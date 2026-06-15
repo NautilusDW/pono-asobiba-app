@@ -524,6 +524,33 @@
     pointer-events: none;
     z-index: 5;
   }
+  .gh-line-sweep {
+    position: absolute;
+    left: 0;
+    top: var(--gh-hit-y, 80%);
+    width: 100%;
+    height: 7px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 7;
+    background:
+      linear-gradient(90deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.14) 22%,
+        var(--sweep-main, rgba(255,247,173,0.92)) 50%,
+        rgba(255,255,255,0.14) 78%,
+        rgba(255,255,255,0) 100%);
+    box-shadow:
+      0 0 12px var(--sweep-glow, rgba(254,240,138,0.62)),
+      0 0 26px var(--sweep-glow, rgba(254,240,138,0.42));
+    opacity: 0;
+    animation: ghLineSweep 0.36s ease-out forwards;
+  }
+  @keyframes ghLineSweep {
+    0%   { opacity: 0; transform: translateY(-50%) scaleX(0.16); filter: brightness(1.4); }
+    26%  { opacity: 0.92; transform: translateY(-50%) scaleX(0.72); filter: brightness(1.2); }
+    100% { opacity: 0; transform: translateY(-50%) scaleX(1.06); filter: brightness(1); }
+  }
   .gh-note {
     position: absolute;
     left: var(--gh-note-x, 0);
@@ -707,15 +734,17 @@
     position: absolute;
     left: var(--gh-pop-x, 50%);
     top: var(--gh-hit-y, 80%);
-    min-width: 58px;
-    height: 42px;
-    padding: 0 14px;
+    min-width: 54px;
+    height: 54px;
+    padding: 0 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 14px;
+    border-radius: 999px;
     border: 3px solid rgba(255,255,255,0.9);
-    background: linear-gradient(180deg, var(--pop-hi, #fff7ad), var(--pop-lo, #38bdf8));
+    background:
+      radial-gradient(circle at 30% 24%, rgba(255,255,255,0.94) 0 15%, rgba(255,255,255,0.18) 16% 28%, transparent 29%),
+      radial-gradient(circle, var(--pop-hi, #fff7ad) 0 34%, var(--pop-lo, #38bdf8) 78%, rgba(15,23,42,0.7) 100%);
     color: rgba(15,23,42,0.86);
     font-size: 1.08rem;
     font-weight: 900;
@@ -727,21 +756,26 @@
     pointer-events: none;
     z-index: 9;
     transform: translate(-50%, -50%) scale(1);
-    animation: ghNotePopAway 0.46s cubic-bezier(.12,.78,.22,1) forwards;
+    animation: ghNotePopAway 0.42s cubic-bezier(.1,.78,.18,1) forwards;
   }
   .gh-note-pop::after {
     content: "";
     position: absolute;
-    inset: -9px;
-    border-radius: 18px;
+    inset: -10px;
+    border-radius: 999px;
     border: 2px solid rgba(255,255,255,0.72);
     opacity: 0.72;
     animation: ghNotePopRing 0.46s ease-out forwards;
   }
+  .gh-note-pop.just {
+    min-width: 64px;
+    height: 64px;
+    filter: brightness(1.18);
+  }
   @keyframes ghNotePopAway {
-    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: brightness(1.08); }
-    34%  { opacity: 0.98; transform: translate(-50%, -57%) scale(1.15); filter: brightness(1.18); }
-    100% { opacity: 0; transform: translate(-50%, -78%) scale(0.52); filter: brightness(1.28); }
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.16); filter: brightness(1.18); }
+    34%  { opacity: 0.98; transform: translate(-50%, -48%) scale(0.92); filter: brightness(1.28); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.16); filter: brightness(1.55); }
   }
   @keyframes ghNotePopRing {
     0%   { opacity: 0.8; transform: scale(0.7); }
@@ -3169,9 +3203,58 @@
       0 0 20px var(--key-glow);
   }
   body.rhythm-layout .instr-btn::before,
-  body.rhythm-layout .instr-btn::after,
   body.rhythm-layout .rhythm-ring {
     border-radius: var(--btn-radius, 18px);
+  }
+  body.rhythm-layout .instr-btn::after {
+    inset: 22% 16% 24%;
+    border-radius: 999px;
+    border: clamp(2px, calc(var(--sz, 82px) * 0.026), 4px) dashed rgba(255,255,255,0.72);
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.2) 0 28%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0) 70%);
+    box-shadow:
+      inset 0 0 12px rgba(255,255,255,0.2),
+      0 0 12px var(--key-glow, rgba(255,216,77,0.42));
+    opacity: 0.54;
+    transform: scaleY(0.72);
+    z-index: 3;
+  }
+  body.rhythm-layout .instr-btn.rhythm-target::after {
+    opacity: 0.92;
+    border-color: rgba(255,255,255,0.94);
+    border-style: solid;
+    box-shadow:
+      inset 0 0 16px rgba(255,255,255,0.28),
+      0 0 14px rgba(255,247,173,0.58),
+      0 0 26px var(--key-glow, rgba(255,216,77,0.46));
+    animation: rhythmReceptorReady 0.7s ease-in-out infinite;
+  }
+  body.rhythm-layout .instr-btn.rhythm-hit::after {
+    opacity: 1;
+    border-style: solid;
+    border-color: rgba(255,255,255,1);
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.7) 0 18%, rgba(254,240,138,0.5) 19% 40%, rgba(45,212,191,0.08) 62%, transparent 74%);
+    box-shadow:
+      inset 0 0 18px rgba(255,255,255,0.4),
+      0 0 18px rgba(255,247,173,0.82),
+      0 0 34px var(--key-glow, rgba(255,216,77,0.68));
+    animation: rhythmReceptorHit 0.26s cubic-bezier(.1,.8,.2,1) both;
+  }
+  body.rhythm-layout .instr-btn.rhythm-miss::after {
+    opacity: 0.8;
+    border-style: solid;
+    border-color: rgba(248,113,113,0.9);
+    background: radial-gradient(ellipse at 50% 50%, rgba(248,113,113,0.26) 0 38%, rgba(248,113,113,0) 72%);
+    box-shadow: 0 0 18px rgba(248,113,113,0.52);
+  }
+  @keyframes rhythmReceptorReady {
+    0%, 100% { transform: scaleY(0.72) scale(0.96); filter: brightness(1); }
+    50%      { transform: scaleY(0.72) scale(1.05); filter: brightness(1.18); }
+  }
+  @keyframes rhythmReceptorHit {
+    0%   { transform: scaleY(0.72) scale(1.16); filter: brightness(1.38); }
+    100% { transform: scaleY(0.72) scale(0.88); filter: brightness(1.08); }
   }
   /* Guitar Hero 風: 8ボタンを画面下端に横一列。レーン番号 0-7 = data-idx 0-7。 */
   /* 子供の指が画面下端ぎりぎりに届かないので 28px 浮かせる (ヒットラインは getBoundingClientRect 基準で自動追従) */
@@ -3205,7 +3288,12 @@
     opacity: 0;
   }
   body.rhythm-layout.webgl-rhythm .instr-btn::after {
-    opacity: 0 !important;
+    opacity: 0.64 !important;
+  }
+  body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-target::after,
+  body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-hit::after,
+  body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-miss::after {
+    opacity: 1 !important;
   }
   /* v713+: 左 22% は左メニュー帯 (モード切替 / ねいろ / ばんそう, 中心 11% / 幅 160px) を
      避けるため空ける。8 ボタンは画面右 78% の中で等間隔配置。1 区間 = 78% / 8 = 9.75%。
@@ -3796,12 +3884,12 @@ var _rhythmSampleSeBuffers = {};      // decoded AudioBuffer cache (scenario →
 var _rhythmSampleSeRawBuffers = {};   // raw ArrayBuffer cache (AC 未作成時の保険)
 var _rhythmSampleSeLoading = false;
 var RHYTHM_SAMPLE_SE_MAP = {
-  just:      { file: 'just-hit.mp3',   volume: 0.6  },
-  nice:      { file: 'nice-hit.mp3',   volume: 0.45 },
-  good:      { file: 'good-hit.mp3',   volume: 0.5  },
-  ok:        { file: 'ok-hit.mp3',     volume: 0.35 },
-  close:     { file: 'close-hit.mp3',  volume: 0.4  },
-  miss:      { file: 'miss-hit.mp3',   volume: 0.55 },
+  just:      { file: 'just-hit.mp3',   volume: 0.78 },
+  nice:      { file: 'nice-hit.mp3',   volume: 0.62 },
+  good:      { file: 'good-hit.mp3',   volume: 0.58 },
+  ok:        { file: 'ok-hit.mp3',     volume: 0.43 },
+  close:     { file: 'close-hit.mp3',  volume: 0.46 },
+  miss:      { file: 'miss-hit.mp3',   volume: 0.58 },
   gameStart: { file: 'game-start.mp3', volume: 0.7  },
   gameClear: { file: 'game-clear.mp3', volume: 0.65 }
 };
@@ -3844,6 +3932,7 @@ function _playRhythmSampleSe(scenario) {
   var meta = RHYTHM_SAMPLE_SE_MAP[scenario];
   if (!meta) return false;
   var buf = _rhythmSampleSeBuffers[scenario];
+  if (!buf && _rhythmSampleSeRawBuffers[scenario]) _ensureRhythmSampleSeDecoded();
   if (!buf) return false;
   var ac = getAC();
   if (!ac) return false;
@@ -6103,13 +6192,28 @@ function _gh3DKeyTextureFor(lane, label) {
   ctx.fillRect(42, 45, 172, 166);
   ctx.restore();
 
-  ctx.lineWidth = 4;
-  ctx.setLineDash([9, 8]);
-  ctx.strokeStyle = 'rgba(255,247,210,0.72)';
+  var cup = ctx.createRadialGradient(128, 128, 8, 128, 128, 76);
+  cup.addColorStop(0, 'rgba(255,255,255,0.28)');
+  cup.addColorStop(0.42, 'rgba(255,255,255,0.12)');
+  cup.addColorStop(0.72, 'rgba(15,23,42,0.1)');
+  cup.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = cup;
   ctx.beginPath();
-  ctx.ellipse(128, 128, 67, 58, 0, 0, Math.PI * 2);
+  ctx.ellipse(128, 128, 72, 61, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.lineWidth = 7;
+  ctx.setLineDash([11, 8]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.78)';
+  ctx.beginPath();
+  ctx.ellipse(128, 128, 69, 59, 0, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(255,247,210,0.62)';
+  ctx.beginPath();
+  ctx.ellipse(128, 128, 50, 43, 0, 0, Math.PI * 2);
+  ctx.stroke();
 
   var fontSize = label && label.length >= 2 ? 70 : 92;
   do {
@@ -6342,15 +6446,16 @@ function _gh3DDrawOneKey(lane, mvp) {
       miss ? 0.86 : 1
     );
   }
-  if (hit) {
+  if (target || hit) {
     var haloY = topY + 0.018;
+    var haloAlpha = hit ? 0.26 : 0.12;
     _gh3DPushColorQuad(
       sideVerts,
       [centerX - w * 0.58, haloY, centerZ + d * 0.56],
       [centerX + w * 0.58, haloY, centerZ + d * 0.56],
       [centerX + w * 0.5, haloY, centerZ - d * 0.45],
       [centerX - w * 0.5, haloY, centerZ - d * 0.45],
-      [1, 0.96, 0.68, 0.18]
+      [1, 0.96, 0.68, haloAlpha]
     );
   }
   _gh3DDrawColor(gl, _gh3d.notesColorProgram, _gh3d.noteColorBuffer, sideVerts, gl.TRIANGLES, mvp);
@@ -6457,7 +6562,7 @@ function _ghClearFlashTimers() {
   _rhythm.flashTimers = [];
   var lanes = _ghLanesEl();
   if (lanes) {
-    lanes.querySelectorAll('.gh-flash, .gh-burst, .gh-note-pop, .rhythm-judge-pop').forEach(function(el) {
+    lanes.querySelectorAll('.gh-flash, .gh-line-sweep, .gh-burst, .gh-note-pop, .rhythm-judge-pop').forEach(function(el) {
       if (el.parentNode) el.parentNode.removeChild(el);
     });
   }
@@ -6490,15 +6595,23 @@ function _ghFlashLane(laneIdx, kind) {
 function _ghSpawnHitFlash(laneIdx) {
   var lanes = _ghLanesEl();
   if (!lanes) return;
+  var laneColor = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FEF08A', lo: '#38BDF8' };
+  var laneRgb = _gh3DHexToRgb(laneColor.hi || '#FEF08A');
   var flash = document.createElement('div');
   flash.className = 'gh-flash';
   var center = (laneIdx + 0.5) * 12.5; // % 中心
   flash.style.setProperty('--gh-flash-x', center + '%');
   lanes.appendChild(flash);
+  var sweep = document.createElement('div');
+  sweep.className = 'gh-line-sweep';
+  sweep.style.setProperty('--sweep-main', laneColor.hi || 'rgba(255,247,173,0.92)');
+  sweep.style.setProperty('--sweep-glow', 'rgba(' + Math.round(laneRgb[0] * 255) + ',' + Math.round(laneRgb[1] * 255) + ',' + Math.round(laneRgb[2] * 255) + ',0.68)');
+  lanes.appendChild(sweep);
   // setTimeout を _rhythm.flashTimers に追跡: モード離脱時にまとめて clearTimeout
   if (!_rhythm.flashTimers) _rhythm.flashTimers = [];
   var timerId = setTimeout(function() {
     if (flash.parentNode) flash.parentNode.removeChild(flash);
+    if (sweep.parentNode) sweep.parentNode.removeChild(sweep);
     // 完了済みの id を配列から除去 (リークしないよう)
     if (_rhythm.flashTimers) {
       var i = _rhythm.flashTimers.indexOf(timerId);
@@ -6559,7 +6672,7 @@ function _ghSpawnNoteBurst(noteOrLane, kind) {
   }, burstKind === 'miss' ? 520 : 680);
   _rhythm.flashTimers.push(timerId);
 }
-function _ghSpawnNotePop(noteOrLane) {
+function _ghSpawnNotePop(noteOrLane, judge) {
   var lanes = _ghLanesEl();
   if (!lanes) return;
   var laneIdx = 0;
@@ -6569,7 +6682,7 @@ function _ghSpawnNotePop(noteOrLane) {
   var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FEF08A', lo: '#0EA5E9' };
   var rgb = _gh3DHexToRgb(color.hi || '#FEF08A');
   var pop = document.createElement('div');
-  pop.className = 'gh-note-pop';
+  pop.className = 'gh-note-pop ' + ((judge && judge.key) || 'hit');
   pop.style.setProperty('--gh-pop-x', ((laneIdx + 0.5) * 12.5) + '%');
   pop.style.setProperty('--pop-hi', color.hi || '#FEF08A');
   pop.style.setProperty('--pop-lo', color.lo || '#0EA5E9');
@@ -7411,11 +7524,10 @@ function _playRhythmBlockSfx(kind, laneIdx, judge) {
     sparkleOsc.stop(now + 0.24);
   }
 
-  // サンプル SE 重ね (just / nice のみ — 爽快感を perfect timing に集中させる)。
+  // 既存の Oto 用サンプル SE を判定ごとに重ねる。
   // バッファ未ロード時は no-op で synth 単独になるため安全。
-  if (!isMiss && judge && (judge.key === 'just' || judge.key === 'nice')) {
-    _playRhythmSampleSe(judge.key);
-  }
+  var sampleKey = isMiss ? 'miss' : ((judge && judge.key) || 'good');
+  _playRhythmSampleSe(sampleKey);
 
   var cleanupDelay = isMiss ? 260 : 420;
   setTimeout(function() {
@@ -7835,7 +7947,10 @@ function handleRhythmTap(idx, btn) {
       _setRhythmStatus(judge.label, 'warn');
     }
     _ghSpawnHitFlash(laneIdx);
-    _ghSpawnNotePop(best);
+    _ghSpawnNotePop(best, judge);
+    if (judge.key === 'just' || judge.key === 'nice' || judge.key === 'good') {
+      _ghSpawnNoteBurst(best, 'success');
+    }
     _playRhythmTapPitch(laneIdx, judge);
     _playRhythmBlockSfx('success', laneIdx, judge);
     _pulseRhythmButton(btn, 'rhythm-hit' + (judge.key === 'just' ? ' rhythm-hit-just' : (judge.key === 'nice' ? ' rhythm-hit-nice' : '')));
