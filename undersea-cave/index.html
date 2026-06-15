@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ポノの海底洞窟たんけん | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #12334a;
+    --deep: #052035;
+    --water: #0c75a5;
+    --water-soft: #8fe7f0;
+    --sand: #f2d48b;
+    --coral: #ff8c7a;
+    --gold: #ffd56a;
+    --panel: rgba(244, 253, 255, 0.86);
+    --line: rgba(255, 255, 255, 0.5);
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+    overflow: hidden;
+    background: #02111f;
+    color: var(--ink);
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  body {
+    display: grid;
+    place-items: center;
+  }
+
+  #app {
+    position: relative;
+    width: min(100vw, calc(100dvh * 16 / 9));
+    height: min(100dvh, calc(100vw * 9 / 16));
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 24% 14%, rgba(187, 247, 255, 0.26), transparent 22%),
+      linear-gradient(180deg, #74d8ee 0%, #126d9f 46%, #063653 100%);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  }
+
+  @media (min-width: 720px) {
+    #app { border-radius: 8px; }
+  }
+
+  #gameCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  .hud {
+    position: absolute;
+    z-index: 20;
+    top: max(10px, env(safe-area-inset-top));
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .hud-left,
+  .hud-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .back-link,
+  .hud-chip,
+  .prompt {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: 0 8px 22px rgba(3, 36, 60, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .back-link {
+    pointer-events: auto;
+    display: inline-grid;
+    place-items: center;
+    min-width: 74px;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 8px;
+    color: #0f5270;
+    font-weight: 900;
+    font-size: 0.94rem;
+    text-decoration: none;
+  }
+
+  .hud-chip {
+    min-width: 116px;
+    height: 42px;
+    border-radius: 8px;
+    padding: 5px 11px 6px;
+    display: grid;
+    align-content: center;
+    gap: 1px;
+  }
+
+  .hud-chip span {
+    display: block;
+    color: rgba(17, 78, 105, 0.72);
+    font-size: 0.62rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .hud-chip strong {
+    display: block;
+    color: #07364f;
+    font-size: 0.98rem;
+    font-weight: 900;
+    line-height: 1.04;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .prompt {
+    position: absolute;
+    z-index: 18;
+    left: 50%;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(520px, calc(100% - 28px));
+    min-height: 46px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    padding: 8px 18px;
+    color: #0d4964;
+    font-size: clamp(0.9rem, 2.1vw, 1.12rem);
+    font-weight: 900;
+    line-height: 1.25;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 0.24s ease, transform 0.24s ease;
+  }
+
+  .prompt.is-soft {
+    color: #3b6b55;
+    background: rgba(252, 252, 230, 0.88);
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background:
+      radial-gradient(circle at 48% 42%, rgba(255, 245, 180, 0.2), transparent 30%),
+      rgba(2, 26, 44, 0.48);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .overlay[hidden] { display: none; }
+
+  .modal-panel {
+    width: min(430px, calc(100vw - 40px));
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.58);
+    background:
+      linear-gradient(180deg, rgba(246, 254, 255, 0.96), rgba(218, 248, 250, 0.94));
+    box-shadow: 0 24px 70px rgba(0, 18, 38, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    padding: 24px 22px 22px;
+    text-align: center;
+  }
+
+  .modal-panel h1 {
+    color: #0b4968;
+    font-size: clamp(1.55rem, 5.4vw, 2.1rem);
+    line-height: 1.08;
+    letter-spacing: 0;
+    margin-bottom: 10px;
+    font-weight: 900;
+  }
+
+  .modal-panel p {
+    color: #2c6680;
+    font-size: 1.02rem;
+    line-height: 1.55;
+    font-weight: 700;
+    margin-bottom: 18px;
+  }
+
+  .modal-art {
+    width: min(230px, 64vw);
+    height: 116px;
+    margin: 2px auto 14px;
+    background-image: url('../assets/images/ocean/Submarine/Submarine_003.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    filter: drop-shadow(0 12px 16px rgba(9, 82, 110, 0.24));
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    width: 100%;
+    min-height: 48px;
+    border: 0;
+    border-radius: 8px;
+    color: #07364f;
+    font-family: inherit;
+    font-size: 1.08rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .primary-btn {
+    background: linear-gradient(180deg, #fff2a8, #ffd66f);
+    box-shadow: 0 6px 0 #d99f37, 0 12px 20px rgba(143, 94, 28, 0.24);
+  }
+
+  .secondary-btn {
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(33, 111, 139, 0.22);
+    box-shadow: 0 4px 0 rgba(33, 111, 139, 0.18);
+  }
+
+  .primary-btn:active,
+  .secondary-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 #d99f37, 0 8px 14px rgba(143, 94, 28, 0.18);
+  }
+
+  #loading {
+    position: absolute;
+    z-index: 60;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #dffcff;
+    font-weight: 900;
+    letter-spacing: 0;
+    background: #052035;
+  }
+
+  #loading[hidden] { display: none; }
+
+  @media (max-height: 440px) {
+    .hud { top: max(6px, env(safe-area-inset-top)); }
+    .back-link,
+    .hud-chip {
+      height: 36px;
+      min-width: 86px;
+      border-radius: 8px;
+    }
+    .hud-chip span { font-size: 0.55rem; }
+    .hud-chip strong { font-size: 0.86rem; }
+    .prompt {
+      min-height: 38px;
+      padding: 6px 12px;
+      font-size: 0.84rem;
+    }
+    .modal-panel {
+      padding: 18px;
+      width: min(430px, calc(100vw - 34px));
+    }
+    .modal-art {
+      height: 82px;
+      margin-bottom: 8px;
+    }
+    .modal-panel p {
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gameCanvas" aria-label="ポノの海底洞窟たんけん"></canvas>
+  <div class="hud" aria-live="polite">
+    <div class="hud-left">
+      <a class="back-link" href="../play.html">もどる</a>
+      <div class="hud-chip"><span>ひかり</span><strong id="cargoText">0 / 9</strong></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-chip"><span>ともだち</span><strong id="friendText">0 / 3</strong></div>
+      <div class="hud-chip"><span>スコア</span><strong id="scoreText">0</strong></div>
+    </div>
+  </div>
+  <div class="prompt" id="prompt">ひかりのエサを あつめよう</div>
+  <div id="loading">よみこみ中...</div>
+  <div class="overlay" id="startOverlay">
+    <div class="modal-panel">
+      <div class="modal-art" aria-hidden="true"></div>
+      <h1>海底洞窟<br>たんけん</h1>
+      <p>ひかりのエサを あつめて、<br>海のともだちへ とどけよう。</p>
+      <button class="primary-btn" id="startBtn" type="button">はじめる</button>
+    </div>
+  </div>
+  <div class="overlay" id="finishOverlay" hidden>
+    <div class="modal-panel">
+      <div class="modal-art" aria-hidden="true"></div>
+      <h1>みんな<br>にこにこ</h1>
+      <p id="finishText">海底洞窟が きらきらに なったよ。</p>
+      <button class="primary-btn" id="againBtn" type="button">もういちど</button>
+      <button class="secondary-btn" id="homeBtn" type="button">あそびばへ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const BASE_W = 1600;
+  const BASE_H = 900;
+  const WORLD_W = 5200;
+  const TOTAL_LIGHT = 9;
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const app = document.getElementById('app');
+  const loading = document.getElementById('loading');
+  const startOverlay = document.getElementById('startOverlay');
+  const finishOverlay = document.getElementById('finishOverlay');
+  const startBtn = document.getElementById('startBtn');
+  const againBtn = document.getElementById('againBtn');
+  const homeBtn = document.getElementById('homeBtn');
+  const promptEl = document.getElementById('prompt');
+  const cargoText = document.getElementById('cargoText');
+  const friendText = document.getElementById('friendText');
+  const scoreText = document.getElementById('scoreText');
+  const finishText = document.getElementById('finishText');
+
+  const ASSET_BASE = '../assets/images/undersea-cave/';
+  const ASSETS = {
+    bgCeiling: ASSET_BASE + 'bg_ceiling.png',
+    bgWallNear: ASSET_BASE + 'bg_wall_near.png',
+    bgFloor: ASSET_BASE + 'bg_floor_sand.png',
+    bgWallFar: ASSET_BASE + 'bg_wall_far.png',
+    submarine: '../assets/images/ocean/Submarine/Submarine_003.png',
+    whaleSleep: ASSET_BASE + 'friend_whale_sleep.png',
+    whaleSurprise: ASSET_BASE + 'friend_whale_surprise.png',
+    whaleOpen: ASSET_BASE + 'friend_whale_open.png',
+    octopusSurprise: ASSET_BASE + 'friend_octopus_surprise.png',
+    octopusHappy: ASSET_BASE + 'friend_octopus_happy.png',
+    octopusSmile: ASSET_BASE + 'friend_octopus_smile.png',
+    pearlShell: ASSET_BASE + 'item_pearl_shell.png',
+    foodBubble: ASSET_BASE + 'item_food_bubble.png',
+    bellBubble: ASSET_BASE + 'item_bell_bubble.png',
+    seaweed: ASSET_BASE + 'item_seaweed.png',
+    heartBubble: ASSET_BASE + 'item_heart_bubble.png',
+    ponoGlow: ASSET_BASE + 'item_pono_glow.png',
+    foodPellet: ASSET_BASE + 'item_food_pellet.png',
+    plankton: ASSET_BASE + 'item_plankton_sparkles.png'
+  };
+
+  const img = {};
+  let audio = null;
+  let dpr = 1;
+  let lastTime = 0;
+  let ready = false;
+
+  const state = {
+    mode: 'ready',
+    time: 0,
+    camera: 0,
+    score: 0,
+    cargo: 0,
+    delivered: 0,
+    friendsDone: 0,
+    boost: 0,
+    pointerActive: false,
+    promptTimer: 0,
+    promptText: '',
+    player: { x: 190, y: 454, tx: 260, ty: 454, vx: 0, vy: 0, tilt: 0 },
+    keys: Object.create(null),
+    collectables: [],
+    friends: [],
+    bubbles: [],
+    sparks: [],
+    decor: []
+  };
+
+  const friendTemplate = [
+    {
+      id: 'whaleA',
+      x: 1320,
+      y: 372,
+      w: 420,
+      normal: 'whaleSleep',
+      active: 'whaleSurprise',
+      happy: 'whaleOpen',
+      need: 3,
+      label: 'あと 3'
+    },
+    {
+      id: 'octo',
+      x: 2820,
+      y: 545,
+      w: 330,
+      normal: 'octopusSurprise',
+      active: 'octopusSmile',
+      happy: 'octopusHappy',
+      need: 3,
+      label: 'あと 3'
+    },
+    {
+      id: 'whaleB',
+      x: 4300,
+      y: 382,
+      w: 390,
+      normal: 'whaleSurprise',
+      active: 'whaleOpen',
+      happy: 'whaleSleep',
+      need: 3,
+      label: 'あと 3'
+    }
+  ];
+
+  const foodSpots = [
+    [460, 255], [650, 565], [910, 370],
+    [1580, 240], [1820, 610], [2140, 390],
+    [3050, 245], [3310, 620], [3680, 390],
+    [4500, 580], [4700, 300], [4920, 480]
+  ];
+
+  const bonusSpots = [
+    ['pearlShell', 720, 700, 78], ['bellBubble', 1200, 250, 74],
+    ['heartBubble', 2020, 220, 74], ['plankton', 2460, 670, 76],
+    ['pearlShell', 3480, 705, 78], ['bellBubble', 3950, 250, 74],
+    ['heartBubble', 4720, 640, 74]
+  ];
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('image load failed: ' + src));
+      image.src = src;
+    });
+  }
+
+  function resize() {
+    const rect = app.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    ctx.setTransform(canvas.width / BASE_W, 0, 0, canvas.height / BASE_H, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function dist(a, b, x, y) {
+    const dx = a - x;
+    const dy = b - y;
+    return Math.hypot(dx, dy);
+  }
+
+  function centerDraw(image, x, y, w, alpha = 1, flip = false) {
+    if (!image) return;
+    const h = w * image.height / image.width;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(image, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+
+  function initAudio() {
+    if (audio) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      audio = new AC();
+    } catch (_) {
+      audio = null;
+    }
+  }
+
+  function tone(type) {
+    if (!audio) return;
+    const now = audio.currentTime;
+    const gain = audio.createGain();
+    const osc = audio.createOscillator();
+    const freqs = {
+      pick: [660, 880],
+      feed: [520, 780],
+      clear: [660, 990],
+      finish: [520, 720]
+    }[type] || [500, 680];
+    osc.type = type === 'feed' ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(freqs[0], now);
+    osc.frequency.exponentialRampToValueAtTime(freqs[1], now + 0.12);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(type === 'finish' ? 0.09 : 0.055, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+    osc.connect(gain).connect(audio.destination);
+    osc.start(now);
+    osc.stop(now + 0.18);
+  }
+
+  function setPrompt(text, soft = false, ttl = 2.6) {
+    state.promptText = text;
+    state.promptTimer = ttl;
+    promptEl.textContent = text;
+    promptEl.classList.toggle('is-soft', !!soft);
+  }
+
+  function resetWorld() {
+    state.mode = 'ready';
+    state.time = 0;
+    state.camera = 0;
+    state.score = 0;
+    state.cargo = 0;
+    state.delivered = 0;
+    state.friendsDone = 0;
+    state.boost = 0;
+    state.pointerActive = false;
+    state.promptTimer = 0;
+    state.promptText = '';
+    state.player = { x: 190, y: 454, tx: 260, ty: 454, vx: 0, vy: 0, tilt: 0 };
+    state.collectables = [];
+    state.friends = friendTemplate.map((f) => ({ ...f, fed: 0, done: false, focus: 0, feedClock: 0, pulse: 0 }));
+    state.bubbles = [];
+    state.sparks = [];
+    state.decor = [];
+
+    foodSpots.forEach((spot, i) => {
+      state.collectables.push({
+        kind: 'food',
+        img: i % 2 ? 'foodPellet' : 'foodBubble',
+        x: spot[0],
+        y: spot[1],
+        r: i % 2 ? 42 : 54,
+        w: i % 2 ? 58 : 76,
+        taken: false,
+        phase: i * 0.7
+      });
+    });
+    bonusSpots.forEach((spot, i) => {
+      state.collectables.push({
+        kind: spot[0] === 'bellBubble' ? 'bell' : 'bonus',
+        img: spot[0],
+        x: spot[1],
+        y: spot[2],
+        r: spot[3] * 0.56,
+        w: spot[3],
+        taken: false,
+        phase: 1.3 + i * 0.8
+      });
+    });
+
+    for (let i = 0; i < 26; i += 1) {
+      state.decor.push({
+        img: i % 4 === 0 ? 'seaweed' : (i % 3 === 0 ? 'pearlShell' : 'plankton'),
+        x: 340 + i * 185 + (i % 5) * 30,
+        y: i % 4 === 0 ? 706 : 720 + (i % 3) * 8,
+        w: i % 4 === 0 ? 58 + (i % 3) * 18 : 46 + (i % 4) * 10,
+        alpha: i % 4 === 0 ? 0.72 : 0.36
+      });
+    }
+    updateHud();
+    setPrompt('ひかりのエサを あつめよう', false, 2.8);
+  }
+
+  function startGame() {
+    initAudio();
+    if (audio && audio.state === 'suspended') audio.resume().catch(() => {});
+    resetWorld();
+    state.mode = 'playing';
+    startOverlay.hidden = true;
+    finishOverlay.hidden = true;
+    setPrompt('ひかりのエサを あつめよう', false, 2.4);
+  }
+
+  function finishGame() {
+    if (state.mode === 'finish') return;
+    state.mode = 'finish';
+    state.score += 300;
+    updateHud();
+    tone('finish');
+    burst(state.player.x + 60, state.player.y, 'ponoGlow', 11);
+    finishText.textContent = 'スコア ' + state.score + '。海底洞窟が きらきらに なったよ。';
+    setTimeout(() => {
+      finishOverlay.hidden = false;
+    }, 650);
+    try {
+      const best = Math.max(Number(localStorage.getItem('undersea_cave_best_score') || 0), state.score);
+      localStorage.setItem('undersea_cave_best_score', String(best));
+      localStorage.setItem('undersea_cave_cleared', '1');
+    } catch (_) {}
+  }
+
+  function updateHud() {
+    cargoText.textContent = state.delivered + ' / ' + TOTAL_LIGHT;
+    friendText.textContent = state.friendsDone + ' / ' + state.friends.length;
+    scoreText.textContent = String(state.score);
+  }
+
+  function canvasPoint(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (ev.clientX - rect.left) / rect.width * BASE_W;
+    const y = (ev.clientY - rect.top) / rect.height * BASE_H;
+    return { x, y };
+  }
+
+  function setTarget(ev) {
+    if (state.mode !== 'playing') return;
+    const p = canvasPoint(ev);
+    state.player.tx = clamp(state.camera + p.x, 90, WORLD_W - 120);
+    state.player.ty = clamp(p.y, 150, 712);
+  }
+
+  function spawnBubble(x, y, scale = 1) {
+    state.bubbles.push({
+      x,
+      y,
+      vx: -24 - Math.random() * 16,
+      vy: -34 - Math.random() * 32,
+      r: (6 + Math.random() * 12) * scale,
+      life: 1.2 + Math.random() * 0.8,
+      max: 1.8
+    });
+  }
+
+  function burst(x, y, imgKey, count = 8) {
+    for (let i = 0; i < count; i += 1) {
+      const a = Math.PI * 2 * (i / count) + Math.random() * 0.3;
+      const sp = 95 + Math.random() * 135;
+      state.sparks.push({
+        x,
+        y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp - 35,
+        img: imgKey,
+        w: 34 + Math.random() * 26,
+        life: 0.8 + Math.random() * 0.35,
+        max: 1.1,
+        rot: Math.random() * Math.PI,
+        vr: -1.5 + Math.random() * 3
+      });
+    }
+  }
+
+  function update(dt) {
+    state.time += dt;
+    state.promptTimer = Math.max(0, state.promptTimer - dt);
+
+    if (state.mode === 'playing') {
+      updatePlayer(dt);
+      updateCollectables(dt);
+      updateFriends(dt);
+    } else if (state.mode === 'ready') {
+      state.player.y = 454 + Math.sin(state.time * 1.5) * 9;
+      state.player.x = 210 + Math.sin(state.time * 0.5) * 22;
+      state.camera += (0 - state.camera) * Math.min(1, dt * 1.8);
+    }
+
+    state.bubbles.forEach((b) => {
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.life -= dt;
+    });
+    state.bubbles = state.bubbles.filter((b) => b.life > 0);
+
+    state.sparks.forEach((s) => {
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vy += 55 * dt;
+      s.rot += s.vr * dt;
+      s.life -= dt;
+    });
+    state.sparks = state.sparks.filter((s) => s.life > 0);
+
+    if (state.mode === 'playing' && Math.random() < dt * 4.5) {
+      spawnBubble(state.player.x - 115, state.player.y + 22, 0.72);
+    }
+  }
+
+  function updatePlayer(dt) {
+    const p = state.player;
+    if (state.keys.ArrowRight || state.keys.KeyD) p.tx += 520 * dt;
+    if (state.keys.ArrowLeft || state.keys.KeyA) p.tx -= 520 * dt;
+    if (state.keys.ArrowUp || state.keys.KeyW) p.ty -= 420 * dt;
+    if (state.keys.ArrowDown || state.keys.KeyS) p.ty += 420 * dt;
+    p.tx = clamp(p.tx, 90, WORLD_W - 120);
+    p.ty = clamp(p.ty, 150, 712);
+
+    const speed = state.boost > 0 ? 600 : 410;
+    state.boost = Math.max(0, state.boost - dt);
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 2) {
+      const step = Math.min(d, speed * dt);
+      p.x += dx / d * step;
+      p.y += dy / d * step;
+    }
+    p.x = clamp(p.x, 90, WORLD_W - 120);
+    p.y = clamp(p.y, 150, 712);
+    p.vx = dx;
+    p.vy = dy;
+    p.tilt += ((dy / 380) - p.tilt) * Math.min(1, dt * 6);
+
+    const desired = clamp(p.x - BASE_W * 0.36, 0, WORLD_W - BASE_W);
+    state.camera += (desired - state.camera) * Math.min(1, dt * 3.2);
+  }
+
+  function updateCollectables(dt) {
+    const p = state.player;
+    for (const item of state.collectables) {
+      if (item.taken) continue;
+      if (dist(item.x, item.y, p.x, p.y) < item.r + 56) {
+        item.taken = true;
+        if (item.kind === 'food') {
+          state.cargo = Math.min(6, state.cargo + 1);
+          state.score += 40;
+          tone('pick');
+          burst(item.x, item.y, 'plankton', 7);
+          setPrompt('エサを のせたよ', true, 1.2);
+        } else if (item.kind === 'bell') {
+          state.boost = 3.2;
+          state.score += 60;
+          tone('pick');
+          burst(item.x, item.y, 'bellBubble', 8);
+          setPrompt('すいすい はやくなったよ', true, 1.4);
+        } else {
+          state.score += 30;
+          tone('pick');
+          burst(item.x, item.y, item.img, 6);
+        }
+        updateHud();
+      }
+    }
+  }
+
+  function updateFriends(dt) {
+    const p = state.player;
+    for (const friend of state.friends) {
+      const near = dist(friend.x - 20, friend.y, p.x, p.y) < 255;
+      friend.focus += ((near && !friend.done ? 1 : 0) - friend.focus) * Math.min(1, dt * 5);
+      friend.pulse = Math.max(0, friend.pulse - dt);
+      if (!near || friend.done) continue;
+
+      if (state.cargo <= 0 && friend.fed < friend.need) {
+        if (state.promptTimer <= 0.02) setPrompt('ひかりのエサを さがそう', false, 1.2);
+        continue;
+      }
+
+      friend.feedClock += dt;
+      if (friend.feedClock >= 0.42 && friend.fed < friend.need && state.cargo > 0) {
+        friend.feedClock = 0;
+        friend.fed += 1;
+        state.cargo -= 1;
+        state.delivered += 1;
+        state.score += 90;
+        friend.pulse = 0.45;
+        tone('feed');
+        burst(friend.x - 70, friend.y - 22, 'heartBubble', 7);
+        setPrompt('とどいたよ', true, 1.0);
+        if (friend.fed >= friend.need) {
+          friend.done = true;
+          state.friendsDone += 1;
+          state.score += 160;
+          tone('clear');
+          burst(friend.x, friend.y, 'ponoGlow', 14);
+          setPrompt(state.friendsDone >= state.friends.length ? 'どうくつの おくが ひかったよ' : 'つぎの ともだちへ', true, 2.0);
+          if (state.friendsDone >= state.friends.length) finishGame();
+        }
+        updateHud();
+      }
+    }
+  }
+
+  function draw() {
+    ctx.save();
+    ctx.setTransform(canvas.width / BASE_W, 0, 0, canvas.height / BASE_H, 0, 0);
+    drawScene();
+    ctx.restore();
+  }
+
+  function drawScene() {
+    const t = state.time;
+    const cam = state.camera;
+    const seaShift = Math.sin(t * 0.28) * 18;
+    const grad = ctx.createLinearGradient(0, 0, 0, BASE_H);
+    grad.addColorStop(0, '#91ecf7');
+    grad.addColorStop(0.42, '#1788b2');
+    grad.addColorStop(1, '#052d49');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, BASE_W, BASE_H);
+
+    drawRays(t);
+    drawStrip(img.bgWallFar, cam * 0.32 + seaShift, 114, 230, 0.46);
+    drawStrip(img.bgWallNear, cam * 0.58, 492, 238, 0.58);
+    drawDecor(cam);
+    drawStrip(img.bgFloor, cam * 0.92, 708, 218, 1);
+    drawStrip(img.bgCeiling, cam * 0.95, -2, 246, 1);
+    drawBubbles(cam);
+    drawCollectables(cam, t);
+    drawFriends(cam, t);
+    drawPlayer(cam, t);
+    drawSparks(cam);
+    drawWaterOverlay(t);
+  }
+
+  function drawStrip(image, offset, y, h, alpha) {
+    if (!image) return;
+    const w = image.width * (h / image.height);
+    let x = -((offset % w) + w) % w;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    for (; x < BASE_W + w; x += w) {
+      ctx.drawImage(image, x, y, w, h);
+    }
+    ctx.restore();
+  }
+
+  function drawRays(t) {
+    ctx.save();
+    ctx.globalAlpha = 0.24;
+    for (let i = 0; i < 7; i += 1) {
+      const x = 120 + i * 235 + Math.sin(t * 0.32 + i) * 28;
+      const g = ctx.createLinearGradient(x, 0, x + 120, 600);
+      g.addColorStop(0, 'rgba(255, 255, 230, 0.45)');
+      g.addColorStop(1, 'rgba(255, 255, 230, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 84, 0);
+      ctx.lineTo(x + 270, BASE_H);
+      ctx.lineTo(x - 80, BASE_H);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawDecor(cam) {
+    for (const d of state.decor) {
+      const sx = d.x - cam;
+      if (sx < -120 || sx > BASE_W + 120) continue;
+      centerDraw(img[d.img], sx, d.y, d.w, d.alpha);
+    }
+  }
+
+  function drawBubbles(cam) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(224, 252, 255, 0.65)';
+    ctx.lineWidth = 2;
+    for (const b of state.bubbles) {
+      const sx = b.x - cam;
+      const alpha = clamp(b.life / b.max, 0, 1);
+      ctx.globalAlpha = alpha * 0.75;
+      ctx.beginPath();
+      ctx.arc(sx, b.y, b.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = alpha * 0.28;
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawCollectables(cam, t) {
+    for (const item of state.collectables) {
+      if (item.taken) continue;
+      const sx = item.x - cam;
+      if (sx < -150 || sx > BASE_W + 150) continue;
+      const bob = Math.sin(t * 2.2 + item.phase) * 10;
+      const glow = 0.68 + Math.sin(t * 4 + item.phase) * 0.14;
+      ctx.save();
+      ctx.translate(sx, item.y + bob);
+      ctx.globalAlpha = 0.38 * glow;
+      ctx.fillStyle = item.kind === 'food' ? '#fff8a8' : '#b7fff3';
+      ctx.beginPath();
+      ctx.arc(0, 0, item.w * 0.56, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.rotate(Math.sin(t + item.phase) * 0.08);
+      ctx.drawImage(img[item.img], -item.w / 2, -item.w * img[item.img].height / img[item.img].width / 2, item.w, item.w * img[item.img].height / img[item.img].width);
+      ctx.restore();
+    }
+  }
+
+  function drawFriends(cam, t) {
+    for (const friend of state.friends) {
+      const sx = friend.x - cam;
+      if (sx < -520 || sx > BASE_W + 520) continue;
+      const key = friend.done ? friend.happy : (friend.focus > 0.35 ? friend.active : friend.normal);
+      const wave = Math.sin(t * 1.1 + friend.x * 0.01) * 9;
+      const pulse = friend.pulse > 0 ? 1 + Math.sin(friend.pulse * 24) * 0.035 : 1;
+      ctx.save();
+      ctx.translate(sx, friend.y + wave);
+      ctx.scale(pulse, pulse);
+      centerDraw(img[key], 0, 0, friend.w, 1);
+      if (!friend.done) {
+        const needLeft = friend.need - friend.fed;
+        const ringAlpha = 0.35 + friend.focus * 0.45;
+        ctx.globalAlpha = ringAlpha;
+        ctx.strokeStyle = '#fff2a8';
+        ctx.lineWidth = 5;
+        ctx.setLineDash([12, 10]);
+        ctx.beginPath();
+        ctx.ellipse(-24, -8, friend.w * 0.45, friend.w * 0.25, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = 'rgba(255, 250, 217, 0.9)';
+        ctx.strokeStyle = 'rgba(18, 76, 101, 0.18)';
+        roundRect(-82, friend.w * 0.28, 164, 40, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#0c5271';
+        ctx.font = '900 24px Zen Maru Gothic, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('あと ' + needLeft, 0, friend.w * 0.28 + 21);
+      } else {
+        ctx.globalAlpha = 0.78;
+        centerDraw(img.heartBubble, -friend.w * 0.24, -friend.w * 0.32, 72, 1);
+      }
+      ctx.restore();
+    }
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+  }
+
+  function drawPlayer(cam, t) {
+    const p = state.player;
+    const sx = p.x - cam;
+    const sy = p.y;
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(clamp(p.tilt, -0.22, 0.22));
+    const glow = state.boost > 0 ? 0.55 + Math.sin(t * 12) * 0.12 : 0.2;
+    ctx.globalAlpha = glow;
+    ctx.fillStyle = '#fff4a8';
+    ctx.beginPath();
+    ctx.ellipse(-10, 0, 118, 72, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.drawImage(img.submarine, -116, -78, 232, 156);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#001a2b';
+    ctx.beginPath();
+    ctx.ellipse(sx - 10, 748, 120, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSparks(cam) {
+    for (const s of state.sparks) {
+      const sx = s.x - cam;
+      if (sx < -120 || sx > BASE_W + 120) continue;
+      const a = clamp(s.life / s.max, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(sx, s.y);
+      ctx.rotate(s.rot);
+      const image = img[s.img];
+      const h = s.w * image.height / image.width;
+      ctx.drawImage(image, -s.w / 2, -h / 2, s.w, h);
+      ctx.restore();
+    }
+  }
+
+  function drawWaterOverlay(t) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.08;
+    for (let y = 70; y < BASE_H; y += 58) {
+      ctx.fillStyle = '#d8ffff';
+      ctx.beginPath();
+      for (let x = -40; x <= BASE_W + 40; x += 40) {
+        const yy = y + Math.sin(x * 0.015 + t * 1.4 + y) * 5;
+        if (x === -40) ctx.moveTo(x, yy);
+        else ctx.lineTo(x, yy);
+      }
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#d8ffff';
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  window.addEventListener('resize', resize);
+  canvas.addEventListener('pointerdown', (ev) => {
+    state.pointerActive = true;
+    canvas.setPointerCapture(ev.pointerId);
+    setTarget(ev);
+  });
+  canvas.addEventListener('pointermove', (ev) => {
+    if (state.pointerActive) setTarget(ev);
+  });
+  canvas.addEventListener('pointerup', (ev) => {
+    state.pointerActive = false;
+    try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener('pointercancel', () => {
+    state.pointerActive = false;
+  });
+  window.addEventListener('keydown', (ev) => {
+    state.keys[ev.code] = true;
+  });
+  window.addEventListener('keyup', (ev) => {
+    state.keys[ev.code] = false;
+  });
+
+  startBtn.addEventListener('click', startGame);
+  againBtn.addEventListener('click', startGame);
+  homeBtn.addEventListener('click', () => {
+    location.href = '../play.html';
+  });
+
+  function frame(now) {
+    if (!lastTime) lastTime = now;
+    const dt = Math.min(0.033, (now - lastTime) / 1000);
+    lastTime = now;
+    if (ready) {
+      update(dt);
+      draw();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  Promise.all(Object.entries(ASSETS).map(([key, src]) => loadImage(src).then((image) => { img[key] = image; })))
+    .then(() => {
+      ready = true;
+      loading.hidden = true;
+      resize();
+      resetWorld();
+      window.__underseaCaveState = state;
+      requestAnimationFrame(frame);
+    })
+    .catch((err) => {
+      loading.textContent = 'よみこみで とまりました';
+      console.error(err);
+    });
+})();
+</script>
+</body>
+</html>

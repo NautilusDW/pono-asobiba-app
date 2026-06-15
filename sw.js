@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1161; // v1161: add Starparodier SFX and tougher Lazarus flow | v1160: fit Oto rhythm overlay prompts in 16:9 | v1159: fix bento cup drag and completion request cards | v1158: add Starparodier power stars and corner Lazarus movement | v1157 bento tutorial exposes edit toolbar and splits next-button guidance
+const CACHE_VERSION = 1164; // v1164: fix Starparodier SE output and Lazarus shots | v1163: add undersea cave alpha asset minigame | v1162: split bento completion details into result page | v1161: add Starparodier SFX and tougher Lazarus flow | v1160: fit Oto rhythm overlay prompts in 16:9
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
