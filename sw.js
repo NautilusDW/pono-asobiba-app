@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1189; // v1189: composite sticker book hard page flip | v1188: fix Oto rhythm Pono/rival idle placement | v1187: add generated kids sticker book assets | v1186: add Oto rhythm rival alpha reactions | v1185: separate Canvas sticker book
+const CACHE_VERSION = 1190; // v1190: fix app-staging SW navigation loop (redirect:'manual' + opaqueredirect passthrough) | v1189: composite sticker book hard page flip | v1188: fix Oto rhythm Pono/rival idle placement | v1187: add generated kids sticker book assets | v1186: add Oto rhythm rival alpha reactions | v1185: separate Canvas sticker book
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -49,12 +49,27 @@ self.addEventListener('fetch', event => {
   }
 
   // HTML はキャッシュしない（常に最新を取得）
-  // iOS WebKit の HTTP キャッシュも迂回するため cache: 'no-store' を明示
+  // iOS WebKit の HTTP キャッシュも迂回するため cache: 'no-store' を明示。
+  //
+  // ナビゲーション系リクエスト (navigate / document / Accept: text/html) は
+  // redirect: 'manual' で取得する。 worker 側で /play.html → /play への 307 が
+  // 発生したとき、 デフォルト redirect:'follow' のままだと SW が redirected
+  // Response を respondWith してナビゲーションが失敗 → トースト → リロード
+  // → 無限ループに陥る (app-staging で実害発生)。
+  // opaqueredirect が返ってきたら Response.redirect で 302 を返して
+  // ブラウザのネイティブナビゲーションに再発火させる。 再発火時点では URL が
+  // 最終形 (/play 等) になっているため 307 ループは起きない。
   const isHTML = event.request.destination === 'document'
     || event.request.headers.get('accept')?.includes('text/html');
   if (isHTML) {
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
+      fetch(event.request, { cache: 'no-store', redirect: 'manual' })
+        .then(response => {
+          if (response.type === 'opaqueredirect') {
+            return Response.redirect(response.url || event.request.url, 302);
+          }
+          return response;
+        })
         .catch(() => caches.match(event.request))
     );
     return;
