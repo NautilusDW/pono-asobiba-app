@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:540-starparodier-parody-names-takoyaki-core] Codex: user 決定「ギャラクシー親分 / メカメンジャー4 / 宇宙たこ焼き顔」を受領。Starparodier のボス/中ボス名を差し替え、ギャラクシー親分のHP低下時に中央コアが開き、Image2生成PNGの宇宙たこ焼き顔が左右スライドの引き戸から出る演出を追加する。 (by Codex)
+- 2026-06-15 - [batch:540-starparodier-parody-names-takoyaki-core] DONE - Codex: Starparodier の中ボス表示を `メカメンジャー4`、ボス表示と WARNING 文言を `ギャラクシー親分` へ変更。ギャラクシー親分はHPが約48%未満で中央コアが開き始め、低HP時に `assets/images/starparodier/galaxy_oyabun_takoyaki_face.png` のImage2生成PNGを丸窓内に表示し、左右スライドの引き戸で開く演出を追加。`sw.js` / `play.html` は v1175。inline script parse / `node --check sw.js` / `git diff --check` / Playwright で中ボス名・ボス名・低HP時のImage2コア表示・pageerror/404なしを確認済み。 (by Codex)
 - 2026-06-15 - [batch:538-starparodier-starbrain-warning-entry] Codex: user 指摘「ビッグスターブレインをいきなり出さず画面上から出現、出る前にウォーニング的メッセージを1つ追加」を受領。Starparodier の `starbrainIntro` / `starbrain` 遷移と描画を調整し、教育要素候補も併せて提示する。 (by Codex)
 - 2026-06-15 - [batch:538-starparodier-starbrain-warning-entry] DONE - Codex: Starparodier のビッグスターブレイン前に中央 WARNING バナー「WARNING: ビッグスターブレイン 接近中!」を追加し、`starbrain` 開始時はボスを画面上外から約1.35秒で定位置へスライドインするよう変更。登場中は攻撃しない。`sw.js` / `play.html` は v1172。inline script parse / `node --check sw.js` / `git diff --check` / Playwright desktop 896x432 と mobile 390x844 で WARNING 表示、ボス未生成→上外 y →定位置到達、出現中 enemyBullets 0、pageerror/404 なしを確認済み。 (by Codex)
 - 2026-06-15 - [batch:537-starparodier-lazarus-no-shots-short-zako] Codex: user 指摘「ラザロは弾を撃たない。雑魚爆発が花火みたいなので2〜3枚で短く」を受領。Starparodier のラザロ弾処理削除と雑魚爆発フレーム短縮、cache v1170 反映を行う。 (by Codex)

@@ -392,7 +392,8 @@
     lazarusTL: 'midboss_lazarus_top_left.png',
     lazarusTR: 'midboss_lazarus_top_right.png',
     lazarusBL: 'midboss_lazarus_bottom_left.png',
-    lazarusBR: 'midboss_lazarus_bottom_right.png'
+    lazarusBR: 'midboss_lazarus_bottom_right.png',
+    takoyakiCore: 'galaxy_oyabun_takoyaki_face.png'
   };
   const EFFECT_ASSETS = {
     zakoExplosion: makeFrameList('effects/zako_explosion_', 3),
@@ -454,6 +455,8 @@
   const PLAYER_SHOT_LIMIT = 78;
   const POWER_MAX = 3;
   const BARRIER_MAX = 5;
+  const MIDBOSS_NAME = 'メカメンジャー4';
+  const STARBRAIN_NAME = 'ギャラクシー親分';
   const LAZARUS_SPLIT_HITS = 64;
   const LAZARUS_ASSEMBLE_TIME = 14.2;
   const STARBRAIN_WARNING_TIME = 2.2;
@@ -797,7 +800,7 @@
     } else if (phase === 'lazarusSplit') {
       phaseText.textContent = 'MID BOSS';
       bossMeter.hidden = false;
-      bossName.textContent = 'LAZARUS UNIT';
+      bossName.textContent = MIDBOSS_NAME;
       state.enemyBullets.length = 0;
       state.enemies.length = 0;
       state.boss = {
@@ -815,7 +818,7 @@
     } else if (phase === 'lazarusFull') {
       phaseText.textContent = 'MID BOSS';
       bossMeter.hidden = false;
-      bossName.textContent = 'LAZARUS UNIT';
+      bossName.textContent = MIDBOSS_NAME;
       state.boss = {
         type: 'lazarusFull',
         x: W * 0.5,
@@ -843,7 +846,7 @@
     } else if (phase === 'starbrain') {
       phaseText.textContent = 'BOSS';
       bossMeter.hidden = false;
-      bossName.textContent = 'BIG STAR BRAIN';
+      bossName.textContent = STARBRAIN_NAME;
       state.boss = {
         type: 'starbrain',
         x: W * 0.5,
@@ -2038,6 +2041,7 @@
     }
     ctx.restore();
 
+    drawStarbrainTakoyakiCore(b, size);
     drawStarbrainDamageFlash(b, size);
 
     ctx.save();
@@ -2052,6 +2056,92 @@
     }
     ctx.restore();
     drawBossTargetRings(b, 0.72);
+  }
+
+  function starbrainCoreOpenAmount(b) {
+    if (!b || !b.maxHp) return 0;
+    const hpRate = b.hp / b.maxHp;
+    return clamp((0.48 - hpRate) / 0.2, 0, 1);
+  }
+
+  function drawStarbrainTakoyakiCore(b, size) {
+    const open = starbrainCoreOpenAmount(b);
+    if (open <= 0) return;
+    const x = b.x;
+    const y = b.y + size.h * 0.08;
+    const r = size.h * 0.17;
+    const faceR = r * 0.74;
+    const scale = 0.55 + open * 0.45;
+    const faceImg = imgs.takoyakiCore;
+
+    ctx.save();
+    ctx.globalAlpha = open;
+    ctx.shadowColor = 'rgba(255, 213, 106, 0.48)';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = 'rgba(7, 5, 16, 0.88)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 1.28, r * 0.94, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.beginPath();
+    ctx.arc(0, 0, faceR, 0, Math.PI * 2);
+    ctx.clip();
+    if (faceImg) {
+      const srcSize = Math.min(faceImg.naturalWidth, faceImg.naturalHeight) * 0.84;
+      const sx = (faceImg.naturalWidth - srcSize) * 0.5;
+      const sy = (faceImg.naturalHeight - srcSize) * 0.48;
+      const drawSize = faceR * 2.18;
+      ctx.drawImage(faceImg, sx, sy, srcSize, srcSize, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+    } else {
+      const faceGlow = ctx.createRadialGradient(-faceR * 0.28, -faceR * 0.32, faceR * 0.12, 0, 0, faceR);
+      faceGlow.addColorStop(0, '#ffe9a6');
+      faceGlow.addColorStop(0.58, '#d78b3c');
+      faceGlow.addColorStop(1, '#73381d');
+      ctx.fillStyle = faceGlow;
+      ctx.fillRect(-faceR, -faceR, faceR * 2, faceR * 2);
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.shadowColor = 'rgba(255, 213, 106, 0.42)';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = faceR * 0.08;
+    ctx.strokeStyle = '#4f2415';
+    ctx.beginPath();
+    ctx.arc(0, 0, faceR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    const panelW = r * 0.76;
+    const panelH = r * 1.65;
+    const gap = r * (0.16 + open * 0.72);
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.translate(x + side * (gap + panelW * 0.5), y);
+      roundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 6);
+      ctx.fillStyle = 'rgba(37, 43, 51, 0.9)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(126, 255, 199, 0.42)';
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(126, 255, 199, 0.18)';
+      roundedRect(side < 0 ? panelW * 0.12 : -panelW * 0.22, -panelH * 0.42, panelW * 0.1, panelH * 0.84, 4);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.strokeStyle = 'rgba(255, 213, 106, 0.64)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 1.28, r * 0.94, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawStarbrainDamageFlash(b, size) {
@@ -2142,7 +2232,7 @@
 
   function drawWarningMessage() {
     if (state.phase !== 'starbrainIntro') return;
-    const text = 'WARNING: ビッグスターブレイン 接近中!';
+    const text = `WARNING: ${STARBRAIN_NAME} 接近中!`;
     const pulse = 0.72 + Math.sin(state.phaseTime * 10) * 0.18;
     const w = Math.min(W - 32, 560);
     const h = H < 430 ? 54 : 66;
