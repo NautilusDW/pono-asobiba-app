@@ -7834,6 +7834,7 @@ function createFreePaletteDragItem(def, point) {
       y: point.y,
       skipRender: true,
       skipGuideAdvance: true,
+      skipTutorialPlace: true,
     });
   }
   if (def.type === 'template') {
@@ -7842,6 +7843,7 @@ function createFreePaletteDragItem(def, point) {
       y: point.y,
       skipRender: true,
       skipGuideAdvance: true,
+      skipTutorialPlace: true,
     });
   }
   if (getBoxTierCount() > 1 && def.type !== 'decor' && freeActiveTier === 1) {
@@ -7851,6 +7853,7 @@ function createFreePaletteDragItem(def, point) {
     x: point.x,
     y: point.y,
     skipRender: true,
+    skipTutorialPlace: true,
   });
 }
 function updateFreePaletteDragGhost(e) {
@@ -7956,6 +7959,7 @@ function finishFreePaletteDrag(shouldFinalize) {
     return;
   }
   finalizeFreeItemPosition(uid);
+  const placed = placedItems.find(i => i.uid === uid) || null;
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
@@ -7963,6 +7967,7 @@ function finishFreePaletteDrag(shouldFinalize) {
   playPop();
   if (def.snapTarget) {
     openCupEditor(uid);
+    try { if (typeof tutorialOnItemPlaced === 'function') tutorialOnItemPlaced(placed); } catch (_) {}
     return;
   }
   if ((def.type === 'rice_auto' || def.type === 'template') && freeGuideStep === 'rice') {
@@ -7970,6 +7975,7 @@ function finishFreePaletteDrag(shouldFinalize) {
   } else if (freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
     setSpeech('いいね！のりOKを おしてね。');
   }
+  try { if (typeof tutorialOnItemPlaced === 'function') tutorialOnItemPlaced(placed); } catch (_) {}
 }
 function onFreePaletteDragEnd(e) {
   if (e && e.cancelable) e.preventDefault();
@@ -8028,7 +8034,9 @@ function addFreeLayoutItem(def, opts = {}) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
   }
-  try { if (typeof tutorialOnItemPlaced === 'function') tutorialOnItemPlaced(item); } catch (_) {}
+  if (!opts.skipTutorialPlace) {
+    try { if (typeof tutorialOnItemPlaced === 'function') tutorialOnItemPlaced(item); } catch (_) {}
+  }
   return item;
 }
 function removeFreeItem(uid) {
@@ -8415,7 +8423,14 @@ function addRiceFaceTemplate(templateId, opts = {}) {
   const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot('rice');
   const size = opts.size || base.size || 138;
   const scale = size / (base.size || 138);
-  const rice = addFreeLayoutItem(base, { x: spot.x, y: spot.y, size, tier: opts.tier || 1, skipRender: true });
+  const rice = addFreeLayoutItem(base, {
+    x: spot.x,
+    y: spot.y,
+    size,
+    tier: opts.tier || 1,
+    skipRender: true,
+    skipTutorialPlace: !!opts.skipTutorialPlace,
+  });
   tpl.parts.forEach(part => {
     const def = decorItems.find(d => d.id === part.id);
     if (!def) return;
@@ -8426,6 +8441,7 @@ function addRiceFaceTemplate(templateId, opts = {}) {
       tier: rice.tier,
       parentId: rice.uid,
       skipRender: true,
+      skipTutorialPlace: true,
     });
   });
   freeSelectedItemUid = rice.uid;
@@ -8463,6 +8479,7 @@ function addAutoRiceForSelectedBox(opts = {}) {
     size: auto.size || base.size,
     tier: 1,
     skipRender: true,
+    skipTutorialPlace: !!opts.skipTutorialPlace,
   });
   freeSelectedItemUid = rice.uid;
   if (!opts.skipRender) {
@@ -8513,6 +8530,10 @@ function selectFreeBentoBox(id) {
 }
 function confirmFreeBentoBoxSelection() {
   if (freeGuideStep !== 'box') return;
+  if (typeof tutorialState !== 'undefined' && tutorialState.active && tutorialState.step === 'greet') {
+    try { if (typeof showToast === 'function') showToast('まず「はじめる」を おしてね'); } catch (_) {}
+    return;
+  }
   const box = getSelectedBentoBox();
   setSpeech(box.name + 'で つくろう！');
   setFreeGuideStep('rice');
@@ -11525,9 +11546,9 @@ function tutorialNoriOkButton() {
   const buttons = document.querySelectorAll('.free-guide-actions button');
   for (const b of buttons) {
     const t = b.textContent || '';
-    if (t.indexOf('のりOK') >= 0 || t.indexOf('つぎへ') >= 0) return b;
+    if (t.indexOf('のりOK') >= 0) return b;
   }
-  return document.querySelector('.free-guide-actions button.primary');
+  return null;
 }
 function tutorialResetInactivity() {
   tutorialState.inactivityFired = false;
@@ -11998,10 +12019,17 @@ function tutorialRenderStep() {
 
   // 5. nori-ok — のり工程を終えておかず工程へ進む
   if (step === 'nori-ok') {
+    if (!hasNoriDecorOnTier(1)) {
+      tutorialAdvance('decor');
+      return;
+    }
     tutorialShowBubble('「のりOK」を おしてね', { topVh: '18', side: 'left' });
     const btn = tutorialNoriOkButton();
     if (btn) {
-      if (firstRender) tutorialTrimPath(btn, { radius: 22 });
+      if (firstRender) {
+        tutorialTrimPath(btn, { radius: 22 });
+        tutorialOutlineElement(btn);
+      }
       tutorialAnimateTap(btn);
     } else {
       tutorialHideFinger();
@@ -12135,7 +12163,7 @@ function tutorialRenderStep() {
     const btn = tutorialCompleteButton();
     const label = tutorialButtonLabel(btn);
     tutorialShowBubble(
-      `なおす: 小/中/大・↺↻・↑↓<br>下の「${label}」で すすむ`,
+      `なおす: サイズ・回転・前後<br>下の「${label}」で すすむ`,
       { topVh: '16', side: 'left' }
     );
     if (firstRender) {
@@ -12308,7 +12336,7 @@ function tutorialOnItemPlaced(item) {
       return;
     }
   }
-  if (step === 'decor' && item.type === 'decor') {
+  if (step === 'decor' && isNoriDecorItem(item) && hasNoriDecorOnTier(1)) {
     tutorialAdvance('nori-ok');
     return;
   }

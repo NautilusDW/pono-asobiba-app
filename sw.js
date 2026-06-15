@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1151; // v1151: add Pono space stage starparodier with alpha sprites | v1150: unify Oto rhythm left rail layout and settings menu | v1149 bento tutorial explains small-okazu cups/dividers and edit controls | v1148 bento tutorial follows rice->nori->okazu order and moves tab bubbles left | v1147: maze stage7 boss HUD gauge alpha lowered so boss head remains visible behind it
+const CACHE_VERSION = 1152; // v1152 bento tutorial waits for confirmed drops and clarifies edit controls | v1151: add Pono space stage starparodier with alpha sprites | v1150: unify Oto rhythm left rail layout and settings menu | v1149 bento tutorial explains small-okazu cups/dividers and edit controls | v1148 bento tutorial follows rice->nori->okazu order and moves tab bubbles left
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
