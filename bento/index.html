@@ -3369,18 +3369,19 @@ body.bento-complete-open .pono-dropdown {
 .complete-right {
   position: relative;
   overflow: hidden;
-  flex: 0 0 clamp(260px, 30vw, 340px);
-  width: clamp(260px, 30vw, 340px);
+  flex: 0 0 clamp(184px, 23vw, 288px);
+  width: clamp(184px, 23vw, 288px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   background: rgba(255,255,255,0.9);
   border-radius: 16px;
-  padding: 10px 10px 12px;
+  padding: 8px 10px 10px;
   min-width: 0;
-  min-height: clamp(320px, 72vh, 430px);
+  min-height: 0;
+  height: 100%;
   box-shadow: 0 4px 18px rgba(93,78,55,0.12);
 }
 .complete-right::before {
@@ -3397,19 +3398,30 @@ body.bento-complete-open .pono-dropdown {
   position: relative;
   z-index: 1;
 }
-.complete-right .balance-row {
+.complete-summary-strip {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 2px;
+  flex: 0 0 auto;
 }
-.complete-right .balance-item {
+.complete-summary-strip .balance-row,
+.complete-summary-strip .complete-checklist {
+  display: contents;
+}
+.complete-summary-strip .balance-item,
+.complete-summary-strip .complete-check {
   min-width: 0;
-  padding: 4px 5px;
-  gap: 4px;
+  min-height: clamp(48px, 8.4vh, 68px);
+  padding: 6px 7px;
+  gap: 5px;
 }
-.complete-right .balance-item-role {
-  font-size: 0.54rem;
+.complete-summary-strip .balance-item {
+  justify-content: flex-start;
+}
+.complete-summary-strip .balance-item-role {
+  font-size: 0.55rem;
 }
 .complete-pono-slot {
   width: 132px; height: 120px;
@@ -3659,10 +3671,10 @@ body.bento-complete-open .pono-dropdown {
   }
   .complete-right {
     align-self: center;
-    flex: 0 0 clamp(236px, 24vw, 252px);
-    width: clamp(236px, 24vw, 252px);
+    flex: 0 0 clamp(178px, 22vw, 226px);
+    width: clamp(178px, 22vw, 226px);
     min-height: 0;
-    height: clamp(520px, 76dvh, 620px);
+    height: 100%;
   }
   .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
     --complete-stage-content-scale: 1.36;
@@ -3672,7 +3684,7 @@ body.bento-complete-open .pono-dropdown {
   .complete-card-wide { width: 98%; padding: 8px 8px 12px; }
   .complete-main { flex-direction: column; }
   .complete-right { width: 96%; flex: 0 0 auto; flex-direction: column; }
-  .complete-checklist { grid-template-columns: 1fr; width: 96%; }
+  .complete-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .complete-pono-slot { width: 126px; height: 92px; }
   .complete-pono-big { width: 126px; height: 126px; }
   .complete-pono-slot.is-npc { height: 100px; }
@@ -3722,27 +3734,28 @@ body.bento-complete-open .pono-dropdown {
     flex-basis: clamp(176px, 20vw, 202px);
     width: clamp(176px, 20vw, 202px);
   }
+  .complete-summary-strip {
+    gap: 4px;
+  }
   .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
     --complete-stage-content-scale: 1.3;
   }
-  .complete-right .balance-item {
-    min-height: 24px;
-    padding: 2px 3px;
+  .complete-summary-strip .balance-item,
+  .complete-summary-strip .complete-check {
+    min-height: 38px;
+    padding: 3px 4px;
     gap: 3px;
     font-size: 0.49rem;
     line-height: 1.04;
   }
-  .complete-right .balance-dot {
+  .complete-summary-strip .balance-dot {
     width: 11px;
     height: 11px;
   }
-  .complete-right .balance-item-role,
-  .complete-check-desc {
-    display: none;
-  }
-  .complete-check {
-    min-height: 30px;
-    padding: 4px 5px;
+  .complete-summary-strip .balance-item-role,
+  .complete-summary-strip .complete-check-desc {
+    font-size: 0.48rem;
+    line-height: 1.06;
   }
   .complete-check-title {
     font-size: 0.55rem;
@@ -3795,14 +3808,11 @@ body.bento-complete-open .pono-dropdown {
     gap: 2px;
     padding: 4px 6px;
   }
-  .complete-right .balance-row,
-  .complete-checklist {
+  .complete-summary-strip {
     gap: 3px;
   }
-  .complete-checklist {
-    margin: 0;
-  }
-  .complete-check {
+  .complete-summary-strip .complete-check,
+  .complete-summary-strip .balance-item {
     min-height: 26px;
     padding: 3px 4px;
   }
@@ -4165,8 +4175,6 @@ body.bento-complete-open .pono-dropdown {
         <button id="save-fav-btn" class="save-fav-btn">⭐ おきにいりに いれる</button>
       </div>
       <div class="complete-right" id="complete-right">
-        <div class="balance-row" id="balance-row"></div>
-        <div class="complete-checklist" id="complete-checklist"></div>
         <div class="complete-pono-slot" id="complete-pono-slot">
           <img id="complete-pono-big" class="complete-pono-big" src="../assets/images/characters/pono/dance/dance_hooray.webp" alt="ポノ">
         </div>
@@ -4181,6 +4189,10 @@ body.bento-complete-open .pono-dropdown {
         <div class="daily-acorn-status hidden-pre" id="daily-acorn-status"></div>
         <div class="complete-trivia" id="complete-trivia"></div>
       </div>
+    </div>
+    <div class="complete-summary-strip" id="complete-summary-strip">
+      <div class="balance-row" id="balance-row"></div>
+      <div class="complete-checklist" id="complete-checklist"></div>
     </div>
   </div>
 </div>
@@ -4508,6 +4520,7 @@ const NPC_REQUESTERS = [
     id: 'risu', name: 'りすちゃん',
     ...npcPortraits('risu'),
     requestLabel: 'コロッケか ポテトサラダ',
+    primaryFoods: ['コロッケ', 'ポテトサラダ'],
     wantedFoods: ['コロッケ', 'ポテトサラダ', 'たまごやき'],
     perfectCombos: [['コロッケ', 'ポテトサラダ'], ['コロッケ', 'たまごやき']],
     intro:    'コロッケか ポテトサラダが たべたいな。ちいさい おかずも ひとつ いれてね',
@@ -4520,6 +4533,7 @@ const NPC_REQUESTERS = [
     id: 'inu', name: 'わんちゃん',
     ...npcPortraits('inu'),
     requestLabel: 'ハンバーグか からあげ',
+    primaryFoods: ['ハンバーグ', 'からあげ'],
     wantedFoods: ['ハンバーグ', 'からあげ', 'ミートボール', 'タコウインナー'],
     perfectCombos: [['ハンバーグ', 'ミートボール'], ['からあげ', 'ミートボール'], ['ハンバーグ', 'からあげ']],
     intro:    'おにくの おかずが たべたいな。ハンバーグか からあげが いいな',
@@ -4532,6 +4546,7 @@ const NPC_REQUESTERS = [
     id: 'ahiru', name: 'あひるさん',
     ...npcPortraits('ahiru'),
     requestLabel: 'たまごやき',
+    primaryFoods: ['たまごやき'],
     wantedFoods: ['たまごやき', 'コーンほうれんそう', 'コロッケ'],
     perfectCombos: [['たまごやき', 'コーンほうれんそう'], ['たまごやき', 'コロッケ']],
     intro:    'たまごやきが たべたいな。あったら いれてくれる？',
@@ -4544,6 +4559,7 @@ const NPC_REQUESTERS = [
     id: 'shika', name: 'しかさん',
     ...npcPortraits('shika'),
     requestLabel: 'ブロッコリーか えだまめ',
+    primaryFoods: ['ブロッコリー', 'えだまめ'],
     wantedFoods: ['ブロッコリー', 'えだまめ', 'にんじんいんげん', 'キャベツ', 'コーンほうれんそう'],
     perfectCombos: [['ブロッコリー', 'えだまめ'], ['ブロッコリー', 'にんじんいんげん'], ['キャベツ', 'えだまめ']],
     intro:    'やさいの おかずが たべたいな。ブロッコリーか えだまめが いいな',
@@ -4556,6 +4572,7 @@ const NPC_REQUESTERS = [
     id: 'araiguma', name: 'アライグマくん',
     ...npcPortraits('araiguma'),
     requestLabel: 'タコウインナーか プチトマト',
+    primaryFoods: ['タコウインナー', 'プチトマト'],
     wantedFoods: ['タコウインナー', 'プチトマト', 'にんじんいんげん'],
     perfectCombos: [['タコウインナー', 'プチトマト'], ['タコウインナー', 'にんじんいんげん']],
     intro:    'かわいい おかずが たべたいな。タコウインナーか プチトマトが いいな',
@@ -4568,6 +4585,7 @@ const NPC_REQUESTERS = [
     id: 'neko', name: 'ねこさん',
     ...npcPortraits('neko'),
     requestLabel: 'やきざけ',
+    primaryFoods: ['やきざけ'],
     wantedFoods: ['やきざけ', 'きんぴらごぼう', 'たまごやき'],
     perfectCombos: [['やきざけ', 'きんぴらごぼう'], ['やきざけ', 'たまごやき']],
     intro:    'おさかなの おかずが たべたいな。やきざけを いれてくれる？',
@@ -5478,20 +5496,29 @@ function decideNpcMode() {
 function evaluateRequest(requester, foodNames) {
   const names = Array.isArray(foodNames) ? foodNames : [];
   if (!requester) {
-    return { enabled: false, hit: false, perfect: false, score: 0, matchedFoods: [], label: '' };
+    return { enabled: false, hit: false, perfect: false, score: 0, matchedFoods: [], matchedSupportFoods: [], label: '' };
   }
   const wanted = requester.wantedFoods || [];
-  const matchedFoods = wanted.filter(n => names.includes(n));
+  const primary = Array.isArray(requester.primaryFoods) && requester.primaryFoods.length
+    ? requester.primaryFoods
+    : wanted.slice(0, 1);
+  const matchedFoods = primary.filter(n => names.includes(n));
+  const matchedSupportFoods = wanted
+    .filter(n => !primary.includes(n))
+    .filter(n => names.includes(n));
   const perfectCombos = requester.perfectCombos || [];
-  const comboPerfect = perfectCombos.some(combo => combo.every(n => names.includes(n)));
+  const comboPerfect = perfectCombos.some(combo =>
+    combo.every(n => names.includes(n)) && combo.some(n => primary.includes(n))
+  );
   const hit = matchedFoods.length > 0;
-  const perfect = comboPerfect || matchedFoods.length >= 2;
+  const perfect = hit && (comboPerfect || matchedSupportFoods.length > 0 || matchedFoods.length >= 2);
   return {
     enabled: true,
     hit,
     perfect,
     score: perfect ? 2 : hit ? 1 : 0,
     matchedFoods,
+    matchedSupportFoods,
     label: requester.requestLabel || wanted.slice(0, 2).join('・') || 'おねがい',
   };
 }
@@ -6507,6 +6534,11 @@ function canAddFoodForCurrentStep(def) {
 }
 function canAddFoodToCup(def) {
   return !!def && def.type === 'food' && (((def.okazuRole || getOkazuRole(def)) === 'side') || !!def.cupAllowed);
+}
+function getCupFoodChildSize(def, cup) {
+  if (!def || !cup) return 96;
+  if (def.brushItem) return Math.min(126, Math.round((cup.size || 190) * 0.66));
+  return Math.min(def.cupSize || def.size || 120, Math.round((cup.size || 190) * 0.78));
 }
 function getCupEditorFoodItems() {
   return getFreeFoodCatalog().filter(canAddFoodToCup);
@@ -7591,6 +7623,9 @@ function makePaletteDropToast(def) {
   if (def.type === 'decor') {
     return 'のりを ごはんのうえまで もっていこう！';
   }
+  if (def.type === 'food' && getEditingCup()) {
+    return 'カップまで もっていこう！';
+  }
   return 'おべんとうばこまで もっていこう！';
 }
 function getFreeItemImage(item) {
@@ -7862,7 +7897,13 @@ function canStartFreePaletteDrag(def) {
     showToast('がめんを タップしてね！');
     return false;
   }
-  if (def.type === 'food' && getEditingCup()) return false;
+  if (def.type === 'food' && getEditingCup()) {
+    if (!canAddFoodToCup(def)) {
+      showToast('カップには 小さいおかずを いれよう！');
+      return false;
+    }
+    return true;
+  }
   if (def.type === 'food' && !canAddFoodForCurrentStep(def)) {
     showToast('いまの おかずから えらぼう！');
     return false;
@@ -7870,6 +7911,28 @@ function canStartFreePaletteDrag(def) {
   return true;
 }
 function createFreePaletteDragItem(def, point) {
+  const editingCup = def.type === 'food' ? getEditingCup() : null;
+  if (editingCup) {
+    if (!canAddFoodToCup(def)) return null;
+    const childSize = getCupFoodChildSize(def, editingCup);
+    const cupDropRadius = getCupInnerRadius(editingCup, { size: childSize }) + Math.max(44, childSize * 0.62);
+    if (dist(point, editingCup) > cupDropRadius) return null;
+    const item = addFreeLayoutItem(def, {
+      x: point.x,
+      y: point.y,
+      size: childSize,
+      tier: getItemTier(editingCup),
+      parentCupId: editingCup.uid,
+      brushLevel: def.brushItem ? 0 : def.brushLevel,
+      skipRender: true,
+      skipTutorialPlace: true,
+    });
+    if (!item) return null;
+    item.layer = Math.max(item.layer || 1, (editingCup.layer || 1) + (++freeLayerSeq));
+    freeActiveCupUid = editingCup.uid;
+    freeCupToolMode = 'contents';
+    return item;
+  }
   if (def.type === 'rice_auto') {
     return addAutoRiceForSelectedBox({
       x: point.x,
@@ -8452,9 +8515,7 @@ function addFoodToSelectedCup(def) {
   }
   const childCount = placedItems.filter(i => i.parentCupId === cup.uid).length;
   const isBrushFood = !!def.brushItem;
-  const childSize = isBrushFood
-    ? Math.min(126, Math.round((cup.size || 190) * 0.66))
-    : Math.min(def.cupSize || def.size || 120, Math.round((cup.size || 190) * 0.78));
+  const childSize = getCupFoodChildSize(def, cup);
   const slot = getCupChildSlot(cup, childCount, childSize, childCount + 1);
   const item = addFreeLayoutItem(def, {
     x: slot.x,
@@ -9109,15 +9170,7 @@ function makeFreePaletteButton(def) {
         });
         return;
       }
-      if (def.type === 'food' && getEditingCup()) {
-        if (!canAddFoodToCup(def)) {
-          showToast('カップには 小さいおかずを いれよう！');
-          return;
-        }
-        addFoodToSelectedCup(def);
-        return;
-      }
-      if (isCabbageBrushDef(def)) {
+      if (isCabbageBrushDef(def) && !getEditingCup()) {
         if (!canAddFoodForCurrentStep(def)) {
           showToast('いまの おかずから えらぼう！');
           return;

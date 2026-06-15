@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1158; // v1158: add Starparodier power stars and corner Lazarus movement | v1157 bento tutorial exposes edit toolbar and splits next-button guidance | v1156: tune Starparodier Lazarus pre-merge hits and Star Brain bubbles | v1155: remove dotted receptor rings from Oto rhythm buttons | v1154 bento tutorial moves OK bubbles and replaces size buttons with sliders
+const CACHE_VERSION = 1159; // v1159: fix bento cup drag and completion request cards | v1158: add Starparodier power stars and corner Lazarus movement | v1157 bento tutorial exposes edit toolbar and splits next-button guidance | v1156: tune Starparodier Lazarus pre-merge hits and Star Brain bubbles | v1155: remove dotted receptor rings from Oto rhythm buttons
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
