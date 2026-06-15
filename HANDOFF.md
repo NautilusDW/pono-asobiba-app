@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:517-oto-rhythm-unified-layout-settings-menu] Codex: user 指摘「OtoTouchリズム左UIが16:9/21:9で入りきらない / 右上の音符ボタン周辺を従来設定ボタンにしてメニューへ戻る・スケール等をまとめたい」を受領。HANDOFF / git log / `oto/index.html` を確認し、同修正未着手。リズム画面左レールを画角共通の高さ基準レイアウトへ統一し、右上を単一設定メニュー化する。 (by Codex)
+- 2026-06-15 - [batch:517-oto-rhythm-unified-layout-settings-menu] DONE - Codex: OtoTouch リズム画面の左レールを stage/container 高さ基準の共通レイアウトへ統一し、16:9 / 21:9 / 横長低背でもポノ・モード・音色・テンポが収まるよう調整。右上は音符スケールボタン + 別設定ボタンを廃止し、従来系の `ctrl-btn-settings.png` 1 ボタンから `もどる` / `あそびかた` / 表記切替 / スケールを開くメニューへ集約。`sw.js` / `play.html` は v1150。inline script parse、`node --check sw.js`、`git diff --check`、UTF-8 LF BOMなし、Playwright 667x375 / 844x390 / 1366x768 / 1664x422 / 1664x900 のレイアウト矩形検査とスクショ目視で確認。レビュー観点: 左UIの画角共通収まり、右上設定導線、共通メニュー二重起動なしを自己確認。 (by Codex)
 - 2026-06-15 - [batch:516-bento-tutorial-small-okazu-edit-guidance] Codex: user 指摘「小さいおかずタブを青囲み、完成のオレンジボタンを具体化、小さいおかず内のカップ/仕切り説明、カップ内おかず選択、サイズ/回転/前後矢印の短い説明」を受領。HANDOFF / git log / `bento/index.html` を確認し、同修正未着手。既存のカップ/仕切り/編集UIを利用してチュートリアル文言とステップを追加する。 (by Codex)
 - 2026-06-15 - [batch:516-bento-tutorial-small-okazu-edit-guidance] DONE - Codex: bento full-flow tutorial の小さいおかず導線を拡張。`ちいさい おかず` タブを青枠で強調し、カップ/仕切り説明 → カップ内おかず選択 → カップOK → 編集操作案内 (`なおす: 小/中/大・↺↻・↑↓`) → 下の実ボタン名案内へ変更。`sw.js` v1149。inline script parse / diff check / Playwright 896x432 で tab 非重なり、カップ経路、仕切り経路、編集/完了文言を確認。レビュー観点: tutorial state machine、カップ編集 DOM、右パネル操作阻害、別件 `oto/index.html` 変更を非接触で自己確認。 (by Codex)
 - 2026-06-15 - [batch:515-bento-tutorial-decor-before-okazu-tab-bubble] Codex: user 指摘「ごはん後に『おかず』タブ案内が出るが、実際は先に海苔を飾る説明。さらに吹き出しがタブを隠して押せない」を受領。HANDOFF / git log / `bento/index.html` を確認し、同修正未着手。自由配置ガイドの `rice -> decor -> tier2Main` 順にフルチュートリアルを合わせ、タブ案内 bubble を右パネルから逃がす。 (by Codex)

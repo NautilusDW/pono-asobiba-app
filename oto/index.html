@@ -38,6 +38,7 @@
   .stage {
     position: absolute; inset: 0;
     overflow: hidden;
+    container-type: size;
   }
   body.rhythm-layout #app {
     background:
@@ -2376,26 +2377,9 @@
     gap: 6px;
   }
 
-  /* v1108: 共通の「せってい」(.pono-menu-toggle, common/menu.js が左上に配置) を
-     oto では非表示にして、右上♪に統合する。代わりに ⚙️ ボタンを sets-collapsed 内に追加し、
-     既存 .pono-menu-toggle を click() でプロキシ起動する。 */
+  /* 共通メニューの左上ボタンは Oto では使わず、右上の単一せっていボタンにまとめる。 */
   .pono-menu-toggle { display: none !important; }
-  .oto-settings-btn {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.72);
-    background: rgba(0,0,0,0.36);
-    color: #fff;
-    font-size: 1.2rem;
-    cursor: pointer;
-    touch-action: manipulation;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.28);
-    transition: transform 0.1s, filter 0.1s;
-    padding: 0;
-  }
-  .oto-settings-btn:active { transform: scale(0.92); filter: brightness(0.92); }
-  /* v1108: 共通 dropdown は左上前提なので、oto では右上に再配置 */
+  /* common/menu.js の dropdown は使わないが、万一開いても右上に出るようにしておく。 */
   .pono-dropdown {
     top: calc(max(12px, env(safe-area-inset-top)) + 56px) !important;
     left: auto !important;
@@ -2404,30 +2388,30 @@
     z-index: 31 !important;
   }
   .set-trigger {
-    width: 52px; height: 52px;
-    border-radius: 50%;
+    width: 56px; height: 56px;
+    border-radius: 14px;
     border: none;
-    background: transparent;
+    background: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png') center / contain no-repeat;
     padding: 0;
-    font-size: 1.7rem;
     cursor: pointer;
     touch-action: manipulation;
     box-shadow: none;
     display: flex; align-items: center; justify-content: center;
     transition: transform 0.1s, filter 0.1s;
   }
+  .set-trigger .btn-img { display: none; }
   .set-trigger:active { transform: scale(0.92); filter: brightness(0.92); }
   .set-popover {
     display: none;
     position: absolute;
-    top: 60px; right: 0;
+    top: 58px; right: 0;
     background: rgba(255,255,255,0.97);
     border-radius: 14px;
     padding: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     flex-direction: column;
     gap: 6px;
-    min-width: 200px;
+    min-width: 220px;
   }
   .set-popover.open { display: flex; animation: popoverIn 0.18s ease-out; }
   @keyframes popoverIn {
@@ -2448,6 +2432,34 @@
   .set-popover .set-btn.active {
     background: linear-gradient(135deg, #FEF3C7, #FBBF24);
     border-color: #F2B800;
+  }
+  .oto-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    color: #5D4E37;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 900;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .oto-menu-item:active {
+    transform: scale(0.96);
+    background: #FEF3C7;
+  }
+  .oto-menu-icon {
+    width: 26px;
+    flex: 0 0 26px;
+    text-align: center;
+    font-size: 1.2rem;
   }
   .scale-row {
     display: flex; align-items: center; gap: 4px;
@@ -3351,6 +3363,106 @@
     body:not(.rhythm-layout) .instr-btn[data-idx="3"],
     body:not(.rhythm-layout) .instr-btn[data-idx="7"] { left: 86%; }
   }
+
+  /* Oto rhythm final layout layer:
+     The stage is always 16:9, so the left rail should scale from stage/viewport
+     height instead of mixing fixed px rules for 16:9 and 21:9. */
+  @media (orientation: landscape) {
+    body.rhythm-layout .stage {
+      --rhythm-left-x: 11%;
+      --rhythm-left-w: clamp(118px, 33cqh, 148px);
+      --rhythm-chip-h: clamp(32px, 9cqh, 44px);
+      --rhythm-icon: clamp(31px, 9cqh, 42px);
+    }
+    body.rhythm-layout .pono-wrap {
+      left: var(--rhythm-left-x) !important;
+      top: clamp(10px, 3.2cqh, 26px) !important;
+      width: clamp(82px, 22cqh, 112px) !important;
+      height: clamp(82px, 22cqh, 112px) !important;
+      transform: translate(-50%, 0) !important;
+    }
+    body.rhythm-layout .pono-sprite {
+      height: clamp(76px, 21cqh, 106px) !important;
+    }
+    body.rhythm-layout .mode-switch,
+    body.rhythm-layout .chord-pill,
+    body.rhythm-layout .sound-sets-box,
+    body.rhythm-layout .band-group {
+      left: var(--rhythm-left-x) !important;
+      transform: translateX(-50%) !important;
+      width: var(--rhythm-left-w) !important;
+      max-width: var(--rhythm-left-w) !important;
+      box-sizing: border-box;
+    }
+    body.rhythm-layout .mode-switch {
+      top: clamp(100px, 26cqh, 150px) !important;
+      min-height: var(--rhythm-chip-h);
+    }
+    body.rhythm-layout .mode-btn {
+      padding: 6px 4px !important;
+      font-size: clamp(0.72rem, 2.5cqh, 0.92rem) !important;
+      line-height: 1.05;
+    }
+    body.rhythm-layout .chord-pill {
+      top: clamp(145px, 36cqh, 204px) !important;
+      min-height: clamp(30px, 8cqh, 38px);
+    }
+    body.rhythm-layout .chord-pill-btn {
+      padding: 5px 3px !important;
+      font-size: clamp(0.64rem, 2.2cqh, 0.78rem) !important;
+    }
+    body.rhythm-layout .sound-sets-box {
+      top: clamp(186px, 47cqh, 260px) !important;
+      padding: 4px 5px 6px !important;
+      gap: 3px !important;
+    }
+    body.rhythm-layout .sound-sets-label,
+    body.rhythm-layout .band-group-label {
+      font-size: clamp(0.58rem, 1.8cqh, 0.7rem) !important;
+      white-space: nowrap;
+    }
+    body.rhythm-layout .sound-sets {
+      gap: 3px !important;
+      max-width: calc(var(--rhythm-left-w) - 10px) !important;
+    }
+    body.rhythm-layout .sound-sets .set-btn {
+      width: var(--rhythm-icon) !important;
+      height: var(--rhythm-icon) !important;
+    }
+    body.rhythm-layout .band-group {
+      top: clamp(306px, 79cqh, 392px) !important;
+      bottom: auto !important;
+      padding: 4px 6px 6px !important;
+      gap: 4px !important;
+    }
+    body.rhythm-layout .speed-row {
+      flex-direction: row !important;
+      justify-content: center;
+      gap: 4px !important;
+      width: 100%;
+    }
+    body.rhythm-layout .band-group .speed-btn {
+      width: calc((var(--rhythm-left-w) - 24px) / 3) !important;
+      height: clamp(30px, 8.5cqh, 38px) !important;
+      min-height: 0 !important;
+      padding: 2px !important;
+      border-radius: 999px;
+      justify-content: center !important;
+      gap: 0;
+    }
+    body.rhythm-layout .band-group .speed-btn .btn-img {
+      width: clamp(22px, 6.8cqh, 30px) !important;
+      height: clamp(22px, 6.8cqh, 30px) !important;
+    }
+    body.rhythm-layout .band-group .speed-btn span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
 </style>
 </head>
 <body>
@@ -3412,12 +3524,19 @@
       </div>
     </div>
 
-    <!-- スケール 折りたたみ (右上、popover でふつう/ペンタのみ) -->
+    <!-- せっていメニュー (右上、戻る/表記/スケールを集約) -->
     <div class="sets-collapsed" id="sets">
-      <!-- v1108: せってい (旧 左上 .pono-menu-toggle) を ♪ の左隣に統合 -->
-      <button class="oto-settings-btn" id="oto-settings-btn" type="button" aria-label="せってい">⚙</button>
-      <button class="set-trigger" id="set-trigger" aria-label="スケール"><img class="btn-img" src="../assets/images/oto/buttons/btn_ui_scale.png" alt=""></button>
+      <button class="set-trigger" id="set-trigger" type="button" aria-label="せってい"></button>
       <div class="set-popover" id="set-popover">
+        <button class="oto-menu-item" id="oto-menu-home" type="button">
+          <span class="oto-menu-icon">🏠</span><span>もどる</span>
+        </button>
+        <button class="oto-menu-item" id="oto-menu-tutorial" type="button">
+          <span class="oto-menu-icon">❓</span><span>あそびかた</span>
+        </button>
+        <button class="oto-menu-item" id="oto-menu-notation" type="button">
+          <span class="oto-menu-icon">🔤</span><span id="oto-menu-notation-label">おんぷ ABCに</span>
+        </button>
         <div class="scale-row">
           <span class="scale-label">スケール</span>
           <button class="scale-btn active" id="scale-major" aria-label="ふつう">ふつう</button>
@@ -8007,7 +8126,7 @@ var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
 
 function _isOnButton(e) {
   return !!(e.target && e.target.closest && e.target.closest(
-    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .chord-pill-btn, .scale-btn, .set-trigger, .rhythm-menu, .rhythm-complete'
+    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .chord-pill-btn, .scale-btn, .set-trigger, .oto-menu-item, .set-popover, .rhythm-menu, .rhythm-complete'
   ));
 }
 
@@ -8629,26 +8748,8 @@ function showTutorial() {
   renderStep();
 }
 
-// ────────────────────────────────
-// 共通メニュー (⚙) — ❓ あそびかた 追加
-// ────────────────────────────────
-function setupOtoMenu() {
-  if (!window.initMenu) return;
-  initMenu({
-    tutorial: showTutorial,
-    extraButtons: [
-      {
-        icon: '🔤',
-        label: NOTE_BUTTON_NOTATION === 'abc' ? 'おんぷ ドレミに' : 'おんぷ ABCに',
-        onClick: function() {
-          setNoteNotation(NOTE_BUTTON_NOTATION === 'abc' ? 'kana' : 'abc', true);
-          setupOtoMenu();
-        }
-      }
-    ]
-  });
-}
-setupOtoMenu();
+// common/menu.js is still loaded for shared SW update handling.
+// Oto uses its own top-right settings menu so the hidden common dropdown is not initialized here.
 
 // ────────────────────────────────
 // イントロ → タップで AudioContext アンロック → ステージ表示 → 初回のみチュートリアル
@@ -9350,30 +9451,32 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
 // 内部的に残っているが、トリガーする UI が無いため事実上 dead code。
 
 // ════════════════════════════════════════════════════════════
-// v1108: せってい (右上 ⚙ ボタン) → 共通 .pono-menu-toggle へプロキシ
-// 旧 左上のセッティングボタンは非表示 (CSS で display:none) のため、
-// oto-settings-btn が押されたら .pono-menu-toggle を click() で代理発火する。
-// menu.js 側の初期化が遅れても拾えるよう、ボタン本体でなく document に委譲する。
-// ════════════════════════════════════════════════════════════
-document.addEventListener('click', function(e) {
-  var btn = e.target && (e.target.closest ? e.target.closest('#oto-settings-btn') : null);
-  if (!btn) return;
-  e.preventDefault();
-  e.stopPropagation();
-  var hostBtn = document.querySelector('.pono-menu-toggle');
-  if (hostBtn) hostBtn.click();
-}, true);
-
-// ════════════════════════════════════════════════════════════
-// 音色 折りたたみ (右上 popover) + ペンタトニック切替
+// 右上 せっていメニュー + ペンタトニック切替
 // ════════════════════════════════════════════════════════════
 (function() {
   var trigger = document.getElementById('set-trigger');
   var popover = document.getElementById('set-popover');
   if (!trigger || !popover) return;
-  function close() { popover.classList.remove('open'); }
-  function open()  { popover.classList.add('open'); }
+  var homeBtn = document.getElementById('oto-menu-home');
+  var tutorialBtn = document.getElementById('oto-menu-tutorial');
+  var notationBtn = document.getElementById('oto-menu-notation');
+  var notationLabel = document.getElementById('oto-menu-notation-label');
+  function refreshMenuLabels() {
+    if (notationLabel) {
+      notationLabel.textContent = NOTE_BUTTON_NOTATION === 'abc' ? 'おんぷ ドレミに' : 'おんぷ ABCに';
+    }
+    trigger.setAttribute('aria-expanded', popover.classList.contains('open') ? 'true' : 'false');
+  }
+  function close() {
+    popover.classList.remove('open');
+    refreshMenuLabels();
+  }
+  function open()  {
+    popover.classList.add('open');
+    refreshMenuLabels();
+  }
   trigger.addEventListener('click', function(e) {
+    e.preventDefault();
     e.stopPropagation();
     if (popover.classList.contains('open')) close(); else open();
   });
@@ -9382,6 +9485,24 @@ document.addEventListener('click', function(e) {
     if (!popover.classList.contains('open')) return;
     if (popover.contains(e.target) || trigger.contains(e.target)) return;
     close();
+  });
+  if (homeBtn) homeBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+    location.href = '../play.html';
+  });
+  if (tutorialBtn) tutorialBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+    showTutorial();
+  });
+  if (notationBtn) notationBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setNoteNotation(NOTE_BUTTON_NOTATION === 'abc' ? 'kana' : 'abc', true);
+    refreshMenuLabels();
   });
   // 音色選択は .sound-sets の .set-btn (常時表示) — popover 外から
   document.querySelectorAll('.sound-sets .set-btn').forEach(function(b) {
@@ -9428,6 +9549,7 @@ document.addEventListener('click', function(e) {
     var saved = localStorage.getItem('pono_oto_scale') || 'major';
     setScale(saved === 'penta' ? 'penta' : 'major');
   } catch(e) {}
+  refreshMenuLabels();
 
   // コードモード toggle
   var cOff = document.getElementById('chord-off');
