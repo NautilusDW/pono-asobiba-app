@@ -26,7 +26,7 @@ binding = "ASSETS"
 # - HTML/sw.js 等への no-cache ヘッダー注入（applyCacheHeaders）
 # - 画像/JS/CSS は Worker 内でそのまま ASSETS.fetch() にパススルーするので
 #   エッジキャッシュは引き続き有効（レスポンスヘッダーに手を加えない）
-run_worker_first = ["/*"]
+run_worker_first = true
 
 [observability]
 enabled = true
