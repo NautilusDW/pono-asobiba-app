@@ -2958,40 +2958,70 @@ body.bento-complete-open .pono-dropdown {
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 
-/* ===== Bento full-flow tutorial (v1) ===== */
+/* ===== Bento full-flow tutorial (v2: ✊✋ two-hand drag demo) ===== */
 .tut-finger {
   position: fixed;
   left: 0; top: 0;
-  width: 56px; height: 56px;
-  z-index: 10001;
+  width: 64px; height: 64px;
+  z-index: 9100;
   pointer-events: none;
+  user-select: none;
+  display: none;
+}
+.tut-hand {
+  position: absolute;
+  left: 0; top: 0;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px;
+  line-height: 1;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
-  animation: tutFingerDrag 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
   --from-x: 0px; --from-y: 0px;
   --to-x: 0px; --to-y: 0px;
-  opacity: 0;
-  user-select: none;
 }
-.tut-finger img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-  -webkit-user-drag: none;
+.tut-hand--open {
+  animation: tutHandOpen 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
-@keyframes tutFingerDrag {
-  0%   { transform: translate(var(--from-x), var(--from-y)) scale(1);   opacity: 0; }
-  10%  { opacity: 1; }
-  45%  { transform: translate(var(--from-x), var(--from-y)) scale(0.9); }
-  55%  { transform: translate(var(--from-x), var(--from-y)) scale(1.05); }
-  90%  { transform: translate(var(--to-x), var(--to-y)) scale(0.95);   opacity: 1; }
-  100% { transform: translate(var(--to-x), var(--to-y)) scale(1);       opacity: 0; }
+.tut-hand--grip {
+  animation: tutHandGrip 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
-.tut-finger.tut-finger--fast { animation-duration: 1.1s; }
+@keyframes tutHandOpen {
+  /* ✋: visible at FROM (0-8%), fade out, then reappear at TO (67-100%, fade) */
+  0%    { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
+  8%    { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
+  9%    { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
+  66%   { transform: translate(var(--to-x), var(--to-y)); opacity: 0; }
+  67%   { transform: translate(var(--to-x), var(--to-y)); opacity: 1; }
+  75%   { transform: translate(var(--to-x), var(--to-y)); opacity: 1; }
+  92%   { transform: translate(var(--to-x), var(--to-y)); opacity: 0.2; }
+  93%   { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
+  100%  { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
+}
+@keyframes tutHandGrip {
+  /* ✊: invisible at FROM (0-8%), travel FROM→TO (8-67%), then fade out */
+  0%    { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
+  8%    { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
+  9%    { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
+  66%   { transform: translate(var(--to-x), var(--to-y)); opacity: 1; }
+  67%   { transform: translate(var(--to-x), var(--to-y)); opacity: 0; }
+  100%  { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
+}
+.tut-finger.tut-finger--fast .tut-hand--open,
+.tut-finger.tut-finger--fast .tut-hand--grip {
+  animation-duration: 1.2s;
+}
 .tut-finger.tut-finger--tap {
   animation: tutFingerTap 1.2s ease-in-out infinite;
   --tap-x: 0px; --tap-y: 0px;
+}
+.tut-finger.tut-finger--tap .tut-hand--grip { display: none; }
+.tut-finger.tut-finger--tap .tut-hand--open {
+  animation: none;
+  transform: translate(var(--tap-x), var(--tap-y));
+  opacity: 1;
 }
 @keyframes tutFingerTap {
   0%   { transform: translate(var(--tap-x), var(--tap-y)) scale(1);    opacity: 1; }
@@ -3011,12 +3041,105 @@ body.bento-complete-open .pono-dropdown {
   background: #FFFBE9;
   border: 3px solid var(--primary, #F2915A);
 }
+.tut-bubble--v2 {
+  z-index: 9000;
+}
 .tut-complete-pulse {
   animation: tutCompletePulse 1.4s ease-in-out infinite;
 }
 @keyframes tutCompletePulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(242, 145, 90, 0.7); }
   50%      { box-shadow: 0 0 0 14px rgba(242, 145, 90, 0); }
+}
+/* v2: skip checkbox on greet */
+.tut-skip-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 16px;
+  min-height: 48px;
+  background: #FFF6E8;
+  border-radius: 12px;
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 700;
+  color: #5D4E37;
+  cursor: pointer;
+  user-select: none;
+}
+.tut-skip-label input[type="checkbox"] {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--primary, #F2915A);
+}
+/* v2: locked palette button (other bento boxes during box step) */
+.free-palette-item.tut-locked,
+.free-palette-item.tut-locked:hover,
+.free-palette-item.tut-locked:active {
+  pointer-events: none;
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+/* v2: settings (gear) re-enable tutorial */
+.tut-settings-btn {
+  position: fixed;
+  top: 6px;
+  right: 56px;
+  z-index: 8;
+  width: 36px; height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  color: #5D4E37;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.5;
+  display: flex; align-items: center; justify-content: center;
+}
+.tut-settings-btn:active { transform: translateY(1px); opacity: 0.9; }
+.tut-settings-modal {
+  position: fixed; inset: 0;
+  z-index: 9998;
+  background: rgba(93,78,55,0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.tut-settings-modal.hidden { display: none; }
+.tut-settings-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  text-align: center;
+}
+.tut-settings-card h2 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  color: #5D4E37;
+}
+.tut-settings-card button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#60A5FA,#818CF8);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+.tut-settings-card button.secondary {
+  background: #EFE7DA;
+  color: #5D4E37;
 }
 
 /* ===== Redesigned complete card (2-column) ===== */
@@ -3789,6 +3912,14 @@ body.bento-complete-open .pono-dropdown {
 
 <div class="game-title">ポノとつくろう いろどりべんとう</div>
 <button class="fav-header-btn" id="fav-header-btn" aria-label="おきにいりを みる" title="おきにいりを みる">⭐</button>
+<button class="tut-settings-btn" id="tut-settings-btn" aria-label="せってい" title="おとなのかた へ">⚙</button>
+<div class="tut-settings-modal hidden" id="tut-settings-modal">
+  <div class="tut-settings-card">
+    <h2>おとなのかた へ</h2>
+    <button type="button" id="tut-settings-reenable">おべんとうの あそびかたを もう一回 みる</button>
+    <button type="button" class="secondary" id="tut-settings-close">とじる</button>
+  </div>
+</div>
 
 <div id="app">
   <!-- 左: お弁当箱 -->
@@ -10807,14 +10938,19 @@ function showTutorial() {
   });
 }
 
-// ===== Full-flow Tutorial (v1) =====
-// 初回プレイヤー向けに 箱→ご飯→おかず→かざり 全工程を ☝️ 指で誘導
-// 既存 freeGuideStep を観測のみ。 setFreeGuideStep が tutorialOnGuideChange(step) を呼ぶ。
+// ===== Full-flow Tutorial (v2) =====
+// 9-step flow: greet → box → rice → okazuFirst → cup → cupChild → okazuMore → decor → complete
+// 既存 freeGuideStep を観測しつつ、cup/cupChild は item placement で独自進行
+// v1 関数名 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced / tutorialOnStageComplete) は維持して内部を置換
 const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 const tutorialState = {
   active: false,
-  step: null,            // 'greet' | 'box' | 'rice' | 'okazuFirst' | 'okazuMore' | 'decor' | 'complete' | 'done'
+  step: null,            // 'greet'|'box'|'rice'|'okazuFirst'|'cup'|'cupChild'|'okazuMore'|'decor'|'complete'|'done'
   okazuPlacedCount: 0,
+  cupPlacedCount: 0,
+  cupChildCount: 0,
+  ricePlacedCount: 0,
+  decorPlacedCount: 0,
   fingerEl: null,
   bubbleEl: null,
   resizeRaf: 0,
@@ -10822,6 +10958,7 @@ const tutorialState = {
   inactivityTimer: 0,
   inactivityFired: false,
   observer: null,
+  lastRenderKey: '',
 };
 
 function tutorialReadDone() {
@@ -10844,23 +10981,35 @@ function tutorialIsPortraitBlocking() {
   if (!n) return false;
   return getComputedStyle(n).display !== 'none';
 }
+function tutorialIsRecallBlocking() {
+  // おもいだしモーダル表示中は finger を抑制
+  const m = document.getElementById('recall-modal');
+  if (!m) return false;
+  return getComputedStyle(m).display !== 'none';
+}
 function tutorialEnsureLayer() {
   if (!tutorialState.fingerEl) {
     const finger = document.createElement('div');
     finger.className = 'tut-finger';
     finger.id = 'tut-finger';
-    const img = document.createElement('img');
-    img.src = '../assets/images/quizland/illust/choice/finger.png';
-    img.alt = '';
-    img.setAttribute('aria-hidden', 'true');
-    finger.appendChild(img);
+    // ✊✋ two-hand layered structure (v2): no <img> finger
+    const open = document.createElement('span');
+    open.className = 'tut-hand tut-hand--open';
+    open.setAttribute('aria-hidden', 'true');
+    open.textContent = '✋';
+    const grip = document.createElement('span');
+    grip.className = 'tut-hand tut-hand--grip';
+    grip.setAttribute('aria-hidden', 'true');
+    grip.textContent = '✊';
+    finger.appendChild(open);
+    finger.appendChild(grip);
     finger.style.display = 'none';
     document.body.appendChild(finger);
     tutorialState.fingerEl = finger;
   }
   if (!tutorialState.bubbleEl) {
     const bubble = document.createElement('div');
-    bubble.className = 'tut-bubble tut-bubble--anchored hidden';
+    bubble.className = 'tut-bubble tut-bubble--anchored tut-bubble--v2 hidden';
     bubble.id = 'tut-bubble-tutorial';
     document.body.appendChild(bubble);
     tutorialState.bubbleEl = bubble;
@@ -10874,6 +11023,16 @@ function tutorialShowBubble(html, opts = {}) {
   const b = tutorialState.bubbleEl;
   b.classList.remove('hidden');
   b.classList.toggle('tut-bubble--loud', !!opts.loud);
+  // anchor=null && rightSide=true => bubble を右端に固定
+  if (opts.rightSide) {
+    b.innerHTML = html;
+    b.style.right = '16px';
+    b.style.left = 'auto';
+    b.style.top = (opts.topVh || '18') + 'vh';
+    b.style.transform = 'none';
+    return;
+  }
+  b.style.right = 'auto';
   b.innerHTML = html;
   tutorialPositionBubble(opts.anchor);
 }
@@ -10884,9 +11043,11 @@ function tutorialPositionBubble(anchorEl) {
   const b = tutorialState.bubbleEl;
   if (!b) return;
   if (!anchorEl) {
-    b.style.top = '50%';
-    b.style.left = '50%';
-    b.style.transform = 'translate(-50%,-50%)';
+    // 既定: 右上 (右端配置を優先)
+    b.style.top = '18vh';
+    b.style.right = '16px';
+    b.style.left = 'auto';
+    b.style.transform = 'none';
     return;
   }
   const r = anchorEl.getBoundingClientRect();
@@ -10898,18 +11059,18 @@ function tutorialPositionBubble(anchorEl) {
   left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
   b.style.left = left + 'px';
   b.style.top = top + 'px';
+  b.style.right = 'auto';
   b.style.transform = 'none';
 }
-function tutorialAnimateDrag(fromEl, toEl, opts = {}) {
+function tutorialAnimateDrag(fromPoint, toPoint, opts = {}) {
   tutorialEnsureLayer();
+  if (tutorialIsRecallBlocking()) { tutorialHideFinger(); return; }
   const f = tutorialState.fingerEl;
-  if (!fromEl || !toEl) { tutorialHideFinger(); return; }
-  const fr = fromEl.getBoundingClientRect();
-  const tr = toEl.getBoundingClientRect();
-  const fx = fr.left + fr.width / 2 - 28;
-  const fy = fr.top + fr.height / 2 - 28;
-  const tx = tr.left + tr.width / 2 - 28;
-  const ty = tr.top + tr.height / 2 - 28;
+  if (!fromPoint || !toPoint) { tutorialHideFinger(); return; }
+  const fx = fromPoint.x - 28;
+  const fy = fromPoint.y - 28;
+  const tx = toPoint.x - 28;
+  const ty = toPoint.y - 28;
   f.style.display = 'block';
   f.classList.remove('tut-finger--tap');
   f.classList.toggle('tut-finger--fast', !!opts.fast);
@@ -10917,13 +11078,28 @@ function tutorialAnimateDrag(fromEl, toEl, opts = {}) {
   f.style.setProperty('--from-y', fy + 'px');
   f.style.setProperty('--to-x', tx + 'px');
   f.style.setProperty('--to-y', ty + 'px');
-  // restart animation
-  f.style.animation = 'none';
+  // restart animation on both hand layers
+  const hands = f.querySelectorAll('.tut-hand');
+  hands.forEach(h => { h.style.animation = 'none'; });
   void f.offsetWidth;
-  f.style.animation = '';
+  hands.forEach(h => { h.style.animation = ''; });
+}
+function tutorialAnimateDragFromEl(fromEl, toPointOrEl, opts = {}) {
+  if (!fromEl) { tutorialHideFinger(); return; }
+  const fr = fromEl.getBoundingClientRect();
+  const from = { x: fr.left + fr.width / 2, y: fr.top + fr.height / 2 };
+  let to;
+  if (toPointOrEl && typeof toPointOrEl.getBoundingClientRect === 'function') {
+    const tr = toPointOrEl.getBoundingClientRect();
+    to = { x: tr.left + tr.width / 2, y: tr.top + tr.height / 2 };
+  } else {
+    to = toPointOrEl;
+  }
+  tutorialAnimateDrag(from, to, opts);
 }
 function tutorialAnimateTap(targetEl) {
   tutorialEnsureLayer();
+  if (tutorialIsRecallBlocking()) { tutorialHideFinger(); return; }
   const f = tutorialState.fingerEl;
   if (!targetEl) { tutorialHideFinger(); return; }
   const r = targetEl.getBoundingClientRect();
@@ -10946,10 +11122,8 @@ function tutorialScheduleResync() {
   });
 }
 function tutorialRefresh() {
-  // 現在のステップに応じて位置/ターゲットを再計算
   if (!tutorialState.active) return;
   if (tutorialIsPortraitBlocking()) {
-    // portrait 中は finger を隠し、bubble は「よこむきにしてね」を上書き表示
     tutorialHideFinger();
     tutorialShowBubble('よこむきに してね', { loud: true });
     return;
@@ -10964,8 +11138,21 @@ function tutorialStageCenter() {
       || document.querySelector('.free-layout-stage')
       || document.querySelector('.free-bento-shape');
 }
+function tutorialStageRect() {
+  const stage = tutorialStageCenter();
+  return stage ? stage.getBoundingClientRect() : null;
+}
+function tutorialStageLeftHalfPoint() {
+  const r = tutorialStageRect();
+  if (!r) return null;
+  return { x: r.left + r.width * 0.25, y: r.top + r.height * 0.5 };
+}
+function tutorialStageRightHalfPoint() {
+  const r = tutorialStageRect();
+  if (!r) return null;
+  return { x: r.left + r.width * 0.75, y: r.top + r.height * 0.5 };
+}
 function tutorialCompleteButton() {
-  // data-action="stage-complete" 属性で正確に特定 (テキスト fallback も保持)
   const tagged = document.querySelector('[data-action="stage-complete"]');
   if (tagged) return tagged;
   const primary = document.querySelector('.free-guide-actions button.primary');
@@ -10988,78 +11175,259 @@ function tutorialResetInactivity() {
     tutorialRenderStep();
   }, 20000);
 }
+// 強制選択 + 他のお弁当箱パレットを .tut-locked で disabled
+function tutorialApplyBoxLock() {
+  if (tutorialState.step !== 'box') return;
+  // 1) box_rect_split を強制選択
+  try {
+    if (typeof selectedBentoBoxId !== 'undefined' && selectedBentoBoxId !== 'box_rect_split') {
+      if (typeof selectFreeBentoBox === 'function') {
+        selectFreeBentoBox('box_rect_split');
+      } else {
+        selectedBentoBoxId = 'box_rect_split';
+      }
+    }
+  } catch (_) {}
+  // 2) box タブのパレット内で他箱を tut-locked にする
+  const isBoxTab = (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'box');
+  if (!isBoxTab) return;
+  const buttons = document.querySelectorAll('.free-item-list .free-palette-item');
+  buttons.forEach((btn, idx) => {
+    // 1番目を box_rect_split として想定 (bentoBoxes 配列順)
+    if (idx === 0) {
+      btn.classList.remove('tut-locked');
+      btn.dataset.tutTarget = '1';
+    } else {
+      btn.classList.add('tut-locked');
+    }
+  });
+}
+function tutorialClearBoxLock() {
+  document.querySelectorAll('.free-palette-item.tut-locked').forEach(el => el.classList.remove('tut-locked'));
+}
+// パレットから type=cup の最初のボタンを取得 (accessory タブ)
+function tutorialFindCupPaletteEl() {
+  const list = document.querySelector('.free-item-list');
+  if (!list) return null;
+  const btns = list.querySelectorAll('.free-palette-item');
+  for (const b of btns) {
+    const name = b.querySelector('.free-palette-name');
+    if (name && (name.textContent || '').indexOf('カップ') >= 0) return b;
+  }
+  return btns[0] || null;
+}
+function tutorialFindRicePaletteEl() {
+  // freeLayoutTab=='rice' のときの最初の要素
+  return tutorialFirstPaletteItem();
+}
+function tutorialFindFoodPaletteEl() {
+  return tutorialFirstPaletteItem();
+}
+function tutorialFindNoriPaletteEl() {
+  // decor タブで「のり」を含む最初の要素
+  const list = document.querySelector('.free-item-list');
+  if (!list) return null;
+  const btns = list.querySelectorAll('.free-palette-item');
+  for (const b of btns) {
+    const name = b.querySelector('.free-palette-name');
+    if (name && (name.textContent || '').indexOf('のり') >= 0) return b;
+  }
+  return btns[0] || null;
+}
+function tutorialFindCupContentRowBtn() {
+  return document.querySelector('.free-cup-content-row button')
+      || document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
+      || document.querySelector('.free-cup-contents .free-cup-content-row');
+}
+function tutorialFindPlacedCupEl() {
+  // ステージ上のカップ DOM (snapTarget で配置済み)
+  return document.querySelector('.free-placed-item.cup, .free-placed-item.snap-target, .free-placed-item.free-css-cup')
+      || document.querySelector('.free-placed-item[data-type="cup"]');
+}
 function tutorialRenderStep() {
   if (!tutorialState.active) return;
+  if (tutorialIsPortraitBlocking()) {
+    tutorialHideFinger();
+    tutorialShowBubble('よこむきに してね', { loud: true });
+    return;
+  }
   const step = tutorialState.step;
   const loud = tutorialState.inactivityFired;
   const fast = tutorialState.inactivityFired;
+
+  // greet
   if (step === 'greet') {
     const b = tutorialState.bubbleEl;
-    // 既に greet を描いている場合は innerHTML 差し替えしない (MutationObserver loop 回避)
     if (b && b.dataset.step === 'greet' && document.getElementById('tut-greet-next')) {
       tutorialHideFinger();
-      tutorialPositionBubble(null);
       return;
     }
-    tutorialShowBubble(
+    const html =
       'やあ！ぼく ポノだよ。<br>きょうは いっしょに<br>おべんとう つくろう！'
-      + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>',
-      { loud }
-    );
+      + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>'
+      + '<label class="tut-skip-label"><input type="checkbox" id="tut-skip-checkbox"><span>つぎから スキップする</span></label>';
+    tutorialShowBubble(html, { loud, rightSide: true, topVh: '18' });
     if (tutorialState.bubbleEl) tutorialState.bubbleEl.dataset.step = 'greet';
     tutorialHideFinger();
     const btn = document.getElementById('tut-greet-next');
     if (btn) btn.addEventListener('pointerdown', e => {
       e.preventDefault(); e.stopPropagation();
+      const skip = document.getElementById('tut-skip-checkbox');
+      if (skip && skip.checked) {
+        // skip: フラグセット + 即 teardown
+        try { localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); } catch (_) {}
+        tutorialState.active = false;
+        tutorialState.step = 'done';
+        if (tutorialState.bubbleEl) delete tutorialState.bubbleEl.dataset.step;
+        tutorialTeardown();
+        return;
+      }
       if (tutorialState.bubbleEl) delete tutorialState.bubbleEl.dataset.step;
       tutorialState.step = 'box';
+      tutorialApplyBoxLock();
       tutorialRenderStep();
       tutorialResetInactivity();
     }, { once: true });
     return;
   }
+
+  // box
   if (step === 'box') {
+    tutorialApplyBoxLock();
     const palette = tutorialFirstPaletteItem();
-    const stage = tutorialStageCenter();
-    tutorialShowBubble('すきな おべんとうばこを えらんで、<br>まんなかに もってきてね', { anchor: palette, loud });
-    tutorialAnimateDrag(palette, stage, { fast });
+    tutorialShowBubble(
+      'きょうは この おべんとうばこを<br>つかうよ！しきりが あるから、<br>ごはんと おかずを わけて<br>いれられるんだ'
+      + '<br><button class="tut-next-btn" id="tut-box-next">つぎへ →</button>',
+      { loud, rightSide: true, topVh: '14' }
+    );
+    if (palette) tutorialAnimateTap(palette); else tutorialHideFinger();
+    const btn = document.getElementById('tut-box-next');
+    if (btn) btn.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      tutorialClearBoxLock();
+      tutorialState.step = 'rice';
+      tutorialRenderStep();
+      tutorialResetInactivity();
+    }, { once: true });
     return;
   }
+
+  // rice
   if (step === 'rice') {
-    const palette = tutorialFirstPaletteItem();
-    const stage = tutorialStageCenter();
-    tutorialShowBubble('つぎは ごはんだよ！<br>ゆびで つまんで<br>おべんとうばこに のせよう', { anchor: palette, loud });
-    tutorialAnimateDrag(palette, stage, { fast });
+    const palette = tutorialFindRicePaletteEl();
+    const target = tutorialStageLeftHalfPoint();
+    tutorialShowBubble(
+      'ごはんを つかんで、<br>ひだりがわに のせよう！'
+      + '<br><button class="tut-next-btn" id="tut-rice-skip">じぶんで やってみる</button>',
+      { loud, rightSide: true, topVh: '20' }
+    );
+    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
+    else tutorialHideFinger();
+    const skip = document.getElementById('tut-rice-skip');
+    if (skip) skip.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      tutorialState.step = 'okazuFirst';
+      tutorialRenderStep();
+      tutorialResetInactivity();
+    }, { once: true });
     return;
   }
+
+  // okazuFirst
   if (step === 'okazuFirst') {
-    const palette = tutorialFirstPaletteItem();
-    const stage = tutorialStageCenter();
-    tutorialShowBubble('あかい おかずを いれてみよう！<br>からだを つくる ちからだよ', { anchor: palette, loud });
-    tutorialAnimateDrag(palette, stage, { fast });
+    const palette = tutorialFindFoodPaletteEl();
+    const target = tutorialStageRightHalfPoint();
+    tutorialShowBubble(
+      'あかい おかずを<br>みぎがわに いれよう！<br>からだを つくる ちからだよ',
+      { loud, rightSide: true, topVh: '20' }
+    );
+    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
+    else tutorialHideFinger();
     return;
   }
-  if (step === 'okazuMore') {
-    const palette = tutorialFirstPaletteItem();
-    // 控えめにパレット領域全体へ
-    const tray = document.querySelector('.free-item-list');
-    const remaining = Math.max(0, 3 - tutorialState.okazuPlacedCount);
-    if (remaining > 0) {
-      tutorialShowBubble(`あと ${remaining} こ！`, { anchor: tray || palette, loud });
-      tutorialAnimateTap(palette || tray);
+
+  // cup (new)
+  if (step === 'cup') {
+    const palette = tutorialFindCupPaletteEl();
+    const target = tutorialStageRightHalfPoint();
+    tutorialShowBubble(
+      'ちいさい おかずは『カップ』に<br>いれるよ。カップを さきに<br>みぎがわに おこう！',
+      { loud, rightSide: true, topVh: '20' }
+    );
+    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
+    else tutorialHideFinger();
+    return;
+  }
+
+  // cupChild (new) — タップでカップ開く → 中におかずを入れる
+  if (step === 'cupChild') {
+    const cupEl = tutorialFindPlacedCupEl();
+    const rowBtn = tutorialFindCupContentRowBtn();
+    const editingCup = (typeof getEditingCup === 'function') ? getEditingCup() : null;
+    if (!editingCup && cupEl) {
+      // まだ開いてない: 配置済みカップにタップパルス
+      tutorialShowBubble(
+        'カップを タップして、<br>なかに ちいさい おかずを<br>いれよう',
+        { loud, rightSide: true, topVh: '20' }
+      );
+      tutorialAnimateTap(cupEl);
+    } else if (editingCup) {
+      // 開いてる: パレットから中央 (cup) へドラッグ
+      tutorialShowBubble(
+        'なかに ちいさい おかずを<br>いれよう！',
+        { loud, rightSide: true, topVh: '20' }
+      );
+      const cupNowEl = tutorialFindPlacedCupEl();
+      const editorList = document.querySelector('.free-cup-editor-actions ~ .free-item-list .free-palette-item')
+        || document.querySelector('.free-cup-editor-actions + * .free-palette-item')
+        || tutorialFirstPaletteItem();
+      if (editorList && cupNowEl) {
+        const cr = cupNowEl.getBoundingClientRect();
+        tutorialAnimateDragFromEl(editorList, { x: cr.left + cr.width / 2, y: cr.top + cr.height / 2 }, { fast });
+      } else if (rowBtn) {
+        tutorialAnimateTap(rowBtn);
+      } else {
+        tutorialHideFinger();
+      }
     } else {
-      tutorialShowBubble('じょうずだね！つぎは…', { anchor: tray || palette, loud });
+      tutorialShowBubble(
+        'カップを タップして、<br>なかに ちいさい おかずを<br>いれよう',
+        { loud, rightSide: true, topVh: '20' }
+      );
       tutorialHideFinger();
     }
     return;
   }
-  if (step === 'decor') {
-    const palette = tutorialFirstPaletteItem();
-    const stage = tutorialStageCenter();
-    tutorialShowBubble('さいごに のりで<br>かおを つくろう！', { anchor: palette, loud });
-    tutorialAnimateDrag(palette, stage, { fast });
+
+  // okazuMore
+  if (step === 'okazuMore') {
+    const palette = tutorialFindFoodPaletteEl();
+    const tray = document.querySelector('.free-item-list');
+    const remaining = Math.max(0, 3 - tutorialState.okazuPlacedCount);
+    if (remaining > 0) {
+      tutorialShowBubble(`あと ${remaining} こ おかずを いれよう`, { loud, rightSide: true, topVh: '20' });
+      tutorialAnimateTap(palette || tray);
+    } else {
+      tutorialShowBubble('じょうずだね！つぎは…', { loud, rightSide: true, topVh: '20' });
+      tutorialHideFinger();
+    }
     return;
   }
+
+  // decor
+  if (step === 'decor') {
+    const palette = tutorialFindNoriPaletteEl();
+    const target = tutorialStageLeftHalfPoint(); // ご飯がある左半分中心
+    tutorialShowBubble(
+      'さいごに のりで<br>かおを つくろう！<br>つかんで ごはんの うえに のせてね',
+      { loud, rightSide: true, topVh: '20' }
+    );
+    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
+    else tutorialHideFinger();
+    return;
+  }
+
+  // complete
   if (step === 'complete') {
     const btn = tutorialCompleteButton();
     if (btn) btn.classList.add('tut-complete-pulse');
@@ -11083,6 +11451,11 @@ function tutorialTeardown() {
   }
   if (tutorialState.inactivityTimer) { clearTimeout(tutorialState.inactivityTimer); tutorialState.inactivityTimer = 0; }
   if (tutorialState.observer) { try { tutorialState.observer.disconnect(); } catch (_) {} tutorialState.observer = null; }
+  if (tutorialState.tapHandler) {
+    try { document.removeEventListener('pointerdown', tutorialState.tapHandler, true); } catch (_) {}
+    tutorialState.tapHandler = null;
+  }
+  tutorialClearBoxLock();
   tutorialHideFinger();
   tutorialHideBubble();
   tutorialClearCompletePulse();
@@ -11091,26 +11464,35 @@ function tutorialStart() {
   if (tutorialReadDone()) return;
   if (tutorialState.active) return;
   if (tutorialIsPortraitBlocking()) {
-    // 横画面に戻るまで待機
     setTimeout(tutorialStart, 600);
     return;
   }
   tutorialState.active = true;
   tutorialState.step = 'greet';
   tutorialState.okazuPlacedCount = 0;
+  tutorialState.cupPlacedCount = 0;
+  tutorialState.cupChildCount = 0;
+  tutorialState.ricePlacedCount = 0;
+  tutorialState.decorPlacedCount = 0;
   tutorialEnsureLayer();
-  // 既存のステップに合わせて再同期
   tutorialOnGuideChange(typeof freeGuideStep !== 'undefined' ? freeGuideStep : null);
   tutorialRenderStep();
   tutorialResetInactivity();
-  // resize/orientation で再計算
   tutorialState.resizeHandler = () => tutorialScheduleResync();
   window.addEventListener('resize', tutorialState.resizeHandler);
   window.addEventListener('orientationchange', tutorialState.resizeHandler);
-  // パレット/ステージ DOM 変化を検知して finger 位置を更新
   const root = document.body;
   tutorialState.observer = new MutationObserver(() => tutorialScheduleResync());
   try { tutorialState.observer.observe(root, { subtree: true, childList: true }); } catch (_) {}
+  // ユーザータップで デモループ をリセット (anywhere)
+  tutorialState.tapHandler = function(e) {
+    if (!tutorialState.active) return;
+    // bubble 内クリックは無視 (ボタンの onClick 用)
+    const bub = tutorialState.bubbleEl;
+    if (bub && bub.contains(e.target)) return;
+    tutorialResetInactivity();
+  };
+  document.addEventListener('pointerdown', tutorialState.tapHandler, true);
 }
 function tutorialOnGuideChange(step) {
   if (!tutorialState.active) return;
@@ -11119,14 +11501,20 @@ function tutorialOnGuideChange(step) {
     tutorialShowBubble('よこむきに してね', { loud: true });
     return;
   }
-  // greet 中は手動操作待ち
-  if (tutorialState.step === 'greet') return;
+  // greet 中 / cup / cupChild は手動 (item placement) で進行管理
+  if (tutorialState.step === 'greet' || tutorialState.step === 'cup' || tutorialState.step === 'cupChild') {
+    return;
+  }
   if (step === 'box') tutorialState.step = 'box';
   else if (step === 'rice') tutorialState.step = 'rice';
   else if (step === 'tier2Main' || step === 'tier3Main') {
-    tutorialState.step = tutorialState.okazuPlacedCount === 0 ? 'okazuFirst' : 'okazuMore';
+    if (tutorialState.step !== 'cup' && tutorialState.step !== 'cupChild' && tutorialState.step !== 'okazuMore') {
+      tutorialState.step = tutorialState.okazuPlacedCount === 0 ? 'okazuFirst' : 'okazuMore';
+    }
   } else if (step === 'tier2Side' || step === 'tier3Side') {
-    tutorialState.step = 'okazuMore';
+    if (tutorialState.step !== 'cup' && tutorialState.step !== 'cupChild') {
+      tutorialState.step = 'okazuMore';
+    }
   } else if (step === 'decor') {
     tutorialState.step = 'decor';
   } else if (step === 'tier3Prompt') {
@@ -11135,14 +11523,38 @@ function tutorialOnGuideChange(step) {
   tutorialResetInactivity();
   tutorialRenderStep();
 }
-// placedItems の変化を検知して食材数を追跡 / 完成タイミングを掴む
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
   if (!item) return;
-  if (item.type === 'food') {
-    tutorialState.okazuPlacedCount += 1;
-    // おかずが3個以上 + おかず工程中なら 完成ボタン誘導へ
-    if (tutorialState.okazuPlacedCount >= 3 && (tutorialState.step === 'okazuFirst' || tutorialState.step === 'okazuMore')) {
+  const step = tutorialState.step;
+  if (item.type === 'rice') {
+    tutorialState.ricePlacedCount += 1;
+    if (step === 'rice') {
+      tutorialState.step = 'okazuFirst';
+    }
+  } else if (item.type === 'cup' || item.snapTarget) {
+    tutorialState.cupPlacedCount += 1;
+    if (step === 'cup') {
+      tutorialState.step = 'cupChild';
+    }
+  } else if (item.type === 'food') {
+    if (item.parentCupId) {
+      // カップ内 child
+      tutorialState.cupChildCount += 1;
+      if (step === 'cupChild' && tutorialState.cupChildCount >= 1) {
+        tutorialState.step = 'okazuMore';
+      }
+    } else {
+      tutorialState.okazuPlacedCount += 1;
+      if (step === 'okazuFirst') {
+        tutorialState.step = 'cup';
+      } else if ((step === 'okazuMore') && tutorialState.okazuPlacedCount >= 3) {
+        tutorialState.step = 'decor';
+      }
+    }
+  } else if (item.type === 'decor') {
+    tutorialState.decorPlacedCount += 1;
+    if (step === 'decor') {
       tutorialState.step = 'complete';
     }
   }
@@ -11153,6 +11565,39 @@ function tutorialOnStageComplete() {
   if (!tutorialState.active) return;
   tutorialMarkDone();
 }
+
+// ===== Tutorial settings (gear) re-enable wiring =====
+(function() {
+  function bind() {
+    const gear = document.getElementById('tut-settings-btn');
+    const modal = document.getElementById('tut-settings-modal');
+    const reBtn = document.getElementById('tut-settings-reenable');
+    const closeBtn = document.getElementById('tut-settings-close');
+    if (!gear || !modal) return;
+    gear.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      modal.classList.remove('hidden');
+    });
+    if (reBtn) reBtn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      modal.classList.add('hidden');
+      try { if (typeof showToast === 'function') showToast('つぎの あそびで でるよ'); } catch (_) {}
+    });
+    if (closeBtn) closeBtn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      modal.classList.add('hidden');
+    });
+    modal.addEventListener('pointerdown', function(e) {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind, { once: true });
+  } else {
+    bind();
+  }
+})();
 
 // ===== Init =====
 applyBentoColor();

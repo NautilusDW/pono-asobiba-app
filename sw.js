@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1118; // v1118: maze creatures — depth-scaled hit radius (drawR×1.3), reset _defeatedCreatures per stage
+const CACHE_VERSION = 1120; // v1120: play.html splash - ロゴ/広告サイズ縮小と margin 詰めで viewport 内に確実に収まるよう調整
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
