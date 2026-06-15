@@ -4650,7 +4650,7 @@ const FREE_LAYOUT_PC_MAX_STAGE_W = 640;
 const FREE_LAYOUT_PC_MAX_STAGE_H = 388;
 const FREE_TABS = [
   { id: 'box', label: 'おべんとうばこ' },
-  { id: 'accessory', label: 'カップ・しきり' },
+  { id: 'accessory', label: 'ちいさい おかず' },
   { id: 'rice', label: 'ごはん' },
   { id: 'food', label: 'おかず' },
   { id: 'decor', label: 'かざり' },
@@ -9767,6 +9767,7 @@ function renderFreeLayoutControls() {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'free-tab' + (t.id === freeLayoutTab ? ' active' : '');
+      b.dataset.tab = t.id;
       b.textContent = t.label;
       b.addEventListener('pointerdown', e => {
         e.preventDefault();
@@ -11398,7 +11399,7 @@ function tutorialTrimPath(targetEl, opts = {}) {
   rect.setAttribute('rx', String(opts.radius || 14));
   rect.setAttribute('ry', String(opts.radius || 14));
   rect.setAttribute('fill', 'none');
-  rect.setAttribute('stroke', opts.color || '#4a9df7');
+  rect.setAttribute('stroke', opts.color || '#F2915A');
   rect.setAttribute('stroke-width', String(opts.width || 3));
   rect.setAttribute('stroke-linecap', 'round');
   svg.appendChild(rect);
@@ -11546,7 +11547,7 @@ function tutorialRenderStep() {
   // 0. greet — 中央配置 + skip checkbox 縮小
   if (step === 'greet') {
     const html =
-      'おべんとうの つくりかたを おしえるよ'
+      'いっしょに おべんとう つくろう！'
       + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>'
       + '<label class="tut-skip-mini"><input type="checkbox" id="tut-skip-checkbox"><span>つぎから スキップする</span></label>';
     tutorialShowBubble(html, { center: true });
@@ -11663,7 +11664,7 @@ function tutorialRenderStep() {
 
   // 6. tab-small — accessory (ちいさいおかず) タブを押させる
   if (step === 'tab-small') {
-    tutorialShowBubble('『ちいさい おかず』を おしてね', { topVh: '20' });
+    tutorialShowBubble('『ちいさい おかず』タブを おしてね', { topVh: '20' });
     if (firstRender) {
       if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory') {
         setTimeout(() => tutorialAdvance('small-place'), 0);
@@ -11690,9 +11691,14 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 8. decor — のりを ご飯の上に
+  // 8. decor — のりを ご飯の上に (配置済みのご飯にもトリムパスで場所を明示)
   if (step === 'decor') {
     tutorialShowBubble('さいごに のりを ごはんの うえに のせよう', { topVh: '20' });
+    if (firstRender) {
+      // 配置済みの rice 要素に highlight (ご飯の場所を明示)
+      const riceEls = document.querySelectorAll('.free-placed-item.type-rice');
+      riceEls.forEach(rEl => tutorialTrimPath(rEl, { radius: 12 }));
+    }
     const palette = tutorialFindNoriPaletteEl();
     const target = tutorialStageLeftHalfPoint();
     if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
@@ -11700,9 +11706,9 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 9. complete — 『かんせい！』ボタンに trim + tap
+  // 9. complete — オレンジ色の primary ボタンに trim + tap (ラベルは状況依存で変わるためラベル非依存表現)
   if (step === 'complete') {
-    tutorialShowBubble('『かんせい！』ボタンを おしてね', { topVh: '20' });
+    tutorialShowBubble('オレンジいろの ボタンを おしてね', { topVh: '20' });
     const btn = tutorialCompleteButton();
     if (btn) {
       if (firstRender) tutorialTrimPath(btn, { radius: 24 });
@@ -11720,7 +11726,7 @@ function tutorialFindTabBtn(tabId) {
   let el = document.querySelector('.free-tab[data-tab="' + tabId + '"]');
   if (el) return el;
   // 2) FREE_TABS のラベル文字で照合
-  const LABELS = { rice: 'ごはん', food: 'おかず', accessory: 'カップ' };
+  const LABELS = { rice: 'ごはん', food: 'おかず', accessory: 'ちいさい' };
   const want = LABELS[tabId];
   if (!want) return null;
   const tabs = document.querySelectorAll('.free-tabs .free-tab');
@@ -11833,9 +11839,11 @@ function tutorialOnItemPlaced(item) {
   }
   if (step === 'small-place') {
     // cup / 小おかず (food side or cup child) の配置で進める
+    // v3 fix: accessory タブで配置された時のみ進める (誤検知ガード)
     const role = item.okazuRole || '';
-    if (item.type === 'cup' || item.snapTarget ||
-        (item.type === 'food' && (item.parentCupId || role === 'side'))) {
+    const isAccessoryTab = (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory');
+    if (isAccessoryTab && (item.type === 'cup' || item.snapTarget ||
+        (item.type === 'food' && (item.parentCupId || role === 'side')))) {
       tutorialAdvance('decor');
       return;
     }

@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1126; // v1126: maze - 2勝先取式の撤回 (1勝即撃破に戻す、ユーザー指示)
+const CACHE_VERSION = 1129; // v1129: maze - stage7 サブタイトル「びっくりボーリング」削除 (ユーザー指示)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

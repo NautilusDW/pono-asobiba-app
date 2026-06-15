@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:509-pono-space-lazarus-pattern-starbrain-wide] Codex: user 指摘「ラザロは4つに分かれている時と合体時の顔模様が違うので統一。スターブレインは正方形に近い形ではなく横長に」を受領。`balanced_palette`版の色役割を維持しつつ、ラザロは分割パーツと合体顔の模様が連続するシート、スターブレインは横長シルエットの大型要塞として3スタイル分を追加生成する。 (by Codex)
 - 2026-06-15 - [batch:508-pono-space-balanced-enemy-boss-palette] Codex: user 指摘「ザコもラザロも紫で同じ色に見える。扱いが違うので色を分け、ラザロは中ボスとして明るめに目立たせ、スターブレインももう一度カラー設計して作り直す」を受領。既存造形は維持し、ザコ=暗い量産機色、ラザロ=明るい中ボス色、スターブレイン=大型ボス色として3スタイル分を追加生成する。 (by Codex)
 - 2026-06-15 - [batch:508-pono-space-balanced-enemy-boss-palette] DONE - Codex: GPT Image 2 built-in imagegen で色役割を分けた再生成を追加。ザコは暗い青鉄/スレートの量産機 `zako_enemy_mech_balanced_palette_style_{a,b,c}_raw.png`、ラザロは明るいマラカイト/銀白の中ボス `midboss_split_face_balanced_palette_style_{a,b,c}_raw.png`、スターブレインは深緑黒の要塞 + マゼンタ/白コア `boss_starbrain_balanced_palette_style_{a,b,c}_raw.png`。全て白背景 raw、ザコ/ボス各 1254x1254 RGB、ラザロ各 1536x1024 RGB。`contact_sheet_balanced_enemy_boss_palette.jpg` で、紫主色の重複解消、ラザロの明るさ、スターブレインの大型ボス感、赤橙/金/水色主体の回避を確認。 (by Codex)
 - 2026-06-15 - [batch:507-pono-space-villain-palette-zako-lazarus] Codex: user 指摘「敵キャラ/ラザロが主役と同じテイストで味方に見える。メカっぽい悪役色へ。差し色は炎っぽくない方。デザインは悪くない」を受領。既存造形は維持し、ザコメカ3種とラザロ分割中ボス3種を、黒鉄/深紫/暗緑/鈍い銀ベース + 小面積ライム/紫/白青発光の悪役メカパレットで再生成する。 (by Codex)
