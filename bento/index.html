@@ -2999,24 +2999,26 @@ body.bento-complete-open .pono-dropdown {
 }
 @keyframes tutHandOpen {
   /* ✋: visible at FROM (0-8%), fade out, then reappear at TO (67-100%, fade) */
-  0%    { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
-  8%    { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
-  9%    { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
-  66%   { transform: translate(var(--to-x), var(--to-y)); opacity: 0; }
-  67%   { transform: translate(var(--to-x), var(--to-y)); opacity: 1; }
-  75%   { transform: translate(var(--to-x), var(--to-y)); opacity: 1; }
-  92%   { transform: translate(var(--to-x), var(--to-y)); opacity: 0.2; }
-  93%   { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
-  100%  { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
+  /* v3.3.1: translate(... - 50%) で hand box の中心を viewport 座標に合わせる
+     (JS 側は center 座標をそのまま CSS var に流し込む。 clamp サイズ変化に追随) */
+  0%    { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 1; }
+  8%    { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 1; }
+  9%    { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0; }
+  66%   { transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 0; }
+  67%   { transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 1; }
+  75%   { transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 1; }
+  92%   { transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 0.2; }
+  93%   { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0; }
+  100%  { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 1; }
 }
 @keyframes tutHandGrip {
   /* ✊: invisible at FROM (0-8%), travel FROM→TO (8-67%), then fade out */
-  0%    { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
-  8%    { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
-  9%    { transform: translate(var(--from-x), var(--from-y)); opacity: 1; }
-  66%   { transform: translate(var(--to-x), var(--to-y)); opacity: 1; }
-  67%   { transform: translate(var(--to-x), var(--to-y)); opacity: 0; }
-  100%  { transform: translate(var(--from-x), var(--from-y)); opacity: 0; }
+  0%    { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0; }
+  8%    { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0; }
+  9%    { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 1; }
+  66%   { transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 1; }
+  67%   { transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 0; }
+  100%  { transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0; }
 }
 .tut-finger.tut-finger--fast .tut-hand--open,
 .tut-finger.tut-finger--fast .tut-hand--grip {
@@ -3030,13 +3032,14 @@ body.bento-complete-open .pono-dropdown {
 .tut-finger.tut-finger--tap .tut-hand--grip { display: none; }
 .tut-finger.tut-finger--tap .tut-hand--open {
   animation: none;
-  transform: translate(var(--tap-x), var(--tap-y));
+  /* v3.3.1: center anchor (50% box offset) */
+  transform: translate(calc(var(--tap-x) - 50%), calc(var(--tap-y) - 50%));
   opacity: 1;
 }
 @keyframes tutFingerTap {
-  0%   { transform: translate(var(--tap-x), var(--tap-y)) scale(1);    opacity: 1; }
-  50%  { transform: translate(var(--tap-x), var(--tap-y)) scale(0.78); opacity: 0.9; }
-  100% { transform: translate(var(--tap-x), var(--tap-y)) scale(1);    opacity: 1; }
+  0%   { transform: translate(calc(var(--tap-x) - 50%), calc(var(--tap-y) - 50%)) scale(1);    opacity: 1; }
+  50%  { transform: translate(calc(var(--tap-x) - 50%), calc(var(--tap-y) - 50%)) scale(0.78); opacity: 0.9; }
+  100% { transform: translate(calc(var(--tap-x) - 50%), calc(var(--tap-y) - 50%)) scale(1);    opacity: 1; }
 }
 .tut-bubble.tut-bubble--anchored {
   white-space: normal;
@@ -11294,12 +11297,14 @@ function tutorialAnimateDrag(fromPoint, toPoint, opts = {}) {
   if (tutorialIsRecallBlocking()) { tutorialHideFinger(); return; }
   const f = tutorialState.fingerEl;
   if (!fromPoint || !toPoint) { tutorialHideFinger(); return; }
-  // v3.2: 手のサイズ 72px に合わせて中心合わせを 28→36 に
-  const fx = fromPoint.x - 36;
-  const fy = fromPoint.y - 36;
-  const tx = toPoint.x - 36;
-  const ty = toPoint.y - 36;
-  f.style.display = 'block';
+  // v3.3.1: center coords をそのまま CSS var に。 keyframes 側で calc(... - 50%) で
+  // hand box の中心 anchor を viewport 座標に合わせる (clamp サイズ追随)
+  const fx = fromPoint.x;
+  const fy = fromPoint.y;
+  const tx = toPoint.x;
+  const ty = toPoint.y;
+  // v3.3.1: 'block' → 'flex' (防御的: 親も flex に統一して継承トラブル回避)
+  f.style.display = 'flex';
   f.classList.remove('tut-finger--tap');
   f.classList.toggle('tut-finger--fast', !!opts.fast);
   f.style.setProperty('--from-x', fx + 'px');
@@ -11378,10 +11383,11 @@ function tutorialAnimateTap(targetEl) {
   const f = tutorialState.fingerEl;
   if (!targetEl) { tutorialHideFinger(); return; }
   const r = targetEl.getBoundingClientRect();
-  // v3.2: 手のサイズ 72px に合わせて中心合わせを 28→36 に
-  const tx = r.left + r.width / 2 - 36;
-  const ty = r.top + r.height / 2 - 36;
-  f.style.display = 'block';
+  // v3.3.1: center 座標をそのまま渡す (keyframes 側で calc(... - 50%) で box center anchor)
+  const tx = r.left + r.width / 2;
+  const ty = r.top + r.height / 2;
+  // v3.3.1: 'block' → 'flex' (防御的)
+  f.style.display = 'flex';
   f.classList.add('tut-finger--tap');
   f.classList.remove('tut-finger--fast');
   f.style.setProperty('--tap-x', tx + 'px');
