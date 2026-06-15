@@ -749,6 +749,10 @@
       .bottom-nav { --nav-sprite-w: 400px; }
       .for-parents { width: 340px; height: 88px; }
       .for-parents__label { margin-left: 98px; margin-right: 28px; font-size: 21px; }
+      .sticker-book-entry { width: 288px; min-height: 62px; bottom: 116px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 38px); }
+      .sticker-book-entry__icon { width: 46px; height: 46px; font-size: 1.8rem; }
+      .sticker-book-entry__label { font-size: 20px; }
+      .sticker-book-entry__sub { font-size: 12px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
@@ -772,6 +776,10 @@
       .bottom-nav { --nav-sprite-w: 300px; }
       .for-parents { width: 300px; height: 78px; }
       .for-parents__label { margin-left: 86px; margin-right: 22px; font-size: 19px; }
+      .sticker-book-entry { width: 252px; min-height: 58px; bottom: 104px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 36px); padding: 8px 13px; }
+      .sticker-book-entry__icon { width: 42px; height: 42px; font-size: 1.65rem; }
+      .sticker-book-entry__label { font-size: 18px; }
+      .sticker-book-entry__sub { display: none; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
       /* 1280×1024 etc. (very rare). Visible canvas slice ≈ 1029.5px,
@@ -784,6 +792,8 @@
       .bottom-nav { --nav-sprite-w: 280px; }
       .for-parents { width: 280px; height: 74px; }
       .for-parents__label { margin-left: 80px; margin-right: 20px; font-size: 18px; }
+      .sticker-book-entry { width: 238px; min-height: 56px; bottom: 100px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 32px); }
+      .sticker-book-entry__label { font-size: 17px; }
     }
 
     /* ===== Bottom Navigation =====
@@ -850,6 +860,91 @@
     .bn-item:focus-visible {
       outline: 3px solid rgba(255, 235, 170, 0.95);
       outline-offset: 4px;
+    }
+    .sticker-book-entry {
+      position: absolute;
+      bottom: 126px;
+      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 42px);
+      width: 306px;
+      min-height: 70px;
+      z-index: 91;
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      padding: 9px 16px 10px;
+      border: 3px solid rgba(116, 73, 25, 0.72);
+      border-radius: 24px 27px 22px 29px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0) 34%),
+        linear-gradient(180deg, #FFF4C6 0%, #FFE19B 58%, #E7B363 100%);
+      color: #4a2a10;
+      font-family: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow:
+        0 5px 0 rgba(122, 76, 25, 0.42),
+        0 9px 18px rgba(48, 27, 10, 0.28),
+        inset 0 2px 0 rgba(255,255,255,0.65);
+      transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .sticker-book-entry:hover {
+      filter: brightness(1.04);
+      box-shadow:
+        0 6px 0 rgba(122, 76, 25, 0.42),
+        0 11px 20px rgba(48, 27, 10, 0.3),
+        inset 0 2px 0 rgba(255,255,255,0.72);
+    }
+    .sticker-book-entry:active {
+      transform: translateY(3px);
+      box-shadow:
+        0 2px 0 rgba(122, 76, 25, 0.42),
+        0 5px 12px rgba(48, 27, 10, 0.24),
+        inset 0 2px 0 rgba(255,255,255,0.62);
+    }
+    .sticker-book-entry:focus-visible {
+      outline: 3px solid rgba(255, 250, 210, 0.95);
+      outline-offset: 4px;
+    }
+    .sticker-book-entry__icon {
+      flex: 0 0 auto;
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      border: 4px solid #fff;
+      box-shadow:
+        0 2px 0 rgba(164, 111, 43, 0.28),
+        0 7px 12px rgba(58, 33, 11, 0.18),
+        inset 0 0 0 2px rgba(255, 227, 154, 0.75);
+      font-size: 2rem;
+      line-height: 1;
+      transform: rotate(-5deg);
+      pointer-events: none;
+    }
+    .sticker-book-entry__label {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 1px;
+      font-size: 22px;
+      line-height: 1.02;
+      letter-spacing: 0;
+      text-align: left;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow:
+        0 1px 0 rgba(255, 248, 219, 0.78),
+        0 2px 4px rgba(255, 248, 219, 0.45);
+    }
+    .sticker-book-entry__sub {
+      font-size: 13px;
+      color: #7b4e21;
+      line-height: 1.1;
     }
     /* Stand-alone "for parents" button in the bottom-left of the safe area.
        The 005 asset is a wide ribbon-shaped button — we overlay the text
@@ -1459,6 +1554,10 @@
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
     </nav>
+    <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
+      <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
+      <span class="sticker-book-entry__label"><span>シールちょう</span><span class="sticker-book-entry__sub">あつめた シール</span></span>
+    </button>
     <button class="for-parents" id="forParentsBtn" type="button" aria-label="えほんをもっているおともだちへ">
       <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
       <span class="for-parents__label"><span>えほんをもっている</span><span>おともだちへ</span></span>
@@ -1793,7 +1892,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1182;
+    const PAGE_CACHE_VERSION = 1183;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -2144,6 +2243,14 @@
         openModal('settingsModal');
       }
     });
+
+    // ===== Sticker book entry =====
+    const stickerBookEntry = document.getElementById('stickerBookEntry');
+    if (stickerBookEntry) {
+      stickerBookEntry.addEventListener('click', () => {
+        location.href = 'collection/index.html?tab=stickers&view=place';
+      });
+    }
 
     // ===== 「えほんをもっているおともだちへ」 button → unlock flow =====
     // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。

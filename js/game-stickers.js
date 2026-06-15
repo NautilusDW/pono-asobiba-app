@@ -147,39 +147,31 @@
 
     var sticker = result.sticker;
     var page = result.page || {};
+    var accent = page.accent || '#F2915A';
     var overlay = document.createElement('div');
     overlay.id = 'game-sticker-toast';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-label', 'シールをゲット');
-    overlay.style.cssText = [
-      'position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;',
-      'background:rgba(13,20,33,0.42);padding:18px;',
-      'font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;',
-      'animation:gameStickerFade .18s ease-out;'
-    ].join('');
-
-    var accent = page.accent || '#F2915A';
-    var box = document.createElement('div');
-    box.style.cssText = [
-      'width:min(320px,92vw);background:#fff;border-radius:22px;padding:16px 16px 14px;text-align:center;',
-      'box-shadow:0 18px 46px rgba(0,0,0,0.28);border:3px solid ' + accent + ';',
-      'color:#4A3726;'
-    ].join('');
+    overlay.style.setProperty('--sticker-accent', accent);
 
     var media = sticker.img
-      ? '<img src="' + resolveAsset(sticker.img) + '" alt="" style="width:108px;height:108px;object-fit:contain;display:block;margin:0 auto 8px;filter:drop-shadow(0 8px 12px rgba(0,0,0,0.18));">'
-      : '<div style="font-size:4.2rem;line-height:1;margin-bottom:8px;">' + (sticker.emoji || '⭐') + '</div>';
+      ? '<img class="game-sticker-piece__img" src="' + _esc(resolveAsset(sticker.img)) + '" alt="">'
+      : '<div class="game-sticker-piece__emoji">' + _esc(sticker.emoji || '⭐') + '</div>';
 
-    var spark = result.count >= 3 ? '<div style="font-size:0.78rem;font-weight:900;color:#D97706;margin-top:2px;">キラキラ ×' + result.count + '</div>' : '';
+    var box = document.createElement('div');
+    box.className = 'game-sticker-popup';
+    var spark = result.count >= 3 ? '<div class="game-sticker-popup__spark">キラキラ ×' + result.count + '</div>' : '';
     box.innerHTML =
-      '<div style="font-size:0.82rem;font-weight:900;color:' + accent + ';margin-bottom:6px;">シール ゲット!</div>' +
-      media +
-      '<div style="font-size:1.05rem;font-weight:900;line-height:1.25;">' + _esc(sticker.name || 'シール') + '</div>' +
-      '<div style="font-size:0.74rem;color:#8A7460;margin-top:4px;">' + _esc(page.title || result.gameId || '') + 'のページに はったよ</div>' +
+      '<div class="game-sticker-popup__eyebrow">シール ゲット!</div>' +
+      '<div class="game-sticker-popup__sheet">' +
+        '<div class="game-sticker-piece" aria-hidden="true">' + media + '</div>' +
+      '</div>' +
+      '<div class="game-sticker-popup__name">' + _esc(sticker.name || 'シール') + '</div>' +
+      '<div class="game-sticker-popup__sub">' + _esc(page.title || result.gameId || '') + 'のページに はれるよ</div>' +
       spark +
-      '<div style="display:flex;gap:8px;justify-content:center;margin-top:13px;">' +
-      '<button type="button" data-sticker-close style="border:0;border-radius:999px;background:#EEE6DD;color:#5D4E37;font-weight:900;padding:10px 16px;font-family:inherit;">つづける</button>' +
-      '<button type="button" data-sticker-book style="border:0;border-radius:999px;background:' + accent + ';color:#fff;font-weight:900;padding:10px 16px;font-family:inherit;">シールちょう</button>' +
+      '<div class="game-sticker-popup__actions">' +
+        '<button type="button" data-sticker-close class="game-sticker-popup__btn game-sticker-popup__btn--sub">つづける</button>' +
+        '<button type="button" data-sticker-book class="game-sticker-popup__btn game-sticker-popup__btn--main">ペタッとはる</button>' +
       '</div>';
 
     overlay.appendChild(box);
@@ -189,14 +181,41 @@
     if (!style) {
       style = document.createElement('style');
       style.id = 'game-sticker-style';
-      style.textContent = '@keyframes gameStickerFade{from{opacity:0}to{opacity:1}}';
+      style.textContent = [
+        '#game-sticker-toast{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(13,20,33,.42);padding:18px;font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;animation:gameStickerFade .18s ease-out;}',
+        '#game-sticker-toast .game-sticker-popup{width:min(336px,92vw);background:#fffdf6;border-radius:24px;padding:17px 16px 15px;text-align:center;box-shadow:0 18px 46px rgba(0,0,0,.28), inset 0 2px 0 rgba(255,255,255,.85);border:3px solid var(--sticker-accent,#F2915A);color:#4A3726;overflow:hidden;}',
+        '#game-sticker-toast .game-sticker-popup__eyebrow{font-size:.84rem;font-weight:900;color:var(--sticker-accent,#F2915A);margin-bottom:8px;}',
+        '#game-sticker-toast .game-sticker-popup__sheet{display:grid;place-items:center;min-height:140px;background:radial-gradient(circle at 50% 58%, rgba(242,145,90,.18), transparent 58%);}',
+        '#game-sticker-toast .game-sticker-piece{width:126px;height:126px;border-radius:30px;background:#fff;border:7px solid #fff;display:grid;place-items:center;transform:rotate(-4deg);box-shadow:0 3px 0 rgba(180,129,66,.26),0 12px 22px rgba(85,54,20,.2),inset 0 0 0 2px rgba(255,230,170,.72);position:relative;animation:gameStickerPop .34s cubic-bezier(.18,.9,.24,1.22);}',
+        '#game-sticker-toast .game-sticker-piece:after{content:"";position:absolute;inset:-8px;border-radius:36px;border:2px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(150,102,45,.14);pointer-events:none;}',
+        '#game-sticker-toast .game-sticker-piece__img{width:106px;height:106px;object-fit:contain;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.16));}',
+        '#game-sticker-toast .game-sticker-piece__emoji{font-size:4rem;line-height:1;filter:drop-shadow(0 6px 8px rgba(0,0,0,.14));}',
+        '#game-sticker-toast .game-sticker-popup__name{font-size:1.08rem;font-weight:900;line-height:1.25;margin-top:2px;}',
+        '#game-sticker-toast .game-sticker-popup__sub{font-size:.74rem;color:#8A7460;margin-top:4px;font-weight:700;}',
+        '#game-sticker-toast .game-sticker-popup__spark{font-size:.78rem;font-weight:900;color:#D97706;margin-top:3px;}',
+        '#game-sticker-toast .game-sticker-popup__actions{display:flex;gap:8px;justify-content:center;margin-top:14px;}',
+        '#game-sticker-toast .game-sticker-popup__btn{border:0;border-radius:999px;font-weight:900;padding:10px 16px;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 rgba(81,50,19,.18);}',
+        '#game-sticker-toast .game-sticker-popup__btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(81,50,19,.18);}',
+        '#game-sticker-toast .game-sticker-popup__btn--sub{background:#EEE6DD;color:#5D4E37;}',
+        '#game-sticker-toast .game-sticker-popup__btn--main{background:var(--sticker-accent,#F2915A);color:#fff;}',
+        '#game-sticker-toast .game-sticker-popup.is-pasting .game-sticker-piece{animation:gameStickerPeta .62s cubic-bezier(.18,.86,.24,1) forwards;}',
+        '#game-sticker-toast .game-sticker-popup.is-pasting .game-sticker-popup__btn{pointer-events:none;opacity:.65;}',
+        '@keyframes gameStickerFade{from{opacity:0}to{opacity:1}}',
+        '@keyframes gameStickerPop{from{opacity:0;transform:translateY(16px) rotate(-10deg) scale(.72)}to{opacity:1;transform:translateY(0) rotate(-4deg) scale(1)}}',
+        '@keyframes gameStickerPeta{0%{transform:translateY(0) rotate(-4deg) scale(1)}45%{transform:translateY(14px) rotate(3deg) scale(1.08)}70%{transform:translateY(10px) rotate(-1deg) scale(.9)}100%{transform:translateY(12px) rotate(0deg) scale(.94);box-shadow:0 1px 0 rgba(180,129,66,.2),0 7px 13px rgba(85,54,20,.16),inset 0 0 0 2px rgba(255,230,170,.72)}}'
+      ].join('');
       document.head.appendChild(style);
     }
 
     function close() { _removeToast(); }
     box.querySelector('[data-sticker-close]').addEventListener('click', close);
     box.querySelector('[data-sticker-book]').addEventListener('click', function () {
-      location.href = _rootPrefix() + 'collection/index.html?tab=stickers&game=' + encodeURIComponent(result.gameId);
+      box.classList.add('is-pasting');
+      var btn = box.querySelector('[data-sticker-book]');
+      if (btn) btn.disabled = true;
+      window.setTimeout(function () {
+        location.href = _rootPrefix() + 'collection/index.html?tab=stickers&game=' + encodeURIComponent(result.gameId) + '&view=place';
+      }, 560);
     });
     overlay.addEventListener('click', function (event) {
       if (event.target === overlay) close();
