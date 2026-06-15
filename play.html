@@ -39,6 +39,7 @@
   <link rel="preload" as="image" href="assets/ui/thumb_oto.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_bento.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_puzzle.webp">
+  <link rel="preload" as="image" href="assets/ui/thumb_starparodier.webp">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -599,6 +600,7 @@
     .game-card[data-id="oto"]        .game-card__title { color: #d38a2c; }   /* playful music amber */
     .game-card[data-id="bento"]      .game-card__title { color: #d7712d; }   /* carrot orange */
     .game-card[data-id="puzzle"]     .game-card__title { color: #5a89bf; }   /* gentle puzzle blue */
+    .game-card[data-id="starparodier"] .game-card__title { color: #7dffe0; } /* space mint */
     /* On the dark "maze" card the cream halo would clash — switch to a
        warm dark halo so the yellow title still pops on the night panel. */
     .game-card[data-id="maze"] .game-card__title {
@@ -1654,6 +1656,19 @@
         peekPos: '36% 52%',
         tier: 'free'
       },
+      {
+        id: 'starparodier',
+        title: 'ポノのスターパロジャー',
+        subtitle: '宇宙で メカと たたかおう',
+        icon: '🚀',
+        bg: 'assets/ui/play_starparodier_title_back.webp',
+        href: 'starparodier/index.html',
+        panel: 'assets/ui/menu_card_base_03.webp',
+        thumb: 'assets/ui/thumb_starparodier.webp',
+        thumbPos: '50% 52%',
+        peekPos: '50% 50%',
+        tier: 'free'
+      },
       // ----- Coming-soon (debug-playable for devs) -----
       {
         id: 'writing-mori',
@@ -1748,7 +1763,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1150;
+    const PAGE_CACHE_VERSION = 1151;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
