@@ -394,8 +394,14 @@
     lazarusBL: 'midboss_lazarus_bottom_left.png',
     lazarusBR: 'midboss_lazarus_bottom_right.png'
   };
+  const EFFECT_ASSETS = {
+    zakoExplosion: makeFrameList('effects/zako_explosion_', 22),
+    lazarusExplosion: makeFrameList('effects/lazarus_explosion_', 12),
+    starbrainExplosion: makeFrameList('effects/starbrain_explosion_', 9)
+  };
 
   const imgs = {};
+  const effectImgs = {};
   const keys = {};
   const pointer = { active: false, x: 0, y: 0 };
   const rng = mulberry32(518);
@@ -429,6 +435,7 @@
     items: [],
     enemies: [],
     particles: [],
+    effects: [],
     boss: null
   };
   try {
@@ -659,20 +666,29 @@
     return dx * dx + dy * dy;
   }
 
-  function loadImages() {
-    const entries = Object.entries(ASSETS);
-    return Promise.all(entries.map(([key, file]) => new Promise((resolve) => {
+  function makeFrameList(prefix, count) {
+    return Array.from({ length: count }, (_, index) => `${prefix}${String(index + 1).padStart(2, '0')}.png`);
+  }
+
+  function loadSingleImage(file) {
+    return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => {
-        imgs[key] = img;
-        resolve();
-      };
-      img.onerror = () => {
-        imgs[key] = null;
-        resolve();
-      };
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
       img.src = ASSET_BASE + file;
-    })));
+    });
+  }
+
+  function loadImages() {
+    const assetLoads = Object.entries(ASSETS).map(([key, file]) => (
+      loadSingleImage(file).then((img) => { imgs[key] = img; })
+    ));
+    const effectLoads = Object.entries(EFFECT_ASSETS).map(([key, files]) => (
+      Promise.all(files.map(loadSingleImage)).then((frames) => {
+        effectImgs[key] = frames.filter(Boolean);
+      })
+    ));
+    return Promise.all(assetLoads.concat(effectLoads));
   }
 
   function resize() {
@@ -741,6 +757,7 @@
     state.items.length = 0;
     state.enemies.length = 0;
     state.particles.length = 0;
+    state.effects.length = 0;
     state.boss = null;
     centerPlayer();
     state.player.cooldown = 0;
@@ -863,7 +880,9 @@
     updateBullets(dt);
     updateEnemies(dt);
     updateBoss(dt);
+    updateEffects(dt);
     updateParticles(dt);
+    if (state.phase === 'clearPending' && state.phaseTime > 1.55) finishClear();
     updateHud();
   }
 
@@ -961,7 +980,7 @@
     p.r = clamp(W * 0.028, 18, 30);
     p.cooldown -= dt;
     p.inv = Math.max(0, p.inv - dt);
-    if (p.cooldown <= 0) {
+    if (state.phase !== 'clearPending' && p.cooldown <= 0) {
       firePlayer();
       p.cooldown = state.boss ? PLAYER_FIRE_INTERVAL_BOSS : PLAYER_FIRE_INTERVAL;
     }
@@ -1155,7 +1174,7 @@
       }
       if (b.hp <= 0) {
         awardScore(1500);
-        burst(b.x, b.y, '#7effc7', 52, 260);
+        spawnLazarusExplosion(b.x, b.y, Math.max(getLazarusFullSize().w, getLazarusFullSize().h) * 1.22);
         playSfx('bossDown');
         setPhase('postLazarus');
       }
@@ -1173,10 +1192,7 @@
         b.shot = b.hp < b.maxHp * 0.45 ? 0.82 : 1.06;
       }
       if (b.hp <= 0) {
-        awardScore(3600);
-        burst(b.x, b.y, '#c77dff', 88, 330);
-        playSfx('bossDown');
-        finishClear();
+        startStarbrainDefeat(b);
       }
     }
   }
@@ -1185,6 +1201,7 @@
     const pieces = getLazarusPieceLayout(lazarusSplitProgress());
     awardScore(2400);
     for (const piece of pieces) burst(piece.cx, piece.cy, '#7effc7', 18, 180);
+    spawnLazarusExplosion(W * 0.5, lazarusBaseY(), Math.max(getLazarusFullSize().w, getLazarusFullSize().h) * 1.18);
     state.enemyBullets.length = 0;
     b.hp = 0;
     playSfx('bossDown');
@@ -1298,7 +1315,7 @@
             state.kills += 1;
             state.phaseKills += 1;
             awardScore(100 + e.maxHp * 40);
-            burst(e.x, e.y, '#66e9ff', 12 + e.maxHp * 4, 120);
+            spawnEnemyExplosion(e);
             playSfx('enemyDown');
           }
           break;
@@ -1422,6 +1439,87 @@
     }
   }
 
+  function updateEffects(dt) {
+    for (let i = state.effects.length - 1; i >= 0; i--) {
+      const effect = state.effects[i];
+      if (effect.delay > 0) {
+        effect.delay -= dt;
+        continue;
+      }
+      effect.age += dt;
+      const frames = effectImgs[effect.sheet] || [];
+      const duration = frames.length ? frames.length / effect.fps : 0.3;
+      if (effect.age > duration) state.effects.splice(i, 1);
+    }
+  }
+
+  function addSpriteEffect(sheet, x, y, size, options = {}) {
+    const frames = effectImgs[sheet] || [];
+    if (!frames.length) return;
+    state.effects.push({
+      sheet,
+      x,
+      y,
+      size,
+      age: 0,
+      delay: options.delay || 0,
+      fps: options.fps || 20,
+      rotation: options.rotation || 0,
+      flip: options.flip || 1,
+      alpha: options.alpha == null ? 1 : options.alpha
+    });
+  }
+
+  function spawnEnemyExplosion(enemy) {
+    const size = clamp(enemyHitRadius(enemy) * 3.2, 82, 132);
+    addSpriteEffect('zakoExplosion', enemy.x, enemy.y, size, {
+      fps: 30,
+      rotation: (rng() - 0.5) * 0.45,
+      flip: rng() < 0.5 ? -1 : 1
+    });
+    burst(enemy.x, enemy.y, '#66e9ff', 10 + enemy.maxHp * 3, 118);
+  }
+
+  function spawnLazarusExplosion(x, y, size) {
+    addSpriteEffect('lazarusExplosion', x, y, size, {
+      fps: 17,
+      rotation: (rng() - 0.5) * 0.18
+    });
+    burst(x, y, '#7effc7', 38, 220);
+  }
+
+  function startStarbrainDefeat(boss) {
+    awardScore(3600);
+    const size = getStarbrainSize();
+    const nodes = bossTargetNodes(boss);
+    const spots = [
+      nodes[1] || { x: boss.x - size.w * 0.28, y: boss.y + size.h * 0.04 },
+      nodes[0] || { x: boss.x, y: boss.y + size.h * 0.08 },
+      nodes[2] || { x: boss.x + size.w * 0.28, y: boss.y + size.h * 0.04 }
+    ];
+    spots.forEach((spot, index) => {
+      const jitter = size.h * 0.045;
+      const x = spot.x + (rng() - 0.5) * jitter;
+      const y = spot.y + (rng() - 0.5) * jitter;
+      addSpriteEffect('starbrainExplosion', x, y, size.h * (index === 1 ? 1.08 : 0.92), {
+        delay: index * 0.24 + rng() * 0.07,
+        fps: 18,
+        rotation: rng() * Math.PI * 2,
+        flip: index === 1 ? 1 : -1
+      });
+      burst(x, y, index === 1 ? '#c77dff' : '#7effc7', 30, 250);
+    });
+    state.enemyBullets.length = 0;
+    state.bullets.length = 0;
+    state.enemies.length = 0;
+    state.boss = null;
+    state.phase = 'clearPending';
+    state.phaseTime = 0;
+    bossMeter.hidden = true;
+    phaseText.textContent = 'CLEAR';
+    playSfx('bossDown');
+  }
+
   function burst(x, y, color, count, speed) {
     for (let i = 0; i < count; i++) {
       const a = rng() * Math.PI * 2;
@@ -1508,6 +1606,7 @@
     drawBoss();
     drawBullets(state.enemyBullets);
     drawPlayer();
+    drawEffects();
     drawParticles();
     drawVignette();
   }
@@ -2039,6 +2138,32 @@
       ctx.beginPath();
       ctx.arc(node.x, node.y, node.r * 0.55, 0, Math.PI * 2);
       ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawEffects() {
+    ctx.save();
+    for (const effect of state.effects) {
+      if (effect.delay > 0) continue;
+      const frames = effectImgs[effect.sheet] || [];
+      if (!frames.length) continue;
+      const index = Math.min(frames.length - 1, Math.floor(effect.age * effect.fps));
+      const img = frames[index];
+      if (!img) continue;
+      const base = Math.max(img.naturalWidth || img.width || 1, img.naturalHeight || img.height || 1);
+      const scale = effect.size / base;
+      const w = (img.naturalWidth || img.width || effect.size) * scale;
+      const h = (img.naturalHeight || img.height || effect.size) * scale;
+      const duration = frames.length / effect.fps;
+      const fade = clamp((duration - effect.age) / 0.18, 0, 1);
+      ctx.globalAlpha = effect.alpha * fade;
+      ctx.save();
+      ctx.translate(effect.x, effect.y);
+      ctx.rotate(effect.rotation);
+      ctx.scale(effect.flip, 1);
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.restore();
     }
     ctx.restore();
   }
