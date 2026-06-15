@@ -32,13 +32,30 @@
 After alpha/crop is done, save the final PNGs as:
 
 ```text
-assets/images/sea-album/stage1/player_submarine.png
-assets/images/sea-album/stage1/hermit_crab.png
-assets/images/sea-album/stage1/shrimp.png
-assets/images/sea-album/stage1/sea_star.png
-assets/images/sea-album/stage1/tidepool_goby.png
-assets/images/sea-album/stage1/sea_anemone.png
-assets/images/sea-album/stage1/horseshoe_crab_boss.png
+assets/images/sea-album/stage1/hermit_crab_normal.png
+assets/images/sea-album/stage1/hermit_crab_eating.png
+assets/images/sea-album/stage1/hermit_crab_happy.png
+assets/images/sea-album/stage1/shrimp_normal.png
+assets/images/sea-album/stage1/shrimp_eating.png
+assets/images/sea-album/stage1/shrimp_happy.png
+assets/images/sea-album/stage1/sea_star_normal.png
+assets/images/sea-album/stage1/sea_star_eating.png
+assets/images/sea-album/stage1/sea_star_happy.png
+assets/images/sea-album/stage1/tidepool_goby_normal.png
+assets/images/sea-album/stage1/tidepool_goby_eating.png
+assets/images/sea-album/stage1/tidepool_goby_happy.png
+assets/images/sea-album/stage1/sea_anemone_normal.png
+assets/images/sea-album/stage1/sea_anemone_eating.png
+assets/images/sea-album/stage1/sea_anemone_happy.png
+assets/images/sea-album/stage1/horseshoe_crab_boss_normal.png
+assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png
+assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png
 ```
 
-The current game uses canvas fallback drawings. After those files exist, set `USE_ALPHA_SPRITES` in `sea-album/index.html` to `true`.
+The player submarine uses the existing shared asset:
+
+```text
+assets/images/ocean/Submarine/Submarine_003.png
+```
+
+The current game uses canvas fallback drawings for creatures. After the expression files exist, set `USE_ALPHA_SPRITES` in `sea-album/index.html` to `true`.

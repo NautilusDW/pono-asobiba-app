@@ -41,7 +41,7 @@
   <link rel="preload" as="image" href="assets/ui/thumb_puzzle.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_starparodier.webp">
   <link rel="preload" as="image" href="assets/images/undersea-cave/friend_whale_sleep.png">
-  <link rel="preload" as="image" href="assets/images/sea-album/stage1/stage1_tidepool_background.png">
+  <link rel="preload" as="image" href="assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1691,10 +1691,10 @@
         title: 'ポノの海底アルバム',
         subtitle: '生き物を しらべて カードを あつめよう',
         icon: '🐚',
-        bg: 'assets/images/sea-album/stage1/stage1_tidepool_background.png',
+        bg: 'assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png',
         href: 'sea-album/index.html',
         panel: 'assets/ui/menu_card_base_02.webp',
-        thumb: 'assets/images/sea-album/stage1/stage1_tidepool_background.png',
+        thumb: 'assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png',
         thumbPos: '50% 62%',
         peekPos: '50% 52%',
         tier: 'free'
@@ -1793,7 +1793,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1170;
+    const PAGE_CACHE_VERSION = 1171;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport

@@ -529,6 +529,10 @@
 
   const BASE_W = 1600;
   const BASE_H = 900;
+  const WORLD_W = 4200;
+  const PLAYER_MIN_X = 120;
+  const PLAYER_MAX_X = WORLD_W - 220;
+  const CAMERA_LEAD_X = 390;
   const STORAGE_KEY = 'sea_album_cards_v1';
 
   const canvas = document.getElementById('gameCanvas');
@@ -548,13 +552,26 @@
 
   const ASSET = {
     bg: '../assets/images/sea-album/stage1/stage1_tidepool_background.png',
-    player: '../assets/images/sea-album/stage1/player_submarine.png',
-    hermit: '../assets/images/sea-album/stage1/hermit_crab.png',
-    shrimp: '../assets/images/sea-album/stage1/shrimp.png',
-    seaStar: '../assets/images/sea-album/stage1/sea_star.png',
-    goby: '../assets/images/sea-album/stage1/tidepool_goby.png',
-    anemone: '../assets/images/sea-album/stage1/sea_anemone.png',
-    horseshoe: '../assets/images/sea-album/stage1/horseshoe_crab_boss.png'
+    scrollBg: '../assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png',
+    player: '../assets/images/ocean/Submarine/Submarine_003.png',
+    hermitNormal: '../assets/images/sea-album/stage1/hermit_crab_normal.png',
+    hermitEating: '../assets/images/sea-album/stage1/hermit_crab_eating.png',
+    hermitHappy: '../assets/images/sea-album/stage1/hermit_crab_happy.png',
+    shrimpNormal: '../assets/images/sea-album/stage1/shrimp_normal.png',
+    shrimpEating: '../assets/images/sea-album/stage1/shrimp_eating.png',
+    shrimpHappy: '../assets/images/sea-album/stage1/shrimp_happy.png',
+    seaStarNormal: '../assets/images/sea-album/stage1/sea_star_normal.png',
+    seaStarEating: '../assets/images/sea-album/stage1/sea_star_eating.png',
+    seaStarHappy: '../assets/images/sea-album/stage1/sea_star_happy.png',
+    gobyNormal: '../assets/images/sea-album/stage1/tidepool_goby_normal.png',
+    gobyEating: '../assets/images/sea-album/stage1/tidepool_goby_eating.png',
+    gobyHappy: '../assets/images/sea-album/stage1/tidepool_goby_happy.png',
+    anemoneNormal: '../assets/images/sea-album/stage1/sea_anemone_normal.png',
+    anemoneEating: '../assets/images/sea-album/stage1/sea_anemone_eating.png',
+    anemoneHappy: '../assets/images/sea-album/stage1/sea_anemone_happy.png',
+    horseshoeNormal: '../assets/images/sea-album/stage1/horseshoe_crab_boss_normal.png',
+    horseshoeEating: '../assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png',
+    horseshoeHappy: '../assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png'
   };
   const USE_ALPHA_SPRITES = false;
 
@@ -642,6 +659,7 @@
     observed: 0,
     bossSpawned: false,
     bossDone: false,
+    camera: 0,
     player: { x: 220, y: 440, tx: 220, ty: 440, shield: 0 },
     keys: Object.create(null),
     shots: [],
@@ -690,6 +708,27 @@
     return Math.hypot(a - x, b - y);
   }
 
+  function screenX(x) {
+    return x - state.camera;
+  }
+
+  function enemyMood(enemy) {
+    if (enemy.defeated) return 'happy';
+    if (enemy.eatTimer > 0) return 'eating';
+    return enemy.mood || 'normal';
+  }
+
+  function moodAssetKey(enemy) {
+    const suffix = enemyMood(enemy);
+    return enemy.key + suffix.charAt(0).toUpperCase() + suffix.slice(1);
+  }
+
+  function markEating(enemy) {
+    if (enemy.defeated) return;
+    enemy.mood = 'eating';
+    enemy.eatTimer = 0.34;
+  }
+
   function setPrompt(text, ttl = 2.2) {
     state.promptTimer = ttl;
     promptEl.textContent = text;
@@ -733,6 +772,7 @@
     state.observed = 0;
     state.bossSpawned = false;
     state.bossDone = false;
+    state.camera = 0;
     state.player = { x: 220, y: 440, tx: 220, ty: 440, shield: 0 };
     state.shots = [];
     state.bombs = [];
@@ -772,7 +812,7 @@
     const y = rand(type.y[0], type.y[1]);
     state.enemies.push({
       key,
-      x: BASE_W + 80,
+      x: Math.min(WORLD_W - 130, state.camera + BASE_W + 100),
       y,
       baseY: y,
       hp: type.hp,
@@ -781,7 +821,10 @@
       size: type.size,
       phase: Math.random() * Math.PI * 2,
       hit: 0,
-      dead: false,
+      mood: 'normal',
+      eatTimer: 0,
+      defeated: false,
+      vanishTimer: 0,
       boss: false
     });
   }
@@ -791,7 +834,7 @@
     state.bossSpawned = true;
     state.enemies.push({
       key: 'horseshoe',
-      x: BASE_W + 220,
+      x: Math.min(WORLD_W - 250, state.camera + BASE_W + 220),
       y: 615,
       baseY: 615,
       hp: ENEMY_TYPES.horseshoe.hp,
@@ -800,7 +843,10 @@
       size: ENEMY_TYPES.horseshoe.size,
       phase: 0,
       hit: 0,
-      dead: false,
+      mood: 'normal',
+      eatTimer: 0,
+      defeated: false,
+      vanishTimer: 0,
       boss: true
     });
     setPrompt('古代のボスが あらわれた！ ぽよん弾も使おう', 3.2);
@@ -840,8 +886,11 @@
   }
 
   function defeatEnemy(enemy) {
-    if (enemy.dead) return;
-    enemy.dead = true;
+    if (enemy.defeated) return;
+    enemy.defeated = true;
+    enemy.mood = 'happy';
+    enemy.eatTimer = 0;
+    enemy.vanishTimer = enemy.boss ? 1.05 : 0.72;
     const type = ENEMY_TYPES[enemy.key];
     state.score += type.score;
     state.observed += 1;
@@ -876,10 +925,12 @@
     if (state.keys.ArrowDown || state.keys.KeyS) p.ty += 420 * dt;
     if (state.keys.ArrowLeft || state.keys.KeyA) p.tx -= 420 * dt;
     if (state.keys.ArrowRight || state.keys.KeyD) p.tx += 420 * dt;
-    p.tx = clamp(p.tx, 110, 620);
+    p.tx = clamp(p.tx, PLAYER_MIN_X, PLAYER_MAX_X);
     p.ty = clamp(p.ty, 150, 735);
     p.x += (p.tx - p.x) * Math.min(1, dt * 7.5);
     p.y += (p.ty - p.y) * Math.min(1, dt * 7.5);
+    const desiredCamera = clamp(p.x - CAMERA_LEAD_X, 0, WORLD_W - BASE_W);
+    state.camera += (desiredCamera - state.camera) * Math.min(1, dt * 4.8);
 
     state.shotTimer -= dt;
     state.bombTimer -= dt;
@@ -904,7 +955,7 @@
       s.y += s.vy * dt;
       s.life -= dt;
     });
-    state.shots = state.shots.filter((s) => s.life > 0 && s.x < BASE_W + 80 && s.y > -80 && s.y < BASE_H + 80);
+    state.shots = state.shots.filter((s) => s.life > 0 && s.x > state.camera - 90 && s.x < state.camera + BASE_W + 150 && s.y > -80 && s.y < BASE_H + 80);
 
     state.bombs.forEach((b) => {
       b.x += b.vx * dt;
@@ -916,13 +967,21 @@
         addImpact(b.x, 742, b.blast);
       }
     });
-    state.bombs = state.bombs.filter((b) => b.life > 0 && b.x < BASE_W + 120);
+    state.bombs = state.bombs.filter((b) => b.life > 0 && b.x > state.camera - 120 && b.x < state.camera + BASE_W + 170);
 
     state.enemies.forEach((enemy) => {
       enemy.phase += dt;
       enemy.hit = Math.max(0, enemy.hit - dt);
+      enemy.eatTimer = Math.max(0, enemy.eatTimer - dt);
+      if (enemy.eatTimer <= 0 && enemy.mood === 'eating') enemy.mood = 'normal';
+      if (enemy.defeated) {
+        enemy.vanishTimer -= dt;
+        enemy.y = enemy.baseY + Math.sin(state.time * 4 + enemy.phase) * 6;
+        return;
+      }
       if (enemy.boss) {
-        enemy.x += (1110 - enemy.x) * Math.min(1, dt * 0.7);
+        const bossTarget = Math.min(WORLD_W - 260, state.camera + 1110);
+        enemy.x += (bossTarget - enemy.x) * Math.min(1, dt * 0.7);
         enemy.y = enemy.baseY + Math.sin(state.time * 1.2) * 18;
       } else {
         enemy.x -= enemy.speed * dt;
@@ -931,7 +990,10 @@
     });
 
     checkCollisions();
-    state.enemies = state.enemies.filter((e) => !e.dead && e.x > -180);
+    state.enemies = state.enemies.filter((e) => {
+      if (e.defeated) return e.vanishTimer > 0;
+      return screenX(e.x) > -220;
+    });
 
     state.powerups.forEach((u) => {
       u.x -= 92 * dt;
@@ -945,7 +1007,7 @@
         updateHud();
       }
     });
-    state.powerups = state.powerups.filter((u) => u.life > 0 && u.x > -60);
+    state.powerups = state.powerups.filter((u) => u.life > 0 && screenX(u.x) > -80);
 
     updateParticles(dt);
     if (Math.random() < dt * 4.4) {
@@ -966,12 +1028,14 @@
 
   function checkCollisions() {
     for (const enemy of state.enemies) {
+      if (enemy.defeated) continue;
       const hitRadius = enemy.size * (enemy.boss ? 0.46 : 0.44);
       for (const s of state.shots) {
         if (s.life > 0 && distance(s.x, s.y, enemy.x, enemy.y) < hitRadius + s.r) {
           s.life = 0;
           enemy.hp -= 1;
           enemy.hit = 0.1;
+          markEating(enemy);
           addImpact(s.x, s.y, 28, 'gold');
           if (enemy.hp <= 0) defeatEnemy(enemy);
         }
@@ -981,6 +1045,7 @@
           b.life = 0;
           enemy.hp -= enemy.boss ? 2 : 3;
           enemy.hit = 0.12;
+          markEating(enemy);
           addImpact(b.x, b.y, b.blast, 'gold');
           if (enemy.hp <= 0) defeatEnemy(enemy);
         }
@@ -989,6 +1054,7 @@
         if (impact.life > impact.max - 0.04 && distance(impact.x, impact.y, enemy.x, enemy.y) < hitRadius + impact.radius * 0.58) {
           enemy.hp -= enemy.boss ? 1 : 2;
           enemy.hit = 0.1;
+          markEating(enemy);
           if (enemy.hp <= 0) defeatEnemy(enemy);
         }
       }
@@ -1011,9 +1077,18 @@
   }
 
   function drawBackground() {
-    const bg = state.assets.bg;
+    const bg = state.assets.scrollBg || state.assets.bg;
     if (bg) {
-      ctx.drawImage(bg, 0, 0, BASE_W, BASE_H);
+      const targetAspect = BASE_W / BASE_H;
+      const wideEnough = bg.width / bg.height > targetAspect + 0.05;
+      if (wideEnough) {
+        const sw = Math.min(bg.width, bg.height * targetAspect);
+        const maxSx = Math.max(0, bg.width - sw);
+        const sx = maxSx * clamp(state.camera / Math.max(1, WORLD_W - BASE_W), 0, 1);
+        ctx.drawImage(bg, sx, 0, sw, bg.height, 0, 0, BASE_W, BASE_H);
+      } else {
+        ctx.drawImage(bg, 0, 0, BASE_W, BASE_H);
+      }
     } else {
       const g = ctx.createLinearGradient(0, 0, 0, BASE_H);
       g.addColorStop(0, '#8ee8f4');
@@ -1026,7 +1101,7 @@
     ctx.globalAlpha = 0.16;
     ctx.fillStyle = '#fff7c8';
     for (let i = 0; i < 6; i += 1) {
-      const x = 120 + i * 260 + Math.sin(state.time * 0.2 + i) * 30;
+      const x = 120 + i * 260 - (state.camera * 0.08 % 260) + Math.sin(state.time * 0.2 + i) * 30;
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x + 90, 0);
@@ -1042,7 +1117,7 @@
     const p = state.player;
     const image = state.assets.player;
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(screenX(p.x), p.y);
     const bob = Math.sin(state.time * 4) * 4;
     if (image) {
       drawCentered(image, 0, bob, 188);
@@ -1095,7 +1170,7 @@
 
   function drawShot(s) {
     ctx.save();
-    ctx.translate(s.x, s.y);
+    ctx.translate(screenX(s.x), s.y);
     const g = ctx.createLinearGradient(-22, 0, 22, 0);
     g.addColorStop(0, 'rgba(255,255,255,0)');
     g.addColorStop(0.45, '#fff7a8');
@@ -1111,7 +1186,7 @@
 
   function drawBomb(b) {
     ctx.save();
-    ctx.translate(b.x, b.y);
+    ctx.translate(screenX(b.x), b.y);
     ctx.shadowColor = '#ffd86e';
     ctx.shadowBlur = 14;
     ctx.fillStyle = '#ffbb48';
@@ -1127,7 +1202,7 @@
 
   function drawPowerup(u) {
     ctx.save();
-    ctx.translate(u.x, u.y);
+    ctx.translate(screenX(u.x), u.y);
     ctx.rotate(state.time * 1.8);
     ctx.shadowColor = '#fff2a8';
     ctx.shadowBlur = 18;
@@ -1152,23 +1227,27 @@
 
   function drawEnemy(enemy) {
     const type = ENEMY_TYPES[enemy.key];
-    const image = state.assets[enemy.key];
+    const image = state.assets[moodAssetKey(enemy)] || state.assets[enemy.key + 'Normal'];
+    const mood = enemyMood(enemy);
     ctx.save();
-    ctx.translate(enemy.x, enemy.y);
+    ctx.translate(screenX(enemy.x), enemy.y);
+    if (enemy.defeated) ctx.globalAlpha = clamp(enemy.vanishTimer / (enemy.boss ? 1.05 : 0.72), 0, 1);
     if (enemy.hit > 0) ctx.filter = 'brightness(1.8)';
     if (image) {
       drawCentered(image, 0, 0, enemy.size * (enemy.boss ? 1.55 : 1.4));
     } else {
-      if (enemy.key === 'hermit') drawHermit(enemy.size);
-      else if (enemy.key === 'shrimp') drawShrimp(enemy.size);
-      else if (enemy.key === 'seaStar') drawSeaStar(enemy.size);
-      else if (enemy.key === 'goby') drawGoby(enemy.size);
-      else if (enemy.key === 'anemone') drawAnemone(enemy.size);
-      else drawHorseshoe(enemy.size);
+      if (enemy.key === 'hermit') drawHermit(enemy.size, mood);
+      else if (enemy.key === 'shrimp') drawShrimp(enemy.size, mood);
+      else if (enemy.key === 'seaStar') drawSeaStar(enemy.size, mood);
+      else if (enemy.key === 'goby') drawGoby(enemy.size, mood);
+      else if (enemy.key === 'anemone') drawAnemone(enemy.size, mood);
+      else drawHorseshoe(enemy.size, mood);
     }
     ctx.filter = 'none';
-    if (enemy.boss) drawBossBar(enemy);
-    else drawSmallHp(enemy, type);
+    if (!enemy.defeated) {
+      if (enemy.boss) drawBossBar(enemy);
+      else drawSmallHp(enemy, type);
+    }
     ctx.restore();
   }
 
@@ -1210,7 +1289,56 @@
     ctx.quadraticCurveTo(x, y, x + r, y);
   }
 
-  function drawHermit(s) {
+  function drawFoodOrb(x, y, r) {
+    ctx.save();
+    ctx.shadowColor = '#fff0a0';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#f5c44d';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.beginPath();
+    ctx.arc(x - r * 0.28, y - r * 0.32, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawClosedEye(x, y, w = 13) {
+    ctx.save();
+    ctx.strokeStyle = '#18394a';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.5, y);
+    ctx.quadraticCurveTo(x, y + 6, x + w * 0.5, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSmile(x, y, w = 24, h = 12) {
+    ctx.save();
+    ctx.strokeStyle = '#8c4725';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.5, y);
+    ctx.quadraticCurveTo(x, y + h, x + w * 0.5, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawOpenMouth(x, y, r = 7) {
+    ctx.save();
+    ctx.fillStyle = '#8b332d';
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.72, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHermit(s, mood) {
     ctx.fillStyle = '#e66d37';
     ctx.strokeStyle = '#8c4725';
     ctx.lineWidth = 4;
@@ -1223,14 +1351,26 @@
     ctx.arc(-20, -10, s * 0.34, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#1c3d4c';
-    ctx.beginPath();
-    ctx.arc(18, -12, 5, 0, Math.PI * 2);
-    ctx.arc(36, -10, 5, 0, Math.PI * 2);
-    ctx.fill();
+    if (mood === 'happy') {
+      drawClosedEye(18, -12, 13);
+      drawClosedEye(36, -10, 13);
+      drawSmile(28, 4, 22, 11);
+    } else {
+      ctx.fillStyle = '#1c3d4c';
+      ctx.beginPath();
+      ctx.arc(18, -12, 5, 0, Math.PI * 2);
+      ctx.arc(36, -10, 5, 0, Math.PI * 2);
+      ctx.fill();
+      if (mood === 'eating') {
+        drawOpenMouth(29, 2, 6);
+        drawFoodOrb(45, 6, s * 0.12);
+      } else {
+        drawSmile(28, 3, 18, 8);
+      }
+    }
   }
 
-  function drawShrimp(s) {
+  function drawShrimp(s, mood) {
     ctx.strokeStyle = '#d45f45';
     ctx.lineWidth = 4;
     ctx.fillStyle = '#ff9e82';
@@ -1242,27 +1382,46 @@
     ctx.moveTo(-28, -4);
     ctx.quadraticCurveTo(-58, -22, -78, -8);
     ctx.stroke();
-    ctx.fillStyle = '#18394a';
-    ctx.beginPath();
-    ctx.arc(25, -10, 5, 0, Math.PI * 2);
-    ctx.fill();
+    if (mood === 'happy') {
+      drawClosedEye(25, -10, 13);
+      drawSmile(29, 6, 20, 9);
+    } else {
+      ctx.fillStyle = '#18394a';
+      ctx.beginPath();
+      ctx.arc(25, -10, 5, 0, Math.PI * 2);
+      ctx.fill();
+      if (mood === 'eating') {
+        drawOpenMouth(32, 3, 6);
+        drawFoodOrb(48, 5, s * 0.12);
+      }
+    }
   }
 
-  function drawSeaStar(s) {
+  function drawSeaStar(s, mood) {
     ctx.fillStyle = '#f78a49';
     ctx.strokeStyle = '#bf6538';
     ctx.lineWidth = 4;
     starPath(0, 0, s * 0.45, s * 0.2, 5);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#10384a';
-    ctx.beginPath();
-    ctx.arc(-9, -4, 4, 0, Math.PI * 2);
-    ctx.arc(9, -4, 4, 0, Math.PI * 2);
-    ctx.fill();
+    if (mood === 'happy') {
+      drawClosedEye(-10, -4, 12);
+      drawClosedEye(10, -4, 12);
+      drawSmile(0, 11, 26, 12);
+    } else {
+      ctx.fillStyle = '#10384a';
+      ctx.beginPath();
+      ctx.arc(-9, -4, 4, 0, Math.PI * 2);
+      ctx.arc(9, -4, 4, 0, Math.PI * 2);
+      ctx.fill();
+      if (mood === 'eating') {
+        drawOpenMouth(0, 10, 7);
+        drawFoodOrb(0, 24, s * 0.13);
+      }
+    }
   }
 
-  function drawGoby(s) {
+  function drawGoby(s, mood) {
     ctx.fillStyle = '#e2bd72';
     ctx.strokeStyle = '#8d6b3d';
     ctx.lineWidth = 4;
@@ -1277,13 +1436,22 @@
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#16394b';
-    ctx.beginPath();
-    ctx.arc(30, -8, 6, 0, Math.PI * 2);
-    ctx.fill();
+    if (mood === 'happy') {
+      drawClosedEye(30, -8, 14);
+      drawSmile(36, 8, 22, 9);
+    } else {
+      ctx.fillStyle = '#16394b';
+      ctx.beginPath();
+      ctx.arc(30, -8, 6, 0, Math.PI * 2);
+      ctx.fill();
+      if (mood === 'eating') {
+        drawOpenMouth(43, 5, 6);
+        drawFoodOrb(61, 6, s * 0.12);
+      }
+    }
   }
 
-  function drawAnemone(s) {
+  function drawAnemone(s, mood) {
     ctx.fillStyle = '#ef6f80';
     ctx.strokeStyle = '#b94d62';
     ctx.lineWidth = 4;
@@ -1298,9 +1466,23 @@
       ctx.quadraticCurveTo(Math.cos(a) * s * 0.36, -s * 0.24, Math.cos(a) * s * 0.45, -s * 0.5 + Math.sin(i) * 8);
       ctx.stroke();
     }
+    if (mood === 'happy') {
+      drawClosedEye(-12, 18, 12);
+      drawClosedEye(12, 18, 12);
+      drawSmile(0, 31, 24, 12);
+    } else if (mood === 'eating') {
+      drawOpenMouth(0, 14, 8);
+      drawFoodOrb(0, -6, s * 0.14);
+    } else {
+      ctx.fillStyle = '#7d3348';
+      ctx.beginPath();
+      ctx.arc(-10, 18, 4, 0, Math.PI * 2);
+      ctx.arc(10, 18, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
-  function drawHorseshoe(s) {
+  function drawHorseshoe(s, mood) {
     ctx.fillStyle = '#8c8051';
     ctx.strokeStyle = '#4d4328';
     ctx.lineWidth = 6;
@@ -1310,11 +1492,21 @@
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#4d4328';
-    ctx.beginPath();
-    ctx.arc(-54, -30, 7, 0, Math.PI * 2);
-    ctx.arc(-40, 18, 7, 0, Math.PI * 2);
-    ctx.fill();
+    if (mood === 'happy') {
+      drawClosedEye(-54, -30, 16);
+      drawClosedEye(-40, 18, 16);
+      drawSmile(-25, 0, 40, 15);
+    } else {
+      ctx.fillStyle = '#4d4328';
+      ctx.beginPath();
+      ctx.arc(-54, -30, 7, 0, Math.PI * 2);
+      ctx.arc(-40, 18, 7, 0, Math.PI * 2);
+      ctx.fill();
+      if (mood === 'eating') {
+        drawOpenMouth(-12, 2, 10);
+        drawFoodOrb(28, 10, s * 0.08);
+      }
+    }
     ctx.strokeStyle = '#d7c884';
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -1332,7 +1524,7 @@
     ctx.strokeStyle = i.kind === 'boss' ? '#ff8b76' : '#fff4a8';
     ctx.lineWidth = 8 * (1 - pct) + 2;
     ctx.beginPath();
-    ctx.arc(i.x, i.y, i.radius * (0.4 + pct * 0.9), 0, Math.PI * 2);
+    ctx.arc(screenX(i.x), i.y, i.radius * (0.4 + pct * 0.9), 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
@@ -1344,7 +1536,7 @@
     state.bubbles.forEach((b) => {
       ctx.globalAlpha = clamp(b.life / b.max, 0, 1);
       ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.arc(screenX(b.x), b.y, b.r, 0, Math.PI * 2);
       ctx.stroke();
     });
     ctx.restore();
@@ -1356,11 +1548,16 @@
     ctx.globalAlpha = 0.09;
     ctx.strokeStyle = '#e6ffff';
     ctx.lineWidth = 2;
+    const offset = -((state.camera * 0.16) % 36);
     for (let y = 140; y < BASE_H; y += 62) {
       ctx.beginPath();
-      for (let x = -20; x <= BASE_W + 20; x += 36) {
+      let first = true;
+      for (let x = offset - 20; x <= BASE_W + 56; x += 36) {
         const yy = y + Math.sin(x * 0.02 + state.time * 1.2 + y) * 4;
-        if (x === -20) ctx.moveTo(x, yy);
+        if (first) {
+          ctx.moveTo(x, yy);
+          first = false;
+        }
         else ctx.lineTo(x, yy);
       }
       ctx.stroke();
@@ -1379,7 +1576,7 @@
   function setTarget(ev) {
     if (state.mode !== 'playing') return;
     const p = pointerToGame(ev);
-    state.player.tx = clamp(p.x, 110, 620);
+    state.player.tx = clamp(state.camera + p.x, PLAYER_MIN_X, PLAYER_MAX_X);
     state.player.ty = clamp(p.y, 150, 735);
   }
 
@@ -1455,7 +1652,7 @@
   });
 
   Promise.all(Object.entries(ASSET).map(([key, src]) => {
-    if (key !== 'bg' && !USE_ALPHA_SPRITES) {
+    if (key !== 'bg' && key !== 'scrollBg' && key !== 'player' && !USE_ALPHA_SPRITES) {
       state.assets[key] = null;
       return Promise.resolve();
     }
