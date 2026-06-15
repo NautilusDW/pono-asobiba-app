@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1137; // v1137: opt-in SW update toast via common/sw-update.js + SKIP_WAITING message handler (no auto-activate; user taps toast to apply)
+const CACHE_VERSION = 1138; // v1138: oto title bluer + bluer drop-shadow, rhythm stage cards compacted (64px min-h, smaller font/padding), rhythm menu footer btns smaller, score-qualifying rhythm runs gate the name-entry form (body.rhythm-namegate) with new "あとで" skip button
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

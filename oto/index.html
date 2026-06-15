@@ -1613,6 +1613,7 @@
   }
   .rhythm-song-choice {
     min-height: 64px;
+    padding: 8px 12px;
     border-radius: 15px;
     border: 3px solid rgba(255,255,255,0.68);
     background: rgba(255,255,255,0.12);
@@ -1626,7 +1627,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 4px;
     position: relative;
   }
   .rhythm-song-choice.locked {
@@ -1648,10 +1649,11 @@
   }
   .rhythm-stage-badge,
   .rhythm-clear-badge {
-    padding: 3px 7px;
+    padding: 2px 6px;
     border-radius: 999px;
     background: rgba(255,255,255,0.18);
     color: rgba(255,255,255,0.9);
+    font-size: 0.62rem;
   }
   .rhythm-song-choice.active .rhythm-stage-badge,
   .rhythm-song-choice.active .rhythm-clear-badge {
@@ -1659,8 +1661,9 @@
     color: #5D4E37;
   }
   .rhythm-song-name {
-    font-size: 1.05rem;
-    line-height: 1.05;
+    font-size: clamp(14px, 1.7vw, 17px);
+    font-weight: 800;
+    line-height: 1.2;
   }
   .rhythm-song-note {
     font-size: 0.72rem;
@@ -1725,11 +1728,13 @@
   }
   .rhythm-menu-btn {
     flex: 1;
-    min-height: 52px;
+    min-width: 100px;
+    min-height: 44px;
+    padding: 8px 18px;
     border: none;
     border-radius: 18px;
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 15px;
     font-weight: 900;
     cursor: pointer;
     touch-action: manipulation;
@@ -1932,6 +1937,44 @@
   .rhythm-result-ranking-view.hidden { display: none; }
   .rhythm-result-main-actions.hidden { display: none; }
   .rhythm-score-summary.hidden { display: none; }
+  /* v1116: ハイスコア入賞時はネームフォームを最優先表示する */
+  body.rhythm-namegate .rhythm-score-summary,
+  body.rhythm-namegate .rhythm-result-main-actions {
+    display: none !important;
+  }
+  body.rhythm-namegate #rhythm-result-ranking-view,
+  body.rhythm-namegate #rhythm-result-ranking-view.hidden {
+    display: flex !important;
+    flex-direction: column;
+  }
+  body.rhythm-namegate .rhythm-name-form {
+    background: rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 16px;
+    margin: 12px 0;
+  }
+  body.rhythm-namegate .rhythm-name-form .rhythm-name-label {
+    font-size: 18px;
+    font-weight: 900;
+    color: #FDE68A;
+  }
+  body.rhythm-namegate .rhythm-back-to-result,
+  body.rhythm-namegate .rhythm-ranking {
+    display: none !important;
+  }
+  .rhythm-name-skip {
+    margin-left: 8px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.85);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
   .rhythm-complete-btn.ranking { background: linear-gradient(135deg, #FCD34D, #F59E0B); color: #5C3A06; }
   .rhythm-back-to-result {
     margin-top: 12px;
@@ -2398,7 +2441,7 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: #A7D8F0;
+    background: #6FA8DC;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     overflow: hidden;
@@ -2422,7 +2465,7 @@
     max-width: 100%;
     height: auto;
     display: block;
-    filter: drop-shadow(0 10px 26px rgba(40, 22, 8, 0.34));
+    filter: drop-shadow(0 4px 18px rgba(30,64,124,0.42)) drop-shadow(0 2px 6px rgba(30,64,124,0.28));
   }
   .intro-btn {
     font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
@@ -3405,6 +3448,7 @@
             <div class="rhythm-name-row">
               <input class="rhythm-name-input" id="rhythm-name-input" type="text" maxlength="8" autocomplete="off" inputmode="text" placeholder="なまえ">
               <button class="rhythm-name-save" type="submit">のこす</button>
+              <button class="rhythm-name-skip" type="button" id="rhythm-name-skip">あとで</button>
             </div>
           </form>
           <div class="rhythm-ranking" id="rhythm-ranking">
@@ -6498,6 +6542,8 @@ function _hideRhythmComplete() {
   if (form) form.classList.add('hidden');
   _rhythm.pendingScoreEntry = null;
   _renderRhythmResultStars(0);
+  // v1116: namegate を確実に解除 (どこから閉じても通常表示に戻す)
+  document.body.classList.remove('rhythm-namegate');
 }
 function _rhythmScoreStars() {
   var total = Math.max(1, RHYTHM_SONG.notes.length);
@@ -6712,6 +6758,12 @@ function _showRhythmComplete(result) {
   }
   _renderRhythmLeaderboard(scoreEntry.key, null, { outsideRank: outsideRank });
   _prepareRhythmNameForm(scoreEntry);
+  // v1116: ハイスコア入賞時はネームフォームを最優先表示 (body class でゲート)
+  if (qualifies) {
+    document.body.classList.add('rhythm-namegate');
+  } else {
+    document.body.classList.remove('rhythm-namegate');
+  }
   if (text) {
     text.textContent = clearedFullSong ? 'ステージ クリア！' : 'パート クリア！';
     text.classList.remove('show'); // v1108: 初期 (900ms 経過まで) は非表示。下の setTimeout で .show
@@ -7761,6 +7813,17 @@ if (rhythmNameForm) rhythmNameForm.addEventListener('submit', function(e) {
   var label = document.getElementById('rhythm-name-label');
   if (label && rank) label.textContent = rank + 'いに のこったよ';
   _renderRhythmLeaderboard(entry.key, entry.id);
+  // v1116: 保存が終わったらネームゲートを解除し通常結果表示に戻す
+  document.body.classList.remove('rhythm-namegate');
+});
+// v1116: 「あとで」ボタンでネームゲートをスキップ (匿名で保存しない)
+var rhythmNameSkip = document.getElementById('rhythm-name-skip');
+if (rhythmNameSkip) rhythmNameSkip.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  document.body.classList.remove('rhythm-namegate');
+  var form = document.getElementById('rhythm-name-form');
+  if (form) form.classList.add('hidden');
 });
 _renderRhythmSongMenu();
 _updateRhythmMenuActions();
