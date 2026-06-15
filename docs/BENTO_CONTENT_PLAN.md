@@ -8,7 +8,7 @@
 
 ## 0. このドキュメントの位置付け
 
-オーナーから「お弁当のコンテンツ数を tier 別に再設計したい」という方針が出た。 既存の [TIER_POLICY.md §12](./TIER_POLICY.md) では `30 食材 / 8-15-30 配分` を採用していたが、 実態 (46 種のおかず + 12 種の飾り + 3 種のごはん) との乖離が大きい。 本ドキュメントは **実装事実 → 新方針 → 差分とアクション** の順に整理し、 Phase 1 (今すぐ) / Phase 2 / Phase 3 のロードマップに落とし込む。
+オーナーから「お弁当のコンテンツ数を tier 別に再設計したい」という方針が出た。 既存の [TIER_POLICY.md §12](./TIER_POLICY.md) では `30 食材 / 8-15-30 配分` を採用していたが、 実態 (46 種のおかず + 11 種の飾り + 3 種のごはん) との乖離が大きい。 本ドキュメントは **実装事実 → 新方針 → 差分とアクション** の順に整理し、 Phase 1 (今すぐ) / Phase 2 / Phase 3 のロードマップに落とし込む。
 
 実装が動いた場合は本ドキュメントを真とし、 [TIER_POLICY.md §12](./TIER_POLICY.md) (古い数字版) を本ドキュメントへのリンクに置き換える運用 (= bento 関連の正本はここ)。
 
@@ -85,7 +85,7 @@ const FREE_SIDE_OKAZU_NAMES = ['キャベツ','プチトマト','たまごやき
 | `rice_base_bear` | くま型 | キャラ箱 (bear系) |
 | `rice_base_cat` | ねこ型 | キャラ箱 (cat系) |
 
-ふりかけご飯 / おにぎり / チャーハン / サンドイッチ は**未実装**。
+**ふりかけご飯**は画像アセットは既存 (`rice_furikake.webp` 等、 [bento/index.html L4017](../bento/index.html) の `RICE` 配列に `'ふりかけごはん'` 定義あり)。 ただしフリーレイアウト用 `riceBases` 配列 (上記 3 種: rice_base_round / bear / cat) には未配置で、 現 UI には出てこない。 **おにぎり / チャーハン / サンドイッチ** は画像アセットも未生成。
 
 ### 1.4 飾り (decor + pick) — 合計 **11 種類**
 
@@ -105,12 +105,12 @@ const FREE_SIDE_OKAZU_NAMES = ['キャベツ','プチトマト','たまごやき
 | id | 形 | 段数 (tierCount) |
 |---|---|---|
 | `box_rect_split` | 仕切り長方形 | 1 |
-| `box_square` | 四角 | 1 |
-| `box_round` | 丸 | 1 |
-| `box_bear` | くま型 | 3 (新方針で 2 に変更予定) |
-| `box_bear_pink` | くまピンク | 3 (同上) |
-| `box_cat_blue` | ねこ青 | 3 (同上) |
-| `box_cat` | ねこ | 3 (同上) |
+| `box_square` | 四角 | 2 |
+| `box_round` | 丸 | 2 |
+| `box_bear` | くま型 | 2 |
+| `box_bear_pink` | くまピンク | 2 |
+| `box_cat_blue` | ねこ青 | 2 |
+| `box_cat` | ねこ | 2 |
 
 ### 1.6 既存の tier 配分 ([common/tier.js L128-148](../common/tier.js))
 
@@ -191,7 +191,7 @@ BOOK_BENTO_NPCS       = ['risu', 'inu', 'shika']
 | **ご飯ベース** | rice_base_round のみ | + bear / cat 形 + **ふりかけご飯** | + **ふりかけお絵かき** (Phase 2) |
 | **飾り (のり系 5)** | **なし** | あり | あり |
 | **飾り (ピック 4)** | あり (要判断) | あり | あり |
-| **お弁当箱** | box_rect_split (1) | + square / round (計 3) | + キャラ箱 4 種 (計 7、 2 段化) |
+| **お弁当箱** | box_rect_split (1 段) | + square / round (計 3、 square/round は 2 段) | + キャラ箱 4 種 (計 7、 キャラ箱も 2 段) |
 | **NPC** | なし | risu / inu / shika (3) | + ahiru / panda / neko (6) |
 
 ご飯の扱いを「飾れる/飾れない」で書き換えた点が、 旧 [TIER_POLICY.md §12](./TIER_POLICY.md) との大きな差分。 旧版は「のり剥奪」概念がなかった。
@@ -204,7 +204,7 @@ BOOK_BENTO_NPCS       = ['risu', 'inu', 'shika']
 
 - [x] 本ドキュメント `docs/BENTO_CONTENT_PLAN.md` を作成し、 [TIER_POLICY.md §12](./TIER_POLICY.md) との関係を「BENTO_CONTENT_PLAN.md が bento の正本、 TIER_POLICY.md §12 は旧版」と明示
 - [ ] **無料からのり剥奪**: [common/tier.js](../common/tier.js) に `FREE_BENTO_DECOR_IDS = []` / `BOOK_BENTO_DECOR_IDS = ['nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile', 'nori_brow_left', 'nori_brow_right', 'ketchup_cheek', 'decor_umeboshi', 'pick_star', 'pick_flower', 'pick_flag', 'pick_heart']` のような配列を追加 + `isBentoDecorUnlocked(id)` を新設。 [bento/index.html](../bento/index.html) の `decorItems` レンダリング側でガード。
-- [ ] **本にふりかけご飯追加**: `riceBases` に `rice_base_furikake_round` 等を追加し `BOOK_BENTO_RICE_IDS` で book 以上に開放。 画像アセット要追加 (新規 1 種)。
+- [ ] **本にふりかけご飯追加**: `riceBases` に `rice_base_furikake_round` 等を追加し `BOOK_BENTO_RICE_IDS` で book 以上に開放。 既存アセット流用 (`rice_furikake.webp` ほか、 `RICE` 配列のものを再利用) で新規画像不要。
 - [ ] sw.js `CACHE_VERSION` bump (現値を確認の上 +1)
 
 ### Phase 2 — 次 PR 以降
@@ -241,12 +241,12 @@ sub 上限を **20** に着地させる場合の追加不足: 上記 +10 種 (= 
 
 | Phase | アセット | 数量 |
 |---|---|---|
-| 1 | `rice_base_furikake_round.png` (ふりかけ載せ済み 丸型) | 1 |
-| 1 | `rice_base_furikake_bear.png` (キャラ箱用 ふりかけ載せ) | 1-2 |
+| 1 | ふりかけご飯 (丸型) | 既存 `rice_furikake.webp` 流用、 新規画像不要 (`riceBases` に新規エントリ追加のみ) |
+| 1 | ふりかけご飯 (キャラ箱用 bear/cat) | 既存アセットの色味流用 or 形違い 1-2 種 (再エントリで対応可) |
 | 2 | ふりかけお絵かき用テクスチャ (粒状ブラシ素材) | 2-3 |
-| 3 | チャーハン版 ベース | 3 (丸/くま/ねこ) |
-| 3 | おにぎり版 (三角) | 1-2 |
-| 3 | サンドイッチ版 | 2-3 |
+| 3 | チャーハン版 ベース | 3 (丸/くま/ねこ) — 新規画像必要 |
+| 3 | おにぎり版 (三角) | 1-2 — 新規画像必要 |
+| 3 | サンドイッチ版 | 2-3 — 新規画像必要 |
 
 ---
 

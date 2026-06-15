@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-15T00:45:07Z - 迷路お邪魔虫の白縁問題詳細解析 (画素単位でhachi/odoke/pyonの白プレマルチプライド確定) + stagingデプロイ反映確認 (CACHE_VERSION 1118 + baseSize/14 staging到達済み、SW残留が原因のユーザー側キャッシュ問題と特定)
+- **タスク**: 迷路お邪魔虫の白縁問題詳細解析 (画素単位でhachi/odoke/pyonの白プレマルチプライド確定) + stagingデプロイ反映確認 (CACHE_VERSION 1118 + baseSize/14 staging到達済み、SW残留が原因のユーザー側キャッシュ問題と特定)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 29
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 17, "Bash": 10, "Read": 2}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-15T00:39:11Z - 迷路お邪魔虫3点改修 (サイズ縮小viewBox/14 + 奥行きdepthScale 0.65-1.0 + 揺れaliveCount≤4トリガ) + クロスレビュー指摘修正 (当たり判定drawR×1.3連動 + _defeatedCreatures.clear() in imgLoadStage) + アルファ全画像調査 (全件OK)
 - **タスク**: 迷路お邪魔虫3点改修 (サイズ縮小viewBox/14 + 奥行きdepthScale 0.65-1.0 + 揺れaliveCount≤4トリガ) + クロスレビュー指摘修正 (当たり判定drawR×1.3連動 + _defeatedCreatures.clear() in imgLoadStage) + アルファ全画像調査 (全件OK)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 6, "Bash": 2}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-14T22:51:03Z - 迷路OPダイアログのテキスト折り返し不具合修正 (op-layout.json lineHeight 1.5化+beat1 3行化, index.html word-break/line-break/text-wrap追加, sw.js 1106→1107)
-- **タスク**: 迷路OPダイアログのテキスト折り返し不具合修正 (op-layout.json lineHeight 1.5化+beat1 3行化, index.html word-break/line-break/text-wrap追加, sw.js 1106→1107)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 4
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 3, "Bash": 1}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
