@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1129; // v1129: maze - stage7 サブタイトル「びっくりボーリング」削除 (ユーザー指示)
+const CACHE_VERSION = 1130; // v1130: maze - stage7 ボウリングピン 描画縮小 (drawH 0.18→0.14) + 揺れトリガを残り3本以下に限定 (当たり判定 r は据え置き)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

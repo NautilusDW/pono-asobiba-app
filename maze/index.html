@@ -7417,7 +7417,7 @@ function _bowlPinMetrics(gs, pin) {
   const img = _bowlBugImg(pin.kind);
   const naturalAspect = img && img.naturalWidth ? (img.naturalWidth / Math.max(1, img.naturalHeight)) : 0.9;
   const aspect = _bowlClamp(naturalAspect, 0.66, 1.28);
-  const drawH = minDim * 0.18 * scale;
+  const drawH = minDim * 0.14 * scale;
   const drawW = drawH * aspect;
   const minHit = BOWL_HIT_R_REL * minDim;
   return {
@@ -8485,7 +8485,11 @@ function _drawBowlScene(gs, now) {
 
   // Pins (sort back-to-front by y for shadow stacking)
   const sorted = gs.pins.slice().sort(function(a, b){ return a.y - b.y; });
-  for (let i = 0; i < sorted.length; i++) _drawBowlPin(gs, sorted[i], now);
+  // v1130: 揺れ (shake/jolt/wobble) は残り3本以下のときのみ発動。1フレーム1回計算。
+  let aliveCount = 0;
+  for (let i = 0; i < gs.pins.length; i++) if (!gs.pins[i].fallen) aliveCount++;
+  const shouldShake = aliveCount <= 3;
+  for (let i = 0; i < sorted.length; i++) _drawBowlPin(gs, sorted[i], now, shouldShake);
 
   if (gs.phase === 'boss' || gs.phase === 'boss_defeat') _drawBowlBoss(gs, now);
 
@@ -9216,19 +9220,22 @@ function _bowlSpikeBurstPath(ctx, points, outerR, innerR) {
   ctx.closePath();
 }
 
-function _drawBowlPin(gs, pin, now) {
+function _drawBowlPin(gs, pin, now, shouldShake) {
   const ctx = gs.ctx;
   const metrics = _bowlPinMetrics(gs, pin);
   const r = metrics.r;
   const img = _bowlBugImg(pin.kind);
   const fp = pin.fallProgress;
-  const shakePower = pin.fallen ? 0 : _bowlClamp(pin.shakePower || 0, 0, 1.2);
-  const shakeWave = pin.fallen ? 0 : Math.sin(now * 0.045 + (pin.shakePhase || 0)) * shakePower;
+  // v1130: 残り3本以下のときのみ shake/jolt/wobble を発動 (shouldShake=true)。
+  // 振幅 (shakePower 自体) は据え置き、ゲートのみ追加。倒れ演出 (pin.fallen) は影響なし。
+  const shakeActive = !pin.fallen && shouldShake !== false;
+  const shakePower = shakeActive ? _bowlClamp(pin.shakePower || 0, 0, 1.2) : 0;
+  const shakeWave = shakeActive ? Math.sin(now * 0.045 + (pin.shakePhase || 0)) * shakePower : 0;
   const standingTilt = pin.fallen ? 0 : _bowlClamp((pin.tilt || 0) + shakeWave * 0.16, -1.05, 1.05);
-  const visualJoltX = pin.fallen ? 0 : (pin.joltX || 0) + shakeWave * r * 0.28;
-  const visualJoltY = pin.fallen ? 0 : (pin.joltY || 0) + Math.abs(shakeWave) * r * 0.055;
+  const visualJoltX = pin.fallen ? 0 : (shakeActive ? (pin.joltX || 0) : 0) + shakeWave * r * 0.28;
+  const visualJoltY = pin.fallen ? 0 : (shakeActive ? (pin.joltY || 0) : 0) + Math.abs(shakeWave) * r * 0.055;
   const squash = pin.fallen ? 0 : _bowlClamp(pin.squash || 0, 0, 0.24);
-  const wobbling = !pin.fallen && (Math.abs(standingTilt) > 0.015 || shakePower > 0.035 || now < (pin.wobbleUntil || 0));
+  const wobbling = !pin.fallen && shakeActive && (Math.abs(standingTilt) > 0.015 || shakePower > 0.035 || now < (pin.wobbleUntil || 0));
   ctx.save();
   ctx.translate(pin.x + visualJoltX, pin.y + visualJoltY);
 
