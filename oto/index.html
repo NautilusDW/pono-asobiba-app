@@ -2276,10 +2276,20 @@
   /* v(dark-result-modal): 結果モーダルを rhythm-menu-panel と同じダークネイビーで統一。
      既存の明るい色定義 (line 1791- 等) を !important で上書きするオーバーライド層。 */
   .rhythm-complete-panel {
-    background: linear-gradient(180deg, rgba(18,35,86,0.97), rgba(12,24,58,0.97)) !important;
+    /* v(confetti-reveal): alpha を 0.97 → 0.90 に下げて背景の rhythm-clear-art (紙吹雪) が
+       パネル中央でも透けるようにし、stage-clear の祝祭感をカード内まで届かせる。 */
+    background: linear-gradient(180deg, rgba(18,35,86,0.90), rgba(12,24,58,0.90)) !important;
     border: 3px solid rgba(255,255,255,0.18) !important;
     color: #F8FAFC !important;
     box-shadow: 0 12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset !important;
+  }
+  /* v(stage-clear-glow): stage クリア時はパネル内側にゴールドのほのかな発光を足し、
+     ダーク化しても「クリアの嬉しさ」が伝わるようにする。 */
+  .rhythm-complete.stage-clear .rhythm-complete-panel {
+    box-shadow:
+      0 0 32px rgba(254,240,138,0.18) inset,
+      0 12px 48px rgba(0,0,0,0.55),
+      0 0 0 1px rgba(255,255,255,0.06) inset !important;
   }
   .rhythm-complete-title {
     color: #FDE68A !important;
@@ -2329,6 +2339,21 @@
   .rhythm-ranking-outside {
     color: #E0E7FF !important;
     background: rgba(255,255,255,0.08) !important;
+  }
+  /* v(dark-result-modal): ランキング rank4+ 行・空行・no-data メッセージは
+     旧ライトパレット (#31506F on rgba(15,58,92,0.07)) のままだとダークネイビー上で
+     ほぼ判読不能になる。明るい白系に切り替えて可読性を確保する。
+     rank-1/2/3 の金銀銅グラデは現状コントラスト OK なので触らない。 */
+  .rhythm-ranking-row {
+    background: rgba(255,255,255,0.08) !important;
+    color: #E0E7FF !important;
+  }
+  .rhythm-ranking-row.empty {
+    background: rgba(255,255,255,0.04) !important;
+    color: rgba(248,250,252,0.42) !important;
+  }
+  .rhythm-ranking-empty {
+    color: rgba(248,250,252,0.6) !important;
   }
 
   /* (rec-bar / 録音 UI は復活させない方針で削除) */

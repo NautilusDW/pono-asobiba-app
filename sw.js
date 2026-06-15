@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1143; // v1143: maze stage7 bowling iPhone SE portrait stage stretch + idle sway cue hidden until final pin | v1142 bento tutorial v3.3.1: drag demo hand positioning fix | v1141: maze stage7 title/status grid row removal, stage-note anchoring, pin sway/shake gates unified to aliveCount===1 | v1140 bento v3.3 security/layout hardening
+const CACHE_VERSION = 1144; // v1144: cache bump | v1143: maze stage7 bowling iPhone SE portrait stage stretch + idle sway cue hidden until final pin | v1142 bento tutorial v3.3.1: drag demo hand positioning fix | v1141: maze stage7 title/status grid row removal, stage-note anchoring, pin sway/shake gates unified to aliveCount===1 | v1140 bento v3.3 security/layout hardening
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
