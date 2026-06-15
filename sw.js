@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1130; // v1130: maze - stage7 ボウリングピン 描画縮小 (drawH 0.18→0.14) + 揺れトリガを残り3本以下に限定 (当たり判定 r は据え置き)
+const CACHE_VERSION = 1131; // v1131: bento tutorial v3.1: box step → game button (これでOK) hook, trim path outset+blink+thicker stroke, bubble つぎへ button removed
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

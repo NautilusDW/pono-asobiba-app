@@ -9589,7 +9589,9 @@ function renderFreeGuidePanel() {
   const actions = document.createElement('div');
   actions.className = 'free-guide-actions';
   if (freeGuideStep === 'box') {
-    actions.appendChild(makeSmallControlButton('これでOK', 'primary', confirmFreeBentoBoxSelection));
+    const okBtn = makeSmallControlButton('これでOK', 'primary', confirmFreeBentoBoxSelection);
+    okBtn.id = 'free-box-confirm'; // v3.1: tutorial の box step がトリムパスで強調するため
+    actions.appendChild(okBtn);
   } else if (freeGuideStep === 'rice') {
     actions.appendChild(makeSmallControlButton('おべんとうばこにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'decor') {
