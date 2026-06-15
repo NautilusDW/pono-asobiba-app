@@ -11270,8 +11270,9 @@ function tutorialAnimateTap(targetEl) {
   const f = tutorialState.fingerEl;
   if (!targetEl) { tutorialHideFinger(); return; }
   const r = targetEl.getBoundingClientRect();
-  const tx = r.left + r.width / 2 - 28;
-  const ty = r.top + r.height / 2 - 28;
+  // v3.2: 手のサイズ 72px に合わせて中心合わせを 28→36 に
+  const tx = r.left + r.width / 2 - 36;
+  const ty = r.top + r.height / 2 - 36;
   f.style.display = 'block';
   f.classList.add('tut-finger--tap');
   f.classList.remove('tut-finger--fast');
