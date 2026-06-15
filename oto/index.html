@@ -1398,7 +1398,7 @@
   body.rhythm-layout .rhythm-fever-bubble {
     /* v1116: 視線がノートのヒットライン (=画面下から約20% 上) に集中するため、
        中央 (50%/50%) では「中途半端」だった。ヒットライン直上に貼り直す。 */
-    left: 50%;
+    left: var(--rhythm-play-center, 61%);
     top: clamp(8px, calc(var(--gh-hit-y, 80%) - 96px), calc(100% - 120px));
     transform: translate(-50%, -50%) scale(0.95);
     opacity: 0.92;
@@ -3049,9 +3049,21 @@
       font-size: clamp(1.08rem, 2.9vw, 1.42rem);
     }
   }
+  body.rhythm-layout #stage {
+    --rhythm-play-left: 22%;
+    --rhythm-play-center: 61%;
+  }
+  body.rhythm-layout .rec-overlay {
+    left: var(--rhythm-play-left, 22%);
+    right: 0;
+    width: auto;
+  }
+  body.rhythm-layout .rec-overlay-msg {
+    white-space: nowrap;
+  }
   body.rhythm-layout .rhythm-hud {
-    left: 61%;
-    top: max(72px, calc(env(safe-area-inset-top) + 72px));
+    left: var(--rhythm-play-center, 61%);
+    top: clamp(72px, calc(var(--gh-hit-y, 80%) - 86px), calc(100% - 96px));
     bottom: auto;
     width: min(44vw, 340px);
     transform: translateX(-50%);
@@ -3061,6 +3073,11 @@
     min-width: 180px;
     max-width: 100%;
     font-size: 0.92rem;
+    white-space: nowrap;
+    transform: none;
+  }
+  body.rhythm-layout.rec-overlay-active .rhythm-hud.show {
+    display: none;
   }
   body.rhythm-layout .rhythm-queue {
     display: none;
@@ -3099,7 +3116,16 @@
 
   /* スマホ横は左コントロール列に余白がないため、リズム案内はボタン上の光と輪っかへ集約 */
   @media (orientation: landscape) and (max-height: 520px) {
-    .rhythm-hud.show { display: none; }
+    body:not(.rhythm-layout) .rhythm-hud.show { display: none; }
+    body.rhythm-layout .rhythm-hud {
+      top: clamp(92px, calc(var(--gh-hit-y, 80%) - 86px), calc(100% - 96px));
+      width: min(56vw, 420px);
+    }
+    body.rhythm-layout .rhythm-hud.show { display: flex; }
+    body.rhythm-layout .rhythm-status {
+      max-width: min(94%, 420px);
+      font-size: clamp(0.74rem, 2.35vw, 0.9rem);
+    }
   }
 
   body.rhythm-layout .instr-btn {
@@ -6512,6 +6538,11 @@ function _ghUpdateLanesGeometry() {
     el.style.setProperty('--gh-road-top', roadTop + 'px');
     el.style.setProperty('--gh-lane-w', '12.5%');
   });
+  if (stage) {
+    stage.style.setProperty('--gh-hit-y', hitY + 'px');
+    stage.style.setProperty('--gh-vanish-y', vanishY + 'px');
+    stage.style.setProperty('--gh-road-top', roadTop + 'px');
+  }
   // 毎フレーム getComputedStyle を回避するため hitY をキャッシュ
   _rhythm._ghHitY = hitY;
   _rhythm._ghTopY = vanishY;
@@ -9393,6 +9424,7 @@ function _showOverlay(num, msg) {
   var nEl = document.getElementById('rec-overlay-num');
   var mEl = document.getElementById('rec-overlay-msg');
   if (!ov) return;
+  document.body.classList.add('rec-overlay-active');
   ov.style.display = 'flex';
   nEl.textContent = num != null ? String(num) : '';
   mEl.textContent = msg || '';
@@ -9402,6 +9434,7 @@ function _showOverlay(num, msg) {
 function _hideOverlay() {
   var ov = document.getElementById('rec-overlay');
   if (ov) ov.style.display = 'none';
+  document.body.classList.remove('rec-overlay-active');
 }
 
 function _showProgress(label, recordingClass) {
