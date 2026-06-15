@@ -14,6 +14,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
+<script src="../js/game-stickers.js"></script>
 <script src="../common/tier.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -7402,6 +7403,9 @@ function _showRhythmComplete(result) {
   var hasNextPart = !!result.hasNextPart;
   var clearedFullSong = RHYTHM_PRACTICE_MODE === 'full';
   if (clearedFullSong) _markRhythmSongCleared(stars);
+  if (clearedFullSong && window.PonoGameStickers) {
+    window.PonoGameStickers.grant({ gameId: 'oto', event: stars >= 3 ? 'perfect' : 'clear' });
+  }
   _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'idle', null, _rhythmPonoLine('clear'));
   var nextStageSong = !hasNextPart ? _nextRhythmStageSong(RHYTHM_BASE_SONG) : null;
   var complete = document.getElementById('rhythm-complete');

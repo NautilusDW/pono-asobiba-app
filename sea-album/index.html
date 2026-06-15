@@ -9,6 +9,7 @@
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="../js/game-stickers.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -772,6 +773,19 @@
       saveAlbum();
       const card = CARDS.find((c) => c.id === id);
       showToast((card ? card.name : 'カード') + 'を アルバムに ついか！');
+      const stickerIds = {
+        shrimp: 'sea_album_shrimp',
+        hermit: 'sea_album_hermit',
+        goby: 'sea_album_goby',
+        horseshoe: 'sea_album_horseshoe'
+      };
+      if (window.PonoGameStickers && stickerIds[id]) {
+        window.PonoGameStickers.grant({
+          gameId: 'sea-album',
+          stickerId: stickerIds[id],
+          event: 'card:' + id
+        });
+      }
     }
   }
 
@@ -808,6 +822,9 @@
     setPrompt('Stage 1 クリア！ アルバムを見てみよう', 4);
     updateHud();
     document.getElementById('finishCopy').textContent = 'スコア ' + state.score + '。浅瀬の生き物をアルバムに登録したよ。';
+    if (window.PonoGameStickers) {
+      window.PonoGameStickers.grant({ gameId: 'sea-album', event: 'clear' });
+    }
     setTimeout(() => { finishOverlay.hidden = false; }, 800);
   }
 

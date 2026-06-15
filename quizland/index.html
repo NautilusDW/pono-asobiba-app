@@ -15,6 +15,7 @@
 <script src="../common/narration.js"></script>
 <script src="../js/quizland-babble.js"></script>
 <script src="../js/animation-player.js"></script>
+<script src="../js/game-stickers.js"></script>
 <script src="./data/questions.js"></script>
 <!-- Layout system (Phase A+B): saved-layout.json applier (always loaded).
      Editor (drag/resize/save) は ?edit=1 のときだけ自動で遅延ロード。 -->
@@ -6303,6 +6304,9 @@ function showResult() {
   }
   if (cleared) {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
+    if (window.PonoGameStickers) {
+      window.PonoGameStickers.grant({ gameId: 'quizland', event: isPerfect ? 'perfect' : 'clear' });
+    }
     playFanfare();
     launchConfetti();
     setTimeout(launchConfetti, 400);

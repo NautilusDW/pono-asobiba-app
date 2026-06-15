@@ -976,6 +976,14 @@ function showSuccessModal() {
 
   const displayMeta = getStageDisplayMeta(currentStageIndex);
   const isLast = currentStageIndex >= STAGES.length - 1;
+  var __stickerKey = '__pono_puzzle_sticker_granted_' + currentStageIndex;
+  if (!window[__stickerKey] && window.PonoGameStickers) {
+    window[__stickerKey] = true;
+    window.PonoGameStickers.grant({
+      gameId: 'puzzle',
+      event: isLast ? 'clear' : 'stage_clear'
+    });
+  }
   if (isLast) {
     modalStageInfo.textContent = 'ぜんぶ クリア！！';
     btnNextStage.classList.add('hidden');

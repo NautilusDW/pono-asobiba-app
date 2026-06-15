@@ -2964,6 +2964,7 @@ body.image-stage-mode .game-wrap {
 <script src="../common/acorns.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
+<script src="../js/game-stickers.js"></script>
 <script src="../common/tier.js"></script>
 <script src="image-runtime.js"></script>
 
@@ -9964,6 +9965,12 @@ function onClear() {
   if (!isImageStage || isOfficial) {
     if (window.incrementStat) window.incrementStat('maze_clears', 1);
     if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
+    if (window.PonoGameStickers) {
+      window.PonoGameStickers.grant({
+        gameId: 'maze',
+        event: stageIdx >= STAGES.length - 1 ? 'clear' : 'stage_clear'
+      });
+    }
   }
   playStageClearMz();
   setTimeout(function() {

@@ -1,0 +1,261 @@
+{
+  "version": 1,
+  "pages": {
+    "quizland": {
+      "title": "フクロウはかせ",
+      "subtitle": "なぞなぞで あつめる シール",
+      "icon": "🦉",
+      "accent": "#7C5CFF",
+      "stickers": [
+        {
+          "id": "quizland_owl_professor",
+          "name": "フクロウはかせ",
+          "img": "assets/images/quizland/owl_professor_guide.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "quizland_question_balloon",
+          "name": "なんだろう",
+          "img": "assets/images/quizland/balloons/ballon_01.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "quizland_final_stamp",
+          "name": "ぜんぶ できたね",
+          "img": "assets/images/quizland/stamps/zenbu_dekita.png",
+          "unlockOn": ["perfect", "clear"]
+        },
+        {
+          "id": "quizland_q5_plate",
+          "name": "だい5もん",
+          "img": "assets/images/quizland/qno_plate_5.png",
+          "unlockOn": ["perfect"]
+        }
+      ]
+    },
+    "maze": {
+      "title": "ランタンのめいろ",
+      "subtitle": "もりの たんけんシール",
+      "icon": "🏮",
+      "accent": "#6C8E3F",
+      "stickers": [
+        {
+          "id": "maze_lantern_trail",
+          "name": "ランタンの みち",
+          "img": "assets/ui/thumb_quiz-sound.webp",
+          "unlockOn": ["stage_clear", "clear"]
+        },
+        {
+          "id": "maze_acorn_bag",
+          "name": "どんぐりぶくろ",
+          "img": "assets/images/maze/gimmicks/donguri/acorn_bag.png",
+          "unlockOn": ["stage_clear", "clear"]
+        },
+        {
+          "id": "maze_glove",
+          "name": "ちからの グローブ",
+          "img": "assets/images/maze/gimmicks/strength/glove_pair_item.png",
+          "unlockOn": ["stage_clear", "clear"]
+        },
+        {
+          "id": "maze_gold_key",
+          "name": "きんの かぎ",
+          "img": "assets/images/maze/flag/gold_key.png",
+          "unlockOn": ["clear"]
+        }
+      ]
+    },
+    "oto": {
+      "title": "おとタッチ",
+      "subtitle": "おんぷと リズムの シール",
+      "icon": "🎵",
+      "accent": "#19A7CE",
+      "stickers": [
+        {
+          "id": "oto_do_key",
+          "name": "ドの ボタン",
+          "img": "assets/images/oto/buttons/btn_note_kana_do.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "oto_mi_key",
+          "name": "ミの ボタン",
+          "img": "assets/images/oto/buttons/btn_note_kana_mi.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "oto_stage_clear",
+          "name": "ステージ クリア",
+          "img": "assets/images/oto/rhythm/stage_clear_burst.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "oto_star_score",
+          "name": "さんぼし",
+          "emoji": "⭐",
+          "unlockOn": ["perfect", "clear"]
+        }
+      ]
+    },
+    "puzzle": {
+      "title": "なかよしパズル",
+      "subtitle": "できあがった えの シール",
+      "icon": "🧩",
+      "accent": "#F2915A",
+      "stickers": [
+        {
+          "id": "puzzle_usagi",
+          "name": "うさぎの なかま",
+          "img": "assets/images/puzzle/partners/partner_usagi.webp",
+          "unlockOn": ["stage_clear", "clear"]
+        },
+        {
+          "id": "puzzle_risu",
+          "name": "りすの なかま",
+          "img": "assets/images/puzzle/partners/partner_risu.webp",
+          "unlockOn": ["stage_clear", "clear"]
+        },
+        {
+          "id": "puzzle_kojika",
+          "name": "こじかの なかま",
+          "img": "assets/images/puzzle/partners/partner_kojika.webp",
+          "unlockOn": ["stage_clear", "clear"]
+        },
+        {
+          "id": "puzzle_fukurou",
+          "name": "フクロウの なかま",
+          "img": "assets/images/puzzle/partners/partner_fukurou.webp",
+          "unlockOn": ["clear"]
+        }
+      ]
+    },
+    "bento": {
+      "title": "いろどりべんとう",
+      "subtitle": "おかずを あつめる シール",
+      "icon": "🍱",
+      "accent": "#F97316",
+      "stickers": [
+        {
+          "id": "bento_tamagoyaki",
+          "name": "たまごやき",
+          "img": "assets/images/bento/cooking/egg/egg_003_done.png",
+          "unlockOn": ["complete", "clear"]
+        },
+        {
+          "id": "bento_carrot",
+          "name": "にんじん",
+          "img": "assets/images/bento/cooking/carrot/carrot_011.png",
+          "unlockOn": ["complete", "clear"]
+        },
+        {
+          "id": "bento_shrimp",
+          "name": "えびフライ",
+          "img": "assets/images/bento/cooking/shrimp/shrimp_003_done.png",
+          "unlockOn": ["complete", "clear"]
+        },
+        {
+          "id": "bento_salmon",
+          "name": "しゃけ",
+          "img": "assets/images/bento/cooking/salmon/salmon_003_done.png",
+          "unlockOn": ["complete", "clear"]
+        }
+      ]
+    },
+    "starparodier": {
+      "title": "スターパロジャー",
+      "subtitle": "うちゅうの シール",
+      "icon": "🚀",
+      "accent": "#7C3AED",
+      "stickers": [
+        {
+          "id": "starparodier_pono_ship",
+          "name": "ポノの きたい",
+          "img": "assets/images/starparodier/player_ship_pono.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "starparodier_power_star",
+          "name": "パワースター",
+          "img": "assets/images/starparodier/power_star.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "starparodier_moon",
+          "name": "月ステージ",
+          "img": "assets/images/starparodier/moon_mid_loop.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "starparodier_galaxy_boss",
+          "name": "ギャラクシー親分",
+          "img": "assets/images/starparodier/galaxy_oyabun_octopus_funny_face.png",
+          "unlockOn": ["clear"]
+        }
+      ]
+    },
+    "undersea-cave": {
+      "title": "海底洞窟",
+      "subtitle": "ひかりと ともだちの シール",
+      "icon": "🌊",
+      "accent": "#0EA5E9",
+      "stickers": [
+        {
+          "id": "undersea_whale",
+          "name": "ねむりくじら",
+          "img": "assets/images/undersea-cave/friend_whale_sleep.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "undersea_octopus",
+          "name": "にこにこタコ",
+          "img": "assets/images/undersea-cave/friend_octopus_happy.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "undersea_food",
+          "name": "ひかりのエサ",
+          "img": "assets/images/undersea-cave/item_food_pellet.png",
+          "unlockOn": ["clear"]
+        },
+        {
+          "id": "undersea_pearl",
+          "name": "しんじゅの かい",
+          "img": "assets/images/undersea-cave/item_pearl_shell.png",
+          "unlockOn": ["clear"]
+        }
+      ]
+    },
+    "sea-album": {
+      "title": "海底アルバム",
+      "subtitle": "しおだまりの いきものシール",
+      "icon": "🐚",
+      "accent": "#0891B2",
+      "stickers": [
+        {
+          "id": "sea_album_shrimp",
+          "name": "エビ",
+          "img": "assets/images/sea-album/stage1/shrimp_happy.png",
+          "unlockOn": ["card:shrimp", "clear"]
+        },
+        {
+          "id": "sea_album_hermit",
+          "name": "ヤドカリ",
+          "img": "assets/images/sea-album/stage1/hermit_crab_happy.png",
+          "unlockOn": ["card:hermit", "clear"]
+        },
+        {
+          "id": "sea_album_goby",
+          "name": "ハゼ",
+          "img": "assets/images/sea-album/stage1/tidepool_goby_happy.png",
+          "unlockOn": ["card:goby", "clear"]
+        },
+        {
+          "id": "sea_album_horseshoe",
+          "name": "カブトガニ",
+          "img": "assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png",
+          "unlockOn": ["card:horseshoe", "clear"]
+        }
+      ]
+    }
+  }
+}

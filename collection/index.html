@@ -203,6 +203,107 @@ body {
 .stamp-status.unlocked { color: #10B981; }
 .stamp-status.locked { color: #D1D5DB; }
 
+/* Game sticker book */
+.sticker-book-shell {
+  display: grid; grid-template-columns: 156px minmax(0, 1fr);
+  gap: 12px; min-height: 0;
+}
+.sticker-page-list {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: calc(100dvh - 122px); overflow-y: auto;
+  padding-right: 2px;
+}
+.sticker-page-btn {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center;
+  gap: 8px; width: 100%;
+  border: 2px solid transparent; border-radius: 14px;
+  background: #FFF8E8; color: #5D4E37;
+  padding: 8px; font-family: inherit; font-weight: 900; text-align: left;
+  cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+}
+.sticker-page-btn.active {
+  background: var(--sticker-accent, #F2915A); color: #fff;
+  border-color: var(--sticker-accent, #F2915A);
+}
+.sticker-page-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: grid; place-items: center; background: rgba(255,255,255,0.72);
+  font-size: 1.35rem; line-height: 1;
+}
+.sticker-page-meta { min-width: 0; }
+.sticker-page-name { font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sticker-page-count { font-size: 0.58rem; opacity: 0.72; margin-top: 1px; }
+.sticker-panel {
+  min-width: 0; background: #FFFDF7; border: 2px solid #FDE68A;
+  border-radius: 18px; padding: 12px;
+}
+.sticker-panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 10px;
+}
+.sticker-panel-title {
+  font-size: 1rem; font-weight: 900; color: #5D4E37; line-height: 1.25;
+}
+.sticker-panel-sub {
+  font-size: 0.68rem; color: #A07B56; font-weight: 700; margin-top: 2px;
+}
+.sticker-progress {
+  flex-shrink: 0; min-width: 76px; text-align: center;
+  border-radius: 999px; background: #fff; border: 2px solid var(--sticker-accent, #F2915A);
+  color: var(--sticker-accent, #F2915A); padding: 6px 10px;
+  font-size: 0.78rem; font-weight: 900;
+}
+.sticker-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+.sticker-card {
+  min-height: 138px; border-radius: 14px; padding: 10px 8px;
+  background: #fff; border: 2px dashed #E9D8C1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; position: relative; overflow: hidden;
+}
+.sticker-card.owned {
+  border-style: solid; border-color: var(--sticker-accent, #F2915A);
+  background: linear-gradient(180deg, #fff, #FFF8E8);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.sticker-card.sparkle::before {
+  content: '✨'; position: absolute; top: 6px; right: 8px;
+  font-size: 1rem;
+}
+.sticker-img {
+  width: 76px; height: 76px; object-fit: contain; display: block;
+  filter: drop-shadow(0 5px 8px rgba(0,0,0,0.12));
+}
+.sticker-emoji { font-size: 3rem; line-height: 1; }
+.sticker-card:not(.owned) .sticker-img,
+.sticker-card:not(.owned) .sticker-emoji {
+  filter: grayscale(1) brightness(0); opacity: 0.22;
+}
+.sticker-name {
+  margin-top: 8px; font-size: 0.72rem; font-weight: 900; color: #5D4E37;
+  line-height: 1.25; max-width: 100%;
+}
+.sticker-card:not(.owned) .sticker-name { color: #B8AA99; }
+.sticker-count {
+  margin-top: 3px; font-size: 0.6rem; font-weight: 900; color: #D97706;
+}
+.sticker-empty {
+  background: #FFF8E8; border-radius: 14px; padding: 16px;
+  color: #8A7460; font-size: 0.78rem; font-weight: 900; text-align: center;
+}
+
+@media (max-width: 720px) {
+  .sticker-book-shell { grid-template-columns: 1fr; }
+  .sticker-page-list {
+    flex-direction: row; max-height: none; overflow-x: auto; overflow-y: hidden;
+    padding: 0 0 4px;
+  }
+  .sticker-page-btn { min-width: 132px; }
+  .sticker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* Furniture section */
 .furn-group-title {
   font-size: 0.9rem; font-weight: 900; color: #F2915A;
@@ -221,6 +322,9 @@ body {
       </button>
       <button class="coll-tab" data-tab="sea">
         <span class="tab-icon">🐠</span><span>うみの いきもの</span>
+      </button>
+      <button class="coll-tab" data-tab="stickers">
+        <span class="tab-icon">📒</span><span>シールちょう</span>
       </button>
       <button class="coll-tab" data-tab="stamp">
         <span class="tab-icon">🏆</span><span>じっせき</span>
@@ -251,6 +355,11 @@ body {
       </div>
     </div>
 
+    <!-- ゲーム別シールちょう -->
+    <div class="coll-section" id="sec-stickers">
+      <div id="game-sticker-book"></div>
+    </div>
+
     <!-- 実績 -->
     <div class="coll-section" id="sec-stamp">
       <div class="stamp-list" id="stamp-list"></div>
@@ -267,6 +376,7 @@ body {
 
 <script src="../common/achievements.js"></script>
 <script src="../room/items.js"></script>
+<script src="../js/game-stickers.js"></script>
 <script>
 'use strict';
 
@@ -307,22 +417,137 @@ body {
 var TAB_TITLES = {
   furn: 'かぐ・かざり',
   sea:  'うみの いきもの',
+  stickers: 'シールちょう',
   stamp: 'じっせき',
 };
 function _updateContentTitle(tabKey) {
   var el = document.getElementById('collContentTitle');
   if (el && TAB_TITLES[tabKey]) el.textContent = TAB_TITLES[tabKey];
 }
+function activateTab(tabKey) {
+  var tab = document.querySelector('.coll-tab[data-tab="' + tabKey + '"]');
+  if (!tab) return;
+  document.querySelectorAll('.coll-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.coll-section').forEach(function(s) { s.classList.remove('active'); });
+  tab.classList.add('active');
+  var sec = document.getElementById('sec-' + tabKey);
+  if (sec) sec.classList.add('active');
+  _updateContentTitle(tabKey);
+}
 document.querySelectorAll('.coll-tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
-    document.querySelectorAll('.coll-tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.coll-section').forEach(function(s) { s.classList.remove('active'); });
-    tab.classList.add('active');
-    var sec = document.getElementById('sec-' + tab.dataset.tab);
-    if (sec) sec.classList.add('active');
-    _updateContentTitle(tab.dataset.tab);
+    activateTab(tab.dataset.tab);
   });
 });
+
+// ===== Game sticker book =====
+(function() {
+  var root = document.getElementById('game-sticker-book');
+  if (!root || !window.PonoGameStickers) return;
+
+  var selectedGame = '';
+  try {
+    var params = new URLSearchParams(location.search);
+    selectedGame = params.get('game') || '';
+  } catch(e) {}
+
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function pageProgress(page, owned) {
+    var stickers = page.stickers || [];
+    var got = stickers.filter(function(s) { return !!owned[s.id]; }).length;
+    return { got: got, total: stickers.length };
+  }
+
+  function render(catalog) {
+    var pages = catalog && catalog.pages ? catalog.pages : {};
+    var ids = Object.keys(pages);
+    if (!ids.length) {
+      root.innerHTML = '<div class="sticker-empty">シールちょうを よみこめませんでした。</div>';
+      return;
+    }
+    if (!selectedGame || !pages[selectedGame]) selectedGame = ids[0];
+
+    var state = window.PonoGameStickers.getState();
+    var navHtml = ids.map(function(id) {
+      var page = pages[id];
+      var owned = ((state.pages || {})[id] || {}).owned || {};
+      var prog = pageProgress(page, owned);
+      var active = id === selectedGame;
+      var style = '--sticker-accent:' + (page.accent || '#F2915A');
+      return '<button type="button" class="sticker-page-btn' + (active ? ' active' : '') + '" data-game="' + esc(id) + '" style="' + style + '">' +
+        '<span class="sticker-page-icon">' + esc(page.icon || '📒') + '</span>' +
+        '<span class="sticker-page-meta">' +
+          '<span class="sticker-page-name">' + esc(page.title || id) + '</span>' +
+          '<span class="sticker-page-count">' + prog.got + ' / ' + prog.total + '</span>' +
+        '</span>' +
+      '</button>';
+    }).join('');
+
+    var page = pages[selectedGame];
+    var owned = ((state.pages || {})[selectedGame] || {}).owned || {};
+    var prog = pageProgress(page, owned);
+    var accent = page.accent || '#F2915A';
+    var stickersHtml = (page.stickers || []).map(function(sticker) {
+      var info = owned[sticker.id];
+      var count = info && info.count ? info.count : 0;
+      var isOwned = count > 0;
+      var media = sticker.img
+        ? '<img class="sticker-img" src="' + esc(window.PonoGameStickers.resolveAsset(sticker.img)) + '" alt="">'
+        : '<div class="sticker-emoji">' + esc(sticker.emoji || '⭐') + '</div>';
+      return '<div class="sticker-card' + (isOwned ? ' owned' : '') + (count >= 3 ? ' sparkle' : '') + '" style="--sticker-accent:' + accent + '">' +
+        media +
+        '<div class="sticker-name">' + (isOwned ? esc(sticker.name || 'シール') : '？？？') + '</div>' +
+        (isOwned ? '<div class="sticker-count">' + (count >= 3 ? 'キラキラ ' : '') + '×' + count + '</div>' : '') +
+      '</div>';
+    }).join('');
+
+    root.innerHTML =
+      '<div class="sticker-book-shell">' +
+        '<div class="sticker-page-list">' + navHtml + '</div>' +
+        '<div class="sticker-panel" style="--sticker-accent:' + accent + '">' +
+          '<div class="sticker-panel-head">' +
+            '<div>' +
+              '<div class="sticker-panel-title">' + esc(page.icon || '📒') + ' ' + esc(page.title || selectedGame) + '</div>' +
+              '<div class="sticker-panel-sub">' + esc(page.subtitle || 'ゲームで あつめる シール') + '</div>' +
+            '</div>' +
+            '<div class="sticker-progress">' + prog.got + ' / ' + prog.total + '</div>' +
+          '</div>' +
+          '<div class="sticker-grid">' + stickersHtml + '</div>' +
+        '</div>' +
+      '</div>';
+
+    root.querySelectorAll('.sticker-page-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        selectedGame = btn.getAttribute('data-game') || selectedGame;
+        render(catalog);
+      });
+    });
+  }
+
+  window.PonoGameStickers.loadCatalog()
+    .then(function(catalog) {
+      render(catalog);
+      try {
+        var params = new URLSearchParams(location.search);
+        if (params.get('tab') === 'stickers') activateTab('stickers');
+      } catch(e) {}
+    })
+    .catch(function() {
+      root.innerHTML = '<div class="sticker-empty">シールちょうを よみこめませんでした。</div>';
+    });
+
+  window.addEventListener('PonoGameStickerGranted', function() {
+    window.PonoGameStickers.loadCatalog().then(render).catch(function(){});
+  });
+})();
 
 // ===== Sea Creatures =====
 var unlockedSea = [];
