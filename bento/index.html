@@ -2973,9 +2973,11 @@ body.bento-complete-open .pono-dropdown {
   position: absolute;
   left: 0; top: 0;
   /* v3.2: 48px(56pxボックス) → 64px(72pxボックス) で子供にも追える大きさへ */
-  width: 72px; height: 72px;
+  /* v3.2.1: clamp 化 — iPhone SE (320px) 等の小型 viewport で palette を遮らないよう、
+     12vw を基準に 48px-80px の範囲に縮減。 font-size も 10vw / 40-64px に追随。 */
+  width: clamp(48px, 12vw, 80px); height: clamp(48px, 12vw, 80px);
   display: flex; align-items: center; justify-content: center;
-  font-size: 64px;
+  font-size: clamp(40px, 10vw, 64px);
   line-height: 1;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
   /* v3.2: 背景に対するコントラスト確保 */
@@ -3152,7 +3154,8 @@ body.bento-complete-open .pono-dropdown {
   overflow: visible;
 }
 .tut-trim-box rect {
-  /* v3.2: 点滅をゆっくり (2000ms) に。 緑 (#34c759) は弁当の暖色/黄ギンガム背景と識別しやすい。 stroke は実線。 */
+  /* v3.2.1: 点滅をゆっくり (2000ms) に。 色は ビビッドな青 (#1E7FD8) — 黄ギンガム背景に対する
+     コントラスト 〜4.8:1 を確保しつつ、 緑 (#34c759) の「成功/完了」誤読リスクを回避。 stroke は実線。 */
   animation: tutTrimBlink 2000ms ease-in-out infinite;
 }
 @keyframes tutTrimBlink {
@@ -11080,6 +11083,10 @@ const tutorialState = {
   maskEl: null,
   tabClickHandler: null,
   renderedStep: null, // last rendered step (to avoid re-binding listeners)
+  // v3.2.1: retry chain timer (tutorialAnimateDragFromElWithRetry) — race condition 回避用
+  _retryTimer: null,
+  paletteObserver: null,
+  _paletteResyncRaf: 0,
 };
 
 function tutorialReadDone() {
@@ -11231,8 +11238,16 @@ function tutorialAnimateDragFromEl(fromEl, toPointOrEl, opts = {}) {
 // v3.2: palette/target が DOM 描画前に null になるケースに備え、最大 20 回 x 50ms (= 1s) リトライ。
 // 引数は (1) 既存のとおり Element / point、 または (2) string(セレクタ) / function(()=>Element|point)
 // どちらでもよい。 タブ切替直後など、 step が変わったら静かに諦める。
+// v3.2.1: tutorialState._retryTimer に setTimeout ID を保存し、 並列チェーン (MutationObserver の
+// 再発火等) で二重指アニメが起動する race condition を解消。 step 遷移検知は関数開始時の
+// originalStep キャプチャで判定。
 function tutorialAnimateDragFromElWithRetry(paletteSelectorOrEl, targetSelectorOrEl, opts = {}, retries = 20) {
-  const startStep = tutorialState && tutorialState.step;
+  // 前回の retry timer を必ずクリア (並列起動を防止)
+  if (tutorialState._retryTimer) {
+    clearTimeout(tutorialState._retryTimer);
+    tutorialState._retryTimer = null;
+  }
+  const originalStep = tutorialState && tutorialState.step;
   function resolveFrom(x) {
     if (!x) return null;
     if (typeof x === 'string') return document.querySelector(x);
@@ -11248,11 +11263,14 @@ function tutorialAnimateDragFromElWithRetry(paletteSelectorOrEl, targetSelectorO
   function attempt(remaining) {
     // step が遷移済みなら諦める (古いタイマーが進行中の step を上書きしないよう)
     if (!tutorialState || !tutorialState.active) return;
-    if (tutorialState.step !== startStep) return;
+    if (tutorialState.step !== originalStep) return;
     const palette = resolveFrom(paletteSelectorOrEl);
     const target = resolveTo(targetSelectorOrEl);
     if ((!palette || !target) && remaining > 0) {
-      setTimeout(() => attempt(remaining - 1), 50);
+      tutorialState._retryTimer = setTimeout(() => {
+        tutorialState._retryTimer = null;
+        attempt(remaining - 1);
+      }, 50);
       return;
     }
     if (!palette || !target) {
@@ -11452,7 +11470,7 @@ function tutorialTrimPath(targetEl, opts = {}) {
   rect.setAttribute('rx', String(opts.radius || 14));
   rect.setAttribute('ry', String(opts.radius || 14));
   rect.setAttribute('fill', 'none');
-  rect.setAttribute('stroke', opts.color || '#34c759');
+  rect.setAttribute('stroke', opts.color || '#1E7FD8');
   rect.setAttribute('stroke-width', String(opts.width || 4.5));
   rect.setAttribute('stroke-linecap', 'round');
   svg.appendChild(rect);
@@ -11557,6 +11575,11 @@ function tutorialAdvance(nextStep) {
   tutorialState.renderedStep = null;
   tutorialResetInactivity();
   tutorialRenderStep();
+  // v3.2.1: step 切替時は前ステップの retry chain も必ず破棄
+  if (tutorialState._retryTimer) {
+    clearTimeout(tutorialState._retryTimer);
+    tutorialState._retryTimer = null;
+  }
 }
 
 // v3 タブクリックを document レベルで委任的に検知する。 既存 click ハンドラは壊さない。
@@ -11588,8 +11611,17 @@ function tutorialUninstallTabHook() {
 }
 // v3.2: .free-item-list (パレット) の子変化を観測。 タブ切替/再描画で palette が消えてから
 // 復元するまでの隙間で finger が「描画ゼロ」になる症状を、 復元検知で再 render することで治す。
+// v3.2.1: 監視対象を body subtree から palette コンテナへ縮小 (feedback loop / 過剰再描画を排除)。
+// 優先: .free-item-list → .right-panel.free-layout-panel → 見つからなければ起動しない。
 function tutorialInstallPaletteObserver() {
   if (tutorialState.paletteObserver) return;
+  const target = document.querySelector('.free-item-list')
+              || document.querySelector('.right-panel.free-layout-panel');
+  if (!target) {
+    // パレットが見つからない時は body subtree を張るより起動しない方が安全
+    // (feedback loop / アイテム配置のたびに再描画されるリスクの方が高い)
+    return;
+  }
   try {
     const obs = new MutationObserver(() => {
       if (!tutorialState.active) return;
@@ -11600,8 +11632,7 @@ function tutorialInstallPaletteObserver() {
         try { tutorialRenderStep(); } catch (_) {}
       });
     });
-    // body 直下から subtree 監視 (パレット root 自体が差し替えられても拾える)
-    obs.observe(document.body, { childList: true, subtree: true });
+    obs.observe(target, { childList: true, subtree: true });
     tutorialState.paletteObserver = obs;
   } catch (_) {}
 }
@@ -11613,6 +11644,11 @@ function tutorialUninstallPaletteObserver() {
   if (tutorialState._paletteResyncRaf) {
     try { cancelAnimationFrame(tutorialState._paletteResyncRaf); } catch (_) {}
     tutorialState._paletteResyncRaf = 0;
+  }
+  // v3.2.1: observer 解除と同時に進行中の retry chain も必ず破棄
+  if (tutorialState._retryTimer) {
+    clearTimeout(tutorialState._retryTimer);
+    tutorialState._retryTimer = null;
   }
 }
 // v3: button/tab/place-driven step renderer.

@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:510-pono-space-lazarus-exact-puzzle-starbrain-medium] Codex: user 指摘「ラザロは4ピースを実際にはめると中央や目横装飾/青ポッチ/突起/緑丸が合体顔と一致しない。生成任せではなくパズルとして組んで確認する。ビッグスターブレインは横長すぎるので横幅を0.7〜0.8程度へ」を受領。ラザロは合体顔マスターから4ピースを派生して一致性を担保し、スターブレインは横長を中程度に抑えて再生成する。 (by Codex)
 - 2026-06-15 - [batch:509-pono-space-lazarus-pattern-starbrain-wide] Codex: user 指摘「ラザロは4つに分かれている時と合体時の顔模様が違うので統一。スターブレインは正方形に近い形ではなく横長に」を受領。`balanced_palette`版の色役割を維持しつつ、ラザロは分割パーツと合体顔の模様が連続するシート、スターブレインは横長シルエットの大型要塞として3スタイル分を追加生成する。 (by Codex)
 - 2026-06-15 - [batch:509-pono-space-lazarus-pattern-starbrain-wide] DONE - Codex: GPT Image 2 built-in imagegen でラザロ3スタイルとスターブレイン3スタイルを追加生成。ラザロは `midboss_split_face_consistent_pattern_style_{a,b,c}_raw.png` として、合体顔をマスター図案にし、分割4パーツ側の目リング/銀帯/緑パネル/青宝石/外周リベット/渦模様が対応するよう再生成。スターブレインは `boss_starbrain_horizontal_style_{a,b,c}_raw.png` として、中央マゼンタコアを残しつつ左右へ長い要塞型へ変更。白背景 raw、ラザロ各 1536x1024 RGB、スターブレインは A 1659x948 / B,C 1774x887 RGB。`contact_sheet_lazarus_consistent_starbrain_horizontal.jpg` で、ラザロ模様統一とスターブレイン横長比率(A約2.7、B/C約3.1)を確認。 (by Codex)
 - 2026-06-15 - [batch:508-pono-space-balanced-enemy-boss-palette] Codex: user 指摘「ザコもラザロも紫で同じ色に見える。扱いが違うので色を分け、ラザロは中ボスとして明るめに目立たせ、スターブレインももう一度カラー設計して作り直す」を受領。既存造形は維持し、ザコ=暗い量産機色、ラザロ=明るい中ボス色、スターブレイン=大型ボス色として3スタイル分を追加生成する。 (by Codex)

@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1134; // v1134: bento tutorial v3.2: trim path slower (2s) + green #34c759, ✊✋ hand demo robust retry up to 1s + larger 64px + z-index 9200
+const CACHE_VERSION = 1135; // v1135: bento tutorial v3.2.1: retry timer leak fixed, observer scoped to palette area, trim color #1E7FD8 (blue for contrast+semantic), hand size clamped
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
