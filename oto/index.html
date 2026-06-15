@@ -2273,6 +2273,64 @@
     }
   }
 
+  /* v(dark-result-modal): 結果モーダルを rhythm-menu-panel と同じダークネイビーで統一。
+     既存の明るい色定義 (line 1791- 等) を !important で上書きするオーバーライド層。 */
+  .rhythm-complete-panel {
+    background: linear-gradient(180deg, rgba(18,35,86,0.97), rgba(12,24,58,0.97)) !important;
+    border: 3px solid rgba(255,255,255,0.18) !important;
+    color: #F8FAFC !important;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06) inset !important;
+  }
+  .rhythm-complete-title {
+    color: #FDE68A !important;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.45) !important;
+  }
+  .rhythm-complete-text {
+    color: #E0E7FF !important;
+    background: rgba(255,255,255,0.08) !important;
+  }
+  .rhythm-score-main {
+    color: #F8FAFC !important;
+  }
+  .rhythm-score-main strong {
+    color: #FDE68A !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  }
+  .rhythm-score-breakdown span {
+    background: rgba(255,255,255,0.08) !important;
+    color: #F8FAFC !important;
+  }
+  .rhythm-score-breakdown b {
+    color: #FDE68A !important;
+  }
+  .rhythm-score-details summary {
+    color: rgba(255,255,255,0.82) !important;
+  }
+  .rhythm-name-form {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.18) !important;
+  }
+  .rhythm-name-label {
+    color: #FBBF24 !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .rhythm-name-input {
+    background: rgba(255,255,255,0.94) !important;
+    color: #1E1B4B !important;
+    border: 2px solid rgba(251,191,36,0.55) !important;
+  }
+  .rhythm-name-skip {
+    background: rgba(255,255,255,0.18) !important;
+    color: #F8FAFC !important;
+  }
+  .rhythm-ranking-title {
+    color: #FDE68A !important;
+  }
+  .rhythm-ranking-outside {
+    color: #E0E7FF !important;
+    background: rgba(255,255,255,0.08) !important;
+  }
+
   /* (rec-bar / 録音 UI は復活させない方針で削除) */
 
 
@@ -2283,7 +2341,11 @@
     position: absolute;
     top: max(12px, env(safe-area-inset-top));
     right: max(16px, env(safe-area-inset-right));
-    z-index: 12;
+    /* v(fix-settings-during-result): rhythm-complete (z-index:19) の backdrop が
+       右上の #oto-settings-btn を覆ってタップ不能になっていた問題の修正。
+       sets-collapsed を rhythm-complete より上 (>=20) に上げて、結果画面表示中も
+       設定ボタンがタップ可能な状態を保つ。 */
+    z-index: 30;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -2313,6 +2375,8 @@
     top: calc(max(12px, env(safe-area-inset-top)) + 56px) !important;
     left: auto !important;
     right: max(16px, env(safe-area-inset-right)) !important;
+    /* v(fix-settings-during-result): rhythm-complete (z-index:19) より上に */
+    z-index: 31 !important;
   }
   .set-trigger {
     width: 52px; height: 52px;

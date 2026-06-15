@@ -2581,6 +2581,13 @@ body.image-stage-mode .game-wrap {
   .encounter-modal .enc-card { width: min(94vw, 720px); }
   .enc-creature img { height: clamp(120px, 24vh, 180px); }
   .enc-dialog { max-height: 22dvh; }
+  .bowl-game {
+    align-items: stretch;
+  }
+  .bowl-game__stage {
+    height: 100%;
+    aspect-ratio: auto;
+  }
   .janken-arena {
     grid-template-columns: 1fr 1fr;
   }
@@ -9320,7 +9327,7 @@ function _drawBowlPin(gs, pin, now, shouldShake) {
     ctx.stroke();
   }
 
-  if (!pin.fallen && pin.swayAmpLane) {
+  if (!pin.fallen && pin.swayAmpLane && shakeActive) {
     ctx.fillStyle = 'rgba(255,255,255,0.56)';
     ctx.beginPath();
     ctx.ellipse(0, r * 0.08, r * 0.54, r * 0.10, 0, 0, Math.PI * 2);

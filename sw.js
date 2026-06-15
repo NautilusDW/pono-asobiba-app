@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1141; // v1141 (旧称 v1138): maze stage7 iPhone SE layout崩れ修正 + 揺れ条件の再確認 — .bowl-game grid を 3行→1行 に縮約 (空 title/status 行除去で iPhone SE 縦の上半分空白解消), .bowl-game__stage-note を .bowl-game__stage の子に移動 (position:absolute の基準を正しい祖先へ), _updateBowlPinMotion sway を aliveCount===1 でゲート (後列3本が常時揺れる真因の除去), shouldShake を aliveCount<=3 から ===1 に統一 (creature shouldBob と整合) | v1140 bento v3.3: critical NPC import proto-pollution patch (Object.create(null)+__proto__/constructor/prototype skip+charId/expr whitelist), Number.isFinite guards on applyNpcPositionStyle (x/y/scale/rotation/opacity), tutorialFirstPaletteItem/tutorialStageCenter wildcard selector scope narrowed, tutTrimDraw resize restart during 1400ms draw phase, NPC transform composition via --npc-scale/--npc-rotation CSS variables to preserve npcBob translateY
+const CACHE_VERSION = 1143; // v1143: maze stage7 bowling iPhone SE portrait stage stretch + idle sway cue hidden until final pin | v1142 bento tutorial v3.3.1: drag demo hand positioning fix | v1141: maze stage7 title/status grid row removal, stage-note anchoring, pin sway/shake gates unified to aliveCount===1 | v1140 bento v3.3 security/layout hardening
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
