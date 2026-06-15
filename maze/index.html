@@ -2142,10 +2142,11 @@ body.image-stage-mode .game-wrap {
 /* ===== Bikkuri Bowling Mini-Game (kumo encounter, 3D lane + boss rush) v1059 ===== */
 .bowl-game {
   display: grid;
-  grid-template-rows: auto minmax(300px, 1fr) auto;
+  /* v1138: title/status DOM 削除に追従し1行 grid に縮約 (上部空白の原因解消) */
+  grid-template-rows: minmax(300px, 1fr);
   align-items: center;
   justify-self: center;
-  gap: 8px;
+  gap: 0;
   width: min(94vw, 760px);
   max-width: 100%;
   min-height: min(76dvh, 560px);
@@ -2522,8 +2523,9 @@ body.image-stage-mode .game-wrap {
     font-size: 0.82rem;
   }
   .bowl-game {
-    grid-template-rows: 1.35em minmax(170px, 1fr) 1.1em;
-    gap: 4px;
+    /* v1138: iPhone SE 縦持ちで上半分が空白になっていた問題の修正 (空 title/status 行除去) */
+    grid-template-rows: minmax(170px, 1fr);
+    gap: 0;
     width: min(88vw, 620px);
     min-height: min(82dvh, 285px);
   }
@@ -7492,6 +7494,10 @@ function _preloadBowlBugPins(gs) {
 
 function _updateBowlPinMotion(gs, now) {
   if (!gs || gs.reducedMotion) return;
+  // v1138: 揺れ/sway は「最後の1本」のみ。それ以前 (= 後列3本が常時揺れて見える原因) は静止。
+  let aliveCount = 0;
+  for (let i = 0; i < gs.pins.length; i++) if (!gs.pins[i].fallen) aliveCount++;
+  if (aliveCount !== 1) return;
   for (let i = 0; i < gs.pins.length; i++) {
     const p = gs.pins[i];
     if (!p || p.fallen || !p.swayAmpLane) continue;
@@ -7652,6 +7658,7 @@ function _showBowlGame(c) {
 
   const wrap = document.createElement('div');
   wrap.className = 'bowl-game';
+  // v1138: stage-note は stage の子に置く (position:absolute が .bowl-game__stage を基準に解決される)
   wrap.innerHTML =
     '<div class="bowl-game__stage" id="bowlStage">' +
       '<canvas class="bowl-game__canvas" id="bowlCanvas" aria-label="どんぐりを ころがして おじゃま虫を たおすゲーム"></canvas>' +
@@ -7662,8 +7669,8 @@ function _showBowlGame(c) {
           '<button class="bowl-game__boss-intro-btn" id="bowlBossIntroBtn" type="button">タップ スタート ▶</button>' +
         '</div>' +
       '</div>' +
-    '</div>' +
-    '<div class="bowl-game__stage-note">下から上へ なぞって はなそう！</div>';
+      '<div class="bowl-game__stage-note">下から上へ なぞって はなそう！</div>' +
+    '</div>';
   encStageEl.innerHTML = '';
   encStageEl.appendChild(wrap);
 
@@ -8486,10 +8493,10 @@ function _drawBowlScene(gs, now) {
 
   // Pins (sort back-to-front by y for shadow stacking)
   const sorted = gs.pins.slice().sort(function(a, b){ return a.y - b.y; });
-  // v1130: 揺れ (shake/jolt/wobble) は残り3本以下のときのみ発動。1フレーム1回計算。
+  // v1138: 揺れ (shake/jolt/wobble) は残り1本のときのみ発動 (creature shouldBob と整合)。
   let aliveCount = 0;
   for (let i = 0; i < gs.pins.length; i++) if (!gs.pins[i].fallen) aliveCount++;
-  const shouldShake = aliveCount <= 3;
+  const shouldShake = aliveCount === 1;
   for (let i = 0; i < sorted.length; i++) _drawBowlPin(gs, sorted[i], now, shouldShake);
 
   if (gs.phase === 'boss' || gs.phase === 'boss_defeat') _drawBowlBoss(gs, now);
@@ -9227,7 +9234,7 @@ function _drawBowlPin(gs, pin, now, shouldShake) {
   const r = metrics.r;
   const img = _bowlBugImg(pin.kind);
   const fp = pin.fallProgress;
-  // v1130: 残り3本以下のときのみ shake/jolt/wobble を発動 (shouldShake=true)。
+  // v1138: 残り1本のときのみ shake/jolt/wobble を発動 (shouldShake=true)。
   // 振幅 (shakePower 自体) は据え置き、ゲートのみ追加。倒れ演出 (pin.fallen) は影響なし。
   const shakeActive = !pin.fallen && shouldShake !== false;
   const shakePower = shakeActive ? _bowlClamp(pin.shakePower || 0, 0, 1.2) : 0;
