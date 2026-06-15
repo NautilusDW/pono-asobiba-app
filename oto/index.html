@@ -3630,6 +3630,168 @@
       white-space: nowrap;
     }
   }
+  .rhythm-battle-panel {
+    display: none;
+  }
+  body.rhythm-layout .rhythm-battle-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 22%;
+    z-index: 6;
+    display: grid;
+    grid-template-rows: minmax(0, 1.04fr) minmax(0, 0.96fr);
+    gap: clamp(6px, 1.8cqh, 12px);
+    padding: clamp(8px, 2.2cqh, 18px) clamp(6px, 1.5cqw, 12px) clamp(10px, 2.8cqh, 20px);
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 18% 16%, rgba(167,139,250,0.24), transparent 36%),
+      radial-gradient(circle at 86% 88%, rgba(45,212,191,0.18), transparent 32%),
+      linear-gradient(180deg, rgba(49,31,106,0.72), rgba(6,38,54,0.76));
+    border-right: 1px solid rgba(125,211,252,0.18);
+    box-shadow: inset -18px 0 30px rgba(2,6,23,0.24);
+  }
+  body.rhythm-layout .mode-switch,
+  body.rhythm-layout .chord-pill,
+  body.rhythm-layout .sound-sets-box,
+  body.rhythm-layout .band-group {
+    display: none !important;
+  }
+  .rhythm-rival-card,
+  .rhythm-pono-card {
+    position: relative;
+    min-height: 0;
+    border: 2px solid rgba(226,232,240,0.72);
+    border-radius: clamp(12px, 2.8cqh, 18px);
+    background:
+      linear-gradient(180deg, rgba(15,23,42,0.74), rgba(15,23,42,0.44)),
+      rgba(8,13,32,0.58);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.2),
+      0 8px 18px rgba(0,0,0,0.22);
+    overflow: hidden;
+  }
+  .rhythm-rival-kicker,
+  .rhythm-pono-kicker {
+    position: absolute;
+    left: 50%;
+    top: clamp(5px, 1.5cqh, 9px);
+    transform: translateX(-50%);
+    z-index: 2;
+    padding: 2px 9px 3px;
+    border-radius: 999px;
+    background: rgba(2,6,23,0.64);
+    border: 1px solid rgba(255,255,255,0.5);
+    color: #E0F2FE;
+    font-size: clamp(0.58rem, 2cqh, 0.76rem);
+    line-height: 1;
+    white-space: nowrap;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.35);
+  }
+  .rhythm-rival-name {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    top: clamp(27px, 7cqh, 42px);
+    z-index: 2;
+    padding: 4px 6px 5px;
+    border-radius: 10px;
+    background: rgba(2,6,23,0.58);
+    color: #FEF3C7;
+    font-size: clamp(0.72rem, 2.5cqh, 0.98rem);
+    line-height: 1.04;
+    text-align: center;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.42);
+  }
+  .rhythm-rival-art {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-size: auto 100%;
+    background-position: var(--rival-sheet-pos, 0% 50%);
+    filter: saturate(1.08) contrast(1.04);
+    transform: scale(1.02);
+  }
+  .rhythm-rival-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(2,6,23,0.2), transparent 42%, rgba(2,6,23,0.54)),
+      radial-gradient(circle at 50% 96%, rgba(34,211,238,0.2), transparent 48%);
+    z-index: 1;
+  }
+  .rhythm-rival-line,
+  .rhythm-pono-line {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: clamp(7px, 1.9cqh, 12px);
+    z-index: 3;
+    min-height: clamp(31px, 8.2cqh, 46px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 8px;
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,0.76);
+    color: #fff;
+    background: rgba(4,120,87,0.78);
+    font-size: clamp(0.66rem, 2.35cqh, 0.92rem);
+    line-height: 1.08;
+    text-align: center;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.42);
+  }
+  .rhythm-rival-line {
+    background: rgba(126,34,206,0.76);
+  }
+  .rhythm-pono-card {
+    background:
+      radial-gradient(circle at 52% 42%, rgba(52,211,153,0.2), transparent 38%),
+      linear-gradient(180deg, rgba(15,23,42,0.5), rgba(8,47,73,0.64));
+  }
+  .rhythm-pono-card::before {
+    content: '';
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    top: 18%;
+    height: 54%;
+    border-radius: 999px;
+    background: radial-gradient(ellipse at 50% 72%, rgba(16,185,129,0.22), transparent 66%);
+    filter: blur(2px);
+  }
+  body.rhythm-layout .pono-wrap {
+    left: 11% !important;
+    top: clamp(270px, 58cqh, 410px) !important;
+    width: clamp(80px, 24cqh, 118px) !important;
+    height: clamp(82px, 25cqh, 124px) !important;
+    z-index: 8;
+  }
+  body.rhythm-layout .pono-sprite {
+    height: clamp(78px, 24cqh, 116px) !important;
+  }
+  @media (orientation: landscape) and (max-height: 520px) {
+    body.rhythm-layout .rhythm-battle-panel {
+      gap: 5px;
+      padding-top: 6px;
+      padding-bottom: 8px;
+    }
+    body.rhythm-layout .pono-wrap {
+      top: clamp(220px, 57cqh, 300px) !important;
+    }
+    .rhythm-rival-name {
+      top: 27px;
+      font-size: clamp(0.62rem, 2.3cqh, 0.8rem);
+    }
+    .rhythm-rival-line,
+    .rhythm-pono-line {
+      min-height: 29px;
+      padding: 4px 7px;
+      font-size: clamp(0.58rem, 2.1cqh, 0.76rem);
+    }
+  }
 </style>
 </head>
 <body>
@@ -3665,6 +3827,19 @@
     <!-- ポノ (中層) — ラッパーで位置決めし、img は高さ固定 + 幅 auto で中央寄せ -->
     <div class="pono-wrap">
       <img id="pono" class="pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
+    </div>
+
+    <div class="rhythm-battle-panel" id="rhythm-battle-panel" aria-hidden="true">
+      <section class="rhythm-rival-card" aria-hidden="true">
+        <div class="rhythm-rival-art" id="rhythm-rival-art"></div>
+        <div class="rhythm-rival-kicker">ライバル</div>
+        <div class="rhythm-rival-name" id="rhythm-rival-name">DJ ケロック</div>
+        <div class="rhythm-rival-line" id="rhythm-rival-line">この リズム できるケロ？</div>
+      </section>
+      <section class="rhythm-pono-card" aria-hidden="true">
+        <div class="rhythm-pono-kicker">ポノ</div>
+        <div class="rhythm-pono-line" id="rhythm-pono-line">いくよ！</div>
+      </section>
     </div>
 
 
@@ -4942,6 +5117,47 @@ var RHYTHM_SCORE_STAR_BONUS = 1000;
 var RHYTHM_SCORE_NOMISS_BONUS = 1500;
 var RHYTHM_SCORE_FULL_BONUS = 1000;
 var RHYTHM_SCORE_MAX_COMBO_BONUS = 50;
+var RHYTHM_RIVALS = {
+  easy: {
+    key: 'kerock',
+    name: 'DJ ケロック',
+    sheet: '../assets/images/oto/rhythm/rivals/dj_kerock_opening_3panel.png',
+    lines: {
+      idle: 'この リズム できるケロ？',
+      attack: 'ノートを おとすケロ！',
+      defeat: 'ケロッ おぼえたなー！'
+    }
+  },
+  normal: {
+    key: 'neji',
+    name: 'ネジマエストロ',
+    sheet: '../assets/images/oto/rhythm/rivals/neji_maestro_opening_3panel.png',
+    lines: {
+      idle: 'つぎは ねじまき リズムだ！',
+      attack: 'ギアの ノートを まわせ！',
+      defeat: 'ネジが まけちゃった！'
+    }
+  },
+  hard: {
+    key: 'gaohn',
+    name: 'ビートキング ガオーン',
+    sheet: '../assets/images/oto/rhythm/rivals/beat_king_gaohn_opening_3panel.png',
+    lines: {
+      idle: 'さいごの ビートだ！',
+      attack: 'ぜんぶ うけてみろ！',
+      defeat: 'くやしい でも みとめる！'
+    }
+  }
+};
+var RHYTHM_RIVAL_STATE_POS = {
+  idle: '0% 50%',
+  attack: '50% 50%',
+  defeat: '100% 50%'
+};
+Object.keys(RHYTHM_RIVALS).forEach(function(key) {
+  var im = new Image();
+  im.src = RHYTHM_RIVALS[key].sheet;
+});
 var _playMode = 'free';
 var _rhythm = {
   enabled: false,
@@ -5003,6 +5219,47 @@ var RHYTHM_DEMO_SEEN_KEY = 'pono_oto_rhythm_demo_seen_v1';
 var RHYTHM_PROGRESS_KEY = 'pono_oto_rhythm_progress_v1';
 var RHYTHM_SCORE_KEY = 'pono_oto_rhythm_scores_v1';
 var RHYTHM_SCORE_NAME_KEY = 'pono_oto_rhythm_score_name_v1';
+
+function _rhythmRivalKeyForSong(song) {
+  var diff = (song && (song.difficulty || song.note)) || 'かんたん';
+  if (diff === 'むずかしめ') return 'hard';
+  if (diff === 'ふつう') return 'normal';
+  return 'easy';
+}
+function _currentRhythmRival() {
+  return RHYTHM_RIVALS[_rhythmRivalKeyForSong(RHYTHM_BASE_SONG)] || RHYTHM_RIVALS.easy;
+}
+function _rhythmPonoLine(kind, judge) {
+  if (kind === 'clear') return 'やったね！';
+  if (kind === 'miss') return 'だいじょうぶ！';
+  if (kind === 'demo') return 'みて おぼえよう';
+  if (judge && judge.key === 'just') return 'ぴったり！';
+  if (judge && judge.key === 'nice') return 'いいね！';
+  if (judge && (judge.key === 'good' || judge.key === 'ok')) return 'そのちょうし！';
+  if (_rhythm.streak >= 8) return 'フィーバー！';
+  if (_rhythm.streak >= 4) return 'れんぞく！';
+  return 'いくよ！';
+}
+function _updateRhythmBattlePanel(state, lineOverride, ponoLine) {
+  var panel = document.getElementById('rhythm-battle-panel');
+  if (!panel) return;
+  var rival = _currentRhythmRival();
+  state = state || 'idle';
+  if (!RHYTHM_RIVAL_STATE_POS[state]) state = 'idle';
+  panel.dataset.rival = rival.key;
+  panel.dataset.state = state;
+  var art = document.getElementById('rhythm-rival-art');
+  if (art) {
+    art.style.backgroundImage = 'url("' + rival.sheet + '")';
+    art.style.setProperty('--rival-sheet-pos', RHYTHM_RIVAL_STATE_POS[state]);
+  }
+  var name = document.getElementById('rhythm-rival-name');
+  if (name) name.textContent = rival.name;
+  var line = document.getElementById('rhythm-rival-line');
+  if (line) line.textContent = lineOverride || rival.lines[state] || rival.lines.idle;
+  var pono = document.getElementById('rhythm-pono-line');
+  if (pono) pono.textContent = ponoLine || _rhythmPonoLine();
+}
 
 function _rhythmSongStage(song) {
   if (!song) return 1;
@@ -5297,18 +5554,21 @@ function _selectRhythmSong(id) {
   _refreshRhythmSong();
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
+  _updateRhythmBattlePanel('idle');
 }
 function _setRhythmPracticeMode(mode) {
   RHYTHM_PRACTICE_MODE = mode === 'full' ? 'full' : 'block';
   _refreshRhythmSong();
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
+  _updateRhythmBattlePanel('idle');
 }
 function _setRhythmSection(index) {
   RHYTHM_SECTION_INDEX = Math.max(0, index || 0);
   _refreshRhythmSong();
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
+  _updateRhythmBattlePanel('idle');
 }
 function _rhythmHasNextSection() {
   var sections = _rhythmSections(RHYTHM_BASE_SONG);
@@ -5510,6 +5770,9 @@ function _recordRhythmMiss() {
   _rhythm.streak = 0;
   _rhythm.misses++;
   _clearRhythmFever();
+  if (document.body.classList.contains('rhythm-layout')) {
+    _updateRhythmBattlePanel('attack', null, _rhythmPonoLine('miss'));
+  }
 }
 function _spawnRhythmJudgePop(laneIdx, judge, addedScore, btn) {
   judge = judge || { key: 'miss', label: 'ミス', points: 0 };
@@ -6951,6 +7214,9 @@ function _hideRhythmComplete() {
   if (form) form.classList.add('hidden');
   _rhythm.pendingScoreEntry = null;
   _renderRhythmResultStars(0);
+  if (!_rhythm.enabled && document.body.classList.contains('rhythm-layout')) {
+    _updateRhythmBattlePanel('idle');
+  }
   // v1116: namegate を確実に解除 (どこから閉じても通常表示に戻す)
   document.body.classList.remove('rhythm-namegate');
 }
@@ -7136,6 +7402,7 @@ function _showRhythmComplete(result) {
   var hasNextPart = !!result.hasNextPart;
   var clearedFullSong = RHYTHM_PRACTICE_MODE === 'full';
   if (clearedFullSong) _markRhythmSongCleared(stars);
+  _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'idle', null, _rhythmPonoLine('clear'));
   var nextStageSong = !hasNextPart ? _nextRhythmStageSong(RHYTHM_BASE_SONG) : null;
   var complete = document.getElementById('rhythm-complete');
   var title = document.getElementById('rhythm-complete-title');
@@ -7351,6 +7618,7 @@ function _startRhythmMode() {
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
   _setRhythmStatus('いちばん したまで きたら タッチ！', null, 'hint');
+  _updateRhythmBattlePanel('attack', null, 'いくよ！');
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   // リズム用サンプル SE: 未ロードならフェッチ開始、AC 作成後に再デコードを試みる。
@@ -7792,6 +8060,7 @@ function _startRhythmDemo(thenStart) {
   _rhythm.idx = 0;
   _rhythm.streak = 0;
   _rhythm.nowCue = false;
+  _updateRhythmBattlePanel('attack', null, _rhythmPonoLine('demo'));
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
   _setRhythmStatus('おてほん 3,2,1', null);
@@ -7810,6 +8079,7 @@ function _beginRhythmCountdown() {
   _clearRhythmDemo(true);
   _hideRhythmComplete();
   _setModeButtons('rhythm');
+  _updateRhythmBattlePanel('attack', null, 'いくよ！');
   // 1ノート目の速度は変えず、遠すぎる非表示区間だけ省いて「スタート!」直後から見せる。
   _rhythm.prevBandVolume = _bandVolume;
   var ac = getAC();
@@ -7884,6 +8154,7 @@ function _showRhythmMenu() {
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
   _setModeButtons('rhythm');
+  _updateRhythmBattlePanel('idle');
   var menu = document.getElementById('rhythm-menu');
   if (menu) {
     menu.setAttribute('data-step', 'song'); // v1108: 開く度に step1 (曲えらび) から
@@ -7961,6 +8232,9 @@ function _stopRhythmMode() {
 function _setModeButtons(mode) {
   document.body.classList.toggle('rhythm-layout', mode === 'rhythm');
   if (mode === 'rhythm') _gh3DEnsure();
+  if (mode === 'rhythm') {
+    _updateRhythmBattlePanel(_rhythm.enabled || _rhythm.demoActive ? 'attack' : 'idle');
+  }
   document.querySelectorAll('.mode-btn').forEach(function(btn) {
     var active = btn.dataset.mode === mode;
     btn.classList.toggle('active', active);
@@ -8008,6 +8282,7 @@ function handleRhythmTap(idx, btn) {
         _playRhythmBlockSfx('miss', laneIdx);
         _ghFlashLane(laneIdx, 'miss');
         _pulseRhythmButton(btn, 'rhythm-miss');
+        _updateRhythmBattlePanel('attack', null, _rhythmPonoLine('miss'));
       }
       return;
     }
@@ -8015,6 +8290,7 @@ function handleRhythmTap(idx, btn) {
     if (delta < -RHYTHM_OK_MS) {
       // まだ早すぎ → ノートは残す
       _setRhythmStatus('もうすこし', 'warn');
+      _updateRhythmBattlePanel('attack', null, 'もうすこし！');
       return;
     }
     var abs = Math.abs(delta);
@@ -8037,6 +8313,7 @@ function handleRhythmTap(idx, btn) {
     } else {
       _setRhythmStatus(judge.label, 'warn');
     }
+    _updateRhythmBattlePanel('attack', null, _rhythmPonoLine(null, judge));
     _ghSpawnHitFlash(laneIdx);
     _ghSpawnNotePop(best, judge);
     if (judge.key === 'just' || judge.key === 'nice' || judge.key === 'good') {
