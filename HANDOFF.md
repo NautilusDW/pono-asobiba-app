@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:530-bento-result-detail-page-tab-bubble] Codex: user 指摘「小さいおかずタブ案内が画角によって遠い、完成画面下部の分析カードは窮屈なので完成/動物リアクション後の別ページに分けたい」を受領。HANDOFF / git log / `bento/index.html` を確認し、タブ近接 bubble と完成詳細ページ分離を作業中。 (by Codex)
+- 2026-06-15 - [batch:530-bento-result-detail-page-tab-bubble] DONE - Codex: full-flow tutorial の `ちいさい おかず` タブ案内を対象タブ横へ再配置。完成画面は動物リアクション/お気に入りの結果ページと、`くわしい けっか` 詳細ページに分離し、赤/黄/緑 + おねがい/3グループ/いろんなおかずの6カードは詳細ページで3列×2段表示に変更。`sw.js` v1165。inline script parse / `node --check sw.js` / diff check / Playwright 896x432・768x579 でタブ近接、結果ページ、詳細ページ、戻る、2段カード表示を確認。レビュー観点: tutorial bubble placement、result/detail page state、low landscape card sizing、既存未コミット undersea/starparodier 差分非接触を自己確認。 (by Codex)
 - 2026-06-15 - [batch:531-starparodier-se-lazarus-fix] Codex: user 指摘「SEが全然出てない、ラザロが弾を発射しない、ラザロが弱すぎるので体力を倍ぐらい」を受領。既存の bento/undersea/HANDOFF 未コミット差分を保持し、`starparodier/index.html` と cache bump のみ修正予定。 (by Codex)
 - 2026-06-15 - [batch:531-starparodier-se-lazarus-fix] DONE - Codex: Starparodier の WebAudio SE を開始ボタン pointerdown / canvas pointerdown / keydown で明示アンロックし、master gain と各SE gainを実用音量へ引き上げ。ラザロ分割HPは64へ倍増、合体時間を少し延ばし、分割ラザロは見えやすい紫泡弾をプレイヤー方向へ発射するよう修正。`sw.js` / `play.html` は v1164。inline script parse / `node --check sw.js` / `git diff --check` / Playwright 896x432 で audio context running・master 0.62・ラザロHP64・敵弾生成・合体後ダメージを確認。レビュー観点: 音声アンロック、SE音量、ラザロ弾の視認性、HP/合体猶予、既存未コミット差分非接触を自己確認。 (by Codex)
 - 2026-06-15 - [batch:531-starparodier-se-lazarus-fix] Codex: user 指摘「SEが全然出てない、ラザロが弾を発射しない、ラザロが弱すぎるので体力を倍ぐらい」を受領。既存の bento/undersea/HANDOFF 未コミット差分を保持し、`starparodier/index.html` と cache bump のみ修正予定。 (by Codex)

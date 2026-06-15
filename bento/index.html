@@ -3339,6 +3339,17 @@ body.bento-complete-open .pono-dropdown {
   flex: 1 1 auto;
   min-height: 0;
 }
+.complete-result-page {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.complete-result-page.hidden,
+.complete-detail-page.hidden {
+  display: none;
+}
 .complete-left {
   flex: 1 1 auto;
   width: auto;
@@ -3401,9 +3412,9 @@ body.bento-complete-open .pono-dropdown {
 .complete-summary-strip {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 2px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 0;
   flex: 0 0 auto;
 }
 .complete-summary-strip .balance-row,
@@ -3413,15 +3424,59 @@ body.bento-complete-open .pono-dropdown {
 .complete-summary-strip .balance-item,
 .complete-summary-strip .complete-check {
   min-width: 0;
-  min-height: clamp(48px, 8.4vh, 68px);
-  padding: 6px 7px;
-  gap: 5px;
+  min-height: clamp(82px, 18vh, 128px);
+  padding: 12px 14px;
+  gap: 10px;
 }
 .complete-summary-strip .balance-item {
   justify-content: flex-start;
 }
 .complete-summary-strip .balance-item-role {
-  font-size: 0.55rem;
+  font-size: 0.7rem;
+}
+.complete-detail-page {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 10px 10px;
+}
+.complete-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 36px;
+}
+.complete-detail-back,
+.complete-detail-btn {
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+.complete-detail-back {
+  padding: 8px 16px;
+  background: #fff;
+  color: #5D4E37;
+  box-shadow: 0 2px 0 rgba(93,78,55,0.2);
+  border: 2px solid rgba(93,78,55,0.12);
+}
+.complete-detail-btn {
+  margin-top: 2px;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, #FFF4C7, #FFD86B);
+  color: #5C3A00;
+  box-shadow: 0 3px 0 #B87200;
+  transition: opacity 0.35s ease, transform 0.35s ease, box-shadow 0.15s;
+}
+.complete-detail-btn:active,
+.complete-detail-back:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(93,78,55,0.25);
 }
 .complete-pono-slot {
   width: 132px; height: 120px;
@@ -3479,9 +3534,11 @@ body.bento-complete-open .pono-dropdown {
 .complete-pono-bubble.hidden-pre,
 .complete-trivia.hidden-pre,
 .complete-stars.hidden-pre,
-.complete-acorns.hidden-pre {
+.complete-acorns.hidden-pre,
+.complete-detail-btn.hidden-pre {
   opacity: 0;
   transform: scale(0.7);
+  pointer-events: none;
 }
 .complete-stars {
   display: flex;
@@ -3622,6 +3679,25 @@ body.bento-complete-open .pono-dropdown {
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
+.complete-detail-page .balance-item {
+  font-size: 0.84rem;
+}
+.complete-detail-page .balance-dot {
+  width: 18px;
+  height: 18px;
+}
+.complete-detail-page .complete-check-mark {
+  flex-basis: 32px;
+  width: 32px;
+  height: 32px;
+  font-size: 0.95rem;
+}
+.complete-detail-page .complete-check-title {
+  font-size: 0.86rem;
+}
+.complete-detail-page .complete-check-desc {
+  font-size: 0.7rem;
+}
 .complete-trivia {
   font-size: 0.68rem;
   font-weight: 700;
@@ -3684,7 +3760,9 @@ body.bento-complete-open .pono-dropdown {
   .complete-card-wide { width: 98%; padding: 8px 8px 12px; }
   .complete-main { flex-direction: column; }
   .complete-right { width: 96%; flex: 0 0 auto; flex-direction: column; }
-  .complete-summary-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .complete-detail-page .complete-summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .complete-detail-page .balance-item,
+  .complete-detail-page .complete-check { min-height: 72px; padding: 8px; }
   .complete-pono-slot { width: 126px; height: 92px; }
   .complete-pono-big { width: 126px; height: 126px; }
   .complete-pono-slot.is-npc { height: 100px; }
@@ -3735,36 +3813,36 @@ body.bento-complete-open .pono-dropdown {
     width: clamp(176px, 20vw, 202px);
   }
   .complete-summary-strip {
-    gap: 4px;
+    gap: 6px;
   }
   .complete-bento.free-complete-stack.free-complete-side-by-side:not(.free-complete-preview-mode) .free-layout-stage {
     --complete-stage-content-scale: 1.3;
   }
   .complete-summary-strip .balance-item,
   .complete-summary-strip .complete-check {
-    min-height: 38px;
-    padding: 3px 4px;
-    gap: 3px;
-    font-size: 0.49rem;
-    line-height: 1.04;
+    min-height: 62px;
+    padding: 7px 8px;
+    gap: 6px;
+    font-size: 0.68rem;
+    line-height: 1.1;
   }
   .complete-summary-strip .balance-dot {
-    width: 11px;
-    height: 11px;
+    width: 14px;
+    height: 14px;
   }
   .complete-summary-strip .balance-item-role,
   .complete-summary-strip .complete-check-desc {
-    font-size: 0.48rem;
-    line-height: 1.06;
+    font-size: 0.58rem;
+    line-height: 1.12;
   }
   .complete-check-title {
-    font-size: 0.55rem;
-    line-height: 1.08;
+    font-size: 0.68rem;
+    line-height: 1.12;
   }
   .complete-check-mark {
-    flex-basis: 20px;
-    width: 20px;
-    height: 20px;
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
   }
   .complete-pono-slot {
     width: 110px;
@@ -3809,12 +3887,12 @@ body.bento-complete-open .pono-dropdown {
     padding: 4px 6px;
   }
   .complete-summary-strip {
-    gap: 3px;
+    gap: 4px;
   }
   .complete-summary-strip .complete-check,
   .complete-summary-strip .balance-item {
-    min-height: 26px;
-    padding: 3px 4px;
+    min-height: 46px;
+    padding: 5px 6px;
   }
   .complete-pono-slot {
     width: 96px;
@@ -4169,30 +4247,38 @@ body.bento-complete-open .pono-dropdown {
   <div class="complete-card complete-card-wide">
     <button class="complete-close" id="complete-btn">&times;</button>
     <div class="complete-title" id="complete-title">🎉 おべんとう かんせい！</div>
-    <div class="complete-main">
-      <div class="complete-left">
-        <div class="complete-bento" id="complete-bento"></div>
-        <button id="save-fav-btn" class="save-fav-btn">⭐ おきにいりに いれる</button>
-      </div>
-      <div class="complete-right" id="complete-right">
-        <div class="complete-pono-slot" id="complete-pono-slot">
-          <img id="complete-pono-big" class="complete-pono-big" src="../assets/images/characters/pono/dance/dance_hooray.webp" alt="ポノ">
+    <div class="complete-result-page" id="complete-result-page">
+      <div class="complete-main">
+        <div class="complete-left">
+          <div class="complete-bento" id="complete-bento"></div>
+          <button id="save-fav-btn" class="save-fav-btn">⭐ おきにいりに いれる</button>
         </div>
-        <div class="complete-pono-bubble" id="complete-msg">おいしそう！</div>
-        <div class="complete-stars hidden-pre" id="complete-stars" aria-label="ひょうか">
-          <span class="star s0">★</span><span class="star s1">★</span><span class="star s2">★</span>
+        <div class="complete-right" id="complete-right">
+          <div class="complete-pono-slot" id="complete-pono-slot">
+            <img id="complete-pono-big" class="complete-pono-big" src="../assets/images/characters/pono/dance/dance_hooray.webp" alt="ポノ">
+          </div>
+          <div class="complete-pono-bubble" id="complete-msg">おいしそう！</div>
+          <div class="complete-stars hidden-pre" id="complete-stars" aria-label="ひょうか">
+            <span class="star s0">★</span><span class="star s1">★</span><span class="star s2">★</span>
+          </div>
+          <div class="complete-acorns hidden-pre" id="complete-acorns">
+            <span class="complete-acorn-icon" aria-hidden="true">🌰</span>
+            <span class="complete-acorn-plus">+</span><span class="complete-acorn-num" id="complete-acorn-num">0</span>
+          </div>
+          <div class="daily-acorn-status hidden-pre" id="daily-acorn-status"></div>
+          <div class="complete-trivia" id="complete-trivia"></div>
+          <button type="button" class="complete-detail-btn hidden-pre" id="complete-detail-btn">くわしい けっか</button>
         </div>
-        <div class="complete-acorns hidden-pre" id="complete-acorns">
-          <span class="complete-acorn-icon" aria-hidden="true">🌰</span>
-          <span class="complete-acorn-plus">+</span><span class="complete-acorn-num" id="complete-acorn-num">0</span>
-        </div>
-        <div class="daily-acorn-status hidden-pre" id="daily-acorn-status"></div>
-        <div class="complete-trivia" id="complete-trivia"></div>
       </div>
     </div>
-    <div class="complete-summary-strip" id="complete-summary-strip">
-      <div class="balance-row" id="balance-row"></div>
-      <div class="complete-checklist" id="complete-checklist"></div>
+    <div class="complete-detail-page hidden" id="complete-detail-page">
+      <div class="complete-detail-actions">
+        <button type="button" class="complete-detail-back" id="complete-detail-back">もどる</button>
+      </div>
+      <div class="complete-summary-strip" id="complete-summary-strip">
+        <div class="balance-row" id="balance-row"></div>
+        <div class="complete-checklist" id="complete-checklist"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -6130,6 +6216,7 @@ function revealReactionWithDrama(reaction) {
   const bubble = document.getElementById('complete-msg');
   const trivia = document.getElementById('complete-trivia');
   const saveBtn = document.getElementById('save-fav-btn');
+  const detailBtn = document.getElementById('complete-detail-btn');
   const right = document.getElementById('complete-right');
   const starsEl = document.getElementById('complete-stars');
   const acornsEl = document.getElementById('complete-acorns');
@@ -6151,6 +6238,7 @@ function revealReactionWithDrama(reaction) {
   bubble.classList.add('hidden-pre');
   if (trivia) trivia.classList.add('hidden-pre');
   if (saveBtn) saveBtn.classList.add('hidden-pre');
+  if (detailBtn) detailBtn.classList.add('hidden-pre');
   // 評価表示をリセット
   if (starsEl) {
     starsEl.classList.add('hidden-pre');
@@ -6260,6 +6348,7 @@ function revealReactionWithDrama(reaction) {
   // T=2850ms → どんぐり演出後に保存ボタン
   _revealTimers.push(setTimeout(() => {
     if (saveBtn) saveBtn.classList.remove('hidden-pre');
+    if (detailBtn) detailBtn.classList.remove('hidden-pre');
   }, 2400 + 420 + stars * 240 + 500));
 
   // T=3100ms: reveal クラス外して 通常状態に戻す / poor なら droopy
@@ -10641,6 +10730,19 @@ function queueCompleteChromeSafeAreaSync() {
   setTimeout(syncCompleteChromeSafeArea, 900);
 }
 
+function setCompletePage(page) {
+  const detailMode = page === 'detail';
+  const card = document.querySelector('#complete-overlay .complete-card-wide');
+  const resultPage = document.getElementById('complete-result-page');
+  const detailPage = document.getElementById('complete-detail-page');
+  const title = document.getElementById('complete-title');
+  if (card) card.classList.toggle('is-detail-page', detailMode);
+  if (resultPage) resultPage.classList.toggle('hidden', detailMode);
+  if (detailPage) detailPage.classList.toggle('hidden', !detailMode);
+  if (title) title.textContent = detailMode ? 'くわしい けっか' : '🎉 おべんとう かんせい！';
+  queueCompleteChromeSafeAreaSync();
+}
+
 function stageComplete() {
   try { if (typeof tutorialOnStageComplete === 'function') tutorialOnStageComplete(); } catch (_) {}
   const completionData = freeLayoutMode
@@ -10775,6 +10877,15 @@ function stageComplete() {
       playPop();
     };
   }
+  const detailBtn = document.getElementById('complete-detail-btn');
+  if (detailBtn) {
+    detailBtn.classList.add('hidden-pre');
+    detailBtn.onclick = () => setCompletePage('detail');
+  }
+  const detailBack = document.getElementById('complete-detail-back');
+  if (detailBack) {
+    detailBack.onclick = () => setCompletePage('result');
+  }
 
   document.getElementById('complete-btn').onclick = () => {
     clearRevealTimers();
@@ -10802,6 +10913,7 @@ function stageComplete() {
   // 自由モード (currentRequester == null) の時は従来通りすぐ完成画面。
   const _showCompleteOverlay = () => {
     document.getElementById('complete-overlay').classList.remove('hidden');
+    setCompletePage('result');
     queueCompleteChromeSafeAreaSync();
     if (freeLayoutMode) {
       requestAnimationFrame(() => {
@@ -12234,6 +12346,7 @@ function tutorialRenderStep() {
     }
     const smallTab = tutorialFindTabBtn('accessory');
     if (smallTab) {
+      tutorialPositionBubbleBeside(smallTab, { gap: 8 });
       if (firstRender) {
         tutorialTrimPath(smallTab, { radius: 10 });
         tutorialOutlineElement(smallTab);
