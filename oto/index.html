@@ -748,7 +748,7 @@
   }
   .rhythm-judge-pop {
     position: absolute;
-    left: var(--judge-left, 50%);
+    left: clamp(46px, var(--judge-left, 50%), calc(100% - 46px));
     top: var(--judge-top, calc(var(--gh-hit-y, 80%) - 72px));
     min-width: 92px;
     padding: 7px 12px 8px;
@@ -1361,9 +1361,23 @@
       0 12px 24px rgba(0,0,0,0.3);
   }
   body.rhythm-layout .rhythm-fever-bubble {
-    left: min(calc(61% + 74px), calc(100% - 282px));
-    top: max(76px, calc(29% - 88px));
-    max-width: min(30vw, 236px);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.92;
+    z-index: 20;
+    max-width: min(60vw, 320px);
+    pointer-events: none;
+    text-align: center;
+  }
+  body.rhythm-layout .rhythm-fever-bubble.show {
+    /* override base animation if it conflicts with new transform anchor */
+    animation: rhythmFeverBubbleCenterPop 1.0s cubic-bezier(.13,.82,.18,1) both;
+  }
+  @keyframes rhythmFeverBubbleCenterPop {
+    0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.92; }
+    100% { transform: translate(-50%, -50%) scale(0.95); opacity: 0; }
   }
   body.rhythm-layout.rhythm-fever-1 .stage {
     box-shadow: 0 0 56px rgba(250,204,21,0.22), 0 0 48px rgba(0,0,0,0.36);
@@ -2382,7 +2396,7 @@
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: #FFF6E0;
+    background: #A7D8F0;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     overflow: hidden;
@@ -2849,8 +2863,8 @@
       font-size: clamp(1.06rem, 2.8vw, 1.34rem);
     }
     body.rhythm-layout .rhythm-fever-bubble {
-      top: max(78px, calc(31% - 58px));
-      max-width: min(32vw, 218px);
+      /* center floating; keep transform anchor from base override */
+      max-width: min(70vw, 280px);
       padding: 8px 14px 10px;
       font-size: clamp(1.08rem, 2.9vw, 1.42rem);
     }
@@ -4953,7 +4967,7 @@ function _renderRhythmSongMenu() {
     var stageClass = stageLocked ? ' locked' : '';
     return '<button class="rhythm-song-choice' + active + locked + stageClass + '" data-song="' + song.id + '"' + disabled + '>' +
       '<span class="rhythm-song-meta"><span class="rhythm-stage-badge">ステージ' + _rhythmSongStage(song) + '</span><span class="rhythm-clear-badge">' + statusText + '</span></span>' +
-      '<span class="rhythm-song-name">' + song.name + '</span><span class="rhythm-song-note">' + (song.difficulty || song.note) + '</span></button>';
+      '<span class="rhythm-song-name">' + song.name + '</span></button>';
   }).join('');
   list.querySelectorAll('.rhythm-song-choice').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
@@ -7384,7 +7398,8 @@ function _beginRhythmCountdown() {
   // 「スタート!」はカウントの締めとして表示し、ノート側は別途落下時間を維持する。
   schedule(countdownDonePerf, function() {
     _showOverlay('スタート!', '');
-    _playRhythmSampleSe('gameStart'); // fanfare SE for "スタート!"
+    // 'スタート!' のファンファーレSEは削除 (タイミングがドラム開始 +120ms とズレて違和感あったため)
+    // _playRhythmSampleSe('gameStart');
   });
   // 少し見せてから overlay クリア
   schedule(countdownDonePerf + RHYTHM_START_OVERLAY_MS, function() { _clearRhythmCountdown(); });
