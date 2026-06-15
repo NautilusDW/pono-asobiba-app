@@ -61,6 +61,16 @@ routes = []  # custom_domain 継承を回避（既存 staging と同じ理由）
 [env.staging-app.vars]
 APP_BUILD = "1"
 
+# Cloudflare の [env.XXX] では top-level [assets] が継承されないため、
+# staging-app では明示的に再宣言する必要がある。
+# 再宣言しないと CF エッジが静的ファイルを直接 HIT で返してしまい、
+# worker が起動しない（= applyCacheHeaders の no-store も APP_BUILD 注入も効かない）。
+# run_worker_first は boolean true（配列 [true] にすると CF cache HIT 残留バグの罠あり）。
+[env.staging-app.assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = true
+
 # KV は当面 staging と同一 namespace を共有する（後で分離可能）
 # 必要になったら wrangler kv:namespace create BENTO_MASK_CONFIG --env staging-app で別 ID を取得して差し替え
 # 注意: 同じ key (例: bento-mask-defaults-v1) を staging と staging-app の両方から同時に書き込むと
