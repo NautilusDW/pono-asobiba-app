@@ -3146,11 +3146,12 @@ body.bento-complete-open .pono-dropdown {
   overflow: visible;
 }
 .tut-trim-box rect {
-  animation: tutTrimOffset 1800ms linear infinite;
+  /* v3.1: 連続移動 (tutTrimOffset) を点滅 (tutTrimBlink) に変更。 stroke は実線。 */
+  animation: tutTrimBlink 1000ms ease-in-out infinite;
 }
-@keyframes tutTrimOffset {
-  from { stroke-dashoffset: var(--trim-len, 100); }
-  to   { stroke-dashoffset: 0; }
+@keyframes tutTrimBlink {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
 }
 /* v3: mask overlay (right-half blink) */
 .tut-mask-overlay {
@@ -8406,6 +8407,11 @@ function confirmFreeBentoBoxSelection() {
   const box = getSelectedBentoBox();
   setSpeech(box.name + 'で つくろう！');
   setFreeGuideStep('rice');
+  // v3.1: tutorial の box step は「これでOK」と一本化。 ボタン押下でチュートリアルも前進。
+  if (typeof tutorialState !== 'undefined' && tutorialState.active && tutorialState.step === 'box') {
+    tutorialClearBoxLock();
+    tutorialAdvance('tab-rice');
+  }
 }
 function createFreeVisual(item) {
   const imgSrc = getFreeItemImage(item);
@@ -11391,6 +11397,7 @@ function tutorialFindPlacedCupEl() {
 // 一周させる「トリムパス」アニメを開始する。 ResizeObserver でサイズ追従。
 function tutorialTrimPath(targetEl, opts = {}) {
   if (!targetEl) return null;
+  const OUTSET = 8; // v3.1: target の外側に余白を確保し、 縁ピッタリ問題を回避
   const wrap = document.createElement('div');
   wrap.className = 'tut-trim-box';
   document.body.appendChild(wrap);
@@ -11400,7 +11407,7 @@ function tutorialTrimPath(targetEl, opts = {}) {
   rect.setAttribute('ry', String(opts.radius || 14));
   rect.setAttribute('fill', 'none');
   rect.setAttribute('stroke', opts.color || '#F2915A');
-  rect.setAttribute('stroke-width', String(opts.width || 3));
+  rect.setAttribute('stroke-width', String(opts.width || 4.5));
   rect.setAttribute('stroke-linecap', 'round');
   svg.appendChild(rect);
   wrap.appendChild(svg);
@@ -11412,17 +11419,17 @@ function tutorialTrimPath(targetEl, opts = {}) {
       return;
     }
     wrap.style.display = '';
-    wrap.style.left = (r.left + window.scrollX) + 'px';
-    wrap.style.top = (r.top + window.scrollY) + 'px';
-    wrap.style.width = r.width + 'px';
-    wrap.style.height = r.height + 'px';
-    rect.setAttribute('x', '2');
-    rect.setAttribute('y', '2');
-    rect.setAttribute('width', String(Math.max(0, r.width - 4)));
-    rect.setAttribute('height', String(Math.max(0, r.height - 4)));
-    const L = Math.max(40, 2 * (r.width + r.height));
-    rect.setAttribute('stroke-dasharray', L + ' ' + L);
-    rect.style.setProperty('--trim-len', L);
+    // 外側に OUTSET 分膨らませる (左/上は -OUTSET、 幅/高さは +OUTSET*2)
+    wrap.style.left = (r.left + window.scrollX - OUTSET) + 'px';
+    wrap.style.top = (r.top + window.scrollY - OUTSET) + 'px';
+    wrap.style.width = (r.width + OUTSET * 2) + 'px';
+    wrap.style.height = (r.height + OUTSET * 2) + 'px';
+    // wrap いっぱいに rect を引く (stroke が見切れないよう 1px だけ内側)
+    rect.setAttribute('x', '1');
+    rect.setAttribute('y', '1');
+    rect.setAttribute('width', String(Math.max(0, r.width + OUTSET * 2 - 2)));
+    rect.setAttribute('height', String(Math.max(0, r.height + OUTSET * 2 - 2)));
+    // dash-offset アニメは廃止、 blink に切替済 (CSS 側)。 dasharray は実線。
   }
   sync();
   let ro = null;
@@ -11570,12 +11577,12 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 1. box — 弁当箱外周にトリムパス + 「つぎへ」 button
+  // 1. box — 弁当箱外周にトリムパス + 「これでOK」 game button にもトリムパス
   if (step === 'box') {
     tutorialApplyBoxLock();
     tutorialShowBubble(
       'きょうは この おべんとうばこを つかうよ'
-      + '<br><button class="tut-next-btn" id="tut-box-next">つぎへ →</button>',
+      + '<br>したの 「これでOK」を おしてね',
       { topVh: '14' }
     );
     tutorialHideFinger();
@@ -11583,17 +11590,11 @@ function tutorialRenderStep() {
       // 弁当箱外周 trim
       const shape = document.querySelector('.free-bento-shape') || document.getElementById('free-layout-stage');
       if (shape) tutorialTrimPath(shape, { radius: 18 });
-      // next-btn trim (見つけ次第)
+      // 「これでOK」 game button trim (見つけ次第。 render 後の追加にも対応するため少し遅延)
       setTimeout(() => {
-        const nb = document.getElementById('tut-box-next');
-        if (nb && tutorialState.step === 'box') tutorialTrimPath(nb, { radius: 22 });
+        const okBtn = document.getElementById('free-box-confirm');
+        if (okBtn && tutorialState.step === 'box') tutorialTrimPath(okBtn, { radius: 22 });
       }, 30);
-      const btn = document.getElementById('tut-box-next');
-      if (btn) btn.addEventListener('pointerdown', e => {
-        e.preventDefault(); e.stopPropagation();
-        tutorialClearBoxLock();
-        tutorialAdvance('tab-rice');
-      }, { once: true });
     }
     return;
   }
