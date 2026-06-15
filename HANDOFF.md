@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:528-starparodier-sfx-lazarus-flow] Codex: user 依頼「効果音追加、ラザロ後にザコを挟んでからボス、スターブレイン被弾時の色反転/ダメージ表示、ラザロ分割は32発かつ左右合体後のみダメージ通過」を受領。既存の未コミット Oto/Bento/HANDOFF 差分を保持し、`starparodier/index.html` と cache v1161 のみ作業中。 (by Codex)
+- 2026-06-15 - [batch:528-starparodier-sfx-lazarus-flow] DONE - Codex: `starparodier/index.html` に WebAudio 合成SE (ショット/命中/撃破/星取得/バリア/被弾/ボス命中/フェーズ) を追加。ラザロ分割は32HPに増やし、左右が中央で合体した後だけ当たり判定リングとダメージを有効化。ラザロ撃破後は `AREA 2` の短いザコウェーブを挟んでから `BOSS AREA`/スターブレインへ進行。スターブレイン被弾時は命中ノード周辺に部分的な difference 反転 + glow を表示。`sw.js` / `play.html` は v1161。inline script parse、`node --check sw.js`、`git diff --check`、Playwright 896x432/390x844 でラザロ32HP・合体前無効・合体後有効・ラザロ後ザコ・ボス遷移・スターブレイン被弾状態を確認。レビュー観点: SE発火頻度、ラザロ被弾ゲート、ポストラザロ遷移、ボス被弾表示、既存未コミット差分非接触を自己確認。 (by Codex)
 - 2026-06-15 - [batch:526-bento-cup-drag-final-layout] Codex: user 指摘「カップ内の小さいおかずがタップで入ってしまうのでドラッグへ、やきざけ未配置なのに入った判定を修正、完成画面右カードが縦長で読めないため下部横長レイアウトへ」を受領。HANDOFF / git log / `bento/index.html` を確認し、別作業差分を巻き込まずに修正中。 (by Codex)
 - 2026-06-15 - [batch:526-bento-cup-drag-final-layout] DONE - Codex: カップ編集中の小さいおかずはタップ即追加を廃止し、カップ付近へのドラッグ/ドロップでのみ追加するよう統一。NPC依頼は `primaryFoods` と副菜候補を分け、ねこ依頼で `やきざけ` 未配置なら「入ってる」判定にならないよう修正。完成画面は赤/黄/緑カードと3つのチェックカードを右パネルから下部横長サマリーへ移動し、右側は動物リアクション中心に整理。inline script parse / diff check / Playwright 896x432・768x579 でタップ非追加、ドラッグ追加、やきざけ未配置文言、6カード下部表示を確認。レビュー観点: cup editor drag lifecycle、NPC request scoring、completion responsive layout、別作業Starparodier差分非接触を自己確認。 (by Codex)
 - 2026-06-15 - [batch:525-starparodier-corner-lazarus-power-stars] Codex: user 指摘「ラザロは四隅に出て左右が中央で合体後、上下に迫る流れ。星マークを取るスターソルジャー風パワーアップ、最後はバリア。星はグロウ明滅し定期的に落下。`D:\ポノのおへや\スターパロジャー` の追加ザコも差し替え」を受領。HANDOFF / git log / 素材フォルダを確認し、`starparodier/index.html` とアセット反映を作業中。 (by Codex)

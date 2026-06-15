@@ -405,6 +405,9 @@
   let raf = 0;
   let lastTs = 0;
   let stars = [];
+  let audioCtx = null;
+  let audioMaster = null;
+  const sfxLast = Object.create(null);
 
   const state = {
     running: false,
@@ -413,6 +416,7 @@
     phaseTime: 0,
     spawnTimer: 0,
     itemTimer: 0,
+    phaseKills: 0,
     score: 0,
     kills: 0,
     power: 0,
@@ -435,8 +439,8 @@
   const PLAYER_SHOT_LIMIT = 78;
   const POWER_MAX = 3;
   const BARRIER_MAX = 5;
-  const LAZARUS_SPLIT_HITS = 8;
-  const LAZARUS_ASSEMBLE_TIME = 9.4;
+  const LAZARUS_SPLIT_HITS = 32;
+  const LAZARUS_ASSEMBLE_TIME = 12.2;
   const LAZARUS_SPLIT_FIRE_FAST = 0.28;
   const LAZARUS_SPLIT_FIRE_SLOW = 0.34;
 
@@ -468,6 +472,138 @@
     if (color.startsWith('rgb(')) return color.replace('rgb(', 'rgba(').replace(')', `,${alpha})`);
     if (color.startsWith('rgba(')) return color.replace(/,\s*[\d.]+\)$/, `,${alpha})`);
     return color;
+  }
+
+  function initAudio() {
+    if (audioCtx) {
+      if (audioCtx.state === 'suspended') {
+        try {
+          const resume = audioCtx.resume();
+          if (resume && resume.catch) resume.catch(() => {});
+        } catch (_) {}
+      }
+      return audioCtx;
+    }
+    const AudioApi = window.AudioContext || window.webkitAudioContext;
+    if (!AudioApi) return null;
+    try {
+      audioCtx = new AudioApi();
+      audioMaster = audioCtx.createGain();
+      audioMaster.gain.value = 0.18;
+      audioMaster.connect(audioCtx.destination);
+      return audioCtx;
+    } catch (_) {
+      audioCtx = null;
+      audioMaster = null;
+      return null;
+    }
+  }
+
+  function sfxReady(name, gap) {
+    const ctxAudio = initAudio();
+    if (!ctxAudio || !audioMaster) return false;
+    const now = ctxAudio.currentTime;
+    const last = Object.prototype.hasOwnProperty.call(sfxLast, name) ? sfxLast[name] : -99;
+    if (last + gap > now) return false;
+    sfxLast[name] = now;
+    return true;
+  }
+
+  function playTone(freq, duration, type, gain, opts = {}) {
+    const ctxAudio = initAudio();
+    if (!ctxAudio || !audioMaster) return;
+    const start = ctxAudio.currentTime + (opts.delay || 0);
+    const osc = ctxAudio.createOscillator();
+    const g = ctxAudio.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, start);
+    if (opts.to) {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(1, opts.to), start + duration);
+    }
+    g.gain.setValueAtTime(gain, start);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    osc.connect(g);
+    g.connect(audioMaster);
+    osc.start(start);
+    osc.stop(start + duration + 0.02);
+  }
+
+  function playNoise(duration, gain, opts = {}) {
+    const ctxAudio = initAudio();
+    if (!ctxAudio || !audioMaster) return;
+    const length = Math.max(1, Math.floor(ctxAudio.sampleRate * duration));
+    const buffer = ctxAudio.createBuffer(1, length, ctxAudio.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+    const source = ctxAudio.createBufferSource();
+    const filter = ctxAudio.createBiquadFilter();
+    const g = ctxAudio.createGain();
+    const start = ctxAudio.currentTime + (opts.delay || 0);
+    source.buffer = buffer;
+    filter.type = opts.filterType || 'bandpass';
+    filter.frequency.value = opts.frequency || 880;
+    filter.Q.value = opts.q || 0.8;
+    g.gain.setValueAtTime(gain, start);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    source.connect(filter);
+    filter.connect(g);
+    g.connect(audioMaster);
+    source.start(start);
+    source.stop(start + duration + 0.02);
+  }
+
+  function playSfx(name) {
+    if (name === 'shoot') {
+      if (!sfxReady('shoot', 0.052)) return;
+      playTone(760, 0.055, 'square', 0.018, { to: 1260 });
+      return;
+    }
+    if (name === 'hit') {
+      if (!sfxReady('hit', 0.036)) return;
+      playTone(520, 0.045, 'triangle', 0.024, { to: 260 });
+      return;
+    }
+    if (name === 'enemyDown') {
+      if (!sfxReady('enemyDown', 0.08)) return;
+      playNoise(0.08, 0.036, { frequency: 620, q: 1.1 });
+      playTone(180, 0.09, 'sawtooth', 0.018, { to: 70 });
+      return;
+    }
+    if (name === 'item') {
+      if (!sfxReady('item', 0.12)) return;
+      playTone(620, 0.07, 'sine', 0.03, { to: 980 });
+      playTone(980, 0.09, 'sine', 0.026, { delay: 0.055, to: 1320 });
+      return;
+    }
+    if (name === 'barrier') {
+      if (!sfxReady('barrier', 0.14)) return;
+      playNoise(0.11, 0.028, { frequency: 1240, q: 1.5 });
+      playTone(880, 0.1, 'triangle', 0.026, { to: 420 });
+      return;
+    }
+    if (name === 'damage') {
+      if (!sfxReady('damage', 0.14)) return;
+      playNoise(0.12, 0.034, { filterType: 'lowpass', frequency: 360, q: 0.7 });
+      playTone(210, 0.13, 'sawtooth', 0.022, { to: 80 });
+      return;
+    }
+    if (name === 'bossHit') {
+      if (!sfxReady('bossHit', 0.045)) return;
+      playTone(1180, 0.055, 'square', 0.022, { to: 190 });
+      playNoise(0.055, 0.024, { frequency: 1560, q: 1.8 });
+      return;
+    }
+    if (name === 'bossDown') {
+      if (!sfxReady('bossDown', 0.3)) return;
+      playNoise(0.26, 0.05, { filterType: 'lowpass', frequency: 520, q: 0.9 });
+      playTone(180, 0.3, 'sawtooth', 0.036, { to: 42 });
+      return;
+    }
+    if (name === 'phase') {
+      if (!sfxReady('phase', 0.35)) return;
+      playTone(420, 0.1, 'triangle', 0.028, { to: 630 });
+      playTone(630, 0.12, 'triangle', 0.026, { delay: 0.08, to: 840 });
+    }
   }
 
   function easeOutCubic(t) {
@@ -550,12 +686,14 @@
   }
 
   function resetGame() {
+    initAudio();
     state.running = true;
     state.paused = false;
     state.phase = 'ready';
     state.phaseTime = 0;
     state.spawnTimer = 0.4;
     state.itemTimer = 3.2;
+    state.phaseKills = 0;
     state.score = 0;
     state.kills = 0;
     state.power = 0;
@@ -573,6 +711,7 @@
     setPhase('zako');
     const debugPhase = getDebugPhase();
     if (debugPhase === 'lazarus') setPhase('lazarusSplit');
+    else if (debugPhase === 'post') setPhase('postLazarus');
     else if (debugPhase === 'starbrain') setPhase('starbrain');
     hideOverlay();
     updateHud();
@@ -595,6 +734,7 @@
     state.phase = phase;
     state.phaseTime = 0;
     state.spawnTimer = 0.2;
+    state.phaseKills = 0;
     state.boss = null;
 
     if (phase === 'zako') {
@@ -614,8 +754,10 @@
         maxHp: LAZARUS_SPLIT_HITS,
         shot: 0.22,
         mergeTime: LAZARUS_ASSEMBLE_TIME,
-        pattern: 0
+        pattern: 0,
+        hurt: 0
       };
+      playSfx('phase');
     } else if (phase === 'lazarusFull') {
       phaseText.textContent = 'MID BOSS';
       bossMeter.hidden = false;
@@ -627,13 +769,23 @@
         hp: 120,
         maxHp: 120,
         shot: 0.75,
-        dir: 1
+        dir: 1,
+        hurt: 0
       };
+    } else if (phase === 'postLazarus') {
+      phaseText.textContent = 'AREA 2';
+      bossMeter.hidden = true;
+      state.enemyBullets.length = 0;
+      state.enemies.length = 0;
+      state.spawnTimer = 0.35;
+      playSfx('phase');
     } else if (phase === 'starbrainIntro') {
       phaseText.textContent = 'BOSS AREA';
       bossMeter.hidden = true;
       state.enemyBullets.length = 0;
+      state.enemies.length = 0;
       burst(W * 0.5, H * 0.28, '#7effc7', 42, 220);
+      playSfx('phase');
     } else if (phase === 'starbrain') {
       phaseText.textContent = 'BOSS';
       bossMeter.hidden = false;
@@ -646,8 +798,14 @@
         maxHp: 190,
         shot: 0.7,
         pattern: 0,
-        dir: 1
+        dir: 1,
+        hurt: 0,
+        hitX: 0,
+        hitY: 0,
+        hitRole: 'center',
+        hitColor: '#ffffff'
       };
+      playSfx('phase');
     }
     updateHud();
   }
@@ -734,6 +892,7 @@
       state.barrier = BARRIER_MAX;
       awardScore(700);
     }
+    playSfx('item');
     burst(item.x, item.y, state.power >= POWER_MAX ? '#ffffff' : '#ffd56a', 28, 150);
   }
 
@@ -789,6 +948,7 @@
         { damage: 1 }
       );
     }
+    playSfx('shoot');
   }
 
   function playerShotPattern() {
@@ -881,14 +1041,20 @@
   }
 
   function updateEnemies(dt) {
-    if (state.phase === 'zako') {
+    if (state.phase === 'zako' || state.phase === 'postLazarus') {
+      const postLazarus = state.phase === 'postLazarus';
       state.spawnTimer -= dt;
       if (state.spawnTimer <= 0) {
         spawnDrone();
-        state.spawnTimer = clamp(1.05 - state.phaseTime * 0.012, 0.68, 1.05);
+        state.spawnTimer = postLazarus
+          ? clamp(0.86 - state.phaseTime * 0.022, 0.46, 0.86)
+          : clamp(1.05 - state.phaseTime * 0.012, 0.68, 1.05);
       }
-      if (state.phaseTime > 20 || state.kills >= 24) {
+      if (!postLazarus && (state.phaseTime > 20 || state.phaseKills >= 24)) {
         setPhase('lazarusSplit');
+      }
+      if (postLazarus && (state.phaseTime > 12.5 || state.phaseKills >= 14)) {
+        setPhase('starbrainIntro');
       }
     }
 
@@ -922,6 +1088,7 @@
       if (state.phase === 'starbrainIntro' && state.phaseTime > 2.1) setPhase('starbrain');
       return;
     }
+    if (b.hurt) b.hurt = Math.max(0, b.hurt - dt);
 
     if (b.type === 'lazarusSplit') {
       if (b.hp <= 0) {
@@ -952,7 +1119,8 @@
       if (b.hp <= 0) {
         awardScore(1500);
         burst(b.x, b.y, '#7effc7', 52, 260);
-        setPhase('starbrainIntro');
+        playSfx('bossDown');
+        setPhase('postLazarus');
       }
       return;
     }
@@ -970,6 +1138,7 @@
       if (b.hp <= 0) {
         awardScore(3600);
         burst(b.x, b.y, '#c77dff', 88, 330);
+        playSfx('bossDown');
         finishClear();
       }
     }
@@ -981,7 +1150,8 @@
     for (const piece of pieces) burst(piece.cx, piece.cy, '#7effc7', 18, 180);
     state.enemyBullets.length = 0;
     b.hp = 0;
-    setPhase('starbrainIntro');
+    playSfx('bossDown');
+    setPhase('postLazarus');
   }
 
   function shootFan(x, y, count, center, spread, speed, color) {
@@ -1061,6 +1231,14 @@
     }
   }
 
+  function registerBossHit(boss, node, color) {
+    boss.hurt = 0.2;
+    boss.hitX = node.x;
+    boss.hitY = node.y;
+    boss.hitRole = node.role;
+    boss.hitColor = color || '#ffffff';
+  }
+
   function collidePlayerBullets() {
     const boss = state.boss;
     for (let i = state.bullets.length - 1; i >= 0; i--) {
@@ -1072,11 +1250,14 @@
           e.hp -= 1;
           consumed = true;
           hitSpark(bullet.x, bullet.y, bullet.color);
+          playSfx('hit');
           if (e.hp <= 0) {
             state.enemies.splice(j, 1);
             state.kills += 1;
+            state.phaseKills += 1;
             awardScore(100 + e.maxHp * 40);
             burst(e.x, e.y, '#66e9ff', 12 + e.maxHp * 4, 120);
+            playSfx('enemyDown');
           }
           break;
         }
@@ -1087,6 +1268,8 @@
           boss.hp -= bullet.damage || 1;
           consumed = true;
           hitSpark(bullet.x, bullet.y, bullet.color);
+          registerBossHit(boss, node, bullet.color);
+          playSfx(boss.type === 'starbrain' ? 'bossHit' : 'hit');
         }
       }
       if (consumed) state.bullets.splice(i, 1);
@@ -1127,6 +1310,7 @@
   function bossTargetNodes(boss) {
     if (!boss) return [];
     if (boss.type === 'lazarusSplit') {
+      if (!lazarusSplitVulnerable()) return [];
       return getLazarusPieceLayout(lazarusSplitProgress()).map(piece => ({
         x: piece.cx,
         y: piece.cy,
@@ -1161,6 +1345,7 @@
       state.barrier -= 1;
       p.inv = 0.58;
       burst(x, y, '#94f7ff', 22, 170);
+      playSfx('barrier');
       if (state.barrier <= 0 && state.power >= POWER_MAX) state.power = POWER_MAX - 1;
       if (navigator.vibrate) {
         try { navigator.vibrate(18); } catch (_) {}
@@ -1170,6 +1355,7 @@
     p.inv = 1.05;
     state.shield = Math.max(0, state.shield - amount);
     burst(x, y, '#ffd56a', 18, 150);
+    playSfx('damage');
     if (navigator.vibrate) {
       try { navigator.vibrate(35); } catch (_) {}
     }
@@ -1631,7 +1817,7 @@
     }
     ctx.restore();
 
-    drawBossTargetRings(state.boss, 0.78);
+    if (lazarusSplitVulnerable()) drawBossTargetRings(state.boss, 0.78);
     if (fade > 0) drawLazarusFull(fade);
   }
 
@@ -1639,6 +1825,10 @@
     const b = state.boss;
     const mergeTime = b && b.mergeTime ? b.mergeTime : LAZARUS_ASSEMBLE_TIME;
     return easeInOutSine((state.phaseTime - 0.35) / mergeTime);
+  }
+
+  function lazarusSplitVulnerable() {
+    return state.boss && state.boss.type === 'lazarusSplit' && lazarusSplitProgress() >= 0.52;
   }
 
   function getLazarusPieceLayout(progress = lazarusSplitProgress()) {
@@ -1735,6 +1925,8 @@
     }
     ctx.restore();
 
+    drawStarbrainDamageFlash(b, size);
+
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     ctx.strokeStyle = 'rgba(199,125,255,0.28)';
@@ -1747,6 +1939,41 @@
     }
     ctx.restore();
     drawBossTargetRings(b, 0.72);
+  }
+
+  function drawStarbrainDamageFlash(b, size) {
+    if (!b.hurt) return;
+    const alpha = clamp(b.hurt / 0.2, 0, 1);
+    const x = b.hitX || b.x;
+    const y = b.hitY || b.y;
+    const wide = b.hitRole === 'center' ? size.h * 0.34 : size.h * 0.27;
+    const tall = b.hitRole === 'center' ? size.h * 0.22 : size.h * 0.18;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'difference';
+    ctx.globalAlpha = 0.26 * alpha;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(x, y, wide, tall, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, wide * 1.35);
+    glow.addColorStop(0, `rgba(255,255,255,${0.55 * alpha})`);
+    glow.addColorStop(0.45, `rgba(102,233,255,${0.36 * alpha})`);
+    glow.addColorStop(1, 'rgba(199,125,255,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.ellipse(x, y, wide * 1.35, tall * 1.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255,255,255,${0.65 * alpha})`;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(x, y, Math.min(wide, tall) * (0.7 + (1 - alpha) * 0.35), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawBossTargetRings(boss, alpha) {
