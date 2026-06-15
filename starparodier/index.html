@@ -385,6 +385,8 @@
   const ASSET_BASE = '../assets/images/starparodier/';
   const ASSETS = {
     player: 'player_ship_pono.png',
+    enemy: 'zako_enemy.png',
+    powerStar: 'power_star.png',
     boss: 'boss_starbrain.png',
     lazarusFull: 'midboss_lazarus_full.png',
     lazarusTL: 'midboss_lazarus_top_left.png',
@@ -410,12 +412,16 @@
     phase: 'ready',
     phaseTime: 0,
     spawnTimer: 0,
+    itemTimer: 0,
     score: 0,
     kills: 0,
+    power: 0,
+    barrier: 0,
     shield: 100,
     player: { x: 0, y: 0, tx: 0, ty: 0, r: 22, cooldown: 0, inv: 0 },
     bullets: [],
     enemyBullets: [],
+    items: [],
     enemies: [],
     particles: [],
     boss: null
@@ -427,6 +433,8 @@
   const PLAYER_FIRE_INTERVAL = 0.085;
   const PLAYER_FIRE_INTERVAL_BOSS = 0.075;
   const PLAYER_SHOT_LIMIT = 78;
+  const POWER_MAX = 3;
+  const BARRIER_MAX = 5;
   const LAZARUS_SPLIT_HITS = 8;
   const LAZARUS_ASSEMBLE_TIME = 9.4;
   const LAZARUS_SPLIT_FIRE_FAST = 0.28;
@@ -547,11 +555,15 @@
     state.phase = 'ready';
     state.phaseTime = 0;
     state.spawnTimer = 0.4;
+    state.itemTimer = 3.2;
     state.score = 0;
     state.kills = 0;
+    state.power = 0;
+    state.barrier = 0;
     state.shield = 100;
     state.bullets.length = 0;
     state.enemyBullets.length = 0;
+    state.items.length = 0;
     state.enemies.length = 0;
     state.particles.length = 0;
     state.boss = null;
@@ -652,6 +664,7 @@
     state.phaseTime += dt;
     updateStars(dt);
     updatePlayer(dt);
+    updateItems(dt);
     updateBullets(dt);
     updateEnemies(dt);
     updateBoss(dt);
@@ -672,9 +685,61 @@
     }
   }
 
+  function updateItems(dt) {
+    if (!state.running || state.paused) return;
+    state.itemTimer -= dt;
+    if (state.itemTimer <= 0) {
+      spawnPowerStar();
+      state.itemTimer = 6.8 + rng() * 2.6;
+    }
+
+    const p = state.player;
+    for (let i = state.items.length - 1; i >= 0; i--) {
+      const item = state.items[i];
+      item.age += dt;
+      item.x += item.vx * dt + Math.sin(item.age * 3.2 + item.phase) * item.wobble * dt;
+      item.y += item.vy * dt;
+      if (circleHit(p.x, p.y, p.r, item.x, item.y, item.r * 0.62)) {
+        state.items.splice(i, 1);
+        collectPowerStar(item);
+        continue;
+      }
+      if (item.y > H + item.r * 2) state.items.splice(i, 1);
+    }
+  }
+
+  function spawnPowerStar() {
+    const size = clamp(Math.min(W, H) * 0.085, 42, 72);
+    const margin = Math.max(size, W * 0.13);
+    state.items.push({
+      type: 'powerStar',
+      x: lerp(margin, W - margin, rng()),
+      y: -size,
+      vx: (rng() - 0.5) * 28,
+      vy: 92 + rng() * 26,
+      r: size * 0.48,
+      size,
+      age: 0,
+      wobble: 18 + rng() * 14,
+      phase: rng() * Math.PI * 2
+    });
+  }
+
+  function collectPowerStar(item) {
+    if (state.power < POWER_MAX) {
+      state.power += 1;
+      if (state.power >= POWER_MAX) state.barrier = BARRIER_MAX;
+      awardScore(300 + state.power * 120);
+    } else {
+      state.barrier = BARRIER_MAX;
+      awardScore(700);
+    }
+    burst(item.x, item.y, state.power >= POWER_MAX ? '#ffffff' : '#ffd56a', 28, 150);
+  }
+
   function updatePlayer(dt) {
     const p = state.player;
-    const speed = Math.max(W, H) * 0.72;
+    const speed = Math.max(W, H) * (0.72 + state.power * 0.035);
     let dx = 0;
     let dy = 0;
     if (keys.ArrowLeft || keys.a || keys.A) dx -= 1;
@@ -691,7 +756,9 @@
       p.ty = pointer.y - Math.min(68, H * 0.1);
     }
     p.tx = clamp(p.tx, W * 0.08, W * 0.92);
-    const maxPlayerY = (H < 430 && state.boss) ? H * 0.68 : H * 0.9;
+    const maxPlayerY = state.phase === 'lazarusSplit'
+      ? (H < 430 ? H * 0.58 : H * 0.56)
+      : ((H < 430 && state.boss) ? H * 0.68 : H * 0.9);
     p.ty = clamp(p.ty, H * 0.18, maxPlayerY);
     p.x = lerp(p.x, p.tx, 1 - Math.pow(0.0008, dt));
     p.y = lerp(p.y, p.ty, 1 - Math.pow(0.0008, dt));
@@ -709,15 +776,7 @@
     const p = state.player;
     const spread = clamp(W * 0.082, 50, 106);
     const speed = Math.max(720, H * 2.0);
-    const shots = [
-      [-0.48, -0.30, '#7effc7'],
-      [-0.32, -0.18, '#94f7ff'],
-      [-0.16, -0.06, '#7effc7'],
-      [0, 0, '#ffffff'],
-      [0.16, 0.06, '#7effc7'],
-      [0.32, 0.18, '#94f7ff'],
-      [0.48, 0.30, '#7effc7']
-    ];
+    const shots = playerShotPattern();
     for (const [dx, vx, color] of shots) {
       addBullet(
         p.x + dx * spread,
@@ -730,6 +789,29 @@
         { damage: 1 }
       );
     }
+  }
+
+  function playerShotPattern() {
+    if (state.power >= 2) {
+      return [
+        [-0.48, -0.30, '#7effc7'],
+        [-0.24, -0.12, '#94f7ff'],
+        [0, 0, state.power >= POWER_MAX ? '#ffffff' : '#7effc7'],
+        [0.24, 0.12, '#94f7ff'],
+        [0.48, 0.30, '#7effc7']
+      ];
+    }
+    if (state.power === 1) {
+      return [
+        [-0.26, -0.12, '#7effc7'],
+        [0, 0, '#ffffff'],
+        [0.26, 0.12, '#7effc7']
+      ];
+    }
+    return [
+      [-0.14, 0, '#7effc7'],
+      [0.14, 0, '#94f7ff']
+    ];
   }
 
   function addBullet(x, y, vx, vy, r, side, color, opts = {}) {
@@ -781,7 +863,7 @@
     const typeRoll = rng();
     const type = typeRoll < 0.45 ? 'scout' : (typeRoll < 0.78 ? 'turret' : 'crystal');
     const hp = type === 'crystal' ? 3 : (type === 'turret' ? 2 : 1);
-    const size = type === 'crystal' ? 31 : (type === 'turret' ? 28 : 24);
+    const size = type === 'crystal' ? 39 : (type === 'turret' ? 35 : 31);
     state.enemies.push({
       type,
       x,
@@ -827,7 +909,7 @@
         state.enemies.splice(i, 1);
         continue;
       }
-      if (p.inv <= 0 && circleHit(p.x, p.y, p.r, e.x, e.y, e.size * 0.64)) {
+      if (p.inv <= 0 && circleHit(p.x, p.y, p.r, e.x, e.y, enemyHitRadius(e))) {
         state.enemies.splice(i, 1);
         damagePlayer(16, e.x, e.y);
       }
@@ -986,7 +1068,7 @@
       let consumed = false;
       for (let j = state.enemies.length - 1; j >= 0; j--) {
         const e = state.enemies[j];
-        if (circleHit(bullet.x, bullet.y, bullet.r, e.x, e.y, e.size * 0.7)) {
+        if (circleHit(bullet.x, bullet.y, bullet.r, e.x, e.y, enemyHitRadius(e))) {
           e.hp -= 1;
           consumed = true;
           hitSpark(bullet.x, bullet.y, bullet.color);
@@ -1030,6 +1112,10 @@
     return dx * dx + dy * dy <= rr * rr;
   }
 
+  function enemyHitRadius(e) {
+    return e.size * 0.92;
+  }
+
   function hitBossTarget(bullet, boss) {
     const nodes = bossTargetNodes(boss);
     for (const node of nodes) {
@@ -1071,6 +1157,16 @@
 
   function damagePlayer(amount, x, y) {
     const p = state.player;
+    if (state.barrier > 0) {
+      state.barrier -= 1;
+      p.inv = 0.58;
+      burst(x, y, '#94f7ff', 22, 170);
+      if (state.barrier <= 0 && state.power >= POWER_MAX) state.power = POWER_MAX - 1;
+      if (navigator.vibrate) {
+        try { navigator.vibrate(18); } catch (_) {}
+      }
+      return;
+    }
     p.inv = 1.05;
     state.shield = Math.max(0, state.shield - amount);
     burst(x, y, '#ffd56a', 18, 150);
@@ -1178,6 +1274,7 @@
   function render(dt) {
     ctx.clearRect(0, 0, W, H);
     drawBackground();
+    drawItems();
     drawBullets(state.bullets);
     drawEnemies();
     drawBoss();
@@ -1259,6 +1356,8 @@
     }
     ctx.restore();
 
+    if (state.barrier > 0) drawPlayerBarrier(p.x, p.y, shipW, shipH);
+
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
     const grad = ctx.createRadialGradient(p.x, p.y + shipH * 0.42, 2, p.x, p.y + shipH * 0.42, shipW * 0.42);
@@ -1268,6 +1367,36 @@
     ctx.beginPath();
     ctx.ellipse(p.x, p.y + shipH * 0.42, shipW * 0.36, shipH * 0.22, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPlayerBarrier(x, y, shipW, shipH) {
+    const radiusX = shipW * 0.62;
+    const radiusY = shipH * 0.52;
+    const pulse = 1 + Math.sin(state.phaseTime * 6) * 0.04;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.shadowColor = 'rgba(148,247,255,0.82)';
+    ctx.shadowBlur = 18;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(148,247,255,0.58)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, radiusX * pulse, radiusY * pulse, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.54)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, radiusX * 0.82, radiusY * 0.82, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = 0; i < state.barrier; i++) {
+      const a = state.phaseTime * 1.8 + Math.PI * 2 * (i / BARRIER_MAX);
+      const px = x + Math.cos(a) * radiusX;
+      const py = y + Math.sin(a) * radiusY;
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx.beginPath();
+      ctx.arc(px, py, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -1332,6 +1461,52 @@
     ctx.restore();
   }
 
+  function drawItems() {
+    for (const item of state.items) drawPowerStar(item);
+  }
+
+  function drawPowerStar(item) {
+    const img = imgs.powerStar;
+    const glow = 0.74 + Math.sin(item.age * 5.5) * 0.22;
+    const size = item.size * (1 + Math.sin(item.age * 4.2) * 0.035);
+    ctx.save();
+    ctx.translate(item.x, item.y);
+    ctx.rotate(Math.sin(item.age * 1.7) * 0.08);
+    ctx.globalCompositeOperation = 'screen';
+    const g = ctx.createRadialGradient(0, 0, size * 0.08, 0, 0, size * 0.95);
+    g.addColorStop(0, `rgba(255,255,255,${0.62 * glow})`);
+    g.addColorStop(0.35, `rgba(255,213,106,${0.36 * glow})`);
+    g.addColorStop(1, 'rgba(102,233,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.95, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = 'rgba(255,213,106,0.78)';
+    ctx.shadowBlur = 18 + 10 * glow;
+    if (img) {
+      ctx.drawImage(img, -size / 2, -size / 2, size, size);
+    } else {
+      drawFallbackStar(0, 0, size * 0.44);
+    }
+    ctx.restore();
+  }
+
+  function drawFallbackStar(x, y, r) {
+    ctx.fillStyle = '#ffd56a';
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5;
+      const rr = i % 2 ? r * 0.48 : r;
+      const px = x + Math.cos(a) * rr;
+      const py = y + Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
   function drawEnemies() {
     for (const e of state.enemies) drawDrone(e);
   }
@@ -1341,6 +1516,22 @@
     ctx.translate(e.x, e.y);
     ctx.rotate(e.rot);
     const s = e.size;
+    const img = imgs.enemy;
+
+    if (img) {
+      const w = s * 2.35;
+      const h = w * (img.naturalHeight / img.naturalWidth);
+      ctx.shadowColor = e.type === 'crystal' ? 'rgba(126,255,199,0.54)' : 'rgba(164,108,255,0.5)';
+      ctx.shadowBlur = 13;
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = e.type === 'crystal' ? 'rgba(126,255,199,0.38)' : 'rgba(255,255,255,0.26)';
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
 
     ctx.shadowColor = 'rgba(199,125,255,0.55)';
     ctx.shadowBlur = 12;
@@ -1458,8 +1649,8 @@
     const topLeftY = targetY - full.h / 2;
     const fullImg = imgs.lazarusFull;
     const scale = fullImg ? full.w / fullImg.naturalWidth : full.w / 430;
-    const hGap = clamp(W * 0.26, 150, 290) * (1 - easeInOutSine(progress / 0.62));
-    const vGap = clamp(H * 0.075, 36, 58) * (1 - easeInOutSine((progress - 0.62) / 0.38));
+    const horizontalPhase = easeInOutSine(progress / 0.5);
+    const verticalPhase = easeInOutSine((progress - 0.5) / 0.5);
     const raw = [
       { key: 'tl', img: imgs.lazarusTL, tx: topLeftX, ty: topLeftY, side: -1, row: -1 },
       { key: 'tr', img: imgs.lazarusTR, tx: topLeftX + full.w - pieceW(imgs.lazarusTR) * scale, ty: topLeftY, side: 1, row: -1 },
@@ -1469,8 +1660,13 @@
     return raw.map(piece => {
       const w = pieceW(piece.img) * scale;
       const h = pieceH(piece.img) * scale;
-      const x = piece.tx + piece.side * hGap;
-      const y = piece.ty + piece.row * vGap;
+      const marginX = clamp(W * 0.025, 10, 34);
+      const topStartY = H < 430 ? H * 0.13 : H * 0.075;
+      const bottomStartY = H - h - (H < 430 ? H * 0.13 : H * 0.095);
+      const startX = piece.side < 0 ? marginX : W - w - marginX;
+      const startY = piece.row < 0 ? topStartY : bottomStartY;
+      const x = lerp(startX, piece.tx, horizontalPhase);
+      const y = lerp(startY, piece.ty, verticalPhase);
       return {
         ...piece,
         x,
