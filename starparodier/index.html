@@ -407,6 +407,7 @@
   let stars = [];
   let audioCtx = null;
   let audioMaster = null;
+  let audioPrimed = false;
   const sfxLast = Object.create(null);
 
   const state = {
@@ -431,7 +432,14 @@
     boss: null
   };
   try {
-    if (new URLSearchParams(location.search).get('dev') === '1') window.__starparodierState = state;
+    if (new URLSearchParams(location.search).get('dev') === '1') {
+      window.__starparodierState = state;
+      window.__starparodierAudioDebug = () => ({
+        state: audioCtx ? audioCtx.state : 'none',
+        master: audioMaster ? audioMaster.gain.value : 0,
+        primed: audioPrimed
+      });
+    }
   } catch (_) {}
 
   const PLAYER_FIRE_INTERVAL = 0.085;
@@ -439,10 +447,10 @@
   const PLAYER_SHOT_LIMIT = 78;
   const POWER_MAX = 3;
   const BARRIER_MAX = 5;
-  const LAZARUS_SPLIT_HITS = 32;
-  const LAZARUS_ASSEMBLE_TIME = 12.2;
-  const LAZARUS_SPLIT_FIRE_FAST = 0.28;
-  const LAZARUS_SPLIT_FIRE_SLOW = 0.34;
+  const LAZARUS_SPLIT_HITS = 64;
+  const LAZARUS_ASSEMBLE_TIME = 14.2;
+  const LAZARUS_SPLIT_FIRE_FAST = 0.62;
+  const LAZARUS_SPLIT_FIRE_SLOW = 0.82;
 
   function mulberry32(seed) {
     return function () {
@@ -489,7 +497,7 @@
     try {
       audioCtx = new AudioApi();
       audioMaster = audioCtx.createGain();
-      audioMaster.gain.value = 0.18;
+      audioMaster.gain.value = 0.62;
       audioMaster.connect(audioCtx.destination);
       return audioCtx;
     } catch (_) {
@@ -497,6 +505,29 @@
       audioMaster = null;
       return null;
     }
+  }
+
+  function unlockAudio() {
+    const ctxAudio = initAudio();
+    if (!ctxAudio || !audioMaster) return;
+    if (ctxAudio.state === 'suspended') {
+      try {
+        const resume = ctxAudio.resume();
+        if (resume && resume.catch) resume.catch(() => {});
+      } catch (_) {}
+    }
+    if (audioPrimed) return;
+    audioPrimed = true;
+    try {
+      const source = ctxAudio.createBufferSource();
+      const buffer = ctxAudio.createBuffer(1, 1, ctxAudio.sampleRate);
+      const g = ctxAudio.createGain();
+      g.gain.value = 0.0001;
+      source.buffer = buffer;
+      source.connect(g);
+      g.connect(audioMaster);
+      source.start(0);
+    } catch (_) {}
   }
 
   function sfxReady(name, gap) {
@@ -555,54 +586,60 @@
   function playSfx(name) {
     if (name === 'shoot') {
       if (!sfxReady('shoot', 0.052)) return;
-      playTone(760, 0.055, 'square', 0.018, { to: 1260 });
+      playTone(760, 0.055, 'square', 0.09, { to: 1260 });
       return;
     }
     if (name === 'hit') {
       if (!sfxReady('hit', 0.036)) return;
-      playTone(520, 0.045, 'triangle', 0.024, { to: 260 });
+      playTone(520, 0.045, 'triangle', 0.1, { to: 260 });
       return;
     }
     if (name === 'enemyDown') {
       if (!sfxReady('enemyDown', 0.08)) return;
-      playNoise(0.08, 0.036, { frequency: 620, q: 1.1 });
-      playTone(180, 0.09, 'sawtooth', 0.018, { to: 70 });
+      playNoise(0.08, 0.13, { frequency: 620, q: 1.1 });
+      playTone(180, 0.09, 'sawtooth', 0.08, { to: 70 });
+      return;
+    }
+    if (name === 'enemyShot') {
+      if (!sfxReady('enemyShot', 0.16)) return;
+      playTone(430, 0.075, 'triangle', 0.075, { to: 240 });
+      playNoise(0.04, 0.055, { frequency: 940, q: 1.4 });
       return;
     }
     if (name === 'item') {
       if (!sfxReady('item', 0.12)) return;
-      playTone(620, 0.07, 'sine', 0.03, { to: 980 });
-      playTone(980, 0.09, 'sine', 0.026, { delay: 0.055, to: 1320 });
+      playTone(620, 0.07, 'sine', 0.12, { to: 980 });
+      playTone(980, 0.09, 'sine', 0.11, { delay: 0.055, to: 1320 });
       return;
     }
     if (name === 'barrier') {
       if (!sfxReady('barrier', 0.14)) return;
-      playNoise(0.11, 0.028, { frequency: 1240, q: 1.5 });
-      playTone(880, 0.1, 'triangle', 0.026, { to: 420 });
+      playNoise(0.11, 0.12, { frequency: 1240, q: 1.5 });
+      playTone(880, 0.1, 'triangle', 0.11, { to: 420 });
       return;
     }
     if (name === 'damage') {
       if (!sfxReady('damage', 0.14)) return;
-      playNoise(0.12, 0.034, { filterType: 'lowpass', frequency: 360, q: 0.7 });
-      playTone(210, 0.13, 'sawtooth', 0.022, { to: 80 });
+      playNoise(0.12, 0.14, { filterType: 'lowpass', frequency: 360, q: 0.7 });
+      playTone(210, 0.13, 'sawtooth', 0.1, { to: 80 });
       return;
     }
     if (name === 'bossHit') {
       if (!sfxReady('bossHit', 0.045)) return;
-      playTone(1180, 0.055, 'square', 0.022, { to: 190 });
-      playNoise(0.055, 0.024, { frequency: 1560, q: 1.8 });
+      playTone(1180, 0.055, 'square', 0.095, { to: 190 });
+      playNoise(0.055, 0.1, { frequency: 1560, q: 1.8 });
       return;
     }
     if (name === 'bossDown') {
       if (!sfxReady('bossDown', 0.3)) return;
-      playNoise(0.26, 0.05, { filterType: 'lowpass', frequency: 520, q: 0.9 });
-      playTone(180, 0.3, 'sawtooth', 0.036, { to: 42 });
+      playNoise(0.26, 0.18, { filterType: 'lowpass', frequency: 520, q: 0.9 });
+      playTone(180, 0.3, 'sawtooth', 0.13, { to: 42 });
       return;
     }
     if (name === 'phase') {
       if (!sfxReady('phase', 0.35)) return;
-      playTone(420, 0.1, 'triangle', 0.028, { to: 630 });
-      playTone(630, 0.12, 'triangle', 0.026, { delay: 0.08, to: 840 });
+      playTone(420, 0.1, 'triangle', 0.11, { to: 630 });
+      playTone(630, 0.12, 'triangle', 0.1, { delay: 0.08, to: 840 });
     }
   }
 
@@ -686,7 +723,7 @@
   }
 
   function resetGame() {
-    initAudio();
+    unlockAudio();
     state.running = true;
     state.paused = false;
     state.phase = 'ready';
@@ -1180,26 +1217,31 @@
   function shootLazarusSplitBurst(b) {
     const pieces = getLazarusPieceLayout(lazarusSplitProgress());
     if (!pieces.length) return;
+    const progress = lazarusSplitProgress();
     const pattern = b.pattern++ % 4;
-    const sets = [
-      [0, 3],
-      [1, 2],
-      [0, 1],
-      [2, 3]
-    ];
+    const sets = progress < 0.52
+      ? [[0], [1], [0, 1], [1]]
+      : [[0, 1], [0, 2], [1, 3], [2, 3]];
     const chosen = sets[pattern];
     for (const idx of chosen) {
       const p = pieces[idx];
       if (!p) continue;
-      addBullet(p.cx, p.cy + p.h * 0.16, 0, 118 + lazarusSplitProgress() * 42, 6.2, 'enemy', '#7effc7', {
+      const target = state.player;
+      const angle = Math.atan2(target.y - p.cy, target.x - p.cx);
+      const speed = 108 + progress * 38;
+      const vx = Math.cos(angle) * speed * 0.78;
+      const vy = Math.sin(angle) * speed;
+      addBullet(p.cx, p.cy + p.h * 0.12, vx, vy, 8.2, 'enemy', '#a46cff', {
         style: 'bubble',
-        damage: 5,
-        life: 5.2,
-        wobbleAmp: 6,
-        wobbleFreq: 3.2,
+        damage: 4,
+        life: 6,
+        wobbleAmp: 9,
+        wobbleFreq: 2.8,
         wobblePhase: idx
       });
+      hitSpark(p.cx, p.cy + p.h * 0.12, '#c77dff');
     }
+    playSfx('enemyShot');
   }
 
   function shootStarbrainBubbles(b) {
@@ -2026,6 +2068,7 @@
   }
 
   canvas.addEventListener('pointerdown', (event) => {
+    unlockAudio();
     pointer.active = true;
     pointer.x = event.clientX;
     pointer.y = event.clientY;
@@ -2049,6 +2092,7 @@
   canvas.addEventListener('pointercancel', clearPointer);
 
   window.addEventListener('keydown', (event) => {
+    unlockAudio();
     keys[event.key] = true;
     if (event.key === ' ' && !state.running) {
       event.preventDefault();
@@ -2059,6 +2103,7 @@
     keys[event.key] = false;
   });
 
+  startBtn.addEventListener('pointerdown', unlockAudio);
   startBtn.onclick = resetGame;
   homeBtn.addEventListener('click', () => {
     location.href = '../play.html';
