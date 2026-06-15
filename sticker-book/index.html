@@ -209,6 +209,20 @@ html, body {
     ctx.drawImage(img, sx, sy, sw, sh, dx + (dw - outW) / 2, dy + (dh - outH) / 2, outW, outH);
   }
 
+  function copyRect(rect) {
+    return { x: rect.x, y: rect.y, w: rect.w, h: rect.h };
+  }
+
+  function easeInOut(t) {
+    t = clamp(t, 0, 1);
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  function smoothstep(edge0, edge1, value) {
+    var t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+    return t * t * (3 - 2 * t);
+  }
+
   function preloadPageImages(page) {
     (page && page.stickers ? page.stickers : []).forEach(function(sticker) {
       if (sticker.img) loadImage(resolveAsset(sticker.img));
@@ -405,6 +419,30 @@ html, body {
     var accent = page.accent || '#f2915a';
     drawLeftPageContent(page, owned, progress, accent);
     drawRightPageContent(page, gameId, owned, accent, isFlipPreview);
+  }
+
+  function makeFlipSnapshot(gameId, dir) {
+    var page = view.catalog && view.catalog.pages ? view.catalog.pages[gameId] : null;
+    if (!page) return null;
+
+    var snapshotCanvas = document.createElement('canvas');
+    snapshotCanvas.width = W;
+    snapshotCanvas.height = H;
+
+    var liveCtx = ctx;
+    ctx = snapshotCanvas.getContext('2d');
+    try {
+      ctx.clearRect(0, 0, W, H);
+      drawPageContent(page, gameId, true);
+    } finally {
+      ctx = liveCtx;
+    }
+
+    return {
+      canvas: snapshotCanvas,
+      rect: copyRect(dir > 0 ? book.right : book.left),
+      gameId: gameId
+    };
   }
 
   function drawLeftPageContent(page, owned, progress, accent) {
@@ -762,80 +800,126 @@ html, body {
     view.buttonHits.push({ action: action, x: x - r, y: y - r, w: r * 2, h: r * 2 });
   }
 
+  function drawGeneratedFlipTexture(dir, p) {
+    var sheet = assetEntry(STATIC_ASSETS.flipSheet);
+    if (!sheet || !sheet.loaded) return false;
+
+    var cols = 3;
+    var rows = 3;
+    var total = cols * rows;
+    var rawIndex = Math.min(total - 1, Math.floor(p * total));
+    var frame = dir > 0 ? rawIndex : (total - 1 - rawIndex);
+    var fw = sheet.img.naturalWidth / cols;
+    var fh = sheet.img.naturalHeight / rows;
+    var sx = (frame % cols) * fw;
+    var sy = Math.floor(frame / cols) * fh;
+
+    ctx.save();
+    ctx.globalAlpha = 0.3 + Math.sin(p * Math.PI) * 0.38;
+    drawImageContain(sheet.img, sx, sy, fw, fh, 116, 56, 1688, 806);
+    ctx.restore();
+    return true;
+  }
+
+  function drawFlipSnapshotSurface(snapshot, dir, p) {
+    if (!snapshot || !snapshot.canvas || p > 0.76) return;
+    var rect = snapshot.rect;
+    var fade = smoothstep(0.18, 0.72, p);
+    var visible = Math.max(0.18, 1 - easeInOut(p) * 0.86);
+    var dw = rect.w * visible;
+    var dx = dir > 0 ? rect.x + rect.w - dw : rect.x;
+    var lift = -Math.sin(p * Math.PI) * 16;
+
+    ctx.save();
+    pagePath(rect, dir > 0 ? 'right' : 'left', 0);
+    ctx.clip();
+    ctx.globalAlpha = 1 - fade * 0.86;
+    ctx.shadowColor = 'rgba(64,37,18,0.28)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetX = dir > 0 ? -10 : 10;
+    ctx.shadowOffsetY = 8;
+    ctx.drawImage(snapshot.canvas, rect.x, rect.y, rect.w, rect.h, dx, rect.y + lift, dw, rect.h);
+    ctx.shadowColor = 'transparent';
+
+    var shine = ctx.createLinearGradient(dx, rect.y, dx + dw, rect.y);
+    shine.addColorStop(0, 'rgba(255,255,255,0.36)');
+    shine.addColorStop(0.42, 'rgba(255,255,255,0.08)');
+    shine.addColorStop(1, 'rgba(255,255,255,0.48)');
+    ctx.fillStyle = shine;
+    roundRectPath(dx, rect.y + 10 + lift, dw, rect.h - 20, 30);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawLaminatedFlipMask(rect, dir, p) {
+    var cover = Math.sin(p * Math.PI);
+    var ease = easeInOut(p);
+    var panelW = rect.w * (0.24 + cover * 0.82);
+    var x = rect.x + rect.w / 2 - panelW / 2 + (dir > 0 ? -1 : 1) * rect.w * (ease - 0.5) * 0.72;
+    var y = rect.y - 8 - cover * 8;
+    var h = rect.h + 18 + cover * 18;
+
+    if (cover > 0.72) {
+      ctx.save();
+      ctx.globalAlpha = (cover - 0.72) / 0.28 * 0.42;
+      ctx.fillStyle = '#fff5cb';
+      roundRectPath(book.left.x + 20, book.left.y + 18, book.right.x + book.right.w - book.left.x - 40, book.right.h - 36, 42);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.globalAlpha = 0.18 + cover * 0.78;
+    ctx.shadowColor = 'rgba(53,31,14,0.34)';
+    ctx.shadowBlur = 28 + cover * 18;
+    ctx.shadowOffsetX = dir > 0 ? -18 : 18;
+    ctx.shadowOffsetY = 12;
+    var g = ctx.createLinearGradient(x, y, x + panelW, y + h);
+    g.addColorStop(0, '#fffbea');
+    g.addColorStop(0.28, '#fff1b8');
+    g.addColorStop(0.68, '#ffe097');
+    g.addColorStop(1, '#d59b4d');
+    ctx.fillStyle = g;
+    roundRectPath(x, y, panelW, h, 34);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = 'rgba(112,74,35,0.24)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.32 + cover * 0.34;
+    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(x + panelW * 0.24, y + 32);
+    ctx.bezierCurveTo(x + panelW * 0.5, y + 12, x + panelW * 0.72, y + h - 44, x + panelW * 0.9, y + h - 28);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function completeFlip() {
+    if (!view.flip) return;
+    view.gameIndex = view.flip.to;
+    view.flip = null;
+    updateURL();
+    preloadPageImages(currentPage());
+    requestDraw();
+  }
+
   function drawFlipOverlay() {
     if (!view.flip) return;
     var now = performance.now();
     var p = clamp((now - view.flip.started) / view.flip.duration, 0, 1);
     var dir = view.flip.dir;
-    var sheet = assetEntry(STATIC_ASSETS.flipSheet);
-    if (sheet && sheet.loaded) {
-      var cols = 3;
-      var rows = 3;
-      var total = cols * rows;
-      var rawIndex = Math.min(total - 1, Math.floor(p * total));
-      var frame = dir > 0 ? rawIndex : (total - 1 - rawIndex);
-      var fw = sheet.img.naturalWidth / cols;
-      var fh = sheet.img.naturalHeight / rows;
-      var sx = (frame % cols) * fw;
-      var sy = Math.floor(frame / cols) * fh;
-      ctx.save();
-      ctx.globalAlpha = 0.96;
-      drawImageContain(sheet.img, sx, sy, fw, fh, 116, 56, 1688, 806);
-      ctx.restore();
-      if (p >= 1) {
-        view.gameIndex = view.flip.to;
-        view.flip = null;
-        updateURL();
-        preloadPageImages(currentPage());
-        requestDraw();
-      } else {
-        requestAnimationFrame(draw);
-      }
-      return;
-    }
+    var snapshot = view.flip.snapshot;
+    var rect = snapshot && snapshot.rect ? snapshot.rect : (dir > 0 ? book.right : book.left);
 
-    var rect = dir > 0 ? book.right : book.left;
-    var ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-    var fold = dir > 0 ? rect.x + rect.w * (1 - ease) : rect.x + rect.w * ease;
-    var curve = Math.sin(p * Math.PI) * 84;
+    drawGeneratedFlipTexture(dir, p);
+    drawFlipSnapshotSurface(snapshot, dir, p);
+    drawLaminatedFlipMask(rect, dir, p);
 
-    ctx.save();
-    ctx.globalAlpha = 0.96;
-    ctx.beginPath();
-    if (dir > 0) {
-      ctx.moveTo(rect.x + rect.w, rect.y + 18);
-      ctx.bezierCurveTo(fold + curve, rect.y + 62, fold - curve, rect.y + rect.h - 90, rect.x + rect.w, rect.y + rect.h - 22);
-      ctx.lineTo(rect.x + rect.w, rect.y + 18);
-    } else {
-      ctx.moveTo(rect.x, rect.y + 18);
-      ctx.bezierCurveTo(fold - curve, rect.y + 62, fold + curve, rect.y + rect.h - 90, rect.x, rect.y + rect.h - 22);
-      ctx.lineTo(rect.x, rect.y + 18);
-    }
-    var g = ctx.createLinearGradient(dir > 0 ? fold : rect.x, rect.y, dir > 0 ? rect.x + rect.w : fold, rect.y);
-    g.addColorStop(0, '#f0d79b');
-    g.addColorStop(0.36, '#fff7d9');
-    g.addColorStop(0.72, '#d5a85e');
-    g.addColorStop(1, '#7a4d26');
-    ctx.fillStyle = g;
-    ctx.shadowColor = 'rgba(0,0,0,0.34)';
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetX = dir > 0 ? -10 : 10;
-    ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = 'rgba(111,73,35,0.32)';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.restore();
-
-    if (p >= 1) {
-      view.gameIndex = view.flip.to;
-      view.flip = null;
-      updateURL();
-      preloadPageImages(currentPage());
-      requestDraw();
-    } else {
-      requestAnimationFrame(draw);
-    }
+    if (p >= 1) completeFlip();
+    else requestAnimationFrame(draw);
   }
 
   function drawPasteAnimation() {
@@ -900,12 +984,14 @@ html, body {
     if (view.flip || targetIndex === view.gameIndex || targetIndex < 0 || targetIndex >= view.gameIds.length) return;
     view.selectedUid = '';
     var dir = targetIndex > view.gameIndex ? 1 : -1;
+    var snapshot = makeFlipSnapshot(currentGameId(), dir);
     view.flip = {
       dir: dir,
       from: view.gameIndex,
       to: targetIndex,
       started: performance.now(),
-      duration: 640
+      duration: 540,
+      snapshot: snapshot
     };
     requestDraw();
   }

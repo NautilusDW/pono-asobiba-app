@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1188; // v1188: fix Oto rhythm Pono/rival idle placement | v1187: add generated kids sticker book assets | v1186: add Oto rhythm rival alpha reactions | v1185: separate Canvas sticker book | v1183: polish sticker book placement
+const CACHE_VERSION = 1189; // v1189: composite sticker book hard page flip | v1188: fix Oto rhythm Pono/rival idle placement | v1187: add generated kids sticker book assets | v1186: add Oto rhythm rival alpha reactions | v1185: separate Canvas sticker book
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
