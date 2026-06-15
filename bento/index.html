@@ -2970,6 +2970,9 @@ body.bento-complete-open .pono-dropdown {
   pointer-events: none;
   user-select: none;
   display: none;
+  --from-x: 0px; --from-y: 0px;
+  --to-x: 0px; --to-y: 0px;
+  --tap-x: 0px; --tap-y: 0px;
 }
 .tut-hand {
   position: absolute;
@@ -2987,8 +2990,6 @@ body.bento-complete-open .pono-dropdown {
   pointer-events: none;
   user-select: none;
   will-change: transform, opacity;
-  --from-x: 0px; --from-y: 0px;
-  --to-x: 0px; --to-y: 0px;
 }
 .tut-hand--open {
   /* v3.2: 2.4s → 2.8s に若干ゆっくり (子供が追えるように) */
@@ -11180,6 +11181,7 @@ const tutorialState = {
   _retryTimer: null,
   paletteObserver: null,
   _paletteResyncRaf: 0,
+  fingerDragKey: '',
 };
 
 function tutorialReadDone() {
@@ -11238,7 +11240,13 @@ function tutorialEnsureLayer() {
   }
 }
 function tutorialHideFinger() {
+  tutorialState.fingerDragKey = '';
   if (tutorialState.fingerEl) tutorialState.fingerEl.style.display = 'none';
+}
+function tutorialSetBubbleHtml(b, html) {
+  if (!b || b._tutLastHtml === html) return;
+  b.innerHTML = html;
+  b._tutLastHtml = html;
 }
 function tutorialShowBubble(html, opts = {}) {
   tutorialEnsureLayer();
@@ -11250,7 +11258,7 @@ function tutorialShowBubble(html, opts = {}) {
   // center option: greet 用の画面中央配置
   if (opts.center) {
     b.classList.add('tut-bubble--center');
-    b.innerHTML = html;
+    tutorialSetBubbleHtml(b, html);
     // CSS が position/top/left/transform をハンドルするのでクリア
     b.style.right = '';
     b.style.left = '';
@@ -11260,7 +11268,7 @@ function tutorialShowBubble(html, opts = {}) {
   }
   b.classList.remove('tut-bubble--center');
   // 既定: 右端固定 (他ステップ)
-  b.innerHTML = html;
+  tutorialSetBubbleHtml(b, html);
   b.style.right = '16px';
   b.style.left = 'auto';
   b.style.top = (opts.topVh || '18') + 'vh';
@@ -11311,6 +11319,9 @@ function tutorialAnimateDrag(fromPoint, toPoint, opts = {}) {
   f.style.setProperty('--from-y', fy + 'px');
   f.style.setProperty('--to-x', tx + 'px');
   f.style.setProperty('--to-y', ty + 'px');
+  const dragKey = [Math.round(fx), Math.round(fy), Math.round(tx), Math.round(ty), opts.fast ? 'fast' : 'normal'].join(':');
+  if (tutorialState.fingerDragKey === dragKey) return;
+  tutorialState.fingerDragKey = dragKey;
   // restart animation on both hand layers
   const hands = f.querySelectorAll('.tut-hand');
   hands.forEach(h => { h.style.animation = 'none'; });
@@ -11392,6 +11403,7 @@ function tutorialAnimateTap(targetEl) {
   f.classList.remove('tut-finger--fast');
   f.style.setProperty('--tap-x', tx + 'px');
   f.style.setProperty('--tap-y', ty + 'px');
+  tutorialState.fingerDragKey = '';
   f.style.animation = 'none';
   void f.offsetWidth;
   f.style.animation = '';
