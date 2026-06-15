@@ -1392,6 +1392,18 @@ html, body {
 .free-context-toolbar.above {
   transform: translate(-50%, -100%);
 }
+.free-context-toolbar.edge-left {
+  transform: translate(0, 0);
+}
+.free-context-toolbar.above.edge-left {
+  transform: translate(0, -100%);
+}
+.free-context-toolbar.edge-right {
+  transform: translate(-100%, 0);
+}
+.free-context-toolbar.above.edge-right {
+  transform: translate(-100%, -100%);
+}
 .free-context-toolbar button {
   min-width: 34px;
   height: 30px;
@@ -8701,13 +8713,22 @@ function createFreeContextToolbar() {
   if (!toolbar.childElementCount) return null;
   const size = (item.size || 72) * (item.scale || 1);
   const x = clamp(item.x || FREE_LAYOUT_W / 2, 86, FREE_LAYOUT_W - 86);
+  const wideToolbar = presets.length || toolbar.childElementCount >= 3;
+  let toolbarX = x;
+  if (wideToolbar && x > FREE_LAYOUT_W * 0.5) {
+    toolbar.classList.add('edge-right');
+    toolbarX = FREE_LAYOUT_W - 10;
+  } else if (wideToolbar && x < FREE_LAYOUT_W * 0.34) {
+    toolbar.classList.add('edge-left');
+    toolbarX = 10;
+  }
   const belowY = (item.y || FREE_LAYOUT_H / 2) + size / 2 + 12;
   const canShowBelow = belowY + 38 < FREE_LAYOUT_H - 8;
   const y = canShowBelow
     ? clamp(belowY, 8, FREE_LAYOUT_H - 42)
     : clamp((item.y || FREE_LAYOUT_H / 2) - size / 2 - 12, 48, FREE_LAYOUT_H - 8);
   if (!canShowBelow) toolbar.classList.add('above');
-  toolbar.style.left = toPctX(x);
+  toolbar.style.left = toPctX(toolbarX);
   toolbar.style.top = toPctY(y);
   return toolbar;
 }
@@ -11210,7 +11231,7 @@ function showTutorial() {
 // state machine: tutorialState.step is the single source of truth.
 // Steps: greet → box → tab-rice → rice-place → decor → nori-ok →
 //        tab-okazu → okazu-red → tab-small → small-accessory →
-//        tab-small-food/small-cup-food → small-place/cup-ok → small-edit
+//        tab-small-food/small-cup-food → small-place/cup-ok → small-edit → small-next
 // 公開関数 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced /
 // tutorialOnStageComplete) は維持。 storage key は互換のため v1 を再利用。
 const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
@@ -11218,7 +11239,7 @@ const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 //   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'decor' | 'nori-ok' |
 //   'tab-okazu' | 'okazu-red' | 'tab-small' | 'small-accessory' |
 //   'tab-small-food' | 'small-place' | 'small-cup-food' | 'cup-ok' |
-//   'small-edit' | 'complete' | 'done'
+//   'small-edit' | 'small-next' | 'complete' | 'done'
 const tutorialState = {
   active: false,
   step: null,
@@ -11241,6 +11262,7 @@ const tutorialState = {
   renderedStep: null, // last rendered step (to avoid re-binding listeners)
   // v3.2.1: retry chain timer (tutorialAnimateDragFromElWithRetry) — race condition 回避用
   _retryTimer: null,
+  _targetRetryTimer: null,
   paletteObserver: null,
   _paletteResyncRaf: 0,
   fingerDragKey: '',
@@ -11305,6 +11327,13 @@ function tutorialEnsureLayer() {
 function tutorialHideFinger() {
   tutorialState.fingerDragKey = '';
   if (tutorialState.fingerEl) tutorialState.fingerEl.style.display = 'none';
+}
+function tutorialRetryRenderStep(step, delay = 120) {
+  if (tutorialState._targetRetryTimer) clearTimeout(tutorialState._targetRetryTimer);
+  tutorialState._targetRetryTimer = setTimeout(() => {
+    tutorialState._targetRetryTimer = null;
+    if (tutorialState.active && tutorialState.step === step) tutorialRenderStep();
+  }, delay);
 }
 function tutorialSetBubbleHtml(b, html) {
   if (!b || b._tutLastHtml === html) return;
@@ -11575,6 +11604,8 @@ function tutorialStageRightHalfPoint() {
 function tutorialCompleteButton() {
   const tagged = document.querySelector('[data-action="stage-complete"]');
   if (tagged) return tagged;
+  const actionPrimary = document.querySelector('.free-action-row button.primary');
+  if (actionPrimary) return actionPrimary;
   const primary = document.querySelector('.free-guide-actions button.primary');
   if (primary) {
     const t = primary.textContent || '';
@@ -11804,6 +11835,13 @@ function tutorialTrimPath(targetEl, opts = {}) {
   const entry = { wrap, rect, ro, target: targetEl, sync, startTime };
   tutorialState.trims.push(entry);
   return entry;
+}
+
+function tutorialMarkTarget(targetEl, opts = {}) {
+  if (!targetEl) return;
+  const alreadyTrimmed = (tutorialState.trims || []).some(t => t.target === targetEl);
+  if (!alreadyTrimmed) tutorialTrimPath(targetEl, opts);
+  tutorialOutlineElement(targetEl);
 }
 
 function tutorialClearTrims() {
@@ -12222,29 +12260,52 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 14. small-edit — 直し方と最後のOKを短く案内
+  // 14. small-edit — 直し方を対象ツールバーの近くで短く案内
   if (step === 'small-edit') {
-    const btn = tutorialCompleteButton();
-    const label = tutorialButtonLabel(btn);
+    const toolbar = tutorialContextToolbarEl();
     tutorialShowBubble(
-      `なおす: サイズ・回転・前後<br>下の「${label}」で すすむ`,
+      'ここで なおせるよ'
+      + '<br>サイズ・むき・まえ/うしろ'
+      + '<br><button class="tut-next-btn" id="tut-small-edit-next">つぎ →</button>',
       { topVh: '16', side: 'left' }
     );
-    if (firstRender) {
-      const toolbar = tutorialContextToolbarEl();
-      if (toolbar) tutorialTrimPath(toolbar, { radius: 14 });
-      if (btn) tutorialTrimPath(btn, { radius: 24 });
+    if (toolbar) tutorialPositionBubble(toolbar);
+    if (toolbar) tutorialMarkTarget(toolbar, { radius: 14 });
+    else tutorialRetryRenderStep('small-edit');
+    const next = document.getElementById('tut-small-edit-next');
+    if (next && !next._tutBound) {
+      next._tutBound = true;
+      next.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        tutorialAdvance('small-next');
+      }, { once: true });
     }
-    if (btn) tutorialAnimateTap(btn);
-    else tutorialHideFinger();
+    tutorialHideFinger();
     return;
   }
 
-  // 15. complete — primary ボタンに trim + tap
+  // 15. small-next — 進むボタンを対象の近くで案内
+  if (step === 'small-next') {
+    const btn = tutorialCompleteButton();
+    tutorialShowBubble('ここを おしてね', { topVh: '18', side: 'left' });
+    if (btn) {
+      tutorialPositionBubble(btn);
+      tutorialMarkTarget(btn, { radius: 24 });
+      tutorialAnimateTap(btn);
+    } else {
+      tutorialRetryRenderStep('small-next');
+      tutorialHideFinger();
+    }
+    return;
+  }
+
+  // 16. complete — primary ボタンに trim + tap
   if (step === 'complete') {
     const btn = tutorialCompleteButton();
-    tutorialShowBubble(`下の「${tutorialButtonLabel(btn)}」を おしてね`, { topVh: '18', side: 'left' });
+    tutorialShowBubble(`「${tutorialButtonLabel(btn)}」を おしてね`, { topVh: '18', side: 'left' });
     if (btn) {
+      tutorialPositionBubble(btn);
       if (firstRender) tutorialTrimPath(btn, { radius: 24 });
       tutorialAnimateTap(btn);
     } else {
@@ -12284,6 +12345,7 @@ function tutorialTeardown() {
     tutorialState.resizeRaf = 0;
   }
   if (tutorialState.inactivityTimer) { clearTimeout(tutorialState.inactivityTimer); tutorialState.inactivityTimer = 0; }
+  if (tutorialState._targetRetryTimer) { clearTimeout(tutorialState._targetRetryTimer); tutorialState._targetRetryTimer = null; }
   if (tutorialState.observer) { try { tutorialState.observer.disconnect(); } catch (_) {} tutorialState.observer = null; }
   if (tutorialState.tapHandler) {
     try { document.removeEventListener('pointerdown', tutorialState.tapHandler, true); } catch (_) {}
