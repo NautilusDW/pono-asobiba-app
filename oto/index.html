@@ -3058,20 +3058,40 @@
     right: 0;
     width: auto;
   }
+  body.rhythm-layout .rec-overlay:not(.word-cue) {
+    box-sizing: border-box;
+    padding-bottom: clamp(28px, 7vh, 48px);
+  }
   body.rhythm-layout .rec-overlay-msg {
     white-space: nowrap;
+    max-width: min(92%, 560px);
+    text-align: center;
+  }
+  body.rhythm-layout .rec-overlay:not(.word-cue) .rec-overlay-msg {
+    margin-top: -6px;
+    transform: translateY(-12px);
+  }
+  body.rhythm-layout .rec-overlay.word-cue .rec-overlay-num {
+    display: none;
+  }
+  body.rhythm-layout .rec-overlay.word-cue .rec-overlay-msg {
+    margin-top: 0;
+    transform: none;
+    font-size: clamp(2.35rem, 8vw, 4.8rem);
+    line-height: 1;
   }
   body.rhythm-layout .rhythm-hud {
     left: var(--rhythm-play-center, 61%);
     top: clamp(72px, calc(var(--gh-hit-y, 80%) - 86px), calc(100% - 96px));
     bottom: auto;
-    width: min(44vw, 340px);
+    width: min(56vw, 380px);
     transform: translateX(-50%);
   }
   body.rhythm-layout .rhythm-status {
-    width: auto;
-    min-width: 180px;
+    width: min(100%, 360px);
+    min-width: min(100%, 220px);
     max-width: 100%;
+    box-sizing: border-box;
     font-size: 0.92rem;
     white-space: nowrap;
     transform: none;
@@ -3119,12 +3139,19 @@
     body:not(.rhythm-layout) .rhythm-hud.show { display: none; }
     body.rhythm-layout .rhythm-hud {
       top: clamp(92px, calc(var(--gh-hit-y, 80%) - 86px), calc(100% - 96px));
-      width: min(56vw, 420px);
+      width: min(70vw, 420px);
     }
     body.rhythm-layout .rhythm-hud.show { display: flex; }
     body.rhythm-layout .rhythm-status {
-      max-width: min(94%, 420px);
-      font-size: clamp(0.74rem, 2.35vw, 0.9rem);
+      width: min(70vw, 360px);
+      min-width: 0;
+      max-width: min(70vw, 360px);
+      padding: 6px 12px 7px;
+      font-size: clamp(0.64rem, 2.05vw, 0.82rem);
+      line-height: 1.05;
+    }
+    body.rhythm-layout .rec-overlay-num {
+      font-size: clamp(5.7rem, 19vw, 6.9rem);
     }
   }
 
@@ -9424,16 +9451,21 @@ function _showOverlay(num, msg) {
   var nEl = document.getElementById('rec-overlay-num');
   var mEl = document.getElementById('rec-overlay-msg');
   if (!ov) return;
+  var isWordCue = (typeof num === 'string' && !/^\d+$/.test(num));
   document.body.classList.add('rec-overlay-active');
+  ov.classList.toggle('word-cue', isWordCue);
   ov.style.display = 'flex';
-  nEl.textContent = num != null ? String(num) : '';
-  mEl.textContent = msg || '';
+  nEl.textContent = isWordCue ? '' : (num != null ? String(num) : '');
+  mEl.textContent = isWordCue ? String(num) : (msg || '');
   // restart animation
   nEl.style.animation = 'none'; void nEl.offsetWidth; nEl.style.animation = '';
 }
 function _hideOverlay() {
   var ov = document.getElementById('rec-overlay');
-  if (ov) ov.style.display = 'none';
+  if (ov) {
+    ov.style.display = 'none';
+    ov.classList.remove('word-cue');
+  }
   document.body.classList.remove('rec-overlay-active');
 }
 
