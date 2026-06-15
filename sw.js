@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1109; // v1109: maze opening dialog — box yPct 84→80, heightPct 30.5→34, text lineHeight 1.5→1.35 to keep 3-line beats[0] + page indicator inside viewport
+const CACHE_VERSION = 1110; // v1110: bento — remove かざらず次へ btn (no-decor confirm modal), restyle かざり label (full-width orange heading), drop おもいだし title, add full-flow tutorial v1 (☝️ finger guide)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

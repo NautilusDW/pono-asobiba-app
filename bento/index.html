@@ -1028,6 +1028,23 @@ html, body {
   gap: 4px;
   flex-shrink: 0;
 }
+/* 見出しラベル（押せない／パレット全幅／ボタンと差別化） */
+.free-section-heading {
+  width: 100%;
+  flex-shrink: 0;
+  background: var(--primary, #F08C2E);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-align: left;
+  padding: 5px 10px;
+  border-radius: 6px;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);
+  pointer-events: none;
+  user-select: none;
+}
 .free-tab {
   border: 2px solid #F8C36B;
   border-radius: 10px;
@@ -2894,6 +2911,41 @@ body.bento-complete-open .pono-dropdown {
 }
 .sk-intro-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #B87200; }
 
+/* ===== Nori skip confirm modal ===== */
+.nori-skip-confirm {
+  position: fixed; inset: 0; z-index: 9975;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px;
+}
+.nori-skip-confirm.hidden { display: none; }
+.nori-skip-card {
+  background: #fff; border-radius: 24px;
+  padding: 22px 24px; max-width: 360px; width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  text-align: center;
+}
+.nori-skip-title {
+  font-size: 1.05rem; font-weight: 900;
+  color: var(--primary); margin-bottom: 16px; line-height: 1.4;
+}
+.nori-skip-actions {
+  display: flex; gap: 10px; justify-content: center;
+}
+.nori-skip-actions button {
+  flex: 1; padding: 12px 14px; border: none; border-radius: 50px;
+  font-family: inherit; font-size: 0.95rem; font-weight: 900;
+  cursor: pointer;
+}
+.nori-skip-actions .nori-skip-back {
+  background: #F1E6D2; color: #6B4A1F; box-shadow: 0 3px 0 #C9B392;
+}
+.nori-skip-actions .nori-skip-ok {
+  background: linear-gradient(180deg, #FFD84D, #F5A800);
+  color: #5C3A00; box-shadow: 0 3px 0 #B87200;
+}
+.nori-skip-actions button:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+
 /* ===== Tutorial ===== */
 .tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
 .tut-dim.hidden { display:none; }
@@ -2902,6 +2954,61 @@ body.bento-complete-open .pono-dropdown {
 @keyframes tutPopIn { from{opacity:0} to{opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
+
+/* ===== Bento full-flow tutorial (v1) ===== */
+.tut-finger {
+  position: fixed;
+  left: 0; top: 0;
+  width: 56px; height: 56px;
+  z-index: 10001;
+  pointer-events: none;
+  font-size: 44px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
+  animation: tutFingerDrag 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  --from-x: 0px; --from-y: 0px;
+  --to-x: 0px; --to-y: 0px;
+  opacity: 0;
+  user-select: none;
+}
+@keyframes tutFingerDrag {
+  0%   { transform: translate(var(--from-x), var(--from-y)) scale(1);   opacity: 0; }
+  10%  { opacity: 1; }
+  45%  { transform: translate(var(--from-x), var(--from-y)) scale(0.9); }
+  55%  { transform: translate(var(--from-x), var(--from-y)) scale(1.05); }
+  90%  { transform: translate(var(--to-x), var(--to-y)) scale(0.95);   opacity: 1; }
+  100% { transform: translate(var(--to-x), var(--to-y)) scale(1);       opacity: 0; }
+}
+.tut-finger.tut-finger--fast { animation-duration: 1.1s; }
+.tut-finger.tut-finger--tap {
+  animation: tutFingerTap 1.2s ease-in-out infinite;
+  --tap-x: 0px; --tap-y: 0px;
+}
+@keyframes tutFingerTap {
+  0%   { transform: translate(var(--tap-x), var(--tap-y)) scale(1);    opacity: 1; }
+  50%  { transform: translate(var(--tap-x), var(--tap-y)) scale(0.78); opacity: 0.9; }
+  100% { transform: translate(var(--tap-x), var(--tap-y)) scale(1);    opacity: 1; }
+}
+.tut-bubble.tut-bubble--anchored {
+  white-space: normal;
+  max-width: 280px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+}
+.tut-bubble.tut-bubble--loud {
+  font-size: 1.05rem;
+  padding: 14px 18px;
+  max-width: 320px;
+  background: #FFFBE9;
+  border: 3px solid var(--primary, #F2915A);
+}
+.tut-complete-pulse {
+  animation: tutCompletePulse 1.4s ease-in-out infinite;
+}
+@keyframes tutCompletePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(242, 145, 90, 0.7); }
+  50%      { box-shadow: 0 0 0 14px rgba(242, 145, 90, 0); }
+}
 
 /* ===== Redesigned complete card (2-column) ===== */
 .complete-card-wide {
@@ -3868,6 +3975,24 @@ body.bento-complete-open .pono-dropdown {
     }
     setTimeout(waitForReadyThenTutorial, 600);
   }
+  // 全工程チュートリアル (v1): 初回プレイヤーのみ・NPC/タイトル/横画面が片付いたら開始
+  function waitForReadyThenFullTutorial() {
+    if (typeof tutorialReadDone === 'function' && tutorialReadDone()) return;
+    const titleScreen = document.getElementById('title-screen');
+    const npcIntro = document.getElementById('npc-intro');
+    const shopOpening = document.getElementById('shop-opening');
+    const skIntro = document.getElementById('sk-intro');
+    const titleVisible = titleScreen && !titleScreen.classList.contains('hidden');
+    const npcVisible   = npcIntro && !npcIntro.classList.contains('hidden') && !npcIntro.hidden;
+    const shopVisible  = shopOpening && !shopOpening.classList.contains('hidden') && !shopOpening.hidden;
+    const skVisible    = skIntro && !skIntro.classList.contains('hidden');
+    if (titleVisible || npcVisible || shopVisible || skVisible || window.innerWidth <= window.innerHeight) {
+      setTimeout(waitForReadyThenFullTutorial, 600);
+      return;
+    }
+    if (typeof tutorialStart === 'function') tutorialStart();
+  }
+  setTimeout(waitForReadyThenFullTutorial, 800);
 })();
 
 const P = '../assets/images/Bento_parts/';
@@ -4146,9 +4271,7 @@ function renderBentoReminder() {
   const requestEval = evaluateRequest(currentRequester, data.foodNames || []);
   const chipFood = requestEval.matchedFoods[0] || (currentRequester.wantedFoods || [])[0] || requestEval.label;
 
-  const title = document.createElement('div');
-  title.className = 'bento-reminder__title';
-  title.textContent = 'おもいだし';
+  // 「おもいだし」見出しは撤去 (sw1110): モーダル本体・おねがい/バランス内容のみ残す
 
   const requestRow = document.createElement('div');
   requestRow.className = 'bento-reminder__row';
@@ -4184,7 +4307,7 @@ function renderBentoReminder() {
   });
   balanceRow.append(balanceLabel, groups);
 
-  reminder.replaceChildren(title, requestRow, balanceRow);
+  reminder.replaceChildren(requestRow, balanceRow);
 }
 
 // ===== 豆知識（4-5さい向け食育トリビア） =====
@@ -6121,6 +6244,7 @@ function setFreeGuideStep(step, opts = {}) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
   }
+  try { if (typeof tutorialOnGuideChange === 'function') tutorialOnGuideChange(step); } catch (_) {}
 }
 function getFreePaletteItems(tabId) {
   if (tabId === 'accessory') return bentoAccessories;
@@ -7556,6 +7680,7 @@ function addFreeLayoutItem(def, opts = {}) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
   }
+  try { if (typeof tutorialOnItemPlaced === 'function') tutorialOnItemPlaced(item); } catch (_) {}
   return item;
 }
 function removeFreeItem(uid) {
@@ -9137,6 +9262,44 @@ function tryAdvanceFromNori() {
   }
   setFreeGuideStep('tier2');
 }
+// decorが1個も無い時のみ確認モーダルを挟む（飾りスキップ事故防止）
+function countDecorOnTier(tier = 1) {
+  return placedItems.filter(i => i.type === 'decor' && getItemTier(i) === tier).length;
+}
+function handleNoriOkPressed() {
+  if (countDecorOnTier(1) === 0) {
+    showNoDecorConfirmModal();
+    return;
+  }
+  tryAdvanceFromNori();
+}
+function showNoDecorConfirmModal() {
+  let modal = document.getElementById('nori-skip-confirm');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'nori-skip-confirm';
+    modal.className = 'nori-skip-confirm';
+    modal.innerHTML = ''
+      + '<div class="nori-skip-card">'
+      +   '<div class="nori-skip-title">のりを かざらなくても いい？</div>'
+      +   '<div class="nori-skip-actions">'
+      +     '<button type="button" class="nori-skip-back">もどる</button>'
+      +     '<button type="button" class="nori-skip-ok">うん、いいよ</button>'
+      +   '</div>'
+      + '</div>';
+    document.body.appendChild(modal);
+    modal.querySelector('.nori-skip-back').addEventListener('pointerdown', e => {
+      e.preventDefault();
+      modal.classList.add('hidden');
+    });
+    modal.querySelector('.nori-skip-ok').addEventListener('pointerdown', e => {
+      e.preventDefault();
+      modal.classList.add('hidden');
+      tryAdvanceFromNori();
+    });
+  }
+  modal.classList.remove('hidden');
+}
 function tryFinishOkazuTier(tier) {
   const role = getCurrentOkazuRole();
   if (role === 'main') {
@@ -9187,8 +9350,7 @@ function renderFreeGuidePanel() {
     actions.appendChild(makeSmallControlButton('おべんとうばこにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'decor') {
     actions.appendChild(makeSmallControlButton('ごはんにもどる', '', goBackFreeGuideStep));
-    actions.appendChild(makeSmallControlButton('かざらず次へ', '', tryAdvanceFromNori));
-    actions.appendChild(makeSmallControlButton(hasNoriDecorOnTier(1) ? 'のりOK' : 'つぎへ', 'primary', tryAdvanceFromNori));
+    actions.appendChild(makeSmallControlButton(hasNoriDecorOnTier(1) ? 'のりOK' : 'つぎへ', 'primary', handleNoriOkPressed));
   } else if (freeGuideStep === 'tier2Main') {
     actions.appendChild(makeSmallControlButton('かざりにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'tier2Side') {
@@ -9348,22 +9510,30 @@ function renderFreeLayoutControls() {
   if (guidePanel && freeGuideStep !== 'box') tray.appendChild(guidePanel);
 
   const guideTabs = getFreeGuideTabs();
-  const tabs = document.createElement('div');
-  tabs.className = 'free-tabs';
-  guideTabs.forEach(t => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'free-tab' + (t.id === freeLayoutTab ? ' active' : '');
-    b.textContent = t.label;
-    b.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      freeLayoutTab = t.id;
-      if (t.id !== 'food') freeBrushStampDef = null;
-      renderFreeLayoutControls();
+  // 飾り工程は単一カテゴリのため、 押せる「タブ」ではなく見出しラベルとして表示
+  if (freeGuideStep === 'decor' && guideTabs.length === 1 && guideTabs[0].id === 'decor') {
+    const heading = document.createElement('div');
+    heading.className = 'free-section-heading';
+    heading.textContent = guideTabs[0].label;
+    tray.appendChild(heading);
+  } else {
+    const tabs = document.createElement('div');
+    tabs.className = 'free-tabs';
+    guideTabs.forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'free-tab' + (t.id === freeLayoutTab ? ' active' : '');
+      b.textContent = t.label;
+      b.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        freeLayoutTab = t.id;
+        if (t.id !== 'food') freeBrushStampDef = null;
+        renderFreeLayoutControls();
+      });
+      tabs.appendChild(b);
     });
-    tabs.appendChild(b);
-  });
-  if (guideTabs.length && freeGuideStep !== 'box') tray.appendChild(tabs);
+    if (guideTabs.length && freeGuideStep !== 'box') tray.appendChild(tabs);
+  }
 
   const tierControls = null;
   if (tierControls) tray.appendChild(tierControls);
@@ -9983,6 +10153,7 @@ function queueCompleteChromeSafeAreaSync() {
 }
 
 function stageComplete() {
+  try { if (typeof tutorialOnStageComplete === 'function') tutorialOnStageComplete(); } catch (_) {}
   const completionData = freeLayoutMode
     ? syncFreeLayoutSelectionState()
     : {
@@ -10617,6 +10788,309 @@ function showTutorial() {
     var skIntro = document.getElementById('sk-intro');
     skIntro.classList.remove('hidden');
   });
+}
+
+// ===== Full-flow Tutorial (v1) =====
+// 初回プレイヤー向けに 箱→ご飯→おかず→かざり 全工程を ☝️ 指で誘導
+// 既存 freeGuideStep を観測のみ。 setFreeGuideStep が tutorialOnGuideChange(step) を呼ぶ。
+const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
+const tutorialState = {
+  active: false,
+  step: null,            // 'greet' | 'box' | 'rice' | 'okazuFirst' | 'okazuMore' | 'decor' | 'complete' | 'done'
+  okazuPlacedCount: 0,
+  fingerEl: null,
+  bubbleEl: null,
+  resizeRaf: 0,
+  resizeHandler: null,
+  inactivityTimer: 0,
+  inactivityFired: false,
+  observer: null,
+};
+
+function tutorialReadDone() {
+  try {
+    if (location.search.indexOf('tutreset=1') >= 0) {
+      localStorage.removeItem(TUTORIAL_STORAGE_KEY);
+      return false;
+    }
+  } catch (_) {}
+  try { return localStorage.getItem(TUTORIAL_STORAGE_KEY) === '1'; } catch (_) { return false; }
+}
+function tutorialMarkDone() {
+  try { localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); } catch (_) {}
+  tutorialState.active = false;
+  tutorialState.step = 'done';
+  tutorialTeardown();
+}
+function tutorialIsPortraitBlocking() {
+  const n = document.getElementById('portrait-notice');
+  if (!n) return false;
+  return getComputedStyle(n).display !== 'none';
+}
+function tutorialEnsureLayer() {
+  if (!tutorialState.fingerEl) {
+    const finger = document.createElement('div');
+    finger.className = 'tut-finger';
+    finger.id = 'tut-finger';
+    finger.textContent = '☝️';
+    finger.style.display = 'none';
+    document.body.appendChild(finger);
+    tutorialState.fingerEl = finger;
+  }
+  if (!tutorialState.bubbleEl) {
+    const bubble = document.createElement('div');
+    bubble.className = 'tut-bubble tut-bubble--anchored hidden';
+    bubble.id = 'tut-bubble-tutorial';
+    document.body.appendChild(bubble);
+    tutorialState.bubbleEl = bubble;
+  }
+}
+function tutorialHideFinger() {
+  if (tutorialState.fingerEl) tutorialState.fingerEl.style.display = 'none';
+}
+function tutorialShowBubble(html, opts = {}) {
+  tutorialEnsureLayer();
+  const b = tutorialState.bubbleEl;
+  b.classList.remove('hidden');
+  b.classList.toggle('tut-bubble--loud', !!opts.loud);
+  b.innerHTML = html;
+  tutorialPositionBubble(opts.anchor);
+}
+function tutorialHideBubble() {
+  if (tutorialState.bubbleEl) tutorialState.bubbleEl.classList.add('hidden');
+}
+function tutorialPositionBubble(anchorEl) {
+  const b = tutorialState.bubbleEl;
+  if (!b) return;
+  if (!anchorEl) {
+    b.style.top = '50%';
+    b.style.left = '50%';
+    b.style.transform = 'translate(-50%,-50%)';
+    return;
+  }
+  const r = anchorEl.getBoundingClientRect();
+  const bw = b.offsetWidth || 260;
+  const bh = b.offsetHeight || 80;
+  let top = r.top - bh - 12;
+  let left = r.left + r.width / 2 - bw / 2;
+  if (top < 8) top = r.bottom + 12;
+  left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+  b.style.left = left + 'px';
+  b.style.top = top + 'px';
+  b.style.transform = 'none';
+}
+function tutorialAnimateDrag(fromEl, toEl, opts = {}) {
+  tutorialEnsureLayer();
+  const f = tutorialState.fingerEl;
+  if (!fromEl || !toEl) { tutorialHideFinger(); return; }
+  const fr = fromEl.getBoundingClientRect();
+  const tr = toEl.getBoundingClientRect();
+  const fx = fr.left + fr.width / 2 - 28;
+  const fy = fr.top + fr.height / 2 - 28;
+  const tx = tr.left + tr.width / 2 - 28;
+  const ty = tr.top + tr.height / 2 - 28;
+  f.style.display = 'block';
+  f.classList.remove('tut-finger--tap');
+  f.classList.toggle('tut-finger--fast', !!opts.fast);
+  f.style.setProperty('--from-x', fx + 'px');
+  f.style.setProperty('--from-y', fy + 'px');
+  f.style.setProperty('--to-x', tx + 'px');
+  f.style.setProperty('--to-y', ty + 'px');
+  // restart animation
+  f.style.animation = 'none';
+  void f.offsetWidth;
+  f.style.animation = '';
+}
+function tutorialAnimateTap(targetEl) {
+  tutorialEnsureLayer();
+  const f = tutorialState.fingerEl;
+  if (!targetEl) { tutorialHideFinger(); return; }
+  const r = targetEl.getBoundingClientRect();
+  const tx = r.left + r.width / 2 - 28;
+  const ty = r.top + r.height / 2 - 28;
+  f.style.display = 'block';
+  f.classList.add('tut-finger--tap');
+  f.classList.remove('tut-finger--fast');
+  f.style.setProperty('--tap-x', tx + 'px');
+  f.style.setProperty('--tap-y', ty + 'px');
+  f.style.animation = 'none';
+  void f.offsetWidth;
+  f.style.animation = '';
+}
+function tutorialScheduleResync() {
+  if (tutorialState.resizeRaf) cancelAnimationFrame(tutorialState.resizeRaf);
+  tutorialState.resizeRaf = requestAnimationFrame(() => {
+    tutorialState.resizeRaf = 0;
+    tutorialRefresh();
+  });
+}
+function tutorialRefresh() {
+  // 現在のステップに応じて位置/ターゲットを再計算
+  if (!tutorialState.active) return;
+  if (tutorialIsPortraitBlocking()) { tutorialHideFinger(); tutorialHideBubble(); return; }
+  tutorialRenderStep();
+}
+function tutorialFirstPaletteItem() {
+  return document.querySelector('.free-item-list .free-palette-item');
+}
+function tutorialStageCenter() {
+  return document.getElementById('free-layout-stage')
+      || document.querySelector('.free-layout-stage')
+      || document.querySelector('.free-bento-shape');
+}
+function tutorialCompleteButton() {
+  return document.querySelector('.free-complete-btn');
+}
+function tutorialResetInactivity() {
+  tutorialState.inactivityFired = false;
+  if (tutorialState.inactivityTimer) clearTimeout(tutorialState.inactivityTimer);
+  tutorialState.inactivityTimer = setTimeout(() => {
+    tutorialState.inactivityFired = true;
+    tutorialRenderStep();
+  }, 20000);
+}
+function tutorialRenderStep() {
+  if (!tutorialState.active) return;
+  const step = tutorialState.step;
+  const loud = tutorialState.inactivityFired;
+  const fast = tutorialState.inactivityFired;
+  if (step === 'greet') {
+    tutorialShowBubble(
+      'やあ！ぼく ポノだよ。<br>きょうは いっしょに<br>おべんとう つくろう！'
+      + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>',
+      { loud }
+    );
+    tutorialHideFinger();
+    const btn = document.getElementById('tut-greet-next');
+    if (btn) btn.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      tutorialState.step = 'box';
+      tutorialRenderStep();
+      tutorialResetInactivity();
+    }, { once: true });
+    return;
+  }
+  if (step === 'box') {
+    const palette = tutorialFirstPaletteItem();
+    const stage = tutorialStageCenter();
+    tutorialShowBubble('すきな おべんとうばこを えらんで、<br>まんなかに もってきてね', { anchor: palette, loud });
+    tutorialAnimateDrag(palette, stage, { fast });
+    return;
+  }
+  if (step === 'rice') {
+    const palette = tutorialFirstPaletteItem();
+    const stage = tutorialStageCenter();
+    tutorialShowBubble('つぎは ごはんだよ！<br>ゆびで つまんで<br>おべんとうばこに のせよう', { anchor: palette, loud });
+    tutorialAnimateDrag(palette, stage, { fast });
+    return;
+  }
+  if (step === 'okazuFirst') {
+    const palette = tutorialFirstPaletteItem();
+    const stage = tutorialStageCenter();
+    tutorialShowBubble('あかい おかずを いれてみよう！<br>からだを つくる ちからだよ', { anchor: palette, loud });
+    tutorialAnimateDrag(palette, stage, { fast });
+    return;
+  }
+  if (step === 'okazuMore') {
+    const palette = tutorialFirstPaletteItem();
+    // 控えめにパレット領域全体へ
+    const tray = document.querySelector('.free-item-list');
+    const remaining = Math.max(0, 3 - tutorialState.okazuPlacedCount);
+    tutorialShowBubble(`あと ${remaining} こ いれて、<br>いろどり よくしてね`, { anchor: tray || palette, loud });
+    tutorialAnimateTap(palette || tray);
+    return;
+  }
+  if (step === 'decor') {
+    const palette = tutorialFirstPaletteItem();
+    const stage = tutorialStageCenter();
+    tutorialShowBubble('さいごに のりで<br>かおを つくろう！', { anchor: palette, loud });
+    tutorialAnimateDrag(palette, stage, { fast });
+    return;
+  }
+  if (step === 'complete') {
+    const btn = tutorialCompleteButton();
+    if (btn) btn.classList.add('tut-complete-pulse');
+    tutorialShowBubble('できた！ボタンを おして<br>みせちゃおう', { anchor: btn, loud });
+    tutorialAnimateTap(btn);
+    return;
+  }
+}
+function tutorialClearCompletePulse() {
+  document.querySelectorAll('.tut-complete-pulse').forEach(el => el.classList.remove('tut-complete-pulse'));
+}
+function tutorialTeardown() {
+  if (tutorialState.resizeHandler) {
+    window.removeEventListener('resize', tutorialState.resizeHandler);
+    window.removeEventListener('orientationchange', tutorialState.resizeHandler);
+    tutorialState.resizeHandler = null;
+  }
+  if (tutorialState.inactivityTimer) { clearTimeout(tutorialState.inactivityTimer); tutorialState.inactivityTimer = 0; }
+  if (tutorialState.observer) { try { tutorialState.observer.disconnect(); } catch (_) {} tutorialState.observer = null; }
+  tutorialHideFinger();
+  tutorialHideBubble();
+  tutorialClearCompletePulse();
+}
+function tutorialStart() {
+  if (tutorialReadDone()) return;
+  if (tutorialState.active) return;
+  if (tutorialIsPortraitBlocking()) {
+    // 横画面に戻るまで待機
+    setTimeout(tutorialStart, 600);
+    return;
+  }
+  tutorialState.active = true;
+  tutorialState.step = 'greet';
+  tutorialState.okazuPlacedCount = 0;
+  tutorialEnsureLayer();
+  // 既存のステップに合わせて再同期
+  tutorialOnGuideChange(typeof freeGuideStep !== 'undefined' ? freeGuideStep : null);
+  tutorialRenderStep();
+  tutorialResetInactivity();
+  // resize/orientation で再計算
+  tutorialState.resizeHandler = () => tutorialScheduleResync();
+  window.addEventListener('resize', tutorialState.resizeHandler);
+  window.addEventListener('orientationchange', tutorialState.resizeHandler);
+  // パレット/ステージ DOM 変化を検知して finger 位置を更新
+  const root = document.body;
+  tutorialState.observer = new MutationObserver(() => tutorialScheduleResync());
+  try { tutorialState.observer.observe(root, { subtree: true, childList: true }); } catch (_) {}
+}
+function tutorialOnGuideChange(step) {
+  if (!tutorialState.active) return;
+  if (tutorialIsPortraitBlocking()) { tutorialHideFinger(); tutorialHideBubble(); return; }
+  // greet 中は手動操作待ち
+  if (tutorialState.step === 'greet') return;
+  if (step === 'box') tutorialState.step = 'box';
+  else if (step === 'rice') tutorialState.step = 'rice';
+  else if (step === 'tier2Main' || step === 'tier3Main') {
+    tutorialState.step = tutorialState.okazuPlacedCount === 0 ? 'okazuFirst' : 'okazuMore';
+  } else if (step === 'tier2Side' || step === 'tier3Side') {
+    tutorialState.step = 'okazuMore';
+  } else if (step === 'decor') {
+    tutorialState.step = 'decor';
+  } else if (step === 'tier3Prompt') {
+    tutorialState.step = 'complete';
+  }
+  tutorialResetInactivity();
+  tutorialRenderStep();
+}
+// placedItems の変化を検知して食材数を追跡 / 完成タイミングを掴む
+function tutorialOnItemPlaced(item) {
+  if (!tutorialState.active) return;
+  if (!item) return;
+  if (item.type === 'food') {
+    tutorialState.okazuPlacedCount += 1;
+    if (tutorialState.okazuPlacedCount >= 3 && tutorialState.step !== 'decor') {
+      // 十分入ったら decor 直前まで待ちつつ表示文言を更新
+      tutorialState.step = 'okazuMore';
+    }
+  }
+  tutorialResetInactivity();
+  tutorialRenderStep();
+}
+function tutorialOnStageComplete() {
+  if (!tutorialState.active) return;
+  tutorialMarkDone();
 }
 
 // ===== Init =====

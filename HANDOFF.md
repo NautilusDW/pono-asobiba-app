@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:507-pono-space-villain-palette-zako-lazarus] Codex: user 指摘「敵キャラ/ラザロが主役と同じテイストで味方に見える。メカっぽい悪役色へ。差し色は炎っぽくない方。デザインは悪くない」を受領。既存造形は維持し、ザコメカ3種とラザロ分割中ボス3種を、黒鉄/深紫/暗緑/鈍い銀ベース + 小面積ライム/紫/白青発光の悪役メカパレットで再生成する。 (by Codex)
 - 2026-06-14 - [batch:506-pono-space-starbrain-researched-redo] Codex: user 指摘「ちゃんと調べてから生成して」を受領。Webで Star Brain / Big Star Brain の公開情報とスクショを確認し、前回の星型ボスは外して、中央に脳/コアを持つ巨大な浮遊機械要塞（複雑な機械フレーム、左右エネルギーノード、砲台/突起）として3スタイル分を再生成する。IP丸写しは避け、構成要素だけをオリジナル化する。 (by Codex)
 - 2026-06-14 - [batch:506-pono-space-starbrain-researched-redo] DONE - Codex: 生成前に Star Soldier Wiki/Fandom、ja.wikipedia、Nintendo VC、GAME Watch 等で Star Brain / Big Star Brain を調査。特徴を「中央に脳/コアを持つ浮遊要塞」「Big は巨大で中心部を4砲台が守る」「ステージ末ボス」と整理し、前回の星型案を非推奨にして、`boss_starbrain_researched_style_{a,b,c}_raw.png` を追加生成。各 1254x1254 RGB raw、白背景。`contact_sheet_starbrain_researched_boss.jpg` で、四角/八角の機械要塞フレーム、左右大型ノード、中央の抽象的な知性コア、非生々しい表現を確認。 (by Codex)
 - 2026-06-14 - [batch:505-pono-space-starbrain-boss] Codex: user 指摘「ボスはスターブレイン風で」を受領。IP丸写しではなく、星型シルエット + 脳/知性コア + 機械要塞パネルの文法を使った、怖すぎない大型ボスとして3スタイル分を追加生成する。 (by Codex)
