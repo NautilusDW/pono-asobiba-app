@@ -8975,6 +8975,8 @@ function _drawBowlBossHud(gs, now) {
   const y = Math.max(8, H * 0.035);
 
   ctx.save();
+  // v1147: ボスの頭がHUD裏に来ても見えるよう、ゲージ全体を半透明にする。
+  ctx.globalAlpha = 0.64;
   ctx.fillStyle = 'rgba(255, 252, 232, 0.92)';
   ctx.strokeStyle = 'rgba(99, 142, 60, 0.86)';
   ctx.lineWidth = 2;

@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:514-maze-stage7-boss-hud-alpha] DONE - Codex: user 指摘「ボスの頭がゲージで見切れる」を受け、`maze/index.html` の `_drawBowlBossHud` で HUD/ゲージ全体に `ctx.globalAlpha = 0.64` を適用。ボス位置は v1146 のまま、表示だけ半透明化。`sw.js` は v1147。inline script parse / diff check / UTF-8 LF BOMなし確認済み。 (by Codex)
 - 2026-06-15 - [batch:513-pono-space-lazarus-unclipped-exact-puzzle] Codex: user 指摘「前回ラザロは1個を4つに切る方針自体はよいが、元の合体顔が左側/下側で見切れており、そのまま切ったため4分割側も見切れている。スターブレインはそのままでよい」を受領。見切れていない合体顔マスターを再生成し、そのマスターから4ピースを機械的に派生して再合体差分を確認する。 (by Codex)
 - 2026-06-15 - [batch:512-bento-tutorial-drag-hand-visible] Codex: `HANDOFF_DRAG_DEMO.md` を受領。HANDOFF / git log / 現行 `bento/index.html` を確認し、同不具合の完了済み修正は未検出。`.tut-finger` が `.tut-dim` より下の z-index にあり手アイコンだけ暗幕下へ潜る疑いを中心に、4つのドラッグデモ表示だけを最小修正する。 (by Codex)
 - 2026-06-15 - [batch:512-bento-tutorial-drag-hand-visible] DONE - Codex: 根本原因は `.tut-hand` 側の `--from-x/--to-x` 初期値が親 `.tut-finger` から渡した座標を上書きしていたことと、bubble の同一 `innerHTML` 再代入が MutationObserver に拾われ手アニメを連続再起動していたこと。CSS vars を親へ移し、bubble 更新を冪等化、同一座標ドラッグの再起動を抑止。`sw.js` v1145。Playwright 896x432 で4ステップの `✊` 移動、renderCount 177→2、inline script parse、git diff --check を確認。ローカル API 404 は既存の静的サーバー制約。 (by Codex)
