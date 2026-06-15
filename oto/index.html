@@ -2807,15 +2807,10 @@
     width: 30px;
     height: 30px;
   }
-  @media (orientation: landscape) {
-    /* mode-switch (+350px) + おおよそ 56-72px 高 + 18px gap の下に band-group を置く。
-       16:9 narrow / 4:3 iPad どちらでも +440px で重なりなく着地する。
-       下限を 440px に固定し、上限は viewport 高に応じて 460px まで許容。 */
-    body.rhythm-layout .band-group {
-      top: clamp(440px, 56vh, 460px);
-      bottom: auto;
-    }
-  }
+  /* 2026-06-15 (Measure phase): 旧 clamp(440px, 56vh, 460px) ベースの band-group landscape
+     ルールは Region 5.3 (上位 @media (orientation: landscape) の !important 付き +436px) に
+     統合されたため削除済み。視覚順 pono → mode-switch → chord-pill → sound-sets-box → band-group
+     のスタックは Region 5.3 を参照。 */
   @media (orientation: landscape) and (max-height: 520px) {
     body.rhythm-layout .sound-sets-box {
       top: calc(max(6px, env(safe-area-inset-top)) + 108px);
@@ -2968,22 +2963,33 @@
   body.rhythm-layout .pono-sprite {
     height: 100px;
   }
-  /* Region 5.3: pono を左パネル最上部 (top: safe-area + 8px, height:110px) に移動したため、
-     その下に並ぶ chord-pill / sound-sets-box / mode-switch / band-group を pono の下端より下に逃がす。
+  /* Region 5.3 (FINAL stacking, Measure phase: 2026-06-15):
+     pono を左パネル最上部 (top: safe-area + 8px, height:110px) に置いたため、
+     その下に並ぶ mode-switch / chord-pill / sound-sets-box / band-group を pono 下端より下へ逃がす。
      pono 下端 ≒ safe-area-top + 8 + 110 = +118px。
-     縦スタック順 (landscape: 4:3 iPad / 16:9 narrow 共通):
-       pono → chord-pill (+170px) → sound-sets-box (+230px) → mode-switch (+350px) → band-group (+440px)
-     16:9 narrow (1280x720 / 1366x768 / 1920x1080) では下の Region 5.2b で各値を再宣言する。
-     portrait では pono / 左パネル配置が異なるためこのスタックは適用しない。 */
+     視覚順 (top → bottom) を画面表示と一致させた最終スタック:
+       pono (top anchor, ~110px)
+       → mode-switch    (+130px,  ~72px tall: じゆう/リズム)
+       → chord-pill     (+214px,  ~35px tall: たんおん/コード)
+       → sound-sets-box (+261px,  ~163px tall: ねいろ instrument grid, 3 行 wrap)
+       → band-group     (+436px,  ~163px tall: ばんそう ドラム)
+     合計下端 ≒ +599px, 720h viewport にマージン込みで収まる。
+     スコープは 16:9 narrow に限らず 4:3 iPad など全 landscape 比へ拡張 (Measure 結論)。
+     band-group の clamp()-based 上書きや旧 +170/+210/+126/+268 系を抑え込むため !important 付与。
+     portrait では pono / 左パネル配置が異なるため別ルールで対応 (下記 portrait ブロック)。 */
   @media (orientation: landscape) {
+    body.rhythm-layout .mode-switch {
+      top: calc(max(8px, env(safe-area-inset-top)) + 130px) !important;
+    }
     body.rhythm-layout .chord-pill {
-      top: calc(max(8px, env(safe-area-inset-top)) + 170px);
+      top: calc(max(8px, env(safe-area-inset-top)) + 214px) !important;
     }
     body.rhythm-layout .sound-sets-box {
-      top: calc(max(8px, env(safe-area-inset-top)) + 230px);
+      top: calc(max(8px, env(safe-area-inset-top)) + 261px) !important;
     }
-    body.rhythm-layout .mode-switch {
-      top: calc(max(8px, env(safe-area-inset-top)) + 350px);
+    body.rhythm-layout .band-group {
+      top: calc(max(8px, env(safe-area-inset-top)) + 436px) !important;
+      bottom: auto;
     }
   }
   /* portrait rhythm-layout: 旧 mode-switch 位置 (+170px) を維持。 */
@@ -3155,29 +3161,11 @@
       width: clamp(112px, 11vw, 122px);
       max-width: clamp(112px, 11vw, 122px);
     }
-    /* Region 5.2b: 16:9 narrow (1280x720 / 1366x768 / 1920x1080) では、
-       rhythm-layout の pono (top: safe-area+8px, height:110px) が物理的に
-       左パネル上部の sound-sets-box / chord-pill を覆ってしまうため、
-       pono の下端 (safe-area-top + 118px) より下に縦スタックする。
-       縦順: pono → chord-pill → sound-sets-box → mode-switch → band-group。
-       高さ実測:
-         chord-pill ≒ 36-40px (1 行のピル)
-         sound-sets-box ≒ 150-160px (6 ボタン 44x44 を 2 列 3 行で wrap)
-         mode-switch  ≒ 56-72px (2 行 mode-btn)
-       したがって +170 / +230 / +350 / +440 で重なりなしに収まる。 */
-    body.rhythm-layout .chord-pill {
-      top: calc(max(8px, env(safe-area-inset-top)) + 170px);
-    }
-    body.rhythm-layout .sound-sets-box {
-      top: calc(max(8px, env(safe-area-inset-top)) + 230px);
-    }
-    body.rhythm-layout .mode-switch {
-      top: calc(max(8px, env(safe-area-inset-top)) + 350px);
-    }
-    body.rhythm-layout .band-group {
-      top: calc(max(8px, env(safe-area-inset-top)) + 440px);
-      bottom: auto;
-    }
+    /* Region 5.2b: 16:9 narrow 専用の chord-pill / sound-sets-box / mode-switch / band-group の
+       top 値は、2026-06-15 (Measure phase) に上位の `@media (orientation: landscape)`
+       (Region 5.3) へ統合された。視覚順 (pono → mode-switch → chord-pill → sound-sets-box → band-group)
+       の +130 / +214 / +261 / +436 で 4:3 iPad と 16:9 narrow の両方をカバーする。
+       ここではアスペクト比固有の left/width/transform 調整のみを残し、top 値は触らない。 */
 
     /* クリアモーダル: 16:9 narrow では幅をさらに詰めて確実に親 stage 内へ。 */
     .rhythm-complete-panel {

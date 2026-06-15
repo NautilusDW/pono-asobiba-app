@@ -5419,11 +5419,22 @@ function _creatureImg(url) {
 }
 
 function imgDrawCreatures(stage, now) {
-  const size = stage.viewBox.h / 11;
+  // Base size: smaller than before (was viewBox.h/11) so the cast doesn't
+  // feel cramped, then modulated per-creature for depth.
+  const baseSize = stage.viewBox.h / 14;
+  // Bob (subtle floating) is now gated on remaining creature count — only the
+  // last few survivors wiggle so the player can spot them quickly.
+  const aliveCount = (stage.creatures?.length || 0) - (_defeatedCreatures?.size || 0);
+  const shouldBob = aliveCount > 0 && aliveCount <= 4;
   for (const c of stage.creatures) {
     if (_defeatedCreatures.has(c.id || (c.x + ',' + c.y))) continue;
     const data = _creatureData(c);
-    const bob = Math.sin(now / 320 + (c.x + c.y) * 0.01) * (size * 0.06);
+    // Depth scale: y=0 is the top of the viewBox (奥/far), y=viewBox.h is the
+    // bottom (手前/near). Far creatures shrink to 0.65×, near ones stay 1.0×.
+    const depthT = Math.max(0, Math.min(1, c.y / stage.viewBox.h));
+    const depthScale = 0.65 + depthT * 0.35;
+    const size = baseSize * depthScale;
+    const bob = shouldBob ? Math.sin(now / 320 + (c.x + c.y) * 0.01) * (size * 0.06) : 0;
     const sprite = _creatureImg(data.imageUrl);
     ctx.save();
     if (sprite) {
