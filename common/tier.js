@@ -46,11 +46,21 @@
   }
   function gameLocksEnabled() { return !!window.PONO_TIER_GAME_LOCKS_ENABLED; }
 
+  // ---- APP_BUILD 判定 ----
+  // アプリ版 (APP_BUILD=1) は URL 自体がアプリ版用ビルドであることを示すため、
+  // localStorage 経由ではなく window.__APP_BUILD__ を見て tier を決定する。
+  function isAppBuild() {
+    try { return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1'; }
+    catch (e) { return false; }
+  }
+
   // ---- tier 判定 ----
   function getTier() {
+    // アプリ版 (APP_BUILD=1) は無条件で sub tier (アプリ版 URL に来た時点で sub 想定)
+    if (isAppBuild()) return 'sub';
+    // 本版: localStorage 状態で book / free のみ。 sub には絶対到達しない
     try {
-      if (localStorage.getItem('pono_sub_active') === '1') return 'sub';
-      if (localStorage.getItem('pono_premium')    === '1') return 'book';
+      if (localStorage.getItem('pono_premium') === '1') return 'book';
     } catch (e) {}
     return 'free';
   }
@@ -430,6 +440,7 @@
   // ---- export ----
   window.PonoTier = {
     getTier: getTier,
+    isAppBuild: isAppBuild,
     isFree: isFree,
     isBook: isBook,
     isSub:  isSub,

@@ -2312,7 +2312,8 @@
         if (ok) {
           try {
             localStorage.setItem('pono_premium', '1');
-            if (adminOk) localStorage.setItem('pono_sub_active', '1');
+            // sub tier は APP_BUILD で決まるため、 localStorage に pono_sub_active は書かない
+            // (本版で 'abcd' を入れても book までしか上がらない)
           } catch (e) {}
           if (errEl) errEl.hidden = true;
           if (input) input.style.display = 'none';

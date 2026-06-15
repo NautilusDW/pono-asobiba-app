@@ -17,6 +17,15 @@
 
 ## Active (進行中 / 未着手)
 
+## sub-tier テスト方針 (sw1192)
+
+- 本版 staging (https://pono-asobiba-staging.ndw.workers.dev/) では sub-only コンテンツは絶対に表示されない。 'abcd' パスワードでも book までしか上がらない。
+- アプリ版 staging (https://pono-asobiba-app-staging.ndw.workers.dev/) では visitor が **自動的に sub** 扱い (APP_BUILD=1 ベース)。 パスワード入力不要で sub-only コンテンツを確認可能。
+- 既存 localStorage の pono_sub_active='1' は無効化された。 fresh load で getTier() は APP_BUILD で判定する。
+
+## sub-tier 振り分け確定状態
+- writing カタカナ / aquarium 全種 / room 全アイテム / quizland Lv2-3 / maze stage 8+ / oto blip/taiko/penta/twinkle/ode / puzzle stage 10+ + special slots + 4 sub partners (アライグマ/ウサギ/フクロウ/カラス) / bento sub 食材-15+/箱-3+/NPC-3+ は アプリ版限定。
+
 - 2026-06-16 - [batch:552-oto-rhythm-pono-opening-polish] DONE - Codex: OtoTouchリズム左パネルで、リズム中にステージ上の小さい旧ポノを非表示にし、左下のポノカード内に通常ポノを表示。ライバル/ポノの待機時に拍に合わせた軽い拡大縮小を追加し、ポノのバンプ/フィーバー粒子も左下ポノを基準に変更。ステージ開始用の3コマ会話オープニングを曲ごとに追加し、「つぎへ/スキップ」から開始できる導線を実装。追加後、自動コミット `181f9ef` に大半が含まれたため、未コミット分は待機アニメのtransform競合修正と `sw.js` v1188 のキャッシュバンプのみ。Playwright 16:9/横長で上ポノ非表示、左下ポノ表示、オープニング表示、pageerrorなしを確認。 (by Codex)
 - 2026-06-16 - [batch:551-sticker-book-kids-generated-assets] Codex: user 指摘「日本の子どもが持っていそうなシールブックとして生成からやり直す」を受領。高級ノート風は不採用にし、GPT Image 2 built-inで子ども用の貼ってはがせるシールブック本体、Bento用ラミネート台紙、シール収納台紙、ページめくりスプライト素材を生成して `assets/images/sticker-book/` に取り込み、Canvas表示へ反映する。 (by Codex)
 - 2026-06-16 - [batch:551-sticker-book-kids-generated-assets] DONE - Codex: 日本の子ども向け「貼ってはがせる」シールブック寄りに、生成画像4点 (`sticker_book_base_kids_16x9.png` / `sticker_page_bento_laminated.png` / `sticker_storage_sheet.png` / `sticker_page_flip_sheet_3x3.png`) を `assets/images/sticker-book/` へ追加し、`sticker-book/index.html` のCanvas描画へ統合。base/storage/bento/flipの読み込み、シール追加・ドラッグ・拡大・回転・ページめくり、モバイル16:9、画像サイズ3MB未満、UTF-8 BOMなし/LF、`node --check`、inline script parse、対象差分 `git diff --check` を確認。`sw.js` / `play.html` は v1187。スクショ: `tmp/sticker_book_generated_bento_pasted.png` / `tmp/sticker_book_generated_after_flip.png` / `tmp/sticker_book_generated_mobile.png`。未関連の `.github/workflows/deploy.yml` / `AGENTS.md` / `oto/index.html` / `src/worker.js` / `wrangler.toml` 差分は触らず保持。 (by Codex)
