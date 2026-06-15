@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-15T01:11:20Z - クロスレビューHIGH適用: bento tutorialClearBoxLockのリスナーリーク修正 + oto rhythm-fever-bubble clamp保護 + sw.js CACHE_VERSION 1124バンプ
+- **タスク**: クロスレビューHIGH適用: bento tutorialClearBoxLockのリスナーリーク修正 + oto rhythm-fever-bubble clamp保護 + sw.js CACHE_VERSION 1124バンプ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 38
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 22, "Bash": 13, "Read": 3}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-15T01:10:07Z - 迷路お邪魔虫マスク3種(pyon/odoke/hachi)差し替え + 撃破を2勝先取式 (通常hp=2, boss=3, strength_push据え置き) に変更 + 励まし表示 850ms→1300ms (子供の読み時間確保)
 - **タスク**: 迷路お邪魔虫マスク3種(pyon/odoke/hachi)差し替え + 撃破を2勝先取式 (通常hp=2, boss=3, strength_push据え置き) に変更 + 励まし表示 850ms→1300ms (子供の読み時間確保)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 8, "ToolSearch": 1, "Bash": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-15T00:13:35Z - oto rhythm-layout pono keyframe clip fix + 16:9 stack
-- **タスク**: oto rhythm-layout pono keyframe clip fix + 16:9 stack
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 9
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 8, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

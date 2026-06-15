@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1123; // v1123: maze - 2勝先取式の励まし表示 850ms→1300ms (子供の読み時間確保)
+const CACHE_VERSION = 1124; // v1124: bento tutorial v2 polish (lock feedback, copy "あかい おかずは げんきの もとだよ", settings いま みる button) + oto fever bubble repositioned with clamp() guard
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

@@ -11209,6 +11209,7 @@ function tutorialApplyBoxLock() {
           e.stopPropagation();
           try { if (typeof showToast === 'function') showToast('きょうは このはこを つかうよ'); } catch (_) {}
         };
+        btn._tutLockHandler = handler;
         btn.addEventListener('pointerdown', handler, true);
         btn.addEventListener('click', handler, true);
       }
@@ -11217,6 +11218,14 @@ function tutorialApplyBoxLock() {
 }
 function tutorialClearBoxLock() {
   document.querySelectorAll('.free-palette-item.tut-locked').forEach(el => el.classList.remove('tut-locked'));
+  document.querySelectorAll('.free-palette-item').forEach(el => {
+    if (el._tutLockHandler) {
+      el.removeEventListener('pointerdown', el._tutLockHandler, true);
+      el.removeEventListener('click', el._tutLockHandler, true);
+      delete el._tutLockHandler;
+      delete el.dataset.tutLockBound;
+    }
+  });
 }
 // パレットから type=cup の最初のボタンを取得 (accessory タブ)
 function tutorialFindCupPaletteEl() {
