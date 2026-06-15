@@ -1361,8 +1361,10 @@
       0 12px 24px rgba(0,0,0,0.3);
   }
   body.rhythm-layout .rhythm-fever-bubble {
+    /* v1116: 視線がノートのヒットライン (=画面下から約20% 上) に集中するため、
+       中央 (50%/50%) では「中途半端」だった。ヒットライン直上に貼り直す。 */
     left: 50%;
-    top: 50%;
+    top: calc(var(--gh-hit-y, 80%) - 96px);
     transform: translate(-50%, -50%) scale(0.95);
     opacity: 0.92;
     z-index: 20;

@@ -9534,6 +9534,41 @@ const _GAME_STARTERS = {
 function _closeEncounter(playerWon) {
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
   const wasStrengthPush = _currentGame === 'strength_push';
+  // ── 2勝先取式: 勝利でも HP が残っていれば次ラウンドへ ──
+  // strength_push は連打型なので除外 (1回で撃破)。
+  // 敗北時はリセットして次の挑戦で満タンに戻す (子供向けにフェア)。
+  if (playerWon && !wasStrengthPush && _currentCreature && (_currentCreature._hp || 0) > 1) {
+    const c = _currentCreature;
+    c._hp -= 1;
+    const remaining = c._hp;
+    const encourageMsg = (remaining === 1)
+      ? 'あといっかいで かてるよ！'
+      : 'もうちょっと！ あと ' + remaining + 'かい！';
+    // 現在のミニゲーム state をリセット (次ラウンドで再初期化されるように)
+    if (_currentGame === 'flag') { _flagGameState = null; _clearFlagTunnelTimers(); }
+    if (_currentGame === 'water_bridge') { _waterGameState = null; _clearWaterGimmickTimers(); }
+    if (_currentGame === 'web_sweep' || _currentGame === 'donguri_bowl') {
+      _detachBowlListeners(_bowlGameState); _bowlGameState = null; _clearWebGimmickTimers();
+    }
+    _setEncounterMode(null);
+    if (_creatureDefeatTimer) { clearTimeout(_creatureDefeatTimer); _creatureDefeatTimer = null; }
+    // 励まし表示: encStageEl に大きく出す
+    encStageEl.innerHTML =
+      '<div class="enc-result win" style="font-size:1.4em;">' +
+        '<div>' + encourageMsg + '</div>' +
+        '<div style="margin-top:.4em;font-size:.8em;">もういちど ちょうせん！</div>' +
+      '</div>';
+    // 1300ms 後に同じ encounter を再オープン (子供がサブテキストまで読める時間を確保)
+    _creatureDefeatTimer = setTimeout(function() {
+      _creatureDefeatTimer = null;
+      // モーダルは閉じずにそのまま次ラウンドへ。
+      // 一旦 _encounterActive を false にして _triggerEncounter のガードを通す。
+      _encounterActive = false;
+      _encounteringCreatureId = null;
+      _triggerEncounter(c);
+    }, 1300);
+    return;
+  }
   if (_currentGame === 'flag') {
     _flagGameState = null;
     _clearFlagTunnelTimers();
@@ -9565,6 +9600,8 @@ function _closeEncounter(playerWon) {
   if (playerWon) {
     // Defeat creature, resume the walk forward
     _defeatedCreatures.add(cid);
+    // 撃破完了: HP runtime state をクリア (次のリスポーンに備える)
+    if (_currentCreature) { _currentCreature._hp = null; _currentCreature._hpMax = null; }
     if (walkAnim && walkAnim.type === 'image') {
       // Resume by adjusting t0 so elapsed time effectively continues from where we paused
       if (walkAnim._pausedAt) {
@@ -9584,6 +9621,8 @@ function _closeEncounter(playerWon) {
   } else {
     // Lose: cancel the walk and bounce back to the node pono left from
     // (NOT all the way back to start — that was too punishing)
+    // 敗北時は HP をリセット (次の挑戦で満タンスタート / 子供向けにフェア)
+    if (_currentCreature) { _currentCreature._hp = null; _currentCreature._hpMax = null; }
     const backNodeId = walkAnim ? walkAnim.startNodeId : (stage.start && stage.start.id);
     walkAnim = null;
     const backNode = stage.nodesById[backNodeId] || stage.start;

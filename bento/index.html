@@ -3078,9 +3078,10 @@ body.bento-complete-open .pono-dropdown {
 .free-palette-item.tut-locked,
 .free-palette-item.tut-locked:hover,
 .free-palette-item.tut-locked:active {
-  pointer-events: none;
+  pointer-events: auto;
   opacity: 0.55;
   filter: grayscale(0.4);
+  cursor: not-allowed;
 }
 /* v2: settings (gear) re-enable tutorial */
 .tut-settings-btn {
@@ -3916,7 +3917,8 @@ body.bento-complete-open .pono-dropdown {
 <div class="tut-settings-modal hidden" id="tut-settings-modal">
   <div class="tut-settings-card">
     <h2>おとなのかた へ</h2>
-    <button type="button" id="tut-settings-reenable">おべんとうの あそびかたを もう一回 みる</button>
+    <button type="button" id="tut-settings-reenable-now">いま みる</button>
+    <button type="button" id="tut-settings-reenable">つぎから みる</button>
     <button type="button" class="secondary" id="tut-settings-close">とじる</button>
   </div>
 </div>
@@ -11199,6 +11201,17 @@ function tutorialApplyBoxLock() {
       btn.dataset.tutTarget = '1';
     } else {
       btn.classList.add('tut-locked');
+      if (!btn.dataset.tutLockBound) {
+        btn.dataset.tutLockBound = '1';
+        const handler = function(e) {
+          if (!btn.classList.contains('tut-locked')) return;
+          e.preventDefault();
+          e.stopPropagation();
+          try { if (typeof showToast === 'function') showToast('きょうは このはこを つかうよ'); } catch (_) {}
+        };
+        btn.addEventListener('pointerdown', handler, true);
+        btn.addEventListener('click', handler, true);
+      }
     }
   });
 }
@@ -11338,7 +11351,7 @@ function tutorialRenderStep() {
     const palette = tutorialFindFoodPaletteEl();
     const target = tutorialStageRightHalfPoint();
     tutorialShowBubble(
-      'あかい おかずを<br>みぎがわに いれよう！<br>からだを つくる ちからだよ',
+      'あかい おかずを<br>みぎがわに いれよう！<br>あかい おかずは げんきの もとだよ',
       { loud, rightSide: true, topVh: '20' }
     );
     if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
@@ -11572,6 +11585,7 @@ function tutorialOnStageComplete() {
     const gear = document.getElementById('tut-settings-btn');
     const modal = document.getElementById('tut-settings-modal');
     const reBtn = document.getElementById('tut-settings-reenable');
+    const reNowBtn = document.getElementById('tut-settings-reenable-now');
     const closeBtn = document.getElementById('tut-settings-close');
     if (!gear || !modal) return;
     gear.addEventListener('pointerdown', function(e) {
@@ -11583,6 +11597,13 @@ function tutorialOnStageComplete() {
       try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
       modal.classList.add('hidden');
       try { if (typeof showToast === 'function') showToast('つぎの あそびで でるよ'); } catch (_) {}
+    });
+    if (reNowBtn) reNowBtn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      modal.classList.add('hidden');
+      // フレッシュな状態で確実にチュートリアルを発火させるため reload を採用
+      try { location.reload(); } catch (_) {}
     });
     if (closeBtn) closeBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();

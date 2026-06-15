@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1121; // v1121: play.html splash - ロゴ最大幅 380→320, .tap-intro-card max-height 100vh→100% で親padding 考慮し溢れ対策
+const CACHE_VERSION = 1123; // v1123: maze - 2勝先取式の励まし表示 850ms→1300ms (子供の読み時間確保)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
