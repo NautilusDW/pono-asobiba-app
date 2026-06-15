@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:541-starparodier-moon-stage-octopus-core] Codex: user 指摘「たこ焼き顔では分かりにくいので、Image2で分かりやすいたこ型エイリアンに変更。太陽系ステージは月から始め、月面クレーター背景を21:9横長素材2〜3枚のループで作れるか」を受領。Starparodier のギャラクシー親分コアをたこ型エイリアンへ差し替え、月ステージ用の3レイヤー横ループ背景とステージ順/クリア豆知識の土台を実装する。 (by Codex)
+- 2026-06-15 - [batch:541-starparodier-moon-stage-octopus-core] DONE - Codex: Image2生成の `galaxy_oyabun_octopus_face.png` へギャラクシー親分の中身を差し替え、旧たこ焼き顔PNGは削除。Image2生成の月面21:9素材 `moon_far_loop.png` / `moon_mid_loop.png` / `moon_near_loop.png` を追加し、遠景・中景・近景の3レイヤー横ループ背景として実装。現在ステージは `月ステージ`、クリア時は「月は地球のまわりをまわる」豆知識を表示。太陽系ステージ順の土台として月→火星→水星→木星→金星→土星→天王星→海王星のデータを追加。`sw.js` / `play.html` は v1176。inline script parse / `node --check sw.js` / `git diff --check` / Playwright で月面3素材ロード、たこ型コア表示、月クリア文言、pageerror/404なしを確認済み。 (by Codex)
 - 2026-06-15 - [batch:540-starparodier-parody-names-takoyaki-core] Codex: user 決定「ギャラクシー親分 / メカメンジャー4 / 宇宙たこ焼き顔」を受領。Starparodier のボス/中ボス名を差し替え、ギャラクシー親分のHP低下時に中央コアが開き、Image2生成PNGの宇宙たこ焼き顔が左右スライドの引き戸から出る演出を追加する。 (by Codex)
 - 2026-06-15 - [batch:540-starparodier-parody-names-takoyaki-core] DONE - Codex: Starparodier の中ボス表示を `メカメンジャー4`、ボス表示と WARNING 文言を `ギャラクシー親分` へ変更。ギャラクシー親分はHPが約48%未満で中央コアが開き始め、低HP時に `assets/images/starparodier/galaxy_oyabun_takoyaki_face.png` のImage2生成PNGを丸窓内に表示し、左右スライドの引き戸で開く演出を追加。`sw.js` / `play.html` は v1175。inline script parse / `node --check sw.js` / `git diff --check` / Playwright で中ボス名・ボス名・低HP時のImage2コア表示・pageerror/404なしを確認済み。 (by Codex)
 - 2026-06-15 - [batch:538-starparodier-starbrain-warning-entry] Codex: user 指摘「ビッグスターブレインをいきなり出さず画面上から出現、出る前にウォーニング的メッセージを1つ追加」を受領。Starparodier の `starbrainIntro` / `starbrain` 遷移と描画を調整し、教育要素候補も併せて提示する。 (by Codex)

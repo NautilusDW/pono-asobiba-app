@@ -355,7 +355,7 @@
     <div class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
       <img class="overlay-ship" src="../assets/images/starparodier/player_ship_pono.png" alt="">
       <h1 id="overlayTitle">ポノのスターパロジャー</h1>
-      <p id="overlayText">宇宙ステージへ しゅっぱつ</p>
+      <p id="overlayText">月ステージへ しゅっぱつ</p>
       <div class="overlay-actions">
         <button class="primary-btn" id="startBtn" type="button">スタート</button>
         <button class="ghost-btn" id="homeBtn" type="button">もどる</button>
@@ -393,7 +393,10 @@
     lazarusTR: 'midboss_lazarus_top_right.png',
     lazarusBL: 'midboss_lazarus_bottom_left.png',
     lazarusBR: 'midboss_lazarus_bottom_right.png',
-    takoyakiCore: 'galaxy_oyabun_takoyaki_face.png'
+    bossCore: 'galaxy_oyabun_octopus_face.png',
+    moonFar: 'moon_far_loop.png',
+    moonMid: 'moon_mid_loop.png',
+    moonNear: 'moon_near_loop.png'
   };
   const EFFECT_ASSETS = {
     zakoExplosion: makeFrameList('effects/zako_explosion_', 3),
@@ -457,6 +460,17 @@
   const BARRIER_MAX = 5;
   const MIDBOSS_NAME = 'メカメンジャー4';
   const STARBRAIN_NAME = 'ギャラクシー親分';
+  const SOLAR_STAGES = [
+    { id: 'moon', label: '月', phase: '月ステージ', clearTitle: '月を かいほう', clearText: '月は 地球のまわりをまわる いちばん近い天体だよ。' },
+    { id: 'mars', label: '火星', phase: '火星ステージ', clearTitle: '火星を かいほう', clearText: '火星は 地球の外側をまわる 赤い惑星だよ。' },
+    { id: 'mercury', label: '水星', phase: '水星ステージ', clearTitle: '水星を かいほう', clearText: '水星は 太陽にいちばん近い 小さな惑星だよ。' },
+    { id: 'jupiter', label: '木星', phase: '木星ステージ', clearTitle: '木星を かいほう', clearText: '木星は 太陽系でいちばん大きな ガスの惑星だよ。' },
+    { id: 'venus', label: '金星', phase: '金星ステージ', clearTitle: '金星を かいほう', clearText: '金星は 地球の近くをまわる 雲に包まれた惑星だよ。' },
+    { id: 'saturn', label: '土星', phase: '土星ステージ', clearTitle: '土星を かいほう', clearText: '土星は 大きなわっかをもつ ガスの惑星だよ。' },
+    { id: 'uranus', label: '天王星', phase: '天王星ステージ', clearTitle: '天王星を かいほう', clearText: '天王星は 青緑色で 横にたおれたように回る惑星だよ。' },
+    { id: 'neptune', label: '海王星', phase: '海王星ステージ', clearTitle: '海王星を かいほう', clearText: '海王星は 太陽からとても遠い 青い惑星だよ。' }
+  ];
+  const CURRENT_STAGE = SOLAR_STAGES[0];
   const LAZARUS_SPLIT_HITS = 64;
   const LAZARUS_ASSEMBLE_TIME = 14.2;
   const STARBRAIN_WARNING_TIME = 2.2;
@@ -795,7 +809,7 @@
     state.boss = null;
 
     if (phase === 'zako') {
-      phaseText.textContent = 'AREA 1';
+      phaseText.textContent = CURRENT_STAGE.phase;
       bossMeter.hidden = true;
     } else if (phase === 'lazarusSplit') {
       phaseText.textContent = 'MID BOSS';
@@ -830,7 +844,7 @@
         hurt: 0
       };
     } else if (phase === 'postLazarus') {
-      phaseText.textContent = 'AREA 2';
+      phaseText.textContent = `${CURRENT_STAGE.label} 後半`;
       bossMeter.hidden = true;
       state.enemyBullets.length = 0;
       state.enemies.length = 0;
@@ -1518,7 +1532,7 @@
       if (window.incrementStat) window.incrementStat('starparodier_clears', 1);
       localStorage.setItem('starparodier_best_score', String(Math.max(Number(localStorage.getItem('starparodier_best_score') || 0), state.score)));
     } catch (_) {}
-    showOverlay('ステージクリア', 'ポノが 宇宙ステージを まもったよ', 'もういちど');
+    showOverlay(CURRENT_STAGE.clearTitle, CURRENT_STAGE.clearText, 'もういちど');
   }
 
   function finishFail() {
@@ -1544,7 +1558,7 @@
     const wasRunning = state.running;
     state.paused = wasRunning;
     overlayTitle.textContent = 'あそびかた';
-    overlayText.textContent = 'ポノの機体をうごかして、メカのたまをよけながら進もう。ショットは自動で出るよ。';
+    overlayText.textContent = 'ポノの機体をうごかして、月を支配するメカのたまをよけながら進もう。ショットは自動で出るよ。';
     startBtn.textContent = wasRunning ? 'つづける' : 'スタート';
     overlay.hidden = false;
     startBtn.onclick = () => {
@@ -1589,19 +1603,23 @@
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    const neb1 = ctx.createRadialGradient(W * 0.18, H * 0.32, 0, W * 0.18, H * 0.32, Math.max(W, H) * 0.34);
-    neb1.addColorStop(0, 'rgba(32, 188, 204, 0.18)');
-    neb1.addColorStop(1, 'rgba(32, 188, 204, 0)');
-    ctx.fillStyle = neb1;
-    ctx.fillRect(0, 0, W, H);
-    const neb2 = ctx.createRadialGradient(W * 0.78, H * 0.18, 0, W * 0.78, H * 0.18, Math.max(W, H) * 0.38);
-    neb2.addColorStop(0, 'rgba(169, 84, 255, 0.20)');
-    neb2.addColorStop(1, 'rgba(169, 84, 255, 0)');
-    ctx.fillStyle = neb2;
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
+    if (CURRENT_STAGE.id === 'moon') {
+      drawMoonBackgroundLayers();
+    } else {
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      const neb1 = ctx.createRadialGradient(W * 0.18, H * 0.32, 0, W * 0.18, H * 0.32, Math.max(W, H) * 0.34);
+      neb1.addColorStop(0, 'rgba(32, 188, 204, 0.18)');
+      neb1.addColorStop(1, 'rgba(32, 188, 204, 0)');
+      ctx.fillStyle = neb1;
+      ctx.fillRect(0, 0, W, H);
+      const neb2 = ctx.createRadialGradient(W * 0.78, H * 0.18, 0, W * 0.78, H * 0.18, Math.max(W, H) * 0.38);
+      neb2.addColorStop(0, 'rgba(169, 84, 255, 0.20)');
+      neb2.addColorStop(1, 'rgba(169, 84, 255, 0)');
+      ctx.fillStyle = neb2;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
 
     for (const s of stars) {
       const color = s.hue === 'mint' ? '126,255,199' : (s.hue === 'violet' ? '199,125,255' : '235,251,255');
@@ -1634,6 +1652,36 @@
       ctx.lineTo(W * (0.18 + (i % 3) * 0.24), y + H * 0.12);
       ctx.stroke();
     }
+  }
+
+  function drawMoonBackgroundLayers() {
+    drawLoopedBackgroundLayer(imgs.moonFar, 8, 0, H, 0.94);
+    drawLoopedBackgroundLayer(imgs.moonMid, 16, 0, H, 0.13, 0.06, 0.88);
+    drawLoopedBackgroundLayer(imgs.moonNear, 46, H * 0.73, H * 0.36, 0.5, 0.48, 0.46);
+
+    const shade = ctx.createLinearGradient(0, 0, 0, H);
+    shade.addColorStop(0, 'rgba(2, 5, 17, 0.28)');
+    shade.addColorStop(0.45, 'rgba(2, 5, 17, 0.06)');
+    shade.addColorStop(1, 'rgba(2, 5, 17, 0.24)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawLoopedBackgroundLayer(img, speed, top, height, alpha, sourceTop = 0, sourceHeight = 1) {
+    if (!img) return;
+    const sy = img.naturalHeight * sourceTop;
+    const sh = img.naturalHeight * sourceHeight;
+    const drawH = height;
+    const drawW = drawH * (img.naturalWidth / sh);
+    const offset = -((state.phaseTime * speed) % drawW);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.imageSmoothingEnabled = true;
+    for (let x = offset - drawW; x < W + drawW; x += drawW) {
+      ctx.drawImage(img, 0, sy, img.naturalWidth, sh, x, top, drawW, drawH);
+    }
+    ctx.restore();
   }
 
   function drawPlayer() {
@@ -2070,9 +2118,9 @@
     const x = b.x;
     const y = b.y + size.h * 0.08;
     const r = size.h * 0.17;
-    const faceR = r * 0.74;
+    const faceR = r * 0.86;
     const scale = 0.55 + open * 0.45;
-    const faceImg = imgs.takoyakiCore;
+    const faceImg = imgs.bossCore;
 
     ctx.save();
     ctx.globalAlpha = open;
@@ -2091,10 +2139,10 @@
     ctx.arc(0, 0, faceR, 0, Math.PI * 2);
     ctx.clip();
     if (faceImg) {
-      const srcSize = Math.min(faceImg.naturalWidth, faceImg.naturalHeight) * 0.84;
+      const srcSize = Math.min(faceImg.naturalWidth, faceImg.naturalHeight) * 0.66;
       const sx = (faceImg.naturalWidth - srcSize) * 0.5;
-      const sy = (faceImg.naturalHeight - srcSize) * 0.48;
-      const drawSize = faceR * 2.18;
+      const sy = (faceImg.naturalHeight - srcSize) * 0.5;
+      const drawSize = faceR * 2.42;
       ctx.drawImage(faceImg, sx, sy, srcSize, srcSize, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
     } else {
       const faceGlow = ctx.createRadialGradient(-faceR * 0.28, -faceR * 0.32, faceR * 0.12, 0, 0, faceR);

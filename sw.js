@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1175; // v1175: add Starparodier parody names and takoyaki core | v1174: add Sea Album stage 1 alpha creature sprites | v1173: calibrate Oto rhythm hit timing | v1172: add Starparodier boss warning entry | v1171: fix Sea Album scrolling and expression states
+const CACHE_VERSION = 1176; // v1176: add Starparodier moon stage art and octopus core | v1175: add Starparodier parody names and takoyaki core | v1174: add Sea Album stage 1 alpha creature sprites | v1173: calibrate Oto rhythm hit timing | v1172: add Starparodier boss warning entry
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
