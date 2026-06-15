@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1125; // v1125: maze - odoke/pyon マスク再差し替え + 揺れトリガを最後の1匹のみに変更 (hachi は据え置き)
+const CACHE_VERSION = 1126; // v1126: maze - 2勝先取式の撤回 (1勝即撃破に戻す、ユーザー指示)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
