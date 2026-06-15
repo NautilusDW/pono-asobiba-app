@@ -214,7 +214,7 @@
       var btn = box.querySelector('[data-sticker-book]');
       if (btn) btn.disabled = true;
       window.setTimeout(function () {
-        location.href = _rootPrefix() + 'collection/index.html?tab=stickers&game=' + encodeURIComponent(result.gameId) + '&view=place';
+        location.href = _rootPrefix() + 'sticker-book/index.html?game=' + encodeURIComponent(result.gameId);
       }, 560);
     });
     overlay.addEventListener('click', function (event) {
