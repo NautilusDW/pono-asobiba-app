@@ -3679,7 +3679,7 @@
     left: 50%;
     top: clamp(5px, 1.5cqh, 9px);
     transform: translateX(-50%);
-    z-index: 2;
+    z-index: 4;
     padding: 2px 9px 3px;
     border-radius: 999px;
     background: rgba(2,6,23,0.64);
@@ -3695,7 +3695,7 @@
     left: 6%;
     right: 6%;
     top: clamp(27px, 7cqh, 42px);
-    z-index: 2;
+    z-index: 4;
     padding: 4px 6px 5px;
     border-radius: 10px;
     background: rgba(2,6,23,0.58);
@@ -3708,11 +3708,134 @@
   .rhythm-rival-art {
     position: absolute;
     inset: 0;
-    background-repeat: no-repeat;
-    background-size: auto 100%;
-    background-position: var(--rival-sheet-pos, 0% 50%);
     filter: saturate(1.08) contrast(1.04);
-    transform: scale(1.02);
+    z-index: 2;
+  }
+  .rhythm-rival-sprite {
+    position: absolute;
+    left: 50%;
+    top: 54%;
+    width: 94%;
+    height: 80%;
+    object-fit: contain;
+    object-position: center;
+    transform: translate(-50%, -50%);
+    transform-origin: 50% 72%;
+    filter: drop-shadow(0 10px 8px rgba(0,0,0,0.34));
+    animation: rival-idle-bob 2.8s ease-in-out infinite;
+    will-change: transform, filter;
+  }
+  .rhythm-rival-card[data-rival="gaohn"] .rhythm-rival-sprite {
+    top: 50%;
+    width: 80%;
+    height: 68%;
+  }
+  .rhythm-rival-card[data-rival="gaohn"][data-state="attack"] .rhythm-rival-sprite {
+    top: 54%;
+    width: 104%;
+    height: 76%;
+  }
+  .rhythm-rival-fx {
+    position: absolute;
+    z-index: 2;
+    display: none;
+    width: 28%;
+    height: 28%;
+    background: center / contain no-repeat;
+    pointer-events: none;
+    opacity: 0;
+    filter: drop-shadow(0 3px 2px rgba(0,0,0,0.22));
+  }
+  .rhythm-rival-fx.show { display: block; }
+  .rhythm-rival-fx.fx-a { left: 7%; top: 20%; }
+  .rhythm-rival-fx.fx-b { right: 8%; top: 18%; }
+  .rhythm-rival-fx.fx-c { right: 12%; bottom: 22%; }
+  .rhythm-rival-fx.fx-line { animation: rival-fx-line 520ms ease-out both; }
+  .rhythm-rival-fx.fx-pop { animation: rival-fx-pop 560ms ease-out both; }
+  .rhythm-rival-fx.fx-sweat { animation: rival-fx-sweat 760ms ease-out both; }
+  .rhythm-rival-fx.fx-spin { animation: rival-fx-spin 780ms ease-out both; }
+  .rhythm-rival-fx.fx-float { animation: rival-fx-float 900ms ease-out both; }
+  .rhythm-rival-card[data-state="attack"] .rhythm-rival-sprite {
+    animation: rival-attack-pop 520ms cubic-bezier(.2,1.45,.38,1) both;
+  }
+  .rhythm-rival-card[data-state="happy"] .rhythm-rival-sprite {
+    animation: rival-happy-bounce 640ms cubic-bezier(.2,1.35,.3,1) both;
+  }
+  .rhythm-rival-card[data-state="surprised"] .rhythm-rival-sprite {
+    animation: rival-surprise-pop 520ms ease-out both;
+  }
+  .rhythm-rival-card[data-state="frustrated"] .rhythm-rival-sprite,
+  .rhythm-rival-card[data-state="panic"] .rhythm-rival-sprite {
+    animation: rival-frustrated-shake 620ms ease-out both;
+  }
+  .rhythm-rival-card[data-state="defeat"] .rhythm-rival-sprite {
+    animation: rival-defeat-drop 900ms cubic-bezier(.16,.84,.34,1) both;
+  }
+  .rhythm-rival-card[data-state="impressed"] .rhythm-rival-sprite {
+    animation: rival-impressed-nod 700ms ease-out both;
+  }
+  @keyframes rival-idle-bob {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0) scale(1); }
+    50% { transform: translate(-50%, -50%) translateY(-3px) scale(1.012); }
+  }
+  @keyframes rival-attack-pop {
+    0% { transform: translate(-50%, -50%) translateY(6px) scale(0.94) rotate(-2deg); }
+    46% { transform: translate(-50%, -50%) translateY(-7px) scale(1.08) rotate(2deg); }
+    100% { transform: translate(-50%, -50%) translateY(0) scale(1); }
+  }
+  @keyframes rival-happy-bounce {
+    0% { transform: translate(-50%, -50%) translateY(4px) scale(0.96); }
+    34% { transform: translate(-50%, -50%) translateY(-11px) scale(1.06); }
+    64% { transform: translate(-50%, -50%) translateY(1px) scale(0.99); }
+    100% { transform: translate(-50%, -50%) translateY(0) scale(1); }
+  }
+  @keyframes rival-surprise-pop {
+    0% { transform: translate(-50%, -50%) scale(0.9); filter: drop-shadow(0 10px 8px rgba(0,0,0,0.34)) brightness(1.15); }
+    48% { transform: translate(-50%, -50%) translateY(-5px) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 10px 8px rgba(0,0,0,0.34)); }
+  }
+  @keyframes rival-frustrated-shake {
+    0%, 100% { transform: translate(-50%, -50%) translateX(0) rotate(0deg); }
+    18% { transform: translate(-50%, -50%) translateX(-5px) rotate(-2deg); }
+    36% { transform: translate(-50%, -50%) translateX(5px) rotate(2deg); }
+    54% { transform: translate(-50%, -50%) translateX(-4px) rotate(-1deg); }
+    72% { transform: translate(-50%, -50%) translateX(3px) rotate(1deg); }
+  }
+  @keyframes rival-defeat-drop {
+    0% { transform: translate(-50%, -50%) translateY(-3px) scale(1.02); }
+    44% { transform: translate(-50%, -50%) translateY(8px) scale(0.96); }
+    100% { transform: translate(-50%, -50%) translateY(3px) scale(0.98); }
+  }
+  @keyframes rival-impressed-nod {
+    0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+    32% { transform: translate(-50%, -50%) translateY(4px) rotate(2deg) scale(0.98); }
+    62% { transform: translate(-50%, -50%) translateY(-3px) rotate(-1deg) scale(1.03); }
+    100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  }
+  @keyframes rival-fx-line {
+    0% { opacity: 0; transform: translateY(8px) scale(0.55) rotate(-8deg); }
+    24% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-16px) scale(1.1) rotate(3deg); }
+  }
+  @keyframes rival-fx-pop {
+    0% { opacity: 0; transform: scale(0.35) rotate(-14deg); }
+    30% { opacity: 1; transform: scale(1.08) rotate(5deg); }
+    100% { opacity: 0; transform: scale(1.2) rotate(18deg); }
+  }
+  @keyframes rival-fx-sweat {
+    0% { opacity: 0; transform: translateY(-8px) scale(0.6); }
+    18% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(18px) scale(1.05); }
+  }
+  @keyframes rival-fx-spin {
+    0% { opacity: 0; transform: scale(0.55) rotate(0deg); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.08) rotate(240deg); }
+  }
+  @keyframes rival-fx-float {
+    0% { opacity: 0; transform: translateY(8px) scale(0.7); }
+    22% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-24px) scale(1.08); }
   }
   .rhythm-rival-card::after {
     content: '';
@@ -3729,7 +3852,7 @@
     left: 6%;
     right: 6%;
     bottom: clamp(7px, 1.9cqh, 12px);
-    z-index: 3;
+    z-index: 4;
     min-height: clamp(31px, 8.2cqh, 46px);
     display: flex;
     align-items: center;
@@ -3832,7 +3955,12 @@
 
     <div class="rhythm-battle-panel" id="rhythm-battle-panel" aria-hidden="true">
       <section class="rhythm-rival-card" aria-hidden="true">
-        <div class="rhythm-rival-art" id="rhythm-rival-art"></div>
+        <div class="rhythm-rival-art" id="rhythm-rival-art">
+          <img class="rhythm-rival-sprite" id="rhythm-rival-sprite" src="../assets/images/oto/rhythm/rivals/reactions/kero/idle_point.png" alt="" draggable="false">
+          <span class="rhythm-rival-fx fx-a" id="rhythm-rival-fx-a"></span>
+          <span class="rhythm-rival-fx fx-b" id="rhythm-rival-fx-b"></span>
+          <span class="rhythm-rival-fx fx-c" id="rhythm-rival-fx-c"></span>
+        </div>
         <div class="rhythm-rival-kicker">ライバル</div>
         <div class="rhythm-rival-name" id="rhythm-rival-name">DJ ケロック</div>
         <div class="rhythm-rival-line" id="rhythm-rival-line">この リズム できるケロ？</div>
@@ -5118,46 +5246,184 @@ var RHYTHM_SCORE_STAR_BONUS = 1000;
 var RHYTHM_SCORE_NOMISS_BONUS = 1500;
 var RHYTHM_SCORE_FULL_BONUS = 1000;
 var RHYTHM_SCORE_MAX_COMBO_BONUS = 50;
+var RHYTHM_RIVAL_ASSET_BASE = '../assets/images/oto/rhythm/rivals/reactions/';
+function _rivalReactionAsset(folder, file) {
+  return RHYTHM_RIVAL_ASSET_BASE + folder + '/' + file;
+}
 var RHYTHM_RIVALS = {
   easy: {
     key: 'kerock',
     name: 'DJ ケロック',
-    sheet: '../assets/images/oto/rhythm/rivals/dj_kerock_opening_3panel.png',
+    sprites: {
+      idle: _rivalReactionAsset('kero', 'idle_point.png'),
+      attack: _rivalReactionAsset('kero', 'attack_record.png'),
+      happy: _rivalReactionAsset('kero', 'happy_laugh.png'),
+      surprised: _rivalReactionAsset('kero', 'surprised.png'),
+      frustrated: _rivalReactionAsset('kero', 'frustrated_steam.png'),
+      panic: _rivalReactionAsset('kero', 'panic.png'),
+      defeat: _rivalReactionAsset('kero', 'defeat_dizzy.png'),
+      impressed: _rivalReactionAsset('kero', 'impressed.png'),
+      taunt: _rivalReactionAsset('kero', 'taunt_smirk.png')
+    },
+    fx: {
+      attack: [
+        { file: _rivalReactionAsset('kero', 'fx_shock_zigzag.png'), type: 'pop' },
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_a.png'), type: 'line' }
+      ],
+      happy: [
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'line' }
+      ],
+      surprised: [
+        { file: _rivalReactionAsset('kero', 'fx_shock_zigzag.png'), type: 'pop' }
+      ],
+      frustrated: [
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_a.png'), type: 'line' }
+      ],
+      panic: [
+        { file: _rivalReactionAsset('kero', 'fx_sweat_pair.png'), type: 'sweat' },
+        { file: _rivalReactionAsset('kero', 'fx_tear_a.png'), type: 'sweat' }
+      ],
+      defeat: [
+        { file: _rivalReactionAsset('kero', 'fx_tear_b.png'), type: 'sweat' },
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'float' }
+      ],
+      impressed: [
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_a.png'), type: 'pop' }
+      ]
+    },
     lines: {
       idle: 'この リズム できるケロ？',
       attack: 'ノートを おとすケロ！',
+      taunt: 'まだ こないケロ？',
+      happy: 'ケロケロ まだまだ！',
+      surprised: 'やるケロ！？',
+      frustrated: 'ぐぬぬケロ...',
+      panic: 'まってケロー！',
+      impressed: 'すごいケロ！',
       defeat: 'ケロッ おぼえたなー！'
     }
   },
   normal: {
     key: 'neji',
     name: 'ネジマエストロ',
-    sheet: '../assets/images/oto/rhythm/rivals/neji_maestro_opening_3panel.png',
+    sprites: {
+      idle: _rivalReactionAsset('robot', 'idle_baton.png'),
+      attack: _rivalReactionAsset('robot', 'attack_gears.png'),
+      happy: _rivalReactionAsset('robot', 'happy_laugh.png'),
+      surprised: _rivalReactionAsset('robot', 'surprised.png'),
+      frustrated: _rivalReactionAsset('robot', 'frustrated_steam.png'),
+      panic: _rivalReactionAsset('robot', 'panic_malfunction.png'),
+      defeat: _rivalReactionAsset('robot', 'defeat_droop.png'),
+      impressed: _rivalReactionAsset('robot', 'impressed_bow.png'),
+      taunt: _rivalReactionAsset('robot', 'taunt_baton.png')
+    },
+    fx: {
+      attack: [
+        { file: _rivalReactionAsset('robot', 'fx_gear_note.png'), type: 'spin' },
+        { file: _rivalReactionAsset('robot', 'fx_blue_motion.png'), type: 'line' }
+      ],
+      happy: [
+        { file: _rivalReactionAsset('robot', 'fx_star_big.png'), type: 'pop' }
+      ],
+      surprised: [
+        { file: _rivalReactionAsset('robot', 'fx_action_lines_a.png'), type: 'pop' }
+      ],
+      frustrated: [
+        { file: _rivalReactionAsset('robot', 'fx_smoke_a.png'), type: 'float' },
+        { file: _rivalReactionAsset('robot', 'fx_smoke_b.png'), type: 'float' }
+      ],
+      panic: [
+        { file: _rivalReactionAsset('robot', 'fx_bolt.png'), type: 'spin' },
+        { file: _rivalReactionAsset('robot', 'fx_spring.png'), type: 'spin' },
+        { file: _rivalReactionAsset('robot', 'fx_nut.png'), type: 'spin' }
+      ],
+      defeat: [
+        { file: _rivalReactionAsset('robot', 'fx_down_arrow.png'), type: 'float' }
+      ],
+      impressed: [
+        { file: _rivalReactionAsset('robot', 'fx_star_a.png'), type: 'pop' },
+        { file: _rivalReactionAsset('robot', 'fx_star_b.png'), type: 'pop' },
+        { file: _rivalReactionAsset('robot', 'fx_star_c.png'), type: 'pop' }
+      ]
+    },
     lines: {
       idle: 'つぎは ねじまき リズムだ！',
       attack: 'ギアの ノートを まわせ！',
+      taunt: 'はやい はやい！',
+      happy: 'カチカチ まだまだ！',
+      surprised: 'おっと ずれた！',
+      frustrated: 'ネジが あつい...',
+      panic: 'こしょう しそう！',
+      impressed: 'いい テンポだ！',
       defeat: 'ネジが まけちゃった！'
     }
   },
   hard: {
     key: 'gaohn',
     name: 'ビートキング ガオーン',
-    sheet: '../assets/images/oto/rhythm/rivals/beat_king_gaohn_opening_3panel.png',
+    sprites: {
+      idle: _rivalReactionAsset('lion', 'taunt_point.png'),
+      attack: _rivalReactionAsset('lion', 'attack_drums_close.png'),
+      happy: _rivalReactionAsset('lion', 'happy_roar.png'),
+      surprised: _rivalReactionAsset('lion', 'surprised.png'),
+      frustrated: _rivalReactionAsset('lion', 'frustrated_arms.png'),
+      panic: _rivalReactionAsset('lion', 'panic.png'),
+      defeat: _rivalReactionAsset('lion', 'defeat_sit.png'),
+      impressed: _rivalReactionAsset('lion', 'impressed.png'),
+      taunt: _rivalReactionAsset('lion', 'taunt_point.png')
+    },
+    fx: {
+      attack: [
+        { file: _rivalReactionAsset('lion', 'fx_action_burst.png'), type: 'pop' },
+        { file: _rivalReactionAsset('lion', 'fx_speed_line_a.png'), type: 'line' },
+        { file: _rivalReactionAsset('lion', 'fx_speed_line_b.png'), type: 'line' }
+      ],
+      happy: [
+        { file: _rivalReactionAsset('lion', 'fx_action_burst.png'), type: 'pop' }
+      ],
+      surprised: [
+        { file: _rivalReactionAsset('lion', 'fx_sweat_a.png'), type: 'sweat' }
+      ],
+      frustrated: [
+        { file: _rivalReactionAsset('lion', 'fx_speed_line_c.png'), type: 'line' }
+      ],
+      panic: [
+        { file: _rivalReactionAsset('lion', 'fx_sweat_b.png'), type: 'sweat' },
+        { file: _rivalReactionAsset('lion', 'fx_sweat_c.png'), type: 'sweat' }
+      ],
+      defeat: [
+        { file: _rivalReactionAsset('lion', 'fx_tear.png'), type: 'sweat' }
+      ],
+      impressed: [
+        { file: _rivalReactionAsset('lion', 'fx_action_burst.png'), type: 'pop' }
+      ]
+    },
     lines: {
       idle: 'さいごの ビートだ！',
       attack: 'ぜんぶ うけてみろ！',
+      taunt: 'あわてるなよ！',
+      happy: 'ガオーン まだだ！',
+      surprised: 'なにっ うまい！',
+      frustrated: 'むむむ...',
+      panic: 'おうかんがー！',
+      impressed: 'みごとだ！',
       defeat: 'くやしい でも みとめる！'
     }
   }
 };
-var RHYTHM_RIVAL_STATE_POS = {
-  idle: '0% 50%',
-  attack: '50% 50%',
-  defeat: '100% 50%'
-};
 Object.keys(RHYTHM_RIVALS).forEach(function(key) {
-  var im = new Image();
-  im.src = RHYTHM_RIVALS[key].sheet;
+  var rival = RHYTHM_RIVALS[key];
+  Object.keys(rival.sprites || {}).forEach(function(state) {
+    var im = new Image();
+    im.src = rival.sprites[state];
+  });
+  Object.keys(rival.fx || {}).forEach(function(state) {
+    (rival.fx[state] || []).forEach(function(item) {
+      if (!item || !item.file) return;
+      var im = new Image();
+      im.src = item.file;
+    });
+  });
 });
 var _playMode = 'free';
 var _rhythm = {
@@ -5241,19 +5507,63 @@ function _rhythmPonoLine(kind, judge) {
   if (_rhythm.streak >= 4) return 'れんぞく！';
   return 'いくよ！';
 }
+function _resetRhythmRivalFx() {
+  ['a', 'b', 'c'].forEach(function(slot) {
+    var el = document.getElementById('rhythm-rival-fx-' + slot);
+    if (!el) return;
+    el.className = 'rhythm-rival-fx fx-' + slot;
+    el.style.backgroundImage = '';
+  });
+}
+function _applyRhythmRivalFx(rival, state) {
+  _resetRhythmRivalFx();
+  var fx = (rival && rival.fx && rival.fx[state]) || [];
+  ['a', 'b', 'c'].forEach(function(slot, idx) {
+    var item = fx[idx];
+    var el = document.getElementById('rhythm-rival-fx-' + slot);
+    if (!el || !item || !item.file) return;
+    el.className = 'rhythm-rival-fx fx-' + slot + ' fx-' + (item.type || 'pop');
+    el.style.backgroundImage = 'url("' + item.file + '")';
+    void el.offsetWidth;
+    el.classList.add('show');
+  });
+}
+function _restartRhythmRivalSpriteMotion() {
+  var sprite = document.getElementById('rhythm-rival-sprite');
+  if (!sprite) return;
+  sprite.style.animation = 'none';
+  void sprite.offsetWidth;
+  sprite.style.animation = '';
+}
+function _rhythmRivalStateForHit(judge) {
+  if (_rhythm.streak >= 8) return 'panic';
+  if (_rhythm.streak >= 4) return 'frustrated';
+  if (judge && judge.key === 'just') return 'surprised';
+  if (judge && judge.key === 'nice') return 'frustrated';
+  if (judge && (judge.key === 'good' || judge.key === 'ok')) return 'frustrated';
+  return 'taunt';
+}
 function _updateRhythmBattlePanel(state, lineOverride, ponoLine) {
   var panel = document.getElementById('rhythm-battle-panel');
   if (!panel) return;
   var rival = _currentRhythmRival();
   state = state || 'idle';
-  if (!RHYTHM_RIVAL_STATE_POS[state]) state = 'idle';
+  var sprites = rival.sprites || {};
+  if (!sprites[state]) state = 'idle';
   panel.dataset.rival = rival.key;
   panel.dataset.state = state;
-  var art = document.getElementById('rhythm-rival-art');
-  if (art) {
-    art.style.backgroundImage = 'url("' + rival.sheet + '")';
-    art.style.setProperty('--rival-sheet-pos', RHYTHM_RIVAL_STATE_POS[state]);
+  var card = panel.querySelector('.rhythm-rival-card');
+  if (card) {
+    card.dataset.rival = rival.key;
+    card.dataset.state = state;
   }
+  var sprite = document.getElementById('rhythm-rival-sprite');
+  if (sprite) {
+    var nextSrc = sprites[state] || sprites.idle;
+    if (sprite.getAttribute('src') !== nextSrc) sprite.src = nextSrc;
+    _restartRhythmRivalSpriteMotion();
+  }
+  _applyRhythmRivalFx(rival, state);
   var name = document.getElementById('rhythm-rival-name');
   if (name) name.textContent = rival.name;
   var line = document.getElementById('rhythm-rival-line');
@@ -5772,7 +6082,7 @@ function _recordRhythmMiss() {
   _rhythm.misses++;
   _clearRhythmFever();
   if (document.body.classList.contains('rhythm-layout')) {
-    _updateRhythmBattlePanel('attack', null, _rhythmPonoLine('miss'));
+    _updateRhythmBattlePanel('happy', null, _rhythmPonoLine('miss'));
   }
 }
 function _spawnRhythmJudgePop(laneIdx, judge, addedScore, btn) {
@@ -5918,6 +6228,9 @@ function _showRhythmFever(info, laneIdx) {
   }
   bumpPono();
   _playRhythmFeverSfx(info.level);
+  if (document.body.classList.contains('rhythm-layout')) {
+    _updateRhythmBattlePanel(info.level >= 3 ? 'panic' : 'frustrated', null, _rhythmPonoLine());
+  }
   _rhythm.feverTimer = setTimeout(function() {
     _removeRhythmFeverClasses();
     _rhythm.feverLevel = 0;
@@ -8286,7 +8599,7 @@ function handleRhythmTap(idx, btn) {
         _playRhythmBlockSfx('miss', laneIdx);
         _ghFlashLane(laneIdx, 'miss');
         _pulseRhythmButton(btn, 'rhythm-miss');
-        _updateRhythmBattlePanel('attack', null, _rhythmPonoLine('miss'));
+        _updateRhythmBattlePanel('happy', null, _rhythmPonoLine('miss'));
       }
       return;
     }
@@ -8294,7 +8607,7 @@ function handleRhythmTap(idx, btn) {
     if (delta < -RHYTHM_OK_MS) {
       // まだ早すぎ → ノートは残す
       _setRhythmStatus('もうすこし', 'warn');
-      _updateRhythmBattlePanel('attack', null, 'もうすこし！');
+      _updateRhythmBattlePanel('taunt', null, 'もうすこし！');
       return;
     }
     var abs = Math.abs(delta);
@@ -8317,7 +8630,7 @@ function handleRhythmTap(idx, btn) {
     } else {
       _setRhythmStatus(judge.label, 'warn');
     }
-    _updateRhythmBattlePanel('attack', null, _rhythmPonoLine(null, judge));
+    _updateRhythmBattlePanel(_rhythmRivalStateForHit(judge), null, _rhythmPonoLine(null, judge));
     _ghSpawnHitFlash(laneIdx);
     _ghSpawnNotePop(best, judge);
     if (judge.key === 'just' || judge.key === 'nice' || judge.key === 'good') {
