@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1179; // v1179: make Sea Album firing input manual | v1178: make Starparodier octopus core funnier | v1177: include Earth in Starparodier stage data | v1176: add Starparodier moon stage art and octopus core | v1175: add Starparodier parody names and takoyaki core
+const CACHE_VERSION = 1180; // v1180: make Starparodier moon background scroll vertically | v1179: make Sea Album firing input manual | v1178: make Starparodier octopus core funnier | v1177: include Earth in Starparodier stage data | v1176: add Starparodier moon stage art and octopus core
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

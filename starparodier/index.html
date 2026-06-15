@@ -1656,9 +1656,9 @@
   }
 
   function drawMoonBackgroundLayers() {
-    drawLoopedBackgroundLayer(imgs.moonFar, 8, 0, H, 0.94);
-    drawLoopedBackgroundLayer(imgs.moonMid, 16, 0, H, 0.13, 0.06, 0.88);
-    drawLoopedBackgroundLayer(imgs.moonNear, 46, H * 0.73, H * 0.36, 0.5, 0.48, 0.46);
+    drawStaticBackgroundCover(imgs.moonFar, 0.94);
+    drawVerticalBackgroundLayer(imgs.moonMid, 24, H * 0.12, H * 0.66, 0.08, 0.22, 0.58);
+    drawVerticalBackgroundLayer(imgs.moonNear, 62, H * 0.68, H * 0.42, 0.5, 0.48, 0.46);
 
     const shade = ctx.createLinearGradient(0, 0, 0, H);
     shade.addColorStop(0, 'rgba(2, 5, 17, 0.28)');
@@ -1668,19 +1668,35 @@
     ctx.fillRect(0, 0, W, H);
   }
 
-  function drawLoopedBackgroundLayer(img, speed, top, height, alpha, sourceTop = 0, sourceHeight = 1) {
+  function drawStaticBackgroundCover(img, alpha) {
     if (!img) return;
-    const sy = img.naturalHeight * sourceTop;
-    const sh = img.naturalHeight * sourceHeight;
-    const drawH = height;
-    const drawW = drawH * (img.naturalWidth / sh);
-    const offset = -((state.phaseTime * speed) % drawW);
+    const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+    const drawW = img.naturalWidth * scale;
+    const drawH = img.naturalHeight * scale;
 
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.imageSmoothingEnabled = true;
-    for (let x = offset - drawW; x < W + drawW; x += drawW) {
-      ctx.drawImage(img, 0, sy, img.naturalWidth, sh, x, top, drawW, drawH);
+    ctx.drawImage(img, (W - drawW) * 0.5, (H - drawH) * 0.5, drawW, drawH);
+    ctx.restore();
+  }
+
+  function drawVerticalBackgroundLayer(img, speed, top, height, alpha, sourceTop = 0, sourceHeight = 1) {
+    if (!img) return;
+    const sy = img.naturalHeight * sourceTop;
+    const sh = img.naturalHeight * sourceHeight;
+    const drawW = W;
+    const drawH = drawW * (sh / img.naturalWidth);
+    const offset = (state.phaseTime * speed) % drawH;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.imageSmoothingEnabled = true;
+    ctx.beginPath();
+    ctx.rect(0, top, W, height);
+    ctx.clip();
+    for (let y = top + offset - drawH; y < top + height + drawH; y += drawH) {
+      ctx.drawImage(img, 0, sy, img.naturalWidth, sh, 0, y, drawW, drawH);
     }
     ctx.restore();
   }
