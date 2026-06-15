@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1171; // v1171: fix Sea Album scrolling and expression states | v1170: stop Lazarus shots and shorten Starparodier small explosions | v1169: add Sea Album stage 1 base | v1168: add Starparodier explosion sprite effects | v1167: polish bento tutorial hints and detail results
+const CACHE_VERSION = 1172; // v1172: add Starparodier boss warning entry | v1171: fix Sea Album scrolling and expression states | v1170: stop Lazarus shots and shorten Starparodier small explosions | v1169: add Sea Album stage 1 base | v1168: add Starparodier explosion sprite effects
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

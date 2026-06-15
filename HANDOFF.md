@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-06-15 - [batch:538-starparodier-starbrain-warning-entry] Codex: user 指摘「ビッグスターブレインをいきなり出さず画面上から出現、出る前にウォーニング的メッセージを1つ追加」を受領。Starparodier の `starbrainIntro` / `starbrain` 遷移と描画を調整し、教育要素候補も併せて提示する。 (by Codex)
+- 2026-06-15 - [batch:538-starparodier-starbrain-warning-entry] DONE - Codex: Starparodier のビッグスターブレイン前に中央 WARNING バナー「WARNING: ビッグスターブレイン 接近中!」を追加し、`starbrain` 開始時はボスを画面上外から約1.35秒で定位置へスライドインするよう変更。登場中は攻撃しない。`sw.js` / `play.html` は v1172。inline script parse / `node --check sw.js` / `git diff --check` / Playwright desktop 896x432 と mobile 390x844 で WARNING 表示、ボス未生成→上外 y →定位置到達、出現中 enemyBullets 0、pageerror/404 なしを確認済み。 (by Codex)
 - 2026-06-15 - [batch:537-starparodier-lazarus-no-shots-short-zako] Codex: user 指摘「ラザロは弾を撃たない。雑魚爆発が花火みたいなので2〜3枚で短く」を受領。Starparodier のラザロ弾処理削除と雑魚爆発フレーム短縮、cache v1170 反映を行う。 (by Codex)
 - 2026-06-15 - [batch:537-starparodier-lazarus-no-shots-short-zako] DONE - Codex: `starparodier/index.html` から分割ラザロの `shootLazarusSplitBurst` と合体後ラザロの泡弾処理を削除し、ラザロ戦では敵弾を生成しないよう変更。雑魚爆発は直下素材の長い22コマ再生をやめ、`zako_explosion_01..03.png` の3コマだけに整理して短い撃破フラッシュへ変更。`sw.js` / `play.html` は v1170。inline script parse / `node --check sw.js` / PNG alpha確認 / `git diff --check` / Playwright でラザロ分割・合体後の敵弾0、雑魚爆発3コマ発火を確認済み。 (by Codex)
 - 2026-06-15 - [batch:536-sea-album-scroll-submarine-expressions] Codex: user 指摘「背景がスクロールできない、潜水艦は既存素材を使う、生物は弾が当たった時/食べた後など複数表情が必要」を受領。`sea-album` は既存ベースあり。Stage 1 背景を横スクロール前提へ修正、既存 `assets/images/ocean/Submarine/Submarine_003.png` へ自機差し替え、表情rawシート生成と状態実装を行う。 (by Codex)

@@ -456,6 +456,8 @@
   const BARRIER_MAX = 5;
   const LAZARUS_SPLIT_HITS = 64;
   const LAZARUS_ASSEMBLE_TIME = 14.2;
+  const STARBRAIN_WARNING_TIME = 2.2;
+  const STARBRAIN_ENTRY_TIME = 1.35;
 
   function mulberry32(seed) {
     return function () {
@@ -832,7 +834,7 @@
       state.spawnTimer = 0.35;
       playSfx('phase');
     } else if (phase === 'starbrainIntro') {
-      phaseText.textContent = 'BOSS AREA';
+      phaseText.textContent = 'WARNING';
       bossMeter.hidden = true;
       state.enemyBullets.length = 0;
       state.enemies.length = 0;
@@ -845,12 +847,13 @@
       state.boss = {
         type: 'starbrain',
         x: W * 0.5,
-        y: starbrainBaseY(),
+        y: starbrainEntryStartY(),
         hp: 190,
         maxHp: 190,
         shot: 0.7,
         pattern: 0,
         dir: 1,
+        enter: 0,
         hurt: 0,
         hitX: 0,
         hitY: 0,
@@ -1139,7 +1142,7 @@
   function updateBoss(dt) {
     const b = state.boss;
     if (!b) {
-      if (state.phase === 'starbrainIntro' && state.phaseTime > 2.1) setPhase('starbrain');
+      if (state.phase === 'starbrainIntro' && state.phaseTime > STARBRAIN_WARNING_TIME) setPhase('starbrain');
       return;
     }
     if (b.hurt) b.hurt = Math.max(0, b.hurt - dt);
@@ -1168,6 +1171,13 @@
     }
 
     if (b.type === 'starbrain') {
+      if (b.enter < 1) {
+        b.enter = Math.min(1, b.enter + dt / STARBRAIN_ENTRY_TIME);
+        b.x = W * 0.5;
+        b.y = lerp(starbrainEntryStartY(), starbrainBaseY(), easeOutCubic(b.enter));
+        b.shot = 0.62;
+        return;
+      }
       const limit = W * 0.22;
       b.x += b.dir * W * 0.09 * dt;
       if (b.x < W * 0.5 - limit || b.x > W * 0.5 + limit) b.dir *= -1;
@@ -1564,6 +1574,7 @@
     drawPlayer();
     drawEffects();
     drawParticles();
+    drawWarningMessage();
     drawVignette();
   }
 
@@ -2006,6 +2017,11 @@
     return H < 430 ? H * 0.25 : H * 0.26;
   }
 
+  function starbrainEntryStartY() {
+    const size = getStarbrainSize();
+    return -size.h * 0.62;
+  }
+
   function drawStarbrain() {
     const b = state.boss;
     const img = imgs.boss;
@@ -2121,6 +2137,38 @@
       ctx.drawImage(img, -w / 2, -h / 2, w, h);
       ctx.restore();
     }
+    ctx.restore();
+  }
+
+  function drawWarningMessage() {
+    if (state.phase !== 'starbrainIntro') return;
+    const text = 'WARNING: ビッグスターブレイン 接近中!';
+    const pulse = 0.72 + Math.sin(state.phaseTime * 10) * 0.18;
+    const w = Math.min(W - 32, 560);
+    const h = H < 430 ? 54 : 66;
+    const x = (W - w) / 2;
+    const y = H * 0.32 - h / 2;
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = `rgba(255, 213, 106, ${0.42 * pulse})`;
+    ctx.shadowBlur = 20;
+    roundedRect(x, y, w, h, 8);
+    ctx.fillStyle = 'rgba(10, 8, 22, 0.78)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255, 213, 106, ${pulse})`;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    let fontSize = H < 430 ? 18 : 22;
+    do {
+      ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif`;
+      if (ctx.measureText(text).width <= w - 28 || fontSize <= 15) break;
+      fontSize -= 1;
+    } while (fontSize > 15);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffd56a';
+    ctx.fillText(text, W * 0.5, y + h * 0.5);
     ctx.restore();
   }
 
