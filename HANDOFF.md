@@ -17,7 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-06-15 - [batch:511-maze-stage7-bowling-mobile-layout-shake-scale] Codex: user 依頼「maze stage7 ボウリングで iPhone SE 上半分空白、開始時から後ろ3本が動く、ピン縮小の体感不足」を受領。`HANDOFF.md`/maze 直近履歴で既存修正ありを確認済み。title DOM 削除後の grid 行、staging 反映状況、shake 以外の動き、描画サイズを検証して局所修正する。 (by Codex)
+- 2026-06-15 - [batch:511-maze-stage7-bowling-mobile-layout-shake-scale] DONE - Codex: maze stage7 ボウリングを sw v1143 で修正・staging 反映確認。iPhone SE 375x667 は stage 上余白 125px→22px、667x375 は既存維持。`_updateBowlPinMotion` sway / `shouldShake` / idle cue を aliveCount===1 に統一し、staging Playwright で常時移動 0。drawH=0.14 は実測で旧0.18比約22%縮小済み、0.12 追加縮小はユーザー確認待ち。Harvey クロスレビュー blocking なし。静的 asset header は既存 `_headers` が効かず `public,max-age=0` のままなので別途配信設定確認が必要。 (by Codex)
 - 2026-06-15 - [batch:510-pono-space-lazarus-exact-puzzle-starbrain-medium] Codex: user 指摘「ラザロは4ピースを実際にはめると中央や目横装飾/青ポッチ/突起/緑丸が合体顔と一致しない。生成任せではなくパズルとして組んで確認する。ビッグスターブレインは横長すぎるので横幅を0.7〜0.8程度へ」を受領。ラザロは合体顔マスターから4ピースを派生して一致性を担保し、スターブレインは横長を中程度に抑えて再生成する。 (by Codex)
 - 2026-06-15 - [batch:510-pono-space-lazarus-exact-puzzle-starbrain-medium] DONE - Codex: ラザロは生成任せをやめ、合体顔マスターから4ピースを派生した `midboss_split_face_puzzle_exact_style_{a,b,c}_raw.png` を追加。仮組みレビュー `lazarus_puzzle_exact_reassembly_review.jpg` で4ピース再合体とマスター顔の差分 mean 0.0000 を確認。スターブレインは横長すぎた前回版を抑えた `boss_starbrain_medium_width_style_{a,b,c}_raw.png` を追加し、前回横長比で A 0.81 / B 0.81 / C 0.76、bbox 比率 A 2.04 / B 1.93 / C 1.76。確認用 `contact_sheet_lazarus_exact_starbrain_medium_width.jpg` を作成。全て白背景 raw。 (by Codex)
 - 2026-06-15 - [batch:509-pono-space-lazarus-pattern-starbrain-wide] Codex: user 指摘「ラザロは4つに分かれている時と合体時の顔模様が違うので統一。スターブレインは正方形に近い形ではなく横長に」を受領。`balanced_palette`版の色役割を維持しつつ、ラザロは分割パーツと合体顔の模様が連続するシート、スターブレインは横長シルエットの大型要塞として3スタイル分を追加生成する。 (by Codex)
