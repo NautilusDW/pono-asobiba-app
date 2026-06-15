@@ -3154,13 +3154,17 @@ body.bento-complete-open .pono-dropdown {
   overflow: visible;
 }
 .tut-trim-box rect {
-  /* v3.2.1: 点滅をゆっくり (2000ms) に。 色は ビビッドな青 (#1E7FD8) — 黄ギンガム背景に対する
-     コントラスト 〜4.8:1 を確保しつつ、 緑 (#34c759) の「成功/完了」誤読リスクを回避。 stroke は実線。 */
-  animation: tutTrimBlink 2000ms ease-in-out infinite;
+  /* v3.3: 最初の 1400ms で一周描いてから 900ms で点滅 (ユーザー要望: 太く・点滅速く・最初は一周描く)。
+     stroke-dasharray/offset は JS 側で 初期セット。 色は ビビッドな青 (#1E7FD8)。 stroke は実線。 */
+  animation: tutTrimDraw 1400ms ease-out forwards, tutTrimBlink 900ms 1400ms infinite ease-in-out;
 }
 @keyframes tutTrimBlink {
   0%, 100% { opacity: 0.4; }
   50%      { opacity: 1; }
+}
+@keyframes tutTrimDraw {
+  0%   { stroke-dashoffset: var(--trim-len, 1000); opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
 }
 /* v3: mask overlay (right-half blink) */
 .tut-mask-overlay {
@@ -4376,6 +4380,69 @@ function getRequesterPortrait(req, mood) {
   if (mood === 'sad') return req.portraitSad || req.portraitNormal || '';
   return req.portraitNormal || req.portraitRequest || '';
 }
+
+// ===== NPC 位置オーバーライド (admin の NPC位置エディタで保存される) =====
+// localStorage key: 'bento_npc_positions_v1'
+// 形式: { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
+//   - x: left %  (0-100, default 58)
+//   - y: bottom % (0-50, default 23)
+//   - scale: 倍率 (0.5-1.5, default 1)
+//   - rotation: 回転 deg (-20〜+20, default 0)
+//   - opacity: 不透明度 (0-1, default 1)
+// シーンに応じてデフォルト値が異なる (delivery=58/23, shop-opening=50/23) ため、
+// 適用側はデフォルトを引数で受け取り、 オーバーライドがあれば上書きする。
+const NPC_POSITION_LS_KEY = 'bento_npc_positions_v1';
+const NPC_POSITION_DEFAULT = { x: 58, y: 23, scale: 1, rotation: 0, opacity: 1 };
+const NPC_MOOD_TO_EXPRESSION = {
+  request: 'request',
+  normal: 'normal',
+  happy: 'happy',
+  super_happy: 'super_happy',
+  almost: 'almost',
+  sad: 'sad',
+};
+function loadNpcPositionOverrides() {
+  try {
+    const raw = localStorage.getItem(NPC_POSITION_LS_KEY);
+    if (!raw) return {};
+    const obj = JSON.parse(raw);
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch { return {}; }
+}
+function getNpcPositionOverride(charId, expression) {
+  if (!charId) return null;
+  const key = (charId || '') + '_' + (expression || 'normal');
+  const all = loadNpcPositionOverrides();
+  return all[key] || null;
+}
+// シーン上の <img> に位置オーバーライドを反映。
+// el が `position: absolute` 想定 (delivery/shop-opening) の場合は left/bottom も適用。
+// el が npc-portrait-wrap 内の img (固定サイズボックス) の場合は left/bottom は無効、
+// scale/rotation/opacity のみ反映 (translateX(-50%) を維持しないため別 transform)。
+function applyNpcPositionStyle(el, charId, mood, options) {
+  if (!el || !charId) return;
+  const opts = options || {};
+  const expression = NPC_MOOD_TO_EXPRESSION[mood] || mood || 'normal';
+  const baseDefault = Object.assign({}, NPC_POSITION_DEFAULT, opts.defaults || {});
+  const override = getNpcPositionOverride(charId, expression) || {};
+  const pos = {
+    x:       (typeof override.x === 'number')        ? override.x        : baseDefault.x,
+    y:       (typeof override.y === 'number')        ? override.y        : baseDefault.y,
+    scale:   (typeof override.scale === 'number')    ? override.scale    : baseDefault.scale,
+    rotation:(typeof override.rotation === 'number') ? override.rotation : baseDefault.rotation,
+    opacity: (typeof override.opacity === 'number')  ? override.opacity  : baseDefault.opacity,
+  };
+  const useAbsolute = opts.useAbsolute !== false;   // default true
+  if (useAbsolute) {
+    el.style.left   = pos.x + '%';
+    el.style.bottom = pos.y + '%';
+    el.style.transform = 'translateX(-50%) scale(' + pos.scale + ') rotate(' + pos.rotation + 'deg)';
+  } else {
+    // overlay 内の固定ボックス: 中央 (transform-origin center) で scale/rotate のみ
+    el.style.transform = 'scale(' + pos.scale + ') rotate(' + pos.rotation + 'deg)';
+  }
+  el.style.opacity = String(pos.opacity);
+}
 const NPC_REQUESTERS = [
   {
     id: 'risu', name: 'りすちゃん',
@@ -5421,6 +5488,7 @@ function showRequesterIntro(req) {
   if (!ov || !img || !nm || !line || !cta) return;
   img.src = getRequesterPortrait(req, 'request');
   img.alt = req.name;
+  applyNpcPositionStyle(img, req.id, 'request', { useAbsolute: false });
   nm.textContent  = req.name + ' が きたよ！';
   line.textContent = req.intro;
   ov.classList.remove('is-closing', 'is-super-happy', 'is-happy', 'is-almost', 'is-sad', 'hidden');
@@ -5568,6 +5636,11 @@ function showShopOpening(req, onDone, options = {}) {
     if (step.customer) {
       const customerReady = waitForImageReady(customer, getRequesterPortrait(req, step.mood || 'normal'));
       customer.alt = req.name;
+      // 入場アニメ中は CSS の transform を尊重、 アニメ後に位置オーバーライドを適用
+      customer.style.left = '';
+      customer.style.bottom = '';
+      customer.style.transform = '';
+      customer.style.opacity = '';
       Promise.all([bgReady, customerReady])
         .then(() => waitMs(step.enter ? SHOP_CUSTOMER_ENTER_DELAY_MS : 80))
         .then(() => {
@@ -5576,6 +5649,12 @@ function showShopOpening(req, onDone, options = {}) {
           if (step.enter) requestAnimationFrame(() => {
             if (token === renderToken && !ov.classList.contains('hidden')) ov.classList.add('is-entering');
           });
+          // 入場アニメ (0.68s) が終わってから override 反映
+          setTimeout(() => {
+            if (token === renderToken && !ov.classList.contains('hidden')) {
+              applyNpcPositionStyle(customer, req.id, step.mood || 'normal', { defaults: { x: 50, y: 23 }, useAbsolute: true });
+            }
+          }, step.enter ? 720 : 100);
         });
     } else {
       customer.removeAttribute('src');
@@ -5653,6 +5732,7 @@ function showRequesterReaction(req, finalEval, onDone) {
   const mood = (finalEval && finalEval.npcMood) || 'sad';
   img.src = getRequesterPortrait(req, mood);
   img.alt = req.name;
+  applyNpcPositionStyle(img, req.id, mood, { useAbsolute: false });
   nm.textContent  = req.name;
   line.textContent = getRequesterReactionMessage(req, finalEval);
   if (detail) detail.textContent = getRequesterReactionDetail(finalEval);
@@ -5710,6 +5790,7 @@ function showBentoDelivery(req, finalEval, onDone) {
   const mood = (finalEval && finalEval.npcMood) || 'sad';
   img.src = getRequesterPortrait(req, mood);
   img.alt = req.name;
+  applyNpcPositionStyle(img, req.id, mood, { defaults: { x: 58, y: 23 }, useAbsolute: true });
   name.textContent = req.name + ' に おべんとうを わたしたよ';
   line.textContent = getRequesterReactionMessage(req, finalEval);
   next.textContent = 'けっかを みる';
@@ -11241,7 +11322,7 @@ function tutorialAnimateDragFromEl(fromEl, toPointOrEl, opts = {}) {
 // v3.2.1: tutorialState._retryTimer に setTimeout ID を保存し、 並列チェーン (MutationObserver の
 // 再発火等) で二重指アニメが起動する race condition を解消。 step 遷移検知は関数開始時の
 // originalStep キャプチャで判定。
-function tutorialAnimateDragFromElWithRetry(paletteSelectorOrEl, targetSelectorOrEl, opts = {}, retries = 20) {
+function tutorialAnimateDragFromElWithRetry(paletteSelectorOrEl, targetSelectorOrEl, opts = {}, retries = 30) {
   // 前回の retry timer を必ずクリア (並列起動を防止)
   if (tutorialState._retryTimer) {
     clearTimeout(tutorialState._retryTimer);
@@ -11270,7 +11351,7 @@ function tutorialAnimateDragFromElWithRetry(paletteSelectorOrEl, targetSelectorO
       tutorialState._retryTimer = setTimeout(() => {
         tutorialState._retryTimer = null;
         attempt(remaining - 1);
-      }, 50);
+      }, 60);
       return;
     }
     if (!palette || !target) {
@@ -11321,12 +11402,26 @@ function tutorialRefresh() {
   tutorialRenderStep();
 }
 function tutorialFirstPaletteItem() {
-  return document.querySelector('.free-item-list .free-palette-item');
+  // v3.3: 実際のクラス (.free-item-list / .free-palette-item) → 関連 fallback → ワイルドカード。
+  // 過去にパレット DOM 再描画タイミングで null を返してドラッグデモが見えない症状を防ぐ。
+  return document.querySelector('.free-item-list .free-palette-item')
+      || document.querySelector('.right-panel.free-layout-panel .free-palette-item')
+      || document.querySelector('.free-palette-item')
+      || document.querySelector('.free-item-list > button')
+      || document.querySelector('.free-item-list > *:not(button)')
+      || document.querySelector('[class*="palette"] [class*="item"]:not(button)')
+      || null;
 }
 function tutorialStageCenter() {
+  // v3.3: id → 既知 class 階層 → ワイルドカード fallback。 ステージが描画中で id 未付与でも拾えるようにする。
   return document.getElementById('free-layout-stage')
       || document.querySelector('.free-layout-stage')
-      || document.querySelector('.free-bento-shape');
+      || document.querySelector('.free-bento-shape')
+      || document.querySelector('#bento-stage')
+      || document.querySelector('.bento-stage')
+      || document.querySelector('.free-stage')
+      || document.querySelector('[class*="layout-stage"]')
+      || document.querySelector('[class*="bento-shape"]');
 }
 function tutorialStageRect() {
   const stage = tutorialStageCenter();
@@ -11416,33 +11511,41 @@ function tutorialClearBoxLock() {
   });
 }
 // パレットから type=cup の最初のボタンを取得 (accessory タブ)
+// v3.3: タブ context が一致しないときは null を返し、 各 step が誤タブの palette を掴まないようにする。
 function tutorialFindCupPaletteEl() {
-  const list = document.querySelector('.free-item-list');
-  if (!list) return null;
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'accessory') return null;
+  const list = document.querySelector('.free-item-list')
+            || document.querySelector('.right-panel.free-layout-panel');
+  if (!list) return tutorialFirstPaletteItem();
   const btns = list.querySelectorAll('.free-palette-item');
   for (const b of btns) {
     const name = b.querySelector('.free-palette-name');
     if (name && (name.textContent || '').indexOf('カップ') >= 0) return b;
   }
-  return btns[0] || null;
+  return btns[0] || tutorialFirstPaletteItem();
 }
 function tutorialFindRicePaletteEl() {
   // freeLayoutTab=='rice' のときの最初の要素
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'rice') return null;
   return tutorialFirstPaletteItem();
 }
 function tutorialFindFoodPaletteEl() {
+  // okazu-red step は food タブで動くので、 タブが違うときは null
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
   return tutorialFirstPaletteItem();
 }
 function tutorialFindNoriPaletteEl() {
   // decor タブで「のり」を含む最初の要素
-  const list = document.querySelector('.free-item-list');
-  if (!list) return null;
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'decor') return null;
+  const list = document.querySelector('.free-item-list')
+            || document.querySelector('.right-panel.free-layout-panel');
+  if (!list) return tutorialFirstPaletteItem();
   const btns = list.querySelectorAll('.free-palette-item');
   for (const b of btns) {
     const name = b.querySelector('.free-palette-name');
     if (name && (name.textContent || '').indexOf('のり') >= 0) return b;
   }
-  return btns[0] || null;
+  return btns[0] || tutorialFirstPaletteItem();
 }
 function tutorialFindCupContentRowBtn() {
   return document.querySelector('.free-cup-content-row button')
@@ -11471,7 +11574,7 @@ function tutorialTrimPath(targetEl, opts = {}) {
   rect.setAttribute('ry', String(opts.radius || 14));
   rect.setAttribute('fill', 'none');
   rect.setAttribute('stroke', opts.color || '#1E7FD8');
-  rect.setAttribute('stroke-width', String(opts.width || 4.5));
+  rect.setAttribute('stroke-width', String(opts.width || 6.5));
   rect.setAttribute('stroke-linecap', 'round');
   svg.appendChild(rect);
   wrap.appendChild(svg);
@@ -11489,11 +11592,16 @@ function tutorialTrimPath(targetEl, opts = {}) {
     wrap.style.width = (r.width + OUTSET * 2) + 'px';
     wrap.style.height = (r.height + OUTSET * 2) + 'px';
     // wrap いっぱいに rect を引く (stroke が見切れないよう 1px だけ内側)
+    const w = Math.max(0, r.width + OUTSET * 2 - 2);
+    const h = Math.max(0, r.height + OUTSET * 2 - 2);
     rect.setAttribute('x', '1');
     rect.setAttribute('y', '1');
-    rect.setAttribute('width', String(Math.max(0, r.width + OUTSET * 2 - 2)));
-    rect.setAttribute('height', String(Math.max(0, r.height + OUTSET * 2 - 2)));
-    // dash-offset アニメは廃止、 blink に切替済 (CSS 側)。 dasharray は実線。
+    rect.setAttribute('width', String(w));
+    rect.setAttribute('height', String(h));
+    // v3.3: 矩形周長を概算して dasharray/dashoffset を初期セット (tutTrimDraw 用)
+    const perim = Math.max(1, 2 * (w + h));
+    rect.setAttribute('stroke-dasharray', perim + ' ' + perim);
+    wrap.style.setProperty('--trim-len', perim);
   }
   sync();
   let ro = null;
@@ -11615,13 +11723,13 @@ function tutorialUninstallTabHook() {
 // 優先: .free-item-list → .right-panel.free-layout-panel → 見つからなければ起動しない。
 function tutorialInstallPaletteObserver() {
   if (tutorialState.paletteObserver) return;
+  // v3.3: 優先 .free-item-list → .right-panel.free-layout-panel → 最終 body の childList (subtree:false)。
+  // 過去 v3.2.1 では body subtree を張ると feedback loop で連続再描画していたので、 body は浅い監視に限定。
   const target = document.querySelector('.free-item-list')
-              || document.querySelector('.right-panel.free-layout-panel');
-  if (!target) {
-    // パレットが見つからない時は body subtree を張るより起動しない方が安全
-    // (feedback loop / アイテム配置のたびに再描画されるリスクの方が高い)
-    return;
-  }
+              || document.querySelector('.right-panel.free-layout-panel')
+              || document.body;
+  if (!target) return;
+  const shallowOnly = (target === document.body);
   try {
     const obs = new MutationObserver(() => {
       if (!tutorialState.active) return;
@@ -11632,7 +11740,7 @@ function tutorialInstallPaletteObserver() {
         try { tutorialRenderStep(); } catch (_) {}
       });
     });
-    obs.observe(target, { childList: true, subtree: true });
+    obs.observe(target, { childList: true, subtree: !shallowOnly });
     tutorialState.paletteObserver = obs;
   } catch (_) {}
 }

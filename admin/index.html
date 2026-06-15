@@ -50,6 +50,22 @@ body {
 .sub-tab.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
 .sub-panel { display: none; }
 .sub-panel.active { display: block; }
+.npc-pos-expr-btn {
+  padding: 6px 12px; border: 2px solid #E0D8CC; border-radius: 14px;
+  background: #fff; color: #5D4E37; font-family: inherit;
+  font-size: 0.72rem; font-weight: 700; cursor: pointer;
+  transition: all 0.15s;
+}
+.npc-pos-expr-btn:hover { border-color: #F59E0B; color: #B45309; }
+.npc-pos-expr-btn.active { background: #F59E0B; color: #fff; border-color: #F59E0B; }
+.npc-pos-slider-row {
+  display: grid; grid-template-columns: 90px 1fr 60px; align-items: center; gap: 8px;
+  background: #FFF8EE; border: 1px solid #E8D8B8; border-radius: 8px;
+  padding: 6px 10px;
+}
+.npc-pos-slider-row label { font-size: 0.78rem; font-weight: 700; color: #5D4E37; }
+.npc-pos-slider-row input[type=range] { width: 100%; }
+.npc-pos-slider-row .npc-pos-val { font-size: 0.72rem; color: #8B7355; font-weight: 700; text-align: right; }
 .checker-bg {
   background-image: linear-gradient(45deg, #ddd 25%, transparent 25%),
     linear-gradient(-45deg, #ddd 25%, transparent 25%),
@@ -977,6 +993,7 @@ tr:hover { background: #FFFAF0; }
 <div class="panel" id="panel-bento">
   <div class="sub-tabs">
     <button class="sub-tab active" data-sub="bento-illust">🎨 イラスト管理</button>
+    <button class="sub-tab" data-sub="bento-npc-pos">🎨 NPC 位置エディタ</button>
   </div>
   <div class="sub-panel active" id="sub-bento-illust">
   <div class="section">
@@ -992,6 +1009,79 @@ tr:hover { background: #FFFAF0; }
       ステータスはブラウザに自動保存されます。画像の差し替えは 🖼️ ボタンからGitHubにアップロードできます。
     </div>
     <div id="bento-illust-groups"></div>
+  </div>
+  </div>
+
+  <!-- ===== NPC 位置エディタ ===== -->
+  <div class="sub-panel" id="sub-bento-npc-pos">
+  <div class="section">
+    <div class="section-title">🎨 NPC 位置エディタ（弁当ゲーム）</div>
+    <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
+      おべんとう <code>delivery</code>/<code>shop-opening</code> シーンに登場する NPC スプライトの位置を、
+      <strong>キャラクター × 表情</strong> ごとに調整します。<br>
+      設定は <code>localStorage['bento_npc_positions_v1']</code> に保存され、 <strong>ブラウザのキャッシュをまたいで保持</strong>されます。<br>
+      delivery 画面のデフォルトは <code>x=58%, y=23%</code>。 shop-opening のデフォルトは <code>x=50%, y=23%</code>。
+      スライダーの値は delivery 画面を想定した絶対値で、両画面共通で反映されます。
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
+      <!-- 左: 選択 + スライダー -->
+      <div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">キャラクター</label>
+          <select id="npc-pos-char" style="width:100%;padding:8px 10px;border:2px solid #C7894A;border-radius:8px;background:#fff;font-family:inherit;font-size:0.9rem;font-weight:700;color:#5D4E37;">
+            <option value="risu">りすちゃん (risu)</option>
+            <option value="inu">わんちゃん (inu)</option>
+            <option value="ahiru">あひるさん (ahiru)</option>
+            <option value="shika">しかさん (shika)</option>
+            <option value="araiguma">アライグマくん (araiguma)</option>
+            <option value="neko">ねこさん (neko)</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">表情</label>
+          <div id="npc-pos-expr-row" style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button type="button" class="npc-pos-expr-btn active" data-expr="request">request</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="normal">normal</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="happy">happy</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="super_happy">super_happy</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="almost">almost</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="sad">sad</button>
+          </div>
+        </div>
+
+        <div id="npc-pos-sliders" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;">
+          <button id="npc-pos-save" type="button" style="padding:7px 14px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">💾 保存</button>
+          <button id="npc-pos-reset" type="button" style="padding:7px 14px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↺ この組合せをリセット</button>
+          <button id="npc-pos-reset-all" type="button" style="padding:7px 14px;background:#EF4444;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">🗑 全部リセット</button>
+          <button id="npc-pos-export" type="button" style="padding:7px 14px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">⬇ エクスポート (JSON)</button>
+          <button id="npc-pos-import" type="button" style="padding:7px 14px;background:#6366F1;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">⬆ インポート</button>
+          <input id="npc-pos-import-file" type="file" accept="application/json,.json" style="display:none;">
+        </div>
+
+        <div id="npc-pos-status" style="margin-top:10px;font-size:0.72rem;color:#8B7355;min-height:1.1em;"></div>
+      </div>
+
+      <!-- 右: プレビュー -->
+      <div>
+        <div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">プレビュー（16:9 シーン）</div>
+        <div id="npc-pos-preview" style="position:relative;width:100%;aspect-ratio:16/9;background:#f4cf91 url('../assets/images/bento/story/shop_order_counter.png') center/contain no-repeat;border:2px solid #C7894A;border-radius:12px;overflow:hidden;">
+          <!-- 0%/50%/100% 目盛 (横) -->
+          <div style="position:absolute;inset:0;pointer-events:none;">
+            <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.35);"></div>
+            <div style="position:absolute;left:0;right:0;bottom:23%;height:1px;background:rgba(255,255,255,0.35);"></div>
+          </div>
+          <img id="npc-pos-preview-img" alt="" style="position:absolute;left:58%;bottom:23%;height:40%;max-width:38%;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 8px 12px rgba(70,40,16,0.18));">
+        </div>
+        <div style="font-size:0.72rem;color:#8B7355;margin-top:8px;line-height:1.45;">
+          スライダーをドラッグするとリアルタイムに反映。 中央のグリッド線は <code>x=50%</code>, <code>y=23%</code> の目安。
+          実機 (bento ゲーム本体) 側の表示は、 保存後に再読み込みで反映されます。
+        </div>
+      </div>
+    </div>
   </div>
   </div>
 </div>
@@ -1425,6 +1515,7 @@ document.querySelectorAll('.sub-tab').forEach(function(btn) {
     if (subId === 'wm-questions') { wmRenderMatchTable(); wmRenderCwTable(); }
     if (subId === 'wm-illust')    wmLoadIllust();
     if (subId === 'quiz-narration') ttsInit();
+    if (subId === 'bento-npc-pos') npcPosInit();
   });
 });
 

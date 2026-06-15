@@ -2202,26 +2202,14 @@
     }
 
     // ===== PWA Service Worker =====
-    if ('serviceWorker' in navigator) {
-      // SW更新時に自動リロード（ユーザーは何もしなくていい）
-      // iOS ホーム画面 PWA では controllerchange が発火しにくいので postMessage も併用
-      var _swRefreshing = false;
-      function _swReload() {
-        if (_swRefreshing) return;
-        _swRefreshing = true;
-        window.location.reload();
-      }
-      navigator.serviceWorker.addEventListener('controllerchange', _swReload);
-      navigator.serviceWorker.addEventListener('message', function(e) {
-        if (e && e.data && e.data.type === 'sw-updated') _swReload();
-      });
-      navigator.serviceWorker.register('/sw.js').then(function(reg) {
-        // 起動のたびにSW更新チェック
-        reg.update();
-        // 30分ごとにバックグラウンドで更新チェック
-        setInterval(function() { reg.update(); }, 30 * 60 * 1000);
-      }).catch(function() {});
-    }
+    // 登録 + 更新検知 + ユーザー明示タップでのみ切替 (トースト) を
+    // common/sw-update.js に集約。
+    (function () {
+      var s = document.createElement('script');
+      s.src = '/common/sw-update.js';
+      s.defer = true;
+      document.head.appendChild(s);
+    })();
 
     // ===== Stamp Rally System (15-slot card, 5×3) =====
     (function() {

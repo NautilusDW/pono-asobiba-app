@@ -1,13 +1,24 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1135; // v1135: bento tutorial v3.2.1: retry timer leak fixed, observer scoped to palette area, trim color #1E7FD8 (blue for contrast+semantic), hand size clamped
+const CACHE_VERSION = 1137; // v1137: opt-in SW update toast via common/sw-update.js + SKIP_WAITING message handler (no auto-activate; user taps toast to apply)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
   // 開いているゲームへ新しいSWを即時適用すると、controllerchange経由で
   // ページがリロードされ、ゲームがタイトル状態へ戻ってしまう。
   // 待機状態にして、次回起動/遷移時に自然に切り替える。
+});
+
+// ── Opt-in skip-waiting (v1137-) ──
+// ページ側 (common/sw-update.js) がトースト経由で明示的にユーザータップを
+// 取った時だけ postMessage({type:'SKIP_WAITING'}) を送ってくる。
+// install での skipWaiting() 呼び出しを避ける慎重設計はそのまま、
+// 「ユーザーが明示的にアップデートしたい時だけ即時切替」を可能にする。
+self.addEventListener('message', event => {
+  if (event && event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', event => {

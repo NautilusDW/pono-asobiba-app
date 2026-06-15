@@ -2362,23 +2362,14 @@
     selectGame(0);
 
     // ===== Service worker =====
-    // In Claude preview (claudeusercontent.com), skip SW + purge any caches it
-    // already installed so stale 404s for assets don't persist.
-    const __isClaudePreview = /claudeusercontent\.com$/.test(location.hostname);
-    if ('serviceWorker' in navigator) {
-      if (__isClaudePreview) {
-        navigator.serviceWorker.getRegistrations()
-          .then((rs) => rs.forEach((r) => r.unregister()))
-          .catch(() => {});
-        if (window.caches && caches.keys) {
-          caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
-        }
-      } else {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
-    }
+    // 登録 + 更新検知 + ユーザー明示タップでのみ切替 (トースト) を
+    // common/sw-update.js に集約。Claude preview 判定もそちらで吸収する。
+    (function () {
+      var s = document.createElement('script');
+      s.src = '/common/sw-update.js';
+      s.defer = true;
+      document.head.appendChild(s);
+    })();
   </script>
 
   <!-- ===== Stage scale-to-fit + portrait detection ===== -->

@@ -9862,7 +9862,8 @@ function loadStage(idx) {
   // 到達しない dead code。Phase 2 (有料ロック有効化時) のために保持。
   var requestedIdx = idx | 0;
   var stageNum = requestedIdx > 0 ? requestedIdx : 1;
-  if (window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'
+  if (!window._DEV_BYPASS_TIER
+      && window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'
       && !window.PonoTier.isMazeStageUnlocked(stageNum)) {
     if (typeof window.PonoTier.showSubscribePromo === 'function') {
       window.PonoTier.showSubscribePromo({
@@ -10441,6 +10442,21 @@ function _getInitialStageIdx() {
   } catch (e) { /* ignore */ }
   return 1;
 }
+// ---- DEV bypass: ?dev=1 で tier check を session 内のみ無視 ----
+// localStorage には書き込まない。リロードや別タブには引き継がない。
+try {
+  window._DEV_BYPASS_TIER = new URLSearchParams(window.location.search).get('dev') === '1';
+  if (window._DEV_BYPASS_TIER) {
+    console.warn('[maze] DEV mode: tier check bypassed for this session');
+    // 右下にひかえめな DEV indicator (CSS インラインのみ)
+    const _devTag = document.createElement('div');
+    _devTag.textContent = 'DEV';
+    _devTag.style.cssText = 'position:fixed;right:6px;bottom:6px;z-index:99999;'
+      + 'font:10px/1 sans-serif;color:#888;background:rgba(255,255,255,0.4);'
+      + 'padding:2px 5px;border-radius:3px;pointer-events:none;letter-spacing:0.5px;';
+    (document.body || document.documentElement).appendChild(_devTag);
+  }
+} catch (e) { /* ignore */ }
 // 起動時は image stage index と ?image=<name> のみ解決し、loadStage は保留。
 // タイトル画面タップ後に OP を再生してから初回 loadStage を呼ぶことで、
 // 起動時にいきなり storyIntro モーダルが被さる旧バグを根本回避する。

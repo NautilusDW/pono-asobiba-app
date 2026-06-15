@@ -15592,27 +15592,8 @@ initMenu({
 </script>
 
 <!-- Service Worker 登録: ホーム画面 PWA からこのページを直接開いた時も
-     新しい SW を検知してリロードする (iOS 対策) -->
-<script>
-  if ('serviceWorker' in navigator) {
-    function _ponoSWReload() {
-      if (!window._ponoSWRefreshing) {
-        window._ponoSWRefreshing = true;
-        window.location.reload();
-      }
-    }
-    navigator.serviceWorker.addEventListener('controllerchange', _ponoSWReload);
-    navigator.serviceWorker.addEventListener('message', function(e) {
-      if (e && e.data && e.data.type === 'sw-updated') _ponoSWReload();
-    });
-    navigator.serviceWorker.register('/sw.js').then(function(reg) {
-      reg.update();
-      // 表示復帰 (ホーム画面 PWA からの再前面化) 時にも update を呼ぶ
-      document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') { try { reg.update(); } catch (e) {} }
-      });
-    }).catch(function() {});
-  }
-</script>
+     新しい SW を検知して、ユーザーがトーストをタップしたらリロードする (iOS 対策)。
+     登録 + 更新検知 + 切替 UI は common/sw-update.js に集約。 -->
+<script src="/common/sw-update.js" defer></script>
 </body>
 </html>
