@@ -420,6 +420,17 @@
     particles: [],
     boss: null
   };
+  try {
+    if (new URLSearchParams(location.search).get('dev') === '1') window.__starparodierState = state;
+  } catch (_) {}
+
+  const PLAYER_FIRE_INTERVAL = 0.085;
+  const PLAYER_FIRE_INTERVAL_BOSS = 0.075;
+  const PLAYER_SHOT_LIMIT = 78;
+  const LAZARUS_SPLIT_HITS = 8;
+  const LAZARUS_ASSEMBLE_TIME = 9.4;
+  const LAZARUS_SPLIT_FIRE_FAST = 0.28;
+  const LAZARUS_SPLIT_FIRE_SLOW = 0.34;
 
   function mulberry32(seed) {
     return function () {
@@ -439,9 +450,26 @@
     return a + (b - a) * t;
   }
 
+  function colorWithAlpha(color, alpha) {
+    if (color.startsWith('#') && color.length === 7) {
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    if (color.startsWith('rgb(')) return color.replace('rgb(', 'rgba(').replace(')', `,${alpha})`);
+    if (color.startsWith('rgba(')) return color.replace(/,\s*[\d.]+\)$/, `,${alpha})`);
+    return color;
+  }
+
   function easeOutCubic(t) {
     t = clamp(t, 0, 1);
     return 1 - Math.pow(1 - t, 3);
+  }
+
+  function easeInOutSine(t) {
+    t = clamp(t, 0, 1);
+    return -(Math.cos(Math.PI * t) - 1) / 2;
   }
 
   function dist2(a, b) {
@@ -485,15 +513,22 @@
   }
 
   function makeStars() {
-    const count = Math.round(clamp((W * H) / 5200, 80, 260));
+    const count = Math.round(clamp((W * H) / 4300, 110, 340));
     stars = [];
     for (let i = 0; i < count; i++) {
+      const roll = rng();
+      const layer = roll < 0.5 ? 'far' : (roll < 0.84 ? 'mid' : 'near');
+      const layerScale = layer === 'near' ? 1.45 : (layer === 'mid' ? 0.9 : 0.48);
       stars.push({
         x: rng() * W,
         y: rng() * H,
-        z: 0.35 + rng() * 1.7,
-        r: 0.7 + rng() * 1.8,
-        hue: rng() < 0.2 ? 'mint' : (rng() < 0.45 ? 'violet' : 'white')
+        layer,
+        z: layerScale,
+        r: (0.65 + rng() * 1.65) * layerScale,
+        speed: layer === 'near' ? 118 + rng() * 56 : (layer === 'mid' ? 58 + rng() * 34 : 22 + rng() * 18),
+        drift: (rng() - 0.5) * (layer === 'near' ? 12 : 5),
+        hue: rng() < 0.18 ? 'mint' : (rng() < 0.38 ? 'violet' : 'white'),
+        tw: rng() * Math.PI * 2
       });
     }
   }
@@ -562,10 +597,12 @@
       state.boss = {
         type: 'lazarusSplit',
         x: W * 0.5,
-        y: H * 0.31,
-        hp: 120,
-        maxHp: 120,
-        shot: 1.0
+        y: lazarusBaseY(),
+        hp: LAZARUS_SPLIT_HITS,
+        maxHp: LAZARUS_SPLIT_HITS,
+        shot: 0.22,
+        mergeTime: LAZARUS_ASSEMBLE_TIME,
+        pattern: 0
       };
     } else if (phase === 'lazarusFull') {
       phaseText.textContent = 'MID BOSS';
@@ -574,10 +611,10 @@
       state.boss = {
         type: 'lazarusFull',
         x: W * 0.5,
-        y: H * 0.31,
-        hp: 190,
-        maxHp: 190,
-        shot: 0.6,
+        y: lazarusBaseY(),
+        hp: 120,
+        maxHp: 120,
+        shot: 0.75,
         dir: 1
       };
     } else if (phase === 'starbrainIntro') {
@@ -593,10 +630,10 @@
         type: 'starbrain',
         x: W * 0.5,
         y: starbrainBaseY(),
-        hp: 360,
-        maxHp: 360,
-        shot: 0.45,
-        ring: 1.8,
+        hp: 190,
+        maxHp: 190,
+        shot: 0.7,
+        pattern: 0,
         dir: 1
       };
     }
@@ -624,11 +661,14 @@
 
   function updateStars(dt) {
     for (const s of stars) {
-      s.y += (24 + s.z * 42) * dt;
+      s.y += s.speed * dt;
+      s.x += s.drift * dt;
       if (s.y > H + 8) {
         s.y = -8;
         s.x = rng() * W;
       }
+      if (s.x < -8) s.x = W + 8;
+      else if (s.x > W + 8) s.x = -8;
     }
   }
 
@@ -660,21 +700,56 @@
     p.inv = Math.max(0, p.inv - dt);
     if (p.cooldown <= 0) {
       firePlayer();
-      p.cooldown = state.phase === 'starbrain' ? 0.125 : 0.15;
+      p.cooldown = state.boss ? PLAYER_FIRE_INTERVAL_BOSS : PLAYER_FIRE_INTERVAL;
     }
   }
 
   function firePlayer() {
+    if (state.bullets.length > PLAYER_SHOT_LIMIT) return;
     const p = state.player;
-    const spread = clamp(W * 0.025, 13, 28);
-    addBullet(p.x, p.y - p.r * 1.2, 0, -680, 6, 'player', '#94f7ff');
-    addBullet(p.x - spread, p.y - p.r * 0.65, -44, -620, 5, 'player', '#7effc7');
-    addBullet(p.x + spread, p.y - p.r * 0.65, 44, -620, 5, 'player', '#7effc7');
+    const spread = clamp(W * 0.082, 50, 106);
+    const speed = Math.max(720, H * 2.0);
+    const shots = [
+      [-0.48, -0.30, '#7effc7'],
+      [-0.32, -0.18, '#94f7ff'],
+      [-0.16, -0.06, '#7effc7'],
+      [0, 0, '#ffffff'],
+      [0.16, 0.06, '#7effc7'],
+      [0.32, 0.18, '#94f7ff'],
+      [0.48, 0.30, '#7effc7']
+    ];
+    for (const [dx, vx, color] of shots) {
+      addBullet(
+        p.x + dx * spread,
+        p.y - p.r * (dx === 0 ? 1.32 : 0.9),
+        vx * Math.min(W, H) * 0.58,
+        -speed * (dx === 0 ? 1 : 0.94),
+        dx === 0 ? 5.4 : 4.4,
+        'player',
+        color,
+        { damage: 1 }
+      );
+    }
   }
 
-  function addBullet(x, y, vx, vy, r, side, color) {
+  function addBullet(x, y, vx, vy, r, side, color, opts = {}) {
     const list = side === 'player' ? state.bullets : state.enemyBullets;
-    list.push({ x, y, vx, vy, r, side, color, life: 4 });
+    list.push({
+      x,
+      y,
+      vx,
+      vy,
+      r,
+      side,
+      color,
+      life: opts.life || 4,
+      age: 0,
+      style: opts.style || '',
+      damage: opts.damage || 0,
+      wobbleAmp: opts.wobbleAmp || 0,
+      wobbleFreq: opts.wobbleFreq || 0,
+      wobblePhase: opts.wobblePhase || 0
+    });
   }
 
   function updateBullets(dt) {
@@ -687,8 +762,12 @@
   function moveBullets(list, dt) {
     for (let i = list.length - 1; i >= 0; i--) {
       const b = list[i];
+      b.age += dt;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
+      if (b.wobbleAmp) {
+        b.x += Math.sin(b.age * b.wobbleFreq + b.wobblePhase) * b.wobbleAmp * dt;
+      }
       b.life -= dt;
       if (b.life <= 0 || b.x < -40 || b.x > W + 40 || b.y < -60 || b.y > H + 60) {
         list.splice(i, 1);
@@ -714,7 +793,8 @@
       size,
       rot: rng() * Math.PI * 2,
       spin: (rng() - 0.5) * 2.4,
-      shot: 1.1 + rng() * 1.4
+      canShoot: type !== 'scout' && rng() < 0.42,
+      shot: 2.4 + rng() * 2.2
     });
   }
 
@@ -723,7 +803,7 @@
       state.spawnTimer -= dt;
       if (state.spawnTimer <= 0) {
         spawnDrone();
-        state.spawnTimer = clamp(0.9 - state.phaseTime * 0.018, 0.46, 0.9);
+        state.spawnTimer = clamp(1.05 - state.phaseTime * 0.012, 0.68, 1.05);
       }
       if (state.phaseTime > 20 || state.kills >= 24) {
         setPhase('lazarusSplit');
@@ -736,12 +816,12 @@
       e.x += e.vx * dt + Math.sin(state.phaseTime * 2.1 + e.y * 0.01) * 22 * dt;
       e.y += e.vy * dt;
       e.rot += e.spin * dt;
-      e.shot -= dt;
-      if (e.shot <= 0) {
+      if (e.canShoot) e.shot -= dt;
+      if (e.canShoot && e.shot <= 0) {
         const angle = Math.atan2(p.y - e.y, p.x - e.x);
-        const speed = 170 + rng() * 52;
-        addBullet(e.x, e.y + e.size * 0.55, Math.cos(angle) * speed, Math.sin(angle) * speed, 6, 'enemy', '#c77dff');
-        e.shot = 1.4 + rng() * 1.4;
+        const speed = 116 + rng() * 42;
+        addBullet(e.x, e.y + e.size * 0.55, Math.cos(angle) * speed, Math.sin(angle) * speed, 5.5, 'enemy', '#a46cff', { damage: 6 });
+        e.shot = 2.6 + rng() * 2.4;
       }
       if (e.y > H + 70 || e.x < -70 || e.x > W + 70) {
         state.enemies.splice(i, 1);
@@ -762,12 +842,16 @@
     }
 
     if (b.type === 'lazarusSplit') {
+      if (b.hp <= 0) {
+        defeatLazarusSplitEarly(b);
+        return;
+      }
       b.shot -= dt;
       if (b.shot <= 0) {
-        shootFan(W * 0.5, H * 0.29, 5, Math.PI * 0.5, 0.75, 170, '#66e9ff');
-        b.shot = 1.15;
+        shootLazarusSplitBurst(b);
+        b.shot = lazarusSplitProgress() > 0.72 ? LAZARUS_SPLIT_FIRE_FAST : LAZARUS_SPLIT_FIRE_SLOW;
       }
-      if (state.phaseTime > 5.2) {
+      if (state.phaseTime > b.mergeTime) {
         setPhase('lazarusFull');
       }
       return;
@@ -775,11 +859,13 @@
 
     if (b.type === 'lazarusFull') {
       b.x += Math.sin(state.phaseTime * 1.25) * W * 0.07 * dt;
-      b.y = H * 0.29 + Math.sin(state.phaseTime * 2.2) * H * 0.018;
+      b.y = lazarusBaseY() + Math.sin(state.phaseTime * 2.2) * H * 0.018;
       b.shot -= dt;
       if (b.shot <= 0) {
-        shootFan(b.x, b.y + 58, 7, Math.PI * 0.5, 1.0, 200, '#7effc7');
-        b.shot = 0.95;
+        const nodes = bossTargetNodes(b);
+        const node = nodes[(Math.floor(state.phaseTime * 2) + 1) % nodes.length] || { x: b.x, y: b.y + 30 };
+        shootBubbleFan(node.x, node.y, 3, Math.PI * 0.5, 0.38, 142, '#7effc7');
+        b.shot = 1.22;
       }
       if (b.hp <= 0) {
         awardScore(1500);
@@ -795,15 +881,9 @@
       if (b.x < W * 0.5 - limit || b.x > W * 0.5 + limit) b.dir *= -1;
       b.y = starbrainBaseY() + Math.sin(state.phaseTime * 1.7) * H * 0.018;
       b.shot -= dt;
-      b.ring -= dt;
       if (b.shot <= 0) {
-        shootAimedPair(b.x - getStarbrainSize().w * 0.28, b.y + getStarbrainSize().h * 0.15, '#c77dff');
-        shootAimedPair(b.x + getStarbrainSize().w * 0.28, b.y + getStarbrainSize().h * 0.15, '#66e9ff');
-        b.shot = 0.58;
-      }
-      if (b.ring <= 0) {
-        shootRing(b.x, b.y + getStarbrainSize().h * 0.14, 12, 132, '#7effc7');
-        b.ring = 2.2;
+        shootStarbrainBubbles(b);
+        b.shot = b.hp < b.maxHp * 0.45 ? 0.82 : 1.06;
       }
       if (b.hp <= 0) {
         awardScore(3600);
@@ -813,11 +893,75 @@
     }
   }
 
+  function defeatLazarusSplitEarly(b) {
+    const pieces = getLazarusPieceLayout(lazarusSplitProgress());
+    awardScore(2400);
+    for (const piece of pieces) burst(piece.cx, piece.cy, '#7effc7', 18, 180);
+    state.enemyBullets.length = 0;
+    b.hp = 0;
+    setPhase('starbrainIntro');
+  }
+
   function shootFan(x, y, count, center, spread, speed, color) {
     for (let i = 0; i < count; i++) {
       const t = count === 1 ? 0.5 : i / (count - 1);
       const a = center - spread * 0.5 + spread * t;
       addBullet(x, y, Math.cos(a) * speed, Math.sin(a) * speed, 7, 'enemy', color);
+    }
+  }
+
+  function shootBubbleFan(x, y, count, center, spread, speed, color) {
+    for (let i = 0; i < count; i++) {
+      const t = count === 1 ? 0.5 : i / (count - 1);
+      const a = center - spread * 0.5 + spread * t;
+      addBullet(x, y, Math.cos(a) * speed, Math.sin(a) * speed, 10, 'enemy', color, {
+        style: 'bubble',
+        damage: 7,
+        life: 5.4,
+        wobbleAmp: 14,
+        wobbleFreq: 3.4 + i * 0.45,
+        wobblePhase: i * 1.7
+      });
+    }
+  }
+
+  function shootLazarusSplitBurst(b) {
+    const pieces = getLazarusPieceLayout(lazarusSplitProgress());
+    if (!pieces.length) return;
+    const pattern = b.pattern++ % 4;
+    const sets = [
+      [0, 3],
+      [1, 2],
+      [0, 1],
+      [2, 3]
+    ];
+    const chosen = sets[pattern];
+    for (const idx of chosen) {
+      const p = pieces[idx];
+      if (!p) continue;
+      addBullet(p.cx, p.cy + p.h * 0.16, 0, 118 + lazarusSplitProgress() * 42, 6.2, 'enemy', '#7effc7', {
+        style: 'bubble',
+        damage: 5,
+        life: 5.2,
+        wobbleAmp: 6,
+        wobbleFreq: 3.2,
+        wobblePhase: idx
+      });
+    }
+  }
+
+  function shootStarbrainBubbles(b) {
+    const nodes = bossTargetNodes(b);
+    const sideNodes = nodes.filter(n => n.role === 'side');
+    const center = nodes.find(n => n.role === 'center') || { x: b.x, y: b.y };
+    b.pattern = (b.pattern || 0) + 1;
+    if (b.pattern % 3 === 0) {
+      shootBubbleFan(center.x, center.y + center.r * 0.25, 3, Math.PI * 0.5, 0.46, 132, '#9b78ff');
+      return;
+    }
+    for (const node of sideNodes) {
+      const outward = node.x < b.x ? -0.13 : 0.13;
+      shootBubbleFan(node.x, node.y, 1, Math.PI * 0.5 + outward, 0.1, 122, '#66e9ff');
     }
   }
 
@@ -855,10 +999,10 @@
           break;
         }
       }
-      if (!consumed && boss && boss.type !== 'lazarusSplit') {
-        const br = bossHitRadius(boss);
-        if (circleHit(bullet.x, bullet.y, bullet.r, boss.x, boss.y, br)) {
-          boss.hp -= 1;
+      if (!consumed && boss && state.boss === boss) {
+        const node = hitBossTarget(bullet, boss);
+        if (node) {
+          boss.hp -= bullet.damage || 1;
           consumed = true;
           hitSpark(bullet.x, bullet.y, bullet.color);
         }
@@ -874,7 +1018,7 @@
       const b = state.enemyBullets[i];
       if (circleHit(p.x, p.y, p.r, b.x, b.y, b.r)) {
         state.enemyBullets.splice(i, 1);
-        damagePlayer(10, b.x, b.y);
+        damagePlayer(b.damage || 8, b.x, b.y);
       }
     }
   }
@@ -886,11 +1030,43 @@
     return dx * dx + dy * dy <= rr * rr;
   }
 
-  function bossHitRadius(boss) {
-    if (boss.type === 'starbrain') {
-      return Math.min(getStarbrainSize().w * 0.34, H * 0.24);
+  function hitBossTarget(bullet, boss) {
+    const nodes = bossTargetNodes(boss);
+    for (const node of nodes) {
+      if (circleHit(bullet.x, bullet.y, bullet.r, node.x, node.y, node.r)) return node;
     }
-    return Math.min(getLazarusFullSize().w * 0.46, H * 0.16);
+    return null;
+  }
+
+  function bossTargetNodes(boss) {
+    if (!boss) return [];
+    if (boss.type === 'lazarusSplit') {
+      return getLazarusPieceLayout(lazarusSplitProgress()).map(piece => ({
+        x: piece.cx,
+        y: piece.cy,
+        r: Math.min(piece.w, piece.h) * 0.34,
+        role: 'piece'
+      }));
+    }
+    if (boss.type === 'lazarusFull') {
+      const size = getLazarusFullSize();
+      const eyeY = boss.y - size.h * 0.04;
+      return [
+        { x: boss.x, y: boss.y - size.h * 0.19, r: size.w * 0.075, role: 'center' },
+        { x: boss.x - size.w * 0.23, y: eyeY, r: size.w * 0.085, role: 'side' },
+        { x: boss.x + size.w * 0.23, y: eyeY, r: size.w * 0.085, role: 'side' }
+      ];
+    }
+    if (boss.type === 'starbrain') {
+      const size = getStarbrainSize();
+      const sideY = boss.y + size.h * 0.04;
+      return [
+        { x: boss.x, y: boss.y + size.h * 0.08, r: size.h * 0.17, role: 'center' },
+        { x: boss.x - size.w * 0.285, y: sideY, r: size.h * 0.14, role: 'side' },
+        { x: boss.x + size.w * 0.285, y: sideY, r: size.h * 0.14, role: 'side' }
+      ];
+    }
+    return [];
   }
 
   function damagePlayer(amount, x, y) {
@@ -1035,19 +1211,33 @@
 
     for (const s of stars) {
       const color = s.hue === 'mint' ? '126,255,199' : (s.hue === 'violet' ? '199,125,255' : '235,251,255');
-      ctx.fillStyle = `rgba(${color}, ${0.45 + s.z * 0.22})`;
+      const tw = 0.78 + Math.sin(state.phaseTime * (1.4 + s.z) + s.tw) * 0.18;
+      ctx.fillStyle = `rgba(${color}, ${clamp(0.35 + s.z * 0.32, 0.34, 0.92) * tw})`;
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
       ctx.fill();
+      if (s.layer === 'near') {
+        ctx.globalAlpha = 0.32;
+        ctx.fillRect(s.x - s.r * 0.42, s.y - s.r * 5, s.r * 0.84, s.r * 9);
+        ctx.globalAlpha = 1;
+      }
     }
 
-    ctx.strokeStyle = 'rgba(102,233,255,0.08)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 7; i++) {
-      const y = ((state.phaseTime * 34 + i * 92) % (H + 92)) - 46;
+    ctx.strokeStyle = 'rgba(102,233,255,0.06)';
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 9; i++) {
+      const y = ((state.phaseTime * 42 + i * 78) % (H + 110)) - 55;
       ctx.beginPath();
       ctx.moveTo(W * 0.08, y);
       ctx.lineTo(W * 0.92, y + Math.sin(i) * 24);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.09)';
+    for (let i = 0; i < 6; i++) {
+      const y = ((state.phaseTime * 118 + i * 126) % (H + 160)) - 80;
+      ctx.beginPath();
+      ctx.moveTo(W * (0.18 + (i % 3) * 0.24), y);
+      ctx.lineTo(W * (0.18 + (i % 3) * 0.24), y + H * 0.12);
       ctx.stroke();
     }
   }
@@ -1102,19 +1292,42 @@
     for (const b of list) {
       ctx.shadowColor = b.color;
       ctx.shadowBlur = b.side === 'player' ? 16 : 12;
-      ctx.fillStyle = b.color;
-      ctx.beginPath();
       if (b.side === 'player') {
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
         ctx.ellipse(b.x, b.y, b.r * 0.62, b.r * 1.9, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.78)';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, Math.max(1.4, b.r * 0.34), 0, Math.PI * 2);
+        ctx.fill();
+      } else if (b.style === 'bubble') {
+        const pulse = 1 + Math.sin(b.age * 6.2) * 0.07;
+        const r = b.r * pulse;
+        const grad = ctx.createRadialGradient(b.x - r * 0.28, b.y - r * 0.32, r * 0.08, b.x, b.y, r);
+        grad.addColorStop(0, 'rgba(255,255,255,0.88)');
+        grad.addColorStop(0.2, 'rgba(255,255,255,0.24)');
+        grad.addColorStop(0.62, colorWithAlpha(b.color, 0.34));
+        grad.addColorStop(1, 'rgba(18,24,48,0.08)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,255,255,0.68)';
+        ctx.stroke();
       } else {
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.78)';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, Math.max(1.4, b.r * 0.34), 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255,255,255,0.78)';
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, Math.max(1.4, b.r * 0.34), 0, Math.PI * 2);
-      ctx.fill();
     }
     ctx.restore();
   }
@@ -1201,46 +1414,73 @@
 
   function getLazarusFullSize() {
     const img = imgs.lazarusFull;
-    const baseW = clamp(W * 0.25, 150, 260);
+    const baseW = H < 430 ? clamp(Math.min(W * 0.22, H * 0.45), 140, 205) : clamp(W * 0.25, 150, 260);
     const ratio = img ? img.naturalHeight / img.naturalWidth : 1.03;
     return { w: baseW, h: baseW * ratio };
   }
 
+  function lazarusBaseY() {
+    return H < 430 ? H * 0.31 : H * 0.32;
+  }
+
   function drawLazarusSplit() {
-    const full = getLazarusFullSize();
-    const targetX = W * 0.5;
-    const targetY = H * 0.29;
-    const topLeftX = targetX - full.w / 2;
-    const topLeftY = targetY - full.h / 2;
-    const fullImg = imgs.lazarusFull;
-    const scale = fullImg ? full.w / fullImg.naturalWidth : 0.6;
-    const progress = easeOutCubic((state.phaseTime - 0.45) / 3.7);
-    const fade = clamp((progress - 0.82) / 0.18, 0, 1);
-    const pieces = [
-      { img: imgs.lazarusTL, sx: W * 0.17, sy: H * 0.14, tx: topLeftX, ty: topLeftY, rot: -0.32 },
-      { img: imgs.lazarusTR, sx: W * 0.82, sy: H * 0.13, tx: topLeftX + full.w - pieceW(imgs.lazarusTR) * scale, ty: topLeftY, rot: 0.28 },
-      { img: imgs.lazarusBL, sx: W * 0.2, sy: H * 0.56, tx: topLeftX, ty: topLeftY + full.h - pieceH(imgs.lazarusBL) * scale, rot: 0.22 },
-      { img: imgs.lazarusBR, sx: W * 0.8, sy: H * 0.56, tx: topLeftX + full.w - pieceW(imgs.lazarusBR) * scale, ty: topLeftY + full.h - pieceH(imgs.lazarusBR) * scale, rot: -0.24 }
-    ];
+    const progress = lazarusSplitProgress();
+    const fade = clamp((progress - 0.88) / 0.12, 0, 1);
+    const pieces = getLazarusPieceLayout(progress);
 
     ctx.save();
     ctx.globalAlpha = 1 - fade * 0.92;
     for (const p of pieces) {
-      const x = lerp(p.sx, p.tx, progress);
-      const y = lerp(p.sy, p.ty, progress);
-      const w = pieceW(p.img) * scale;
-      const h = pieceH(p.img) * scale;
       ctx.save();
-      ctx.translate(x + w / 2, y + h / 2);
-      ctx.rotate(p.rot * (1 - progress) + Math.sin(state.phaseTime * 4) * 0.035);
+      ctx.translate(p.cx, p.cy);
       ctx.shadowColor = 'rgba(126,255,199,0.58)';
       ctx.shadowBlur = 18;
-      if (p.img) ctx.drawImage(p.img, -w / 2, -h / 2, w, h);
+      if (p.img) ctx.drawImage(p.img, -p.w / 2, -p.h / 2, p.w, p.h);
       ctx.restore();
     }
     ctx.restore();
 
+    drawBossTargetRings(state.boss, 0.78);
     if (fade > 0) drawLazarusFull(fade);
+  }
+
+  function lazarusSplitProgress() {
+    const b = state.boss;
+    const mergeTime = b && b.mergeTime ? b.mergeTime : LAZARUS_ASSEMBLE_TIME;
+    return easeInOutSine((state.phaseTime - 0.35) / mergeTime);
+  }
+
+  function getLazarusPieceLayout(progress = lazarusSplitProgress()) {
+    const full = getLazarusFullSize();
+    const targetX = W * 0.5;
+    const targetY = lazarusBaseY();
+    const topLeftX = targetX - full.w / 2;
+    const topLeftY = targetY - full.h / 2;
+    const fullImg = imgs.lazarusFull;
+    const scale = fullImg ? full.w / fullImg.naturalWidth : full.w / 430;
+    const hGap = clamp(W * 0.26, 150, 290) * (1 - easeInOutSine(progress / 0.62));
+    const vGap = clamp(H * 0.075, 36, 58) * (1 - easeInOutSine((progress - 0.62) / 0.38));
+    const raw = [
+      { key: 'tl', img: imgs.lazarusTL, tx: topLeftX, ty: topLeftY, side: -1, row: -1 },
+      { key: 'tr', img: imgs.lazarusTR, tx: topLeftX + full.w - pieceW(imgs.lazarusTR) * scale, ty: topLeftY, side: 1, row: -1 },
+      { key: 'bl', img: imgs.lazarusBL, tx: topLeftX, ty: topLeftY + full.h - pieceH(imgs.lazarusBL) * scale, side: -1, row: 1 },
+      { key: 'br', img: imgs.lazarusBR, tx: topLeftX + full.w - pieceW(imgs.lazarusBR) * scale, ty: topLeftY + full.h - pieceH(imgs.lazarusBR) * scale, side: 1, row: 1 }
+    ];
+    return raw.map(piece => {
+      const w = pieceW(piece.img) * scale;
+      const h = pieceH(piece.img) * scale;
+      const x = piece.tx + piece.side * hGap;
+      const y = piece.ty + piece.row * vGap;
+      return {
+        ...piece,
+        x,
+        y,
+        w,
+        h,
+        cx: x + w / 2,
+        cy: y + h / 2
+      };
+    });
   }
 
   function pieceW(img) {
@@ -1268,18 +1508,19 @@
       ctx.fill();
     }
     ctx.restore();
+    if (alpha > 0.92 && state.boss && state.boss.type === 'lazarusFull') drawBossTargetRings(state.boss, 0.7);
   }
 
   function getStarbrainSize() {
     const img = imgs.boss;
-    const maxW = Math.min(W * 0.48, 660);
+    const maxW = H < 430 ? Math.min(W * 0.34, H * 0.7) : Math.min(W * 0.48, 660);
     const w = clamp(maxW, 240, Math.max(280, W * 0.5));
     const ratio = img ? img.naturalHeight / img.naturalWidth : 0.57;
     return { w, h: w * ratio };
   }
 
   function starbrainBaseY() {
-    return H < 430 ? H * 0.36 : H * 0.26;
+    return H < 430 ? H * 0.25 : H * 0.26;
   }
 
   function drawStarbrain() {
@@ -1306,6 +1547,32 @@
       const r = size.h * (0.18 + i * 0.11) + Math.sin(state.phaseTime * 3 + i) * 4;
       ctx.beginPath();
       ctx.ellipse(b.x, b.y, r * 1.4, r, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    drawBossTargetRings(b, 0.72);
+  }
+
+  function drawBossTargetRings(boss, alpha) {
+    if (!boss) return;
+    const nodes = bossTargetNodes(boss);
+    if (!nodes.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = alpha;
+    for (const node of nodes) {
+      const pulse = Math.sin(state.phaseTime * 5.6 + node.x * 0.01) * 0.08 + 1;
+      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = node.role === 'center' ? 'rgba(255,255,255,0.78)' : 'rgba(126,255,199,0.62)';
+      ctx.shadowColor = node.role === 'center' ? 'rgba(255,255,255,0.48)' : 'rgba(126,255,199,0.42)';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.r * pulse, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = 'rgba(102,233,255,0.34)';
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.r * 0.55, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
