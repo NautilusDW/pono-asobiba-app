@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ポノの海底アルバム | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #104057;
+    --deep: #05324d;
+    --sea: #0d8eb8;
+    --foam: #e9fdff;
+    --panel: rgba(246, 254, 255, 0.9);
+    --line: rgba(255, 255, 255, 0.62);
+    --gold: #ffd86e;
+    --coral: #ff8b76;
+    --leaf: #51aa76;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+    overflow: hidden;
+    background: #031827;
+    color: var(--ink);
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  body { display: grid; place-items: center; }
+
+  #app {
+    position: relative;
+    width: min(100vw, calc(100dvh * 16 / 9));
+    height: min(100dvh, calc(100vw * 9 / 16));
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: linear-gradient(180deg, #83e5f3, #086f9e);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  }
+
+  @media (min-width: 720px) {
+    #app { border-radius: 8px; }
+  }
+
+  #gameCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  .hud {
+    position: absolute;
+    z-index: 20;
+    top: max(8px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  .hud-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .hud-chip,
+  .hud-btn,
+  .prompt,
+  .toast {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: 0 8px 22px rgba(3, 36, 60, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.58);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .hud-btn {
+    pointer-events: auto;
+    min-width: 70px;
+    height: 40px;
+    border-radius: 8px;
+    border-color: var(--line);
+    color: #0a5674;
+    font: 900 0.94rem/1 'Zen Maru Gothic', sans-serif;
+    text-decoration: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+
+  .hud-chip {
+    min-width: 92px;
+    height: 40px;
+    border-radius: 8px;
+    padding: 5px 10px;
+    display: grid;
+    align-content: center;
+    gap: 1px;
+  }
+
+  .hud-chip span {
+    display: block;
+    color: rgba(18, 73, 96, 0.68);
+    font-size: 0.56rem;
+    line-height: 1;
+    font-weight: 900;
+  }
+
+  .hud-chip strong {
+    display: block;
+    color: #093a54;
+    font-size: 0.9rem;
+    line-height: 1;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .prompt {
+    position: absolute;
+    z-index: 18;
+    left: 50%;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    width: min(620px, calc(100% - 26px));
+    min-height: 44px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    padding: 8px 18px;
+    color: #0d4964;
+    font-size: clamp(0.88rem, 2vw, 1.08rem);
+    font-weight: 900;
+    line-height: 1.24;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .toast {
+    position: absolute;
+    z-index: 22;
+    left: 50%;
+    top: max(58px, calc(env(safe-area-inset-top) + 58px));
+    transform: translateX(-50%) translateY(-10px);
+    opacity: 0;
+    min-width: 220px;
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: #0c5572;
+    font-size: 1rem;
+    font-weight: 900;
+    text-align: center;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background:
+      radial-gradient(circle at 50% 42%, rgba(255, 248, 190, 0.2), transparent 30%),
+      rgba(3, 30, 48, 0.45);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .overlay[hidden] { display: none; }
+
+  .panel {
+    width: min(900px, calc(100vw - 34px));
+    max-height: min(760px, calc(100dvh - 34px));
+    overflow: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.64);
+    background: linear-gradient(180deg, rgba(249, 254, 255, 0.97), rgba(222, 249, 251, 0.95));
+    box-shadow: 0 26px 72px rgba(0, 18, 38, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    padding: 18px;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  h1,
+  h2 {
+    color: #0b4968;
+    font-weight: 900;
+    letter-spacing: 0;
+    line-height: 1.08;
+  }
+
+  h1 { font-size: clamp(1.55rem, 4.7vw, 2.34rem); }
+  h2 { font-size: clamp(1.28rem, 3.8vw, 1.86rem); }
+
+  .panel-copy {
+    margin-top: 8px;
+    color: #2d6680;
+    font-size: clamp(0.92rem, 2.1vw, 1.04rem);
+    line-height: 1.48;
+    font-weight: 700;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .close-btn {
+    min-height: 44px;
+    border: 0;
+    border-radius: 8px;
+    font: 900 1rem/1 'Zen Maru Gothic', sans-serif;
+    cursor: pointer;
+    color: #07364f;
+    padding: 0 18px;
+  }
+
+  .primary-btn {
+    min-width: 150px;
+    background: linear-gradient(180deg, #fff2a8, #ffd66f);
+    box-shadow: 0 6px 0 #d99f37, 0 12px 20px rgba(143, 94, 28, 0.22);
+  }
+
+  .secondary-btn,
+  .close-btn {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(33, 111, 139, 0.22);
+    box-shadow: 0 4px 0 rgba(33, 111, 139, 0.18);
+  }
+
+  .primary-btn:active,
+  .secondary-btn:active,
+  .close-btn:active,
+  .hud-btn:active {
+    transform: translateY(2px);
+  }
+
+  .stage-grid,
+  .album-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .stage-card,
+  .album-card {
+    min-width: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(42, 125, 153, 0.24);
+    background: rgba(255, 255, 255, 0.72);
+    padding: 10px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .stage-card strong,
+  .album-card strong {
+    color: #0c4e6e;
+    font-size: 0.9rem;
+    line-height: 1.14;
+  }
+
+  .stage-card span,
+  .album-card span {
+    color: #4b7384;
+    font-size: 0.72rem;
+    line-height: 1.25;
+    font-weight: 700;
+  }
+
+  .stage-card.locked {
+    opacity: 0.52;
+    filter: saturate(0.65);
+  }
+
+  .album-card {
+    min-height: 138px;
+    cursor: pointer;
+  }
+
+  .album-icon {
+    height: 52px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 1.65rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #6fcbe3, #4eaa84);
+  }
+
+  .album-card.locked .album-icon {
+    background: linear-gradient(135deg, #9fb6c0, #748b95);
+  }
+
+  .detail-body {
+    display: grid;
+    grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .detail-art {
+    min-height: 150px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 3rem;
+    font-weight: 900;
+    background: radial-gradient(circle at 38% 28%, #fff6a8, transparent 34%), linear-gradient(135deg, #75d6e8, #4889aa);
+  }
+
+  .fact-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .fact-row {
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(33, 111, 139, 0.16);
+    padding: 10px 12px;
+  }
+
+  .fact-row b {
+    display: block;
+    color: #0c5572;
+    font-size: 0.82rem;
+    margin-bottom: 3px;
+  }
+
+  .fact-row span {
+    color: #315e70;
+    font-size: 0.94rem;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  #loading {
+    position: absolute;
+    z-index: 60;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #e7fdff;
+    font-weight: 900;
+    background: #05324d;
+  }
+
+  #loading[hidden] { display: none; }
+
+  @media (max-width: 760px), (max-height: 460px) {
+    .hud { gap: 5px; }
+    .hud-group { gap: 5px; }
+    .hud-btn,
+    .hud-chip {
+      min-width: 62px;
+      height: 34px;
+      border-radius: 8px;
+    }
+    .hud-btn { font-size: 0.78rem; padding: 0 8px; }
+    .hud-chip { padding: 4px 7px; }
+    .hud-chip span { font-size: 0.5rem; }
+    .hud-chip strong { font-size: 0.76rem; }
+    .prompt {
+      min-height: 36px;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+    }
+    .panel {
+      padding: 14px;
+      max-height: calc(100dvh - 24px);
+    }
+    .stage-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+    }
+    .album-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+    .album-card {
+      min-height: 116px;
+      padding: 8px;
+    }
+    .album-icon { height: 42px; font-size: 1.35rem; }
+    .detail-body { grid-template-columns: 1fr; }
+    .detail-art { min-height: 96px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gameCanvas" aria-label="ポノの海底アルバム"></canvas>
+
+  <div class="hud" aria-live="polite">
+    <div class="hud-group">
+      <a class="hud-btn" href="../play.html">もどる</a>
+      <button class="hud-btn" id="stageBtn" type="button">ステージ</button>
+      <div class="hud-chip"><span>POWER</span><strong id="powerText">1</strong></div>
+    </div>
+    <div class="hud-group">
+      <div class="hud-chip"><span>アルバム</span><strong id="albumText">0 / 6</strong></div>
+      <div class="hud-chip"><span>スコア</span><strong id="scoreText">0</strong></div>
+      <button class="hud-btn" id="albumBtn" type="button">アルバム</button>
+    </div>
+  </div>
+
+  <div class="prompt" id="prompt">まっすぐ弾と ぽよん弾で 観察しよう</div>
+  <div class="toast" id="toast">アルバムに ついか！</div>
+  <div id="loading">よみこみ中...</div>
+
+  <div class="overlay" id="startOverlay">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h1>ポノの海底アルバム</h1>
+          <p class="panel-copy">Stage 1 は、しおだまりと浅瀬。まっすぐ弾と、下へ落ちるぽよん弾で、海の生き物を観察してアルバムに集めよう。</p>
+        </div>
+      </div>
+      <div class="stage-grid" id="startStageGrid"></div>
+      <div class="panel-actions">
+        <button class="primary-btn" id="startBtn" type="button">Stage 1 を はじめる</button>
+        <button class="secondary-btn" id="startAlbumBtn" type="button">アルバム</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="albumOverlay" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>海底アルバム</h2>
+          <p class="panel-copy">見つけた生き物の、すむところ・たべもの・ひみつを見られるよ。</p>
+        </div>
+        <button class="close-btn" data-close="albumOverlay" type="button">とじる</button>
+      </div>
+      <div class="album-grid" id="albumGrid"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="detailOverlay" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2 id="detailTitle">カード</h2>
+          <p class="panel-copy" id="detailSub">Stage 1</p>
+        </div>
+        <button class="close-btn" data-close="detailOverlay" type="button">とじる</button>
+      </div>
+      <div class="detail-body">
+        <div class="detail-art" id="detailArt">?</div>
+        <div class="fact-list" id="detailFacts"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="stageOverlay" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>ステージマップ</h2>
+          <p class="panel-copy">まず Stage 1 で、アルバム・パワーアップ・ボスまでの基本を作っています。</p>
+        </div>
+        <button class="close-btn" data-close="stageOverlay" type="button">とじる</button>
+      </div>
+      <div class="stage-grid" id="stageGrid"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="finishOverlay" hidden>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Stage 1 クリア</h2>
+          <p class="panel-copy" id="finishCopy">浅瀬の生き物をアルバムに登録したよ。</p>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button class="primary-btn" id="againBtn" type="button">もういちど</button>
+        <button class="secondary-btn" id="finishAlbumBtn" type="button">アルバムを見る</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const BASE_W = 1600;
+  const BASE_H = 900;
+  const STORAGE_KEY = 'sea_album_cards_v1';
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const app = document.getElementById('app');
+  const loading = document.getElementById('loading');
+  const promptEl = document.getElementById('prompt');
+  const toastEl = document.getElementById('toast');
+  const powerText = document.getElementById('powerText');
+  const albumText = document.getElementById('albumText');
+  const scoreText = document.getElementById('scoreText');
+  const startOverlay = document.getElementById('startOverlay');
+  const albumOverlay = document.getElementById('albumOverlay');
+  const detailOverlay = document.getElementById('detailOverlay');
+  const stageOverlay = document.getElementById('stageOverlay');
+  const finishOverlay = document.getElementById('finishOverlay');
+
+  const ASSET = {
+    bg: '../assets/images/sea-album/stage1/stage1_tidepool_background.png',
+    player: '../assets/images/sea-album/stage1/player_submarine.png',
+    hermit: '../assets/images/sea-album/stage1/hermit_crab.png',
+    shrimp: '../assets/images/sea-album/stage1/shrimp.png',
+    seaStar: '../assets/images/sea-album/stage1/sea_star.png',
+    goby: '../assets/images/sea-album/stage1/tidepool_goby.png',
+    anemone: '../assets/images/sea-album/stage1/sea_anemone.png',
+    horseshoe: '../assets/images/sea-album/stage1/horseshoe_crab_boss.png'
+  };
+  const USE_ALPHA_SPRITES = false;
+
+  const STAGES = [
+    ['しおだまりと浅瀬', 'ヤドカリやカブトガニ'],
+    ['サンゴの迷路', 'クマノミとオウムガイ'],
+    ['海藻の森', 'タコと海藻のかくれ家'],
+    ['外洋の青い道', 'マンタとメガマウス'],
+    ['夕暮れの中層', 'リュウグウノツカイ'],
+    ['深海の海底', 'ダイオウグソクムシ'],
+    ['古代海底神殿', 'ダイオウイカと伝説']
+  ];
+
+  const CARDS = [
+    {
+      id: 'hermit',
+      name: 'ヤドカリ',
+      icon: 'ヤ',
+      stage: 'Stage 1',
+      habitat: '浅い海の岩場や、しおだまりにいるよ。',
+      food: '小さな海藻や、海に落ちた食べものを少しずつ食べるよ。',
+      secret: '空いた貝がらを家にして、からだを守るよ。'
+    },
+    {
+      id: 'shrimp',
+      name: '小エビ',
+      icon: 'エ',
+      stage: 'Stage 1',
+      habitat: '岩のすきまや海藻の近くにかくれるよ。',
+      food: '小さなプランクトンや、細かい食べものを食べるよ。',
+      secret: '長いひげでまわりをさぐりながら動くよ。'
+    },
+    {
+      id: 'seaStar',
+      name: 'ヒトデ',
+      icon: 'ヒ',
+      stage: 'Stage 1',
+      habitat: '岩場や砂の上をゆっくり歩くよ。',
+      food: '貝などを食べる種類がいるよ。',
+      secret: '足のような小さな管で、じわじわ進むよ。'
+    },
+    {
+      id: 'goby',
+      name: 'ハゼ',
+      icon: 'ハ',
+      stage: 'Stage 1',
+      habitat: '浅い海の底や砂地にいる小さな魚だよ。',
+      food: '小さな虫やプランクトンを食べるよ。',
+      secret: '底の近くで、ぴたっと止まるのが得意だよ。'
+    },
+    {
+      id: 'anemone',
+      name: 'イソギンチャク',
+      icon: 'イ',
+      stage: 'Stage 1',
+      habitat: '岩にくっついて、波のある浅い海にもいるよ。',
+      food: '触手にふれた小さな生き物を食べるよ。',
+      secret: '花みたいだけど、じつは動物のなかまだよ。'
+    },
+    {
+      id: 'horseshoe',
+      name: 'カブトガニ',
+      icon: '古',
+      stage: 'Stage 1 Boss',
+      habitat: '浅い海や砂浜の近くでくらすよ。',
+      food: '小さな貝や虫のなかまを食べるよ。',
+      secret: 'とても古い時代から形が大きく変わらない「生きた化石」と呼ばれるよ。'
+    }
+  ];
+
+  const ENEMY_TYPES = {
+    hermit: { card: 'hermit', hp: 3, score: 80, speed: 72, y: [650, 740], size: 72, bottom: true },
+    shrimp: { card: 'shrimp', hp: 2, score: 70, speed: 118, y: [320, 560], size: 62 },
+    seaStar: { card: 'seaStar', hp: 3, score: 90, speed: 54, y: [660, 760], size: 72, bottom: true },
+    goby: { card: 'goby', hp: 2, score: 70, speed: 98, y: [430, 650], size: 72 },
+    anemone: { card: 'anemone', hp: 4, score: 110, speed: 42, y: [680, 750], size: 86, bottom: true },
+    horseshoe: { card: 'horseshoe', hp: 34, score: 600, speed: 0, y: [570, 570], size: 250, bottom: true, boss: true }
+  };
+
+  const state = {
+    mode: 'ready',
+    time: 0,
+    score: 0,
+    power: 1,
+    observed: 0,
+    bossSpawned: false,
+    bossDone: false,
+    player: { x: 220, y: 440, tx: 220, ty: 440, shield: 0 },
+    keys: Object.create(null),
+    shots: [],
+    bombs: [],
+    impacts: [],
+    enemies: [],
+    powerups: [],
+    bubbles: [],
+    album: new Set(),
+    assets: Object.create(null),
+    promptTimer: 0,
+    toastTimer: 0,
+    spawnTimer: 0,
+    shotTimer: 0,
+    bombTimer: 0
+  };
+
+  function loadOptional(src) {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = src;
+    });
+  }
+
+  function resize() {
+    const rect = app.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    ctx.setTransform(canvas.width / BASE_W, 0, 0, canvas.height / BASE_H, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+  }
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function distance(a, b, x, y) {
+    return Math.hypot(a - x, b - y);
+  }
+
+  function setPrompt(text, ttl = 2.2) {
+    state.promptTimer = ttl;
+    promptEl.textContent = text;
+  }
+
+  function showToast(text) {
+    state.toastTimer = 2.2;
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+  }
+
+  function saveAlbum() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...state.album]));
+    } catch (_) {}
+  }
+
+  function loadAlbum() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      state.album = new Set(raw ? JSON.parse(raw) : []);
+    } catch (_) {
+      state.album = new Set();
+    }
+  }
+
+  function unlockCard(id) {
+    if (!state.album.has(id)) {
+      state.album.add(id);
+      saveAlbum();
+      const card = CARDS.find((c) => c.id === id);
+      showToast((card ? card.name : 'カード') + 'を アルバムに ついか！');
+    }
+  }
+
+  function resetRun() {
+    state.mode = 'playing';
+    state.time = 0;
+    state.score = 0;
+    state.power = 1;
+    state.observed = 0;
+    state.bossSpawned = false;
+    state.bossDone = false;
+    state.player = { x: 220, y: 440, tx: 220, ty: 440, shield: 0 };
+    state.shots = [];
+    state.bombs = [];
+    state.impacts = [];
+    state.enemies = [];
+    state.powerups = [];
+    state.bubbles = [];
+    state.spawnTimer = 0.6;
+    state.shotTimer = 0.12;
+    state.bombTimer = 0.55;
+    startOverlay.hidden = true;
+    finishOverlay.hidden = true;
+    setPrompt('まっすぐ弾と ぽよん弾で 観察しよう', 2.8);
+    updateHud();
+  }
+
+  function finishStage() {
+    state.mode = 'finish';
+    state.score += 400;
+    setPrompt('Stage 1 クリア！ アルバムを見てみよう', 4);
+    updateHud();
+    document.getElementById('finishCopy').textContent = 'スコア ' + state.score + '。浅瀬の生き物をアルバムに登録したよ。';
+    setTimeout(() => { finishOverlay.hidden = false; }, 800);
+  }
+
+  function updateHud() {
+    powerText.textContent = String(state.power);
+    albumText.textContent = state.album.size + ' / ' + CARDS.length;
+    scoreText.textContent = String(state.score);
+  }
+
+  function spawnEnemy() {
+    if (state.bossSpawned) return;
+    const order = ['shrimp', 'hermit', 'goby', 'seaStar', 'anemone'];
+    const key = order[Math.floor(Math.random() * order.length)];
+    const type = ENEMY_TYPES[key];
+    const y = rand(type.y[0], type.y[1]);
+    state.enemies.push({
+      key,
+      x: BASE_W + 80,
+      y,
+      baseY: y,
+      hp: type.hp,
+      maxHp: type.hp,
+      speed: type.speed,
+      size: type.size,
+      phase: Math.random() * Math.PI * 2,
+      hit: 0,
+      dead: false,
+      boss: false
+    });
+  }
+
+  function spawnBoss() {
+    if (state.bossSpawned) return;
+    state.bossSpawned = true;
+    state.enemies.push({
+      key: 'horseshoe',
+      x: BASE_W + 220,
+      y: 615,
+      baseY: 615,
+      hp: ENEMY_TYPES.horseshoe.hp,
+      maxHp: ENEMY_TYPES.horseshoe.hp,
+      speed: 24,
+      size: ENEMY_TYPES.horseshoe.size,
+      phase: 0,
+      hit: 0,
+      dead: false,
+      boss: true
+    });
+    setPrompt('古代のボスが あらわれた！ ぽよん弾も使おう', 3.2);
+  }
+
+  function fireShots() {
+    const angles = state.power === 1 ? [0] : (state.power === 2 ? [-0.12, 0.12] : [-0.16, 0, 0.16]);
+    angles.forEach((angle) => {
+      state.shots.push({
+        x: state.player.x + 82,
+        y: state.player.y - 4,
+        vx: 620,
+        vy: Math.sin(angle) * 560,
+        r: 13,
+        life: 1.8
+      });
+    });
+  }
+
+  function fireBombs() {
+    const count = state.power >= 3 ? 2 : 1;
+    for (let i = 0; i < count; i += 1) {
+      state.bombs.push({
+        x: state.player.x + 60,
+        y: state.player.y + 30,
+        vx: 310 + i * 46,
+        vy: -230 - i * 30,
+        r: 18,
+        blast: state.power >= 4 ? 82 : 64,
+        life: 2.2
+      });
+    }
+  }
+
+  function addImpact(x, y, radius, kind = 'gold') {
+    state.impacts.push({ x, y, radius, life: 0.36, max: 0.36, kind });
+  }
+
+  function defeatEnemy(enemy) {
+    if (enemy.dead) return;
+    enemy.dead = true;
+    const type = ENEMY_TYPES[enemy.key];
+    state.score += type.score;
+    state.observed += 1;
+    unlockCard(type.card);
+    addImpact(enemy.x, enemy.y, enemy.size * 0.72, enemy.boss ? 'boss' : 'heart');
+    if (!enemy.boss && state.observed % 3 === 0) {
+      state.powerups.push({ x: enemy.x, y: enemy.y, r: 28, life: 8 });
+    }
+    if (enemy.boss) {
+      state.bossDone = true;
+      finishStage();
+    } else if (state.observed >= 10 && !state.bossSpawned) {
+      spawnBoss();
+    }
+    updateHud();
+  }
+
+  function update(dt) {
+    state.time += dt;
+    if (state.promptTimer > 0) state.promptTimer -= dt;
+    if (state.toastTimer > 0) {
+      state.toastTimer -= dt;
+      if (state.toastTimer <= 0) toastEl.classList.remove('show');
+    }
+    if (state.mode !== 'playing') {
+      updateParticles(dt);
+      return;
+    }
+
+    const p = state.player;
+    if (state.keys.ArrowUp || state.keys.KeyW) p.ty -= 420 * dt;
+    if (state.keys.ArrowDown || state.keys.KeyS) p.ty += 420 * dt;
+    if (state.keys.ArrowLeft || state.keys.KeyA) p.tx -= 420 * dt;
+    if (state.keys.ArrowRight || state.keys.KeyD) p.tx += 420 * dt;
+    p.tx = clamp(p.tx, 110, 620);
+    p.ty = clamp(p.ty, 150, 735);
+    p.x += (p.tx - p.x) * Math.min(1, dt * 7.5);
+    p.y += (p.ty - p.y) * Math.min(1, dt * 7.5);
+
+    state.shotTimer -= dt;
+    state.bombTimer -= dt;
+    if (state.shotTimer <= 0) {
+      fireShots();
+      state.shotTimer = state.power >= 4 ? 0.18 : 0.24;
+    }
+    if (state.bombTimer <= 0) {
+      fireBombs();
+      state.bombTimer = state.power >= 4 ? 0.68 : 0.86;
+    }
+
+    state.spawnTimer -= dt;
+    if (state.spawnTimer <= 0 && !state.bossSpawned) {
+      spawnEnemy();
+      state.spawnTimer = rand(1.0, 1.8);
+    }
+    if (state.time > 44 && !state.bossSpawned) spawnBoss();
+
+    state.shots.forEach((s) => {
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.life -= dt;
+    });
+    state.shots = state.shots.filter((s) => s.life > 0 && s.x < BASE_W + 80 && s.y > -80 && s.y < BASE_H + 80);
+
+    state.bombs.forEach((b) => {
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.vy += 620 * dt;
+      b.life -= dt;
+      if (b.y > 742) {
+        b.life = 0;
+        addImpact(b.x, 742, b.blast);
+      }
+    });
+    state.bombs = state.bombs.filter((b) => b.life > 0 && b.x < BASE_W + 120);
+
+    state.enemies.forEach((enemy) => {
+      enemy.phase += dt;
+      enemy.hit = Math.max(0, enemy.hit - dt);
+      if (enemy.boss) {
+        enemy.x += (1110 - enemy.x) * Math.min(1, dt * 0.7);
+        enemy.y = enemy.baseY + Math.sin(state.time * 1.2) * 18;
+      } else {
+        enemy.x -= enemy.speed * dt;
+        enemy.y = enemy.baseY + Math.sin(enemy.phase * 2.2) * (ENEMY_TYPES[enemy.key].bottom ? 5 : 26);
+      }
+    });
+
+    checkCollisions();
+    state.enemies = state.enemies.filter((e) => !e.dead && e.x > -180);
+
+    state.powerups.forEach((u) => {
+      u.x -= 92 * dt;
+      u.y += Math.sin(state.time * 4 + u.x * 0.01) * 18 * dt;
+      u.life -= dt;
+      if (distance(u.x, u.y, p.x, p.y) < 70) {
+        u.life = 0;
+        state.power = Math.min(4, state.power + 1);
+        state.score += 70;
+        setPrompt(state.power >= 3 ? 'ぽよん弾が 2こ 出るよ' : 'まっすぐ弾が ふえたよ', 2.1);
+        updateHud();
+      }
+    });
+    state.powerups = state.powerups.filter((u) => u.life > 0 && u.x > -60);
+
+    updateParticles(dt);
+    if (Math.random() < dt * 4.4) {
+      state.bubbles.push({ x: p.x - 86, y: p.y + 24, r: rand(5, 13), vx: rand(-24, -8), vy: rand(-62, -34), life: rand(1.0, 1.8), max: 1.8 });
+    }
+  }
+
+  function updateParticles(dt) {
+    state.impacts.forEach((i) => { i.life -= dt; });
+    state.impacts = state.impacts.filter((i) => i.life > 0);
+    state.bubbles.forEach((b) => {
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.life -= dt;
+    });
+    state.bubbles = state.bubbles.filter((b) => b.life > 0);
+  }
+
+  function checkCollisions() {
+    for (const enemy of state.enemies) {
+      const hitRadius = enemy.size * (enemy.boss ? 0.46 : 0.44);
+      for (const s of state.shots) {
+        if (s.life > 0 && distance(s.x, s.y, enemy.x, enemy.y) < hitRadius + s.r) {
+          s.life = 0;
+          enemy.hp -= 1;
+          enemy.hit = 0.1;
+          addImpact(s.x, s.y, 28, 'gold');
+          if (enemy.hp <= 0) defeatEnemy(enemy);
+        }
+      }
+      for (const b of state.bombs) {
+        if (b.life > 0 && distance(b.x, b.y, enemy.x, enemy.y) < hitRadius + b.r) {
+          b.life = 0;
+          enemy.hp -= enemy.boss ? 2 : 3;
+          enemy.hit = 0.12;
+          addImpact(b.x, b.y, b.blast, 'gold');
+          if (enemy.hp <= 0) defeatEnemy(enemy);
+        }
+      }
+      for (const impact of state.impacts) {
+        if (impact.life > impact.max - 0.04 && distance(impact.x, impact.y, enemy.x, enemy.y) < hitRadius + impact.radius * 0.58) {
+          enemy.hp -= enemy.boss ? 1 : 2;
+          enemy.hit = 0.1;
+          if (enemy.hp <= 0) defeatEnemy(enemy);
+        }
+      }
+    }
+  }
+
+  function draw() {
+    ctx.save();
+    ctx.setTransform(canvas.width / BASE_W, 0, 0, canvas.height / BASE_H, 0, 0);
+    drawBackground();
+    drawBubbles();
+    state.powerups.forEach(drawPowerup);
+    state.enemies.forEach(drawEnemy);
+    state.shots.forEach(drawShot);
+    state.bombs.forEach(drawBomb);
+    state.impacts.forEach(drawImpact);
+    drawPlayer();
+    drawWaterOverlay();
+    ctx.restore();
+  }
+
+  function drawBackground() {
+    const bg = state.assets.bg;
+    if (bg) {
+      ctx.drawImage(bg, 0, 0, BASE_W, BASE_H);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, 0, BASE_H);
+      g.addColorStop(0, '#8ee8f4');
+      g.addColorStop(0.48, '#23a6c7');
+      g.addColorStop(1, '#f0d38a');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, BASE_W, BASE_H);
+    }
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = '#fff7c8';
+    for (let i = 0; i < 6; i += 1) {
+      const x = 120 + i * 260 + Math.sin(state.time * 0.2 + i) * 30;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 90, 0);
+      ctx.lineTo(x + 290, BASE_H);
+      ctx.lineTo(x - 120, BASE_H);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawPlayer() {
+    const p = state.player;
+    const image = state.assets.player;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    const bob = Math.sin(state.time * 4) * 4;
+    if (image) {
+      drawCentered(image, 0, bob, 188);
+    } else {
+      ctx.translate(0, bob);
+      ctx.fillStyle = '#f3c84c';
+      ctx.strokeStyle = '#1f6689';
+      ctx.lineWidth = 5;
+      roundedEllipse(0, 0, 92, 46);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#58b9df';
+      ctx.beginPath();
+      ctx.ellipse(18, -4, 31, 26, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#8d5a2c';
+      ctx.beginPath();
+      ctx.arc(18, -4, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#1f6689';
+      ctx.beginPath();
+      ctx.moveTo(-90, 0);
+      ctx.lineTo(-130, -28);
+      ctx.lineTo(-126, 28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(78, -28);
+      ctx.lineTo(126, 0);
+      ctx.lineTo(78, 28);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function roundedEllipse(x, y, rx, ry) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  }
+
+  function drawCentered(image, x, y, width, alpha = 1) {
+    const h = width * image.height / image.width;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(image, x - width / 2, y - h / 2, width, h);
+    ctx.restore();
+  }
+
+  function drawShot(s) {
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    const g = ctx.createLinearGradient(-22, 0, 22, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.45, '#fff7a8');
+    g.addColorStop(1, '#ffb13e');
+    ctx.fillStyle = g;
+    ctx.shadowColor = '#fff0a0';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 34, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBomb(b) {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.shadowColor = '#ffd86e';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ffbb48';
+    ctx.beginPath();
+    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff4b8';
+    ctx.beginPath();
+    ctx.arc(-6, -6, b.r * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPowerup(u) {
+    ctx.save();
+    ctx.translate(u.x, u.y);
+    ctx.rotate(state.time * 1.8);
+    ctx.shadowColor = '#fff2a8';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#fff28a';
+    starPath(0, 0, 24, 11, 5);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function starPath(x, y, r1, r2, n) {
+    ctx.beginPath();
+    for (let i = 0; i < n * 2; i += 1) {
+      const r = i % 2 ? r2 : r1;
+      const a = -Math.PI / 2 + i * Math.PI / n;
+      const px = x + Math.cos(a) * r;
+      const py = y + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  function drawEnemy(enemy) {
+    const type = ENEMY_TYPES[enemy.key];
+    const image = state.assets[enemy.key];
+    ctx.save();
+    ctx.translate(enemy.x, enemy.y);
+    if (enemy.hit > 0) ctx.filter = 'brightness(1.8)';
+    if (image) {
+      drawCentered(image, 0, 0, enemy.size * (enemy.boss ? 1.55 : 1.4));
+    } else {
+      if (enemy.key === 'hermit') drawHermit(enemy.size);
+      else if (enemy.key === 'shrimp') drawShrimp(enemy.size);
+      else if (enemy.key === 'seaStar') drawSeaStar(enemy.size);
+      else if (enemy.key === 'goby') drawGoby(enemy.size);
+      else if (enemy.key === 'anemone') drawAnemone(enemy.size);
+      else drawHorseshoe(enemy.size);
+    }
+    ctx.filter = 'none';
+    if (enemy.boss) drawBossBar(enemy);
+    else drawSmallHp(enemy, type);
+    ctx.restore();
+  }
+
+  function drawSmallHp(enemy) {
+    const w = enemy.size;
+    const pct = clamp(enemy.hp / enemy.maxHp, 0, 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    roundRect(-w * 0.42, -w * 0.76, w * 0.84, 9, 5);
+    ctx.fill();
+    ctx.fillStyle = '#63bd78';
+    roundRect(-w * 0.42, -w * 0.76, w * 0.84 * pct, 9, 5);
+    ctx.fill();
+  }
+
+  function drawBossBar(enemy) {
+    const pct = clamp(enemy.hp / enemy.maxHp, 0, 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    roundRect(-170, -180, 340, 24, 8);
+    ctx.fill();
+    ctx.fillStyle = '#ff8b76';
+    roundRect(-166, -176, 332 * pct, 16, 6);
+    ctx.fill();
+    ctx.fillStyle = '#0c5572';
+    ctx.font = '900 22px Zen Maru Gothic, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('カブトガニ', 0, -196);
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+  }
+
+  function drawHermit(s) {
+    ctx.fillStyle = '#e66d37';
+    ctx.strokeStyle = '#8c4725';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(8, 10, s * 0.35, s * 0.25, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#e8c18a';
+    ctx.beginPath();
+    ctx.arc(-20, -10, s * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#1c3d4c';
+    ctx.beginPath();
+    ctx.arc(18, -12, 5, 0, Math.PI * 2);
+    ctx.arc(36, -10, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawShrimp(s) {
+    ctx.strokeStyle = '#d45f45';
+    ctx.lineWidth = 4;
+    ctx.fillStyle = '#ff9e82';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.46, s * 0.22, 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-28, -4);
+    ctx.quadraticCurveTo(-58, -22, -78, -8);
+    ctx.stroke();
+    ctx.fillStyle = '#18394a';
+    ctx.beginPath();
+    ctx.arc(25, -10, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawSeaStar(s) {
+    ctx.fillStyle = '#f78a49';
+    ctx.strokeStyle = '#bf6538';
+    ctx.lineWidth = 4;
+    starPath(0, 0, s * 0.45, s * 0.2, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#10384a';
+    ctx.beginPath();
+    ctx.arc(-9, -4, 4, 0, Math.PI * 2);
+    ctx.arc(9, -4, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawGoby(s) {
+    ctx.fillStyle = '#e2bd72';
+    ctx.strokeStyle = '#8d6b3d';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.5, s * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-42, 0);
+    ctx.lineTo(-70, -18);
+    ctx.lineTo(-68, 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#16394b';
+    ctx.beginPath();
+    ctx.arc(30, -8, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawAnemone(s) {
+    ctx.fillStyle = '#ef6f80';
+    ctx.strokeStyle = '#b94d62';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, 20, s * 0.38, s * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    for (let i = 0; i < 10; i += 1) {
+      const a = -Math.PI + i * Math.PI / 9;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 12, 0);
+      ctx.quadraticCurveTo(Math.cos(a) * s * 0.36, -s * 0.24, Math.cos(a) * s * 0.45, -s * 0.5 + Math.sin(i) * 8);
+      ctx.stroke();
+    }
+  }
+
+  function drawHorseshoe(s) {
+    ctx.fillStyle = '#8c8051';
+    ctx.strokeStyle = '#4d4328';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.ellipse(-8, 0, s * 0.5, s * 0.34, 0.02, Math.PI * 0.12, Math.PI * 1.88);
+    ctx.lineTo(s * 0.76, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#4d4328';
+    ctx.beginPath();
+    ctx.arc(-54, -30, 7, 0, Math.PI * 2);
+    ctx.arc(-40, 18, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#d7c884';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-60, -50);
+    ctx.quadraticCurveTo(-16, -18, 26, -10);
+    ctx.moveTo(-62, 42);
+    ctx.quadraticCurveTo(-12, 24, 38, 12);
+    ctx.stroke();
+  }
+
+  function drawImpact(i) {
+    const pct = 1 - i.life / i.max;
+    ctx.save();
+    ctx.globalAlpha = 1 - pct;
+    ctx.strokeStyle = i.kind === 'boss' ? '#ff8b76' : '#fff4a8';
+    ctx.lineWidth = 8 * (1 - pct) + 2;
+    ctx.beginPath();
+    ctx.arc(i.x, i.y, i.radius * (0.4 + pct * 0.9), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBubbles() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(235, 254, 255, 0.7)';
+    ctx.lineWidth = 2;
+    state.bubbles.forEach((b) => {
+      ctx.globalAlpha = clamp(b.life / b.max, 0, 1);
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function drawWaterOverlay() {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.09;
+    ctx.strokeStyle = '#e6ffff';
+    ctx.lineWidth = 2;
+    for (let y = 140; y < BASE_H; y += 62) {
+      ctx.beginPath();
+      for (let x = -20; x <= BASE_W + 20; x += 36) {
+        const yy = y + Math.sin(x * 0.02 + state.time * 1.2 + y) * 4;
+        if (x === -20) ctx.moveTo(x, yy);
+        else ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function pointerToGame(ev) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (ev.clientX - rect.left) / rect.width * BASE_W,
+      y: (ev.clientY - rect.top) / rect.height * BASE_H
+    };
+  }
+
+  function setTarget(ev) {
+    if (state.mode !== 'playing') return;
+    const p = pointerToGame(ev);
+    state.player.tx = clamp(p.x, 110, 620);
+    state.player.ty = clamp(p.y, 150, 735);
+  }
+
+  function renderStages(targetId) {
+    const target = document.getElementById(targetId);
+    target.innerHTML = STAGES.map((s, i) => {
+      const locked = i > 0;
+      return '<div class="stage-card ' + (locked ? 'locked' : '') + '"><strong>Stage ' + (i + 1) + '<br>' + s[0] + '</strong><span>' + (locked ? 'これから追加' : s[1]) + '</span></div>';
+    }).join('');
+  }
+
+  function renderAlbum() {
+    albumText.textContent = state.album.size + ' / ' + CARDS.length;
+    const grid = document.getElementById('albumGrid');
+    grid.innerHTML = CARDS.map((card) => {
+      const open = state.album.has(card.id);
+      return '<button class="album-card ' + (open ? '' : 'locked') + '" data-card="' + card.id + '" type="button"><div class="album-icon">' + (open ? card.icon : '?') + '</div><strong>' + (open ? card.name : '???') + '</strong><span>' + (open ? card.stage + ' で発見' : 'まだ見つけていない') + '</span></button>';
+    }).join('');
+    grid.querySelectorAll('.album-card').forEach((btn) => {
+      btn.addEventListener('click', () => showDetail(btn.dataset.card));
+    });
+  }
+
+  function showDetail(id) {
+    const card = CARDS.find((c) => c.id === id);
+    if (!card) return;
+    const open = state.album.has(id);
+    document.getElementById('detailTitle').textContent = open ? card.name : 'まだ ひみつ';
+    document.getElementById('detailSub').textContent = open ? card.stage : 'ステージで見つけよう';
+    document.getElementById('detailArt').textContent = open ? card.icon : '?';
+    document.getElementById('detailFacts').innerHTML = open
+      ? [
+        ['すむところ', card.habitat],
+        ['たべもの', card.food],
+        ['からだのひみつ', card.secret]
+      ].map(([k, v]) => '<div class="fact-row"><b>' + k + '</b><span>' + v + '</span></div>').join('')
+      : '<div class="fact-row"><b>ヒント</b><span>Stage 1 で観察すると、カードがひらくよ。</span></div>';
+    detailOverlay.hidden = false;
+  }
+
+  function frame(now) {
+    if (!frame.last) frame.last = now;
+    const dt = Math.min(0.033, (now - frame.last) / 1000);
+    frame.last = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  canvas.addEventListener('pointerdown', (ev) => {
+    canvas.setPointerCapture(ev.pointerId);
+    setTarget(ev);
+  });
+  canvas.addEventListener('pointermove', setTarget);
+  canvas.addEventListener('pointerup', (ev) => {
+    try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {}
+  });
+  window.addEventListener('keydown', (ev) => { state.keys[ev.code] = true; });
+  window.addEventListener('keyup', (ev) => { state.keys[ev.code] = false; });
+  window.addEventListener('resize', resize);
+
+  document.getElementById('startBtn').addEventListener('click', resetRun);
+  document.getElementById('againBtn').addEventListener('click', resetRun);
+  document.getElementById('albumBtn').addEventListener('click', () => { renderAlbum(); albumOverlay.hidden = false; });
+  document.getElementById('startAlbumBtn').addEventListener('click', () => { renderAlbum(); albumOverlay.hidden = false; });
+  document.getElementById('finishAlbumBtn').addEventListener('click', () => { renderAlbum(); albumOverlay.hidden = false; });
+  document.getElementById('stageBtn').addEventListener('click', () => { renderStages('stageGrid'); stageOverlay.hidden = false; });
+  document.querySelectorAll('[data-close]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.close);
+      if (el) el.hidden = true;
+    });
+  });
+
+  Promise.all(Object.entries(ASSET).map(([key, src]) => {
+    if (key !== 'bg' && !USE_ALPHA_SPRITES) {
+      state.assets[key] = null;
+      return Promise.resolve();
+    }
+    return loadOptional(src).then((image) => { state.assets[key] = image; });
+  }))
+    .then(() => {
+      loadAlbum();
+      renderStages('startStageGrid');
+      renderStages('stageGrid');
+      renderAlbum();
+      resize();
+      loading.hidden = true;
+      updateHud();
+      window.__seaAlbumState = state;
+      requestAnimationFrame(frame);
+    });
+})();
+</script>
+</body>
+</html>
