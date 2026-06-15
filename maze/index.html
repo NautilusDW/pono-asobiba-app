@@ -5691,6 +5691,14 @@ function _triggerEncounter(c) {
     clearTimeout(_creatureDefeatTimer);
     _creatureDefeatTimer = null;
   }
+  // 2勝先取式の HP 初期化 (runtime のみ、永続化しない)。
+  // strength_push は連打式なのでこの HP 制度から除外 (1回でクリア扱い)。
+  // boss creature (stage7-web-kumo / id に 'boss' を含む) は hp_max=3、それ以外は 2。
+  if (c._hp == null) {
+    const _isBoss = !!(c.isBoss || (c.id && (c.id === 'stage7-web-kumo' || /boss/i.test(c.id))));
+    c._hpMax = _isBoss ? 3 : 2;
+    c._hp = c._hpMax;
+  }
   _encounterActive = true;
   _encounteringCreatureId = c.id || (c.x + ',' + c.y);
   _currentCreature = c;
