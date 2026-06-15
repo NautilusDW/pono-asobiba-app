@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-15T22:32:56Z - app-staging SW navigation loop 修正 (redirect:'manual' + env.staging-app.assets) を develop / develop-app 両ブランチに push (sw v1190)
+- **タスク**: app-staging SW navigation loop 修正 (redirect:'manual' + env.staging-app.assets) を develop / develop-app 両ブランチに push (sw v1190)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 16
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 14, "ToolSearch": 2}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-15T17:18:47Z - アプリ版専用 staging worker (pono-asobiba-app-staging) を develop-app ブランチに紐付けて新設、 develop に ff merge で同期
+- **タスク**: アプリ版専用 staging worker (pono-asobiba-app-staging) を develop-app ブランチに紐付けて新設、 develop に ff merge で同期
+- **結果**: 失敗
+- **理由**: origin/develop と origin/develop-app が diverged。develop に同名・同内容の別 commit f724ebc が先行 push 済 (develop-app 側は 58e1d2f、merge-base は 181f9ef)。ff merge 不可。さらに working tree dirty (sw v1189 / sticker-book hard page flip 作業中の差分)。destructive 手段は使わず中断。
+- **総アクション数**: 14
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 12, "ToolSearch": 2}
+- **サマリ**: 失敗タスク: エラー2件。 失敗要因候補: テストを一切実行しなかった
+
+
 ### 2026-06-15T04:03:58Z - maze stage7 ボス頭頂部クリップ修正 (boss.y 0.31→0.36*H + drawImage offset -0.56→-0.50*drawH, sw1146)
 - **タスク**: maze stage7 ボス頭頂部クリップ修正 (boss.y 0.31→0.36*H + drawImage offset -0.56→-0.50*drawH, sw1146)
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 46, "Bash": 18, "Read": 6, "Write": 2, "Edit": 7, "Workflow": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-15T02:45:08Z - bento tutorial v3.2.1 (sw1135): トリムパス青 #1E7FD8 でゆっくり 2s、 ✊✋ ドラッグデモを retry+MutationObserver で全drag stepで確実発火、 race condition 解消、 hand サイズ clamp
-- **タスク**: bento tutorial v3.2.1 (sw1135): トリムパス青 #1E7FD8 でゆっくり 2s、 ✊✋ ドラッグデモを retry+MutationObserver で全drag stepで確実発火、 race condition 解消、 hand サイズ clamp
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 52
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 39, "ToolSearch": 1, "Bash": 9, "Read": 1, "Write": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-15T02:37:25Z - bento tutorial v3.2: trim 緑+2s, ✊✋デモ retry/observer堅牢化, 手64px+z9200+textshadow, sw v1134
-- **タスク**: bento tutorial v3.2: trim 緑+2s, ✊✋デモ retry/observer堅牢化, 手64px+z9200+textshadow, sw v1134
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 76
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 44, "Bash": 17, "Read": 6, "Write": 2, "Edit": 7}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
