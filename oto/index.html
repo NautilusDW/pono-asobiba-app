@@ -3086,6 +3086,23 @@
     bottom: auto;
     width: min(56vw, 380px);
     transform: translateX(-50%);
+    opacity: 1;
+    transition: opacity 0.34s ease, top 0.18s ease, transform 0.34s ease;
+  }
+  body.rhythm-layout .rhythm-hud.rhythm-hud-judge {
+    top: max(58px, calc(env(safe-area-inset-top) + 58px));
+    width: min(48vw, 360px);
+    opacity: 1;
+    transform: translateX(-50%);
+    transition: none;
+  }
+  body.rhythm-layout .rhythm-hud.rhythm-hud-judge .rhythm-status {
+    width: min(100%, 300px);
+    min-width: 180px;
+  }
+  body.rhythm-layout .rhythm-hud.rhythm-hud-hidden {
+    opacity: 0;
+    transform: translate(-50%, -8px);
   }
   body.rhythm-layout .rhythm-status {
     width: min(100%, 360px);
@@ -3140,6 +3157,15 @@
     body.rhythm-layout .rhythm-hud {
       top: clamp(92px, calc(var(--gh-hit-y, 80%) - 86px), calc(100% - 96px));
       width: min(70vw, 420px);
+    }
+    body.rhythm-layout .rhythm-hud.rhythm-hud-judge {
+      top: max(52px, calc(env(safe-area-inset-top) + 52px));
+      width: min(58vw, 360px);
+    }
+    body.rhythm-layout .rhythm-hud.rhythm-hud-judge .rhythm-status {
+      width: min(100%, 300px);
+      min-width: 180px;
+      max-width: min(58vw, 300px);
     }
     body.rhythm-layout .rhythm-hud.show { display: flex; }
     body.rhythm-layout .rhythm-status {
@@ -5430,12 +5456,27 @@ function _pulseRhythmButton(btn, className) {
     if (_gh3d.ready) _gh3DRender();
   }, 180);
 }
-function _setRhythmStatus(text, tone) {
+function _setRhythmStatus(text, tone, mode) {
   var el = document.getElementById('rhythm-status');
   if (!el) return;
+  var hud = document.getElementById('rhythm-hud');
+  var statusMode = mode || (tone ? 'judge' : (String(text || '').indexOf('いちばん') >= 0 ? 'hint' : 'info'));
   el.textContent = text;
-  el.classList.remove('good', 'warn', 'miss');
+  el.classList.remove('good', 'warn', 'miss', 'rhythm-status-hint', 'rhythm-status-info', 'rhythm-status-judge', 'fade-out');
+  el.classList.add('rhythm-status-' + statusMode);
   if (tone) el.classList.add(tone);
+  if (hud) {
+    hud.classList.remove('rhythm-hud-hint', 'rhythm-hud-info', 'rhythm-hud-judge', 'rhythm-hud-hidden');
+    hud.classList.add('rhythm-hud-' + statusMode);
+  }
+}
+function _fadeRhythmHintStatus() {
+  var el = document.getElementById('rhythm-status');
+  var hud = document.getElementById('rhythm-hud');
+  if (!el || !hud) return;
+  if (!el.classList.contains('rhythm-status-hint')) return;
+  el.classList.add('fade-out');
+  hud.classList.add('rhythm-hud-hidden');
 }
 function _rhythmJudgeForAbs(absMs) {
   for (var i = 0; i < RHYTHM_JUDGE_STEPS.length; i++) {
@@ -6768,6 +6809,7 @@ function _ghSpawnNote(seqIndex) {
   el.style.setProperty('--gh-note-x', center + '%');
   el.textContent = _rhythmNoteLabel(laneIdx);
   lanes.appendChild(el);
+  if (!_rhythm.demoActive && seqIndex === 0) _fadeRhythmHintStatus();
   _rhythm.activeNotes.push({
     seq: seqIndex,
     lane: laneIdx,
@@ -7307,7 +7349,7 @@ function _startRhythmMode() {
   _rhythm.nextSpawnSeq = 0;
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
-  _setRhythmStatus('いちばん したまで きたら タッチ！', null);
+  _setRhythmStatus('いちばん したまで きたら タッチ！', null, 'hint');
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   // リズム用サンプル SE: 未ロードならフェッチ開始、AC 作成後に再デコードを試みる。
