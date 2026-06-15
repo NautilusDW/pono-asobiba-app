@@ -2593,8 +2593,10 @@ body.bento-complete-open .pono-dropdown {
   animation: npcBob 2.4s ease-in-out infinite;
 }
 @keyframes npcBob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
+  /* v3.3: applyNpcPositionStyle(useAbsolute:false) からの --npc-scale / --npc-rotation を
+     合成する (transform を直接上書きしないことで bob と override を共存させる) */
+  0%, 100% { transform: translateY(0)   scale(var(--npc-scale, 1)) rotate(var(--npc-rotation, 0deg)); }
+  50%      { transform: translateY(-6px) scale(var(--npc-scale, 1)) rotate(var(--npc-rotation, 0deg)); }
 }
 .npc-text {
   flex: 1 1 auto;
@@ -4425,12 +4427,13 @@ function applyNpcPositionStyle(el, charId, mood, options) {
   const expression = NPC_MOOD_TO_EXPRESSION[mood] || mood || 'normal';
   const baseDefault = Object.assign({}, NPC_POSITION_DEFAULT, opts.defaults || {});
   const override = getNpcPositionOverride(charId, expression) || {};
+  // v3.3: Number.isFinite で Infinity / NaN を明示的に弾く (typeof だけでは漏れる)
   const pos = {
-    x:       (typeof override.x === 'number')        ? override.x        : baseDefault.x,
-    y:       (typeof override.y === 'number')        ? override.y        : baseDefault.y,
-    scale:   (typeof override.scale === 'number')    ? override.scale    : baseDefault.scale,
-    rotation:(typeof override.rotation === 'number') ? override.rotation : baseDefault.rotation,
-    opacity: (typeof override.opacity === 'number')  ? override.opacity  : baseDefault.opacity,
+    x:       Number.isFinite(override.x)        ? override.x        : baseDefault.x,
+    y:       Number.isFinite(override.y)        ? override.y        : baseDefault.y,
+    scale:   Number.isFinite(override.scale)    ? override.scale    : baseDefault.scale,
+    rotation:Number.isFinite(override.rotation) ? override.rotation : baseDefault.rotation,
+    opacity: Number.isFinite(override.opacity)  ? override.opacity  : baseDefault.opacity,
   };
   const useAbsolute = opts.useAbsolute !== false;   // default true
   if (useAbsolute) {
@@ -4438,8 +4441,14 @@ function applyNpcPositionStyle(el, charId, mood, options) {
     el.style.bottom = pos.y + '%';
     el.style.transform = 'translateX(-50%) scale(' + pos.scale + ') rotate(' + pos.rotation + 'deg)';
   } else {
-    // overlay 内の固定ボックス: 中央 (transform-origin center) で scale/rotate のみ
-    el.style.transform = 'scale(' + pos.scale + ') rotate(' + pos.rotation + 'deg)';
+    // v3.3: overlay 内固定ボックス (npc-portrait-wrap img 等) では既存 CSS の
+    // animation: npcBob (translateY) を温存するため transform を直接書き換えず、
+    // CSS variable で scale/rotation を注入する。 該当 CSS 側で
+    //   transform: translateY(...) scale(var(--npc-scale,1)) rotate(var(--npc-rotation,0deg))
+    // のように合成済み。 古い state を消すため transform は明示的にクリア。
+    el.style.transform = '';
+    el.style.setProperty('--npc-scale',    String(pos.scale));
+    el.style.setProperty('--npc-rotation', String(pos.rotation) + 'deg');
   }
   el.style.opacity = String(pos.opacity);
 }
@@ -11402,26 +11411,29 @@ function tutorialRefresh() {
   tutorialRenderStep();
 }
 function tutorialFirstPaletteItem() {
-  // v3.3: 実際のクラス (.free-item-list / .free-palette-item) → 関連 fallback → ワイルドカード。
-  // 過去にパレット DOM 再描画タイミングで null を返してドラッグデモが見えない症状を防ぐ。
+  // v3.3: 実際のクラス (.free-item-list / .free-palette-item) → 関連 fallback の順。
+  // ワイルドカードは bento 専用コンテナ (.right-panel.free-layout-panel) の配下に限定
+  // することで他ゲーム DOM への誤マッチを防ぐ。 最後はワイルドカード自体を削除し、
+  // null を返して静かに失敗させる (旧 [class*="palette"] [class*="item"] は廃止)。
   return document.querySelector('.free-item-list .free-palette-item')
       || document.querySelector('.right-panel.free-layout-panel .free-palette-item')
       || document.querySelector('.free-palette-item')
       || document.querySelector('.free-item-list > button')
       || document.querySelector('.free-item-list > *:not(button)')
-      || document.querySelector('[class*="palette"] [class*="item"]:not(button)')
+      || document.querySelector('.right-panel.free-layout-panel [class*="palette-item"]')
       || null;
 }
 function tutorialStageCenter() {
-  // v3.3: id → 既知 class 階層 → ワイルドカード fallback。 ステージが描画中で id 未付与でも拾えるようにする。
+  // v3.3: id → 既知 class 階層 → bento 専用コンテナ配下のワイルドカード。
+  // ステージが描画中で id 未付与でも拾えるようにする。
   return document.getElementById('free-layout-stage')
       || document.querySelector('.free-layout-stage')
       || document.querySelector('.free-bento-shape')
       || document.querySelector('#bento-stage')
       || document.querySelector('.bento-stage')
       || document.querySelector('.free-stage')
-      || document.querySelector('[class*="layout-stage"]')
-      || document.querySelector('[class*="bento-shape"]');
+      || document.querySelector('.right-panel.free-layout-panel [class*="layout-stage"]')
+      || document.querySelector('.right-panel.free-layout-panel [class*="bento-shape"]');
 }
 function tutorialStageRect() {
   const stage = tutorialStageCenter();

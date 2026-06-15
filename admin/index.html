@@ -11403,13 +11403,27 @@ function npcPosBindControls() {
           if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
             npcPosSetStatus('JSON 形式が不正です (オブジェクトを期待)', true); return;
           }
-          // 値の検証
-          var cleaned = {};
+          // 値の検証 (defense in depth: __proto__/constructor/prototype は明示的に skip し、
+          // 受け皿は Object.create(null) で純粋オブジェクトにする。 さらに charId/expression を
+          // ホワイトリスト検証して、 想定外キーの混入も防ぐ)
+          var cleaned = Object.create(null);
           var count = 0;
+          var PROTO_KEYS = { '__proto__': 1, 'constructor': 1, 'prototype': 1 };
+          // hasOwn fallback (IE 等の古環境を考慮しないが、 念のため)
+          var hasOwn = Object.prototype.hasOwnProperty;
           Object.keys(obj).forEach(function(k) {
+            if (PROTO_KEYS[k]) return;             // proto pollution 対策
+            if (!hasOwn.call(obj, k)) return;       // 自身のプロパティのみ
+            // key 形式は "<charId>_<expression>". ホワイトリストで検証
+            var sep = k.indexOf('_');
+            if (sep < 0) return;
+            var charId = k.slice(0, sep);
+            var expr   = k.slice(sep + 1);
+            if (NPC_POS_CHARS.indexOf(charId) < 0) return;
+            if (NPC_POS_EXPRS.indexOf(expr) < 0) return;
             var v = obj[k];
             if (!v || typeof v !== 'object') return;
-            var entry = {};
+            var entry = Object.create(null);
             ['x','y','scale','rotation','opacity'].forEach(function(prop) {
               if (typeof v[prop] === 'number' && isFinite(v[prop])) entry[prop] = v[prop];
             });
