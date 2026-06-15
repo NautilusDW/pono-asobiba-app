@@ -445,7 +445,7 @@
     </div>
   </div>
 
-  <div class="prompt" id="prompt">まっすぐ弾と ぽよん弾で 観察しよう</div>
+  <div class="prompt" id="prompt">左クリックで まっすぐ弾、右クリックで ぽよん弾</div>
   <div class="toast" id="toast">アルバムに ついか！</div>
   <div id="loading">よみこみ中...</div>
 
@@ -454,7 +454,7 @@
       <div class="panel-head">
         <div>
           <h1>ポノの海底アルバム</h1>
-          <p class="panel-copy">Stage 1 は、しおだまりと浅瀬。まっすぐ弾と、下へ落ちるぽよん弾で、海の生き物を観察してアルバムに集めよう。</p>
+          <p class="panel-copy">Stage 1 は、しおだまりと浅瀬。左クリックのまっすぐ弾と、右クリックのぽよん弾で、海の生き物を観察してアルバムに集めよう。</p>
         </div>
       </div>
       <div class="stage-grid" id="startStageGrid"></div>
@@ -679,6 +679,8 @@
     bubbles: [],
     album: new Set(),
     assets: Object.create(null),
+    fireHeld: false,
+    bombHeld: false,
     promptTimer: 0,
     toastTimer: 0,
     spawnTimer: 0,
@@ -789,12 +791,14 @@
     state.enemies = [];
     state.powerups = [];
     state.bubbles = [];
+    state.fireHeld = false;
+    state.bombHeld = false;
     state.spawnTimer = 0.6;
-    state.shotTimer = 0.12;
-    state.bombTimer = 0.55;
+    state.shotTimer = 0;
+    state.bombTimer = 0;
     startOverlay.hidden = true;
     finishOverlay.hidden = true;
-    setPrompt('まっすぐ弾と ぽよん弾で 観察しよう', 2.8);
+    setPrompt('左クリックで まっすぐ弾、右クリックで ぽよん弾', 3.2);
     updateHud();
   }
 
@@ -890,6 +894,28 @@
     }
   }
 
+  function shotInterval() {
+    return state.power >= 4 ? 0.18 : 0.24;
+  }
+
+  function bombInterval() {
+    return state.power >= 4 ? 0.68 : 0.86;
+  }
+
+  function tryFireShots() {
+    if (state.mode !== 'playing' || state.shotTimer > 0) return false;
+    fireShots();
+    state.shotTimer = shotInterval();
+    return true;
+  }
+
+  function tryFireBombs() {
+    if (state.mode !== 'playing' || state.bombTimer > 0) return false;
+    fireBombs();
+    state.bombTimer = bombInterval();
+    return true;
+  }
+
   function addImpact(x, y, radius, kind = 'gold') {
     state.impacts.push({ x, y, radius, life: 0.36, max: 0.36, kind });
   }
@@ -941,16 +967,10 @@
     const desiredCamera = clamp(p.x - CAMERA_LEAD_X, 0, WORLD_W - BASE_W);
     state.camera += (desiredCamera - state.camera) * Math.min(1, dt * 4.8);
 
-    state.shotTimer -= dt;
-    state.bombTimer -= dt;
-    if (state.shotTimer <= 0) {
-      fireShots();
-      state.shotTimer = state.power >= 4 ? 0.18 : 0.24;
-    }
-    if (state.bombTimer <= 0) {
-      fireBombs();
-      state.bombTimer = state.power >= 4 ? 0.68 : 0.86;
-    }
+    state.shotTimer = Math.max(0, state.shotTimer - dt);
+    state.bombTimer = Math.max(0, state.bombTimer - dt);
+    if (state.fireHeld || state.keys.Space || state.keys.KeyZ || state.keys.Enter) tryFireShots();
+    if (state.bombHeld || state.keys.ShiftLeft || state.keys.ShiftRight || state.keys.KeyX) tryFireBombs();
 
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0 && !state.bossSpawned) {
@@ -1589,6 +1609,11 @@
     state.player.ty = clamp(p.y, 150, 735);
   }
 
+  function releasePointerFire(ev) {
+    if (ev.button === 2) state.bombHeld = false;
+    else if (ev.button === 0 || ev.button === -1) state.fireHeld = false;
+  }
+
   function renderStages(targetId) {
     const target = document.getElementById(targetId);
     target.innerHTML = STAGES.map((s, i) => {
@@ -1636,15 +1661,42 @@
   }
 
   canvas.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault();
     canvas.setPointerCapture(ev.pointerId);
     setTarget(ev);
+    if (ev.button === 2) {
+      state.bombHeld = true;
+      tryFireBombs();
+    } else {
+      state.fireHeld = true;
+      tryFireShots();
+    }
   });
-  canvas.addEventListener('pointermove', setTarget);
+  canvas.addEventListener('pointermove', (ev) => {
+    ev.preventDefault();
+    setTarget(ev);
+  });
   canvas.addEventListener('pointerup', (ev) => {
+    releasePointerFire(ev);
     try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {}
   });
-  window.addEventListener('keydown', (ev) => { state.keys[ev.code] = true; });
+  canvas.addEventListener('pointercancel', (ev) => {
+    releasePointerFire(ev);
+    try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  window.addEventListener('keydown', (ev) => {
+    if (['Space', 'Enter', 'KeyZ', 'KeyX', 'ShiftLeft', 'ShiftRight'].includes(ev.code)) ev.preventDefault();
+    state.keys[ev.code] = true;
+    if (ev.code === 'Space' || ev.code === 'Enter' || ev.code === 'KeyZ') tryFireShots();
+    if (ev.code === 'KeyX' || ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') tryFireBombs();
+  });
   window.addEventListener('keyup', (ev) => { state.keys[ev.code] = false; });
+  window.addEventListener('blur', () => {
+    state.keys = Object.create(null);
+    state.fireHeld = false;
+    state.bombHeld = false;
+  });
   window.addEventListener('resize', resize);
 
   document.getElementById('startBtn').addEventListener('click', resetRun);

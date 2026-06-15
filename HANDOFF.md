@@ -17,6 +17,9 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:544-sea-album-manual-fire-input] DONE - Codex: user 指摘「弾は左マウスボタンで発射するのでは？」を受け、Sea Album の自動発射を廃止し、左クリック長押し/Space/Zで通常弾、右クリック長押し/Shift/Xでぽよん弾を発射する入力へ変更。開始直後の自動発射なし、左クリック通常弾、右クリックぽよん弾、左クリック解除後に撃ちっぱなしにならないことを Playwright + Canvas描画フックで確認。`sw.js` / `play.html` は v1179。 (by Codex)
+- 2026-06-15 - [batch:543-starparodier-funny-octopus-core] DONE - Codex: user 指摘「過去のエイリアンは面白くない。パロディなので、つぶらな瞳でもっと面白い感じ」を受領。Image2生成の `galaxy_oyabun_octopus_funny_face.png` を追加し、ギャラクシー親分のコア参照を差し替え。旧 `galaxy_oyabun_octopus_face.png` は削除。丸窓内でつぶらな瞳が読めるよう描画クロップを調整。`sw.js` / `play.html` は v1178。Playwright で画像ロード、ボス名、pageerror/404なし、スクショ `tmp/starparodier_octopus_funny_core_v2.png` を確認済み。 (by Codex)
+- 2026-06-15 - [batch:542-oto-rhythm-rivals-opening-sidebar] Codex: user 依頼「OtoTouch リズムに難易度ごとの敵キャラ3人と、2〜3枚静止画のオープニング/勝利ストーリーを作りたい。リズム時の左メニューは不要なので、上を敵キャラ、下をポノのリアクションにする」を受領。Image2で各ライバルのオープニングrawシートを生成し、Otoリズム左サイドをバトル表示へ差し替える。 (by Codex)
 - 2026-06-15 - [batch:541-starparodier-moon-stage-octopus-core] Codex: user 指摘「たこ焼き顔では分かりにくいので、Image2で分かりやすいたこ型エイリアンに変更。太陽系ステージは月から始め、月面クレーター背景を21:9横長素材2〜3枚のループで作れるか」を受領。Starparodier のギャラクシー親分コアをたこ型エイリアンへ差し替え、月ステージ用の3レイヤー横ループ背景とステージ順/クリア豆知識の土台を実装する。 (by Codex)
 - 2026-06-15 - [batch:541-starparodier-moon-stage-octopus-core] DONE - Codex: Image2生成の `galaxy_oyabun_octopus_face.png` へギャラクシー親分の中身を差し替え、旧たこ焼き顔PNGは削除。Image2生成の月面21:9素材 `moon_far_loop.png` / `moon_mid_loop.png` / `moon_near_loop.png` を追加し、遠景・中景・近景の3レイヤー横ループ背景として実装。現在ステージは `月ステージ`、クリア時は「月は地球のまわりをまわる」豆知識を表示。太陽系ステージ順の土台として月→火星→水星→木星→金星→土星→天王星→海王星→地球のデータを追加。`sw.js` / `play.html` は v1177。inline script parse / `node --check sw.js` / `git diff --check` / Playwright で月面3素材ロード、たこ型コア表示、月クリア文言、pageerror/404なしを確認済み。 (by Codex)
 - 2026-06-15 - [batch:540-starparodier-parody-names-takoyaki-core] Codex: user 決定「ギャラクシー親分 / メカメンジャー4 / 宇宙たこ焼き顔」を受領。Starparodier のボス/中ボス名を差し替え、ギャラクシー親分のHP低下時に中央コアが開き、Image2生成PNGの宇宙たこ焼き顔が左右スライドの引き戸から出る演出を追加する。 (by Codex)
