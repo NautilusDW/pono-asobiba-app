@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:513-pono-space-lazarus-unclipped-exact-puzzle] Codex: user 指摘「前回ラザロは1個を4つに切る方針自体はよいが、元の合体顔が左側/下側で見切れており、そのまま切ったため4分割側も見切れている。スターブレインはそのままでよい」を受領。見切れていない合体顔マスターを再生成し、そのマスターから4ピースを機械的に派生して再合体差分を確認する。 (by Codex)
 - 2026-06-15 - [batch:512-bento-tutorial-drag-hand-visible] Codex: `HANDOFF_DRAG_DEMO.md` を受領。HANDOFF / git log / 現行 `bento/index.html` を確認し、同不具合の完了済み修正は未検出。`.tut-finger` が `.tut-dim` より下の z-index にあり手アイコンだけ暗幕下へ潜る疑いを中心に、4つのドラッグデモ表示だけを最小修正する。 (by Codex)
 - 2026-06-15 - [batch:512-bento-tutorial-drag-hand-visible] DONE - Codex: 根本原因は `.tut-hand` 側の `--from-x/--to-x` 初期値が親 `.tut-finger` から渡した座標を上書きしていたことと、bubble の同一 `innerHTML` 再代入が MutationObserver に拾われ手アニメを連続再起動していたこと。CSS vars を親へ移し、bubble 更新を冪等化、同一座標ドラッグの再起動を抑止。`sw.js` v1145。Playwright 896x432 で4ステップの `✊` 移動、renderCount 177→2、inline script parse、git diff --check を確認。ローカル API 404 は既存の静的サーバー制約。 (by Codex)
 - 2026-06-15 - [batch:511-maze-stage7-bowling-mobile-layout-shake-scale] DONE - Codex: maze stage7 ボウリングを sw v1143 で修正・staging 反映確認。iPhone SE 375x667 は stage 上余白 125px→22px、667x375 は既存維持。`_updateBowlPinMotion` sway / `shouldShake` / idle cue を aliveCount===1 に統一し、staging Playwright で常時移動 0。drawH=0.14 は実測で旧0.18比約22%縮小済み、0.12 追加縮小はユーザー確認待ち。Harvey クロスレビュー blocking なし。静的 asset header は既存 `_headers` が効かず `public,max-age=0` のままなので別途配信設定確認が必要。 (by Codex)

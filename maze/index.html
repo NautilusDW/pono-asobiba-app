@@ -8019,7 +8019,8 @@ function _updateBowlBossMotion(gs, now) {
   const ease = 1 - Math.pow(1 - introT, 3);
   boss.r = BOWL_BOSS_R_REL * minDim;
   const sway = Math.sin(now / 780 + boss.wobbleSeed) * gs.w * 0.18;
-  boss.y = gs.h * 0.31 - (1 - ease) * gs.h * 0.28 + Math.sin(now / 310 + boss.wobbleSeed) * minDim * 0.008;
+  // v1146: ボスのY基準を 0.31→0.36 (頭頂部クリップ回避)。intro デルタも 0.28→0.30 で開始位置をわずかに維持
+  boss.y = gs.h * 0.36 - (1 - ease) * gs.h * 0.30 + Math.sin(now / 310 + boss.wobbleSeed) * minDim * 0.008;
   const lane = _bowlLaneBoundsAt(gs, boss.y + boss.r * 0.18);
   boss.x = _bowlClamp(gs.w * 0.5 + sway, lane.left + boss.r * 0.72, lane.right - boss.r * 0.72);
 }
@@ -8933,7 +8934,8 @@ function _drawBowlBoss(gs, now) {
       ctx.shadowColor = 'rgba(255, 238, 90, 0.85)';
       ctx.shadowBlur = r * 0.34;
     }
-    ctx.drawImage(imgBowlBoss, -drawW / 2, -drawH * 0.56, drawW, drawH);
+    // v1146: 画像上方オフセットを 0.56→0.50 にし、頭が boss.y より上に伸びる量を縮小
+    ctx.drawImage(imgBowlBoss, -drawW / 2, -drawH * 0.50, drawW, drawH);
     ctx.restore();
   } else {
     const grad = ctx.createRadialGradient(-r * 0.28, -r * 0.28, r * 0.08, 0, 0, r);
