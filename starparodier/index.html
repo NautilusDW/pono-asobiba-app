@@ -393,7 +393,7 @@
     lazarusTR: 'midboss_lazarus_top_right.png',
     lazarusBL: 'midboss_lazarus_bottom_left.png',
     lazarusBR: 'midboss_lazarus_bottom_right.png',
-    bossCore: 'galaxy_oyabun_octopus_face.png',
+    bossCore: 'galaxy_oyabun_octopus_funny_face.png',
     moonFar: 'moon_far_loop.png',
     moonMid: 'moon_mid_loop.png',
     moonNear: 'moon_near_loop.png'
@@ -2140,10 +2140,10 @@
     ctx.arc(0, 0, faceR, 0, Math.PI * 2);
     ctx.clip();
     if (faceImg) {
-      const srcSize = Math.min(faceImg.naturalWidth, faceImg.naturalHeight) * 0.66;
+      const srcSize = Math.min(faceImg.naturalWidth, faceImg.naturalHeight) * 0.58;
       const sx = (faceImg.naturalWidth - srcSize) * 0.5;
-      const sy = (faceImg.naturalHeight - srcSize) * 0.5;
-      const drawSize = faceR * 2.42;
+      const sy = (faceImg.naturalHeight - srcSize) * 0.53;
+      const drawSize = faceR * 2.5;
       ctx.drawImage(faceImg, sx, sy, srcSize, srcSize, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
     } else {
       const faceGlow = ctx.createRadialGradient(-faceR * 0.28, -faceR * 0.32, faceR * 0.12, 0, 0, faceR);
