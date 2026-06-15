@@ -573,7 +573,7 @@
     horseshoeEating: '../assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png',
     horseshoeHappy: '../assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png'
   };
-  const USE_ALPHA_SPRITES = false;
+  const USE_ALPHA_SPRITES = true;
 
   const STAGES = [
     ['しおだまりと浅瀬', 'ヤドカリやカブトガニ'],
@@ -649,6 +649,15 @@
     goby: { card: 'goby', hp: 2, score: 70, speed: 98, y: [430, 650], size: 72 },
     anemone: { card: 'anemone', hp: 4, score: 110, speed: 42, y: [680, 750], size: 86, bottom: true },
     horseshoe: { card: 'horseshoe', hp: 34, score: 600, speed: 0, y: [570, 570], size: 250, bottom: true, boss: true }
+  };
+
+  const ENEMY_SPRITE_SCALE = {
+    hermit: 1.55,
+    shrimp: 1.85,
+    seaStar: 1.45,
+    goby: 1.65,
+    anemone: 1.45,
+    horseshoe: 1.55
   };
 
   const state = {
@@ -1234,7 +1243,7 @@
     if (enemy.defeated) ctx.globalAlpha = clamp(enemy.vanishTimer / (enemy.boss ? 1.05 : 0.72), 0, 1);
     if (enemy.hit > 0) ctx.filter = 'brightness(1.8)';
     if (image) {
-      drawCentered(image, 0, 0, enemy.size * (enemy.boss ? 1.55 : 1.4));
+      drawCentered(image, 0, 0, enemy.size * (ENEMY_SPRITE_SCALE[enemy.key] || 1.45));
     } else {
       if (enemy.key === 'hermit') drawHermit(enemy.size, mood);
       else if (enemy.key === 'shrimp') drawShrimp(enemy.size, mood);

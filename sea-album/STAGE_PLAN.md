@@ -58,4 +58,9 @@ The player submarine uses the existing shared asset:
 assets/images/ocean/Submarine/Submarine_003.png
 ```
 
-The current game uses canvas fallback drawings for creatures. After the expression files exist, set `USE_ALPHA_SPRITES` in `sea-album/index.html` to `true`.
+The current game loads these alpha PNGs with `USE_ALPHA_SPRITES` in `sea-album/index.html`.
+
+## Effect Asset Policy
+
+- Bubbles, small food sparkles, hit rings, water shimmer, and other lightweight effects should be drawn as canvas particles.
+- Do not generate or request image assets for generic bubbles unless the effect needs a specific character-like design.
