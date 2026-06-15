@@ -3209,13 +3209,13 @@
   body.rhythm-layout .instr-btn::after {
     inset: 22% 16% 24%;
     border-radius: 999px;
-    border: clamp(2px, calc(var(--sz, 82px) * 0.026), 4px) dashed rgba(255,255,255,0.72);
+    border: 0;
     background:
       radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.2) 0 28%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0) 70%);
     box-shadow:
       inset 0 0 12px rgba(255,255,255,0.2),
       0 0 12px var(--key-glow, rgba(255,216,77,0.42));
-    opacity: 0.54;
+    opacity: 0;
     transform: scaleY(0.72);
     z-index: 3;
   }
@@ -3288,7 +3288,7 @@
     opacity: 0;
   }
   body.rhythm-layout.webgl-rhythm .instr-btn::after {
-    opacity: 0.64 !important;
+    opacity: 0 !important;
   }
   body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-target::after,
   body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-hit::after,
@@ -6201,19 +6201,6 @@ function _gh3DKeyTextureFor(lane, label) {
   ctx.beginPath();
   ctx.ellipse(128, 128, 72, 61, 0, 0, Math.PI * 2);
   ctx.fill();
-
-  ctx.lineWidth = 7;
-  ctx.setLineDash([11, 8]);
-  ctx.strokeStyle = 'rgba(255,255,255,0.78)';
-  ctx.beginPath();
-  ctx.ellipse(128, 128, 69, 59, 0, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(255,247,210,0.62)';
-  ctx.beginPath();
-  ctx.ellipse(128, 128, 50, 43, 0, 0, Math.PI * 2);
-  ctx.stroke();
 
   var fontSize = label && label.length >= 2 ? 70 : 92;
   do {

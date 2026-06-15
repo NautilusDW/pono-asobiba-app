@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:522-oto-rhythm-remove-dotted-receptor] DONE - Codex: user 指摘「リズムボタン上の点線はいらない」を受け、OtoTouch リズムのボタン受け皿から常時表示の破線リングを削除。DOM `::after` の dashed border を非表示化し、WebGL鍵盤テクスチャに焼き込んでいた `setLineDash([11,8])` の楕円破線も撤去。ヒット/ターゲット時の光演出は維持。`sw.js` / `play.html` は v1155。作業外の `bento/index.html` / `starparodier/index.html` 差分は非接触。 (by Codex)
 - 2026-06-15 - [batch:521-bento-tutorial-bubble-position-size-slider] Codex: user 指摘「箱説明が長いので2行へ短縮、のりOK吹き出しをボタン横へ、右側おかず配置の吹き出しを下へ、カップOKを青枠で明示、小中大ボタンをサイズ名のスライダーへ」を受領。HANDOFF / git log / `bento/index.html` を確認し、同修正未着手。tutorial bubble の target 横配置 helper と accessory size slider 化を行う。 (by Codex)
 - 2026-06-15 - [batch:521-bento-tutorial-bubble-position-size-slider] DONE - Codex: bento full-flow tutorial を修正。箱説明は「きょうは」を外して2行化、`のりOK` 案内はボタン横に配置して青枠継続、右側おかず配置の吹き出しは下寄せ、カップ終了は右パネルの `OK` を青枠にして文言も `みぎの「OK」` へ明確化。小/中/大ボタンは通常ツールバー・カップ/仕切り・ブラシ操作を `サイズ` スライダーへ置換。`sw.js` v1154。inline script parse / diff check / Playwright 896x432 で箱2行、のりOK横、右側おかず下寄せ、右OK青枠、サイズスライダーを確認。レビュー観点: tutorial target 判定、DOM描画遅延、右パネル/ステージOKの曖昧さ、既存Oto差分非接触を自己確認。 (by Codex)
 - 2026-06-15 - [batch:520-oto-rhythm-hit-feel-polish] Codex: user 依頼「OtoTouchリズムの爽快感をもう一押し。丸ノードと四角ボタンの形ズレ、エフェクト不足、未使用SEを調べて簡単なものから入れてほしい」を受領。HANDOFF / git log / `assets/audio/sfx/oto/` / `oto/index.html` を確認し、同修正未着手。既存 Oto SE を判定音に接続し、ボタン側の丸い受け皿リング・ヒット時の吸い込み/発光演出を軽量追加する。 (by Codex)
