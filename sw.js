@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1120; // v1120: play.html splash - ロゴ/広告サイズ縮小と margin 詰めで viewport 内に確実に収まるよう調整
+const CACHE_VERSION = 1121; // v1121: play.html splash - ロゴ最大幅 380→320, .tap-intro-card max-height 100vh→100% で親padding 考慮し溢れ対策
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

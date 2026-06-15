@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-15T01:02:08Z - play.html スプラッシュ viewport 収まり修正: ロゴ width min(54vw,320px)+max-height 28vh+object-fit contain、.tap-intro-card max-height 100% (親padding考慮)、広告ゾーン/サブテキストも縮小、bounce -14→-8 で上端飛び出し対策、sw v1121
+- **タスク**: play.html スプラッシュ viewport 収まり修正: ロゴ width min(54vw,320px)+max-height 28vh+object-fit contain、.tap-intro-card max-height 100% (親padding考慮)、広告ゾーン/サブテキストも縮小、bounce -14→-8 で上端飛び出し対策、sw v1121
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 46
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 21, "Read": 6, "ToolSearch": 1, "Bash": 12, "Write": 2, "Edit": 3, "Grep": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-15T01:00:36Z - play.html splash 微調整 (ロゴ最大幅320, .tap-intro-card max-height 100%) と sw.js CACHE_VERSION バンプ
+- **タスク**: play.html splash 微調整 (ロゴ最大幅320, .tap-intro-card max-height 100%) と sw.js CACHE_VERSION バンプ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 26
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 17, "ToolSearch": 1, "Bash": 5, "Read": 1, "Write": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-15T00:45:07Z - 迷路お邪魔虫の白縁問題詳細解析 (画素単位でhachi/odoke/pyonの白プレマルチプライド確定) + stagingデプロイ反映確認 (CACHE_VERSION 1118 + baseSize/14 staging到達済み、SW残留が原因のユーザー側キャッシュ問題と特定)
 - **タスク**: 迷路お邪魔虫の白縁問題詳細解析 (画素単位でhachi/odoke/pyonの白プレマルチプライド確定) + stagingデプロイ反映確認 (CACHE_VERSION 1118 + baseSize/14 staging到達済み、SW残留が原因のユーザー側キャッシュ問題と特定)
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 10, "Bash": 5}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-14T23:42:07Z - oto/index.html 5点UI改修 (リザルト圧縮+吹き出し化、設定→右上♪統合、自由モード左下切れ修正、背景青寄り、リズム曲選択2ステップ化) + クロスレビュー指摘の display:flex/translateX修正
-- **タスク**: oto/index.html 5点UI改修 (リザルト圧縮+吹き出し化、設定→右上♪統合、自由モード左下切れ修正、背景青寄り、リズム曲選択2ステップ化) + クロスレビュー指摘の display:flex/translateX修正
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 11
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 8, "Bash": 3}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-14T23:36:36Z - oto UI: result modal compact + speech bubble / settings⚙ merged into right-top ♪ / band-group no-cutoff / bluer BG / 2-step song-then-mode select / CACHE_VERSION 1108
-- **タスク**: oto UI: result modal compact + speech bubble / settings⚙ merged into right-top ♪ / band-group no-cutoff / bluer BG / 2-step song-then-mode select / CACHE_VERSION 1108
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 8
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 6, "Bash": 2}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
