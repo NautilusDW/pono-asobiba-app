@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1110; // v1110: bento — remove かざらず次へ btn (no-decor confirm modal), restyle かざり label (full-width orange heading), drop おもいだし title, add full-flow tutorial v1 (☝️ finger guide)
+const CACHE_VERSION = 1115; // v1115: bento — cross-review fixes: nori-skip modal text/buttons rephrased, tutorial finger.png replaces emoji, free-section-heading toned to primary-light, okazuMore bubble simplified, tutorialTeardown cancels resizeRaf, waitForReadyThenFullTutorial 2min cap, data-action="stage-complete" for reliable button targeting, greet step idempotent, portrait blocking shows よこむきに してね, nori-skip z-index raised above portrait-notice
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

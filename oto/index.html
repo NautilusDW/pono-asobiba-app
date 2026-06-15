@@ -102,6 +102,20 @@
     75%  { transform: translate(-50%, -54%) scale(1.04); }
     100% { transform: translate(-50%, -50%) scale(1); }
   }
+  /* rhythm-layout 用: pono-wrap が translate(-50%, 0) (上端アンカー) なので、
+     center-anchored の ponoBreathe/ponoBump を当てると translate(-50%, -50%) で
+     ~55px 上方向にずれて画面外へクリップする。Y 基準を 0 にした専用キーフレームを使う。 */
+  @keyframes ponoBreatheTop {
+    0%, 100% { transform: translate(-50%, 0) scale(1); }
+    50%      { transform: translate(-50%, -2%) scale(1.025); }
+  }
+  @keyframes ponoBumpTop {
+    0%   { transform: translate(-50%, 0) scale(1); }
+    25%  { transform: translate(-50%, -6%) scale(1.08); }
+    50%  { transform: translate(-50%, 0) scale(1); }
+    75%  { transform: translate(-50%, -4%) scale(1.04); }
+    100% { transform: translate(-50%, 0) scale(1); }
+  }
 
   /* ── セット切替アイコン (上部) ── */
   .sets {
@@ -1475,14 +1489,55 @@
   }
   .rhythm-menu.show { display: flex; }
   body.oto-modal-open .pono-menu-toggle { display: none !important; }
-  /* v1108: 2ステップ表示切替 */
-  .rhythm-step { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  /* v1108: 2ステップ表示切替
+     Region 1.5: rhythm-step を flex column にして
+     song-list だけスクロール、footer はパネル下部に固定する構造へ。 */
+  .rhythm-step {
+    display: none;
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
   .rhythm-menu[data-step="song"] .rhythm-step[data-step-view="song"] { display: flex; }
   .rhythm-menu[data-step="mode"] .rhythm-step[data-step-view="mode"] { display: flex; }
+  .rhythm-step > .rhythm-menu-title,
+  .rhythm-step > .rhythm-stage-status,
+  .rhythm-step > .rhythm-diff-tabs {
+    flex: 0 0 auto;
+  }
+  .rhythm-step > .rhythm-song-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+  }
+  .rhythm-step > .rhythm-menu-actions {
+    flex: 0 0 auto;
+    margin-top: 10px;
+  }
+  /* Region 1: 難易度タブ (かんたん / ふつう / むずかしめ) */
+  .rhythm-diff-tabs {
+    display: flex; width: 100%; gap: 6px; margin-bottom: 4px;
+  }
+  .rhythm-diff-tab {
+    flex: 1; min-height: 36px; padding: 6px 10px;
+    border: 2px solid rgba(255,255,255,0.32);
+    border-radius: 14px; background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.78);
+    font-family: inherit; font-weight: 800; font-size: 0.9rem;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .rhythm-diff-tab.active {
+    background: linear-gradient(135deg, #FDE68A, #F59E0B);
+    color: #5C3A06; border-color: rgba(255,255,255,0.85);
+  }
   .rhythm-menu-panel {
     width: min(86vw, 520px);
     max-height: calc(100vh - 32px);
-    overflow-y: auto;
+    overflow: hidden;
     border-radius: 24px;
     border: 3px solid rgba(255,255,255,0.82);
     background: rgba(18,35,86,0.94);
@@ -1491,7 +1546,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 0;
     text-align: center;
   }
   .rhythm-menu-title {
@@ -2687,12 +2742,14 @@
     }
     body.rhythm-layout .mode-switch,
     body.rhythm-layout .sound-sets-box,
+    body.rhythm-layout .chord-pill,
     body.rhythm-layout .band-group,
     body.rhythm-layout .rhythm-hud,
     body.rhythm-layout .rhythm-status,
     body.rhythm-layout .rhythm-queue {
       left: 11%;
       width: 160px;
+      transform: translateX(-50%);
     }
     body.rhythm-layout .sound-sets-box {
       max-width: 160px;
@@ -2833,12 +2890,12 @@
     body:not(.rhythm-layout) .instr-btn[data-idx="5"] { left: 56%; top: 78%; --sz: 170px; }
     body:not(.rhythm-layout) .instr-btn[data-idx="6"] { left: 76%; top: 78%; --sz: 170px; }
     body:not(.rhythm-layout) .instr-btn[data-idx="7"] { left: 89%; top: 65%; --sz: 166px; }
-    .pono-wrap {
+    body:not(.rhythm-layout) .pono-wrap {
       left: 67%;
       width: 250px;
       height: 210px;
     }
-    .pono-sprite { height: 205px; }
+    body:not(.rhythm-layout) .pono-sprite { height: 205px; }
     .rhythm-special-bubble {
       left: 67%;
       top: calc(50% - 116px);
@@ -2890,9 +2947,31 @@
       drop-shadow(0 6px 7px rgba(0,0,0,0.3));
   }
   body.rhythm-layout .pono-wrap {
-    left: 61%;
-    top: 29%;
+    left: 11%;
+    /* notch / safe-area iPad で上端クリップを避ける hardening:
+       6% よりも env(safe-area-inset-top) を尊重した最小オフセットを保証する。 */
+    top: calc(max(8px, env(safe-area-inset-top)) + 8px);
+    transform: translate(-50%, 0);
+    width: 110px;
+    height: 110px;
     z-index: 7;
+    /* rhythm-layout の transform anchor (-50%, 0) と整合する専用キーフレームに差し替え。
+       (.pono-wrap base の ponoBreathe は -50%, -50% 想定で ~55px 上方向にクリップする) */
+    animation-name: ponoBreatheTop;
+  }
+  body.rhythm-layout .pono-wrap.bump {
+    animation-name: ponoBumpTop;
+  }
+  body.rhythm-layout .pono-sprite {
+    height: 100px;
+  }
+  /* Region 5.3: pono を左パネル最上部 (top: safe-area + 8px, height:110px) に移動したため、
+     その下に並ぶ sound-sets-box / mode-switch / chord-pill を pono の下端より下に逃がす。
+     pono 下端 ≒ safe-area-top + 8 + 110 = +118px。
+     16:9 narrow (1280x720 / 1366x768) でも物理的に pono が左パネル UI を覆わないよう、
+     sound-sets-box → chord-pill → mode-switch の順で縦スタックする。 */
+  body.rhythm-layout .mode-switch {
+    top: calc(max(8px, env(safe-area-inset-top)) + 170px);
   }
   body.rhythm-layout .instr-btn.press {
     transform: translate(-50%, -50%) translateY(4px) scale(0.98);
@@ -3040,6 +3119,36 @@
     body.rhythm-layout .band-group {
       width: clamp(112px, 11vw, 122px);
       max-width: clamp(112px, 11vw, 122px);
+    }
+    /* Region 5.2: 同じく sound-sets-box / mode-switch / chord-pill も
+       中央寄せ (left:50% + translateX(-50%)) では 16:9 narrow で
+       左端が画面外に切れるため、左端アンカーへ統一して幅を詰める。
+       なお、ここで明示的に `transform: none` を書いているのは
+       上位の `@media (orientation: landscape)` ブロック (lines 2729-2738) で
+       共有指定された `transform: translateX(-50%)` を打ち消すため。
+       カスケード順序に依存しているが、両ブロックを 1 つに統合する
+       リファクタは将来 (16:9 fix の安定化後) に検討する。 */
+    body.rhythm-layout .sound-sets-box,
+    body.rhythm-layout .mode-switch,
+    body.rhythm-layout .chord-pill {
+      left: max(16px, calc(env(safe-area-inset-left) + 16px));
+      transform: none;
+      width: clamp(112px, 11vw, 122px);
+      max-width: clamp(112px, 11vw, 122px);
+    }
+    /* Region 5.2b: 16:9 narrow (1280x720 / 1366x768) では、
+       rhythm-layout の pono (top: safe-area+8px, height:110px) が物理的に
+       左パネル上部の sound-sets-box / chord-pill を覆ってしまうため、
+       pono の下端 (safe-area-top + 118px) より下に縦スタックする。
+       縦順: pono → sound-sets-box → chord-pill → mode-switch。 */
+    body.rhythm-layout .sound-sets-box {
+      top: calc(max(8px, env(safe-area-inset-top)) + 126px);
+    }
+    body.rhythm-layout .chord-pill {
+      top: calc(max(8px, env(safe-area-inset-top)) + 210px);
+    }
+    body.rhythm-layout .mode-switch {
+      top: calc(max(8px, env(safe-area-inset-top)) + 268px);
     }
 
     /* クリアモーダル: 16:9 narrow では幅をさらに詰めて確実に親 stage 内へ。 */
@@ -3195,7 +3304,7 @@
     </div>
 
     <div class="rhythm-hud" id="rhythm-hud" aria-live="polite">
-      <div class="rhythm-status" id="rhythm-status">ひかるボタンを いま！でタッチ</div>
+      <div class="rhythm-status" id="rhythm-status">いちばん したまで きたら タッチ！</div>
       <div class="rhythm-queue" id="rhythm-queue"></div>
     </div>
     <div class="rhythm-special-bubble" id="rhythm-special-bubble" aria-live="polite"></div>
@@ -3210,6 +3319,11 @@
         <div class="rhythm-step rhythm-step-song" data-step-view="song">
           <div class="rhythm-menu-title">きょくを えらぼう</div>
           <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
+          <div class="rhythm-diff-tabs" role="tablist">
+            <button class="rhythm-diff-tab active" type="button" data-diff="かんたん" role="tab" aria-selected="true">かんたん</button>
+            <button class="rhythm-diff-tab" type="button" data-diff="ふつう" role="tab" aria-selected="false">ふつう</button>
+            <button class="rhythm-diff-tab" type="button" data-diff="むずかしめ" role="tab" aria-selected="false">むずかしめ</button>
+          </div>
           <div class="rhythm-song-list" id="rhythm-song-list"></div>
           <div class="rhythm-menu-actions">
             <button class="rhythm-menu-btn cancel" id="rhythm-menu-cancel">もどる</button>
@@ -4782,13 +4896,37 @@ function _updateRhythmMenuActions() {
   if (start) start.textContent = 'はじめる';
   if (demo) demo.classList.remove('hidden');
 }
+// Region 1.2: 曲一覧を難易度タブ (かんたん/ふつう/むずかしめ) で絞り込む
+var RHYTHM_CURRENT_DIFF = 'かんたん';
 function _renderRhythmSongMenu() {
   var list = document.getElementById('rhythm-song-list');
   if (!list) return;
   var status = document.getElementById('rhythm-stage-status');
   if (status) status.textContent = _rhythmStageSummary();
+  // 難易度タブの active 状態を同期 (RHYTHM_CURRENT_DIFF をソース・オブ・トゥルースに)
+  var tabs = document.querySelectorAll('.rhythm-diff-tab');
+  tabs.forEach(function(t) {
+    var on = t.dataset.diff === RHYTHM_CURRENT_DIFF;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  // 1度だけハンドラを束ねる (window flag でガード)
+  if (!window._rhythmDiffTabsBound) {
+    window._rhythmDiffTabsBound = true;
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        RHYTHM_CURRENT_DIFF = tab.dataset.diff;
+        _renderRhythmSongMenu();
+      });
+    });
+  }
   var progress = _loadRhythmProgress();
-  list.innerHTML = _rhythmSongsByStage().map(function(song) {
+  var songs = _rhythmSongsByStage().filter(function(s) {
+    return (s.difficulty || s.note) === RHYTHM_CURRENT_DIFF;
+  });
+  list.innerHTML = songs.map(function(song) {
     var active = song.id === RHYTHM_BASE_SONG.id ? ' active' : '';
     var locked = (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(song.id)) ? ' tier-locked' : '';
     var stageLocked = !_rhythmSongUnlocked(song, progress);
@@ -6719,7 +6857,7 @@ function _startRhythmMode() {
   _rhythm.nextSpawnSeq = 0;
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
-  _setRhythmStatus('おちてくるノートを いま！でタッチ', null);
+  _setRhythmStatus('いちばん したまで きたら タッチ！', null);
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
   // リズム用サンプル SE: 未ロードならフェッチ開始、AC 作成後に再デコードを試みる。
@@ -6727,8 +6865,8 @@ function _startRhythmMode() {
   _ensureRhythmSampleSeDecoded();
   preloadRhythmSampleSeBuffers();
   var ac = getAC();
-  // ゲーム開始スティンガ。バッファが間に合っていれば 1 回だけ鳴らす (失敗時無音)。
-  _playRhythmSampleSe('gameStart');
+  // ゲーム開始スティンガは無音化 (Region 2): 開始合図はオーバーレイ「スタート!」で代用。
+  // _playRhythmSampleSe('gameStart');
   // v709: 「拍同期は AC 時刻 (秒) で計算 → 毎フレーム perf 時刻に変換」方式に統一。
   // 旧 v708: bandStartPerf を 1 回スナップショットしてから startPerfTime を固定 → 数秒で
   //          AC↔perf がドリフトして「だんだんノートが伴奏とずれる」と報告された。
@@ -7234,6 +7372,15 @@ function _showRhythmMenu() {
   _clearRhythmDemo(false);
   _hideRhythmComplete();
   _forcePianoSoundForRhythm();
+  // Region 1.3: 現在の base song の難易度に合わせてタブを切替 (失敗時 'かんたん')
+  try {
+    var _baseDiff = (RHYTHM_BASE_SONG && (RHYTHM_BASE_SONG.difficulty || RHYTHM_BASE_SONG.note)) || 'かんたん';
+    if (_baseDiff === 'かんたん' || _baseDiff === 'ふつう' || _baseDiff === 'むずかしめ') {
+      RHYTHM_CURRENT_DIFF = _baseDiff;
+    } else {
+      RHYTHM_CURRENT_DIFF = 'かんたん';
+    }
+  } catch (e) { RHYTHM_CURRENT_DIFF = 'かんたん'; }
   _renderRhythmSongMenu();
   _updateRhythmMenuActions();
   _setModeButtons('rhythm');

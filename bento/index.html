@@ -1032,18 +1032,21 @@ html, body {
 .free-section-heading {
   width: 100%;
   flex-shrink: 0;
-  background: var(--primary, #F08C2E);
-  color: #fff;
+  background: var(--primary-light, #FDDCBF);
+  color: var(--text, #5D4E37);
   font-family: inherit;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   font-weight: 900;
   letter-spacing: 0.05em;
   text-align: left;
   padding: 5px 10px;
   border-radius: 6px;
-  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08);
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.05);
   pointer-events: none;
   user-select: none;
+}
+.free-section-heading::before {
+  content: '🎀 ';
 }
 .free-tab {
   border: 2px solid #F8C36B;
@@ -2913,7 +2916,7 @@ body.bento-complete-open .pono-dropdown {
 
 /* ===== Nori skip confirm modal ===== */
 .nori-skip-confirm {
-  position: fixed; inset: 0; z-index: 9975;
+  position: fixed; inset: 0; z-index: 9985;
   background: rgba(0,0,0,0.55);
   display: flex; align-items: center; justify-content: center;
   padding: 12px;
@@ -2962,14 +2965,20 @@ body.bento-complete-open .pono-dropdown {
   width: 56px; height: 56px;
   z-index: 10001;
   pointer-events: none;
-  font-size: 44px;
-  line-height: 1;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
   animation: tutFingerDrag 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   --from-x: 0px; --from-y: 0px;
   --to-x: 0px; --to-y: 0px;
   opacity: 0;
   user-select: none;
+}
+.tut-finger img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 @keyframes tutFingerDrag {
   0%   { transform: translate(var(--from-x), var(--from-y)) scale(1);   opacity: 0; }
@@ -3976,8 +3985,10 @@ body.bento-complete-open .pono-dropdown {
     setTimeout(waitForReadyThenTutorial, 600);
   }
   // 全工程チュートリアル (v1): 初回プレイヤーのみ・NPC/タイトル/横画面が片付いたら開始
+  let _fullTutorialPollCount = 0;
   function waitForReadyThenFullTutorial() {
     if (typeof tutorialReadDone === 'function' && tutorialReadDone()) return;
+    if (_fullTutorialPollCount++ > 200) return; // 600ms * 200 ≈ 2分で諦め
     const titleScreen = document.getElementById('title-screen');
     const npcIntro = document.getElementById('npc-intro');
     const shopOpening = document.getElementById('shop-opening');
@@ -9281,10 +9292,10 @@ function showNoDecorConfirmModal() {
     modal.className = 'nori-skip-confirm';
     modal.innerHTML = ''
       + '<div class="nori-skip-card">'
-      +   '<div class="nori-skip-title">のりを かざらなくても いい？</div>'
+      +   '<div class="nori-skip-title">のりは かざらないで すすむ？</div>'
       +   '<div class="nori-skip-actions">'
-      +     '<button type="button" class="nori-skip-back">もどる</button>'
-      +     '<button type="button" class="nori-skip-ok">うん、いいよ</button>'
+      +     '<button type="button" class="nori-skip-back">のりを かざる</button>'
+      +     '<button type="button" class="nori-skip-ok">すすむ</button>'
       +   '</div>'
       + '</div>';
     document.body.appendChild(modal);
@@ -9356,10 +9367,14 @@ function renderFreeGuidePanel() {
   } else if (freeGuideStep === 'tier2Side') {
     const tier = getGuideTierForStep('tier2Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
-    actions.appendChild(makeSmallControlButton(getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'side') < 1));
+    const sideOkBtn = makeSmallControlButton(getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'side') < 1);
+    if (getBoxTierCount() === 1) sideOkBtn.dataset.action = 'stage-complete';
+    actions.appendChild(sideOkBtn);
   } else if (freeGuideStep === 'tier3Prompt') {
     actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
-    actions.appendChild(makeSmallControlButton('できあがり', 'primary', () => stageComplete()));
+    const doneBtn = makeSmallControlButton('できあがり', 'primary', () => stageComplete());
+    doneBtn.dataset.action = 'stage-complete';
+    actions.appendChild(doneBtn);
     actions.appendChild(makeSmallControlButton('3だんめへ', '', () => setFreeGuideStep('tier3Main')));
   } else if (freeGuideStep === 'tier3Main') {
     actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
@@ -9367,7 +9382,9 @@ function renderFreeGuidePanel() {
     const tier = getGuideTierForStep('tier3Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
     actions.appendChild(makeSmallControlButton('3だんめOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'side') < 1));
-    actions.appendChild(makeSmallControlButton('できあがり', '', () => stageComplete()));
+    const doneBtn3 = makeSmallControlButton('できあがり', '', () => stageComplete());
+    doneBtn3.dataset.action = 'stage-complete';
+    actions.appendChild(doneBtn3);
   }
   if (!actions.children.length) return null;
   const card = document.createElement('div');
@@ -10832,7 +10849,11 @@ function tutorialEnsureLayer() {
     const finger = document.createElement('div');
     finger.className = 'tut-finger';
     finger.id = 'tut-finger';
-    finger.textContent = '☝️';
+    const img = document.createElement('img');
+    img.src = '../assets/images/quizland/illust/choice/finger.png';
+    img.alt = '';
+    img.setAttribute('aria-hidden', 'true');
+    finger.appendChild(img);
     finger.style.display = 'none';
     document.body.appendChild(finger);
     tutorialState.fingerEl = finger;
@@ -10927,7 +10948,12 @@ function tutorialScheduleResync() {
 function tutorialRefresh() {
   // 現在のステップに応じて位置/ターゲットを再計算
   if (!tutorialState.active) return;
-  if (tutorialIsPortraitBlocking()) { tutorialHideFinger(); tutorialHideBubble(); return; }
+  if (tutorialIsPortraitBlocking()) {
+    // portrait 中は finger を隠し、bubble は「よこむきにしてね」を上書き表示
+    tutorialHideFinger();
+    tutorialShowBubble('よこむきに してね', { loud: true });
+    return;
+  }
   tutorialRenderStep();
 }
 function tutorialFirstPaletteItem() {
@@ -10939,7 +10965,20 @@ function tutorialStageCenter() {
       || document.querySelector('.free-bento-shape');
 }
 function tutorialCompleteButton() {
-  return document.querySelector('.free-complete-btn');
+  // data-action="stage-complete" 属性で正確に特定 (テキスト fallback も保持)
+  const tagged = document.querySelector('[data-action="stage-complete"]');
+  if (tagged) return tagged;
+  const primary = document.querySelector('.free-guide-actions button.primary');
+  if (primary) {
+    const t = primary.textContent || '';
+    if (t.indexOf('できあがり') >= 0 || t.indexOf('おかずOK') >= 0) return primary;
+  }
+  const all = document.querySelectorAll('.free-guide-actions button');
+  for (const b of all) {
+    const t = b.textContent || '';
+    if (t.indexOf('できあがり') >= 0) return b;
+  }
+  return primary || document.querySelector('.free-complete-btn');
 }
 function tutorialResetInactivity() {
   tutorialState.inactivityFired = false;
@@ -10955,15 +10994,24 @@ function tutorialRenderStep() {
   const loud = tutorialState.inactivityFired;
   const fast = tutorialState.inactivityFired;
   if (step === 'greet') {
+    const b = tutorialState.bubbleEl;
+    // 既に greet を描いている場合は innerHTML 差し替えしない (MutationObserver loop 回避)
+    if (b && b.dataset.step === 'greet' && document.getElementById('tut-greet-next')) {
+      tutorialHideFinger();
+      tutorialPositionBubble(null);
+      return;
+    }
     tutorialShowBubble(
       'やあ！ぼく ポノだよ。<br>きょうは いっしょに<br>おべんとう つくろう！'
       + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>',
       { loud }
     );
+    if (tutorialState.bubbleEl) tutorialState.bubbleEl.dataset.step = 'greet';
     tutorialHideFinger();
     const btn = document.getElementById('tut-greet-next');
     if (btn) btn.addEventListener('pointerdown', e => {
       e.preventDefault(); e.stopPropagation();
+      if (tutorialState.bubbleEl) delete tutorialState.bubbleEl.dataset.step;
       tutorialState.step = 'box';
       tutorialRenderStep();
       tutorialResetInactivity();
@@ -10996,8 +11044,13 @@ function tutorialRenderStep() {
     // 控えめにパレット領域全体へ
     const tray = document.querySelector('.free-item-list');
     const remaining = Math.max(0, 3 - tutorialState.okazuPlacedCount);
-    tutorialShowBubble(`あと ${remaining} こ いれて、<br>いろどり よくしてね`, { anchor: tray || palette, loud });
-    tutorialAnimateTap(palette || tray);
+    if (remaining > 0) {
+      tutorialShowBubble(`あと ${remaining} こ！`, { anchor: tray || palette, loud });
+      tutorialAnimateTap(palette || tray);
+    } else {
+      tutorialShowBubble('じょうずだね！つぎは…', { anchor: tray || palette, loud });
+      tutorialHideFinger();
+    }
     return;
   }
   if (step === 'decor') {
@@ -11023,6 +11076,10 @@ function tutorialTeardown() {
     window.removeEventListener('resize', tutorialState.resizeHandler);
     window.removeEventListener('orientationchange', tutorialState.resizeHandler);
     tutorialState.resizeHandler = null;
+  }
+  if (tutorialState.resizeRaf) {
+    cancelAnimationFrame(tutorialState.resizeRaf);
+    tutorialState.resizeRaf = 0;
   }
   if (tutorialState.inactivityTimer) { clearTimeout(tutorialState.inactivityTimer); tutorialState.inactivityTimer = 0; }
   if (tutorialState.observer) { try { tutorialState.observer.disconnect(); } catch (_) {} tutorialState.observer = null; }
@@ -11057,7 +11114,11 @@ function tutorialStart() {
 }
 function tutorialOnGuideChange(step) {
   if (!tutorialState.active) return;
-  if (tutorialIsPortraitBlocking()) { tutorialHideFinger(); tutorialHideBubble(); return; }
+  if (tutorialIsPortraitBlocking()) {
+    tutorialHideFinger();
+    tutorialShowBubble('よこむきに してね', { loud: true });
+    return;
+  }
   // greet 中は手動操作待ち
   if (tutorialState.step === 'greet') return;
   if (step === 'box') tutorialState.step = 'box';
@@ -11080,9 +11141,9 @@ function tutorialOnItemPlaced(item) {
   if (!item) return;
   if (item.type === 'food') {
     tutorialState.okazuPlacedCount += 1;
-    if (tutorialState.okazuPlacedCount >= 3 && tutorialState.step !== 'decor') {
-      // 十分入ったら decor 直前まで待ちつつ表示文言を更新
-      tutorialState.step = 'okazuMore';
+    // おかずが3個以上 + おかず工程中なら 完成ボタン誘導へ
+    if (tutorialState.okazuPlacedCount >= 3 && (tutorialState.step === 'okazuFirst' || tutorialState.step === 'okazuMore')) {
+      tutorialState.step = 'complete';
     }
   }
   tutorialResetInactivity();

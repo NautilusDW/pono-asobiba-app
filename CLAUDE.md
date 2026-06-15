@@ -813,6 +813,9 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 
 
 
+
+
+
 ## Current Difficulty Level
 
 - **レベル**: 5 - 抽象指示 (Abstract)
@@ -823,11 +826,11 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 
 > タスクを依頼する際は、上記レベルの抽象度でプロンプトを作成してください。
 
-## Auto-Extracted Best Practices (Updated: 2026-06-14)
+## Auto-Extracted Best Practices (Updated: 2026-06-15)
 
 以下のルールは過去のタスク実績から自動抽出されたベストプラクティスです。
 
-1. **エラー発生後に別のアプローチに切り替えた** (検出回数: 1316, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
+1. **エラー発生後に別のアプローチに切り替えた** (検出回数: 1319, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
 2. **小さな単位で検証しながら進めた** (検出回数: 1035, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
 3. **編集前にファイルを読んで理解した** (検出回数: 994, 例: ピボット修正+スワップバグ修正+GitHubゴミファイル削除（エージェント自律ループでplanner/code-reviewer活用）, めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消)
 4. **実装前にコードベースを探索した** (検出回数: 612, 例: めいろゲーム改修: 自動歩行を直進のみに変更し L字も明示タップ必須化、再帰バックトラッカーで本物の迷路生成、Pono drawing をbase layer必須化、障害物配置をplayer-reachable限定、no-spam-solve audit追加, rewards保存のSHA mismatchエラーをHTTPキャッシュバイパスで解消, めいろ修正: draw loop の例外停止を try/catch で根本対応、チュートリアル + ステージ1 を新規追加 (コの字+石ブロック)、🪨 STONE タイル追加、リテラル \n 修正)
