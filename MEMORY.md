@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-15T23:22:48Z - アプリ版専用 staging worker (pono-asobiba-app-staging) を develop-app ブランチに紐付け新設、 SW navigation redirect ループを v1191 で根治
+- **タスク**: アプリ版専用 staging worker (pono-asobiba-app-staging) を develop-app ブランチに紐付け新設、 SW navigation redirect ループを v1191 で根治
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 24
+- **エラー数**: 4
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 22, "ToolSearch": 2}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-15T22:32:56Z - app-staging SW navigation loop 修正 (redirect:'manual' + env.staging-app.assets) を develop / develop-app 両ブランチに push (sw v1190)
 - **タスク**: app-staging SW navigation loop 修正 (redirect:'manual' + env.staging-app.assets) を develop / develop-app 両ブランチに push (sw v1190)
 - **結果**: 成功
@@ -238,19 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-06-15T03:03:50Z - 弁当ゲーム NPC位置エディタ (admin サブタブ + bento 側オーバーライド適用)
 - **タスク**: 弁当ゲーム NPC位置エディタ (admin サブタブ + bento 側オーバーライド適用)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 81
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 46, "Bash": 18, "Read": 6, "Write": 2, "Edit": 7, "Workflow": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-15T03:02:37Z - stage7 真因3点を Workflow で並列特定+並列修正: (A)wrangler.toml の run_worker_first 配列→true で CF edge HIT 解消 (B)maze に ?stage=N&dev=1 デバッグ機能追加 (tier check bypass、iPad/PC両対応) (C)common/sw-update.js 新規でtoast型SW更新UX (skipWaiting自動呼出は維持しない慎重設計) + sw.js 1135→1137。前提として『お邪魔虫=ボウリングピン』判定はAgent複数で再確証 (背景画像にcreature含まれず)
-- **タスク**: stage7 真因3点を Workflow で並列特定+並列修正: (A)wrangler.toml の run_worker_first 配列→true で CF edge HIT 解消 (B)maze に ?stage=N&dev=1 デバッグ機能追加 (tier check bypass、iPad/PC両対応) (C)common/sw-update.js 新規でtoast型SW更新UX (skipWaiting自動呼出は維持しない慎重設計) + sw.js 1135→1137。前提として『お邪魔虫=ボウリングピン』判定はAgent複数で再確証 (背景画像にcreature含まれず)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 81
