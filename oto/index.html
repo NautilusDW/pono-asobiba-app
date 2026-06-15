@@ -2808,8 +2808,11 @@
     height: 30px;
   }
   @media (orientation: landscape) {
+    /* mode-switch (+350px) + おおよそ 56-72px 高 + 18px gap の下に band-group を置く。
+       16:9 narrow / 4:3 iPad どちらでも +440px で重なりなく着地する。
+       下限を 440px に固定し、上限は viewport 高に応じて 460px まで許容。 */
     body.rhythm-layout .band-group {
-      top: clamp(266px, 42vh, 420px);
+      top: clamp(440px, 56vh, 460px);
       bottom: auto;
     }
   }
@@ -2966,12 +2969,28 @@
     height: 100px;
   }
   /* Region 5.3: pono を左パネル最上部 (top: safe-area + 8px, height:110px) に移動したため、
-     その下に並ぶ sound-sets-box / mode-switch / chord-pill を pono の下端より下に逃がす。
+     その下に並ぶ chord-pill / sound-sets-box / mode-switch / band-group を pono の下端より下に逃がす。
      pono 下端 ≒ safe-area-top + 8 + 110 = +118px。
-     16:9 narrow (1280x720 / 1366x768) でも物理的に pono が左パネル UI を覆わないよう、
-     sound-sets-box → chord-pill → mode-switch の順で縦スタックする。 */
-  body.rhythm-layout .mode-switch {
-    top: calc(max(8px, env(safe-area-inset-top)) + 170px);
+     縦スタック順 (landscape: 4:3 iPad / 16:9 narrow 共通):
+       pono → chord-pill (+170px) → sound-sets-box (+230px) → mode-switch (+350px) → band-group (+440px)
+     16:9 narrow (1280x720 / 1366x768 / 1920x1080) では下の Region 5.2b で各値を再宣言する。
+     portrait では pono / 左パネル配置が異なるためこのスタックは適用しない。 */
+  @media (orientation: landscape) {
+    body.rhythm-layout .chord-pill {
+      top: calc(max(8px, env(safe-area-inset-top)) + 170px);
+    }
+    body.rhythm-layout .sound-sets-box {
+      top: calc(max(8px, env(safe-area-inset-top)) + 230px);
+    }
+    body.rhythm-layout .mode-switch {
+      top: calc(max(8px, env(safe-area-inset-top)) + 350px);
+    }
+  }
+  /* portrait rhythm-layout: 旧 mode-switch 位置 (+170px) を維持。 */
+  @media (orientation: portrait) {
+    body.rhythm-layout .mode-switch {
+      top: calc(max(8px, env(safe-area-inset-top)) + 170px);
+    }
   }
   body.rhythm-layout .instr-btn.press {
     transform: translate(-50%, -50%) translateY(4px) scale(0.98);
@@ -3136,19 +3155,28 @@
       width: clamp(112px, 11vw, 122px);
       max-width: clamp(112px, 11vw, 122px);
     }
-    /* Region 5.2b: 16:9 narrow (1280x720 / 1366x768) では、
+    /* Region 5.2b: 16:9 narrow (1280x720 / 1366x768 / 1920x1080) では、
        rhythm-layout の pono (top: safe-area+8px, height:110px) が物理的に
        左パネル上部の sound-sets-box / chord-pill を覆ってしまうため、
        pono の下端 (safe-area-top + 118px) より下に縦スタックする。
-       縦順: pono → sound-sets-box → chord-pill → mode-switch。 */
-    body.rhythm-layout .sound-sets-box {
-      top: calc(max(8px, env(safe-area-inset-top)) + 126px);
-    }
+       縦順: pono → chord-pill → sound-sets-box → mode-switch → band-group。
+       高さ実測:
+         chord-pill ≒ 36-40px (1 行のピル)
+         sound-sets-box ≒ 150-160px (6 ボタン 44x44 を 2 列 3 行で wrap)
+         mode-switch  ≒ 56-72px (2 行 mode-btn)
+       したがって +170 / +230 / +350 / +440 で重なりなしに収まる。 */
     body.rhythm-layout .chord-pill {
-      top: calc(max(8px, env(safe-area-inset-top)) + 210px);
+      top: calc(max(8px, env(safe-area-inset-top)) + 170px);
+    }
+    body.rhythm-layout .sound-sets-box {
+      top: calc(max(8px, env(safe-area-inset-top)) + 230px);
     }
     body.rhythm-layout .mode-switch {
-      top: calc(max(8px, env(safe-area-inset-top)) + 268px);
+      top: calc(max(8px, env(safe-area-inset-top)) + 350px);
+    }
+    body.rhythm-layout .band-group {
+      top: calc(max(8px, env(safe-area-inset-top)) + 440px);
+      bottom: auto;
     }
 
     /* クリアモーダル: 16:9 narrow では幅をさらに詰めて確実に親 stage 内へ。 */
@@ -7348,11 +7376,15 @@ function _beginRhythmCountdown() {
     _rhythm.countdownTimers.push(setTimeout(fn, delay));
   }
   // 「3」表示はチュートリアル後すぐ出す。間隔だけを伸ばしてノート速度は変えない。
-  schedule(t3Perf, function() { _showOverlay(countBeats, 'リズム スタート'); });
+  schedule(t3Perf, function() {
+    _showOverlay(countBeats, 'リズム スタート');
+    _playRhythmSampleSe('ok'); // tick SE for "3"
+  });
   for (var k = 1; k < countBeats; k++) {
     (function(kk) {
       schedule(t3Perf + kk * stepMs, function() {
         _showOverlay(countBeats - kk, 'リズム スタート');
+        _playRhythmSampleSe('ok'); // tick SE for "2" and "1"
       });
     })(k);
   }
@@ -7362,7 +7394,10 @@ function _beginRhythmCountdown() {
     setPlayMode('rhythm');
   });
   // 「スタート!」はカウントの締めとして表示し、ノート側は別途落下時間を維持する。
-  schedule(countdownDonePerf, function() { _showOverlay('スタート!', ''); });
+  schedule(countdownDonePerf, function() {
+    _showOverlay('スタート!', '');
+    _playRhythmSampleSe('gameStart'); // fanfare SE for "スタート!"
+  });
   // 少し見せてから overlay クリア
   schedule(countdownDonePerf + RHYTHM_START_OVERLAY_MS, function() { _clearRhythmCountdown(); });
 }

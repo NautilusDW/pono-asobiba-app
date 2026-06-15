@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1115; // v1115: bento — cross-review fixes: nori-skip modal text/buttons rephrased, tutorial finger.png replaces emoji, free-section-heading toned to primary-light, okazuMore bubble simplified, tutorialTeardown cancels resizeRaf, waitForReadyThenFullTutorial 2min cap, data-action="stage-complete" for reliable button targeting, greet step idempotent, portrait blocking shows よこむきに してね, nori-skip z-index raised above portrait-notice
+const CACHE_VERSION = 1116; // v1116: oto/index.html update
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
