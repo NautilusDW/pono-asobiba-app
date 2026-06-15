@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1139; // v1138: oto title bluer + bluer drop-shadow, rhythm stage cards compacted (64px min-h, smaller font/padding), rhythm menu footer btns smaller, score-qualifying rhythm runs gate the name-entry form (body.rhythm-namegate) with new "あとで" skip button
+const CACHE_VERSION = 1140; // v1140 bento v3.3: critical NPC import proto-pollution patch (Object.create(null)+__proto__/constructor/prototype skip+charId/expr whitelist), Number.isFinite guards on applyNpcPositionStyle (x/y/scale/rotation/opacity), tutorialFirstPaletteItem/tutorialStageCenter wildcard selector scope narrowed, tutTrimDraw resize restart during 1400ms draw phase, NPC transform composition via --npc-scale/--npc-rotation CSS variables to preserve npcBob translateY
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

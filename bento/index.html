@@ -11590,6 +11590,11 @@ function tutorialTrimPath(targetEl, opts = {}) {
   svg.appendChild(rect);
   wrap.appendChild(svg);
 
+  // v3.3: 描画フェーズ (animation 開始から DRAW_MS) の途中に sync() が走ると
+  // dasharray が変わって視覚的ジャンプが起きる。 描画フェーズ中のリサイズ時のみ
+  // CSS animation を再起動して新しい周長で再描画する。
+  const DRAW_MS = 1400;
+  const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
   function sync() {
     const r = targetEl.getBoundingClientRect();
     if (!r || r.width === 0 || r.height === 0) {
@@ -11613,6 +11618,16 @@ function tutorialTrimPath(targetEl, opts = {}) {
     const perim = Math.max(1, 2 * (w + h));
     rect.setAttribute('stroke-dasharray', perim + ' ' + perim);
     wrap.style.setProperty('--trim-len', perim);
+    // v3.3: 描画フェーズ中であれば animation を再起動して新しい長さで描き直す。
+    // 描画完了後 (>=DRAW_MS) は --trim-len 更新のみで OK (点滅相のため動的反映は不要)。
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (now - startTime < DRAW_MS) {
+      const prev = rect.style.animation;
+      rect.style.animation = 'none';
+      // reflow を強制して animation の再起動を成立させる
+      void rect.getBoundingClientRect();
+      rect.style.animation = prev || '';
+    }
   }
   sync();
   let ro = null;
@@ -11620,7 +11635,7 @@ function tutorialTrimPath(targetEl, opts = {}) {
     ro = new ResizeObserver(sync);
     ro.observe(targetEl);
   } catch (_) {}
-  const entry = { wrap, rect, ro, target: targetEl, sync };
+  const entry = { wrap, rect, ro, target: targetEl, sync, startTime };
   tutorialState.trims.push(entry);
   return entry;
 }
