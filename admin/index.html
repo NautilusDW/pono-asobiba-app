@@ -11187,6 +11187,264 @@ function renderMonsterIllust() {
   MONSTER_BOSSES.forEach(function(b) { _renderMonsterCard(b, bossGrid, 'boss'); });
 }
 
+// ════════════════════════════════════════════════════════════════
+// 🎨 NPC 位置エディタ (弁当ゲームの delivery/shop-opening スプライト位置)
+// ════════════════════════════════════════════════════════════════
+// localStorage 形式は bento/index.html 側の applyNpcPositionStyle と同期:
+//   key   = 'bento_npc_positions_v1'
+//   value = { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
+var NPC_POS_LS_KEY = 'bento_npc_positions_v1';
+var NPC_POS_PORTRAIT_BASE = '../assets/images/bento/npc/';
+var NPC_POS_DEFAULT = { x: 58, y: 23, scale: 1, rotation: 0, opacity: 1 };
+var NPC_POS_CHARS = ['risu', 'inu', 'ahiru', 'shika', 'araiguma', 'neko'];
+var NPC_POS_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
+var NPC_POS_SLIDER_DEFS = [
+  { key: 'x',        label: 'x (left %)',    min: 0,   max: 100, step: 0.5 },
+  { key: 'y',        label: 'y (bottom %)',  min: 0,   max: 50,  step: 0.5 },
+  { key: 'scale',    label: 'scale',         min: 0.5, max: 1.5, step: 0.01 },
+  { key: 'rotation', label: 'rotation (°)',  min: -20, max: 20,  step: 0.5 },
+  { key: 'opacity',  label: 'opacity',       min: 0,   max: 1,   step: 0.01 },
+];
+var _npcPosState = {
+  initialised: false,
+  charId: 'risu',
+  expression: 'request',
+  current: Object.assign({}, NPC_POS_DEFAULT),
+};
+
+function npcPosLoadAll() {
+  try {
+    var raw = localStorage.getItem(NPC_POS_LS_KEY);
+    if (!raw) return {};
+    var obj = JSON.parse(raw);
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch (e) { return {}; }
+}
+function npcPosSaveAll(obj) {
+  try {
+    localStorage.setItem(NPC_POS_LS_KEY, JSON.stringify(obj || {}));
+    return true;
+  } catch (e) { return false; }
+}
+function npcPosMakeKey(charId, expression) { return charId + '_' + expression; }
+function npcPosGet(charId, expression) {
+  var all = npcPosLoadAll();
+  var key = npcPosMakeKey(charId, expression);
+  var saved = all[key] || {};
+  return {
+    x:        (typeof saved.x === 'number')        ? saved.x        : NPC_POS_DEFAULT.x,
+    y:        (typeof saved.y === 'number')        ? saved.y        : NPC_POS_DEFAULT.y,
+    scale:    (typeof saved.scale === 'number')    ? saved.scale    : NPC_POS_DEFAULT.scale,
+    rotation: (typeof saved.rotation === 'number') ? saved.rotation : NPC_POS_DEFAULT.rotation,
+    opacity:  (typeof saved.opacity === 'number')  ? saved.opacity  : NPC_POS_DEFAULT.opacity,
+  };
+}
+function npcPosSetStatus(msg, isErr) {
+  var el = document.getElementById('npc-pos-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isErr ? '#B91C1C' : '#0F766E';
+}
+
+function npcPosBuildSliders() {
+  var host = document.getElementById('npc-pos-sliders');
+  if (!host) return;
+  host.innerHTML = '';
+  NPC_POS_SLIDER_DEFS.forEach(function(def) {
+    var row = document.createElement('div');
+    row.className = 'npc-pos-slider-row';
+    var label = document.createElement('label');
+    label.textContent = def.label;
+    var input = document.createElement('input');
+    input.type = 'range';
+    input.min = String(def.min);
+    input.max = String(def.max);
+    input.step = String(def.step);
+    input.dataset.key = def.key;
+    var val = document.createElement('span');
+    val.className = 'npc-pos-val';
+    val.dataset.key = def.key;
+    row.appendChild(label);
+    row.appendChild(input);
+    row.appendChild(val);
+    host.appendChild(row);
+    input.addEventListener('input', function() {
+      var num = parseFloat(input.value);
+      if (!isNaN(num)) {
+        _npcPosState.current[def.key] = num;
+        val.textContent = npcPosFormatVal(def.key, num);
+        npcPosApplyPreview();
+      }
+    });
+  });
+}
+
+function npcPosFormatVal(key, num) {
+  if (key === 'scale' || key === 'opacity') return num.toFixed(2);
+  if (key === 'rotation') return num.toFixed(1) + '°';
+  return num.toFixed(1) + '%';
+}
+
+function npcPosSyncSlidersFromState() {
+  var host = document.getElementById('npc-pos-sliders');
+  if (!host) return;
+  NPC_POS_SLIDER_DEFS.forEach(function(def) {
+    var input = host.querySelector('input[data-key="' + def.key + '"]');
+    var val   = host.querySelector('span[data-key="' + def.key + '"]');
+    var num = _npcPosState.current[def.key];
+    if (input) input.value = String(num);
+    if (val)   val.textContent = npcPosFormatVal(def.key, num);
+  });
+}
+
+function npcPosApplyPreview() {
+  var img = document.getElementById('npc-pos-preview-img');
+  if (!img) return;
+  // プレビュー用 sprite: <charId>_<expression>.png を読込。 happy は素材未配置のため normal にフォールバック
+  var exp = _npcPosState.expression;
+  var fileExp = (exp === 'happy') ? 'normal' : exp;
+  var src = NPC_POS_PORTRAIT_BASE + _npcPosState.charId + '_' + fileExp + '.png';
+  if (img.dataset.lastSrc !== src) {
+    img.src = src;
+    img.dataset.lastSrc = src;
+  }
+  var p = _npcPosState.current;
+  img.style.left   = p.x + '%';
+  img.style.bottom = p.y + '%';
+  img.style.transform = 'translateX(-50%) scale(' + p.scale + ') rotate(' + p.rotation + 'deg)';
+  img.style.opacity = String(p.opacity);
+}
+
+function npcPosLoadCurrent() {
+  _npcPosState.current = npcPosGet(_npcPosState.charId, _npcPosState.expression);
+  npcPosSyncSlidersFromState();
+  npcPosApplyPreview();
+  npcPosSetStatus('', false);
+}
+
+function npcPosBindControls() {
+  var charSel = document.getElementById('npc-pos-char');
+  if (charSel) {
+    charSel.addEventListener('change', function() {
+      _npcPosState.charId = charSel.value;
+      npcPosLoadCurrent();
+    });
+  }
+  document.querySelectorAll('#npc-pos-expr-row .npc-pos-expr-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#npc-pos-expr-row .npc-pos-expr-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      _npcPosState.expression = btn.dataset.expr;
+      npcPosLoadCurrent();
+    });
+  });
+  var saveBtn = document.getElementById('npc-pos-save');
+  if (saveBtn) saveBtn.addEventListener('click', function() {
+    var all = npcPosLoadAll();
+    var key = npcPosMakeKey(_npcPosState.charId, _npcPosState.expression);
+    all[key] = {
+      x: _npcPosState.current.x,
+      y: _npcPosState.current.y,
+      scale: _npcPosState.current.scale,
+      rotation: _npcPosState.current.rotation,
+      opacity: _npcPosState.current.opacity,
+    };
+    if (npcPosSaveAll(all)) {
+      npcPosSetStatus('保存しました (' + key + ')', false);
+    } else {
+      npcPosSetStatus('保存失敗 (localStorage に書き込めません)', true);
+    }
+  });
+  var resetBtn = document.getElementById('npc-pos-reset');
+  if (resetBtn) resetBtn.addEventListener('click', function() {
+    var all = npcPosLoadAll();
+    var key = npcPosMakeKey(_npcPosState.charId, _npcPosState.expression);
+    if (all[key]) { delete all[key]; npcPosSaveAll(all); }
+    _npcPosState.current = Object.assign({}, NPC_POS_DEFAULT);
+    npcPosSyncSlidersFromState();
+    npcPosApplyPreview();
+    npcPosSetStatus(key + ' をデフォルトに戻しました', false);
+  });
+  var resetAllBtn = document.getElementById('npc-pos-reset-all');
+  if (resetAllBtn) resetAllBtn.addEventListener('click', function() {
+    if (!confirm('全キャラ・全表情の位置オーバーライドを削除します。よろしいですか？')) return;
+    npcPosSaveAll({});
+    _npcPosState.current = Object.assign({}, NPC_POS_DEFAULT);
+    npcPosSyncSlidersFromState();
+    npcPosApplyPreview();
+    npcPosSetStatus('全オーバーライドを削除しました', false);
+  });
+  var exportBtn = document.getElementById('npc-pos-export');
+  if (exportBtn) exportBtn.addEventListener('click', function() {
+    var data = npcPosLoadAll();
+    var json = JSON.stringify(data, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'bento_npc_positions_v1.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    npcPosSetStatus('JSON をエクスポートしました (' + Object.keys(data).length + ' 件)', false);
+  });
+  var importBtn  = document.getElementById('npc-pos-import');
+  var importFile = document.getElementById('npc-pos-import-file');
+  if (importBtn && importFile) {
+    importBtn.addEventListener('click', function() { importFile.click(); });
+    importFile.addEventListener('change', function() {
+      var f = importFile.files && importFile.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function() {
+        try {
+          var obj = JSON.parse(String(reader.result || '{}'));
+          if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+            npcPosSetStatus('JSON 形式が不正です (オブジェクトを期待)', true); return;
+          }
+          // 値の検証
+          var cleaned = {};
+          var count = 0;
+          Object.keys(obj).forEach(function(k) {
+            var v = obj[k];
+            if (!v || typeof v !== 'object') return;
+            var entry = {};
+            ['x','y','scale','rotation','opacity'].forEach(function(prop) {
+              if (typeof v[prop] === 'number' && isFinite(v[prop])) entry[prop] = v[prop];
+            });
+            if (Object.keys(entry).length > 0) { cleaned[k] = entry; count++; }
+          });
+          if (!confirm('インポートで現在の設定が上書きされます (' + count + ' 件)。よろしいですか？')) return;
+          npcPosSaveAll(cleaned);
+          npcPosLoadCurrent();
+          npcPosSetStatus('インポート完了 (' + count + ' 件)', false);
+        } catch (e) {
+          npcPosSetStatus('JSON パース失敗: ' + e.message, true);
+        }
+        importFile.value = '';
+      };
+      reader.readAsText(f);
+    });
+  }
+}
+
+function npcPosInit() {
+  if (_npcPosState.initialised) {
+    npcPosLoadCurrent();
+    return;
+  }
+  _npcPosState.initialised = true;
+  npcPosBuildSliders();
+  npcPosBindControls();
+  // 初期状態
+  var charSel = document.getElementById('npc-pos-char');
+  if (charSel) _npcPosState.charId = charSel.value || 'risu';
+  var activeExpr = document.querySelector('#npc-pos-expr-row .npc-pos-expr-btn.active');
+  if (activeExpr) _npcPosState.expression = activeExpr.dataset.expr || 'request';
+  npcPosLoadCurrent();
+}
+
 </script>
 </body>
 </html>

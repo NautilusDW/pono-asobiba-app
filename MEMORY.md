@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-15T03:02:37Z - stage7 真因3点を Workflow で並列特定+並列修正: (A)wrangler.toml の run_worker_first 配列→true で CF edge HIT 解消 (B)maze に ?stage=N&dev=1 デバッグ機能追加 (tier check bypass、iPad/PC両対応) (C)common/sw-update.js 新規でtoast型SW更新UX (skipWaiting自動呼出は維持しない慎重設計) + sw.js 1135→1137。前提として『お邪魔虫=ボウリングピン』判定はAgent複数で再確証 (背景画像にcreature含まれず)
+- **タスク**: stage7 真因3点を Workflow で並列特定+並列修正: (A)wrangler.toml の run_worker_first 配列→true で CF edge HIT 解消 (B)maze に ?stage=N&dev=1 デバッグ機能追加 (tier check bypass、iPad/PC両対応) (C)common/sw-update.js 新規でtoast型SW更新UX (skipWaiting自動呼出は維持しない慎重設計) + sw.js 1135→1137。前提として『お邪魔虫=ボウリングピン』判定はAgent複数で再確証 (背景画像にcreature含まれず)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 81
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 46, "Bash": 18, "Read": 6, "Write": 2, "Edit": 7, "Workflow": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-15T02:45:08Z - bento tutorial v3.2.1 (sw1135): トリムパス青 #1E7FD8 でゆっくり 2s、 ✊✋ ドラッグデモを retry+MutationObserver で全drag stepで確実発火、 race condition 解消、 hand サイズ clamp
 - **タスク**: bento tutorial v3.2.1 (sw1135): トリムパス青 #1E7FD8 でゆっくり 2s、 ✊✋ ドラッグデモを retry+MutationObserver で全drag stepで確実発火、 race condition 解消、 hand サイズ clamp
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 30, "ToolSearch": 1, "Bash": 6, "Read": 1, "Write": 1, "Edit": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-15T02:07:02Z - maze stage7 サブタイトル「びっくりボーリング」削除 + sw.js v1128 バンプ
-- **タスク**: maze stage7 サブタイトル「びっくりボーリング」削除 + sw.js v1128 バンプ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 56
-- **エラー数**: 0
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
-- **ツール使用統計**: {"Agent": 36, "Bash": 15, "Read": 3, "Write": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
