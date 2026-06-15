@@ -11149,14 +11149,14 @@ function showTutorial() {
 // ===== Full-flow Tutorial (v3) =====
 // 10-step button/tab/place-driven flow (no time-based progression).
 // state machine: tutorialState.step is the single source of truth.
-// Steps: greet → box → tab-rice → rice-place → tab-okazu → okazu-red →
-//        tab-small → small-place → decor → complete
+// Steps: greet → box → tab-rice → rice-place → decor → nori-ok →
+//        tab-okazu → okazu-red → tab-small → small-place → complete
 // 公開関数 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced /
 // tutorialOnStageComplete) は維持。 storage key は互換のため v1 を再利用。
 const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 // v3 step ids (button/tab/place driven only):
-//   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'tab-okazu' | 'okazu-red' |
-//   'tab-small' | 'small-place' | 'decor' | 'complete' | 'done'
+//   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'decor' | 'nori-ok' |
+//   'tab-okazu' | 'okazu-red' | 'tab-small' | 'small-place' | 'complete' | 'done'
 const tutorialState = {
   active: false,
   step: null,
@@ -11269,13 +11269,27 @@ function tutorialShowBubble(html, opts = {}) {
   b.classList.remove('tut-bubble--center');
   // 既定: 右端固定 (他ステップ)
   tutorialSetBubbleHtml(b, html);
-  b.style.right = '16px';
-  b.style.left = 'auto';
+  if (opts.side === 'left') {
+    b.style.left = '16px';
+    b.style.right = 'auto';
+  } else {
+    b.style.right = '16px';
+    b.style.left = 'auto';
+  }
   b.style.top = (opts.topVh || '18') + 'vh';
   b.style.transform = 'none';
 }
 function tutorialHideBubble() {
   if (tutorialState.bubbleEl) tutorialState.bubbleEl.classList.add('hidden');
+}
+function tutorialDismissFreeGuideBlocker() {
+  try {
+    if (typeof isFreeMainGuideBlocking === 'function' &&
+        typeof dismissFreeMainGuide === 'function' &&
+        isFreeMainGuideBlocking()) {
+      dismissFreeMainGuide();
+    }
+  } catch (_) {}
 }
 function tutorialPositionBubble(anchorEl) {
   const b = tutorialState.bubbleEl;
@@ -11480,6 +11494,14 @@ function tutorialCompleteButton() {
     if (t.indexOf('できあがり') >= 0) return b;
   }
   return primary || document.querySelector('.free-complete-btn');
+}
+function tutorialNoriOkButton() {
+  const buttons = document.querySelectorAll('.free-guide-actions button');
+  for (const b of buttons) {
+    const t = b.textContent || '';
+    if (t.indexOf('のりOK') >= 0 || t.indexOf('つぎへ') >= 0) return b;
+  }
+  return document.querySelector('.free-guide-actions button.primary');
 }
 function tutorialResetInactivity() {
   tutorialState.inactivityFired = false;
@@ -11814,6 +11836,7 @@ function tutorialRenderStep() {
     tutorialShowBubble('よこむきに してね');
     return;
   }
+  tutorialDismissFreeGuideBlocker();
   const step = tutorialState.step;
   const fast = tutorialState.inactivityFired;
   const firstRender = tutorialState.renderedStep !== step;
@@ -11907,9 +11930,39 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 4. tab-okazu — okazu (food) タブを押させる
+  // 4. decor — のりを ご飯の上に (配置済みのご飯にもトリムパスで場所を明示)
+  if (step === 'decor') {
+    tutorialShowBubble('のりを ごはんの うえに のせよう', { topVh: '20' });
+    if (firstRender) {
+      // 配置済みの rice 要素に highlight (ご飯の場所を明示)
+      const riceEls = document.querySelectorAll('.free-placed-item.type-rice');
+      riceEls.forEach(rEl => tutorialTrimPath(rEl, { radius: 12 }));
+    }
+    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFindNoriPaletteEl(),
+      () => tutorialStageLeftHalfPoint(),
+      { fast }
+    );
+    return;
+  }
+
+  // 5. nori-ok — のり工程を終えておかず工程へ進む
+  if (step === 'nori-ok') {
+    tutorialShowBubble('「のりOK」を おしてね', { topVh: '18', side: 'left' });
+    const btn = tutorialNoriOkButton();
+    if (btn) {
+      if (firstRender) tutorialTrimPath(btn, { radius: 22 });
+      tutorialAnimateTap(btn);
+    } else {
+      tutorialHideFinger();
+    }
+    return;
+  }
+
+  // 6. tab-okazu — okazu (food) タブを押させる
   if (step === 'tab-okazu') {
-    tutorialShowBubble('『おかず』タブを おしてね', { topVh: '20' });
+    tutorialShowBubble('『おかず』タブを おしてね', { topVh: '18', side: 'left' });
     if (firstRender) {
       if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'food') {
         setTimeout(() => tutorialAdvance('okazu-red'), 0);
@@ -11926,7 +11979,7 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 5. okazu-red — 右半分にあかい食材を入れる + 右半分マスク明滅
+  // 7. okazu-red — 右半分にあかい食材を入れる + 右半分マスク明滅
   if (step === 'okazu-red') {
     tutorialShowBubble(
       'みぎがわに <span class="tut-emph-red">あかい</span> おかずを いれてね',
@@ -11942,9 +11995,9 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 6. tab-small — accessory (ちいさいおかず) タブを押させる
+  // 8. tab-small — accessory (ちいさいおかず) タブを押させる
   if (step === 'tab-small') {
-    tutorialShowBubble('『ちいさい おかず』タブを おしてね', { topVh: '20' });
+    tutorialShowBubble('『ちいさい おかず』タブを おしてね', { topVh: '18', side: 'left' });
     if (firstRender) {
       if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory') {
         setTimeout(() => tutorialAdvance('small-place'), 0);
@@ -11961,7 +12014,7 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 7. small-place — cup or 小おかずを 1個以上 配置
+  // 9. small-place — cup or 小おかずを 1個以上 配置
   if (step === 'small-place') {
     tutorialShowBubble('すきな ちいさい おかずを いれてね', { topVh: '20' });
     // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
@@ -11973,24 +12026,7 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 8. decor — のりを ご飯の上に (配置済みのご飯にもトリムパスで場所を明示)
-  if (step === 'decor') {
-    tutorialShowBubble('さいごに のりを ごはんの うえに のせよう', { topVh: '20' });
-    if (firstRender) {
-      // 配置済みの rice 要素に highlight (ご飯の場所を明示)
-      const riceEls = document.querySelectorAll('.free-placed-item.type-rice');
-      riceEls.forEach(rEl => tutorialTrimPath(rEl, { radius: 12 }));
-    }
-    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindNoriPaletteEl(),
-      () => tutorialStageLeftHalfPoint(),
-      { fast }
-    );
-    return;
-  }
-
-  // 9. complete — オレンジ色の primary ボタンに trim + tap (ラベルは状況依存で変わるためラベル非依存表現)
+  // 10. complete — オレンジ色の primary ボタンに trim + tap (ラベルは状況依存で変わるためラベル非依存表現)
   if (step === 'complete') {
     tutorialShowBubble('オレンジいろの ボタンを おしてね', { topVh: '20' });
     const btn = tutorialCompleteButton();
@@ -12086,8 +12122,8 @@ function tutorialStart() {
   };
   document.addEventListener('pointerdown', tutorialState.tapHandler, true);
 }
-// v3: freeGuideStep 変化は state machine を進めない (button/tab/place が唯一の進行口)。
-// 「box ステップ完了前に rice 文言を出すバグ」を構造的に排除するため、 全 step で no-op。
+// v3: freeGuideStep 変化では原則 state machine を進めない (button/tab/place が進行口)。
+// 例外として、のりOKボタンで本体側が tier2Main へ進んだ時だけ tab-okazu へ橋渡しする。
 // 関数自体は既存呼出 (setFreeGuideStep → tutorialOnGuideChange) 互換のため残す。
 function tutorialOnGuideChange(/* step */) {
   if (!tutorialState.active) return;
@@ -12098,7 +12134,9 @@ function tutorialOnGuideChange(/* step */) {
     tutorialShowBubble('よこむきに してね');
     return;
   }
-  // 進行はしない (state machine は button/tab/place のみで遷移する)
+  if (tutorialState.step === 'nori-ok' && freeGuideStep === 'tier2Main') {
+    tutorialAdvance('tab-okazu');
+  }
 }
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
@@ -12114,7 +12152,7 @@ function tutorialOnItemPlaced(item) {
 
   // v3: step ガード付き遷移 (該当 step でない placement は進行に使わない)
   if (step === 'rice-place' && item.type === 'rice') {
-    tutorialAdvance('tab-okazu');
+    tutorialAdvance('decor');
     return;
   }
   if (step === 'okazu-red' && item.type === 'food' && !item.parentCupId) {
@@ -12128,12 +12166,12 @@ function tutorialOnItemPlaced(item) {
     const isAccessoryTab = (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory');
     if (isAccessoryTab && (item.type === 'cup' || item.snapTarget ||
         (item.type === 'food' && (item.parentCupId || role === 'side')))) {
-      tutorialAdvance('decor');
+      tutorialAdvance('complete');
       return;
     }
   }
   if (step === 'decor' && item.type === 'decor') {
-    tutorialAdvance('complete');
+    tutorialAdvance('nori-ok');
     return;
   }
   tutorialResetInactivity();

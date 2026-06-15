@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1147; // v1147: maze stage7 boss HUD gauge alpha lowered so boss head remains visible behind it | v1146: maze stage7 boss Y lowered (0.31→0.36) + image upward offset reduced (0.56→0.50) to prevent head clipping under HUD | v1145 bento tutorial drag hand CSS vars inherit from finger layer | v1144: cache bump | v1143: maze stage7 bowling iPhone SE portrait stage stretch + idle sway cue hidden until final pin
+const CACHE_VERSION = 1148; // v1148 bento tutorial follows rice->nori->okazu order and moves tab bubbles left | v1147: maze stage7 boss HUD gauge alpha lowered so boss head remains visible behind it | v1146: maze stage7 boss Y lowered (0.31→0.36) + image upward offset reduced (0.56→0.50) to prevent head clipping under HUD | v1145 bento tutorial drag hand CSS vars inherit from finger layer | v1144: cache bump
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

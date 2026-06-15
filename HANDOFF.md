@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:515-bento-tutorial-decor-before-okazu-tab-bubble] Codex: user 指摘「ごはん後に『おかず』タブ案内が出るが、実際は先に海苔を飾る説明。さらに吹き出しがタブを隠して押せない」を受領。HANDOFF / git log / `bento/index.html` を確認し、同修正未着手。自由配置ガイドの `rice -> decor -> tier2Main` 順にフルチュートリアルを合わせ、タブ案内 bubble を右パネルから逃がす。 (by Codex)
+- 2026-06-15 - [batch:515-bento-tutorial-decor-before-okazu-tab-bubble] DONE - Codex: bento full-flow tutorial を `rice-place -> decor -> nori-ok -> okazu-red` の順へ修正し、ごはん後に誤って「おかずタブ」へ進むズレを解消。タブ案内 bubble は左側表示に変更し、フルチュートリアル中は本体ガイド blocking を自動解除。`sw.js` v1148。Playwright 896x432 で rice後decor、nori配置後nori-ok、noriOK後okazu-red、タブbubble/右タブ非重なり、inline script parse、diff check を確認。レビュー観点: state machine と本体 freeGuideStep の順序同期、右パネル操作阻害、既存 drag hand への副作用を自己確認。 (by Codex)
 - 2026-06-15 - [batch:514-maze-stage7-boss-hud-alpha] DONE - Codex: user 指摘「ボスの頭がゲージで見切れる」を受け、`maze/index.html` の `_drawBowlBossHud` で HUD/ゲージ全体に `ctx.globalAlpha = 0.64` を適用。ボス位置は v1146 のまま、表示だけ半透明化。`sw.js` は v1147。inline script parse / diff check / UTF-8 LF BOMなし確認済み。 (by Codex)
 - 2026-06-15 - [batch:513-pono-space-lazarus-unclipped-exact-puzzle] Codex: user 指摘「前回ラザロは1個を4つに切る方針自体はよいが、元の合体顔が左側/下側で見切れており、そのまま切ったため4分割側も見切れている。スターブレインはそのままでよい」を受領。見切れていない合体顔マスターを再生成し、そのマスターから4ピースを機械的に派生して再合体差分を確認する。 (by Codex)
 - 2026-06-15 - [batch:512-bento-tutorial-drag-hand-visible] Codex: `HANDOFF_DRAG_DEMO.md` を受領。HANDOFF / git log / 現行 `bento/index.html` を確認し、同不具合の完了済み修正は未検出。`.tut-finger` が `.tut-dim` より下の z-index にあり手アイコンだけ暗幕下へ潜る疑いを中心に、4つのドラッグデモ表示だけを最小修正する。 (by Codex)
