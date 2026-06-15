@@ -3281,9 +3281,16 @@ body.bento-complete-open .pono-dropdown {
   text-align: center;
 }
 .tut-settings-card h2 {
-  margin: 0 0 16px;
+  margin: 0 0 8px;
   font-size: 1.1rem;
   color: #5D4E37;
+}
+.tut-settings-desc {
+  margin: 0 0 14px;
+  color: #7A684F;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.45;
 }
 .tut-settings-card button {
   display: block;
@@ -3440,8 +3447,8 @@ body.bento-complete-open .pono-dropdown {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   padding: 4px 10px 10px;
 }
 .complete-detail-actions {
@@ -3477,6 +3484,242 @@ body.bento-complete-open .pono-dropdown {
 .complete-detail-back:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 rgba(93,78,55,0.25);
+}
+.complete-detail-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, 0.9fr) minmax(0, 1.55fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+.complete-detail-card {
+  min-width: 0;
+  min-height: 0;
+  background: rgba(255,255,255,0.9);
+  border: 2px solid rgba(245,168,0,0.24);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(93,78,55,0.08);
+  padding: 10px;
+}
+.complete-detail-heading {
+  margin: 0 0 8px;
+  color: #5D4E37;
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+.complete-request-card {
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-color: rgba(255,138,76,0.34);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,231,0.92)),
+    center / cover no-repeat url('../assets/images/bento/story/shop_order_counter.png');
+}
+.complete-request-hero {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.complete-request-animal {
+  flex: 0 0 auto;
+  width: clamp(74px, 14vh, 116px);
+  height: clamp(74px, 14vh, 116px);
+  object-fit: contain;
+  filter: drop-shadow(0 7px 10px rgba(93,78,55,0.18));
+}
+.complete-request-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.complete-request-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #fff;
+  background: #F5A800;
+  font-size: 0.66rem;
+  font-weight: 900;
+  box-shadow: 0 2px 0 rgba(184,114,0,0.35);
+}
+.complete-request-status.is-ok { background: #22C55E; }
+.complete-request-status.is-miss { background: #9CA3AF; }
+.complete-request-label {
+  color: #4A3825;
+  font-size: 0.94rem;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.complete-request-note,
+.complete-variety-note {
+  margin: 0;
+  color: #7A684F;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.complete-groups-card {
+  display: flex;
+  flex-direction: column;
+}
+.complete-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 0;
+}
+.complete-group-card {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(255,255,255,0.86);
+  border: 2px solid rgba(93,78,55,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.complete-group-card.is-missing {
+  opacity: 0.58;
+  filter: grayscale(0.28);
+}
+.complete-group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.complete-group-dot {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65), 0 1px 4px rgba(93,78,55,0.18);
+}
+.complete-group-dot.b-r { background: #EF4444; }
+.complete-group-dot.b-y { background: #EAB308; }
+.complete-group-dot.b-g { background: #22C55E; }
+.complete-group-name {
+  color: #4A3825;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+.complete-group-role {
+  color: #7A684F;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.complete-group-foods,
+.complete-food-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.complete-group-foods {
+  min-height: 38px;
+}
+.complete-food-mini {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #FFF8E8;
+  border: 1px solid rgba(93,78,55,0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.complete-food-mini img {
+  width: 94%;
+  height: 94%;
+  object-fit: contain;
+}
+.complete-food-empty {
+  color: #9A8A72;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.complete-variety-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.complete-food-chip-list {
+  min-height: 34px;
+}
+.complete-food-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 154px;
+  border-radius: 999px;
+  padding: 3px 8px 3px 4px;
+  background: #FFF8E8;
+  border: 1px solid rgba(93,78,55,0.1);
+  color: #4A3825;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.complete-food-chip img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.complete-food-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .complete-card-wide.is-detail-page .complete-title { font-size: 1rem; }
+  .complete-card-wide.is-detail-page .complete-detail-actions { min-height: 30px; }
+  .complete-card-wide.is-detail-page .complete-detail-back { padding: 6px 14px; }
+  .complete-detail-content {
+    grid-template-columns: minmax(178px, 0.78fr) minmax(0, 1.5fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+  .complete-detail-card { padding: 8px; border-radius: 12px; }
+  .complete-detail-heading { margin-bottom: 5px; font-size: 0.76rem; }
+  .complete-request-card { grid-row: 1 / span 2; gap: 5px; }
+  .complete-request-animal { width: 72px; height: 72px; }
+  .complete-request-label { font-size: 0.78rem; }
+  .complete-request-note,
+  .complete-variety-note { font-size: 0.58rem; line-height: 1.25; }
+  .complete-request-status { font-size: 0.56rem; padding: 3px 8px; }
+  .complete-groups-grid { gap: 5px; }
+  .complete-group-card { padding: 6px; gap: 4px; }
+  .complete-group-dot { width: 14px; height: 14px; }
+  .complete-group-name { font-size: 0.6rem; }
+  .complete-group-role { font-size: 0.5rem; }
+  .complete-group-foods { min-height: 27px; gap: 3px; }
+  .complete-food-mini { width: 25px; height: 25px; border-radius: 7px; }
+  .complete-food-chip { max-width: 118px; font-size: 0.54rem; padding: 2px 6px 2px 3px; }
+  .complete-food-chip img { width: 20px; height: 20px; }
+}
+@media (max-width: 620px) {
+  .complete-detail-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+  .complete-request-card { grid-row: auto; }
 }
 .complete-pono-slot {
   width: 132px; height: 120px;
@@ -4162,12 +4405,13 @@ body.bento-complete-open .pono-dropdown {
 
 <div class="game-title">ポノとつくろう いろどりべんとう</div>
 <button class="fav-header-btn" id="fav-header-btn" aria-label="おきにいりを みる" title="おきにいりを みる">⭐</button>
-<button class="tut-settings-btn" id="tut-settings-btn" aria-label="せってい" title="おとなのかた へ">⚙</button>
+<button class="tut-settings-btn" id="tut-settings-btn" aria-label="チュートリアル設定" title="チュートリアル設定">⚙</button>
 <div class="tut-settings-modal hidden" id="tut-settings-modal">
   <div class="tut-settings-card">
-    <h2>おとなのかた へ</h2>
-    <button type="button" id="tut-settings-reenable-now">いま みる</button>
-    <button type="button" id="tut-settings-reenable">つぎから みる</button>
+    <h2>やりかたの せってい</h2>
+    <p class="tut-settings-desc">みぎうえの はぐるまは、やりかたを もういちど みる せっていです。</p>
+    <button type="button" id="tut-settings-reenable-now">いま やりかたをみる</button>
+    <button type="button" id="tut-settings-reenable">つぎから やりかたをみる</button>
     <button type="button" class="secondary" id="tut-settings-close">とじる</button>
   </div>
 </div>
@@ -4275,10 +4519,7 @@ body.bento-complete-open .pono-dropdown {
       <div class="complete-detail-actions">
         <button type="button" class="complete-detail-back" id="complete-detail-back">もどる</button>
       </div>
-      <div class="complete-summary-strip" id="complete-summary-strip">
-        <div class="balance-row" id="balance-row"></div>
-        <div class="complete-checklist" id="complete-checklist"></div>
-      </div>
+      <div class="complete-detail-content" id="complete-detail-content"></div>
     </div>
   </div>
 </div>
@@ -6201,6 +6442,182 @@ function renderCompleteChecklist(el, finalEval) {
     'いろんな おかず',
     balanceEval.varietyOk ? 'かたより すくなめ' : 'おなじものが おおめ'
   );
+}
+
+function getCompleteOkazuFoods(completionData) {
+  const foods = (completionData && completionData.foods) || [];
+  const okazuNames = new Set((completionData && completionData.okazuNames) || []);
+  return foods.filter((food, index) => {
+    if (!food || !food.name) return false;
+    if (food.type === 'food') return true;
+    if (food.type === 'rice') return false;
+    return index > 0 || okazuNames.has(food.name);
+  });
+}
+
+function findCompleteFoodByName(name, completionData) {
+  const target = String(name || '');
+  if (!target) return null;
+  const placed = ((completionData && completionData.foods) || []).find(food => food && food.name === target);
+  if (placed) return placed;
+  const catalog = (typeof FREE_COOKED_OKAZU !== 'undefined' ? FREE_COOKED_OKAZU : []).find(food => food && food.name === target)
+              || (typeof RICE !== 'undefined' ? RICE : []).find(food => food && food.name === target)
+              || null;
+  if (!catalog) return { name: target, img: '', sk: '' };
+  return { name: target, img: catalog.img || getFreeItemImage(catalog) || '', sk: catalog.sk || '', type: catalog.type || 'food' };
+}
+
+function makeCompleteFoodMini(food, chipMode) {
+  const wrap = document.createElement('span');
+  wrap.className = chipMode ? 'complete-food-chip' : 'complete-food-mini';
+  const imgSrc = (food && (food.img || getFreeItemImage(food))) || '';
+  if (imgSrc) {
+    const img = document.createElement('img');
+    img.src = imgSrc;
+    img.alt = (food && food.name) || '';
+    wrap.appendChild(img);
+  }
+  if (chipMode) {
+    const label = document.createElement('span');
+    label.textContent = (food && food.name) || 'おかず';
+    wrap.appendChild(label);
+  }
+  return wrap;
+}
+
+function appendCompleteFoodMinis(parent, foods, emptyText, limit) {
+  const list = (foods || []).filter(Boolean).slice(0, limit || 4);
+  parent.innerHTML = '';
+  if (!list.length) {
+    const empty = document.createElement('span');
+    empty.className = 'complete-food-empty';
+    empty.textContent = emptyText || 'まだ';
+    parent.appendChild(empty);
+    return;
+  }
+  list.forEach(food => parent.appendChild(makeCompleteFoodMini(food, false)));
+}
+
+function appendCompleteFoodChips(parent, foods, emptyText, limit) {
+  const list = (foods || []).filter(Boolean).slice(0, limit || 7);
+  parent.innerHTML = '';
+  if (!list.length) {
+    const empty = document.createElement('span');
+    empty.className = 'complete-food-empty';
+    empty.textContent = emptyText || 'まだ';
+    parent.appendChild(empty);
+    return;
+  }
+  list.forEach(food => parent.appendChild(makeCompleteFoodMini(food, true)));
+}
+
+function renderCompleteDetailContent(el, finalEval, completionData, requester) {
+  if (!el || !finalEval || !completionData) return;
+  el.innerHTML = '';
+  const requestEval = finalEval.requestEval || { enabled: false };
+  const balanceEval = finalEval.balanceEval || evaluateBalanceGroups(completionData.balance, completionData.okazuNames || []);
+  const allFoods = completionData.foods || [];
+  const okazuFoods = getCompleteOkazuFoods(completionData);
+
+  const requestCard = document.createElement('section');
+  requestCard.className = 'complete-detail-card complete-request-card';
+  const requestHeading = document.createElement('h3');
+  requestHeading.className = 'complete-detail-heading';
+  requestHeading.textContent = 'どうぶつの おねがい';
+  requestCard.appendChild(requestHeading);
+  const requestHero = document.createElement('div');
+  requestHero.className = 'complete-request-hero';
+  const animal = document.createElement('img');
+  animal.className = 'complete-request-animal';
+  animal.src = requester ? getRequesterPortrait(requester, finalEval.npcMood || 'happy') : (PONO_BASE + 'dance/dance_hooray.webp');
+  animal.alt = requester ? requester.name : 'ポノ';
+  requestHero.appendChild(animal);
+  const requestCopy = document.createElement('div');
+  requestCopy.className = 'complete-request-copy';
+  const requestStatus = document.createElement('span');
+  requestStatus.className = 'complete-request-status ' + (requestEval.enabled ? (requestEval.hit ? 'is-ok' : 'is-miss') : 'is-ok');
+  requestStatus.textContent = requestEval.enabled ? (requestEval.hit ? 'おねがい OK' : 'つぎに ためそう') : 'じゆうに できた';
+  const requestLabel = document.createElement('div');
+  requestLabel.className = 'complete-request-label';
+  requestLabel.textContent = requestEval.enabled
+    ? ((requester && requester.name ? requester.name + ': ' : '') + requestEval.label)
+    : 'すきな おべんとう';
+  requestCopy.appendChild(requestStatus);
+  requestCopy.appendChild(requestLabel);
+  requestHero.appendChild(requestCopy);
+  requestCard.appendChild(requestHero);
+  const requestFoods = requestEval.enabled && requester
+    ? ((requester.primaryFoods && requester.primaryFoods.length ? requester.primaryFoods : (requester.wantedFoods || []).slice(0, 2))
+        .map(name => findCompleteFoodByName(name, completionData)))
+    : [];
+  const requestChipList = document.createElement('div');
+  requestChipList.className = 'complete-food-chip-list';
+  appendCompleteFoodChips(requestChipList, requestFoods, 'おねがいなし', 3);
+  requestCard.appendChild(requestChipList);
+  const requestNote = document.createElement('p');
+  requestNote.className = 'complete-request-note';
+  requestNote.textContent = requestEval.enabled
+    ? (requestEval.hit ? 'おねがいの おかずが はいっているよ。' : 'つぎは、この おかずも いれてみよう。')
+    : 'いろや しゅるいを みながら、すきに つくれたよ。';
+  requestCard.appendChild(requestNote);
+
+  const groupsCard = document.createElement('section');
+  groupsCard.className = 'complete-detail-card complete-groups-card';
+  const groupsHeading = document.createElement('h3');
+  groupsHeading.className = 'complete-detail-heading';
+  groupsHeading.textContent = balanceEval.complete ? '3つの グループが そろったよ' : '3つの グループを 見てみよう';
+  groupsCard.appendChild(groupsHeading);
+  const groupGrid = document.createElement('div');
+  groupGrid.className = 'complete-groups-grid';
+  ['r', 'y', 'g'].forEach(key => {
+    const info = SK_GROUP_INFO[key];
+    const hasGroup = (balanceEval.counts && balanceEval.counts[key] > 0);
+    const card = document.createElement('div');
+    card.className = 'complete-group-card ' + (hasGroup ? 'is-complete' : 'is-missing');
+    const head = document.createElement('div');
+    head.className = 'complete-group-head';
+    const dot = document.createElement('span');
+    dot.className = 'complete-group-dot b-' + key;
+    const text = document.createElement('div');
+    const name = document.createElement('div');
+    name.className = 'complete-group-name';
+    name.textContent = info.label;
+    const role = document.createElement('div');
+    role.className = 'complete-group-role';
+    role.textContent = info.role;
+    text.appendChild(name);
+    text.appendChild(role);
+    head.appendChild(dot);
+    head.appendChild(text);
+    const foods = document.createElement('div');
+    foods.className = 'complete-group-foods';
+    appendCompleteFoodMinis(foods, allFoods.filter(food => food && food.sk === key), 'あとで いれよう', 4);
+    card.appendChild(head);
+    card.appendChild(foods);
+    groupGrid.appendChild(card);
+  });
+  groupsCard.appendChild(groupGrid);
+
+  const varietyCard = document.createElement('section');
+  varietyCard.className = 'complete-detail-card complete-variety-card';
+  const varietyHeading = document.createElement('h3');
+  varietyHeading.className = 'complete-detail-heading';
+  varietyHeading.textContent = balanceEval.varietyOk ? 'いろんな おかずが 入ったよ' : 'おかずを もう少し ふやせるよ';
+  varietyCard.appendChild(varietyHeading);
+  const varietyList = document.createElement('div');
+  varietyList.className = 'complete-food-chip-list';
+  appendCompleteFoodChips(varietyList, okazuFoods, 'おかずを 入れてみよう', 8);
+  varietyCard.appendChild(varietyList);
+  const varietyNote = document.createElement('p');
+  varietyNote.className = 'complete-variety-note';
+  varietyNote.textContent = balanceEval.varietyOk
+    ? 'すきな おかずを いくつか いれると、みためも たのしいね。'
+    : 'おなじものが おおいときは、べつの おかずも すこし いれてみよう。';
+  varietyCard.appendChild(varietyNote);
+
+  el.appendChild(requestCard);
+  el.appendChild(groupsCard);
+  el.appendChild(varietyCard);
 }
 
 // ===== 結果発表の演出（ドラムロール→じゃーん→表情切替） =====
@@ -10830,9 +11247,7 @@ function stageComplete() {
   const yCount = completionData.balance.y;
   const gCount = completionData.balance.g;
   const finalEval = buildBentoFinalEvaluation(currentRequester, completionData);
-  const balRow = document.getElementById('balance-row');
-  renderBalanceSummary(balRow, finalEval.balanceEval);
-  renderCompleteChecklist(document.getElementById('complete-checklist'), finalEval);
+  renderCompleteDetailContent(document.getElementById('complete-detail-content'), finalEval, completionData, currentRequester);
 
   // ポノ表情＋セリフ（バランスに応じた演出） ※ 演出は revealReactionWithDrama で実行
   const okazuNames = completionData.okazuNames;
@@ -12286,7 +12701,7 @@ function tutorialRenderStep() {
     }
     const btn = tutorialNoriOkButton();
     if (btn) {
-      tutorialShowBubble('「のりOK」を おしてね', { topVh: '18', side: 'left' });
+      tutorialShowBubble('のりは いくつか かざれるよ<br>できたら「のりOK」', { topVh: '18', side: 'left' });
       tutorialPositionBubbleBeside(btn);
       if (firstRender) {
         tutorialTrimPath(btn, { radius: 22 });
@@ -12294,7 +12709,7 @@ function tutorialRenderStep() {
       }
       tutorialAnimateTap(btn);
     } else {
-      tutorialShowBubble('「のりOK」を おしてね', { topVh: '18', side: 'left' });
+      tutorialShowBubble('のりは いくつか かざれるよ<br>できたら「のりOK」', { topVh: '18', side: 'left' });
       tutorialHideFinger();
     }
     return;
@@ -12322,7 +12737,8 @@ function tutorialRenderStep() {
   // 7. okazu-red — 右半分にあかい食材を入れる + 右半分マスク明滅
   if (step === 'okazu-red') {
     tutorialShowBubble(
-      'みぎがわに <span class="tut-emph-red">あかい</span> おかずを いれてね',
+      'すきな おかずを いくつか 入れてね'
+      + '<br><span class="tut-emph-red">あか</span>の グループも 入れよう',
       { topVh: '58', side: 'left' }
     );
     if (firstRender) tutorialMaskOverlay({ half: 'right' });
@@ -12388,7 +12804,7 @@ function tutorialRenderStep() {
 
   // 11. small-cup-food — カップ内に小さいおかずを入れる
   if (step === 'small-cup-food') {
-    tutorialShowBubble('カップに いれる おかずを えらぼう', { topVh: '18', side: 'left' });
+    tutorialShowBubble('カップに 小さい おかずを 入れよう', { topVh: '18', side: 'left' });
     tutorialAnimateDragFromElWithRetry(
       () => tutorialFindCupFoodPaletteEl(),
       () => tutorialActiveCupPoint(),
@@ -12399,7 +12815,7 @@ function tutorialRenderStep() {
 
   // 12. small-place — 小さいおかずを 1個以上 配置
   if (step === 'small-place') {
-    tutorialShowBubble('すきな 小さい おかずを いれてね', { topVh: '18', side: 'left' });
+    tutorialShowBubble('小さい おかずも<br>いくつか 入れられるよ', { topVh: '18', side: 'left' });
     // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
     tutorialAnimateDragFromElWithRetry(
       () => tutorialFindSmallFoodPaletteEl(),
@@ -12430,12 +12846,12 @@ function tutorialRenderStep() {
   if (step === 'small-edit') {
     const toolbar = tutorialContextToolbarEl();
     tutorialShowBubble(
-      'ここで なおせるよ'
+      'みながら なおせるよ'
       + '<br>サイズ・むき・まえ/うしろ'
       + '<br><button class="tut-next-btn" id="tut-small-edit-next">つぎ →</button>',
       { topVh: '16', side: 'left' }
     );
-    if (toolbar) tutorialPositionBubble(toolbar);
+    if (toolbar) tutorialPositionBubbleBeside(toolbar, { gap: 14 });
     if (toolbar) tutorialMarkTarget(toolbar, { radius: 14 });
     else tutorialRetryRenderStep('small-edit');
     const next = document.getElementById('tut-small-edit-next');
@@ -12454,7 +12870,8 @@ function tutorialRenderStep() {
   // 15. small-next — 進むボタンを対象の近くで案内
   if (step === 'small-next') {
     const btn = tutorialCompleteButton();
-    tutorialShowBubble('ここを おしてね', { topVh: '18', side: 'left' });
+    const label = tutorialButtonLabel(btn);
+    tutorialShowBubble('まだ おかずを たせるよ<br>できたら「' + label + '」', { topVh: '18', side: 'left' });
     if (btn) {
       tutorialPositionBubble(btn);
       tutorialMarkTarget(btn, { radius: 24 });
@@ -12469,7 +12886,7 @@ function tutorialRenderStep() {
   // 16. complete — primary ボタンに trim + tap
   if (step === 'complete') {
     const btn = tutorialCompleteButton();
-    tutorialShowBubble(`「${tutorialButtonLabel(btn)}」を おしてね`, { topVh: '18', side: 'left' });
+    tutorialShowBubble(`あか・きいろ・みどりも みてみよう<br>できたら「${tutorialButtonLabel(btn)}」`, { topVh: '18', side: 'left' });
     if (btn) {
       tutorialPositionBubble(btn);
       if (firstRender) tutorialTrimPath(btn, { radius: 24 });
