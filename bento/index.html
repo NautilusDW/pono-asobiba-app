@@ -2963,7 +2963,8 @@ body.bento-complete-open .pono-dropdown {
   position: fixed;
   left: 0; top: 0;
   width: 64px; height: 64px;
-  z-index: 9100;
+  /* v3.2: overlay 系より確実に上 (9200)、 bubble 9997 より下を維持 */
+  z-index: 9200;
   pointer-events: none;
   user-select: none;
   display: none;
@@ -2971,11 +2972,14 @@ body.bento-complete-open .pono-dropdown {
 .tut-hand {
   position: absolute;
   left: 0; top: 0;
-  width: 56px; height: 56px;
+  /* v3.2: 48px(56pxボックス) → 64px(72pxボックス) で子供にも追える大きさへ */
+  width: 72px; height: 72px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 44px;
+  font-size: 64px;
   line-height: 1;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
+  /* v3.2: 背景に対するコントラスト確保 */
+  text-shadow: 0 2px 6px rgba(0,0,0,0.25);
   pointer-events: none;
   user-select: none;
   will-change: transform, opacity;
@@ -2983,10 +2987,11 @@ body.bento-complete-open .pono-dropdown {
   --to-x: 0px; --to-y: 0px;
 }
 .tut-hand--open {
-  animation: tutHandOpen 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  /* v3.2: 2.4s → 2.8s に若干ゆっくり (子供が追えるように) */
+  animation: tutHandOpen 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 .tut-hand--grip {
-  animation: tutHandGrip 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: tutHandGrip 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 @keyframes tutHandOpen {
   /* ✋: visible at FROM (0-8%), fade out, then reappear at TO (67-100%, fade) */
@@ -3011,7 +3016,8 @@ body.bento-complete-open .pono-dropdown {
 }
 .tut-finger.tut-finger--fast .tut-hand--open,
 .tut-finger.tut-finger--fast .tut-hand--grip {
-  animation-duration: 1.2s;
+  /* v3.2: 1.2s → 1.4s (通常 2.8s の半速) */
+  animation-duration: 1.4s;
 }
 .tut-finger.tut-finger--tap {
   animation: tutFingerTap 1.2s ease-in-out infinite;
@@ -3146,8 +3152,8 @@ body.bento-complete-open .pono-dropdown {
   overflow: visible;
 }
 .tut-trim-box rect {
-  /* v3.1: 連続移動 (tutTrimOffset) を点滅 (tutTrimBlink) に変更。 stroke は実線。 */
-  animation: tutTrimBlink 1000ms ease-in-out infinite;
+  /* v3.2: 点滅をゆっくり (2000ms) に。 緑 (#34c759) は弁当の暖色/黄ギンガム背景と識別しやすい。 stroke は実線。 */
+  animation: tutTrimBlink 2000ms ease-in-out infinite;
 }
 @keyframes tutTrimBlink {
   0%, 100% { opacity: 0.4; }
@@ -11191,10 +11197,11 @@ function tutorialAnimateDrag(fromPoint, toPoint, opts = {}) {
   if (tutorialIsRecallBlocking()) { tutorialHideFinger(); return; }
   const f = tutorialState.fingerEl;
   if (!fromPoint || !toPoint) { tutorialHideFinger(); return; }
-  const fx = fromPoint.x - 28;
-  const fy = fromPoint.y - 28;
-  const tx = toPoint.x - 28;
-  const ty = toPoint.y - 28;
+  // v3.2: 手のサイズ 72px に合わせて中心合わせを 28→36 に
+  const fx = fromPoint.x - 36;
+  const fy = fromPoint.y - 36;
+  const tx = toPoint.x - 36;
+  const ty = toPoint.y - 36;
   f.style.display = 'block';
   f.classList.remove('tut-finger--tap');
   f.classList.toggle('tut-finger--fast', !!opts.fast);
@@ -11220,6 +11227,42 @@ function tutorialAnimateDragFromEl(fromEl, toPointOrEl, opts = {}) {
     to = toPointOrEl;
   }
   tutorialAnimateDrag(from, to, opts);
+}
+// v3.2: palette/target が DOM 描画前に null になるケースに備え、最大 20 回 x 50ms (= 1s) リトライ。
+// 引数は (1) 既存のとおり Element / point、 または (2) string(セレクタ) / function(()=>Element|point)
+// どちらでもよい。 タブ切替直後など、 step が変わったら静かに諦める。
+function tutorialAnimateDragFromElWithRetry(paletteSelectorOrEl, targetSelectorOrEl, opts = {}, retries = 20) {
+  const startStep = tutorialState && tutorialState.step;
+  function resolveFrom(x) {
+    if (!x) return null;
+    if (typeof x === 'string') return document.querySelector(x);
+    if (typeof x === 'function') { try { return x(); } catch (_) { return null; } }
+    return x;
+  }
+  function resolveTo(x) {
+    if (!x) return null;
+    if (typeof x === 'string') return document.querySelector(x);
+    if (typeof x === 'function') { try { return x(); } catch (_) { return null; } }
+    return x;
+  }
+  function attempt(remaining) {
+    // step が遷移済みなら諦める (古いタイマーが進行中の step を上書きしないよう)
+    if (!tutorialState || !tutorialState.active) return;
+    if (tutorialState.step !== startStep) return;
+    const palette = resolveFrom(paletteSelectorOrEl);
+    const target = resolveTo(targetSelectorOrEl);
+    if ((!palette || !target) && remaining > 0) {
+      setTimeout(() => attempt(remaining - 1), 50);
+      return;
+    }
+    if (!palette || !target) {
+      // 最終失敗、 静かに finger を隠して終了 (エラーは出さない)
+      tutorialHideFinger();
+      return;
+    }
+    tutorialAnimateDragFromEl(palette, target, opts);
+  }
+  attempt(retries);
 }
 function tutorialAnimateTap(targetEl) {
   tutorialEnsureLayer();
@@ -11408,7 +11451,7 @@ function tutorialTrimPath(targetEl, opts = {}) {
   rect.setAttribute('rx', String(opts.radius || 14));
   rect.setAttribute('ry', String(opts.radius || 14));
   rect.setAttribute('fill', 'none');
-  rect.setAttribute('stroke', opts.color || '#F2915A');
+  rect.setAttribute('stroke', opts.color || '#34c759');
   rect.setAttribute('stroke-width', String(opts.width || 4.5));
   rect.setAttribute('stroke-linecap', 'round');
   svg.appendChild(rect);
@@ -11484,12 +11527,21 @@ function tutorialClearMask() {
 }
 
 // .free-tab ボタンのクリックに合わせて呼ばれる。 現在 step とマッチする tabId なら次へ進める。
+// v3.2: タブ切替直後はパレット DOM の再構築が走るため、 rAF x2 (= 2フレーム後) に
+// 遷移を予約することで、 advance/render 時に palette/target が存在する状態を担保する。
 function tutorialOnTabSwitch(tabId) {
   if (!tutorialState.active) return;
   const s = tutorialState.step;
-  if (s === 'tab-rice' && tabId === 'rice') tutorialAdvance('rice-place');
-  else if (s === 'tab-okazu' && tabId === 'food') tutorialAdvance('okazu-red');
-  else if (s === 'tab-small' && tabId === 'accessory') tutorialAdvance('small-place');
+  const advance = (nextStep) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!tutorialState.active) return;
+      if (tutorialState.step !== s) return; // すでに別 step に進んでいたら何もしない
+      tutorialAdvance(nextStep);
+    }));
+  };
+  if (s === 'tab-rice' && tabId === 'rice') advance('rice-place');
+  else if (s === 'tab-okazu' && tabId === 'food') advance('okazu-red');
+  else if (s === 'tab-small' && tabId === 'accessory') advance('small-place');
 }
 
 // state 遷移ヘルパ。 タイマー進行は禁止。 これと item-placed/button のみが進行口。
@@ -11523,11 +11575,43 @@ function tutorialInstallTabHook() {
   };
   // pointerdown を使う (既存も pointerdown のため click より早い)
   document.addEventListener('pointerdown', tutorialState.tabClickHandler, false);
+  // v3.2: パレット DOM が再構築されたら現 step を再評価 (デモが見えない問題の根本対処)
+  tutorialInstallPaletteObserver();
 }
 function tutorialUninstallTabHook() {
   if (tutorialState.tabClickHandler) {
     try { document.removeEventListener('pointerdown', tutorialState.tabClickHandler, false); } catch (_) {}
     tutorialState.tabClickHandler = null;
+  }
+  tutorialUninstallPaletteObserver();
+}
+// v3.2: .free-item-list (パレット) の子変化を観測。 タブ切替/再描画で palette が消えてから
+// 復元するまでの隙間で finger が「描画ゼロ」になる症状を、 復元検知で再 render することで治す。
+function tutorialInstallPaletteObserver() {
+  if (tutorialState.paletteObserver) return;
+  try {
+    const obs = new MutationObserver(() => {
+      if (!tutorialState.active) return;
+      // 連打を吸収するため rAF にまとめる
+      if (tutorialState._paletteResyncRaf) return;
+      tutorialState._paletteResyncRaf = requestAnimationFrame(() => {
+        tutorialState._paletteResyncRaf = 0;
+        try { tutorialRenderStep(); } catch (_) {}
+      });
+    });
+    // body 直下から subtree 監視 (パレット root 自体が差し替えられても拾える)
+    obs.observe(document.body, { childList: true, subtree: true });
+    tutorialState.paletteObserver = obs;
+  } catch (_) {}
+}
+function tutorialUninstallPaletteObserver() {
+  if (tutorialState.paletteObserver) {
+    try { tutorialState.paletteObserver.disconnect(); } catch (_) {}
+    tutorialState.paletteObserver = null;
+  }
+  if (tutorialState._paletteResyncRaf) {
+    try { cancelAnimationFrame(tutorialState._paletteResyncRaf); } catch (_) {}
+    tutorialState._paletteResyncRaf = 0;
   }
 }
 // v3: button/tab/place-driven step renderer.
@@ -11624,11 +11708,13 @@ function tutorialRenderStep() {
 
   // 3. rice-place — ✊✋ デモで左半分へドラッグ
   if (step === 'rice-place') {
-    const palette = tutorialFindRicePaletteEl();
-    const target = tutorialStageLeftHalfPoint();
     tutorialShowBubble('ごはんを つかんで ひだりがわに のせよう', { topVh: '20' });
-    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
-    else tutorialHideFinger();
+    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFindRicePaletteEl(),
+      () => tutorialStageLeftHalfPoint(),
+      { fast }
+    );
     return;
   }
 
@@ -11658,10 +11744,12 @@ function tutorialRenderStep() {
       { topVh: '20' }
     );
     if (firstRender) tutorialMaskOverlay({ half: 'right' });
-    const palette = tutorialFindFoodPaletteEl();
-    const target = tutorialStageRightHalfPoint();
-    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
-    else tutorialHideFinger();
+    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFindFoodPaletteEl(),
+      () => tutorialStageRightHalfPoint(),
+      { fast }
+    );
     return;
   }
 
@@ -11687,10 +11775,12 @@ function tutorialRenderStep() {
   // 7. small-place — cup or 小おかずを 1個以上 配置
   if (step === 'small-place') {
     tutorialShowBubble('すきな ちいさい おかずを いれてね', { topVh: '20' });
-    const palette = tutorialFirstPaletteItem();
-    const target = tutorialStageRightHalfPoint();
-    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
-    else tutorialHideFinger();
+    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFirstPaletteItem(),
+      () => tutorialStageRightHalfPoint(),
+      { fast }
+    );
     return;
   }
 
@@ -11702,10 +11792,12 @@ function tutorialRenderStep() {
       const riceEls = document.querySelectorAll('.free-placed-item.type-rice');
       riceEls.forEach(rEl => tutorialTrimPath(rEl, { radius: 12 }));
     }
-    const palette = tutorialFindNoriPaletteEl();
-    const target = tutorialStageLeftHalfPoint();
-    if (palette && target) tutorialAnimateDragFromEl(palette, target, { fast });
-    else tutorialHideFinger();
+    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFindNoriPaletteEl(),
+      () => tutorialStageLeftHalfPoint(),
+      { fast }
+    );
     return;
   }
 
