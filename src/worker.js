@@ -73,9 +73,30 @@ export default {
     }
 
     const response = await env.ASSETS.fetch(request);
-    return applyCacheHeaders(request, response);
+    const cached = applyCacheHeaders(request, response);
+    return injectAppBuildFlag(cached, env);
   }
 };
+
+// アプリ版 staging worker (pono-asobiba-app-staging) では env.APP_BUILD="1" を設定し、
+// 静的 HTML レスポンスへ window.__APP_BUILD__=1 を <head> 直後に注入する。
+// - API レスポンス (/.netlify/functions/*, /api/*) はこの関数まで到達しないので安全。
+// - 既存 worker (production / staging) は APP_BUILD 未定義なので 100% 既存動作のままパススルー。
+// - HTMLRewriter は Cloudflare Workers 標準のストリーミング変換 API なので
+//   巨大な HTML でもメモリに全展開せず低コスト。
+function injectAppBuildFlag(response, env) {
+  if (env.APP_BUILD !== '1') return response;
+  if (response.status < 200 || response.status >= 300) return response;
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('text/html')) return response;
+  return new HTMLRewriter()
+    .on('head', {
+      element(el) {
+        el.prepend('<script>window.__APP_BUILD__=1;</script>', { html: true });
+      }
+    })
+    .transform(response);
+}
 
 // HTML は常に最新、それ以外（画像・動画・JS・CSS）は長期キャッシュ
 // CDN-Cache-Control / Cloudflare-CDN-Cache-Control は Cloudflare エッジに効く
@@ -621,6 +642,7 @@ const ALLOWED_GH_GET_ONLY_PATTERNS = [
 // 主に curl / 非ブラウザによる濫用対策 (二重防御)。
 const ALLOWED_GH_ORIGINS = [
   'https://pono-asobiba-staging.ndw.workers.dev',
+  'https://pono-asobiba-app-staging.ndw.workers.dev',
   'https://pono-asobiba-app.ndw.workers.dev',
   'https://pono.kodama-no-mori.com',
   'http://localhost:8788',

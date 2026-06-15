@@ -1791,6 +1791,112 @@
     color: #fff;
     border: 2px solid rgba(255,255,255,0.5);
   }
+  .rhythm-opening {
+    position: absolute;
+    inset: 0;
+    z-index: 18;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(14px, 3vw, 28px);
+    padding-left: max(23%, clamp(120px, 23vw, 300px));
+    background: linear-gradient(90deg, rgba(2,6,23,0.14), rgba(2,6,23,0.32));
+    pointer-events: auto;
+  }
+  .rhythm-opening.show {
+    display: flex;
+  }
+  .rhythm-opening-panel {
+    width: min(76%, 560px);
+    max-height: min(82%, 360px);
+    display: grid;
+    gap: 10px;
+    padding: clamp(14px, 2.4vw, 22px);
+    border: 3px solid rgba(255,255,255,0.82);
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,247,173,0.32), transparent 36%),
+      linear-gradient(180deg, rgba(15,23,42,0.9), rgba(30,41,59,0.86));
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 16px 36px rgba(0,0,0,0.34);
+  }
+  .rhythm-opening-stage {
+    justify-self: center;
+    padding: 3px 12px 4px;
+    border-radius: 999px;
+    background: rgba(20,184,166,0.22);
+    border: 1px solid rgba(153,246,228,0.72);
+    color: #CCFBF1;
+    font-size: clamp(0.68rem, 1.8vw, 0.86rem);
+    line-height: 1;
+  }
+  .rhythm-opening-speaker {
+    color: #FEF3C7;
+    font-size: clamp(1rem, 2.8vw, 1.35rem);
+    line-height: 1.1;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.42);
+  }
+  .rhythm-opening-line {
+    min-height: 3.4em;
+    display: grid;
+    place-items: center;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: rgba(2,6,23,0.46);
+    border: 2px solid rgba(255,255,255,0.45);
+    color: #F8FAFC;
+    font-size: clamp(1rem, 2.65vw, 1.42rem);
+    line-height: 1.35;
+  }
+  .rhythm-opening-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .rhythm-opening-btn {
+    min-width: 112px;
+    min-height: 42px;
+    border: 2px solid rgba(255,255,255,0.64);
+    border-radius: 16px;
+    padding: 7px 16px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 900;
+    color: #fff;
+    background: rgba(255,255,255,0.14);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .rhythm-opening-btn.next {
+    background: linear-gradient(135deg, #34D399, #10B981);
+    color: #064E3B;
+    border-color: rgba(255,255,255,0.86);
+  }
+  @media (orientation: landscape) and (max-height: 520px) {
+    .rhythm-opening {
+      padding-left: max(22%, 122px);
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+    .rhythm-opening-panel {
+      width: min(78%, 500px);
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 18px;
+    }
+    .rhythm-opening-line {
+      min-height: 2.8em;
+      padding: 7px 10px;
+      font-size: clamp(0.86rem, 3.4cqh, 1.06rem);
+    }
+    .rhythm-opening-btn {
+      min-height: 34px;
+      min-width: 96px;
+      padding: 5px 12px;
+      font-size: 0.78rem;
+    }
+  }
   .rhythm-complete {
     position: absolute;
     inset: 0;
@@ -3710,6 +3816,8 @@
     inset: 0;
     filter: saturate(1.08) contrast(1.04);
     z-index: 2;
+    transform-origin: 50% 76%;
+    animation: rhythm-pono-pulse var(--rhythm-beat-ms, 666ms) ease-in-out infinite;
   }
   .rhythm-rival-sprite {
     position: absolute;
@@ -3885,6 +3993,53 @@
     border-radius: 999px;
     background: radial-gradient(ellipse at 50% 72%, rgba(16,185,129,0.22), transparent 66%);
     filter: blur(2px);
+    z-index: 0;
+    pointer-events: none;
+  }
+  body.rhythm-layout .stage > .pono-wrap {
+    display: none !important;
+  }
+  .rhythm-pono-art {
+    position: absolute;
+    left: 50%;
+    top: 44%;
+    width: 72%;
+    height: 58%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    transform-origin: 50% 78%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: rhythm-character-pulse var(--rhythm-beat-ms, 666ms) ease-in-out infinite;
+    filter: drop-shadow(0 8px 7px rgba(0,0,0,0.28));
+    will-change: transform;
+  }
+  .rhythm-pono-art.bump {
+    animation: rhythm-pono-bump 620ms ease-out both;
+  }
+  .rhythm-pono-sprite {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+  @keyframes rhythm-character-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.022); }
+  }
+  @keyframes rhythm-pono-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.026); }
+  }
+  @keyframes rhythm-pono-bump {
+    0% { transform: translate(-50%, -50%) translateY(0) scale(1); }
+    28% { transform: translate(-50%, -50%) translateY(-8px) scale(1.1); }
+    58% { transform: translate(-50%, -50%) translateY(0) scale(1); }
+    78% { transform: translate(-50%, -50%) translateY(-4px) scale(1.04); }
+    100% { transform: translate(-50%, -50%) translateY(0) scale(1); }
   }
   body.rhythm-layout .pono-wrap {
     left: 11% !important;
@@ -3966,6 +4121,9 @@
         <div class="rhythm-rival-line" id="rhythm-rival-line">この リズム できるケロ？</div>
       </section>
       <section class="rhythm-pono-card" aria-hidden="true">
+        <div class="rhythm-pono-art" id="rhythm-pono-art">
+          <img class="rhythm-pono-sprite" id="rhythm-pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
+        </div>
         <div class="rhythm-pono-kicker">ポノ</div>
         <div class="rhythm-pono-line" id="rhythm-pono-line">いくよ！</div>
       </section>
@@ -4099,6 +4257,18 @@
             <button class="rhythm-menu-btn demo hidden" id="rhythm-menu-demo">おてほん</button>
             <button class="rhythm-menu-btn start" id="rhythm-menu-start">はじめる</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rhythm-opening" id="rhythm-opening" role="dialog" aria-modal="true" aria-label="ステージのはじまり">
+      <div class="rhythm-opening-panel">
+        <div class="rhythm-opening-stage" id="rhythm-opening-stage">ステージ 1</div>
+        <div class="rhythm-opening-speaker" id="rhythm-opening-speaker">DJ ケロック</div>
+        <div class="rhythm-opening-line" id="rhythm-opening-line">この リズム できるケロ？</div>
+        <div class="rhythm-opening-actions">
+          <button class="rhythm-opening-btn skip" id="rhythm-opening-skip" type="button">スキップ</button>
+          <button class="rhythm-opening-btn next" id="rhythm-opening-next" type="button">つぎへ</button>
         </div>
       </div>
     </div>
@@ -5411,6 +5581,38 @@ var RHYTHM_RIVALS = {
     }
   }
 };
+var RHYTHM_OPENING_SCENES = {
+  kaeru: [
+    { speaker: 'rival', state: 'taunt', text: 'ケロケロ！ ドレミの はしを わたれるケロ？' },
+    { speaker: 'pono', rivalState: 'idle', text: 'ポノも しっかり きくよ！' },
+    { speaker: 'rival', state: 'attack', text: 'したのラインで うけてみろケロ！' }
+  ],
+  mary: [
+    { speaker: 'rival', state: 'taunt', text: 'ふわふわの ひつじビートだケロ！' },
+    { speaker: 'pono', rivalState: 'idle', text: 'やさしく タッチするよ' },
+    { speaker: 'rival', state: 'attack', text: 'ミの おとを よく きくケロ！' }
+  ],
+  twinkle: [
+    { speaker: 'rival', state: 'taunt', text: 'ほしの ノートを ちらすケロ！' },
+    { speaker: 'pono', rivalState: 'idle', text: 'きらきらでも あわてない' },
+    { speaker: 'rival', state: 'attack', text: 'れんぞくで ついてこれるケロ？' }
+  ],
+  choucho: [
+    { speaker: 'rival', state: 'taunt', text: 'カチカチ！ はねる リズムを まわせ！' },
+    { speaker: 'pono', rivalState: 'idle', text: 'ひらひらでも よくみるよ' },
+    { speaker: 'rival', state: 'attack', text: 'ギアの あいずで いくぞ！' }
+  ],
+  london: [
+    { speaker: 'rival', state: 'taunt', text: 'ガタン！ はしの リズムだ！' },
+    { speaker: 'pono', rivalState: 'idle', text: 'おちついて タッチするよ' },
+    { speaker: 'rival', state: 'attack', text: 'テンポが かわっても できるか？' }
+  ],
+  ode: [
+    { speaker: 'rival', state: 'taunt', text: 'ガオーン！ さいごの おうさまビートだ！' },
+    { speaker: 'pono', rivalState: 'idle', text: 'ポノも ぜんぶ だしきるよ！' },
+    { speaker: 'rival', state: 'attack', text: 'よろこびの おとで しょうぶだ！' }
+  ]
+};
 Object.keys(RHYTHM_RIVALS).forEach(function(key) {
   var rival = RHYTHM_RIVALS[key];
   Object.keys(rival.sprites || {}).forEach(function(state) {
@@ -5466,6 +5668,10 @@ var _rhythm = {
   feverLevel: 0,
   feverTimer: 0,
   feverBubbleTimer: 0,
+  openingActive: false,
+  openingIndex: 0,
+  openingScenes: [],
+  openingThenStart: false,
   nowCue: false,
   // Guitar Hero 風: 落下中ノート / 次にスポーンする seqIndex / レーン miss-flash timer
   activeNotes: [],
@@ -5507,6 +5713,12 @@ function _rhythmPonoLine(kind, judge) {
   if (_rhythm.streak >= 4) return 'れんぞく！';
   return 'いくよ！';
 }
+function _rhythmPonoEffectTarget() {
+  if (document.body && document.body.classList.contains('rhythm-layout')) {
+    return document.getElementById('rhythm-pono-art') || document.querySelector('.pono-wrap');
+  }
+  return document.querySelector('.pono-wrap');
+}
 function _resetRhythmRivalFx() {
   ['a', 'b', 'c'].forEach(function(slot) {
     var el = document.getElementById('rhythm-rival-fx-' + slot);
@@ -5546,6 +5758,7 @@ function _rhythmRivalStateForHit(judge) {
 function _updateRhythmBattlePanel(state, lineOverride, ponoLine) {
   var panel = document.getElementById('rhythm-battle-panel');
   if (!panel) return;
+  _syncRhythmBeatPulse();
   var rival = _currentRhythmRival();
   state = state || 'idle';
   var sprites = rival.sprites || {};
@@ -5786,6 +5999,90 @@ function _rhythmBeatMs() {
     return base * _rhythm.demoBeatScale;
   }
   return base;
+}
+function _syncRhythmBeatPulse() {
+  var stage = document.getElementById('stage');
+  if (!stage) return;
+  var beat = 666;
+  try {
+    beat = _rhythmBeatMs();
+  } catch(e) {}
+  beat = Math.max(420, Math.min(940, beat || 666));
+  stage.style.setProperty('--rhythm-beat-ms', beat + 'ms');
+}
+function _rhythmOpeningScenesForSong(song) {
+  var baseId = (song && song.id) || (RHYTHM_BASE_SONG && RHYTHM_BASE_SONG.id) || 'kaeru';
+  baseId = String(baseId).split(':')[0];
+  var scenes = RHYTHM_OPENING_SCENES[baseId];
+  if (scenes && scenes.length) return scenes;
+  return [
+    { speaker: 'rival', state: 'taunt', text: 'この リズム できるかな？' },
+    { speaker: 'pono', rivalState: 'idle', text: 'ポノも いっしょに やるよ！' },
+    { speaker: 'rival', state: 'attack', text: 'ノートを よくみて タッチ！' }
+  ];
+}
+function _hideRhythmOpening() {
+  _rhythm.openingActive = false;
+  _rhythm.openingIndex = 0;
+  _rhythm.openingScenes = [];
+  _rhythm.openingThenStart = false;
+  var opening = document.getElementById('rhythm-opening');
+  if (opening) opening.classList.remove('show');
+  if (document.body) document.body.classList.remove('oto-modal-open');
+}
+function _renderRhythmOpeningScene() {
+  var scenes = _rhythm.openingScenes || [];
+  var scene = scenes[_rhythm.openingIndex] || scenes[0];
+  if (!scene) return;
+  var rival = _currentRhythmRival();
+  var song = RHYTHM_BASE_SONG || RHYTHM_SONGS[0];
+  var stage = document.getElementById('rhythm-opening-stage');
+  var speaker = document.getElementById('rhythm-opening-speaker');
+  var line = document.getElementById('rhythm-opening-line');
+  var next = document.getElementById('rhythm-opening-next');
+  if (stage) stage.textContent = 'ステージ ' + _rhythmSongStage(song) + ' / ' + (song.name || '');
+  if (speaker) speaker.textContent = scene.speaker === 'pono' ? 'ポノ' : rival.name;
+  if (line) line.textContent = scene.text || '';
+  if (next) next.textContent = _rhythm.openingIndex >= scenes.length - 1 ? 'はじめる' : 'つぎへ';
+  if (scene.speaker === 'pono') {
+    _updateRhythmBattlePanel(scene.rivalState || 'idle', null, scene.text || _rhythmPonoLine());
+    bumpPono();
+  } else {
+    _updateRhythmBattlePanel(scene.state || 'taunt', scene.text || null, _rhythmPonoLine());
+  }
+}
+function _finishRhythmOpening() {
+  var thenStart = _rhythm.openingThenStart;
+  _hideRhythmOpening();
+  if (thenStart) _beginRhythmCountdown();
+  else _showRhythmMenu();
+}
+function _advanceRhythmOpening() {
+  if (!_rhythm.openingActive) return;
+  _rhythm.openingIndex++;
+  if (_rhythm.openingIndex >= (_rhythm.openingScenes || []).length) {
+    _finishRhythmOpening();
+    return;
+  }
+  _renderRhythmOpeningScene();
+}
+function _showRhythmOpening(thenStart) {
+  if (_rhythm.enabled) _stopRhythmMode();
+  _clearRhythmCountdown();
+  _clearRhythmDemo(true);
+  _hideRhythmComplete();
+  _hideRhythmMenu();
+  _forcePianoSoundForRhythm();
+  _setModeButtons('rhythm');
+  _syncRhythmBeatPulse();
+  _rhythm.openingActive = true;
+  _rhythm.openingIndex = 0;
+  _rhythm.openingScenes = _rhythmOpeningScenesForSong(RHYTHM_BASE_SONG);
+  _rhythm.openingThenStart = !!thenStart;
+  var opening = document.getElementById('rhythm-opening');
+  if (opening) opening.classList.add('show');
+  if (document.body) document.body.classList.add('oto-modal-open');
+  _renderRhythmOpeningScene();
 }
 function _rhythmVisualFallMs() {
   if (_rhythm.demoActive && !_rhythm.enabled && _rhythm.demoFallMs) {
@@ -6219,7 +6516,7 @@ function _showRhythmFever(info, laneIdx) {
     _ghSpawnHitFlash(laneIdx);
     if (info.level >= 2) _ghSpawnNoteBurst(laneIdx, 'success');
   }
-  var pono = document.querySelector('.pono-wrap');
+  var pono = _rhythmPonoEffectTarget();
   if (pono) {
     var rect = pono.getBoundingClientRect();
     var p = _viewportPointToStage(rect.left + rect.width * 0.5, rect.top + rect.height * 0.46);
@@ -8394,6 +8691,7 @@ function _startRhythmDemo(thenStart) {
 function _beginRhythmCountdown() {
   _clearRhythmCountdown();
   _clearRhythmDemo(true);
+  _hideRhythmOpening();
   _hideRhythmComplete();
   _setModeButtons('rhythm');
   _updateRhythmBattlePanel('attack', null, 'いくよ！');
@@ -8457,6 +8755,7 @@ function _showRhythmMenu() {
   if (_rhythm.enabled) _stopRhythmMode();
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
+  _hideRhythmOpening();
   _hideRhythmComplete();
   _forcePianoSoundForRhythm();
   // Region 1.3: 現在の base song の難易度に合わせてタブを切替 (失敗時 'かんたん')
@@ -8499,6 +8798,7 @@ function _hideRhythmMenu() {
 function _stopRhythmMode() {
   _clearRhythmCountdown();
   _clearRhythmDemo(false);
+  _hideRhythmOpening();
   _clearRhythmFinishTimer();
   _clearRhythmMelodySchedule();
   _hideRhythmComplete();
@@ -8706,7 +9006,21 @@ if (rhythmMenuStart) rhythmMenuStart.addEventListener('click', function(e) {
   e.stopPropagation();
   unlockAudio();
   _hideRhythmMenu();
-  _beginRhythmCountdown();
+  _showRhythmOpening(true);
+});
+var rhythmOpeningNext = document.getElementById('rhythm-opening-next');
+if (rhythmOpeningNext) rhythmOpeningNext.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  _advanceRhythmOpening();
+});
+var rhythmOpeningSkip = document.getElementById('rhythm-opening-skip');
+if (rhythmOpeningSkip) rhythmOpeningSkip.addEventListener('click', function(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  unlockAudio();
+  _finishRhythmOpening();
 });
 var rhythmMenuDemo = document.getElementById('rhythm-menu-demo');
 if (rhythmMenuDemo) rhythmMenuDemo.addEventListener('click', function(e) {
@@ -8806,7 +9120,7 @@ if (rhythmCompleteNext) rhythmCompleteNext.addEventListener('click', function(e)
   unlockAudio();
   if (!_goToNextRhythmSection() && !_goToNextRhythmStage()) return;
   _hideRhythmComplete();
-  _beginRhythmCountdown();
+  _showRhythmOpening(true);
 });
 var rhythmNameForm = document.getElementById('rhythm-name-form');
 if (rhythmNameForm) rhythmNameForm.addEventListener('submit', function(e) {
@@ -9362,13 +9676,20 @@ function _pickDanceFrame() {
   _lastFrameIdx = idx;
   return _ponoDanceFrames[idx];
 }
+function _setPonoSpriteSrc(src) {
+  var needle = src.replace('../','');
+  if (_ponoEl && _ponoEl.src.indexOf(needle) < 0) _ponoEl.src = src;
+  var rhythmPono = document.getElementById('rhythm-pono-sprite');
+  if (rhythmPono && rhythmPono.src.indexOf(needle) < 0) rhythmPono.src = src;
+}
 function bumpPono() {
-  if (!_ponoEl) return;
+  var rhythmPono = document.getElementById('rhythm-pono-sprite');
+  if (!_ponoEl && !rhythmPono) return;
   // ダンスポーズに差し替え
   var nextSrc = _pickDanceFrame();
-  if (_ponoEl.src.indexOf(nextSrc.replace('../','')) < 0) _ponoEl.src = nextSrc;
+  _setPonoSpriteSrc(nextSrc);
   // bump アニメ再起動 (ラッパー側にクラス付与)
-  var target = _ponoWrap || _ponoEl;
+  var target = _rhythmPonoEffectTarget() || _ponoWrap || _ponoEl || rhythmPono;
   target.classList.remove('bump');
   void target.offsetWidth;
   target.classList.add('bump');
@@ -9380,7 +9701,7 @@ function bumpPono() {
   // 静止復帰 (最後のタップから 1.2秒経ったらデフォルトに戻す)
   if (_restTimer) clearTimeout(_restTimer);
   _restTimer = setTimeout(function() {
-    if (_ponoEl) _ponoEl.src = _ponoDefaultSrc;
+    _setPonoSpriteSrc(_ponoDefaultSrc);
     _lastFrameIdx = -1;
     _restTimer = null;
   }, 1200);
