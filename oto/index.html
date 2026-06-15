@@ -4892,6 +4892,7 @@ var RHYTHM_OK_MS = 430;
 var RHYTHM_MISS_MS = 760;
 var RHYTHM_JUST_MS = 70;
 var RHYTHM_NICE_MS = 150;
+var RHYTHM_GH_INPUT_OFFSET_MS = 110;
 var RHYTHM_FINAL_NOTE_GRACE_MS = 680;
 var RHYTHM_FINISH_DELAY_MS = 820;
 var RHYTHM_PREVIEW_STEPS = 4;
@@ -7983,12 +7984,15 @@ function handleRhythmTap(idx, btn) {
     // Guitar Hero: 同レーン上で targetTime に最も近い activeNote を探して判定
     var laneIdx = _ghBtnIdxToLaneIdx(idx);
     var now = performance.now();
+    // 3Dノートは円の手前エッジがボタン上面に触れた瞬間が「押しどころ」に見える。
+    // targetTime は中心寄りなので、GHモードだけ入力判定を少し前倒しして見た目に合わせる。
+    var judgeNow = now + RHYTHM_GH_INPUT_OFFSET_MS;
     var best = null;
     var bestAbs = Infinity;
     for (var i = 0; i < _rhythm.activeNotes.length; i++) {
       var n = _rhythm.activeNotes[i];
       if (!n || n.consumed || n.missed || n.lane !== laneIdx) continue;
-      var d = Math.abs(n.targetTime - now);
+      var d = Math.abs(n.targetTime - judgeNow);
       if (d < bestAbs) { bestAbs = d; best = n; }
     }
     var hitWindow = best ? _rhythmHitWindowMsForSeq(best.seq) : RHYTHM_MISS_MS;
@@ -8007,7 +8011,7 @@ function handleRhythmTap(idx, btn) {
       }
       return;
     }
-    var delta = now - best.targetTime;
+    var delta = judgeNow - best.targetTime;
     if (delta < -RHYTHM_OK_MS) {
       // まだ早すぎ → ノートは残す
       _setRhythmStatus('もうすこし', 'warn');
