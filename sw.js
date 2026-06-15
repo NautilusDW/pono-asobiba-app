@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1191; // v1191: navigation handler bypass (opaqueredirect loop fix) | v1190: fix app-staging SW navigation loop (redirect:'manual' + opaqueredirect passthrough) | v1189: composite sticker book hard page flip | v1188: fix Oto rhythm Pono/rival idle placement | v1187: add generated kids sticker book assets | v1186: add Oto rhythm rival alpha reactions | v1185: separate Canvas sticker book
+const CACHE_VERSION = 1192; // v1192: tier resolution = APP_BUILD-driven (アプリ版 auto sub / 本版 sub unreachable) | v1191: navigation handler bypass (opaqueredirect loop fix) | v1190: fix app-staging SW navigation loop (redirect:'manual' + opaqueredirect passthrough) | v1189: composite sticker book hard page flip | v1188: fix Oto rhythm Pono/rival idle placement | v1187: add generated kids sticker book assets | v1186: add Oto rhythm rival alpha reactions | v1185: separate Canvas sticker book
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

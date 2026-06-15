@@ -17,6 +17,15 @@
 
 ## Active (進行中 / 未着手)
 
+## sub-tier テスト方針 (sw1192)
+
+- 本版 staging (https://pono-asobiba-staging.ndw.workers.dev/) では sub-only コンテンツは絶対に表示されない。 'abcd' パスワードでも book までしか上がらない。
+- アプリ版 staging (https://pono-asobiba-app-staging.ndw.workers.dev/) では visitor が **自動的に sub** 扱い (APP_BUILD=1 ベース)。 パスワード入力不要で sub-only コンテンツを確認可能。
+- 既存 localStorage の pono_sub_active='1' は無効化された。 fresh load で getTier() は APP_BUILD で判定する。
+
+## sub-tier 振り分け確定状態
+- writing カタカナ / aquarium 全種 / room 全アイテム / quizland Lv2-3 / maze stage 8+ / oto blip/taiko/penta/twinkle/ode / puzzle stage 10+ + special slots + 4 sub partners (アライグマ/ウサギ/フクロウ/カラス) / bento sub 食材-15+/箱-3+/NPC-3+ は アプリ版限定。
+
 - 2026-06-16 - [batch:553-sticker-book-hard-page-flip] Codex: user 指摘「シールを貼った後、めくった時に合成できるのか」を受領。正確な3D変形ではなく、めくり開始時にシール込みページをスナップショット化し、硬いラミネート台紙で一瞬隠して破綻を避けるページめくりへ修正する。 (by Codex)
 - 2026-06-16 - [batch:553-sticker-book-hard-page-flip] DONE - Codex: `sticker-book/index.html` のページめくりを、開始時に現在ページをシール込みでoffscreen canvasへ焼き込み、めくり中は生成flip sheetを質感として薄く重ね、焼き込み面を短時間だけ縮小表示してから硬いラミネート台紙マスクで隠す方式へ変更。シールがページから浮いて見える3D個別変形は避ける。`sw.js` / `play.html` は v1189。検証: `node --check`、inline script parse、対象差分 `git diff --check`、PlaywrightでBento貼付済みページのflip snapshot生成・中間frame snapshot保持・flip sheetロード・ページ切替・貼付データ保持・desktop/mobile overflowなしを確認。スクショ: `tmp/sticker_book_hardflip_before.png` / `tmp/sticker_book_hardflip_mid_slow.png` / `tmp/sticker_book_hardflip_after.png`。 (by Codex)
 - 2026-06-16 - [batch:552-oto-rhythm-pono-opening-polish] DONE - Codex: OtoTouchリズム左パネルで、リズム中にステージ上の小さい旧ポノを非表示にし、左下のポノカード内に通常ポノを表示。ライバル/ポノの待機時に拍に合わせた軽い拡大縮小を追加し、ポノのバンプ/フィーバー粒子も左下ポノを基準に変更。ステージ開始用の3コマ会話オープニングを曲ごとに追加し、「つぎへ/スキップ」から開始できる導線を実装。追加後、自動コミット `181f9ef` に大半が含まれたため、未コミット分は待機アニメのtransform競合修正と `sw.js` v1188 のキャッシュバンプのみ。Playwright 16:9/横長で上ポノ非表示、左下ポノ表示、オープニング表示、pageerrorなしを確認。 (by Codex)
