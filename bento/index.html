@@ -2959,6 +2959,11 @@ body.bento-complete-open .pono-dropdown {
 @keyframes tutPopIn { from{opacity:0} to{opacity:1} }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
+.tut-blue-outline {
+  outline: 3px solid #1E7FD8 !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.92), 0 0 14px rgba(30,127,216,0.5) !important;
+}
 
 /* ===== Bento full-flow tutorial (v2: ✊✋ two-hand drag demo) ===== */
 .tut-finger {
@@ -6508,6 +6513,7 @@ function closeCupEditor() {
   setSpeech(getBoxTierCount() > 1 ? `${freeActiveTier}だんめに おかずを いれよう！` : 'おかずを いれよう！');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
+  try { if (typeof tutorialOnCupEditorClosed === 'function') tutorialOnCupEditorClosed(); } catch (_) {}
 }
 function getFreeGuideCopy() {
   if (getEditingCup()) return FREE_GUIDE_COPY.cupEditor;
@@ -11150,13 +11156,16 @@ function showTutorial() {
 // 10-step button/tab/place-driven flow (no time-based progression).
 // state machine: tutorialState.step is the single source of truth.
 // Steps: greet → box → tab-rice → rice-place → decor → nori-ok →
-//        tab-okazu → okazu-red → tab-small → small-place → complete
+//        tab-okazu → okazu-red → tab-small → small-accessory →
+//        tab-small-food/small-cup-food → small-place/cup-ok → small-edit
 // 公開関数 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced /
 // tutorialOnStageComplete) は維持。 storage key は互換のため v1 を再利用。
 const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 // v3 step ids (button/tab/place driven only):
 //   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'decor' | 'nori-ok' |
-//   'tab-okazu' | 'okazu-red' | 'tab-small' | 'small-place' | 'complete' | 'done'
+//   'tab-okazu' | 'okazu-red' | 'tab-small' | 'small-accessory' |
+//   'tab-small-food' | 'small-place' | 'small-cup-food' | 'cup-ok' |
+//   'small-edit' | 'complete' | 'done'
 const tutorialState = {
   active: false,
   step: null,
@@ -11182,6 +11191,7 @@ const tutorialState = {
   paletteObserver: null,
   _paletteResyncRaf: 0,
   fingerDragKey: '',
+  outlinedEls: [],
 };
 
 function tutorialReadDone() {
@@ -11281,6 +11291,18 @@ function tutorialShowBubble(html, opts = {}) {
 }
 function tutorialHideBubble() {
   if (tutorialState.bubbleEl) tutorialState.bubbleEl.classList.add('hidden');
+}
+function tutorialOutlineElement(el) {
+  if (!el) return;
+  el.classList.add('tut-blue-outline');
+  if (!tutorialState.outlinedEls.includes(el)) tutorialState.outlinedEls.push(el);
+}
+function tutorialClearOutlines() {
+  if (!tutorialState.outlinedEls || !tutorialState.outlinedEls.length) return;
+  tutorialState.outlinedEls.forEach(el => {
+    try { el.classList.remove('tut-blue-outline'); } catch (_) {}
+  });
+  tutorialState.outlinedEls = [];
 }
 function tutorialDismissFreeGuideBlocker() {
   try {
@@ -11495,6 +11517,10 @@ function tutorialCompleteButton() {
   }
   return primary || document.querySelector('.free-complete-btn');
 }
+function tutorialButtonLabel(btn) {
+  const text = btn ? (btn.textContent || '').replace(/\s+/g, ' ').trim() : '';
+  return text || 'ボタン';
+}
 function tutorialNoriOkButton() {
   const buttons = document.querySelectorAll('.free-guide-actions button');
   for (const b of buttons) {
@@ -11598,6 +11624,16 @@ function tutorialFindNoriPaletteEl() {
   }
   return btns[0] || tutorialFirstPaletteItem();
 }
+function tutorialFindSmallFoodPaletteEl() {
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
+  return tutorialFirstPaletteItem();
+}
+function tutorialFindCupFoodPaletteEl() {
+  if (!getEditingCup()) return null;
+  return document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
+      || document.querySelector('.free-item-list .free-palette-item')
+      || tutorialFindSmallFoodPaletteEl();
+}
 function tutorialFindCupContentRowBtn() {
   return document.querySelector('.free-cup-content-row button')
       || document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
@@ -11607,6 +11643,17 @@ function tutorialFindPlacedCupEl() {
   // ステージ上のカップ DOM (snapTarget で配置済み)
   return document.querySelector('.free-placed-item.cup, .free-placed-item.snap-target, .free-placed-item.free-css-cup')
       || document.querySelector('.free-placed-item[data-type="cup"]');
+}
+function tutorialActiveCupPoint() {
+  const cupEl = tutorialFindPlacedCupEl();
+  if (cupEl) {
+    const r = cupEl.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  return tutorialStageRightHalfPoint();
+}
+function tutorialContextToolbarEl() {
+  return document.querySelector('.free-context-toolbar');
 }
 
 // ===== v3 utilities =====
@@ -11734,7 +11781,8 @@ function tutorialOnTabSwitch(tabId) {
   };
   if (s === 'tab-rice' && tabId === 'rice') advance('rice-place');
   else if (s === 'tab-okazu' && tabId === 'food') advance('okazu-red');
-  else if (s === 'tab-small' && tabId === 'accessory') advance('small-place');
+  else if (s === 'tab-small' && tabId === 'accessory') advance('small-accessory');
+  else if (s === 'tab-small-food' && tabId === 'food') advance('small-place');
 }
 
 // state 遷移ヘルパ。 タイマー進行は禁止。 これと item-placed/button のみが進行口。
@@ -11847,6 +11895,7 @@ function tutorialRenderStep() {
     tutorialClearTrims();
     tutorialClearMask();
     tutorialClearCompletePulse();
+    tutorialClearOutlines();
   }
 
   // 0. greet — 中央配置 + skip checkbox 縮小
@@ -12000,13 +12049,16 @@ function tutorialRenderStep() {
     tutorialShowBubble('『ちいさい おかず』タブを おしてね', { topVh: '18', side: 'left' });
     if (firstRender) {
       if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory') {
-        setTimeout(() => tutorialAdvance('small-place'), 0);
+        setTimeout(() => tutorialAdvance('small-accessory'), 0);
         return;
       }
     }
     const smallTab = tutorialFindTabBtn('accessory');
     if (smallTab) {
-      if (firstRender) tutorialTrimPath(smallTab, { radius: 10 });
+      if (firstRender) {
+        tutorialTrimPath(smallTab, { radius: 10 });
+        tutorialOutlineElement(smallTab);
+      }
       tutorialAnimateTap(smallTab);
     } else {
       tutorialHideFinger();
@@ -12014,22 +12066,92 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 9. small-place — cup or 小おかずを 1個以上 配置
-  if (step === 'small-place') {
-    tutorialShowBubble('すきな ちいさい おかずを いれてね', { topVh: '20' });
-    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+  // 9. small-accessory — カップ/仕切りを先に選ぶ
+  if (step === 'small-accessory') {
+    tutorialShowBubble('まず カップや しきりを えらぼう', { topVh: '18', side: 'left' });
+    if (firstRender) {
+      const cup = tutorialFindCupPaletteEl();
+      if (cup) tutorialTrimPath(cup, { radius: 12 });
+    }
     tutorialAnimateDragFromElWithRetry(
-      () => tutorialFirstPaletteItem(),
+      () => tutorialFindCupPaletteEl(),
       () => tutorialStageRightHalfPoint(),
       { fast }
     );
     return;
   }
 
-  // 10. complete — オレンジ色の primary ボタンに trim + tap (ラベルは状況依存で変わるためラベル非依存表現)
-  if (step === 'complete') {
-    tutorialShowBubble('オレンジいろの ボタンを おしてね', { topVh: '20' });
+  // 10. tab-small-food — カップ/仕切り後に小さいおかず本体へ戻る
+  if (step === 'tab-small-food') {
+    tutorialShowBubble('つぎは『おかず』を おしてね', { topVh: '18', side: 'left' });
+    const okazuTab = tutorialFindTabBtn('food');
+    if (okazuTab) {
+      if (firstRender) tutorialTrimPath(okazuTab, { radius: 10 });
+      tutorialAnimateTap(okazuTab);
+    } else {
+      tutorialHideFinger();
+    }
+    return;
+  }
+
+  // 11. small-cup-food — カップ内に小さいおかずを入れる
+  if (step === 'small-cup-food') {
+    tutorialShowBubble('カップに いれる おかずを えらぼう', { topVh: '18', side: 'left' });
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFindCupFoodPaletteEl(),
+      () => tutorialActiveCupPoint(),
+      { fast }
+    );
+    return;
+  }
+
+  // 12. small-place — 小さいおかずを 1個以上 配置
+  if (step === 'small-place') {
+    tutorialShowBubble('すきな 小さい おかずを いれてね', { topVh: '18', side: 'left' });
+    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFindSmallFoodPaletteEl(),
+      () => tutorialStageRightHalfPoint(),
+      { fast }
+    );
+    return;
+  }
+
+  // 13. cup-ok — カップ編集を閉じる
+  if (step === 'cup-ok') {
+    tutorialShowBubble('OKで カップを とじよう', { topVh: '18', side: 'left' });
+    const btn = document.querySelector('.free-cup-done-btn');
+    if (btn) {
+      if (firstRender) tutorialTrimPath(btn, { radius: 18 });
+      tutorialAnimateTap(btn);
+    } else {
+      tutorialAdvance('small-edit');
+    }
+    return;
+  }
+
+  // 14. small-edit — 直し方と最後のOKを短く案内
+  if (step === 'small-edit') {
     const btn = tutorialCompleteButton();
+    const label = tutorialButtonLabel(btn);
+    tutorialShowBubble(
+      `なおす: 小/中/大・↺↻・↑↓<br>下の「${label}」で すすむ`,
+      { topVh: '16', side: 'left' }
+    );
+    if (firstRender) {
+      const toolbar = tutorialContextToolbarEl();
+      if (toolbar) tutorialTrimPath(toolbar, { radius: 14 });
+      if (btn) tutorialTrimPath(btn, { radius: 24 });
+    }
+    if (btn) tutorialAnimateTap(btn);
+    else tutorialHideFinger();
+    return;
+  }
+
+  // 15. complete — primary ボタンに trim + tap
+  if (step === 'complete') {
+    const btn = tutorialCompleteButton();
+    tutorialShowBubble(`下の「${tutorialButtonLabel(btn)}」を おしてね`, { topVh: '18', side: 'left' });
     if (btn) {
       if (firstRender) tutorialTrimPath(btn, { radius: 24 });
       tutorialAnimateTap(btn);
@@ -12082,6 +12204,7 @@ function tutorialTeardown() {
   // v3: trims / mask / tab hook
   tutorialClearTrims();
   tutorialClearMask();
+  tutorialClearOutlines();
   tutorialUninstallTabHook();
   tutorialState.renderedStep = null;
 }
@@ -12138,6 +12261,10 @@ function tutorialOnGuideChange(/* step */) {
     tutorialAdvance('tab-okazu');
   }
 }
+function tutorialOnCupEditorClosed() {
+  if (!tutorialState.active) return;
+  if (tutorialState.step === 'cup-ok') tutorialAdvance('small-edit');
+}
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
   if (!item) return;
@@ -12159,14 +12286,25 @@ function tutorialOnItemPlaced(item) {
     tutorialAdvance('tab-small');
     return;
   }
+  if (step === 'small-accessory') {
+    if (item.type === 'cup' || item.snapTarget) {
+      tutorialAdvance('small-cup-food');
+      return;
+    }
+    if (item.type === 'divider') {
+      tutorialAdvance('tab-small-food');
+      return;
+    }
+  }
+  if (step === 'small-cup-food' && item.type === 'food' && item.parentCupId) {
+    tutorialAdvance('cup-ok');
+    return;
+  }
   if (step === 'small-place') {
-    // cup / 小おかず (food side or cup child) の配置で進める
-    // v3 fix: accessory タブで配置された時のみ進める (誤検知ガード)
+    // 小おかず (food side) の配置で進める。 accessory は small-accessory で扱う。
     const role = item.okazuRole || '';
-    const isAccessoryTab = (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory');
-    if (isAccessoryTab && (item.type === 'cup' || item.snapTarget ||
-        (item.type === 'food' && (item.parentCupId || role === 'side')))) {
-      tutorialAdvance('complete');
+    if (item.type === 'food' && !item.parentCupId && role === 'side') {
+      tutorialAdvance('small-edit');
       return;
     }
   }

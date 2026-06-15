@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-15 - [batch:516-bento-tutorial-small-okazu-edit-guidance] Codex: user 指摘「小さいおかずタブを青囲み、完成のオレンジボタンを具体化、小さいおかず内のカップ/仕切り説明、カップ内おかず選択、サイズ/回転/前後矢印の短い説明」を受領。HANDOFF / git log / `bento/index.html` を確認し、同修正未着手。既存のカップ/仕切り/編集UIを利用してチュートリアル文言とステップを追加する。 (by Codex)
+- 2026-06-15 - [batch:516-bento-tutorial-small-okazu-edit-guidance] DONE - Codex: bento full-flow tutorial の小さいおかず導線を拡張。`ちいさい おかず` タブを青枠で強調し、カップ/仕切り説明 → カップ内おかず選択 → カップOK → 編集操作案内 (`なおす: 小/中/大・↺↻・↑↓`) → 下の実ボタン名案内へ変更。`sw.js` v1149。inline script parse / diff check / Playwright 896x432 で tab 非重なり、カップ経路、仕切り経路、編集/完了文言を確認。レビュー観点: tutorial state machine、カップ編集 DOM、右パネル操作阻害、別件 `oto/index.html` 変更を非接触で自己確認。 (by Codex)
 - 2026-06-15 - [batch:515-bento-tutorial-decor-before-okazu-tab-bubble] Codex: user 指摘「ごはん後に『おかず』タブ案内が出るが、実際は先に海苔を飾る説明。さらに吹き出しがタブを隠して押せない」を受領。HANDOFF / git log / `bento/index.html` を確認し、同修正未着手。自由配置ガイドの `rice -> decor -> tier2Main` 順にフルチュートリアルを合わせ、タブ案内 bubble を右パネルから逃がす。 (by Codex)
 - 2026-06-15 - [batch:515-bento-tutorial-decor-before-okazu-tab-bubble] DONE - Codex: bento full-flow tutorial を `rice-place -> decor -> nori-ok -> okazu-red` の順へ修正し、ごはん後に誤って「おかずタブ」へ進むズレを解消。タブ案内 bubble は左側表示に変更し、フルチュートリアル中は本体ガイド blocking を自動解除。`sw.js` v1148。Playwright 896x432 で rice後decor、nori配置後nori-ok、noriOK後okazu-red、タブbubble/右タブ非重なり、inline script parse、diff check を確認。レビュー観点: state machine と本体 freeGuideStep の順序同期、右パネル操作阻害、既存 drag hand への副作用を自己確認。 (by Codex)
 - 2026-06-15 - [batch:514-maze-stage7-boss-hud-alpha] DONE - Codex: user 指摘「ボスの頭がゲージで見切れる」を受け、`maze/index.html` の `_drawBowlBossHud` で HUD/ゲージ全体に `ctx.globalAlpha = 0.64` を適用。ボス位置は v1146 のまま、表示だけ半透明化。`sw.js` は v1147。inline script parse / diff check / UTF-8 LF BOMなし確認済み。 (by Codex)
