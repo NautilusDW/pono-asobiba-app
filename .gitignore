@@ -40,6 +40,8 @@ tmp/
 le-*.diff
 _scratch*
 _debug*
+.staging_*
+.staging_*.html
 
 # Hybrid Stop hook (Option D) sentinel + debounce state
 .claude/.has-edits

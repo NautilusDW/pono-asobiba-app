@@ -5428,9 +5428,9 @@ function imgDrawCreatures(stage, now) {
   // feel cramped, then modulated per-creature for depth.
   const baseSize = stage.viewBox.h / 14;
   // Bob (subtle floating) is now gated on remaining creature count — only the
-  // last few survivors wiggle so the player can spot them quickly.
+  // 最後の1匹のみ揺れる (ステージ4-6匹想定で開始時静止、残り1匹で動き出して目立たせる)
   const aliveCount = (stage.creatures?.length || 0) - (_defeatedCreatures?.size || 0);
-  const shouldBob = aliveCount > 0 && aliveCount <= 4;
+  const shouldBob = aliveCount === 1;  // last one only
   for (const c of stage.creatures) {
     if (_defeatedCreatures.has(c.id || (c.x + ',' + c.y))) continue;
     const data = _creatureData(c);

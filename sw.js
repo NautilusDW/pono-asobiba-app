@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1124; // v1124: bento tutorial v2 polish (lock feedback, copy "あかい おかずは げんきの もとだよ", settings いま みる button) + oto fever bubble repositioned with clamp() guard
+const CACHE_VERSION = 1125; // v1125: maze - odoke/pyon マスク再差し替え + 揺れトリガを最後の1匹のみに変更 (hachi は据え置き)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
