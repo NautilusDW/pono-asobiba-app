@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1153; // v1153: boost Oto rhythm hit feel with receptor rings and per-judge SE | v1152 bento tutorial waits for confirmed drops and clarifies edit controls | v1151: add Pono space stage starparodier with alpha sprites | v1150: unify Oto rhythm left rail layout and settings menu | v1149 bento tutorial explains small-okazu cups/dividers and edit controls
+const CACHE_VERSION = 1154; // v1154 bento tutorial moves OK bubbles and replaces size buttons with sliders | v1153: boost Oto rhythm hit feel with receptor rings and per-judge SE | v1152 bento tutorial waits for confirmed drops and clarifies edit controls | v1151: add Pono space stage starparodier with alpha sprites | v1150: unify Oto rhythm left rail layout and settings menu
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

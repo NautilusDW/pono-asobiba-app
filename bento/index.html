@@ -1151,6 +1151,36 @@ html, body {
   border-color: var(--primary);
   color: #8B4513;
 }
+.free-size-slider {
+  display: grid;
+  grid-template-columns: auto minmax(78px, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 2px solid #8AD6B6;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #064E3B;
+  font-family: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+}
+.free-size-slider span {
+  line-height: 1;
+  white-space: nowrap;
+}
+.free-size-slider input[type="range"] {
+  width: 100%;
+  min-width: 78px;
+  accent-color: #22C55E;
+  cursor: pointer;
+}
+.free-context-toolbar .free-size-slider {
+  min-width: 132px;
+  padding: 2px 8px;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
+}
 .free-mask-panel,
 .free-brush-panel,
 .free-layer-panel {
@@ -8122,6 +8152,35 @@ function setSelectedAccessorySize(sizeKey) {
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
+function createFreeSizeSlider(item, opts = {}) {
+  const presets = getAccessorySizePresets(item);
+  if (presets.length < 2) return null;
+  const current = getAccessorySizeKey(item);
+  const currentIndex = Math.max(0, presets.findIndex(p => p.key === current));
+  const wrap = document.createElement('div');
+  wrap.className = 'free-size-slider';
+  const label = document.createElement('span');
+  label.textContent = 'サイズ';
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = String(presets.length - 1);
+  slider.step = '1';
+  slider.value = String(currentIndex);
+  slider.setAttribute('aria-label', 'サイズ');
+  const apply = () => {
+    const index = clamp(Math.round(Number(slider.value) || 0), 0, presets.length - 1);
+    if (opts.selectItemUid) freeSelectedItemUid = opts.selectItemUid;
+    setSelectedAccessorySize(presets[index].key);
+  };
+  slider.addEventListener('pointerdown', e => { e.stopPropagation(); });
+  slider.addEventListener('click', e => { e.stopPropagation(); });
+  slider.addEventListener('input', e => { e.stopPropagation(); apply(); });
+  slider.addEventListener('change', e => { e.stopPropagation(); apply(); });
+  wrap.appendChild(label);
+  wrap.appendChild(slider);
+  return wrap;
+}
 function getSelectedBrushItem() {
   const item = getSelectedFreeItem();
   return item && item.brushItem && Array.isArray(item.brushImages) && item.brushImages.length ? item : null;
@@ -8608,14 +8667,8 @@ function createFreeContextToolbar() {
 
   const presets = getAccessorySizePresets(item);
   if (presets.length) {
-    const current = getAccessorySizeKey(item);
-    presets.forEach(preset => {
-      toolbar.appendChild(createFreeContextButton(
-        preset.label,
-        preset.key === current ? 'active' : '',
-        () => setSelectedAccessorySize(preset.key)
-      ));
-    });
+    const sizeSlider = createFreeSizeSlider(item);
+    if (sizeSlider) toolbar.appendChild(sizeSlider);
   }
 
   if (item.type !== 'rice' && !item.snapTarget) {
@@ -9084,23 +9137,7 @@ function renderFreeTierControls() {
 function renderSelectedAccessorySizeControls() {
   const item = getSelectedFreeItem();
   if (item && item.snapTarget && freeCupToolMode === 'contents') return null;
-  const presets = getAccessorySizePresets(item);
-  if (!presets.length) return null;
-  const row = document.createElement('div');
-  row.className = 'free-size-row';
-  const current = getAccessorySizeKey(item);
-  presets.forEach(preset => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'free-size-btn' + (preset.key === current ? ' active' : '');
-    b.textContent = preset.label;
-    b.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      setSelectedAccessorySize(preset.key);
-    });
-    row.appendChild(b);
-  });
-  return row;
+  return createFreeSizeSlider(item);
 }
 function renderSelectedBrushControls() {
   return null;
@@ -9122,17 +9159,29 @@ function renderBrushStampControls() {
   panel.appendChild(preview);
   const actions = document.createElement('div');
   actions.className = 'free-brush-actions';
-  [
-    { level: 0, label: '小' },
-    { level: 1, label: '中' },
-    { level: 2, label: '大' },
-  ].forEach(preset => {
-    actions.appendChild(makeSmallControlButton(preset.label, freeBrushStampLevel === preset.level ? 'primary' : '', () => {
-      freeBrushStampLevel = preset.level;
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
-    }));
-  });
+  const sizeWrap = document.createElement('div');
+  sizeWrap.className = 'free-size-slider';
+  const sizeLabel = document.createElement('span');
+  sizeLabel.textContent = 'サイズ';
+  const sizeSlider = document.createElement('input');
+  sizeSlider.type = 'range';
+  sizeSlider.min = '0';
+  sizeSlider.max = '2';
+  sizeSlider.step = '1';
+  sizeSlider.value = String(clamp(freeBrushStampLevel, 0, 2));
+  sizeSlider.setAttribute('aria-label', 'サイズ');
+  const applyBrushSize = () => {
+    freeBrushStampLevel = clamp(Math.round(Number(sizeSlider.value) || 0), 0, 2);
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  };
+  sizeSlider.addEventListener('pointerdown', e => { e.stopPropagation(); });
+  sizeSlider.addEventListener('click', e => { e.stopPropagation(); });
+  sizeSlider.addEventListener('input', e => { e.stopPropagation(); applyBrushSize(); });
+  sizeSlider.addEventListener('change', e => { e.stopPropagation(); applyBrushSize(); });
+  sizeWrap.appendChild(sizeLabel);
+  sizeWrap.appendChild(sizeSlider);
+  actions.appendChild(sizeWrap);
   actions.appendChild(makeSmallControlButton('OK', '', exitFreeBrushStampMode));
   panel.appendChild(actions);
   return panel;
@@ -9760,24 +9809,7 @@ function renderFreeGuidePanel() {
 }
 function renderCupSizeControls(cup) {
   if (!cup) return null;
-  const presets = getAccessorySizePresets(cup);
-  if (!presets.length) return null;
-  const row = document.createElement('div');
-  row.className = 'free-size-row';
-  const current = getAccessorySizeKey(cup);
-  presets.forEach(preset => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'free-size-btn' + (preset.key === current ? ' active' : '');
-    b.textContent = preset.label;
-    b.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      freeSelectedItemUid = cup.uid;
-      setSelectedAccessorySize(preset.key);
-    });
-    row.appendChild(b);
-  });
-  return row;
+  return createFreeSizeSlider(cup, { selectItemUid: cup.uid });
 }
 function renderCupContentsList(cup) {
   const box = document.createElement('div');
@@ -11357,6 +11389,23 @@ function tutorialPositionBubble(anchorEl) {
   b.style.right = 'auto';
   b.style.transform = 'none';
 }
+function tutorialPositionBubbleBeside(anchorEl, opts = {}) {
+  const b = tutorialState.bubbleEl;
+  if (!b || !anchorEl) return;
+  const r = anchorEl.getBoundingClientRect();
+  const bw = b.offsetWidth || 220;
+  const bh = b.offsetHeight || 68;
+  const gap = opts.gap || 10;
+  let left = r.left - bw - gap;
+  if (left < 8) left = r.right + gap;
+  if (left + bw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - bw - 8);
+  let top = r.top + r.height / 2 - bh / 2;
+  top = Math.max(8, Math.min(top, window.innerHeight - bh - 8));
+  b.style.left = left + 'px';
+  b.style.top = top + 'px';
+  b.style.right = 'auto';
+  b.style.transform = 'none';
+}
 function tutorialAnimateDrag(fromPoint, toPoint, opts = {}) {
   tutorialEnsureLayer();
   if (tutorialIsRecallBlocking()) { tutorialHideFinger(); return; }
@@ -11547,6 +11596,15 @@ function tutorialNoriOkButton() {
   for (const b of buttons) {
     const t = b.textContent || '';
     if (t.indexOf('のりOK') >= 0) return b;
+  }
+  return null;
+}
+function tutorialCupOkButton() {
+  const editorBtn = document.querySelector('.free-cup-done-btn');
+  if (editorBtn) return editorBtn;
+  const toolbarButtons = document.querySelectorAll('.free-context-toolbar button.primary');
+  for (const b of toolbarButtons) {
+    if ((b.textContent || '').trim() === 'OK') return b;
   }
   return null;
 }
@@ -11949,8 +12007,8 @@ function tutorialRenderStep() {
   if (step === 'box') {
     tutorialApplyBoxLock();
     tutorialShowBubble(
-      'きょうは この おべんとうばこを つかうよ'
-      + '<br>したの 「これでOK」を おしてね',
+      'この はこを つかうよ'
+      + '<br>「これでOK」を おしてね',
       { topVh: '14' }
     );
     tutorialHideFinger();
@@ -12023,15 +12081,17 @@ function tutorialRenderStep() {
       tutorialAdvance('decor');
       return;
     }
-    tutorialShowBubble('「のりOK」を おしてね', { topVh: '18', side: 'left' });
     const btn = tutorialNoriOkButton();
     if (btn) {
+      tutorialShowBubble('「のりOK」を おしてね', { topVh: '18', side: 'left' });
+      tutorialPositionBubbleBeside(btn);
       if (firstRender) {
         tutorialTrimPath(btn, { radius: 22 });
         tutorialOutlineElement(btn);
       }
       tutorialAnimateTap(btn);
     } else {
+      tutorialShowBubble('「のりOK」を おしてね', { topVh: '18', side: 'left' });
       tutorialHideFinger();
     }
     return;
@@ -12060,7 +12120,7 @@ function tutorialRenderStep() {
   if (step === 'okazu-red') {
     tutorialShowBubble(
       'みぎがわに <span class="tut-emph-red">あかい</span> おかずを いれてね',
-      { topVh: '20' }
+      { topVh: '58', side: 'left' }
     );
     if (firstRender) tutorialMaskOverlay({ half: 'right' });
     // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
@@ -12147,10 +12207,14 @@ function tutorialRenderStep() {
 
   // 13. cup-ok — カップ編集を閉じる
   if (step === 'cup-ok') {
-    tutorialShowBubble('OKで カップを とじよう', { topVh: '18', side: 'left' });
-    const btn = document.querySelector('.free-cup-done-btn');
+    const btn = tutorialCupOkButton();
     if (btn) {
-      if (firstRender) tutorialTrimPath(btn, { radius: 18 });
+      tutorialShowBubble('みぎの「OK」で とじよう', { topVh: '18', side: 'left' });
+      tutorialPositionBubbleBeside(btn);
+      if (firstRender) {
+        tutorialTrimPath(btn, { radius: 18 });
+        tutorialOutlineElement(btn);
+      }
       tutorialAnimateTap(btn);
     } else {
       tutorialAdvance('small-edit');
