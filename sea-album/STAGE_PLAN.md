@@ -97,6 +97,9 @@
 - 見せ方: 重要な取得物は魚の吹き出しだけに頼らず、中央の獲得カード、上部の目的表示、画面端の矢印ガイドで必ず見えるようにする。
 - レイヤー: アルバム登録、コイン獲得、吹き出しなどの文字は潜水艦より前面に出し、プレイヤーに隠れないようにする。
 - 間の作り方: 開始直後の目の前の敵に鍵を持たせない。まず普通に浅瀬を進ませ、少し奥でヤドカリに会ってから鍵をもらう。
+- ガイド整理: 単なる移動方向には丸マーカーを出さない。「右へ進む」は上部目的表示だけにし、画面内の丸はヤドカリや光る貝など実体のある重要対象に限る。
+- セリフ整理: 吹き出しはヤドカリとボスなど重要キャラだけ。通常の生き物は吹き出し箱を使わず、濃い文字に白い縁取りを付けて短く出す。
+- 表情: 通常の生き物は最初は怒り顔。1発目はまだ怒り、2発目で「あれ？」、最後に喜び顔とハートで帰る。
 
 1. スタート近くの貝宝箱
    - x=520 あたりに、最初から閉じた貝を見せておく。
@@ -179,10 +182,6 @@ assets/images/sea-album/stage1/sea_anemone_happy.png
 assets/images/sea-album/stage1/horseshoe_crab_boss_normal.png
 assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png
 assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png
-assets/images/sea-album/stage1/item_shell_chest_closed.png
-assets/images/sea-album/stage1/item_shell_chest_open.png
-assets/images/sea-album/stage1/item_shell_key.png
-assets/images/sea-album/stage1/item_sandball.png
 ```
 
 プレイヤー潜水艦は、既存の共通素材を使う。
@@ -192,6 +191,15 @@ assets/images/ocean/Submarine/Submarine_003.png
 ```
 
 現在のゲームは `sea-album/index.html` 内の素材切り替え設定で、これらのアルファPNGを読み込む。
+
+アイテム素材は、前回のリアル寄りPNGをゲーム表示から外し、現状はCanvasの手描きfallbackを使う。手描き寄りに再生成したrawは `tmp/alpha_pending/571-sea-album-items-cartoon-redo/sea_album_stage1_items_cartoon_raw.png` に置いた。アルファ抜きと切り出し後、以下の4枚として差し替える。
+
+```text
+assets/images/sea-album/stage1/item_shell_chest_closed.png
+assets/images/sea-album/stage1/item_shell_chest_open.png
+assets/images/sea-album/stage1/item_shell_key.png
+assets/images/sea-album/stage1/item_sandball.png
+```
 
 ## エフェクト素材方針
 
