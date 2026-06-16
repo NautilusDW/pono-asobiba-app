@@ -814,10 +814,18 @@
     horseshoeNormal: '../assets/images/sea-album/stage1/horseshoe_crab_boss_normal.png',
     horseshoeEating: '../assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png',
     horseshoeHappy: '../assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png',
+    itemShellClosed: '../assets/images/sea-album/stage1/item_shell_chest_closed.png',
+    itemShellOpen: '../assets/images/sea-album/stage1/item_shell_chest_open.png',
+    itemShellKey: '../assets/images/sea-album/stage1/item_shell_key.png',
+    itemSandball: '../assets/images/sea-album/stage1/item_sandball.png',
     foodPellet: '../assets/images/undersea-cave/item_food_pellet.png',
     foodBubble: '../assets/images/undersea-cave/item_food_bubble.png',
     heartCluster: '../assets/images/mojikko/care/fx_heart_cluster.png'
   };
+  const SHELL_SPARKLE_KEYS = Array.from({ length: 16 }, (_, index) => 'shellSparkle' + String(index + 1).padStart(2, '0'));
+  SHELL_SPARKLE_KEYS.forEach((key, index) => {
+    ASSET[key] = '../assets/images/sea-album/effects/shell_open_sparkle_' + String(index + 1).padStart(2, '0') + '.png';
+  });
   const USE_ALPHA_SPRITES = true;
   const IMPORTANT_SPEECH_KEYS = new Set(['hermit', 'horseshoe']);
   const BOSS_ARENA_CAMERA = WORLD_W - BASE_W;
@@ -949,6 +957,7 @@
     enemyShots: [],
     hazards: [],
     impacts: [],
+    sparkles: [],
     coinsDropped: [],
     coinPops: [],
     enemies: [],
@@ -1118,7 +1127,7 @@
     if (state.bossDone) return 'Stage 1 クリア';
     if (state.bossSpawned) return 'カブトガニに えさを当てよう';
     if (!g.shellKey) return state.camera < KEY_HERMIT_CAMERA ? '生き物と仲良くして ヤドカリを探そう' : 'ヤドカリにえさをあげて カギをもらおう';
-    if (!g.shellOpened) return '左の光る貝へ戻って すなだんごを探そう';
+    if (!g.shellOpened) return '左の貝宝箱へ戻って すなだんごを探そう';
     if ((g.friendship || 0) < FRIENDSHIP_MAX) return 'なかよし度を100まで上げよう';
     if (!g.sandball) return 'すなだんごを探そう';
     return 'すなだんごを持って 右奥へ進もう';
@@ -1248,6 +1257,7 @@
     state.enemyShots = [];
     state.hazards = [];
     state.impacts = [];
+    state.sparkles = [];
     state.coinsDropped = [];
     state.coinPops = [];
     state.enemies = [];
@@ -1592,8 +1602,8 @@
       g.shellKey = true;
       g.keyAwardedAt = state.time;
       say(enemy, 'このカギで ひらくよ！', 2.3);
-      showEventCard('🔑', '貝のカギをもらった！', '左に戻って、光る貝の宝箱を開けよう。', 'gold', 3.4);
-      setPrompt('左の貝へ もどろう', 2.8);
+      showEventCard('🔑', '貝のカギをもらった！', '左に戻って、貝宝箱を開けよう。', 'gold', 3.4);
+      setPrompt('左の貝宝箱へ もどろう', 2.8);
       addFriendship(8, enemy.x, enemy.y);
     }
   }
@@ -1605,11 +1615,33 @@
     g.shellOpenedAt = state.time;
     g.sandball = true;
     g.sandballAt = state.time;
+    spawnShellSparkles(SHELL_CHEST_X, SHELL_CHEST_Y - 118, 11);
     scatterCoins(9, SHELL_CHEST_X, SHELL_CHEST_Y - 40);
     addImpact(SHELL_CHEST_X, SHELL_CHEST_Y - 40, 86, 'gold');
     addFriendship(12, SHELL_CHEST_X, SHELL_CHEST_Y - 62);
     showEventCard('砂', 'すなだんごを見つけた！', 'カブトガニの突進を止められるよ。仲良し度を100にしよう。', 'gold', 3.8);
     setPrompt('すなだんごを手に入れた！', 2.8);
+  }
+
+  function spawnShellSparkles(x, y, count = 10) {
+    const images = SHELL_SPARKLE_KEYS.map((key) => state.assets[key]).filter(Boolean);
+    for (let i = 0; i < count; i += 1) {
+      const angle = -Math.PI * 0.95 + (Math.PI * 1.08 * (i / Math.max(1, count - 1))) + rand(-0.2, 0.2);
+      const speed = rand(64, 136);
+      const life = rand(0.7, 1.22);
+      state.sparkles.push({
+        x: x + rand(-14, 14),
+        y: y + rand(-10, 22),
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - rand(16, 36),
+        rotation: rand(-0.35, 0.35),
+        vr: rand(-2.2, 2.2),
+        size: rand(28, 72),
+        life,
+        max: life,
+        image: images.length ? pick(images) : null
+      });
+    }
   }
 
   function defeatEnemy(enemy) {
@@ -1877,14 +1909,14 @@
       if (g.shellKey && dShell < 150) openShellChest();
       else if (!g.shellKey && dShell < 180) showGimmickHint('まだ開かない。右でカギを探そう');
       else if (!g.shellKey && p.x > BOSS_TRIGGER_X - 420) showGimmickHint('先にカギを探そう');
-      else if (g.shellKey && p.x > SHELL_CHEST_X + 520) showGimmickHint('左の光る貝へ もどろう');
+      else if (g.shellKey && p.x > SHELL_CHEST_X + 520) showGimmickHint('左の貝宝箱へ もどろう');
     }
 
     if (!state.bossSpawned && p.x > BOSS_TRIGGER_X) {
       if (!g.shellKey) {
         showBossGateHint('鍵', 'カギが必要', '右側でヤドカリにえさをあげて、貝のカギをもらおう。', '先にカギを探そう');
       } else if (!g.shellOpened) {
-        showBossGateHint('貝', '貝宝箱へ戻ろう', '左の光る貝を開けると、ボス対策の道具が見つかるよ。', '左の光る貝へ もどろう');
+        showBossGateHint('貝', '貝宝箱へ戻ろう', '左の貝宝箱を開けると、ボス対策の道具が見つかるよ。', '左の貝宝箱へ もどろう');
       } else if ((g.friendship || 0) < FRIENDSHIP_MAX) {
         showBossGateHint('友', 'まだ仲良し度が足りない', '生き物にえさをあげて、なかよし100まで上げよう。', 'もっと生き物と仲良くなろう');
       } else if (!g.sandball) {
@@ -2065,6 +2097,15 @@
   function updateParticles(dt) {
     state.impacts.forEach((i) => { i.life -= dt; });
     state.impacts = state.impacts.filter((i) => i.life > 0);
+    state.sparkles.forEach((s) => {
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vx *= 0.985;
+      s.vy -= 8 * dt;
+      s.rotation += s.vr * dt;
+      s.life -= dt;
+    });
+    state.sparkles = state.sparkles.filter((s) => s.life > 0);
     updateDroppedCoins(dt);
     state.coinPops.forEach((c) => {
       c.y -= 34 * dt;
@@ -2163,6 +2204,7 @@
     state.bombs.forEach(drawBomb);
     state.enemyShots.forEach(drawEnemyShot);
     state.impacts.forEach(drawImpact);
+    state.sparkles.forEach(drawSparkle);
     state.coinsDropped.forEach(drawDroppedCoin);
     drawPlayer();
     drawWaterOverlay();
@@ -2231,7 +2273,7 @@
       };
     }
     if (!g.shellOpened) {
-      return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: '光る貝', sub: 'カギで開く', tone: '#ffd86e' };
+      return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: '貝宝箱', sub: 'カギで開く', tone: '#ffd86e' };
     }
     if ((g.friendship || 0) < FRIENDSHIP_MAX) return null;
     if (!g.sandball) {
@@ -2319,42 +2361,37 @@
     const y = SHELL_CHEST_Y;
     if (x < -180 || x > BASE_W + 180) return;
     const open = g.shellOpened;
-    const glow = g.shellKey && !open;
+    const chestImage = open ? state.assets.itemShellOpen : state.assets.itemShellClosed;
     ctx.save();
     ctx.translate(x, y);
-    if (glow || open) {
-      ctx.globalAlpha = open ? 0.38 : 0.26 + Math.sin(state.time * 5) * 0.08;
-      ctx.fillStyle = '#fff2a8';
+    if (chestImage) drawBottomCentered(chestImage, 0, 6, open ? 168 : 160);
+    else {
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#8e6b43';
+      const topLift = open ? -34 : 0;
+      ctx.fillStyle = open ? '#ffe0a2' : '#f5c777';
       ctx.beginPath();
-      ctx.ellipse(0, -22, 88, 46, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -18 + topLift, 70, 27, open ? -0.12 : 0, Math.PI, 0);
       ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#8e6b43';
-    const topLift = open ? -34 : 0;
-    ctx.fillStyle = open ? '#ffe0a2' : '#f5c777';
-    ctx.beginPath();
-    ctx.ellipse(0, -18 + topLift, 70, 27, open ? -0.12 : 0, Math.PI, 0);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#f0ae55';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 78, 34, 0, 0, Math.PI);
-    ctx.lineTo(-78, 0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    for (let i = -3; i <= 3; i += 1) {
-      ctx.strokeStyle = 'rgba(133, 89, 43, 0.38)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(i * 18, -2);
-      ctx.quadraticCurveTo(i * 11, -32, 0, -44 + topLift * 0.45);
       ctx.stroke();
+      ctx.fillStyle = '#f0ae55';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 78, 34, 0, 0, Math.PI);
+      ctx.lineTo(-78, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      for (let i = -3; i <= 3; i += 1) {
+        ctx.strokeStyle = 'rgba(133, 89, 43, 0.38)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(i * 18, -2);
+        ctx.quadraticCurveTo(i * 11, -32, 0, -44 + topLift * 0.45);
+        ctx.stroke();
+      }
     }
     if (open) {
-      drawSandBallIcon(0, -31, 0.56 + Math.sin(state.time * 4) * 0.015);
+      drawSandBallIcon(0, -22, 0.58 + Math.sin(state.time * 4) * 0.015);
     } else if (!g.shellKey) {
       drawShellKeyIcon(0, -18, 0.24, 0.42);
     }
@@ -2362,6 +2399,14 @@
   }
 
   function drawShellKeyIcon(x, y, scale = 1, alpha = 1) {
+    const image = state.assets.itemShellKey;
+    if (image) {
+      ctx.save();
+      ctx.translate(x, y);
+      drawBottomCentered(image, 0, 18, 126 * scale, alpha);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
@@ -2409,6 +2454,14 @@
   }
 
   function drawSandBallIcon(x, y, scale = 1, alpha = 1) {
+    const image = state.assets.itemSandball;
+    if (image) {
+      ctx.save();
+      ctx.translate(x, y);
+      drawBottomCentered(image, 0, 16, 158 * scale, alpha);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(scale, scale);
@@ -2535,6 +2588,14 @@
     ctx.save();
     ctx.globalAlpha *= alpha;
     ctx.drawImage(image, x - width / 2, y - h / 2, width, h);
+    ctx.restore();
+  }
+
+  function drawBottomCentered(image, x, yBottom, width, alpha = 1) {
+    const h = width * image.height / image.width;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.drawImage(image, x - width / 2, yBottom - h, width, h);
     ctx.restore();
   }
 
@@ -3231,6 +3292,36 @@
     ctx.beginPath();
     ctx.arc(screenX(i.x), i.y, i.radius * (0.4 + pct * 0.9), 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSparkle(s) {
+    const pct = 1 - s.life / s.max;
+    const alpha = Math.sin((1 - pct) * Math.PI) * 0.92;
+    if (alpha <= 0.01) return;
+    const sx = screenX(s.x);
+    ctx.save();
+    ctx.translate(sx, s.y);
+    ctx.rotate(s.rotation);
+    ctx.globalAlpha = alpha;
+    if (s.image) {
+      const width = s.size * (0.92 + pct * 0.18);
+      const height = width * s.image.height / s.image.width;
+      ctx.shadowColor = 'rgba(255, 243, 168, 0.9)';
+      ctx.shadowBlur = 16;
+      ctx.drawImage(s.image, -width / 2, -height / 2, width, height);
+    } else {
+      ctx.strokeStyle = '#ffd86e';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(255, 243, 168, 0.9)';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.moveTo(-s.size * 0.28, 0);
+      ctx.lineTo(s.size * 0.28, 0);
+      ctx.moveTo(0, -s.size * 0.28);
+      ctx.lineTo(0, s.size * 0.28);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
