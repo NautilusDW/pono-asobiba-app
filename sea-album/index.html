@@ -647,7 +647,8 @@
     horseshoeEating: '../assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png',
     horseshoeHappy: '../assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png',
     foodPellet: '../assets/images/undersea-cave/item_food_pellet.png',
-    foodBubble: '../assets/images/undersea-cave/item_food_bubble.png'
+    foodBubble: '../assets/images/undersea-cave/item_food_bubble.png',
+    heartCluster: '../assets/images/mojikko/care/fx_heart_cluster.png'
   };
   const USE_ALPHA_SPRITES = true;
   const BOSS_ARENA_CAMERA = WORLD_W - BASE_W;
@@ -944,13 +945,14 @@
       state.coinsDropped.push({
         x: x + rand(-12, 12),
         y: y + rand(-16, 10),
-        vx: Math.cos(angle) * speed + rand(-28, 28),
-        vy: Math.sin(angle) * speed - rand(35, 90),
+        vx: Math.cos(angle) * speed + rand(-24, 24),
+        vy: Math.sin(angle) * speed - rand(8, 42),
         value,
         r: value >= 4 ? 16 : 12,
-        life: 8.5,
-        max: 8.5,
-        spin: rand(-4, 4),
+        life: 10.5,
+        max: 10.5,
+        groundY: clamp(y + rand(105, 220), 545, 760),
+        spinRate: rand(3.0, 5.2) * (Math.random() < 0.5 ? -1 : 1),
         phase: rand(0, Math.PI * 2)
       });
     }
@@ -1269,6 +1271,7 @@
     enemy.mood = 'happy';
     enemy.eatTimer = 0;
     enemy.vanishTimer = enemy.boss ? 1.8 : 1.18;
+    enemy.happyVanishMax = enemy.vanishTimer;
     say(enemy, pick(HAPPY_LINES[enemy.key] || ['ありがとう！']), enemy.boss ? 2.4 : 2.0);
     const type = ENEMY_TYPES[enemy.key];
     state.score += type.score;
@@ -1687,13 +1690,30 @@
         coin.vx += (p.x - coin.x) * pull * dt;
         coin.vy += (p.y - coin.y) * pull * dt;
         coin.magnet = true;
+        coin.settled = false;
       } else {
-        coin.vy += 95 * dt;
+        coin.magnet = false;
+        coin.vy += (coin.settled ? 20 : 118) * dt;
       }
-      coin.vx *= Math.pow(0.2, dt);
-      coin.vy *= Math.pow(0.34, dt);
+      coin.vx *= Math.pow(coin.settled && !coin.magnet ? 0.12 : 0.42, dt);
+      coin.vy *= Math.pow(coin.magnet ? 0.34 : 0.78, dt);
       coin.x += coin.vx * dt;
       coin.y += coin.vy * dt;
+      const groundY = coin.groundY || 760;
+      if (!coin.magnet && coin.y >= groundY) {
+        coin.y = groundY;
+        if (Math.abs(coin.vy) > 36) {
+          coin.vy *= -0.18;
+          coin.vx *= 0.55;
+        } else {
+          coin.vy = 0;
+          coin.settled = true;
+        }
+      }
+      if (coin.settled && !coin.magnet) {
+        coin.spinRate *= Math.pow(0.72, dt);
+        if (Math.abs(coin.spinRate) < 1.2) coin.spinRate = 1.2 * Math.sign(coin.spinRate || 1);
+      }
       coin.y = clamp(coin.y, 80, 760);
       if (d < COIN_COLLECT_RADIUS) {
         coin.life = 0;
@@ -1862,7 +1882,7 @@
   function drawCentered(image, x, y, width, alpha = 1) {
     const h = width * image.height / image.width;
     ctx.save();
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha *= alpha;
     ctx.drawImage(image, x - width / 2, y - h / 2, width, h);
     ctx.restore();
   }
@@ -2081,9 +2101,10 @@
     const type = ENEMY_TYPES[enemy.key];
     const image = state.assets[moodAssetKey(enemy)] || state.assets[enemy.key + 'Normal'];
     const mood = enemyMood(enemy);
+    const happyDone = enemy.defeated && enemy.mood === 'happy';
     ctx.save();
     ctx.translate(screenX(enemy.x), enemy.y);
-    if (enemy.defeated) ctx.globalAlpha = clamp(enemy.vanishTimer / (enemy.boss ? 1.8 : 1.18), 0, 1);
+    if (enemy.defeated) ctx.globalAlpha = clamp(enemy.vanishTimer / (enemy.happyVanishMax || (enemy.boss ? 1.8 : 1.18)), 0, 1);
     if (enemy.hit > 0) ctx.filter = 'brightness(1.8)';
     ctx.save();
     if (!enemy.boss && (enemy.dir || -1) > 0) ctx.scale(-1, 1);
@@ -2104,11 +2125,12 @@
     }
     ctx.restore();
     ctx.filter = 'none';
+    if (happyDone) drawHappyHearts(enemy);
     if (!enemy.defeated) {
       if (enemy.boss) drawBossBar(enemy);
       else drawSmallHp(enemy, type);
     }
-    if (enemy.speech) drawSpeechBubble(enemy.speech.text, enemy.boss ? -40 : 0, enemy.boss ? -230 : -enemy.size * 1.02, enemy.boss ? 360 : 230);
+    if (enemy.speech) drawSpeechBubble(enemy.speech.text, enemy.boss ? -40 : 0, enemy.boss ? -230 : -enemy.size * 1.02, enemy.boss ? 360 : 230, happyDone);
     ctx.restore();
   }
 
@@ -2137,7 +2159,49 @@
     ctx.fillText('カブトガニ', 0, -196);
   }
 
-  function drawSpeechBubble(text, x, y, w) {
+  function drawHappyHearts(enemy) {
+    const heart = state.assets.heartCluster;
+    const t = (enemy.happyVanishMax || 1.18) - enemy.vanishTimer;
+    const base = enemy.boss ? 1.08 : 0.72;
+    const spots = [
+      { x: enemy.size * 0.42, y: -enemy.size * 0.62, s: base, p: 0 },
+      { x: -enemy.size * 0.34, y: -enemy.size * 0.44, s: base * 0.72, p: 1.4 },
+      { x: enemy.size * 0.08, y: -enemy.size * 0.92, s: base * 0.58, p: 2.3 }
+    ];
+    ctx.save();
+    spots.forEach((spot) => {
+      const bob = Math.sin(state.time * 5.2 + spot.p + enemy.phase) * 5 - t * 18;
+      const pulse = 1 + Math.sin(state.time * 6.8 + spot.p) * 0.06;
+      ctx.save();
+      ctx.translate(spot.x, spot.y + bob);
+      ctx.rotate(Math.sin(state.time * 3 + spot.p) * 0.08);
+      if (heart) {
+        drawCentered(heart, 0, 0, 58 * spot.s * pulse, 0.96);
+      } else {
+        drawHeartShape(0, 0, 18 * spot.s * pulse);
+      }
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+
+  function drawHeartShape(x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(size / 24, size / 24);
+    ctx.fillStyle = '#ff6ca7';
+    ctx.strokeStyle = 'rgba(150, 22, 83, 0.22)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.bezierCurveTo(-18, -4, -8, -18, 0, -8);
+    ctx.bezierCurveTo(8, -18, 18, -4, 0, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSpeechBubble(text, x, y, w, happy = false) {
     ctx.save();
     ctx.font = '900 20px Zen Maru Gothic, sans-serif';
     ctx.textAlign = 'center';
@@ -2147,9 +2211,13 @@
     const h = 34 + lines.length * 24;
     const left = x - maxW / 2;
     const top = y - h / 2;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-    ctx.strokeStyle = 'rgba(41, 125, 152, 0.32)';
+    ctx.fillStyle = happy ? 'rgba(255, 225, 241, 0.96)' : 'rgba(255, 255, 255, 0.92)';
+    ctx.strokeStyle = happy ? 'rgba(255, 115, 170, 0.58)' : 'rgba(41, 125, 152, 0.32)';
     ctx.lineWidth = 3;
+    if (happy) {
+      ctx.shadowColor = 'rgba(255, 130, 190, 0.25)';
+      ctx.shadowBlur = 18;
+    }
     roundRect(left, top, maxW, h, 12);
     ctx.fill();
     ctx.stroke();
@@ -2160,7 +2228,12 @@
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#0d4964';
+    if (happy) {
+      ctx.shadowBlur = 0;
+      drawHeartShape(left + 24, top + 20, 16);
+      drawHeartShape(left + maxW - 24, top + h - 15, 13);
+    }
+    ctx.fillStyle = happy ? '#9f2865' : '#0d4964';
     lines.forEach((line, index) => {
       ctx.fillText(line, x, top + 22 + index * 24);
     });
@@ -2441,28 +2514,90 @@
 
   function drawDroppedCoin(c) {
     const alpha = clamp(c.life / Math.min(c.max, 1.2), 0, 1);
+    const spin = state.time * (c.spinRate || 3.8) + c.phase;
+    const face = Math.abs(Math.cos(spin));
+    const rx = Math.max(c.r * 0.16, c.r * (0.22 + face * 0.84));
+    const ry = c.r * 0.92;
+    const front = Math.cos(spin) >= 0;
     ctx.save();
     ctx.translate(screenX(c.x), c.y);
-    ctx.rotate(state.time * c.spin + c.phase);
     ctx.globalAlpha = alpha;
     ctx.shadowColor = c.magnet ? '#fff8b8' : '#ffd86e';
-    ctx.shadowBlur = c.magnet ? 18 : 9;
-    ctx.fillStyle = '#ffd86e';
-    ctx.strokeStyle = '#a66d12';
-    ctx.lineWidth = 3;
+    ctx.shadowBlur = c.magnet ? 18 : 10;
+
+    ctx.save();
+    ctx.globalAlpha *= c.settled ? 0.28 : 0.16;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(61, 45, 23, 0.42)';
     ctx.beginPath();
-    ctx.ellipse(0, 0, c.r, c.r * 0.86, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, c.r * 0.98, c.r * 0.88, c.r * 0.24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    const side = ctx.createLinearGradient(-rx, 0, rx, 0);
+    side.addColorStop(0, '#9b610d');
+    side.addColorStop(0.18, '#f1b83b');
+    side.addColorStop(0.52, '#ffdf75');
+    side.addColorStop(0.82, '#c88417');
+    side.addColorStop(1, '#7a4b0b');
+    ctx.fillStyle = side;
+    ctx.strokeStyle = '#8a5a12';
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx + c.r * 0.12, ry, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#fff7c6';
+
+    const faceGrad = ctx.createRadialGradient(-rx * 0.42, -ry * 0.5, c.r * 0.08, 0, 0, Math.max(rx, ry));
+    faceGrad.addColorStop(0, '#fff6ba');
+    faceGrad.addColorStop(0.42, front ? '#ffd95a' : '#e5a42a');
+    faceGrad.addColorStop(1, front ? '#c37a12' : '#9c6415');
+    ctx.fillStyle = faceGrad;
+    ctx.strokeStyle = '#fff0a2';
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.ellipse(-c.r * 0.3, -c.r * 0.28, c.r * 0.28, c.r * 0.18, -0.5, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, rx, ry * 0.86, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#9b6b18';
-    ctx.font = '900 ' + Math.round(c.r * 1.12) + 'px Zen Maru Gothic, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('C', 0, 1);
+    ctx.stroke();
+    if (face > 0.32) {
+      ctx.strokeStyle = 'rgba(130, 79, 14, 0.62)';
+      ctx.lineWidth = Math.max(1.2, c.r * 0.13);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, rx * 0.64, ry * 0.56, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.save();
+      ctx.scale(face, 1);
+      drawCoinStar(0, 0, c.r * 0.34);
+      ctx.restore();
+    } else {
+      ctx.strokeStyle = '#ffe082';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, -ry * 0.64);
+      ctx.lineTo(0, ry * 0.64);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawCoinStar(x, y, r) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#fff2a4';
+    ctx.strokeStyle = 'rgba(123, 79, 13, 0.5)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i += 1) {
+      const a = -Math.PI / 2 + i * Math.PI / 5;
+      const rr = i % 2 === 0 ? r : r * 0.45;
+      const px = Math.cos(a) * rr;
+      const py = Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
     ctx.restore();
   }
 

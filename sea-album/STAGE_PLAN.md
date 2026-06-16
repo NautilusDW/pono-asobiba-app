@@ -1,51 +1,58 @@
-# ポノの海底アルバム Stage Plan
+# ポノの海底アルバム ステージ計画
 
-## Core Loop
+## 基本ループ
 
-1. Stage を選ぶ。
-2. まっすぐ弾と、下へ落ちるぽよん弾で生き物を観察する。
+1. ステージを選ぶ。
+2. えさ魚雷と泡つきえさボムで生き物を観察する。
 3. 観察できた生き物がアルバムに登録される。
 4. アルバムで「すむところ」「たべもの」「からだのひみつ」を読む。
 5. 未発見カードとレアカードを集めるために再挑戦する。
 
-## Weapon Growth
+## えさの強化
 
-- Power 1: homing bait torpedo, one active shot at a time
-- Power 2: bait torpedo turns a little faster
-- Power 3: bubble food bomb can launch a 2-orb drop
-- Power 4: bait torpedo reloads a little faster, bubble food bomb has wider splash
+- パワー1: えさ魚雷。画面内に1発だけ出せる。
+- パワー2: えさ魚雷の曲がり方が少し強くなる。
+- パワー3: 泡つきえさボムを2個まで落とせる。
+- パワー4: えさ魚雷の再発射が少し早くなり、泡つきえさボムの効果範囲が広がる。
 
-## Exploration Gimmicks
+## 探索ギミック案
 
-Stage 1 should teach "go forward, find an item, go back, reveal a hidden thing" without adding a menu-heavy RPG layer.
+ステージ1では、メニューの多い探索ゲームにせず、「先へ進む → 何かを見つける → 左へ戻る → さっきなかったものが出る」を自然に覚えられるようにする。
 
-1. Hidden shell chest near the start
-   - A closed shell sits at x=520, visible but locked.
-   - After feeding the hermit crab, it drops a "shell key" pearl.
-   - Returning left and touching the closed shell opens it, scattering coins and revealing a rare album note.
+1. スタート近くの貝の宝箱
+   - x=520 あたりに、最初から閉じた貝を見せておく。
+   - ヤドカリにえさをあげて仲良くなると、「貝のかぎ」になる真珠を落とす。
+   - 左へ戻って閉じた貝に触れると開き、コインがゆっくりばらまかれて、レアなアルバムメモが出る。
 
-2. Bubble switch behind seaweed
-   - A seaweed curtain blocks a lower path around x=1850.
-   - Feeding the goby makes it point to a bubble switch just behind the curtain.
-   - A bubble food bomb that lands on the switch lifts the seaweed for that run.
+2. 海藻の奥の泡スイッチ
+   - x=1850 あたりの下ルートを海藻カーテンでふさぐ。
+   - ハゼにえさをあげると、海藻の奥にある泡スイッチを指さす。
+   - 泡つきえさボムをスイッチに落とすと、そのプレイ中だけ海藻が上がって通れる。
 
-3. Dark tidepool nook
-   - A dim side pocket sits left of the boss gate.
-   - The first pass only shows silhouettes.
-   - Buying or finding a "small light" lets the player revisit it and reveal one rare creature card.
+3. 暗いしおだまりの小部屋
+   - ボスゲートの少し左に、暗い横穴を置く。
+   - 初回は生き物のシルエットだけ見える。
+   - 「小さなライト」を買う、または拾ってから戻ると、レア生き物カードが1枚見つかる。
 
-4. Three-pearl boss gate
-   - The boss approach has three empty shell sockets.
-   - Pearl colors come from a small task each: feed all regular creatures once, open the start shell chest, and hit the bubble switch.
-   - When all three are set, the gate animates open and the boss warning starts.
+4. 3色真珠のボスゲート
+   - ボス前に、真珠を3つはめる貝の台座を置く。
+   - 真珠は「通常の生き物全員に1回えさをあげる」「スタート近くの貝宝箱を開ける」「泡スイッチを押す」で1つずつ手に入る。
+   - 3つそろうとゲートが開き、カブトガニの警告演出へ進む。
 
-5. Coin use
-   - Coins should first buy convenience items, not raw attack power: small light, magnet shell, and map hint.
-   - This keeps the feeding pace readable while still making repeated exploration feel useful.
+5. コインの使い道
+   - 最初は攻撃力ではなく、探索が楽しくなる便利アイテムに使う。
+   - 候補は「小さなライト」「磁石の貝」「地図ヒント」。
+   - えさを読む時間を保ちつつ、繰り返し探索する意味を作れる。
 
-## Seven Stages
+## 見た目メモ
 
-| Stage | Field | Regular album targets | Boss |
+- 生き物が最後に喜ぶときは、吹き出しをピンクにしてハートを出す。
+- 喜んだ生き物とハートは同じタイミングで薄くなって消える。
+- コインは平面の丸ではなく、3D風にくるくる回りながら、ゆっくり海底へ落ちる。
+
+## 7ステージ案
+
+| ステージ | 場所 | 通常アルバム対象 | ボス |
 |---|---|---|---|
 | 1 | しおだまりと浅瀬 | ヤドカリ、小エビ、ヒトデ、ハゼ、イソギンチャク | カブトガニ |
 | 2 | サンゴの迷路 | クマノミ、ナンヨウハギ、チョウチョウウオ、タツノオトシゴ、クリーナーシュリンプ | オウムガイ |
@@ -55,9 +62,9 @@ Stage 1 should teach "go forward, find an item, go back, reveal a hidden thing" 
 | 6 | 深海の海底 | ダイオウグソクムシ、深海エビ、ナマコ、アンコウ、タカアシガニ系 | シーラカンス |
 | 7 | 古代海底神殿 | ダイオウイカ、巨大クラゲ、古代魚風、深海甲殻類 | クラーケン伝説 |
 
-## Stage 1 Alpha Asset Targets
+## ステージ1 アルファ素材の配置先
 
-After alpha/crop is done, save the final PNGs as:
+アルファ抜きと切り抜きが終わった最終PNGは、以下の名前で保存する。
 
 ```text
 assets/images/sea-album/stage1/hermit_crab_normal.png
@@ -80,15 +87,15 @@ assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png
 assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png
 ```
 
-The player submarine uses the existing shared asset:
+プレイヤー潜水艦は、既存の共通素材を使う。
 
 ```text
 assets/images/ocean/Submarine/Submarine_003.png
 ```
 
-The current game loads these alpha PNGs with `USE_ALPHA_SPRITES` in `sea-album/index.html`.
+現在のゲームは `sea-album/index.html` 内の素材切り替え設定で、これらのアルファPNGを読み込む。
 
-## Effect Asset Policy
+## エフェクト素材方針
 
-- Bubbles, small food sparkles, hit rings, water shimmer, and other lightweight effects should be drawn as canvas particles.
-- Do not generate or request image assets for generic bubbles unless the effect needs a specific character-like design.
+- 泡、小さいきらめき、ヒットリング、水のゆらぎなどの軽いエフェクトは、画像ではなくゲーム画面上で直接描く。
+- キャラクターのような特別なデザインが必要な場合を除き、汎用の泡エフェクト画像は生成しない。
