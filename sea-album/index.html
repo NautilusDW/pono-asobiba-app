@@ -585,7 +585,7 @@
 
   const BASE_W = 1600;
   const BASE_H = 900;
-  const WORLD_W = 5200;
+  const WORLD_W = 6200;
   const PLAYER_MIN_X = 120;
   const PLAYER_MAX_X = WORLD_W - 220;
   const CAMERA_LEAD_X = 390;
@@ -605,6 +605,14 @@
   const BOMB_GRAVITY = 320;
   const COIN_MAGNET_RADIUS = 230;
   const COIN_COLLECT_RADIUS = 42;
+  const SHELL_CHEST_X = 560;
+  const SHELL_CHEST_Y = 748;
+  const SEAWEED_SWITCH_X = 2050;
+  const SEAWEED_SWITCH_Y = 704;
+  const SEAWEED_CURTAIN_X = 2140;
+  const PEARL_GATE_X = WORLD_W - BASE_W - 320;
+  const PEARL_GATE_Y = 604;
+  const GATE_LOCK_MARGIN = 210;
 
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -794,6 +802,7 @@
     enemies: [],
     powerups: [],
     bubbles: [],
+    gimmicks: createStageGimmicks(),
     album: new Set(),
     assets: Object.create(null),
     fireHeld: false,
@@ -847,6 +856,43 @@
 
   function screenX(x) {
     return x - state.camera;
+  }
+
+  function createStageGimmicks() {
+    return {
+      shellKey: false,
+      shellOpened: false,
+      switchRevealed: false,
+      switchOn: false,
+      friendPearl: false,
+      gateOpen: false,
+      friendCount: 0,
+      hintCooldown: 0,
+      gateAnnounced: false,
+      shellOpenedAt: 0,
+      switchOnAt: 0,
+      gateOpenAt: 0
+    };
+  }
+
+  function gatePearlCount() {
+    const g = state.gimmicks;
+    return (g.friendPearl ? 1 : 0) + (g.shellOpened ? 1 : 0) + (g.switchOn ? 1 : 0);
+  }
+
+  function gateIsOpen() {
+    return state.gimmicks && state.gimmicks.gateOpen;
+  }
+
+  function gateLockX() {
+    return gateIsOpen() || state.bossSpawned ? PLAYER_MAX_X : PEARL_GATE_X - GATE_LOCK_MARGIN;
+  }
+
+  function showGimmickHint(text, ttl = 1.45) {
+    const g = state.gimmicks;
+    if (!g || g.hintCooldown > 0) return;
+    setPrompt(text, ttl);
+    g.hintCooldown = ttl + 0.45;
   }
 
   function enemyMood(enemy) {
@@ -1005,6 +1051,7 @@
     state.enemies = [];
     state.powerups = [];
     state.bubbles = [];
+    state.gimmicks = createStageGimmicks();
     state.fireHeld = false;
     state.bombHeld = false;
     state.spawnTimer = 1.2;
@@ -1043,10 +1090,21 @@
     jetText.textContent = ready ? 'OK' : Math.max(1, Math.ceil(cooldown)).toString();
   }
 
+  function hasActiveEnemy(key) {
+    return state.enemies.some((enemy) => enemy.key === key && !enemy.defeated);
+  }
+
+  function chooseStageEnemy() {
+    const g = state.gimmicks;
+    if (g && !g.shellKey && !hasActiveEnemy('hermit') && state.camera < 1100) return 'hermit';
+    if (g && g.shellOpened && !g.switchRevealed && !hasActiveEnemy('goby') && state.camera > 850) return 'goby';
+    const order = ['shrimp', 'hermit', 'goby', 'seaStar', 'anemone'];
+    return order[Math.floor(Math.random() * order.length)];
+  }
+
   function spawnEnemy() {
     if (state.bossSpawned) return;
-    const order = ['shrimp', 'hermit', 'goby', 'seaStar', 'anemone'];
-    const key = order[Math.floor(Math.random() * order.length)];
+    const key = chooseStageEnemy();
     const type = ENEMY_TYPES[key];
     const y = rand(type.y[0], type.y[1]);
     const fromLeft = state.player.facing < 0 && state.camera > 260 && Math.random() < 0.75;
@@ -1265,6 +1323,63 @@
     state.impacts.push({ x, y, radius, life: 0.36, max: 0.36, kind });
   }
 
+  function updateFriendGimmick(enemy) {
+    if (!state.gimmicks || enemy.boss) return;
+    const g = state.gimmicks;
+    g.friendCount = Math.min(3, g.friendCount + 1);
+    if (enemy.key === 'hermit' && !g.shellKey) {
+      g.shellKey = true;
+      say(enemy, 'この しんじゅで ひらくよ！', 2.3);
+      setPrompt('左の貝へ もどろう', 2.8);
+    }
+    if (enemy.key === 'goby' && !g.switchRevealed) {
+      g.switchRevealed = true;
+      say(enemy, 'したに あわスイッチ！', 2.4);
+      setPrompt('泡ボムを スイッチへ', 2.8);
+    }
+    if (!g.friendPearl && g.friendCount >= 3) {
+      g.friendPearl = true;
+      addImpact(enemy.x, enemy.y - 26, 56, 'heart');
+      setPrompt('なかよし真珠 1つめ', 2.2);
+    }
+    refreshPearlGate();
+  }
+
+  function openShellChest() {
+    const g = state.gimmicks;
+    if (!g || g.shellOpened || !g.shellKey) return;
+    g.shellOpened = true;
+    g.shellOpenedAt = state.time;
+    scatterCoins(9, SHELL_CHEST_X, SHELL_CHEST_Y - 40);
+    addImpact(SHELL_CHEST_X, SHELL_CHEST_Y - 40, 86, 'gold');
+    setPrompt('貝がひらいた！ 真珠 2つめ', 2.8);
+    showToast('しおだまりメモを 見つけた！');
+    refreshPearlGate();
+  }
+
+  function activateBubbleSwitch() {
+    const g = state.gimmicks;
+    if (!g || g.switchOn) return;
+    g.switchOn = true;
+    g.switchRevealed = true;
+    g.switchOnAt = state.time;
+    scatterCoins(6, SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y - 34);
+    addImpact(SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y, 92, 'gold');
+    setPrompt('海藻が あがった！ 真珠 3つめ', 2.8);
+    refreshPearlGate();
+  }
+
+  function refreshPearlGate() {
+    const g = state.gimmicks;
+    if (!g || g.gateOpen) return;
+    if (g.friendPearl && g.shellOpened && g.switchOn) {
+      g.gateOpen = true;
+      g.gateOpenAt = state.time;
+      addImpact(PEARL_GATE_X, PEARL_GATE_Y, 150, 'gold');
+      setPrompt('3つそろった！ 奥へ進もう', 3.0);
+    }
+  }
+
   function defeatEnemy(enemy) {
     if (enemy.defeated) return;
     enemy.defeated = true;
@@ -1279,6 +1394,7 @@
     scatterCoins(type.coins || 0, enemy.x, enemy.y);
     unlockCard(type.card);
     addImpact(enemy.x, enemy.y, enemy.size * 0.72, enemy.boss ? 'boss' : 'heart');
+    updateFriendGimmick(enemy);
     if (!enemy.boss && state.observed % 3 === 0) {
       state.powerups.push({ x: enemy.x, y: enemy.y, r: 28, life: 8 });
     }
@@ -1287,8 +1403,6 @@
       state.bossPhase = 'done';
       state.finishTimer = 1.55;
       setPrompt('カブトガニと なかよくなった！', 2.2);
-    } else if (state.observed >= 10 && !state.bossSpawned) {
-      spawnBoss();
     }
     updateHud();
   }
@@ -1503,6 +1617,43 @@
     }
   }
 
+  function updateStageGimmicks(dt) {
+    const g = state.gimmicks;
+    if (!g) return;
+    g.hintCooldown = Math.max(0, g.hintCooldown - dt);
+    const p = state.player;
+
+    if (!g.shellOpened) {
+      const dShell = distance(p.x, p.y, SHELL_CHEST_X, SHELL_CHEST_Y - 52);
+      if (g.shellKey && dShell < 150) openShellChest();
+      else if (!g.shellKey && dShell < 180) showGimmickHint('ヤドカリが かぎを しってるかも');
+    }
+
+    if (g.switchRevealed && !g.switchOn) {
+      if (distance(p.x, p.y, SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y) < 210) {
+        showGimmickHint('泡ボムを スイッチへ');
+      }
+      for (const bomb of state.bombs) {
+        if (bomb.life > 0 && distance(bomb.x, bomb.y, SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y) < bomb.r + 70) {
+          bomb.life = 0;
+          activateBubbleSwitch();
+          break;
+        }
+      }
+    } else if (!g.switchRevealed && p.x > SEAWEED_CURTAIN_X - 360 && p.x < SEAWEED_CURTAIN_X + 80) {
+      showGimmickHint('ハゼが なにか しってるかも');
+    }
+
+    refreshPearlGate();
+    const dGate = Math.abs(p.x - PEARL_GATE_X);
+    if (!g.gateOpen && dGate < 260) {
+      showGimmickHint('真珠を 3つ あつめよう');
+    }
+    if (g.gateOpen && !state.bossSpawned && p.x > PEARL_GATE_X + 170) {
+      spawnBoss();
+    }
+  }
+
   function update(dt) {
     state.time += dt;
     if (state.promptTimer > 0) state.promptTimer -= dt;
@@ -1532,7 +1683,7 @@
     }
     const arenaLocked = state.bossPhase === 'scroll' || state.bossPhase === 'intro' || state.bossPhase === 'fight' || state.bossPhase === 'done';
     const minPlayerX = arenaLocked ? state.camera + 120 : PLAYER_MIN_X;
-    const maxPlayerX = arenaLocked ? state.camera + 780 : PLAYER_MAX_X;
+    const maxPlayerX = arenaLocked ? state.camera + 780 : Math.min(PLAYER_MAX_X, gateLockX());
     p.tx = clamp(p.tx, minPlayerX, maxPlayerX);
     p.ty = clamp(p.ty, 150, 735);
     p.x += (p.tx - p.x) * Math.min(1, dt * PLAYER_FOLLOW_RATE);
@@ -1558,8 +1709,6 @@
       spawnEnemy();
       state.spawnTimer = rand(2.0, 3.2);
     }
-    if (((state.time > 90 && state.camera > WORLD_W * 0.42) || state.observed >= 10) && !state.bossSpawned) spawnBoss();
-
     state.shots.forEach((s) => {
       if (s.homing) updateHomingShot(s, dt);
       else {
@@ -1581,6 +1730,7 @@
       }
     });
     state.bombs = state.bombs.filter((b) => b.life > 0 && b.x > state.camera - 120 && b.x < state.camera + BASE_W + 170);
+    updateStageGimmicks(dt);
 
     state.enemyShots.forEach((s) => {
       s.x += s.vx * dt;
@@ -1754,6 +1904,7 @@
     ctx.save();
     ctx.setTransform(canvas.width / BASE_W, 0, 0, canvas.height / BASE_H, 0, 0);
     drawBackground();
+    drawStageGimmicks();
     drawBubbles();
     drawBossEffects();
     state.hazards.forEach(drawHazard);
@@ -1805,6 +1956,175 @@
       ctx.closePath();
       ctx.fill();
     }
+    ctx.restore();
+  }
+
+  function drawStageGimmicks() {
+    if (!state.gimmicks) return;
+    drawSeaweedSwitch();
+    drawPearlGate();
+    drawShellChest();
+  }
+
+  function drawShellChest() {
+    const g = state.gimmicks;
+    const x = screenX(SHELL_CHEST_X);
+    const y = SHELL_CHEST_Y;
+    if (x < -180 || x > BASE_W + 180) return;
+    const open = g.shellOpened;
+    const glow = g.shellKey && !open;
+    ctx.save();
+    ctx.translate(x, y);
+    if (glow || open) {
+      ctx.globalAlpha = open ? 0.38 : 0.26 + Math.sin(state.time * 5) * 0.08;
+      ctx.fillStyle = '#fff2a8';
+      ctx.beginPath();
+      ctx.ellipse(0, -22, 88, 46, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#8e6b43';
+    const topLift = open ? -34 : 0;
+    ctx.fillStyle = open ? '#ffe0a2' : '#f5c777';
+    ctx.beginPath();
+    ctx.ellipse(0, -18 + topLift, 70, 27, open ? -0.12 : 0, Math.PI, 0);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#f0ae55';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 78, 34, 0, 0, Math.PI);
+    ctx.lineTo(-78, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    for (let i = -3; i <= 3; i += 1) {
+      ctx.strokeStyle = 'rgba(133, 89, 43, 0.38)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(i * 18, -2);
+      ctx.quadraticCurveTo(i * 11, -32, 0, -44 + topLift * 0.45);
+      ctx.stroke();
+    }
+    if (open) {
+      ctx.fillStyle = '#fff6c9';
+      ctx.strokeStyle = '#b8882c';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -30, 15 + Math.sin(state.time * 4) * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      drawCoinStar(0, -31, 8);
+    }
+    ctx.restore();
+  }
+
+  function drawSeaweedSwitch() {
+    const g = state.gimmicks;
+    const sx = screenX(SEAWEED_CURTAIN_X);
+    if (sx > -220 && sx < BASE_W + 220) {
+      ctx.save();
+      ctx.translate(sx, 716);
+      const open = g.switchOn;
+      const spread = open ? 76 : 0;
+      for (let i = -5; i <= 5; i += 1) {
+        const side = i < 0 ? -1 : 1;
+        const baseX = i * 22 + side * spread;
+        const h = 220 + Math.sin(i * 1.7) * 28;
+        ctx.strokeStyle = i % 2 ? '#3f9f63' : '#65bd5f';
+        ctx.lineWidth = 16;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(baseX, 38);
+        ctx.bezierCurveTo(baseX + Math.sin(state.time * 1.3 + i) * 26, -h * 0.25, baseX - side * 34, -h * 0.62, baseX + side * (open ? 46 : 10), -h);
+        ctx.stroke();
+      }
+      if (!open) {
+        ctx.globalAlpha = 0.78;
+        ctx.fillStyle = 'rgba(24, 91, 57, 0.22)';
+        roundRect(-134, -218, 268, 228, 22);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    if (!g.switchRevealed && !g.switchOn) return;
+    const x = screenX(SEAWEED_SWITCH_X);
+    const y = SEAWEED_SWITCH_Y;
+    if (x < -120 || x > BASE_W + 120) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.shadowColor = g.switchOn ? '#fff4a8' : '#aaf6ff';
+    ctx.shadowBlur = g.switchOn ? 22 : 14;
+    ctx.fillStyle = g.switchOn ? '#ffe17a' : '#d7fbff';
+    ctx.strokeStyle = g.switchOn ? '#c28a20' : '#49a9c1';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 38 + Math.sin(state.time * 4) * 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.beginPath();
+    ctx.arc(-11, -12, 10, 0, Math.PI * 2);
+    ctx.fill();
+    if (!g.switchOn) {
+      ctx.fillStyle = '#0d6e84';
+      ctx.font = '900 18px Zen Maru Gothic, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('あわ', 0, 64);
+    }
+    ctx.restore();
+  }
+
+  function drawPearlGate() {
+    const g = state.gimmicks;
+    const x = screenX(PEARL_GATE_X);
+    const y = PEARL_GATE_Y;
+    if (x < -260 || x > BASE_W + 260) return;
+    const open = g.gateOpen;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.globalAlpha = open ? 0.5 : 0.9;
+    for (let side = -1; side <= 1; side += 2) {
+      const slide = open ? side * 92 : 0;
+      ctx.fillStyle = side < 0 ? '#7cc4b2' : '#69b7a2';
+      ctx.strokeStyle = 'rgba(21, 85, 82, 0.55)';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(side * 48 + slide, 0, 56, 156, 0.1 * side, -Math.PI / 2, Math.PI / 2);
+      ctx.lineTo(side * 48 + slide, -156);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    if (!open) {
+      ctx.fillStyle = 'rgba(8, 57, 74, 0.28)';
+      roundRect(-86, -142, 172, 282, 44);
+      ctx.fill();
+    }
+    const pearls = [
+      { on: g.friendPearl, color: '#a7e7ff', x: -58 },
+      { on: g.shellOpened, color: '#fff0a6', x: 0 },
+      { on: g.switchOn, color: '#f8a7df', x: 58 }
+    ];
+    pearls.forEach((pearl) => {
+      ctx.save();
+      ctx.translate(pearl.x, -176);
+      ctx.shadowColor = pearl.on ? pearl.color : 'transparent';
+      ctx.shadowBlur = pearl.on ? 16 : 0;
+      ctx.fillStyle = pearl.on ? pearl.color : '#d7e1dc';
+      ctx.strokeStyle = pearl.on ? '#ffffff' : '#75918d';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    });
+    ctx.fillStyle = open ? '#fff3ae' : '#e9fdff';
+    ctx.font = '900 22px Zen Maru Gothic, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(open ? 'ひらいた！' : gatePearlCount() + ' / 3', 0, 174);
     ctx.restore();
   }
 

@@ -17,6 +17,9 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-16 - [batch:562-oto-title-mode-choice] Codex: user 依頼「OtoTouchタイトル画面をタップしたら、同じ青背景の上でリズム/自由を選ぶ。リズムを先、文言は任せる」を受領。既存 Sea Album batch:561 の未コミット差分は触らず、`oto/index.html` と cache bump だけ対応する。 (by Codex)
+- 2026-06-16 - [batch:561-sea-album-stage1-gimmicks] Codex: user 依頼「Sea Album ステージ1から具体ギミックを実装。必要なら横幅拡張、上下スクロールは将来で一面は左右だけ」を受領。貝キー/戻り宝箱/泡スイッチ/3真珠ゲート/ボス解放を横探索の最初の実装として入れる。 (by Codex)
+- 2026-06-16 - [batch:561-sea-album-stage1-gimmicks] DONE - Codex: Sea Album Stage 1 を横探索フローに拡張。ヤドカリの貝キー、スタート近くの貝宝箱、ハゼ解放の泡スイッチ、3真珠ゲート、ゲート通過後のカブトガニ警告を実装し、時間/観察数でのボス自動出現を撤去。`STAGE_PLAN.md` を日本語で具体化し、`sw.js` を v1207 へ更新。検証: HTML inline script parse / `node --check sw.js` / `git diff --check` / UTF-8 BOMなしLF確認 / Playwright desktop 1366x768 と mobile 844x390 で貝開放、泡スイッチ、ゲート開閉、閉ゲート移動制限、ゲート後ボス警告、横はみ出しなしを確認。 (by Codex)
 - 2026-06-16 - [batch:559-oto-rhythm-bubble-above-tap-pitch] Codex: user 指摘「リズム開幕の吹き出しはキャラ上、押下時3Dボタンが切れて見える、リズム中に押した音階音が聞こえず長音も伸びない」を受領。既存 `oto/index.html` / `sw.js` を土台に、吹き出し位置、WebGLキー描画順/深度、タップ音量と長音持続を修正する。 (by Codex)
 - 2026-06-16 - [batch:559-oto-rhythm-bubble-above-tap-pitch] DONE - Codex: OtoTouchリズム開幕の吹き出しをライバル上へ移動し、ボタンはキャラ下へ分離。WebGLキーは影/側面/ハローのdepth writeを分け、ヒット時はノートを先に除去してからキー押下描画するよう修正。リズム中のタップ音階音を増音し、ヒットした譜面の beatLen に応じて長音を伸ばすよう変更。`sw.js` は並行中 v1205 Sea Album 差分の上に v1206 へ更新。検証: inline script parse / `node --check sw.js` / `git diff --check` / Playwright desktop 1366x768・低背844x390で吹き出し上配置、WebGLキー押下、DOM after非表示、ヒット後activeNotes 0、長音duration計算、pageerror/404なしを確認。 (by Codex)
 - 2026-06-16 - [batch:560-sea-album-happy-heart-coin-doc] Codex: user 指摘「Sea Album の最後の喜び吹き出しをピンクにしてハートと一緒に退場、コインを3D風にくるくる落下、英語になった STAGE_PLAN.md を日本語化」を受領。既存 batch:557 を土台に `sea-album/index.html` / `STAGE_PLAN.md` / `sw.js` 中心で対応する。 (by Codex)
