@@ -1841,7 +1841,23 @@
         thumb: 'assets/ui/thumb_quiz-sound.webp'
       }
     ];
-    const MENU_GAMES = GAMES.filter((game) => game.id !== 'quiz-sound');
+    // tier:'sub' のカードは アプリ版 (APP_BUILD=1) でのみ表示。
+    // 本版 (= window.__APP_BUILD__ undefined) では『じゅんびちゅう』風 UI ごと完全に
+    // hide することで、ユーザーに「本版にいずれ来るゲーム」と誤解させないようにする。
+    // PonoTier.isAppBuild() を優先使用し、未ロード時は window.__APP_BUILD__ 直読みで fallback。
+    const __isAppBuild = (() => {
+      try {
+        if (window.PonoTier && typeof window.PonoTier.isAppBuild === 'function') {
+          return window.PonoTier.isAppBuild();
+        }
+      } catch (_) {}
+      return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
+    })();
+    const MENU_GAMES = GAMES.filter((game) => {
+      if (game.id === 'quiz-sound') return false;
+      if (game.tier === 'sub' && !__isAppBuild) return false;
+      return true;
+    });
 
     let currentIdx = 0;
     let activeBgEl = 'A';
