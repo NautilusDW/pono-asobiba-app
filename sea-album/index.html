@@ -180,6 +180,46 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  .jet-btn {
+    position: absolute;
+    z-index: 24;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+    width: 78px;
+    height: 78px;
+    border: 1px solid rgba(255, 255, 255, 0.68);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 36% 26%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.12) 34%, transparent 35%),
+      linear-gradient(180deg, #e8ffff, #62d7f0 54%, #1f91c3);
+    box-shadow: 0 8px 0 rgba(13, 79, 116, 0.48), 0 16px 26px rgba(0, 38, 64, 0.24);
+    color: #06364f;
+    font: 900 0.78rem/1 'Zen Maru Gothic', sans-serif;
+    display: grid;
+    place-items: center;
+    gap: 2px;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .jet-btn span,
+  .jet-btn strong {
+    display: block;
+    line-height: 1;
+  }
+
+  .jet-btn strong {
+    font-size: 1.05rem;
+  }
+
+  .jet-btn[disabled] {
+    cursor: default;
+    filter: grayscale(0.35);
+    opacity: 0.58;
+    transform: translateY(4px);
+    box-shadow: 0 4px 0 rgba(13, 79, 116, 0.42), 0 10px 18px rgba(0, 38, 64, 0.18);
+  }
+
   .overlay {
     position: absolute;
     inset: 0;
@@ -403,10 +443,23 @@
     .hud-chip span { font-size: 0.5rem; }
     .hud-chip strong { font-size: 0.76rem; }
     .prompt {
+      left: max(8px, env(safe-area-inset-left));
+      right: 76px;
+      width: auto;
       min-height: 36px;
+      transform: none;
       padding: 6px 10px;
       font-size: 0.82rem;
     }
+    .jet-btn {
+      width: 58px;
+      height: 58px;
+      right: max(8px, env(safe-area-inset-right));
+      bottom: max(8px, env(safe-area-inset-bottom));
+      font-size: 0.62rem;
+      box-shadow: 0 5px 0 rgba(13, 79, 116, 0.48), 0 10px 18px rgba(0, 38, 64, 0.2);
+    }
+    .jet-btn strong { font-size: 0.82rem; }
     .panel {
       padding: 14px;
       max-height: calc(100dvh - 24px);
@@ -446,8 +499,9 @@
     </div>
   </div>
 
-  <div class="prompt" id="prompt">左クリックで まっすぐ弾、右クリックで ぽよん弾</div>
+  <div class="prompt" id="prompt">左クリック長押しで えさ弾とボムを連射</div>
   <div class="toast" id="toast">アルバムに ついか！</div>
+  <button class="jet-btn" id="jetBtn" type="button" disabled><span>JET</span><strong id="jetText">OK</strong></button>
   <div id="loading">よみこみ中...</div>
 
   <div class="overlay" id="startOverlay">
@@ -455,7 +509,7 @@
       <div class="panel-head">
         <div>
           <h1>ポノの海底アルバム</h1>
-          <p class="panel-copy">Stage 1 は、しおだまりと浅瀬。左クリックのまっすぐ弾と、右クリックのぽよん弾で、海の生き物を観察してアルバムに集めよう。</p>
+          <p class="panel-copy">Stage 1 は、しおだまりと浅瀬。左クリック長押しやドラッグでえさ弾とボムを連射し、海の生き物と仲良くなってアルバムに集めよう。</p>
         </div>
       </div>
       <div class="stage-grid" id="startStageGrid"></div>
@@ -545,6 +599,8 @@
   const powerText = document.getElementById('powerText');
   const albumText = document.getElementById('albumText');
   const scoreText = document.getElementById('scoreText');
+  const jetBtn = document.getElementById('jetBtn');
+  const jetText = document.getElementById('jetText');
   const startOverlay = document.getElementById('startOverlay');
   const albumOverlay = document.getElementById('albumOverlay');
   const detailOverlay = document.getElementById('detailOverlay');
@@ -572,9 +628,14 @@
     anemoneHappy: '../assets/images/sea-album/stage1/sea_anemone_happy.png',
     horseshoeNormal: '../assets/images/sea-album/stage1/horseshoe_crab_boss_normal.png',
     horseshoeEating: '../assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png',
-    horseshoeHappy: '../assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png'
+    horseshoeHappy: '../assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png',
+    foodPellet: '../assets/images/undersea-cave/item_food_pellet.png'
   };
   const USE_ALPHA_SPRITES = true;
+  const BOSS_ARENA_CAMERA = WORLD_W - BASE_W;
+  const BOSS_TARGET_X = BOSS_ARENA_CAMERA + 1190;
+  const BOSS_START_X = BOSS_ARENA_CAMERA + BASE_W + 260;
+  const PLAYER_HIT_RADIUS = 54;
 
   const STAGES = [
     ['しおだまりと浅瀬', 'ヤドカリやカブトガニ'],
@@ -661,6 +722,31 @@
     horseshoe: 1.55
   };
 
+  const ENEMY_TAUNTS = {
+    hermit: ['なにしに きたんだ？', 'ぼくの すみかに ちかづくなー！'],
+    shrimp: ['ひゃっ！ だれだ！', 'ここは ぼくたちの しおだまりだよ！'],
+    seaStar: ['のっそり まもるぞー', 'あやしい せんすいかんだなあ'],
+    goby: ['そこを とおすわけには いかないぞ', 'すなけむりで かくれちゃうぞ！'],
+    anemone: ['ふわふわ さわるなー！', 'ここで なにを しているの？']
+  };
+
+  const HAPPY_LINES = {
+    hermit: ['えさを くれるの？ いいひとだ！', 'ありがとう！ きれいな 貝がらの場所を おしえるね'],
+    shrimp: ['もぐもぐ！ なかよくしよう！', '岩のすきまには 小さななかまが いるよ'],
+    seaStar: ['ごちそうさま。ゆっくり 案内するね', '海の底も よく見ると 足あとがあるよ'],
+    goby: ['おいしい！ 砂地の先に ひみつがあるよ', 'もう こわくないよ。いっしょに 探そう'],
+    anemone: ['えさ うれしいな。サンゴの道は 右からだよ', '花みたいでも 動物なんだよ'],
+    horseshoe: ['むむ、悪いやつでは なかったのか', '古い海のことなら まかせてくれ']
+  };
+
+  const BOSS_LINES = {
+    warning: 'WARNING',
+    intro: 'おまえたちに 好きなようには させないぞ！',
+    charge: '砂をけって つっこむぞ！',
+    laser: 'しっぽの ひかりを うけてみろ！',
+    normal: '泡と砂で おいかえしてやる！'
+  };
+
   const state = {
     mode: 'ready',
     time: 0,
@@ -670,10 +756,12 @@
     bossSpawned: false,
     bossDone: false,
     camera: 0,
-    player: { x: 220, y: 440, tx: 220, ty: 440, shield: 0 },
+    player: { x: 220, y: 440, tx: 220, ty: 440, shield: 0, hit: 0, jetCooldown: 0, jetTimer: 0, jetVx: 0, jetVy: 0 },
     keys: Object.create(null),
     shots: [],
     bombs: [],
+    enemyShots: [],
+    hazards: [],
     impacts: [],
     enemies: [],
     powerups: [],
@@ -682,6 +770,11 @@
     assets: Object.create(null),
     fireHeld: false,
     bombHeld: false,
+    bossPhase: 'none',
+    bossTimer: 0,
+    bossAttackIndex: 0,
+    finishTimer: 0,
+    finishStarted: false,
     promptTimer: 0,
     toastTimer: 0,
     spawnTimer: 0,
@@ -716,6 +809,10 @@
     return min + Math.random() * (max - min);
   }
 
+  function pick(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
   function distance(a, b, x, y) {
     return Math.hypot(a - x, b - y);
   }
@@ -739,6 +836,11 @@
     if (enemy.defeated) return;
     enemy.mood = 'eating';
     enemy.eatTimer = 0.34;
+    if (!enemy.speech || enemy.speech.ttl < 0.4) say(enemy, 'もぐもぐ...', 0.75);
+  }
+
+  function say(enemy, text, ttl = 2.1) {
+    enemy.speech = { text, ttl };
   }
 
   function setPrompt(text, ttl = 2.2) {
@@ -797,10 +899,17 @@
     state.observed = 0;
     state.bossSpawned = false;
     state.bossDone = false;
+    state.bossPhase = 'none';
+    state.bossTimer = 0;
+    state.bossAttackIndex = 0;
+    state.finishTimer = 0;
+    state.finishStarted = false;
     state.camera = 0;
-    state.player = { x: 220, y: 440, tx: 220, ty: 440, shield: 0 };
+    state.player = { x: 220, y: 440, tx: 220, ty: 440, shield: 0, hit: 0, jetCooldown: 0, jetTimer: 0, jetVx: 0, jetVy: 0 };
     state.shots = [];
     state.bombs = [];
+    state.enemyShots = [];
+    state.hazards = [];
     state.impacts = [];
     state.enemies = [];
     state.powerups = [];
@@ -812,7 +921,7 @@
     state.bombTimer = 0;
     startOverlay.hidden = true;
     finishOverlay.hidden = true;
-    setPrompt('左クリックで まっすぐ弾、右クリックで ぽよん弾', 3.2);
+    setPrompt('左クリック長押しで えさ弾とボムを いっしょに連射', 3.2);
     updateHud();
   }
 
@@ -832,6 +941,14 @@
     powerText.textContent = String(state.power);
     albumText.textContent = state.album.size + ' / ' + CARDS.length;
     scoreText.textContent = String(state.score);
+    syncJetButton();
+  }
+
+  function syncJetButton() {
+    const cooldown = state.player.jetCooldown || 0;
+    const ready = state.mode === 'playing' && cooldown <= 0;
+    jetBtn.disabled = !ready;
+    jetText.textContent = ready ? 'OK' : Math.max(1, Math.ceil(cooldown)).toString();
   }
 
   function spawnEnemy() {
@@ -840,7 +957,7 @@
     const key = order[Math.floor(Math.random() * order.length)];
     const type = ENEMY_TYPES[key];
     const y = rand(type.y[0], type.y[1]);
-    state.enemies.push({
+    const enemy = {
       key,
       x: Math.min(WORLD_W - 130, state.camera + BASE_W + 100),
       y,
@@ -856,15 +973,27 @@
       defeated: false,
       vanishTimer: 0,
       boss: false
-    });
+    };
+    say(enemy, pick(ENEMY_TAUNTS[key]), 2.2);
+    state.enemies.push(enemy);
   }
 
   function spawnBoss() {
     if (state.bossSpawned) return;
     state.bossSpawned = true;
-    state.enemies.push({
+    state.bossPhase = 'warning';
+    state.bossTimer = 2.15;
+    state.spawnTimer = 999;
+    state.powerups = [];
+    state.enemies = state.enemies.filter((enemy) => enemy.defeated);
+    setPrompt('WARNING! カブトガニが 近づいてくる', 2.3);
+  }
+
+  function createBossEnemy() {
+    if (state.enemies.some((enemy) => enemy.boss)) return;
+    const boss = {
       key: 'horseshoe',
-      x: Math.min(WORLD_W - 250, state.camera + BASE_W + 220),
+      x: BOSS_START_X,
       y: 615,
       baseY: 615,
       hp: ENEMY_TYPES.horseshoe.hp,
@@ -877,9 +1006,17 @@
       eatTimer: 0,
       defeated: false,
       vanishTimer: 0,
-      boss: true
-    });
-    setPrompt('古代のボスが あらわれた！ ぽよん弾も使おう', 3.2);
+      boss: true,
+      attackKind: 'intro',
+      attackPhase: 'intro',
+      attackT: 0,
+      attackCooldown: 0.8,
+      attackPulse: 0,
+      dashY: 615
+    };
+    say(boss, BOSS_LINES.intro, 2.3);
+    state.enemies.push(boss);
+    setPrompt('カブトガニが あらわれた！ 合図を見てジェットでよけよう', 3.2);
   }
 
   function fireShots() {
@@ -890,7 +1027,8 @@
         y: state.player.y - 4,
         vx: 620,
         vy: Math.sin(angle) * 560,
-        r: 13,
+        r: 18,
+        damage: 1,
         life: 1.8
       });
     });
@@ -900,13 +1038,14 @@
     const count = state.power >= 3 ? 2 : 1;
     for (let i = 0; i < count; i += 1) {
       state.bombs.push({
-        x: state.player.x + 60,
-        y: state.player.y + 30,
-        vx: 310 + i * 46,
-        vy: -230 - i * 30,
-        r: 18,
-        blast: state.power >= 4 ? 82 : 64,
-        life: 2.2
+        x: state.player.x + 66,
+        y: state.player.y + 42 + i * 10,
+        vx: 360 + i * 44,
+        vy: 120 + i * 28,
+        r: 23,
+        blast: state.power >= 4 ? 96 : 74,
+        damage: 4,
+        life: 2.5
       });
     }
   }
@@ -933,6 +1072,12 @@
     return true;
   }
 
+  function tryFireBoth() {
+    const shot = tryFireShots();
+    const bomb = tryFireBombs();
+    return shot || bomb;
+  }
+
   function addImpact(x, y, radius, kind = 'gold') {
     state.impacts.push({ x, y, radius, life: 0.36, max: 0.36, kind });
   }
@@ -942,7 +1087,8 @@
     enemy.defeated = true;
     enemy.mood = 'happy';
     enemy.eatTimer = 0;
-    enemy.vanishTimer = enemy.boss ? 1.05 : 0.72;
+    enemy.vanishTimer = enemy.boss ? 1.8 : 1.18;
+    say(enemy, pick(HAPPY_LINES[enemy.key] || ['ありがとう！']), enemy.boss ? 1.8 : 1.45);
     const type = ENEMY_TYPES[enemy.key];
     state.score += type.score;
     state.observed += 1;
@@ -953,11 +1099,216 @@
     }
     if (enemy.boss) {
       state.bossDone = true;
-      finishStage();
+      state.bossPhase = 'done';
+      state.finishTimer = 1.55;
+      setPrompt('カブトガニと なかよくなった！', 2.2);
     } else if (state.observed >= 10 && !state.bossSpawned) {
       spawnBoss();
     }
     updateHud();
+  }
+
+  function bossCameraTarget(player) {
+    if (state.bossPhase === 'scroll' || state.bossPhase === 'intro' || state.bossPhase === 'fight' || state.bossPhase === 'done') {
+      return BOSS_ARENA_CAMERA;
+    }
+    return clamp(player.x - CAMERA_LEAD_X, 0, WORLD_W - BASE_W);
+  }
+
+  function updateBossSequence(dt) {
+    if (state.bossPhase === 'none') return;
+    if (state.bossPhase === 'warning') {
+      state.bossTimer -= dt;
+      if (state.bossTimer <= 0) {
+        state.bossPhase = 'scroll';
+        state.bossTimer = 0;
+        setPrompt('海底の奥へ すすむよ。雑魚は もう出てこない', 2.4);
+      }
+      return;
+    }
+    if (state.bossPhase === 'scroll') {
+      state.player.tx = clamp(state.camera + 330, PLAYER_MIN_X, PLAYER_MAX_X);
+      state.player.ty = clamp(state.player.ty, 260, 650);
+      if (Math.abs(state.camera - BOSS_ARENA_CAMERA) < 12) {
+        state.camera = BOSS_ARENA_CAMERA;
+        createBossEnemy();
+        state.bossPhase = 'intro';
+        state.bossTimer = 2.35;
+      }
+      return;
+    }
+    if (state.bossPhase === 'intro') {
+      state.bossTimer -= dt;
+      const boss = state.enemies.find((enemy) => enemy.boss);
+      if (boss) boss.x += (BOSS_TARGET_X - boss.x) * Math.min(1, dt * 1.9);
+      if (state.bossTimer <= 0) {
+        state.bossPhase = 'fight';
+        if (boss) {
+          boss.attackKind = 'normal';
+          boss.attackPhase = 'idle';
+          boss.attackCooldown = 0.35;
+          say(boss, BOSS_LINES.normal, 1.7);
+        }
+      }
+    }
+  }
+
+  function hitPlayer(kind) {
+    const p = state.player;
+    if (p.shield > 0 || state.mode !== 'playing' || state.bossDone) return;
+    p.shield = 1.1;
+    p.hit = 0.22;
+    state.score = Math.max(0, state.score - 40);
+    addImpact(p.x, p.y, 70, kind === 'charge' || kind === 'laser' ? 'danger' : 'gold');
+    setPrompt(kind === 'laser' || kind === 'charge' ? '合図を見たら JET でよけよう！' : 'あぶない！ 泡と砂をよけよう', 1.55);
+    updateHud();
+  }
+
+  function activateJet(dx = 0, dy = 0) {
+    const p = state.player;
+    if (state.mode !== 'playing' || p.jetCooldown > 0) return false;
+    const yDir = Math.abs(dy) > 0.2 ? Math.sign(dy) : (p.y > BASE_H * 0.52 ? -1 : 1);
+    const xDir = Math.abs(dx) > 0.2 ? Math.sign(dx) : -0.2;
+    p.jetTimer = 0.28;
+    p.jetCooldown = 1.85;
+    p.shield = Math.max(p.shield, 0.42);
+    p.jetVx = xDir * 460;
+    p.jetVy = yDir * 820;
+    for (let i = 0; i < 9; i += 1) {
+      state.bubbles.push({ x: p.x - 90 + rand(-12, 14), y: p.y + rand(-20, 24), r: rand(5, 14), vx: rand(-150, -70), vy: rand(-80, 70), life: rand(0.55, 1.0), max: 1.0 });
+    }
+    syncJetButton();
+    return true;
+  }
+
+  function beginBossAttack(enemy) {
+    const pattern = ['normal', 'charge', 'normal', 'laser'];
+    enemy.attackKind = pattern[state.bossAttackIndex % pattern.length];
+    state.bossAttackIndex += 1;
+    enemy.attackPhase = 'telegraph';
+    enemy.attackT = 0;
+    enemy.attackPulse = 0;
+    enemy.dashY = clamp(state.player.y, 240, 690);
+    if (enemy.attackKind === 'charge') say(enemy, BOSS_LINES.charge, 1.25);
+    else if (enemy.attackKind === 'laser') say(enemy, BOSS_LINES.laser, 1.35);
+    else say(enemy, BOSS_LINES.normal, 1.2);
+  }
+
+  function endBossAttack(enemy, cooldown = 0.8) {
+    enemy.attackPhase = 'idle';
+    enemy.attackKind = 'idle';
+    enemy.attackT = 0;
+    enemy.attackPulse = 0;
+    enemy.attackCooldown = cooldown;
+  }
+
+  function spawnBossNormalAttack(enemy) {
+    const roll = Math.random();
+    if (roll < 0.45) {
+      state.enemyShots.push({
+        kind: 'bubble',
+        x: enemy.x - 138,
+        y: enemy.y + rand(-74, 54),
+        vx: rand(-310, -230),
+        vy: rand(-42, 42),
+        gravity: 0,
+        r: rand(13, 22),
+        life: 4.2
+      });
+    } else if (roll < 0.8) {
+      state.enemyShots.push({
+        kind: 'sand',
+        x: enemy.x - 118,
+        y: 720,
+        vx: rand(-390, -300),
+        vy: rand(-220, -115),
+        gravity: 380,
+        r: rand(8, 13),
+        life: 3.2
+      });
+    } else {
+      state.hazards.push({
+        kind: 'whirlpool',
+        x: state.camera + rand(390, 930),
+        y: rand(330, 675),
+        radius: rand(58, 78),
+        spin: rand(-1, 1),
+        life: 1.7,
+        max: 1.7
+      });
+    }
+  }
+
+  function updateBossAI(enemy, dt) {
+    if (state.bossPhase !== 'fight') {
+      enemy.x += (BOSS_TARGET_X - enemy.x) * Math.min(1, dt * 1.6);
+      enemy.y = enemy.baseY + Math.sin(state.time * 1.2) * 14;
+      return;
+    }
+
+    if (enemy.attackPhase !== 'active' || enemy.attackKind !== 'charge') {
+      enemy.x += (BOSS_TARGET_X - enemy.x) * Math.min(1, dt * 1.1);
+    }
+    enemy.y = enemy.baseY + Math.sin(state.time * 1.2) * 16;
+
+    if (!enemy.attackPhase || enemy.attackPhase === 'idle') {
+      enemy.attackCooldown -= dt;
+      if (enemy.attackCooldown <= 0) beginBossAttack(enemy);
+      return;
+    }
+
+    enemy.attackT += dt;
+    if (enemy.attackKind === 'normal') {
+      if (enemy.attackPhase === 'telegraph' && enemy.attackT > 0.45) {
+        enemy.attackPhase = 'active';
+        enemy.attackT = 0;
+        enemy.attackPulse = 0;
+      } else if (enemy.attackPhase === 'active') {
+        enemy.attackPulse -= dt;
+        if (enemy.attackPulse <= 0) {
+          spawnBossNormalAttack(enemy);
+          enemy.attackPulse = 0.28;
+        }
+        if (enemy.attackT > 2.0) endBossAttack(enemy, 0.75);
+      }
+      return;
+    }
+
+    if (enemy.attackKind === 'charge') {
+      if (enemy.attackPhase === 'telegraph') {
+        enemy.dashY += (clamp(state.player.y, 240, 690) - enemy.dashY) * Math.min(1, dt * 2.6);
+        enemy.y = enemy.dashY;
+        if (enemy.attackT > 1.05) {
+          enemy.attackPhase = 'active';
+          enemy.attackT = 0;
+          enemy.x = BOSS_ARENA_CAMERA + BASE_W + 210;
+        }
+      } else if (enemy.attackPhase === 'active') {
+        enemy.y = enemy.dashY;
+        enemy.x -= 1360 * dt;
+        if (distance(enemy.x - 40, enemy.y, state.player.x, state.player.y) < enemy.size * 0.38 + PLAYER_HIT_RADIUS) hitPlayer('charge');
+        if (screenX(enemy.x) < -280) {
+          enemy.attackPhase = 'recover';
+          enemy.attackT = 0;
+          enemy.x = BOSS_START_X;
+        }
+      } else if (enemy.attackPhase === 'recover') {
+        enemy.x += (BOSS_TARGET_X - enemy.x) * Math.min(1, dt * 2.4);
+        if (Math.abs(enemy.x - BOSS_TARGET_X) < 12 || enemy.attackT > 1.3) endBossAttack(enemy, 0.9);
+      }
+      return;
+    }
+
+    if (enemy.attackKind === 'laser') {
+      if (enemy.attackPhase === 'telegraph' && enemy.attackT > 1.05) {
+        enemy.attackPhase = 'active';
+        enemy.attackT = 0;
+      } else if (enemy.attackPhase === 'active') {
+        const laserY = enemy.y + 12;
+        if (state.player.x < enemy.x + 150 && Math.abs(state.player.y - laserY) < 48) hitPlayer('laser');
+        if (enemy.attackT > 1.18) endBossAttack(enemy, 1.0);
+      }
+    }
   }
 
   function update(dt) {
@@ -973,28 +1324,43 @@
     }
 
     const p = state.player;
+    p.shield = Math.max(0, (p.shield || 0) - dt);
+    p.hit = Math.max(0, (p.hit || 0) - dt);
+    p.jetCooldown = Math.max(0, (p.jetCooldown || 0) - dt);
+    p.jetTimer = Math.max(0, (p.jetTimer || 0) - dt);
     if (state.keys.ArrowUp || state.keys.KeyW) p.ty -= 420 * dt;
     if (state.keys.ArrowDown || state.keys.KeyS) p.ty += 420 * dt;
     if (state.keys.ArrowLeft || state.keys.KeyA) p.tx -= 420 * dt;
     if (state.keys.ArrowRight || state.keys.KeyD) p.tx += 420 * dt;
-    p.tx = clamp(p.tx, PLAYER_MIN_X, PLAYER_MAX_X);
+    const arenaLocked = state.bossPhase === 'scroll' || state.bossPhase === 'intro' || state.bossPhase === 'fight' || state.bossPhase === 'done';
+    const minPlayerX = arenaLocked ? state.camera + 120 : PLAYER_MIN_X;
+    const maxPlayerX = arenaLocked ? state.camera + 780 : PLAYER_MAX_X;
+    p.tx = clamp(p.tx, minPlayerX, maxPlayerX);
     p.ty = clamp(p.ty, 150, 735);
     p.x += (p.tx - p.x) * Math.min(1, dt * 7.5);
     p.y += (p.ty - p.y) * Math.min(1, dt * 7.5);
-    const desiredCamera = clamp(p.x - CAMERA_LEAD_X, 0, WORLD_W - BASE_W);
-    state.camera += (desiredCamera - state.camera) * Math.min(1, dt * 4.8);
+    if (p.jetTimer > 0) {
+      p.x = clamp(p.x + p.jetVx * dt, minPlayerX, maxPlayerX);
+      p.y = clamp(p.y + p.jetVy * dt, 150, 735);
+      p.tx = p.x;
+      p.ty = p.y;
+    }
+    updateBossSequence(dt);
+    const desiredCamera = bossCameraTarget(p);
+    const cameraRate = state.bossPhase === 'scroll' ? 1.7 : (state.bossPhase === 'fight' || state.bossPhase === 'intro' ? 9 : 4.8);
+    state.camera += (desiredCamera - state.camera) * Math.min(1, dt * cameraRate);
 
     state.shotTimer = Math.max(0, state.shotTimer - dt);
     state.bombTimer = Math.max(0, state.bombTimer - dt);
-    if (state.fireHeld || state.keys.Space || state.keys.KeyZ || state.keys.Enter) tryFireShots();
-    if (state.bombHeld || state.keys.ShiftLeft || state.keys.ShiftRight || state.keys.KeyX) tryFireBombs();
+    if (state.fireHeld || state.keys.Space || state.keys.KeyZ || state.keys.Enter) tryFireBoth();
+    if (state.bombHeld || state.keys.KeyX) tryFireBombs();
 
     state.spawnTimer -= dt;
-    if (state.spawnTimer <= 0 && !state.bossSpawned) {
+    if (state.spawnTimer <= 0 && !state.bossSpawned && state.bossPhase === 'none') {
       spawnEnemy();
       state.spawnTimer = rand(1.0, 1.8);
     }
-    if (state.time > 44 && !state.bossSpawned) spawnBoss();
+    if ((state.time > 44 || state.observed >= 10) && !state.bossSpawned) spawnBoss();
 
     state.shots.forEach((s) => {
       s.x += s.vx * dt;
@@ -1015,20 +1381,44 @@
     });
     state.bombs = state.bombs.filter((b) => b.life > 0 && b.x > state.camera - 120 && b.x < state.camera + BASE_W + 170);
 
+    state.enemyShots.forEach((s) => {
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vy += (s.gravity || 0) * dt;
+      s.life -= dt;
+      if (distance(s.x, s.y, p.x, p.y) < PLAYER_HIT_RADIUS + s.r) {
+        s.life = 0;
+        hitPlayer(s.kind === 'sand' ? 'sand' : 'bubble');
+      }
+    });
+    state.enemyShots = state.enemyShots.filter((s) => s.life > 0 && s.x > state.camera - 140 && s.x < state.camera + BASE_W + 180 && s.y > -90 && s.y < BASE_H + 90);
+    state.hazards.forEach((h) => {
+      h.life -= dt;
+      if (h.kind === 'whirlpool' && h.life > 0 && distance(h.x, h.y, p.x, p.y) < h.radius + PLAYER_HIT_RADIUS * 0.55) {
+        const pull = Math.min(1, dt * 1.6);
+        p.x += (h.x - p.x) * pull;
+        p.y += (h.y - p.y) * pull;
+        hitPlayer('whirlpool');
+      }
+    });
+    state.hazards = state.hazards.filter((h) => h.life > 0);
+
     state.enemies.forEach((enemy) => {
       enemy.phase += dt;
       enemy.hit = Math.max(0, enemy.hit - dt);
       enemy.eatTimer = Math.max(0, enemy.eatTimer - dt);
       if (enemy.eatTimer <= 0 && enemy.mood === 'eating') enemy.mood = 'normal';
+      if (enemy.speech) {
+        enemy.speech.ttl -= dt;
+        if (enemy.speech.ttl <= 0) enemy.speech = null;
+      }
       if (enemy.defeated) {
         enemy.vanishTimer -= dt;
         enemy.y = enemy.baseY + Math.sin(state.time * 4 + enemy.phase) * 6;
         return;
       }
       if (enemy.boss) {
-        const bossTarget = Math.min(WORLD_W - 260, state.camera + 1110);
-        enemy.x += (bossTarget - enemy.x) * Math.min(1, dt * 0.7);
-        enemy.y = enemy.baseY + Math.sin(state.time * 1.2) * 18;
+        updateBossAI(enemy, dt);
       } else {
         enemy.x -= enemy.speed * dt;
         enemy.y = enemy.baseY + Math.sin(enemy.phase * 2.2) * (ENEMY_TYPES[enemy.key].bottom ? 5 : 26);
@@ -1056,6 +1446,14 @@
     state.powerups = state.powerups.filter((u) => u.life > 0 && screenX(u.x) > -80);
 
     updateParticles(dt);
+    if (state.finishTimer > 0) {
+      state.finishTimer -= dt;
+      if (state.finishTimer <= 0 && !state.finishStarted) {
+        state.finishStarted = true;
+        finishStage();
+      }
+    }
+    syncJetButton();
     if (Math.random() < dt * 4.4) {
       state.bubbles.push({ x: p.x - 86, y: p.y + 24, r: rand(5, 13), vx: rand(-24, -8), vy: rand(-62, -34), life: rand(1.0, 1.8), max: 1.8 });
     }
@@ -1079,7 +1477,7 @@
       for (const s of state.shots) {
         if (s.life > 0 && distance(s.x, s.y, enemy.x, enemy.y) < hitRadius + s.r) {
           s.life = 0;
-          enemy.hp -= 1;
+          enemy.hp -= s.damage || 1;
           enemy.hit = 0.1;
           markEating(enemy);
           addImpact(s.x, s.y, 28, 'gold');
@@ -1089,7 +1487,7 @@
       for (const b of state.bombs) {
         if (b.life > 0 && distance(b.x, b.y, enemy.x, enemy.y) < hitRadius + b.r) {
           b.life = 0;
-          enemy.hp -= enemy.boss ? 2 : 3;
+          enemy.hp -= b.damage || (enemy.boss ? 2 : 3);
           enemy.hit = 0.12;
           markEating(enemy);
           addImpact(b.x, b.y, b.blast, 'gold');
@@ -1097,7 +1495,7 @@
         }
       }
       for (const impact of state.impacts) {
-        if (impact.life > impact.max - 0.04 && distance(impact.x, impact.y, enemy.x, enemy.y) < hitRadius + impact.radius * 0.58) {
+        if (impact.kind !== 'danger' && impact.life > impact.max - 0.04 && distance(impact.x, impact.y, enemy.x, enemy.y) < hitRadius + impact.radius * 0.58) {
           enemy.hp -= enemy.boss ? 1 : 2;
           enemy.hit = 0.1;
           markEating(enemy);
@@ -1112,13 +1510,17 @@
     ctx.setTransform(canvas.width / BASE_W, 0, 0, canvas.height / BASE_H, 0, 0);
     drawBackground();
     drawBubbles();
+    drawBossEffects();
+    state.hazards.forEach(drawHazard);
     state.powerups.forEach(drawPowerup);
     state.enemies.forEach(drawEnemy);
     state.shots.forEach(drawShot);
     state.bombs.forEach(drawBomb);
+    state.enemyShots.forEach(drawEnemyShot);
     state.impacts.forEach(drawImpact);
     drawPlayer();
     drawWaterOverlay();
+    drawBossOverlay();
     ctx.restore();
   }
 
@@ -1165,6 +1567,20 @@
     ctx.save();
     ctx.translate(screenX(p.x), p.y);
     const bob = Math.sin(state.time * 4) * 4;
+    if (p.hit > 0) ctx.filter = 'brightness(1.8) saturate(1.35)';
+    if (p.jetTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.72;
+      ctx.fillStyle = '#e9fdff';
+      ctx.shadowColor = '#d8ffff';
+      ctx.shadowBlur = 18;
+      for (let i = 0; i < 4; i += 1) {
+        ctx.beginPath();
+        ctx.ellipse(-96 - i * 18, bob + Math.sin(state.time * 24 + i) * 12, 28 - i * 4, 10 - i, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
     if (image) {
       drawCentered(image, 0, bob, 188);
     } else {
@@ -1198,6 +1614,15 @@
       ctx.closePath();
       ctx.fill();
     }
+    ctx.filter = 'none';
+    if (p.shield > 0) {
+      ctx.globalAlpha = clamp(p.shield, 0, 0.62);
+      ctx.strokeStyle = '#e9fdff';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(0, bob, 118, 66, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -1214,36 +1639,167 @@
     ctx.restore();
   }
 
+  function drawFoodImage(x, y, r) {
+    const food = state.assets.foodPellet;
+    if (food) drawCentered(food, x, y, r * 2.2);
+    else drawFoodOrb(x, y, r);
+  }
+
   function drawShot(s) {
     ctx.save();
     ctx.translate(screenX(s.x), s.y);
-    const g = ctx.createLinearGradient(-22, 0, 22, 0);
+    const angle = Math.atan2(s.vy, s.vx);
+    ctx.rotate(angle);
+    const g = ctx.createLinearGradient(-56, 0, 10, 0);
     g.addColorStop(0, 'rgba(255,255,255,0)');
-    g.addColorStop(0.45, '#fff7a8');
+    g.addColorStop(0.42, 'rgba(255, 247, 168, 0.74)');
     g.addColorStop(1, '#ffb13e');
     ctx.fillStyle = g;
     ctx.shadowColor = '#fff0a0';
     ctx.shadowBlur = 14;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 34, 10, 0, 0, Math.PI * 2);
+    ctx.ellipse(-22, 0, 46, 10, 0, 0, Math.PI * 2);
     ctx.fill();
+    drawFoodImage(18, 0, s.r);
     ctx.restore();
   }
 
   function drawBomb(b) {
     ctx.save();
     ctx.translate(screenX(b.x), b.y);
+    ctx.rotate(Math.sin(state.time * 8 + b.x * 0.01) * 0.18);
     ctx.shadowColor = '#ffd86e';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = '#ffbb48';
-    ctx.beginPath();
-    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fff4b8';
-    ctx.beginPath();
-    ctx.arc(-6, -6, b.r * 0.35, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.shadowBlur = 16;
+    drawFoodImage(0, 0, b.r);
     ctx.restore();
+  }
+
+  function drawEnemyShot(s) {
+    ctx.save();
+    ctx.translate(screenX(s.x), s.y);
+    if (s.kind === 'sand') {
+      ctx.fillStyle = '#d9bd76';
+      ctx.strokeStyle = 'rgba(109, 78, 38, 0.62)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, s.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.globalAlpha = 0.86;
+      ctx.strokeStyle = '#eaffff';
+      ctx.fillStyle = 'rgba(209, 250, 255, 0.24)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, s.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.72)';
+      ctx.beginPath();
+      ctx.arc(-s.r * 0.28, -s.r * 0.28, s.r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawHazard(h) {
+    if (h.kind !== 'whirlpool') return;
+    const pct = 1 - h.life / h.max;
+    ctx.save();
+    ctx.translate(screenX(h.x), h.y);
+    ctx.rotate(state.time * 4 * (h.spin < 0 ? -1 : 1));
+    ctx.globalAlpha = 0.72 * (1 - pct * 0.25);
+    ctx.strokeStyle = '#e8ffff';
+    ctx.lineWidth = 5;
+    for (let i = 0; i < 3; i += 1) {
+      ctx.beginPath();
+      ctx.arc(0, 0, h.radius * (0.35 + i * 0.22 + pct * 0.12), i * 1.1, Math.PI * 1.45 + i * 1.1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawBossEffects() {
+    const boss = state.enemies.find((enemy) => enemy.boss && !enemy.defeated);
+    if (!boss || state.bossPhase !== 'fight') return;
+    if (boss.attackKind === 'charge' && (boss.attackPhase === 'telegraph' || boss.attackPhase === 'active')) {
+      const y = boss.dashY || boss.y;
+      ctx.save();
+      ctx.globalAlpha = boss.attackPhase === 'telegraph' ? 0.28 + Math.sin(state.time * 28) * 0.08 : 0.2;
+      ctx.fillStyle = '#ff776d';
+      ctx.fillRect(0, y - 56, BASE_W, 112);
+      ctx.strokeStyle = '#fff4a8';
+      ctx.lineWidth = 5;
+      ctx.setLineDash([22, 14]);
+      ctx.beginPath();
+      ctx.moveTo(0, y - 58);
+      ctx.lineTo(BASE_W, y - 58);
+      ctx.moveTo(0, y + 58);
+      ctx.lineTo(BASE_W, y + 58);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (boss.attackKind === 'laser' && (boss.attackPhase === 'telegraph' || boss.attackPhase === 'active')) {
+      const y = boss.y + 12;
+      const startX = screenX(boss.x + 105);
+      ctx.save();
+      if (boss.attackPhase === 'telegraph') {
+        ctx.globalAlpha = 0.28 + Math.sin(state.time * 24) * 0.12;
+        ctx.strokeStyle = '#fff1a6';
+        ctx.lineWidth = 8;
+        ctx.setLineDash([26, 16]);
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(0, y);
+        ctx.stroke();
+      } else {
+        const beam = ctx.createLinearGradient(startX, y, 0, y);
+        beam.addColorStop(0, '#fff8b8');
+        beam.addColorStop(0.4, '#ffe65a');
+        beam.addColorStop(1, 'rgba(255, 167, 59, 0.2)');
+        ctx.shadowColor = '#fff1a6';
+        ctx.shadowBlur = 22;
+        ctx.strokeStyle = beam;
+        ctx.lineWidth = 38 + Math.sin(state.time * 38) * 6;
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(0, y);
+        ctx.stroke();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(0, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawBossOverlay() {
+    if (state.bossPhase === 'warning') {
+      ctx.save();
+      ctx.globalAlpha = 0.92;
+      ctx.fillStyle = 'rgba(4, 28, 45, 0.54)';
+      ctx.fillRect(0, 0, BASE_W, BASE_H);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff4a8';
+      ctx.font = '900 104px Zen Maru Gothic, sans-serif';
+      ctx.fillText(BOSS_LINES.warning, BASE_W / 2, BASE_H * 0.43);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 38px Zen Maru Gothic, sans-serif';
+      ctx.fillText('カブトガニ 接近中', BASE_W / 2, BASE_H * 0.56);
+      ctx.restore();
+    } else if (state.bossPhase === 'scroll') {
+      ctx.save();
+      ctx.globalAlpha = 0.78;
+      ctx.fillStyle = '#e9fdff';
+      ctx.font = '900 30px Zen Maru Gothic, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('海底の奥へ 強制スクロール中', BASE_W / 2, 112);
+      ctx.restore();
+    }
   }
 
   function drawPowerup(u) {
@@ -1277,8 +1833,14 @@
     const mood = enemyMood(enemy);
     ctx.save();
     ctx.translate(screenX(enemy.x), enemy.y);
-    if (enemy.defeated) ctx.globalAlpha = clamp(enemy.vanishTimer / (enemy.boss ? 1.05 : 0.72), 0, 1);
+    if (enemy.defeated) ctx.globalAlpha = clamp(enemy.vanishTimer / (enemy.boss ? 1.8 : 1.18), 0, 1);
     if (enemy.hit > 0) ctx.filter = 'brightness(1.8)';
+    ctx.save();
+    if (enemy.boss && enemy.attackKind === 'laser' && (enemy.attackPhase === 'telegraph' || enemy.attackPhase === 'active')) ctx.scale(-1, 1);
+    if (enemy.boss && enemy.attackKind === 'charge' && enemy.attackPhase === 'telegraph') {
+      const pulse = 1 + Math.sin(enemy.attackT * 28) * 0.035 + enemy.attackT * 0.025;
+      ctx.scale(pulse, pulse);
+    }
     if (image) {
       drawCentered(image, 0, 0, enemy.size * (ENEMY_SPRITE_SCALE[enemy.key] || 1.45));
     } else {
@@ -1289,11 +1851,13 @@
       else if (enemy.key === 'anemone') drawAnemone(enemy.size, mood);
       else drawHorseshoe(enemy.size, mood);
     }
+    ctx.restore();
     ctx.filter = 'none';
     if (!enemy.defeated) {
       if (enemy.boss) drawBossBar(enemy);
       else drawSmallHp(enemy, type);
     }
+    if (enemy.speech) drawSpeechBubble(enemy.speech.text, enemy.boss ? -40 : 0, enemy.boss ? -230 : -enemy.size * 1.02, enemy.boss ? 360 : 230);
     ctx.restore();
   }
 
@@ -1320,6 +1884,55 @@
     ctx.font = '900 22px Zen Maru Gothic, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('カブトガニ', 0, -196);
+  }
+
+  function drawSpeechBubble(text, x, y, w) {
+    ctx.save();
+    ctx.font = '900 20px Zen Maru Gothic, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const maxW = w;
+    const lines = wrapText(text, maxW - 30, ctx.font);
+    const h = 34 + lines.length * 24;
+    const left = x - maxW / 2;
+    const top = y - h / 2;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.strokeStyle = 'rgba(41, 125, 152, 0.32)';
+    ctx.lineWidth = 3;
+    roundRect(left, top, maxW, h, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + 22, top + h - 2);
+    ctx.lineTo(x + 6, top + h + 20);
+    ctx.lineTo(x - 12, top + h - 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#0d4964';
+    lines.forEach((line, index) => {
+      ctx.fillText(line, x, top + 22 + index * 24);
+    });
+    ctx.restore();
+  }
+
+  function wrapText(text, maxWidth, font) {
+    ctx.save();
+    ctx.font = font;
+    const lines = [];
+    let line = '';
+    for (const char of text) {
+      const next = line + char;
+      if (line && ctx.measureText(next).width > maxWidth) {
+        lines.push(line);
+        line = char;
+      } else {
+        line = next;
+      }
+    }
+    if (line) lines.push(line);
+    ctx.restore();
+    return lines.slice(0, 3);
   }
 
   function roundRect(x, y, w, h, r) {
@@ -1567,7 +2180,7 @@
     const pct = 1 - i.life / i.max;
     ctx.save();
     ctx.globalAlpha = 1 - pct;
-    ctx.strokeStyle = i.kind === 'boss' ? '#ff8b76' : '#fff4a8';
+    ctx.strokeStyle = i.kind === 'danger' ? '#ff776d' : (i.kind === 'boss' ? '#ff8b76' : '#fff4a8');
     ctx.lineWidth = 8 * (1 - pct) + 2;
     ctx.beginPath();
     ctx.arc(screenX(i.x), i.y, i.radius * (0.4 + pct * 0.9), 0, Math.PI * 2);
@@ -1622,7 +2235,10 @@
   function setTarget(ev) {
     if (state.mode !== 'playing') return;
     const p = pointerToGame(ev);
-    state.player.tx = clamp(state.camera + p.x, PLAYER_MIN_X, PLAYER_MAX_X);
+    const arenaLocked = state.bossPhase === 'scroll' || state.bossPhase === 'intro' || state.bossPhase === 'fight' || state.bossPhase === 'done';
+    const minPlayerX = arenaLocked ? state.camera + 120 : PLAYER_MIN_X;
+    const maxPlayerX = arenaLocked ? state.camera + 780 : PLAYER_MAX_X;
+    state.player.tx = clamp(state.camera + p.x, minPlayerX, maxPlayerX);
     state.player.ty = clamp(p.y, 150, 735);
   }
 
@@ -1686,7 +2302,7 @@
       tryFireBombs();
     } else {
       state.fireHeld = true;
-      tryFireShots();
+      tryFireBoth();
     }
   });
   canvas.addEventListener('pointermove', (ev) => {
@@ -1705,8 +2321,9 @@
   window.addEventListener('keydown', (ev) => {
     if (['Space', 'Enter', 'KeyZ', 'KeyX', 'ShiftLeft', 'ShiftRight'].includes(ev.code)) ev.preventDefault();
     state.keys[ev.code] = true;
-    if (ev.code === 'Space' || ev.code === 'Enter' || ev.code === 'KeyZ') tryFireShots();
-    if (ev.code === 'KeyX' || ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') tryFireBombs();
+    if (ev.code === 'Space' || ev.code === 'Enter' || ev.code === 'KeyZ') tryFireBoth();
+    if (ev.code === 'KeyX') tryFireBombs();
+    if (ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') activateJet();
   });
   window.addEventListener('keyup', (ev) => { state.keys[ev.code] = false; });
   window.addEventListener('blur', () => {
@@ -1715,6 +2332,14 @@
     state.bombHeld = false;
   });
   window.addEventListener('resize', resize);
+  jetBtn.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault();
+    activateJet();
+  });
+  jetBtn.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    activateJet();
+  });
 
   document.getElementById('startBtn').addEventListener('click', resetRun);
   document.getElementById('againBtn').addEventListener('click', resetRun);
