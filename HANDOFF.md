@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-16 - [batch:565-sea-album-power-shop-plan] Codex: user 指摘「Sea Album のヤドカリのセリフと名前が被って読めない。ホーミングミサイル数などのパワーアップを、通常面/ショップ/ショップ専用の兼ね合いで考えたい」を受領。ヤドカリ吹き出し重なりを修正し、`STAGE_PLAN.md` にパワーアップ/ショップ方針を整理する。 (by Codex)
+- 2026-06-16 - [batch:565-sea-album-power-shop-plan] DONE - Codex: Sea Album のヤドカリ吹き出し中は目的ラベルを非表示にして、名前とセリフが重ならないよう修正。`STAGE_PLAN.md` に、通常ステージ内の一時パワーアップ、ショップの永続装備、ショップ専用アイテム、ホーミング魚雷の本数上限方針を整理。`sw.js` は v1212。検証: HTML inline script parse / `node --check sw.js` / Playwright でヤドカリ吹き出し中に `ヤドカリ` ラベルが描画されないことを確認。 (by Codex)
 - 2026-06-16 - [batch:564-sea-album-stage1-one-gimmick] Codex: user 指摘「Sea Album 一面は一気に起こりすぎるのでギミックは1個。ヤドカリから鍵をもらって宝箱を開けるだけ。ハゼ等はなし。いきなり目の前の敵に鍵を持たせず、間を大切にする」を受領。Stage1 を貝キー/貝宝箱だけに整理し、泡スイッチ・3真珠ゲート・ハゼ導線を外す。 (by Codex)
 - 2026-06-16 - [batch:564-sea-album-stage1-one-gimmick] DONE - Codex: Sea Album Stage1 を「少し進む → ヤドカリから貝のカギ → 左へ戻って貝宝箱を開ける → 右奥でカブトガニ警告」だけに簡略化。開始直後のヤドカリ強制出現をやめ、カメラが少し進んでから出るよう調整。泡スイッチ/海藻/3真珠ゲート/ハゼ導線を実装・表示・ドキュメントから外し、Stage1カード総数もハゼ抜きの5枚へ調整。通常カードのシールポップはステージ中に出さず、ボス警告時は中央カードを即非表示。`sw.js` は v1211。検証: HTML inline script parse / `node --check sw.js` / `git diff --check` / UTF-8 BOMなしLF / Playwright desktop 1366x768 と mobile 844x390 でヤドカリ遅延、カギ取得、貝宝箱、ボス警告、ハゼ未対象、通知非重なり、横overflowなしを確認。 (by Codex)
 - 2026-06-16 - [batch:563-sea-album-gimmick-visibility] Codex: user 指摘「Sea Album Stage1 のギミックが見せ方不足で何を得た/何のためか分からない。重要発言が画面端で一瞬、撮影テキストが潜水艦の裏、導線が不明」を受領。`oto/index.html` の別件未コミット差分は触らず、Sea Album の重要イベント通知・目的表示・描画レイヤー・画面端ガイドを整理する。 (by Codex)

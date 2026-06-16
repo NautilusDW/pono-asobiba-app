@@ -2050,9 +2050,9 @@
     state.coinsDropped.forEach(drawDroppedCoin);
     drawPlayer();
     drawWaterOverlay();
+    drawGuideMarkers();
     state.enemies.forEach(drawEnemySpeech);
     state.coinPops.forEach(drawCoinPop);
-    drawGuideMarkers();
     drawBossOverlay();
     ctx.restore();
   }
@@ -2118,7 +2118,8 @@
         y: hermit ? hermit.y : 530,
         title: 'ヤドカリ',
         sub: '貝のカギ',
-        tone: '#ffd86e'
+        tone: '#ffd86e',
+        suppressLabel: !!(hermit && hermit.speech && hermit.speech.ttl > 0)
       };
     }
     if (!g.shellOpened) {
@@ -2157,7 +2158,7 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-      drawMarkerLabel(x, y + 62, (offLeft ? '左へ ' : '右へ ') + target.title, target.sub, target.tone);
+      if (!target.suppressLabel) drawMarkerLabel(x, y + 62, (offLeft ? '左へ ' : '右へ ') + target.title, target.sub, target.tone);
     } else {
       ctx.globalAlpha = 0.92;
       ctx.strokeStyle = target.tone;
@@ -2168,7 +2169,7 @@
       ctx.ellipse(sx, sy, 54 * pulse, 36 * pulse, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.shadowBlur = 0;
-      drawMarkerLabel(sx, sy - 72, target.title, target.sub, target.tone);
+      if (!target.suppressLabel) drawMarkerLabel(sx, sy - 72, target.title, target.sub, target.tone);
     }
     ctx.restore();
   }
