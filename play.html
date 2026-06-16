@@ -1356,18 +1356,26 @@
       align-items: center;
       justify-content: center;
       background:
-        radial-gradient(circle at 50% 40%, rgba(80, 50, 18, 0.88) 0%, rgba(20, 10, 0, 0.95) 75%);
+        radial-gradient(circle at 50% 40%, #5b3518 0%, #261308 58%, #120800 100%);
       color: #fff8e1;
       font-family: 'Zen Maru Gothic', sans-serif;
       padding: clamp(12px, 3vw, 24px);
       cursor: pointer;
+      pointer-events: auto;
+      touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
       animation: tapIntroFadeIn 0.35s ease;
     }
     .tap-intro[hidden] { display: none !important; }
+    body.tap-intro-open .stage {
+      pointer-events: none;
+    }
+    body.tap-intro-open .tap-intro {
+      pointer-events: auto;
+    }
     .tap-intro.is-closing {
       animation: tapIntroFadeOut 0.4s ease forwards;
-      pointer-events: none;
+      pointer-events: auto;
     }
     .tap-intro-card {
       text-align: center;
@@ -2119,7 +2127,18 @@
     let cardPointerDown = null;
     let cardPointerDownTimer = 0;
 
+    function isTapIntroBlockingInput() {
+      const intro = document.getElementById('tapIntro');
+      return !!(intro && !intro.hidden);
+    }
+
     function onCardPointerDown(e) {
+      if (isTapIntroBlockingInput()) {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        clearCardPointerDown();
+        return;
+      }
       const card = e.target.closest('.game-card');
       if (!card || (typeof e.button === 'number' && e.button > 0)) return;
       clearTimeout(cardPointerDownTimer);
@@ -2150,6 +2169,11 @@
     }
 
     function onCardClick(e) {
+      if (isTapIntroBlockingInput()) {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       const card = e.target.closest('.game-card');
       if (!card) return;
       if (!isCardTap(e, card)) return;
@@ -2161,6 +2185,11 @@
 
     function onCardKeyDown(e) {
       if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (isTapIntroBlockingInput()) {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       const card = e.target.closest('.game-card');
       if (!card || e.target !== card) return;
       const idx = Number(card.dataset.idx);
@@ -2171,6 +2200,7 @@
     }
 
     function startGame(idx) {
+      if (isTapIntroBlockingInput()) return;
       const game = MENU_GAMES[idx];
       if (!game) return;
       // Coming-soon entries are normally blocked. debugPlayable:true lets
@@ -2464,14 +2494,33 @@
         if (!intro) return false;
         // Don't show if: muted in Settings, already unlocked this session,
         // or device held in portrait (portrait-warn takes priority anyway).
-        if (isMuted() || isUnlocked()) return false;
-        if (window.innerHeight > window.innerWidth) return false;
+        if (isMuted() || isUnlocked()) {
+          document.body.classList.remove('tap-intro-open');
+          return false;
+        }
+        if (window.innerHeight > window.innerWidth) {
+          document.body.classList.remove('tap-intro-open');
+          return false;
+        }
+        document.body.classList.add('tap-intro-open');
         intro.hidden = false;
         return true;
       }
 
-      function dismissIntro() {
+      function stopIntroEvent(e) {
+        if (!e) return;
+        if (e.target && e.target.closest && e.target.closest('.tap-intro-ad-link')) {
+          e.stopPropagation();
+          return;
+        }
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+      }
+
+      function dismissIntro(e) {
+        stopIntroEvent(e);
         if (!intro || intro.hidden) return;
+        if (intro.classList.contains('is-closing')) return;
         // We're inside a user gesture → playing is allowed by iOS.
         if (!isMuted()) {
           const p = bgm.play();
@@ -2484,13 +2533,16 @@
         setTimeout(() => {
           intro.hidden = true;
           intro.classList.remove('is-closing');
+          document.body.classList.remove('tap-intro-open');
         }, 380);
       }
 
       if (intro) {
         intro.addEventListener('pointerdown', dismissIntro);
+        intro.addEventListener('pointerup', stopIntroEvent);
+        intro.addEventListener('click', stopIntroEvent);
         intro.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dismissIntro(); }
+          if (e.key === 'Enter' || e.key === ' ') { dismissIntro(e); }
         });
         // Ad banner: tapping the Amazon link should open Amazon in a new tab
         // ONLY — it must not also dismiss the intro / start BGM. Stop the
