@@ -64,11 +64,17 @@ html, body {
   var statusEl = document.getElementById('bookStatus');
   var STATIC_ASSETS = {
     base: '../assets/images/sticker-book/sticker_book_base_kids_16x9.png',
-    storage: '../assets/images/sticker-book/sticker_storage_sheet.png',
-    flipSheet: '../assets/images/sticker-book/sticker_page_flip_sheet_3x3.png'
+    storage: '../assets/images/sticker-book/sticker_storage_sheet.png'
   };
   var PAGE_ASSETS = {
     bento: '../assets/images/sticker-book/sticker_page_bento_laminated.png'
+  };
+  var APP_ONLY_GAME_IDS = {
+    starparodier: true,
+    'undersea-cave': true,
+    'sea-album': true,
+    'writing-mori': true,
+    zukan: true
   };
 
   var view = {
@@ -139,6 +145,14 @@ html, body {
   function currentPage() {
     var id = currentGameId();
     return view.catalog && view.catalog.pages ? view.catalog.pages[id] : null;
+  }
+
+  function isAppBuild() {
+    return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
+  }
+
+  function isAppOnlyPage(gameId, page) {
+    return !!((page && page.appOnly) || APP_ONLY_GAME_IDS[gameId]);
   }
 
   function ownedFor(gameId) {
@@ -417,7 +431,7 @@ html, body {
     var owned = ownedFor(gameId);
     var progress = pageProgress(page, owned);
     var accent = page.accent || '#f2915a';
-    drawLeftPageContent(page, owned, progress, accent);
+    drawLeftPageContent(page, gameId, owned, progress, accent);
     drawRightPageContent(page, gameId, owned, accent, isFlipPreview);
   }
 
@@ -445,12 +459,16 @@ html, body {
     };
   }
 
-  function drawLeftPageContent(page, owned, progress, accent) {
+  function drawLeftPageContent(page, gameId, owned, progress, accent) {
     var r = book.left;
+    var appOnlyLocked = isAppOnlyPage(gameId, page) && !isAppBuild();
     fitText((page.icon || '📒') + ' ' + (page.title || ''), r.x + 82, r.y + 74, r.w - 180, 38, '#4b2e17', 900);
     fitText(page.subtitle || 'ゲームで あつめる シール', r.x + 84, r.y + 116, r.w - 170, 23, '#8c623a', 800);
 
     drawPill(r.x + r.w - 154, r.y + 62, 96, 40, progress.got + ' / ' + progress.total, accent, '#fff');
+    if (appOnlyLocked) {
+      drawAppOnlyNotice(r.x + 78, r.y + 132, r.w - 156, 34, 'アプリ版で 手に入るよ', accent);
+    }
 
     var stickers = page.stickers || [];
     var startX = r.x + 72;
@@ -466,11 +484,11 @@ html, body {
       var y = startY + row * (cellH + gapY);
       var sticker = stickers[i];
       var count = owned[sticker.id] && owned[sticker.id].count ? owned[sticker.id].count : 0;
-      drawStickerSlot(x, y, cellW, cellH, sticker, count, accent);
+      drawStickerSlot(x, y, cellW, cellH, sticker, count, accent, appOnlyLocked);
     }
   }
 
-  function drawStickerSlot(x, y, w, h, sticker, count, accent) {
+  function drawStickerSlot(x, y, w, h, sticker, count, accent, appOnlyLocked) {
     ctx.save();
     ctx.fillStyle = count ? 'rgba(255,255,255,0.68)' : 'rgba(126,99,67,0.08)';
     roundRectPath(x, y, w, h, 28);
@@ -488,7 +506,7 @@ html, body {
     }
     ctx.restore();
 
-    fitText(count ? sticker.name || 'シール' : '？？？', x + w / 2, y + h - 34, w - 24, 22, count ? '#54351d' : '#a58d70', 900, 'center');
+    fitText(count ? sticker.name || 'シール' : (appOnlyLocked ? 'アプリ版で' : '？？？'), x + w / 2, y + h - 34, w - 24, 22, count ? '#54351d' : '#a58d70', 900, 'center');
     if (count >= 2) {
       drawPill(x + w - 76, y + 14, 54, 30, 'x' + count, '#d97706', '#fff');
     }
@@ -496,8 +514,12 @@ html, body {
 
   function drawRightPageContent(page, gameId, owned, accent, isFlipPreview) {
     var r = book.right;
+    var appOnlyLocked = isAppOnlyPage(gameId, page) && !isAppBuild();
     drawThemedPlacementPage(gameId, r);
     fitText('はるページ', r.x + 72, r.y + 74, 300, 32, accent, 900);
+    if (appOnlyLocked) {
+      drawAppOnlyNotice(r.x + 72, r.y + 104, 424, 34, 'このシールは アプリ版で 手に入るよ', accent);
+    }
     ctx.save();
     ctx.globalAlpha = 0.08;
     ctx.font = '150px "Zen Maru Gothic", sans-serif';
@@ -643,9 +665,26 @@ html, body {
     ctx.restore();
   }
 
+  function drawAppOnlyNotice(x, y, w, h, text, accent) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(92,55,18,0.18)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = 'rgba(255,248,220,0.92)';
+    roundRectPath(x, y, w, h, h / 2);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = accent || '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    fitText(text, x + w / 2, y + h / 2 + 1, w - 28, 19, '#6b431d', 900, 'center');
+    ctx.restore();
+  }
+
   function drawTray(page, gameId) {
     var r = book.tray;
     var owned = ownedFor(gameId);
+    var appOnlyLocked = isAppOnlyPage(gameId, page) && !isAppBuild();
     view.stickerEntries = [];
     ctx.save();
     var storage = assetEntry(STATIC_ASSETS.storage);
@@ -681,7 +720,7 @@ html, body {
     fitText('もっているシール', r.x + 34, r.y + 43, 240, 25, '#5a3518', 900);
     var stickers = (page.stickers || []).filter(function(sticker) { return !!owned[sticker.id]; });
     if (!stickers.length) {
-      fitText('ゲームで あつめよう', r.x + 34, r.y + 88, 300, 24, '#7e5a35', 900);
+      fitText(appOnlyLocked ? 'アプリ版で あつめよう' : 'ゲームで あつめよう', r.x + 34, r.y + 88, 330, 24, '#7e5a35', 900);
     }
     stickers.forEach(function(sticker, i) {
       var x = r.x + 330 + i * 128;
@@ -800,100 +839,155 @@ html, body {
     view.buttonHits.push({ action: action, x: x - r, y: y - r, w: r * 2, h: r * 2 });
   }
 
-  function drawGeneratedFlipTexture(dir, p) {
-    var sheet = assetEntry(STATIC_ASSETS.flipSheet);
-    if (!sheet || !sheet.loaded) return false;
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
 
-    var cols = 3;
-    var rows = 3;
-    var total = cols * rows;
-    var rawIndex = Math.min(total - 1, Math.floor(p * total));
-    var frame = dir > 0 ? rawIndex : (total - 1 - rawIndex);
-    var fw = sheet.img.naturalWidth / cols;
-    var fh = sheet.img.naturalHeight / rows;
-    var sx = (frame % cols) * fw;
-    var sy = Math.floor(frame / cols) * fh;
+  function pointBetween(a, b, t) {
+    return { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) };
+  }
 
-    ctx.save();
-    ctx.globalAlpha = 0.3 + Math.sin(p * Math.PI) * 0.38;
-    drawImageContain(sheet.img, sx, sy, fw, fh, 116, 56, 1688, 806);
-    ctx.restore();
-    return true;
+  function flipPanelPath(panel) {
+    var leftSide = panel.outerTop.x < panel.hingeTop.x;
+    ctx.beginPath();
+    if (leftSide) {
+      ctx.moveTo(panel.outerTop.x, panel.outerTop.y);
+      ctx.lineTo(panel.hingeTop.x, panel.hingeTop.y);
+      ctx.lineTo(panel.hingeBottom.x, panel.hingeBottom.y);
+      ctx.lineTo(panel.outerBottom.x, panel.outerBottom.y);
+    } else {
+      ctx.moveTo(panel.hingeTop.x, panel.hingeTop.y);
+      ctx.lineTo(panel.outerTop.x, panel.outerTop.y);
+      ctx.lineTo(panel.outerBottom.x, panel.outerBottom.y);
+      ctx.lineTo(panel.hingeBottom.x, panel.hingeBottom.y);
+    }
+    ctx.closePath();
+  }
+
+  function flipPanelGeometry(rect, dir, p) {
+    var t = easeInOut(p);
+    var lift = Math.sin(p * Math.PI);
+    var target = dir > 0 ? book.left : book.right;
+    var hingeX = book.spineX + (dir > 0 ? 22 : -22);
+    var outerStart = dir > 0 ? rect.x + rect.w - 16 : rect.x + 16;
+    var outerEnd = dir > 0 ? target.x + 38 : target.x + target.w - 38;
+    var outerX = lerp(outerStart, outerEnd, t);
+    var side = outerX < hingeX ? -1 : 1;
+    var lean = side * (16 + lift * 58);
+    return {
+      hingeTop: { x: hingeX, y: rect.y + 24 - lift * 10 },
+      hingeBottom: { x: hingeX, y: rect.y + rect.h - 24 + lift * 12 },
+      outerTop: { x: outerX, y: rect.y + 22 - lift * 82 + lean * 0.2 },
+      outerBottom: { x: outerX, y: rect.y + rect.h - 18 + lift * 58 - lean * 0.08 },
+      lift: lift
+    };
   }
 
   function drawFlipSnapshotSurface(snapshot, dir, p) {
-    if (!snapshot || !snapshot.canvas || p > 0.76) return;
+    if (!snapshot || !snapshot.canvas) return;
     var rect = snapshot.rect;
-    var fade = smoothstep(0.18, 0.72, p);
-    var visible = Math.max(0.18, 1 - easeInOut(p) * 0.86);
-    var dw = rect.w * visible;
-    var dx = dir > 0 ? rect.x + rect.w - dw : rect.x;
-    var lift = -Math.sin(p * Math.PI) * 16;
+    var panel = flipPanelGeometry(rect, dir, p);
+    var midFade = smoothstep(0.44, 0.72, p);
+    var contentAlpha = Math.max(0, 0.96 - midFade * 0.86);
+    var strips = 52;
 
     ctx.save();
-    pagePath(rect, dir > 0 ? 'right' : 'left', 0);
-    ctx.clip();
-    ctx.globalAlpha = 1 - fade * 0.86;
+    flipPanelPath(panel);
     ctx.shadowColor = 'rgba(64,37,18,0.28)';
-    ctx.shadowBlur = 16;
-    ctx.shadowOffsetX = dir > 0 ? -10 : 10;
-    ctx.shadowOffsetY = 8;
-    ctx.drawImage(snapshot.canvas, rect.x, rect.y, rect.w, rect.h, dx, rect.y + lift, dw, rect.h);
-    ctx.shadowColor = 'transparent';
-
-    var shine = ctx.createLinearGradient(dx, rect.y, dx + dw, rect.y);
-    shine.addColorStop(0, 'rgba(255,255,255,0.36)');
-    shine.addColorStop(0.42, 'rgba(255,255,255,0.08)');
-    shine.addColorStop(1, 'rgba(255,255,255,0.48)');
-    ctx.fillStyle = shine;
-    roundRectPath(dx, rect.y + 10 + lift, dw, rect.h - 20, 30);
+    ctx.shadowBlur = 18 + panel.lift * 30;
+    ctx.shadowOffsetX = dir > 0 ? -18 : 18;
+    ctx.shadowOffsetY = 12 + panel.lift * 8;
+    var paper = ctx.createLinearGradient(panel.hingeTop.x, panel.hingeTop.y, panel.outerTop.x, panel.outerBottom.y);
+    paper.addColorStop(0, '#fffdf4');
+    paper.addColorStop(0.45, '#fff0b7');
+    paper.addColorStop(1, '#d7a65d');
+    ctx.fillStyle = paper;
     ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.restore();
+
+    ctx.save();
+    flipPanelPath(panel);
+    ctx.clip();
+    ctx.globalAlpha = contentAlpha;
+    for (var i = 0; i < strips; i++) {
+      var t0 = i / strips;
+      var t1 = (i + 1) / strips;
+      var tm = (t0 + t1) / 2;
+      var top0 = pointBetween(panel.hingeTop, panel.outerTop, t0);
+      var top1 = pointBetween(panel.hingeTop, panel.outerTop, t1);
+      var bottom0 = pointBetween(panel.hingeBottom, panel.outerBottom, t0);
+      var bottom1 = pointBetween(panel.hingeBottom, panel.outerBottom, t1);
+      var x0 = (top0.x + bottom0.x) / 2;
+      var x1 = (top1.x + bottom1.x) / 2;
+      var dx = Math.min(x0, x1) - 1;
+      var dw = Math.max(2, Math.abs(x1 - x0) + 2);
+      var top = (top0.y + top1.y) / 2;
+      var bottom = (bottom0.y + bottom1.y) / 2;
+      var curve = Math.sin(tm * Math.PI) * panel.lift * 18;
+      var sourceT = dir > 0 ? t0 : 1 - t1;
+      ctx.drawImage(
+        snapshot.canvas,
+        rect.x + rect.w * sourceT,
+        rect.y,
+        rect.w / strips,
+        rect.h,
+        dx,
+        top + curve,
+        dw,
+        Math.max(20, bottom - top - curve * 0.25)
+      );
+    }
+    ctx.restore();
+
+    ctx.save();
+    flipPanelPath(panel);
+    var shine = ctx.createLinearGradient(panel.outerTop.x, panel.outerTop.y, panel.hingeBottom.x, panel.hingeBottom.y);
+    shine.addColorStop(0, 'rgba(255,255,255,0.78)');
+    shine.addColorStop(0.18, 'rgba(255,255,255,0.24)');
+    shine.addColorStop(0.62, 'rgba(255,242,183,0.08)');
+    shine.addColorStop(1, 'rgba(93,54,24,0.22)');
+    ctx.globalAlpha = 0.36 + panel.lift * 0.36;
+    ctx.fillStyle = shine;
+    ctx.fill();
+    ctx.globalAlpha = 0.5 + panel.lift * 0.28;
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(panel.outerTop.x, panel.outerTop.y + 18);
+    ctx.bezierCurveTo(
+      lerp(panel.outerTop.x, panel.hingeTop.x, 0.32),
+      lerp(panel.outerTop.y, panel.hingeTop.y, 0.18) - 8,
+      lerp(panel.outerBottom.x, panel.hingeBottom.x, 0.72),
+      lerp(panel.outerBottom.y, panel.hingeBottom.y, 0.68),
+      panel.outerBottom.x,
+      panel.outerBottom.y - 28
+    );
+    ctx.stroke();
+    ctx.globalAlpha = 0.82;
+    ctx.strokeStyle = 'rgba(98,62,28,0.24)';
+    ctx.lineWidth = 4;
+    flipPanelPath(panel);
+    ctx.stroke();
     ctx.restore();
   }
 
   function drawLaminatedFlipMask(rect, dir, p) {
     var cover = Math.sin(p * Math.PI);
-    var ease = easeInOut(p);
-    var panelW = rect.w * (0.24 + cover * 0.82);
-    var x = rect.x + rect.w / 2 - panelW / 2 + (dir > 0 ? -1 : 1) * rect.w * (ease - 0.5) * 0.72;
-    var y = rect.y - 8 - cover * 8;
-    var h = rect.h + 18 + cover * 18;
-
-    if (cover > 0.72) {
-      ctx.save();
-      ctx.globalAlpha = (cover - 0.72) / 0.28 * 0.42;
-      ctx.fillStyle = '#fff5cb';
-      roundRectPath(book.left.x + 20, book.left.y + 18, book.right.x + book.right.w - book.left.x - 40, book.right.h - 36, 42);
-      ctx.fill();
-      ctx.restore();
-    }
-
+    if (cover <= 0.08) return;
     ctx.save();
-    ctx.globalAlpha = 0.18 + cover * 0.78;
-    ctx.shadowColor = 'rgba(53,31,14,0.34)';
-    ctx.shadowBlur = 28 + cover * 18;
-    ctx.shadowOffsetX = dir > 0 ? -18 : 18;
-    ctx.shadowOffsetY = 12;
-    var g = ctx.createLinearGradient(x, y, x + panelW, y + h);
-    g.addColorStop(0, '#fffbea');
-    g.addColorStop(0.28, '#fff1b8');
-    g.addColorStop(0.68, '#ffe097');
-    g.addColorStop(1, '#d59b4d');
-    ctx.fillStyle = g;
-    roundRectPath(x, y, panelW, h, 34);
+    ctx.globalAlpha = cover * 0.22;
+    ctx.fillStyle = '#fff6d2';
+    roundRectPath(book.left.x + 26, book.left.y + 24, book.right.x + book.right.w - book.left.x - 52, book.right.h - 42, 40);
     ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = 'rgba(112,74,35,0.24)';
-    ctx.lineWidth = 4;
-    ctx.stroke();
 
-    ctx.globalAlpha = 0.32 + cover * 0.34;
-    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(x + panelW * 0.24, y + 32);
-    ctx.bezierCurveTo(x + panelW * 0.5, y + 12, x + panelW * 0.72, y + h - 44, x + panelW * 0.9, y + h - 28);
-    ctx.stroke();
+    ctx.globalAlpha = cover * 0.24;
+    var g = ctx.createRadialGradient(book.spineX, rect.y + rect.h / 2, 24, book.spineX, rect.y + rect.h / 2, 520);
+    g.addColorStop(0, 'rgba(255,255,255,0.65)');
+    g.addColorStop(0.36, 'rgba(255,236,163,0.34)');
+    g.addColorStop(1, 'rgba(255,236,163,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(book.left.x, rect.y - 60, book.right.x + book.right.w - book.left.x, rect.h + 120);
     ctx.restore();
   }
 
@@ -914,7 +1008,6 @@ html, body {
     var snapshot = view.flip.snapshot;
     var rect = snapshot && snapshot.rect ? snapshot.rect : (dir > 0 ? book.right : book.left);
 
-    drawGeneratedFlipTexture(dir, p);
     drawFlipSnapshotSurface(snapshot, dir, p);
     drawLaminatedFlipMask(rect, dir, p);
 
