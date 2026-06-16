@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-16 - [batch:564-sea-album-stage1-one-gimmick] Codex: user 指摘「Sea Album 一面は一気に起こりすぎるのでギミックは1個。ヤドカリから鍵をもらって宝箱を開けるだけ。ハゼ等はなし。いきなり目の前の敵に鍵を持たせず、間を大切にする」を受領。Stage1 を貝キー/貝宝箱だけに整理し、泡スイッチ・3真珠ゲート・ハゼ導線を外す。 (by Codex)
+- 2026-06-16 - [batch:564-sea-album-stage1-one-gimmick] DONE - Codex: Sea Album Stage1 を「少し進む → ヤドカリから貝のカギ → 左へ戻って貝宝箱を開ける → 右奥でカブトガニ警告」だけに簡略化。開始直後のヤドカリ強制出現をやめ、カメラが少し進んでから出るよう調整。泡スイッチ/海藻/3真珠ゲート/ハゼ導線を実装・表示・ドキュメントから外し、Stage1カード総数もハゼ抜きの5枚へ調整。通常カードのシールポップはステージ中に出さず、ボス警告時は中央カードを即非表示。`sw.js` は v1211。検証: HTML inline script parse / `node --check sw.js` / `git diff --check` / UTF-8 BOMなしLF / Playwright desktop 1366x768 と mobile 844x390 でヤドカリ遅延、カギ取得、貝宝箱、ボス警告、ハゼ未対象、通知非重なり、横overflowなしを確認。 (by Codex)
 - 2026-06-16 - [batch:563-sea-album-gimmick-visibility] Codex: user 指摘「Sea Album Stage1 のギミックが見せ方不足で何を得た/何のためか分からない。重要発言が画面端で一瞬、撮影テキストが潜水艦の裏、導線が不明」を受領。`oto/index.html` の別件未コミット差分は触らず、Sea Album の重要イベント通知・目的表示・描画レイヤー・画面端ガイドを整理する。 (by Codex)
 - 2026-06-16 - [batch:563-sea-album-gimmick-visibility] DONE - Codex: Sea Album Stage1 の見せ方を整理。中央の獲得カード、上部の現在目的/真珠進捗、画面端の目的地矢印、前面レイヤーの魚吹き出し/獲得テキストを追加し、中央カード表示中は上部トーストを抑制。貝未開放時に海藻へ来た場合はハゼではなく左の貝へ戻すヒントに修正。`STAGE_PLAN.md` に見せ方/レイヤールールを追記し、`sw.js` は v1210。検証: HTML inline script parse / `node --check sw.js` / `git diff --check` / UTF-8 BOMなしLF確認 / Playwright desktop 1366x768 と mobile 844x390 で中央通知、目的表示、画面端ガイド、トースト非重なり、吹き出し前面、prompt/JET非重なり、横overflowなしを確認。 (by Codex)
 - 2026-06-16 - [batch:562-oto-title-mode-choice] Codex: user 依頼「OtoTouchタイトル画面をタップしたら、同じ青背景の上でリズム/自由を選ぶ。リズムを先、文言は任せる」を受領。既存 Sea Album batch:561 の未コミット差分は触らず、`oto/index.html` と cache bump だけ対応する。 (by Codex)

@@ -161,7 +161,7 @@
     position: absolute;
     z-index: 22;
     left: 50%;
-    top: max(58px, calc(env(safe-area-inset-top) + 58px));
+    top: max(106px, calc(env(safe-area-inset-top) + 106px));
     transform: translateX(-50%) translateY(-10px);
     opacity: 0;
     min-width: 220px;
@@ -641,10 +641,10 @@
   <div class="prompt" id="prompt">長押しで えさ魚雷</div>
   <div class="toast" id="toast">アルバムに ついか！</div>
   <div class="guide-strip" id="guideStrip" aria-live="polite">
-    <span class="guide-copy" id="guideObjective">ヤドカリと仲良くして 貝のカギ</span>
-    <strong class="guide-progress" id="guideProgress">真珠 0 / 3</strong>
+    <span class="guide-copy" id="guideObjective">まずは浅瀬を進んで観察しよう</span>
+    <strong class="guide-progress" id="guideProgress">カギなし</strong>
   </div>
-  <div class="event-card gold" id="eventCard" aria-live="polite">
+  <div class="event-card gold" id="eventCard" aria-live="polite" hidden>
     <div class="event-icon" id="eventIcon">!</div>
     <div>
       <div class="event-title" id="eventTitle">見つけた！</div>
@@ -734,7 +734,7 @@
 
   const BASE_W = 1600;
   const BASE_H = 900;
-  const WORLD_W = 6200;
+  const WORLD_W = 5600;
   const PLAYER_MIN_X = 120;
   const PLAYER_MAX_X = WORLD_W - 220;
   const CAMERA_LEAD_X = 390;
@@ -756,12 +756,8 @@
   const COIN_COLLECT_RADIUS = 42;
   const SHELL_CHEST_X = 560;
   const SHELL_CHEST_Y = 748;
-  const SEAWEED_SWITCH_X = 2050;
-  const SEAWEED_SWITCH_Y = 704;
-  const SEAWEED_CURTAIN_X = 2140;
-  const PEARL_GATE_X = WORLD_W - BASE_W - 320;
-  const PEARL_GATE_Y = 604;
-  const GATE_LOCK_MARGIN = 210;
+  const KEY_HERMIT_CAMERA = 1050;
+  const BOSS_TRIGGER_X = WORLD_W - BASE_W - 180;
 
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -856,15 +852,6 @@
       habitat: '岩場や砂の上をゆっくり歩くよ。',
       food: '貝などを食べる種類がいるよ。',
       secret: '足のような小さな管で、じわじわ進むよ。'
-    },
-    {
-      id: 'goby',
-      name: 'ハゼ',
-      icon: 'ハ',
-      stage: 'Stage 1',
-      habitat: '浅い海の底や砂地にいる小さな魚だよ。',
-      food: '小さな虫やプランクトンを食べるよ。',
-      secret: '底の近くで、ぴたっと止まるのが得意だよ。'
     },
     {
       id: 'anemone',
@@ -1018,30 +1005,14 @@
     return {
       shellKey: false,
       shellOpened: false,
-      switchRevealed: false,
-      switchOn: false,
-      friendPearl: false,
-      gateOpen: false,
-      friendCount: 0,
       hintCooldown: 0,
-      gateAnnounced: false,
       shellOpenedAt: 0,
-      switchOnAt: 0,
-      gateOpenAt: 0
+      keyAwardedAt: 0
     };
   }
 
-  function gatePearlCount() {
-    const g = state.gimmicks;
-    return (g.friendPearl ? 1 : 0) + (g.shellOpened ? 1 : 0) + (g.switchOn ? 1 : 0);
-  }
-
-  function gateIsOpen() {
-    return state.gimmicks && state.gimmicks.gateOpen;
-  }
-
-  function gateLockX() {
-    return gateIsOpen() || state.bossSpawned ? PLAYER_MAX_X : PEARL_GATE_X - GATE_LOCK_MARGIN;
+  function stageMaxPlayerX() {
+    return PLAYER_MAX_X;
   }
 
   function showGimmickHint(text, ttl = 1.45) {
@@ -1105,6 +1076,7 @@
     eventIconEl.textContent = icon;
     eventTitleEl.textContent = title;
     eventBodyEl.textContent = body;
+    eventCardEl.hidden = false;
     eventCardEl.className = 'event-card show ' + tone;
     updateGuideHud();
   }
@@ -1112,6 +1084,7 @@
   function hideEventCard() {
     state.eventCardTimer = 0;
     eventCardEl.classList.remove('show');
+    eventCardEl.hidden = true;
   }
 
   function currentObjectiveText() {
@@ -1119,19 +1092,16 @@
     if (!g) return '長押しで えさ魚雷';
     if (state.bossDone) return 'Stage 1 クリア';
     if (state.bossSpawned) return 'カブトガニに えさを当てよう';
-    if (!g.shellKey) return 'ヤドカリと仲良くして 貝のカギ';
+    if (!g.shellKey) return state.camera < KEY_HERMIT_CAMERA ? '浅瀬を少し進んで観察しよう' : 'ヤドカリを探して カギをもらおう';
     if (!g.shellOpened) return '左の光る貝へ戻って 開けよう';
-    if (!g.switchRevealed) return '右へ進んで ハゼを探そう';
-    if (!g.switchOn) return '泡ボムで あわスイッチを押そう';
-    if (!g.friendPearl) return '3匹と仲良くして 青い真珠';
-    if (!g.gateOpen) return '真珠を3つそろえよう';
-    return '右奥の開いたゲートへ進もう';
+    return '宝箱を開けた。右奥へ進もう';
   }
 
   function updateGuideHud() {
     if (!guideObjectiveEl || !guideProgressEl) return;
     guideObjectiveEl.textContent = currentObjectiveText();
-    guideProgressEl.textContent = gateIsOpen() ? 'ゲート OPEN' : '真珠 ' + gatePearlCount() + ' / 3';
+    const g = state.gimmicks;
+    guideProgressEl.textContent = !g ? 'カギなし' : (g.shellOpened ? '宝箱 OPEN' : (g.shellKey ? 'カギあり' : 'カギなし'));
   }
 
   function saveAlbum() {
@@ -1147,6 +1117,10 @@
     } catch (_) {
       state.album = new Set();
     }
+  }
+
+  function albumOpenCount() {
+    return CARDS.reduce((count, card) => count + (state.album.has(card.id) ? 1 : 0), 0);
   }
 
   function saveCoins() {
@@ -1202,8 +1176,7 @@
       state.album.add(id);
       saveAlbum();
       const card = CARDS.find((c) => c.id === id);
-      showToast((card ? card.name : 'カード') + 'を アルバムに ついか！');
-      showEventCard(card ? card.icon : '📸', 'アルバムに記録', (card ? card.name : 'カード') + 'を撮ったよ。あとで生き物のひみつを見られるよ。', 'blue', 2.7);
+      showToast((card ? card.name : 'カード') + 'を 撮ったよ');
       const stickerIds = {
         shrimp: 'sea_album_shrimp',
         hermit: 'sea_album_hermit',
@@ -1214,7 +1187,8 @@
         window.PonoGameStickers.grant({
           gameId: 'sea-album',
           stickerId: stickerIds[id],
-          event: 'card:' + id
+          event: 'card:' + id,
+          show: false
         });
       }
     }
@@ -1273,7 +1247,7 @@
 
   function updateHud() {
     powerText.textContent = String(state.power);
-    albumText.textContent = state.album.size + ' / ' + CARDS.length;
+    albumText.textContent = albumOpenCount() + ' / ' + CARDS.length;
     scoreText.textContent = String(state.score);
     coinText.textContent = String(state.coins);
     syncJetButton();
@@ -1293,9 +1267,12 @@
 
   function chooseStageEnemy() {
     const g = state.gimmicks;
-    if (g && !g.shellKey && !hasActiveEnemy('hermit') && state.camera < 1100) return 'hermit';
-    if (g && g.shellOpened && !g.switchRevealed && !hasActiveEnemy('goby') && state.camera > 850) return 'goby';
-    const order = ['shrimp', 'hermit', 'goby', 'seaStar', 'anemone'];
+    const earlyOrder = ['shrimp', 'seaStar', 'anemone'];
+    if (g && !g.shellKey) {
+      if (state.camera >= KEY_HERMIT_CAMERA && !hasActiveEnemy('hermit')) return 'hermit';
+      return earlyOrder[Math.floor(Math.random() * earlyOrder.length)];
+    }
+    const order = ['shrimp', 'hermit', 'seaStar', 'anemone'];
     return order[Math.floor(Math.random() * order.length)];
   }
 
@@ -1336,6 +1313,11 @@
     state.spawnTimer = 999;
     state.powerups = [];
     state.enemies = state.enemies.filter((enemy) => enemy.defeated);
+    hideEventCard();
+    state.toastTimer = 0;
+    toastEl.classList.remove('show');
+    const stickerToast = document.getElementById('game-sticker-toast');
+    if (stickerToast) stickerToast.remove();
     setPrompt('WARNING! カブトガニ接近', 2.5);
   }
 
@@ -1523,26 +1505,13 @@
   function updateFriendGimmick(enemy) {
     if (!state.gimmicks || enemy.boss) return;
     const g = state.gimmicks;
-    g.friendCount = Math.min(3, g.friendCount + 1);
     if (enemy.key === 'hermit' && !g.shellKey) {
       g.shellKey = true;
+      g.keyAwardedAt = state.time;
       say(enemy, 'このカギで ひらくよ！', 2.3);
       showEventCard('🔑', '貝のカギをもらった！', '左に戻って、光る貝の宝箱を開けよう。', 'gold', 3.4);
       setPrompt('左の貝へ もどろう', 2.8);
     }
-    if (enemy.key === 'goby' && !g.switchRevealed) {
-      g.switchRevealed = true;
-      say(enemy, 'したに あわスイッチ！', 2.4);
-      showEventCard('あわ', '泡スイッチ発見！', '泡つきえさボムを当てると、海藻が開くよ。', 'green', 3.4);
-      setPrompt('泡ボムを スイッチへ', 2.8);
-    }
-    if (!g.friendPearl && g.friendCount >= 3) {
-      g.friendPearl = true;
-      addImpact(enemy.x, enemy.y - 26, 56, 'heart');
-      showEventCard('青', '青い真珠をもらった！', '真珠ゲートに必要な 1つめ。あと2つ探そう。', 'blue', 3.2);
-      setPrompt('なかよし真珠 1つめ', 2.2);
-    }
-    refreshPearlGate();
   }
 
   function openShellChest() {
@@ -1552,35 +1521,8 @@
     g.shellOpenedAt = state.time;
     scatterCoins(9, SHELL_CHEST_X, SHELL_CHEST_Y - 40);
     addImpact(SHELL_CHEST_X, SHELL_CHEST_Y - 40, 86, 'gold');
-    showEventCard('黄', '黄色い真珠を見つけた！', '貝の宝箱から 2つめ。右へ進んで残りを探そう。', 'gold', 3.4);
-    setPrompt('貝がひらいた！ 真珠 2つめ', 2.8);
-    showToast('黄色い真珠を 見つけた！');
-    refreshPearlGate();
-  }
-
-  function activateBubbleSwitch() {
-    const g = state.gimmicks;
-    if (!g || g.switchOn) return;
-    g.switchOn = true;
-    g.switchRevealed = true;
-    g.switchOnAt = state.time;
-    scatterCoins(6, SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y - 34);
-    addImpact(SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y, 92, 'gold');
-    showEventCard('桃', 'ピンクの真珠を見つけた！', 'これで真珠がそろったよ。右奥のゲートへ進もう。', 'pink', 3.4);
-    setPrompt('海藻が あがった！ 真珠 3つめ', 2.8);
-    refreshPearlGate();
-  }
-
-  function refreshPearlGate() {
-    const g = state.gimmicks;
-    if (!g || g.gateOpen) return;
-    if (g.friendPearl && g.shellOpened && g.switchOn) {
-      g.gateOpen = true;
-      g.gateOpenAt = state.time;
-      addImpact(PEARL_GATE_X, PEARL_GATE_Y, 150, 'gold');
-      showEventCard('開', '真珠ゲートが開いた！', '右へ進むとカブトガニのいる奥へ入れるよ。', 'green', 3.4);
-      setPrompt('3つそろった！ 奥へ進もう', 3.0);
-    }
+    showEventCard('宝', '貝宝箱が開いた！', 'コインを拾ったら、右奥へゆっくり進もう。', 'gold', 3.4);
+    setPrompt('貝がひらいた！ 奥へ進もう', 2.8);
   }
 
   function defeatEnemy(enemy) {
@@ -1829,32 +1771,12 @@
     if (!g.shellOpened) {
       const dShell = distance(p.x, p.y, SHELL_CHEST_X, SHELL_CHEST_Y - 52);
       if (g.shellKey && dShell < 150) openShellChest();
-      else if (!g.shellKey && dShell < 180) showGimmickHint('ヤドカリが かぎを しってるかも');
+      else if (!g.shellKey && dShell < 180) showGimmickHint('まだ開かない。右でカギを探そう');
+      else if (!g.shellKey && p.x > BOSS_TRIGGER_X - 420) showGimmickHint('先にカギを探そう');
+      else if (g.shellKey && p.x > SHELL_CHEST_X + 520) showGimmickHint('左の光る貝へ もどろう');
     }
 
-    if (g.switchRevealed && !g.switchOn) {
-      if (distance(p.x, p.y, SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y) < 210) {
-        showGimmickHint('泡ボムを スイッチへ');
-      }
-      for (const bomb of state.bombs) {
-        if (bomb.life > 0 && distance(bomb.x, bomb.y, SEAWEED_SWITCH_X, SEAWEED_SWITCH_Y) < bomb.r + 70) {
-          bomb.life = 0;
-          activateBubbleSwitch();
-          break;
-        }
-      }
-    } else if (!g.shellOpened && p.x > SEAWEED_CURTAIN_X - 360 && p.x < SEAWEED_CURTAIN_X + 80) {
-      showGimmickHint('先に左の貝へ もどろう');
-    } else if (g.shellOpened && !g.switchRevealed && p.x > SEAWEED_CURTAIN_X - 360 && p.x < SEAWEED_CURTAIN_X + 80) {
-      showGimmickHint('ハゼが なにか しってるかも');
-    }
-
-    refreshPearlGate();
-    const dGate = Math.abs(p.x - PEARL_GATE_X);
-    if (!g.gateOpen && dGate < 260) {
-      showGimmickHint('真珠を 3つ あつめよう');
-    }
-    if (g.gateOpen && !state.bossSpawned && p.x > PEARL_GATE_X + 170) {
+    if (g.shellOpened && !state.bossSpawned && p.x > BOSS_TRIGGER_X) {
       spawnBoss();
     }
   }
@@ -1893,7 +1815,7 @@
     }
     const arenaLocked = state.bossPhase === 'scroll' || state.bossPhase === 'intro' || state.bossPhase === 'fight' || state.bossPhase === 'done';
     const minPlayerX = arenaLocked ? state.camera + 120 : PLAYER_MIN_X;
-    const maxPlayerX = arenaLocked ? state.camera + 780 : Math.min(PLAYER_MAX_X, gateLockX());
+    const maxPlayerX = arenaLocked ? state.camera + 780 : stageMaxPlayerX();
     p.tx = clamp(p.tx, minPlayerX, maxPlayerX);
     p.ty = clamp(p.ty, 150, 735);
     p.x += (p.tx - p.x) * Math.min(1, dt * PLAYER_FOLLOW_RATE);
@@ -2174,8 +2096,6 @@
 
   function drawStageGimmicks() {
     if (!state.gimmicks) return;
-    drawSeaweedSwitch();
-    drawPearlGate();
     drawShellChest();
   }
 
@@ -2184,6 +2104,15 @@
     if (!g || state.mode !== 'playing' || state.bossSpawned) return null;
     if (!g.shellKey) {
       const hermit = state.enemies.find((enemy) => enemy.key === 'hermit' && !enemy.defeated);
+      if (!hermit && state.camera < KEY_HERMIT_CAMERA) {
+        return {
+          x: state.camera + 1060,
+          y: 520,
+          title: '右へ進む',
+          sub: '浅瀬を観察',
+          tone: '#a8e9ff'
+        };
+      }
       return {
         x: hermit ? hermit.x : Math.max(state.camera + 980, 820),
         y: hermit ? hermit.y : 530,
@@ -2195,35 +2124,12 @@
     if (!g.shellOpened) {
       return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: '光る貝', sub: 'カギで開く', tone: '#ffd86e' };
     }
-    if (!g.switchRevealed) {
-      const goby = state.enemies.find((enemy) => enemy.key === 'goby' && !enemy.defeated);
-      return {
-        x: goby ? goby.x : SEAWEED_CURTAIN_X - 250,
-        y: goby ? goby.y : 530,
-        title: 'ハゼを探す',
-        sub: 'スイッチのヒント',
-        tone: '#a8e9ff'
-      };
-    }
-    if (!g.switchOn) {
-      return { x: SEAWEED_SWITCH_X, y: SEAWEED_SWITCH_Y - 42, title: 'あわスイッチ', sub: '泡ボムを当てる', tone: '#98e58f' };
-    }
-    if (!g.friendPearl) {
-      const friend = state.enemies.find((enemy) => !enemy.boss && !enemy.defeated);
-      return {
-        x: friend ? friend.x : state.camera + 880,
-        y: friend ? friend.y : 520,
-        title: 'あと' + Math.max(1, 3 - state.gimmicks.friendCount) + '匹',
-        sub: '仲良くなる',
-        tone: '#a8e9ff'
-      };
-    }
     return {
-      x: PEARL_GATE_X,
-      y: PEARL_GATE_Y - 60,
-      title: g.gateOpen ? '開いたゲート' : '真珠ゲート',
-      sub: g.gateOpen ? '右へ進む' : gatePearlCount() + ' / 3',
-      tone: g.gateOpen ? '#98e58f' : '#ffacd6'
+      x: BOSS_TRIGGER_X + 180,
+      y: 540,
+      title: '右奥へ進む',
+      sub: 'カブトガニの海',
+      tone: '#98e58f'
     };
   }
 
@@ -2342,115 +2248,6 @@
       ctx.stroke();
       drawCoinStar(0, -31, 8);
     }
-    ctx.restore();
-  }
-
-  function drawSeaweedSwitch() {
-    const g = state.gimmicks;
-    const sx = screenX(SEAWEED_CURTAIN_X);
-    if (sx > -220 && sx < BASE_W + 220) {
-      ctx.save();
-      ctx.translate(sx, 716);
-      const open = g.switchOn;
-      const spread = open ? 76 : 0;
-      for (let i = -5; i <= 5; i += 1) {
-        const side = i < 0 ? -1 : 1;
-        const baseX = i * 22 + side * spread;
-        const h = 220 + Math.sin(i * 1.7) * 28;
-        ctx.strokeStyle = i % 2 ? '#3f9f63' : '#65bd5f';
-        ctx.lineWidth = 16;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(baseX, 38);
-        ctx.bezierCurveTo(baseX + Math.sin(state.time * 1.3 + i) * 26, -h * 0.25, baseX - side * 34, -h * 0.62, baseX + side * (open ? 46 : 10), -h);
-        ctx.stroke();
-      }
-      if (!open) {
-        ctx.globalAlpha = 0.78;
-        ctx.fillStyle = 'rgba(24, 91, 57, 0.22)';
-        roundRect(-134, -218, 268, 228, 22);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    if (!g.switchRevealed && !g.switchOn) return;
-    const x = screenX(SEAWEED_SWITCH_X);
-    const y = SEAWEED_SWITCH_Y;
-    if (x < -120 || x > BASE_W + 120) return;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.shadowColor = g.switchOn ? '#fff4a8' : '#aaf6ff';
-    ctx.shadowBlur = g.switchOn ? 22 : 14;
-    ctx.fillStyle = g.switchOn ? '#ffe17a' : '#d7fbff';
-    ctx.strokeStyle = g.switchOn ? '#c28a20' : '#49a9c1';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, 0, 38 + Math.sin(state.time * 4) * 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.72)';
-    ctx.beginPath();
-    ctx.arc(-11, -12, 10, 0, Math.PI * 2);
-    ctx.fill();
-    if (!g.switchOn) {
-      ctx.fillStyle = '#0d6e84';
-      ctx.font = '900 18px Zen Maru Gothic, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('あわ', 0, 64);
-    }
-    ctx.restore();
-  }
-
-  function drawPearlGate() {
-    const g = state.gimmicks;
-    const x = screenX(PEARL_GATE_X);
-    const y = PEARL_GATE_Y;
-    if (x < -260 || x > BASE_W + 260) return;
-    const open = g.gateOpen;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.globalAlpha = open ? 0.5 : 0.9;
-    for (let side = -1; side <= 1; side += 2) {
-      const slide = open ? side * 92 : 0;
-      ctx.fillStyle = side < 0 ? '#7cc4b2' : '#69b7a2';
-      ctx.strokeStyle = 'rgba(21, 85, 82, 0.55)';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.ellipse(side * 48 + slide, 0, 56, 156, 0.1 * side, -Math.PI / 2, Math.PI / 2);
-      ctx.lineTo(side * 48 + slide, -156);
-      ctx.fill();
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-    if (!open) {
-      ctx.fillStyle = 'rgba(8, 57, 74, 0.28)';
-      roundRect(-86, -142, 172, 282, 44);
-      ctx.fill();
-    }
-    const pearls = [
-      { on: g.friendPearl, color: '#a7e7ff', x: -58 },
-      { on: g.shellOpened, color: '#fff0a6', x: 0 },
-      { on: g.switchOn, color: '#f8a7df', x: 58 }
-    ];
-    pearls.forEach((pearl) => {
-      ctx.save();
-      ctx.translate(pearl.x, -176);
-      ctx.shadowColor = pearl.on ? pearl.color : 'transparent';
-      ctx.shadowBlur = pearl.on ? 16 : 0;
-      ctx.fillStyle = pearl.on ? pearl.color : '#d7e1dc';
-      ctx.strokeStyle = pearl.on ? '#ffffff' : '#75918d';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(0, 0, 24, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    });
-    ctx.fillStyle = open ? '#fff3ae' : '#e9fdff';
-    ctx.font = '900 22px Zen Maru Gothic, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(open ? 'ひらいた！' : gatePearlCount() + ' / 3', 0, 174);
     ctx.restore();
   }
 
@@ -2701,11 +2498,17 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#fff4a8';
+      ctx.strokeStyle = 'rgba(4, 28, 45, 0.72)';
+      ctx.lineWidth = 10;
+      ctx.lineJoin = 'round';
       ctx.font = '900 104px Zen Maru Gothic, sans-serif';
-      ctx.fillText(BOSS_LINES.warning, BASE_W / 2, BASE_H * 0.43);
+      ctx.strokeText(BOSS_LINES.warning, BASE_W / 2, BASE_H * 0.34);
+      ctx.fillText(BOSS_LINES.warning, BASE_W / 2, BASE_H * 0.34);
       ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 7;
       ctx.font = '900 38px Zen Maru Gothic, sans-serif';
-      ctx.fillText('カブトガニ 接近中', BASE_W / 2, BASE_H * 0.56);
+      ctx.strokeText('カブトガニ 接近中', BASE_W / 2, BASE_H * 0.48);
+      ctx.fillText('カブトガニ 接近中', BASE_W / 2, BASE_H * 0.48);
       ctx.restore();
     } else if (state.bossPhase === 'scroll') {
       ctx.save();
