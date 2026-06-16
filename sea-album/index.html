@@ -758,6 +758,15 @@
   const SHELL_CHEST_Y = 748;
   const KEY_HERMIT_CAMERA = 1050;
   const BOSS_TRIGGER_X = WORLD_W - BASE_W - 180;
+  const FRIENDSHIP_MAX = 100;
+  const FRIENDSHIP_HINTS = [
+    { at: 20, icon: '!', title: 'カブトガニのうわさ', body: 'カブトガニは まっすぐ つっこんでくるよ。' },
+    { at: 40, icon: '貝', title: 'あやしい貝', body: '左の大きな貝に、いいものが入っているかも。' },
+    { at: 60, icon: '鍵', title: 'カギのヒント', body: '貝のカギは、ヤドカリが知っているみたい。' },
+    { at: 80, icon: '砂', title: 'ボス対策', body: 'すなだんごがあれば、カブトガニの突進を止められるよ。' },
+    { at: 100, icon: '!', title: 'カブトガニがくるよ', body: 'すなだんごを持って、右奥へ進もう。' }
+  ];
+  const POWERUP_FRIENDSHIP_MARKS = [25, 55, 85];
 
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -1003,11 +1012,17 @@
 
   function createStageGimmicks() {
     return {
+      friendship: 0,
+      friendKinds: Object.create(null),
+      friendshipHints: Object.create(null),
+      powerMarks: Object.create(null),
       shellKey: false,
       shellOpened: false,
+      sandball: false,
       hintCooldown: 0,
       shellOpenedAt: 0,
-      keyAwardedAt: 0
+      keyAwardedAt: 0,
+      sandballAt: 0
     };
   }
 
@@ -1020,6 +1035,14 @@
     if (!g || g.hintCooldown > 0) return;
     setPrompt(text, ttl);
     g.hintCooldown = ttl + 0.45;
+  }
+
+  function showBossGateHint(icon, title, body, prompt) {
+    const g = state.gimmicks;
+    if (!g || g.hintCooldown > 0) return;
+    showEventCard(icon, title, body, 'blue', 3.2);
+    setPrompt(prompt || body, 2.6);
+    g.hintCooldown = 3.5;
   }
 
   function enemyMood(enemy) {
@@ -1092,16 +1115,24 @@
     if (!g) return '長押しで えさ魚雷';
     if (state.bossDone) return 'Stage 1 クリア';
     if (state.bossSpawned) return 'カブトガニに えさを当てよう';
-    if (!g.shellKey) return state.camera < KEY_HERMIT_CAMERA ? '浅瀬を少し進んで観察しよう' : 'ヤドカリを探して カギをもらおう';
-    if (!g.shellOpened) return '左の光る貝へ戻って 開けよう';
-    return '宝箱を開けた。右奥へ進もう';
+    if (!g.shellKey) return state.camera < KEY_HERMIT_CAMERA ? '生き物と仲良くして ヤドカリを探そう' : 'ヤドカリにえさをあげて カギをもらおう';
+    if (!g.shellOpened) return '左の光る貝へ戻って すなだんごを探そう';
+    if ((g.friendship || 0) < FRIENDSHIP_MAX) return 'なかよし度を100まで上げよう';
+    if (!g.sandball) return 'すなだんごを探そう';
+    return 'すなだんごを持って 右奥へ進もう';
   }
 
   function updateGuideHud() {
     if (!guideObjectiveEl || !guideProgressEl) return;
     guideObjectiveEl.textContent = currentObjectiveText();
     const g = state.gimmicks;
-    guideProgressEl.textContent = !g ? 'カギなし' : (g.shellOpened ? '宝箱 OPEN' : (g.shellKey ? 'カギあり' : 'カギなし'));
+    if (!g) {
+      guideProgressEl.textContent = 'なかよし 0/100';
+      return;
+    }
+    const friend = Math.floor(g.friendship || 0);
+    const item = g.sandball ? ' / すなだんご' : (g.shellOpened ? ' / 宝箱OPEN' : (g.shellKey ? ' / カギあり' : ' / カギなし'));
+    guideProgressEl.textContent = 'なかよし ' + friend + '/100' + item;
   }
 
   function saveAlbum() {
@@ -1355,9 +1386,12 @@
   function fireShots() {
     const dir = state.player.facing || 1;
     const speed = TORPEDO_BASE_SPEED + Math.min(3, state.power - 1) * 18;
+    const active = activeTorpedoCountOnScreen();
+    const slots = torpedoSlotCount();
+    const slotOffset = (active - (slots - 1) / 2) * 24;
     state.shots.push({
       x: state.player.x + dir * 86,
-      y: state.player.y - 4,
+      y: state.player.y - 4 + slotOffset,
       vx: speed * dir,
       vy: 0,
       dir,
@@ -1388,19 +1422,27 @@
   }
 
   function shotInterval() {
-    return state.power >= 4 ? 1.08 : 1.34;
+    if (state.power >= 4) return 1.18;
+    if (state.power >= 3) return 1.26;
+    return 1.34;
   }
 
   function bombInterval() {
     return state.power >= 4 ? 2.2 : 2.65;
   }
 
-  function activeTorpedoOnScreen() {
-    return state.shots.some((s) => {
+  function torpedoSlotCount() {
+    if (state.power >= 4) return 3;
+    if (state.power >= 3) return 2;
+    return 1;
+  }
+
+  function activeTorpedoCountOnScreen() {
+    return state.shots.filter((s) => {
       if (!s.homing || s.life <= 0) return false;
       const sx = screenX(s.x);
       return sx > -TORPEDO_EXIT_PAD && sx < BASE_W + TORPEDO_EXIT_PAD && s.y > -90 && s.y < BASE_H + 90;
-    });
+    }).length;
   }
 
   function activeBombsOnScreen() {
@@ -1476,7 +1518,7 @@
 
   function tryFireShots() {
     if (state.mode !== 'playing' || state.shotTimer > 0) return false;
-    if (activeTorpedoOnScreen()) return false;
+    if (activeTorpedoCountOnScreen() >= torpedoSlotCount()) return false;
     fireShots();
     state.shotTimer = shotInterval();
     return true;
@@ -1502,6 +1544,45 @@
     state.impacts.push({ x, y, radius, life: 0.36, max: 0.36, kind });
   }
 
+  function showFriendshipHint(mark) {
+    const hint = FRIENDSHIP_HINTS.find((h) => h.at === mark);
+    if (!hint) return;
+    showEventCard(hint.icon, hint.title, hint.body, mark >= 80 ? 'gold' : 'blue', 3.6);
+    setPrompt(hint.body, 3.0);
+  }
+
+  function addFriendship(amount, x, y) {
+    const g = state.gimmicks;
+    if (!g || amount <= 0 || state.bossSpawned) return;
+    const prev = g.friendship || 0;
+    const next = Math.min(FRIENDSHIP_MAX, prev + amount);
+    if (next <= prev) return;
+    g.friendship = next;
+
+    for (const mark of POWERUP_FRIENDSHIP_MARKS) {
+      if (prev < mark && next >= mark && !g.powerMarks[mark]) {
+        g.powerMarks[mark] = true;
+        state.powerups.push({ x: x || state.player.x + 110, y: y || state.player.y - 30, r: 28, life: 8 });
+      }
+    }
+
+    for (const hint of FRIENDSHIP_HINTS) {
+      if (prev < hint.at && next >= hint.at && !g.friendshipHints[hint.at]) {
+        g.friendshipHints[hint.at] = true;
+        showFriendshipHint(hint.at);
+      }
+    }
+    updateHud();
+  }
+
+  function addCreatureFriendship(enemy) {
+    const g = state.gimmicks;
+    if (!g || enemy.boss) return;
+    const first = !g.friendKinds[enemy.key];
+    g.friendKinds[enemy.key] = true;
+    addFriendship(first ? 18 : 4, enemy.x, enemy.y);
+  }
+
   function updateFriendGimmick(enemy) {
     if (!state.gimmicks || enemy.boss) return;
     const g = state.gimmicks;
@@ -1511,6 +1592,7 @@
       say(enemy, 'このカギで ひらくよ！', 2.3);
       showEventCard('🔑', '貝のカギをもらった！', '左に戻って、光る貝の宝箱を開けよう。', 'gold', 3.4);
       setPrompt('左の貝へ もどろう', 2.8);
+      addFriendship(8, enemy.x, enemy.y);
     }
   }
 
@@ -1519,10 +1601,13 @@
     if (!g || g.shellOpened || !g.shellKey) return;
     g.shellOpened = true;
     g.shellOpenedAt = state.time;
+    g.sandball = true;
+    g.sandballAt = state.time;
     scatterCoins(9, SHELL_CHEST_X, SHELL_CHEST_Y - 40);
     addImpact(SHELL_CHEST_X, SHELL_CHEST_Y - 40, 86, 'gold');
-    showEventCard('宝', '貝宝箱が開いた！', 'コインを拾ったら、右奥へゆっくり進もう。', 'gold', 3.4);
-    setPrompt('貝がひらいた！ 奥へ進もう', 2.8);
+    addFriendship(12, SHELL_CHEST_X, SHELL_CHEST_Y - 62);
+    showEventCard('砂', 'すなだんごを見つけた！', 'カブトガニの突進を止められるよ。仲良し度を100にしよう。', 'gold', 3.8);
+    setPrompt('すなだんごを手に入れた！', 2.8);
   }
 
   function defeatEnemy(enemy) {
@@ -1539,10 +1624,8 @@
     scatterCoins(type.coins || 0, enemy.x, enemy.y);
     unlockCard(type.card);
     addImpact(enemy.x, enemy.y, enemy.size * 0.72, enemy.boss ? 'boss' : 'heart');
+    addCreatureFriendship(enemy);
     updateFriendGimmick(enemy);
-    if (!enemy.boss && state.observed % 3 === 0) {
-      state.powerups.push({ x: enemy.x, y: enemy.y, r: 28, life: 8 });
-    }
     if (enemy.boss) {
       state.bossDone = true;
       state.bossPhase = 'done';
@@ -1741,10 +1824,29 @@
         enemy.x += (BOSS_TARGET_X - enemy.x) * Math.min(1, dt * 2.25);
         if (Math.abs(enemy.x - BOSS_TARGET_X) < 18) {
           enemy.x = BOSS_TARGET_X;
-          endBossAttack(enemy, 1.15);
+          if (state.gimmicks && state.gimmicks.sandball && !enemy.sandballStunned) {
+            enemy.sandballStunned = true;
+            enemy.attackPhase = 'stunned';
+            enemy.attackT = 0;
+            enemy.mood = 'eating';
+            enemy.eatTimer = 1.25;
+            say(enemy, 'すなだんご？', 1.45);
+            setPrompt('止まった！ えさを当てよう', 1.6);
+          } else {
+            enemy.sandballStunned = false;
+            endBossAttack(enemy, 1.15);
+          }
         } else if (enemy.attackT > 4.2) {
           enemy.x = BOSS_TARGET_X;
+          enemy.sandballStunned = false;
           endBossAttack(enemy, 1.35);
+        }
+      } else if (enemy.attackPhase === 'stunned') {
+        enemy.x = BOSS_TARGET_X;
+        enemy.y = enemy.baseY + Math.sin(state.time * 8) * 5;
+        if (enemy.attackT > 1.25) {
+          enemy.sandballStunned = false;
+          endBossAttack(enemy, 1.3);
         }
       }
       return;
@@ -1776,8 +1878,18 @@
       else if (g.shellKey && p.x > SHELL_CHEST_X + 520) showGimmickHint('左の光る貝へ もどろう');
     }
 
-    if (g.shellOpened && !state.bossSpawned && p.x > BOSS_TRIGGER_X) {
-      spawnBoss();
+    if (!state.bossSpawned && p.x > BOSS_TRIGGER_X) {
+      if (!g.shellKey) {
+        showBossGateHint('鍵', 'カギが必要', '右側でヤドカリにえさをあげて、貝のカギをもらおう。', '先にカギを探そう');
+      } else if (!g.shellOpened) {
+        showBossGateHint('貝', '貝宝箱へ戻ろう', '左の光る貝を開けると、ボス対策の道具が見つかるよ。', '左の光る貝へ もどろう');
+      } else if ((g.friendship || 0) < FRIENDSHIP_MAX) {
+        showBossGateHint('友', 'まだ仲良し度が足りない', '生き物にえさをあげて、なかよし100まで上げよう。', 'もっと生き物と仲良くなろう');
+      } else if (!g.sandball) {
+        showBossGateHint('砂', 'すなだんごが必要', 'カブトガニの突進を止めるため、貝宝箱のすなだんごを探そう。', 'すなだんごを探そう');
+      } else {
+        spawnBoss();
+      }
     }
   }
 
@@ -1923,9 +2035,11 @@
       u.life -= dt;
       if (distance(u.x, u.y, p.x, p.y) < 70) {
         u.life = 0;
+        const before = state.power;
         state.power = Math.min(4, state.power + 1);
         state.score += 70;
-        setPrompt(state.power >= 3 ? 'ボム +1' : 'えさ弾 +1', 2.1);
+        const powerMsg = state.power <= before ? 'POWER MAX' : (state.power === 2 ? 'ホーミング UP' : (state.power === 3 ? 'えさ魚雷 2本' : 'えさ魚雷 3本'));
+        setPrompt(powerMsg, 2.1);
         updateHud();
       }
     });
@@ -2125,6 +2239,29 @@
     if (!g.shellOpened) {
       return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: '光る貝', sub: 'カギで開く', tone: '#ffd86e' };
     }
+    if ((g.friendship || 0) < FRIENDSHIP_MAX) {
+      const targetEnemy = state.enemies.find((enemy) => !enemy.defeated && !enemy.boss);
+      if (targetEnemy) {
+        return {
+          x: targetEnemy.x,
+          y: targetEnemy.y,
+          title: 'なかよし',
+          sub: Math.floor(g.friendship || 0) + '/100',
+          tone: '#a8e9ff',
+          suppressLabel: !!(targetEnemy.speech && targetEnemy.speech.ttl > 0)
+        };
+      }
+      return {
+        x: state.camera + BASE_W - 240,
+        y: 500,
+        title: '生き物探し',
+        sub: Math.floor(g.friendship || 0) + '/100',
+        tone: '#a8e9ff'
+      };
+    }
+    if (!g.sandball) {
+      return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: 'すなだんご', sub: '貝宝箱', tone: '#ffd86e' };
+    }
     return {
       x: BOSS_TRIGGER_X + 180,
       y: 540,
@@ -2240,14 +2377,107 @@
       ctx.stroke();
     }
     if (open) {
-      ctx.fillStyle = '#fff6c9';
-      ctx.strokeStyle = '#b8882c';
-      ctx.lineWidth = 3;
+      drawSandBallIcon(0, -31, 0.56 + Math.sin(state.time * 4) * 0.015);
+    } else if (!g.shellKey) {
+      drawShellKeyIcon(0, -18, 0.24, 0.42);
+    }
+    ctx.restore();
+  }
+
+  function drawShellKeyIcon(x, y, scale = 1, alpha = 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha *= alpha;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = '#ffe48a';
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = '#9a6418';
+    ctx.fillStyle = '#ffd767';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.arc(-30, -4, 27, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#f6b43f';
+    ctx.beginPath();
+    ctx.arc(-30, -4, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-5, -4);
+    ctx.lineTo(58, -4);
+    ctx.lineTo(58, 18);
+    ctx.lineTo(42, 18);
+    ctx.lineTo(42, 6);
+    ctx.lineTo(24, 6);
+    ctx.lineTo(24, 18);
+    ctx.lineTo(8, 18);
+    ctx.lineTo(8, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffc9b8';
+    ctx.strokeStyle = '#9a6418';
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 5; i += 1) {
+      const a = -Math.PI * 0.9 + i * Math.PI * 0.45;
       ctx.beginPath();
-      ctx.arc(0, -30, 15 + Math.sin(state.time * 4) * 1.2, 0, Math.PI * 2);
+      ctx.ellipse(-30 + Math.cos(a) * 10, -34 + Math.sin(a) * 6, 10, 24, a + Math.PI / 2, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      drawCoinStar(0, -31, 8);
+    }
+    ctx.restore();
+  }
+
+  function drawSandBallIcon(x, y, scale = 1, alpha = 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha *= alpha;
+    ctx.shadowColor = '#fff1a6';
+    ctx.shadowBlur = 16;
+    const grad = ctx.createRadialGradient(-18, -18, 6, 0, 0, 54);
+    grad.addColorStop(0, '#fff0bf');
+    grad.addColorStop(0.48, '#dfbf70');
+    grad.addColorStop(1, '#a87535');
+    ctx.fillStyle = grad;
+    ctx.strokeStyle = '#8b6232';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 48, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    const shells = [
+      [-16, -10, '#fff2ca', 0.85],
+      [19, 9, '#8edbd3', 0.68],
+      [7, -27, '#ffa8a8', 0.55],
+      [-2, 24, '#ffe8a8', 0.48]
+    ];
+    shells.forEach(([sx, sy, color, s]) => {
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.scale(s, s);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = 'rgba(112, 82, 46, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -16);
+      ctx.quadraticCurveTo(19, -2, 0, 18);
+      ctx.quadraticCurveTo(-19, -2, 0, -16);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    });
+    ctx.fillStyle = 'rgba(116, 82, 45, 0.42)';
+    for (let i = 0; i < 10; i += 1) {
+      const a = i * 1.73;
+      const r = 12 + (i % 4) * 8;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * r, Math.sin(a) * r, 2.1 + (i % 3) * 0.7, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
