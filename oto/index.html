@@ -1798,7 +1798,7 @@
     display: none;
     --opening-exit-x: -38vw;
     --opening-exit-y: -27vh;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     align-content: center;
     justify-items: center;
     gap: clamp(8px, 2.2vh, 16px);
@@ -1820,6 +1820,7 @@
   }
   .rhythm-opening-character {
     position: relative;
+    grid-row: 2;
     width: min(35vw, 280px);
     height: clamp(126px, 33vh, 270px);
     pointer-events: none;
@@ -1945,11 +1946,16 @@
     animation: rhythm-opening-fire-rise 430ms cubic-bezier(.22,.82,.22,1) both;
   }
   .rhythm-opening-panel {
+    display: contents;
+  }
+  .rhythm-opening-line,
+  .rhythm-opening-actions {
     position: relative;
+    z-index: 5;
+  }
+  .rhythm-opening-line {
+    grid-row: 1;
     width: min(88%, 620px);
-    max-height: min(44vh, 340px);
-    display: grid;
-    gap: 10px;
     padding: 0;
     border: 0;
     border-radius: 0;
@@ -1962,6 +1968,10 @@
     pointer-events: none;
   }
   .rhythm-opening.is-settling .rhythm-opening-panel {
+    animation: rhythm-opening-panel-exit 260ms ease both;
+  }
+  .rhythm-opening.is-settling .rhythm-opening-line,
+  .rhythm-opening.is-settling .rhythm-opening-actions {
     animation: rhythm-opening-panel-exit 260ms ease both;
   }
   .rhythm-opening.is-settling .rhythm-opening-character {
@@ -2016,7 +2026,6 @@
     text-shadow: 0 2px 0 rgba(0,0,0,0.42);
   }
   .rhythm-opening-line {
-    position: relative;
     min-height: 3.4em;
     display: grid;
     place-items: center;
@@ -2041,18 +2050,19 @@
     pointer-events: none;
   }
   .rhythm-opening-line::before {
-    top: -24px;
+    bottom: -24px;
     border-left: 20px solid transparent;
     border-right: 20px solid transparent;
-    border-bottom: 24px solid rgba(255,255,255,0.92);
+    border-top: 24px solid rgba(255,255,255,0.92);
   }
   .rhythm-opening-line::after {
-    top: -16px;
+    bottom: -16px;
     border-left: 15px solid transparent;
     border-right: 15px solid transparent;
-    border-bottom: 18px solid rgba(248,250,252,0.96);
+    border-top: 18px solid rgba(248,250,252,0.96);
   }
   .rhythm-opening-actions {
+    grid-row: 3;
     display: flex;
     gap: 10px;
     justify-content: center;
@@ -2089,8 +2099,6 @@
       height: clamp(104px, 32vh, 152px);
     }
     .rhythm-opening-panel {
-      width: min(86%, 520px);
-      gap: 6px;
       padding: 0;
       border-radius: 0;
     }
@@ -2103,22 +2111,23 @@
     }
     .rhythm-opening-line {
       min-height: 2.8em;
+      width: min(86%, 520px);
       padding: 10px 14px;
       border-width: 3px;
       border-radius: 20px;
       font-size: clamp(0.86rem, 3.4cqh, 1.06rem);
     }
     .rhythm-opening-line::before {
-      top: -18px;
+      bottom: -18px;
       border-left-width: 15px;
       border-right-width: 15px;
-      border-bottom-width: 18px;
+      border-top-width: 18px;
     }
     .rhythm-opening-line::after {
-      top: -12px;
+      bottom: -12px;
       border-left-width: 11px;
       border-right-width: 11px;
-      border-bottom-width: 13px;
+      border-top-width: 13px;
     }
     .rhythm-opening-fire {
       left: clamp(72px, 17vw, 150px);
@@ -3715,7 +3724,7 @@
   body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-target::after,
   body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-hit::after,
   body.rhythm-layout.webgl-rhythm .instr-btn.rhythm-miss::after {
-    opacity: 1 !important;
+    opacity: 0 !important;
   }
   /* v713+: 左 22% は左メニュー帯 (モード切替 / ねいろ / ばんそう, 中心 11% / 幅 160px) を
      避けるため空ける。8 ボタンは画面右 78% の中で等間隔配置。1 区間 = 78% / 8 = 9.75%。
@@ -7699,7 +7708,9 @@ function _gh3DDrawOneKey(lane, mvp) {
     return keyTopYAt(pointZ) - h;
   }
   var pts = _gh3DRoundedBoxPoints(centerX, centerZ, w, d, 48);
+  var shadowVerts = [];
   var sideVerts = [];
+  var haloVerts = [];
   var topVerts = [];
   var glow = hit ? 1.2 : (target ? 0.48 : 0);
   var dim = miss ? 0.7 : 1;
@@ -7720,7 +7731,7 @@ function _gh3DDrawOneKey(lane, mvp) {
   }
   var shadowY = keyBottomYAt(centerZ) - 0.035;
   _gh3DPushColorQuad(
-    sideVerts,
+    shadowVerts,
     [centerX - w * 0.48, shadowY, centerZ + d * 0.52],
     [centerX + w * 0.48, shadowY, centerZ + d * 0.52],
     [centerX + w * 0.42, shadowY, centerZ - d * 0.36],
@@ -7743,7 +7754,7 @@ function _gh3DDrawOneKey(lane, mvp) {
     var haloY = topY + 0.018;
     var haloAlpha = hit ? 0.26 : 0.12;
     _gh3DPushColorQuad(
-      sideVerts,
+      haloVerts,
       [centerX - w * 0.58, haloY, centerZ + d * 0.56],
       [centerX + w * 0.58, haloY, centerZ + d * 0.56],
       [centerX + w * 0.5, haloY, centerZ - d * 0.45],
@@ -7751,8 +7762,21 @@ function _gh3DDrawOneKey(lane, mvp) {
       [1, 0.96, 0.68, haloAlpha]
     );
   }
+  var depthMaskWas = gl.getParameter(gl.DEPTH_WRITEMASK);
+  gl.depthMask(false);
+  _gh3DDrawColor(gl, _gh3d.notesColorProgram, _gh3d.noteColorBuffer, shadowVerts, gl.TRIANGLES, mvp);
   _gh3DDrawColor(gl, _gh3d.notesColorProgram, _gh3d.noteColorBuffer, sideVerts, gl.TRIANGLES, mvp);
+  gl.depthMask(depthMaskWas);
   _gh3DDrawTextured(gl, _gh3d.notesProgram, _gh3d.noteBuffer, tex, topVerts, mvp);
+  if (haloVerts.length) {
+    var depthWasEnabled = gl.isEnabled(gl.DEPTH_TEST);
+    var haloDepthMaskWas = gl.getParameter(gl.DEPTH_WRITEMASK);
+    gl.disable(gl.DEPTH_TEST);
+    gl.depthMask(false);
+    _gh3DDrawColor(gl, _gh3d.notesColorProgram, _gh3d.noteColorBuffer, haloVerts, gl.TRIANGLES, mvp);
+    if (depthWasEnabled) gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(haloDepthMaskWas);
+  }
 }
 function _gh3DDrawKeys(mvp) {
   for (var lane = 0; lane < 8; lane++) _gh3DDrawOneKey(lane, mvp);
@@ -8635,7 +8659,7 @@ function _startRhythmMode() {
       }
     }
   }
-  _scheduleRhythmMelody(0.16);
+  _scheduleRhythmMelody(0.11);
   // レーンジオメトリ更新 (次フレームで再計算もする)
   if (document.body.classList.contains('rhythm-layout')) {
     _ghUpdateLanesGeometry();
@@ -8748,19 +8772,28 @@ function _scheduleRhythmMelody(peakGain) {
   });
   return true;
 }
-function _playRhythmTapPitch(idx, judge) {
+function _rhythmTapPitchDurationForBeatLen(beatLen) {
+  var beats = Math.max(1, Number(beatLen) || 1);
+  return Math.max(190, Math.min(2400, beats * _rhythmBeatMs() * 0.88));
+}
+function _playRhythmTapPitch(idx, judge, durationMs) {
   var ac = getAC();
   if (!ac) return;
   var freqs = _rhythmNoteFreqs(idx);
   if (!freqs.length) return;
   var now = ac.currentTime;
-  var power = judge && judge.key === 'just' ? 1.22 : (judge && judge.key === 'nice' ? 1.08 : 0.92);
-  var dur = 0.13;
+  var judgeKey = judge && judge.key;
+  var power = judgeKey === 'just' ? 1.28 : (judgeKey === 'nice' ? 1.16 : (judgeKey === 'miss' ? 0.78 : 1.02));
+  var dur = Math.max(0.18, Math.min(2.4, (durationMs || 210) / 1000));
+  var attack = Math.min(0.018, dur * 0.12);
+  var release = Math.min(0.18, Math.max(0.055, dur * 0.22));
+  var sustainEnd = Math.max(now + attack + 0.04, now + dur - release);
   var g = ac.createGain();
-  var peak = 0.082 * power / Math.max(1, Math.sqrt(freqs.length));
+  var peak = 0.155 * power / Math.max(1, Math.sqrt(freqs.length));
   var nodes = [g];
   g.gain.setValueAtTime(0, now);
-  g.gain.linearRampToValueAtTime(peak, now + 0.008);
+  g.gain.linearRampToValueAtTime(peak, now + attack);
+  g.gain.setValueAtTime(peak * 0.82, sustainEnd);
   g.gain.exponentialRampToValueAtTime(0.001, now + dur);
   freqs.forEach(function(freq, i) {
     var o = ac.createOscillator();
@@ -8776,7 +8809,7 @@ function _playRhythmTapPitch(idx, judge) {
     nodes.forEach(function(node) {
       try { node.disconnect(); } catch(e) {}
     });
-  }, 220);
+  }, Math.round(dur * 1000) + 180);
 }
 function _playRhythmBlockSfx(kind, laneIdx, judge) {
   var ac = getAC();
@@ -9228,6 +9261,7 @@ function handleRhythmTap(idx, btn) {
       // v708: 画面に判定対象のノートが何も無いタップ (曲開始直後の素振り等) では
       //       赤フラッシュを出さない。何かが落ちている時 / 同レーンで明確に過ぎている時のみ赤。
       var hasAnyActiveNote = _rhythm.activeNotes && _rhythm.activeNotes.length > 0;
+      _playRhythmTapPitch(laneIdx, { key: hasAnyActiveNote ? 'miss' : 'ok' }, 190);
       if (hasAnyActiveNote) {
         _recordRhythmMiss();
         _setRhythmStatus('ちがうレーン', 'miss');
@@ -9243,6 +9277,7 @@ function handleRhythmTap(idx, btn) {
     var delta = judgeNow - best.targetTime;
     if (delta < -RHYTHM_OK_MS) {
       // まだ早すぎ → ノートは残す
+      _playRhythmTapPitch(laneIdx, { key: 'close' }, 190);
       _setRhythmStatus('もうすこし', 'warn');
       _updateRhythmBattlePanel('taunt', null, 'もうすこし！');
       return;
@@ -9251,6 +9286,7 @@ function handleRhythmTap(idx, btn) {
     var hitResult = _recordRhythmHit(abs);
     var judge = hitResult.judge;
     var addedScore = hitResult.added;
+    var tapDurationMs = _rhythmTapPitchDurationForBeatLen(best.beatLen || _rhythmBeatLengthAt(best.seq));
     var rect = btn ? btn.getBoundingClientRect() : null;
     var cx = rect ? rect.left + rect.width / 2 : 0;
     var cy = rect ? rect.top + rect.height / 2 : 0;
@@ -9273,12 +9309,12 @@ function handleRhythmTap(idx, btn) {
     if (judge.key === 'just' || judge.key === 'nice' || judge.key === 'good') {
       _ghSpawnNoteBurst(best, 'success');
     }
-    _playRhythmTapPitch(laneIdx, judge);
+    _ghRemoveNote(best);
+    _playRhythmTapPitch(laneIdx, judge, tapDurationMs);
     _playRhythmBlockSfx('success', laneIdx, judge);
     _pulseRhythmButton(btn, 'rhythm-hit' + (judge.key === 'just' ? ' rhythm-hit-just' : (judge.key === 'nice' ? ' rhythm-hit-nice' : '')));
     _spawnRhythmJudgePop(laneIdx, judge, addedScore, btn);
     _updateRhythmFever(laneIdx);
-    _ghRemoveNote(best);
     _advanceRhythm(true);
     return;
   }
@@ -9290,12 +9326,14 @@ function handleRhythmTap(idx, btn) {
   var deltaL = performance.now() - _rhythm.targetTime;
   if (idx !== expected) {
     _recordRhythmMiss();
+    _playRhythmTapPitch(idx, { key: 'miss' }, 190);
     _setRhythmStatus('ひかるボタンだよ', 'miss');
     _spawnRhythmJudgePop(idx, { key: 'miss', label: 'ミス' }, 0, btn);
     _pulseRhythmButton(btn, 'rhythm-miss');
     return;
   }
   if (deltaL < -RHYTHM_OK_MS) {
+    _playRhythmTapPitch(idx, { key: 'close' }, 190);
     _setRhythmStatus('もうすこし', 'warn');
     return;
   }
@@ -9307,7 +9345,7 @@ function handleRhythmTap(idx, btn) {
   } else {
     _setRhythmStatus(ringJudge.label, 'warn');
   }
-  _playRhythmTapPitch(idx, ringJudge);
+  _playRhythmTapPitch(idx, ringJudge, _rhythmTapPitchDurationForBeatLen(_rhythmBeatLengthAt(_rhythm.idx)));
   _playRhythmBlockSfx('success', idx, ringJudge);
   _pulseRhythmButton(btn, 'rhythm-hit' + (ringJudge.key === 'just' ? ' rhythm-hit-just' : (ringJudge.key === 'nice' ? ' rhythm-hit-nice' : '')));
   _spawnRhythmJudgePop(idx, ringJudge, ringHit.added, btn);
