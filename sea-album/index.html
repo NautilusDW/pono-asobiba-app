@@ -500,7 +500,7 @@
     </div>
   </div>
 
-  <div class="prompt" id="prompt">長押しで えさ連射</div>
+  <div class="prompt" id="prompt">長押しで えさ魚雷</div>
   <div class="toast" id="toast">アルバムに ついか！</div>
   <button class="jet-btn" id="jetBtn" type="button" disabled><span>JET</span><strong id="jetText">OK</strong></button>
   <div id="loading">よみこみ中...</div>
@@ -596,8 +596,11 @@
   const CAMERA_FOLLOW_RATE = 2.8;
   const BOSS_SCROLL_RATE = 0.78;
   const BOSS_FIXED_CAMERA_RATE = 5.2;
-  const SHOT_SPEED_X = 410;
-  const SHOT_SPREAD_SPEED = 280;
+  const TORPEDO_BASE_SPEED = 355;
+  const TORPEDO_MAX_SPEED = 500;
+  const TORPEDO_TURN_RATE = 3.9;
+  const TORPEDO_LOCK_RANGE = 1450;
+  const TORPEDO_EXIT_PAD = 130;
   const BOMB_SPEED_X = 235;
   const BOMB_GRAVITY = 320;
   const COIN_MAGNET_RADIUS = 230;
@@ -1007,7 +1010,7 @@
     state.bombTimer = 0;
     startOverlay.hidden = true;
     finishOverlay.hidden = true;
-    setPrompt('長押しで えさ連射', 3.2);
+    setPrompt('長押しで えさ魚雷', 3.2);
     updateHud();
   }
 
@@ -1111,23 +1114,25 @@
   }
 
   function fireShots() {
-    const angles = state.power === 1 ? [0] : (state.power === 2 ? [-0.12, 0.12] : [-0.16, 0, 0.16]);
     const dir = state.player.facing || 1;
-    angles.forEach((angle) => {
-      state.shots.push({
-        x: state.player.x + dir * 82,
-        y: state.player.y - 4,
-        vx: SHOT_SPEED_X * dir,
-        vy: Math.sin(angle) * SHOT_SPREAD_SPEED,
-        r: 18,
-        damage: 1,
-        life: 3.0
-      });
+    const speed = TORPEDO_BASE_SPEED + Math.min(3, state.power - 1) * 18;
+    state.shots.push({
+      x: state.player.x + dir * 86,
+      y: state.player.y - 4,
+      vx: speed * dir,
+      vy: 0,
+      dir,
+      r: 20,
+      damage: 1,
+      life: 5.8,
+      homing: true,
+      locked: false,
+      wobble: Math.random() * Math.PI * 2
     });
   }
 
-  function fireBombs() {
-    const count = state.power >= 3 ? 2 : 1;
+  function fireBombs(maxCount = Infinity) {
+    const count = Math.min(state.power >= 3 ? 2 : 1, maxCount);
     const dir = state.player.facing || 1;
     for (let i = 0; i < count; i += 1) {
       state.bombs.push({
@@ -1144,15 +1149,95 @@
   }
 
   function shotInterval() {
-    return state.power >= 4 ? 0.44 : 0.58;
+    return state.power >= 4 ? 1.08 : 1.34;
   }
 
   function bombInterval() {
-    return state.power >= 4 ? 1.16 : 1.45;
+    return state.power >= 4 ? 2.2 : 2.65;
+  }
+
+  function activeTorpedoOnScreen() {
+    return state.shots.some((s) => {
+      if (!s.homing || s.life <= 0) return false;
+      const sx = screenX(s.x);
+      return sx > -TORPEDO_EXIT_PAD && sx < BASE_W + TORPEDO_EXIT_PAD && s.y > -90 && s.y < BASE_H + 90;
+    });
+  }
+
+  function activeBombsOnScreen() {
+    return state.bombs.filter((b) => {
+      if (b.life <= 0) return false;
+      const sx = screenX(b.x);
+      return sx > -120 && sx < BASE_W + 170;
+    }).length;
+  }
+
+  function findHomingTarget(shot) {
+    let best = null;
+    let bestScore = Infinity;
+    const shotDir = Math.sign(shot.vx || shot.dir || 1);
+    for (const enemy of state.enemies) {
+      if (enemy.defeated || enemy.vanishTimer > 0) continue;
+      const d = distance(shot.x, shot.y, enemy.x, enemy.y);
+      if (d > TORPEDO_LOCK_RANGE && !enemy.boss) continue;
+      const sx = screenX(enemy.x);
+      const visible = sx > -220 && sx < BASE_W + 260;
+      const ahead = shotDir === 0 || Math.sign(enemy.x - shot.x || shotDir) === shotDir;
+      if (!ahead && !visible) continue;
+      const verticalBias = Math.abs(enemy.y - shot.y) * 0.35;
+      const bossBias = enemy.boss ? -240 : 0;
+      const behindPenalty = ahead ? 0 : 420;
+      const score = d + verticalBias + behindPenalty + bossBias;
+      if (score < bestScore) {
+        bestScore = score;
+        best = enemy;
+      }
+    }
+    return best;
+  }
+
+  function updateHomingShot(shot, dt) {
+    const target = findHomingTarget(shot);
+    const currentAngle = Math.atan2(shot.vy, shot.vx);
+    const currentSpeed = clamp(Math.hypot(shot.vx, shot.vy) || TORPEDO_BASE_SPEED, TORPEDO_BASE_SPEED, TORPEDO_MAX_SPEED);
+    if (target) {
+      const desiredAngle = Math.atan2(target.y - shot.y, target.x - shot.x);
+      const delta = Math.atan2(Math.sin(desiredAngle - currentAngle), Math.cos(desiredAngle - currentAngle));
+      const turnBoost = state.power >= 2 ? 1.16 : 1;
+      const nextAngle = currentAngle + clamp(delta, -TORPEDO_TURN_RATE * turnBoost * dt, TORPEDO_TURN_RATE * turnBoost * dt);
+      const nextSpeed = clamp(currentSpeed + 22 * dt, TORPEDO_BASE_SPEED, TORPEDO_MAX_SPEED + Math.min(3, state.power - 1) * 14);
+      shot.vx = Math.cos(nextAngle) * nextSpeed;
+      shot.vy = Math.sin(nextAngle) * nextSpeed;
+      shot.locked = true;
+    } else {
+      const dir = shot.dir || Math.sign(shot.vx) || 1;
+      const drift = Math.min(1, dt * 1.6);
+      shot.vx += (TORPEDO_BASE_SPEED * dir - shot.vx) * drift;
+      shot.vy += (0 - shot.vy) * drift;
+      shot.locked = false;
+    }
+    shot.wobble += dt * 8;
+    shot.x += shot.vx * dt;
+    shot.y += shot.vy * dt + Math.sin(shot.wobble) * 4 * dt;
+    shot.y = clamp(shot.y, 72, 805);
+    shot.life -= dt;
+    if (Math.random() < dt * 17) {
+      const angle = Math.atan2(shot.vy, shot.vx);
+      state.bubbles.push({
+        x: shot.x - Math.cos(angle) * 46,
+        y: shot.y - Math.sin(angle) * 30 + rand(-8, 8),
+        r: rand(4, 10),
+        vx: -Math.cos(angle) * rand(28, 58),
+        vy: -Math.sin(angle) * rand(18, 46) - rand(8, 24),
+        life: rand(0.5, 0.95),
+        max: 0.95
+      });
+    }
   }
 
   function tryFireShots() {
     if (state.mode !== 'playing' || state.shotTimer > 0) return false;
+    if (activeTorpedoOnScreen()) return false;
     fireShots();
     state.shotTimer = shotInterval();
     return true;
@@ -1160,7 +1245,10 @@
 
   function tryFireBombs() {
     if (state.mode !== 'playing' || state.bombTimer > 0) return false;
-    fireBombs();
+    const maxActive = state.power >= 3 ? 2 : 1;
+    const room = maxActive - activeBombsOnScreen();
+    if (room <= 0) return false;
+    fireBombs(room);
     state.bombTimer = bombInterval();
     return true;
   }
@@ -1470,9 +1558,12 @@
     if (((state.time > 90 && state.camera > WORLD_W * 0.42) || state.observed >= 10) && !state.bossSpawned) spawnBoss();
 
     state.shots.forEach((s) => {
-      s.x += s.vx * dt;
-      s.y += s.vy * dt;
-      s.life -= dt;
+      if (s.homing) updateHomingShot(s, dt);
+      else {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.life -= dt;
+      }
     });
     state.shots = state.shots.filter((s) => s.life > 0 && s.x > state.camera - 90 && s.x < state.camera + BASE_W + 150 && s.y > -80 && s.y < BASE_H + 80);
 
@@ -1787,17 +1878,39 @@
     ctx.translate(screenX(s.x), s.y);
     const angle = Math.atan2(s.vy, s.vx);
     ctx.rotate(angle);
-    const g = ctx.createLinearGradient(-56, 0, 10, 0);
-    g.addColorStop(0, 'rgba(255,255,255,0)');
-    g.addColorStop(0.42, 'rgba(255, 247, 168, 0.74)');
-    g.addColorStop(1, '#ffb13e');
-    ctx.fillStyle = g;
-    ctx.shadowColor = '#fff0a0';
-    ctx.shadowBlur = 14;
-    ctx.beginPath();
-    ctx.ellipse(-22, 0, 46, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-    drawFoodImage(18, 0, s.r);
+    if (s.homing) {
+      const g = ctx.createLinearGradient(-92, 0, 20, 0);
+      g.addColorStop(0, 'rgba(209, 250, 255, 0)');
+      g.addColorStop(0.34, s.locked ? 'rgba(82, 220, 255, 0.34)' : 'rgba(255, 247, 168, 0.3)');
+      g.addColorStop(0.74, 'rgba(255, 246, 166, 0.82)');
+      g.addColorStop(1, '#ffb13e');
+      ctx.fillStyle = g;
+      ctx.shadowColor = s.locked ? '#7be8ff' : '#fff0a0';
+      ctx.shadowBlur = s.locked ? 20 : 15;
+      ctx.beginPath();
+      ctx.ellipse(-34, 0, 70, 13, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.68;
+      ctx.strokeStyle = s.locked ? '#d8fbff' : '#fff3ad';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(-4, 0, 35, 18, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      drawFoodImage(24, 0, s.r * 1.04);
+    } else {
+      const g = ctx.createLinearGradient(-56, 0, 10, 0);
+      g.addColorStop(0, 'rgba(255,255,255,0)');
+      g.addColorStop(0.42, 'rgba(255, 247, 168, 0.74)');
+      g.addColorStop(1, '#ffb13e');
+      ctx.fillStyle = g;
+      ctx.shadowColor = '#fff0a0';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.ellipse(-22, 0, 46, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      drawFoodImage(18, 0, s.r);
+    }
     ctx.restore();
   }
 

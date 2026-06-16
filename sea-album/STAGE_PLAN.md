@@ -10,10 +10,38 @@
 
 ## Weapon Growth
 
-- Power 1: straight shot 1-way, bomb food orb 1
-- Power 2: straight shot 2-way, bomb food orb 1
-- Power 3: straight shot 3-way, bomb food orb 2
-- Power 4: straight shot 3-way faster, bomb food orb 2 with wider splash
+- Power 1: homing bait torpedo, one active shot at a time
+- Power 2: bait torpedo turns a little faster
+- Power 3: bubble food bomb can launch a 2-orb drop
+- Power 4: bait torpedo reloads a little faster, bubble food bomb has wider splash
+
+## Exploration Gimmicks
+
+Stage 1 should teach "go forward, find an item, go back, reveal a hidden thing" without adding a menu-heavy RPG layer.
+
+1. Hidden shell chest near the start
+   - A closed shell sits at x=520, visible but locked.
+   - After feeding the hermit crab, it drops a "shell key" pearl.
+   - Returning left and touching the closed shell opens it, scattering coins and revealing a rare album note.
+
+2. Bubble switch behind seaweed
+   - A seaweed curtain blocks a lower path around x=1850.
+   - Feeding the goby makes it point to a bubble switch just behind the curtain.
+   - A bubble food bomb that lands on the switch lifts the seaweed for that run.
+
+3. Dark tidepool nook
+   - A dim side pocket sits left of the boss gate.
+   - The first pass only shows silhouettes.
+   - Buying or finding a "small light" lets the player revisit it and reveal one rare creature card.
+
+4. Three-pearl boss gate
+   - The boss approach has three empty shell sockets.
+   - Pearl colors come from a small task each: feed all regular creatures once, open the start shell chest, and hit the bubble switch.
+   - When all three are set, the gate animates open and the boss warning starts.
+
+5. Coin use
+   - Coins should first buy convenience items, not raw attack power: small light, magnet shell, and map hint.
+   - This keeps the feeding pace readable while still making repeated exploration feel useful.
 
 ## Seven Stages
 
