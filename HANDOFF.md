@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-16 - [batch:566-sea-album-friendship-boss-loop] Codex: user 方針「永続装備はニューゲームでも毎回ついている装備。ステージごとに仲良し度を100まで上げるとボスが出て、それまでにキーアイテムを探し、仲良し度上昇に応じてヒントが出る形にしたい」を受領。`STAGE_PLAN.md` に仲良し度/ボス解放/キーアイテム/ショップの役割を具体化する。 (by Codex)
+- 2026-06-16 - [batch:566-sea-album-friendship-boss-loop] DONE - Codex: `STAGE_PLAN.md` に、永続装備はニューゲーム/再挑戦でも最初から付くこと、ステージ内の仲良し度0〜100、節目ヒント、キーアイテム未所持時のボス前戻し、ショップ専用/ステージ内限定の切り分け、ステージ1の「カブトガニのすなだんご」案を追記。ドキュメントのみの変更のため `sw.js` は触らず、既存の Oto 関連未コミット差分も未ステージのまま保持。検証: `git diff --check` / UTF-8 BOMなしLF。 (by Codex)
 - 2026-06-16 - [batch:565-sea-album-power-shop-plan] Codex: user 指摘「Sea Album のヤドカリのセリフと名前が被って読めない。ホーミングミサイル数などのパワーアップを、通常面/ショップ/ショップ専用の兼ね合いで考えたい」を受領。ヤドカリ吹き出し重なりを修正し、`STAGE_PLAN.md` にパワーアップ/ショップ方針を整理する。 (by Codex)
 - 2026-06-16 - [batch:565-sea-album-power-shop-plan] DONE - Codex: Sea Album のヤドカリ吹き出し中は目的ラベルを非表示にして、名前とセリフが重ならないよう修正。`STAGE_PLAN.md` に、通常ステージ内の一時パワーアップ、ショップの永続装備、ショップ専用アイテム、ホーミング魚雷の本数上限方針を整理。`sw.js` は v1212。検証: HTML inline script parse / `node --check sw.js` / Playwright でヤドカリ吹き出し中に `ヤドカリ` ラベルが描画されないことを確認。 (by Codex)
 - 2026-06-16 - [batch:564-sea-album-stage1-one-gimmick] Codex: user 指摘「Sea Album 一面は一気に起こりすぎるのでギミックは1個。ヤドカリから鍵をもらって宝箱を開けるだけ。ハゼ等はなし。いきなり目の前の敵に鍵を持たせず、間を大切にする」を受領。Stage1 を貝キー/貝宝箱だけに整理し、泡スイッチ・3真珠ゲート・ハゼ導線を外す。 (by Codex)
