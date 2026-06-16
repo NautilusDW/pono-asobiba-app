@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>ポノの海底アルバム | ポノのあそびば</title>
+<title>ポノのうみアルバム | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
@@ -138,23 +138,7 @@
   }
 
   .prompt {
-    position: absolute;
-    z-index: 18;
-    left: 50%;
-    bottom: max(12px, env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    width: min(620px, calc(100% - 26px));
-    min-height: 44px;
-    border-radius: 8px;
-    display: grid;
-    place-items: center;
-    padding: 8px 18px;
-    color: #0d4964;
-    font-size: clamp(0.88rem, 2vw, 1.08rem);
-    font-weight: 900;
-    line-height: 1.24;
-    text-align: center;
-    pointer-events: none;
+    display: none;
   }
 
   .toast {
@@ -268,9 +252,25 @@
     font-weight: 900;
   }
 
+  .event-icon.has-image {
+    background-color: rgba(255, 255, 255, 0.78);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 84% auto;
+    color: transparent;
+  }
+
   .event-card.blue .event-icon { background: radial-gradient(circle at 35% 25%, #f5ffff 0 18%, #a8e9ff 50%, #2792bc 100%); color: #075472; }
   .event-card.pink .event-icon { background: radial-gradient(circle at 35% 25%, #fff4fb 0 18%, #ffacd6 50%, #d74a93 100%); color: #8c235d; }
   .event-card.green .event-icon { background: radial-gradient(circle at 35% 25%, #f7fff0 0 18%, #98e58f 50%, #43a964 100%); color: #125a34; }
+  .event-card .event-icon.has-image {
+    background-color: rgba(255, 255, 255, 0.78);
+    background-image: var(--event-icon-image, none);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 84% auto;
+    color: transparent;
+  }
 
   .event-title {
     color: #073a54;
@@ -549,15 +549,7 @@
     .hud-chip { padding: 4px 7px; }
     .hud-chip span { font-size: 0.5rem; }
     .hud-chip strong { font-size: 0.76rem; }
-    .prompt {
-      left: max(8px, env(safe-area-inset-left));
-      right: 76px;
-      width: auto;
-      min-height: 36px;
-      transform: none;
-      padding: 6px 10px;
-      font-size: 0.82rem;
-    }
+    .prompt { display: none; }
     .guide-strip {
       top: max(46px, calc(env(safe-area-inset-top) + 46px));
       width: min(430px, calc(100% - 180px));
@@ -622,7 +614,7 @@
 </head>
 <body>
 <div id="app">
-  <canvas id="gameCanvas" aria-label="ポノの海底アルバム"></canvas>
+  <canvas id="gameCanvas" aria-label="ポノのうみアルバム"></canvas>
 
   <div class="hud" aria-live="polite">
     <div class="hud-group">
@@ -638,28 +630,28 @@
     </div>
   </div>
 
-  <div class="prompt" id="prompt">長押しで えさ魚雷</div>
+  <div class="prompt" id="prompt" aria-hidden="true"></div>
   <div class="toast" id="toast">アルバムに ついか！</div>
   <div class="guide-strip" id="guideStrip" aria-live="polite">
-    <span class="guide-copy" id="guideObjective">まずは浅瀬を進んで観察しよう</span>
-    <strong class="guide-progress" id="guideProgress">カギなし</strong>
+    <span class="guide-copy" id="guideObjective">ヤドカリ</span>
+    <strong class="guide-progress" id="guideProgress">なかよし 0/100</strong>
   </div>
   <div class="event-card gold" id="eventCard" aria-live="polite" hidden>
     <div class="event-icon" id="eventIcon">!</div>
     <div>
-      <div class="event-title" id="eventTitle">見つけた！</div>
-      <div class="event-body" id="eventBody">次にすることを表示します。</div>
+      <div class="event-title" id="eventTitle">みつけた！</div>
+      <div class="event-body" id="eventBody">つぎへ</div>
     </div>
   </div>
   <button class="jet-btn" id="jetBtn" type="button" disabled><span>JET</span><strong id="jetText">OK</strong></button>
-  <div id="loading">よみこみ中...</div>
+  <div id="loading">よみこみちゅう...</div>
 
   <div class="overlay" id="startOverlay">
     <div class="panel">
       <div class="panel-head">
         <div>
-          <h1>ポノの海底アルバム</h1>
-          <p class="panel-copy">長押しでえさをあげて、海のなかまと仲良くなろう。</p>
+          <h1>ポノのうみアルバム</h1>
+          <p class="panel-copy">えさをあげて、うみのなかまと なかよくなろう。</p>
         </div>
       </div>
       <div class="stage-grid" id="startStageGrid"></div>
@@ -674,8 +666,8 @@
     <div class="panel">
       <div class="panel-head">
         <div>
-          <h2>海底アルバム</h2>
-          <p class="panel-copy">見つけた生き物の、すむところ・たべもの・ひみつを見られるよ。</p>
+          <h2>うみアルバム</h2>
+          <p class="panel-copy">みつけたいきものの、すむところ・たべもの・ひみつを みられるよ。</p>
         </div>
         <button class="close-btn" data-close="albumOverlay" type="button">とじる</button>
       </div>
@@ -704,7 +696,7 @@
       <div class="panel-head">
         <div>
           <h2>ステージマップ</h2>
-          <p class="panel-copy">まず Stage 1 で、アルバム・パワーアップ・ボスまでの基本を作っています。</p>
+          <p class="panel-copy">まず ステージ 1 で、アルバム・パワーアップ・ボスまでの きほんを つくっています。</p>
         </div>
         <button class="close-btn" data-close="stageOverlay" type="button">とじる</button>
       </div>
@@ -717,12 +709,12 @@
       <div class="panel-head">
         <div>
           <h2>Stage 1 クリア</h2>
-          <p class="panel-copy" id="finishCopy">浅瀬の生き物をアルバムに登録したよ。</p>
+          <p class="panel-copy" id="finishCopy">あさせの いきものを アルバムに とうろくしたよ。</p>
         </div>
       </div>
       <div class="panel-actions">
         <button class="primary-btn" id="againBtn" type="button">もういちど</button>
-        <button class="secondary-btn" id="finishAlbumBtn" type="button">アルバムを見る</button>
+        <button class="secondary-btn" id="finishAlbumBtn" type="button">アルバムをみる</button>
       </div>
     </div>
   </div>
@@ -760,11 +752,9 @@
   const BOSS_TRIGGER_X = WORLD_W - BASE_W - 180;
   const FRIENDSHIP_MAX = 100;
   const FRIENDSHIP_HINTS = [
-    { at: 20, icon: '!', title: 'カブトガニのうわさ', body: 'カブトガニは まっすぐ つっこんでくるよ。' },
-    { at: 40, icon: '貝', title: 'あやしい貝', body: '左の大きな貝に、いいものが入っているかも。' },
-    { at: 60, icon: '鍵', title: 'カギのヒント', body: '貝のカギは、ヤドカリが知っているみたい。' },
-    { at: 80, icon: '砂', title: 'ボス対策', body: 'すなだんごがあれば、カブトガニの突進を止められるよ。' },
-    { at: 100, icon: '!', title: 'カブトガニがくるよ', body: 'すなだんごを持って、右奥へ進もう。' }
+    { at: 40, icon: 'かい', title: 'かい', body: 'カギで あく', imageKey: 'itemShellClosed' },
+    { at: 80, icon: 'すな', title: 'すなだんご', body: 'ボスを とめる', imageKey: 'itemSandball' },
+    { at: 100, icon: '→', title: '→ ボス', body: '' }
   ];
   const POWERUP_FRIENDSHIP_MARKS = [25, 55, 85];
 
@@ -834,13 +824,13 @@
   const PLAYER_HIT_RADIUS = 54;
 
   const STAGES = [
-    ['しおだまりと浅瀬', 'ヤドカリやカブトガニ'],
-    ['サンゴの迷路', 'クマノミとオウムガイ'],
-    ['海藻の森', 'タコと海藻のかくれ家'],
-    ['外洋の青い道', 'マンタとメガマウス'],
-    ['夕暮れの中層', 'リュウグウノツカイ'],
-    ['深海の海底', 'ダイオウグソクムシ'],
-    ['古代海底神殿', 'ダイオウイカと伝説']
+    ['しおだまりと あさせ', 'ヤドカリと カブトガニ'],
+    ['サンゴめいろ', 'クマノミと オウムガイ'],
+    ['うみくさの もり', 'タコの かくれが'],
+    ['そとの ひろいうみ', 'マンタと メガマウス'],
+    ['ゆうぐれの うみ', 'リュウグウノツカイ'],
+    ['ふかいうみ', 'ダイオウグソクムシ'],
+    ['むかしの うみ', 'ダイオウイカと でんせつ']
   ];
 
   const CARDS = [
@@ -849,45 +839,45 @@
       name: 'ヤドカリ',
       icon: 'ヤ',
       stage: 'Stage 1',
-      habitat: '浅い海の岩場や、しおだまりにいるよ。',
-      food: '小さな海藻や、海に落ちた食べものを少しずつ食べるよ。',
-      secret: '空いた貝がらを家にして、からだを守るよ。'
+      habitat: 'あさい うみの いわばや、しおだまりにいるよ。',
+      food: 'ちいさな うみくさや、うみに おちた たべものを たべるよ。',
+      secret: 'あいた かいがらを いえにして、からだを まもるよ。'
     },
     {
       id: 'shrimp',
-      name: '小エビ',
+      name: 'こエビ',
       icon: 'エ',
       stage: 'Stage 1',
-      habitat: '岩のすきまや海藻の近くにかくれるよ。',
-      food: '小さなプランクトンや、細かい食べものを食べるよ。',
-      secret: '長いひげでまわりをさぐりながら動くよ。'
+      habitat: 'いわの すきまや、うみくさの ちかくに かくれるよ。',
+      food: 'ちいさな プランクトンや、こまかい たべものを たべるよ。',
+      secret: 'ながい ひげで まわりを さぐるよ。'
     },
     {
       id: 'seaStar',
       name: 'ヒトデ',
       icon: 'ヒ',
       stage: 'Stage 1',
-      habitat: '岩場や砂の上をゆっくり歩くよ。',
-      food: '貝などを食べる種類がいるよ。',
-      secret: '足のような小さな管で、じわじわ進むよ。'
+      habitat: 'いわばや すなの うえを ゆっくり あるくよ。',
+      food: 'かいなどを たべる なかまも いるよ。',
+      secret: 'ちいさな あしで、じわじわ すすむよ。'
     },
     {
       id: 'anemone',
       name: 'イソギンチャク',
       icon: 'イ',
       stage: 'Stage 1',
-      habitat: '岩にくっついて、波のある浅い海にもいるよ。',
-      food: '触手にふれた小さな生き物を食べるよ。',
-      secret: '花みたいだけど、じつは動物のなかまだよ。'
+      habitat: 'いわに くっついて、なみの ある うみにも いるよ。',
+      food: 'てに ふれた ちいさな いきものを たべるよ。',
+      secret: 'はなみたいだけど、どうぶつの なかまだよ。'
     },
     {
       id: 'horseshoe',
       name: 'カブトガニ',
-      icon: '古',
+      icon: 'カ',
       stage: 'Stage 1 Boss',
-      habitat: '浅い海や砂浜の近くでくらすよ。',
-      food: '小さな貝や虫のなかまを食べるよ。',
-      secret: 'とても古い時代から形が大きく変わらない「生きた化石」と呼ばれるよ。'
+      habitat: 'あさい うみや、すなはまの ちかくで くらすよ。',
+      food: 'ちいさな かいや、むしの なかまを たべるよ。',
+      secret: 'とても むかしから、すがたが あまり かわらないよ。'
     }
   ];
 
@@ -918,26 +908,26 @@
   };
 
   const HAPPY_LINES = {
-    hermit: ['ありがと！', '貝があるよ'],
+    hermit: ['ありがと！', 'かいがあるよ'],
     shrimp: ['もぐもぐ！', 'なかよし！'],
     seaStar: ['ごちそうさま', 'ゆっくりね'],
-    goby: ['おいしい！', '砂地を見て'],
-    anemone: ['うれしいな', '右へ行こう'],
-    horseshoe: ['悪くないな', '案内しよう']
+    goby: ['おいしい！', 'すなをみて'],
+    anemone: ['うれしいな', 'すすもう'],
+    horseshoe: ['いいぞ', 'どうぞ']
   };
 
   const FEED_REACTION_LINES = {
     first: ['まだだぞ！', 'な、なんだ？', 'こっちくるな！'],
     second: ['あれ？', 'なにこれ？', 'いいにおい？'],
-    boss: ['むむ...', 'えさだと？', 'まだ通さんぞ']
+    boss: ['むむ...', 'えさだと？', 'まだだぞ']
   };
 
   const BOSS_LINES = {
     warning: 'WARNING',
-    intro: 'ここは通さん！',
+    intro: 'ここは だめだ！',
     charge: 'つっこむぞ！',
     laser: 'しっぽビーム！',
-    normal: 'あわ攻撃！'
+    normal: 'あわだ！'
   };
 
   const state = {
@@ -960,6 +950,7 @@
     sparkles: [],
     coinsDropped: [],
     coinPops: [],
+    playerNotices: [],
     enemies: [],
     powerups: [],
     bubbles: [],
@@ -1047,11 +1038,10 @@
     g.hintCooldown = ttl + 0.45;
   }
 
-  function showBossGateHint(icon, title, body, prompt) {
+  function showBossGateHint(icon, title, body, imageKey = '') {
     const g = state.gimmicks;
     if (!g || g.hintCooldown > 0) return;
-    showEventCard(icon, title, body, 'blue', 3.2);
-    setPrompt(prompt || body, 2.6);
+    showEventCard(icon, title, body, 'blue', 2.8, imageKey);
     g.hintCooldown = 3.5;
   }
 
@@ -1091,9 +1081,37 @@
     enemy.speech = { text, ttl };
   }
 
+  function normalizePromptText(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return '';
+    if (raw.includes('えさ 2ほん')) return 'えさ 2ほん';
+    if (raw.includes('えさ 3ぼん')) return 'えさ 3ぼん';
+    if (raw.includes('ホーミング')) return 'ホーミング';
+    if (raw.includes('POWER MAX')) return 'さいだい';
+    if (raw.includes('JET') || raw.includes('よけよう') || raw.includes('よけて')) return 'ジェット';
+    if (raw.includes('とまった')) return 'とまった';
+    if (raw.includes('なかよく')) return 'なかよし';
+    if (raw.includes('クリア')) return 'クリア';
+    return '';
+  }
+
+  function showPlayerNotice(text, ttl = 1.65) {
+    if (!text || !state.playerNotices) return;
+    state.playerNotices.push({
+      text,
+      life: ttl,
+      max: ttl,
+      ox: rand(-18, 18),
+      slot: state.playerNotices.length
+    });
+    if (state.playerNotices.length > 3) state.playerNotices.shift();
+  }
+
   function setPrompt(text, ttl = 2.2) {
-    state.promptTimer = ttl;
-    promptEl.textContent = text;
+    state.promptTimer = 0;
+    promptEl.textContent = '';
+    const shortText = normalizePromptText(text);
+    if (shortText) showPlayerNotice(shortText, Math.min(ttl, 2.1));
   }
 
   function showToast(text) {
@@ -1103,13 +1121,17 @@
     toastEl.classList.add('show');
   }
 
-  function showEventCard(icon, title, body, tone = 'gold', ttl = 3.1) {
+  function showEventCard(icon, title, body, tone = 'gold', ttl = 3.1, imageKey = '') {
     state.eventCardTimer = ttl;
     state.toastTimer = 0;
     toastEl.classList.remove('show');
-    eventIconEl.textContent = icon;
+    const image = imageKey ? state.assets[imageKey] : null;
+    eventIconEl.textContent = image ? '' : icon;
+    eventIconEl.classList.toggle('has-image', !!image);
+    eventIconEl.style.backgroundImage = image ? 'url("' + image.src + '")' : '';
     eventTitleEl.textContent = title;
-    eventBodyEl.textContent = body;
+    eventBodyEl.textContent = body || '';
+    eventBodyEl.hidden = !body;
     eventCardEl.hidden = false;
     eventCardEl.className = 'event-card show ' + tone;
     updateGuideHud();
@@ -1119,18 +1141,21 @@
     state.eventCardTimer = 0;
     eventCardEl.classList.remove('show');
     eventCardEl.hidden = true;
+    eventIconEl.classList.remove('has-image');
+    eventIconEl.style.backgroundImage = '';
+    eventBodyEl.hidden = false;
   }
 
   function currentObjectiveText() {
     const g = state.gimmicks;
-    if (!g) return '長押しで えさ魚雷';
-    if (state.bossDone) return 'Stage 1 クリア';
-    if (state.bossSpawned) return 'カブトガニに えさを当てよう';
-    if (!g.shellKey) return state.camera < KEY_HERMIT_CAMERA ? '生き物と仲良くして ヤドカリを探そう' : 'ヤドカリにえさをあげて カギをもらおう';
-    if (!g.shellOpened) return '左の貝宝箱へ戻って すなだんごを探そう';
-    if ((g.friendship || 0) < FRIENDSHIP_MAX) return 'なかよし度を100まで上げよう';
-    if (!g.sandball) return 'すなだんごを探そう';
-    return 'すなだんごを持って 右奥へ進もう';
+    if (!g) return 'ヤドカリ';
+    if (state.bossDone) return 'クリア';
+    if (state.bossSpawned) return 'ボス';
+    if (!g.shellKey) return 'ヤドカリ';
+    if (!g.shellOpened) return 'かい';
+    if ((g.friendship || 0) < FRIENDSHIP_MAX) return 'なかよし';
+    if (!g.sandball) return 'すなだんご';
+    return '→ ボス';
   }
 
   function updateGuideHud() {
@@ -1142,7 +1167,7 @@
       return;
     }
     const friend = Math.floor(g.friendship || 0);
-    const item = g.sandball ? ' / すなだんご' : (g.shellOpened ? ' / 宝箱OPEN' : (g.shellKey ? ' / カギあり' : ' / カギなし'));
+    const item = g.sandball ? ' / すな' : (g.shellOpened ? ' / かいOK' : (g.shellKey ? ' / カギ' : ''));
     guideProgressEl.textContent = 'なかよし ' + friend + '/100' + item;
   }
 
@@ -1218,7 +1243,7 @@
       state.album.add(id);
       saveAlbum();
       const card = CARDS.find((c) => c.id === id);
-      showToast((card ? card.name : 'カード') + 'を 撮ったよ');
+      showToast((card ? card.name : 'カード') + 'を とったよ');
       const stickerIds = {
         shrimp: 'sea_album_shrimp',
         hermit: 'sea_album_hermit',
@@ -1260,19 +1285,20 @@
     state.sparkles = [];
     state.coinsDropped = [];
     state.coinPops = [];
+    state.playerNotices = [];
     state.enemies = [];
     state.powerups = [];
     state.bubbles = [];
     state.gimmicks = createStageGimmicks();
     state.fireHeld = false;
     state.bombHeld = false;
-    state.spawnTimer = 1.2;
+    state.spawnTimer = 2.6;
     state.shotTimer = 0;
     state.bombTimer = 0;
     startOverlay.hidden = true;
     finishOverlay.hidden = true;
     hideEventCard();
-    setPrompt('長押しで えさ魚雷', 3.2);
+    setPrompt('えさ', 3.2);
     updateHud();
   }
 
@@ -1308,6 +1334,10 @@
     return state.enemies.some((enemy) => enemy.key === key && !enemy.defeated);
   }
 
+  function activeNormalEnemyCount() {
+    return state.enemies.reduce((count, enemy) => count + (!enemy.boss && !enemy.defeated ? 1 : 0), 0);
+  }
+
   function chooseStageEnemy() {
     const g = state.gimmicks;
     const earlyOrder = ['shrimp', 'seaStar', 'anemone'];
@@ -1321,6 +1351,7 @@
 
   function spawnEnemy() {
     if (state.bossSpawned) return;
+    if (activeNormalEnemyCount() >= 1) return;
     const key = chooseStageEnemy();
     const type = ENEMY_TYPES[key];
     const y = rand(type.y[0], type.y[1]);
@@ -1361,7 +1392,7 @@
     toastEl.classList.remove('show');
     const stickerToast = document.getElementById('game-sticker-toast');
     if (stickerToast) stickerToast.remove();
-    setPrompt('WARNING! カブトガニ接近', 2.5);
+    setPrompt('ボス', 2.5);
   }
 
   function createBossEnemy() {
@@ -1392,7 +1423,7 @@
     };
     say(boss, BOSS_LINES.intro, 2.6);
     state.enemies.push(boss);
-    setPrompt('合図を見て JET', 3.2);
+        setPrompt('JET', 3.2);
   }
 
   function fireShots() {
@@ -1559,8 +1590,7 @@
   function showFriendshipHint(mark) {
     const hint = FRIENDSHIP_HINTS.find((h) => h.at === mark);
     if (!hint) return;
-    showEventCard(hint.icon, hint.title, hint.body, mark >= 80 ? 'gold' : 'blue', 3.6);
-    setPrompt(hint.body, 3.0);
+    showEventCard(hint.icon, hint.title, hint.body, mark >= 80 ? 'gold' : 'blue', 2.8, hint.imageKey || '');
   }
 
   function addFriendship(amount, x, y) {
@@ -1602,8 +1632,8 @@
       g.shellKey = true;
       g.keyAwardedAt = state.time;
       say(enemy, 'このカギで ひらくよ！', 2.3);
-      showEventCard('🔑', '貝のカギをもらった！', '左に戻って、貝宝箱を開けよう。', 'gold', 3.4);
-      setPrompt('左の貝宝箱へ もどろう', 2.8);
+      showEventCard('', 'カギ', 'かいを あける', 'gold', 3.0, 'itemShellKey');
+      setPrompt('かい', 2.8);
       addFriendship(8, enemy.x, enemy.y);
     }
   }
@@ -1619,8 +1649,8 @@
     scatterCoins(9, SHELL_CHEST_X, SHELL_CHEST_Y - 40);
     addImpact(SHELL_CHEST_X, SHELL_CHEST_Y - 40, 86, 'gold');
     addFriendship(12, SHELL_CHEST_X, SHELL_CHEST_Y - 62);
-    showEventCard('砂', 'すなだんごを見つけた！', 'カブトガニの突進を止められるよ。仲良し度を100にしよう。', 'gold', 3.8);
-    setPrompt('すなだんごを手に入れた！', 2.8);
+    showEventCard('', 'すなだんご', 'ボスを とめる', 'gold', 3.2, 'itemSandball');
+    setPrompt('すなだんご', 2.8);
   }
 
   function spawnShellSparkles(x, y, count = 10) {
@@ -1683,7 +1713,7 @@
       if (state.bossTimer <= 0) {
         state.bossPhase = 'scroll';
         state.bossTimer = 0;
-        setPrompt('奥へ進むよ', 2.4);
+        setPrompt('ボス', 2.4);
       }
       return;
     }
@@ -1865,7 +1895,7 @@
             enemy.mood = 'eating';
             enemy.eatTimer = 1.25;
             say(enemy, 'すなだんご？', 1.45);
-            setPrompt('止まった！ えさを当てよう', 1.6);
+            setPrompt('とまった', 1.6);
           } else {
             enemy.sandballStunned = false;
             endBossAttack(enemy, 1.15);
@@ -1907,20 +1937,20 @@
     if (!g.shellOpened) {
       const dShell = distance(p.x, p.y, SHELL_CHEST_X, SHELL_CHEST_Y - 52);
       if (g.shellKey && dShell < 150) openShellChest();
-      else if (!g.shellKey && dShell < 180) showGimmickHint('まだ開かない。右でカギを探そう');
-      else if (!g.shellKey && p.x > BOSS_TRIGGER_X - 420) showGimmickHint('先にカギを探そう');
-      else if (g.shellKey && p.x > SHELL_CHEST_X + 520) showGimmickHint('左の貝宝箱へ もどろう');
+      else if (!g.shellKey && dShell < 180) showGimmickHint('カギ');
+      else if (!g.shellKey && p.x > BOSS_TRIGGER_X - 420) showGimmickHint('カギ');
+      else if (g.shellKey && p.x > SHELL_CHEST_X + 520) showGimmickHint('かい');
     }
 
     if (!state.bossSpawned && p.x > BOSS_TRIGGER_X) {
       if (!g.shellKey) {
-        showBossGateHint('鍵', 'カギが必要', '右側でヤドカリにえさをあげて、貝のカギをもらおう。', '先にカギを探そう');
+        showBossGateHint('', 'カギ', 'ヤドカリ', 'itemShellKey');
       } else if (!g.shellOpened) {
-        showBossGateHint('貝', '貝宝箱へ戻ろう', '左の貝宝箱を開けると、ボス対策の道具が見つかるよ。', '左の貝宝箱へ もどろう');
+        showBossGateHint('', 'かい', 'カギで あく', 'itemShellClosed');
       } else if ((g.friendship || 0) < FRIENDSHIP_MAX) {
-        showBossGateHint('友', 'まだ仲良し度が足りない', '生き物にえさをあげて、なかよし100まで上げよう。', 'もっと生き物と仲良くなろう');
+        showBossGateHint('♡', 'なかよし', '100');
       } else if (!g.sandball) {
-        showBossGateHint('砂', 'すなだんごが必要', 'カブトガニの突進を止めるため、貝宝箱のすなだんごを探そう。', 'すなだんごを探そう');
+        showBossGateHint('', 'すなだんご', 'ボスを とめる', 'itemSandball');
       } else {
         spawnBoss();
       }
@@ -1985,7 +2015,7 @@
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0 && !state.bossSpawned && state.bossPhase === 'none') {
       spawnEnemy();
-      state.spawnTimer = rand(2.0, 3.2);
+      state.spawnTimer = activeNormalEnemyCount() >= 1 ? rand(2.8, 4.2) : rand(5.2, 7.4);
     }
     state.shots.forEach((s) => {
       if (s.homing) updateHomingShot(s, dt);
@@ -2072,7 +2102,7 @@
         const before = state.power;
         state.power = Math.min(4, state.power + 1);
         state.score += 70;
-        const powerMsg = state.power <= before ? 'POWER MAX' : (state.power === 2 ? 'ホーミング UP' : (state.power === 3 ? 'えさ魚雷 2本' : 'えさ魚雷 3本'));
+        const powerMsg = state.power <= before ? 'POWER MAX' : (state.power === 2 ? 'ホーミング UP' : (state.power === 3 ? 'えさ 2ほん' : 'えさ 3ぼん'));
         setPrompt(powerMsg, 2.1);
         updateHud();
       }
@@ -2112,6 +2142,8 @@
       c.life -= dt;
     });
     state.coinPops = state.coinPops.filter((c) => c.life > 0);
+    state.playerNotices.forEach((n) => { n.life -= dt; });
+    state.playerNotices = state.playerNotices.filter((n) => n.life > 0);
     state.bubbles.forEach((b) => {
       b.x += b.vx * dt;
       b.y += b.vy * dt;
@@ -2209,6 +2241,7 @@
     drawPlayer();
     drawWaterOverlay();
     drawGuideMarkers();
+    drawPlayerNotices();
     state.enemies.forEach(drawEnemySpeech);
     state.coinPops.forEach(drawCoinPop);
     drawBossOverlay();
@@ -2267,23 +2300,21 @@
         x: hermit ? hermit.x : Math.max(state.camera + 980, 820),
         y: hermit ? hermit.y : 530,
         title: 'ヤドカリ',
-        sub: '貝のカギ',
         tone: '#ffd86e',
-        suppressLabel: !!(hermit && hermit.speech && hermit.speech.ttl > 0)
+        glowOnly: true
       };
     }
     if (!g.shellOpened) {
-      return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: '貝宝箱', sub: 'カギで開く', tone: '#ffd86e' };
+      return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: 'かい', tone: '#ffd86e', imageKey: 'itemShellClosed', glowOnly: true };
     }
     if ((g.friendship || 0) < FRIENDSHIP_MAX) return null;
     if (!g.sandball) {
-      return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: 'すなだんご', sub: '貝宝箱', tone: '#ffd86e' };
+      return { x: SHELL_CHEST_X, y: SHELL_CHEST_Y - 72, title: 'すなだんご', tone: '#ffd86e', imageKey: 'itemSandball', glowOnly: true };
     }
     return {
       x: BOSS_TRIGGER_X + 180,
       y: 540,
-      title: '右奥へ進む',
-      sub: 'カブトガニの海',
+      title: 'ボス',
       tone: '#98e58f',
       edgeOnly: true
     };
@@ -2314,19 +2345,58 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-      if (!target.suppressLabel) drawMarkerLabel(x, y + 62, (offLeft ? '左へ ' : '右へ ') + target.title, target.sub, target.tone);
+      if (target.imageKey) drawGuideTargetIcon(target, x, y + 64, 58);
+      else if (target.title === 'ボス') drawBossGuideLabel(x, y + 64, target.title, target.tone);
     } else {
-      ctx.globalAlpha = 0.92;
-      ctx.strokeStyle = target.tone;
-      ctx.lineWidth = 5;
-      ctx.shadowColor = target.tone;
-      ctx.shadowBlur = 16;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, 54 * pulse, 36 * pulse, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      if (!target.suppressLabel) drawMarkerLabel(sx, sy - 72, target.title, target.sub, target.tone);
+      drawGuideGlow(sx, sy, target.tone, pulse);
+      if (target.imageKey) drawGuideTargetIcon(target, sx, sy - 66, 62);
     }
+    ctx.restore();
+  }
+
+  function drawGuideGlow(x, y, tone, pulse = 1) {
+    const radius = 74 * pulse;
+    const grad = ctx.createRadialGradient(x, y, 8, x, y, radius);
+    grad.addColorStop(0, tone + 'cc');
+    grad.addColorStop(0.45, tone + '66');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawGuideTargetIcon(target, x, y, width) {
+    const image = state.assets[target.imageKey];
+    if (!image) return;
+    ctx.save();
+    ctx.shadowColor = target.tone;
+    ctx.shadowBlur = 16;
+    drawCentered(image, x, y, width);
+    ctx.restore();
+  }
+
+  function drawBossGuideLabel(x, y, text, tone) {
+    const w = 94;
+    const h = 42;
+    ctx.save();
+    ctx.fillStyle = 'rgba(246, 254, 255, 0.95)';
+    ctx.strokeStyle = tone;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(3, 36, 60, 0.22)';
+    ctx.shadowBlur = 12;
+    roundRect(x - w / 2, y - h / 2, w, h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#0c4e6e';
+    ctx.font = '900 22px Zen Maru Gothic, sans-serif';
+    ctx.fillText(text, x, y + 1);
     ctx.restore();
   }
 
@@ -2352,6 +2422,42 @@
     ctx.fillStyle = '#567684';
     ctx.font = '900 15px Zen Maru Gothic, sans-serif';
     ctx.fillText(sub, left + w / 2, top + 45);
+    ctx.restore();
+  }
+
+  function drawPlayerNotices() {
+    if (!state.playerNotices || !state.playerNotices.length) return;
+    const p = state.player;
+    ctx.save();
+    state.playerNotices.forEach((notice, index) => {
+      const progress = 1 - notice.life / notice.max;
+      const alpha = clamp(notice.life / Math.min(0.45, notice.max), 0, 1);
+      const x = clamp(screenX(p.x) + notice.ox, 88, BASE_W - 88);
+      const y = clamp(p.y - 96 - progress * 34 - index * 30, 102, BASE_H - 110);
+      drawPlayerNoticeText(notice.text, x, y, alpha);
+    });
+    ctx.restore();
+  }
+
+  function drawPlayerNoticeText(text, x, y, alpha) {
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.font = '900 24px Zen Maru Gothic, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const w = Math.min(190, Math.max(82, ctx.measureText(text).width + 36));
+    const h = 38;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.strokeStyle = 'rgba(74, 177, 205, 0.92)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(4, 48, 78, 0.18)';
+    ctx.shadowBlur = 10;
+    roundRect(x - w / 2, y - h / 2, w, h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#075472';
+    ctx.fillText(text, x, y + 1);
     ctx.restore();
   }
 
@@ -2776,8 +2882,8 @@
       ctx.fillStyle = '#ffffff';
       ctx.lineWidth = 7;
       ctx.font = '900 38px Zen Maru Gothic, sans-serif';
-      ctx.strokeText('カブトガニ 接近中', BASE_W / 2, BASE_H * 0.48);
-      ctx.fillText('カブトガニ 接近中', BASE_W / 2, BASE_H * 0.48);
+      ctx.strokeText('ボス', BASE_W / 2, BASE_H * 0.48);
+      ctx.fillText('ボス', BASE_W / 2, BASE_H * 0.48);
       ctx.restore();
     } else if (state.bossPhase === 'scroll') {
       ctx.save();
@@ -2785,7 +2891,7 @@
       ctx.fillStyle = '#e9fdff';
       ctx.font = '900 30px Zen Maru Gothic, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('海底の奥へ 強制スクロール中', BASE_W / 2, 112);
+      ctx.fillText('ボスへ', BASE_W / 2, 112);
       ctx.restore();
     }
   }
@@ -3505,7 +3611,7 @@
     const target = document.getElementById(targetId);
     target.innerHTML = STAGES.map((s, i) => {
       const locked = i > 0;
-      return '<div class="stage-card ' + (locked ? 'locked' : '') + '"><strong>Stage ' + (i + 1) + '<br>' + s[0] + '</strong><span>' + (locked ? 'これから追加' : s[1]) + '</span></div>';
+      return '<div class="stage-card ' + (locked ? 'locked' : '') + '"><strong>Stage ' + (i + 1) + '<br>' + s[0] + '</strong><span>' + (locked ? 'これから' : s[1]) + '</span></div>';
     }).join('');
   }
 
@@ -3514,7 +3620,7 @@
     const grid = document.getElementById('albumGrid');
     grid.innerHTML = CARDS.map((card) => {
       const open = state.album.has(card.id);
-      return '<button class="album-card ' + (open ? '' : 'locked') + '" data-card="' + card.id + '" type="button"><div class="album-icon">' + (open ? card.icon : '?') + '</div><strong>' + (open ? card.name : '???') + '</strong><span>' + (open ? card.stage + ' で発見' : 'まだ見つけていない') + '</span></button>';
+      return '<button class="album-card ' + (open ? '' : 'locked') + '" data-card="' + card.id + '" type="button"><div class="album-icon">' + (open ? card.icon : '?') + '</div><strong>' + (open ? card.name : '???') + '</strong><span>' + (open ? card.stage + ' でみつけた' : 'まだ みつけていない') + '</span></button>';
     }).join('');
     grid.querySelectorAll('.album-card').forEach((btn) => {
       btn.addEventListener('click', () => showDetail(btn.dataset.card));
@@ -3526,7 +3632,7 @@
     if (!card) return;
     const open = state.album.has(id);
     document.getElementById('detailTitle').textContent = open ? card.name : 'まだ ひみつ';
-    document.getElementById('detailSub').textContent = open ? card.stage : 'ステージで見つけよう';
+    document.getElementById('detailSub').textContent = open ? card.stage : 'ステージで みつけよう';
     document.getElementById('detailArt').textContent = open ? card.icon : '?';
     document.getElementById('detailFacts').innerHTML = open
       ? [
@@ -3534,7 +3640,7 @@
         ['たべもの', card.food],
         ['からだのひみつ', card.secret]
       ].map(([k, v]) => '<div class="fact-row"><b>' + k + '</b><span>' + v + '</span></div>').join('')
-      : '<div class="fact-row"><b>ヒント</b><span>Stage 1 で観察すると、カードがひらくよ。</span></div>';
+      : '<div class="fact-row"><b>ヒント</b><span>Stage 1 で みつけると、カードがひらくよ。</span></div>';
     detailOverlay.hidden = false;
   }
 
