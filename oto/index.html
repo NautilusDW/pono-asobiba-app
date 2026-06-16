@@ -1796,19 +1796,116 @@
     inset: 0;
     z-index: 18;
     display: none;
-    align-items: center;
-    justify-content: center;
-    padding: clamp(14px, 3vw, 28px);
-    padding-left: max(23%, clamp(120px, 23vw, 300px));
-    background: linear-gradient(90deg, rgba(2,6,23,0.14), rgba(2,6,23,0.32));
+    --opening-exit-x: -38vw;
+    --opening-exit-y: -27vh;
+    grid-template-rows: auto auto;
+    align-content: center;
+    justify-items: center;
+    gap: clamp(8px, 2.2vh, 16px);
+    padding: clamp(10px, 2.4vw, 26px);
+    background:
+      radial-gradient(circle at 50% 37%, rgba(34,211,238,0.24), transparent 35%),
+      linear-gradient(180deg, rgba(2,6,23,0.16), rgba(2,6,23,0.48));
     pointer-events: auto;
   }
   .rhythm-opening.show {
-    display: flex;
+    display: grid;
   }
+  body.rhythm-opening-active .rhythm-battle-panel {
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+  body.rhythm-opening-active:not(.rhythm-opening-settle) .rhythm-battle-panel {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.96);
+  }
+  .rhythm-opening-character {
+    position: relative;
+    width: min(35vw, 280px);
+    height: clamp(126px, 33vh, 270px);
+    pointer-events: none;
+    transform-origin: 50% 62%;
+    animation: rhythm-opening-arrive 420ms cubic-bezier(.16,.84,.28,1) both;
+    isolation: isolate;
+  }
+  .rhythm-opening-spotlight {
+    position: absolute;
+    left: 50%;
+    bottom: 2%;
+    z-index: 0;
+    width: 76%;
+    height: 24%;
+    border-radius: 999px;
+    background: radial-gradient(ellipse at center, rgba(255,255,255,0.5), rgba(125,211,252,0.22) 52%, transparent 72%);
+    filter: blur(1px);
+    transform: translateX(-50%);
+  }
+  .rhythm-opening-sprite {
+    position: absolute;
+    left: 50%;
+    top: 51%;
+    z-index: 2;
+    width: 100%;
+    height: 96%;
+    object-fit: contain;
+    object-position: center;
+    transform: translate(-50%, -50%);
+    transform-origin: 50% 72%;
+    filter: drop-shadow(0 16px 12px rgba(0,0,0,0.36));
+    animation: rival-idle-bob 2.8s ease-in-out infinite;
+    will-change: transform, filter;
+  }
+  .rhythm-opening-character[data-rival="gaohn"] .rhythm-opening-sprite {
+    top: 49%;
+    width: 84%;
+    height: 86%;
+  }
+  .rhythm-opening-character[data-rival="gaohn"][data-state="attack"] .rhythm-opening-sprite {
+    top: 52%;
+    width: 108%;
+    height: 92%;
+  }
+  .rhythm-opening-character[data-state="attack"] .rhythm-opening-sprite {
+    animation: rival-attack-pop 520ms cubic-bezier(.2,1.45,.38,1) both;
+  }
+  .rhythm-opening-character[data-state="happy"] .rhythm-opening-sprite {
+    animation: rival-happy-bounce 640ms cubic-bezier(.2,1.35,.3,1) both;
+  }
+  .rhythm-opening-character[data-state="surprised"] .rhythm-opening-sprite {
+    animation: rival-surprise-pop 520ms ease-out both;
+  }
+  .rhythm-opening-character[data-state="frustrated"] .rhythm-opening-sprite,
+  .rhythm-opening-character[data-state="panic"] .rhythm-opening-sprite {
+    animation: rival-frustrated-shake 620ms ease-out both;
+  }
+  .rhythm-opening-character[data-state="defeat"] .rhythm-opening-sprite {
+    animation: rival-defeat-drop 900ms cubic-bezier(.16,.84,.34,1) both;
+  }
+  .rhythm-opening-character[data-state="impressed"] .rhythm-opening-sprite {
+    animation: rival-impressed-nod 700ms ease-out both;
+  }
+  .rhythm-opening-fx {
+    position: absolute;
+    z-index: 3;
+    display: none;
+    width: 24%;
+    height: 24%;
+    background: center / contain no-repeat;
+    pointer-events: none;
+    opacity: 0;
+    filter: drop-shadow(0 3px 2px rgba(0,0,0,0.22));
+  }
+  .rhythm-opening-fx.show { display: block; }
+  .rhythm-opening-fx.fx-a { left: 4%; top: 16%; }
+  .rhythm-opening-fx.fx-b { right: 6%; top: 15%; }
+  .rhythm-opening-fx.fx-c { right: 10%; bottom: 20%; }
+  .rhythm-opening-fx.fx-line { animation: rival-fx-line 520ms ease-out both; }
+  .rhythm-opening-fx.fx-pop { animation: rival-fx-pop 560ms ease-out both; }
+  .rhythm-opening-fx.fx-sweat { animation: rival-fx-sweat 760ms ease-out both; }
+  .rhythm-opening-fx.fx-spin { animation: rival-fx-spin 780ms ease-out both; }
+  .rhythm-opening-fx.fx-float { animation: rival-fx-float 900ms ease-out both; }
   .rhythm-opening-panel {
-    width: min(76%, 560px);
-    max-height: min(82%, 360px);
+    width: min(88%, 620px);
+    max-height: min(44vh, 340px);
     display: grid;
     gap: 10px;
     padding: clamp(14px, 2.4vw, 22px);
@@ -1820,6 +1917,27 @@
     color: #fff;
     text-align: center;
     box-shadow: 0 16px 36px rgba(0,0,0,0.34);
+  }
+  .rhythm-opening.is-settling {
+    pointer-events: none;
+  }
+  .rhythm-opening.is-settling .rhythm-opening-panel {
+    animation: rhythm-opening-panel-exit 260ms ease both;
+  }
+  .rhythm-opening.is-settling .rhythm-opening-character {
+    animation: rhythm-opening-rival-to-card 420ms cubic-bezier(.22,.82,.22,1) forwards;
+  }
+  @keyframes rhythm-opening-arrive {
+    0% { opacity: 0; transform: translateY(18px) scale(0.82); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes rhythm-opening-panel-exit {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(8px) scale(0.96); }
+  }
+  @keyframes rhythm-opening-rival-to-card {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0.16; transform: translate(var(--opening-exit-x), var(--opening-exit-y)) scale(0.34); }
   }
   .rhythm-opening-stage {
     justify-self: center;
@@ -1875,15 +1993,27 @@
   }
   @media (orientation: landscape) and (max-height: 520px) {
     .rhythm-opening {
-      padding-left: max(22%, 122px);
+      --opening-exit-x: -39vw;
+      --opening-exit-y: -22vh;
       padding-top: 8px;
       padding-bottom: 8px;
+      gap: 6px;
+    }
+    .rhythm-opening-character {
+      width: min(30vw, 168px);
+      height: clamp(104px, 32vh, 152px);
     }
     .rhythm-opening-panel {
-      width: min(78%, 500px);
+      width: min(86%, 520px);
       gap: 6px;
       padding: 10px 14px;
       border-radius: 18px;
+    }
+    .rhythm-opening-stage {
+      font-size: clamp(0.58rem, 2.4cqh, 0.72rem);
+    }
+    .rhythm-opening-speaker {
+      font-size: clamp(0.86rem, 3.2cqh, 1.05rem);
     }
     .rhythm-opening-line {
       min-height: 2.8em;
@@ -4262,6 +4392,13 @@
     </div>
 
     <div class="rhythm-opening" id="rhythm-opening" role="dialog" aria-modal="true" aria-label="ステージのはじまり">
+      <div class="rhythm-opening-character" id="rhythm-opening-character" data-rival="kero" data-state="taunt" aria-hidden="true">
+        <div class="rhythm-opening-spotlight"></div>
+        <img class="rhythm-opening-sprite" id="rhythm-opening-sprite" src="../assets/images/oto/rhythm/rivals/reactions/kero/taunt_smirk.png" alt="" draggable="false">
+        <span class="rhythm-opening-fx fx-a" id="rhythm-opening-fx-a"></span>
+        <span class="rhythm-opening-fx fx-b" id="rhythm-opening-fx-b"></span>
+        <span class="rhythm-opening-fx fx-c" id="rhythm-opening-fx-c"></span>
+      </div>
       <div class="rhythm-opening-panel">
         <div class="rhythm-opening-stage" id="rhythm-opening-stage">ステージ 1</div>
         <div class="rhythm-opening-speaker" id="rhythm-opening-speaker">DJ ケロック</div>
@@ -5669,6 +5806,8 @@ var _rhythm = {
   feverTimer: 0,
   feverBubbleTimer: 0,
   openingActive: false,
+  openingSettling: false,
+  openingSettleTimer: null,
   openingIndex: 0,
   openingScenes: [],
   openingThenStart: false,
@@ -5783,6 +5922,52 @@ function _updateRhythmBattlePanel(state, lineOverride, ponoLine) {
   if (line) line.textContent = lineOverride || rival.lines[state] || rival.lines.idle;
   var pono = document.getElementById('rhythm-pono-line');
   if (pono) pono.textContent = ponoLine || _rhythmPonoLine();
+}
+
+function _resetRhythmOpeningFx() {
+  ['a', 'b', 'c'].forEach(function(slot) {
+    var el = document.getElementById('rhythm-opening-fx-' + slot);
+    if (!el) return;
+    el.className = 'rhythm-opening-fx fx-' + slot;
+    el.style.backgroundImage = '';
+  });
+}
+function _applyRhythmOpeningFx(rival, state) {
+  _resetRhythmOpeningFx();
+  var fx = (rival && rival.fx && rival.fx[state]) || [];
+  ['a', 'b', 'c'].forEach(function(slot, idx) {
+    var item = fx[idx];
+    var el = document.getElementById('rhythm-opening-fx-' + slot);
+    if (!el || !item || !item.file) return;
+    el.className = 'rhythm-opening-fx fx-' + slot + ' fx-' + (item.type || 'pop');
+    el.style.backgroundImage = 'url("' + item.file + '")';
+    void el.offsetWidth;
+    el.classList.add('show');
+  });
+}
+function _restartRhythmOpeningSpriteMotion() {
+  var sprite = document.getElementById('rhythm-opening-sprite');
+  if (!sprite) return;
+  sprite.style.animation = 'none';
+  void sprite.offsetWidth;
+  sprite.style.animation = '';
+}
+function _updateRhythmOpeningCharacter(scene) {
+  var character = document.getElementById('rhythm-opening-character');
+  var sprite = document.getElementById('rhythm-opening-sprite');
+  if (!character || !sprite) return;
+  var rival = _currentRhythmRival();
+  var state = scene && scene.speaker === 'rival'
+    ? (scene.state || 'taunt')
+    : ((scene && scene.rivalState) || 'idle');
+  var sprites = rival.sprites || {};
+  if (!sprites[state]) state = 'idle';
+  character.dataset.rival = rival.key;
+  character.dataset.state = state;
+  var nextSrc = sprites[state] || sprites.idle;
+  if (sprite.getAttribute('src') !== nextSrc) sprite.src = nextSrc;
+  _restartRhythmOpeningSpriteMotion();
+  _applyRhythmOpeningFx(rival, state);
 }
 
 function _rhythmSongStage(song) {
@@ -6022,13 +6207,22 @@ function _rhythmOpeningScenesForSong(song) {
   ];
 }
 function _hideRhythmOpening() {
+  if (_rhythm.openingSettleTimer) {
+    clearTimeout(_rhythm.openingSettleTimer);
+    _rhythm.openingSettleTimer = null;
+  }
   _rhythm.openingActive = false;
+  _rhythm.openingSettling = false;
   _rhythm.openingIndex = 0;
   _rhythm.openingScenes = [];
   _rhythm.openingThenStart = false;
   var opening = document.getElementById('rhythm-opening');
-  if (opening) opening.classList.remove('show');
-  if (document.body) document.body.classList.remove('oto-modal-open');
+  if (opening) opening.classList.remove('show', 'is-settling');
+  if (document.body) {
+    document.body.classList.remove('oto-modal-open');
+    document.body.classList.remove('rhythm-opening-active');
+    document.body.classList.remove('rhythm-opening-settle');
+  }
 }
 function _renderRhythmOpeningScene() {
   var scenes = _rhythm.openingScenes || [];
@@ -6044,6 +6238,7 @@ function _renderRhythmOpeningScene() {
   if (speaker) speaker.textContent = scene.speaker === 'pono' ? 'ポノ' : rival.name;
   if (line) line.textContent = scene.text || '';
   if (next) next.textContent = _rhythm.openingIndex >= scenes.length - 1 ? 'はじめる' : 'つぎへ';
+  _updateRhythmOpeningCharacter(scene);
   if (scene.speaker === 'pono') {
     _updateRhythmBattlePanel(scene.rivalState || 'idle', null, scene.text || _rhythmPonoLine());
     bumpPono();
@@ -6053,12 +6248,27 @@ function _renderRhythmOpeningScene() {
 }
 function _finishRhythmOpening() {
   var thenStart = _rhythm.openingThenStart;
-  _hideRhythmOpening();
-  if (thenStart) _beginRhythmCountdown();
-  else _showRhythmMenu();
+  if (_rhythm.openingSettling) return;
+  var opening = document.getElementById('rhythm-opening');
+  if (!opening) {
+    _hideRhythmOpening();
+    if (thenStart) _beginRhythmCountdown();
+    else _showRhythmMenu();
+    return;
+  }
+  _rhythm.openingActive = false;
+  _rhythm.openingSettling = true;
+  opening.classList.add('is-settling');
+  if (document.body) document.body.classList.add('rhythm-opening-settle');
+  _rhythm.openingSettleTimer = setTimeout(function() {
+    _rhythm.openingSettleTimer = null;
+    _hideRhythmOpening();
+    if (thenStart) _beginRhythmCountdown();
+    else _showRhythmMenu();
+  }, 430);
 }
 function _advanceRhythmOpening() {
-  if (!_rhythm.openingActive) return;
+  if (!_rhythm.openingActive || _rhythm.openingSettling) return;
   _rhythm.openingIndex++;
   if (_rhythm.openingIndex >= (_rhythm.openingScenes || []).length) {
     _finishRhythmOpening();
@@ -6075,13 +6285,23 @@ function _showRhythmOpening(thenStart) {
   _forcePianoSoundForRhythm();
   _setModeButtons('rhythm');
   _syncRhythmBeatPulse();
+  if (_rhythm.openingSettleTimer) {
+    clearTimeout(_rhythm.openingSettleTimer);
+    _rhythm.openingSettleTimer = null;
+  }
   _rhythm.openingActive = true;
+  _rhythm.openingSettling = false;
   _rhythm.openingIndex = 0;
   _rhythm.openingScenes = _rhythmOpeningScenesForSong(RHYTHM_BASE_SONG);
   _rhythm.openingThenStart = !!thenStart;
   var opening = document.getElementById('rhythm-opening');
+  if (opening) opening.classList.remove('is-settling');
   if (opening) opening.classList.add('show');
-  if (document.body) document.body.classList.add('oto-modal-open');
+  if (document.body) {
+    document.body.classList.add('oto-modal-open');
+    document.body.classList.add('rhythm-opening-active');
+    document.body.classList.remove('rhythm-opening-settle');
+  }
   _renderRhythmOpeningScene();
 }
 function _rhythmVisualFallMs() {

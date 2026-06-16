@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-16 - [batch:554-oto-rhythm-opening-center-rival] Codex: user 指摘「OtoTouch の敵初登場を左上ボックスではなくステージ中央で喋らせ、会話後に左上ボックスへ移動」を受領。既存 batch:552 の曲別オープニングを土台に、視線が中央に定まる導入へ調整する。 (by Codex)
+- 2026-06-16 - [batch:554-oto-rhythm-opening-center-rival] DONE - Codex: `oto/index.html` のリズム開始オープニングで、会話中は左バトルパネルを非表示にし、ライバルを中央に大きく表示。会話終了時に中央ライバルが左上カードへ移動する短い settling 演出を追加し、その後カウントダウン開始。`sw.js` は v1200。検証: inline script parse / `node --check sw.js` / `git diff --check` / UTF-8 BOMなしLF / Playwright desktop 1365x768・低横 844x390 で中央表示、左パネル opacity 0、settling 中に左カード復帰、終了後 overlay none、3ライバル画像ロード、404/pageerrorなし、overflow 0 を確認。スクショ `tmp/oto_opening_center_desktop.png` / `tmp/oto_opening_center_low_landscape.png`。レビュー観点: 視線誘導、既存曲別会話、低背横画面、PWA cache を自己確認。 (by Codex)
 - 2026-06-16 - [batch:553-sea-album-feed-bombs-boss] Codex: user 依頼「Sea Album の通常弾/ボム分離、餌つき通常弾と餌ボム、左押し/ドラッグ連射、仲良くなるセリフ、カブトガニ boss warning/強制スクロール/固定戦闘/突進/尻尾レーザー」を受領。HANDOFF では batch:536 / 544 まで実装済みと確認。既存 Sea Album を土台に差分実装する。 (by Codex)
 - 2026-06-16 - [batch:553-sea-album-feed-bombs-boss] DONE - Codex: `sea-album/index.html` に餌画像先端 + 黄色尾の通常弾、餌ボムの斜め下重力弧、左クリック/タッチ長押しで両方連射、JET回避、雑魚/ボスの警戒・喜び吹き出し、カブトガニ WARNING → 強制スクロール → 固定ボス戦、通常泡/砂/渦・突進・尻尾レーザーを実装。`sw.js` は v1198。検証: inline script parse / `node --check sw.js` / UTF-8 BOMなしLF / `git diff --check` / Playwright desktopで左押し shots+bombs・餌画像・WARNING・boss fight・charge/laser・boss clear、844x390でJETとprompt非重なり・overflow 0・pageerror/404なしを確認。スクショ `tmp/sea_album_boss_fight.png` / `tmp/sea_album_mobile_jet.png`。レビュー観点: 操作入力、PWA cache、ボス状態遷移、低背横画面、既存Album/sticker導線を自己確認。 (by Codex)
 
