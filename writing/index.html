@@ -15385,7 +15385,13 @@ function goToPracticeDirect(rowIndex) {
       // 無料ユーザーはここに来ないのが正しいが、URL 直叩きでの保険。
       // 短縮版オープニングを見せたあと play.html に戻し、練習には入れない。
       var _isFree = false;
-      try { _isFree = localStorage.getItem('pono_premium') !== '1'; } catch (e) {}
+      try {
+        if (window.PonoTier && typeof window.PonoTier.isFree === 'function') {
+          _isFree = window.PonoTier.isFree();
+        } else {
+          _isFree = localStorage.getItem('pono_premium') !== '1';
+        }
+      } catch (e) {}
       var _scenes = _isFree ? SHORT_OPENING_SCENES : OPENING_SCENES;
       _showStoryboard(_scenes, function() {
         if (_isFree) {

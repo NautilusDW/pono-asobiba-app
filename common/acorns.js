@@ -86,7 +86,8 @@
   }
   function currentTotalCap() {
     try {
-      return localStorage.getItem('pono_premium') === '1' ? TOTAL_CAP_PAID : TOTAL_CAP_FREE;
+      var __tier = (window.PonoTier && window.PonoTier.getTier && window.PonoTier.getTier()) || (localStorage.getItem('pono_premium') === '1' ? 'sub' : 'free');
+      return (__tier !== 'free') ? TOTAL_CAP_PAID : TOTAL_CAP_FREE;
     } catch (e) { return TOTAL_CAP_FREE; }
   }
 
