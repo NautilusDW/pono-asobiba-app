@@ -239,7 +239,8 @@ html, body {
 
 <script>
 // ===== Premium Gate =====
-if (localStorage.getItem('pono_premium') !== '1') {
+var __appBuild = window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
+if (!__appBuild && localStorage.getItem('pono_premium') !== '1') {
   location.replace('../play.html');
 }
 

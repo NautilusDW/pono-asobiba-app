@@ -86,10 +86,12 @@
     return path.startsWith('../') ? path : '../' + path;
   }
 
-  // ---- ユーザー層判定（Phase 2 で tier.js に分離） ----
+  // ---- ユーザー層判定（PonoTier 優先、未ロード時のみ raw fallback） ----
   function isFree() {
-    try { return localStorage.getItem('pono_premium') !== '1'; }
-    catch (e) { return true; }
+    try {
+      if (window.PonoTier && typeof window.PonoTier.isFree === 'function') return window.PonoTier.isFree();
+      return localStorage.getItem('pono_premium') !== '1';
+    } catch (e) { return true; }
   }
   function shouldBlockFree(cardId) {
     if (!cardId) return false;
