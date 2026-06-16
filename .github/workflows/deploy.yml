@@ -39,6 +39,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
           # branch 別に deploy 先を切替:
           #   - master      → production  (pono-asobiba-app + pono.kodama-no-mori.com)
           #   - develop     → staging     (pono-asobiba-staging.ndw.workers.dev)
