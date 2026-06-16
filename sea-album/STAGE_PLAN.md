@@ -179,6 +179,10 @@ assets/images/sea-album/stage1/sea_anemone_happy.png
 assets/images/sea-album/stage1/horseshoe_crab_boss_normal.png
 assets/images/sea-album/stage1/horseshoe_crab_boss_eating.png
 assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png
+assets/images/sea-album/stage1/item_shell_chest_closed.png
+assets/images/sea-album/stage1/item_shell_chest_open.png
+assets/images/sea-album/stage1/item_shell_key.png
+assets/images/sea-album/stage1/item_sandball.png
 ```
 
 プレイヤー潜水艦は、既存の共通素材を使う。
