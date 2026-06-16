@@ -1220,6 +1220,42 @@
     background: linear-gradient(135deg, #A7F3D0, #34D399);
     color: #064E3B;
   }
+  .free-view-switch {
+    position: absolute;
+    top: calc(max(8px, env(safe-area-inset-top)) + 180px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 28px;
+    border: 2px solid rgba(255,255,255,0.72);
+    background: rgba(0,0,0,0.38);
+    z-index: 12;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.22);
+  }
+  body.free-mode .free-view-switch {
+    display: flex;
+  }
+  .free-view-btn {
+    min-width: 72px;
+    padding: 7px 12px;
+    border: none;
+    border-radius: 22px;
+    background: transparent;
+    color: rgba(255,255,255,0.86);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background 0.14s, color 0.14s, transform 0.08s;
+  }
+  .free-view-btn:active { transform: scale(0.94); }
+  .free-view-btn.active {
+    background: linear-gradient(135deg, #FDE68A, #F59E0B);
+    color: #5D3A00;
+  }
   .rhythm-hud {
     position: absolute;
     left: 50%;
@@ -4372,12 +4408,36 @@
     height: clamp(76px, 21cqh, 106px) !important;
   }
   body.rhythm-layout.free-stage-layout .mode-switch,
+  body.rhythm-layout.free-stage-layout .free-view-switch,
   body.rhythm-layout.free-stage-layout .chord-pill,
   body.rhythm-layout.free-stage-layout .sound-sets-box,
   body.rhythm-layout.free-stage-layout .band-group {
     display: flex !important;
     pointer-events: auto;
     z-index: 8;
+  }
+  body.rhythm-layout.free-stage-layout .free-view-switch {
+    left: var(--rhythm-left-x, 11%) !important;
+    top: clamp(196px, 33cqh, 244px) !important;
+    width: var(--rhythm-left-w, 148px) !important;
+    max-width: var(--rhythm-left-w, 148px) !important;
+    transform: translateX(-50%) !important;
+    box-sizing: border-box;
+  }
+  body.rhythm-layout.free-stage-layout .free-view-btn {
+    min-width: 0;
+    flex: 1;
+    padding: 6px 4px;
+    font-size: clamp(0.66rem, 2.2cqh, 0.82rem);
+  }
+  body.rhythm-layout.free-stage-layout .chord-pill {
+    top: clamp(238px, 43cqh, 286px) !important;
+  }
+  body.rhythm-layout.free-stage-layout .sound-sets-box {
+    top: clamp(278px, 53cqh, 326px) !important;
+  }
+  body.rhythm-layout.free-stage-layout .band-group {
+    top: clamp(408px, 83cqh, 438px) !important;
   }
   body.rhythm-layout.free-stage-layout .gh-hitline {
     opacity: 0.8;
@@ -4495,6 +4555,12 @@
     <div class="mode-switch" id="mode-switch" role="tablist" aria-label="あそび方">
       <button class="mode-btn active" data-mode="free" role="tab" aria-selected="true">じゆう</button>
       <button class="mode-btn" data-mode="rhythm" role="tab" aria-selected="false">リズム</button>
+    </div>
+
+    <!-- 自由モードの見た目切替: 元の丸ボタン / 3Dステージ -->
+    <div class="free-view-switch" id="free-view-switch" role="tablist" aria-label="じゆうモードの見た目">
+      <button class="free-view-btn active" data-free-view="classic" role="tab" aria-selected="true">まる</button>
+      <button class="free-view-btn" data-free-view="stage" role="tab" aria-selected="false">3D</button>
     </div>
 
     <!-- WebGL 3D レーン / ノーツ (対応環境で使用。DOM版はフォールバック) -->
@@ -5957,6 +6023,12 @@ Object.keys(RHYTHM_RIVALS).forEach(function(key) {
   });
 });
 var _playMode = 'free';
+var _freeViewMode = 'classic';
+try {
+  _freeViewMode = localStorage.getItem('pono_oto_free_view') === 'stage' ? 'stage' : 'classic';
+} catch (e) {
+  _freeViewMode = 'classic';
+}
 var _rhythm = {
   enabled: false,
   idx: 0,
@@ -7407,12 +7479,13 @@ function _gh3DDrawRoad() {
       var age = Math.max(0, Math.min(1, (nowMs - flash.start) / flash.duration));
       var strength = Math.pow(1 - age, 1.15);
       var laneIdx = Math.max(0, Math.min(7, flash.lane | 0));
+      var flashRgb = flash.kind === 'miss' ? [1.0, 0.12, 0.14] : _gh3DLaneRgb(laneIdx);
       var fx0 = -GH3D_HALF_W + laneIdx * GH3D_LANE_W + 0.035;
       var fx1 = fx0 + GH3D_LANE_W - 0.07;
       var fyNear = _gh3DRoadY(zNear) + 0.09;
       var fyFar = _gh3DRoadY(zFar) + 0.09;
-      var nearC = [1.0, 0.14, 0.12, 0.16 + 0.42 * strength];
-      var farC = [1.0, 0.08, 0.14, 0.02 + 0.12 * strength];
+      var nearC = [flashRgb[0], flashRgb[1], flashRgb[2], 0.18 + 0.5 * strength];
+      var farC = [flashRgb[0], flashRgb[1], flashRgb[2], 0.03 + 0.18 * strength];
       _gh3DPushColorQuadGradient(
         flashTris,
         [fx0, fyNear, zNear], nearC,
@@ -7956,13 +8029,13 @@ function _ghClearFlashTimers() {
   }
 }
 function _ghFlashLane(laneIdx, kind) {
-  if (kind === 'miss') {
+  if (kind === 'miss' || kind === 'success' || kind === 'free') {
     if (!_rhythm.lane3dFlashes) _rhythm.lane3dFlashes = [];
     _rhythm.lane3dFlashes.push({
       lane: laneIdx,
       kind: kind,
       start: performance.now(),
-      duration: GH3D_LANE_FLASH_MS
+      duration: kind === 'miss' ? GH3D_LANE_FLASH_MS : 520
     });
     if (_gh3d.ready) _gh3DRender();
   }
@@ -9283,13 +9356,17 @@ function _stopRhythmMode() {
   _bandVolume = _rhythm.prevBandVolume || 1;
 }
 function _setModeButtons(mode) {
-  var stageLayout = mode === 'rhythm' || mode === 'free';
+  var stageLayout = mode === 'rhythm' || (mode === 'free' && _freeViewMode === 'stage');
   document.body.classList.toggle('rhythm-layout', stageLayout);
-  document.body.classList.toggle('free-stage-layout', mode === 'free');
+  document.body.classList.toggle('free-mode', mode === 'free');
+  document.body.classList.toggle('free-stage-layout', mode === 'free' && _freeViewMode === 'stage');
   if (stageLayout) {
     _gh3DEnsure();
     _ghUpdateLanesGeometry();
     if (_gh3d.ready) requestAnimationFrame(_gh3DRender);
+  } else {
+    _ghClearActiveNotes();
+    _ghClearLaneFlashes();
   }
   if (mode === 'rhythm') {
     _updateRhythmBattlePanel(_rhythm.enabled || _rhythm.demoActive ? 'attack' : 'idle');
@@ -9299,9 +9376,21 @@ function _setModeButtons(mode) {
     btn.classList.toggle('active', active);
     btn.setAttribute('aria-selected', active ? 'true' : 'false');
   });
+  document.querySelectorAll('.free-view-btn').forEach(function(btn) {
+    var active = btn.dataset.freeView === _freeViewMode;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
   if (typeof resizeBg === 'function') {
     requestAnimationFrame(resizeBg);
   }
+}
+function setFreeViewMode(mode, persist) {
+  _freeViewMode = mode === 'stage' ? 'stage' : 'classic';
+  if (persist) {
+    try { localStorage.setItem('pono_oto_free_view', _freeViewMode); } catch (e) {}
+  }
+  if (_playMode === 'free') _setModeButtons('free');
 }
 function setPlayMode(mode) {
   mode = mode === 'rhythm' ? 'rhythm' : 'free';
@@ -9313,6 +9402,16 @@ function setPlayMode(mode) {
     _stopRhythmMode();
     _setModeButtons(mode);
   }
+}
+function triggerFreeStageHit(idx, stageX, stageY) {
+  if (!_playMode || _playMode !== 'free') return;
+  if (!document.body.classList.contains('free-stage-layout')) return;
+  var laneIdx = _ghBtnIdxToLaneIdx(idx);
+  _ghFlashLane(laneIdx, 'free');
+  _ghSpawnHitFlash(laneIdx);
+  _ghSpawnNoteBurst(laneIdx, 'success');
+  spawnSoundBurst(stageX, stageY - 18, laneIdx, 6);
+  if (_gh3d.ready) requestAnimationFrame(_gh3DRender);
 }
 function handleRhythmTap(idx, btn) {
   if (!_rhythm.enabled) return;
@@ -9449,6 +9548,14 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
       _hideRhythmMenu();
       setPlayMode('free');
     }
+  });
+});
+document.querySelectorAll('.free-view-btn').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    unlockAudio();
+    setFreeViewMode(btn.dataset.freeView, true);
   });
 });
 var rhythmMenuStart = document.getElementById('rhythm-menu-start');
@@ -9659,6 +9766,7 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
     var p = _viewportPointToStage(cx, cy);
     spawnRipples(cx, cy);
     spawnParticles(p.x, p.y, 8);
+    triggerFreeStageHit(idx, p.x, p.y);
     bumpPono();
     handleRhythmTap(idx, btn);
 
@@ -9691,7 +9799,7 @@ var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
 
 function _isOnButton(e) {
   return !!(e.target && e.target.closest && e.target.closest(
-    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .chord-pill-btn, .scale-btn, .set-trigger, .oto-menu-item, .set-popover, .rhythm-menu, .rhythm-complete'
+    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .free-view-btn, .chord-pill-btn, .scale-btn, .set-trigger, .oto-menu-item, .set-popover, .rhythm-menu, .rhythm-complete'
   ));
 }
 
@@ -9712,6 +9820,14 @@ function spawnBubbleAt(x, y, colorIdx) {
   playSetSoundFor(currentSet, idx, CHORD_MODE === 'on');
   recordEvent('kira', { colorIdx: colorIdx });
 }
+function spawnFreeTapMagic(x, y, colorIdx, strong) {
+  spawnRipplesLocal(x, y);
+  spawnSoundBurst(x, y, colorIdx, strong ? 8 : 5);
+  spawnParticles(x, y, strong ? 10 : 6);
+  if (strong) {
+    addAmbientBubble(x + (Math.random() - 0.5) * 42, y + 18, 18);
+  }
+}
 
 _stageEl.addEventListener('pointerdown', function(e) {
   if (_rhythm.demoActive) {
@@ -9731,6 +9847,7 @@ _stageEl.addEventListener('pointerdown', function(e) {
   // 当たらなかった場合: 虹色シャボン玉を新規生成 + キラキラ音
   var colorIdx = Math.floor(Math.random() * BUBBLE_COLORS.length);
   spawnBubbleAt(x, y, colorIdx);
+  spawnFreeTapMagic(x, y, colorIdx, true);
   _drag.active = true;
   _drag.lastX = x; _drag.lastY = y;
   _drag.colorIdx = (colorIdx + 1) % BUBBLE_COLORS.length;
@@ -9752,6 +9869,7 @@ _stageEl.addEventListener('pointermove', function(e) {
   // 既存シャボン玉に当たれば破裂、そうでなければ生成
   if (!popBubbleAt(x, y)) {
     spawnBubbleAt(x, y, _drag.colorIdx);
+    spawnFreeTapMagic(x, y, _drag.colorIdx, false);
     _drag.colorIdx = (_drag.colorIdx + 1) % BUBBLE_COLORS.length;
   }
   _drag.lastX = x; _drag.lastY = y;
@@ -9905,6 +10023,62 @@ function drawParticles() {
     bgCtx.globalAlpha = Math.max(0, Math.min(1, alpha));
     bgCtx.font = p.size + 'px serif';
     bgCtx.fillText(p.emoji, p.x, p.y);
+  }
+  bgCtx.globalAlpha = 1;
+}
+
+// ─ 音符バースト: 空タップ時に音が出た場所を見せる ─
+var soundBursts = [];
+var MAX_SOUND_BURSTS = 18;
+var SOUND_BURST_GLYPHS = ['♪', '♫', '★', '✦'];
+function spawnSoundBurst(cx, cy, colorIdx, count) {
+  var c = BUBBLE_COLORS[colorIdx] || BUBBLE_COLORS[0];
+  soundBursts.push({
+    x: cx,
+    y: cy,
+    color: c,
+    count: Math.max(3, Math.min(9, count || 5)),
+    life: 0,
+    maxLife: 0.72,
+    spin: Math.random() * TAU
+  });
+  if (soundBursts.length > MAX_SOUND_BURSTS) soundBursts.splice(0, soundBursts.length - MAX_SOUND_BURSTS);
+}
+function updateSoundBursts(dt) {
+  for (var i = soundBursts.length - 1; i >= 0; i--) {
+    var b = soundBursts[i];
+    b.life += dt;
+    if (b.life >= b.maxLife) soundBursts.splice(i, 1);
+  }
+}
+function drawSoundBursts() {
+  bgCtx.textAlign = 'center';
+  bgCtx.textBaseline = 'middle';
+  for (var i = 0; i < soundBursts.length; i++) {
+    var b = soundBursts[i];
+    var t = b.life / b.maxLife;
+    var alpha = Math.max(0, 1 - t);
+    var ring = 24 + t * 86;
+    bgCtx.globalAlpha = alpha * 0.62;
+    bgCtx.strokeStyle = 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',0.9)';
+    bgCtx.lineWidth = 3;
+    bgCtx.beginPath();
+    bgCtx.arc(b.x, b.y, ring, 0, TAU);
+    bgCtx.stroke();
+    bgCtx.globalAlpha = alpha;
+    bgCtx.font = '900 ' + (20 + t * 6) + 'px DotGothic16, sans-serif';
+    bgCtx.fillStyle = 'rgba(255,255,255,0.95)';
+    bgCtx.strokeStyle = 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',0.86)';
+    bgCtx.lineWidth = 3;
+    for (var j = 0; j < b.count; j++) {
+      var ang = b.spin + (j / b.count) * TAU + t * 0.9;
+      var rr = 22 + t * 76;
+      var x = b.x + Math.cos(ang) * rr;
+      var y = b.y + Math.sin(ang) * rr * 0.72 - t * 14;
+      var glyph = SOUND_BURST_GLYPHS[j % SOUND_BURST_GLYPHS.length];
+      bgCtx.strokeText(glyph, x, y);
+      bgCtx.fillText(glyph, x, y);
+    }
   }
   bgCtx.globalAlpha = 1;
 }
@@ -10174,6 +10348,8 @@ function loop(now) {
   drawPopAnims();
   updateRipples(dt);
   drawRipples();
+  updateSoundBursts(dt);
+  drawSoundBursts();
   updateParticles(dt);
   drawParticles();
   drawFinale(now);

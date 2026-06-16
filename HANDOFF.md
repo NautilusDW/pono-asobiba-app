@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-16 - [batch:568-play-tap-intro-blocking] Codex: user 指摘「トップメニューからタイトル画面へ入る時のPR/タップ開始画面が透け、タップが背面ゲームカードに届いて意図しないゲームが始まる」を受領。HANDOFF / git log / play.html 検索で同一対応なし確認済み。`play.html` の tap-intro を不透明化し、表示中/終了中は背面入力を遮断、必要に応じて `sw.js` を現行未コミット v1213 から追番バンプする。 (by Codex)
+- 2026-06-16 - [batch:567-oto-free-mode-view-toggle-effects] DONE - Codex: user 指摘「自由モードは元の丸ボタンUIと3Dステージを選べるように。前のUI側の波紋/空タップ音などの面白いギミックも考える。3Dステージ側の演出も必要」を受領し、自由モード内に `まる / 3D` 切替を追加。デフォルトは元の丸UIへ戻し、丸UIは空タップ/ドラッグで波紋・音符リング・粒子・バブル・選択音を出す演出を追加。3D側は押したレーンが奥へ光る3Dレーンフラッシュ、ヒットラインスイープ、ボタン上のバースト、音符リングを追加。`sw.js` は v1213。検証: inline script parse / `node --check sw.js` / `git diff --check` / Playwright 1280x720で自由開始=丸UI、空タップ演出、3D切替、3Dレーン演出、丸UI復帰、pageerrorなしを確認。 (by Codex)
 - 2026-06-16 - [batch:566-sea-album-friendship-boss-loop] Codex: user 方針「永続装備はニューゲームでも毎回ついている装備。ステージごとに仲良し度を100まで上げるとボスが出て、それまでにキーアイテムを探し、仲良し度上昇に応じてヒントが出る形にしたい」を受領。`STAGE_PLAN.md` に仲良し度/ボス解放/キーアイテム/ショップの役割を具体化する。 (by Codex)
 - 2026-06-16 - [batch:566-sea-album-friendship-boss-loop] DONE - Codex: `STAGE_PLAN.md` に、永続装備はニューゲーム/再挑戦でも最初から付くこと、ステージ内の仲良し度0〜100、節目ヒント、キーアイテム未所持時のボス前戻し、ショップ専用/ステージ内限定の切り分け、ステージ1の「カブトガニのすなだんご」案を追記。ドキュメントのみの変更のため `sw.js` は触らず、既存の Oto 関連未コミット差分も未ステージのまま保持。検証: `git diff --check` / UTF-8 BOMなしLF。 (by Codex)
 - 2026-06-16 - [batch:565-sea-album-power-shop-plan] Codex: user 指摘「Sea Album のヤドカリのセリフと名前が被って読めない。ホーミングミサイル数などのパワーアップを、通常面/ショップ/ショップ専用の兼ね合いで考えたい」を受領。ヤドカリ吹き出し重なりを修正し、`STAGE_PLAN.md` にパワーアップ/ショップ方針を整理する。 (by Codex)
