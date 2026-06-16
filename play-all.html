@@ -2089,7 +2089,9 @@
     const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide'];
 
     function applyUnlockState() {
-      const unlocked = localStorage.getItem('pono_premium') === '1';
+      const unlocked = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+        ? !window.PonoTier.isFree()
+        : (localStorage.getItem('pono_premium') === '1');
       lockedCards.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('locked', !unlocked);
@@ -2140,7 +2142,9 @@
         }
       }
       var _debugOn  = localStorage.getItem('pono_debug')   === '1';
-      var _premium  = localStorage.getItem('pono_premium') === '1';
+      var _premium  = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+        ? !window.PonoTier.isFree()
+        : (localStorage.getItem('pono_premium') === '1');
       var _hasRoom  = _debugOn || _premium;
       // 下部ナビの「🏠 おうち」を、無料ユーザーには「📓 てちょう」として見せる
       if (!_hasRoom) {
@@ -2197,9 +2201,14 @@
     }
 
     // ===== Premium bonus for already-unlocked users =====
-    if (localStorage.getItem('pono_premium') === '1' && window.grantPremiumBonus) {
-      window.grantPremiumBonus();
-    }
+    (function() {
+      var _isPremium = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+        ? !window.PonoTier.isFree()
+        : (localStorage.getItem('pono_premium') === '1');
+      if (_isPremium && window.grantPremiumBonus) {
+        window.grantPremiumBonus();
+      }
+    })();
 
     // ===== PWA Service Worker =====
     // 登録 + 更新検知 + ユーザー明示タップでのみ切替 (トースト) を
@@ -3767,7 +3776,9 @@
           }
         } else if (action === 'room') {
           var debugOn = localStorage.getItem('pono_debug')   === '1';
-          var premium = localStorage.getItem('pono_premium') === '1';
+          var premium = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+            ? !window.PonoTier.isFree()
+            : (localStorage.getItem('pono_premium') === '1');
           if (debugOn || premium) {
             location.href = 'room/index.html';
           } else {
