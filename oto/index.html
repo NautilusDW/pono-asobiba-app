@@ -1903,20 +1903,60 @@
   .rhythm-opening-fx.fx-sweat { animation: rival-fx-sweat 760ms ease-out both; }
   .rhythm-opening-fx.fx-spin { animation: rival-fx-spin 780ms ease-out both; }
   .rhythm-opening-fx.fx-float { animation: rival-fx-float 900ms ease-out both; }
+  .rhythm-opening-fire {
+    position: absolute;
+    left: clamp(104px, 17vw, 260px);
+    bottom: clamp(54px, 11vh, 116px);
+    z-index: 4;
+    width: clamp(72px, 9vw, 118px);
+    height: clamp(56px, 8vw, 92px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 14px) scale(0.7);
+    filter: drop-shadow(0 8px 9px rgba(251,146,60,0.38));
+  }
+  .rhythm-opening-fire span {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 42%;
+    height: 76%;
+    border-radius: 52% 48% 48% 52% / 68% 68% 32% 32%;
+    background:
+      radial-gradient(circle at 50% 68%, rgba(255,255,255,0.95) 0 18%, rgba(254,240,138,0.95) 28%, transparent 56%),
+      linear-gradient(180deg, #FDE047 0%, #FB923C 46%, #EF4444 100%);
+    transform-origin: 50% 100%;
+    animation: rhythm-opening-flame 260ms ease-in-out infinite alternate;
+  }
+  .rhythm-opening-fire span:nth-child(1) {
+    transform: translateX(-78%) rotate(-16deg) scale(0.78);
+    animation-delay: -90ms;
+  }
+  .rhythm-opening-fire span:nth-child(2) {
+    width: 52%;
+    height: 94%;
+    transform: translateX(-50%) scale(1);
+  }
+  .rhythm-opening-fire span:nth-child(3) {
+    transform: translateX(-20%) rotate(16deg) scale(0.74);
+    animation-delay: -150ms;
+  }
+  .rhythm-opening.is-settling .rhythm-opening-fire {
+    animation: rhythm-opening-fire-rise 430ms cubic-bezier(.22,.82,.22,1) both;
+  }
   .rhythm-opening-panel {
+    position: relative;
     width: min(88%, 620px);
     max-height: min(44vh, 340px);
     display: grid;
     gap: 10px;
-    padding: clamp(14px, 2.4vw, 22px);
-    border: 3px solid rgba(255,255,255,0.82);
-    border-radius: 22px;
-    background:
-      radial-gradient(circle at 18% 12%, rgba(255,247,173,0.32), transparent 36%),
-      linear-gradient(180deg, rgba(15,23,42,0.9), rgba(30,41,59,0.86));
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: #fff;
     text-align: center;
-    box-shadow: 0 16px 36px rgba(0,0,0,0.34);
+    box-shadow: none;
   }
   .rhythm-opening.is-settling {
     pointer-events: none;
@@ -1937,10 +1977,24 @@
   }
   @keyframes rhythm-opening-rival-to-card {
     0% { opacity: 1; transform: translate(0, 0) scale(1); }
-    100% { opacity: 0.16; transform: translate(var(--opening-exit-x), var(--opening-exit-y)) scale(0.34); }
+    100% { opacity: 0.92; transform: translate(var(--opening-exit-x), var(--opening-exit-y)) scale(0.34); }
+  }
+  @keyframes rhythm-opening-fire-rise {
+    0% { opacity: 0; transform: translate(-50%, 18px) scale(0.55); }
+    34% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+    100% { opacity: 0.96; transform: translate(-50%, -4px) scale(0.92); }
+  }
+  @keyframes rhythm-opening-flame {
+    0% { filter: brightness(0.95); border-radius: 44% 56% 48% 52% / 70% 68% 32% 30%; }
+    100% { filter: brightness(1.16); border-radius: 58% 42% 52% 48% / 66% 72% 28% 34%; }
   }
   .rhythm-opening-stage {
-    justify-self: center;
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: -34px;
+    z-index: 2;
+    transform: translateX(-50%);
     padding: 3px 12px 4px;
     border-radius: 999px;
     background: rgba(20,184,166,0.22);
@@ -1950,22 +2004,53 @@
     line-height: 1;
   }
   .rhythm-opening-speaker {
+    display: none;
+    justify-self: center;
+    padding: 4px 14px 5px;
+    border-radius: 999px;
+    background: rgba(2,6,23,0.58);
+    border: 2px solid rgba(255,255,255,0.62);
     color: #FEF3C7;
     font-size: clamp(1rem, 2.8vw, 1.35rem);
     line-height: 1.1;
     text-shadow: 0 2px 0 rgba(0,0,0,0.42);
   }
   .rhythm-opening-line {
+    position: relative;
     min-height: 3.4em;
     display: grid;
     place-items: center;
-    padding: 10px 14px;
-    border-radius: 16px;
-    background: rgba(2,6,23,0.46);
-    border: 2px solid rgba(255,255,255,0.45);
-    color: #F8FAFC;
+    padding: 16px 24px;
+    border-radius: 28px;
+    background: rgba(248,250,252,0.96);
+    border: 4px solid rgba(255,255,255,0.92);
+    color: #162033;
     font-size: clamp(1rem, 2.65vw, 1.42rem);
     line-height: 1.35;
+    text-shadow: none;
+    box-shadow: 0 16px 28px rgba(0,0,0,0.32), inset 0 -4px 0 rgba(15,23,42,0.08);
+  }
+  .rhythm-opening-line::before,
+  .rhythm-opening-line::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .rhythm-opening-line::before {
+    top: -24px;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 24px solid rgba(255,255,255,0.92);
+  }
+  .rhythm-opening-line::after {
+    top: -16px;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 18px solid rgba(248,250,252,0.96);
   }
   .rhythm-opening-actions {
     display: flex;
@@ -2006,10 +2091,11 @@
     .rhythm-opening-panel {
       width: min(86%, 520px);
       gap: 6px;
-      padding: 10px 14px;
-      border-radius: 18px;
+      padding: 0;
+      border-radius: 0;
     }
     .rhythm-opening-stage {
+      top: -25px;
       font-size: clamp(0.58rem, 2.4cqh, 0.72rem);
     }
     .rhythm-opening-speaker {
@@ -2017,8 +2103,28 @@
     }
     .rhythm-opening-line {
       min-height: 2.8em;
-      padding: 7px 10px;
+      padding: 10px 14px;
+      border-width: 3px;
+      border-radius: 20px;
       font-size: clamp(0.86rem, 3.4cqh, 1.06rem);
+    }
+    .rhythm-opening-line::before {
+      top: -18px;
+      border-left-width: 15px;
+      border-right-width: 15px;
+      border-bottom-width: 18px;
+    }
+    .rhythm-opening-line::after {
+      top: -12px;
+      border-left-width: 11px;
+      border-right-width: 11px;
+      border-bottom-width: 13px;
+    }
+    .rhythm-opening-fire {
+      left: clamp(72px, 17vw, 150px);
+      bottom: clamp(38px, 10vh, 72px);
+      width: clamp(52px, 9vw, 76px);
+      height: clamp(42px, 8vw, 62px);
     }
     .rhythm-opening-btn {
       min-height: 34px;
@@ -4399,6 +4505,11 @@
         <span class="rhythm-opening-fx fx-b" id="rhythm-opening-fx-b"></span>
         <span class="rhythm-opening-fx fx-c" id="rhythm-opening-fx-c"></span>
       </div>
+      <div class="rhythm-opening-fire" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
       <div class="rhythm-opening-panel">
         <div class="rhythm-opening-stage" id="rhythm-opening-stage">ステージ 1</div>
         <div class="rhythm-opening-speaker" id="rhythm-opening-speaker">DJ ケロック</div>
@@ -5721,32 +5832,38 @@ var RHYTHM_RIVALS = {
 var RHYTHM_OPENING_SCENES = {
   kaeru: [
     { speaker: 'rival', state: 'taunt', text: 'ケロケロ！ ドレミの はしを わたれるケロ？' },
-    { speaker: 'pono', rivalState: 'idle', text: 'ポノも しっかり きくよ！' },
+    { speaker: 'rival', state: 'happy', text: 'ぼくの ビートに ついてこれるケロ？' },
+    { speaker: 'rival', state: 'taunt', text: 'ラインに きたら すぐ タッチだケロ！' },
     { speaker: 'rival', state: 'attack', text: 'したのラインで うけてみろケロ！' }
   ],
   mary: [
     { speaker: 'rival', state: 'taunt', text: 'ふわふわの ひつじビートだケロ！' },
-    { speaker: 'pono', rivalState: 'idle', text: 'やさしく タッチするよ' },
+    { speaker: 'rival', state: 'happy', text: 'やさしく でも ぴったり いくケロ！' },
+    { speaker: 'rival', state: 'taunt', text: 'おなじ おとが つづくケロ！' },
     { speaker: 'rival', state: 'attack', text: 'ミの おとを よく きくケロ！' }
   ],
   twinkle: [
     { speaker: 'rival', state: 'taunt', text: 'ほしの ノートを ちらすケロ！' },
-    { speaker: 'pono', rivalState: 'idle', text: 'きらきらでも あわてない' },
+    { speaker: 'rival', state: 'happy', text: 'キラッと きたら ねらうケロ！' },
+    { speaker: 'rival', state: 'taunt', text: 'ひとつずつ みれば だいじょうぶケロ！' },
     { speaker: 'rival', state: 'attack', text: 'れんぞくで ついてこれるケロ？' }
   ],
   choucho: [
     { speaker: 'rival', state: 'taunt', text: 'カチカチ！ はねる リズムを まわせ！' },
-    { speaker: 'pono', rivalState: 'idle', text: 'ひらひらでも よくみるよ' },
+    { speaker: 'rival', state: 'happy', text: 'ギアの あいずを よく みろ！' },
+    { speaker: 'rival', state: 'taunt', text: 'ちょうちょの うごきに まどわされるな！' },
     { speaker: 'rival', state: 'attack', text: 'ギアの あいずで いくぞ！' }
   ],
   london: [
     { speaker: 'rival', state: 'taunt', text: 'ガタン！ はしの リズムだ！' },
-    { speaker: 'pono', rivalState: 'idle', text: 'おちついて タッチするよ' },
+    { speaker: 'rival', state: 'happy', text: 'おちるまえに リズムを とれ！' },
+    { speaker: 'rival', state: 'taunt', text: 'テンポの かわりめを みのがすな！' },
     { speaker: 'rival', state: 'attack', text: 'テンポが かわっても できるか？' }
   ],
   ode: [
     { speaker: 'rival', state: 'taunt', text: 'ガオーン！ さいごの おうさまビートだ！' },
-    { speaker: 'pono', rivalState: 'idle', text: 'ポノも ぜんぶ だしきるよ！' },
+    { speaker: 'rival', state: 'happy', text: 'ここまで きたなら ぜんぶ みせろ！' },
+    { speaker: 'rival', state: 'taunt', text: 'おおきな おとでも まっすぐ ねらえ！' },
     { speaker: 'rival', state: 'attack', text: 'よろこびの おとで しょうぶだ！' }
   ]
 };
@@ -6202,7 +6319,7 @@ function _rhythmOpeningScenesForSong(song) {
   if (scenes && scenes.length) return scenes;
   return [
     { speaker: 'rival', state: 'taunt', text: 'この リズム できるかな？' },
-    { speaker: 'pono', rivalState: 'idle', text: 'ポノも いっしょに やるよ！' },
+    { speaker: 'rival', state: 'happy', text: 'よくみて リズムを つかめ！' },
     { speaker: 'rival', state: 'attack', text: 'ノートを よくみて タッチ！' }
   ];
 }

@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-16 - [batch:558-oto-rhythm-opening-speech-bubble-fire] DONE - Codex: OtoTouch リズム開始オープニングを、中央ライバルの下に大きな説明パネルではなく、しっぽ付きの白い吹き出しで喋っている見た目へ変更。ステージ/名前ラベルは会話中非表示にし、ポノ返事シーンはなくしてライバルが4行続けて喋る構成に調整。終了時は左パネルへ戻る settling 中に左下へ炎エフェクトを表示。`sw.js` は v1202。検証: inline script parse / `node --check sw.js` / `git diff --check` / Playwright 1366x768 と 844x390 で吹き出し表示、カエル4行会話、左パネル復帰、左下炎、pageerrorなしを確認。 (by Codex)
+- 2026-06-16 - [batch:557-sea-album-homing-torpedo-gimmicks] Codex: user 指摘「Sea Album の弾はもっと魚雷のように遅く、画面外に出るころ次弾、誘導弾/ホーミングミサイル的に敵へ向かう。探索ギミック案をさらに具体化」を受領。既存 batch:556 を土台に、通常弾を画面内1発のホーミングえさ魚雷へ調整し、探索ギミックを実装単位で整理する。 (by Codex)
 - 2026-06-16 - [batch:554-oto-rhythm-opening-center-rival] Codex: user 指摘「OtoTouch の敵初登場を左上ボックスではなくステージ中央で喋らせ、会話後に左上ボックスへ移動」を受領。既存 batch:552 の曲別オープニングを土台に、視線が中央に定まる導入へ調整する。 (by Codex)
 - 2026-06-16 - [batch:554-oto-rhythm-opening-center-rival] DONE - Codex: `oto/index.html` のリズム開始オープニングで、会話中は左バトルパネルを非表示にし、ライバルを中央に大きく表示。会話終了時に中央ライバルが左上カードへ移動する短い settling 演出を追加し、その後カウントダウン開始。`sw.js` は v1200。検証: inline script parse / `node --check sw.js` / `git diff --check` / UTF-8 BOMなしLF / Playwright desktop 1365x768・低横 844x390 で中央表示、左パネル opacity 0、settling 中に左カード復帰、終了後 overlay none、3ライバル画像ロード、404/pageerrorなし、overflow 0 を確認。スクショ `tmp/oto_opening_center_desktop.png` / `tmp/oto_opening_center_low_landscape.png`。レビュー観点: 視線誘導、既存曲別会話、低背横画面、PWA cache を自己確認。 (by Codex)
 - 2026-06-16 - [batch:555-sea-album-slower-coins] Codex: user 指摘「Sea Album 全体を遅く、文章短く、ボス耐久増、敵撃破でコイン獲得と上部表示」を受領。既存 batch:553 を土台に、`sea-album/index.html` と `sw.js` だけを変更予定。未コミットの batch:554 HANDOFF 行は保持する。 (by Codex)
