@@ -1,0 +1,793 @@
+fileFormatVersion: 2
+guid: afe7a353fb3584542b86f341f4240ba2
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3149899664768302724
+    second: procedural_caustics_0
+  - first:
+      213: 7759871121668379463
+    second: procedural_caustics_1
+  - first:
+      213: 2022438124101271577
+    second: procedural_caustics_2
+  - first:
+      213: -45621649282365841
+    second: procedural_caustics_3
+  - first:
+      213: -7929261801875781455
+    second: procedural_caustics_4
+  - first:
+      213: -7940964586778940212
+    second: procedural_caustics_5
+  - first:
+      213: -2567955030725292865
+    second: procedural_caustics_6
+  - first:
+      213: -471261266248707300
+    second: procedural_caustics_7
+  - first:
+      213: -3667224043480320919
+    second: procedural_caustics_8
+  - first:
+      213: -3945824079196377655
+    second: procedural_caustics_9
+  - first:
+      213: -7737715909304578018
+    second: procedural_caustics_10
+  - first:
+      213: -3136102882667723629
+    second: procedural_caustics_11
+  - first:
+      213: -4816927585515573292
+    second: procedural_caustics_12
+  - first:
+      213: 3660344094603570770
+    second: procedural_caustics_13
+  - first:
+      213: -4676096612380116824
+    second: procedural_caustics_14
+  - first:
+      213: 7349156016360328311
+    second: procedural_caustics_15
+  - first:
+      213: 2806634552424980266
+    second: procedural_caustics_16
+  - first:
+      213: 7540631259947330119
+    second: procedural_caustics_17
+  - first:
+      213: 8459598992357950836
+    second: procedural_caustics_18
+  - first:
+      213: -1898628748735395777
+    second: procedural_caustics_19
+  - first:
+      213: 1527239409532548454
+    second: procedural_caustics_20
+  - first:
+      213: -575373243538282271
+    second: procedural_caustics_21
+  - first:
+      213: -6336380069390414654
+    second: procedural_caustics_22
+  - first:
+      213: -7940438954629730189
+    second: procedural_caustics_23
+  - first:
+      213: -732852022675320682
+    second: procedural_caustics_24
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: procedural_caustics_0
+      rect:
+        serializedVersion: 2
+        x: 195
+        y: 236
+        width: 41
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48ef2a46e01b6bb20800000000000000
+      internalID: 3149899664768302724
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_1
+      rect:
+        serializedVersion: 2
+        x: 360
+        y: 217
+        width: 39
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7431bddeba990bb60800000000000000
+      internalID: 7759871121668379463
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_2
+      rect:
+        serializedVersion: 2
+        x: 442
+        y: 243
+        width: 39
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 910834f22c4211c10800000000000000
+      internalID: 2022438124101271577
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 175
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6605780a5bed5ff0800000000000000
+      internalID: -45621649282365841
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_4
+      rect:
+        serializedVersion: 2
+        x: 65
+        y: 200
+        width: 43
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1b8ce18f66a95f190800000000000000
+      internalID: -7929261801875781455
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_5
+      rect:
+        serializedVersion: 2
+        x: 229
+        y: 178
+        width: 43
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ccca51708c60cc190800000000000000
+      internalID: -7940964586778940212
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_6
+      rect:
+        serializedVersion: 2
+        x: 483
+        y: 196
+        width: 15
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fbc0172518acc5cd0800000000000000
+      internalID: -2567955030725292865
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_7
+      rect:
+        serializedVersion: 2
+        x: 107
+        y: 152
+        width: 20
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1358dc006eb579f0800000000000000
+      internalID: -471261266248707300
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_8
+      rect:
+        serializedVersion: 2
+        x: 154
+        y: 157
+        width: 34
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 964759889276b1dc0800000000000000
+      internalID: -3667224043480320919
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_9
+      rect:
+        serializedVersion: 2
+        x: 323
+        y: 140
+        width: 27
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9cd2155e7ed9d39c0800000000000000
+      internalID: -3945824079196377655
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_10
+      rect:
+        serializedVersion: 2
+        x: 393
+        y: 156
+        width: 44
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e10130d606c1e9490800000000000000
+      internalID: -7737715909304578018
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_11
+      rect:
+        serializedVersion: 2
+        x: 18
+        y: 113
+        width: 44
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 39403834b035a74d0800000000000000
+      internalID: -3136102882667723629
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_12
+      rect:
+        serializedVersion: 2
+        x: 183
+        y: 92
+        width: 44
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4df6094d1e5d62db0800000000000000
+      internalID: -4816927585515573292
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_13
+      rect:
+        serializedVersion: 2
+        x: 269
+        y: 129
+        width: 29
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 25e6b8a8f872cc230800000000000000
+      internalID: 3660344094603570770
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_14
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 106
+        width: 35
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a8fca3f7ea2b1fb0800000000000000
+      internalID: -4676096612380116824
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_15
+      rect:
+        serializedVersion: 2
+        x: 496
+        y: 125
+        width: 16
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 77c051a95727df560800000000000000
+      internalID: 7349156016360328311
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_16
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 63
+        width: 37
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2fd0a7514b23f620800000000000000
+      internalID: 2806634552424980266
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_17
+      rect:
+        serializedVersion: 2
+        x: 127
+        y: 86
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 74aed5fcd24b5a860800000000000000
+      internalID: 7540631259947330119
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_18
+      rect:
+        serializedVersion: 2
+        x: 347
+        y: 71
+        width: 44
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4758fb17678866570800000000000000
+      internalID: 8459598992357950836
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_19
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 28
+        width: 16
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f38484f5637b6a5e0800000000000000
+      internalID: -1898628748735395777
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_20
+      rect:
+        serializedVersion: 2
+        x: 138
+        y: 8
+        width: 42
+        height: 40
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6653a2cb628d13510800000000000000
+      internalID: 1527239409532548454
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_21
+      rect:
+        serializedVersion: 2
+        x: 220
+        y: 40
+        width: 40
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1e8e2ad551dd308f0800000000000000
+      internalID: -575373243538282271
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_22
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 113
+        height: 56
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2cc8e1206e7a018a0800000000000000
+      internalID: -6336380069390414654
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_23
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 0
+        width: 38
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 370fe9c47d4edc190800000000000000
+      internalID: -7940438954629730189
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: procedural_caustics_24
+      rect:
+        serializedVersion: 2
+        x: 303
+        y: 0
+        width: 41
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 690d28bd7f264d5f0800000000000000
+      internalID: -732852022675320682
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    customData:
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices:
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      procedural_caustics_0: 3149899664768302724
+      procedural_caustics_1: 7759871121668379463
+      procedural_caustics_10: -7737715909304578018
+      procedural_caustics_11: -3136102882667723629
+      procedural_caustics_12: -4816927585515573292
+      procedural_caustics_13: 3660344094603570770
+      procedural_caustics_14: -4676096612380116824
+      procedural_caustics_15: 7349156016360328311
+      procedural_caustics_16: 2806634552424980266
+      procedural_caustics_17: 7540631259947330119
+      procedural_caustics_18: 8459598992357950836
+      procedural_caustics_19: -1898628748735395777
+      procedural_caustics_2: 2022438124101271577
+      procedural_caustics_20: 1527239409532548454
+      procedural_caustics_21: -575373243538282271
+      procedural_caustics_22: -6336380069390414654
+      procedural_caustics_23: -7940438954629730189
+      procedural_caustics_24: -732852022675320682
+      procedural_caustics_3: -45621649282365841
+      procedural_caustics_4: -7929261801875781455
+      procedural_caustics_5: -7940964586778940212
+      procedural_caustics_6: -2567955030725292865
+      procedural_caustics_7: -471261266248707300
+      procedural_caustics_8: -3667224043480320919
+      procedural_caustics_9: -3945824079196377655
+  mipmapLimitGroupName:
+  pSDRemoveMatte: 0
+  userData:
+  assetBundleName:
+  assetBundleVariant:
