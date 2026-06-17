@@ -1192,7 +1192,7 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
 .opposite-with-img { gap: 14px; }
 
 /* 「つぎへ」ボタン: stage 中央下のオーバーレイ。 progress-num.png を背景に
-   置き、 答え選択 (img_answer / 通常両方) 後に全 169 問で表示する。
+   置き、 答え選択 (img_answer / 通常両方) 後に全問で表示する。
    コンテナ (#next-btn-area) は safe-area 直下に固定配置 (CSS 制御)。 */
 .next-btn-area {
   position: absolute;
@@ -1931,7 +1931,7 @@ body.layout-editor-on .character img {
   50%      { opacity: 1;    transform: scale(1.06); }
 }
 
-/* ===== Mode Select Screen ===== */
+/* ===== Difficulty Select Screen ===== */
 .mode-screen {
   position: fixed; inset: 0; z-index: 49;
   background: linear-gradient(170deg, #FDE68A 0%, #FBBF24 100%);
@@ -1949,35 +1949,7 @@ body.layout-editor-on .character img {
   letter-spacing: 0.05em;
   text-align: center;
 }
-.mode-screen-row {
-  display: flex; flex-direction: column; gap: 8px;
-  width: 100%; max-width: 360px;
-}
-.mode-screen .mode-btn {
-  padding: 10px 18px;
-  border: 4px solid #FBBF24;
-  border-radius: 18px;
-  background: #fff;
-  font-family: inherit;
-  font-weight: 900;
-  color: #5D4E37;
-  font-size: 1rem;
-  cursor: pointer;
-  text-align: left;
-  line-height: 1.25;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-  transition: transform 0.1s;
-}
-.mode-screen .mode-btn:active { transform: scale(0.96); }
-.mode-screen .mode-btn .mode-sub {
-  display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #A89880;
-  margin-top: 2px;
-}
-
-/* ===== Difficulty picker (mode-screen 内, mode-btn の下) ===== */
+/* ===== Difficulty picker ===== */
 .diff-screen-title {
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
   font-size: clamp(0.85rem, 2.8vw, 1.1rem);
@@ -3383,20 +3355,10 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   <p>よこむきに<br>してね</p>
 </div>
 
-<!-- ===== Mode Select ===== -->
+<!-- ===== Difficulty Select ===== -->
 <div class="mode-screen hidden" id="mode-screen">
-  <div class="mode-screen-title">どっちで あそぶ？</div>
-  <div class="mode-screen-row">
-    <button class="mode-btn" data-mode="inspire">
-      😊 やさしい
-      <span class="mode-sub">いろ・かず・かたち</span>
-    </button>
-    <button class="mode-btn" data-mode="know">
-      💡 ものしり
-      <span class="mode-sub">てんき・からだ・なんでも</span>
-    </button>
-  </div>
-  <div class="diff-screen-title">むずかしさ</div>
+  <div class="mode-screen-title">なんいどを えらぶ？</div>
+  <div class="diff-screen-title">いろ・かず・かたち・ものしりを まぜて だすよ</div>
   <div class="diff-row" id="diff-row">
     <button class="diff-btn" data-diff="easy" aria-pressed="false">
       <span class="diff-stars">★</span>
@@ -3526,12 +3488,12 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     <div class="modal-title" id="result-title">クリア！</div>
     <div class="modal-msg" id="result-msg"></div>
     <button class="modal-btn" id="result-btn">もういっかい ▶</button>
-    <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 モードをかえる</button>
+    <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 なんいどをかえる</button>
     <a href="../play.html" class="modal-back">← メニューにもどる</a>
   </div>
 </div>
 
-<!-- ===== Opening Cinematic (mode-btn → playOpeningCinematic → initGame) ===== -->
+<!-- ===== Opening Cinematic (difficulty button → playOpeningCinematic → initGame) ===== -->
 <div id="op-cinematic" class="op-cinematic hidden" aria-hidden="true">
   <div class="op-bg" id="op-bg"></div>
   <!-- 4:3 safe area for characters/narration/dialogues so 4:3 端末でも収まる (Fix 5a) -->
@@ -3608,10 +3570,10 @@ let currentQ = null;
 let locked = false;
 
 // ─── デバッグ全問プレイモード判定 ─────────────────────
-//   ?debug=all : 全 169 問を固定順で 1 度ずつ通すモード。
-//                タイトル/モード選択をスキップし、 result も 169 問完走後に出る。
+//   ?debug=all : 全問を固定順で 1 度ずつ通すモード。
+//                タイトル/難易度選択をスキップし、 result も全問完走後に出る。
 //   ?edit=1 (layout-editor-on) と同時指定された場合は layout-editor を優先し、
-//   debug ナビは無効化する (DOM は付くが操作は通常通り、進行はそのまま 169 を回す)。
+//   debug ナビは無効化する (DOM は付くが操作は通常通り、進行はそのまま全問を回す)。
 //   通常ユーザー (?debug=all なし) では一切挙動が変わらないこと。
 const QZ_DEBUG_ALL = (function () {
   try {
@@ -3648,7 +3610,7 @@ function isPlaytestInEditor() {
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
 let selectedCategories = Object.fromEntries(ALL_CATS.map(k => [k, true]));
 // 難易度
-// Lv1 = やさしい, Lv2 = ふつう, Lv3 = むずかしい (各 56 問 / 全 168 問)
+// Lv1 = かんたん, Lv2 = ふつう, Lv3 = むずかしい。カテゴリは分けずに全体から混ぜる。
 // 各レベルだけを抽出するために min == max のレンジで指定する
 const DIFF_LEVELS = ['easy', 'normal', 'hard'];
 const DIFF_MIN_LEVEL = { easy: 1, normal: 2, hard: 3 };
@@ -3659,21 +3621,16 @@ try {
   const _saved = localStorage.getItem(DIFF_STORAGE_KEY);
   if (_saved && DIFF_LEVELS.indexOf(_saved) !== -1) selectedDifficulty = _saved;
 } catch (e) { /* localStorage 不可なら デフォルト 'easy' */ }
-// やさしい(inspire) = 文字読めない3-4歳でも遊べる: 色・数・形 (絵中心)
-// ものしり(know)    = 5-6 歳〜: トリビア・天気・体・反対語 (文字読み必須)
-const MODE_TO_CATEGORIES = {
-  inspire: ['order_color', 'count_total', 'shape_name', 'number_sequence'],
-  know:    ['trivia', 'weather', 'body', 'opposite']
-};
-let selectedMode = 'inspire';
+function selectAllQuizlandCategories() {
+  ALL_CATS.forEach(function(c) { selectedCategories[c] = true; });
+}
 
-// ─── 難易度ロック判定 (free/book × mode × Lv) ───
+// ─── 難易度ロック判定 (free/book/sub × Lv) ───
 //   common/tier.js の PonoTier.isQuizlandDifficultyUnlocked を使う。
 //   PonoTier が無い (= 古い sw キャッシュ等) 場合は安全側で全開放。
-//   呼び出しの度に最新の selectedMode を渡すことで mode 切替が即時反映される。
 function isQuizlandDifficultyUnlockedLocal(diff) {
   if (!window.PonoTier || typeof window.PonoTier.isQuizlandDifficultyUnlocked !== 'function') return true;
-  return window.PonoTier.isQuizlandDifficultyUnlocked(diff, selectedMode);
+  return window.PonoTier.isQuizlandDifficultyUnlocked(diff);
 }
 function applyDiffTierLockUI() {
   document.querySelectorAll('.diff-btn').forEach(function(b) {
@@ -4639,6 +4596,7 @@ function shuffle(arr) {
 }
 
 function buildPlaylist() {
+  selectAllQuizlandCategories();
   const cats = ALL_CATS.filter(c => selectedCategories[c]);
   if (cats.length === 0) return [];
   const minLv = DIFF_MIN_LEVEL[selectedDifficulty];
@@ -4658,8 +4616,8 @@ function buildPlaylist() {
 // ─── デバッグ全問プレイ用: 全カテゴリを固定順で 1 度ずつ並べる ──────
 //   カテゴリ順は QUIZLAND_QUESTIONS の宣言順 (= ALL_CATS と同じ順)。
 //   各カテゴリ内は level 昇順 → 元配列の idx 昇順。 シャッフル無し。
-//   合計 169 問 (order_color 24 + count_total 24 + shape_name 24 + weather 24
-//                + opposite 24 + trivia 25 + body 24)。
+//   合計 180 問 (order_color 24 + count_total 24 + shape_name 22 + weather 24
+//                + opposite 24 + trivia 26 + body 24 + number_sequence 12)。
 function buildDebugPlaylist() {
   const list = [];
   ALL_CATS.forEach(cat => {
@@ -5831,7 +5789,7 @@ function loadQuestion(q) {
   const _delayNarration = (_monNumForNarr >= 1 && _monNumForNarr <= 5);
   setupNarration(q, { skipAutoPlay: _delayNarration });
   showProblemDialogue(q);
-  // 「第 N 問目」SE: 問題ロード時 (= mode-btn タップ後 = user gesture 後) のみ鳴らす
+  // 「第 N 問目」SE: 問題ロード時 (= 難易度ボタンタップ後 = user gesture 後) のみ鳴らす
   // updateHUD() は起動時 IIFE 末尾でも呼ばれるため、SE 発火は loadQuestion 末尾に限定する
   // v966: ユーザー手動編集 mp3 (kurumi_dai{1-5}mon.mp3) は冒頭に don 音が結合済の
   //       「don + ナレーション」一体ファイルに更新されたため、 アプリ側で
@@ -6139,7 +6097,7 @@ function updateHUD() {
   document.getElementById('q-total').textContent = totalQuestions;
   const prog = document.getElementById('hud-progress');
   prog.innerHTML = '';
-  // デバッグ全問モードは 169 個ドットを並べると HUD が破綻するので、
+  // デバッグ全問モードは全問ぶんのドットを並べると HUD が破綻するので、
   // 5 個に圧縮した擬似プログレスを表示する (現在位置を 0..4 にマッピング)。
   const dotCount = QZ_DEBUG_ALL ? DEFAULT_TOTAL_Q : totalQuestions;
   const currentDotIdx = QZ_DEBUG_ALL && totalQuestions > 0
@@ -6392,7 +6350,7 @@ function showResult() {
 // ═══════════════════════════════════════════════════════════
 function initGame() {
   if (QZ_DEBUG_ALL) {
-    // デバッグ全問プレイ: シャッフル無し / 全問固定順 / 169 問完走で result 画面へ
+    // デバッグ全問プレイ: シャッフル無し / 全問固定順 / 全問完走で result 画面へ
     playlist = buildDebugPlaylist();
     totalQuestions = playlist.length;
   } else {
@@ -6407,8 +6365,8 @@ function initGame() {
   _rov.classList.remove('is-perfect', 'is-animated');
   if (playlist.length === 0) {
     // 何らかの理由で問題が組めなかった場合の保険:
-    // free × normal/hard, book × know × normal/hard のように現ティアでは
-    // 全問ロックされる組み合わせの時にここに落ちる。 黙ってモード画面に
+    // free × normal/hard, book × hard のように現ティアでは
+    // 全問ロックされる組み合わせの時にここに落ちる。 黙って難易度画面に
     // 戻すと「タイトルに戻された」と誤解されるため、 サブスク誘導モーダルで
     // 「アプリで遊べるよ」と明示する。
     // [Phase 2 future-use] MVP (PONO_TIER_GAME_LOCKS_ENABLED=false) では
@@ -6429,7 +6387,7 @@ function initGame() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Opening Cinematic (mode-btn → playOpeningCinematic → initGame)
+// Opening Cinematic (difficulty button → playOpeningCinematic → initGame)
 // ═══════════════════════════════════════════════════════════
 const OP_PANELS = [
   // Panel 1 — narration
@@ -6892,8 +6850,8 @@ function _opLoadNarrationOverride(vc) {
   // これは tools/op-layout-editor.html → 📡 GitHub 配信 で書き込まれ、 全端末・
   // 全ユーザに同じ値が配信される正規ソース。 LayoutSystem.init が defer ロード
   // 時点で window._currentLayoutData に展開するので、 OP cinematic 開始時には
-  // 通常 fetch 完了済 (mode-btn タップまで数秒のラグがあるため race は実用上ない)。
-  // ただし低速回線での初回ロードや、ユーザーが mode-btn を即タップした場合は
+  // 通常 fetch 完了済 (難易度ボタンタップまで数秒のラグがあるため race は実用上ない)。
+  // ただし低速回線での初回ロードや、ユーザーが難易度ボタンを即タップした場合は
   // LayoutSystem fetch が間に合わず、まれに localStorage フォールバックや CSS
   // デフォルトに落ちることがある (= 許容範囲: 次回タップ以降は正規値で上書きされる)。
   // 未 fetch / __op_narration 未設定 / 当該 VC キー無し のいずれかなら、 dev override
@@ -6935,7 +6893,7 @@ function _opHexToRgba(hex, opacity) {
 }
 // 2026-05-10 (Q 案): saved-layout.json の `__op_layout[vc]` から立ち絵+対話+ナレ
 // 全部の runtime 用 snapshot を読み込む。 LayoutSystem.init が defer ロード時点で
-// window._currentLayoutData に展開済 (mode-btn タップまで通常数秒のラグがあるので
+// window._currentLayoutData に展開済 (難易度ボタンタップまで通常数秒のラグがあるので
 // race は実用上ない)。 未 fetch / __op_layout 未設定 / 当該 VC キー無し なら null。
 function _opLoadLayoutOverride(vc) {
   if (!vc) return null;
@@ -7916,7 +7874,7 @@ async function playQuestionNumberPlate(qIdx) {
   img.src = '../assets/images/quizland/qno_plate_' + plateNum + '.png';
 
   // v1098: 最終問題 (qIdx === totalQuestions - 1) のみ「さいごの もんだい！」
-  //   バルーンを plate の上に同時表示。 QZ_DEBUG_ALL (169問) では qIdx 4 は
+  //   バルーンを plate の上に同時表示。 QZ_DEBUG_ALL (全問) では qIdx 4 は
   //   最終問題ではないので、 totalQuestions を真値として参照し誤表示を防ぐ。
   const balloonImg = document.getElementById('qno-final-balloon-img');
   if (balloonImg) {
@@ -7987,10 +7945,10 @@ function hideQuestionNumberPlate() {
 // ═══════════════════════════════════════════════════════════
 // Wiring
 // ═══════════════════════════════════════════════════════════
-// タイトル画面タップ → モード選択画面へ (BGM もここで起動)
+// タイトル画面タップ → 難易度選択画面へ (BGM もここで起動)
 document.getElementById('start-screen').addEventListener('click', function() {
   ensureAudio();
-  // Fix 1a: シネマティック資産をタイトルタップ時点で温める。 mode-btn を押した時には
+  // Fix 1a: シネマティック資産をタイトルタップ時点で温める。 難易度ボタンを押した時には
   // 画像/音声がキャッシュ済みになっており、進行中のプログレッシブ描画ガタつきを避ける。
   try {
     var __preloadList = [
@@ -8042,37 +8000,38 @@ document.getElementById('start-screen').addEventListener('click', function() {
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 
-// モードボタンタップ = 即ゲーム開始 (やさしい/ものしりに応じて出題カテゴリ切替)
+// 難易度ボタンタップ = 全カテゴリ混合でゲーム開始。
 // 6 パネルのオープニング・シネマティックを再生してから initGame() を呼ぶ。
-document.querySelectorAll('.mode-btn').forEach(function(btn) {
-  btn.addEventListener('click', async function() {
-    selectedMode = btn.dataset.mode;
-    ALL_CATS.forEach(function(c) {
-      selectedCategories[c] = MODE_TO_CATEGORIES[selectedMode].indexOf(c) !== -1;
-    });
-    // モード変更で book × know の Lv2/3 がロック対象に変わるため、
-    // 現在の selectedDifficulty がロック対象なら easy に強制リセット。
-    if (!isQuizlandDifficultyUnlockedLocal(selectedDifficulty)) {
-      selectedDifficulty = 'easy';
-      try { localStorage.setItem(DIFF_STORAGE_KEY, 'easy'); } catch (e) {}
-      refreshDiffActive();
-    }
-    applyDiffTierLockUI();
-    // mode-screen hide is deferred to playOpeningCinematic so the black
-    // overlay shows BEFORE the underlying game UI is exposed.
-    try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
-    try { await playQuizStartCard();   } catch (e) { console.warn('quiz start card error', e); }
-    initGame();
-    if (typeof initMenu === 'function') {
-      initMenu({
-        bgmToggle: function() { toggleBGM(); },
-        tutorial: function() { alert('フクロウ博士の なぞなぞに こたえよう！'); }
+async function startQuizlandWithDifficulty(diff) {
+  if (DIFF_LEVELS.indexOf(diff) === -1) return;
+  if (!isQuizlandDifficultyUnlockedLocal(diff)) {
+    if (window.PonoTier && window.PonoTier.showSubscribePromo) {
+      window.PonoTier.showSubscribePromo({
+        title: 'むずかしい もんだいが ふえているよ！',
+        body: 'もっと たくさんの なぞなぞは アプリ で あそべるよ'
       });
     }
-  });
-});
+    return;
+  }
+  selectedDifficulty = diff;
+  try { localStorage.setItem(DIFF_STORAGE_KEY, diff); } catch (e) { /* ignore */ }
+  selectAllQuizlandCategories();
+  refreshDiffActive();
+  applyDiffTierLockUI();
+  // mode-screen hide is deferred to playOpeningCinematic so the black
+  // overlay shows BEFORE the underlying game UI is exposed.
+  try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
+  try { await playQuizStartCard();   } catch (e) { console.warn('quiz start card error', e); }
+  initGame();
+  if (typeof initMenu === 'function') {
+    initMenu({
+      bgmToggle: function() { toggleBGM(); },
+      tutorial: function() { alert('フクロウ博士の なぞなぞに こたえよう！'); }
+    });
+  }
+}
 
-// 難易度ピル: タップで selectedDifficulty を更新 + localStorage 保存
+// 難易度ピル: タップで selectedDifficulty を更新して開始
 function refreshDiffActive() {
   document.querySelectorAll('.diff-btn').forEach(function(b) {
     if (b.dataset.diff === selectedDifficulty) {
@@ -8087,27 +8046,10 @@ function refreshDiffActive() {
 document.querySelectorAll('.diff-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     const d = btn.dataset.diff;
-    if (DIFF_LEVELS.indexOf(d) === -1) return;
-    // ティア × モードでロック中ならサブスク誘導モーダルを出し、 selectedDifficulty は変更しない
-    // [Phase 2 future-use] MVP (PONO_TIER_GAME_LOCKS_ENABLED=false) では
-    //   isQuizlandDifficultyUnlockedLocal が常に true を返すため、 この分岐は
-    //   実質到達しない (買い切り全機能開放方針)。 Phase 2 でサブスク制を
-    //   再開する場合に備えて残置している。
-    if (!isQuizlandDifficultyUnlockedLocal(d)) {
-      if (window.PonoTier && window.PonoTier.showSubscribePromo) {
-        window.PonoTier.showSubscribePromo({
-          title: 'むずかしい もんだいが ふえているよ！',
-          body: 'もっと たくさんの なぞなぞは アプリ で あそべるよ'
-        });
-      }
-      return;
-    }
-    selectedDifficulty = d;
-    try { localStorage.setItem(DIFF_STORAGE_KEY, d); } catch (e) { /* ignore */ }
-    refreshDiffActive();
+    startQuizlandWithDifficulty(d);
   });
 });
-// 起動時に保存された selectedDifficulty が現モードでロック対象なら easy に戻す。
+// 起動時に保存された selectedDifficulty が現tierでロック対象なら easy に戻す。
 if (!isQuizlandDifficultyUnlockedLocal(selectedDifficulty)) {
   selectedDifficulty = 'easy';
   try { localStorage.setItem(DIFF_STORAGE_KEY, 'easy'); } catch (e) {}
@@ -8134,7 +8076,7 @@ document.getElementById('result-btn').addEventListener('click', function(e) {
   initGame();
 });
 
-// Result "change mode" → モード選択画面へ
+// Result "change difficulty" → 難易度選択画面へ
 document.getElementById('result-cat-btn').addEventListener('click', function(e) {
   if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
   const _rov2 = document.getElementById('result-overlay');
@@ -8863,7 +8805,7 @@ try {
   window.updateDebugNav = updateDebugNav;
 } catch (_) {}
 
-// editor 内 🧪 Playtest ON のときに、 全 169 問の playlist を構築し直す。
+// editor 内 🧪 Playtest ON のときに、 全問の playlist を構築し直す。
 // ?debug=all で起動したときと同等の playlist 状態にするための共通関数。
 // 現在表示中の問題と同じ問題が新 playlist に含まれていれば、 questionIdx を
 // その index に更新するだけで再 loadQuestion せず滑らかに切替える (画面のチラつき防止)。

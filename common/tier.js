@@ -109,9 +109,7 @@
     'body|0','body|1','body|2',
     'trivia|0','trivia|1','trivia|2','trivia|3','trivia|4'
   ]; // Phase 2: 各カテゴリ Lv1 から3問 + trivia 5問 = 26問
-  var BOOK_QUIZLAND_KNOW_MAX_LEVEL = 1; // book は know モード Lv1 まで (inspire は全部解放)
-  var BOOK_QUIZLAND_INSPIRE_CATEGORIES = ['order_color','count_total','shape_name','number_sequence'];
-  var KNOW_QUIZLAND_CATEGORIES = ['trivia','weather','body','opposite'];
+  var BOOK_QUIZLAND_MAX_LEVEL = 2; // book はカテゴリを混ぜて Lv2 まで、sub は Lv3 まで
 
   // ---- maze ----
   var FREE_MAZE_MAX_STAGE = 3;
@@ -188,14 +186,7 @@
     var t = getTier();
     if (t === 'sub') return true;
     if (t === 'book') {
-      if (BOOK_QUIZLAND_INSPIRE_CATEGORIES.indexOf(category) >= 0) return true;
-      if (KNOW_QUIZLAND_CATEGORIES.indexOf(category) >= 0) return (level || 1) <= BOOK_QUIZLAND_KNOW_MAX_LEVEL;
-      // 既知カテゴリ集合に無い文字列が来た場合は安全側に通す (Phase 2 wiring 時に
-      // カテゴリ命名がプラン §A と一致しないと全 book ロックされる事故を避けるため)。
-      if (typeof console !== 'undefined' && console.warn) {
-        console.warn('[PonoTier] unknown quizland category for book tier:', category, '— defaulting to unlocked');
-      }
-      return true;
+      return (level || 1) <= BOOK_QUIZLAND_MAX_LEVEL;
     }
     // free: 固定リスト (Phase 2 で qid 埋める)。
     // 空配列の間はフェイルセーフで true (= 全開放) を返し、 セーフフラグを ON にした瞬間に
@@ -207,12 +198,10 @@
   }
 
   // ---- quizland 難易度ロック ----
-  // 難易度 (easy=Lv1 / normal=Lv2 / hard=Lv3) を ティア × モード のペアで判定する。
+  // 難易度 (easy=Lv1 / normal=Lv2 / hard=Lv3) を tier だけで判定する。
   //   free: easy のみ (Lv1)
-  //   book × inspire: 全難易度 OK (Lv1/2/3)
-  //   book × know:    easy のみ (Lv1)
+  //   book: easy / normal (Lv1/2)
   //   sub: 全開放
-  // mode を省略すると安全側で easy のみ (book × know と同等扱い) を返す。
   // DIFF_MIN_LEVEL は呼び出し側 (quizland) と整合: easy=1, normal=2, hard=3。
   function isQuizlandDifficultyUnlocked(diff, mode) {
     if (!gameLocksEnabled()) return true;
@@ -221,9 +210,7 @@
     var t = getTier();
     if (t === 'sub') return true;
     if (t === 'free') return lv === 1;
-    // book: inspire のみ全 Lv 解放、 know は Lv1 まで
-    if (mode === 'inspire') return true;
-    return lv === 1;
+    return lv <= BOOK_QUIZLAND_MAX_LEVEL;
   }
 
   function isMazeStageUnlocked(stageNum) {
