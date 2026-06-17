@@ -167,7 +167,7 @@ body.sheet-on .stage::after {
      .hdr-pill                  -> Fukuro_frame_004.png (ヘッダー全体の papyrus + 葉飾り)
      .hdr-left .title-card      -> title_logo.png (フクロウ + 木の看板 一体絵 / owl-icon は display:none)
      .progress-num              -> progress-num.png (細長小ピル)
-     .dots                      -> CSS line + circular dots
+     .dots                      -> progress-mark.png (比率固定の5ドット帯)
      .char-hint    -> balloons/balloon_temp.png (吹き出し暫定)
 
    契約:
@@ -619,48 +619,38 @@ body.sheet-on .hdr-left .title-card span {
 }
 .hdr-left .dots {
   position: relative;
-  display: flex;
-  gap: 10px;
+  display: block;
   flex: 0 0 auto;
-  height: 32px;
-  align-items: center;
-  justify-content: space-between;
-  background-image: none;
-  padding: 0 2px;
-  box-sizing: content-box;
-}
-.hdr-left .dots::before {
-  content: '';
-  position: absolute;
-  left: 13px;
-  right: 13px;
-  top: 50%;
-  height: 4px;
-  transform: translateY(-50%);
-  background: linear-gradient(180deg, #e8a23a, #8f5d13);
-  border-radius: 999px;
-  box-shadow:
-    0 1px 0 rgba(255, 245, 190, 0.8) inset,
-    0 1px 2px rgba(93, 58, 0, 0.28);
-  z-index: 0;
-}
-/* Inactive dot: CSS で真円を描く。背景画像を潰して使わないため楕円化しない。 */
-.hdr-left .dot {
-  position: relative;
-  z-index: 1;
-  width: 26px;
-  height: 26px;
-  flex: 0 0 26px;
+  width: clamp(190px, 18vw, 250px);
+  height: clamp(75px, 7.14vw, 99px);
+  aspect-ratio: 1200 / 476;
+  background-image: url('../assets/images/quizland/progress-mark.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  padding: 0;
   box-sizing: border-box;
-  background: radial-gradient(circle at 35% 30%, #fff8da 0%, #f5d990 60%, #d49a32 100%);
-  background-image: none;
-  border: 2px solid #9f6818;
-  border-radius: 50%;
-  box-shadow:
-    inset 0 2px 4px rgba(255, 255, 235, 0.72),
-    inset 0 -2px 4px rgba(119, 69, 9, 0.18),
-    0 1px 2px rgba(93, 58, 0, 0.28);
 }
+/* Inactive dot: 元画像 progress-mark.png の空丸をそのまま見せる。 */
+.hdr-left .dot {
+  position: absolute;
+  top: 49.6%;
+  z-index: 1;
+  width: clamp(24px, 2.6vw, 34px);
+  height: clamp(24px, 2.6vw, 34px);
+  box-sizing: border-box;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-radius: 50%;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+}
+.hdr-left .dot:nth-child(1) { left: 12%; }
+.hdr-left .dot:nth-child(2) { left: 31%; }
+.hdr-left .dot:nth-child(3) { left: 50%; }
+.hdr-left .dot:nth-child(4) { left: 69%; }
+.hdr-left .dot:nth-child(5) { left: 88%; }
 /* Done dot: dot.png をそのまま (色tint無し、元画像のオレンジ) */
 .hdr-left .dot.done {
   background-color: transparent;
@@ -678,11 +668,11 @@ body.sheet-on .hdr-left .title-card span {
   background-repeat: no-repeat;
   background-position: center;
   border: none;
-  transform: scale(1.18);
+  transform: translate(-50%, -50%) scale(1.18);
 }
-/* sheet-on: progress-num.png は表示したまま、ドット帯はCSS線で描く */
+/* sheet-on: progress-num.png / progress-mark.png は表示したまま、枠だけ消す */
 body.sheet-on .hdr-left .dots {
-  background-image: none !important;
+  background-image: url('../assets/images/quizland/progress-mark.png') !important;
 }
 
 /* ===== v1013: カレントドット グロー明滅 + 最終問題バッジ ===== */
@@ -1156,6 +1146,8 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
 }
 .next-q-btn {
   pointer-events: auto;
+  position: relative;
+  isolation: isolate;
   display: none;
   background: url('../assets/images/quizland/progress-num.png') center / 100% 100% no-repeat;
   border: none;
@@ -1171,18 +1163,51 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
   cursor: pointer;
   opacity: 0;
   transform: translateY(8px) scale(0.96);
-  transition: opacity 0.35s ease, transform 0.35s ease;
-  box-shadow: 0 8px 20px rgba(120, 83, 20, 0.25);
+  transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+  filter: drop-shadow(0 8px 16px rgba(120, 83, 20, 0.28));
+  box-shadow: 0 0 0 rgba(255, 190, 54, 0);
   border-radius: 22px;
+}
+.next-q-btn::before {
+  content: '';
+  position: absolute;
+  inset: -12px -18px;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 246, 128, 0.98) 0%, rgba(255, 190, 34, 0.66) 42%, rgba(255, 180, 34, 0) 75%);
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .next-q-btn.show {
   display: inline-block;
   opacity: 1;
   transform: translateY(0) scale(1);
+  filter:
+    drop-shadow(0 8px 16px rgba(120, 83, 20, 0.3))
+    drop-shadow(0 0 22px rgba(255, 198, 34, 0.96));
+  animation: nextq-attention-glow 1.25s ease-in-out infinite alternate;
+}
+.next-q-btn.show::before {
+  opacity: 1;
+  transform: scale(1);
 }
 .next-q-btn:active { transform: translateY(2px) scale(0.98); }
 .next-q-btn[disabled],
 .next-q-btn:disabled { opacity: 0.65; cursor: default; }
+@keyframes nextq-attention-glow {
+  from {
+    filter:
+      drop-shadow(0 8px 16px rgba(120, 83, 20, 0.3))
+      drop-shadow(0 0 16px rgba(255, 185, 28, 0.82));
+  }
+  to {
+    filter:
+      drop-shadow(0 8px 18px rgba(120, 83, 20, 0.34))
+      drop-shadow(0 0 30px rgba(255, 216, 64, 1));
+  }
+}
 
 /* ─────────────────────────────────────────────────────────
    Staged reveal (typewriter -> illustration -> choices)
@@ -3263,30 +3288,37 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     max-height: 38vh;
   }
 }
-/* 最終問題の中央表示。画像 alpha に依存せず、完全不透明のCSSカードで表示する。 */
+/* 最終問題の中央表示。元画像を使い、同じ画像マスクの不透明下地で透けを止める。 */
 #qno-final-balloon {
-  min-width: clamp(220px, 32vw, 380px);
-  padding: clamp(10px, 1.6vw, 18px) clamp(22px, 3vw, 38px);
-  background: linear-gradient(180deg, #fff8e2 0%, #f4d792 100%);
-  border: 4px solid #5a3413;
-  border-radius: 22px;
-  box-shadow:
-    0 5px 0 #7a4a17,
-    0 10px 20px rgba(78, 45, 5, 0.25),
-    inset 0 2px 0 rgba(255, 255, 235, 0.78);
-  color: #f07818;
-  -webkit-text-stroke: 3px #5a3413;
-  paint-order: stroke fill;
-  text-shadow: 0 2px 0 rgba(255, 244, 206, 0.9);
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-weight: 900;
-  font-size: clamp(34px, 4.4vw, 60px);
-  line-height: 1.12;
-  letter-spacing: 0.04em;
-  text-align: center;
+  position: relative;
+  width: min(46vw, 430px);
+  aspect-ratio: 600 / 324;
   transform: scale(0);
   opacity: 0;
   transition: opacity 0.22s ease-out;
+}
+#qno-final-balloon::before,
+#qno-final-balloon::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #fff0b8;
+  -webkit-mask: url('../assets/images/quizland/final_q_balloon.webp') center / contain no-repeat;
+  mask: url('../assets/images/quizland/final_q_balloon.webp') center / contain no-repeat;
+  pointer-events: none;
+}
+#qno-final-balloon::after {
+  background: #fff7d4;
+  opacity: 0.86;
+}
+#qno-final-balloon-img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.22));
 }
 #qno-final-balloon:not(.show) { display: none; }
 .qno-plate-overlay.is-impact #qno-final-balloon.show {
@@ -3297,9 +3329,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 }
 @media (max-width: 540px) {
   #qno-final-balloon {
-    min-width: 0;
-    max-width: 72vw;
-    font-size: clamp(28px, 9vw, 42px);
+    width: 64vw;
   }
 }
 </style>
@@ -3508,7 +3538,9 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 <div id="qno-plate-overlay" class="qno-plate-overlay hidden" aria-hidden="true">
   <!-- v1098: バルーン (最終問題のみ表示) を plate の上に縦積み。 plate 単独時 (Q1-Q4) は従来通り中央配置。 -->
   <div class="qno-plate-stack">
-    <div id="qno-final-balloon" aria-hidden="true">さいごの<br>もんだい！</div>
+    <div id="qno-final-balloon" aria-hidden="true">
+      <img id="qno-final-balloon-img" src="" alt="">
+    </div>
     <img class="qno-plate-img" id="qno-plate-img" src="" alt="">
   </div>
 </div>
@@ -6073,6 +6105,39 @@ function updateHUD() {
   }
   // デバッグナビ更新 (DOM があれば)
   if (typeof updateDebugNav === 'function') updateDebugNav();
+  ensureProgressMarkAspectGuard();
+}
+
+const PROGRESS_MARK_ASPECT = 476 / 1200;
+let _progressMarkAspectObserver = null;
+let _progressMarkAspectFixing = false;
+function normalizeProgressMarkAspect() {
+  const dots = document.getElementById('hud-progress');
+  if (!dots) return;
+  const width = parseFloat(getComputedStyle(dots).width || dots.style.width);
+  if (!Number.isFinite(width) || width <= 0) return;
+  const expectedHeight = width * PROGRESS_MARK_ASPECT;
+  const currentHeight = parseFloat(dots.style.height || '0');
+  if (Math.abs(currentHeight - expectedHeight) < 0.5) return;
+  _progressMarkAspectFixing = true;
+  dots.style.height = expectedHeight.toFixed(3) + 'px';
+  _progressMarkAspectFixing = false;
+}
+function ensureProgressMarkAspectGuard() {
+  const dots = document.getElementById('hud-progress');
+  if (!dots) return;
+  normalizeProgressMarkAspect();
+  requestAnimationFrame(normalizeProgressMarkAspect);
+  setTimeout(normalizeProgressMarkAspect, 120);
+  if (_progressMarkAspectObserver) return;
+  _progressMarkAspectObserver = new MutationObserver(function () {
+    if (_progressMarkAspectFixing) return;
+    requestAnimationFrame(normalizeProgressMarkAspect);
+  });
+  _progressMarkAspectObserver.observe(dots, { attributes: true, attributeFilter: ['style'] });
+  window.addEventListener('resize', function () {
+    requestAnimationFrame(normalizeProgressMarkAspect);
+  }, { passive: true });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -7818,12 +7883,15 @@ async function playQuestionNumberPlate(qIdx) {
   //   バルーンを plate の上に同時表示。 QZ_DEBUG_ALL (全問) では qIdx 4 は
   //   最終問題ではないので、 totalQuestions を真値として参照し誤表示を防ぐ。
   const finalBalloon = document.getElementById('qno-final-balloon');
+  const finalBalloonImg = document.getElementById('qno-final-balloon-img');
   if (finalBalloon) {
     if (totalQuestions > 1 && qIdx === totalQuestions - 1) {
+      if (finalBalloonImg) finalBalloonImg.src = '../assets/images/quizland/final_q_balloon.webp';
       finalBalloon.classList.add('show');
       finalBalloon.setAttribute('aria-hidden', 'false');
     } else {
       finalBalloon.classList.remove('show');
+      if (finalBalloonImg) finalBalloonImg.src = '';
       finalBalloon.setAttribute('aria-hidden', 'true');
     }
   }
@@ -7876,10 +7944,12 @@ function hideQuestionNumberPlate() {
     root.classList.add('hidden');
     root.setAttribute('aria-hidden', 'true');
     if (img) img.src = '';
-    // 中央の最終問題カードも plate と同様に hide (次問へ持ち越さない)。
+    // 中央の最終問題画像も plate と同様に hide + src クリア (次問へ持ち越さない)。
     const finalBalloon = document.getElementById('qno-final-balloon');
+    const finalBalloonImg = document.getElementById('qno-final-balloon-img');
     if (finalBalloon) {
       finalBalloon.classList.remove('show');
+      if (finalBalloonImg) finalBalloonImg.src = '';
       finalBalloon.setAttribute('aria-hidden', 'true');
     }
     _qnoRunning = false;
@@ -7909,7 +7979,8 @@ document.getElementById('start-screen').addEventListener('click', function() {
       '../assets/images/quizland/qno_plate_2.png',
       '../assets/images/quizland/qno_plate_3.png',
       '../assets/images/quizland/qno_plate_4.png',
-      '../assets/images/quizland/qno_plate_5.png'
+      '../assets/images/quizland/qno_plate_5.png',
+      '../assets/images/quizland/final_q_balloon.webp'
     ];
     for (var __pi = 0; __pi < __preloadList.length; __pi++) {
       var __pim = new Image(); __pim.src = __preloadList[__pi];
