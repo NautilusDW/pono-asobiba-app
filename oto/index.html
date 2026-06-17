@@ -6773,12 +6773,12 @@ function _rhythmNoteSkinFor(seqIndex, laneIdx, song) {
   if (rivalKey === 'hard') {
     return {
       theme: 'gaohn',
-      shape: 'burst',
+      shape: 'crown',
       hi: laneColor.hi || '#F59E0B',
       lo: laneColor.lo || '#C2410C',
       rim: 'rgba(255,250,220,0.94)',
-      ink: 'rgba(255,255,255,0.96)',
-      domGlyph: '\u2736',
+      ink: '#FFE58A',
+      domGlyph: '\uD83D\uDC51',
       bonusScore: 0
     };
   }
@@ -8355,6 +8355,40 @@ function _gh3DDrawClawIcon(ctx, x, y, r, stroke) {
   });
   ctx.restore();
 }
+function _gh3DDrawCrownIcon(ctx, x, y, r, fill, stroke) {
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(5, r * 0.13);
+  ctx.strokeStyle = stroke;
+  ctx.fillStyle = fill;
+
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.82, y - r * 0.16);
+  ctx.lineTo(x - r * 0.48, y + r * 0.15);
+  ctx.lineTo(x - r * 0.20, y - r * 0.58);
+  ctx.lineTo(x, y + r * 0.02);
+  ctx.lineTo(x + r * 0.20, y - r * 0.58);
+  ctx.lineTo(x + r * 0.48, y + r * 0.15);
+  ctx.lineTo(x + r * 0.82, y - r * 0.16);
+  ctx.lineTo(x + r * 0.62, y + r * 0.36);
+  ctx.lineTo(x - r * 0.62, y + r * 0.36);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  _gh3DRoundRectPath(ctx, x - r * 0.66, y + r * 0.26, r * 1.32, r * 0.34, r * 0.10);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.86)';
+  [-0.34, 0, 0.34].forEach(function(offset) {
+    ctx.beginPath();
+    ctx.arc(x + offset * r, y + r * 0.12, r * 0.075, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
 function _ghApplyDomNoteSkin(el, noteSkin) {
   if (!el) return;
   el.style.clipPath = '';
@@ -8368,6 +8402,8 @@ function _ghApplyDomNoteSkin(el, noteSkin) {
   } else if (noteSkin.shape === 'burst') {
     el.style.borderRadius = '22%';
     el.style.clipPath = 'polygon(50% 0%, 61% 16%, 79% 8%, 82% 28%, 100% 35%, 88% 52%, 97% 70%, 77% 74%, 72% 94%, 52% 86%, 36% 100%, 26% 82%, 7% 86%, 12% 66%, 0% 49%, 18% 38%, 16% 18%, 36% 20%)';
+  } else if (noteSkin.shape === 'crown') {
+    el.style.fontFamily = '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI Symbol",sans-serif';
   }
 }
 function _gh3DTextureFor(lane, label, noteSkin) {
@@ -8411,6 +8447,11 @@ function _gh3DTextureFor(lane, label, noteSkin) {
     ctx.beginPath();
     ctx.arc(96, 96, 74, 0, Math.PI * 2);
     ctx.stroke();
+  } else if (noteSkin.shape === 'crown') {
+    ctx.beginPath();
+    ctx.arc(96, 96, 74, 0, Math.PI * 2);
+    ctx.stroke();
+    _gh3DDrawCrownIcon(ctx, 96, 101, 44, noteSkin.ink || '#FFE58A', 'rgba(76,39,0,0.74)');
   } else {
     ctx.beginPath();
     ctx.arc(96, 96, 74, 0, Math.PI * 2);
