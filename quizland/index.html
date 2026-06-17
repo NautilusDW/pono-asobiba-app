@@ -167,7 +167,7 @@ body.sheet-on .stage::after {
      .hdr-pill                  -> Fukuro_frame_004.png (ヘッダー全体の papyrus + 葉飾り)
      .hdr-left .title-card      -> title_logo.png (フクロウ + 木の看板 一体絵 / owl-icon は display:none)
      .progress-num              -> progress-num.png (細長小ピル)
-     .dots                      -> progress-mark.png (5 ドット帯)
+     .dots                      -> CSS line + circular dots
      .char-hint    -> balloons/balloon_temp.png (吹き出し暫定)
 
    契約:
@@ -538,7 +538,6 @@ body.layout-editor-on.show-safe .q-text-card::after {
   padding: 6px 18px 6px 8px;
   width: 100%;
   justify-content: flex-start;
-  /* v1013: #final-q-badge (絶対配置の子) のアンカー基準。視覚影響なし */
   position: relative;
 }
 .hdr-left .owl-icon {
@@ -619,31 +618,48 @@ body.sheet-on .hdr-left .title-card span {
   text-align: center;
 }
 .hdr-left .dots {
+  position: relative;
   display: flex;
   gap: 10px;
   flex: 0 0 auto;
-  height: 14px;
+  height: 32px;
   align-items: center;
   justify-content: space-between;
-  /* preview/full から移植: progress-mark.png を装飾ピルとして背景に */
-  background-image: url('../assets/images/quizland/progress-mark.png');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  padding: 4px 14px;
+  background-image: none;
+  padding: 0 2px;
   box-sizing: content-box;
 }
-/* Inactive dot: 真円維持 + 紙色で埋めて progress-mark.png の貫通横線を隠す
-   (透明にすると左右のコネクタ線がドット中央を横断して横長楕円に見える問題への対処) */
+.hdr-left .dots::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  right: 13px;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, #e8a23a, #8f5d13);
+  border-radius: 999px;
+  box-shadow:
+    0 1px 0 rgba(255, 245, 190, 0.8) inset,
+    0 1px 2px rgba(93, 58, 0, 0.28);
+  z-index: 0;
+}
+/* Inactive dot: CSS で真円を描く。背景画像を潰して使わないため楕円化しない。 */
 .hdr-left .dot {
+  position: relative;
+  z-index: 1;
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
-  background-color: var(--paper);
+  box-sizing: border-box;
+  background: radial-gradient(circle at 35% 30%, #fff8da 0%, #f5d990 60%, #d49a32 100%);
   background-image: none;
-  border: 2px dashed rgba(120, 80, 20, 0.35);
+  border: 2px solid #9f6818;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(255, 250, 230, 0.6);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 235, 0.72),
+    inset 0 -2px 4px rgba(119, 69, 9, 0.18),
+    0 1px 2px rgba(93, 58, 0, 0.28);
 }
 /* Done dot: dot.png をそのまま (色tint無し、元画像のオレンジ) */
 .hdr-left .dot.done {
@@ -664,9 +680,9 @@ body.sheet-on .hdr-left .title-card span {
   border: none;
   transform: scale(1.18);
 }
-/* sheet-on: progress-num.png / progress-mark.png は表示したまま、 枠だけ消す */
+/* sheet-on: progress-num.png は表示したまま、ドット帯はCSS線で描く */
 body.sheet-on .hdr-left .dots {
-  background-image: url('../assets/images/quizland/progress-mark.png') !important;
+  background-image: none !important;
 }
 
 /* ===== v1013: カレントドット グロー明滅 + 最終問題バッジ ===== */
@@ -685,75 +701,11 @@ body.sheet-on .hdr-left .dots {
   }
   to {
     filter: drop-shadow(0 0 3px rgba(178, 60, 0, 0.4));
-    opacity: 0.5;
+    opacity: 1;
   }
 }
 .hdr-left .dot.current {
   animation: qz-dot-glow 1.2s ease-in-out infinite alternate;
-}
-
-/* v1013: 「さいごの もんだい！」バッジ。 hdr-left ピルの右隣の空きスペース
-   (ピル右端 x≈994 〜 おしらせボタン左端 x≈1219) に絶対配置で吊るす。
-   saved-layout.json は .hdr-left|0 全体を transform で動かすだけなのでバッジも追従する。
-   layout-editor whitelist 非対象 (= #next-btn-area と同じ扱い)。
-   表示/非表示は updateHUD() が questionIdx === totalQuestions - 1 で切替。 */
-#final-q-badge {
-  position: absolute;
-  left: calc(100% + 14px);
-  top: 50%;
-  width: max-content;
-  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
-  border: 3px solid var(--wood-dark);
-  border-radius: 16px;
-  padding: 6px 14px;
-  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
-  pointer-events: none;
-  z-index: 5;
-  transform: translateY(-50%) scale(0);
-  opacity: 0;
-}
-#final-q-badge.hidden { display: none; }
-#final-q-badge.is-pop {
-  animation: finalq-bounce-in 0.7s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
-}
-@keyframes finalq-bounce-in {
-  0%   { transform: translateY(-50%) scale(0);    opacity: 0; }
-  60%  { transform: translateY(-50%) scale(1.18); opacity: 1; }
-  80%  { transform: translateY(-50%) scale(0.94); opacity: 1; }
-  100% { transform: translateY(-50%) scale(1);    opacity: 1; }
-}
-/* v1013: グラデ文字 + 縁取りの 2 層構造。
-   下層 (.final-q-text 本体) = 太い text-stroke で縁取り、
-   上層 (::before, data-text 複製) = background-clip: text のグラデ塗り。
-   text-shadow は transparent fill を透過して見える既知問題があるため不使用。 */
-.final-q-text {
-  position: relative;
-  display: inline-block;
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-weight: 900;
-  font-size: 26px;
-  line-height: 1.2;
-  text-align: center;
-  letter-spacing: 0.04em;
-  color: #5a3413;
-  -webkit-text-stroke: 6px #5a3413;
-  /* 出現後もゆったり光が明滅 (カレントドットと同系の柔らかさ) */
-  animation: finalq-soft-pulse 1.6s ease-in-out infinite alternate;
-}
-.final-q-text::before {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  white-space: pre;       /* data-text 内の改行 (&#10;) を <br> と同じ位置で折る */
-  -webkit-text-stroke: 0;
-  background: linear-gradient(180deg, #ffb347 0%, #f07818 55%, #d4520e 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-@keyframes finalq-soft-pulse {
-  from { filter: drop-shadow(0 0 2px rgba(255, 180, 70, 0)); }
-  to   { filter: drop-shadow(0 0 8px rgba(255, 165, 40, 0.7)); }
 }
 
 .hdr-right {
@@ -3311,30 +3263,43 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     max-height: 38vh;
   }
 }
-/* v1098: 「さいごの もんだい！」バルーン。 plate の上に banner として表示。
-   plate より一回り小さく (46vw/30vh)。 .show が付いた最終問題のみ表示され、
-   pop-in / fade-out は plate と同じ is-impact / is-fadeout 駆動で完全同期する。 */
-#qno-final-balloon-img {
-  max-width: 46vw;
-  max-height: 30vh;
-  width: auto;
-  height: auto;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.22));
+/* 最終問題の中央表示。画像 alpha に依存せず、完全不透明のCSSカードで表示する。 */
+#qno-final-balloon {
+  min-width: clamp(220px, 32vw, 380px);
+  padding: clamp(10px, 1.6vw, 18px) clamp(22px, 3vw, 38px);
+  background: linear-gradient(180deg, #fff8e2 0%, #f4d792 100%);
+  border: 4px solid #5a3413;
+  border-radius: 22px;
+  box-shadow:
+    0 5px 0 #7a4a17,
+    0 10px 20px rgba(78, 45, 5, 0.25),
+    inset 0 2px 0 rgba(255, 255, 235, 0.78);
+  color: #f07818;
+  -webkit-text-stroke: 3px #5a3413;
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 rgba(255, 244, 206, 0.9);
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  font-size: clamp(34px, 4.4vw, 60px);
+  line-height: 1.12;
+  letter-spacing: 0.04em;
+  text-align: center;
   transform: scale(0);
   opacity: 0;
   transition: opacity 0.22s ease-out;
 }
-#qno-final-balloon-img:not(.show) { display: none; }
-.qno-plate-overlay.is-impact #qno-final-balloon-img.show {
+#qno-final-balloon:not(.show) { display: none; }
+.qno-plate-overlay.is-impact #qno-final-balloon.show {
   animation: qnoImpact 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
 }
-.qno-plate-overlay.is-fadeout #qno-final-balloon-img {
+.qno-plate-overlay.is-fadeout #qno-final-balloon {
   opacity: 0;
 }
 @media (max-width: 540px) {
-  #qno-final-balloon-img {
-    max-width: 64vw;
-    max-height: 22vh;
+  #qno-final-balloon {
+    min-width: 0;
+    max-width: 72vw;
+    font-size: clamp(28px, 9vw, 42px);
   }
 }
 </style>
@@ -3399,10 +3364,6 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
             <span class="dot"></span>
             <span class="dot"></span>
             <span class="dot"></span>
-          </div>
-          <!-- v1013: 最終問題バッジ。 updateHUD() が表示/非表示を切替 (絶対配置・flex 非干渉) -->
-          <div id="final-q-badge" class="hidden" aria-hidden="true">
-            <span class="final-q-text" data-text="さいごの&#10;もんだい！">さいごの<br>もんだい！</span>
           </div>
         </div>
 
@@ -3547,7 +3508,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 <div id="qno-plate-overlay" class="qno-plate-overlay hidden" aria-hidden="true">
   <!-- v1098: バルーン (最終問題のみ表示) を plate の上に縦積み。 plate 単独時 (Q1-Q4) は従来通り中央配置。 -->
   <div class="qno-plate-stack">
-    <img id="qno-final-balloon-img" src="" alt="">
+    <div id="qno-final-balloon" aria-hidden="true">さいごの<br>もんだい！</div>
     <img class="qno-plate-img" id="qno-plate-img" src="" alt="">
   </div>
 </div>
@@ -6110,26 +6071,6 @@ function updateHUD() {
     if (i === currentDotIdx) dot.classList.add('current');
     prog.appendChild(dot);
   }
-  // v1013: 「さいごの もんだい！」バッジ。 最終問題 (idx === total - 1) の間だけ表示。
-  //   - 問題数可変対応: totalQuestions を真値として参照 (QZ_DEBUG_ALL でも実際の最終問題で発火)
-  //   - totalQuestions > 1 ガード: 1 問だけのモードで開幕から出るのは不自然なので抑止
-  //   - 既に表示中の再呼び出しでは bounce-in を再発火させない (updateHUD 多重呼び出し対策)
-  const finalBadge = document.getElementById('final-q-badge');
-  if (finalBadge) {
-    const isFinalQ = totalQuestions > 1 && questionIdx === totalQuestions - 1;
-    if (isFinalQ) {
-      if (finalBadge.classList.contains('hidden')) {
-        finalBadge.classList.remove('hidden');
-        finalBadge.setAttribute('aria-hidden', 'false');
-        void finalBadge.offsetWidth;  // reflow で scale(0) 初期状態を確定させてからアニメ開始
-        finalBadge.classList.add('is-pop');
-      }
-    } else {
-      finalBadge.classList.add('hidden');
-      finalBadge.classList.remove('is-pop');
-      finalBadge.setAttribute('aria-hidden', 'true');
-    }
-  }
   // デバッグナビ更新 (DOM があれば)
   if (typeof updateDebugNav === 'function') updateDebugNav();
 }
@@ -7876,14 +7817,14 @@ async function playQuestionNumberPlate(qIdx) {
   // v1098: 最終問題 (qIdx === totalQuestions - 1) のみ「さいごの もんだい！」
   //   バルーンを plate の上に同時表示。 QZ_DEBUG_ALL (全問) では qIdx 4 は
   //   最終問題ではないので、 totalQuestions を真値として参照し誤表示を防ぐ。
-  const balloonImg = document.getElementById('qno-final-balloon-img');
-  if (balloonImg) {
+  const finalBalloon = document.getElementById('qno-final-balloon');
+  if (finalBalloon) {
     if (totalQuestions > 1 && qIdx === totalQuestions - 1) {
-      balloonImg.src = '../assets/images/quizland/final_q_balloon.webp';
-      balloonImg.classList.add('show');
+      finalBalloon.classList.add('show');
+      finalBalloon.setAttribute('aria-hidden', 'false');
     } else {
-      balloonImg.classList.remove('show');
-      balloonImg.src = '';
+      finalBalloon.classList.remove('show');
+      finalBalloon.setAttribute('aria-hidden', 'true');
     }
   }
 
@@ -7935,9 +7876,12 @@ function hideQuestionNumberPlate() {
     root.classList.add('hidden');
     root.setAttribute('aria-hidden', 'true');
     if (img) img.src = '';
-    // v1098: バルーンも plate と同様に hide + src クリア (次問へ持ち越さない)。
-    const balloonImg = document.getElementById('qno-final-balloon-img');
-    if (balloonImg) { balloonImg.classList.remove('show'); balloonImg.src = ''; }
+    // 中央の最終問題カードも plate と同様に hide (次問へ持ち越さない)。
+    const finalBalloon = document.getElementById('qno-final-balloon');
+    if (finalBalloon) {
+      finalBalloon.classList.remove('show');
+      finalBalloon.setAttribute('aria-hidden', 'true');
+    }
     _qnoRunning = false;
   }, 240); // CSS transition (0.22s) と一致 (R2: 早めの fade out + 多少 OL)
 }
@@ -7965,8 +7909,7 @@ document.getElementById('start-screen').addEventListener('click', function() {
       '../assets/images/quizland/qno_plate_2.png',
       '../assets/images/quizland/qno_plate_3.png',
       '../assets/images/quizland/qno_plate_4.png',
-      '../assets/images/quizland/qno_plate_5.png',
-      '../assets/images/quizland/final_q_balloon.webp'
+      '../assets/images/quizland/qno_plate_5.png'
     ];
     for (var __pi = 0; __pi < __preloadList.length; __pi++) {
       var __pim = new Image(); __pim.src = __preloadList[__pi];
