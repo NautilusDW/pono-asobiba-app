@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1277: Oto next-stage transitions close the result/name gate before sticker rewards and cleanly leave stuck rhythm states.
 // v1276: SW update checks stay passive and no longer show a blocking in-page version prompt.
 // v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls.
 // v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke.
@@ -48,7 +49,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1276; // v1276: SW update checks stay passive and no longer show a blocking in-page version prompt. | v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls. | v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke. | v1273: Oto rhythm stage select is open so uncleared stages can be chosen directly. | v1272: Oto 3D note buttons share one closed top rim between side polygons and the textured top.
+const CACHE_VERSION = 1277; // v1277: Oto next-stage transitions close the result/name gate before sticker rewards and cleanly leave stuck rhythm states. | v1276: SW update checks stay passive and no longer show a blocking in-page version prompt. | v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls. | v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke. | v1273: Oto rhythm stage select is open so uncleared stages can be chosen directly.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

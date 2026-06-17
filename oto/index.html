@@ -10678,9 +10678,12 @@ if (rhythmCompleteNext) rhythmCompleteNext.addEventListener('click', function(e)
   e.preventDefault();
   e.stopPropagation();
   unlockAudio();
-  if (!_goToNextRhythmSection() && !_goToNextRhythmStage()) return;
+  var movedToNext = _goToNextRhythmSection() || _goToNextRhythmStage();
+  if (!movedToNext) return;
+  // Close the result/name gate before the sticker reward. Otherwise the song can
+  // switch to the next stage while the old result layer still owns the screen.
+  _hideRhythmComplete();
   _afterRhythmStickerReward(function() {
-    _hideRhythmComplete();
     _showRhythmOpening(true);
   });
 });
@@ -12295,7 +12298,20 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     e.preventDefault();
     e.stopPropagation();
     close();
-    location.href = '../play.html';
+    try {
+      _stopRhythmMode();
+      _hideRhythmMenu();
+      _hideRhythmOpening();
+      _hideRhythmComplete();
+      _clearRhythmCountdown();
+      _clearRhythmDemo(false);
+      _stopOtoBgm(80);
+    } catch (err) {}
+    var homeUrl = new URL('../play.html', window.location.href).href;
+    window.location.assign(homeUrl);
+    setTimeout(function() {
+      if (window.location.href !== homeUrl) window.location.href = homeUrl;
+    }, 120);
   });
   if (tutorialBtn) tutorialBtn.addEventListener('click', function(e) {
     e.preventDefault();
