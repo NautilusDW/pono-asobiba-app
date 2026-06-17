@@ -6362,6 +6362,43 @@ var RHYTHM_SONGS = [
         beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
       }
     ]
+  },
+  {
+    id: 'alps',
+    name: 'アルプスいちまんじゃく',
+    note: 'むずかしめ',
+    stage: 7,
+    difficulty: 'むずかしめ',
+    bpm: 112,
+    bandSongId: 'alps112',
+    bandStems: ['drums'],
+    bandVolume: 0.32,
+    sections: [
+      {
+        name: '1',
+        note: 'アルプス',
+        notes: [0, 0, 1, 2, 0, 2, 1, 4, 0, 0, 1, 2, 0, 6, 5, 4],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      },
+      {
+        name: '2',
+        note: 'おどろう',
+        notes: [0, 0, 1, 2, 3, 2, 1, 0, 6, 4, 5, 6, 7, 7],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2]
+      },
+      {
+        name: '3',
+        note: 'はやいぞ',
+        notes: [3, 3, 4, 5, 3, 5, 4, 2, 0, 0, 1, 2, 0, 6, 5, 4],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+      },
+      {
+        name: '4',
+        note: 'さいご',
+        notes: [3, 3, 4, 5, 3, 5, 4, 2, 0, 2, 1, 4, 0, 0],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2]
+      }
+    ]
   }
 ];
 var RHYTHM_BASE_SONG = RHYTHM_SONGS[0];
@@ -6632,6 +6669,10 @@ var RHYTHM_OPENING_SCENES = {
     { speaker: 'rival', state: 'taunt', text: 'オレさまは ビートキング ガオーン！' },
     { speaker: 'rival', state: 'happy', text: 'リズムたいけつなら だれにも まけん！' },
     { speaker: 'rival', state: 'attack', text: 'よろこびの おとで しょうぶだ！' }
+  ],
+  alps: [
+    { speaker: 'rival', state: 'taunt', text: 'こんどは アルプスの はやわざだ！' },
+    { speaker: 'rival', state: 'attack', text: 'おうかんノートに ついてこい！' }
   ]
 };
 Object.keys(RHYTHM_RIVALS).forEach(function(key) {
@@ -11753,7 +11794,8 @@ var SONGS = [
   { id: 'mary90',     name: 'メリー',   type: 'synth', bpm: 90,  bars: 4, chords: ['C','G','C','G'] },
   { id: 'choucho90',  name: 'ちょうちょう', type: 'synth', bpm: 90, bars: 4, chords: ['C','G','C','G'] },
   { id: 'london90',   name: 'ロンドン', type: 'synth', bpm: 90,  bars: 4, chords: ['C','G','C','G'] },
-  { id: 'ode100',     name: 'よろこび', type: 'synth', bpm: 100, bars: 8, chords: ['C','G','C','G','C','F','G','C'] }
+  { id: 'ode100',     name: 'よろこび', type: 'synth', bpm: 100, bars: 8, chords: ['C','G','C','G','C','F','G','C'] },
+  { id: 'alps112',    name: 'アルプス', type: 'synth', bpm: 112, bars: 16, chords: ['C','C','G','C','C','F','G','C','F','F','C','C','F','F','C','G'] }
 ];
 var _curSongIdx = 0;
 function _currentSong() { return SONGS[_curSongIdx]; }
