@@ -9442,6 +9442,38 @@ function _clearRhythmStickerReward() {
   _rhythm.pendingStickerResult = null;
   _rhythm.pendingStickerPromise = null;
 }
+function _watchStickerToastClose(callback) {
+  callback = typeof callback === 'function' ? callback : function() {};
+  var doneCalled = false;
+  function doneSoon() {
+    if (doneCalled) return;
+    doneCalled = true;
+    setTimeout(callback, 0);
+  }
+  setTimeout(function() {
+    var toast = document.getElementById('game-sticker-toast');
+    if (!toast) {
+      doneSoon();
+      return;
+    }
+    var closeBtn = toast.querySelector('[data-sticker-close]');
+    if (closeBtn) closeBtn.addEventListener('click', doneSoon, { once: true });
+    toast.addEventListener('click', function(event) {
+      if (event.target === toast) doneSoon();
+    }, { once: true });
+    if (window.MutationObserver && document.body) {
+      var observer = new MutationObserver(function() {
+        if (!document.getElementById('game-sticker-toast')) {
+          try { observer.disconnect(); } catch (e) {}
+          doneSoon();
+        }
+      });
+      try {
+        observer.observe(document.body, { childList: true, subtree: false });
+      } catch (e) {}
+    }
+  }, 0);
+}
 function _afterRhythmStickerReward(callback) {
   callback = typeof callback === 'function' ? callback : function() {};
   var result = _rhythm.pendingStickerResult;
@@ -9452,7 +9484,16 @@ function _afterRhythmStickerReward(callback) {
   }
   function showOrContinue(stickerResult) {
     if (stickerResult && window.PonoGameStickers && typeof window.PonoGameStickers.showStickerToast === 'function') {
-      window.PonoGameStickers.showStickerToast(stickerResult, { onClose: done });
+      var called = false;
+      function doneOnce() {
+        if (called) return;
+        called = true;
+        done();
+      }
+      window.PonoGameStickers.showStickerToast(stickerResult, { onClose: doneOnce });
+      // Older deployed sticker code ignores the onClose option. Watch the toast
+      // close button directly so rhythm can continue after the reward popup.
+      _watchStickerToastClose(doneOnce);
       return;
     }
     done();
