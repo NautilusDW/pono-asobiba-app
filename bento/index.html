@@ -135,6 +135,8 @@ html, body {
   background: #f4cf91;
 }
 .shop-opening__bg {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -143,12 +145,14 @@ html, body {
 .shop-opening__shade {
   position: absolute;
   inset: auto 0 0;
+  z-index: 4;
   height: 40%;
   background: linear-gradient(180deg, rgba(80,45,18,0) 0%, rgba(80,45,18,0.26) 100%);
   pointer-events: none;
 }
 .shop-opening__customer {
   position: absolute;
+  z-index: 3;
   left: 50%;
   bottom: 23%;
   height: 40%;
@@ -159,6 +163,47 @@ html, body {
   opacity: 0;
   pointer-events: none;
 }
+.shop-opening__staff {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.shop-opening.is-staff-step .shop-opening__staff {
+  opacity: 1;
+}
+.shop-opening__staff-counter-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  clip-path: inset(
+    var(--staff-counter-mask-top, 51%)
+    var(--staff-counter-mask-right, 0%)
+    var(--staff-counter-mask-bottom, 18%)
+    var(--staff-counter-mask-left, 0%)
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+.shop-opening.is-staff-step .shop-opening__staff-counter-mask {
+  opacity: var(--staff-counter-mask-opacity, 1);
+}
+.shop-opening__staff-member {
+  position: absolute;
+  left: 50%;
+  bottom: 48%;
+  height: 32%;
+  max-width: 30%;
+  object-fit: contain;
+  transform: translateX(-50%);
+  transform-origin: center bottom;
+  filter: drop-shadow(0 7px 10px rgba(70, 40, 16, 0.12));
+  pointer-events: none;
+}
 .shop-opening.has-customer .shop-opening__customer {
   opacity: 1;
 }
@@ -166,11 +211,12 @@ html, body {
   animation: shopCustomerEnter 0.68s ease-out both;
 }
 @keyframes shopCustomerEnter {
-  from { transform: translateX(-50%); opacity: 0; }
-  to   { transform: translateX(-50%); opacity: 1; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .shop-opening__dialog {
   position: absolute;
+  z-index: 5;
   left: 50%;
   bottom: clamp(14px, 3vh, 34px);
   width: min(76vw, 960px);
@@ -234,6 +280,9 @@ html, body {
   box-shadow: 0 1px 0 #c67934;
 }
 @media (max-width: 900px) {
+  .shop-opening__staff-member {
+    max-width: 34%;
+  }
   .shop-opening__customer {
     bottom: 24%;
     height: 37%;
@@ -829,6 +878,7 @@ html, body {
   50% { transform: translateY(-3px) rotate(3deg); }
 }
 .free-placed-item {
+  --selected-color: #22C55E;
   position: absolute;
   display: flex;
   align-items: center;
@@ -847,13 +897,16 @@ html, body {
     drop-shadow(-0.7px 0 0 #FFFFFF)
     drop-shadow(0 0.7px 0 #FFFFFF)
     drop-shadow(0 -0.7px 0 #FFFFFF)
-    drop-shadow(1.35px 0 0 #22C55E)
-    drop-shadow(-1.35px 0 0 #22C55E)
-    drop-shadow(0 1.35px 0 #22C55E)
-    drop-shadow(0 -1.35px 0 #22C55E)
+    drop-shadow(1.35px 0 0 var(--selected-color))
+    drop-shadow(-1.35px 0 0 var(--selected-color))
+    drop-shadow(0 1.35px 0 var(--selected-color))
+    drop-shadow(0 -1.35px 0 var(--selected-color))
     drop-shadow(0 3px 4px rgba(21, 191, 115, 0.18))
     drop-shadow(0 8px 10px rgba(68,42,16,0.2));
 }
+.free-placed-item.sk-group-r { --selected-color: #EF4444; }
+.free-placed-item.sk-group-y { --selected-color: #EAB308; }
+.free-placed-item.sk-group-g { --selected-color: #22C55E; }
 .free-placed-item.pop {
   animation: freePlacePop 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
@@ -1028,6 +1081,7 @@ html, body {
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   flex-shrink: 0;
+  justify-items: center;
 }
 /* 見出しラベル（押せない／パレット全幅／ボタンと差別化） */
 .free-section-heading {
@@ -1160,8 +1214,8 @@ html, body {
   min-height: 30px;
   padding: 4px 8px;
   border: 2px solid #8AD6B6;
-  border-radius: 999px;
-  background: #FFFFFF;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
   color: #064E3B;
   font-family: inherit;
   font-size: 0.58rem;
@@ -1272,6 +1326,46 @@ html, body {
   padding: 3px 2px;
   cursor: pointer;
 }
+.free-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 0;
+}
+.free-icon-svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.free-icon-glyph {
+  display: block;
+  color: currentColor;
+  font-family: Arial, 'Zen Maru Gothic', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 0.9;
+  -webkit-text-stroke: 0.7px currentColor;
+  text-shadow: 0 0 0 currentColor;
+  transform: translateY(-1px);
+  pointer-events: none;
+}
+.free-layer-actions .free-icon-svg,
+.free-brush-actions .free-icon-svg {
+  width: 21px;
+  height: 21px;
+}
+.free-icon-button[data-free-icon="layer-back"] .free-icon-svg,
+.free-icon-button[data-free-icon="layer-front"] .free-icon-svg {
+  width: 23px;
+  height: 23px;
+}
 .free-mask-actions button.primary,
 .free-brush-actions button.primary,
 .free-layer-actions button.primary {
@@ -1375,6 +1469,8 @@ html, body {
   object-fit: contain;
 }
 .free-context-toolbar {
+  --toolbar-panel-border: #8AD6B6;
+  --toolbar-panel-bg: rgba(240, 253, 244, 0.96);
   position: absolute;
   z-index: 36;
   display: flex;
@@ -1382,13 +1478,60 @@ html, body {
   justify-content: center;
   gap: 5px;
   padding: 5px 7px;
-  border: 3px solid #34D399;
+  border: 3px solid var(--toolbar-panel-border);
   border-radius: 999px;
-  background: rgba(236, 253, 245, 0.96);
+  background: var(--toolbar-panel-bg);
   box-shadow: 0 7px 16px rgba(34, 120, 82, 0.18);
   color: #064E3B;
   transform: translate(-50%, 0);
   pointer-events: auto;
+}
+.free-context-toolbar.sk-group-r {
+  --toolbar-panel-border: #F87171;
+  --toolbar-panel-bg: rgba(254, 242, 242, 0.96);
+  color: #7F1D1D;
+}
+.free-context-toolbar.sk-group-y {
+  --toolbar-panel-border: #EAB308;
+  --toolbar-panel-bg: rgba(254, 252, 232, 0.96);
+  color: #713F12;
+}
+.free-context-toolbar.sk-group-g {
+  --toolbar-panel-border: #22C55E;
+  --toolbar-panel-bg: rgba(240, 253, 244, 0.96);
+  color: #14532D;
+}
+.free-context-toolbar--panel {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  transform: none !important;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 0;
+  padding: 7px 8px;
+  border: 3px solid var(--toolbar-panel-border);
+  border-radius: 12px;
+  background: var(--toolbar-panel-bg);
+  flex-shrink: 0;
+}
+.free-context-toolbar-title {
+  flex: 1 0 100%;
+  min-width: 0;
+  color: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.free-context-toolbar--panel .free-size-slider {
+  flex: 1 1 138px;
+  min-width: 132px;
+  padding: 3px 8px;
 }
 .free-context-toolbar.above {
   transform: translate(-50%, -100%);
@@ -1418,6 +1561,17 @@ html, body {
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
+}
+.free-context-toolbar button.free-icon-button {
+  padding: 0;
+}
+.free-context-toolbar .free-icon-svg {
+  width: 23px;
+  height: 23px;
+}
+.free-context-toolbar .free-icon-glyph--rotate {
+  font-size: 23px;
+  transform: translateY(-1.5px);
 }
 .free-context-toolbar button.active {
   background: #BBF7D0;
@@ -1581,6 +1735,8 @@ html, body {
   font-size: 0.48rem;
   font-weight: 900;
   min-height: 24px;
+  min-width: 72px;
+  width: auto;
   padding: 1px 8px;
   cursor: pointer;
 }
@@ -1603,6 +1759,8 @@ html, body {
   padding-right: 2px;
 }
 .free-palette-item {
+  --sk-card-border: rgba(255,255,255,0);
+  --sk-card-ink: #6B3E16;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1618,6 +1776,38 @@ html, body {
   font-family: inherit;
   cursor: grab;
   touch-action: none;
+}
+.free-palette-item > * {
+  position: relative;
+  z-index: 1;
+}
+.free-palette-item.sk-group-r {
+  --sk-card-border: #F87171;
+  --sk-card-ink: #991B1B;
+}
+.free-palette-item.sk-group-y {
+  --sk-card-border: #EAB308;
+  --sk-card-ink: #713F12;
+}
+.free-palette-item.sk-group-g {
+  --sk-card-border: #22C55E;
+  --sk-card-ink: #14532D;
+}
+.free-palette-group-chip {
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  z-index: 2;
+  min-width: 30px;
+  padding: 2px 6px 3px;
+  border: 2px solid var(--sk-card-border);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: var(--sk-card-ink);
+  font-size: 0.46rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
 }
 .free-palette-item:active { transform: scale(0.94); }
 .free-palette-item.tier-locked,
@@ -2374,19 +2564,33 @@ html, body {
 }
 
 .food-item {
+  --sk-card-bg: #fff;
+  --sk-card-border: #FDE68A;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
   padding: 6px 3px;
-  background: #fff;
+  background: var(--sk-card-bg);
   border-radius: 12px;
-  border: 2.5px solid #FDE68A;
+  border: 2.5px solid var(--sk-card-border);
   box-shadow: 0 2px 8px var(--shadow);
   cursor: pointer;
   transition: transform 0.15s, opacity 0.3s;
   min-height: 72px;
+}
+.food-item.sk-group-r {
+  --sk-card-bg: #FFF1F1;
+  --sk-card-border: #F87171;
+}
+.food-item.sk-group-y {
+  --sk-card-bg: #FFF9C7;
+  --sk-card-border: #EAB308;
+}
+.food-item.sk-group-g {
+  --sk-card-bg: #E9FBEF;
+  --sk-card-border: #22C55E;
 }
 .food-item:active { transform: scale(0.9); }
 .food-item .food-img {
@@ -2900,15 +3104,17 @@ body.bento-complete-open .pono-dropdown {
 #sk-intro.hidden { display: none; }
 .sk-intro-card {
   background: #fff; border-radius: 24px;
-  padding: 14px 16px 14px; max-width: 520px; width: 100%;
+  padding: 13px 15px 14px;
+  max-width: min(720px, calc(100vw - 24px)); width: 100%;
+  max-height: calc(100dvh - 22px);
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   text-align: center;
 }
 .sk-intro-title {
-  font-size: 1.2rem; font-weight: 900;
-  color: var(--primary); margin-bottom: 12px;
+  font-size: clamp(1rem, 2.5vw, 1.18rem); font-weight: 900;
+  color: var(--primary); margin-bottom: 8px;
 }
-.sk-intro-lead,
 .sk-intro-note {
   color: var(--text);
   font-size: 0.8rem;
@@ -2917,47 +3123,82 @@ body.bento-complete-open .pono-dropdown {
   margin: 0 0 10px;
 }
 .sk-intro-note {
-  margin: 10px 0 0;
+  margin: 9px 0 0;
   color: #6B3E16;
   background: #FFF3D9;
   border-radius: 12px;
-  padding: 8px 10px;
+  padding: 7px 10px;
 }
 .sk-intro-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
 }
 .sk-intro-col {
-  border-radius: 16px; padding: 8px 6px 8px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 3px solid transparent;
+  border-radius: 16px; padding: 7px 6px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
 }
-.sk-intro-col.sk-r-bg { background: #FEE2E2; }
-.sk-intro-col.sk-y-bg { background: #FEF9C3; }
-.sk-intro-col.sk-g-bg { background: #DCFCE7; }
+.sk-intro-col.sk-r-bg { background: #FFF1F1; border-color: #F87171; }
+.sk-intro-col.sk-y-bg { background: #FFF9C7; border-color: #FACC15; }
+.sk-intro-col.sk-g-bg { background: #E9FBEF; border-color: #4ADE80; }
 .sk-intro-dot {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
 }
 .sk-intro-dot.sk-r { background: #EF4444; }
 .sk-intro-dot.sk-y { background: #EAB308; }
 .sk-intro-dot.sk-g { background: #22C55E; }
 .sk-intro-label {
-  font-size: 0.82rem; font-weight: 900; color: var(--text); line-height: 1.3;
+  font-size: clamp(0.72rem, 1.7vw, 0.84rem); font-weight: 900; color: var(--text); line-height: 1.2;
 }
 .sk-intro-sublabel {
-  font-size: 0.65rem; font-weight: 700; color: var(--text-light); line-height: 1.3;
+  font-size: clamp(0.55rem, 1.35vw, 0.66rem); font-weight: 800; color: var(--text-light); line-height: 1.2;
 }
 .sk-intro-imgs {
-  display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 2px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 2px;
 }
-.sk-intro-imgs img {
-  width: 44px; height: 44px; object-fit: contain;
+.sk-intro-example {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  gap: 2px;
+  padding: 4px 2px 3px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.62);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset;
+}
+.sk-intro-example img {
+  width: clamp(35px, 7vw, 52px); height: clamp(35px, 7vw, 52px); object-fit: contain;
+}
+.sk-intro-example span {
+  max-width: 100%;
+  color: #6B3E16;
+  font-size: clamp(0.46rem, 1.1vw, 0.56rem);
+  font-weight: 900;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .sk-intro-btn {
-  margin-top: 14px; padding: 12px 32px; border: none; border-radius: 50px;
+  margin-top: 12px; padding: 10px 32px; border: none; border-radius: 50px;
   background: linear-gradient(180deg, #FFD84D, #F5A800);
   color: #5C3A00; font-family: inherit; font-size: 1.1rem; font-weight: 900;
   cursor: pointer; box-shadow: 0 4px 0 #B87200;
 }
 .sk-intro-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #B87200; }
+@media (max-height: 430px), (max-width: 700px) {
+  .sk-intro-card { padding: 10px 12px 11px; border-radius: 20px; }
+  .sk-intro-title { margin-bottom: 6px; }
+  .sk-intro-grid { gap: 6px; }
+  .sk-intro-col { padding: 6px 5px; gap: 4px; }
+  .sk-intro-note { margin-top: 7px; padding: 6px 8px; font-size: 0.7rem; }
+  .sk-intro-btn { margin-top: 9px; padding: 8px 28px; font-size: 1rem; }
+}
 
 /* ===== Nori skip confirm modal ===== */
 .nori-skip-confirm {
@@ -3533,6 +3774,7 @@ body.bento-complete-open .pono-dropdown {
   height: clamp(74px, 14vh, 116px);
   object-fit: contain;
   filter: drop-shadow(0 7px 10px rgba(93,78,55,0.18));
+  transform: scale(var(--npc-scale, 1)) rotate(var(--npc-rotation, 0deg));
 }
 .complete-request-copy {
   min-width: 0;
@@ -4338,7 +4580,13 @@ body.bento-complete-open .pono-dropdown {
 
 <div class="shop-opening hidden" id="shop-opening" aria-live="polite">
   <div class="shop-opening__frame">
-    <img class="shop-opening__bg" id="shop-opening-bg" src="../assets/images/bento/story/shop_staff_counter.png" alt="">
+    <img class="shop-opening__bg" id="shop-opening-bg" src="../assets/images/bento/story/staff/shop_staff_bg_layered.png" alt="">
+    <div class="shop-opening__staff" id="shop-opening-staff" aria-hidden="true">
+      <img class="shop-opening__staff-member" id="shop-opening-staff-pono" alt="">
+      <img class="shop-opening__staff-member" id="shop-opening-staff-boy" alt="">
+      <img class="shop-opening__staff-member" id="shop-opening-staff-girl" alt="">
+    </div>
+    <div class="shop-opening__staff-counter-mask" id="shop-opening-staff-mask" aria-hidden="true"></div>
     <img class="shop-opening__customer" id="shop-opening-customer" alt="">
     <div class="shop-opening__shade"></div>
     <div class="shop-opening__dialog">
@@ -4359,44 +4607,70 @@ body.bento-complete-open .pono-dropdown {
 <!-- 三色食品群 説明オーバーレイ（初回のみ） -->
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
-    <div class="sk-intro-title">🍱 げんきな おべんとうの 3つの グループ</div>
-    <p class="sk-intro-lead">これは 見た目の色ではなく、食べものの はたらきの グループだよ。</p>
+    <div class="sk-intro-title">🍱 げんきな おべんとう 3つの なかま</div>
     <div class="sk-intro-grid">
       <!-- 赤 -->
       <div class="sk-intro-col sk-r-bg">
         <div class="sk-intro-dot sk-r"></div>
-        <div class="sk-intro-label">あかの グループ</div>
-        <div class="sk-intro-sublabel">おにく・おさかな・たまご<br>からだを つくる</div>
+        <div class="sk-intro-label">あかの なかま</div>
+        <div class="sk-intro-sublabel">からだを つくる</div>
         <div class="sk-intro-imgs">
-          <img src="../assets/images/bento/cooking/mince_patty/patty_003_done.png" alt="ハンバーグ">
-          <img src="../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png" alt="からあげ">
-          <img src="../assets/images/bento/cooking/shrimp/shrimp_003_done.png" alt="エビフライ">
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/mince_patty/patty_003_done.png" alt="おにく">
+            <span>おにく</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/salmon/salmon_003_done.png" alt="おさかな">
+            <span>おさかな</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/egg/egg_003_done.png" alt="たまご">
+            <span>たまご</span>
+          </div>
         </div>
       </div>
       <!-- 黄 -->
       <div class="sk-intro-col sk-y-bg">
         <div class="sk-intro-dot sk-y"></div>
-        <div class="sk-intro-label">きいろの グループ</div>
-        <div class="sk-intro-sublabel">ごはん・めん・じゃがいも<br>あそぶ ちから</div>
+        <div class="sk-intro-label">きいろの なかま</div>
+        <div class="sk-intro-sublabel">あそぶ ちから</div>
         <div class="sk-intro-imgs">
-          <img src="../assets/images/Bento_parts/rice_umeboshi.webp" alt="ごはん" style="transform:rotate(90deg)">
-          <img src="../assets/images/bento/cooking/korokke/korokke_003_done.png" alt="コロッケ">
-          <img src="../assets/images/bento/free-layout/okazu_napolitan.png" alt="ナポリタン">
+          <div class="sk-intro-example">
+            <img src="../assets/images/Bento_parts/rice_umeboshi.webp" alt="ごはん" style="transform:rotate(90deg)">
+            <span>ごはん</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/free-layout/okazu_napolitan.png" alt="めん">
+            <span>めん</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/korokke/korokke_003_done.png" alt="じゃがいも">
+            <span>じゃがいも</span>
+          </div>
         </div>
       </div>
       <!-- 緑 -->
       <div class="sk-intro-col sk-g-bg">
         <div class="sk-intro-dot sk-g"></div>
-        <div class="sk-intro-label">みどりの グループ</div>
-        <div class="sk-intro-sublabel">やさい・くだもの<br>ちょうしを ととのえる</div>
+        <div class="sk-intro-label">みどりの なかま</div>
+        <div class="sk-intro-sublabel">ちょうしを ととのえる</div>
         <div class="sk-intro-imgs">
-          <img src="../assets/images/bento/free-layout/okazu_broccoli.png" alt="ブロッコリー">
-          <img src="../assets/images/bento/cooking/tomato/tomato_001.png" alt="プチトマト">
-          <img src="../assets/images/bento/free-layout/fruit_ichigo.png" alt="いちご">
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/free-layout/okazu_broccoli.png" alt="ブロッコリー">
+            <span>ブロッコリー</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/tomato/tomato_001.png" alt="トマト">
+            <span>トマト</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/free-layout/fruit_ichigo.png" alt="いちご">
+            <span>いちご</span>
+          </div>
         </div>
       </div>
     </div>
-    <p class="sk-intro-note">どうぶつの おねがいも ききながら、3つの グループを そろえよう。</p>
+    <p class="sk-intro-note">あか・きいろ・みどりを ひとつずつ いれてみよう。</p>
     <button class="sk-intro-btn" id="sk-intro-btn">わかった！</button>
   </div>
 </div>
@@ -4562,6 +4836,7 @@ body.bento-complete-open .pono-dropdown {
   document.getElementById('sk-intro-btn').addEventListener('click', function() {
     localStorage.setItem('bento_sk_intro_done', '1');
     localStorage.setItem('bento_tut_seen_v2', '1');
+    window.__bentoSkIntroShownThisRun = true;
     intro.classList.add('hidden');
     const freeStage = document.getElementById('free-layout-stage');
     if (freeStage) {
@@ -4753,15 +5028,19 @@ const FREE_SIDE_OKAZU_NAMES = ['キャベツ', 'プチトマト', 'たまごや�
 // タイトル後に 1 体ランダム選定。 入れた食材の name が wantedFoods / perfectCombos と
 // 三色グループの両方で最終リアクションを決める。
 const NPC_PORTRAIT_BASE = '../assets/images/bento/npc/';
+const NPC_PORTRAIT_ASSET_VERSION = '20260617-risu-bright-set';
+function npcPortraitSrc(src) {
+  return src + '?v=' + encodeURIComponent(NPC_PORTRAIT_ASSET_VERSION);
+}
 function npcPortraits(id) {
   const base = NPC_PORTRAIT_BASE + id + '_';
   return {
-    portraitRequest: base + 'request.png',
-    portraitNormal: base + 'normal.png',
-    portraitHappy: base + 'normal.png',
-    portraitSuperHappy: base + 'super_happy.png',
-    portraitAlmost: base + 'almost.png',
-    portraitSad: base + 'sad.png',
+    portraitRequest: npcPortraitSrc(base + 'request.png'),
+    portraitNormal: npcPortraitSrc(base + 'normal.png'),
+    portraitHappy: npcPortraitSrc(base + 'normal.png'),
+    portraitSuperHappy: npcPortraitSrc(base + 'super_happy.png'),
+    portraitAlmost: npcPortraitSrc(base + 'almost.png'),
+    portraitSad: npcPortraitSrc(base + 'sad.png'),
   };
 }
 function getRequesterPortrait(req, mood) {
@@ -4778,7 +5057,7 @@ function getRequesterPortrait(req, mood) {
 // localStorage key: 'bento_npc_positions_v1'
 // 形式: { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
 //   - x: left %  (0-100, default 58)
-//   - y: bottom % (0-50, default 23)
+//   - y: bottom % (0-100, default 23)
 //   - scale: 倍率 (0.5-1.5, default 1)
 //   - rotation: 回転 deg (-20〜+20, default 0)
 //   - opacity: 不透明度 (0-1, default 1)
@@ -4806,7 +5085,9 @@ function getNpcPositionOverride(charId, expression) {
   if (!charId) return null;
   const key = (charId || '') + '_' + (expression || 'normal');
   const all = loadNpcPositionOverrides();
-  return all[key] || null;
+  if (all[key]) return all[key];
+  if (expression === 'happy') return all[(charId || '') + '_normal'] || null;
+  return null;
 }
 // シーン上の <img> に位置オーバーライドを反映。
 // el が `position: absolute` 想定 (delivery/shop-opening) の場合は left/bottom も適用。
@@ -4924,11 +5205,56 @@ const NPC_REQUESTERS = [
   },
 ];
 
+const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
+const TUTORIAL_FIXED_REQUESTER_ID = 'araiguma';
+
+function isTutorialResetRequested() {
+  try { return new URLSearchParams(location.search).get('tutreset') === '1'; } catch (_) { return false; }
+}
+function isTutorialPendingForNpcSelection() {
+  if (isTutorialResetRequested()) return true;
+  try { return localStorage.getItem(BENTO_TUTORIAL_STORAGE_KEY) !== '1'; } catch (_) { return true; }
+}
+function isTutorialRequesterFoodAvailable(foodName) {
+  if (!foodName) return false;
+  try {
+    if (window.PonoTier && typeof window.PonoTier.isBentoFoodUnlocked === 'function') {
+      return window.PonoTier.isBentoFoodUnlocked(foodName);
+    }
+  } catch (_) {}
+  return true;
+}
+function getTutorialFixedRequester() {
+  const preferred = NPC_REQUESTERS.find(r => r.id === TUTORIAL_FIXED_REQUESTER_ID) || null;
+  const hasAvailablePrimary = req => {
+    const primary = (req && Array.isArray(req.primaryFoods)) ? req.primaryFoods : [];
+    return primary.some(isTutorialRequesterFoodAvailable);
+  };
+  if (preferred && hasAvailablePrimary(preferred)) return preferred;
+  return NPC_REQUESTERS.find(hasAvailablePrimary) || preferred || NPC_REQUESTERS[0] || null;
+}
+function shouldUseTutorialFixedRequester() {
+  if (!freeLayoutMode) return false;
+  if (!isTutorialPendingForNpcSelection()) return false;
+  try {
+    const sp = new URLSearchParams(location.search);
+    if (sp.has('npc') && !isTutorialResetRequested()) return false;
+  } catch (_) {}
+  return true;
+}
+
 const SK_GROUP_INFO = {
   r: { label: 'あかの グループ', role: 'からだを つくる', foods: 'おにく・おさかな・たまご' },
   y: { label: 'きいろの グループ', role: 'あそぶ ちから', foods: 'ごはん・めん・じゃがいも' },
   g: { label: 'みどりの グループ', role: 'ちょうしを ととのえる', foods: 'やさい・くだもの' },
 };
+const SK_GROUP_SHORT_LABELS = { r: 'あか', y: 'きいろ', g: 'みどり' };
+function getSkGroupClass(sk) {
+  return sk && SK_GROUP_SHORT_LABELS[sk] ? 'sk-group-' + sk : '';
+}
+function getSkGroupShortLabel(sk) {
+  return SK_GROUP_SHORT_LABELS[sk] || '';
+}
 
 const BENTO_REMINDER_FOOD_ICONS = [
   ['やきざけ', '🐟'],
@@ -5034,7 +5360,7 @@ function renderBentoReminder() {
 // ===== 豆知識（4-5さい向け食育トリビア） =====
 const TRIVIA = {
   'ブロッコリー':       'ブロッコリーは やさいの グループ。からだの ちょうしを ととのえるよ！',
-  'プチトマト':         'プチトマトは やさいの グループ。見た目の色とは べつなんだよ！',
+  'プチトマト':         'プチトマトは やさいの なかま。からだを げんきに するよ！',
   'にんじん':           'にんじんは めが よく みえるように してくれるよ！',
   'ほうれん':           'ほうれんそうは ぱわーが もりもり でるよ！',
   'えだまめ':           'えだまめは ちいさいけど ぱわーが いっぱい！',
@@ -5781,6 +6107,13 @@ function selectNextNpcRequester() {
 }
 
 function decideNpcMode() {
+  if (shouldUseTutorialFixedRequester()) {
+    const req = getTutorialFixedRequester();
+    if (req) {
+      setCurrentNpcRequester(req);
+      return;
+    }
+  }
   // ----- テスト用 URL パラメータ (?npc=...) -----
   // ?npc=0           → 強制 自由モード (動物来ない)
   // ?npc=1           → 強制 依頼モード (ランダム動物)
@@ -5919,9 +6252,134 @@ function showRequesterIntro(req) {
   ov.onclick = dismiss;
 }
 
-const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/shop_staff_counter.png';
+const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/staff/shop_staff_bg_layered.png';
 const SHOP_OPENING_ORDER_BG = '../assets/images/bento/story/shop_order_counter.png';
 const SHOP_CUSTOMER_ENTER_DELAY_MS = 420;
+const SHOP_STAFF_ASSET_VERSION = '20260617-staff-wave-alt-v2';
+const SHOP_STAFF_ASSET_BASE = '../assets/images/bento/story/staff/';
+const SHOP_STAFF_COUNTER_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
+const SHOP_STAFF_COUNTER_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
+const SHOP_STAFF_MEMBERS = [
+  {
+    id: 'staffpono',
+    elementId: 'shop-opening-staff-pono',
+    name: 'ポノ',
+    defaultPose: 'idle',
+    height: '23%',
+    maxWidth: '24%',
+    defaults: { x: 13.6, y: 48.2, scale: 1, rotation: 0, opacity: 1 },
+    poses: {
+      idle: 'pono_idle.png',
+      wave: 'pono_wave.png',
+      present: 'pono_present.png',
+      listen: 'pono_listen.png',
+      wave_alt: 'pono_wave_alt.png',
+    },
+  },
+  {
+    id: 'staffboy',
+    elementId: 'shop-opening-staff-boy',
+    name: '男の子',
+    defaultPose: 'wave',
+    height: '34%',
+    maxWidth: '28%',
+    defaults: { x: 34.2, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
+    poses: {
+      idle: 'boy_idle.png',
+      wave: 'boy_wave.png',
+      present: 'boy_present.png',
+      hands: 'boy_hands.png',
+      wave_alt: 'boy_wave_alt.png',
+    },
+  },
+  {
+    id: 'staffgirl',
+    elementId: 'shop-opening-staff-girl',
+    name: '女の子',
+    defaultPose: 'idle',
+    height: '34%',
+    maxWidth: '28%',
+    defaults: { x: 46.9, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
+    poses: {
+      idle: 'girl_idle.png',
+      wave: 'girl_wave.png',
+      present: 'girl_present.png',
+      hands: 'girl_hands.png',
+      wave_alt: 'girl_wave_alt.png',
+    },
+  },
+];
+
+function versionedShopStaffSrc(file) {
+  return SHOP_STAFF_ASSET_BASE + file + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION);
+}
+
+function clampShopStaffMaskNumber(value, min, max, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(min, Math.min(max, num));
+}
+
+function normalizeShopStaffCounterMask(raw) {
+  const src = (raw && typeof raw === 'object') ? raw : {};
+  const mask = {
+    x: clampShopStaffMaskNumber(src.x, 0, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.x),
+    y: clampShopStaffMaskNumber(src.y, 0, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.y),
+    width: clampShopStaffMaskNumber(src.width, 1, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.width),
+    height: clampShopStaffMaskNumber(src.height, 1, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.height),
+    opacity: clampShopStaffMaskNumber(src.opacity, 0, 1, SHOP_STAFF_COUNTER_MASK_DEFAULT.opacity),
+  };
+  if (mask.x + mask.width > 100) mask.width = Math.max(1, 100 - mask.x);
+  if (mask.y + mask.height > 100) mask.height = Math.max(1, 100 - mask.y);
+  return mask;
+}
+
+function loadShopStaffCounterMask() {
+  try {
+    const raw = localStorage.getItem(SHOP_STAFF_COUNTER_MASK_LS_KEY);
+    return normalizeShopStaffCounterMask(raw ? JSON.parse(raw) : null);
+  } catch {
+    return normalizeShopStaffCounterMask(null);
+  }
+}
+
+function applyShopStaffCounterMaskStyle() {
+  const maskEl = document.getElementById('shop-opening-staff-mask');
+  if (!maskEl) return;
+  const mask = loadShopStaffCounterMask();
+  const right = Math.max(0, 100 - mask.x - mask.width);
+  const bottom = Math.max(0, 100 - mask.y - mask.height);
+  maskEl.style.backgroundImage = 'url("' + SHOP_OPENING_STAFF_BG + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION) + '")';
+  maskEl.style.setProperty('--staff-counter-mask-left', mask.x + '%');
+  maskEl.style.setProperty('--staff-counter-mask-top', mask.y + '%');
+  maskEl.style.setProperty('--staff-counter-mask-right', right + '%');
+  maskEl.style.setProperty('--staff-counter-mask-bottom', bottom + '%');
+  maskEl.style.setProperty('--staff-counter-mask-opacity', String(mask.opacity));
+}
+
+function setupShopOpeningStaff() {
+  SHOP_STAFF_MEMBERS.forEach(member => {
+    const img = document.getElementById(member.elementId);
+    if (!img) return;
+    const pose = member.defaultPose;
+    const file = member.poses[pose] || member.poses.idle;
+    if (file) img.src = versionedShopStaffSrc(file);
+    img.alt = member.name;
+    img.style.height = member.height;
+    img.style.maxWidth = member.maxWidth;
+    applyNpcPositionStyle(img, member.id, pose, { defaults: member.defaults, useAbsolute: true });
+  });
+  applyShopStaffCounterMaskStyle();
+}
+
+function waitForShopOpeningStaffReady() {
+  return Promise.all(SHOP_STAFF_MEMBERS.map(member => {
+    const img = document.getElementById(member.elementId);
+    if (!img) return Promise.resolve();
+    const file = member.poses[member.defaultPose] || member.poses.idle;
+    return waitForImageReady(img, versionedShopStaffSrc(file));
+  }));
+}
 
 function waitForImageReady(img, src) {
   if (!img || !src) return Promise.resolve();
@@ -5995,11 +6453,12 @@ function showShopOpening(req, onDone, options = {}) {
   if (!req) { if (onDone) onDone(); return; }
   const ov = document.getElementById('shop-opening');
   const bg = document.getElementById('shop-opening-bg');
+  const staff = document.getElementById('shop-opening-staff');
   const customer = document.getElementById('shop-opening-customer');
   const name = document.getElementById('shop-opening-name');
   const line = document.getElementById('shop-opening-line');
   const next = document.getElementById('shop-opening-next');
-  if (!ov || !bg || !customer || !name || !line || !next) {
+  if (!ov || !bg || !staff || !customer || !name || !line || !next) {
     if (onDone) onDone();
     return;
   }
@@ -6007,6 +6466,7 @@ function showShopOpening(req, onDone, options = {}) {
   const allSteps = [
     {
       bg: SHOP_OPENING_STAFF_BG,
+      staff: true,
       customer: false,
       name: 'ポノの おべんとうやさん',
       line: 'ここは ポノたちの おべんとうやさん。\nポノと ふたりの こどもが、どうぶつたちの おべんとうを つくるよ。',
@@ -6043,37 +6503,35 @@ function showShopOpening(req, onDone, options = {}) {
     name.textContent = step.name;
     renderShopOpeningLine(line, step, req);
     next.textContent = step.next;
+    ov.classList.toggle('is-staff-step', !!step.staff);
     ov.classList.toggle('is-customer-step', !!step.customer);
     ov.classList.toggle('is-request-step', !!step.emphasis);
     const keepVisibleCustomer = !!(step.customer && !step.enter && ov.classList.contains('has-customer'));
     ov.classList.toggle('has-customer', keepVisibleCustomer);
     ov.classList.remove('is-entering');
+    if (step.staff) {
+      setupShopOpeningStaff();
+      waitForShopOpeningStaffReady();
+    }
     if (step.customer) {
       const customerReady = waitForImageReady(customer, getRequesterPortrait(req, step.mood || 'normal'));
       customer.alt = req.name;
-      // 入場アニメ中は CSS の transform を尊重、 アニメ後に位置オーバーライドを適用
-      customer.style.left = '';
-      customer.style.bottom = '';
-      customer.style.transform = '';
-      customer.style.opacity = '';
+      customer.style.visibility = 'hidden';
+      applyNpcPositionStyle(customer, req.id, step.mood || 'normal', { defaults: { x: 50, y: 23 }, useAbsolute: true });
       Promise.all([bgReady, customerReady])
         .then(() => waitMs(step.enter ? SHOP_CUSTOMER_ENTER_DELAY_MS : 80))
         .then(() => {
           if (token !== renderToken || !step.customer || ov.classList.contains('hidden')) return;
+          customer.style.visibility = '';
           ov.classList.add('has-customer');
           if (step.enter) requestAnimationFrame(() => {
             if (token === renderToken && !ov.classList.contains('hidden')) ov.classList.add('is-entering');
           });
-          // 入場アニメ (0.68s) が終わってから override 反映
-          setTimeout(() => {
-            if (token === renderToken && !ov.classList.contains('hidden')) {
-              applyNpcPositionStyle(customer, req.id, step.mood || 'normal', { defaults: { x: 50, y: 23 }, useAbsolute: true });
-            }
-          }, step.enter ? 720 : 100);
         });
     } else {
       customer.removeAttribute('src');
       customer.alt = '';
+      customer.style.visibility = 'hidden';
     }
   };
 
@@ -6082,7 +6540,7 @@ function showShopOpening(req, onDone, options = {}) {
     stepIndex += 1;
     if (stepIndex >= steps.length) {
       ov.classList.add('hidden');
-      ov.classList.remove('has-customer', 'is-customer-step', 'is-request-step', 'is-entering');
+      ov.classList.remove('has-customer', 'is-staff-step', 'is-customer-step', 'is-request-step', 'is-entering');
       if (onDone) onDone();
       return;
     }
@@ -6532,6 +6990,7 @@ function renderCompleteDetailContent(el, finalEval, completionData, requester) {
   animal.className = 'complete-request-animal';
   animal.src = requester ? getRequesterPortrait(requester, finalEval.npcMood || 'happy') : (PONO_BASE + 'dance/dance_hooray.webp');
   animal.alt = requester ? requester.name : 'ポノ';
+  if (requester) applyNpcPositionStyle(animal, requester.id, finalEval.npcMood || 'happy', { useAbsolute: false });
   requestHero.appendChild(animal);
   const requestCopy = document.createElement('div');
   requestCopy.className = 'complete-request-copy';
@@ -8011,6 +8470,67 @@ function getPlacementBounds(box) {
 function getRicePlacementBounds(box = getSelectedBentoBox()) {
   return (box && box.riceBounds) || getPlacementBounds(box);
 }
+function clampBoundsToParent(bounds, parent) {
+  if (!bounds || !parent) return bounds || parent || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
+  const x1 = clamp(bounds.x, parent.x, parent.x + parent.w);
+  const y1 = clamp(bounds.y, parent.y, parent.y + parent.h);
+  const x2 = clamp(bounds.x + bounds.w, parent.x, parent.x + parent.w);
+  const y2 = clamp(bounds.y + bounds.h, parent.y, parent.y + parent.h);
+  return {
+    x: Math.min(x1, x2),
+    y: Math.min(y1, y2),
+    w: Math.max(1, Math.abs(x2 - x1)),
+    h: Math.max(1, Math.abs(y2 - y1)),
+  };
+}
+function getBoundsFromSpots(spots, fallback, pad = 96) {
+  if (!Array.isArray(spots) || !spots.length) return fallback;
+  const xs = spots.map(s => s.x).filter(Number.isFinite);
+  const ys = spots.map(s => s.y).filter(Number.isFinite);
+  if (!xs.length || !ys.length) return fallback;
+  const b = {
+    x: Math.min(...xs) - pad,
+    y: Math.min(...ys) - pad,
+    w: (Math.max(...xs) - Math.min(...xs)) + pad * 2,
+    h: (Math.max(...ys) - Math.min(...ys)) + pad * 2,
+  };
+  return clampBoundsToParent(b, fallback);
+}
+function getFoodPlacementBounds(box = getSelectedBentoBox()) {
+  const fallback = getPlacementBounds(box);
+  return (box && box.foodBounds) || getBoundsFromSpots(box && box.foodSpots, fallback, 104);
+}
+function getAccessoryPlacementBounds(box = getSelectedBentoBox()) {
+  const fallback = getPlacementBounds(box);
+  return (box && box.accessoryBounds) || getBoundsFromSpots(box && (box.accessorySpots || box.foodSpots), fallback, 112);
+}
+function getFreeDropBoundsForDef(def, box = getSelectedBentoBox()) {
+  if (!def) return getPlacementBounds(box);
+  if (def.type === 'rice' || def.type === 'rice_auto' || def.type === 'template') return getRicePlacementBounds(box);
+  if (def.type === 'decor') return getRicePlacementBounds(box);
+  if (def.type === 'food') return getFoodPlacementBounds(box);
+  if (def.type === 'cup' || def.type === 'divider') return getAccessoryPlacementBounds(box);
+  return getPlacementBounds(box);
+}
+function getFreePlacementBoundsForItem(item, box = getSelectedBentoBox()) {
+  if (!item) return getPlacementBounds(box);
+  if (item.type === 'rice' || isNoriDecorItem(item) || item.type === 'decor') return getRicePlacementBounds(box);
+  if (item.type === 'food' && !getParentCup(item)) return getFoodPlacementBounds(box);
+  if (item.type === 'cup' || item.type === 'divider' || item.snapTarget) return getAccessoryPlacementBounds(box);
+  return getPlacementBounds(box);
+}
+function isPointInsideBounds(point, bounds, inset = 0) {
+  if (!point || !bounds) return false;
+  return point.x >= bounds.x + inset
+    && point.x <= bounds.x + bounds.w - inset
+    && point.y >= bounds.y + inset
+    && point.y <= bounds.y + bounds.h - inset;
+}
+function canCreateFreePaletteItemAtPoint(def, point) {
+  if (!def || !point) return false;
+  if (def.type === 'food' && getEditingCup()) return true;
+  return isPointInsideBounds(point, getFreeDropBoundsForDef(def), 0);
+}
 function isNoriDecorItem(item) {
   return !!item && item.type === 'decor' && String(item.id || '').startsWith('nori_');
 }
@@ -8053,6 +8573,10 @@ function getNextFreeSpot(type) {
 function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
   const b = getPlacementBounds(box);
+  return clampPointToBounds(x, y, item, b);
+}
+function clampPointToFreeItemBounds(x, y, item) {
+  const b = getFreePlacementBoundsForItem(item);
   return clampPointToBounds(x, y, item, b);
 }
 function clampPointToBounds(x, y, item, b) {
@@ -8125,13 +8649,16 @@ function layoutCupChildren(cup) {
 function makePaletteDropToast(def) {
   if (!def) return 'おべんとうばこまで もっていこう！';
   if (def.type === 'rice_auto' || def.type === 'template' || def.type === 'rice') {
-    return 'ごはんを おべんとうばこに いれよう！';
+    return 'ごはんは ひだりの ごはんの ところへ もっていこう！';
   }
   if (def.type === 'decor') {
     return 'のりを ごはんのうえまで もっていこう！';
   }
   if (def.type === 'food' && getEditingCup()) {
     return 'カップまで もっていこう！';
+  }
+  if (def.type === 'food') {
+    return 'おかずは みぎの おかずの ところへ もっていこう！';
   }
   return 'おべんとうばこまで もっていこう！';
 }
@@ -8199,7 +8726,7 @@ function moveCupChildren(cup, dx, dy) {
 function snapPointForItem(item, x, y) {
   let point = item.type === 'food' && getParentCup(item)
     ? clampPointToCup(x, y, item, getParentCup(item))
-    : clampPointToBento(x, y, item);
+    : clampPointToFreeItemBounds(x, y, item);
   if (isNoriDecorItem(item)) {
     delete item.parentCupId;
     return clampPointToRice(x, y, item);
@@ -8228,7 +8755,7 @@ function snapPointForItem(item, x, y) {
       };
     }
   }
-  return clampPointToBento(point.x, point.y, item);
+  return clampPointToFreeItemBounds(point.x, point.y, item);
 }
 function avoidFreeOverlap(item) {
   if (!item || item.type === 'decor' || item.type === 'pick' || item.type === 'divider' || item.parentCupId) return;
@@ -8245,7 +8772,7 @@ function avoidFreeOverlap(item) {
     const d = dist(item, other);
     if (d < minD) {
       const angle = d > 0.001 ? Math.atan2(item.y - other.y, item.x - other.x) : (0.7 + i * 0.8);
-      const p = clampPointToBento(
+      const p = clampPointToFreeItemBounds(
         other.x + Math.cos(angle) * minD,
         other.y + Math.sin(angle) * minD,
         item
@@ -8260,7 +8787,7 @@ function setFreeItemPosition(uid, x, y) {
   const parentCup = item.type === 'food' ? getParentCup(item) : null;
   const p = isNoriDecorItem(item)
     ? clampPointToRice(x, y, item)
-    : parentCup ? clampPointToCup(x, y, item, parentCup) : clampPointToBento(x, y, item);
+    : parentCup ? clampPointToCup(x, y, item, parentCup) : clampPointToFreeItemBounds(x, y, item);
   const dx = p.x - item.x;
   const dy = p.y - item.y;
   item.x = p.x;
@@ -8440,6 +8967,7 @@ function createFreePaletteDragItem(def, point) {
     freeCupToolMode = 'contents';
     return item;
   }
+  if (!canCreateFreePaletteItemAtPoint(def, point)) return null;
   if (def.type === 'rice_auto') {
     return addAutoRiceForSelectedBox({
       x: point.x,
@@ -8473,7 +9001,7 @@ function updateFreePaletteDragGhost(e) {
   freePaletteDragState.ghost.style.left = `${e.clientX}px`;
   freePaletteDragState.ghost.style.top = `${e.clientY}px`;
   if (isNoriDecorItem(freePaletteDragState.def)) {
-    freePaletteDragState.ghost.classList.toggle('is-over-stage', !!eventToFreePoint(e));
+    freePaletteDragState.ghost.classList.toggle('is-over-stage', !!freePaletteDragState.uid);
   }
 }
 function removeFreePaletteDragGhost() {
@@ -8518,6 +9046,7 @@ function onFreePaletteDragMove(e) {
     freePaletteDragState.uid = item.uid;
     freeSelectedItemUid = item.uid;
     justCreated = true;
+    updateFreePaletteDragGhost(e);
   }
   setFreeItemPosition(freePaletteDragState.uid, point.x, point.y);
   if (justCreated) {
@@ -8728,7 +9257,7 @@ function setSelectedAccessorySize(sizeKey) {
   item.size = preset.size;
   item.sizeKey = preset.key;
   if (item.type === 'cup' && preset.radius) item.radius = preset.radius;
-  const p = clampPointToBento(item.x, item.y, item);
+  const p = clampPointToFreeItemBounds(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
   if (item.snapTarget) clampCupChildren(item);
   renderFreeLayoutStage();
@@ -8774,7 +9303,7 @@ function setSelectedBrushLevel(delta) {
   item.brushLevel = clamp((item.brushLevel == null ? 1 : item.brushLevel) + delta, 0, max);
   item.size = [128, 170, 220][item.brushLevel] || item.size;
   const parentCup = getParentCup(item);
-  const p = parentCup ? clampPointToCup(item.x, item.y, item, parentCup) : clampPointToBento(item.x, item.y, item);
+  const p = parentCup ? clampPointToCup(item.x, item.y, item, parentCup) : clampPointToFreeItemBounds(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -9149,7 +9678,7 @@ function selectFreeBentoBox(id) {
   const box = getSelectedBentoBox();
   placedItems.forEach(item => {
     const old = { x: item.x, y: item.y };
-    const p = isNoriDecorItem(item) ? clampPointToRice(item.x, item.y, item) : clampPointToBento(item.x, item.y, item);
+    const p = isNoriDecorItem(item) ? clampPointToRice(item.x, item.y, item) : clampPointToFreeItemBounds(item.x, item.y, item);
     item.x = p.x; item.y = p.y;
     const dx = item.x - old.x;
     const dy = item.y - old.y;
@@ -9198,11 +9727,12 @@ function createFreeVisual(item) {
 function createFreePlacedElement(item, interactive) {
   const el = document.createElement('div');
   const typeClass = item.type ? ' type-' + item.type : '';
+  const groupClass = getSkGroupClass(item.sk);
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && (!editingCup || item.parentCupId !== editingCup.uid);
   const brushLocked = interactive && !!freeBrushStampDef;
   const isSelected = interactive && isItemVisuallySelected(item);
-  el.className = 'free-placed-item' + typeClass + (isSelected ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '') + (brushLocked ? ' brush-locked' : '');
+  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : ''].filter(Boolean).join(' ');
   el.dataset.freeUid = item.uid;
   el.style.left = toPctX(item.x);
   el.style.top = toPctY(item.y);
@@ -9225,11 +9755,85 @@ function createFreePlacedElement(item, interactive) {
   }
   return el;
 }
+function getFreeControlIconName(label) {
+  if (label === '↺') return 'rotate-left';
+  if (label === '↻') return 'rotate-right';
+  if (label === '↓') return 'layer-down';
+  if (label === '↑') return 'layer-up';
+  if (label === '⇩') return 'layer-back';
+  if (label === '⇧') return 'layer-front';
+  return '';
+}
+function getFreeControlIconTitle(label) {
+  if (label === '↺') return '左に回す';
+  if (label === '↻') return '右に回す';
+  if (label === '↓') return 'うしろへ';
+  if (label === '↑') return 'まえへ';
+  if (label === '⇩') return 'いちばんうしろへ';
+  if (label === '⇧') return 'いちばんまえへ';
+  return label || '';
+}
+function appendSvgPath(svg, d) {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  svg.appendChild(path);
+}
+function createFreeControlIcon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'free-icon-svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  if (name === 'rotate-left') {
+    appendSvgPath(svg, 'M8 5H3v5');
+    appendSvgPath(svg, 'M4.2 10A8 8 0 1 0 7.1 5.4');
+  } else if (name === 'rotate-right') {
+    appendSvgPath(svg, 'M16 5h5v5');
+    appendSvgPath(svg, 'M19.8 10A8 8 0 1 1 16.9 5.4');
+  } else if (name === 'layer-down') {
+    appendSvgPath(svg, 'M12 4v14');
+    appendSvgPath(svg, 'M6 12l6 6 6-6');
+  } else if (name === 'layer-up') {
+    appendSvgPath(svg, 'M12 20V6');
+    appendSvgPath(svg, 'M6 12l6-6 6 6');
+  } else if (name === 'layer-back') {
+    appendSvgPath(svg, 'M12 4v12');
+    appendSvgPath(svg, 'M6 10l6 6 6-6');
+    appendSvgPath(svg, 'M5 20h14');
+  } else if (name === 'layer-front') {
+    appendSvgPath(svg, 'M12 20V8');
+    appendSvgPath(svg, 'M6 14l6-6 6 6');
+    appendSvgPath(svg, 'M5 4h14');
+  }
+  return svg;
+}
+function setFreeControlButtonContent(button, label) {
+  const iconName = getFreeControlIconName(label);
+  if (!iconName) {
+    button.textContent = label;
+    return;
+  }
+  const title = getFreeControlIconTitle(label);
+  button.textContent = '';
+  button.classList.add('free-icon-button');
+  button.dataset.freeIcon = iconName;
+  button.setAttribute('aria-label', title);
+  button.title = title;
+  if (iconName === 'rotate-left' || iconName === 'rotate-right') {
+    const glyph = document.createElement('span');
+    glyph.className = 'free-icon-glyph free-icon-glyph--rotate';
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.textContent = label;
+    button.appendChild(glyph);
+  } else {
+    button.appendChild(createFreeControlIcon(iconName));
+  }
+}
 function createFreeContextButton(label, className, onClick, disabled = false) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.textContent = label;
   if (className) b.className = className;
+  setFreeControlButtonContent(b, label);
   b.disabled = !!disabled;
   b.addEventListener('pointerdown', ev => {
     ev.preventDefault();
@@ -9239,27 +9843,43 @@ function createFreeContextButton(label, className, onClick, disabled = false) {
   });
   return b;
 }
-function createFreeContextToolbar() {
+function createFreeContextToolbar(opts = {}) {
   const item = getSelectedFreeItem();
   if (!item || isFreeMainGuideBlocking() || freeBrushStampDef) return null;
+  const panelMode = !!opts.panel;
   const toolbar = document.createElement('div');
-  toolbar.className = 'free-context-toolbar';
+  toolbar.className = 'free-context-toolbar' + (panelMode ? ' free-context-toolbar--panel' : '');
+  const groupClass = getSkGroupClass(item.sk);
+  if (groupClass) toolbar.classList.add(groupClass);
+  let controlCount = 0;
+  const appendControl = node => {
+    if (!node) return;
+    toolbar.appendChild(node);
+    controlCount++;
+  };
+
+  if (panelMode) {
+    const title = document.createElement('span');
+    title.className = 'free-context-toolbar-title';
+    title.textContent = item.name || 'えらんだもの';
+    toolbar.appendChild(title);
+  }
 
   const presets = getAccessorySizePresets(item);
   if (presets.length) {
     const sizeSlider = createFreeSizeSlider(item);
-    if (sizeSlider) toolbar.appendChild(sizeSlider);
+    appendControl(sizeSlider);
   }
 
   if (item.type !== 'rice' && !item.snapTarget) {
-    toolbar.appendChild(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
-    toolbar.appendChild(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
+    appendControl(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
+    appendControl(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
   }
 
   if (item.snapTarget) {
     const editingCup = getEditingCup();
     const isEditingThisCup = editingCup && editingCup.uid === item.uid;
-    toolbar.appendChild(createFreeContextButton(
+    appendControl(createFreeContextButton(
       isEditingThisCup ? 'OK' : 'なおす',
       'primary',
       () => isEditingThisCup ? closeCupEditor() : openCupEditor(item.uid)
@@ -9273,12 +9893,13 @@ function createFreeContextToolbar() {
       const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
       const canDown = overlapIndexes.some(i => i >= 0 && i < index);
       const canUp = overlapIndexes.some(i => i > index);
-      toolbar.appendChild(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
-      toolbar.appendChild(createFreeContextButton('↑', 'active', () => moveSelectedItemLayer(1), !canUp));
+      appendControl(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
+      appendControl(createFreeContextButton('↑', 'active', () => moveSelectedItemLayer(1), !canUp));
     }
   }
 
-  if (!toolbar.childElementCount) return null;
+  if (!controlCount) return null;
+  if (panelMode) return toolbar;
   const size = (item.size || 72) * (item.scale || 1);
   const x = clamp(item.x || FREE_LAYOUT_W / 2, 86, FREE_LAYOUT_W - 86);
   const wideToolbar = presets.length || toolbar.childElementCount >= 3;
@@ -9512,8 +10133,6 @@ function renderFreeLayoutInto(host, opts = {}) {
     renderRoot.appendChild(riceLayer);
   }
   if (opts.interactive) {
-    const contextToolbar = createFreeContextToolbar();
-    if (contextToolbar) renderRoot.appendChild(contextToolbar);
     if (freeBrushStampDef) {
       const hint = document.createElement('div');
       hint.className = 'free-brush-stamp-hint';
@@ -9622,6 +10241,11 @@ function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'free-palette-item';
+  const groupClass = getSkGroupClass(def.sk);
+  if (groupClass) {
+    btn.classList.add(groupClass);
+    btn.dataset.sk = def.sk;
+  }
   if (freeLayoutTab === 'box') btn.classList.add('box-choice');
   if ((freeLayoutTab === 'box' && def.id === selectedBentoBoxId) || def.uid === freeSelectedItemUid || (freeBrushStampDef && isCabbageBrushDef(def))) {
     btn.classList.add('selected');
@@ -9634,6 +10258,12 @@ function makeFreePaletteButton(def) {
     btn.setAttribute('aria-disabled', 'true');
   }
   btn.appendChild(createPaletteVisual(def));
+  if (groupClass && freeLayoutTab !== 'box') {
+    const group = document.createElement('span');
+    group.className = 'free-palette-group-chip';
+    group.textContent = getSkGroupShortLabel(def.sk);
+    btn.appendChild(group);
+  }
   if (def.tierLocked) {
     const lock = document.createElement('span');
     lock.className = 'free-palette-lock';
@@ -10241,8 +10871,8 @@ function renderFreeMaskEditorControls() {
 function makeSmallControlButton(label, className, onClick, disabled = false) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.textContent = label;
   if (className) b.className = className;
+  setFreeControlButtonContent(b, label);
   b.disabled = !!disabled;
   b.addEventListener('pointerdown', e => {
     e.preventDefault();
@@ -10429,19 +11059,23 @@ function renderFreeCupEditorControls() {
   }
   const frag = document.createDocumentFragment();
   frag.appendChild(renderCupContentsList(cup));
+  const selectedToolbar = createFreeContextToolbar({ panel: true });
+  if (selectedToolbar) frag.appendChild(selectedToolbar);
 
-  const actions = document.createElement('div');
-  actions.className = 'free-cup-editor-actions';
-  const done = document.createElement('button');
-  done.type = 'button';
-  done.className = 'free-cup-done-btn';
-  done.textContent = 'OK';
-  done.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    closeCupEditor();
-  });
-  actions.appendChild(done);
-  frag.appendChild(actions);
+  if (!selectedToolbar) {
+    const actions = document.createElement('div');
+    actions.className = 'free-cup-editor-actions';
+    const done = document.createElement('button');
+    done.type = 'button';
+    done.className = 'free-cup-done-btn';
+    done.textContent = 'OK';
+    done.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      closeCupEditor();
+    });
+    actions.appendChild(done);
+    frag.appendChild(actions);
+  }
 
   const list = document.createElement('div');
   list.className = 'free-item-list';
@@ -10542,6 +11176,9 @@ function renderFreeLayoutControls() {
 
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
+
+  const selectedToolbar = createFreeContextToolbar({ panel: true });
+  if (selectedToolbar) tray.appendChild(selectedToolbar);
 
   let items = guideTabs.length
     ? (freeLayoutTab === 'box' ? bentoBoxes : getFreePaletteItems(freeLayoutTab))
@@ -11052,7 +11689,7 @@ function onFreeOkazuTap(el, food) {
 
 function mkItem(f) {
   const d = document.createElement('div');
-  d.className = 'food-item';
+  d.className = ['food-item', getSkGroupClass(f.sk)].filter(Boolean).join(' ');
   const skDot = f.sk ? `<span class="sk-dot sk-${f.sk}"></span>` : '';
   d.innerHTML = `${skDot}${foodVis(f)}<span class="food-name">${f.name}</span>`;
   return d;
@@ -11818,7 +12455,7 @@ function showTutorial() {
 //        tab-small-food/small-cup-food → small-place/cup-ok → small-edit → small-next
 // 公開関数 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced /
 // tutorialOnStageComplete) は維持。 storage key は互換のため v1 を再利用。
-const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
+const TUTORIAL_STORAGE_KEY = BENTO_TUTORIAL_STORAGE_KEY;
 // v3 step ids (button/tab/place driven only):
 //   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'decor' | 'nori-ok' |
 //   'tab-okazu' | 'okazu-red' | 'tab-small' | 'small-accessory' |
@@ -11851,12 +12488,18 @@ const tutorialState = {
   _paletteResyncRaf: 0,
   fingerDragKey: '',
   outlinedEls: [],
+  groupIntroShown: false,
 };
 
 function tutorialReadDone() {
   try {
-    if (location.search.indexOf('tutreset=1') >= 0) {
+    if (isTutorialResetRequested()) {
       localStorage.removeItem(TUTORIAL_STORAGE_KEY);
+      localStorage.removeItem('bento_sk_intro_done');
+      localStorage.removeItem('bento_tut_seen');
+      localStorage.removeItem('bento_tut_seen_v2');
+      sessionStorage.removeItem(NPC_DECIDED_KEY);
+      sessionStorage.removeItem(NPC_SESSION_KEY);
       return false;
     }
   } catch (_) {}
@@ -11957,6 +12600,34 @@ function tutorialShowBubble(html, opts = {}) {
 }
 function tutorialHideBubble() {
   if (tutorialState.bubbleEl) tutorialState.bubbleEl.classList.add('hidden');
+}
+function tutorialShowGroupIntroThen(nextStep) {
+  if (tutorialState.groupIntroShown) {
+    tutorialAdvance(nextStep);
+    return;
+  }
+  const intro = document.getElementById('sk-intro');
+  const btn = document.getElementById('sk-intro-btn');
+  if (!intro || !btn) {
+    tutorialState.groupIntroShown = true;
+    tutorialAdvance(nextStep);
+    return;
+  }
+  tutorialState.groupIntroShown = true;
+  tutorialHideBubble();
+  tutorialHideFinger();
+  tutorialClearTrims();
+  tutorialClearMask();
+  tutorialClearOutlines();
+  intro.classList.remove('hidden');
+  const resume = () => {
+    window.__bentoSkIntroShownThisRun = true;
+    if (!tutorialState.active || tutorialState.step !== 'greet') return;
+    setTimeout(() => {
+      if (tutorialState.active && tutorialState.step === 'greet') tutorialAdvance(nextStep);
+    }, 0);
+  };
+  btn.addEventListener('click', resume, { once: true });
 }
 function tutorialOutlineElement(el) {
   if (!el) return;
@@ -12300,10 +12971,47 @@ function tutorialFindRicePaletteEl() {
   if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'rice') return null;
   return tutorialFirstPaletteItem();
 }
+function tutorialGetRequesterForGuide() {
+  return currentRequester || getTutorialFixedRequester();
+}
+function tutorialGetRequestedFoodNames() {
+  const req = tutorialGetRequesterForGuide();
+  const primary = (req && Array.isArray(req.primaryFoods)) ? req.primaryFoods : [];
+  const wanted = (req && Array.isArray(req.wantedFoods)) ? req.wantedFoods : [];
+  const names = [...new Set([...primary, ...wanted])].filter(Boolean);
+  const available = names.filter(isTutorialRequesterFoodAvailable);
+  return available.length ? available : names;
+}
+function tutorialGetRequestedFoodLabel() {
+  return tutorialGetRequestedFoodNames()[0] || 'おねがいの おかず';
+}
+function tutorialFindPaletteFoodByNames(names) {
+  const list = document.querySelector('.free-item-list')
+            || document.querySelector('.right-panel.free-layout-panel');
+  if (!list) return null;
+  const btns = list.querySelectorAll('.free-palette-item');
+  const wants = (names || []).map(n => String(n || '').trim()).filter(Boolean);
+  for (const want of wants) {
+    for (const b of btns) {
+      const name = (b.querySelector('.free-palette-name') || b).textContent || '';
+      if (name.trim() === want) return b;
+    }
+  }
+  for (const want of wants) {
+    for (const b of btns) {
+      const name = (b.querySelector('.free-palette-name') || b).textContent || '';
+      if (name.indexOf(want) >= 0) return b;
+    }
+  }
+  return null;
+}
 function tutorialFindFoodPaletteEl() {
   // okazu-red step は food タブで動くので、 タブが違うときは null
   if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
-  return tutorialFirstPaletteItem();
+  return tutorialFindPaletteFoodByNames(tutorialGetRequestedFoodNames())
+      || document.querySelector('.free-item-list .free-palette-item.sk-group-r')
+      || document.querySelector('.free-item-list .free-palette-item[data-sk="r"]')
+      || tutorialFirstPaletteItem();
 }
 function tutorialFindNoriPaletteEl() {
   // decor タブで「のり」を含む最初の要素
@@ -12347,7 +13055,10 @@ function tutorialActiveCupPoint() {
   return tutorialStageRightHalfPoint();
 }
 function tutorialContextToolbarEl() {
-  return document.querySelector('.free-context-toolbar');
+  return document.querySelector('#food-tray .free-context-toolbar--panel')
+      || document.querySelector('.right-panel.free-layout-panel .free-context-toolbar--panel')
+      || document.querySelector('.free-context-toolbar--panel')
+      || document.querySelector('.free-context-toolbar');
 }
 
 // ===== v3 utilities =====
@@ -12371,10 +13082,6 @@ function tutorialTrimPath(targetEl, opts = {}) {
   svg.appendChild(rect);
   wrap.appendChild(svg);
 
-  // v3.3: 描画フェーズ (animation 開始から DRAW_MS) の途中に sync() が走ると
-  // dasharray が変わって視覚的ジャンプが起きる。 描画フェーズ中のリサイズ時のみ
-  // CSS animation を再起動して新しい周長で再描画する。
-  const DRAW_MS = 1400;
   const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
   function sync() {
     const r = targetEl.getBoundingClientRect();
@@ -12399,16 +13106,8 @@ function tutorialTrimPath(targetEl, opts = {}) {
     const perim = Math.max(1, 2 * (w + h));
     rect.setAttribute('stroke-dasharray', perim + ' ' + perim);
     wrap.style.setProperty('--trim-len', perim);
-    // v3.3: 描画フェーズ中であれば animation を再起動して新しい長さで描き直す。
-    // 描画完了後 (>=DRAW_MS) は --trim-len 更新のみで OK (点滅相のため動的反映は不要)。
-    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    if (now - startTime < DRAW_MS) {
-      const prev = rect.style.animation;
-      rect.style.animation = 'none';
-      // reflow を強制して animation の再起動を成立させる
-      void rect.getBoundingClientRect();
-      rect.style.animation = prev || '';
-    }
+    // 描画中に同期が入っても animation は再起動しない。
+    // DOM 変化や画像 decode が重なる初回ロードで、途中から何度も描き直されるのを避ける。
   }
   sync();
   let ro = null;
@@ -12619,7 +13318,7 @@ function tutorialRenderStep() {
           tutorialTeardown();
           return;
         }
-        tutorialAdvance('box');
+        tutorialShowGroupIntroThen('box');
       }, { once: true });
     }
     return;
@@ -12740,9 +13439,10 @@ function tutorialRenderStep() {
 
   // 7. okazu-red — 右半分にあかい食材を入れる + 右半分マスク明滅
   if (step === 'okazu-red') {
+    const requestedFood = tutorialGetRequestedFoodLabel();
     tutorialShowBubble(
-      'すきな おかずを いくつか 入れてね'
-      + '<br><span class="tut-emph-red">あか</span>の グループも 入れよう',
+      'おねがいの「' + requestedFood + '」を 入れよう'
+      + '<br><span class="tut-emph-red">あか</span>の グループだよ',
       { topVh: '58', side: 'left' }
     );
     if (firstRender) tutorialMaskOverlay({ half: 'right' });
@@ -12964,6 +13664,14 @@ function tutorialStart() {
   tutorialState.cupChildCount = 0;
   tutorialState.ricePlacedCount = 0;
   tutorialState.decorPlacedCount = 0;
+  tutorialState.groupIntroShown = !!window.__bentoSkIntroShownThisRun;
+  if (shouldUseTutorialFixedRequester()) {
+    const req = getTutorialFixedRequester();
+    if (req && currentRequester !== req) {
+      setCurrentNpcRequester(req);
+      renderBentoReminder();
+    }
+  }
   tutorialEnsureLayer();
   // v3: freeGuideStep からの自動進行はしない。 button/tab/place が唯一の進行口。
   tutorialRenderStep();
@@ -12973,7 +13681,7 @@ function tutorialStart() {
   window.addEventListener('orientationchange', tutorialState.resizeHandler);
   const root = document.body;
   tutorialState.observer = new MutationObserver(() => tutorialScheduleResync());
-  try { tutorialState.observer.observe(root, { subtree: true, childList: true }); } catch (_) {}
+  try { tutorialState.observer.observe(root, { subtree: false, childList: true }); } catch (_) {}
   // v3: タブクリック検知 hook
   tutorialInstallTabHook();
   // ユーザータップで デモループ をリセット (anywhere)
@@ -13076,12 +13784,14 @@ function tutorialOnStageComplete() {
     if (reBtn) reBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      try { localStorage.removeItem('bento_sk_intro_done'); localStorage.removeItem('bento_tut_seen'); localStorage.removeItem('bento_tut_seen_v2'); } catch (_) {}
       modal.classList.add('hidden');
       try { if (typeof showToast === 'function') showToast('つぎの あそびで でるよ'); } catch (_) {}
     });
     if (reNowBtn) reNowBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      try { localStorage.removeItem('bento_sk_intro_done'); localStorage.removeItem('bento_tut_seen'); localStorage.removeItem('bento_tut_seen_v2'); } catch (_) {}
       modal.classList.add('hidden');
       // フレッシュな状態で確実にチュートリアルを発火させるため reload を採用
       try { location.reload(); } catch (_) {}
