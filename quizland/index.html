@@ -4423,6 +4423,30 @@ function _qzScheduleStageLayoutRestore() {
    bootstrap (editor-bootstrap.js) が defer で 3 スクリプトを直列ロード後、
    この config を使って LayoutSystem.init を呼ぶ。 pages 省略時は
    page-nav.js が公開する window.PONO_PAGES が自動採用される。 */
+function _qzEditorGhBranch() {
+  try {
+    var sp = new URLSearchParams(window.location.search || '');
+    var forced = sp.get('ghBranch');
+    if (forced) return forced;
+  } catch (_) { /* noop */ }
+  try {
+    if (window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1') {
+      return 'develop-app';
+    }
+  } catch (_) { /* noop */ }
+  return 'develop';
+}
+function _qzIsLocalEditorHost() {
+  var h = window.location && window.location.hostname;
+  return h === '127.0.0.1' || h === 'localhost' || h === '::1';
+}
+function _qzEditorGhPath() {
+  try {
+    var sp = new URLSearchParams(window.location.search || '');
+    if (sp.get('gh') === '1') return 'quizland/saved-layout.json';
+  } catch (_) { /* noop */ }
+  return _qzIsLocalEditorHost() ? null : 'quizland/saved-layout.json';
+}
 window.EditorBootstrapConfig = {
   layoutUrl: './saved-layout.json',
   canvas: '#stage',
@@ -4440,7 +4464,10 @@ window.EditorBootstrapConfig = {
   // 2026-06-11: 質問バナー / 音声ボタンは常時 per-Q 化せず、 editor toolbar の
   // 「🎯 この質問だけ / 🌐 すべての質問」 トグルで保存範囲を選ぶ (既定 🌐 = 共通保存)。
   perQuestionScopeToggleSelectors: QZ_PER_QUESTION_SCOPE_TOGGLE,
-  ghPath: 'quizland/saved-layout.json',
+  ghPath: _qzEditorGhPath(),
+  // app staging (APP_BUILD=1) では保存先も develop-app に合わせる。
+  // local などで別ブランチへ送りたい場合は ?ghBranch=foo で明示上書きできる。
+  ghBranch: _qzEditorGhBranch(),
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
   // Future (Phase 2): aspect-aware layout fork
   // エディター保存直後は GitHub commit → staging deploy の反映ラグがあるため、
@@ -5038,6 +5065,50 @@ function _qzNudgeLayoutEditorDynamicScan() {
   }, 0);
 }
 
+function _qzStagePhaseLayoutTargets(stageWrap) {
+  if (!stageWrap) return [];
+  return [stageWrap].concat(
+    Array.prototype.slice.call(stageWrap.querySelectorAll('.stage-img-wrap, .emoji-main-img'))
+  );
+}
+
+function _qzResetStagePhaseGeometry(stageWrap) {
+  _qzStagePhaseLayoutTargets(stageWrap).forEach(function (el) {
+    if (!el) return;
+    el.style.width = '';
+    el.style.height = '';
+    el.style.transform = '';
+    el._tx = 0;
+    el._ty = 0;
+    try {
+      if (typeof el._resizeUpdateLabel === 'function') el._resizeUpdateLabel();
+    } catch (_) {}
+  });
+}
+
+function _qzBuildPhaseScopedStageLayoutData(data, phase) {
+  if (!data || typeof data !== 'object' || phase !== 'answer') return data;
+  // 問題フェーズと答えフェーズは同じ DOM 要素を使い回すため、
+  // answer 適用時に question / legacy base キーへ fallback すると
+  // 片方を触るともう片方も同じ大きさに見えてしまう。
+  var filtered = Object.assign({}, data);
+  [
+    '.emoji-display',
+    '.stage-img-wrap',
+    '.emoji-main-img'
+  ].forEach(function (baseSel) {
+    Object.keys(filtered).forEach(function (key) {
+      if (
+        key.indexOf(baseSel + '.phase-question|') === 0 ||
+        key.indexOf(baseSel + '|') === 0
+      ) {
+        delete filtered[key];
+      }
+    });
+  });
+  return filtered;
+}
+
 // `.emoji-display` の phase クラス (`phase-question` / `phase-answer`) を切替し、
 // LayoutApplier に再 apply を促すヘルパー。 `.emoji-display` ステージを持たない
 // q.type (order_color / count_total / shape_name) では .emoji-display が存在しない
@@ -5046,23 +5117,22 @@ function setPhase(phase) {
   const stageWrap = document.querySelector('#stage-area .emoji-display');
   const phaseClass = phase === 'answer' ? 'phase-answer' : 'phase-question';
   if (stageWrap) {
-    const phaseTargets = [stageWrap].concat(
-      Array.prototype.slice.call(stageWrap.querySelectorAll('.stage-img-wrap, .emoji-main-img'))
-    );
-    phaseTargets.forEach(function (el) {
+    _qzStagePhaseLayoutTargets(stageWrap).forEach(function (el) {
       if (!el || !el.classList) return;
       el.classList.remove('phase-question', 'phase-answer');
       el.classList.add(phaseClass);
     });
+    _qzResetStagePhaseGeometry(stageWrap);
   }
   // LayoutApplier 再 apply: phase 切替で別 key の値を読みに行かせる。
   // _currentLayoutData が無い (= ?edit=1 でもない・layout JSON 未配信) なら no-op。
   if (window.LayoutApplier && window._currentLayoutData) {
     var _qid = (typeof window.QUIZLAND_GET_CURRENT_QID === 'function')
       ? window.QUIZLAND_GET_CURRENT_QID() : null;
+    var layoutData = _qzBuildPhaseScopedStageLayoutData(window._currentLayoutData, phase);
     try {
       window.LayoutApplier.apply(
-        window._currentLayoutData,
+        layoutData,
         document.getElementById('stage-area') || null,
         {
           selectors: QZ_RESIZABLE_SELECTORS,

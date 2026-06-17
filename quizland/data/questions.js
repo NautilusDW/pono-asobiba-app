@@ -400,7 +400,7 @@ const QUIZLAND_QUESTIONS = {
       detail:'チーターは じそく 100キロ いじょうで はしれるよ！'},
     { level:2, type:'trivia', category:'trivia',
       img:'mt_fuji.png',
-      img_answer:'stage_weather_falling_snow.png',
+      img_answer:'stage_trivia_fuji_snowfall.png',
       q:'ふじさんの あたまに あるのは なに？',
       answer:0, choices:['ゆき','けむり','くも','とり'] ,
       detail:'たかい やまの うえは すずしいから、ゆきが ずっと とけずに のこるよ！'},

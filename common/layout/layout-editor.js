@@ -259,6 +259,7 @@
   }
   function ghPath() {
     var cfg = state.config || {};
+    if (Object.prototype.hasOwnProperty.call(cfg, 'ghPath') && !cfg.ghPath) return '';
     if (cfg.ghPath) return cfg.ghPath;
     // Derive from layoutUrl — strip leading "./" or "/"
     var lu = cfg.layoutUrl || '';
@@ -268,6 +269,10 @@
   function ghRepoOwner() { return (state.config && state.config.ghOwner) || DEFAULT_GH_OWNER; }
   function ghRepoName()  { return (state.config && state.config.ghRepo)  || DEFAULT_GH_REPO; }
   function ghBranch()    { return (state.config && state.config.ghBranch) || DEFAULT_GH_BRANCH; }
+  function isLocalStaticHost() {
+    var h = location.hostname;
+    return location.protocol === 'file:' || h === '127.0.0.1' || h === 'localhost' || h === '::1';
+  }
 
   function ghGetContents(path) {
     var url = '/api/gh/repos/' + ghRepoOwner() + '/' + ghRepoName() + '/contents/' +
@@ -1693,7 +1698,7 @@
       // 2026-06-11: GH path 無し = local が真実。 削除予約は localSave で反映済みなのでクリア。
       if (state._perQDeletedKeys) state._perQDeletedKeys.clear();
       updateDirtyUI();
-      showToast('ローカルに保存しました (GH path 未設定)', 'error');
+      showToast('ローカルに保存しました', isLocalStaticHost() ? 'warn' : 'error');
       emit('save:success', { local: true, remote: false });
       return Promise.resolve({ local: true, remote: false });
     }
@@ -1751,6 +1756,16 @@
         showToast('別エディタが先に保存しました。再読み込みして再保存してください', 'error');
         emit('save:conflict', err);
       } else {
+        if (isLocalStaticHost()) {
+          state.lastSavedJson = compact;
+          state.lastSavedQid = frozenQid;
+          state._dirty = false;
+          if (state._perQDeletedKeys) state._perQDeletedKeys.clear();
+          updateDirtyUI();
+          showToast('ローカルに保存しました', 'warn');
+          emit('save:success', { local: true, remote: false, localOnly: true });
+          return { local: true, remote: false, localOnly: true };
+        }
         showToast('GitHub 保存失敗: ローカルにのみ保存', 'error');
       }
       emit('save:error', err);
@@ -2648,20 +2663,29 @@
       //   start state を保存。ドラッグ対象自身に既に含まれる要素は除外して二重適用を防ぐ。
       var movedSet = new Set(targets);
       var unlinkedStates = []; // {el, parent, tx, ty, before}
+      var unlinkedSeen = new Set();
+      function addUnlinkedChild(parent, child) {
+        if (!child || movedSet.has(child) || parent === child || !parent.contains(child) || unlinkedSeen.has(child)) return;
+        unlinkedSeen.add(child);
+        unlinkedStates.push({
+          el: child,
+          parent: parent,
+          tx: child._tx || 0,
+          ty: child._ty || 0,
+          before: getResizeState(child)
+        });
+      }
+      targets.forEach(function (parent) {
+        try {
+          Array.prototype.forEach.call(parent.querySelectorAll('[data-le-keep-position]'), function (child) {
+            addUnlinkedChild(parent, child);
+          });
+        } catch (err) {}
+      });
       if (state.unlinkedChildren && state.unlinkedChildren.size) {
         targets.forEach(function (parent) {
           state.unlinkedChildren.forEach(function (child) {
-            if (movedSet.has(child)) return;
-            if (parent === child) return;
-            if (parent.contains(child)) {
-              unlinkedStates.push({
-                el: child,
-                parent: parent,
-                tx: child._tx || 0,
-                ty: child._ty || 0,
-                before: getResizeState(child)
-              });
-            }
+            addUnlinkedChild(parent, child);
           });
         });
       }
