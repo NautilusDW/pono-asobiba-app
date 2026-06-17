@@ -1913,7 +1913,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1203;
+    const PAGE_CACHE_VERSION = 1209;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -2583,11 +2583,11 @@
     selectGame(0);
 
     // ===== Service worker =====
-    // 登録 + 更新検知 + ユーザー明示タップでのみ切替 (トースト) を
-    // common/sw-update.js に集約。Claude preview 判定もそちらで吸収する。
+    // 登録 + 更新検知を common/sw-update.js に集約。更新待ちUIは出さず、
+    // Claude preview 判定もそちらで吸収する。
     (function () {
       var s = document.createElement('script');
-      s.src = '/common/sw-update.js';
+      s.src = '/common/sw-update.js?v=' + encodeURIComponent(String(PAGE_CACHE_VERSION));
       s.defer = true;
       document.head.appendChild(s);
     })();
