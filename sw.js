@@ -1,7 +1,53 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-const CACHE_VERSION = 1230; // v1230: Quizland final-question banner uses the provided Dr.owl No folder image | v1229: Quizland final-question banner uses an opaque image asset and next button glows from below | v1228: Quizland restores image-based final-question banner and aspect-correct progress art with glowing next button | v1227: Quizland final-question card is opaque and progress dots use unsquashed CSS circles | v1226: Quizland uses difficulty-only mixed-category question selection | v1225: Play bottom nav restores the original colored sticker icon | v1224: Play bottom nav sticker icon uses the dedicated monochrome button asset | v1223: Play bottom nav integrates sticker book as fifth button with alpha sprite assets | v1222: Quizland local editor saves stay clean on static localhost, speaker buttons keep position when parent frames move, and leaf/Fuji stage art is refreshed | v1221: Sea Album restores alpha shell item sprites and separate shell-open sparkle overlays | v1220: StickerBookThreeJS regenerates dedicated page/tab/spine layer textures without source crop masks | v1219: Help page clarifies book-holder benefits without fixing future content details | v1218: Sea Album reduces guide noise, limits speech bubbles, adds angry face layer, removes realistic item sprites | v1217: Help page copy matches current book/app scope and removes inactive stamp guidance | v1216: Sea Album uses imported alpha item sprites for shell chest, key, and sandball | v1215: Sea Album friendship meter, sandball key item, gated boss loop, multi-slot homing torpedoes | v1214: Play tap-intro overlay is opaque and blocks title-card input until fully dismissed | v1213: Oto free mode can switch classic round buttons / 3D stage with tap magic effects | v1212: Sea Album hide target labels during speech and document power/shop upgrade plan | v1211: Sea Album stage1 simplified to one key-and-shell-chest gimmick with delayed hermit pacing | v1210: Sea Album stage1 central item notices, objective strip, speech/text foregrounding | v1209: Oto free mode uses rhythm-style 3D stage with sound controls | v1208: Oto title keeps blue background for rhythm/free choice | v1207: Sea Album stage1 shell chest, bubble switch, pearl gate, horizontal exploration flow | v1206: Oto rhythm bubble above rival, 3D key press cleanup, louder tap pitch with hold sustain | v1205: Sea Album pink happy bubbles, heart vanish effect, 3D spinning coins, Japanese stage plan | v1204: Sea Album homing bait torpedo pacing and concrete exploration gimmick plan | v1203: Oto rhythm opening speech bubble follow-up cache sync | v1202: Oto rhythm bubble + left fire settle | v1201: Sea Album boss charge recovery, staged feeding, bidirectional explore, coin scatter magnet, bubble food bombs | v1200: Oto rhythm opening rival appears center, then settles into left card | v1199: Sea Album slower pacing, shorter lines, tougher boss, persistent coins HUD | v1198: Sea Album feed bullets, bomb arc, boss warning/fixed fight, horseshoe charge/laser, jet dodge | v1197: sticker book procedural angled flip + app-only sticker hints (drop mismatched generated flip sheet) | v1196: reclassify non-MVP MENU_GAMES to tier:sub per user policy (MVP以外は全てアプリ版限定) | v1195: hide tier:sub menu cards entirely on 本版 (no title, no comingSoon overlay) - fixes user confusion about sub-only games appearing as future content | v1194: PonoTier propagation to play-all.html (4 sites) - finish premium gating for アプリ版 | v1193: PonoTier propagation to breakout/stacking/writing - fix premium games inaccessible on アプリ版 | v1192: tier resolution = APP_BUILD-driven (アプリ版 auto sub / 本版 sub unreachable) | v1191: navigation handler bypass (opaqueredirect loop fix) | v1190: fix app-staging SW navigation loop (redirect:'manual' + opaqueredirect passthrough) | v1188: fix Oto rhythm Pono/rival idle placement | v1187: add generated kids sticker book assets | v1186: add Oto rhythm rival reactions | v1185: separate Canvas sticker book
+// v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls.
+// v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke.
+// v1273: Oto rhythm stage select is open so uncleared stages can be chosen directly.
+// v1272: Oto 3D note buttons share one closed top rim between side polygons and the textured top.
+// v1271: Oto 3D note button top textures keep colored edges instead of dark rims.
+// v1270: Bento text buttons use fixed-size slots across states while palette rows keep measured tile spacing.
+// v1270: Oto 3D note button top textures are opaque so the beveled top has no groove.
+// v1269: Bento palette rows use natural tile height and generated UI backgrounds keep measured PNG ratios.
+// v1268: Bento applies NPC saved positions before showing portraits and stops stretching generated UI frames.
+// v1267: Oto 3D note buttons use a rounded two-step bevel instead of a straight slab.
+// v1266: Oto 3D note buttons remove the top-surface groove and silence audio immediately when inactive.
+// v1265: Bento character position editor adds zoomed mask preview, undo, and 0.1% mask sliders.
+// v1264: Oto rhythm rival openings use separate imported BGM tracks for the robot and lion rivals.
+// v1263: Sea Album shows the key item art prominently when the hermit awards it.
+// v1262: Sea Album coin rotation uses the imported alpha coin frames from the item folder.
+// v1261: Bento staff waving-2 portraits reuse the matching staff art with alternate hand angles.
+// v1260: Oto rhythm song menu uses a black backdrop, rival openings fade in from black, and Pono battle reactions are larger with FX.
+// v1259: Bento character position editor can apply one placement to every expression or pose for a character.
+// v1258: Sea Album adds story setup, broader SFX, stronger key handoff, and alpha-aware coin sprites.
+// v1257: Oto adds imported title, rival dialogue, and stage-clear BGM with a settings toggle.
+// v1256: Bento shop staff counter mask is adjustable in the character editor.
+
+// v1255: Sea Album adds story setup, broader SFX, stronger key handoff, and alpha-aware coin sprites.
+// v1254: Bento character position editor allows higher vertical placement for staff and NPC sprites.
+// v1253: Sea Album caps pointer-follow speed, adds touch-offset flick jet, tougher enemies, staged feed lines, and generated coin sprites
+// v1251: Oto reward stickers land from an enlarged impact with don SFX, and rhythm openings/results hide left battle cards while centering rivals in the main monitor.
+// v1250: Bento shop opening uses layered staff background and alpha staff sprites with editable staff poses.
+// v1249: StickerBookThreeJS uses generated transparent page-thickness textures instead of plain bottom rectangles.
+// v1248: StickerBookThreeJS removes the outer vertical page-stack strips that appeared as cut-off pieces behind tabs.
+// v1247: Oto rhythm rival lines are gentler, first rival openings introduce themselves, and sticker rewards use a richer celebration before next-stage openings.
+// v1246: StickerBookThreeJS cover now fills the page ratio, and the binder uses internal split-ring sockets.
+// v1244: Oto rhythm stage clear keeps defeated rival speech visible beside the result panel, including low-height screens.
+// v1243: StickerBookThreeJS uses 20260617-596 cover/thickness assets for cache busting.
+// v1242: Quizland stage question/answer phase layouts now reset stale inline geometry and stop answer preview from inheriting question-stage sizing.
+// v1241: Bento squirrel NPC portraits use the consistent bright 20260614-120131 set.
+// v1240: StickerBookThreeJS restores rich source-based covers and adds simulated left/right page-stack thickness.
+// v1239: Oto rhythm stage clear composites the defeated rival and a final rival line over the clear background.
+// v1238: Bento NPC position editor and runtime share versioned portraits and happy falls back to normal positioning.
+// v1237: Bento squirrel NPC normal/almost portraits now match the newer round style.
+// v1236: StickerBookThreeJS cover mode is now a closed-cover-only view, and inside pages use left list / right free sticker area.
+// v1235: Bento uses imported alpha UI button/frame sprites for controls, group-colored palette tiles, and fixed selected-item toolbar.
+// v1234: Oto free-mode choice thumbnails now use real screenshots, and Kero right-side sweat/action-line FX are flipped to face outward correctly.
+// v1233: Oto rival openings are shorter and sticker rewards wait until result/high-score UI is dismissed; sticker toasts now defer behind visible game overlays.
+// v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
+// v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
+// v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
+const CACHE_VERSION = 1275; // v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls. | v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke. | v1273: Oto rhythm stage select is open so uncleared stages can be chosen directly. | v1272: Oto 3D note buttons share one closed top rim between side polygons and the textured top. | v1271: Oto 3D note button top textures keep colored edges instead of dark rims.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

@@ -773,6 +773,31 @@
     height: 64px;
     filter: brightness(1.18);
   }
+  .free-stage-pono {
+    display: none;
+    position: absolute;
+    left: 61%;
+    top: clamp(42px, 13cqh, 104px);
+    width: clamp(178px, 36cqh, 270px);
+    height: clamp(178px, 36cqh, 270px);
+    transform: translate(-50%, 0);
+    z-index: 5;
+    pointer-events: none;
+    align-items: flex-start;
+    justify-content: center;
+    animation: ponoBreatheTop 2.4s ease-in-out infinite;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.26));
+  }
+  .free-stage-pono.bump {
+    animation-name: ponoBumpTop;
+  }
+  .free-stage-pono img {
+    height: clamp(168px, 35cqh, 254px);
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    -webkit-user-drag: none;
+  }
   @keyframes ghNotePopAway {
     0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.16); filter: brightness(1.18); }
     34%  { opacity: 0.98; transform: translate(-50%, -48%) scale(0.92); filter: brightness(1.28); }
@@ -1572,11 +1597,22 @@
     align-items: center;
     justify-content: center;
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-    background: rgba(8,25,55,0.58);
+    background: #000;
     pointer-events: auto;
   }
   .rhythm-menu.show { display: flex; }
+  .rhythm-menu.is-starting {
+    pointer-events: none;
+  }
+  .rhythm-menu.is-starting .rhythm-menu-panel {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
   body.oto-modal-open .pono-menu-toggle { display: none !important; }
+  body.rhythm-layout.rhythm-menu-open .rhythm-battle-panel {
+    display: none !important;
+  }
   /* v1108: 2ステップ表示切替
      Region 1.5: rhythm-step を flex column にして
      song-list だけスクロール、footer はパネル下部に固定する構造へ。 */
@@ -1832,20 +1868,44 @@
     inset: 0;
     z-index: 18;
     display: none;
+    overflow: hidden;
+    isolation: isolate;
     --opening-exit-x: -38vw;
     --opening-exit-y: -27vh;
+    --rhythm-opening-pad-x: clamp(10px, 2.4vw, 26px);
+    --rhythm-opening-pad-y: clamp(10px, 2.4vw, 26px);
+    --rhythm-opening-main-offset: 22%;
     grid-template-rows: auto auto auto;
     align-content: center;
     justify-items: center;
     gap: clamp(8px, 2.2vh, 16px);
-    padding: clamp(10px, 2.4vw, 26px);
+    padding: var(--rhythm-opening-pad-y) var(--rhythm-opening-pad-x) var(--rhythm-opening-pad-y) calc(var(--rhythm-opening-pad-x) + var(--rhythm-opening-main-offset));
     background:
-      radial-gradient(circle at 50% 37%, rgba(34,211,238,0.24), transparent 35%),
+      radial-gradient(circle at 61% 37%, rgba(34,211,238,0.24), transparent 35%),
       linear-gradient(180deg, rgba(2,6,23,0.16), rgba(2,6,23,0.48));
     pointer-events: auto;
   }
+  .rhythm-opening::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+  }
   .rhythm-opening.show {
     display: grid;
+  }
+  .rhythm-opening.entering::before {
+    animation: rhythm-opening-black-fade 1400ms ease-in-out both;
+  }
+  .rhythm-opening.entering .rhythm-opening-character {
+    animation: rhythm-opening-arrive-delayed 1300ms cubic-bezier(.16,.84,.28,1) both;
+  }
+  .rhythm-opening.entering .rhythm-opening-line,
+  .rhythm-opening.entering .rhythm-opening-actions {
+    animation: rhythm-opening-panel-fade-in 1180ms ease-out 260ms both;
   }
   body.rhythm-opening-active .rhythm-battle-panel {
     transition: opacity 220ms ease, transform 220ms ease;
@@ -1922,7 +1982,7 @@
   }
   .rhythm-opening-fx {
     position: absolute;
-    z-index: 3;
+    z-index: 5;
     display: none;
     width: 24%;
     height: 24%;
@@ -1935,11 +1995,45 @@
   .rhythm-opening-fx.fx-a { left: 4%; top: 16%; }
   .rhythm-opening-fx.fx-b { right: 6%; top: 15%; }
   .rhythm-opening-fx.fx-c { right: 10%; bottom: 20%; }
+  .rhythm-opening-fx.fx-b.fx-line {
+    right: -2%;
+    top: 9%;
+    width: 31%;
+    height: 31%;
+    background-position: right center;
+    transform-origin: 76% 50%;
+  }
+  .rhythm-opening-fx.fx-c.fx-line {
+    right: -1%;
+    bottom: 17%;
+    width: 30%;
+    height: 30%;
+    background-position: right center;
+    transform-origin: 76% 50%;
+  }
+  .rhythm-opening-fx.fx-flip-x {
+    scale: -1 1;
+  }
   .rhythm-opening-fx.fx-line { animation: rival-fx-line 520ms ease-out both; }
   .rhythm-opening-fx.fx-pop { animation: rival-fx-pop 560ms ease-out both; }
   .rhythm-opening-fx.fx-sweat { animation: rival-fx-sweat 760ms ease-out both; }
   .rhythm-opening-fx.fx-spin { animation: rival-fx-spin 780ms ease-out both; }
   .rhythm-opening-fx.fx-float { animation: rival-fx-float 900ms ease-out both; }
+  .rhythm-opening-fx.fx-a.fx-anger-smoke {
+    left: -2%;
+    top: 10%;
+    width: 25%;
+    height: 25%;
+    transform-origin: 74% 76%;
+  }
+  .rhythm-opening-fx.fx-b.fx-anger-smoke {
+    right: -2%;
+    top: 10%;
+    width: 25%;
+    height: 25%;
+    transform-origin: 26% 76%;
+  }
+  .rhythm-opening-fx.fx-anger-smoke { animation: rival-fx-anger-smoke 980ms ease-out both; }
   .rhythm-opening-fire {
     position: absolute;
     left: clamp(104px, 17vw, 260px);
@@ -2015,6 +2109,19 @@
   }
   @keyframes rhythm-opening-arrive {
     0% { opacity: 0; transform: translateY(18px) scale(0.82); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes rhythm-opening-black-fade {
+    0%, 24% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes rhythm-opening-arrive-delayed {
+    0%, 32% { opacity: 0; transform: translateY(18px) scale(0.82); }
+    68% { opacity: 1; transform: translateY(-3px) scale(1.04); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes rhythm-opening-panel-fade-in {
+    0%, 30% { opacity: 0; transform: translateY(8px) scale(0.96); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
   }
   @keyframes rhythm-opening-panel-exit {
@@ -2210,6 +2317,79 @@
   .rhythm-complete.stage-clear .rhythm-clear-art {
     opacity: 1;
     animation: rhythmClearArtIn 900ms cubic-bezier(0.2, 0.9, 0.22, 1) both;
+  }
+  .rhythm-victory-rival {
+    position: absolute;
+    left: clamp(18px, 7%, 92px);
+    bottom: clamp(20px, 7%, 72px);
+    z-index: 1;
+    width: clamp(154px, 24%, 310px);
+    min-height: clamp(220px, 40%, 380px);
+    display: none;
+    pointer-events: none;
+    align-items: flex-end;
+    justify-content: center;
+    filter: drop-shadow(0 18px 18px rgba(0,0,0,0.34));
+  }
+  .rhythm-complete.stage-clear .rhythm-victory-rival.show {
+    display: flex;
+    animation: rhythmVictoryRivalIn 780ms cubic-bezier(.16,.86,.28,1) both;
+  }
+  .rhythm-victory-rival-sprite {
+    width: 100%;
+    max-height: clamp(190px, 43cqh, 360px);
+    object-fit: contain;
+    transform-origin: 50% 82%;
+    animation: rhythmVictoryRivalWobble 1.35s ease-in-out 760ms both;
+  }
+  .rhythm-victory-rival[data-rival="gaohn"] .rhythm-victory-rival-sprite {
+    width: 112%;
+    max-width: 112%;
+  }
+  .rhythm-victory-speech {
+    position: absolute;
+    left: clamp(8px, 7%, 28px);
+    top: clamp(-12px, 3%, 18px);
+    min-width: clamp(136px, 17vw, 190px);
+    max-width: clamp(156px, 21vw, 230px);
+    padding: 9px 13px 10px;
+    border: 3px solid rgba(255,255,255,0.92);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,250,230,0.96), rgba(255,232,155,0.92));
+    color: #5B3400;
+    font-weight: 900;
+    font-size: clamp(0.82rem, 2.3vw, 1.03rem);
+    line-height: 1.24;
+    text-align: center;
+    box-shadow: 0 9px 20px rgba(0,0,0,0.22);
+    transform: rotate(-2deg);
+  }
+  .rhythm-victory-speech::before,
+  .rhythm-victory-speech::after {
+    content: '';
+    position: absolute;
+    left: 22px;
+    bottom: -15px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+  }
+  .rhythm-victory-speech::before {
+    border-width: 15px 13px 0 13px;
+    border-color: rgba(255,255,255,0.92) transparent transparent transparent;
+  }
+  .rhythm-victory-speech::after {
+    left: 25px;
+    bottom: -10px;
+    border-width: 12px 10px 0 10px;
+    border-color: rgba(255,232,155,0.92) transparent transparent transparent;
+  }
+  .rhythm-victory-name {
+    display: block;
+    margin-bottom: 2px;
+    color: #7C2D12;
+    font-size: 0.72em;
+    opacity: 0.82;
   }
   .rhythm-complete-panel {
     position: relative;
@@ -2616,6 +2796,16 @@
     72% { opacity: 1; transform: translateY(-2px) scale(1.02); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
   }
+  @keyframes rhythmVictoryRivalIn {
+    0% { opacity: 0; transform: translateX(-26px) translateY(24px) rotate(-6deg) scale(0.78); }
+    62% { opacity: 1; transform: translateX(3px) translateY(-5px) rotate(2deg) scale(1.04); }
+    100% { opacity: 1; transform: translateX(0) translateY(0) rotate(0deg) scale(1); }
+  }
+  @keyframes rhythmVictoryRivalWobble {
+    0%, 100% { transform: rotate(0deg) translateY(0); }
+    35% { transform: rotate(-2deg) translateY(4px); }
+    68% { transform: rotate(1.5deg) translateY(1px); }
+  }
   @keyframes rhythmClearStarPop {
     0% { opacity: 0; transform: translateY(12px) scale(0.36) rotate(-18deg); }
     62% { opacity: 1; transform: translateY(-5px) scale(1.22) rotate(8deg); }
@@ -2669,6 +2859,30 @@
     color: #334155;
   }
   @media (max-width: 540px), (orientation: landscape) and (max-height: 520px) {
+    .rhythm-complete.stage-clear {
+      justify-content: flex-end;
+    }
+    .rhythm-complete.stage-clear .rhythm-complete-panel {
+      width: min(68%, 480px);
+      max-width: min(68%, 480px);
+    }
+    .rhythm-victory-rival {
+      left: max(8px, 2%);
+      bottom: max(12px, 4%);
+      width: clamp(118px, 24%, 180px);
+      min-height: clamp(156px, 34%, 240px);
+      opacity: 0.92;
+    }
+    .rhythm-victory-speech {
+      left: 4px;
+      top: -10px;
+      min-width: 104px;
+      max-width: 118px;
+      padding: 7px 10px 8px;
+      font-size: clamp(0.58rem, 2.1vw, 0.72rem);
+      border-width: 2px;
+      border-radius: 15px;
+    }
     .rhythm-complete-panel {
       padding: 14px 16px 16px;
     }
@@ -3058,6 +3272,21 @@
   .start-mode-text {
     display: none;
   }
+  .start-mode-screen {
+    display: block;
+  }
+  .start-mode-free {
+    display: none;
+  }
+  .start-mode-choice.free-step .start-mode-main {
+    display: none;
+  }
+  .start-mode-choice.free-step .start-mode-free {
+    display: block;
+  }
+  .start-mode-choice.free-step .start-mode-panel {
+    transform: translateY(clamp(76px, 13vh, 110px));
+  }
   .start-mode-actions {
     display: grid;
     grid-template-columns: 1fr;
@@ -3104,6 +3333,86 @@
   .start-mode-btn:active {
     transform: translateY(3px) scale(0.98);
   }
+  .start-free-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .start-free-view-btn {
+    min-height: 156px;
+    border: 3px solid rgba(255,255,255,0.92);
+    border-radius: 24px;
+    padding: 10px;
+    font-family: inherit;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    color: #11315D;
+    background: linear-gradient(180deg, rgba(255,255,255,0.86), rgba(219,234,254,0.78));
+    box-shadow: 0 8px 18px rgba(30,64,124,0.24), inset 0 -4px 0 rgba(93,58,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .start-free-view-btn.stage-view {
+    color: #064E3B;
+    background: linear-gradient(180deg, rgba(209,250,229,0.92), rgba(45,212,191,0.68));
+  }
+  .start-free-view-btn:active {
+    transform: translateY(3px) scale(0.98);
+  }
+  .start-free-thumb {
+    position: relative;
+    width: min(100%, 168px);
+    height: 72px;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.12), 0 5px 10px rgba(15,23,42,0.12);
+    background: #0B1633;
+  }
+  .start-free-thumb img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+  .start-free-thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent 42%, rgba(0,0,0,0.12));
+  }
+  .start-free-label {
+    font-size: clamp(0.9rem, 2.4vw, 1.15rem);
+    line-height: 1.08;
+    white-space: nowrap;
+  }
+  .start-free-view-btn small {
+    display: block;
+    font-size: clamp(0.62rem, 1.8vw, 0.78rem);
+    line-height: 1.2;
+    color: rgba(15,23,42,0.72);
+  }
+  .start-free-back {
+    margin-top: 10px;
+    min-width: 112px;
+    padding: 7px 16px 8px;
+    border: 2px solid rgba(255,255,255,0.78);
+    border-radius: 999px;
+    font-family: inherit;
+    font-weight: 900;
+    color: #1E3A8A;
+    background: rgba(255,255,255,0.6);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
   @media (max-width: 900px) {
     .start-mode-choice {
       justify-content: center;
@@ -3115,8 +3424,20 @@
       margin-right: 0;
       transform: none;
     }
+    .start-mode-choice.free-step .start-mode-panel {
+      transform: none;
+    }
   }
   @media (max-width: 540px) {
+    .start-free-actions {
+      grid-template-columns: 1fr;
+    }
+    .start-free-view-btn {
+      min-height: 118px;
+    }
+    .start-free-thumb {
+      height: 56px;
+    }
     .start-mode-btn {
       min-height: 58px;
       padding: 8px 16px;
@@ -4074,6 +4395,10 @@
     border-right: 1px solid rgba(125,211,252,0.18);
     box-shadow: inset -18px 0 30px rgba(2,6,23,0.24);
   }
+  body.rhythm-layout.rhythm-opening-active .rhythm-battle-panel,
+  body.rhythm-layout.rhythm-complete-active .rhythm-battle-panel {
+    display: none !important;
+  }
   body.rhythm-layout .mode-switch,
   body.rhythm-layout .chord-pill,
   body.rhythm-layout .sound-sets-box,
@@ -4160,7 +4485,7 @@
   }
   .rhythm-rival-fx {
     position: absolute;
-    z-index: 2;
+    z-index: 5;
     display: none;
     width: 28%;
     height: 28%;
@@ -4173,11 +4498,45 @@
   .rhythm-rival-fx.fx-a { left: 7%; top: 20%; }
   .rhythm-rival-fx.fx-b { right: 8%; top: 18%; }
   .rhythm-rival-fx.fx-c { right: 12%; bottom: 22%; }
+  .rhythm-rival-fx.fx-b.fx-line {
+    right: -2%;
+    top: 10%;
+    width: 36%;
+    height: 36%;
+    background-position: right center;
+    transform-origin: 76% 50%;
+  }
+  .rhythm-rival-fx.fx-c.fx-line {
+    right: -1%;
+    bottom: 18%;
+    width: 34%;
+    height: 34%;
+    background-position: right center;
+    transform-origin: 76% 50%;
+  }
+  .rhythm-rival-fx.fx-flip-x {
+    scale: -1 1;
+  }
   .rhythm-rival-fx.fx-line { animation: rival-fx-line 520ms ease-out both; }
   .rhythm-rival-fx.fx-pop { animation: rival-fx-pop 560ms ease-out both; }
   .rhythm-rival-fx.fx-sweat { animation: rival-fx-sweat 760ms ease-out both; }
   .rhythm-rival-fx.fx-spin { animation: rival-fx-spin 780ms ease-out both; }
   .rhythm-rival-fx.fx-float { animation: rival-fx-float 900ms ease-out both; }
+  .rhythm-rival-fx.fx-a.fx-anger-smoke {
+    left: 4%;
+    top: 14%;
+    width: 25%;
+    height: 25%;
+    transform-origin: 74% 76%;
+  }
+  .rhythm-rival-fx.fx-b.fx-anger-smoke {
+    right: 4%;
+    top: 14%;
+    width: 25%;
+    height: 25%;
+    transform-origin: 26% 76%;
+  }
+  .rhythm-rival-fx.fx-anger-smoke { animation: rival-fx-anger-smoke 980ms ease-out both; }
   .rhythm-rival-card[data-state="attack"] .rhythm-rival-sprite {
     animation: rival-attack-pop 520ms cubic-bezier(.2,1.45,.38,1) both;
   }
@@ -4260,6 +4619,13 @@
     22% { opacity: 1; }
     100% { opacity: 0; transform: translateY(-24px) scale(1.08); }
   }
+  @keyframes rival-fx-anger-smoke {
+    0% { opacity: 0; transform: translateY(10px) scale(0.48) rotate(-8deg); }
+    18% { opacity: 1; transform: translateY(0) scale(1.04) rotate(4deg); }
+    44% { opacity: 0.96; transform: translateY(-8px) scale(1.16) rotate(-3deg); }
+    68% { opacity: 0.74; transform: translateY(-14px) scale(0.98) rotate(5deg); }
+    100% { opacity: 0; transform: translateY(-24px) scale(1.18) rotate(-6deg); }
+  }
   .rhythm-rival-card::after {
     content: '';
     position: absolute;
@@ -4317,15 +4683,16 @@
   .rhythm-pono-art {
     position: absolute;
     left: 50%;
-    top: 44%;
-    width: 72%;
-    height: 58%;
+    top: 49%;
+    width: 90%;
+    height: 72%;
     z-index: 2;
     transform: translate(-50%, -50%);
     transform-origin: 50% 78%;
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    overflow: visible;
     animation: rhythm-pono-pulse var(--rhythm-beat-ms, 666ms) ease-in-out infinite;
     filter: drop-shadow(0 8px 7px rgba(0,0,0,0.28));
     will-change: transform;
@@ -4341,6 +4708,24 @@
     -webkit-user-drag: none;
     pointer-events: none;
   }
+  .rhythm-pono-fx {
+    position: absolute;
+    z-index: 4;
+    display: none;
+    width: 24%;
+    height: 24%;
+    background: center / contain no-repeat;
+    pointer-events: none;
+    opacity: 0;
+    filter: drop-shadow(0 3px 2px rgba(0,0,0,0.22));
+  }
+  .rhythm-pono-fx.show { display: block; }
+  .rhythm-pono-fx.fx-a { left: 5%; top: 11%; }
+  .rhythm-pono-fx.fx-b { right: 4%; top: 15%; }
+  .rhythm-pono-fx.fx-c { right: 13%; bottom: 24%; }
+  .rhythm-pono-fx.fx-heart { animation: rhythm-pono-fx-heart 780ms ease-out both; }
+  .rhythm-pono-fx.fx-star,
+  .rhythm-pono-fx.fx-sparkle { animation: rhythm-pono-fx-sparkle 720ms ease-out both; }
   @keyframes rhythm-character-pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.022); }
@@ -4355,6 +4740,16 @@
     58% { transform: translate(-50%, -50%) translateY(0) scale(1); }
     78% { transform: translate(-50%, -50%) translateY(-4px) scale(1.04); }
     100% { transform: translate(-50%, -50%) translateY(0) scale(1); }
+  }
+  @keyframes rhythm-pono-fx-heart {
+    0% { opacity: 0; transform: translateY(8px) scale(0.45) rotate(-8deg); }
+    26% { opacity: 1; transform: translateY(-3px) scale(1.12) rotate(5deg); }
+    100% { opacity: 0; transform: translateY(-26px) scale(1.18) rotate(14deg); }
+  }
+  @keyframes rhythm-pono-fx-sparkle {
+    0% { opacity: 0; transform: translateY(6px) scale(0.38) rotate(-16deg); }
+    24% { opacity: 1; transform: translateY(-2px) scale(1.1) rotate(8deg); }
+    100% { opacity: 0; transform: translateY(-20px) scale(1.22) rotate(26deg); }
   }
   body.rhythm-layout .pono-wrap {
     left: 11% !important;
@@ -4393,19 +4788,10 @@
     display: none !important;
   }
   body.rhythm-layout.free-stage-layout .stage > .pono-wrap {
-    display: flex !important;
-    left: var(--rhythm-left-x, 11%) !important;
-    top: clamp(10px, 3.2cqh, 26px) !important;
-    width: clamp(82px, 22cqh, 112px) !important;
-    height: clamp(82px, 22cqh, 112px) !important;
-    transform: translate(-50%, 0) !important;
-    animation-name: ponoBreatheTop !important;
+    display: none !important;
   }
-  body.rhythm-layout.free-stage-layout .stage > .pono-wrap.bump {
-    animation-name: ponoBumpTop !important;
-  }
-  body.rhythm-layout.free-stage-layout .stage > .pono-wrap .pono-sprite {
-    height: clamp(76px, 21cqh, 106px) !important;
+  body.rhythm-layout.free-stage-layout .free-stage-pono {
+    display: flex;
   }
   body.rhythm-layout.free-stage-layout .mode-switch,
   body.rhythm-layout.free-stage-layout .free-view-switch,
@@ -4460,11 +4846,29 @@
 
 <div class="start-mode-choice" id="start-mode-choice" role="dialog" aria-modal="true" aria-label="あそびかたをえらぶ">
   <div class="start-mode-panel">
-    <div class="start-mode-title">あそびかたを えらぼう</div>
-    <div class="start-mode-text">あとで いつでも きりかえられるよ</div>
-    <div class="start-mode-actions">
-      <button class="start-mode-btn rhythm" data-start-mode="rhythm"><span>リズム</span><small>ストーリーモード</small></button>
-      <button class="start-mode-btn free" data-start-mode="free"><span>じゆう</span><small>すきに えんそう</small></button>
+    <div class="start-mode-screen start-mode-main">
+      <div class="start-mode-title">あそびかたを えらぼう</div>
+      <div class="start-mode-text">あとで いつでも きりかえられるよ</div>
+      <div class="start-mode-actions">
+        <button class="start-mode-btn rhythm" data-start-mode="rhythm"><span>リズム</span><small>ストーリーモード</small></button>
+        <button class="start-mode-btn free" data-start-mode="free"><span>じゆう</span><small>すきに えんそう</small></button>
+      </div>
+    </div>
+    <div class="start-mode-screen start-mode-free" aria-label="じゆうのあそびかたをえらぶ">
+      <div class="start-mode-title">じゆうの あそびかた</div>
+      <div class="start-free-actions">
+        <button class="start-free-view-btn classic" data-free-view="classic">
+          <span class="start-free-thumb classic" aria-hidden="true"><img src="../assets/images/oto/ui/free_mode_button_screenshot_thumb.png" alt="" draggable="false"></span>
+          <span class="start-free-label">ボタンえんそう</span>
+          <small>まるい ボタンで あそぶ</small>
+        </button>
+        <button class="start-free-view-btn stage-view" data-free-view="stage">
+          <span class="start-free-thumb stage" aria-hidden="true"><img src="../assets/images/oto/ui/free_mode_stage_screenshot_thumb.png" alt="" draggable="false"></span>
+          <span class="start-free-label">ステージえんそう</span>
+          <small>3Dレーンで あそぶ</small>
+        </button>
+      </div>
+      <button class="start-free-back" type="button">もどる</button>
     </div>
   </div>
 </div>
@@ -4477,6 +4881,9 @@
     <!-- ポノ (中層) — ラッパーで位置決めし、img は高さ固定 + 幅 auto で中央寄せ -->
     <div class="pono-wrap">
       <img id="pono" class="pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
+    </div>
+    <div class="free-stage-pono" id="free-stage-pono" aria-hidden="true">
+      <img id="free-stage-pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
     </div>
 
     <div class="rhythm-battle-panel" id="rhythm-battle-panel" aria-hidden="true">
@@ -4494,6 +4901,9 @@
       <section class="rhythm-pono-card" aria-hidden="true">
         <div class="rhythm-pono-art" id="rhythm-pono-art">
           <img class="rhythm-pono-sprite" id="rhythm-pono-sprite" src="../assets/images/characters/pono/pono_001.png" alt="" draggable="false">
+          <span class="rhythm-pono-fx fx-a" id="rhythm-pono-fx-a"></span>
+          <span class="rhythm-pono-fx fx-b" id="rhythm-pono-fx-b"></span>
+          <span class="rhythm-pono-fx fx-c" id="rhythm-pono-fx-c"></span>
         </div>
         <div class="rhythm-pono-kicker">ポノ</div>
         <div class="rhythm-pono-line" id="rhythm-pono-line">いくよ！</div>
@@ -4534,6 +4944,9 @@
         <button class="oto-menu-item" id="oto-menu-tutorial" type="button">
           <span class="oto-menu-icon">❓</span><span>あそびかた</span>
         </button>
+        <button class="oto-menu-item" id="oto-menu-bgm" type="button">
+          <span class="oto-menu-icon">🎵</span><span id="oto-menu-bgm-label">おんがく ON</span>
+        </button>
         <button class="oto-menu-item" id="oto-menu-notation" type="button">
           <span class="oto-menu-icon">🔤</span><span id="oto-menu-notation-label">おんぷ ABCに</span>
         </button>
@@ -4559,8 +4972,8 @@
 
     <!-- 自由モードの見た目切替: 元の丸ボタン / 3Dステージ -->
     <div class="free-view-switch" id="free-view-switch" role="tablist" aria-label="じゆうモードの見た目">
-      <button class="free-view-btn active" data-free-view="classic" role="tab" aria-selected="true">まる</button>
-      <button class="free-view-btn" data-free-view="stage" role="tab" aria-selected="false">3D</button>
+      <button class="free-view-btn active" data-free-view="classic" role="tab" aria-selected="true">ボタン</button>
+      <button class="free-view-btn" data-free-view="stage" role="tab" aria-selected="false">ステージ</button>
     </div>
 
     <!-- WebGL 3D レーン / ノーツ (対応環境で使用。DOM版はフォールバック) -->
@@ -4664,6 +5077,13 @@
 
     <div class="rhythm-complete" id="rhythm-complete" role="dialog" aria-modal="true" aria-label="リズムおしまい">
       <img class="rhythm-clear-art" id="rhythm-clear-art" src="../assets/images/oto/rhythm/stage_clear_burst.png" alt="" draggable="false">
+      <div class="rhythm-victory-rival" id="rhythm-victory-rival" aria-hidden="true">
+        <img class="rhythm-victory-rival-sprite" id="rhythm-victory-rival-sprite" src="../assets/images/oto/rhythm/rivals/reactions/kero/defeat_dizzy.png" alt="" draggable="false">
+        <div class="rhythm-victory-speech" id="rhythm-victory-speech">
+          <span class="rhythm-victory-name" id="rhythm-victory-name">DJ ケロック</span>
+          <span id="rhythm-victory-line">ケロッ... まいったケロ！</span>
+        </div>
+      </div>
       <div class="rhythm-complete-panel">
         <div class="rhythm-complete-title" id="rhythm-complete-title">よくできたね</div>
         <div class="rhythm-result-stars" id="rhythm-result-stars" aria-label="ひょうか">
@@ -4744,7 +5164,12 @@
 // Audio: iOS Safari 対応アンロック
 // ────────────────────────────────
 let _ac = null;
+var _otoWindowInactive = false;
+function _otoAudioShouldBlock() {
+  return !!(document.hidden || _otoWindowInactive);
+}
 function getAC() {
+  if (_otoAudioShouldBlock()) return null;
   if (!_ac) { try { _ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
   if (_ac && _ac.state === 'suspended') _ac.resume().catch(function(){});
   return _ac;
@@ -4763,6 +5188,199 @@ function unlockAudio() {
 }
 document.addEventListener('touchstart', unlockAudio, { capture: true, passive: true });
 document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: true });
+
+// ────────────────────────────────
+// BGM: タイトル / ライバル会話 / ステージクリア
+// ────────────────────────────────
+var OTO_BGM_TRACKS = {
+  title: {
+    src: '../assets/audio/oto/bgm/pono_oto_touch_title.mp3',
+    volume: 0.34,
+    loop: true
+  },
+  rival: {
+    src: '../assets/audio/oto/bgm/dj_kerock_hop_rival.mp3',
+    volume: 0.24,
+    loop: true
+  },
+  rivalRobot: {
+    src: '../assets/audio/oto/bgm/clockwork_rival_robot.mp3',
+    volume: 0.25,
+    loop: true
+  },
+  rivalLion: {
+    src: '../assets/audio/oto/bgm/lion_crown_clash_rival.mp3',
+    volume: 0.27,
+    loop: true
+  },
+  clear: {
+    src: '../assets/audio/oto/bgm/stage_clear_sticker_victory.mp3',
+    volume: 0.36,
+    loop: true
+  }
+};
+var _otoBgmState = {
+  audios: {},
+  currentKey: null,
+  desiredKey: null
+};
+function _otoBgmEnabled() {
+  try { return localStorage.getItem('pono_bgm_enabled') !== 'off'; } catch(e) { return true; }
+}
+function _otoBgmAudio(key) {
+  var meta = OTO_BGM_TRACKS[key];
+  if (!meta) return null;
+  if (!_otoBgmState.audios[key]) {
+    var audio = new Audio(meta.src);
+    audio.loop = meta.loop !== false;
+    audio.preload = 'auto';
+    audio.volume = 0;
+    _otoBgmState.audios[key] = audio;
+  }
+  return _otoBgmState.audios[key];
+}
+function _fadeOtoAudio(audio, toVolume, durationMs, onDone) {
+  if (!audio) return;
+  if (audio._otoFadeFrame) {
+    cancelAnimationFrame(audio._otoFadeFrame);
+    audio._otoFadeFrame = 0;
+  }
+  var from = Number(audio.volume) || 0;
+  var to = Math.max(0, Math.min(1, Number(toVolume) || 0));
+  var duration = Math.max(0, durationMs || 0);
+  if (!duration) {
+    audio.volume = to;
+    if (onDone) onDone();
+    return;
+  }
+  var start = performance.now();
+  function step(now) {
+    var t = Math.min(1, (now - start) / duration);
+    var eased = 1 - Math.pow(1 - t, 3);
+    audio.volume = Math.max(0, Math.min(1, from + (to - from) * eased));
+    if (t < 1) {
+      audio._otoFadeFrame = requestAnimationFrame(step);
+    } else {
+      audio._otoFadeFrame = 0;
+      audio.volume = to;
+      if (onDone) onDone();
+    }
+  }
+  audio._otoFadeFrame = requestAnimationFrame(step);
+}
+function _pauseOtoBgm(durationMs) {
+  var key = _otoBgmState.currentKey;
+  var audio = key ? _otoBgmState.audios[key] : null;
+  _otoBgmState.currentKey = null;
+  if (!audio) return;
+  _fadeOtoAudio(audio, 0, durationMs == null ? 360 : durationMs, function() {
+    try { audio.pause(); } catch(e) {}
+  });
+}
+function _pauseAllOtoBgmNow() {
+  Object.keys(_otoBgmState.audios || {}).forEach(function(key) {
+    var audio = _otoBgmState.audios[key];
+    if (!audio) return;
+    if (audio._otoFadeFrame) {
+      cancelAnimationFrame(audio._otoFadeFrame);
+      audio._otoFadeFrame = 0;
+    }
+    try { audio.volume = 0; } catch(e) {}
+    try { audio.pause(); } catch(e) {}
+  });
+  _otoBgmState.currentKey = null;
+}
+function _stopOtoBgm(durationMs) {
+  _otoBgmState.desiredKey = null;
+  _pauseOtoBgm(durationMs);
+}
+function _playOtoBgm(key, options) {
+  options = options || {};
+  if (!OTO_BGM_TRACKS[key]) {
+    _stopOtoBgm(options.fadeMs);
+    return;
+  }
+  _otoBgmState.desiredKey = key;
+  if (_otoAudioShouldBlock()) {
+    _pauseAllOtoBgmNow();
+    return;
+  }
+  if (!_otoBgmEnabled()) {
+    _pauseOtoBgm(options.fadeMs);
+    return;
+  }
+  var meta = OTO_BGM_TRACKS[key];
+  var next = _otoBgmAudio(key);
+  if (!next) return;
+  var fadeMs = options.fadeMs == null ? 520 : options.fadeMs;
+  var prevKey = _otoBgmState.currentKey;
+  if (prevKey && prevKey !== key) {
+    var prev = _otoBgmState.audios[prevKey];
+    if (prev) {
+      _fadeOtoAudio(prev, 0, fadeMs, function() {
+        try { prev.pause(); } catch(e) {}
+      });
+    }
+  }
+  _otoBgmState.currentKey = key;
+  if (options.restart) {
+    try { next.currentTime = 0; } catch(e) {}
+  }
+  try {
+    var promise = next.play();
+    if (promise && typeof promise.catch === 'function') promise.catch(function(){});
+  } catch(e) {}
+  _fadeOtoAudio(next, meta.volume, fadeMs);
+}
+function _setOtoBgmEnabled(enabled) {
+  try { localStorage.setItem('pono_bgm_enabled', enabled ? 'on' : 'off'); } catch(e) {}
+  if (enabled) {
+    if (_otoBgmState.desiredKey) _playOtoBgm(_otoBgmState.desiredKey, { fadeMs: 240 });
+  } else {
+    _pauseOtoBgm(180);
+  }
+  _refreshOtoBgmMenuLabel();
+}
+function _refreshOtoBgmMenuLabel() {
+  var label = document.getElementById('oto-menu-bgm-label');
+  if (label) label.textContent = _otoBgmEnabled() ? 'おんがく ON' : 'おんがく OFF';
+}
+function _stopHeldNotesForInactive() {
+  if (typeof _heldNotes === 'undefined' || !_heldNotes || typeof _heldNotes.keys !== 'function') return;
+  Array.from(_heldNotes.keys()).forEach(function(btn) {
+    try { stopHeldNote(btn); } catch(e) {}
+  });
+}
+function _silenceOtoAudioForInactive(reason) {
+  if (reason === 'blur') _otoWindowInactive = true;
+  _pauseAllOtoBgmNow();
+  try { if (typeof _clearRhythmMelodySchedule === 'function') _clearRhythmMelodySchedule(); } catch(e) {}
+  try { if (typeof _clearRhythmBackingSchedule === 'function') _clearRhythmBackingSchedule(); } catch(e) {}
+  try { if (typeof _stopAllPlayback === 'function') _stopAllPlayback(); } catch(e) {}
+  try { if (typeof _stopAllBands === 'function') _stopAllBands(); } catch(e) {}
+  _stopHeldNotesForInactive();
+  if (_ac && _ac.state === 'running') _ac.suspend().catch(function(){});
+}
+function _resumeOtoAudioAfterInactive() {
+  if (document.hidden) return;
+  if (document.hasFocus && !document.hasFocus()) return;
+  _otoWindowInactive = false;
+  if (_ac && _ac.state === 'suspended') _ac.resume().catch(function(){});
+  if (_otoBgmEnabled() && _otoBgmState.desiredKey) {
+    _playOtoBgm(_otoBgmState.desiredKey, { fadeMs: 260 });
+  }
+}
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) _silenceOtoAudioForInactive('visibility');
+  else _resumeOtoAudioAfterInactive();
+});
+window.addEventListener('blur', function() {
+  _silenceOtoAudioForInactive('blur');
+});
+window.addEventListener('focus', function() {
+  _otoWindowInactive = false;
+  _resumeOtoAudioAfterInactive();
+});
 
 // ────────────────────────────────
 // ボイス音源: voices/NN-aiueo.wav を6音ピックアップ (あ か さ た な ま)
@@ -5805,7 +6423,23 @@ var RHYTHM_SCORE_STAR_BONUS = 1000;
 var RHYTHM_SCORE_NOMISS_BONUS = 1500;
 var RHYTHM_SCORE_FULL_BONUS = 1000;
 var RHYTHM_SCORE_MAX_COMBO_BONUS = 50;
+var RHYTHM_SCORE_GOLD_GEAR_BONUS = 260;
 var RHYTHM_RIVAL_ASSET_BASE = '../assets/images/oto/rhythm/rivals/reactions/';
+var RHYTHM_PONO_FX_ASSETS = {
+  good: [
+    { file: '../assets/images/mojikko/writing/icon_star_large.png', type: 'star', slot: 'a' },
+    { file: '../assets/images/mojikko/writing/icon_heart_large.png', type: 'heart', slot: 'b' },
+    { file: '../assets/images/mojikko/writing/icon_sparkle.png', type: 'sparkle', slot: 'c' }
+  ],
+  fever: [
+    { file: '../assets/images/mojikko/writing/icon_heart_large.png', type: 'heart', slot: 'a' },
+    { file: '../assets/images/mojikko/writing/icon_star_large.png', type: 'star', slot: 'b' },
+    { file: '../assets/images/mojikko/writing/icon_sparkle.png', type: 'sparkle', slot: 'c' }
+  ],
+  care: [
+    { file: '../assets/images/mojikko/writing/icon_heart_large.png', type: 'heart', slot: 'b' }
+  ]
+};
 function _rivalReactionAsset(folder, file) {
   return RHYTHM_RIVAL_ASSET_BASE + folder + '/' + file;
 }
@@ -5827,27 +6461,28 @@ var RHYTHM_RIVALS = {
     fx: {
       attack: [
         { file: _rivalReactionAsset('kero', 'fx_shock_zigzag.png'), type: 'pop' },
-        { file: _rivalReactionAsset('kero', 'fx_action_lines_a.png'), type: 'line' }
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'line', slot: 'b', flipX: true }
       ],
       happy: [
-        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'line' }
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'line', slot: 'b', flipX: true }
       ],
       surprised: [
-        { file: _rivalReactionAsset('kero', 'fx_shock_zigzag.png'), type: 'pop' }
+        { file: _rivalReactionAsset('kero', 'fx_shock_zigzag.png'), type: 'pop', slot: 'b' }
       ],
       frustrated: [
-        { file: _rivalReactionAsset('kero', 'fx_action_lines_a.png'), type: 'line' }
+        { file: _rivalReactionAsset('kero', 'fx_anger_smoke_left.png'), type: 'anger-smoke', slot: 'a' },
+        { file: _rivalReactionAsset('kero', 'fx_anger_smoke_right.png'), type: 'anger-smoke', slot: 'b' }
       ],
       panic: [
-        { file: _rivalReactionAsset('kero', 'fx_sweat_pair.png'), type: 'sweat' },
-        { file: _rivalReactionAsset('kero', 'fx_tear_a.png'), type: 'sweat' }
+        { file: _rivalReactionAsset('kero', 'fx_sweat_pair.png'), type: 'sweat', slot: 'b' },
+        { file: _rivalReactionAsset('kero', 'fx_tear_a.png'), type: 'sweat', slot: 'c', flipX: true }
       ],
       defeat: [
-        { file: _rivalReactionAsset('kero', 'fx_tear_b.png'), type: 'sweat' },
-        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'float' }
+        { file: _rivalReactionAsset('kero', 'fx_tear_b.png'), type: 'sweat', slot: 'b' },
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'line', slot: 'c', flipX: true }
       ],
       impressed: [
-        { file: _rivalReactionAsset('kero', 'fx_action_lines_a.png'), type: 'pop' }
+        { file: _rivalReactionAsset('kero', 'fx_action_lines_b.png'), type: 'line', slot: 'b', flipX: true }
       ]
     },
     lines: {
@@ -5859,7 +6494,7 @@ var RHYTHM_RIVALS = {
       frustrated: 'ぐぬぬケロ...',
       panic: 'まってケロー！',
       impressed: 'すごいケロ！',
-      defeat: 'ケロッ おぼえたなー！'
+      defeat: 'ケロッ... まいったケロ！'
     }
   },
   normal: {
@@ -5888,8 +6523,8 @@ var RHYTHM_RIVALS = {
         { file: _rivalReactionAsset('robot', 'fx_action_lines_a.png'), type: 'pop' }
       ],
       frustrated: [
-        { file: _rivalReactionAsset('robot', 'fx_smoke_a.png'), type: 'float' },
-        { file: _rivalReactionAsset('robot', 'fx_smoke_b.png'), type: 'float' }
+        { file: _rivalReactionAsset('robot', 'fx_smoke_a.png'), type: 'float', slot: 'b' },
+        { file: _rivalReactionAsset('robot', 'fx_smoke_b.png'), type: 'float', slot: 'a' }
       ],
       panic: [
         { file: _rivalReactionAsset('robot', 'fx_bolt.png'), type: 'spin' },
@@ -5914,7 +6549,7 @@ var RHYTHM_RIVALS = {
       frustrated: 'ネジが あつい...',
       panic: 'こしょう しそう！',
       impressed: 'いい テンポだ！',
-      defeat: 'ネジが まけちゃった！'
+      defeat: 'まいった！ いい リズムだ！'
     }
   },
   hard: {
@@ -5966,45 +6601,36 @@ var RHYTHM_RIVALS = {
       frustrated: 'むむむ...',
       panic: 'おうかんがー！',
       impressed: 'みごとだ！',
-      defeat: 'くやしい でも みとめる！'
+      defeat: 'まいった！ みとめるぞ！'
     }
   }
 };
 var RHYTHM_OPENING_SCENES = {
   kaeru: [
-    { speaker: 'rival', state: 'taunt', text: 'ケロケロ！ ドレミの はしを わたれるケロ？' },
-    { speaker: 'rival', state: 'happy', text: 'ぼくの ビートに ついてこれるケロ？' },
-    { speaker: 'rival', state: 'taunt', text: 'ラインに きたら すぐ タッチだケロ！' },
+    { speaker: 'rival', state: 'taunt', text: 'オレは DJ ケロック！' },
+    { speaker: 'rival', state: 'happy', text: 'リズムたいけつなら だれにも まけないぜ！' },
     { speaker: 'rival', state: 'attack', text: 'したのラインで うけてみろケロ！' }
   ],
   mary: [
-    { speaker: 'rival', state: 'taunt', text: 'ふわふわの ひつじビートだケロ！' },
-    { speaker: 'rival', state: 'happy', text: 'やさしく でも ぴったり いくケロ！' },
     { speaker: 'rival', state: 'taunt', text: 'おなじ おとが つづくケロ！' },
     { speaker: 'rival', state: 'attack', text: 'ミの おとを よく きくケロ！' }
   ],
   twinkle: [
     { speaker: 'rival', state: 'taunt', text: 'ほしの ノートを ちらすケロ！' },
-    { speaker: 'rival', state: 'happy', text: 'キラッと きたら ねらうケロ！' },
-    { speaker: 'rival', state: 'taunt', text: 'ひとつずつ みれば だいじょうぶケロ！' },
     { speaker: 'rival', state: 'attack', text: 'れんぞくで ついてこれるケロ？' }
   ],
   choucho: [
-    { speaker: 'rival', state: 'taunt', text: 'カチカチ！ はねる リズムを まわせ！' },
-    { speaker: 'rival', state: 'happy', text: 'ギアの あいずを よく みろ！' },
-    { speaker: 'rival', state: 'taunt', text: 'ちょうちょの うごきに まどわされるな！' },
+    { speaker: 'rival', state: 'taunt', text: 'わたしは ネジマエストロ！' },
+    { speaker: 'rival', state: 'happy', text: 'リズムたいけつなら だれにも まけない！' },
     { speaker: 'rival', state: 'attack', text: 'ギアの あいずで いくぞ！' }
   ],
   london: [
     { speaker: 'rival', state: 'taunt', text: 'ガタン！ はしの リズムだ！' },
-    { speaker: 'rival', state: 'happy', text: 'おちるまえに リズムを とれ！' },
-    { speaker: 'rival', state: 'taunt', text: 'テンポの かわりめを みのがすな！' },
     { speaker: 'rival', state: 'attack', text: 'テンポが かわっても できるか？' }
   ],
   ode: [
-    { speaker: 'rival', state: 'taunt', text: 'ガオーン！ さいごの おうさまビートだ！' },
-    { speaker: 'rival', state: 'happy', text: 'ここまで きたなら ぜんぶ みせろ！' },
-    { speaker: 'rival', state: 'taunt', text: 'おおきな おとでも まっすぐ ねらえ！' },
+    { speaker: 'rival', state: 'taunt', text: 'オレさまは ビートキング ガオーン！' },
+    { speaker: 'rival', state: 'happy', text: 'リズムたいけつなら だれにも まけん！' },
     { speaker: 'rival', state: 'attack', text: 'よろこびの おとで しょうぶだ！' }
   ]
 };
@@ -6020,6 +6646,13 @@ Object.keys(RHYTHM_RIVALS).forEach(function(key) {
       var im = new Image();
       im.src = item.file;
     });
+  });
+});
+Object.keys(RHYTHM_PONO_FX_ASSETS).forEach(function(key) {
+  (RHYTHM_PONO_FX_ASSETS[key] || []).forEach(function(item) {
+    if (!item || !item.file) return;
+    var im = new Image();
+    im.src = item.file;
   });
 });
 var _playMode = 'free';
@@ -6066,12 +6699,15 @@ var _rhythm = {
   maxStreak: 0,
   score: 0,
   pendingScoreEntry: null,
+  pendingStickerResult: null,
+  pendingStickerPromise: null,
   feverLevel: 0,
   feverTimer: 0,
   feverBubbleTimer: 0,
   openingActive: false,
   openingSettling: false,
   openingSettleTimer: null,
+  openingMenuTimer: null,
   openingIndex: 0,
   openingScenes: [],
   openingThenStart: false,
@@ -6102,8 +6738,60 @@ function _rhythmRivalKeyForSong(song) {
   if (diff === 'ふつう') return 'normal';
   return 'easy';
 }
+function _rhythmOpeningBgmKeyForSong(song) {
+  var rivalKey = _rhythmRivalKeyForSong(song);
+  if (rivalKey === 'hard') return 'rivalLion';
+  if (rivalKey === 'normal') return 'rivalRobot';
+  return 'rival';
+}
 function _currentRhythmRival() {
   return RHYTHM_RIVALS[_rhythmRivalKeyForSong(RHYTHM_BASE_SONG)] || RHYTHM_RIVALS.easy;
+}
+function _rhythmGoldGearBonusAt(seqIndex, song) {
+  if (_rhythmRivalKeyForSong(song || RHYTHM_BASE_SONG) !== 'normal') return 0;
+  if (_rhythmBeatLengthAt(seqIndex) > 1) return 0;
+  var songId = ((song && song.id) || (RHYTHM_BASE_SONG && RHYTHM_BASE_SONG.id) || 'oto');
+  var seed = songId.length % 4;
+  return seqIndex > 0 && ((seqIndex + seed) % 7 === 3) ? RHYTHM_SCORE_GOLD_GEAR_BONUS : 0;
+}
+function _rhythmNoteSkinFor(seqIndex, laneIdx, song) {
+  var rivalKey = _rhythmRivalKeyForSong(song || RHYTHM_BASE_SONG);
+  var laneColor = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FDE68A', lo: '#F59E0B' };
+  if (rivalKey === 'normal') {
+    var goldBonus = _rhythmGoldGearBonusAt(seqIndex, song);
+    return {
+      theme: 'gear',
+      shape: 'gear',
+      hi: goldBonus ? '#FDE68A' : '#E5EDF5',
+      lo: goldBonus ? '#D97706' : '#94A3B8',
+      rim: goldBonus ? 'rgba(255,248,220,0.96)' : 'rgba(255,255,255,0.9)',
+      ink: goldBonus ? '#6B3F00' : '#111827',
+      domGlyph: '\u2699',
+      bonusScore: goldBonus
+    };
+  }
+  if (rivalKey === 'hard') {
+    return {
+      theme: 'gaohn',
+      shape: 'burst',
+      hi: laneColor.hi || '#F59E0B',
+      lo: laneColor.lo || '#C2410C',
+      rim: 'rgba(255,250,220,0.94)',
+      ink: 'rgba(255,255,255,0.96)',
+      domGlyph: '\u2736',
+      bonusScore: 0
+    };
+  }
+  return {
+    theme: 'kero',
+    shape: 'round',
+    hi: laneColor.hi || '#FDE68A',
+    lo: laneColor.lo || '#F59E0B',
+    rim: 'rgba(255,255,255,0.92)',
+    ink: 'rgba(255,255,255,0.95)',
+    domGlyph: '\u266a',
+    bonusScore: 0
+  };
 }
 function _rhythmPonoLine(kind, judge) {
   if (kind === 'clear') return 'やったね！';
@@ -6117,6 +6805,9 @@ function _rhythmPonoLine(kind, judge) {
   return 'いくよ！';
 }
 function _rhythmPonoEffectTarget() {
+  if (document.body && document.body.classList.contains('free-stage-layout')) {
+    return document.getElementById('free-stage-pono') || document.querySelector('.pono-wrap');
+  }
   if (document.body && document.body.classList.contains('rhythm-layout')) {
     return document.getElementById('rhythm-pono-art') || document.querySelector('.pono-wrap');
   }
@@ -6130,14 +6821,64 @@ function _resetRhythmRivalFx() {
     el.style.backgroundImage = '';
   });
 }
+function _rhythmFxSlotFor(item, idx, used) {
+  if (item && item.slot && !used[item.slot]) return item.slot;
+  var rightSide = item && (item.type === 'line' || item.type === 'sweat' || item.type === 'float');
+  var order = rightSide ? ['b', 'c', 'a'] : ['a', 'b', 'c'];
+  for (var i = 0; i < order.length; i++) {
+    if (!used[order[i]]) return order[i];
+  }
+  return ['a', 'b', 'c'][idx % 3];
+}
 function _applyRhythmRivalFx(rival, state) {
   _resetRhythmRivalFx();
   var fx = (rival && rival.fx && rival.fx[state]) || [];
-  ['a', 'b', 'c'].forEach(function(slot, idx) {
-    var item = fx[idx];
+  var used = {};
+  fx.forEach(function(item, idx) {
+    var slot = _rhythmFxSlotFor(item, idx, used);
+    if (used[slot]) return;
+    used[slot] = true;
     var el = document.getElementById('rhythm-rival-fx-' + slot);
     if (!el || !item || !item.file) return;
     el.className = 'rhythm-rival-fx fx-' + slot + ' fx-' + (item.type || 'pop');
+    if (item.flipX) el.classList.add('fx-flip-x');
+    el.style.backgroundImage = 'url("' + item.file + '")';
+    void el.offsetWidth;
+    el.classList.add('show');
+  });
+}
+function _resetRhythmPonoFx() {
+  ['a', 'b', 'c'].forEach(function(slot) {
+    var el = document.getElementById('rhythm-pono-fx-' + slot);
+    if (!el) return;
+    el.className = 'rhythm-pono-fx fx-' + slot;
+    el.style.backgroundImage = '';
+  });
+}
+function _rhythmPonoFxSet(lineText) {
+  var text = String(lineText || '');
+  if (!text || text === 'いくよ！' || text === 'みて おぼえよう') return [];
+  if (text.indexOf('フィーバー') >= 0 || text.indexOf('れんぞく') >= 0 || text.indexOf('やった') >= 0) {
+    return RHYTHM_PONO_FX_ASSETS.fever;
+  }
+  if (text.indexOf('だいじょうぶ') >= 0 || text.indexOf('もうすこし') >= 0) {
+    return RHYTHM_PONO_FX_ASSETS.care;
+  }
+  return RHYTHM_PONO_FX_ASSETS.good;
+}
+function _applyRhythmPonoFx(lineText) {
+  _resetRhythmPonoFx();
+  if (!document.body || !document.body.classList.contains('rhythm-layout')) return;
+  if (document.body.classList.contains('free-stage-layout')) return;
+  if (document.body.classList.contains('rhythm-menu-open')) return;
+  var art = document.getElementById('rhythm-pono-art');
+  if (!art) return;
+  var fx = _rhythmPonoFxSet(lineText);
+  fx.forEach(function(item, idx) {
+    var slot = item.slot || ['a', 'b', 'c'][idx % 3];
+    var el = document.getElementById('rhythm-pono-fx-' + slot);
+    if (!el || !item || !item.file) return;
+    el.className = 'rhythm-pono-fx fx-' + slot + ' fx-' + (item.type || 'sparkle');
     el.style.backgroundImage = 'url("' + item.file + '")';
     void el.offsetWidth;
     el.classList.add('show');
@@ -6184,8 +6925,10 @@ function _updateRhythmBattlePanel(state, lineOverride, ponoLine) {
   if (name) name.textContent = rival.name;
   var line = document.getElementById('rhythm-rival-line');
   if (line) line.textContent = lineOverride || rival.lines[state] || rival.lines.idle;
+  var nextPonoLine = ponoLine || _rhythmPonoLine();
   var pono = document.getElementById('rhythm-pono-line');
-  if (pono) pono.textContent = ponoLine || _rhythmPonoLine();
+  if (pono) pono.textContent = nextPonoLine;
+  _applyRhythmPonoFx(nextPonoLine);
 }
 
 function _resetRhythmOpeningFx() {
@@ -6199,11 +6942,15 @@ function _resetRhythmOpeningFx() {
 function _applyRhythmOpeningFx(rival, state) {
   _resetRhythmOpeningFx();
   var fx = (rival && rival.fx && rival.fx[state]) || [];
-  ['a', 'b', 'c'].forEach(function(slot, idx) {
-    var item = fx[idx];
+  var used = {};
+  fx.forEach(function(item, idx) {
+    var slot = _rhythmFxSlotFor(item, idx, used);
+    if (used[slot]) return;
+    used[slot] = true;
     var el = document.getElementById('rhythm-opening-fx-' + slot);
     if (!el || !item || !item.file) return;
     el.className = 'rhythm-opening-fx fx-' + slot + ' fx-' + (item.type || 'pop');
+    if (item.flipX) el.classList.add('fx-flip-x');
     el.style.backgroundImage = 'url("' + item.file + '")';
     void el.offsetWidth;
     el.classList.add('show');
@@ -6354,9 +7101,8 @@ function _rhythmSongStars(song, progress) {
   return Math.max(0, Math.min(3, value || 0));
 }
 function _rhythmSongUnlocked(song, progress) {
-  progress = progress || _loadRhythmProgress();
-  if (!song) return false;
-  return _rhythmSongStage(song) <= Math.max(1, progress.unlockedStage || 1) || _rhythmSongCleared(song, progress);
+  // Stage select is open: clearing songs records stars/progress, but does not gate play.
+  return !!song;
 }
 function _markRhythmSongCleared(stars) {
   if (RHYTHM_PRACTICE_MODE !== 'full' || !RHYTHM_BASE_SONG) return false;
@@ -6394,10 +7140,9 @@ function _goToNextRhythmStage() {
 function _rhythmStageSummary() {
   var progress = _loadRhythmProgress();
   var total = RHYTHM_SONGS.length;
-  var unlocked = Math.min(total, Math.max(1, progress.unlockedStage || 1));
   var current = _rhythmSongStage(RHYTHM_BASE_SONG);
   var clearedCount = RHYTHM_SONGS.filter(function(song) { return _rhythmSongCleared(song, progress); }).length;
-  return 'ステージ ' + current + ' / ' + total + '　クリア ' + clearedCount;
+  return 'ステージ ' + current + ' / ' + total + '　ぜんぶ えらべる　クリア ' + clearedCount;
 }
 
 function _rhythmSections(song) {
@@ -6481,7 +7226,7 @@ function _hideRhythmOpening() {
   _rhythm.openingScenes = [];
   _rhythm.openingThenStart = false;
   var opening = document.getElementById('rhythm-opening');
-  if (opening) opening.classList.remove('show', 'is-settling');
+  if (opening) opening.classList.remove('show', 'is-settling', 'entering');
   if (document.body) {
     document.body.classList.remove('oto-modal-open');
     document.body.classList.remove('rhythm-opening-active');
@@ -6516,20 +7261,40 @@ function _finishRhythmOpening() {
   var opening = document.getElementById('rhythm-opening');
   if (!opening) {
     _hideRhythmOpening();
-    if (thenStart) _beginRhythmCountdown();
-    else _showRhythmMenu();
+    if (thenStart) {
+      _stopOtoBgm(300);
+      _beginRhythmCountdown();
+    } else {
+      _playOtoBgm('title');
+      _showRhythmMenu();
+    }
     return;
   }
   _rhythm.openingActive = false;
   _rhythm.openingSettling = true;
+  opening.classList.remove('entering');
   opening.classList.add('is-settling');
   if (document.body) document.body.classList.add('rhythm-opening-settle');
   _rhythm.openingSettleTimer = setTimeout(function() {
     _rhythm.openingSettleTimer = null;
     _hideRhythmOpening();
-    if (thenStart) _beginRhythmCountdown();
-    else _showRhythmMenu();
+    if (thenStart) {
+      _stopOtoBgm(300);
+      _beginRhythmCountdown();
+    } else {
+      _playOtoBgm('title');
+      _showRhythmMenu();
+    }
   }, 430);
+}
+function _startRhythmOpeningFromMenu() {
+  if (_rhythm.openingMenuTimer) return;
+  var menu = document.getElementById('rhythm-menu');
+  if (menu) menu.classList.add('is-starting');
+  _rhythm.openingMenuTimer = setTimeout(function() {
+    _rhythm.openingMenuTimer = null;
+    _showRhythmOpening(true);
+  }, 260);
 }
 function _advanceRhythmOpening() {
   if (!_rhythm.openingActive || _rhythm.openingSettling) return;
@@ -6559,13 +7324,19 @@ function _showRhythmOpening(thenStart) {
   _rhythm.openingScenes = _rhythmOpeningScenesForSong(RHYTHM_BASE_SONG);
   _rhythm.openingThenStart = !!thenStart;
   var opening = document.getElementById('rhythm-opening');
-  if (opening) opening.classList.remove('is-settling');
-  if (opening) opening.classList.add('show');
   if (document.body) {
     document.body.classList.add('oto-modal-open');
     document.body.classList.add('rhythm-opening-active');
     document.body.classList.remove('rhythm-opening-settle');
+    document.body.classList.remove('rhythm-complete-active');
   }
+  if (opening) {
+    opening.classList.remove('is-settling', 'entering');
+    opening.classList.add('show');
+    void opening.offsetWidth;
+    opening.classList.add('entering');
+  }
+  _playOtoBgm(_rhythmOpeningBgmKeyForSong(RHYTHM_BASE_SONG), { restart: true });
   _renderRhythmOpeningScene();
 }
 function _rhythmVisualFallMs() {
@@ -6628,10 +7399,6 @@ function _rhythmTargetAcTimeFor(seqIndex) {
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
   if (!found) return;
-  if (!_rhythmSongUnlocked(found)) {
-    _setRhythmStatus('まえのステージを クリアしてね', 'warn');
-    return;
-  }
   // Phase 2 future-use: rhythm song tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
   // isOtoRhythmSongUnlocked() always returns true so this branch is unreachable.
   if (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(id)) {
@@ -6734,13 +7501,10 @@ function _renderRhythmSongMenu() {
   list.innerHTML = songs.map(function(song) {
     var active = song.id === RHYTHM_BASE_SONG.id ? ' active' : '';
     var locked = (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(song.id)) ? ' tier-locked' : '';
-    var stageLocked = !_rhythmSongUnlocked(song, progress);
     var cleared = _rhythmSongCleared(song, progress);
     var stars = _rhythmSongStars(song, progress);
-    var statusText = stageLocked ? 'ロック' : (cleared ? ('★'.repeat(Math.max(1, stars))) : 'NEW');
-    var disabled = stageLocked ? ' disabled aria-disabled="true"' : '';
-    var stageClass = stageLocked ? ' locked' : '';
-    return '<button class="rhythm-song-choice' + active + locked + stageClass + '" data-song="' + song.id + '"' + disabled + '>' +
+    var statusText = cleared ? ('★'.repeat(Math.max(1, stars))) : 'えらべる';
+    return '<button class="rhythm-song-choice' + active + locked + '" data-song="' + song.id + '">' +
       '<span class="rhythm-song-meta"><span class="rhythm-stage-badge">ステージ' + _rhythmSongStage(song) + '</span><span class="rhythm-clear-badge">' + statusText + '</span></span>' +
       '<span class="rhythm-song-name">' + song.name + '</span></button>';
   }).join('');
@@ -7539,11 +8303,88 @@ function _gh3DRoundRectPath(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
-function _gh3DTextureFor(lane, label) {
+function _gh3DNoteProfileScale(noteSkin, ang) {
+  var shape = noteSkin && noteSkin.shape;
+  if (shape === 'gear') return 1 + 0.16 * Math.max(0, Math.cos(ang * 8));
+  if (shape === 'burst') return 1 + 0.1 * Math.max(0, Math.cos(ang * 6));
+  return 1;
+}
+function _gh3DDrawGearIcon(ctx, x, y, r, fill, stroke) {
+  var teeth = 8;
+  var inner = r * 0.36;
+  var base = r * 0.64;
+  var tooth = r * 0.86;
+  ctx.save();
+  ctx.beginPath();
+  for (var i = 0; i < teeth * 2; i++) {
+    var ang = -Math.PI / 2 + i * Math.PI / teeth;
+    var rad = (i % 2 === 0) ? tooth : base;
+    var px = x + Math.cos(ang) * rad;
+    var py = y + Math.sin(ang) * rad;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = Math.max(5, r * 0.14);
+  ctx.strokeStyle = stroke;
+  ctx.stroke();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(x, y, inner, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.beginPath();
+  ctx.arc(x, y, inner * 0.44, 0, Math.PI * 2);
+  ctx.fillStyle = stroke;
+  ctx.fill();
+  ctx.restore();
+}
+function _gh3DDrawClawIcon(ctx, x, y, r, stroke) {
+  ctx.save();
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = Math.max(6, r * 0.16);
+  ctx.lineCap = 'round';
+  [-0.34, 0, 0.34].forEach(function(offset) {
+    ctx.beginPath();
+    ctx.moveTo(x + offset * r * 0.9, y + r * 0.52);
+    ctx.lineTo(x + offset * r * 0.45, y - r * 0.05);
+    ctx.lineTo(x + offset * r * 0.14, y - r * 0.84);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+function _ghApplyDomNoteSkin(el, noteSkin) {
+  if (!el) return;
+  el.style.clipPath = '';
+  el.style.borderRadius = '50%';
+  el.style.fontFamily = '';
+  if (!noteSkin) return;
+  if (noteSkin.shape === 'gear') {
+    el.style.borderRadius = '24%';
+    el.style.clipPath = 'polygon(50% 0%, 61% 11%, 77% 5%, 84% 20%, 99% 28%, 92% 45%, 100% 60%, 86% 69%, 84% 84%, 67% 82%, 55% 100%, 42% 89%, 27% 96%, 19% 79%, 3% 72%, 10% 55%, 1% 39%, 15% 31%, 17% 14%, 33% 16%)';
+    el.style.fontFamily = '"Segoe UI Symbol","Noto Sans Symbols 2",sans-serif';
+  } else if (noteSkin.shape === 'burst') {
+    el.style.borderRadius = '22%';
+    el.style.clipPath = 'polygon(50% 0%, 61% 16%, 79% 8%, 82% 28%, 100% 35%, 88% 52%, 97% 70%, 77% 74%, 72% 94%, 52% 86%, 36% 100%, 26% 82%, 7% 86%, 12% 66%, 0% 49%, 18% 38%, 16% 18%, 36% 20%)';
+  }
+}
+function _gh3DTextureFor(lane, label, noteSkin) {
   var gl = _gh3d.notesGl;
-  var key = lane + ':' + label;
+  var shapeKey = noteSkin && noteSkin.shape ? noteSkin.shape : 'round';
+  var toneKey = noteSkin ? [noteSkin.hi, noteSkin.lo, noteSkin.ink, noteSkin.domGlyph].join('/') : '';
+  var key = lane + ':' + label + ':' + shapeKey + ':' + toneKey;
   if (_gh3d.textureCache[key]) return _gh3d.textureCache[key];
   var color = RHYTHM_LANE_COLORS[lane] || { hi: '#FDE68A', lo: '#F59E0B' };
+  noteSkin = noteSkin || {
+    shape: 'round',
+    hi: color.hi || '#FDE68A',
+    lo: color.lo || '#F59E0B',
+    rim: 'rgba(255,255,255,0.92)',
+    ink: 'rgba(255,255,255,0.95)',
+    domGlyph: '\u266a'
+  };
   var c = document.createElement('canvas');
   c.width = 192;
   c.height = 192;
@@ -7554,41 +8395,52 @@ function _gh3DTextureFor(lane, label) {
   ctx.arc(96, 96, 76, 0, Math.PI * 2);
   ctx.clip();
   var grad = ctx.createRadialGradient(68, 54, 8, 96, 96, 82);
-  grad.addColorStop(0, color.hi || '#FDE68A');
-  grad.addColorStop(0.52, color.lo || '#F59E0B');
+  grad.addColorStop(0, noteSkin.hi || color.hi || '#FDE68A');
+  grad.addColorStop(0.52, noteSkin.lo || color.lo || '#F59E0B');
   grad.addColorStop(1, '#172554');
   ctx.fillStyle = grad;
   ctx.fillRect(20, 20, 152, 152);
   ctx.restore();
 
   ctx.lineWidth = 10;
-  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-  ctx.beginPath();
-  ctx.arc(96, 96, 74, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.lineWidth = 5;
-  ctx.setLineDash([8, 7]);
-  ctx.strokeStyle = 'rgba(255,247,210,0.64)';
-  ctx.beginPath();
-  ctx.arc(96, 96, 58, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  ctx.strokeStyle = noteSkin.rim || 'rgba(255,255,255,0.92)';
+  if (noteSkin.shape === 'gear') {
+    _gh3DDrawGearIcon(ctx, 96, 98, 44, 'rgba(255,255,255,0.9)', noteSkin.ink || '#111827');
+  } else if (noteSkin.shape === 'burst') {
+    _gh3DDrawClawIcon(ctx, 96, 100, 42, noteSkin.ink || 'rgba(255,255,255,0.96)');
+    ctx.beginPath();
+    ctx.arc(96, 96, 74, 0, Math.PI * 2);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(96, 96, 74, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 5;
+    ctx.setLineDash([8, 7]);
+    ctx.strokeStyle = 'rgba(255,247,210,0.64)';
+    ctx.beginPath();
+    ctx.arc(96, 96, 58, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
   ctx.fillStyle = 'rgba(255,255,255,0.86)';
   ctx.beginPath();
   ctx.arc(63, 54, 17, 0, Math.PI * 2);
   ctx.fill();
 
-  var icon = '♪';
-  var fontSize = 88;
-  ctx.font = '900 ' + fontSize + 'px "DotGothic16", "Zen Maru Gothic", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = 'rgba(255,255,255,0.54)';
-  ctx.strokeText(icon, 96, 101);
-  ctx.fillStyle = 'rgba(255,255,255,0.95)';
-  ctx.fillText(icon, 96, 101);
+  if (noteSkin.shape === 'round') {
+    var icon = noteSkin.domGlyph || '\u266a';
+    var fontSize = 88;
+    ctx.font = '900 ' + fontSize + 'px "DotGothic16", "Zen Maru Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(255,255,255,0.54)';
+    ctx.strokeText(icon, 96, 101);
+    ctx.fillStyle = noteSkin.ink || 'rgba(255,255,255,0.95)';
+    ctx.fillText(icon, 96, 101);
+  }
 
   if (label) {
     ctx.font = '900 24px "DotGothic16", "Zen Maru Gothic", sans-serif';
@@ -7620,30 +8472,29 @@ function _gh3DKeyTextureFor(lane, label) {
   var ctx = c.getContext('2d');
   ctx.clearRect(0, 0, c.width, c.height);
 
-  ctx.shadowColor = 'rgba(0,0,0,0.34)';
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 7;
-  _gh3DRoundRectPath(ctx, 23, 25, 210, 204, 34);
-  var grad = ctx.createLinearGradient(34, 28, 222, 230);
+  var grad = ctx.createLinearGradient(24, 14, 232, 244);
   grad.addColorStop(0, color.hi || '#FDE68A');
-  grad.addColorStop(0.52, color.lo || '#F59E0B');
-  grad.addColorStop(1, '#172554');
+  grad.addColorStop(0.58, color.lo || '#F59E0B');
+  grad.addColorStop(1, color.lo || '#F59E0B');
   ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
+  ctx.fillRect(0, 0, c.width, c.height);
 
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-  ctx.stroke();
+  var lowerShade = ctx.createLinearGradient(0, 72, 0, 256);
+  lowerShade.addColorStop(0, 'rgba(255,255,255,0)');
+  lowerShade.addColorStop(0.62, 'rgba(15,23,42,0.02)');
+  lowerShade.addColorStop(1, 'rgba(15,23,42,0.08)');
+  ctx.fillStyle = lowerShade;
+  ctx.fillRect(0, 0, c.width, c.height);
+
   ctx.save();
-  _gh3DRoundRectPath(ctx, 42, 45, 172, 166, 26);
+  _gh3DRoundRectPath(ctx, 14, 14, 228, 228, 38);
   ctx.clip();
   var shine = ctx.createRadialGradient(78, 60, 4, 90, 70, 86);
-  shine.addColorStop(0, 'rgba(255,255,255,0.74)');
-  shine.addColorStop(0.28, 'rgba(255,255,255,0.18)');
+  shine.addColorStop(0, 'rgba(255,255,255,0.68)');
+  shine.addColorStop(0.28, 'rgba(255,255,255,0.2)');
   shine.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = shine;
-  ctx.fillRect(42, 45, 172, 166);
+  ctx.fillRect(14, 14, 228, 228);
   ctx.restore();
 
   var cup = ctx.createRadialGradient(128, 128, 8, 128, 128, 76);
@@ -7655,6 +8506,15 @@ function _gh3DKeyTextureFor(lane, label) {
   ctx.beginPath();
   ctx.ellipse(128, 128, 72, 61, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = 'rgba(255,255,255,0.86)';
+  _gh3DRoundRectPath(ctx, 6, 6, 244, 244, 43);
+  ctx.stroke();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(255,255,255,0.26)';
+  _gh3DRoundRectPath(ctx, 23, 24, 210, 204, 31);
+  ctx.stroke();
 
   var fontSize = label && label.length >= 2 ? 70 : 92;
   do {
@@ -7774,9 +8634,9 @@ function _gh3DDrawOneNote(note, mvp) {
   var passFade = p <= 1 ? 1 : Math.max(0, 1 - (p - 1) / (RHYTHM_NOTE_PASS_PROGRESS - 1));
   var a = Math.max(0, Math.min(1, (0.28 + p * 1.15) * fadeIn * passFade));
   if (a <= 0.01) return;
-  var label = _rhythmNoteLabel(lane);
-  var tex = _gh3DTextureFor(lane, label);
-  var rgb = _gh3DLaneRgb(lane);
+  var noteSkin = note.noteSkin || _rhythmNoteSkinFor(note.seq || 0, lane);
+  var tex = _gh3DTextureFor(lane, '', noteSkin);
+  var rgb = _gh3DHexToRgb(noteSkin.lo || noteSkin.hi || '#F59E0B');
   var sideVerts = [];
   var topVerts = [];
   var baseY = _gh3DRoadYForNote(z) + yLift;
@@ -7796,10 +8656,12 @@ function _gh3DDrawOneNote(note, mvp) {
     var a1 = (Math.PI * 2 * (seg + 1)) / segments;
     var c0 = Math.cos(a0), s0 = Math.sin(a0);
     var c1 = Math.cos(a1), s1 = Math.sin(a1);
-    var x0 = centerX + c0 * radiusX;
-    var x1 = centerX + c1 * radiusX;
-    var z0 = z + s0 * radiusZ;
-    var z1 = z + s1 * radiusZ;
+    var sMul0 = _gh3DNoteProfileScale(noteSkin, a0);
+    var sMul1 = _gh3DNoteProfileScale(noteSkin, a1);
+    var x0 = centerX + c0 * radiusX * sMul0;
+    var x1 = centerX + c1 * radiusX * sMul1;
+    var z0 = z + s0 * radiusZ * sMul0;
+    var z1 = z + s1 * radiusZ * sMul1;
     var p0b = [x0, noteBaseYAt(z0), z0];
     var p1b = [x1, noteBaseYAt(z1), z1];
     var p0t = [x0, noteTopYAt(z0), z0];
@@ -7812,8 +8674,8 @@ function _gh3DDrawOneNote(note, mvp) {
     _gh3DPushTexTri(
       topVerts,
       topCenter, 0.5, 0.5,
-      p0t, 0.5 + c0 * 0.48, 0.5 + s0 * 0.48,
-      p1t, 0.5 + c1 * 0.48, 0.5 + s1 * 0.48,
+      p0t, 0.5 + c0 * 0.44 * sMul0, 0.5 + s0 * 0.44 * sMul0,
+      p1t, 0.5 + c1 * 0.44 * sMul1, 0.5 + s1 * 0.44 * sMul1,
       a
     );
   }
@@ -7846,26 +8708,30 @@ function _gh3DDrawOneKey(lane, mvp) {
   function keyBottomYAt(pointZ) {
     return keyTopYAt(pointZ) - h;
   }
-  var pts = _gh3DRoundedBoxPoints(centerX, centerZ, w, d, 48);
+  var basePts = _gh3DRoundedBoxPoints(centerX, centerZ, w * 1.035, d * 1.02, 48);
+  // topPts is the single closed rim: side quads end here and the textured top starts here.
+  var topPts = _gh3DRoundedBoxPoints(centerX, centerZ, w * 1.02, d * 1.0, 48);
   var shadowVerts = [];
   var sideVerts = [];
   var haloVerts = [];
   var topVerts = [];
   var glow = hit ? 1.2 : (target ? 0.48 : 0);
   var dim = miss ? 0.7 : 1;
-  for (var i = 0; i < pts.length; i++) {
-    var p0 = pts[i];
-    var p1 = pts[(i + 1) % pts.length];
-    var mid = (p0.a + p1.a) * 0.5;
-    var light = (0.55 + 0.38 * Math.max(0, Math.cos(mid - Math.PI * 0.28))) * dim + glow * 0.12;
-    var topC = _gh3DShadeRgb(rgb, light + 0.18, 0.96);
+  for (var i = 0; i < topPts.length; i++) {
+    var b0 = basePts[i];
+    var b1 = basePts[(i + 1) % basePts.length];
+    var t0b = topPts[i];
+    var t1b = topPts[(i + 1) % topPts.length];
+    var mid = (t0b.a + t1b.a) * 0.5;
+    var light = (0.6 + 0.36 * Math.max(0, Math.cos(mid - Math.PI * 0.28))) * dim + glow * 0.12;
     var bottomC = _gh3DShadeRgb(rgb, light * 0.5, 0.9);
+    var sideC = _gh3DShadeRgb(rgb, Math.min(1.18, light * 1.06 + 0.16), 0.98);
     _gh3DPushColorQuadGradient(
       sideVerts,
-      [p0.x, keyBottomYAt(p0.z), p0.z], bottomC,
-      [p1.x, keyBottomYAt(p1.z), p1.z], bottomC,
-      [p1.x, keyTopYAt(p1.z), p1.z], topC,
-      [p0.x, keyTopYAt(p0.z), p0.z], topC
+      [b0.x, keyBottomYAt(b0.z), b0.z], bottomC,
+      [b1.x, keyBottomYAt(b1.z), b1.z], bottomC,
+      [t1b.x, keyTopYAt(t1b.z), t1b.z], sideC,
+      [t0b.x, keyTopYAt(t0b.z), t0b.z], sideC
     );
   }
   var shadowY = keyBottomYAt(centerZ) - 0.035;
@@ -7877,15 +8743,15 @@ function _gh3DDrawOneKey(lane, mvp) {
     [centerX - w * 0.42, shadowY, centerZ - d * 0.36],
     [0, 0, 0, pressed ? 0.18 : 0.28]
   );
-  var topCenter = [centerX, topY + 0.006, centerZ];
-  for (var j = 0; j < pts.length; j++) {
-    var t0 = pts[j];
-    var t1 = pts[(j + 1) % pts.length];
+  var topCenter = [centerX, topY, centerZ];
+  for (var j = 0; j < topPts.length; j++) {
+    var t0 = topPts[j];
+    var t1 = topPts[(j + 1) % topPts.length];
     _gh3DPushTexTri(
       topVerts,
       topCenter, 0.5, 0.5,
-      [t0.x, keyTopYAt(t0.z) + 0.006, t0.z], t0.u, t0.v,
-      [t1.x, keyTopYAt(t1.z) + 0.006, t1.z], t1.u, t1.v,
+      [t0.x, keyTopYAt(t0.z), t0.z], t0.u, t0.v,
+      [t1.x, keyTopYAt(t1.z), t1.z], t1.u, t1.v,
       miss ? 0.86 : 1
     );
   }
@@ -8083,7 +8949,7 @@ function _ghSpawnHitFlash(laneIdx) {
 }
 function _ghNoteBurstColor(laneIdx, kind) {
   var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FDE68A', lo: '#F59E0B' };
-  var main = kind === 'miss' ? (color.lo || color.hi) : '#fff7ad';
+  var main = kind === 'miss' ? (color.lo || color.hi) : (color.hi || '#fff7ad');
   var soft = kind === 'miss' ? (color.hi || color.lo) : (color.lo || '#67e8f9');
   var rgb = _gh3DHexToRgb(kind === 'miss' ? main : (color.hi || '#FDE68A'));
   var alpha = kind === 'miss' ? 0.46 : 0.86;
@@ -8097,11 +8963,21 @@ function _ghSpawnNoteBurst(noteOrLane, kind) {
   var lanes = _ghLanesEl();
   if (!lanes) return;
   var laneIdx = 0;
+  var noteSkin = null;
   if (typeof noteOrLane === 'number') laneIdx = noteOrLane;
-  else if (noteOrLane && typeof noteOrLane.lane === 'number') laneIdx = noteOrLane.lane;
+  else if (noteOrLane && typeof noteOrLane.lane === 'number') {
+    laneIdx = noteOrLane.lane;
+    noteSkin = noteOrLane.noteSkin || null;
+  }
   laneIdx = Math.max(0, Math.min(7, laneIdx | 0));
-  var burstKind = kind === 'miss' ? 'miss' : 'success';
-  var colors = _ghNoteBurstColor(laneIdx, burstKind);
+  var burstKind = kind === 'miss' ? 'miss' : (kind === 'bonus' ? 'bonus' : 'success');
+  var colors = _ghNoteBurstColor(laneIdx, burstKind === 'bonus' ? 'success' : burstKind);
+  if (noteSkin && burstKind !== 'miss') {
+    colors.main = noteSkin.bonusScore ? '#FFF4A8' : (noteSkin.hi || colors.main);
+    colors.soft = noteSkin.bonusScore ? '#F59E0B' : (noteSkin.lo || colors.soft);
+    var bonusRgb = _gh3DHexToRgb(noteSkin.bonusScore ? '#F59E0B' : (noteSkin.hi || colors.main));
+    colors.glow = 'rgba(' + Math.round(bonusRgb[0] * 255) + ',' + Math.round(bonusRgb[1] * 255) + ',' + Math.round(bonusRgb[2] * 255) + ',' + (burstKind === 'bonus' ? 0.94 : 0.82) + ')';
+  }
   var burst = document.createElement('div');
   burst.className = 'gh-burst ' + burstKind;
   burst.style.setProperty('--gh-burst-x', ((laneIdx + 0.5) * 12.5) + '%');
@@ -8130,25 +9006,32 @@ function _ghSpawnNoteBurst(noteOrLane, kind) {
       var idx = _rhythm.flashTimers.indexOf(timerId);
       if (idx >= 0) _rhythm.flashTimers.splice(idx, 1);
     }
-  }, burstKind === 'miss' ? 520 : 680);
+  }, burstKind === 'miss' ? 520 : 720);
   _rhythm.flashTimers.push(timerId);
 }
 function _ghSpawnNotePop(noteOrLane, judge) {
   var lanes = _ghLanesEl();
   if (!lanes) return;
   var laneIdx = 0;
+  var noteSkin = null;
   if (typeof noteOrLane === 'number') laneIdx = noteOrLane;
-  else if (noteOrLane && typeof noteOrLane.lane === 'number') laneIdx = noteOrLane.lane;
+  else if (noteOrLane && typeof noteOrLane.lane === 'number') {
+    laneIdx = noteOrLane.lane;
+    noteSkin = noteOrLane.noteSkin || null;
+  }
   laneIdx = Math.max(0, Math.min(7, laneIdx | 0));
   var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FEF08A', lo: '#0EA5E9' };
-  var rgb = _gh3DHexToRgb(color.hi || '#FEF08A');
+  var hi = (noteSkin && noteSkin.hi) || color.hi || '#FEF08A';
+  var lo = (noteSkin && noteSkin.lo) || color.lo || '#0EA5E9';
+  var rgb = _gh3DHexToRgb(hi);
   var pop = document.createElement('div');
   pop.className = 'gh-note-pop ' + ((judge && judge.key) || 'hit');
   pop.style.setProperty('--gh-pop-x', ((laneIdx + 0.5) * 12.5) + '%');
-  pop.style.setProperty('--pop-hi', color.hi || '#FEF08A');
-  pop.style.setProperty('--pop-lo', color.lo || '#0EA5E9');
+  pop.style.setProperty('--pop-hi', hi);
+  pop.style.setProperty('--pop-lo', lo);
   pop.style.setProperty('--pop-glow', 'rgba(' + Math.round(rgb[0] * 255) + ',' + Math.round(rgb[1] * 255) + ',' + Math.round(rgb[2] * 255) + ',0.72)');
-  pop.textContent = _rhythmNoteLabel(laneIdx);
+  pop.textContent = (noteSkin && noteSkin.domGlyph) ? noteSkin.domGlyph : _rhythmNoteLabel(laneIdx);
+  _ghApplyDomNoteSkin(pop, noteSkin);
   lanes.appendChild(pop);
   if (!_rhythm.flashTimers) _rhythm.flashTimers = [];
   var timerId = setTimeout(function() {
@@ -8170,6 +9053,7 @@ function _ghSpawnNote(seqIndex) {
   var laneIdx = _ghBtnIdxToLaneIdx(_rhythmIdxAt(seqIndex));
   var targetTime = _rhythmTargetTimeFor(seqIndex);
   var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FDE68A', lo: '#F59E0B' };
+  var noteSkin = _rhythmNoteSkinFor(seqIndex, laneIdx);
   var cue = _rhythmSpecialCueAt(seqIndex);
   var beatLen = _rhythmBeatLengthAt(seqIndex);
   var el = document.createElement('div');
@@ -8177,12 +9061,15 @@ function _ghSpawnNote(seqIndex) {
   el.dataset.lane = String(laneIdx);
   el.dataset.seq = String(seqIndex);
   el.dataset.beats = String(beatLen);
-  el.style.setProperty('--gh-hi', color.hi);
-  el.style.setProperty('--gh-lo', color.lo);
+  el.dataset.theme = noteSkin.shape || 'round';
+  el.style.setProperty('--gh-hi', noteSkin.hi || color.hi);
+  el.style.setProperty('--gh-lo', noteSkin.lo || color.lo);
   if (beatLen > 1) el.style.setProperty('--gh-hold-tail', Math.min(5, beatLen - 1).toFixed(2));
   var center = (laneIdx + 0.5) * 12.5;
   el.style.setProperty('--gh-note-x', center + '%');
-  el.textContent = _rhythmNoteLabel(laneIdx);
+  el.textContent = noteSkin.domGlyph || _rhythmNoteLabel(laneIdx);
+  el.style.color = noteSkin.ink || 'rgba(0,0,0,0.78)';
+  _ghApplyDomNoteSkin(el, noteSkin);
   lanes.appendChild(el);
   if (!_rhythm.demoActive && seqIndex === 0) _fadeRhythmHintStatus();
   _rhythm.activeNotes.push({
@@ -8190,6 +9077,8 @@ function _ghSpawnNote(seqIndex) {
     lane: laneIdx,
     targetTime: targetTime,
     el: el,
+    noteSkin: noteSkin,
+    bonusScore: noteSkin.bonusScore || 0,
     beatLen: beatLen,
     consumed: false
   });
@@ -8314,11 +9203,34 @@ function _clearRhythmFinishTimer() {
     _rhythm.finishTimer = 0;
   }
 }
+function _updateRhythmVictoryRival(show) {
+  var box = document.getElementById('rhythm-victory-rival');
+  if (!box) return;
+  if (!show) {
+    box.classList.remove('show');
+    return;
+  }
+  var rival = _currentRhythmRival();
+  var sprite = document.getElementById('rhythm-victory-rival-sprite');
+  var name = document.getElementById('rhythm-victory-name');
+  var line = document.getElementById('rhythm-victory-line');
+  var defeatSrc = rival && rival.sprites ? (rival.sprites.defeat || rival.sprites.frustrated || rival.sprites.idle) : '';
+  box.dataset.rival = (rival && rival.key) || '';
+  if (sprite && defeatSrc && sprite.getAttribute('src') !== defeatSrc) sprite.src = defeatSrc;
+  if (name) name.textContent = (rival && rival.name) || 'ライバル';
+  if (line) line.textContent = (rival && rival.lines && rival.lines.defeat) || 'また しょうぶだ！';
+  box.classList.remove('show');
+  void box.offsetWidth;
+  box.classList.add('show');
+}
 function _hideRhythmComplete() {
   _clearRhythmCompleteTimers();
   _clearRhythmFinishTimer();
   var complete = document.getElementById('rhythm-complete');
   if (complete) complete.classList.remove('show', 'stage-clear');
+  if (_otoBgmState.currentKey === 'clear') _stopOtoBgm(360);
+  document.body.classList.remove('rhythm-complete-active');
+  _updateRhythmVictoryRival(false);
   var actions = document.getElementById('rhythm-complete-actions');
   if (actions) actions.classList.add('hidden');
   var form = document.getElementById('rhythm-name-form');
@@ -8503,6 +9415,58 @@ function _prepareRhythmNameForm(entry) {
     try { input.focus(); input.select(); } catch(e) {}
   }, 120);
 }
+function _queueRhythmStickerReward(stars) {
+  _rhythm.pendingStickerResult = null;
+  _rhythm.pendingStickerPromise = null;
+  if (!window.PonoGameStickers || typeof window.PonoGameStickers.grant !== 'function') return;
+  var grantPromise = window.PonoGameStickers.grant({
+    gameId: 'oto',
+    event: stars >= 3 ? 'perfect' : 'clear',
+    show: false
+  });
+  if (!grantPromise || typeof grantPromise.then !== 'function') return;
+  _rhythm.pendingStickerPromise = grantPromise;
+  grantPromise.then(function(result) {
+    if (_rhythm.pendingStickerPromise === grantPromise) {
+      _rhythm.pendingStickerResult = result || null;
+    }
+    return result;
+  }).catch(function() {
+    if (_rhythm.pendingStickerPromise === grantPromise) {
+      _rhythm.pendingStickerResult = null;
+      _rhythm.pendingStickerPromise = null;
+    }
+  });
+}
+function _clearRhythmStickerReward() {
+  _rhythm.pendingStickerResult = null;
+  _rhythm.pendingStickerPromise = null;
+}
+function _afterRhythmStickerReward(callback) {
+  callback = typeof callback === 'function' ? callback : function() {};
+  var result = _rhythm.pendingStickerResult;
+  var promise = _rhythm.pendingStickerPromise;
+  _clearRhythmStickerReward();
+  function done() {
+    callback();
+  }
+  function showOrContinue(stickerResult) {
+    if (stickerResult && window.PonoGameStickers && typeof window.PonoGameStickers.showStickerToast === 'function') {
+      window.PonoGameStickers.showStickerToast(stickerResult, { onClose: done });
+      return;
+    }
+    done();
+  }
+  if (result) {
+    showOrContinue(result);
+    return;
+  }
+  if (promise && typeof promise.then === 'function') {
+    promise.then(showOrContinue).catch(done);
+    return;
+  }
+  done();
+}
 function _showRhythmComplete(result) {
   _hideRhythmMenu();
   _clearRhythmCompleteTimers();
@@ -8513,9 +9477,9 @@ function _showRhythmComplete(result) {
   var hasNextPart = !!result.hasNextPart;
   var clearedFullSong = RHYTHM_PRACTICE_MODE === 'full';
   if (clearedFullSong) _markRhythmSongCleared(stars);
-  if (clearedFullSong && window.PonoGameStickers) {
-    window.PonoGameStickers.grant({ gameId: 'oto', event: stars >= 3 ? 'perfect' : 'clear' });
-  }
+  if (clearedFullSong) _queueRhythmStickerReward(stars);
+  else _clearRhythmStickerReward();
+  document.body.classList.add('rhythm-complete-active');
   _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'idle', null, _rhythmPonoLine('clear'));
   var nextStageSong = !hasNextPart ? _nextRhythmStageSong(RHYTHM_BASE_SONG) : null;
   var complete = document.getElementById('rhythm-complete');
@@ -8566,7 +9530,13 @@ function _showRhythmComplete(result) {
   if (select) select.classList.remove('hidden');
   if (demo) demo.classList.remove('hidden');
   complete.classList.add('show');
-  if (clearedFullSong) _playRhythmClearSfx(stars);
+  _updateRhythmVictoryRival(clearedFullSong);
+  if (clearedFullSong) {
+    _playOtoBgm('clear', { restart: true, fadeMs: 220 });
+    _playRhythmClearSfx(stars);
+  } else {
+    _stopOtoBgm(260);
+  }
   _rhythm.completeTimers.push(setTimeout(function() {
     if (text) {
       text.textContent = hasNextPart
@@ -8693,6 +9663,7 @@ function _rhythmTick() {
 }
 function _startRhythmMode() {
   if (_rhythm.enabled) return;
+  _stopOtoBgm(260);
   _clearRhythmMelodySchedule();
   _hideRhythmComplete();
   _forcePianoSoundForRhythm();
@@ -8718,6 +9689,7 @@ function _startRhythmMode() {
   _rhythm.maxStreak = 0;
   _rhythm.score = 0;
   _rhythm.pendingScoreEntry = null;
+  _clearRhythmStickerReward();
   _clearRhythmFever();
   _rhythm.nowCue = false;
   // v705+: 古い startPerfTime が残っていると、ジオメトリ計算前に
@@ -9174,6 +10146,7 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
 }
 function _startRhythmDemo(thenStart) {
   if (_rhythm.enabled) _stopRhythmMode();
+  _stopOtoBgm(260);
   _clearRhythmCountdown();
   _clearRhythmDemo(true);
   _hideRhythmMenu();
@@ -9198,6 +10171,7 @@ function _startRhythmDemo(thenStart) {
   }, stepMs * 3 + demoStartDelayMs));
 }
 function _beginRhythmCountdown() {
+  _stopOtoBgm(260);
   _clearRhythmCountdown();
   _clearRhythmDemo(true);
   _hideRhythmOpening();
@@ -9282,10 +10256,15 @@ function _showRhythmMenu() {
   _updateRhythmBattlePanel('idle');
   var menu = document.getElementById('rhythm-menu');
   if (menu) {
+    menu.classList.remove('is-starting');
     menu.setAttribute('data-step', 'song'); // v1108: 開く度に step1 (曲えらび) から
     menu.classList.add('show');
   }
-  if (document.body) document.body.classList.add('oto-modal-open');
+  if (document.body) {
+    document.body.classList.add('oto-modal-open');
+    document.body.classList.add('rhythm-menu-open');
+  }
+  _playOtoBgm('title');
 }
 // v1108: 2ステップ切替ヘルパ
 function _setRhythmMenuStep(step) {
@@ -9301,8 +10280,11 @@ function _setRhythmMenuStep(step) {
 }
 function _hideRhythmMenu() {
   var menu = document.getElementById('rhythm-menu');
-  if (menu) menu.classList.remove('show');
-  if (document.body) document.body.classList.remove('oto-modal-open');
+  if (menu) menu.classList.remove('show', 'is-starting');
+  if (document.body) {
+    document.body.classList.remove('oto-modal-open');
+    document.body.classList.remove('rhythm-menu-open');
+  }
 }
 function _stopRhythmMode() {
   _clearRhythmCountdown();
@@ -9399,6 +10381,7 @@ function setPlayMode(mode) {
     _setModeButtons(mode);
     _startRhythmMode();
   } else {
+    _stopOtoBgm(360);
     _stopRhythmMode();
     _setModeButtons(mode);
   }
@@ -9461,11 +10444,23 @@ function handleRhythmTap(idx, btn) {
     var hitResult = _recordRhythmHit(abs);
     var judge = hitResult.judge;
     var addedScore = hitResult.added;
+    var bonusScore = (best.bonusScore && judge.key === 'just') ? best.bonusScore : 0;
+    if (bonusScore > 0) {
+      _rhythm.score += bonusScore;
+      addedScore += bonusScore;
+    }
     var tapDurationMs = _rhythmTapPitchDurationForBeatLen(best.beatLen || _rhythmBeatLengthAt(best.seq));
     var rect = btn ? btn.getBoundingClientRect() : null;
     var cx = rect ? rect.left + rect.width / 2 : 0;
     var cy = rect ? rect.top + rect.height / 2 : 0;
-    if (judge.key === 'just' || judge.key === 'nice') {
+    if (bonusScore > 0) {
+      _setRhythmStatus('ゴールド ジャスト!', 'good');
+      if (rect) spawnRipples(cx, cy);
+      if (judge.key === 'just') {
+        var pBonus = _viewportPointToStage(cx, cy);
+        spawnParticles(pBonus.x, pBonus.y, 16);
+      }
+    } else if (judge.key === 'just' || judge.key === 'nice') {
       _setRhythmStatus(_rhythm.streak >= 4 ? judge.short + ' ' + _rhythm.streak + 'れん' : judge.label, 'good');
       if (rect) spawnRipples(cx, cy);
       if (judge.key === 'just') {
@@ -9482,7 +10477,7 @@ function handleRhythmTap(idx, btn) {
     _ghSpawnHitFlash(laneIdx);
     _ghSpawnNotePop(best, judge);
     if (judge.key === 'just' || judge.key === 'nice' || judge.key === 'good') {
-      _ghSpawnNoteBurst(best, 'success');
+      _ghSpawnNoteBurst(best, bonusScore > 0 ? 'bonus' : 'success');
     }
     _ghRemoveNote(best);
     _playRhythmTapPitch(laneIdx, judge, tapDurationMs);
@@ -9563,8 +10558,7 @@ if (rhythmMenuStart) rhythmMenuStart.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
   unlockAudio();
-  _hideRhythmMenu();
-  _showRhythmOpening(true);
+  _startRhythmOpeningFromMenu();
 });
 var rhythmOpeningNext = document.getElementById('rhythm-opening-next');
 if (rhythmOpeningNext) rhythmOpeningNext.addEventListener('click', function(e) {
@@ -9646,7 +10640,9 @@ if (rhythmCompleteAgain) rhythmCompleteAgain.addEventListener('click', function(
   e.stopPropagation();
   unlockAudio();
   _hideRhythmComplete();
-  _beginRhythmCountdown();
+  _afterRhythmStickerReward(function() {
+    _beginRhythmCountdown();
+  });
 });
 var rhythmCompleteDemo = document.getElementById('rhythm-complete-demo');
 if (rhythmCompleteDemo) rhythmCompleteDemo.addEventListener('click', function(e) {
@@ -9654,7 +10650,9 @@ if (rhythmCompleteDemo) rhythmCompleteDemo.addEventListener('click', function(e)
   e.stopPropagation();
   unlockAudio();
   _hideRhythmComplete();
-  _startRhythmDemo(false);
+  _afterRhythmStickerReward(function() {
+    _startRhythmDemo(false);
+  });
 });
 var rhythmCompleteSelect = document.getElementById('rhythm-complete-select');
 if (rhythmCompleteSelect) rhythmCompleteSelect.addEventListener('click', function(e) {
@@ -9662,14 +10660,18 @@ if (rhythmCompleteSelect) rhythmCompleteSelect.addEventListener('click', functio
   e.stopPropagation();
   unlockAudio();
   _hideRhythmComplete();
-  _showRhythmMenu();
+  _afterRhythmStickerReward(function() {
+    _showRhythmMenu();
+  });
 });
 var rhythmCompleteDone = document.getElementById('rhythm-complete-done');
 if (rhythmCompleteDone) rhythmCompleteDone.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
   _hideRhythmComplete();
-  setPlayMode('free');
+  _afterRhythmStickerReward(function() {
+    setPlayMode('free');
+  });
 });
 var rhythmCompleteNext = document.getElementById('rhythm-complete-next');
 if (rhythmCompleteNext) rhythmCompleteNext.addEventListener('click', function(e) {
@@ -9677,8 +10679,10 @@ if (rhythmCompleteNext) rhythmCompleteNext.addEventListener('click', function(e)
   e.stopPropagation();
   unlockAudio();
   if (!_goToNextRhythmSection() && !_goToNextRhythmStage()) return;
-  _hideRhythmComplete();
-  _showRhythmOpening(true);
+  _afterRhythmStickerReward(function() {
+    _hideRhythmComplete();
+    _showRhythmOpening(true);
+  });
 });
 var rhythmNameForm = document.getElementById('rhythm-name-form');
 if (rhythmNameForm) rhythmNameForm.addEventListener('submit', function(e) {
@@ -10306,10 +11310,13 @@ function _setPonoSpriteSrc(src) {
   if (_ponoEl && _ponoEl.src.indexOf(needle) < 0) _ponoEl.src = src;
   var rhythmPono = document.getElementById('rhythm-pono-sprite');
   if (rhythmPono && rhythmPono.src.indexOf(needle) < 0) rhythmPono.src = src;
+  var freeStagePono = document.getElementById('free-stage-pono-sprite');
+  if (freeStagePono && freeStagePono.src.indexOf(needle) < 0) freeStagePono.src = src;
 }
 function bumpPono() {
   var rhythmPono = document.getElementById('rhythm-pono-sprite');
-  if (!_ponoEl && !rhythmPono) return;
+  var freeStagePono = document.getElementById('free-stage-pono-sprite');
+  if (!_ponoEl && !rhythmPono && !freeStagePono) return;
   // ダンスポーズに差し替え
   var nextSrc = _pickDanceFrame();
   _setPonoSpriteSrc(nextSrc);
@@ -10368,7 +11375,7 @@ document.addEventListener('visibilitychange', function() {
   } else {
     _lastFrame = 0; // 復帰時 dt 暴走防止
     if (!_rafId) _rafId = requestAnimationFrame(loop);
-    if (_ac && _ac.state === 'suspended') _ac.resume().catch(function(){});
+    if (_ac && _ac.state === 'suspended' && !_otoAudioShouldBlock()) _ac.resume().catch(function(){});
   }
 });
 
@@ -10516,13 +11523,21 @@ function showTutorial() {
   }
   function hideStartChoice() {
     if (startChoice) startChoice.classList.remove('show');
+    if (startChoice) startChoice.classList.remove('free-step');
     if (intro) intro.classList.remove('is-choosing');
     document.body.classList.remove('intro-mode-picking');
   }
   function showStartChoice() {
     if (intro) intro.classList.add('is-choosing');
     document.body.classList.add('intro-mode-picking');
-    if (startChoice) startChoice.classList.add('show');
+    if (startChoice) {
+      startChoice.classList.remove('free-step');
+      startChoice.classList.add('show');
+    }
+  }
+  function showFreeStyleChoice() {
+    if (!startChoice) return;
+    startChoice.classList.add('show', 'free-step');
   }
   function enterApp() {
     document.body.classList.add('app-started');
@@ -10532,6 +11547,7 @@ function showTutorial() {
   function startIntro() {
     if (intro && intro.classList.contains('is-choosing')) return;
     unlockAudio();
+    _playOtoBgm('title', { fadeMs: 220 });
     _ensureAnimalDecoded();
     _hideRhythmMenu();
     showStartChoice();
@@ -10543,15 +11559,37 @@ function showTutorial() {
         e.preventDefault();
         e.stopPropagation();
         unlockAudio();
-        enterApp();
-        setPlayMode('free');
         if (btn.dataset.startMode === 'rhythm') {
+          enterApp();
+          setPlayMode('free');
           _showRhythmMenu();
         } else {
+          showFreeStyleChoice();
+        }
+      });
+    });
+    startChoice.querySelectorAll('.start-free-view-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        unlockAudio();
+        var viewMode = btn.dataset.freeView === 'stage' ? 'stage' : 'classic';
+        setFreeViewMode(viewMode, true);
+        enterApp();
+        setPlayMode('free');
+        if (viewMode === 'classic') {
           maybeShowInitialTutorial();
         }
       });
     });
+    var backBtn = startChoice.querySelector('.start-free-back');
+    if (backBtn) {
+      backBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        startChoice.classList.remove('free-step');
+      });
+    }
   }
 })();
 
@@ -11221,9 +12259,14 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   if (!trigger || !popover) return;
   var homeBtn = document.getElementById('oto-menu-home');
   var tutorialBtn = document.getElementById('oto-menu-tutorial');
+  var bgmBtn = document.getElementById('oto-menu-bgm');
   var notationBtn = document.getElementById('oto-menu-notation');
+  var bgmLabel = document.getElementById('oto-menu-bgm-label');
   var notationLabel = document.getElementById('oto-menu-notation-label');
   function refreshMenuLabels() {
+    if (bgmLabel) {
+      bgmLabel.textContent = _otoBgmEnabled() ? 'おんがく ON' : 'おんがく OFF';
+    }
     if (notationLabel) {
       notationLabel.textContent = NOTE_BUTTON_NOTATION === 'abc' ? 'おんぷ ドレミに' : 'おんぷ ABCに';
     }
@@ -11259,6 +12302,13 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     e.stopPropagation();
     close();
     showTutorial();
+  });
+  if (bgmBtn) bgmBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    unlockAudio();
+    _setOtoBgmEnabled(!_otoBgmEnabled());
+    refreshMenuLabels();
   });
   if (notationBtn) notationBtn.addEventListener('click', function(e) {
     e.preventDefault();
