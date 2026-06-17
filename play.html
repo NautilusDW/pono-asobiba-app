@@ -744,9 +744,9 @@
       .brand-sign { width: 380px; }
       .brand-sign > img.brand-ribbon { width: 345px; }
       .brand-ribbon { width: 345px; }
-      /* Shrink bottom-nav + for-parents so 4 buttons (incl. せってい) fit
+      /* Shrink bottom-nav + for-parents so 5 buttons (incl. シール) fit
          inside the safe area without clipping at the right edge. */
-      .bottom-nav { --nav-sprite-w: 400px; }
+      .bottom-nav { --nav-sprite-w: 500px !important; }
       .for-parents { width: 340px; height: 88px; }
       .for-parents__label { margin-left: 98px; margin-right: 28px; font-size: 21px; }
       .sticker-book-entry { width: 288px; min-height: 62px; bottom: 116px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 38px); }
@@ -758,7 +758,7 @@
       /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
          At 4:3 the visible canvas slice is vw × 823/vh ≈ 1097.3 canvas-px,
          so safe-w must drop well below that. 1020 leaves ~77px buffer
-         so the 300px-wide bottom-nav (4 buttons incl. せってい) is fully visible. */
+         so the bottom-nav (5 buttons incl. シール) is fully visible. */
       :root {
         --safe-w: 1020px;
       }
@@ -773,7 +773,7 @@
       .brand-col { padding-top: 20px; }
       /* bottom-nav and for-parents stay side-by-side; nudge them so they
          read as a balanced pair inside the narrower safe-area. */
-      .bottom-nav { --nav-sprite-w: 300px; }
+      .bottom-nav { --nav-sprite-w: 380px !important; }
       .for-parents { width: 300px; height: 78px; }
       .for-parents__label { margin-left: 86px; margin-right: 22px; font-size: 19px; }
       .sticker-book-entry { width: 252px; min-height: 58px; bottom: 104px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 36px); padding: 8px 13px; }
@@ -789,7 +789,7 @@
       .brand-sign { width: 310px; }
       .brand-sign > img.brand-ribbon { width: 282px; }
       .brand-ribbon { width: 282px; }
-      .bottom-nav { --nav-sprite-w: 280px; }
+      .bottom-nav { --nav-sprite-w: 355px !important; }
       .for-parents { width: 280px; height: 74px; }
       .for-parents__label { margin-left: 80px; margin-right: 20px; font-size: 18px; }
       .sticker-book-entry { width: 238px; min-height: 56px; bottom: 100px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 32px); }
@@ -797,11 +797,11 @@
     }
 
     /* ===== Bottom Navigation =====
-       Shared wooden base sprite + four transparent hit areas so the actions
+       Shared wooden base sprite + five transparent hit areas so the actions
        stay independent while the visuals read as one grouped control. */
     .bottom-nav {
-      --nav-sprite-w: 412px;
-      --nav-sprite-h: calc(var(--nav-sprite-w) * 380 / 1426);
+      --nav-sprite-w: 520px;
+      --nav-sprite-h: calc(var(--nav-sprite-w) * 355 / 1700);
       position: absolute;
       bottom: 18px;
       /* Offset by the canvas→safe-area gutter so the cluster sits inside
@@ -813,14 +813,10 @@
       height: var(--nav-sprite-h);
       z-index: 90;
       display: grid;
-      grid-template-columns:
-        calc(var(--nav-sprite-w) * 385 / 1426)
-        calc(var(--nav-sprite-w) * 342 / 1426)
-        calc(var(--nav-sprite-w) * 331 / 1426)
-        calc(var(--nav-sprite-w) * 368 / 1426);
+      grid-template-columns: repeat(5, 1fr);
       align-items: stretch;
       justify-content: stretch;
-      background-image: url('assets/ui/bottom_nav_group_normal.webp');
+      background-image: url('assets/ui/bottom_nav_group_5_normal.png');
       background-repeat: no-repeat;
       background-size: 100% 100%;
       background-position: center center;
@@ -835,7 +831,7 @@
       inset: 0;
       opacity: var(--press-opacity, 0);
       pointer-events: none;
-      background-image: url('assets/ui/bottom_nav_group_pressed.webp');
+      background-image: url('assets/ui/bottom_nav_group_5_pressed.png');
       background-repeat: no-repeat;
       background-size: 100% 100%;
       background-position: center center;
@@ -844,7 +840,7 @@
     }
     .bn-item {
       position: relative;
-      flex: 1 1 25%;
+      flex: 1 1 20%;
       height: 100%;
       display: block;
       padding: 0;
@@ -868,7 +864,7 @@
       width: 306px;
       min-height: 70px;
       z-index: 91;
-      display: inline-flex;
+      display: none;
       align-items: center;
       gap: 11px;
       padding: 9px 16px 10px;
@@ -1560,6 +1556,7 @@
       <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"></button>
       <button class="bn-item" data-action="top" type="button" aria-label="トップ"></button>
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
+      <button class="bn-item" data-action="stickers" type="button" aria-label="シール"></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
     </nav>
     <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
@@ -1916,7 +1913,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1198;
+    const PAGE_CACHE_VERSION = 1201;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -2249,10 +2246,11 @@
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
     const BOTTOM_NAV_PRESS_AREAS = [
-      { left: '0.35%', right: '27.21%' },
-      { left: '27.21%', right: '51.02%' },
-      { left: '51.02%', right: '74.47%' },
-      { left: '74.47%', right: '99.93%' }
+      { left: '0%', right: '20%' },
+      { left: '20%', right: '40%' },
+      { left: '40%', right: '60%' },
+      { left: '60%', right: '80%' },
+      { left: '80%', right: '100%' }
     ];
     function clearBottomNavPressed() {
       bottomNav.querySelectorAll('.bn-item.is-pressed').forEach((btn) => btn.classList.remove('is-pressed'));
@@ -2285,6 +2283,8 @@
         location.href = 'index.html';
       } else if (action === 'news') {
         openModal('newsModal');
+      } else if (action === 'stickers') {
+        location.href = 'sticker-book/index.html';
       } else if (action === 'settings') {
         openModal('settingsModal');
       }
