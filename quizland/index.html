@@ -3304,11 +3304,11 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     max-height: 38vh;
   }
 }
-/* 最終問題の中央表示。元画像由来の不透明PNGで、背景透けを止める。 */
+/* 最終問題の中央表示。Dr.owl'quiz/No フォルダ提供の画像を使用。 */
 #qno-final-balloon {
   position: relative;
   width: min(46vw, 430px);
-  aspect-ratio: 600 / 324;
+  aspect-ratio: 1536 / 1024;
   transform: scale(0);
   opacity: 0;
   transition: opacity 0.22s ease-out;
@@ -7888,7 +7888,7 @@ async function playQuestionNumberPlate(qIdx) {
   const finalBalloonImg = document.getElementById('qno-final-balloon-img');
   if (finalBalloon) {
     if (totalQuestions > 1 && qIdx === totalQuestions - 1) {
-      if (finalBalloonImg) finalBalloonImg.src = '../assets/images/quizland/final_q_balloon_opaque.png';
+      if (finalBalloonImg) finalBalloonImg.src = '../assets/images/quizland/final_q_balloon_no.png';
       finalBalloon.classList.add('show');
       finalBalloon.setAttribute('aria-hidden', 'false');
     } else {
@@ -7982,7 +7982,7 @@ document.getElementById('start-screen').addEventListener('click', function() {
       '../assets/images/quizland/qno_plate_3.png',
       '../assets/images/quizland/qno_plate_4.png',
       '../assets/images/quizland/qno_plate_5.png',
-      '../assets/images/quizland/final_q_balloon_opaque.png'
+      '../assets/images/quizland/final_q_balloon_no.png'
     ];
     for (var __pi = 0; __pi < __preloadList.length; __pi++) {
       var __pim = new Image(); __pim.src = __preloadList[__pi];
