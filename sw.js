@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1276: SW update checks stay passive and no longer show a blocking in-page version prompt.
 // v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls.
 // v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke.
 // v1273: Oto rhythm stage select is open so uncleared stages can be chosen directly.
@@ -47,7 +48,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1275; // v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls. | v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke. | v1273: Oto rhythm stage select is open so uncleared stages can be chosen directly. | v1272: Oto 3D note buttons share one closed top rim between side polygons and the textured top. | v1271: Oto 3D note button top textures keep colored edges instead of dark rims.
+const CACHE_VERSION = 1276; // v1276: SW update checks stay passive and no longer show a blocking in-page version prompt. | v1275: Bento rolls back generated control button/frame sprites to the previous compact CSS controls. | v1274: Oto Kero frustrated reaction uses imported fixed alpha art and left/right anger smoke. | v1273: Oto rhythm stage select is open so uncleared stages can be chosen directly. | v1272: Oto 3D note buttons share one closed top rim between side polygons and the textured top.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -56,11 +57,9 @@ self.addEventListener('install', event => {
   // 待機状態にして、次回起動/遷移時に自然に切り替える。
 });
 
-// ── Opt-in skip-waiting (v1137-) ──
-// ページ側 (common/sw-update.js) がトースト経由で明示的にユーザータップを
-// 取った時だけ postMessage({type:'SKIP_WAITING'}) を送ってくる。
-// install での skipWaiting() 呼び出しを避ける慎重設計はそのまま、
-// 「ユーザーが明示的にアップデートしたい時だけ即時切替」を可能にする。
+// ── Legacy skip-waiting message hook (v1137-) ──
+// 現行の common/sw-update.js は更新待ちUIを出さず、次回起動/遷移で自然に
+// 切り替える。既に開いている旧ページからのメッセージだけ後方互換で受ける。
 self.addEventListener('message', event => {
   if (event && event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
