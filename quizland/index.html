@@ -1171,13 +1171,18 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
 .next-q-btn::before {
   content: '';
   position: absolute;
-  inset: -12px -18px;
+  left: -36px;
+  right: -36px;
+  bottom: -34px;
+  height: 88px;
   z-index: -1;
   border-radius: 999px;
   background:
-    radial-gradient(ellipse at center, rgba(255, 246, 128, 0.98) 0%, rgba(255, 190, 34, 0.66) 42%, rgba(255, 180, 34, 0) 75%);
+    radial-gradient(ellipse at center, rgba(255, 252, 144, 1) 0%, rgba(255, 214, 48, 0.9) 28%, rgba(255, 153, 16, 0.5) 56%, rgba(255, 168, 20, 0) 78%);
   opacity: 0;
-  transform: scale(0.92);
+  transform: scale(0.82);
+  transform-origin: center bottom;
+  filter: blur(2px);
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 .next-q-btn.show {
@@ -1187,11 +1192,12 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
   filter:
     drop-shadow(0 8px 16px rgba(120, 83, 20, 0.3))
     drop-shadow(0 0 22px rgba(255, 198, 34, 0.96));
-  animation: nextq-attention-glow 1.25s ease-in-out infinite alternate;
+  animation: nextq-attention-glow 0.95s ease-in-out infinite alternate;
 }
 .next-q-btn.show::before {
   opacity: 1;
   transform: scale(1);
+  animation: nextq-bottom-glow-pulse 0.95s ease-in-out infinite alternate;
 }
 .next-q-btn:active { transform: translateY(2px) scale(0.98); }
 .next-q-btn[disabled],
@@ -1200,12 +1206,22 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
   from {
     filter:
       drop-shadow(0 8px 16px rgba(120, 83, 20, 0.3))
-      drop-shadow(0 0 16px rgba(255, 185, 28, 0.82));
+      drop-shadow(0 0 14px rgba(255, 185, 28, 0.8));
   }
   to {
     filter:
-      drop-shadow(0 8px 18px rgba(120, 83, 20, 0.34))
-      drop-shadow(0 0 30px rgba(255, 216, 64, 1));
+      drop-shadow(0 12px 24px rgba(120, 83, 20, 0.42))
+      drop-shadow(0 0 42px rgba(255, 224, 72, 1));
+  }
+}
+@keyframes nextq-bottom-glow-pulse {
+  from {
+    opacity: 0.58;
+    transform: translateY(2px) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(8px) scale(1.12);
   }
 }
 
@@ -3288,7 +3304,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     max-height: 38vh;
   }
 }
-/* 最終問題の中央表示。元画像を使い、同じ画像マスクの不透明下地で透けを止める。 */
+/* 最終問題の中央表示。元画像由来の不透明PNGで、背景透けを止める。 */
 #qno-final-balloon {
   position: relative;
   width: min(46vw, 430px);
@@ -3296,20 +3312,6 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   transform: scale(0);
   opacity: 0;
   transition: opacity 0.22s ease-out;
-}
-#qno-final-balloon::before,
-#qno-final-balloon::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: #fff0b8;
-  -webkit-mask: url('../assets/images/quizland/final_q_balloon.webp') center / contain no-repeat;
-  mask: url('../assets/images/quizland/final_q_balloon.webp') center / contain no-repeat;
-  pointer-events: none;
-}
-#qno-final-balloon::after {
-  background: #fff7d4;
-  opacity: 0.86;
 }
 #qno-final-balloon-img {
   position: relative;
@@ -7886,7 +7888,7 @@ async function playQuestionNumberPlate(qIdx) {
   const finalBalloonImg = document.getElementById('qno-final-balloon-img');
   if (finalBalloon) {
     if (totalQuestions > 1 && qIdx === totalQuestions - 1) {
-      if (finalBalloonImg) finalBalloonImg.src = '../assets/images/quizland/final_q_balloon.webp';
+      if (finalBalloonImg) finalBalloonImg.src = '../assets/images/quizland/final_q_balloon_opaque.png';
       finalBalloon.classList.add('show');
       finalBalloon.setAttribute('aria-hidden', 'false');
     } else {
@@ -7980,7 +7982,7 @@ document.getElementById('start-screen').addEventListener('click', function() {
       '../assets/images/quizland/qno_plate_3.png',
       '../assets/images/quizland/qno_plate_4.png',
       '../assets/images/quizland/qno_plate_5.png',
-      '../assets/images/quizland/final_q_balloon.webp'
+      '../assets/images/quizland/final_q_balloon_opaque.png'
     ];
     for (var __pi = 0; __pi < __preloadList.length; __pi++) {
       var __pim = new Image(); __pim.src = __preloadList[__pi];
