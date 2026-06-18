@@ -338,9 +338,6 @@
   body.rhythm-layout.webgl-rhythm.rhythm-demo-note-visible #instruments {
     z-index: 7;
   }
-  body.rhythm-layout.webgl-rhythm.rhythm-demo-note-visible .gh-note {
-    display: flex !important;
-  }
   #rhythm-road::before,
   #rhythm-road::after {
     content: '';
@@ -9026,9 +9023,7 @@ function _gh3DDrawNotes() {
   var notes = (_rhythm.activeNotes || []).slice().sort(function(a, b) {
     return (a._gh3dProgress || 0) - (b._gh3dProgress || 0);
   });
-  if (!(document.body && document.body.classList.contains('rhythm-demo-note-visible'))) {
-    for (var i = 0; i < notes.length; i++) _gh3DDrawOneNote(notes[i], mvp);
-  }
+  for (var i = 0; i < notes.length; i++) _gh3DDrawOneNote(notes[i], mvp);
   _gh3DDrawKeys(mvp);
 }
 function _gh3DRender() {
@@ -11672,20 +11667,22 @@ document.addEventListener('visibilitychange', function() {
 var TUT_SEEN_KEY = 'pono_oto_tut_seen_v4';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
-  rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v3',
-  rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v3',
+  rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v4',
+  rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v4',
   rhythmStory: 'pono_oto_rhythm_story_tut_seen_v5',
   rhythmStoryFromMenu: 'pono_oto_rhythm_story_from_menu_tut_seen_v2',
   freeStage: 'pono_oto_free_stage_tut_seen_v4'
 };
 var OTO_RHYTHM_TUTORIAL_VOICE = {
-  song: 'まずは ステージ1、かえるのうたを えらぼう。かつと つぎの ステージも えらべるよ。',
+  songIntro: 'ここは、あそぶ きょくを えらぶ がめんだよ。きょくを えらぶと、リズムの れんしゅうが はじまるよ。',
+  stageUnlock: 'さいしょに あそべる きょくは すこしだけ。ライバルに かつと、つぎの きょくや ステージが ふえていくよ。',
+  song: 'まずは、かえるのうたから はじめよう。かえるのうたの ボタンを おしてね。',
   next: 'えらべたね。つぎへを おして、あそびかたを えらぼう。',
   block: 'さいしょは ブロックで みじかく れんしゅうしよう。ブロックを おしてね。',
   demo: 'おてほんを みるよ。ノートが ラインに きたら、同じボタンを おすよ。',
   tryNote: 'こんどは じぶんで やってみよう。ノートが ラインに きたら、ファのボタンを おしてね。',
   advice: 'もっと れんしゅうしたいときは、じゆうモードで あそべるよ。おてほんを みてから はじめると わかりやすいよ。',
-  start: 'ステージ1、かえるのうたで あそぼう。はじめるを おしてね。'
+  start: 'かえるのうたで あそぼう。はじめるを おしてね。'
 };
 var OTO_TUTORIAL_HAND_ASSETS = {
   point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
@@ -12046,8 +12043,36 @@ function _makeOtoTutorialSteps(kind) {
   if (kind === 'rhythmMenu') {
     return [
       {
-        badge: 'ステージ1',
-        msg: 'ステージ1<br>かえるのうたを おしてね',
+        badge: 'きょく',
+        msg: 'ここで あそぶ<br>きょくを えらぶよ',
+        voice: OTO_RHYTHM_TUTORIAL_VOICE.songIntro,
+        anchor: '.rhythm-menu-guide',
+        side: 'menuBottom',
+        hideActions: true,
+        autoNextMs: 2800,
+        before: function() {
+          _setRhythmMenuAwaitingSongChoice(true);
+          RHYTHM_CURRENT_DIFF = 'かんたん';
+          _selectRhythmSong('kaeru');
+          _prepareOtoRhythmMenuTutorial('song');
+        }
+      },
+      {
+        badge: 'ステージ',
+        msg: 'かつと あそべる<br>きょくが ふえるよ',
+        voice: OTO_RHYTHM_TUTORIAL_VOICE.stageUnlock,
+        anchor: '#rhythm-stage-status',
+        side: 'menuAnchorBelow',
+        hideActions: true,
+        autoNextMs: 3200,
+        before: function() {
+          _setRhythmMenuAwaitingSongChoice(true);
+          _prepareOtoRhythmMenuTutorial('song');
+        }
+      },
+      {
+        badge: 'えらぶ',
+        msg: 'さいしょは<br>かえるのうたを おしてね',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.song,
         anchor: '.rhythm-song-choice[data-song="kaeru"]',
         side: 'menuAnchorBelow',
@@ -12139,7 +12164,7 @@ function _makeOtoTutorialSteps(kind) {
       },
       {
         badge: 'スタート',
-        msg: 'ステージ1 / かえるのうた<br>はじめるを おしてね',
+        msg: 'かえるのうたで<br>はじめるよ',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.start,
         anchor: '#rhythm-menu-start',
         side: 'menuBottom',
@@ -12185,7 +12210,7 @@ function _makeOtoTutorialSteps(kind) {
       },
       {
         badge: 'はじめる',
-        msg: 'ステージ1 / かえるのうた<br>はじめるを おしてね',
+        msg: 'かえるのうたで<br>はじめるよ',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.start,
         anchor: '#rhythm-menu-start',
         side: 'menuBottom',
