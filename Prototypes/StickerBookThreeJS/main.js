@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-672";
+const ASSET_VERSION = "20260618-673";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -29,6 +29,7 @@ const STICKER_PLAN_URL = "./sticker_book_content_plan.json";
 const STICKER_ASSET_PREFIX = "../../";
 const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
 const EDITOR_STATE_VERSION = 3;
+const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const DRAWING_COLORS = [
   "#EF4444",
@@ -513,6 +514,10 @@ window.__stickerBookDebugState = () => ({
   spreadJumpActive: Boolean(spreadJumpAnimation),
   spreadJumpVisiblePageCount: spreadJumpAnimation?.visiblePageCount ?? 0,
   spreadJumpCycles: spreadJumpAnimation?.cycles ?? 0,
+  leftPlacementCount: getPagePlacements(activeBookPage).length,
+  rightPlacementCount: getPagePlacements(rightBookPageNumber()).length,
+  turnFrontTextureIsCanvas: frontPage.material.map?.image instanceof HTMLCanvasElement,
+  turnBackTextureIsCanvas: backPage.material.map?.image instanceof HTMLCanvasElement,
 });
 animate();
 
@@ -679,6 +684,7 @@ function ensureDefaultEditorPages() {
     getPagePlacements(pageDef.page);
     getPageDrawingStrokes(pageDef.page);
   }
+  seedDefaultEditorContentIfNeeded();
 }
 
 function createDefaultPlacements(stickers) {
@@ -708,6 +714,39 @@ function createDefaultPlacements(stickers) {
       z: (index + 1) * 10,
     };
   });
+}
+
+function seedDefaultEditorContentIfNeeded() {
+  if (!stickerOptions.length || hasAnyEditorContent()) {
+    return;
+  }
+  const sortedStickers = [...stickerOptions].sort((a, b) => {
+    const gameOrderA = stickerPlan?.games?.findIndex((game) => game.id === a.gameId) ?? 0;
+    const gameOrderB = stickerPlan?.games?.findIndex((game) => game.id === b.gameId) ?? 0;
+    return gameOrderA - gameOrderB || String(a.id).localeCompare(String(b.id));
+  });
+  const pageCount = editorPageCount();
+  const stickersPerPage = Math.max(1, Math.ceil(sortedStickers.length / pageCount));
+  for (let page = 1; page <= pageCount; page += 1) {
+    const start = (page - 1) * stickersPerPage;
+    const stickers = sortedStickers.slice(start, start + stickersPerPage);
+    editorState.pages[String(page)] = createDefaultPlacements(stickers);
+  }
+  editorState.defaultContentSeedVersion = DEFAULT_CONTENT_SEED_VERSION;
+  editorStateDirty = true;
+}
+
+function hasAnyEditorContent() {
+  const pageValues = editorState.pages && typeof editorState.pages === "object"
+    ? Object.values(editorState.pages)
+    : [];
+  if (pageValues.some((placements) => Array.isArray(placements) && placements.length > 0)) {
+    return true;
+  }
+  const drawingValues = editorState.drawings && typeof editorState.drawings === "object"
+    ? Object.values(editorState.drawings)
+    : [];
+  return drawingValues.some((strokes) => Array.isArray(strokes) && strokes.length > 0);
 }
 
 function setupEditorGameFilter() {
@@ -1482,6 +1521,7 @@ function setBookPage(page, options = {}) {
   const shouldAnimate = shouldAnimateBookPageTurn(previousPage, nextPage, options);
   const mode = options.turnMode || (Math.abs(nextPage - previousPage) <= 2 ? "single" : "jump");
   if (shouldAnimate) {
+    preparePageTurnTextures(previousPage, nextPage);
     startSpreadJump(nextSpreadPosition, {
       ...spreadJumpOptionsForBookTurn(previousPage, nextPage, mode),
       onComplete: () => applyBookPageSelection(nextPage, options),
@@ -1507,6 +1547,19 @@ function applyBookPageSelection(nextPage, options = {}) {
   }
   refreshPageTemplateTextures();
   updateBookPageControls();
+}
+
+function preparePageTurnTextures(previousPage, nextPage) {
+  if (activeSurface !== "inside") {
+    return;
+  }
+  if (nextPage >= previousPage) {
+    assignTextureObject(frontPage, getPageTemplateTexture("right", Math.min(previousPage + 1, editorPageCount())));
+    assignTextureObject(backPage, getPageTemplateTexture("left", nextPage));
+    return;
+  }
+  assignTextureObject(frontPage, getPageTemplateTexture("right", Math.min(nextPage + 1, editorPageCount())));
+  assignTextureObject(backPage, getPageTemplateTexture("left", previousPage));
 }
 
 function spreadJumpOptionsForBookTurn(previousPage, nextPage, mode) {
@@ -1712,6 +1765,7 @@ function loadEditorState() {
       version: parsed.version || 1,
       pages: parsed.pages,
       drawings: parsed.drawings && typeof parsed.drawings === "object" ? parsed.drawings : {},
+      defaultContentSeedVersion: parsed.defaultContentSeedVersion || 0,
     };
   } catch {
     return createEmptyEditorState();
@@ -1719,7 +1773,7 @@ function loadEditorState() {
 }
 
 function createEmptyEditorState() {
-  return { version: EDITOR_STATE_VERSION, pages: {}, drawings: {} };
+  return { version: EDITOR_STATE_VERSION, pages: {}, drawings: {}, defaultContentSeedVersion: 0 };
 }
 
 function saveEditorState() {
@@ -1728,6 +1782,7 @@ function saveEditorState() {
     if (!editorState.drawings || typeof editorState.drawings !== "object") {
       editorState.drawings = {};
     }
+    editorState.defaultContentSeedVersion = editorState.defaultContentSeedVersion || 0;
     localStorage.setItem(EDITOR_STORAGE_KEY, JSON.stringify(editorState));
   } catch {
     // Local storage can be unavailable in private contexts; editing still works for the session.
@@ -2416,12 +2471,17 @@ function assignTextureObject(mesh, texture) {
   mesh.material.needsUpdate = true;
 }
 
-function getPageTemplateTexture(side) {
-  const key = `${activeBook}:${side}`;
+function getPageTemplateTexture(side, pageNumber = pageNumberForTemplateSide(side)) {
+  const safePage = THREE.MathUtils.clamp(Math.round(pageNumber) || 1, 1, editorPageCount());
+  const key = `${activeBook}:${side}:${safePage}`;
   if (!pageTemplateTextureMap.has(key)) {
-    pageTemplateTextureMap.set(key, createPageTemplateTexture(side, activeBook));
+    pageTemplateTextureMap.set(key, createPageTemplateTexture(side, activeBook, safePage));
   }
   return pageTemplateTextureMap.get(key);
+}
+
+function pageNumberForTemplateSide(side) {
+  return side === "left" ? activeBookPage : rightBookPageNumber();
 }
 
 function refreshPageTemplateTextures() {
@@ -2435,11 +2495,14 @@ function refreshPageTemplateTextures() {
   if (frontPage?.material && activeSurface === "inside") {
     assignTextureObject(frontPage, getPageTemplateTexture("right"));
   }
+  if (backPage?.material && activeSurface === "inside") {
+    assignTextureObject(backPage, getPageTemplateTexture("left"));
+  }
   updateFlutterPageTextures();
   updateBookPageControls();
 }
 
-function createPageTemplateTexture(side, bookName) {
+function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTemplateSide(side)) {
   const templateCanvas = document.createElement("canvas");
   templateCanvas.width = PAGE_TEXTURE_W;
   templateCanvas.height = PAGE_TEXTURE_H;
@@ -2458,7 +2521,7 @@ function createPageTemplateTexture(side, bookName) {
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
-  drawDynamicPageContent(ctx, texture, side, palette);
+  drawDynamicPageContent(ctx, texture, side, palette, pageNumber);
   return texture;
 }
 
@@ -2608,8 +2671,7 @@ function drawRightPageTemplate(ctx, palette) {
   ctx.restore();
 }
 
-function drawDynamicPageContent(ctx, texture, side, palette) {
-  const pageNumber = side === "left" ? activeBookPage : rightBookPageNumber();
+function drawDynamicPageContent(ctx, texture, side, palette, pageNumber = pageNumberForTemplateSide(side)) {
   const pageDef = editorPageDefinitions[pageNumber - 1] || editorPageDefinitions[0] || null;
   drawStickerCanvasPage(ctx, texture, palette, pageDef, getPagePlacements(pageNumber), pageNumber);
 }
@@ -2686,6 +2748,7 @@ function drawStickerCanvasPage(ctx, texture, palette, pageDef, placements, pageN
   drawPageDrawingLayer(ctx, pageNumber);
   const ordered = [...placements].sort((a, b) => a.z - b.z);
   for (const placement of ordered) {
+    drawPlacedStickerPlaceholder(ctx, placement);
     drawAsyncPlacedSticker(ctx, texture, placement);
   }
   texture.needsUpdate = true;
@@ -3128,7 +3191,7 @@ function updateFlutterPageTextures() {
   for (const page of flutterPages.pages) {
     page.frontMaterial.map = getPageTemplateTexture("right");
     page.frontMaterial.needsUpdate = true;
-    page.backMaterial.map = getTexture(SHARED_TEXTURES.pageBack);
+    page.backMaterial.map = getPageTemplateTexture("left");
     page.backMaterial.needsUpdate = true;
   }
 }
@@ -3337,7 +3400,11 @@ function applyVariantState() {
   } else {
     assignTexture(frontPage, bundle.coverFront);
   }
-  assignTexture(backPage, activeSurface === "inside" ? SHARED_TEXTURES.pageBack : bundle.coverInside);
+  if (activeSurface === "inside") {
+    assignTextureObject(backPage, getPageTemplateTexture("left"));
+  } else {
+    assignTexture(backPage, bundle.coverInside);
+  }
   assignTexture(closedCover, bundle.coverFront);
   assignTexture(spine, bundle.spine);
   assignTexture(sideTabs.left, bundle.tabsLeft);
