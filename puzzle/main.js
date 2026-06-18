@@ -1389,8 +1389,76 @@ function rebuildPath(piece) {
   piece.path = path;
 }
 
+function getBasicPracticeFocusPieceForDim() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return null;
+  var phase = partnerPracticeState.phase;
+  var isPieceMovePhase = phase === 'basic-intro'
+    || phase === 'basic-drag-demo'
+    || phase === 'basic-drag-try'
+    || phase === 'basic-drag-moving'
+    || phase === 'basic-hint-demo-select'
+    || phase === 'basic-hint-demo-button'
+    || phase === 'basic-hint-demo-place'
+    || phase === 'basic-hint-select-try'
+    || phase === 'basic-hint-press-try'
+    || phase === 'basic-hint-drag-try'
+    || phase === 'basic-hint-drag-moving';
+  return isPieceMovePhase ? partnerPracticeState.targetPiece : null;
+}
+
+function shouldDimBasicPracticePiece(piece) {
+  var focusPiece = getBasicPracticeFocusPieceForDim();
+  return !!(focusPiece && piece && piece !== focusPiece);
+}
+
+function drawBasicPracticeGhostPiece(ctx) {
+  if (!ctx || !partnerPracticeState || !partnerPracticeState.loopCueGhost) return;
+  var ghost = partnerPracticeState.loopCueGhost;
+  var piece = ghost.piece;
+  if (!piece || piece.snapped || !sourceImg) return;
+  var gx = ghost.x;
+  var gy = ghost.y;
+  var rotation = ghost.rotation || 0;
+  var alpha = ghost.alpha == null ? 0.36 : ghost.alpha;
+  var cx = gx + pieceW / 2;
+  var cy = gy + pieceH / 2;
+  var rad = rotation * Math.PI / 180;
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.12, Math.min(0.58, alpha));
+  ctx.filter = 'saturate(0.72) brightness(1.08)';
+  if (rotation) {
+    ctx.translate(cx, cy);
+    ctx.rotate(rad);
+    ctx.translate(-cx, -cy);
+  }
+  ctx.beginPath();
+  buildPiecePath(ctx, gx, gy, pieceW, pieceH, piece.tabs);
+  ctx.clip();
+  ctx.drawImage(sourceImg, boardX + (gx - piece.homeX), boardY + (gy - piece.homeY), boardW, boardH);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.64;
+  if (rotation) {
+    ctx.translate(cx, cy);
+    ctx.rotate(rad);
+    ctx.translate(-cx, -cy);
+  }
+  ctx.beginPath();
+  buildPiecePath(ctx, gx, gy, pieceW, pieceH, piece.tabs);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.94)';
+  ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.035);
+  ctx.shadowColor = 'rgba(36, 145, 255, 0.76)';
+  ctx.shadowBlur = 14;
+  ctx.setLineDash([Math.max(8, pieceW * 0.08), Math.max(5, pieceW * 0.05)]);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ===== Draw a single piece =====
 function drawPiece(piece) {
+  const dimmedForBasicPractice = shouldDimBasicPracticePiece(piece);
   const rotated = !!piece.rotation;
   const cx = piece.x + pieceW / 2;
   const cy = piece.y + pieceH / 2;
@@ -1402,6 +1470,9 @@ function drawPiece(piece) {
     puzzleCtx.translate(cx, cy);
     puzzleCtx.rotate(rad);
     puzzleCtx.translate(-cx, -cy);
+  }
+  if (dimmedForBasicPractice) {
+    puzzleCtx.filter = 'grayscale(1) saturate(0.28) brightness(1.02) contrast(0.98)';
   }
   puzzleCtx.beginPath();
   buildPiecePath(puzzleCtx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
@@ -1420,8 +1491,10 @@ function drawPiece(piece) {
   }
   puzzleCtx.beginPath();
   buildPiecePath(puzzleCtx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
-  puzzleCtx.strokeStyle = piece === dragPiece ? '#F2915A' : '#5D4E37';
-  puzzleCtx.lineWidth = piece === dragPiece ? 2.5 : 1.8;
+  puzzleCtx.strokeStyle = dimmedForBasicPractice
+    ? 'rgba(86, 86, 86, 0.82)'
+    : (piece === dragPiece ? '#F2915A' : '#5D4E37');
+  puzzleCtx.lineWidth = dimmedForBasicPractice ? 1.7 : (piece === dragPiece ? 2.5 : 1.8);
   puzzleCtx.stroke();
   if (piece === dragPiece) {
     puzzleCtx.beginPath();
@@ -1473,6 +1546,7 @@ function redraw() {
       },
     }, false);
   }
+  drawBasicPracticeGhostPiece(puzzleCtx);
   drawPartnerPracticeCue(puzzleCtx);
 }
 
@@ -1488,39 +1562,39 @@ function drawPartnerPracticeCue(ctx) {
 
   if (cue.kind === 'tap-piece') {
     var minSide = Math.min(pieceW, pieceH);
-    var tapR = minSide * (0.66 + pulse * 0.12);
-    var glowR = tapR * (1.32 + pulse * 0.08);
+    var tapR = minSide * (0.70 + pulse * 0.14);
+    var glowR = tapR * (1.42 + pulse * 0.12);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     var glow = ctx.createRadialGradient(cx, cy, tapR * 0.55, cx, cy, glowR);
-    glow.addColorStop(0, 'rgba(255, 186, 60, 0.08)');
-    glow.addColorStop(0.45, 'rgba(255, 176, 55,' + (0.20 + pulse * 0.10).toFixed(3) + ')');
-    glow.addColorStop(0.74, 'rgba(255, 170, 48,' + (0.44 + pulse * 0.22).toFixed(3) + ')');
+    glow.addColorStop(0, 'rgba(255, 202, 68, 0.14)');
+    glow.addColorStop(0.42, 'rgba(255, 176, 55,' + (0.32 + pulse * 0.14).toFixed(3) + ')');
+    glow.addColorStop(0.76, 'rgba(255, 132, 35,' + (0.58 + pulse * 0.26).toFixed(3) + ')');
     glow.addColorStop(1, 'rgba(255, 226, 135, 0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.shadowColor = 'rgba(255, 176, 58, 0.92)';
-    ctx.shadowBlur = 30 + pulse * 18;
+    ctx.shadowColor = 'rgba(255, 150, 38, 0.98)';
+    ctx.shadowBlur = 38 + pulse * 24;
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
-    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.86 + pulse * 0.14).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(5, minSide * 0.048);
+    ctx.strokeStyle = 'rgba(255, 120, 42,' + (0.90 + pulse * 0.10).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(6, minSide * 0.058);
     ctx.stroke();
-    ctx.shadowColor = 'rgba(255, 186, 60, 0.86)';
-    ctx.shadowBlur = 18 + pulse * 14;
+    ctx.shadowColor = 'rgba(255, 210, 70, 0.95)';
+    ctx.shadowBlur = 24 + pulse * 18;
     ctx.beginPath();
     ctx.arc(cx, cy, tapR, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 176, 58,' + (0.62 + pulse * 0.30).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(4, minSide * 0.032);
+    ctx.strokeStyle = 'rgba(255, 174, 35,' + (0.72 + pulse * 0.28).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(5, minSide * 0.040);
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.arc(cx, cy, tapR * 1.16, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 222, 138,' + (0.48 + pulse * 0.30).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(3, minSide * 0.018);
+    ctx.strokeStyle = 'rgba(255, 235, 150,' + (0.60 + pulse * 0.30).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(4, minSide * 0.024);
     ctx.stroke();
     ctx.restore();
     recordBasicHintSelectCueVisible(now);
@@ -2029,7 +2103,7 @@ let hintFlashVisibleAt = 0;             // 正解位置のヒント演出が実�
 let hintNoticeTimeout = null;           // 「ピースを えらんで〜」吹き出しの非表示タイマー
 let stageHintUsesActual = 0;            // 今ステージで実際に使ったヒント回数
 
-const HINT_FLASH_DURATION_MS = 1500;    // 金色星 + radial glow 表示時間 (Phase 3c: 2000→1500)
+const HINT_FLASH_DURATION_MS = 2600;    // ヒント位置の強調表示時間
 
 // ヒント初期回数 (仲良し度システム廃止後の確定テーブル):
 //   base = {Stage 1-5: 1, Stage 6-12: 2, Stage 13-20: 3}
@@ -2240,9 +2314,16 @@ function refreshHintButtonState() {
   var sid = getCurrentStageIdForHint();
   var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
   var label = 'ヒント';
-  var basicHintPressWaiting = !!(partnerPracticeState
+  var isBasicPracticeHintPhase = !!(partnerPracticeState
     && partnerPracticeState.mode === 'basic'
-    && partnerPracticeState.phase === 'hint-press'
+    && (partnerPracticeState.phase === 'hint-press'
+      || partnerPracticeState.phase === 'basic-hint-select-try'
+      || partnerPracticeState.phase === 'basic-hint-press-try'));
+  var basicHintSelectWaiting = !!(isBasicPracticeHintPhase
+    && partnerPracticeState.phase === 'basic-hint-select-try');
+  var basicHintPressWaiting = !!(isBasicPracticeHintPhase
+    && (partnerPracticeState.phase === 'hint-press'
+      || partnerPracticeState.phase === 'basic-hint-press-try')
     && !partnerPracticeState.hintPressReady);
   if (dragPiece) {
     // ドラッグ中は無効化 + 😴 マーク
@@ -2253,7 +2334,7 @@ function refreshHintButtonState() {
     return;
   }
   btnHint.classList.remove('is-sleeping');
-  if (basicHintPressWaiting) {
+  if (basicHintSelectWaiting || basicHintPressWaiting) {
     btnHint.classList.add('is-disabled');
     btnHint.classList.remove('is-empty');
     btnHint.textContent = label + '×' + Math.max(0, remaining);
@@ -2281,7 +2362,7 @@ function shakeHintButton() {
   setTimeout(function () { if (btnHint) btnHint.classList.remove('is-shake'); }, 400);
 }
 
-// 「ピースを えらんで からおしてね」吹き出しを表示
+// 「ピースを 選んでから押してね」吹き出しを表示
 function showHintNotice() {
   if (!puzzleContainer) return;
   var existing = document.getElementById('hint-notice-bubble');
@@ -2290,7 +2371,7 @@ function showHintNotice() {
   var el = document.createElement('div');
   el.id = 'hint-notice-bubble';
   el.className = 'hint-notice-bubble';
-  el.textContent = 'ピースを えらんで からおしてね';
+  el.textContent = 'ピースを 選んでから押してね';
   puzzleContainer.appendChild(el);
   hintNoticeTimeout = setTimeout(function () {
     if (el && el.parentNode) el.parentNode.removeChild(el);
@@ -2325,6 +2406,20 @@ function ensureHintAnimLoop() {
   hintAnimRafHandle = requestAnimationFrame(loop);
 }
 
+function showHintGlowForPiece(piece, durationMs) {
+  if (!piece || piece.snapped) return;
+  hintFlashVisibleAt = 0;
+  hintFlashPiece = piece;
+  hintFlashUntil = Date.now() + Math.max(1, durationMs || HINT_FLASH_DURATION_MS);
+  ensureHintAnimLoop();
+}
+
+function clearHintGlow() {
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  hintFlashVisibleAt = 0;
+}
+
 // ピース中心座標
 function pieceCenter(piece, useHome) {
   if (useHome) {
@@ -2356,47 +2451,53 @@ function drawHintOverlay(ctx) {
     ctx.restore();
   }
 
-  // ── 金色星 + radial glow (ヒント発火後 1.5 秒) ──
-  // Phase 3c: 「正解そのもの」感を抑える: 星 -20% / glow 半径 -30% / 表示時間 1500ms / 枠点滅は維持
+  // ── ヒント位置の強調: 青白い輪郭 + 広めの glow + 星 ──
   if (hintFlashPiece && now < hintFlashUntil
       && pieces && pieces.indexOf(hintFlashPiece) >= 0) {
     if (!hintFlashVisibleAt) {
       hintFlashVisibleAt = now;
       scheduleBasicHintDoneAfterFlashVisible();
     }
-    var t = (hintFlashUntil - now) / HINT_FLASH_DURATION_MS; // 1 → 0
+    var t = Math.max(0, Math.min(1, (hintFlashUntil - now) / HINT_FLASH_DURATION_MS)); // 1 → 0
     var phase = 1 - t;                                       // 0 → 1
     var slot = pieceCenter(hintFlashPiece, true);
     var blink = 0.5 + 0.5 * Math.sin(now / 120);             // 0..1
-    // glow 半径 30% 縮小: 旧 0.4 + 0.5*phase → 0.28 + 0.35*phase
-    var glowR = Math.max(pieceW, pieceH) * (0.28 + 0.35 * phase);
+    var glowR = Math.max(pieceW, pieceH) * (0.62 + 0.22 * blink + 0.18 * Math.min(phase, 1));
 
     ctx.save();
-    // radial glow (alpha も少し控えめに)
     var grad = ctx.createRadialGradient(slot.cx, slot.cy, 4, slot.cx, slot.cy, glowR);
-    grad.addColorStop(0,   'rgba(255, 215, 64, ' + (0.42 * (1 - phase * 0.4)).toFixed(3) + ')');
-    grad.addColorStop(0.6, 'rgba(255, 200, 0, 0.12)');
-    grad.addColorStop(1,   'rgba(255, 200, 0, 0)');
+    grad.addColorStop(0,   'rgba(255, 255, 255, ' + (0.78 + 0.12 * blink).toFixed(3) + ')');
+    grad.addColorStop(0.34, 'rgba(89, 209, 255, ' + (0.44 + 0.16 * blink).toFixed(3) + ')');
+    grad.addColorStop(0.72, 'rgba(37, 99, 235, 0.20)');
+    grad.addColorStop(1,   'rgba(37, 99, 235, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(slot.cx, slot.cy, glowR, 0, Math.PI * 2);
     ctx.fill();
 
-    // 枠点滅 (どこか分かる程度 → 維持)
-    ctx.lineWidth = 3 + 2 * blink;
-    ctx.strokeStyle = 'rgba(255, 215, 64, ' + (0.6 + 0.35 * blink).toFixed(3) + ')';
-    ctx.shadowColor = 'rgba(255, 215, 64, 0.9)';
-    ctx.shadowBlur = 16 + 10 * blink;
+    ctx.lineWidth = Math.max(5, Math.min(pieceW, pieceH) * 0.07) + 2 * blink;
+    ctx.strokeStyle = 'rgba(255, 255, 255, ' + (0.86 + 0.12 * blink).toFixed(3) + ')';
+    ctx.shadowColor = 'rgba(48, 166, 255, 0.95)';
+    ctx.shadowBlur = 24 + 14 * blink;
     ctx.beginPath();
     buildPiecePath(ctx, hintFlashPiece.homeX, hintFlashPiece.homeY, pieceW, pieceH, hintFlashPiece.tabs);
     ctx.stroke();
 
-    // 金色星 (5 つ尖り) — サイズ 20% 縮小: 0.32 → 0.256
-    ctx.shadowBlur = 20;
-    ctx.fillStyle = 'rgba(255, 224, 102, ' + (0.85 + 0.15 * blink).toFixed(3) + ')';
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.95)';
+    ctx.setLineDash([Math.max(8, pieceW * 0.08), Math.max(5, pieceW * 0.05)]);
+    ctx.lineDashOffset = -now / 42;
+    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.038);
+    ctx.strokeStyle = 'rgba(21, 142, 235, ' + (0.78 + 0.18 * blink).toFixed(3) + ')';
+    ctx.shadowBlur = 10 + 8 * blink;
+    ctx.beginPath();
+    buildPiecePath(ctx, hintFlashPiece.homeX, hintFlashPiece.homeY, pieceW, pieceH, hintFlashPiece.tabs);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = 'rgba(255, 244, 136, ' + (0.90 + 0.10 * blink).toFixed(3) + ')';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
     ctx.lineWidth = 2.5;
-    drawStar(ctx, slot.cx, slot.cy, Math.min(pieceW, pieceH) * 0.256, 5, 0.45);
+    drawStar(ctx, slot.cx, slot.cy, Math.min(pieceW, pieceH) * 0.34, 5, 0.45);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -2460,17 +2561,52 @@ function setSelectedPieceForHint(piece) {
 const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
 const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
+const BASIC_PRACTICE_HAND_ASSETS = {
+  open: '../assets/images/puzzle/ui/tutorial/hand_open_hover.png',
+  release: '../assets/images/puzzle/ui/tutorial/hand_open_release.png',
+  grab: '../assets/images/puzzle/ui/tutorial/hand_grab_ready.png',
+  grip: '../assets/images/puzzle/ui/tutorial/hand_grip.png',
+  pinch: '../assets/images/puzzle/ui/tutorial/hand_pinch.png',
+  point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
+};
+const BASIC_HAND_DEMO_MOVE_MS = 680;
+const BASIC_HAND_DEMO_HOLD_MS = 420;
+const BASIC_HAND_DEMO_AFTER_MS = 260;
+const BASIC_DRAG_DEMO_DURATION_MS = 1250;
+const BASIC_LOOP_HAND_CUE_START_MS = 900;
+const BASIC_LOOP_HAND_CUE_MOVE_MS = 1050;
+const BASIC_LOOP_HAND_CUE_REPEAT_MS = 820;
+const BASIC_INTRO_DEMO_BANNER_DELAY_MS = 5200;
+const BASIC_INTRO_DEMO_BANNER_MS = 3000;
+const BASIC_DRAG_NA_START_DELAY_MS = 650;
+const BASIC_DRAG_ORANGE_PRE_VOICE_MS = 180;
+const BASIC_DRAG_BLUE_CUE_DELAY_MS = 2300;
+const BASIC_TRY_BLUE_CUE_DELAY_MS = 3600;
+const BASIC_TRY_BANNER_MS = 6800;
+// Offsets measured from the moment the corresponding voice (basic_tut_02 for
+// the demo phase, basic_tut_03 for the try phase) STARTS playing. The orange
+// cue should appear when the narration says 「このピースをつかんで」 and the blue
+// cue when it says 「青い場所へ」. These values were tuned to the current
+// recordings; if narration timing changes, re-measure with audacity.
+const BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS = 800;
+const BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS = 2500;
+const BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS = 700;
+const BASIC_DRAG_TRY_BLUE_AT_VOICE_MS = 2400;
+const BASIC_AFTER_DRAG_SUCCESS_MS = 1700;
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
 const BASIC_SELECT_PIECE_AFTER_CUE_VISIBLE_MS = 1000;
+const BASIC_HINT_DEMO_GLOW_MS = 5200;
+const BASIC_HINT_TRY_GLOW_MS = 180000;
 const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
 const BASIC_HINT_AUTO_SNAP_DELAY_MS = 2200;
 const BASIC_HINT_AUTO_SNAP_DURATION_MS = 1200;
 const BASIC_AFTER_AUTO_SNAP_FINISH_MS = 650;
+const BASIC_MODE_BADGE_POP_MS = 3000;
 const PARTNER_PRACTICE_AFTER_TAP_DELAY_MS = 180;
 const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
 const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
-const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
+const BASIC_TUT_FALLBACK_MS = [8900, 5100, 6800, 6300, 6800, 7200, 5400, 7600];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -2564,8 +2700,8 @@ function clearBasicPracticeSeen() {
 }
 
 function getBasicTutFallbackMs(stepIndex, fallbackMs) {
-  if (fallbackMs) return fallbackMs;
-  return BASIC_TUT_FALLBACK_MS[stepIndex | 0] || 4300;
+  var defaultMs = BASIC_TUT_FALLBACK_MS[stepIndex | 0] || 4300;
+  return Math.max(defaultMs, fallbackMs || 0);
 }
 
 function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
@@ -2585,10 +2721,24 @@ function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
     }
   } catch (_) {}
   var done = false;
+  var startedAt = performance.now();
+  var fallbackDelay = getBasicTutFallbackMs(stepIndex, fallbackMs);
+  function setVoiceFallbackTimer(delayMs) {
+    if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+    if (partnerPracticeState.basicVoiceTimer) {
+      try { clearTimeout(partnerPracticeState.basicVoiceTimer); } catch (_) {}
+    }
+    var elapsed = performance.now() - startedAt;
+    var remaining = Math.max(0, delayMs - elapsed);
+    partnerPracticeState.basicVoiceTimer = setTimeout(finish, remaining);
+  }
   var finish = function () {
     if (done) return;
     if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
     done = true;
+    if (partnerPracticeState.basicVoiceTimer) {
+      try { clearTimeout(partnerPracticeState.basicVoiceTimer); } catch (_) {}
+    }
     partnerPracticeState.basicVoiceBusy = false;
     partnerPracticeState.basicVoiceStepIndex = null;
     partnerPracticeState.basicVoiceTimer = null;
@@ -2599,8 +2749,25 @@ function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
   };
   if (audio && typeof audio.addEventListener === 'function') {
     try { audio.addEventListener('ended', finish, { once: true }); } catch (_) {}
+    try {
+      audio.addEventListener('loadedmetadata', function () {
+        if (done || !partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          var durationMs = Math.ceil(audio.duration * 1000) + 850;
+          if (durationMs > fallbackDelay) {
+            fallbackDelay = durationMs;
+            setVoiceFallbackTimer(fallbackDelay);
+          }
+        }
+      }, { once: true });
+    } catch (_) {}
+    try {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        fallbackDelay = Math.max(fallbackDelay, Math.ceil(audio.duration * 1000) + 850);
+      }
+    } catch (_) {}
   }
-  partnerPracticeState.basicVoiceTimer = setTimeout(finish, getBasicTutFallbackMs(stepIndex, fallbackMs));
+  setVoiceFallbackTimer(fallbackDelay);
   return audio;
 }
 
@@ -2655,10 +2822,41 @@ function resetPuzzlePracticeSeenFlags() {
   } catch (_) {}
 }
 
+function clearActivePracticeSessionForReplay() {
+  if (!partnerPracticeState) return;
+  var originalTitle = partnerPracticeState.originalTitle;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  if (peekOn) setPeekOverlay(false);
+  clearBasicPracticeVoiceQueue();
+  stopPuzzleVoice();
+  stopChallengeTimer();
+  hideChallengeStatus();
+  if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
+    partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
+  }
+  removeBasicPracticeModeBanner();
+  document.body.classList.remove('partner-practice-active');
+  document.body.classList.remove('partner-practice-hint-on');
+  document.body.classList.remove('partner-practice-peek-on');
+  document.body.classList.remove('partner-practice-basic-layout');
+  if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
+  if (stageLabel && originalTitle) stageLabel.textContent = originalTitle;
+  partnerPracticeState.active = false;
+  partnerPracticeState = null;
+  redraw();
+}
+
 function resetPuzzlePracticeAndReplay() {
   resetPuzzlePracticeSeenFlags();
   clearCurrentPartnerSelection();
   partnerChoiceDismissedStageId = null;
+  clearActivePracticeSessionForReplay();
   showBasicPracticeIfNeeded(function () {}, true);
 }
 
@@ -2677,6 +2875,8 @@ function choosePartnerPracticeStageIndex() {
 function clearPartnerPracticeTimers() {
   if (!partnerPracticeState) return;
   clearPartnerPracticeTapToStart();
+  clearBasicPracticeHand();
+  partnerPracticeState.loopCueGhost = null;
   var timers = partnerPracticeState.timers || [];
   for (var i = 0; i < timers.length; i++) {
     try { clearTimeout(timers[i]); } catch (_) {}
@@ -2701,6 +2901,242 @@ function practiceSetTimeout(fn, ms) {
   }, ms);
   partnerPracticeState.timers.push(id);
   return id;
+}
+
+function clampBasicPracticeHandSize(size) {
+  var viewportMin = Math.min(window.innerWidth || 800, window.innerHeight || 600);
+  var maxSize = Math.max(72, Math.min(128, viewportMin * 0.18));
+  return Math.max(54, Math.min(maxSize, size || 92));
+}
+
+function getBasicPracticeHandAnchor(pose) {
+  if (pose === 'point') return { x: 0.08, y: 0.52 };
+  if (pose === 'grab' || pose === 'grip' || pose === 'pinch') return { x: 0.48, y: 0.52 };
+  return { x: 0.50, y: 0.52 };
+}
+
+function getBasicPracticeHandEl() {
+  if (!partnerPracticeState) return null;
+  if (partnerPracticeState.handEl && partnerPracticeState.handEl.isConnected) {
+    return partnerPracticeState.handEl;
+  }
+  var el = document.createElement('div');
+  el.className = 'partner-practice-hand';
+  el.setAttribute('aria-hidden', 'true');
+  var img = document.createElement('img');
+  img.alt = '';
+  img.draggable = false;
+  el.appendChild(img);
+  document.body.appendChild(el);
+  partnerPracticeState.handEl = el;
+  partnerPracticeState.handImg = img;
+  return el;
+}
+
+function setBasicPracticeHand(point, pose, options) {
+  if (!partnerPracticeState || !point) return;
+  options = options || {};
+  pose = pose || 'open';
+  var el = getBasicPracticeHandEl();
+  if (!el) return;
+  var img = partnerPracticeState.handImg || el.querySelector('img');
+  if (img) img.src = BASIC_PRACTICE_HAND_ASSETS[pose] || BASIC_PRACTICE_HAND_ASSETS.open;
+  var size = clampBasicPracticeHandSize(options.size);
+  var anchor = options.anchor || getBasicPracticeHandAnchor(pose);
+  el.style.width = size.toFixed(1) + 'px';
+  el.style.left = (point.x - size * anchor.x).toFixed(1) + 'px';
+  el.style.top = (point.y - size * anchor.y).toFixed(1) + 'px';
+  el.style.setProperty('--practice-hand-rotate', options.rotate || '0deg');
+  el.style.setProperty('--practice-hand-scale', options.scale == null ? '1' : String(options.scale));
+  el.classList.add('is-visible');
+  el.classList.toggle('is-pressing', !!options.pressing);
+  document.body.classList.add('partner-practice-hand-visible');
+}
+
+function hideBasicPracticeHand() {
+  if (!partnerPracticeState || !partnerPracticeState.handEl) return;
+  partnerPracticeState.handEl.classList.remove('is-visible', 'is-pressing');
+  document.body.classList.remove('partner-practice-hand-visible');
+}
+
+function clearBasicPracticeHand() {
+  if (!partnerPracticeState) return;
+  if (partnerPracticeState.handEl && partnerPracticeState.handEl.parentNode) {
+    partnerPracticeState.handEl.parentNode.removeChild(partnerPracticeState.handEl);
+  }
+  partnerPracticeState.handEl = null;
+  partnerPracticeState.handImg = null;
+  document.body.classList.remove('partner-practice-hand-visible');
+}
+
+function setBasicPracticeModeBanner(kind, text, visibleMs) {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  var el = partnerPracticeState.modeBadgeEl;
+  if (!el || !el.isConnected) {
+    el = document.createElement('div');
+    el.className = 'partner-practice-mode-badge';
+    el.setAttribute('aria-live', 'polite');
+    document.body.appendChild(el);
+    partnerPracticeState.modeBadgeEl = el;
+  }
+  var mode = kind === 'try' ? 'try' : (kind === 'done' ? 'done' : 'demo');
+  setBasicPracticeFrameMode(mode);
+  el.className = 'partner-practice-mode-badge is-visible is-' + mode;
+  el.textContent = text || (mode === 'try' ? 'やってみよう！' : (mode === 'done' ? 'できたね！' : 'おてほんをみてね'));
+  var token = ((partnerPracticeState.modeBadgeToken || 0) + 1);
+  partnerPracticeState.modeBadgeToken = token;
+  var duration = Math.max(3000, visibleMs || BASIC_MODE_BADGE_POP_MS);
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.modeBadgeToken !== token) return;
+    if (el && el.isConnected) el.classList.remove('is-visible');
+  }, duration);
+}
+
+function setBasicPracticeFrameMode(mode) {
+  var frame = puzzleContainer && puzzleContainer.closest ? puzzleContainer.closest('.puzzle-frame') : null;
+  if (!frame) frame = document.querySelector('.puzzle-frame');
+  if (!frame) return;
+  frame.classList.remove('is-practice-mode-pulsing', 'practice-mode-demo', 'practice-mode-try', 'practice-mode-done');
+  if (mode) {
+    frame.classList.add('is-practice-mode-pulsing', 'practice-mode-' + mode);
+  }
+}
+
+function removeBasicPracticeModeBanner() {
+  if (partnerPracticeState) {
+    partnerPracticeState.modeBadgeToken = ((partnerPracticeState.modeBadgeToken || 0) + 1);
+  }
+  setBasicPracticeFrameMode(null);
+  if (!partnerPracticeState || !partnerPracticeState.modeBadgeEl) return;
+  if (partnerPracticeState.modeBadgeEl.parentNode) {
+    partnerPracticeState.modeBadgeEl.parentNode.removeChild(partnerPracticeState.modeBadgeEl);
+  }
+  partnerPracticeState.modeBadgeEl = null;
+}
+
+function cancelBasicPracticeLoopCue() {
+  if (!partnerPracticeState) return;
+  partnerPracticeState.loopCueToken = ((partnerPracticeState.loopCueToken || 0) + 1);
+  partnerPracticeState.loopCueActive = false;
+  partnerPracticeState.loopCueGhost = null;
+  hideBasicPracticeHand();
+  redraw();
+}
+
+function practiceRectCenter(rect) {
+  if (!rect) return null;
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+function getPieceScreenCenter(piece, useHome) {
+  var rect = useHome ? getPieceHomeScreenRect(piece) : getPieceScreenRect(piece);
+  return practiceRectCenter(rect);
+}
+
+function getBasicHandSizeForRect(rect, scale) {
+  if (!rect) return clampBasicPracticeHandSize(92);
+  return clampBasicPracticeHandSize(Math.max(rect.width, rect.height) * (scale || 1.15));
+}
+
+function animateBasicPracticeHand(from, to, duration, pose, options, onFrame, onDone) {
+  if (!partnerPracticeState || !from || !to) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  options = options || {};
+  var start = performance.now();
+  function frame(now) {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    var t = Math.max(0, Math.min(1, (now - start) / Math.max(1, duration || BASIC_HAND_DEMO_MOVE_MS)));
+    var ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    var point = {
+      x: from.x + (to.x - from.x) * ease,
+      y: from.y + (to.y - from.y) * ease,
+    };
+    setBasicPracticeHand(point, pose, options);
+    if (typeof onFrame === 'function') onFrame(ease, point);
+    if (t < 1) {
+      var raf = requestAnimationFrame(frame);
+      if (partnerPracticeState) partnerPracticeState.rafs.push(raf);
+      return;
+    }
+    if (typeof onDone === 'function') onDone();
+  }
+  var raf = requestAnimationFrame(frame);
+  partnerPracticeState.rafs.push(raf);
+}
+
+function armBasicDragLoopCue(piece, phaseName) {
+  if (!partnerPracticeState || !piece || !phaseName) return;
+  cancelBasicPracticeLoopCue();
+  var token = ((partnerPracticeState.loopCueToken || 0) + 1);
+  partnerPracticeState.loopCueToken = token;
+  partnerPracticeState.loopCueActive = true;
+
+  function isCurrent() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.active
+      && partnerPracticeState.loopCueActive
+      && partnerPracticeState.loopCueToken === token
+      && partnerPracticeState.phase === phaseName
+      && !dragPiece
+      && piece
+      && !piece.snapped);
+  }
+
+  function scheduleNext(delayMs) {
+    practiceSetTimeout(function () {
+      if (!isCurrent()) return;
+      runOnce();
+    }, delayMs);
+  }
+
+  function runOnce() {
+    if (!isCurrent()) return;
+    var pieceFrom = { x: piece.x, y: piece.y, rotation: piece.rotation || 0 };
+    var pieceTo = { x: piece.homeX, y: piece.homeY, rotation: 0 };
+    var from = getPieceScreenCenter(piece, false);
+    var to = getPieceScreenCenter(piece, true);
+    var rect = getPieceScreenRect(piece);
+    if (!from || !to || !rect) return;
+    var size = getBasicHandSizeForRect(rect, 1.14);
+    partnerPracticeState.loopCueGhost = null;
+    setBasicPracticeHand(from, 'open', { size: size });
+    practiceSetTimeout(function () {
+      if (!isCurrent()) return;
+      setBasicPracticeHand(from, 'grab', { size: size, pressing: true, scale: 0.96 });
+      practiceSetTimeout(function () {
+        if (!isCurrent()) return;
+        animateBasicPracticeHand(from, to, BASIC_LOOP_HAND_CUE_MOVE_MS, 'grip', {
+          size: size,
+          pressing: true,
+          scale: 0.94,
+        }, function (ease) {
+          if (!isCurrent()) return;
+          partnerPracticeState.loopCueGhost = {
+            piece: piece,
+            x: pieceFrom.x + (pieceTo.x - pieceFrom.x) * ease,
+            y: pieceFrom.y + (pieceTo.y - pieceFrom.y) * ease,
+            rotation: pieceFrom.rotation + (pieceTo.rotation - pieceFrom.rotation) * ease,
+            alpha: 0.34,
+          };
+          redraw();
+        }, function () {
+          if (!isCurrent()) return;
+          setBasicPracticeHand(to, 'release', { size: size, scale: 1 });
+          practiceSetTimeout(function () {
+            if (!isCurrent()) return;
+            partnerPracticeState.loopCueGhost = null;
+            redraw();
+            hideBasicPracticeHand();
+            scheduleNext(BASIC_LOOP_HAND_CUE_REPEAT_MS);
+          }, BASIC_HAND_DEMO_AFTER_MS);
+        });
+      }, 180);
+    }, 180);
+  }
+
+  scheduleNext(BASIC_LOOP_HAND_CUE_START_MS);
 }
 
 function practiceAddHighlight(el) {
@@ -2782,14 +3218,35 @@ function createPartnerPracticeCoach(partnerId, partner) {
   actions.appendChild(start);
   coach.appendChild(actions);
 
-  document.body.appendChild(coach);
+  if (state.mode === 'basic') {
+    coach.classList.add('is-fixed-panel', 'is-actions-hidden');
+  }
+  var fixedPanelHost = state.mode === 'basic' ? document.querySelector('.main') : null;
+  if (fixedPanelHost) {
+    var frame = fixedPanelHost.querySelector('.puzzle-frame');
+    if (frame && frame.nextSibling) {
+      fixedPanelHost.insertBefore(coach, frame.nextSibling);
+    } else {
+      fixedPanelHost.appendChild(coach);
+    }
+  } else {
+    document.body.appendChild(coach);
+  }
   return coach;
+}
+
+function isBasicPracticeFixedPanelActive() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && partnerPracticeState.coach
+    && partnerPracticeState.coach.classList.contains('is-fixed-panel'));
 }
 
 function clearPartnerPracticeCoachBubble() {
   if (!partnerPracticeState || !partnerPracticeState.coach) return;
   var coach = partnerPracticeState.coach;
-  coach.classList.remove('is-bubble', 'is-actions-hidden', 'is-quiet');
+  coach.classList.remove('is-bubble', 'is-quiet', 'is-basic-stable');
+  coach.classList.toggle('is-actions-hidden', isBasicPracticeFixedPanelActive());
   coach.removeAttribute('data-side');
   coach.style.removeProperty('--partner-bubble-left');
   coach.style.removeProperty('--partner-bubble-top');
@@ -2809,10 +3266,164 @@ function clampPartnerBubble(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function shouldUseBasicStableBubble() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return false;
+  var viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+  var viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+  return viewportW > viewportH;
+}
+
+function inflateScreenRect(rect, padX, padY) {
+  if (!rect) return null;
+  var x = padX || 0;
+  var y = padY == null ? x : padY;
+  return {
+    left: rect.left - x,
+    top: rect.top - y,
+    right: rect.right + x,
+    bottom: rect.bottom + y,
+    width: rect.width + x * 2,
+    height: rect.height + y * 2,
+  };
+}
+
+function combineScreenRects(a, b) {
+  if (!a) return b || null;
+  if (!b) return a || null;
+  var left = Math.min(a.left, b.left);
+  var top = Math.min(a.top, b.top);
+  var right = Math.max(a.right, b.right);
+  var bottom = Math.max(a.bottom, b.bottom);
+  return {
+    left: left,
+    top: top,
+    right: right,
+    bottom: bottom,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function screenRectOverlapArea(a, b) {
+  if (!a || !b) return 0;
+  var w = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+  var h = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  return w * h;
+}
+
+function positionBasicStablePracticeBubble(coach, targetRect) {
+  if (!coach) return;
+  coach.classList.add('is-basic-stable');
+  var margin = 12;
+  var gap = 12;
+  var viewportW = window.innerWidth || document.documentElement.clientWidth || 800;
+  var viewportH = window.innerHeight || document.documentElement.clientHeight || 600;
+  var rect = coach.getBoundingClientRect();
+  var bubbleW = rect.width || Math.min(520, viewportW - margin * 2);
+  var bubbleH = rect.height || 92;
+  var frameEl = puzzleContainer && puzzleContainer.closest ? puzzleContainer.closest('.puzzle-frame') : null;
+  var frameRect = frameEl && frameEl.getBoundingClientRect ? frameEl.getBoundingClientRect() : null;
+  var sidebarEl = document.querySelector('.sidebar');
+  var sidebarRect = sidebarEl && sidebarEl.getBoundingClientRect ? sidebarEl.getBoundingClientRect() : null;
+  var badgeEl = document.querySelector('.partner-practice-mode-badge.is-visible');
+  var badgeRect = badgeEl && badgeEl.getBoundingClientRect ? badgeEl.getBoundingClientRect() : null;
+
+  var left = clampPartnerBubble((viewportW - bubbleW) / 2, margin, Math.max(margin, viewportW - bubbleW - margin));
+  var minTop = margin;
+  if (badgeRect && badgeRect.height) {
+    minTop = Math.max(minTop, badgeRect.bottom + gap);
+  }
+  if (frameRect && frameRect.height) {
+    minTop = Math.max(minTop, frameRect.top + Math.min(18, frameRect.height * 0.06));
+  }
+
+  var bottomLimit = viewportH - margin;
+  if (sidebarRect && sidebarRect.height) {
+    bottomLimit = Math.min(bottomLimit, sidebarRect.top - gap);
+  }
+  var preferredTop = bottomLimit - bubbleH;
+  if (frameRect && frameRect.height) {
+    preferredTop = Math.min(preferredTop, frameRect.top + frameRect.height * 0.66);
+  }
+  var maxTop = Math.max(minTop, viewportH - bubbleH - margin);
+  if (bottomLimit > margin) {
+    maxTop = Math.max(minTop, Math.min(maxTop, bottomLimit - bubbleH));
+  }
+  var targetPiece = partnerPracticeState && partnerPracticeState.targetPiece;
+  var pieceRectOnScreen = targetPiece ? getPieceScreenRect(targetPiece) : null;
+  var homeRectOnScreen = targetPiece ? getPieceHomeScreenRect(targetPiece) : null;
+  var pathRect = combineScreenRects(pieceRectOnScreen, homeRectOnScreen);
+  var avoidRects = [];
+  if (targetRect) avoidRects.push({ rect: inflateScreenRect(targetRect, 18, 14), weight: 1000 });
+  if (pieceRectOnScreen) avoidRects.push({ rect: inflateScreenRect(pieceRectOnScreen, 20, 18), weight: 1200 });
+  if (homeRectOnScreen) avoidRects.push({ rect: inflateScreenRect(homeRectOnScreen, 24, 20), weight: 1400 });
+  if (pathRect) avoidRects.push({ rect: inflateScreenRect(pathRect, 10, 10), weight: 0.65 });
+
+  var frameLeft = frameRect ? frameRect.left + 18 : margin;
+  var frameRight = frameRect ? frameRect.right - bubbleW - 18 : viewportW - bubbleW - margin;
+  var frameTop = frameRect ? Math.max(minTop, frameRect.top + 18) : minTop;
+  var frameBottom = frameRect ? Math.min(maxTop, frameRect.bottom - bubbleH - 18) : maxTop;
+  var centerLeft = clampPartnerBubble((viewportW - bubbleW) / 2, margin, Math.max(margin, viewportW - bubbleW - margin));
+  var centerTop = clampPartnerBubble((frameTop + frameBottom) / 2, minTop, maxTop);
+  var candidates = [
+    { left: frameRight, top: frameTop, bias: 0 },
+    { left: frameLeft, top: frameTop, bias: 4 },
+    { left: frameLeft, top: frameBottom, bias: 8 },
+    { left: frameRight, top: frameBottom, bias: 8 },
+    { left: centerLeft, top: frameTop, bias: 14 },
+    { left: centerLeft, top: frameBottom, bias: 16 },
+    { left: frameRight, top: centerTop, bias: 18 },
+    { left: frameLeft, top: centerTop, bias: 20 },
+    { left: left, top: preferredTop, bias: 28 },
+  ];
+  var best = null;
+  var bestScore = Infinity;
+  candidates.forEach(function (candidate) {
+    var candLeft = clampPartnerBubble(candidate.left, margin, Math.max(margin, viewportW - bubbleW - margin));
+    var candTop = clampPartnerBubble(candidate.top, minTop, maxTop);
+    var rectForScore = {
+      left: candLeft,
+      top: candTop,
+      right: candLeft + bubbleW,
+      bottom: candTop + bubbleH,
+      width: bubbleW,
+      height: bubbleH,
+    };
+    var score = candidate.bias || 0;
+    for (var i = 0; i < avoidRects.length; i++) {
+      score += screenRectOverlapArea(rectForScore, avoidRects[i].rect) * avoidRects[i].weight;
+    }
+    if (pieces && pieces.length) {
+      for (var j = 0; j < pieces.length; j++) {
+        if (!pieces[j] || pieces[j] === targetPiece || pieces[j].snapped) continue;
+        score += screenRectOverlapArea(rectForScore, getPieceScreenRect(pieces[j])) * 0.25;
+      }
+    }
+    if (score < bestScore) {
+      bestScore = score;
+      best = { left: candLeft, top: candTop };
+    }
+  });
+  if (best) {
+    left = best.left;
+    preferredTop = best.top;
+  }
+  var top = clampPartnerBubble(preferredTop, minTop, maxTop);
+
+  coach.dataset.side = 'stable';
+  coach.style.setProperty('--partner-bubble-left', left.toFixed(1) + 'px');
+  coach.style.setProperty('--partner-bubble-top', top.toFixed(1) + 'px');
+}
+
 function positionPartnerPracticeBubble(targetRect, preferredSide) {
   if (!partnerPracticeState || !partnerPracticeState.coach || !targetRect) return;
   var coach = partnerPracticeState.coach;
   showPartnerPracticeCoach();
+  coach.classList.remove('is-basic-stable');
+  if (shouldUseBasicStableBubble()) {
+    positionBasicStablePracticeBubble(coach, targetRect);
+    return;
+  }
   var gap = 14;
   var margin = 10;
   var side = preferredSide || '';
@@ -2869,6 +3480,15 @@ function positionPartnerPracticeBubble(targetRect, preferredSide) {
 function setPartnerPracticeCoachBubbleForRect(targetRect, preferredSide, showActions) {
   if (!partnerPracticeState || !partnerPracticeState.coach || !targetRect) return;
   var coach = partnerPracticeState.coach;
+  if (isBasicPracticeFixedPanelActive()) {
+    coach.classList.remove('is-bubble', 'is-basic-stable');
+    coach.classList.toggle('is-actions-hidden', !showActions);
+    coach.removeAttribute('data-side');
+    coach.style.removeProperty('--partner-bubble-left');
+    coach.style.removeProperty('--partner-bubble-top');
+    showPartnerPracticeCoach();
+    return;
+  }
   coach.classList.add('is-bubble');
   coach.classList.toggle('is-actions-hidden', !showActions);
   requestAnimationFrame(function () {
@@ -3041,10 +3661,132 @@ function getPracticePieces() {
   return pieces.filter(function (p) { return p && !p.snapped; });
 }
 
+function getCurrentPieceRef(piece) {
+  if (!piece || !pieces || !pieces.length) return null;
+  if (pieces.indexOf(piece) >= 0) return piece;
+  return pieces.find(function (p) {
+    return p && p.row === piece.row && p.col === piece.col && !p.snapped;
+  }) || null;
+}
+
+function scoreBasicPracticePieceImage(piece) {
+  if (!piece || !sourceImg || !boardW || !boardH) return -1;
+  try {
+    var naturalW = sourceImg.naturalWidth || sourceImg.width || 0;
+    var naturalH = sourceImg.naturalHeight || sourceImg.height || 0;
+    if (!naturalW || !naturalH) return -1;
+    var sx = Math.max(0, Math.floor((piece.homeX - boardX) / boardW * naturalW));
+    var sy = Math.max(0, Math.floor((piece.homeY - boardY) / boardH * naturalH));
+    var sw = Math.max(1, Math.ceil(pieceW / boardW * naturalW));
+    var sh = Math.max(1, Math.ceil(pieceH / boardH * naturalH));
+    if (sx + sw > naturalW) sw = naturalW - sx;
+    if (sy + sh > naturalH) sh = naturalH - sy;
+    if (sw <= 0 || sh <= 0) return -1;
+    var sampleSize = 20;
+    var canvas = scoreBasicPracticePieceImage._canvas;
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      scoreBasicPracticePieceImage._canvas = canvas;
+    }
+    canvas.width = sampleSize;
+    canvas.height = sampleSize;
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return -1;
+    ctx.clearRect(0, 0, sampleSize, sampleSize);
+    ctx.drawImage(sourceImg, sx, sy, sw, sh, 0, 0, sampleSize, sampleSize);
+    var data = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+    var count = 0;
+    var sumR = 0;
+    var sumG = 0;
+    var sumB = 0;
+    var sumSat = 0;
+    var lumas = [];
+    for (var i = 0; i < data.length; i += 4) {
+      var a = data[i + 3];
+      if (a < 16) continue;
+      var r = data[i];
+      var g = data[i + 1];
+      var b = data[i + 2];
+      var max = Math.max(r, g, b);
+      var min = Math.min(r, g, b);
+      var sat = max ? (max - min) / max : 0;
+      var luma = r * 0.299 + g * 0.587 + b * 0.114;
+      sumR += r;
+      sumG += g;
+      sumB += b;
+      sumSat += sat;
+      lumas.push(luma);
+      count++;
+    }
+    if (!count) return -1;
+    var meanLuma = lumas.reduce(function (acc, n) { return acc + n; }, 0) / count;
+    var variance = lumas.reduce(function (acc, n) {
+      var d = n - meanLuma;
+      return acc + d * d;
+    }, 0) / count;
+    var avgSat = sumSat / count;
+    var avgR = sumR / count;
+    var avgG = sumG / count;
+    var avgB = sumB / count;
+    var colorDistance = Math.max(avgR, avgG, avgB) - Math.min(avgR, avgG, avgB);
+    var centerBias = 1 - Math.min(1, Math.hypot(
+      (piece.col + 0.5) / Math.max(1, stageCols) - 0.5,
+      (piece.row + 0.5) / Math.max(1, stageRows) - 0.5
+    ));
+    return variance * 0.7 + avgSat * 90 + colorDistance * 0.22 + centerBias * 18;
+  } catch (_) {
+    return -1;
+  }
+}
+
+function getBasicPracticeAnchorPiece() {
+  var list = getPracticePieces();
+  if (!list.length) return null;
+  var best = null;
+  var bestScore = -Infinity;
+  list.forEach(function (piece) {
+    var score = scoreBasicPracticePieceImage(piece);
+    if (score > bestScore) {
+      bestScore = score;
+      best = piece;
+    }
+  });
+  if (best && bestScore > 18) {
+    var oneUp = list.find(function (piece) {
+      return piece && !piece.snapped && piece.col === best.col && piece.row === best.row - 1;
+    });
+    if (oneUp) return oneUp;
+    return best;
+  }
+  return list.find(function (piece) {
+    return piece && piece.row === 1 && piece.col === 1 && !piece.snapped;
+  }) || list.find(function (piece) {
+    return piece && piece.row >= 1 && piece.col >= 1 && !piece.snapped;
+  }) || list[0] || null;
+}
+
+function getPracticeSafePadX() {
+  return Math.max(14, Math.min(pieceW * 0.34, canvasW * 0.12));
+}
+
+function getPracticeSafePadY() {
+  return Math.max(14, Math.min(pieceH * 0.34, canvasH * 0.12));
+}
+
+function clampValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function placePieceForPractice(piece, x, y, rotation) {
   if (!piece) return;
-  piece.x = Math.max(0, Math.min(canvasW - pieceW, x));
-  piece.y = Math.max(0, Math.min(canvasH - pieceH, y));
+  if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+    var safe = clampPracticePiecePos(x, y);
+    piece.x = safe.x;
+    piece.y = safe.y;
+  } else {
+    piece.x = Math.max(0, Math.min(canvasW - pieceW, x));
+    piece.y = Math.max(0, Math.min(canvasH - pieceH, y));
+  }
   piece.rotation = rotation || 0;
   piece.snapped = false;
   var maxZ = pieces && pieces.length
@@ -3054,6 +3796,61 @@ function placePieceForPractice(piece, x, y, rotation) {
   rebuildPath(piece);
 }
 
+function placeBasicPracticeBoardPattern() {
+  if (!pieces || !pieces.length) return;
+  var padX = getPracticeSafePadX();
+  var padY = getPracticeSafePadY();
+  var maxX = Math.max(padX, canvasW - pieceW - padX);
+  var maxY = Math.max(padY, canvasH - pieceH - padY);
+  var gapX = Math.max(10, pieceW * 0.16);
+  var gapY = Math.max(10, pieceH * 0.16);
+  var leftX = clampValue(boardX - pieceW - gapX, padX, maxX);
+  var rightX = clampValue(boardX + boardW + gapX, padX, maxX);
+  var topY = clampValue(boardY + gapY, padY, maxY);
+  var midY = clampValue(boardY + boardH * 0.50 - pieceH / 2, padY, maxY);
+  var lowY = clampValue(boardY + boardH - pieceH - gapY, padY, maxY);
+  var upperY = clampValue(boardY - pieceH - gapY, padY, maxY);
+  var lowerY = clampValue(boardY + boardH + gapY, padY, maxY);
+  var topX1 = clampValue(boardX + boardW * 0.12, padX, maxX);
+  var topX2 = clampValue(boardX + boardW * 0.42, padX, maxX);
+  var topX3 = clampValue(boardX + boardW * 0.72, padX, maxX);
+  var lowX1 = clampValue(boardX + boardW * 0.08, padX, maxX);
+  var lowX2 = clampValue(boardX + boardW * 0.38, padX, maxX);
+  var lowX3 = clampValue(boardX + boardW * 0.68, padX, maxX);
+  var candidates = [
+    { x: leftX, y: topY },
+    { x: rightX, y: topY },
+    { x: leftX, y: lowY },
+    { x: rightX, y: lowY },
+    { x: leftX, y: midY },
+    { x: rightX, y: midY },
+    { x: topX1, y: upperY },
+    { x: topX2, y: upperY },
+    { x: topX3, y: upperY },
+    { x: lowX1, y: lowerY },
+    { x: lowX2, y: lowerY },
+    { x: lowX3, y: lowerY },
+  ];
+  var anchor = getBasicPracticeAnchorPiece();
+  var ordered = [];
+  if (anchor) ordered.push(anchor);
+  pieces.forEach(function (piece) {
+    if (piece && piece !== anchor) ordered.push(piece);
+  });
+  ordered.forEach(function (piece, i) {
+    var pos = candidates[i % candidates.length];
+    piece.snapped = false;
+    piece.rotation = 0;
+    piece.x = pos.x;
+    piece.y = pos.y;
+    piece.zOrder = i;
+    rebuildPath(piece);
+  });
+  snappedCount = 0;
+  updateProgress();
+  redraw();
+}
+
 function resetPracticeBoard() {
   setSelectedPieceForHint(null);
   hintFlashPiece = null;
@@ -3061,6 +3858,7 @@ function resetPracticeBoard() {
   stageHintUsesActual = 0;
   dragPiece = null;
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  hideBasicPracticeHand();
   if (partnerPracticeState) {
     partnerPracticeState.phase = 'reset';
     partnerPracticeState.targetPiece = null;
@@ -3072,7 +3870,11 @@ function resetPracticeBoard() {
   document.body.classList.remove('partner-practice-peek-on');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-input-on');
   clearPracticeHighlights();
-  shufflePieces();
+  if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+    placeBasicPracticeBoardPattern();
+  } else {
+    shufflePieces();
+  }
   if (partnerPracticeState && partnerPracticeState.partnerId === 'risu') {
     activeChallenge.started = false;
     activeChallenge.expired = false;
@@ -3140,11 +3942,16 @@ function rectsOverlap(a, b) {
   return !!(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
 }
 
+function pointInPracticeRect(x, y, rect) {
+  return !!(rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+}
+
 function clampPracticePiecePos(x, y) {
-  var pad = Math.max(8, pieceW * 0.10);
+  var padX = getPracticeSafePadX();
+  var padY = getPracticeSafePadY();
   return {
-    x: Math.max(pad, Math.min(canvasW - pieceW - pad, x)),
-    y: Math.max(pad, Math.min(canvasH - pieceH - pad, y)),
+    x: clampValue(x, padX, Math.max(padX, canvasW - pieceW - padX)),
+    y: clampValue(y, padY, Math.max(padY, canvasH - pieceH - padY)),
   };
 }
 
@@ -3181,6 +3988,10 @@ function findHintPracticeAwayPos(avoidRect, placed) {
   ];
   for (var i = 0; i < candidates.length; i++) {
     if (isHintPracticePosClear(candidates[i], avoidRect, placed, zones)) return candidates[i];
+  }
+
+  if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+    return clampPracticePiecePos(canvasW - pieceW - pad, canvasH - pieceH - pad);
   }
 
   var best = null;
@@ -3228,6 +4039,574 @@ function clearHintPracticeTargetArea(targetPiece) {
   rebuildPath(targetPiece);
 }
 
+function runBasicButtonHandDemo(targetEl, options, onDone) {
+  if (!partnerPracticeState || !targetEl || !targetEl.getBoundingClientRect) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  options = options || {};
+  var rect = targetEl.getBoundingClientRect();
+  var target = {
+    x: rect.left + rect.width * 0.58,
+    y: rect.top + rect.height * 0.52,
+  };
+  var start = {
+    x: Math.min((window.innerWidth || 800) - 28, rect.right + Math.max(72, rect.width * 0.82)),
+    y: target.y + Math.max(16, rect.height * 0.22),
+  };
+  var size = getBasicHandSizeForRect(rect, options.sizeScale || 1.28);
+  setBasicPracticeHand(start, 'point', { size: size, scale: 1 });
+  animateBasicPracticeHand(start, target, options.moveMs || BASIC_HAND_DEMO_MOVE_MS, 'point', { size: size }, null, function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    targetEl.classList.add('partner-practice-demo-pressed');
+    setBasicPracticeHand(target, 'point', { size: size, pressing: true, scale: 0.94 });
+    if (typeof options.onPress === 'function') options.onPress();
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      if (typeof options.onRelease === 'function') options.onRelease();
+      targetEl.classList.remove('partner-practice-demo-pressed');
+      setBasicPracticeHand(target, 'point', { size: size, scale: 1 });
+      practiceSetTimeout(function () {
+        hideBasicPracticeHand();
+        if (typeof onDone === 'function') onDone();
+      }, options.afterMs || BASIC_HAND_DEMO_AFTER_MS);
+    }, options.holdMs || BASIC_HAND_DEMO_HOLD_MS);
+  });
+}
+
+function runBasicPieceTapHandDemo(piece, onDone) {
+  if (!partnerPracticeState || !piece) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var rect = getPieceScreenRect(piece);
+  var target = practiceRectCenter(rect);
+  if (!rect || !target) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var start = {
+    x: Math.min((window.innerWidth || 800) - 36, rect.right + Math.max(54, rect.width * 0.8)),
+    y: target.y + Math.max(12, rect.height * 0.18),
+  };
+  var size = getBasicHandSizeForRect(rect, 1.28);
+  setBasicPracticeHand(start, 'point', { size: size });
+  animateBasicPracticeHand(start, target, BASIC_HAND_DEMO_MOVE_MS, 'point', { size: size }, null, function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    setBasicPracticeHand(target, 'point', { size: size, pressing: true, scale: 0.94 });
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      setBasicPracticeHand(target, 'point', { size: size, scale: 1 });
+      practiceSetTimeout(function () {
+        hideBasicPracticeHand();
+        if (typeof onDone === 'function') onDone();
+      }, BASIC_HAND_DEMO_AFTER_MS);
+    }, BASIC_HAND_DEMO_HOLD_MS);
+  });
+}
+
+function runBasicDragHandDemo(piece, from, to, onDone) {
+  if (!partnerPracticeState || !piece || !from || !to) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var rect = getPieceScreenRect(piece);
+  var start = getPieceScreenCenter(piece, false);
+  var target = getPieceScreenCenter(piece, true);
+  if (!rect || !start) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var size = getBasicHandSizeForRect(rect, 1.2);
+  setBasicPracticeHand(start, 'open', { size: size });
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    var grabPoint = getPieceScreenCenter(piece, false) || start;
+    setBasicPracticeHand(grabPoint, 'grab', { size: size, pressing: true, scale: 0.98 });
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      setBasicPracticeHand(grabPoint, 'grip', { size: size, pressing: true, scale: 0.94 });
+      animateBasicPracticeHand(start, target || start, BASIC_DRAG_DEMO_DURATION_MS, 'grip', {
+        size: size,
+        pressing: true,
+        scale: 0.94,
+      }, function (ease) {
+        if (!partnerPracticeState || !partnerPracticeState.active) return;
+        partnerPracticeState.loopCueGhost = {
+          piece: piece,
+          x: from.x + (to.x - from.x) * ease,
+          y: from.y + (to.y - from.y) * ease,
+          rotation: (from.rotation || 0) + ((to.rotation || 0) - (from.rotation || 0)) * ease,
+          alpha: 0.34,
+        };
+        redraw();
+      }, function () {
+        if (!partnerPracticeState || !partnerPracticeState.active) return;
+        var releasePoint = target || getPieceScreenCenter(piece, true) || grabPoint;
+        setBasicPracticeHand(releasePoint, 'release', { size: size, scale: 1 });
+        practiceSetTimeout(function () {
+          if (partnerPracticeState) partnerPracticeState.loopCueGhost = null;
+          redraw();
+          hideBasicPracticeHand();
+          if (typeof onDone === 'function') onDone();
+        }, BASIC_HAND_DEMO_AFTER_MS);
+      });
+    }, 220);
+  }, 260);
+}
+
+function runBasicHintPlaceHandDemo(piece, onDone) {
+  if (!partnerPracticeState || !piece || !btnHint) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var from = { x: piece.x, y: piece.y, rotation: piece.rotation || 0 };
+  var to = { x: piece.homeX, y: piece.homeY, rotation: 0 };
+  setSelectedPieceForHint(null);
+  clearPracticeHighlights();
+  clearHintGlow();
+  partnerPracticeState.phase = 'basic-hint-demo-select';
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(false);
+  setBasicPracticeModeBanner('demo', 'おてほんをみてね');
+  setPartnerPracticeCoachCopy(
+    'まず みてね',
+    '場所を 知りたい ピースを 選ぶよ',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  refreshHintButtonState();
+  redraw();
+
+  playBasicPracticeVoice(6, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-select') return;
+    runBasicPieceTapHandDemo(piece, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-select') return;
+      setSelectedPieceForHint(piece);
+      partnerPracticeState.phase = 'basic-hint-demo-button';
+      partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+      practiceAddHighlight(btnHint);
+      setPartnerPracticeCoachCopy(
+        'まず みてね',
+        '次は「ヒント」を 押すよ',
+        ''
+      );
+      setPartnerPracticeCoachBubble(btnHint, null, false);
+      refreshHintButtonState();
+      redraw();
+      runBasicButtonHandDemo(btnHint, {
+        moveMs: 920,
+        holdMs: 900,
+        afterMs: 520,
+        onPress: function () {
+          showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
+        },
+      }, function () {
+        if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-button') return;
+        clearPracticeHighlights();
+        partnerPracticeState.phase = 'basic-hint-demo-place';
+        partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+        setPartnerPracticeCoachCopy(
+          'まず みてね',
+          '光った場所へ 持っていくよ',
+          ''
+        );
+        setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+        showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
+        runBasicDragHandDemo(piece, from, to, function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-place') return;
+          placePieceForPractice(piece, from.x, from.y, from.rotation || 0);
+          setSelectedPieceForHint(null);
+          clearHintGlow();
+          partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+          if (typeof onDone === 'function') onDone();
+        });
+      });
+    });
+  });
+}
+
+function pickBasicDragPracticePiece() {
+  return getBasicPracticeAnchorPiece();
+}
+
+function startBasicDragPractice() {
+  if (!partnerPracticeState) return;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (peekOn) setPeekOverlay(false);
+  setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(false);
+  partnerPracticeState.phase = 'basic-drag-demo';
+  partnerPracticeState.cue = null;
+  partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  var currentTarget = getCurrentPieceRef(partnerPracticeState.targetPiece);
+  var piece = (currentTarget && !currentTarget.snapped)
+    ? currentTarget
+    : pickBasicDragPracticePiece();
+  if (!piece) {
+    startBasicPeekPractice();
+    return;
+  }
+  var canReuseStart = currentTarget && currentTarget === partnerPracticeState.targetPiece;
+  var start = (canReuseStart && partnerPracticeState.basicDragStart) || {
+    x: piece.x,
+    y: piece.y,
+    rotation: piece.rotation || 0,
+  };
+  var to = { x: piece.homeX, y: piece.homeY, rotation: 0 };
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.basicDragStart = { x: start.x, y: start.y, rotation: start.rotation || 0 };
+  placePieceForPractice(piece, start.x, start.y, start.rotation || 0);
+  partnerPracticeState.cue = null;
+  setBasicPracticeFrameMode('demo');
+  clearPartnerPracticeCoachBubble();
+  showPartnerPracticeCoach();
+  if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
+  setPartnerPracticeCoachCopy(
+    'まず みてね',
+    'このピースを つかんで 青い場所へ',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  redraw();
+
+  // Start the voice FIRST after a short settle delay, then schedule the
+  // orange/blue cues relative to voice start so they align with the spoken
+  // phrases (このピースをつかんで → orange, 青い場所へ → blue). Cue is null at
+  // phase entry so the orange target doesn't appear at t=0 anymore.
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+    if (partnerPracticeState.targetPiece !== piece) return;
+    // Schedule orange cue at ~800ms into voice (when 「このピースをつかんで」 is spoken).
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+      if (partnerPracticeState.targetPiece !== piece) return;
+      partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+      redraw();
+    }, BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS);
+    // Schedule blue cue at ~2500ms into voice (when 「青い場所へ」 is spoken).
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+      if (partnerPracticeState.targetPiece !== piece) return;
+      partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+      redraw();
+    }, BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS);
+    playBasicPracticeVoice(1, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+      runBasicDragHandDemo(piece, { x: start.x, y: start.y, rotation: 0 }, to, function () {
+        if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+        placePieceForPractice(piece, start.x, start.y, 0);
+        clearHintPracticeTargetArea(piece);
+        partnerPracticeState.phase = 'basic-drag-try';
+        // Cue starts null for the try phase too; orange/blue come in with voice.
+        partnerPracticeState.cue = null;
+        setPartnerPracticeInput(false);
+        setBasicPracticeModeBanner('try', 'やってみよう', BASIC_TRY_BANNER_MS);
+        setPartnerPracticeCoachCopy(
+          'やってみよう',
+          'ピースを 持って、青い場所へ',
+          ''
+        );
+        setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+        redraw();
+        // Orange cue for try phase: appears when 「このピースをつかんで」 plays in basic_tut_03.
+        practiceSetTimeout(function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
+          partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+          redraw();
+        }, BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS);
+        // Blue cue for try phase: appears when 「青い場所へ」 plays.
+        practiceSetTimeout(function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
+          partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+          redraw();
+        }, BASIC_DRAG_TRY_BLUE_AT_VOICE_MS);
+        playBasicPracticeVoice(2, function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
+          setPartnerPracticeInput(true);
+          redraw();
+          armBasicDragLoopCue(piece, 'basic-drag-try');
+        });
+      });
+    });
+  }, BASIC_DRAG_NA_START_DELAY_MS);
+}
+
+function isBasicDragPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && (partnerPracticeState.phase === 'basic-drag-try'
+      || partnerPracticeState.phase === 'basic-drag-moving'));
+}
+
+function isBasicHintDragPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && (partnerPracticeState.phase === 'basic-hint-drag-try'
+      || partnerPracticeState.phase === 'basic-hint-drag-moving'));
+}
+
+function getBasicDragPracticeHitPiece(x, y) {
+  if (!isBasicDragPracticePhase() && !isBasicHintDragPracticePhase()) return null;
+  var piece = partnerPracticeState.targetPiece;
+  if (!piece || piece.snapped) return null;
+  var padX = Math.max(24, Math.min(52, pieceW * 0.42));
+  var padY = Math.max(24, Math.min(52, pieceH * 0.42));
+  return pointInPracticeRect(x, y, pieceRect(piece, padX, padY)) ? piece : null;
+}
+
+function isBasicDragPracticeNearHome(piece) {
+  if (!piece) return false;
+  return Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY) <= Math.max(SNAP_DIST * 1.45, pieceW * 0.52);
+}
+
+function onBasicDragPracticeDragStart(piece) {
+  if (!isBasicDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  partnerPracticeState.phase = 'basic-drag-moving';
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setPartnerPracticeCoachCopy(
+    'そのまま うごかそう',
+    '青い場所へ 持っていってね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+}
+
+function updateBasicDragPracticeDrag(piece) {
+  if (!isBasicDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
+  partnerPracticeState.cue = {
+    kind: isBasicDragPracticeNearHome(piece) ? 'kojika-glow' : 'kojika-move-target',
+    piece: piece,
+  };
+}
+
+function onBasicDragPracticePieceDropped(piece, didSnap) {
+  if (!isBasicDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  if (!didSnap && !piece.snapped && isBasicDragPracticeNearHome(piece)
+      && typeof window.PonoPuzzleForceSnapPiece === 'function') {
+    didSnap = window.PonoPuzzleForceSnapPiece(piece);
+  }
+  if (didSnap || piece.snapped) {
+    partnerPracticeState.phase = 'basic-drag-done';
+    partnerPracticeState.cue = null;
+    setPartnerPracticeInput(false);
+    setBasicPracticeModeBanner('done', 'できたね！');
+    setPartnerPracticeCoachCopy(
+      'できたね',
+      '次は「見る」ボタンを 試すよ',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece) || getPieceScreenRect(piece), 'below', false);
+    redraw();
+    playBasicPracticeVoice(3, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-done') return;
+      startBasicPeekPractice();
+    }, Math.max(BASIC_AFTER_DRAG_SUCCESS_MS, 3000));
+    return;
+  }
+  partnerPracticeState.phase = 'basic-drag-try';
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  setPartnerPracticeCoachCopy(
+    'もういちど',
+    '青い場所に 近づけて 離そう',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+  redraw();
+  armBasicDragLoopCue(piece, 'basic-drag-try');
+}
+
+function startBasicHintPlaceTry(piece) {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (!piece || piece.snapped) return;
+  clearPracticeHighlights();
+  clearBasicPracticeHand();
+  clearHintGlow();
+  setSelectedPieceForHint(null);
+  partnerPracticeState.phase = 'basic-hint-select-try';
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  partnerPracticeState.hintSelectReady = true;
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(true);
+  setPartnerPracticePeekInput(false);
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  showPartnerPracticeCoach();
+  setPartnerPracticeCoachCopy(
+    'やってみよう',
+    '場所を 知りたい ピースを 選んでね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  refreshHintButtonState();
+  redraw();
+}
+
+function isBasicHintSelectPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && partnerPracticeState.phase === 'basic-hint-select-try');
+}
+
+function isBasicHintPressPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && partnerPracticeState.phase === 'basic-hint-press-try');
+}
+
+function onBasicHintSelectPracticePointerDown(piece) {
+  if (!isBasicHintSelectPracticePhase()) return false;
+  var targetPiece = partnerPracticeState.targetPiece;
+  if (!targetPiece || targetPiece.snapped) return true;
+  if (!piece || piece !== targetPiece) {
+    partnerPracticeState.cue = { kind: 'tap-piece', piece: targetPiece };
+    setPartnerPracticeCoachCopy(
+      piece ? 'このピースだよ' : 'ピースを 選んでね',
+      '場所を 知りたい ピースを タッチ',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(targetPiece), 'above', false);
+    redraw();
+    return true;
+  }
+
+  setSelectedPieceForHint(piece);
+  partnerPracticeState.phase = 'basic-hint-press-try';
+  partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+  partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = true;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(true);
+  clearPracticeHighlights();
+  practiceAddHighlight(btnHint);
+  setPartnerPracticeCoachCopy(
+    '次は「ヒント」',
+    '「ヒント」を 押してみよう',
+    ''
+  );
+  setPartnerPracticeCoachBubble(btnHint, null, false);
+  refreshHintButtonState();
+  redraw();
+  return true;
+}
+
+function onBasicHintPracticeHintButtonUsed() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-press-try') return false;
+  var piece = selectedPieceForHint || partnerPracticeState.targetPiece;
+  if (!piece || piece.snapped) return false;
+  clearPracticeHighlights();
+  partnerPracticeState.phase = 'basic-hint-drag-try';
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(true);
+  setPartnerPracticePeekInput(false);
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  showHintGlowForPiece(piece, BASIC_HINT_TRY_GLOW_MS);
+  showPartnerPracticeCoach();
+  setPartnerPracticeCoachCopy(
+    'やってみよう',
+    'ピースを 持って、光った場所へ',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  refreshHintButtonState();
+  redraw();
+  armBasicDragLoopCue(piece, 'basic-hint-drag-try');
+  return true;
+}
+
+function onBasicHintDragPracticeDragStart(piece) {
+  if (!isBasicHintDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  partnerPracticeState.phase = 'basic-hint-drag-moving';
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setPartnerPracticeCoachCopy(
+    'そのまま うごかそう',
+    '光った場所へ 持っていってね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+}
+
+function updateBasicHintDragPracticeDrag(piece) {
+  if (!isBasicHintDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
+  partnerPracticeState.cue = {
+    kind: isBasicDragPracticeNearHome(piece) ? 'kojika-glow' : 'kojika-move-target',
+    piece: piece,
+  };
+}
+
+function onBasicHintDragPracticePieceDropped(piece, didSnap) {
+  if (!isBasicHintDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  if (!didSnap && !piece.snapped && isBasicDragPracticeNearHome(piece)
+      && typeof window.PonoPuzzleForceSnapPiece === 'function') {
+    didSnap = window.PonoPuzzleForceSnapPiece(piece);
+  }
+  if (didSnap || piece.snapped) {
+    clearHintGlow();
+    setSelectedPieceForHint(null);
+    partnerPracticeState.phase = 'basic-hint-drag-done';
+    partnerPracticeState.cue = null;
+    setPartnerPracticeInput(false);
+    setBasicPracticeModeBanner('done', 'できたね！');
+    setPartnerPracticeCoachCopy(
+      'できたね',
+      'ヒントの場所に 置けたよ',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece) || getPieceScreenRect(piece), 'below', false);
+    redraw();
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-drag-done') return;
+      finishPartnerPractice();
+    }, BASIC_AFTER_DRAG_SUCCESS_MS);
+    return;
+  }
+  partnerPracticeState.phase = 'basic-hint-drag-try';
+  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  showHintGlowForPiece(piece, BASIC_HINT_TRY_GLOW_MS);
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  setPartnerPracticeCoachCopy(
+    'もういちど',
+    '光った場所に 近づけて 離そう',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+  redraw();
+  armBasicDragLoopCue(piece, 'basic-hint-drag-try');
+}
+
+function rearmBasicLoopCueIfWaiting() {
+  if (!partnerPracticeState || !partnerPracticeState.targetPiece) return;
+  if (partnerPracticeState.phase === 'basic-drag-try') {
+    armBasicDragLoopCue(partnerPracticeState.targetPiece, 'basic-drag-try');
+    return;
+  }
+  if (partnerPracticeState.phase === 'basic-hint-drag-try') {
+    armBasicDragLoopCue(partnerPracticeState.targetPiece, 'basic-hint-drag-try');
+  }
+}
+
 function startCommonHintPractice(partnerId) {
   if (!partnerPracticeState) return;
   clearPartnerPracticeTimers();
@@ -3256,6 +4635,7 @@ function startCommonHintPractice(partnerId) {
   clearHintPracticeTargetArea(piece);
   refreshHintButtonState();
   if (partnerPracticeState.mode === 'basic') {
+    setBasicPracticeModeBanner('demo', 'おてほんをみてね');
     clearPartnerPracticeCoachBubble();
     setPartnerPracticeCoachCopy('', '', '');
     hidePartnerPracticeCoach();
@@ -3293,25 +4673,47 @@ function startBasicIntroPractice() {
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
+  var firstPiece = pickBasicDragPracticePiece();
+  if (firstPiece) {
+    partnerPracticeState.targetPiece = firstPiece;
+    partnerPracticeState.basicDragStart = {
+      x: firstPiece.x,
+      y: firstPiece.y,
+      rotation: firstPiece.rotation || 0,
+    };
+    placePieceForPractice(firstPiece, firstPiece.x, firstPiece.y, firstPiece.rotation || 0);
+  }
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
-  clearPartnerPracticeCoachBubble();
   if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
   setPartnerPracticeCoachCopy(
-    'れんしゅうするよ',
+    'あそびかたを れんしゅうするよ',
     '',
     ''
   );
+  clearPartnerPracticeCoachBubble();
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-intro') return;
+    setBasicPracticeModeBanner('demo', 'おてほんをみてね', BASIC_INTRO_DEMO_BANNER_MS);
+  }, BASIC_INTRO_DEMO_BANNER_DELAY_MS);
   playBasicPracticeVoice(0, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-intro') return;
-    startBasicPeekPractice();
-  }, 4300);
+    startBasicDragPractice();
+  });
   redraw();
 }
 
 function startBasicPeekPractice() {
   if (!partnerPracticeState) return;
+  // Invalidate any in-flight basic voice token + queued callbacks BEFORE
+  // clearing timers, so the previous voice's synchronous onDone chain (which
+  // may have called us) cannot fire a stale callback after we start voice(4).
+  clearBasicPracticeVoiceQueue();
   clearPartnerPracticeTimers();
+  // Explicitly stop any audio still playing so the new playBasicTut(4) has a
+  // clean lifecycle to attach 'ended' to. The deferred play() in voice.js
+  // ensures the stop -> play transition is not racy.
+  stopPuzzleVoice();
   clearPracticeHighlights();
   setSelectedPieceForHint(null);
   hintFlashPiece = null;
@@ -3319,7 +4721,7 @@ function startBasicPeekPractice() {
   dragPiece = null;
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
   if (peekOn) setPeekOverlay(false);
-  partnerPracticeState.phase = 'peek-press';
+  partnerPracticeState.phase = 'peek-demo';
   partnerPracticeState.cue = null;
   partnerPracticeState.peekHoldStart = 0;
   partnerPracticeState.peekHoldReady = false;
@@ -3329,70 +4731,92 @@ function startBasicPeekPractice() {
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(false);
-  setPartnerPracticePeekInput(true);
-  practiceAddHighlight(btnPeek);
+  setPartnerPracticePeekInput(false);
+  // Use the full fallback duration for basic_tut_05 (~6.8s) so the badge
+  // stays visible for the entire intro narration, not just 3s.
+  setBasicPracticeModeBanner('demo', 'おてほんをみてね', BASIC_TUT_FALLBACK_MS[4] || 6800);
+  clearPartnerPracticeCoachBubble();
+  showPartnerPracticeCoach();
+  if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
   setPartnerPracticeCoachCopy(
-    'ながく おしてね',
-    '',
+    'まずは「見る」ボタン',
+    '長く押すと、出来上がりの絵が見えるよ',
     ''
   );
-  playBasicPracticeVoice(1);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
+  practiceAddHighlight(btnPeek);
+  playBasicPracticeVoice(4, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
+    runBasicButtonHandDemo(btnPeek, {
+      holdMs: BASIC_PEEK_HOLD_MS + 280,
+      onPress: function () { setPeekOverlay(true); },
+      onRelease: function () { setPeekOverlay(false); },
+    }, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
+      clearPracticeHighlights();
+      practiceAddHighlight(btnPeek);
+      partnerPracticeState.phase = 'peek-press';
+      setPartnerPracticePeekInput(true);
+      setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
+      setPartnerPracticeCoachCopy(
+        'やってみよう',
+        '「見る」ボタンを 長く押してね',
+        ''
+      );
+      setPartnerPracticeCoachBubble(btnPeek, null, false);
+    });
+  });
   redraw();
 }
 
 function playBasicPeekHoldNarration() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
   setPartnerPracticeCoachCopy(
-    'そのまま みてね',
-    'おしている あいだ みえるよ',
+    'そのまま 見てね',
+    '押している間、出来上がりの絵が見えるよ',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
-  playBasicPracticeVoice(2, function () {
+  practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
     partnerPracticeState.peekHoldReady = true;
     setPartnerPracticeCoachCopy(
-      'はなすと もどるよ',
-      'わからなくなったら ながく おしてね',
+      '離すと戻るよ',
+      'わからなくなったら もう一度 長く押してね',
       ''
     );
     setPartnerPracticeCoachBubble(btnPeek, null, false);
     partnerPracticeState.peekReturnNarrationStarted = true;
-    playBasicPracticeVoice(3, function () {
+    practiceSetTimeout(function () {
       if (!partnerPracticeState) return;
       partnerPracticeState.peekReturnNarrationDone = true;
-    });
-  });
+    }, 700);
+  }, 700);
 }
 
 function playBasicPeekSuccessThenHint() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-  practiceSetTimeout(function () {
+  playBasicPracticeVoice(5, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-    if (peekOn) setPeekOverlay(false);
-    startCommonHintPractice(null);
-  }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+      if (peekOn) setPeekOverlay(false);
+      startCommonHintPractice(null);
+    }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
+  });
 }
 
 function playBasicPeekReturnThenSuccess() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-  if (partnerPracticeState.peekReturnNarrationDone) {
-    playBasicPeekSuccessThenHint();
-    return;
-  }
   partnerPracticeState.peekReturnNarrationStarted = true;
   setPartnerPracticeCoachCopy(
-    'はなすと もどるよ',
-    'わからなくなったら ながく おしてね',
+    '見えたね',
+    '離すと、パズルに戻るよ。わからなくなったら、もう一度長く押してね',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
-  playBasicPracticeVoice(3, function () {
-    if (!partnerPracticeState) return;
-    partnerPracticeState.peekReturnNarrationDone = true;
-    if (partnerPracticeState.phase === 'peek-done') playBasicPeekSuccessThenHint();
-  });
+  partnerPracticeState.peekReturnNarrationDone = true;
+  playBasicPeekSuccessThenHint();
 }
 
 function onPartnerPracticePeekPressed() {
@@ -3416,28 +4840,24 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     partnerPracticeState.peekHoldReady = false;
     partnerPracticeState.basicVoiceQueued = null;
     setPartnerPracticePeekInput(true);
+    setBasicPracticeModeBanner('try', 'やってみよう！');
     clearPracticeHighlights();
     practiceAddHighlight(btnPeek);
     setPartnerPracticeCoachCopy(
-      'ながく おしてね',
-      'おしている あいだだけ みえるよ',
+      '長く押してね',
+      '「見る」ボタンは 押している間だけ見えるよ',
       ''
     );
-    if (!(partnerPracticeState.basicVoiceBusy && partnerPracticeState.basicVoiceStepIndex === 1)) {
-      queueBasicPracticeAfterVoice(function () {
-        if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
-        playBasicPracticeVoice(1);
-      });
-    }
     setPartnerPracticeCoachBubble(btnPeek, null, false);
     return;
   }
   partnerPracticeState.phase = 'peek-done';
   clearPracticeHighlights();
   setPartnerPracticePeekInput(false);
+  setBasicPracticeModeBanner('done', 'できたね！');
   setPartnerPracticeCoachCopy(
-    'みえたね',
-    'わからなくなったら ながく おしてね',
+    '見えたね',
+    '離すと、パズルに戻るよ。わからなくなったら、もう一度長く押してね',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
@@ -3461,24 +4881,53 @@ function onPartnerPracticePieceSelected(piece) {
     redraw();
     return;
   }
-  partnerPracticeState.phase = 'hint-press';
+  partnerPracticeState.phase = 'hint-demo';
   partnerPracticeState.targetPiece = piece;
   partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
   practiceAddHighlight(btnHint);
+  setPartnerPracticeInput(false);
   setPartnerPracticeCoachCopy(
-    'ヒントを おしてみよう',
-    '',
+    'まず みてね',
+    '次は「ヒント」を 押すよ',
     ''
   );
-  playBasicPracticeVoice(5, function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
-    partnerPracticeState.hintPressReady = true;
+  setPartnerPracticeCoachBubble(btnHint, null, false);
+  runBasicButtonHandDemo(btnHint, { holdMs: 520 }, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-demo') return;
+    partnerPracticeState.phase = 'hint-press';
+    setPartnerPracticeInput(true);
+    setPartnerPracticeCoachCopy(
+      'やってみよう',
+      '「ヒント」を 押してみよう',
+      ''
+    );
+    playBasicPracticeVoice(6, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
+      partnerPracticeState.hintPressReady = true;
+      refreshHintButtonState();
+    });
+    setPartnerPracticeCoachBubble(btnHint, null, false);
     refreshHintButtonState();
   });
-  setPartnerPracticeCoachBubble(btnHint, null, false);
   refreshHintButtonState();
+}
+
+function startBasicHintSelectTry(piece) {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+  if (partnerPracticeState.mode !== 'basic') return;
+  if (!piece || piece.snapped) return;
+  showPartnerPracticeCoach();
+  setPartnerPracticeInput(true);
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  setPartnerPracticeCoachCopy(
+    'やってみよう',
+    '場所を 知りたい ピースを 選んでね',
+    ''
+  );
+  partnerPracticeState.hintSelectReady = true;
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
 }
 
 function recordBasicHintSelectCueVisible(now) {
@@ -3497,16 +4946,10 @@ function showBasicHintSelectNarration() {
   if (!piece || piece.snapped) return;
   partnerPracticeState.waitingForHintSelectCueNarration = false;
   showPartnerPracticeCoach();
-  setPartnerPracticeCoachCopy(
-    'この ピースを タッチ',
-    '',
-    ''
-  );
-  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
-  playBasicPracticeVoice(4, function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
-    partnerPracticeState.hintSelectReady = true;
-    setPartnerPracticeInput(true);
+  setPartnerPracticeInput(false);
+  runBasicHintPlaceHandDemo(piece, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-place') return;
+    startBasicHintPlaceTry(piece);
   });
 }
 
@@ -3530,11 +4973,11 @@ function showBasicHintDoneNarration() {
   partnerPracticeState.basicDoneFinishScheduled = false;
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
-    'ひかったね',
-    'ばしょが わからない ときは ヒントを つかってね',
+    '光ったね',
+    '場所が わからないときは ヒントを 使ってね',
     ''
   );
-  playBasicPracticeVoice(6, function () {
+  playBasicPracticeVoice(7, function () {
     if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
     partnerPracticeState.basicDoneVoiceDone = true;
     maybeFinishBasicPracticeAfterSnap();
@@ -3583,7 +5026,7 @@ function animateBasicHintPieceIntoPlace() {
     markBasicPracticePieceSnapped(piece);
     partnerPracticeState.basicDoneSnapDone = true;
     maybeFinishBasicPracticeAfterSnap();
-  });
+  }, { hand: true, handPose: 'grip', handSize: getBasicHandSizeForRect(getPieceScreenRect(piece), 1.2) });
 }
 
 function maybeFinishBasicPracticeAfterSnap() {
@@ -3629,11 +5072,11 @@ function onPartnerPracticeHintUsed() {
     return;
   }
   setPartnerPracticeCoachCopy(
-    'ひかったね',
-    'ばしょが わからない ときは ヒントを つかってね',
+    '光ったね',
+    '場所が わからないときは ヒントを 使ってね',
     ''
   );
-  playBasicPracticeVoice(6);
+  playBasicPracticeVoice(7);
   setPartnerPracticeCoachBubble(btnHint, null, false);
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
@@ -3653,6 +5096,7 @@ function startPartnerSpecificPractice(partnerId) {
   if (!partnerPracticeState || !partnerPracticeState.active) return;
   clearPartnerPracticeTimers();
   clearPracticeHighlights();
+  removeBasicPracticeModeBanner();
   clearPartnerPracticeCoachBubble();
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
@@ -3771,8 +5215,9 @@ function runRisuTimerDemo() {
   }, PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS);
 }
 
-function animatePracticePiece(piece, from, to, duration, onDone) {
+function animatePracticePiece(piece, from, to, duration, onDone, options) {
   if (!partnerPracticeState || !piece) return;
+  options = options || {};
   var start = performance.now();
   function frame(now) {
     if (!partnerPracticeState || !partnerPracticeState.active) return;
@@ -3784,6 +5229,16 @@ function animatePracticePiece(piece, from, to, duration, onDone) {
     rebuildPath(piece);
     dragPiece = piece;
     runAssistHooks('duringDrag', { piece: piece, dx: to.x - from.x, dy: to.y - from.y, partner: getCurrentPartner() }, false);
+    if (options.hand) {
+      var handPoint = getPieceScreenCenter(piece, false);
+      if (handPoint) {
+        setBasicPracticeHand(handPoint, options.handPose || 'grip', {
+          size: options.handSize,
+          pressing: true,
+          scale: 0.94,
+        });
+      }
+    }
     redraw();
     if (t < 1) {
       var raf = requestAnimationFrame(frame);
@@ -3812,6 +5267,14 @@ function pickKojikaPracticeStart(piece) {
     var d = Math.hypot(candidate.x - piece.homeX, candidate.y - piece.homeY);
     return d > bestD ? candidate : best;
   }, farCandidates[0]);
+}
+
+function pickBasicDragPracticeStart(piece) {
+  return {
+    x: Math.max(10, canvasW - pieceW - 10),
+    y: 10,
+    rotation: 0,
+  };
 }
 
 function startKojikaInteractivePractice(piece) {
@@ -4015,6 +5478,11 @@ function beginPartnerPractice(partnerId, returnIndex, done, options) {
     timers: [],
     rafs: [],
     cueRaf: null,
+    loopCueToken: 0,
+    loopCueActive: false,
+    loopCueGhost: null,
+    modeBadgeEl: null,
+    modeBadgeToken: 0,
     highlighted: [],
     targetPiece: null,
     cue: null,
@@ -4032,6 +5500,7 @@ function beginPartnerPractice(partnerId, returnIndex, done, options) {
   };
 
   document.body.classList.add('partner-practice-active');
+  document.body.classList.toggle('partner-practice-basic-layout', partnerPracticeState.mode === 'basic');
   if (puzzleContainer) puzzleContainer.classList.add('partner-practice-on');
   removePrestartOverlay();
   resetPracticeBoard();
@@ -4063,9 +5532,11 @@ function finishPartnerPractice() {
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
   }
+  removeBasicPracticeModeBanner();
   document.body.classList.remove('partner-practice-active');
   document.body.classList.remove('partner-practice-hint-on');
   document.body.classList.remove('partner-practice-peek-on');
+  document.body.classList.remove('partner-practice-basic-layout');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
   partnerPracticeState.active = false;
   partnerPracticeState = null;
@@ -4096,9 +5567,11 @@ function returnPartnerPracticeToSelect() {
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
   }
+  removeBasicPracticeModeBanner();
   document.body.classList.remove('partner-practice-active');
   document.body.classList.remove('partner-practice-hint-on');
   document.body.classList.remove('partner-practice-peek-on');
+  document.body.classList.remove('partner-practice-basic-layout');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
   partnerPracticeState.active = false;
   partnerPracticeState = null;
@@ -4123,6 +5596,9 @@ function showBasicPracticeIfNeeded(done, force) {
   if (!force && hasSeenBasicPractice()) {
     if (typeof done === 'function') done();
     return;
+  }
+  if (force && partnerPracticeState && partnerPracticeState.active) {
+    clearActivePracticeSessionForReplay();
   }
   var returnIndex = currentStageIndex;
   var practiceIndex = choosePartnerPracticeStageIndex();
@@ -4174,23 +5650,50 @@ function onPointerDown(e) {
   // 散布アニメ中・prestart 表示中は一切のドラッグを拒否 (CSS pointer-events と二重防御)
   if (scatterAnimating || prestartOverlayEl) return;
   if (partnerPracticeState && partnerPracticeState.active && !partnerPracticeState.allowCanvasInput) return;
+  cancelBasicPracticeLoopCue();
   const { x, y } = getPos(e);
   let found = null;
   for (const p of pieces) {
     if (p.snapped) continue;
     if (hitTest(p, x, y) && (!found || p.zOrder > found.zOrder)) found = p;
   }
+  var basicDragHitPiece = getBasicDragPracticeHitPiece(x, y);
+  if (basicDragHitPiece) found = basicDragHitPiece;
   // タップ検出用の初期値はピース有無に関わらず常に記録 (空タップで選択解除のため)
   pointerDownTime = Date.now();
   pointerDownX = x;
   pointerDownY = y;
   pointerMoveDist = 0;
 
+  if (isBasicHintSelectPracticePhase()) {
+    emptyTapPending = false;
+    dragPiece = null;
+    onBasicHintSelectPracticePointerDown(found);
+    return;
+  }
+
+  if (isBasicHintPressPracticePhase()) {
+    emptyTapPending = false;
+    dragPiece = null;
+    if (partnerPracticeState && partnerPracticeState.targetPiece) {
+      partnerPracticeState.cue = { kind: 'selected-piece', piece: partnerPracticeState.targetPiece };
+      setPartnerPracticeCoachCopy(
+        '次は「ヒント」',
+        '「ヒント」を 押してみよう',
+        ''
+      );
+      setPartnerPracticeCoachBubble(btnHint, null, false);
+      redraw();
+    }
+    return;
+  }
+
   if (!found) {
     // 空タップの可能性: pointerup で判定して selectedPieceForHint をクリアする。
     // dragPiece は立てないが、 pointerup ハンドラを通すため down ハンドラの中で
     // emptyTapPending フラグを立てておく。
     emptyTapPending = true;
+    rearmBasicLoopCueIfWaiting();
     return;
   }
 
@@ -4212,11 +5715,47 @@ function onPointerDown(e) {
     return;
   }
 
+  if (isBasicDragPracticePhase()
+      && partnerPracticeState.targetPiece
+      && found !== partnerPracticeState.targetPiece) {
+    emptyTapPending = false;
+    dragPiece = null;
+    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece };
+    setPartnerPracticeCoachCopy(
+      'この ピースだよ',
+      '',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(partnerPracticeState.targetPiece), 'above', false);
+    redraw();
+    rearmBasicLoopCueIfWaiting();
+    return;
+  }
+
+  if (isBasicHintDragPracticePhase()
+      && partnerPracticeState.targetPiece
+      && found !== partnerPracticeState.targetPiece) {
+    emptyTapPending = false;
+    dragPiece = null;
+    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece };
+    setPartnerPracticeCoachCopy(
+      'この ピースだよ',
+      '',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(partnerPracticeState.targetPiece), 'above', false);
+    redraw();
+    rearmBasicLoopCueIfWaiting();
+    return;
+  }
+
   emptyTapPending = false;
   dragPiece = found;
   dragOffX = x - found.x; dragOffY = y - found.y;
   dragPiece.zOrder = Math.max(...pieces.map(p => p.zOrder)) + 1;
   onKojikaPracticeDragStart(found);
+  onBasicDragPracticeDragStart(found);
+  onBasicHintDragPracticeDragStart(found);
 
   // ドラッグ開始時はヒントボタンを 😴 に
   refreshHintButtonState();
@@ -4251,6 +5790,8 @@ function onPointerMove(e) {
     partner: getCurrentPartner(),
   }, false);
   updateKojikaPracticeDrag(dragPiece);
+  updateBasicDragPracticeDrag(dragPiece);
+  updateBasicHintDragPracticeDrag(dragPiece);
 
   redraw();
 }
@@ -4285,7 +5826,9 @@ function onPointerUp(e) {
   var isKojikaPracticeMove = !!(partnerPracticeState && partnerPracticeState.active
     && partnerPracticeState.partnerId === 'kojika'
     && (partnerPracticeState.phase === 'kojika-drag' || partnerPracticeState.phase === 'kojika-moving'));
-  if (isTap && !piece.snapped && !isKojikaPracticeMove) {
+  var isBasicDragPracticeMove = isBasicDragPracticePhase();
+  var isBasicHintDragPracticeMove = isBasicHintDragPracticePhase();
+  if (isTap && !piece.snapped && !isKojikaPracticeMove && !isBasicDragPracticeMove && !isBasicHintDragPracticeMove) {
     setSelectedPieceForHint(piece);
   }
 
@@ -4305,6 +5848,8 @@ function onPointerUp(e) {
 
   var didSnap = trySnap(piece);
   onKojikaPracticePieceDropped(piece, didSnap);
+  onBasicDragPracticePieceDropped(piece, didSnap);
+  onBasicHintDragPracticePieceDropped(piece, didSnap);
   // スナップで選択中ピースが固定された場合は選択解除
   if (selectedPieceForHint && selectedPieceForHint.snapped) {
     setSelectedPieceForHint(null);
@@ -4670,7 +6215,8 @@ if (btnHint) {
 
     var isBasicPracticeHint = !!(partnerPracticeState
       && partnerPracticeState.mode === 'basic'
-      && partnerPracticeState.phase === 'hint-press');
+      && (partnerPracticeState.phase === 'hint-press'
+        || partnerPracticeState.phase === 'basic-hint-press-try'));
     if (isBasicPracticeHint && !partnerPracticeState.hintPressReady) {
       return;
     }
@@ -4724,7 +6270,11 @@ if (btnHint) {
     stageHintUsesActual++;
     setHintUsesRemaining(sid, Math.max(0, remaining - 1));
     refreshHintButtonState();
-    onPartnerPracticeHintUsed();
+    if (partnerPracticeState && partnerPracticeState.phase === 'basic-hint-press-try') {
+      onBasicHintPracticeHintButtonUsed();
+    } else {
+      onPartnerPracticeHintUsed();
+    }
   });
 }
 
@@ -4803,6 +6353,9 @@ const resizeObserver = new ResizeObserver(() => {
   if (!sourceImg) return;
   // 散布アニメ実行中は canvas 再生成で破綻するので resize 由来の再初期化を抑止
   if (scatterAnimating) return;
+  // チュートリアル中に canvas を作り直すと、案内中の targetPiece と
+  // 新しく作られた pieces 配列がズレて、ピース形状が合わなくなる。
+  if (partnerPracticeState && partnerPracticeState.active) return;
   const rect = puzzleContainer.getBoundingClientRect();
   // ピース 1 つ以上スナップ済 + サイズ差 ±20% 以内 なら 再初期化 skip
   // (子供向けで進捗を消したくないため、 微小 resize では CSS スケールに任せる)

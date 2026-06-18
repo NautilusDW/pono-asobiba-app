@@ -5996,15 +5996,15 @@ function _chooseJankenCpuHand(playerHand) {
   const losesTo = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
   const safePlayer = beats[playerHand] ? playerHand : 'rock';
   if (_jankenGuaranteedWinKeys[_jankenEncounterKey(_currentCreature)]) {
-    return losesTo[safePlayer];
+    return beats[safePlayer];
   }
   const lossStreak = Math.max(0, _jankenLossStreak);
   const playerWinChance = Math.min(0.75, (1 / 3) + lossStreak * 0.15);
   const drawChance = (1 - playerWinChance) / 2;
   const roll = Math.random();
-  if (roll < playerWinChance) return losesTo[safePlayer];
+  if (roll < playerWinChance) return beats[safePlayer];
   if (roll < playerWinChance + drawChance) return safePlayer;
-  return beats[safePlayer];
+  return losesTo[safePlayer];
 }
 
 function _resolveJanken(playerHand) {

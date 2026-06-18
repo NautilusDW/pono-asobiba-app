@@ -19,6 +19,7 @@ window.PuzzleVoice = (function () {
   'use strict';
 
   var BASE = '../assets/audio/puzzle/voice/';
+  var AUDIO_VERSION = 'v1311';
 
   var REGISTRY = {
     tut:        ['tut_01.mp3', 'tut_02.mp3', 'tut_03.mp3'],
@@ -46,7 +47,7 @@ window.PuzzleVoice = (function () {
   var currentAudio = null;
 
   function makeAudio(file) {
-    var a = new Audio(BASE + file);
+    var a = new Audio(BASE + file + '?v=' + AUDIO_VERSION);
     a.preload = 'auto';
     a.volume = 1.0;
     // Avoid the browser re-fetching across page navigations within session.
@@ -68,10 +69,27 @@ window.PuzzleVoice = (function () {
     stop();
     try { a.currentTime = 0; } catch (_) { /* some browsers throw if not ready */ }
     currentAudio = a;
-    var p = a.play();
-    if (p && typeof p.catch === 'function') {
-      p.catch(function () { /* autoplay blocked — silent */ });
-    }
+    // Defer play() to a microtask so we break out of any synchronous chain from
+    // a previous audio's 'ended' handler. On iOS Safari, calling play() on a
+    // pooled audio synchronously from another audio's ended callback can
+    // silently reject with NotAllowedError or AbortError. Deferring lets the
+    // previous audio's lifecycle settle and ensures listeners attached by the
+    // caller (e.g. 'ended', 'loadedmetadata') are wired up before play starts.
+    Promise.resolve().then(function () {
+      // Bail if a later playFile/stop superseded this call.
+      if (currentAudio !== a) return;
+      try {
+        var p = a.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(function (err) {
+            // Surface rejection so dev can spot real-browser failures.
+            try { console.warn('[PuzzleVoice] play() rejected for', file, err && err.name); } catch (_) {}
+          });
+        }
+      } catch (err) {
+        try { console.warn('[PuzzleVoice] play() threw for', file, err && err.message); } catch (_) {}
+      }
+    });
     return a;
   }
 

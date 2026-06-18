@@ -4417,7 +4417,7 @@ window.EditorBootstrapConfig = {
   // 「🎯 この質問だけ / 🌐 すべての質問」 トグルで保存範囲を選ぶ (既定 🌐 = 共通保存)。
   perQuestionScopeToggleSelectors: QZ_PER_QUESTION_SCOPE_TOGGLE,
   ghPath: _qzEditorGhPath(),
-  // app staging (APP_BUILD=1) では保存先も develop-app に合わせる。
+  // 2026-06-16: app staging (APP_BUILD=1) では保存先も develop-app に合わせる。
   // local などで別ブランチへ送りたい場合は ?ghBranch=foo で明示上書きできる。
   ghBranch: _qzEditorGhBranch(),
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
@@ -5043,7 +5043,9 @@ function _qzBuildPhaseScopedStageLayoutData(data, phase) {
   if (!data || typeof data !== 'object' || phase !== 'answer') return data;
   // 問題フェーズと答えフェーズは同じ DOM 要素を使い回すため、
   // answer 適用時に question / legacy base キーへ fallback すると
-  // 片方を触るともう片方も同じ大きさに見えてしまう。
+  // 「片方を触るともう片方も同じ大きさになる」見え方になる。
+  // ここでは apply 用の一時 clone から question/base の stage key だけ外し、
+  // answer 専用キーが無いときは CSS 既定値へ戻す。
   var filtered = Object.assign({}, data);
   [
     '.emoji-display',

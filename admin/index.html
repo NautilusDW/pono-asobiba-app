@@ -66,6 +66,29 @@ body {
 .npc-pos-slider-row label { font-size: 0.78rem; font-weight: 700; color: #5D4E37; }
 .npc-pos-slider-row input[type=range] { width: 100%; }
 .npc-pos-slider-row .npc-pos-val { font-size: 0.72rem; color: #8B7355; font-weight: 700; text-align: right; }
+.npc-pos-preview-tools {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  margin-bottom: 6px; flex-wrap: wrap;
+}
+.npc-pos-preview-zoom {
+  display: flex; align-items: center; gap: 5px; font-size: 0.7rem;
+  color: #8B7355; font-weight: 800;
+}
+.npc-pos-preview-zoom-btn {
+  padding: 4px 8px; border: 2px solid #E0D8CC; border-radius: 999px;
+  background: #fff; color: #5D4E37; font-family: inherit;
+  font-size: 0.7rem; font-weight: 900; cursor: pointer;
+}
+.npc-pos-preview-zoom-btn.active {
+  background: #0EA5E9; border-color: #0EA5E9; color: #fff;
+}
+.npc-pos-preview-scroll {
+  width: 100%; max-width: 100%; max-height: 72vh; overflow: auto; padding: 4px;
+  background: #FFF8E8; border: 1px solid #E8D8B8; border-radius: 12px;
+}
+.npc-pos-preview-scroll #npc-pos-preview {
+  flex: 0 0 auto; transition: width 0.15s ease;
+}
 .checker-bg {
   background-image: linear-gradient(45deg, #ddd 25%, transparent 25%),
     linear-gradient(-45deg, #ddd 25%, transparent 25%),
@@ -322,6 +345,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="aquarium">🐠 水族館</button>
   <button class="tab" data-panel="quiz-sound">🐾 音当てクイズ</button>
   <button class="tab" data-panel="quizland">🧩 クイズランド</button>
+  <button class="tab" data-panel="voice-lab">🔊 音声生成</button>
   <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
   <button class="tab" data-panel="writing">✏️ 文字書き</button>
@@ -732,6 +756,95 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div>
 
+<!-- ===== 🔊 音声生成 ===== -->
+<div class="panel" id="panel-voice-lab">
+  <div class="section">
+    <div class="section-title">🔊 パズル チュートリアル音声生成</div>
+    <div style="padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;margin-bottom:12px;color:#475569;font-size:0.78rem;line-height:1.7;">
+      APIキーはブラウザに保存しません。ローカルは <code>.dev.vars</code> に <code>GEMINI_API_KEY=...</code> を入れて、Worker 経由で生成します。Gemini TTS の出力は WAV です。
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:12px;">
+      <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
+        話者
+        <select id="puzzle-tts-voice" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+          <option value="Aoede">Aoede（落ち着いた女声）</option>
+          <option value="Leda">Leda（やさしい女声）</option>
+          <option value="Callirrhoe">Callirrhoe（明るめ女声）</option>
+          <option value="Despina">Despina（軽やか女声）</option>
+          <option value="Kore">Kore（少し案内役寄り）</option>
+        </select>
+      </label>
+      <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
+        語り口
+        <select id="puzzle-tts-style" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+          <option value="[gently]">やさしく</option>
+          <option value="[slowly and warmly]">ゆっくり温かく</option>
+          <option value="[cheerfully but calmly]">明るく・落ち着き</option>
+          <option value="[like talking to a small child with a warm smile]">子供に話しかけるように</option>
+        </select>
+      </label>
+      <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
+        モデル
+        <input id="puzzle-tts-model" value="gemini-3.1-flash-tts-preview" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+      </label>
+    </div>
+
+    <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;margin-bottom:10px;">
+      Scene
+      <textarea id="puzzle-tts-scene" rows="2" style="padding:8px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;line-height:1.6;">A gentle female guide teaches a preschool puzzle tutorial in a warm forest playroom.</textarea>
+    </label>
+    <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;margin-bottom:12px;">
+      Sample Context
+      <textarea id="puzzle-tts-context" rows="3" style="padding:8px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;line-height:1.6;">Japanese narration for a young children's puzzle tutorial. Use a gentle female storyteller voice, close to the opening narration. Warm, soft, clear, and reassuring. Speak slowly with short natural pauses. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce 「見る」 and 「ヒント」 clearly as button names.</textarea>
+    </label>
+
+    <div style="display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,1.4fr);gap:10px;margin-bottom:10px;">
+      <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
+        履歴名
+        <input id="puzzle-tts-history-name" placeholder="例: パズル基本チュートリアル v1" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+      </label>
+      <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
+        保存した履歴
+        <select id="puzzle-tts-history-list" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;"></select>
+      </label>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+      <button type="button" onclick="puzzleTtsSaveHistory()" style="padding:7px 12px;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">履歴に保存</button>
+      <button type="button" onclick="puzzleTtsLoadSelectedHistory()" style="padding:7px 12px;background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">履歴を読み込み</button>
+      <button type="button" onclick="puzzleTtsDeleteSelectedHistory()" style="padding:7px 12px;background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">履歴を削除</button>
+      <button type="button" onclick="puzzleTtsSelectSaveDir()" style="padding:7px 12px;background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">保存先を選ぶ</button>
+      <span id="puzzle-tts-save-dir-label" style="font-size:0.76rem;color:#64748B;font-weight:800;">保存先: 未選択（通常のダウンロード）</span>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+      <button type="button" onclick="puzzleTtsAddRow()" style="padding:7px 14px;background:#ECFEFF;color:#0E7490;border:1px solid #A5F3FC;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">行を追加</button>
+      <button type="button" onclick="puzzleTtsGenerateAll()" style="padding:7px 14px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">全部生成</button>
+      <button type="button" onclick="puzzleTtsSetAllChecks(true)" style="padding:7px 12px;background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">全チェック</button>
+      <button type="button" onclick="puzzleTtsSetAllChecks(false)" style="padding:7px 12px;background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">チェック解除</button>
+      <button type="button" onclick="puzzleTtsDownloadChecked()" style="padding:7px 14px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">チェックしたものを保存</button>
+      <button type="button" onclick="puzzleTtsCopyAllStudioPrompts()" style="padding:7px 14px;background:#EEF2FF;color:#4338CA;border:1px solid #C7D2FE;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">AI Studio用をコピー</button>
+      <span id="puzzle-tts-status" style="font-size:0.78rem;color:#6D28D9;font-weight:800;"></span>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead>
+          <tr>
+            <th style="text-align:center;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">選択</th>
+            <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">ファイル名</th>
+            <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;">読み上げテキスト</th>
+            <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">生成音声</th>
+            <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="puzzle-tts-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 🧩 クイズランド ===== -->
 <div class="panel" id="panel-quizland">
   <div class="sub-tabs">
@@ -993,7 +1106,7 @@ tr:hover { background: #FFFAF0; }
 <div class="panel" id="panel-bento">
   <div class="sub-tabs">
     <button class="sub-tab active" data-sub="bento-illust">🎨 イラスト管理</button>
-    <button class="sub-tab" data-sub="bento-npc-pos">🎨 NPC 位置エディタ</button>
+    <button class="sub-tab" data-sub="bento-npc-pos">🎨 キャラ位置エディタ</button>
   </div>
   <div class="sub-panel active" id="sub-bento-illust">
   <div class="section">
@@ -1012,21 +1125,22 @@ tr:hover { background: #FFFAF0; }
   </div>
   </div>
 
-  <!-- ===== NPC 位置エディタ ===== -->
+  <!-- ===== キャラ位置エディタ ===== -->
   <div class="sub-panel" id="sub-bento-npc-pos">
   <div class="section">
-    <div class="section-title">🎨 NPC 位置エディタ（弁当ゲーム）</div>
+    <div class="section-title">🎨 キャラ位置エディタ（弁当ゲーム）</div>
     <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
-      おべんとう <code>delivery</code>/<code>shop-opening</code> シーンに登場する NPC スプライトの位置を、
-      <strong>キャラクター × 表情</strong> ごとに調整します。<br>
+      おべんとう <code>delivery</code>/<code>shop-opening</code> シーンに登場する動物NPCと店員キャラの位置を、
+      <strong>キャラクター × 表情/ポーズ</strong> ごとに調整します。<br>
+      本体側では来店、注文前モーダル、配達、結果リアクション、結果詳細のNPC表示に反映されます。<br>
       設定は <code>localStorage['bento_npc_positions_v1']</code> に保存され、 <strong>ブラウザのキャッシュをまたいで保持</strong>されます。<br>
-      delivery 画面のデフォルトは <code>x=58%, y=23%</code>。 shop-opening のデフォルトは <code>x=50%, y=23%</code>。
-      スライダーの値は delivery 画面を想定した絶対値で、両画面共通で反映されます。
+      動物NPCは delivery 画面、店員キャラは最初の shop-opening 画面を想定した絶対値です。<br>
+      <code>happy</code> は画像が <code>normal</code> と共通なので、happy 未保存時は normal の位置を引き継ぎます。
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
       <!-- 左: 選択 + スライダー -->
-      <div>
+      <div style="min-width:0;">
         <div style="margin-bottom:14px;">
           <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">キャラクター</label>
           <select id="npc-pos-char" style="width:100%;padding:8px 10px;border:2px solid #C7894A;border-radius:8px;background:#fff;font-family:inherit;font-size:0.9rem;font-weight:700;color:#5D4E37;">
@@ -1036,25 +1150,41 @@ tr:hover { background: #FFFAF0; }
             <option value="shika">しかさん (shika)</option>
             <option value="araiguma">アライグマくん (araiguma)</option>
             <option value="neko">ねこさん (neko)</option>
+            <option value="staffpono">店員 ポノ (staffpono)</option>
+            <option value="staffboy">店員 男の子 (staffboy)</option>
+            <option value="staffgirl">店員 女の子 (staffgirl)</option>
           </select>
         </div>
 
         <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">表情</label>
+          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">表情 / ポーズ</label>
           <div id="npc-pos-expr-row" style="display:flex;flex-wrap:wrap;gap:6px;">
             <button type="button" class="npc-pos-expr-btn active" data-expr="request">request</button>
-            <button type="button" class="npc-pos-expr-btn" data-expr="normal">normal</button>
-            <button type="button" class="npc-pos-expr-btn" data-expr="happy">happy</button>
-            <button type="button" class="npc-pos-expr-btn" data-expr="super_happy">super_happy</button>
-            <button type="button" class="npc-pos-expr-btn" data-expr="almost">almost</button>
-            <button type="button" class="npc-pos-expr-btn" data-expr="sad">sad</button>
           </div>
         </div>
 
+        <label style="display:flex;align-items:center;gap:8px;margin:-2px 0 14px;padding:8px 10px;border:2px solid #E8D8C0;border-radius:10px;background:#FFFDF7;font-size:0.78rem;font-weight:800;color:#5D4E37;cursor:pointer;">
+          <input id="npc-pos-apply-all-exprs" type="checkbox" style="width:18px;height:18px;accent-color:#F59E0B;">
+          <span id="npc-pos-apply-all-label">このキャラの全表情/ポーズをまとめて操作</span>
+        </label>
+
         <div id="npc-pos-sliders" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <div id="npc-pos-mask-panel" style="display:none;margin-top:18px;padding:12px;border:2px dashed #C7894A;border-radius:10px;background:#FFF8E8;">
+          <div style="font-size:0.82rem;font-weight:900;color:#5D4E37;margin-bottom:4px;">カウンターマスク</div>
+          <div style="font-size:0.72rem;color:#8B7355;line-height:1.45;margin-bottom:10px;">
+            店員キャラをカウンターの向こう側に見せるため、背景のカウンター前面だけを上から重ねます。
+          </div>
+          <div id="npc-pos-mask-sliders" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+            <button id="npc-pos-mask-save" type="button" style="padding:6px 12px;background:#0EA5E9;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">💾 マスク保存</button>
+            <button id="npc-pos-mask-reset" type="button" style="padding:6px 12px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">↺ マスクリセット</button>
+          </div>
+        </div>
 
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;">
           <button id="npc-pos-save" type="button" style="padding:7px 14px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">💾 保存</button>
+          <button id="npc-pos-undo" type="button" disabled style="padding:7px 14px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;opacity:0.45;">↶ 取り消し</button>
           <button id="npc-pos-reset" type="button" style="padding:7px 14px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↺ この組合せをリセット</button>
           <button id="npc-pos-reset-all" type="button" style="padding:7px 14px;background:#EF4444;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">🗑 全部リセット</button>
           <button id="npc-pos-export" type="button" style="padding:7px 14px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">⬇ エクスポート (JSON)</button>
@@ -1066,18 +1196,31 @@ tr:hover { background: #FFFAF0; }
       </div>
 
       <!-- 右: プレビュー -->
-      <div>
-        <div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">プレビュー（16:9 シーン）</div>
-        <div id="npc-pos-preview" style="position:relative;width:100%;aspect-ratio:16/9;background:#f4cf91 url('../assets/images/bento/story/shop_order_counter.png') center/contain no-repeat;border:2px solid #C7894A;border-radius:12px;overflow:hidden;">
-          <!-- 0%/50%/100% 目盛 (横) -->
-          <div style="position:absolute;inset:0;pointer-events:none;">
-            <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.35);"></div>
-            <div style="position:absolute;left:0;right:0;bottom:23%;height:1px;background:rgba(255,255,255,0.35);"></div>
+      <div style="min-width:0;">
+        <div class="npc-pos-preview-tools">
+          <div style="font-size:0.78rem;font-weight:700;color:#5D4E37;">プレビュー（16:9 シーン）</div>
+          <div class="npc-pos-preview-zoom" id="npc-pos-preview-zoom-controls" aria-label="プレビュー拡大率">
+            <span>拡大</span>
+            <button type="button" class="npc-pos-preview-zoom-btn active" data-zoom="1">100%</button>
+            <button type="button" class="npc-pos-preview-zoom-btn" data-zoom="1.5">150%</button>
+            <button type="button" class="npc-pos-preview-zoom-btn" data-zoom="2">200%</button>
+            <button type="button" class="npc-pos-preview-zoom-btn" data-zoom="3">300%</button>
           </div>
-          <img id="npc-pos-preview-img" alt="" style="position:absolute;left:58%;bottom:23%;height:40%;max-width:38%;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 8px 12px rgba(70,40,16,0.18));">
+        </div>
+        <div class="npc-pos-preview-scroll" id="npc-pos-preview-scroll">
+          <div id="npc-pos-preview" style="position:relative;width:100%;aspect-ratio:16/9;background:#f4cf91 url('../assets/images/bento/story/shop_order_counter.png') center/contain no-repeat;border:2px solid #C7894A;border-radius:12px;overflow:hidden;">
+            <!-- 0%/50%/100% 目盛 (横) -->
+            <div style="position:absolute;inset:0;pointer-events:none;">
+              <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.35);"></div>
+              <div style="position:absolute;left:0;right:0;bottom:23%;height:1px;background:rgba(255,255,255,0.35);"></div>
+            </div>
+            <img id="npc-pos-preview-img" alt="" style="position:absolute;left:58%;bottom:23%;height:40%;max-width:38%;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 8px 12px rgba(70,40,16,0.18));">
+            <div id="npc-pos-preview-mask" style="position:absolute;inset:0;pointer-events:none;background-position:center;background-size:100% 100%;background-repeat:no-repeat;clip-path:inset(51% 0% 18% 0%);opacity:0;"></div>
+            <div id="npc-pos-preview-mask-outline" style="display:none;position:absolute;left:0%;top:51%;width:100%;height:31%;box-sizing:border-box;border:2px dashed rgba(14,165,233,0.9);background:rgba(14,165,233,0.08);pointer-events:none;"></div>
+          </div>
         </div>
         <div style="font-size:0.72rem;color:#8B7355;margin-top:8px;line-height:1.45;">
-          スライダーをドラッグするとリアルタイムに反映。 中央のグリッド線は <code>x=50%</code>, <code>y=23%</code> の目安。
+          スライダーをドラッグするとリアルタイムに反映。 拡大時はプレビュー枠内をスクロールできます。中央のグリッド線は <code>x=50%</code>, <code>y=23%</code> の目安。
           実機 (bento ゲーム本体) 側の表示は、 保存後に再読み込みで反映されます。
         </div>
       </div>
@@ -1517,6 +1660,890 @@ document.querySelectorAll('.sub-tab').forEach(function(btn) {
     if (subId === 'quiz-narration') ttsInit();
     if (subId === 'bento-npc-pos') npcPosInit();
   });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Puzzle tutorial TTS lab
+// ════════════════════════════════════════════════════════════════
+var PUZZLE_TTS_DEFAULT_LINES = [
+  { id: 'basic_tut_01', file: 'basic_tut_01.mp3', text: 'これから、パズルの遊び方を練習するよ。まずは、お手本を見てね。' },
+  { id: 'basic_tut_02', file: 'basic_tut_02.mp3', text: 'このピースをつかんで、青い場所へ持っていくよ。' },
+  { id: 'basic_tut_03', file: 'basic_tut_03.mp3', text: 'やってみよう。ピースを持って、青い場所で離してね。' },
+  { id: 'basic_tut_04', file: 'basic_tut_04.mp3', text: 'できたね。次は、「見る」ボタンを試すよ。' },
+  { id: 'basic_tut_05', file: 'basic_tut_05.mp3', text: 'まずは、「見る」ボタンを長く押してみよう。押している間、出来上がりの絵が見えるよ。' },
+  { id: 'basic_tut_06', file: 'basic_tut_06.mp3', text: '見えたね。離すと、パズルに戻るよ。わからなくなったら、もう一度長く押してね。' },
+  { id: 'basic_tut_07', file: 'basic_tut_07.mp3', text: '次はヒントだよ。場所を知りたいピースを選んでね。ピースを選んだら、「ヒント」ボタンを押してみよう。光った場所へ、ピースを持っていくよ。' },
+  { id: 'basic_tut_08', file: 'basic_tut_08.mp3', text: '光ったね。ピースの場所がわからないときは、ヒントを使ってね。' }
+];
+var PUZZLE_TTS_LINES = PUZZLE_TTS_DEFAULT_LINES.map(function(line) { return Object.assign({}, line); });
+var puzzleTtsAudioById = {};
+var puzzleTtsAudioVersionsById = {};
+var puzzleTtsSelectedVersionById = {};
+var puzzleTtsGenerating = false;
+var puzzleTtsCheckedById = {};
+var puzzleTtsTextById = {};
+var puzzleTtsCurrentAudio = null;
+var puzzleTtsCurrentAudioId = '';
+var PUZZLE_TTS_HISTORY_KEY = 'pono_puzzle_tts_history_v1';
+var PUZZLE_TTS_DRAFT_KEY = 'pono_puzzle_tts_draft_v1';
+var PUZZLE_TTS_AUDIO_DB_NAME = 'pono_puzzle_tts_audio_v1';
+var PUZZLE_TTS_AUDIO_STORE = 'line_versions';
+var PUZZLE_TTS_MAX_VERSIONS = 8;
+var puzzleTtsHistory = [];
+var puzzleTtsDraftTimer = 0;
+var puzzleTtsSaveDirHandle = null;
+var puzzleTtsAudioDbPromise = null;
+
+function puzzleTtsHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function puzzleTtsMakeId(prefix) {
+  return (prefix || 'line') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+function puzzleTtsNormalizeId(id) {
+  var safe = String(id || '').trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
+  return safe || puzzleTtsMakeId('line');
+}
+
+function puzzleTtsNormalizeFileName(file) {
+  var name = String(file || '').trim().replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, '_');
+  if (!name) name = 'voice_' + Date.now().toString(36) + '.mp3';
+  if (!/\.[a-z0-9]{2,5}$/i.test(name)) name += '.mp3';
+  return name;
+}
+
+function puzzleTtsWavName(file) {
+  var name = puzzleTtsNormalizeFileName(file || 'voice.wav');
+  if (/\.[a-z0-9]{2,5}$/i.test(name)) return name.replace(/\.[a-z0-9]{2,5}$/i, '.wav');
+  return name + '.wav';
+}
+
+function puzzleTtsStatus(msg, isError) {
+  var el = document.getElementById('puzzle-tts-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#B91C1C' : '#6D28D9';
+}
+
+function puzzleTtsSaveDirStatus(msg, isError) {
+  var el = document.getElementById('puzzle-tts-save-dir-label');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#B91C1C' : '#64748B';
+}
+
+function puzzleTtsRowStatus(id, msg, isError) {
+  var el = document.getElementById('puzzle-tts-row-status-' + id);
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? '#B91C1C' : '#64748B';
+}
+
+function puzzleTtsTextFor(line) {
+  var el = document.getElementById('puzzle-tts-text-' + line.id);
+  if (el) {
+    puzzleTtsTextById[line.id] = el.value;
+    line.text = el.value;
+    return el.value.trim();
+  }
+  return (puzzleTtsTextById[line.id] != null ? puzzleTtsTextById[line.id] : line.text).trim();
+}
+
+function puzzleTtsFileFor(line) {
+  var el = document.getElementById('puzzle-tts-file-' + line.id);
+  if (el) {
+    line.file = el.value.trim();
+    return line.file;
+  }
+  return line.file || '';
+}
+
+function puzzleTtsCurrentLineTexts() {
+  var texts = {};
+  PUZZLE_TTS_LINES.forEach(function(line) {
+    texts[line.id] = puzzleTtsTextFor(line);
+  });
+  return texts;
+}
+
+function puzzleTtsCurrentRows() {
+  return PUZZLE_TTS_LINES.map(function(line) {
+    var text = puzzleTtsTextFor(line);
+    var file = puzzleTtsFileFor(line);
+    return {
+      id: line.id,
+      file: puzzleTtsNormalizeFileName(file || line.file),
+      text: text
+    };
+  });
+}
+
+function puzzleTtsApplyRows(rows, legacyLines) {
+  var seen = {};
+  var source = Array.isArray(rows) && rows.length ? rows : PUZZLE_TTS_DEFAULT_LINES;
+  PUZZLE_TTS_LINES = source.map(function(row, idx) {
+    var id = puzzleTtsNormalizeId(row && row.id);
+    if (seen[id]) id = puzzleTtsMakeId('line');
+    seen[id] = true;
+    var fallback = PUZZLE_TTS_DEFAULT_LINES[idx] || {};
+    var text = (row && row.text != null) ? String(row.text) : (fallback.text || '');
+    if (legacyLines && legacyLines[id] != null) text = String(legacyLines[id]);
+    return {
+      id: id,
+      file: puzzleTtsNormalizeFileName((row && row.file) || fallback.file || ('voice_' + String(idx + 1).padStart(2, '0') + '.mp3')),
+      text: text
+    };
+  });
+  puzzleTtsTextById = {};
+  PUZZLE_TTS_LINES.forEach(function(line) {
+    puzzleTtsTextById[line.id] = line.text || '';
+  });
+}
+
+function puzzleTtsControlValue(id) {
+  var el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function puzzleTtsSetControlValue(id, value) {
+  var el = document.getElementById(id);
+  if (el) el.value = value || '';
+}
+
+function puzzleTtsCollectState() {
+  var rows = puzzleTtsCurrentRows();
+  return {
+    version: 2,
+    savedAt: new Date().toISOString(),
+    voice: puzzleTtsControlValue('puzzle-tts-voice') || 'Aoede',
+    style: puzzleTtsControlValue('puzzle-tts-style') || '[gently]',
+    model: puzzleTtsControlValue('puzzle-tts-model') || '',
+    scene: puzzleTtsControlValue('puzzle-tts-scene') || '',
+    context: puzzleTtsControlValue('puzzle-tts-context') || '',
+    rows: rows,
+    lines: rows.reduce(function(acc, row) {
+      acc[row.id] = row.text;
+      return acc;
+    }, {})
+  };
+}
+
+function puzzleTtsApplyState(state, options) {
+  if (!state) return;
+  options = options || {};
+  puzzleTtsSetControlValue('puzzle-tts-voice', state.voice || 'Aoede');
+  puzzleTtsSetControlValue('puzzle-tts-style', state.style || '[gently]');
+  puzzleTtsSetControlValue('puzzle-tts-model', state.model || 'gemini-3.1-flash-tts-preview');
+  puzzleTtsSetControlValue('puzzle-tts-scene', state.scene || '');
+  puzzleTtsSetControlValue('puzzle-tts-context', state.context || '');
+  puzzleTtsApplyRows(state.rows, state.lines || null);
+  if (state.name) puzzleTtsSetControlValue('puzzle-tts-history-name', state.name);
+  puzzleTtsRenderRows();
+  if (!options.skipDraft) puzzleTtsSaveDraftSoon();
+}
+
+function puzzleTtsLoadHistoryStore() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(PUZZLE_TTS_HISTORY_KEY) || '[]');
+    puzzleTtsHistory = Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    puzzleTtsHistory = [];
+  }
+}
+
+function puzzleTtsPersistHistoryStore() {
+  try {
+    localStorage.setItem(PUZZLE_TTS_HISTORY_KEY, JSON.stringify(puzzleTtsHistory.slice(0, 40)));
+  } catch (_) {}
+}
+
+function puzzleTtsHistoryLabel(item) {
+  var name = item && item.name ? item.name : '名前なし';
+  var date = item && item.savedAt ? item.savedAt.replace('T', ' ').slice(0, 16) : '';
+  return date ? (date + ' / ' + name) : name;
+}
+
+function puzzleTtsRenderHistoryList() {
+  var select = document.getElementById('puzzle-tts-history-list');
+  if (!select) return;
+  if (!puzzleTtsHistory.length) {
+    select.innerHTML = '<option value="">履歴なし</option>';
+    return;
+  }
+  select.innerHTML = puzzleTtsHistory.map(function(item) {
+    return '<option value="' + puzzleTtsHtml(item.id) + '">' + puzzleTtsHtml(puzzleTtsHistoryLabel(item)) + '</option>';
+  }).join('');
+}
+
+function puzzleTtsSaveHistory() {
+  var state = puzzleTtsCollectState();
+  var name = (puzzleTtsControlValue('puzzle-tts-history-name') || '').trim();
+  state.id = 'hist_' + Date.now();
+  state.name = name || ('パズル音声 ' + state.savedAt.replace('T', ' ').slice(0, 16));
+  puzzleTtsHistory = puzzleTtsHistory.filter(function(item) { return item.id !== state.id; });
+  puzzleTtsHistory.unshift(state);
+  puzzleTtsPersistHistoryStore();
+  puzzleTtsRenderHistoryList();
+  var select = document.getElementById('puzzle-tts-history-list');
+  if (select) select.value = state.id;
+  puzzleTtsSaveDraftSoon();
+  puzzleTtsStatus('履歴に保存しました');
+}
+
+function puzzleTtsSelectedHistory() {
+  var select = document.getElementById('puzzle-tts-history-list');
+  var id = select ? select.value : '';
+  return puzzleTtsHistory.find(function(item) { return item.id === id; }) || null;
+}
+
+function puzzleTtsLoadSelectedHistory() {
+  var item = puzzleTtsSelectedHistory();
+  if (!item) {
+    puzzleTtsStatus('読み込む履歴がありません', true);
+    return;
+  }
+  puzzleTtsApplyState(item);
+  puzzleTtsStatus('履歴を読み込みました');
+}
+
+function puzzleTtsDeleteSelectedHistory() {
+  var item = puzzleTtsSelectedHistory();
+  if (!item) {
+    puzzleTtsStatus('削除する履歴がありません', true);
+    return;
+  }
+  puzzleTtsHistory = puzzleTtsHistory.filter(function(row) { return row.id !== item.id; });
+  puzzleTtsPersistHistoryStore();
+  puzzleTtsRenderHistoryList();
+  puzzleTtsStatus('履歴を削除しました');
+}
+
+function puzzleTtsSaveDraftSoon() {
+  clearTimeout(puzzleTtsDraftTimer);
+  puzzleTtsDraftTimer = setTimeout(function() {
+    try {
+      localStorage.setItem(PUZZLE_TTS_DRAFT_KEY, JSON.stringify(puzzleTtsCollectState()));
+    } catch (_) {}
+  }, 250);
+}
+
+function puzzleTtsLoadDraft() {
+  try {
+    var raw = localStorage.getItem(PUZZLE_TTS_DRAFT_KEY);
+    if (!raw) return;
+    puzzleTtsApplyState(JSON.parse(raw), { skipDraft: true });
+  } catch (_) {}
+}
+
+function puzzleTtsBuildPromptText(text) {
+  var scene = (document.getElementById('puzzle-tts-scene') || {}).value || '';
+  var context = (document.getElementById('puzzle-tts-context') || {}).value || '';
+  var style = (document.getElementById('puzzle-tts-style') || {}).value || '[gently]';
+  return [
+    style,
+    'You are generating audio only. Do not speak these instructions.',
+    'Scene: ' + scene.trim(),
+    'Sample Context: ' + context.trim(),
+    'Speak only the following Japanese narration line. Keep the wording exactly as written.',
+    '「' + text + '」'
+  ].filter(Boolean).join('\n');
+}
+
+function puzzleTtsStudioPromptFor(line) {
+  var file = puzzleTtsNormalizeFileName(puzzleTtsFileFor(line) || line.file);
+  line.file = file;
+  return [
+    'Scene',
+    (document.getElementById('puzzle-tts-scene') || {}).value || '',
+    '',
+    'Sample Context',
+    (document.getElementById('puzzle-tts-context') || {}).value || '',
+    '',
+    'Speaker 1 - ' + ((document.getElementById('puzzle-tts-voice') || {}).value || 'Aoede'),
+    file,
+    puzzleTtsTextFor(line)
+  ].join('\n');
+}
+
+function puzzleTtsDataUrl(entry) {
+  if (!entry || !entry.audio) return '';
+  return 'data:' + (entry.mime || 'audio/wav') + ';base64,' + entry.audio;
+}
+
+function puzzleTtsOpenAudioDb() {
+  if (!window.indexedDB) return Promise.reject(new Error('IndexedDB unavailable'));
+  if (puzzleTtsAudioDbPromise) return puzzleTtsAudioDbPromise;
+  puzzleTtsAudioDbPromise = new Promise(function(resolve, reject) {
+    var req = indexedDB.open(PUZZLE_TTS_AUDIO_DB_NAME, 1);
+    req.onupgradeneeded = function() {
+      var db = req.result;
+      if (!db.objectStoreNames.contains(PUZZLE_TTS_AUDIO_STORE)) {
+        db.createObjectStore(PUZZLE_TTS_AUDIO_STORE, { keyPath: 'lineId' });
+      }
+    };
+    req.onsuccess = function() { resolve(req.result); };
+    req.onerror = function() { reject(req.error || new Error('IndexedDB open failed')); };
+  });
+  return puzzleTtsAudioDbPromise;
+}
+
+function puzzleTtsGetVersions(id) {
+  var versions = puzzleTtsAudioVersionsById[id];
+  if (Array.isArray(versions)) return versions;
+  return puzzleTtsAudioById[id] ? [puzzleTtsAudioById[id]] : [];
+}
+
+function puzzleTtsGetSelectedVersion(id) {
+  var versions = puzzleTtsGetVersions(id);
+  if (!versions.length) return null;
+  var selectedId = puzzleTtsSelectedVersionById[id] || '';
+  return versions.find(function(v) { return v.versionId === selectedId; }) || versions[0];
+}
+
+function puzzleTtsSyncSelectedEntry(id) {
+  var selected = puzzleTtsGetSelectedVersion(id);
+  if (selected) {
+    puzzleTtsAudioById[id] = selected;
+    puzzleTtsSelectedVersionById[id] = selected.versionId || '';
+  } else {
+    delete puzzleTtsAudioById[id];
+    delete puzzleTtsSelectedVersionById[id];
+  }
+}
+
+function puzzleTtsSetVersions(id, versions, selectedVersionId) {
+  var cleaned = (Array.isArray(versions) ? versions : []).filter(function(v) { return v && v.audio; }).slice(0, PUZZLE_TTS_MAX_VERSIONS);
+  if (cleaned.length) {
+    puzzleTtsAudioVersionsById[id] = cleaned;
+    puzzleTtsSelectedVersionById[id] = selectedVersionId || cleaned[0].versionId || '';
+  } else {
+    delete puzzleTtsAudioVersionsById[id];
+    delete puzzleTtsSelectedVersionById[id];
+  }
+  puzzleTtsSyncSelectedEntry(id);
+}
+
+function puzzleTtsPersistVersions(id) {
+  var versions = puzzleTtsGetVersions(id);
+  return puzzleTtsOpenAudioDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(PUZZLE_TTS_AUDIO_STORE, 'readwrite');
+      var store = tx.objectStore(PUZZLE_TTS_AUDIO_STORE);
+      if (versions.length) {
+        store.put({ lineId: id, selectedVersionId: puzzleTtsSelectedVersionById[id] || '', versions: versions });
+      } else {
+        store.delete(id);
+      }
+      tx.oncomplete = resolve;
+      tx.onerror = function() { reject(tx.error || new Error('IndexedDB write failed')); };
+    });
+  }).catch(function(e) {
+    puzzleTtsStatus('音声バージョンの保存に失敗: ' + (e && e.message || e), true);
+  });
+}
+
+function puzzleTtsDeleteVersions(id) {
+  puzzleTtsSetVersions(id, []);
+  return puzzleTtsPersistVersions(id);
+}
+
+function puzzleTtsLoadAudioVersions() {
+  return puzzleTtsOpenAudioDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(PUZZLE_TTS_AUDIO_STORE, 'readonly');
+      var req = tx.objectStore(PUZZLE_TTS_AUDIO_STORE).getAll();
+      req.onsuccess = function() {
+        (req.result || []).forEach(function(record) {
+          if (!record || !record.lineId) return;
+          puzzleTtsSetVersions(record.lineId, record.versions || [], record.selectedVersionId || '');
+        });
+        resolve();
+      };
+      req.onerror = function() { reject(req.error || new Error('IndexedDB read failed')); };
+    });
+  }).catch(function() {
+    return null;
+  });
+}
+
+function puzzleTtsVersionLabel(entry, idx) {
+  if (!entry) return '音声なし';
+  var date = entry.generatedAt ? new Date(entry.generatedAt) : null;
+  var time = date && !isNaN(date.getTime())
+    ? date.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+    : '保存版';
+  var voice = entry.voice ? (' / ' + entry.voice) : '';
+  var model = entry.model ? (' / ' + entry.model) : '';
+  return 'v' + String(idx + 1) + ' ' + time + voice + model;
+}
+
+function puzzleTtsSuggestNewFileName() {
+  var max = 0;
+  PUZZLE_TTS_LINES.forEach(function(line) {
+    var m = String(line.file || '').match(/basic_tut_(\d+)/i);
+    if (m) max = Math.max(max, parseInt(m[1], 10) || 0);
+  });
+  return 'basic_tut_' + String(max + 1 || PUZZLE_TTS_LINES.length + 1).padStart(2, '0') + '.mp3';
+}
+
+function puzzleTtsAddRow() {
+  var id = puzzleTtsMakeId('custom');
+  var file = puzzleTtsSuggestNewFileName();
+  var line = { id: id, file: file, text: '' };
+  PUZZLE_TTS_LINES.push(line);
+  puzzleTtsTextById[id] = '';
+  puzzleTtsCheckedById[id] = true;
+  puzzleTtsRenderRows();
+  puzzleTtsSaveDraftSoon();
+  puzzleTtsStatus(file + ' を追加しました');
+  setTimeout(function() {
+    var el = document.getElementById('puzzle-tts-text-' + id);
+    if (el) el.focus();
+  }, 0);
+}
+
+function puzzleTtsDeleteRow(id) {
+  var line = puzzleTtsGetLine(id);
+  if (!line) return;
+  if (!confirm(line.file + ' を削除します。生成済みバージョンもこの管理画面から外れます。')) return;
+  PUZZLE_TTS_LINES = PUZZLE_TTS_LINES.filter(function(row) { return row.id !== id; });
+  delete puzzleTtsTextById[id];
+  delete puzzleTtsCheckedById[id];
+  delete puzzleTtsAudioById[id];
+  delete puzzleTtsAudioVersionsById[id];
+  delete puzzleTtsSelectedVersionById[id];
+  if (puzzleTtsCurrentAudioId.indexOf(id + ':') === 0) puzzleTtsStopCurrentAudio();
+  puzzleTtsDeleteVersions(id);
+  puzzleTtsRenderRows();
+  puzzleTtsSaveDraftSoon();
+  puzzleTtsStatus(line.file + ' を削除しました');
+}
+
+function puzzleTtsRenderRows() {
+  var tbody = document.getElementById('puzzle-tts-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = PUZZLE_TTS_LINES.map(function(line) {
+    var versions = puzzleTtsGetVersions(line.id);
+    var entry = puzzleTtsGetSelectedVersion(line.id);
+    var canUse = !!entry;
+    var checked = !!puzzleTtsCheckedById[line.id];
+    var textValue = puzzleTtsTextById[line.id] != null ? puzzleTtsTextById[line.id] : line.text;
+    var versionSelect = versions.length
+      ? '<select data-puzzle-tts-version="' + puzzleTtsHtml(line.id) + '" style="max-width:220px;padding:5px 7px;border-radius:7px;border:1px solid #CBD5E1;background:#fff;font-family:inherit;font-size:0.72rem;font-weight:800;">' +
+          versions.map(function(v, idx) {
+            var value = v.versionId || String(idx);
+            return '<option value="' + puzzleTtsHtml(value) + '" ' + (entry && entry.versionId === value ? 'selected' : '') + '>' + puzzleTtsHtml(puzzleTtsVersionLabel(v, idx)) + '</option>';
+          }).join('') +
+        '</select>'
+      : '<select disabled style="max-width:220px;padding:5px 7px;border-radius:7px;border:1px solid #E2E8F0;background:#F8FAFC;color:#94A3B8;font-family:inherit;font-size:0.72rem;font-weight:800;"><option>未生成</option></select>';
+    return '<tr data-puzzle-tts-row="' + puzzleTtsHtml(line.id) + '">' +
+      '<td style="padding:8px;border-bottom:1px solid #EDE9FE;text-align:center;vertical-align:middle;">' +
+        '<input type="checkbox" data-puzzle-tts-check="' + puzzleTtsHtml(line.id) + '" ' + (checked ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#6D28D9;cursor:pointer;">' +
+      '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid #EDE9FE;min-width:190px;font-weight:900;color:#334155;">' +
+        '<input id="puzzle-tts-file-' + line.id + '" data-puzzle-tts-file="' + puzzleTtsHtml(line.id) + '" value="' + puzzleTtsHtml(line.file) + '" style="width:100%;min-width:170px;padding:6px 8px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:900;color:#334155;">' +
+        '<div style="font-size:0.7rem;color:#64748B;font-weight:700;">保存: ' + puzzleTtsHtml(puzzleTtsWavName(line.file)) + '</div>' +
+      '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid #EDE9FE;min-width:360px;">' +
+        '<textarea id="puzzle-tts-text-' + line.id + '" data-puzzle-tts-text="' + puzzleTtsHtml(line.id) + '" rows="2" style="width:100%;padding:7px 9px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;line-height:1.55;">' + puzzleTtsHtml(textValue) + '</textarea>' +
+      '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid #EDE9FE;min-width:230px;">' +
+        '<div style="display:grid;gap:5px;">' +
+          versionSelect +
+          '<span id="puzzle-tts-row-status-' + line.id + '" style="font-weight:800;color:#64748B;">' + (canUse ? ('生成済み ' + versions.length + '版') : '未生成') + '</span>' +
+          (canUse ? '<div style="font-size:0.7rem;color:#64748B;">' + puzzleTtsHtml(entry.model || '') + '</div>' : '') +
+        '</div>' +
+      '</td>' +
+      '<td style="padding:8px;border-bottom:1px solid #EDE9FE;white-space:nowrap;">' +
+        '<button type="button" data-puzzle-tts-action="generate" data-puzzle-tts-id="' + puzzleTtsHtml(line.id) + '" style="padding:5px 9px;margin:2px;background:#F3E8FF;color:#6D28D9;border:1px solid #D8B4FE;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:900;cursor:pointer;">生成</button>' +
+        '<button type="button" data-puzzle-tts-action="play" data-puzzle-tts-id="' + puzzleTtsHtml(line.id) + '" ' + (canUse ? '' : 'disabled') + ' title="再生" aria-label="再生" style="width:32px;height:30px;padding:0;margin:2px;background:#ECFDF5;color:#047857;border:1px solid #A7F3D0;border-radius:6px;font-family:inherit;font-size:0.82rem;font-weight:900;line-height:1;cursor:pointer;">▶</button>' +
+        '<button type="button" data-puzzle-tts-action="download" data-puzzle-tts-id="' + puzzleTtsHtml(line.id) + '" ' + (canUse ? '' : 'disabled') + ' style="padding:5px 9px;margin:2px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:900;cursor:pointer;">WAV保存</button>' +
+        '<button type="button" data-puzzle-tts-action="copy" data-puzzle-tts-id="' + puzzleTtsHtml(line.id) + '" style="padding:5px 9px;margin:2px;background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:900;cursor:pointer;">コピー</button>' +
+        '<button type="button" data-puzzle-tts-action="delete" data-puzzle-tts-id="' + puzzleTtsHtml(line.id) + '" style="padding:5px 9px;margin:2px;background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA;border-radius:6px;font-family:inherit;font-size:0.72rem;font-weight:900;cursor:pointer;">削除</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+  puzzleTtsUpdatePlayButtons();
+}
+
+function puzzleTtsBindTableActions() {
+  var tbody = document.getElementById('puzzle-tts-tbody');
+  if (!tbody || tbody._puzzleTtsBound) return;
+  tbody._puzzleTtsBound = true;
+  tbody.addEventListener('click', function(e) {
+    var btn = e.target.closest('button[data-puzzle-tts-action]');
+    if (!btn || btn.disabled) return;
+    var id = btn.getAttribute('data-puzzle-tts-id') || '';
+    var action = btn.getAttribute('data-puzzle-tts-action') || '';
+    if (action === 'generate') puzzleTtsGenerateOne(id);
+    if (action === 'play') puzzleTtsPlay(id);
+    if (action === 'download') puzzleTtsDownload(id).catch(function(err) {
+      puzzleTtsStatus('保存できません: ' + (err && err.message || err), true);
+    });
+    if (action === 'copy') puzzleTtsCopyStudioPrompt(id);
+    if (action === 'delete') puzzleTtsDeleteRow(id);
+  });
+  tbody.addEventListener('change', function(e) {
+    var checkbox = e.target.closest('input[data-puzzle-tts-check]');
+    if (checkbox) {
+      var id = checkbox.getAttribute('data-puzzle-tts-check') || '';
+      puzzleTtsCheckedById[id] = checkbox.checked;
+      return;
+    }
+    var versionSelect = e.target.closest('select[data-puzzle-tts-version]');
+    if (versionSelect) {
+      var versionId = versionSelect.value || '';
+      var rowId = versionSelect.getAttribute('data-puzzle-tts-version') || '';
+      puzzleTtsSelectedVersionById[rowId] = versionId;
+      puzzleTtsSyncSelectedEntry(rowId);
+      puzzleTtsPersistVersions(rowId);
+      puzzleTtsUpdatePlayButtons();
+      puzzleTtsStatus('プレビューする音声版を切り替えました');
+      return;
+    }
+    var fileInput = e.target.closest('input[data-puzzle-tts-file]');
+    if (fileInput) {
+      var fileId = fileInput.getAttribute('data-puzzle-tts-file') || '';
+      var line = puzzleTtsGetLine(fileId);
+      if (!line) return;
+      line.file = puzzleTtsNormalizeFileName(fileInput.value);
+      fileInput.value = line.file;
+      puzzleTtsSaveDraftSoon();
+      puzzleTtsRenderRows();
+    }
+  });
+  tbody.addEventListener('input', function(e) {
+    var textarea = e.target.closest('textarea[data-puzzle-tts-text]');
+    if (textarea) {
+      var id = textarea.getAttribute('data-puzzle-tts-text') || '';
+      var line = puzzleTtsGetLine(id);
+      puzzleTtsTextById[id] = textarea.value;
+      if (line) line.text = textarea.value;
+      puzzleTtsSaveDraftSoon();
+      return;
+    }
+    var fileInput = e.target.closest('input[data-puzzle-tts-file]');
+    if (fileInput) {
+      var fileId = fileInput.getAttribute('data-puzzle-tts-file') || '';
+      var fileLine = puzzleTtsGetLine(fileId);
+      if (fileLine) fileLine.file = fileInput.value;
+      puzzleTtsSaveDraftSoon();
+    }
+  });
+}
+
+function puzzleTtsBindSettingsDraft() {
+  [
+    'puzzle-tts-voice',
+    'puzzle-tts-style',
+    'puzzle-tts-model',
+    'puzzle-tts-scene',
+    'puzzle-tts-context',
+    'puzzle-tts-history-name'
+  ].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el || el._puzzleTtsDraftBound) return;
+    el._puzzleTtsDraftBound = true;
+    el.addEventListener('input', puzzleTtsSaveDraftSoon);
+    el.addEventListener('change', puzzleTtsSaveDraftSoon);
+  });
+}
+
+function puzzleTtsGetLine(id) {
+  return PUZZLE_TTS_LINES.find(function(line) { return line.id === id; }) || null;
+}
+
+function puzzleTtsGenerateOne(id) {
+  var line = puzzleTtsGetLine(id);
+  if (!line) return Promise.reject(new Error('line not found: ' + id));
+  var text = puzzleTtsTextFor(line);
+  line.file = puzzleTtsNormalizeFileName(puzzleTtsFileFor(line) || line.file);
+  if (!text) {
+    puzzleTtsRowStatus(id, 'テキストなし', true);
+    return Promise.reject(new Error('text required'));
+  }
+  var voice = (document.getElementById('puzzle-tts-voice') || {}).value || 'Aoede';
+  var stylePrompt = (document.getElementById('puzzle-tts-style') || {}).value || '[gently]';
+  var model = ((document.getElementById('puzzle-tts-model') || {}).value || '').trim();
+  puzzleTtsRowStatus(id, '生成中...');
+  puzzleTtsStatus(line.file + ' を生成中...');
+  return fetch('/api/admin/tts-generate', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: text,
+      promptText: puzzleTtsBuildPromptText(text),
+      voice: voice,
+      stylePrompt: stylePrompt,
+      modelOverride: model || undefined
+    })
+  }).then(function(r) {
+    return r.json().then(function(data) {
+      if (!r.ok) throw new Error(data && data.error ? data.error : ('HTTP ' + r.status));
+      if (!data || !data.audio) throw new Error('音声データがありません');
+      var version = Object.assign({}, data, {
+        versionId: puzzleTtsMakeId('ver'),
+        generatedAt: new Date().toISOString(),
+        voice: voice,
+        stylePrompt: stylePrompt,
+        model: data.model || model || '',
+        file: line.file,
+        text: text
+      });
+      var versions = [version].concat(puzzleTtsGetVersions(id)).slice(0, PUZZLE_TTS_MAX_VERSIONS);
+      puzzleTtsSetVersions(id, versions, version.versionId);
+      puzzleTtsPersistVersions(id);
+      puzzleTtsRenderRows();
+      puzzleTtsStatus(line.file + ' 生成完了（' + versions.length + '版保存）');
+      puzzleTtsSaveDraftSoon();
+      return version;
+    });
+  }).catch(function(e) {
+    puzzleTtsRowStatus(id, '失敗: ' + (e && e.message || e), true);
+    puzzleTtsStatus('生成失敗: ' + (e && e.message || e), true);
+    throw e;
+  });
+}
+
+function puzzleTtsGenerateAll() {
+  if (puzzleTtsGenerating) {
+    puzzleTtsStatus('生成中です');
+    return;
+  }
+  puzzleTtsGenerating = true;
+  var chain = Promise.resolve();
+  var targets = PUZZLE_TTS_LINES.filter(function(line) {
+    return !!puzzleTtsTextFor(line);
+  });
+  if (!targets.length) {
+    puzzleTtsGenerating = false;
+    puzzleTtsStatus('生成するテキストがありません', true);
+    return;
+  }
+  targets.forEach(function(line) {
+    chain = chain.then(function() { return puzzleTtsGenerateOne(line.id); });
+  });
+  chain.then(function() {
+    puzzleTtsStatus(targets.length + ' 件を生成しました');
+  }).catch(function() {
+    // 行ごとのエラー表示に任せる
+  }).finally(function() {
+    puzzleTtsGenerating = false;
+  });
+}
+
+function puzzleTtsStopCurrentAudio() {
+  if (puzzleTtsCurrentAudio) {
+    try {
+      puzzleTtsCurrentAudio.pause();
+      puzzleTtsCurrentAudio.currentTime = 0;
+    } catch (_) {}
+  }
+  puzzleTtsCurrentAudio = null;
+  puzzleTtsCurrentAudioId = '';
+  puzzleTtsUpdatePlayButtons();
+}
+
+function puzzleTtsUpdatePlayButtons() {
+  document.querySelectorAll('button[data-puzzle-tts-action="play"]').forEach(function(btn) {
+    var id = btn.getAttribute('data-puzzle-tts-id') || '';
+    var entry = puzzleTtsGetSelectedVersion(id);
+    var playKey = id + ':' + (entry && entry.versionId || '');
+    var isCurrent = !!puzzleTtsCurrentAudio && puzzleTtsCurrentAudioId === playKey;
+    btn.textContent = isCurrent ? '■' : '▶';
+    btn.title = isCurrent ? '停止' : '再生';
+    btn.setAttribute('aria-label', isCurrent ? '停止' : '再生');
+  });
+}
+
+function puzzleTtsPlay(id) {
+  var entry = puzzleTtsGetSelectedVersion(id);
+  if (!entry) return;
+  var playKey = id + ':' + (entry.versionId || '');
+  if (puzzleTtsCurrentAudio && puzzleTtsCurrentAudioId === playKey) {
+    puzzleTtsStopCurrentAudio();
+    return;
+  }
+  puzzleTtsStopCurrentAudio();
+  var audio = new Audio(puzzleTtsDataUrl(entry));
+  puzzleTtsCurrentAudio = audio;
+  puzzleTtsCurrentAudioId = playKey;
+  puzzleTtsUpdatePlayButtons();
+  audio.addEventListener('ended', function() {
+    if (puzzleTtsCurrentAudio === audio) puzzleTtsStopCurrentAudio();
+  });
+  audio.addEventListener('pause', function() {
+    if (puzzleTtsCurrentAudio === audio && audio.currentTime >= audio.duration) puzzleTtsStopCurrentAudio();
+  });
+  audio.play().catch(function(e) {
+    if (puzzleTtsCurrentAudio === audio) puzzleTtsStopCurrentAudio();
+    puzzleTtsStatus('再生できません: ' + (e && e.message || e), true);
+  });
+}
+
+function puzzleTtsEntryBlob(entry) {
+  var b64 = entry && entry.audio ? entry.audio : '';
+  var bin = atob(b64);
+  var len = bin.length;
+  var bytes = new Uint8Array(len);
+  for (var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: (entry && entry.mime) || 'audio/wav' });
+}
+
+function puzzleTtsBrowserDownload(filename, entry) {
+  var a = document.createElement('a');
+  a.href = puzzleTtsDataUrl(entry);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function puzzleTtsSelectSaveDir() {
+  if (!window.showDirectoryPicker) {
+    puzzleTtsSaveDirStatus('保存先: このブラウザでは指定不可（通常のダウンロード）', true);
+    puzzleTtsStatus('保存先指定に対応していないブラウザです', true);
+    return;
+  }
+  try {
+    puzzleTtsSaveDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    puzzleTtsSaveDirStatus('保存先: ' + (puzzleTtsSaveDirHandle.name || '選択済み'));
+    puzzleTtsStatus('保存先を選びました');
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    puzzleTtsSaveDirHandle = null;
+    puzzleTtsSaveDirStatus('保存先: 未選択（通常のダウンロード）');
+    puzzleTtsStatus('保存先を選べませんでした: ' + (e && e.message || e), true);
+  }
+}
+
+async function puzzleTtsEnsureSaveDirPermission() {
+  if (!puzzleTtsSaveDirHandle) return false;
+  if (!puzzleTtsSaveDirHandle.queryPermission || !puzzleTtsSaveDirHandle.requestPermission) return true;
+  var opts = { mode: 'readwrite' };
+  var current = await puzzleTtsSaveDirHandle.queryPermission(opts);
+  if (current === 'granted') return true;
+  var requested = await puzzleTtsSaveDirHandle.requestPermission(opts);
+  return requested === 'granted';
+}
+
+async function puzzleTtsWriteToPickedDir(filename, entry) {
+  var ok = await puzzleTtsEnsureSaveDirPermission();
+  if (!ok) throw new Error('保存先フォルダーの許可がありません');
+  var fileHandle = await puzzleTtsSaveDirHandle.getFileHandle(filename, { create: true });
+  var writable = await fileHandle.createWritable();
+  await writable.write(puzzleTtsEntryBlob(entry));
+  await writable.close();
+}
+
+async function puzzleTtsDownload(id, options) {
+  options = options || {};
+  var line = puzzleTtsGetLine(id);
+  var entry = puzzleTtsGetSelectedVersion(id);
+  if (!line || !entry) return false;
+  line.file = puzzleTtsNormalizeFileName(puzzleTtsFileFor(line) || line.file);
+  var filename = puzzleTtsWavName(line.file);
+  if (puzzleTtsSaveDirHandle) {
+    await puzzleTtsWriteToPickedDir(filename, entry);
+    if (!options.quiet) puzzleTtsStatus(filename + ' を選択フォルダーに保存しました');
+    return true;
+  }
+  puzzleTtsBrowserDownload(filename, entry);
+  if (!options.quiet) puzzleTtsStatus(filename + ' をダウンロードしました');
+  return true;
+}
+
+function puzzleTtsCheckedIds() {
+  return PUZZLE_TTS_LINES.filter(function(line) {
+    return !!puzzleTtsCheckedById[line.id];
+  }).map(function(line) {
+    return line.id;
+  });
+}
+
+function puzzleTtsSetAllChecks(checked) {
+  PUZZLE_TTS_LINES.forEach(function(line) {
+    puzzleTtsCheckedById[line.id] = !!checked;
+  });
+  document.querySelectorAll('input[data-puzzle-tts-check]').forEach(function(input) {
+    input.checked = !!checked;
+  });
+  puzzleTtsStatus(checked ? '全部チェックしました' : 'チェックを外しました');
+}
+
+async function puzzleTtsDownloadChecked() {
+  var checkedIds = puzzleTtsCheckedIds();
+  var downloadable = checkedIds.filter(function(id) {
+    return !!puzzleTtsGetSelectedVersion(id);
+  });
+  if (!checkedIds.length) {
+    puzzleTtsStatus('保存する行にチェックを入れてください', true);
+    return;
+  }
+  if (!downloadable.length) {
+    puzzleTtsStatus('チェックした行はまだ生成されていません', true);
+    return;
+  }
+  if (downloadable.length < checkedIds.length) {
+    puzzleTtsStatus('生成済みの ' + downloadable.length + ' 件を保存します。未生成の行はスキップしました');
+  } else {
+    puzzleTtsStatus(downloadable.length + ' 件を保存します');
+  }
+  for (var i = 0; i < downloadable.length; i++) {
+    try {
+      await puzzleTtsDownload(downloadable[i], { quiet: true });
+      if (!puzzleTtsSaveDirHandle) {
+        await new Promise(function(resolve) { setTimeout(resolve, 250); });
+      }
+    } catch (e) {
+      puzzleTtsStatus('保存できません: ' + (e && e.message || e), true);
+      return;
+    }
+  }
+  puzzleTtsStatus(downloadable.length + ' 件を保存しました' + (puzzleTtsSaveDirHandle ? '（選択フォルダー）' : ''));
+}
+
+function puzzleTtsCopyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  ta.remove();
+  return Promise.resolve();
+}
+
+function puzzleTtsCopyStudioPrompt(id) {
+  var line = puzzleTtsGetLine(id);
+  if (!line) return;
+  puzzleTtsCopyText(puzzleTtsStudioPromptFor(line)).then(function() {
+    puzzleTtsStatus(line.file + ' のAI Studio用テキストをコピーしました');
+  });
+}
+
+function puzzleTtsCopyAllStudioPrompts() {
+  var text = PUZZLE_TTS_LINES.map(function(line) {
+    return puzzleTtsStudioPromptFor(line);
+  }).join('\n\n---\n\n');
+  puzzleTtsCopyText(text).then(function() {
+    puzzleTtsStatus('AI Studio用テキストをまとめてコピーしました');
+  });
+}
+
+puzzleTtsLoadHistoryStore();
+puzzleTtsRenderHistoryList();
+puzzleTtsRenderRows();
+puzzleTtsBindTableActions();
+puzzleTtsBindSettingsDraft();
+puzzleTtsLoadDraft();
+puzzleTtsLoadAudioVersions().then(function() {
+  puzzleTtsRenderRows();
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -11195,22 +12222,87 @@ function renderMonsterIllust() {
 //   value = { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
 var NPC_POS_LS_KEY = 'bento_npc_positions_v1';
 var NPC_POS_PORTRAIT_BASE = '../assets/images/bento/npc/';
+var NPC_POS_STAFF_BASE = '../assets/images/bento/story/staff/';
+var NPC_POS_PORTRAIT_VERSION = '20260617-staff-wave-alt-v2';
+var NPC_POS_STAFF_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
 var NPC_POS_DEFAULT = { x: 58, y: 23, scale: 1, rotation: 0, opacity: 1 };
-var NPC_POS_CHARS = ['risu', 'inu', 'ahiru', 'shika', 'araiguma', 'neko'];
-var NPC_POS_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
+var NPC_POS_STAFF_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
+var NPC_POS_ANIMAL_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
+var NPC_POS_CHAR_CONFIGS = {
+  risu:     { type: 'npc', name: 'りすちゃん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
+  inu:      { type: 'npc', name: 'わんちゃん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
+  ahiru:    { type: 'npc', name: 'あひるさん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
+  shika:    { type: 'npc', name: 'しかさん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
+  araiguma: { type: 'npc', name: 'アライグマくん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
+  neko:     { type: 'npc', name: 'ねこさん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
+  staffpono: {
+    type: 'staff',
+    name: '店員 ポノ',
+    exprs: ['idle', 'wave', 'present', 'listen', 'wave_alt'],
+    labels: { idle: 'まつ', wave: 'てをふる', present: 'どうぞ', listen: 'きく', wave_alt: 'てをふる2' },
+    files: { idle: 'pono_idle.png', wave: 'pono_wave.png', present: 'pono_present.png', listen: 'pono_listen.png', wave_alt: 'pono_wave_alt.png' },
+    defaults: { x: 13.6, y: 48.2, scale: 1, rotation: 0, opacity: 1 },
+    height: '23%',
+    maxWidth: '24%',
+  },
+  staffboy: {
+    type: 'staff',
+    name: '店員 男の子',
+    exprs: ['idle', 'wave', 'present', 'hands', 'wave_alt'],
+    labels: { idle: 'まつ', wave: 'てをふる', present: 'どうぞ', hands: 'むねのて', wave_alt: 'てをふる2' },
+    files: { idle: 'boy_idle.png', wave: 'boy_wave.png', present: 'boy_present.png', hands: 'boy_hands.png', wave_alt: 'boy_wave_alt.png' },
+    defaults: { x: 34.2, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
+    height: '34%',
+    maxWidth: '28%',
+  },
+  staffgirl: {
+    type: 'staff',
+    name: '店員 女の子',
+    exprs: ['idle', 'wave', 'present', 'hands', 'wave_alt'],
+    labels: { idle: 'まつ', wave: 'てをふる', present: 'どうぞ', hands: 'むねのて', wave_alt: 'てをふる2' },
+    files: { idle: 'girl_idle.png', wave: 'girl_wave.png', present: 'girl_present.png', hands: 'girl_hands.png', wave_alt: 'girl_wave_alt.png' },
+    defaults: { x: 46.9, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
+    height: '34%',
+    maxWidth: '28%',
+  },
+};
+var NPC_POS_CHARS = Object.keys(NPC_POS_CHAR_CONFIGS);
 var NPC_POS_SLIDER_DEFS = [
   { key: 'x',        label: 'x (left %)',    min: 0,   max: 100, step: 0.5 },
-  { key: 'y',        label: 'y (bottom %)',  min: 0,   max: 50,  step: 0.5 },
+  { key: 'y',        label: 'y (bottom %)',  min: 0,   max: 100, step: 0.5 },
   { key: 'scale',    label: 'scale',         min: 0.5, max: 1.5, step: 0.01 },
   { key: 'rotation', label: 'rotation (°)',  min: -20, max: 20,  step: 0.5 },
   { key: 'opacity',  label: 'opacity',       min: 0,   max: 1,   step: 0.01 },
+];
+var NPC_POS_MASK_SLIDER_DEFS = [
+  { key: 'x',       label: 'mask x (left %)', min: 0,   max: 100, step: 0.1 },
+  { key: 'y',       label: 'mask y (top %)',  min: 0,   max: 100, step: 0.1 },
+  { key: 'width',   label: 'mask width %',    min: 1,   max: 100, step: 0.1 },
+  { key: 'height',  label: 'mask height %',   min: 1,   max: 100, step: 0.1 },
+  { key: 'opacity', label: 'mask opacity',    min: 0,   max: 1,   step: 0.01 },
 ];
 var _npcPosState = {
   initialised: false,
   charId: 'risu',
   expression: 'request',
   current: Object.assign({}, NPC_POS_DEFAULT),
+  mask: Object.assign({}, NPC_POS_STAFF_MASK_DEFAULT),
+  applyAll: false,
+  previewZoom: 1,
+  undoStack: [],
 };
+
+function npcPosGetConfig(charId) {
+  return NPC_POS_CHAR_CONFIGS[charId] || NPC_POS_CHAR_CONFIGS.risu;
+}
+function npcPosGetExprs(charId) {
+  var cfg = npcPosGetConfig(charId);
+  return (cfg.exprs && cfg.exprs.length) ? cfg.exprs : NPC_POS_ANIMAL_EXPRS;
+}
+function npcPosGetDefault(charId) {
+  var cfg = npcPosGetConfig(charId);
+  return Object.assign({}, NPC_POS_DEFAULT, cfg.defaults || {});
+}
 
 function npcPosLoadAll() {
   try {
@@ -11226,17 +12318,203 @@ function npcPosSaveAll(obj) {
     return true;
   } catch (e) { return false; }
 }
+function npcPosClampNumber(value, min, max, fallback) {
+  var num = Number(value);
+  if (!isFinite(num)) return fallback;
+  return Math.max(min, Math.min(max, num));
+}
+function npcPosNormalizeStaffMask(raw) {
+  var src = (raw && typeof raw === 'object') ? raw : {};
+  var mask = {
+    x: npcPosClampNumber(src.x, 0, 100, NPC_POS_STAFF_MASK_DEFAULT.x),
+    y: npcPosClampNumber(src.y, 0, 100, NPC_POS_STAFF_MASK_DEFAULT.y),
+    width: npcPosClampNumber(src.width, 1, 100, NPC_POS_STAFF_MASK_DEFAULT.width),
+    height: npcPosClampNumber(src.height, 1, 100, NPC_POS_STAFF_MASK_DEFAULT.height),
+    opacity: npcPosClampNumber(src.opacity, 0, 1, NPC_POS_STAFF_MASK_DEFAULT.opacity),
+  };
+  if (mask.x + mask.width > 100) mask.width = Math.max(1, 100 - mask.x);
+  if (mask.y + mask.height > 100) mask.height = Math.max(1, 100 - mask.y);
+  return mask;
+}
+function npcPosLoadStaffMask() {
+  try {
+    var raw = localStorage.getItem(NPC_POS_STAFF_MASK_LS_KEY);
+    return npcPosNormalizeStaffMask(raw ? JSON.parse(raw) : null);
+  } catch (e) {
+    return npcPosNormalizeStaffMask(null);
+  }
+}
+function npcPosSaveStaffMask(mask) {
+  try {
+    localStorage.setItem(NPC_POS_STAFF_MASK_LS_KEY, JSON.stringify(npcPosNormalizeStaffMask(mask)));
+    return true;
+  } catch (e) { return false; }
+}
+function npcPosStaffMaskInsets(mask) {
+  var m = npcPosNormalizeStaffMask(mask);
+  return {
+    left: m.x,
+    top: m.y,
+    right: Math.max(0, 100 - m.x - m.width),
+    bottom: Math.max(0, 100 - m.y - m.height),
+  };
+}
 function npcPosMakeKey(charId, expression) { return charId + '_' + expression; }
+function npcPosVersionedSrc(src) {
+  return src + '?v=' + encodeURIComponent(NPC_POS_PORTRAIT_VERSION);
+}
+function npcPosCurrentPayload() {
+  return {
+    x: _npcPosState.current.x,
+    y: _npcPosState.current.y,
+    scale: _npcPosState.current.scale,
+    rotation: _npcPosState.current.rotation,
+    opacity: _npcPosState.current.opacity,
+  };
+}
+function npcPosClonePlacement(src) {
+  function num(value, fallback) {
+    var n = Number(value);
+    return isFinite(n) ? n : fallback;
+  }
+  return {
+    x: num(src && src.x, NPC_POS_DEFAULT.x),
+    y: num(src && src.y, NPC_POS_DEFAULT.y),
+    scale: num(src && src.scale, NPC_POS_DEFAULT.scale),
+    rotation: num(src && src.rotation, NPC_POS_DEFAULT.rotation),
+    opacity: num(src && src.opacity, NPC_POS_DEFAULT.opacity),
+  };
+}
+function npcPosGetStorageRaw(key) {
+  try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+function npcPosRestoreStorageRaw(key, raw) {
+  try {
+    if (raw === null || typeof raw === 'undefined') localStorage.removeItem(key);
+    else localStorage.setItem(key, raw);
+  } catch (e) {}
+}
+function npcPosCaptureUndoSnapshot(label) {
+  return {
+    label: label || '変更',
+    charId: _npcPosState.charId,
+    expression: _npcPosState.expression,
+    applyAll: !!_npcPosState.applyAll,
+    current: npcPosClonePlacement(_npcPosState.current),
+    mask: npcPosNormalizeStaffMask(_npcPosState.mask),
+    positionsRaw: npcPosGetStorageRaw(NPC_POS_LS_KEY),
+    staffMaskRaw: npcPosGetStorageRaw(NPC_POS_STAFF_MASK_LS_KEY),
+  };
+}
+function npcPosSnapshotSignature(snap) {
+  return JSON.stringify({
+    charId: snap.charId,
+    expression: snap.expression,
+    applyAll: snap.applyAll,
+    current: snap.current,
+    mask: snap.mask,
+    positionsRaw: snap.positionsRaw,
+    staffMaskRaw: snap.staffMaskRaw,
+  });
+}
+function npcPosUpdateUndoUi() {
+  var btn = document.getElementById('npc-pos-undo');
+  if (!btn) return;
+  var hasUndo = _npcPosState.undoStack.length > 0;
+  btn.disabled = !hasUndo;
+  btn.style.opacity = hasUndo ? '1' : '0.45';
+  btn.style.cursor = hasUndo ? 'pointer' : 'not-allowed';
+  btn.textContent = hasUndo ? '↶ 取り消し' : '↶ 取り消し';
+}
+function npcPosPushUndo(label) {
+  var snap = npcPosCaptureUndoSnapshot(label);
+  var stack = _npcPosState.undoStack;
+  var sig = npcPosSnapshotSignature(snap);
+  if (stack.length && stack[stack.length - 1]._sig === sig) return;
+  snap._sig = sig;
+  stack.push(snap);
+  if (stack.length > 40) stack.shift();
+  npcPosUpdateUndoUi();
+}
+function npcPosRestoreUndoSnapshot(snap) {
+  if (!snap) return;
+  npcPosRestoreStorageRaw(NPC_POS_LS_KEY, snap.positionsRaw);
+  npcPosRestoreStorageRaw(NPC_POS_STAFF_MASK_LS_KEY, snap.staffMaskRaw);
+  _npcPosState.charId = NPC_POS_CHARS.indexOf(snap.charId) >= 0 ? snap.charId : 'risu';
+  _npcPosState.expression = snap.expression || npcPosGetExprs(_npcPosState.charId)[0] || 'request';
+  _npcPosState.applyAll = !!snap.applyAll;
+  _npcPosState.current = npcPosClonePlacement(snap.current || npcPosGetDefault(_npcPosState.charId));
+  _npcPosState.mask = npcPosNormalizeStaffMask(snap.mask || NPC_POS_STAFF_MASK_DEFAULT);
+  var charSel = document.getElementById('npc-pos-char');
+  if (charSel) charSel.value = _npcPosState.charId;
+  npcPosRenderExpressionButtons();
+  npcPosSyncSlidersFromState();
+  npcPosSyncMaskSlidersFromState();
+  npcPosUpdateBulkUi();
+  npcPosApplyPreview();
+}
+function npcPosUndoLast() {
+  var snap = _npcPosState.undoStack.pop();
+  if (!snap) {
+    npcPosUpdateUndoUi();
+    return;
+  }
+  npcPosRestoreUndoSnapshot(snap);
+  npcPosUpdateUndoUi();
+  npcPosSetStatus('1つ前の状態に戻しました', false);
+}
+function npcPosStartUndoForInput(input, label) {
+  if (!input || input.dataset.undoOpen === '1') return;
+  npcPosPushUndo(label);
+  input.dataset.undoOpen = '1';
+}
+function npcPosEndUndoForInput(input) {
+  if (!input) return;
+  delete input.dataset.undoOpen;
+}
+function npcPosSetPreviewZoom(zoom) {
+  var z = npcPosClampNumber(zoom, 1, 3, 1);
+  _npcPosState.previewZoom = z;
+  var preview = document.getElementById('npc-pos-preview');
+  var scroll = document.getElementById('npc-pos-preview-scroll');
+  if (preview) {
+    if (z <= 1 || !scroll) {
+      preview.style.width = '100%';
+      preview.style.minWidth = '0';
+    } else {
+      var baseWidth = Math.max(320, scroll.clientWidth - 8);
+      var width = Math.round(baseWidth * z) + 'px';
+      preview.style.width = width;
+      preview.style.minWidth = width;
+    }
+  }
+  if (scroll && z === 1) {
+    scroll.scrollLeft = 0;
+    scroll.scrollTop = 0;
+  }
+  document.querySelectorAll('.npc-pos-preview-zoom-btn').forEach(function(btn) {
+    btn.classList.toggle('active', Math.abs(Number(btn.dataset.zoom) - z) < 0.001);
+  });
+}
+function npcPosApplyAllWord(charId) {
+  var cfg = npcPosGetConfig(charId);
+  return cfg.type === 'staff' ? '全ポーズ' : '全表情';
+}
+function npcPosTargetExprs() {
+  return _npcPosState.applyAll ? npcPosGetExprs(_npcPosState.charId) : [_npcPosState.expression];
+}
 function npcPosGet(charId, expression) {
+  var baseDefault = npcPosGetDefault(charId);
   var all = npcPosLoadAll();
   var key = npcPosMakeKey(charId, expression);
-  var saved = all[key] || {};
+  var cfg = npcPosGetConfig(charId);
+  var saved = all[key] || ((cfg.type === 'npc' && expression === 'happy') ? all[npcPosMakeKey(charId, 'normal')] : null) || {};
   return {
-    x:        (typeof saved.x === 'number')        ? saved.x        : NPC_POS_DEFAULT.x,
-    y:        (typeof saved.y === 'number')        ? saved.y        : NPC_POS_DEFAULT.y,
-    scale:    (typeof saved.scale === 'number')    ? saved.scale    : NPC_POS_DEFAULT.scale,
-    rotation: (typeof saved.rotation === 'number') ? saved.rotation : NPC_POS_DEFAULT.rotation,
-    opacity:  (typeof saved.opacity === 'number')  ? saved.opacity  : NPC_POS_DEFAULT.opacity,
+    x:        (typeof saved.x === 'number')        ? saved.x        : baseDefault.x,
+    y:        (typeof saved.y === 'number')        ? saved.y        : baseDefault.y,
+    scale:    (typeof saved.scale === 'number')    ? saved.scale    : baseDefault.scale,
+    rotation: (typeof saved.rotation === 'number') ? saved.rotation : baseDefault.rotation,
+    opacity:  (typeof saved.opacity === 'number')  ? saved.opacity  : baseDefault.opacity,
   };
 }
 function npcPosSetStatus(msg, isErr) {
@@ -11244,6 +12522,18 @@ function npcPosSetStatus(msg, isErr) {
   if (!el) return;
   el.textContent = msg || '';
   el.style.color = isErr ? '#B91C1C' : '#0F766E';
+}
+
+function npcPosUpdateBulkUi() {
+  var word = npcPosApplyAllWord(_npcPosState.charId);
+  var cb = document.getElementById('npc-pos-apply-all-exprs');
+  var label = document.getElementById('npc-pos-apply-all-label');
+  var saveBtn = document.getElementById('npc-pos-save');
+  var resetBtn = document.getElementById('npc-pos-reset');
+  if (cb) cb.checked = !!_npcPosState.applyAll;
+  if (label) label.textContent = 'このキャラの' + word + 'をまとめて操作';
+  if (saveBtn) saveBtn.textContent = _npcPosState.applyAll ? ('💾 ' + word + 'へ保存') : '💾 保存';
+  if (resetBtn) resetBtn.textContent = _npcPosState.applyAll ? ('↺ このキャラの' + word + 'をリセット') : '↺ この組合せをリセット';
 }
 
 function npcPosBuildSliders() {
@@ -11268,7 +12558,14 @@ function npcPosBuildSliders() {
     row.appendChild(input);
     row.appendChild(val);
     host.appendChild(row);
+    input.addEventListener('pointerdown', function() { npcPosStartUndoForInput(input, '位置を変更'); });
+    input.addEventListener('keydown', function(evt) {
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].indexOf(evt.key) >= 0) {
+        npcPosStartUndoForInput(input, '位置を変更');
+      }
+    });
     input.addEventListener('input', function() {
+      npcPosStartUndoForInput(input, '位置を変更');
       var num = parseFloat(input.value);
       if (!isNaN(num)) {
         _npcPosState.current[def.key] = num;
@@ -11276,12 +12573,91 @@ function npcPosBuildSliders() {
         npcPosApplyPreview();
       }
     });
+    input.addEventListener('change', function() { npcPosEndUndoForInput(input); });
+    input.addEventListener('pointerup', function() { npcPosEndUndoForInput(input); });
+    input.addEventListener('blur', function() { npcPosEndUndoForInput(input); });
+  });
+}
+
+function npcPosBuildMaskSliders() {
+  var host = document.getElementById('npc-pos-mask-sliders');
+  if (!host) return;
+  host.innerHTML = '';
+  NPC_POS_MASK_SLIDER_DEFS.forEach(function(def) {
+    var row = document.createElement('div');
+    row.className = 'npc-pos-slider-row';
+    var label = document.createElement('label');
+    label.textContent = def.label;
+    var input = document.createElement('input');
+    input.type = 'range';
+    input.min = String(def.min);
+    input.max = String(def.max);
+    input.step = String(def.step);
+    input.dataset.maskKey = def.key;
+    var val = document.createElement('span');
+    val.className = 'npc-pos-val';
+    val.dataset.maskKey = def.key;
+    row.appendChild(label);
+    row.appendChild(input);
+    row.appendChild(val);
+    host.appendChild(row);
+    input.addEventListener('pointerdown', function() { npcPosStartUndoForInput(input, 'マスクを変更'); });
+    input.addEventListener('keydown', function(evt) {
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].indexOf(evt.key) >= 0) {
+        npcPosStartUndoForInput(input, 'マスクを変更');
+      }
+    });
+    input.addEventListener('input', function() {
+      npcPosStartUndoForInput(input, 'マスクを変更');
+      var num = parseFloat(input.value);
+      if (!isNaN(num)) {
+        _npcPosState.mask[def.key] = num;
+        _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
+        npcPosSyncMaskSlidersFromState();
+        npcPosApplyMaskPreview();
+      }
+    });
+    input.addEventListener('change', function() { npcPosEndUndoForInput(input); });
+    input.addEventListener('pointerup', function() { npcPosEndUndoForInput(input); });
+    input.addEventListener('blur', function() { npcPosEndUndoForInput(input); });
+  });
+}
+
+function npcPosRenderExpressionButtons() {
+  var row = document.getElementById('npc-pos-expr-row');
+  if (!row) return;
+  var cfg = npcPosGetConfig(_npcPosState.charId);
+  var exprs = npcPosGetExprs(_npcPosState.charId);
+  if (exprs.indexOf(_npcPosState.expression) < 0) _npcPosState.expression = exprs[0] || 'normal';
+  row.innerHTML = '';
+  exprs.forEach(function(expr) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'npc-pos-expr-btn' + (expr === _npcPosState.expression ? ' active' : '');
+    btn.dataset.expr = expr;
+    btn.textContent = (cfg.labels && cfg.labels[expr]) || expr;
+    btn.addEventListener('click', function() {
+      row.querySelectorAll('.npc-pos-expr-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      _npcPosState.expression = expr;
+      if (_npcPosState.applyAll) {
+        npcPosApplyPreview();
+        npcPosSetStatus('まとめて操作中: ' + npcPosApplyAllWord(_npcPosState.charId) + 'へ同じ位置で保存されます', false);
+      } else {
+        npcPosLoadCurrent();
+      }
+    });
+    row.appendChild(btn);
   });
 }
 
 function npcPosFormatVal(key, num) {
   if (key === 'scale' || key === 'opacity') return num.toFixed(2);
   if (key === 'rotation') return num.toFixed(1) + '°';
+  return num.toFixed(1) + '%';
+}
+function npcPosFormatMaskVal(key, num) {
+  if (key === 'opacity') return num.toFixed(2);
   return num.toFixed(1) + '%';
 }
 
@@ -11297,13 +12673,65 @@ function npcPosSyncSlidersFromState() {
   });
 }
 
+function npcPosSyncMaskSlidersFromState() {
+  var host = document.getElementById('npc-pos-mask-sliders');
+  if (!host) return;
+  _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
+  NPC_POS_MASK_SLIDER_DEFS.forEach(function(def) {
+    var input = host.querySelector('input[data-mask-key="' + def.key + '"]');
+    var val   = host.querySelector('span[data-mask-key="' + def.key + '"]');
+    var num = _npcPosState.mask[def.key];
+    if (input) input.value = String(num);
+    if (val)   val.textContent = npcPosFormatMaskVal(def.key, num);
+  });
+}
+
+function npcPosApplyMaskPreview() {
+  var panel = document.getElementById('npc-pos-mask-panel');
+  var maskEl = document.getElementById('npc-pos-preview-mask');
+  var outline = document.getElementById('npc-pos-preview-mask-outline');
+  var cfg = npcPosGetConfig(_npcPosState.charId);
+  var isStaff = cfg.type === 'staff';
+  if (panel) panel.style.display = isStaff ? 'block' : 'none';
+  if (!maskEl || !outline) return;
+  if (!isStaff) {
+    maskEl.style.opacity = '0';
+    outline.style.display = 'none';
+    return;
+  }
+  var mask = npcPosNormalizeStaffMask(_npcPosState.mask);
+  var inset = npcPosStaffMaskInsets(mask);
+  maskEl.style.backgroundImage = "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
+  maskEl.style.clipPath = 'inset(' + inset.top + '% ' + inset.right + '% ' + inset.bottom + '% ' + inset.left + '%)';
+  maskEl.style.opacity = String(mask.opacity);
+  outline.style.display = 'block';
+  outline.style.left = mask.x + '%';
+  outline.style.top = mask.y + '%';
+  outline.style.width = mask.width + '%';
+  outline.style.height = mask.height + '%';
+}
+
 function npcPosApplyPreview() {
   var img = document.getElementById('npc-pos-preview-img');
   if (!img) return;
-  // プレビュー用 sprite: <charId>_<expression>.png を読込。 happy は素材未配置のため normal にフォールバック
+  var preview = document.getElementById('npc-pos-preview');
+  var cfg = npcPosGetConfig(_npcPosState.charId);
   var exp = _npcPosState.expression;
-  var fileExp = (exp === 'happy') ? 'normal' : exp;
-  var src = NPC_POS_PORTRAIT_BASE + _npcPosState.charId + '_' + fileExp + '.png';
+  var src = '';
+  if (cfg.type === 'staff') {
+    var file = cfg.files && (cfg.files[exp] || cfg.files.idle);
+    src = npcPosVersionedSrc(NPC_POS_STAFF_BASE + file);
+    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
+    img.style.height = cfg.height || '32%';
+    img.style.maxWidth = cfg.maxWidth || '30%';
+  } else {
+    // プレビュー用 sprite: <charId>_<expression>.png を読込。 happy は素材未配置のため normal にフォールバック
+    var fileExp = (exp === 'happy') ? 'normal' : exp;
+    src = npcPosVersionedSrc(NPC_POS_PORTRAIT_BASE + _npcPosState.charId + '_' + fileExp + '.png');
+    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/shop_order_counter.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
+    img.style.height = '40%';
+    img.style.maxWidth = '38%';
+  }
   if (img.dataset.lastSrc !== src) {
     img.src = src;
     img.dataset.lastSrc = src;
@@ -11313,12 +12741,16 @@ function npcPosApplyPreview() {
   img.style.bottom = p.y + '%';
   img.style.transform = 'translateX(-50%) scale(' + p.scale + ') rotate(' + p.rotation + 'deg)';
   img.style.opacity = String(p.opacity);
+  npcPosApplyMaskPreview();
 }
 
 function npcPosLoadCurrent() {
   _npcPosState.current = npcPosGet(_npcPosState.charId, _npcPosState.expression);
+  _npcPosState.mask = npcPosLoadStaffMask();
   npcPosSyncSlidersFromState();
+  npcPosSyncMaskSlidersFromState();
   npcPosApplyPreview();
+  npcPosUpdateBulkUi();
   npcPosSetStatus('', false);
 }
 
@@ -11327,49 +12759,94 @@ function npcPosBindControls() {
   if (charSel) {
     charSel.addEventListener('change', function() {
       _npcPosState.charId = charSel.value;
+      npcPosRenderExpressionButtons();
       npcPosLoadCurrent();
     });
   }
-  document.querySelectorAll('#npc-pos-expr-row .npc-pos-expr-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('#npc-pos-expr-row .npc-pos-expr-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      _npcPosState.expression = btn.dataset.expr;
+  var applyAllCb = document.getElementById('npc-pos-apply-all-exprs');
+  if (applyAllCb) applyAllCb.addEventListener('change', function() {
+    _npcPosState.applyAll = !!applyAllCb.checked;
+    npcPosUpdateBulkUi();
+    if (_npcPosState.applyAll) {
+      npcPosSetStatus('まとめて操作中: ' + npcPosApplyAllWord(_npcPosState.charId) + 'へ同じ位置で保存されます', false);
+    } else {
       npcPosLoadCurrent();
+    }
+  });
+  var undoBtn = document.getElementById('npc-pos-undo');
+  if (undoBtn) undoBtn.addEventListener('click', npcPosUndoLast);
+  var zoomControls = document.getElementById('npc-pos-preview-zoom-controls');
+  if (zoomControls) {
+    zoomControls.querySelectorAll('.npc-pos-preview-zoom-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        npcPosSetPreviewZoom(parseFloat(btn.dataset.zoom || '1'));
+      });
     });
+  }
+  window.addEventListener('resize', function() {
+    npcPosSetPreviewZoom(_npcPosState.previewZoom);
   });
   var saveBtn = document.getElementById('npc-pos-save');
   if (saveBtn) saveBtn.addEventListener('click', function() {
     var all = npcPosLoadAll();
-    var key = npcPosMakeKey(_npcPosState.charId, _npcPosState.expression);
-    all[key] = {
-      x: _npcPosState.current.x,
-      y: _npcPosState.current.y,
-      scale: _npcPosState.current.scale,
-      rotation: _npcPosState.current.rotation,
-      opacity: _npcPosState.current.opacity,
-    };
+    var payload = npcPosCurrentPayload();
+    var exprs = npcPosTargetExprs();
+    exprs.forEach(function(expr) {
+      all[npcPosMakeKey(_npcPosState.charId, expr)] = Object.assign({}, payload);
+    });
     if (npcPosSaveAll(all)) {
-      npcPosSetStatus('保存しました (' + key + ')', false);
+      if (_npcPosState.applyAll) {
+        npcPosSetStatus(npcPosApplyAllWord(_npcPosState.charId) + 'へ保存しました (' + exprs.length + ' 件)', false);
+      } else {
+        npcPosSetStatus('保存しました (' + npcPosMakeKey(_npcPosState.charId, _npcPosState.expression) + ')', false);
+      }
     } else {
       npcPosSetStatus('保存失敗 (localStorage に書き込めません)', true);
     }
   });
+  var maskSaveBtn = document.getElementById('npc-pos-mask-save');
+  if (maskSaveBtn) maskSaveBtn.addEventListener('click', function() {
+    _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
+    if (npcPosSaveStaffMask(_npcPosState.mask)) {
+      npcPosSyncMaskSlidersFromState();
+      npcPosApplyMaskPreview();
+      npcPosSetStatus('カウンターマスクを保存しました', false);
+    } else {
+      npcPosSetStatus('マスク保存失敗 (localStorage に書き込めません)', true);
+    }
+  });
+  var maskResetBtn = document.getElementById('npc-pos-mask-reset');
+  if (maskResetBtn) maskResetBtn.addEventListener('click', function() {
+    npcPosPushUndo('マスクリセット');
+    try { localStorage.removeItem(NPC_POS_STAFF_MASK_LS_KEY); } catch (e) {}
+    _npcPosState.mask = Object.assign({}, NPC_POS_STAFF_MASK_DEFAULT);
+    npcPosSyncMaskSlidersFromState();
+    npcPosApplyMaskPreview();
+    npcPosSetStatus('カウンターマスクを初期値に戻しました', false);
+  });
   var resetBtn = document.getElementById('npc-pos-reset');
   if (resetBtn) resetBtn.addEventListener('click', function() {
+    npcPosPushUndo('位置リセット');
     var all = npcPosLoadAll();
-    var key = npcPosMakeKey(_npcPosState.charId, _npcPosState.expression);
-    if (all[key]) { delete all[key]; npcPosSaveAll(all); }
-    _npcPosState.current = Object.assign({}, NPC_POS_DEFAULT);
-    npcPosSyncSlidersFromState();
-    npcPosApplyPreview();
-    npcPosSetStatus(key + ' をデフォルトに戻しました', false);
+    var exprs = npcPosTargetExprs();
+    exprs.forEach(function(expr) {
+      var key = npcPosMakeKey(_npcPosState.charId, expr);
+      if (all[key]) delete all[key];
+    });
+    npcPosSaveAll(all);
+    npcPosLoadCurrent();
+    if (_npcPosState.applyAll) {
+      npcPosSetStatus(_npcPosState.charId + ' の ' + npcPosApplyAllWord(_npcPosState.charId) + ' をリセットしました', false);
+    } else {
+      npcPosSetStatus(npcPosMakeKey(_npcPosState.charId, _npcPosState.expression) + ' の上書きを削除しました', false);
+    }
   });
   var resetAllBtn = document.getElementById('npc-pos-reset-all');
   if (resetAllBtn) resetAllBtn.addEventListener('click', function() {
     if (!confirm('全キャラ・全表情の位置オーバーライドを削除します。よろしいですか？')) return;
+    npcPosPushUndo('全部リセット');
     npcPosSaveAll({});
-    _npcPosState.current = Object.assign({}, NPC_POS_DEFAULT);
+    _npcPosState.current = npcPosGetDefault(_npcPosState.charId);
     npcPosSyncSlidersFromState();
     npcPosApplyPreview();
     npcPosSetStatus('全オーバーライドを削除しました', false);
@@ -11420,7 +12897,7 @@ function npcPosBindControls() {
             var charId = k.slice(0, sep);
             var expr   = k.slice(sep + 1);
             if (NPC_POS_CHARS.indexOf(charId) < 0) return;
-            if (NPC_POS_EXPRS.indexOf(expr) < 0) return;
+            if (npcPosGetExprs(charId).indexOf(expr) < 0) return;
             var v = obj[k];
             if (!v || typeof v !== 'object') return;
             var entry = Object.create(null);
@@ -11430,6 +12907,7 @@ function npcPosBindControls() {
             if (Object.keys(entry).length > 0) { cleaned[k] = entry; count++; }
           });
           if (!confirm('インポートで現在の設定が上書きされます (' + count + ' 件)。よろしいですか？')) return;
+          npcPosPushUndo('インポート');
           npcPosSaveAll(cleaned);
           npcPosLoadCurrent();
           npcPosSetStatus('インポート完了 (' + count + ' 件)', false);
@@ -11450,12 +12928,14 @@ function npcPosInit() {
   }
   _npcPosState.initialised = true;
   npcPosBuildSliders();
+  npcPosBuildMaskSliders();
   npcPosBindControls();
+  npcPosUpdateUndoUi();
+  npcPosSetPreviewZoom(_npcPosState.previewZoom);
   // 初期状態
   var charSel = document.getElementById('npc-pos-char');
   if (charSel) _npcPosState.charId = charSel.value || 'risu';
-  var activeExpr = document.querySelector('#npc-pos-expr-row .npc-pos-expr-btn.active');
-  if (activeExpr) _npcPosState.expression = activeExpr.dataset.expr || 'request';
+  npcPosRenderExpressionButtons();
   npcPosLoadCurrent();
 }
 

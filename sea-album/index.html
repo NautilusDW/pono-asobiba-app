@@ -239,6 +239,11 @@
   .event-card.gold { border-color: rgba(255, 216, 110, 0.96); }
   .event-card.green { border-color: rgba(127, 210, 143, 0.92); }
 
+  .event-card.item-card {
+    grid-template-columns: 138px 1fr;
+    min-height: 158px;
+  }
+
   .event-icon {
     width: 74px;
     height: 74px;
@@ -256,7 +261,7 @@
     background-color: rgba(255, 255, 255, 0.78);
     background-position: center;
     background-repeat: no-repeat;
-    background-size: 84% auto;
+    background-size: 92% auto;
     color: transparent;
   }
 
@@ -268,8 +273,16 @@
     background-image: var(--event-icon-image, none);
     background-position: center;
     background-repeat: no-repeat;
-    background-size: 84% auto;
+    background-size: 92% auto;
     color: transparent;
+  }
+
+  .event-card.item-card .event-icon {
+    width: 124px;
+    height: 124px;
+    border-radius: 8px;
+    background-size: contain;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.7), 0 14px 26px rgba(117, 74, 12, 0.24);
   }
 
   .event-title {
@@ -290,7 +303,8 @@
   .jet-btn {
     position: absolute;
     z-index: 24;
-    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
+    right: auto;
     bottom: max(14px, env(safe-area-inset-bottom));
     width: 78px;
     height: 78px;
@@ -379,6 +393,36 @@
     font-size: clamp(0.92rem, 2.1vw, 1.04rem);
     line-height: 1.48;
     font-weight: 700;
+  }
+
+  .opening-story {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .story-card {
+    min-width: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(42, 125, 153, 0.22);
+    background: rgba(255, 255, 255, 0.74);
+    padding: 11px 12px;
+    display: grid;
+    gap: 5px;
+  }
+
+  .story-card b {
+    color: #0c4e6e;
+    font-size: 0.96rem;
+    line-height: 1.14;
+  }
+
+  .story-card span {
+    color: #426b7b;
+    font-size: 0.78rem;
+    line-height: 1.32;
+    font-weight: 800;
   }
 
   .panel-actions {
@@ -572,12 +616,21 @@
       height: 54px;
       font-size: 1.45rem;
     }
+    .event-card.item-card {
+      min-height: 118px;
+      grid-template-columns: 92px 1fr;
+    }
+    .event-card.item-card .event-icon {
+      width: 86px;
+      height: 86px;
+    }
     .event-title { font-size: 1.08rem; }
     .event-body { margin-top: 4px; font-size: 0.82rem; }
     .jet-btn {
       width: 58px;
       height: 58px;
-      right: max(8px, env(safe-area-inset-right));
+      left: max(8px, env(safe-area-inset-left));
+      right: auto;
       bottom: max(8px, env(safe-area-inset-bottom));
       font-size: 0.62rem;
       box-shadow: 0 5px 0 rgba(13, 79, 116, 0.48), 0 10px 18px rgba(0, 38, 64, 0.2);
@@ -599,6 +652,16 @@
       min-height: 116px;
       padding: 8px;
     }
+    .opening-story {
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+    .story-card {
+      padding: 8px 10px;
+      gap: 3px;
+    }
+    .story-card b { font-size: 0.88rem; }
+    .story-card span { font-size: 0.72rem; line-height: 1.24; }
     .album-icon { height: 42px; font-size: 1.35rem; }
     .detail-body { grid-template-columns: 1fr; }
     .detail-art { min-height: 96px; }
@@ -608,6 +671,61 @@
     .guide-strip {
       top: max(88px, calc(env(safe-area-inset-top) + 88px));
       width: calc(100% - 18px);
+    }
+  }
+
+  @media (max-height: 460px) and (orientation: landscape) {
+    .panel {
+      padding: 10px 12px;
+    }
+    .panel-head {
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 1.42rem; }
+    .panel-copy {
+      margin-top: 4px;
+      font-size: 0.82rem;
+      line-height: 1.24;
+    }
+    .opening-story {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .story-card {
+      padding: 6px 7px;
+      gap: 2px;
+    }
+    .story-card b { font-size: 0.72rem; line-height: 1.05; }
+    .story-card span { font-size: 0.58rem; line-height: 1.2; }
+    .stage-grid {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .stage-card,
+    .album-card {
+      padding: 6px;
+    }
+    .stage-card strong,
+    .album-card strong {
+      font-size: 0.68rem;
+      line-height: 1.08;
+    }
+    .stage-card span,
+    .album-card span {
+      font-size: 0.56rem;
+      line-height: 1.15;
+    }
+    .panel-actions {
+      margin-top: 8px;
+    }
+    .primary-btn,
+    .secondary-btn,
+    .close-btn {
+      min-height: 36px;
+      padding: 0 13px;
+      font-size: 0.86rem;
     }
   }
 </style>
@@ -653,6 +771,11 @@
           <h1>ポノのうみアルバム</h1>
           <p class="panel-copy">えさをあげて、うみのなかまと なかよくなろう。</p>
         </div>
+      </div>
+      <div class="opening-story" aria-label="おはなし">
+        <div class="story-card"><b>たべものが きえた</b><span>あさせの なかまたちは、おなかを すかせている。</span></div>
+        <div class="story-card"><b>だれの しわざ？</b><span>わからないから、みんな けいかいしている。</span></div>
+        <div class="story-card"><b>えさを わけよう</b><span>なかよくなると、道やカギを 教えてくれる。</span></div>
       </div>
       <div class="stage-grid" id="startStageGrid"></div>
       <div class="panel-actions">
@@ -733,7 +856,13 @@
   const STORAGE_KEY = 'sea_album_cards_v1';
   const COIN_STORAGE_KEY = 'sea_album_coins_v1';
   const PLAYER_MOVE_SPEED = 260;
-  const PLAYER_FOLLOW_RATE = 4.2;
+  const PLAYER_MAX_SPEED = 285;
+  const PLAYER_DRAW_WIDTH = 212;
+  const TOUCH_TARGET_OFFSET_X = 168;
+  const TOUCH_TARGET_OFFSET_Y = 48;
+  const JET_FLICK_MIN_DISTANCE = 108;
+  const JET_FLICK_MAX_TIME = 0.22;
+  const JET_FLICK_COOLDOWN = 0.42;
   const CAMERA_FOLLOW_RATE = 2.8;
   const BOSS_SCROLL_RATE = 0.78;
   const BOSS_FIXED_CAMERA_RATE = 5.2;
@@ -746,6 +875,7 @@
   const BOMB_GRAVITY = 320;
   const COIN_MAGNET_RADIUS = 230;
   const COIN_COLLECT_RADIUS = 42;
+  const COIN_SHEET_FRAMES = 8;
   const SHELL_CHEST_X = 560;
   const SHELL_CHEST_Y = 748;
   const KEY_HERMIT_CAMERA = 1050;
@@ -808,10 +938,34 @@
     itemShellOpen: '../assets/images/sea-album/stage1/item_shell_chest_open.png',
     itemShellKey: '../assets/images/sea-album/stage1/item_shell_key.png',
     itemSandball: '../assets/images/sea-album/stage1/item_sandball.png',
+    coinSheet: '../assets/images/sea-album/stage1/coin_rotation_raw.png',
     foodPellet: '../assets/images/undersea-cave/item_food_pellet.png',
     foodBubble: '../assets/images/undersea-cave/item_food_bubble.png',
     heartCluster: '../assets/images/mojikko/care/fx_heart_cluster.png'
   };
+  const SFX = {
+    start: '../assets/sounds/Game Start.mp3',
+    fire: '../assets/sounds/se/aquarium/feed.mp3',
+    bomb: '../assets/sounds/se/aquarium/bubbles.mp3',
+    feedHit: '../assets/sounds/se/common/tap.mp3',
+    friend: '../assets/sounds/se/common/success.mp3',
+    coin: '../assets/sounds/se/common/hint.mp3',
+    key: '../assets/sounds/se/common/success.mp3',
+    chest: '../assets/sounds/se/TreasureBox.mp3',
+    jet: '../assets/sounds/se/common/transition.mp3',
+    damage: '../assets/sounds/se/common/error.mp3',
+    boss: '../assets/audio/battle/encounter_A.mp3',
+    clear: '../assets/sounds/Game Win.mp3'
+  };
+  const SFX_COOLDOWN = {
+    fire: 0.18,
+    bomb: 0.34,
+    feedHit: 0.08,
+    coin: 0.1,
+    jet: 0.4,
+    damage: 0.45
+  };
+  const sfxPools = Object.create(null);
   const SHELL_SPARKLE_KEYS = Array.from({ length: 16 }, (_, index) => 'shellSparkle' + String(index + 1).padStart(2, '0'));
   SHELL_SPARKLE_KEYS.forEach((key, index) => {
     ASSET[key] = '../assets/images/sea-album/effects/shell_open_sparkle_' + String(index + 1).padStart(2, '0') + '.png';
@@ -882,12 +1036,12 @@
   ];
 
   const ENEMY_TYPES = {
-    hermit: { card: 'hermit', hp: 3, score: 80, coins: 3, speed: 36, y: [650, 740], size: 72, bottom: true },
-    shrimp: { card: 'shrimp', hp: 3, score: 70, coins: 2, speed: 58, y: [320, 560], size: 62 },
-    seaStar: { card: 'seaStar', hp: 3, score: 90, coins: 2, speed: 28, y: [660, 760], size: 72, bottom: true },
-    goby: { card: 'goby', hp: 3, score: 70, coins: 2, speed: 50, y: [430, 650], size: 72 },
-    anemone: { card: 'anemone', hp: 3, score: 110, coins: 3, speed: 22, y: [680, 750], size: 86, bottom: true },
-    horseshoe: { card: 'horseshoe', hp: 88, score: 600, coins: 25, speed: 0, y: [570, 570], size: 250, bottom: true, boss: true }
+    hermit: { card: 'hermit', hp: 4, score: 80, coins: 3, speed: 36, y: [650, 740], size: 84, bottom: true },
+    shrimp: { card: 'shrimp', hp: 4, score: 70, coins: 2, speed: 58, y: [320, 560], size: 74 },
+    seaStar: { card: 'seaStar', hp: 4, score: 90, coins: 2, speed: 28, y: [660, 760], size: 84, bottom: true },
+    goby: { card: 'goby', hp: 4, score: 70, coins: 2, speed: 50, y: [430, 650], size: 84 },
+    anemone: { card: 'anemone', hp: 4, score: 110, coins: 3, speed: 22, y: [680, 750], size: 100, bottom: true },
+    horseshoe: { card: 'horseshoe', hp: 88, score: 600, coins: 25, speed: 0, y: [570, 570], size: 268, bottom: true, boss: true }
   };
 
   const ENEMY_SPRITE_SCALE = {
@@ -900,25 +1054,26 @@
   };
 
   const ENEMY_TAUNTS = {
-    hermit: ['だれ？', 'こないで！'],
-    shrimp: ['ひゃっ！', 'だれだ！'],
-    seaStar: ['まもるぞ', 'あやしい'],
-    goby: ['とおせんぼ', 'かくれるぞ'],
-    anemone: ['さわるなー', 'なに？']
+    hermit: ['なにしに来たの？', 'ここも たべものないよ', 'カギを まもってる'],
+    shrimp: ['なんで ここに？', 'こないで！', 'たべもの ないよ'],
+    seaStar: ['まもるぞ', 'あやしい', 'だれの なかま？'],
+    goby: ['とおせんぼ', 'かくれるぞ', 'なにしに来たの？'],
+    anemone: ['さわるなー', 'なんで ここに？', 'こわいよ']
   };
 
   const HAPPY_LINES = {
-    hermit: ['ありがと！', 'かいがあるよ'],
-    shrimp: ['もぐもぐ！', 'なかよし！'],
-    seaStar: ['ごちそうさま', 'ゆっくりね'],
+    hermit: ['ありがとう', 'カギをどうぞ'],
+    shrimp: ['たすかった！', 'なかよし！'],
+    seaStar: ['ごちそうさま', 'ほっとした'],
     goby: ['おいしい！', 'すなをみて'],
-    anemone: ['うれしいな', 'すすもう'],
+    anemone: ['うれしいな', 'もう こわくない'],
     horseshoe: ['いいぞ', 'どうぞ']
   };
 
   const FEED_REACTION_LINES = {
-    first: ['まだだぞ！', 'な、なんだ？', 'こっちくるな！'],
-    second: ['あれ？', 'なにこれ？', 'いいにおい？'],
+    first: ['まだだぞ！', 'なにしに来たの？', 'とったの？'],
+    second: ['えさ？', 'くれるの？', 'いいにおい？'],
+    third: ['こわくない？', 'たすかる...', 'おなかすいた'],
     boss: ['むむ...', 'えさだと？', 'まだだぞ']
   };
 
@@ -948,6 +1103,7 @@
     hazards: [],
     impacts: [],
     sparkles: [],
+    itemPickups: [],
     coinsDropped: [],
     coinPops: [],
     playerNotices: [],
@@ -957,6 +1113,8 @@
     gimmicks: createStageGimmicks(),
     album: new Set(),
     assets: Object.create(null),
+    sfxLast: Object.create(null),
+    pointerTrack: null,
     fireHeld: false,
     bombHeld: false,
     bossPhase: 'none',
@@ -981,6 +1139,67 @@
     });
   }
 
+  function prepareCoinSheet() {
+    const sheet = state.assets.coinSheet;
+    if (!sheet) return;
+    try {
+      const width = sheet.naturalWidth || sheet.width;
+      const height = sheet.naturalHeight || sheet.height;
+      const canvasSheet = document.createElement('canvas');
+      canvasSheet.width = width;
+      canvasSheet.height = height;
+      const sheetCtx = canvasSheet.getContext('2d');
+      sheetCtx.drawImage(sheet, 0, 0, width, height);
+      const pixels = sheetCtx.getImageData(0, 0, width, height);
+      const data = pixels.data;
+      let hasAlpha = false;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] < 250) {
+          hasAlpha = true;
+          break;
+        }
+      }
+      if (hasAlpha) {
+        state.assets.coinSheetAlpha = sheet;
+        return;
+      }
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+        if (r > 238 && g > 238 && b > 238 && chroma < 18) {
+          data[i + 3] = 0;
+        } else if (r > 226 && g > 226 && b > 226 && chroma < 22) {
+          data[i + 3] = Math.min(data[i + 3], 90);
+        }
+      }
+      sheetCtx.putImageData(pixels, 0, 0);
+      state.assets.coinSheetAlpha = canvasSheet;
+    } catch (_) {
+      state.assets.coinSheetAlpha = null;
+    }
+  }
+
+  function playSfx(name, volume = 0.5) {
+    const src = SFX[name];
+    if (!src) return;
+    const gap = SFX_COOLDOWN[name] || 0;
+    const last = state.sfxLast[name] || -99;
+    if (state.time - last < gap) return;
+    state.sfxLast[name] = state.time;
+    const pool = sfxPools[name] || (sfxPools[name] = []);
+    let audio = pool.find((item) => item.paused || item.ended);
+    if (!audio) {
+      audio = new Audio(src);
+      audio.preload = 'auto';
+      pool.push(audio);
+    }
+    audio.volume = volume;
+    try { audio.currentTime = 0; } catch (_) {}
+    audio.play().catch(() => {});
+  }
+
   function resize() {
     const rect = app.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -999,12 +1218,31 @@
     return min + Math.random() * (max - min);
   }
 
+  function randInt(min, max) {
+    return Math.floor(rand(min, max + 1));
+  }
+
   function pick(list) {
     return list[Math.floor(Math.random() * list.length)];
   }
 
   function distance(a, b, x, y) {
     return Math.hypot(a - x, b - y);
+  }
+
+  function moveToward(currentX, currentY, targetX, targetY, maxStep) {
+    const dx = targetX - currentX;
+    const dy = targetY - currentY;
+    const d = Math.hypot(dx, dy);
+    if (d <= maxStep || d <= 0.001) return { x: targetX, y: targetY };
+    return {
+      x: currentX + dx / d * maxStep,
+      y: currentY + dy / d * maxStep
+    };
+  }
+
+  function normalEnemyHp() {
+    return randInt(4, 5);
   }
 
   function screenX(x) {
@@ -1070,10 +1308,19 @@
       enemy.mood = 'angry';
       enemy.eatTimer = 0;
       say(enemy, pick(FEED_REACTION_LINES.first), 1.35);
-    } else {
+    } else if (enemy.feedHits <= 2) {
       enemy.mood = 'eating';
       enemy.eatTimer = 1.35;
       say(enemy, pick(FEED_REACTION_LINES.second), 1.55);
+    } else {
+      enemy.mood = 'eating';
+      enemy.eatTimer = 1.45;
+      if (!enemy.reassured) {
+        enemy.reassured = true;
+        say(enemy, pick(FEED_REACTION_LINES.third), 1.65);
+      } else if (!enemy.speech || enemy.speech.ttl < 0.45) {
+        say(enemy, 'もぐ...', 1.1);
+      }
     }
   }
 
@@ -1090,6 +1337,8 @@
     if (raw.includes('POWER MAX')) return 'さいだい';
     if (raw.includes('JET') || raw.includes('よけよう') || raw.includes('よけて')) return 'ジェット';
     if (raw.includes('とまった')) return 'とまった';
+    if (raw.includes('カギ')) return 'カギ';
+    if (raw.includes('かい')) return 'かい';
     if (raw.includes('なかよく')) return 'なかよし';
     if (raw.includes('クリア')) return 'クリア';
     return '';
@@ -1129,11 +1378,12 @@
     eventIconEl.textContent = image ? '' : icon;
     eventIconEl.classList.toggle('has-image', !!image);
     eventIconEl.style.backgroundImage = image ? 'url("' + image.src + '")' : '';
+    eventIconEl.style.setProperty('--event-icon-image', image ? 'url("' + image.src + '")' : 'none');
     eventTitleEl.textContent = title;
     eventBodyEl.textContent = body || '';
     eventBodyEl.hidden = !body;
     eventCardEl.hidden = false;
-    eventCardEl.className = 'event-card show ' + tone;
+    eventCardEl.className = 'event-card show ' + tone + (image ? ' item-card' : '');
     updateGuideHud();
   }
 
@@ -1143,6 +1393,7 @@
     eventCardEl.hidden = true;
     eventIconEl.classList.remove('has-image');
     eventIconEl.style.backgroundImage = '';
+    eventIconEl.style.removeProperty('--event-icon-image');
     eventBodyEl.hidden = false;
   }
 
@@ -1152,7 +1403,7 @@
     if (state.bossDone) return 'クリア';
     if (state.bossSpawned) return 'ボス';
     if (!g.shellKey) return 'ヤドカリ';
-    if (!g.shellOpened) return 'かい';
+    if (!g.shellOpened) return '左の かい';
     if ((g.friendship || 0) < FRIENDSHIP_MAX) return 'なかよし';
     if (!g.sandball) return 'すなだんご';
     return '→ ボス';
@@ -1209,6 +1460,7 @@
     state.coins += amount;
     saveCoins();
     state.coinPops.push({ x, y: y - 24, amount, life: 1.25, max: 1.25 });
+    playSfx('coin', 0.34);
     updateHud();
   }
 
@@ -1263,6 +1515,7 @@
 
   function resetRun() {
     state.mode = 'playing';
+    playSfx('start', 0.42);
     state.time = 0;
     state.score = 0;
     state.power = 1;
@@ -1283,6 +1536,7 @@
     state.hazards = [];
     state.impacts = [];
     state.sparkles = [];
+    state.itemPickups = [];
     state.coinsDropped = [];
     state.coinPops = [];
     state.playerNotices = [];
@@ -1290,6 +1544,7 @@
     state.powerups = [];
     state.bubbles = [];
     state.gimmicks = createStageGimmicks();
+    state.pointerTrack = null;
     state.fireHeld = false;
     state.bombHeld = false;
     state.spawnTimer = 2.6;
@@ -1356,14 +1611,15 @@
     const type = ENEMY_TYPES[key];
     const y = rand(type.y[0], type.y[1]);
     const fromLeft = state.player.facing < 0 && state.camera > 260 && Math.random() < 0.75;
+    const hp = normalEnemyHp();
     const enemy = {
       key,
       x: fromLeft ? Math.max(90, state.camera - 120) : Math.min(WORLD_W - 130, state.camera + BASE_W + 100),
       y,
       baseY: y,
       dir: fromLeft ? 1 : -1,
-      hp: type.hp,
-      maxHp: type.hp,
+      hp,
+      maxHp: hp,
       feedHits: 0,
       speed: type.speed,
       size: type.size,
@@ -1384,6 +1640,7 @@
     state.bossSpawned = true;
     state.bossPhase = 'warning';
     state.bossTimer = 2.6;
+    playSfx('boss', 0.42);
     state.spawnTimer = 999;
     state.powerups = [];
     state.enemies = state.enemies.filter((enemy) => enemy.defeated);
@@ -1563,6 +1820,7 @@
     if (state.mode !== 'playing' || state.shotTimer > 0) return false;
     if (activeTorpedoCountOnScreen() >= torpedoSlotCount()) return false;
     fireShots();
+    playSfx('fire', 0.2);
     state.shotTimer = shotInterval();
     return true;
   }
@@ -1573,6 +1831,7 @@
     const room = maxActive - activeBombsOnScreen();
     if (room <= 0) return false;
     fireBombs(room);
+    playSfx('bomb', 0.24);
     state.bombTimer = bombInterval();
     return true;
   }
@@ -1585,6 +1844,22 @@
 
   function addImpact(x, y, radius, kind = 'gold') {
     state.impacts.push({ x, y, radius, life: 0.36, max: 0.36, kind });
+  }
+
+  function spawnItemPickup(imageKey, x, y, label = '') {
+    const image = state.assets[imageKey];
+    if (!image) return;
+    state.itemPickups.push({
+      image,
+      x,
+      y,
+      label,
+      life: 1.85,
+      max: 1.85,
+      size: imageKey === 'itemShellKey' ? 228 : 152,
+      rotation: imageKey === 'itemShellKey' ? -0.1 : 0
+    });
+    if (state.itemPickups.length > 3) state.itemPickups.shift();
   }
 
   function showFriendshipHint(mark) {
@@ -1631,9 +1906,12 @@
     if (enemy.key === 'hermit' && !g.shellKey) {
       g.shellKey = true;
       g.keyAwardedAt = state.time;
-      say(enemy, 'このカギで ひらくよ！', 2.3);
-      showEventCard('', 'カギ', 'かいを あける', 'gold', 3.0, 'itemShellKey');
-      setPrompt('かい', 2.8);
+      say(enemy, '左の かいを あけて！', 2.5);
+      spawnItemPickup('itemShellKey', enemy.x, enemy.y - 128, 'カギ');
+      addImpact(enemy.x, enemy.y - 78, 72, 'gold');
+      showEventCard('', 'カギを もらった', '左の かいへ', 'gold', 4.2, 'itemShellKey');
+      setPrompt('カギ', 2.8);
+      playSfx('key', 0.5);
       addFriendship(8, enemy.x, enemy.y);
     }
   }
@@ -1645,7 +1923,9 @@
     g.shellOpenedAt = state.time;
     g.sandball = true;
     g.sandballAt = state.time;
+    playSfx('chest', 0.52);
     spawnShellSparkles(SHELL_CHEST_X, SHELL_CHEST_Y - 118, 11);
+    spawnItemPickup('itemSandball', SHELL_CHEST_X, SHELL_CHEST_Y - 142, 'すなだんご');
     scatterCoins(9, SHELL_CHEST_X, SHELL_CHEST_Y - 40);
     addImpact(SHELL_CHEST_X, SHELL_CHEST_Y - 40, 86, 'gold');
     addFriendship(12, SHELL_CHEST_X, SHELL_CHEST_Y - 62);
@@ -1690,6 +1970,7 @@
     addImpact(enemy.x, enemy.y, enemy.size * 0.72, enemy.boss ? 'boss' : 'heart');
     addCreatureFriendship(enemy);
     updateFriendGimmick(enemy);
+    playSfx(enemy.boss ? 'clear' : 'friend', enemy.boss ? 0.5 : 0.42);
     if (enemy.boss) {
       state.bossDone = true;
       state.bossPhase = 'done';
@@ -1750,6 +2031,7 @@
     p.shield = 1.1;
     p.hit = 0.22;
     state.score = Math.max(0, state.score - 40);
+    playSfx('damage', 0.36);
     addImpact(p.x, p.y, 70, kind === 'charge' || kind === 'laser' ? 'danger' : 'gold');
     setPrompt(kind === 'laser' || kind === 'charge' ? 'JETでよけよう' : 'よけよう', 1.55);
     updateHud();
@@ -1765,6 +2047,7 @@
     p.shield = Math.max(p.shield, 0.42);
     p.jetVx = xDir * 340;
     p.jetVy = yDir * 640;
+    playSfx('jet', 0.34);
     for (let i = 0; i < 9; i += 1) {
       const trailDir = -(p.facing || 1);
       state.bubbles.push({ x: p.x + trailDir * 90 + rand(-12, 14), y: p.y + rand(-20, 24), r: rand(5, 14), vx: trailDir * rand(70, 150), vy: rand(-80, 70), life: rand(0.55, 1.0), max: 1.0 });
@@ -1994,8 +2277,9 @@
     const maxPlayerX = arenaLocked ? state.camera + 780 : stageMaxPlayerX();
     p.tx = clamp(p.tx, minPlayerX, maxPlayerX);
     p.ty = clamp(p.ty, 150, 735);
-    p.x += (p.tx - p.x) * Math.min(1, dt * PLAYER_FOLLOW_RATE);
-    p.y += (p.ty - p.y) * Math.min(1, dt * PLAYER_FOLLOW_RATE);
+    const nextPlayer = moveToward(p.x, p.y, p.tx, p.ty, PLAYER_MAX_SPEED * dt);
+    p.x = clamp(nextPlayer.x, minPlayerX, maxPlayerX);
+    p.y = clamp(nextPlayer.y, 150, 735);
     if (p.jetTimer > 0) {
       p.x = clamp(p.x + p.jetVx * dt, minPlayerX, maxPlayerX);
       p.y = clamp(p.y + p.jetVy * dt, 150, 735);
@@ -2103,6 +2387,7 @@
         state.power = Math.min(4, state.power + 1);
         state.score += 70;
         const powerMsg = state.power <= before ? 'POWER MAX' : (state.power === 2 ? 'ホーミング UP' : (state.power === 3 ? 'えさ 2ほん' : 'えさ 3ぼん'));
+        playSfx('friend', 0.36);
         setPrompt(powerMsg, 2.1);
         updateHud();
       }
@@ -2136,6 +2421,12 @@
       s.life -= dt;
     });
     state.sparkles = state.sparkles.filter((s) => s.life > 0);
+    state.itemPickups.forEach((item) => {
+      item.life -= dt;
+      item.y -= 22 * dt;
+      item.rotation *= Math.pow(0.82, dt);
+    });
+    state.itemPickups = state.itemPickups.filter((item) => item.life > 0);
     updateDroppedCoins(dt);
     state.coinPops.forEach((c) => {
       c.y -= 34 * dt;
@@ -2204,6 +2495,7 @@
           s.life = 0;
           enemy.hp -= s.damage || 1;
           enemy.hit = 0.1;
+          playSfx('feedHit', 0.22);
           feedReaction(enemy);
           addImpact(s.x, s.y, 28, 'gold');
           if (enemy.hp <= 0) defeatEnemy(enemy);
@@ -2214,6 +2506,7 @@
           b.life = 0;
           enemy.hp -= b.damage || (enemy.boss ? 2 : 3);
           enemy.hit = 0.12;
+          playSfx('feedHit', 0.26);
           feedReaction(enemy);
           addImpact(b.x, b.y, b.blast, 'gold');
           if (enemy.hp <= 0) defeatEnemy(enemy);
@@ -2243,6 +2536,7 @@
     drawGuideMarkers();
     drawPlayerNotices();
     state.enemies.forEach(drawEnemySpeech);
+    state.itemPickups.forEach(drawItemPickup);
     state.coinPops.forEach(drawCoinPop);
     drawBossOverlay();
     ctx.restore();
@@ -2640,7 +2934,7 @@
       ctx.restore();
     }
     if (image) {
-      drawCentered(image, 0, bob, 188);
+      drawCentered(image, 0, bob, PLAYER_DRAW_WIDTH);
     } else {
       ctx.translate(0, bob);
       ctx.fillStyle = '#f3c84c';
@@ -2678,7 +2972,7 @@
       ctx.strokeStyle = '#e9fdff';
       ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.ellipse(0, bob, 118, 66, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, bob, 130, 72, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
@@ -3431,6 +3725,62 @@
     ctx.restore();
   }
 
+  function drawItemPickup(item) {
+    const pct = 1 - item.life / item.max;
+    const alpha = Math.min(1, item.life / 0.28);
+    const pop = 0.78 + Math.sin(Math.min(1, pct) * Math.PI) * 0.18;
+    const sx = screenX(item.x);
+    const maxW = item.size * pop;
+    const maxH = item.size * 1.18 * pop;
+    let w = maxW;
+    let h = w * item.image.height / item.image.width;
+    if (h > maxH) {
+      h = maxH;
+      w = h * item.image.width / item.image.height;
+    }
+    ctx.save();
+    ctx.translate(sx, item.y);
+    ctx.rotate(item.rotation || 0);
+    ctx.globalAlpha = alpha;
+    ctx.shadowColor = 'rgba(255, 236, 136, 0.92)';
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = 'rgba(255, 250, 209, 0.72)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, maxW * 0.54, maxH * 0.46, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.drawImage(item.image, -w / 2, -h / 2, w, h);
+    if (item.label) {
+      ctx.shadowBlur = 6;
+      ctx.font = '900 28px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = 'rgba(90, 58, 12, 0.75)';
+      ctx.fillStyle = '#fff7a9';
+      ctx.strokeText(item.label, 0, maxH * 0.54);
+      ctx.fillText(item.label, 0, maxH * 0.54);
+    }
+    ctx.restore();
+  }
+
+  function coinSheetImage() {
+    return state.assets.coinSheetAlpha || state.assets.coinSheet || null;
+  }
+
+  function drawGeneratedCoinSprite(c, width) {
+    const image = coinSheetImage();
+    if (!image) return false;
+    const frameW = Math.floor(image.width / COIN_SHEET_FRAMES);
+    const frameH = image.height;
+    if (!frameW || !frameH) return false;
+    const spin = state.time * Math.abs(c.spinRate || 3.8) * 0.7 + (c.phase || 0);
+    const frame = Math.floor((spin % (Math.PI * 2)) / (Math.PI * 2) * COIN_SHEET_FRAMES) % COIN_SHEET_FRAMES;
+    const w = width;
+    const h = w * frameH / frameW;
+    ctx.drawImage(image, frame * frameW, 0, frameW, frameH, -w / 2, -h / 2, w, h);
+    return true;
+  }
+
   function drawDroppedCoin(c) {
     const alpha = clamp(c.life / Math.min(c.max, 1.2), 0, 1);
     const spin = state.time * (c.spinRate || 3.8) + c.phase;
@@ -3452,6 +3802,11 @@
     ctx.ellipse(0, c.r * 0.98, c.r * 0.88, c.r * 0.24, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+
+    if (drawGeneratedCoinSprite(c, c.r * 4.9)) {
+      ctx.restore();
+      return;
+    }
 
     const side = ctx.createLinearGradient(-rx, 0, rx, 0);
     side.addColorStop(0, '#9b610d');
@@ -3527,15 +3882,20 @@
     ctx.translate(screenX(c.x), c.y);
     ctx.shadowColor = '#fff1a0';
     ctx.shadowBlur = 10;
-    ctx.fillStyle = '#ffd86e';
-    ctx.beginPath();
-    ctx.arc(-28, -2, 13, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#9b6b18';
-    ctx.font = '900 17px Zen Maru Gothic, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('C', -28, -2);
+    ctx.save();
+    ctx.translate(-28, -2);
+    if (!drawGeneratedCoinSprite({ r: 10, spinRate: 3.4, phase: c.amount * 0.41 }, 48)) {
+      ctx.fillStyle = '#ffd86e';
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#9b6b18';
+      ctx.font = '900 17px Zen Maru Gothic, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('C', 0, 0);
+    }
+    ctx.restore();
     ctx.fillStyle = '#fff7c6';
     ctx.strokeStyle = 'rgba(36, 70, 76, 0.58)';
     ctx.lineWidth = 4;
@@ -3589,9 +3949,19 @@
     };
   }
 
+  function targetPointForPointer(point, ev) {
+    if ((ev.pointerType || '') !== 'touch') return point;
+    const side = point.x >= BASE_W * 0.5 ? -1 : 1;
+    return {
+      x: point.x + side * TOUCH_TARGET_OFFSET_X,
+      y: point.y - TOUCH_TARGET_OFFSET_Y
+    };
+  }
+
   function setTarget(ev) {
     if (state.mode !== 'playing') return;
-    const p = pointerToGame(ev);
+    const rawPoint = pointerToGame(ev);
+    const p = targetPointForPointer(rawPoint, ev);
     const worldX = state.camera + p.x;
     const arenaLocked = state.bossPhase === 'scroll' || state.bossPhase === 'intro' || state.bossPhase === 'fight' || state.bossPhase === 'done';
     const minPlayerX = arenaLocked ? state.camera + 120 : PLAYER_MIN_X;
@@ -3600,11 +3970,51 @@
     else if (worldX > state.player.x + 18) state.player.facing = 1;
     state.player.tx = clamp(worldX, minPlayerX, maxPlayerX);
     state.player.ty = clamp(p.y, 150, 735);
+    return rawPoint;
+  }
+
+  function beginPointerTrack(ev, point) {
+    state.pointerTrack = {
+      id: ev.pointerId,
+      type: ev.pointerType || 'mouse',
+      x: point ? point.x : 0,
+      y: point ? point.y : 0,
+      t: performance.now(),
+      lastJet: -99
+    };
+  }
+
+  function updatePointerTrack(ev, point) {
+    const track = state.pointerTrack;
+    if (!track || track.id !== ev.pointerId || !point) return;
+    const now = performance.now();
+    const elapsed = Math.max(0.001, (now - track.t) / 1000);
+    const dx = point.x - track.x;
+    const dy = point.y - track.y;
+    const d = Math.hypot(dx, dy);
+    if (track.type === 'touch'
+        && d >= JET_FLICK_MIN_DISTANCE
+        && elapsed <= JET_FLICK_MAX_TIME
+        && state.time - track.lastJet > JET_FLICK_COOLDOWN
+        && activateJet(dx, dy)) {
+      track.lastJet = state.time;
+      track.x = point.x;
+      track.y = point.y;
+      track.t = now;
+      showPlayerNotice('JET', 0.75);
+      return;
+    }
+    if (elapsed > 0.16 || d > 46) {
+      track.x = point.x;
+      track.y = point.y;
+      track.t = now;
+    }
   }
 
   function releasePointerFire(ev) {
     if (ev.button === 2) state.bombHeld = false;
     else if (ev.button === 0 || ev.button === -1) state.fireHeld = false;
+    if (state.pointerTrack && state.pointerTrack.id === ev.pointerId) state.pointerTrack = null;
   }
 
   function renderStages(targetId) {
@@ -3655,8 +4065,9 @@
 
   canvas.addEventListener('pointerdown', (ev) => {
     ev.preventDefault();
-    canvas.setPointerCapture(ev.pointerId);
-    setTarget(ev);
+    try { canvas.setPointerCapture(ev.pointerId); } catch (_) {}
+    const point = setTarget(ev);
+    beginPointerTrack(ev, point);
     if (ev.button === 2) {
       state.bombHeld = true;
       tryFireBombs();
@@ -3667,7 +4078,8 @@
   });
   canvas.addEventListener('pointermove', (ev) => {
     ev.preventDefault();
-    setTarget(ev);
+    const point = setTarget(ev);
+    updatePointerTrack(ev, point);
   });
   canvas.addEventListener('pointerup', (ev) => {
     releasePointerFire(ev);
@@ -3690,6 +4102,7 @@
     state.keys = Object.create(null);
     state.fireHeld = false;
     state.bombHeld = false;
+    state.pointerTrack = null;
   });
   window.addEventListener('resize', resize);
   jetBtn.addEventListener('pointerdown', (ev) => {
@@ -3722,6 +4135,7 @@
     return loadOptional(src).then((image) => { state.assets[key] = image; });
   }))
     .then(() => {
+      prepareCoinSheet();
       loadAlbum();
       loadCoins();
       renderStages('startStageGrid');

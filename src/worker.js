@@ -58,6 +58,10 @@ export default {
     if (path === '/api/bento/mask-defaults') {
       return handleBentoMaskDefaults(request, env);
     }
+    if (path === '/api/admin/tts-generate') {
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleAiTts(request, env);
+    }
 
     if (path.startsWith('/api/gh/')) {
       if (!checkBasicAuth(request, env)) return authChallenge();
@@ -425,7 +429,9 @@ async function handleAiTts(request, env) {
   const ALLOWED_STYLES = ['[gently]', '[cheerfully]', '[excitedly]', '[giggles]', '[whispers]', ''];
   let style = (typeof body.stylePrompt === 'string') ? body.stylePrompt.trim() : '[gently]';
   if (ALLOWED_STYLES.indexOf(style) === -1) style = '[gently]';
-  const styledText = style ? (style + ' ' + text) : text;
+  const promptText = (typeof body.promptText === 'string') ? body.promptText.trim() : '';
+  if (promptText.length > 3000) return json(400, { error: 'promptText が長すぎます（3000字まで）' });
+  const styledText = promptText || (style ? (style + ' ' + text) : text);
 
   const MODEL_PRIMARY  = body.modelOverride || 'gemini-3.1-flash-tts-preview';
   const MODEL_FALLBACK = 'gemini-2.5-flash-preview-tts';

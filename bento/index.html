@@ -135,6 +135,8 @@ html, body {
   background: #f4cf91;
 }
 .shop-opening__bg {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -143,12 +145,14 @@ html, body {
 .shop-opening__shade {
   position: absolute;
   inset: auto 0 0;
+  z-index: 4;
   height: 40%;
   background: linear-gradient(180deg, rgba(80,45,18,0) 0%, rgba(80,45,18,0.26) 100%);
   pointer-events: none;
 }
 .shop-opening__customer {
   position: absolute;
+  z-index: 3;
   left: 50%;
   bottom: 23%;
   height: 40%;
@@ -159,6 +163,47 @@ html, body {
   opacity: 0;
   pointer-events: none;
 }
+.shop-opening__staff {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.shop-opening.is-staff-step .shop-opening__staff {
+  opacity: 1;
+}
+.shop-opening__staff-counter-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  clip-path: inset(
+    var(--staff-counter-mask-top, 51%)
+    var(--staff-counter-mask-right, 0%)
+    var(--staff-counter-mask-bottom, 18%)
+    var(--staff-counter-mask-left, 0%)
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+.shop-opening.is-staff-step .shop-opening__staff-counter-mask {
+  opacity: var(--staff-counter-mask-opacity, 1);
+}
+.shop-opening__staff-member {
+  position: absolute;
+  left: 50%;
+  bottom: 48%;
+  height: 32%;
+  max-width: 30%;
+  object-fit: contain;
+  transform: translateX(-50%);
+  transform-origin: center bottom;
+  filter: drop-shadow(0 7px 10px rgba(70, 40, 16, 0.12));
+  pointer-events: none;
+}
 .shop-opening.has-customer .shop-opening__customer {
   opacity: 1;
 }
@@ -166,11 +211,12 @@ html, body {
   animation: shopCustomerEnter 0.68s ease-out both;
 }
 @keyframes shopCustomerEnter {
-  from { transform: translateX(-50%); opacity: 0; }
-  to   { transform: translateX(-50%); opacity: 1; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .shop-opening__dialog {
   position: absolute;
+  z-index: 5;
   left: 50%;
   bottom: clamp(14px, 3vh, 34px);
   width: min(76vw, 960px);
@@ -234,6 +280,9 @@ html, body {
   box-shadow: 0 1px 0 #c67934;
 }
 @media (max-width: 900px) {
+  .shop-opening__staff-member {
+    max-width: 34%;
+  }
   .shop-opening__customer {
     bottom: 24%;
     height: 37%;
@@ -452,12 +501,61 @@ html, body {
 .game-title {
   position: fixed;
   top: 6px; left: 50%; transform: translateX(-50%);
-  font-size: 1.3rem; font-weight: 900;
-  color: var(--primary);
-  text-shadow: 2px 2px 0 var(--primary-light);
-  z-index: 5;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  max-width: min(86vw, 560px);
+  padding: 4px 10px 4px 12px;
+  border: 3px solid #93C5FD;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.94);
+  color: #1D4ED8;
+  box-shadow: 0 5px 14px rgba(56, 96, 150, 0.18);
+  font-size: 0.78rem; font-weight: 900;
+  line-height: 1;
+  z-index: 9400;
   pointer-events: none;
   white-space: nowrap;
+  text-shadow: none;
+  overflow: hidden;
+}
+.game-title.is-visible {
+  display: flex;
+}
+.game-title.is-try {
+  border-color: #86EFAC;
+  color: #047857;
+}
+.game-title__main,
+.game-title__sub {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.game-title__sub {
+  color: #5D4E37;
+  font-size: 0.58rem;
+}
+.game-title__btn {
+  flex-shrink: 0;
+  pointer-events: auto;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 15px;
+  background: linear-gradient(180deg, #7EA7FF, #5E85EF);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #4166C7;
+  cursor: pointer;
+}
+.game-title.is-try .game-title__btn {
+  background: linear-gradient(180deg, #8DE48E, #55BE63);
+  box-shadow: 0 3px 0 #2F8E40;
 }
 
 /* ===== 横向きメインレイアウト =====
@@ -829,6 +927,7 @@ html, body {
   50% { transform: translateY(-3px) rotate(3deg); }
 }
 .free-placed-item {
+  --selected-color: #22C55E;
   position: absolute;
   display: flex;
   align-items: center;
@@ -847,13 +946,16 @@ html, body {
     drop-shadow(-0.7px 0 0 #FFFFFF)
     drop-shadow(0 0.7px 0 #FFFFFF)
     drop-shadow(0 -0.7px 0 #FFFFFF)
-    drop-shadow(1.35px 0 0 #22C55E)
-    drop-shadow(-1.35px 0 0 #22C55E)
-    drop-shadow(0 1.35px 0 #22C55E)
-    drop-shadow(0 -1.35px 0 #22C55E)
+    drop-shadow(1.35px 0 0 var(--selected-color))
+    drop-shadow(-1.35px 0 0 var(--selected-color))
+    drop-shadow(0 1.35px 0 var(--selected-color))
+    drop-shadow(0 -1.35px 0 var(--selected-color))
     drop-shadow(0 3px 4px rgba(21, 191, 115, 0.18))
     drop-shadow(0 8px 10px rgba(68,42,16,0.2));
 }
+.free-placed-item.sk-group-r { --selected-color: #EF4444; }
+.free-placed-item.sk-group-y { --selected-color: #EAB308; }
+.free-placed-item.sk-group-g { --selected-color: #22C55E; }
 .free-placed-item.pop {
   animation: freePlacePop 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
@@ -1028,6 +1130,7 @@ html, body {
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   flex-shrink: 0;
+  justify-items: center;
 }
 /* 見出しラベル（押せない／パレット全幅／ボタンと差別化） */
 .free-section-heading {
@@ -1160,8 +1263,8 @@ html, body {
   min-height: 30px;
   padding: 4px 8px;
   border: 2px solid #8AD6B6;
-  border-radius: 999px;
-  background: #FFFFFF;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
   color: #064E3B;
   font-family: inherit;
   font-size: 0.58rem;
@@ -1180,6 +1283,50 @@ html, body {
 .free-context-toolbar .free-size-slider {
   min-width: 132px;
   padding: 2px 8px;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
+}
+.free-size-stepper {
+  display: grid;
+  grid-template-columns: auto repeat(3, 30px);
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 2px solid #8AD6B6;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #064E3B;
+  font-family: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+}
+.free-size-stepper span {
+  line-height: 1;
+  white-space: nowrap;
+}
+.free-size-step-btn {
+  width: 30px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid #8AD6B6;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #047857;
+  font-family: inherit;
+  font-size: 0.66rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+.free-size-step-btn.active {
+  border-color: #22C55E;
+  background: #DCFCE7;
+  color: #14532D;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.85);
+}
+.free-context-toolbar .free-size-stepper {
+  min-width: 132px;
+  padding: 3px 7px;
   box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
 }
 .free-mask-panel,
@@ -1271,6 +1418,46 @@ html, body {
   min-height: 28px;
   padding: 3px 2px;
   cursor: pointer;
+}
+.free-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 0;
+}
+.free-icon-svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.free-icon-glyph {
+  display: block;
+  color: currentColor;
+  font-family: Arial, 'Zen Maru Gothic', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 0.9;
+  -webkit-text-stroke: 0.7px currentColor;
+  text-shadow: 0 0 0 currentColor;
+  transform: translateY(-1px);
+  pointer-events: none;
+}
+.free-layer-actions .free-icon-svg,
+.free-brush-actions .free-icon-svg {
+  width: 21px;
+  height: 21px;
+}
+.free-icon-button[data-free-icon="layer-back"] .free-icon-svg,
+.free-icon-button[data-free-icon="layer-front"] .free-icon-svg {
+  width: 23px;
+  height: 23px;
 }
 .free-mask-actions button.primary,
 .free-brush-actions button.primary,
@@ -1375,6 +1562,8 @@ html, body {
   object-fit: contain;
 }
 .free-context-toolbar {
+  --toolbar-panel-border: #8AD6B6;
+  --toolbar-panel-bg: rgba(240, 253, 244, 0.96);
   position: absolute;
   z-index: 36;
   display: flex;
@@ -1382,13 +1571,61 @@ html, body {
   justify-content: center;
   gap: 5px;
   padding: 5px 7px;
-  border: 3px solid #34D399;
+  border: 3px solid var(--toolbar-panel-border);
   border-radius: 999px;
-  background: rgba(236, 253, 245, 0.96);
+  background: var(--toolbar-panel-bg);
   box-shadow: 0 7px 16px rgba(34, 120, 82, 0.18);
   color: #064E3B;
   transform: translate(-50%, 0);
   pointer-events: auto;
+}
+.free-context-toolbar.sk-group-r {
+  --toolbar-panel-border: #F87171;
+  --toolbar-panel-bg: rgba(254, 242, 242, 0.96);
+  color: #7F1D1D;
+}
+.free-context-toolbar.sk-group-y {
+  --toolbar-panel-border: #EAB308;
+  --toolbar-panel-bg: rgba(254, 252, 232, 0.96);
+  color: #713F12;
+}
+.free-context-toolbar.sk-group-g {
+  --toolbar-panel-border: #22C55E;
+  --toolbar-panel-bg: rgba(240, 253, 244, 0.96);
+  color: #14532D;
+}
+.free-context-toolbar--panel {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  transform: none !important;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 0;
+  padding: 7px 8px;
+  border: 3px solid var(--toolbar-panel-border);
+  border-radius: 12px;
+  background: var(--toolbar-panel-bg);
+  flex-shrink: 0;
+}
+.free-context-toolbar-title {
+  flex: 1 0 100%;
+  min-width: 0;
+  color: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.free-context-toolbar--panel .free-size-slider,
+.free-context-toolbar--panel .free-size-stepper {
+  flex: 1 1 138px;
+  min-width: 132px;
+  padding: 3px 8px;
 }
 .free-context-toolbar.above {
   transform: translate(-50%, -100%);
@@ -1418,6 +1655,17 @@ html, body {
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
+}
+.free-context-toolbar button.free-icon-button {
+  padding: 0;
+}
+.free-context-toolbar .free-icon-svg {
+  width: 23px;
+  height: 23px;
+}
+.free-context-toolbar .free-icon-glyph--rotate {
+  font-size: 23px;
+  transform: translateY(-1.5px);
 }
 .free-context-toolbar button.active {
   background: #BBF7D0;
@@ -1532,17 +1780,20 @@ html, body {
   line-height: 1.15;
 }
 .free-cup-editor-actions {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  justify-content: flex-end;
   gap: 4px;
   flex-shrink: 0;
 }
 .free-cup-done-btn {
-  border: none;
-  border-radius: 11px;
-  background: center / 100% 100% no-repeat url('../assets/images/bento/ui/button_green.png');
+  width: 92px;
+  max-width: 44%;
+  border: 2px solid #52C76C;
+  border-bottom-color: #2E9F48;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #E9FFD9 0%, #A6E87B 55%, #76CD5F 100%);
   color: #174B2C;
-  box-shadow: none;
+  box-shadow: 0 3px 0 #2E9F48, inset 0 2px 0 rgba(255,255,255,0.78);
   font-family: inherit;
   font-size: 0.62rem;
   font-weight: 900;
@@ -1581,6 +1832,8 @@ html, body {
   font-size: 0.48rem;
   font-weight: 900;
   min-height: 24px;
+  min-width: 72px;
+  width: auto;
   padding: 1px 8px;
   cursor: pointer;
 }
@@ -1603,6 +1856,8 @@ html, body {
   padding-right: 2px;
 }
 .free-palette-item {
+  --sk-card-border: rgba(255,255,255,0);
+  --sk-card-ink: #6B3E16;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1618,6 +1873,38 @@ html, body {
   font-family: inherit;
   cursor: grab;
   touch-action: none;
+}
+.free-palette-item > * {
+  position: relative;
+  z-index: 1;
+}
+.free-palette-item.sk-group-r {
+  --sk-card-border: #F87171;
+  --sk-card-ink: #991B1B;
+}
+.free-palette-item.sk-group-y {
+  --sk-card-border: #EAB308;
+  --sk-card-ink: #713F12;
+}
+.free-palette-item.sk-group-g {
+  --sk-card-border: #22C55E;
+  --sk-card-ink: #14532D;
+}
+.free-palette-group-chip {
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  z-index: 2;
+  min-width: 30px;
+  padding: 2px 6px 3px;
+  border: 2px solid var(--sk-card-border);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: var(--sk-card-ink);
+  font-size: 0.46rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
 }
 .free-palette-item:active { transform: scale(0.94); }
 .free-palette-item.tier-locked,
@@ -2337,6 +2624,37 @@ html, body {
   filter: none;
   opacity: 1;
 }
+.bento-reminder.is-request-focus {
+  max-width: 260px;
+  border-color: #F87171;
+  background: rgba(255, 247, 237, 0.98);
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.82), 0 8px 18px rgba(239, 68, 68, 0.22);
+  transform-origin: center;
+  animation: bentoReminderPulse 0.95s ease-in-out infinite;
+}
+.bento-reminder.is-request-focus .bento-reminder__label:first-child {
+  color: #B91C1C;
+}
+.bento-reminder.is-request-focus .bento-reminder__chip {
+  border-color: #EF4444;
+  background: #FFF7ED;
+  color: #7F1D1D;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.8) inset, 0 0 0 2px rgba(239,68,68,0.12);
+}
+.bento-reminder.is-request-focus .bento-reminder__chip-text {
+  max-width: 164px;
+  font-size: 0.72rem;
+}
+@keyframes bentoReminderPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.82), 0 8px 18px rgba(239, 68, 68, 0.22);
+  }
+  50% {
+    transform: scale(1.045);
+    box-shadow: 0 0 0 6px rgba(255,255,255,0.96), 0 0 0 10px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(239, 68, 68, 0.28);
+  }
+}
 @media (max-width: 900px) {
   #app.free-layout-active > .free-bottom-guide.has-reminder .free-bottom-speech {
     flex: 1 1 180px;
@@ -2374,19 +2692,33 @@ html, body {
 }
 
 .food-item {
+  --sk-card-bg: #fff;
+  --sk-card-border: #FDE68A;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
   padding: 6px 3px;
-  background: #fff;
+  background: var(--sk-card-bg);
   border-radius: 12px;
-  border: 2.5px solid #FDE68A;
+  border: 2.5px solid var(--sk-card-border);
   box-shadow: 0 2px 8px var(--shadow);
   cursor: pointer;
   transition: transform 0.15s, opacity 0.3s;
   min-height: 72px;
+}
+.food-item.sk-group-r {
+  --sk-card-bg: #FFF1F1;
+  --sk-card-border: #F87171;
+}
+.food-item.sk-group-y {
+  --sk-card-bg: #FFF9C7;
+  --sk-card-border: #EAB308;
+}
+.food-item.sk-group-g {
+  --sk-card-bg: #E9FBEF;
+  --sk-card-border: #22C55E;
 }
 .food-item:active { transform: scale(0.9); }
 .food-item .food-img {
@@ -2900,15 +3232,17 @@ body.bento-complete-open .pono-dropdown {
 #sk-intro.hidden { display: none; }
 .sk-intro-card {
   background: #fff; border-radius: 24px;
-  padding: 14px 16px 14px; max-width: 520px; width: 100%;
+  padding: 13px 15px 14px;
+  max-width: min(720px, calc(100vw - 24px)); width: 100%;
+  max-height: calc(100dvh - 22px);
+  overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   text-align: center;
 }
 .sk-intro-title {
-  font-size: 1.2rem; font-weight: 900;
-  color: var(--primary); margin-bottom: 12px;
+  font-size: clamp(1rem, 2.5vw, 1.18rem); font-weight: 900;
+  color: var(--primary); margin-bottom: 8px;
 }
-.sk-intro-lead,
 .sk-intro-note {
   color: var(--text);
   font-size: 0.8rem;
@@ -2917,47 +3251,82 @@ body.bento-complete-open .pono-dropdown {
   margin: 0 0 10px;
 }
 .sk-intro-note {
-  margin: 10px 0 0;
+  margin: 9px 0 0;
   color: #6B3E16;
   background: #FFF3D9;
   border-radius: 12px;
-  padding: 8px 10px;
+  padding: 7px 10px;
 }
 .sk-intro-grid {
   display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
 }
 .sk-intro-col {
-  border-radius: 16px; padding: 8px 6px 8px;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 3px solid transparent;
+  border-radius: 16px; padding: 7px 6px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
 }
-.sk-intro-col.sk-r-bg { background: #FEE2E2; }
-.sk-intro-col.sk-y-bg { background: #FEF9C3; }
-.sk-intro-col.sk-g-bg { background: #DCFCE7; }
+.sk-intro-col.sk-r-bg { background: #FFF1F1; border-color: #F87171; }
+.sk-intro-col.sk-y-bg { background: #FFF9C7; border-color: #FACC15; }
+.sk-intro-col.sk-g-bg { background: #E9FBEF; border-color: #4ADE80; }
 .sk-intro-dot {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
 }
 .sk-intro-dot.sk-r { background: #EF4444; }
 .sk-intro-dot.sk-y { background: #EAB308; }
 .sk-intro-dot.sk-g { background: #22C55E; }
 .sk-intro-label {
-  font-size: 0.82rem; font-weight: 900; color: var(--text); line-height: 1.3;
+  font-size: clamp(0.72rem, 1.7vw, 0.84rem); font-weight: 900; color: var(--text); line-height: 1.2;
 }
 .sk-intro-sublabel {
-  font-size: 0.65rem; font-weight: 700; color: var(--text-light); line-height: 1.3;
+  font-size: clamp(0.55rem, 1.35vw, 0.66rem); font-weight: 800; color: var(--text-light); line-height: 1.2;
 }
 .sk-intro-imgs {
-  display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 2px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 2px;
 }
-.sk-intro-imgs img {
-  width: 44px; height: 44px; object-fit: contain;
+.sk-intro-example {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  gap: 2px;
+  padding: 4px 2px 3px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.62);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset;
+}
+.sk-intro-example img {
+  width: clamp(35px, 7vw, 52px); height: clamp(35px, 7vw, 52px); object-fit: contain;
+}
+.sk-intro-example span {
+  max-width: 100%;
+  color: #6B3E16;
+  font-size: clamp(0.46rem, 1.1vw, 0.56rem);
+  font-weight: 900;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .sk-intro-btn {
-  margin-top: 14px; padding: 12px 32px; border: none; border-radius: 50px;
+  margin-top: 12px; padding: 10px 32px; border: none; border-radius: 50px;
   background: linear-gradient(180deg, #FFD84D, #F5A800);
   color: #5C3A00; font-family: inherit; font-size: 1.1rem; font-weight: 900;
   cursor: pointer; box-shadow: 0 4px 0 #B87200;
 }
 .sk-intro-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #B87200; }
+@media (max-height: 430px), (max-width: 700px) {
+  .sk-intro-card { padding: 10px 12px 11px; border-radius: 20px; }
+  .sk-intro-title { margin-bottom: 6px; }
+  .sk-intro-grid { gap: 6px; }
+  .sk-intro-col { padding: 6px 5px; gap: 4px; }
+  .sk-intro-note { margin-top: 7px; padding: 6px 8px; font-size: 0.7rem; }
+  .sk-intro-btn { margin-top: 9px; padding: 8px 28px; font-size: 1rem; }
+}
 
 /* ===== Nori skip confirm modal ===== */
 .nori-skip-confirm {
@@ -3000,6 +3369,55 @@ body.bento-complete-open .pono-dropdown {
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.95rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
 .tut-bubble.hidden { display:none; }
 @keyframes tutPopIn { from{opacity:0} to{opacity:1} }
+.tut-pono-callout {
+  position: fixed;
+  z-index: 9300;
+  left: 132px;
+  bottom: 86px;
+  max-width: min(340px, calc(100vw - 420px));
+  padding: 10px 14px 11px;
+  border: 3px solid #F2915A;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.97);
+  color: #5D4E37;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: left;
+  box-shadow: 0 7px 18px rgba(93,78,55,0.18);
+  pointer-events: none;
+}
+.tut-pono-callout.hidden { display: none; }
+.tut-pono-callout::before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  bottom: 18px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 10px 18px 10px 0;
+  border-color: transparent #F2915A transparent transparent;
+}
+.tut-pono-callout::after {
+  content: '';
+  position: absolute;
+  left: -11px;
+  bottom: 21px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 13px 7px 0;
+  border-color: transparent rgba(255,255,255,0.97) transparent transparent;
+}
+@media (max-width: 900px) {
+  .tut-pono-callout {
+    left: 118px;
+    bottom: 78px;
+    max-width: min(300px, calc(100vw - 150px));
+    font-size: 0.72rem;
+  }
+}
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 .tut-blue-outline {
@@ -3007,12 +3425,27 @@ body.bento-complete-open .pono-dropdown {
   outline-offset: 3px;
   box-shadow: 0 0 0 3px rgba(255,255,255,0.92), 0 0 14px rgba(30,127,216,0.5) !important;
 }
+.tut-pointer-hand {
+  position: fixed;
+  z-index: 9301;
+  width: clamp(42px, 7vw, 64px);
+  height: clamp(42px, 7vw, 64px);
+  pointer-events: none;
+  user-select: none;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 7px rgba(0,0,0,0.32));
+  animation: tutPointerPulse 1.05s ease-in-out infinite;
+}
+@keyframes tutPointerPulse {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.05); }
+}
 
 /* ===== Bento full-flow tutorial (v2: ✊✋ two-hand drag demo) ===== */
 .tut-finger {
   position: fixed;
   left: 0; top: 0;
-  width: 64px; height: 64px;
+  width: 58px; height: 58px;
   /* v3.2: overlay 系より確実に上 (9200)、 bubble 9997 より下を維持 */
   z-index: 9200;
   pointer-events: none;
@@ -3025,19 +3458,24 @@ body.bento-complete-open .pono-dropdown {
 .tut-hand {
   position: absolute;
   left: 0; top: 0;
-  /* v3.2: 48px(56pxボックス) → 64px(72pxボックス) で子供にも追える大きさへ */
-  /* v3.2.1: clamp 化 — iPhone SE (320px) 等の小型 viewport で palette を遮らないよう、
-     12vw を基準に 48px-80px の範囲に縮減。 font-size も 10vw / 40-64px に追随。 */
-  width: clamp(48px, 12vw, 80px); height: clamp(48px, 12vw, 80px);
+  width: clamp(34px, 8vw, 58px); height: clamp(34px, 8vw, 58px);
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(40px, 10vw, 64px);
   line-height: 1;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
-  /* v3.2: 背景に対するコントラスト確保 */
-  text-shadow: 0 2px 6px rgba(0,0,0,0.25);
   pointer-events: none;
   user-select: none;
+  object-fit: contain;
+  -webkit-user-drag: none;
   will-change: transform, opacity;
+}
+.tut-hand img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 .tut-hand--open {
   /* v3.2: 2.4s → 2.8s に若干ゆっくり (子供が追えるように) */
@@ -3159,6 +3597,15 @@ body.bento-complete-open .pono-dropdown {
   line-height: 1.55;
   z-index: 9000;
 }
+.tut-bubble--request {
+  max-width: min(92vw, 430px);
+  font-size: clamp(0.68rem, 1.5vw, 0.9rem);
+  line-height: 1.35;
+}
+.tut-bubble--request .tut-request-line {
+  display: block;
+  white-space: nowrap;
+}
 .tut-bubble--center {
   position: fixed;
   top: 50%;
@@ -3211,6 +3658,25 @@ body.bento-complete-open .pono-dropdown {
   /* v3.3: 最初の 1400ms で一周描いてから 900ms で点滅 (ユーザー要望: 太く・点滅速く・最初は一周描く)。
      stroke-dasharray/offset は JS 側で 初期セット。 色は ビビッドな青 (#1E7FD8)。 stroke は実線。 */
   animation: tutTrimDraw 1400ms ease-out forwards, tutTrimBlink 900ms 1400ms infinite ease-in-out;
+}
+/* v3: drop target circle for overlap/layer tutorial */
+.tut-target-circle {
+  position: fixed;
+  z-index: 9075;
+  width: 92px;
+  height: 92px;
+  margin-left: -46px;
+  margin-top: -46px;
+  border: 6px solid #1E7FD8;
+  border-radius: 999px;
+  background: rgba(30, 127, 216, 0.08);
+  box-shadow: 0 0 0 5px rgba(255,255,255,0.92), 0 0 18px rgba(30,127,216,0.42);
+  pointer-events: none;
+  animation: tutTargetCirclePulse 0.9s ease-in-out infinite;
+}
+@keyframes tutTargetCirclePulse {
+  0%, 100% { transform: scale(0.96); opacity: 0.72; }
+  50%      { transform: scale(1.08); opacity: 1; }
 }
 @keyframes tutTrimBlink {
   0%, 100% { opacity: 0.4; }
@@ -3533,6 +3999,7 @@ body.bento-complete-open .pono-dropdown {
   height: clamp(74px, 14vh, 116px);
   object-fit: contain;
   filter: drop-shadow(0 7px 10px rgba(93,78,55,0.18));
+  transform: scale(var(--npc-scale, 1)) rotate(var(--npc-rotation, 0deg));
 }
 .complete-request-copy {
   min-width: 0;
@@ -4338,7 +4805,13 @@ body.bento-complete-open .pono-dropdown {
 
 <div class="shop-opening hidden" id="shop-opening" aria-live="polite">
   <div class="shop-opening__frame">
-    <img class="shop-opening__bg" id="shop-opening-bg" src="../assets/images/bento/story/shop_staff_counter.png" alt="">
+    <img class="shop-opening__bg" id="shop-opening-bg" src="../assets/images/bento/story/staff/shop_staff_bg_layered.png" alt="">
+    <div class="shop-opening__staff" id="shop-opening-staff" aria-hidden="true">
+      <img class="shop-opening__staff-member" id="shop-opening-staff-pono" alt="">
+      <img class="shop-opening__staff-member" id="shop-opening-staff-boy" alt="">
+      <img class="shop-opening__staff-member" id="shop-opening-staff-girl" alt="">
+    </div>
+    <div class="shop-opening__staff-counter-mask" id="shop-opening-staff-mask" aria-hidden="true"></div>
     <img class="shop-opening__customer" id="shop-opening-customer" alt="">
     <div class="shop-opening__shade"></div>
     <div class="shop-opening__dialog">
@@ -4359,44 +4832,70 @@ body.bento-complete-open .pono-dropdown {
 <!-- 三色食品群 説明オーバーレイ（初回のみ） -->
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
-    <div class="sk-intro-title">🍱 げんきな おべんとうの 3つの グループ</div>
-    <p class="sk-intro-lead">これは 見た目の色ではなく、食べものの はたらきの グループだよ。</p>
+    <div class="sk-intro-title">🍱 げんきな おべんとう 3つの なかま</div>
     <div class="sk-intro-grid">
       <!-- 赤 -->
       <div class="sk-intro-col sk-r-bg">
         <div class="sk-intro-dot sk-r"></div>
-        <div class="sk-intro-label">あかの グループ</div>
-        <div class="sk-intro-sublabel">おにく・おさかな・たまご<br>からだを つくる</div>
+        <div class="sk-intro-label">あかの なかま</div>
+        <div class="sk-intro-sublabel">からだを つくる</div>
         <div class="sk-intro-imgs">
-          <img src="../assets/images/bento/cooking/mince_patty/patty_003_done.png" alt="ハンバーグ">
-          <img src="../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png" alt="からあげ">
-          <img src="../assets/images/bento/cooking/shrimp/shrimp_003_done.png" alt="エビフライ">
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/mince_patty/patty_003_done.png" alt="おにく">
+            <span>おにく</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/salmon/salmon_003_done.png" alt="おさかな">
+            <span>おさかな</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/egg/egg_003_done.png" alt="たまご">
+            <span>たまご</span>
+          </div>
         </div>
       </div>
       <!-- 黄 -->
       <div class="sk-intro-col sk-y-bg">
         <div class="sk-intro-dot sk-y"></div>
-        <div class="sk-intro-label">きいろの グループ</div>
-        <div class="sk-intro-sublabel">ごはん・めん・じゃがいも<br>あそぶ ちから</div>
+        <div class="sk-intro-label">きいろの なかま</div>
+        <div class="sk-intro-sublabel">あそぶ ちから</div>
         <div class="sk-intro-imgs">
-          <img src="../assets/images/Bento_parts/rice_umeboshi.webp" alt="ごはん" style="transform:rotate(90deg)">
-          <img src="../assets/images/bento/cooking/korokke/korokke_003_done.png" alt="コロッケ">
-          <img src="../assets/images/bento/free-layout/okazu_napolitan.png" alt="ナポリタン">
+          <div class="sk-intro-example">
+            <img src="../assets/images/Bento_parts/rice_umeboshi.webp" alt="ごはん" style="transform:rotate(90deg)">
+            <span>ごはん</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/free-layout/okazu_napolitan.png" alt="めん">
+            <span>めん</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/korokke/korokke_003_done.png" alt="じゃがいも">
+            <span>じゃがいも</span>
+          </div>
         </div>
       </div>
       <!-- 緑 -->
       <div class="sk-intro-col sk-g-bg">
         <div class="sk-intro-dot sk-g"></div>
-        <div class="sk-intro-label">みどりの グループ</div>
-        <div class="sk-intro-sublabel">やさい・くだもの<br>ちょうしを ととのえる</div>
+        <div class="sk-intro-label">みどりの なかま</div>
+        <div class="sk-intro-sublabel">ちょうしを ととのえる</div>
         <div class="sk-intro-imgs">
-          <img src="../assets/images/bento/free-layout/okazu_broccoli.png" alt="ブロッコリー">
-          <img src="../assets/images/bento/cooking/tomato/tomato_001.png" alt="プチトマト">
-          <img src="../assets/images/bento/free-layout/fruit_ichigo.png" alt="いちご">
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/free-layout/okazu_broccoli.png" alt="ブロッコリー">
+            <span>ブロッコリー</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/cooking/tomato/tomato_001.png" alt="トマト">
+            <span>トマト</span>
+          </div>
+          <div class="sk-intro-example">
+            <img src="../assets/images/bento/free-layout/fruit_ichigo.png" alt="いちご">
+            <span>いちご</span>
+          </div>
         </div>
       </div>
     </div>
-    <p class="sk-intro-note">どうぶつの おねがいも ききながら、3つの グループを そろえよう。</p>
+    <p class="sk-intro-note">あか・きいろ・みどりを ひとつずつ いれてみよう。</p>
     <button class="sk-intro-btn" id="sk-intro-btn">わかった！</button>
   </div>
 </div>
@@ -4404,7 +4903,7 @@ body.bento-complete-open .pono-dropdown {
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 
-<div class="game-title">ポノとつくろう いろどりべんとう</div>
+<div class="game-title" id="tutorial-mode-label" aria-live="polite"></div>
 <button class="fav-header-btn" id="fav-header-btn" aria-label="おきにいりを みる" title="おきにいりを みる">⭐</button>
 <button class="tut-settings-btn" id="tut-settings-btn" aria-label="チュートリアル設定" title="チュートリアル設定">⚙</button>
 <div class="tut-settings-modal hidden" id="tut-settings-modal">
@@ -4562,6 +5061,7 @@ body.bento-complete-open .pono-dropdown {
   document.getElementById('sk-intro-btn').addEventListener('click', function() {
     localStorage.setItem('bento_sk_intro_done', '1');
     localStorage.setItem('bento_tut_seen_v2', '1');
+    window.__bentoSkIntroShownThisRun = true;
     intro.classList.add('hidden');
     const freeStage = document.getElementById('free-layout-stage');
     if (freeStage) {
@@ -4753,15 +5253,19 @@ const FREE_SIDE_OKAZU_NAMES = ['キャベツ', 'プチトマト', 'たまごや�
 // タイトル後に 1 体ランダム選定。 入れた食材の name が wantedFoods / perfectCombos と
 // 三色グループの両方で最終リアクションを決める。
 const NPC_PORTRAIT_BASE = '../assets/images/bento/npc/';
+const NPC_PORTRAIT_ASSET_VERSION = '20260617-risu-bright-set';
+function npcPortraitSrc(src) {
+  return src + '?v=' + encodeURIComponent(NPC_PORTRAIT_ASSET_VERSION);
+}
 function npcPortraits(id) {
   const base = NPC_PORTRAIT_BASE + id + '_';
   return {
-    portraitRequest: base + 'request.png',
-    portraitNormal: base + 'normal.png',
-    portraitHappy: base + 'normal.png',
-    portraitSuperHappy: base + 'super_happy.png',
-    portraitAlmost: base + 'almost.png',
-    portraitSad: base + 'sad.png',
+    portraitRequest: npcPortraitSrc(base + 'request.png'),
+    portraitNormal: npcPortraitSrc(base + 'normal.png'),
+    portraitHappy: npcPortraitSrc(base + 'normal.png'),
+    portraitSuperHappy: npcPortraitSrc(base + 'super_happy.png'),
+    portraitAlmost: npcPortraitSrc(base + 'almost.png'),
+    portraitSad: npcPortraitSrc(base + 'sad.png'),
   };
 }
 function getRequesterPortrait(req, mood) {
@@ -4778,7 +5282,7 @@ function getRequesterPortrait(req, mood) {
 // localStorage key: 'bento_npc_positions_v1'
 // 形式: { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
 //   - x: left %  (0-100, default 58)
-//   - y: bottom % (0-50, default 23)
+//   - y: bottom % (0-100, default 23)
 //   - scale: 倍率 (0.5-1.5, default 1)
 //   - rotation: 回転 deg (-20〜+20, default 0)
 //   - opacity: 不透明度 (0-1, default 1)
@@ -4806,7 +5310,9 @@ function getNpcPositionOverride(charId, expression) {
   if (!charId) return null;
   const key = (charId || '') + '_' + (expression || 'normal');
   const all = loadNpcPositionOverrides();
-  return all[key] || null;
+  if (all[key]) return all[key];
+  if (expression === 'happy') return all[(charId || '') + '_normal'] || null;
+  return null;
 }
 // シーン上の <img> に位置オーバーライドを反映。
 // el が `position: absolute` 想定 (delivery/shop-opening) の場合は left/bottom も適用。
@@ -4924,11 +5430,56 @@ const NPC_REQUESTERS = [
   },
 ];
 
+const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
+const TUTORIAL_FIXED_REQUESTER_ID = 'araiguma';
+
+function isTutorialResetRequested() {
+  try { return new URLSearchParams(location.search).get('tutreset') === '1'; } catch (_) { return false; }
+}
+function isTutorialPendingForNpcSelection() {
+  if (isTutorialResetRequested()) return true;
+  try { return localStorage.getItem(BENTO_TUTORIAL_STORAGE_KEY) !== '1'; } catch (_) { return true; }
+}
+function isTutorialRequesterFoodAvailable(foodName) {
+  if (!foodName) return false;
+  try {
+    if (window.PonoTier && typeof window.PonoTier.isBentoFoodUnlocked === 'function') {
+      return window.PonoTier.isBentoFoodUnlocked(foodName);
+    }
+  } catch (_) {}
+  return true;
+}
+function getTutorialFixedRequester() {
+  const preferred = NPC_REQUESTERS.find(r => r.id === TUTORIAL_FIXED_REQUESTER_ID) || null;
+  const hasAvailablePrimary = req => {
+    const primary = (req && Array.isArray(req.primaryFoods)) ? req.primaryFoods : [];
+    return primary.some(isTutorialRequesterFoodAvailable);
+  };
+  if (preferred && hasAvailablePrimary(preferred)) return preferred;
+  return NPC_REQUESTERS.find(hasAvailablePrimary) || preferred || NPC_REQUESTERS[0] || null;
+}
+function shouldUseTutorialFixedRequester() {
+  if (!freeLayoutMode) return false;
+  if (!isTutorialPendingForNpcSelection()) return false;
+  try {
+    const sp = new URLSearchParams(location.search);
+    if (sp.has('npc') && !isTutorialResetRequested()) return false;
+  } catch (_) {}
+  return true;
+}
+
 const SK_GROUP_INFO = {
   r: { label: 'あかの グループ', role: 'からだを つくる', foods: 'おにく・おさかな・たまご' },
   y: { label: 'きいろの グループ', role: 'あそぶ ちから', foods: 'ごはん・めん・じゃがいも' },
   g: { label: 'みどりの グループ', role: 'ちょうしを ととのえる', foods: 'やさい・くだもの' },
 };
+const SK_GROUP_SHORT_LABELS = { r: 'あか', y: 'きいろ', g: 'みどり' };
+function getSkGroupClass(sk) {
+  return sk && SK_GROUP_SHORT_LABELS[sk] ? 'sk-group-' + sk : '';
+}
+function getSkGroupShortLabel(sk) {
+  return SK_GROUP_SHORT_LABELS[sk] || '';
+}
 
 const BENTO_REMINDER_FOOD_ICONS = [
   ['やきざけ', '🐟'],
@@ -4983,6 +5534,7 @@ function renderBentoReminder() {
   reminder.classList.toggle('hidden', !show);
   guide.classList.toggle('has-reminder', show);
   if (!show) {
+    reminder.classList.remove('is-request-focus');
     reminder.replaceChildren();
     return;
   }
@@ -5034,7 +5586,7 @@ function renderBentoReminder() {
 // ===== 豆知識（4-5さい向け食育トリビア） =====
 const TRIVIA = {
   'ブロッコリー':       'ブロッコリーは やさいの グループ。からだの ちょうしを ととのえるよ！',
-  'プチトマト':         'プチトマトは やさいの グループ。見た目の色とは べつなんだよ！',
+  'プチトマト':         'プチトマトは やさいの なかま。からだを げんきに するよ！',
   'にんじん':           'にんじんは めが よく みえるように してくれるよ！',
   'ほうれん':           'ほうれんそうは ぱわーが もりもり でるよ！',
   'えだまめ':           'えだまめは ちいさいけど ぱわーが いっぱい！',
@@ -5133,7 +5685,7 @@ const FREE_LAYOUT_PC_MAX_STAGE_W = 640;
 const FREE_LAYOUT_PC_MAX_STAGE_H = 388;
 const FREE_TABS = [
   { id: 'box', label: 'おべんとうばこ' },
-  { id: 'accessory', label: 'ちいさい おかず' },
+  { id: 'accessory', label: 'カップ' },
   { id: 'rice', label: 'ごはん' },
   { id: 'food', label: 'おかず' },
   { id: 'decor', label: 'かざり' },
@@ -5161,7 +5713,7 @@ const FREE_GUIDE_COPY = {
     title: '3だんめに 大きい おかずを いれよう！',
   },
   tier3Side: {
-    title: '3だんめに 小さい おかずを いれよう！',
+    title: '3だんめに カップと 小さい おかずを いれよう！',
   },
   cupEditor: {
     title: 'カップに 小さい おかずを いれよう！',
@@ -5781,6 +6333,13 @@ function selectNextNpcRequester() {
 }
 
 function decideNpcMode() {
+  if (shouldUseTutorialFixedRequester()) {
+    const req = getTutorialFixedRequester();
+    if (req) {
+      setCurrentNpcRequester(req);
+      return;
+    }
+  }
   // ----- テスト用 URL パラメータ (?npc=...) -----
   // ?npc=0           → 強制 自由モード (動物来ない)
   // ?npc=1           → 強制 依頼モード (ランダム動物)
@@ -5919,9 +6478,134 @@ function showRequesterIntro(req) {
   ov.onclick = dismiss;
 }
 
-const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/shop_staff_counter.png';
+const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/staff/shop_staff_bg_layered.png';
 const SHOP_OPENING_ORDER_BG = '../assets/images/bento/story/shop_order_counter.png';
 const SHOP_CUSTOMER_ENTER_DELAY_MS = 420;
+const SHOP_STAFF_ASSET_VERSION = '20260617-staff-wave-alt-v2';
+const SHOP_STAFF_ASSET_BASE = '../assets/images/bento/story/staff/';
+const SHOP_STAFF_COUNTER_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
+const SHOP_STAFF_COUNTER_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
+const SHOP_STAFF_MEMBERS = [
+  {
+    id: 'staffpono',
+    elementId: 'shop-opening-staff-pono',
+    name: 'ポノ',
+    defaultPose: 'idle',
+    height: '23%',
+    maxWidth: '24%',
+    defaults: { x: 13.6, y: 48.2, scale: 1, rotation: 0, opacity: 1 },
+    poses: {
+      idle: 'pono_idle.png',
+      wave: 'pono_wave.png',
+      present: 'pono_present.png',
+      listen: 'pono_listen.png',
+      wave_alt: 'pono_wave_alt.png',
+    },
+  },
+  {
+    id: 'staffboy',
+    elementId: 'shop-opening-staff-boy',
+    name: '男の子',
+    defaultPose: 'wave',
+    height: '34%',
+    maxWidth: '28%',
+    defaults: { x: 34.2, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
+    poses: {
+      idle: 'boy_idle.png',
+      wave: 'boy_wave.png',
+      present: 'boy_present.png',
+      hands: 'boy_hands.png',
+      wave_alt: 'boy_wave_alt.png',
+    },
+  },
+  {
+    id: 'staffgirl',
+    elementId: 'shop-opening-staff-girl',
+    name: '女の子',
+    defaultPose: 'idle',
+    height: '34%',
+    maxWidth: '28%',
+    defaults: { x: 46.9, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
+    poses: {
+      idle: 'girl_idle.png',
+      wave: 'girl_wave.png',
+      present: 'girl_present.png',
+      hands: 'girl_hands.png',
+      wave_alt: 'girl_wave_alt.png',
+    },
+  },
+];
+
+function versionedShopStaffSrc(file) {
+  return SHOP_STAFF_ASSET_BASE + file + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION);
+}
+
+function clampShopStaffMaskNumber(value, min, max, fallback) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(min, Math.min(max, num));
+}
+
+function normalizeShopStaffCounterMask(raw) {
+  const src = (raw && typeof raw === 'object') ? raw : {};
+  const mask = {
+    x: clampShopStaffMaskNumber(src.x, 0, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.x),
+    y: clampShopStaffMaskNumber(src.y, 0, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.y),
+    width: clampShopStaffMaskNumber(src.width, 1, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.width),
+    height: clampShopStaffMaskNumber(src.height, 1, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.height),
+    opacity: clampShopStaffMaskNumber(src.opacity, 0, 1, SHOP_STAFF_COUNTER_MASK_DEFAULT.opacity),
+  };
+  if (mask.x + mask.width > 100) mask.width = Math.max(1, 100 - mask.x);
+  if (mask.y + mask.height > 100) mask.height = Math.max(1, 100 - mask.y);
+  return mask;
+}
+
+function loadShopStaffCounterMask() {
+  try {
+    const raw = localStorage.getItem(SHOP_STAFF_COUNTER_MASK_LS_KEY);
+    return normalizeShopStaffCounterMask(raw ? JSON.parse(raw) : null);
+  } catch {
+    return normalizeShopStaffCounterMask(null);
+  }
+}
+
+function applyShopStaffCounterMaskStyle() {
+  const maskEl = document.getElementById('shop-opening-staff-mask');
+  if (!maskEl) return;
+  const mask = loadShopStaffCounterMask();
+  const right = Math.max(0, 100 - mask.x - mask.width);
+  const bottom = Math.max(0, 100 - mask.y - mask.height);
+  maskEl.style.backgroundImage = 'url("' + SHOP_OPENING_STAFF_BG + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION) + '")';
+  maskEl.style.setProperty('--staff-counter-mask-left', mask.x + '%');
+  maskEl.style.setProperty('--staff-counter-mask-top', mask.y + '%');
+  maskEl.style.setProperty('--staff-counter-mask-right', right + '%');
+  maskEl.style.setProperty('--staff-counter-mask-bottom', bottom + '%');
+  maskEl.style.setProperty('--staff-counter-mask-opacity', String(mask.opacity));
+}
+
+function setupShopOpeningStaff() {
+  SHOP_STAFF_MEMBERS.forEach(member => {
+    const img = document.getElementById(member.elementId);
+    if (!img) return;
+    const pose = member.defaultPose;
+    const file = member.poses[pose] || member.poses.idle;
+    if (file) img.src = versionedShopStaffSrc(file);
+    img.alt = member.name;
+    img.style.height = member.height;
+    img.style.maxWidth = member.maxWidth;
+    applyNpcPositionStyle(img, member.id, pose, { defaults: member.defaults, useAbsolute: true });
+  });
+  applyShopStaffCounterMaskStyle();
+}
+
+function waitForShopOpeningStaffReady() {
+  return Promise.all(SHOP_STAFF_MEMBERS.map(member => {
+    const img = document.getElementById(member.elementId);
+    if (!img) return Promise.resolve();
+    const file = member.poses[member.defaultPose] || member.poses.idle;
+    return waitForImageReady(img, versionedShopStaffSrc(file));
+  }));
+}
 
 function waitForImageReady(img, src) {
   if (!img || !src) return Promise.resolve();
@@ -5995,11 +6679,12 @@ function showShopOpening(req, onDone, options = {}) {
   if (!req) { if (onDone) onDone(); return; }
   const ov = document.getElementById('shop-opening');
   const bg = document.getElementById('shop-opening-bg');
+  const staff = document.getElementById('shop-opening-staff');
   const customer = document.getElementById('shop-opening-customer');
   const name = document.getElementById('shop-opening-name');
   const line = document.getElementById('shop-opening-line');
   const next = document.getElementById('shop-opening-next');
-  if (!ov || !bg || !customer || !name || !line || !next) {
+  if (!ov || !bg || !staff || !customer || !name || !line || !next) {
     if (onDone) onDone();
     return;
   }
@@ -6007,6 +6692,7 @@ function showShopOpening(req, onDone, options = {}) {
   const allSteps = [
     {
       bg: SHOP_OPENING_STAFF_BG,
+      staff: true,
       customer: false,
       name: 'ポノの おべんとうやさん',
       line: 'ここは ポノたちの おべんとうやさん。\nポノと ふたりの こどもが、どうぶつたちの おべんとうを つくるよ。',
@@ -6043,37 +6729,35 @@ function showShopOpening(req, onDone, options = {}) {
     name.textContent = step.name;
     renderShopOpeningLine(line, step, req);
     next.textContent = step.next;
+    ov.classList.toggle('is-staff-step', !!step.staff);
     ov.classList.toggle('is-customer-step', !!step.customer);
     ov.classList.toggle('is-request-step', !!step.emphasis);
     const keepVisibleCustomer = !!(step.customer && !step.enter && ov.classList.contains('has-customer'));
     ov.classList.toggle('has-customer', keepVisibleCustomer);
     ov.classList.remove('is-entering');
+    if (step.staff) {
+      setupShopOpeningStaff();
+      waitForShopOpeningStaffReady();
+    }
     if (step.customer) {
       const customerReady = waitForImageReady(customer, getRequesterPortrait(req, step.mood || 'normal'));
       customer.alt = req.name;
-      // 入場アニメ中は CSS の transform を尊重、 アニメ後に位置オーバーライドを適用
-      customer.style.left = '';
-      customer.style.bottom = '';
-      customer.style.transform = '';
-      customer.style.opacity = '';
+      customer.style.visibility = 'hidden';
+      applyNpcPositionStyle(customer, req.id, step.mood || 'normal', { defaults: { x: 50, y: 23 }, useAbsolute: true });
       Promise.all([bgReady, customerReady])
         .then(() => waitMs(step.enter ? SHOP_CUSTOMER_ENTER_DELAY_MS : 80))
         .then(() => {
           if (token !== renderToken || !step.customer || ov.classList.contains('hidden')) return;
+          customer.style.visibility = '';
           ov.classList.add('has-customer');
           if (step.enter) requestAnimationFrame(() => {
             if (token === renderToken && !ov.classList.contains('hidden')) ov.classList.add('is-entering');
           });
-          // 入場アニメ (0.68s) が終わってから override 反映
-          setTimeout(() => {
-            if (token === renderToken && !ov.classList.contains('hidden')) {
-              applyNpcPositionStyle(customer, req.id, step.mood || 'normal', { defaults: { x: 50, y: 23 }, useAbsolute: true });
-            }
-          }, step.enter ? 720 : 100);
         });
     } else {
       customer.removeAttribute('src');
       customer.alt = '';
+      customer.style.visibility = 'hidden';
     }
   };
 
@@ -6082,7 +6766,7 @@ function showShopOpening(req, onDone, options = {}) {
     stepIndex += 1;
     if (stepIndex >= steps.length) {
       ov.classList.add('hidden');
-      ov.classList.remove('has-customer', 'is-customer-step', 'is-request-step', 'is-entering');
+      ov.classList.remove('has-customer', 'is-staff-step', 'is-customer-step', 'is-request-step', 'is-entering');
       if (onDone) onDone();
       return;
     }
@@ -6532,6 +7216,7 @@ function renderCompleteDetailContent(el, finalEval, completionData, requester) {
   animal.className = 'complete-request-animal';
   animal.src = requester ? getRequesterPortrait(requester, finalEval.npcMood || 'happy') : (PONO_BASE + 'dance/dance_hooray.webp');
   animal.alt = requester ? requester.name : 'ポノ';
+  if (requester) applyNpcPositionStyle(animal, requester.id, finalEval.npcMood || 'happy', { useAbsolute: false });
   requestHero.appendChild(animal);
   const requestCopy = document.createElement('div');
   requestCopy.className = 'complete-request-copy';
@@ -6837,6 +7522,64 @@ window.addEventListener('pagehide', stopBgm);
 function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.exponentialRampToValueAtTime(900,t+0.08); g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12); o.start(t);o.stop(t+0.12); }
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
+const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
+const BENTO_TUTORIAL_STEP_VOICE = {
+  box: 'basic_tut_01',
+  'rice-place': 'basic_tut_02',
+  decor: 'basic_tut_03',
+  'nori-ok': 'basic_tut_04',
+  'okazu-red': 'basic_tut_05',
+  'okazu-overlap': 'basic_tut_06',
+  'layer-edit': 'basic_tut_07',
+  'move-requested-food': 'basic_tut_08',
+  'small-accessory': 'basic_tut_09',
+  'cup-edit': 'basic_tut_10',
+  'cup-edit-try': 'basic_tut_11',
+  'small-cup-food': 'basic_tut_12',
+  'small-next': 'basic_tut_13',
+};
+let bentoTutorialVoiceAudio = null;
+function stopBentoTutorialVoice() {
+  if (!bentoTutorialVoiceAudio) return;
+  try {
+    bentoTutorialVoiceAudio._bentoCancelled = true;
+    bentoTutorialVoiceAudio.pause();
+    bentoTutorialVoiceAudio.currentTime = 0;
+  } catch (_) {}
+  bentoTutorialVoiceAudio = null;
+}
+function playBentoTutorialVoice(id, opts = {}) {
+  if (!id) return null;
+  if (isMaskEditorAudioMuted()) {
+    if (typeof opts.onEnded === 'function') {
+      setTimeout(opts.onEnded, opts.fallbackMs || 5000);
+    }
+    return null;
+  }
+  stopBentoTutorialVoice();
+  try {
+    const audio = new Audio(BENTO_TUTORIAL_VOICE_BASE + id + '.mp3');
+    audio.volume = 0.95;
+    if (typeof opts.onEnded === 'function') {
+      let finished = false;
+      const done = () => {
+        if (finished || audio._bentoCancelled) return;
+        finished = true;
+        opts.onEnded();
+      };
+      audio.addEventListener('ended', done, { once: true });
+      setTimeout(done, opts.fallbackMs || 7000);
+    }
+    bentoTutorialVoiceAudio = audio;
+    const p = audio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+    return audio;
+  } catch (_) {}
+  if (typeof opts.onEnded === 'function') {
+    setTimeout(opts.onEnded, opts.fallbackMs || 5000);
+  }
+  return null;
+}
 function playFanfare() { const ac=getAC(),t=ac.currentTime; [523,659,784,1047].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.12;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.2,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.45);o.start(s);o.stop(s+0.45);}); }
 function playDrumroll() {
   const ac = getAC();
@@ -6980,7 +7723,10 @@ function getFreeGuideTabs() {
   if (freeGuideStep === 'rice') return FREE_TABS.filter(t => t.id === 'rice');
   if (freeGuideStep === 'decor') return FREE_TABS.filter(t => t.id === 'decor');
   if (isOkazuGuideStep()) {
-    return FREE_TABS.filter(t => t.id === 'food' || t.id === 'accessory');
+    if (String(freeGuideStep).endsWith('Side')) {
+      return FREE_TABS.filter(t => t.id === 'accessory' || t.id === 'food');
+    }
+    return FREE_TABS.filter(t => t.id === 'food');
   }
   if (freeGuideStep === 'tier3Prompt') return [];
   return FREE_TABS;
@@ -7012,7 +7758,15 @@ function resetFreeMainGuide() {
 function isFreeMainGuideDismissed() {
   return freeGuideDismissedKey === getFreeGuideDismissKey();
 }
+function isFreeMainGuideSuppressedByTutorial() {
+  try {
+    return !!(tutorialState && tutorialState.active && tutorialState.step !== 'box');
+  } catch (_) {
+    return false;
+  }
+}
 function isFreeMainGuideBlocking() {
+  if (isFreeMainGuideSuppressedByTutorial()) return false;
   const copy = getFreeGuideCopy();
   return !!(copy && copy.title && !isFreeMainGuideDismissed());
 }
@@ -7040,7 +7794,7 @@ function canAddFoodForCurrentStep(def) {
   return true;
 }
 function canAddFoodToCup(def) {
-  return !!def && def.type === 'food' && (((def.okazuRole || getOkazuRole(def)) === 'side') || !!def.cupAllowed);
+  return !!def && def.type === 'food' && ((def.okazuRole || getOkazuRole(def)) === 'side');
 }
 function getCupFoodChildSize(def, cup) {
   if (!def || !cup) return 96;
@@ -7146,7 +7900,7 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('つぎは 小さい おかずを いれよう！');
+    setSpeech('つぎは カップと 小さい おかずを いれよう！');
   } else if (step === 'tier3Prompt') {
     freeActiveTier = Math.min(2, getBoxTierCount());
     freeSelectedItemUid = null;
@@ -7166,7 +7920,7 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('3だんめの 小さいおかずを いれよう！');
+    setSpeech('3だんめの カップと 小さい おかずを いれよう！');
   }
   normalizeFreeGuideTab();
   if (!opts.skipRender) {
@@ -8011,6 +8765,67 @@ function getPlacementBounds(box) {
 function getRicePlacementBounds(box = getSelectedBentoBox()) {
   return (box && box.riceBounds) || getPlacementBounds(box);
 }
+function clampBoundsToParent(bounds, parent) {
+  if (!bounds || !parent) return bounds || parent || { x: 0, y: 0, w: FREE_LAYOUT_W, h: FREE_LAYOUT_H };
+  const x1 = clamp(bounds.x, parent.x, parent.x + parent.w);
+  const y1 = clamp(bounds.y, parent.y, parent.y + parent.h);
+  const x2 = clamp(bounds.x + bounds.w, parent.x, parent.x + parent.w);
+  const y2 = clamp(bounds.y + bounds.h, parent.y, parent.y + parent.h);
+  return {
+    x: Math.min(x1, x2),
+    y: Math.min(y1, y2),
+    w: Math.max(1, Math.abs(x2 - x1)),
+    h: Math.max(1, Math.abs(y2 - y1)),
+  };
+}
+function getBoundsFromSpots(spots, fallback, pad = 96) {
+  if (!Array.isArray(spots) || !spots.length) return fallback;
+  const xs = spots.map(s => s.x).filter(Number.isFinite);
+  const ys = spots.map(s => s.y).filter(Number.isFinite);
+  if (!xs.length || !ys.length) return fallback;
+  const b = {
+    x: Math.min(...xs) - pad,
+    y: Math.min(...ys) - pad,
+    w: (Math.max(...xs) - Math.min(...xs)) + pad * 2,
+    h: (Math.max(...ys) - Math.min(...ys)) + pad * 2,
+  };
+  return clampBoundsToParent(b, fallback);
+}
+function getFoodPlacementBounds(box = getSelectedBentoBox()) {
+  const fallback = getPlacementBounds(box);
+  return (box && box.foodBounds) || getBoundsFromSpots(box && box.foodSpots, fallback, 104);
+}
+function getAccessoryPlacementBounds(box = getSelectedBentoBox()) {
+  const fallback = getPlacementBounds(box);
+  return (box && box.accessoryBounds) || getBoundsFromSpots(box && (box.accessorySpots || box.foodSpots), fallback, 112);
+}
+function getFreeDropBoundsForDef(def, box = getSelectedBentoBox()) {
+  if (!def) return getPlacementBounds(box);
+  if (def.type === 'rice' || def.type === 'rice_auto' || def.type === 'template') return getRicePlacementBounds(box);
+  if (def.type === 'decor') return getRicePlacementBounds(box);
+  if (def.type === 'food') return getFoodPlacementBounds(box);
+  if (def.type === 'cup' || def.type === 'divider') return getAccessoryPlacementBounds(box);
+  return getPlacementBounds(box);
+}
+function getFreePlacementBoundsForItem(item, box = getSelectedBentoBox()) {
+  if (!item) return getPlacementBounds(box);
+  if (item.type === 'rice' || isNoriDecorItem(item) || item.type === 'decor') return getRicePlacementBounds(box);
+  if (item.type === 'food' && !getParentCup(item)) return getFoodPlacementBounds(box);
+  if (item.type === 'cup' || item.type === 'divider' || item.snapTarget) return getAccessoryPlacementBounds(box);
+  return getPlacementBounds(box);
+}
+function isPointInsideBounds(point, bounds, inset = 0) {
+  if (!point || !bounds) return false;
+  return point.x >= bounds.x + inset
+    && point.x <= bounds.x + bounds.w - inset
+    && point.y >= bounds.y + inset
+    && point.y <= bounds.y + bounds.h - inset;
+}
+function canCreateFreePaletteItemAtPoint(def, point) {
+  if (!def || !point) return false;
+  if (def.type === 'food' && getEditingCup()) return true;
+  return isPointInsideBounds(point, getFreeDropBoundsForDef(def), 0);
+}
 function isNoriDecorItem(item) {
   return !!item && item.type === 'decor' && String(item.id || '').startsWith('nori_');
 }
@@ -8053,6 +8868,10 @@ function getNextFreeSpot(type) {
 function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
   const b = getPlacementBounds(box);
+  return clampPointToBounds(x, y, item, b);
+}
+function clampPointToFreeItemBounds(x, y, item) {
+  const b = getFreePlacementBoundsForItem(item);
   return clampPointToBounds(x, y, item, b);
 }
 function clampPointToBounds(x, y, item, b) {
@@ -8125,13 +8944,16 @@ function layoutCupChildren(cup) {
 function makePaletteDropToast(def) {
   if (!def) return 'おべんとうばこまで もっていこう！';
   if (def.type === 'rice_auto' || def.type === 'template' || def.type === 'rice') {
-    return 'ごはんを おべんとうばこに いれよう！';
+    return 'ごはんは ひだりの ごはんの ところへ もっていこう！';
   }
   if (def.type === 'decor') {
     return 'のりを ごはんのうえまで もっていこう！';
   }
   if (def.type === 'food' && getEditingCup()) {
     return 'カップまで もっていこう！';
+  }
+  if (def.type === 'food') {
+    return 'おかずは みぎの おかずの ところへ もっていこう！';
   }
   return 'おべんとうばこまで もっていこう！';
 }
@@ -8199,7 +9021,7 @@ function moveCupChildren(cup, dx, dy) {
 function snapPointForItem(item, x, y) {
   let point = item.type === 'food' && getParentCup(item)
     ? clampPointToCup(x, y, item, getParentCup(item))
-    : clampPointToBento(x, y, item);
+    : clampPointToFreeItemBounds(x, y, item);
   if (isNoriDecorItem(item)) {
     delete item.parentCupId;
     return clampPointToRice(x, y, item);
@@ -8228,7 +9050,7 @@ function snapPointForItem(item, x, y) {
       };
     }
   }
-  return clampPointToBento(point.x, point.y, item);
+  return clampPointToFreeItemBounds(point.x, point.y, item);
 }
 function avoidFreeOverlap(item) {
   if (!item || item.type === 'decor' || item.type === 'pick' || item.type === 'divider' || item.parentCupId) return;
@@ -8245,7 +9067,7 @@ function avoidFreeOverlap(item) {
     const d = dist(item, other);
     if (d < minD) {
       const angle = d > 0.001 ? Math.atan2(item.y - other.y, item.x - other.x) : (0.7 + i * 0.8);
-      const p = clampPointToBento(
+      const p = clampPointToFreeItemBounds(
         other.x + Math.cos(angle) * minD,
         other.y + Math.sin(angle) * minD,
         item
@@ -8260,7 +9082,7 @@ function setFreeItemPosition(uid, x, y) {
   const parentCup = item.type === 'food' ? getParentCup(item) : null;
   const p = isNoriDecorItem(item)
     ? clampPointToRice(x, y, item)
-    : parentCup ? clampPointToCup(x, y, item, parentCup) : clampPointToBento(x, y, item);
+    : parentCup ? clampPointToCup(x, y, item, parentCup) : clampPointToFreeItemBounds(x, y, item);
   const dx = p.x - item.x;
   const dy = p.y - item.y;
   item.x = p.x;
@@ -8393,6 +9215,7 @@ function onFreeItemDragEnd(e) {
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
   spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
   playPop();
+  try { if (typeof tutorialOnItemMoved === 'function') tutorialOnItemMoved(uid); } catch (_) {}
   if (uid === freePendingCupEditorUid) {
     freePendingCupEditorUid = null;
     openCupEditor(uid);
@@ -8440,6 +9263,7 @@ function createFreePaletteDragItem(def, point) {
     freeCupToolMode = 'contents';
     return item;
   }
+  if (!canCreateFreePaletteItemAtPoint(def, point)) return null;
   if (def.type === 'rice_auto') {
     return addAutoRiceForSelectedBox({
       x: point.x,
@@ -8473,7 +9297,7 @@ function updateFreePaletteDragGhost(e) {
   freePaletteDragState.ghost.style.left = `${e.clientX}px`;
   freePaletteDragState.ghost.style.top = `${e.clientY}px`;
   if (isNoriDecorItem(freePaletteDragState.def)) {
-    freePaletteDragState.ghost.classList.toggle('is-over-stage', !!eventToFreePoint(e));
+    freePaletteDragState.ghost.classList.toggle('is-over-stage', !!freePaletteDragState.uid);
   }
 }
 function removeFreePaletteDragGhost() {
@@ -8518,6 +9342,7 @@ function onFreePaletteDragMove(e) {
     freePaletteDragState.uid = item.uid;
     freeSelectedItemUid = item.uid;
     justCreated = true;
+    updateFreePaletteDragGhost(e);
   }
   setFreeItemPosition(freePaletteDragState.uid, point.x, point.y);
   if (justCreated) {
@@ -8728,7 +9553,7 @@ function setSelectedAccessorySize(sizeKey) {
   item.size = preset.size;
   item.sizeKey = preset.key;
   if (item.type === 'cup' && preset.radius) item.radius = preset.radius;
-  const p = clampPointToBento(item.x, item.y, item);
+  const p = clampPointToFreeItemBounds(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
   if (item.snapTarget) clampCupChildren(item);
   renderFreeLayoutStage();
@@ -8740,27 +9565,25 @@ function createFreeSizeSlider(item, opts = {}) {
   const current = getAccessorySizeKey(item);
   const currentIndex = Math.max(0, presets.findIndex(p => p.key === current));
   const wrap = document.createElement('div');
-  wrap.className = 'free-size-slider';
+  wrap.className = 'free-size-stepper';
+  wrap.style.gridTemplateColumns = 'auto repeat(' + presets.length + ', 30px)';
   const label = document.createElement('span');
   label.textContent = 'サイズ';
-  const slider = document.createElement('input');
-  slider.type = 'range';
-  slider.min = '0';
-  slider.max = String(presets.length - 1);
-  slider.step = '1';
-  slider.value = String(currentIndex);
-  slider.setAttribute('aria-label', 'サイズ');
-  const apply = () => {
-    const index = clamp(Math.round(Number(slider.value) || 0), 0, presets.length - 1);
-    if (opts.selectItemUid) freeSelectedItemUid = opts.selectItemUid;
-    setSelectedAccessorySize(presets[index].key);
-  };
-  slider.addEventListener('pointerdown', e => { e.stopPropagation(); });
-  slider.addEventListener('click', e => { e.stopPropagation(); });
-  slider.addEventListener('input', e => { e.stopPropagation(); apply(); });
-  slider.addEventListener('change', e => { e.stopPropagation(); apply(); });
   wrap.appendChild(label);
-  wrap.appendChild(slider);
+  presets.forEach((preset, index) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'free-size-step-btn' + (index === currentIndex ? ' active' : '');
+    btn.textContent = String(index + 1);
+    btn.setAttribute('aria-label', 'サイズ ' + (index + 1));
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (opts.selectItemUid) freeSelectedItemUid = opts.selectItemUid;
+      setSelectedAccessorySize(preset.key);
+    });
+    wrap.appendChild(btn);
+  });
   return wrap;
 }
 function getSelectedBrushItem() {
@@ -8774,7 +9597,7 @@ function setSelectedBrushLevel(delta) {
   item.brushLevel = clamp((item.brushLevel == null ? 1 : item.brushLevel) + delta, 0, max);
   item.size = [128, 170, 220][item.brushLevel] || item.size;
   const parentCup = getParentCup(item);
-  const p = parentCup ? clampPointToCup(item.x, item.y, item, parentCup) : clampPointToBento(item.x, item.y, item);
+  const p = parentCup ? clampPointToCup(item.x, item.y, item, parentCup) : clampPointToFreeItemBounds(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -8943,6 +9766,7 @@ function moveSelectedItemLayer(delta) {
   applyLayerUnitOrder(nextUnits);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
+  try { if (typeof tutorialOnLayerMoved === 'function') tutorialOnLayerMoved(delta); } catch (_) {}
 }
 function moveSelectedItemLayerTo(edge) {
   const item = getSelectedFreeItem();
@@ -8964,6 +9788,7 @@ function moveSelectedItemLayerTo(edge) {
   applyLayerUnitOrder(nextUnits);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
+  try { if (typeof tutorialOnLayerMoved === 'function') tutorialOnLayerMoved(edge); } catch (_) {}
 }
 function sendItemLayerTo(item, edge) {
   const units = buildLayerUnits(item);
@@ -9149,7 +9974,7 @@ function selectFreeBentoBox(id) {
   const box = getSelectedBentoBox();
   placedItems.forEach(item => {
     const old = { x: item.x, y: item.y };
-    const p = isNoriDecorItem(item) ? clampPointToRice(item.x, item.y, item) : clampPointToBento(item.x, item.y, item);
+    const p = isNoriDecorItem(item) ? clampPointToRice(item.x, item.y, item) : clampPointToFreeItemBounds(item.x, item.y, item);
     item.x = p.x; item.y = p.y;
     const dx = item.x - old.x;
     const dy = item.y - old.y;
@@ -9198,11 +10023,12 @@ function createFreeVisual(item) {
 function createFreePlacedElement(item, interactive) {
   const el = document.createElement('div');
   const typeClass = item.type ? ' type-' + item.type : '';
+  const groupClass = getSkGroupClass(item.sk);
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && (!editingCup || item.parentCupId !== editingCup.uid);
   const brushLocked = interactive && !!freeBrushStampDef;
   const isSelected = interactive && isItemVisuallySelected(item);
-  el.className = 'free-placed-item' + typeClass + (isSelected ? ' selected' : '') + (item.pop ? ' pop' : '') + (lockCupChild ? ' cup-child-locked' : '') + (brushLocked ? ' brush-locked' : '');
+  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : ''].filter(Boolean).join(' ');
   el.dataset.freeUid = item.uid;
   el.style.left = toPctX(item.x);
   el.style.top = toPctY(item.y);
@@ -9225,11 +10051,85 @@ function createFreePlacedElement(item, interactive) {
   }
   return el;
 }
+function getFreeControlIconName(label) {
+  if (label === '↺') return 'rotate-left';
+  if (label === '↻') return 'rotate-right';
+  if (label === '↓') return 'layer-down';
+  if (label === '↑') return 'layer-up';
+  if (label === '⇩') return 'layer-back';
+  if (label === '⇧') return 'layer-front';
+  return '';
+}
+function getFreeControlIconTitle(label) {
+  if (label === '↺') return '左に回す';
+  if (label === '↻') return '右に回す';
+  if (label === '↓') return 'うしろへ';
+  if (label === '↑') return 'まえへ';
+  if (label === '⇩') return 'いちばんうしろへ';
+  if (label === '⇧') return 'いちばんまえへ';
+  return label || '';
+}
+function appendSvgPath(svg, d) {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  svg.appendChild(path);
+}
+function createFreeControlIcon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'free-icon-svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  if (name === 'rotate-left') {
+    appendSvgPath(svg, 'M8 5H3v5');
+    appendSvgPath(svg, 'M4.2 10A8 8 0 1 0 7.1 5.4');
+  } else if (name === 'rotate-right') {
+    appendSvgPath(svg, 'M16 5h5v5');
+    appendSvgPath(svg, 'M19.8 10A8 8 0 1 1 16.9 5.4');
+  } else if (name === 'layer-down') {
+    appendSvgPath(svg, 'M12 4v14');
+    appendSvgPath(svg, 'M6 12l6 6 6-6');
+  } else if (name === 'layer-up') {
+    appendSvgPath(svg, 'M12 20V6');
+    appendSvgPath(svg, 'M6 12l6-6 6 6');
+  } else if (name === 'layer-back') {
+    appendSvgPath(svg, 'M12 4v12');
+    appendSvgPath(svg, 'M6 10l6 6 6-6');
+    appendSvgPath(svg, 'M5 20h14');
+  } else if (name === 'layer-front') {
+    appendSvgPath(svg, 'M12 20V8');
+    appendSvgPath(svg, 'M6 14l6-6 6 6');
+    appendSvgPath(svg, 'M5 4h14');
+  }
+  return svg;
+}
+function setFreeControlButtonContent(button, label) {
+  const iconName = getFreeControlIconName(label);
+  if (!iconName) {
+    button.textContent = label;
+    return;
+  }
+  const title = getFreeControlIconTitle(label);
+  button.textContent = '';
+  button.classList.add('free-icon-button');
+  button.dataset.freeIcon = iconName;
+  button.setAttribute('aria-label', title);
+  button.title = title;
+  if (iconName === 'rotate-left' || iconName === 'rotate-right') {
+    const glyph = document.createElement('span');
+    glyph.className = 'free-icon-glyph free-icon-glyph--rotate';
+    glyph.setAttribute('aria-hidden', 'true');
+    glyph.textContent = label;
+    button.appendChild(glyph);
+  } else {
+    button.appendChild(createFreeControlIcon(iconName));
+  }
+}
 function createFreeContextButton(label, className, onClick, disabled = false) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.textContent = label;
   if (className) b.className = className;
+  setFreeControlButtonContent(b, label);
   b.disabled = !!disabled;
   b.addEventListener('pointerdown', ev => {
     ev.preventDefault();
@@ -9239,28 +10139,44 @@ function createFreeContextButton(label, className, onClick, disabled = false) {
   });
   return b;
 }
-function createFreeContextToolbar() {
+function createFreeContextToolbar(opts = {}) {
   const item = getSelectedFreeItem();
   if (!item || isFreeMainGuideBlocking() || freeBrushStampDef) return null;
+  const panelMode = !!opts.panel;
   const toolbar = document.createElement('div');
-  toolbar.className = 'free-context-toolbar';
+  toolbar.className = 'free-context-toolbar' + (panelMode ? ' free-context-toolbar--panel' : '');
+  const groupClass = getSkGroupClass(item.sk);
+  if (groupClass) toolbar.classList.add(groupClass);
+  let controlCount = 0;
+  const appendControl = node => {
+    if (!node) return;
+    toolbar.appendChild(node);
+    controlCount++;
+  };
+
+  if (panelMode) {
+    const title = document.createElement('span');
+    title.className = 'free-context-toolbar-title';
+    title.textContent = item.name || 'えらんだもの';
+    toolbar.appendChild(title);
+  }
 
   const presets = getAccessorySizePresets(item);
   if (presets.length) {
     const sizeSlider = createFreeSizeSlider(item);
-    if (sizeSlider) toolbar.appendChild(sizeSlider);
+    appendControl(sizeSlider);
   }
 
   if (item.type !== 'rice' && !item.snapTarget) {
-    toolbar.appendChild(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
-    toolbar.appendChild(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
+    appendControl(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
+    appendControl(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
   }
 
   if (item.snapTarget) {
     const editingCup = getEditingCup();
     const isEditingThisCup = editingCup && editingCup.uid === item.uid;
-    toolbar.appendChild(createFreeContextButton(
-      isEditingThisCup ? 'OK' : 'なおす',
+    appendControl(createFreeContextButton(
+      'OK',
       'primary',
       () => isEditingThisCup ? closeCupEditor() : openCupEditor(item.uid)
     ));
@@ -9273,12 +10189,13 @@ function createFreeContextToolbar() {
       const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
       const canDown = overlapIndexes.some(i => i >= 0 && i < index);
       const canUp = overlapIndexes.some(i => i > index);
-      toolbar.appendChild(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
-      toolbar.appendChild(createFreeContextButton('↑', 'active', () => moveSelectedItemLayer(1), !canUp));
+      appendControl(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
+      appendControl(createFreeContextButton('↑', 'active', () => moveSelectedItemLayer(1), !canUp));
     }
   }
 
-  if (!toolbar.childElementCount) return null;
+  if (!controlCount) return null;
+  if (panelMode) return toolbar;
   const size = (item.size || 72) * (item.scale || 1);
   const x = clamp(item.x || FREE_LAYOUT_W / 2, 86, FREE_LAYOUT_W - 86);
   const wideToolbar = presets.length || toolbar.childElementCount >= 3;
@@ -9312,6 +10229,7 @@ function createFreeMainGuideTapLayer() {
   return layer;
 }
 function createFreeMainGuide() {
+  if (isFreeMainGuideSuppressedByTutorial()) return null;
   const copy = getFreeGuideCopy();
   if (!copy || !copy.title) return null;
   if (isFreeMainGuideDismissed()) return null;
@@ -9512,8 +10430,6 @@ function renderFreeLayoutInto(host, opts = {}) {
     renderRoot.appendChild(riceLayer);
   }
   if (opts.interactive) {
-    const contextToolbar = createFreeContextToolbar();
-    if (contextToolbar) renderRoot.appendChild(contextToolbar);
     if (freeBrushStampDef) {
       const hint = document.createElement('div');
       hint.className = 'free-brush-stamp-hint';
@@ -9622,6 +10538,11 @@ function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'free-palette-item';
+  const groupClass = getSkGroupClass(def.sk);
+  if (groupClass) {
+    btn.classList.add(groupClass);
+    btn.dataset.sk = def.sk;
+  }
   if (freeLayoutTab === 'box') btn.classList.add('box-choice');
   if ((freeLayoutTab === 'box' && def.id === selectedBentoBoxId) || def.uid === freeSelectedItemUid || (freeBrushStampDef && isCabbageBrushDef(def))) {
     btn.classList.add('selected');
@@ -9634,6 +10555,12 @@ function makeFreePaletteButton(def) {
     btn.setAttribute('aria-disabled', 'true');
   }
   btn.appendChild(createPaletteVisual(def));
+  if (groupClass && freeLayoutTab !== 'box') {
+    const group = document.createElement('span');
+    group.className = 'free-palette-group-chip';
+    group.textContent = getSkGroupShortLabel(def.sk);
+    btn.appendChild(group);
+  }
   if (def.tierLocked) {
     const lock = document.createElement('span');
     lock.className = 'free-palette-lock';
@@ -10241,8 +11168,8 @@ function renderFreeMaskEditorControls() {
 function makeSmallControlButton(label, className, onClick, disabled = false) {
   const b = document.createElement('button');
   b.type = 'button';
-  b.textContent = label;
   if (className) b.className = className;
+  setFreeControlButtonContent(b, label);
   b.disabled = !!disabled;
   b.addEventListener('pointerdown', e => {
     e.preventDefault();
@@ -10428,7 +11355,14 @@ function renderFreeCupEditorControls() {
     return null;
   }
   const frag = document.createDocumentFragment();
+  const guidePanel = renderFreeGuidePanel();
+  if (guidePanel && (freeGuideStep === 'tier2Side' || freeGuideStep === 'tier3Side')) {
+    guidePanel.classList.add('free-cup-guide-actions');
+    frag.appendChild(guidePanel);
+  }
   frag.appendChild(renderCupContentsList(cup));
+  const selectedToolbar = createFreeContextToolbar({ panel: true });
+  if (selectedToolbar) frag.appendChild(selectedToolbar);
 
   const actions = document.createElement('div');
   actions.className = 'free-cup-editor-actions';
@@ -10457,14 +11391,14 @@ function renderFreeCupControls() {
   panel.className = 'free-cup-panel';
   const title = document.createElement('div');
   title.className = 'free-cup-title';
-  title.textContent = 'カップを なおせるよ';
+  title.textContent = 'カップを えらべるよ';
   panel.appendChild(title);
 
   const list = document.createElement('div');
   list.className = 'free-cup-list';
   cups.forEach((cup, idx) => {
     const active = cup.uid === freeActiveCupUid || cup.uid === freeSelectedItemUid;
-    list.appendChild(makeSmallControlButton(`カップ${idx + 1}をなおす`, active ? 'active' : '', () => {
+    list.appendChild(makeSmallControlButton(`カップ${idx + 1}を えらぶ`, active ? 'active' : '', () => {
       openCupEditor(cup.uid);
     }));
   });
@@ -10543,6 +11477,9 @@ function renderFreeLayoutControls() {
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
 
+  const selectedToolbar = createFreeContextToolbar({ panel: true });
+  if (selectedToolbar) tray.appendChild(selectedToolbar);
+
   let items = guideTabs.length
     ? (freeLayoutTab === 'box' ? bentoBoxes : getFreePaletteItems(freeLayoutTab))
     : [];
@@ -10578,7 +11515,7 @@ function renderFreeLayoutControls() {
   if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
     const tier = getGuideTierForStep(freeGuideStep);
     actions.classList.add('has-guide-action');
-    actions.appendChild(makeSmallControlButton('小さいおかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
+    actions.appendChild(makeSmallControlButton('小さい おかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
   }
   tray.appendChild(actions);
 }
@@ -11052,7 +11989,7 @@ function onFreeOkazuTap(el, food) {
 
 function mkItem(f) {
   const d = document.createElement('div');
-  d.className = 'food-item';
+  d.className = ['food-item', getSkGroupClass(f.sk)].filter(Boolean).join(' ');
   const skDot = f.sk ? `<span class="sk-dot sk-${f.sk}"></span>` : '';
   d.innerHTML = `${skDot}${foodVis(f)}<span class="food-name">${f.name}</span>`;
   return d;
@@ -11159,6 +12096,11 @@ function setCompletePage(page) {
   if (detailPage) detailPage.classList.toggle('hidden', !detailMode);
   if (title) title.textContent = detailMode ? 'くわしい けっか' : '🎉 おべんとう かんせい！';
   queueCompleteChromeSafeAreaSync();
+  if (detailMode) {
+    setTimeout(() => {
+      try { if (typeof tutorialOnCompleteDetailShown === 'function') tutorialOnCompleteDetailShown(); } catch (_) {}
+    }, 80);
+  }
 }
 
 function stageComplete() {
@@ -11178,7 +12120,11 @@ function stageComplete() {
       };
   if (window.incrementStat) window.incrementStat('bento_complete', 1);
   if (window.PonoGameStickers) {
-    window.PonoGameStickers.grant({ gameId: 'bento', event: 'complete' });
+    if (typeof tutorialState !== 'undefined' && tutorialState.active) {
+      tutorialState.pendingStickerGrant = true;
+    } else {
+      window.PonoGameStickers.grant({ gameId: 'bento', event: 'complete' });
+    }
   }
   // ※ どんぐり付与は評価が確定してから revealReactionWithDrama 内で行う (quality依存)
   // スタンプラリー: プレイ記録
@@ -11307,13 +12253,20 @@ function stageComplete() {
   }
 
   document.getElementById('complete-btn').onclick = () => {
+    const shouldGrantTutorialSticker =
+      typeof tutorialShouldGrantPendingSticker === 'function'
+      && tutorialShouldGrantPendingSticker();
     clearRevealTimers();
+    try { if (typeof tutorialClearCompleteGuideTimers === 'function') tutorialClearCompleteGuideTimers(); } catch (_) {}
     const slot = document.getElementById('complete-pono-slot');
     if (slot) slot.classList.remove('reveal','thinking','droopy');
     const rightEl = document.getElementById('complete-right');
     if (rightEl) rightEl.classList.remove('flashing','gloomy');
     document.getElementById('complete-overlay').classList.add('hidden');
     syncCompleteChromeSafeArea();
+    if (shouldGrantTutorialSticker && typeof tutorialGrantPendingStickerAfterClose === 'function') {
+      tutorialGrantPendingStickerAfterClose();
+    }
     if (freeLayoutMode) {
       startNextBentoOrderRound();
       return;
@@ -11342,6 +12295,9 @@ function stageComplete() {
       });
     }
     revealReactionWithDrama(reaction);
+    setTimeout(() => {
+      try { if (typeof tutorialStartCompleteGuidance === 'function') tutorialStartCompleteGuidance(); } catch (_) {}
+    }, 3000);
   };
   if (currentRequester) {
     showBentoDelivery(currentRequester, finalEval, _showCompleteOverlay);
@@ -11814,16 +12770,19 @@ function showTutorial() {
 // 10-step button/tab/place-driven flow (no time-based progression).
 // state machine: tutorialState.step is the single source of truth.
 // Steps: greet → box → tab-rice → rice-place → decor → nori-ok →
-//        tab-okazu → okazu-red → tab-small → small-accessory →
-//        tab-small-food/small-cup-food → small-place/cup-ok → small-edit → small-next
+//        tab-okazu → okazu-red → okazu-overlap → layer-edit →
+//        layer-edit-try → move-requested-food → small-accessory → cup-edit →
+//        cup-edit-try → small-cup-food → small-next → complete-result
 // 公開関数 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced /
 // tutorialOnStageComplete) は維持。 storage key は互換のため v1 を再利用。
-const TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
+const TUTORIAL_STORAGE_KEY = BENTO_TUTORIAL_STORAGE_KEY;
 // v3 step ids (button/tab/place driven only):
 //   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'decor' | 'nori-ok' |
-//   'tab-okazu' | 'okazu-red' | 'tab-small' | 'small-accessory' |
-//   'tab-small-food' | 'small-place' | 'small-cup-food' | 'cup-ok' |
-//   'small-edit' | 'small-next' | 'complete' | 'done'
+//   'tab-okazu' | 'okazu-red' | 'okazu-overlap' | 'layer-edit' |
+//   'layer-edit-try' | 'move-requested-food' | 'layer-done' | 'tab-small' | 'small-accessory' | 'cup-edit' |
+//   'cup-edit-try' | 'tab-small-food' | 'small-place' | 'small-cup-food' |
+//   'cup-ok' | 'small-edit' | 'small-edit-try' | 'small-next' |
+//   'complete' | 'complete-result' | 'done'
 const tutorialState = {
   active: false,
   step: null,
@@ -11842,21 +12801,40 @@ const tutorialState = {
   lastRenderKey: '',
   trims: [],          // [{ wrap, rect, ro, target }]
   maskEl: null,
+  targetCircleEl: null,
   tabClickHandler: null,
   renderedStep: null, // last rendered step (to avoid re-binding listeners)
   // v3.2.1: retry chain timer (tutorialAnimateDragFromElWithRetry) — race condition 回避用
   _retryTimer: null,
   _targetRetryTimer: null,
+  _fingerHideTimer: null,
+  _layerDoneTimer: null,
   paletteObserver: null,
   _paletteResyncRaf: 0,
   fingerDragKey: '',
   outlinedEls: [],
+  groupIntroShown: false,
+  editDemoShown: false,
+  layerMoveDone: false,
+  ponoCalloutEl: null,
+  pointHandEl: null,
+  lastVoiceStep: '',
+  completeGuideTimers: [],
+  completeGuideToken: 0,
+  completeGuideStarted: false,
+  completeDetailShown: false,
+  pendingStickerGrant: false,
 };
 
 function tutorialReadDone() {
   try {
-    if (location.search.indexOf('tutreset=1') >= 0) {
+    if (isTutorialResetRequested()) {
       localStorage.removeItem(TUTORIAL_STORAGE_KEY);
+      localStorage.removeItem('bento_sk_intro_done');
+      localStorage.removeItem('bento_tut_seen');
+      localStorage.removeItem('bento_tut_seen_v2');
+      sessionStorage.removeItem(NPC_DECIDED_KEY);
+      sessionStorage.removeItem(NPC_SESSION_KEY);
       return false;
     }
   } catch (_) {}
@@ -11884,15 +12862,18 @@ function tutorialEnsureLayer() {
     const finger = document.createElement('div');
     finger.className = 'tut-finger';
     finger.id = 'tut-finger';
-    // ✊✋ two-hand layered structure (v2): no <img> finger
-    const open = document.createElement('span');
+    const open = document.createElement('img');
     open.className = 'tut-hand tut-hand--open';
     open.setAttribute('aria-hidden', 'true');
-    open.textContent = '✋';
-    const grip = document.createElement('span');
+    open.alt = '';
+    open.draggable = false;
+    open.src = '../assets/images/puzzle/ui/tutorial/hand_open_release.png';
+    const grip = document.createElement('img');
     grip.className = 'tut-hand tut-hand--grip';
     grip.setAttribute('aria-hidden', 'true');
-    grip.textContent = '✊';
+    grip.alt = '';
+    grip.draggable = false;
+    grip.src = '../assets/images/puzzle/ui/tutorial/hand_grip.png';
     finger.appendChild(open);
     finger.appendChild(grip);
     finger.style.display = 'none';
@@ -11907,10 +12888,28 @@ function tutorialEnsureLayer() {
     document.body.appendChild(bubble);
     tutorialState.bubbleEl = bubble;
   }
+  if (!tutorialState.ponoCalloutEl) {
+    const callout = document.createElement('div');
+    callout.className = 'tut-pono-callout hidden';
+    callout.id = 'tut-pono-callout';
+    document.body.appendChild(callout);
+    tutorialState.ponoCalloutEl = callout;
+  }
 }
 function tutorialHideFinger() {
+  if (tutorialState._fingerHideTimer) {
+    clearTimeout(tutorialState._fingerHideTimer);
+    tutorialState._fingerHideTimer = null;
+  }
   tutorialState.fingerDragKey = '';
   if (tutorialState.fingerEl) tutorialState.fingerEl.style.display = 'none';
+}
+function tutorialHideFingerAfter(delay = 2200, step = tutorialState.step) {
+  if (tutorialState._fingerHideTimer) clearTimeout(tutorialState._fingerHideTimer);
+  tutorialState._fingerHideTimer = setTimeout(() => {
+    tutorialState._fingerHideTimer = null;
+    if (tutorialState.active && tutorialState.step === step) tutorialHideFinger();
+  }, delay);
 }
 function tutorialRetryRenderStep(step, delay = 120) {
   if (tutorialState._targetRetryTimer) clearTimeout(tutorialState._targetRetryTimer);
@@ -11931,6 +12930,7 @@ function tutorialShowBubble(html, opts = {}) {
   // v3: never use loud / anchored variants — single style only
   b.classList.remove('tut-bubble--loud');
   b.classList.remove('tut-bubble--anchored');
+  b.classList.toggle('tut-bubble--request', !!opts.request);
   // center option: greet 用の画面中央配置
   if (opts.center) {
     b.classList.add('tut-bubble--center');
@@ -11955,8 +12955,259 @@ function tutorialShowBubble(html, opts = {}) {
   b.style.top = (opts.topVh || '18') + 'vh';
   b.style.transform = 'none';
 }
+function tutorialPositionBubbleBelowBentoBox() {
+  const b = tutorialState.bubbleEl;
+  const shape = document.querySelector('.free-bento-shape') || document.getElementById('free-layout-stage');
+  if (!b || !shape) return;
+  const r = shape.getBoundingClientRect();
+  const bw = b.offsetWidth || 260;
+  const bh = b.offsetHeight || 80;
+  const left = Math.max(8, Math.min(r.left + r.width / 2 - bw / 2, window.innerWidth - bw - 8));
+  let top = r.bottom + 12;
+  if (top + bh > window.innerHeight - 8) top = Math.max(8, r.top - bh - 12);
+  b.style.left = left + 'px';
+  b.style.top = top + 'px';
+  b.style.right = 'auto';
+  b.style.transform = 'none';
+}
 function tutorialHideBubble() {
   if (tutorialState.bubbleEl) tutorialState.bubbleEl.classList.add('hidden');
+}
+function tutorialPositionPonoCallout(opts = {}) {
+  const el = tutorialState.ponoCalloutEl;
+  if (!el) return;
+  const box = document.querySelector('.free-bento-shape') || document.getElementById('free-layout-stage');
+  const pono = document.getElementById('free-pono-img');
+  const anchor = box || pono;
+  if (!anchor) return;
+  const r = anchor.getBoundingClientRect();
+  if (!r || !r.width || !r.height) return;
+  const bw = el.offsetWidth || 300;
+  const bh = el.offsetHeight || 68;
+  const placement = opts.placement || el.dataset.tutPlacement || '';
+  const preferredLeft = box ? (r.left + r.width * 0.16) : (r.right - 4);
+  let left = Math.max(8, Math.min(preferredLeft, window.innerWidth - bw - 8));
+  let top = box ? (r.bottom + 8) : (r.top + r.height * 0.1);
+  if (box && placement === 'high') top = r.top + r.height * 0.54;
+  if (box && placement !== 'high') {
+    const blockers = [
+      document.getElementById('bento-reminder'),
+      document.getElementById('free-speech'),
+      document.querySelector('.free-bottom-speech'),
+      document.getElementById('speech'),
+      document.querySelector('.speech-bubble'),
+    ].filter(Boolean);
+    for (const blocker of blockers) {
+      const rr = blocker.getBoundingClientRect();
+      const visible = rr && rr.width && rr.height && getComputedStyle(blocker).display !== 'none';
+      if (visible && !(top + bh < rr.top || top > rr.bottom)) {
+        top = r.top + r.height * 0.54;
+        break;
+      }
+    }
+  }
+  if (top + bh > window.innerHeight - 8) top = Math.max(8, r.top - bh - 8);
+  el.style.left = left + 'px';
+  el.style.top = top + 'px';
+  el.style.bottom = 'auto';
+}
+function tutorialShowPonoCallout(html, opts = {}) {
+  tutorialEnsureLayer();
+  const el = tutorialState.ponoCalloutEl;
+  if (!el) return;
+  el.dataset.tutPlacement = opts.placement || '';
+  tutorialSetBubbleHtml(el, html);
+  el.classList.remove('hidden');
+  tutorialPositionPonoCallout(opts);
+}
+function tutorialHidePonoCallout() {
+  if (tutorialState.ponoCalloutEl) {
+    tutorialState.ponoCalloutEl.classList.add('hidden');
+    tutorialState.ponoCalloutEl.dataset.tutPlacement = '';
+  }
+}
+function tutorialSetModeLabel(text, opts = {}) {
+  const el = document.getElementById('tutorial-mode-label') || document.querySelector('.game-title');
+  if (!el) return;
+  el.classList.toggle('is-visible', !!text);
+  el.classList.toggle('is-demo', opts.mode === 'demo');
+  el.classList.toggle('is-try', opts.mode === 'try');
+  el.innerHTML = '';
+  if (!text) return;
+  const main = document.createElement('span');
+  main.className = 'game-title__main';
+  main.textContent = text;
+  el.appendChild(main);
+  if (opts.note) {
+    const sub = document.createElement('span');
+    sub.className = 'game-title__sub';
+    sub.textContent = opts.note;
+    el.appendChild(sub);
+  }
+  if (opts.buttonText && typeof opts.onClick === 'function') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'game-title__btn';
+    btn.textContent = opts.buttonText;
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      opts.onClick();
+    });
+    el.appendChild(btn);
+  }
+}
+function tutorialPlayStepVoice(step, firstRender) {
+  if (!firstRender) return;
+  const id = BENTO_TUTORIAL_STEP_VOICE[step];
+  if (!id || tutorialState.lastVoiceStep === step) return;
+  tutorialState.lastVoiceStep = step;
+  playBentoTutorialVoice(id);
+}
+function tutorialClearCompleteGuideTimers() {
+  if (!tutorialState.completeGuideTimers || !tutorialState.completeGuideTimers.length) return;
+  tutorialState.completeGuideTimers.forEach(id => clearTimeout(id));
+  tutorialState.completeGuideTimers = [];
+}
+function tutorialSetCompleteGuideTimer(fn, delay) {
+  const id = setTimeout(fn, delay);
+  tutorialState.completeGuideTimers.push(id);
+  return id;
+}
+function tutorialStartCompleteGuidance() {
+  if (!tutorialState.active || tutorialState.completeGuideStarted) return;
+  tutorialState.completeGuideStarted = true;
+  tutorialClearCompleteGuideTimers();
+  const guideToken = ++tutorialState.completeGuideToken;
+  const stillGuiding = () =>
+    tutorialState.active
+    && tutorialState.completeGuideToken === guideToken
+    && !tutorialState.completeDetailShown
+    && !document.getElementById('complete-overlay')?.classList.contains('hidden');
+  const playAndThen = (voiceId, fallbackMs, next) => {
+    playBentoTutorialVoice(voiceId, {
+      fallbackMs,
+      onEnded: () => {
+        if (!stillGuiding() || typeof next !== 'function') return;
+        tutorialSetCompleteGuideTimer(next, 900);
+      },
+    });
+  };
+  tutorialClearTrims();
+  tutorialClearTargetCircle();
+  tutorialHideFinger();
+  tutorialHidePonoCallout();
+  tutorialSetModeLabel('');
+  tutorialShowBubble('これで おべんとうが<br>かんせいしたよ！', { topVh: '16', side: 'left' });
+  playAndThen('basic_tut_14', 5200, () => {
+    if (!stillGuiding()) return;
+    const saveBtn = document.getElementById('save-fav-btn');
+    tutorialClearTrims();
+    tutorialShowBubble('きにいった おべんとうは<br>おきにいりに いれておけるよ', { topVh: '18', side: 'left' });
+    if (saveBtn && !saveBtn.classList.contains('hidden-pre')) {
+      tutorialPositionBubbleBeside(saveBtn, { gap: 12 });
+      tutorialMarkTarget(saveBtn, { radius: 22, outline: false });
+      tutorialAnimateTap(saveBtn);
+    } else {
+      tutorialHideFinger();
+    }
+    playAndThen('basic_tut_15', 6800, () => {
+      if (!stillGuiding()) return;
+      tutorialClearTrims();
+      tutorialHideFinger();
+      tutorialShowBubble('ともだちが よろこぶ<br>おべんとうを たくさん<br>つくってあげよう！', { topVh: '18', side: 'left' });
+      playAndThen('basic_tut_16', 6200, () => {
+        if (!stillGuiding()) return;
+        const detailBtn = document.getElementById('complete-detail-btn');
+        tutorialClearTrims();
+        tutorialShowBubble('くわしい けっかを おすと<br>いろんな じょうほうが みられるよ', { topVh: '18', side: 'left' });
+        if (detailBtn && !detailBtn.classList.contains('hidden-pre')) {
+          tutorialPositionBubbleBeside(detailBtn, { gap: 12 });
+          tutorialMarkTarget(detailBtn, { radius: 22, outline: false });
+          tutorialAnimateTap(detailBtn);
+        } else {
+          tutorialHideFinger();
+        }
+        playBentoTutorialVoice('basic_tut_17', { fallbackMs: 8200 });
+      });
+    });
+  });
+}
+function tutorialOnCompleteDetailShown() {
+  if (!tutorialState.active || tutorialState.completeDetailShown) return;
+  tutorialState.completeDetailShown = true;
+  tutorialState.completeGuideToken++;
+  tutorialClearCompleteGuideTimers();
+  tutorialClearTrims();
+  tutorialClearTargetCircle();
+  tutorialHideFinger();
+  tutorialHidePonoCallout();
+  tutorialSetModeLabel('');
+  tutorialShowBubble('うまくいったら<br>ステッカーが もらえるよ！<br>たくさん あつめよう！', { topVh: '18', side: 'left' });
+  playBentoTutorialVoice('basic_tut_18', {
+    fallbackMs: 7600,
+    onEnded: () => {
+      if (!tutorialState.active || !tutorialState.completeDetailShown) return;
+      const closeBtn = document.getElementById('complete-btn');
+      if (closeBtn) {
+        tutorialShowBubble('とじるを おすと<br>ステッカーが でるよ', { topVh: '18', side: 'left' });
+        tutorialPositionBubbleBeside(closeBtn, { gap: 12 });
+        tutorialMarkTarget(closeBtn, { radius: 22, outline: false });
+        tutorialAnimateTap(closeBtn);
+      }
+    },
+  });
+}
+function tutorialShouldGrantPendingSticker() {
+  return !!(
+    tutorialState.active
+    && tutorialState.pendingStickerGrant
+    && tutorialState.completeDetailShown
+  );
+}
+function tutorialGrantPendingStickerAfterClose() {
+  if (!tutorialState.pendingStickerGrant) return;
+  tutorialState.pendingStickerGrant = false;
+  try {
+    if (window.PonoGameStickers) {
+      window.PonoGameStickers.grant({ gameId: 'bento', event: 'complete' });
+    }
+  } catch (_) {}
+  tutorialMarkDone();
+}
+function tutorialSetReminderFocus(active) {
+  const reminder = document.getElementById('bento-reminder');
+  if (reminder) reminder.classList.toggle('is-request-focus', !!active);
+}
+function tutorialShowGroupIntroThen(nextStep) {
+  if (tutorialState.groupIntroShown) {
+    tutorialAdvance(nextStep);
+    return;
+  }
+  const intro = document.getElementById('sk-intro');
+  const btn = document.getElementById('sk-intro-btn');
+  if (!intro || !btn) {
+    tutorialState.groupIntroShown = true;
+    tutorialAdvance(nextStep);
+    return;
+  }
+  tutorialState.groupIntroShown = true;
+  tutorialHideBubble();
+  tutorialHideFinger();
+  tutorialClearTrims();
+  tutorialClearMask();
+  tutorialClearTargetCircle();
+  tutorialClearOutlines();
+  tutorialHidePonoCallout();
+  intro.classList.remove('hidden');
+  const resume = () => {
+    window.__bentoSkIntroShownThisRun = true;
+    if (!tutorialState.active || tutorialState.step !== 'greet') return;
+    setTimeout(() => {
+      if (tutorialState.active && tutorialState.step === 'greet') tutorialAdvance(nextStep);
+    }, 0);
+  };
+  btn.addEventListener('click', resume, { once: true });
 }
 function tutorialOutlineElement(el) {
   if (!el) return;
@@ -11969,6 +13220,38 @@ function tutorialClearOutlines() {
     try { el.classList.remove('tut-blue-outline'); } catch (_) {}
   });
   tutorialState.outlinedEls = [];
+}
+function tutorialHidePointingHand() {
+  if (!tutorialState.pointHandEl) return;
+  try {
+    if (tutorialState.pointHandEl.parentNode) tutorialState.pointHandEl.parentNode.removeChild(tutorialState.pointHandEl);
+  } catch (_) {}
+  tutorialState.pointHandEl = null;
+}
+function tutorialShowPointingHand(targetEl, opts = {}) {
+  if (!targetEl) {
+    tutorialHidePointingHand();
+    return;
+  }
+  tutorialHidePointingHand();
+  const r = targetEl.getBoundingClientRect();
+  if (!r || !r.width || !r.height) return;
+  const img = document.createElement('img');
+  img.className = 'tut-pointer-hand';
+  img.alt = '';
+  img.draggable = false;
+  img.src = '../assets/images/puzzle/ui/tutorial/hand_point_left.png';
+  const size = Math.max(42, Math.min(64, window.innerWidth * 0.07));
+  const side = opts.side || 'right';
+  let left = side === 'left' ? (r.left - size - 8) : (r.right - size * 0.72);
+  if (left + size > window.innerWidth - 8) left = Math.max(8, r.left - size - 8);
+  if (left < 8) left = Math.min(window.innerWidth - size - 8, r.right + 8);
+  const topBase = side === 'left' ? (r.top + r.height / 2 - size / 2) : (r.top + r.height * 0.24);
+  const top = Math.max(8, Math.min(topBase, window.innerHeight - size - 8));
+  img.style.left = left + 'px';
+  img.style.top = top + 'px';
+  document.body.appendChild(img);
+  tutorialState.pointHandEl = img;
 }
 function tutorialDismissFreeGuideBlocker() {
   try {
@@ -12178,12 +13461,86 @@ function tutorialStageRect() {
 function tutorialStageLeftHalfPoint() {
   const r = tutorialStageRect();
   if (!r) return null;
-  return { x: r.left + r.width * 0.25, y: r.top + r.height * 0.5 };
+  return { x: r.left + r.width * 0.34, y: r.top + r.height * 0.5 };
 }
 function tutorialStageRightHalfPoint() {
   const r = tutorialStageRect();
   if (!r) return null;
   return { x: r.left + r.width * 0.75, y: r.top + r.height * 0.5 };
+}
+function tutorialStageRatioPoint(rx, ry) {
+  const r = tutorialStageRect();
+  if (!r) return null;
+  return { x: r.left + r.width * rx, y: r.top + r.height * ry };
+}
+function tutorialFreeRatioPoint(rx, ry) {
+  return {
+    x: clamp(FREE_LAYOUT_W * rx, 0, FREE_LAYOUT_W),
+    y: clamp(FREE_LAYOUT_H * ry, 0, FREE_LAYOUT_H),
+  };
+}
+function tutorialLayerDemoScreenPoint() {
+  return tutorialStageRatioPoint(0.73, 0.54);
+}
+function tutorialLayerDemoFreePoint() {
+  return tutorialFreeRatioPoint(0.73, 0.54);
+}
+function tutorialLayerFoodFreePoint() {
+  return tutorialFreeRatioPoint(0.73, 0.66);
+}
+function tutorialCupDemoScreenPoint() {
+  return tutorialStageRatioPoint(0.73, 0.36);
+}
+function tutorialCupDemoFreePoint() {
+  return tutorialFreeRatioPoint(0.73, 0.36);
+}
+function tutorialShowTargetCircle(point, opts = {}) {
+  tutorialClearTargetCircle();
+  if (!point) return null;
+  const el = document.createElement('div');
+  el.className = 'tut-target-circle';
+  const size = opts.size || 92;
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  el.style.marginLeft = (-size / 2) + 'px';
+  el.style.marginTop = (-size / 2) + 'px';
+  el.style.left = point.x + 'px';
+  el.style.top = point.y + 'px';
+  document.body.appendChild(el);
+  tutorialState.targetCircleEl = el;
+  return el;
+}
+function tutorialClearTargetCircle() {
+  if (!tutorialState.targetCircleEl) return;
+  try { if (tutorialState.targetCircleEl.parentNode) tutorialState.targetCircleEl.parentNode.removeChild(tutorialState.targetCircleEl); } catch (_) {}
+  tutorialState.targetCircleEl = null;
+}
+function tutorialSnapItemToLayerDemoPoint(item) {
+  if (!item) return;
+  const p = tutorialLayerDemoFreePoint();
+  item.x = p.x;
+  item.y = p.y;
+  item.tier = getGuideTierForStep(freeGuideStep);
+  finalizeFreeItemPosition(item.uid);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function tutorialMoveLayerDemoFoodsDown() {
+  const from = tutorialLayerDemoFreePoint();
+  const to = tutorialLayerFoodFreePoint();
+  const tier = getGuideTierForStep(freeGuideStep);
+  const foods = placedItems
+    .filter(item => item.type === 'food' && !item.parentCupId && getItemTier(item) === tier)
+    .filter(item => Math.abs((item.x || 0) - from.x) <= 110 && Math.abs((item.y || 0) - from.y) <= 110)
+    .sort((a, b) => (a.layer || 0) - (b.layer || 0));
+  if (!foods.length) return false;
+  const center = (foods.length - 1) / 2;
+  foods.forEach((item, idx) => {
+    setFreeItemPosition(item.uid, to.x + (idx - center) * 26, to.y + (idx % 2 ? 8 : -8));
+  });
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  return true;
 }
 function tutorialCompleteButton() {
   const tagged = document.querySelector('[data-action="stage-complete"]');
@@ -12300,10 +13657,58 @@ function tutorialFindRicePaletteEl() {
   if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'rice') return null;
   return tutorialFirstPaletteItem();
 }
+function tutorialGetRequesterForGuide() {
+  return currentRequester || getTutorialFixedRequester();
+}
+function tutorialGetRequestedFoodNames() {
+  const req = tutorialGetRequesterForGuide();
+  const primary = (req && Array.isArray(req.primaryFoods)) ? req.primaryFoods : [];
+  const wanted = (req && Array.isArray(req.wantedFoods)) ? req.wantedFoods : [];
+  const names = [...new Set([...primary, ...wanted])].filter(Boolean);
+  const available = names.filter(isTutorialRequesterFoodAvailable);
+  return available.length ? available : names;
+}
+function tutorialGetRequestedFoodLabel() {
+  return tutorialGetRequestedFoodNames()[0] || 'おねがいの おかず';
+}
+function tutorialFindPaletteFoodByNames(names) {
+  const list = document.querySelector('.free-item-list')
+            || document.querySelector('.right-panel.free-layout-panel');
+  if (!list) return null;
+  const btns = list.querySelectorAll('.free-palette-item');
+  const wants = (names || []).map(n => String(n || '').trim()).filter(Boolean);
+  for (const want of wants) {
+    for (const b of btns) {
+      const name = (b.querySelector('.free-palette-name') || b).textContent || '';
+      if (name.trim() === want) return b;
+    }
+  }
+  for (const want of wants) {
+    for (const b of btns) {
+      const name = (b.querySelector('.free-palette-name') || b).textContent || '';
+      if (name.indexOf(want) >= 0) return b;
+    }
+  }
+  return null;
+}
 function tutorialFindFoodPaletteEl() {
   // okazu-red step は food タブで動くので、 タブが違うときは null
   if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
-  return tutorialFirstPaletteItem();
+  return tutorialFindPaletteFoodByNames(tutorialGetRequestedFoodNames())
+      || document.querySelector('.free-item-list .free-palette-item.sk-group-r')
+      || document.querySelector('.free-item-list .free-palette-item[data-sk="r"]')
+      || tutorialFirstPaletteItem();
+}
+function tutorialFindLayerDemoFoodPaletteEl() {
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
+  const requested = new Set(tutorialGetRequestedFoodNames().map(n => String(n || '').trim()));
+  const preferred = ['ハンバーグ', 'からあげ', 'コロッケ', 'ナポリタン'].filter(n => !requested.has(n));
+  return tutorialFindPaletteFoodByNames(preferred)
+      || Array.from(document.querySelectorAll('.free-item-list .free-palette-item')).find(btn => {
+        const name = (btn.querySelector('.free-palette-name') || btn).textContent || '';
+        return !requested.has(name.trim());
+      })
+      || tutorialFirstPaletteItem();
 }
 function tutorialFindNoriPaletteEl() {
   // decor タブで「のり」を含む最初の要素
@@ -12333,6 +13738,31 @@ function tutorialFindCupContentRowBtn() {
       || document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
       || document.querySelector('.free-cup-contents .free-cup-content-row');
 }
+function tutorialFindPlacedRequestedFoodItem() {
+  const names = tutorialGetRequestedFoodNames().map(n => String(n || '').trim()).filter(Boolean);
+  for (const name of names) {
+    const item = placedItems.find(i => i.type === 'food' && !i.parentCupId && String(i.name || '').trim() === name);
+    if (item) return item;
+  }
+  for (const name of names) {
+    const item = placedItems.find(i => i.type === 'food' && !i.parentCupId && String(i.name || '').indexOf(name) >= 0);
+    if (item) return item;
+  }
+  return placedItems.find(i => i.type === 'food' && !i.parentCupId) || null;
+}
+function tutorialFindPlacedRequestedFoodEl() {
+  const item = tutorialFindPlacedRequestedFoodItem();
+  return item ? document.querySelector(`[data-free-uid="${item.uid}"]`) : null;
+}
+function tutorialMoveRequestedFoodToLowerPoint(item) {
+  item = item || tutorialFindPlacedRequestedFoodItem();
+  if (!item) return false;
+  const p = tutorialLayerFoodFreePoint();
+  setFreeItemPosition(item.uid, p.x, p.y);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  return true;
+}
 function tutorialFindPlacedCupEl() {
   // ステージ上のカップ DOM (snapTarget で配置済み)
   return document.querySelector('.free-placed-item.cup, .free-placed-item.snap-target, .free-placed-item.free-css-cup')
@@ -12347,7 +13777,61 @@ function tutorialActiveCupPoint() {
   return tutorialStageRightHalfPoint();
 }
 function tutorialContextToolbarEl() {
-  return document.querySelector('.free-context-toolbar');
+  return document.querySelector('#food-tray .free-context-toolbar--panel')
+      || document.querySelector('.right-panel.free-layout-panel .free-context-toolbar--panel')
+      || document.querySelector('.free-context-toolbar--panel')
+      || document.querySelector('.free-context-toolbar');
+}
+function tutorialEditSizeControlEl() {
+  const toolbar = tutorialContextToolbarEl();
+  if (!toolbar) return null;
+  return toolbar.querySelector('.free-size-stepper')
+      || toolbar.querySelector('.free-size-slider')
+      || null;
+}
+function tutorialEditSizeSliderEl() {
+  const toolbar = tutorialContextToolbarEl();
+  if (!toolbar) return null;
+  return toolbar.querySelector('.free-size-step-btn:not(.active):not(:disabled)')
+      || toolbar.querySelector('.free-size-step-btn.active')
+      || null;
+}
+function tutorialEditLayerButtonEl() {
+  const toolbar = tutorialContextToolbarEl();
+  if (!toolbar) return null;
+  return toolbar.querySelector('[data-free-icon="layer-down"]:not(:disabled)')
+      || toolbar.querySelector('[data-free-icon="layer-up"]:not(:disabled)')
+      || toolbar.querySelector('[data-free-icon="rotate-right"]:not(:disabled)')
+      || toolbar.querySelector('[data-free-icon="rotate-left"]:not(:disabled)')
+      || toolbar.querySelector('button.primary:not(:disabled)')
+      || null;
+}
+function tutorialLayerDownButtonEl() {
+  const toolbar = tutorialContextToolbarEl();
+  if (!toolbar) return null;
+  return toolbar.querySelector('[data-free-icon="layer-down"]:not(:disabled)')
+      || tutorialEditLayerButtonEl();
+}
+function tutorialAnimateEditDemo(fast) {
+  const sizeButton = tutorialEditSizeSliderEl();
+  if (sizeButton) {
+    tutorialAnimateTap(sizeButton);
+    return;
+  }
+  const layerBtn = tutorialEditLayerButtonEl();
+  if (layerBtn) {
+    tutorialAnimateTap(layerBtn);
+    return;
+  }
+  tutorialHideFinger();
+}
+function tutorialAnimateLayerDemo(fast) {
+  const layerBtn = tutorialLayerDownButtonEl();
+  if (layerBtn) {
+    tutorialAnimateTap(layerBtn);
+    return;
+  }
+  tutorialAnimateEditDemo(fast);
 }
 
 // ===== v3 utilities =====
@@ -12371,10 +13855,6 @@ function tutorialTrimPath(targetEl, opts = {}) {
   svg.appendChild(rect);
   wrap.appendChild(svg);
 
-  // v3.3: 描画フェーズ (animation 開始から DRAW_MS) の途中に sync() が走ると
-  // dasharray が変わって視覚的ジャンプが起きる。 描画フェーズ中のリサイズ時のみ
-  // CSS animation を再起動して新しい周長で再描画する。
-  const DRAW_MS = 1400;
   const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
   function sync() {
     const r = targetEl.getBoundingClientRect();
@@ -12399,16 +13879,8 @@ function tutorialTrimPath(targetEl, opts = {}) {
     const perim = Math.max(1, 2 * (w + h));
     rect.setAttribute('stroke-dasharray', perim + ' ' + perim);
     wrap.style.setProperty('--trim-len', perim);
-    // v3.3: 描画フェーズ中であれば animation を再起動して新しい長さで描き直す。
-    // 描画完了後 (>=DRAW_MS) は --trim-len 更新のみで OK (点滅相のため動的反映は不要)。
-    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    if (now - startTime < DRAW_MS) {
-      const prev = rect.style.animation;
-      rect.style.animation = 'none';
-      // reflow を強制して animation の再起動を成立させる
-      void rect.getBoundingClientRect();
-      rect.style.animation = prev || '';
-    }
+    // 描画中に同期が入っても animation は再起動しない。
+    // DOM 変化や画像 decode が重なる初回ロードで、途中から何度も描き直されるのを避ける。
   }
   sync();
   let ro = null;
@@ -12425,7 +13897,7 @@ function tutorialMarkTarget(targetEl, opts = {}) {
   if (!targetEl) return;
   const alreadyTrimmed = (tutorialState.trims || []).some(t => t.target === targetEl);
   if (!alreadyTrimmed) tutorialTrimPath(targetEl, opts);
-  tutorialOutlineElement(targetEl);
+  if (opts.outline !== false) tutorialOutlineElement(targetEl);
 }
 
 function tutorialClearTrims() {
@@ -12494,8 +13966,14 @@ function tutorialAdvance(nextStep) {
   // step 変更時は前ステップの装飾を一旦掃除
   tutorialClearTrims();
   tutorialClearMask();
+  tutorialClearTargetCircle();
   tutorialHideFinger();
+  tutorialHidePointingHand();
   tutorialState.renderedStep = null;
+  if (tutorialState._layerDoneTimer) {
+    clearTimeout(tutorialState._layerDoneTimer);
+    tutorialState._layerDoneTimer = null;
+  }
   tutorialResetInactivity();
   tutorialRenderStep();
   // v3.2.1: step 切替時は前ステップの retry chain も必ず破棄
@@ -12590,13 +14068,19 @@ function tutorialRenderStep() {
   const fast = tutorialState.inactivityFired;
   const firstRender = tutorialState.renderedStep !== step;
   tutorialState.renderedStep = step;
+  tutorialSetModeLabel('');
+  tutorialSetReminderFocus(false);
+  tutorialPlayStepVoice(step, firstRender);
 
   // ステップが切り替わるたびに、 前ステップの装飾を一掃 (button-bound 含む)
   if (firstRender) {
     tutorialClearTrims();
     tutorialClearMask();
+    tutorialClearTargetCircle();
     tutorialClearCompletePulse();
     tutorialClearOutlines();
+    tutorialHidePonoCallout();
+    tutorialHidePointingHand();
   }
 
   // 0. greet — 中央配置 + skip checkbox 縮小
@@ -12619,7 +14103,7 @@ function tutorialRenderStep() {
           tutorialTeardown();
           return;
         }
-        tutorialAdvance('box');
+        tutorialShowGroupIntroThen('box');
       }, { once: true });
     }
     return;
@@ -12629,10 +14113,11 @@ function tutorialRenderStep() {
   if (step === 'box') {
     tutorialApplyBoxLock();
     tutorialShowBubble(
-      'この はこを つかうよ'
+      'こんかいは これを つかうよ'
       + '<br>「これでOK」を おしてね',
       { topVh: '14' }
     );
+    tutorialPositionBubbleBelowBentoBox();
     tutorialHideFinger();
     if (firstRender) {
       // 弁当箱外周 trim
@@ -12740,24 +14225,136 @@ function tutorialRenderStep() {
 
   // 7. okazu-red — 右半分にあかい食材を入れる + 右半分マスク明滅
   if (step === 'okazu-red') {
-    tutorialShowBubble(
-      'すきな おかずを いくつか 入れてね'
-      + '<br><span class="tut-emph-red">あか</span>の グループも 入れよう',
-      { topVh: '58', side: 'left' }
-    );
+    const requestedFood = tutorialGetRequestedFoodLabel();
+    tutorialSetReminderFocus(true);
+    tutorialHideBubble();
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout('おともだちの おねがい<br>「' + requestedFood + '」を いれよう！<br><span class="tut-emph-red">あか</span>の グループだよ', { placement: 'high' });
+    tutorialShowTargetCircle(tutorialLayerDemoScreenPoint(), { size: 108 });
     if (firstRender) tutorialMaskOverlay({ half: 'right' });
     // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
     tutorialAnimateDragFromElWithRetry(
       () => tutorialFindFoodPaletteEl(),
-      () => tutorialStageRightHalfPoint(),
+      () => tutorialLayerDemoScreenPoint(),
       { fast }
     );
     return;
   }
 
-  // 8. tab-small — accessory (ちいさいおかず) タブを押させる
+  // 7b. okazu-overlap — 無料枠の別おかずを重ねて、上下の意味が見える状態にする
+  if (step === 'okazu-overlap') {
+    tutorialSetReminderFocus(false);
+    tutorialHidePonoCallout();
+    tutorialShowBubble('もうひとつ おかずを<br>まるの ところに 重ねよう', { topVh: '18', side: 'left' });
+    tutorialShowTargetCircle(tutorialLayerDemoScreenPoint(), { size: 108 });
+    tutorialAnimateDragFromElWithRetry(
+      () => tutorialFindLayerDemoFoodPaletteEl(),
+      () => tutorialLayerDemoScreenPoint(),
+      { fast }
+    );
+    return;
+  }
+
+  // 7c. layer-edit — 重なったおかずで上下を見せる
+  if (step === 'layer-edit') {
+    const toolbar = tutorialContextToolbarEl();
+    const layerBtn = tutorialLayerDownButtonEl();
+    setSpeech('あれ？' + tutorialGetRequestedFoodLabel() + 'が 見えなくなっちゃったよ');
+    try { if (typeof setPono === 'function') setPono(false); } catch (_) {}
+    tutorialShowPonoCallout('あれ？<br>' + tutorialGetRequestedFoodLabel() + 'が 見えなくなっちゃったよ');
+    tutorialSetModeLabel('おてほんを みてみよう', {
+      mode: 'demo',
+      note: 'この↓ボタンで うしろへ',
+      buttonText: 'やってみよう',
+      onClick: () => tutorialAdvance('layer-edit-try'),
+    });
+    tutorialHideBubble();
+    if (layerBtn) tutorialMarkTarget(layerBtn, { radius: 14, outline: false });
+    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+    else tutorialRetryRenderStep('layer-edit');
+    if (firstRender && toolbar) {
+      tutorialAnimateLayerDemo(fast);
+      tutorialHideFingerAfter(2200, 'layer-edit');
+    } else if (!toolbar) {
+      tutorialHideFinger();
+    }
+    return;
+  }
+
+  // 7d. layer-edit-try — 上下操作を試してからカップへ進む
+  if (step === 'layer-edit-try') {
+    const toolbar = tutorialContextToolbarEl();
+    const layerBtn = tutorialLayerDownButtonEl();
+    setSpeech('重なって 見えなくなったら、えらんで まえ・うしろを かえよう。この↓を おしてね');
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout('重なって 見えなくなったら<br>この↓を おしてね');
+    tutorialSetModeLabel('この ↓ ボタンを おしてね', {
+      mode: 'try',
+      note: 'えらんだ おかずが うしろへ',
+    });
+    tutorialHideBubble();
+    if (layerBtn) tutorialMarkTarget(layerBtn, { radius: 14, outline: false });
+    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+    else tutorialRetryRenderStep('layer-edit-try');
+    tutorialHideFinger();
+    return;
+  }
+
+  // 7e. move-requested-food — 見えたタコウインナーを空き位置へ動かす
+  if (step === 'move-requested-food') {
+    const foodEl = tutorialFindPlacedRequestedFoodEl();
+    const requestedFood = tutorialGetRequestedFoodLabel();
+    setSpeech(requestedFood + 'を えらんで あいている ところに うごかそう');
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout(requestedFood + 'を えらんで<br>あいている ところに うごかそう');
+    tutorialSetModeLabel('やってみよう！', {
+      mode: 'try',
+      note: requestedFood + 'を したへ',
+    });
+    tutorialHideBubble();
+    tutorialShowTargetCircle(tutorialStageRatioPoint(0.73, 0.66), { size: 112 });
+    if (foodEl) {
+      if (firstRender) tutorialTrimPath(foodEl, { radius: 18 });
+      tutorialAnimateDragFromElWithRetry(
+        () => tutorialFindPlacedRequestedFoodEl(),
+        () => tutorialStageRatioPoint(0.73, 0.66),
+        { fast }
+      );
+    } else {
+      tutorialRetryRenderStep('move-requested-food');
+      tutorialHideFinger();
+    }
+    return;
+  }
+
+  // 7e. layer-done — レイヤー操作後、次のカップへつなぐ
+  if (step === 'layer-done') {
+    setSpeech('できたね！おかずは したへ よせたよ。つぎは カップを えらぼう');
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout('できたね！<br>おかずは したへ よせたよ<br>つぎは カップを えらぼう');
+    tutorialSetModeLabel('できたね！', {
+      mode: 'try',
+      note: 'つぎは カップ',
+    });
+    tutorialHideBubble();
+    tutorialHideFinger();
+    if (firstRender) {
+      if (tutorialState._layerDoneTimer) clearTimeout(tutorialState._layerDoneTimer);
+      tutorialState._layerDoneTimer = setTimeout(() => {
+        tutorialState._layerDoneTimer = null;
+        if (tutorialState.active && tutorialState.step === 'layer-done') {
+          freeLayoutTab = 'accessory';
+          renderFreeLayoutControls();
+          tutorialAdvance('small-accessory');
+        }
+      }, 2100);
+    }
+    return;
+  }
+
+  // 8. tab-small — accessory (カップ) タブを押させる
   if (step === 'tab-small') {
-    tutorialShowBubble('『ちいさい おかず』タブを おしてね', { topVh: '18', side: 'left' });
+    tutorialShowBubble('『カップ』を おしてね', { topVh: '18', side: 'left' });
     if (firstRender) {
       if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory') {
         setTimeout(() => tutorialAdvance('small-accessory'), 0);
@@ -12769,7 +14366,6 @@ function tutorialRenderStep() {
       tutorialPositionBubbleBeside(smallTab, { gap: 8 });
       if (firstRender) {
         tutorialTrimPath(smallTab, { radius: 10 });
-        tutorialOutlineElement(smallTab);
       }
       tutorialAnimateTap(smallTab);
     } else {
@@ -12780,16 +14376,96 @@ function tutorialRenderStep() {
 
   // 9. small-accessory — カップ/仕切りを先に選ぶ
   if (step === 'small-accessory') {
-    tutorialShowBubble('まず カップや しきりを えらぼう', { topVh: '18', side: 'left' });
-    if (firstRender) {
-      const cup = tutorialFindCupPaletteEl();
-      if (cup) tutorialTrimPath(cup, { radius: 12 });
+    try {
+      if (typeof freeGuideStep !== 'undefined'
+          && (!isOkazuGuideStep(freeGuideStep) || !String(freeGuideStep).endsWith('Side'))) {
+        setFreeGuideStep('tier2Side', { skipRender: true });
+      }
+      if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'accessory') {
+        freeLayoutTab = 'accessory';
+        renderFreeLayoutControls();
+      }
+    } catch (_) {}
+    setSpeech('みずたまカップを あいている ところに おこう');
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout('みずたまカップを<br>あいている ところに おこう');
+    tutorialSetModeLabel('みずたまカップを おこう', {
+      mode: 'try',
+      note: 'あいている ところへ',
+    });
+    tutorialHideBubble();
+    tutorialShowTargetCircle(tutorialCupDemoScreenPoint(), { size: 112 });
+    const cup = tutorialFindCupPaletteEl();
+    if (cup) {
+      tutorialOutlineElement(cup);
+      tutorialShowPointingHand(cup, { side: 'right' });
+      if (firstRender) tutorialTrimPath(cup, { radius: 12 });
+    } else {
+      tutorialRetryRenderStep('small-accessory');
     }
     tutorialAnimateDragFromElWithRetry(
       () => tutorialFindCupPaletteEl(),
-      () => tutorialStageRightHalfPoint(),
+      () => tutorialCupDemoScreenPoint(),
       { fast }
     );
+    return;
+  }
+
+  // 9b. cup-edit — カップを置いた直後にサイズ/上下を見せる
+  if (step === 'cup-edit') {
+    const toolbar = tutorialContextToolbarEl();
+    const sizeControl = tutorialEditSizeControlEl();
+    setSpeech('カップの サイズを えらべるよ。3が いちばん おおきいよ。やじるしで まえ・うしろも かえられるよ。きまったら OKを おしてね');
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout('サイズは 1・2・3<br>3が いちばん おおきいよ<br>やじるしで まえ・うしろ<br>きまったら OKを おしてね');
+    tutorialSetModeLabel('おてほんを みてみよう', {
+      mode: 'demo',
+      note: 'サイズ 1・2・3',
+      buttonText: 'やってみよう',
+      onClick: () => tutorialAdvance('cup-edit-try'),
+    });
+    tutorialHideBubble();
+    if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
+    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+    else tutorialRetryRenderStep('cup-edit');
+    if (firstRender && (sizeControl || toolbar)) {
+      tutorialAnimateEditDemo(fast);
+      tutorialHideFingerAfter(2200, 'cup-edit');
+    } else if (!sizeControl && !toolbar) {
+      tutorialHideFinger();
+    }
+    return;
+  }
+
+  // 9c. cup-edit-try — カップ編集を試したあと、小さいおかずを入れる
+  if (step === 'cup-edit-try') {
+    const toolbar = tutorialContextToolbarEl();
+    const sizeControl = tutorialEditSizeControlEl();
+    const okBtn = tutorialCupOkButton();
+    setSpeech('1・2・3を えらんでみよう。やじるしでも まえ・うしろを かえられるよ。きまったら OKを おしてね');
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout('1・2・3を えらんでみよう<br>やじるしでも かえられるよ<br>きまったら OKを おしてね');
+    tutorialSetModeLabel('やってみよう！', {
+      mode: 'try',
+      note: '1・2・3 → OK',
+    });
+    tutorialHideBubble();
+    let markedCupTryTarget = false;
+    if (sizeControl) {
+      tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
+      markedCupTryTarget = true;
+    }
+    if (okBtn) {
+      tutorialMarkTarget(okBtn, { radius: 16, outline: false });
+      markedCupTryTarget = true;
+    }
+    if (!markedCupTryTarget && toolbar) {
+      tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+      markedCupTryTarget = true;
+    }
+    if (!markedCupTryTarget) tutorialRetryRenderStep('cup-edit-try');
+    if (firstRender && sizeControl) tutorialAnimateEditDemo(fast);
+    else tutorialHideFinger();
     return;
   }
 
@@ -12808,7 +14484,17 @@ function tutorialRenderStep() {
 
   // 11. small-cup-food — カップ内に小さいおかずを入れる
   if (step === 'small-cup-food') {
-    tutorialShowBubble('カップに 小さい おかずを 入れよう', { topVh: '18', side: 'left' });
+    tutorialHidePonoCallout();
+    setSpeech('たまごやきを カップに いれよう');
+    tutorialSetModeLabel('やってみよう！', {
+      mode: 'try',
+      note: 'ちいさい おかずを カップへ',
+    });
+    tutorialShowBubble('たまごやきを<br>カップに いれよう', { topVh: '54', side: 'left' });
+    if (firstRender) {
+      const smallFood = tutorialFindCupFoodPaletteEl();
+      if (smallFood) tutorialTrimPath(smallFood, { radius: 12 });
+    }
     tutorialAnimateDragFromElWithRetry(
       () => tutorialFindCupFoodPaletteEl(),
       () => tutorialActiveCupPoint(),
@@ -12837,36 +14523,48 @@ function tutorialRenderStep() {
       tutorialPositionBubbleBeside(btn);
       if (firstRender) {
         tutorialTrimPath(btn, { radius: 18 });
-        tutorialOutlineElement(btn);
       }
       tutorialAnimateTap(btn);
     } else {
-      tutorialAdvance('small-edit');
+      tutorialAdvance(tutorialState.editDemoShown ? 'small-next' : 'small-edit');
     }
     return;
   }
 
-  // 14. small-edit — 直し方を対象ツールバーの近くで短く案内
+  // 14. small-edit — 直し方を手の見本で案内
   if (step === 'small-edit') {
     const toolbar = tutorialContextToolbarEl();
-    tutorialShowBubble(
-      'みながら なおせるよ'
-      + '<br>サイズ・むき・まえ/うしろ'
-      + '<br><button class="tut-next-btn" id="tut-small-edit-next">つぎ →</button>',
-      { topVh: '16', side: 'left' }
-    );
-    if (toolbar) tutorialPositionBubbleBeside(toolbar, { gap: 14 });
-    if (toolbar) tutorialMarkTarget(toolbar, { radius: 14 });
+    if (firstRender) tutorialState.editDemoShown = true;
+    tutorialSetModeLabel('おてほんを みてみよう', {
+      mode: 'demo',
+      note: 'サイズ・むき・かさなり',
+      buttonText: 'やってみよう',
+      onClick: () => tutorialAdvance('small-edit-try'),
+    });
+    tutorialHideBubble();
+    if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
     else tutorialRetryRenderStep('small-edit');
-    const next = document.getElementById('tut-small-edit-next');
-    if (next && !next._tutBound) {
-      next._tutBound = true;
-      next.addEventListener('pointerdown', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        tutorialAdvance('small-next');
-      }, { once: true });
+    if (firstRender && toolbar) {
+      tutorialAnimateEditDemo(fast);
+      tutorialHideFingerAfter(2200, 'small-edit');
+    } else if (!toolbar) {
+      tutorialHideFinger();
     }
+    return;
+  }
+
+  // 14b. small-edit-try — 上部表示だけにして、弁当と操作パネルを隠さない
+  if (step === 'small-edit-try') {
+    const toolbar = tutorialContextToolbarEl();
+    tutorialSetModeLabel('やってみよう！', {
+      mode: 'try',
+      note: 'できたら つぎへ',
+      buttonText: 'つぎへ',
+      onClick: () => tutorialAdvance('small-next'),
+    });
+    tutorialHideBubble();
+    if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+    else tutorialRetryRenderStep('small-edit-try');
     tutorialHideFinger();
     return;
   }
@@ -12875,7 +14573,10 @@ function tutorialRenderStep() {
   if (step === 'small-next') {
     const btn = tutorialCompleteButton();
     const label = tutorialButtonLabel(btn);
-    tutorialShowBubble('まだ おかずを たせるよ<br>できたら「' + label + '」', { topVh: '18', side: 'left' });
+    const nextText = label.indexOf('小さい') >= 0
+      ? 'つぎは カップと 小さい おかずへ<br>「' + label + '」'
+      : 'できたら<br>「' + label + '」を おしてね';
+    tutorialShowBubble(nextText, { topVh: '18', side: 'left' });
     if (btn) {
       tutorialPositionBubble(btn);
       tutorialMarkTarget(btn, { radius: 24 });
@@ -12908,13 +14609,14 @@ function tutorialFindTabBtn(tabId) {
   let el = document.querySelector('.free-tab[data-tab="' + tabId + '"]');
   if (el) return el;
   // 2) FREE_TABS のラベル文字で照合
-  const LABELS = { rice: 'ごはん', food: 'おかず', accessory: 'ちいさい' };
+  const LABELS = { rice: 'ごはん', food: 'おかず', accessory: 'カップ' };
   const want = LABELS[tabId];
   if (!want) return null;
   const tabs = document.querySelectorAll('.free-tabs .free-tab');
   for (const b of tabs) {
     const t = b.textContent || '';
     if (t.indexOf(want) >= 0) return b;
+    if (tabId === 'accessory' && t.indexOf('ちいさい') >= 0) return b;
   }
   return null;
 }
@@ -12922,6 +14624,8 @@ function tutorialClearCompletePulse() {
   document.querySelectorAll('.tut-complete-pulse').forEach(el => el.classList.remove('tut-complete-pulse'));
 }
 function tutorialTeardown() {
+  stopBentoTutorialVoice();
+  tutorialClearCompleteGuideTimers();
   if (tutorialState.resizeHandler) {
     window.removeEventListener('resize', tutorialState.resizeHandler);
     window.removeEventListener('orientationchange', tutorialState.resizeHandler);
@@ -12933,6 +14637,7 @@ function tutorialTeardown() {
   }
   if (tutorialState.inactivityTimer) { clearTimeout(tutorialState.inactivityTimer); tutorialState.inactivityTimer = 0; }
   if (tutorialState._targetRetryTimer) { clearTimeout(tutorialState._targetRetryTimer); tutorialState._targetRetryTimer = null; }
+  if (tutorialState._layerDoneTimer) { clearTimeout(tutorialState._layerDoneTimer); tutorialState._layerDoneTimer = null; }
   if (tutorialState.observer) { try { tutorialState.observer.disconnect(); } catch (_) {} tutorialState.observer = null; }
   if (tutorialState.tapHandler) {
     try { document.removeEventListener('pointerdown', tutorialState.tapHandler, true); } catch (_) {}
@@ -12941,6 +14646,9 @@ function tutorialTeardown() {
   tutorialClearBoxLock();
   tutorialHideFinger();
   tutorialHideBubble();
+  tutorialHidePonoCallout();
+  tutorialHidePointingHand();
+  tutorialSetModeLabel('');
   tutorialClearCompletePulse();
   // v3: trims / mask / tab hook
   tutorialClearTrims();
@@ -12964,6 +14672,22 @@ function tutorialStart() {
   tutorialState.cupChildCount = 0;
   tutorialState.ricePlacedCount = 0;
   tutorialState.decorPlacedCount = 0;
+  tutorialState.editDemoShown = false;
+  tutorialState.layerMoveDone = false;
+  tutorialState.lastVoiceStep = '';
+  tutorialState.completeGuideStarted = false;
+  tutorialState.completeDetailShown = false;
+  tutorialState.completeGuideToken = 0;
+  tutorialState.pendingStickerGrant = false;
+  tutorialClearCompleteGuideTimers();
+  tutorialState.groupIntroShown = !!window.__bentoSkIntroShownThisRun;
+  if (shouldUseTutorialFixedRequester()) {
+    const req = getTutorialFixedRequester();
+    if (req && currentRequester !== req) {
+      setCurrentNpcRequester(req);
+      renderBentoReminder();
+    }
+  }
   tutorialEnsureLayer();
   // v3: freeGuideStep からの自動進行はしない。 button/tab/place が唯一の進行口。
   tutorialRenderStep();
@@ -12973,7 +14697,7 @@ function tutorialStart() {
   window.addEventListener('orientationchange', tutorialState.resizeHandler);
   const root = document.body;
   tutorialState.observer = new MutationObserver(() => tutorialScheduleResync());
-  try { tutorialState.observer.observe(root, { subtree: true, childList: true }); } catch (_) {}
+  try { tutorialState.observer.observe(root, { subtree: false, childList: true }); } catch (_) {}
   // v3: タブクリック検知 hook
   tutorialInstallTabHook();
   // ユーザータップで デモループ をリセット (anywhere)
@@ -13004,7 +14728,33 @@ function tutorialOnGuideChange(/* step */) {
 }
 function tutorialOnCupEditorClosed() {
   if (!tutorialState.active) return;
-  if (tutorialState.step === 'cup-ok') tutorialAdvance('small-edit');
+  if (tutorialState.step === 'cup-edit' || tutorialState.step === 'cup-edit-try') {
+    const cupUid = freeActiveCupUid;
+    if (cupUid) openCupEditor(cupUid);
+    tutorialAdvance('small-cup-food');
+    return;
+  }
+  if (tutorialState.step === 'cup-ok') {
+    tutorialAdvance(tutorialState.editDemoShown ? 'small-next' : 'small-edit');
+  }
+}
+function tutorialOnLayerMoved() {
+  if (!tutorialState.active) return;
+  if (tutorialState.step !== 'layer-edit' && tutorialState.step !== 'layer-edit-try') return;
+  if (tutorialState.layerMoveDone) return;
+  tutorialState.layerMoveDone = true;
+  if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
+    setFreeGuideStep(freeGuideStep.startsWith('tier3') ? 'tier3Side' : 'tier2Side');
+  }
+  tutorialAdvance('move-requested-food');
+}
+function tutorialOnItemMoved(uid) {
+  if (!tutorialState.active) return;
+  if (tutorialState.step !== 'move-requested-food') return;
+  const requested = tutorialFindPlacedRequestedFoodItem();
+  if (!requested || requested.uid !== uid) return;
+  tutorialMoveRequestedFoodToLowerPoint(requested);
+  tutorialAdvance('small-accessory');
 }
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
@@ -13024,12 +14774,19 @@ function tutorialOnItemPlaced(item) {
     return;
   }
   if (step === 'okazu-red' && item.type === 'food' && !item.parentCupId) {
-    tutorialAdvance('tab-small');
+    tutorialSnapItemToLayerDemoPoint(item);
+    tutorialAdvance('okazu-overlap');
+    return;
+  }
+  if (step === 'okazu-overlap' && item.type === 'food' && !item.parentCupId) {
+    tutorialSnapItemToLayerDemoPoint(item);
+    tutorialAdvance('layer-edit');
     return;
   }
   if (step === 'small-accessory') {
     if (item.type === 'cup' || item.snapTarget) {
-      tutorialAdvance('small-cup-food');
+      tutorialState.editDemoShown = true;
+      tutorialAdvance('cup-edit');
       return;
     }
     if (item.type === 'divider') {
@@ -13038,7 +14795,8 @@ function tutorialOnItemPlaced(item) {
     }
   }
   if (step === 'small-cup-food' && item.type === 'food' && item.parentCupId) {
-    tutorialAdvance('cup-ok');
+    if (getEditingCup()) closeCupEditor();
+    tutorialAdvance('small-next');
     return;
   }
   if (step === 'small-place') {
@@ -13057,7 +14815,12 @@ function tutorialOnItemPlaced(item) {
 }
 function tutorialOnStageComplete() {
   if (!tutorialState.active) return;
-  tutorialMarkDone();
+  tutorialState.step = 'complete-result';
+  tutorialState.renderedStep = null;
+  tutorialClearTrims();
+  tutorialClearTargetCircle();
+  tutorialHideFinger();
+  tutorialHidePonoCallout();
 }
 
 // ===== Tutorial settings (gear) re-enable wiring =====
@@ -13076,12 +14839,14 @@ function tutorialOnStageComplete() {
     if (reBtn) reBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      try { localStorage.removeItem('bento_sk_intro_done'); localStorage.removeItem('bento_tut_seen'); localStorage.removeItem('bento_tut_seen_v2'); } catch (_) {}
       modal.classList.add('hidden');
       try { if (typeof showToast === 'function') showToast('つぎの あそびで でるよ'); } catch (_) {}
     });
     if (reNowBtn) reNowBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      try { localStorage.removeItem('bento_sk_intro_done'); localStorage.removeItem('bento_tut_seen'); localStorage.removeItem('bento_tut_seen_v2'); } catch (_) {}
       modal.classList.add('hidden');
       // フレッシュな状態で確実にチュートリアルを発火させるため reload を採用
       try { location.reload(); } catch (_) {}
