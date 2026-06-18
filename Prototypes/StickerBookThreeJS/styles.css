@@ -263,6 +263,56 @@ input[type="range"] {
   border-radius: 999px;
   font-size: 13px;
   font-weight: 900;
+  cursor: pointer;
+}
+
+.book-page-label[aria-expanded="true"] {
+  background: rgba(221, 255, 252, 0.9);
+  border-color: rgba(75, 180, 188, 0.46);
+}
+
+.book-page-jump {
+  position: fixed;
+  left: 50%;
+  bottom: max(186px, calc(env(safe-area-inset-bottom) + 186px));
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap: 7px;
+  width: min(286px, calc(100vw - 32px));
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(216, 241, 238, 0.34);
+  background: rgba(255, 253, 244, 0.9);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+}
+
+.book-page-jump[hidden] {
+  display: none;
+}
+
+.book-page-jump button {
+  min-height: 36px;
+  border: 1px solid rgba(178, 157, 87, 0.32);
+  border-radius: 12px;
+  background: rgba(255, 251, 228, 0.86);
+  color: #243b40;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.book-page-jump button.is-active {
+  background: #d9f7f7;
+  border-color: rgba(75, 180, 188, 0.5);
+  color: #23565c;
+}
+
+.book-page-jump button:disabled {
+  cursor: default;
 }
 
 .sticker-editor[hidden] {
@@ -1030,6 +1080,11 @@ input[type="range"] {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .book-page-jump {
+    bottom: max(174px, calc(env(safe-area-inset-bottom) + 174px));
+    width: min(260px, calc(100vw - 24px));
   }
 
   .tuning-panel {

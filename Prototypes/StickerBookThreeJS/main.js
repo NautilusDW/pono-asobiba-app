@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-670";
+const ASSET_VERSION = "20260618-671";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -131,6 +131,7 @@ const bookPageControls = document.getElementById("bookPageControls");
 const bookPrevPage = document.getElementById("bookPrevPage");
 const bookNextPage = document.getElementById("bookNextPage");
 const bookPageLabel = document.getElementById("bookPageLabel");
+const bookPageJump = document.getElementById("bookPageJump");
 
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
@@ -538,8 +539,23 @@ function pickEditablePage(event) {
 }
 
 function setupBookPageControls() {
-  bookPrevPage?.addEventListener("click", () => setBookPage(activeBookPage - 2));
-  bookNextPage?.addEventListener("click", () => setBookPage(activeBookPage + 2));
+  bookPrevPage?.addEventListener("click", () => setBookPage(activeBookPage - 2, { turnMode: "single" }));
+  bookNextPage?.addEventListener("click", () => setBookPage(activeBookPage + 2, { turnMode: "single" }));
+  bookPageLabel?.addEventListener("click", () => toggleBookPageJump());
+  document.addEventListener("pointerdown", (event) => {
+    if (bookPageJump?.hidden) {
+      return;
+    }
+    if (bookPageControls?.contains(event.target)) {
+      return;
+    }
+    closeBookPageJump();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeBookPageJump();
+    }
+  });
 }
 
 function pageNumberForPickedPage(mesh) {
@@ -1454,16 +1470,19 @@ function setBookPage(page, options = {}) {
     return;
   }
   const nextSpreadPosition = spreadPositionForBookPage(nextPage);
-  activeBookPage = nextPage;
-  if (!options.skipEditorSync) {
-    activeEditorPage = nextPage;
-    selectedPlacementId = null;
-    renderEditorShell();
+  const shouldAnimate = shouldAnimateBookPageTurn(previousPage, nextPage, options);
+  const mode = options.turnMode || (Math.abs(nextPage - previousPage) <= 2 ? "single" : "jump");
+  if (shouldAnimate && mode === "jump") {
+    startSpreadJump(nextSpreadPosition, {
+      ...spreadJumpOptionsForBookTurn(previousPage, nextPage, mode),
+      onComplete: () => applyBookPageSelection(nextPage, options),
+    });
+    return;
   }
-  refreshPageTemplateTextures();
-  updateBookPageControls();
-  if (shouldAnimateBookPageTurn(previousPage, nextPage, options)) {
-    startSpreadJump(nextSpreadPosition);
+
+  applyBookPageSelection(nextPage, options);
+  if (shouldAnimate) {
+    startSpreadJump(nextSpreadPosition, spreadJumpOptionsForBookTurn(previousPage, nextPage, mode));
   } else {
     cancelSpreadJump();
     spreadPosition = nextSpreadPosition;
@@ -1474,11 +1493,43 @@ function setBookPage(page, options = {}) {
   }
 }
 
+function applyBookPageSelection(nextPage, options = {}) {
+  activeBookPage = nextPage;
+  if (!options.skipEditorSync) {
+    activeEditorPage = nextPage;
+    selectedPlacementId = null;
+    renderEditorShell();
+  }
+  refreshPageTemplateTextures();
+  updateBookPageControls();
+}
+
+function spreadJumpOptionsForBookTurn(previousPage, nextPage, mode) {
+  if (mode === "single") {
+    return {
+      cycles: 1,
+      duration: 0.34,
+      minVisiblePageCount: 1,
+      visiblePageCount: 1,
+    };
+  }
+  const pairDistance = Math.abs(
+    Math.floor((spreadStartForPage(nextPage) - 1) / 2) - Math.floor((spreadStartForPage(previousPage) - 1) / 2),
+  );
+  const visiblePageCount = THREE.MathUtils.clamp(pairDistance + 1, FLUTTER_PAGE_MIN_COUNT, FLUTTER_PAGE_MAX_COUNT);
+  return {
+    cycles: visiblePageCount,
+    duration: THREE.MathUtils.lerp(0.34, 0.68, (visiblePageCount - 1) / (FLUTTER_PAGE_MAX_COUNT - 1)),
+    minVisiblePageCount: FLUTTER_PAGE_MIN_COUNT,
+    visiblePageCount,
+  };
+}
+
 function shouldAnimateBookPageTurn(previousPage, nextPage, options) {
   if (options.animate === false || activeSurface === "cover" || previousPage === nextPage) {
     return false;
   }
-  return !stickerEditor || stickerEditor.hidden;
+  return !editorEnabled || !stickerEditor || stickerEditor.hidden;
 }
 
 function updateBookPageControls() {
@@ -1489,6 +1540,7 @@ function updateBookPageControls() {
   const lastSpreadStart = spreadStartForPage(editorPageCount());
   if (bookPageLabel) {
     bookPageLabel.textContent = `${rangeLabel} / ${editorPageCount()}`;
+    bookPageLabel.disabled = activeSurface === "cover";
   }
   if (bookPrevPage) {
     bookPrevPage.disabled = activeSurface === "cover" || activeBookPage <= 1;
@@ -1498,6 +1550,51 @@ function updateBookPageControls() {
   }
   if (bookPageControls) {
     bookPageControls.hidden = activeSurface === "cover";
+  }
+  renderBookPageJump();
+}
+
+function toggleBookPageJump() {
+  if (!bookPageJump || activeSurface === "cover") {
+    return;
+  }
+  if (bookPageJump.hidden) {
+    renderBookPageJump();
+    bookPageJump.hidden = false;
+    bookPageLabel?.setAttribute("aria-expanded", "true");
+  } else {
+    closeBookPageJump();
+  }
+}
+
+function closeBookPageJump() {
+  if (!bookPageJump) {
+    return;
+  }
+  bookPageJump.hidden = true;
+  bookPageLabel?.setAttribute("aria-expanded", "false");
+}
+
+function renderBookPageJump() {
+  if (!bookPageJump) {
+    return;
+  }
+  const pairCount = Math.max(1, Math.ceil(editorPageCount() / 2));
+  const activeStart = spreadStartForPage(activeBookPage);
+  bookPageJump.replaceChildren();
+  for (let pairIndex = 0; pairIndex < pairCount; pairIndex += 1) {
+    const pageStart = pairIndex * 2 + 1;
+    const pageEnd = Math.min(pageStart + 1, editorPageCount());
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = pageEnd > pageStart ? `${pageStart}-${pageEnd}` : String(pageStart);
+    button.classList.toggle("is-active", pageStart === activeStart);
+    button.disabled = activeSurface === "cover";
+    button.addEventListener("click", () => {
+      closeBookPageJump();
+      setBookPage(pageStart, { turnMode: Math.abs(pageStart - activeBookPage) <= 2 ? "single" : "jump" });
+    });
+    bookPageJump.append(button);
   }
 }
 
@@ -3285,9 +3382,9 @@ function startSpreadJump(targetSpread, options = {}) {
   }
 
   const distance = Math.abs(target - spreadPosition);
-  const duration = THREE.MathUtils.lerp(SPREAD_JUMP_MIN_DURATION, SPREAD_JUMP_MAX_DURATION, distance);
-  const visiblePageCount = flutterPageCountForDistance(distance);
-  const cycles = visiblePageCount;
+  const duration = options.duration ?? THREE.MathUtils.lerp(SPREAD_JUMP_MIN_DURATION, SPREAD_JUMP_MAX_DURATION, distance);
+  const visiblePageCount = options.visiblePageCount ?? flutterPageCountForDistance(distance);
+  const cycles = options.cycles ?? visiblePageCount;
   spreadJumpAnimation = {
     from: spreadPosition,
     to: target,
@@ -3296,6 +3393,8 @@ function startSpreadJump(targetSpread, options = {}) {
     duration,
     cycles,
     visiblePageCount,
+    minVisiblePageCount: options.minVisiblePageCount ?? FLUTTER_PAGE_MIN_COUNT,
+    onComplete: options.onComplete,
     direction: target >= spreadPosition ? 1 : -1,
   };
   isPlaying = false;
@@ -3346,11 +3445,12 @@ function updateSpreadJump() {
   spreadPosition = THREE.MathUtils.lerp(jump.from, jump.to, easedT);
   flipProgress = jump.direction > 0 ? phase : 1 - phase;
   slider.value = String(flipProgress);
-  updateFlutterPages(phase, jump.direction, jump.visiblePageCount);
+  updateFlutterPages(phase, jump.direction, jump.visiblePageCount, jump.minVisiblePageCount);
   updatePage(flipProgress);
   updateSpreadJumpControls();
 
   if (rawT >= 0.995) {
+    const onComplete = jump.onComplete;
     spreadPosition = jump.to;
     flipProgress = SPREAD_JUMP_SETTLE_PROGRESS;
     slider.value = String(flipProgress);
@@ -3359,6 +3459,9 @@ function updateSpreadJump() {
     for (const page of flutterPages.pages) {
       page.frontMaterial.opacity = 0;
       page.backMaterial.opacity = 0;
+    }
+    if (typeof onComplete === "function") {
+      onComplete();
     }
     setupTuningPanel();
     updatePage(flipProgress);
@@ -3369,12 +3472,17 @@ function updateSpreadJump() {
   return true;
 }
 
-function updateFlutterPages(basePhase, direction, visiblePageCount = FLUTTER_PAGE_MAX_COUNT) {
+function updateFlutterPages(
+  basePhase,
+  direction,
+  visiblePageCount = FLUTTER_PAGE_MAX_COUNT,
+  minVisiblePageCount = FLUTTER_PAGE_MIN_COUNT,
+) {
   flutterPages.group.visible = activeSurface === "inside" && Boolean(spreadJumpAnimation);
   const safeDirection = direction >= 0 ? 1 : -1;
   const activeCount = THREE.MathUtils.clamp(
     Math.round(visiblePageCount),
-    FLUTTER_PAGE_MIN_COUNT,
+    minVisiblePageCount,
     FLUTTER_PAGE_MAX_COUNT,
   );
   for (let i = 0; i < flutterPages.pages.length; i += 1) {

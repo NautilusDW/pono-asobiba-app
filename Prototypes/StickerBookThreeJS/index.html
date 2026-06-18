@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sticker Book Three.js</title>
-  <link rel="stylesheet" href="./styles.css?v=20260618-670">
+  <link rel="stylesheet" href="./styles.css?v=20260618-671">
 </head>
 <body>
   <main id="app">
@@ -37,8 +37,9 @@
     </div>
     <div id="bookPageControls" class="book-page-controls" aria-label="Book page controls">
       <button id="bookPrevPage" class="book-page-button book-page-button-left" type="button" aria-label="Previous book page">◀</button>
-      <span id="bookPageLabel" class="book-page-label">1-2 / 12</span>
+      <button id="bookPageLabel" class="book-page-label" type="button" aria-haspopup="dialog" aria-expanded="false">1-2 / 12</button>
       <button id="bookNextPage" class="book-page-button book-page-button-right" type="button" aria-label="Next book page">▶</button>
+      <div id="bookPageJump" class="book-page-jump" hidden aria-label="Page jump"></div>
     </div>
     <section id="stickerEditor" class="sticker-editor" hidden aria-label="Sticker page editor">
       <div class="sticker-editor-shell">
@@ -113,6 +114,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260618-670"></script>
+  <script type="module" src="./main.js?v=20260618-671"></script>
 </body>
 </html>
