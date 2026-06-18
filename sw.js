@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1304: Oto rhythm menu has first-run tutorials for song selection and block/full setup.
 // v1303: Oto rhythm tutorial starts with a visible overview and uses real rhythm notes for the demo.
 // v1300: Oto rhythm story tutorial shows the stage first, demos one falling note, and keeps prompts off controls.
 // v1297: Oto tutorial bubbles avoid controls and add a next-time hide checkbox.
@@ -57,7 +58,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1303; // v1303: Oto rhythm tutorial starts with a visible overview and uses real rhythm notes for the demo. | v1300: Oto rhythm story tutorial shows the stage first, demos one falling note, and keeps prompts off controls. | v1297: Oto tutorial bubbles avoid controls and add a next-time hide checkbox. | v1295: Oto adds first-run tutorials for rhythm story and free 3D stage modes.
+const CACHE_VERSION = 1304; // v1304: Oto rhythm menu has first-run tutorials for song selection and block/full setup. | v1303: Oto rhythm tutorial starts with a visible overview and uses real rhythm notes for the demo. | v1300: Oto rhythm story tutorial shows the stage first, demos one falling note, and keeps prompts off controls. | v1297: Oto tutorial bubbles avoid controls and add a next-time hide checkbox.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

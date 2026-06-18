@@ -10786,7 +10786,7 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
         return;
       }
       _showRhythmMenu();
-      maybeShowOtoTutorial('rhythmStory', 420);
+      maybeShowOtoTutorial('rhythmMenu', 420);
     }
     else {
       _hideRhythmMenu();
@@ -10845,6 +10845,7 @@ if (rhythmMenuNext) rhythmMenuNext.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
   _setRhythmMenuStep('mode');
+  maybeShowOtoTutorial('rhythmMenuMode', 160);
 });
 // v1108: 2ステップ: モードえらびから曲えらびへ戻る
 var rhythmMenuBack = document.getElementById('rhythm-menu-back');
@@ -11639,6 +11640,8 @@ document.addEventListener('visibilitychange', function() {
 var TUT_SEEN_KEY = 'pono_oto_tut_seen_v4';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
+  rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v1',
+  rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v1',
   rhythmStory: 'pono_oto_rhythm_story_tut_seen_v4',
   freeStage: 'pono_oto_free_stage_tut_seen_v4'
 };
@@ -11670,6 +11673,25 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
     var stageRectRight = stageElRight ? stageElRight.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
     left = Math.round(stageRectRight.right - bw - Math.max(14, stageRectRight.width * 0.06));
     top = Math.round(stageRectRight.top + Math.max(12, Math.min(30, stageRectRight.height * 0.04)));
+  } else if (preferredSide === 'menuBottom') {
+    var menuPanel = document.querySelector('#rhythm-menu.show .rhythm-menu-panel') || document.querySelector('.rhythm-menu-panel');
+    var menuRect = menuPanel ? menuPanel.getBoundingClientRect() : null;
+    if (menuRect) {
+      left = Math.round(menuRect.left + menuRect.width / 2 - bw / 2);
+      top = Math.round(menuRect.bottom + 12);
+      if (top + bh > vh - 12 && menuRect.right + bw + 16 <= vw - 12) {
+        left = Math.round(menuRect.right + 14);
+        top = Math.round(menuRect.top + menuRect.height / 2 - bh / 2);
+      } else if (top + bh > vh - 12 && menuRect.left - bw - 16 >= 12) {
+        left = Math.round(menuRect.left - bw - 14);
+        top = Math.round(menuRect.top + menuRect.height / 2 - bh / 2);
+      } else if (top + bh > vh - 12) {
+        top = Math.round(menuRect.top - bh - 12);
+      }
+    } else {
+      left = Math.round((vw - bw) / 2);
+      top = Math.round(vh - bh - 18);
+    }
   } else if (!anchorRect) {
     left = Math.round((vw - bw) / 2);
     top  = Math.round((vh - bh) / 2);
@@ -11751,6 +11773,19 @@ function _prepareOtoRhythmTutorialStage() {
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
 }
+function _prepareOtoRhythmMenuTutorial(step) {
+  _clearRhythmCountdown();
+  _clearRhythmDemo(true);
+  _hideRhythmOpening();
+  _hideRhythmComplete();
+  _forcePianoSoundForRhythm();
+  _setModeButtons('rhythm');
+  var menu = document.getElementById('rhythm-menu');
+  if (!menu || !menu.classList.contains('show')) {
+    _showRhythmMenu();
+  }
+  _setRhythmMenuStep(step === 'mode' ? 'mode' : 'song');
+}
 function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   if (!_otoTutorialState || !step || typeof step.demoNoteIdx !== 'number') return;
   var idx = Math.max(0, Math.min(7, step.demoNoteIdx | 0));
@@ -11817,8 +11852,11 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   }, _rhythm.demoFallMs + 1100));
 }
 function _currentOtoTutorialKind() {
+  if (document.body && document.body.classList.contains('rhythm-menu-open')) {
+    var rhythmMenu = document.getElementById('rhythm-menu');
+    return rhythmMenu && rhythmMenu.getAttribute('data-step') === 'mode' ? 'rhythmMenuMode' : 'rhythmMenu';
+  }
   if (document.body && (
-    document.body.classList.contains('rhythm-menu-open') ||
     document.body.classList.contains('rhythm-opening-active') ||
     _playMode === 'rhythm'
   )) {
@@ -11828,6 +11866,68 @@ function _currentOtoTutorialKind() {
   return 'classic';
 }
 function _makeOtoTutorialSteps(kind) {
+  if (kind === 'rhythmMenu') {
+    return [
+      {
+        badge: 'きょく',
+        msg: 'ここで きょくを<br>えらぶよ',
+        anchor: '#rhythm-song-list',
+        side: 'menuBottom',
+        hand: 'point',
+        before: function() {
+          _prepareOtoRhythmMenuTutorial('song');
+        }
+      },
+      {
+        badge: 'つぎへ',
+        msg: 'きょくを えらんだら<br>つぎへを おしてね',
+        anchor: '#rhythm-menu-next',
+        side: 'menuBottom',
+        hand: 'point',
+        nextLabel: 'OK',
+        showHideNext: true,
+        before: function() {
+          _prepareOtoRhythmMenuTutorial('song');
+        }
+      }
+    ];
+  }
+  if (kind === 'rhythmMenuMode') {
+    return [
+      {
+        badge: 'れんしゅう',
+        msg: 'ブロックは みじかく<br>ぜんぶは さいごまで あそぶよ',
+        anchor: '#rhythm-practice',
+        side: 'menuBottom',
+        hand: 'point',
+        before: function() {
+          _prepareOtoRhythmMenuTutorial('mode');
+        }
+      },
+      {
+        badge: 'おてほん',
+        msg: 'おてほんで ながれを<br>きいてから はじめられるよ',
+        anchor: '#rhythm-menu-demo',
+        side: 'menuBottom',
+        hand: 'point',
+        before: function() {
+          _prepareOtoRhythmMenuTutorial('mode');
+        }
+      },
+      {
+        badge: 'はじめる',
+        msg: 'ここから<br>はじめるよ',
+        anchor: '#rhythm-menu-start',
+        side: 'menuBottom',
+        hand: 'point',
+        nextLabel: 'OK',
+        showHideNext: true,
+        before: function() {
+          _prepareOtoRhythmMenuTutorial('mode');
+        }
+      }
+    ];
+  }
   if (kind === 'rhythmStory') {
     return [
       {
@@ -12247,7 +12347,7 @@ function maybeShowOtoTutorial(kind, delayMs) {
           enterApp();
           setPlayMode('free');
           _showRhythmMenu();
-          maybeShowOtoTutorial('rhythmStory', 560);
+          maybeShowOtoTutorial('rhythmMenu', 560);
         } else {
           showFreeStyleChoice();
         }
