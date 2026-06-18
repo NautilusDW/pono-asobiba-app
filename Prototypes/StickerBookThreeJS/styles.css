@@ -816,7 +816,7 @@ input[type="range"] {
   transform-origin: center;
   touch-action: none;
   cursor: grab;
-  contain: layout paint style;
+  contain: layout style;
   will-change: left, top, transform;
 }
 

@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-683";
+const ASSET_VERSION = "20260618-684";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -3039,11 +3039,16 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
       const drawH = drawW / Math.max(0.2, aspect);
       const x = (placement.x / 100) * PAGE_TEXTURE_W;
       const y = (placement.y / 100) * PAGE_TEXTURE_H;
+      const paddedImage = getPaddedStickerImage(image);
+      const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
+      const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+      const paddedDrawW = drawW * (paddedImage.width / sourceWidth);
+      const paddedDrawH = drawH * (paddedImage.height / sourceHeight);
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
-      drawStickerWhiteOutline(ctx, image, -drawW / 2, -drawH / 2, drawW, drawH);
-      ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+      drawStickerWhiteOutline(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
+      ctx.drawImage(paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
       drawPageDrawingLayer(ctx, pageNumber);
       texture.needsUpdate = true;
@@ -3052,12 +3057,12 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
 }
 
 function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
-  const whiteOutline = Math.max(1.6, Math.min(4.2, width * 0.009));
-  const blackOutline = whiteOutline + Math.max(0.45, Math.min(0.9, width * 0.002));
+  const whiteOutline = Math.max(1.25, Math.min(3.4, width * 0.007));
+  const blackOutline = whiteOutline + Math.max(0.35, Math.min(0.7, width * 0.0016));
   const blackOffsets = stickerOutlineOffsets(blackOutline);
   const whiteOffsets = stickerOutlineOffsets(whiteOutline);
   ctx.save();
-  ctx.globalAlpha = 0.28;
+  ctx.globalAlpha = 0.22;
   ctx.filter = "brightness(0)";
   for (const [dx, dy] of blackOffsets.slice(0, 4)) {
     ctx.drawImage(image, x + dx, y + dy, width, height);
@@ -3069,6 +3074,22 @@ function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
   }
   ctx.filter = "none";
   ctx.restore();
+}
+
+function getPaddedStickerImage(image) {
+  if (image.__sb3dPaddedImage) {
+    return image.__sb3dPaddedImage;
+  }
+  const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
+  const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+  const pad = Math.max(18, Math.ceil(Math.max(sourceWidth, sourceHeight) * 0.1));
+  const canvas = document.createElement("canvas");
+  canvas.width = sourceWidth + pad * 2;
+  canvas.height = sourceHeight + pad * 2;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, pad, pad, sourceWidth, sourceHeight);
+  image.__sb3dPaddedImage = canvas;
+  return canvas;
 }
 
 function stickerOutlineOffsets(outline) {
@@ -3911,6 +3932,10 @@ function renderCoverOpenTransition(rawProgress) {
     applyCoverTuning();
   }
   setCoverOpeningSpreadVisible(true);
+  const showBinding = p > 0.86;
+  spine.visible = showBinding;
+  ringGroup.visible = showBinding;
+  innerRight.visible = showBinding;
   coverTurn.visible = raw < 0.985;
   coverTurn.position.set(
     THREE.MathUtils.lerp(COVER_CLOSED_X, COVER_OPEN_X, p),
@@ -3990,10 +4015,10 @@ function setCoverOpeningSpreadVisible(visible) {
   leftPageInner.visible = false;
   rightPage.visible = visible;
   innerLeft.visible = false;
-  innerRight.visible = visible;
+  innerRight.visible = false;
   pageTurn.visible = false;
-  spine.visible = visible;
-  ringGroup.visible = visible;
+  spine.visible = false;
+  ringGroup.visible = false;
   pageStacks.group.visible = visible;
   pageStacks.left.group.visible = false;
   pageStacks.right.group.visible = visible;
