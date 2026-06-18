@@ -31,9 +31,9 @@ body {
 #app::before {
   inset: -2%;
   background:
-    linear-gradient(180deg, rgba(255, 244, 208, 0.08), rgba(8, 30, 38, 0.16)),
-    url("../../assets/zukan/title/desk_bg.png") center / cover no-repeat;
-  filter: saturate(1.04) brightness(0.9);
+    linear-gradient(180deg, rgba(255, 244, 208, 0.04), rgba(8, 30, 38, 0.08)),
+    url("../../assets/ui/sticker_book_table_bg_1600.webp") center / cover no-repeat;
+  filter: saturate(1.03) brightness(0.98);
   transform: scale(1.02);
 }
 
@@ -217,7 +217,7 @@ input[type="range"] {
 
 .book-page-controls {
   position: fixed;
-  inset: auto 0 max(136px, calc(env(safe-area-inset-bottom) + 136px));
+  inset: auto 0 max(18px, calc(env(safe-area-inset-bottom) + 18px));
   z-index: 2;
   display: flex;
   justify-content: space-between;
@@ -274,7 +274,7 @@ input[type="range"] {
 .book-page-jump {
   position: fixed;
   left: 50%;
-  bottom: max(186px, calc(env(safe-area-inset-bottom) + 186px));
+  bottom: max(70px, calc(env(safe-area-inset-bottom) + 70px));
   transform: translateX(-50%);
   z-index: 3;
   pointer-events: auto;
@@ -770,7 +770,7 @@ input[type="range"] {
 }
 
 .editor-draw-canvas {
-  z-index: 1;
+  z-index: 9000;
 }
 
 .sticker-editor.is-draw-mode .editor-draw-canvas {
@@ -1065,7 +1065,7 @@ input[type="range"] {
   }
 
   .book-page-controls {
-    bottom: max(124px, calc(env(safe-area-inset-bottom) + 124px));
+    bottom: max(12px, calc(env(safe-area-inset-bottom) + 12px));
     padding: 0 12px;
   }
 
@@ -1083,7 +1083,7 @@ input[type="range"] {
   }
 
   .book-page-jump {
-    bottom: max(174px, calc(env(safe-area-inset-bottom) + 174px));
+    bottom: max(62px, calc(env(safe-area-inset-bottom) + 62px));
     width: min(260px, calc(100vw - 24px));
   }
 

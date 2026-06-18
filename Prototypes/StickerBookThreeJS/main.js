@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-675";
+const ASSET_VERSION = "20260618-676";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -157,7 +157,7 @@ document.body.classList.toggle("is-prototype-controls", prototypeControlsEnabled
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
-const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v5";
+const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v6";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v2";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
@@ -173,11 +173,11 @@ const PAGE_FLUTTER_BEND = 0.56;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
-  stackLeftY: 0.85,
+  stackLeftY: 0.7,
   stackLeftScaleX: 1,
   stackLeftScaleY: 1,
   stackRightX: 0,
-  stackRightY: 0.85,
+  stackRightY: 0.7,
   stackRightScaleX: 1,
   stackRightScaleY: 1,
 };
@@ -2745,12 +2745,12 @@ function drawStickerListPage(ctx, texture, palette, pageDef, stickers) {
 }
 
 function drawStickerCanvasPage(ctx, texture, palette, pageDef, placements, pageNumber) {
-  drawPageDrawingLayer(ctx, pageNumber);
   const ordered = [...placements].sort((a, b) => a.z - b.z);
   for (const placement of ordered) {
     drawPlacedStickerPlaceholder(ctx, placement);
-    drawAsyncPlacedSticker(ctx, texture, placement);
+    drawAsyncPlacedSticker(ctx, texture, placement, pageNumber);
   }
+  drawPageDrawingLayer(ctx, pageNumber);
   texture.needsUpdate = true;
 }
 
@@ -2809,7 +2809,7 @@ function drawAsyncStickerImage(ctx, texture, src, x, y, width, height) {
     .catch(() => {});
 }
 
-function drawAsyncPlacedSticker(ctx, texture, placement) {
+function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
   loadStickerImage(placement.assetUrl)
     .then((image) => {
       const baseW = PAGE_TEXTURE_W * 0.18 * placement.scale;
@@ -2826,6 +2826,7 @@ function drawAsyncPlacedSticker(ctx, texture, placement) {
       ctx.shadowOffsetY = 14;
       ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.restore();
+      drawPageDrawingLayer(ctx, pageNumber);
       texture.needsUpdate = true;
     })
     .catch(() => {});
@@ -3669,7 +3670,7 @@ function resize() {
   renderer.setSize(width, height, false);
 
   const viewW = PAGE_W * 2 + GUTTER + (width < 720 ? 0.68 : 0.42);
-  const viewH = PAGE_H + (width < 720 ? 1.75 : 0.72);
+  const viewH = PAGE_H + (width < 720 ? 1.88 : 0.88);
   const aspect = width / height;
   const fov = THREE.MathUtils.degToRad(CAMERA_FOV);
   const distanceForHeight = viewH / (2 * Math.tan(fov / 2));
@@ -3682,7 +3683,7 @@ function resize() {
   camera.updateProjectionMatrix();
 
   book.scale.setScalar(1);
-  book.position.y = width < 720 ? 0.32 : 0.16;
+  book.position.y = width < 720 ? 0.56 : 0.38;
   if (stickerEditor && !stickerEditor.hidden) {
     renderDrawingCanvas();
   }
