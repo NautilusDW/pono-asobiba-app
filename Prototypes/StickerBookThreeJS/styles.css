@@ -811,8 +811,8 @@ input[type="range"] {
   left: var(--x);
   top: var(--y);
   z-index: var(--z);
-  width: 18%;
-  transform: translate(-50%, -50%) rotate(var(--rotation)) scale(var(--scale));
+  width: calc(18% * var(--render-scale, 1));
+  transform: translate(-50%, -50%) rotate(var(--rotation)) scale(var(--visual-scale, var(--scale)));
   transform-origin: center;
   touch-action: none;
   cursor: grab;
@@ -844,14 +844,22 @@ input[type="range"] {
   height: auto;
   pointer-events: none;
   filter:
-    drop-shadow(var(--sticker-outline-axis, 1.2px) 0 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(var(--sticker-outline-axis-neg, -1.2px) 0 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(0 var(--sticker-outline-axis, 1.2px) 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(0 var(--sticker-outline-axis-neg, -1.2px) 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(var(--sticker-outline-diag, 0.85px) var(--sticker-outline-diag, 0.85px) 0 rgba(255, 255, 255, 0.96))
-    drop-shadow(var(--sticker-outline-diag-neg, -0.85px) var(--sticker-outline-diag, 0.85px) 0 rgba(255, 255, 255, 0.96))
-    drop-shadow(var(--sticker-outline-diag, 0.85px) var(--sticker-outline-diag-neg, -0.85px) 0 rgba(255, 255, 255, 0.96))
-    drop-shadow(var(--sticker-outline-diag-neg, -0.85px) var(--sticker-outline-diag-neg, -0.85px) 0 rgba(255, 255, 255, 0.96));
+    drop-shadow(var(--sticker-white-axis, 1.05px) 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(var(--sticker-white-axis-neg, -1.05px) 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 var(--sticker-white-axis, 1.05px) 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 var(--sticker-white-axis-neg, -1.05px) 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(var(--sticker-white-diag, 0.74px) var(--sticker-white-diag, 0.74px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-white-diag-neg, -0.74px) var(--sticker-white-diag, 0.74px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-white-diag, 0.74px) var(--sticker-white-diag-neg, -0.74px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-white-diag-neg, -0.74px) var(--sticker-white-diag-neg, -0.74px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-black-axis, 1.48px) 0 0 rgba(35, 35, 28, 0.55))
+    drop-shadow(var(--sticker-black-axis-neg, -1.48px) 0 0 rgba(35, 35, 28, 0.55))
+    drop-shadow(0 var(--sticker-black-axis, 1.48px) 0 rgba(35, 35, 28, 0.55))
+    drop-shadow(0 var(--sticker-black-axis-neg, -1.48px) 0 rgba(35, 35, 28, 0.55))
+    drop-shadow(var(--sticker-black-diag, 1.05px) var(--sticker-black-diag, 1.05px) 0 rgba(35, 35, 28, 0.48))
+    drop-shadow(var(--sticker-black-diag-neg, -1.05px) var(--sticker-black-diag, 1.05px) 0 rgba(35, 35, 28, 0.48))
+    drop-shadow(var(--sticker-black-diag, 1.05px) var(--sticker-black-diag-neg, -1.05px) 0 rgba(35, 35, 28, 0.48))
+    drop-shadow(var(--sticker-black-diag-neg, -1.05px) var(--sticker-black-diag-neg, -1.05px) 0 rgba(35, 35, 28, 0.48));
   user-select: none;
   -webkit-user-drag: none;
 }

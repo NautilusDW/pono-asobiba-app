@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-681";
+const ASSET_VERSION = "20260618-682";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -61,6 +61,7 @@ const DRAWING_STAMPS = [
 const DRAWING_DEFAULT_COLOR = DRAWING_COLORS[0];
 const DRAWING_DEFAULT_SIZE = 14;
 const DRAWING_MIN_DISTANCE = 0.22;
+const EDITOR_STICKER_RENDER_SCALE_MAX = 3;
 
 const SHARED_TEXTURES = {
   pageBack: "sb3d_page_back_generated.webp",
@@ -171,6 +172,9 @@ const TUNING_HISTORY_LIMIT = 80;
 const SPREAD_JUMP_SETTLE_PROGRESS = 0;
 const SPREAD_JUMP_MIN_DURATION = 0.28;
 const SPREAD_JUMP_MAX_DURATION = 0.62;
+const COVER_OPEN_DURATION = 1.15;
+const BOOK_COVER_X = 0;
+const BOOK_INSIDE_X = 0.24;
 const FLUTTER_PAGE_MIN_COUNT = 3;
 const FLUTTER_PAGE_MAX_COUNT = 6;
 const PAGE_TURN_BEND = 0.34;
@@ -234,6 +238,7 @@ let tuningUndoStack = [];
 let tuningRedoStack = [];
 let activeTuningEditLabel = "";
 let spreadJumpAnimation = null;
+let coverOpenAnimation = null;
 let stickerPlan = null;
 let stickerOptions = [];
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
@@ -329,6 +334,39 @@ const closedCover = makePageSurface(BOOK_VARIANTS[activeBook].coverFront, create
 closedCover.position.set(-PAGE_W / 2, 0, 0.04);
 closedCover.renderOrder = 30;
 coverOnly.add(closedCover);
+
+const coverTurn = new THREE.Group();
+coverTurn.visible = false;
+coverTurn.position.set(-PAGE_W / 2, 0, 0.18);
+book.add(coverTurn);
+
+const coverTurnGeometry = createCoverSurfaceGeometry();
+const coverTurnFront = new THREE.Mesh(
+  coverTurnGeometry,
+  new THREE.MeshStandardMaterial({
+    map: getTexture(BOOK_VARIANTS[activeBook].coverFront),
+    transparent: false,
+    side: THREE.FrontSide,
+    depthWrite: true,
+    roughness: 0.9,
+    metalness: 0.0,
+  }),
+);
+const coverTurnBack = new THREE.Mesh(
+  coverTurnGeometry,
+  new THREE.MeshStandardMaterial({
+    map: getTexture(BOOK_VARIANTS[activeBook].coverInside),
+    transparent: false,
+    side: THREE.BackSide,
+    depthWrite: true,
+    roughness: 0.92,
+    metalness: 0.0,
+  }),
+);
+coverTurnFront.renderOrder = 86;
+coverTurnBack.renderOrder = 85;
+coverTurn.add(coverTurnBack);
+coverTurn.add(coverTurnFront);
 
 const spine = makePlane(BOOK_VARIANTS[activeBook].spine, SPINE_W, PAGE_H, { depth: -0.09, lit: true, transparent: true });
 spine.position.set(0, 0, -0.09);
@@ -1062,44 +1100,69 @@ function updatePlacementElementStyle(placement) {
 
 function placementStyleVars(placement) {
   const scale = sanitizedPlacementScale(placement?.scale);
-  const selectionBorder = 2 / scale;
-  const selectionRadius = 14 / scale;
-  const outlineAxis = 1.2 / scale;
-  const outlineDiag = 0.85 / scale;
+  const renderScale = editorStickerRenderScale(scale);
+  const visualScale = scale / renderScale;
+  const selectionBorder = 2 / visualScale;
+  const selectionRadius = 14 / visualScale;
+  const whiteAxis = 1.05 / visualScale;
+  const whiteDiag = 0.74 / visualScale;
+  const blackAxis = 1.48 / visualScale;
+  const blackDiag = 1.05 / visualScale;
   return [
     `--x:${placement.x}%`,
     `--y:${placement.y}%`,
     `--scale:${scale}`,
+    `--render-scale:${renderScale}`,
+    `--visual-scale:${visualScale}`,
     `--rotation:${placement.rotation || 0}deg`,
     `--z:${placement.z}`,
     `--selection-border:${selectionBorder.toFixed(3)}px`,
     `--selection-radius:${selectionRadius.toFixed(3)}px`,
-    `--sticker-outline-axis:${outlineAxis.toFixed(3)}px`,
-    `--sticker-outline-axis-neg:${(-outlineAxis).toFixed(3)}px`,
-    `--sticker-outline-diag:${outlineDiag.toFixed(3)}px`,
-    `--sticker-outline-diag-neg:${(-outlineDiag).toFixed(3)}px`,
+    `--sticker-white-axis:${whiteAxis.toFixed(3)}px`,
+    `--sticker-white-axis-neg:${(-whiteAxis).toFixed(3)}px`,
+    `--sticker-white-diag:${whiteDiag.toFixed(3)}px`,
+    `--sticker-white-diag-neg:${(-whiteDiag).toFixed(3)}px`,
+    `--sticker-black-axis:${blackAxis.toFixed(3)}px`,
+    `--sticker-black-axis-neg:${(-blackAxis).toFixed(3)}px`,
+    `--sticker-black-diag:${blackDiag.toFixed(3)}px`,
+    `--sticker-black-diag-neg:${(-blackDiag).toFixed(3)}px`,
   ].join("; ");
 }
 
 function applyPlacementStyleVars(element, placement) {
   const scale = sanitizedPlacementScale(placement?.scale);
-  const outlineAxis = 1.2 / scale;
-  const outlineDiag = 0.85 / scale;
+  const renderScale = editorStickerRenderScale(scale);
+  const visualScale = scale / renderScale;
+  const whiteAxis = 1.05 / visualScale;
+  const whiteDiag = 0.74 / visualScale;
+  const blackAxis = 1.48 / visualScale;
+  const blackDiag = 1.05 / visualScale;
   element.style.setProperty("--x", `${placement.x}%`);
   element.style.setProperty("--y", `${placement.y}%`);
   element.style.setProperty("--scale", String(scale));
+  element.style.setProperty("--render-scale", String(renderScale));
+  element.style.setProperty("--visual-scale", String(visualScale));
   element.style.setProperty("--rotation", `${placement.rotation || 0}deg`);
   element.style.setProperty("--z", String(placement.z));
-  element.style.setProperty("--selection-border", `${(2 / scale).toFixed(3)}px`);
-  element.style.setProperty("--selection-radius", `${(14 / scale).toFixed(3)}px`);
-  element.style.setProperty("--sticker-outline-axis", `${outlineAxis.toFixed(3)}px`);
-  element.style.setProperty("--sticker-outline-axis-neg", `${(-outlineAxis).toFixed(3)}px`);
-  element.style.setProperty("--sticker-outline-diag", `${outlineDiag.toFixed(3)}px`);
-  element.style.setProperty("--sticker-outline-diag-neg", `${(-outlineDiag).toFixed(3)}px`);
+  element.style.setProperty("--selection-border", `${(2 / visualScale).toFixed(3)}px`);
+  element.style.setProperty("--selection-radius", `${(14 / visualScale).toFixed(3)}px`);
+  element.style.setProperty("--sticker-white-axis", `${whiteAxis.toFixed(3)}px`);
+  element.style.setProperty("--sticker-white-axis-neg", `${(-whiteAxis).toFixed(3)}px`);
+  element.style.setProperty("--sticker-white-diag", `${whiteDiag.toFixed(3)}px`);
+  element.style.setProperty("--sticker-white-diag-neg", `${(-whiteDiag).toFixed(3)}px`);
+  element.style.setProperty("--sticker-black-axis", `${blackAxis.toFixed(3)}px`);
+  element.style.setProperty("--sticker-black-axis-neg", `${(-blackAxis).toFixed(3)}px`);
+  element.style.setProperty("--sticker-black-diag", `${blackDiag.toFixed(3)}px`);
+  element.style.setProperty("--sticker-black-diag-neg", `${(-blackDiag).toFixed(3)}px`);
 }
 
 function sanitizedPlacementScale(scale) {
   return Math.max(0.2, Number(scale) || 1);
+}
+
+function editorStickerRenderScale(scale) {
+  const normalized = sanitizedPlacementScale(scale);
+  return Math.min(EDITOR_STICKER_RENDER_SCALE_MAX, Math.max(1.75, Math.ceil(normalized * 1.2)));
 }
 
 function updateEditorSelectionClass() {
@@ -1589,6 +1652,7 @@ function setBookPage(page, options = {}) {
     setBookSurface("inside", page);
     return;
   }
+  cancelCoverOpen();
   const previousPage = activeBookPage;
   const nextPage = spreadStartForPage(page);
   if (nextPage === activeBookPage && !options.force) {
@@ -1619,6 +1683,11 @@ function setBookPage(page, options = {}) {
 function setBookSurface(surface, page = activeBookPage) {
   const nextSurface = surface === "cover" ? "cover" : "inside";
   cancelSpreadJump();
+  if (activeSurface === "cover" && nextSurface === "inside") {
+    startCoverOpen(page);
+    return;
+  }
+  cancelCoverOpen();
   activeSurface = nextSurface;
   isPlaying = false;
   playButton.classList.remove("playing");
@@ -1634,6 +1703,46 @@ function setBookSurface(surface, page = activeBookPage) {
     stickerDragState = null;
   }
   applyVariantState();
+}
+
+function startCoverOpen(page = activeBookPage) {
+  cancelCoverOpen();
+  const nextPage = spreadStartForPage(page);
+  activeSurface = "inside";
+  isPlaying = false;
+  playButton.classList.remove("playing");
+  flipProgress = 0;
+  slider.value = "0";
+  slider.disabled = true;
+  activeBookPage = nextPage;
+  activeEditorPage = nextPage;
+  spreadPosition = spreadPositionForBookPage(nextPage);
+  selectedPlacementId = null;
+  stickerDragState = null;
+  closeBookPageJump();
+  refreshPageTemplateTextures();
+  updateControlState();
+  assignCoverTurnTextures();
+  coverOpenAnimation = {
+    startTime: performance.now(),
+    duration: COVER_OPEN_DURATION,
+  };
+  renderCoverOpenTransition(0);
+  syncUrl();
+}
+
+function cancelCoverOpen() {
+  if (!coverOpenAnimation) {
+    coverTurn.visible = false;
+    return;
+  }
+  coverOpenAnimation = null;
+  coverTurn.visible = false;
+  if (activeSurface === "inside") {
+    assignTextureObject(frontPage, getPageTemplateTexture("right"));
+    assignTextureObject(backPage, getPageTemplateTexture("left"));
+    slider.disabled = false;
+  }
 }
 
 function applyBookPageSelection(nextPage, options = {}) {
@@ -2940,8 +3049,27 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
 }
 
 function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
-  const outline = Math.max(3, Math.min(9, width * 0.018));
-  const offsets = [
+  const whiteOutline = Math.max(3, Math.min(9, width * 0.018));
+  const blackOutline = whiteOutline + Math.max(1.2, Math.min(3.2, width * 0.005));
+  const blackOffsets = stickerOutlineOffsets(blackOutline);
+  const whiteOffsets = stickerOutlineOffsets(whiteOutline);
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.filter = "brightness(0)";
+  for (const [dx, dy] of blackOffsets) {
+    ctx.drawImage(image, x + dx, y + dy, width, height);
+  }
+  ctx.globalAlpha = 0.96;
+  ctx.filter = "brightness(0) invert(1)";
+  for (const [dx, dy] of whiteOffsets) {
+    ctx.drawImage(image, x + dx, y + dy, width, height);
+  }
+  ctx.filter = "none";
+  ctx.restore();
+}
+
+function stickerOutlineOffsets(outline) {
+  return [
     [outline, 0],
     [-outline, 0],
     [0, outline],
@@ -2951,14 +3079,6 @@ function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
     [outline * 0.72, -outline * 0.72],
     [-outline * 0.72, -outline * 0.72],
   ];
-  ctx.save();
-  ctx.globalAlpha = 0.96;
-  ctx.filter = "brightness(0) invert(1)";
-  for (const [dx, dy] of offsets) {
-    ctx.drawImage(image, x + dx, y + dy, width, height);
-  }
-  ctx.filter = "none";
-  ctx.restore();
 }
 
 function drawImageContain(ctx, image, x, y, width, height) {
@@ -3549,6 +3669,7 @@ function applyVariantState() {
     assignTexture(backPage, bundle.coverInside);
   }
   assignTexture(closedCover, bundle.coverFront);
+  assignCoverTurnTextures();
   assignTexture(spine, bundle.spine);
   assignTexture(sideTabs.left, bundle.tabsLeft);
   assignTexture(sideTabs.right, bundle.tabsRight);
@@ -3558,6 +3679,12 @@ function applyVariantState() {
   updateControlState();
   updatePage(flipProgress);
   syncUrl();
+}
+
+function assignCoverTurnTextures() {
+  const bundle = BOOK_VARIANTS[activeBook];
+  assignTexture(coverTurnFront, bundle.coverFront);
+  assignTexture(coverTurnBack, bundle.coverInside);
 }
 
 function updateControlState() {
@@ -3739,14 +3866,18 @@ function updatePage(progress) {
     isPlaying = false;
     playButton.classList.remove("playing");
     coverOnly.visible = true;
+    coverTurn.visible = false;
     setOpenSpreadVisible(false);
     applyCoverTuning();
+    applyBookFramePosition(0);
     updateSpreadJumpControls();
     return;
   }
 
   coverOnly.visible = false;
+  coverTurn.visible = false;
   setOpenSpreadVisible(true);
+  applyBookFramePosition(1);
   bendPageGeometry(turningPageGeometry, p, PAGE_TURN_BEND * Math.sin(p * Math.PI));
   bendPageGeometry(flipShadow.geometry, p, PAGE_TURN_BEND * Math.sin(p * Math.PI));
   const hingeTravel = smootherstep(p);
@@ -3767,6 +3898,64 @@ function updatePage(progress) {
   rightPage.visible = true;
 }
 
+function renderCoverOpenTransition(rawProgress) {
+  const raw = THREE.MathUtils.clamp(rawProgress, 0, 1);
+  const p = smootherstep(raw);
+  flipProgress = 0;
+  slider.value = "0";
+  coverOnly.visible = raw < 0.035;
+  if (coverOnly.visible) {
+    applyCoverTuning();
+  }
+  setOpenSpreadVisible(true);
+  coverTurn.visible = raw < 0.985;
+  coverTurn.position.set(
+    THREE.MathUtils.lerp(-PAGE_W / 2, -GUTTER / 2, p),
+    0,
+    0.18 + Math.sin(p * Math.PI) * 0.08,
+  );
+  coverTurn.rotation.y = -p * Math.PI;
+  coverTurn.rotation.x = Math.sin(p * Math.PI) * 0.018;
+  coverTurnFront.visible = p < 0.5;
+  coverTurnBack.visible = p >= 0.5;
+  flipShadow.visible = raw > 0.04 && raw < 0.95;
+  flipShadow.material.opacity = 0.07 + Math.sin(p * Math.PI) * 0.16;
+  pageTurn.visible = false;
+  updateStackThickness();
+  updateSpreadJumpControls();
+  applyBookFramePosition(p);
+
+  leftPageOuter.visible = false;
+  leftPageInner.visible = true;
+  rightPage.visible = true;
+}
+
+function updateCoverOpen(delta) {
+  if (!coverOpenAnimation) {
+    return false;
+  }
+  const animation = coverOpenAnimation;
+  const elapsed = (performance.now() - animation.startTime) / 1000;
+  const raw = THREE.MathUtils.clamp(elapsed / animation.duration, 0, 1);
+  renderCoverOpenTransition(raw);
+  if (raw >= 0.995) {
+    coverOpenAnimation = null;
+    coverTurn.visible = false;
+    flipShadow.visible = true;
+    assignTextureObject(frontPage, getPageTemplateTexture("right"));
+    assignTextureObject(backPage, getPageTemplateTexture("left"));
+    slider.disabled = false;
+    updatePage(0);
+    syncUrl();
+  }
+  return true;
+}
+
+function applyBookFramePosition(openProgress) {
+  const p = smootherstep(openProgress);
+  book.position.x = THREE.MathUtils.lerp(BOOK_COVER_X, BOOK_INSIDE_X, p);
+}
+
 function setOpenSpreadVisible(visible) {
   sideTabs.group.visible = visible;
   leftPageOuter.visible = false;
@@ -3775,6 +3964,9 @@ function setOpenSpreadVisible(visible) {
   innerLeft.visible = visible;
   innerRight.visible = visible;
   pageTurn.visible = visible;
+  if (!visible) {
+    coverTurn.visible = false;
+  }
   spine.visible = visible;
   ringGroup.visible = visible;
   pageStacks.group.visible = visible;
@@ -3791,6 +3983,10 @@ function smootherstep(x) {
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.08);
+  if (updateCoverOpen(delta)) {
+    renderer.render(scene, camera);
+    return;
+  }
   if (updateSpreadJump(delta)) {
     renderer.render(scene, camera);
     return;
@@ -3826,6 +4022,9 @@ function resize() {
 
   book.scale.setScalar(1);
   book.position.y = width < 720 ? 0.56 : 0.38;
+  if (!coverOpenAnimation) {
+    applyBookFramePosition(activeSurface === "cover" ? 0 : 1);
+  }
   if (stickerEditor && !stickerEditor.hidden) {
     renderDrawingCanvas();
   }
