@@ -11640,9 +11640,10 @@ document.addEventListener('visibilitychange', function() {
 var TUT_SEEN_KEY = 'pono_oto_tut_seen_v4';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
-  rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v1',
-  rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v1',
+  rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v2',
+  rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v2',
   rhythmStory: 'pono_oto_rhythm_story_tut_seen_v4',
+  rhythmStoryFromMenu: 'pono_oto_rhythm_story_from_menu_tut_seen_v1',
   freeStage: 'pono_oto_free_stage_tut_seen_v4'
 };
 var OTO_TUTORIAL_HAND_ASSETS = {
@@ -11673,6 +11674,15 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
     var stageRectRight = stageElRight ? stageElRight.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
     left = Math.round(stageRectRight.right - bw - Math.max(14, stageRectRight.width * 0.06));
     top = Math.round(stageRectRight.top + Math.max(12, Math.min(30, stageRectRight.height * 0.04)));
+  } else if (preferredSide === 'stageLeft') {
+    var stageElSide = document.getElementById('stage');
+    var stageRectSide = stageElSide ? stageElSide.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
+    left = Math.round(stageRectSide.left + Math.max(14, stageRectSide.width * 0.035));
+    top = Math.round(stageRectSide.top + stageRectSide.height * 0.3 - bh / 2);
+  } else if (preferredSide === 'menuAnchorBelow' && anchorRect) {
+    left = Math.round(anchorRect.left + anchorRect.width / 2 - bw / 2);
+    top = Math.round(anchorRect.bottom + 12);
+    if (top + bh > vh - 12) top = Math.round(vh - bh - 12);
   } else if (preferredSide === 'menuBottom') {
     var menuPanel = document.querySelector('#rhythm-menu.show .rhythm-menu-panel') || document.querySelector('.rhythm-menu-panel');
     var menuRect = menuPanel ? menuPanel.getBoundingClientRect() : null;
@@ -11898,7 +11908,7 @@ function _makeOtoTutorialSteps(kind) {
         badge: 'れんしゅう',
         msg: 'ブロックは みじかく<br>ぜんぶは さいごまで あそぶよ',
         anchor: '#rhythm-practice',
-        side: 'menuBottom',
+        side: 'menuAnchorBelow',
         hand: 'point',
         before: function() {
           _prepareOtoRhythmMenuTutorial('mode');
@@ -11908,7 +11918,7 @@ function _makeOtoTutorialSteps(kind) {
         badge: 'おてほん',
         msg: 'おてほんで ながれを<br>きいてから はじめられるよ',
         anchor: '#rhythm-menu-demo',
-        side: 'menuBottom',
+        side: 'menuAnchorBelow',
         hand: 'point',
         before: function() {
           _prepareOtoRhythmMenuTutorial('mode');
@@ -11947,7 +11957,7 @@ function _makeOtoTutorialSteps(kind) {
         badge: 'ライン',
         msg: 'ノートが このラインに きたら<br>タッチするよ',
         anchor: '.gh-hitline',
-        side: 'stageTop',
+        side: 'stageLeft',
         hand: 'point',
         before: function() {
           _prepareOtoRhythmTutorialStage();
@@ -11958,7 +11968,7 @@ function _makeOtoTutorialSteps(kind) {
         badge: 'ボタン',
         msg: 'おなじ レーンの ボタンを<br>タッチするよ',
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'stageTop',
+        side: 'stageLeft',
         hand: 'tap',
         tapIdx: 3,
         before: function() {
@@ -11970,7 +11980,36 @@ function _makeOtoTutorialSteps(kind) {
         badge: 'おてほん',
         msg: 'ノートが きたら<br>おしてみるよ',
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'stageTopLeft',
+        side: 'stageLeft',
+        noSpot: true,
+        demoNoteIdx: 3,
+        nextLabel: 'OK',
+        showHideNext: true,
+        before: function() {
+          _prepareOtoRhythmTutorialStage();
+          _setRhythmStatus('おてほんを みてね', null, 'judge');
+        }
+      }
+    ];
+  }
+  if (kind === 'rhythmStoryFromMenu') {
+    return [
+      {
+        badge: 'ライン',
+        msg: 'ノートが このラインに きたら<br>タッチするよ',
+        anchor: '.gh-hitline',
+        side: 'stageLeft',
+        hand: 'point',
+        before: function() {
+          _prepareOtoRhythmTutorialStage();
+          _setRhythmStatus('ラインに きたら タッチ', null, 'judge');
+        }
+      },
+      {
+        badge: 'ボタン',
+        msg: 'ノートが きたら<br>おなじ レーンの ボタンを おすよ',
+        anchor: '.instr-btn[data-idx="3"]',
+        side: 'stageLeft',
         noSpot: true,
         demoNoteIdx: 3,
         nextLabel: 'OK',
@@ -12116,7 +12155,7 @@ function _showOtoTutorialHand(step, rect, anchorEl) {
     if (_otoTutorialState) _otoTutorialState.pressedEl = null;
   }, 760));
 }
-function _finishOtoTutorial(markSeen) {
+function _finishOtoTutorial(markSeen, continueFlow) {
   if (!_otoTutorialState) return;
   var kind = _otoTutorialState.kind;
   var dim = document.getElementById('tut-dim');
@@ -12134,15 +12173,23 @@ function _finishOtoTutorial(markSeen) {
   } else if (markSeen) {
     _otoTutorialSessionHidden[kind] = true;
   }
-  var shouldRestoreRhythmMenu = kind === 'rhythmStory' && !_rhythm.enabled && !_rhythm.openingActive && !_rhythm.demoActive;
+  var shouldLaunchRhythmStageTutorial = kind === 'rhythmMenuMode' && continueFlow;
+  var shouldRestoreRhythmMenu = (kind === 'rhythmStory' || kind === 'rhythmStoryFromMenu') && !_rhythm.enabled && !_rhythm.openingActive && !_rhythm.demoActive;
+  var restoreRhythmStep = kind === 'rhythmStoryFromMenu' ? 'mode' : 'song';
   if (shouldRestoreRhythmMenu) {
     var hud = document.getElementById('rhythm-hud');
     if (hud) hud.classList.remove('show');
   }
   _otoTutorialState = null;
+  if (shouldLaunchRhythmStageTutorial) {
+    setTimeout(function() {
+      showTutorial('rhythmStoryFromMenu', { force: true });
+    }, 180);
+    return;
+  }
   if (shouldRestoreRhythmMenu) {
     _showRhythmMenu();
-    _setRhythmMenuStep('song');
+    _setRhythmMenuStep(restoreRhythmStep);
   }
 }
 function _renderOtoTutorialStep() {
@@ -12154,7 +12201,7 @@ function _renderOtoTutorialStep() {
   var i = _otoTutorialState.index || 0;
   var s = steps[i];
   if (!s) {
-    _finishOtoTutorial(true);
+    _finishOtoTutorial(true, true);
     return;
   }
   _clearOtoTutorialAutoTimer();
@@ -12237,7 +12284,7 @@ function _renderOtoTutorialStep() {
     if (skip) skip.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      _finishOtoTutorial(true);
+      _finishOtoTutorial(true, false);
     }, { once: true });
     if (btn) btn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
@@ -12245,7 +12292,7 @@ function _renderOtoTutorialStep() {
       if (!_otoTutorialState) return;
       _otoTutorialState.index++;
       if (_otoTutorialState.index >= steps.length) {
-        _finishOtoTutorial(true);
+        _finishOtoTutorial(true, true);
       } else {
         _renderOtoTutorialStep();
       }
@@ -12254,7 +12301,7 @@ function _renderOtoTutorialStep() {
       _otoTutorialState.autoTimer = setTimeout(function() {
         if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
         _otoTutorialState.index++;
-        if (_otoTutorialState.index >= steps.length) _finishOtoTutorial(true);
+        if (_otoTutorialState.index >= steps.length) _finishOtoTutorial(true, true);
         else _renderOtoTutorialStep();
       }, Math.max(300, s.autoNextMs || 1200));
     }
