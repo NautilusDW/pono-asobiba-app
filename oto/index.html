@@ -3445,29 +3445,60 @@
     }
   }
 
-  /* ── チュートリアル (bento のスタイルを踏襲) ── */
-  .tut-dim { position:fixed; inset:0; z-index:9995; background:rgba(93,78,55,0.6); pointer-events:auto; }
+  /* ── チュートリアル (puzzle の実UIチュートリアルに寄せる) ── */
+  .tut-dim { position:fixed; inset:0; z-index:9995; background:rgba(2,6,23,0.62); pointer-events:auto; }
   .tut-dim.hidden { display:none; }
   .tut-bubble {
     position:fixed; z-index:9997;
-    background:#fff; border-radius:16px;
-    padding:14px 18px; max-width:min(86vw, 380px);
-    box-shadow:0 4px 20px rgba(93,78,55,0.4);
-    font-size:0.95rem; font-weight:700; color:#5D4E37;
-    line-height:1.6; text-align:center;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,244,211,0.98) 100%);
+    border: 3px solid rgba(255,255,255,0.94);
+    border-radius:20px;
+    padding:12px 16px 14px; max-width:min(88vw, 420px);
+    box-shadow:
+      0 12px 28px rgba(2,6,23,0.38),
+      0 0 0 5px rgba(255,207,67,0.22),
+      inset 0 -3px 0 rgba(212,164,84,0.16);
+    font-size:clamp(0.86rem, 2.2vw, 1.05rem); font-weight:900; color:#4A3217;
+    line-height:1.45; text-align:center;
     animation: tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
   }
   .tut-bubble.hidden { display:none; }
+  .tut-badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-height:22px;
+    margin:0 auto 7px;
+    padding:3px 12px 4px;
+    border-radius:999px;
+    background:linear-gradient(135deg, #24C6DC, #FFD34D);
+    color:#10243A;
+    font-size:0.76em;
+    line-height:1;
+    box-shadow:0 3px 0 rgba(0,0,0,0.13);
+  }
+  .tut-msg { display:block; }
+  .tut-actions {
+    display:flex; justify-content:center; gap:10px;
+    margin-top:10px;
+  }
   @keyframes tutPopIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
-  .tut-next-btn {
+  .tut-next-btn,
+  .tut-skip-btn {
     display:inline-block; margin-top:10px;
-    padding:8px 24px; border:none; border-radius:50px;
+    padding:8px 20px; border:none; border-radius:50px;
     background:linear-gradient(135deg,#60A5FA,#818CF8);
     color:#fff; font-family:inherit;
     font-size:0.9rem; font-weight:900; cursor:pointer;
     box-shadow: 0 3px 0 rgba(0,0,0,0.18);
+    touch-action: manipulation;
+  }
+  .tut-skip-btn {
+    background:rgba(15,23,42,0.22);
+    color:#1F2937;
+    box-shadow: inset 0 0 0 2px rgba(15,23,42,0.18);
   }
   .tut-next-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.18); }
+  .tut-skip-btn:active { transform: translateY(2px); }
   /* スポットライト: anchor 位置に被せて 暗幕に「穴」をあける */
   .tut-spot {
     position: fixed;
@@ -3480,6 +3511,37 @@
     transition: all 0.25s ease-out;
   }
   .tut-spot.hidden { display: none; }
+  .tut-hand {
+    position: fixed;
+    z-index: 9998;
+    width: clamp(64px, 10vw, 96px);
+    aspect-ratio: 1 / 1;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--tut-hand-rotate, 0deg)) scale(var(--tut-hand-scale, 1));
+    transform-origin: 50% 50%;
+    filter: drop-shadow(0 9px 11px rgba(2,6,23,0.32));
+    transition: opacity 0.14s ease, transform 0.16s ease;
+  }
+  .tut-hand.hidden { display:none; }
+  .tut-hand.show { opacity: 1; }
+  .tut-hand.is-pointing { animation: otoTutPoint 0.72s ease-in-out infinite; }
+  .tut-hand.is-tapping { animation: otoTutTap 1.05s ease-in-out infinite; }
+  .tut-hand img {
+    display:block;
+    width:100%; height:100%;
+    object-fit:contain;
+    -webkit-user-drag:none;
+    user-select:none;
+  }
+  @keyframes otoTutPoint {
+    0%, 100% { transform: translate(-50%, -50%) rotate(var(--tut-hand-rotate, 0deg)) translateX(0) scale(var(--tut-hand-scale, 1)); }
+    50% { transform: translate(-50%, -50%) rotate(var(--tut-hand-rotate, 0deg)) translateX(-8px) scale(var(--tut-hand-scale, 1)); }
+  }
+  @keyframes otoTutTap {
+    0%, 100% { transform: translate(-50%, -50%) rotate(var(--tut-hand-rotate, 0deg)) translateY(-8px) scale(var(--tut-hand-scale, 1)); }
+    45%, 62% { transform: translate(-50%, -50%) rotate(var(--tut-hand-rotate, 0deg)) translateY(4px) scale(calc(var(--tut-hand-scale, 1) * 0.92)); }
+  }
   @keyframes tutSpotPulse {
     0%, 100% { outline-color: #FFD84D; outline-width: 4px; }
     50%      { outline-color: #FBBF24; outline-width: 6px; }
@@ -4835,6 +4897,9 @@
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-spot hidden" id="tut-spot"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
+<div class="tut-hand hidden" id="tut-hand" aria-hidden="true">
+  <img id="tut-hand-img" src="../assets/images/puzzle/ui/tutorial/hand_point_left.png" alt="" draggable="false">
+</div>
 
 <!-- イントロ: タップで AudioContext をアンロック -->
 <div class="intro" id="intro" role="button" aria-label="タップしてスタート">
@@ -10661,10 +10726,12 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
         return;
       }
       _showRhythmMenu();
+      maybeShowOtoTutorial('rhythmStory', 420);
     }
     else {
       _hideRhythmMenu();
       setPlayMode('free');
+      if (_freeViewMode === 'stage') maybeShowOtoTutorial('freeStage', 420);
     }
   });
 });
@@ -10674,6 +10741,7 @@ document.querySelectorAll('.free-view-btn').forEach(function(btn) {
     e.stopPropagation();
     unlockAudio();
     setFreeViewMode(btn.dataset.freeView, true);
+    if (_playMode === 'free' && _freeViewMode === 'stage') maybeShowOtoTutorial('freeStage', 420);
   });
 });
 var rhythmMenuStart = document.getElementById('rhythm-menu-start');
@@ -11509,6 +11577,18 @@ document.addEventListener('visibilitychange', function() {
 // チュートリアル
 // ────────────────────────────────
 var TUT_SEEN_KEY = 'pono_oto_tut_seen';
+var OTO_TUTORIAL_KEYS = {
+  classic: TUT_SEEN_KEY,
+  rhythmStory: 'pono_oto_rhythm_story_tut_seen_v1',
+  freeStage: 'pono_oto_free_stage_tut_seen_v1'
+};
+var OTO_TUTORIAL_HAND_ASSETS = {
+  point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
+  open: '../assets/images/puzzle/ui/tutorial/hand_open_hover.png',
+  grip: '../assets/images/puzzle/ui/tutorial/hand_grip.png',
+  release: '../assets/images/puzzle/ui/tutorial/hand_open_release.png'
+};
+var _otoTutorialState = null;
 function _tutPositionBubble(bubble, anchorRect, preferredSide) {
   // anchorRect の 上/下/中央 に合わせて bubble を配置、画面外にはみ出さないようクランプ
   var bw = bubble.offsetWidth, bh = bubble.offsetHeight;
@@ -11519,17 +11599,29 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
     top  = Math.round((vh - bh) / 2);
   } else {
     var side = preferredSide || 'below';
+    var anchorCx = anchorRect.left + anchorRect.width / 2;
+    var anchorCy = anchorRect.top + anchorRect.height / 2;
+    if (side === 'left') {
+      left = anchorRect.left - bw - 14;
+      top = Math.round(anchorCy - bh / 2);
+      if (left < 12) side = 'below';
+    }
+    if (side === 'right') {
+      left = anchorRect.right + 14;
+      top = Math.round(anchorCy - bh / 2);
+      if (left + bw > vw - 12) side = 'below';
+    }
     // 縦方向: anchor の下 or 上
     if (side === 'above') {
       top = anchorRect.top - bh - 14;
       if (top < 12) top = anchorRect.bottom + 14; // 上に入らなければ下
-    } else {
+      left = Math.round(anchorCx - bw / 2);
+    } else if (side === 'below' || side !== 'left' && side !== 'right') {
       top = anchorRect.bottom + 14;
       if (top + bh > vh - 12) top = anchorRect.top - bh - 14; // 下に入らなければ上
+      left = Math.round(anchorCx - bw / 2);
     }
     // 横方向: anchor の中心にそろえてクランプ
-    var anchorCx = anchorRect.left + anchorRect.width / 2;
-    left = Math.round(anchorCx - bw / 2);
     if (left < 12) left = 12;
     if (left + bw > vw - 12) left = vw - bw - 12;
     if (top < 12) top = 12;
@@ -11539,37 +11631,249 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
   bubble.style.top  = top  + 'px';
 }
 
-function showTutorial() {
-  var dim = document.getElementById('tut-dim');
-  var bubble = document.getElementById('tut-bubble');
-  if (!dim || !bubble) return;
-
-  // 5ステップ定義
-  var steps = [
+function _otoTutorialSeen(kind) {
+  var key = OTO_TUTORIAL_KEYS[kind] || TUT_SEEN_KEY;
+  try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
+}
+function _markOtoTutorialSeen(kind) {
+  var key = OTO_TUTORIAL_KEYS[kind] || TUT_SEEN_KEY;
+  try { localStorage.setItem(key, '1'); } catch (e) {}
+}
+function _currentOtoTutorialKind() {
+  if (document.body && (
+    document.body.classList.contains('rhythm-menu-open') ||
+    document.body.classList.contains('rhythm-opening-active') ||
+    _playMode === 'rhythm'
+  )) {
+    return 'rhythmStory';
+  }
+  if (_playMode === 'free' && _freeViewMode === 'stage') return 'freeStage';
+  return 'classic';
+}
+function _makeOtoTutorialSteps(kind) {
+  if (kind === 'rhythmStory') {
+    return [
+      {
+        badge: 'ストーリー',
+        msg: 'ライバルと リズムしょうぶ！<br>まず きょくを えらぼう',
+        anchor: '#rhythm-menu .rhythm-song-list',
+        side: 'left',
+        hand: 'point',
+        before: function() {
+          _setModeButtons('rhythm');
+          _showRhythmMenu();
+          _setRhythmMenuStep('song');
+        }
+      },
+      {
+        badge: 'れんしゅう',
+        msg: 'ブロックなら みじかく れんしゅう<br>ぜんぶなら さいごまで あそぶよ',
+        anchor: '#rhythm-practice',
+        side: 'left',
+        hand: 'point',
+        before: function() { _setRhythmMenuStep('mode'); }
+      },
+      {
+        badge: 'おてほん',
+        msg: 'おてほんで ながれを きいて<br>はじめるで しょうぶスタート',
+        anchor: '#rhythm-menu-start',
+        side: 'above',
+        hand: 'point'
+      },
+      {
+        badge: 'タッチ',
+        msg: 'ノートが ひかるラインに きたら<br>おなじレーンの ボタンを タッチ',
+        anchor: '.gh-hitline',
+        side: 'above',
+        hand: 'point',
+        before: function() {
+          _hideRhythmMenu();
+          _setModeButtons('rhythm');
+          _setRhythmStatus('いちばん したまで きたら タッチ！', null, 'hint');
+          var hud = document.getElementById('rhythm-hud');
+          if (hud) hud.classList.add('show');
+        }
+      },
+      {
+        badge: 'ながいノート',
+        msg: 'ボタンを おすと おとが なるよ<br>ながいノートは ながく おしてね',
+        anchor: '.instr-btn[data-idx="3"]',
+        side: 'above',
+        hand: 'tap',
+        tapIdx: 3
+      }
+    ];
+  }
+  if (kind === 'freeStage') {
+    return [
+      {
+        badge: 'ステージえんそう',
+        msg: 'ここでは じゆうに ドレミを<br>ならして あそべるよ',
+        anchor: '#free-stage-pono',
+        side: 'below',
+        hand: 'point',
+        before: function() {
+          setFreeViewMode('stage', true);
+          setPlayMode('free');
+        }
+      },
+      {
+        badge: 'タッチ',
+        msg: 'したの ボタンを タッチ！<br>ひかって おとが なるよ',
+        anchor: '.instr-btn[data-idx="3"]',
+        side: 'above',
+        hand: 'tap',
+        tapIdx: 3
+      },
+      {
+        badge: 'ねいろ',
+        msg: 'ねいろを かえると<br>きらきら・たいこ・どうぶつに かわるよ',
+        anchor: '.sound-sets-box',
+        side: 'right',
+        hand: 'point'
+      },
+      {
+        badge: 'ばんそう',
+        msg: 'ドラムを ならすと<br>リズムに のって えんそうできるよ',
+        anchor: '.band-group',
+        side: 'right',
+        hand: 'point'
+      },
+      {
+        badge: 'きりかえ',
+        msg: 'ボタンえんそうにも<br>いつでも きりかえられるよ',
+        anchor: '#free-view-switch',
+        side: 'right',
+        hand: 'point'
+      }
+    ];
+  }
+  return [
     {
-      msg: '🎵 ポノのおとタッチへ ようこそ！<br>まるい ボタンを タッチすると<br>おとが なるよ',
+      badge: 'おとタッチ',
+      msg: 'ポノのおとタッチへ ようこそ！<br>まるい ボタンを タッチすると<br>おとが なるよ',
       anchor: null, side: null
     },
     {
-      msg: 'うえの ボタンで <b>ねいろ</b> を<br>えらべるよ (ピアノ / マリンバ など)',
-      anchor: '.sound-sets-box', side: 'below'
+      badge: 'ねいろ',
+      msg: 'うえの ボタンで <b>ねいろ</b> を<br>えらべるよ',
+      anchor: '.sound-sets-box', side: 'below', hand: 'point'
     },
     {
-      msg: 'なが〜く おしてみよう<br>ドレミ・きらきらは ながく のびるよ ✨',
-      anchor: '.instr-btn[data-idx="1"]', side: 'below'
+      badge: 'ながく おす',
+      msg: 'なが〜く おしてみよう<br>ドレミ・きらきらは ながく のびるよ',
+      anchor: '.instr-btn[data-idx="1"]', side: 'below', hand: 'tap', tapIdx: 1
     },
     {
-      msg: 'した の <b>ばんそう</b> で<br>ドラムの はやさを えらんで<br>リズムに のって あそべるよ',
-      anchor: '.band-group', side: 'above'
+      badge: 'ばんそう',
+      msg: 'した の <b>ばんそう</b> で<br>ドラムの はやさを えらべるよ',
+      anchor: '.band-group', side: 'above', hand: 'point'
     },
     {
-      msg: 'じゆうに あそんでね！<br><small style="color:#888">⚙ メニューから もういちど みれるよ</small>',
+      badge: 'できた',
+      msg: 'じゆうに あそんでね！<br><small style="color:#777">⚙ メニューから もういちど みれるよ</small>',
       anchor: null, side: null
     }
   ];
-
+}
+function _clearOtoTutorialHandTimers() {
+  if (!_otoTutorialState || !_otoTutorialState.handTimers) return;
+  _otoTutorialState.handTimers.forEach(function(t) { try { clearTimeout(t); } catch (e) {} });
+  _otoTutorialState.handTimers = [];
+  var pressed = _otoTutorialState.pressedEl;
+  if (pressed) {
+    try { pressed.classList.remove('press', 'rhythm-hit', 'rhythm-hit-just'); } catch (e) {}
+  }
+  _otoTutorialState.pressedEl = null;
+}
+function _hideOtoTutorialHand() {
+  _clearOtoTutorialHandTimers();
+  var hand = document.getElementById('tut-hand');
+  if (!hand) return;
+  hand.classList.add('hidden');
+  hand.classList.remove('show', 'is-pointing', 'is-tapping');
+}
+function _showOtoTutorialHand(step, rect, anchorEl) {
+  var hand = document.getElementById('tut-hand');
+  var img = document.getElementById('tut-hand-img');
+  if (!hand || !img || !step || !step.hand || !rect) {
+    _hideOtoTutorialHand();
+    return;
+  }
+  _clearOtoTutorialHandTimers();
+  var kind = step.hand === 'tap' ? 'open' : 'point';
+  img.src = OTO_TUTORIAL_HAND_ASSETS[kind] || OTO_TUTORIAL_HAND_ASSETS.point;
+  var left = rect.left + rect.width * (step.hand === 'tap' ? 0.64 : 0.86);
+  var top = rect.top + rect.height * (step.hand === 'tap' ? 0.54 : 0.5);
+  hand.style.left = left + 'px';
+  hand.style.top = top + 'px';
+  hand.style.setProperty('--tut-hand-rotate', step.hand === 'tap' ? '-14deg' : '0deg');
+  hand.style.setProperty('--tut-hand-scale', step.hand === 'tap' ? '1.05' : '0.95');
+  hand.classList.remove('hidden', 'is-pointing', 'is-tapping');
+  hand.classList.add('show', step.hand === 'tap' ? 'is-tapping' : 'is-pointing');
+  if (step.hand !== 'tap') return;
+  var timers = _otoTutorialState ? _otoTutorialState.handTimers : [];
+  timers.push(setTimeout(function() {
+    img.src = OTO_TUTORIAL_HAND_ASSETS.grip;
+    if (anchorEl && anchorEl.classList) {
+      anchorEl.classList.add('press', 'rhythm-hit', 'rhythm-hit-just');
+      if (_otoTutorialState) _otoTutorialState.pressedEl = anchorEl;
+    }
+    if (typeof step.tapIdx === 'number') {
+      try {
+        unlockAudio();
+        playSetSound(step.tapIdx);
+        if (step.anchor && String(step.anchor).indexOf('instr-btn') >= 0) {
+          var stagePoint = _viewportPointToStage(rect.left + rect.width / 2, rect.top + rect.height / 2);
+          spawnParticles(stagePoint.x, stagePoint.y, 10);
+        }
+      } catch (e) {}
+    }
+  }, 360));
+  timers.push(setTimeout(function() {
+    img.src = OTO_TUTORIAL_HAND_ASSETS.release;
+    if (anchorEl && anchorEl.classList) {
+      anchorEl.classList.remove('press', 'rhythm-hit', 'rhythm-hit-just');
+    }
+    if (_otoTutorialState) _otoTutorialState.pressedEl = null;
+  }, 760));
+}
+function _finishOtoTutorial(markSeen) {
+  if (!_otoTutorialState) return;
+  var kind = _otoTutorialState.kind;
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
   var spot = document.getElementById('tut-spot');
-  var i = 0;
+  if (dim) dim.classList.add('hidden');
+  if (bubble) bubble.classList.add('hidden');
+  if (spot) spot.classList.add('hidden');
+  _hideOtoTutorialHand();
+  document.body.classList.remove('oto-tutorial-open');
+  if (markSeen) _markOtoTutorialSeen(kind);
+  var shouldRestoreRhythmMenu = kind === 'rhythmStory' && !_rhythm.enabled && !_rhythm.openingActive && !_rhythm.demoActive;
+  if (shouldRestoreRhythmMenu) {
+    var hud = document.getElementById('rhythm-hud');
+    if (hud) hud.classList.remove('show');
+  }
+  _otoTutorialState = null;
+  if (shouldRestoreRhythmMenu) {
+    _showRhythmMenu();
+    _setRhythmMenuStep('song');
+  }
+}
+function _renderOtoTutorialStep() {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  var spot = document.getElementById('tut-spot');
+  if (!dim || !bubble || !_otoTutorialState) return;
+  var steps = _otoTutorialState.steps || [];
+  var i = _otoTutorialState.index || 0;
+  var s = steps[i];
+  if (!s) {
+    _finishOtoTutorial(true);
+    return;
+  }
+  _hideOtoTutorialHand();
 
   function _hideSpot() { if (spot) spot.classList.add('hidden'); }
   function _showSpotAt(rect, borderRadius) {
@@ -11583,13 +11887,19 @@ function showTutorial() {
     spot.classList.remove('hidden');
   }
 
-  function renderStep() {
-    var s = steps[i];
+  try {
+    if (typeof s.before === 'function') s.before();
+  } catch (e) {}
+  setTimeout(function() {
+    if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
     var isLast = (i === steps.length - 1);
-    bubble.innerHTML = s.msg +
-      '<br><button class="tut-next-btn" id="tut-next">' +
-      (isLast ? 'わかった！' : 'つぎ →') +
-      '</button>';
+    bubble.innerHTML =
+      '<div class="tut-badge">' + (s.badge || 'あそびかた') + '</div>' +
+      '<div class="tut-msg">' + s.msg + '</div>' +
+      '<div class="tut-actions">' +
+      '<button class="tut-skip-btn" id="tut-skip">スキップ</button>' +
+      '<button class="tut-next-btn" id="tut-next">' + (isLast ? 'わかった！' : 'つぎへ') + '</button>' +
+      '</div>';
     bubble.classList.remove('hidden');
     bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
 
@@ -11610,23 +11920,53 @@ function showTutorial() {
     }
     requestAnimationFrame(function() {
       _tutPositionBubble(bubble, rect, s.side);
+      _showOtoTutorialHand(s, rect, anchorEl);
     });
     var btn = document.getElementById('tut-next');
-    btn.addEventListener('pointerdown', function(e) {
+    var skip = document.getElementById('tut-skip');
+    if (skip) skip.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      i++;
-      if (i >= steps.length) {
-        dim.classList.add('hidden');
-        bubble.classList.add('hidden');
-        _hideSpot();
-        try { localStorage.setItem(TUT_SEEN_KEY, '1'); } catch (er) {}
+      _finishOtoTutorial(true);
+    }, { once: true });
+    if (btn) btn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!_otoTutorialState) return;
+      _otoTutorialState.index++;
+      if (_otoTutorialState.index >= steps.length) {
+        _finishOtoTutorial(true);
       } else {
-        renderStep();
+        _renderOtoTutorialStep();
       }
     }, { once: true });
-  }
-  renderStep();
+  }, 60);
+}
+
+function showTutorial(kind, opts) {
+  kind = kind || _currentOtoTutorialKind();
+  if (kind === 'rhythm') kind = 'rhythmStory';
+  opts = opts || {};
+  var steps = _makeOtoTutorialSteps(kind);
+  if (!steps || !steps.length) return;
+  _finishOtoTutorial(false);
+  _otoTutorialState = {
+    kind: kind,
+    index: 0,
+    steps: steps,
+    handTimers: [],
+    pressedEl: null,
+    force: !!opts.force
+  };
+  document.body.classList.add('oto-tutorial-open');
+  _renderOtoTutorialStep();
+}
+
+function maybeShowOtoTutorial(kind, delayMs) {
+  if (_otoTutorialSeen(kind)) return;
+  setTimeout(function() {
+    if (!_otoTutorialSeen(kind)) showTutorial(kind);
+  }, delayMs == null ? 420 : delayMs);
 }
 
 // common/menu.js is still loaded for shared SW update handling.
@@ -11641,11 +11981,7 @@ function showTutorial() {
   var startChoice = document.getElementById('start-mode-choice');
   if (!intro || !introBtn) return;
   function maybeShowInitialTutorial() {
-    try {
-      if (!localStorage.getItem(TUT_SEEN_KEY)) {
-        setTimeout(showTutorial, 500);
-      }
-    } catch (e) {}
+    maybeShowOtoTutorial('classic', 500);
   }
   function hideStartChoice() {
     if (startChoice) startChoice.classList.remove('show');
@@ -11689,6 +12025,7 @@ function showTutorial() {
           enterApp();
           setPlayMode('free');
           _showRhythmMenu();
+          maybeShowOtoTutorial('rhythmStory', 560);
         } else {
           showFreeStyleChoice();
         }
@@ -11705,6 +12042,8 @@ function showTutorial() {
         setPlayMode('free');
         if (viewMode === 'classic') {
           maybeShowInitialTutorial();
+        } else {
+          maybeShowOtoTutorial('freeStage', 560);
         }
       });
     });
@@ -12441,7 +12780,7 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     e.preventDefault();
     e.stopPropagation();
     close();
-    showTutorial();
+    showTutorial(_currentOtoTutorialKind(), { force: true });
   });
   if (bgmBtn) bgmBtn.addEventListener('click', function(e) {
     e.preventDefault();

@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1295: Oto adds first-run tutorials for rhythm story and free 3D stage modes.
 // v1283: Roll back the Bento staff/NPC staging bundle and restore the previous Bento defaults.
 // v1281: Oto adds Alps Ichimanjaku as a new hard lion-rival rhythm stage.
 // v1280: Oto lion-rival rhythm notes use a simple crown mark instead of claw/burst marks.
@@ -53,7 +54,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1283; // v1283: Roll back the Bento staff/NPC staging bundle and restore the previous Bento defaults. | v1281: Oto adds Alps Ichimanjaku as a new hard lion-rival rhythm stage. | v1280: Oto lion-rival rhythm notes use a simple crown mark instead of claw/burst marks. | v1278: Oto watches legacy sticker reward close events so next-stage openings continue on staging.
+const CACHE_VERSION = 1295; // v1295: Oto adds first-run tutorials for rhythm story and free 3D stage modes. | v1283: Roll back the Bento staff/NPC staging bundle and restore the previous Bento defaults. | v1281: Oto adds Alps Ichimanjaku as a new hard lion-rival rhythm stage. | v1280: Oto lion-rival rhythm notes use a simple crown mark instead of claw/burst marks.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
