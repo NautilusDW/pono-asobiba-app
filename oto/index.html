@@ -3454,13 +3454,13 @@
       linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,244,211,0.98) 100%);
     border: 3px solid rgba(255,255,255,0.94);
     border-radius:20px;
-    padding:12px 16px 14px; max-width:min(88vw, 420px);
+    padding:10px 14px 12px; max-width:min(84vw, 380px);
     box-shadow:
       0 12px 28px rgba(2,6,23,0.38),
       0 0 0 5px rgba(255,207,67,0.22),
       inset 0 -3px 0 rgba(212,164,84,0.16);
-    font-size:clamp(0.86rem, 2.2vw, 1.05rem); font-weight:900; color:#4A3217;
-    line-height:1.45; text-align:center;
+    font-size:clamp(0.82rem, 2vw, 0.98rem); font-weight:900; color:#4A3217;
+    line-height:1.38; text-align:center;
     animation: tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
   }
   .tut-bubble.hidden { display:none; }
@@ -3479,13 +3479,17 @@
   .tut-msg { display:block; }
   .tut-actions {
     display:flex; justify-content:center; gap:10px;
-    margin-top:10px;
+    margin-top:8px;
+  }
+  .tut-actions .tut-next-btn,
+  .tut-actions .tut-skip-btn {
+    margin-top:0;
   }
   @keyframes tutPopIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
   .tut-next-btn,
   .tut-skip-btn {
-    display:inline-block; margin-top:10px;
-    padding:8px 20px; border:none; border-radius:50px;
+    display:inline-block; margin-top:6px;
+    padding:7px 20px; border:none; border-radius:50px;
     background:linear-gradient(135deg,#60A5FA,#818CF8);
     color:#fff; font-family:inherit;
     font-size:0.9rem; font-weight:900; cursor:pointer;
@@ -3499,6 +3503,21 @@
   }
   .tut-next-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.18); }
   .tut-skip-btn:active { transform: translateY(2px); }
+  .tut-hide-next {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    margin-top:8px;
+    color:#5B4630;
+    font-size:0.78em;
+    line-height:1;
+  }
+  .tut-hide-next input {
+    width:18px;
+    height:18px;
+    accent-color:#34D399;
+  }
   /* スポットライト: anchor 位置に被せて 暗幕に「穴」をあける */
   .tut-spot {
     position: fixed;
@@ -11576,11 +11595,11 @@ document.addEventListener('visibilitychange', function() {
 // ────────────────────────────────
 // チュートリアル
 // ────────────────────────────────
-var TUT_SEEN_KEY = 'pono_oto_tut_seen';
+var TUT_SEEN_KEY = 'pono_oto_tut_seen_v2';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
-  rhythmStory: 'pono_oto_rhythm_story_tut_seen_v1',
-  freeStage: 'pono_oto_free_stage_tut_seen_v1'
+  rhythmStory: 'pono_oto_rhythm_story_tut_seen_v2',
+  freeStage: 'pono_oto_free_stage_tut_seen_v2'
 };
 var OTO_TUTORIAL_HAND_ASSETS = {
   point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
@@ -11589,12 +11608,18 @@ var OTO_TUTORIAL_HAND_ASSETS = {
   release: '../assets/images/puzzle/ui/tutorial/hand_open_release.png'
 };
 var _otoTutorialState = null;
+var _otoTutorialSessionHidden = {};
 function _tutPositionBubble(bubble, anchorRect, preferredSide) {
   // anchorRect の 上/下/中央 に合わせて bubble を配置、画面外にはみ出さないようクランプ
   var bw = bubble.offsetWidth, bh = bubble.offsetHeight;
   var vw = window.innerWidth, vh = window.innerHeight;
   var left, top;
-  if (!anchorRect) {
+  if (preferredSide === 'stageTop') {
+    var stageEl = document.getElementById('stage');
+    var stageRect = stageEl ? stageEl.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
+    left = Math.round(stageRect.left + stageRect.width / 2 - bw / 2);
+    top = Math.round(stageRect.top + Math.max(12, Math.min(34, stageRect.height * 0.045)));
+  } else if (!anchorRect) {
     left = Math.round((vw - bw) / 2);
     top  = Math.round((vh - bh) / 2);
   } else {
@@ -11621,12 +11646,12 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
       if (top + bh > vh - 12) top = anchorRect.top - bh - 14; // 下に入らなければ上
       left = Math.round(anchorCx - bw / 2);
     }
-    // 横方向: anchor の中心にそろえてクランプ
-    if (left < 12) left = 12;
-    if (left + bw > vw - 12) left = vw - bw - 12;
-    if (top < 12) top = 12;
-    if (top + bh > vh - 12) top = vh - bh - 12;
   }
+  // 横方向: anchor / stage の中心にそろえてクランプ
+  if (left < 12) left = 12;
+  if (left + bw > vw - 12) left = vw - bw - 12;
+  if (top < 12) top = 12;
+  if (top + bh > vh - 12) top = vh - bh - 12;
   bubble.style.left = left + 'px';
   bubble.style.top  = top  + 'px';
 }
@@ -11638,6 +11663,10 @@ function _otoTutorialSeen(kind) {
 function _markOtoTutorialSeen(kind) {
   var key = OTO_TUTORIAL_KEYS[kind] || TUT_SEEN_KEY;
   try { localStorage.setItem(key, '1'); } catch (e) {}
+}
+function _otoTutorialHideNextChecked() {
+  var input = document.getElementById('tut-hide-next');
+  return !!(input && input.checked);
 }
 function _currentOtoTutorialKind() {
   if (document.body && (
@@ -11657,7 +11686,7 @@ function _makeOtoTutorialSteps(kind) {
         badge: 'ストーリー',
         msg: 'ライバルと リズムしょうぶ！<br>まず きょくを えらぼう',
         anchor: '#rhythm-menu .rhythm-song-list',
-        side: 'left',
+        side: 'stageTop',
         hand: 'point',
         before: function() {
           _setModeButtons('rhythm');
@@ -11667,17 +11696,17 @@ function _makeOtoTutorialSteps(kind) {
       },
       {
         badge: 'れんしゅう',
-        msg: 'ブロックなら みじかく れんしゅう<br>ぜんぶなら さいごまで あそぶよ',
+        msg: 'ブロックは みじかく れんしゅう<br>ぜんぶは さいごまで あそぶよ',
         anchor: '#rhythm-practice',
-        side: 'left',
+        side: 'stageTop',
         hand: 'point',
         before: function() { _setRhythmMenuStep('mode'); }
       },
       {
         badge: 'おてほん',
-        msg: 'おてほんで ながれを きいて<br>はじめるで しょうぶスタート',
-        anchor: '#rhythm-menu-start',
-        side: 'above',
+        msg: 'まず おてほんを おして<br>ながれを きいてみよう',
+        anchor: '#rhythm-menu-demo',
+        side: 'stageTop',
         hand: 'point'
       },
       {
@@ -11849,7 +11878,11 @@ function _finishOtoTutorial(markSeen) {
   if (spot) spot.classList.add('hidden');
   _hideOtoTutorialHand();
   document.body.classList.remove('oto-tutorial-open');
-  if (markSeen) _markOtoTutorialSeen(kind);
+  if (markSeen && _otoTutorialHideNextChecked()) {
+    _markOtoTutorialSeen(kind);
+  } else if (markSeen) {
+    _otoTutorialSessionHidden[kind] = true;
+  }
   var shouldRestoreRhythmMenu = kind === 'rhythmStory' && !_rhythm.enabled && !_rhythm.openingActive && !_rhythm.demoActive;
   if (shouldRestoreRhythmMenu) {
     var hud = document.getElementById('rhythm-hud');
@@ -11897,9 +11930,10 @@ function _renderOtoTutorialStep() {
       '<div class="tut-badge">' + (s.badge || 'あそびかた') + '</div>' +
       '<div class="tut-msg">' + s.msg + '</div>' +
       '<div class="tut-actions">' +
-      '<button class="tut-skip-btn" id="tut-skip">スキップ</button>' +
+      '<button class="tut-skip-btn" id="tut-skip">とじる</button>' +
       '<button class="tut-next-btn" id="tut-next">' + (isLast ? 'わかった！' : 'つぎへ') + '</button>' +
-      '</div>';
+      '</div>' +
+      '<label class="tut-hide-next"><input type="checkbox" id="tut-hide-next">つぎから ださない</label>';
     bubble.classList.remove('hidden');
     bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
 
@@ -11964,8 +11998,9 @@ function showTutorial(kind, opts) {
 
 function maybeShowOtoTutorial(kind, delayMs) {
   if (_otoTutorialSeen(kind)) return;
+  if (_otoTutorialSessionHidden[kind]) return;
   setTimeout(function() {
-    if (!_otoTutorialSeen(kind)) showTutorial(kind);
+    if (!_otoTutorialSeen(kind) && !_otoTutorialSessionHidden[kind]) showTutorial(kind);
   }, delayMs == null ? 420 : delayMs);
 }
 
