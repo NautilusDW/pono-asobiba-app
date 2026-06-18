@@ -66,29 +66,6 @@ body {
 .npc-pos-slider-row label { font-size: 0.78rem; font-weight: 700; color: #5D4E37; }
 .npc-pos-slider-row input[type=range] { width: 100%; }
 .npc-pos-slider-row .npc-pos-val { font-size: 0.72rem; color: #8B7355; font-weight: 700; text-align: right; }
-.npc-pos-preview-tools {
-  display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  margin-bottom: 6px; flex-wrap: wrap;
-}
-.npc-pos-preview-zoom {
-  display: flex; align-items: center; gap: 5px; font-size: 0.7rem;
-  color: #8B7355; font-weight: 800;
-}
-.npc-pos-preview-zoom-btn {
-  padding: 4px 8px; border: 2px solid #E0D8CC; border-radius: 999px;
-  background: #fff; color: #5D4E37; font-family: inherit;
-  font-size: 0.7rem; font-weight: 900; cursor: pointer;
-}
-.npc-pos-preview-zoom-btn.active {
-  background: #0EA5E9; border-color: #0EA5E9; color: #fff;
-}
-.npc-pos-preview-scroll {
-  width: 100%; max-width: 100%; max-height: 72vh; overflow: auto; padding: 4px;
-  background: #FFF8E8; border: 1px solid #E8D8B8; border-radius: 12px;
-}
-.npc-pos-preview-scroll #npc-pos-preview {
-  flex: 0 0 auto; transition: width 0.15s ease;
-}
 .checker-bg {
   background-image: linear-gradient(45deg, #ddd 25%, transparent 25%),
     linear-gradient(-45deg, #ddd 25%, transparent 25%),
@@ -1016,7 +993,7 @@ tr:hover { background: #FFFAF0; }
 <div class="panel" id="panel-bento">
   <div class="sub-tabs">
     <button class="sub-tab active" data-sub="bento-illust">🎨 イラスト管理</button>
-    <button class="sub-tab" data-sub="bento-npc-pos">🎨 キャラ位置エディタ</button>
+    <button class="sub-tab" data-sub="bento-npc-pos">🎨 NPC 位置エディタ</button>
   </div>
   <div class="sub-panel active" id="sub-bento-illust">
   <div class="section">
@@ -1035,22 +1012,21 @@ tr:hover { background: #FFFAF0; }
   </div>
   </div>
 
-  <!-- ===== キャラ位置エディタ ===== -->
+  <!-- ===== NPC 位置エディタ ===== -->
   <div class="sub-panel" id="sub-bento-npc-pos">
   <div class="section">
-    <div class="section-title">🎨 キャラ位置エディタ（弁当ゲーム）</div>
+    <div class="section-title">🎨 NPC 位置エディタ（弁当ゲーム）</div>
     <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
-      おべんとう <code>delivery</code>/<code>shop-opening</code> シーンに登場する動物NPCと店員キャラの位置を、
-      <strong>キャラクター × 表情/ポーズ</strong> ごとに調整します。<br>
-      本体側では来店、注文前モーダル、配達、結果リアクション、結果詳細のNPC表示に反映されます。<br>
+      おべんとう <code>delivery</code>/<code>shop-opening</code> シーンに登場する NPC スプライトの位置を、
+      <strong>キャラクター × 表情</strong> ごとに調整します。<br>
       設定は <code>localStorage['bento_npc_positions_v1']</code> に保存され、 <strong>ブラウザのキャッシュをまたいで保持</strong>されます。<br>
-      動物NPCは delivery 画面、店員キャラは最初の shop-opening 画面を想定した絶対値です。<br>
-      <code>happy</code> は画像が <code>normal</code> と共通なので、happy 未保存時は normal の位置を引き継ぎます。
+      delivery 画面のデフォルトは <code>x=58%, y=23%</code>。 shop-opening のデフォルトは <code>x=50%, y=23%</code>。
+      スライダーの値は delivery 画面を想定した絶対値で、両画面共通で反映されます。
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;">
       <!-- 左: 選択 + スライダー -->
-      <div style="min-width:0;">
+      <div>
         <div style="margin-bottom:14px;">
           <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">キャラクター</label>
           <select id="npc-pos-char" style="width:100%;padding:8px 10px;border:2px solid #C7894A;border-radius:8px;background:#fff;font-family:inherit;font-size:0.9rem;font-weight:700;color:#5D4E37;">
@@ -1060,41 +1036,25 @@ tr:hover { background: #FFFAF0; }
             <option value="shika">しかさん (shika)</option>
             <option value="araiguma">アライグマくん (araiguma)</option>
             <option value="neko">ねこさん (neko)</option>
-            <option value="staffpono">店員 ポノ (staffpono)</option>
-            <option value="staffboy">店員 男の子 (staffboy)</option>
-            <option value="staffgirl">店員 女の子 (staffgirl)</option>
           </select>
         </div>
 
         <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">表情 / ポーズ</label>
+          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">表情</label>
           <div id="npc-pos-expr-row" style="display:flex;flex-wrap:wrap;gap:6px;">
             <button type="button" class="npc-pos-expr-btn active" data-expr="request">request</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="normal">normal</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="happy">happy</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="super_happy">super_happy</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="almost">almost</button>
+            <button type="button" class="npc-pos-expr-btn" data-expr="sad">sad</button>
           </div>
         </div>
-
-        <label style="display:flex;align-items:center;gap:8px;margin:-2px 0 14px;padding:8px 10px;border:2px solid #E8D8C0;border-radius:10px;background:#FFFDF7;font-size:0.78rem;font-weight:800;color:#5D4E37;cursor:pointer;">
-          <input id="npc-pos-apply-all-exprs" type="checkbox" style="width:18px;height:18px;accent-color:#F59E0B;">
-          <span id="npc-pos-apply-all-label">このキャラの全表情/ポーズをまとめて操作</span>
-        </label>
 
         <div id="npc-pos-sliders" style="display:flex;flex-direction:column;gap:10px;"></div>
 
-        <div id="npc-pos-mask-panel" style="display:none;margin-top:18px;padding:12px;border:2px dashed #C7894A;border-radius:10px;background:#FFF8E8;">
-          <div style="font-size:0.82rem;font-weight:900;color:#5D4E37;margin-bottom:4px;">カウンターマスク</div>
-          <div style="font-size:0.72rem;color:#8B7355;line-height:1.45;margin-bottom:10px;">
-            店員キャラをカウンターの向こう側に見せるため、背景のカウンター前面だけを上から重ねます。
-          </div>
-          <div id="npc-pos-mask-sliders" style="display:flex;flex-direction:column;gap:10px;"></div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-            <button id="npc-pos-mask-save" type="button" style="padding:6px 12px;background:#0EA5E9;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">💾 マスク保存</button>
-            <button id="npc-pos-mask-reset" type="button" style="padding:6px 12px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.78rem;font-weight:700;cursor:pointer;">↺ マスクリセット</button>
-          </div>
-        </div>
-
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;">
           <button id="npc-pos-save" type="button" style="padding:7px 14px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">💾 保存</button>
-          <button id="npc-pos-undo" type="button" disabled style="padding:7px 14px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;opacity:0.45;">↶ 取り消し</button>
           <button id="npc-pos-reset" type="button" style="padding:7px 14px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↺ この組合せをリセット</button>
           <button id="npc-pos-reset-all" type="button" style="padding:7px 14px;background:#EF4444;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">🗑 全部リセット</button>
           <button id="npc-pos-export" type="button" style="padding:7px 14px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">⬇ エクスポート (JSON)</button>
@@ -1106,31 +1066,18 @@ tr:hover { background: #FFFAF0; }
       </div>
 
       <!-- 右: プレビュー -->
-      <div style="min-width:0;">
-        <div class="npc-pos-preview-tools">
-          <div style="font-size:0.78rem;font-weight:700;color:#5D4E37;">プレビュー（16:9 シーン）</div>
-          <div class="npc-pos-preview-zoom" id="npc-pos-preview-zoom-controls" aria-label="プレビュー拡大率">
-            <span>拡大</span>
-            <button type="button" class="npc-pos-preview-zoom-btn active" data-zoom="1">100%</button>
-            <button type="button" class="npc-pos-preview-zoom-btn" data-zoom="1.5">150%</button>
-            <button type="button" class="npc-pos-preview-zoom-btn" data-zoom="2">200%</button>
-            <button type="button" class="npc-pos-preview-zoom-btn" data-zoom="3">300%</button>
+      <div>
+        <div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">プレビュー（16:9 シーン）</div>
+        <div id="npc-pos-preview" style="position:relative;width:100%;aspect-ratio:16/9;background:#f4cf91 url('../assets/images/bento/story/shop_order_counter.png') center/contain no-repeat;border:2px solid #C7894A;border-radius:12px;overflow:hidden;">
+          <!-- 0%/50%/100% 目盛 (横) -->
+          <div style="position:absolute;inset:0;pointer-events:none;">
+            <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.35);"></div>
+            <div style="position:absolute;left:0;right:0;bottom:23%;height:1px;background:rgba(255,255,255,0.35);"></div>
           </div>
-        </div>
-        <div class="npc-pos-preview-scroll" id="npc-pos-preview-scroll">
-          <div id="npc-pos-preview" style="position:relative;width:100%;aspect-ratio:16/9;background:#f4cf91 url('../assets/images/bento/story/shop_order_counter.png') center/contain no-repeat;border:2px solid #C7894A;border-radius:12px;overflow:hidden;">
-            <!-- 0%/50%/100% 目盛 (横) -->
-            <div style="position:absolute;inset:0;pointer-events:none;">
-              <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.35);"></div>
-              <div style="position:absolute;left:0;right:0;bottom:23%;height:1px;background:rgba(255,255,255,0.35);"></div>
-            </div>
-            <img id="npc-pos-preview-img" alt="" style="position:absolute;left:58%;bottom:23%;height:40%;max-width:38%;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 8px 12px rgba(70,40,16,0.18));">
-            <div id="npc-pos-preview-mask" style="position:absolute;inset:0;pointer-events:none;background-position:center;background-size:100% 100%;background-repeat:no-repeat;clip-path:inset(51% 0% 18% 0%);opacity:0;"></div>
-            <div id="npc-pos-preview-mask-outline" style="display:none;position:absolute;left:0%;top:51%;width:100%;height:31%;box-sizing:border-box;border:2px dashed rgba(14,165,233,0.9);background:rgba(14,165,233,0.08);pointer-events:none;"></div>
-          </div>
+          <img id="npc-pos-preview-img" alt="" style="position:absolute;left:58%;bottom:23%;height:40%;max-width:38%;object-fit:contain;transform:translateX(-50%);filter:drop-shadow(0 8px 12px rgba(70,40,16,0.18));">
         </div>
         <div style="font-size:0.72rem;color:#8B7355;margin-top:8px;line-height:1.45;">
-          スライダーをドラッグするとリアルタイムに反映。 拡大時はプレビュー枠内をスクロールできます。中央のグリッド線は <code>x=50%</code>, <code>y=23%</code> の目安。
+          スライダーをドラッグするとリアルタイムに反映。 中央のグリッド線は <code>x=50%</code>, <code>y=23%</code> の目安。
           実機 (bento ゲーム本体) 側の表示は、 保存後に再読み込みで反映されます。
         </div>
       </div>
@@ -11248,87 +11195,22 @@ function renderMonsterIllust() {
 //   value = { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
 var NPC_POS_LS_KEY = 'bento_npc_positions_v1';
 var NPC_POS_PORTRAIT_BASE = '../assets/images/bento/npc/';
-var NPC_POS_STAFF_BASE = '../assets/images/bento/story/staff/';
-var NPC_POS_PORTRAIT_VERSION = '20260617-staff-wave-alt-v2';
-var NPC_POS_STAFF_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
 var NPC_POS_DEFAULT = { x: 58, y: 23, scale: 1, rotation: 0, opacity: 1 };
-var NPC_POS_STAFF_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
-var NPC_POS_ANIMAL_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
-var NPC_POS_CHAR_CONFIGS = {
-  risu:     { type: 'npc', name: 'りすちゃん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
-  inu:      { type: 'npc', name: 'わんちゃん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
-  ahiru:    { type: 'npc', name: 'あひるさん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
-  shika:    { type: 'npc', name: 'しかさん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
-  araiguma: { type: 'npc', name: 'アライグマくん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
-  neko:     { type: 'npc', name: 'ねこさん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
-  staffpono: {
-    type: 'staff',
-    name: '店員 ポノ',
-    exprs: ['idle', 'wave', 'present', 'listen', 'wave_alt'],
-    labels: { idle: 'まつ', wave: 'てをふる', present: 'どうぞ', listen: 'きく', wave_alt: 'てをふる2' },
-    files: { idle: 'pono_idle.png', wave: 'pono_wave.png', present: 'pono_present.png', listen: 'pono_listen.png', wave_alt: 'pono_wave_alt.png' },
-    defaults: { x: 13.6, y: 48.2, scale: 1, rotation: 0, opacity: 1 },
-    height: '23%',
-    maxWidth: '24%',
-  },
-  staffboy: {
-    type: 'staff',
-    name: '店員 男の子',
-    exprs: ['idle', 'wave', 'present', 'hands', 'wave_alt'],
-    labels: { idle: 'まつ', wave: 'てをふる', present: 'どうぞ', hands: 'むねのて', wave_alt: 'てをふる2' },
-    files: { idle: 'boy_idle.png', wave: 'boy_wave.png', present: 'boy_present.png', hands: 'boy_hands.png', wave_alt: 'boy_wave_alt.png' },
-    defaults: { x: 34.2, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
-    height: '34%',
-    maxWidth: '28%',
-  },
-  staffgirl: {
-    type: 'staff',
-    name: '店員 女の子',
-    exprs: ['idle', 'wave', 'present', 'hands', 'wave_alt'],
-    labels: { idle: 'まつ', wave: 'てをふる', present: 'どうぞ', hands: 'むねのて', wave_alt: 'てをふる2' },
-    files: { idle: 'girl_idle.png', wave: 'girl_wave.png', present: 'girl_present.png', hands: 'girl_hands.png', wave_alt: 'girl_wave_alt.png' },
-    defaults: { x: 46.9, y: 46.8, scale: 1, rotation: 0, opacity: 1 },
-    height: '34%',
-    maxWidth: '28%',
-  },
-};
-var NPC_POS_CHARS = Object.keys(NPC_POS_CHAR_CONFIGS);
+var NPC_POS_CHARS = ['risu', 'inu', 'ahiru', 'shika', 'araiguma', 'neko'];
+var NPC_POS_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
 var NPC_POS_SLIDER_DEFS = [
   { key: 'x',        label: 'x (left %)',    min: 0,   max: 100, step: 0.5 },
-  { key: 'y',        label: 'y (bottom %)',  min: 0,   max: 100, step: 0.5 },
+  { key: 'y',        label: 'y (bottom %)',  min: 0,   max: 50,  step: 0.5 },
   { key: 'scale',    label: 'scale',         min: 0.5, max: 1.5, step: 0.01 },
   { key: 'rotation', label: 'rotation (°)',  min: -20, max: 20,  step: 0.5 },
   { key: 'opacity',  label: 'opacity',       min: 0,   max: 1,   step: 0.01 },
-];
-var NPC_POS_MASK_SLIDER_DEFS = [
-  { key: 'x',       label: 'mask x (left %)', min: 0,   max: 100, step: 0.1 },
-  { key: 'y',       label: 'mask y (top %)',  min: 0,   max: 100, step: 0.1 },
-  { key: 'width',   label: 'mask width %',    min: 1,   max: 100, step: 0.1 },
-  { key: 'height',  label: 'mask height %',   min: 1,   max: 100, step: 0.1 },
-  { key: 'opacity', label: 'mask opacity',    min: 0,   max: 1,   step: 0.01 },
 ];
 var _npcPosState = {
   initialised: false,
   charId: 'risu',
   expression: 'request',
   current: Object.assign({}, NPC_POS_DEFAULT),
-  mask: Object.assign({}, NPC_POS_STAFF_MASK_DEFAULT),
-  applyAll: false,
-  previewZoom: 1,
-  undoStack: [],
 };
-
-function npcPosGetConfig(charId) {
-  return NPC_POS_CHAR_CONFIGS[charId] || NPC_POS_CHAR_CONFIGS.risu;
-}
-function npcPosGetExprs(charId) {
-  var cfg = npcPosGetConfig(charId);
-  return (cfg.exprs && cfg.exprs.length) ? cfg.exprs : NPC_POS_ANIMAL_EXPRS;
-}
-function npcPosGetDefault(charId) {
-  var cfg = npcPosGetConfig(charId);
-  return Object.assign({}, NPC_POS_DEFAULT, cfg.defaults || {});
-}
 
 function npcPosLoadAll() {
   try {
@@ -11344,203 +11226,17 @@ function npcPosSaveAll(obj) {
     return true;
   } catch (e) { return false; }
 }
-function npcPosClampNumber(value, min, max, fallback) {
-  var num = Number(value);
-  if (!isFinite(num)) return fallback;
-  return Math.max(min, Math.min(max, num));
-}
-function npcPosNormalizeStaffMask(raw) {
-  var src = (raw && typeof raw === 'object') ? raw : {};
-  var mask = {
-    x: npcPosClampNumber(src.x, 0, 100, NPC_POS_STAFF_MASK_DEFAULT.x),
-    y: npcPosClampNumber(src.y, 0, 100, NPC_POS_STAFF_MASK_DEFAULT.y),
-    width: npcPosClampNumber(src.width, 1, 100, NPC_POS_STAFF_MASK_DEFAULT.width),
-    height: npcPosClampNumber(src.height, 1, 100, NPC_POS_STAFF_MASK_DEFAULT.height),
-    opacity: npcPosClampNumber(src.opacity, 0, 1, NPC_POS_STAFF_MASK_DEFAULT.opacity),
-  };
-  if (mask.x + mask.width > 100) mask.width = Math.max(1, 100 - mask.x);
-  if (mask.y + mask.height > 100) mask.height = Math.max(1, 100 - mask.y);
-  return mask;
-}
-function npcPosLoadStaffMask() {
-  try {
-    var raw = localStorage.getItem(NPC_POS_STAFF_MASK_LS_KEY);
-    return npcPosNormalizeStaffMask(raw ? JSON.parse(raw) : null);
-  } catch (e) {
-    return npcPosNormalizeStaffMask(null);
-  }
-}
-function npcPosSaveStaffMask(mask) {
-  try {
-    localStorage.setItem(NPC_POS_STAFF_MASK_LS_KEY, JSON.stringify(npcPosNormalizeStaffMask(mask)));
-    return true;
-  } catch (e) { return false; }
-}
-function npcPosStaffMaskInsets(mask) {
-  var m = npcPosNormalizeStaffMask(mask);
-  return {
-    left: m.x,
-    top: m.y,
-    right: Math.max(0, 100 - m.x - m.width),
-    bottom: Math.max(0, 100 - m.y - m.height),
-  };
-}
 function npcPosMakeKey(charId, expression) { return charId + '_' + expression; }
-function npcPosVersionedSrc(src) {
-  return src + '?v=' + encodeURIComponent(NPC_POS_PORTRAIT_VERSION);
-}
-function npcPosCurrentPayload() {
-  return {
-    x: _npcPosState.current.x,
-    y: _npcPosState.current.y,
-    scale: _npcPosState.current.scale,
-    rotation: _npcPosState.current.rotation,
-    opacity: _npcPosState.current.opacity,
-  };
-}
-function npcPosClonePlacement(src) {
-  function num(value, fallback) {
-    var n = Number(value);
-    return isFinite(n) ? n : fallback;
-  }
-  return {
-    x: num(src && src.x, NPC_POS_DEFAULT.x),
-    y: num(src && src.y, NPC_POS_DEFAULT.y),
-    scale: num(src && src.scale, NPC_POS_DEFAULT.scale),
-    rotation: num(src && src.rotation, NPC_POS_DEFAULT.rotation),
-    opacity: num(src && src.opacity, NPC_POS_DEFAULT.opacity),
-  };
-}
-function npcPosGetStorageRaw(key) {
-  try { return localStorage.getItem(key); } catch (e) { return null; }
-}
-function npcPosRestoreStorageRaw(key, raw) {
-  try {
-    if (raw === null || typeof raw === 'undefined') localStorage.removeItem(key);
-    else localStorage.setItem(key, raw);
-  } catch (e) {}
-}
-function npcPosCaptureUndoSnapshot(label) {
-  return {
-    label: label || '変更',
-    charId: _npcPosState.charId,
-    expression: _npcPosState.expression,
-    applyAll: !!_npcPosState.applyAll,
-    current: npcPosClonePlacement(_npcPosState.current),
-    mask: npcPosNormalizeStaffMask(_npcPosState.mask),
-    positionsRaw: npcPosGetStorageRaw(NPC_POS_LS_KEY),
-    staffMaskRaw: npcPosGetStorageRaw(NPC_POS_STAFF_MASK_LS_KEY),
-  };
-}
-function npcPosSnapshotSignature(snap) {
-  return JSON.stringify({
-    charId: snap.charId,
-    expression: snap.expression,
-    applyAll: snap.applyAll,
-    current: snap.current,
-    mask: snap.mask,
-    positionsRaw: snap.positionsRaw,
-    staffMaskRaw: snap.staffMaskRaw,
-  });
-}
-function npcPosUpdateUndoUi() {
-  var btn = document.getElementById('npc-pos-undo');
-  if (!btn) return;
-  var hasUndo = _npcPosState.undoStack.length > 0;
-  btn.disabled = !hasUndo;
-  btn.style.opacity = hasUndo ? '1' : '0.45';
-  btn.style.cursor = hasUndo ? 'pointer' : 'not-allowed';
-  btn.textContent = hasUndo ? '↶ 取り消し' : '↶ 取り消し';
-}
-function npcPosPushUndo(label) {
-  var snap = npcPosCaptureUndoSnapshot(label);
-  var stack = _npcPosState.undoStack;
-  var sig = npcPosSnapshotSignature(snap);
-  if (stack.length && stack[stack.length - 1]._sig === sig) return;
-  snap._sig = sig;
-  stack.push(snap);
-  if (stack.length > 40) stack.shift();
-  npcPosUpdateUndoUi();
-}
-function npcPosRestoreUndoSnapshot(snap) {
-  if (!snap) return;
-  npcPosRestoreStorageRaw(NPC_POS_LS_KEY, snap.positionsRaw);
-  npcPosRestoreStorageRaw(NPC_POS_STAFF_MASK_LS_KEY, snap.staffMaskRaw);
-  _npcPosState.charId = NPC_POS_CHARS.indexOf(snap.charId) >= 0 ? snap.charId : 'risu';
-  _npcPosState.expression = snap.expression || npcPosGetExprs(_npcPosState.charId)[0] || 'request';
-  _npcPosState.applyAll = !!snap.applyAll;
-  _npcPosState.current = npcPosClonePlacement(snap.current || npcPosGetDefault(_npcPosState.charId));
-  _npcPosState.mask = npcPosNormalizeStaffMask(snap.mask || NPC_POS_STAFF_MASK_DEFAULT);
-  var charSel = document.getElementById('npc-pos-char');
-  if (charSel) charSel.value = _npcPosState.charId;
-  npcPosRenderExpressionButtons();
-  npcPosSyncSlidersFromState();
-  npcPosSyncMaskSlidersFromState();
-  npcPosUpdateBulkUi();
-  npcPosApplyPreview();
-}
-function npcPosUndoLast() {
-  var snap = _npcPosState.undoStack.pop();
-  if (!snap) {
-    npcPosUpdateUndoUi();
-    return;
-  }
-  npcPosRestoreUndoSnapshot(snap);
-  npcPosUpdateUndoUi();
-  npcPosSetStatus('1つ前の状態に戻しました', false);
-}
-function npcPosStartUndoForInput(input, label) {
-  if (!input || input.dataset.undoOpen === '1') return;
-  npcPosPushUndo(label);
-  input.dataset.undoOpen = '1';
-}
-function npcPosEndUndoForInput(input) {
-  if (!input) return;
-  delete input.dataset.undoOpen;
-}
-function npcPosSetPreviewZoom(zoom) {
-  var z = npcPosClampNumber(zoom, 1, 3, 1);
-  _npcPosState.previewZoom = z;
-  var preview = document.getElementById('npc-pos-preview');
-  var scroll = document.getElementById('npc-pos-preview-scroll');
-  if (preview) {
-    if (z <= 1 || !scroll) {
-      preview.style.width = '100%';
-      preview.style.minWidth = '0';
-    } else {
-      var baseWidth = Math.max(320, scroll.clientWidth - 8);
-      var width = Math.round(baseWidth * z) + 'px';
-      preview.style.width = width;
-      preview.style.minWidth = width;
-    }
-  }
-  if (scroll && z === 1) {
-    scroll.scrollLeft = 0;
-    scroll.scrollTop = 0;
-  }
-  document.querySelectorAll('.npc-pos-preview-zoom-btn').forEach(function(btn) {
-    btn.classList.toggle('active', Math.abs(Number(btn.dataset.zoom) - z) < 0.001);
-  });
-}
-function npcPosApplyAllWord(charId) {
-  var cfg = npcPosGetConfig(charId);
-  return cfg.type === 'staff' ? '全ポーズ' : '全表情';
-}
-function npcPosTargetExprs() {
-  return _npcPosState.applyAll ? npcPosGetExprs(_npcPosState.charId) : [_npcPosState.expression];
-}
 function npcPosGet(charId, expression) {
-  var baseDefault = npcPosGetDefault(charId);
   var all = npcPosLoadAll();
   var key = npcPosMakeKey(charId, expression);
-  var cfg = npcPosGetConfig(charId);
-  var saved = all[key] || ((cfg.type === 'npc' && expression === 'happy') ? all[npcPosMakeKey(charId, 'normal')] : null) || {};
+  var saved = all[key] || {};
   return {
-    x:        (typeof saved.x === 'number')        ? saved.x        : baseDefault.x,
-    y:        (typeof saved.y === 'number')        ? saved.y        : baseDefault.y,
-    scale:    (typeof saved.scale === 'number')    ? saved.scale    : baseDefault.scale,
-    rotation: (typeof saved.rotation === 'number') ? saved.rotation : baseDefault.rotation,
-    opacity:  (typeof saved.opacity === 'number')  ? saved.opacity  : baseDefault.opacity,
+    x:        (typeof saved.x === 'number')        ? saved.x        : NPC_POS_DEFAULT.x,
+    y:        (typeof saved.y === 'number')        ? saved.y        : NPC_POS_DEFAULT.y,
+    scale:    (typeof saved.scale === 'number')    ? saved.scale    : NPC_POS_DEFAULT.scale,
+    rotation: (typeof saved.rotation === 'number') ? saved.rotation : NPC_POS_DEFAULT.rotation,
+    opacity:  (typeof saved.opacity === 'number')  ? saved.opacity  : NPC_POS_DEFAULT.opacity,
   };
 }
 function npcPosSetStatus(msg, isErr) {
@@ -11548,18 +11244,6 @@ function npcPosSetStatus(msg, isErr) {
   if (!el) return;
   el.textContent = msg || '';
   el.style.color = isErr ? '#B91C1C' : '#0F766E';
-}
-
-function npcPosUpdateBulkUi() {
-  var word = npcPosApplyAllWord(_npcPosState.charId);
-  var cb = document.getElementById('npc-pos-apply-all-exprs');
-  var label = document.getElementById('npc-pos-apply-all-label');
-  var saveBtn = document.getElementById('npc-pos-save');
-  var resetBtn = document.getElementById('npc-pos-reset');
-  if (cb) cb.checked = !!_npcPosState.applyAll;
-  if (label) label.textContent = 'このキャラの' + word + 'をまとめて操作';
-  if (saveBtn) saveBtn.textContent = _npcPosState.applyAll ? ('💾 ' + word + 'へ保存') : '💾 保存';
-  if (resetBtn) resetBtn.textContent = _npcPosState.applyAll ? ('↺ このキャラの' + word + 'をリセット') : '↺ この組合せをリセット';
 }
 
 function npcPosBuildSliders() {
@@ -11584,14 +11268,7 @@ function npcPosBuildSliders() {
     row.appendChild(input);
     row.appendChild(val);
     host.appendChild(row);
-    input.addEventListener('pointerdown', function() { npcPosStartUndoForInput(input, '位置を変更'); });
-    input.addEventListener('keydown', function(evt) {
-      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].indexOf(evt.key) >= 0) {
-        npcPosStartUndoForInput(input, '位置を変更');
-      }
-    });
     input.addEventListener('input', function() {
-      npcPosStartUndoForInput(input, '位置を変更');
       var num = parseFloat(input.value);
       if (!isNaN(num)) {
         _npcPosState.current[def.key] = num;
@@ -11599,91 +11276,12 @@ function npcPosBuildSliders() {
         npcPosApplyPreview();
       }
     });
-    input.addEventListener('change', function() { npcPosEndUndoForInput(input); });
-    input.addEventListener('pointerup', function() { npcPosEndUndoForInput(input); });
-    input.addEventListener('blur', function() { npcPosEndUndoForInput(input); });
-  });
-}
-
-function npcPosBuildMaskSliders() {
-  var host = document.getElementById('npc-pos-mask-sliders');
-  if (!host) return;
-  host.innerHTML = '';
-  NPC_POS_MASK_SLIDER_DEFS.forEach(function(def) {
-    var row = document.createElement('div');
-    row.className = 'npc-pos-slider-row';
-    var label = document.createElement('label');
-    label.textContent = def.label;
-    var input = document.createElement('input');
-    input.type = 'range';
-    input.min = String(def.min);
-    input.max = String(def.max);
-    input.step = String(def.step);
-    input.dataset.maskKey = def.key;
-    var val = document.createElement('span');
-    val.className = 'npc-pos-val';
-    val.dataset.maskKey = def.key;
-    row.appendChild(label);
-    row.appendChild(input);
-    row.appendChild(val);
-    host.appendChild(row);
-    input.addEventListener('pointerdown', function() { npcPosStartUndoForInput(input, 'マスクを変更'); });
-    input.addEventListener('keydown', function(evt) {
-      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].indexOf(evt.key) >= 0) {
-        npcPosStartUndoForInput(input, 'マスクを変更');
-      }
-    });
-    input.addEventListener('input', function() {
-      npcPosStartUndoForInput(input, 'マスクを変更');
-      var num = parseFloat(input.value);
-      if (!isNaN(num)) {
-        _npcPosState.mask[def.key] = num;
-        _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
-        npcPosSyncMaskSlidersFromState();
-        npcPosApplyMaskPreview();
-      }
-    });
-    input.addEventListener('change', function() { npcPosEndUndoForInput(input); });
-    input.addEventListener('pointerup', function() { npcPosEndUndoForInput(input); });
-    input.addEventListener('blur', function() { npcPosEndUndoForInput(input); });
-  });
-}
-
-function npcPosRenderExpressionButtons() {
-  var row = document.getElementById('npc-pos-expr-row');
-  if (!row) return;
-  var cfg = npcPosGetConfig(_npcPosState.charId);
-  var exprs = npcPosGetExprs(_npcPosState.charId);
-  if (exprs.indexOf(_npcPosState.expression) < 0) _npcPosState.expression = exprs[0] || 'normal';
-  row.innerHTML = '';
-  exprs.forEach(function(expr) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'npc-pos-expr-btn' + (expr === _npcPosState.expression ? ' active' : '');
-    btn.dataset.expr = expr;
-    btn.textContent = (cfg.labels && cfg.labels[expr]) || expr;
-    btn.addEventListener('click', function() {
-      row.querySelectorAll('.npc-pos-expr-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      _npcPosState.expression = expr;
-      if (_npcPosState.applyAll) {
-        npcPosApplyPreview();
-        npcPosSetStatus('まとめて操作中: ' + npcPosApplyAllWord(_npcPosState.charId) + 'へ同じ位置で保存されます', false);
-      } else {
-        npcPosLoadCurrent();
-      }
-    });
-    row.appendChild(btn);
   });
 }
 
 function npcPosFormatVal(key, num) {
   if (key === 'scale' || key === 'opacity') return num.toFixed(2);
   if (key === 'rotation') return num.toFixed(1) + '°';
-  return num.toFixed(1) + '%';
-}
-function npcPosFormatMaskVal(key, num) {
-  if (key === 'opacity') return num.toFixed(2);
   return num.toFixed(1) + '%';
 }
 
@@ -11699,65 +11297,13 @@ function npcPosSyncSlidersFromState() {
   });
 }
 
-function npcPosSyncMaskSlidersFromState() {
-  var host = document.getElementById('npc-pos-mask-sliders');
-  if (!host) return;
-  _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
-  NPC_POS_MASK_SLIDER_DEFS.forEach(function(def) {
-    var input = host.querySelector('input[data-mask-key="' + def.key + '"]');
-    var val   = host.querySelector('span[data-mask-key="' + def.key + '"]');
-    var num = _npcPosState.mask[def.key];
-    if (input) input.value = String(num);
-    if (val)   val.textContent = npcPosFormatMaskVal(def.key, num);
-  });
-}
-
-function npcPosApplyMaskPreview() {
-  var panel = document.getElementById('npc-pos-mask-panel');
-  var maskEl = document.getElementById('npc-pos-preview-mask');
-  var outline = document.getElementById('npc-pos-preview-mask-outline');
-  var cfg = npcPosGetConfig(_npcPosState.charId);
-  var isStaff = cfg.type === 'staff';
-  if (panel) panel.style.display = isStaff ? 'block' : 'none';
-  if (!maskEl || !outline) return;
-  if (!isStaff) {
-    maskEl.style.opacity = '0';
-    outline.style.display = 'none';
-    return;
-  }
-  var mask = npcPosNormalizeStaffMask(_npcPosState.mask);
-  var inset = npcPosStaffMaskInsets(mask);
-  maskEl.style.backgroundImage = "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
-  maskEl.style.clipPath = 'inset(' + inset.top + '% ' + inset.right + '% ' + inset.bottom + '% ' + inset.left + '%)';
-  maskEl.style.opacity = String(mask.opacity);
-  outline.style.display = 'block';
-  outline.style.left = mask.x + '%';
-  outline.style.top = mask.y + '%';
-  outline.style.width = mask.width + '%';
-  outline.style.height = mask.height + '%';
-}
-
 function npcPosApplyPreview() {
   var img = document.getElementById('npc-pos-preview-img');
   if (!img) return;
-  var preview = document.getElementById('npc-pos-preview');
-  var cfg = npcPosGetConfig(_npcPosState.charId);
+  // プレビュー用 sprite: <charId>_<expression>.png を読込。 happy は素材未配置のため normal にフォールバック
   var exp = _npcPosState.expression;
-  var src = '';
-  if (cfg.type === 'staff') {
-    var file = cfg.files && (cfg.files[exp] || cfg.files.idle);
-    src = npcPosVersionedSrc(NPC_POS_STAFF_BASE + file);
-    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
-    img.style.height = cfg.height || '32%';
-    img.style.maxWidth = cfg.maxWidth || '30%';
-  } else {
-    // プレビュー用 sprite: <charId>_<expression>.png を読込。 happy は素材未配置のため normal にフォールバック
-    var fileExp = (exp === 'happy') ? 'normal' : exp;
-    src = npcPosVersionedSrc(NPC_POS_PORTRAIT_BASE + _npcPosState.charId + '_' + fileExp + '.png');
-    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/shop_order_counter.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
-    img.style.height = '40%';
-    img.style.maxWidth = '38%';
-  }
+  var fileExp = (exp === 'happy') ? 'normal' : exp;
+  var src = NPC_POS_PORTRAIT_BASE + _npcPosState.charId + '_' + fileExp + '.png';
   if (img.dataset.lastSrc !== src) {
     img.src = src;
     img.dataset.lastSrc = src;
@@ -11767,16 +11313,12 @@ function npcPosApplyPreview() {
   img.style.bottom = p.y + '%';
   img.style.transform = 'translateX(-50%) scale(' + p.scale + ') rotate(' + p.rotation + 'deg)';
   img.style.opacity = String(p.opacity);
-  npcPosApplyMaskPreview();
 }
 
 function npcPosLoadCurrent() {
   _npcPosState.current = npcPosGet(_npcPosState.charId, _npcPosState.expression);
-  _npcPosState.mask = npcPosLoadStaffMask();
   npcPosSyncSlidersFromState();
-  npcPosSyncMaskSlidersFromState();
   npcPosApplyPreview();
-  npcPosUpdateBulkUi();
   npcPosSetStatus('', false);
 }
 
@@ -11785,94 +11327,49 @@ function npcPosBindControls() {
   if (charSel) {
     charSel.addEventListener('change', function() {
       _npcPosState.charId = charSel.value;
-      npcPosRenderExpressionButtons();
       npcPosLoadCurrent();
     });
   }
-  var applyAllCb = document.getElementById('npc-pos-apply-all-exprs');
-  if (applyAllCb) applyAllCb.addEventListener('change', function() {
-    _npcPosState.applyAll = !!applyAllCb.checked;
-    npcPosUpdateBulkUi();
-    if (_npcPosState.applyAll) {
-      npcPosSetStatus('まとめて操作中: ' + npcPosApplyAllWord(_npcPosState.charId) + 'へ同じ位置で保存されます', false);
-    } else {
+  document.querySelectorAll('#npc-pos-expr-row .npc-pos-expr-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('#npc-pos-expr-row .npc-pos-expr-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      _npcPosState.expression = btn.dataset.expr;
       npcPosLoadCurrent();
-    }
-  });
-  var undoBtn = document.getElementById('npc-pos-undo');
-  if (undoBtn) undoBtn.addEventListener('click', npcPosUndoLast);
-  var zoomControls = document.getElementById('npc-pos-preview-zoom-controls');
-  if (zoomControls) {
-    zoomControls.querySelectorAll('.npc-pos-preview-zoom-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        npcPosSetPreviewZoom(parseFloat(btn.dataset.zoom || '1'));
-      });
     });
-  }
-  window.addEventListener('resize', function() {
-    npcPosSetPreviewZoom(_npcPosState.previewZoom);
   });
   var saveBtn = document.getElementById('npc-pos-save');
   if (saveBtn) saveBtn.addEventListener('click', function() {
     var all = npcPosLoadAll();
-    var payload = npcPosCurrentPayload();
-    var exprs = npcPosTargetExprs();
-    exprs.forEach(function(expr) {
-      all[npcPosMakeKey(_npcPosState.charId, expr)] = Object.assign({}, payload);
-    });
+    var key = npcPosMakeKey(_npcPosState.charId, _npcPosState.expression);
+    all[key] = {
+      x: _npcPosState.current.x,
+      y: _npcPosState.current.y,
+      scale: _npcPosState.current.scale,
+      rotation: _npcPosState.current.rotation,
+      opacity: _npcPosState.current.opacity,
+    };
     if (npcPosSaveAll(all)) {
-      if (_npcPosState.applyAll) {
-        npcPosSetStatus(npcPosApplyAllWord(_npcPosState.charId) + 'へ保存しました (' + exprs.length + ' 件)', false);
-      } else {
-        npcPosSetStatus('保存しました (' + npcPosMakeKey(_npcPosState.charId, _npcPosState.expression) + ')', false);
-      }
+      npcPosSetStatus('保存しました (' + key + ')', false);
     } else {
       npcPosSetStatus('保存失敗 (localStorage に書き込めません)', true);
     }
   });
-  var maskSaveBtn = document.getElementById('npc-pos-mask-save');
-  if (maskSaveBtn) maskSaveBtn.addEventListener('click', function() {
-    _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
-    if (npcPosSaveStaffMask(_npcPosState.mask)) {
-      npcPosSyncMaskSlidersFromState();
-      npcPosApplyMaskPreview();
-      npcPosSetStatus('カウンターマスクを保存しました', false);
-    } else {
-      npcPosSetStatus('マスク保存失敗 (localStorage に書き込めません)', true);
-    }
-  });
-  var maskResetBtn = document.getElementById('npc-pos-mask-reset');
-  if (maskResetBtn) maskResetBtn.addEventListener('click', function() {
-    npcPosPushUndo('マスクリセット');
-    try { localStorage.removeItem(NPC_POS_STAFF_MASK_LS_KEY); } catch (e) {}
-    _npcPosState.mask = Object.assign({}, NPC_POS_STAFF_MASK_DEFAULT);
-    npcPosSyncMaskSlidersFromState();
-    npcPosApplyMaskPreview();
-    npcPosSetStatus('カウンターマスクを初期値に戻しました', false);
-  });
   var resetBtn = document.getElementById('npc-pos-reset');
   if (resetBtn) resetBtn.addEventListener('click', function() {
-    npcPosPushUndo('位置リセット');
     var all = npcPosLoadAll();
-    var exprs = npcPosTargetExprs();
-    exprs.forEach(function(expr) {
-      var key = npcPosMakeKey(_npcPosState.charId, expr);
-      if (all[key]) delete all[key];
-    });
-    npcPosSaveAll(all);
-    npcPosLoadCurrent();
-    if (_npcPosState.applyAll) {
-      npcPosSetStatus(_npcPosState.charId + ' の ' + npcPosApplyAllWord(_npcPosState.charId) + ' をリセットしました', false);
-    } else {
-      npcPosSetStatus(npcPosMakeKey(_npcPosState.charId, _npcPosState.expression) + ' の上書きを削除しました', false);
-    }
+    var key = npcPosMakeKey(_npcPosState.charId, _npcPosState.expression);
+    if (all[key]) { delete all[key]; npcPosSaveAll(all); }
+    _npcPosState.current = Object.assign({}, NPC_POS_DEFAULT);
+    npcPosSyncSlidersFromState();
+    npcPosApplyPreview();
+    npcPosSetStatus(key + ' をデフォルトに戻しました', false);
   });
   var resetAllBtn = document.getElementById('npc-pos-reset-all');
   if (resetAllBtn) resetAllBtn.addEventListener('click', function() {
     if (!confirm('全キャラ・全表情の位置オーバーライドを削除します。よろしいですか？')) return;
-    npcPosPushUndo('全部リセット');
     npcPosSaveAll({});
-    _npcPosState.current = npcPosGetDefault(_npcPosState.charId);
+    _npcPosState.current = Object.assign({}, NPC_POS_DEFAULT);
     npcPosSyncSlidersFromState();
     npcPosApplyPreview();
     npcPosSetStatus('全オーバーライドを削除しました', false);
@@ -11923,7 +11420,7 @@ function npcPosBindControls() {
             var charId = k.slice(0, sep);
             var expr   = k.slice(sep + 1);
             if (NPC_POS_CHARS.indexOf(charId) < 0) return;
-            if (npcPosGetExprs(charId).indexOf(expr) < 0) return;
+            if (NPC_POS_EXPRS.indexOf(expr) < 0) return;
             var v = obj[k];
             if (!v || typeof v !== 'object') return;
             var entry = Object.create(null);
@@ -11933,7 +11430,6 @@ function npcPosBindControls() {
             if (Object.keys(entry).length > 0) { cleaned[k] = entry; count++; }
           });
           if (!confirm('インポートで現在の設定が上書きされます (' + count + ' 件)。よろしいですか？')) return;
-          npcPosPushUndo('インポート');
           npcPosSaveAll(cleaned);
           npcPosLoadCurrent();
           npcPosSetStatus('インポート完了 (' + count + ' 件)', false);
@@ -11954,14 +11450,12 @@ function npcPosInit() {
   }
   _npcPosState.initialised = true;
   npcPosBuildSliders();
-  npcPosBuildMaskSliders();
   npcPosBindControls();
-  npcPosUpdateUndoUi();
-  npcPosSetPreviewZoom(_npcPosState.previewZoom);
   // 初期状態
   var charSel = document.getElementById('npc-pos-char');
   if (charSel) _npcPosState.charId = charSel.value || 'risu';
-  npcPosRenderExpressionButtons();
+  var activeExpr = document.querySelector('#npc-pos-expr-row .npc-pos-expr-btn.active');
+  if (activeExpr) _npcPosState.expression = activeExpr.dataset.expr || 'request';
   npcPosLoadCurrent();
 }
 

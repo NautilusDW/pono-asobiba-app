@@ -1,10 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-// v1282: Bento rotate controls use bold rotate glyphs instead of circular SVG arrows.
+// v1283: Roll back the Bento staff/NPC staging bundle and restore the previous Bento defaults.
 // v1281: Oto adds Alps Ichimanjaku as a new hard lion-rival rhythm stage.
 // v1280: Oto lion-rival rhythm notes use a simple crown mark instead of claw/burst marks.
-// v1279: Bento uses thicker SVG glyphs for rotate and layer arrow controls while keeping button frames unchanged.
 // v1278: Oto watches legacy sticker reward close events so next-stage openings continue on staging.
 // v1277: Oto next-stage transitions close the result/name gate before sticker rewards and cleanly leave stuck rhythm states.
 // v1276: SW update checks stay passive and no longer show a blocking in-page version prompt.
@@ -54,7 +53,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1282; // v1282: Bento rotate controls use bold rotate glyphs instead of circular SVG arrows. | v1281: Oto adds Alps Ichimanjaku as a new hard lion-rival rhythm stage. | v1280: Oto lion-rival rhythm notes use a simple crown mark instead of claw/burst marks. | v1279: Bento uses thicker SVG glyphs for rotate and layer arrow controls while keeping button frames unchanged. | v1278: Oto watches legacy sticker reward close events so next-stage openings continue on staging.
+const CACHE_VERSION = 1283; // v1283: Roll back the Bento staff/NPC staging bundle and restore the previous Bento defaults. | v1281: Oto adds Alps Ichimanjaku as a new hard lion-rival rhythm stage. | v1280: Oto lion-rival rhythm notes use a simple crown mark instead of claw/burst marks. | v1278: Oto watches legacy sticker reward close events so next-stage openings continue on staging.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
