@@ -13236,22 +13236,17 @@ function tutorialStartCompleteGuidance() {
     }
     playAndThen('basic_tut_15', 6800, () => {
       if (!stillGuiding()) return;
+      const detailBtn = document.getElementById('complete-detail-btn');
       tutorialClearTrims();
       tutorialHideFinger();
-      tutorialShowBubble('ともだちが よろこぶ<br>おべんとうを たくさん<br>つくってあげよう！', { topVh: '18', side: 'left' });
-      playAndThen('basic_tut_16', 6200, () => {
-        if (!stillGuiding()) return;
-        const detailBtn = document.getElementById('complete-detail-btn');
-        tutorialClearTrims();
-        tutorialHideBubble();
-        if (detailBtn && !detailBtn.classList.contains('hidden-pre')) {
-          tutorialMarkTarget(detailBtn, { radius: 22, outline: false });
-          tutorialAnimateTap(detailBtn);
-        } else {
-          tutorialHideFinger();
-        }
-        playBentoTutorialVoice('basic_tut_17', { fallbackMs: 8200 });
-      });
+      tutorialHideBubble();
+      if (detailBtn && !detailBtn.classList.contains('hidden-pre')) {
+        tutorialMarkTarget(detailBtn, { radius: 22, outline: false });
+        tutorialAnimateTap(detailBtn);
+      } else {
+        tutorialHideFinger();
+      }
+      playBentoTutorialVoice('basic_tut_17', { fallbackMs: 8200 });
     });
   });
 }
@@ -13259,24 +13254,39 @@ function tutorialOnCompleteDetailShown() {
   if (!tutorialState.active || tutorialState.completeDetailShown) return;
   tutorialState.completeDetailShown = true;
   tutorialState.completeGuideToken++;
+  const detailToken = tutorialState.completeGuideToken;
+  const stillDetailGuiding = () =>
+    tutorialState.active
+    && tutorialState.completeDetailShown
+    && tutorialState.completeGuideToken === detailToken
+    && !document.getElementById('complete-overlay')?.classList.contains('hidden')
+    && !document.getElementById('complete-detail-page')?.classList.contains('hidden');
+  const showStickerCloseGuide = () => {
+    if (!stillDetailGuiding()) return;
+    tutorialClearTrims();
+    tutorialClearTargetCircle();
+    tutorialHideFinger();
+    const closeBtn = document.getElementById('complete-btn');
+    tutorialShowBubble('とじるを おすと<br>ステッカーが もらえるよ', { topVh: '18', side: 'left' });
+    if (closeBtn) {
+      tutorialPositionBubbleBeside(closeBtn, { gap: 12 });
+      tutorialMarkTarget(closeBtn, { radius: 22, outline: false });
+      tutorialAnimateTap(closeBtn);
+    }
+    playBentoTutorialVoice('basic_tut_18', { fallbackMs: 7600 });
+  };
   tutorialClearCompleteGuideTimers();
   tutorialClearTrims();
   tutorialClearTargetCircle();
   tutorialHideFinger();
   tutorialHidePonoCallout();
   tutorialSetModeLabel('');
-  tutorialShowBubble('うまくいったら<br>ステッカーが もらえるよ！<br>たくさん あつめよう！', { topVh: '18', side: 'left' });
-  playBentoTutorialVoice('basic_tut_18', {
-    fallbackMs: 7600,
+  tutorialShowBubble('ともだちが よろこぶ<br>おべんとうを たくさん<br>つくってあげよう！', { topVh: '18', side: 'left' });
+  playBentoTutorialVoice('basic_tut_16', {
+    fallbackMs: 6200,
     onEnded: () => {
-      if (!tutorialState.active || !tutorialState.completeDetailShown) return;
-      const closeBtn = document.getElementById('complete-btn');
-      if (closeBtn) {
-        tutorialShowBubble('とじるを おすと<br>ステッカーが でるよ', { topVh: '18', side: 'left' });
-        tutorialPositionBubbleBeside(closeBtn, { gap: 12 });
-        tutorialMarkTarget(closeBtn, { radius: 22, outline: false });
-        tutorialAnimateTap(closeBtn);
-      }
+      if (!stillDetailGuiding()) return;
+      tutorialSetCompleteGuideTimer(showStickerCloseGuide, 900);
     },
   });
 }
