@@ -11636,11 +11636,11 @@ document.addEventListener('visibilitychange', function() {
 // ────────────────────────────────
 // チュートリアル
 // ────────────────────────────────
-var TUT_SEEN_KEY = 'pono_oto_tut_seen_v3';
+var TUT_SEEN_KEY = 'pono_oto_tut_seen_v4';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
-  rhythmStory: 'pono_oto_rhythm_story_tut_seen_v3',
-  freeStage: 'pono_oto_free_stage_tut_seen_v3'
+  rhythmStory: 'pono_oto_rhythm_story_tut_seen_v4',
+  freeStage: 'pono_oto_free_stage_tut_seen_v4'
 };
 var OTO_TUTORIAL_HAND_ASSETS = {
   point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
@@ -11660,6 +11660,16 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
     var stageRect = stageEl ? stageEl.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
     left = Math.round(stageRect.left + stageRect.width / 2 - bw / 2);
     top = Math.round(stageRect.top + Math.max(12, Math.min(34, stageRect.height * 0.045)));
+  } else if (preferredSide === 'stageTopLeft') {
+    var stageElLeft = document.getElementById('stage');
+    var stageRectLeft = stageElLeft ? stageElLeft.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
+    left = Math.round(stageRectLeft.left + Math.max(14, stageRectLeft.width * 0.24));
+    top = Math.round(stageRectLeft.top + Math.max(12, Math.min(30, stageRectLeft.height * 0.04)));
+  } else if (preferredSide === 'stageTopRight') {
+    var stageElRight = document.getElementById('stage');
+    var stageRectRight = stageElRight ? stageElRight.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
+    left = Math.round(stageRectRight.right - bw - Math.max(14, stageRectRight.width * 0.06));
+    top = Math.round(stageRectRight.top + Math.max(12, Math.min(30, stageRectRight.height * 0.04)));
   } else if (!anchorRect) {
     left = Math.round((vw - bw) / 2);
     top  = Math.round((vh - bh) / 2);
@@ -11724,6 +11734,10 @@ function _clearOtoTutorialDemoEffects() {
   });
   _otoTutorialState.demoTimers = [];
   _otoTutorialState.demoNodes = [];
+  if (_otoTutorialState.ownsRhythmDemo) {
+    _clearRhythmDemo(true);
+    _otoTutorialState.ownsRhythmDemo = false;
+  }
 }
 function _prepareOtoRhythmTutorialStage() {
   _hideRhythmMenu();
@@ -11741,48 +11755,66 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   if (!_otoTutorialState || !step || typeof step.demoNoteIdx !== 'number') return;
   var idx = Math.max(0, Math.min(7, step.demoNoteIdx | 0));
   var btn = anchorEl || _rhythmButton(idx);
-  var stage = document.getElementById('stage');
-  if (!btn || !stage) return;
-  var btnRect = btn.getBoundingClientRect();
-  var stageRect = stage.getBoundingClientRect();
-  var line = document.querySelector('.gh-hitline');
-  var lineRect = line ? line.getBoundingClientRect() : null;
-  var endX = btnRect.left + btnRect.width / 2;
-  var hitY = lineRect ? (lineRect.top + lineRect.height / 2) : (btnRect.top - btnRect.height * 0.25);
-  var startY = Math.max(stageRect.top + 42, hitY - Math.min(stageRect.height * 0.52, 290));
-  var endY = Math.min(hitY, btnRect.top - Math.max(8, btnRect.height * 0.12));
-  var color = RHYTHM_LANE_COLORS[idx] || { hi: '#FDE68A', lo: '#F59E0B' };
-  var note = document.createElement('div');
-  note.className = 'tut-falling-note';
-  note.style.setProperty('--note-hi', color.hi || '#FDE68A');
-  note.style.setProperty('--note-lo', color.lo || '#F59E0B');
-  note.style.left = endX + 'px';
-  note.style.top = startY + 'px';
-  document.body.appendChild(note);
-  _otoTutorialState.demoNodes.push(note);
-  try {
-    note.animate([
-      { transform: 'translate(-50%, -50%) scale(0.58)', top: startY + 'px', opacity: 0 },
-      { transform: 'translate(-50%, -50%) scale(0.78)', top: (startY + (endY - startY) * 0.24) + 'px', opacity: 1 },
-      { transform: 'translate(-50%, -50%) scale(1)', top: endY + 'px', opacity: 1 }
-    ], {
-      duration: 1750,
-      easing: 'cubic-bezier(0.18, 0.76, 0.24, 1)',
-      fill: 'forwards'
-    });
-  } catch (e) {
-    note.style.top = endY + 'px';
-  }
+  var lanes = _ghLanesEl();
+  if (!btn || !lanes) return;
+  _clearRhythmDemo(true);
+  _ghClearActiveNotes();
+  _ghClearLaneFlashes();
+  _rhythm.demoActive = true;
+  _rhythm.demoBeatScale = 0;
+  _rhythm.demoFallMs = Math.min(RHYTHM_FALL_MS, 6200);
+  _rhythm.idx = 0;
+  _rhythm.nextSpawnSeq = (RHYTHM_SONG && RHYTHM_SONG.notes ? RHYTHM_SONG.notes.length : 999);
+  _rhythm.startAcTime = 0;
+  _rhythm.startPerfTime = performance.now() + _rhythm.demoFallMs;
+  _rhythm._ghHitY = null;
+  _ghUpdateLanesGeometry();
+  var laneIdx = _ghBtnIdxToLaneIdx(idx);
+  var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FDE68A', lo: '#F59E0B' };
+  var noteSkin = _rhythmNoteSkinFor(0, laneIdx);
+  var el = document.createElement('div');
+  el.className = 'gh-note';
+  el.dataset.lane = String(laneIdx);
+  el.dataset.seq = '0';
+  el.dataset.beats = '1';
+  el.dataset.theme = noteSkin.shape || 'round';
+  el.style.setProperty('--gh-hi', noteSkin.hi || color.hi);
+  el.style.setProperty('--gh-lo', noteSkin.lo || color.lo);
+  el.style.setProperty('--gh-note-x', ((laneIdx + 0.5) * 12.5) + '%');
+  el.textContent = noteSkin.domGlyph || _rhythmNoteLabel(laneIdx);
+  el.style.color = noteSkin.ink || 'rgba(0,0,0,0.78)';
+  _ghApplyDomNoteSkin(el, noteSkin);
+  lanes.appendChild(el);
+  var note = {
+    seq: 0,
+    lane: laneIdx,
+    targetTime: _rhythm.startPerfTime,
+    el: el,
+    noteSkin: noteSkin,
+    bonusScore: noteSkin.bonusScore || 0,
+    beatLen: 1,
+    consumed: false
+  };
+  _rhythm.activeNotes.push(note);
+  _otoTutorialState.ownsRhythmDemo = true;
+  _startRhythmDemoVisualLoop();
+  var hitDelay = Math.max(900, _rhythm.demoFallMs - 130);
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState) return;
-    _showOtoTutorialHand({ hand: 'tap', tapIdx: idx, anchor: '.instr-btn[data-idx="' + idx + '"]' }, btnRect, btn);
-    _ghSpawnHitFlash(_ghBtnIdxToLaneIdx(idx));
-    _ghSpawnNoteBurst(_ghBtnIdxToLaneIdx(idx), 'success');
-  }, 1320));
+    var rect = btn.getBoundingClientRect();
+    _showOtoTutorialHand({ hand: 'tap', tapIdx: idx, anchor: '.instr-btn[data-idx="' + idx + '"]' }, rect, btn);
+    _ghSpawnHitFlash(laneIdx);
+    _ghSpawnNotePop(note, { key: 'just', label: 'ジャスト!' });
+    _ghSpawnNoteBurst(note, 'success');
+    _pulseRhythmButton(btn, 'rhythm-hit rhythm-hit-just');
+    try { playSetSound(idx); } catch (e) {}
+    _ghRemoveNote(note);
+  }, hitDelay));
   _otoTutorialState.demoTimers.push(setTimeout(function() {
-    if (!note || !note.parentNode) return;
-    try { note.parentNode.removeChild(note); } catch (e) {}
-  }, 2280));
+    if (!_otoTutorialState) return;
+    _clearRhythmDemo(true);
+    _otoTutorialState.ownsRhythmDemo = false;
+  }, _rhythm.demoFallMs + 1100));
 }
 function _currentOtoTutorialKind() {
   if (document.body && (
@@ -11799,11 +11831,16 @@ function _makeOtoTutorialSteps(kind) {
   if (kind === 'rhythmStory') {
     return [
       {
-        lookOnly: true,
-        autoNextMs: 1800,
+        badge: 'ぜんたい',
+        msg: 'まず がめんを<br>みてみよう',
+        anchor: null,
+        side: 'stageTopLeft',
+        hideActions: true,
+        noDim: true,
+        autoNextMs: 2600,
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('まず ながれを みてね', null, 'hint');
+          _setRhythmStatus('まず ながれを みてね', null, 'judge');
         }
       },
       {
@@ -11814,7 +11851,7 @@ function _makeOtoTutorialSteps(kind) {
         hand: 'point',
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('ラインに きたら タッチ', null, 'hint');
+          _setRhythmStatus('ラインに きたら タッチ', null, 'judge');
         }
       },
       {
@@ -11826,20 +11863,21 @@ function _makeOtoTutorialSteps(kind) {
         tapIdx: 3,
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('おなじ レーンを タッチ', null, 'hint');
+          _setRhythmStatus('おなじ レーンを タッチ', null, 'judge');
         }
       },
       {
         badge: 'おてほん',
-        msg: 'こんどは ノートを<br>いっかい おしてみるよ',
+        msg: 'ノートが きたら<br>おしてみるよ',
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'stageTop',
+        side: 'stageTopLeft',
+        noSpot: true,
         demoNoteIdx: 3,
         nextLabel: 'OK',
         showHideNext: true,
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('おてほんを みてね', null, 'hint');
+          _setRhythmStatus('おてほんを みてね', null, 'judge');
         }
       }
     ];
@@ -12053,21 +12091,27 @@ function _renderOtoTutorialStep() {
     if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
     var isLast = (i === steps.length - 1);
     var nextLabel = s.nextLabel || (isLast ? 'わかった！' : 'つぎへ');
-    bubble.innerHTML =
-      '<div class="tut-badge">' + (s.badge || 'あそびかた') + '</div>' +
-      '<div class="tut-msg">' + s.msg + '</div>' +
+    var actionsHtml = s.hideActions ? '' : (
       '<div class="tut-actions">' +
       '<button class="tut-skip-btn" id="tut-skip">とじる</button>' +
       '<button class="tut-next-btn" id="tut-next">' + nextLabel + '</button>' +
       '</div>' +
-      ((s.showHideNext || isLast) ? '<label class="tut-hide-next"><input type="checkbox" id="tut-hide-next">つぎから ださない</label>' : '');
+      ((s.showHideNext || isLast) ? '<label class="tut-hide-next"><input type="checkbox" id="tut-hide-next">つぎから ださない</label>' : '')
+    );
+    bubble.innerHTML =
+      '<div class="tut-badge">' + (s.badge || 'あそびかた') + '</div>' +
+      '<div class="tut-msg">' + s.msg + '</div>' +
+      actionsHtml;
     bubble.classList.remove('hidden');
     bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
 
     var anchorEl = s.anchor ? document.querySelector(s.anchor) : null;
     var rect = anchorEl ? anchorEl.getBoundingClientRect() : null;
 
-    if (anchorEl) {
+    if (s.noDim) {
+      _hideSpot();
+      dim.classList.add('hidden');
+    } else if (anchorEl && !s.noSpot) {
       // スポットライト (anchor と同じ形状) を出し、dim 本体は隠す
       // (spot 自体が box-shadow で dim 効果を生むので二重にしない)
       dim.classList.add('hidden');
@@ -12077,7 +12121,8 @@ function _renderOtoTutorialStep() {
       _showSpotAt(rect, radius);
     } else {
       _hideSpot();
-      dim.classList.remove('hidden');
+      if (s.noSpot) dim.classList.add('hidden');
+      else dim.classList.remove('hidden');
     }
     requestAnimationFrame(function() {
       _tutPositionBubble(bubble, rect, s.side);
@@ -12105,6 +12150,14 @@ function _renderOtoTutorialStep() {
         _renderOtoTutorialStep();
       }
     }, { once: true });
+    if (s.autoNextMs) {
+      _otoTutorialState.autoTimer = setTimeout(function() {
+        if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+        _otoTutorialState.index++;
+        if (_otoTutorialState.index >= steps.length) _finishOtoTutorial(true);
+        else _renderOtoTutorialStep();
+      }, Math.max(300, s.autoNextMs || 1200));
+    }
   }, 60);
 }
 
