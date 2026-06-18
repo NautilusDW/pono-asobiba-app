@@ -8,7 +8,7 @@ const PAGE_TEXTURE_H = 1536;
 const PAGE_H = 6.0;
 const PAGE_W = PAGE_H * PAGE_ASPECT;
 const GUTTER = PAGE_H * (192 / 1536);
-const COLLECTION_GUTTER = PAGE_H * (72 / 1536);
+const COLLECTION_GUTTER = PAGE_H * (38 / 1536);
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
@@ -3999,10 +3999,10 @@ function applyAlbumLayout() {
 function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
-    spine.scale.x = 1.08;
+    spine.scale.x = 0.72;
     spine.position.z = -0.05;
     spine.renderOrder = 6;
-    spine.material.opacity = 0.78;
+    spine.material.opacity = 0.48;
     return;
   }
   spine.scale.x = 1;
