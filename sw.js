@@ -1,7 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
-// v1312: Oto rhythm tutorial stops auto-advancing text steps, fixes incorrect early pointers, and matches demo note fall speed to real songs.
+// v1313: Oto rhythm tutorial advances only through real UI taps, highlights difficulty tabs first, and auto-continues after the sample note.
 // v1309: Puzzle basic tutorial delays the opening demo badge and restores the full Look-button narration.
 // v1308: Puzzle basic tutorial mixes old Look narration audio with the drag demo and delays blue target cues.
 // v1307: Puzzle basic tutorial keeps settings inside the practice layout and restores the Look narration copy.
@@ -66,7 +66,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1312; // v1312: Oto rhythm tutorial stops auto-advancing text steps, fixes incorrect early pointers, and matches demo note fall speed to real songs. | v1311: Puzzle basic tutorial fixes mode badge CSS fade-out, deferred voice playback, voice lifecycle on phase transitions, and ties drag cues to actual voice playback. | v1310: Puzzle basic tutorial keeps mode badges visible for at least three seconds and cache-busts puzzle scripts. | v1309: Puzzle basic tutorial delays the opening demo badge and restores the full Look-button narration. | v1308: Puzzle basic tutorial mixes old Look narration audio with the drag demo and delays blue target cues. | v1307: Puzzle basic tutorial keeps settings inside the practice layout and restores the Look narration copy. | v1306: Puzzle basic tutorial narrows the right rail and gives the board more horizontal room.
+const CACHE_VERSION = 1313; // v1313: Oto rhythm tutorial advances only through real UI taps, highlights difficulty tabs first, and auto-continues after the sample note. | v1312: Oto rhythm tutorial stops auto-advancing text steps, fixes incorrect early pointers, and matches demo note fall speed to real songs. | v1311: Puzzle basic tutorial fixes mode badge CSS fade-out, deferred voice playback, voice lifecycle on phase transitions, and ties drag cues to actual voice playback. | v1310: Puzzle basic tutorial keeps mode badges visible for at least three seconds and cache-busts puzzle scripts. | v1309: Puzzle basic tutorial delays the opening demo badge and restores the full Look-button narration. | v1308: Puzzle basic tutorial mixes old Look narration audio with the drag demo and delays blue target cues. | v1307: Puzzle basic tutorial keeps settings inside the practice layout and restores the Look narration copy. | v1306: Puzzle basic tutorial narrows the right rail and gives the board more horizontal room.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
