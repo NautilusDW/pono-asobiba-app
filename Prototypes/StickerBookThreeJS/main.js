@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-679";
+const ASSET_VERSION = "20260618-681";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -141,7 +141,12 @@ const tuningEnabled = isLocalPreview && params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 let activeBook = params.get("book") === "girl" ? "girl" : "boy";
-let activeSurface = params.get("surface") === "cover" ? "cover" : "inside";
+const requestedSurface = params.get("surface");
+let activeSurface = requestedSurface === "cover"
+  ? "cover"
+  : requestedSurface === "inside" || params.has("page") || params.has("spread")
+    ? "inside"
+    : "cover";
 let flipProgress = isLocalPreview ? readClampedNumber(params.get("progress"), 0, 0, 1) : 0;
 let spreadPosition = isLocalPreview && params.has("spread")
   ? readClampedNumber(params.get("spread"), 0.5, 0, 1)
@@ -476,13 +481,7 @@ for (const button of surfaceButtons) {
     if (nextSurface === activeSurface) {
       return;
     }
-    cancelSpreadJump();
-    activeSurface = nextSurface;
-    isPlaying = false;
-    playButton.classList.remove("playing");
-    flipProgress = 0;
-    slider.value = String(flipProgress);
-    applyVariantState();
+    setBookSurface(nextSurface, activeBookPage);
   });
 }
 
@@ -553,8 +552,20 @@ function pickEditablePage(event) {
 }
 
 function setupBookPageControls() {
-  bookPrevPage?.addEventListener("click", () => setBookPage(activeBookPage - 2, { turnMode: "single" }));
-  bookNextPage?.addEventListener("click", () => setBookPage(activeBookPage + 2, { turnMode: "single" }));
+  bookPrevPage?.addEventListener("click", () => {
+    if (activeSurface === "inside" && activeBookPage <= 1) {
+      setBookSurface("cover", activeBookPage);
+      return;
+    }
+    setBookPage(activeBookPage - 2, { turnMode: "single" });
+  });
+  bookNextPage?.addEventListener("click", () => {
+    if (activeSurface === "cover") {
+      setBookSurface("inside", 1);
+      return;
+    }
+    setBookPage(activeBookPage + 2, { turnMode: "single" });
+  });
   bookPageLabel?.addEventListener("click", () => toggleBookPageJump());
   document.addEventListener("pointerdown", (event) => {
     if (bookPageJump?.hidden) {
@@ -1019,7 +1030,7 @@ function renderEditorCanvas() {
     <div
       class="placed-sticker${placement.id === selectedPlacementId ? " is-selected" : ""}"
       data-placement-id="${escapeHtml(placement.id)}"
-      style="--x:${placement.x}%; --y:${placement.y}%; --scale:${placement.scale}; --rotation:${placement.rotation}deg; --z:${placement.z};"
+      style="${placementStyleVars(placement)}"
       title="${escapeHtml(placement.label)}"
     >
       <img src="${escapeHtml(placement.assetUrl)}" alt="${escapeHtml(placement.label)}" draggable="false">
@@ -1044,13 +1055,51 @@ function updatePlacementElementStyle(placement) {
   if (!element) {
     return false;
   }
-  element.style.setProperty("--x", `${placement.x}%`);
-  element.style.setProperty("--y", `${placement.y}%`);
-  element.style.setProperty("--scale", String(placement.scale));
-  element.style.setProperty("--rotation", `${placement.rotation}deg`);
-  element.style.setProperty("--z", String(placement.z));
+  applyPlacementStyleVars(element, placement);
   element.style.zIndex = String(placement.z);
   return true;
+}
+
+function placementStyleVars(placement) {
+  const scale = sanitizedPlacementScale(placement?.scale);
+  const selectionBorder = 2 / scale;
+  const selectionRadius = 14 / scale;
+  const outlineAxis = 1.2 / scale;
+  const outlineDiag = 0.85 / scale;
+  return [
+    `--x:${placement.x}%`,
+    `--y:${placement.y}%`,
+    `--scale:${scale}`,
+    `--rotation:${placement.rotation || 0}deg`,
+    `--z:${placement.z}`,
+    `--selection-border:${selectionBorder.toFixed(3)}px`,
+    `--selection-radius:${selectionRadius.toFixed(3)}px`,
+    `--sticker-outline-axis:${outlineAxis.toFixed(3)}px`,
+    `--sticker-outline-axis-neg:${(-outlineAxis).toFixed(3)}px`,
+    `--sticker-outline-diag:${outlineDiag.toFixed(3)}px`,
+    `--sticker-outline-diag-neg:${(-outlineDiag).toFixed(3)}px`,
+  ].join("; ");
+}
+
+function applyPlacementStyleVars(element, placement) {
+  const scale = sanitizedPlacementScale(placement?.scale);
+  const outlineAxis = 1.2 / scale;
+  const outlineDiag = 0.85 / scale;
+  element.style.setProperty("--x", `${placement.x}%`);
+  element.style.setProperty("--y", `${placement.y}%`);
+  element.style.setProperty("--scale", String(scale));
+  element.style.setProperty("--rotation", `${placement.rotation || 0}deg`);
+  element.style.setProperty("--z", String(placement.z));
+  element.style.setProperty("--selection-border", `${(2 / scale).toFixed(3)}px`);
+  element.style.setProperty("--selection-radius", `${(14 / scale).toFixed(3)}px`);
+  element.style.setProperty("--sticker-outline-axis", `${outlineAxis.toFixed(3)}px`);
+  element.style.setProperty("--sticker-outline-axis-neg", `${(-outlineAxis).toFixed(3)}px`);
+  element.style.setProperty("--sticker-outline-diag", `${outlineDiag.toFixed(3)}px`);
+  element.style.setProperty("--sticker-outline-diag-neg", `${(-outlineDiag).toFixed(3)}px`);
+}
+
+function sanitizedPlacementScale(scale) {
+  return Math.max(0.2, Number(scale) || 1);
 }
 
 function updateEditorSelectionClass() {
@@ -1536,6 +1585,10 @@ function applyStickerEditorToBook() {
 }
 
 function setBookPage(page, options = {}) {
+  if (activeSurface === "cover") {
+    setBookSurface("inside", page);
+    return;
+  }
   const previousPage = activeBookPage;
   const nextPage = spreadStartForPage(page);
   if (nextPage === activeBookPage && !options.force) {
@@ -1561,6 +1614,26 @@ function setBookPage(page, options = {}) {
   slider.value = "0";
   updatePage(flipProgress);
   syncUrl();
+}
+
+function setBookSurface(surface, page = activeBookPage) {
+  const nextSurface = surface === "cover" ? "cover" : "inside";
+  cancelSpreadJump();
+  activeSurface = nextSurface;
+  isPlaying = false;
+  playButton.classList.remove("playing");
+  flipProgress = 0;
+  slider.value = "0";
+  closeBookPageJump();
+  if (activeSurface === "inside") {
+    const nextPage = spreadStartForPage(page);
+    activeBookPage = nextPage;
+    activeEditorPage = nextPage;
+    spreadPosition = spreadPositionForBookPage(nextPage);
+    selectedPlacementId = null;
+    stickerDragState = null;
+  }
+  applyVariantState();
 }
 
 function applyBookPageSelection(nextPage, options = {}) {
@@ -1616,6 +1689,23 @@ function shouldAnimateBookPageTurn(previousPage, nextPage, options) {
 }
 
 function updateBookPageControls() {
+  if (activeSurface === "cover") {
+    if (bookPageLabel) {
+      bookPageLabel.textContent = "表紙";
+      bookPageLabel.disabled = true;
+    }
+    if (bookPrevPage) {
+      bookPrevPage.disabled = true;
+    }
+    if (bookNextPage) {
+      bookNextPage.disabled = false;
+    }
+    if (bookPageControls) {
+      bookPageControls.hidden = false;
+    }
+    renderBookPageJump();
+    return;
+  }
   const rightPageNumber = rightBookPageNumber();
   const rangeLabel = rightPageNumber > activeBookPage
     ? `${activeBookPage}-${rightPageNumber}`
@@ -1626,13 +1716,13 @@ function updateBookPageControls() {
     bookPageLabel.disabled = activeSurface === "cover";
   }
   if (bookPrevPage) {
-    bookPrevPage.disabled = activeSurface === "cover" || activeBookPage <= 1;
+    bookPrevPage.disabled = false;
   }
   if (bookNextPage) {
     bookNextPage.disabled = activeSurface === "cover" || activeBookPage >= lastSpreadStart;
   }
   if (bookPageControls) {
-    bookPageControls.hidden = activeSurface === "cover";
+    bookPageControls.hidden = false;
   }
   renderBookPageJump();
 }
@@ -1665,6 +1755,15 @@ function renderBookPageJump() {
   const pairCount = Math.max(1, Math.ceil(editorPageCount() / 2));
   const activeStart = spreadStartForPage(activeBookPage);
   bookPageJump.replaceChildren();
+  const coverButton = document.createElement("button");
+  coverButton.type = "button";
+  coverButton.textContent = "表紙";
+  coverButton.classList.toggle("is-active", activeSurface === "cover");
+  coverButton.addEventListener("click", () => {
+    closeBookPageJump();
+    setBookSurface("cover", activeBookPage);
+  });
+  bookPageJump.append(coverButton);
   for (let pairIndex = 0; pairIndex < pairCount; pairIndex += 1) {
     const pageStart = pairIndex * 2 + 1;
     const pageEnd = Math.min(pageStart + 1, editorPageCount());
@@ -1672,9 +1771,12 @@ function renderBookPageJump() {
     button.type = "button";
     button.textContent = pageEnd > pageStart ? `${pageStart}-${pageEnd}` : String(pageStart);
     button.classList.toggle("is-active", pageStart === activeStart);
-    button.disabled = activeSurface === "cover";
     button.addEventListener("click", () => {
       closeBookPageJump();
+      if (activeSurface === "cover") {
+        setBookSurface("inside", pageStart);
+        return;
+      }
       setBookPage(pageStart, { turnMode: Math.abs(pageStart - activeBookPage) <= 2 ? "single" : "jump" });
     });
     bookPageJump.append(button);
@@ -2838,7 +2940,7 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
 }
 
 function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
-  const outline = Math.max(7, Math.min(24, width * 0.04));
+  const outline = Math.max(3, Math.min(9, width * 0.018));
   const offsets = [
     [outline, 0],
     [-outline, 0],

@@ -16,18 +16,16 @@ body {
     drop-shadow(1px 0 0 rgba(255, 255, 255, 0.98))
     drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.98))
     drop-shadow(0 1px 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(0 0 2px rgba(255, 255, 255, 0.92));
+    drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.98));
   --sticker-page-outline-filter:
-    drop-shadow(2px 0 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(-2px 0 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(0 2px 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(0 -2px 0 rgba(255, 255, 255, 0.98))
-    drop-shadow(1.4px 1.4px 0 rgba(255, 255, 255, 0.96))
-    drop-shadow(-1.4px 1.4px 0 rgba(255, 255, 255, 0.96))
-    drop-shadow(1.4px -1.4px 0 rgba(255, 255, 255, 0.96))
-    drop-shadow(-1.4px -1.4px 0 rgba(255, 255, 255, 0.96))
-    drop-shadow(0 0 3px rgba(255, 255, 255, 0.92));
+    drop-shadow(1.5px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(-1.5px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 1.5px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 -1.5px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(1px 1px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(-1px 1px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(1px -1px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(-1px -1px 0 rgba(255, 255, 255, 0.96));
 }
 
 #app {
@@ -827,9 +825,17 @@ input[type="range"] {
 }
 
 .placed-sticker.is-selected {
-  outline: 3px solid rgba(70, 181, 188, 0.72);
-  outline-offset: 5px;
-  border-radius: 14px;
+  outline: none;
+}
+
+.placed-sticker.is-selected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: var(--selection-border, 2px) solid rgba(70, 181, 188, 0.9);
+  border-radius: var(--selection-radius, 14px);
+  pointer-events: none;
 }
 
 .placed-sticker img {
@@ -837,7 +843,15 @@ input[type="range"] {
   width: 100%;
   height: auto;
   pointer-events: none;
-  filter: var(--sticker-page-outline-filter);
+  filter:
+    drop-shadow(var(--sticker-outline-axis, 1.2px) 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(var(--sticker-outline-axis-neg, -1.2px) 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 var(--sticker-outline-axis, 1.2px) 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 var(--sticker-outline-axis-neg, -1.2px) 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(var(--sticker-outline-diag, 0.85px) var(--sticker-outline-diag, 0.85px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-outline-diag-neg, -0.85px) var(--sticker-outline-diag, 0.85px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-outline-diag, 0.85px) var(--sticker-outline-diag-neg, -0.85px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-outline-diag-neg, -0.85px) var(--sticker-outline-diag-neg, -0.85px) 0 rgba(255, 255, 255, 0.96));
   user-select: none;
   -webkit-user-drag: none;
 }
