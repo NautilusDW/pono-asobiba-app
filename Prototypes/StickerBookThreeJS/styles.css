@@ -749,6 +749,9 @@ input[type="range"] {
   box-shadow:
     0 20px 44px rgba(51, 35, 14, 0.22),
     inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .editor-page-canvas::before {
@@ -774,7 +777,10 @@ input[type="range"] {
 }
 
 .sticker-editor.is-draw-mode .editor-draw-canvas {
-  pointer-events: auto;
+  pointer-events: none;
+}
+
+.sticker-editor.is-draw-mode .editor-page-canvas {
   cursor: crosshair;
 }
 

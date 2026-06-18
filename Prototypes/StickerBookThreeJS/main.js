@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-676";
+const ASSET_VERSION = "20260618-677";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -157,7 +157,7 @@ document.body.classList.toggle("is-prototype-controls", prototypeControlsEnabled
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
-const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v6";
+const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v5";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v2";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
@@ -1963,12 +1963,15 @@ function rightOnlyTuningBase() {
   return normalizeTuning(layerTuningByPair[RIGHT_ONLY_PAIR_KEY], SHARED_TUNING_FALLBACK);
 }
 
-function applyRightOnlyTuningToAllPairs({ pushHistory = false } = {}) {
+function applyRightOnlyTuningToAllPairs({ pushHistory = false, overwrite = true } = {}) {
   if (pushHistory) {
     pushTuningUndo("右だけを全てへ");
   }
   const base = rightOnlyTuningBase();
   for (const key of tuningPairKeys()) {
+    if (!overwrite && layerTuningByPair[key]) {
+      continue;
+    }
     layerTuningByPair[key] = normalizeTuning(base, SHARED_TUNING_FALLBACK);
   }
   persistLayerTuningStore();
@@ -1981,7 +1984,7 @@ function seedAllTuningPairsFromRightOnlyOnce() {
     }
   } catch {}
 
-  applyRightOnlyTuningToAllPairs();
+  applyRightOnlyTuningToAllPairs({ overwrite: false });
 
   try {
     localStorage.setItem(RIGHT_ONLY_SYNC_MARKER_KEY, "v1");
