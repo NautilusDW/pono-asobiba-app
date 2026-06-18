@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-682";
+const ASSET_VERSION = "20260618-683";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -165,7 +165,7 @@ playButton.classList.toggle("playing", isPlaying);
 
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v5";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
-const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v2";
+const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v3";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
 const TUNING_HISTORY_LIMIT = 80;
@@ -173,8 +173,11 @@ const SPREAD_JUMP_SETTLE_PROGRESS = 0;
 const SPREAD_JUMP_MIN_DURATION = 0.28;
 const SPREAD_JUMP_MAX_DURATION = 0.62;
 const COVER_OPEN_DURATION = 1.15;
-const BOOK_COVER_X = 0;
-const BOOK_INSIDE_X = 0.24;
+const COVER_CLOSED_X = GUTTER / 2;
+const COVER_OPEN_X = -GUTTER / 2;
+const COVER_CENTER_X = COVER_CLOSED_X + PAGE_W / 2;
+const BOOK_COVER_X = -COVER_CENTER_X;
+const BOOK_INSIDE_X = 0;
 const FLUTTER_PAGE_MIN_COUNT = 3;
 const FLUTTER_PAGE_MAX_COUNT = 6;
 const PAGE_TURN_BEND = 0.34;
@@ -207,13 +210,13 @@ const TUNING_FIELDS = [
 ];
 const DEFAULT_COVER_TUNING = {
   coverStackX: 0,
-  coverStackY: 0.14,
-  coverStackScaleX: 1.1,
-  coverStackScaleY: 0.72,
-  coverStackOpacity: 1,
+  coverStackY: 0.06,
+  coverStackScaleX: 1,
+  coverStackScaleY: 0.48,
+  coverStackOpacity: 0.96,
   coverBgScaleX: 1.16,
   coverBgScaleY: 1.08,
-  coverBgOpacity: 0.24,
+  coverBgOpacity: 0,
 };
 const COVER_TUNING_FIELDS = [
   ["coverStackX", "厚み X", -0.7, 0.7, 0.005],
@@ -323,7 +326,7 @@ const coverBackground = new THREE.Mesh(
     depthWrite: false,
   }),
 );
-coverBackground.position.set(-PAGE_W / 2, 0, -0.08);
+coverBackground.position.set(COVER_CLOSED_X, 0, -0.08);
 coverBackground.renderOrder = 18;
 coverOnly.add(coverBackground);
 
@@ -331,13 +334,13 @@ const coverThickness = createCoverThicknessLayer();
 coverOnly.add(coverThickness.group);
 
 const closedCover = makePageSurface(BOOK_VARIANTS[activeBook].coverFront, createCoverSurfaceGeometry());
-closedCover.position.set(-PAGE_W / 2, 0, 0.04);
+closedCover.position.set(COVER_CLOSED_X, 0, 0.04);
 closedCover.renderOrder = 30;
 coverOnly.add(closedCover);
 
 const coverTurn = new THREE.Group();
 coverTurn.visible = false;
-coverTurn.position.set(-PAGE_W / 2, 0, 0.18);
+coverTurn.position.set(COVER_CLOSED_X, 0, 0.18);
 book.add(coverTurn);
 
 const coverTurnGeometry = createCoverSurfaceGeometry();
@@ -1104,10 +1107,10 @@ function placementStyleVars(placement) {
   const visualScale = scale / renderScale;
   const selectionBorder = 2 / visualScale;
   const selectionRadius = 14 / visualScale;
-  const whiteAxis = 1.05 / visualScale;
-  const whiteDiag = 0.74 / visualScale;
-  const blackAxis = 1.48 / visualScale;
-  const blackDiag = 1.05 / visualScale;
+  const whiteAxis = 0.82 / visualScale;
+  const whiteDiag = 0.58 / visualScale;
+  const blackAxis = 0.28 / visualScale;
+  const blackDiag = 0.2 / visualScale;
   return [
     `--x:${placement.x}%`,
     `--y:${placement.y}%`,
@@ -1133,10 +1136,10 @@ function applyPlacementStyleVars(element, placement) {
   const scale = sanitizedPlacementScale(placement?.scale);
   const renderScale = editorStickerRenderScale(scale);
   const visualScale = scale / renderScale;
-  const whiteAxis = 1.05 / visualScale;
-  const whiteDiag = 0.74 / visualScale;
-  const blackAxis = 1.48 / visualScale;
-  const blackDiag = 1.05 / visualScale;
+  const whiteAxis = 0.82 / visualScale;
+  const whiteDiag = 0.58 / visualScale;
+  const blackAxis = 0.28 / visualScale;
+  const blackDiag = 0.2 / visualScale;
   element.style.setProperty("--x", `${placement.x}%`);
   element.style.setProperty("--y", `${placement.y}%`);
   element.style.setProperty("--scale", String(scale));
@@ -3049,14 +3052,14 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
 }
 
 function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
-  const whiteOutline = Math.max(3, Math.min(9, width * 0.018));
-  const blackOutline = whiteOutline + Math.max(1.2, Math.min(3.2, width * 0.005));
+  const whiteOutline = Math.max(1.6, Math.min(4.2, width * 0.009));
+  const blackOutline = whiteOutline + Math.max(0.45, Math.min(0.9, width * 0.002));
   const blackOffsets = stickerOutlineOffsets(blackOutline);
   const whiteOffsets = stickerOutlineOffsets(whiteOutline);
   ctx.save();
-  ctx.globalAlpha = 0.55;
+  ctx.globalAlpha = 0.28;
   ctx.filter = "brightness(0)";
-  for (const [dx, dy] of blackOffsets) {
+  for (const [dx, dy] of blackOffsets.slice(0, 4)) {
     ctx.drawImage(image, x + dx, y + dy, width, height);
   }
   ctx.globalAlpha = 0.96;
@@ -3439,7 +3442,7 @@ function applyCoverTuning() {
   const scaledTextureH = THICKNESS_TEXTURE_H * coverTuning.coverStackScaleY;
   const topY = -PAGE_H / 2 + THICKNESS_OVERLAP + coverTuning.coverStackY;
   coverThickness.plane.position.set(
-    coverTuning.coverStackX,
+    COVER_CLOSED_X + PAGE_W / 2 + coverTuning.coverStackX,
     topY - scaledTextureH / 2,
     -0.015,
   );
@@ -3447,7 +3450,7 @@ function applyCoverTuning() {
   coverBackground.visible = coverTuning.coverBgOpacity > 0;
   coverBackground.material.opacity = coverTuning.coverBgOpacity;
   coverBackground.scale.set(coverTuning.coverBgScaleX, coverTuning.coverBgScaleY, 1);
-  coverBackground.position.set((-PAGE_W * coverTuning.coverBgScaleX) / 2, 0, -0.08);
+  coverBackground.position.set(COVER_CLOSED_X, 0, -0.08);
 }
 
 function updateFlutterPageTextures() {
@@ -3903,14 +3906,14 @@ function renderCoverOpenTransition(rawProgress) {
   const p = smootherstep(raw);
   flipProgress = 0;
   slider.value = "0";
-  coverOnly.visible = raw < 0.035;
+  coverOnly.visible = raw < 0.025;
   if (coverOnly.visible) {
     applyCoverTuning();
   }
-  setOpenSpreadVisible(true);
+  setCoverOpeningSpreadVisible(true);
   coverTurn.visible = raw < 0.985;
   coverTurn.position.set(
-    THREE.MathUtils.lerp(-PAGE_W / 2, -GUTTER / 2, p),
+    THREE.MathUtils.lerp(COVER_CLOSED_X, COVER_OPEN_X, p),
     0,
     0.18 + Math.sin(p * Math.PI) * 0.08,
   );
@@ -3926,7 +3929,7 @@ function renderCoverOpenTransition(rawProgress) {
   applyBookFramePosition(p);
 
   leftPageOuter.visible = false;
-  leftPageInner.visible = true;
+  leftPageInner.visible = p > 0.96;
   rightPage.visible = true;
 }
 
@@ -3958,6 +3961,8 @@ function applyBookFramePosition(openProgress) {
 
 function setOpenSpreadVisible(visible) {
   sideTabs.group.visible = visible;
+  sideTabs.left.visible = visible;
+  sideTabs.right.visible = visible;
   leftPageOuter.visible = false;
   leftPageInner.visible = visible;
   rightPage.visible = visible;
@@ -3970,7 +3975,30 @@ function setOpenSpreadVisible(visible) {
   spine.visible = visible;
   ringGroup.visible = visible;
   pageStacks.group.visible = visible;
+  pageStacks.left.group.visible = visible;
+  pageStacks.right.group.visible = visible;
   if (!visible) {
+    flutterPages.group.visible = false;
+  }
+}
+
+function setCoverOpeningSpreadVisible(visible) {
+  sideTabs.group.visible = visible;
+  sideTabs.left.visible = false;
+  sideTabs.right.visible = visible;
+  leftPageOuter.visible = false;
+  leftPageInner.visible = false;
+  rightPage.visible = visible;
+  innerLeft.visible = false;
+  innerRight.visible = visible;
+  pageTurn.visible = false;
+  spine.visible = visible;
+  ringGroup.visible = visible;
+  pageStacks.group.visible = visible;
+  pageStacks.left.group.visible = false;
+  pageStacks.right.group.visible = visible;
+  if (!visible) {
+    coverTurn.visible = false;
     flutterPages.group.visible = false;
   }
 }
