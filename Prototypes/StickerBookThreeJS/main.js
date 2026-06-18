@@ -1,0 +1,3485 @@
+import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
+
+const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
+const ASSET_VERSION = "20260618-668";
+const PAGE_ASPECT = 1472 / 1536;
+const PAGE_TEXTURE_W = 1472;
+const PAGE_TEXTURE_H = 1536;
+const PAGE_H = 6.0;
+const PAGE_W = PAGE_H * PAGE_ASPECT;
+const GUTTER = PAGE_H * (192 / 1536);
+const SPINE_W = PAGE_H * (256 / 1536);
+const CAMERA_FOV = 34;
+const PAGE_RADIUS = PAGE_H * (92 / 1536);
+const PAGE_HOLE_X = PAGE_W * (16 / 1472);
+const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
+const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
+const PAGE_RING_PIXELS = [170, 370, 570, 770, 970, 1170, 1370];
+const THICKNESS_TEXTURE_H = PAGE_H * (256 / 1536);
+const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
+const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
+const THICKNESS_DEFAULT_SCALE_Y = {
+  empty: 0,
+  small: 1,
+  half: 1,
+  mostly: 1,
+  full: 1,
+};
+const STICKER_PLAN_URL = "./sticker_book_content_plan.json";
+const STICKER_ASSET_PREFIX = "../../";
+const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
+const EDITOR_STATE_VERSION = 3;
+const STICKER_ALBUM_PAGE_COUNT = 12;
+const DRAWING_COLORS = [
+  "#EF4444",
+  "#F97316",
+  "#FBBF24",
+  "#EAB308",
+  "#22C55E",
+  "#14B8A6",
+  "#06B6D4",
+  "#3B82F6",
+  "#6366F1",
+  "#8B5CF6",
+  "#EC4899",
+  "#F43F5E",
+  "#92400E",
+  "#78716C",
+  "#1C1917",
+];
+const DRAWING_STAMPS = [
+  { id: "star", label: "スター", src: "../../assets/images/mojikko/writing/icon_star.png" },
+  { id: "heart", label: "ハート", src: "../../assets/images/mojikko/writing/icon_heart.png" },
+  { id: "sparkle", label: "きらきら", src: "../../assets/images/mojikko/writing/icon_sparkle.png" },
+  { id: "cookie", label: "クッキー", src: "../../assets/images/mojikko/writing/icon_cookie.png" },
+  { id: "pencil", label: "えんぴつ", src: "../../assets/images/mojikko/writing/icon_pencil.png" },
+  { id: "stamp", label: "スタンプ", src: "../../assets/images/icons/stamp_001.png" },
+  { id: "rainbow", label: "にじ", src: "../../assets/images/icons/icons_001.png" },
+  { id: "kirakira", label: "ひかり", src: "../../assets/images/icons/kirakira.png" },
+];
+const DRAWING_DEFAULT_COLOR = DRAWING_COLORS[0];
+const DRAWING_DEFAULT_SIZE = 14;
+const DRAWING_MIN_DISTANCE = 0.22;
+
+const SHARED_TEXTURES = {
+  pageBack: "sb3d_page_back_generated.png",
+  innerLeft: "sb3d_inner_shadow_left.png",
+  innerRight: "sb3d_inner_shadow_right.png",
+  flipShadow: "sb3d_flip_shadow.png",
+  floorShadow: "sb3d_book_floor_shadow.png",
+};
+
+const BOOK_VARIANTS = {
+  boy: {
+    insideLeft: "sb3d_boy_page_left_generated.png",
+    insideRight: "sb3d_boy_page_right_generated.png",
+    coverFront: "sb3d_boy_cover_front_generated.png",
+    coverBack: "sb3d_boy_cover_back_generated.png",
+    coverInside: "sb3d_boy_cover_inside_generated.png",
+    spine: "sb3d_boy_spine_generated.png",
+    tabsLeft: "sb3d_boy_side_tabs_left_generated.png",
+    tabsRight: "sb3d_boy_side_tabs_right_generated.png",
+  },
+  girl: {
+    insideLeft: "sb3d_girl_page_left_generated.png",
+    insideRight: "sb3d_girl_page_right_generated.png",
+    coverFront: "sb3d_girl_cover_front_generated.png",
+    coverBack: "sb3d_girl_cover_back_generated.png",
+    coverInside: "sb3d_girl_cover_inside_generated.png",
+    spine: "sb3d_girl_spine_generated.png",
+    tabsLeft: "sb3d_girl_side_tabs_left_generated.png",
+    tabsRight: "sb3d_girl_side_tabs_right_generated.png",
+  },
+};
+
+const canvas = document.getElementById("scene");
+const slider = document.getElementById("flipSlider");
+const playButton = document.getElementById("playButton");
+const resetButton = document.getElementById("resetButton");
+const tuningPanel = document.getElementById("tuningPanel");
+const spreadJumper = document.getElementById("spreadJumper");
+const spreadJumpButtons = [...document.querySelectorAll("[data-spread-target]")];
+const bookButtons = [...document.querySelectorAll("[data-book]")];
+const surfaceButtons = [...document.querySelectorAll("[data-surface]")];
+const stickerEditor = document.getElementById("stickerEditor");
+const editorClose = document.getElementById("editorClose");
+const editorPageLabel = document.getElementById("editorPageLabel");
+const editorGameFilter = document.getElementById("editorGameFilter");
+const editorStickerSearch = document.getElementById("editorStickerSearch");
+const stickerLibrary = document.getElementById("stickerLibrary");
+const editorPageCanvas = document.getElementById("editorPageCanvas");
+const editorScale = document.getElementById("editorScale");
+const editorRotation = document.getElementById("editorRotation");
+const editorLayerBack = document.getElementById("editorLayerBack");
+const editorLayerFront = document.getElementById("editorLayerFront");
+const editorDelete = document.getElementById("editorDelete");
+const editorApply = document.getElementById("editorApply");
+const editorModeButtons = [...document.querySelectorAll("[data-editor-mode]")];
+const editorFilterGrid = document.querySelector(".editor-filter-grid");
+const drawingTools = document.getElementById("drawingTools");
+const drawPenButton = document.getElementById("drawPen");
+const drawEraserButton = document.getElementById("drawEraser");
+const drawStampButton = document.getElementById("drawStamp");
+const drawRainbowButton = document.getElementById("drawRainbow");
+const drawSparkleButton = document.getElementById("drawSparkle");
+const drawColorPalette = document.getElementById("drawColorPalette");
+const drawSizeButtons = [...document.querySelectorAll("[data-draw-size]")];
+const drawStampPanel = document.getElementById("drawStampPanel");
+const drawUndoButton = document.getElementById("drawUndo");
+const drawClearButton = document.getElementById("drawClear");
+const bookPageControls = document.getElementById("bookPageControls");
+const bookPrevPage = document.getElementById("bookPrevPage");
+const bookNextPage = document.getElementById("bookNextPage");
+const bookPageLabel = document.getElementById("bookPageLabel");
+
+const params = new URLSearchParams(window.location.search);
+const tuningEnabled = params.get("tune") === "1";
+const editorEnabled = readBooleanParam("editor") || readBooleanParam("edit");
+const prototypeControlsEnabled = editorEnabled || tuningEnabled || readBooleanParam("controls");
+let activeBook = params.get("book") === "girl" ? "girl" : "boy";
+let activeSurface = params.get("surface") === "cover" ? "cover" : "inside";
+let flipProgress = readClampedNumber(params.get("progress"), Number(slider.value), 0, 1);
+let spreadPosition = readClampedNumber(params.get("spread"), 0.5, 0, 1);
+let isPlaying = params.get("play") === "1";
+const clock = new THREE.Clock();
+if (activeSurface === "cover") {
+  flipProgress = 0;
+  isPlaying = false;
+}
+document.body.classList.toggle("is-editor-enabled", editorEnabled);
+document.body.classList.toggle("is-prototype-controls", prototypeControlsEnabled);
+slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
+playButton.classList.toggle("playing", isPlaying);
+
+const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v5";
+const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
+const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v2";
+const RIGHT_ONLY_PAIR_KEY = "empty-full";
+const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
+const TUNING_HISTORY_LIMIT = 80;
+const SPREAD_JUMP_SETTLE_PROGRESS = 0;
+const SPREAD_JUMP_MIN_DURATION = 0.28;
+const SPREAD_JUMP_MAX_DURATION = 0.62;
+const FLUTTER_PAGE_MIN_COUNT = 3;
+const FLUTTER_PAGE_MAX_COUNT = 6;
+const PAGE_TURN_BEND = 0.34;
+const PAGE_FLUTTER_BEND = 0.56;
+const FLUTTER_TRAIL_OPACITY = 0.16;
+const DEFAULT_TUNING = {
+  stackLeftX: 0,
+  stackLeftY: 0.85,
+  stackLeftScaleX: 1,
+  stackLeftScaleY: 1,
+  stackRightX: 0,
+  stackRightY: 0.85,
+  stackRightScaleX: 1,
+  stackRightScaleY: 1,
+};
+const SHARED_TUNING_FALLBACK = {
+  ...DEFAULT_TUNING,
+  stackLeftScaleY: THICKNESS_DEFAULT_SCALE_Y.full,
+  stackRightScaleY: THICKNESS_DEFAULT_SCALE_Y.full,
+};
+const TUNING_FIELDS = [
+  ["stackLeftX", "左 厚み X", -0.6, 0.6, 0.005],
+  ["stackLeftY", "左 厚み Y", -0.75, 2.0, 0.005],
+  ["stackLeftScaleX", "左 幅", 0.7, 1.25, 0.005],
+  ["stackLeftScaleY", "左 高さ", 0.12, 1.65, 0.005],
+  ["stackRightX", "右 厚み X", -0.6, 0.6, 0.005],
+  ["stackRightY", "右 厚み Y", -0.75, 2.0, 0.005],
+  ["stackRightScaleX", "右 幅", 0.7, 1.25, 0.005],
+  ["stackRightScaleY", "右 高さ", 0.12, 1.65, 0.005],
+];
+const DEFAULT_COVER_TUNING = {
+  coverStackX: 0,
+  coverStackY: 0.14,
+  coverStackScaleX: 1.1,
+  coverStackScaleY: 0.72,
+  coverStackOpacity: 1,
+  coverBgScaleX: 1.16,
+  coverBgScaleY: 1.08,
+  coverBgOpacity: 0.24,
+};
+const COVER_TUNING_FIELDS = [
+  ["coverStackX", "厚み X", -0.7, 0.7, 0.005],
+  ["coverStackY", "厚み Y", -0.35, 1.6, 0.005],
+  ["coverStackScaleX", "厚み 幅", 0.75, 1.5, 0.005],
+  ["coverStackScaleY", "厚み 高さ", 0.08, 1.6, 0.005],
+  ["coverStackOpacity", "厚み 濃さ", 0, 1, 0.01],
+  ["coverBgScaleX", "背景 幅", 0.9, 1.45, 0.005],
+  ["coverBgScaleY", "背景 高さ", 0.9, 1.35, 0.005],
+  ["coverBgOpacity", "背景 なじみ", 0, 0.8, 0.01],
+];
+const SPREAD_PRESETS = [
+  ["empty-full", 0, "右だけ"],
+  ["small-mostly", 0.25, "右多め"],
+  ["half-half", 0.5, "半分"],
+  ["mostly-small", 0.75, "左多め"],
+  ["full-empty", 1, "左だけ"],
+];
+let layerTuningByPair = loadLayerTuningStore();
+let coverTuning = loadCoverTuning();
+let tuningUndoStack = [];
+let tuningRedoStack = [];
+let activeTuningEditLabel = "";
+let spreadJumpAnimation = null;
+let stickerPlan = null;
+let stickerOptions = [];
+let editorPageDefinitions = createFallbackEditorPageDefinitions();
+let editorState = loadEditorState();
+let activeEditorPage = 1;
+let activeBookPage = spreadStartForPage(readClampedNumber(params.get("page"), 1, 1, editorPageDefinitions.length));
+let selectedPlacementId = null;
+let stickerDragState = null;
+let editorStateSaveTimer = 0;
+let editorStateDirty = false;
+let editorGameFilterValue = "all";
+let editorSearchQuery = "";
+let editorMode = "sticker";
+let drawTool = "pen";
+let drawBrushColor = DRAWING_DEFAULT_COLOR;
+let drawBrushSize = DRAWING_DEFAULT_SIZE;
+let selectedDrawingStamp = DRAWING_STAMPS[0].id;
+let drawingPointerState = null;
+const stickerImageCache = new Map();
+const drawingStampImageCache = new Map();
+seedAllTuningPairsFromRightOnlyOnce();
+
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  alpha: true,
+  preserveDrawingBuffer: true,
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.sortObjects = true;
+
+const scene = new THREE.Scene();
+scene.background = null;
+
+const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.1, 100);
+const cameraTarget = new THREE.Vector3(0, 0.08, 0);
+const pageRaycaster = new THREE.Raycaster();
+const pointerNdc = new THREE.Vector2();
+
+const loader = new THREE.TextureLoader();
+const textureFiles = [
+  ...new Set([
+    ...Object.values(SHARED_TEXTURES),
+    ...Object.values(BOOK_VARIANTS.boy),
+    ...Object.values(BOOK_VARIANTS.girl),
+    ...["boy", "girl"].flatMap((bookName) =>
+      THICKNESS_LEVEL_NAMES.flatMap((level) => [
+        `sb3d_${bookName}_page_thickness_left_${level}.png`,
+        `sb3d_${bookName}_page_thickness_right_${level}.png`,
+      ]),
+    ),
+  ]),
+];
+const textureEntries = await Promise.all(textureFiles.map(async (file) => [file, await loadTexture(file)]));
+const textureMap = new Map(textureEntries);
+const pageTemplateTextureMap = new Map();
+window.__stickerBookAssetsLoaded = true;
+
+const book = new THREE.Group();
+scene.add(book);
+
+const floorShadow = makePlane(SHARED_TEXTURES.floorShadow, PAGE_W * 2 + GUTTER + 0.9, 0.7, {
+  opacity: 0.72,
+  depth: -0.22,
+});
+floorShadow.position.set(0, -PAGE_H * 0.54, -0.06);
+book.add(floorShadow);
+
+const coverOnly = new THREE.Group();
+book.add(coverOnly);
+
+const coverBackground = new THREE.Mesh(
+  createCoverSurfaceGeometry(),
+  new THREE.MeshBasicMaterial({
+    color: 0x173a43,
+    transparent: true,
+    opacity: DEFAULT_COVER_TUNING.coverBgOpacity,
+    depthWrite: false,
+  }),
+);
+coverBackground.position.set(-PAGE_W / 2, 0, -0.08);
+coverBackground.renderOrder = 18;
+coverOnly.add(coverBackground);
+
+const coverThickness = createCoverThicknessLayer();
+coverOnly.add(coverThickness.group);
+
+const closedCover = makePageSurface(BOOK_VARIANTS[activeBook].coverFront, createCoverSurfaceGeometry());
+closedCover.position.set(-PAGE_W / 2, 0, 0.04);
+closedCover.renderOrder = 30;
+coverOnly.add(closedCover);
+
+const spine = makePlane(BOOK_VARIANTS[activeBook].spine, SPINE_W, PAGE_H, { depth: -0.09, lit: true, transparent: true });
+spine.position.set(0, 0, -0.09);
+spine.material.depthWrite = false;
+spine.renderOrder = 1;
+book.add(spine);
+
+const sideTabs = createSideTabs();
+sideTabs.group.position.z = -0.04;
+book.add(sideTabs.group);
+
+const pageStacks = createPageStacks();
+book.add(pageStacks.group);
+
+const leftPageOuter = makePageSurface(BOOK_VARIANTS[activeBook].coverBack, createPageSurfaceGeometry("right"));
+leftPageOuter.position.set(-PAGE_W - GUTTER / 2, 0, -0.001);
+leftPageOuter.renderOrder = 9;
+book.add(leftPageOuter);
+
+const leftPageInner = makePageSurface(BOOK_VARIANTS[activeBook].insideLeft, createPageSurfaceGeometry("right"));
+leftPageInner.position.set(-PAGE_W - GUTTER / 2, 0, 0);
+leftPageInner.renderOrder = 10;
+book.add(leftPageInner);
+
+const rightPage = makePageSurface(BOOK_VARIANTS[activeBook].insideRight, createPageSurfaceGeometry("left"));
+rightPage.position.set(GUTTER / 2, 0, 0);
+rightPage.renderOrder = 10;
+book.add(rightPage);
+
+const innerLeft = makePlane(SHARED_TEXTURES.innerLeft, GUTTER, PAGE_H, { opacity: 0.64, depth: 0.05 });
+innerLeft.position.set(-GUTTER / 2, 0, 0.03);
+innerLeft.renderOrder = 12;
+book.add(innerLeft);
+
+const innerRight = makePlane(SHARED_TEXTURES.innerRight, GUTTER, PAGE_H, { opacity: 0.64, depth: 0.05 });
+innerRight.position.set(GUTTER / 2, 0, 0.03);
+innerRight.renderOrder = 12;
+book.add(innerRight);
+
+const pageTurn = new THREE.Group();
+pageTurn.position.set(GUTTER / 2, 0, 0.08);
+book.add(pageTurn);
+
+const turningPageGeometry = createBendablePageSurfaceGeometry("left");
+prepareBendGeometry(turningPageGeometry);
+const frontPage = new THREE.Mesh(
+  turningPageGeometry,
+  new THREE.MeshStandardMaterial({
+    map: getTexture(BOOK_VARIANTS[activeBook].insideRight),
+    transparent: false,
+    side: THREE.FrontSide,
+    depthWrite: true,
+    roughness: 0.92,
+    metalness: 0.0,
+  }),
+);
+frontPage.renderOrder = 20;
+
+const backPage = new THREE.Mesh(
+  turningPageGeometry,
+  new THREE.MeshStandardMaterial({
+    map: getTexture(SHARED_TEXTURES.pageBack),
+    transparent: false,
+    side: THREE.BackSide,
+    depthWrite: true,
+    roughness: 0.95,
+    metalness: 0.0,
+  }),
+);
+backPage.renderOrder = 19;
+
+frontPage.position.z = 0.002;
+backPage.position.z = -0.002;
+pageTurn.add(backPage);
+pageTurn.add(frontPage);
+
+const flipShadow = new THREE.Mesh(
+  turningPageGeometry.clone(),
+  new THREE.MeshBasicMaterial({
+    map: getTexture(SHARED_TEXTURES.flipShadow),
+    transparent: true,
+    opacity: 0.18,
+    side: THREE.FrontSide,
+    depthWrite: false,
+  }),
+);
+flipShadow.position.z = 0.018;
+flipShadow.renderOrder = 23;
+prepareBendGeometry(flipShadow.geometry);
+pageTurn.add(flipShadow);
+
+const flutterPages = createFlutterPages();
+book.add(flutterPages.group);
+
+const ringGroup = createHalfRingMeshes();
+ringGroup.renderOrder = 70;
+book.add(ringGroup);
+
+const topLight = new THREE.DirectionalLight(0xffffff, 1.7);
+topLight.position.set(-2.5, 3.5, 6);
+scene.add(topLight);
+
+const sideLight = new THREE.DirectionalLight(0x8fd9e5, 0.75);
+sideLight.position.set(4, -3, 5);
+scene.add(sideLight);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.86));
+
+slider.addEventListener("input", () => {
+  cancelSpreadJump();
+  flipProgress = Number(slider.value);
+  isPlaying = false;
+  playButton.classList.remove("playing");
+  updatePage(flipProgress);
+  syncUrl();
+});
+
+playButton.addEventListener("click", () => {
+  cancelSpreadJump();
+  isPlaying = !isPlaying;
+  playButton.classList.toggle("playing", isPlaying);
+  syncUrl();
+});
+
+resetButton.addEventListener("click", () => {
+  cancelSpreadJump();
+  isPlaying = false;
+  flipProgress = 0;
+  slider.value = String(flipProgress);
+  playButton.classList.remove("playing");
+  updatePage(flipProgress);
+  syncUrl();
+});
+
+for (const button of bookButtons) {
+  button.addEventListener("click", () => {
+    const nextBook = button.dataset.book === "girl" ? "girl" : "boy";
+    if (nextBook === activeBook) {
+      return;
+    }
+    cancelSpreadJump();
+    activeBook = nextBook;
+    applyVariantState();
+  });
+}
+
+for (const button of surfaceButtons) {
+  button.addEventListener("click", () => {
+    const nextSurface = button.dataset.surface === "cover" ? "cover" : "inside";
+    if (nextSurface === activeSurface) {
+      return;
+    }
+    cancelSpreadJump();
+    activeSurface = nextSurface;
+    isPlaying = false;
+    playButton.classList.remove("playing");
+    flipProgress = activeSurface === "cover" ? 0 : 0.82;
+    slider.value = String(flipProgress);
+    applyVariantState();
+  });
+}
+
+for (const button of spreadJumpButtons) {
+  button.addEventListener("click", () => {
+    const target = readClampedNumber(button.dataset.spreadTarget, spreadPosition, 0, 1);
+    startSpreadJump(target);
+  });
+}
+
+window.addEventListener("resize", resize);
+setupTuningPanel();
+setupBookPageControls();
+if (editorEnabled) {
+  setupScenePagePicking();
+  setupStickerEditor();
+} else {
+  stickerEditor?.remove();
+  loadStickerPlanForEditor();
+}
+resize();
+applyVariantState();
+window.__stickerBookReady = true;
+animate();
+
+function setupScenePagePicking() {
+  if (!editorEnabled) {
+    return;
+  }
+  canvas.addEventListener("pointermove", (event) => {
+    canvas.style.cursor = pickEditablePage(event) ? "zoom-in" : "";
+  });
+  canvas.addEventListener("pointerleave", () => {
+    canvas.style.cursor = "";
+  });
+  canvas.addEventListener("click", (event) => {
+    const pickedPage = pickEditablePage(event);
+    if (!pickedPage) {
+      return;
+    }
+    openStickerEditor(pageNumberForPickedPage(pickedPage));
+  });
+}
+
+function pickEditablePage(event) {
+  if (!editorEnabled || activeSurface !== "inside" || !stickerEditor || !stickerEditor.hidden) {
+    return null;
+  }
+  const rect = canvas.getBoundingClientRect();
+  pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  pageRaycaster.setFromCamera(pointerNdc, camera);
+  const hits = pageRaycaster.intersectObjects([rightPage, leftPageInner], false);
+  return hits[0]?.object || null;
+}
+
+function setupBookPageControls() {
+  bookPrevPage?.addEventListener("click", () => setBookPage(activeBookPage - 2));
+  bookNextPage?.addEventListener("click", () => setBookPage(activeBookPage + 2));
+}
+
+function pageNumberForPickedPage(mesh) {
+  if (mesh === leftPageInner) {
+    return activeBookPage;
+  }
+  if (mesh === rightPage) {
+    return rightBookPageNumber();
+  }
+  return activeBookPage;
+}
+
+function setupStickerEditor() {
+  if (!stickerEditor || !editorPageCanvas) {
+    return;
+  }
+
+  editorClose?.addEventListener("click", closeStickerEditor);
+  editorGameFilter?.addEventListener("change", () => {
+    editorGameFilterValue = editorGameFilter.value;
+    renderStickerLibrary();
+  });
+  editorStickerSearch?.addEventListener("input", () => {
+    editorSearchQuery = editorStickerSearch.value.trim();
+    renderStickerLibrary();
+  });
+  editorPageCanvas.addEventListener("pointerdown", handleEditorCanvasPointerDown);
+  window.addEventListener("pointermove", handleStickerDragMove);
+  window.addEventListener("pointerup", endStickerDrag);
+  window.addEventListener("pointermove", handleDrawingPointerMove);
+  window.addEventListener("pointerup", endDrawingStroke);
+  window.addEventListener("pointercancel", endDrawingStroke);
+  editorScale?.addEventListener("input", () => updateSelectedPlacement({ scale: Number(editorScale.value) }));
+  editorRotation?.addEventListener("input", () => updateSelectedPlacement({ rotation: Number(editorRotation.value) }));
+  editorLayerBack?.addEventListener("click", () => moveSelectedPlacementLayer(-1));
+  editorLayerFront?.addEventListener("click", () => moveSelectedPlacementLayer(1));
+  editorDelete?.addEventListener("click", deleteSelectedPlacement);
+  editorApply?.addEventListener("click", applyStickerEditorToBook);
+  buildDrawingControls();
+  editorModeButtons.forEach((button) => {
+    button.addEventListener("click", () => setEditorMode(button.dataset.editorMode));
+  });
+  drawPenButton?.addEventListener("click", () => setDrawTool("pen"));
+  drawEraserButton?.addEventListener("click", () => setDrawTool("eraser"));
+  drawStampButton?.addEventListener("click", () => {
+    if (drawTool === "stamp" && drawStampPanel) {
+      drawStampPanel.hidden = !drawStampPanel.hidden;
+      return;
+    }
+    setDrawTool("stamp");
+  });
+  drawRainbowButton?.addEventListener("click", () => setDrawTool("rainbow"));
+  drawSparkleButton?.addEventListener("click", () => setDrawTool("sparkle"));
+  drawUndoButton?.addEventListener("click", undoDrawingStroke);
+  drawClearButton?.addEventListener("click", clearActivePageDrawing);
+  window.addEventListener("keydown", handleEditorKeydown);
+
+  renderEditorShell();
+  loadStickerPlanForEditor();
+}
+
+async function loadStickerPlanForEditor() {
+  try {
+    const response = await fetch(`${STICKER_PLAN_URL}?v=${ASSET_VERSION}`);
+    if (!response.ok) {
+      throw new Error(`plan ${response.status}`);
+    }
+    stickerPlan = await response.json();
+    stickerOptions = stickerPlan.stickers
+      .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
+      .map((sticker) => ({
+        ...sticker,
+        assetUrl: stickerAssetUrl(sticker.assetPath),
+      }));
+    editorPageDefinitions = buildEditorPageDefinitions();
+    activeBookPage = spreadStartForPage(activeBookPage);
+    activeEditorPage = THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
+    ensureDefaultEditorPages();
+    saveEditorState();
+    if (editorEnabled) {
+      setupEditorGameFilter();
+      renderEditorShell();
+    }
+    refreshPageTemplateTextures();
+    window.__stickerEditorPlanLoaded = true;
+  } catch (error) {
+    console.warn("Sticker plan load failed", error);
+    if (stickerLibrary) {
+      stickerLibrary.textContent = "シールを よみこめません";
+    }
+  }
+}
+
+function buildEditorPageDefinitions() {
+  return createFallbackEditorPageDefinitions();
+}
+
+function createFallbackEditorPageDefinitions() {
+  return Array.from({ length: STICKER_ALBUM_PAGE_COUNT }, (_, index) => ({
+    page: index + 1,
+    gameId: "",
+    label: `ページ ${index + 1}`,
+    shelfType: "sticker_album",
+  }));
+}
+
+function ensureDefaultEditorPages() {
+  for (const pageDef of editorPageDefinitions) {
+    getPagePlacements(pageDef.page);
+    getPageDrawingStrokes(pageDef.page);
+  }
+}
+
+function createDefaultPlacements(stickers) {
+  const count = stickers.length;
+  if (!count) {
+    return [];
+  }
+  const cols = count <= 6 ? 3 : count <= 12 ? 4 : count <= 20 ? 5 : 6;
+  const rows = Math.ceil(count / cols);
+  const xPad = cols >= 6 ? 12 : 16;
+  const yPad = rows >= 5 ? 13 : 18;
+  const cellW = (100 - xPad * 2) / cols;
+  const cellH = (100 - yPad * 2) / rows;
+  const scale = count <= 6 ? 1.08 : count <= 12 ? 0.86 : count <= 20 ? 0.68 : 0.55;
+  return stickers.map((sticker, index) => {
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    return {
+      id: createPlacementId(),
+      stickerId: sticker.id,
+      label: sticker.label,
+      assetUrl: sticker.assetUrl,
+      x: xPad + cellW * (col + 0.5),
+      y: yPad + cellH * (row + 0.5),
+      scale: defaultStickerScale(sticker) * scale,
+      rotation: ((index % 5) - 2) * 3,
+      z: (index + 1) * 10,
+    };
+  });
+}
+
+function setupEditorGameFilter() {
+  if (!editorGameFilter || !stickerPlan) {
+    return;
+  }
+  const activeGameIds = new Set(stickerOptions.map((sticker) => sticker.gameId));
+  const games = stickerPlan.games.filter((game) => activeGameIds.has(game.id));
+  editorGameFilter.innerHTML = [
+    '<option value="all">ぜんぶ</option>',
+    ...games.map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.label)}</option>`),
+  ].join("");
+  if (![...editorGameFilter.options].some((option) => option.value === editorGameFilterValue)) {
+    editorGameFilterValue = "all";
+  }
+  editorGameFilter.value = editorGameFilterValue;
+}
+
+function buildDrawingControls() {
+  if (drawColorPalette && !drawColorPalette.children.length) {
+    drawColorPalette.innerHTML = DRAWING_COLORS.map((color) => `
+      <button
+        type="button"
+        class="draw-color-button${color === drawBrushColor ? " is-active" : ""}"
+        data-draw-color="${escapeHtml(color)}"
+        style="--draw-color:${escapeHtml(color)}"
+        aria-label="${escapeHtml(color)}"
+      ></button>
+    `).join("");
+    drawColorPalette.querySelectorAll("[data-draw-color]").forEach((button) => {
+      button.addEventListener("click", () => {
+        drawBrushColor = button.dataset.drawColor || DRAWING_DEFAULT_COLOR;
+        setDrawTool("pen");
+        updateDrawingControlState();
+      });
+    });
+  }
+
+  drawSizeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      drawBrushSize = THREE.MathUtils.clamp(Number(button.dataset.drawSize) || DRAWING_DEFAULT_SIZE, 2, 48);
+      updateDrawingControlState();
+    });
+  });
+
+  if (drawStampPanel && !drawStampPanel.children.length) {
+    drawStampPanel.innerHTML = DRAWING_STAMPS.map((stamp) => `
+      <button
+        type="button"
+        class="draw-stamp-button${stamp.id === selectedDrawingStamp ? " is-active" : ""}"
+        data-draw-stamp="${escapeHtml(stamp.id)}"
+        aria-label="${escapeHtml(stamp.label)}"
+        title="${escapeHtml(stamp.label)}"
+      ><img src="${escapeHtml(stamp.src)}" alt=""></button>
+    `).join("");
+    drawStampPanel.querySelectorAll("[data-draw-stamp]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedDrawingStamp = button.dataset.drawStamp || DRAWING_STAMPS[0].id;
+        setDrawTool("stamp");
+        updateDrawingControlState();
+      });
+    });
+    DRAWING_STAMPS.forEach((stamp) => getDrawingStampImage(stamp));
+  }
+  updateDrawingControlState();
+}
+
+function openStickerEditor(page = activeBookPage) {
+  if (!editorEnabled || !stickerEditor || !editorPageCanvas) {
+    return;
+  }
+  cancelSpreadJump();
+  isPlaying = false;
+  playButton.classList.remove("playing");
+  activeEditorPage = THREE.MathUtils.clamp(Math.round(page), 1, editorPageCount());
+  stickerEditor.hidden = false;
+  selectedPlacementId = null;
+  stickerDragState = null;
+  setEditorMode("sticker", { render: false });
+  renderEditorShell();
+}
+
+function closeStickerEditor() {
+  flushEditorStateSave();
+  stickerEditor.hidden = true;
+  selectedPlacementId = null;
+  stickerDragState = null;
+  drawingPointerState = null;
+  canvas.style.cursor = "";
+}
+
+function renderEditorShell() {
+  updateEditorModeUi();
+  renderEditorPageChrome();
+  renderStickerLibrary();
+  renderEditorCanvas();
+  updateEditorControls();
+}
+
+function renderEditorPageChrome() {
+  const pageLabel = editorPageName(activeEditorPage);
+  if (editorPageLabel) {
+    editorPageLabel.textContent = `${activeEditorPage} / ${editorPageCount()}　${pageLabel}`;
+  }
+}
+
+function setEditorMode(mode, options = {}) {
+  const nextMode = mode === "draw" ? "draw" : "sticker";
+  if (nextMode === editorMode && options.render !== false) {
+    updateEditorModeUi();
+    updateEditorControls();
+    return;
+  }
+  editorMode = nextMode;
+  if (editorMode === "draw") {
+    selectedPlacementId = null;
+    stickerDragState = null;
+  } else {
+    drawingPointerState = null;
+  }
+  updateEditorModeUi();
+  if (options.render !== false) {
+    renderEditorShell();
+  }
+}
+
+function updateEditorModeUi() {
+  if (stickerEditor) {
+    stickerEditor.classList.toggle("is-draw-mode", editorMode === "draw");
+    stickerEditor.classList.toggle("is-sticker-mode", editorMode === "sticker");
+  }
+  editorModeButtons.forEach((button) => {
+    const active = button.dataset.editorMode === editorMode;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  if (editorFilterGrid) {
+    editorFilterGrid.hidden = editorMode !== "sticker";
+  }
+  if (stickerLibrary) {
+    stickerLibrary.hidden = editorMode !== "sticker";
+  }
+  if (drawingTools) {
+    drawingTools.hidden = editorMode !== "draw";
+  }
+  updateDrawingControlState();
+}
+
+function setDrawTool(tool) {
+  drawTool = ["eraser", "stamp", "rainbow", "sparkle"].includes(tool) ? tool : "pen";
+  if (drawStampPanel) {
+    drawStampPanel.hidden = drawTool !== "stamp";
+  }
+  updateDrawingControlState();
+}
+
+function updateDrawingControlState() {
+  drawPenButton?.classList.toggle("is-active", drawTool === "pen");
+  drawEraserButton?.classList.toggle("is-active", drawTool === "eraser");
+  drawStampButton?.classList.toggle("is-active", drawTool === "stamp");
+  drawRainbowButton?.classList.toggle("is-active", drawTool === "rainbow");
+  drawSparkleButton?.classList.toggle("is-active", drawTool === "sparkle");
+  drawColorPalette?.querySelectorAll("[data-draw-color]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.drawColor === drawBrushColor);
+  });
+  drawSizeButtons.forEach((button) => {
+    button.classList.toggle("is-active", Number(button.dataset.drawSize) === drawBrushSize);
+  });
+  drawStampPanel?.querySelectorAll("[data-draw-stamp]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.drawStamp === selectedDrawingStamp);
+  });
+}
+
+function getDrawingStampDefinition(stampId) {
+  return DRAWING_STAMPS.find((stamp) => stamp.id === stampId)
+    || DRAWING_STAMPS.find((stamp) => stamp.label === stampId)
+    || null;
+}
+
+function getDrawingStampImage(stamp) {
+  if (!stamp?.src) {
+    return null;
+  }
+  if (drawingStampImageCache.has(stamp.id)) {
+    return drawingStampImageCache.get(stamp.id);
+  }
+  const image = new Image();
+  image.decoding = "async";
+  image.src = stamp.src;
+  image.addEventListener("load", () => {
+    if (!stickerEditor?.hidden) {
+      renderDrawingCanvas();
+    }
+    refreshPageTemplateTextures();
+  }, { once: true });
+  drawingStampImageCache.set(stamp.id, image);
+  return image;
+}
+
+function renderStickerLibrary() {
+  if (!stickerLibrary) {
+    return;
+  }
+  if (!stickerOptions.length) {
+    stickerLibrary.textContent = "シールを よみこみちゅう";
+    return;
+  }
+  const query = editorSearchQuery.toLowerCase();
+  const filtered = stickerOptions.filter((sticker) => {
+    if (editorGameFilterValue !== "all" && sticker.gameId !== editorGameFilterValue) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+    return [
+      sticker.id,
+      sticker.label,
+      sticker.kana,
+      sticker.listNote,
+      ...(sticker.nameIdeas || []),
+    ].some((text) => String(text || "").toLowerCase().includes(query));
+  });
+
+  stickerLibrary.innerHTML = filtered.map((sticker) => `
+    <button type="button" class="sticker-pick" data-sticker-id="${escapeHtml(sticker.id)}">
+      <img src="${escapeHtml(sticker.assetUrl)}" alt="${escapeHtml(sticker.label)}" loading="lazy" decoding="async">
+      <span>${escapeHtml(sticker.label)}</span>
+    </button>
+  `).join("");
+  stickerLibrary.querySelectorAll("[data-sticker-id]").forEach((button) => {
+    button.addEventListener("click", () => addStickerToActivePage(button.dataset.stickerId));
+  });
+}
+
+function renderEditorCanvas() {
+  if (!editorPageCanvas) {
+    return;
+  }
+  const placements = [...getActivePagePlacements()].sort((a, b) => a.z - b.z);
+  editorPageCanvas.innerHTML = `
+    <canvas class="editor-template-canvas" aria-hidden="true"></canvas>
+    <canvas class="editor-draw-canvas" aria-hidden="true"></canvas>
+    ${placements.map((placement) => `
+    <div
+      class="placed-sticker${placement.id === selectedPlacementId ? " is-selected" : ""}"
+      data-placement-id="${escapeHtml(placement.id)}"
+      style="--x:${placement.x}%; --y:${placement.y}%; --scale:${placement.scale}; --rotation:${placement.rotation}deg; --z:${placement.z};"
+      title="${escapeHtml(placement.label)}"
+    >
+      <img src="${escapeHtml(placement.assetUrl)}" alt="${escapeHtml(placement.label)}" draggable="false">
+    </div>
+  `).join("")}`;
+  renderEditorTemplateCanvas();
+  renderDrawingCanvas();
+}
+
+function findPlacementElement(id) {
+  if (!editorPageCanvas || !id) {
+    return null;
+  }
+  const escapedId = globalThis.CSS?.escape
+    ? CSS.escape(String(id))
+    : String(id).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return editorPageCanvas.querySelector(`[data-placement-id="${escapedId}"]`);
+}
+
+function updatePlacementElementStyle(placement) {
+  const element = findPlacementElement(placement?.id);
+  if (!element) {
+    return false;
+  }
+  element.style.setProperty("--x", `${placement.x}%`);
+  element.style.setProperty("--y", `${placement.y}%`);
+  element.style.setProperty("--scale", String(placement.scale));
+  element.style.setProperty("--rotation", `${placement.rotation}deg`);
+  element.style.setProperty("--z", String(placement.z));
+  element.style.zIndex = String(placement.z);
+  return true;
+}
+
+function updateEditorSelectionClass() {
+  if (!editorPageCanvas) {
+    return;
+  }
+  editorPageCanvas.querySelectorAll("[data-placement-id]").forEach((element) => {
+    element.classList.toggle("is-selected", element.dataset.placementId === selectedPlacementId);
+  });
+}
+
+function addStickerToActivePage(stickerId) {
+  const sticker = stickerOptions.find((item) => item.id === stickerId);
+  if (!sticker) {
+    return;
+  }
+  const placements = getActivePagePlacements();
+  const offset = (placements.length % 5) - 2;
+  const placement = {
+    id: createPlacementId(),
+    stickerId: sticker.id,
+    label: sticker.label,
+    assetUrl: sticker.assetUrl,
+    x: THREE.MathUtils.clamp(50 + offset * 4, 12, 88),
+    y: THREE.MathUtils.clamp(48 + offset * 3, 12, 88),
+    scale: defaultStickerScale(sticker),
+    rotation: 0,
+    z: nextPlacementZ(placements),
+  };
+  placements.push(placement);
+  selectedPlacementId = placement.id;
+  saveEditorState();
+  renderEditorShell();
+}
+
+function handleEditorCanvasPointerDown(event) {
+  if (editorMode === "draw") {
+    startDrawingStroke(event);
+    return;
+  }
+  const target = event.target.closest("[data-placement-id]");
+  if (!target) {
+    selectedPlacementId = null;
+    stickerDragState = null;
+    updateEditorSelectionClass();
+    updateEditorControls();
+    return;
+  }
+  event.preventDefault();
+  const placement = getPlacementById(target.dataset.placementId);
+  if (!placement) {
+    return;
+  }
+  selectedPlacementId = placement.id;
+  const rect = editorPageCanvas.getBoundingClientRect();
+  stickerDragState = {
+    id: placement.id,
+    offsetX: event.clientX - (rect.left + (placement.x / 100) * rect.width),
+    offsetY: event.clientY - (rect.top + (placement.y / 100) * rect.height),
+  };
+  updateEditorSelectionClass();
+  updateEditorControls();
+}
+
+function handleStickerDragMove(event) {
+  if (!stickerDragState || !editorPageCanvas || stickerEditor.hidden) {
+    return;
+  }
+  const placement = getPlacementById(stickerDragState.id);
+  if (!placement) {
+    return;
+  }
+  const rect = editorPageCanvas.getBoundingClientRect();
+  placement.x = THREE.MathUtils.clamp(
+    ((event.clientX - rect.left - stickerDragState.offsetX) / rect.width) * 100,
+    4,
+    96,
+  );
+  placement.y = THREE.MathUtils.clamp(
+    ((event.clientY - rect.top - stickerDragState.offsetY) / rect.height) * 100,
+    4,
+    96,
+  );
+  updatePlacementElementStyle(placement);
+  markEditorStateDirty();
+}
+
+function endStickerDrag() {
+  stickerDragState = null;
+  flushEditorStateSave();
+}
+
+function startDrawingStroke(event) {
+  if (!editorPageCanvas || stickerEditor.hidden) {
+    return;
+  }
+  event.preventDefault();
+  const point = editorPointerToPagePoint(event);
+  if (!point) {
+    return;
+  }
+  if (drawTool === "stamp") {
+    getActivePageDrawingStrokes().push({
+      id: createDrawingStrokeId(),
+      tool: "stamp",
+      stamp: selectedDrawingStamp,
+      color: drawBrushColor,
+      size: drawBrushSize,
+      points: [point],
+    });
+    saveEditorState();
+    renderDrawingCanvas();
+    return;
+  }
+  const stroke = {
+    id: createDrawingStrokeId(),
+    tool: drawTool,
+    color: drawBrushColor,
+    size: drawBrushSize,
+    points: [point],
+  };
+  getActivePageDrawingStrokes().push(stroke);
+  drawingPointerState = {
+    pointerId: event.pointerId,
+    stroke,
+  };
+  editorPageCanvas.setPointerCapture?.(event.pointerId);
+  renderDrawingCanvas();
+}
+
+function handleDrawingPointerMove(event) {
+  if (!drawingPointerState || stickerEditor.hidden || editorMode !== "draw") {
+    return;
+  }
+  if (event.pointerId !== drawingPointerState.pointerId) {
+    return;
+  }
+  const point = editorPointerToPagePoint(event);
+  if (!point) {
+    return;
+  }
+  const points = drawingPointerState.stroke.points;
+  const lastPoint = points[points.length - 1];
+  const distance = Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y);
+  if (distance < DRAWING_MIN_DISTANCE) {
+    return;
+  }
+  points.push(point);
+  renderDrawingCanvas();
+}
+
+function endDrawingStroke(event) {
+  if (!drawingPointerState) {
+    return;
+  }
+  if (event?.pointerId != null && event.pointerId !== drawingPointerState.pointerId) {
+    return;
+  }
+  drawingPointerState = null;
+  saveEditorState();
+}
+
+function editorPointerToPagePoint(event) {
+  if (!editorPageCanvas) {
+    return null;
+  }
+  const rect = editorPageCanvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    return null;
+  }
+  return {
+    x: THREE.MathUtils.clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100),
+    y: THREE.MathUtils.clamp(((event.clientY - rect.top) / rect.height) * 100, 0, 100),
+  };
+}
+
+function renderDrawingCanvas() {
+  if (!editorPageCanvas) {
+    return;
+  }
+  renderEditorTemplateCanvas();
+  const drawCanvas = editorPageCanvas.querySelector(".editor-draw-canvas");
+  if (!drawCanvas) {
+    return;
+  }
+  const rect = editorPageCanvas.getBoundingClientRect();
+  const width = Math.max(1, rect.width);
+  const height = Math.max(1, rect.height);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.round(width * dpr);
+  const pixelHeight = Math.round(height * dpr);
+  if (drawCanvas.width !== pixelWidth || drawCanvas.height !== pixelHeight) {
+    drawCanvas.width = pixelWidth;
+    drawCanvas.height = pixelHeight;
+  }
+  const ctx = drawCanvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  drawDrawingStrokes(ctx, getActivePageDrawingStrokes(), width, height);
+}
+
+function renderEditorTemplateCanvas() {
+  if (!editorPageCanvas) {
+    return;
+  }
+  const templateCanvas = editorPageCanvas.querySelector(".editor-template-canvas");
+  if (!templateCanvas) {
+    return;
+  }
+  const rect = editorPageCanvas.getBoundingClientRect();
+  const width = Math.max(1, rect.width);
+  const height = Math.max(1, rect.height);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.round(width * dpr);
+  const pixelHeight = Math.round(height * dpr);
+  if (templateCanvas.width !== pixelWidth || templateCanvas.height !== pixelHeight) {
+    templateCanvas.width = pixelWidth;
+    templateCanvas.height = pixelHeight;
+  }
+  const ctx = templateCanvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  ctx.save();
+  ctx.scale(width / PAGE_TEXTURE_W, height / PAGE_TEXTURE_H);
+  const side = editorPageSide(activeEditorPage);
+  const palette = editorPagePalette();
+  drawPageTemplateBase(ctx, palette, side);
+  drawRightPageTemplate(ctx, palette);
+  drawRingHoleGuides(ctx, side);
+  ctx.restore();
+}
+
+function editorPageSide(page) {
+  return page % 2 === 1 ? "left" : "right";
+}
+
+function editorPagePalette() {
+  return activeBook === "girl"
+    ? { accent: "#d78db9", sub: "#7bc8c8", line: "#dcb6cc", tab: "#f5ddea" }
+    : { accent: "#d79a34", sub: "#55aeb8", line: "#d3b35f", tab: "#f4e7b8" };
+}
+
+function drawDrawingStrokes(ctx, strokes, width, height) {
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const brushScale = drawingBrushRenderScale(width, height);
+  for (const stroke of strokes) {
+    const points = Array.isArray(stroke.points) ? stroke.points : [];
+    if (!points.length) {
+      continue;
+    }
+    if (stroke.tool === "stamp") {
+      drawStoredStamp(ctx, stroke, width, height, brushScale);
+      continue;
+    }
+    const lineWidth = Math.max(1, (Number(stroke.size) || DRAWING_DEFAULT_SIZE) * brushScale);
+    ctx.globalCompositeOperation = stroke.tool === "eraser" ? "destination-out" : "source-over";
+    ctx.lineWidth = lineWidth;
+
+    if (stroke.tool === "rainbow") {
+      drawRainbowStroke(ctx, points, width, height);
+    } else {
+      ctx.strokeStyle = stroke.color || DRAWING_DEFAULT_COLOR;
+      drawStrokePath(ctx, points, width, height);
+      if (stroke.tool === "sparkle") {
+        drawSparkleDots(ctx, points, width, height, lineWidth, stroke.color || DRAWING_DEFAULT_COLOR);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawingBrushRenderScale(width, height) {
+  if (Math.abs(width - PAGE_TEXTURE_W) < 1 && Math.abs(height - PAGE_TEXTURE_H) < 1) {
+    return 1;
+  }
+  return Math.max(0.1, (width / PAGE_TEXTURE_W + height / PAGE_TEXTURE_H) / 2);
+}
+
+function drawStrokePath(ctx, points, width, height) {
+  const first = points[0];
+  ctx.beginPath();
+  ctx.moveTo((first.x / 100) * width, (first.y / 100) * height);
+  if (points.length === 1) {
+    ctx.lineTo((first.x / 100) * width + 0.01, (first.y / 100) * height + 0.01);
+  } else {
+    for (let i = 1; i < points.length; i += 1) {
+      const point = points[i];
+      ctx.lineTo((point.x / 100) * width, (point.y / 100) * height);
+    }
+  }
+  ctx.stroke();
+}
+
+function drawRainbowStroke(ctx, points, width, height) {
+  if (points.length === 1) {
+    ctx.strokeStyle = "hsl(0, 90%, 55%)";
+    drawStrokePath(ctx, points, width, height);
+    return;
+  }
+  for (let i = 1; i < points.length; i += 1) {
+    const from = points[i - 1];
+    const to = points[i];
+    ctx.strokeStyle = `hsl(${(i * 18) % 360}, 90%, 55%)`;
+    ctx.beginPath();
+    ctx.moveTo((from.x / 100) * width, (from.y / 100) * height);
+    ctx.lineTo((to.x / 100) * width, (to.y / 100) * height);
+    ctx.stroke();
+  }
+}
+
+function drawSparkleDots(ctx, points, width, height, lineWidth, color) {
+  const sparkleColors = ["#FFD700", "#FF69B4", "#00E5FF", "#FFFFFF", color];
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  for (let i = 0; i < points.length; i += 2) {
+    const point = points[i];
+    const x = (point.x / 100) * width;
+    const y = (point.y / 100) * height;
+    for (let j = 0; j < 3; j += 1) {
+      const angle = ((i + j * 2) * 1.73) % (Math.PI * 2);
+      const radius = lineWidth * (0.7 + j * 0.34);
+      ctx.beginPath();
+      ctx.arc(
+        x + Math.cos(angle) * radius,
+        y + Math.sin(angle) * radius,
+        Math.max(1.4, lineWidth * 0.12),
+        0,
+        Math.PI * 2,
+      );
+      ctx.fillStyle = sparkleColors[(i + j) % sparkleColors.length];
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawStoredStamp(ctx, stroke, width, height, brushScale = 1) {
+  const point = stroke.points[0];
+  const x = (point.x / 100) * width;
+  const y = (point.y / 100) * height;
+  const size = Math.max(16, (Number(stroke.size) || DRAWING_DEFAULT_SIZE) * 3.6 * brushScale);
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.shadowColor = "rgba(60, 48, 20, 0.18)";
+  ctx.shadowBlur = size * 0.08;
+  ctx.shadowOffsetY = size * 0.05;
+  const stampDef = getDrawingStampDefinition(stroke.stamp);
+  const stampImage = getDrawingStampImage(stampDef);
+  if (stampImage?.complete && stampImage.naturalWidth > 0) {
+    const ratio = stampImage.naturalWidth / stampImage.naturalHeight || 1;
+    const drawW = ratio >= 1 ? size : size * ratio;
+    const drawH = ratio >= 1 ? size / ratio : size;
+    ctx.drawImage(stampImage, x - drawW / 2, y - drawH / 2, drawW, drawH);
+  } else {
+    ctx.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(stampDef?.label || String(stroke.stamp || ""), x, y);
+  }
+  ctx.restore();
+}
+
+function undoDrawingStroke() {
+  const strokes = getActivePageDrawingStrokes();
+  if (!strokes.length) {
+    return;
+  }
+  strokes.pop();
+  saveEditorState();
+  renderDrawingCanvas();
+}
+
+function clearActivePageDrawing() {
+  const key = String(activeEditorPage);
+  editorState.drawings[key] = [];
+  saveEditorState();
+  renderDrawingCanvas();
+}
+
+function updateSelectedPlacement(patch) {
+  const placement = getSelectedPlacement();
+  if (!placement) {
+    return;
+  }
+  if (Number.isFinite(patch.scale)) {
+    placement.scale = THREE.MathUtils.clamp(patch.scale, 0.35, 2.4);
+  }
+  if (Number.isFinite(patch.rotation)) {
+    placement.rotation = THREE.MathUtils.clamp(patch.rotation, -180, 180);
+  }
+  updatePlacementElementStyle(placement);
+  markEditorStateDirty();
+  updateEditorControls(false);
+}
+
+function moveSelectedPlacementLayer(direction) {
+  const selected = getSelectedPlacement();
+  if (!selected) {
+    return;
+  }
+  const placements = getActivePagePlacements().sort((a, b) => a.z - b.z);
+  const index = placements.findIndex((placement) => placement.id === selected.id);
+  const targetIndex = THREE.MathUtils.clamp(index + direction, 0, placements.length - 1);
+  if (targetIndex === index) {
+    return;
+  }
+  const temp = placements[index].z;
+  placements[index].z = placements[targetIndex].z;
+  placements[targetIndex].z = temp;
+  saveEditorState();
+  updatePlacementElementStyle(placements[index]);
+  updatePlacementElementStyle(placements[targetIndex]);
+  updateEditorControls();
+}
+
+function deleteSelectedPlacement() {
+  if (!selectedPlacementId) {
+    return;
+  }
+  const placements = getActivePagePlacements();
+  const index = placements.findIndex((placement) => placement.id === selectedPlacementId);
+  if (index >= 0) {
+    placements.splice(index, 1);
+  }
+  findPlacementElement(selectedPlacementId)?.remove();
+  selectedPlacementId = null;
+  saveEditorState();
+  updateEditorControls();
+}
+
+function handleEditorKeydown(event) {
+  if (!stickerEditor || stickerEditor.hidden) {
+    return;
+  }
+  if (event.key === "Escape") {
+    closeStickerEditor();
+  }
+  if ((event.key === "Delete" || event.key === "Backspace") && selectedPlacementId) {
+    event.preventDefault();
+    deleteSelectedPlacement();
+  }
+}
+
+function updateEditorControls(syncInputs = true) {
+  const placement = getSelectedPlacement();
+  const disabled = editorMode !== "sticker" || !placement;
+  for (const input of [editorScale, editorRotation]) {
+    if (input) {
+      input.disabled = disabled;
+    }
+  }
+  for (const button of [editorLayerBack, editorLayerFront, editorDelete]) {
+    if (button) {
+      button.disabled = disabled;
+    }
+  }
+  if (placement && syncInputs) {
+    editorScale.value = String(placement.scale);
+    editorRotation.value = String(placement.rotation);
+  }
+}
+
+function setEditorPage(page) {
+  const nextPage = THREE.MathUtils.clamp(Math.round(page), 1, editorPageCount());
+  if (nextPage === activeEditorPage) {
+    return;
+  }
+  activeEditorPage = nextPage;
+  selectedPlacementId = null;
+  stickerDragState = null;
+  drawingPointerState = null;
+  renderEditorShell();
+}
+
+function applyStickerEditorToBook() {
+  flushEditorStateSave();
+  saveEditorState();
+  setBookPage(activeEditorPage, { skipEditorSync: true, force: true });
+  refreshPageTemplateTextures();
+  closeStickerEditor();
+}
+
+function setBookPage(page, options = {}) {
+  const nextPage = spreadStartForPage(page);
+  if (nextPage === activeBookPage && !options.force) {
+    updateBookPageControls();
+    return;
+  }
+  activeBookPage = nextPage;
+  if (!options.skipEditorSync) {
+    activeEditorPage = nextPage;
+    selectedPlacementId = null;
+    renderEditorShell();
+  }
+  refreshPageTemplateTextures();
+  updateBookPageControls();
+  syncUrl();
+}
+
+function updateBookPageControls() {
+  const rightPageNumber = rightBookPageNumber();
+  const rangeLabel = rightPageNumber > activeBookPage
+    ? `${activeBookPage}-${rightPageNumber}`
+    : String(activeBookPage);
+  const lastSpreadStart = spreadStartForPage(editorPageCount());
+  if (bookPageLabel) {
+    bookPageLabel.textContent = `${rangeLabel} / ${editorPageCount()}`;
+  }
+  if (bookPrevPage) {
+    bookPrevPage.disabled = activeSurface === "cover" || activeBookPage <= 1;
+  }
+  if (bookNextPage) {
+    bookNextPage.disabled = activeSurface === "cover" || activeBookPage >= lastSpreadStart;
+  }
+  if (bookPageControls) {
+    bookPageControls.hidden = activeSurface === "cover";
+  }
+}
+
+function editorPageName(page) {
+  return editorPageDefinitions[page - 1]?.label || "ページ";
+}
+
+function editorPageCount() {
+  return Math.max(1, editorPageDefinitions.length);
+}
+
+function spreadStartForPage(page) {
+  const count = editorPageCount();
+  let nextPage = THREE.MathUtils.clamp(Math.round(page) || 1, 1, count);
+  if (nextPage % 2 === 0) {
+    nextPage -= 1;
+  }
+  return THREE.MathUtils.clamp(nextPage, 1, count);
+}
+
+function rightBookPageNumber() {
+  return Math.min(activeBookPage + 1, editorPageCount());
+}
+
+function activeEditorPageDefinition() {
+  return editorPageDefinitions[activeEditorPage - 1] || editorPageDefinitions[0] || null;
+}
+
+function activeBookPageDefinition() {
+  return editorPageDefinitions[activeBookPage - 1] || editorPageDefinitions[0] || null;
+}
+
+function stickersForPage(page) {
+  const pageDef = editorPageDefinitions[page - 1];
+  if (!pageDef?.gameId) {
+    return stickerOptions;
+  }
+  return stickerOptions.filter((sticker) => sticker.gameId === pageDef.gameId);
+}
+
+function getActivePagePlacements() {
+  return getPagePlacements(activeEditorPage);
+}
+
+function getPagePlacements(page) {
+  const key = String(page);
+  if (!Array.isArray(editorState.pages[key])) {
+    editorState.pages[key] = [];
+  }
+  return editorState.pages[key];
+}
+
+function getActivePageDrawingStrokes() {
+  return getPageDrawingStrokes(activeEditorPage);
+}
+
+function getPageDrawingStrokes(page) {
+  const key = String(page);
+  if (!editorState.drawings || typeof editorState.drawings !== "object") {
+    editorState.drawings = {};
+  }
+  if (!Array.isArray(editorState.drawings[key])) {
+    editorState.drawings[key] = [];
+  }
+  return editorState.drawings[key];
+}
+
+function getPlacementById(id) {
+  return getActivePagePlacements().find((placement) => placement.id === id) || null;
+}
+
+function getSelectedPlacement() {
+  return selectedPlacementId ? getPlacementById(selectedPlacementId) : null;
+}
+
+function nextPlacementZ(placements) {
+  return placements.reduce((max, placement) => Math.max(max, Number(placement.z) || 0), 0) + 10;
+}
+
+function defaultStickerScale(sticker) {
+  if (/nori|ketchup/.test(sticker.id)) {
+    return 0.72;
+  }
+  if (/box_|rice_/.test(sticker.id)) {
+    return 1.18;
+  }
+  return 1;
+}
+
+function loadEditorState() {
+  try {
+    const raw = localStorage.getItem(EDITOR_STORAGE_KEY);
+    if (!raw) {
+      return createEmptyEditorState();
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !parsed.pages || typeof parsed.pages !== "object") {
+      return createEmptyEditorState();
+    }
+    return {
+      version: parsed.version || 1,
+      pages: parsed.pages,
+      drawings: parsed.drawings && typeof parsed.drawings === "object" ? parsed.drawings : {},
+    };
+  } catch {
+    return createEmptyEditorState();
+  }
+}
+
+function createEmptyEditorState() {
+  return { version: EDITOR_STATE_VERSION, pages: {}, drawings: {} };
+}
+
+function saveEditorState() {
+  try {
+    editorState.version = EDITOR_STATE_VERSION;
+    if (!editorState.drawings || typeof editorState.drawings !== "object") {
+      editorState.drawings = {};
+    }
+    localStorage.setItem(EDITOR_STORAGE_KEY, JSON.stringify(editorState));
+  } catch {
+    // Local storage can be unavailable in private contexts; editing still works for the session.
+  }
+}
+
+function markEditorStateDirty() {
+  editorStateDirty = true;
+  if (editorStateSaveTimer) {
+    return;
+  }
+  editorStateSaveTimer = window.setTimeout(() => {
+    editorStateSaveTimer = 0;
+    flushEditorStateSave();
+  }, 160);
+}
+
+function flushEditorStateSave() {
+  if (editorStateSaveTimer) {
+    window.clearTimeout(editorStateSaveTimer);
+    editorStateSaveTimer = 0;
+  }
+  if (!editorStateDirty) {
+    return;
+  }
+  editorStateDirty = false;
+  saveEditorState();
+}
+
+function createPlacementId() {
+  return globalThis.crypto?.randomUUID?.() || `sticker-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function createDrawingStrokeId() {
+  return globalThis.crypto?.randomUUID?.() || `stroke-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function stickerAssetUrl(path) {
+  if (/^https?:\/\//.test(path) || path.startsWith("../") || path.startsWith("./")) {
+    return path;
+  }
+  return `${STICKER_ASSET_PREFIX}${path}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char]);
+}
+
+function loadLayerTuningStore() {
+  try {
+    const raw = localStorage.getItem(TUNING_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw);
+    return normalizeTuningStore(parsed);
+  } catch {
+    return {};
+  }
+}
+
+function migrateLegacyTuningStore() {
+  try {
+    const legacyRaw = localStorage.getItem(LEGACY_TUNING_STORAGE_KEY);
+    if (!legacyRaw) {
+      return {};
+    }
+    const legacy = normalizeTuning(JSON.parse(legacyRaw));
+    const pair = thicknessPairForSpread(spreadPosition);
+    return { [pair.key]: legacy };
+  } catch {
+    return {};
+  }
+}
+
+function normalizeTuningStore(store) {
+  if (!store || typeof store !== "object") {
+    return {};
+  }
+  const normalized = {};
+  for (const [key, value] of Object.entries(store)) {
+    normalized[key] = normalizeTuning(value, defaultTuningForPairKey(key));
+  }
+  return normalized;
+}
+
+function normalizeTuning(value, fallback = DEFAULT_TUNING) {
+  if (!value || typeof value !== "object") {
+    return { ...fallback };
+  }
+  const next = { ...fallback };
+  for (const [key, , min, max] of TUNING_FIELDS) {
+    next[key] = readClampedNumber(value[key], fallback[key], min, max);
+  }
+  return next;
+}
+
+function loadCoverTuning() {
+  try {
+    const raw = localStorage.getItem(COVER_TUNING_STORAGE_KEY);
+    if (!raw) {
+      return { ...DEFAULT_COVER_TUNING };
+    }
+    return normalizeCoverTuning(JSON.parse(raw));
+  } catch {
+    return { ...DEFAULT_COVER_TUNING };
+  }
+}
+
+function normalizeCoverTuning(value) {
+  if (!value || typeof value !== "object") {
+    return { ...DEFAULT_COVER_TUNING };
+  }
+  const next = { ...DEFAULT_COVER_TUNING };
+  for (const [key, , min, max] of COVER_TUNING_FIELDS) {
+    next[key] = readClampedNumber(value[key], DEFAULT_COVER_TUNING[key], min, max);
+  }
+  return next;
+}
+
+function saveCoverTuning(nextTuning) {
+  coverTuning = normalizeCoverTuning(nextTuning);
+  persistCoverTuning();
+}
+
+function persistCoverTuning() {
+  try {
+    localStorage.setItem(COVER_TUNING_STORAGE_KEY, JSON.stringify(coverTuning));
+  } catch {}
+}
+
+function getCurrentLayerTuning() {
+  const pair = thicknessPairForSpread(spreadPosition);
+  if (!layerTuningByPair[pair.key]) {
+    layerTuningByPair[pair.key] = defaultTuningForPairKey(pair.key);
+  }
+  return layerTuningByPair[pair.key];
+}
+
+function saveCurrentLayerTuning(tuning) {
+  const pair = thicknessPairForSpread(spreadPosition);
+  layerTuningByPair[pair.key] = normalizeTuning(tuning, defaultTuningForPairKey(pair.key));
+  persistLayerTuningStore();
+}
+
+function defaultTuningForPairKey() {
+  return { ...SHARED_TUNING_FALLBACK };
+}
+
+function persistLayerTuningStore() {
+  try {
+    localStorage.setItem(TUNING_STORAGE_KEY, JSON.stringify(layerTuningByPair));
+  } catch {}
+}
+
+function cloneTuningStore(store = layerTuningByPair) {
+  const cloned = {};
+  if (!store || typeof store !== "object") {
+    return cloned;
+  }
+  for (const [key, value] of Object.entries(store)) {
+    cloned[key] = normalizeTuning(value, defaultTuningForPairKey(key));
+  }
+  return cloned;
+}
+
+function tuningPairKeys() {
+  return SPREAD_PRESETS.map(([key]) => key);
+}
+
+function rightOnlyTuningBase() {
+  return normalizeTuning(layerTuningByPair[RIGHT_ONLY_PAIR_KEY], SHARED_TUNING_FALLBACK);
+}
+
+function applyRightOnlyTuningToAllPairs({ pushHistory = false } = {}) {
+  if (pushHistory) {
+    pushTuningUndo("右だけを全てへ");
+  }
+  const base = rightOnlyTuningBase();
+  for (const key of tuningPairKeys()) {
+    layerTuningByPair[key] = normalizeTuning(base, SHARED_TUNING_FALLBACK);
+  }
+  persistLayerTuningStore();
+}
+
+function seedAllTuningPairsFromRightOnlyOnce() {
+  try {
+    if (localStorage.getItem(RIGHT_ONLY_SYNC_MARKER_KEY) === "v1") {
+      return;
+    }
+  } catch {}
+
+  applyRightOnlyTuningToAllPairs();
+
+  try {
+    localStorage.setItem(RIGHT_ONLY_SYNC_MARKER_KEY, "v1");
+  } catch {}
+}
+
+function createTuningSnapshot(label) {
+  return {
+    label,
+    spreadPosition,
+    layerTuningByPair: cloneTuningStore(),
+    coverTuning: normalizeCoverTuning(coverTuning),
+  };
+}
+
+function pushTuningUndo(label) {
+  tuningUndoStack.push(createTuningSnapshot(label));
+  if (tuningUndoStack.length > TUNING_HISTORY_LIMIT) {
+    tuningUndoStack.shift();
+  }
+  tuningRedoStack = [];
+  updateTuningUndoRedoButtons();
+}
+
+function restoreTuningSnapshot(snapshot) {
+  if (!snapshot) {
+    return;
+  }
+  activeTuningEditLabel = "";
+  spreadPosition = THREE.MathUtils.clamp(Number(snapshot.spreadPosition), 0, 1);
+  layerTuningByPair = cloneTuningStore(snapshot.layerTuningByPair);
+  coverTuning = normalizeCoverTuning(snapshot.coverTuning);
+  persistLayerTuningStore();
+  persistCoverTuning();
+  setupTuningPanel();
+  updatePage(flipProgress);
+  syncUrl();
+  updateTuningUndoRedoButtons();
+}
+
+function undoTuningChange() {
+  const snapshot = tuningUndoStack.pop();
+  if (!snapshot) {
+    return;
+  }
+  tuningRedoStack.push(createTuningSnapshot("redo"));
+  restoreTuningSnapshot(snapshot);
+}
+
+function redoTuningChange() {
+  const snapshot = tuningRedoStack.pop();
+  if (!snapshot) {
+    return;
+  }
+  tuningUndoStack.push(createTuningSnapshot("undo"));
+  restoreTuningSnapshot(snapshot);
+}
+
+function beginTuningEdit(label) {
+  if (activeTuningEditLabel) {
+    return;
+  }
+  pushTuningUndo(label);
+  activeTuningEditLabel = label;
+}
+
+function endTuningEdit() {
+  activeTuningEditLabel = "";
+}
+
+function updateTuningUndoRedoButtons() {
+  const undo = document.getElementById("tuningUndo");
+  if (undo) {
+    undo.disabled = tuningUndoStack.length === 0;
+  }
+  const redo = document.getElementById("tuningRedo");
+  if (redo) {
+    redo.disabled = tuningRedoStack.length === 0;
+  }
+}
+
+function setupTuningPanel() {
+  if (!tuningPanel || !tuningEnabled) {
+    return;
+  }
+  tuningPanel.hidden = false;
+  tuningPanel.innerHTML = "";
+
+  const title = document.createElement("div");
+  title.className = "tuning-title";
+  title.textContent = "厚みレイヤー調整";
+  const version = document.createElement("span");
+  version.textContent = ASSET_VERSION;
+  title.append(version);
+  tuningPanel.append(title);
+
+  if (activeSurface === "cover") {
+    setupCoverTuningPanel();
+    return;
+  }
+
+  const pair = thicknessPairForSpread(spreadPosition);
+  const pairLabel = document.createElement("div");
+  pairLabel.className = "tuning-pair";
+  pairLabel.textContent = `組み合わせ: ${pair.left} / ${pair.right}`;
+  tuningPanel.append(pairLabel);
+
+  const presets = document.createElement("div");
+  presets.className = "tuning-presets";
+  for (const [key, presetSpread, label] of SPREAD_PRESETS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.classList.toggle("is-active", key === pair.key);
+    button.addEventListener("click", () => {
+      if (spreadPosition === presetSpread) {
+        return;
+      }
+      startSpreadJump(presetSpread, { recordUndo: true });
+    });
+    presets.append(button);
+  }
+  tuningPanel.append(presets);
+
+  const grid = document.createElement("div");
+  grid.className = "tuning-grid";
+  tuningPanel.append(grid);
+
+  appendSpreadTuningRow(grid);
+
+  const currentTuning = getCurrentLayerTuning();
+  for (const [key, label, min, max, step] of TUNING_FIELDS) {
+    const row = document.createElement("label");
+    row.className = "tuning-row";
+
+    const text = document.createElement("span");
+    text.textContent = label;
+
+    const range = document.createElement("input");
+    range.type = "range";
+    range.min = String(min);
+    range.max = String(max);
+    range.step = String(step);
+    range.value = String(currentTuning[key]);
+
+    const number = document.createElement("input");
+    number.type = "number";
+    number.min = String(min);
+    number.max = String(max);
+    number.step = String(step);
+    number.value = String(currentTuning[key]);
+
+    const update = (nextValue) => {
+      const parsed = Number(nextValue);
+      if (!Number.isFinite(parsed)) {
+        return;
+      }
+      const nextTuning = { ...getCurrentLayerTuning() };
+      nextTuning[key] = THREE.MathUtils.clamp(parsed, min, max);
+      range.value = String(nextTuning[key]);
+      number.value = String(nextTuning[key]);
+      saveCurrentLayerTuning(nextTuning);
+      updateTuningOutput();
+      updatePage(flipProgress);
+    };
+
+    range.addEventListener("pointerdown", () => beginTuningEdit(label));
+    range.addEventListener("keydown", () => beginTuningEdit(label));
+    range.addEventListener("input", () => {
+      beginTuningEdit(label);
+      update(range.value);
+    });
+    range.addEventListener("change", endTuningEdit);
+    range.addEventListener("pointerup", endTuningEdit);
+    range.addEventListener("blur", endTuningEdit);
+    number.addEventListener("change", () => {
+      pushTuningUndo(label);
+      update(number.value);
+    });
+    row.append(text, range, number);
+    grid.append(row);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "tuning-actions";
+  const syncAll = document.createElement("button");
+  syncAll.type = "button";
+  syncAll.textContent = "右だけを全てへ";
+  syncAll.addEventListener("click", () => {
+    applyRightOnlyTuningToAllPairs({ pushHistory: true });
+    setupTuningPanel();
+    updatePage(flipProgress);
+    updateTuningOutput();
+  });
+
+  const undo = document.createElement("button");
+  undo.type = "button";
+  undo.id = "tuningUndo";
+  undo.textContent = "取り消し";
+  undo.disabled = tuningUndoStack.length === 0;
+  undo.addEventListener("click", undoTuningChange);
+
+  const redo = document.createElement("button");
+  redo.type = "button";
+  redo.id = "tuningRedo";
+  redo.textContent = "やり直し";
+  redo.disabled = tuningRedoStack.length === 0;
+  redo.addEventListener("click", redoTuningChange);
+
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.textContent = "現在リセット";
+  reset.addEventListener("click", () => {
+    const pair = thicknessPairForSpread(spreadPosition);
+    pushTuningUndo("現在リセット");
+    saveCurrentLayerTuning(defaultTuningForPairKey(pair.key));
+    setupTuningPanel();
+    updatePage(flipProgress);
+  });
+
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.textContent = "全コピー";
+  copy.addEventListener("click", async () => {
+    const text = tuningExportText();
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text).catch(() => {});
+    }
+    updateTuningOutput();
+  });
+  actions.append(syncAll, undo, redo, reset, copy);
+  tuningPanel.append(actions);
+
+  const output = document.createElement("textarea");
+  output.className = "tuning-output";
+  output.readOnly = true;
+  output.id = "tuningOutput";
+  tuningPanel.append(output);
+  updateTuningOutput();
+  updateTuningUndoRedoButtons();
+}
+
+function setupCoverTuningPanel() {
+  const surfaceLabel = document.createElement("div");
+  surfaceLabel.className = "tuning-pair";
+  surfaceLabel.textContent = "表紙: 厚み / 背景 合成";
+  tuningPanel.append(surfaceLabel);
+
+  const grid = document.createElement("div");
+  grid.className = "tuning-grid";
+  tuningPanel.append(grid);
+
+  for (const [key, label, min, max, step] of COVER_TUNING_FIELDS) {
+    const row = document.createElement("label");
+    row.className = "tuning-row";
+
+    const text = document.createElement("span");
+    text.textContent = label;
+
+    const range = document.createElement("input");
+    range.type = "range";
+    range.min = String(min);
+    range.max = String(max);
+    range.step = String(step);
+    range.value = String(coverTuning[key]);
+
+    const number = document.createElement("input");
+    number.type = "number";
+    number.min = String(min);
+    number.max = String(max);
+    number.step = String(step);
+    number.value = String(coverTuning[key]);
+
+    const update = (nextValue) => {
+      const parsed = Number(nextValue);
+      if (!Number.isFinite(parsed)) {
+        return;
+      }
+      const nextTuning = { ...coverTuning };
+      nextTuning[key] = THREE.MathUtils.clamp(parsed, min, max);
+      saveCoverTuning(nextTuning);
+      range.value = String(coverTuning[key]);
+      number.value = String(coverTuning[key]);
+      applyCoverTuning();
+      updateTuningOutput();
+    };
+
+    range.addEventListener("pointerdown", () => beginTuningEdit(label));
+    range.addEventListener("keydown", () => beginTuningEdit(label));
+    range.addEventListener("input", () => {
+      beginTuningEdit(label);
+      update(range.value);
+    });
+    range.addEventListener("change", endTuningEdit);
+    range.addEventListener("pointerup", endTuningEdit);
+    range.addEventListener("blur", endTuningEdit);
+    number.addEventListener("change", () => {
+      pushTuningUndo(label);
+      update(number.value);
+    });
+    row.append(text, range, number);
+    grid.append(row);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "tuning-actions";
+
+  const undo = document.createElement("button");
+  undo.type = "button";
+  undo.id = "tuningUndo";
+  undo.textContent = "取り消し";
+  undo.disabled = tuningUndoStack.length === 0;
+  undo.addEventListener("click", undoTuningChange);
+
+  const redo = document.createElement("button");
+  redo.type = "button";
+  redo.id = "tuningRedo";
+  redo.textContent = "やり直し";
+  redo.disabled = tuningRedoStack.length === 0;
+  redo.addEventListener("click", redoTuningChange);
+
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.textContent = "表紙リセット";
+  reset.addEventListener("click", () => {
+    pushTuningUndo("表紙リセット");
+    saveCoverTuning(DEFAULT_COVER_TUNING);
+    applyCoverTuning();
+    setupTuningPanel();
+  });
+
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.textContent = "コピー";
+  copy.addEventListener("click", async () => {
+    const text = tuningExportText();
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text).catch(() => {});
+    }
+    updateTuningOutput();
+  });
+
+  actions.append(undo, redo, reset, copy);
+  tuningPanel.append(actions);
+
+  const output = document.createElement("textarea");
+  output.className = "tuning-output";
+  output.readOnly = true;
+  output.id = "tuningOutput";
+  tuningPanel.append(output);
+  updateTuningOutput();
+  updateTuningUndoRedoButtons();
+}
+
+function appendSpreadTuningRow(grid) {
+  const row = document.createElement("label");
+  row.className = "tuning-row";
+
+  const text = document.createElement("span");
+  text.textContent = "見開き位置";
+
+  const range = document.createElement("input");
+  range.type = "range";
+  range.min = "0";
+  range.max = "1";
+  range.step = "0.05";
+  range.value = String(spreadPosition);
+
+  const number = document.createElement("input");
+  number.type = "number";
+  number.min = "0";
+  number.max = "1";
+  number.step = "0.05";
+  number.value = String(spreadPosition);
+
+  const update = (nextValue) => {
+    const parsed = Number(nextValue);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    cancelSpreadJump();
+    spreadPosition = THREE.MathUtils.clamp(parsed, 0, 1);
+    range.value = String(spreadPosition);
+    number.value = String(spreadPosition);
+    setupTuningPanel();
+    updateTuningOutput();
+    updatePage(flipProgress);
+    syncUrl();
+  };
+
+  range.addEventListener("pointerdown", () => beginTuningEdit("見開き位置"));
+  range.addEventListener("keydown", () => beginTuningEdit("見開き位置"));
+  range.addEventListener("input", () => {
+    beginTuningEdit("見開き位置");
+    update(range.value);
+  });
+  range.addEventListener("change", endTuningEdit);
+  range.addEventListener("pointerup", endTuningEdit);
+  range.addEventListener("blur", endTuningEdit);
+  number.addEventListener("change", () => {
+    pushTuningUndo("見開き位置");
+    update(number.value);
+  });
+  row.append(text, range, number);
+  grid.append(row);
+}
+
+function tuningExportText() {
+  if (activeSurface === "cover") {
+    return JSON.stringify(
+      {
+        surface: "cover",
+        textureSize: "1472x1536",
+        aspect: Number(PAGE_ASPECT.toFixed(6)),
+        promptRatio: "23:24",
+        cornerRadiusPx: 92,
+        cover: coverTuning,
+      },
+      null,
+      2,
+    );
+  }
+
+  const pair = thicknessPairForSpread(spreadPosition);
+  return JSON.stringify(
+    {
+      spread: Number(spreadPosition.toFixed(3)),
+      pair: pair.key,
+      leftLevel: pair.left,
+      rightLevel: pair.right,
+      current: getCurrentLayerTuning(),
+      allPairs: layerTuningByPair,
+    },
+    null,
+    2,
+  );
+}
+
+function updateTuningOutput() {
+  const output = document.getElementById("tuningOutput");
+  if (output) {
+    output.value = tuningExportText();
+  }
+}
+
+function readClampedNumber(value, fallback, min, max) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return THREE.MathUtils.clamp(parsed, min, max);
+}
+
+function readBooleanParam(name) {
+  const value = params.get(name);
+  return value === "1" || value === "true" || value === "yes";
+}
+
+function loadTexture(file) {
+  return new Promise((resolve, reject) => {
+    loader.load(
+      `${ASSET_ROOT}${file}?v=${ASSET_VERSION}`,
+      (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = 8;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        resolve(texture);
+      },
+      undefined,
+      reject,
+    );
+  });
+}
+
+function getTexture(file) {
+  return textureMap.get(file);
+}
+
+function assignTexture(mesh, file) {
+  mesh.material.map = getTexture(file);
+  mesh.material.needsUpdate = true;
+}
+
+function assignTextureObject(mesh, texture) {
+  mesh.material.map = texture;
+  mesh.material.needsUpdate = true;
+}
+
+function getPageTemplateTexture(side) {
+  const key = `${activeBook}:${side}`;
+  if (!pageTemplateTextureMap.has(key)) {
+    pageTemplateTextureMap.set(key, createPageTemplateTexture(side, activeBook));
+  }
+  return pageTemplateTextureMap.get(key);
+}
+
+function refreshPageTemplateTextures() {
+  pageTemplateTextureMap.clear();
+  if (leftPageInner?.material) {
+    assignTextureObject(leftPageInner, getPageTemplateTexture("left"));
+  }
+  if (rightPage?.material) {
+    assignTextureObject(rightPage, getPageTemplateTexture("right"));
+  }
+  if (frontPage?.material && activeSurface === "inside") {
+    assignTextureObject(frontPage, getPageTemplateTexture("right"));
+  }
+  updateFlutterPageTextures();
+  updateBookPageControls();
+}
+
+function createPageTemplateTexture(side, bookName) {
+  const templateCanvas = document.createElement("canvas");
+  templateCanvas.width = PAGE_TEXTURE_W;
+  templateCanvas.height = PAGE_TEXTURE_H;
+  const ctx = templateCanvas.getContext("2d");
+  const palette = bookName === "girl"
+    ? { accent: "#d78db9", sub: "#7bc8c8", line: "#dcb6cc", tab: "#f5ddea" }
+    : { accent: "#d79a34", sub: "#55aeb8", line: "#d3b35f", tab: "#f4e7b8" };
+
+  drawPageTemplateBase(ctx, palette, side);
+  drawRightPageTemplate(ctx, palette);
+  drawRingHoleGuides(ctx, side);
+
+  const texture = new THREE.CanvasTexture(templateCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  drawDynamicPageContent(ctx, texture, side, palette);
+  return texture;
+}
+
+function drawPageTemplateBase(ctx, palette, side) {
+  const width = PAGE_TEXTURE_W;
+  const height = PAGE_TEXTURE_H;
+  ctx.clearRect(0, 0, width, height);
+  const bg = ctx.createLinearGradient(0, 0, width, height);
+  bg.addColorStop(0, "#fff9e4");
+  bg.addColorStop(0.54, "#fff4ce");
+  bg.addColorStop(1, "#f8eab9");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.save();
+  drawCanvasRoundedRect(ctx, 58, 54, width - 116, height - 108, 78);
+  ctx.clip();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.36)";
+  ctx.fillRect(82, 84, width - 164, height - 168);
+
+  ctx.strokeStyle = palette.line;
+  ctx.lineWidth = 6;
+  drawCanvasRoundedRect(ctx, 78, 74, width - 156, height - 148, 68);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.58)";
+  ctx.lineWidth = 4;
+  drawCanvasRoundedRect(ctx, 108, 106, width - 216, height - 212, 52);
+  ctx.stroke();
+
+  const stripX = side === "right" ? 90 : width - 166;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
+  ctx.strokeStyle = "rgba(195, 176, 111, 0.22)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, stripX, 112, 76, height - 224, 38);
+  ctx.fill();
+  ctx.stroke();
+  for (let i = 0; i < 5; i += 1) {
+    const x = stripX + 20 + i * 9;
+    ctx.beginPath();
+    ctx.moveTo(x, 142);
+    ctx.lineTo(x, height - 142);
+    ctx.strokeStyle = "rgba(211, 185, 104, 0.17)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  const shade = ctx.createLinearGradient(0, 0, 0, height);
+  shade.addColorStop(0, "rgba(255,255,255,0.7)");
+  shade.addColorStop(0.5, "rgba(255,255,255,0)");
+  shade.addColorStop(1, "rgba(95,70,20,0.12)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, width, height);
+}
+
+function drawLeftPageTemplate(ctx, palette) {
+  const startX = 170;
+  const startY = 220;
+  const colW = 520;
+  const rowH = 118;
+  ctx.save();
+  ctx.fillStyle = "#334447";
+  ctx.font = '800 66px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText("シールいちらん", PAGE_TEXTURE_W / 2 - 46, 150);
+  ctx.fillStyle = palette.sub;
+  ctx.font = '800 34px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText("みつけたもの", PAGE_TEXTURE_W / 2 - 46, 196);
+
+  for (let i = 0; i < 12; i += 1) {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = startX + col * (colW + 42);
+    const y = startY + row * (rowH + 28);
+    ctx.fillStyle = col % 2 === 0 ? "rgba(255,255,255,0.5)" : "rgba(224,245,245,0.52)";
+    ctx.strokeStyle = "rgba(188, 151, 73, 0.46)";
+    ctx.lineWidth = 3;
+    drawCanvasRoundedRect(ctx, x, y, colW, rowH, 18);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = palette.sub;
+    drawCanvasRoundedRect(ctx, x + 20, y + 22, 70, 38, 14);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = '800 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.textAlign = "center";
+    ctx.fillText(String(i + 1).padStart(2, "0"), x + 55, y + 50);
+
+    ctx.fillStyle = "rgba(255,255,255,0.6)";
+    ctx.beginPath();
+    ctx.ellipse(x + 142, y + 58, 52, 32, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(74, 99, 100, 0.16)";
+    ctx.lineWidth = 8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x + 220, y + 43);
+    ctx.lineTo(x + colW - 52, y + 43);
+    ctx.moveTo(x + 220, y + 76);
+    ctx.lineTo(x + colW - 132, y + 76);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawRightPageTemplate(ctx, palette) {
+  const margin = 160;
+  const x = 170;
+  const y = 136;
+  const width = PAGE_TEXTURE_W - margin - 190;
+  const height = PAGE_TEXTURE_H - 260;
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.34)";
+  ctx.strokeStyle = palette.line;
+  ctx.lineWidth = 5;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 42);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(211, 156, 74, 0.26)";
+  ctx.lineWidth = 2;
+  for (let gx = x + 104; gx < x + width - 70; gx += 126) {
+    ctx.beginPath();
+    ctx.moveTo(gx, y + 54);
+    ctx.lineTo(gx, y + height - 54);
+    ctx.stroke();
+  }
+  for (let gy = y + 106; gy < y + height - 70; gy += 126) {
+    ctx.beginPath();
+    ctx.moveTo(x + 54, gy);
+    ctx.lineTo(x + width - 54, gy);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = "rgba(255,255,255,0.62)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, x + 24, y + 24, width - 48, height - 48, 34);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,255,255,0.32)";
+  ctx.beginPath();
+  ctx.ellipse(x + width * 0.72, y + height * 0.22, 210, 86, -0.25, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawDynamicPageContent(ctx, texture, side, palette) {
+  const pageNumber = side === "left" ? activeBookPage : rightBookPageNumber();
+  const pageDef = editorPageDefinitions[pageNumber - 1] || editorPageDefinitions[0] || null;
+  drawStickerCanvasPage(ctx, texture, palette, pageDef, getPagePlacements(pageNumber), pageNumber);
+}
+
+function drawStickerListPage(ctx, texture, palette, pageDef, stickers) {
+  const contentX = 148;
+  const contentY = 190;
+  const contentW = PAGE_TEXTURE_W - 272;
+  const contentH = PAGE_TEXTURE_H - 340;
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 250, 226, 0.94)";
+  drawCanvasRoundedRect(ctx, contentX - 18, contentY - 116, contentW + 36, contentH + 172, 42);
+  ctx.fill();
+
+  ctx.fillStyle = "#334447";
+  ctx.font = '800 58px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(pageDef?.label || "シール", PAGE_TEXTURE_W / 2 - 44, contentY - 54);
+  ctx.fillStyle = palette.sub;
+  ctx.font = '800 30px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText("シールいちらん", PAGE_TEXTURE_W / 2 - 44, contentY - 16);
+
+  const count = stickers.length;
+  const cols = count > 18 ? 3 : 2;
+  const rows = Math.max(1, Math.ceil(count / cols));
+  const gapX = 24;
+  const gapY = 14;
+  const cellW = (contentW - gapX * (cols - 1)) / cols;
+  const cellH = Math.min(96, (contentH - gapY * (rows - 1)) / rows);
+  const thumb = Math.min(58, cellH - 22);
+  for (let i = 0; i < count; i += 1) {
+    const sticker = stickers[i];
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = contentX + col * (cellW + gapX);
+    const y = contentY + row * (cellH + gapY);
+    ctx.fillStyle = col % 2 === 0 ? "rgba(255,255,255,0.62)" : "rgba(224,245,245,0.54)";
+    ctx.strokeStyle = "rgba(188, 151, 73, 0.38)";
+    ctx.lineWidth = 3;
+    drawCanvasRoundedRect(ctx, x, y, cellW, cellH, 18);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = palette.sub;
+    drawCanvasRoundedRect(ctx, x + 14, y + 16, 56, 30, 12);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = '800 19px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.textAlign = "center";
+    ctx.fillText(String(i + 1).padStart(2, "0"), x + 42, y + 38);
+
+    const imageX = x + 84;
+    const imageY = y + (cellH - thumb) / 2;
+    drawStickerImagePlaceholder(ctx, imageX, imageY, thumb, thumb, sticker.label);
+    drawAsyncStickerImage(ctx, texture, sticker.assetUrl, imageX, imageY, thumb, thumb);
+
+    ctx.fillStyle = "#334447";
+    ctx.font = `800 ${count > 18 ? 20 : 24}px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
+    ctx.textAlign = "left";
+    ctx.fillText(sticker.label, imageX + thumb + 14, y + cellH / 2 + 8, cellW - thumb - 112);
+  }
+
+  if (!count) {
+    ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
+    ctx.font = '800 38px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.textAlign = "center";
+    ctx.fillText("シールは まだありません", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
+  }
+  ctx.restore();
+  texture.needsUpdate = true;
+}
+
+function drawStickerCanvasPage(ctx, texture, palette, pageDef, placements, pageNumber) {
+  drawPageDrawingLayer(ctx, pageNumber);
+  const ordered = [...placements].sort((a, b) => a.z - b.z);
+  for (const placement of ordered) {
+    drawAsyncPlacedSticker(ctx, texture, placement);
+  }
+  texture.needsUpdate = true;
+}
+
+function drawPageDrawingLayer(ctx, pageNumber) {
+  const strokes = getPageDrawingStrokes(pageNumber);
+  if (!strokes.length) {
+    return;
+  }
+  const layer = document.createElement("canvas");
+  layer.width = PAGE_TEXTURE_W;
+  layer.height = PAGE_TEXTURE_H;
+  const layerCtx = layer.getContext("2d");
+  drawDrawingStrokes(layerCtx, strokes, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  ctx.drawImage(layer, 0, 0);
+}
+
+function drawStickerImagePlaceholder(ctx, x, y, width, height, label) {
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.68)";
+  ctx.beginPath();
+  ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(51,68,71,0.22)";
+  ctx.font = '800 22px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText([...String(label || "?")][0] || "?", x + width / 2, y + height / 2 + 8);
+  ctx.restore();
+}
+
+function drawPlacedStickerPlaceholder(ctx, placement) {
+  const base = PAGE_TEXTURE_W * 0.18 * placement.scale;
+  const x = (placement.x / 100) * PAGE_TEXTURE_W;
+  const y = (placement.y / 100) * PAGE_TEXTURE_H;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.strokeStyle = "rgba(75,160,170,0.24)";
+  ctx.lineWidth = 5;
+  drawCanvasRoundedRect(ctx, -base / 2, -base / 2, base, base, base * 0.18);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "rgba(51,68,71,0.3)";
+  ctx.font = `800 ${Math.max(22, base * 0.16)}px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.fillText([...String(placement.label || "?")][0] || "?", 0, 8);
+  ctx.restore();
+}
+
+function drawAsyncStickerImage(ctx, texture, src, x, y, width, height) {
+  loadStickerImage(src)
+    .then((image) => {
+      drawImageContain(ctx, image, x, y, width, height);
+      texture.needsUpdate = true;
+    })
+    .catch(() => {});
+}
+
+function drawAsyncPlacedSticker(ctx, texture, placement) {
+  loadStickerImage(placement.assetUrl)
+    .then((image) => {
+      const baseW = PAGE_TEXTURE_W * 0.18 * placement.scale;
+      const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+      const drawW = baseW;
+      const drawH = drawW / Math.max(0.2, aspect);
+      const x = (placement.x / 100) * PAGE_TEXTURE_W;
+      const y = (placement.y / 100) * PAGE_TEXTURE_H;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
+      ctx.shadowColor = "rgba(60, 48, 20, 0.24)";
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 14;
+      ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+      texture.needsUpdate = true;
+    })
+    .catch(() => {});
+}
+
+function drawImageContain(ctx, image, x, y, width, height) {
+  const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+  let drawW = width;
+  let drawH = drawW / Math.max(0.2, aspect);
+  if (drawH > height) {
+    drawH = height;
+    drawW = drawH * aspect;
+  }
+  ctx.drawImage(image, x + (width - drawW) / 2, y + (height - drawH) / 2, drawW, drawH);
+}
+
+function loadStickerImage(src) {
+  if (!src) {
+    return Promise.reject(new Error("missing image src"));
+  }
+  if (!stickerImageCache.has(src)) {
+    stickerImageCache.set(src, new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.decoding = "async";
+      image.src = src;
+    }));
+  }
+  return stickerImageCache.get(src);
+}
+
+function drawRingHoleGuides(ctx, side) {
+  const x = side === "right" ? 38 : PAGE_TEXTURE_W - 38;
+  ctx.save();
+  for (const pixelY of PAGE_RING_PIXELS) {
+    const y = pixelY;
+    ctx.fillStyle = "rgba(22, 55, 60, 0.5)";
+    ctx.beginPath();
+    ctx.ellipse(x, y, 18, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.46)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 24, 24, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawCanvasRoundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function makePlane(file, width, height, options = {}) {
+  const material = options.lit
+    ? new THREE.MeshStandardMaterial({
+        map: getTexture(file),
+        transparent: options.transparent ?? true,
+        opacity: options.opacity ?? 1,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        roughness: 0.9,
+        metalness: 0.0,
+      })
+    : new THREE.MeshBasicMaterial({
+        map: getTexture(file),
+        transparent: true,
+        opacity: options.opacity ?? 1,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+  mesh.position.z = options.depth ?? 0;
+  return mesh;
+}
+
+function makePageSurface(file, geometry) {
+  const material = new THREE.MeshStandardMaterial({
+    map: getTexture(file),
+    transparent: false,
+    side: THREE.DoubleSide,
+    depthWrite: true,
+    roughness: 0.9,
+    metalness: 0.0,
+  });
+  return new THREE.Mesh(geometry, material);
+}
+
+function createSideTabs() {
+  const group = new THREE.Group();
+  const tabW = PAGE_H * (320 / 1536);
+  const tabReveal = tabW * 0.28;
+  const tabCenterOffset = tabW * 0.5 - tabReveal;
+  const leftEdge = -PAGE_W - GUTTER / 2;
+  const rightEdge = PAGE_W + GUTTER / 2;
+
+  const baseMaterial = new THREE.MeshStandardMaterial({
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    roughness: 0.72,
+    metalness: 0.0,
+  });
+
+  const leftMaterial = baseMaterial.clone();
+  leftMaterial.map = getTexture(BOOK_VARIANTS[activeBook].tabsLeft);
+  const left = new THREE.Mesh(new THREE.PlaneGeometry(tabW, PAGE_H), leftMaterial);
+  left.position.set(leftEdge + tabCenterOffset, 0, 0);
+  left.renderOrder = 3;
+  group.add(left);
+
+  const rightMaterial = baseMaterial.clone();
+  rightMaterial.map = getTexture(BOOK_VARIANTS[activeBook].tabsRight);
+  const right = new THREE.Mesh(new THREE.PlaneGeometry(tabW, PAGE_H), rightMaterial);
+  right.position.set(rightEdge - tabCenterOffset, 0, 0);
+  right.renderOrder = 3;
+  group.add(right);
+
+  return { group, left, right };
+}
+
+function createPageStacks() {
+  const group = new THREE.Group();
+  const left = createStackSide("left");
+  const right = createStackSide("right");
+  group.add(left.group);
+  group.add(right.group);
+  return { group, left, right };
+}
+
+function createStackSide(side) {
+  const group = new THREE.Group();
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(PAGE_W, THICKNESS_TEXTURE_H),
+    new THREE.MeshBasicMaterial({
+      map: getTexture(thicknessFileFor(side, "half")),
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+  );
+  plane.position.z = -0.034;
+  plane.renderOrder = 4;
+  group.add(plane);
+
+  return { side, group, plane, level: null, book: null };
+}
+
+function createCoverThicknessLayer() {
+  const group = new THREE.Group();
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(PAGE_W, THICKNESS_TEXTURE_H),
+    new THREE.MeshBasicMaterial({
+      map: getTexture(thicknessFileFor("right", "full")),
+      transparent: true,
+      opacity: DEFAULT_COVER_TUNING.coverStackOpacity,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+  );
+  plane.position.z = -0.015;
+  plane.renderOrder = 24;
+  group.add(plane);
+
+  return { group, plane, book: null };
+}
+
+function createFlutterPages() {
+  const group = new THREE.Group();
+  group.visible = false;
+  const pages = [];
+
+  for (let i = 0; i < FLUTTER_PAGE_MAX_COUNT; i += 1) {
+    const shell = new THREE.Group();
+    const frontMaterial = new THREE.MeshStandardMaterial({
+      map: getTexture(BOOK_VARIANTS[activeBook].insideRight),
+      transparent: true,
+      opacity: 0,
+      side: THREE.FrontSide,
+      depthWrite: false,
+      roughness: 0.92,
+      metalness: 0.0,
+    });
+    const backMaterial = new THREE.MeshStandardMaterial({
+      map: getTexture(SHARED_TEXTURES.pageBack),
+      transparent: true,
+      opacity: 0,
+      side: THREE.BackSide,
+      depthWrite: false,
+      roughness: 0.95,
+      metalness: 0.0,
+    });
+    const geometry = createFlutterPageGeometry();
+    const front = new THREE.Mesh(geometry, frontMaterial);
+    const back = new THREE.Mesh(geometry, backMaterial);
+    front.position.z = 0.003;
+    back.position.z = -0.003;
+    front.renderOrder = 26 + i;
+    back.renderOrder = 25 + i;
+    shell.add(back);
+    shell.add(front);
+    group.add(shell);
+    pages.push({ shell, geometry, frontMaterial, backMaterial });
+  }
+
+  return { group, pages };
+}
+
+function createFlutterPageGeometry() {
+  const geometry = new THREE.PlaneGeometry(PAGE_W, PAGE_H, 28, 18);
+  geometry.translate(PAGE_W / 2, 0, 0);
+  prepareBendGeometry(geometry);
+  return geometry;
+}
+
+function prepareBendGeometry(geometry) {
+  if (!geometry.userData.basePositions) {
+    geometry.userData.basePositions = Float32Array.from(geometry.attributes.position.array);
+  }
+}
+
+function bendPageGeometry(geometry, progress, bendAmount) {
+  const positions = geometry.attributes.position;
+  const base = geometry.userData.basePositions;
+  if (!base) {
+    return;
+  }
+
+  const p = THREE.MathUtils.clamp(progress, 0, 1);
+  const turn = Math.sin(p * Math.PI);
+  const side = p < 0.5 ? 1 : -1;
+  for (let i = 0; i < positions.count; i += 1) {
+    const index = i * 3;
+    const x = base[index];
+    const y = base[index + 1];
+    const z = base[index + 2];
+    const u = THREE.MathUtils.clamp(x / PAGE_W, 0, 1);
+    const yN = THREE.MathUtils.clamp((y + PAGE_H / 2) / PAGE_H, 0, 1) - 0.5;
+    const crossCurve = Math.sin(u * Math.PI);
+    const edgePull = u * (1 - u);
+    const freeEdgeCurl = u * u;
+    const flutterRipple = Math.sin((u * 2.6 + yN * 0.7 + p * 1.8) * Math.PI);
+
+    positions.setXYZ(
+      i,
+      x - freeEdgeCurl * bendAmount * turn * 0.08,
+      y + yN * edgePull * bendAmount * 0.18,
+      z +
+        side * crossCurve * bendAmount * turn +
+        side * freeEdgeCurl * bendAmount * turn * 0.36 +
+        flutterRipple * edgePull * bendAmount * 0.12,
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+}
+
+function updateStackThickness() {
+  const pair = thicknessPairForSpread(spreadPosition);
+  const tuning = getCurrentLayerTuning();
+  positionStackSide(pageStacks.left, pair.left, tuning);
+  positionStackSide(pageStacks.right, pair.right, tuning);
+}
+
+function thicknessPairForSpread(spread) {
+  const openedAmount = THREE.MathUtils.clamp(spread, 0, 1);
+  const left = thicknessLevelForAmount(openedAmount);
+  const right = thicknessLevelForAmount(1 - openedAmount);
+  return {
+    left,
+    right,
+    key: `${left}-${right}`,
+  };
+}
+
+function thicknessLevelForAmount(amount) {
+  if (amount < 0.08) {
+    return "empty";
+  }
+  if (amount < 0.35) {
+    return "small";
+  }
+  if (amount < 0.65) {
+    return "half";
+  }
+  if (amount < 0.92) {
+    return "mostly";
+  }
+  return "full";
+}
+
+function thicknessFileFor(side, level) {
+  const assetLevel = level === "empty" ? "empty" : "full";
+  return `sb3d_${activeBook}_page_thickness_${side}_${assetLevel}.png`;
+}
+
+function positionStackSide(stack, level, tuning) {
+  if (stack.level !== level || stack.book !== activeBook) {
+    assignTexture(stack.plane, thicknessFileFor(stack.side, level));
+    stack.level = level;
+    stack.book = activeBook;
+  }
+
+  stack.plane.visible = level !== "empty";
+  const tunePrefix = stack.side === "left" ? "stackLeft" : "stackRight";
+  stack.plane.scale.set(
+    tuning[`${tunePrefix}ScaleX`],
+    tuning[`${tunePrefix}ScaleY`],
+    1,
+  );
+
+  const isLeft = stack.side === "left";
+  const pageLeft = isLeft ? -PAGE_W - GUTTER / 2 : GUTTER / 2;
+  const pageRight = isLeft ? -GUTTER / 2 : PAGE_W + GUTTER / 2;
+  const pageCenter = (pageLeft + pageRight) / 2;
+  const scaledTextureH = THICKNESS_TEXTURE_H * tuning[`${tunePrefix}ScaleY`];
+  const topY = -PAGE_H / 2 + THICKNESS_OVERLAP + tuning[`${tunePrefix}Y`];
+  stack.plane.position.set(
+    pageCenter + tuning[`${tunePrefix}X`],
+    topY - scaledTextureH / 2,
+    -0.034,
+  );
+}
+
+function applyCoverTuning() {
+  if (coverThickness.book !== activeBook) {
+    assignTexture(coverThickness.plane, thicknessFileFor("right", "full"));
+    coverThickness.book = activeBook;
+  }
+
+  coverThickness.plane.visible = coverTuning.coverStackOpacity > 0;
+  coverThickness.plane.material.opacity = coverTuning.coverStackOpacity;
+  coverThickness.plane.scale.set(coverTuning.coverStackScaleX, coverTuning.coverStackScaleY, 1);
+
+  const scaledTextureH = THICKNESS_TEXTURE_H * coverTuning.coverStackScaleY;
+  const topY = -PAGE_H / 2 + THICKNESS_OVERLAP + coverTuning.coverStackY;
+  coverThickness.plane.position.set(
+    coverTuning.coverStackX,
+    topY - scaledTextureH / 2,
+    -0.015,
+  );
+
+  coverBackground.visible = coverTuning.coverBgOpacity > 0;
+  coverBackground.material.opacity = coverTuning.coverBgOpacity;
+  coverBackground.scale.set(coverTuning.coverBgScaleX, coverTuning.coverBgScaleY, 1);
+  coverBackground.position.set((-PAGE_W * coverTuning.coverBgScaleX) / 2, 0, -0.08);
+}
+
+function updateFlutterPageTextures() {
+  for (const page of flutterPages.pages) {
+    page.frontMaterial.map = getPageTemplateTexture("right");
+    page.frontMaterial.needsUpdate = true;
+    page.backMaterial.map = getTexture(SHARED_TEXTURES.pageBack);
+    page.backMaterial.needsUpdate = true;
+  }
+}
+
+function createBendablePageSurfaceGeometry(bindingSide) {
+  const baseGeometry = createPageSurfaceGeometry(bindingSide);
+  const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
+  const subdivided = subdivideBendableGeometry(source);
+  return subdivided;
+}
+
+function subdivideBendableGeometry(source) {
+  const positions = source.attributes.position;
+  const sourceUvs = source.attributes.uv;
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+  const maxSegment = PAGE_H / 8;
+  const maxDepth = 3;
+
+  for (let i = 0; i < positions.count; i += 3) {
+    const a = readGeometryPoint(positions, sourceUvs, i);
+    const b = readGeometryPoint(positions, sourceUvs, i + 1);
+    const c = readGeometryPoint(positions, sourceUvs, i + 2);
+    addSubdividedTriangle(vertices, uvs, indices, a, b, c, maxSegment, maxDepth);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setIndex(indices);
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function readGeometryPoint(positions, uvs, index) {
+  return {
+    position: new THREE.Vector3(positions.getX(index), positions.getY(index), positions.getZ(index)),
+    uv: new THREE.Vector2(uvs.getX(index), uvs.getY(index)),
+  };
+}
+
+function addSubdividedTriangle(vertices, uvs, indices, a, b, c, maxSegment, depth) {
+  const maxEdge = Math.max(
+    a.position.distanceTo(b.position),
+    b.position.distanceTo(c.position),
+    c.position.distanceTo(a.position),
+  );
+
+  if (depth <= 0 || maxEdge <= maxSegment) {
+    const start = vertices.length / 3;
+    for (const point of [a, b, c]) {
+      vertices.push(point.position.x, point.position.y, point.position.z);
+      uvs.push(point.uv.x, point.uv.y);
+    }
+    indices.push(start, start + 1, start + 2);
+    return;
+  }
+
+  const ab = midpointGeometryPoint(a, b);
+  const bc = midpointGeometryPoint(b, c);
+  const ca = midpointGeometryPoint(c, a);
+  addSubdividedTriangle(vertices, uvs, indices, a, ab, ca, maxSegment, depth - 1);
+  addSubdividedTriangle(vertices, uvs, indices, ab, b, bc, maxSegment, depth - 1);
+  addSubdividedTriangle(vertices, uvs, indices, ca, bc, c, maxSegment, depth - 1);
+  addSubdividedTriangle(vertices, uvs, indices, ab, bc, ca, maxSegment, depth - 1);
+}
+
+function midpointGeometryPoint(a, b) {
+  return {
+    position: new THREE.Vector3().addVectors(a.position, b.position).multiplyScalar(0.5),
+    uv: new THREE.Vector2().addVectors(a.uv, b.uv).multiplyScalar(0.5),
+  };
+}
+
+function createPageSurfaceGeometry(bindingSide) {
+  const shape = new THREE.Shape();
+  addRoundedRectPath(shape, 0, -PAGE_H / 2, PAGE_W, PAGE_H, PAGE_RADIUS);
+
+  const holeX = bindingSide === "left" ? PAGE_HOLE_X : PAGE_W - PAGE_HOLE_X;
+  for (const pixelY of PAGE_RING_PIXELS) {
+    const hole = new THREE.Path();
+    const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
+    hole.absellipse(holeX, y, PAGE_HOLE_RX, PAGE_HOLE_RY, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+  }
+
+  const geometry = new THREE.ShapeGeometry(shape, 28);
+  const positions = geometry.attributes.position;
+  const uvs = [];
+  for (let i = 0; i < positions.count; i += 1) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    uvs.push(x / PAGE_W, (y + PAGE_H / 2) / PAGE_H);
+  }
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createCoverSurfaceGeometry() {
+  const shape = new THREE.Shape();
+  addRoundedRectPath(shape, 0, -PAGE_H / 2, PAGE_W, PAGE_H, PAGE_RADIUS);
+  const geometry = new THREE.ShapeGeometry(shape, 28);
+  const positions = geometry.attributes.position;
+  const uvs = [];
+  for (let i = 0; i < positions.count; i += 1) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    uvs.push(x / PAGE_W, (y + PAGE_H / 2) / PAGE_H);
+  }
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function addRoundedRectPath(shape, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  shape.moveTo(x + r, y);
+  shape.lineTo(x + width - r, y);
+  shape.quadraticCurveTo(x + width, y, x + width, y + r);
+  shape.lineTo(x + width, y + height - r);
+  shape.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  shape.lineTo(x + r, y + height);
+  shape.quadraticCurveTo(x, y + height, x, y + height - r);
+  shape.lineTo(x, y + r);
+  shape.quadraticCurveTo(x, y, x + r, y);
+}
+
+function createHalfRingMeshes() {
+  const group = new THREE.Group();
+  const ringMaterial = new THREE.MeshStandardMaterial({
+    color: 0xcbb783,
+    emissive: 0x3b2a12,
+    emissiveIntensity: 0.025,
+    roughness: 0.76,
+    metalness: 0.0,
+    transparent: true,
+    opacity: 1,
+    depthTest: true,
+    depthWrite: false,
+  });
+  const highlightMaterial = new THREE.MeshBasicMaterial({
+    color: 0xfff5d7,
+    transparent: true,
+    opacity: 0.2,
+    depthTest: true,
+    depthWrite: false,
+  });
+
+  for (const pixelY of PAGE_RING_PIXELS) {
+    const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
+    const ring = new THREE.Mesh(createHalfRingTubeGeometry(y), ringMaterial);
+    ring.renderOrder = 72;
+    group.add(ring);
+
+    const highlight = new THREE.Mesh(createHalfRingHighlightGeometry(y), highlightMaterial);
+    highlight.renderOrder = 73;
+    group.add(highlight);
+  }
+
+  return group;
+}
+
+function createHalfRingTubeGeometry(baseY) {
+  const points = [];
+  const span = 0.78;
+  for (let i = 0; i <= 20; i += 1) {
+    const t = i / 20;
+    const arch = Math.sin(t * Math.PI);
+    points.push(
+      new THREE.Vector3(
+        THREE.MathUtils.lerp(-span / 2, span / 2, t),
+        baseY + arch * 0.034,
+        0.12 + arch * 0.34,
+      ),
+    );
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 40, 0.064, 16, false);
+}
+
+function createHalfRingHighlightGeometry(baseY) {
+  const points = [];
+  const span = 0.62;
+  for (let i = 0; i <= 16; i += 1) {
+    const t = i / 16;
+    const arch = Math.sin(t * Math.PI);
+    points.push(
+      new THREE.Vector3(
+        THREE.MathUtils.lerp(-span / 2, span / 2, t),
+        baseY + 0.026 + arch * 0.03,
+        0.16 + arch * 0.33,
+      ),
+    );
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.007, 6, false);
+}
+
+function applyVariantState() {
+  const bundle = BOOK_VARIANTS[activeBook];
+  assignTexture(leftPageOuter, bundle.coverBack);
+  assignTextureObject(leftPageInner, getPageTemplateTexture("left"));
+  assignTextureObject(rightPage, getPageTemplateTexture("right"));
+  if (activeSurface === "inside") {
+    assignTextureObject(frontPage, getPageTemplateTexture("right"));
+  } else {
+    assignTexture(frontPage, bundle.coverFront);
+  }
+  assignTexture(backPage, activeSurface === "inside" ? SHARED_TEXTURES.pageBack : bundle.coverInside);
+  assignTexture(closedCover, bundle.coverFront);
+  assignTexture(spine, bundle.spine);
+  assignTexture(sideTabs.left, bundle.tabsLeft);
+  assignTexture(sideTabs.right, bundle.tabsRight);
+  applyCoverTuning();
+  updateFlutterPageTextures();
+  slider.disabled = activeSurface === "cover";
+  updateControlState();
+  updatePage(flipProgress);
+  syncUrl();
+}
+
+function updateControlState() {
+  for (const button of bookButtons) {
+    button.classList.toggle("is-active", button.dataset.book === activeBook);
+  }
+  for (const button of surfaceButtons) {
+    button.classList.toggle("is-active", button.dataset.surface === activeSurface);
+  }
+  updateSpreadJumpControls();
+  updateBookPageControls();
+}
+
+function updateSpreadJumpControls() {
+  if (spreadJumper) {
+    spreadJumper.hidden = activeSurface === "cover";
+  }
+  for (const button of spreadJumpButtons) {
+    const target = readClampedNumber(button.dataset.spreadTarget, 0, 0, 1);
+    button.disabled = activeSurface === "cover";
+    button.classList.toggle("is-active", Math.abs(target - spreadPosition) < 0.02);
+  }
+}
+
+function startSpreadJump(targetSpread, options = {}) {
+  const target = THREE.MathUtils.clamp(Number(targetSpread), 0, 1);
+  if (activeSurface === "cover" || !Number.isFinite(target)) {
+    return;
+  }
+  if (Math.abs(target - spreadPosition) < 0.001) {
+    updateSpreadJumpControls();
+    return;
+  }
+
+  if (options.recordUndo) {
+    pushTuningUndo("見開きプリセット変更");
+  }
+
+  const distance = Math.abs(target - spreadPosition);
+  const duration = THREE.MathUtils.lerp(SPREAD_JUMP_MIN_DURATION, SPREAD_JUMP_MAX_DURATION, distance);
+  const visiblePageCount = flutterPageCountForDistance(distance);
+  const cycles = visiblePageCount;
+  spreadJumpAnimation = {
+    from: spreadPosition,
+    to: target,
+    startTime: performance.now(),
+    elapsed: 0,
+    duration,
+    cycles,
+    visiblePageCount,
+    direction: target >= spreadPosition ? 1 : -1,
+  };
+  isPlaying = false;
+  playButton.classList.remove("playing");
+  flutterPages.group.visible = true;
+  clock.getDelta();
+  updateSpreadJumpControls();
+}
+
+function flutterPageCountForDistance(distance) {
+  const d = THREE.MathUtils.clamp(distance, 0, 1);
+  // Spread dots are 0.25 apart: adjacent=3, half-book=4, three-step=5, end-to-end=6.
+  if (d <= 0.26) {
+    return 3;
+  }
+  if (d <= 0.51) {
+    return 4;
+  }
+  if (d <= 0.76) {
+    return 5;
+  }
+  return 6;
+}
+
+function cancelSpreadJump() {
+  if (!spreadJumpAnimation) {
+    return;
+  }
+  spreadJumpAnimation = null;
+  flutterPages.group.visible = false;
+  for (const page of flutterPages.pages) {
+    page.frontMaterial.opacity = 0;
+    page.backMaterial.opacity = 0;
+  }
+}
+
+function updateSpreadJump() {
+  if (!spreadJumpAnimation) {
+    return false;
+  }
+
+  const jump = spreadJumpAnimation;
+  jump.elapsed = (performance.now() - jump.startTime) / 1000;
+  const rawT = THREE.MathUtils.clamp(jump.elapsed / jump.duration, 0, 1);
+  const easedT = smootherstep(rawT);
+  const phase = (rawT * jump.cycles) % 1;
+
+  spreadPosition = THREE.MathUtils.lerp(jump.from, jump.to, easedT);
+  flipProgress = jump.direction > 0 ? phase : 1 - phase;
+  slider.value = String(flipProgress);
+  updateFlutterPages(phase, jump.direction, jump.visiblePageCount);
+  updatePage(flipProgress);
+  updateSpreadJumpControls();
+
+  if (rawT >= 0.995) {
+    spreadPosition = jump.to;
+    flipProgress = SPREAD_JUMP_SETTLE_PROGRESS;
+    slider.value = String(flipProgress);
+    spreadJumpAnimation = null;
+    flutterPages.group.visible = false;
+    for (const page of flutterPages.pages) {
+      page.frontMaterial.opacity = 0;
+      page.backMaterial.opacity = 0;
+    }
+    setupTuningPanel();
+    updatePage(flipProgress);
+    updateSpreadJumpControls();
+    syncUrl();
+  }
+
+  return true;
+}
+
+function updateFlutterPages(basePhase, direction, visiblePageCount = FLUTTER_PAGE_MAX_COUNT) {
+  flutterPages.group.visible = activeSurface === "inside" && Boolean(spreadJumpAnimation);
+  const safeDirection = direction >= 0 ? 1 : -1;
+  const activeCount = THREE.MathUtils.clamp(
+    Math.round(visiblePageCount),
+    FLUTTER_PAGE_MIN_COUNT,
+    FLUTTER_PAGE_MAX_COUNT,
+  );
+  for (let i = 0; i < flutterPages.pages.length; i += 1) {
+    const page = flutterPages.pages[i];
+    if (i >= activeCount) {
+      page.shell.visible = false;
+      page.frontMaterial.opacity = 0;
+      page.backMaterial.opacity = 0;
+      continue;
+    }
+
+    const offset = (i / activeCount) * 0.82;
+    const cycle = (basePhase + offset) % 1;
+    const p = safeDirection > 0 ? cycle : 1 - cycle;
+    const hingeTravel = smootherstep(p);
+    const trailWeight = 1 - (i / Math.max(1, activeCount - 1)) * 0.38;
+    const opacity = Math.sin(cycle * Math.PI) * FLUTTER_TRAIL_OPACITY * trailWeight;
+
+    page.shell.visible = opacity > 0.018;
+    page.shell.position.x = THREE.MathUtils.lerp(GUTTER / 2, -GUTTER / 2, hingeTravel);
+    page.shell.position.z = 0.1 + Math.sin(p * Math.PI) * 0.2 + i * 0.011;
+    page.shell.rotation.y = -p * Math.PI;
+    page.shell.rotation.x = Math.sin(p * Math.PI) * 0.028;
+    page.shell.rotation.z = Math.sin((cycle + i * 0.07) * Math.PI * 2) * 0.012;
+    bendPageGeometry(page.geometry, p, PAGE_FLUTTER_BEND * Math.sin(cycle * Math.PI));
+    page.frontMaterial.opacity = opacity;
+    page.backMaterial.opacity = opacity * 0.88;
+  }
+}
+
+function updatePage(progress) {
+  const p = THREE.MathUtils.clamp(progress, 0, 1);
+  if (activeSurface === "cover") {
+    flipProgress = 0;
+    slider.value = "0";
+    isPlaying = false;
+    playButton.classList.remove("playing");
+    coverOnly.visible = true;
+    setOpenSpreadVisible(false);
+    applyCoverTuning();
+    updateSpreadJumpControls();
+    return;
+  }
+
+  coverOnly.visible = false;
+  setOpenSpreadVisible(true);
+  bendPageGeometry(turningPageGeometry, p, PAGE_TURN_BEND * Math.sin(p * Math.PI));
+  bendPageGeometry(flipShadow.geometry, p, PAGE_TURN_BEND * Math.sin(p * Math.PI));
+  const hingeTravel = smootherstep(p);
+  const showBack = p >= 0.5;
+  pageTurn.position.x = THREE.MathUtils.lerp(GUTTER / 2, -GUTTER / 2, hingeTravel);
+  pageTurn.position.z = 0.07 + Math.sin(p * Math.PI) * 0.015;
+  pageTurn.rotation.y = -p * Math.PI;
+  pageTurn.rotation.x = Math.sin(p * Math.PI) * 0.02;
+
+  frontPage.visible = !showBack;
+  backPage.visible = showBack;
+  flipShadow.material.opacity = 0.08 + Math.sin(p * Math.PI) * 0.18;
+  updateStackThickness();
+  updateSpreadJumpControls();
+
+  leftPageOuter.visible = false;
+  leftPageInner.visible = true;
+  rightPage.visible = true;
+}
+
+function setOpenSpreadVisible(visible) {
+  sideTabs.group.visible = visible;
+  leftPageOuter.visible = false;
+  leftPageInner.visible = visible;
+  rightPage.visible = visible;
+  innerLeft.visible = visible;
+  innerRight.visible = visible;
+  pageTurn.visible = visible;
+  spine.visible = visible;
+  ringGroup.visible = visible;
+  pageStacks.group.visible = visible;
+  if (!visible) {
+    flutterPages.group.visible = false;
+  }
+}
+
+function smootherstep(x) {
+  const t = THREE.MathUtils.clamp(x, 0, 1);
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const delta = Math.min(clock.getDelta(), 0.08);
+  if (updateSpreadJump(delta)) {
+    renderer.render(scene, camera);
+    return;
+  }
+  if (isPlaying) {
+    flipProgress += delta * 0.34;
+    if (flipProgress > 1) {
+      flipProgress = 0;
+    }
+    slider.value = String(flipProgress);
+    updatePage(flipProgress);
+  }
+  renderer.render(scene, camera);
+}
+
+function resize() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  renderer.setSize(width, height, false);
+
+  const viewW = PAGE_W * 2 + GUTTER + 1.1;
+  const viewH = PAGE_H + (width < 720 ? 3.2 : 1.5);
+  const aspect = width / height;
+  const fov = THREE.MathUtils.degToRad(CAMERA_FOV);
+  const distanceForHeight = viewH / (2 * Math.tan(fov / 2));
+  const distanceForWidth = viewW / (2 * Math.tan(fov / 2) * aspect);
+  const distance = Math.max(distanceForHeight, distanceForWidth) * 1.06;
+
+  camera.aspect = aspect;
+  camera.position.set(0, -distance * 0.18, distance);
+  camera.lookAt(cameraTarget);
+  camera.updateProjectionMatrix();
+
+  book.scale.setScalar(1);
+  book.position.y = width < 720 ? 0.58 : 0.22;
+  if (stickerEditor && !stickerEditor.hidden) {
+    renderDrawingCanvas();
+  }
+}
+
+function syncUrl() {
+  const next = new URLSearchParams(window.location.search);
+  next.set("progress", String(Number(flipProgress.toFixed(3))));
+  next.set("spread", String(Number(spreadPosition.toFixed(3))));
+  next.set("page", String(activeBookPage));
+  next.set("book", activeBook);
+  next.set("surface", activeSurface);
+  if (isPlaying) {
+    next.set("play", "1");
+  } else {
+    next.delete("play");
+  }
+  const query = next.toString();
+  history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+}
