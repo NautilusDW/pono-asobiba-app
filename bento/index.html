@@ -10190,7 +10190,7 @@ function createFreeContextToolbar(opts = {}) {
       const canDown = overlapIndexes.some(i => i >= 0 && i < index);
       const canUp = overlapIndexes.some(i => i > index);
       appendControl(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
-      appendControl(createFreeContextButton('↑', 'active', () => moveSelectedItemLayer(1), !canUp));
+      appendControl(createFreeContextButton('↑', '', () => moveSelectedItemLayer(1), !canUp));
     }
   }
 
@@ -10712,7 +10712,7 @@ function renderSelectedLayerControls() {
   const actions = document.createElement('div');
   actions.className = 'free-layer-actions';
   actions.appendChild(makeSmallControlButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
-  actions.appendChild(makeSmallControlButton('↑', 'primary', () => moveSelectedItemLayer(1), !canUp));
+  actions.appendChild(makeSmallControlButton('↑', '', () => moveSelectedItemLayer(1), !canUp));
   actions.appendChild(makeSmallControlButton('⇩', '', () => moveSelectedItemLayerTo('back'), !canDown));
   actions.appendChild(makeSmallControlButton('⇧', '', () => moveSelectedItemLayerTo('front'), !canUp));
   panel.appendChild(actions);
@@ -11363,19 +11363,25 @@ function renderFreeCupEditorControls() {
   frag.appendChild(renderCupContentsList(cup));
   const selectedToolbar = createFreeContextToolbar({ panel: true });
   if (selectedToolbar) frag.appendChild(selectedToolbar);
+  const hasToolbarDoneButton = !!(
+    selectedToolbar
+    && Array.from(selectedToolbar.querySelectorAll('button')).some(btn => (btn.textContent || '').trim() === 'OK')
+  );
 
-  const actions = document.createElement('div');
-  actions.className = 'free-cup-editor-actions';
-  const done = document.createElement('button');
-  done.type = 'button';
-  done.className = 'free-cup-done-btn';
-  done.textContent = 'OK';
-  done.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    closeCupEditor();
-  });
-  actions.appendChild(done);
-  frag.appendChild(actions);
+  if (!hasToolbarDoneButton) {
+    const actions = document.createElement('div');
+    actions.className = 'free-cup-editor-actions';
+    const done = document.createElement('button');
+    done.type = 'button';
+    done.className = 'free-cup-done-btn';
+    done.textContent = 'OK';
+    done.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      closeCupEditor();
+    });
+    actions.appendChild(done);
+    frag.appendChild(actions);
+  }
 
   const list = document.createElement('div');
   list.className = 'free-item-list';
@@ -12251,6 +12257,21 @@ function stageComplete() {
   if (detailBack) {
     detailBack.onclick = () => setCompletePage('result');
   }
+  const continueAfterCompleteClose = () => {
+    if (freeLayoutMode) {
+      startNextBentoOrderRound();
+      return;
+    }
+    if (inChallengeMode) {
+      loadChallengeStage();
+    } else if (last) {
+      inChallengeMode = true;
+      loadChallengeStage();
+    } else {
+      stageIdx++;
+      loadStage();
+    }
+  };
 
   document.getElementById('complete-btn').onclick = () => {
     const shouldGrantTutorialSticker =
@@ -12265,21 +12286,10 @@ function stageComplete() {
     document.getElementById('complete-overlay').classList.add('hidden');
     syncCompleteChromeSafeArea();
     if (shouldGrantTutorialSticker && typeof tutorialGrantPendingStickerAfterClose === 'function') {
-      tutorialGrantPendingStickerAfterClose();
-    }
-    if (freeLayoutMode) {
-      startNextBentoOrderRound();
+      tutorialGrantPendingStickerAfterClose(continueAfterCompleteClose);
       return;
     }
-    if (inChallengeMode) {
-      loadChallengeStage();
-    } else if (last) {
-      inChallengeMode = true;
-      loadChallengeStage();
-    } else {
-      stageIdx++;
-      loadStage();
-    }
+    continueAfterCompleteClose();
   };
   // NPC 依頼者モード時は、 完成画面の前に「お弁当を渡す」演出を挟む。
   // 自由モード (currentRequester == null) の時は従来通りすぐ完成画面。
@@ -12988,7 +12998,7 @@ function tutorialPositionPonoCallout(opts = {}) {
   const preferredLeft = box ? (r.left + r.width * 0.16) : (r.right - 4);
   let left = Math.max(8, Math.min(preferredLeft, window.innerWidth - bw - 8));
   let top = box ? (r.bottom + 8) : (r.top + r.height * 0.1);
-  if (box && placement === 'high') top = r.top + r.height * 0.54;
+  if (box && placement === 'high') top = r.top + r.height * 0.62;
   if (box && placement !== 'high') {
     const blockers = [
       document.getElementById('bento-reminder'),
@@ -13001,7 +13011,7 @@ function tutorialPositionPonoCallout(opts = {}) {
       const rr = blocker.getBoundingClientRect();
       const visible = rr && rr.width && rr.height && getComputedStyle(blocker).display !== 'none';
       if (visible && !(top + bh < rr.top || top > rr.bottom)) {
-        top = r.top + r.height * 0.54;
+        top = Math.max(r.top + 6, rr.top - bh - 8);
         break;
       }
     }
@@ -13165,15 +13175,45 @@ function tutorialShouldGrantPendingSticker() {
     && tutorialState.completeDetailShown
   );
 }
-function tutorialGrantPendingStickerAfterClose() {
+function tutorialGrantPendingStickerAfterClose(onClose) {
   if (!tutorialState.pendingStickerGrant) return;
   tutorialState.pendingStickerGrant = false;
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    tutorialMarkDone();
+    if (typeof onClose === 'function') onClose();
+  };
   try {
     if (window.PonoGameStickers) {
-      window.PonoGameStickers.grant({ gameId: 'bento', event: 'complete' });
+      const result = window.PonoGameStickers.grant({
+        gameId: 'bento',
+        event: 'complete',
+        immediate: true,
+        onClose: finish,
+      });
+      if (result && typeof result.then === 'function') {
+        result.then(granted => {
+          if (!granted) finish();
+          else {
+            setTimeout(() => {
+              if (!document.getElementById('game-sticker-toast')) finish();
+            }, 1200);
+          }
+        }, finish);
+      } else {
+        setTimeout(() => {
+          if (!document.getElementById('game-sticker-toast')) finish();
+        }, 1200);
+      }
+      return;
     }
-  } catch (_) {}
-  tutorialMarkDone();
+  } catch (_) {
+    finish();
+    return;
+  }
+  finish();
 }
 function tutorialSetReminderFocus(active) {
   const reminder = document.getElementById('bento-reminder');
@@ -13776,6 +13816,36 @@ function tutorialActiveCupPoint() {
   }
   return tutorialStageRightHalfPoint();
 }
+function tutorialActiveCupItem() {
+  return getEditingCup()
+      || getActiveCup()
+      || placedItems.find(i => i.snapTarget && getItemTier(i) === getGuideTierForStep())
+      || placedItems.find(i => i.snapTarget)
+      || null;
+}
+function tutorialAttachFoodToActiveCupIfOverlaps(item) {
+  if (!item || item.type !== 'food') return false;
+  if (item.parentCupId) return true;
+  const cup = tutorialActiveCupItem();
+  if (!cup) return false;
+  const itemRadius = Math.max(44, (item.size || 96) * (item.scale || 1) * 0.58);
+  const cupRadius = cup.radius || ((cup.size || 180) * 0.58);
+  if (dist(item, cup) > cupRadius + itemRadius) return false;
+  const def = getFreeFoodCatalog().find(f => f.id === item.id || f.name === item.name) || item;
+  item.parentCupId = cup.uid;
+  item.tier = getItemTier(cup);
+  item.size = getCupFoodChildSize(def, cup);
+  item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
+  item.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
+  const p = clampPointToCup(item.x, item.y, item, cup);
+  item.x = p.x;
+  item.y = p.y;
+  freeActiveCupUid = cup.uid;
+  layoutCupChildren(cup);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  return true;
+}
 function tutorialContextToolbarEl() {
   return document.querySelector('#food-tray .free-context-toolbar--panel')
       || document.querySelector('.right-panel.free-layout-panel .free-context-toolbar--panel')
@@ -14229,7 +14299,7 @@ function tutorialRenderStep() {
     tutorialSetReminderFocus(true);
     tutorialHideBubble();
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('おともだちの おねがい<br>「' + requestedFood + '」を いれよう！<br><span class="tut-emph-red">あか</span>の グループだよ', { placement: 'high' });
+    tutorialShowPonoCallout('おともだちの おねがい<br>「' + requestedFood + '」を いれよう！<br><span class="tut-emph-red">あか</span>の グループだよ');
     tutorialShowTargetCircle(tutorialLayerDemoScreenPoint(), { size: 108 });
     if (firstRender) tutorialMaskOverlay({ half: 'right' });
     // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
@@ -14794,8 +14864,17 @@ function tutorialOnItemPlaced(item) {
       return;
     }
   }
-  if (step === 'small-cup-food' && item.type === 'food' && item.parentCupId) {
+  if (step === 'small-cup-food' && item.type === 'food') {
+    const inCup = !!item.parentCupId || tutorialAttachFoodToActiveCupIfOverlaps(item);
+    if (!inCup) {
+      tutorialResetInactivity();
+      return;
+    }
     if (getEditingCup()) closeCupEditor();
+    else {
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }
     tutorialAdvance('small-next');
     return;
   }

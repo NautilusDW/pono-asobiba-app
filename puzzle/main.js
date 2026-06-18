@@ -2592,6 +2592,10 @@ const BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS = 800;
 const BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS = 2500;
 const BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS = 700;
 const BASIC_DRAG_TRY_BLUE_AT_VOICE_MS = 2400;
+// If the audio element never fires 'play'/'playing' within this window (autoplay
+// blocked, file 404, decode stall), we fall back to a wall-clock schedule so the
+// orange/blue cues still appear and the child is never stuck without guidance.
+const BASIC_CUE_PLAY_FALLBACK_MS = 1200;
 const BASIC_AFTER_DRAG_SUCCESS_MS = 1700;
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
@@ -2603,6 +2607,10 @@ const BASIC_HINT_AUTO_SNAP_DELAY_MS = 2200;
 const BASIC_HINT_AUTO_SNAP_DURATION_MS = 1200;
 const BASIC_AFTER_AUTO_SNAP_FINISH_MS = 650;
 const BASIC_MODE_BADGE_POP_MS = 3000;
+// 'できたね！' success badge on a completed peek hold. Long enough to read but
+// shorter than the narrated intro/try banners; the phase then moves on to the
+// success narration + hint, so it doesn't need the full ~6.8s.
+const BASIC_PEEK_DONE_BANNER_MS = 3500;
 const PARTNER_PRACTICE_AFTER_TAP_DELAY_MS = 180;
 const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
 const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
@@ -2769,6 +2777,90 @@ function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
   }
   setVoiceFallbackTimer(fallbackDelay);
   return audio;
+}
+
+// Anchor the orange (tap-piece) and blue (kojika-move-target) cues to the
+// ACTUAL audio playback of the narration, not to a setTimeout measured from
+// scheduling time. We attach a one-time 'play'/'playing' listener on the audio
+// element; when it fires, we schedule the cues at orangeMs/blueMs measured from
+// that real playback start. If playback never starts within
+// BASIC_CUE_PLAY_FALLBACK_MS (autoplay blocked / file missing / decode stall),
+// we fall back to the old wall-clock schedule so cues still appear.
+//
+// opts: { audio, phase, piece, orangeMs, blueMs }
+function scheduleBasicDragCuesOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts.audio;
+  var phase = opts.phase;
+  var piece = opts.piece;
+  var orangeMs = opts.orangeMs | 0;
+  var blueMs = opts.blueMs | 0;
+  var scheduledAt = performance.now();
+  var fired = false; // cues scheduled once (either via play event or fallback)
+
+  function stillValid() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.phase === phase
+      && (!piece || partnerPracticeState.targetPiece === piece));
+  }
+
+  function showOrange() {
+    if (!stillValid()) return;
+    partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+    redraw();
+  }
+  function showBlue() {
+    if (!stillValid()) return;
+    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+    redraw();
+  }
+
+  // Schedule both cues relative to `anchorTime` (real or fallback playback
+  // start). Offsets already elapsed since the anchor are clamped to 0 so a late
+  // anchor still produces the cues immediately rather than skipping them.
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(showOrange, Math.max(0, orangeMs - elapsed));
+    practiceSetTimeout(showBlue, Math.max(0, blueMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    // Anchor to the moment playback truly began.
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    // If the audio is already playing by the time we get here, anchor now.
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  // Fallback: if 'play' never fires (no audio element, autoplay blocked, 404,
+  // decode stall), schedule from the original wall-clock so cues still appear.
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
 }
 
 function queueBasicPracticeAfterVoice(fn) {
@@ -4281,28 +4373,19 @@ function startBasicDragPractice() {
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
   redraw();
 
-  // Start the voice FIRST after a short settle delay, then schedule the
-  // orange/blue cues relative to voice start so they align with the spoken
-  // phrases (このピースをつかんで → orange, 青い場所へ → blue). Cue is null at
-  // phase entry so the orange target doesn't appear at t=0 anymore.
+  // Start the voice FIRST after a short settle delay, then anchor the orange/blue
+  // cues to the audio element's REAL playback start (scheduleBasicDragCuesOnVoice)
+  // so they align with the spoken phrases (このピースをつかんで → orange,
+  // 青い場所へ → blue) even when play() is delayed. Cue is null at phase entry so
+  // the orange target doesn't appear at t=0 anymore.
   practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
     if (partnerPracticeState.targetPiece !== piece) return;
-    // Schedule orange cue at ~800ms into voice (when 「このピースをつかんで」 is spoken).
-    practiceSetTimeout(function () {
-      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
-      if (partnerPracticeState.targetPiece !== piece) return;
-      partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
-      redraw();
-    }, BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS);
-    // Schedule blue cue at ~2500ms into voice (when 「青い場所へ」 is spoken).
-    practiceSetTimeout(function () {
-      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
-      if (partnerPracticeState.targetPiece !== piece) return;
-      partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
-      redraw();
-    }, BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS);
-    playBasicPracticeVoice(1, function () {
+    // Start the voice first, then anchor the orange/blue cues to the audio
+    // element's real playback start (with a wall-clock fallback) so they line up
+    // with the spoken 「このピースをつかんで」 / 「青い場所へ」 even if play() is
+    // delayed by network / decode / autoplay gating.
+    var demoAudio = playBasicPracticeVoice(1, function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
       runBasicDragHandDemo(piece, { x: start.x, y: start.y, rotation: 0 }, to, function () {
         if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
@@ -4320,25 +4403,30 @@ function startBasicDragPractice() {
         );
         setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
         redraw();
-        // Orange cue for try phase: appears when 「このピースをつかんで」 plays in basic_tut_03.
-        practiceSetTimeout(function () {
-          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
-          partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
-          redraw();
-        }, BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS);
-        // Blue cue for try phase: appears when 「青い場所へ」 plays.
-        practiceSetTimeout(function () {
-          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
-          partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
-          redraw();
-        }, BASIC_DRAG_TRY_BLUE_AT_VOICE_MS);
-        playBasicPracticeVoice(2, function () {
+        // Start the try voice (basic_tut_03), then anchor the orange/blue cues to
+        // its real playback start so 「このピースをつかんで」/「青い場所へ」 stay in
+        // sync even if play() is delayed (wall-clock fallback inside the helper).
+        var tryAudio = playBasicPracticeVoice(2, function () {
           if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
           setPartnerPracticeInput(true);
           redraw();
           armBasicDragLoopCue(piece, 'basic-drag-try');
         });
+        scheduleBasicDragCuesOnVoice({
+          audio: tryAudio,
+          phase: 'basic-drag-try',
+          piece: piece,
+          orangeMs: BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS,
+          blueMs: BASIC_DRAG_TRY_BLUE_AT_VOICE_MS,
+        });
       });
+    });
+    scheduleBasicDragCuesOnVoice({
+      audio: demoAudio,
+      phase: 'basic-drag-demo',
+      piece: piece,
+      orangeMs: BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS,
+      blueMs: BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS,
     });
   }, BASIC_DRAG_NA_START_DELAY_MS);
 }
@@ -4840,7 +4928,10 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     partnerPracticeState.peekHoldReady = false;
     partnerPracticeState.basicVoiceQueued = null;
     setPartnerPracticePeekInput(true);
-    setBasicPracticeModeBanner('try', 'やってみよう！');
+    // Too-short press: keep the 'やってみよう！' re-prompt up as long as the
+    // sibling try banner (peek-press entry uses BASIC_TRY_BANNER_MS) instead of
+    // silently defaulting to 3s, so the retry instruction stays readable.
+    setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
     clearPracticeHighlights();
     practiceAddHighlight(btnPeek);
     setPartnerPracticeCoachCopy(
@@ -4854,7 +4945,9 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
   partnerPracticeState.phase = 'peek-done';
   clearPracticeHighlights();
   setPartnerPracticePeekInput(false);
-  setBasicPracticeModeBanner('done', 'できたね！');
+  // Explicit duration (~3.5s) so 'できたね！' stays visible long enough to read
+  // instead of the silent 3s default; the phase then moves to success narration.
+  setBasicPracticeModeBanner('done', 'できたね！', BASIC_PEEK_DONE_BANNER_MS);
   setPartnerPracticeCoachCopy(
     '見えたね',
     '離すと、パズルに戻るよ。わからなくなったら、もう一度長く押してね',
