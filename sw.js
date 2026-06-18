@@ -1,3 +1,4 @@
+// v1307: Oto rhythm tutorial uses hands-on taps and a single-note practice.
 // v1306: Oto rhythm demo notes render visibly and move during tutorial/sample playback.
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
@@ -60,7 +61,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1306; // v1306: Oto rhythm demo notes render visibly and move during tutorial/sample playback. | v1305: Oto rhythm menu tutorial continues into left-side line/button guidance with real falling notes. | v1304: Oto rhythm menu has first-run tutorials for song selection and block/full setup. | v1303: Oto rhythm tutorial starts with a visible overview and uses real rhythm notes for the demo.
+const CACHE_VERSION = 1307; // v1307: Oto rhythm tutorial uses hands-on taps and a single-note practice. | v1306: Oto rhythm demo notes render visibly and move during tutorial/sample playback. | v1305: Oto rhythm menu tutorial continues into left-side line/button guidance with real falling notes. | v1304: Oto rhythm menu has first-run tutorials for song selection and block/full setup. | v1303: Oto rhythm tutorial starts with a visible overview and uses real rhythm notes for the demo.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
