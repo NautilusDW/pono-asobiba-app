@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-685";
+const ASSET_VERSION = "20260619-686";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -4212,6 +4212,7 @@ function updatePage(progress) {
   bendPageGeometry(flipShadow.geometry, p, PAGE_TURN_BEND * Math.sin(p * Math.PI));
   const hingeTravel = smootherstep(p);
   const showBack = p >= 0.5;
+  pageTurn.visible = p > 0.001;
   pageTurn.position.x = THREE.MathUtils.lerp(GUTTER / 2, -GUTTER / 2, hingeTravel);
   pageTurn.position.z = 0.07 + Math.sin(p * Math.PI) * 0.015;
   pageTurn.rotation.y = -p * Math.PI;
