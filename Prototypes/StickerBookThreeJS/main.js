@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-669";
+const ASSET_VERSION = "20260618-670";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -62,33 +62,33 @@ const DRAWING_DEFAULT_SIZE = 14;
 const DRAWING_MIN_DISTANCE = 0.22;
 
 const SHARED_TEXTURES = {
-  pageBack: "sb3d_page_back_generated.png",
-  innerLeft: "sb3d_inner_shadow_left.png",
-  innerRight: "sb3d_inner_shadow_right.png",
-  flipShadow: "sb3d_flip_shadow.png",
-  floorShadow: "sb3d_book_floor_shadow.png",
+  pageBack: "sb3d_page_back_generated.webp",
+  innerLeft: "sb3d_inner_shadow_left.webp",
+  innerRight: "sb3d_inner_shadow_right.webp",
+  flipShadow: "sb3d_flip_shadow.webp",
+  floorShadow: "sb3d_book_floor_shadow.webp",
 };
 
 const BOOK_VARIANTS = {
   boy: {
-    insideLeft: "sb3d_boy_page_left_generated.png",
-    insideRight: "sb3d_boy_page_right_generated.png",
-    coverFront: "sb3d_boy_cover_front_generated.png",
-    coverBack: "sb3d_boy_cover_back_generated.png",
-    coverInside: "sb3d_boy_cover_inside_generated.png",
-    spine: "sb3d_boy_spine_generated.png",
-    tabsLeft: "sb3d_boy_side_tabs_left_generated.png",
-    tabsRight: "sb3d_boy_side_tabs_right_generated.png",
+    insideLeft: "sb3d_boy_page_left_generated.webp",
+    insideRight: "sb3d_boy_page_right_generated.webp",
+    coverFront: "sb3d_boy_cover_front_generated.webp",
+    coverBack: "sb3d_boy_cover_back_generated.webp",
+    coverInside: "sb3d_boy_cover_inside_generated.webp",
+    spine: "sb3d_boy_spine_generated.webp",
+    tabsLeft: "sb3d_boy_side_tabs_left_generated.webp",
+    tabsRight: "sb3d_boy_side_tabs_right_generated.webp",
   },
   girl: {
-    insideLeft: "sb3d_girl_page_left_generated.png",
-    insideRight: "sb3d_girl_page_right_generated.png",
-    coverFront: "sb3d_girl_cover_front_generated.png",
-    coverBack: "sb3d_girl_cover_back_generated.png",
-    coverInside: "sb3d_girl_cover_inside_generated.png",
-    spine: "sb3d_girl_spine_generated.png",
-    tabsLeft: "sb3d_girl_side_tabs_left_generated.png",
-    tabsRight: "sb3d_girl_side_tabs_right_generated.png",
+    insideLeft: "sb3d_girl_page_left_generated.webp",
+    insideRight: "sb3d_girl_page_right_generated.webp",
+    coverFront: "sb3d_girl_cover_front_generated.webp",
+    coverBack: "sb3d_girl_cover_back_generated.webp",
+    coverInside: "sb3d_girl_cover_inside_generated.webp",
+    spine: "sb3d_girl_spine_generated.webp",
+    tabsLeft: "sb3d_girl_side_tabs_left_generated.webp",
+    tabsRight: "sb3d_girl_side_tabs_right_generated.webp",
   },
 };
 
@@ -140,8 +140,10 @@ const editorEnabled = isLocalPreview && (readBooleanParam("editor") || readBoole
 const prototypeControlsEnabled = isLocalPreview && (editorEnabled || tuningEnabled || readBooleanParam("controls"));
 let activeBook = params.get("book") === "girl" ? "girl" : "boy";
 let activeSurface = params.get("surface") === "cover" ? "cover" : "inside";
-let flipProgress = readClampedNumber(params.get("progress"), Number(slider.value), 0, 1);
-let spreadPosition = readClampedNumber(params.get("spread"), 0.5, 0, 1);
+let flipProgress = isLocalPreview ? readClampedNumber(params.get("progress"), 0, 0, 1) : 0;
+let spreadPosition = isLocalPreview && params.has("spread")
+  ? readClampedNumber(params.get("spread"), 0.5, 0, 1)
+  : 0;
 let isPlaying = params.get("play") === "1";
 const clock = new THREE.Clock();
 if (activeSurface === "cover") {
@@ -231,6 +233,9 @@ let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let editorState = loadEditorState();
 let activeEditorPage = 1;
 let activeBookPage = spreadStartForPage(readClampedNumber(params.get("page"), 1, 1, editorPageDefinitions.length));
+if (!isLocalPreview || !params.has("spread")) {
+  spreadPosition = spreadPositionForBookPage(activeBookPage);
+}
 let selectedPlacementId = null;
 let stickerDragState = null;
 let editorStateSaveTimer = 0;
@@ -273,8 +278,8 @@ const textureFiles = [
     ...Object.values(BOOK_VARIANTS.girl),
     ...["boy", "girl"].flatMap((bookName) =>
       THICKNESS_LEVEL_NAMES.flatMap((level) => [
-        `sb3d_${bookName}_page_thickness_left_${level}.png`,
-        `sb3d_${bookName}_page_thickness_right_${level}.png`,
+        `sb3d_${bookName}_page_thickness_left_${level}.webp`,
+        `sb3d_${bookName}_page_thickness_right_${level}.webp`,
       ]),
     ),
   ]),
@@ -473,7 +478,7 @@ for (const button of surfaceButtons) {
     activeSurface = nextSurface;
     isPlaying = false;
     playButton.classList.remove("playing");
-    flipProgress = activeSurface === "cover" ? 0 : 0.82;
+    flipProgress = 0;
     slider.value = String(flipProgress);
     applyVariantState();
   });
@@ -612,6 +617,9 @@ async function loadStickerPlanForEditor() {
     editorPageDefinitions = buildEditorPageDefinitions();
     activeBookPage = spreadStartForPage(activeBookPage);
     activeEditorPage = THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
+    if (!isLocalPreview || !params.has("spread")) {
+      spreadPosition = spreadPositionForBookPage(activeBookPage);
+    }
     ensureDefaultEditorPages();
     saveEditorState();
     if (editorEnabled) {
@@ -1439,11 +1447,13 @@ function applyStickerEditorToBook() {
 }
 
 function setBookPage(page, options = {}) {
+  const previousPage = activeBookPage;
   const nextPage = spreadStartForPage(page);
   if (nextPage === activeBookPage && !options.force) {
     updateBookPageControls();
     return;
   }
+  const nextSpreadPosition = spreadPositionForBookPage(nextPage);
   activeBookPage = nextPage;
   if (!options.skipEditorSync) {
     activeEditorPage = nextPage;
@@ -1452,7 +1462,23 @@ function setBookPage(page, options = {}) {
   }
   refreshPageTemplateTextures();
   updateBookPageControls();
-  syncUrl();
+  if (shouldAnimateBookPageTurn(previousPage, nextPage, options)) {
+    startSpreadJump(nextSpreadPosition);
+  } else {
+    cancelSpreadJump();
+    spreadPosition = nextSpreadPosition;
+    flipProgress = 0;
+    slider.value = "0";
+    updatePage(flipProgress);
+    syncUrl();
+  }
+}
+
+function shouldAnimateBookPageTurn(previousPage, nextPage, options) {
+  if (options.animate === false || activeSurface === "cover" || previousPage === nextPage) {
+    return false;
+  }
+  return !stickerEditor || stickerEditor.hidden;
 }
 
 function updateBookPageControls() {
@@ -1490,6 +1516,15 @@ function spreadStartForPage(page) {
     nextPage -= 1;
   }
   return THREE.MathUtils.clamp(nextPage, 1, count);
+}
+
+function spreadPositionForBookPage(page) {
+  const pairCount = Math.max(1, Math.ceil(editorPageCount() / 2));
+  if (pairCount <= 1) {
+    return 0;
+  }
+  const pairIndex = Math.floor((spreadStartForPage(page) - 1) / 2);
+  return THREE.MathUtils.clamp(pairIndex / (pairCount - 1), 0, 1);
 }
 
 function rightBookPageNumber() {
@@ -2932,7 +2967,7 @@ function thicknessLevelForAmount(amount) {
 
 function thicknessFileFor(side, level) {
   const assetLevel = level === "empty" ? "empty" : "full";
-  return `sb3d_${activeBook}_page_thickness_${side}_${assetLevel}.png`;
+  return `sb3d_${activeBook}_page_thickness_${side}_${assetLevel}.webp`;
 }
 
 function positionStackSide(stack, level, tuning) {
