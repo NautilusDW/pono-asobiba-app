@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-668";
+const ASSET_VERSION = "20260618-669";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -133,9 +133,11 @@ const bookNextPage = document.getElementById("bookNextPage");
 const bookPageLabel = document.getElementById("bookPageLabel");
 
 const params = new URLSearchParams(window.location.search);
-const tuningEnabled = params.get("tune") === "1";
-const editorEnabled = readBooleanParam("editor") || readBooleanParam("edit");
-const prototypeControlsEnabled = editorEnabled || tuningEnabled || readBooleanParam("controls");
+const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
+const isLocalPreview = localPreviewHostnames.has(window.location.hostname);
+const tuningEnabled = isLocalPreview && params.get("tune") === "1";
+const editorEnabled = isLocalPreview && (readBooleanParam("editor") || readBooleanParam("edit"));
+const prototypeControlsEnabled = isLocalPreview && (editorEnabled || tuningEnabled || readBooleanParam("controls"));
 let activeBook = params.get("book") === "girl" ? "girl" : "boy";
 let activeSurface = params.get("surface") === "cover" ? "cover" : "inside";
 let flipProgress = readClampedNumber(params.get("progress"), Number(slider.value), 0, 1);
