@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-677";
+const ASSET_VERSION = "20260618-679";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -644,6 +644,7 @@ async function loadStickerPlanForEditor() {
         ...sticker,
         assetUrl: stickerAssetUrl(sticker.assetPath),
       }));
+    syncEditorPlacementsWithStickerPlan();
     editorPageDefinitions = buildEditorPageDefinitions();
     activeBookPage = spreadStartForPage(activeBookPage);
     activeEditorPage = THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
@@ -663,6 +664,30 @@ async function loadStickerPlanForEditor() {
     if (stickerLibrary) {
       stickerLibrary.textContent = "シールを よみこめません";
     }
+  }
+}
+
+function syncEditorPlacementsWithStickerPlan() {
+  const stickersById = new Map(stickerOptions.map((sticker) => [sticker.id, sticker]));
+  let changed = false;
+  for (const placements of Object.values(editorState.pages || {})) {
+    if (!Array.isArray(placements)) {
+      continue;
+    }
+    for (const placement of placements) {
+      const sticker = stickersById.get(placement.stickerId);
+      if (!sticker) {
+        continue;
+      }
+      if (placement.assetUrl !== sticker.assetUrl || placement.label !== sticker.label) {
+        placement.assetUrl = sticker.assetUrl;
+        placement.label = sticker.label;
+        changed = true;
+      }
+    }
+  }
+  if (changed) {
+    editorStateDirty = true;
   }
 }
 
@@ -2750,7 +2775,6 @@ function drawStickerListPage(ctx, texture, palette, pageDef, stickers) {
 function drawStickerCanvasPage(ctx, texture, palette, pageDef, placements, pageNumber) {
   const ordered = [...placements].sort((a, b) => a.z - b.z);
   for (const placement of ordered) {
-    drawPlacedStickerPlaceholder(ctx, placement);
     drawAsyncPlacedSticker(ctx, texture, placement, pageNumber);
   }
   drawPageDrawingLayer(ctx, pageNumber);
@@ -2783,26 +2807,6 @@ function drawStickerImagePlaceholder(ctx, x, y, width, height, label) {
   ctx.restore();
 }
 
-function drawPlacedStickerPlaceholder(ctx, placement) {
-  const base = PAGE_TEXTURE_W * 0.18 * placement.scale;
-  const x = (placement.x / 100) * PAGE_TEXTURE_W;
-  const y = (placement.y / 100) * PAGE_TEXTURE_H;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
-  ctx.fillStyle = "rgba(255,255,255,0.5)";
-  ctx.strokeStyle = "rgba(75,160,170,0.24)";
-  ctx.lineWidth = 5;
-  drawCanvasRoundedRect(ctx, -base / 2, -base / 2, base, base, base * 0.18);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "rgba(51,68,71,0.3)";
-  ctx.font = `800 ${Math.max(22, base * 0.16)}px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
-  ctx.textAlign = "center";
-  ctx.fillText([...String(placement.label || "?")][0] || "?", 0, 8);
-  ctx.restore();
-}
-
 function drawAsyncStickerImage(ctx, texture, src, x, y, width, height) {
   loadStickerImage(src)
     .then((image) => {
@@ -2824,15 +2828,35 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
-      ctx.shadowColor = "rgba(60, 48, 20, 0.24)";
-      ctx.shadowBlur = 18;
-      ctx.shadowOffsetY = 14;
+      drawStickerWhiteOutline(ctx, image, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.restore();
       drawPageDrawingLayer(ctx, pageNumber);
       texture.needsUpdate = true;
     })
     .catch(() => {});
+}
+
+function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
+  const outline = Math.max(7, Math.min(24, width * 0.04));
+  const offsets = [
+    [outline, 0],
+    [-outline, 0],
+    [0, outline],
+    [0, -outline],
+    [outline * 0.72, outline * 0.72],
+    [-outline * 0.72, outline * 0.72],
+    [outline * 0.72, -outline * 0.72],
+    [-outline * 0.72, -outline * 0.72],
+  ];
+  ctx.save();
+  ctx.globalAlpha = 0.96;
+  ctx.filter = "brightness(0) invert(1)";
+  for (const [dx, dy] of offsets) {
+    ctx.drawImage(image, x + dx, y + dy, width, height);
+  }
+  ctx.filter = "none";
+  ctx.restore();
 }
 
 function drawImageContain(ctx, image, x, y, width, height) {
@@ -3102,9 +3126,22 @@ function bendPageGeometry(geometry, progress, bendAmount) {
 
 function updateStackThickness() {
   const pair = thicknessPairForSpread(spreadPosition);
-  const tuning = getCurrentLayerTuning();
+  const tuning = visibleLayerTuning(getCurrentLayerTuning());
   positionStackSide(pageStacks.left, pair.left, tuning);
   positionStackSide(pageStacks.right, pair.right, tuning);
+}
+
+function visibleLayerTuning(tuning) {
+  if (tuningEnabled) {
+    return tuning;
+  }
+  return {
+    ...tuning,
+    stackLeftY: Math.min(tuning.stackLeftY, 0.68),
+    stackLeftScaleY: Math.max(tuning.stackLeftScaleY, 0.72),
+    stackRightY: Math.min(tuning.stackRightY, 0.68),
+    stackRightScaleY: Math.max(tuning.stackRightScaleY, 0.72),
+  };
 }
 
 function thicknessPairForSpread(spread) {

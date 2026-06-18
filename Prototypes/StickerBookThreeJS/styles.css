@@ -11,6 +11,25 @@ body {
   font-family: Arial, "Meiryo", sans-serif;
 }
 
+:root {
+  --sticker-thumbnail-outline-filter:
+    drop-shadow(1px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.92));
+  --sticker-page-outline-filter:
+    drop-shadow(2px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(-2px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 2px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 -2px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(1.4px 1.4px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(-1.4px 1.4px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(1.4px -1.4px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(-1.4px -1.4px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.92));
+}
+
 #app {
   position: fixed;
   inset: 0;
@@ -32,9 +51,9 @@ body {
   inset: -2%;
   background:
     linear-gradient(180deg, rgba(255, 244, 208, 0.04), rgba(8, 30, 38, 0.08)),
-    url("../../assets/ui/sticker_book_table_bg_1600.webp") center / cover no-repeat;
+    url("../../assets/ui/sticker_book_table_bg_1600.webp") center / auto 124% no-repeat;
   filter: saturate(1.03) brightness(0.98);
-  transform: scale(1.02);
+  transform: scale(1.01);
 }
 
 #app::after {
@@ -693,7 +712,7 @@ input[type="range"] {
   max-height: 58px;
   place-self: center;
   object-fit: contain;
-  filter: drop-shadow(0 5px 7px rgba(64, 54, 24, 0.18));
+  filter: var(--sticker-thumbnail-outline-filter);
 }
 
 .sticker-pick span {
@@ -818,7 +837,7 @@ input[type="range"] {
   width: 100%;
   height: auto;
   pointer-events: none;
-  filter: drop-shadow(0 8px 8px rgba(60, 49, 21, 0.24));
+  filter: var(--sticker-page-outline-filter);
   user-select: none;
   -webkit-user-drag: none;
 }
