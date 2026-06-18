@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-673";
+const ASSET_VERSION = "20260618-674";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -138,8 +138,8 @@ const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
 const isLocalPreview = localPreviewHostnames.has(window.location.hostname);
 const tuningEnabled = isLocalPreview && params.get("tune") === "1";
-const editorEnabled = isLocalPreview && (readBooleanParam("editor") || readBooleanParam("edit"));
-const prototypeControlsEnabled = isLocalPreview && (editorEnabled || tuningEnabled || readBooleanParam("controls"));
+const editorEnabled = true;
+const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 let activeBook = params.get("book") === "girl" ? "girl" : "boy";
 let activeSurface = params.get("surface") === "cover" ? "cover" : "inside";
 let flipProgress = isLocalPreview ? readClampedNumber(params.get("progress"), 0, 0, 1) : 0;
@@ -3668,13 +3668,13 @@ function resize() {
   const height = window.innerHeight;
   renderer.setSize(width, height, false);
 
-  const viewW = PAGE_W * 2 + GUTTER + 1.1;
-  const viewH = PAGE_H + (width < 720 ? 3.2 : 1.5);
+  const viewW = PAGE_W * 2 + GUTTER + (width < 720 ? 0.68 : 0.42);
+  const viewH = PAGE_H + (width < 720 ? 1.75 : 0.72);
   const aspect = width / height;
   const fov = THREE.MathUtils.degToRad(CAMERA_FOV);
   const distanceForHeight = viewH / (2 * Math.tan(fov / 2));
   const distanceForWidth = viewW / (2 * Math.tan(fov / 2) * aspect);
-  const distance = Math.max(distanceForHeight, distanceForWidth) * 1.06;
+  const distance = Math.max(distanceForHeight, distanceForWidth) * (width < 720 ? 1.0 : 1.03);
 
   camera.aspect = aspect;
   camera.position.set(0, -distance * 0.18, distance);
@@ -3682,7 +3682,7 @@ function resize() {
   camera.updateProjectionMatrix();
 
   book.scale.setScalar(1);
-  book.position.y = width < 720 ? 0.58 : 0.22;
+  book.position.y = width < 720 ? 0.32 : 0.16;
   if (stickerEditor && !stickerEditor.hidden) {
     renderDrawingCanvas();
   }
