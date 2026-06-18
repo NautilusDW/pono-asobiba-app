@@ -13011,7 +13011,7 @@ function tutorialPositionPonoCallout(opts = {}) {
       const rr = blocker.getBoundingClientRect();
       const visible = rr && rr.width && rr.height && getComputedStyle(blocker).display !== 'none';
       if (visible && !(top + bh < rr.top || top > rr.bottom)) {
-        top = Math.max(r.top + 6, rr.top - bh - 8);
+        top = Math.max(r.top + 6, rr.top - bh - 2);
         break;
       }
     }
@@ -13072,7 +13072,22 @@ function tutorialPlayStepVoice(step, firstRender) {
   const id = BENTO_TUTORIAL_STEP_VOICE[step];
   if (!id || tutorialState.lastVoiceStep === step) return;
   tutorialState.lastVoiceStep = step;
-  playBentoTutorialVoice(id);
+  const opts = {};
+  if (step === 'cup-edit-try') {
+    opts.onEnded = () => tutorialMarkCupOkAfterVoice(step);
+    opts.fallbackMs = 7600;
+  }
+  playBentoTutorialVoice(id, opts);
+}
+function tutorialMarkCupOkAfterVoice(step) {
+  if (!tutorialState.active || tutorialState.step !== step) return;
+  const okBtn = tutorialCupOkButton();
+  if (!okBtn) {
+    tutorialRetryRenderStep(step, 160);
+    return;
+  }
+  tutorialClearTrims();
+  tutorialMarkTarget(okBtn, { radius: 16, outline: false });
 }
 function tutorialClearCompleteGuideTimers() {
   if (!tutorialState.completeGuideTimers || !tutorialState.completeGuideTimers.length) return;
@@ -13520,19 +13535,19 @@ function tutorialFreeRatioPoint(rx, ry) {
   };
 }
 function tutorialLayerDemoScreenPoint() {
-  return tutorialStageRatioPoint(0.73, 0.54);
+  return tutorialStageRatioPoint(0.73, 0.52);
 }
 function tutorialLayerDemoFreePoint() {
-  return tutorialFreeRatioPoint(0.73, 0.54);
+  return tutorialFreeRatioPoint(0.73, 0.52);
 }
 function tutorialLayerFoodFreePoint() {
-  return tutorialFreeRatioPoint(0.73, 0.66);
+  return tutorialFreeRatioPoint(0.66, 0.68);
 }
 function tutorialCupDemoScreenPoint() {
-  return tutorialStageRatioPoint(0.73, 0.36);
+  return tutorialStageRatioPoint(0.80, 0.36);
 }
 function tutorialCupDemoFreePoint() {
-  return tutorialFreeRatioPoint(0.73, 0.36);
+  return tutorialFreeRatioPoint(0.80, 0.36);
 }
 function tutorialShowTargetCircle(point, opts = {}) {
   tutorialClearTargetCircle();
@@ -13822,6 +13837,23 @@ function tutorialActiveCupItem() {
       || placedItems.find(i => i.snapTarget && getItemTier(i) === getGuideTierForStep())
       || placedItems.find(i => i.snapTarget)
       || null;
+}
+function tutorialSetActiveCupSizeKey(sizeKey, opts = {}) {
+  const cup = tutorialActiveCupItem();
+  const preset = (FREE_ACCESSORY_SIZE_PRESETS.cup || []).find(p => p.key === sizeKey);
+  if (!cup || !preset) return false;
+  cup.size = preset.size;
+  cup.sizeKey = preset.key;
+  if (preset.radius) cup.radius = preset.radius;
+  const p = clampPointToFreeItemBounds(cup.x, cup.y, cup);
+  cup.x = p.x;
+  cup.y = p.y;
+  if (cup.snapTarget) clampCupChildren(cup);
+  if (opts.render !== false) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }
+  return true;
 }
 function tutorialAttachFoodToActiveCupIfOverlaps(item) {
   if (!item || item.type !== 'food') return false;
@@ -14483,14 +14515,15 @@ function tutorialRenderStep() {
 
   // 9b. cup-edit — カップを置いた直後にサイズ/上下を見せる
   if (step === 'cup-edit') {
+    if (firstRender) tutorialSetActiveCupSizeKey('small');
     const toolbar = tutorialContextToolbarEl();
     const sizeControl = tutorialEditSizeControlEl();
-    setSpeech('カップの サイズを えらべるよ。3が いちばん おおきいよ。やじるしで まえ・うしろも かえられるよ。きまったら OKを おしてね');
+    setSpeech('カップの サイズを えらべるよ。今回は 1に してみよう。やじるしで まえ・うしろも かえられるよ');
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('サイズは 1・2・3<br>3が いちばん おおきいよ<br>やじるしで まえ・うしろ<br>きまったら OKを おしてね');
+    tutorialShowPonoCallout('サイズは 1・2・3<br>今回は 1に しよう<br>やじるしで まえ・うしろも<br>かえられるよ');
     tutorialSetModeLabel('おてほんを みてみよう', {
       mode: 'demo',
-      note: 'サイズ 1・2・3',
+      note: 'サイズ 1・まえうしろ',
       buttonText: 'やってみよう',
       onClick: () => tutorialAdvance('cup-edit-try'),
     });
@@ -14509,15 +14542,16 @@ function tutorialRenderStep() {
 
   // 9c. cup-edit-try — カップ編集を試したあと、小さいおかずを入れる
   if (step === 'cup-edit-try') {
+    if (firstRender) tutorialSetActiveCupSizeKey('small');
     const toolbar = tutorialContextToolbarEl();
     const sizeControl = tutorialEditSizeControlEl();
     const okBtn = tutorialCupOkButton();
-    setSpeech('1・2・3を えらんでみよう。やじるしでも まえ・うしろを かえられるよ。きまったら OKを おしてね');
+    setSpeech('1を えらんでみよう。やじるしでも まえ・うしろを かえられるよ。きまったら OKを おしてね');
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('1・2・3を えらんでみよう<br>やじるしでも かえられるよ<br>きまったら OKを おしてね');
+    tutorialShowPonoCallout('1を えらんでみよう<br>やじるしでも かえられるよ<br>きまったら OKを おしてね');
     tutorialSetModeLabel('やってみよう！', {
       mode: 'try',
-      note: '1・2・3 → OK',
+      note: 'サイズ 1 → OK',
     });
     tutorialHideBubble();
     let markedCupTryTarget = false;
@@ -14525,7 +14559,7 @@ function tutorialRenderStep() {
       tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
       markedCupTryTarget = true;
     }
-    if (okBtn) {
+    if (!markedCupTryTarget && okBtn) {
       tutorialMarkTarget(okBtn, { radius: 16, outline: false });
       markedCupTryTarget = true;
     }

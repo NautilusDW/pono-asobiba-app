@@ -565,6 +565,12 @@ window.__stickerBookDebugState = () => ({
   spreadJumpActive: Boolean(spreadJumpAnimation),
   spreadJumpVisiblePageCount: spreadJumpAnimation?.visiblePageCount ?? 0,
   spreadJumpCycles: spreadJumpAnimation?.cycles ?? 0,
+  ringGroupVisible: ringGroup.visible,
+  innerLeftVisible: innerLeft.visible,
+  innerRightVisible: innerRight.visible,
+  pageTurnVisible: pageTurn.visible,
+  frontPageVisible: frontPage.visible,
+  backPageVisible: backPage.visible,
   leftPlacementCount: getPagePlacements(activeBookPage).length,
   rightPlacementCount: getPagePlacements(rightBookPageNumber()).length,
   turnFrontTextureIsCanvas: frontPage.material.map?.image instanceof HTMLCanvasElement,
@@ -3929,9 +3935,9 @@ function applyVariantState() {
 function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
-    spine.scale.x = 1.34;
-    spine.position.z = 0.035;
-    spine.renderOrder = 16;
+    spine.scale.x = 1.92;
+    spine.position.z = 0.07;
+    spine.renderOrder = 30;
     return;
   }
   spine.scale.x = 1;
@@ -4232,7 +4238,7 @@ function renderCoverOpenTransition(rawProgress) {
     applyCoverTuning();
   }
   setCoverOpeningSpreadVisible(true);
-  const showBinding = p > 0.64;
+  const showBinding = p > 0.52;
   spine.visible = showBinding;
   ringGroup.visible = showBinding && activeAlbumMode !== "collection";
   innerRight.visible = showBinding && activeAlbumMode !== "collection";

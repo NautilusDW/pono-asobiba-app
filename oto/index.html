@@ -3590,7 +3590,7 @@
     outline: 4px solid #FFD84D;
     outline-offset: 2px;
     animation: tutSpotPulse 1.2s ease-in-out infinite;
-    transition: all 0.25s ease-out;
+    transition: none;
   }
   .tut-spot.hidden { display: none; }
   .tut-hand {
@@ -11674,8 +11674,8 @@ document.addEventListener('visibilitychange', function() {
 var TUT_SEEN_KEY = 'pono_oto_tut_seen_v4';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
-  rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v5',
-  rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v5',
+  rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v6',
+  rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v6',
   rhythmStory: 'pono_oto_rhythm_story_tut_seen_v5',
   rhythmStoryFromMenu: 'pono_oto_rhythm_story_from_menu_tut_seen_v2',
   freeStage: 'pono_oto_free_stage_tut_seen_v4'
@@ -12051,27 +12051,19 @@ function _makeOtoTutorialSteps(kind) {
     return [
       {
         badge: 'きょく',
-        msg: 'ここで あそぶ<br>きょくを えらぶよ',
+        msg: 'かんたん・ふつう・むずかしめを<br>えらべるよ<br>まずは かんたんを おしてね',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.songIntro,
-        anchor: null,
+        anchor: '.rhythm-diff-tabs',
         side: 'stageTop',
-        noDim: true,
+        hand: 'point',
+        handAnchor: '.rhythm-diff-tab[data-diff="かんたん"]',
+        hideActions: true,
+        advanceOn: '.rhythm-diff-tab[data-diff="かんたん"]',
+        advanceDelayMs: 220,
         before: function() {
           _setRhythmMenuAwaitingSongChoice(true);
           RHYTHM_CURRENT_DIFF = 'かんたん';
           _selectRhythmSong('kaeru');
-          _prepareOtoRhythmMenuTutorial('song');
-        }
-      },
-      {
-        badge: 'ステージ',
-        msg: 'かつと あそべる<br>きょくが ふえるよ',
-        voice: OTO_RHYTHM_TUTORIAL_VOICE.stageUnlock,
-        anchor: null,
-        side: 'stageTop',
-        noDim: true,
-        before: function() {
-          _setRhythmMenuAwaitingSongChoice(true);
           _prepareOtoRhythmMenuTutorial('song');
         }
       },
@@ -12132,7 +12124,9 @@ function _makeOtoTutorialSteps(kind) {
         anchor: '.instr-btn[data-idx="3"]',
         side: 'stageTopRight',
         noSpot: true,
+        hideActions: true,
         demoNoteIdx: 3,
+        autoAdvanceAfterDemo: true,
         before: function() {
           _prepareOtoRhythmTutorialStage();
           _setRhythmStatus('おてほんを みてね', null, 'judge');
@@ -12150,17 +12144,6 @@ function _makeOtoTutorialSteps(kind) {
         before: function() {
           _prepareOtoRhythmTutorialStage();
           _setRhythmStatus('ラインに きたら タッチ', null, 'judge');
-        }
-      },
-      {
-        badge: 'コツ',
-        msg: 'じゆうモードでも<br>れんしゅう できるよ<br>おてほんも つかってね',
-        voice: OTO_RHYTHM_TUTORIAL_VOICE.advice,
-        anchor: '#rhythm-menu-demo',
-        side: 'stageTop',
-        hand: 'point',
-        before: function() {
-          _prepareOtoRhythmMenuTutorial('mode');
         }
       },
       {
@@ -12203,6 +12186,9 @@ function _makeOtoTutorialSteps(kind) {
         anchor: '#rhythm-menu-demo',
         side: 'stageTop',
         hand: 'point',
+        hideActions: true,
+        advanceOn: '#rhythm-menu-demo',
+        advanceDelayMs: 260,
         before: function() {
           _prepareOtoRhythmMenuTutorial('mode');
         }
@@ -12564,7 +12550,9 @@ function _renderOtoTutorialStep() {
       } else if (typeof s.userTryNoteIdx === 'number') {
         _runOtoTutorialUserFallingNoteTry(s, anchorEl);
       } else {
-        _showOtoTutorialHand(s, rect, anchorEl);
+        var handEl = s.handAnchor ? document.querySelector(s.handAnchor) : anchorEl;
+        var handRect = handEl ? handEl.getBoundingClientRect() : rect;
+        _showOtoTutorialHand(s, handRect, handEl || anchorEl);
       }
     });
     var btn = document.getElementById('tut-next');
