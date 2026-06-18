@@ -1,14 +1,14 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-688";
+const ASSET_VERSION = "20260619-691";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
 const PAGE_H = 6.0;
 const PAGE_W = PAGE_H * PAGE_ASPECT;
 const GUTTER = PAGE_H * (192 / 1536);
-const COLLECTION_GUTTER = PAGE_H * (38 / 1536);
+const COLLECTION_GUTTER = 0;
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
@@ -21,10 +21,10 @@ const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
 const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
 const THICKNESS_DEFAULT_SCALE_Y = {
   empty: 0,
-  small: 1,
-  half: 1,
-  mostly: 1,
-  full: 1,
+  small: 0.28,
+  half: 0.5,
+  mostly: 0.68,
+  full: 0.86,
 };
 const STICKER_PLAN_URL = "./sticker_book_content_plan.json";
 const STICKER_ASSET_PREFIX = "../../";
@@ -167,7 +167,7 @@ document.body.classList.toggle("is-prototype-controls", prototypeControlsEnabled
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
-const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v5";
+const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v7";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v3";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
@@ -189,11 +189,11 @@ const PAGE_FLUTTER_BEND = 0.56;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
-  stackLeftY: 0.7,
+  stackLeftY: 0.06,
   stackLeftScaleX: 1,
   stackLeftScaleY: 1,
   stackRightX: 0,
-  stackRightY: 0.7,
+  stackRightY: 0.06,
   stackRightScaleX: 1,
   stackRightScaleY: 1,
 };
@@ -253,7 +253,8 @@ let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
 let editorState = loadEditorState();
 let activeEditorPage = 1;
-let activeBookPage = spreadStartForPage(readClampedNumber(params.get("page"), 1, 1, editorPageDefinitions.length));
+const requestedInitialPage = Math.max(1, Math.round(readClampedNumber(params.get("page"), 1, 1, 999)));
+let activeBookPage = requestedInitialPage % 2 === 0 ? requestedInitialPage - 1 : requestedInitialPage;
 if (!isLocalPreview || !params.has("spread")) {
   spreadPosition = spreadPositionForBookPage(activeBookPage);
 }
@@ -398,8 +399,8 @@ book.add(leftPageOuter);
 
 const standardLeftPageGeometry = createPageSurfaceGeometry("right");
 const standardRightPageGeometry = createPageSurfaceGeometry("left");
-const collectionLeftPageGeometry = createCoverSurfaceGeometry();
-const collectionRightPageGeometry = createCoverSurfaceGeometry();
+const collectionLeftPageGeometry = createCollectionPageSurfaceGeometry("right");
+const collectionRightPageGeometry = createCollectionPageSurfaceGeometry("left");
 
 const leftPageInner = makePageSurface(BOOK_VARIANTS[activeBook].insideLeft, standardLeftPageGeometry);
 leftPageInner.position.set(-PAGE_W - GUTTER / 2, 0, 0);
@@ -574,6 +575,7 @@ window.__stickerBookDebugState = () => ({
   activeAlbumMode,
   flipProgress,
   spreadPosition,
+  thicknessPair: thicknessPairForSpread(spreadPosition),
   spreadJumpActive: Boolean(spreadJumpAnimation),
   spreadJumpVisiblePageCount: spreadJumpAnimation?.visiblePageCount ?? 0,
   spreadJumpCycles: spreadJumpAnimation?.cycles ?? 0,
@@ -748,6 +750,10 @@ async function loadStickerPlanForEditor() {
       renderEditorShell();
     }
     refreshPageTemplateTextures();
+    updateControlState();
+    setupTuningPanel();
+    updatePage(flipProgress);
+    syncUrl();
     window.__stickerEditorPlanLoaded = true;
   } catch (error) {
     console.warn("Sticker plan load failed", error);
@@ -2262,8 +2268,17 @@ function saveCurrentLayerTuning(tuning) {
   persistLayerTuningStore();
 }
 
-function defaultTuningForPairKey() {
-  return { ...SHARED_TUNING_FALLBACK };
+function defaultTuningForPairKey(key = "half-half") {
+  const [leftLevel = "half", rightLevel = "half"] = String(key).split("-");
+  return {
+    ...SHARED_TUNING_FALLBACK,
+    stackLeftScaleY: scaleForThicknessLevel(leftLevel),
+    stackRightScaleY: scaleForThicknessLevel(rightLevel),
+  };
+}
+
+function scaleForThicknessLevel(level) {
+  return THICKNESS_DEFAULT_SCALE_Y[level] ?? THICKNESS_DEFAULT_SCALE_Y.full;
 }
 
 function persistLayerTuningStore() {
@@ -2288,7 +2303,7 @@ function tuningPairKeys() {
 }
 
 function rightOnlyTuningBase() {
-  return normalizeTuning(layerTuningByPair[RIGHT_ONLY_PAIR_KEY], SHARED_TUNING_FALLBACK);
+  return normalizeTuning(layerTuningByPair[RIGHT_ONLY_PAIR_KEY], defaultTuningForPairKey(RIGHT_ONLY_PAIR_KEY));
 }
 
 function applyRightOnlyTuningToAllPairs({ pushHistory = false, overwrite = true } = {}) {
@@ -2300,7 +2315,12 @@ function applyRightOnlyTuningToAllPairs({ pushHistory = false, overwrite = true 
     if (!overwrite && layerTuningByPair[key]) {
       continue;
     }
-    layerTuningByPair[key] = normalizeTuning(base, SHARED_TUNING_FALLBACK);
+    const fallback = defaultTuningForPairKey(key);
+    layerTuningByPair[key] = normalizeTuning({
+      ...base,
+      stackLeftScaleY: fallback.stackLeftScaleY,
+      stackRightScaleY: fallback.stackRightScaleY,
+    }, fallback);
   }
   persistLayerTuningStore();
 }
@@ -2312,7 +2332,12 @@ function seedAllTuningPairsFromRightOnlyOnce() {
     }
   } catch {}
 
-  applyRightOnlyTuningToAllPairs({ overwrite: false });
+  for (const key of tuningPairKeys()) {
+    if (!layerTuningByPair[key]) {
+      layerTuningByPair[key] = defaultTuningForPairKey(key);
+    }
+  }
+  persistLayerTuningStore();
 
   try {
     localStorage.setItem(RIGHT_ONLY_SYNC_MARKER_KEY, "v1");
@@ -2929,13 +2954,20 @@ function drawCollectionPageTemplate(ctx, palette, side) {
   const width = PAGE_TEXTURE_W - 252;
   const height = PAGE_TEXTURE_H - 260;
   ctx.save();
-  const innerBandX = side === "right" ? 0 : PAGE_TEXTURE_W - 116;
-  const innerBandGradient = ctx.createLinearGradient(innerBandX, 0, innerBandX + 116, 0);
-  innerBandGradient.addColorStop(0, "rgba(255, 248, 220, 0.92)");
-  innerBandGradient.addColorStop(0.62, "rgba(250, 238, 190, 0.86)");
-  innerBandGradient.addColorStop(1, "rgba(230, 207, 142, 0.35)");
+  const innerBandW = 44;
+  const innerBandX = side === "right" ? 0 : PAGE_TEXTURE_W - innerBandW;
+  const innerBandGradient = ctx.createLinearGradient(innerBandX, 0, innerBandX + innerBandW, 0);
+  if (side === "right") {
+    innerBandGradient.addColorStop(0, "rgba(120, 96, 44, 0.12)");
+    innerBandGradient.addColorStop(0.48, "rgba(246, 235, 190, 0.28)");
+    innerBandGradient.addColorStop(1, "rgba(255, 252, 235, 0)");
+  } else {
+    innerBandGradient.addColorStop(0, "rgba(255, 252, 235, 0)");
+    innerBandGradient.addColorStop(0.52, "rgba(246, 235, 190, 0.28)");
+    innerBandGradient.addColorStop(1, "rgba(120, 96, 44, 0.12)");
+  }
   ctx.fillStyle = innerBandGradient;
-  ctx.fillRect(innerBandX, 72, 116, PAGE_TEXTURE_H - 144);
+  ctx.fillRect(innerBandX, 72, innerBandW, PAGE_TEXTURE_H - 144);
 
   ctx.fillStyle = "rgba(255, 252, 235, 0.72)";
   ctx.strokeStyle = palette.line;
@@ -3624,9 +3656,7 @@ function visibleLayerTuning(tuning) {
   return {
     ...tuning,
     stackLeftY: Math.min(tuning.stackLeftY, 0.68),
-    stackLeftScaleY: Math.max(tuning.stackLeftScaleY, 0.72),
     stackRightY: Math.min(tuning.stackRightY, 0.68),
-    stackRightScaleY: Math.max(tuning.stackRightScaleY, 0.72),
   };
 }
 
@@ -3658,7 +3688,7 @@ function thicknessLevelForAmount(amount) {
 }
 
 function thicknessFileFor(side, level) {
-  const assetLevel = level === "empty" ? "empty" : "full";
+  const assetLevel = THICKNESS_LEVEL_NAMES.includes(level) ? level : "full";
   return `sb3d_${activeBook}_page_thickness_${side}_${assetLevel}.webp`;
 }
 
@@ -3732,7 +3762,7 @@ function createBendablePageSurfaceGeometry(bindingSide) {
 }
 
 function createBendablePlainPageSurfaceGeometry() {
-  const baseGeometry = createCoverSurfaceGeometry();
+  const baseGeometry = createCollectionPageSurfaceGeometry("left");
   const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
   const subdivided = subdivideBendableGeometry(source);
   return subdivided;
@@ -3841,6 +3871,47 @@ function createCoverSurfaceGeometry() {
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
   return geometry;
+}
+
+function createCollectionPageSurfaceGeometry(bindingSide) {
+  const shape = new THREE.Shape();
+  addOuterRoundedPagePath(shape, bindingSide);
+  const geometry = new THREE.ShapeGeometry(shape, 28);
+  const positions = geometry.attributes.position;
+  const uvs = [];
+  for (let i = 0; i < positions.count; i += 1) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    uvs.push(x / PAGE_W, (y + PAGE_H / 2) / PAGE_H);
+  }
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function addOuterRoundedPagePath(shape, bindingSide) {
+  const x = 0;
+  const y = -PAGE_H / 2;
+  const width = PAGE_W;
+  const height = PAGE_H;
+  const r = Math.min(PAGE_RADIUS, width / 2, height / 2);
+  if (bindingSide === "left") {
+    shape.moveTo(x, y);
+    shape.lineTo(x + width - r, y);
+    shape.quadraticCurveTo(x + width, y, x + width, y + r);
+    shape.lineTo(x + width, y + height - r);
+    shape.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    shape.lineTo(x, y + height);
+    shape.lineTo(x, y);
+    return;
+  }
+  shape.moveTo(x + r, y);
+  shape.lineTo(x + width, y);
+  shape.lineTo(x + width, y + height);
+  shape.lineTo(x + r, y + height);
+  shape.quadraticCurveTo(x, y + height, x, y + height - r);
+  shape.lineTo(x, y + r);
+  shape.quadraticCurveTo(x, y, x + r, y);
 }
 
 function addRoundedRectPath(shape, x, y, width, height, radius) {
@@ -3999,10 +4070,10 @@ function applyAlbumLayout() {
 function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
-    spine.scale.x = 0.72;
-    spine.position.z = -0.05;
+    spine.scale.x = 0.28;
+    spine.position.z = -0.065;
     spine.renderOrder = 6;
-    spine.material.opacity = 0.48;
+    spine.material.opacity = 0.16;
     return;
   }
   spine.scale.x = 1;

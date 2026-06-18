@@ -3249,6 +3249,21 @@ body.bento-complete-open .pono-dropdown {
   font-size: clamp(1rem, 2.5vw, 1.18rem); font-weight: 900;
   color: var(--primary); margin-bottom: 8px;
 }
+.sk-intro-narration {
+  min-height: 42px;
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #F6BF5A;
+  border-radius: 16px;
+  background: #FFF8E5;
+  color: #6B3E16;
+  font-size: clamp(0.72rem, 1.65vw, 0.86rem);
+  font-weight: 900;
+  line-height: 1.35;
+}
 .sk-intro-note {
   color: var(--text);
   font-size: 0.8rem;
@@ -3270,10 +3285,41 @@ body.bento-complete-open .pono-dropdown {
   border: 3px solid transparent;
   border-radius: 16px; padding: 7px 6px 8px;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
+  position: relative;
+  transition: transform 0.32s ease, opacity 0.32s ease, filter 0.32s ease, box-shadow 0.32s ease;
+  transform-origin: center;
 }
 .sk-intro-col.sk-r-bg { background: #FFF1F1; border-color: #F87171; }
 .sk-intro-col.sk-y-bg { background: #FFF9C7; border-color: #FACC15; }
 .sk-intro-col.sk-g-bg { background: #E9FBEF; border-color: #4ADE80; }
+#sk-intro.is-guiding .sk-intro-col.is-muted {
+  opacity: 0.46;
+  filter: saturate(0.72);
+  transform: scale(0.96);
+}
+#sk-intro.is-guiding .sk-intro-col.is-focus {
+  opacity: 1;
+  transform: scale(1.055);
+  z-index: 2;
+  animation: skIntroGroupFocus 1.15s ease-in-out infinite;
+}
+#sk-intro.is-guiding.is-all-focus .sk-intro-col.is-focus {
+  transform: scale(1.015);
+  animation: none;
+}
+#sk-intro.is-guiding .sk-intro-col.sk-r-bg.is-focus {
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.95), 0 0 0 9px rgba(248,113,113,0.48), 0 12px 22px rgba(239,68,68,0.22);
+}
+#sk-intro.is-guiding .sk-intro-col.sk-y-bg.is-focus {
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.95), 0 0 0 9px rgba(250,204,21,0.54), 0 12px 22px rgba(202,138,4,0.2);
+}
+#sk-intro.is-guiding .sk-intro-col.sk-g-bg.is-focus {
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.95), 0 0 0 9px rgba(74,222,128,0.48), 0 12px 22px rgba(34,197,94,0.2);
+}
+@keyframes skIntroGroupFocus {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -3px; }
+}
 .sk-intro-dot {
   width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
 }
@@ -3304,6 +3350,12 @@ body.bento-complete-open .pono-dropdown {
   border-radius: 10px;
   background: rgba(255,255,255,0.62);
   box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset;
+  transition: transform 0.32s ease, background 0.32s ease;
+  transform-origin: center bottom;
+}
+#sk-intro.is-guiding .sk-intro-col.is-focus .sk-intro-example {
+  background: rgba(255,255,255,0.82);
+  transform: translateY(-1px) scale(1.06);
 }
 .sk-intro-example img {
   width: clamp(35px, 7vw, 52px); height: clamp(35px, 7vw, 52px); object-fit: contain;
@@ -3328,8 +3380,10 @@ body.bento-complete-open .pono-dropdown {
 @media (max-height: 430px), (max-width: 700px) {
   .sk-intro-card { padding: 10px 12px 11px; border-radius: 20px; }
   .sk-intro-title { margin-bottom: 6px; }
+  .sk-intro-narration { min-height: 35px; margin-bottom: 6px; padding: 6px 9px; font-size: 0.7rem; }
   .sk-intro-grid { gap: 6px; }
   .sk-intro-col { padding: 6px 5px; gap: 4px; }
+  #sk-intro.is-guiding .sk-intro-col.is-focus { transform: scale(1.025); }
   .sk-intro-note { margin-top: 7px; padding: 6px 8px; font-size: 0.7rem; }
   .sk-intro-btn { margin-top: 9px; padding: 8px 28px; font-size: 1rem; }
 }
@@ -4839,9 +4893,10 @@ body.bento-complete-open .pono-dropdown {
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
     <div class="sk-intro-title">🍱 げんきな おべんとう 3つの なかま</div>
+    <div class="sk-intro-narration" id="sk-intro-narration" aria-live="polite">たべものには 3つの なかまが あるよ。</div>
     <div class="sk-intro-grid">
       <!-- 赤 -->
-      <div class="sk-intro-col sk-r-bg">
+      <div class="sk-intro-col sk-r-bg" data-sk-intro-group="r">
         <div class="sk-intro-dot sk-r"></div>
         <div class="sk-intro-label">あかの なかま</div>
         <div class="sk-intro-sublabel">からだを つくる</div>
@@ -4861,7 +4916,7 @@ body.bento-complete-open .pono-dropdown {
         </div>
       </div>
       <!-- 黄 -->
-      <div class="sk-intro-col sk-y-bg">
+      <div class="sk-intro-col sk-y-bg" data-sk-intro-group="y">
         <div class="sk-intro-dot sk-y"></div>
         <div class="sk-intro-label">きいろの なかま</div>
         <div class="sk-intro-sublabel">あそぶ ちから</div>
@@ -4881,7 +4936,7 @@ body.bento-complete-open .pono-dropdown {
         </div>
       </div>
       <!-- 緑 -->
-      <div class="sk-intro-col sk-g-bg">
+      <div class="sk-intro-col sk-g-bg" data-sk-intro-group="g">
         <div class="sk-intro-dot sk-g"></div>
         <div class="sk-intro-label">みどりの なかま</div>
         <div class="sk-intro-sublabel">ちょうしを ととのえる</div>
@@ -5057,6 +5112,57 @@ body.bento-complete-open .pono-dropdown {
   fit();
 })();
 
+// 三色食品群の説明は、ナレーション台本と同じ短文を順番に見せる。
+const SK_INTRO_GUIDE_STEPS = [
+  { key: 'all', text: 'たべものには 3つの なかまが あるよ。' },
+  { key: 'r', text: 'あかは からだを つくる なかま。<br>おにく・おさかな・たまごだよ。' },
+  { key: 'y', text: 'きいろは あそぶ ちからに なるよ。<br>ごはん・めん・じゃがいもだよ。' },
+  { key: 'g', text: 'みどりは からだの ちょうしを ととのえるよ。<br>やさいや くだものだよ。' },
+  { key: 'all', text: 'あか・きいろ・みどりを<br>ひとつずつ いれてみよう。' },
+];
+let skIntroGuideTimer = null;
+let skIntroGuideIndex = 0;
+function stopSkIntroGuide() {
+  if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
+  skIntroGuideTimer = null;
+  const intro = document.getElementById('sk-intro');
+  if (intro) intro.classList.remove('is-guiding', 'is-all-focus');
+  document.querySelectorAll('.sk-intro-col').forEach(col => {
+    col.classList.remove('is-focus', 'is-muted');
+  });
+}
+function applySkIntroGuideStep(index) {
+  const intro = document.getElementById('sk-intro');
+  const caption = document.getElementById('sk-intro-narration');
+  if (!intro || intro.classList.contains('hidden')) return false;
+  const step = SK_INTRO_GUIDE_STEPS[index] || SK_INTRO_GUIDE_STEPS[0];
+  if (caption) caption.innerHTML = step.text;
+  intro.classList.add('is-guiding');
+  intro.classList.toggle('is-all-focus', step.key === 'all');
+  document.querySelectorAll('.sk-intro-col').forEach(col => {
+    const matched = step.key === 'all' || col.dataset.skIntroGroup === step.key;
+    col.classList.toggle('is-focus', matched);
+    col.classList.toggle('is-muted', step.key !== 'all' && !matched);
+  });
+  return true;
+}
+function scheduleNextSkIntroGuideStep() {
+  if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
+  if (skIntroGuideIndex >= SK_INTRO_GUIDE_STEPS.length - 1) {
+    skIntroGuideTimer = null;
+    return;
+  }
+  skIntroGuideTimer = setTimeout(() => {
+    skIntroGuideIndex += 1;
+    if (applySkIntroGuideStep(skIntroGuideIndex)) scheduleNextSkIntroGuideStep();
+  }, 3600);
+}
+function startSkIntroGuide() {
+  stopSkIntroGuide();
+  skIntroGuideIndex = 0;
+  if (applySkIntroGuideStep(skIntroGuideIndex)) scheduleNextSkIntroGuideStep();
+}
+
 // 三色食品群 初回説明
 (function() {
   // (旧: localStorage.removeItem('bento_sk_intro_done') / 'bento_tut_seen' は
@@ -5065,6 +5171,7 @@ body.bento-complete-open .pono-dropdown {
   const intro = document.getElementById('sk-intro');
   // sk-introボタンのハンドラを常に登録（showTutorialから表示される）
   document.getElementById('sk-intro-btn').addEventListener('click', function() {
+    stopSkIntroGuide();
     localStorage.setItem('bento_sk_intro_done', '1');
     localStorage.setItem('bento_tut_seen_v2', '1');
     window.__bentoSkIntroShownThisRun = true;
@@ -5117,7 +5224,10 @@ body.bento-complete-open .pono-dropdown {
         return;
       }
       if (document.getElementById('free-layout-stage')) {
-        setTimeout(() => intro.classList.remove('hidden'), 400);
+        setTimeout(() => {
+          intro.classList.remove('hidden');
+          startSkIntroGuide();
+        }, 400);
         return;
       }
       setTimeout(showTutorial, 400);

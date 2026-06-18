@@ -759,9 +759,20 @@ tr:hover { background: #FFFAF0; }
 <!-- ===== 🔊 音声生成 ===== -->
 <div class="panel" id="panel-voice-lab">
   <div class="section">
-    <div class="section-title">🔊 パズル チュートリアル音声生成</div>
+    <div class="section-title">🔊 ナレーション音声生成</div>
     <div style="padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;margin-bottom:12px;color:#475569;font-size:0.78rem;line-height:1.7;">
       APIキーはブラウザに保存しません。ローカルは <code>.dev.vars</code> に <code>GEMINI_API_KEY=...</code> を入れて、Worker 経由で生成します。Gemini TTS の出力は WAV です。
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(240px,1fr) auto;gap:10px;align-items:end;margin-bottom:12px;">
+      <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
+        よみこみプリセット
+        <select id="puzzle-tts-preset" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+          <option value="puzzle_basic_tutorial">パズル 基本チュートリアル</option>
+          <option value="oto_rhythm_tutorial">オトタッチ リズムチュートリアル</option>
+        </select>
+      </label>
+      <button type="button" onclick="puzzleTtsLoadPreset()" style="padding:8px 14px;background:#FEF3C7;color:#92400E;border:1px solid #FBBF24;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">プリセットを読み込み</button>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:12px;">
@@ -802,7 +813,7 @@ tr:hover { background: #FFFAF0; }
     <div style="display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,1.4fr);gap:10px;margin-bottom:10px;">
       <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
         履歴名
-        <input id="puzzle-tts-history-name" placeholder="例: パズル基本チュートリアル v1" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+        <input id="puzzle-tts-history-name" placeholder="例: オトタッチ リズムチュートリアル v1" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
       </label>
       <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
         保存した履歴
@@ -1663,20 +1674,53 @@ document.querySelectorAll('.sub-tab').forEach(function(btn) {
 });
 
 // ════════════════════════════════════════════════════════════════
-// Puzzle tutorial TTS lab
+// Narration TTS lab
 // ════════════════════════════════════════════════════════════════
-var PUZZLE_TTS_DEFAULT_LINES = [
-  { id: 'basic_tut_01', file: 'basic_tut_01.mp3', text: 'これからパズルの遊び方を練習するよ。まずはお手本を見てね。' },
-  { id: 'basic_tut_02', file: 'basic_tut_02.mp3', text: 'このピースをつかんで青い場所へ持っていくよ。' },
-  { id: 'basic_tut_03', file: 'basic_tut_03.mp3', text: 'やってみよう。ピースを持って、青い場所へ離してね。' },
-  { id: 'basic_tut_04', file: 'basic_tut_04.mp3', text: 'できたね。次は、見るボタンを試すよ。' },
-  { id: 'basic_tut_05', file: 'basic_tut_05.mp3', text: 'まずは見るボタンを長く押してみよう。' },
-  { id: 'basic_tut_06', file: 'basic_tut_06.mp3', text: '離すと、元のパズルに戻るよ。' },
-  { id: 'basic_tut_07', file: 'basic_tut_07.mp3', text: '困った時に使ってね。' },
-  { id: 'basic_tut_08', file: 'basic_tut_08.mp3', text: '次はヒントだよ。ヒントを押すと場所が光るよ。' },
-  { id: 'basic_tut_09', file: 'basic_tut_09.mp3', text: '光った場所へピースを持っていくよ。' },
-  { id: 'basic_tut_10', file: 'basic_tut_10.mp3', text: 'できたね。わからない時は見るとヒントを使ってね。' }
+var PUZZLE_TTS_PRESETS = [
+  {
+    id: 'puzzle_basic_tutorial',
+    label: 'パズル 基本チュートリアル',
+    historyName: 'パズル 基本チュートリアル',
+    voice: 'Aoede',
+    style: '[gently]',
+    scene: 'A gentle female guide teaches a preschool puzzle tutorial in a warm forest playroom.',
+    context: 'Japanese narration for a young children\'s puzzle tutorial. Use a gentle female storyteller voice, close to the opening narration. Warm, soft, clear, and reassuring. Speak slowly with short natural pauses. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce 「見る」 and 「ヒント」 clearly as button names.',
+    rows: [
+      { id: 'basic_tut_01', file: 'basic_tut_01.mp3', text: 'これからパズルの遊び方を練習するよ。まずはお手本を見てね。' },
+      { id: 'basic_tut_02', file: 'basic_tut_02.mp3', text: 'このピースをつかんで青い場所へ持っていくよ。' },
+      { id: 'basic_tut_03', file: 'basic_tut_03.mp3', text: 'やってみよう。ピースを持って、青い場所へ離してね。' },
+      { id: 'basic_tut_04', file: 'basic_tut_04.mp3', text: 'できたね。次は、見るボタンを試すよ。' },
+      { id: 'basic_tut_05', file: 'basic_tut_05.mp3', text: 'まずは見るボタンを長く押してみよう。' },
+      { id: 'basic_tut_06', file: 'basic_tut_06.mp3', text: '離すと、元のパズルに戻るよ。' },
+      { id: 'basic_tut_07', file: 'basic_tut_07.mp3', text: '困った時に使ってね。' },
+      { id: 'basic_tut_08', file: 'basic_tut_08.mp3', text: '次はヒントだよ。ヒントを押すと場所が光るよ。' },
+      { id: 'basic_tut_09', file: 'basic_tut_09.mp3', text: '光った場所へピースを持っていくよ。' },
+      { id: 'basic_tut_10', file: 'basic_tut_10.mp3', text: 'できたね。わからない時は見るとヒントを使ってね。' }
+    ]
+  },
+  {
+    id: 'oto_rhythm_tutorial',
+    label: 'オトタッチ リズムチュートリアル',
+    historyName: 'オトタッチ リズムチュートリアル',
+    voice: 'Aoede',
+    style: '[slowly and warmly]',
+    scene: 'A gentle female guide teaches a preschool rhythm game on a dark but cheerful arcade stage.',
+    context: 'Japanese narration for OtoTouch rhythm mode. Use a warm, soft, clear voice for young children. Speak slowly with short pauses so children have time to read and act. Keep the tone playful and reassuring. No music, no sound effects, no background noise. Pronounce note names like 「ファ」 clearly.',
+    rows: [
+      { id: 'oto_rhythm_tut_01_difficulty', file: 'oto_rhythm_tut_01_difficulty.mp3', text: 'むずかしさを えらべるよ。かんたん、ふつう、むずかしめ。さいしょは、かんたんを おしてね。' },
+      { id: 'oto_rhythm_tut_02_song', file: 'oto_rhythm_tut_02_song.mp3', text: 'まずは、かえるのうたから はじめよう。かえるのうたの ボタンを おしてね。' },
+      { id: 'oto_rhythm_tut_03_next', file: 'oto_rhythm_tut_03_next.mp3', text: 'えらべたね。つぎへを おして、あそびかたを えらぼう。' },
+      { id: 'oto_rhythm_tut_04_practice_block', file: 'oto_rhythm_tut_04_practice_block.mp3', text: 'さいしょは ブロックで みじかく れんしゅうしよう。ブロックを おしてね。' },
+      { id: 'oto_rhythm_tut_05_sample_countdown', file: 'oto_rhythm_tut_05_sample_countdown.mp3', text: 'おてほんを みるよ。タップしたら、さん、に、いちで はじまるよ。' },
+      { id: 'oto_rhythm_tut_06_sample_note', file: 'oto_rhythm_tut_06_sample_note.mp3', text: 'おてほんを みるよ。ノートが ラインに きたら、同じボタンを おすよ。' },
+      { id: 'oto_rhythm_tut_07_player_countdown', file: 'oto_rhythm_tut_07_player_countdown.mp3', text: 'つぎは きみのばん。タップしたら、さん、に、いちで はじまるよ。' },
+      { id: 'oto_rhythm_tut_08_player_note', file: 'oto_rhythm_tut_08_player_note.mp3', text: 'こんどは じぶんで やってみよう。ノートが ラインに きたら、ファのボタンを おしてね。' },
+      { id: 'oto_rhythm_tut_09_judgement', file: 'oto_rhythm_tut_09_judgement.mp3', text: 'ラインに ぴったりなら、ジャスト。すこし ちかいと、ナイス。おそくても、オッケー。ぴったりほど、てんが たかいよ。' },
+      { id: 'oto_rhythm_tut_10_start', file: 'oto_rhythm_tut_10_start.mp3', text: 'かえるのうたで あそぼう。はじめるを おしてね。' }
+    ]
+  }
 ];
+var PUZZLE_TTS_DEFAULT_LINES = PUZZLE_TTS_PRESETS[0].rows.map(function(line) { return Object.assign({}, line); });
 var PUZZLE_TTS_LINES = PUZZLE_TTS_DEFAULT_LINES.map(function(line) { return Object.assign({}, line); });
 var puzzleTtsAudioById = {};
 var puzzleTtsAudioVersionsById = {};
@@ -1814,6 +1858,46 @@ function puzzleTtsSetControlValue(id, value) {
   if (el) el.value = value || '';
 }
 
+function puzzleTtsCloneRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map(function(row) {
+    return {
+      id: row.id,
+      file: row.file,
+      text: row.text
+    };
+  });
+}
+
+function puzzleTtsPresetById(id) {
+  return PUZZLE_TTS_PRESETS.find(function(preset) { return preset.id === id; }) || PUZZLE_TTS_PRESETS[0];
+}
+
+function puzzleTtsStateFromPreset(preset) {
+  return {
+    version: 2,
+    savedAt: new Date().toISOString(),
+    name: preset.historyName || preset.label || '',
+    voice: preset.voice || 'Aoede',
+    style: preset.style || '[gently]',
+    model: 'gemini-3.1-flash-tts-preview',
+    scene: preset.scene || '',
+    context: preset.context || '',
+    rows: puzzleTtsCloneRows(preset.rows),
+    lines: {}
+  };
+}
+
+function puzzleTtsLoadPreset(id) {
+  var select = document.getElementById('puzzle-tts-preset');
+  var preset = puzzleTtsPresetById(id || (select ? select.value : ''));
+  puzzleTtsApplyState(puzzleTtsStateFromPreset(preset));
+  PUZZLE_TTS_LINES.forEach(function(line) {
+    puzzleTtsCheckedById[line.id] = true;
+  });
+  puzzleTtsRenderRows();
+  puzzleTtsStatus((preset.label || 'プリセット') + ' を読み込みました');
+}
+
 function puzzleTtsCollectState() {
   var rows = puzzleTtsCurrentRows();
   return {
@@ -1883,7 +1967,7 @@ function puzzleTtsSaveHistory() {
   var state = puzzleTtsCollectState();
   var name = (puzzleTtsControlValue('puzzle-tts-history-name') || '').trim();
   state.id = 'hist_' + Date.now();
-  state.name = name || ('パズル音声 ' + state.savedAt.replace('T', ' ').slice(0, 16));
+  state.name = name || ('ナレーション音声 ' + state.savedAt.replace('T', ' ').slice(0, 16));
   puzzleTtsHistory = puzzleTtsHistory.filter(function(item) { return item.id !== state.id; });
   puzzleTtsHistory.unshift(state);
   puzzleTtsPersistHistoryStore();
@@ -2083,10 +2167,17 @@ function puzzleTtsVersionLabel(entry, idx) {
 
 function puzzleTtsSuggestNewFileName() {
   var max = 0;
+  var isOtoRhythm = PUZZLE_TTS_LINES.some(function(line) {
+    return /^oto_rhythm_tut_/i.test(String(line.file || ''));
+  });
   PUZZLE_TTS_LINES.forEach(function(line) {
-    var m = String(line.file || '').match(/basic_tut_(\d+)/i);
+    var pattern = isOtoRhythm ? /oto_rhythm_tut_(\d+)/i : /basic_tut_(\d+)/i;
+    var m = String(line.file || '').match(pattern);
     if (m) max = Math.max(max, parseInt(m[1], 10) || 0);
   });
+  if (isOtoRhythm) {
+    return 'oto_rhythm_tut_' + String(max + 1 || PUZZLE_TTS_LINES.length + 1).padStart(2, '0') + '_custom.mp3';
+  }
   return 'basic_tut_' + String(max + 1 || PUZZLE_TTS_LINES.length + 1).padStart(2, '0') + '.mp3';
 }
 
