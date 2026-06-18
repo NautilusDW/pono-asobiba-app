@@ -2492,6 +2492,12 @@ html, body {
 #app.free-layout-active > .free-bottom-guide.has-reminder {
   gap: 8px;
 }
+#app.free-layout-active > .free-bottom-guide.tut-hide-speech {
+  width: auto;
+}
+#app.free-layout-active > .free-bottom-guide.tut-hide-speech .free-bottom-speech {
+  display: none;
+}
 .free-bottom-pono {
   width: 94px;
   height: 78px;
@@ -3392,7 +3398,7 @@ body.bento-complete-open .pono-dropdown {
   content: '';
   position: absolute;
   left: -24px;
-  bottom: 13px;
+  bottom: 2px;
   width: 0;
   height: 0;
   border-style: solid;
@@ -3403,7 +3409,7 @@ body.bento-complete-open .pono-dropdown {
   content: '';
   position: absolute;
   left: -15px;
-  bottom: 17px;
+  bottom: 6px;
   width: 0;
   height: 0;
   border-style: solid;
@@ -6184,7 +6190,7 @@ const decorItems = [
   { id: 'nori_mouth_smile', type: 'decor', name: 'くち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 78, layerBase: 50 },
   { id: 'nori_brow_left', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
   { id: 'nori_brow_right', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
-  { id: 'nori_bento_sheet', type: 'decor', name: 'のりべん', image: FREE_ASSET + 'nori_bento_sheet.png', size: 170, layerBase: 49 },
+  { id: 'nori_bento_sheet', type: 'decor', name: 'のりべん', image: FREE_ASSET + 'nori_bento_sheet.png', size: 230, layerBase: 49 },
   { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 },
   { id: 'decor_umeboshi', type: 'decor', name: 'うめぼし', image: FREE_ASSET + 'decor_umeboshi.png', size: 54, layerBase: 52 },
   { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
@@ -6232,9 +6238,9 @@ const riceFaceTemplates = {
     name: 'のりべん',
     baseRice: 'rice_base_round',
     parts: [
-      { id: 'nori_bento_sheet', x: 0, y: -37, size: 116, rotation: -1 },
-      { id: 'nori_bento_sheet', x: 0, y: 0, size: 116, rotation: 1 },
-      { id: 'nori_bento_sheet', x: 0, y: 37, size: 116, rotation: -1 },
+      { id: 'nori_bento_sheet', x: 0, y: -48, size: 148, rotation: -1 },
+      { id: 'nori_bento_sheet', x: 0, y: 0, size: 148, rotation: 1 },
+      { id: 'nori_bento_sheet', x: 0, y: 48, size: 148, rotation: -1 },
     ],
   },
 };
@@ -10400,7 +10406,7 @@ function renderFreeLayoutInto(host, opts = {}) {
     ? items.filter(item => getItemTier(item) === activeTier)
     : items;
   const displayItems = useIntegratedRice && integratedRice
-    ? visibleItems.filter(item => item.uid !== integratedRice.uid && item.parentId !== integratedRice.uid)
+    ? visibleItems.filter(item => item.uid !== integratedRice.uid && (item.parentId !== integratedRice.uid || isNoriDecorItem(item)))
     : visibleItems;
   host.classList.add('free-layout-stage');
   host.onpointerdown = null;
@@ -13070,6 +13076,10 @@ function tutorialPositionBubbleBelowBentoBox() {
 function tutorialHideBubble() {
   if (tutorialState.bubbleEl) tutorialState.bubbleEl.classList.add('hidden');
 }
+function tutorialSetBottomSpeechHidden(hidden) {
+  const guide = document.querySelector('#app > .free-bottom-guide');
+  if (guide) guide.classList.toggle('tut-hide-speech', !!hidden);
+}
 function tutorialPositionPonoCallout(opts = {}) {
   const el = tutorialState.ponoCalloutEl;
   if (!el) return;
@@ -13630,10 +13640,10 @@ function tutorialFreePointToScreenPoint(point) {
   };
 }
 function tutorialLayerDemoScreenPoint() {
-  return tutorialStageRatioPoint(0.75, 0.51);
+  return tutorialStageRatioPoint(0.71, 0.51);
 }
 function tutorialLayerDemoFreePoint() {
-  return tutorialFreeRatioPoint(0.75, 0.51);
+  return tutorialFreeRatioPoint(0.71, 0.51);
 }
 function tutorialLayerFoodFreePoint() {
   return tutorialFreeRatioPoint(0.62, 0.72);
@@ -14302,6 +14312,7 @@ function tutorialRenderStep() {
   tutorialState.renderedStep = step;
   tutorialSetModeLabel('');
   tutorialSetReminderFocus(false);
+  tutorialSetBottomSpeechHidden(false);
   tutorialPlayStepVoice(step, firstRender);
 
   // ステップが切り替わるたびに、 前ステップの装飾を一掃 (button-bound 含む)
@@ -14648,12 +14659,13 @@ function tutorialRenderStep() {
     if (firstRender) tutorialSetActiveCupSizeKey('small');
     const toolbar = tutorialContextToolbarEl();
     const sizeControl = tutorialEditSizeControlEl();
-    setSpeech('カップの サイズを えらべるよ。今回は 1に してみよう。やじるしで まえ・うしろも かえられるよ');
+    setSpeech('こんかいは 1に しよう。OKボタンを おしてね');
+    tutorialSetBottomSpeechHidden(true);
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('サイズは 1・2・3<br>今回は 1に しよう<br>やじるしで まえ・うしろも<br>かえられるよ');
+    tutorialShowPonoCallout('こんかいは 1に しよう！<br>OKボタンを おしてね');
     tutorialSetModeLabel('おてほんを みてみよう', {
       mode: 'demo',
-      note: 'サイズ 1・まえうしろ',
+      note: 'サイズ 1',
       buttonText: 'やってみよう',
       onClick: () => tutorialAdvance('cup-edit-try'),
     });
@@ -14676,9 +14688,10 @@ function tutorialRenderStep() {
     const toolbar = tutorialContextToolbarEl();
     const sizeControl = tutorialEditSizeControlEl();
     const okBtn = tutorialCupOkButton();
-    setSpeech('1を えらんでみよう。やじるしでも まえ・うしろを かえられるよ。きまったら OKを おしてね');
+    setSpeech('こんかいは 1に しよう。OKボタンを おしてね');
+    tutorialSetBottomSpeechHidden(true);
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('1を えらんでみよう<br>やじるしでも かえられるよ<br>きまったら OKを おしてね');
+    tutorialShowPonoCallout('こんかいは 1に しよう！<br>OKボタンを おしてね');
     tutorialSetModeLabel('やってみよう！', {
       mode: 'try',
       note: 'サイズ 1 → OK',
@@ -14721,6 +14734,12 @@ function tutorialRenderStep() {
     if (getEditingCup()) {
       freeCupEditorUid = null;
       freeCupToolMode = 'move';
+      freeSelectedItemUid = null;
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }
+    if (getSelectedCup()) {
+      freeSelectedItemUid = null;
       renderFreeLayoutStage();
       renderFreeLayoutControls();
     }
@@ -14978,8 +14997,8 @@ function tutorialOnCupEditorClosed() {
     freeCupToolMode = 'move';
     if (cupUid) {
       freeActiveCupUid = cupUid;
-      freeSelectedItemUid = cupUid;
     }
+    freeSelectedItemUid = null;
     freeLayoutTab = 'food';
     renderFreeLayoutStage();
     renderFreeLayoutControls();
