@@ -332,6 +332,15 @@
   body.rhythm-layout.webgl-rhythm #rhythm3d-notes { display: block; }
   body.rhythm-layout.webgl-rhythm #rhythm-road { display: none; }
   body.rhythm-layout.webgl-rhythm .gh-note { display: none !important; }
+  body.rhythm-layout.webgl-rhythm.rhythm-demo-note-visible #rhythm-lanes {
+    z-index: 8;
+  }
+  body.rhythm-layout.webgl-rhythm.rhythm-demo-note-visible #instruments {
+    z-index: 7;
+  }
+  body.rhythm-layout.webgl-rhythm.rhythm-demo-note-visible .gh-note {
+    display: flex !important;
+  }
   #rhythm-road::before,
   #rhythm-road::after {
     content: '';
@@ -9349,9 +9358,10 @@ function _ghUpdateFallingNotes(now) {
     var passFade = visualProgress <= 1 ? 1 : Math.max(0, 1 - passAmount / (RHYTHM_NOTE_PASS_PROGRESS - 1));
     var fadeIn = Math.max(0, Math.min(1, (visualProgress - RHYTHM_NOTE_FADE_IN_START) / (RHYTHM_NOTE_FADE_IN_END - RHYTHM_NOTE_FADE_IN_START)));
     var opacity = (0.34 + 0.66 * Math.max(depth, hitProgress * 0.42)) * fadeIn * passFade;
+    var domZ = (document.body && document.body.classList.contains('rhythm-demo-note-visible')) ? 0 : z;
     note.el.style.opacity = opacity.toFixed(3);
     note.el.style.zIndex = String(3 + Math.round(depth * 4));
-    note.el.style.transform = 'translate3d(' + xShift.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, ' + z.toFixed(1) + ') scale(' + scale.toFixed(3) + ')';
+    note.el.style.transform = 'translate3d(' + xShift.toFixed(1) + 'px, ' + y.toFixed(1) + 'px, ' + domZ.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
   }
   _gh3DRender();
 }
@@ -10298,6 +10308,7 @@ function _clearRhythmDemo(keepHud) {
   _rhythm.demoBeatScale = 0;
   _rhythm.demoFallMs = 0;
   _rhythm.demoNoteBtn = null;
+  _setRhythmDemoNoteVisible(false);
   _hideOverlay();
   _clearRhythmButtonState();
   if (!_rhythm.enabled) {
@@ -10321,6 +10332,10 @@ function _clearRhythmDemo(keepHud) {
     if (hud) hud.classList.remove('show');
   }
 }
+function _setRhythmDemoNoteVisible(active) {
+  if (!document.body) return;
+  document.body.classList.toggle('rhythm-demo-note-visible', !!active);
+}
 function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
   if (!_rhythm.demoActive) return;
   if (overlayHoldMs > 0) {
@@ -10332,6 +10347,7 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
   }
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _setRhythmStatus('おてほんを みてね', null);
+  _setRhythmDemoNoteVisible(true);
   _rhythm.demoBeatScale = RHYTHM_DEMO_TIME_SCALE;
   _rhythm.demoFallMs = RHYTHM_DEMO_FALL_MS;
   var beatMs = _rhythmBeatMs();
@@ -11766,6 +11782,7 @@ function _clearOtoTutorialDemoEffects() {
   });
   _otoTutorialState.demoTimers = [];
   _otoTutorialState.demoNodes = [];
+  _setRhythmDemoNoteVisible(false);
   if (_otoTutorialState.ownsRhythmDemo) {
     _clearRhythmDemo(true);
     _otoTutorialState.ownsRhythmDemo = false;
@@ -11805,6 +11822,7 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   _clearRhythmDemo(true);
   _ghClearActiveNotes();
   _ghClearLaneFlashes();
+  _setRhythmDemoNoteVisible(true);
   _rhythm.demoActive = true;
   _rhythm.demoBeatScale = 0;
   _rhythm.demoFallMs = Math.min(RHYTHM_FALL_MS, 6200);
@@ -11858,6 +11876,7 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState) return;
     _clearRhythmDemo(true);
+    _setRhythmDemoNoteVisible(false);
     _otoTutorialState.ownsRhythmDemo = false;
   }, _rhythm.demoFallMs + 1100));
 }

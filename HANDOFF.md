@@ -987,6 +987,8 @@
 
 ## Recent (Done — 古い順に削除)
 
+- 2026-06-18 - [batch:675-oto-rhythm-demo-visible-notes] DONE - Codex: Fixed Oto sample/tutorial falling notes. `oto/index.html` now fixes the missing `px` in DOM note `translate3d()` z, enables `rhythm-demo-note-visible` only during tutorial/sample playback, and clears it when the demo ends. `sw.js` staged as v1306. Verified locally with Playwright + serviceWorkers blocked: rhythmStoryFromMenu button demo shows `.gh-note display:flex`, y moves about 97->185, hit removes activeNotes and clears the class; `_startRhythmDemo(false)` sample playback also shows visible moving notes, console/pageerror 0. Common Oto change; `develop` sync still pending. (by Codex)
+
 - 2026-05-29 - [batch:182-mojikko-yochiyochi-roam-babble-milk-raw] **Done** — もじっこファームのよちよち期以降で、通常時のミルマルがファーム内を左右へ自由に動き回る idle roam を追加。食事/なでる/あそぶ/寝る/怒り中は止まり、通常に戻ると再開する。吹き出しと食べ物 FX はミルマルの横位置へ追従。よちよち期の吹き出し文言は「おいしい/ありがとう」のような完成文ではなく、「まんま、んま！」「もじ...かく？」など意味が伝わる赤ちゃん言葉寄りへ調整。追加歩行コマ+もじミルクアイコン raw sheet は `tmp/alpha_pending/182_mojikko_roam_milk_icon_raw/milmaru_roam_frames_and_milk_icons_raw.png` に保存。ローカル Playwright で roam 開始/移動/給餌中停止/給餌後再開/文字書きカード文言を確認。`sw.js` は v668。 (by Codex)
 
 - 2026-05-29 - [batch:181-mojikko-yochiyochi-assets] **Done** — user が `D:\ポノのおへや\Moji\assets\ミルマル\よちよち` に置いた透過済みよちよち素材16枚を `assets/images/mojikko/care/milmaru_yochiyochi_*.png` へ意味名で配置。お世話画面は `sukusuku >= 25` で殻入りベビーではなくよちよち姿を使い、normal/happy/eating/play/sleep/cry/angry/disappointed/worried に割り当て。文字書き画面左下カードもよちよち期はよちよち画像へ切替。ローカル Playwright で通常/給餌/餌なし/文字書きカードの背景画像切替を確認。`sw.js` は v666。 (by Codex)
