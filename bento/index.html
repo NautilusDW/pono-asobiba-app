@@ -3391,23 +3391,23 @@ body.bento-complete-open .pono-dropdown {
 .tut-pono-callout::before {
   content: '';
   position: absolute;
-  left: -18px;
-  bottom: 18px;
+  left: -24px;
+  bottom: 13px;
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 10px 18px 10px 0;
+  border-width: 12px 24px 12px 0;
   border-color: transparent #F2915A transparent transparent;
 }
 .tut-pono-callout::after {
   content: '';
   position: absolute;
-  left: -11px;
-  bottom: 21px;
+  left: -15px;
+  bottom: 17px;
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 7px 13px 7px 0;
+  border-width: 8px 16px 8px 0;
   border-color: transparent rgba(255,255,255,0.97) transparent transparent;
 }
 @media (max-width: 900px) {
@@ -6184,6 +6184,7 @@ const decorItems = [
   { id: 'nori_mouth_smile', type: 'decor', name: 'くち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 78, layerBase: 50 },
   { id: 'nori_brow_left', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
   { id: 'nori_brow_right', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
+  { id: 'nori_bento_sheet', type: 'decor', name: 'のりべん', image: FREE_ASSET + 'nori_bento_sheet.png', size: 170, layerBase: 49 },
   { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 },
   { id: 'decor_umeboshi', type: 'decor', name: 'うめぼし', image: FREE_ASSET + 'decor_umeboshi.png', size: 54, layerBase: 52 },
   { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
@@ -6225,6 +6226,15 @@ const riceFaceTemplates = {
       { id: 'nori_mouth_smile', x: 0, y: 42, size: 72 },
       { id: 'ketchup_cheek', x: -66, y: 18, size: 42 },
       { id: 'ketchup_cheek', x: 66, y: 18, size: 42 },
+    ],
+  },
+  noriben: {
+    name: 'のりべん',
+    baseRice: 'rice_base_round',
+    parts: [
+      { id: 'nori_bento_sheet', x: 0, y: -37, size: 116, rotation: -1 },
+      { id: 'nori_bento_sheet', x: 0, y: 0, size: 116, rotation: 1 },
+      { id: 'nori_bento_sheet', x: 0, y: 37, size: 116, rotation: -1 },
     ],
   },
 };
@@ -7801,6 +7811,54 @@ function getCupFoodChildSize(def, cup) {
   if (def.brushItem) return Math.min(126, Math.round((cup.size || 190) * 0.66));
   return Math.min(def.cupSize || def.size || 120, Math.round((cup.size || 190) * 0.78));
 }
+function findCupOverlappingFood(item, preferredCup = null) {
+  if (!item || item.type !== 'food' || item.parentCupId || !canAddFoodToCup(item)) return null;
+  const itemTier = getItemTier(item);
+  const cups = preferredCup
+    ? [preferredCup]
+    : placedItems.filter(cup =>
+        cup.snapTarget
+        && (getBoxTierCount() <= 1 || getItemTier(cup) === itemTier || getItemTier(cup) === freeActiveTier)
+      );
+  let best = null;
+  let bestDist = Infinity;
+  cups.forEach(cup => {
+    if (!cup || !cup.snapTarget) return;
+    const itemRadius = Math.max(36, (item.size || 72) * (item.scale || 1) * 0.56);
+    const cupRadius = cup.radius || ((cup.size || 180) * 0.58);
+    const d = dist(item, cup);
+    if (d <= cupRadius + itemRadius && d < bestDist) {
+      best = cup;
+      bestDist = d;
+    }
+  });
+  return best;
+}
+function attachFoodToCupIfOverlaps(item, preferredCup = null, opts = {}) {
+  if (!item || item.type !== 'food') return false;
+  if (item.parentCupId) return true;
+  const cup = findCupOverlappingFood(item, preferredCup);
+  if (!cup) return false;
+  const def = getFreeFoodCatalog().find(f => f.id === item.id || f.name === item.name) || item;
+  item.parentCupId = cup.uid;
+  item.tier = getItemTier(cup);
+  item.size = getCupFoodChildSize(def, cup);
+  item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
+  item.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
+  item.manualCupPosition = true;
+  const p = clampPointToCup(item.x, item.y, item, cup);
+  item.x = p.x;
+  item.y = p.y;
+  freeActiveCupUid = cup.uid;
+  freeCupToolMode = 'move';
+  freeSelectedItemUid = opts.selectCup ? cup.uid : item.uid;
+  layoutCupChildren(cup);
+  if (opts.render !== false) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }
+  return true;
+}
 function getCupEditorFoodItems() {
   return getFreeFoodCatalog().filter(canAddFoodToCup);
 }
@@ -7931,7 +7989,7 @@ function setFreeGuideStep(step, opts = {}) {
 }
 function getFreePaletteItems(tabId) {
   if (tabId === 'accessory') return bentoAccessories;
-  if (tabId === 'rice') return [getAutoRicePaletteItem()];
+  if (tabId === 'rice') return [getAutoRicePaletteItem(), getNoribenPaletteItem()];
   if (tabId === 'food') {
     const foods = getFreeFoodCatalog();
     if (isOkazuGuideStep()) {
@@ -7956,6 +8014,18 @@ function getAutoRicePaletteItem() {
     type: 'rice_auto',
     name: 'ごはんを よそう',
     image: auto.thumbnailImage || base.thumbnailImage || base.image,
+    css: base.css,
+    size: base.size,
+  };
+}
+function getNoribenPaletteItem() {
+  const base = riceBases[0];
+  return {
+    id: 'rice_template_noriben',
+    type: 'template',
+    templateId: 'noriben',
+    name: 'のりべん',
+    image: FREE_ASSET + 'nori_bento_sheet.png',
     css: base.css,
     size: base.size,
   };
@@ -9397,6 +9467,9 @@ function finishFreePaletteDrag(shouldFinalize) {
   }
   finalizeFreeItemPosition(uid);
   const placed = placedItems.find(i => i.uid === uid) || null;
+  if (def.type === 'food' && placed && !placed.parentCupId) {
+    attachFoodToCupIfOverlaps(placed, null, { render: false, selectChild: true });
+  }
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
@@ -9860,7 +9933,7 @@ function addFoodToSelectedCup(def) {
   });
   item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
   layoutCupChildren(cup);
-  freeSelectedItemUid = cup.uid;
+  freeSelectedItemUid = item.uid;
   freeActiveCupUid = cup.uid;
   freeCupToolMode = 'contents';
   renderFreeLayoutStage();
@@ -9887,11 +9960,13 @@ function addRiceFaceTemplate(templateId, opts = {}) {
   const spot = opts.x != null && opts.y != null ? { x: opts.x, y: opts.y } : getNextFreeSpot('rice');
   const size = opts.size || base.size || 138;
   const scale = size / (base.size || 138);
+  const tier = opts.tier || 1;
+  if (!opts.keepExistingRice) removeRiceOnTier(tier);
   const rice = addFreeLayoutItem(base, {
     x: spot.x,
     y: spot.y,
     size,
-    tier: opts.tier || 1,
+    tier,
     skipRender: true,
     skipTutorialPlace: !!opts.skipTutorialPlace,
   });
@@ -10025,11 +10100,13 @@ function createFreePlacedElement(item, interactive) {
   const typeClass = item.type ? ' type-' + item.type : '';
   const groupClass = getSkGroupClass(item.sk);
   const editingCup = getEditingCup();
-  const lockCupChild = interactive && !!item.parentCupId && (!editingCup || item.parentCupId !== editingCup.uid);
+  const lockCupChild = interactive && !!item.parentCupId && !!editingCup && item.parentCupId !== editingCup.uid;
   const brushLocked = interactive && !!freeBrushStampDef;
   const isSelected = interactive && isItemVisuallySelected(item);
   el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : ''].filter(Boolean).join(' ');
   el.dataset.freeUid = item.uid;
+  el.dataset.itemId = item.id || '';
+  el.dataset.type = item.type || '';
   el.style.left = toPctX(item.x);
   el.style.top = toPctY(item.y);
   el.style.width = toPctSize(item.size || 72);
@@ -10538,6 +10615,8 @@ function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'free-palette-item';
+  btn.dataset.itemId = def.id || '';
+  btn.dataset.type = def.type || '';
   const groupClass = getSkGroupClass(def.sk);
   if (groupClass) {
     btn.classList.add(groupClass);
@@ -11336,6 +11415,14 @@ function renderCupContentsList(cup) {
     const name = document.createElement('span');
     name.textContent = child.name || `おかず${idx + 1}`;
     row.appendChild(name);
+    row.appendChild(makeSmallControlButton('うごかす', child.uid === freeSelectedItemUid ? 'active' : '', () => {
+      freeCupEditorUid = null;
+      freeCupToolMode = 'move';
+      freeActiveCupUid = cup.uid;
+      freeSelectedItemUid = child.uid;
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }));
     row.appendChild(makeSmallControlButton('けす', '', () => {
       removeFreeItem(child.uid);
       freeCupEditorUid = cup.uid;
@@ -13088,6 +13175,7 @@ function tutorialMarkCupOkAfterVoice(step) {
   }
   tutorialClearTrims();
   tutorialMarkTarget(okBtn, { radius: 16, outline: false });
+  tutorialAnimateTap(okBtn);
 }
 function tutorialClearCompleteGuideTimers() {
   if (!tutorialState.completeGuideTimers || !tutorialState.completeGuideTimers.length) return;
@@ -13145,9 +13233,8 @@ function tutorialStartCompleteGuidance() {
         if (!stillGuiding()) return;
         const detailBtn = document.getElementById('complete-detail-btn');
         tutorialClearTrims();
-        tutorialShowBubble('くわしい けっかを おすと<br>いろんな じょうほうが みられるよ', { topVh: '18', side: 'left' });
+        tutorialHideBubble();
         if (detailBtn && !detailBtn.classList.contains('hidden-pre')) {
-          tutorialPositionBubbleBeside(detailBtn, { gap: 12 });
           tutorialMarkTarget(detailBtn, { radius: 22, outline: false });
           tutorialAnimateTap(detailBtn);
         } else {
@@ -13534,6 +13621,14 @@ function tutorialFreeRatioPoint(rx, ry) {
     y: clamp(FREE_LAYOUT_H * ry, 0, FREE_LAYOUT_H),
   };
 }
+function tutorialFreePointToScreenPoint(point) {
+  const r = tutorialStageRect();
+  if (!r || !point) return null;
+  return {
+    x: r.left + r.width * (point.x / FREE_LAYOUT_W),
+    y: r.top + r.height * (point.y / FREE_LAYOUT_H),
+  };
+}
 function tutorialLayerDemoScreenPoint() {
   return tutorialStageRatioPoint(0.75, 0.51);
 }
@@ -13776,7 +13871,11 @@ function tutorialFindNoriPaletteEl() {
   if (!list) return tutorialFirstPaletteItem();
   const btns = list.querySelectorAll('.free-palette-item');
   for (const b of btns) {
+    if (b.dataset.itemId === 'nori_eye_round') return b;
+  }
+  for (const b of btns) {
     const name = b.querySelector('.free-palette-name');
+    if (b.dataset.itemId === 'nori_bento_sheet') continue;
     if (name && (name.textContent || '').indexOf('のり') >= 0) return b;
   }
   return btns[0] || tutorialFirstPaletteItem();
@@ -13786,7 +13885,7 @@ function tutorialFindSmallFoodPaletteEl() {
   return tutorialFirstPaletteItem();
 }
 function tutorialFindCupFoodPaletteEl() {
-  if (!getEditingCup()) return null;
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
   return tutorialFindPaletteFoodByNames(['プチトマト', 'ブロッコリー', 'えだまめ', 'コーンほうれんそう', 'キャベツ'])
       || document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
       || document.querySelector('.free-item-list .free-palette-item')
@@ -13828,6 +13927,11 @@ function tutorialFindPlacedCupEl() {
       || document.querySelector('.free-placed-item[data-type="cup"]');
 }
 function tutorialActiveCupPoint() {
+  const cup = tutorialActiveCupItem();
+  if (cup) {
+    const point = tutorialFreePointToScreenPoint(cup);
+    if (point) return point;
+  }
   const cupEl = tutorialFindPlacedCupEl();
   if (cupEl) {
     const r = cupEl.getBoundingClientRect();
@@ -13860,26 +13964,48 @@ function tutorialSetActiveCupSizeKey(sizeKey, opts = {}) {
   return true;
 }
 function tutorialAttachFoodToActiveCupIfOverlaps(item) {
-  if (!item || item.type !== 'food') return false;
-  if (item.parentCupId) return true;
   const cup = tutorialActiveCupItem();
+  return attachFoodToCupIfOverlaps(item, cup, { selectChild: true, render: false });
+}
+function tutorialArrangeTomatoesInCup(cup) {
   if (!cup) return false;
-  const itemRadius = Math.max(44, (item.size || 96) * (item.scale || 1) * 0.58);
-  const cupRadius = cup.radius || ((cup.size || 180) * 0.58);
-  if (dist(item, cup) > cupRadius + itemRadius) return false;
-  const def = getFreeFoodCatalog().find(f => f.id === item.id || f.name === item.name) || item;
-  item.parentCupId = cup.uid;
-  item.tier = getItemTier(cup);
-  item.size = getCupFoodChildSize(def, cup);
-  item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
-  item.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
-  const p = clampPointToCup(item.x, item.y, item, cup);
-  item.x = p.x;
-  item.y = p.y;
-  freeActiveCupUid = cup.uid;
+  const tomatoes = placedItems.filter(child => child.parentCupId === cup.uid && String(child.name || '') === 'プチトマト');
+  if (!tomatoes.length) return false;
+  const def = getFreeFoodCatalog().find(f => f.name === 'プチトマト') || tomatoes[0];
+  const childSize = getCupFoodChildSize(def, cup);
+  const first = tomatoes[0];
+  first.size = childSize;
+  first.x = cup.x - Math.max(14, childSize * 0.24);
+  first.y = cup.y + Math.max(4, childSize * 0.08);
+  first.manualCupPosition = true;
+  let second = tomatoes[1];
+  if (!second) {
+    second = addFreeLayoutItem(def, {
+      x: cup.x + Math.max(16, childSize * 0.28),
+      y: cup.y - Math.max(5, childSize * 0.10),
+      size: childSize,
+      tier: getItemTier(cup),
+      parentCupId: cup.uid,
+      skipRender: true,
+      skipTutorialPlace: true,
+    });
+  }
+  if (second) {
+    second.size = childSize;
+    second.x = cup.x + Math.max(16, childSize * 0.28);
+    second.y = cup.y - Math.max(5, childSize * 0.10);
+    second.manualCupPosition = true;
+    second.layer = Math.max(second.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
+  }
+  [first, second].filter(Boolean).forEach(child => {
+    const p = clampPointToCup(child.x, child.y, child, cup);
+    child.x = p.x;
+    child.y = p.y;
+    child.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
+  });
   layoutCupChildren(cup);
-  renderFreeLayoutStage();
-  renderFreeLayoutControls();
+  freeActiveCupUid = cup.uid;
+  freeSelectedItemUid = first.uid;
   return true;
 }
 function tutorialContextToolbarEl() {
@@ -14592,6 +14718,16 @@ function tutorialRenderStep() {
 
   // 11. small-cup-food — カップ内に小さいおかずを入れる
   if (step === 'small-cup-food') {
+    if (getEditingCup()) {
+      freeCupEditorUid = null;
+      freeCupToolMode = 'move';
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }
+    if (freeLayoutTab !== 'food') {
+      freeLayoutTab = 'food';
+      renderFreeLayoutControls();
+    }
     tutorialHidePonoCallout();
     setSpeech('みどりの プチトマトを カップに いれよう');
     tutorialSetModeLabel('やってみよう！', {
@@ -14837,8 +14973,16 @@ function tutorialOnGuideChange(/* step */) {
 function tutorialOnCupEditorClosed() {
   if (!tutorialState.active) return;
   if (tutorialState.step === 'cup-edit' || tutorialState.step === 'cup-edit-try') {
-    const cupUid = freeActiveCupUid;
-    if (cupUid) openCupEditor(cupUid);
+    const cupUid = freeActiveCupUid || (getSelectedCup() && getSelectedCup().uid);
+    freeCupEditorUid = null;
+    freeCupToolMode = 'move';
+    if (cupUid) {
+      freeActiveCupUid = cupUid;
+      freeSelectedItemUid = cupUid;
+    }
+    freeLayoutTab = 'food';
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
     tutorialAdvance('small-cup-food');
     return;
   }
@@ -14908,6 +15052,9 @@ function tutorialOnItemPlaced(item) {
       tutorialResetInactivity();
       return;
     }
+    if (String(item.name || '') === 'プチトマト') {
+      tutorialArrangeTomatoesInCup(tutorialActiveCupItem());
+    }
     if (getEditingCup()) closeCupEditor();
     else {
       renderFreeLayoutStage();
@@ -14937,7 +15084,9 @@ function tutorialOnStageComplete() {
   tutorialClearTrims();
   tutorialClearTargetCircle();
   tutorialHideFinger();
+  tutorialHideBubble();
   tutorialHidePonoCallout();
+  tutorialSetModeLabel('');
 }
 
 // ===== Tutorial settings (gear) re-enable wiring =====
