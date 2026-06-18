@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-684";
+const ASSET_VERSION = "20260619-685";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -31,6 +31,7 @@ const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
 const EDITOR_STATE_VERSION = 3;
 const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
+const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
 const DRAWING_COLORS = [
   "#EF4444",
   "#F97316",
@@ -134,6 +135,7 @@ const bookPrevPage = document.getElementById("bookPrevPage");
 const bookNextPage = document.getElementById("bookNextPage");
 const bookPageLabel = document.getElementById("bookPageLabel");
 const bookPageJump = document.getElementById("bookPageJump");
+const albumModeToggle = document.getElementById("albumModeToggle");
 
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
@@ -142,6 +144,7 @@ const tuningEnabled = isLocalPreview && params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 let activeBook = params.get("book") === "girl" ? "girl" : "boy";
+let activeAlbumMode = params.get("album") === "collection" ? "collection" : "free";
 const requestedSurface = params.get("surface");
 let activeSurface = requestedSurface === "cover"
   ? "cover"
@@ -244,7 +247,9 @@ let spreadJumpAnimation = null;
 let coverOpenAnimation = null;
 let stickerPlan = null;
 let stickerOptions = [];
+let collectionStickerOptions = [];
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
+let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
 let editorState = loadEditorState();
 let activeEditorPage = 1;
 let activeBookPage = spreadStartForPage(readClampedNumber(params.get("page"), 1, 1, editorPageDefinitions.length));
@@ -302,6 +307,7 @@ const textureFiles = [
 const textureEntries = await Promise.all(textureFiles.map(async (file) => [file, await loadTexture(file)]));
 const textureMap = new Map(textureEntries);
 const pageTemplateTextureMap = new Map();
+const collectionSpineTextureMap = new Map();
 window.__stickerBookAssetsLoaded = true;
 
 const book = new THREE.Group();
@@ -533,6 +539,10 @@ for (const button of spreadJumpButtons) {
   });
 }
 
+albumModeToggle?.addEventListener("click", () => {
+  setAlbumMode(activeAlbumMode === "collection" ? "free" : "collection");
+});
+
 window.addEventListener("resize", resize);
 setupTuningPanel();
 setupBookPageControls();
@@ -549,6 +559,7 @@ window.__stickerBookReady = true;
 window.__stickerBookDebugState = () => ({
   activeBookPage,
   activeSurface,
+  activeAlbumMode,
   flipProgress,
   spreadPosition,
   spreadJumpActive: Boolean(spreadJumpAnimation),
@@ -581,7 +592,13 @@ function setupScenePagePicking() {
 }
 
 function pickEditablePage(event) {
-  if (!editorEnabled || activeSurface !== "inside" || !stickerEditor || !stickerEditor.hidden) {
+  if (
+    activeAlbumMode === "collection"
+    || !editorEnabled
+    || activeSurface !== "inside"
+    || !stickerEditor
+    || !stickerEditor.hidden
+  ) {
     return null;
   }
   const rect = canvas.getBoundingClientRect();
@@ -690,15 +707,18 @@ async function loadStickerPlanForEditor() {
       throw new Error(`plan ${response.status}`);
     }
     stickerPlan = await response.json();
-    stickerOptions = stickerPlan.stickers
-      .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
+    collectionStickerOptions = stickerPlan.stickers
       .map((sticker) => ({
         ...sticker,
-        assetUrl: stickerAssetUrl(sticker.assetPath),
+        assetUrl: sticker.assetPath ? stickerAssetUrl(sticker.assetPath) : "",
       }));
+    stickerOptions = collectionStickerOptions
+      .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
+      .map((sticker) => ({ ...sticker }));
     syncEditorPlacementsWithStickerPlan();
     editorPageDefinitions = buildEditorPageDefinitions();
-    activeBookPage = spreadStartForPage(activeBookPage);
+    collectionPageDefinitions = buildCollectionPageDefinitions();
+    activeBookPage = spreadStartForPage(Math.min(activeBookPage, editorPageCount()));
     activeEditorPage = THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
     if (!isLocalPreview || !params.has("spread")) {
       spreadPosition = spreadPositionForBookPage(activeBookPage);
@@ -754,6 +774,27 @@ function createFallbackEditorPageDefinitions() {
     label: `ページ ${index + 1}`,
     shelfType: "sticker_album",
   }));
+}
+
+function createFallbackCollectionPageDefinitions() {
+  return [{
+    page: 1,
+    label: "シールアルバム",
+    shelfType: "sticker_collection",
+  }];
+}
+
+function buildCollectionPageDefinitions() {
+  const pageCount = Math.max(1, Math.ceil(collectionStickerOptions.length / COLLECTION_ALBUM_STICKERS_PER_PAGE));
+  return Array.from({ length: pageCount }, (_, index) => ({
+    page: index + 1,
+    label: index === 0 ? "シールアルバム" : `シール ${index + 1}`,
+    shelfType: "sticker_collection",
+  }));
+}
+
+function activePageDefinitions() {
+  return activeAlbumMode === "collection" ? collectionPageDefinitions : editorPageDefinitions;
 }
 
 function ensureDefaultEditorPages() {
@@ -1683,6 +1724,30 @@ function setBookPage(page, options = {}) {
   syncUrl();
 }
 
+function setAlbumMode(mode) {
+  const nextMode = mode === "collection" ? "collection" : "free";
+  if (nextMode === activeAlbumMode) {
+    updateAlbumModeUi();
+    return;
+  }
+  closeStickerEditor();
+  cancelCoverOpen();
+  cancelSpreadJump();
+  activeAlbumMode = nextMode;
+  activeBookPage = spreadStartForPage(1);
+  activeEditorPage = 1;
+  spreadPosition = spreadPositionForBookPage(activeBookPage);
+  flipProgress = 0;
+  slider.value = "0";
+  selectedPlacementId = null;
+  stickerDragState = null;
+  assignSpineTexture();
+  refreshPageTemplateTextures();
+  updateAlbumModeUi();
+  updatePage(flipProgress);
+  syncUrl();
+}
+
 function setBookSurface(surface, page = activeBookPage) {
   const nextSurface = surface === "cover" ? "cover" : "inside";
   cancelSpreadJump();
@@ -1896,11 +1961,11 @@ function renderBookPageJump() {
 }
 
 function editorPageName(page) {
-  return editorPageDefinitions[page - 1]?.label || "ページ";
+  return activePageDefinitions()[page - 1]?.label || "ページ";
 }
 
 function editorPageCount() {
-  return Math.max(1, editorPageDefinitions.length);
+  return Math.max(1, activePageDefinitions().length);
 }
 
 function spreadStartForPage(page) {
@@ -1930,10 +1995,15 @@ function activeEditorPageDefinition() {
 }
 
 function activeBookPageDefinition() {
-  return editorPageDefinitions[activeBookPage - 1] || editorPageDefinitions[0] || null;
+  const definitions = activePageDefinitions();
+  return definitions[activeBookPage - 1] || definitions[0] || null;
 }
 
 function stickersForPage(page) {
+  if (activeAlbumMode === "collection") {
+    const start = (Math.max(1, Math.round(page)) - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE;
+    return collectionStickerOptions.slice(start, start + COLLECTION_ALBUM_STICKERS_PER_PAGE);
+  }
   const pageDef = editorPageDefinitions[page - 1];
   if (!pageDef?.gameId) {
     return stickerOptions;
@@ -2715,7 +2785,7 @@ function assignTextureObject(mesh, texture) {
 
 function getPageTemplateTexture(side, pageNumber = pageNumberForTemplateSide(side)) {
   const safePage = THREE.MathUtils.clamp(Math.round(pageNumber) || 1, 1, editorPageCount());
-  const key = `${activeBook}:${side}:${safePage}`;
+  const key = `${activeBook}:${activeAlbumMode}:${side}:${safePage}`;
   if (!pageTemplateTextureMap.has(key)) {
     pageTemplateTextureMap.set(key, createPageTemplateTexture(side, activeBook, safePage));
   }
@@ -2753,9 +2823,13 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
     ? { accent: "#d78db9", sub: "#7bc8c8", line: "#dcb6cc", tab: "#f5ddea" }
     : { accent: "#d79a34", sub: "#55aeb8", line: "#d3b35f", tab: "#f4e7b8" };
 
-  drawPageTemplateBase(ctx, palette, side);
-  drawRightPageTemplate(ctx, palette);
-  drawRingHoleGuides(ctx, side);
+  drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
+  if (activeAlbumMode === "collection") {
+    drawCollectionPageTemplate(ctx, palette, side);
+  } else {
+    drawRightPageTemplate(ctx, palette);
+    drawRingHoleGuides(ctx, side);
+  }
 
   const texture = new THREE.CanvasTexture(templateCanvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -2767,7 +2841,7 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
   return texture;
 }
 
-function drawPageTemplateBase(ctx, palette, side) {
+function drawPageTemplateBase(ctx, palette, side, mode = "free") {
   const width = PAGE_TEXTURE_W;
   const height = PAGE_TEXTURE_H;
   ctx.clearRect(0, 0, width, height);
@@ -2794,21 +2868,31 @@ function drawPageTemplateBase(ctx, palette, side) {
   drawCanvasRoundedRect(ctx, 108, 106, width - 216, height - 212, 52);
   ctx.stroke();
 
-  const stripX = side === "right" ? 90 : width - 166;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
-  ctx.strokeStyle = "rgba(195, 176, 111, 0.22)";
-  ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, stripX, 112, 76, height - 224, 38);
-  ctx.fill();
-  ctx.stroke();
-  for (let i = 0; i < 5; i += 1) {
-    const x = stripX + 20 + i * 9;
-    ctx.beginPath();
-    ctx.moveTo(x, 142);
-    ctx.lineTo(x, height - 142);
-    ctx.strokeStyle = "rgba(211, 185, 104, 0.17)";
-    ctx.lineWidth = 2;
+  if (mode === "collection") {
+    const foldX = side === "right" ? 82 : width - 92;
+    const foldGradient = ctx.createLinearGradient(foldX - 42, 0, foldX + 42, 0);
+    foldGradient.addColorStop(0, "rgba(117, 89, 36, 0.06)");
+    foldGradient.addColorStop(0.5, "rgba(255,255,255,0.42)");
+    foldGradient.addColorStop(1, "rgba(117, 89, 36, 0.04)");
+    ctx.fillStyle = foldGradient;
+    ctx.fillRect(foldX - 44, 106, 88, height - 212);
+  } else {
+    const stripX = side === "right" ? 90 : width - 166;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.strokeStyle = "rgba(195, 176, 111, 0.22)";
+    ctx.lineWidth = 3;
+    drawCanvasRoundedRect(ctx, stripX, 112, 76, height - 224, 38);
+    ctx.fill();
     ctx.stroke();
+    for (let i = 0; i < 5; i += 1) {
+      const x = stripX + 20 + i * 9;
+      ctx.beginPath();
+      ctx.moveTo(x, 142);
+      ctx.lineTo(x, height - 142);
+      ctx.strokeStyle = "rgba(211, 185, 104, 0.17)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
   }
   ctx.restore();
 
@@ -2818,6 +2902,33 @@ function drawPageTemplateBase(ctx, palette, side) {
   shade.addColorStop(1, "rgba(95,70,20,0.12)");
   ctx.fillStyle = shade;
   ctx.fillRect(0, 0, width, height);
+}
+
+function drawCollectionPageTemplate(ctx, palette, side) {
+  const x = 126;
+  const y = 130;
+  const width = PAGE_TEXTURE_W - 252;
+  const height = PAGE_TEXTURE_H - 260;
+  ctx.save();
+  const innerBandX = side === "right" ? 0 : PAGE_TEXTURE_W - 116;
+  const innerBandGradient = ctx.createLinearGradient(innerBandX, 0, innerBandX + 116, 0);
+  innerBandGradient.addColorStop(0, "rgba(255, 248, 220, 0.92)");
+  innerBandGradient.addColorStop(0.62, "rgba(250, 238, 190, 0.86)");
+  innerBandGradient.addColorStop(1, "rgba(230, 207, 142, 0.35)");
+  ctx.fillStyle = innerBandGradient;
+  ctx.fillRect(innerBandX, 72, 116, PAGE_TEXTURE_H - 144);
+
+  ctx.fillStyle = "rgba(255, 252, 235, 0.72)";
+  ctx.strokeStyle = palette.line;
+  ctx.lineWidth = 5;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 46);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.68)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, x + 24, y + 24, width - 48, height - 48, 34);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawLeftPageTemplate(ctx, palette) {
@@ -2915,7 +3026,117 @@ function drawRightPageTemplate(ctx, palette) {
 
 function drawDynamicPageContent(ctx, texture, side, palette, pageNumber = pageNumberForTemplateSide(side)) {
   const pageDef = editorPageDefinitions[pageNumber - 1] || editorPageDefinitions[0] || null;
+  if (activeAlbumMode === "collection") {
+    const collectionPageDef = collectionPageDefinitions[pageNumber - 1] || collectionPageDefinitions[0] || null;
+    drawCollectionAlbumPage(ctx, texture, palette, collectionPageDef, stickersForPage(pageNumber), pageNumber);
+    return;
+  }
   drawStickerCanvasPage(ctx, texture, palette, pageDef, getPagePlacements(pageNumber), pageNumber);
+}
+
+function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageNumber) {
+  const contentX = 168;
+  const contentY = 178;
+  const contentW = PAGE_TEXTURE_W - 336;
+  const contentH = PAGE_TEXTURE_H - 322;
+  const cols = 3;
+  const rows = 4;
+  const gapX = 28;
+  const gapY = 24;
+  const cellW = (contentW - gapX * (cols - 1)) / cols;
+  const cellH = (contentH - 86 - gapY * (rows - 1)) / rows;
+
+  ctx.save();
+  ctx.fillStyle = "#334447";
+  ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(pageDef?.label || "シールアルバム", PAGE_TEXTURE_W / 2, 112);
+  ctx.fillStyle = palette.sub;
+  ctx.font = '800 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText(`${pageNumber} / ${editorPageCount()}`, PAGE_TEXTURE_W / 2, 150);
+
+  for (let i = 0; i < stickers.length; i += 1) {
+    const sticker = stickers[i];
+    const globalIndex = (pageNumber - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE + i + 1;
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = contentX + col * (cellW + gapX);
+    const y = contentY + row * (cellH + gapY);
+    const found = sticker.unlock === "found";
+    drawCollectionStickerCard(ctx, texture, sticker, globalIndex, x, y, cellW, cellH, found);
+  }
+
+  if (!stickers.length) {
+    ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
+    ctx.font = '800 38px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.textAlign = "center";
+    ctx.fillText("シールは まだありません", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
+  }
+  ctx.restore();
+  texture.needsUpdate = true;
+}
+
+function drawCollectionStickerCard(ctx, texture, sticker, index, x, y, width, height, found) {
+  ctx.save();
+  ctx.fillStyle = found ? "rgba(255,255,255,0.66)" : "rgba(226, 225, 212, 0.58)";
+  ctx.strokeStyle = found ? "rgba(188, 151, 73, 0.34)" : "rgba(120, 128, 122, 0.24)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 22);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = found ? "#4aa5ad" : "#9aa09b";
+  drawCanvasRoundedRect(ctx, x + 14, y + 14, 68, 34, 13);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = '800 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(String(index).padStart(2, "0"), x + 48, y + 38);
+
+  const imageSize = Math.min(width - 64, height - 86, 172);
+  const imageX = x + (width - imageSize) / 2;
+  const imageY = y + 54;
+  if (sticker.assetUrl) {
+    drawAsyncCollectionStickerImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found);
+  } else {
+    drawMissingStickerBadge(ctx, imageX, imageY, imageSize, imageSize);
+  }
+
+  ctx.fillStyle = found ? "#334447" : "rgba(51, 68, 71, 0.54)";
+  ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(sticker.label || "シール", x + width / 2, y + height - 24, width - 28);
+  ctx.restore();
+}
+
+function drawAsyncCollectionStickerImage(ctx, texture, src, x, y, width, height, found) {
+  loadStickerImage(src)
+    .then((image) => {
+      ctx.save();
+      if (!found) {
+        ctx.globalAlpha = 0.38;
+        ctx.filter = "grayscale(1) saturate(0.15)";
+      }
+      drawImageContain(ctx, image, x, y, width, height);
+      ctx.restore();
+      texture.needsUpdate = true;
+    })
+    .catch(() => {});
+}
+
+function drawMissingStickerBadge(ctx, x, y, width, height) {
+  ctx.save();
+  ctx.fillStyle = "rgba(160, 160, 150, 0.18)";
+  ctx.strokeStyle = "rgba(120, 128, 122, 0.22)";
+  ctx.lineWidth = 4;
+  drawCanvasRoundedRect(ctx, x + width * 0.12, y + width * 0.12, width * 0.76, height * 0.76, 28);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "rgba(80, 88, 84, 0.36)";
+  ctx.font = '900 52px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText("?", x + width / 2, y + height / 2 + 18);
+  ctx.restore();
 }
 
 function drawStickerListPage(ctx, texture, palette, pageDef, stickers) {
@@ -3694,7 +3915,7 @@ function applyVariantState() {
   }
   assignTexture(closedCover, bundle.coverFront);
   assignCoverTurnTextures();
-  assignTexture(spine, bundle.spine);
+  assignSpineTexture();
   assignTexture(sideTabs.left, bundle.tabsLeft);
   assignTexture(sideTabs.right, bundle.tabsRight);
   applyCoverTuning();
@@ -3703,6 +3924,73 @@ function applyVariantState() {
   updateControlState();
   updatePage(flipProgress);
   syncUrl();
+}
+
+function assignSpineTexture() {
+  if (activeAlbumMode === "collection") {
+    assignTextureObject(spine, getCollectionSpineTexture(activeBook));
+    spine.scale.x = 1.34;
+    spine.position.z = 0.035;
+    spine.renderOrder = 16;
+    return;
+  }
+  spine.scale.x = 1;
+  spine.position.z = -0.09;
+  spine.renderOrder = 1;
+  assignTexture(spine, BOOK_VARIANTS[activeBook].spine);
+}
+
+function getCollectionSpineTexture(bookName) {
+  if (collectionSpineTextureMap.has(bookName)) {
+    return collectionSpineTextureMap.get(bookName);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 1536;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const base = bookName === "girl"
+    ? { edge: "#b56c9b", main: "#f3d8e9", dark: "#7e5874", line: "#fff6e1" }
+    : { edge: "#2d6f7a", main: "#e7d294", dark: "#355f64", line: "#fff4c9" };
+  const grad = ctx.createLinearGradient(26, 0, 230, 0);
+  grad.addColorStop(0, base.dark);
+  grad.addColorStop(0.18, base.edge);
+  grad.addColorStop(0.5, base.main);
+  grad.addColorStop(0.82, base.edge);
+  grad.addColorStop(1, base.dark);
+  ctx.fillStyle = grad;
+  drawCanvasRoundedRect(ctx, 34, 24, 188, 1488, 54);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(80, 66, 36, 0.26)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, 54, 52, 148, 1432, 34);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(71, 61, 35, 0.13)";
+  ctx.lineWidth = 2;
+  for (let x = 78; x <= 178; x += 20) {
+    ctx.beginPath();
+    ctx.moveTo(x, 86);
+    ctx.lineTo(x, 1450);
+    ctx.stroke();
+  }
+  ctx.fillStyle = base.line;
+  ctx.globalAlpha = 0.38;
+  for (const y of [210, 1326]) {
+    drawCanvasRoundedRect(ctx, 66, y, 124, 44, 18);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  collectionSpineTextureMap.set(bookName, texture);
+  return texture;
 }
 
 function assignCoverTurnTextures() {
@@ -3720,6 +4008,18 @@ function updateControlState() {
   }
   updateSpreadJumpControls();
   updateBookPageControls();
+  updateAlbumModeUi();
+}
+
+function updateAlbumModeUi() {
+  document.body.classList.toggle("is-collection-album", activeAlbumMode === "collection");
+  if (albumModeToggle) {
+    albumModeToggle.textContent = activeAlbumMode === "collection" ? "シールちょう" : "シールアルバム";
+    albumModeToggle.setAttribute(
+      "aria-label",
+      activeAlbumMode === "collection" ? "シールちょうをひらく" : "シールアルバムをひらく",
+    );
+  }
 }
 
 function updateSpreadJumpControls() {
@@ -3932,10 +4232,10 @@ function renderCoverOpenTransition(rawProgress) {
     applyCoverTuning();
   }
   setCoverOpeningSpreadVisible(true);
-  const showBinding = p > 0.86;
+  const showBinding = p > 0.64;
   spine.visible = showBinding;
-  ringGroup.visible = showBinding;
-  innerRight.visible = showBinding;
+  ringGroup.visible = showBinding && activeAlbumMode !== "collection";
+  innerRight.visible = showBinding && activeAlbumMode !== "collection";
   coverTurn.visible = raw < 0.985;
   coverTurn.position.set(
     THREE.MathUtils.lerp(COVER_CLOSED_X, COVER_OPEN_X, p),
@@ -4002,6 +4302,12 @@ function setOpenSpreadVisible(visible) {
   pageStacks.group.visible = visible;
   pageStacks.left.group.visible = visible;
   pageStacks.right.group.visible = visible;
+  if (visible && activeAlbumMode === "collection") {
+    sideTabs.group.visible = false;
+    ringGroup.visible = false;
+    innerLeft.visible = false;
+    innerRight.visible = false;
+  }
   if (!visible) {
     flutterPages.group.visible = false;
   }
@@ -4022,6 +4328,9 @@ function setCoverOpeningSpreadVisible(visible) {
   pageStacks.group.visible = visible;
   pageStacks.left.group.visible = false;
   pageStacks.right.group.visible = visible;
+  if (visible && activeAlbumMode === "collection") {
+    sideTabs.group.visible = false;
+  }
   if (!visible) {
     coverTurn.visible = false;
     flutterPages.group.visible = false;
@@ -4090,6 +4399,7 @@ function syncUrl() {
   next.set("page", String(activeBookPage));
   next.set("book", activeBook);
   next.set("surface", activeSurface);
+  next.set("album", activeAlbumMode);
   if (isPlaying) {
     next.set("play", "1");
   } else {

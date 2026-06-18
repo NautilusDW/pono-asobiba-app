@@ -332,6 +332,35 @@ input[type="range"] {
   cursor: default;
 }
 
+.album-mode-toggle {
+  position: fixed;
+  left: 50%;
+  bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px));
+  z-index: 2;
+  transform: translateX(-50%);
+  min-width: 156px;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(216, 241, 238, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 253, 244, 0.88);
+  color: #243b40;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(10px);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.album-mode-toggle:hover {
+  background: rgba(224, 247, 244, 0.94);
+}
+
+body.is-collection-album .album-mode-toggle {
+  border-color: rgba(238, 203, 101, 0.52);
+  background: rgba(255, 241, 199, 0.92);
+}
+
 .sticker-editor[hidden] {
   display: none;
 }
@@ -731,8 +760,8 @@ input[type="range"] {
   grid-template-rows: minmax(0, 1fr);
   padding: 14px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 244, 205, 0.6)),
-    rgba(248, 247, 231, 0.95);
+    radial-gradient(circle at 50% 44%, rgba(255, 246, 211, 0.18), transparent 42%),
+    linear-gradient(135deg, rgba(22, 52, 53, 0.9), rgba(44, 65, 50, 0.86));
 }
 
 @media (min-width: 1100px) and (min-aspect-ratio: 3 / 2) {
