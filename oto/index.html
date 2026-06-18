@@ -9389,7 +9389,9 @@ function _ghUpdateFallingNotes(now) {
     var z = -520 * (1 - hitProgress) + passAmount * 280;
     var scale = 0.52 + 0.58 * Math.pow(hitProgress, 1.12) + passAmount * 0.5;
     var passFade = visualProgress <= 1 ? 1 : Math.max(0, 1 - passAmount / (RHYTHM_NOTE_PASS_PROGRESS - 1));
-    var fadeIn = Math.max(0, Math.min(1, (visualProgress - RHYTHM_NOTE_FADE_IN_START) / (RHYTHM_NOTE_FADE_IN_END - RHYTHM_NOTE_FADE_IN_START)));
+    var fadeStart = note.quickFadeIn ? -0.04 : RHYTHM_NOTE_FADE_IN_START;
+    var fadeEnd = note.quickFadeIn ? 0.08 : RHYTHM_NOTE_FADE_IN_END;
+    var fadeIn = Math.max(0, Math.min(1, (visualProgress - fadeStart) / (fadeEnd - fadeStart)));
     var opacity = (0.34 + 0.66 * Math.max(depth, hitProgress * 0.42)) * fadeIn * passFade;
     var domZ = (document.body && document.body.classList.contains('rhythm-demo-note-visible')) ? 0 : z;
     note.el.style.opacity = opacity.toFixed(3);
@@ -11973,7 +11975,8 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
     noteSkin: noteSkin,
     bonusScore: noteSkin.bonusScore || 0,
     beatLen: 1,
-    consumed: false
+    consumed: false,
+    quickFadeIn: true
   };
   _rhythm.activeNotes.push(note);
   _otoTutorialState.ownsRhythmDemo = true;
@@ -12043,7 +12046,8 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
     noteSkin: noteSkin,
     bonusScore: 0,
     beatLen: 1,
-    consumed: false
+    consumed: false,
+    quickFadeIn: true
   };
   _rhythm.activeNotes.push(note);
   _otoTutorialState.ownsRhythmDemo = true;
