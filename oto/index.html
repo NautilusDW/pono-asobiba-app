@@ -1719,6 +1719,16 @@
     font-weight: 900;
     line-height: 1.2;
   }
+  .rhythm-menu-guide {
+    width: min(100%, 470px);
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.9);
+    font-size: clamp(0.72rem, 1.8vw, 0.86rem);
+    font-weight: 900;
+    line-height: 1.35;
+  }
   .rhythm-song-choice {
     min-height: 64px;
     padding: 8px 12px;
@@ -3518,6 +3528,35 @@
     height:18px;
     accent-color:#34D399;
   }
+  .tut-falling-note {
+    position: fixed;
+    z-index: 9998;
+    width: clamp(34px, 6.2vw, 54px);
+    height: clamp(34px, 6.2vw, 54px);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(circle at 34% 26%, rgba(255,255,255,0.96) 0 13%, rgba(255,255,255,0) 15%),
+      linear-gradient(135deg, var(--note-hi, #FDE68A), var(--note-lo, #F59E0B));
+    border: 3px solid rgba(255,255,255,0.94);
+    box-shadow:
+      0 0 0 5px rgba(255,216,77,0.18),
+      0 12px 18px rgba(0,0,0,0.32),
+      inset 0 -7px 0 rgba(0,0,0,0.2),
+      inset 0 5px 0 rgba(255,255,255,0.28);
+  }
+  .tut-falling-note::after {
+    content: '♪';
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 1.25rem;
+    font-weight: 900;
+    text-shadow: 0 2px 5px rgba(0,0,0,0.32);
+  }
   /* スポットライト: anchor 位置に被せて 暗幕に「穴」をあける */
   .tut-spot {
     position: fixed;
@@ -5104,6 +5143,7 @@
         <!-- Step 1: 曲えらび -->
         <div class="rhythm-step rhythm-step-song" data-step-view="song">
           <div class="rhythm-menu-title">きょくを えらぼう</div>
+          <div class="rhythm-menu-guide">かんたん・ふつう・むずかしめから えらぶよ。かつと ステージが ふえるよ。</div>
           <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
           <div class="rhythm-diff-tabs" role="tablist">
             <button class="rhythm-diff-tab active" type="button" data-diff="かんたん" role="tab" aria-selected="true">かんたん</button>
@@ -7267,7 +7307,7 @@ function _rhythmStageSummary() {
   var total = RHYTHM_SONGS.length;
   var current = _rhythmSongStage(RHYTHM_BASE_SONG);
   var clearedCount = RHYTHM_SONGS.filter(function(song) { return _rhythmSongCleared(song, progress); }).length;
-  return 'ステージ ' + current + ' / ' + total + '　ぜんぶ えらべる　クリア ' + clearedCount;
+  return 'ステージ ' + current + ' / ' + total + '　クリア ' + clearedCount;
 }
 
 function _rhythmSections(song) {
@@ -9687,7 +9727,8 @@ function _showRhythmComplete(result) {
   if (clearedFullSong) _queueRhythmStickerReward(stars);
   else _clearRhythmStickerReward();
   document.body.classList.add('rhythm-complete-active');
-  _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'idle', null, _rhythmPonoLine('clear'));
+  var partialRivalLine = hasNextPart ? 'いいぞ でも まだまだ これからケロ！' : 'ブロックは できたな ほんばんも こい！';
+  _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'taunt', clearedFullSong ? null : partialRivalLine, _rhythmPonoLine('clear'));
   var nextStageSong = !hasNextPart ? _nextRhythmStageSong(RHYTHM_BASE_SONG) : null;
   var complete = document.getElementById('rhythm-complete');
   var title = document.getElementById('rhythm-complete-title');
@@ -9726,7 +9767,7 @@ function _showRhythmComplete(result) {
     document.body.classList.remove('rhythm-namegate');
   }
   if (text) {
-    text.textContent = clearedFullSong ? 'ステージ クリア！' : 'パート クリア！';
+    text.textContent = clearedFullSong ? 'ステージ クリア！' : 'ブロック クリア！';
     text.classList.remove('show'); // v1108: 初期 (900ms 経過まで) は非表示。下の setTimeout で .show
   }
   if (actions) actions.classList.add('hidden');
@@ -9747,8 +9788,8 @@ function _showRhythmComplete(result) {
   _rhythm.completeTimers.push(setTimeout(function() {
     if (text) {
       text.textContent = hasNextPart
-        ? 'つぎのパートへ いけるよ'
-        : (nextStageSong ? 'つぎのステージも あそべるよ' : 'べつのきょくも えらべるよ');
+        ? 'まだまだ これからだよ'
+        : (nextStageSong ? 'つぎのステージも あそべるよ' : 'ほんばんも あそべるよ');
       text.classList.add('show'); // v1108: 吹き出しを表示
     }
     if (actions) actions.classList.remove('hidden');
@@ -11595,11 +11636,11 @@ document.addEventListener('visibilitychange', function() {
 // ────────────────────────────────
 // チュートリアル
 // ────────────────────────────────
-var TUT_SEEN_KEY = 'pono_oto_tut_seen_v2';
+var TUT_SEEN_KEY = 'pono_oto_tut_seen_v3';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
-  rhythmStory: 'pono_oto_rhythm_story_tut_seen_v2',
-  freeStage: 'pono_oto_free_stage_tut_seen_v2'
+  rhythmStory: 'pono_oto_rhythm_story_tut_seen_v3',
+  freeStage: 'pono_oto_free_stage_tut_seen_v3'
 };
 var OTO_TUTORIAL_HAND_ASSETS = {
   point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
@@ -11668,6 +11709,81 @@ function _otoTutorialHideNextChecked() {
   var input = document.getElementById('tut-hide-next');
   return !!(input && input.checked);
 }
+function _clearOtoTutorialAutoTimer() {
+  if (!_otoTutorialState || !_otoTutorialState.autoTimer) return;
+  try { clearTimeout(_otoTutorialState.autoTimer); } catch (e) {}
+  _otoTutorialState.autoTimer = 0;
+}
+function _clearOtoTutorialDemoEffects() {
+  if (!_otoTutorialState) return;
+  (_otoTutorialState.demoTimers || []).forEach(function(t) {
+    try { clearTimeout(t); } catch (e) {}
+  });
+  (_otoTutorialState.demoNodes || []).forEach(function(node) {
+    try { if (node && node.parentNode) node.parentNode.removeChild(node); } catch (e) {}
+  });
+  _otoTutorialState.demoTimers = [];
+  _otoTutorialState.demoNodes = [];
+}
+function _prepareOtoRhythmTutorialStage() {
+  _hideRhythmMenu();
+  _clearRhythmCountdown();
+  _clearRhythmDemo(true);
+  _hideRhythmComplete();
+  _hideRhythmOpening();
+  _forcePianoSoundForRhythm();
+  _setModeButtons('rhythm');
+  _updateRhythmBattlePanel('idle', null, 'まず みてね');
+  var hud = document.getElementById('rhythm-hud');
+  if (hud) hud.classList.add('show');
+}
+function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
+  if (!_otoTutorialState || !step || typeof step.demoNoteIdx !== 'number') return;
+  var idx = Math.max(0, Math.min(7, step.demoNoteIdx | 0));
+  var btn = anchorEl || _rhythmButton(idx);
+  var stage = document.getElementById('stage');
+  if (!btn || !stage) return;
+  var btnRect = btn.getBoundingClientRect();
+  var stageRect = stage.getBoundingClientRect();
+  var line = document.querySelector('.gh-hitline');
+  var lineRect = line ? line.getBoundingClientRect() : null;
+  var endX = btnRect.left + btnRect.width / 2;
+  var hitY = lineRect ? (lineRect.top + lineRect.height / 2) : (btnRect.top - btnRect.height * 0.25);
+  var startY = Math.max(stageRect.top + 42, hitY - Math.min(stageRect.height * 0.52, 290));
+  var endY = Math.min(hitY, btnRect.top - Math.max(8, btnRect.height * 0.12));
+  var color = RHYTHM_LANE_COLORS[idx] || { hi: '#FDE68A', lo: '#F59E0B' };
+  var note = document.createElement('div');
+  note.className = 'tut-falling-note';
+  note.style.setProperty('--note-hi', color.hi || '#FDE68A');
+  note.style.setProperty('--note-lo', color.lo || '#F59E0B');
+  note.style.left = endX + 'px';
+  note.style.top = startY + 'px';
+  document.body.appendChild(note);
+  _otoTutorialState.demoNodes.push(note);
+  try {
+    note.animate([
+      { transform: 'translate(-50%, -50%) scale(0.58)', top: startY + 'px', opacity: 0 },
+      { transform: 'translate(-50%, -50%) scale(0.78)', top: (startY + (endY - startY) * 0.24) + 'px', opacity: 1 },
+      { transform: 'translate(-50%, -50%) scale(1)', top: endY + 'px', opacity: 1 }
+    ], {
+      duration: 1750,
+      easing: 'cubic-bezier(0.18, 0.76, 0.24, 1)',
+      fill: 'forwards'
+    });
+  } catch (e) {
+    note.style.top = endY + 'px';
+  }
+  _otoTutorialState.demoTimers.push(setTimeout(function() {
+    if (!_otoTutorialState) return;
+    _showOtoTutorialHand({ hand: 'tap', tapIdx: idx, anchor: '.instr-btn[data-idx="' + idx + '"]' }, btnRect, btn);
+    _ghSpawnHitFlash(_ghBtnIdxToLaneIdx(idx));
+    _ghSpawnNoteBurst(_ghBtnIdxToLaneIdx(idx), 'success');
+  }, 1320));
+  _otoTutorialState.demoTimers.push(setTimeout(function() {
+    if (!note || !note.parentNode) return;
+    try { note.parentNode.removeChild(note); } catch (e) {}
+  }, 2280));
+}
 function _currentOtoTutorialKind() {
   if (document.body && (
     document.body.classList.contains('rhythm-menu-open') ||
@@ -11683,53 +11799,48 @@ function _makeOtoTutorialSteps(kind) {
   if (kind === 'rhythmStory') {
     return [
       {
-        badge: 'ストーリー',
-        msg: 'ライバルと リズムしょうぶ！<br>まず きょくを えらぼう',
-        anchor: '#rhythm-menu .rhythm-song-list',
-        side: 'stageTop',
-        hand: 'point',
+        lookOnly: true,
+        autoNextMs: 1800,
         before: function() {
-          _setModeButtons('rhythm');
-          _showRhythmMenu();
-          _setRhythmMenuStep('song');
+          _prepareOtoRhythmTutorialStage();
+          _setRhythmStatus('まず ながれを みてね', null, 'hint');
         }
       },
       {
-        badge: 'れんしゅう',
-        msg: 'ブロックは みじかく れんしゅう<br>ぜんぶは さいごまで あそぶよ',
-        anchor: '#rhythm-practice',
+        badge: 'ライン',
+        msg: 'ノートが このラインに きたら<br>タッチするよ',
+        anchor: '.gh-hitline',
         side: 'stageTop',
         hand: 'point',
-        before: function() { _setRhythmMenuStep('mode'); }
+        before: function() {
+          _prepareOtoRhythmTutorialStage();
+          _setRhythmStatus('ラインに きたら タッチ', null, 'hint');
+        }
+      },
+      {
+        badge: 'ボタン',
+        msg: 'おなじ レーンの ボタンを<br>タッチするよ',
+        anchor: '.instr-btn[data-idx="3"]',
+        side: 'stageTop',
+        hand: 'tap',
+        tapIdx: 3,
+        before: function() {
+          _prepareOtoRhythmTutorialStage();
+          _setRhythmStatus('おなじ レーンを タッチ', null, 'hint');
+        }
       },
       {
         badge: 'おてほん',
-        msg: 'まず おてほんを おして<br>ながれを きいてみよう',
-        anchor: '#rhythm-menu-demo',
-        side: 'stageTop',
-        hand: 'point'
-      },
-      {
-        badge: 'タッチ',
-        msg: 'ノートが ひかるラインに きたら<br>おなじレーンの ボタンを タッチ',
-        anchor: '.gh-hitline',
-        side: 'above',
-        hand: 'point',
-        before: function() {
-          _hideRhythmMenu();
-          _setModeButtons('rhythm');
-          _setRhythmStatus('いちばん したまで きたら タッチ！', null, 'hint');
-          var hud = document.getElementById('rhythm-hud');
-          if (hud) hud.classList.add('show');
-        }
-      },
-      {
-        badge: 'ながいノート',
-        msg: 'ボタンを おすと おとが なるよ<br>ながいノートは ながく おしてね',
+        msg: 'こんどは ノートを<br>いっかい おしてみるよ',
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'above',
-        hand: 'tap',
-        tapIdx: 3
+        side: 'stageTop',
+        demoNoteIdx: 3,
+        nextLabel: 'OK',
+        showHideNext: true,
+        before: function() {
+          _prepareOtoRhythmTutorialStage();
+          _setRhythmStatus('おてほんを みてね', null, 'hint');
+        }
       }
     ];
   }
@@ -11876,6 +11987,8 @@ function _finishOtoTutorial(markSeen) {
   if (dim) dim.classList.add('hidden');
   if (bubble) bubble.classList.add('hidden');
   if (spot) spot.classList.add('hidden');
+  _clearOtoTutorialAutoTimer();
+  _clearOtoTutorialDemoEffects();
   _hideOtoTutorialHand();
   document.body.classList.remove('oto-tutorial-open');
   if (markSeen && _otoTutorialHideNextChecked()) {
@@ -11906,6 +12019,8 @@ function _renderOtoTutorialStep() {
     _finishOtoTutorial(true);
     return;
   }
+  _clearOtoTutorialAutoTimer();
+  _clearOtoTutorialDemoEffects();
   _hideOtoTutorialHand();
 
   function _hideSpot() { if (spot) spot.classList.add('hidden'); }
@@ -11923,17 +12038,29 @@ function _renderOtoTutorialStep() {
   try {
     if (typeof s.before === 'function') s.before();
   } catch (e) {}
+  if (s.lookOnly) {
+    if (dim) dim.classList.add('hidden');
+    if (bubble) bubble.classList.add('hidden');
+    if (spot) spot.classList.add('hidden');
+    _otoTutorialState.autoTimer = setTimeout(function() {
+      if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+      _otoTutorialState.index++;
+      _renderOtoTutorialStep();
+    }, Math.max(300, s.autoNextMs || 1500));
+    return;
+  }
   setTimeout(function() {
     if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
     var isLast = (i === steps.length - 1);
+    var nextLabel = s.nextLabel || (isLast ? 'わかった！' : 'つぎへ');
     bubble.innerHTML =
       '<div class="tut-badge">' + (s.badge || 'あそびかた') + '</div>' +
       '<div class="tut-msg">' + s.msg + '</div>' +
       '<div class="tut-actions">' +
       '<button class="tut-skip-btn" id="tut-skip">とじる</button>' +
-      '<button class="tut-next-btn" id="tut-next">' + (isLast ? 'わかった！' : 'つぎへ') + '</button>' +
+      '<button class="tut-next-btn" id="tut-next">' + nextLabel + '</button>' +
       '</div>' +
-      '<label class="tut-hide-next"><input type="checkbox" id="tut-hide-next">つぎから ださない</label>';
+      ((s.showHideNext || isLast) ? '<label class="tut-hide-next"><input type="checkbox" id="tut-hide-next">つぎから ださない</label>' : '');
     bubble.classList.remove('hidden');
     bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
 
@@ -11954,7 +12081,11 @@ function _renderOtoTutorialStep() {
     }
     requestAnimationFrame(function() {
       _tutPositionBubble(bubble, rect, s.side);
-      _showOtoTutorialHand(s, rect, anchorEl);
+      if (typeof s.demoNoteIdx === 'number') {
+        _runOtoTutorialFallingNoteDemo(s, anchorEl);
+      } else {
+        _showOtoTutorialHand(s, rect, anchorEl);
+      }
     });
     var btn = document.getElementById('tut-next');
     var skip = document.getElementById('tut-skip');
@@ -11989,6 +12120,9 @@ function showTutorial(kind, opts) {
     index: 0,
     steps: steps,
     handTimers: [],
+    demoTimers: [],
+    demoNodes: [],
+    autoTimer: 0,
     pressedEl: null,
     force: !!opts.force
   };
