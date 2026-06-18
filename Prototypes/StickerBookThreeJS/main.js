@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260618-671";
+const ASSET_VERSION = "20260618-672";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -505,6 +505,15 @@ if (editorEnabled) {
 resize();
 applyVariantState();
 window.__stickerBookReady = true;
+window.__stickerBookDebugState = () => ({
+  activeBookPage,
+  activeSurface,
+  flipProgress,
+  spreadPosition,
+  spreadJumpActive: Boolean(spreadJumpAnimation),
+  spreadJumpVisiblePageCount: spreadJumpAnimation?.visiblePageCount ?? 0,
+  spreadJumpCycles: spreadJumpAnimation?.cycles ?? 0,
+});
 animate();
 
 function setupScenePagePicking() {
@@ -1472,7 +1481,7 @@ function setBookPage(page, options = {}) {
   const nextSpreadPosition = spreadPositionForBookPage(nextPage);
   const shouldAnimate = shouldAnimateBookPageTurn(previousPage, nextPage, options);
   const mode = options.turnMode || (Math.abs(nextPage - previousPage) <= 2 ? "single" : "jump");
-  if (shouldAnimate && mode === "jump") {
+  if (shouldAnimate) {
     startSpreadJump(nextSpreadPosition, {
       ...spreadJumpOptionsForBookTurn(previousPage, nextPage, mode),
       onComplete: () => applyBookPageSelection(nextPage, options),
@@ -1481,16 +1490,12 @@ function setBookPage(page, options = {}) {
   }
 
   applyBookPageSelection(nextPage, options);
-  if (shouldAnimate) {
-    startSpreadJump(nextSpreadPosition, spreadJumpOptionsForBookTurn(previousPage, nextPage, mode));
-  } else {
-    cancelSpreadJump();
-    spreadPosition = nextSpreadPosition;
-    flipProgress = 0;
-    slider.value = "0";
-    updatePage(flipProgress);
-    syncUrl();
-  }
+  cancelSpreadJump();
+  spreadPosition = nextSpreadPosition;
+  flipProgress = 0;
+  slider.value = "0";
+  updatePage(flipProgress);
+  syncUrl();
 }
 
 function applyBookPageSelection(nextPage, options = {}) {
@@ -1509,8 +1514,8 @@ function spreadJumpOptionsForBookTurn(previousPage, nextPage, mode) {
     return {
       cycles: 1,
       duration: 0.34,
-      minVisiblePageCount: 1,
-      visiblePageCount: 1,
+      minVisiblePageCount: 0,
+      visiblePageCount: 0,
     };
   }
   const pairDistance = Math.abs(
@@ -3374,6 +3379,9 @@ function startSpreadJump(targetSpread, options = {}) {
   }
   if (Math.abs(target - spreadPosition) < 0.001) {
     updateSpreadJumpControls();
+    if (typeof options.onComplete === "function") {
+      options.onComplete();
+    }
     return;
   }
 
