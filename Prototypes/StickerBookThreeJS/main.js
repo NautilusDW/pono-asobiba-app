@@ -1,13 +1,14 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-686";
+const ASSET_VERSION = "20260619-687";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
 const PAGE_H = 6.0;
 const PAGE_W = PAGE_H * PAGE_ASPECT;
 const GUTTER = PAGE_H * (192 / 1536);
+const COLLECTION_GUTTER = PAGE_H * (72 / 1536);
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
@@ -395,12 +396,17 @@ leftPageOuter.position.set(-PAGE_W - GUTTER / 2, 0, -0.001);
 leftPageOuter.renderOrder = 9;
 book.add(leftPageOuter);
 
-const leftPageInner = makePageSurface(BOOK_VARIANTS[activeBook].insideLeft, createPageSurfaceGeometry("right"));
+const standardLeftPageGeometry = createPageSurfaceGeometry("right");
+const standardRightPageGeometry = createPageSurfaceGeometry("left");
+const collectionLeftPageGeometry = createCoverSurfaceGeometry();
+const collectionRightPageGeometry = createCoverSurfaceGeometry();
+
+const leftPageInner = makePageSurface(BOOK_VARIANTS[activeBook].insideLeft, standardLeftPageGeometry);
 leftPageInner.position.set(-PAGE_W - GUTTER / 2, 0, 0);
 leftPageInner.renderOrder = 10;
 book.add(leftPageInner);
 
-const rightPage = makePageSurface(BOOK_VARIANTS[activeBook].insideRight, createPageSurfaceGeometry("left"));
+const rightPage = makePageSurface(BOOK_VARIANTS[activeBook].insideRight, standardRightPageGeometry);
 rightPage.position.set(GUTTER / 2, 0, 0);
 rightPage.renderOrder = 10;
 book.add(rightPage);
@@ -419,8 +425,15 @@ const pageTurn = new THREE.Group();
 pageTurn.position.set(GUTTER / 2, 0, 0.08);
 book.add(pageTurn);
 
-const turningPageGeometry = createBendablePageSurfaceGeometry("left");
+const standardTurningPageGeometry = createBendablePageSurfaceGeometry("left");
+const collectionTurningPageGeometry = createBendablePlainPageSurfaceGeometry();
+const standardFlipShadowGeometry = standardTurningPageGeometry.clone();
+const collectionFlipShadowGeometry = collectionTurningPageGeometry.clone();
+let turningPageGeometry = standardTurningPageGeometry;
 prepareBendGeometry(turningPageGeometry);
+prepareBendGeometry(collectionTurningPageGeometry);
+prepareBendGeometry(standardFlipShadowGeometry);
+prepareBendGeometry(collectionFlipShadowGeometry);
 const frontPage = new THREE.Mesh(
   turningPageGeometry,
   new THREE.MeshStandardMaterial({
@@ -453,7 +466,7 @@ pageTurn.add(backPage);
 pageTurn.add(frontPage);
 
 const flipShadow = new THREE.Mesh(
-  turningPageGeometry.clone(),
+  standardFlipShadowGeometry,
   new THREE.MeshBasicMaterial({
     map: getTexture(SHARED_TEXTURES.flipShadow),
     transparent: true,
@@ -464,7 +477,6 @@ const flipShadow = new THREE.Mesh(
 );
 flipShadow.position.z = 0.018;
 flipShadow.renderOrder = 23;
-prepareBendGeometry(flipShadow.geometry);
 pageTurn.add(flipShadow);
 
 const flutterPages = createFlutterPages();
@@ -1748,6 +1760,7 @@ function setAlbumMode(mode) {
   selectedPlacementId = null;
   stickerDragState = null;
   assignSpineTexture();
+  applyAlbumLayout();
   refreshPageTemplateTextures();
   updateAlbumModeUi();
   updatePage(flipProgress);
@@ -3665,8 +3678,9 @@ function positionStackSide(stack, level, tuning) {
   );
 
   const isLeft = stack.side === "left";
-  const pageLeft = isLeft ? -PAGE_W - GUTTER / 2 : GUTTER / 2;
-  const pageRight = isLeft ? -GUTTER / 2 : PAGE_W + GUTTER / 2;
+  const gap = currentBookGap();
+  const pageLeft = isLeft ? -PAGE_W - gap / 2 : gap / 2;
+  const pageRight = isLeft ? -gap / 2 : PAGE_W + gap / 2;
   const pageCenter = (pageLeft + pageRight) / 2;
   const scaledTextureH = THICKNESS_TEXTURE_H * tuning[`${tunePrefix}ScaleY`];
   const topY = -PAGE_H / 2 + THICKNESS_OVERLAP + tuning[`${tunePrefix}Y`];
@@ -3712,6 +3726,13 @@ function updateFlutterPageTextures() {
 
 function createBendablePageSurfaceGeometry(bindingSide) {
   const baseGeometry = createPageSurfaceGeometry(bindingSide);
+  const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
+  const subdivided = subdivideBendableGeometry(source);
+  return subdivided;
+}
+
+function createBendablePlainPageSurfaceGeometry() {
+  const baseGeometry = createCoverSurfaceGeometry();
   const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
   const subdivided = subdivideBendableGeometry(source);
   return subdivided;
@@ -3924,6 +3945,7 @@ function applyVariantState() {
   assignSpineTexture();
   assignTexture(sideTabs.left, bundle.tabsLeft);
   assignTexture(sideTabs.right, bundle.tabsRight);
+  applyAlbumLayout();
   applyCoverTuning();
   updateFlutterPageTextures();
   slider.disabled = activeSurface === "cover";
@@ -3932,17 +3954,61 @@ function applyVariantState() {
   syncUrl();
 }
 
+function currentBookGap() {
+  return activeAlbumMode === "collection" ? COLLECTION_GUTTER : GUTTER;
+}
+
+function applyAlbumLayout() {
+  const gap = currentBookGap();
+  leftPageOuter.position.x = -PAGE_W - gap / 2;
+  leftPageInner.position.x = -PAGE_W - gap / 2;
+  rightPage.position.x = gap / 2;
+  innerLeft.position.x = -gap / 2;
+  innerRight.position.x = gap / 2;
+
+  if (activeAlbumMode === "collection") {
+    if (leftPageInner.geometry !== collectionLeftPageGeometry) {
+      leftPageInner.geometry = collectionLeftPageGeometry;
+    }
+    if (rightPage.geometry !== collectionRightPageGeometry) {
+      rightPage.geometry = collectionRightPageGeometry;
+    }
+    if (turningPageGeometry !== collectionTurningPageGeometry) {
+      turningPageGeometry = collectionTurningPageGeometry;
+      frontPage.geometry = collectionTurningPageGeometry;
+      backPage.geometry = collectionTurningPageGeometry;
+      flipShadow.geometry = collectionFlipShadowGeometry;
+    }
+    return;
+  }
+
+  if (leftPageInner.geometry !== standardLeftPageGeometry) {
+    leftPageInner.geometry = standardLeftPageGeometry;
+  }
+  if (rightPage.geometry !== standardRightPageGeometry) {
+    rightPage.geometry = standardRightPageGeometry;
+  }
+  if (turningPageGeometry !== standardTurningPageGeometry) {
+    turningPageGeometry = standardTurningPageGeometry;
+    frontPage.geometry = standardTurningPageGeometry;
+    backPage.geometry = standardTurningPageGeometry;
+    flipShadow.geometry = standardFlipShadowGeometry;
+  }
+}
+
 function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
-    spine.scale.x = 1.92;
-    spine.position.z = 0.07;
-    spine.renderOrder = 30;
+    spine.scale.x = 1.08;
+    spine.position.z = -0.05;
+    spine.renderOrder = 6;
+    spine.material.opacity = 0.78;
     return;
   }
   spine.scale.x = 1;
   spine.position.z = -0.09;
   spine.renderOrder = 1;
+  spine.material.opacity = 1;
   assignTexture(spine, BOOK_VARIANTS[activeBook].spine);
 }
 
@@ -4177,7 +4243,8 @@ function updateFlutterPages(
     const opacity = Math.sin(cycle * Math.PI) * FLUTTER_TRAIL_OPACITY * trailWeight;
 
     page.shell.visible = opacity > 0.018;
-    page.shell.position.x = THREE.MathUtils.lerp(GUTTER / 2, -GUTTER / 2, hingeTravel);
+    const gap = currentBookGap();
+    page.shell.position.x = THREE.MathUtils.lerp(gap / 2, -gap / 2, hingeTravel);
     page.shell.position.z = 0.1 + Math.sin(p * Math.PI) * 0.2 + i * 0.011;
     page.shell.rotation.y = -p * Math.PI;
     page.shell.rotation.x = Math.sin(p * Math.PI) * 0.028;
@@ -4198,6 +4265,7 @@ function updatePage(progress) {
     coverOnly.visible = true;
     coverTurn.visible = false;
     setOpenSpreadVisible(false);
+    applyAlbumLayout();
     applyCoverTuning();
     applyBookFramePosition(0);
     updateSpreadJumpControls();
@@ -4207,13 +4275,15 @@ function updatePage(progress) {
   coverOnly.visible = false;
   coverTurn.visible = false;
   setOpenSpreadVisible(true);
+  applyAlbumLayout();
   applyBookFramePosition(1);
   bendPageGeometry(turningPageGeometry, p, PAGE_TURN_BEND * Math.sin(p * Math.PI));
   bendPageGeometry(flipShadow.geometry, p, PAGE_TURN_BEND * Math.sin(p * Math.PI));
   const hingeTravel = smootherstep(p);
   const showBack = p >= 0.5;
   pageTurn.visible = p > 0.001;
-  pageTurn.position.x = THREE.MathUtils.lerp(GUTTER / 2, -GUTTER / 2, hingeTravel);
+  const gap = currentBookGap();
+  pageTurn.position.x = THREE.MathUtils.lerp(gap / 2, -gap / 2, hingeTravel);
   pageTurn.position.z = 0.07 + Math.sin(p * Math.PI) * 0.015;
   pageTurn.rotation.y = -p * Math.PI;
   pageTurn.rotation.x = Math.sin(p * Math.PI) * 0.02;
@@ -4239,13 +4309,15 @@ function renderCoverOpenTransition(rawProgress) {
     applyCoverTuning();
   }
   setCoverOpeningSpreadVisible(true);
+  applyAlbumLayout();
+  const gap = currentBookGap();
   const showBinding = p > 0.52;
   spine.visible = showBinding;
   ringGroup.visible = showBinding && activeAlbumMode !== "collection";
   innerRight.visible = showBinding && activeAlbumMode !== "collection";
   coverTurn.visible = raw < 0.985;
   coverTurn.position.set(
-    THREE.MathUtils.lerp(COVER_CLOSED_X, COVER_OPEN_X, p),
+    THREE.MathUtils.lerp(COVER_CLOSED_X, -gap / 2, p),
     0,
     0.18 + Math.sin(p * Math.PI) * 0.08,
   );

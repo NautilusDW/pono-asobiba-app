@@ -13011,7 +13011,7 @@ function tutorialPositionPonoCallout(opts = {}) {
       const rr = blocker.getBoundingClientRect();
       const visible = rr && rr.width && rr.height && getComputedStyle(blocker).display !== 'none';
       if (visible && !(top + bh < rr.top || top > rr.bottom)) {
-        top = Math.max(r.top + 6, rr.top - bh - 2);
+        top = Math.max(r.top + 6, rr.top - bh + 2);
         break;
       }
     }
@@ -13535,13 +13535,16 @@ function tutorialFreeRatioPoint(rx, ry) {
   };
 }
 function tutorialLayerDemoScreenPoint() {
-  return tutorialStageRatioPoint(0.73, 0.52);
+  return tutorialStageRatioPoint(0.75, 0.51);
 }
 function tutorialLayerDemoFreePoint() {
-  return tutorialFreeRatioPoint(0.73, 0.52);
+  return tutorialFreeRatioPoint(0.75, 0.51);
 }
 function tutorialLayerFoodFreePoint() {
-  return tutorialFreeRatioPoint(0.66, 0.68);
+  return tutorialFreeRatioPoint(0.62, 0.72);
+}
+function tutorialLayerFoodScreenPoint() {
+  return tutorialStageRatioPoint(0.62, 0.72);
 }
 function tutorialCupDemoScreenPoint() {
   return tutorialStageRatioPoint(0.80, 0.36);
@@ -13784,7 +13787,8 @@ function tutorialFindSmallFoodPaletteEl() {
 }
 function tutorialFindCupFoodPaletteEl() {
   if (!getEditingCup()) return null;
-  return document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
+  return tutorialFindPaletteFoodByNames(['プチトマト', 'ブロッコリー', 'えだまめ', 'コーンほうれんそう', 'キャベツ'])
+      || document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
       || document.querySelector('.free-item-list .free-palette-item')
       || tutorialFindSmallFoodPaletteEl();
 }
@@ -14414,12 +14418,12 @@ function tutorialRenderStep() {
       note: requestedFood + 'を したへ',
     });
     tutorialHideBubble();
-    tutorialShowTargetCircle(tutorialStageRatioPoint(0.73, 0.66), { size: 112 });
+    tutorialShowTargetCircle(tutorialLayerFoodScreenPoint(), { size: 112 });
     if (foodEl) {
       if (firstRender) tutorialTrimPath(foodEl, { radius: 18 });
       tutorialAnimateDragFromElWithRetry(
         () => tutorialFindPlacedRequestedFoodEl(),
-        () => tutorialStageRatioPoint(0.73, 0.66),
+        () => tutorialLayerFoodScreenPoint(),
         { fast }
       );
     } else {
@@ -14589,12 +14593,12 @@ function tutorialRenderStep() {
   // 11. small-cup-food — カップ内に小さいおかずを入れる
   if (step === 'small-cup-food') {
     tutorialHidePonoCallout();
-    setSpeech('たまごやきを カップに いれよう');
+    setSpeech('みどりの プチトマトを カップに いれよう');
     tutorialSetModeLabel('やってみよう！', {
       mode: 'try',
-      note: 'ちいさい おかずを カップへ',
+      note: 'みどりを カップへ',
     });
-    tutorialShowBubble('たまごやきを<br>カップに いれよう', { topVh: '54', side: 'left' });
+    tutorialShowBubble('プチトマトを<br>カップに いれよう', { topVh: '54', side: 'left' });
     if (firstRender) {
       const smallFood = tutorialFindCupFoodPaletteEl();
       if (smallFood) tutorialTrimPath(smallFood, { radius: 12 });
