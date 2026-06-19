@@ -7451,6 +7451,10 @@ function _nextRhythmAutoStartSong() {
     return !_rhythmSongCleared(song, progress);
   }) || playable[playable.length - 1] || sorted[0] || null;
 }
+function _firstRhythmStorySong() {
+  var sorted = _rhythmSongsByStage();
+  return sorted[0] || RHYTHM_SONGS[0] || null;
+}
 function _prepareRhythmStorySong(song) {
   if (song) RHYTHM_BASE_SONG = song;
   RHYTHM_SECTION_INDEX = 0;
@@ -10730,7 +10734,7 @@ function _openRhythmStageSelect() {
   _showRhythmMenu();
 }
 function _startRhythmStoryFromTitle() {
-  _prepareRhythmStorySong(_nextRhythmAutoStartSong());
+  _prepareRhythmStorySong(_firstRhythmStorySong());
   _hideRhythmMenu();
   _hideRhythmComplete();
   _clearRhythmCountdown();
