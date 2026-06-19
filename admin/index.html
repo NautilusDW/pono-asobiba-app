@@ -778,12 +778,12 @@ tr:hover { background: #FFFAF0; }
     <div style="display:grid;grid-template-columns:minmax(240px,1fr) auto;gap:10px;align-items:end;margin-bottom:12px;">
       <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
         よみこみプリセット
-        <select id="puzzle-tts-preset" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+        <select id="puzzle-tts-preset" onchange="puzzleTtsLoadPreset(this.value)" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
           <option value="puzzle_basic_tutorial">パズル 基本チュートリアル</option>
           <option value="oto_rhythm_tutorial">オトタッチ リズムチュートリアル</option>
         </select>
       </label>
-      <button type="button" onclick="puzzleTtsLoadPreset()" style="padding:8px 14px;background:#FEF3C7;color:#92400E;border:1px solid #FBBF24;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">プリセットを読み込み</button>
+      <button type="button" onclick="puzzleTtsLoadPreset()" style="padding:8px 14px;background:#FEF3C7;color:#92400E;border:1px solid #FBBF24;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">読み上げテキストに入れる</button>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:12px;">
@@ -1912,7 +1912,7 @@ function puzzleTtsLoadPreset(id) {
     puzzleTtsCheckedById[line.id] = true;
   });
   puzzleTtsRenderRows();
-  puzzleTtsStatus((preset.label || 'プリセット') + ' を読み込みました');
+  puzzleTtsStatus((preset.label || 'プリセット') + ' を読み上げテキスト欄に入れました');
 }
 
 function puzzleTtsCollectState() {
