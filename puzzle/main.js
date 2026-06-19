@@ -4584,9 +4584,7 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
   }
   partnerPracticeState.phase = 'basic-drag-try';
   partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
-  // The 'やってみよう！' try badge already popped once at the start of this
-  // user-try step; do NOT re-pop it on the move/retry. Keep the move-step
-  // coach copy + cue so guidance stays visible without a duplicate badge.
+  setBasicPracticeModeBanner('try', 'やってみよう！');
   setPartnerPracticeCoachCopy(
     'もういちど',
     'あおい ばしょに ちかづけて はなそう',
@@ -4612,7 +4610,9 @@ function startBasicHintPlaceTry(piece) {
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(true);
   setPartnerPracticePeekInput(false);
-  setBasicPracticeModeBanner('try', 'やってみよう！');
+  // ヒント節の「やってみよう」中央バッジはヒントボタン押下時
+  // (onBasicHintPracticeHintButtonUsed) で1回だけ出す。選ぶ段では
+  // 中央バッジを出さず、コーチ案内だけで誘導する（連続表示の重複を回避）。
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'やってみよう',
