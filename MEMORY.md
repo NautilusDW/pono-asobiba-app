@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T20:39:55Z - LP play-cards に puzzle と quizland を追加し、 シールアルバムを別 section (sticker-extra) に分離 + sw v1368 バンプ
+- **タスク**: LP play-cards に puzzle と quizland を追加し、 シールアルバムを別 section (sticker-extra) に分離 + sw v1368 バンプ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 12
+- **エラー数**: 0
+- **検出された良いパターン**: 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 4, "Bash": 1, "Grep": 2, "Agent": 2, "Glob": 2, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T12:42:23Z - LP hero washi labels concentrated around CTA (left/right side bars, x 25-75% center column fully cleared) + free copy changed to むりょうで あそべるよ！; bg_soft_playmat.webp/@2x rebuilt; CACHE_VERSION bumped to 1363 (1362 was already taken)
 - **タスク**: LP hero washi labels concentrated around CTA (left/right side bars, x 25-75% center column fully cleared) + free copy changed to むりょうで あそべるよ！; bg_soft_playmat.webp/@2x rebuilt; CACHE_VERSION bumped to 1363 (1362 was already taken)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 22, "Workflow": 7, "Read": 27, "ToolSearch": 2, "DesignSync": 17, "Bash": 52, "Grep": 2, "Write": 6, "ScheduleWakeup": 2, "Skill": 1, "Glob": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T07:05:01Z - Puzzle basic tutorial hint: demo-less single guided try (mirror 見る button) — removed runBasicHintPlaceHandDemo call, idx8/9/10 each play once at child's step, sw1337, main/voice v1322
-- **タスク**: Puzzle basic tutorial hint: demo-less single guided try (mirror 見る button) — removed runBasicHintPlaceHandDemo call, idx8/9/10 each play once at child's step, sw1337, main/voice v1322
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 129
-- **エラー数**: 10
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 22, "Workflow": 5, "Read": 27, "ToolSearch": 2, "DesignSync": 17, "Bash": 45, "Grep": 2, "Write": 6, "ScheduleWakeup": 1, "Skill": 1, "Glob": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

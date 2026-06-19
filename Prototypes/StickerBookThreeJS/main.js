@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-710";
+const ASSET_VERSION = "20260620-711";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -206,8 +206,6 @@ const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.009;
 const COLLECTION_FOLD_W = SPINE_W * 0.68;
 const COLLECTION_FOLD_DEPTH = PAGE_H * 0.02;
 const COLLECTION_FOLD_Z = 0.026;
-const COLLECTION_BOTTOM_BRIDGE_W = PAGE_W * 0.22;
-const COLLECTION_BOTTOM_BRIDGE_SCALE_Y = 0.64;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -334,8 +332,6 @@ const textureMap = new Map(textureEntries);
 const pageTemplateTextureMap = new Map();
 const collectionSpineTextureMap = new Map();
 const collectionFoldTextureMap = new Map();
-const collectionBottomBridgeTextureMap = new Map();
-const collectionBottomShadowTextureMap = new Map();
 window.__stickerBookAssetsLoaded = true;
 
 const book = new THREE.Group();
@@ -3568,12 +3564,10 @@ function createPageStacks() {
   const left = createStackSide("left");
   const right = createStackSide("right");
   const collection = createCollectionStackBlock();
-  const bottomBridge = createCollectionBottomBridge();
   group.add(left.group);
   group.add(right.group);
   group.add(collection.group);
-  group.add(bottomBridge.group);
-  return { group, left, right, collection, bottomBridge };
+  return { group, left, right, collection };
 }
 
 function createStackSide(side) {
@@ -3633,41 +3627,6 @@ function createCollectionStackBlock() {
   group.add(plane);
 
   return { group, plane, width, height, book: null };
-}
-
-function createCollectionBottomBridge() {
-  const group = new THREE.Group();
-  group.visible = false;
-
-  const fill = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1),
-    new THREE.MeshBasicMaterial({
-      map: getCollectionBottomBridgeTexture(activeBook),
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    }),
-  );
-  fill.position.z = -0.033;
-  fill.renderOrder = 5;
-  group.add(fill);
-
-  const shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1),
-    new THREE.MeshBasicMaterial({
-      map: getCollectionBottomShadowTexture(activeBook),
-      transparent: true,
-      opacity: 0.72,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    }),
-  );
-  shadow.position.z = -0.027;
-  shadow.renderOrder = 6;
-  group.add(shadow);
-
-  return { group, fill, shadow, book: null };
 }
 
 function createFlutterPages() {
@@ -3774,12 +3733,10 @@ function updateStackThickness(options = {}) {
     const tuning = visibleLayerTuning(getCurrentLayerTuning());
     positionStackSide(pageStacks.left, pair.left, tuning);
     positionStackSide(pageStacks.right, pair.right, tuning);
-    positionCollectionBottomBridge(pair, tuning);
     return;
   }
 
   pageStacks.collection.group.visible = false;
-  pageStacks.bottomBridge.group.visible = false;
   pageStacks.left.group.visible = true;
   pageStacks.right.group.visible = true;
   const pair = thicknessPairForSpread(spreadPosition);
@@ -3860,45 +3817,8 @@ function positionStackSide(stack, level, tuning) {
   );
 }
 
-function positionCollectionBottomBridge(pair, tuning) {
-  const bridge = pageStacks.bottomBridge;
-  const leftVisible = pair.left !== "empty";
-  const rightVisible = pair.right !== "empty";
-
-  if (!leftVisible && !rightVisible) {
-    bridge.group.visible = false;
-    return;
-  }
-
-  if (bridge.book !== activeBook) {
-    assignTextureObject(bridge.fill, getCollectionBottomBridgeTexture(activeBook));
-    assignTextureObject(bridge.shadow, getCollectionBottomShadowTexture(activeBook));
-    bridge.book = activeBook;
-  }
-
-  const bothSides = leftVisible && rightVisible;
-  const leftScaleY = leftVisible ? tuning.stackLeftScaleY : tuning.stackRightScaleY;
-  const rightScaleY = rightVisible ? tuning.stackRightScaleY : tuning.stackLeftScaleY;
-  const scaleY = ((leftScaleY + rightScaleY) / 2) * COLLECTION_BOTTOM_BRIDGE_SCALE_Y;
-  const leftY = leftVisible ? tuning.stackLeftY : tuning.stackRightY;
-  const rightY = rightVisible ? tuning.stackRightY : tuning.stackLeftY;
-  const offsetY = (leftY + rightY) / 2;
-  const height = THICKNESS_TEXTURE_H * scaleY;
-  const width = COLLECTION_BOTTOM_BRIDGE_W * (bothSides ? 1 : 0.58);
-  const topY = -PAGE_H / 2 + Math.min(offsetY, THICKNESS_OVERLAP * 1.7);
-  const centerY = topY - height / 2;
-  const centerX = bothSides ? 0 : leftVisible ? -width / 2 : width / 2;
-
-  bridge.fill.scale.set(width, height, 1);
-  bridge.shadow.scale.set(width, height, 1);
-  bridge.shadow.material.opacity = bothSides ? 0.72 : 0.34;
-  bridge.group.position.set(centerX, centerY, 0);
-  bridge.group.visible = true;
-}
-
 function hideStackThickness() {
   pageStacks.collection.group.visible = false;
-  pageStacks.bottomBridge.group.visible = false;
   pageStacks.left.group.visible = false;
   pageStacks.right.group.visible = false;
 }
@@ -4518,112 +4438,6 @@ function getCollectionFoldTexture(bookName) {
   return texture;
 }
 
-function getCollectionBottomBridgeTexture(bookName) {
-  if (collectionBottomBridgeTextureMap.has(bookName)) {
-    return collectionBottomBridgeTextureMap.get(bookName);
-  }
-
-  const texture = getTexture(`sb3d_${bookName}_page_thickness_right_full.webp`).clone();
-  texture.offset.set(0.41, 0);
-  texture.repeat.set(0.18, 0.62);
-  texture.needsUpdate = true;
-  collectionBottomBridgeTextureMap.set(bookName, texture);
-  return texture;
-}
-
-function getCollectionBottomShadowTexture(bookName) {
-  if (collectionBottomShadowTextureMap.has(bookName)) {
-    return collectionBottomShadowTextureMap.get(bookName);
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const base = bookName === "girl"
-    ? { warm: "218, 187, 132", dark: "91, 67, 39", light: "255, 248, 229" }
-    : { warm: "214, 190, 128", dark: "88, 72, 39", light: "255, 250, 232" };
-
-  const sideTone = ctx.createLinearGradient(0, 0, canvas.width, 0);
-  sideTone.addColorStop(0, `rgba(${base.warm}, 0)`);
-  sideTone.addColorStop(0.22, `rgba(${base.warm}, 0.1)`);
-  sideTone.addColorStop(0.43, `rgba(${base.light}, 0.08)`);
-  sideTone.addColorStop(0.5, `rgba(${base.dark}, 0.2)`);
-  sideTone.addColorStop(0.57, `rgba(${base.light}, 0.08)`);
-  sideTone.addColorStop(0.78, `rgba(${base.warm}, 0.1)`);
-  sideTone.addColorStop(1, `rgba(${base.warm}, 0)`);
-  ctx.fillStyle = sideTone;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.save();
-  ctx.filter = "blur(5px)";
-  ctx.strokeStyle = `rgba(${base.dark}, 0.22)`;
-  ctx.lineWidth = 12;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  for (let y = -24; y <= canvas.height + 24; y += 18) {
-    const t = y / canvas.height;
-    const wobble = Math.sin(t * Math.PI * 5.8) * 3.8 + Math.sin(t * Math.PI * 13.4) * 1.6;
-    const x = canvas.width / 2 + wobble;
-    if (y <= -24) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
-    }
-  }
-  ctx.stroke();
-
-  ctx.globalAlpha = 0.5;
-  ctx.lineWidth = 4;
-  for (const xBase of [canvas.width * 0.44, canvas.width * 0.56]) {
-    ctx.beginPath();
-    for (let y = -16; y <= canvas.height + 16; y += 22) {
-      const t = y / canvas.height;
-      const wobble = Math.sin(t * Math.PI * 7.1 + xBase * 0.02) * 2.4;
-      const x = xBase + wobble;
-      if (y <= -16) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.stroke();
-  }
-  ctx.restore();
-
-  ctx.globalCompositeOperation = "destination-in";
-  const sideMask = ctx.createLinearGradient(0, 0, canvas.width, 0);
-  sideMask.addColorStop(0, "rgba(0, 0, 0, 0)");
-  sideMask.addColorStop(0.18, "rgba(0, 0, 0, 0.72)");
-  sideMask.addColorStop(0.35, "rgba(0, 0, 0, 1)");
-  sideMask.addColorStop(0.65, "rgba(0, 0, 0, 1)");
-  sideMask.addColorStop(0.82, "rgba(0, 0, 0, 0.72)");
-  sideMask.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = sideMask;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const verticalMask = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  verticalMask.addColorStop(0, "rgba(0, 0, 0, 0.28)");
-  verticalMask.addColorStop(0.22, "rgba(0, 0, 0, 0.74)");
-  verticalMask.addColorStop(0.52, "rgba(0, 0, 0, 1)");
-  verticalMask.addColorStop(0.92, "rgba(0, 0, 0, 0.86)");
-  verticalMask.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = verticalMask;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.globalCompositeOperation = "source-over";
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.needsUpdate = true;
-  collectionBottomShadowTextureMap.set(bookName, texture);
-  return texture;
-}
-
 function assignCoverTurnTextures() {
   const bundle = BOOK_VARIANTS[activeBook];
   assignTexture(coverTurnFront, bundle.coverFront);
@@ -4942,7 +4756,6 @@ function setOpenSpreadVisible(visible) {
   pageStacks.left.group.visible = visible;
   pageStacks.right.group.visible = visible;
   pageStacks.collection.group.visible = false;
-  pageStacks.bottomBridge.group.visible = false;
   if (visible && activeAlbumMode === "collection") {
     sideTabs.group.visible = false;
     ringGroup.visible = false;
@@ -4972,7 +4785,6 @@ function setCoverOpeningSpreadVisible(visible) {
   pageStacks.left.group.visible = false;
   pageStacks.right.group.visible = visible;
   pageStacks.collection.group.visible = false;
-  pageStacks.bottomBridge.group.visible = false;
   if (visible && activeAlbumMode === "collection") {
     sideTabs.group.visible = false;
   }

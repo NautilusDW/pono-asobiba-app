@@ -389,11 +389,14 @@
     .pc-card--mt2::before{left:30%;transform:translateX(-50%) rotate(4deg);background:repeating-linear-gradient(45deg,rgba(251,201,162,.7) 0 6px,rgba(253,220,191,.6) 6px 14px);}
     .pc-card--mt3::before{left:62%;transform:translateX(-50%) rotate(-5deg);background:repeating-linear-gradient(135deg,rgba(242,145,90,.55) 0 5px,rgba(251,201,162,.7) 5px 12px);}
     .pc-card--mt4::before{left:42%;transform:translateX(-50%) rotate(2deg);background:repeating-linear-gradient(0deg,rgba(253,220,191,.75) 0 7px,rgba(251,201,162,.6) 7px 16px);}
+    .pc-card--mt5::before{left:55%;transform:translateX(-50%) rotate(-2deg);background:repeating-linear-gradient(60deg,rgba(242,145,90,.6) 0 6px,rgba(251,201,162,.7) 6px 14px);}
     .pc-visual{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background-size:cover;background-position:center;background-repeat:no-repeat;}
     .pc-v-bento  {background-image:url('assets/images/bento/cooking/ui/recipe_card_frame.png'),linear-gradient(150deg,#F8CFA6,#F2A971);}
     .pc-v-maze   {background-image:url('maze/imageStages/stage5.jpg'),linear-gradient(150deg,#B7A877,#8C9A6E);}
     .pc-v-oto    {background-image:url('assets/images/oto/title_back.jpg'),linear-gradient(150deg,#F6D79E,#EFC06B);}
     .pc-v-sticker{background-image:url('assets/images/sticker-book/sticker_book_base_kids_16x9.png'),linear-gradient(150deg,#FBD8C2,#F4B79A);}
+    .pc-v-puzzle {background-image:url('assets/images/puzzle/title_back.jpg'),linear-gradient(150deg,#B0D4E6,#89BAD4);}
+    .pc-v-quizland{background-image:url('assets/images/quizland/title_back.jpg'),linear-gradient(150deg,#D4A574,#C08A54);}
     .pc-bubble{position:absolute;top:8px;right:-6px;z-index:3;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:.82rem;letter-spacing:.04em;padding:7px 13px;border-radius:14px 14px 14px 4px;transform:rotate(5deg);box-shadow:0 4px 10px rgba(201,106,46,.35);}
     .pc-bubble--alt{background:var(--pc-primary);box-shadow:0 4px 10px rgba(242,145,90,.32);}
     .pc-body{padding:16px 8px 0;}
@@ -411,8 +414,19 @@
     .play-cards a:focus-visible{outline:3px solid var(--pc-primary);outline-offset:3px;}
     @keyframes pc-pop{from{opacity:0;transform:translateY(16px) rotate(0);}to{opacity:1;transform:rotate(var(--rot));}}
     @media (prefers-reduced-motion:reduce){.play-cards *{animation:none!important;}}
-    @media (min-width:768px){.play-cards{padding:40px 32px 48px;}.pc-stack{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:30px 28px;}.pc-card:nth-child(4n+3){--rot:.6deg;}}
-    @media (min-width:1200px){.pc-stack{max-width:1000px;gap:38px 36px;}.pc-visual{aspect-ratio:16/10;}}
+    @media (min-width:768px){.play-cards{padding:40px 32px 48px;}.pc-stack{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:30px 28px;}.pc-card:nth-child(4n+3){--rot:.6deg;}.pc-card--mt5{grid-column:1 / -1;justify-self:center;width:calc(50% - 14px);}}
+    @media (min-width:1200px){.pc-stack{max-width:1000px;gap:38px 36px;}.pc-visual{aspect-ratio:16/10;}.pc-card--mt5{width:calc(50% - 18px);}}
+
+    /* ===== Sticker extra (ゲーム外の楽しみ方) ===== */
+    .sticker-extra{width:100%;max-width:560px;margin:8px auto 0;padding:20px 16px 22px;text-align:center;background:rgba(255,255,255,.78);border:2px dashed #FDDCBF;border-radius:18px;box-shadow:0 4px 14px rgba(93,78,55,.1);}
+    .sticker-extra-h{margin:0;font-weight:900;font-size:clamp(16px,3.8vw,19px);color:#5D4E37;letter-spacing:.04em;}
+    .sticker-extra-em{background:linear-gradient(transparent 62%, #FDDCBF 62%);padding:0 .15em;}
+    .sticker-extra-sub{margin:6px 0 14px;font-weight:700;font-size:clamp(12px,2.9vw,13.5px);color:#7A6A4F;letter-spacing:.02em;}
+    .sticker-extra-card{position:relative;background:#FFFDF8;border:1px solid rgba(93,78,55,.08);border-radius:16px;padding:12px;box-shadow:0 6px 18px rgba(93,78,55,.12);}
+    .sticker-extra-visual{width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background-image:url('assets/images/sticker-book/sticker_book_base_kids_16x9.png'),linear-gradient(150deg,#FBD8C2,#F4B79A);background-size:cover;background-position:center;background-repeat:no-repeat;}
+    .sticker-extra-body{padding:12px 4px 4px;text-align:left;}
+    .sticker-extra-title{font-weight:900;font-size:clamp(18px,4.5vw,22px);margin:0 0 6px;color:#5D4E37;}
+    .sticker-extra-play{font-weight:700;font-size:clamp(13.5px,3.4vw,15px);line-height:1.7;color:#5D4E37;margin:0;}
 
     /* ===== Amazon book-aside (compact) ===== */
     .book-aside{width:100%;max-width:560px;margin:8px auto 0;padding:18px 16px 20px;text-align:center;background:rgba(255,255,255,.78);border:2px solid #FDE68A;border-radius:18px;box-shadow:0 4px 14px rgba(93,78,55,.1);}
@@ -493,19 +507,42 @@
           </div>
         </article>
         <article class="pc-card pc-card--mt4">
-          <div class="pc-bubble pc-bubble--alt">あつめ よう</div>
-          <div class="pc-visual pc-v-sticker" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面"></div>
+          <div class="pc-bubble pc-bubble--alt">じっくり あそぶ</div>
+          <div class="pc-visual pc-v-puzzle" role="img" aria-label="ピースをあわせて絵を完成させる、ポノのなかよしパズルの画面"></div>
           <div class="pc-body">
-            <h3 class="pc-title">シールアルバム</h3>
-            <p class="pc-play">あそんで あつめた シールを、じぶんの アルバムに ぺたぺた はろう！</p>
-            <p class="pc-growth">集めて並べる楽しさで <b>達成感とコレクション欲、整理する力</b> が育ちます</p>
-            <div class="pc-chips"><span class="pc-chip">あつめる</span><span class="pc-chip">せいり</span><span class="pc-chip">たっせいかん</span></div>
+            <h3 class="pc-title">ポノの なかよしパズル</h3>
+            <p class="pc-play">ピースを あわせて、ポノたちの えを かんせいさせよう！</p>
+            <p class="pc-growth">形を見比べてはめる遊びで <b>集中力・空間認識力・観察力</b> が育ちます</p>
+            <div class="pc-chips"><span class="pc-chip">しゅうちゅう</span><span class="pc-chip">かんさつ</span><span class="pc-chip">かんがえる</span></div>
+          </div>
+        </article>
+        <article class="pc-card pc-card--mt5">
+          <div class="pc-bubble pc-bubble--alt">あたま つかう</div>
+          <div class="pc-visual pc-v-quizland" role="img" aria-label="フクロウはかせがなぞなぞを出す、フクロウはかせのなぞなぞの画面"></div>
+          <div class="pc-body">
+            <h3 class="pc-title">フクロウはかせの なぞなぞ</h3>
+            <p class="pc-play">フクロウはかせの ふしぎな もんだいに こたえよう！ ひらめいたら ピン！</p>
+            <p class="pc-growth">考えて答えを見つける遊びで <b>ひらめき力・ことばの知識・推理力</b> が育ちます</p>
+            <div class="pc-chips"><span class="pc-chip">ひらめき</span><span class="pc-chip">ものしり</span><span class="pc-chip">ことば</span></div>
           </div>
         </article>
       </div>
       <div class="pc-cta-wrap">
         <a href="play.html" class="pc-cta">ぜんぶ あそびに いく <span aria-hidden="true">→</span></a>
       </div>
+    </section>
+
+    <!-- ===== あそびの ほかにも：ゲーム外の楽しみ方 (シールアルバム) ===== -->
+    <section class="sticker-extra" aria-labelledby="sticker-extra-h">
+      <p class="sticker-extra-h" id="sticker-extra-h">あそびの <span class="sticker-extra-em">ほかにも</span></p>
+      <p class="sticker-extra-sub">ゲームを あそぶと、シールが もらえて、アルバムに ぺたぺた はれるよ</p>
+      <article class="sticker-extra-card">
+        <div class="sticker-extra-visual" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面"></div>
+        <div class="sticker-extra-body">
+          <h3 class="sticker-extra-title">シールアルバム</h3>
+          <p class="sticker-extra-play">あそんで あつめた シールを、じぶんの アルバムに ぺたぺた はろう！ ながめるだけでも たのしいよ</p>
+        </div>
+      </article>
     </section>
 
     <!-- ===== Amazon えほんも あるよ (compact) ===== -->
