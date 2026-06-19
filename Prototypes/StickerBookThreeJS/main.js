@@ -202,9 +202,7 @@ const PAGE_TURN_BEND = 0.34;
 const PAGE_FLUTTER_BEND = 0.56;
 const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.22;
 const COLLECTION_PAGE_SPINE_PULL = 0;
-const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.014;
-const COLLECTION_SPINE_FOLD_W = SPINE_W * 1.08;
-const COLLECTION_SPINE_FOLD_DIP = PAGE_H * 0.024;
+const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.009;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -400,8 +398,6 @@ coverTurn.add(coverTurnBack);
 coverTurn.add(coverTurnFront);
 
 const spine = makePlane(BOOK_VARIANTS[activeBook].spine, SPINE_W, PAGE_H, { depth: -0.09, lit: true, transparent: true });
-const standardSpineGeometry = spine.geometry;
-const collectionSpineFoldGeometry = createCollectionSpineFoldGeometry();
 spine.position.set(0, 0, -0.09);
 spine.material.depthWrite = false;
 spine.renderOrder = 1;
@@ -3887,7 +3883,8 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
     const fold = spineT * spineT * (3 - 2 * spineT);
     const v = THREE.MathUtils.clamp((y + PAGE_H / 2) / PAGE_H, 0, 1);
     const middle = Math.sin(v * Math.PI);
-    const verticalFold = 0.82 + 0.18 * Math.pow(middle, 0.72);
+    const edgeFade = smootherstep(v / 0.18) * smootherstep((1 - v) / 0.1);
+    const verticalFold = edgeFade * (0.78 + 0.22 * Math.pow(middle, 0.72));
     const pull = fold * COLLECTION_PAGE_SPINE_PULL * (0.82 + middle * 0.32);
     const dip = fold * COLLECTION_PAGE_SPINE_DIP * verticalFold;
 
@@ -3903,52 +3900,6 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
-}
-
-function createCollectionSpineFoldGeometry() {
-  const width = COLLECTION_SPINE_FOLD_W;
-  const half = width / 2;
-  const xSegments = 18;
-  const ySegments = 72;
-  const geometry = new THREE.BufferGeometry();
-  const vertices = [];
-  const uvs = [];
-  const indices = [];
-
-  for (let yi = 0; yi <= ySegments; yi += 1) {
-    const v = yi / ySegments;
-    const y = -PAGE_H / 2 + PAGE_H * v;
-    const middle = Math.sin(v * Math.PI);
-    const vertical = 0.86 + 0.14 * Math.pow(Math.max(0, middle), 0.7);
-    for (let xi = 0; xi <= xSegments; xi += 1) {
-      const u = xi / xSegments;
-      const x = -half + width * u;
-      const center = 1 - Math.abs(x / half);
-      const valley = smootherstep(center);
-      const shoulder = Math.pow(Math.abs(x / half), 1.55);
-      const z = shoulder * PAGE_H * 0.004 - valley * COLLECTION_SPINE_FOLD_DIP * vertical;
-      vertices.push(x, y, z);
-      uvs.push(u, v);
-    }
-  }
-
-  for (let yi = 0; yi < ySegments; yi += 1) {
-    for (let xi = 0; xi < xSegments; xi += 1) {
-      const a = yi * (xSegments + 1) + xi;
-      const b = a + 1;
-      const c = a + xSegments + 1;
-      const d = c + 1;
-      indices.push(a, c, b, b, c, d);
-    }
-  }
-
-  geometry.setIndex(indices);
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geometry.computeVertexNormals();
-  geometry.computeBoundingBox();
-  geometry.computeBoundingSphere();
-  return geometry;
 }
 
 function subdivideBendableGeometry(source) {

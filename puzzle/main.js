@@ -1564,12 +1564,67 @@ function redraw() {
   drawPartnerPracticeCue(puzzleCtx);
 }
 
+// FIX A: alpha envelope helpers. Cues fade IN over ~260ms when first shown and
+// fade OUT over ~420ms after a release is requested. The middle steady state
+// still pulses via Math.sin in each cue branch.
+var BASIC_CUE_FADE_IN_MS = 260;
+var BASIC_CUE_FADE_OUT_MS = 420;
+
+function computeCueAlphaEnvelope(cue, now) {
+  if (!cue) return 0;
+  if (cue.startTime == null) cue.startTime = now;
+  if (cue.releaseTime != null) {
+    var since = now - cue.releaseTime;
+    if (since <= 0) return 1;
+    if (since >= BASIC_CUE_FADE_OUT_MS) return 0;
+    return Math.max(0, 1 - since / BASIC_CUE_FADE_OUT_MS);
+  }
+  var sinceStart = now - cue.startTime;
+  if (sinceStart >= BASIC_CUE_FADE_IN_MS) return 1;
+  if (sinceStart <= 0) return 0;
+  return Math.min(1, sinceStart / BASIC_CUE_FADE_IN_MS);
+}
+
+// Smoothly transition the current basic-practice cue. Passing null marks the
+// existing cue for fade-out (the draw loop will null it once envelope hits 0).
+// Passing a new cue stamps startTime so it fades in cleanly.
+function setBasicCueWithRelease(newCue) {
+  if (!partnerPracticeState) return;
+  var now = performance.now();
+  if (newCue == null) {
+    var current = partnerPracticeState.cue;
+    if (!current) return;
+    if (current.releaseTime == null) current.releaseTime = now;
+    ensurePartnerPracticeCueLoop();
+    return;
+  }
+  newCue.startTime = now;
+  newCue.releaseTime = null;
+  partnerPracticeState.cue = newCue;
+  ensurePartnerPracticeCueLoop();
+}
+
 function drawPartnerPracticeCue(ctx) {
   if (!ctx || !partnerPracticeState || !partnerPracticeState.cue) return;
   var cue = partnerPracticeState.cue;
   var piece = cue.piece;
   if (!piece || piece.snapped) return;
   var now = performance.now();
+  // FIX A: lazy-stamp startTime for cues assigned via raw `= { ... }` paths
+  // that don't route through setBasicCueWithRelease. Without this, those cues
+  // would skip the fade-in.
+  if (cue.startTime == null) cue.startTime = now;
+  var envelope = computeCueAlphaEnvelope(cue, now);
+  if (envelope <= 0) {
+    if (cue.releaseTime != null) {
+      partnerPracticeState.cue = null;
+    }
+    return;
+  }
+  // While fading (in or out) keep the loop ticking so the next frame can
+  // continue the animation; the steady state's pulse handler at each branch
+  // tail also requests another frame.
+  if (envelope < 1 || cue.releaseTime != null) ensurePartnerPracticeCueLoop();
   var cx = piece.x + pieceW / 2;
   var cy = piece.y + pieceH / 2;
   var pulse = 0.5 + 0.5 * Math.sin(now / 180);
@@ -1579,6 +1634,7 @@ function drawPartnerPracticeCue(ctx) {
     var tapR = minSide * (0.70 + pulse * 0.14);
     var glowR = tapR * (1.42 + pulse * 0.12);
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'lighter';
     var glow = ctx.createRadialGradient(cx, cy, tapR * 0.55, cx, cy, glowR);
     glow.addColorStop(0, 'rgba(255, 202, 68, 0.14)');
@@ -1619,6 +1675,7 @@ function drawPartnerPracticeCue(ctx) {
   if (cue.kind === 'selected-piece') {
     var selectedR = Math.min(pieceW, pieceH) * (0.58 + pulse * 0.05);
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'source-over';
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
@@ -1658,6 +1715,7 @@ function drawPartnerPracticeCue(ctx) {
 
   if (cue.kind === 'kojika-move-target') {
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'source-over';
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
@@ -1697,6 +1755,7 @@ function drawPartnerPracticeCue(ctx) {
     var hy = piece.homeY + pieceH / 2;
     var r = Math.min(pieceW, pieceH) * (0.78 + pulse * 0.08);
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'lighter';
     var grad = ctx.createRadialGradient(cx, cy, r * 0.08, cx, cy, r);
     grad.addColorStop(0, 'rgba(125, 190, 255, 0.72)');
@@ -1718,6 +1777,7 @@ function drawPartnerPracticeCue(ctx) {
     ctx.restore();
 
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
     ctx.strokeStyle = 'rgba(59, 130, 246, 0.92)';
@@ -1731,9 +1791,24 @@ function drawPartnerPracticeCue(ctx) {
 function ensurePartnerPracticeCueLoop() {
   if (!partnerPracticeState || partnerPracticeState.cueRaf) return;
   partnerPracticeState.cueRaf = requestAnimationFrame(function tick() {
-    if (!partnerPracticeState || !partnerPracticeState.active || !partnerPracticeState.cue) {
+    if (!partnerPracticeState || !partnerPracticeState.active) {
       if (partnerPracticeState) partnerPracticeState.cueRaf = null;
       return;
+    }
+    var cue = partnerPracticeState.cue;
+    if (!cue) {
+      partnerPracticeState.cueRaf = null;
+      return;
+    }
+    // FIX A: if the cue has fully faded out, null it here and stop the loop.
+    if (cue.releaseTime != null) {
+      var env = computeCueAlphaEnvelope(cue, performance.now());
+      if (env <= 0) {
+        partnerPracticeState.cue = null;
+        partnerPracticeState.cueRaf = null;
+        redraw();
+        return;
+      }
     }
     partnerPracticeState.cueRaf = null;
     redraw();
@@ -2642,6 +2717,10 @@ const BASIC_MODE_BADGE_POP_MS = 3000;
 // .partner-practice-mode-badge.is-leaving so the badge finishes fading before
 // JS removes .is-visible / the element from the DOM.
 const BASIC_MODE_BADGE_FADE_MS = 350;
+// Button highlight (見る / ヒント ring + glow) fade-out duration. Must match
+// the CSS transition on .partner-practice-highlight.is-leaving so the glow
+// fades out smoothly before JS strips the highlight class entirely.
+const PARTNER_HIGHLIGHT_FADE_MS = 320;
 // 'できたね！' success badge on a completed peek hold. Long enough to read but
 // shorter than the narrated intro/try banners; the phase then moves on to the
 // success narration + hint, so it doesn't need the full ~6.8s.
@@ -2848,6 +2927,10 @@ function scheduleBasicDragCuesOnVoice(opts) {
   var piece = opts.piece;
   var orangeMs = opts.orangeMs | 0;
   var blueMs = opts.blueMs | 0;
+  // FIX B: when the try-phase split callback owns the orange cue (so it lights
+  // together with badge-hide + input-enable in the same tick), the caller passes
+  // skipOrange:true to dedupe; only the blue cue is scheduled here.
+  var skipOrange = !!opts.skipOrange;
   var scheduledAt = performance.now();
   var fired = false; // cues scheduled once (either via play event or fallback)
 
@@ -2859,12 +2942,12 @@ function scheduleBasicDragCuesOnVoice(opts) {
 
   function showOrange() {
     if (!stillValid()) return;
-    partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
     redraw();
   }
   function showBlue() {
     if (!stillValid()) return;
-    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
     redraw();
   }
 
@@ -2875,7 +2958,7 @@ function scheduleBasicDragCuesOnVoice(opts) {
     if (fired) return;
     fired = true;
     var elapsed = Math.max(0, performance.now() - anchorTime);
-    practiceSetTimeout(showOrange, Math.max(0, orangeMs - elapsed));
+    if (!skipOrange) practiceSetTimeout(showOrange, Math.max(0, orangeMs - elapsed));
     practiceSetTimeout(showBlue, Math.max(0, blueMs - elapsed));
   }
 
@@ -2929,6 +3012,7 @@ function scheduleBasicDragTrySplitOnVoice(opts) {
   var splitMs = opts.splitMs | 0;
   var scheduledAt = performance.now();
   var fired = false; // split scheduled once (either via play event or fallback)
+  var doSplitRan = false; // FIX B: idempotency guard — doSplit must run exactly once.
 
   function stillTry() {
     return !!(partnerPracticeState
@@ -2937,10 +3021,19 @@ function scheduleBasicDragTrySplitOnVoice(opts) {
   }
 
   function doSplit() {
-    // Guarded so a stale timer can't fire after leaving basic-drag-try.
+    // Guarded so a stale timer can't fire after leaving basic-drag-try, and so
+    // it can never run twice (the state machine would break).
+    if (doSplitRan) return;
     if (!stillTry()) return;
+    doSplitRan = true;
+    // FIX B: badge fade-out, input enable, AND orange tap-piece cue lighting
+    // all run in the SAME tick so they're perfectly aligned with the narration
+    // boundary at ~splitMs. The orange cue is fade-in via setBasicCueWithRelease
+    // (FIX A envelope) and is NOT scheduled separately in scheduleBasicDragCues
+    // OnVoice (skipOrange:true at the call site).
     hideBasicPracticeTryBannerNow();
     setPartnerPracticeInput(true);
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
     redraw();
   }
 
@@ -3014,7 +3107,10 @@ function scheduleBasicHintSelectCueOnVoice(opts) {
 
   function showSelectCue() {
     if (!stillSelect()) return;
-    partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+    // FIX A/C: route through setBasicCueWithRelease so the orange cue fades IN
+    // smoothly (rather than appearing abruptly) the moment idx8 narration
+    // reaches 「場所を知りたいピース」 — and the banner pops in the same tick.
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
     setBasicPracticeModeBanner('try', 'やってみよう！');
     redraw();
   }
@@ -3489,10 +3585,32 @@ function practiceAddHighlight(el) {
 function clearPracticeHighlights() {
   if (!partnerPracticeState) return;
   var list = partnerPracticeState.highlighted || [];
+  // Snapshot the leaving set first so we can stage a soft fade-out (~320ms)
+  // before fully stripping the highlight class. Idempotent: elements that are
+  // already mid-fade (.is-leaving present) are skipped so we never stack
+  // duplicate timers on the same node.
+  var leaving = [];
   for (var i = 0; i < list.length; i++) {
-    try { list[i].classList.remove('partner-practice-highlight'); } catch (_) {}
+    var el = list[i];
+    if (!el || !el.classList) continue;
+    if (el.classList.contains('is-leaving')) continue;
+    try { el.classList.add('is-leaving'); } catch (_) {}
+    leaving.push(el);
   }
+  // Reset the tracked list immediately so any re-entrant call (e.g. a new
+  // highlight added on the next tick) doesn't see stale entries.
   partnerPracticeState.highlighted = [];
+  if (!leaving.length) return;
+  setTimeout(function () {
+    for (var j = 0; j < leaving.length; j++) {
+      var node = leaving[j];
+      if (!node || !node.classList) continue;
+      try {
+        node.classList.remove('partner-practice-highlight');
+        node.classList.remove('is-leaving');
+      } catch (_) {}
+    }
+  }, PARTNER_HIGHLIGHT_FADE_MS + 20);
 }
 
 function createPartnerPracticeCoach(partnerId, partner) {
@@ -4696,14 +4814,16 @@ function startBasicDragPractice() {
           piece: piece,
           splitMs: BASIC_DRAG_TRY_SPLIT_AT_VOICE_MS,
         });
-        // Orange (「ピースを持って」) / blue (「青い場所へ」) cues anchored to the same
-        // full audio. Helper has its own wall-clock fallback if play never fires.
+        // Blue (「青い場所へ」) cue anchored to the same full audio. Orange is
+        // owned by scheduleBasicDragTrySplitOnVoice's doSplit so badge/input/
+        // orange cue all fire in the SAME tick (FIX B); skipOrange:true dedupes.
         scheduleBasicDragCuesOnVoice({
           audio: tryAudio,
           phase: 'basic-drag-try',
           piece: piece,
           orangeMs: BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS,
           blueMs: BASIC_DRAG_TRY_BLUE_AT_VOICE_MS,
+          skipOrange: true,
         });
       });
     });
@@ -4818,6 +4938,16 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
 function startBasicHintPlaceTry(piece) {
   if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
   if (!piece || piece.snapped) return;
+  // FIX C: ENFORCE clean canvas at entry — any leftover cue from the prior phase
+  // (e.g. the demo path) must fade out via the FIX A envelope before idx8 fires
+  // its cue. Banner is hidden via the existing is-leaving fade, and any pending
+  // banner timers were cleared upstream by clearPartnerPracticeTimers.
+  // setBasicCueWithRelease(null) gracefully fades any leftover cue rather than
+  // hard-cutting it. Upstream (startCommonHintPractice basic branch + FIX C)
+  // already zeroes the cue at hint-select entry; this is defensive belt-and-
+  // suspenders in case any future path leaves one behind.
+  setBasicCueWithRelease(null);
+  hideBasicPracticeTryBannerNow();
   clearPracticeHighlights();
   clearBasicPracticeHand();
   clearHintGlow();
@@ -4826,7 +4956,6 @@ function startBasicHintPlaceTry(piece) {
   partnerPracticeState.targetPiece = piece;
   // v1338 FIX 2/3: do NOT light the orange tap-piece cue (or pop the badge) at t=0.
   // Both are anchored below to idx8's real playback at the 「場所を知りたいピース」 phrase.
-  partnerPracticeState.cue = null;
   partnerPracticeState.hintSelectReady = true;
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
@@ -5036,7 +5165,16 @@ function startCommonHintPractice(partnerId) {
   }
   partnerPracticeState.phase = 'hint-select';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  // FIX C: in basic mode, the orange tap-piece cue must NOT light at hint-select
+  // entry — it would paint immediately on the next redraw and produce a brief
+  // orange flash before idx8 narration anchors the cue at ~2200ms. The basic
+  // branch (startBasicHintPlaceTry -> scheduleBasicHintSelectCueOnVoice) will
+  // set the cue itself, synced to the audio's real play event.
+  if (partnerPracticeState.mode === 'basic') {
+    partnerPracticeState.cue = null;
+  } else {
+    partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  }
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
@@ -5048,6 +5186,10 @@ function startCommonHintPractice(partnerId) {
   clearHintPracticeTargetArea(piece);
   refreshHintButtonState();
   if (partnerPracticeState.mode === 'basic') {
+    // FIX C: also fade out any leftover try banner from prior phase before the
+    // 'demo' frame-mode flip so no stray 「やってみよう！」 lingers visually while
+    // idx8 narration ramps up.
+    hideBasicPracticeTryBannerNow();
     setBasicPracticeModeBanner('demo', 'おてほんをみてね');
     clearPartnerPracticeCoachBubble();
     setPartnerPracticeCoachCopy('', '', '');

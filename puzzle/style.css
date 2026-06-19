@@ -552,6 +552,24 @@ body.partner-practice-active .prestart-overlay {
   animation: partnerPracticeRingFade 0.78s ease-in-out infinite;
 }
 
+/* Fade the highlight glow + inset ring out (~320ms) before JS removes the
+   class entirely, instead of the old instant hide. JS adds .is-leaving
+   (keeping .partner-practice-highlight so the ::after pseudo still renders),
+   waits for this transition, then removes both classes. Mirrors the badge
+   leaving pattern above. */
+.partner-practice-highlight.is-leaving {
+  opacity: 0;
+  box-shadow: 0 0 0 0 rgba(255, 207, 67, 0) !important;
+  transition: opacity 320ms ease-out, box-shadow 320ms ease-out;
+  animation: none;
+}
+
+.partner-practice-highlight.is-leaving::after {
+  opacity: 0;
+  transition: opacity 320ms ease-out;
+  animation: none;
+}
+
 .controls .btn.partner-practice-highlight::before {
   content: "";
   position: absolute;
@@ -1088,31 +1106,31 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
 }
 
 /* v1342 round-2 FIX 3: the big center badge no longer pops for try/demo, so the
-   bottom coach box TITLE becomes the call-to-action. Give it a gentle, kid-
-   friendly emphasis — a soft pulse (color + glow, no size change), an accent
-   text color, and a contrasting outline/border pill — so 「やってみよう」 etc.
-   clearly stands out without being aggressive. Scoped to the basic tutorial. */
+   bottom coach box TITLE becomes the call-to-action. Render it as a FILLED
+   orange CTA pill with WHITE text so 「やってみよう」 etc. reads as a clear
+   action prompt at a glance. Pulse animates the fill / glow only — the text
+   stays solid white across the entire cycle. Scoped to the basic tutorial. */
 .partner-practice-coach--basic .partner-practice-coach__title {
   display: inline-block;
   padding: 3px 12px;
   border: 2px solid rgba(242, 145, 90, 0.85);
   border-radius: 12px;
-  background: rgba(255, 244, 222, 0.9);
-  color: #C7561E;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  background-color: #E8631F;
+  color: #FFFFFF;
+  text-shadow: 0 1px 0 rgba(120, 40, 6, 0.35);
   animation: partnerPracticeCoachTitlePulse 1.5s ease-in-out infinite;
 }
 
 @keyframes partnerPracticeCoachTitlePulse {
   0%, 100% {
-    color: #C7561E;
+    background-color: #E8631F;
     border-color: rgba(242, 145, 90, 0.85);
     box-shadow: 0 0 0 0 rgba(242, 145, 90, 0);
   }
   50% {
-    color: #E8631F;
+    background-color: #F2914A;
     border-color: rgba(242, 145, 90, 1);
-    box-shadow: 0 0 10px 2px rgba(255, 196, 120, 0.55);
+    box-shadow: 0 0 12px 3px rgba(255, 196, 120, 0.65);
   }
 }
 
