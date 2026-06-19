@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-706";
+const ASSET_VERSION = "20260619-707";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -200,11 +200,11 @@ const FLUTTER_PAGE_MIN_COUNT = 3;
 const FLUTTER_PAGE_MAX_COUNT = 6;
 const PAGE_TURN_BEND = 0.34;
 const PAGE_FLUTTER_BEND = 0.56;
-const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.26;
+const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.22;
 const COLLECTION_PAGE_SPINE_PULL = 0;
-const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.008;
-const COLLECTION_PAGE_OUTER_EDGE_WAVE = PAGE_W * 0.011;
-const COLLECTION_PAGE_LONG_EDGE_WAVE = PAGE_H * 0.008;
+const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.014;
+const COLLECTION_SPINE_FOLD_W = SPINE_W * 1.08;
+const COLLECTION_SPINE_FOLD_DIP = PAGE_H * 0.024;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -400,6 +400,8 @@ coverTurn.add(coverTurnBack);
 coverTurn.add(coverTurnFront);
 
 const spine = makePlane(BOOK_VARIANTS[activeBook].spine, SPINE_W, PAGE_H, { depth: -0.09, lit: true, transparent: true });
+const standardSpineGeometry = spine.geometry;
+const collectionSpineFoldGeometry = createCollectionSpineFoldGeometry();
 spine.position.set(0, 0, -0.09);
 spine.material.depthWrite = false;
 spine.renderOrder = 1;
