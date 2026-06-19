@@ -50,6 +50,8 @@
   <meta name="apple-mobile-web-app-title" content="ポノあそびば">
   <meta name="theme-color" content="#F2915A">
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preload" as="image" href="assets/lp/hero/h1_calligraphy.png" imagesrcset="assets/lp/hero/h1_calligraphy.png 1x, assets/lp/hero/h1_calligraphy@2x.png 2x" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/lp/hero/bg_soft_playmat.webp" fetchpriority="high">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -305,11 +307,23 @@
       --herob-text-light:#7A6A4F;
       --herob-shadow:rgba(93,78,55,.12);
       width:100%;max-width:1040px;margin:0 auto;padding:26px 18px 28px;text-align:center;color:var(--herob-text);
+      background-color:#FFF8F0;
+      background-image:image-set(url('assets/lp/hero/bg_soft_playmat.webp') 1x, url('assets/lp/hero/bg_soft_playmat@2x.webp') 2x);
+      background-image:-webkit-image-set(url('assets/lp/hero/bg_soft_playmat.webp') 1x, url('assets/lp/hero/bg_soft_playmat@2x.webp') 2x);
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      border-radius:24px;
+    }
+    /* Fallback for browsers without image-set support */
+    @supports not (background-image: image-set(url('a') 1x)){
+      .herob{background-image:url('assets/lp/hero/bg_soft_playmat.webp');}
     }
     .herob *{box-sizing:border-box;}
-    .herob-title{font-weight:900;font-size:clamp(26px,5.6vw,48px);line-height:1.2;letter-spacing:.02em;margin:0;color:var(--herob-text);animation:herob-rise .6s ease both;}
-    .herob-title .accent{color:var(--herob-primary-deep);}
-    .herob-lead{font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:10px auto 0;animation:herob-rise .6s .06s ease both;}
+    .herob-title{margin:0;animation:herob-rise .6s ease both;}
+    .herob-title-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;white-space:nowrap;}
+    .herob-title-img{display:block;max-width:min(640px,88vw);width:100%;height:auto;margin:0 auto;}
+    .herob-lead{font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:14px auto 0;animation:herob-rise .6s .06s ease both;}
     .herob-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:560px;margin:18px auto 0;animation:herob-rise .6s .12s ease both;}
     .herob-chip{background:var(--herob-primary-light);color:var(--herob-text);font-weight:900;font-size:clamp(12px,3vw,14px);padding:8px 16px;border-radius:999px;letter-spacing:.02em;}
     .herob-cta-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:22px auto 0;animation:herob-rise .6s .18s ease both;}
@@ -398,7 +412,16 @@
 
     <!-- ===== Hero B: 体験予告優先 (slim版) ===== -->
     <section class="herob" aria-labelledby="herob-h">
-      <h1 class="herob-title" id="herob-h">みて、さわって、<span class="accent">あそぼう</span></h1>
+      <h1 class="herob-title" id="herob-h">
+        <span class="herob-title-text">みて、さわって、あそぼう</span>
+        <img src="assets/lp/hero/h1_calligraphy.png"
+             srcset="assets/lp/hero/h1_calligraphy.png 1x, assets/lp/hero/h1_calligraphy@2x.png 2x"
+             alt=""
+             aria-hidden="true"
+             class="herob-title-img"
+             fetchpriority="high"
+             width="640" height="108">
+      </h1>
       <p class="herob-lead">ポノの あそびばで できること</p>
       <div class="herob-chips" aria-label="あそびばの ジャンル">
         <span class="herob-chip">2〜7さい</span>
