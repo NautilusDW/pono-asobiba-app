@@ -1,0 +1,179 @@
+{
+  "results": [
+    {
+      "id": "sk_intro_01",
+      "expected": "たべものには 3つの なかまが あるよ",
+      "attempts": [
+        {
+          "attempt": 1,
+          "text_in": "たべものには 3つの なかまが あるよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 2,
+          "text_in": "みんな、たべものには 3つの なかまが あるよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 3,
+          "text_in": "たべものは 3つの なかまに わかれるよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        }
+      ],
+      "accepted": null,
+      "status": "skipped"
+    },
+    {
+      "id": "sk_intro_02",
+      "expected": "あかは からだを つくる なかま おにくや おさかなや たまごだよ",
+      "attempts": [
+        {
+          "attempt": 1,
+          "text_in": "あかは からだを つくる なかま。おにくや おさかなや、たまごだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 2,
+          "text_in": "あかい たべものは からだを つくる なかま。おにくや おさかな、たまごだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 3,
+          "text_in": "あかい いろの たべものは からだを つくる なかま。おにく、おさかな、たまごだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        }
+      ],
+      "accepted": null,
+      "status": "skipped"
+    },
+    {
+      "id": "sk_intro_03",
+      "expected": "きいろは あそぶ ちからに なるよ ごはんや めんや じゃがいもだよ",
+      "attempts": [
+        {
+          "attempt": 1,
+          "text_in": "きいろは あそぶ ちからに なるよ。ごはんや めんや、じゃがいもだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 2,
+          "text_in": "きいろい たべものは あそぶ ちからに なるよ。ごはんや めん、じゃがいもだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 3,
+          "text_in": "きいろは げんきに あそぶ ちからに なるよ。ごはん、めん、じゃがいもだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        }
+      ],
+      "accepted": null,
+      "status": "skipped"
+    },
+    {
+      "id": "sk_intro_04",
+      "expected": "みどりは からだの ちょうしを ととのえるよ やさいや くだものだよ",
+      "attempts": [
+        {
+          "attempt": 1,
+          "text_in": "みどりは からだの ちょうしを ととのえるよ。やさいや、くだものだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 2,
+          "text_in": "みどりい たべものは からだの ちょうしを ととのえるよ。やさいや くだものだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 3,
+          "text_in": "みどりは からだの ちょうしを よくするよ。やさいや くだものだよ。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        }
+      ],
+      "accepted": null,
+      "status": "skipped"
+    },
+    {
+      "id": "sk_intro_05",
+      "expected": "あか きいろ みどりを ひとつずつ いれてみよう",
+      "attempts": [
+        {
+          "attempt": 1,
+          "text_in": "あか、きいろ、みどりを ひとつずつ いれてみよう。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 2,
+          "text_in": "あかと きいろと みどりを ひとつずつ いれてみよう。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 3,
+          "text_in": "あかと きいろと みどり、ひとつずつ いれて みようね。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        }
+      ],
+      "accepted": null,
+      "status": "skipped"
+    },
+    {
+      "id": "okazu_more_01",
+      "expected": "すきな おかずを もっと いれても いいよ おわったら おかずOKを おしてね",
+      "attempts": [
+        {
+          "attempt": 1,
+          "text_in": "すきな おかずを もっと いれても いいよ。おわったら、おかずOKを おしてね。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 2,
+          "text_in": "すきな おかずを、もっと いれても いいよ。おわったら 『おかずOK』を おしてね。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        },
+        {
+          "attempt": 3,
+          "text_in": "すきな おかずを たくさん いれても いいよ。おわったら、おかずOK を おしてね。",
+          "tts_error": "HTTP 403",
+          "transcribed": null,
+          "matched": false
+        }
+      ],
+      "accepted": null,
+      "status": "skipped"
+    }
+  ],
+  "leftovers": []
+}

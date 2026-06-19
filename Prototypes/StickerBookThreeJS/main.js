@@ -1941,6 +1941,7 @@ function setAlbumMode(mode) {
   selectedPlacementId = null;
   stickerDragState = null;
   assignSpineTexture();
+  assignSideTabTextures();
   applyAlbumLayout();
   refreshPageTemplateTextures();
   updateAlbumModeUi();
@@ -3247,9 +3248,9 @@ function drawScallopedPanelPath(ctx, x, y, width, height, radius, scallopDepth, 
 
 function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
   const bandX = 98;
-  const bandY = PAGE_TEXTURE_H - 242;
+  const bandY = PAGE_TEXTURE_H - 212;
   const bandW = PAGE_TEXTURE_W - 196;
-  const bandH = 138;
+  const bandH = 104;
   const bandGradient = ctx.createLinearGradient(0, bandY, 0, bandY + bandH);
   bandGradient.addColorStop(0, tintColor(theme.slotBand.fill, 0.18));
   bandGradient.addColorStop(0.72, theme.slotBand.fill);
@@ -3257,33 +3258,33 @@ function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
 
   ctx.save();
   ctx.fillStyle = bandGradient;
-  drawCanvasRoundedRect(ctx, bandX, bandY, bandW, bandH, 36);
+  drawCanvasRoundedRect(ctx, bandX, bandY, bandW, bandH, 28);
   ctx.fill();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.52)";
-  ctx.lineWidth = 4;
-  drawCanvasRoundedRect(ctx, bandX + 10, bandY + 10, bandW - 20, bandH - 20, 28);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.46)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, bandX + 8, bandY + 8, bandW - 16, bandH - 16, 22);
   ctx.stroke();
 
   const slotCount = 5;
   const slotGap = 22;
   const slotW = (bandW - 78 - slotGap * (slotCount - 1)) / slotCount;
-  const slotH = 92;
-  const slotY = bandY + 22;
+  const slotH = 64;
+  const slotY = bandY + 18;
   for (let i = 0; i < slotCount; i += 1) {
     const x = bandX + 39 + i * (slotW + slotGap);
     ctx.fillStyle = theme.slotBand.slot;
     ctx.strokeStyle = theme.slotBand.stroke;
-    ctx.lineWidth = 3;
-    drawCanvasRoundedRect(ctx, x, slotY, slotW, slotH, 22);
+    ctx.lineWidth = 2.5;
+    drawCanvasRoundedRect(ctx, x, slotY, slotW, slotH, 17);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.26)";
     ctx.beginPath();
     ctx.ellipse(x + slotW * 0.68, slotY + slotH * 0.24, slotW * 0.22, slotH * 0.12, -0.24, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  const decoY = bandY + bandH - 18;
+  const decoY = bandY + bandH - 12;
   const decoKinds = pageTheme.motifSet === "ocean"
     ? ["shell", "wave", "star", "bubble"]
     : pageTheme.motifSet === "nature"
@@ -3292,11 +3293,11 @@ function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
   for (let i = 0; i < 9; i += 1) {
     const x = bandX + 76 + i * ((bandW - 152) / 8);
     const kind = decoKinds[i % decoKinds.length];
-    drawCollectionMiniMotif(ctx, kind, x, decoY + (i % 2) * 4, 16 + (i % 3) * 2, pageTheme.accent, i * 0.3);
+    drawCollectionMiniMotif(ctx, kind, x, decoY + (i % 2) * 3, 12 + (i % 3) * 2, pageTheme.accent, i * 0.3);
   }
   if (side === "right" && pageTheme.motifSet === "ocean") {
-    drawCollectionMiniMotif(ctx, "wave", bandX + bandW - 122, bandY + 36, 24, pageTheme.accent, 0);
-    drawCollectionMiniMotif(ctx, "shell", bandX + bandW - 76, bandY + 44, 19, "#fff3d0", 0);
+    drawCollectionMiniMotif(ctx, "wave", bandX + bandW - 122, bandY + 28, 18, pageTheme.accent, 0);
+    drawCollectionMiniMotif(ctx, "shell", bandX + bandW - 76, bandY + 34, 15, "#fff3d0", 0);
   }
   ctx.restore();
 }
@@ -3629,19 +3630,21 @@ function drawDynamicPageContent(ctx, texture, side, palette, pageNumber = pageNu
 }
 
 function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageNumber) {
+  const theme = palette.collection;
   const contentX = 168;
-  const contentY = 178;
+  const contentY = 210;
   const contentW = PAGE_TEXTURE_W - 336;
-  const contentH = PAGE_TEXTURE_H - 322;
+  const slotBandTop = PAGE_TEXTURE_H - 254;
+  const contentH = slotBandTop - contentY - 26;
   const cols = 3;
   const rows = 4;
   const gapX = 28;
   const gapY = 24;
   const cellW = (contentW - gapX * (cols - 1)) / cols;
-  const cellH = (contentH - 86 - gapY * (rows - 1)) / rows;
+  const cellH = (contentH - gapY * (rows - 1)) / rows;
 
   ctx.save();
-  ctx.fillStyle = "#334447";
+  ctx.fillStyle = theme.text;
   ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
   ctx.fillText(pageDef?.label || "シールアルバム", PAGE_TEXTURE_W / 2, 112);
@@ -3657,7 +3660,7 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
     const x = contentX + col * (cellW + gapX);
     const y = contentY + row * (cellH + gapY);
     const found = sticker.unlock === "found";
-    drawCollectionStickerCard(ctx, texture, sticker, globalIndex, x, y, cellW, cellH, found);
+    drawCollectionStickerCard(ctx, texture, palette, sticker, globalIndex, x, y, cellW, cellH, found);
   }
 
   if (!stickers.length) {
@@ -3670,16 +3673,17 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
   texture.needsUpdate = true;
 }
 
-function drawCollectionStickerCard(ctx, texture, sticker, index, x, y, width, height, found) {
+function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, width, height, found) {
+  const cardTheme = palette.collection.card;
   ctx.save();
-  ctx.fillStyle = found ? "rgba(255,255,255,0.66)" : "rgba(226, 225, 212, 0.58)";
-  ctx.strokeStyle = found ? "rgba(188, 151, 73, 0.34)" : "rgba(120, 128, 122, 0.24)";
+  ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
+  ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
   ctx.lineWidth = 3;
   drawCanvasRoundedRect(ctx, x, y, width, height, 22);
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = found ? "#4aa5ad" : "#9aa09b";
+  ctx.fillStyle = found ? cardTheme.numberFill : "#9aa09b";
   drawCanvasRoundedRect(ctx, x + 14, y + 14, 68, 34, 13);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
@@ -3687,17 +3691,17 @@ function drawCollectionStickerCard(ctx, texture, sticker, index, x, y, width, he
   ctx.textAlign = "center";
   ctx.fillText(String(index).padStart(2, "0"), x + 48, y + 38);
 
-  const imageSize = Math.min(width - 64, height - 86, 172);
+  const imageSize = Math.min(width - 64, height - 82, 160);
   const imageX = x + (width - imageSize) / 2;
-  const imageY = y + 54;
+  const imageY = y + 50;
   if (sticker.assetUrl) {
     drawAsyncCollectionStickerImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found);
   } else {
     drawMissingStickerBadge(ctx, imageX, imageY, imageSize, imageSize);
   }
 
-  ctx.fillStyle = found ? "#334447" : "rgba(51, 68, 71, 0.54)";
-  ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillStyle = found ? palette.collection.text : "rgba(51, 68, 71, 0.54)";
+  ctx.font = '800 23px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
   ctx.fillText(sticker.label || "シール", x + width / 2, y + height - 24, width - 28);
   ctx.restore();
@@ -3980,6 +3984,24 @@ function drawCanvasRoundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
+function tintColor(hex, amount) {
+  const raw = String(hex || "").replace("#", "");
+  const value = raw.length === 3
+    ? raw.split("").map((char) => `${char}${char}`).join("")
+    : raw.padEnd(6, "0").slice(0, 6);
+  const number = Number.parseInt(value, 16);
+  if (!Number.isFinite(number)) {
+    return hex;
+  }
+  const mix = THREE.MathUtils.clamp(amount, -1, 1);
+  const target = mix >= 0 ? 255 : 0;
+  const weight = Math.abs(mix);
+  const r = Math.round(((number >> 16) & 255) * (1 - weight) + target * weight);
+  const g = Math.round(((number >> 8) & 255) * (1 - weight) + target * weight);
+  const b = Math.round((number & 255) * (1 - weight) + target * weight);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function makePlane(file, width, height, options = {}) {
   const material = options.lit
     ? new THREE.MeshStandardMaterial({
@@ -4045,7 +4067,103 @@ function createSideTabs() {
   right.renderOrder = 3;
   group.add(right);
 
-  return { group, left, right };
+  return { group, left, right, tabCenterOffset };
+}
+
+function positionSideTabs(gap = currentBookGap()) {
+  const leftEdge = -PAGE_W - gap / 2;
+  const rightEdge = PAGE_W + gap / 2;
+  sideTabs.left.position.x = leftEdge + sideTabs.tabCenterOffset;
+  sideTabs.right.position.x = rightEdge - sideTabs.tabCenterOffset;
+}
+
+function assignSideTabTextures() {
+  const bundle = BOOK_VARIANTS[activeBook];
+  if (activeAlbumMode === "collection") {
+    assignTextureObject(sideTabs.left, getCollectionTabsTexture(activeBook, "left"));
+    assignTextureObject(sideTabs.right, getCollectionTabsTexture(activeBook, "right"));
+    return;
+  }
+  assignTexture(sideTabs.left, bundle.tabsLeft);
+  assignTexture(sideTabs.right, bundle.tabsRight);
+}
+
+function getCollectionTabsTexture(bookName, side) {
+  const key = `${bookName}:${side}`;
+  if (collectionTabsTextureMap.has(key)) {
+    return collectionTabsTextureMap.get(key);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 320;
+  canvas.height = 1536;
+  const ctx = canvas.getContext("2d");
+  const theme = stickerBookTheme(bookName).collection;
+  const tabs = theme.tabs;
+  const tabH = 152;
+  const tabGap = 32;
+  const startY = 126;
+  const tabW = 270;
+  const tabX = side === "left" ? 8 : canvas.width - tabW - 8;
+  const motifX = side === "left" ? 54 : canvas.width - 54;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < tabs.length; i += 1) {
+    const tab = tabs[i];
+    const y = startY + i * (tabH + tabGap);
+    ctx.save();
+    ctx.shadowColor = "rgba(49, 42, 25, 0.18)";
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = tab.color;
+    drawSideTabPath(ctx, tabX, y, tabW, tabH, 44, side);
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.48)";
+    ctx.lineWidth = 5;
+    drawSideTabPath(ctx, tabX + 10, y + 10, tabW - 20, tabH - 20, 34, side);
+    ctx.stroke();
+    ctx.strokeStyle = tab.shadow;
+    ctx.globalAlpha = 0.22;
+    ctx.lineWidth = 4;
+    drawSideTabPath(ctx, tabX + 2, y + 4, tabW - 4, tabH - 8, 40, side);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    drawCollectionMiniMotif(ctx, tab.motif, motifX, y + tabH / 2, 32, "rgba(255, 250, 220, 0.92)", side === "left" ? -0.08 : 0.08);
+    ctx.restore();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  collectionTabsTextureMap.set(key, texture);
+  return texture;
+}
+
+function drawSideTabPath(ctx, x, y, width, height, radius, side) {
+  const r = Math.min(radius, height / 2, width / 2);
+  ctx.beginPath();
+  if (side === "left") {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width, y);
+    ctx.lineTo(x + width, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+  } else {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x, y + height);
+    ctx.lineTo(x, y);
+  }
+  ctx.closePath();
 }
 
 function createPageStacks() {
@@ -4731,6 +4849,8 @@ function createHalfRingMeshes() {
     group.add(highlight);
   }
 
+  group.userData.ringMaterial = ringMaterial;
+  group.userData.highlightMaterial = highlightMaterial;
   return group;
 }
 
@@ -4786,8 +4906,7 @@ function applyVariantState() {
   assignTexture(closedCover, bundle.coverFront);
   assignCoverTurnTextures();
   assignSpineTexture();
-  assignTexture(sideTabs.left, bundle.tabsLeft);
-  assignTexture(sideTabs.right, bundle.tabsRight);
+  assignSideTabTextures();
   applyAlbumLayout();
   applyCoverTuning();
   updateFlutterPageTextures();
@@ -4808,6 +4927,7 @@ function applyAlbumLayout() {
   rightPage.position.x = gap / 2;
   innerLeft.position.x = -gap / 2;
   innerRight.position.x = gap / 2;
+  positionSideTabs(gap);
 
   if (activeAlbumMode === "collection") {
     if (leftPageInner.geometry !== collectionLeftPageGeometry) {
@@ -4841,6 +4961,7 @@ function applyAlbumLayout() {
 }
 
 function assignSpineTexture() {
+  applyRingMaterialTheme();
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
     assignTextureObject(collectionFold, getCollectionFoldTexture(activeBook));
@@ -4859,6 +4980,44 @@ function assignSpineTexture() {
   assignTexture(spine, BOOK_VARIANTS[activeBook].spine);
 }
 
+function applyRingMaterialTheme() {
+  const ringMaterial = ringGroup?.userData?.ringMaterial;
+  const highlightMaterial = ringGroup?.userData?.highlightMaterial;
+  if (activeAlbumMode !== "collection") {
+    if (ringMaterial) {
+      ringMaterial.color.setHex(0xcbb783);
+      ringMaterial.emissive.setHex(0x3b2a12);
+      ringMaterial.emissiveIntensity = 0.025;
+      ringMaterial.roughness = 0.76;
+      ringMaterial.metalness = 0.0;
+      ringMaterial.opacity = 1;
+      ringMaterial.needsUpdate = true;
+    }
+    if (highlightMaterial) {
+      highlightMaterial.color.setHex(0xfff5d7);
+      highlightMaterial.opacity = 0.2;
+      highlightMaterial.needsUpdate = true;
+    }
+    return;
+  }
+
+  const theme = stickerBookTheme(activeBook).collection;
+  if (ringMaterial) {
+    ringMaterial.color.setHex(theme.ring);
+    ringMaterial.emissive.setHex(0x3b2a12);
+    ringMaterial.emissiveIntensity = 0.012;
+    ringMaterial.roughness = 0.86;
+    ringMaterial.metalness = 0.02;
+    ringMaterial.opacity = 0.58;
+    ringMaterial.needsUpdate = true;
+  }
+  if (highlightMaterial) {
+    highlightMaterial.color.setHex(theme.ringHighlight);
+    highlightMaterial.opacity = 0.14;
+    highlightMaterial.needsUpdate = true;
+  }
+}
+
 function getCollectionSpineTexture(bookName) {
   if (collectionSpineTextureMap.has(bookName)) {
     return collectionSpineTextureMap.get(bookName);
@@ -4868,9 +5027,7 @@ function getCollectionSpineTexture(bookName) {
   canvas.height = 1536;
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const base = bookName === "girl"
-    ? { warm: "#f4ddea", paper: "#fff7df", shadow: "#8a6477", seam: "#c59ab4" }
-    : { warm: "#efe2ac", paper: "#fff8df", shadow: "#7b7147", seam: "#c6a95b" };
+  const base = stickerBookTheme(bookName).collection.spine;
 
   ctx.save();
   const baseGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
@@ -4920,6 +5077,17 @@ function getCollectionSpineTexture(bookName) {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
+  for (const pixelY of PAGE_RING_PIXELS) {
+    ctx.fillStyle = "rgba(255, 255, 240, 0.32)";
+    ctx.beginPath();
+    ctx.ellipse(128, pixelY, 48, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(70, 56, 24, 0.16)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(128, pixelY, 54, 22, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -4942,27 +5110,25 @@ function getCollectionFoldTexture(bookName) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const base = bookName === "girl"
-    ? { paper: "250, 242, 219", warm: "214, 188, 142", dark: "95, 75, 45" }
-    : { paper: "250, 244, 216", warm: "210, 190, 127", dark: "91, 78, 43" };
+  const base = stickerBookTheme(bookName).collection.spine;
 
   const body = ctx.createLinearGradient(0, 0, canvas.width, 0);
-  body.addColorStop(0, `rgba(${base.dark}, 0)`);
-  body.addColorStop(0.14, `rgba(${base.dark}, 0.06)`);
-  body.addColorStop(0.27, `rgba(${base.warm}, 0.13)`);
-  body.addColorStop(0.39, `rgba(${base.paper}, 0.09)`);
-  body.addColorStop(0.48, `rgba(${base.dark}, 0.2)`);
-  body.addColorStop(0.5, `rgba(${base.dark}, 0.3)`);
-  body.addColorStop(0.52, `rgba(${base.dark}, 0.2)`);
-  body.addColorStop(0.61, `rgba(${base.paper}, 0.09)`);
-  body.addColorStop(0.73, `rgba(${base.warm}, 0.13)`);
-  body.addColorStop(0.86, `rgba(${base.dark}, 0.06)`);
-  body.addColorStop(1, `rgba(${base.dark}, 0)`);
+  body.addColorStop(0, `rgba(${base.foldDark}, 0)`);
+  body.addColorStop(0.14, `rgba(${base.foldDark}, 0.06)`);
+  body.addColorStop(0.27, `rgba(${base.foldWarm}, 0.13)`);
+  body.addColorStop(0.39, `rgba(${base.foldPaper}, 0.09)`);
+  body.addColorStop(0.48, `rgba(${base.foldDark}, 0.2)`);
+  body.addColorStop(0.5, `rgba(${base.foldDark}, 0.3)`);
+  body.addColorStop(0.52, `rgba(${base.foldDark}, 0.2)`);
+  body.addColorStop(0.61, `rgba(${base.foldPaper}, 0.09)`);
+  body.addColorStop(0.73, `rgba(${base.foldWarm}, 0.13)`);
+  body.addColorStop(0.86, `rgba(${base.foldDark}, 0.06)`);
+  body.addColorStop(1, `rgba(${base.foldDark}, 0)`);
   ctx.fillStyle = body;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.filter = "blur(10px)";
-  ctx.fillStyle = `rgba(${base.dark}, 0.16)`;
+  ctx.fillStyle = `rgba(${base.foldDark}, 0.16)`;
   ctx.fillRect(canvas.width * 0.18, -80, 30, canvas.height + 160);
   ctx.fillRect(canvas.width * 0.76, -80, 30, canvas.height + 160);
   ctx.fillStyle = "rgba(255, 255, 244, 0.16)";
@@ -4971,11 +5137,11 @@ function getCollectionFoldTexture(bookName) {
   ctx.filter = "none";
 
   const centerLine = ctx.createLinearGradient(canvas.width * 0.47, 0, canvas.width * 0.53, 0);
-  centerLine.addColorStop(0, `rgba(${base.dark}, 0)`);
-  centerLine.addColorStop(0.48, `rgba(${base.dark}, 0.18)`);
-  centerLine.addColorStop(0.5, `rgba(${base.dark}, 0.26)`);
-  centerLine.addColorStop(0.52, `rgba(${base.dark}, 0.18)`);
-  centerLine.addColorStop(1, `rgba(${base.dark}, 0)`);
+  centerLine.addColorStop(0, `rgba(${base.foldDark}, 0)`);
+  centerLine.addColorStop(0.48, `rgba(${base.foldDark}, 0.18)`);
+  centerLine.addColorStop(0.5, `rgba(${base.foldDark}, 0.26)`);
+  centerLine.addColorStop(0.52, `rgba(${base.foldDark}, 0.18)`);
+  centerLine.addColorStop(1, `rgba(${base.foldDark}, 0)`);
   ctx.fillStyle = centerLine;
   ctx.fillRect(canvas.width * 0.45, 0, canvas.width * 0.1, canvas.height);
 
@@ -5259,8 +5425,9 @@ function renderCoverOpenTransition(rawProgress) {
   const gap = currentBookGap();
   const showBinding = p > 0.52;
   spine.visible = showBinding;
-  ringGroup.visible = showBinding && activeAlbumMode !== "collection";
+  ringGroup.visible = showBinding;
   innerRight.visible = showBinding && activeAlbumMode !== "collection";
+  collectionFold.visible = showBinding && activeAlbumMode === "collection";
   coverTurn.visible = raw < 0.985;
   coverTurn.position.set(
     THREE.MathUtils.lerp(COVER_CLOSED_X, -gap / 2, p),
@@ -5330,8 +5497,8 @@ function setOpenSpreadVisible(visible) {
   pageStacks.right.group.visible = visible;
   pageStacks.collection.group.visible = false;
   if (visible && activeAlbumMode === "collection") {
-    sideTabs.group.visible = false;
-    ringGroup.visible = false;
+    sideTabs.group.visible = true;
+    ringGroup.visible = true;
     innerLeft.visible = false;
     innerRight.visible = false;
     collectionFold.visible = visible;
@@ -5359,7 +5526,7 @@ function setCoverOpeningSpreadVisible(visible) {
   pageStacks.right.group.visible = visible;
   pageStacks.collection.group.visible = false;
   if (visible && activeAlbumMode === "collection") {
-    sideTabs.group.visible = false;
+    sideTabs.group.visible = true;
   }
   if (!visible) {
     coverTurn.visible = false;

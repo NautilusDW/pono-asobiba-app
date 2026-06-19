@@ -3526,6 +3526,13 @@
     pointer-events: auto;
     animation: tutBlackRelease 0.48s ease-out both;
   }
+  .tut-dim.tut-end-fade {
+    display: block;
+    z-index: 10020;
+    background: #020617;
+    pointer-events: auto;
+    animation: tutEndFadeToBlack 1.08s ease-in-out both;
+  }
   .tut-dim.tut-start-fade {
     display: block;
     z-index: 10020;
@@ -3595,6 +3602,10 @@
   @keyframes tutBlackRelease {
     0% { opacity: 1; }
     100% { opacity: 0; }
+  }
+  @keyframes tutEndFadeToBlack {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
   }
   @keyframes tutStartFade {
     0%, 34% { opacity: 1; }
@@ -7958,6 +7969,18 @@ function _setRhythmStatus(text, tone, mode) {
     hud.classList.add('rhythm-hud-' + statusMode);
   }
 }
+function _hideRhythmStatusNow() {
+  var el = document.getElementById('rhythm-status');
+  var hud = document.getElementById('rhythm-hud');
+  if (el) {
+    el.textContent = '';
+    el.classList.remove('good', 'warn', 'miss', 'rhythm-status-hint', 'rhythm-status-info', 'rhythm-status-judge', 'fade-out');
+  }
+  if (hud) {
+    hud.classList.remove('show', 'rhythm-hud-hint', 'rhythm-hud-info', 'rhythm-hud-judge');
+    hud.classList.add('rhythm-hud-hidden');
+  }
+}
 function _fadeRhythmHintStatus() {
   var el = document.getElementById('rhythm-status');
   var hud = document.getElementById('rhythm-hud');
@@ -12034,6 +12057,11 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
     var stageRectRight = stageElRight ? stageElRight.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
     left = Math.round(stageRectRight.right - bw - Math.max(14, stageRectRight.width * 0.06));
     top = Math.round(stageRectRight.top + Math.max(12, Math.min(30, stageRectRight.height * 0.04)));
+  } else if (preferredSide === 'stageNoteRight') {
+    var stageElNoteRight = document.getElementById('stage');
+    var stageRectNoteRight = stageElNoteRight ? stageElNoteRight.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
+    left = Math.round(stageRectNoteRight.right - bw - Math.max(22, stageRectNoteRight.width * 0.055));
+    top = Math.round(stageRectNoteRight.top + Math.max(78, Math.min(126, stageRectNoteRight.height * 0.18)));
   } else if (preferredSide === 'stageLeft') {
     var stageElSide = document.getElementById('stage');
     var stageRectSide = stageElSide ? stageElSide.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
@@ -12181,14 +12209,14 @@ function _showOtoTutorialBlackCover() {
   if (spot) spot.classList.add('hidden');
   _hideOtoTutorialHand();
   if (!dim) return;
-  dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-release', 'tut-start-fade');
+  dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-release', 'tut-end-fade', 'tut-start-fade');
   dim.classList.add('tut-black-hold');
 }
 function _releaseOtoTutorialBlackCover(durationMs) {
   var dim = document.getElementById('tut-dim');
   if (!dim) return;
   var wait = Math.max(180, durationMs || 480);
-  dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-start-fade');
+  dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-end-fade', 'tut-start-fade');
   dim.classList.add('tut-black-release');
   setTimeout(function() {
     if (!dim.classList.contains('tut-black-release')) return;
@@ -12205,7 +12233,7 @@ function _runOtoTutorialBlackTransition(durationMs, done) {
   if (spot) spot.classList.add('hidden');
   _hideOtoTutorialHand();
   if (dim) {
-    dim.classList.remove('hidden', 'tut-black-hold', 'tut-black-release', 'tut-start-fade');
+    dim.classList.remove('hidden', 'tut-black-hold', 'tut-black-release', 'tut-end-fade', 'tut-start-fade');
     dim.classList.add('tut-black-transition');
   }
   setTimeout(function() {
@@ -12226,7 +12254,7 @@ function _runOtoTutorialStartFade(durationMs, done) {
   if (spot) spot.classList.add('hidden');
   _hideOtoTutorialHand();
   if (dim) {
-    dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-black-release');
+    dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-black-release', 'tut-end-fade');
     dim.classList.add('tut-start-fade');
   }
   setTimeout(function() {
@@ -12236,6 +12264,31 @@ function _runOtoTutorialStartFade(durationMs, done) {
     }
     if (typeof done === 'function') done();
   }, wait);
+}
+function _runOtoTutorialEndFadeToRhythmStart() {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  var spot = document.getElementById('tut-spot');
+  if (bubble) bubble.classList.add('hidden');
+  if (spot) spot.classList.add('hidden');
+  _hideOtoTutorialHand();
+  _hideRhythmStatusNow();
+  if (!dim) {
+    setTimeout(function() { _showRhythmOpening(true); }, 520);
+    return;
+  }
+  dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-black-release', 'tut-end-fade', 'tut-start-fade');
+  dim.classList.add('tut-end-fade');
+  setTimeout(function() {
+    dim.classList.remove('tut-end-fade', 'tut-black-transition', 'tut-black-release', 'tut-start-fade');
+    dim.classList.add('tut-black-hold');
+    setTimeout(function() {
+      _showRhythmOpening(true);
+      setTimeout(function() {
+        _releaseOtoTutorialBlackCover(640);
+      }, 360);
+    }, 560);
+  }, 1120);
 }
 function _advanceOtoTutorialStep(expectedSteps, expectedIndex, delayMs) {
   if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
@@ -12602,7 +12655,7 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
       bubble.style.left = '-9999px';
       bubble.style.top = '-9999px';
       requestAnimationFrame(function() {
-        _tutPositionBubble(bubble, null, 'stageTop');
+        _tutPositionBubble(bubble, null, 'stageNoteRight');
       });
     }
     _clearOtoTutorialDemoTimersAndCleanups();
@@ -12670,7 +12723,7 @@ function _makeOtoTutorialSteps(kind) {
         msg: 'ノートが ボタンに きたら<br>タイミングよく おすよ',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.demo,
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'stageTop',
+        side: 'stageNoteRight',
         noSpot: true,
         hideActions: true,
         demoNoteIdx: 3,
@@ -12703,7 +12756,7 @@ function _makeOtoTutorialSteps(kind) {
         msg: 'ファが ボタンに きたら<br>おしてね',
         skipNarration: true,
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'stageTop',
+        side: 'stageNoteRight',
         noSpot: true,
         hideActions: true,
         userTryNoteIdx: 3,
@@ -13177,12 +13230,14 @@ function _finishOtoTutorial(markSeen, continueFlow) {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   var spot = document.getElementById('tut-spot');
+  var shouldStartRhythmAfterTutorial = kind === 'rhythmStart' && continueFlow;
   if (dim) {
     dim.classList.remove('tut-black-transition');
     dim.classList.remove('tut-black-hold');
     dim.classList.remove('tut-black-release');
+    dim.classList.remove('tut-end-fade');
     dim.classList.remove('tut-start-fade');
-    dim.classList.add('hidden');
+    if (!shouldStartRhythmAfterTutorial) dim.classList.add('hidden');
   }
   if (bubble) bubble.classList.add('hidden');
   if (spot) spot.classList.add('hidden');
@@ -13200,7 +13255,6 @@ function _finishOtoTutorial(markSeen, continueFlow) {
     _otoTutorialSessionHidden[kind] = true;
   }
   var shouldLaunchRhythmStageTutorial = false;
-  var shouldStartRhythmAfterTutorial = kind === 'rhythmStart' && continueFlow;
   var shouldRestoreRhythmMenu = (kind === 'rhythmStory' || kind === 'rhythmStoryFromMenu') && !_rhythm.enabled && !_rhythm.openingActive && !_rhythm.demoActive;
   var restoreRhythmStep = kind === 'rhythmStoryFromMenu' ? 'mode' : 'song';
   if (shouldRestoreRhythmMenu) {
@@ -13216,9 +13270,7 @@ function _finishOtoTutorial(markSeen, continueFlow) {
     return;
   }
   if (shouldStartRhythmAfterTutorial) {
-    setTimeout(function() {
-      _showRhythmOpening(true);
-    }, 180);
+    _runOtoTutorialEndFadeToRhythmStart();
     return;
   }
   if (shouldRestoreRhythmMenu) {
@@ -13236,6 +13288,7 @@ function _renderOtoTutorialStep() {
     dim.classList.remove('tut-black-transition');
     dim.classList.remove('tut-black-hold');
     dim.classList.remove('tut-black-release');
+    dim.classList.remove('tut-end-fade');
   }
   dim.classList.remove('tut-start-fade');
   var steps = _otoTutorialState.steps || [];
