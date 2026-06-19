@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-695";
+const ASSET_VERSION = "20260619-696";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -3681,7 +3681,12 @@ function bendPageGeometry(geometry, progress, bendAmount) {
   geometry.computeVertexNormals();
 }
 
-function updateStackThickness() {
+function updateStackThickness(options = {}) {
+  if (options.coverOpening) {
+    positionCoverOpeningStack();
+    return;
+  }
+
   if (activeAlbumMode === "collection") {
     positionCollectionStackBlock();
     return;
@@ -3766,6 +3771,15 @@ function positionStackSide(stack, level, tuning) {
     topY - scaledTextureH / 2,
     -0.034,
   );
+}
+
+function positionCoverOpeningStack() {
+  pageStacks.collection.group.visible = false;
+  pageStacks.left.group.visible = false;
+  pageStacks.right.group.visible = true;
+
+  const tuning = visibleLayerTuning(defaultTuningForPairKey("empty-full"));
+  positionStackSide(pageStacks.right, "full", tuning);
 }
 
 function applyCoverTuning() {
@@ -4480,7 +4494,7 @@ function renderCoverOpenTransition(rawProgress) {
   flipShadow.visible = raw > 0.04 && raw < 0.95;
   flipShadow.material.opacity = 0.07 + Math.sin(p * Math.PI) * 0.16;
   pageTurn.visible = false;
-  updateStackThickness();
+  updateStackThickness({ coverOpening: true });
   updateSpreadJumpControls();
   applyBookFramePosition(p);
 
@@ -4533,7 +4547,7 @@ function setOpenSpreadVisible(visible) {
   pageStacks.group.visible = visible;
   pageStacks.left.group.visible = visible;
   pageStacks.right.group.visible = visible;
-  pageStacks.collection.group.visible = visible && activeAlbumMode === "collection";
+  pageStacks.collection.group.visible = false;
   if (visible && activeAlbumMode === "collection") {
     sideTabs.group.visible = false;
     ringGroup.visible = false;
@@ -4560,7 +4574,7 @@ function setCoverOpeningSpreadVisible(visible) {
   pageStacks.group.visible = visible;
   pageStacks.left.group.visible = false;
   pageStacks.right.group.visible = visible;
-  pageStacks.collection.group.visible = visible && activeAlbumMode === "collection";
+  pageStacks.collection.group.visible = false;
   if (visible && activeAlbumMode === "collection") {
     sideTabs.group.visible = false;
   }
