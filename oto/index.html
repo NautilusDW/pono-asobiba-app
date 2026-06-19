@@ -12280,7 +12280,7 @@ function _runOtoTutorialEndFadeToRhythmStart() {
   dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-black-release', 'tut-end-fade', 'tut-start-fade');
   dim.classList.add('tut-end-fade');
   setTimeout(function() {
-    dim.classList.remove('tut-end-fade', 'tut-black-transition', 'tut-black-release', 'tut-start-fade');
+    dim.classList.remove('hidden', 'tut-end-fade', 'tut-black-transition', 'tut-black-release', 'tut-start-fade');
     dim.classList.add('tut-black-hold');
     setTimeout(function() {
       _showRhythmOpening(true);
