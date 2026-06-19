@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T09:40:04Z - Puzzle basic tutorial timing 3修正 (sw1353): おてほんバナーをidx0 +3800ms / 見るボタン指をidx4 +1800ms / v1346 regression修復 (cue-visible bootstrap → time-based schedule)
+- **タスク**: Puzzle basic tutorial timing 3修正 (sw1353): おてほんバナーをidx0 +3800ms / 見るボタン指をidx4 +1800ms / v1346 regression修復 (cue-visible bootstrap → time-based schedule)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 27
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 8, "Bash": 11, "Grep": 2, "ToolSearch": 1, "Agent": 1, "Workflow": 2, "Edit": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T09:36:42Z - LP hero brand logo D→B 差し替え + kicker 位置調整 (そびば上)
 - **タスク**: LP hero brand logo D→B 差し替え + kicker 位置調整 (そびば上)
 - **結果**: 成功
@@ -238,19 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-06-19T05:36:52Z - Fix blocking issues in 13-step puzzle hint-split wire: route basic-hint-drag-done through showBasicHintDoneNarration so idx11/idx12 closing narrations play before finishPartnerPractice
 - **タスク**: Fix blocking issues in 13-step puzzle hint-split wire: route basic-hint-drag-done through showBasicHintDoneNarration so idx11/idx12 closing narrations play before finishPartnerPractice
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 106
-- **エラー数**: 10
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 22, "Workflow": 5, "Read": 12, "ToolSearch": 2, "DesignSync": 17, "Bash": 38, "Grep": 2, "Write": 6, "ScheduleWakeup": 1, "Skill": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T05:33:39Z - シフト後パズルヒント音声(tut_09-13,08,03)をfaster-whisper small jaで再書き起こし検証、全スロット一致確認・durations報告
-- **タスク**: シフト後パズルヒント音声(tut_09-13,08,03)をfaster-whisper small jaで再書き起こし検証、全スロット一致確認・durations報告
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 106

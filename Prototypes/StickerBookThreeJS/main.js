@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-708";
+const ASSET_VERSION = "20260619-709";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -203,7 +203,7 @@ const PAGE_FLUTTER_BEND = 0.56;
 const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.22;
 const COLLECTION_PAGE_SPINE_PULL = 0;
 const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.009;
-const COLLECTION_FOLD_W = SPINE_W * 0.74;
+const COLLECTION_FOLD_W = SPINE_W * 0.68;
 const COLLECTION_FOLD_DEPTH = PAGE_H * 0.02;
 const COLLECTION_FOLD_Z = 0.026;
 const FLUTTER_TRAIL_OPACITY = 0.16;
@@ -4376,20 +4376,20 @@ function getCollectionFoldTexture(bookName) {
   const body = ctx.createLinearGradient(0, 0, canvas.width, 0);
   body.addColorStop(0, `rgba(${base.dark}, 0)`);
   body.addColorStop(0.14, `rgba(${base.dark}, 0.06)`);
-  body.addColorStop(0.27, `rgba(${base.warm}, 0.16)`);
+  body.addColorStop(0.27, `rgba(${base.warm}, 0.13)`);
   body.addColorStop(0.39, `rgba(${base.paper}, 0.09)`);
-  body.addColorStop(0.48, `rgba(${base.dark}, 0.28)`);
-  body.addColorStop(0.5, `rgba(${base.dark}, 0.42)`);
-  body.addColorStop(0.52, `rgba(${base.dark}, 0.28)`);
+  body.addColorStop(0.48, `rgba(${base.dark}, 0.2)`);
+  body.addColorStop(0.5, `rgba(${base.dark}, 0.3)`);
+  body.addColorStop(0.52, `rgba(${base.dark}, 0.2)`);
   body.addColorStop(0.61, `rgba(${base.paper}, 0.09)`);
-  body.addColorStop(0.73, `rgba(${base.warm}, 0.16)`);
+  body.addColorStop(0.73, `rgba(${base.warm}, 0.13)`);
   body.addColorStop(0.86, `rgba(${base.dark}, 0.06)`);
   body.addColorStop(1, `rgba(${base.dark}, 0)`);
   ctx.fillStyle = body;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.filter = "blur(10px)";
-  ctx.fillStyle = `rgba(${base.dark}, 0.22)`;
+  ctx.fillStyle = `rgba(${base.dark}, 0.16)`;
   ctx.fillRect(canvas.width * 0.18, -80, 30, canvas.height + 160);
   ctx.fillRect(canvas.width * 0.76, -80, 30, canvas.height + 160);
   ctx.fillStyle = "rgba(255, 255, 244, 0.16)";
@@ -4399,9 +4399,9 @@ function getCollectionFoldTexture(bookName) {
 
   const centerLine = ctx.createLinearGradient(canvas.width * 0.47, 0, canvas.width * 0.53, 0);
   centerLine.addColorStop(0, `rgba(${base.dark}, 0)`);
-  centerLine.addColorStop(0.48, `rgba(${base.dark}, 0.28)`);
-  centerLine.addColorStop(0.5, `rgba(${base.dark}, 0.42)`);
-  centerLine.addColorStop(0.52, `rgba(${base.dark}, 0.28)`);
+  centerLine.addColorStop(0.48, `rgba(${base.dark}, 0.18)`);
+  centerLine.addColorStop(0.5, `rgba(${base.dark}, 0.26)`);
+  centerLine.addColorStop(0.52, `rgba(${base.dark}, 0.18)`);
   centerLine.addColorStop(1, `rgba(${base.dark}, 0)`);
   ctx.fillStyle = centerLine;
   ctx.fillRect(canvas.width * 0.45, 0, canvas.width * 0.1, canvas.height);

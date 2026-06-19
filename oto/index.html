@@ -10622,7 +10622,11 @@ function _showRhythmMenu() {
     document.body.classList.add('oto-modal-open');
     document.body.classList.add('rhythm-menu-open');
   }
-  _playOtoBgm('title');
+  var keepTutorialBgm = !!(_otoTutorialState && (
+    _otoTutorialState.kind === 'rhythmMenu' ||
+    _otoTutorialState.kind === 'rhythmMenuMode'
+  ));
+  if (!keepTutorialBgm) _playOtoBgm('title');
 }
 // v1108: 2ステップ切替ヘルパ
 function _setRhythmMenuStep(step) {
