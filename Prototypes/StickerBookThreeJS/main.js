@@ -169,7 +169,7 @@ playButton.classList.toggle("playing", isPlaying);
 
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v8";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
-const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v5";
+const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
 const TUNING_HISTORY_LIMIT = 80;
@@ -214,10 +214,10 @@ const TUNING_FIELDS = [
 ];
 const DEFAULT_COVER_TUNING = {
   coverStackX: 0,
-  coverStackY: 0.18,
+  coverStackY: 0.24,
   coverStackScaleX: 1,
-  coverStackScaleY: 0.45,
-  coverStackOpacity: 0.94,
+  coverStackScaleY: 0.62,
+  coverStackOpacity: 0.96,
   coverBgScaleX: 1.16,
   coverBgScaleY: 1.08,
   coverBgOpacity: 0,
@@ -4316,8 +4316,8 @@ function createBookBlockThicknessTexture(bookName, options) {
     const t = i / (lineCount - 1);
     const yy = y + h * (0.28 + t * 0.64);
     const edgeInset = 28 + Math.sin(t * Math.PI) * 18;
-    ctx.strokeStyle = `rgba(110, 86, 38, ${0.2 - t * 0.05})`;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = `rgba(110, 86, 38, ${0.25 - t * 0.06})`;
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(x + edgeInset, yy);
     ctx.lineTo(x + w - edgeInset, yy);
@@ -4332,24 +4332,27 @@ function createBookBlockThicknessTexture(bookName, options) {
 
   if (options.spine) {
     const cx = canvas.width / 2;
-    const spineW = Math.round(canvas.width * 0.082);
+    const spineW = Math.round(canvas.width * 0.07);
+    ctx.save();
+    ctx.filter = "blur(22px)";
+    ctx.fillStyle = "rgba(76, 58, 24, 0.2)";
+    ctx.fillRect(cx - spineW * 0.62, y - 28, spineW * 0.2, h + 56);
+    ctx.fillRect(cx + spineW * 0.42, y - 28, spineW * 0.2, h + 56);
+    ctx.fillStyle = "rgba(255, 253, 231, 0.34)";
+    ctx.fillRect(cx - spineW * 0.22, y - 28, spineW * 0.44, h + 56);
+    ctx.restore();
+
     const spineGrad = ctx.createLinearGradient(cx - spineW, 0, cx + spineW, 0);
-    spineGrad.addColorStop(0, "rgba(99, 78, 35, 0.22)");
-    spineGrad.addColorStop(0.23, "rgba(255,255,240,0.42)");
-    spineGrad.addColorStop(0.5, palette.spine);
-    spineGrad.addColorStop(0.77, "rgba(255,255,240,0.42)");
-    spineGrad.addColorStop(1, "rgba(99, 78, 35, 0.22)");
+    spineGrad.addColorStop(0, "rgba(99, 78, 35, 0)");
+    spineGrad.addColorStop(0.28, "rgba(99, 78, 35, 0.08)");
+    spineGrad.addColorStop(0.5, "rgba(255, 252, 228, 0.18)");
+    spineGrad.addColorStop(0.72, "rgba(99, 78, 35, 0.08)");
+    spineGrad.addColorStop(1, "rgba(99, 78, 35, 0)");
     ctx.fillStyle = spineGrad;
     ctx.fillRect(cx - spineW / 2, y - 12, spineW, h + 24);
 
-    ctx.filter = "blur(10px)";
-    ctx.fillStyle = "rgba(71, 55, 24, 0.15)";
-    ctx.fillRect(cx - spineW * 0.72, y - 20, spineW * 0.22, h + 40);
-    ctx.fillRect(cx + spineW * 0.5, y - 20, spineW * 0.22, h + 40);
-    ctx.filter = "none";
-
-    ctx.strokeStyle = "rgba(94, 75, 34, 0.16)";
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(94, 75, 34, 0.08)";
+    ctx.lineWidth = 3;
     for (const offset of [-0.34, 0.34]) {
       ctx.beginPath();
       ctx.moveTo(cx + spineW * offset, y + 10);
