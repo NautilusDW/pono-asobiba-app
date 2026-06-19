@@ -15415,9 +15415,11 @@ window.addEventListener('resize', () => {
     window.PonoCapture.register({
       gameId: "bento",
       build: async function(opts) {
-        var container = document.getElementById("free-layout-stage")
-          || document.getElementById("app")
-          || document.body;
+        // v1349: 旧 primary だった #free-layout-stage は .bento-inner 内部に動的生成される
+        // 「お弁当箱の中身レイヤー」のみで、 Pono / NPC / 食材パレット / UI を含まない
+        // (= キャプチャすると空の弁当箱だけが出る)。 ゲーム画面全体をラップしている
+        // #app を primary とし、 最終手段のみ body にフォールバック。
+        var container = document.getElementById("app") || document.body;
         try {
           var mod = await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm");
           var html2canvas = (mod && (mod.default || mod)) || window.html2canvas;

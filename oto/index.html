@@ -14135,7 +14135,11 @@ _renderRecBar();
             backgroundColor: null,
             scale: 2,
             useCORS: true,
-            logging: false
+            logging: false,
+            ignoreElements: function(el) {
+              try { return el && el.hasAttribute && el.hasAttribute('data-capture-hide'); }
+              catch (e) { return false; }
+            }
           });
         } catch (e) {
           console.warn('[capture:oto] html2canvas import failed, falling back to bgCanvas only', e);
