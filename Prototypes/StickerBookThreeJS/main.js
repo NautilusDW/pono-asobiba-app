@@ -1,14 +1,14 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-692";
+const ASSET_VERSION = "20260619-693";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
 const PAGE_H = 6.0;
 const PAGE_W = PAGE_H * PAGE_ASPECT;
 const GUTTER = PAGE_H * (192 / 1536);
-const COLLECTION_GUTTER = 0;
+const COLLECTION_GUTTER = PAGE_H * (28 / 1536);
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
@@ -169,7 +169,7 @@ playButton.classList.toggle("playing", isPlaying);
 
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v8";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
-const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v3";
+const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v4";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
 const TUNING_HISTORY_LIMIT = 80;
@@ -214,10 +214,10 @@ const TUNING_FIELDS = [
 ];
 const DEFAULT_COVER_TUNING = {
   coverStackX: 0,
-  coverStackY: 0.06,
+  coverStackY: 0.28,
   coverStackScaleX: 1,
-  coverStackScaleY: 0.48,
-  coverStackOpacity: 0.96,
+  coverStackScaleY: 0.42,
+  coverStackOpacity: 0.92,
   coverBgScaleX: 1.16,
   coverBgScaleY: 1.08,
   coverBgOpacity: 0,
@@ -2954,20 +2954,35 @@ function drawCollectionPageTemplate(ctx, palette, side) {
   const width = PAGE_TEXTURE_W - 252;
   const height = PAGE_TEXTURE_H - 260;
   ctx.save();
-  const innerBandW = 44;
+  const innerBandW = 92;
   const innerBandX = side === "right" ? 0 : PAGE_TEXTURE_W - innerBandW;
   const innerBandGradient = ctx.createLinearGradient(innerBandX, 0, innerBandX + innerBandW, 0);
   if (side === "right") {
-    innerBandGradient.addColorStop(0, "rgba(120, 96, 44, 0.12)");
-    innerBandGradient.addColorStop(0.48, "rgba(246, 235, 190, 0.28)");
+    innerBandGradient.addColorStop(0, "rgba(80, 64, 30, 0.16)");
+    innerBandGradient.addColorStop(0.42, "rgba(232, 219, 170, 0.26)");
     innerBandGradient.addColorStop(1, "rgba(255, 252, 235, 0)");
   } else {
     innerBandGradient.addColorStop(0, "rgba(255, 252, 235, 0)");
-    innerBandGradient.addColorStop(0.52, "rgba(246, 235, 190, 0.28)");
-    innerBandGradient.addColorStop(1, "rgba(120, 96, 44, 0.12)");
+    innerBandGradient.addColorStop(0.58, "rgba(232, 219, 170, 0.26)");
+    innerBandGradient.addColorStop(1, "rgba(80, 64, 30, 0.16)");
   }
+  ctx.filter = "blur(13px)";
   ctx.fillStyle = innerBandGradient;
-  ctx.fillRect(innerBandX, 72, innerBandW, PAGE_TEXTURE_H - 144);
+  ctx.fillRect(innerBandX, -80, innerBandW, PAGE_TEXTURE_H + 160);
+  ctx.filter = "none";
+
+  const creaseW = 22;
+  const creaseX = side === "right" ? 0 : PAGE_TEXTURE_W - creaseW;
+  const creaseGradient = ctx.createLinearGradient(creaseX, 0, creaseX + creaseW, 0);
+  if (side === "right") {
+    creaseGradient.addColorStop(0, "rgba(77, 61, 27, 0.13)");
+    creaseGradient.addColorStop(1, "rgba(255, 252, 235, 0)");
+  } else {
+    creaseGradient.addColorStop(0, "rgba(255, 252, 235, 0)");
+    creaseGradient.addColorStop(1, "rgba(77, 61, 27, 0.13)");
+  }
+  ctx.fillStyle = creaseGradient;
+  ctx.fillRect(creaseX, -40, creaseW, PAGE_TEXTURE_H + 80);
 
   ctx.fillStyle = "rgba(255, 252, 235, 0.72)";
   ctx.strokeStyle = palette.line;
@@ -4070,13 +4085,15 @@ function applyAlbumLayout() {
 function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
-    spine.scale.x = 0.28;
-    spine.position.z = -0.065;
+    spine.scale.set(0.46, 1.08, 1);
+    spine.position.y = -0.08;
+    spine.position.z = -0.045;
     spine.renderOrder = 6;
-    spine.material.opacity = 0.16;
+    spine.material.opacity = 0.72;
     return;
   }
-  spine.scale.x = 1;
+  spine.scale.set(1, 1, 1);
+  spine.position.y = 0;
   spine.position.z = -0.09;
   spine.renderOrder = 1;
   spine.material.opacity = 1;
@@ -4093,39 +4110,58 @@ function getCollectionSpineTexture(bookName) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const base = bookName === "girl"
-    ? { edge: "#b56c9b", main: "#f3d8e9", dark: "#7e5874", line: "#fff6e1" }
-    : { edge: "#2d6f7a", main: "#e7d294", dark: "#355f64", line: "#fff4c9" };
-  const grad = ctx.createLinearGradient(26, 0, 230, 0);
-  grad.addColorStop(0, base.dark);
-  grad.addColorStop(0.18, base.edge);
-  grad.addColorStop(0.5, base.main);
-  grad.addColorStop(0.82, base.edge);
-  grad.addColorStop(1, base.dark);
-  ctx.fillStyle = grad;
-  drawCanvasRoundedRect(ctx, 34, 24, 188, 1488, 54);
+    ? { warm: "#f4ddea", paper: "#fff7df", shadow: "#8a6477", seam: "#c59ab4" }
+    : { warm: "#efe2ac", paper: "#fff8df", shadow: "#7b7147", seam: "#c6a95b" };
+
+  ctx.save();
+  const baseGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  baseGrad.addColorStop(0, "rgba(72, 59, 28, 0)");
+  baseGrad.addColorStop(0.18, "rgba(72, 59, 28, 0.18)");
+  baseGrad.addColorStop(0.43, base.warm);
+  baseGrad.addColorStop(0.5, base.paper);
+  baseGrad.addColorStop(0.57, base.warm);
+  baseGrad.addColorStop(0.82, "rgba(72, 59, 28, 0.18)");
+  baseGrad.addColorStop(1, "rgba(72, 59, 28, 0)");
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, -90, canvas.width, canvas.height + 180);
+
+  ctx.filter = "blur(18px)";
+  ctx.fillStyle = "rgba(87, 71, 35, 0.24)";
+  ctx.fillRect(24, -120, 38, canvas.height + 240);
+  ctx.fillRect(canvas.width - 62, -120, 38, canvas.height + 240);
+  ctx.fillStyle = "rgba(255, 255, 245, 0.42)";
+  ctx.fillRect(104, -120, 48, canvas.height + 240);
+  ctx.filter = "none";
+
+  const centerGrad = ctx.createLinearGradient(80, 0, 176, 0);
+  centerGrad.addColorStop(0, "rgba(106, 87, 43, 0.18)");
+  centerGrad.addColorStop(0.42, "rgba(255, 252, 230, 0.42)");
+  centerGrad.addColorStop(0.58, "rgba(255, 252, 230, 0.42)");
+  centerGrad.addColorStop(1, "rgba(106, 87, 43, 0.18)");
+  ctx.fillStyle = centerGrad;
+  drawCanvasRoundedRect(ctx, 70, -40, 116, canvas.height + 80, 28);
   ctx.fill();
-  ctx.strokeStyle = "rgba(80, 66, 36, 0.26)";
-  ctx.lineWidth = 5;
-  ctx.stroke();
-  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+
+  ctx.strokeStyle = "rgba(95, 78, 37, 0.12)";
   ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, 54, 52, 148, 1432, 34);
-  ctx.stroke();
-  ctx.strokeStyle = "rgba(71, 61, 35, 0.13)";
-  ctx.lineWidth = 2;
-  for (let x = 78; x <= 178; x += 20) {
+  for (const x of [74, 95, 161, 182]) {
     ctx.beginPath();
-    ctx.moveTo(x, 86);
-    ctx.lineTo(x, 1450);
+    ctx.moveTo(x, -24);
+    ctx.lineTo(x, canvas.height + 24);
     ctx.stroke();
   }
-  ctx.fillStyle = base.line;
-  ctx.globalAlpha = 0.38;
-  for (const y of [210, 1326]) {
-    drawCanvasRoundedRect(ctx, 66, y, 124, 44, 18);
-    ctx.fill();
+
+  ctx.strokeStyle = base.seam;
+  ctx.globalAlpha = 0.16;
+  ctx.lineWidth = 2;
+  for (const x of [116, 140]) {
+    ctx.beginPath();
+    ctx.moveTo(x, -18);
+    ctx.lineTo(x, canvas.height + 18);
+    ctx.stroke();
   }
   ctx.globalAlpha = 1;
+  ctx.restore();
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
