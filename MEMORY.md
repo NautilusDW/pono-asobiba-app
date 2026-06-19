@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T04:11:02Z - puzzle basic tutorial: 見る(peek)中は中央モードバッジ(やってみよう/できたね)を抑制+フェードアウトしパズル画像を覆わないように修正、sw1332/main.voice v1319バンプ
+- **タスク**: puzzle basic tutorial: 見る(peek)中は中央モードバッジ(やってみよう/できたね)を抑制+フェードアウトしパズル画像を覆わないように修正、sw1332/main.voice v1319バンプ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 92
+- **エラー数**: 15
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 17, "Bash": 42, "Workflow": 12, "Edit": 10, "Write": 3, "Agent": 6, "Grep": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T03:52:29Z - Puzzle basic tutorial drag-try: restore full basic_tut_03 voice + badge/voice-together with audio-anchored split (badge-hide + input-enable at ~2.18s ピース boundary), removed silent badge-alone hold, cues at 2.18s/3.72s, cache bumps sw1331/voice1317/index1318
 - **タスク**: Puzzle basic tutorial drag-try: restore full basic_tut_03 voice + badge/voice-together with audio-anchored split (badge-hide + input-enable at ~2.18s ピース boundary), removed silent badge-alone hold, cues at 2.18s/3.72s, cache bumps sw1331/voice1317/index1318
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 11, "Grep": 8, "Read": 7}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-19T01:01:14Z - puzzle voice basic_tut_05..11.mp3 を faster-whisper small(ja) で再文字起こしし、各スロットを期待文と照合検証
-- **タスク**: puzzle voice basic_tut_05..11.mp3 を faster-whisper small(ja) で再文字起こしし、各スロットを期待文と照合検証
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 36
-- **エラー数**: 8
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 8, "Workflow": 3, "Read": 5, "ToolSearch": 2, "DesignSync": 11, "Bash": 2, "Grep": 2, "Write": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

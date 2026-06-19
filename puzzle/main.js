@@ -3186,6 +3186,14 @@ function clearBasicPracticeHand() {
 
 function setBasicPracticeModeBanner(kind, text, visibleMs) {
   if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  // While the 見る(peek) picture is showing, suppress center mode-badge pops so
+  // 「やってみよう」/「できたね」 can't cover the completed-puzzle picture the
+  // child is peeking at. Any badge already up was faded out on peek-show;
+  // downstream badges resume normally once peek ends (flag cleared).
+  if (partnerPracticeState.peekPictureVisible) {
+    hideBasicPracticeTryBannerNow();
+    return;
+  }
   var el = partnerPracticeState.modeBadgeEl;
   if (!el || !el.isConnected) {
     el = document.createElement('div');
@@ -5804,6 +5812,10 @@ function beginPartnerPractice(partnerId, returnIndex, done, options) {
     loopCueGhost: null,
     modeBadgeEl: null,
     modeBadgeToken: 0,
+    // True only while the 見る(peek) completed-picture overlay is visible.
+    // Used to fade out + suppress the center mode badge so 「やってみよう」/
+    // 「できたね」 don't cover the picture the child is trying to look at.
+    peekPictureVisible: false,
     highlighted: [],
     targetPiece: null,
     cue: null,
@@ -6416,6 +6428,13 @@ function setPeekOverlay(on) {
     if (!cv) { peekOn = false; return; }
     drawPeekOverlay();
     if (puzzleContainer) puzzleContainer.classList.add('peek-on');
+    // Peek picture now visible: fade out any center mode badge so it doesn't
+    // cover the completed-puzzle picture, and suppress new badge pops until the
+    // child releases the 見る button (handled in setBasicPracticeModeBanner).
+    if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+      partnerPracticeState.peekPictureVisible = true;
+      hideBasicPracticeTryBannerNow();
+    }
     if (btnPeek) {
       btnPeek.classList.add('is-active');
       btnPeek.setAttribute('aria-pressed', 'true');
@@ -6427,6 +6446,9 @@ function setPeekOverlay(on) {
     }
     peekCanvas = null;
     if (puzzleContainer) puzzleContainer.classList.remove('peek-on');
+    // Peek picture hidden: resume normal center mode-badge behavior for
+    // downstream steps (e.g. the 'done'/hint phases triggered on release).
+    if (partnerPracticeState) partnerPracticeState.peekPictureVisible = false;
     if (btnPeek) {
       btnPeek.classList.remove('is-active');
       btnPeek.setAttribute('aria-pressed', 'false');
