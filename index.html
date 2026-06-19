@@ -50,7 +50,7 @@
   <meta name="apple-mobile-web-app-title" content="ポノあそびば">
   <meta name="theme-color" content="#F2915A">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preload" as="image" href="assets/lp/hero/h1_calligraphy.png" imagesrcset="assets/lp/hero/h1_calligraphy.png 1x, assets/lp/hero/h1_calligraphy@2x.png 2x" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/lp/hero/brand_logo.png" imagesrcset="assets/lp/hero/brand_logo.png 1x, assets/lp/hero/brand_logo@2x.png 2x" fetchpriority="high">
   <link rel="preload" as="image" href="assets/lp/hero/bg_soft_playmat.webp" fetchpriority="high">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
   <style>
@@ -306,7 +306,7 @@
       --herob-text:#5D4E37;
       --herob-text-light:#7A6A4F;
       --herob-shadow:rgba(93,78,55,.12);
-      width:100%;max-width:1040px;margin:0 auto;padding:26px 18px 28px;text-align:center;color:var(--herob-text);
+      width:100%;max-width:1040px;margin:0 auto;padding:20px 18px 28px;text-align:center;color:var(--herob-text);
       background-color:#FFF8F0;
       background-image:image-set(url('assets/lp/hero/bg_soft_playmat.webp') 1x, url('assets/lp/hero/bg_soft_playmat@2x.webp') 2x);
       background-image:-webkit-image-set(url('assets/lp/hero/bg_soft_playmat.webp') 1x, url('assets/lp/hero/bg_soft_playmat@2x.webp') 2x);
@@ -320,9 +320,11 @@
       .herob{background-image:url('assets/lp/hero/bg_soft_playmat.webp');}
     }
     .herob *{box-sizing:border-box;}
-    .herob-title{margin:0;animation:herob-rise .6s ease both;}
+    .herob-kicker{margin:0 auto 12px;text-align:center;animation:herob-rise .6s ease both;}
+    .herob-kicker-img{display:block;max-width:min(380px,70vw);width:100%;height:auto;margin:0 auto;opacity:0.92;}
+    .herob-title{margin:0;animation:herob-rise .6s .04s ease both;}
     .herob-title-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;white-space:nowrap;}
-    .herob-title-img{display:block;max-width:min(640px,88vw);width:100%;height:auto;margin:0 auto;}
+    .herob-title-img{display:block;max-width:min(720px,90vw);width:100%;height:auto;margin:0 auto;}
     .herob-lead{font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:14px auto 0;animation:herob-rise .6s .06s ease both;}
     .herob-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:560px;margin:18px auto 0;animation:herob-rise .6s .12s ease both;}
     .herob-chip{background:var(--herob-primary-light);color:var(--herob-text);font-weight:900;font-size:clamp(12px,3vw,14px);padding:8px 16px;border-radius:999px;letter-spacing:.02em;}
@@ -412,15 +414,24 @@
 
     <!-- ===== Hero B: 体験予告優先 (slim版) ===== -->
     <section class="herob" aria-labelledby="herob-h">
-      <h1 class="herob-title" id="herob-h">
-        <span class="herob-title-text">みて、さわって、あそぼう</span>
+      <p class="herob-kicker" aria-hidden="true">
         <img src="assets/lp/hero/h1_calligraphy.png"
              srcset="assets/lp/hero/h1_calligraphy.png 1x, assets/lp/hero/h1_calligraphy@2x.png 2x"
+             alt=""
+             class="herob-kicker-img"
+             loading="lazy"
+             decoding="async"
+             width="640" height="108">
+      </p>
+      <h1 class="herob-title" id="herob-h">
+        <span class="herob-title-text">ポノのあそびば</span>
+        <img src="assets/lp/hero/brand_logo.png"
+             srcset="assets/lp/hero/brand_logo.png 1x, assets/lp/hero/brand_logo@2x.png 2x"
              alt=""
              aria-hidden="true"
              class="herob-title-img"
              fetchpriority="high"
-             width="640" height="108">
+             width="800" height="250">
       </h1>
       <p class="herob-lead">ポノの あそびばで できること</p>
       <div class="herob-chips" aria-label="あそびばの ジャンル">
