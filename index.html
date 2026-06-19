@@ -385,11 +385,11 @@
     .pc-card:nth-child(odd){--rot:-2deg;}
     .pc-card:nth-child(even){--rot:2deg;}
     .pc-card::before{content:"";position:absolute;top:-12px;width:108px;height:26px;border-radius:3px;box-shadow:0 2px 5px var(--pc-shadow);}
-    .pc-card--mt1::before{left:50%;transform:translateX(-50%) rotate(-3deg);background:repeating-linear-gradient(90deg,rgba(242,145,90,.6) 0 8px,rgba(253,220,191,.7) 8px 16px);}
-    .pc-card--mt2::before{left:30%;transform:translateX(-50%) rotate(4deg);background:repeating-linear-gradient(45deg,rgba(251,201,162,.7) 0 6px,rgba(253,220,191,.6) 6px 14px);}
-    .pc-card--mt3::before{left:62%;transform:translateX(-50%) rotate(-5deg);background:repeating-linear-gradient(135deg,rgba(242,145,90,.55) 0 5px,rgba(251,201,162,.7) 5px 12px);}
-    .pc-card--mt4::before{left:42%;transform:translateX(-50%) rotate(2deg);background:repeating-linear-gradient(0deg,rgba(253,220,191,.75) 0 7px,rgba(251,201,162,.6) 7px 16px);}
-    .pc-card--mt5::before{left:55%;transform:translateX(-50%) rotate(-2deg);background:repeating-linear-gradient(60deg,rgba(242,145,90,.6) 0 6px,rgba(251,201,162,.7) 6px 14px);}
+    .pc-card--mt1::before{left:50%;transform:translateX(-50%) rotate(-3deg);background:repeating-linear-gradient(90deg,rgba(232,90,79,.65) 0 8px,rgba(247,181,174,.75) 8px 16px);}
+    .pc-card--mt2::before{left:30%;transform:translateX(-50%) rotate(4deg);background:repeating-linear-gradient(45deg,rgba(58,91,140,.65) 0 6px,rgba(159,179,208,.75) 6px 14px);}
+    .pc-card--mt3::before{left:62%;transform:translateX(-50%) rotate(-5deg);background:repeating-linear-gradient(135deg,rgba(79,179,217,.65) 0 5px,rgba(181,222,236,.75) 5px 12px);}
+    .pc-card--mt4::before{left:42%;transform:translateX(-50%) rotate(2deg);background:repeating-linear-gradient(0deg,rgba(95,184,159,.65) 0 7px,rgba(184,221,207,.75) 7px 16px);}
+    .pc-card--mt5::before{left:55%;transform:translateX(-50%) rotate(-2deg);background:repeating-linear-gradient(60deg,rgba(139,111,181,.65) 0 6px,rgba(197,181,221,.75) 6px 14px);}
     .pc-visual{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background-size:cover;background-position:center;background-repeat:no-repeat;}
     .pc-v-bento  {background-image:url('assets/images/bento/cooking/ui/recipe_card_frame.png'),linear-gradient(150deg,#F8CFA6,#F2A971);}
     .pc-v-maze   {background-image:url('maze/imageStages/stage5.jpg'),linear-gradient(150deg,#B7A877,#8C9A6E);}
@@ -438,6 +438,34 @@
     .book-aside-link:focus-visible{outline:3px solid #F2915A;outline-offset:3px;}
     .book-aside-link img,.book-aside-link picture,.book-aside-link picture img{display:block;width:100%;height:auto;}
 
+    /* ===== Clickable play-cards (open game-detail modal) ===== */
+    .game-card-clickable{cursor:pointer;transition:transform .25s ease,box-shadow .25s ease;}
+    .game-card-clickable:hover{transform:rotate(var(--rot)) translateY(-3px);box-shadow:0 14px 32px var(--pc-shadow);}
+    .game-card-clickable:focus-visible{outline:3px solid var(--pc-primary);outline-offset:4px;}
+
+    /* ===== Game detail modal ===== */
+    .game-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;}
+    .game-modal[aria-hidden="false"]{display:flex;}
+    .game-modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);}
+    .game-modal-card{position:relative;background:#FFFDF8;border-radius:24px;width:min(560px,92vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:gm-pop .35s cubic-bezier(.16,.84,.5,1.05) both;}
+    .game-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;padding:14px 18px;background:#888;color:#fff;}
+    .game-modal-title{font-weight:900;font-size:clamp(18px,4.4vw,22px);line-height:1.3;letter-spacing:.02em;color:#fff;margin:0;}
+    .game-modal-close{appearance:none;background:transparent;border:0;color:#fff;font-size:28px;font-weight:900;line-height:1;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s ease;}
+    .game-modal-close:hover{background:rgba(255,255,255,.18);}
+    .game-modal-close:focus-visible{outline:3px solid #fff;outline-offset:2px;}
+    .game-modal-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;}
+    .game-modal-images{display:flex;flex-direction:column;gap:16px;padding:18px 20px 6px;}
+    .game-modal-images img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;}
+    .game-modal-detail{font-weight:700;font-size:clamp(14px,3.6vw,16px);line-height:1.85;color:var(--text);margin:0;padding:14px 20px 20px;}
+    .game-modal-cta-wrap{display:flex;justify-content:center;padding:14px 20px 22px;border-top:1px solid rgba(93,78,55,.08);background:#FFFDF8;}
+    .game-modal-cta{display:inline-flex;align-items:center;gap:.5em;min-height:52px;padding:12px 30px;background:#888;color:#fff;font-weight:900;font-size:clamp(16px,4vw,19px);letter-spacing:.06em;text-decoration:none;border-radius:22px;box-shadow:0 6px 18px rgba(0,0,0,.18);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
+    .game-modal-cta:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.26);}
+    .game-modal-cta:active{transform:translateY(0) scale(.98);}
+    .game-modal-cta:focus-visible{outline:3px solid #fff;outline-offset:3px;}
+    body.modal-open{overflow:hidden;}
+    @keyframes gm-pop{from{opacity:0;transform:translateY(20px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+    @media (prefers-reduced-motion:reduce){.game-modal-card{animation:none;}.game-card-clickable{transition:none;}.game-card-clickable:hover{transform:rotate(var(--rot));}}
+
     /* ===== a11y common :focus-visible (既存要素) ===== */
     .help-link:focus-visible{outline:3px solid var(--primary);outline-offset:3px;border-radius:50px;}
   </style>
@@ -476,7 +504,7 @@
         <p class="pc-sub">ポノと いっしょに、こんな あそびが まってるよ</p>
       </div>
       <div class="pc-stack">
-        <article class="pc-card pc-card--mt1">
+        <article class="pc-card pc-card--mt1 game-card-clickable" data-game="bento" role="button" tabindex="0" aria-label="彩り弁当の詳細を見る">
           <div class="pc-bubble">いま にんき！</div>
           <div class="pc-visual pc-v-bento" role="img" aria-label="すきなおかずを選んで作る、いろどりお弁当の画面"></div>
           <div class="pc-body">
@@ -486,7 +514,7 @@
             <div class="pc-chips"><span class="pc-chip">そうぞう</span><span class="pc-chip">いろ</span><span class="pc-chip">だんどり</span></div>
           </div>
         </article>
-        <article class="pc-card pc-card--mt2">
+        <article class="pc-card pc-card--mt2 game-card-clickable" data-game="maze" role="button" tabindex="0" aria-label="ランタンの迷路の詳細を見る">
           <div class="pc-bubble pc-bubble--alt">ゆうき そだつ</div>
           <div class="pc-visual pc-v-maze" role="img" aria-label="ランタンを持って暗い森を探検するめいろの画面"></div>
           <div class="pc-body">
@@ -496,7 +524,7 @@
             <div class="pc-chips"><span class="pc-chip">たんけん</span><span class="pc-chip">ゆうき</span><span class="pc-chip">かんがえる</span></div>
           </div>
         </article>
-        <article class="pc-card pc-card--mt3">
+        <article class="pc-card pc-card--mt3 game-card-clickable" data-game="oto" role="button" tabindex="0" aria-label="ポノのおとタッチの詳細を見る">
           <div class="pc-bubble pc-bubble--alt">リズム なる</div>
           <div class="pc-visual pc-v-oto" role="img" aria-label="タップでドレミが鳴る、ポノのおとタッチの画面"></div>
           <div class="pc-body">
@@ -506,7 +534,7 @@
             <div class="pc-chips"><span class="pc-chip">リズム</span><span class="pc-chip">おんがく</span><span class="pc-chip">ひょうげん</span></div>
           </div>
         </article>
-        <article class="pc-card pc-card--mt4">
+        <article class="pc-card pc-card--mt4 game-card-clickable" data-game="puzzle" role="button" tabindex="0" aria-label="ポノのなかよしパズルの詳細を見る">
           <div class="pc-bubble pc-bubble--alt">じっくり あそぶ</div>
           <div class="pc-visual pc-v-puzzle" role="img" aria-label="ピースをあわせて絵を完成させる、ポノのなかよしパズルの画面"></div>
           <div class="pc-body">
@@ -516,7 +544,7 @@
             <div class="pc-chips"><span class="pc-chip">しゅうちゅう</span><span class="pc-chip">かんさつ</span><span class="pc-chip">かんがえる</span></div>
           </div>
         </article>
-        <article class="pc-card pc-card--mt5">
+        <article class="pc-card pc-card--mt5 game-card-clickable" data-game="quizland" role="button" tabindex="0" aria-label="フクロウはかせのなぞなぞの詳細を見る">
           <div class="pc-bubble pc-bubble--alt">あたま つかう</div>
           <div class="pc-visual pc-v-quizland" role="img" aria-label="フクロウはかせがなぞなぞを出す、フクロウはかせのなぞなぞの画面"></div>
           <div class="pc-body">
@@ -620,6 +648,185 @@
     </div>
 
   </div>
+
+  <!-- ===== Game detail modal (template, JS で内容差し替え) ===== -->
+  <div class="game-modal" id="game-modal" aria-hidden="true" aria-modal="true" role="dialog" aria-labelledby="game-modal-title">
+    <div class="game-modal-overlay" data-close="1"></div>
+    <div class="game-modal-card" role="document">
+      <header class="game-modal-header" id="game-modal-header">
+        <h2 class="game-modal-title" id="game-modal-title"></h2>
+        <button type="button" class="game-modal-close" data-close="1" aria-label="閉じる">×</button>
+      </header>
+      <div class="game-modal-body">
+        <div class="game-modal-images" id="game-modal-images"></div>
+        <p class="game-modal-detail" id="game-modal-detail"></p>
+      </div>
+      <div class="game-modal-cta-wrap">
+        <a href="play.html" class="game-modal-cta" id="game-modal-cta">このゲームで あそぶ <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var GAME_MODAL_DATA = {
+        bento: {
+          title: '彩り弁当',
+          accent: '#C4453C',
+          accentDark: '#A33A33',
+          images: [
+            {src:'assets/images/bento/title_back.webp', alt:'彩り弁当のタイトル画面'},
+            {src:'assets/images/bento/story/shop_order_counter.png', alt:'お弁当屋さんでお客さんを迎える画面'},
+            {src:'assets/images/bento/cooking/kitchen_bg.webp', alt:'お料理キッチンの背景'}
+          ],
+          detail: 'すきな おかずを えらんで、 じぶんだけの おべんとうを つくろう！ いろを くみあわせる たのしさで、 「すきな いろ」 や 「だんどり」 が そだつよ。'
+        },
+        maze: {
+          title: 'ランタンの迷路',
+          accent: '#3A5B8C',
+          accentDark: '#2A4368',
+          images: [
+            {src:'assets/ui/play_maze_title_back.webp', alt:'ランタンの迷路のタイトル画面'},
+            {src:'maze/imageStages/stage5.jpg', alt:'夜の森の迷路ステージ'},
+            {src:'maze/imageStages/map1.jpg', alt:'迷路の全体マップ'}
+          ],
+          detail: 'ランタンを もって、 くらい もりを たんけん！ さきを みとおす ちからと、 くらやみでも すすむ ちいさな ゆうきが そだつよ。'
+        },
+        oto: {
+          title: 'ポノのおとタッチ',
+          accent: '#2F7FA0',
+          accentDark: '#1F5E78',
+          images: [
+            {src:'assets/images/oto/title_back.jpg', alt:'ポノのおとタッチのタイトル画面'},
+            {src:'assets/ui/play_oto_title_back.webp', alt:'おとタッチのメニューイメージ'},
+            {src:'assets/images/oto/ui/free_mode_stage_screenshot_thumb.png', alt:'タップで楽器を鳴らす画面'}
+          ],
+          detail: 'タップで ドレミが なるよ！ どうぶつの こえや たいこも あそべて、 リズムや おとの たかさで 「おんかん」 と 「ひょうげん」 の たのしさが そだつよ。'
+        },
+        puzzle: {
+          title: 'ポノのなかよしパズル',
+          accent: '#2E7A60',
+          accentDark: '#1F5945',
+          images: [
+            {src:'assets/images/puzzle/title_back.jpg', alt:'ポノのなかよしパズルのタイトル画面'},
+            {src:'assets/images/puzzle/opening/cut01.jpg', alt:'ポノとなかまたちのオープニング'},
+            {src:'assets/images/puzzle/stages/puzzle_stage_08_flower_field_bugs.jpg', alt:'花畑と虫のパズルステージ'}
+          ],
+          detail: 'ピースを あわせて、 ポノたちの えを かんせいさせよう！ かたちを みくらべる あそびで、 「しゅうちゅうの ちから」 と 「かんさつの ちから」 が そだつよ。'
+        },
+        quizland: {
+          title: 'フクロウはかせの なぞなぞ',
+          accent: '#8B6FB5',
+          accentDark: '#6F5598',
+          images: [
+            {src:'assets/images/quizland/title_back.jpg', alt:'フクロウはかせのなぞなぞのタイトル画面'},
+            {src:'assets/ui/play_quizland_title_back.webp', alt:'なぞなぞのメニューイメージ'},
+            {src:'assets/images/quizland/OP/quiz_start_card.webp', alt:'フクロウはかせのなぞなぞスタート看板'}
+          ],
+          detail: 'フクロウはかせの ふしぎな もんだいに こたえよう！ ひらめいたら ピン！ 「ことばの ちしき」 と 「すいりの ちから」 が そだつよ。'
+        }
+      };
+
+      var modal = document.getElementById('game-modal');
+      var header = document.getElementById('game-modal-header');
+      var titleEl = document.getElementById('game-modal-title');
+      var imagesEl = document.getElementById('game-modal-images');
+      var detailEl = document.getElementById('game-modal-detail');
+      var ctaEl = document.getElementById('game-modal-cta');
+      var closeBtn = modal ? modal.querySelector('.game-modal-close') : null;
+      var lastFocused = null;
+      var currentAccentDark = null;
+
+      function applyPlaceholderOnError(img){
+        img.onerror = null;
+        img.removeAttribute('src');
+        img.style.background = 'linear-gradient(135deg,#F2E7D3,#E8D9BB)';
+      }
+
+      function openModal(gameId){
+        var data = GAME_MODAL_DATA[gameId];
+        if(!data || !modal) return;
+        lastFocused = document.activeElement;
+        titleEl.textContent = data.title;
+        header.style.background = data.accent;
+        ctaEl.style.background = data.accent;
+        currentAccentDark = data.accentDark;
+        // images
+        imagesEl.innerHTML = '';
+        for(var i=0;i<data.images.length;i++){
+          var info = data.images[i];
+          var img = document.createElement('img');
+          img.src = info.src;
+          img.alt = info.alt || '';
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.onerror = (function(el){ return function(){ applyPlaceholderOnError(el); }; })(img);
+          imagesEl.appendChild(img);
+        }
+        detailEl.textContent = data.detail;
+        modal.setAttribute('aria-hidden','false');
+        document.body.classList.add('modal-open');
+        // focus close button so Esc/Enter is easy to reach
+        setTimeout(function(){ if(closeBtn) closeBtn.focus(); }, 30);
+      }
+
+      function closeModal(){
+        if(!modal) return;
+        modal.setAttribute('aria-hidden','true');
+        document.body.classList.remove('modal-open');
+        if(lastFocused && typeof lastFocused.focus === 'function'){
+          try { lastFocused.focus(); } catch(_){}
+        }
+        lastFocused = null;
+      }
+
+      // CTA hover -> accentDark
+      if(ctaEl){
+        ctaEl.addEventListener('mouseenter', function(){ if(currentAccentDark) ctaEl.style.background = currentAccentDark; });
+        ctaEl.addEventListener('mouseleave', function(){
+          // restore current accent from header bg
+          ctaEl.style.background = header.style.background;
+        });
+      }
+
+      // Close handlers
+      if(modal){
+        modal.addEventListener('click', function(e){
+          var t = e.target;
+          if(t && t.getAttribute && t.getAttribute('data-close') === '1'){
+            closeModal();
+          }
+        });
+      }
+      document.addEventListener('keydown', function(e){
+        if(e.key === 'Escape' && modal && modal.getAttribute('aria-hidden') === 'false'){
+          closeModal();
+        }
+      });
+
+      // Bind cards
+      function bindCards(){
+        var cards = document.querySelectorAll('.pc-card[data-game]');
+        for(var i=0;i<cards.length;i++){
+          (function(card){
+            var gameId = card.getAttribute('data-game');
+            card.addEventListener('click', function(){ openModal(gameId); });
+            card.addEventListener('keydown', function(e){
+              if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){
+                e.preventDefault();
+                openModal(gameId);
+              }
+            });
+          })(cards[i]);
+        }
+      }
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', bindCards);
+      } else {
+        bindCards();
+      }
+    })();
+  </script>
 
   <!-- Service Worker 登録: 登録 + 更新検知 + ユーザー明示タップでのみ切替 (トースト) を
        common/sw-update.js に集約。auto-reload と postMessage('sw-updated') の旧フォールバックも

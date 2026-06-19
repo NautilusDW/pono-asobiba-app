@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-712";
+const ASSET_VERSION = "20260620-713";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -211,6 +211,12 @@ const COLLECTION_STACK_SEGMENTS_Y = 10;
 const COLLECTION_STACK_SPINE_DROP = PAGE_H * 0.008;
 const COLLECTION_STACK_SPINE_DEPTH = PAGE_H * 0.009;
 const COLLECTION_STACK_BOTTOM_WAVE = PAGE_H * 0.0024;
+const COLLECTION_STACK_INNER_BOTTOM_WIDTH = 0.22;
+const COLLECTION_STACK_INNER_BOTTOM_ROWS = 0.36;
+const COLLECTION_STACK_INNER_BOTTOM_EDGE_ROWS = 0.16;
+const COLLECTION_STACK_INNER_BOTTOM_LIFT = PAGE_H * 0.018;
+const COLLECTION_STACK_INNER_BOTTOM_TAPER = PAGE_W * 0.014;
+const COLLECTION_STACK_INNER_BOTTOM_DEPTH = PAGE_H * 0.0046;
 const COLLECTION_STACK_INNER_U_CROP = Math.min(0.065, PAGE_RADIUS / PAGE_W);
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
@@ -3627,6 +3633,19 @@ function createCollectionStackSideGeometry(side) {
         : COLLECTION_STACK_INNER_U_CROP + u * (1 - COLLECTION_STACK_INNER_U_CROP);
       const spineProximity = side === "left" ? u : 1 - u;
       const spineEase = smootherstep(spineProximity);
+      const innerBottomWidthStart = 1 - COLLECTION_STACK_INNER_BOTTOM_WIDTH;
+      const innerBottomWidth = smootherstep(
+        (spineProximity - innerBottomWidthStart) / COLLECTION_STACK_INNER_BOTTOM_WIDTH,
+      );
+      const innerBottomRows = smootherstep(
+        (COLLECTION_STACK_INNER_BOTTOM_ROWS - v) / COLLECTION_STACK_INNER_BOTTOM_ROWS,
+      );
+      const innerBottomEdge = smootherstep(
+        (COLLECTION_STACK_INNER_BOTTOM_EDGE_ROWS - v) / COLLECTION_STACK_INNER_BOTTOM_EDGE_ROWS,
+      );
+      const innerBottomRound = innerBottomWidth * innerBottomRows;
+      const innerBottomEdgeBias = 0.35 + innerBottomEdge * 0.65;
+      const innerSideDirection = side === "left" ? 1 : -1;
       const subtleEdgeWave =
         Math.sin(u * Math.PI * 2.15 + (side === "left" ? 0.35 : 1.05)) +
         Math.sin(u * Math.PI * 4.4 + (side === "left" ? 1.7 : 0.5)) * 0.38;
@@ -3634,8 +3653,12 @@ function createCollectionStackSideGeometry(side) {
       const yDrop = COLLECTION_STACK_SPINE_DROP * spineEase * spineVerticalDrop;
       const zSink = COLLECTION_STACK_SPINE_DEPTH * spineEase * depthVerticalCurve;
       const yWave = COLLECTION_STACK_BOTTOM_WAVE * subtleEdgeWave * bottomWeight;
+      const xRound =
+        innerSideDirection * COLLECTION_STACK_INNER_BOTTOM_TAPER * innerBottomRound * innerBottomEdgeBias;
+      const yRound = COLLECTION_STACK_INNER_BOTTOM_LIFT * innerBottomRound * innerBottomEdgeBias;
+      const zRound = COLLECTION_STACK_INNER_BOTTOM_DEPTH * innerBottomRound * innerBottomEdgeBias;
 
-      positions.push(localX, localY - yDrop + yWave, ribbonBow - zSink);
+      positions.push(localX + xRound, localY - yDrop + yWave + yRound, ribbonBow - zSink - zRound);
       uvs.push(textureU, v);
     }
   }

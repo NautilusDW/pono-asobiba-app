@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T22:05:26Z - LP game modal cross-review fixes: WCAG accent colors, bento/quizland 3rd image swap, kanji-to-hiragana copy, iOS momentum scroll, CACHE bump 1372→1373
+- **タスク**: LP game modal cross-review fixes: WCAG accent colors, bento/quizland 3rd image swap, kanji-to-hiragana copy, iOS momentum scroll, CACHE bump 1372→1373
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 48
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 15, "Bash": 7, "Grep": 3, "Agent": 9, "Glob": 8, "ToolSearch": 1, "Edit": 5}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-06-19T21:48:31Z - LP play-cardsにゲーム別テープ色とゲーム詳細モーダル追加 (5ゲーム), sw v1372 bump
+- **タスク**: LP play-cardsにゲーム別テープ色とゲーム詳細モーダル追加 (5ゲーム), sw v1372 bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 61
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 24, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 9, "ToolSearch": 1, "Edit": 5, "Write": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T21:17:50Z - お弁当チュートリアル 3 修正 (cup-edit-try ①+OK同時マーク + small-cup-food プチトマトのみロック + drag ghost を def.cupSize で配置後実寸統一) を orchestrator-mode で並列エージェント実装→クロスレビュー→follow-up fix→v1370 まで衝突回避バンプ→develop-app へ ff-merge & push 完了
 - **タスク**: お弁当チュートリアル 3 修正 (cup-edit-try ①+OK同時マーク + small-cup-food プチトマトのみロック + drag ghost を def.cupSize で配置後実寸統一) を orchestrator-mode で並列エージェント実装→クロスレビュー→follow-up fix→v1370 まで衝突回避バンプ→develop-app へ ff-merge & push 完了
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 36, "Workflow": 9, "Read": 29, "ToolSearch": 2, "DesignSync": 17, "Bash": 78, "Grep": 3, "Write": 6, "ScheduleWakeup": 7, "Skill": 1, "Glob": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T08:39:15Z - Puzzle basic tutorial fade+sync 4修正 (sw1346): オレンジ塗りCTA + cue alpha envelope真クロスフェード + drag-try同期 + ヒント前cue抑止
-- **タスク**: Puzzle basic tutorial fade+sync 4修正 (sw1346): オレンジ塗りCTA + cue alpha envelope真クロスフェード + drag-try同期 + ヒント前cue抑止
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 21
-- **エラー数**: 2
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 7, "Bash": 8, "Grep": 2, "ToolSearch": 1, "Agent": 1, "Workflow": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-19T07:56:06Z - Puzzle basic tutorial round-2 polish: strengthen 見る/ヒント context-menu suppression (selectstart/dragstart + controls-scoped + CSS cascade to inner content), non-scaling highlight glow so stacked buttons don't overlap, suppress center try/demo badge + emphasize bottom coach title; sw 1341->1342, cache-bust v1324
-- **タスク**: Puzzle basic tutorial round-2 polish: strengthen 見る/ヒント context-menu suppression (selectstart/dragstart + controls-scoped + CSS cascade to inner content), non-scaling highlight glow so stacked buttons don't overlap, suppress center try/demo badge + emphasize bottom coach title; sw 1341->1342, cache-bust v1324
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 154
-- **エラー数**: 11
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 29, "Workflow": 7, "Read": 27, "ToolSearch": 2, "DesignSync": 17, "Bash": 59, "Grep": 2, "Write": 6, "ScheduleWakeup": 3, "Skill": 1, "Glob": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
