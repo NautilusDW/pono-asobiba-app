@@ -1695,6 +1695,25 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   box-shadow: var(--puzzle-btn-shadow-soft);
 }
 
+/* v1338 FIX 1: Long-press / repeat-press on the 見る(peek) and ヒント buttons used
+   to surface the native context menu (right-click-style callout) and block the
+   button. Suppress the callout + text selection on these tutorial buttons (and
+   the puzzle canvas) so repeated taps / peek long-press / hint tap stay reliable.
+   Normal pointer handlers are untouched; only the OS callout is prevented. */
+.controls .btn-peek,
+.controls .btn-hint,
+#puzzle-container canvas {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+#puzzle-container canvas {
+  /* The canvas itself needs touch-action:none for drag (set inline), so only
+     apply the callout/selection suppression here, not touch-action. */
+  touch-action: none;
+}
+
 .btn {
   --puzzle-btn-bg: var(--puzzle-btn-cream);
   --puzzle-btn-color: #5A3A18;

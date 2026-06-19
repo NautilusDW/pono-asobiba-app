@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-704";
+const ASSET_VERSION = "20260619-705";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -200,6 +200,9 @@ const FLUTTER_PAGE_MIN_COUNT = 3;
 const FLUTTER_PAGE_MAX_COUNT = 6;
 const PAGE_TURN_BEND = 0.34;
 const PAGE_FLUTTER_BEND = 0.56;
+const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.26;
+const COLLECTION_PAGE_SPINE_PULL = 0;
+const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.018;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -414,8 +417,8 @@ book.add(leftPageOuter);
 
 const standardLeftPageGeometry = createPageSurfaceGeometry("right");
 const standardRightPageGeometry = createPageSurfaceGeometry("left");
-const collectionLeftPageGeometry = createCollectionPageSurfaceGeometry("right");
-const collectionRightPageGeometry = createCollectionPageSurfaceGeometry("left");
+const collectionLeftPageGeometry = createCurvedCollectionPageSurfaceGeometry("right");
+const collectionRightPageGeometry = createCurvedCollectionPageSurfaceGeometry("left");
 
 const leftPageInner = makePageSurface(BOOK_VARIANTS[activeBook].insideLeft, standardLeftPageGeometry);
 leftPageInner.position.set(-PAGE_W - GUTTER / 2, 0, 0);
@@ -3857,6 +3860,46 @@ function createBendablePlainPageSurfaceGeometry() {
   const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
   const subdivided = subdivideBendableGeometry(source);
   return subdivided;
+}
+
+function createCurvedCollectionPageSurfaceGeometry(bindingSide) {
+  const baseGeometry = createCollectionPageSurfaceGeometry(bindingSide);
+  const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
+  const subdivided = subdivideBendableGeometry(source);
+  curveCollectionPageGeometry(subdivided, bindingSide);
+  return subdivided;
+}
+
+function curveCollectionPageGeometry(geometry, bindingSide) {
+  const positions = geometry.attributes.position;
+  const sideSign = bindingSide === "right" ? -1 : 1;
+
+  for (let i = 0; i < positions.count; i += 1) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    const z = positions.getZ(i);
+    const spineDistance = bindingSide === "right" ? PAGE_W - x : x;
+    const spineT = 1 - THREE.MathUtils.clamp(spineDistance / COLLECTION_PAGE_SPINE_CURVE_WIDTH, 0, 1);
+    const fold = spineT * spineT * (3 - 2 * spineT);
+    const v = THREE.MathUtils.clamp((y + PAGE_H / 2) / PAGE_H, 0, 1);
+    const middle = Math.sin(v * Math.PI);
+    const smallWave = Math.sin(v * Math.PI * 2 + (bindingSide === "right" ? 0.45 : -0.45));
+    const pull = fold * (COLLECTION_PAGE_SPINE_PULL * (0.82 + middle * 0.32) + smallWave * PAGE_W * 0.0025);
+    const dip = fold * COLLECTION_PAGE_SPINE_DIP * (0.82 + middle * 0.18);
+    const yWobble = fold * smallWave * PAGE_H * 0.0028;
+
+    positions.setXYZ(
+      i,
+      x + sideSign * pull,
+      y + yWobble,
+      z - dip,
+    );
+  }
+
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
 }
 
 function subdivideBendableGeometry(source) {

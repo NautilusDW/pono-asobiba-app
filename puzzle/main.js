@@ -2618,6 +2618,11 @@ const BASIC_DRAG_TRY_BLUE_AT_VOICE_MS = 3720;
 // the 「やってみよう」 badge fades out (existing .is-leaving) AND drag input enables,
 // while the same continuous audio keeps playing into 「ピースを持って、青い場所へ…」.
 const BASIC_DRAG_TRY_SPLIT_AT_VOICE_MS = 2180;
+// v1338 FIX 2/3: offset into idx8 (basic_tut_09 「次はヒントだよ。場所を知りたいピースを…」)
+// where the 「場所を知りたいピース」 phrase begins (after 「次はヒントだよ。」). The orange
+// tap-piece cue AND the 「やってみよう！」 badge appear together at this moment, synced to
+// the narration's REAL playback start, instead of lighting up immediately at t=0.
+const BASIC_HINT_SELECT_CUE_AT_VOICE_MS = 2200;
 // If the audio element never fires 'play'/'playing' within this window (autoplay
 // blocked, file 404, decode stall), we fall back to a wall-clock schedule so the
 // orange/blue cues still appear and the child is never stuck without guidance.
@@ -2979,6 +2984,74 @@ function scheduleBasicDragTrySplitOnVoice(opts) {
   // Fallback: if 'play' never fires (autoplay blocked, 404, decode stall),
   // schedule from the original wall-clock so the child is never stuck with a
   // disabled board behind a frozen badge.
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
+}
+
+// v1338 FIX 2/3: hint SELECT step. The orange tap-piece cue AND the
+// 「やってみよう！」 badge are NOT set at t=0; they appear together when idx8 reaches
+// 「場所を知りたいピース」 (~selectMs into the clip), anchored to the audio's REAL
+// playback start. Mirrors scheduleBasicDragCuesOnVoice's play-event +
+// wall-clock-fallback pattern so the cue+badge always appear even if 'play'
+// never fires (autoplay blocked / 404 / decode stall).
+function scheduleBasicHintSelectCueOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts.audio;
+  var piece = opts.piece;
+  var selectMs = opts.selectMs | 0;
+  var scheduledAt = performance.now();
+  var fired = false; // cue+badge scheduled once (either via play event or fallback)
+
+  function stillSelect() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'basic-hint-select-try'
+      && (!piece || partnerPracticeState.targetPiece === piece));
+  }
+
+  function showSelectCue() {
+    if (!stillSelect()) return;
+    partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+    setBasicPracticeModeBanner('try', 'やってみよう！');
+    redraw();
+  }
+
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(showSelectCue, Math.max(0, selectMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
   practiceSetTimeout(function () {
     if (fired) return;
     cleanup();
@@ -4740,15 +4813,14 @@ function startBasicHintPlaceTry(piece) {
   setSelectedPieceForHint(null);
   partnerPracticeState.phase = 'basic-hint-select-try';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  // v1338 FIX 2/3: do NOT light the orange tap-piece cue (or pop the badge) at t=0.
+  // Both are anchored below to idx8's real playback at the 「場所を知りたいピース」 phrase.
+  partnerPracticeState.cue = null;
   partnerPracticeState.hintSelectReady = true;
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(true);
   setPartnerPracticePeekInput(false);
-  // Demo-less single-try hint: this is the FIRST step of the guided try, so show the
-  // 「やってみよう！」 try badge here (the お手本 demo that used to precede it is removed).
-  setBasicPracticeModeBanner('try', 'やってみよう！');
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'やってみよう',
@@ -4758,6 +4830,17 @@ function startBasicHintPlaceTry(piece) {
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
   refreshHintButtonState();
   redraw();
+  // Demo-less single-try hint: this is the FIRST step of the guided try. idx8
+  // (SELECT 「次はヒントだよ。場所を知りたいピースを、まず選んでね」) plays here; the orange
+  // tap-piece cue + 「やってみよう！」 badge appear together when the narration reaches
+  // 「場所を知りたいピース」 (~BASIC_HINT_SELECT_CUE_AT_VOICE_MS), synced to the audio's
+  // REAL play event with a wall-clock fallback.
+  var selectAudio = playBasicPracticeVoice(8);
+  scheduleBasicHintSelectCueOnVoice({
+    audio: selectAudio,
+    piece: piece,
+    selectMs: BASIC_HINT_SELECT_CUE_AT_VOICE_MS,
+  });
 }
 
 function isBasicHintSelectPracticePhase() {
@@ -4847,6 +4930,10 @@ function onBasicHintDragPracticeDragStart(piece) {
   if (!piece || piece !== partnerPracticeState.targetPiece) return;
   partnerPracticeState.phase = 'basic-hint-drag-moving';
   partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  // v1338 FIX 3: fade the 「やってみよう！」 center badge out the moment the child
+  // STARTS dragging the hint piece, so it stops covering the puzzle during the
+  // move/retry (the screenshot showed it obstructing the board mid-drag).
+  hideBasicPracticeTryBannerNow();
   setPartnerPracticeCoachCopy(
     'そのまま うごかそう',
     'ひかった ばしょへ もっていってね',
@@ -5281,11 +5368,11 @@ function showBasicHintSelectNarration() {
   setPartnerPracticeInput(false);
   // Demo-less single-try hint (mirrors the 見る button): skip the お手本 hand demo
   // (runBasicHintPlaceHandDemo) and let the child do select→press→move directly,
-  // guided by narration. idx8 (SELECT) plays here at the start of the guided try;
+  // guided by narration. startBasicHintPlaceTry now plays idx8 (SELECT) itself and
+  // anchors the orange cue + 「やってみよう！」 badge to its real playback (v1338 FIX 2/3);
   // idx9 (PRESS) plays when the child selects (onBasicHintSelectPracticePointerDown);
   // idx10 (GLOW) plays when the child presses ヒント (onBasicHintPracticeHintButtonUsed).
   startBasicHintPlaceTry(piece);
-  playBasicPracticeVoice(8);
 }
 
 function scheduleBasicHintSelectAfterCueVisible() {
@@ -5320,6 +5407,12 @@ function showBasicHintDoneNarration() {
     'ばしょが わからないときは ヒントを つかってね',
     ''
   );
+  // v1338 FIX 4: idx11 names BOTH 見る and ヒント, so make both buttons stand out
+  // while it plays. clearPracticeHighlights() guards against duplicate stacking;
+  // finishPartnerPractice() already clears highlights at the Stage-1 transition.
+  clearPracticeHighlights();
+  practiceAddHighlight(btnPeek);
+  practiceAddHighlight(btnHint);
   playBasicPracticeVoice(11, function () {
     if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
     // idx11 ("できたね。…") finished. Before transitioning to Stage 1, play the
@@ -6297,6 +6390,9 @@ function initPuzzle(img) {
   puzzleCanvas.addEventListener('pointerup',     onPointerUp,    { passive: false });
   puzzleCanvas.addEventListener('pointercancel', onPointerUp,    { passive: false });
   puzzleCanvas.addEventListener('lostpointercapture', onPointerUp);
+  // v1338 FIX 1: prevent the native context menu (long-press / right-click
+  // callout) over the puzzle canvas so a held drag never gets hijacked.
+  puzzleCanvas.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
 
   loadingEl.classList.add('hidden');
 
@@ -6565,6 +6661,10 @@ if (btnShuffle) {
 }
 
 if (btnPeek) {
+  // v1338 FIX 1: a peek long-press (or repeat press) used to pop the native
+  // context menu and block the button; suppress the callout so long-press peek
+  // and repeated taps stay reliable. Pointer/keyboard handlers below are intact.
+  btnPeek.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
   btnPeek.addEventListener('pointerdown', startPeekPress, { passive: false });
   btnPeek.addEventListener('pointerup', function (e) {
     if (peekPressPointerId != null && e.pointerId !== peekPressPointerId) return;
@@ -6593,6 +6693,10 @@ if (btnPeek) {
 // 旧: 完成形を全体表示 → 散布
 // 新: 選択中ピースのスロットに金色星+radial glow+枠点滅を 2 秒表示
 if (btnHint) {
+  // v1338 FIX 1: pressing ヒント repeatedly (release → press again) used to pop
+  // the native context menu and block the button; suppress the callout so the
+  // hint tap stays reliable. The click handler below is unchanged.
+  btnHint.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
   btnHint.addEventListener('click', () => {
     if (!puzzleCanvas) return;
     // 散布アニメ中・prestart 表示中はヒント無効
