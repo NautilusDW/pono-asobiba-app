@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T21:17:50Z - お弁当チュートリアル 3 修正 (cup-edit-try ①+OK同時マーク + small-cup-food プチトマトのみロック + drag ghost を def.cupSize で配置後実寸統一) を orchestrator-mode で並列エージェント実装→クロスレビュー→follow-up fix→v1370 まで衝突回避バンプ→develop-app へ ff-merge & push 完了
+- **タスク**: お弁当チュートリアル 3 修正 (cup-edit-try ①+OK同時マーク + small-cup-food プチトマトのみロック + drag ghost を def.cupSize で配置後実寸統一) を orchestrator-mode で並列エージェント実装→クロスレビュー→follow-up fix→v1370 まで衝突回避バンプ→develop-app へ ff-merge & push 完了
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 53
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 19, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 8, "ToolSearch": 1, "Edit": 4}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T20:39:55Z - LP play-cards に puzzle と quizland を追加し、 シールアルバムを別 section (sticker-extra) に分離 + sw v1368 バンプ
 - **タスク**: LP play-cards に puzzle と quizland を追加し、 シールアルバムを別 section (sticker-extra) に分離 + sw v1368 バンプ
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 29, "Workflow": 7, "Read": 27, "ToolSearch": 2, "DesignSync": 17, "Bash": 59, "Grep": 2, "Write": 6, "ScheduleWakeup": 3, "Skill": 1, "Glob": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T07:24:05Z - Puzzle basic tutorial hint-section 4 polish fixes (context menu suppression, synced orange select cue, try-badge hide-on-drag, final dual-button highlight); sw 1339->1340, puzzle voice/main v1322->v1323
-- **タスク**: Puzzle basic tutorial hint-section 4 polish fixes (context menu suppression, synced orange select cue, try-badge hide-on-drag, final dual-button highlight); sw 1339->1340, puzzle voice/main v1322->v1323
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 139
-- **エラー数**: 11
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 22, "Workflow": 7, "Read": 27, "ToolSearch": 2, "DesignSync": 17, "Bash": 52, "Grep": 2, "Write": 6, "ScheduleWakeup": 2, "Skill": 1, "Glob": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
