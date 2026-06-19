@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T02:37:53Z - Puzzle basic-drag-try reorder: badge alone first then on fade enable input + play trimmed basic_tut_03 together; fallback idx2 trim; cache bumps sw1328/voice v1316/index v1316
+- **タスク**: Puzzle basic-drag-try reorder: badge alone first then on fade enable input + play trimmed basic_tut_03 together; fallback idx2 trim; cache bumps sw1328/voice v1316/index v1316
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 59
+- **エラー数**: 9
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 15, "Workflow": 4, "Read": 5, "ToolSearch": 2, "DesignSync": 17, "Bash": 8, "Grep": 2, "Write": 6}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-19T01:56:58Z - Puzzle tutorial: hint try-badge shown once + add idx11 closing voice (basic_tut_12) before Stage 1; bump caches/docs/admin
 - **タスク**: Puzzle tutorial: hint try-badge shown once + add idx11 closing voice (basic_tut_12) before Stage 1; bump caches/docs/admin
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 13, "Bash": 16, "Workflow": 4, "Edit": 3, "Write": 1, "Agent": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-18T16:08:55Z - voice_review.html に差し替え案セクション+コンポジション全8曲セクション追加、COMP_1-8.wav をwebrootへコピー
-- **タスク**: voice_review.html に差し替え案セクション+コンポジション全8曲セクション追加、COMP_1-8.wav をwebrootへコピー
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 37
-- **エラー数**: 8
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 15, "Workflow": 3, "Edit": 3, "Write": 1, "Agent": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -19,7 +19,7 @@ window.PuzzleVoice = (function () {
   'use strict';
 
   var BASE = '../assets/audio/puzzle/voice/';
-  var AUDIO_VERSION = 'v1315';
+  var AUDIO_VERSION = 'v1316';
 
   var REGISTRY = {
     tut:        ['tut_01.mp3', 'tut_02.mp3', 'tut_03.mp3'],

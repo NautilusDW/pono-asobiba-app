@@ -2604,8 +2604,19 @@ const BASIC_TRY_BANNER_MS = 6800;
 // recordings; if narration timing changes, re-measure with audacity.
 const BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS = 800;
 const BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS = 2500;
-const BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS = 700;
-const BASIC_DRAG_TRY_BLUE_AT_VOICE_MS = 2400;
+// Try-phase cues. basic_tut_03 was re-trimmed to drop the leading 「やってみよう。」
+// (the center badge now shows that word on its own beat first), so the spoken
+// 「ピースを持って」 now starts at ~0s and 「青い場所へ」 lands ~1.5s in. The cue
+// offsets are measured from the moment the TRIMMED voice starts playing.
+const BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS = 150;
+const BASIC_DRAG_TRY_BLUE_AT_VOICE_MS = 1600;
+// Deliberate "badge alone" beat at the first 「やってみよう」 TRY: the center
+// 「やってみよう」 badge pops on its own (input still disabled, voice not yet
+// playing). When it fades, input is enabled AND the trimmed narration starts at
+// the SAME moment. This is the badge-alone hold BEFORE the fade kicks in; the
+// input+voice are scheduled at hold + BASIC_MODE_BADGE_FADE_MS so they fire right
+// as the badge disappears.
+const BASIC_DRAG_TRY_BADGE_HOLD_MS = 1750;
 // If the audio element never fires 'play'/'playing' within this window (autoplay
 // blocked, file 404, decode stall), we fall back to a wall-clock schedule so the
 // orange/blue cues still appear and the child is never stuck without guidance.
@@ -2632,7 +2643,9 @@ const BASIC_PEEK_DONE_BANNER_MS = 3500;
 const PARTNER_PRACTICE_AFTER_TAP_DELAY_MS = 180;
 const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
 const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
-const BASIC_TUT_FALLBACK_MS = [8900, 5100, 6800, 6300, 4070, 6480, 3070, 2640, 6880, 5080, 7240, 5140];
+// idx2 (basic_tut_03) trimmed from ~6.52s to ~4.34s (leading 「やってみよう。」 cut);
+// fallback = ceil(4.34s) + ~850ms tail = 5190ms.
+const BASIC_TUT_FALLBACK_MS = [8900, 5100, 5190, 6300, 4070, 6480, 3070, 2640, 6880, 5080, 7240, 5140];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -4466,8 +4479,14 @@ function startBasicDragPractice() {
         partnerPracticeState.phase = 'basic-drag-try';
         // Cue starts null for the try phase too; orange/blue come in with voice.
         partnerPracticeState.cue = null;
+        // Badge-alone beat: show 「やってみよう」 by itself first (input stays
+        // disabled, the narration does NOT start yet). The badge holds for
+        // BASIC_DRAG_TRY_BADGE_HOLD_MS, then fades (~BASIC_MODE_BADGE_FADE_MS via
+        // .is-leaving). Input + the trimmed idx2 voice start TOGETHER the moment
+        // the badge disappears — the trimmed clip no longer says 「やってみよう」,
+        // so the badge carries that word during the pause beat instead.
         setPartnerPracticeInput(false);
-        setBasicPracticeModeBanner('try', 'やってみよう', BASIC_TRY_BANNER_MS);
+        setBasicPracticeModeBanner('try', 'やってみよう', BASIC_DRAG_TRY_BADGE_HOLD_MS);
         setPartnerPracticeCoachCopy(
           'やってみよう',
           'ピースを もって、あおい ばしょへ',
@@ -4475,26 +4494,32 @@ function startBasicDragPractice() {
         );
         setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
         redraw();
-        // Start the try voice (basic_tut_03), then anchor the orange/blue cues to
-        // its real playback start so 「このピースをつかんで」/「青い場所へ」 stay in
-        // sync even if play() is delayed (wall-clock fallback inside the helper).
-        var tryAudio = playBasicPracticeVoice(2, function () {
+        // Fire input-enable + voice right as the badge finishes fading out
+        // (hold + fade). They start at the SAME instant so the child can grab the
+        // piece exactly when the narration 「ピースを持って…」 begins.
+        practiceSetTimeout(function () {
           if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
-          // CHANGE #4 timing sync: hide the 「やってみよう」 badge at the SAME moment
-          // the 見る/ヒント buttons un-grey (input enabled), instead of letting the
-          // badge's independent BASIC_TRY_BANNER_MS timer expire at a different time.
-          hideBasicPracticeTryBannerNow();
+          // Enable input and play the trimmed try voice (basic_tut_03)
+          // simultaneously, then anchor the orange/blue cues to the audio
+          // element's real playback start so 「ピースを持って」/「青い場所へ」 stay
+          // in sync even if play() is delayed (wall-clock fallback in the helper).
           setPartnerPracticeInput(true);
           redraw();
-          armBasicDragLoopCue(piece, 'basic-drag-try');
-        });
-        scheduleBasicDragCuesOnVoice({
-          audio: tryAudio,
-          phase: 'basic-drag-try',
-          piece: piece,
-          orangeMs: BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS,
-          blueMs: BASIC_DRAG_TRY_BLUE_AT_VOICE_MS,
-        });
+          var tryAudio = playBasicPracticeVoice(2, function () {
+            if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
+            // Badge is already gone (its own hold+fade timer). Just arm the drag
+            // loop cue so a child who hasn't grabbed the piece yet keeps getting
+            // the orange/blue nudge.
+            armBasicDragLoopCue(piece, 'basic-drag-try');
+          });
+          scheduleBasicDragCuesOnVoice({
+            audio: tryAudio,
+            phase: 'basic-drag-try',
+            piece: piece,
+            orangeMs: BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS,
+            blueMs: BASIC_DRAG_TRY_BLUE_AT_VOICE_MS,
+          });
+        }, BASIC_DRAG_TRY_BADGE_HOLD_MS + BASIC_MODE_BADGE_FADE_MS);
       });
     });
     scheduleBasicDragCuesOnVoice({
