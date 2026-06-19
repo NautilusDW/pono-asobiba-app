@@ -94,32 +94,60 @@
   }
 
   // ── 合成: ゲーム canvas → 指定解像度の出力 canvas (contain fit) ──
+  // 重要: 出力 canvas の backing buffer サイズは preset と完全一致させる
+  //       (source canvas の CSS サイズや devicePixelRatio に引きずられない)。
   function compose(sourceCanvas, outW, outH) {
+    // 1) 出力 canvas を ALWAYS 指定 preset サイズで新規作成
+    //    数値以外が来ても整数に強制 (string/float 由来の dimension ずれを防止)
+    var W = Math.max(1, Math.floor(Number(outW) || 0));
+    var H = Math.max(1, Math.floor(Number(outH) || 0));
     var out = document.createElement('canvas');
-    out.width  = outW;
-    out.height = outH;
+    out.width  = W;
+    out.height = H;
     var ctx = out.getContext('2d');
     if (!ctx) return out;
-    // 余白は透明 (LP 用は後段で別途背景を載せる方針)
-    ctx.clearRect(0, 0, outW, outH);
+    // 背景は透明 (LP 合成は後段で別途背景を載せる方針)
+    ctx.clearRect(0, 0, W, H);
 
-    var sw = sourceCanvas.width  || sourceCanvas.naturalWidth  || outW;
-    var sh = sourceCanvas.height || sourceCanvas.naturalHeight || outH;
+    // 2) source canvas の "backing buffer" サイズを取得
+    //    (CSS の width/height ではなく、 実描画解像度。
+    //     maze の #gameCanvas は window 比 × dpr で backing buffer が決まる)
+    var sw = Number(sourceCanvas && sourceCanvas.width)  || Number(sourceCanvas && sourceCanvas.naturalWidth)  || 0;
+    var sh = Number(sourceCanvas && sourceCanvas.height) || Number(sourceCanvas && sourceCanvas.naturalHeight) || 0;
     if (!sw || !sh) return out;
 
-    // contain fit
-    var scale = Math.min(outW / sw, outH / sh);
-    var dw = Math.round(sw * scale);
-    var dh = Math.round(sh * scale);
-    var dx = Math.round((outW - dw) / 2);
-    var dy = Math.round((outH - dh) / 2);
+    // 3) contain-fit 計算 (task 仕様準拠の明示計算)
+    var srcAspect = sw / sh;
+    var dstAspect = W  / H;
+    var drawW, drawH, drawX, drawY;
+    if (srcAspect > dstAspect) {
+      // source が出力より横長 → 横幅フィット、 上下に letterbox
+      drawW = W;
+      drawH = W / srcAspect;
+      drawX = 0;
+      drawY = (H - drawH) / 2;
+    } else {
+      // source が出力より縦長 (または同比) → 縦幅フィット、 左右に letterbox
+      drawH = H;
+      drawW = H * srcAspect;
+      drawX = (W - drawW) / 2;
+      drawY = 0;
+    }
+    // 整数化 (sub-pixel ずれによる滲み防止)
+    drawW = Math.round(drawW);
+    drawH = Math.round(drawH);
+    drawX = Math.round(drawX);
+    drawY = Math.round(drawY);
+
     try {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(sourceCanvas, 0, 0, sw, sh, dx, dy, dw, dh);
+      // 9-arg drawImage: source 全域 (0,0,sw,sh) → dest contain-fit 矩形
+      ctx.drawImage(sourceCanvas, 0, 0, sw, sh, drawX, drawY, drawW, drawH);
     } catch (e) {
-      // tainted canvas 等は無視 (出力は黒/透明枠だけ)
+      // tainted canvas 等は無視 (出力は透明枠だけ)
     }
+
     return out;
   }
 
@@ -160,9 +188,12 @@
       return Promise.resolve(null);
     }
 
+    // preset は { w, h } または { width, height } どちらの形でも受け付ける
     var preset = opts.preset || PRESETS[0];
-    var w = opts.width  || preset.w || 1920;
-    var h = opts.height || preset.h || 1080;
+    var presetW = preset && (preset.w || preset.width);
+    var presetH = preset && (preset.h || preset.height);
+    var w = Math.max(1, Math.floor(Number(opts.width)  || Number(presetW) || 1920));
+    var h = Math.max(1, Math.floor(Number(opts.height) || Number(presetH) || 1080));
     var label = opts.label || (registered.defaultLabel || '');
 
     var buildOpts = { width: w, height: h, format: 'png', label: label };
@@ -172,7 +203,12 @@
       .then(function (src) {
         if (!src) return null;
         // build() が canvas を返してきたか、 image/url を返したかで分岐
-        if (src instanceof HTMLCanvasElement) {
+        // HTMLCanvasElement 判定は instanceof + getContext duck-typing 両対応
+        // (iframe 等で同名 prototype が違うインスタンスにも対応)
+        var isCanvas = (src instanceof HTMLCanvasElement) ||
+                       (src && typeof src.getContext === 'function' && 'width' in src && 'height' in src);
+        if (isCanvas) {
+          // 必ず offscreen 合成を経由して preset 解像度で固定出力
           return compose(src, w, h);
         }
         console.warn('[PonoCapture] build() は HTMLCanvasElement を返してください');
