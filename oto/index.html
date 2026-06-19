@@ -1652,6 +1652,7 @@
   /* Region 1: 難易度タブ (かんたん / ふつう / 難しい) */
   .rhythm-diff-tabs {
     display: flex; width: 100%; gap: 6px; margin-bottom: 4px;
+    border-radius: 18px;
   }
   .rhythm-diff-tab {
     flex: 1; min-height: 36px; padding: 6px 10px;
@@ -3497,6 +3498,21 @@
     pointer-events: auto;
     animation: tutBlackBrief 0.82s ease-in-out both;
   }
+  .tut-dim.tut-black-hold {
+    display: block;
+    z-index: 10020;
+    background: #020617;
+    opacity: 1;
+    pointer-events: auto;
+    animation: none;
+  }
+  .tut-dim.tut-black-release {
+    display: block;
+    z-index: 10020;
+    background: #020617;
+    pointer-events: auto;
+    animation: tutBlackRelease 0.48s ease-out both;
+  }
   .tut-dim.tut-start-fade {
     display: block;
     z-index: 10020;
@@ -3561,7 +3577,10 @@
   @keyframes tutPopIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
   @keyframes tutBlackBrief {
     0% { opacity: 0; }
-    24%, 76% { opacity: 1; }
+    42%, 100% { opacity: 1; }
+  }
+  @keyframes tutBlackRelease {
+    0% { opacity: 1; }
     100% { opacity: 0; }
   }
   @keyframes tutStartFade {
@@ -12038,6 +12057,29 @@ function _clearOtoTutorialDemoEffects(preserveNarration) {
     _otoTutorialState.ownsRhythmDemo = false;
   }
 }
+function _showOtoTutorialBlackCover() {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  var spot = document.getElementById('tut-spot');
+  if (bubble) bubble.classList.add('hidden');
+  if (spot) spot.classList.add('hidden');
+  _hideOtoTutorialHand();
+  if (!dim) return;
+  dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-release', 'tut-start-fade');
+  dim.classList.add('tut-black-hold');
+}
+function _releaseOtoTutorialBlackCover(durationMs) {
+  var dim = document.getElementById('tut-dim');
+  if (!dim) return;
+  var wait = Math.max(180, durationMs || 480);
+  dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-start-fade');
+  dim.classList.add('tut-black-release');
+  setTimeout(function() {
+    if (!dim.classList.contains('tut-black-release')) return;
+    dim.classList.remove('tut-black-release');
+    dim.classList.add('hidden');
+  }, wait + 40);
+}
 function _runOtoTutorialBlackTransition(durationMs, done) {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
@@ -12047,14 +12089,15 @@ function _runOtoTutorialBlackTransition(durationMs, done) {
   if (spot) spot.classList.add('hidden');
   _hideOtoTutorialHand();
   if (dim) {
-    dim.classList.remove('hidden');
+    dim.classList.remove('hidden', 'tut-black-hold', 'tut-black-release', 'tut-start-fade');
     dim.classList.add('tut-black-transition');
   }
   setTimeout(function() {
     if (dim) {
       dim.classList.remove('tut-black-transition');
-      dim.classList.add('hidden');
+      dim.classList.add('tut-black-hold');
     }
+    if (_otoTutorialState) _otoTutorialState.releaseBlackCoverOnRender = true;
     if (typeof done === 'function') done();
   }, wait);
 }
@@ -12067,7 +12110,7 @@ function _runOtoTutorialStartFade(durationMs, done) {
   if (spot) spot.classList.add('hidden');
   _hideOtoTutorialHand();
   if (dim) {
-    dim.classList.remove('hidden', 'tut-black-transition');
+    dim.classList.remove('hidden', 'tut-black-transition', 'tut-black-hold', 'tut-black-release');
     dim.classList.add('tut-start-fade');
   }
   setTimeout(function() {
@@ -12459,6 +12502,7 @@ function _makeOtoTutorialSteps(kind) {
         voice: OTO_RHYTHM_TUTORIAL_VOICE.songIntro,
         anchor: '.rhythm-diff-tabs',
         side: 'stageTop',
+        spotRadius: '18px',
         hand: 'point',
         handAnchor: '.rhythm-diff-tab[data-diff="かんたん"]',
         diffPreview: true,
@@ -12897,6 +12941,8 @@ function _finishOtoTutorial(markSeen, continueFlow) {
   var spot = document.getElementById('tut-spot');
   if (dim) {
     dim.classList.remove('tut-black-transition');
+    dim.classList.remove('tut-black-hold');
+    dim.classList.remove('tut-black-release');
     dim.classList.remove('tut-start-fade');
     dim.classList.add('hidden');
   }
@@ -12938,7 +12984,12 @@ function _renderOtoTutorialStep() {
   var bubble = document.getElementById('tut-bubble');
   var spot = document.getElementById('tut-spot');
   if (!dim || !bubble || !_otoTutorialState) return;
-  dim.classList.remove('tut-black-transition');
+  var keepBlackCover = !!_otoTutorialState.releaseBlackCoverOnRender;
+  if (!keepBlackCover) {
+    dim.classList.remove('tut-black-transition');
+    dim.classList.remove('tut-black-hold');
+    dim.classList.remove('tut-black-release');
+  }
   dim.classList.remove('tut-start-fade');
   var steps = _otoTutorialState.steps || [];
   var i = _otoTutorialState.index || 0;
@@ -12948,10 +12999,19 @@ function _renderOtoTutorialStep() {
     return;
   }
   _clearOtoTutorialAutoTimer();
+  _otoTutorialState.advanceArmed = false;
   var preserveNarration = !!_otoTutorialState.keepNarrationOnNextRender;
   _otoTutorialState.keepNarrationOnNextRender = false;
   _clearOtoTutorialDemoEffects(preserveNarration);
   _hideOtoTutorialHand();
+  function releasePendingBlackCover() {
+    if (!keepBlackCover) return;
+    if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+    _otoTutorialState.releaseBlackCoverOnRender = false;
+    requestAnimationFrame(function() {
+      _releaseOtoTutorialBlackCover(480);
+    });
+  }
 
   function _hideSpot() { if (spot) spot.classList.add('hidden'); }
   function _showSpotAt(rect, borderRadius) {
@@ -12969,9 +13029,10 @@ function _renderOtoTutorialStep() {
     if (typeof s.before === 'function') s.before();
   } catch (e) {}
   if (s.lookOnly) {
-    if (dim) dim.classList.add('hidden');
+    if (dim && !keepBlackCover) dim.classList.add('hidden');
     if (bubble) bubble.classList.add('hidden');
     if (spot) spot.classList.add('hidden');
+    releasePendingBlackCover();
     _otoTutorialState.autoTimer = setTimeout(function() {
       if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
       _otoTutorialState.index++;
@@ -12980,11 +13041,12 @@ function _renderOtoTutorialStep() {
     return;
   }
   if (s.hiddenPrompt) {
-    dim.classList.add('hidden');
+    if (!keepBlackCover) dim.classList.add('hidden');
     bubble.classList.add('hidden');
     if (spot) spot.classList.add('hidden');
     _hideOtoTutorialHand();
     if (!s.skipNarration) _playOtoTutorialNarration(s);
+    releasePendingBlackCover();
     var runHiddenAdvance = function() {
       if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
       try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (e) {}
@@ -13026,19 +13088,21 @@ function _renderOtoTutorialStep() {
     function showAnchorCue(currentAnchor, currentRect) {
       if (s.noDim) {
         _hideSpot();
-        dim.classList.add('hidden');
+        if (!keepBlackCover) dim.classList.add('hidden');
       } else if (currentAnchor && !s.noSpot) {
         // スポットライト (anchor と同じ形状) を出し、dim 本体は隠す
         // (spot 自体が box-shadow で dim 効果を生むので二重にしない)
-        dim.classList.add('hidden');
+        if (!keepBlackCover) dim.classList.add('hidden');
         var cs = window.getComputedStyle(currentAnchor);
         // 丸ボタンは border-radius:50% が計算値 に変換されているので文字列をそのまま使う
-        var radius = cs.borderRadius || '16px';
+        var radius = s.spotRadius || cs.borderRadius || '16px';
         _showSpotAt(currentRect, radius);
       } else {
         _hideSpot();
-        if (s.noSpot) dim.classList.add('hidden');
-        else dim.classList.remove('hidden');
+        if (!keepBlackCover) {
+          if (s.noSpot) dim.classList.add('hidden');
+          else dim.classList.remove('hidden');
+        }
       }
       if (typeof s.demoNoteIdx === 'number') {
         var demoDelay = Math.max(0, s.demoStartDelayMs || 0);
@@ -13068,8 +13132,10 @@ function _renderOtoTutorialStep() {
     if (cueDelay && !s.diffPreview && typeof s.demoNoteIdx !== 'number' && typeof s.userTryNoteIdx !== 'number') {
       _hideSpot();
       _hideOtoTutorialHand();
-      if (s.noDim || s.noSpot) dim.classList.add('hidden');
-      else dim.classList.remove('hidden');
+      if (!keepBlackCover) {
+        if (s.noDim || s.noSpot) dim.classList.add('hidden');
+        else dim.classList.remove('hidden');
+      }
       var cueTimer = setTimeout(function() {
         if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
         if (s.delayedMsg) {
@@ -13084,6 +13150,7 @@ function _renderOtoTutorialStep() {
     requestAnimationFrame(function() {
       _tutPositionBubble(bubble, rect, s.side);
       if (!cueDelay || s.diffPreview || typeof s.demoNoteIdx === 'number' || typeof s.userTryNoteIdx === 'number') scheduleAnchorCue();
+      releasePendingBlackCover();
     });
     var btn = document.getElementById('tut-next');
     var skip = document.getElementById('tut-skip');
@@ -13194,10 +13261,17 @@ function _renderOtoTutorialStep() {
           if (!_isOtoTutorialNarrationReady(steps, i)) return;
           runAdvance();
         };
-        advanceEl.addEventListener(s.advanceEvent || 'click', advanceHandler, true);
+        var advanceEvents = s.advanceEvent ? [s.advanceEvent] : ['pointerdown', 'click'];
+        advanceEvents.forEach(function(evtName) {
+          advanceEl.addEventListener(evtName, advanceHandler, true);
+        });
+        if (_otoTutorialState) _otoTutorialState.advanceArmed = true;
         if (_otoTutorialState) {
           _otoTutorialState.demoCleanups.push(function() {
-            try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler, true); } catch (e) {}
+            advanceEvents.forEach(function(evtName) {
+              try { advanceEl.removeEventListener(evtName, advanceHandler, true); } catch (e) {}
+            });
+            if (_otoTutorialState) _otoTutorialState.advanceArmed = false;
           });
         }
       }
@@ -13214,7 +13288,9 @@ function showTutorial(kind, opts) {
   opts = opts || {};
   var steps = _makeOtoTutorialSteps(kind);
   if (!steps || !steps.length) return;
+  var startsWithBlackCover = kind === 'rhythmMenu';
   _finishOtoTutorial(false);
+  if (startsWithBlackCover) _showOtoTutorialBlackCover();
   _otoTutorialState = {
     kind: kind,
     index: 0,
@@ -13241,10 +13317,33 @@ function showTutorial(kind, opts) {
 function maybeShowOtoTutorial(kind, delayMs) {
   if (_otoTutorialSeen(kind)) return;
   if (_otoTutorialSessionHidden[kind]) return;
+  if (kind === 'rhythmMenu') _showOtoTutorialBlackCover();
   setTimeout(function() {
     if (!_otoTutorialSeen(kind) && !_otoTutorialSessionHidden[kind]) showTutorial(kind);
   }, delayMs == null ? 420 : delayMs);
 }
+
+function _captureOtoTutorialRhythmMenuInput(e) {
+  if (!_otoTutorialState) return;
+  if (_otoTutorialState.kind !== 'rhythmMenu' && _otoTutorialState.kind !== 'rhythmMenuMode') return;
+  var target = e && e.target;
+  if (!target || !target.closest) return;
+  if (target.closest('#tut-bubble, #tut-hand, #tut-hide-next, #tut-skip, #tut-next')) return;
+  var managed = target.closest('.rhythm-diff-tab, .rhythm-song-choice, .rhythm-practice-btn, #rhythm-menu-next, #rhythm-menu-start, #rhythm-menu-demo, #rhythm-menu-back, #rhythm-menu-cancel');
+  if (!managed) return;
+  var steps = _otoTutorialState.steps || [];
+  var step = steps[_otoTutorialState.index || 0] || {};
+  var allowed = false;
+  if (step.advanceOn && _otoTutorialState.advanceArmed) {
+    try { allowed = !!target.closest(step.advanceOn); } catch (err) { allowed = false; }
+  }
+  if (allowed) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+}
+document.addEventListener('pointerdown', _captureOtoTutorialRhythmMenuInput, true);
+document.addEventListener('click', _captureOtoTutorialRhythmMenuInput, true);
 
 // common/menu.js is still loaded for shared SW update handling.
 // Oto uses its own top-right settings menu so the hidden common dropdown is not initialized here.
