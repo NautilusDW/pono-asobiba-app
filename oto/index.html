@@ -12259,6 +12259,24 @@ function _runOtoTutorialTapCountdown(expectedSteps, expectedIndex) {
   if (spot) spot.classList.add('hidden');
   bubble.classList.remove('hidden', 'tut-bubble-tap');
   bubble.classList.add('is-countdown', 'tut-no-actions');
+  var countdownBlocker = function(e) {
+    if (e && e.target && e.target.closest && e.target.closest('#tut-bubble')) return;
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+    }
+  };
+  ['pointerdown', 'click', 'touchstart'].forEach(function(evtName) {
+    document.addEventListener(evtName, countdownBlocker, { capture: true, passive: false });
+  });
+  if (_otoTutorialState) {
+    _otoTutorialState.demoCleanups.push(function() {
+      ['pointerdown', 'click', 'touchstart'].forEach(function(evtName) {
+        document.removeEventListener(evtName, countdownBlocker, true);
+      });
+    });
+  }
   var nums = ['3', '2', '1', '0'];
   var stepMs = RHYTHM_DEMO_COUNT_STEP_MS;
   function showCount(n) {
@@ -12486,6 +12504,16 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
   _rhythm.activeNotes.push(note);
   _otoTutorialState.ownsRhythmDemo = true;
   _startRhythmDemoVisualLoop();
+  function showTryFeedback(text, tone) {
+    var bubble = document.getElementById('tut-bubble');
+    if (bubble) bubble.classList.add('hidden');
+    var hud = document.getElementById('rhythm-hud');
+    if (hud) {
+      hud.classList.add('show');
+      hud.classList.remove('rhythm-hud-hidden');
+    }
+    _setRhythmStatus(text, tone, 'judge');
+  }
   function finishHit(judge) {
     if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
     _clearOtoTutorialDemoTimersAndCleanups();
@@ -12496,7 +12524,7 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
     _spawnRhythmJudgePop(laneIdx, judge, 0, btn);
     _playRhythmTapPitch(laneIdx, judge, _rhythmTapPitchDurationForBeatLen(1));
     _playRhythmBlockSfx('success', laneIdx, judge);
-    _setRhythmStatus('できた！', 'good', 'judge');
+    showTryFeedback('できた！', 'good');
     _ghRemoveNote(note);
     _clearRhythmDemo(true);
     _setRhythmDemoNoteVisible(false);
@@ -12513,7 +12541,7 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
     var judgeNow = performance.now() + RHYTHM_GH_INPUT_OFFSET_MS;
     var delta = judgeNow - note.targetTime;
     if (delta < -RHYTHM_OK_MS) {
-      _setRhythmStatus('もうすこし', 'warn', 'judge');
+      showTryFeedback('もうすこし', 'warn');
       _playRhythmTapPitch(laneIdx, { key: 'close' }, 190);
       _pulseRhythmButton(btn, 'rhythm-hit');
       return;
@@ -12527,7 +12555,11 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
     if (_rhythm.activeNotes.indexOf(note) >= 0) _ghRemoveNote(note);
-    _setRhythmStatus('もういちど やってみよう', 'warn', 'judge');
+    var hud = document.getElementById('rhythm-hud');
+    if (hud) {
+      hud.classList.remove('show');
+      hud.classList.add('rhythm-hud-hidden');
+    }
     var bubble = document.getElementById('tut-bubble');
     if (bubble) {
       bubble.innerHTML =
