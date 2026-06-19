@@ -2087,9 +2087,11 @@ html, body {
   left: 0;
   top: 0;
   z-index: 90;
-  width: 94px;
-  height: 94px;
-  transform: translate(-50%, -50%) scale(1.08);
+  /* v1368: ドラッグ ghost のサイズを配置後サイズと一致させるため CSS var 経由で JS から指定。
+     デフォルトは旧来値 (94px / 86px) で後方互換。 */
+  width: var(--free-drag-ghost-size, 94px);
+  height: var(--free-drag-ghost-size, 94px);
+  transform: translate(-50%, -50%);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -2099,8 +2101,9 @@ html, body {
   box-shadow: none;
 }
 .free-drag-ghost .free-palette-visual {
-  width: 86px;
-  height: 86px;
+  /* v1368: visual も同じく var 経由。 0.92 倍は旧来の 86/94 比率を維持。 */
+  width: calc(var(--free-drag-ghost-size, 94px) * 0.92);
+  height: calc(var(--free-drag-ghost-size, 94px) * 0.92);
   filter: drop-shadow(0 10px 14px rgba(93, 78, 55, 0.24));
 }
 .free-drag-ghost.nori-drag-ghost {
@@ -9577,6 +9580,26 @@ function createFreePaletteDragGhost(def, e) {
     const ghostSize = Math.round(clamp((def.size || 44) * 1.12, 34, 72));
     ghost.classList.add('nori-drag-ghost');
     ghost.style.setProperty('--free-drag-ghost-size', `${ghostSize}px`);
+  } else {
+    // v1368: ドラッグ ghost のサイズを「お弁当に配置されたときの実寸」に揃える。
+    // 配置後の placed item は width = (item.size / FREE_LAYOUT_W) * stageWidthPx (toPctSize 経由) で描画されるため、
+    // 同じ係数で ghost の px サイズを計算する。 stage が見つからない場合はデフォルト 94px にフォールバック。
+    const stage = document.getElementById('free-layout-stage')
+              || document.querySelector('.free-layout-stage');
+    const stageW = stage ? (stage.clientWidth || stage.offsetWidth || 0) : 0;
+    // v1368 追加: カップ内専用食材 (def.cupSize 定義あり) は getCupFoodChildSize で配置時に
+    // cupSize に上書きされるため、 ghost も cupSize 基準で表示して「掴んだ時と置いた時の大きさ」 を一致させる。
+    // 非カップ食材 (cupSize 未定義) は従来通り def.size のまま。
+    let defSize = def && def.size ? def.size : 72;
+    if (def && typeof def.cupSize === 'number' && def.cupSize > 0) {
+      defSize = def.cupSize;
+    }
+    if (stageW > 0) {
+      // ghost コンテナは visual の 1/0.92 倍 (旧 94/86 比率に揃える)
+      const placedPx = (defSize / FREE_LAYOUT_W) * stageW;
+      const ghostBox = Math.max(24, Math.round(placedPx / 0.92));
+      ghost.style.setProperty('--free-drag-ghost-size', `${ghostBox}px`);
+    }
   }
   ghost.appendChild(createPaletteVisual(def));
   document.body.appendChild(ghost);
@@ -11812,6 +11835,18 @@ function renderFreeLayoutControls() {
 
   if (guidePanel && freeGuideStep === 'box') tray.appendChild(guidePanel);
 
+  // v1368: palette 再構築 (tray.innerHTML = '') で消えるチュートリアル lock を確実に復元する。
+  // タブ切替→food タブ再表示で small-cup-food / box の lock が落ちるリグレッションを防ぐフェイルセーフ。
+  try {
+    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
+      if (tutorialState.step === 'box') {
+        if (typeof tutorialApplyBoxLock === 'function') tutorialApplyBoxLock();
+      } else if (tutorialState.step === 'small-cup-food') {
+        if (typeof tutorialApplySmallCupFoodLock === 'function') tutorialApplySmallCupFoodLock();
+      }
+    }
+  } catch (_) {}
+
   if (freeGuideStep === 'box') return;
 
   const actions = document.createElement('div');
@@ -14039,6 +14074,40 @@ function tutorialClearBoxLock() {
     }
   });
 }
+// v1368: small-cup-food step 中はパレットから「プチトマト」以外をロック (box step の方式に揃える)
+function tutorialApplySmallCupFoodLock() {
+  if (tutorialState.step !== 'small-cup-food') return;
+  // food タブ以外では適用しない (renderer が freeLayoutTab='food' に正規化済みの想定)
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return;
+  const buttons = document.querySelectorAll('.free-item-list .free-palette-item');
+  buttons.forEach((btn) => {
+    const nameEl = btn.querySelector('.free-palette-name');
+    const name = ((nameEl ? nameEl.textContent : btn.textContent) || '').trim();
+    const isTomato = name.indexOf('プチトマト') >= 0;
+    if (isTomato) {
+      btn.classList.remove('tut-locked');
+      btn.dataset.tutTarget = '1';
+    } else {
+      btn.classList.add('tut-locked');
+      if (!btn.dataset.tutLockBound) {
+        btn.dataset.tutLockBound = '1';
+        const handler = function(e) {
+          if (!btn.classList.contains('tut-locked')) return;
+          e.preventDefault();
+          e.stopPropagation();
+          try { if (typeof showToast === 'function') showToast('プチトマトを いれようね'); } catch (_) {}
+        };
+        btn._tutLockHandler = handler;
+        btn.addEventListener('pointerdown', handler, true);
+        btn.addEventListener('click', handler, true);
+      }
+    }
+  });
+}
+function tutorialClearSmallCupFoodLock() {
+  // 既存 tutorialClearBoxLock と同じ処理 (DOM 全 palette-item の lock 解除) を流用
+  tutorialClearBoxLock();
+}
 // パレットから type=cup の最初のボタンを取得 (accessory タブ)
 // v3.3: タブ context が一致しないときは null を返し、 各 step が誤タブの palette を掴まないようにする。
 function tutorialFindCupPaletteEl() {
@@ -14949,6 +15018,7 @@ function tutorialRenderStep() {
       note: 'サイズ 1 → OK',
     });
     tutorialHideBubble();
+    // v1368: ①ボタン と OK ボタン の両方を同時に青枠でマーク (box step の 2要素同時マークと同じ方式)
     let markedCupTryTarget = false;
     if (sizeOneBtn) {
       tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
@@ -14957,10 +15027,12 @@ function tutorialRenderStep() {
       tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
       markedCupTryTarget = true;
     }
-    if (!markedCupTryTarget && okBtn) {
+    if (okBtn) {
       tutorialMarkTarget(okBtn, { radius: 16, outline: false });
       markedCupTryTarget = true;
     }
+    // v1368: okBtn が無い + sizeOneBtn 有り の組み合わせでも toolbar fallback を確実に走らせる
+    // (旧コード else if だと markedCupTryTarget=true で toolbar が拾われない後退があった)
     if (!markedCupTryTarget && toolbar) {
       tutorialMarkTarget(toolbar, { radius: 14, outline: false });
       markedCupTryTarget = true;
@@ -15012,6 +15084,8 @@ function tutorialRenderStep() {
       note: 'みどりを カップへ',
     });
     tutorialShowBubble('プチトマトを<br>カップに いれよう', { topVh: '54', side: 'left' });
+    // v1368: パレットから「プチトマト」以外をロック (誤タップ/誤ドラッグ抑止)
+    tutorialApplySmallCupFoodLock();
     if (firstRender) {
       const smallFood = tutorialFindCupFoodPaletteEl();
       if (smallFood) tutorialTrimPath(smallFood, { radius: 12 });
@@ -15339,6 +15413,8 @@ function tutorialOnItemPlaced(item) {
       renderFreeLayoutStage();
       renderFreeLayoutControls();
     }
+    // v1368: パレットロック解除 (step 退出時に必ず解除)
+    tutorialClearSmallCupFoodLock();
     tutorialAdvance('small-next');
     return;
   }
