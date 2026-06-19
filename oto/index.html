@@ -11758,6 +11758,12 @@ var OTO_TUTORIAL_HAND_ASSETS = {
 var _otoTutorialNarrationAudio = null;
 var _otoTutorialState = null;
 var _otoTutorialSessionHidden = {};
+function _isOtoTutorialNarrationReady(expectedSteps, expectedIndex) {
+  return !!(_otoTutorialState &&
+    _otoTutorialState.steps === expectedSteps &&
+    _otoTutorialState.index === expectedIndex &&
+    !_otoTutorialState.narrationPending);
+}
 function _otoTutorialVoiceKeyForText(text) {
   if (!text) return '';
   for (var key in OTO_RHYTHM_TUTORIAL_VOICE) {
@@ -11773,6 +11779,7 @@ function _otoTutorialNarrationSrc(step) {
 function _stopOtoTutorialNarration() {
   var audio = _otoTutorialNarrationAudio;
   _otoTutorialNarrationAudio = null;
+  if (_otoTutorialState) _otoTutorialState.narrationPending = false;
   if (!audio) return;
   try { audio.pause(); } catch(e) {}
   try { audio.currentTime = 0; } catch(e) {}
@@ -11783,15 +11790,24 @@ function _playOtoTutorialNarration(step) {
   if (!src || _otoAudioShouldBlock()) return;
   try {
     var audio = new Audio(src + '?' + OTO_RHYTHM_TUTORIAL_AUDIO_VERSION);
+    var ownerState = _otoTutorialState;
+    if (ownerState) ownerState.narrationPending = true;
+    function markDone() {
+      if (_otoTutorialNarrationAudio === audio) _otoTutorialNarrationAudio = null;
+      if (ownerState && _otoTutorialState === ownerState && _otoTutorialNarrationAudio === null) {
+        ownerState.narrationPending = false;
+      }
+    }
     audio.preload = 'auto';
     audio.volume = 0.96;
     _otoTutorialNarrationAudio = audio;
-    audio.addEventListener('ended', function() {
-      if (_otoTutorialNarrationAudio === audio) _otoTutorialNarrationAudio = null;
-    }, { once: true });
+    audio.addEventListener('ended', markDone, { once: true });
+    audio.addEventListener('error', markDone, { once: true });
     var p = audio.play();
-    if (p && typeof p.catch === 'function') p.catch(function() {});
-  } catch(e) {}
+    if (p && typeof p.catch === 'function') p.catch(markDone);
+  } catch(e) {
+    if (_otoTutorialState) _otoTutorialState.narrationPending = false;
+  }
 }
 function _tutPositionBubble(bubble, anchorRect, preferredSide) {
   // anchorRect の 上/下/中央 に合わせて bubble を配置、画面外にはみ出さないようクランプ
@@ -11936,12 +11952,17 @@ function _advanceOtoTutorialStep(expectedSteps, expectedIndex, delayMs) {
   if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
   _clearOtoTutorialAutoTimer();
   var wait = Math.max(0, delayMs || 0);
-  _otoTutorialState.autoTimer = setTimeout(function() {
+  function tryAdvance() {
     if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
+    if (_otoTutorialState.narrationPending) {
+      _otoTutorialState.autoTimer = setTimeout(tryAdvance, 90);
+      return;
+    }
     _otoTutorialState.index++;
     if (_otoTutorialState.index >= expectedSteps.length) _finishOtoTutorial(true, true);
     else _renderOtoTutorialStep();
-  }, wait);
+  }
+  _otoTutorialState.autoTimer = setTimeout(tryAdvance, wait);
 }
 function _otoTutorialFallMs(step) {
   var requested = step && typeof step.fallMs === 'number' ? step.fallMs : OTO_TUTORIAL_NOTE_FALL_MS;
@@ -12009,7 +12030,9 @@ function _runOtoTutorialDifficultyPreview(step, anchorEl, rect) {
   if (!tabs.length) return;
   _setRhythmMenuAwaitingDiffChoice(true);
   if (document.body) document.body.classList.add('rhythm-menu-diff-demo-playing');
-  var beatMs = Math.max(520, step.diffPreviewStepMs || RHYTHM_DEMO_COUNT_STEP_MS);
+  var startDelayMs = Math.max(0, step.diffPreviewStartDelayMs == null ? 1220 : step.diffPreviewStartDelayMs);
+  var beatMs = Math.max(520, step.diffPreviewStepMs || (RHYTHM_DEMO_COUNT_STEP_MS + 500));
+  var readyDelayMs = Math.max(0, step.diffPreviewReadyDelayMs == null ? 700 : step.diffPreviewReadyDelayMs);
   function clearHighlight() {
     tabs.forEach(function(tab) { tab.classList.remove('tut-demo-highlight'); });
   }
@@ -12021,13 +12044,13 @@ function _runOtoTutorialDifficultyPreview(step, anchorEl, rect) {
     if (_otoTutorialState) _otoTutorialState.demoTimers.push(timer);
   }
   tabs.forEach(function(tab, index) {
-    schedule(220 + index * beatMs, function() {
+    schedule(startDelayMs + index * beatMs, function() {
       clearHighlight();
       tab.classList.add('tut-demo-highlight');
       try { _playRhythmSampleSe('ok'); } catch (e) {}
     });
   });
-  schedule(220 + tabs.length * beatMs, function() {
+  schedule(startDelayMs + tabs.length * beatMs + readyDelayMs, function() {
     clearHighlight();
     if (document.body) document.body.classList.remove('rhythm-menu-diff-demo-playing');
     var handEl = step.handAnchor ? document.querySelector(step.handAnchor) : anchorEl;
@@ -12840,17 +12863,23 @@ function _renderOtoTutorialStep() {
       e.stopPropagation();
       _finishOtoTutorial(true, false);
     }, { once: true });
-    if (btn) btn.addEventListener('pointerdown', function(e) {
+    if (btn) {
+      var btnAdvanced = false;
+      var btnHandler = function(e) {
       e.preventDefault();
       e.stopPropagation();
-      if (!_otoTutorialState) return;
-      _otoTutorialState.index++;
-      if (_otoTutorialState.index >= steps.length) {
-        _finishOtoTutorial(true, true);
-      } else {
-        _renderOtoTutorialStep();
+      if (btnAdvanced || !_isOtoTutorialNarrationReady(steps, i)) return;
+      btnAdvanced = true;
+      try { btn.removeEventListener('pointerdown', btnHandler); } catch (err) {}
+      _advanceOtoTutorialStep(steps, i, 0);
+      };
+      btn.addEventListener('pointerdown', btnHandler);
+      if (_otoTutorialState) {
+        _otoTutorialState.demoCleanups.push(function() {
+          try { btn.removeEventListener('pointerdown', btnHandler); } catch (e) {}
+        });
       }
-    }, { once: true });
+    }
     if (btn && typeof s.demoNoteIdx === 'number' && !s.autoAdvanceAfterDemo) {
       btn.disabled = true;
       btn.textContent = 'みてね';
@@ -12863,10 +12892,16 @@ function _renderOtoTutorialStep() {
     }
     if (s.advanceOnBubbleTap && bubble) {
       bubble.classList.add('tut-bubble-tap');
+      var bubbleAdvanced = false;
       var bubbleHandler = function(e) {
         e.preventDefault();
         e.stopPropagation();
-        if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+        if (bubbleAdvanced || !_isOtoTutorialNarrationReady(steps, i)) return;
+        bubbleAdvanced = true;
+        try { bubble.removeEventListener('pointerdown', bubbleHandler); } catch (err) {}
+        if (anyTapHandler) {
+          try { document.removeEventListener('pointerdown', anyTapHandler, true); } catch (err) {}
+        }
         try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (err) {}
         if (s.countdownBeforeAdvance) {
           _runOtoTutorialTapCountdown(steps, i);
@@ -12874,7 +12909,7 @@ function _renderOtoTutorialStep() {
           _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
         }
       };
-      bubble.addEventListener('pointerdown', bubbleHandler, { once: true });
+      bubble.addEventListener('pointerdown', bubbleHandler);
       var anyTapHandler = null;
       if (s.countdownBeforeAdvance) {
         anyTapHandler = function(e) {
@@ -12895,12 +12930,15 @@ function _renderOtoTutorialStep() {
     if (s.advanceOn) {
       var advanceEl = document.querySelector(s.advanceOn);
       if (advanceEl) {
+        var advanceDone = false;
         var advanceHandler = function() {
-          if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+          if (advanceDone || !_isOtoTutorialNarrationReady(steps, i)) return;
+          advanceDone = true;
+          try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler); } catch (err) {}
           try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (e) {}
           _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
         };
-        advanceEl.addEventListener(s.advanceEvent || 'click', advanceHandler, { once: true });
+        advanceEl.addEventListener(s.advanceEvent || 'click', advanceHandler);
         if (_otoTutorialState) {
           _otoTutorialState.demoCleanups.push(function() {
             try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler); } catch (e) {}
@@ -12909,12 +12947,7 @@ function _renderOtoTutorialStep() {
       }
     }
     if (s.autoNextMs) {
-      _otoTutorialState.autoTimer = setTimeout(function() {
-        if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
-        _otoTutorialState.index++;
-        if (_otoTutorialState.index >= steps.length) _finishOtoTutorial(true, true);
-        else _renderOtoTutorialStep();
-      }, Math.max(300, s.autoNextMs || 1200));
+      _advanceOtoTutorialStep(steps, i, Math.max(300, s.autoNextMs || 1200));
     }
   }, 60);
 }
