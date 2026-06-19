@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T08:39:15Z - Puzzle basic tutorial fade+sync 4修正 (sw1346): オレンジ塗りCTA + cue alpha envelope真クロスフェード + drag-try同期 + ヒント前cue抑止
+- **タスク**: Puzzle basic tutorial fade+sync 4修正 (sw1346): オレンジ塗りCTA + cue alpha envelope真クロスフェード + drag-try同期 + ヒント前cue抑止
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 21
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 7, "Bash": 8, "Grep": 2, "ToolSearch": 1, "Agent": 1, "Workflow": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T07:56:06Z - Puzzle basic tutorial round-2 polish: strengthen 見る/ヒント context-menu suppression (selectstart/dragstart + controls-scoped + CSS cascade to inner content), non-scaling highlight glow so stacked buttons don't overlap, suppress center try/demo badge + emphasize bottom coach title; sw 1341->1342, cache-bust v1324
 - **タスク**: Puzzle basic tutorial round-2 polish: strengthen 見る/ヒント context-menu suppression (selectstart/dragstart + controls-scoped + CSS cascade to inner content), non-scaling highlight glow so stacked buttons don't overlap, suppress center try/demo badge + emphasize bottom coach title; sw 1341->1342, cache-bust v1324
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 17, "Bash": 45, "Workflow": 13, "Edit": 10, "Write": 3, "Agent": 8, "Grep": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-19T05:02:23Z - Gemini TTS(Aoede)でパズルヒント案内2クリップを生成しtmp/voice_reviewに配置・聴き比べセクション追加
-- **タスク**: Gemini TTS(Aoede)でパズルヒント案内2クリップを生成しtmp/voice_reviewに配置・聴き比べセクション追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 98
-- **エラー数**: 16
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 17, "Bash": 45, "Workflow": 12, "Edit": 10, "Write": 3, "Agent": 8, "Grep": 3}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

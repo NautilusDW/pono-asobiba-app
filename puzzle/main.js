@@ -1587,16 +1587,34 @@ function computeCueAlphaEnvelope(cue, now) {
 
 // Smoothly transition the current basic-practice cue. Passing null marks the
 // existing cue for fade-out (the draw loop will null it once envelope hits 0).
-// Passing a new cue stamps startTime so it fades in cleanly.
+// Passing a new cue stamps startTime so it fades in cleanly. To support true
+// cross-fades (e.g. orange tap-piece -> blue kojika-move-target), the previous
+// in-flight cue is moved into `cueOutgoing` and released; the draw loop renders
+// both until the outgoing one fully fades out.
 function setBasicCueWithRelease(newCue) {
   if (!partnerPracticeState) return;
   var now = performance.now();
   if (newCue == null) {
     var current = partnerPracticeState.cue;
-    if (!current) return;
+    if (!current) {
+      // also tail off any outgoing cue if present
+      var pendingOut = partnerPracticeState.cueOutgoing;
+      if (pendingOut && pendingOut.releaseTime == null) {
+        pendingOut.releaseTime = now;
+        ensurePartnerPracticeCueLoop();
+      }
+      return;
+    }
     if (current.releaseTime == null) current.releaseTime = now;
     ensurePartnerPracticeCueLoop();
     return;
+  }
+  // Cross-fade: demote the existing cue (if any) into the outgoing slot and
+  // mark it for release. Replace any stale outgoing slot.
+  var previous = partnerPracticeState.cue;
+  if (previous) {
+    if (previous.releaseTime == null) previous.releaseTime = now;
+    partnerPracticeState.cueOutgoing = previous;
   }
   newCue.startTime = now;
   newCue.releaseTime = null;
@@ -1605,7 +1623,29 @@ function setBasicCueWithRelease(newCue) {
 }
 
 function drawPartnerPracticeCue(ctx) {
-  if (!ctx || !partnerPracticeState || !partnerPracticeState.cue) return;
+  if (!ctx || !partnerPracticeState) return;
+  // FIX A2: draw the outgoing cue first (fading out) under the incoming one for
+  // a true cross-fade between basic-practice cue swaps. Temporarily swap
+  // state.cue so the same draw branches run, then restore. The outgoing cue
+  // always has releaseTime set, so the inner pass may null state.cue via the
+  // envelope<=0 path — we ignore that side-effect and restore explicitly.
+  var outgoing = partnerPracticeState.cueOutgoing;
+  if (outgoing) {
+    if (computeCueAlphaEnvelope(outgoing, performance.now()) <= 0) {
+      partnerPracticeState.cueOutgoing = null;
+    } else {
+      var saved = partnerPracticeState.cue;
+      partnerPracticeState.cue = outgoing;
+      partnerPracticeState.cueOutgoing = null; // prevent recursion
+      drawPartnerPracticeCue(ctx);
+      partnerPracticeState.cue = saved;
+      if (computeCueAlphaEnvelope(outgoing, performance.now()) > 0) {
+        partnerPracticeState.cueOutgoing = outgoing;
+        ensurePartnerPracticeCueLoop();
+      }
+    }
+  }
+  if (!partnerPracticeState.cue) return;
   var cue = partnerPracticeState.cue;
   var piece = cue.piece;
   if (!piece || piece.snapped) return;
@@ -1796,19 +1836,25 @@ function ensurePartnerPracticeCueLoop() {
       return;
     }
     var cue = partnerPracticeState.cue;
-    if (!cue) {
+    var outgoing = partnerPracticeState.cueOutgoing;
+    if (!cue && !outgoing) {
       partnerPracticeState.cueRaf = null;
       return;
     }
-    // FIX A: if the cue has fully faded out, null it here and stop the loop.
-    if (cue.releaseTime != null) {
+    // FIX A: if the active cue has fully faded out, null it here.
+    if (cue && cue.releaseTime != null) {
       var env = computeCueAlphaEnvelope(cue, performance.now());
-      if (env <= 0) {
-        partnerPracticeState.cue = null;
-        partnerPracticeState.cueRaf = null;
-        redraw();
-        return;
-      }
+      if (env <= 0) partnerPracticeState.cue = null;
+    }
+    // FIX A2: same for the outgoing slot used during cross-fades.
+    if (outgoing) {
+      var envOut = computeCueAlphaEnvelope(outgoing, performance.now());
+      if (envOut <= 0) partnerPracticeState.cueOutgoing = null;
+    }
+    if (!partnerPracticeState.cue && !partnerPracticeState.cueOutgoing) {
+      partnerPracticeState.cueRaf = null;
+      redraw();
+      return;
     }
     partnerPracticeState.cueRaf = null;
     redraw();
@@ -4321,7 +4367,7 @@ function resetPracticeBoard() {
   if (partnerPracticeState) {
     partnerPracticeState.phase = 'reset';
     partnerPracticeState.targetPiece = null;
-    partnerPracticeState.cue = null;
+    setBasicCueWithRelease(null);
     partnerPracticeState.allowCanvasInput = false;
     partnerPracticeState.hintIntroDone = false;
   }
@@ -4626,7 +4672,7 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
   clearHintGlow();
   partnerPracticeState.phase = 'basic-hint-demo-select';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(false);
@@ -4648,7 +4694,7 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-select') return;
       setSelectedPieceForHint(piece);
       partnerPracticeState.phase = 'basic-hint-demo-button';
-      partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+      setBasicCueWithRelease({ kind: 'selected-piece', piece: piece });
       practiceAddHighlight(btnHint);
       // index 9 = hint PRESS (basic_tut_10 "ヒントを押すと、その場所が光るよ"). Plays in
       // the demo BEFORE the hand presses the button — mirroring how idx8 plays
@@ -4675,7 +4721,7 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
           if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-button') return;
         clearPracticeHighlights();
         partnerPracticeState.phase = 'basic-hint-demo-place';
-        partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+        setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
         // index 10 = hint glow (basic_tut_11 "光った場所へピースを持っていくよ"). Plays
         // when the glow appears in the demo.
         setPartnerPracticeCoachCopy(
@@ -4691,7 +4737,7 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
           placePieceForPractice(piece, from.x, from.y, from.rotation || 0);
           setSelectedPieceForHint(null);
           clearHintGlow();
-          partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+          setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
           if (typeof onDone === 'function') onDone();
         });
         });
@@ -4716,7 +4762,7 @@ function startBasicDragPractice() {
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
   partnerPracticeState.phase = 'basic-drag-demo';
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
@@ -4738,7 +4784,7 @@ function startBasicDragPractice() {
   partnerPracticeState.targetPiece = piece;
   partnerPracticeState.basicDragStart = { x: start.x, y: start.y, rotation: start.rotation || 0 };
   placePieceForPractice(piece, start.x, start.y, start.rotation || 0);
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   setBasicPracticeFrameMode('demo');
   clearPartnerPracticeCoachBubble();
   showPartnerPracticeCoach();
@@ -4771,7 +4817,7 @@ function startBasicDragPractice() {
         clearHintPracticeTargetArea(piece);
         partnerPracticeState.phase = 'basic-drag-try';
         // Cue starts null for the try phase too; orange/blue come in with voice.
-        partnerPracticeState.cue = null;
+        setBasicCueWithRelease(null);
         // Badge + FULL voice together: show the 「やってみよう」 try badge AND start
         // the full untrimmed basic_tut_03 (「やってみよう。ピースを持って、青い場所へ
         // 離してね」) at the SAME instant — so the spoken 「やってみよう」 plays while the
@@ -4869,7 +4915,7 @@ function onBasicDragPracticeDragStart(piece) {
   if (!isBasicDragPracticePhase()) return;
   if (!piece || piece !== partnerPracticeState.targetPiece) return;
   partnerPracticeState.phase = 'basic-drag-moving';
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   setPartnerPracticeCoachCopy(
     'そのまま うごかそう',
     'あおい ばしょへ もっていってね',
@@ -4881,10 +4927,10 @@ function onBasicDragPracticeDragStart(piece) {
 function updateBasicDragPracticeDrag(piece) {
   if (!isBasicDragPracticePhase()) return;
   if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
-  partnerPracticeState.cue = {
+  setBasicCueWithRelease({
     kind: isBasicDragPracticeNearHome(piece) ? 'kojika-glow' : 'kojika-move-target',
     piece: piece,
-  };
+  });
 }
 
 function onBasicDragPracticePieceDropped(piece, didSnap) {
@@ -4896,7 +4942,7 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
   }
   if (didSnap || piece.snapped) {
     partnerPracticeState.phase = 'basic-drag-done';
-    partnerPracticeState.cue = null;
+    setBasicCueWithRelease(null);
     setPartnerPracticeInput(false);
     setBasicPracticeModeBanner('done', 'できたね！');
     setPartnerPracticeCoachCopy(
@@ -4913,7 +4959,7 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
     return;
   }
   partnerPracticeState.phase = 'basic-drag-try';
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   setBasicPracticeModeBanner('try', 'やってみよう！');
   setPartnerPracticeCoachCopy(
     'もういちど',
@@ -5000,7 +5046,7 @@ function onBasicHintSelectPracticePointerDown(piece) {
   var targetPiece = partnerPracticeState.targetPiece;
   if (!targetPiece || targetPiece.snapped) return true;
   if (!piece || piece !== targetPiece) {
-    partnerPracticeState.cue = { kind: 'tap-piece', piece: targetPiece };
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: targetPiece });
     setPartnerPracticeCoachCopy(
       piece ? 'このピースだよ' : 'ピースを えらんでね',
       'ばしょを しりたい ピースを タッチ',
@@ -5013,7 +5059,7 @@ function onBasicHintSelectPracticePointerDown(piece) {
 
   setSelectedPieceForHint(piece);
   partnerPracticeState.phase = 'basic-hint-press-try';
-  partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+  setBasicCueWithRelease({ kind: 'selected-piece', piece: piece });
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = true;
   partnerPracticeState.hintActivatedByButton = false;
@@ -5041,7 +5087,7 @@ function onBasicHintPracticeHintButtonUsed() {
   clearPracticeHighlights();
   partnerPracticeState.phase = 'basic-hint-drag-try';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(true);
@@ -5069,7 +5115,7 @@ function onBasicHintDragPracticeDragStart(piece) {
   if (!isBasicHintDragPracticePhase()) return;
   if (!piece || piece !== partnerPracticeState.targetPiece) return;
   partnerPracticeState.phase = 'basic-hint-drag-moving';
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   // v1338 FIX 3: fade the 「やってみよう！」 center badge out the moment the child
   // STARTS dragging the hint piece, so it stops covering the puzzle during the
   // move/retry (the screenshot showed it obstructing the board mid-drag).
@@ -5085,10 +5131,10 @@ function onBasicHintDragPracticeDragStart(piece) {
 function updateBasicHintDragPracticeDrag(piece) {
   if (!isBasicHintDragPracticePhase()) return;
   if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
-  partnerPracticeState.cue = {
+  setBasicCueWithRelease({
     kind: isBasicDragPracticeNearHome(piece) ? 'kojika-glow' : 'kojika-move-target',
     piece: piece,
-  };
+  });
 }
 
 function onBasicHintDragPracticePieceDropped(piece, didSnap) {
@@ -5102,7 +5148,7 @@ function onBasicHintDragPracticePieceDropped(piece, didSnap) {
     clearHintGlow();
     setSelectedPieceForHint(null);
     partnerPracticeState.phase = 'basic-hint-drag-done';
-    partnerPracticeState.cue = null;
+    setBasicCueWithRelease(null);
     setPartnerPracticeInput(false);
     setBasicPracticeModeBanner('done', 'できたね！');
     setPartnerPracticeCoachCopy(
@@ -5125,7 +5171,7 @@ function onBasicHintDragPracticePieceDropped(piece, didSnap) {
     return;
   }
   partnerPracticeState.phase = 'basic-hint-drag-try';
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   showHintGlowForPiece(piece, BASIC_HINT_TRY_GLOW_MS);
   setBasicPracticeModeBanner('try', 'やってみよう！');
   setPartnerPracticeCoachCopy(
@@ -5171,9 +5217,9 @@ function startCommonHintPractice(partnerId) {
   // branch (startBasicHintPlaceTry -> scheduleBasicHintSelectCueOnVoice) will
   // set the cue itself, synced to the audio's real play event.
   if (partnerPracticeState.mode === 'basic') {
-    partnerPracticeState.cue = null;
+    setBasicCueWithRelease(null);
   } else {
-    partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
   }
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
@@ -5220,7 +5266,7 @@ function startBasicIntroPractice() {
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
   if (peekOn) setPeekOverlay(false);
   partnerPracticeState.phase = 'basic-intro';
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   partnerPracticeState.peekHoldStart = 0;
   partnerPracticeState.peekHoldReady = false;
   partnerPracticeState.peekReturnNarrationStarted = false;
@@ -5281,7 +5327,7 @@ function startBasicPeekPractice() {
   // right after the instruction (no demo gate). Phase goes straight to
   // 'peek-press'.
   partnerPracticeState.phase = 'peek-press';
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   partnerPracticeState.peekHoldStart = 0;
   partnerPracticeState.peekHoldReady = false;
   partnerPracticeState.peekReturnNarrationStarted = false;
@@ -5454,7 +5500,7 @@ function onPartnerPracticePieceSelected(piece) {
   }
   partnerPracticeState.phase = 'hint-demo';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+  setBasicCueWithRelease({ kind: 'selected-piece', piece: piece });
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
   practiceAddHighlight(btnHint);
@@ -5626,7 +5672,7 @@ function animateBasicHintPieceIntoPlace() {
     return;
   }
   partnerPracticeState.phase = 'basic-auto-snap';
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   var from = { x: piece.x, y: piece.y, rotation: piece.rotation || 0 };
   var to = { x: piece.homeX, y: piece.homeY, rotation: 0 };
   animatePracticePiece(piece, from, to, BASIC_HINT_AUTO_SNAP_DURATION_MS, function () {
@@ -5669,7 +5715,7 @@ function onPartnerPracticeHintUsed() {
   partnerPracticeState.hintActivatedByButton = false;
   clearPracticeHighlights();
   setPartnerPracticeInput(false);
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   if (isBasicPracticeHint) {
     clearPartnerPracticeCoachBubble();
     setPartnerPracticeCoachCopy('', '', '');
@@ -5892,7 +5938,7 @@ function startKojikaInteractivePractice(piece) {
   placePieceForPractice(piece, from.x, from.y, 0);
   partnerPracticeState.phase = 'kojika-drag';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   partnerPracticeState.kojikaGlowShown = false;
   setPartnerPracticeInput(true);
   setPartnerPracticeStartEnabled(false);
@@ -5910,7 +5956,7 @@ function onKojikaPracticeDragStart(piece) {
   if (partnerPracticeState.phase !== 'kojika-drag') return;
   if (piece !== partnerPracticeState.targetPiece) return;
   partnerPracticeState.phase = 'kojika-moving';
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   setPartnerPracticeCoachCopy(
     'あおい ばしょへ',
     'ちかづくと ひかるよ',
@@ -5931,7 +5977,7 @@ function updateKojikaPracticeDrag(piece) {
   if (partnerPracticeState.phase !== 'kojika-moving' && partnerPracticeState.phase !== 'kojika-drag') return;
   if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
   if (isKojikaPracticeNearHome(piece)) {
-    partnerPracticeState.cue = { kind: 'kojika-glow', piece: piece };
+    setBasicCueWithRelease({ kind: 'kojika-glow', piece: piece });
     if (!partnerPracticeState.kojikaGlowShown) {
       partnerPracticeState.kojikaGlowShown = true;
       setPartnerPracticeCoachCopy(
@@ -5942,7 +5988,7 @@ function updateKojikaPracticeDrag(piece) {
       setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'below', true);
     }
   } else {
-    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   }
 }
 
@@ -5956,7 +6002,7 @@ function onKojikaPracticePieceDropped(piece, didSnap) {
   }
   if (didSnap || piece.snapped) {
     partnerPracticeState.phase = 'kojika-done';
-    partnerPracticeState.cue = null;
+    setBasicCueWithRelease(null);
     setPartnerPracticeInput(false);
     setPartnerPracticeStartEnabled(true);
     setPartnerPracticeCoachCopy(
@@ -5968,7 +6014,7 @@ function onKojikaPracticePieceDropped(piece, didSnap) {
     redraw();
     return;
   }
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   setPartnerPracticeCoachCopy(
     partnerPracticeState.kojikaGlowShown ? 'もうすこし ちかくへ' : 'あおい ばしょへ',
     'ピースを うごかしてね',
@@ -6294,7 +6340,7 @@ function onPointerDown(e) {
     emptyTapPending = false;
     dragPiece = null;
     if (partnerPracticeState && partnerPracticeState.targetPiece) {
-      partnerPracticeState.cue = { kind: 'selected-piece', piece: partnerPracticeState.targetPiece };
+      setBasicCueWithRelease({ kind: 'selected-piece', piece: partnerPracticeState.targetPiece });
       setPartnerPracticeCoachCopy(
         'つぎは 「ヒント」',
         '「ヒント」を おしてみよう',
@@ -6322,7 +6368,7 @@ function onPointerDown(e) {
       && found !== partnerPracticeState.targetPiece) {
     emptyTapPending = false;
     dragPiece = null;
-    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece };
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece });
     setPartnerPracticeCoachCopy(
       'こっちの ピースだよ',
       '',
@@ -6338,7 +6384,7 @@ function onPointerDown(e) {
       && found !== partnerPracticeState.targetPiece) {
     emptyTapPending = false;
     dragPiece = null;
-    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece };
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece });
     setPartnerPracticeCoachCopy(
       'この ピースだよ',
       '',
@@ -6355,7 +6401,7 @@ function onPointerDown(e) {
       && found !== partnerPracticeState.targetPiece) {
     emptyTapPending = false;
     dragPiece = null;
-    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece };
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece });
     setPartnerPracticeCoachCopy(
       'この ピースだよ',
       '',

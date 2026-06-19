@@ -778,10 +778,11 @@ tr:hover { background: #FFFAF0; }
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;margin-bottom:12px;">
       <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
         よみこみプリセット
-        <select id="puzzle-tts-preset" onchange="puzzleTtsLoadPreset(this.value)" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
-          <option value="puzzle_basic_tutorial">パズル 基本チュートリアル</option>
-          <option value="oto_rhythm_tutorial">オトタッチ リズムチュートリアル</option>
-        </select>
+          <select id="puzzle-tts-preset" onchange="puzzleTtsLoadPreset(this.value)" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+            <option value="puzzle_basic_tutorial">パズル 基本チュートリアル</option>
+            <option value="bento_basic_tutorial">おべんとう 基本チュートリアル</option>
+            <option value="oto_rhythm_tutorial">オトタッチ リズムチュートリアル</option>
+          </select>
       </label>
       <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
         プリセット名
@@ -805,9 +806,9 @@ tr:hover { background: #FFFAF0; }
       <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
         語り口
         <select id="puzzle-tts-style" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+          <option value="[cheerfully but calmly]">明るく・落ち着き（標準）</option>
           <option value="[gently]">やさしく</option>
           <option value="[slowly and warmly]">ゆっくり温かく</option>
-          <option value="[cheerfully but calmly]">明るく・落ち着き</option>
           <option value="[like talking to a small child with a warm smile]">子供に話しかけるように</option>
         </select>
       </label>
@@ -1699,9 +1700,9 @@ var PUZZLE_TTS_PRESETS = [
     label: 'パズル 基本チュートリアル',
     historyName: 'パズル 基本チュートリアル',
     voice: 'Aoede',
-    style: '[gently]',
+    style: '[cheerfully but calmly]',
     scene: 'A gentle female guide teaches a preschool puzzle tutorial in a warm forest playroom.',
-    context: 'Japanese narration for a young children\'s puzzle tutorial. Use a gentle female storyteller voice, close to the opening narration. Warm, soft, clear, and reassuring. Speak slowly with short natural pauses. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce 「見る」 and 「ヒント」 clearly as button names.',
+    context: 'Japanese narration for a young children\'s puzzle tutorial. Default tone is 明るく・落ち着き: bright, calm, clear, warm, and reassuring. Speak slowly with short natural pauses so children have time to act. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce 「見る」 and 「ヒント」 clearly as button names.',
     rows: [
       { id: 'basic_tut_01', file: 'basic_tut_01.mp3', text: 'これからパズルの遊び方を練習するよ。まずはお手本を見てね。' },
       { id: 'basic_tut_02', file: 'basic_tut_02.mp3', text: 'このピースをつかんで青い場所へ持っていくよ。' },
@@ -1719,11 +1720,40 @@ var PUZZLE_TTS_PRESETS = [
     ]
   },
   {
+    id: 'bento_basic_tutorial',
+    label: 'おべんとう 基本チュートリアル',
+    historyName: 'おべんとう 基本チュートリアル',
+    voice: 'Aoede',
+    style: '[cheerfully but calmly]',
+    scene: 'A gentle female guide teaches a preschool bento-making tutorial in a warm kitchen playroom with Pono helping beside the lunchbox.',
+    context: 'Japanese narration for a young children\'s bento tutorial. Default tone is 明るく・落ち着き: bright, calm, clear, warm, and reassuring. Speak slowly with short natural pauses so children can follow each touch or drag. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce food names like 「のり」, 「おかず」, 「みずたまカップ」, and 「プチトマト」 clearly.',
+    rows: [
+      { id: 'basic_tut_01', file: 'basic_tut_01.mp3', text: 'まずは、おべんとうばこを えらぼう。' },
+      { id: 'basic_tut_02', file: 'basic_tut_02.mp3', text: 'ごはんを つかんで、ひだりがわに のせよう。' },
+      { id: 'basic_tut_03', file: 'basic_tut_03.mp3', text: 'のりを ごはんの うえに のせよう。' },
+      { id: 'basic_tut_04', file: 'basic_tut_04.mp3', text: 'のりは いくつか かざれるよ。できたら、のりOKを おそう。' },
+      { id: 'basic_tut_05', file: 'basic_tut_05.mp3', text: 'まずは、おおきい おかずを ひとつ いれてみよう。' },
+      { id: 'basic_tut_06', file: 'basic_tut_06.mp3', text: 'もうひとつ おかずを、まるの ところに かさねよう。' },
+      { id: 'basic_tut_07', file: 'basic_tut_07.mp3', text: 'かさなっている じゅんばんを かえてみよう。したの やじるしの ボタンを おしてね。' },
+      { id: 'basic_tut_08', file: 'basic_tut_08.mp3', text: 'ウインナーを えらんで、あいている ところに うごかそう。' },
+      { id: 'basic_tut_09', file: 'basic_tut_09.mp3', text: 'みずたまカップを つかんで、おべんとうばこに いれよう。' },
+      { id: 'basic_tut_10', file: 'basic_tut_10.mp3', text: 'カップの サイズを えらべるよ。3が いちばん おおきいよ。やじるしで まえうしろも かえられるよ。' },
+      { id: 'basic_tut_11', file: 'basic_tut_11.mp3', text: 'きまったら、OKを おしてね。' },
+      { id: 'basic_tut_12', file: 'basic_tut_12.mp3', text: 'カップには ちいさい おかずだけ いれられるよ。プチトマトを カップに いれよう。' },
+      { id: 'basic_tut_13', file: 'basic_tut_13.mp3', text: 'いれたら、おかずOKを おそう。' },
+      { id: 'basic_tut_14', file: 'basic_tut_14.mp3', text: 'これで おべんとうが かんせいしたよ。' },
+      { id: 'basic_tut_15', file: 'basic_tut_15.mp3', text: 'きにいった おべんとうは、おきにいりに いれると とっておけるよ。' },
+      { id: 'basic_tut_16', file: 'basic_tut_16.mp3', text: 'ともだちが よろこぶ おべんとうを たくさん つくってあげよう。' },
+      { id: 'basic_tut_17', file: 'basic_tut_17.mp3', text: 'くわしい けっかを おすと、いろんな じょうほうが みられるよ。よく みて、つぎの さんこうに しよう。' },
+      { id: 'basic_tut_18', file: 'basic_tut_18.mp3', text: 'うまくいったら ステッカーが もらえるよ。たくさん あつめよう。' }
+    ]
+  },
+  {
     id: 'oto_rhythm_tutorial',
     label: 'オトタッチ リズムチュートリアル',
     historyName: 'オトタッチ リズムチュートリアル',
     voice: 'Aoede',
-    style: '[slowly and warmly]',
+    style: '[cheerfully but calmly]',
     scene: 'A gentle female guide teaches a preschool rhythm game on a dark but cheerful arcade stage.',
     context: 'Japanese narration for OtoTouch rhythm mode. Use a bright, calm, clear voice for young children (明るく・落ち着き). Speak slowly with short pauses so children have time to read and act. Keep the tone cheerful but settled. No music, no sound effects, no background noise. Pronounce note names like 「ファ」 clearly.',
     rows: [
@@ -1753,6 +1783,7 @@ var puzzleTtsCurrentAudio = null;
 var puzzleTtsCurrentAudioId = '';
 var puzzleTtsSelectedRowId = '';
 var puzzleTtsDragRowId = '';
+var PUZZLE_TTS_DEFAULT_STYLE = '[cheerfully but calmly]';
 var PUZZLE_TTS_USER_PRESETS_KEY = 'pono_puzzle_tts_user_presets_v1';
 var PUZZLE_TTS_HISTORY_KEY = 'pono_puzzle_tts_history_v1';
 var PUZZLE_TTS_DRAFT_KEY = 'pono_puzzle_tts_draft_v1';
@@ -1925,7 +1956,7 @@ function puzzleTtsNormalizeUserPreset(item) {
     label: label || '保存プリセット',
     historyName: String(item.historyName || label || '').trim() || '保存プリセット',
     voice: item.voice || 'Aoede',
-    style: item.style || '[gently]',
+    style: item.style || PUZZLE_TTS_DEFAULT_STYLE,
     model: item.model || 'gemini-3.1-flash-tts-preview',
     scene: item.scene || '',
     context: item.context || '',
@@ -1997,7 +2028,7 @@ function puzzleTtsPresetFromState(state, id, label) {
     label: label,
     historyName: label,
     voice: state.voice || 'Aoede',
-    style: state.style || '[gently]',
+    style: state.style || PUZZLE_TTS_DEFAULT_STYLE,
     model: state.model || 'gemini-3.1-flash-tts-preview',
     scene: state.scene || '',
     context: state.context || '',
@@ -2035,7 +2066,7 @@ function puzzleTtsStateFromPreset(preset) {
     savedAt: new Date().toISOString(),
     name: preset.historyName || preset.label || '',
     voice: preset.voice || 'Aoede',
-    style: preset.style || '[gently]',
+    style: preset.style || PUZZLE_TTS_DEFAULT_STYLE,
     model: preset.model || 'gemini-3.1-flash-tts-preview',
     scene: preset.scene || '',
     context: preset.context || '',
@@ -2064,7 +2095,7 @@ function puzzleTtsCollectState() {
     presetId: puzzleTtsCurrentPresetId || (document.getElementById('puzzle-tts-preset') || {}).value || PUZZLE_TTS_PRESETS[0].id,
     savedAt: new Date().toISOString(),
     voice: puzzleTtsControlValue('puzzle-tts-voice') || 'Aoede',
-    style: puzzleTtsControlValue('puzzle-tts-style') || '[gently]',
+    style: puzzleTtsControlValue('puzzle-tts-style') || PUZZLE_TTS_DEFAULT_STYLE,
     model: puzzleTtsControlValue('puzzle-tts-model') || '',
     scene: puzzleTtsControlValue('puzzle-tts-scene') || '',
     context: puzzleTtsControlValue('puzzle-tts-context') || '',
