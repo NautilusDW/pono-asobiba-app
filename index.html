@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ポノのあそびば｜絵本の世界で楽しく学ぼう！子ども向け知育サイト</title>
   <meta name="description" content="「ポノのあそびば」は、人気絵本『ありがとうって、うれしいね』のキャラクター・ポノと一緒に楽しく学べる子ども向け知育サイト。ひらがな・カタカナのなぞり書き、ぬりえ、パズル、おえかきなど、いろんな遊びを少しずつ用意しています。">
-  <meta name="keywords" content="ポノのあそびば, ポノ, 絵本, ありがとう, 子ども, 幼児, 知育, ひらがな, カタカナ, なぞり書き, ぬりえ, パズル, 無料, 学習ゲーム">
+  <meta name="keywords" content="ポノのあそびば, ポノ, 絵本, ありがとう, 子ども, 幼児, 知育, ひらがな, カタカナ, なぞり書き, ぬりえ, パズル, 学習ゲーム">
   <meta name="author" content="ネモ先生">
   <link rel="canonical" href="https://pono-asobiba-app.ndw.workers.dev/">
 
@@ -295,20 +295,190 @@
       color: var(--text-light);
       line-height: 1.6;
     }
+
+    /* ===== Hero B (slim, scoped) ===== */
+    .herob{
+      --herob-primary:#F2915A;
+      --herob-primary-deep:#C96A2E;
+      --herob-primary-light:#FDDCBF;
+      --herob-text:#5D4E37;
+      --herob-text-light:#7A6A4F;
+      --herob-shadow:rgba(93,78,55,.12);
+      width:100%;max-width:1040px;margin:0 auto;padding:26px 18px 28px;text-align:center;color:var(--herob-text);
+    }
+    .herob *{box-sizing:border-box;}
+    .herob-title{font-weight:900;font-size:clamp(26px,5.6vw,48px);line-height:1.2;letter-spacing:.02em;margin:0;color:var(--herob-text);animation:herob-rise .6s ease both;}
+    .herob-title .accent{color:var(--herob-primary-deep);}
+    .herob-lead{font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:10px auto 0;animation:herob-rise .6s .06s ease both;}
+    .herob-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:560px;margin:18px auto 0;animation:herob-rise .6s .12s ease both;}
+    .herob-chip{background:var(--herob-primary-light);color:var(--herob-text);font-weight:900;font-size:clamp(12px,3vw,14px);padding:8px 16px;border-radius:999px;letter-spacing:.02em;}
+    .herob-cta-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:22px auto 0;animation:herob-rise .6s .18s ease both;}
+    .herob-cta{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:56px;padding:14px 44px;background:var(--herob-primary-deep);color:#fff;font-weight:900;font-size:clamp(18px,4.6vw,24px);letter-spacing:.06em;text-decoration:none;border-radius:26px;box-shadow:0 6px 20px rgba(201,106,46,.32);transition:transform .25s ease,box-shadow .25s ease;}
+    .herob-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(201,106,46,.4);}
+    .herob-cta:active{transform:translateY(0) scale(.98);}
+    .herob-cta:focus-visible{outline:3px solid var(--herob-primary);outline-offset:3px;}
+    .herob-free{font-weight:700;font-size:clamp(12px,3vw,14px);color:var(--herob-text-light);letter-spacing:.04em;margin:0;}
+    @keyframes herob-rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+    @media (prefers-reduced-motion:reduce){.herob *{animation:none!important;}}
+    @media (min-width:768px){.herob{padding:30px 32px 32px;}.herob-chips,.herob-cta-wrap{max-width:680px;}}
+    @media (min-width:1200px){.herob{padding:36px 40px 36px;}}
+
+    /* ===== Play Cards A1 改善版 (scoped) ===== */
+    .play-cards{
+      --pc-primary:#F2915A; --pc-primary-deep:#C96A2E; --pc-primary-light:#FDDCBF;
+      --pc-primary-light-2:#FBC9A2;
+      --pc-text:#5D4E37; --pc-text-light:#7A6A4F; --pc-shadow:rgba(93,78,55,.12); --pc-line:rgba(93,78,55,.03);
+      font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro',sans-serif;color:var(--pc-text);
+      background:transparent;
+      background-image:
+        repeating-linear-gradient(180deg,transparent 0 37px,var(--pc-line) 37px 38px),
+        radial-gradient(circle at 12% 6%, rgba(253,220,191,.42), transparent 40%);
+      padding:28px 18px 36px;
+      width:100%;
+    }
+    .play-cards *{box-sizing:border-box;}
+    .pc-head{text-align:center;max-width:760px;margin:0 auto 20px;}
+    .pc-h2{font-weight:900;font-size:clamp(26px,5.5vw,44px);line-height:1.25;letter-spacing:.02em;margin:0;color:var(--pc-text);}
+    .pc-h2 .u{background:linear-gradient(transparent 62%,var(--pc-primary-light) 62%);padding:0 .15em;}
+    .pc-sub{font-weight:700;font-size:clamp(14px,3vw,18px);color:var(--pc-text-light);margin:12px 0 0;line-height:1.7;}
+    .pc-stack{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:24px;}
+    .pc-card{position:relative;background:#FFFDF8;border:1px solid rgba(93,78,55,.08);border-radius:24px;padding:14px 14px 22px;
+      box-shadow:0 8px 26px var(--pc-shadow);animation:pc-pop .6s ease both;
+      --rot:0deg;
+      transform:rotate(var(--rot));
+    }
+    .pc-card:nth-child(odd){--rot:-2deg;}
+    .pc-card:nth-child(even){--rot:2deg;}
+    .pc-card::before{content:"";position:absolute;top:-12px;width:108px;height:26px;border-radius:3px;box-shadow:0 2px 5px var(--pc-shadow);}
+    .pc-card--mt1::before{left:50%;transform:translateX(-50%) rotate(-3deg);background:repeating-linear-gradient(90deg,rgba(242,145,90,.6) 0 8px,rgba(253,220,191,.7) 8px 16px);}
+    .pc-card--mt2::before{left:30%;transform:translateX(-50%) rotate(4deg);background:repeating-linear-gradient(45deg,rgba(251,201,162,.7) 0 6px,rgba(253,220,191,.6) 6px 14px);}
+    .pc-card--mt3::before{left:62%;transform:translateX(-50%) rotate(-5deg);background:repeating-linear-gradient(135deg,rgba(242,145,90,.55) 0 5px,rgba(251,201,162,.7) 5px 12px);}
+    .pc-card--mt4::before{left:42%;transform:translateX(-50%) rotate(2deg);background:repeating-linear-gradient(0deg,rgba(253,220,191,.75) 0 7px,rgba(251,201,162,.6) 7px 16px);}
+    .pc-visual{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background-size:cover;background-position:center;background-repeat:no-repeat;}
+    .pc-v-bento  {background-image:url('assets/images/bento/cooking/ui/recipe_card_frame.png'),linear-gradient(150deg,#F8CFA6,#F2A971);}
+    .pc-v-maze   {background-image:url('maze/imageStages/stage5.jpg'),linear-gradient(150deg,#B7A877,#8C9A6E);}
+    .pc-v-oto    {background-image:url('assets/images/oto/title_back.jpg'),linear-gradient(150deg,#F6D79E,#EFC06B);}
+    .pc-v-sticker{background-image:url('assets/images/sticker-book/sticker_book_base_kids_16x9.png'),linear-gradient(150deg,#FBD8C2,#F4B79A);}
+    .pc-bubble{position:absolute;top:8px;right:-6px;z-index:3;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:.82rem;letter-spacing:.04em;padding:7px 13px;border-radius:14px 14px 14px 4px;transform:rotate(5deg);box-shadow:0 4px 10px rgba(201,106,46,.35);}
+    .pc-bubble--alt{background:var(--pc-primary);box-shadow:0 4px 10px rgba(242,145,90,.32);}
+    .pc-body{padding:16px 8px 0;}
+    .pc-title{font-weight:900;font-size:clamp(20px,5vw,28px);line-height:1.3;margin:0;color:var(--pc-text);display:inline-block;transform:rotate(-1.2deg);}
+    .pc-title rt{font-size:.45em;font-weight:700;color:var(--pc-text-light);}
+    .pc-play{font-weight:700;font-size:clamp(14px,3.6vw,17px);line-height:1.7;color:var(--pc-text);margin:10px 0 0;}
+    .pc-growth{font-weight:700;font-size:clamp(12.5px,3.2vw,14px);line-height:1.65;color:var(--pc-text);margin:10px 0 0;padding:10px 14px;background:rgba(253,220,191,.4);border-radius:12px;}
+    .pc-growth b{color:var(--pc-primary-deep);}
+    .pc-chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0;}
+    .pc-chip{background:var(--pc-primary-light);color:var(--pc-text);font-weight:900;font-size:12px;padding:5px 12px;border-radius:999px;}
+    .pc-cta-wrap{display:flex;justify-content:center;margin:36px auto 0;}
+    .pc-cta{display:inline-flex;align-items:center;gap:.5em;min-height:56px;padding:14px 38px;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:clamp(17px,4.4vw,22px);letter-spacing:.06em;text-decoration:none;border-radius:24px;box-shadow:0 6px 20px rgba(201,106,46,.32);transition:transform .25s ease,box-shadow .25s ease;}
+    .pc-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(201,106,46,.42);}
+    .pc-cta:active{transform:translateY(0) scale(.98);}
+    .play-cards a:focus-visible{outline:3px solid var(--pc-primary);outline-offset:3px;}
+    @keyframes pc-pop{from{opacity:0;transform:translateY(16px) rotate(0);}to{opacity:1;transform:rotate(var(--rot));}}
+    @media (prefers-reduced-motion:reduce){.play-cards *{animation:none!important;}}
+    @media (min-width:768px){.play-cards{padding:40px 32px 48px;}.pc-stack{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:30px 28px;}.pc-card:nth-child(4n+3){--rot:.6deg;}}
+    @media (min-width:1200px){.pc-stack{max-width:1000px;gap:38px 36px;}.pc-visual{aspect-ratio:16/10;}}
+
+    /* ===== Amazon book-aside (compact) ===== */
+    .book-aside{width:100%;max-width:560px;margin:8px auto 0;padding:18px 16px 20px;text-align:center;background:rgba(255,255,255,.78);border:2px solid #FDE68A;border-radius:18px;box-shadow:0 4px 14px rgba(93,78,55,.1);}
+    .book-aside-h{margin:0;font-weight:900;font-size:clamp(15px,3.6vw,18px);color:#5D4E37;letter-spacing:.04em;}
+    .book-aside-em{background:linear-gradient(transparent 62%, #FDDCBF 62%);padding:0 .15em;}
+    .book-aside-sub{margin:6px 0 12px;font-weight:700;font-size:clamp(11.5px,2.8vw,13px);color:#7A6A4F;letter-spacing:.02em;}
+    .book-aside-link{display:block;border-radius:12px;overflow:hidden;text-decoration:none;box-shadow:0 3px 12px rgba(93,78,55,.12);transition:transform .25s ease,box-shadow .25s ease;}
+    .book-aside-link:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(93,78,55,.18);}
+    .book-aside-link:focus-visible{outline:3px solid #F2915A;outline-offset:3px;}
+    .book-aside-link img,.book-aside-link picture,.book-aside-link picture img{display:block;width:100%;height:auto;}
+
+    /* ===== a11y common :focus-visible (既存要素) ===== */
+    .help-link:focus-visible{outline:3px solid var(--primary);outline-offset:3px;border-radius:50px;}
   </style>
 </head>
 <body>
   <div class="page">
 
-    <!-- Amazon ヒーローバナー -->
-    <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="hero-amazon" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本を見る">
-      <picture>
-        <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
-        <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
-        <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.png">
-        <img src="assets/images/Amazonリンク.png" alt="Amazonで発売中" loading="eager">
-      </picture>
-    </a>
+    <!-- ===== Hero B: 体験予告優先 (slim版) ===== -->
+    <section class="herob" aria-labelledby="herob-h">
+      <h1 class="herob-title" id="herob-h">みて、さわって、<span class="accent">あそぼう</span></h1>
+      <p class="herob-lead">ポノの あそびばで できること</p>
+      <div class="herob-chips" aria-label="あそびばの ジャンル">
+        <span class="herob-chip">2〜7さい</span>
+        <span class="herob-chip">もじ</span>
+        <span class="herob-chip">かず</span>
+        <span class="herob-chip">おえかき</span>
+        <span class="herob-chip">パズル</span>
+        <span class="herob-chip">おんがく</span>
+      </div>
+      <div class="herob-cta-wrap">
+        <a href="play.html" class="herob-cta" id="enter-btn">すぐ あそぶ <span class="arrow" aria-hidden="true">→</span></a>
+        <p class="herob-free">きほんの あそびは いま みんなに ひらいてるよ</p>
+      </div>
+    </section>
+
+    <!-- ===== Play Cards A1 (改善版): LP→bento アセット直参照中。 bento 側でリネーム時は LP も追従要 ===== -->
+    <section class="play-cards pc-grav" aria-labelledby="pc-h2">
+      <div class="pc-head">
+        <h2 class="pc-h2" id="pc-h2">あそびばで <span class="u">できること</span></h2>
+        <p class="pc-sub">ポノと いっしょに、こんな あそびが まってるよ</p>
+      </div>
+      <div class="pc-stack">
+        <article class="pc-card pc-card--mt1">
+          <div class="pc-bubble">いま にんき！</div>
+          <div class="pc-visual pc-v-bento" role="img" aria-label="すきなおかずを選んで作る、いろどりお弁当の画面"></div>
+          <div class="pc-body">
+            <h3 class="pc-title"><ruby>彩<rt>いろど</rt></ruby>り<ruby>弁当<rt>べんとう</rt></ruby></h3>
+            <p class="pc-play">すきな おかずを えらんで、じぶんだけの おべんとうを つくろう！</p>
+            <p class="pc-growth">色の組み合わせや配置で <b>彩りのセンスと段取り力</b> が育ちます</p>
+            <div class="pc-chips"><span class="pc-chip">そうぞう</span><span class="pc-chip">いろ</span><span class="pc-chip">だんどり</span></div>
+          </div>
+        </article>
+        <article class="pc-card pc-card--mt2">
+          <div class="pc-bubble pc-bubble--alt">ゆうき そだつ</div>
+          <div class="pc-visual pc-v-maze" role="img" aria-label="ランタンを持って暗い森を探検するめいろの画面"></div>
+          <div class="pc-body">
+            <h3 class="pc-title">ランタンの <ruby>迷路<rt>めいろ</rt></ruby></h3>
+            <p class="pc-play">ランタンを もって、くらい もりを たんけん！ ゴールまで みちを みつけよう。</p>
+            <p class="pc-growth">先を見通す <b>空間認識力・意思決定力</b> と、暗闇でも進む <b>小さな勇気</b> が育ちます</p>
+            <div class="pc-chips"><span class="pc-chip">たんけん</span><span class="pc-chip">ゆうき</span><span class="pc-chip">かんがえる</span></div>
+          </div>
+        </article>
+        <article class="pc-card pc-card--mt3">
+          <div class="pc-bubble pc-bubble--alt">リズム なる</div>
+          <div class="pc-visual pc-v-oto" role="img" aria-label="タップでドレミが鳴る、ポノのおとタッチの画面"></div>
+          <div class="pc-body">
+            <h3 class="pc-title">ポノの おとタッチ</h3>
+            <p class="pc-play">タップで ドレミが なるよ！ どうぶつの こえや たいこも あそべるよ。</p>
+            <p class="pc-growth">音の高低・リズム遊びで <b>聴覚と音感、表現する楽しさ</b> が育ちます</p>
+            <div class="pc-chips"><span class="pc-chip">リズム</span><span class="pc-chip">おんがく</span><span class="pc-chip">ひょうげん</span></div>
+          </div>
+        </article>
+        <article class="pc-card pc-card--mt4">
+          <div class="pc-bubble pc-bubble--alt">あつめ よう</div>
+          <div class="pc-visual pc-v-sticker" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面"></div>
+          <div class="pc-body">
+            <h3 class="pc-title">シールアルバム</h3>
+            <p class="pc-play">あそんで あつめた シールを、じぶんの アルバムに ぺたぺた はろう！</p>
+            <p class="pc-growth">集めて並べる楽しさで <b>達成感とコレクション欲、整理する力</b> が育ちます</p>
+            <div class="pc-chips"><span class="pc-chip">あつめる</span><span class="pc-chip">せいり</span><span class="pc-chip">たっせいかん</span></div>
+          </div>
+        </article>
+      </div>
+      <div class="pc-cta-wrap">
+        <a href="play.html" class="pc-cta">ぜんぶ あそびに いく <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <!-- ===== Amazon えほんも あるよ (compact) ===== -->
+    <section class="book-aside" aria-labelledby="book-aside-h">
+      <p class="book-aside-h" id="book-aside-h">えほんも <span class="book-aside-em">あるよ</span></p>
+      <p class="book-aside-sub">あそびばの もとに なった ポノの えほん</p>
+      <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="book-aside-link" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本『ありがとうって、うれしいね』を見る">
+        <picture>
+          <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
+          <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
+          <img src="assets/images/Amazonリンク.png" alt="Amazonで絵本『ありがとうって、うれしいね』発売中" loading="lazy">
+        </picture>
+      </a>
+    </section>
 
     <!-- ミュージックビデオ -->
     <section class="video-section">
@@ -318,17 +488,11 @@
           src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
+          loading="lazy"
           title="ポノのうた">
         </iframe>
       </div>
     </section>
-
-    <!-- 入口ボタン (ようこその上に配置) -->
-    <a href="play.html" class="enter-btn" id="enter-btn">
-      <span class="enter-btn-main">ポノのあそびば</span>
-      <span class="enter-btn-iri">いりぐち</span>
-    </a>
-    <div class="enter-btn-sub">⬆ ここから あそべるよ！</div>
 
     <!-- 作者コメント -->
     <div class="author-card" id="welcome-card">

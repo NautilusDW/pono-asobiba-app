@@ -4912,7 +4912,11 @@ function startBasicPeekPractice() {
   dragPiece = null;
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
   if (peekOn) setPeekOverlay(false);
-  partnerPracticeState.phase = 'peek-demo';
+  // No hand demo for the 見る button anymore: idx4 already tells the child to
+  // press it directly, so we frame this as a direct try and enable the button
+  // right after the instruction (no demo gate). Phase goes straight to
+  // 'peek-press'.
+  partnerPracticeState.phase = 'peek-press';
   partnerPracticeState.cue = null;
   partnerPracticeState.peekHoldStart = 0;
   partnerPracticeState.peekHoldReady = false;
@@ -4923,51 +4927,38 @@ function startBasicPeekPractice() {
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
-  // Use the full fallback duration for basic_tut_05 (~4.9s) so the badge
-  // stays visible for the entire intro narration, not just 3s.
-  setBasicPracticeModeBanner('demo', 'おてほんをみてね', BASIC_TUT_FALLBACK_MS[4] || 4921);
+  // Direct-try framing: show the 「やってみよう！」 try badge (no お手本 demo badge).
+  setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
   clearPartnerPracticeCoachBubble();
   showPartnerPracticeCoach();
   if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
   setPartnerPracticeCoachCopy(
-    'まずは 「みる」 ボタン',
-    'ながく おしてみよう',
+    'みる ボタンを',
+    'ながく おしてね',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
   practiceAddHighlight(btnPeek);
   // index 4 = press-instruction (05 "まずは見るボタンを長く押してみよう"). On its
-  // onDone, CHAIN to index 5 = explanation (06 "見るボタンは長く押している間だけ絵が
-  // 見えるよ") so BOTH lines play during the demo BEFORE the hand demo runs.
+  // onDone, enable the 見る button so the child can press it DIRECTLY (no demo),
+  // then CHAIN to index 5 = explanation (06 "見るボタンは長く押している間だけ絵が
+  // 見えるよ"). The child may press the button while idx5 is still playing.
   playBasicPracticeVoice(4, function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
+    // Enable the 見る button right after the instruction is heard.
+    setPartnerPracticePeekInput(true);
     setPartnerPracticeCoachCopy(
       'ながく おしている あいだ、',
       'えが みえるよ',
       ''
     );
     setPartnerPracticeCoachBubble(btnPeek, null, false);
-    playBasicPracticeVoice(5, function () {
-      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
-      runBasicButtonHandDemo(btnPeek, {
-        holdMs: BASIC_PEEK_HOLD_MS + 280,
-        onPress: function () { setPeekOverlay(true); },
-        onRelease: function () { setPeekOverlay(false); },
-      }, function () {
-        if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
-        clearPracticeHighlights();
-        practiceAddHighlight(btnPeek);
-        partnerPracticeState.phase = 'peek-press';
-        setPartnerPracticePeekInput(true);
-        setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
-        setPartnerPracticeCoachCopy(
-          'やってみよう',
-          '「みる」 ボタンを ながく おしてね',
-          ''
-        );
-        setPartnerPracticeCoachBubble(btnPeek, null, false);
-      });
-    });
+    // Keep idx5 (explanation) in the flow. It plays while the button is
+    // already pressable; the child may press during it. The early-return phase
+    // guard at the top of this onDone (phase !== 'peek-press') already protects
+    // this call: if the child pressed before idx4 finished, phase is 'peek-hold'
+    // and we never reach here, so idx6 (press narration) plays instead of idx5.
+    playBasicPracticeVoice(5);
   });
   redraw();
 }

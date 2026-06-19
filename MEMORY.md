@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T02:52:14Z - 見る(peek)デモ削除のブロッキング修正: PUZZLE_TUTORIAL_VOICE.md の詳細セクションをテーブル/コードのindexに整合 (idx5 peek_explain追加, idx6-11リナンバー, 旧tut_basic_08_hint_done実装メモ修正), idx5呼び出しのphaseガードコメント明確化, node --check 3ファイル通過
+- **タスク**: 見る(peek)デモ削除のブロッキング修正: PUZZLE_TUTORIAL_VOICE.md の詳細セクションをテーブル/コードのindexに整合 (idx5 peek_explain追加, idx6-11リナンバー, 旧tut_basic_08_hint_done実装メモ修正), idx5呼び出しのphaseガードコメント明確化, node --check 3ファイル通過
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 68
+- **エラー数**: 9
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 17, "Workflow": 4, "Read": 10, "ToolSearch": 2, "DesignSync": 17, "Bash": 10, "Grep": 2, "Write": 6}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-06-19T02:47:59Z - Puzzle basic tutorial: remove 見る(peek) hand demo so child presses directly after idx4; keep idx5 explanation; doc idx2 trim note; sw1330 + puzzle scripts v1317
+- **タスク**: Puzzle basic tutorial: remove 見る(peek) hand demo so child presses directly after idx4; keep idx5 explanation; doc idx2 trim note; sw1330 + puzzle scripts v1317
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 67
+- **エラー数**: 9
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 16, "Workflow": 4, "Read": 10, "ToolSearch": 2, "DesignSync": 17, "Bash": 10, "Grep": 2, "Write": 6}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-19T02:37:53Z - Puzzle basic-drag-try reorder: badge alone first then on fade enable input + play trimmed basic_tut_03 together; fallback idx2 trim; cache bumps sw1328/voice v1316/index v1316
 - **タスク**: Puzzle basic-drag-try reorder: badge alone first then on fade enable input + play trimmed basic_tut_03 together; fallback idx2 trim; cache bumps sw1328/voice v1316/index v1316
 - **結果**: 成功
@@ -225,32 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-06-18T17:30:49Z - Re-transcribe newly placed puzzle tutorial MP3s (05..10) and verify each line; flag deployment lag
 - **タスク**: Re-transcribe newly placed puzzle tutorial MP3s (05..10) and verify each line; flag deployment lag
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 41
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 16, "Workflow": 4, "Edit": 3, "Write": 1, "Agent": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-18T17:27:17Z - パズル基本チュートリアルを8→10音声ステップに再構成 (peek section に困った時クリップ追加、hint section を intro/glow/finish の3クリップ化、registry/fallback/coach text/docs/admin 更新、CACHE_VERSION 1315→1316 forward bump、script ?v 1311→1312)
-- **タスク**: パズル基本チュートリアルを8→10音声ステップに再構成 (peek section に困った時クリップ追加、hint section を intro/glow/finish の3クリップ化、registry/fallback/coach text/docs/admin 更新、CACHE_VERSION 1315→1316 forward bump、script ?v 1311→1312)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 41
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 16, "Workflow": 4, "Edit": 3, "Write": 1, "Agent": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-18T17:22:23Z - パズルチュートリアル音声 basic_tut_05..10.mp3 を外部WAVから80k mono 44.1kHz libmp3lame で変換配置 (01-04は不変更)
-- **タスク**: パズルチュートリアル音声 basic_tut_05..10.mp3 を外部WAVから80k mono 44.1kHz libmp3lame で変換配置 (01-04は不変更)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 41
