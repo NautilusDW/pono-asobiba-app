@@ -16,6 +16,9 @@ const PROTECTED_PREFIXES = [
 ];
 
 const BENTO_MASK_CONFIG_KEY = 'bento-mask-defaults-v1';
+const NPC_POSITIONS_CURRENT_KEY = 'npc-positions:current';
+const NPC_POSITIONS_HISTORY_PREFIX = 'npc-positions:history:';
+const NPC_POSITIONS_HISTORY_MAX = 10;
 
 function requiresAuth(path) {
   return PROTECTED_PREFIXES.some(p => path === p || path.startsWith(p + '/') || path.startsWith(p + '.'));
@@ -57,6 +60,20 @@ export default {
     }
     if (path === '/api/bento/mask-defaults') {
       return handleBentoMaskDefaults(request, env);
+    }
+    if (path === '/api/admin/bento-npc-positions') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (request.method === 'GET') {
+        if (!checkBasicAuth(request, env)) return authChallenge();
+        return handleBentoNpcPositionsGet(request, env);
+      }
+      if (request.method === 'POST') {
+        if (!checkBasicAuth(request, env)) return authChallenge();
+        return handleBentoNpcPositionsPost(request, env);
+      }
+      return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
     }
     if (path === '/api/admin/tts-generate') {
       if (!checkBasicAuth(request, env)) return authChallenge();
@@ -300,6 +317,86 @@ async function handleBentoMaskDefaults(request, env) {
   try {
     await env.BENTO_MASK_CONFIG.put(BENTO_MASK_CONFIG_KEY, JSON.stringify(payload));
     return json(200, payload, noStoreHeaders());
+  } catch (e) {
+    return json(500, { ok: false, error: e.message }, noStoreHeaders());
+  }
+}
+
+// ---------------------------------------------------------------------------
+// NPC position backup (see admin/index.html npcPosSaveAll).
+// LocalStorage is primary; KV (BENTO_MASK_CONFIG namespace, key prefix
+// "npc-positions:") is cross-device backup. Restored to localStorage on
+// admin load if LS empty. Reuses the existing BENTO_MASK_CONFIG KV binding
+// rather than creating a new namespace.
+// ---------------------------------------------------------------------------
+async function handleBentoNpcPositionsGet(request, env) {
+  if (!env.BENTO_MASK_CONFIG) {
+    return json(503, { ok: false, error: 'BENTO_MASK_CONFIG is not configured' }, noStoreHeaders());
+  }
+  try {
+    const stored = await env.BENTO_MASK_CONFIG.get(NPC_POSITIONS_CURRENT_KEY, 'json');
+    if (!stored) {
+      return json(404, { ok: false, error: 'not_found' }, noStoreHeaders());
+    }
+    return json(200, stored, noStoreHeaders());
+  } catch (e) {
+    return json(500, { ok: false, error: e.message }, noStoreHeaders());
+  }
+}
+
+async function handleBentoNpcPositionsPost(request, env) {
+  if (!env.BENTO_MASK_CONFIG) {
+    return json(503, { ok: false, error: 'BENTO_MASK_CONFIG is not configured' }, noStoreHeaders());
+  }
+
+  let text = '';
+  try {
+    text = await request.text();
+  } catch {
+    return json(400, { ok: false, error: 'Invalid request body' }, noStoreHeaders());
+  }
+  if (text.length > 200000) {
+    return json(413, { ok: false, error: 'Payload too large' }, noStoreHeaders());
+  }
+
+  let body;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    return json(400, { ok: false, error: 'Invalid JSON' }, noStoreHeaders());
+  }
+
+  if (!body || typeof body !== 'object' || !body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
+    return json(400, { ok: false, error: 'data object required' }, noStoreHeaders());
+  }
+
+  const updatedAt = new Date().toISOString();
+  const payload = { data: body.data, updated_at: updatedAt };
+  const serialized = JSON.stringify(payload);
+
+  try {
+    await env.BENTO_MASK_CONFIG.put(NPC_POSITIONS_CURRENT_KEY, serialized);
+    await env.BENTO_MASK_CONFIG.put(NPC_POSITIONS_HISTORY_PREFIX + updatedAt, serialized);
+
+    // Prune history: keep newest NPC_POSITIONS_HISTORY_MAX entries.
+    // Keys are ISO timestamps so lexicographic sort = chronological sort.
+    let historyCount = 0;
+    try {
+      const list = await env.BENTO_MASK_CONFIG.list({ prefix: NPC_POSITIONS_HISTORY_PREFIX });
+      const keys = (list && list.keys ? list.keys.map(k => k.name) : []).sort();
+      historyCount = keys.length;
+      if (historyCount > NPC_POSITIONS_HISTORY_MAX) {
+        const excess = keys.slice(0, historyCount - NPC_POSITIONS_HISTORY_MAX);
+        for (const k of excess) {
+          try { await env.BENTO_MASK_CONFIG.delete(k); } catch {}
+        }
+        historyCount = NPC_POSITIONS_HISTORY_MAX;
+      }
+    } catch {
+      // history listing best-effort; don't fail save if prune itself errors
+    }
+
+    return json(200, { saved: true, history_count: historyCount, updated_at: updatedAt }, noStoreHeaders());
   } catch (e) {
     return json(500, { ok: false, error: e.message }, noStoreHeaders());
   }

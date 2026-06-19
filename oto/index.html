@@ -3497,6 +3497,13 @@
     pointer-events: auto;
     animation: tutBlackBrief 0.82s ease-in-out both;
   }
+  .tut-dim.tut-start-fade {
+    display: block;
+    z-index: 10020;
+    background: #020617;
+    pointer-events: auto;
+    animation: tutStartFade 1.55s ease-in-out both;
+  }
   .tut-bubble {
     position:fixed; z-index:9997;
     background:
@@ -3555,6 +3562,10 @@
   @keyframes tutBlackBrief {
     0% { opacity: 0; }
     24%, 76% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes tutStartFade {
+    0%, 34% { opacity: 1; }
     100% { opacity: 0; }
   }
   .tut-next-btn,
@@ -12047,6 +12058,26 @@ function _runOtoTutorialBlackTransition(durationMs, done) {
     if (typeof done === 'function') done();
   }, wait);
 }
+function _runOtoTutorialStartFade(durationMs, done) {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  var spot = document.getElementById('tut-spot');
+  var wait = Math.max(900, durationMs || 1550);
+  if (bubble) bubble.classList.add('hidden');
+  if (spot) spot.classList.add('hidden');
+  _hideOtoTutorialHand();
+  if (dim) {
+    dim.classList.remove('hidden', 'tut-black-transition');
+    dim.classList.add('tut-start-fade');
+  }
+  setTimeout(function() {
+    if (dim) {
+      dim.classList.remove('tut-start-fade');
+      dim.classList.add('hidden');
+    }
+    if (typeof done === 'function') done();
+  }, wait);
+}
 function _advanceOtoTutorialStep(expectedSteps, expectedIndex, delayMs) {
   if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
   _clearOtoTutorialAutoTimer();
@@ -12413,7 +12444,7 @@ function _makeOtoTutorialSteps(kind) {
         side: 'stageTop',
         noDim: true,
         hideActions: true,
-        autoNextMs: 700,
+        autoNextMs: 3400,
         before: function() {
           _setRhythmMenuAwaitingDiffChoice(false);
           _setRhythmMenuAwaitingSongChoice(true);
@@ -12866,6 +12897,7 @@ function _finishOtoTutorial(markSeen, continueFlow) {
   var spot = document.getElementById('tut-spot');
   if (dim) {
     dim.classList.remove('tut-black-transition');
+    dim.classList.remove('tut-start-fade');
     dim.classList.add('hidden');
   }
   if (bubble) bubble.classList.add('hidden');
@@ -12907,6 +12939,7 @@ function _renderOtoTutorialStep() {
   var spot = document.getElementById('tut-spot');
   if (!dim || !bubble || !_otoTutorialState) return;
   dim.classList.remove('tut-black-transition');
+  dim.classList.remove('tut-start-fade');
   var steps = _otoTutorialState.steps || [];
   var i = _otoTutorialState.index || 0;
   var s = steps[i];
@@ -13195,7 +13228,14 @@ function showTutorial(kind, opts) {
   };
   document.body.classList.add('oto-tutorial-open');
   _startOtoTutorialBgm();
-  _renderOtoTutorialStep();
+  if (kind === 'rhythmMenu') {
+    _runOtoTutorialStartFade(1550, function() {
+      if (!_otoTutorialState || _otoTutorialState.kind !== kind) return;
+      _renderOtoTutorialStep();
+    });
+  } else {
+    _renderOtoTutorialStep();
+  }
 }
 
 function maybeShowOtoTutorial(kind, delayMs) {
