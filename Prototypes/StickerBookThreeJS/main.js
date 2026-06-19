@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-713";
+const ASSET_VERSION = "20260620-716";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -105,6 +105,133 @@ const BOOK_VARIANTS = {
     tabsRight: "sb3d_girl_side_tabs_right_generated.webp",
   },
 };
+
+const STICKER_BOOK_THEMES = {
+  boy: {
+    accent: "#d79a34",
+    sub: "#55aeb8",
+    line: "#d3b35f",
+    tab: "#f4e7b8",
+    collection: {
+      paper: ["#fffbe9", "#fff3cf", "#f7e8b5"],
+      text: "#334447",
+      pageBorder: "#f9edc8",
+      pageHighlight: "rgba(255, 255, 255, 0.78)",
+      frameShadow: "rgba(87, 66, 21, 0.18)",
+      ring: 0xd9c48e,
+      ringHighlight: 0xfff6d6,
+      spine: {
+        warm: "#f1d56a",
+        paper: "#fff8df",
+        shadow: "#716332",
+        seam: "#2f9fa7",
+        foldPaper: "250, 244, 216",
+        foldWarm: "210, 190, 127",
+        foldDark: "81, 72, 38",
+      },
+      pages: {
+        left: {
+          frame: "#99cc56",
+          frameDark: "#77aa3a",
+          accent: "#4fb8a7",
+          innerStroke: "#b6d875",
+          motifSet: "nature",
+        },
+        right: {
+          frame: "#62c6dc",
+          frameDark: "#3798b4",
+          accent: "#f2bd33",
+          innerStroke: "#8ddceb",
+          motifSet: "ocean",
+        },
+      },
+      slotBand: {
+        fill: "#f5d669",
+        edge: "#d9aa1d",
+        slot: "rgba(255, 250, 231, 0.9)",
+        stroke: "rgba(181, 130, 28, 0.32)",
+      },
+      card: {
+        foundFill: "rgba(255, 253, 240, 0.76)",
+        lockedFill: "rgba(223, 225, 215, 0.58)",
+        foundStroke: "rgba(116, 170, 72, 0.38)",
+        lockedStroke: "rgba(116, 128, 122, 0.24)",
+        numberFill: "#3ea5ad",
+      },
+      tabs: [
+        { color: "#f0c82d", shadow: "#c89d15", motif: "star" },
+        { color: "#ef8b35", shadow: "#c96b20", motif: "sparkle" },
+        { color: "#8dcb4a", shadow: "#69a234", motif: "leaf" },
+        { color: "#4eb4d5", shadow: "#2d8eb3", motif: "cloud" },
+        { color: "#28a7a0", shadow: "#1a837e", motif: "shell" },
+      ],
+    },
+  },
+  girl: {
+    accent: "#d78db9",
+    sub: "#7bc8c8",
+    line: "#dcb6cc",
+    tab: "#f5ddea",
+    collection: {
+      paper: ["#fffbea", "#fff4d4", "#f8eac0"],
+      text: "#39434a",
+      pageBorder: "#fbedd2",
+      pageHighlight: "rgba(255, 255, 255, 0.82)",
+      frameShadow: "rgba(88, 62, 35, 0.16)",
+      ring: 0xd8c3a1,
+      ringHighlight: 0xfff8df,
+      spine: {
+        warm: "#bde4d7",
+        paper: "#fff7df",
+        shadow: "#657d75",
+        seam: "#b79ad3",
+        foldPaper: "250, 242, 219",
+        foldWarm: "194, 222, 210",
+        foldDark: "83, 86, 60",
+      },
+      pages: {
+        left: {
+          frame: "#bda8df",
+          frameDark: "#9a83c4",
+          accent: "#f4cf52",
+          innerStroke: "#d6c4ee",
+          motifSet: "garden",
+        },
+        right: {
+          frame: "#a6dcca",
+          frameDark: "#75bda6",
+          accent: "#ef9b7c",
+          innerStroke: "#c4ebdf",
+          motifSet: "skyGarden",
+        },
+      },
+      slotBand: {
+        fill: "#f3d883",
+        edge: "#ddb95a",
+        slot: "rgba(255, 251, 236, 0.92)",
+        stroke: "rgba(178, 137, 63, 0.28)",
+      },
+      card: {
+        foundFill: "rgba(255, 253, 242, 0.78)",
+        lockedFill: "rgba(226, 223, 218, 0.56)",
+        foundStroke: "rgba(126, 188, 170, 0.38)",
+        lockedStroke: "rgba(120, 128, 122, 0.22)",
+        numberFill: "#82c7b8",
+      },
+      tabs: [
+        { color: "#f5c664", shadow: "#d6a53a", motif: "star" },
+        { color: "#f2a67f", shadow: "#d78464", motif: "flower" },
+        { color: "#a8d9cb", shadow: "#7bbbaa", motif: "sparkle" },
+        { color: "#7ec6e6", shadow: "#5aa5c8", motif: "cloud" },
+        { color: "#b89dda", shadow: "#9479bd", motif: "flower" },
+      ],
+    },
+  },
+};
+
+function stickerBookTheme(bookName) {
+  return STICKER_BOOK_THEMES[bookName] || STICKER_BOOK_THEMES.boy;
+}
 
 const canvas = document.getElementById("scene");
 const slider = document.getElementById("flipSlider");
@@ -344,6 +471,7 @@ const textureMap = new Map(textureEntries);
 const pageTemplateTextureMap = new Map();
 const collectionSpineTextureMap = new Map();
 const collectionFoldTextureMap = new Map();
+const collectionTabsTextureMap = new Map();
 window.__stickerBookAssetsLoaded = true;
 
 const book = new THREE.Group();
@@ -1517,9 +1645,7 @@ function editorPageSide(page) {
 }
 
 function editorPagePalette() {
-  return activeBook === "girl"
-    ? { accent: "#d78db9", sub: "#7bc8c8", line: "#dcb6cc", tab: "#f5ddea" }
-    : { accent: "#d79a34", sub: "#55aeb8", line: "#d3b35f", tab: "#f4e7b8" };
+  return stickerBookTheme(activeBook);
 }
 
 function drawDrawingStrokes(ctx, strokes, width, height) {
@@ -2912,9 +3038,7 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
   templateCanvas.width = PAGE_TEXTURE_W;
   templateCanvas.height = PAGE_TEXTURE_H;
   const ctx = templateCanvas.getContext("2d");
-  const palette = bookName === "girl"
-    ? { accent: "#d78db9", sub: "#7bc8c8", line: "#dcb6cc", tab: "#f5ddea" }
-    : { accent: "#d79a34", sub: "#55aeb8", line: "#d3b35f", tab: "#f4e7b8" };
+  const palette = stickerBookTheme(bookName);
 
   drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
   if (activeAlbumMode === "collection") {
@@ -2937,11 +3061,13 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
 function drawPageTemplateBase(ctx, palette, side, mode = "free") {
   const width = PAGE_TEXTURE_W;
   const height = PAGE_TEXTURE_H;
+  const collectionTheme = mode === "collection" ? palette.collection : null;
+  const paperStops = collectionTheme?.paper || ["#fff9e4", "#fff4ce", "#f8eab9"];
   ctx.clearRect(0, 0, width, height);
   const bg = ctx.createLinearGradient(0, 0, width, height);
-  bg.addColorStop(0, "#fff9e4");
-  bg.addColorStop(0.54, "#fff4ce");
-  bg.addColorStop(1, "#f8eab9");
+  bg.addColorStop(0, paperStops[0]);
+  bg.addColorStop(0.54, paperStops[1]);
+  bg.addColorStop(1, paperStops[2]);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
@@ -2998,10 +3124,12 @@ function drawPageTemplateBase(ctx, palette, side, mode = "free") {
 }
 
 function drawCollectionPageTemplate(ctx, palette, side) {
-  const x = 126;
-  const y = 130;
-  const width = PAGE_TEXTURE_W - 252;
-  const height = PAGE_TEXTURE_H - 260;
+  const theme = palette.collection;
+  const pageTheme = theme.pages[side] || theme.pages.left;
+  const x = 92;
+  const y = 88;
+  const width = PAGE_TEXTURE_W - 184;
+  const height = PAGE_TEXTURE_H - 176;
   ctx.save();
   const innerBandW = 92;
   const innerBandX = side === "right" ? 0 : PAGE_TEXTURE_W - innerBandW;
@@ -3035,17 +3163,366 @@ function drawCollectionPageTemplate(ctx, palette, side) {
   ctx.fillRect(creaseX, -40, creaseW, PAGE_TEXTURE_H + 80);
   ctx.filter = "none";
 
-  ctx.fillStyle = "rgba(255, 252, 235, 0.72)";
-  ctx.strokeStyle = palette.line;
+  ctx.shadowColor = theme.frameShadow;
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 12;
+  ctx.fillStyle = theme.pageBorder;
+  drawCanvasRoundedRect(ctx, x - 18, y - 18, width + 36, height + 36, 76);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+
+  const frameGradient = ctx.createLinearGradient(x, y, x + width, y + height);
+  frameGradient.addColorStop(0, tintColor(pageTheme.frame, 0.16));
+  frameGradient.addColorStop(0.58, pageTheme.frame);
+  frameGradient.addColorStop(1, pageTheme.frameDark);
+  ctx.fillStyle = frameGradient;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 62);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255,255,255,0.62)";
+  ctx.lineWidth = 8;
+  drawCanvasRoundedRect(ctx, x + 14, y + 14, width - 28, height - 28, 50);
+  ctx.stroke();
+
+  const paperX = x + 56;
+  const paperY = y + 72;
+  const paperW = width - 112;
+  const paperH = height - 250;
+  const paperGradient = ctx.createLinearGradient(0, paperY, 0, paperY + paperH);
+  paperGradient.addColorStop(0, "rgba(255, 253, 240, 0.98)");
+  paperGradient.addColorStop(0.68, "rgba(255, 248, 223, 0.96)");
+  paperGradient.addColorStop(1, "rgba(252, 237, 192, 0.92)");
+  ctx.fillStyle = paperGradient;
+  drawScallopedPanelPath(ctx, paperX, paperY, paperW, paperH, 48, 28, 9);
+  ctx.fill();
+
+  ctx.strokeStyle = pageTheme.innerStroke;
   ctx.lineWidth = 5;
-  drawCanvasRoundedRect(ctx, x, y, width, height, 46);
+  drawScallopedPanelPath(ctx, paperX, paperY, paperW, paperH, 48, 28, 9);
+  ctx.stroke();
+
+  ctx.strokeStyle = theme.pageHighlight;
+  ctx.lineWidth = 4;
+  drawCanvasRoundedRect(ctx, x + 36, y + 36, width - 72, height - 72, 46);
+  ctx.stroke();
+
+  drawCollectionSlotBand(ctx, theme, pageTheme, side);
+  drawCollectionFrameMotifs(ctx, theme, pageTheme, side);
+  ctx.restore();
+}
+
+function drawScallopedPanelPath(ctx, x, y, width, height, radius, scallopDepth, scallopCount) {
+  const r = Math.min(radius, width / 2, height / 2);
+  const topStart = x + r;
+  const topEnd = x + width - r;
+  const bottomStart = topStart;
+  const bottomEnd = topEnd;
+  const count = Math.max(4, scallopCount);
+  const step = (topEnd - topStart) / count;
+
+  ctx.beginPath();
+  ctx.moveTo(topStart, y);
+  for (let i = 0; i < count; i += 1) {
+    const sx = topStart + i * step;
+    const ex = i === count - 1 ? topEnd : sx + step;
+    const mx = (sx + ex) / 2;
+    const dip = scallopDepth * (i % 2 === 0 ? 1 : 0.78);
+    ctx.quadraticCurveTo(mx, y + dip, ex, y);
+  }
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, bottomEnd, y + height);
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const ex = bottomStart + i * step;
+    const sx = i === count - 1 ? bottomEnd : ex + step;
+    const mx = (sx + ex) / 2;
+    const dip = scallopDepth * (i % 2 === 0 ? 0.86 : 0.66);
+    ctx.quadraticCurveTo(mx, y + height - dip, ex, y + height);
+  }
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, topStart, y);
+  ctx.closePath();
+}
+
+function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
+  const bandX = 98;
+  const bandY = PAGE_TEXTURE_H - 242;
+  const bandW = PAGE_TEXTURE_W - 196;
+  const bandH = 138;
+  const bandGradient = ctx.createLinearGradient(0, bandY, 0, bandY + bandH);
+  bandGradient.addColorStop(0, tintColor(theme.slotBand.fill, 0.18));
+  bandGradient.addColorStop(0.72, theme.slotBand.fill);
+  bandGradient.addColorStop(1, theme.slotBand.edge);
+
+  ctx.save();
+  ctx.fillStyle = bandGradient;
+  drawCanvasRoundedRect(ctx, bandX, bandY, bandW, bandH, 36);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.52)";
+  ctx.lineWidth = 4;
+  drawCanvasRoundedRect(ctx, bandX + 10, bandY + 10, bandW - 20, bandH - 20, 28);
+  ctx.stroke();
+
+  const slotCount = 5;
+  const slotGap = 22;
+  const slotW = (bandW - 78 - slotGap * (slotCount - 1)) / slotCount;
+  const slotH = 92;
+  const slotY = bandY + 22;
+  for (let i = 0; i < slotCount; i += 1) {
+    const x = bandX + 39 + i * (slotW + slotGap);
+    ctx.fillStyle = theme.slotBand.slot;
+    ctx.strokeStyle = theme.slotBand.stroke;
+    ctx.lineWidth = 3;
+    drawCanvasRoundedRect(ctx, x, slotY, slotW, slotH, 22);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
+    ctx.beginPath();
+    ctx.ellipse(x + slotW * 0.68, slotY + slotH * 0.24, slotW * 0.22, slotH * 0.12, -0.24, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const decoY = bandY + bandH - 18;
+  const decoKinds = pageTheme.motifSet === "ocean"
+    ? ["shell", "wave", "star", "bubble"]
+    : pageTheme.motifSet === "nature"
+      ? ["leaf", "flower", "star", "leaf"]
+      : ["flower", "leaf", "star", "bubble"];
+  for (let i = 0; i < 9; i += 1) {
+    const x = bandX + 76 + i * ((bandW - 152) / 8);
+    const kind = decoKinds[i % decoKinds.length];
+    drawCollectionMiniMotif(ctx, kind, x, decoY + (i % 2) * 4, 16 + (i % 3) * 2, pageTheme.accent, i * 0.3);
+  }
+  if (side === "right" && pageTheme.motifSet === "ocean") {
+    drawCollectionMiniMotif(ctx, "wave", bandX + bandW - 122, bandY + 36, 24, pageTheme.accent, 0);
+    drawCollectionMiniMotif(ctx, "shell", bandX + bandW - 76, bandY + 44, 19, "#fff3d0", 0);
+  }
+  ctx.restore();
+}
+
+function drawCollectionFrameMotifs(ctx, theme, pageTheme, side) {
+  const motifs = collectionMotifsFor(pageTheme.motifSet, side);
+  ctx.save();
+  for (const motif of motifs) {
+    drawCollectionMiniMotif(
+      ctx,
+      motif.kind,
+      motif.x,
+      motif.y,
+      motif.size,
+      motif.color || pageTheme.accent,
+      motif.rotation || 0,
+      theme,
+    );
+  }
+  ctx.restore();
+}
+
+function collectionMotifsFor(setName, side) {
+  const edge = side === "left" ? 1 : -1;
+  if (setName === "ocean") {
+    return [
+      { kind: "cloud", x: 250, y: 166, size: 28, color: "#b7e4eb" },
+      { kind: "star", x: 1060, y: 160, size: 16, color: "#ffdf5d" },
+      { kind: "bubble", x: 1200, y: 238, size: 16, color: "#99dce8" },
+      { kind: "boat", x: 232, y: 1198, size: 34, color: "#f0ad36", rotation: -0.08 },
+      { kind: "wave", x: 1028, y: 1186, size: 32, color: "#4fb8d6" },
+      { kind: "shell", x: 1166, y: 1190, size: 22, color: "#fff0ca" },
+    ];
+  }
+  if (setName === "nature") {
+    return [
+      { kind: "leaf", x: 236, y: 164, size: 20, color: "#66b44d", rotation: -0.3 * edge },
+      { kind: "cloud", x: 354, y: 190, size: 28, color: "#b9e0e1" },
+      { kind: "star", x: 1060, y: 158, size: 15, color: "#ffdf5d" },
+      { kind: "hill", x: 250, y: 1192, size: 44, color: "#8fc84b" },
+      { kind: "flower", x: 410, y: 1194, size: 18, color: "#fff4cf" },
+      { kind: "leaf", x: 1114, y: 1196, size: 21, color: "#5eb45e", rotation: 0.35 * edge },
+    ];
+  }
+  return [
+    { kind: "star", x: 248, y: 160, size: 24, color: "#f6d45a" },
+    { kind: "cloud", x: 1052, y: 170, size: 30, color: "#fff8e8" },
+    { kind: "bubble", x: 1166, y: 208, size: 15, color: "#91d2d1" },
+    { kind: "flower", x: 260, y: 1186, size: 20, color: "#f3df6c" },
+    { kind: "leaf", x: 1068, y: 1182, size: 25, color: "#75bd85", rotation: -0.25 * edge },
+    { kind: "star", x: 1168, y: 1198, size: 17, color: "#f3cf5b" },
+  ];
+}
+
+function drawCollectionMiniMotif(ctx, kind, x, y, size, color, rotation = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.shadowColor = "rgba(76, 55, 26, 0.16)";
+  ctx.shadowBlur = Math.max(2, size * 0.12);
+  ctx.shadowOffsetY = Math.max(1, size * 0.06);
+
+  if (kind === "star") {
+    drawStarMotif(ctx, 0, 0, size * 0.48, size * 0.24, color);
+  } else if (kind === "cloud") {
+    drawCloudMotif(ctx, size, color);
+  } else if (kind === "leaf") {
+    drawLeafMotif(ctx, size, color);
+  } else if (kind === "flower") {
+    drawFlowerMotif(ctx, size, color);
+  } else if (kind === "shell") {
+    drawShellMotif(ctx, size, color);
+  } else if (kind === "wave") {
+    drawWaveMotif(ctx, size, color);
+  } else if (kind === "boat") {
+    drawBoatMotif(ctx, size, color);
+  } else if (kind === "hill") {
+    drawHillMotif(ctx, size, color);
+  } else {
+    drawBubbleMotif(ctx, size, color);
+  }
+  ctx.restore();
+}
+
+function drawStarMotif(ctx, x, y, outer, inner, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "rgba(129, 95, 34, 0.12)";
+  ctx.lineWidth = Math.max(1.5, outer * 0.08);
+  ctx.beginPath();
+  for (let i = 0; i < 10; i += 1) {
+    const angle = -Math.PI / 2 + i * (Math.PI / 5);
+    const radius = i % 2 === 0 ? outer : inner;
+    const px = x + Math.cos(angle) * radius;
+    const py = y + Math.sin(angle) * radius;
+    if (i === 0) {
+      ctx.moveTo(px, py);
+    } else {
+      ctx.lineTo(px, py);
+    }
+  }
+  ctx.closePath();
   ctx.fill();
   ctx.stroke();
-  ctx.strokeStyle = "rgba(255,255,255,0.68)";
-  ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, x + 24, y + 24, width - 48, height - 48, 34);
+}
+
+function drawCloudMotif(ctx, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "rgba(77, 126, 137, 0.14)";
+  ctx.lineWidth = Math.max(1.5, size * 0.06);
+  ctx.beginPath();
+  ctx.ellipse(-size * 0.28, size * 0.05, size * 0.28, size * 0.22, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, -size * 0.08, size * 0.34, size * 0.28, 0, 0, Math.PI * 2);
+  ctx.ellipse(size * 0.32, size * 0.04, size * 0.3, size * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
   ctx.stroke();
-  ctx.restore();
+}
+
+function drawLeafMotif(ctx, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "rgba(70, 112, 47, 0.18)";
+  ctx.lineWidth = Math.max(1.4, size * 0.06);
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.34, size * 0.3);
+  ctx.bezierCurveTo(-size * 0.48, -size * 0.16, size * 0.1, -size * 0.5, size * 0.42, -size * 0.4);
+  ctx.bezierCurveTo(size * 0.36, size * 0.02, -size * 0.05, size * 0.38, -size * 0.34, size * 0.3);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 255, 220, 0.5)";
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.24, size * 0.2);
+  ctx.lineTo(size * 0.26, -size * 0.28);
+  ctx.stroke();
+}
+
+function drawFlowerMotif(ctx, size, color) {
+  const petalColor = color;
+  ctx.fillStyle = petalColor;
+  ctx.strokeStyle = "rgba(130, 92, 70, 0.12)";
+  ctx.lineWidth = Math.max(1.2, size * 0.05);
+  for (let i = 0; i < 5; i += 1) {
+    const angle = i * (Math.PI * 2 / 5);
+    ctx.beginPath();
+    ctx.ellipse(Math.cos(angle) * size * 0.22, Math.sin(angle) * size * 0.22, size * 0.18, size * 0.28, angle, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#f5d35e";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, size * 0.14, size * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawShellMotif(ctx, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "rgba(116, 92, 58, 0.18)";
+  ctx.lineWidth = Math.max(1.3, size * 0.06);
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.42, size * 0.28);
+  ctx.quadraticCurveTo(0, -size * 0.48, size * 0.42, size * 0.28);
+  ctx.quadraticCurveTo(0, size * 0.42, -size * 0.42, size * 0.28);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  for (const dx of [-0.22, 0, 0.22]) {
+    ctx.moveTo(0, size * 0.28);
+    ctx.quadraticCurveTo(dx * size, -size * 0.02, dx * size, -size * 0.25);
+  }
+  ctx.strokeStyle = "rgba(146, 112, 70, 0.2)";
+  ctx.stroke();
+}
+
+function drawWaveMotif(ctx, size, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(3, size * 0.16);
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.5, size * 0.08);
+  ctx.quadraticCurveTo(-size * 0.22, -size * 0.26, 0, size * 0.08);
+  ctx.quadraticCurveTo(size * 0.22, size * 0.42, size * 0.5, size * 0.08);
+  ctx.stroke();
+}
+
+function drawBoatMotif(ctx, size, color) {
+  ctx.fillStyle = "#c98735";
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.46, size * 0.18);
+  ctx.lineTo(size * 0.42, size * 0.18);
+  ctx.quadraticCurveTo(size * 0.18, size * 0.42, -size * 0.28, size * 0.34);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#fff4d4";
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.04, size * 0.12);
+  ctx.lineTo(-size * 0.04, -size * 0.46);
+  ctx.lineTo(size * 0.3, size * 0.1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, size * 0.06);
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.04, -size * 0.48);
+  ctx.lineTo(-size * 0.04, size * 0.18);
+  ctx.stroke();
+}
+
+function drawHillMotif(ctx, size, color) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.7, size * 0.34);
+  ctx.quadraticCurveTo(-size * 0.28, -size * 0.18, size * 0.08, size * 0.34);
+  ctx.quadraticCurveTo(size * 0.34, -size * 0.04, size * 0.72, size * 0.34);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawBubbleMotif(ctx, size, color) {
+  ctx.fillStyle = color;
+  ctx.globalAlpha *= 0.78;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, size * 0.32, size * 0.32, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.58)";
+  ctx.beginPath();
+  ctx.ellipse(-size * 0.1, -size * 0.12, size * 0.08, size * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawLeftPageTemplate(ctx, palette) {
