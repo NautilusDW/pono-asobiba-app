@@ -7744,8 +7744,8 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'cup-edit-try': 'basic_tut_11',
   'small-cup-food': 'basic_tut_12',
   'small-next': 'basic_tut_13',
-  // v1373: 「もっと おかず いれていいよ」ナレ ID 確保。 音声未生成時もバブル表示で進める。
-  'okazu-more': 'basic_tut_14',
+  // v1374: okazu-more はバブル + Pono callout で案内。 専用ナレ ID は割り当てない
+  // (basic_tut_14 は complete-result 「これで おべんとうが かんせいしたよ」 で既使用済み)。
 };
 let bentoTutorialVoiceAudio = null;
 function stopBentoTutorialVoice() {
@@ -11568,6 +11568,19 @@ function tryFinishOkazuTier(tier) {
       return;
     }
     setFreeGuideStep(freeGuideStep.startsWith('tier3') ? 'tier3Side' : 'tier2Side');
+    // v1374: okazu-more step は「おかずOK」 押下のみで進む button-only advance。
+    // role=main 段階の OK 押下 = メインおかずを必要数置き終えた合図なので、
+    // チュートリアル中ならここで small-accessory へ進める。
+    try {
+      if (typeof tutorialState !== 'undefined'
+          && tutorialState && tutorialState.active
+          && tutorialState.step === 'okazu-more'
+          && typeof tutorialAdvance === 'function') {
+        freeLayoutTab = 'accessory';
+        renderFreeLayoutControls();
+        tutorialAdvance('small-accessory');
+      }
+    } catch (_) {}
     return;
   }
   if (countOkazuRoleOnTier(tier, 'side') < 1) {
@@ -14903,8 +14916,10 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 7d2. okazu-more — メインおかずを追加で置けることを案内 (v1373 新規)
-  // 「もっと入れてもいいよ」と促し、 おかずOK ボタンを mark。 タイマー経過 or ボタン押下で small-accessory へ。
+  // 7d2. okazu-more — メインおかずを追加で置けることを案内 (v1373 新規 / v1374 で button-only advance に修正)
+  // 「もっと入れてもいいよ」と促し、 おかずOK ボタン押下のみで small-accessory へ進む (v3 設計)。
+  // 自動タイマーは廃止: 子供が追加配置している最中に勝手に進むのを防ぐため、 進行トリガは
+  // tryFinishOkazuTier (= おかずOK / 2だんめOK / 3だんめOK 押下) からのフックに限定。
   if (step === 'okazu-more') {
     setSpeech('すきな おかずを もっと いれてもいいよ。おわったら 「おかずOK」を おしてね');
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
@@ -14915,22 +14930,14 @@ function tutorialRenderStep() {
     });
     tutorialHideBubble();
     tutorialHideFinger();
-    // tutorialCompleteButton は「おかずOK」/「できあがり」primary を返す
+    // tutorialCompleteButton は「おかずOK」/「2だんめOK」/「できあがり」 primary を返す
     const okazuOkBtn = (typeof tutorialCompleteButton === 'function') ? tutorialCompleteButton() : null;
     if (okazuOkBtn) {
       tutorialMarkTarget(okazuOkBtn, { radius: 18, outline: false });
       tutorialAnimateTap(okazuOkBtn);
-    }
-    if (firstRender) {
-      if (tutorialState._okazuMoreTimer) clearTimeout(tutorialState._okazuMoreTimer);
-      tutorialState._okazuMoreTimer = setTimeout(() => {
-        tutorialState._okazuMoreTimer = null;
-        if (tutorialState.active && tutorialState.step === 'okazu-more') {
-          freeLayoutTab = 'accessory';
-          renderFreeLayoutControls();
-          tutorialAdvance('small-accessory');
-        }
-      }, fast ? 2200 : 5200);
+    } else {
+      // ガイドパネル再描画で DOM が再生成された直後などはボタンが取れない可能性 → retry
+      tutorialRetryRenderStep('okazu-more');
     }
     return;
   }
