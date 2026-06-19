@@ -74,13 +74,14 @@ const SHARED_TEXTURES = {
 };
 
 const ZUKAN_THICKNESS_STRIPS = [
-  { file: "sb3d_zukan_thickness_strip_01_alpha.png", aspect: 1564 / 180 },
-  { file: "sb3d_zukan_thickness_strip_02_alpha.png", aspect: 1585 / 198 },
-  { file: "sb3d_zukan_thickness_strip_03_alpha.png", aspect: 1553 / 182 },
-  { file: "sb3d_zukan_thickness_strip_04_alpha.png", aspect: 1596 / 203 },
-  { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 192 },
+  { file: "sb3d_zukan_thickness_strip_01_alpha.png", aspect: 1564 / 127 },
+  { file: "sb3d_zukan_thickness_strip_02_alpha.png", aspect: 1585 / 142 },
+  { file: "sb3d_zukan_thickness_strip_03_alpha.png", aspect: 1553 / 127 },
+  { file: "sb3d_zukan_thickness_strip_04_alpha.png", aspect: 1596 / 140 },
+  { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 117 },
 ];
-const DEFAULT_ZUKAN_FORMAT_INDEX = 4;
+const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
+const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
 
 const BOOK_VARIANTS = {
   boy: {
@@ -3588,7 +3589,7 @@ function createCoverThicknessLayer() {
 function createCollectionStackBlock() {
   const group = new THREE.Group();
   const width = PAGE_W * 2 + PAGE_H * 0.16;
-  const height = width / selectedZukanThickness.aspect;
+  const height = (width / selectedZukanThickness.aspect) * ZUKAN_THICKNESS_DISPLAY_SCALE_Y;
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
     new THREE.MeshBasicMaterial({
