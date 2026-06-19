@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T01:01:14Z - puzzle voice basic_tut_05..11.mp3 を faster-whisper small(ja) で再文字起こしし、各スロットを期待文と照合検証
+- **タスク**: puzzle voice basic_tut_05..11.mp3 を faster-whisper small(ja) で再文字起こしし、各スロットを期待文と照合検証
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 36
+- **エラー数**: 8
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 8, "Workflow": 3, "Read": 5, "ToolSearch": 2, "DesignSync": 11, "Bash": 2, "Grep": 2, "Write": 3}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-06-19T00:55:50Z - Puzzle basic tutorial 10->11 step code wiring (peek explanation idx5 + reorder, hiragana coach, badge fade-out, try-phase timing sync, cache bumps sw1322/v1313)
+- **タスク**: Puzzle basic tutorial 10->11 step code wiring (peek explanation idx5 + reorder, hiragana coach, badge fade-out, try-phase timing sync, cache bumps sw1322/v1313)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 35
+- **エラー数**: 8
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 7, "Workflow": 3, "Read": 5, "ToolSearch": 2, "DesignSync": 11, "Bash": 2, "Grep": 2, "Write": 3}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-18T17:30:49Z - Re-transcribe newly placed puzzle tutorial MP3s (05..10) and verify each line; flag deployment lag
 - **タスク**: Re-transcribe newly placed puzzle tutorial MP3s (05..10) and verify each line; flag deployment lag
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した
 - **ツール使用統計**: {"Agent": 2, "Read": 2, "Edit": 3, "Bash": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-15T04:00:05Z - maze stage7 boss頭頂部クリップ修正: boss.y基準を0.31→0.36、画像upper offsetを0.56→0.50に調整、sw.js CACHE_VERSION 1145→1146
-- **タスク**: maze stage7 boss頭頂部クリップ修正: boss.y基準を0.31→0.36、画像upper offsetを0.56→0.50に調整、sw.js CACHE_VERSION 1145→1146
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 1
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 1}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-15T03:31:50Z - bento tutorial v3.3.1 (sw1142): ✊✋ ドラッグデモ未表示の真因特定→center-anchor 修正 (keyframes に calc(var() - 50%) 適用、 hard-coded -36px オフセット撤廃) で全 4 step で正しい位置に描画
-- **タスク**: bento tutorial v3.3.1 (sw1142): ✊✋ ドラッグデモ未表示の真因特定→center-anchor 修正 (keyframes に calc(var() - 50%) 適用、 hard-coded -36px オフセット撤廃) で全 4 step で正しい位置に描画
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 66
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 51, "ToolSearch": 1, "Bash": 10, "Read": 2, "Write": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

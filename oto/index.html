@@ -1648,7 +1648,7 @@
     flex: 0 0 auto;
     margin-top: 10px;
   }
-  /* Region 1: 難易度タブ (かんたん / ふつう / むずかしめ) */
+  /* Region 1: 難易度タブ (かんたん / ふつう / 難しい) */
   .rhythm-diff-tabs {
     display: flex; width: 100%; gap: 6px; margin-bottom: 4px;
   }
@@ -5198,12 +5198,12 @@
         <!-- Step 1: 曲えらび -->
         <div class="rhythm-step rhythm-step-song" data-step-view="song">
           <div class="rhythm-menu-title">きょくを えらぼう</div>
-          <div class="rhythm-menu-guide">かんたん・ふつう・むずかしめから えらぶよ。かつと ステージが ふえるよ。</div>
+          <div class="rhythm-menu-guide">かんたん・ふつう・難しいから えらぶよ。かつと ステージが ふえるよ。</div>
           <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
           <div class="rhythm-diff-tabs" role="tablist">
             <button class="rhythm-diff-tab active" type="button" data-diff="かんたん" role="tab" aria-selected="true">かんたん</button>
             <button class="rhythm-diff-tab" type="button" data-diff="ふつう" role="tab" aria-selected="false">ふつう</button>
-            <button class="rhythm-diff-tab" type="button" data-diff="むずかしめ" role="tab" aria-selected="false">むずかしめ</button>
+            <button class="rhythm-diff-tab" type="button" data-diff="難しい" role="tab" aria-selected="false">難しい</button>
           </div>
           <div class="rhythm-song-list" id="rhythm-song-list"></div>
           <div class="rhythm-menu-actions">
@@ -6520,9 +6520,9 @@ var RHYTHM_SONGS = [
   {
     id: 'ode',
     name: 'よろこびのうた',
-    note: 'むずかしめ',
+    note: '難しい',
     stage: 6,
-    difficulty: 'むずかしめ',
+    difficulty: '難しい',
     bpm: 100,
     bandSongId: 'ode100',
     bandStems: ['drums'],
@@ -6545,9 +6545,9 @@ var RHYTHM_SONGS = [
   {
     id: 'alps',
     name: 'アルプスいちまんじゃく',
-    note: 'むずかしめ',
+    note: '難しい',
     stage: 7,
-    difficulty: 'むずかしめ',
+    difficulty: '難しい',
     bpm: 112,
     bandSongId: 'alps112',
     bandStems: ['drums'],
@@ -6953,9 +6953,16 @@ var RHYTHM_PROGRESS_KEY = 'pono_oto_rhythm_progress_v1';
 var RHYTHM_SCORE_KEY = 'pono_oto_rhythm_scores_v1';
 var RHYTHM_SCORE_NAME_KEY = 'pono_oto_rhythm_score_name_v1';
 
+function _normalizeRhythmDiffLabel(diff) {
+  if (diff === 'むずかしめ') return '難しい';
+  if (diff === '難しい') return '難しい';
+  if (diff === 'ふつう') return 'ふつう';
+  return 'かんたん';
+}
+
 function _rhythmRivalKeyForSong(song) {
-  var diff = (song && (song.difficulty || song.note)) || 'かんたん';
-  if (diff === 'むずかしめ') return 'hard';
+  var diff = _normalizeRhythmDiffLabel((song && (song.difficulty || song.note)) || 'かんたん');
+  if (diff === '難しい') return 'hard';
   if (diff === 'ふつう') return 'normal';
   return 'easy';
 }
@@ -7689,7 +7696,7 @@ function _updateRhythmMenuActions() {
   if (start) start.textContent = 'はじめる';
   if (demo) demo.classList.remove('hidden');
 }
-// Region 1.2: 曲一覧を難易度タブ (かんたん/ふつう/むずかしめ) で絞り込む
+// Region 1.2: 曲一覧を難易度タブ (かんたん/ふつう/難しい) で絞り込む
 var RHYTHM_CURRENT_DIFF = 'かんたん';
 function _renderRhythmSongMenu() {
   var list = document.getElementById('rhythm-song-list');
@@ -7716,8 +7723,9 @@ function _renderRhythmSongMenu() {
     });
   }
   var progress = _loadRhythmProgress();
+  var currentDiff = _normalizeRhythmDiffLabel(RHYTHM_CURRENT_DIFF);
   var songs = _rhythmSongsByStage().filter(function(s) {
-    return (s.difficulty || s.note) === RHYTHM_CURRENT_DIFF;
+    return _normalizeRhythmDiffLabel(s.difficulty || s.note) === currentDiff;
   });
   list.innerHTML = songs.map(function(song) {
     var active = song.id === RHYTHM_BASE_SONG.id ? ' active' : '';
@@ -10556,8 +10564,8 @@ function _showRhythmMenu() {
   _forcePianoSoundForRhythm();
   // Region 1.3: 現在の base song の難易度に合わせてタブを切替 (失敗時 'かんたん')
   try {
-    var _baseDiff = (RHYTHM_BASE_SONG && (RHYTHM_BASE_SONG.difficulty || RHYTHM_BASE_SONG.note)) || 'かんたん';
-    if (_baseDiff === 'かんたん' || _baseDiff === 'ふつう' || _baseDiff === 'むずかしめ') {
+    var _baseDiff = _normalizeRhythmDiffLabel((RHYTHM_BASE_SONG && (RHYTHM_BASE_SONG.difficulty || RHYTHM_BASE_SONG.note)) || 'かんたん');
+    if (_baseDiff === 'かんたん' || _baseDiff === 'ふつう' || _baseDiff === '難しい') {
       RHYTHM_CURRENT_DIFF = _baseDiff;
     } else {
       RHYTHM_CURRENT_DIFF = 'かんたん';
@@ -11715,7 +11723,7 @@ var OTO_TUTORIAL_KEYS = {
   freeStage: 'pono_oto_free_stage_tut_seen_v4'
 };
 var OTO_RHYTHM_TUTORIAL_VOICE = {
-  songIntro: 'むずかしさを えらべるよ。かんたん、ふつう、むずかしめ。さいしょは、かんたんを おしてね。',
+  songIntro: 'むずかしさを えらべるよ。かんたん、ふつう、難しい。さいしょは、かんたんを おしてね。',
   stageUnlock: 'さいしょに あそべる きょくは すこしだけ。ライバルに かつと、つぎの きょくや ステージが ふえていくよ。',
   song: 'まずは、かえるのうたから はじめよう。かえるのうたの ボタンを おしてね。',
   next: 'えらべたね。つぎへを おして、あそびかたを えらぼう。',
@@ -11889,6 +11897,15 @@ function _otoTutorialFallMs(step) {
   var requested = step && typeof step.fallMs === 'number' ? step.fallMs : OTO_TUTORIAL_NOTE_FALL_MS;
   return Math.max(4200, Math.min(RHYTHM_FALL_MS, requested || OTO_TUTORIAL_NOTE_FALL_MS));
 }
+function _otoTutorialVisibleLeadMs(step, fallMs) {
+  var requested = step && typeof step.visibleLeadMs === 'number' ? step.visibleLeadMs : RHYTHM_DEMO_COUNT_STEP_MS * 6;
+  var maxLead = Math.max(0, (fallMs || OTO_TUTORIAL_NOTE_FALL_MS) - 2600);
+  return Math.max(0, Math.min(maxLead, requested || 0));
+}
+function _otoTutorialTargetDelayMs(step) {
+  var fallMs = _otoTutorialFallMs(step);
+  return Math.max(1800, fallMs - _otoTutorialVisibleLeadMs(step, fallMs));
+}
 function _runOtoTutorialTapCountdown(expectedSteps, expectedIndex) {
   if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
   _clearOtoTutorialAutoTimer();
@@ -11936,7 +11953,7 @@ function _runOtoTutorialDifficultyPreview(step, anchorEl, rect) {
   var tabs = [
     document.querySelector('.rhythm-diff-tab[data-diff="かんたん"]'),
     document.querySelector('.rhythm-diff-tab[data-diff="ふつう"]'),
-    document.querySelector('.rhythm-diff-tab[data-diff="むずかしめ"]')
+    document.querySelector('.rhythm-diff-tab[data-diff="難しい"]')
   ].filter(Boolean);
   if (!tabs.length) return;
   _setRhythmMenuAwaitingDiffChoice(true);
@@ -12013,10 +12030,11 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   _rhythm.demoActive = true;
   _rhythm.demoBeatScale = 0;
   _rhythm.demoFallMs = _otoTutorialFallMs(step);
+  var targetDelayMs = _otoTutorialTargetDelayMs(step);
   _rhythm.idx = 0;
   _rhythm.nextSpawnSeq = (RHYTHM_SONG && RHYTHM_SONG.notes ? RHYTHM_SONG.notes.length : 999);
   _rhythm.startAcTime = 0;
-  _rhythm.startPerfTime = performance.now() + _rhythm.demoFallMs;
+  _rhythm.startPerfTime = performance.now() + targetDelayMs;
   _rhythm._ghHitY = null;
   _ghUpdateLanesGeometry();
   var laneIdx = _ghBtnIdxToLaneIdx(idx);
@@ -12049,7 +12067,7 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   _rhythm.activeNotes.push(note);
   _otoTutorialState.ownsRhythmDemo = true;
   _startRhythmDemoVisualLoop();
-  var hitDelay = Math.max(900, _rhythm.demoFallMs - 130);
+  var hitDelay = Math.max(900, targetDelayMs - 130);
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState) return;
     var rect = btn.getBoundingClientRect();
@@ -12067,7 +12085,7 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
     _setRhythmDemoNoteVisible(false);
     _otoTutorialState.ownsRhythmDemo = false;
     if (step.autoAdvanceAfterDemo) _advanceOtoTutorialStep(expectedSteps, expectedIndex, 320);
-  }, _rhythm.demoFallMs + 1100));
+  }, targetDelayMs + 1100));
 }
 function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
   if (!_otoTutorialState || !step || typeof step.userTryNoteIdx !== 'number') return;
@@ -12084,10 +12102,11 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
   _rhythm.demoActive = true;
   _rhythm.demoBeatScale = 0;
   _rhythm.demoFallMs = _otoTutorialFallMs(step);
+  var targetDelayMs = _otoTutorialTargetDelayMs(step);
   _rhythm.idx = 0;
   _rhythm.nextSpawnSeq = (RHYTHM_SONG && RHYTHM_SONG.notes ? RHYTHM_SONG.notes.length : 999);
   _rhythm.startAcTime = 0;
-  _rhythm.startPerfTime = performance.now() + _rhythm.demoFallMs;
+  _rhythm.startPerfTime = performance.now() + targetDelayMs;
   _rhythm._ghHitY = null;
   _ghUpdateLanesGeometry();
   var laneIdx = _ghBtnIdxToLaneIdx(idx);
@@ -12160,11 +12179,31 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
   });
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
-    if (_rhythm.activeNotes.indexOf(note) >= 0) return;
+    if (_rhythm.activeNotes.indexOf(note) >= 0) _ghRemoveNote(note);
     _setRhythmStatus('もういちど やってみよう', 'warn', 'judge');
-    _clearOtoTutorialDemoEffects();
-    _runOtoTutorialUserFallingNoteTry(step, anchorEl);
-  }, _rhythm.demoFallMs + 1500));
+    var bubble = document.getElementById('tut-bubble');
+    if (bubble) {
+      bubble.innerHTML =
+        '<div class="tut-badge">もういちど</div>' +
+        '<div class="tut-msg">もういちど やってみよう<br>ファが ラインに きたら おしてね</div>';
+      bubble.classList.add('tut-no-actions');
+      bubble.classList.remove('hidden', 'is-countdown', 'tut-bubble-tap');
+      bubble.style.left = '-9999px';
+      bubble.style.top = '-9999px';
+      requestAnimationFrame(function() {
+        _tutPositionBubble(bubble, null, 'stageTopRight');
+      });
+    }
+    _clearOtoTutorialDemoTimersAndCleanups();
+    _clearRhythmDemo(true);
+    _setRhythmDemoNoteVisible(false);
+    _otoTutorialState.ownsRhythmDemo = false;
+    var retryTimer = setTimeout(function() {
+      if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
+      _runOtoTutorialUserFallingNoteTry(step, anchorEl);
+    }, 820);
+    _otoTutorialState.demoTimers.push(retryTimer);
+  }, targetDelayMs + RHYTHM_OK_MS + 900));
 }
 function _currentOtoTutorialKind() {
   if (document.body && document.body.classList.contains('rhythm-menu-open')) {
@@ -12784,9 +12823,20 @@ function _renderOtoTutorialStep() {
         }
       };
       bubble.addEventListener('pointerdown', bubbleHandler, { once: true });
+      var anyTapHandler = null;
+      if (s.countdownBeforeAdvance) {
+        anyTapHandler = function(e) {
+          if (e && e.target && e.target.closest && e.target.closest('#tut-hide-next, #tut-skip, #tut-next')) return;
+          bubbleHandler(e);
+        };
+        document.addEventListener('pointerdown', anyTapHandler, true);
+      }
       if (_otoTutorialState) {
         _otoTutorialState.demoCleanups.push(function() {
           try { bubble.removeEventListener('pointerdown', bubbleHandler); } catch (e) {}
+          if (anyTapHandler) {
+            try { document.removeEventListener('pointerdown', anyTapHandler, true); } catch (e) {}
+          }
         });
       }
     }

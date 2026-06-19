@@ -2607,6 +2607,10 @@ const BASIC_HINT_AUTO_SNAP_DELAY_MS = 2200;
 const BASIC_HINT_AUTO_SNAP_DURATION_MS = 1200;
 const BASIC_AFTER_AUTO_SNAP_FINISH_MS = 650;
 const BASIC_MODE_BADGE_POP_MS = 3000;
+// Mode badge opacity fade-out duration. Must match the CSS transition on
+// .partner-practice-mode-badge.is-leaving so the badge finishes fading before
+// JS removes .is-visible / the element from the DOM.
+const BASIC_MODE_BADGE_FADE_MS = 350;
 // 'できたね！' success badge on a completed peek hold. Long enough to read but
 // shorter than the narrated intro/try banners; the phase then moves on to the
 // success narration + hint, so it doesn't need the full ~6.8s.
@@ -2614,7 +2618,7 @@ const BASIC_PEEK_DONE_BANNER_MS = 3500;
 const PARTNER_PRACTICE_AFTER_TAP_DELAY_MS = 180;
 const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
 const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
-const BASIC_TUT_FALLBACK_MS = [8900, 5100, 6800, 6300, 4921, 3920, 3486, 7730, 5930, 8090];
+const BASIC_TUT_FALLBACK_MS = [8900, 5100, 6800, 6300, 4070, 6480, 3070, 2640, 6880, 5080, 7240];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -3075,13 +3079,39 @@ function setBasicPracticeModeBanner(kind, text, visibleMs) {
   setBasicPracticeFrameMode(mode);
   el.className = 'partner-practice-mode-badge is-visible is-' + mode;
   el.textContent = text || (mode === 'try' ? 'やってみよう！' : (mode === 'done' ? 'できたね！' : 'おてほんをみてね'));
+  // A fresh banner cancels any in-flight fade-out from a previous one.
+  el.classList.remove('is-leaving');
   var token = ((partnerPracticeState.modeBadgeToken || 0) + 1);
   partnerPracticeState.modeBadgeToken = token;
   var duration = Math.max(3000, visibleMs || BASIC_MODE_BADGE_POP_MS);
   practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.modeBadgeToken !== token) return;
-    if (el && el.isConnected) el.classList.remove('is-visible');
+    // Fade out (~350ms opacity transition via .is-leaving) BEFORE hiding,
+    // instead of removing .is-visible instantly.
+    if (el && el.isConnected) el.classList.add('is-leaving');
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.modeBadgeToken !== token) return;
+      if (el && el.isConnected) el.classList.remove('is-visible', 'is-leaving');
+    }, BASIC_MODE_BADGE_FADE_MS);
   }, duration);
+}
+
+// Immediately begin hiding the current mode badge (used by CHANGE #4 to align
+// the try-phase badge fade-out with the 見る/ヒント button grey-out instead of
+// waiting on the badge's own BASIC_TRY_BANNER_MS timer). Bumps the badge token
+// so the pending scheduled hide can't double-fire, then runs the same
+// fade -> remove path.
+function hideBasicPracticeTryBannerNow() {
+  if (!partnerPracticeState) return;
+  var el = partnerPracticeState.modeBadgeEl;
+  if (!el || !el.isConnected || !el.classList.contains('is-visible')) return;
+  var token = ((partnerPracticeState.modeBadgeToken || 0) + 1);
+  partnerPracticeState.modeBadgeToken = token;
+  el.classList.add('is-leaving');
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.modeBadgeToken !== token) return;
+    if (el && el.isConnected) el.classList.remove('is-visible', 'is-leaving');
+  }, BASIC_MODE_BADGE_FADE_MS);
 }
 
 function setBasicPracticeFrameMode(mode) {
@@ -3100,10 +3130,18 @@ function removeBasicPracticeModeBanner() {
   }
   setBasicPracticeFrameMode(null);
   if (!partnerPracticeState || !partnerPracticeState.modeBadgeEl) return;
-  if (partnerPracticeState.modeBadgeEl.parentNode) {
-    partnerPracticeState.modeBadgeEl.parentNode.removeChild(partnerPracticeState.modeBadgeEl);
-  }
+  var el = partnerPracticeState.modeBadgeEl;
+  // Detach state immediately so callers treat the badge as gone, but let the
+  // element fade out (~350ms via .is-leaving) before pulling it from the DOM.
   partnerPracticeState.modeBadgeEl = null;
+  if (!el.isConnected || !el.classList.contains('is-visible')) {
+    if (el.parentNode) el.parentNode.removeChild(el);
+    return;
+  }
+  el.classList.add('is-leaving');
+  practiceSetTimeout(function () {
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }, BASIC_MODE_BADGE_FADE_MS);
 }
 
 function cancelBasicPracticeLoopCue() {
@@ -4265,17 +4303,17 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
   setBasicPracticeModeBanner('demo', 'おてほんをみてね');
-  // index 7 = hint intro ("次はヒントだよ。ヒントを押すと場所が光るよ").
+  // index 8 = hint intro (09 "次はヒントだよ。ヒントを押すと場所が光るよ").
   setPartnerPracticeCoachCopy(
     'つぎは ヒントだよ',
-    'おすと ばしょが ひかるよ',
+    'ばしょを しりたい ピースを えらんでね',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
   refreshHintButtonState();
   redraw();
 
-  playBasicPracticeVoice(7, function () {
+  playBasicPracticeVoice(8, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-select') return;
     runBasicPieceTapHandDemo(piece, function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-select') return;
@@ -4284,8 +4322,8 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
       partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
       practiceAddHighlight(btnHint);
       setPartnerPracticeCoachCopy(
-        'まず みてね',
-        '次は「ヒント」を 押すよ',
+        'つぎは 「ヒント」を おすよ',
+        '',
         ''
       );
       setPartnerPracticeCoachBubble(btnHint, null, false);
@@ -4303,13 +4341,16 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
         clearPracticeHighlights();
         partnerPracticeState.phase = 'basic-hint-demo-place';
         partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+        // index 9 = hint glow (10 "光った場所へピースを持っていくよ"). Plays when
+        // the glow appears in the demo.
         setPartnerPracticeCoachCopy(
-          'まず みてね',
-          '光った場所へ 持っていくよ',
+          'ひかった ばしょへ もっていくよ',
+          '',
           ''
         );
         setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
         showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
+        playBasicPracticeVoice(9);
         runBasicDragHandDemo(piece, from, to, function () {
           if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-place') return;
           placePieceForPractice(piece, from.x, from.y, from.rotation || 0);
@@ -4367,8 +4408,8 @@ function startBasicDragPractice() {
   showPartnerPracticeCoach();
   if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
   setPartnerPracticeCoachCopy(
-    'まず みてね',
-    'このピースを つかんで 青い場所へ',
+    'おてほんを みてね',
+    'このピースを つかんで あおい ばしょへ',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
@@ -4399,7 +4440,7 @@ function startBasicDragPractice() {
         setBasicPracticeModeBanner('try', 'やってみよう', BASIC_TRY_BANNER_MS);
         setPartnerPracticeCoachCopy(
           'やってみよう',
-          'ピースを 持って、青い場所へ',
+          'ピースを もって、あおい ばしょへ',
           ''
         );
         setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
@@ -4409,6 +4450,10 @@ function startBasicDragPractice() {
         // sync even if play() is delayed (wall-clock fallback inside the helper).
         var tryAudio = playBasicPracticeVoice(2, function () {
           if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
+          // CHANGE #4 timing sync: hide the 「やってみよう」 badge at the SAME moment
+          // the 見る/ヒント buttons un-grey (input enabled), instead of letting the
+          // badge's independent BASIC_TRY_BANNER_MS timer expire at a different time.
+          hideBasicPracticeTryBannerNow();
           setPartnerPracticeInput(true);
           redraw();
           armBasicDragLoopCue(piece, 'basic-drag-try');
@@ -4467,7 +4512,7 @@ function onBasicDragPracticeDragStart(piece) {
   partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
   setPartnerPracticeCoachCopy(
     'そのまま うごかそう',
-    '青い場所へ 持っていってね',
+    'あおい ばしょへ もっていってね',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
@@ -4496,7 +4541,7 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
     setBasicPracticeModeBanner('done', 'できたね！');
     setPartnerPracticeCoachCopy(
       'できたね',
-      '次は「見る」ボタンを 試すよ',
+      'つぎは 「みる」 ボタンを ためすよ',
       ''
     );
     setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece) || getPieceScreenRect(piece), 'below', false);
@@ -4512,7 +4557,7 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
   setBasicPracticeModeBanner('try', 'やってみよう！');
   setPartnerPracticeCoachCopy(
     'もういちど',
-    '青い場所に 近づけて 離そう',
+    'あおい ばしょに ちかづけて はなそう',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
@@ -4539,7 +4584,7 @@ function startBasicHintPlaceTry(piece) {
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'やってみよう',
-    '場所を 知りたい ピースを 選んでね',
+    'ばしょを しりたい ピースを えらんでね',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
@@ -4566,8 +4611,8 @@ function onBasicHintSelectPracticePointerDown(piece) {
   if (!piece || piece !== targetPiece) {
     partnerPracticeState.cue = { kind: 'tap-piece', piece: targetPiece };
     setPartnerPracticeCoachCopy(
-      piece ? 'このピースだよ' : 'ピースを 選んでね',
-      '場所を 知りたい ピースを タッチ',
+      piece ? 'このピースだよ' : 'ピースを えらんでね',
+      'ばしょを しりたい ピースを タッチ',
       ''
     );
     setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(targetPiece), 'above', false);
@@ -4585,8 +4630,8 @@ function onBasicHintSelectPracticePointerDown(piece) {
   clearPracticeHighlights();
   practiceAddHighlight(btnHint);
   setPartnerPracticeCoachCopy(
-    '次は「ヒント」',
-    '「ヒント」を 押してみよう',
+    'つぎは 「ヒント」',
+    '「ヒント」を おしてみよう',
     ''
   );
   setPartnerPracticeCoachBubble(btnHint, null, false);
@@ -4612,7 +4657,7 @@ function onBasicHintPracticeHintButtonUsed() {
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'やってみよう',
-    'ピースを 持って、光った場所へ',
+    'ピースを もって、ひかった ばしょへ',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
@@ -4629,7 +4674,7 @@ function onBasicHintDragPracticeDragStart(piece) {
   partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
   setPartnerPracticeCoachCopy(
     'そのまま うごかそう',
-    '光った場所へ 持っていってね',
+    'ひかった ばしょへ もっていってね',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
@@ -4659,8 +4704,8 @@ function onBasicHintDragPracticePieceDropped(piece, didSnap) {
     setPartnerPracticeInput(false);
     setBasicPracticeModeBanner('done', 'できたね！');
     setPartnerPracticeCoachCopy(
-      'できたね',
-      'ヒントの場所に 置けたよ',
+      'ひかったね',
+      'ばしょが わからないときは ヒントを つかってね',
       ''
     );
     setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece) || getPieceScreenRect(piece), 'below', false);
@@ -4677,7 +4722,7 @@ function onBasicHintDragPracticePieceDropped(piece, didSnap) {
   setBasicPracticeModeBanner('try', 'やってみよう！');
   setPartnerPracticeCoachCopy(
     'もういちど',
-    '光った場所に 近づけて 離そう',
+    'ひかった ばしょに ちかづけて はなそう',
     ''
   );
   setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
@@ -4828,31 +4873,43 @@ function startBasicPeekPractice() {
   showPartnerPracticeCoach();
   if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
   setPartnerPracticeCoachCopy(
-    'まずは「見る」ボタン',
+    'まずは 「みる」 ボタン',
     'ながく おしてみよう',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
   practiceAddHighlight(btnPeek);
+  // index 4 = press-instruction (05 "まずは見るボタンを長く押してみよう"). On its
+  // onDone, CHAIN to index 5 = explanation (06 "見るボタンは長く押している間だけ絵が
+  // 見えるよ") so BOTH lines play during the demo BEFORE the hand demo runs.
   playBasicPracticeVoice(4, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
-    runBasicButtonHandDemo(btnPeek, {
-      holdMs: BASIC_PEEK_HOLD_MS + 280,
-      onPress: function () { setPeekOverlay(true); },
-      onRelease: function () { setPeekOverlay(false); },
-    }, function () {
+    setPartnerPracticeCoachCopy(
+      'ながく おしている あいだ、',
+      'えが みえるよ',
+      ''
+    );
+    setPartnerPracticeCoachBubble(btnPeek, null, false);
+    playBasicPracticeVoice(5, function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
-      clearPracticeHighlights();
-      practiceAddHighlight(btnPeek);
-      partnerPracticeState.phase = 'peek-press';
-      setPartnerPracticePeekInput(true);
-      setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
-      setPartnerPracticeCoachCopy(
-        'やってみよう',
-        '「見る」ボタンを 長く押してね',
-        ''
-      );
-      setPartnerPracticeCoachBubble(btnPeek, null, false);
+      runBasicButtonHandDemo(btnPeek, {
+        holdMs: BASIC_PEEK_HOLD_MS + 280,
+        onPress: function () { setPeekOverlay(true); },
+        onRelease: function () { setPeekOverlay(false); },
+      }, function () {
+        if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-demo') return;
+        clearPracticeHighlights();
+        practiceAddHighlight(btnPeek);
+        partnerPracticeState.phase = 'peek-press';
+        setPartnerPracticePeekInput(true);
+        setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
+        setPartnerPracticeCoachCopy(
+          'やってみよう',
+          '「みる」 ボタンを ながく おしてね',
+          ''
+        );
+        setPartnerPracticeCoachBubble(btnPeek, null, false);
+      });
     });
   });
   redraw();
@@ -4860,21 +4917,19 @@ function startBasicPeekPractice() {
 
 function playBasicPeekHoldNarration() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
+  // index 6 = peek release line (07 "離すと、元のパズルに戻るよ"). Plays DURING the
+  // press/hold, not after release, so the child hears what happens while still
+  // holding the 見る button down.
   setPartnerPracticeCoachCopy(
-    'そのまま 見てね',
-    '押している間、出来上がりの絵が見えるよ',
+    'はなすと、もとの パズルに',
+    'もどるよ',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
+  playBasicPracticeVoice(6);
   practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
     partnerPracticeState.peekHoldReady = true;
-    setPartnerPracticeCoachCopy(
-      '離すと戻るよ',
-      'わからなくなったら もう一度 長く押してね',
-      ''
-    );
-    setPartnerPracticeCoachBubble(btnPeek, null, false);
     partnerPracticeState.peekReturnNarrationStarted = true;
     practiceSetTimeout(function () {
       if (!partnerPracticeState) return;
@@ -4885,26 +4940,23 @@ function playBasicPeekHoldNarration() {
 
 function playBasicPeekSuccessThenHint() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-  // index 5 = peek release ("離すと、元のパズルに戻るよ").
-  playBasicPracticeVoice(5, function () {
+  if (peekOn) setPeekOverlay(false);
+  // index 7 = peek stuck note (08 "困った時に使ってね"). Plays AFTER the child
+  // releases the 見る button; the release line (07) already played DURING the
+  // press. After this clip, transition into the hint section.
+  setPartnerPracticeCoachCopy(
+    'こまった ときに つかってね',
+    '',
+    ''
+  );
+  setPartnerPracticeCoachBubble(btnPeek, null, false);
+  playBasicPracticeVoice(7, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-    if (peekOn) setPeekOverlay(false);
-    // index 6 = peek stuck note ("困った時に使ってね"). Plays right after the
-    // release line, before transitioning into the hint section.
-    setPartnerPracticeCoachCopy(
-      'こまったら つかってね',
-      '',
-      ''
-    );
-    setPartnerPracticeCoachBubble(btnPeek, null, false);
-    playBasicPracticeVoice(6, function () {
+    practiceSetTimeout(function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-      practiceSetTimeout(function () {
-        if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-        if (peekOn) setPeekOverlay(false);
-        startCommonHintPractice(null);
-      }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
-    });
+      if (peekOn) setPeekOverlay(false);
+      startCommonHintPractice(null);
+    }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
   });
 }
 
@@ -4912,7 +4964,7 @@ function playBasicPeekReturnThenSuccess() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
   partnerPracticeState.peekReturnNarrationStarted = true;
   setPartnerPracticeCoachCopy(
-    '見えたね',
+    'みえたね',
     'はなすと、もとに もどるよ',
     ''
   );
@@ -4949,8 +5001,8 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     clearPracticeHighlights();
     practiceAddHighlight(btnPeek);
     setPartnerPracticeCoachCopy(
-      '長く押してね',
-      '「見る」ボタンは 押している間だけ見えるよ',
+      'ながく おしてね',
+      '「みる」 ボタンは おしている あいだだけ みえるよ',
       ''
     );
     setPartnerPracticeCoachBubble(btnPeek, null, false);
@@ -4963,8 +5015,8 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
   // instead of the silent 3s default; the phase then moves to success narration.
   setBasicPracticeModeBanner('done', 'できたね！', BASIC_PEEK_DONE_BANNER_MS);
   setPartnerPracticeCoachCopy(
-    '見えたね',
-    '離すと、パズルに戻るよ。わからなくなったら、もう一度長く押してね',
+    'みえたね',
+    'はなすと、もとの パズルに もどるよ。わからなくなったら、もう いちど ながく おしてね',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
@@ -4996,8 +5048,8 @@ function onPartnerPracticePieceSelected(piece) {
   practiceAddHighlight(btnHint);
   setPartnerPracticeInput(false);
   setPartnerPracticeCoachCopy(
-    'まず みてね',
-    '次は「ヒント」を 押すよ',
+    'つぎは 「ヒント」を おすよ',
+    '',
     ''
   );
   setPartnerPracticeCoachBubble(btnHint, null, false);
@@ -5005,13 +5057,13 @@ function onPartnerPracticePieceSelected(piece) {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-demo') return;
     partnerPracticeState.phase = 'hint-press';
     setPartnerPracticeInput(true);
-    // index 8 = hint glow ("光った場所へピースを持っていくよ").
+    // index 9 = hint glow (10 "光った場所へピースを持っていくよ").
     setPartnerPracticeCoachCopy(
-      'やってみよう',
-      'ひかった ばしょへ もっていこう',
+      'ひかった ばしょへ もっていくよ',
+      '',
       ''
     );
-    playBasicPracticeVoice(8, function () {
+    playBasicPracticeVoice(9, function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
       partnerPracticeState.hintPressReady = true;
       refreshHintButtonState();
@@ -5031,7 +5083,7 @@ function startBasicHintSelectTry(piece) {
   setBasicPracticeModeBanner('try', 'やってみよう！');
   setPartnerPracticeCoachCopy(
     'やってみよう',
-    '場所を 知りたい ピースを 選んでね',
+    'ばしょを しりたい ピースを えらんでね',
     ''
   );
   partnerPracticeState.hintSelectReady = true;
@@ -5080,13 +5132,13 @@ function showBasicHintDoneNarration() {
   partnerPracticeState.basicDoneSnapDone = false;
   partnerPracticeState.basicDoneFinishScheduled = false;
   showPartnerPracticeCoach();
-  // index 9 = finish ("できたね。わからない時は見るとヒントを使ってね").
+  // index 10 = finish (11 "できたね。わからない時は見るとヒントを使ってね").
   setPartnerPracticeCoachCopy(
-    'できたね',
-    'わからない ときは「見る」と「ヒント」を つかってね',
+    'ひかったね',
+    'ばしょが わからないときは ヒントを つかってね',
     ''
   );
-  playBasicPracticeVoice(9, function () {
+  playBasicPracticeVoice(10, function () {
     if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
     partnerPracticeState.basicDoneVoiceDone = true;
     maybeFinishBasicPracticeAfterSnap();
@@ -5181,12 +5233,12 @@ function onPartnerPracticeHintUsed() {
     return;
   }
   setPartnerPracticeCoachCopy(
-    '光ったね',
-    '場所が わからないときは ヒントを 使ってね',
+    'ひかったね',
+    'ばしょが わからないときは ヒントを つかってね',
     ''
   );
-  // index 9 = finish clip (re-sequenced from old index 7).
-  playBasicPracticeVoice(9);
+  // index 10 = finish clip (11).
+  playBasicPracticeVoice(10);
   setPartnerPracticeCoachBubble(btnHint, null, false);
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
@@ -5788,8 +5840,8 @@ function onPointerDown(e) {
     if (partnerPracticeState && partnerPracticeState.targetPiece) {
       partnerPracticeState.cue = { kind: 'selected-piece', piece: partnerPracticeState.targetPiece };
       setPartnerPracticeCoachCopy(
-        '次は「ヒント」',
-        '「ヒント」を 押してみよう',
+        'つぎは 「ヒント」',
+        '「ヒント」を おしてみよう',
         ''
       );
       setPartnerPracticeCoachBubble(btnHint, null, false);

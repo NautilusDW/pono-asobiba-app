@@ -648,6 +648,15 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   display: flex;
 }
 
+/* Fade the center mode badge out (~350ms) before JS removes it from the DOM,
+   instead of the old instant hide. JS adds .is-leaving (keeping .is-visible so
+   it stays display:flex), waits for this opacity transition, then removes the
+   element / .is-visible. */
+.partner-practice-mode-badge.is-leaving {
+  opacity: 0;
+  transition: opacity 350ms ease-out;
+}
+
 .puzzle-frame.is-practice-mode-pulsing::after {
   content: "";
   position: absolute;

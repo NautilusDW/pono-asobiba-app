@@ -8,7 +8,7 @@ const PAGE_TEXTURE_H = 1536;
 const PAGE_H = 6.0;
 const PAGE_W = PAGE_H * PAGE_ASPECT;
 const GUTTER = PAGE_H * (192 / 1536);
-const COLLECTION_GUTTER = PAGE_H * (28 / 1536);
+const COLLECTION_GUTTER = 0;
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
@@ -169,7 +169,7 @@ playButton.classList.toggle("playing", isPlaying);
 
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v8";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
-const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v4";
+const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v5";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
 const TUNING_HISTORY_LIMIT = 80;
@@ -214,10 +214,10 @@ const TUNING_FIELDS = [
 ];
 const DEFAULT_COVER_TUNING = {
   coverStackX: 0,
-  coverStackY: 0.28,
+  coverStackY: 0.18,
   coverStackScaleX: 1,
-  coverStackScaleY: 0.42,
-  coverStackOpacity: 0.92,
+  coverStackScaleY: 0.45,
+  coverStackOpacity: 0.94,
   coverBgScaleX: 1.16,
   coverBgScaleY: 1.08,
   coverBgOpacity: 0,
@@ -2958,15 +2958,15 @@ function drawCollectionPageTemplate(ctx, palette, side) {
   const innerBandX = side === "right" ? 0 : PAGE_TEXTURE_W - innerBandW;
   const innerBandGradient = ctx.createLinearGradient(innerBandX, 0, innerBandX + innerBandW, 0);
   if (side === "right") {
-    innerBandGradient.addColorStop(0, "rgba(80, 64, 30, 0.16)");
-    innerBandGradient.addColorStop(0.42, "rgba(232, 219, 170, 0.26)");
+    innerBandGradient.addColorStop(0, "rgba(80, 64, 30, 0.1)");
+    innerBandGradient.addColorStop(0.42, "rgba(232, 219, 170, 0.22)");
     innerBandGradient.addColorStop(1, "rgba(255, 252, 235, 0)");
   } else {
     innerBandGradient.addColorStop(0, "rgba(255, 252, 235, 0)");
-    innerBandGradient.addColorStop(0.58, "rgba(232, 219, 170, 0.26)");
-    innerBandGradient.addColorStop(1, "rgba(80, 64, 30, 0.16)");
+    innerBandGradient.addColorStop(0.58, "rgba(232, 219, 170, 0.22)");
+    innerBandGradient.addColorStop(1, "rgba(80, 64, 30, 0.1)");
   }
-  ctx.filter = "blur(13px)";
+  ctx.filter = "blur(18px)";
   ctx.fillStyle = innerBandGradient;
   ctx.fillRect(innerBandX, -80, innerBandW, PAGE_TEXTURE_H + 160);
   ctx.filter = "none";
@@ -2975,14 +2975,16 @@ function drawCollectionPageTemplate(ctx, palette, side) {
   const creaseX = side === "right" ? 0 : PAGE_TEXTURE_W - creaseW;
   const creaseGradient = ctx.createLinearGradient(creaseX, 0, creaseX + creaseW, 0);
   if (side === "right") {
-    creaseGradient.addColorStop(0, "rgba(77, 61, 27, 0.13)");
+    creaseGradient.addColorStop(0, "rgba(77, 61, 27, 0.05)");
     creaseGradient.addColorStop(1, "rgba(255, 252, 235, 0)");
   } else {
     creaseGradient.addColorStop(0, "rgba(255, 252, 235, 0)");
-    creaseGradient.addColorStop(1, "rgba(77, 61, 27, 0.13)");
+    creaseGradient.addColorStop(1, "rgba(77, 61, 27, 0.05)");
   }
+  ctx.filter = "blur(5px)";
   ctx.fillStyle = creaseGradient;
   ctx.fillRect(creaseX, -40, creaseW, PAGE_TEXTURE_H + 80);
+  ctx.filter = "none";
 
   ctx.fillStyle = "rgba(255, 252, 235, 0.72)";
   ctx.strokeStyle = palette.line;
@@ -4085,11 +4087,11 @@ function applyAlbumLayout() {
 function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
-    spine.scale.set(0.46, 1.08, 1);
-    spine.position.y = -0.08;
-    spine.position.z = -0.045;
+    spine.scale.set(0.3, 1, 1);
+    spine.position.y = 0;
+    spine.position.z = -0.055;
     spine.renderOrder = 6;
-    spine.material.opacity = 0.72;
+    spine.material.opacity = 0.52;
     return;
   }
   spine.scale.set(1, 1, 1);

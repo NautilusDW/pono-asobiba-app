@@ -775,7 +775,7 @@ tr:hover { background: #FFFAF0; }
       APIキーはブラウザに保存しません。ローカルは <code>.dev.vars</code> に <code>GEMINI_API_KEY=...</code> を入れて、Worker 経由で生成します。Gemini TTS の出力は WAV です。
     </div>
 
-    <div style="display:grid;grid-template-columns:minmax(240px,1fr) auto;gap:10px;align-items:end;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;margin-bottom:12px;">
       <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
         よみこみプリセット
         <select id="puzzle-tts-preset" onchange="puzzleTtsLoadPreset(this.value)" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
@@ -783,7 +783,12 @@ tr:hover { background: #FFFAF0; }
           <option value="oto_rhythm_tutorial">オトタッチ リズムチュートリアル</option>
         </select>
       </label>
+      <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;">
+        プリセット名
+        <input id="puzzle-tts-preset-name" placeholder="例: オトタッチ リズムチュートリアル" style="padding:7px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;font-weight:700;">
+      </label>
       <button type="button" onclick="puzzleTtsLoadPreset()" style="padding:8px 14px;background:#FEF3C7;color:#92400E;border:1px solid #FBBF24;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">読み上げテキストに入れる</button>
+      <button type="button" onclick="puzzleTtsSavePreset()" style="padding:8px 14px;background:#EEF2FF;color:#4338CA;border:1px solid #C7D2FE;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">プリセットに保存</button>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:12px;">
@@ -1061,7 +1066,7 @@ tr:hover { background: #FFFAF0; }
       <button class="wm-cw-filter active" data-diff="all" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">すべて</button>
       <button class="wm-cw-filter" data-diff="easy" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">☆ かんたん</button>
       <button class="wm-cw-filter" data-diff="normal" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">★ ふつう</button>
-      <button class="wm-cw-filter" data-diff="hard" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">★★ むずかしめ</button>
+      <button class="wm-cw-filter" data-diff="hard" style="padding:4px 12px;border:2px solid #E0D8CC;border-radius:8px;background:#fff;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">★★ 難しい</button>
     </div>
     <div style="overflow-x:auto;">
       <table id="wm-cw-table" style="width:100%;border-collapse:collapse;font-size:0.78rem;">
@@ -1703,11 +1708,12 @@ var PUZZLE_TTS_PRESETS = [
       { id: 'basic_tut_03', file: 'basic_tut_03.mp3', text: 'やってみよう。ピースを持って、青い場所へ離してね。' },
       { id: 'basic_tut_04', file: 'basic_tut_04.mp3', text: 'できたね。次は、見るボタンを試すよ。' },
       { id: 'basic_tut_05', file: 'basic_tut_05.mp3', text: 'まずは見るボタンを長く押してみよう。' },
-      { id: 'basic_tut_06', file: 'basic_tut_06.mp3', text: '離すと、元のパズルに戻るよ。' },
-      { id: 'basic_tut_07', file: 'basic_tut_07.mp3', text: '困った時に使ってね。' },
-      { id: 'basic_tut_08', file: 'basic_tut_08.mp3', text: '次はヒントだよ。ヒントを押すと場所が光るよ。' },
-      { id: 'basic_tut_09', file: 'basic_tut_09.mp3', text: '光った場所へピースを持っていくよ。' },
-      { id: 'basic_tut_10', file: 'basic_tut_10.mp3', text: 'できたね。わからない時は見るとヒントを使ってね。' }
+      { id: 'basic_tut_06', file: 'basic_tut_06.mp3', text: '見るボタンは長く押している間だけ絵が見えるよ。' },
+      { id: 'basic_tut_07', file: 'basic_tut_07.mp3', text: '離すと、元のパズルに戻るよ。' },
+      { id: 'basic_tut_08', file: 'basic_tut_08.mp3', text: '困った時に使ってね。' },
+      { id: 'basic_tut_09', file: 'basic_tut_09.mp3', text: '次はヒントだよ。ヒントを押すと場所が光るよ。' },
+      { id: 'basic_tut_10', file: 'basic_tut_10.mp3', text: '光った場所へピースを持っていくよ。' },
+      { id: 'basic_tut_11', file: 'basic_tut_11.mp3', text: 'できたね。わからない時は見るとヒントを使ってね。' }
     ]
   },
   {
@@ -1719,7 +1725,7 @@ var PUZZLE_TTS_PRESETS = [
     scene: 'A gentle female guide teaches a preschool rhythm game on a dark but cheerful arcade stage.',
     context: 'Japanese narration for OtoTouch rhythm mode. Use a warm, soft, clear voice for young children. Speak slowly with short pauses so children have time to read and act. Keep the tone playful and reassuring. No music, no sound effects, no background noise. Pronounce note names like 「ファ」 clearly.',
     rows: [
-      { id: 'oto_rhythm_tut_01_difficulty', file: 'oto_rhythm_tut_01_difficulty.mp3', text: 'むずかしさを えらべるよ。かんたん、ふつう、むずかしめ。さいしょは、かんたんを おしてね。' },
+      { id: 'oto_rhythm_tut_01_difficulty', file: 'oto_rhythm_tut_01_difficulty.mp3', text: 'むずかしさを えらべるよ。かんたん、ふつう、難しい。さいしょは、かんたんを おしてね。' },
       { id: 'oto_rhythm_tut_02_song', file: 'oto_rhythm_tut_02_song.mp3', text: 'まずは、かえるのうたから はじめよう。かえるのうたの ボタンを おしてね。' },
       { id: 'oto_rhythm_tut_03_next', file: 'oto_rhythm_tut_03_next.mp3', text: 'えらべたね。つぎへを おして、あそびかたを えらぼう。' },
       { id: 'oto_rhythm_tut_04_practice_block', file: 'oto_rhythm_tut_04_practice_block.mp3', text: 'さいしょは ブロックで みじかく れんしゅうしよう。ブロックを おしてね。' },
@@ -1744,11 +1750,14 @@ var puzzleTtsCurrentAudio = null;
 var puzzleTtsCurrentAudioId = '';
 var puzzleTtsSelectedRowId = '';
 var puzzleTtsDragRowId = '';
+var PUZZLE_TTS_USER_PRESETS_KEY = 'pono_puzzle_tts_user_presets_v1';
 var PUZZLE_TTS_HISTORY_KEY = 'pono_puzzle_tts_history_v1';
 var PUZZLE_TTS_DRAFT_KEY = 'pono_puzzle_tts_draft_v1';
 var PUZZLE_TTS_AUDIO_DB_NAME = 'pono_puzzle_tts_audio_v1';
 var PUZZLE_TTS_AUDIO_STORE = 'line_versions';
 var PUZZLE_TTS_MAX_VERSIONS = 8;
+var puzzleTtsUserPresets = [];
+var puzzleTtsCurrentPresetId = PUZZLE_TTS_PRESETS[0].id;
 var puzzleTtsHistory = [];
 var puzzleTtsDraftTimer = 0;
 var puzzleTtsSaveDirHandle = null;
@@ -1885,18 +1894,146 @@ function puzzleTtsCloneRows(rows) {
   });
 }
 
+function puzzleTtsBuiltinPresetById(id) {
+  return PUZZLE_TTS_PRESETS.find(function(preset) { return preset.id === id; }) || null;
+}
+
+function puzzleTtsUserPresetById(id) {
+  return puzzleTtsUserPresets.find(function(preset) { return preset.id === id; }) || null;
+}
+
+function puzzleTtsAllPresets() {
+  return PUZZLE_TTS_PRESETS.concat(puzzleTtsUserPresets);
+}
+
 function puzzleTtsPresetById(id) {
-  return PUZZLE_TTS_PRESETS.find(function(preset) { return preset.id === id; }) || PUZZLE_TTS_PRESETS[0];
+  return puzzleTtsBuiltinPresetById(id) || puzzleTtsUserPresetById(id) || PUZZLE_TTS_PRESETS[0];
+}
+
+function puzzleTtsNormalizeUserPreset(item) {
+  if (!item || typeof item !== 'object') return null;
+  var rows = puzzleTtsCloneRows(item.rows);
+  if (!rows.length) return null;
+  var id = puzzleTtsNormalizeId(item.id || puzzleTtsMakeId('preset'));
+  if (puzzleTtsBuiltinPresetById(id)) id = puzzleTtsMakeId('preset');
+  var label = String(item.label || item.historyName || item.name || '').trim();
+  return {
+    id: id,
+    label: label || '保存プリセット',
+    historyName: String(item.historyName || label || '').trim() || '保存プリセット',
+    voice: item.voice || 'Aoede',
+    style: item.style || '[gently]',
+    model: item.model || 'gemini-3.1-flash-tts-preview',
+    scene: item.scene || '',
+    context: item.context || '',
+    rows: rows,
+    savedAt: item.savedAt || '',
+    user: true
+  };
+}
+
+function puzzleTtsLoadUserPresetsStore() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem(PUZZLE_TTS_USER_PRESETS_KEY) || '[]');
+    var seen = {};
+    puzzleTtsUserPresets = (Array.isArray(parsed) ? parsed : []).map(puzzleTtsNormalizeUserPreset).filter(function(preset) {
+      if (!preset || seen[preset.id]) return false;
+      seen[preset.id] = true;
+      return true;
+    });
+  } catch (_) {
+    puzzleTtsUserPresets = [];
+  }
+}
+
+function puzzleTtsPersistUserPresetsStore() {
+  try {
+    localStorage.setItem(PUZZLE_TTS_USER_PRESETS_KEY, JSON.stringify(puzzleTtsUserPresets.slice(0, 40)));
+  } catch (_) {}
+}
+
+function puzzleTtsPresetOptionHtml(preset) {
+  return '<option value="' + puzzleTtsHtml(preset.id) + '">' + puzzleTtsHtml(preset.label || preset.id) + '</option>';
+}
+
+function puzzleTtsRenderPresetList(selectedId) {
+  var select = document.getElementById('puzzle-tts-preset');
+  var targetId = selectedId || puzzleTtsCurrentPresetId || (select ? select.value : '') || PUZZLE_TTS_PRESETS[0].id;
+  var preset = puzzleTtsPresetById(targetId);
+  puzzleTtsCurrentPresetId = preset.id;
+  if (select) {
+    var builtinHtml = PUZZLE_TTS_PRESETS.map(puzzleTtsPresetOptionHtml).join('');
+    var userHtml = puzzleTtsUserPresets.map(puzzleTtsPresetOptionHtml).join('');
+    select.innerHTML = '<optgroup label="標準プリセット">' + builtinHtml + '</optgroup>' +
+      (userHtml ? '<optgroup label="保存したプリセット">' + userHtml + '</optgroup>' : '');
+    select.value = puzzleTtsCurrentPresetId;
+  }
+  var nameInput = document.getElementById('puzzle-tts-preset-name');
+  if (nameInput && document.activeElement !== nameInput) {
+    nameInput.value = preset.label || '';
+  }
+}
+
+function puzzleTtsSetCurrentPresetId(id, options) {
+  options = options || {};
+  var preset = puzzleTtsPresetById(id);
+  var changed = preset.id !== puzzleTtsCurrentPresetId;
+  puzzleTtsCurrentPresetId = preset.id;
+  var select = document.getElementById('puzzle-tts-preset');
+  if (select && select.value !== preset.id) select.value = preset.id;
+  var nameInput = document.getElementById('puzzle-tts-preset-name');
+  if (nameInput && (!options.keepPresetName || !nameInput.value.trim())) {
+    nameInput.value = preset.label || '';
+  }
+  if (changed && !options.skipHistoryRender) puzzleTtsRenderHistoryList();
+}
+
+function puzzleTtsPresetFromState(state, id, label) {
+  return {
+    id: id,
+    label: label,
+    historyName: label,
+    voice: state.voice || 'Aoede',
+    style: state.style || '[gently]',
+    model: state.model || 'gemini-3.1-flash-tts-preview',
+    scene: state.scene || '',
+    context: state.context || '',
+    rows: puzzleTtsCloneRows(state.rows),
+    savedAt: state.savedAt || new Date().toISOString(),
+    user: true
+  };
+}
+
+function puzzleTtsSavePreset() {
+  var state = puzzleTtsCollectState();
+  var selectedPreset = puzzleTtsPresetById(puzzleTtsCurrentPresetId);
+  var existingUserPreset = puzzleTtsUserPresetById(puzzleTtsCurrentPresetId);
+  var name = (puzzleTtsControlValue('puzzle-tts-preset-name') || puzzleTtsControlValue('puzzle-tts-history-name') || selectedPreset.label || '').trim();
+  if (!name) name = 'ナレーションプリセット ' + state.savedAt.replace('T', ' ').slice(0, 16);
+  var id = existingUserPreset ? existingUserPreset.id : puzzleTtsMakeId('preset');
+  var preset = puzzleTtsPresetFromState(state, id, name);
+  if (existingUserPreset) {
+    puzzleTtsUserPresets = puzzleTtsUserPresets.map(function(row) { return row.id === id ? preset : row; });
+  } else {
+    puzzleTtsUserPresets.unshift(preset);
+  }
+  puzzleTtsPersistUserPresetsStore();
+  puzzleTtsRenderPresetList(id);
+  puzzleTtsSetCurrentPresetId(id, { skipHistoryRender: true });
+  puzzleTtsRenderHistoryList();
+  puzzleTtsSaveDraftSoon();
+  puzzleTtsStatus('プリセットに保存しました');
 }
 
 function puzzleTtsStateFromPreset(preset) {
   return {
     version: 2,
+    presetId: preset.id,
     savedAt: new Date().toISOString(),
     name: preset.historyName || preset.label || '',
     voice: preset.voice || 'Aoede',
     style: preset.style || '[gently]',
-    model: 'gemini-3.1-flash-tts-preview',
+    model: preset.model || 'gemini-3.1-flash-tts-preview',
     scene: preset.scene || '',
     context: preset.context || '',
     rows: puzzleTtsCloneRows(preset.rows),
@@ -1907,11 +2044,13 @@ function puzzleTtsStateFromPreset(preset) {
 function puzzleTtsLoadPreset(id) {
   var select = document.getElementById('puzzle-tts-preset');
   var preset = puzzleTtsPresetById(id || (select ? select.value : ''));
-  puzzleTtsApplyState(puzzleTtsStateFromPreset(preset));
+  puzzleTtsSetCurrentPresetId(preset.id, { skipHistoryRender: true });
+  puzzleTtsApplyState(puzzleTtsStateFromPreset(preset), { skipPresetSync: true });
   PUZZLE_TTS_LINES.forEach(function(line) {
     puzzleTtsCheckedById[line.id] = true;
   });
   puzzleTtsRenderRows();
+  puzzleTtsRenderHistoryList();
   puzzleTtsStatus((preset.label || 'プリセット') + ' を読み上げテキスト欄に入れました');
 }
 
@@ -1919,6 +2058,7 @@ function puzzleTtsCollectState() {
   var rows = puzzleTtsCurrentRows();
   return {
     version: 2,
+    presetId: puzzleTtsCurrentPresetId || (document.getElementById('puzzle-tts-preset') || {}).value || PUZZLE_TTS_PRESETS[0].id,
     savedAt: new Date().toISOString(),
     voice: puzzleTtsControlValue('puzzle-tts-voice') || 'Aoede',
     style: puzzleTtsControlValue('puzzle-tts-style') || '[gently]',
@@ -1936,6 +2076,9 @@ function puzzleTtsCollectState() {
 function puzzleTtsApplyState(state, options) {
   if (!state) return;
   options = options || {};
+  if (!options.skipPresetSync && state.presetId) {
+    puzzleTtsSetCurrentPresetId(state.presetId);
+  }
   puzzleTtsSetControlValue('puzzle-tts-voice', state.voice || 'Aoede');
   puzzleTtsSetControlValue('puzzle-tts-style', state.style || '[gently]');
   puzzleTtsSetControlValue('puzzle-tts-model', state.model || 'gemini-3.1-flash-tts-preview');
@@ -1947,10 +2090,24 @@ function puzzleTtsApplyState(state, options) {
   if (!options.skipDraft) puzzleTtsSaveDraftSoon();
 }
 
+function puzzleTtsInferPresetIdFromState(state) {
+  var rows = Array.isArray(state && state.rows) ? state.rows : [];
+  var ids = rows.map(function(row) { return String(row && row.id || ''); }).join(' ');
+  var name = String((state && (state.name || state.historyName || state.label)) || '');
+  if (ids.indexOf('oto_rhythm_tut_') >= 0 || name.indexOf('オトタッチ') >= 0) return 'oto_rhythm_tutorial';
+  if (ids.indexOf('basic_tut_') >= 0 || name.indexOf('パズル') >= 0) return 'puzzle_basic_tutorial';
+  return puzzleTtsCurrentPresetId || PUZZLE_TTS_PRESETS[0].id;
+}
+
 function puzzleTtsLoadHistoryStore() {
   try {
     var parsed = JSON.parse(localStorage.getItem(PUZZLE_TTS_HISTORY_KEY) || '[]');
-    puzzleTtsHistory = Array.isArray(parsed) ? parsed : [];
+    puzzleTtsHistory = (Array.isArray(parsed) ? parsed : []).filter(function(item) {
+      return item && typeof item === 'object';
+    }).map(function(item) {
+      if (!item.presetId) item.presetId = puzzleTtsInferPresetIdFromState(item);
+      return item;
+    });
   } catch (_) {
     puzzleTtsHistory = [];
   }
@@ -1958,7 +2115,7 @@ function puzzleTtsLoadHistoryStore() {
 
 function puzzleTtsPersistHistoryStore() {
   try {
-    localStorage.setItem(PUZZLE_TTS_HISTORY_KEY, JSON.stringify(puzzleTtsHistory.slice(0, 40)));
+    localStorage.setItem(PUZZLE_TTS_HISTORY_KEY, JSON.stringify(puzzleTtsHistory.slice(0, 80)));
   } catch (_) {}
 }
 
@@ -1971,11 +2128,15 @@ function puzzleTtsHistoryLabel(item) {
 function puzzleTtsRenderHistoryList() {
   var select = document.getElementById('puzzle-tts-history-list');
   if (!select) return;
-  if (!puzzleTtsHistory.length) {
+  var presetId = puzzleTtsCurrentPresetId || PUZZLE_TTS_PRESETS[0].id;
+  var visibleHistory = puzzleTtsHistory.filter(function(item) {
+    return (item.presetId || puzzleTtsInferPresetIdFromState(item)) === presetId;
+  });
+  if (!visibleHistory.length) {
     select.innerHTML = '<option value="">履歴なし</option>';
     return;
   }
-  select.innerHTML = puzzleTtsHistory.map(function(item) {
+  select.innerHTML = visibleHistory.map(function(item) {
     return '<option value="' + puzzleTtsHtml(item.id) + '">' + puzzleTtsHtml(puzzleTtsHistoryLabel(item)) + '</option>';
   }).join('');
 }
@@ -1984,6 +2145,7 @@ function puzzleTtsSaveHistory() {
   var state = puzzleTtsCollectState();
   var name = (puzzleTtsControlValue('puzzle-tts-history-name') || '').trim();
   state.id = 'hist_' + Date.now();
+  state.presetId = puzzleTtsCurrentPresetId || PUZZLE_TTS_PRESETS[0].id;
   state.name = name || ('ナレーション音声 ' + state.savedAt.replace('T', ' ').slice(0, 16));
   puzzleTtsHistory = puzzleTtsHistory.filter(function(item) { return item.id !== state.id; });
   puzzleTtsHistory.unshift(state);
@@ -2765,6 +2927,8 @@ function puzzleTtsCopyAllStudioPrompts() {
   });
 }
 
+puzzleTtsLoadUserPresetsStore();
+puzzleTtsRenderPresetList();
 puzzleTtsLoadHistoryStore();
 puzzleTtsRenderHistoryList();
 puzzleTtsRenderRows();
@@ -11087,15 +11251,15 @@ var WM_CROSSWORDS = [
   { diff: 'normal', diffLabel: '★ ふつう', vertical: 'つくえ', horizontal: 'ふくろ', shared: 'く', img1: 'tsukue', img2: 'fukuro' },
   { diff: 'normal', diffLabel: '★ ふつう', vertical: 'とけい', horizontal: 'けむり', shared: 'け', img1: 'tokei', img2: 'kemuri' },
   { diff: 'normal', diffLabel: '★ ふつう', vertical: 'りんご', horizontal: 'みんな', shared: 'ん', img1: 'ringo', img2: 'minna' },
-  // むずかしめ
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'トマト', horizontal: 'クマ', shared: 'マ', img1: 'tomato', img2: 'kuma' },
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'パンダ', horizontal: 'パン', shared: 'パン', img1: 'panda', img2: 'pan' },
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'メロン', horizontal: 'ロケット', shared: 'ロ', img1: 'melon', img2: 'rocket' },
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'キリン', horizontal: 'リス', shared: 'リ', img1: 'kirin', img2: 'risu' },
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'ケーキ', horizontal: 'スキー', shared: 'キ', img1: 'cake', img2: 'ski' },
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'バナナ', horizontal: 'ナベ', shared: 'ナ', img1: 'banana', img2: 'nabe' },
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'カメラ', horizontal: 'メガネ', shared: 'メ', img1: 'camera', img2: 'megane' },
-  { diff: 'hard', diffLabel: '★★ むずかしめ', vertical: 'タイヤ', horizontal: 'ライオン', shared: 'イ', img1: 'taiya', img2: 'raion' }
+  // 難しい
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'トマト', horizontal: 'クマ', shared: 'マ', img1: 'tomato', img2: 'kuma' },
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'パンダ', horizontal: 'パン', shared: 'パン', img1: 'panda', img2: 'pan' },
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'メロン', horizontal: 'ロケット', shared: 'ロ', img1: 'melon', img2: 'rocket' },
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'キリン', horizontal: 'リス', shared: 'リ', img1: 'kirin', img2: 'risu' },
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'ケーキ', horizontal: 'スキー', shared: 'キ', img1: 'cake', img2: 'ski' },
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'バナナ', horizontal: 'ナベ', shared: 'ナ', img1: 'banana', img2: 'nabe' },
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'カメラ', horizontal: 'メガネ', shared: 'メ', img1: 'camera', img2: 'megane' },
+  { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'タイヤ', horizontal: 'ライオン', shared: 'イ', img1: 'taiya', img2: 'raion' }
 ];
 
 function wmWordImgUrl(name) {
