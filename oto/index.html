@@ -11849,6 +11849,7 @@ var TUT_SEEN_KEY = 'pono_oto_tut_seen_v4';
 var OTO_TUTORIAL_KEYS = {
   classic: TUT_SEEN_KEY,
   rhythmStart: 'pono_oto_rhythm_start_tut_seen_v1',
+  rhythmStageSelect: 'pono_oto_rhythm_stage_select_tut_seen_v1',
   rhythmMenu: 'pono_oto_rhythm_menu_tut_seen_v7',
   rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v7',
   rhythmStory: 'pono_oto_rhythm_story_tut_seen_v5',
@@ -12526,7 +12527,7 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
 }
 function _currentOtoTutorialKind() {
   if (document.body && document.body.classList.contains('rhythm-menu-open')) {
-    return 'rhythmStart';
+    return 'rhythmStageSelect';
   }
   if (document.body && (
     document.body.classList.contains('rhythm-opening-active') ||
@@ -12538,6 +12539,25 @@ function _currentOtoTutorialKind() {
   return 'classic';
 }
 function _makeOtoTutorialSteps(kind) {
+  if (kind === 'rhythmStageSelect') {
+    return [
+      {
+        badge: 'ステージ',
+        msg: 'クリアした ステージと<br>つぎの ステージで あそべるよ',
+        anchor: '#rhythm-song-list',
+        side: 'stageTop',
+        hand: 'point'
+      },
+      {
+        badge: 'はじめる',
+        msg: 'ステージを えらんだら<br>つぎへを おしてね',
+        anchor: '#rhythm-menu-next',
+        side: 'stageTop',
+        hand: 'point',
+        showHideNext: true
+      }
+    ];
+  }
   if (kind === 'rhythmStart') {
     return [
       {
