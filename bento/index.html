@@ -7744,7 +7744,7 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'cup-edit-try': 'basic_tut_11',
   'small-cup-food': 'basic_tut_12',
   'small-next': 'basic_tut_13',
-  // v1374: okazu-more はバブル + Pono callout で案内。 専用ナレ ID は割り当てない
+  // v1375: okazu-more はバブル + Pono callout で案内。 専用ナレ ID は割り当てない
   // (basic_tut_14 は complete-result 「これで おべんとうが かんせいしたよ」 で既使用済み)。
 };
 let bentoTutorialVoiceAudio = null;
@@ -11568,7 +11568,7 @@ function tryFinishOkazuTier(tier) {
       return;
     }
     setFreeGuideStep(freeGuideStep.startsWith('tier3') ? 'tier3Side' : 'tier2Side');
-    // v1374: okazu-more step は「おかずOK」 押下のみで進む button-only advance。
+    // v1375: okazu-more step は「おかずOK」 押下のみで進む button-only advance。
     // role=main 段階の OK 押下 = メインおかずを必要数置き終えた合図なので、
     // チュートリアル中ならここで small-accessory へ進める。
     try {
