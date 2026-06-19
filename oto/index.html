@@ -5184,7 +5184,7 @@
     </div>
 
     <div class="rhythm-hud" id="rhythm-hud" aria-live="polite">
-      <div class="rhythm-status" id="rhythm-status">いちばん したまで きたら タッチ！</div>
+      <div class="rhythm-status" id="rhythm-status">ボタンに かさなったら タッチ！</div>
       <div class="rhythm-queue" id="rhythm-queue"></div>
     </div>
     <div class="rhythm-special-bubble" id="rhythm-special-bubble" aria-live="polite"></div>
@@ -10018,7 +10018,7 @@ function _startRhythmMode() {
   _rhythm.nextSpawnSeq = 0;
   var hud = document.getElementById('rhythm-hud');
   if (hud) hud.classList.add('show');
-  _setRhythmStatus('いちばん したまで きたら タッチ！', null, 'hint');
+  _setRhythmStatus('ボタンに かさなったら タッチ！', null, 'hint');
   _updateRhythmBattlePanel('attack', null, 'いくよ！');
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
   _ensureRhythmBand();
@@ -11729,10 +11729,10 @@ var OTO_RHYTHM_TUTORIAL_VOICE = {
   next: 'えらべたね。つぎへを おして、あそびかたを えらぼう。',
   block: 'さいしょは ブロックで みじかく れんしゅうしよう。ブロックを おしてね。',
   demoReady: 'おてほんを みるよ。タップしたら、さん、に、いちで はじまるよ。',
-  demo: 'おてほんを みるよ。ノートが ラインに きたら、同じボタンを おすよ。',
+  demo: 'おてほんを みるよ。ノートが ボタンに かさなったら、同じボタンを おすよ。',
   yourTurn: 'つぎは きみのばん。タップしたら、さん、に、いちで はじまるよ。',
-  tryNote: 'こんどは じぶんで やってみよう。ノートが ラインに きたら、ファのボタンを おしてね。',
-  judge: 'ラインに ぴったりなら、ジャスト。すこし ちかいと、ナイス。おそくても、オッケー。ぴったりほど、てんが たかいよ。',
+  tryNote: 'こんどは じぶんで やってみよう。ノートが ファのボタンに かさなったら、おしてね。',
+  judge: 'ボタンに ぴったり かさなると、ジャスト。すこし ちかいと、ナイス。おそくても、オッケー。ぴったりほど、てんが たかいよ。',
   advice: 'もっと れんしゅうしたいときは、じゆうモードで あそべるよ。おてほんを みてから はじめると わかりやすいよ。',
   start: 'かえるのうたで あそぼう。はじめるを おしてね。'
 };
@@ -11898,7 +11898,7 @@ function _otoTutorialFallMs(step) {
   return Math.max(4200, Math.min(RHYTHM_FALL_MS, requested || OTO_TUTORIAL_NOTE_FALL_MS));
 }
 function _otoTutorialVisibleLeadMs(step, fallMs) {
-  var requested = step && typeof step.visibleLeadMs === 'number' ? step.visibleLeadMs : RHYTHM_DEMO_COUNT_STEP_MS * 6;
+  var requested = step && typeof step.visibleLeadMs === 'number' ? step.visibleLeadMs : RHYTHM_DEMO_COUNT_STEP_MS * 10;
   var maxLead = Math.max(0, (fallMs || OTO_TUTORIAL_NOTE_FALL_MS) - 2600);
   return Math.max(0, Math.min(maxLead, requested || 0));
 }
@@ -12185,7 +12185,7 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
     if (bubble) {
       bubble.innerHTML =
         '<div class="tut-badge">もういちど</div>' +
-        '<div class="tut-msg">もういちど やってみよう<br>ファが ラインに きたら おしてね</div>';
+        '<div class="tut-msg">もういちど やってみよう<br>ファが ボタンに かさなったら おしてね</div>';
       bubble.classList.add('tut-no-actions');
       bubble.classList.remove('hidden', 'is-countdown', 'tut-bubble-tap');
       bubble.style.left = '-9999px';
@@ -12351,7 +12351,7 @@ function _makeOtoTutorialSteps(kind) {
         userTryNoteIdx: 3,
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('ラインに きたら タッチ', null, 'judge');
+          _setRhythmStatus('ボタンに かさなったら タッチ', null, 'judge');
         }
       },
       {
@@ -12445,14 +12445,14 @@ function _makeOtoTutorialSteps(kind) {
         }
       },
       {
-        badge: 'ライン',
-        msg: 'ノートが このラインに きたら<br>タッチするよ',
-        anchor: '.gh-hitline',
+        badge: 'ボタン',
+        msg: 'ノートが ボタンに かさなったら<br>タッチするよ',
+        anchor: '.instr-btn[data-idx="3"]',
         side: 'stageTopRight',
         hand: 'point',
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('ラインに きたら タッチ', null, 'judge');
+          _setRhythmStatus('ボタンに かさなったら タッチ', null, 'judge');
         }
       },
       {
@@ -12486,14 +12486,14 @@ function _makeOtoTutorialSteps(kind) {
   if (kind === 'rhythmStoryFromMenu') {
     return [
       {
-        badge: 'ライン',
-        msg: 'ノートが このラインに きたら<br>タッチするよ',
-        anchor: '.gh-hitline',
+        badge: 'ボタン',
+        msg: 'ノートが ボタンに かさなったら<br>タッチするよ',
+        anchor: '.instr-btn[data-idx="3"]',
         side: 'stageTopRight',
         hand: 'point',
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('ラインに きたら タッチ', null, 'judge');
+          _setRhythmStatus('ボタンに かさなったら タッチ', null, 'judge');
         }
       },
       {
