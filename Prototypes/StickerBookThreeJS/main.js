@@ -3877,7 +3877,6 @@ function createCurvedCollectionPageSurfaceGeometry(bindingSide) {
 function curveCollectionPageGeometry(geometry, bindingSide) {
   const positions = geometry.attributes.position;
   const sideSign = bindingSide === "right" ? -1 : 1;
-  const outerSideSign = bindingSide === "right" ? -1 : 1;
 
   for (let i = 0; i < positions.count; i += 1) {
     const x = positions.getX(i);
@@ -3886,32 +3885,16 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
     const spineDistance = bindingSide === "right" ? PAGE_W - x : x;
     const spineT = 1 - THREE.MathUtils.clamp(spineDistance / COLLECTION_PAGE_SPINE_CURVE_WIDTH, 0, 1);
     const fold = spineT * spineT * (3 - 2 * spineT);
-    const u = THREE.MathUtils.clamp(x / PAGE_W, 0, 1);
     const v = THREE.MathUtils.clamp((y + PAGE_H / 2) / PAGE_H, 0, 1);
     const middle = Math.sin(v * Math.PI);
-    const verticalFold = Math.pow(middle, 0.72);
+    const verticalFold = 0.82 + 0.18 * Math.pow(middle, 0.72);
     const pull = fold * COLLECTION_PAGE_SPINE_PULL * (0.82 + middle * 0.32);
     const dip = fold * COLLECTION_PAGE_SPINE_DIP * verticalFold;
-    const outerDistance = bindingSide === "right" ? x : PAGE_W - x;
-    const outerT = smootherstep(1 - outerDistance / (PAGE_W * 0.16));
-    const topT = smootherstep(1 - (PAGE_H / 2 - y) / (PAGE_H * 0.1));
-    const bottomT = smootherstep(1 - (y + PAGE_H / 2) / (PAGE_H * 0.1));
-    const spineFade = smootherstep(spineDistance / (PAGE_W * 0.2));
-    const outerPhase = bindingSide === "right" ? 0.55 : 2.15;
-    const outerWave =
-      Math.sin(v * Math.PI * 1.65 + outerPhase) * 0.62 +
-      Math.sin(v * Math.PI * 3.1 - outerPhase * 0.7) * 0.38;
-    const longEdgeWave = Math.sin(u * Math.PI * 1.28 + (bindingSide === "right" ? 0.2 : -0.2));
-    const edgeX = outerSideSign * outerT * COLLECTION_PAGE_OUTER_EDGE_WAVE * outerWave;
-    const edgeY = spineFade * COLLECTION_PAGE_LONG_EDGE_WAVE * (
-      topT * (0.3 + 0.7 * longEdgeWave) -
-      bottomT * (0.35 + 0.65 * Math.sin(u * Math.PI * 1.12 - 0.25))
-    );
 
     positions.setXYZ(
       i,
-      x + sideSign * pull + edgeX,
-      y + edgeY,
+      x + sideSign * pull,
+      y,
       z - dip,
     );
   }
@@ -3920,6 +3903,52 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
+}
+
+function createCollectionSpineFoldGeometry() {
+  const width = COLLECTION_SPINE_FOLD_W;
+  const half = width / 2;
+  const xSegments = 18;
+  const ySegments = 72;
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let yi = 0; yi <= ySegments; yi += 1) {
+    const v = yi / ySegments;
+    const y = -PAGE_H / 2 + PAGE_H * v;
+    const middle = Math.sin(v * Math.PI);
+    const vertical = 0.86 + 0.14 * Math.pow(Math.max(0, middle), 0.7);
+    for (let xi = 0; xi <= xSegments; xi += 1) {
+      const u = xi / xSegments;
+      const x = -half + width * u;
+      const center = 1 - Math.abs(x / half);
+      const valley = smootherstep(center);
+      const shoulder = Math.pow(Math.abs(x / half), 1.55);
+      const z = shoulder * PAGE_H * 0.004 - valley * COLLECTION_SPINE_FOLD_DIP * vertical;
+      vertices.push(x, y, z);
+      uvs.push(u, v);
+    }
+  }
+
+  for (let yi = 0; yi < ySegments; yi += 1) {
+    for (let xi = 0; xi < xSegments; xi += 1) {
+      const a = yi * (xSegments + 1) + xi;
+      const b = a + 1;
+      const c = a + xSegments + 1;
+      const d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  geometry.setIndex(indices);
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
 function subdivideBendableGeometry(source) {
