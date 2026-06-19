@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T07:05:01Z - Puzzle basic tutorial hint: demo-less single guided try (mirror 見る button) — removed runBasicHintPlaceHandDemo call, idx8/9/10 each play once at child's step, sw1337, main/voice v1322
+- **タスク**: Puzzle basic tutorial hint: demo-less single guided try (mirror 見る button) — removed runBasicHintPlaceHandDemo call, idx8/9/10 each play once at child's step, sw1337, main/voice v1322
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 129
+- **エラー数**: 10
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 22, "Workflow": 5, "Read": 27, "ToolSearch": 2, "DesignSync": 17, "Bash": 45, "Grep": 2, "Write": 6, "ScheduleWakeup": 1, "Skill": 1, "Glob": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-19T06:17:22Z - Puzzle basic tutorial: add missing hint-press narration (idx9) to hint DEMO at button step (voice-then-demonstrate), sw 1335->1336, scripts ->v1321
 - **タスク**: Puzzle basic tutorial: add missing hint-press narration (idx9) to hint DEMO at button step (voice-then-demonstrate), sw 1335->1336, scripts ->v1321
 - **結果**: 成功
@@ -238,19 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-06-19T03:52:29Z - Puzzle basic tutorial drag-try: restore full basic_tut_03 voice + badge/voice-together with audio-anchored split (badge-hide + input-enable at ~2.18s ピース boundary), removed silent badge-alone hold, cues at 2.18s/3.72s, cache bumps sw1331/voice1317/index1318
 - **タスク**: Puzzle basic tutorial drag-try: restore full basic_tut_03 voice + badge/voice-together with audio-anchored split (badge-hide + input-enable at ~2.18s ピース boundary), removed silent badge-alone hold, cues at 2.18s/3.72s, cache bumps sw1331/voice1317/index1318
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 88
-- **エラー数**: 14
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 17, "Bash": 40, "Workflow": 11, "Edit": 9, "Write": 3, "Agent": 6, "Grep": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-19T03:49:42Z - puzzle basic_tut_03 full drag-try narration restore (un-trim, re-encode + whisper timestamps)
-- **タスク**: puzzle basic_tut_03 full drag-try narration restore (un-trim, re-encode + whisper timestamps)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 88

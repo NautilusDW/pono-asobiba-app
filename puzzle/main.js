@@ -4721,15 +4721,16 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
   armBasicDragLoopCue(piece, 'basic-drag-try');
 }
 
-// 13-step real-UI hint TRY chain (idx9 PRESS is reachable from exactly one path):
-//   runBasicHintPlaceHandDemo (demo: idx8 SELECT, idx10 GLOW)
-//     -> showBasicHintSelectNarration -> startBasicHintPlaceTry (phase 'basic-hint-select-try')
+// 13-step real-UI hint, DEMO-LESS single guided try (mirrors the 見る button):
+//   showBasicHintSelectNarration -> startBasicHintPlaceTry (phase 'basic-hint-select-try', plays idx8 SELECT)
 //     -> child taps piece -> onBasicHintSelectPracticePointerDown (phase 'basic-hint-press-try', plays idx9 PRESS)
-//     -> child presses ヒント -> onBasicHintPracticeHintButtonUsed (phase 'basic-hint-drag-try')
+//     -> child presses ヒント -> onBasicHintPracticeHintButtonUsed (phase 'basic-hint-drag-try', plays idx10 GLOW)
 //     -> child drags home -> onBasicHintDragPracticePieceDropped
 //        -> showBasicHintDoneNarration (idx11 FINISH -> idx12 CLOSING) -> finishPartnerPractice.
-// 'basic-hint-press-try' is set ONLY inside onBasicHintSelectPracticePointerDown, so
-// idx9 cannot be skipped on the happy path.
+// There is NO お手本 hand demo: each of idx8/idx9/idx10 plays exactly ONCE at the
+// child's own corresponding step. 'basic-hint-press-try' is set ONLY inside
+// onBasicHintSelectPracticePointerDown, so idx9 cannot be skipped on the happy path.
+// runBasicHintPlaceHandDemo() remains defined but is no longer called for the basic hint.
 function startBasicHintPlaceTry(piece) {
   if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
   if (!piece || piece.snapped) return;
@@ -4745,9 +4746,9 @@ function startBasicHintPlaceTry(piece) {
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(true);
   setPartnerPracticePeekInput(false);
-  // ヒント節の「やってみよう」中央バッジはヒントボタン押下時
-  // (onBasicHintPracticeHintButtonUsed) で1回だけ出す。選ぶ段では
-  // 中央バッジを出さず、コーチ案内だけで誘導する（連続表示の重複を回避）。
+  // Demo-less single-try hint: this is the FIRST step of the guided try, so show the
+  // 「やってみよう！」 try badge here (the お手本 demo that used to precede it is removed).
+  setBasicPracticeModeBanner('try', 'やってみよう！');
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'やってみよう',
@@ -4824,6 +4825,10 @@ function onBasicHintPracticeHintButtonUsed() {
   setPartnerPracticePeekInput(false);
   setBasicPracticeModeBanner('try', 'やってみよう！');
   showHintGlowForPiece(piece, BASIC_HINT_TRY_GLOW_MS);
+  // index 10 = hint GLOW (basic_tut_11 "光った場所へピースを持っていくよ"). Demo-less
+  // single-try: this clip used to play only inside the お手本 demo; now it plays when
+  // the child sees the glow they triggered, prompting them to carry the piece there.
+  playBasicPracticeVoice(10);
   showPartnerPracticeCoach();
   setPartnerPracticeCoachCopy(
     'やってみよう',
@@ -5274,10 +5279,13 @@ function showBasicHintSelectNarration() {
   partnerPracticeState.waitingForHintSelectCueNarration = false;
   showPartnerPracticeCoach();
   setPartnerPracticeInput(false);
-  runBasicHintPlaceHandDemo(piece, function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-place') return;
-    startBasicHintPlaceTry(piece);
-  });
+  // Demo-less single-try hint (mirrors the 見る button): skip the お手本 hand demo
+  // (runBasicHintPlaceHandDemo) and let the child do select→press→move directly,
+  // guided by narration. idx8 (SELECT) plays here at the start of the guided try;
+  // idx9 (PRESS) plays when the child selects (onBasicHintSelectPracticePointerDown);
+  // idx10 (GLOW) plays when the child presses ヒント (onBasicHintPracticeHintButtonUsed).
+  startBasicHintPlaceTry(piece);
+  playBasicPracticeVoice(8);
 }
 
 function scheduleBasicHintSelectAfterCueVisible() {

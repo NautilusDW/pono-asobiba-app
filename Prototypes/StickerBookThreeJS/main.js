@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-703";
+const ASSET_VERSION = "20260619-704";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -3704,7 +3704,13 @@ function updateStackThickness(options = {}) {
   }
 
   if (activeAlbumMode === "collection") {
-    positionCollectionStackBlock();
+    pageStacks.collection.group.visible = false;
+    pageStacks.left.group.visible = true;
+    pageStacks.right.group.visible = true;
+    const pair = thicknessPairForSpread(spreadPosition);
+    const tuning = visibleLayerTuning(getCurrentLayerTuning());
+    positionStackSide(pageStacks.left, pair.left, tuning);
+    positionStackSide(pageStacks.right, pair.right, tuning);
     return;
   }
 
