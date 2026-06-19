@@ -764,9 +764,23 @@ function withAudio(fn) {
   if (ctx.state === 'running') { fn(ctx); return; }
   ctx.resume().then(() => fn(ctx)).catch(() => {});
 }
-// iOSは最初のタッチでAudioContextをunlockする必要がある
-document.addEventListener('touchstart', () => getSfxCtx().resume(), { once: true, passive: true });
-document.addEventListener('pointerdown', () => getSfxCtx().resume(), { once: true });
+// PuzzleVoice.unlock() — prime the narration HTMLAudio pool + Web Audio inside a
+// real user gesture so later gesture-less play() calls (auto-chained 見る/ヒント
+// narration) are not blocked by mobile autoplay (NotAllowedError). Guarded so it
+// is a no-op if voice.js is absent or older.
+function unlockPuzzleVoice() {
+  try {
+    if (window.PuzzleVoice && typeof window.PuzzleVoice.unlock === 'function') {
+      window.PuzzleVoice.unlock();
+    }
+  } catch (_) { /* noop */ }
+}
+
+// iOSは最初のタッチでAudioContextをunlockする必要がある。
+// 同じ最初のジェスチャでナレーション用 HTMLAudio プールも prime しておく
+// (PuzzleVoice.unlock は heavy 部分が冪等なので何度呼んでも安全)。
+document.addEventListener('touchstart', () => { getSfxCtx().resume(); unlockPuzzleVoice(); }, { once: true, passive: true });
+document.addEventListener('pointerdown', () => { getSfxCtx().resume(); unlockPuzzleVoice(); }, { once: true });
 
 // ===== Audio: Snap Sound =====
 function playSnapSound() {
@@ -2727,9 +2741,25 @@ function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
   partnerPracticeState.basicVoiceBusy = true;
   partnerPracticeState.basicVoiceStepIndex = stepIndex | 0;
   var audio = null;
+  // onReject fires when a.play() rejects/throws (mobile autoplay block) or no
+  // audio element exists. Advance the state machine PROMPTLY so basicVoiceBusy
+  // clears and the next queued voice runs, instead of waiting on the multi-
+  // second fallback timer. The done/token guards inside finish() prevent any
+  // double-fire if the clip later does start and emits 'ended'.
+  var onVoiceReject = function () {
+    if (done) return;
+    if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+    // Hop to a macrotask so caller-attached listeners (ended/loadedmetadata)
+    // and the rest of this function are wired up before we advance.
+    setTimeout(function () {
+      if (done) return;
+      if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+      finish();
+    }, 0);
+  };
   try {
     if (window.PuzzleVoice && typeof window.PuzzleVoice.playBasicTut === 'function') {
-      audio = window.PuzzleVoice.playBasicTut(stepIndex);
+      audio = window.PuzzleVoice.playBasicTut(stepIndex, onVoiceReject);
     }
   } catch (_) {}
   var done = false;
@@ -5617,6 +5647,11 @@ function runPartnerPracticeDemo(partnerId) {
 
 function beginPartnerPractice(partnerId, returnIndex, done, options) {
   options = options || {};
+  // This runs synchronously inside the user gesture that starts the tutorial.
+  // Prime the narration audio pool now so the later auto-chained 見る/ヒント
+  // voices (idx4-10), reached seconds after this tap, can play without a fresh
+  // gesture on mobile Safari/Chrome.
+  unlockPuzzleVoice();
   var partner = (window.PonoPartners && typeof window.PonoPartners.get === 'function')
     ? window.PonoPartners.get(partnerId)
     : null;
@@ -6075,6 +6110,11 @@ function initPuzzle(img) {
   buildPieces();
 
   puzzleCanvas.addEventListener('pointerdown', function(e) {
+    // Re-prime/resume narration audio on every real canvas tap (cheap; the
+    // heavy HTMLAudio priming inside unlock() is idempotent). Keeps the
+    // AudioContext alive across re-suspends so peek/hint narration stays
+    // audible when reached later in the tutorial.
+    unlockPuzzleVoice();
     onPointerDown(e);
     if (dragPiece) puzzleCanvas.setPointerCapture(e.pointerId);
   }, { passive: false });

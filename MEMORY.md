@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T01:19:04Z - puzzle 見る/ヒント narration autoplay fix: PuzzleVoice.unlock() primes HTMLAudio+AudioContext in entry gesture, state machine advances on play() reject, bump sw1323/voice v1314
+- **タスク**: puzzle 見る/ヒント narration autoplay fix: PuzzleVoice.unlock() primes HTMLAudio+AudioContext in entry gesture, state machine advances on play() reject, bump sw1323/voice v1314
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 26
+- **エラー数**: 0
+- **検出された良いパターン**: 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 11, "Grep": 8, "Read": 7}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T01:01:14Z - puzzle voice basic_tut_05..11.mp3 を faster-whisper small(ja) で再文字起こしし、各スロットを期待文と照合検証
 - **タスク**: puzzle voice basic_tut_05..11.mp3 を faster-whisper small(ja) で再文字起こしし、各スロットを期待文と照合検証
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 6, "Bash": 4, "Workflow": 2}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-15T04:03:58Z - maze stage7 ボス頭頂部クリップ修正 (boss.y 0.31→0.36*H + drawImage offset -0.56→-0.50*drawH, sw1146)
-- **タスク**: maze stage7 ボス頭頂部クリップ修正 (boss.y 0.31→0.36*H + drawImage offset -0.56→-0.50*drawH, sw1146)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 8
-- **エラー数**: 0
-- **検出された良いパターン**: 編集前にファイルを読んで理解した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した
-- **ツール使用統計**: {"Agent": 2, "Read": 2, "Edit": 3, "Bash": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
