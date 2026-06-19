@@ -202,7 +202,7 @@ const PAGE_TURN_BEND = 0.34;
 const PAGE_FLUTTER_BEND = 0.56;
 const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.26;
 const COLLECTION_PAGE_SPINE_PULL = 0;
-const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.018;
+const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.008;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -3883,15 +3883,14 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
     const fold = spineT * spineT * (3 - 2 * spineT);
     const v = THREE.MathUtils.clamp((y + PAGE_H / 2) / PAGE_H, 0, 1);
     const middle = Math.sin(v * Math.PI);
-    const smallWave = Math.sin(v * Math.PI * 2 + (bindingSide === "right" ? 0.45 : -0.45));
-    const pull = fold * (COLLECTION_PAGE_SPINE_PULL * (0.82 + middle * 0.32) + smallWave * PAGE_W * 0.0025);
-    const dip = fold * COLLECTION_PAGE_SPINE_DIP * (0.82 + middle * 0.18);
-    const yWobble = fold * smallWave * PAGE_H * 0.0028;
+    const verticalFold = Math.pow(middle, 0.72);
+    const pull = fold * COLLECTION_PAGE_SPINE_PULL * (0.82 + middle * 0.32);
+    const dip = fold * COLLECTION_PAGE_SPINE_DIP * verticalFold;
 
     positions.setXYZ(
       i,
       x + sideSign * pull,
-      y + yWobble,
+      y,
       z - dip,
     );
   }

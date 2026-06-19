@@ -3489,6 +3489,13 @@
   /* ── チュートリアル (puzzle の実UIチュートリアルに寄せる) ── */
   .tut-dim { position:fixed; inset:0; z-index:9995; background:rgba(2,6,23,0.62); pointer-events:auto; }
   .tut-dim.hidden { display:none; }
+  .tut-dim.tut-black-transition {
+    display: block;
+    z-index: 10020;
+    background: #020617;
+    pointer-events: auto;
+    animation: tutBlackBrief 0.82s ease-in-out both;
+  }
   .tut-bubble {
     position:fixed; z-index:9997;
     background:
@@ -3544,6 +3551,11 @@
     margin-top:0;
   }
   @keyframes tutPopIn { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+  @keyframes tutBlackBrief {
+    0% { opacity: 0; }
+    24%, 76% { opacity: 1; }
+    100% { opacity: 0; }
+  }
   .tut-next-btn,
   .tut-skip-btn {
     display:inline-block; margin-top:6px;
@@ -11727,7 +11739,8 @@ var OTO_RHYTHM_TUTORIAL_VOICE = {
   stageUnlock: 'さいしょに あそべる きょくは すこしだけ。ライバルに かつと、つぎの きょくや ステージが ふえていくよ。',
   song: 'まずは、かえるのうたから はじめよう。かえるのうたの ボタンを おしてね。',
   next: 'えらべたね。つぎへを おして、あそびかたを えらぼう。',
-  block: 'さいしょは ブロックで みじかく れんしゅうしよう。ブロックを おしてね。',
+  block: 'さいしょは ブロックで みじかく れんしゅうしよう。',
+  fullChallenge: 'なれたら、ぜんぶで さいごまで チャレンジしよう。',
   demoReady: 'おてほんを みるよ。おてほんボタンを おしてね。',
   demo: 'おてほんを みてね。うえから ノートが おちてくるよ。ボタンの ところに きたら、タイミングよく ボタンを おすよ。',
   yourTurn: 'つぎは きみのばん。タップしたら、さん、に、いちで はじまるよ。',
@@ -11742,6 +11755,7 @@ var OTO_RHYTHM_TUTORIAL_AUDIO = {
   song: '../assets/audio/oto/tutorial/oto_rhythm_tut_02_song.mp3',
   next: '../assets/audio/oto/tutorial/oto_rhythm_tut_03_next.mp3',
   block: '../assets/audio/oto/tutorial/oto_rhythm_tut_04_practice_block.mp3',
+  fullChallenge: '../assets/audio/oto/tutorial/oto_rhythm_tut_11_full_challenge.mp3',
   demoReady: '../assets/audio/oto/tutorial/oto_rhythm_tut_05_sample_countdown.mp3',
   demo: '../assets/audio/oto/tutorial/oto_rhythm_tut_06_sample_note.mp3',
   yourTurn: '../assets/audio/oto/tutorial/oto_rhythm_tut_07_player_countdown.mp3',
@@ -11981,6 +11995,26 @@ function _clearOtoTutorialDemoEffects(preserveNarration) {
     _clearRhythmDemo(true);
     _otoTutorialState.ownsRhythmDemo = false;
   }
+}
+function _runOtoTutorialBlackTransition(durationMs, done) {
+  var dim = document.getElementById('tut-dim');
+  var bubble = document.getElementById('tut-bubble');
+  var spot = document.getElementById('tut-spot');
+  var wait = Math.max(120, durationMs || 820);
+  if (bubble) bubble.classList.add('hidden');
+  if (spot) spot.classList.add('hidden');
+  _hideOtoTutorialHand();
+  if (dim) {
+    dim.classList.remove('hidden');
+    dim.classList.add('tut-black-transition');
+  }
+  setTimeout(function() {
+    if (dim) {
+      dim.classList.remove('tut-black-transition');
+      dim.classList.add('hidden');
+    }
+    if (typeof done === 'function') done();
+  }, wait);
 }
 function _advanceOtoTutorialStep(expectedSteps, expectedIndex, delayMs) {
   if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
@@ -12777,7 +12811,10 @@ function _finishOtoTutorial(markSeen, continueFlow) {
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   var spot = document.getElementById('tut-spot');
-  if (dim) dim.classList.add('hidden');
+  if (dim) {
+    dim.classList.remove('tut-black-transition');
+    dim.classList.add('hidden');
+  }
   if (bubble) bubble.classList.add('hidden');
   if (spot) spot.classList.add('hidden');
   _clearOtoTutorialAutoTimer();
@@ -12815,6 +12852,7 @@ function _renderOtoTutorialStep() {
   var bubble = document.getElementById('tut-bubble');
   var spot = document.getElementById('tut-spot');
   if (!dim || !bubble || !_otoTutorialState) return;
+  dim.classList.remove('tut-black-transition');
   var steps = _otoTutorialState.steps || [];
   var i = _otoTutorialState.index || 0;
   var s = steps[i];
@@ -12852,6 +12890,25 @@ function _renderOtoTutorialStep() {
       _otoTutorialState.index++;
       _renderOtoTutorialStep();
     }, Math.max(300, s.autoNextMs || 1500));
+    return;
+  }
+  if (s.hiddenPrompt) {
+    dim.classList.add('hidden');
+    bubble.classList.add('hidden');
+    if (spot) spot.classList.add('hidden');
+    _hideOtoTutorialHand();
+    if (!s.skipNarration) _playOtoTutorialNarration(s);
+    var runHiddenAdvance = function() {
+      if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+      try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (e) {}
+      if (s.countdownBeforeAdvance) {
+        _runOtoTutorialTapCountdown(steps, i);
+      } else {
+        _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
+      }
+    };
+    if (_queueOtoTutorialAdvanceUntilNarrationDone(steps, i, runHiddenAdvance)) return;
+    _otoTutorialState.autoTimer = setTimeout(runHiddenAdvance, Math.max(160, s.autoNextMs || 360));
     return;
   }
   setTimeout(function() {
@@ -12928,6 +12985,11 @@ function _renderOtoTutorialStep() {
       else dim.classList.remove('hidden');
       var cueTimer = setTimeout(function() {
         if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+        if (s.delayedMsg) {
+          var msgEl = bubble.querySelector('.tut-msg');
+          if (msgEl) msgEl.innerHTML = s.delayedMsg;
+          _tutPositionBubble(bubble, rect, s.side);
+        }
         scheduleAnchorCue();
       }, cueDelay);
       if (_otoTutorialState) _otoTutorialState.demoTimers.push(cueTimer);
@@ -13032,7 +13094,14 @@ function _renderOtoTutorialStep() {
             advanceDone = true;
             try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler, true); } catch (err) {}
             try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (e) {}
-            _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
+            var continueAdvance = function() {
+              _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
+            };
+            if (s.transitionBlackMs) {
+              _runOtoTutorialBlackTransition(s.transitionBlackMs, continueAdvance);
+            } else {
+              continueAdvance();
+            }
           };
           if (_queueOtoTutorialAdvanceUntilNarrationDone(steps, i, runAdvance)) return;
           if (!_isOtoTutorialNarrationReady(steps, i)) return;
