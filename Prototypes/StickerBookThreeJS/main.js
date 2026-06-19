@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-707";
+const ASSET_VERSION = "20260619-708";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -201,8 +201,11 @@ const FLUTTER_PAGE_MAX_COUNT = 6;
 const PAGE_TURN_BEND = 0.34;
 const PAGE_FLUTTER_BEND = 0.56;
 const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.22;
-const COLLECTION_PAGE_SPINE_PULL = 0;
+const COLLECTION_PAGE_SPINE_PULL = PAGE_W * 0.018;
 const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.009;
+const COLLECTION_FOLD_W = SPINE_W * 0.74;
+const COLLECTION_FOLD_DEPTH = PAGE_H * 0.02;
+const COLLECTION_FOLD_Z = 0.026;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -328,6 +331,7 @@ const textureEntries = await Promise.all(textureFiles.map(async (file) => [file,
 const textureMap = new Map(textureEntries);
 const pageTemplateTextureMap = new Map();
 const collectionSpineTextureMap = new Map();
+const collectionFoldTextureMap = new Map();
 window.__stickerBookAssetsLoaded = true;
 
 const book = new THREE.Group();
@@ -402,6 +406,21 @@ spine.position.set(0, 0, -0.09);
 spine.material.depthWrite = false;
 spine.renderOrder = 1;
 book.add(spine);
+
+const collectionFold = new THREE.Mesh(
+  createCollectionFoldGeometry(),
+  new THREE.MeshBasicMaterial({
+    map: getCollectionFoldTexture(activeBook),
+    transparent: true,
+    opacity: 0.88,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  }),
+);
+collectionFold.position.set(0, 0, COLLECTION_FOLD_Z);
+collectionFold.renderOrder = 16;
+collectionFold.visible = false;
+book.add(collectionFold);
 
 const sideTabs = createSideTabs();
 sideTabs.group.position.z = -0.04;
@@ -3885,7 +3904,7 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
     const middle = Math.sin(v * Math.PI);
     const edgeFade = smootherstep(v / 0.18) * smootherstep((1 - v) / 0.1);
     const verticalFold = edgeFade * (0.78 + 0.22 * Math.pow(middle, 0.72));
-    const pull = fold * COLLECTION_PAGE_SPINE_PULL * (0.82 + middle * 0.32);
+    const pull = fold * COLLECTION_PAGE_SPINE_PULL * verticalFold;
     const dip = fold * COLLECTION_PAGE_SPINE_DIP * verticalFold;
 
     positions.setXYZ(
@@ -3900,6 +3919,52 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
+}
+
+function createCollectionFoldGeometry() {
+  const width = COLLECTION_FOLD_W;
+  const half = width / 2;
+  const xSegments = 32;
+  const ySegments = 88;
+  const geometry = new THREE.BufferGeometry();
+  const vertices = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let yi = 0; yi <= ySegments; yi += 1) {
+    const v = yi / ySegments;
+    const y = -PAGE_H / 2 + PAGE_H * v;
+    const middle = Math.sin(v * Math.PI);
+    const vertical = smootherstep(v / 0.07) * smootherstep((1 - v) / 0.07) * (0.88 + 0.12 * Math.pow(middle, 0.6));
+    for (let xi = 0; xi <= xSegments; xi += 1) {
+      const u = xi / xSegments;
+      const x = -half + width * u;
+      const normalized = Math.abs(x / half);
+      const valley = smootherstep(1 - normalized);
+      const shoulder = Math.pow(normalized, 1.35);
+      const z = shoulder * PAGE_H * 0.006 - valley * COLLECTION_FOLD_DEPTH * vertical;
+      vertices.push(x, y, z);
+      uvs.push(u, v);
+    }
+  }
+
+  for (let yi = 0; yi < ySegments; yi += 1) {
+    for (let xi = 0; xi < xSegments; xi += 1) {
+      const a = yi * (xSegments + 1) + xi;
+      const b = a + 1;
+      const c = a + xSegments + 1;
+      const d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  geometry.setIndex(indices);
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
 function subdivideBendableGeometry(source) {
@@ -4199,11 +4264,13 @@ function applyAlbumLayout() {
     backPage.geometry = standardTurningPageGeometry;
     flipShadow.geometry = standardFlipShadowGeometry;
   }
+  collectionFold.visible = false;
 }
 
 function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
+    assignTextureObject(collectionFold, getCollectionFoldTexture(activeBook));
     spine.scale.set(0.3, 1, 1);
     spine.position.y = 0;
     spine.position.z = -0.055;
@@ -4288,6 +4355,86 @@ function getCollectionSpineTexture(bookName) {
   texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
   collectionSpineTextureMap.set(bookName, texture);
+  return texture;
+}
+
+function getCollectionFoldTexture(bookName) {
+  if (collectionFoldTextureMap.has(bookName)) {
+    return collectionFoldTextureMap.get(bookName);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 1536;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const base = bookName === "girl"
+    ? { paper: "250, 242, 219", warm: "214, 188, 142", dark: "95, 75, 45" }
+    : { paper: "250, 244, 216", warm: "210, 190, 127", dark: "91, 78, 43" };
+
+  const body = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  body.addColorStop(0, `rgba(${base.dark}, 0)`);
+  body.addColorStop(0.14, `rgba(${base.dark}, 0.06)`);
+  body.addColorStop(0.27, `rgba(${base.warm}, 0.16)`);
+  body.addColorStop(0.39, `rgba(${base.paper}, 0.09)`);
+  body.addColorStop(0.48, `rgba(${base.dark}, 0.28)`);
+  body.addColorStop(0.5, `rgba(${base.dark}, 0.42)`);
+  body.addColorStop(0.52, `rgba(${base.dark}, 0.28)`);
+  body.addColorStop(0.61, `rgba(${base.paper}, 0.09)`);
+  body.addColorStop(0.73, `rgba(${base.warm}, 0.16)`);
+  body.addColorStop(0.86, `rgba(${base.dark}, 0.06)`);
+  body.addColorStop(1, `rgba(${base.dark}, 0)`);
+  ctx.fillStyle = body;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.filter = "blur(10px)";
+  ctx.fillStyle = `rgba(${base.dark}, 0.22)`;
+  ctx.fillRect(canvas.width * 0.18, -80, 30, canvas.height + 160);
+  ctx.fillRect(canvas.width * 0.76, -80, 30, canvas.height + 160);
+  ctx.fillStyle = "rgba(255, 255, 244, 0.16)";
+  ctx.fillRect(canvas.width * 0.34, -80, 38, canvas.height + 160);
+  ctx.fillRect(canvas.width * 0.58, -80, 38, canvas.height + 160);
+  ctx.filter = "none";
+
+  const centerLine = ctx.createLinearGradient(canvas.width * 0.47, 0, canvas.width * 0.53, 0);
+  centerLine.addColorStop(0, `rgba(${base.dark}, 0)`);
+  centerLine.addColorStop(0.48, `rgba(${base.dark}, 0.28)`);
+  centerLine.addColorStop(0.5, `rgba(${base.dark}, 0.42)`);
+  centerLine.addColorStop(0.52, `rgba(${base.dark}, 0.28)`);
+  centerLine.addColorStop(1, `rgba(${base.dark}, 0)`);
+  ctx.fillStyle = centerLine;
+  ctx.fillRect(canvas.width * 0.45, 0, canvas.width * 0.1, canvas.height);
+
+  ctx.globalCompositeOperation = "destination-in";
+  const sideMask = ctx.createLinearGradient(0, 0, canvas.width, 0);
+  sideMask.addColorStop(0, "rgba(0, 0, 0, 0)");
+  sideMask.addColorStop(0.16, "rgba(0, 0, 0, 0.88)");
+  sideMask.addColorStop(0.28, "rgba(0, 0, 0, 1)");
+  sideMask.addColorStop(0.72, "rgba(0, 0, 0, 1)");
+  sideMask.addColorStop(0.84, "rgba(0, 0, 0, 0.88)");
+  sideMask.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = sideMask;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const endMask = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  endMask.addColorStop(0, "rgba(0, 0, 0, 0)");
+  endMask.addColorStop(0.08, "rgba(0, 0, 0, 0)");
+  endMask.addColorStop(0.16, "rgba(0, 0, 0, 1)");
+  endMask.addColorStop(0.86, "rgba(0, 0, 0, 1)");
+  endMask.addColorStop(0.95, "rgba(0, 0, 0, 0)");
+  endMask.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = endMask;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.globalCompositeOperation = "source-over";
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  collectionFoldTextureMap.set(bookName, texture);
   return texture;
 }
 
@@ -4598,6 +4745,7 @@ function setOpenSpreadVisible(visible) {
   rightPage.visible = visible;
   innerLeft.visible = visible;
   innerRight.visible = visible;
+  collectionFold.visible = false;
   pageTurn.visible = visible;
   if (!visible) {
     coverTurn.visible = false;
@@ -4613,6 +4761,7 @@ function setOpenSpreadVisible(visible) {
     ringGroup.visible = false;
     innerLeft.visible = false;
     innerRight.visible = false;
+    collectionFold.visible = visible;
   }
   if (!visible) {
     flutterPages.group.visible = false;
@@ -4628,6 +4777,7 @@ function setCoverOpeningSpreadVisible(visible) {
   rightPage.visible = visible;
   innerLeft.visible = false;
   innerRight.visible = false;
+  collectionFold.visible = false;
   pageTurn.visible = false;
   spine.visible = false;
   ringGroup.visible = false;

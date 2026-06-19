@@ -5390,6 +5390,11 @@ var OTO_BGM_TRACKS = {
     volume: 0.34,
     loop: true
   },
+  tutorial: {
+    src: '../assets/audio/oto/bgm/marble_candy_steps_tutorial.mp3',
+    volume: 0.16,
+    loop: true
+  },
   rival: {
     src: '../assets/audio/oto/bgm/dj_kerock_hop_rival.mp3',
     volume: 0.24,
@@ -5414,7 +5419,8 @@ var OTO_BGM_TRACKS = {
 var _otoBgmState = {
   audios: {},
   currentKey: null,
-  desiredKey: null
+  desiredKey: null,
+  tutorialRestoreKey: null
 };
 function _otoBgmEnabled() {
   try { return localStorage.getItem('pono_bgm_enabled') !== 'off'; } catch(e) { return true; }
@@ -5485,6 +5491,24 @@ function _pauseAllOtoBgmNow() {
 function _stopOtoBgm(durationMs) {
   _otoBgmState.desiredKey = null;
   _pauseOtoBgm(durationMs);
+}
+function _startOtoTutorialBgm() {
+  if (!OTO_BGM_TRACKS.tutorial) return;
+  if (_otoBgmState.desiredKey !== 'tutorial') {
+    _otoBgmState.tutorialRestoreKey = _otoBgmState.desiredKey || _otoBgmState.currentKey || null;
+  }
+  _playOtoBgm('tutorial', { restart: true, fadeMs: 360 });
+}
+function _stopOtoTutorialBgm(restore) {
+  var restoreKey = _otoBgmState.tutorialRestoreKey;
+  _otoBgmState.tutorialRestoreKey = null;
+  if (_otoBgmState.desiredKey !== 'tutorial' && _otoBgmState.currentKey !== 'tutorial') return;
+  var canRestore = restore && !_rhythm.enabled && !_rhythm.openingActive && !_rhythm.demoActive;
+  if (canRestore && restoreKey && OTO_BGM_TRACKS[restoreKey]) {
+    _playOtoBgm(restoreKey, { fadeMs: 280 });
+  } else {
+    _stopOtoBgm(220);
+  }
 }
 function _playOtoBgm(key, options) {
   options = options || {};
@@ -12861,6 +12885,7 @@ function _finishOtoTutorial(markSeen, continueFlow) {
     if (hud) hud.classList.remove('show');
   }
   _otoTutorialState = null;
+  _stopOtoTutorialBgm(true);
   if (shouldLaunchRhythmStageTutorial) {
     setTimeout(function() {
       showTutorial('rhythmStoryFromMenu', { force: true });
@@ -13165,6 +13190,7 @@ function showTutorial(kind, opts) {
     force: !!opts.force
   };
   document.body.classList.add('oto-tutorial-open');
+  _startOtoTutorialBgm();
   _renderOtoTutorialStep();
 }
 
