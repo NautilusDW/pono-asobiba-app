@@ -306,23 +306,29 @@
       --herob-text:#5D4E37;
       --herob-text-light:#7A6A4F;
       --herob-shadow:rgba(93,78,55,.12);
-      width:100%;max-width:1040px;margin:0 auto;padding:20px 18px 28px;text-align:center;color:var(--herob-text);
+      position:relative;
+      width:100vw;
+      margin-left:calc(50% - 50vw);
+      margin-right:calc(50% - 50vw);
+      padding:20px max(18px,calc(50vw - 520px)) 28px;
+      text-align:center;color:var(--herob-text);
       background-color:#FFF8F0;
       background-image:image-set(url('assets/lp/hero/bg_soft_playmat.webp') 1x, url('assets/lp/hero/bg_soft_playmat@2x.webp') 2x);
       background-image:-webkit-image-set(url('assets/lp/hero/bg_soft_playmat.webp') 1x, url('assets/lp/hero/bg_soft_playmat@2x.webp') 2x);
       background-size:cover;
       background-position:center;
       background-repeat:no-repeat;
-      border-radius:24px;
+      border-radius:0;
     }
     /* Fallback for browsers without image-set support */
     @supports not (background-image: image-set(url('a') 1x)){
       .herob{background-image:url('assets/lp/hero/bg_soft_playmat.webp');}
     }
     .herob *{box-sizing:border-box;}
-    .herob-kicker{margin:0 auto 12px;text-align:center;animation:herob-rise .6s ease both;}
-    .herob-kicker-img{display:block;max-width:min(380px,70vw);width:100%;height:auto;margin:0 auto;opacity:0.92;}
-    .herob-title{margin:0;animation:herob-rise .6s .04s ease both;}
+    .herob-logo-wrap{position:relative;display:inline-block;max-width:min(720px,90vw);margin:0 auto;animation:herob-rise .6s .04s ease both;}
+    .herob-kicker{position:absolute;top:-6px;right:-10px;margin:0;z-index:2;transform:rotate(-4deg);pointer-events:none;}
+    .herob-kicker-img{display:block;max-width:clamp(120px,22vw,200px);width:100%;height:auto;opacity:0.92;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.08));}
+    .herob-title{margin:0;}
     .herob-title-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;white-space:nowrap;}
     .herob-title-img{display:block;max-width:min(720px,90vw);width:100%;height:auto;margin:0 auto;}
     .herob-lead{font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:14px auto 0;animation:herob-rise .6s .06s ease both;}
@@ -336,8 +342,9 @@
     .herob-free{font-weight:700;font-size:clamp(12px,3vw,14px);color:var(--herob-text-light);letter-spacing:.04em;margin:0;}
     @keyframes herob-rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
     @media (prefers-reduced-motion:reduce){.herob *{animation:none!important;}}
-    @media (min-width:768px){.herob{padding:30px 32px 32px;}.herob-chips,.herob-cta-wrap{max-width:680px;}}
-    @media (min-width:1200px){.herob{padding:36px 40px 36px;}}
+    @media (max-width:480px){.herob-kicker{top:-4px;right:-4px;transform:rotate(-3deg);}}
+    @media (min-width:768px){.herob{padding-top:30px;padding-bottom:32px;}.herob-chips,.herob-cta-wrap{max-width:680px;}}
+    @media (min-width:1200px){.herob{padding-top:36px;padding-bottom:36px;}}
 
     /* ===== Play Cards A1 改善版 (scoped) ===== */
     .play-cards{
@@ -414,25 +421,27 @@
 
     <!-- ===== Hero B: 体験予告優先 (slim版) ===== -->
     <section class="herob" aria-labelledby="herob-h">
-      <p class="herob-kicker" aria-hidden="true">
-        <img src="assets/lp/hero/h1_calligraphy.png"
-             srcset="assets/lp/hero/h1_calligraphy.png 1x, assets/lp/hero/h1_calligraphy@2x.png 2x"
-             alt=""
-             class="herob-kicker-img"
-             loading="lazy"
-             decoding="async"
-             width="640" height="108">
-      </p>
-      <h1 class="herob-title" id="herob-h">
-        <span class="herob-title-text">ポノのあそびば</span>
-        <img src="assets/lp/hero/brand_logo.png"
-             srcset="assets/lp/hero/brand_logo.png 1x, assets/lp/hero/brand_logo@2x.png 2x"
-             alt=""
-             aria-hidden="true"
-             class="herob-title-img"
-             fetchpriority="high"
-             width="800" height="250">
-      </h1>
+      <div class="herob-logo-wrap">
+        <h1 class="herob-title" id="herob-h">
+          <span class="herob-title-text">ポノのあそびば</span>
+          <img src="assets/lp/hero/brand_logo.png"
+               srcset="assets/lp/hero/brand_logo.png 1x, assets/lp/hero/brand_logo@2x.png 2x"
+               alt=""
+               aria-hidden="true"
+               class="herob-title-img"
+               fetchpriority="high"
+               width="1571" height="584">
+        </h1>
+        <p class="herob-kicker" aria-hidden="true">
+          <img src="assets/lp/hero/h1_calligraphy.png"
+               srcset="assets/lp/hero/h1_calligraphy.png 1x, assets/lp/hero/h1_calligraphy@2x.png 2x"
+               alt=""
+               class="herob-kicker-img"
+               loading="lazy"
+               decoding="async"
+               width="640" height="108">
+        </p>
+      </div>
       <p class="herob-lead">ポノの あそびばで できること</p>
       <div class="herob-chips" aria-label="あそびばの ジャンル">
         <span class="herob-chip">2〜7さい</span>
