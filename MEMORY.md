@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T01:56:58Z - Puzzle tutorial: hint try-badge shown once + add idx11 closing voice (basic_tut_12) before Stage 1; bump caches/docs/admin
+- **タスク**: Puzzle tutorial: hint try-badge shown once + add idx11 closing voice (basic_tut_12) before Stage 1; bump caches/docs/admin
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 40
+- **エラー数**: 9
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 10, "Workflow": 3, "Read": 5, "ToolSearch": 2, "DesignSync": 13, "Bash": 2, "Grep": 2, "Write": 3}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-06-19T01:53:47Z - puzzle tutorial締めボイス basic_tut_12.mp3 を COMP_8.wav から既存エンコード(80k/mono/44100)で生成
+- **タスク**: puzzle tutorial締めボイス basic_tut_12.mp3 を COMP_8.wav から既存エンコード(80k/mono/44100)で生成
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 64
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 14, "Bash": 29, "Workflow": 8, "Edit": 4, "Write": 3, "Agent": 6}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T01:19:04Z - puzzle 見る/ヒント narration autoplay fix: PuzzleVoice.unlock() primes HTMLAudio+AudioContext in entry gesture, state machine advances on play() reject, bump sw1323/voice v1314
 - **タスク**: puzzle 見る/ヒント narration autoplay fix: PuzzleVoice.unlock() primes HTMLAudio+AudioContext in entry gesture, state machine advances on play() reject, bump sw1323/voice v1314
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 13, "Bash": 15, "Workflow": 3, "Edit": 3, "Write": 1, "Agent": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-18T15:13:02Z - パズル基本チュートリアル修正(Codex handoff引取): バッジ3秒未満/basic_tut_05・06実機無音/橙青cue冒頭表示の4問題をエージェントチームで根本診断→修正→非モック実機検証(v1311)
-- **タスク**: パズル基本チュートリアル修正(Codex handoff引取): バッジ3秒未満/basic_tut_05・06実機無音/橙青cue冒頭表示の4問題をエージェントチームで根本診断→修正→非モック実機検証(v1311)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 27
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 12, "Bash": 9, "Workflow": 2, "Edit": 3, "Write": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-18T14:59:31Z - puzzle basic tutorial: anchor orange/blue cues to real audio play event (timeupdate-equivalent w/ play-event anchor + 1200ms wall-clock fallback), standardize peek banner durations
-- **タスク**: puzzle basic tutorial: anchor orange/blue cues to real audio play event (timeupdate-equivalent w/ play-event anchor + 1200ms wall-clock fallback), standardize peek banner durations
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 12
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 6, "Bash": 4, "Workflow": 2}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

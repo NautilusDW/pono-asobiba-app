@@ -2632,7 +2632,7 @@ const BASIC_PEEK_DONE_BANNER_MS = 3500;
 const PARTNER_PRACTICE_AFTER_TAP_DELAY_MS = 180;
 const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
 const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
-const BASIC_TUT_FALLBACK_MS = [8900, 5100, 6800, 6300, 4070, 6480, 3070, 2640, 6880, 5080, 7240];
+const BASIC_TUT_FALLBACK_MS = [8900, 5100, 6800, 6300, 4070, 6480, 3070, 2640, 6880, 5080, 7240, 5140];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -4584,7 +4584,9 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
   }
   partnerPracticeState.phase = 'basic-drag-try';
   partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
-  setBasicPracticeModeBanner('try', 'やってみよう！');
+  // The 'やってみよう！' try badge already popped once at the start of this
+  // user-try step; do NOT re-pop it on the move/retry. Keep the move-step
+  // coach copy + cue so guidance stays visible without a duplicate badge.
   setPartnerPracticeCoachCopy(
     'もういちど',
     'あおい ばしょに ちかづけて はなそう',
@@ -5161,6 +5163,7 @@ function showBasicHintDoneNarration() {
   partnerPracticeState.basicDoneVoiceDone = false;
   partnerPracticeState.basicDoneSnapDone = false;
   partnerPracticeState.basicDoneFinishScheduled = false;
+  partnerPracticeState.basicClosingVoicePlayed = false;
   showPartnerPracticeCoach();
   // index 10 = finish (11 "できたね。わからない時は見るとヒントを使ってね").
   setPartnerPracticeCoachCopy(
@@ -5170,8 +5173,27 @@ function showBasicHintDoneNarration() {
   );
   playBasicPracticeVoice(10, function () {
     if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
-    partnerPracticeState.basicDoneVoiceDone = true;
-    maybeFinishBasicPracticeAfterSnap();
+    // idx10 ("できたね。…") finished. Before transitioning to Stage 1, play the
+    // closing line idx11 ("これで練習はおしまい。さあ、パズルで遊ぼう。"). Only when
+    // that closing voice finishes do we mark basicDoneVoiceDone so the Stage-1
+    // transition (maybeFinishBasicPracticeAfterSnap → finishPartnerPractice)
+    // happens AFTER the child hears the closing line.
+    if (partnerPracticeState.basicClosingVoicePlayed) {
+      partnerPracticeState.basicDoneVoiceDone = true;
+      maybeFinishBasicPracticeAfterSnap();
+      return;
+    }
+    partnerPracticeState.basicClosingVoicePlayed = true;
+    setPartnerPracticeCoachCopy(
+      'これで れんしゅうは おしまい',
+      'さあ、パズルで あそぼう',
+      ''
+    );
+    playBasicPracticeVoice(11, function () {
+      if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+      partnerPracticeState.basicDoneVoiceDone = true;
+      maybeFinishBasicPracticeAfterSnap();
+    });
   });
   partnerPracticeState.phase = 'basic-done';
   setPartnerPracticeCoachBubble(btnHint, null, false);
