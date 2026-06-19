@@ -5380,7 +5380,7 @@ const KARAAGE_DONE_VARIANTS = [
   COOKING_P+'chicken/fry/chicken_fry_piece_05_done.png',
 ];
 const FREE_COOKED_OKAZU = [
-  { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 132, rotation: -6 },
+  { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', size: 110, rotation: -6 }, // v1373: 132→110 (タコらしさを保つ範囲で縮小)
   { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', size: 170, rotation: 2 },
   { img: KARAAGE_DONE_VARIANTS[0],                         name: 'からあげ',         cat: 'meat', sk: 'r', size: 118, rotation: -5, variantGroup: 'karaage_done', variantImages: KARAAGE_DONE_VARIANTS },
   { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', size: 222, rotation: 8 },
@@ -7744,6 +7744,8 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'cup-edit-try': 'basic_tut_11',
   'small-cup-food': 'basic_tut_12',
   'small-next': 'basic_tut_13',
+  // v1373: 「もっと おかず いれていいよ」ナレ ID 確保。 音声未生成時もバブル表示で進める。
+  'okazu-more': 'basic_tut_14',
 };
 let bentoTutorialVoiceAudio = null;
 function stopBentoTutorialVoice() {
@@ -8186,7 +8188,9 @@ function setFreeGuideStep(step, opts = {}) {
 }
 function getFreePaletteItems(tabId) {
   if (tabId === 'accessory') return bentoAccessories;
-  if (tabId === 'rice') return [getAutoRicePaletteItem(), getNoribenPaletteItem()];
+  // v1373: のり弁を rice palette から削除。 のりは decor step で別 layer から乗せる。
+  // getNoribenPaletteItem は将来復活/admin 等のため定義のみ残す。
+  if (tabId === 'rice') return [getAutoRicePaletteItem()];
   if (tabId === 'food') {
     const foods = getFreeFoodCatalog();
     if (isOkazuGuideStep()) {
@@ -13125,15 +13129,16 @@ function showTutorial() {
 // state machine: tutorialState.step is the single source of truth.
 // Steps: greet → box → tab-rice → rice-place → decor → nori-ok →
 //        tab-okazu → okazu-red → okazu-overlap → layer-edit →
-//        layer-edit-try → move-requested-food → small-accessory → cup-edit →
+//        layer-edit-try → move-requested-food → okazu-more → small-accessory → cup-edit →
 //        cup-edit-try → small-cup-food → small-next → complete-result
+// v1373: okazu-more step を追加 (メインおかずを追加で置けることを案内)
 // 公開関数 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced /
 // tutorialOnStageComplete) は維持。 storage key は互換のため v1 を再利用。
 const TUTORIAL_STORAGE_KEY = BENTO_TUTORIAL_STORAGE_KEY;
 // v3 step ids (button/tab/place driven only):
 //   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'decor' | 'nori-ok' |
 //   'tab-okazu' | 'okazu-red' | 'okazu-overlap' | 'layer-edit' |
-//   'layer-edit-try' | 'move-requested-food' | 'layer-done' | 'tab-small' | 'small-accessory' | 'cup-edit' |
+//   'layer-edit-try' | 'move-requested-food' | 'okazu-more' | 'layer-done' | 'tab-small' | 'small-accessory' | 'cup-edit' |
 //   'cup-edit-try' | 'tab-small-food' | 'small-place' | 'small-cup-food' |
 //   'cup-ok' | 'small-edit' | 'small-edit-try' | 'small-next' |
 //   'complete' | 'complete-result' | 'done'
@@ -14008,11 +14013,21 @@ function tutorialNoriOkButton() {
   return null;
 }
 function tutorialCupOkButton() {
+  // v1373: panel mode (.free-context-toolbar--panel) の OK ボタンを最優先で拾う。
+  // 旧実装は .free-context-toolbar button.primary を fallback として返していたため、
+  // 隠れた別 toolbar の OK を返してしまい SVG マークが panel 内の OK に当たらない事例があった。
+  // 1) cup editor 内蔵 OK (display 確認込み)
   const editorBtn = document.querySelector('.free-cup-done-btn');
-  if (editorBtn) return editorBtn;
+  if (editorBtn && editorBtn.offsetParent !== null) return editorBtn;
+  // 2) panel mode toolbar の OK
+  const panelBtns = document.querySelectorAll('.free-context-toolbar--panel button.primary');
+  for (const b of panelBtns) {
+    if (b.offsetParent !== null && (b.textContent || '').trim() === 'OK') return b;
+  }
+  // 3) 通常 toolbar の OK (fallback)
   const toolbarButtons = document.querySelectorAll('.free-context-toolbar button.primary');
   for (const b of toolbarButtons) {
-    if ((b.textContent || '').trim() === 'OK') return b;
+    if (b.offsetParent !== null && (b.textContent || '').trim() === 'OK') return b;
   }
   return null;
 }
@@ -14888,6 +14903,38 @@ function tutorialRenderStep() {
     return;
   }
 
+  // 7d2. okazu-more — メインおかずを追加で置けることを案内 (v1373 新規)
+  // 「もっと入れてもいいよ」と促し、 おかずOK ボタンを mark。 タイマー経過 or ボタン押下で small-accessory へ。
+  if (step === 'okazu-more') {
+    setSpeech('すきな おかずを もっと いれてもいいよ。おわったら 「おかずOK」を おしてね');
+    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
+    tutorialShowPonoCallout('すきな おかずを もっと<br>いれてもいいよ！<br>おわったら 「おかずOK」を おしてね');
+    tutorialSetModeLabel('もっと いれていいよ', {
+      mode: 'try',
+      note: 'おかずOK で つぎへ',
+    });
+    tutorialHideBubble();
+    tutorialHideFinger();
+    // tutorialCompleteButton は「おかずOK」/「できあがり」primary を返す
+    const okazuOkBtn = (typeof tutorialCompleteButton === 'function') ? tutorialCompleteButton() : null;
+    if (okazuOkBtn) {
+      tutorialMarkTarget(okazuOkBtn, { radius: 18, outline: false });
+      tutorialAnimateTap(okazuOkBtn);
+    }
+    if (firstRender) {
+      if (tutorialState._okazuMoreTimer) clearTimeout(tutorialState._okazuMoreTimer);
+      tutorialState._okazuMoreTimer = setTimeout(() => {
+        tutorialState._okazuMoreTimer = null;
+        if (tutorialState.active && tutorialState.step === 'okazu-more') {
+          freeLayoutTab = 'accessory';
+          renderFreeLayoutControls();
+          tutorialAdvance('small-accessory');
+        }
+      }, fast ? 2200 : 5200);
+    }
+    return;
+  }
+
   // 7e. layer-done — レイヤー操作後、次のカップへつなぐ
   if (step === 'layer-done') {
     setSpeech('できたね！おかずは したへ よせたよ。つぎは カップを えらぼう');
@@ -15040,7 +15087,8 @@ function tutorialRenderStep() {
     if (!markedCupTryTarget) tutorialRetryRenderStep('cup-edit-try');
     if (firstRender && sizeControl) {
       tutorialAnimateEditDemo(fast);
-      tutorialQueueCupOkHighlight('cup-edit-try', fast ? 900 : 2400);
+      // v1373: ナレ再生直後 (= ① と同時刻に近いタイミング) に OK mark を刺すよう前倒し
+      tutorialQueueCupOkHighlight('cup-edit-try', fast ? 200 : 500);
     }
     else tutorialHideFinger();
     return;
@@ -15359,7 +15407,8 @@ function tutorialOnItemMoved(uid) {
   const requested = tutorialFindPlacedRequestedFoodItem();
   if (!requested || requested.uid !== uid) return;
   tutorialMoveRequestedFoodToLowerPoint(requested);
-  tutorialAdvance('small-accessory');
+  // v1373: 「すきな おかずを もっと いれてもいいよ」step を挟む。
+  tutorialAdvance('okazu-more');
 }
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
