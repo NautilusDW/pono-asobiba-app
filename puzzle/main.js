@@ -2711,7 +2711,14 @@ const BASIC_DRAG_DEMO_DURATION_MS = 1250;
 const BASIC_LOOP_HAND_CUE_START_MS = 900;
 const BASIC_LOOP_HAND_CUE_MOVE_MS = 1050;
 const BASIC_LOOP_HAND_CUE_REPEAT_MS = 820;
-const BASIC_INTRO_DEMO_BANNER_DELAY_MS = 5200;
+// Anchored to the REAL 'play' event of basic_tut_01.mp3 (idx0,
+// 「これからパズルの遊び方を練習するよ。まずはお手本を見てね」 ~8.9s). Offset = ms from
+// idx0 playback start to the 「お」 onset of 「お手本を見てね」 (~3.8s, ~43% into clip
+// after 「これから…まずは」 prefix). The 「おてほんをみてね」 demo banner is scheduled
+// here via scheduleBasicOpeningBannerOnVoice so it lands exactly on the spoken
+// cue regardless of autoplay/decode delay. Re-measure with audacity /
+// faster-whisper word timestamps if the recording is replaced.
+const BASIC_OTEHON_BANNER_AT_VOICE_MS = 3800;
 const BASIC_INTRO_DEMO_BANNER_MS = 3000;
 const BASIC_DRAG_NA_START_DELAY_MS = 650;
 const BASIC_DRAG_ORANGE_PRE_VOICE_MS = 180;
@@ -2744,6 +2751,11 @@ const BASIC_DRAG_TRY_SPLIT_AT_VOICE_MS = 2180;
 // tap-piece cue AND the 「やってみよう！」 badge appear together at this moment, synced to
 // the narration's REAL playback start, instead of lighting up immediately at t=0.
 const BASIC_HINT_SELECT_CUE_AT_VOICE_MS = 2200;
+// Offset into idx4 (basic_tut_05 「まずは見るボタンを長く押してみよう」) where the phrase
+// 「長く押してみよう」 begins. The 見る button finger/highlight pointer appears at this
+// moment, synced to the narration's REAL playback start, so the child doesn't see
+// the finger before being told what to do. Wall-clock fallback uses the same value.
+const BASIC_PEEK_HAND_AT_VOICE_MS = 1800;
 // If the audio element never fires 'play'/'playing' within this window (autoplay
 // blocked, file 404, decode stall), we fall back to a wall-clock schedule so the
 // orange/blue cues still appear and the child is never stuck without guidance.
@@ -3166,6 +3178,145 @@ function scheduleBasicHintSelectCueOnVoice(opts) {
     fired = true;
     var elapsed = Math.max(0, performance.now() - anchorTime);
     practiceSetTimeout(showSelectCue, Math.max(0, selectMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
+}
+
+// Opening 「おてほんをみてね」 demo banner. Anchored to the REAL 'play' event of
+// basic_tut_01.mp3 (idx0) so the banner lands exactly on the spoken cue
+// 「お手本を見てね」 (~BASIC_OTEHON_BANNER_AT_VOICE_MS into the clip) instead of on a
+// wall-clock timer that drifts under autoplay/decode latency. Mirrors the
+// scheduleBasicHintSelectCueOnVoice pattern with a wall-clock fallback so the
+// banner still appears if the audio element never fires 'play' (autoplay
+// blocked / 404 / decode stall). Guarded against double-fire via `fired` and
+// `shown` so the banner can never pop twice.
+//
+// opts: { audio, offsetMs }
+function scheduleBasicOpeningBannerOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts && opts.audio;
+  var offsetMs = (opts && opts.offsetMs) | 0;
+  var scheduledAt = performance.now();
+  var fired = false; // banner scheduled once (either via play event or fallback)
+  var shown = false; // setBasicPracticeModeBanner called at most once
+
+  function stillIntro() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'basic-intro');
+  }
+
+  function showBanner() {
+    if (shown) return;
+    if (!stillIntro()) return;
+    shown = true;
+    setBasicPracticeModeBanner('demo', 'おてほんをみてね', BASIC_INTRO_DEMO_BANNER_MS);
+    redraw();
+  }
+
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(showBanner, Math.max(0, offsetMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
+}
+
+// Anchor the 見る button finger/highlight pointer to the ACTUAL audio playback of
+// idx4 (basic_tut_05) so the finger appears synced to 「長く押してみよう」 (~1800ms),
+// not at t=0 when the narration is still saying 「まずは見るボタンを…」. Mirrors
+// scheduleBasicHintSelectCueOnVoice: one-shot 'play'/'playing' listener with a
+// wall-clock fallback so the finger still appears if autoplay is blocked.
+//
+// opts: { audio, button, handMs }
+function scheduleBasicPeekHandOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts.audio;
+  var button = opts.button;
+  var handMs = opts.handMs | 0;
+  var scheduledAt = performance.now();
+  var fired = false;
+
+  function stillPeekPress() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'peek-press');
+  }
+
+  function showPeekHand() {
+    if (!stillPeekPress()) return;
+    if (!button) return;
+    practiceAddHighlight(button);
+  }
+
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(showPeekHand, Math.max(0, handMs - elapsed));
   }
 
   function onPlay() {
@@ -5241,6 +5392,14 @@ function startCommonHintPractice(partnerId) {
     setPartnerPracticeCoachCopy('', '', '');
     hidePartnerPracticeCoach();
     partnerPracticeState.waitingForHintSelectCueNarration = true;
+    // FIX C followup (v1347 regression repair): in basic mode the cue is null
+    // (no pre-idx8 orange flash), so the cue-draw bootstrap at
+    // recordBasicHintSelectCueVisible can never fire. Schedule the narration
+    // directly off entry time. The orange cue is later owned by
+    // startBasicHintPlaceTry via scheduleBasicHintSelectCueOnVoice, anchored
+    // to idx8 playback — keeping FIX C's "no orange flash" intent intact.
+    partnerPracticeState.hintSelectCueVisibleAt = performance.now();
+    scheduleBasicHintSelectAfterCueVisible();
     redraw();
   } else {
     setPartnerPracticeCoachCopy(
@@ -5293,13 +5452,19 @@ function startBasicIntroPractice() {
     ''
   );
   clearPartnerPracticeCoachBubble();
-  practiceSetTimeout(function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-intro') return;
-    setBasicPracticeModeBanner('demo', 'おてほんをみてね', BASIC_INTRO_DEMO_BANNER_MS);
-  }, BASIC_INTRO_DEMO_BANNER_DELAY_MS);
-  playBasicPracticeVoice(0, function () {
+  // ISSUE A FIX: anchor the 「おてほんをみてね」 demo banner to the REAL playback start
+  // of basic_tut_01.mp3 (idx0) so it lands exactly on the spoken cue
+  // 「お手本を見てね」 (~BASIC_OTEHON_BANNER_AT_VOICE_MS into the clip) instead of
+  // firing on a wall-clock timer that drifted into the next narration under
+  // autoplay/decode latency. The helper has a wall-clock fallback inside, so the
+  // banner still appears if 'play' never fires.
+  var introAudio = playBasicPracticeVoice(0, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-intro') return;
     startBasicDragPractice();
+  });
+  scheduleBasicOpeningBannerOnVoice({
+    audio: introAudio,
+    offsetMs: BASIC_OTEHON_BANNER_AT_VOICE_MS,
   });
   redraw();
 }
@@ -5348,12 +5513,16 @@ function startBasicPeekPractice() {
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
-  practiceAddHighlight(btnPeek);
   // index 4 = press-instruction (05 "まずは見るボタンを長く押してみよう"). On its
   // onDone, enable the 見る button so the child can press it DIRECTLY (no demo),
   // then CHAIN to index 5 = explanation (06 "見るボタンは長く押している間だけ絵が
   // 見えるよ"). The child may press the button while idx5 is still playing.
-  playBasicPracticeVoice(4, function () {
+  // The 見る button highlight (finger/hand pointer) is NOT shown eagerly here —
+  // it is delayed via scheduleBasicPeekHandOnVoice until ~BASIC_PEEK_HAND_AT_VOICE_MS
+  // into the idx4 clip (synced to the spoken phrase 「長く押してみよう」), so the child
+  // doesn't see the finger before being told what to do. The 「やってみよう！」 try
+  // badge above is intentionally NOT delayed.
+  var peekVoiceAudio = playBasicPracticeVoice(4, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
     // Enable the 見る button right after the instruction is heard.
     setPartnerPracticePeekInput(true);
@@ -5369,6 +5538,14 @@ function startBasicPeekPractice() {
     // this call: if the child pressed before idx4 finished, phase is 'peek-hold'
     // and we never reach here, so idx6 (press narration) plays instead of idx5.
     playBasicPracticeVoice(5);
+  });
+  // Anchor the 見る button finger/highlight to the real playback of idx4 so it
+  // appears synced to 「長く押してみよう」 (~BASIC_PEEK_HAND_AT_VOICE_MS), with a
+  // wall-clock fallback if the audio never fires 'play' (autoplay blocked etc.).
+  scheduleBasicPeekHandOnVoice({
+    audio: peekVoiceAudio,
+    button: btnPeek,
+    handMs: BASIC_PEEK_HAND_AT_VOICE_MS,
   });
   redraw();
 }

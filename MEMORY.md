@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T09:36:42Z - LP hero brand logo D→B 差し替え + kicker 位置調整 (そびば上)
+- **タスク**: LP hero brand logo D→B 差し替え + kicker 位置調整 (そびば上)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 202
+- **エラー数**: 13
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 38, "Workflow": 9, "Read": 33, "ToolSearch": 2, "DesignSync": 17, "Bash": 84, "Grep": 3, "Write": 6, "ScheduleWakeup": 8, "Skill": 1, "Glob": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-19T09:24:02Z - LP hero full-bleed background + kicker repositioned to upper-right of brand logo (sw1350)
 - **タスク**: LP hero full-bleed background + kicker repositioned to upper-right of brand logo (sw1350)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 22, "Workflow": 5, "Read": 12, "ToolSearch": 2, "DesignSync": 17, "Bash": 38, "Grep": 2, "Write": 6, "ScheduleWakeup": 1, "Skill": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T05:29:58Z - パズル基本チュートリアルのヒント導入を12→13ステップに分割配線 (SELECT拍A/PRESS拍B、registry/fallback/flow/coach/docs/cache更新)
-- **タスク**: パズル基本チュートリアルのヒント導入を12→13ステップに分割配線 (SELECT拍A/PRESS拍B、registry/fallback/flow/coach/docs/cache更新)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 99
-- **エラー数**: 16
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 17, "Bash": 45, "Workflow": 13, "Edit": 10, "Write": 3, "Agent": 8, "Grep": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
