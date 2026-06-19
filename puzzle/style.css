@@ -594,20 +594,28 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   100% { transform: scale(1); }
 }
 
-@keyframes partnerPracticePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.095); }
+/* v1342 round-2 FIX 2: non-scaling highlight glow — pulses the box-shadow spread
+   only (max ~7px, well under the 10px inter-button gap) so the button keeps its
+   size and the stacked 見る / ヒント never overlap. No transform. */
+@keyframes partnerPracticeGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px rgba(255, 255, 255, 0.95),
+      0 0 0 6px rgba(255, 207, 67, 0.62),
+      0 6px 16px rgba(80, 50, 18, 0.30);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(255, 255, 255, 0.98),
+      0 0 0 7px rgba(255, 207, 67, 0.92),
+      0 8px 20px rgba(80, 50, 18, 0.36);
+  }
 }
 
-@keyframes partnerPracticeRing {
-  0% {
-    opacity: 0.94;
-    transform: scale(0.86);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.34);
-  }
+/* Inset accent ring fades in/out via opacity only (no scale → no size change). */
+@keyframes partnerPracticeRingFade {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
 }
 
 @keyframes partnerPracticeFinger {
@@ -1077,6 +1085,41 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   font-weight: 900;
   line-height: 1.22;
   color: #4C3318;
+}
+
+/* v1342 round-2 FIX 3: the big center badge no longer pops for try/demo, so the
+   bottom coach box TITLE becomes the call-to-action. Give it a gentle, kid-
+   friendly emphasis — a soft pulse (color + glow, no size change), an accent
+   text color, and a contrasting outline/border pill — so 「やってみよう」 etc.
+   clearly stands out without being aggressive. Scoped to the basic tutorial. */
+.partner-practice-coach--basic .partner-practice-coach__title {
+  display: inline-block;
+  padding: 3px 12px;
+  border: 2px solid rgba(242, 145, 90, 0.85);
+  border-radius: 12px;
+  background: rgba(255, 244, 222, 0.9);
+  color: #C7561E;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  animation: partnerPracticeCoachTitlePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes partnerPracticeCoachTitlePulse {
+  0%, 100% {
+    color: #C7561E;
+    border-color: rgba(242, 145, 90, 0.85);
+    box-shadow: 0 0 0 0 rgba(242, 145, 90, 0);
+  }
+  50% {
+    color: #E8631F;
+    border-color: rgba(242, 145, 90, 1);
+    box-shadow: 0 0 10px 2px rgba(255, 196, 120, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partner-practice-coach--basic .partner-practice-coach__title {
+    animation: none;
+  }
 }
 
 .partner-practice-coach__body {

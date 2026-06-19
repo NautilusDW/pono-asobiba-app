@@ -3267,6 +3267,17 @@ function setBasicPracticeModeBanner(kind, text, visibleMs) {
     hideBasicPracticeTryBannerNow();
     return;
   }
+  // v1342 round-2 FIX 3: the big CENTER badge (「やってみよう！」/「おてほんをみてね」)
+  // covered the puzzle and got in the way. Suppress it for the try/demo kinds —
+  // the call-to-action now lives in the emphasized BOTTOM coach box instead.
+  // Any badge already up is faded out so it doesn't linger over the board. The
+  // 「できたね！」 (done) celebration badge is kept as-is.
+  var bannerMode = kind === 'try' ? 'try' : (kind === 'done' ? 'done' : 'demo');
+  if (bannerMode !== 'done') {
+    setBasicPracticeFrameMode(bannerMode);
+    hideBasicPracticeTryBannerNow();
+    return;
+  }
   var el = partnerPracticeState.modeBadgeEl;
   if (!el || !el.isConnected) {
     el = document.createElement('div');
