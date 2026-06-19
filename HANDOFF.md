@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-19 - [batch:710-lp-scattered-category-bg] Codex: user 指示「横並びチップ文言を背景にランダムに散りばめる案を生成」を受領。LP hero 背景用に `もじ` / `かず` / `おえかき` / `パズル` / `おんがく` を読みやすく散らした raw 背景案を built-in image_gen / GPT Image 2 で生成し、`tmp/alpha_pending/710-lp-scattered-category-bg/` へ納品予定。AGENTS.md §5.1 に従い alpha 抜き/crop/assets配置は行わない。 (by Codex)
+- 2026-06-19 - [batch:710-lp-scattered-category-bg] DONE - Codex: LP hero 用の散りばめカテゴリ背景 raw を built-in image_gen / GPT Image 2 で3案生成し、`tmp/alpha_pending/710-lp-scattered-category-bg/` に保存。文言は `もじ` / `かず` / `おえかき` / `パズル` / `おんがく`。推奨は `lp_scattered_category_bg_five_labels_raw_attempt_02.png`（5語のみ、中央余白、可読性と控えめな特徴付けのバランス最良）。`attempt_01` は余計な小文字が混ざるため参考、`attempt_03` は素材感は良いがやや主張強め。全3枚 1672x941 RGB / 3MB未満。alpha 抜き/crop/assets配置は未実施。レビュー: Codex self-review で3枚を目視し、attempt_02/03 は5語が読めることを確認。 (by Codex)
 - 2026-06-19 - [batch:709-sticker-album-independent-center-fold] DONE - Codex: user 依頼「中央ノドを独立した曲面パーツとして作り直す方向」を受け、collection album 通常見開きに `collectionFold` 専用メッシュを追加。透明フェード付き CanvasTexture を貼った細分化曲面で中央の谷影だけを前面に重ね、白い柱/木目隙間が出る横移動は最終的に `COLLECTION_PAGE_SPINE_PULL=0` へ戻した。`ASSET_VERSION=20260619-709` / module query v709。検証: ESM module check、diff check、Playwright local 4187 で desktop page1/page5/center crop/cover/mobile landscape を撮影し pageerror/requestfailed 0。厚み素材は未変更。 (by Codex)
 - 2026-06-19 - [batch:puzzle-basic-tutorial-overhaul] HANDOFF to next thread (by Claude) - パズル基本チュートリアル(`puzzle/`)を全面作り直しした長セッションの引き継ぎ。**全てローカル(develop-app)のみ・未push**。現状: sw CACHE_VERSION **1344** / voice.js AUDIO_VERSION **v1318** / index.html assets **?v=1324** (style.css/partner-select.css/voice.js/main.js) / REGISTRY.basic_tut = **13ステップ** (basic_tut_01..13)、node構文OK。
 
