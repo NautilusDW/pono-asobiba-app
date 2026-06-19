@@ -12441,9 +12441,25 @@ function _makeOtoTutorialSteps(kind) {
         anchor: '.rhythm-practice-btn[data-practice="block"]',
         side: 'stageTop',
         hand: 'point',
+        cueDelayMs: 3600,
+        delayedMsg: 'ブロックを<br>おしてね',
         hideActions: true,
         advanceOn: '.rhythm-practice-btn[data-practice="block"]',
         advanceDelayMs: 260,
+        before: function() {
+          _prepareOtoRhythmMenuTutorial('mode');
+          _setRhythmPracticeMode('block');
+        }
+      },
+      {
+        badge: 'ぜんぶ',
+        msg: 'なれたら ぜんぶで<br>さいごまで チャレンジしよう',
+        voice: OTO_RHYTHM_TUTORIAL_VOICE.fullChallenge,
+        anchor: '.rhythm-practice-btn[data-practice="full"]',
+        side: 'stageTop',
+        hand: 'point',
+        hideActions: true,
+        autoNextMs: 900,
         before: function() {
           _prepareOtoRhythmMenuTutorial('mode');
           _setRhythmPracticeMode('block');
@@ -12459,7 +12475,8 @@ function _makeOtoTutorialSteps(kind) {
         cueDelayMs: 2600,
         hideActions: true,
         advanceOn: '#rhythm-menu-demo',
-        advanceDelayMs: 180,
+        transitionBlackMs: 900,
+        advanceDelayMs: 160,
         before: function() {
           _prepareOtoRhythmMenuTutorial('mode');
           _setRhythmPracticeMode('block');
@@ -12484,15 +12501,15 @@ function _makeOtoTutorialSteps(kind) {
       },
       {
         badge: 'きみのばん',
-        msg: 'つぎは きみのばん<br>タップで 3,2,1',
+        msg: 'つぎは きみのばん',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.yourTurn,
         anchor: null,
         side: 'stageTopRight',
         noDim: true,
         hideActions: true,
-        advanceOnBubbleTap: true,
+        hiddenPrompt: true,
+        autoNextMs: 280,
         countdownBeforeAdvance: true,
-        countdownVoice: OTO_RHYTHM_TUTORIAL_VOICE.tryNote,
         before: function() {
           _prepareOtoRhythmTutorialStage();
           _setRhythmStatus('つぎは きみのばん', null, 'judge');
@@ -12511,20 +12528,6 @@ function _makeOtoTutorialSteps(kind) {
         before: function() {
           _prepareOtoRhythmTutorialStage();
           _setRhythmStatus('ボタンに かさなったら タッチ', null, 'judge');
-        }
-      },
-      {
-        badge: 'てんすう',
-        msg: 'ぴったりなら ジャスト<br>ナイス・オッケーも てんが はいるよ',
-        voice: OTO_RHYTHM_TUTORIAL_VOICE.judge,
-        anchor: null,
-        side: 'stageTopRight',
-        noDim: true,
-        hideActions: true,
-        advanceOnBubbleTap: true,
-        before: function() {
-          _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('ぴったりほど てんが たかいよ', null, 'judge');
         }
       },
       {
@@ -12547,11 +12550,13 @@ function _makeOtoTutorialSteps(kind) {
     return [
       {
         badge: 'れんしゅう',
-        msg: 'ブロックを おして<br>みじかく れんしゅうしよう',
+        msg: 'さいしょは ブロックで<br>みじかく れんしゅうしよう',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.block,
         anchor: '.rhythm-practice-btn[data-practice="block"]',
         side: 'stageTop',
         hand: 'point',
+        cueDelayMs: 3600,
+        delayedMsg: 'ブロックを<br>おしてね',
         hideActions: true,
         advanceOn: '.rhythm-practice-btn[data-practice="block"]',
         advanceDelayMs: 260,

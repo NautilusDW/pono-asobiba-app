@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-705";
+const ASSET_VERSION = "20260619-706";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -202,7 +202,9 @@ const PAGE_TURN_BEND = 0.34;
 const PAGE_FLUTTER_BEND = 0.56;
 const COLLECTION_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.26;
 const COLLECTION_PAGE_SPINE_PULL = 0;
-const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.008;
+const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.012;
+const COLLECTION_PAGE_OUTER_EDGE_WAVE = PAGE_W * 0.007;
+const COLLECTION_PAGE_LONG_EDGE_WAVE = PAGE_H * 0.006;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -3873,6 +3875,7 @@ function createCurvedCollectionPageSurfaceGeometry(bindingSide) {
 function curveCollectionPageGeometry(geometry, bindingSide) {
   const positions = geometry.attributes.position;
   const sideSign = bindingSide === "right" ? -1 : 1;
+  const outerSideSign = bindingSide === "right" ? -1 : 1;
 
   for (let i = 0; i < positions.count; i += 1) {
     const x = positions.getX(i);
@@ -3881,16 +3884,32 @@ function curveCollectionPageGeometry(geometry, bindingSide) {
     const spineDistance = bindingSide === "right" ? PAGE_W - x : x;
     const spineT = 1 - THREE.MathUtils.clamp(spineDistance / COLLECTION_PAGE_SPINE_CURVE_WIDTH, 0, 1);
     const fold = spineT * spineT * (3 - 2 * spineT);
+    const u = THREE.MathUtils.clamp(x / PAGE_W, 0, 1);
     const v = THREE.MathUtils.clamp((y + PAGE_H / 2) / PAGE_H, 0, 1);
     const middle = Math.sin(v * Math.PI);
     const verticalFold = Math.pow(middle, 0.72);
     const pull = fold * COLLECTION_PAGE_SPINE_PULL * (0.82 + middle * 0.32);
     const dip = fold * COLLECTION_PAGE_SPINE_DIP * verticalFold;
+    const outerDistance = bindingSide === "right" ? x : PAGE_W - x;
+    const outerT = smootherstep(1 - outerDistance / (PAGE_W * 0.16));
+    const topT = smootherstep(1 - (PAGE_H / 2 - y) / (PAGE_H * 0.1));
+    const bottomT = smootherstep(1 - (y + PAGE_H / 2) / (PAGE_H * 0.1));
+    const spineFade = smootherstep(spineDistance / (PAGE_W * 0.2));
+    const outerPhase = bindingSide === "right" ? 0.55 : 2.15;
+    const outerWave =
+      Math.sin(v * Math.PI * 1.65 + outerPhase) * 0.62 +
+      Math.sin(v * Math.PI * 3.1 - outerPhase * 0.7) * 0.38;
+    const longEdgeWave = Math.sin(u * Math.PI * 1.28 + (bindingSide === "right" ? 0.2 : -0.2));
+    const edgeX = outerSideSign * outerT * COLLECTION_PAGE_OUTER_EDGE_WAVE * outerWave;
+    const edgeY = spineFade * COLLECTION_PAGE_LONG_EDGE_WAVE * (
+      topT * (0.3 + 0.7 * longEdgeWave) -
+      bottomT * (0.35 + 0.65 * Math.sin(u * Math.PI * 1.12 - 0.25))
+    );
 
     positions.setXYZ(
       i,
-      x + sideSign * pull,
-      y,
+      x + sideSign * pull + edgeX,
+      y + edgeY,
       z - dip,
     );
   }

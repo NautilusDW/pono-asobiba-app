@@ -528,25 +528,28 @@ body.partner-practice-active .prestart-overlay {
   pointer-events: none;
 }
 
+/* v1342 round-2 FIX 2: the highlight used to scale(1.095) + project a 23px box
+   shadow + a -20px ring, which enlarged the button and made the stacked 見る /
+   ヒント (gap:10px) OVERLAP. The highlight now stays WITHIN the button footprint:
+   no transform/scale and no size growth — only a glow that pulses via opacity /
+   box-shadow spread (kept well under the 10px inter-button gap so they never
+   touch), plus a tight inset accent ring drawn just inside the border. */
 .partner-practice-highlight {
   position: relative;
   z-index: 92;
-  animation: partnerPracticePulse 0.62s ease-in-out infinite;
-  box-shadow:
-    0 0 0 6px rgba(255, 255, 255, 0.98),
-    0 0 0 14px rgba(255, 207, 67, 0.84),
-    0 0 0 23px rgba(242, 145, 90, 0.46),
-    0 12px 30px rgba(80, 50, 18, 0.38) !important;
+  animation: partnerPracticeGlow 0.78s ease-in-out infinite;
 }
 
 .partner-practice-highlight::after {
   content: "";
   position: absolute;
-  inset: -20px;
-  border: 5px solid rgba(255, 255, 255, 0.96);
+  /* Sit just INSIDE the button edge (no outward growth) so the accent ring can
+     never reach the adjacent stacked button. */
+  inset: 2px;
+  border: 3px solid rgba(255, 207, 67, 0.95);
   border-radius: 999px;
   pointer-events: none;
-  animation: partnerPracticeRing 0.74s ease-out infinite;
+  animation: partnerPracticeRingFade 0.78s ease-in-out infinite;
 }
 
 .controls .btn.partner-practice-highlight::before {
@@ -1706,7 +1709,23 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+/* v1342 round-2 FIX 1: the callout/selection suppression must cascade to the
+   button INNER content (icon / text), otherwise a long-press starting on the
+   text node could still begin a selection/context callout. Apply the same
+   suppression to every descendant of the 見る・ヒント buttons. */
+.controls .btn-peek,
+.controls .btn-peek *,
+.controls .btn-hint,
+.controls .btn-hint * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 #puzzle-container canvas {
   /* The canvas itself needs touch-action:none for drag (set inline), so only

@@ -6665,6 +6665,12 @@ if (btnPeek) {
   // context menu and block the button; suppress the callout so long-press peek
   // and repeated taps stay reliable. Pointer/keyboard handlers below are intact.
   btnPeek.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
+  // v1342 round-2 FIX 1: a long-press starting on 見る still briefly surfaced a
+  // selection/context callout on repeat press → also block selectstart/dragstart
+  // (these fire BEFORE the OS callout) so no menu/selection can begin on the
+  // button. preventDefault here doesn't affect the pointer/peek handlers below.
+  btnPeek.addEventListener('selectstart', function (e) { e.preventDefault(); }, { passive: false });
+  btnPeek.addEventListener('dragstart', function (e) { e.preventDefault(); }, { passive: false });
   btnPeek.addEventListener('pointerdown', startPeekPress, { passive: false });
   btnPeek.addEventListener('pointerup', function (e) {
     if (peekPressPointerId != null && e.pointerId !== peekPressPointerId) return;
@@ -6697,6 +6703,10 @@ if (btnHint) {
   // the native context menu and block the button; suppress the callout so the
   // hint tap stays reliable. The click handler below is unchanged.
   btnHint.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
+  // v1342 round-2 FIX 1: mirror the 見る button — block selectstart/dragstart so a
+  // repeat press / long-press on ヒント can't begin a selection/context callout.
+  btnHint.addEventListener('selectstart', function (e) { e.preventDefault(); }, { passive: false });
+  btnHint.addEventListener('dragstart', function (e) { e.preventDefault(); }, { passive: false });
   btnHint.addEventListener('click', () => {
     if (!puzzleCanvas) return;
     // 散布アニメ中・prestart 表示中はヒント無効
@@ -6768,6 +6778,19 @@ if (btnHint) {
     }
   });
 }
+
+// v1342 round-2 FIX 1: a long-press that begins on the 見る/ヒント INNER content
+// (icon / text) — not the button box itself — could still surface a selection /
+// context callout. Catch contextmenu + selectstart at the .controls container
+// (capturing, so it fires for any descendant) and suppress them. Pointer/click
+// handlers are untouched; only the OS callout / text selection is prevented.
+(function suppressControlsCallout() {
+  var controlsEl = (btnPeek && btnPeek.closest) ? btnPeek.closest('.controls') : null;
+  if (!controlsEl && btnHint && btnHint.closest) controlsEl = btnHint.closest('.controls');
+  if (!controlsEl) return;
+  controlsEl.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
+  controlsEl.addEventListener('selectstart', function (e) { e.preventDefault(); }, { passive: false });
+})();
 
 btnNextStage.addEventListener('click', () => {
   const nextIndex = getNextStageIndexForFlow(currentStageIndex);
