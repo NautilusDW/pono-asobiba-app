@@ -4714,6 +4714,15 @@ function onBasicDragPracticePieceDropped(piece, didSnap) {
   armBasicDragLoopCue(piece, 'basic-drag-try');
 }
 
+// 13-step real-UI hint TRY chain (idx9 PRESS is reachable from exactly one path):
+//   runBasicHintPlaceHandDemo (demo: idx8 SELECT, idx10 GLOW)
+//     -> showBasicHintSelectNarration -> startBasicHintPlaceTry (phase 'basic-hint-select-try')
+//     -> child taps piece -> onBasicHintSelectPracticePointerDown (phase 'basic-hint-press-try', plays idx9 PRESS)
+//     -> child presses ヒント -> onBasicHintPracticeHintButtonUsed (phase 'basic-hint-drag-try')
+//     -> child drags home -> onBasicHintDragPracticePieceDropped
+//        -> showBasicHintDoneNarration (idx11 FINISH -> idx12 CLOSING) -> finishPartnerPractice.
+// 'basic-hint-press-try' is set ONLY inside onBasicHintSelectPracticePointerDown, so
+// idx9 cannot be skipped on the happy path.
 function startBasicHintPlaceTry(piece) {
   if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
   if (!piece || piece.snapped) return;
@@ -4864,9 +4873,15 @@ function onBasicHintDragPracticePieceDropped(piece, didSnap) {
     );
     setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece) || getPieceScreenRect(piece), 'below', false);
     redraw();
+    // Do NOT finish immediately: play the closing narrations idx11
+    // ("できたね。…") -> idx12 ("これで練習はおしまい。…") first.
+    // showBasicHintDoneNarration() orchestrates the idx11->idx12 voice chain and
+    // gates finishPartnerPractice() behind maybeFinishBasicPracticeAfterSnap()
+    // (both basicDoneVoiceDone && basicDoneSnapDone). The piece is already
+    // snapped here, so its auto-snap step short-circuits to basicDoneSnapDone.
     practiceSetTimeout(function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-drag-done') return;
-      finishPartnerPractice();
+      showBasicHintDoneNarration();
     }, BASIC_AFTER_DRAG_SUCCESS_MS);
     return;
   }
@@ -5271,7 +5286,13 @@ function scheduleBasicHintSelectAfterCueVisible() {
 }
 
 function showBasicHintDoneNarration() {
-  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-done') return;
+  // Reached from two paths:
+  //  - OLD demo-driven common hint flow -> phase 'hint-done'
+  //  - NEW 13-step real-UI hint flow    -> phase 'basic-hint-drag-done'
+  //    (child dragged the hint piece home themselves).
+  if (!partnerPracticeState) return;
+  if (partnerPracticeState.phase !== 'hint-done'
+      && partnerPracticeState.phase !== 'basic-hint-drag-done') return;
   if (partnerPracticeState.mode !== 'basic') return;
   partnerPracticeState.basicDoneVoiceDone = false;
   partnerPracticeState.basicDoneSnapDone = false;

@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T05:36:52Z - Fix blocking issues in 13-step puzzle hint-split wire: route basic-hint-drag-done through showBasicHintDoneNarration so idx11/idx12 closing narrations play before finishPartnerPractice
+- **タスク**: Fix blocking issues in 13-step puzzle hint-split wire: route basic-hint-drag-done through showBasicHintDoneNarration so idx11/idx12 closing narrations play before finishPartnerPractice
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 106
+- **エラー数**: 10
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 22, "Workflow": 5, "Read": 12, "ToolSearch": 2, "DesignSync": 17, "Bash": 38, "Grep": 2, "Write": 6, "ScheduleWakeup": 1, "Skill": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-06-19T05:33:39Z - シフト後パズルヒント音声(tut_09-13,08,03)をfaster-whisper small jaで再書き起こし検証、全スロット一致確認・durations報告
+- **タスク**: シフト後パズルヒント音声(tut_09-13,08,03)をfaster-whisper small jaで再書き起こし検証、全スロット一致確認・durations報告
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 106
+- **エラー数**: 10
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 22, "Workflow": 5, "Read": 12, "ToolSearch": 2, "DesignSync": 17, "Bash": 38, "Grep": 2, "Write": 6, "ScheduleWakeup": 1, "Skill": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-19T05:29:58Z - パズル基本チュートリアルのヒント導入を12→13ステップに分割配線 (SELECT拍A/PRESS拍B、registry/fallback/flow/coach/docs/cache更新)
 - **タスク**: パズル基本チュートリアルのヒント導入を12→13ステップに分割配線 (SELECT拍A/PRESS拍B、registry/fallback/flow/coach/docs/cache更新)
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 17, "Workflow": 4, "Read": 10, "ToolSearch": 2, "DesignSync": 17, "Bash": 10, "Grep": 2, "Write": 6}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T02:47:59Z - Puzzle basic tutorial: remove 見る(peek) hand demo so child presses directly after idx4; keep idx5 explanation; doc idx2 trim note; sw1330 + puzzle scripts v1317
-- **タスク**: Puzzle basic tutorial: remove 見る(peek) hand demo so child presses directly after idx4; keep idx5 explanation; doc idx2 trim note; sw1330 + puzzle scripts v1317
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 67
-- **エラー数**: 9
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 16, "Workflow": 4, "Read": 10, "ToolSearch": 2, "DesignSync": 17, "Bash": 10, "Grep": 2, "Write": 6}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T02:37:53Z - Puzzle basic-drag-try reorder: badge alone first then on fade enable input + play trimmed basic_tut_03 together; fallback idx2 trim; cache bumps sw1328/voice v1316/index v1316
-- **タスク**: Puzzle basic-drag-try reorder: badge alone first then on fade enable input + play trimmed basic_tut_03 together; fallback idx2 trim; cache bumps sw1328/voice v1316/index v1316
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 59
-- **エラー数**: 9
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 15, "Workflow": 4, "Read": 5, "ToolSearch": 2, "DesignSync": 17, "Bash": 8, "Grep": 2, "Write": 6}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
