@@ -1224,6 +1224,7 @@ tr:hover { background: #FFFAF0; }
         </div>
 
         <div id="npc-pos-status" style="margin-top:10px;font-size:0.72rem;color:#8B7355;min-height:1.1em;"></div>
+        <div id="npc-pos-sync-indicator" style="margin-top:4px;font-size:0.68rem;color:#9CA3AF;min-height:1em;" aria-live="polite"></div>
       </div>
 
       <!-- 右: プレビュー -->
@@ -12651,6 +12652,10 @@ function renderMonsterIllust() {
 //   key   = 'bento_npc_positions_v1'
 //   value = { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
 var NPC_POS_LS_KEY = 'bento_npc_positions_v1';
+var NPC_POS_LS_BACKUP_KEY = 'bento_npc_positions_v1_backup';
+var NPC_POS_LS_HISTORY_KEY = 'bento_npc_positions_v1_history';
+var NPC_POS_HISTORY_MAX = 20;
+var NPC_POS_KV_ENDPOINT = '/api/admin/bento-npc-positions';
 var NPC_POS_PORTRAIT_BASE = '../assets/images/bento/npc/';
 var NPC_POS_STAFF_BASE = '../assets/images/bento/story/staff/';
 var NPC_POS_PORTRAIT_VERSION = '20260617-staff-wave-alt-v2';
@@ -12744,9 +12749,82 @@ function npcPosLoadAll() {
 }
 function npcPosSaveAll(obj) {
   try {
-    localStorage.setItem(NPC_POS_LS_KEY, JSON.stringify(obj || {}));
+    var newJson = JSON.stringify(obj || {});
+    // 冗長化: 旧 v1 を _backup に退避 (1 step back)
+    try {
+      var prev = localStorage.getItem(NPC_POS_LS_KEY);
+      if (prev != null) localStorage.setItem(NPC_POS_LS_BACKUP_KEY, prev);
+    } catch (e1) { /* backup 書き込み失敗は致命ではない */ }
+    // 冗長化: 履歴 (最大 NPC_POS_HISTORY_MAX 件)
+    try {
+      var histRaw = localStorage.getItem(NPC_POS_LS_HISTORY_KEY);
+      var hist = [];
+      if (histRaw) {
+        try { var parsed = JSON.parse(histRaw); if (Array.isArray(parsed)) hist = parsed; } catch (eh) { hist = []; }
+      }
+      hist.push({ data: (obj || {}), ts: new Date().toISOString() });
+      if (hist.length > NPC_POS_HISTORY_MAX) hist = hist.slice(hist.length - NPC_POS_HISTORY_MAX);
+      localStorage.setItem(NPC_POS_LS_HISTORY_KEY, JSON.stringify(hist));
+    } catch (e2) { /* history 書き込み失敗は致命ではない */ }
+    // 本体
+    localStorage.setItem(NPC_POS_LS_KEY, newJson);
+    // KV へ非同期同期 (fire-and-forget; UX をブロックしない)
+    try { npcPosSyncToServer(obj || {}); } catch (e3) {}
     return true;
   } catch (e) { return false; }
+}
+
+function npcPosSetSyncStatus(state, msg) {
+  var el = document.getElementById('npc-pos-sync-indicator');
+  if (!el) return;
+  var color = '#9CA3AF';
+  if (state === 'ok') color = '#0F766E';
+  else if (state === 'err') color = '#B91C1C';
+  else if (state === 'busy') color = '#6B7280';
+  el.style.color = color;
+  el.textContent = msg || '';
+}
+
+function npcPosSyncToServer(positions) {
+  npcPosSetSyncStatus('busy', '… サーバー同期中');
+  fetch(NPC_POS_KV_ENDPOINT, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: positions || {} }),
+    cache: 'no-store'
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    npcPosSetSyncStatus('ok', '✓ サーバー保存OK');
+  }).catch(function(err) {
+    try { console.warn('[npcPos] サーバー保存失敗:', err); } catch (e) {}
+    npcPosSetSyncStatus('err', '⚠ サーバー保存失敗 (ローカルは保存済み)');
+  });
+}
+
+function npcPosSeedFromServerIfEmpty() {
+  try {
+    var raw = localStorage.getItem(NPC_POS_LS_KEY);
+    if (raw && raw !== '{}' && raw.length > 2) return; // localStorage が source of truth
+  } catch (e) { return; }
+  npcPosSetSyncStatus('busy', '… サーバーから復元中');
+  fetch(NPC_POS_KV_ENDPOINT, {
+    method: 'GET',
+    credentials: 'same-origin',
+    cache: 'no-store'
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function(payload) {
+    var data = (payload && payload.data && typeof payload.data === 'object') ? payload.data : null;
+    if (!data) { npcPosSetSyncStatus('', ''); return; }
+    try { localStorage.setItem(NPC_POS_LS_KEY, JSON.stringify(data)); } catch (e) {}
+    npcPosSetSyncStatus('ok', 'サーバーから設定を復元しました');
+    try { if (typeof npcPosLoadCurrent === 'function') npcPosLoadCurrent(); } catch (e) {}
+  }).catch(function(err) {
+    try { console.warn('[npcPos] サーバー復元失敗:', err); } catch (e) {}
+    npcPosSetSyncStatus('', '');
+  });
 }
 function npcPosClampNumber(value, min, max, fallback) {
   var num = Number(value);
@@ -13367,6 +13445,8 @@ function npcPosInit() {
   if (charSel) _npcPosState.charId = charSel.value || 'risu';
   npcPosRenderExpressionButtons();
   npcPosLoadCurrent();
+  // localStorage が空なら Cloudflare KV からシード復元 (fire-and-forget)
+  try { npcPosSeedFromServerIfEmpty(); } catch (e) {}
 }
 
 </script>
