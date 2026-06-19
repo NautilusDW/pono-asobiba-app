@@ -2966,6 +2966,7 @@ body.image-stage-mode .game-wrap {
 <script src="../common/first-clear.js"></script>
 <script src="../js/game-stickers.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/capture.js" defer></script>
 <script src="image-runtime.js"></script>
 
 <script>
@@ -10721,6 +10722,26 @@ async function playMazeOpening(onDone) {
       playMazeOpening(function() { loadStage(_getInitialStageIdx()); });
     }
   }, { once: true });
+})();
+</script>
+
+<!-- スクショモード Phase 1: maze hookup (main canvas のみ。 stage7 bowl は Phase 2 で追加) -->
+<script>
+(function() {
+  function regCapture() {
+    if (!window.PonoCapture) return;
+    window.PonoCapture.register({
+      gameId: 'maze',
+      defaultLabel: 'play',
+      build: function() {
+        // Phase 1 は主 canvas (#gameCanvas) のみを返す。 bowl canvas は stage7 専用で
+        // 別 canvas (#bowlCanvas) のため、 Phase 2 で z-order 合成して対応する。
+        return document.getElementById('gameCanvas');
+      }
+    });
+  }
+  if (window.PonoCapture) regCapture();
+  else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
 })();
 </script>
 </body>

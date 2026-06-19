@@ -1,0 +1,388 @@
+// ── common/capture.js ──
+// Pono Asobiba 共通 スクショモード Phase 1 (PoC: maze only)
+//
+// 設計の正本: docs/SCREENSHOT_MODE_PLAN.md
+//
+// 公開API (window.PonoCapture):
+//   register({ gameId, build, defaultLabel, presets })
+//     - 各ゲーム index.html から登録。 build は (opts) => Promise<HTMLCanvasElement>|HTMLCanvasElement
+//     - opts: { width, height, format, label }
+//   show()        … 外部 (admin 等) から UI を強制表示
+//   shoot(opts)   … 即時 1 枚撮影 (UI ボタン / shortcut から呼ばれる)
+//
+// トリガ層 (子供向け本番では「3つのいずれか」 を通らない限り UI を出さない):
+//   1. URL `?capture=1`
+//   2. キーボード Shift+Alt+C (3 キー同時押し、 修飾必須、 タッチ不可)
+//   3. window.PonoCapture.show() (admin パネル経由、 Phase 3 で使う)
+//
+// ホスト名ガード:
+//   localhost / 127.0.0.1 / *-staging.ndw.workers.dev では 3 トリガとも有効。
+//   本番 (pono.kodama-no-mori.com / pono-asobiba-app.ndw.workers.dev 等) では
+//   sessionStorage.admin_capture_unlocked が立っているときだけ有効。
+//
+// 多重初期化防止: window._ponoCaptureInited を guard 化 (sw-update.js と同じパターン)。
+
+(function () {
+  'use strict';
+
+  if (typeof window === 'undefined') return;
+  if (window._ponoCaptureInited) return;
+  window._ponoCaptureInited = true;
+
+  // ── ホスト名ガード ──
+  // staging / local では誰でも (URL/キー/admin) で起動可。
+  // 本番では sessionStorage の admin gate を通った場合のみ。
+  var STAGING_HOSTS = [
+    'pono-asobiba-app-staging.ndw.workers.dev',
+    'pono-asobiba-staging.ndw.workers.dev',
+    'localhost',
+    '127.0.0.1'
+  ];
+  function isStagingHost() {
+    try {
+      var h = String(location.hostname || '').toLowerCase();
+      return STAGING_HOSTS.indexOf(h) >= 0;
+    } catch (e) { return false; }
+  }
+  function isAdminUnlocked() {
+    try {
+      return sessionStorage.getItem('admin_capture_unlocked') === '1';
+    } catch (e) { return false; }
+  }
+  function isCaptureAllowed() {
+    return isStagingHost() || isAdminUnlocked();
+  }
+
+  // ── 内部状態 ──
+  var registered = null;   // 最新 register された 1 件 (Phase 1 は単一ゲーム想定)
+  var uiRoot = null;       // overlay DOM
+  var inited = false;      // armUI 済か
+  var seqKey = 'pono_capture_seq';
+
+  // ── 解像度プリセット ──
+  // Phase 1 は LP 16:9 / 縦 9:16 / 正方形 / App Store 6.5" の 4 つ。
+  var PRESETS = [
+    { id: 'lp-16x9',    label: 'LP 16:9 (1920×1080)',  w: 1920, h: 1080 },
+    { id: 'lp-9x16',    label: '縦 9:16 (1080×1920)',  w: 1080, h: 1920 },
+    { id: 'square',     label: 'スクエア (1080×1080)', w: 1080, h: 1080 },
+    { id: 'ios-65',     label: 'App Store 6.5" (1284×2778)', w: 1284, h: 2778 }
+  ];
+
+  // ── ファイル名生成 ──
+  function pad(n, w) {
+    var s = String(n);
+    while (s.length < w) s = '0' + s;
+    return s;
+  }
+  function todayStamp() {
+    var d = new Date();
+    return d.getFullYear() + pad(d.getMonth() + 1, 2) + pad(d.getDate(), 2);
+  }
+  function nextSeq() {
+    var n = 1;
+    try {
+      var raw = sessionStorage.getItem(seqKey);
+      if (raw) n = (parseInt(raw, 10) || 0) + 1;
+      sessionStorage.setItem(seqKey, String(n));
+    } catch (e) {}
+    return n;
+  }
+  function makeFileName(gameId, label) {
+    var base = (gameId || 'game') + '_' + todayStamp() + '_' + pad(nextSeq(), 3);
+    if (label) base += '_' + String(label).replace(/[^a-z0-9_-]/gi, '');
+    return base + '.png';
+  }
+
+  // ── 合成: ゲーム canvas → 指定解像度の出力 canvas (contain fit) ──
+  function compose(sourceCanvas, outW, outH) {
+    var out = document.createElement('canvas');
+    out.width  = outW;
+    out.height = outH;
+    var ctx = out.getContext('2d');
+    if (!ctx) return out;
+    // 余白は透明 (LP 用は後段で別途背景を載せる方針)
+    ctx.clearRect(0, 0, outW, outH);
+
+    var sw = sourceCanvas.width  || sourceCanvas.naturalWidth  || outW;
+    var sh = sourceCanvas.height || sourceCanvas.naturalHeight || outH;
+    if (!sw || !sh) return out;
+
+    // contain fit
+    var scale = Math.min(outW / sw, outH / sh);
+    var dw = Math.round(sw * scale);
+    var dh = Math.round(sh * scale);
+    var dx = Math.round((outW - dw) / 2);
+    var dy = Math.round((outH - dh) / 2);
+    try {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(sourceCanvas, 0, 0, sw, sh, dx, dy, dw, dh);
+    } catch (e) {
+      // tainted canvas 等は無視 (出力は黒/透明枠だけ)
+    }
+    return out;
+  }
+
+  // ── ダウンロード ──
+  function download(canvas, filename) {
+    return new Promise(function (resolve) {
+      try {
+        canvas.toBlob(function (blob) {
+          if (!blob) { resolve(false); return; }
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () {
+            try { a.remove(); } catch (e) {}
+            try { URL.revokeObjectURL(url); } catch (e) {}
+            resolve(true);
+          }, 100);
+        }, 'image/png', 1.0);
+      } catch (e) {
+        resolve(false);
+      }
+    });
+  }
+
+  // ── shoot: 単発撮影 ──
+  function shoot(opts) {
+    opts = opts || {};
+    if (!registered || typeof registered.build !== 'function') {
+      console.warn('[PonoCapture] register されていません');
+      return Promise.resolve(null);
+    }
+    if (!isCaptureAllowed()) {
+      console.warn('[PonoCapture] このホストでは撮影できません');
+      return Promise.resolve(null);
+    }
+
+    var preset = opts.preset || PRESETS[0];
+    var w = opts.width  || preset.w || 1920;
+    var h = opts.height || preset.h || 1080;
+    var label = opts.label || (registered.defaultLabel || '');
+
+    var buildOpts = { width: w, height: h, format: 'png', label: label };
+
+    return Promise.resolve()
+      .then(function () { return registered.build(buildOpts); })
+      .then(function (src) {
+        if (!src) return null;
+        // build() が canvas を返してきたか、 image/url を返したかで分岐
+        if (src instanceof HTMLCanvasElement) {
+          return compose(src, w, h);
+        }
+        console.warn('[PonoCapture] build() は HTMLCanvasElement を返してください');
+        return null;
+      })
+      .then(function (out) {
+        if (!out) return null;
+        var fname = makeFileName(registered.gameId, label);
+        return download(out, fname).then(function () { return fname; });
+      })
+      .catch(function (err) {
+        console.error('[PonoCapture] shoot 失敗', err);
+        return null;
+      });
+  }
+
+  // ── UI 構築 ──
+  function buildUI() {
+    if (uiRoot) return uiRoot;
+
+    // CSS 注入 (z-index は max にして既存 UI を侵食しない最上層)
+    var style = document.createElement('style');
+    style.setAttribute('data-pono-capture', '1');
+    style.textContent = [
+      '.pono-capture-overlay{',
+      '  position:fixed;right:16px;bottom:16px;z-index:2147483647;',
+      '  background:rgba(20,20,28,0.92);color:#fff;',
+      '  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;',
+      '  font-size:13px;line-height:1.4;',
+      '  padding:12px 14px;border-radius:12px;',
+      '  box-shadow:0 6px 24px rgba(0,0,0,0.45);',
+      '  max-width:280px;pointer-events:auto;',
+      '}',
+      '.pono-capture-overlay *{box-sizing:border-box;font-family:inherit;}',
+      '.pono-capture-overlay .pc-title{',
+      '  font-weight:700;font-size:12px;margin-bottom:8px;',
+      '  display:flex;align-items:center;justify-content:space-between;gap:8px;',
+      '}',
+      '.pono-capture-overlay .pc-title span{opacity:0.85}',
+      '.pono-capture-overlay select,',
+      '.pono-capture-overlay button{',
+      '  font:inherit;color:#fff;background:#3B82F6;',
+      '  border:1px solid rgba(255,255,255,0.18);',
+      '  border-radius:8px;padding:6px 10px;cursor:pointer;',
+      '}',
+      '.pono-capture-overlay select{',
+      '  background:#1f2330;width:100%;margin-bottom:8px;',
+      '}',
+      '.pono-capture-overlay .pc-row{display:flex;gap:6px;}',
+      '.pono-capture-overlay .pc-shoot{flex:1;background:#10B981;font-weight:700;}',
+      '.pono-capture-overlay .pc-close{background:#374151;}',
+      '.pono-capture-overlay button:hover{filter:brightness(1.1);}',
+      '.pono-capture-overlay button:focus-visible,',
+      '.pono-capture-overlay select:focus-visible{',
+      '  outline:2px solid #FBBF24;outline-offset:2px;',
+      '}',
+      '.pono-capture-overlay .pc-status{',
+      '  margin-top:6px;font-size:11px;opacity:0.75;min-height:1.2em;',
+      '}'
+    ].join('\n');
+    document.head.appendChild(style);
+
+    uiRoot = document.createElement('div');
+    uiRoot.className = 'pono-capture-overlay';
+    uiRoot.setAttribute('role', 'dialog');
+    uiRoot.setAttribute('aria-label', 'Screenshot capture controls');
+
+    var title = document.createElement('div');
+    title.className = 'pc-title';
+    var label = document.createElement('span');
+    label.textContent = '📸 スクショモード';
+    title.appendChild(label);
+    var gameTag = document.createElement('span');
+    gameTag.textContent = registered ? (registered.gameId || '') : '';
+    gameTag.style.cssText = 'font-size:11px;opacity:0.7;';
+    title.appendChild(gameTag);
+    uiRoot.appendChild(title);
+
+    var sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Resolution preset');
+    for (var i = 0; i < PRESETS.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = PRESETS[i].id;
+      opt.textContent = PRESETS[i].label;
+      sel.appendChild(opt);
+    }
+    uiRoot.appendChild(sel);
+
+    var row = document.createElement('div');
+    row.className = 'pc-row';
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pc-shoot';
+    btn.textContent = '撮る';
+    row.appendChild(btn);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'pc-close';
+    closeBtn.textContent = '×';
+    closeBtn.setAttribute('aria-label', 'Close capture overlay');
+    row.appendChild(closeBtn);
+
+    uiRoot.appendChild(row);
+
+    var status = document.createElement('div');
+    status.className = 'pc-status';
+    status.setAttribute('aria-live', 'polite');
+    uiRoot.appendChild(status);
+
+    btn.addEventListener('click', function () {
+      var presetId = sel.value;
+      var preset = PRESETS[0];
+      for (var j = 0; j < PRESETS.length; j++) {
+        if (PRESETS[j].id === presetId) { preset = PRESETS[j]; break; }
+      }
+      status.textContent = '撮影中…';
+      btn.disabled = true;
+      shoot({ preset: preset }).then(function (name) {
+        btn.disabled = false;
+        status.textContent = name ? ('保存: ' + name) : '失敗';
+      });
+    });
+
+    closeBtn.addEventListener('click', function () {
+      if (uiRoot && uiRoot.parentNode) uiRoot.parentNode.removeChild(uiRoot);
+      uiRoot = null;
+    });
+
+    document.body.appendChild(uiRoot);
+    return uiRoot;
+  }
+
+  function show() {
+    if (!isCaptureAllowed()) {
+      console.warn('[PonoCapture] このホストでは UI を表示できません');
+      return;
+    }
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', show, { once: true });
+      return;
+    }
+    if (uiRoot) return;
+    buildUI();
+  }
+
+  // ── キーボード Shift+Alt+C (修飾必須) ──
+  function onKeyDown(e) {
+    if (!e || !e.shiftKey || !e.altKey) return;
+    var k = String(e.key || '').toLowerCase();
+    if (k !== 'c') return;
+    if (!isCaptureAllowed()) return;
+    e.preventDefault();
+    show();
+  }
+
+  // ── URL ?capture=1 ──
+  function urlTriggered() {
+    try {
+      var p = new URLSearchParams(location.search);
+      return p.get('capture') === '1';
+    } catch (e) { return false; }
+  }
+
+  function armUI() {
+    if (inited) return;
+    inited = true;
+    // キーボードはホスト的に許可されている時のみ bind (本番では完全無音)
+    if (isCaptureAllowed()) {
+      window.addEventListener('keydown', onKeyDown, true);
+    }
+    if (isCaptureAllowed() && urlTriggered()) {
+      // DOMContentLoaded を待ってから表示
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', show, { once: true });
+      } else {
+        show();
+      }
+    }
+  }
+
+  // ── register ──
+  function register(opts) {
+    if (!opts || !opts.gameId || typeof opts.build !== 'function') {
+      console.warn('[PonoCapture] register: { gameId, build } が必要です');
+      return;
+    }
+    registered = {
+      gameId: String(opts.gameId),
+      build: opts.build,
+      defaultLabel: opts.defaultLabel || '',
+      presets: Array.isArray(opts.presets) ? opts.presets : []
+    };
+    // 既に UI が出ていれば game タグだけ更新
+    if (uiRoot) {
+      var tag = uiRoot.querySelector('.pc-title span:last-child');
+      if (tag) tag.textContent = registered.gameId;
+    }
+  }
+
+  // ── 公開 API ──
+  window.PonoCapture = {
+    register: register,
+    show: show,
+    shoot: shoot,
+    isAllowed: isCaptureAllowed,
+    PRESETS: PRESETS.slice()
+  };
+
+  // 起動
+  armUI();
+})();

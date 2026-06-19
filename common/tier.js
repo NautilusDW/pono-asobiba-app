@@ -54,8 +54,29 @@
     catch (e) { return false; }
   }
 
+  // ---- capture mode 用 tier override ----
+  // common/capture.js (スクショモード) が sub 限定の隠しゲーム (starparodier 等) を
+  // 撮影するために、 session 限定で「sub tier 同等」 にアクセスできるようにするフラグ。
+  // sessionStorage に保存 → タブを閉じれば消える。 localStorage には書かない。
+  // 既存 tier_system_policy (free/book/sub 3 パターン) は非破壊 (override が立っていなければ
+  // 通常の判定にフォールバック)。 APP_BUILD は書き換えない (Worker prepend の正規ルートを汚染しない)。
+  var CAPTURE_OVERRIDE_KEY = 'pono_capture_tier_override';
+  function isCaptureOverride() {
+    try {
+      return sessionStorage.getItem(CAPTURE_OVERRIDE_KEY) === '1';
+    } catch (e) { return false; }
+  }
+  function setCaptureOverride(on) {
+    try {
+      if (on) sessionStorage.setItem(CAPTURE_OVERRIDE_KEY, '1');
+      else    sessionStorage.removeItem(CAPTURE_OVERRIDE_KEY);
+    } catch (e) {}
+  }
+
   // ---- tier 判定 ----
   function getTier() {
+    // capture mode 中は session 限定で sub 同等
+    if (isCaptureOverride()) return 'sub';
     // アプリ版 (APP_BUILD=1) は無条件で sub tier (アプリ版 URL に来た時点で sub 想定)
     if (isAppBuild()) return 'sub';
     // 本版: localStorage 状態で book / free のみ。 sub には絶対到達しない
@@ -431,6 +452,8 @@
     isFree: isFree,
     isBook: isBook,
     isSub:  isSub,
+    setCaptureOverride: setCaptureOverride,
+    isCaptureOverride: isCaptureOverride,
     isAquariumCreatureUnlocked: isAquariumCreatureUnlocked,
     isRoomItemUnlocked: isRoomItemUnlocked,
     isKatakanaUnlocked: isKatakanaUnlocked,
