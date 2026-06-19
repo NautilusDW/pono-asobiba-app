@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T05:02:23Z - Gemini TTS(Aoede)でパズルヒント案内2クリップを生成しtmp/voice_reviewに配置・聴き比べセクション追加
+- **タスク**: Gemini TTS(Aoede)でパズルヒント案内2クリップを生成しtmp/voice_reviewに配置・聴き比べセクション追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 98
+- **エラー数**: 16
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 17, "Bash": 45, "Workflow": 12, "Edit": 10, "Write": 3, "Agent": 8, "Grep": 3}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T04:11:02Z - puzzle basic tutorial: 見る(peek)中は中央モードバッジ(やってみよう/できたね)を抑制+フェードアウトしパズル画像を覆わないように修正、sw1332/main.voice v1319バンプ
 - **タスク**: puzzle basic tutorial: 見る(peek)中は中央モードバッジ(やってみよう/できたね)を抑制+フェードアウトしパズル画像を覆わないように修正、sw1332/main.voice v1319バンプ
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 14, "Bash": 29, "Workflow": 8, "Edit": 4, "Write": 3, "Agent": 6}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-19T01:19:04Z - puzzle 見る/ヒント narration autoplay fix: PuzzleVoice.unlock() primes HTMLAudio+AudioContext in entry gesture, state machine advances on play() reject, bump sw1323/voice v1314
-- **タスク**: puzzle 見る/ヒント narration autoplay fix: PuzzleVoice.unlock() primes HTMLAudio+AudioContext in entry gesture, state machine advances on play() reject, bump sw1323/voice v1314
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 26
-- **エラー数**: 0
-- **検出された良いパターン**: 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 11, "Grep": 8, "Read": 7}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

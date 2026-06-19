@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-698";
+const ASSET_VERSION = "20260619-699";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -73,12 +73,12 @@ const SHARED_TEXTURES = {
   floorShadow: "sb3d_book_floor_shadow.webp",
 };
 
-const ZUKAN_FORMAT_SPREADS = [
-  { file: "sb3d_zukan_format_spread_01_alpha.png", aspect: 1572 / 824 },
-  { file: "sb3d_zukan_format_spread_02_alpha.png", aspect: 1593 / 865 },
-  { file: "sb3d_zukan_format_spread_03_alpha.png", aspect: 1561 / 798 },
-  { file: "sb3d_zukan_format_spread_04_alpha.png", aspect: 1604 / 853 },
-  { file: "sb3d_zukan_format_spread_05_alpha.png", aspect: 1621 / 717 },
+const ZUKAN_THICKNESS_STRIPS = [
+  { file: "sb3d_zukan_thickness_strip_01_alpha.png", aspect: 1564 / 180 },
+  { file: "sb3d_zukan_thickness_strip_02_alpha.png", aspect: 1585 / 198 },
+  { file: "sb3d_zukan_thickness_strip_03_alpha.png", aspect: 1553 / 182 },
+  { file: "sb3d_zukan_thickness_strip_04_alpha.png", aspect: 1596 / 203 },
+  { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 192 },
 ];
 const DEFAULT_ZUKAN_FORMAT_INDEX = 4;
 
@@ -156,9 +156,9 @@ const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBoolean
 let activeBook = params.get("book") === "girl" ? "girl" : "boy";
 let activeAlbumMode = params.get("album") === "collection" ? "collection" : "free";
 const zukanFormatIndex = Math.round(
-  readClampedNumber(params.get("zukanFormat"), DEFAULT_ZUKAN_FORMAT_INDEX + 1, 1, ZUKAN_FORMAT_SPREADS.length),
+  readClampedNumber(params.get("zukanFormat"), DEFAULT_ZUKAN_FORMAT_INDEX + 1, 1, ZUKAN_THICKNESS_STRIPS.length),
 ) - 1;
-const selectedZukanFormat = ZUKAN_FORMAT_SPREADS[zukanFormatIndex] || ZUKAN_FORMAT_SPREADS[DEFAULT_ZUKAN_FORMAT_INDEX];
+const selectedZukanThickness = ZUKAN_THICKNESS_STRIPS[zukanFormatIndex] || ZUKAN_THICKNESS_STRIPS[DEFAULT_ZUKAN_FORMAT_INDEX];
 const requestedSurface = params.get("surface");
 let activeSurface = requestedSurface === "cover"
   ? "cover"
@@ -309,7 +309,7 @@ const loader = new THREE.TextureLoader();
 const textureFiles = [
   ...new Set([
     ...Object.values(SHARED_TEXTURES),
-    ...ZUKAN_FORMAT_SPREADS.map(({ file }) => file),
+    ...ZUKAN_THICKNESS_STRIPS.map(({ file }) => file),
     ...Object.values(BOOK_VARIANTS.boy),
     ...Object.values(BOOK_VARIANTS.girl),
     ...["boy", "girl"].flatMap((bookName) =>
@@ -3587,12 +3587,12 @@ function createCoverThicknessLayer() {
 
 function createCollectionStackBlock() {
   const group = new THREE.Group();
-  const width = PAGE_W * 2 + PAGE_H * 0.18;
-  const height = width / selectedZukanFormat.aspect;
+  const width = PAGE_W * 2 + PAGE_H * 0.16;
+  const height = width / selectedZukanThickness.aspect;
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
     new THREE.MeshBasicMaterial({
-      map: getTexture(selectedZukanFormat.file),
+      map: getTexture(selectedZukanThickness.file),
       transparent: true,
       opacity: 1,
       side: THREE.DoubleSide,
@@ -3823,8 +3823,8 @@ function positionCollectionStackBlock() {
   pageStacks.right.group.visible = false;
   pageStacks.collection.group.visible = true;
 
-  const lowerOverhang = PAGE_H * 0.09;
-  const centerY = -PAGE_H / 2 - lowerOverhang + pageStacks.collection.height / 2;
+  const topY = -PAGE_H / 2 + PAGE_H * 0.05;
+  const centerY = topY - pageStacks.collection.height / 2;
   pageStacks.collection.plane.scale.set(1, 1, 1);
   pageStacks.collection.plane.position.set(0, centerY, -0.052);
 }
