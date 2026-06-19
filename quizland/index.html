@@ -8919,5 +8919,40 @@ updateHUD();
 
 })();
 </script>
+<!-- ===== Screenshot mode (PonoCapture) registration =====
+     Quizland は DOM ベース (canvas/svg なし) なので html2canvas で
+     #stage コンテナをラスタライズして PonoCapture に渡す。 -->
+<script>
+(function () {
+  function regCapture() {
+    if (!window.PonoCapture) return;
+    window.PonoCapture.register({
+      gameId: 'quizland',
+      build: async function (opts) {
+        var container = document.getElementById('stage');
+        if (!container) throw new Error('quizland capture: #stage not found');
+        try {
+          var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
+          var html2canvas = (mod && (mod.default || mod));
+          if (typeof html2canvas !== 'function') {
+            throw new Error('html2canvas module shape unexpected');
+          }
+          return await html2canvas(container, {
+            backgroundColor: null,
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+        } catch (e) {
+          console.warn('[quizland capture] html2canvas import/exec failed:', e);
+          throw e;
+        }
+      }
+    });
+  }
+  if (window.PonoCapture) regCapture();
+  else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
+})();
+</script>
 </body>
 </html>
