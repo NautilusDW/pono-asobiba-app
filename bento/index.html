@@ -3451,24 +3451,28 @@ body.bento-complete-open .pono-dropdown {
 .tut-pono-callout::before {
   content: '';
   position: absolute;
-  left: -24px;
-  bottom: 2px;
+  left: -21px;
+  bottom: -9px;
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 12px 24px 12px 0;
+  border-width: 10px 22px 10px 0;
   border-color: transparent #F2915A transparent transparent;
+  transform: rotate(-10deg);
+  transform-origin: right center;
 }
 .tut-pono-callout::after {
   content: '';
   position: absolute;
-  left: -15px;
-  bottom: 6px;
+  left: -13px;
+  bottom: -4px;
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 8px 16px 8px 0;
+  border-width: 7px 15px 7px 0;
   border-color: transparent rgba(255,255,255,0.97) transparent transparent;
+  transform: rotate(-10deg);
+  transform-origin: right center;
 }
 @media (max-width: 900px) {
   .tut-pono-callout {
@@ -9505,6 +9509,32 @@ function createFreePaletteDragGhost(def, e) {
   freePaletteDragState.ghost = ghost;
   updateFreePaletteDragGhost(e);
 }
+function tutorialShouldLockCupDrop(def) {
+  return !!(
+    tutorialState.active
+    && tutorialState.step === 'small-accessory'
+    && def
+    && def.snapTarget
+  );
+}
+function tutorialLockCupDropToTarget(def, uid) {
+  if (!tutorialShouldLockCupDrop(def)) return true;
+  const item = placedItems.find(i => i.uid === uid);
+  if (!item) return false;
+  const screenPoint = tutorialFreePointToScreenPoint(item);
+  const targetPoint = tutorialCupDemoScreenPoint();
+  if (screenPoint && targetPoint && dist(screenPoint, targetPoint) > 82) {
+    removeFreeItem(uid);
+    showToast('あおい まるの なかに おいてね');
+    tutorialRetryRenderStep('small-accessory', 180);
+    return false;
+  }
+  const fixed = tutorialCupDemoFreePoint();
+  item.x = fixed.x;
+  item.y = fixed.y;
+  item.tier = getGuideTierForStep(freeGuideStep);
+  return true;
+}
 function beginFreePaletteDrag(e, def) {
   if (e && e.cancelable) e.preventDefault();
   if (!canStartFreePaletteDrag(def)) return;
@@ -9581,6 +9611,7 @@ function finishFreePaletteDrag(shouldFinalize) {
     removeFreeItem(uid);
     return;
   }
+  if (!tutorialLockCupDropToTarget(def, uid)) return;
   finalizeFreeItemPosition(uid);
   const placed = placedItems.find(i => i.uid === uid) || null;
   if (def.type === 'food' && placed && !placed.parentCupId) {
@@ -13022,6 +13053,7 @@ const tutorialState = {
   _retryTimer: null,
   _targetRetryTimer: null,
   _fingerHideTimer: null,
+  _cupOkTrimTimer: null,
   _layerDoneTimer: null,
   paletteObserver: null,
   _paletteResyncRaf: 0,
@@ -13294,9 +13326,19 @@ function tutorialMarkCupOkAfterVoice(step) {
     tutorialRetryRenderStep(step, 160);
     return;
   }
-  tutorialClearTrims();
+  const alreadyMarked = (tutorialState.trims || []).some(t => t.target === okBtn);
   tutorialMarkTarget(okBtn, { radius: 16, outline: false });
-  tutorialAnimateTap(okBtn);
+  if (!alreadyMarked) tutorialAnimateTap(okBtn);
+}
+function tutorialQueueCupOkHighlight(step, delay = 2600) {
+  if (tutorialState._cupOkTrimTimer) {
+    clearTimeout(tutorialState._cupOkTrimTimer);
+    tutorialState._cupOkTrimTimer = null;
+  }
+  tutorialState._cupOkTrimTimer = setTimeout(() => {
+    tutorialState._cupOkTrimTimer = null;
+    tutorialMarkCupOkAfterVoice(step);
+  }, delay);
 }
 function tutorialClearCompleteGuideTimers() {
   if (!tutorialState.completeGuideTimers || !tutorialState.completeGuideTimers.length) return;
@@ -14153,6 +14195,13 @@ function tutorialEditSizeControlEl() {
       || toolbar.querySelector('.free-size-slider')
       || null;
 }
+function tutorialEditSizeButtonEl(index = 1) {
+  const toolbar = tutorialContextToolbarEl();
+  if (!toolbar) return null;
+  return toolbar.querySelector('.free-size-step-btn[aria-label="サイズ ' + index + '"]')
+      || toolbar.querySelector('.free-size-step-btn:nth-of-type(' + index + ')')
+      || null;
+}
 function tutorialEditSizeSliderEl() {
   const toolbar = tutorialContextToolbarEl();
   if (!toolbar) return null;
@@ -14337,6 +14386,10 @@ function tutorialAdvance(nextStep) {
   if (tutorialState._layerDoneTimer) {
     clearTimeout(tutorialState._layerDoneTimer);
     tutorialState._layerDoneTimer = null;
+  }
+  if (tutorialState._cupOkTrimTimer) {
+    clearTimeout(tutorialState._cupOkTrimTimer);
+    tutorialState._cupOkTrimTimer = null;
   }
   tutorialResetInactivity();
   tutorialRenderStep();
@@ -14781,6 +14834,7 @@ function tutorialRenderStep() {
     if (firstRender) tutorialSetActiveCupSizeKey('small');
     const toolbar = tutorialContextToolbarEl();
     const sizeControl = tutorialEditSizeControlEl();
+    const sizeOneBtn = tutorialEditSizeButtonEl(1);
     setSpeech('こんかいは 1に しよう。OKボタンを おしてね');
     tutorialSetBottomSpeechHidden(true);
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
@@ -14792,7 +14846,8 @@ function tutorialRenderStep() {
       onClick: () => tutorialAdvance('cup-edit-try'),
     });
     tutorialHideBubble();
-    if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
+    if (sizeOneBtn) tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
+    else if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
     else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
     else tutorialRetryRenderStep('cup-edit');
     if (firstRender && (sizeControl || toolbar)) {
@@ -14809,6 +14864,7 @@ function tutorialRenderStep() {
     if (firstRender) tutorialSetActiveCupSizeKey('small');
     const toolbar = tutorialContextToolbarEl();
     const sizeControl = tutorialEditSizeControlEl();
+    const sizeOneBtn = tutorialEditSizeButtonEl(1);
     const okBtn = tutorialCupOkButton();
     setSpeech('こんかいは 1に しよう。OKボタンを おしてね');
     tutorialSetBottomSpeechHidden(true);
@@ -14820,7 +14876,10 @@ function tutorialRenderStep() {
     });
     tutorialHideBubble();
     let markedCupTryTarget = false;
-    if (sizeControl) {
+    if (sizeOneBtn) {
+      tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
+      markedCupTryTarget = true;
+    } else if (sizeControl) {
       tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
       markedCupTryTarget = true;
     }
@@ -14833,7 +14892,10 @@ function tutorialRenderStep() {
       markedCupTryTarget = true;
     }
     if (!markedCupTryTarget) tutorialRetryRenderStep('cup-edit-try');
-    if (firstRender && sizeControl) tutorialAnimateEditDemo(fast);
+    if (firstRender && sizeControl) {
+      tutorialAnimateEditDemo(fast);
+      tutorialQueueCupOkHighlight('cup-edit-try', fast ? 900 : 2400);
+    }
     else tutorialHideFinger();
     return;
   }
@@ -14958,9 +15020,10 @@ function tutorialRenderStep() {
   if (step === 'small-next') {
     const btn = tutorialCompleteButton();
     const label = tutorialButtonLabel(btn);
+    setSpeech('じぶんで すきな おかずも いれてみよう。できたら おかずOKを おしてね');
     const nextText = label.indexOf('小さい') >= 0
       ? 'つぎは カップと 小さい おかずへ<br>「' + label + '」'
-      : 'できたら<br>「' + label + '」を おしてね';
+      : 'じぶんで すきな おかずも<br>いれてみよう！<br>できたら「' + label + '」';
     tutorialShowBubble(nextText, { topVh: '18', side: 'left' });
     if (btn) {
       tutorialPositionBubble(btn);
@@ -15023,6 +15086,7 @@ function tutorialTeardown() {
   if (tutorialState.inactivityTimer) { clearTimeout(tutorialState.inactivityTimer); tutorialState.inactivityTimer = 0; }
   if (tutorialState._targetRetryTimer) { clearTimeout(tutorialState._targetRetryTimer); tutorialState._targetRetryTimer = null; }
   if (tutorialState._layerDoneTimer) { clearTimeout(tutorialState._layerDoneTimer); tutorialState._layerDoneTimer = null; }
+  if (tutorialState._cupOkTrimTimer) { clearTimeout(tutorialState._cupOkTrimTimer); tutorialState._cupOkTrimTimer = null; }
   if (tutorialState.observer) { try { tutorialState.observer.disconnect(); } catch (_) {} tutorialState.observer = null; }
   if (tutorialState.tapHandler) {
     try { document.removeEventListener('pointerdown', tutorialState.tapHandler, true); } catch (_) {}
