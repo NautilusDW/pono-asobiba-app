@@ -326,8 +326,8 @@
     }
     .herob *{box-sizing:border-box;}
     .herob-logo-wrap{position:relative;display:inline-block;max-width:min(720px,90vw);margin:0 auto;animation:herob-rise .6s .04s ease both;}
-    .herob-kicker{position:absolute;top:-6px;right:-10px;margin:0;z-index:2;transform:rotate(-4deg);pointer-events:none;}
-    .herob-kicker-img{display:block;max-width:clamp(120px,22vw,200px);width:100%;height:auto;opacity:0.92;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.08));}
+    .herob-kicker{position:absolute;top:-4px;right:4%;margin:0;z-index:2;transform:rotate(-3deg);pointer-events:none;}
+    .herob-kicker-img{display:block;max-width:clamp(110px,18vw,180px);width:100%;height:auto;opacity:0.92;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.08));}
     .herob-title{margin:0;}
     .herob-title-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;white-space:nowrap;}
     .herob-title-img{display:block;max-width:min(720px,90vw);width:100%;height:auto;margin:0 auto;}
@@ -342,7 +342,7 @@
     .herob-free{font-weight:700;font-size:clamp(12px,3vw,14px);color:var(--herob-text-light);letter-spacing:.04em;margin:0;}
     @keyframes herob-rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
     @media (prefers-reduced-motion:reduce){.herob *{animation:none!important;}}
-    @media (max-width:480px){.herob-kicker{top:-4px;right:-4px;transform:rotate(-3deg);}}
+    @media (max-width:480px){.herob-kicker{top:-2px;right:2%;transform:rotate(-3deg);}}
     @media (min-width:768px){.herob{padding-top:30px;padding-bottom:32px;}.herob-chips,.herob-cta-wrap{max-width:680px;}}
     @media (min-width:1200px){.herob{padding-top:36px;padding-bottom:36px;}}
 
@@ -430,7 +430,7 @@
                aria-hidden="true"
                class="herob-title-img"
                fetchpriority="high"
-               width="1571" height="584">
+               width="1595" height="475">
         </h1>
         <p class="herob-kicker" aria-hidden="true">
           <img src="assets/lp/hero/h1_calligraphy.png"
