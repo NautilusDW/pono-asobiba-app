@@ -19,7 +19,7 @@ window.PuzzleVoice = (function () {
   'use strict';
 
   var BASE = '../assets/audio/puzzle/voice/';
-  var AUDIO_VERSION = 'v1317';
+  var AUDIO_VERSION = 'v1318';
 
   var REGISTRY = {
     tut:        ['tut_01.mp3', 'tut_02.mp3', 'tut_03.mp3'],
@@ -32,10 +32,11 @@ window.PuzzleVoice = (function () {
       'basic_tut_06.mp3',  // index 5 — peek explanation ("見るボタンは長く押している間だけ絵が見えるよ")
       'basic_tut_07.mp3',  // index 6 — peek release, plays DURING press ("離すと、元のパズルに戻るよ")
       'basic_tut_08.mp3',  // index 7 — peek stuck note, plays AFTER release ("困った時に使ってね")
-      'basic_tut_09.mp3',  // index 8 — hint intro ("次はヒントだよ。ヒントを押すと場所が光るよ")
-      'basic_tut_10.mp3',  // index 9 — hint glow ("光った場所へピースを持っていくよ")
-      'basic_tut_11.mp3',  // index 10 — finish ("できたね。わからない時は見るとヒントを使ってね")
-      'basic_tut_12.mp3',  // index 11 — closing ("これで練習はおしまい。さあ、パズルで遊ぼう。")
+      'basic_tut_09.mp3',  // index 8 — hint SELECT (拍A "次はヒントだよ。場所を知りたいピースを、まず選んでね")
+      'basic_tut_10.mp3',  // index 9 — hint PRESS (拍B "ヒントを押すと、その場所が光るよ")
+      'basic_tut_11.mp3',  // index 10 — hint glow ("光った場所へピースを持っていくよ")
+      'basic_tut_12.mp3',  // index 11 — finish ("できたね。わからない時は見るとヒントを使ってね")
+      'basic_tut_13.mp3',  // index 12 — closing ("これで練習はおしまい。さあ、パズルで遊ぼう。")
     ],
     clear:      ['clear_01.mp3', 'clear_02.mp3', 'clear_03.mp3', 'clear_04.mp3', 'clear_05.mp3'],
     all_clear:  ['all_clear_01.mp3', 'all_clear_02.mp3'],

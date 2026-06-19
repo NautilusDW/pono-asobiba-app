@@ -2646,7 +2646,7 @@ const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
 const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
 // idx2 (basic_tut_03) is the FULL untrimmed line 「やってみよう。ピースを持って、青い場所へ
 // 離してね」 (~6.52s); fallback = ceil(6.52s) + ~850ms tail = 7370ms.
-const BASIC_TUT_FALLBACK_MS = [8900, 5100, 7370, 6300, 4070, 6480, 3070, 2640, 6880, 5080, 7240, 5140];
+const BASIC_TUT_FALLBACK_MS = [8900, 5100, 7370, 6300, 4070, 6480, 3070, 2640, 7170, 4930, 5930, 8090, 5990];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -4430,7 +4430,7 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
   setBasicPracticeModeBanner('demo', 'おてほんをみてね');
-  // index 8 = hint intro (09 "次はヒントだよ。ヒントを押すと場所が光るよ").
+  // index 8 = hint SELECT (basic_tut_09 "次はヒントだよ。場所を知りたいピースを、まず選んでね").
   setPartnerPracticeCoachCopy(
     'つぎは ヒントだよ',
     'ばしょを しりたい ピースを えらんでね',
@@ -4468,8 +4468,8 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
         clearPracticeHighlights();
         partnerPracticeState.phase = 'basic-hint-demo-place';
         partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
-        // index 9 = hint glow (10 "光った場所へピースを持っていくよ"). Plays when
-        // the glow appears in the demo.
+        // index 10 = hint glow (basic_tut_11 "光った場所へピースを持っていくよ"). Plays
+        // when the glow appears in the demo.
         setPartnerPracticeCoachCopy(
           'ひかった ばしょへ もっていくよ',
           '',
@@ -4477,7 +4477,7 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
         );
         setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
         showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
-        playBasicPracticeVoice(9);
+        playBasicPracticeVoice(10);
         runBasicDragHandDemo(piece, from, to, function () {
           if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-place') return;
           placePieceForPractice(piece, from.x, from.y, from.rotation || 0);
@@ -4780,14 +4780,17 @@ function onBasicHintSelectPracticePointerDown(piece) {
   setPartnerPracticeInput(true);
   clearPracticeHighlights();
   practiceAddHighlight(btnHint);
+  // index 9 = hint PRESS (basic_tut_10 "ヒントを押すと、その場所が光るよ"). Plays after
+  // the child selects the piece, prompting them to press the ヒント button.
   setPartnerPracticeCoachCopy(
-    'つぎは 「ヒント」',
-    '「ヒント」を おしてみよう',
+    'ヒントを おしてみよう',
+    'おすと ばしょが ひかるよ',
     ''
   );
   setPartnerPracticeCoachBubble(btnHint, null, false);
   refreshHintButtonState();
   redraw();
+  playBasicPracticeVoice(9);
   return true;
 }
 
@@ -5199,13 +5202,13 @@ function onPartnerPracticePieceSelected(piece) {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-demo') return;
     partnerPracticeState.phase = 'hint-press';
     setPartnerPracticeInput(true);
-    // index 9 = hint glow (10 "光った場所へピースを持っていくよ").
+    // index 10 = hint glow (basic_tut_11 "光った場所へピースを持っていくよ").
     setPartnerPracticeCoachCopy(
       'ひかった ばしょへ もっていくよ',
       '',
       ''
     );
-    playBasicPracticeVoice(9, function () {
+    playBasicPracticeVoice(10, function () {
       if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
       partnerPracticeState.hintPressReady = true;
       refreshHintButtonState();
@@ -5275,16 +5278,16 @@ function showBasicHintDoneNarration() {
   partnerPracticeState.basicDoneFinishScheduled = false;
   partnerPracticeState.basicClosingVoicePlayed = false;
   showPartnerPracticeCoach();
-  // index 10 = finish (11 "できたね。わからない時は見るとヒントを使ってね").
+  // index 11 = finish (basic_tut_12 "できたね。わからない時は見るとヒントを使ってね").
   setPartnerPracticeCoachCopy(
     'ひかったね',
     'ばしょが わからないときは ヒントを つかってね',
     ''
   );
-  playBasicPracticeVoice(10, function () {
+  playBasicPracticeVoice(11, function () {
     if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
-    // idx10 ("できたね。…") finished. Before transitioning to Stage 1, play the
-    // closing line idx11 ("これで練習はおしまい。さあ、パズルで遊ぼう。"). Only when
+    // idx11 ("できたね。…") finished. Before transitioning to Stage 1, play the
+    // closing line idx12 ("これで練習はおしまい。さあ、パズルで遊ぼう。"). Only when
     // that closing voice finishes do we mark basicDoneVoiceDone so the Stage-1
     // transition (maybeFinishBasicPracticeAfterSnap → finishPartnerPractice)
     // happens AFTER the child hears the closing line.
@@ -5299,7 +5302,7 @@ function showBasicHintDoneNarration() {
       'さあ、パズルで あそぼう',
       ''
     );
-    playBasicPracticeVoice(11, function () {
+    playBasicPracticeVoice(12, function () {
       if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
       partnerPracticeState.basicDoneVoiceDone = true;
       maybeFinishBasicPracticeAfterSnap();
@@ -5399,8 +5402,8 @@ function onPartnerPracticeHintUsed() {
     'ばしょが わからないときは ヒントを つかってね',
     ''
   );
-  // index 10 = finish clip (11).
-  playBasicPracticeVoice(10);
+  // index 11 = finish clip (basic_tut_12 "できたね。…").
+  playBasicPracticeVoice(11);
   setPartnerPracticeCoachBubble(btnHint, null, false);
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
