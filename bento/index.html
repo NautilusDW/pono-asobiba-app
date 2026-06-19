@@ -12976,6 +12976,7 @@ function showTutorial() {
     bubble.classList.add('hidden');
     var skIntro = document.getElementById('sk-intro');
     skIntro.classList.remove('hidden');
+    startSkIntroGuide();
   });
 }
 
@@ -13472,6 +13473,7 @@ function tutorialShowGroupIntroThen(nextStep) {
   tutorialClearOutlines();
   tutorialHidePonoCallout();
   intro.classList.remove('hidden');
+  startSkIntroGuide();
   const resume = () => {
     window.__bentoSkIntroShownThisRun = true;
     if (!tutorialState.active || tutorialState.step !== 'greet') return;
