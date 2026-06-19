@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-19 - [batch:676-oto-rhythm-hands-on-tutorial] FOLLOWUP10 DONE - Codex: user follow-up「かんたん選択後にかえるのうたを選ぼうとしたら選べなかった」を修正。原因は FOLLOWUP9 の「ナレーション完了まで進めない」ガードで、音声中の早いタップを無視していたこと。`oto/index.html` に `queuedNarrationAdvance` を追加し、`advanceOn` / bubble tap / next button は音声中に押された場合、入力を予約して ended/error/play reject 後に進めるよう変更。`advanceOn` は capture listener で通常クリック処理の曲リスト再描画前に拾う。検証: Oto inline script parse、`git diff --check -- oto/index.html`、Playwright local + mock Audio で「かんたん」早押し→音声終了後 step1、「かえるのうた」早押し→音声終了後 step2、pageerror 0。コードは auto-commit `92dd063` に含まれ `origin/develop-app` 反映済み。`develop` sync not done. (by Codex)
 - 2026-06-19 - [batch:697-sticker-album-thickness-image2-raw] Codex: user 指示「失敗してもいいから、できるまで頑張って生成」を受領。built-in image_gen でシールアルバム下端厚み専用 raw 素材を生成する。Canvas/CSS疑似厚みや既存破綻素材は使わず、生成 raw は `tmp/alpha_pending/697-sticker-album-thickness/` へ納品予定。alpha 抜き/crop はしない。別件 `.claude/scheduled_tasks.lock` 差分は触らない。 (by Codex)
 - 2026-06-19 - [batch:697-sticker-album-thickness-image2-raw] DONE - Codex: built-in image_gen で raw 11枚を生成し、`tmp/alpha_pending/697-sticker-album-thickness/sb3d_album_thickness_raw_attempt_01.png`〜`_11.png` に保存。ユーザー指摘「角度が全然違う」を受けて後半は高い top-down / 既存アルバム角度寄せへ再生成。推奨は `attempt_11`（角度・中央背・厚みのまとまりが最良）、下端だけ切り出す候補は `attempt_08`。alpha 抜き/crop は未実施。既存 app は v697 の厚み非表示のまま、組み込みは後続。 (by Codex)
 - 2026-06-19 - [batch:697-sticker-album-thickness-image2-raw] FOLLOWUP2 - Codex: user 指摘「図鑑にしては薄すぎる / 硬い質感 / 上質な紙でシワや折り目は少ない / 参照画像の見開き角度を使う」を受領。添付スクショは角度・外形参照のみとして、厚めの図鑑/硬いコート紙ブロック raw を追加生成する。alpha 抜き/crop はしない。 (by Codex)
