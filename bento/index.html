@@ -2087,7 +2087,7 @@ html, body {
   left: 0;
   top: 0;
   z-index: 90;
-  /* v1368: ドラッグ ghost のサイズを配置後サイズと一致させるため CSS var 経由で JS から指定。
+  /* v1370: ドラッグ ghost のサイズを配置後サイズと一致させるため CSS var 経由で JS から指定。
      デフォルトは旧来値 (94px / 86px) で後方互換。 */
   width: var(--free-drag-ghost-size, 94px);
   height: var(--free-drag-ghost-size, 94px);
@@ -2101,7 +2101,7 @@ html, body {
   box-shadow: none;
 }
 .free-drag-ghost .free-palette-visual {
-  /* v1368: visual も同じく var 経由。 0.92 倍は旧来の 86/94 比率を維持。 */
+  /* v1370: visual も同じく var 経由。 0.92 倍は旧来の 86/94 比率を維持。 */
   width: calc(var(--free-drag-ghost-size, 94px) * 0.92);
   height: calc(var(--free-drag-ghost-size, 94px) * 0.92);
   filter: drop-shadow(0 10px 14px rgba(93, 78, 55, 0.24));
@@ -9581,7 +9581,7 @@ function createFreePaletteDragGhost(def, e) {
     ghost.classList.add('nori-drag-ghost');
     ghost.style.setProperty('--free-drag-ghost-size', `${ghostSize}px`);
   } else {
-    // v1368: ドラッグ ghost のサイズを「お弁当に配置されたときの実寸」に揃える。
+    // v1370: ドラッグ ghost のサイズを「お弁当に配置されたときの実寸」に揃える。
     // 配置後の placed item は width = (item.size / FREE_LAYOUT_W) * stageWidthPx (toPctSize 経由) で描画されるため、
     // 同じ係数で ghost の px サイズを計算する。 stage が見つからない場合はデフォルト 94px にフォールバック。
     const stage = document.getElementById('free-layout-stage')
@@ -11835,7 +11835,7 @@ function renderFreeLayoutControls() {
 
   if (guidePanel && freeGuideStep === 'box') tray.appendChild(guidePanel);
 
-  // v1368: palette 再構築 (tray.innerHTML = '') で消えるチュートリアル lock を確実に復元する。
+  // v1370: palette 再構築 (tray.innerHTML = '') で消えるチュートリアル lock を確実に復元する。
   // タブ切替→food タブ再表示で small-cup-food / box の lock が落ちるリグレッションを防ぐフェイルセーフ。
   try {
     if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
@@ -14074,7 +14074,7 @@ function tutorialClearBoxLock() {
     }
   });
 }
-// v1368: small-cup-food step 中はパレットから「プチトマト」以外をロック (box step の方式に揃える)
+// v1370: small-cup-food step 中はパレットから「プチトマト」以外をロック (box step の方式に揃える)
 function tutorialApplySmallCupFoodLock() {
   if (tutorialState.step !== 'small-cup-food') return;
   // food タブ以外では適用しない (renderer が freeLayoutTab='food' に正規化済みの想定)
@@ -15018,7 +15018,7 @@ function tutorialRenderStep() {
       note: 'サイズ 1 → OK',
     });
     tutorialHideBubble();
-    // v1368: ①ボタン と OK ボタン の両方を同時に青枠でマーク (box step の 2要素同時マークと同じ方式)
+    // v1370: ①ボタン と OK ボタン の両方を同時に青枠でマーク (box step の 2要素同時マークと同じ方式)
     let markedCupTryTarget = false;
     if (sizeOneBtn) {
       tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
@@ -15031,8 +15031,8 @@ function tutorialRenderStep() {
       tutorialMarkTarget(okBtn, { radius: 16, outline: false });
       markedCupTryTarget = true;
     }
-    // v1368: okBtn が無い + sizeOneBtn 有り の組み合わせでも toolbar fallback を確実に走らせる
-    // (旧コード else if だと markedCupTryTarget=true で toolbar が拾われない後退があった)
+    // v1370: sizeOneBtn / sizeControl / okBtn いずれも無いときの toolbar fallback。
+    // else if を分離して挙動を明示化 (直前コミットは else if が markedCupTryTarget=true で toolbar をスキップする副作用を残していた)。
     if (!markedCupTryTarget && toolbar) {
       tutorialMarkTarget(toolbar, { radius: 14, outline: false });
       markedCupTryTarget = true;
@@ -15084,7 +15084,7 @@ function tutorialRenderStep() {
       note: 'みどりを カップへ',
     });
     tutorialShowBubble('プチトマトを<br>カップに いれよう', { topVh: '54', side: 'left' });
-    // v1368: パレットから「プチトマト」以外をロック (誤タップ/誤ドラッグ抑止)
+    // v1370: パレットから「プチトマト」以外をロック (誤タップ/誤ドラッグ抑止)
     tutorialApplySmallCupFoodLock();
     if (firstRender) {
       const smallFood = tutorialFindCupFoodPaletteEl();
@@ -15413,7 +15413,7 @@ function tutorialOnItemPlaced(item) {
       renderFreeLayoutStage();
       renderFreeLayoutControls();
     }
-    // v1368: パレットロック解除 (step 退出時に必ず解除)
+    // v1370: パレットロック解除 (step 退出時に必ず解除)
     tutorialClearSmallCupFoodLock();
     tutorialAdvance('small-next');
     return;
