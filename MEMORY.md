@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T12:42:23Z - LP hero washi labels concentrated around CTA (left/right side bars, x 25-75% center column fully cleared) + free copy changed to むりょうで あそべるよ！; bg_soft_playmat.webp/@2x rebuilt; CACHE_VERSION bumped to 1363 (1362 was already taken)
+- **タスク**: LP hero washi labels concentrated around CTA (left/right side bars, x 25-75% center column fully cleared) + free copy changed to むりょうで あそべるよ！; bg_soft_playmat.webp/@2x rebuilt; CACHE_VERSION bumped to 1363 (1362 was already taken)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 242
+- **エラー数**: 13
+- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 48, "Workflow": 11, "Read": 37, "ToolSearch": 2, "DesignSync": 17, "Bash": 102, "Grep": 3, "Write": 6, "ScheduleWakeup": 14, "Skill": 1, "Glob": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-19T09:58:29Z - capture target を bento/puzzle で document.body 化、 sw v1354 へバンプ
 - **タスク**: capture target を bento/puzzle で document.body 化、 sw v1354 へバンプ
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 22, "Workflow": 5, "Read": 27, "ToolSearch": 2, "DesignSync": 17, "Bash": 45, "Grep": 2, "Write": 6, "ScheduleWakeup": 1, "Skill": 1, "Glob": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T06:17:22Z - Puzzle basic tutorial: add missing hint-press narration (idx9) to hint DEMO at button step (voice-then-demonstrate), sw 1335->1336, scripts ->v1321
-- **タスク**: Puzzle basic tutorial: add missing hint-press narration (idx9) to hint DEMO at button step (voice-then-demonstrate), sw 1335->1336, scripts ->v1321
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 106
-- **エラー数**: 17
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 20, "Bash": 47, "Workflow": 14, "Edit": 11, "Write": 3, "Agent": 8, "Grep": 3}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
