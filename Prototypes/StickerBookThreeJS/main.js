@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-711";
+const ASSET_VERSION = "20260620-712";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -206,6 +206,11 @@ const COLLECTION_PAGE_SPINE_DIP = PAGE_H * 0.009;
 const COLLECTION_FOLD_W = SPINE_W * 0.68;
 const COLLECTION_FOLD_DEPTH = PAGE_H * 0.02;
 const COLLECTION_FOLD_Z = 0.026;
+const COLLECTION_STACK_SEGMENTS_X = 32;
+const COLLECTION_STACK_SEGMENTS_Y = 10;
+const COLLECTION_STACK_SPINE_DROP = PAGE_H * 0.008;
+const COLLECTION_STACK_SPINE_DEPTH = PAGE_H * 0.009;
+const COLLECTION_STACK_BOTTOM_WAVE = PAGE_H * 0.0024;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -3572,21 +3577,81 @@ function createPageStacks() {
 
 function createStackSide(side) {
   const group = new THREE.Group();
+  const material = new THREE.MeshBasicMaterial({
+    map: getTexture(thicknessFileFor(side, "half")),
+    transparent: true,
+    opacity: 1,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(PAGE_W, THICKNESS_TEXTURE_H),
-    new THREE.MeshBasicMaterial({
-      map: getTexture(thicknessFileFor(side, "half")),
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-    }),
+    material,
   );
   plane.position.z = -0.034;
   plane.renderOrder = 4;
   group.add(plane);
 
-  return { side, group, plane, level: null, book: null };
+  const collectionMesh = new THREE.Mesh(
+    createCollectionStackSideGeometry(side),
+    material.clone(),
+  );
+  collectionMesh.visible = false;
+  collectionMesh.position.z = -0.034;
+  collectionMesh.renderOrder = 4;
+  group.add(collectionMesh);
+
+  return { side, group, plane, collectionMesh, level: null, book: null };
+}
+
+function createCollectionStackSideGeometry(side) {
+  const xSegments = Math.max(24, COLLECTION_STACK_SEGMENTS_X);
+  const ySegments = Math.max(8, COLLECTION_STACK_SEGMENTS_Y);
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let yIndex = 0; yIndex <= ySegments; yIndex += 1) {
+    const v = yIndex / ySegments;
+    const localY = -THICKNESS_TEXTURE_H / 2 + v * THICKNESS_TEXTURE_H;
+    const bottomWeight = (1 - v) ** 3.2;
+    const spineVerticalDrop = 0.2 + 0.8 * (1 - v) ** 0.7;
+    const depthVerticalCurve = 0.32 + 0.68 * Math.sin(v * Math.PI);
+
+    for (let xIndex = 0; xIndex <= xSegments; xIndex += 1) {
+      const u = xIndex / xSegments;
+      const localX = -PAGE_W / 2 + u * PAGE_W;
+      const spineProximity = side === "left" ? u : 1 - u;
+      const spineEase = smootherstep(spineProximity);
+      const subtleEdgeWave =
+        Math.sin(u * Math.PI * 2.15 + (side === "left" ? 0.35 : 1.05)) +
+        Math.sin(u * Math.PI * 4.4 + (side === "left" ? 1.7 : 0.5)) * 0.38;
+      const ribbonBow = Math.sin(u * Math.PI) * Math.sin(v * Math.PI) * PAGE_H * 0.0018;
+      const yDrop = COLLECTION_STACK_SPINE_DROP * spineEase * spineVerticalDrop;
+      const zSink = COLLECTION_STACK_SPINE_DEPTH * spineEase * depthVerticalCurve;
+      const yWave = COLLECTION_STACK_BOTTOM_WAVE * subtleEdgeWave * bottomWeight;
+
+      positions.push(localX, localY - yDrop + yWave, ribbonBow - zSink);
+      uvs.push(u, v);
+    }
+  }
+
+  for (let yIndex = 0; yIndex < ySegments; yIndex += 1) {
+    for (let xIndex = 0; xIndex < xSegments; xIndex += 1) {
+      const a = yIndex * (xSegments + 1) + xIndex;
+      const b = a + 1;
+      const c = a + (xSegments + 1);
+      const d = c + 1;
+      indices.push(a, c, b, b, c, d);
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function createCoverThicknessLayer() {
@@ -3790,31 +3855,33 @@ function thicknessFileFor(side, level) {
 
 function positionStackSide(stack, level, tuning) {
   if (stack.level !== level || stack.book !== activeBook) {
-    assignTexture(stack.plane, thicknessFileFor(stack.side, level));
+    const textureFile = thicknessFileFor(stack.side, level);
+    assignTexture(stack.plane, textureFile);
+    assignTexture(stack.collectionMesh, textureFile);
     stack.level = level;
     stack.book = activeBook;
   }
 
-  stack.plane.visible = level !== "empty";
+  const isCollection = activeAlbumMode === "collection";
+  stack.plane.visible = !isCollection && level !== "empty";
+  stack.collectionMesh.visible = isCollection && level !== "empty";
   const tunePrefix = stack.side === "left" ? "stackLeft" : "stackRight";
-  stack.plane.scale.set(
-    tuning[`${tunePrefix}ScaleX`],
-    tuning[`${tunePrefix}ScaleY`],
-    1,
-  );
+  const scaleX = tuning[`${tunePrefix}ScaleX`];
+  const scaleY = tuning[`${tunePrefix}ScaleY`];
+  stack.plane.scale.set(scaleX, scaleY, 1);
+  stack.collectionMesh.scale.set(scaleX, scaleY, 1);
 
   const isLeft = stack.side === "left";
   const gap = currentBookGap();
   const pageLeft = isLeft ? -PAGE_W - gap / 2 : gap / 2;
   const pageRight = isLeft ? -gap / 2 : PAGE_W + gap / 2;
   const pageCenter = (pageLeft + pageRight) / 2;
-  const scaledTextureH = THICKNESS_TEXTURE_H * tuning[`${tunePrefix}ScaleY`];
+  const scaledTextureH = THICKNESS_TEXTURE_H * scaleY;
   const topY = -PAGE_H / 2 + THICKNESS_OVERLAP + tuning[`${tunePrefix}Y`];
-  stack.plane.position.set(
-    pageCenter + tuning[`${tunePrefix}X`],
-    topY - scaledTextureH / 2,
-    -0.034,
-  );
+  const x = pageCenter + tuning[`${tunePrefix}X`];
+  const y = topY - scaledTextureH / 2;
+  stack.plane.position.set(x, y, -0.034);
+  stack.collectionMesh.position.set(x, y, -0.034);
 }
 
 function hideStackThickness() {
