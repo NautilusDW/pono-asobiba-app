@@ -824,7 +824,7 @@ tr:hover { background: #FFFAF0; }
     </label>
     <label style="display:grid;gap:4px;font-size:0.78rem;font-weight:800;color:#8B7355;margin-bottom:12px;">
       Sample Context
-      <textarea id="puzzle-tts-context" rows="3" style="padding:8px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;line-height:1.6;">Japanese narration for a young children's puzzle tutorial. Use a gentle female storyteller voice, close to the opening narration. Warm, soft, clear, and reassuring. Speak slowly with short natural pauses. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce 「見る」 and 「ヒント」 clearly as button names.</textarea>
+      <textarea id="puzzle-tts-context" rows="3" style="padding:8px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.82rem;line-height:1.6;">Japanese narration for a young children's puzzle tutorial. Default tone is 明るく・落ち着き: bright, calm, clear, warm, and reassuring. Speak slowly with short natural pauses so children have time to act. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce 「見る」 and 「ヒント」 clearly as button names.</textarea>
     </label>
 
     <div style="display:grid;grid-template-columns:minmax(180px,1fr) minmax(220px,1.4fr);gap:10px;margin-bottom:10px;">
@@ -970,15 +970,17 @@ tr:hover { background: #FFFAF0; }
       <button id="tts-vv-health-btn" type="button" style="display:none;padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;background:#FFF;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">🔄 VOICEVOX 確認</button>
       <label style="font-size:0.78rem;font-weight:700;color:#8B7355;">語り口</label>
       <select id="tts-style-sel" style="padding:5px 10px;border-radius:8px;border:1px solid #E0D8CC;font-family:inherit;font-size:0.78rem;font-weight:700;max-width:260px;">
+        <optgroup label="── 標準 ──">
+          <option value="[cheerfully but calmly]">☀️ 明るく・おちつき（標準）</option>
+        </optgroup>
         <optgroup label="── やさしく系 ──">
-          <option value="[gently]">🌸 やさしく（標準）</option>
+          <option value="[gently]">🌸 やさしく</option>
           <option value="[gently at a moderate pace]">🌸 やさしく・ふつうテンポ</option>
           <option value="[slowly and warmly]">🌸 ゆっくり・あたたかく</option>
           <option value="[softly and calmly]">🌸 しずかに・おちつき</option>
         </optgroup>
         <optgroup label="── 明るく系 ──">
           <option value="[cheerfully]">☀️ 明るく（標準）</option>
-          <option value="[cheerfully but calmly]">☀️ 明るく・おちつき</option>
           <option value="[cheerfully at a moderate pace]">☀️ 明るく・ふつうテンポ</option>
         </optgroup>
         <optgroup label="── わくわく系 ──">
@@ -1728,24 +1730,24 @@ var PUZZLE_TTS_PRESETS = [
     scene: 'A gentle female guide teaches a preschool bento-making tutorial in a warm kitchen playroom with Pono helping beside the lunchbox.',
     context: 'Japanese narration for a young children\'s bento tutorial. Default tone is 明るく・落ち着き: bright, calm, clear, warm, and reassuring. Speak slowly with short natural pauses so children can follow each touch or drag. Keep the tone friendly and playful, but not overly excited. No music, no sound effects, no background noise. Pronounce food names like 「のり」, 「おかず」, 「みずたまカップ」, and 「プチトマト」 clearly.',
     rows: [
-      { id: 'basic_tut_01', file: 'basic_tut_01.mp3', text: 'まずは、おべんとうばこを えらぼう。' },
-      { id: 'basic_tut_02', file: 'basic_tut_02.mp3', text: 'ごはんを つかんで、ひだりがわに のせよう。' },
-      { id: 'basic_tut_03', file: 'basic_tut_03.mp3', text: 'のりを ごはんの うえに のせよう。' },
-      { id: 'basic_tut_04', file: 'basic_tut_04.mp3', text: 'のりは いくつか かざれるよ。できたら、のりOKを おそう。' },
-      { id: 'basic_tut_05', file: 'basic_tut_05.mp3', text: 'まずは、おおきい おかずを ひとつ いれてみよう。' },
-      { id: 'basic_tut_06', file: 'basic_tut_06.mp3', text: 'もうひとつ おかずを、まるの ところに かさねよう。' },
-      { id: 'basic_tut_07', file: 'basic_tut_07.mp3', text: 'かさなっている じゅんばんを かえてみよう。したの やじるしの ボタンを おしてね。' },
-      { id: 'basic_tut_08', file: 'basic_tut_08.mp3', text: 'ウインナーを えらんで、あいている ところに うごかそう。' },
-      { id: 'basic_tut_09', file: 'basic_tut_09.mp3', text: 'みずたまカップを つかんで、おべんとうばこに いれよう。' },
-      { id: 'basic_tut_10', file: 'basic_tut_10.mp3', text: 'カップの サイズを えらべるよ。3が いちばん おおきいよ。やじるしで まえうしろも かえられるよ。' },
-      { id: 'basic_tut_11', file: 'basic_tut_11.mp3', text: 'きまったら、OKを おしてね。' },
-      { id: 'basic_tut_12', file: 'basic_tut_12.mp3', text: 'カップには ちいさい おかずだけ いれられるよ。プチトマトを カップに いれよう。' },
-      { id: 'basic_tut_13', file: 'basic_tut_13.mp3', text: 'いれたら、おかずOKを おそう。' },
-      { id: 'basic_tut_14', file: 'basic_tut_14.mp3', text: 'これで おべんとうが かんせいしたよ。' },
-      { id: 'basic_tut_15', file: 'basic_tut_15.mp3', text: 'きにいった おべんとうは、おきにいりに いれると とっておけるよ。' },
-      { id: 'basic_tut_16', file: 'basic_tut_16.mp3', text: 'ともだちが よろこぶ おべんとうを たくさん つくってあげよう。' },
-      { id: 'basic_tut_17', file: 'basic_tut_17.mp3', text: 'くわしい けっかを おすと、いろんな じょうほうが みられるよ。よく みて、つぎの さんこうに しよう。' },
-      { id: 'basic_tut_18', file: 'basic_tut_18.mp3', text: 'うまくいったら ステッカーが もらえるよ。たくさん あつめよう。' }
+      { id: 'bento_tut_01', file: 'basic_tut_01.mp3', text: 'まずは、おべんとうばこを えらぼう。' },
+      { id: 'bento_tut_02', file: 'basic_tut_02.mp3', text: 'ごはんを つかんで、ひだりがわに のせよう。' },
+      { id: 'bento_tut_03', file: 'basic_tut_03.mp3', text: 'のりを ごはんの うえに のせよう。' },
+      { id: 'bento_tut_04', file: 'basic_tut_04.mp3', text: 'のりは いくつか かざれるよ。できたら、のりOKを おそう。' },
+      { id: 'bento_tut_05', file: 'basic_tut_05.mp3', text: 'まずは、おおきい おかずを ひとつ いれてみよう。' },
+      { id: 'bento_tut_06', file: 'basic_tut_06.mp3', text: 'もうひとつ おかずを、まるの ところに かさねよう。' },
+      { id: 'bento_tut_07', file: 'basic_tut_07.mp3', text: 'かさなっている じゅんばんを かえてみよう。したの やじるしの ボタンを おしてね。' },
+      { id: 'bento_tut_08', file: 'basic_tut_08.mp3', text: 'ウインナーを えらんで、あいている ところに うごかそう。' },
+      { id: 'bento_tut_09', file: 'basic_tut_09.mp3', text: 'みずたまカップを つかんで、おべんとうばこに いれよう。' },
+      { id: 'bento_tut_10', file: 'basic_tut_10.mp3', text: 'カップの サイズを えらべるよ。3が いちばん おおきいよ。やじるしで まえうしろも かえられるよ。' },
+      { id: 'bento_tut_11', file: 'basic_tut_11.mp3', text: 'きまったら、OKを おしてね。' },
+      { id: 'bento_tut_12', file: 'basic_tut_12.mp3', text: 'カップには ちいさい おかずだけ いれられるよ。プチトマトを カップに いれよう。' },
+      { id: 'bento_tut_13', file: 'basic_tut_13.mp3', text: 'いれたら、おかずOKを おそう。' },
+      { id: 'bento_tut_14', file: 'basic_tut_14.mp3', text: 'これで おべんとうが かんせいしたよ。' },
+      { id: 'bento_tut_15', file: 'basic_tut_15.mp3', text: 'きにいった おべんとうは、おきにいりに いれると とっておけるよ。' },
+      { id: 'bento_tut_16', file: 'basic_tut_16.mp3', text: 'ともだちが よろこぶ おべんとうを たくさん つくってあげよう。' },
+      { id: 'bento_tut_17', file: 'basic_tut_17.mp3', text: 'くわしい けっかを おすと、いろんな じょうほうが みられるよ。よく みて、つぎの さんこうに しよう。' },
+      { id: 'bento_tut_18', file: 'basic_tut_18.mp3', text: 'うまくいったら ステッカーが もらえるよ。たくさん あつめよう。' }
     ]
   },
   {
@@ -1757,6 +1759,7 @@ var PUZZLE_TTS_PRESETS = [
     scene: 'A gentle female guide teaches a preschool rhythm game on a dark but cheerful arcade stage.',
     context: 'Japanese narration for OtoTouch rhythm mode. Use a bright, calm, clear voice for young children (明るく・落ち着き). Speak slowly with short pauses so children have time to read and act. Keep the tone cheerful but settled. No music, no sound effects, no background noise. Pronounce note names like 「ファ」 clearly.',
     rows: [
+      { id: 'oto_rhythm_tut_00_intro', file: 'oto_rhythm_tut_00_intro.mp3', text: 'これから あそびかたを せつめいするよ。' },
       { id: 'oto_rhythm_tut_01_difficulty', file: 'oto_rhythm_tut_01_difficulty.mp3', text: 'ここで むずかしさを えらべるよ。さいしょは、かんたんを おしてね。' },
       { id: 'oto_rhythm_tut_02_song', file: 'oto_rhythm_tut_02_song.mp3', text: 'まずは、かえるのうたから はじめよう。かえるのうたの ボタンを おしてね。' },
       { id: 'oto_rhythm_tut_03_next', file: 'oto_rhythm_tut_03_next.mp3', text: 'えらべたね。つぎへを おして、あそびかたを えらぼう。' },
@@ -2114,7 +2117,7 @@ function puzzleTtsApplyState(state, options) {
     puzzleTtsSetCurrentPresetId(state.presetId);
   }
   puzzleTtsSetControlValue('puzzle-tts-voice', state.voice || 'Aoede');
-  puzzleTtsSetControlValue('puzzle-tts-style', state.style || '[gently]');
+  puzzleTtsSetControlValue('puzzle-tts-style', state.style || PUZZLE_TTS_DEFAULT_STYLE);
   puzzleTtsSetControlValue('puzzle-tts-model', state.model || 'gemini-3.1-flash-tts-preview');
   puzzleTtsSetControlValue('puzzle-tts-scene', state.scene || '');
   puzzleTtsSetControlValue('puzzle-tts-context', state.context || '');
@@ -2239,7 +2242,7 @@ function puzzleTtsLoadDraft() {
 function puzzleTtsBuildPromptText(text) {
   var scene = (document.getElementById('puzzle-tts-scene') || {}).value || '';
   var context = (document.getElementById('puzzle-tts-context') || {}).value || '';
-  var style = (document.getElementById('puzzle-tts-style') || {}).value || '[gently]';
+  var style = (document.getElementById('puzzle-tts-style') || {}).value || PUZZLE_TTS_DEFAULT_STYLE;
   return [
     style,
     'You are generating audio only. Do not speak these instructions.',
@@ -2690,7 +2693,7 @@ function puzzleTtsGenerateOne(id) {
     return Promise.reject(new Error('text required'));
   }
   var voice = (document.getElementById('puzzle-tts-voice') || {}).value || 'Aoede';
-  var stylePrompt = (document.getElementById('puzzle-tts-style') || {}).value || '[gently]';
+  var stylePrompt = (document.getElementById('puzzle-tts-style') || {}).value || PUZZLE_TTS_DEFAULT_STYLE;
   var model = ((document.getElementById('puzzle-tts-model') || {}).value || '').trim();
   puzzleTtsRowStatus(id, '生成中...');
   puzzleTtsStatus(line.file + ' を生成中...');
@@ -3451,7 +3454,7 @@ function showIllustDraftList() {
 // 🔊 音声ナレーション (Gemini 3.1 Flash TTS) — 管理ツール統合
 // ════════════════════════════════════════════════════════════════
 var TTS_DEFAULT_VOICE   = 'Leda';
-var TTS_DEFAULT_STYLE   = '[gently]';
+var TTS_DEFAULT_STYLE   = '[cheerfully but calmly]';
 var TTS_ALLOWED_MODELS  = ['gemini-3.1-flash-tts-preview'];
 var TTS_MODEL           = TTS_ALLOWED_MODELS[0];
 var TTS_DEFAULT_ENGINE  = 'gemini'; // 'gemini' | 'chirp3' | 'voicevox'

@@ -16,6 +16,7 @@
 <script src="../common/first-clear.js"></script>
 <script src="../js/game-stickers.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/capture.js" defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -11735,6 +11736,7 @@ var OTO_TUTORIAL_KEYS = {
   freeStage: 'pono_oto_free_stage_tut_seen_v4'
 };
 var OTO_RHYTHM_TUTORIAL_VOICE = {
+  intro: 'これから あそびかたを せつめいするよ。',
   songIntro: 'ここで むずかしさを えらべるよ。さいしょは、かんたんを おしてね。',
   stageUnlock: 'さいしょに あそべる きょくは すこしだけ。ライバルに かつと、つぎの きょくや ステージが ふえていくよ。',
   song: 'まずは、かえるのうたから はじめよう。かえるのうたの ボタンを おしてね。',
@@ -11749,8 +11751,9 @@ var OTO_RHYTHM_TUTORIAL_VOICE = {
   advice: 'もっと れんしゅうしたいときは、じゆうモードで あそべるよ。おてほんを みてから はじめると わかりやすいよ。',
   start: 'かえるのうたで あそぼう。はじめるを おしてね。'
 };
-var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1343';
+var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1347';
 var OTO_RHYTHM_TUTORIAL_AUDIO = {
+  intro: '../assets/audio/oto/tutorial/oto_rhythm_tut_00_intro.mp3',
   songIntro: '../assets/audio/oto/tutorial/oto_rhythm_tut_01_difficulty.mp3',
   song: '../assets/audio/oto/tutorial/oto_rhythm_tut_02_song.mp3',
   next: '../assets/audio/oto/tutorial/oto_rhythm_tut_03_next.mp3',
@@ -12374,6 +12377,23 @@ function _currentOtoTutorialKind() {
 function _makeOtoTutorialSteps(kind) {
   if (kind === 'rhythmMenu') {
     return [
+      {
+        badge: 'はじめるよ',
+        msg: 'これから あそびかたを<br>せつめいするよ',
+        voice: OTO_RHYTHM_TUTORIAL_VOICE.intro,
+        anchor: null,
+        side: 'stageTop',
+        noDim: true,
+        hideActions: true,
+        autoNextMs: 700,
+        before: function() {
+          _setRhythmMenuAwaitingDiffChoice(false);
+          _setRhythmMenuAwaitingSongChoice(true);
+          RHYTHM_CURRENT_DIFF = 'かんたん';
+          _selectRhythmSong('kaeru');
+          _prepareOtoRhythmMenuTutorial('song');
+        }
+      },
       {
         badge: 'きょく',
         msg: 'ここで むずかしさを えらべるよ<br>まずは かんたんを おしてね',
@@ -14096,6 +14116,37 @@ setTimeout(applyTierLockUI, 500);
 _loadSaved();
 _renderSavedList();
 _renderRecBar();
+</script>
+<script>
+(function() {
+  function regCapture() {
+    if (!window.PonoCapture) return;
+    window.PonoCapture.register({
+      gameId: "oto",
+      build: async function(opts) {
+        // oto は 3 canvas (bgCanvas + rhythm3d-road + rhythm3d-notes) + DOM の UI が
+        // 重なる構成なので、 #app コンテナ全体を html2canvas で 1 枚にラスタライズして合成する。
+        var container = document.getElementById('app') || document.body;
+        try {
+          var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
+          var html2canvas = mod && (mod.default || mod);
+          if (typeof html2canvas !== 'function') throw new Error('html2canvas not loadable');
+          return await html2canvas(container, {
+            backgroundColor: null,
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+        } catch (e) {
+          console.warn('[capture:oto] html2canvas import failed, falling back to bgCanvas only', e);
+          return document.getElementById('bgCanvas');
+        }
+      }
+    });
+  }
+  if (window.PonoCapture) regCapture();
+  else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
+})();
 </script>
 </body>
 </html>

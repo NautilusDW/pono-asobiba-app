@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="../common/menu.js"></script>
+<script src="../common/capture.js" defer></script>
 <script src="../js/game-stickers.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2412,6 +2413,21 @@
     resize();
     updateHud();
   });
+})();
+</script>
+<script>
+(function () {
+  function regCapture() {
+    if (!window.PonoCapture) return;
+    window.PonoCapture.register({
+      gameId: "starparodier",
+      build: function (opts) {
+        return document.getElementById("gameCanvas");
+      }
+    });
+  }
+  if (window.PonoCapture) regCapture();
+  else window.addEventListener("DOMContentLoaded", regCapture, { once: true });
 })();
 </script>
 </body>

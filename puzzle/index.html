@@ -17,6 +17,7 @@
   <script src="../common/first-clear.js"></script>
   <script src="../js/game-stickers.js"></script>
   <script src="../common/tier.js"></script>
+  <script src="../common/capture.js" defer></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -135,6 +136,34 @@
       setTimeout(updateLandscapeNotice, 500);
     });
     window.addEventListener('resize', updateLandscapeNotice);
+  </script>
+  <script>
+  (function() {
+    function regCapture() {
+      if (!window.PonoCapture) return;
+      window.PonoCapture.register({
+        gameId: "puzzle",
+        build: async function(opts) {
+          var container = document.querySelector("#puzzle-container");
+          if (!container) return null;
+          try {
+            var mod = await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm");
+            var html2canvas = (mod && (mod.default || mod)) || window.html2canvas;
+            if (typeof html2canvas !== "function") {
+              console.warn("[PonoCapture/puzzle] html2canvas not callable after import");
+              return null;
+            }
+            return await html2canvas(container, { backgroundColor: null, scale: 2, useCORS: true });
+          } catch (e) {
+            console.warn("[PonoCapture/puzzle] html2canvas import failed", e);
+            return null;
+          }
+        }
+      });
+    }
+    if (window.PonoCapture) regCapture();
+    else window.addEventListener("DOMContentLoaded", regCapture, { once: true });
+  })();
   </script>
 </body>
 </html>
