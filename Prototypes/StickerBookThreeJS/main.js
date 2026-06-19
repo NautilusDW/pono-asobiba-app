@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-691";
+const ASSET_VERSION = "20260619-692";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -21,10 +21,10 @@ const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
 const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
 const THICKNESS_DEFAULT_SCALE_Y = {
   empty: 0,
-  small: 0.28,
-  half: 0.5,
-  mostly: 0.68,
-  full: 0.86,
+  small: 0.8,
+  half: 0.9,
+  mostly: 0.97,
+  full: 1,
 };
 const STICKER_PLAN_URL = "./sticker_book_content_plan.json";
 const STICKER_ASSET_PREFIX = "../../";
@@ -167,7 +167,7 @@ document.body.classList.toggle("is-prototype-controls", prototypeControlsEnabled
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
-const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v7";
+const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v8";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v3";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
@@ -189,11 +189,11 @@ const PAGE_FLUTTER_BEND = 0.56;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
-  stackLeftY: 0.06,
+  stackLeftY: 0.62,
   stackLeftScaleX: 1,
   stackLeftScaleY: 1,
   stackRightX: 0,
-  stackRightY: 0.06,
+  stackRightY: 0.62,
   stackRightScaleX: 1,
   stackRightScaleY: 1,
 };
