@@ -1202,8 +1202,8 @@ tr:hover { background: #FFFAF0; }
         <div id="npc-pos-sliders" style="display:flex;flex-direction:column;gap:10px;"></div>
 
         <div id="npc-pos-mask-panel" style="display:none;margin-top:18px;padding:12px;border:2px dashed #C7894A;border-radius:10px;background:#FFF8E8;">
-          <div style="font-size:0.82rem;font-weight:900;color:#5D4E37;margin-bottom:4px;">カウンターマスク</div>
-          <div style="font-size:0.72rem;color:#8B7355;line-height:1.45;margin-bottom:10px;">
+          <div id="npc-pos-mask-title" style="font-size:0.82rem;font-weight:900;color:#5D4E37;margin-bottom:4px;">カウンターマスク</div>
+          <div id="npc-pos-mask-note" style="font-size:0.72rem;color:#8B7355;line-height:1.45;margin-bottom:10px;">
             店員キャラをカウンターの向こう側に見せるため、背景のカウンター前面だけを上から重ねます。
           </div>
           <div id="npc-pos-mask-sliders" style="display:flex;flex-direction:column;gap:10px;"></div>
@@ -12658,10 +12658,12 @@ var NPC_POS_HISTORY_MAX = 20;
 var NPC_POS_KV_ENDPOINT = '/api/admin/bento-npc-positions';
 var NPC_POS_PORTRAIT_BASE = '../assets/images/bento/npc/';
 var NPC_POS_STAFF_BASE = '../assets/images/bento/story/staff/';
-var NPC_POS_PORTRAIT_VERSION = '20260617-staff-wave-alt-v2';
+var NPC_POS_PORTRAIT_VERSION = '20260619-bento-staffboy-wave-customer-mask-v1';
 var NPC_POS_STAFF_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
+var NPC_POS_CUSTOMER_MASK_LS_KEY = 'bento_customer_counter_mask_v1';
 var NPC_POS_DEFAULT = { x: 58, y: 23, scale: 1, rotation: 0, opacity: 1 };
 var NPC_POS_STAFF_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
+var NPC_POS_CUSTOMER_MASK_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
 var NPC_POS_ANIMAL_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
 var NPC_POS_CHAR_CONFIGS = {
   risu:     { type: 'npc', name: 'りすちゃん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
@@ -12831,18 +12833,37 @@ function npcPosClampNumber(value, min, max, fallback) {
   if (!isFinite(num)) return fallback;
   return Math.max(min, Math.min(max, num));
 }
-function npcPosNormalizeStaffMask(raw) {
+function npcPosNormalizeCounterMask(raw, defaults) {
   var src = (raw && typeof raw === 'object') ? raw : {};
+  var fallback = defaults || NPC_POS_STAFF_MASK_DEFAULT;
   var mask = {
-    x: npcPosClampNumber(src.x, 0, 100, NPC_POS_STAFF_MASK_DEFAULT.x),
-    y: npcPosClampNumber(src.y, 0, 100, NPC_POS_STAFF_MASK_DEFAULT.y),
-    width: npcPosClampNumber(src.width, 1, 100, NPC_POS_STAFF_MASK_DEFAULT.width),
-    height: npcPosClampNumber(src.height, 1, 100, NPC_POS_STAFF_MASK_DEFAULT.height),
-    opacity: npcPosClampNumber(src.opacity, 0, 1, NPC_POS_STAFF_MASK_DEFAULT.opacity),
+    x: npcPosClampNumber(src.x, 0, 100, fallback.x),
+    y: npcPosClampNumber(src.y, 0, 100, fallback.y),
+    width: npcPosClampNumber(src.width, 1, 100, fallback.width),
+    height: npcPosClampNumber(src.height, 1, 100, fallback.height),
+    opacity: npcPosClampNumber(src.opacity, 0, 1, fallback.opacity),
   };
   if (mask.x + mask.width > 100) mask.width = Math.max(1, 100 - mask.x);
   if (mask.y + mask.height > 100) mask.height = Math.max(1, 100 - mask.y);
   return mask;
+}
+function npcPosNormalizeStaffMask(raw) {
+  return npcPosNormalizeCounterMask(raw, NPC_POS_STAFF_MASK_DEFAULT);
+}
+function npcPosNormalizeCustomerMask(raw) {
+  return npcPosNormalizeCounterMask(raw, NPC_POS_CUSTOMER_MASK_DEFAULT);
+}
+function npcPosCurrentMaskType() {
+  return npcPosGetConfig(_npcPosState.charId).type === 'staff' ? 'staff' : 'customer';
+}
+function npcPosCurrentMaskKey() {
+  return npcPosCurrentMaskType() === 'staff' ? NPC_POS_STAFF_MASK_LS_KEY : NPC_POS_CUSTOMER_MASK_LS_KEY;
+}
+function npcPosCurrentMaskDefault() {
+  return npcPosCurrentMaskType() === 'staff' ? NPC_POS_STAFF_MASK_DEFAULT : NPC_POS_CUSTOMER_MASK_DEFAULT;
+}
+function npcPosNormalizeCurrentMask(raw) {
+  return npcPosNormalizeCounterMask(raw, npcPosCurrentMaskDefault());
 }
 function npcPosLoadStaffMask() {
   try {
@@ -12852,14 +12873,25 @@ function npcPosLoadStaffMask() {
     return npcPosNormalizeStaffMask(null);
   }
 }
-function npcPosSaveStaffMask(mask) {
+function npcPosLoadCustomerMask() {
   try {
-    localStorage.setItem(NPC_POS_STAFF_MASK_LS_KEY, JSON.stringify(npcPosNormalizeStaffMask(mask)));
+    var raw = localStorage.getItem(NPC_POS_CUSTOMER_MASK_LS_KEY);
+    return npcPosNormalizeCustomerMask(raw ? JSON.parse(raw) : null);
+  } catch (e) {
+    return npcPosNormalizeCustomerMask(null);
+  }
+}
+function npcPosLoadCurrentMask() {
+  return npcPosCurrentMaskType() === 'staff' ? npcPosLoadStaffMask() : npcPosLoadCustomerMask();
+}
+function npcPosSaveCurrentMask(mask) {
+  try {
+    localStorage.setItem(npcPosCurrentMaskKey(), JSON.stringify(npcPosNormalizeCurrentMask(mask)));
     return true;
   } catch (e) { return false; }
 }
 function npcPosStaffMaskInsets(mask) {
-  var m = npcPosNormalizeStaffMask(mask);
+  var m = npcPosNormalizeCurrentMask(mask);
   return {
     left: m.x,
     top: m.y,
@@ -12909,9 +12941,10 @@ function npcPosCaptureUndoSnapshot(label) {
     expression: _npcPosState.expression,
     applyAll: !!_npcPosState.applyAll,
     current: npcPosClonePlacement(_npcPosState.current),
-    mask: npcPosNormalizeStaffMask(_npcPosState.mask),
+    mask: npcPosNormalizeCurrentMask(_npcPosState.mask),
     positionsRaw: npcPosGetStorageRaw(NPC_POS_LS_KEY),
     staffMaskRaw: npcPosGetStorageRaw(NPC_POS_STAFF_MASK_LS_KEY),
+    customerMaskRaw: npcPosGetStorageRaw(NPC_POS_CUSTOMER_MASK_LS_KEY),
   };
 }
 function npcPosSnapshotSignature(snap) {
@@ -12923,6 +12956,7 @@ function npcPosSnapshotSignature(snap) {
     mask: snap.mask,
     positionsRaw: snap.positionsRaw,
     staffMaskRaw: snap.staffMaskRaw,
+    customerMaskRaw: snap.customerMaskRaw,
   });
 }
 function npcPosUpdateUndoUi() {
@@ -12948,11 +12982,12 @@ function npcPosRestoreUndoSnapshot(snap) {
   if (!snap) return;
   npcPosRestoreStorageRaw(NPC_POS_LS_KEY, snap.positionsRaw);
   npcPosRestoreStorageRaw(NPC_POS_STAFF_MASK_LS_KEY, snap.staffMaskRaw);
+  npcPosRestoreStorageRaw(NPC_POS_CUSTOMER_MASK_LS_KEY, snap.customerMaskRaw);
   _npcPosState.charId = NPC_POS_CHARS.indexOf(snap.charId) >= 0 ? snap.charId : 'risu';
   _npcPosState.expression = snap.expression || npcPosGetExprs(_npcPosState.charId)[0] || 'request';
   _npcPosState.applyAll = !!snap.applyAll;
   _npcPosState.current = npcPosClonePlacement(snap.current || npcPosGetDefault(_npcPosState.charId));
-  _npcPosState.mask = npcPosNormalizeStaffMask(snap.mask || NPC_POS_STAFF_MASK_DEFAULT);
+  _npcPosState.mask = npcPosNormalizeCurrentMask(snap.mask || npcPosCurrentMaskDefault());
   var charSel = document.getElementById('npc-pos-char');
   if (charSel) charSel.value = _npcPosState.charId;
   npcPosRenderExpressionButtons();
@@ -13120,7 +13155,7 @@ function npcPosBuildMaskSliders() {
       var num = parseFloat(input.value);
       if (!isNaN(num)) {
         _npcPosState.mask[def.key] = num;
-        _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
+        _npcPosState.mask = npcPosNormalizeCurrentMask(_npcPosState.mask);
         npcPosSyncMaskSlidersFromState();
         npcPosApplyMaskPreview();
       }
@@ -13184,7 +13219,7 @@ function npcPosSyncSlidersFromState() {
 function npcPosSyncMaskSlidersFromState() {
   var host = document.getElementById('npc-pos-mask-sliders');
   if (!host) return;
-  _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
+  _npcPosState.mask = npcPosNormalizeCurrentMask(_npcPosState.mask);
   NPC_POS_MASK_SLIDER_DEFS.forEach(function(def) {
     var input = host.querySelector('input[data-mask-key="' + def.key + '"]');
     var val   = host.querySelector('span[data-mask-key="' + def.key + '"]');
@@ -13196,20 +13231,25 @@ function npcPosSyncMaskSlidersFromState() {
 
 function npcPosApplyMaskPreview() {
   var panel = document.getElementById('npc-pos-mask-panel');
+  var title = document.getElementById('npc-pos-mask-title');
+  var note = document.getElementById('npc-pos-mask-note');
   var maskEl = document.getElementById('npc-pos-preview-mask');
   var outline = document.getElementById('npc-pos-preview-mask-outline');
   var cfg = npcPosGetConfig(_npcPosState.charId);
   var isStaff = cfg.type === 'staff';
-  if (panel) panel.style.display = isStaff ? 'block' : 'none';
-  if (!maskEl || !outline) return;
-  if (!isStaff) {
-    maskEl.style.opacity = '0';
-    outline.style.display = 'none';
-    return;
+  if (panel) panel.style.display = 'block';
+  if (title) title.textContent = isStaff ? '店員側カウンターマスク' : 'お客さん側カウンターマスク';
+  if (note) {
+    note.textContent = isStaff
+      ? '店員キャラをカウンターの向こう側に見せるため、背景のカウンター前面だけを上から重ねます。'
+      : '動物のお客さんをカウンターの向こう側に見せるため、注文背景のカウンター前面だけを上から重ねます。';
   }
-  var mask = npcPosNormalizeStaffMask(_npcPosState.mask);
+  if (!maskEl || !outline) return;
+  var mask = npcPosNormalizeCurrentMask(_npcPosState.mask);
   var inset = npcPosStaffMaskInsets(mask);
-  maskEl.style.backgroundImage = "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
+  maskEl.style.backgroundImage = isStaff
+    ? "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')"
+    : "url('../assets/images/bento/story/shop_order_counter.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
   maskEl.style.clipPath = 'inset(' + inset.top + '% ' + inset.right + '% ' + inset.bottom + '% ' + inset.left + '%)';
   maskEl.style.opacity = String(mask.opacity);
   outline.style.display = 'block';
@@ -13254,7 +13294,7 @@ function npcPosApplyPreview() {
 
 function npcPosLoadCurrent() {
   _npcPosState.current = npcPosGet(_npcPosState.charId, _npcPosState.expression);
-  _npcPosState.mask = npcPosLoadStaffMask();
+  _npcPosState.mask = npcPosLoadCurrentMask();
   npcPosSyncSlidersFromState();
   npcPosSyncMaskSlidersFromState();
   npcPosApplyPreview();
@@ -13314,23 +13354,25 @@ function npcPosBindControls() {
   });
   var maskSaveBtn = document.getElementById('npc-pos-mask-save');
   if (maskSaveBtn) maskSaveBtn.addEventListener('click', function() {
-    _npcPosState.mask = npcPosNormalizeStaffMask(_npcPosState.mask);
-    if (npcPosSaveStaffMask(_npcPosState.mask)) {
+    var isStaff = npcPosCurrentMaskType() === 'staff';
+    _npcPosState.mask = npcPosNormalizeCurrentMask(_npcPosState.mask);
+    if (npcPosSaveCurrentMask(_npcPosState.mask)) {
       npcPosSyncMaskSlidersFromState();
       npcPosApplyMaskPreview();
-      npcPosSetStatus('カウンターマスクを保存しました', false);
+      npcPosSetStatus((isStaff ? '店員側' : 'お客さん側') + 'カウンターマスクを保存しました', false);
     } else {
       npcPosSetStatus('マスク保存失敗 (localStorage に書き込めません)', true);
     }
   });
   var maskResetBtn = document.getElementById('npc-pos-mask-reset');
   if (maskResetBtn) maskResetBtn.addEventListener('click', function() {
+    var isStaff = npcPosCurrentMaskType() === 'staff';
     npcPosPushUndo('マスクリセット');
-    try { localStorage.removeItem(NPC_POS_STAFF_MASK_LS_KEY); } catch (e) {}
-    _npcPosState.mask = Object.assign({}, NPC_POS_STAFF_MASK_DEFAULT);
+    try { localStorage.removeItem(npcPosCurrentMaskKey()); } catch (e) {}
+    _npcPosState.mask = Object.assign({}, npcPosCurrentMaskDefault());
     npcPosSyncMaskSlidersFromState();
     npcPosApplyMaskPreview();
-    npcPosSetStatus('カウンターマスクを初期値に戻しました', false);
+    npcPosSetStatus((isStaff ? '店員側' : 'お客さん側') + 'カウンターマスクを初期値に戻しました', false);
   });
   var resetBtn = document.getElementById('npc-pos-reset');
   if (resetBtn) resetBtn.addEventListener('click', function() {

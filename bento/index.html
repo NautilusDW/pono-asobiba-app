@@ -193,6 +193,25 @@ html, body {
 .shop-opening.is-staff-step .shop-opening__staff-counter-mask {
   opacity: var(--staff-counter-mask-opacity, 1);
 }
+.shop-opening__customer-counter-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  clip-path: inset(
+    var(--customer-counter-mask-top, 61%)
+    var(--customer-counter-mask-right, 0%)
+    var(--customer-counter-mask-bottom, 0%)
+    var(--customer-counter-mask-left, 0%)
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+.shop-opening.is-customer-step .shop-opening__customer-counter-mask {
+  opacity: var(--customer-counter-mask-opacity, 1);
+}
 .shop-opening__staff-member {
   position: absolute;
   left: 50%;
@@ -343,6 +362,7 @@ html, body {
 }
 .bento-delivery__customer {
   position: absolute;
+  z-index: 1;
   left: 58%;
   bottom: 23%;
   height: 40%;
@@ -352,8 +372,25 @@ html, body {
   filter: drop-shadow(0 8px 12px rgba(70, 40, 16, 0.18));
   animation: npcBob 2.4s ease-in-out infinite;
 }
+.bento-delivery__customer-counter-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  clip-path: inset(
+    var(--customer-counter-mask-top, 61%)
+    var(--customer-counter-mask-right, 0%)
+    var(--customer-counter-mask-bottom, 0%)
+    var(--customer-counter-mask-left, 0%)
+  );
+  opacity: var(--customer-counter-mask-opacity, 1);
+  pointer-events: none;
+}
 .bento-delivery__handoff {
   position: absolute;
+  z-index: 3;
   left: 43%;
   bottom: 4%;
   width: min(26vw, 280px);
@@ -384,6 +421,7 @@ html, body {
 }
 .bento-delivery__dialog {
   position: absolute;
+  z-index: 4;
   left: 50%;
   top: clamp(12px, 3vh, 28px);
   width: min(72vw, 900px);
@@ -440,6 +478,7 @@ html, body {
 .bento-delivery__sparkles {
   position: absolute;
   inset: 0;
+  z-index: 5;
   pointer-events: none;
   opacity: 0;
 }
@@ -4878,6 +4917,7 @@ body.bento-complete-open .pono-dropdown {
     </div>
     <div class="shop-opening__staff-counter-mask" id="shop-opening-staff-mask" aria-hidden="true"></div>
     <img class="shop-opening__customer" id="shop-opening-customer" alt="">
+    <div class="shop-opening__customer-counter-mask" id="shop-opening-customer-mask" aria-hidden="true"></div>
     <div class="shop-opening__shade"></div>
     <div class="shop-opening__dialog">
       <div>
@@ -5040,6 +5080,7 @@ body.bento-complete-open .pono-dropdown {
     <img class="bento-delivery__bg" src="../assets/images/bento/story/shop_order_counter.png" alt="">
     <div class="bento-delivery__sparkles"></div>
     <img class="bento-delivery__customer" id="bento-delivery-customer" alt="">
+    <div class="bento-delivery__customer-counter-mask" id="bento-delivery-customer-mask" aria-hidden="true"></div>
     <div class="bento-delivery__handoff">
       <div id="bento-delivery-bento" class="complete-bento"></div>
     </div>
@@ -6612,10 +6653,12 @@ function showRequesterIntro(req) {
 const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/staff/shop_staff_bg_layered.png';
 const SHOP_OPENING_ORDER_BG = '../assets/images/bento/story/shop_order_counter.png';
 const SHOP_CUSTOMER_ENTER_DELAY_MS = 420;
-const SHOP_STAFF_ASSET_VERSION = '20260617-staff-wave-alt-v2';
+const SHOP_STAFF_ASSET_VERSION = '20260619-bento-staffboy-wave-customer-mask-v1';
 const SHOP_STAFF_ASSET_BASE = '../assets/images/bento/story/staff/';
 const SHOP_STAFF_COUNTER_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
 const SHOP_STAFF_COUNTER_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
+const SHOP_CUSTOMER_COUNTER_MASK_LS_KEY = 'bento_customer_counter_mask_v1';
+const SHOP_CUSTOMER_COUNTER_MASK_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
 const SHOP_STAFF_MEMBERS = [
   {
     id: 'staffpono',
@@ -6677,18 +6720,27 @@ function clampShopStaffMaskNumber(value, min, max, fallback) {
   return Math.max(min, Math.min(max, num));
 }
 
-function normalizeShopStaffCounterMask(raw) {
+function normalizeShopCounterMask(raw, defaults) {
   const src = (raw && typeof raw === 'object') ? raw : {};
+  const fallback = defaults || SHOP_STAFF_COUNTER_MASK_DEFAULT;
   const mask = {
-    x: clampShopStaffMaskNumber(src.x, 0, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.x),
-    y: clampShopStaffMaskNumber(src.y, 0, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.y),
-    width: clampShopStaffMaskNumber(src.width, 1, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.width),
-    height: clampShopStaffMaskNumber(src.height, 1, 100, SHOP_STAFF_COUNTER_MASK_DEFAULT.height),
-    opacity: clampShopStaffMaskNumber(src.opacity, 0, 1, SHOP_STAFF_COUNTER_MASK_DEFAULT.opacity),
+    x: clampShopStaffMaskNumber(src.x, 0, 100, fallback.x),
+    y: clampShopStaffMaskNumber(src.y, 0, 100, fallback.y),
+    width: clampShopStaffMaskNumber(src.width, 1, 100, fallback.width),
+    height: clampShopStaffMaskNumber(src.height, 1, 100, fallback.height),
+    opacity: clampShopStaffMaskNumber(src.opacity, 0, 1, fallback.opacity),
   };
   if (mask.x + mask.width > 100) mask.width = Math.max(1, 100 - mask.x);
   if (mask.y + mask.height > 100) mask.height = Math.max(1, 100 - mask.y);
   return mask;
+}
+
+function normalizeShopStaffCounterMask(raw) {
+  return normalizeShopCounterMask(raw, SHOP_STAFF_COUNTER_MASK_DEFAULT);
+}
+
+function normalizeShopCustomerCounterMask(raw) {
+  return normalizeShopCounterMask(raw, SHOP_CUSTOMER_COUNTER_MASK_DEFAULT);
 }
 
 function loadShopStaffCounterMask() {
@@ -6700,18 +6752,37 @@ function loadShopStaffCounterMask() {
   }
 }
 
+function loadShopCustomerCounterMask() {
+  try {
+    const raw = localStorage.getItem(SHOP_CUSTOMER_COUNTER_MASK_LS_KEY);
+    return normalizeShopCustomerCounterMask(raw ? JSON.parse(raw) : null);
+  } catch {
+    return normalizeShopCustomerCounterMask(null);
+  }
+}
+
+function applyCounterMaskStyle(maskEl, bgUrl, mask, prefix) {
+  if (!maskEl) return;
+  const normalized = normalizeShopCounterMask(mask, prefix === 'customer' ? SHOP_CUSTOMER_COUNTER_MASK_DEFAULT : SHOP_STAFF_COUNTER_MASK_DEFAULT);
+  const right = Math.max(0, 100 - normalized.x - normalized.width);
+  const bottom = Math.max(0, 100 - normalized.y - normalized.height);
+  maskEl.style.backgroundImage = 'url("' + bgUrl + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION) + '")';
+  maskEl.style.setProperty('--' + prefix + '-counter-mask-left', normalized.x + '%');
+  maskEl.style.setProperty('--' + prefix + '-counter-mask-top', normalized.y + '%');
+  maskEl.style.setProperty('--' + prefix + '-counter-mask-right', right + '%');
+  maskEl.style.setProperty('--' + prefix + '-counter-mask-bottom', bottom + '%');
+  maskEl.style.setProperty('--' + prefix + '-counter-mask-opacity', String(normalized.opacity));
+}
+
 function applyShopStaffCounterMaskStyle() {
   const maskEl = document.getElementById('shop-opening-staff-mask');
-  if (!maskEl) return;
-  const mask = loadShopStaffCounterMask();
-  const right = Math.max(0, 100 - mask.x - mask.width);
-  const bottom = Math.max(0, 100 - mask.y - mask.height);
-  maskEl.style.backgroundImage = 'url("' + SHOP_OPENING_STAFF_BG + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION) + '")';
-  maskEl.style.setProperty('--staff-counter-mask-left', mask.x + '%');
-  maskEl.style.setProperty('--staff-counter-mask-top', mask.y + '%');
-  maskEl.style.setProperty('--staff-counter-mask-right', right + '%');
-  maskEl.style.setProperty('--staff-counter-mask-bottom', bottom + '%');
-  maskEl.style.setProperty('--staff-counter-mask-opacity', String(mask.opacity));
+  applyCounterMaskStyle(maskEl, SHOP_OPENING_STAFF_BG, loadShopStaffCounterMask(), 'staff');
+}
+
+function applyShopCustomerCounterMaskStyle() {
+  const mask = loadShopCustomerCounterMask();
+  applyCounterMaskStyle(document.getElementById('shop-opening-customer-mask'), SHOP_OPENING_ORDER_BG, mask, 'customer');
+  applyCounterMaskStyle(document.getElementById('bento-delivery-customer-mask'), SHOP_OPENING_ORDER_BG, mask, 'customer');
 }
 
 function setupShopOpeningStaff() {
@@ -6871,6 +6942,7 @@ function showShopOpening(req, onDone, options = {}) {
       waitForShopOpeningStaffReady();
     }
     if (step.customer) {
+      applyShopCustomerCounterMaskStyle();
       const customerReady = waitForImageReady(customer, getRequesterPortrait(req, step.mood || 'normal'));
       customer.alt = req.name;
       customer.style.visibility = 'hidden';
@@ -7021,6 +7093,7 @@ function showBentoDelivery(req, finalEval, onDone) {
   img.src = getRequesterPortrait(req, mood);
   img.alt = req.name;
   applyNpcPositionStyle(img, req.id, mood, { defaults: { x: 58, y: 23 }, useAbsolute: true });
+  applyShopCustomerCounterMaskStyle();
   name.textContent = req.name + ' に おべんとうを わたしたよ';
   line.textContent = getRequesterReactionMessage(req, finalEval);
   next.textContent = 'けっかを みる';
