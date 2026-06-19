@@ -116,6 +116,17 @@ table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
 th { text-align: left; padding: 8px; color: #FF6B9D; border-bottom: 2px solid #FFF0F5; font-size: 0.75rem; font-weight: 900; }
 td { padding: 8px; border-bottom: 1px solid #F5F0E8; vertical-align: middle; }
 tr:hover { background: #FFFAF0; }
+#puzzle-tts-tbody tr[data-puzzle-tts-row] { transition: background 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease; }
+#puzzle-tts-tbody tr.puzzle-tts-row-selected { background: #FFF3CF; box-shadow: inset 0 0 0 2px #FBBF24; }
+#puzzle-tts-tbody tr.puzzle-tts-row-dragging { opacity: 0.45; }
+#puzzle-tts-tbody tr.puzzle-tts-row-drop-before td { border-top: 3px solid #F59E0B; }
+#puzzle-tts-tbody tr.puzzle-tts-row-drop-after td { border-bottom: 3px solid #F59E0B; }
+.puzzle-tts-drag-handle {
+  display: inline-flex; width: 22px; height: 26px; align-items: center; justify-content: center;
+  margin-right: 6px; border: 1px solid #CBD5E1; border-radius: 7px; background: #F8FAFC;
+  color: #64748B; font-size: 0.86rem; font-weight: 900; cursor: grab; user-select: none;
+}
+.puzzle-tts-drag-handle:active { cursor: grabbing; }
 
 /* ── Type Badges ── */
 .type-badge {
@@ -830,12 +841,13 @@ tr:hover { background: #FFFAF0; }
     </div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
-      <button type="button" onclick="puzzleTtsAddRow()" style="padding:7px 14px;background:#ECFEFF;color:#0E7490;border:1px solid #A5F3FC;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">行を追加</button>
+      <button type="button" onclick="puzzleTtsAddRow()" title="行を選択している場合は、その下に追加します" style="padding:7px 14px;background:#ECFEFF;color:#0E7490;border:1px solid #A5F3FC;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">行を追加</button>
       <button type="button" onclick="puzzleTtsGenerateAll()" style="padding:7px 14px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">全部生成</button>
       <button type="button" onclick="puzzleTtsSetAllChecks(true)" style="padding:7px 12px;background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">全チェック</button>
       <button type="button" onclick="puzzleTtsSetAllChecks(false)" style="padding:7px 12px;background:#F8FAFC;color:#334155;border:1px solid #CBD5E1;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">チェック解除</button>
       <button type="button" onclick="puzzleTtsDownloadChecked()" style="padding:7px 14px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">チェックしたものを保存</button>
       <button type="button" onclick="puzzleTtsCopyAllStudioPrompts()" style="padding:7px 14px;background:#EEF2FF;color:#4338CA;border:1px solid #C7D2FE;border-radius:8px;font-family:inherit;font-size:0.82rem;font-weight:900;cursor:pointer;">AI Studio用をコピー</button>
+      <span style="font-size:0.74rem;color:#64748B;font-weight:800;">行クリックで選択、右クリックで下に追加、↕で並べ替え</span>
       <span id="puzzle-tts-status" style="font-size:0.78rem;color:#6D28D9;font-weight:800;"></span>
     </div>
 
@@ -843,7 +855,7 @@ tr:hover { background: #FFFAF0; }
       <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
         <thead>
           <tr>
-            <th style="text-align:center;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">選択</th>
+            <th style="text-align:center;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">行</th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">ファイル名</th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;">読み上げテキスト</th>
             <th style="text-align:left;padding:7px 8px;color:#6D28D9;border-bottom:2px solid #EDE9FE;white-space:nowrap;">生成音声</th>
@@ -1730,6 +1742,8 @@ var puzzleTtsCheckedById = {};
 var puzzleTtsTextById = {};
 var puzzleTtsCurrentAudio = null;
 var puzzleTtsCurrentAudioId = '';
+var puzzleTtsSelectedRowId = '';
+var puzzleTtsDragRowId = '';
 var PUZZLE_TTS_HISTORY_KEY = 'pono_puzzle_tts_history_v1';
 var PUZZLE_TTS_DRAFT_KEY = 'pono_puzzle_tts_draft_v1';
 var PUZZLE_TTS_AUDIO_DB_NAME = 'pono_puzzle_tts_audio_v1';
@@ -1842,6 +1856,9 @@ function puzzleTtsApplyRows(rows, legacyLines) {
       text: text
     };
   });
+  if (!PUZZLE_TTS_LINES.some(function(line) { return line.id === puzzleTtsSelectedRowId; })) {
+    puzzleTtsSelectedRowId = '';
+  }
   puzzleTtsTextById = {};
   PUZZLE_TTS_LINES.forEach(function(line) {
     puzzleTtsTextById[line.id] = line.text || '';
@@ -2181,16 +2198,64 @@ function puzzleTtsSuggestNewFileName() {
   return 'basic_tut_' + String(max + 1 || PUZZLE_TTS_LINES.length + 1).padStart(2, '0') + '.mp3';
 }
 
-function puzzleTtsAddRow() {
+function puzzleTtsLineIndex(id) {
+  return PUZZLE_TTS_LINES.findIndex(function(line) { return line.id === id; });
+}
+
+function puzzleTtsRenderRowSelection() {
+  var tbody = document.getElementById('puzzle-tts-tbody');
+  if (!tbody) return;
+  tbody.querySelectorAll('tr[data-puzzle-tts-row]').forEach(function(row) {
+    row.classList.toggle('puzzle-tts-row-selected', row.getAttribute('data-puzzle-tts-row') === puzzleTtsSelectedRowId);
+  });
+}
+
+function puzzleTtsSelectRow(id) {
+  puzzleTtsSelectedRowId = puzzleTtsGetLine(id) ? id : '';
+  puzzleTtsRenderRowSelection();
+}
+
+function puzzleTtsClearDropMarkers() {
+  var tbody = document.getElementById('puzzle-tts-tbody');
+  if (!tbody) return;
+  tbody.querySelectorAll('.puzzle-tts-row-drop-before,.puzzle-tts-row-drop-after').forEach(function(row) {
+    row.classList.remove('puzzle-tts-row-drop-before', 'puzzle-tts-row-drop-after');
+  });
+}
+
+function puzzleTtsMoveRow(dragId, targetId, afterTarget) {
+  if (!dragId || !targetId || dragId === targetId) return false;
+  var fromIndex = puzzleTtsLineIndex(dragId);
+  if (fromIndex < 0) return false;
+  var moved = PUZZLE_TTS_LINES.splice(fromIndex, 1)[0];
+  var targetIndex = puzzleTtsLineIndex(targetId);
+  if (targetIndex < 0) {
+    PUZZLE_TTS_LINES.splice(fromIndex, 0, moved);
+    return false;
+  }
+  var insertIndex = targetIndex + (afterTarget ? 1 : 0);
+  PUZZLE_TTS_LINES.splice(insertIndex, 0, moved);
+  puzzleTtsSelectedRowId = dragId;
+  puzzleTtsRenderRows();
+  puzzleTtsSaveDraftSoon();
+  puzzleTtsStatus(moved.file + ' を並べ替えました');
+  return true;
+}
+
+function puzzleTtsAddRow(afterId) {
   var id = puzzleTtsMakeId('custom');
   var file = puzzleTtsSuggestNewFileName();
   var line = { id: id, file: file, text: '' };
-  PUZZLE_TTS_LINES.push(line);
+  var insertAfterId = afterId || puzzleTtsSelectedRowId;
+  var insertIndex = puzzleTtsLineIndex(insertAfterId);
+  if (insertIndex < 0) insertIndex = PUZZLE_TTS_LINES.length - 1;
+  PUZZLE_TTS_LINES.splice(insertIndex + 1, 0, line);
   puzzleTtsTextById[id] = '';
   puzzleTtsCheckedById[id] = true;
+  puzzleTtsSelectedRowId = id;
   puzzleTtsRenderRows();
   puzzleTtsSaveDraftSoon();
-  puzzleTtsStatus(file + ' を追加しました');
+  puzzleTtsStatus(file + (insertAfterId ? ' を選択行の下に追加しました' : ' を追加しました'));
   setTimeout(function() {
     var el = document.getElementById('puzzle-tts-text-' + id);
     if (el) el.focus();
@@ -2201,7 +2266,12 @@ function puzzleTtsDeleteRow(id) {
   var line = puzzleTtsGetLine(id);
   if (!line) return;
   if (!confirm(line.file + ' を削除します。生成済みバージョンもこの管理画面から外れます。')) return;
+  var deletedIndex = puzzleTtsLineIndex(id);
   PUZZLE_TTS_LINES = PUZZLE_TTS_LINES.filter(function(row) { return row.id !== id; });
+  if (puzzleTtsSelectedRowId === id) {
+    var fallback = PUZZLE_TTS_LINES[Math.min(deletedIndex, PUZZLE_TTS_LINES.length - 1)];
+    puzzleTtsSelectedRowId = fallback ? fallback.id : '';
+  }
   delete puzzleTtsTextById[id];
   delete puzzleTtsCheckedById[id];
   delete puzzleTtsAudioById[id];
@@ -2223,6 +2293,7 @@ function puzzleTtsRenderRows() {
     var canUse = !!entry;
     var checked = !!puzzleTtsCheckedById[line.id];
     var textValue = puzzleTtsTextById[line.id] != null ? puzzleTtsTextById[line.id] : line.text;
+    var rowClass = line.id === puzzleTtsSelectedRowId ? 'puzzle-tts-row-selected' : '';
     var versionSelect = versions.length
       ? '<select data-puzzle-tts-version="' + puzzleTtsHtml(line.id) + '" style="max-width:220px;padding:5px 7px;border-radius:7px;border:1px solid #CBD5E1;background:#fff;font-family:inherit;font-size:0.72rem;font-weight:800;">' +
           versions.map(function(v, idx) {
@@ -2231,8 +2302,9 @@ function puzzleTtsRenderRows() {
           }).join('') +
         '</select>'
       : '<select disabled style="max-width:220px;padding:5px 7px;border-radius:7px;border:1px solid #E2E8F0;background:#F8FAFC;color:#94A3B8;font-family:inherit;font-size:0.72rem;font-weight:800;"><option>未生成</option></select>';
-    return '<tr data-puzzle-tts-row="' + puzzleTtsHtml(line.id) + '">' +
+    return '<tr data-puzzle-tts-row="' + puzzleTtsHtml(line.id) + '" draggable="true" class="' + rowClass + '">' +
       '<td style="padding:8px;border-bottom:1px solid #EDE9FE;text-align:center;vertical-align:middle;">' +
+        '<span class="puzzle-tts-drag-handle" data-puzzle-tts-drag-handle="' + puzzleTtsHtml(line.id) + '" title="ドラッグして並べ替え">↕</span>' +
         '<input type="checkbox" data-puzzle-tts-check="' + puzzleTtsHtml(line.id) + '" ' + (checked ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:#6D28D9;cursor:pointer;">' +
       '</td>' +
       '<td style="padding:8px;border-bottom:1px solid #EDE9FE;min-width:190px;font-weight:900;color:#334155;">' +
@@ -2266,6 +2338,8 @@ function puzzleTtsBindTableActions() {
   if (!tbody || tbody._puzzleTtsBound) return;
   tbody._puzzleTtsBound = true;
   tbody.addEventListener('click', function(e) {
+    var clickedRow = e.target.closest('tr[data-puzzle-tts-row]');
+    if (clickedRow) puzzleTtsSelectRow(clickedRow.getAttribute('data-puzzle-tts-row') || '');
     var btn = e.target.closest('button[data-puzzle-tts-action]');
     if (!btn || btn.disabled) return;
     var id = btn.getAttribute('data-puzzle-tts-id') || '';
@@ -2277,6 +2351,68 @@ function puzzleTtsBindTableActions() {
     });
     if (action === 'copy') puzzleTtsCopyStudioPrompt(id);
     if (action === 'delete') puzzleTtsDeleteRow(id);
+  });
+  tbody.addEventListener('contextmenu', function(e) {
+    var row = e.target.closest('tr[data-puzzle-tts-row]');
+    if (!row) return;
+    e.preventDefault();
+    var id = row.getAttribute('data-puzzle-tts-row') || '';
+    puzzleTtsSelectRow(id);
+    puzzleTtsAddRow(id);
+  });
+  tbody.addEventListener('dragstart', function(e) {
+    var row = e.target.closest('tr[data-puzzle-tts-row]');
+    if (!row) return;
+    if (e.target.closest('input, textarea, select, button')) {
+      e.preventDefault();
+      return;
+    }
+    puzzleTtsDragRowId = row.getAttribute('data-puzzle-tts-row') || '';
+    if (!puzzleTtsDragRowId) {
+      e.preventDefault();
+      return;
+    }
+    puzzleTtsSelectRow(puzzleTtsDragRowId);
+    row.classList.add('puzzle-tts-row-dragging');
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', puzzleTtsDragRowId);
+    }
+  });
+  tbody.addEventListener('dragover', function(e) {
+    if (!puzzleTtsDragRowId) return;
+    var row = e.target.closest('tr[data-puzzle-tts-row]');
+    if (!row) return;
+    var id = row.getAttribute('data-puzzle-tts-row') || '';
+    if (!id || id === puzzleTtsDragRowId) return;
+    e.preventDefault();
+    var rect = row.getBoundingClientRect();
+    var after = e.clientY > rect.top + rect.height / 2;
+    puzzleTtsClearDropMarkers();
+    row.classList.add(after ? 'puzzle-tts-row-drop-after' : 'puzzle-tts-row-drop-before');
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  });
+  tbody.addEventListener('drop', function(e) {
+    if (!puzzleTtsDragRowId) return;
+    var row = e.target.closest('tr[data-puzzle-tts-row]');
+    if (!row) return;
+    e.preventDefault();
+    var id = row.getAttribute('data-puzzle-tts-row') || '';
+    var rect = row.getBoundingClientRect();
+    var after = e.clientY > rect.top + rect.height / 2;
+    puzzleTtsClearDropMarkers();
+    puzzleTtsMoveRow(puzzleTtsDragRowId, id, after);
+    puzzleTtsDragRowId = '';
+  });
+  tbody.addEventListener('dragend', function() {
+    puzzleTtsDragRowId = '';
+    puzzleTtsClearDropMarkers();
+    tbody.querySelectorAll('.puzzle-tts-row-dragging').forEach(function(row) {
+      row.classList.remove('puzzle-tts-row-dragging');
+    });
+  });
+  tbody.addEventListener('dragleave', function(e) {
+    if (!tbody.contains(e.relatedTarget)) puzzleTtsClearDropMarkers();
   });
   tbody.addEventListener('change', function(e) {
     var checkbox = e.target.closest('input[data-puzzle-tts-check]');
