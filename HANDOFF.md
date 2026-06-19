@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-19 - [batch:708-sticker-album-independent-center-fold] DONE - Codex: user 依頼「中央ノドを独立した曲面パーツとして作り直す方向」を受け、collection album 通常見開きに `collectionFold` 専用メッシュを追加。透明フェード付き CanvasTexture を貼った細分化曲面で中央の谷影だけを前面に重ね、白い柱/木目隙間が出る横移動は最終的に `COLLECTION_PAGE_SPINE_PULL=0` へ戻した。`ASSET_VERSION=20260619-708` / module query v708。検証: ESM module check、diff check、Playwright local 4187 で desktop page1/page5/center crop/cover/mobile landscape を撮影し pageerror/requestfailed 0。厚み素材は未変更。 (by Codex)
 - 2026-06-19 - [batch:puzzle-basic-tutorial-overhaul] HANDOFF to next thread (by Claude) - パズル基本チュートリアル(`puzzle/`)を全面作り直しした長セッションの引き継ぎ。**全てローカル(develop-app)のみ・未push**。現状: sw CACHE_VERSION **1344** / voice.js AUDIO_VERSION **v1318** / index.html assets **?v=1324** (style.css/partner-select.css/voice.js/main.js) / REGISTRY.basic_tut = **13ステップ** (basic_tut_01..13)、node構文OK。
 
   **■ 13ステップ確定表 (idx/file/内容/音源種別。faster-whisperで配置後照合済 allCorrect):** 0/01 これからパズルの遊び方を練習するよ。まずはお手本を見てね(人声) ／ 1/02 このピースをつかんで青い場所へ持っていくよ(人声) ／ 2/03 やってみよう。ピースを持って、青い場所へ離してね(人声・フル。一度トリムしたが撤回済) ／ 3/04 できたね。次は、見るボタンを試すよ(人声) ／ 4/05 まずは見るボタンを長く押してみよう(人声=コンポジション2) ／ 5/06 見るボタンは長く押している間だけ絵が見えるよ(人声=NA basic_tut_05) ／ 6/07 離すと、元のパズルに戻るよ(人声=コンポジション3) ／ 7/08 困った時に使ってね(人声=コンポジション4) ／ 8/09 次はヒントだよ。場所を知りたいピースを、まず選んでね(**TTS Aoede** gemini-3.1-flash-tts-preview) ／ 9/10 ヒントを押すと、その場所が光るよ(**TTS Aoede**) ／ 10/11 光った場所へピースを持っていくよ(人声=NA 07) ／ 11/12 できたね。わからない時は見るとヒントを使ってね(人声=NA 08) ／ 12/13 これで練習はおしまい。さあ、パズルで遊ぼう(人声=コンポジション8)。
