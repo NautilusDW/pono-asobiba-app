@@ -11736,14 +11736,63 @@ var OTO_RHYTHM_TUTORIAL_VOICE = {
   advice: 'もっと れんしゅうしたいときは、じゆうモードで あそべるよ。おてほんを みてから はじめると わかりやすいよ。',
   start: 'かえるのうたで あそぼう。はじめるを おしてね。'
 };
+var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1327';
+var OTO_RHYTHM_TUTORIAL_AUDIO = {
+  songIntro: '../assets/audio/oto/tutorial/oto_rhythm_tut_01_difficulty.mp3',
+  song: '../assets/audio/oto/tutorial/oto_rhythm_tut_02_song.mp3',
+  next: '../assets/audio/oto/tutorial/oto_rhythm_tut_03_next.mp3',
+  block: '../assets/audio/oto/tutorial/oto_rhythm_tut_04_practice_block.mp3',
+  demoReady: '../assets/audio/oto/tutorial/oto_rhythm_tut_05_sample_countdown.mp3',
+  demo: '../assets/audio/oto/tutorial/oto_rhythm_tut_06_sample_note.mp3',
+  yourTurn: '../assets/audio/oto/tutorial/oto_rhythm_tut_07_player_countdown.mp3',
+  tryNote: '../assets/audio/oto/tutorial/oto_rhythm_tut_08_player_note.mp3',
+  judge: '../assets/audio/oto/tutorial/oto_rhythm_tut_09_judgement.mp3',
+  start: '../assets/audio/oto/tutorial/oto_rhythm_tut_10_start.mp3'
+};
 var OTO_TUTORIAL_HAND_ASSETS = {
   point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
   open: '../assets/images/puzzle/ui/tutorial/hand_open_hover.png',
   grip: '../assets/images/puzzle/ui/tutorial/hand_grip.png',
   release: '../assets/images/puzzle/ui/tutorial/hand_open_release.png'
 };
+var _otoTutorialNarrationAudio = null;
 var _otoTutorialState = null;
 var _otoTutorialSessionHidden = {};
+function _otoTutorialVoiceKeyForText(text) {
+  if (!text) return '';
+  for (var key in OTO_RHYTHM_TUTORIAL_VOICE) {
+    if (OTO_RHYTHM_TUTORIAL_VOICE[key] === text) return key;
+  }
+  return '';
+}
+function _otoTutorialNarrationSrc(step) {
+  if (!step || !step.voice) return '';
+  var key = step.voiceKey || _otoTutorialVoiceKeyForText(step.voice);
+  return key ? (OTO_RHYTHM_TUTORIAL_AUDIO[key] || '') : '';
+}
+function _stopOtoTutorialNarration() {
+  var audio = _otoTutorialNarrationAudio;
+  _otoTutorialNarrationAudio = null;
+  if (!audio) return;
+  try { audio.pause(); } catch(e) {}
+  try { audio.currentTime = 0; } catch(e) {}
+}
+function _playOtoTutorialNarration(step) {
+  var src = _otoTutorialNarrationSrc(step);
+  _stopOtoTutorialNarration();
+  if (!src || _otoAudioShouldBlock()) return;
+  try {
+    var audio = new Audio(src + '?' + OTO_RHYTHM_TUTORIAL_AUDIO_VERSION);
+    audio.preload = 'auto';
+    audio.volume = 0.96;
+    _otoTutorialNarrationAudio = audio;
+    audio.addEventListener('ended', function() {
+      if (_otoTutorialNarrationAudio === audio) _otoTutorialNarrationAudio = null;
+    }, { once: true });
+    var p = audio.play();
+    if (p && typeof p.catch === 'function') p.catch(function() {});
+  } catch(e) {}
+}
 function _tutPositionBubble(bubble, anchorRect, preferredSide) {
   // anchorRect の 上/下/中央 に合わせて bubble を配置、画面外にはみ出さないようクランプ
   var bw = bubble.offsetWidth, bh = bubble.offsetHeight;
@@ -11871,6 +11920,7 @@ function _clearOtoTutorialDemoTimersAndCleanups() {
 }
 function _clearOtoTutorialDemoEffects() {
   if (!_otoTutorialState) return;
+  _stopOtoTutorialNarration();
   _clearOtoTutorialDemoTimersAndCleanups();
   (_otoTutorialState.demoNodes || []).forEach(function(node) {
     try { if (node && node.parentNode) node.parentNode.removeChild(node); } catch (e) {}
@@ -11910,6 +11960,7 @@ function _runOtoTutorialTapCountdown(expectedSteps, expectedIndex) {
   if (!_otoTutorialState || _otoTutorialState.steps !== expectedSteps || _otoTutorialState.index !== expectedIndex) return;
   _clearOtoTutorialAutoTimer();
   _clearOtoTutorialDemoTimersAndCleanups();
+  _stopOtoTutorialNarration();
   _hideOtoTutorialHand();
   var bubble = document.getElementById('tut-bubble');
   var dim = document.getElementById('tut-dim');
@@ -12224,7 +12275,7 @@ function _makeOtoTutorialSteps(kind) {
     return [
       {
         badge: 'きょく',
-        msg: 'むずかしさを えらべるよ<br>まずは かんたんを おしてね',
+        msg: 'ここで むずかしさを えらべるよ<br>まずは かんたんを おしてね',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.songIntro,
         anchor: '.rhythm-diff-tabs',
         side: 'stageTop',
@@ -12747,6 +12798,7 @@ function _renderOtoTutorialStep() {
     bubble.classList.remove('is-countdown', 'tut-bubble-tap');
     bubble.classList.remove('hidden');
     bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
+    _playOtoTutorialNarration(s);
 
     var anchorEl = s.anchor ? document.querySelector(s.anchor) : null;
     var rect = anchorEl ? anchorEl.getBoundingClientRect() : null;

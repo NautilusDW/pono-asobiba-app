@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-694";
+const ASSET_VERSION = "20260619-695";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -71,6 +71,7 @@ const SHARED_TEXTURES = {
   innerRight: "sb3d_inner_shadow_right.webp",
   flipShadow: "sb3d_flip_shadow.webp",
   floorShadow: "sb3d_book_floor_shadow.webp",
+  image2OpenThickness: "sb3d_image2_thickness_spread_mid_alpha.png",
 };
 
 const BOOK_VARIANTS = {
@@ -310,8 +311,6 @@ const textureEntries = await Promise.all(textureFiles.map(async (file) => [file,
 const textureMap = new Map(textureEntries);
 const pageTemplateTextureMap = new Map();
 const collectionSpineTextureMap = new Map();
-const collectionThicknessTextureMap = new Map();
-const coverThicknessTextureMap = new Map();
 window.__stickerBookAssetsLoaded = true;
 
 const book = new THREE.Group();
@@ -3559,7 +3558,7 @@ function createCoverThicknessLayer() {
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(PAGE_W, THICKNESS_TEXTURE_H),
     new THREE.MeshBasicMaterial({
-      map: getCoverThicknessTexture(activeBook),
+      map: getTexture(thicknessFileFor("right", "full")),
       transparent: true,
       opacity: DEFAULT_COVER_TUNING.coverStackOpacity,
       side: THREE.DoubleSide,
@@ -3576,9 +3575,9 @@ function createCoverThicknessLayer() {
 function createCollectionStackBlock() {
   const group = new THREE.Group();
   const plane = new THREE.Mesh(
-    new THREE.PlaneGeometry(PAGE_W * 2, THICKNESS_TEXTURE_H),
+    new THREE.PlaneGeometry(PAGE_W * 2 + SPINE_W * 0.55, PAGE_H),
     new THREE.MeshBasicMaterial({
-      map: getCollectionThicknessTexture(activeBook),
+      map: getTexture(SHARED_TEXTURES.image2OpenThickness),
       transparent: true,
       opacity: 1,
       side: THREE.DoubleSide,
@@ -3771,7 +3770,7 @@ function positionStackSide(stack, level, tuning) {
 
 function applyCoverTuning() {
   if (coverThickness.book !== activeBook) {
-    assignTextureObject(coverThickness.plane, getCoverThicknessTexture(activeBook));
+    assignTexture(coverThickness.plane, thicknessFileFor("right", "full"));
     coverThickness.book = activeBook;
   }
 
@@ -3798,15 +3797,10 @@ function positionCollectionStackBlock() {
   pageStacks.right.group.visible = false;
   pageStacks.collection.group.visible = true;
 
-  if (pageStacks.collection.book !== activeBook) {
-    assignTextureObject(pageStacks.collection.plane, getCollectionThicknessTexture(activeBook));
-    pageStacks.collection.book = activeBook;
-  }
-
-  const scaleX = 1.012;
-  const scaleY = 0.92;
-  const topY = -PAGE_H / 2 + THICKNESS_OVERLAP + 0.52;
-  const scaledTextureH = THICKNESS_TEXTURE_H * scaleY;
+  const scaleX = 1.018;
+  const scaleY = 1.02;
+  const topY = -PAGE_H / 2 + 0.18;
+  const scaledTextureH = PAGE_H * scaleY;
   pageStacks.collection.plane.scale.set(scaleX, scaleY, 1);
   pageStacks.collection.plane.position.set(0, topY - scaledTextureH / 2, -0.038);
 }
@@ -4220,159 +4214,6 @@ function getCollectionSpineTexture(bookName) {
   texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
   collectionSpineTextureMap.set(bookName, texture);
-  return texture;
-}
-
-function getCollectionThicknessTexture(bookName) {
-  if (collectionThicknessTextureMap.has(bookName)) {
-    return collectionThicknessTextureMap.get(bookName);
-  }
-  const texture = createBookBlockThicknessTexture(bookName, {
-    width: 3072,
-    height: 384,
-    spine: true,
-  });
-  collectionThicknessTextureMap.set(bookName, texture);
-  return texture;
-}
-
-function getCoverThicknessTexture(bookName) {
-  if (coverThicknessTextureMap.has(bookName)) {
-    return coverThicknessTextureMap.get(bookName);
-  }
-  const texture = createBookBlockThicknessTexture(bookName, {
-    width: 1536,
-    height: 384,
-    spine: false,
-  });
-  coverThicknessTextureMap.set(bookName, texture);
-  return texture;
-}
-
-function createBookBlockThicknessTexture(bookName, options) {
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const ctx = canvas.getContext("2d");
-  const palette = bookName === "girl"
-    ? {
-        page: "#fff6df",
-        page2: "#f4e4bb",
-        line: "#c899a8",
-        shade: "#9d6f79",
-        spine: "#eadfbb",
-      }
-    : {
-        page: "#fff7de",
-        page2: "#f1e2b6",
-        line: "#c8a85b",
-        shade: "#806b36",
-        spine: "#eadfb2",
-      };
-  const x = Math.round(canvas.width * 0.028);
-  const y = Math.round(canvas.height * 0.07);
-  const w = canvas.width - x * 2;
-  const h = Math.round(canvas.height * 0.82);
-  const radius = Math.round(canvas.height * 0.22);
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.save();
-  ctx.filter = "blur(18px)";
-  ctx.fillStyle = "rgba(69, 54, 24, 0.2)";
-  drawCanvasRoundedRect(ctx, x + 8, y + 26, w - 16, h - 6, radius);
-  ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  drawCanvasRoundedRect(ctx, x, y, w, h, radius);
-  ctx.clip();
-
-  const baseGrad = ctx.createLinearGradient(0, y, 0, y + h);
-  baseGrad.addColorStop(0, "#fffbea");
-  baseGrad.addColorStop(0.26, palette.page);
-  baseGrad.addColorStop(0.7, palette.page2);
-  baseGrad.addColorStop(1, "#d8bd7d");
-  ctx.fillStyle = baseGrad;
-  ctx.fillRect(x, y, w, h);
-
-  const sideGrad = ctx.createLinearGradient(x, 0, x + w, 0);
-  sideGrad.addColorStop(0, "rgba(100, 76, 32, 0.22)");
-  sideGrad.addColorStop(0.035, "rgba(255, 255, 246, 0.48)");
-  sideGrad.addColorStop(0.5, "rgba(255, 255, 246, 0)");
-  sideGrad.addColorStop(0.965, "rgba(255, 255, 246, 0.5)");
-  sideGrad.addColorStop(1, "rgba(100, 76, 32, 0.22)");
-  ctx.fillStyle = sideGrad;
-  ctx.fillRect(x, y, w, h);
-
-  ctx.strokeStyle = "rgba(255,255,248,0.8)";
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(x + radius * 0.8, y + 18);
-  ctx.lineTo(x + w - radius * 0.8, y + 18);
-  ctx.stroke();
-
-  const lineCount = 12;
-  for (let i = 0; i < lineCount; i += 1) {
-    const t = i / (lineCount - 1);
-    const yy = y + h * (0.28 + t * 0.64);
-    const edgeInset = 28 + Math.sin(t * Math.PI) * 18;
-    ctx.strokeStyle = `rgba(110, 86, 38, ${0.25 - t * 0.06})`;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(x + edgeInset, yy);
-    ctx.lineTo(x + w - edgeInset, yy);
-    ctx.stroke();
-    ctx.strokeStyle = `rgba(255,255,248,${0.32 - t * 0.08})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x + edgeInset + 6, yy + 4);
-    ctx.lineTo(x + w - edgeInset - 6, yy + 4);
-    ctx.stroke();
-  }
-
-  if (options.spine) {
-    const cx = canvas.width / 2;
-    const spineW = Math.round(canvas.width * 0.07);
-    ctx.save();
-    ctx.filter = "blur(22px)";
-    ctx.fillStyle = "rgba(76, 58, 24, 0.2)";
-    ctx.fillRect(cx - spineW * 0.62, y - 28, spineW * 0.2, h + 56);
-    ctx.fillRect(cx + spineW * 0.42, y - 28, spineW * 0.2, h + 56);
-    ctx.fillStyle = "rgba(255, 253, 231, 0.34)";
-    ctx.fillRect(cx - spineW * 0.22, y - 28, spineW * 0.44, h + 56);
-    ctx.restore();
-
-    const spineGrad = ctx.createLinearGradient(cx - spineW, 0, cx + spineW, 0);
-    spineGrad.addColorStop(0, "rgba(99, 78, 35, 0)");
-    spineGrad.addColorStop(0.28, "rgba(99, 78, 35, 0.08)");
-    spineGrad.addColorStop(0.5, "rgba(255, 252, 228, 0.18)");
-    spineGrad.addColorStop(0.72, "rgba(99, 78, 35, 0.08)");
-    spineGrad.addColorStop(1, "rgba(99, 78, 35, 0)");
-    ctx.fillStyle = spineGrad;
-    ctx.fillRect(cx - spineW / 2, y - 12, spineW, h + 24);
-
-    ctx.strokeStyle = "rgba(94, 75, 34, 0.08)";
-    ctx.lineWidth = 3;
-    for (const offset of [-0.34, 0.34]) {
-      ctx.beginPath();
-      ctx.moveTo(cx + spineW * offset, y + 10);
-      ctx.lineTo(cx + spineW * offset, y + h - 10);
-      ctx.stroke();
-    }
-  }
-
-  ctx.strokeStyle = "rgba(91, 69, 30, 0.32)";
-  ctx.lineWidth = 4;
-  drawCanvasRoundedRect(ctx, x + 2, y + 2, w - 4, h - 4, radius);
-  ctx.stroke();
-  ctx.restore();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.needsUpdate = true;
   return texture;
 }
 
