@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T06:17:22Z - Puzzle basic tutorial: add missing hint-press narration (idx9) to hint DEMO at button step (voice-then-demonstrate), sw 1335->1336, scripts ->v1321
+- **タスク**: Puzzle basic tutorial: add missing hint-press narration (idx9) to hint DEMO at button step (voice-then-demonstrate), sw 1335->1336, scripts ->v1321
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 106
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 20, "Bash": 47, "Workflow": 14, "Edit": 11, "Write": 3, "Agent": 8, "Grep": 3}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T05:36:52Z - Fix blocking issues in 13-step puzzle hint-split wire: route basic-hint-drag-done through showBasicHintDoneNarration so idx11/idx12 closing narrations play before finishPartnerPractice
 - **タスク**: Fix blocking issues in 13-step puzzle hint-split wire: route basic-hint-drag-done through showBasicHintDoneNarration so idx11/idx12 closing narrations play before finishPartnerPractice
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 17, "Bash": 40, "Workflow": 11, "Edit": 9, "Write": 3, "Agent": 6, "Grep": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-19T02:52:14Z - 見る(peek)デモ削除のブロッキング修正: PUZZLE_TUTORIAL_VOICE.md の詳細セクションをテーブル/コードのindexに整合 (idx5 peek_explain追加, idx6-11リナンバー, 旧tut_basic_08_hint_done実装メモ修正), idx5呼び出しのphaseガードコメント明確化, node --check 3ファイル通過
-- **タスク**: 見る(peek)デモ削除のブロッキング修正: PUZZLE_TUTORIAL_VOICE.md の詳細セクションをテーブル/コードのindexに整合 (idx5 peek_explain追加, idx6-11リナンバー, 旧tut_basic_08_hint_done実装メモ修正), idx5呼び出しのphaseガードコメント明確化, node --check 3ファイル通過
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 68
-- **エラー数**: 9
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 17, "Workflow": 4, "Read": 10, "ToolSearch": 2, "DesignSync": 17, "Bash": 10, "Grep": 2, "Write": 6}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

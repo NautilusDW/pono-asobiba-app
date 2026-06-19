@@ -4448,23 +4448,29 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
       partnerPracticeState.phase = 'basic-hint-demo-button';
       partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
       practiceAddHighlight(btnHint);
+      // index 9 = hint PRESS (basic_tut_10 "ヒントを押すと、その場所が光るよ"). Plays in
+      // the demo BEFORE the hand presses the button — mirroring how idx8 plays
+      // before the tap demo — so the press narration is heard in full and is not
+      // cut by idx10/glow (idx10 only fires after the button demo completes).
       setPartnerPracticeCoachCopy(
         'つぎは 「ヒント」を おすよ',
-        '',
+        'おすと ばしょが ひかるよ',
         ''
       );
       setPartnerPracticeCoachBubble(btnHint, null, false);
       refreshHintButtonState();
       redraw();
-      runBasicButtonHandDemo(btnHint, {
-        moveMs: 920,
-        holdMs: 900,
-        afterMs: 520,
-        onPress: function () {
-          showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
-        },
-      }, function () {
+      playBasicPracticeVoice(9, function () {
         if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-button') return;
+        runBasicButtonHandDemo(btnHint, {
+          moveMs: 920,
+          holdMs: 900,
+          afterMs: 520,
+          onPress: function () {
+            showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
+          },
+        }, function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-button') return;
         clearPracticeHighlights();
         partnerPracticeState.phase = 'basic-hint-demo-place';
         partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
@@ -4485,6 +4491,7 @@ function runBasicHintPlaceHandDemo(piece, onDone) {
           clearHintGlow();
           partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
           if (typeof onDone === 'function') onDone();
+        });
         });
       });
     });
