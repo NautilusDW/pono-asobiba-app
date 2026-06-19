@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-19T03:52:29Z - Puzzle basic tutorial drag-try: restore full basic_tut_03 voice + badge/voice-together with audio-anchored split (badge-hide + input-enable at ~2.18s ピース boundary), removed silent badge-alone hold, cues at 2.18s/3.72s, cache bumps sw1331/voice1317/index1318
+- **タスク**: Puzzle basic tutorial drag-try: restore full basic_tut_03 voice + badge/voice-together with audio-anchored split (badge-hide + input-enable at ~2.18s ピース boundary), removed silent badge-alone hold, cues at 2.18s/3.72s, cache bumps sw1331/voice1317/index1318
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 88
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 17, "Bash": 40, "Workflow": 11, "Edit": 9, "Write": 3, "Agent": 6, "Grep": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-19T03:49:42Z - puzzle basic_tut_03 full drag-try narration restore (un-trim, re-encode + whisper timestamps)
+- **タスク**: puzzle basic_tut_03 full drag-try narration restore (un-trim, re-encode + whisper timestamps)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 88
+- **エラー数**: 14
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Read": 17, "Bash": 40, "Workflow": 11, "Edit": 9, "Write": 3, "Agent": 6, "Grep": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-19T02:52:14Z - 見る(peek)デモ削除のブロッキング修正: PUZZLE_TUTORIAL_VOICE.md の詳細セクションをテーブル/コードのindexに整合 (idx5 peek_explain追加, idx6-11リナンバー, 旧tut_basic_08_hint_done実装メモ修正), idx5呼び出しのphaseガードコメント明確化, node --check 3ファイル通過
 - **タスク**: 見る(peek)デモ削除のブロッキング修正: PUZZLE_TUTORIAL_VOICE.md の詳細セクションをテーブル/コードのindexに整合 (idx5 peek_explain追加, idx6-11リナンバー, 旧tut_basic_08_hint_done実装メモ修正), idx5呼び出しのphaseガードコメント明確化, node --check 3ファイル通過
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 8, "Workflow": 3, "Read": 5, "ToolSearch": 2, "DesignSync": 11, "Bash": 2, "Grep": 2, "Write": 3}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T00:55:50Z - Puzzle basic tutorial 10->11 step code wiring (peek explanation idx5 + reorder, hiragana coach, badge fade-out, try-phase timing sync, cache bumps sw1322/v1313)
-- **タスク**: Puzzle basic tutorial 10->11 step code wiring (peek explanation idx5 + reorder, hiragana coach, badge fade-out, try-phase timing sync, cache bumps sw1322/v1313)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 35
-- **エラー数**: 8
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 7, "Workflow": 3, "Read": 5, "ToolSearch": 2, "DesignSync": 11, "Bash": 2, "Grep": 2, "Write": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-18T17:30:49Z - Re-transcribe newly placed puzzle tutorial MP3s (05..10) and verify each line; flag deployment lag
-- **タスク**: Re-transcribe newly placed puzzle tutorial MP3s (05..10) and verify each line; flag deployment lag
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 41
-- **エラー数**: 9
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Read": 13, "Bash": 16, "Workflow": 4, "Edit": 3, "Write": 1, "Agent": 4}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

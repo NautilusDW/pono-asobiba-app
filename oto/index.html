@@ -11764,6 +11764,35 @@ function _isOtoTutorialNarrationReady(expectedSteps, expectedIndex) {
     _otoTutorialState.index === expectedIndex &&
     !_otoTutorialState.narrationPending);
 }
+function _queueOtoTutorialAdvanceUntilNarrationDone(expectedSteps, expectedIndex, fn) {
+  if (!_otoTutorialState ||
+      _otoTutorialState.steps !== expectedSteps ||
+      _otoTutorialState.index !== expectedIndex ||
+      !_otoTutorialState.narrationPending ||
+      typeof fn !== 'function') {
+    return false;
+  }
+  var ownerState = _otoTutorialState;
+  ownerState.queuedNarrationAdvance = function() {
+    if (_otoTutorialState !== ownerState ||
+        ownerState.steps !== expectedSteps ||
+        ownerState.index !== expectedIndex ||
+        ownerState.narrationPending) {
+      return;
+    }
+    fn();
+  };
+  return true;
+}
+function _runQueuedOtoTutorialAdvance(ownerState) {
+  if (!ownerState || _otoTutorialState !== ownerState || ownerState.narrationPending) return;
+  var fn = ownerState.queuedNarrationAdvance;
+  ownerState.queuedNarrationAdvance = null;
+  if (typeof fn !== 'function') return;
+  setTimeout(function() {
+    if (_otoTutorialState === ownerState && !ownerState.narrationPending) fn();
+  }, 80);
+}
 function _otoTutorialVoiceKeyForText(text) {
   if (!text) return '';
   for (var key in OTO_RHYTHM_TUTORIAL_VOICE) {
@@ -11779,7 +11808,10 @@ function _otoTutorialNarrationSrc(step) {
 function _stopOtoTutorialNarration() {
   var audio = _otoTutorialNarrationAudio;
   _otoTutorialNarrationAudio = null;
-  if (_otoTutorialState) _otoTutorialState.narrationPending = false;
+  if (_otoTutorialState) {
+    _otoTutorialState.narrationPending = false;
+    _otoTutorialState.queuedNarrationAdvance = null;
+  }
   if (!audio) return;
   try { audio.pause(); } catch(e) {}
   try { audio.currentTime = 0; } catch(e) {}
@@ -11796,6 +11828,7 @@ function _playOtoTutorialNarration(step) {
       if (_otoTutorialNarrationAudio === audio) _otoTutorialNarrationAudio = null;
       if (ownerState && _otoTutorialState === ownerState && _otoTutorialNarrationAudio === null) {
         ownerState.narrationPending = false;
+        _runQueuedOtoTutorialAdvance(ownerState);
       }
     }
     audio.preload = 'auto';
@@ -12866,12 +12899,17 @@ function _renderOtoTutorialStep() {
     if (btn) {
       var btnAdvanced = false;
       var btnHandler = function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (btnAdvanced || !_isOtoTutorialNarrationReady(steps, i)) return;
-      btnAdvanced = true;
-      try { btn.removeEventListener('pointerdown', btnHandler); } catch (err) {}
-      _advanceOtoTutorialStep(steps, i, 0);
+        e.preventDefault();
+        e.stopPropagation();
+        var runButtonAdvance = function() {
+          if (btnAdvanced || !_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+          btnAdvanced = true;
+          try { btn.removeEventListener('pointerdown', btnHandler); } catch (err) {}
+          _advanceOtoTutorialStep(steps, i, 0);
+        };
+        if (_queueOtoTutorialAdvanceUntilNarrationDone(steps, i, runButtonAdvance)) return;
+        if (!_isOtoTutorialNarrationReady(steps, i)) return;
+        runButtonAdvance();
       };
       btn.addEventListener('pointerdown', btnHandler);
       if (_otoTutorialState) {
@@ -12896,18 +12934,23 @@ function _renderOtoTutorialStep() {
       var bubbleHandler = function(e) {
         e.preventDefault();
         e.stopPropagation();
-        if (bubbleAdvanced || !_isOtoTutorialNarrationReady(steps, i)) return;
-        bubbleAdvanced = true;
-        try { bubble.removeEventListener('pointerdown', bubbleHandler); } catch (err) {}
-        if (anyTapHandler) {
-          try { document.removeEventListener('pointerdown', anyTapHandler, true); } catch (err) {}
-        }
-        try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (err) {}
-        if (s.countdownBeforeAdvance) {
-          _runOtoTutorialTapCountdown(steps, i);
-        } else {
-          _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
-        }
+        var runBubbleAdvance = function() {
+          if (bubbleAdvanced || !_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+          bubbleAdvanced = true;
+          try { bubble.removeEventListener('pointerdown', bubbleHandler); } catch (err) {}
+          if (anyTapHandler) {
+            try { document.removeEventListener('pointerdown', anyTapHandler, true); } catch (err) {}
+          }
+          try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (err) {}
+          if (s.countdownBeforeAdvance) {
+            _runOtoTutorialTapCountdown(steps, i);
+          } else {
+            _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
+          }
+        };
+        if (_queueOtoTutorialAdvanceUntilNarrationDone(steps, i, runBubbleAdvance)) return;
+        if (!_isOtoTutorialNarrationReady(steps, i)) return;
+        runBubbleAdvance();
       };
       bubble.addEventListener('pointerdown', bubbleHandler);
       var anyTapHandler = null;
@@ -12932,16 +12975,21 @@ function _renderOtoTutorialStep() {
       if (advanceEl) {
         var advanceDone = false;
         var advanceHandler = function() {
-          if (advanceDone || !_isOtoTutorialNarrationReady(steps, i)) return;
-          advanceDone = true;
-          try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler); } catch (err) {}
-          try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (e) {}
-          _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
+          var runAdvance = function() {
+            if (advanceDone || !_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
+            advanceDone = true;
+            try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler, true); } catch (err) {}
+            try { if (typeof s.onAdvance === 'function') s.onAdvance(); } catch (e) {}
+            _advanceOtoTutorialStep(steps, i, s.advanceDelayMs == null ? 120 : s.advanceDelayMs);
+          };
+          if (_queueOtoTutorialAdvanceUntilNarrationDone(steps, i, runAdvance)) return;
+          if (!_isOtoTutorialNarrationReady(steps, i)) return;
+          runAdvance();
         };
-        advanceEl.addEventListener(s.advanceEvent || 'click', advanceHandler);
+        advanceEl.addEventListener(s.advanceEvent || 'click', advanceHandler, true);
         if (_otoTutorialState) {
           _otoTutorialState.demoCleanups.push(function() {
-            try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler); } catch (e) {}
+            try { advanceEl.removeEventListener(s.advanceEvent || 'click', advanceHandler, true); } catch (e) {}
           });
         }
       }
