@@ -211,6 +211,7 @@ const COLLECTION_STACK_SEGMENTS_Y = 10;
 const COLLECTION_STACK_SPINE_DROP = PAGE_H * 0.008;
 const COLLECTION_STACK_SPINE_DEPTH = PAGE_H * 0.009;
 const COLLECTION_STACK_BOTTOM_WAVE = PAGE_H * 0.0024;
+const COLLECTION_STACK_INNER_U_CROP = Math.min(0.065, PAGE_RADIUS / PAGE_W);
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -3621,6 +3622,9 @@ function createCollectionStackSideGeometry(side) {
     for (let xIndex = 0; xIndex <= xSegments; xIndex += 1) {
       const u = xIndex / xSegments;
       const localX = -PAGE_W / 2 + u * PAGE_W;
+      const textureU = side === "left"
+        ? u * (1 - COLLECTION_STACK_INNER_U_CROP)
+        : COLLECTION_STACK_INNER_U_CROP + u * (1 - COLLECTION_STACK_INNER_U_CROP);
       const spineProximity = side === "left" ? u : 1 - u;
       const spineEase = smootherstep(spineProximity);
       const subtleEdgeWave =
@@ -3632,7 +3636,7 @@ function createCollectionStackSideGeometry(side) {
       const yWave = COLLECTION_STACK_BOTTOM_WAVE * subtleEdgeWave * bottomWeight;
 
       positions.push(localX, localY - yDrop + yWave, ribbonBow - zSink);
-      uvs.push(u, v);
+      uvs.push(textureU, v);
     }
   }
 
@@ -3651,6 +3655,8 @@ function createCollectionStackSideGeometry(side) {
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
   geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
   return geometry;
 }
 
