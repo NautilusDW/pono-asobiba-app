@@ -5169,11 +5169,20 @@ const SK_INTRO_GUIDE_STEPS = [
   { key: 'g', text: 'みどりは からだの ちょうしを ととのえるよ。<br>やさいや くだものだよ。' },
   { key: 'all', text: 'あか・きいろ・みどりを<br>ひとつずつ いれてみよう。' },
 ];
+// v1380: 5 文に同期させる音声 ID (assets/audio/bento/tutorial/sk_intro_0X.mp3)。
+// 実測 duration は 4.00 / 8.68 / 7.08 / 7.96 / 7.69 秒。 fallbackMs は audio 失敗時の
+// セーフティタイマーで、 各 duration より十分長い 10s 固定 (audio が ended event を
+// 発火しないまま黙る端末でも次へ進めるため)。 onEnded から 600ms 待って次の音声へ。
+const SK_INTRO_VOICE_IDS = ['sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05'];
+const SK_INTRO_VOICE_GAP_MS = 600;
+const SK_INTRO_VOICE_FALLBACK_MS = 10000;
 let skIntroGuideTimer = null;
 let skIntroGuideIndex = 0;
 function stopSkIntroGuide() {
   if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
   skIntroGuideTimer = null;
+  // v1380: 連続再生中の sk_intro 音声があれば必ず止める (モーダル閉じや早期遷移時)。
+  try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
   const intro = document.getElementById('sk-intro');
   if (intro) intro.classList.remove('is-guiding', 'is-all-focus');
   document.querySelectorAll('.sk-intro-col').forEach(col => {
@@ -5195,16 +5204,51 @@ function applySkIntroGuideStep(index) {
   });
   return true;
 }
+// v1380: 旧 3.6s 固定タイマーから音声連動再生に変更。 各 step で対応音声を再生し、
+// onEnded で 600ms 待って次 step へ。 音声が無効 or 取得失敗時は fallbackMs (10s) で
+// 自動進行 (playBentoTutorialVoice 側のセーフティタイマーが onEnded を保証する)。
+// ミュート設定 (isMaskEditorAudioMuted) 時は playBentoTutorialVoice が即時に
+// setTimeout(opts.onEnded, fallbackMs) する仕様だが、 子供が音声なしで 10s も
+// 待たされるのは UX が悪いので、 ミュート時は旧来の 3.6s に短縮する。
 function scheduleNextSkIntroGuideStep() {
   if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
+  skIntroGuideTimer = null;
   if (skIntroGuideIndex >= SK_INTRO_GUIDE_STEPS.length - 1) {
-    skIntroGuideTimer = null;
+    // 最終 step (key:'all') もナレーション再生は行いたいので、 直前で applyStep 後にこの関数が
+    // 呼ばれた前提で playBentoTutorialVoice をここで起動する。
+    const lastVoiceId = SK_INTRO_VOICE_IDS[skIntroGuideIndex];
+    if (lastVoiceId && typeof playBentoTutorialVoice === 'function') {
+      try { playBentoTutorialVoice(lastVoiceId, { fallbackMs: SK_INTRO_VOICE_FALLBACK_MS }); } catch (_) {}
+    }
     return;
   }
-  skIntroGuideTimer = setTimeout(() => {
+  const currentVoiceId = SK_INTRO_VOICE_IDS[skIntroGuideIndex];
+  const muted = (typeof isMaskEditorAudioMuted === 'function') && isMaskEditorAudioMuted();
+  const advance = () => {
     skIntroGuideIndex += 1;
     if (applySkIntroGuideStep(skIntroGuideIndex)) scheduleNextSkIntroGuideStep();
-  }, 3600);
+  };
+  if (muted) {
+    // ミュート時は旧来の 3.6s ペースを維持。
+    skIntroGuideTimer = setTimeout(advance, 3600);
+    return;
+  }
+  if (!currentVoiceId || typeof playBentoTutorialVoice !== 'function') {
+    // 音声未配置 / 関数未定義時のフォールバック (旧仕様)。
+    skIntroGuideTimer = setTimeout(advance, 3600);
+    return;
+  }
+  try {
+    playBentoTutorialVoice(currentVoiceId, {
+      fallbackMs: SK_INTRO_VOICE_FALLBACK_MS,
+      onEnded: () => {
+        if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
+        skIntroGuideTimer = setTimeout(advance, SK_INTRO_VOICE_GAP_MS);
+      },
+    });
+  } catch (_) {
+    skIntroGuideTimer = setTimeout(advance, 3600);
+  }
 }
 function startSkIntroGuide() {
   stopSkIntroGuide();
@@ -7746,6 +7790,8 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'small-next': 'basic_tut_13',
   // v1375: okazu-more はバブル + Pono callout で案内。 専用ナレ ID は割り当てない
   // (basic_tut_14 は complete-result 「これで おべんとうが かんせいしたよ」 で既使用済み)。
+  // v1380: 別ファイル名 okazu_more_01 で専用ナレを追加 (basic_tut_14 衝突回避)。
+  'okazu-more': 'okazu_more_01',
 };
 let bentoTutorialVoiceAudio = null;
 function stopBentoTutorialVoice() {
@@ -11589,6 +11635,31 @@ function tryFinishOkazuTier(tier) {
     renderFreeLayoutControls();
     return;
   }
+  // v1380: small-accessory step は「カップを置いて → cup-edit / cup-edit-try / small-cup-food /
+  // small-next」と続くので、 ここで stageComplete() を呼ぶと cup チュートリアル一連を全てスキップ
+  // してしまう。 tutorial が active かつ small-accessory にいる時は「みずたまカップを いれてね」と
+  // 促すだけにとどめ、 ステージ完了 / tier3 遷移は触らない。 cup 配置後は
+  // tutorialOnItemPlaced('cup') が cup-edit に進めるので、 そのフロー継続を保証する。
+  try {
+    if (typeof tutorialState !== 'undefined'
+        && tutorialState && tutorialState.active
+        && tutorialState.step === 'small-accessory'
+        && role === 'side') {
+      if (typeof setSpeech === 'function') {
+        setSpeech('みずたまカップを あいている ところに おこう');
+      }
+      // accessory tab に居ることを保証 (子供が food タブから OK を押した可能性に備える)。
+      try {
+        if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'accessory') {
+          freeLayoutTab = 'accessory';
+          if (typeof renderFreeLayoutControls === 'function') renderFreeLayoutControls();
+        }
+      } catch (_) {}
+      // small-accessory renderer 側の cup 強調/ハンド誘導をもう一度走らせる。
+      try { tutorialRetryRenderStep('small-accessory', 60); } catch (_) {}
+      return;
+    }
+  } catch (_) {}
   if (tier === 2 && getBoxTierCount() >= 3) {
     setFreeGuideStep('tier3Prompt');
     return;
@@ -14916,11 +14987,26 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 7d2. okazu-more — メインおかずを追加で置けることを案内 (v1373 新規 / v1374 で button-only advance に修正)
+  // 7d2. okazu-more — メインおかずを追加で置けることを案内 (v1373 新規 / v1374 で button-only advance に修正 / v1380 でメインおかずパレットを強制)
   // 「もっと入れてもいいよ」と促し、 おかずOK ボタン押下のみで small-accessory へ進む (v3 設計)。
   // 自動タイマーは廃止: 子供が追加配置している最中に勝手に進むのを防ぐため、 進行トリガは
   // tryFinishOkazuTier (= おかずOK / 2だんめOK / 3だんめOK 押下) からのフックに限定。
+  // v1380: 直前 step (move-requested-food) が freeGuideStep='tier2Side' のまま終わるため、
+  // okazu-more に入った瞬間に getCurrentOkazuRole() が 'side' を返してしまい、
+  // パレットが 小さい おかず (たまごやき/プチトマト等) のままで「もっと入れてもいいよ」が
+  // メインおかずパレットに切り替わらないバグを修正。 必ず tier2Main に戻して
+  // freeLayoutTab='food' を保証する (setFreeGuideStep が setSpeech するので、
+  // 直後に上書きするため一旦 skipRender:true で更新)。
   if (step === 'okazu-more') {
+    try {
+      if (typeof setFreeGuideStep === 'function') {
+        setFreeGuideStep('tier2Main', { skipRender: true });
+      } else if (typeof freeGuideStep !== 'undefined') {
+        freeGuideStep = 'tier2Main';
+      }
+      if (typeof freeLayoutTab !== 'undefined') freeLayoutTab = 'food';
+      if (typeof renderFreeLayoutControls === 'function') renderFreeLayoutControls();
+    } catch (_) {}
     setSpeech('すきな おかずを もっと いれてもいいよ。おわったら 「おかずOK」を おしてね');
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
     tutorialShowPonoCallout('すきな おかずを もっと<br>いれてもいいよ！<br>おわったら 「おかずOK」を おしてね');
@@ -14939,6 +15025,10 @@ function tutorialRenderStep() {
       // ガイドパネル再描画で DOM が再生成された直後などはボタンが取れない可能性 → retry
       tutorialRetryRenderStep('okazu-more');
     }
+    // v1380: okazu-more ナレーションは BENTO_TUTORIAL_STEP_VOICE map で
+    // 'okazu_more_01' に紐づけ済 (basic_tut_14 と衝突しない別 ID 名で配置)。
+    // tutorialPlayStepVoice(step, firstRender) が renderer 冒頭で呼ばれるので
+    // 個別の playBentoTutorialVoice 呼出は不要 (二重再生防止)。
     return;
   }
 
