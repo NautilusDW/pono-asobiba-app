@@ -325,11 +325,29 @@
       .herob{background-image:url('assets/lp/hero/bg_soft_playmat.webp');}
     }
     .herob *{box-sizing:border-box;}
-    .herob-title{margin:0;animation:herob-rise .6s .04s ease both;}
+    .herob-title{position:relative;z-index:1;margin:0;animation:herob-rise .6s .04s ease both;}
     .herob-title-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;white-space:nowrap;}
     .herob-title-img{display:block;max-width:min(800px,92vw);width:100%;height:auto;margin:0 auto;}
-    .herob-lead{font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:14px auto 0;animation:herob-rise .6s .06s ease both;}
-    .herob-cta-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:22px auto 0;animation:herob-rise .6s .18s ease both;}
+    .herob-lead{position:relative;z-index:1;font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:14px auto 0;animation:herob-rise .6s .06s ease both;}
+    .herob-cta-wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;margin:22px auto 0;animation:herob-rise .6s .18s ease both;}
+    /* ── CSS-positioned hero labels (absolute, responsive via clamp) ── */
+    .herob-label{
+      position:absolute;
+      z-index:0;
+      pointer-events:none;
+      width:clamp(72px,9vw,144px);
+      height:auto;
+      opacity:.96;
+      animation:herob-rise .6s .12s ease both;
+    }
+    .herob-label--moji   { top: clamp(180px, 32%, 280px); left:  clamp(8px, 3%, 48px); transform: rotate(-6deg); }
+    .herob-label--kazu   { top: clamp(280px, 58%, 460px); left:  clamp(8px, 4%, 56px); transform: rotate(4deg);  }
+    .herob-label--oekaki { top: clamp(160px, 28%, 240px); right: clamp(8px, 3%, 48px); transform: rotate(6deg);  }
+    .herob-label--puzzle { top: clamp(240px, 44%, 360px); right: clamp(8px, 3%, 56px); transform: rotate(-6deg); }
+    .herob-label--ongaku { top: clamp(340px, 70%, 520px); right: clamp(8px, 4%, 64px); transform: rotate(3deg);  }
+    @media (max-width:480px){
+      .herob-label{ width:clamp(56px,16vw,96px); }
+    }
     .herob-cta{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:56px;padding:14px 44px;background:var(--herob-primary-deep);color:#fff;font-weight:900;font-size:clamp(18px,4.6vw,24px);letter-spacing:.06em;text-decoration:none;border-radius:26px;box-shadow:0 6px 20px rgba(201,106,46,.32);transition:transform .25s ease,box-shadow .25s ease;}
     .herob-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(201,106,46,.4);}
     .herob-cta:active{transform:translateY(0) scale(.98);}
@@ -415,6 +433,11 @@
 
     <!-- ===== Hero B: 体験予告優先 (slim版) ===== -->
     <section class="herob" aria-labelledby="herob-h">
+      <img class="herob-label herob-label--moji" src="assets/lp/hero/labels/moji.png" alt="" aria-hidden="true" loading="lazy">
+      <img class="herob-label herob-label--kazu" src="assets/lp/hero/labels/kazu.png" alt="" aria-hidden="true" loading="lazy">
+      <img class="herob-label herob-label--oekaki" src="assets/lp/hero/labels/oekaki.png" alt="" aria-hidden="true" loading="lazy">
+      <img class="herob-label herob-label--puzzle" src="assets/lp/hero/labels/puzzle.png" alt="" aria-hidden="true" loading="lazy">
+      <img class="herob-label herob-label--ongaku" src="assets/lp/hero/labels/ongaku.png" alt="" aria-hidden="true" loading="lazy">
       <h1 class="herob-title" id="herob-h">
         <span class="herob-title-text">ポノのあそびば</span>
         <img src="assets/lp/hero/brand_logo.png"
