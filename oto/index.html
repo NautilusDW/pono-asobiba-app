@@ -3083,14 +3083,17 @@
   .set-popover {
     display: none;
     position: absolute;
-    top: 58px; right: 0;
+    top: 54px; right: 0;
     background: rgba(255,255,255,0.97);
-    border-radius: 14px;
-    padding: 8px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.28);
     flex-direction: column;
-    gap: 6px;
-    min-width: 220px;
+    gap: 5px;
+    min-width: 188px;
+    max-height: min(72vh, 360px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .set-popover.open { display: flex; animation: popoverIn 0.18s ease-out; }
   @keyframes popoverIn {
@@ -3115,20 +3118,21 @@
   .oto-menu-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    min-height: 42px;
-    padding: 8px 12px;
+    min-height: 34px;
+    padding: 5px 9px;
     border: 2px solid #e5e7eb;
-    border-radius: 10px;
+    border-radius: 9px;
     background: #fff;
     color: #5D4E37;
     font-family: inherit;
-    font-size: 0.88rem;
+    font-size: 0.76rem;
     font-weight: 900;
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
+    line-height: 1.15;
   }
   .oto-menu-item:active {
     transform: scale(0.96);
@@ -3144,24 +3148,24 @@
     background: #fff;
   }
   .oto-menu-icon {
-    width: 26px;
-    flex: 0 0 26px;
+    width: 22px;
+    flex: 0 0 22px;
     text-align: center;
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
   .scale-row {
     display: flex; align-items: center; gap: 4px;
-    padding: 6px 8px 2px;
+    padding: 5px 4px 1px;
     border-top: 1px solid #e5e7eb;
-    margin-top: 4px;
+    margin-top: 2px;
   }
   .scale-label {
-    font-size: 0.7rem; font-weight: 900; color: #5D4E37;
-    margin-right: 6px;
+    font-size: 0.62rem; font-weight: 900; color: #5D4E37;
+    margin-right: 4px;
   }
   .scale-btn {
     flex: 1;
-    padding: 6px 10px;
+    padding: 5px 7px;
     border: 2px solid #e5e7eb;
     border-radius: 8px;
     background: #fff;
@@ -5194,6 +5198,9 @@
         </button>
         <button class="oto-menu-item" id="oto-menu-tutorial" type="button">
           <span class="oto-menu-icon">❓</span><span>あそびかた</span>
+        </button>
+        <button class="oto-menu-item" id="oto-menu-tutorial-toggle" type="button">
+          <span class="oto-menu-icon">✅</span><span id="oto-menu-tutorial-toggle-label">チュートリアル ON</span>
         </button>
         <button class="oto-menu-item" id="oto-menu-stage-select" type="button">
           <span class="oto-menu-icon">🎼</span><span id="oto-menu-stage-label">ステージを えらぶ</span>
@@ -11881,6 +11888,7 @@ var OTO_TUTORIAL_KEYS = {
   rhythmStoryFromMenu: 'pono_oto_rhythm_story_from_menu_tut_seen_v2',
   freeStage: 'pono_oto_free_stage_tut_seen_v4'
 };
+var OTO_TUTORIAL_AUTO_KEY = 'pono_oto_tutorial_auto_enabled_v1';
 var OTO_RHYTHM_TUTORIAL_VOICE = {
   intro: 'これから あそびかたを せつめいするよ。',
   songIntro: 'ここで むずかしさを えらべるよ。さいしょは、かんたんを おしてね。',
@@ -12092,12 +12100,32 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
 }
 
 function _otoTutorialSeen(kind) {
+  if (!_otoTutorialAutoEnabled()) return true;
+  if (kind === 'rhythmStart') return false;
   var key = OTO_TUTORIAL_KEYS[kind] || TUT_SEEN_KEY;
   try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
 }
 function _markOtoTutorialSeen(kind) {
   var key = OTO_TUTORIAL_KEYS[kind] || TUT_SEEN_KEY;
   try { localStorage.setItem(key, '1'); } catch (e) {}
+}
+function _clearOtoTutorialSeen(kind) {
+  var key = OTO_TUTORIAL_KEYS[kind] || TUT_SEEN_KEY;
+  try { localStorage.removeItem(key); } catch (e) {}
+}
+function _clearAllOtoTutorialSeen() {
+  try { localStorage.removeItem(TUT_SEEN_KEY); } catch (e) {}
+  Object.keys(OTO_TUTORIAL_KEYS).forEach(function(kind) {
+    _clearOtoTutorialSeen(kind);
+  });
+  _otoTutorialSessionHidden = {};
+}
+function _otoTutorialAutoEnabled() {
+  try { return localStorage.getItem(OTO_TUTORIAL_AUTO_KEY) !== '0'; } catch (e) { return true; }
+}
+function _setOtoTutorialAutoEnabled(enabled) {
+  try { localStorage.setItem(OTO_TUTORIAL_AUTO_KEY, enabled ? '1' : '0'); } catch (e) {}
+  if (enabled) _clearAllOtoTutorialSeen();
 }
 function _otoTutorialHideNextChecked() {
   var input = document.getElementById('tut-hide-next');
@@ -12631,7 +12659,8 @@ function _makeOtoTutorialSteps(kind) {
         side: 'stageTop',
         noDim: true,
         hideActions: true,
-        autoNextMs: 900,
+        showHideNext: true,
+        autoNextMs: 3000,
         before: function() {
           _prepareOtoRhythmTutorialStage({ hideHud: true });
         }
@@ -13144,6 +13173,7 @@ function _showOtoTutorialHand(step, rect, anchorEl) {
 function _finishOtoTutorial(markSeen, continueFlow) {
   if (!_otoTutorialState) return;
   var kind = _otoTutorialState.kind;
+  var hideNextChecked = _otoTutorialHideNextChecked();
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   var spot = document.getElementById('tut-spot');
@@ -13162,9 +13192,9 @@ function _finishOtoTutorial(markSeen, continueFlow) {
   document.body.classList.remove('oto-tutorial-open');
   _setRhythmMenuAwaitingSongChoice(false);
   _setRhythmMenuAwaitingDiffChoice(false);
-  if (markSeen && kind === 'rhythmStart') {
-    _markOtoTutorialSeen(kind);
-  } else if (markSeen && _otoTutorialHideNextChecked()) {
+  if (markSeen && hideNextChecked) {
+    _setOtoTutorialAutoEnabled(false);
+  } else if (markSeen && kind !== 'rhythmStart') {
     _markOtoTutorialSeen(kind);
   } else if (markSeen) {
     _otoTutorialSessionHidden[kind] = true;
@@ -13281,12 +13311,13 @@ function _renderOtoTutorialStep() {
     if (!_otoTutorialState || _otoTutorialState.steps !== steps || _otoTutorialState.index !== i) return;
     var isLast = (i === steps.length - 1);
     var nextLabel = s.nextLabel || (isLast ? 'わかった！' : 'つぎへ');
-    var actionsHtml = s.hideActions ? '' : (
+    var hideNextHtml = (s.showHideNext || isLast) ? '<label class="tut-hide-next"><input type="checkbox" id="tut-hide-next">つぎから ださない</label>' : '';
+    var actionsHtml = s.hideActions ? hideNextHtml : (
       '<div class="tut-actions">' +
       '<button class="tut-skip-btn" id="tut-skip">とじる</button>' +
       '<button class="tut-next-btn" id="tut-next">' + nextLabel + '</button>' +
       '</div>' +
-      ((s.showHideNext || isLast) ? '<label class="tut-hide-next"><input type="checkbox" id="tut-hide-next">つぎから ださない</label>' : '')
+      hideNextHtml
     );
     bubble.innerHTML =
       '<div class="tut-badge">' + (s.badge || 'あそびかた') + '</div>' +
@@ -14317,9 +14348,11 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   if (!trigger || !popover) return;
   var homeBtn = document.getElementById('oto-menu-home');
   var tutorialBtn = document.getElementById('oto-menu-tutorial');
+  var tutorialToggleBtn = document.getElementById('oto-menu-tutorial-toggle');
   var stageSelectBtn = document.getElementById('oto-menu-stage-select');
   var bgmBtn = document.getElementById('oto-menu-bgm');
   var notationBtn = document.getElementById('oto-menu-notation');
+  var tutorialToggleLabel = document.getElementById('oto-menu-tutorial-toggle-label');
   var bgmLabel = document.getElementById('oto-menu-bgm-label');
   var notationLabel = document.getElementById('oto-menu-notation-label');
   var stageSelectLabel = document.getElementById('oto-menu-stage-label');
@@ -14329,6 +14362,14 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     }
     if (notationLabel) {
       notationLabel.textContent = NOTE_BUTTON_NOTATION === 'abc' ? 'おんぷ ドレミに' : 'おんぷ ABCに';
+    }
+    if (tutorialToggleBtn) {
+      var tutorialEnabled = _otoTutorialAutoEnabled();
+      tutorialToggleBtn.classList.toggle('is-off', !tutorialEnabled);
+      tutorialToggleBtn.setAttribute('aria-pressed', tutorialEnabled ? 'true' : 'false');
+      if (tutorialToggleLabel) {
+        tutorialToggleLabel.textContent = tutorialEnabled ? 'チュートリアル ON' : 'チュートリアル OFF';
+      }
     }
     if (stageSelectBtn) {
       var stageUnlocked = _rhythmStageSelectUnlocked();
@@ -14383,6 +14424,12 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     e.stopPropagation();
     close();
     showTutorial(_currentOtoTutorialKind(), { force: true });
+  });
+  if (tutorialToggleBtn) tutorialToggleBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    _setOtoTutorialAutoEnabled(!_otoTutorialAutoEnabled());
+    refreshMenuLabels();
   });
   if (stageSelectBtn) stageSelectBtn.addEventListener('click', function(e) {
     e.preventDefault();
