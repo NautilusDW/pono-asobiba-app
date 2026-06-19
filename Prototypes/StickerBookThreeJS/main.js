@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260619-699";
+const ASSET_VERSION = "20260619-701";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -74,13 +74,20 @@ const SHARED_TEXTURES = {
 };
 
 const ZUKAN_THICKNESS_STRIPS = [
+  {
+    file: "sb3d_collection_glossy_thick_paper_alpha.png",
+    aspect: 1666 / 175,
+    scaleY: 0.72,
+    widthPad: PAGE_H * 0.03,
+    topOverlap: PAGE_H * 0.028,
+  },
   { file: "sb3d_zukan_thickness_strip_01_alpha.png", aspect: 1564 / 127 },
   { file: "sb3d_zukan_thickness_strip_02_alpha.png", aspect: 1585 / 142 },
   { file: "sb3d_zukan_thickness_strip_03_alpha.png", aspect: 1553 / 127 },
   { file: "sb3d_zukan_thickness_strip_04_alpha.png", aspect: 1596 / 140 },
   { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 117 },
 ];
-const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
+const DEFAULT_ZUKAN_FORMAT_INDEX = 0;
 const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
 
 const BOOK_VARIANTS = {
@@ -3588,8 +3595,10 @@ function createCoverThicknessLayer() {
 
 function createCollectionStackBlock() {
   const group = new THREE.Group();
-  const width = PAGE_W * 2 + PAGE_H * 0.16;
-  const height = (width / selectedZukanThickness.aspect) * ZUKAN_THICKNESS_DISPLAY_SCALE_Y;
+  const width = PAGE_W * 2 + (selectedZukanThickness.widthPad ?? PAGE_H * 0.16);
+  const height =
+    (width / selectedZukanThickness.aspect) *
+    (selectedZukanThickness.scaleY ?? ZUKAN_THICKNESS_DISPLAY_SCALE_Y);
   const plane = new THREE.Mesh(
     new THREE.PlaneGeometry(width, height),
     new THREE.MeshBasicMaterial({
@@ -3824,7 +3833,7 @@ function positionCollectionStackBlock() {
   pageStacks.right.group.visible = false;
   pageStacks.collection.group.visible = true;
 
-  const topY = -PAGE_H / 2 + PAGE_H * 0.05;
+  const topY = -PAGE_H / 2 + (selectedZukanThickness.topOverlap ?? PAGE_H * 0.05);
   const centerY = topY - pageStacks.collection.height / 2;
   pageStacks.collection.plane.scale.set(1, 1, 1);
   pageStacks.collection.plane.position.set(0, centerY, -0.052);
