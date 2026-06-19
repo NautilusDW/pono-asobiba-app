@@ -144,12 +144,13 @@
       window.PonoCapture.register({
         gameId: "puzzle",
         build: async function(opts) {
-          // v1349: 旧 primary だった #puzzle-container はパズル盤面だけで、
-          // ヘッダ (タイトル/ステージラベル) や sidebar (見る/ヒント/進捗) を含まない。
-          // .page-wrapper を primary にしてゲーム画面全体をキャプチャする。
-          var container = document.querySelector(".page-wrapper")
-            || document.querySelector("#puzzle-container")
-            || document.body;
+          // v1353: .page-wrapper だけだと body 直下の overlay 群
+          // (#title-screen / #title-guide-choice / #puzzle-opening /
+          //  #tut-dim / #tut-bubble、 main.js が body.appendChild する
+          //  coach / overlay / prompt 各種) が含まれず、 タイトル / オープニング /
+          //  チュートリアル中のスクショが空白になる。 body 全体を撮影し、
+          //  不要要素は ignoreElements ([data-capture-hide]) で除外する。
+          var container = document.body;
           if (!container) return null;
           try {
             var mod = await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm");
