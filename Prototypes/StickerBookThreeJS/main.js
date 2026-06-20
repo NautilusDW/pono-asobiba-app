@@ -1240,11 +1240,6 @@ function syncEditorPlacementsWithStickerPlan() {
         placement.label = sticker.label;
         changed = true;
       }
-      const nextScale = collectionStickerPlacementScale(sticker);
-      if (!Number.isFinite(Number(placement.scale)) || Number(placement.scale) > nextScale * 1.16) {
-        placement.scale = nextScale;
-        changed = true;
-      }
     }
   }
   if (changed) {
@@ -1267,6 +1262,11 @@ function syncCollectionPlacementsWithStickerPlan() {
       if (placement.assetUrl !== sticker.assetUrl || placement.label !== sticker.label) {
         placement.assetUrl = sticker.assetUrl;
         placement.label = sticker.label;
+        changed = true;
+      }
+      const nextScale = collectionStickerPlacementScale(sticker);
+      if (!Number.isFinite(Number(placement.scale)) || Number(placement.scale) > nextScale * 1.16) {
+        placement.scale = nextScale;
         changed = true;
       }
     }
