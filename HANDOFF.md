@@ -19,6 +19,7 @@
 
 - 2026-06-16 - [batch:556-develop-tap-intro-blocking] Codex: user 指摘「アプリ版では直ったが絵本購入版ではトップPR/タップ開始画面の透けと背面ゲーム開始が直っていない」を受領。`develop-app` の修正は別ブランチ反映だったため、別 worktree で `develop` に同等修正を移植する。 (by Codex)
 - 2026-06-16 - [batch:556-develop-tap-intro-blocking] DONE - Codex: `develop` の `play.html` に tap-intro 不透明化、`body.tap-intro-open` による `.stage` 入力遮断、カード pointer/click/key/startGame 側の intro 表示中ガードを移植。`PAGE_CACHE_VERSION` と `sw.js` は v1198。検証: play inline scripts parse / `node --check sw.js` / `git diff --check` / Playwright desktop 1366x768 と touch 844x390 で背面カード座標タップ時にURL不変、背景rgbaなし、フェード後入力復帰、フェード後カード開始可を確認。 (by Codex)
+- 2026-06-20 - [batch:741-daily-gacha-system] DEVELOP-SYNC - Codex: develop-app commit `0afbe37` の daily gacha 実装を `develop` へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1` でローカル確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1210。検証: inline parse / `node --check sw.js` / `git diff --check` / Playwright local 127.0.0.1:8769 で通常非表示・`?dev=1` ガチャ完走・pageerror/requestfailed 0 を確認。 (by Codex)
 ## sub-tier テスト方針 (sw1192)
 
 - 本版 staging (https://pono-asobiba-staging.ndw.workers.dev/) では sub-only コンテンツは絶対に表示されない。 'abcd' パスワードでも book までしか上がらない。
