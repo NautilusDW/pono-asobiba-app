@@ -12091,6 +12091,11 @@ function _tutPositionBubble(bubble, anchorRect, preferredSide) {
     var stageRectRight = stageElRight ? stageElRight.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
     left = Math.round(stageRectRight.right - bw - Math.max(14, stageRectRight.width * 0.06));
     top = Math.round(stageRectRight.top + Math.max(12, Math.min(30, stageRectRight.height * 0.04)));
+  } else if (preferredSide === 'stageCenter') {
+    var stageElCenter = document.getElementById('stage');
+    var stageRectCenter = stageElCenter ? stageElCenter.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
+    left = Math.round(stageRectCenter.left + stageRectCenter.width / 2 - bw / 2);
+    top = Math.round(stageRectCenter.top + stageRectCenter.height / 2 - bh / 2);
   } else if (preferredSide === 'stageNoteRight') {
     var stageElNoteRight = document.getElementById('stage');
     var stageRectNoteRight = stageElNoteRight ? stageElNoteRight.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
@@ -12407,7 +12412,7 @@ function _runOtoTutorialTapCountdown(expectedSteps, expectedIndex) {
     bubble.style.left = '-9999px';
     bubble.style.top = '-9999px';
     requestAnimationFrame(function() {
-      _tutPositionBubble(bubble, null, 'stageTopRight');
+      _tutPositionBubble(bubble, null, 'stageCenter');
     });
     try { _playRhythmSampleSe('ok'); } catch (e) {}
     if (label === '0') {
@@ -12754,7 +12759,7 @@ function _makeOtoTutorialSteps(kind) {
         msg: 'これから おてほんを<br>せつめいするよ',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.intro,
         anchor: null,
-        side: 'stageTopRight',
+        side: 'stageCenter',
         noDim: true,
         nextLabel: 'OK',
         showHideNext: true,

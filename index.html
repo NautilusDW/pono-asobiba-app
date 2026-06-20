@@ -428,8 +428,26 @@
     .sticker-extra-title{font-weight:900;font-size:clamp(18px,4.5vw,22px);margin:0 0 6px;color:#5D4E37;}
     .sticker-extra-play{font-weight:700;font-size:clamp(13.5px,3.4vw,15px);line-height:1.7;color:#5D4E37;margin:0;}
 
+    /* ===== セクション区切り (gameカード/シール の あと、 絵本セクションの前) ===== */
+    .lp-section-divider{
+      display:flex; align-items:center; gap:12px;
+      width:100%; max-width:560px;
+      margin:32px auto 8px;
+      padding:0 4px;
+    }
+    .lp-section-divider-line{
+      flex:1 1 auto; height:2px;
+      background:repeating-linear-gradient(90deg, #C7B299 0 6px, transparent 6px 12px);
+      opacity:.55;
+    }
+    .lp-section-divider-label{
+      flex:0 0 auto;
+      font-weight:900; font-size:clamp(12px,2.8vw,13.5px);
+      color:#7A6A4F; letter-spacing:.04em; white-space:nowrap;
+    }
+
     /* ===== Amazon book-aside (compact) ===== */
-    .book-aside{width:100%;max-width:560px;margin:8px auto 0;padding:18px 16px 20px;text-align:center;background:rgba(255,255,255,.78);border:2px solid #FDE68A;border-radius:18px;box-shadow:0 4px 14px rgba(93,78,55,.1);}
+    .book-aside{width:100%;max-width:560px;margin:8px auto 0;padding:22px 18px 24px;text-align:center;background:#FFFBEC;border:3px solid #F4CE5C;border-radius:22px;box-shadow:0 6px 20px rgba(180,140,40,.18);}
     .book-aside-h{margin:0;font-weight:900;font-size:clamp(15px,3.6vw,18px);color:#5D4E37;letter-spacing:.04em;}
     .book-aside-em{background:linear-gradient(transparent 62%, #FDDCBF 62%);padding:0 .15em;}
     .book-aside-sub{margin:6px 0 12px;font-weight:700;font-size:clamp(11.5px,2.8vw,13px);color:#7A6A4F;letter-spacing:.02em;}
@@ -490,7 +508,7 @@
              fetchpriority="high"
              width="1715" height="500">
       </h1>
-      <p class="herob-lead">ポノの あそびばで できること</p>
+      <p class="herob-lead">3〜6さい に おすすめ</p>
       <div class="herob-cta-wrap">
         <a href="play.html" class="herob-cta" id="enter-btn">すぐ あそぶ <span class="arrow" aria-hidden="true">→</span></a>
         <p class="herob-free">むりょうで あそべるよ！</p>
@@ -505,27 +523,27 @@
       </div>
       <div class="pc-stack">
         <article class="pc-card pc-card--mt1 game-card-clickable" data-game="bento" role="button" tabindex="0" aria-label="彩り弁当の詳細を見る">
-          <div class="pc-bubble">いまにんき！</div>
+          <div class="pc-bubble">べんとう やさん</div>
           <div class="pc-visual pc-v-bento" role="img" aria-label="すきなおかずを選んで作る、いろどりお弁当の画面"></div>
           <div class="pc-body">
-            <h3 class="pc-title"><ruby>彩<rt>いろど</rt></ruby>り<ruby>弁当<rt>べんとう</rt></ruby></h3>
+            <h3 class="pc-title">いろどりべんとう</h3>
             <p class="pc-play">すきな おかずを えらんで、じぶんだけの おべんとうを つくろう！</p>
             <p class="pc-growth">色の組み合わせや配置で <b>彩りのセンスと段取り力</b> が育ちます</p>
             <div class="pc-chips"><span class="pc-chip">そうぞう</span><span class="pc-chip">いろ</span><span class="pc-chip">だんどり</span></div>
           </div>
         </article>
         <article class="pc-card pc-card--mt2 game-card-clickable" data-game="maze" role="button" tabindex="0" aria-label="ランタンの迷路の詳細を見る">
-          <div class="pc-bubble pc-bubble--alt">たんけん！</div>
+          <div class="pc-bubble pc-bubble--alt">もり たんけん</div>
           <div class="pc-visual pc-v-maze" role="img" aria-label="ランタンを持って暗い森を探検するめいろの画面"></div>
           <div class="pc-body">
-            <h3 class="pc-title">ランタンの <ruby>迷路<rt>めいろ</rt></ruby></h3>
+            <h3 class="pc-title">ランタンの めいろ</h3>
             <p class="pc-play">ランタンを もって、くらい もりを たんけん！ ゴールまで みちを みつけよう。</p>
             <p class="pc-growth">先を見通す <b>空間認識力・意思決定力</b> と、暗闇でも進む <b>小さな勇気</b> が育ちます</p>
             <div class="pc-chips"><span class="pc-chip">たんけん</span><span class="pc-chip">ゆうき</span><span class="pc-chip">かんがえる</span></div>
           </div>
         </article>
         <article class="pc-card pc-card--mt3 game-card-clickable" data-game="oto" role="button" tabindex="0" aria-label="ポノのおとタッチの詳細を見る">
-          <div class="pc-bubble pc-bubble--alt">♪ おとあそび</div>
+          <div class="pc-bubble pc-bubble--alt">♪ おと あそび</div>
           <div class="pc-visual pc-v-oto" role="img" aria-label="タップでドレミが鳴る、ポノのおとタッチの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">ポノの おとタッチ</h3>
@@ -535,7 +553,7 @@
           </div>
         </article>
         <article class="pc-card pc-card--mt4 game-card-clickable" data-game="puzzle" role="button" tabindex="0" aria-label="ポノのなかよしパズルの詳細を見る">
-          <div class="pc-bubble pc-bubble--alt">えを かんせい！</div>
+          <div class="pc-bubble pc-bubble--alt">みんなで パズル</div>
           <div class="pc-visual pc-v-puzzle" role="img" aria-label="ピースをあわせて絵を完成させる、ポノのなかよしパズルの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">ポノの なかよしパズル</h3>
@@ -545,7 +563,7 @@
           </div>
         </article>
         <article class="pc-card pc-card--mt5 game-card-clickable" data-game="quizland" role="button" tabindex="0" aria-label="フクロウはかせのなぞなぞの詳細を見る">
-          <div class="pc-bubble pc-bubble--alt">ひらめき ピン！</div>
+          <div class="pc-bubble pc-bubble--alt">なぞなぞ クイズ</div>
           <div class="pc-visual pc-v-quizland" role="img" aria-label="フクロウはかせがなぞなぞを出す、フクロウはかせのなぞなぞの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">フクロウはかせの なぞなぞ</h3>
@@ -572,6 +590,13 @@
         </div>
       </article>
     </section>
+
+    <!-- ===== セクション区切り (ゲーム/シール → 絵本へ) ===== -->
+    <div class="lp-section-divider" aria-hidden="true">
+      <span class="lp-section-divider-line"></span>
+      <span class="lp-section-divider-label">📚 おまけ：えほんの おはなし</span>
+      <span class="lp-section-divider-line"></span>
+    </div>
 
     <!-- ===== Amazon えほんも あるよ (compact) ===== -->
     <section class="book-aside" aria-labelledby="book-aside-h">
@@ -679,7 +704,7 @@
             {src:'assets/images/bento/story/shop_order_counter.png', alt:'お弁当屋さんでお客さんを迎える画面'},
             {src:'assets/images/bento/cooking/kitchen_bg.webp', alt:'お料理キッチンの背景'}
           ],
-          detail: 'すきな おかずを えらんで、 じぶんだけの おべんとうを つくろう！ いろを くみあわせる たのしさで、 「すきな いろ」 や 「だんどり」 が そだつよ。'
+          detail: 'おみせに きた おきゃくさんに、 すきな おかずを えらんで おべんとうを つくってあげよう！ じぶんの すきな おべんとうも じゆうに つくれるよ。 「いろどり」 や 「だんどり」 の センスが そだつよ。'
         },
         maze: {
           title: 'ランタンの迷路',
@@ -690,7 +715,7 @@
             {src:'maze/imageStages/stage5.jpg', alt:'夜の森の迷路ステージ'},
             {src:'maze/imageStages/map1.jpg', alt:'迷路の全体マップ'}
           ],
-          detail: 'ランタンを もって、 くらい もりを たんけん！ さきを みとおす ちからと、 くらやみでも すすむ ちいさな ゆうきが そだつよ。'
+          detail: 'ランタンを もって、 もりで まいごに なった どうぶつたちを たすけに いこう！ さきを みとおす ちからと、 くらやみでも すすむ ちいさな ゆうきが そだつよ。'
         },
         oto: {
           title: 'ポノのおとタッチ',
@@ -701,7 +726,7 @@
             {src:'assets/ui/play_oto_title_back.webp', alt:'おとタッチのメニューイメージ'},
             {src:'assets/images/oto/ui/free_mode_stage_screenshot_thumb.png', alt:'タップで楽器を鳴らす画面'}
           ],
-          detail: 'タップで ドレミが なるよ！ どうぶつの こえや たいこも あそべて、 リズムや おとの たかさで 「おんかん」 と 「ひょうげん」 の たのしさが そだつよ。'
+          detail: 'タップで ドレミが なるよ！ どうぶつや たいこで じゆうに あそぶ モードと、 ものがたりに あわせて おとを ならす リズム モードが あるよ。 「おんかん」 と 「ひょうげん」 の たのしさが そだつよ。'
         },
         puzzle: {
           title: 'ポノのなかよしパズル',
@@ -712,7 +737,7 @@
             {src:'assets/images/puzzle/opening/cut01.jpg', alt:'ポノとなかまたちのオープニング'},
             {src:'assets/images/puzzle/stages/puzzle_stage_08_flower_field_bugs.jpg', alt:'花畑と虫のパズルステージ'}
           ],
-          detail: 'ピースを あわせて、 ポノたちの えを かんせいさせよう！ かたちを みくらべる あそびで、 「しゅうちゅうの ちから」 と 「かんさつの ちから」 が そだつよ。'
+          detail: 'ともだちの どうぶつと いっしょに、 ピースを あわせて ポノたちの えを かんせいさせよう！ かたちを みくらべる あそびで、 「しゅうちゅうの ちから」 と 「かんさつの ちから」 が そだつよ。'
         },
         quizland: {
           title: 'フクロウはかせの なぞなぞ',
