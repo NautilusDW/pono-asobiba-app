@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-743";
+const ASSET_VERSION = "20260620-744";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -509,11 +509,13 @@ const STICKER_BOOK_THEMES = {
     line: "#d3b35f",
     tab: "#f4e7b8",
     collection: {
-      paper: ["#fffbe9", "#fff3cf", "#f7e8b5"],
+      paper: ["#fffbe8", "#fff2c9", "#f2dfaa"],
       text: "#334447",
       pageBorder: "#f9edc8",
       pageHighlight: "rgba(255, 255, 255, 0.78)",
       frameShadow: "rgba(87, 66, 21, 0.18)",
+      infoAccent: "#64ad57",
+      infoAccentSoft: "rgba(111, 179, 91, 0.26)",
       ring: 0xd9c48e,
       ringHighlight: 0xfff6d6,
       spine: {
@@ -527,32 +529,32 @@ const STICKER_BOOK_THEMES = {
       },
       pages: {
         left: {
-          frame: "#99cc56",
-          frameDark: "#77aa3a",
-          accent: "#4fb8a7",
-          innerStroke: "#b6d875",
+          frame: "#9aca55",
+          frameDark: "#70a63b",
+          accent: "#58ad75",
+          innerStroke: "#bedf7a",
           motifSet: "nature",
         },
         right: {
-          frame: "#62c6dc",
-          frameDark: "#3798b4",
-          accent: "#f2bd33",
-          innerStroke: "#8ddceb",
-          motifSet: "ocean",
+          frame: "#f0c84f",
+          frameDark: "#ca9c24",
+          accent: "#73b957",
+          innerStroke: "#f4dc84",
+          motifSet: "nature",
         },
       },
       slotBand: {
-        fill: "#f5d669",
-        edge: "#d9aa1d",
+        fill: "#efd15d",
+        edge: "#caa01f",
         slot: "rgba(255, 250, 231, 0.9)",
         stroke: "rgba(181, 130, 28, 0.32)",
       },
       card: {
-        foundFill: "rgba(255, 253, 240, 0.76)",
-        lockedFill: "rgba(223, 225, 215, 0.58)",
-        foundStroke: "rgba(116, 170, 72, 0.38)",
+        foundFill: "rgba(255, 253, 238, 0.82)",
+        lockedFill: "rgba(224, 226, 214, 0.58)",
+        foundStroke: "rgba(126, 177, 78, 0.4)",
         lockedStroke: "rgba(116, 128, 122, 0.24)",
-        numberFill: "#3ea5ad",
+        numberFill: "#4aa8a2",
       },
       tabs: [
         { color: "#f0c82d", shadow: "#c89d15", motif: "star" },
@@ -574,6 +576,8 @@ const STICKER_BOOK_THEMES = {
       pageBorder: "#fbedd2",
       pageHighlight: "rgba(255, 255, 255, 0.82)",
       frameShadow: "rgba(88, 62, 35, 0.16)",
+      infoAccent: "#82c7b8",
+      infoAccentSoft: "rgba(126, 199, 184, 0.26)",
       ring: 0xd8c3a1,
       ringHighlight: 0xfff8df,
       spine: {
@@ -4776,7 +4780,7 @@ function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, 
   ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
   ctx.fillText(pageDef?.label || "ずかんもくじ", PAGE_TEXTURE_W / 2, 112);
-  ctx.fillStyle = palette.sub;
+  ctx.fillStyle = theme.infoAccent || palette.sub;
   ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.fillText(pageDef?.subtitle || "いきものや たべものを しらべよう", PAGE_TEXTURE_W / 2, 150);
   ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
@@ -4815,7 +4819,7 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   const displayNote = collectionZukanCardNote(sticker, found, canShowSpecificItem);
   const { x, y, width, height } = rect;
   ctx.save();
-  ctx.fillStyle = found ? "rgba(255, 253, 240, 0.84)" : cardTheme.lockedFill;
+  ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
   ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
   ctx.lineWidth = 2.5;
   drawCanvasRoundedRect(ctx, x, y, width, height, 16);
@@ -4849,12 +4853,6 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   ctx.fillStyle = found ? "rgba(51, 68, 71, 0.72)" : "rgba(51, 68, 71, 0.46)";
   ctx.font = '700 19px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.fillText(displayNote, x + 222, y + 79, width - 326);
-  if (target?.targetPage) {
-    ctx.textAlign = "right";
-    ctx.fillStyle = found ? palette.sub : "rgba(51, 68, 71, 0.38)";
-    ctx.font = '800 18px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-    ctx.fillText(`p.${String(target.targetPage).padStart(2, "0")}`, x + width - 20, y + height - 22);
-  }
   ctx.restore();
 }
 
@@ -4866,7 +4864,7 @@ function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, 
 
   ctx.save();
   drawCollectionZukanDetailHeader(ctx, palette, theme, detail.header);
-  drawCollectionZukanIllustrationSlot(ctx, detail.image, found);
+  drawCollectionZukanIllustrationSlot(ctx, detail.image, found, theme);
   if (canShowSpecificItem) {
     drawAsyncCollectionZukanImage(
       ctx,
@@ -4930,7 +4928,7 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
         y: fieldY,
         width: fieldW,
         height: fieldH,
-        accentColor: palette.sub,
+        accentColor: theme.infoAccent || palette.sub,
       },
       {
         title: "たべもの",
@@ -5104,7 +5102,7 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = palette.sub;
+  ctx.fillStyle = theme.infoAccent || palette.sub;
   drawCanvasRoundedRect(ctx, x + 30, y + 30, 154, 58, 22);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
@@ -5129,7 +5127,7 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   ctx.restore();
 }
 
-function drawCollectionZukanIllustrationSlot(ctx, rect, found) {
+function drawCollectionZukanIllustrationSlot(ctx, rect, found, theme) {
   const { x, y, width, height } = rect;
   const slotGradient = ctx.createLinearGradient(0, y, 0, y + height);
   slotGradient.addColorStop(0, found ? "rgba(255, 255, 255, 0.78)" : "rgba(238, 239, 232, 0.72)");
@@ -5152,7 +5150,7 @@ function drawCollectionZukanIllustrationSlot(ctx, rect, found) {
   ctx.beginPath();
   ctx.arc(x + width - 78, y + 82, 34, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "rgba(85, 174, 184, 0.25)";
+  ctx.fillStyle = theme.infoAccentSoft || "rgba(85, 174, 184, 0.25)";
   ctx.beginPath();
   ctx.arc(x + 76, y + height - 88, 28, 0, Math.PI * 2);
   ctx.fill();
@@ -5226,7 +5224,7 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   ctx.textAlign = "center";
   ctx.fillText(memo.title, x + 123, y + 61, 146);
 
-  ctx.fillStyle = palette.sub;
+  ctx.fillStyle = theme.infoAccent || palette.sub;
   ctx.beginPath();
   ctx.arc(x + width - 76, y + 58, 24, 0, Math.PI * 2);
   ctx.fill();
