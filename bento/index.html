@@ -3309,11 +3309,15 @@ body.bento-complete-open .pono-dropdown {
   border-radius: 16px;
   background: #FFF8E5;
   color: #6B3E16;
-  /* v1399: 固定文を desktop 基準で読みやすく拡大 (mobile 時 0.72rem → 1.1rem) */
-  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  /* v1402: 下部重複テキスト削除で生まれた余白を活用して font-size を更に拡大 (v1399: clamp(1.1rem, 2vw, 1.4rem) → clamp(1.3rem, 2.4vw, 1.7rem)) */
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
   font-weight: 900;
   line-height: 1.35;
 }
+/* v1402: 上部キャプション内の色名を per-color で強調 (背景が #FFF8E5 クリームなので「きいろ」は #D4A017 黄土色で視認性確保) */
+.sk-intro-narration .sk-color-r { color: #E07A5F; font-weight: 900; }
+.sk-intro-narration .sk-color-y { color: #D4A017; font-weight: 900; }
+.sk-intro-narration .sk-color-g { color: #5BA378; font-weight: 900; }
 .sk-intro-note {
   color: var(--text);
   font-size: 0.8rem;
@@ -4948,7 +4952,7 @@ body.bento-complete-open .pono-dropdown {
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
     <div class="sk-intro-title">🍱 げんきな おべんとう 3つの なかま</div>
-    <div class="sk-intro-narration" id="sk-intro-narration" aria-live="polite">あか・きいろ・みどりを ひとつずつ いれてみよう</div>
+    <div class="sk-intro-narration" id="sk-intro-narration" aria-live="polite"><span class="sk-color-r">あか</span>・<span class="sk-color-y">きいろ</span>・<span class="sk-color-g">みどり</span>を ひとつずつ いれてみよう</div>
     <div class="sk-intro-grid">
       <!-- 赤 -->
       <div class="sk-intro-col sk-r-bg" data-sk-intro-group="r">
@@ -5011,7 +5015,6 @@ body.bento-complete-open .pono-dropdown {
         </div>
       </div>
     </div>
-    <p class="sk-intro-note">あか・きいろ・みどりを ひとつずつ いれてみよう。</p>
     <button class="sk-intro-btn" id="sk-intro-btn">わかった！</button>
   </div>
 </div>
@@ -11841,6 +11844,14 @@ function renderFreeCupEditorControls() {
   list.className = 'free-item-list';
   getCupEditorFoodItems().forEach(def => list.appendChild(makeFreePaletteButton(def)));
   frag.appendChild(list);
+  // v1402: cup-edit-try で cup editor 経路の toolbar 再生成後も size/OK 青枠を再 apply
+  try {
+    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active
+        && tutorialState.step === 'cup-edit-try'
+        && typeof tutorialReapplyCupEditTryMarks === 'function') {
+      tutorialReapplyCupEditTryMarks();
+    }
+  } catch (_) {}
   return frag;
 }
 function renderFreeCupControls() {
@@ -11960,12 +11971,16 @@ function renderFreeLayoutControls() {
 
   // v1370: palette 再構築 (tray.innerHTML = '') で消えるチュートリアル lock を確実に復元する。
   // タブ切替→food タブ再表示で small-cup-food / box の lock が落ちるリグレッションを防ぐフェイルセーフ。
+  // v1402: cup-edit-try でサイズ (1/2/3) や ↓↑ 矢印を押すと toolbar DOM が再生成されて
+  //   size/OK の青枠 mark が消える問題を解消するため、 同じパターンで再 apply フックを追加。
   try {
     if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
       if (tutorialState.step === 'box') {
         if (typeof tutorialApplyBoxLock === 'function') tutorialApplyBoxLock();
       } else if (tutorialState.step === 'small-cup-food') {
         if (typeof tutorialApplySmallCupFoodLock === 'function') tutorialApplySmallCupFoodLock();
+      } else if (tutorialState.step === 'cup-edit-try') {
+        if (typeof tutorialReapplyCupEditTryMarks === 'function') tutorialReapplyCupEditTryMarks();
       }
     }
   } catch (_) {}
@@ -14298,6 +14313,43 @@ function tutorialClearSmallCupFoodLock() {
   // 既存 tutorialClearBoxLock と同じ処理 (DOM 全 palette-item の lock 解除) を流用
   tutorialClearBoxLock();
 }
+// v1402: cup-edit-try step でサイズボタン (1/2/3) や ↓↑ レイヤー矢印を押すと
+//   renderFreeLayoutControls / renderFreeCupEditorControls が toolbar DOM を
+//   再生成し、 tutorialMarkTarget の SVG オーバーレイ target reference が浮いて
+//   青枠が消える症状を解消するための再 apply ヘルパー。 box / small-cup-food の
+//   lock 復元と同じパターン (renderFreeLayoutControls 末尾の hook 参照)。
+function tutorialReapplyCupEditTryMarks() {
+  if (typeof tutorialState === 'undefined' || !tutorialState || !tutorialState.active) return;
+  if (tutorialState.step !== 'cup-edit-try') return;
+  try {
+    // 既存 mark を clear して新 DOM 要素に張り直し
+    if (typeof tutorialClearTrims === 'function') tutorialClearTrims();
+
+    const sizeOneBtn = (typeof tutorialEditSizeButtonEl === 'function' ? tutorialEditSizeButtonEl(1) : null)
+                    || document.querySelector('[data-free-icon="size-1"]:not(:disabled)');
+    const sizeControl = (typeof tutorialEditSizeControlEl === 'function' ? tutorialEditSizeControlEl() : null);
+    const okBtn = (typeof tutorialCupOkButton === 'function' ? tutorialCupOkButton() : null);
+    const toolbar = (typeof tutorialContextToolbarEl === 'function' ? tutorialContextToolbarEl() : null);
+
+    let marked = false;
+    if (sizeOneBtn) {
+      tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
+      marked = true;
+    } else if (sizeControl) {
+      tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
+      marked = true;
+    }
+
+    if (okBtn) {
+      tutorialMarkTarget(okBtn, { radius: 16, outline: false });
+      marked = true;
+    }
+
+    if (!marked && toolbar) {
+      tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+    }
+  } catch (_) {}
+}
 // パレットから type=cup の最初のボタンを取得 (accessory タブ)
 // v3.3: タブ context が一致しないときは null を返し、 各 step が誤タブの palette を掴まないようにする。
 function tutorialFindCupPaletteEl() {
@@ -15261,6 +15313,10 @@ function tutorialRenderStep() {
   //   経由で呼ばれてサイズ mark → 矢印 mark を順次切替える。
 
   // 9c. cup-edit-try — カップ編集を試したあと、小さいおかずを入れる
+  // v1402: サイズボタン (1/2/3) や ↓↑ レイヤー矢印を押すと renderFreeLayoutControls が
+  //   tray.innerHTML = '' で toolbar DOM を再生成し、 tutorialMarkTarget の SVG オーバーレイ
+  //   target reference が浮いて青枠が消える症状を解消するための再 apply ヘルパー。
+  //   box / small-cup-food の lock 復元と同じパターン (line 11963 付近の hook 参照)。
   if (step === 'cup-edit-try') {
     if (firstRender) tutorialSetActiveCupSizeKey('small');
     const toolbar = tutorialContextToolbarEl();
