@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-730";
+const ASSET_VERSION = "20260620-732";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -11,16 +11,6 @@ const GUTTER = PAGE_H * (192 / 1536);
 const COLLECTION_GUTTER = 0;
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
-const COLLECTION_BOOK_LAYOUT = {
-  desktop: {
-    scale: 0.86,
-    y: 0.72,
-  },
-  mobileLandscape: {
-    scale: 0.81,
-    y: 0.84,
-  },
-};
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
 const PAGE_HOLE_X = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
@@ -2269,7 +2259,6 @@ function setAlbumMode(mode) {
   applyAlbumLayout();
   refreshPageTemplateTextures();
   updateAlbumModeUi();
-  resize();
   updatePage(flipProgress);
   syncUrl();
 }
@@ -6024,15 +6013,8 @@ function resize() {
   camera.lookAt(cameraTarget);
   camera.updateProjectionMatrix();
 
-  const collectionLayout = width < 720
-    ? COLLECTION_BOOK_LAYOUT.mobileLandscape
-    : COLLECTION_BOOK_LAYOUT.desktop;
-  const bookScale = activeAlbumMode === "collection" ? collectionLayout.scale : 1;
-  const bookY = activeAlbumMode === "collection"
-    ? collectionLayout.y
-    : width < 720 ? 0.56 : 0.38;
-  book.scale.setScalar(bookScale);
-  book.position.y = bookY;
+  book.scale.setScalar(1);
+  book.position.y = width < 720 ? 0.56 : 0.38;
   if (!coverOpenAnimation) {
     applyBookFramePosition(activeSurface === "cover" ? 0 : 1);
   }
