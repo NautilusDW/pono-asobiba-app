@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-20T04:12:47Z - Bento 2音声 (basic_tut_11 + okazu_more_01) を Cloud TTS Chirp3-HD OAuth2 経路で再生成、whisper 検証 + commit/push 完了 (sw v1397→v1398)
+- **タスク**: Bento 2音声 (basic_tut_11 + okazu_more_01) を Cloud TTS Chirp3-HD OAuth2 経路で再生成、whisper 検証 + commit/push 完了 (sw v1397→v1398)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 111
+- **エラー数**: 15
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 35, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 44, "ToolSearch": 1, "Edit": 6, "Write": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-20T03:36:58Z - Bento capture upper-DOM blur fix: clonedDoc-only box-shadow/filter stripping + small emoji button 1.4x upscale + geometricPrecision (v1396 onclone enhancement)
 - **タスク**: Bento capture upper-DOM blur fix: clonedDoc-only box-shadow/filter stripping + small emoji button 1.4x upscale + geometricPrecision (v1396 onclone enhancement)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Agent": 10, "Bash": 7, "ToolSearch": 1, "Grep": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-20T00:07:48Z - Playwright E2E T06-T11: capture.js preset→PNG IHDR parity + filename + seq increment (v1345 silent-fallback regression guard)
-- **タスク**: Playwright E2E T06-T11: capture.js preset→PNG IHDR parity + filename + seq increment (v1345 silent-fallback regression guard)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 86
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 29, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 27, "ToolSearch": 1, "Edit": 6, "Write": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
