@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-20T03:11:54Z - oto キャプチャの mis-positioned 描画修正 (target を document.body 化 + windowWidth/windowHeight 明示)
+- **タスク**: oto キャプチャの mis-positioned 描画修正 (target を document.body 化 + windowWidth/windowHeight 明示)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 99
+- **エラー数**: 6
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 29, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 40, "ToolSearch": 1, "Edit": 6, "Write": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-20T01:21:37Z - Screenshot capture html2canvas onclone fix + letterRendering dead code削除 + ignoreElements対称化 + .gitignore tmp追加 (sw1390)
 - **タスク**: Screenshot capture html2canvas onclone fix + letterRendering dead code削除 + ignoreElements対称化 + .gitignore tmp追加 (sw1390)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 15, "Bash": 7, "Grep": 3, "Agent": 9, "Glob": 8, "ToolSearch": 1, "Edit": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T21:48:31Z - LP play-cardsにゲーム別テープ色とゲーム詳細モーダル追加 (5ゲーム), sw v1372 bump
-- **タスク**: LP play-cardsにゲーム別テープ色とゲーム詳細モーダル追加 (5ゲーム), sw v1372 bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 61
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 24, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 9, "ToolSearch": 1, "Edit": 5, "Write": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
