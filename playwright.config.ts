@@ -9,6 +9,13 @@ import { defineConfig, devices } from '@playwright/test';
  * - `chromium-staging-smoke` runs only tests tagged `@smoke` against the app staging
  *   worker. This project is opt-in (invoke with `--project=chromium-staging-smoke`)
  *   and is intended for nightly use; do NOT enable it for the default test run.
+ * - `chromium-prod-shim` runs only tests tagged `@prod-shim`. It launches chromium
+ *   with `--host-resolver-rules=MAP <prod-host> 127.0.0.1, MAP <workers-dev-host>
+ *   127.0.0.1` so that `location.hostname` inside the page reports a real
+ *   production hostname while the socket lands on the local python http.server.
+ *   This is how we exercise capture.js's production hostname gate without an
+ *   `[Unforgeable]` location override. Invoke with
+ *   `--project=chromium-prod-shim`.
  *
  * The local `webServer` block boots `python -m http.server 8000` from the repo root.
  * `reuseExistingServer: true` lets a long-running dev server be reused so iterative
@@ -57,6 +64,26 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'https://pono-asobiba-app-staging.ndw.workers.dev',
+      },
+    },
+    {
+      name: 'chromium-prod-shim',
+      grep: /@prod-shim/,
+      use: {
+        ...devices['Desktop Chrome'],
+        // Default baseURL points the chromium-prod-shim project at the
+        // production canonical hostname. Tests that need the workers.dev
+        // hostname override per-call via page.goto('http://...').
+        baseURL: 'http://pono.kodama-no-mori.com:8000',
+        launchOptions: {
+          args: [
+            // DNS shim: production hostnames resolve to local http.server.
+            // location.hostname inside the page reports the real prod host,
+            // bytes come from python -m http.server 8000.
+            '--host-resolver-rules=MAP pono.kodama-no-mori.com 127.0.0.1, MAP pono-asobiba-app.ndw.workers.dev 127.0.0.1',
+            '--ignore-certificate-errors',
+          ],
+        },
       },
     },
   ],
