@@ -445,6 +445,16 @@
   //   - onclone           → クローン DOM の text-overflow:ellipsis を clip+wrap に変換
   //                          (実画面の ellipsis 切れが「タコウインナーか゛」 のように
   //                           真の文字列で焼き込まれるのを根本回避。 実画面は無影響)
+  //                          v1395: 上層 DOM (small emoji buttons / box-shadow / blur) の
+  //                          rasterize 品質ボトムアップも担当:
+  //                            * box-shadow / filter:blur / drop-shadow を全要素 none 化
+  //                              (html2canvas は shadow を別 layer pass で焼き、 emoji /
+  //                               text と組み合わせると "ふんわり滲み" が出るため)
+  //                            * 単一 emoji だけを含むボタン (font-size ≤ 28px) のフォントを
+  //                              1.4x 拡大 + crisp text-rendering 指示。 html2canvas の
+  //                              emoji rasterizer は font-size が小さいほど glyph metric を
+  //                              丸める傾向があり、 一段大きく描画させてから downscale で
+  //                              合わせる方が結果的に締まる。 実 DOM は無影響 (clonedDoc 限定)
   // 各ゲームの html2canvas 呼び出しは: html2canvas(target, PonoCapture.html2canvasOptions())
   // のように使う。 overrides で個別調整可能 (例: backgroundColor を白に固定したい等)。
   function html2canvasOptions(overrides) {
@@ -467,6 +477,29 @@
       },
       onclone: function (clonedDoc) {
         try {
+          // v1395: 1) Inject a stylesheet into the clonedDoc that strips
+          //         box-shadow / filter (blur/drop-shadow) globally and applies
+          //         crisp text-rendering to small text/emoji elements.
+          //         clonedDoc 限定なので実画面 DOM は無影響。
+          try {
+            var captureStyle = clonedDoc.createElement('style');
+            captureStyle.setAttribute('data-pono-capture-onclone', '1');
+            captureStyle.textContent = [
+              '/* pono capture v1395: drop shadows / filters html2canvas reproduces poorly */',
+              '*, *::before, *::after {',
+              '  box-shadow: none !important;',
+              '  -webkit-filter: none !important;',
+              '  filter: none !important;',
+              '}',
+              '/* crisp text/emoji rendering for the html2canvas rasterizer */',
+              'button, svg, [class*="-btn"], [class*="-icon"] {',
+              '  text-rendering: geometricPrecision;',
+              '  -webkit-font-smoothing: antialiased;',
+              '}'
+            ].join('\n');
+            (clonedDoc.head || clonedDoc.documentElement).appendChild(captureStyle);
+          } catch (e) {}
+
           var els = clonedDoc.querySelectorAll('*');
           for (var i = 0; i < els.length; i++) {
             var el = els[i];
@@ -477,6 +510,23 @@
                 el.style.textOverflow = 'clip';
                 el.style.whiteSpace = 'normal';
                 el.style.overflow = 'visible';
+              }
+              // v1395: tiny emoji-only buttons (e.g. bento ⚙ /  ⭐) suffer from
+              // html2canvas's emoji rasterizer at small font sizes. If the
+              // element is a button-ish with a single short emoji-like text
+              // child and font-size ≤ 28px, scale the font 1.4x on the clone so
+              // html2canvas rasterizes a larger glyph (the final compose step
+              // downscales it back, yielding crisper edges).
+              if (cs && el.children && el.children.length === 0) {
+                var tag = (el.tagName || '').toLowerCase();
+                var txt = (el.textContent || '').trim();
+                if ((tag === 'button' || tag === 'span') && txt.length > 0 && txt.length <= 2) {
+                  var fs = parseFloat(cs.fontSize);
+                  if (fs && fs <= 28) {
+                    el.style.fontSize = Math.round(fs * 1.4) + 'px';
+                    el.style.textRendering = 'geometricPrecision';
+                  }
+                }
               }
             } catch (e) {}
           }

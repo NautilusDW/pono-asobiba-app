@@ -12550,7 +12550,7 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   _otoTutorialState.ownsRhythmDemo = true;
   _startRhythmDemoVisualLoop();
   var hitDelay = Math.max(900, targetDelayMs - 130);
-  var readyDelay = Math.max(260, Math.min(hitDelay - 950, targetDelayMs - 1700));
+  var readyDelay = Math.max(220, Math.min(650, hitDelay - 1200));
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState) return;
     var rect = btn.getBoundingClientRect();
@@ -14671,12 +14671,23 @@ _renderRecBar();
         // oto は 3 canvas (bgCanvas + rhythm3d-road + rhythm3d-notes) + DOM の UI が
         // 重なる構成。 #app は position:fixed; inset:0 で viewport を埋めるが、 中の
         // .stage が transform:translate(-50%,-50%) + aspect-ratio:16/9 で中央配置
-        // されているため、 #app を target にすると html2canvas が transform を
-        // 正しく展開できず、 stage が右下に押し込まれる症状が出ていた (左上 2/3 が
-        // 空の bg gradient、 右下に lane だけ小さく見える)。
-        // bento/puzzle と同様に document.body を target にし、 viewport サイズを
-        // 明示 (windowWidth/windowHeight + width/height + x/y=0) する事で、
-        // .stage の transform を viewport 基準で正しく rasterize させる。
+        // されているため、 html2canvas は CSS transform を一部しか展開できず、
+        // .stage の top-left が viewport 中央に置かれ、 中身が右下に押し出される
+        // (左上 2/3 が空 / 右下に road + buttons の症状)。 同様に title screen の
+        // .intro__content も right:clamp(...) + transform:translateY(-50%) で
+        // 配置されており、 html2canvas が translateY を解釈できず content が下に流れる。
+        //
+        // v1392 では「target を document.body にし viewport サイズを明示」のみ
+        // 試したが、 html2canvas が transform を展開できない根本問題は残った
+        // (page.screenshot との 1:1 比較で再現)。
+        //
+        // v1395: html2canvas onclone でクローン DOM 側の centering transform を
+        // 直接書き換える。 実 DOM は無触り (in-game UI は維持)、 クローン側でのみ
+        //   - body.rhythm-layout .stage : left/top=0, transform=none, width/height=100vw/100vh
+        //   - .intro__content : top/right/transform を解除して全画面 flex 中央
+        //   - .start-mode-choice : justify-content を center
+        // とすることで html2canvas が viewport にフィットした正しいレイアウトで
+        // rasterize できる。
         var container = document.body;
         try {
           var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
@@ -14684,6 +14695,50 @@ _renderRecBar();
           if (typeof html2canvas !== 'function') throw new Error('html2canvas not loadable');
           var vw = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
           var vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+          var sharedOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
+            ? window.PonoCapture.html2canvasOptions()
+            : null;
+          var sharedOnclone = sharedOpts && typeof sharedOpts.onclone === 'function' ? sharedOpts.onclone : null;
+          var otoOnclone = function(clonedDoc) {
+            if (sharedOnclone) {
+              try { sharedOnclone(clonedDoc); } catch (e) {}
+            }
+            try {
+              var style = clonedDoc.createElement('style');
+              style.setAttribute('data-pono-capture-oto', '1');
+              // Title (#intro) が live DOM で表示されているかを記録し、 そのときだけ
+              // クローン側でも flex 中央レイアウトを強制する。 rhythm-layout 中は title が
+              // display:none なので onclone でも非表示を維持しないと title が前面に焼かれる。
+              var liveIntro = document.getElementById('intro');
+              var liveIntroVisible = false;
+              try {
+                if (liveIntro) {
+                  var cs = window.getComputedStyle(liveIntro);
+                  liveIntroVisible = cs && cs.display !== 'none' && cs.visibility !== 'hidden';
+                }
+              } catch (e) {}
+              var introCss = liveIntroVisible
+                ? '.intro { width: ' + vw + 'px !important; height: ' + vh + 'px !important; display: flex !important; align-items: center !important; justify-content: center !important; }\n' +
+                  '.intro__content { position: static !important; top: auto !important; right: auto !important; left: auto !important; transform: none !important; width: auto !important; align-items: center !important; }\n'
+                : '#intro, .intro { display: none !important; visibility: hidden !important; }\n';
+              style.textContent =
+                'html, body { width: ' + vw + 'px !important; height: ' + vh + 'px !important; overflow: hidden !important; }\n' +
+                '#app { position: fixed !important; inset: 0 !important; width: ' + vw + 'px !important; height: ' + vh + 'px !important; visibility: visible !important; }\n' +
+                'body.rhythm-layout .stage, .stage {\n' +
+                '  position: absolute !important;\n' +
+                '  left: 0 !important; top: 0 !important; right: auto !important; bottom: auto !important;\n' +
+                '  width: ' + vw + 'px !important; height: ' + vh + 'px !important;\n' +
+                '  transform: none !important;\n' +
+                '  inset: 0 !important;\n' +
+                '}\n' +
+                introCss +
+                '/* モード選択画面: 右寄せ flex を中央へ (live DOM で見えている時のみ) */\n' +
+                '.start-mode-choice { justify-content: center !important; }\n' +
+                '.start-mode-panel { margin-right: 0 !important; }\n';
+              if (clonedDoc.head) clonedDoc.head.appendChild(style);
+              else if (clonedDoc.body) clonedDoc.body.appendChild(style);
+            } catch (e) {}
+          };
           var viewportOverrides = {
             x: 0,
             y: 0,
@@ -14692,10 +14747,11 @@ _renderRecBar();
             windowWidth: vw,
             windowHeight: vh,
             scrollX: 0,
-            scrollY: 0
+            scrollY: 0,
+            onclone: otoOnclone
           };
-          var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
-            ? window.PonoCapture.html2canvasOptions(viewportOverrides)
+          var h2cOpts = sharedOpts
+            ? Object.assign({}, sharedOpts, viewportOverrides)
             : Object.assign({
                 backgroundColor: null,
                 scale: 2,
