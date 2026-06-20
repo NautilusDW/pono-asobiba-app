@@ -3835,24 +3835,28 @@ body.bento-complete-open .pono-dropdown {
   50%      { opacity: 0.75; }
 }
 /* v2: settings (gear) re-enable tutorial */
+/* v1413: z-index 8 → 9500 (game-title=9400 を上回るので、 タイトル帯と重なっても
+   常に gear が見える)。 fav-header-btn (右上 ⭐) も同じ z-index 8 だったので一緒に底上げ。
+   背景も rgba 0.6 → 0.9 + box-shadow 追加で背後 UI の透けを抑えて視認性確保。 */
 .tut-settings-btn {
   position: fixed;
   top: 6px;
   right: 56px;
-  z-index: 8;
+  z-index: 9500;
   width: 36px; height: 36px;
   border: none;
   border-radius: 50%;
-  background: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 1px 3px rgba(93,78,55,0.18);
   color: #5D4E37;
   font-size: 22px;
   line-height: 1;
   padding: 0;
   cursor: pointer;
-  opacity: 0.5;
+  opacity: 0.85;
   display: flex; align-items: center; justify-content: center;
 }
-.tut-settings-btn:active { transform: translateY(1px); opacity: 0.9; }
+.tut-settings-btn:active { transform: translateY(1px); opacity: 0.95; }
 .tut-settings-modal {
   position: fixed; inset: 0;
   z-index: 9998;
@@ -4760,10 +4764,11 @@ body.bento-complete-open .pono-dropdown {
 }
 
 /* ===== Favorites header button ===== */
+/* v1413: z-index 8 → 9500 で game-title (9400) より上に。 tut-settings-btn と同レベル。 */
 .fav-header-btn {
   position: fixed;
   top: 6px; right: 12px;
-  z-index: 8;
+  z-index: 9500;
   width: 36px; height: 36px;
   border: none;
   border-radius: 50%;
@@ -14958,6 +14963,44 @@ function tutorialOnTabSwitch(tabId) {
 function tutorialAdvance(nextStep) {
   if (!tutorialState.active) return;
   if (tutorialState.step === nextStep) return;
+  // v1413: ナレ再生中ならステップ切替を ended まで遅延 (ユーザーが OK ボタン等を
+  //   急いで連打しても声が途中で切れない)。
+  //   - cup-edit の onEnded auto-advance は ended イベント発火直後に呼ばれるので
+  //     audio.ended=true → isPlaying=false で queue されずそのまま通過する。
+  //   - iOS Safari で稀に ended イベントが飛ばないケースの保険として 8s hard timeout を併設。
+  try {
+    const audio = bentoTutorialVoiceAudio;
+    const audioDuration = audio ? audio.duration : 0;
+    const isPlaying = audio
+      && !audio.paused
+      && !audio.ended
+      && (audioDuration === Infinity || isFinite(audioDuration))
+      && audio.currentTime > 0
+      && audio.currentTime < (audioDuration || Infinity);
+    if (isPlaying && !tutorialState._advanceQueued) {
+      try { console.log('[bento-debug] tutorialAdvance queued (voice still playing)', { nextStep: nextStep, currentTime: audio.currentTime, duration: audioDuration }); } catch (_) {}
+      tutorialState._advanceQueued = nextStep;
+      const onVoiceEnd = function () {
+        try { audio.removeEventListener('ended', onVoiceEnd); } catch (_) {}
+        const queuedStep = tutorialState._advanceQueued;
+        tutorialState._advanceQueued = null;
+        if (queuedStep && tutorialState && tutorialState.active && tutorialState.step !== queuedStep) {
+          try { console.log('[bento-debug] voice ended → firing queued advance', { queuedStep: queuedStep }); } catch (_) {}
+          tutorialAdvance(queuedStep);
+        }
+      };
+      audio.addEventListener('ended', onVoiceEnd, { once: true });
+      // 保険: ended が来ない iOS Safari 等のための hard timeout
+      setTimeout(function () {
+        if (tutorialState._advanceQueued === nextStep && tutorialState && tutorialState.active && tutorialState.step !== nextStep) {
+          try { console.warn('[bento-debug] queued advance timeout → firing now', { nextStep: nextStep }); } catch (_) {}
+          tutorialState._advanceQueued = null;
+          tutorialAdvance(nextStep);
+        }
+      }, 8000);
+      return;
+    }
+  } catch (_) {}
   // v1408: cup-edit demo → cup-edit-try advance 時に旧 step の _fingerHideTimer や
   //   指イラストが残置して新ステップの指デモ位置にチラ見えする問題への根本対策。
   //   step を書き換える前に確実にクリアする。
