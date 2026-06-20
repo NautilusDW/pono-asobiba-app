@@ -14088,6 +14088,18 @@ function tutorialButtonLabel(btn) {
   const text = btn ? (btn.textContent || '').replace(/\s+/g, ' ').trim() : '';
   return text || 'ボタン';
 }
+// v1383: okazu-more step 専用。 実 UI の「小さい おかずへ」 primary ボタン
+// (.free-action-row button.primary, handler = tryFinishOkazuTier) を最優先で
+// 取得する。 ラベルが見つからない場合は tutorialCompleteButton() にフォールバック。
+function tutorialOkazuMoreAdvanceButton() {
+  const buttons = document.querySelectorAll('.free-action-row button.primary');
+  for (const b of buttons) {
+    const t = (b.textContent || '').replace(/\s+/g, '');
+    if (t.indexOf('小さい') >= 0 && t.indexOf('おかず') >= 0) return b;
+  }
+  if (typeof tutorialCompleteButton === 'function') return tutorialCompleteButton();
+  return null;
+}
 function tutorialNoriOkButton() {
   const buttons = document.querySelectorAll('.free-guide-actions button');
   for (const b of buttons) {
@@ -14998,31 +15010,44 @@ function tutorialRenderStep() {
   // freeLayoutTab='food' を保証する (setFreeGuideStep が setSpeech するので、
   // 直後に上書きするため一旦 skipRender:true で更新)。
   if (step === 'okazu-more') {
-    try {
-      if (typeof setFreeGuideStep === 'function') {
-        setFreeGuideStep('tier2Main', { skipRender: true });
-      } else if (typeof freeGuideStep !== 'undefined') {
-        freeGuideStep = 'tier2Main';
-      }
-      if (typeof freeLayoutTab !== 'undefined') freeLayoutTab = 'food';
-      if (typeof renderFreeLayoutControls === 'function') renderFreeLayoutControls();
-    } catch (_) {}
-    setSpeech('すきな おかずを もっと いれてもいいよ。おわったら 「おかずOK」を おしてね');
+    // v1383: 初回 render に限定して state 設定 + パレット再描画を行う。
+    // 以前は毎フレーム setFreeGuideStep + renderFreeLayoutControls() を呼んでいて、
+    // tray.innerHTML='' で DOM が再生成 → palette MutationObserver が検知 →
+    // requestAnimationFrame で tutorialRenderStep() 再呼出 → 同じ処理が無限ループ
+    // → メニュー激しいちらつきが発生していた。 firstRender ガードで断ち切る。
+    if (firstRender) {
+      try {
+        if (typeof setFreeGuideStep === 'function') {
+          setFreeGuideStep('tier2Main', { skipRender: true });
+        } else if (typeof freeGuideStep !== 'undefined') {
+          freeGuideStep = 'tier2Main';
+        }
+        if (typeof freeLayoutTab !== 'undefined') freeLayoutTab = 'food';
+        if (typeof renderFreeLayoutControls === 'function') renderFreeLayoutControls();
+      } catch (_) {}
+    }
+    // v1383: 実 UI ボタンの label に合わせて案内テキストを「小さい おかずへ」 に統一。
+    // 旧 (v1380 まで) は「おかずOK」 と案内していたが、 実際のボタン文言と異なるため
+    // 子供が該当ボタンを見つけられず詰む致命バグだった。
+    setSpeech('すきな おかずを もっと いれてもいいよ。おわったら 「小さい おかずへ」 を おしてね');
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('すきな おかずを もっと<br>いれてもいいよ！<br>おわったら 「おかずOK」を おしてね');
+    tutorialShowPonoCallout('すきな おかずを もっと<br>いれてもいいよ！<br>おわったら 「小さい おかずへ」 を おしてね');
     tutorialSetModeLabel('もっと いれていいよ', {
       mode: 'try',
-      note: 'おかずOK で つぎへ',
+      note: '小さい おかずへ で つぎへ',
     });
     tutorialHideBubble();
     tutorialHideFinger();
-    // tutorialCompleteButton は「おかずOK」/「2だんめOK」/「できあがり」 primary を返す
-    const okazuOkBtn = (typeof tutorialCompleteButton === 'function') ? tutorialCompleteButton() : null;
+    // v1383: 「小さい おかずへ」 ボタンを最優先で取得。 tutorialCompleteButton は
+    // 「おかずOK」/「できあがり」 primary 等もマッチするので、 専用ヘルパーで
+    // ラベル一致 (小さい + おかず) を最優先しつつフォールバックで既存実装を使う。
+    const okazuOkBtn = tutorialOkazuMoreAdvanceButton();
     if (okazuOkBtn) {
       tutorialMarkTarget(okazuOkBtn, { radius: 18, outline: false });
       tutorialAnimateTap(okazuOkBtn);
-    } else {
-      // ガイドパネル再描画で DOM が再生成された直後などはボタンが取れない可能性 → retry
+    } else if (firstRender) {
+      // 初回 render でボタンが取れなかった場合のみ retry。 連続 render では retry しない
+      // (firstRender false の状況で retry すると上記 MutationObserver と相互再帰する恐れ)。
       tutorialRetryRenderStep('okazu-more');
     }
     // v1380: okazu-more ナレーションは BENTO_TUTORIAL_STEP_VOICE map で
