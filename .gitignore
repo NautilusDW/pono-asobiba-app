@@ -55,3 +55,9 @@ debug.log
 
 # Claude Design upload bundle (locally generated, do not commit)
 .claude-design-bundle/
+
+# Playwright E2E harness artifacts
+test-results/
+playwright-report/
+# Visual snapshot baselines — keep tracked for now (uncomment to ignore):
+# tests/e2e/**/*-snapshots/
