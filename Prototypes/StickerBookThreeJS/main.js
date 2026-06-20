@@ -3270,7 +3270,11 @@ function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
   const slotW = (bandW - 78 - slotGap * (slotCount - 1)) / slotCount;
   const slotH = 64;
   const slotY = bandY + 18;
+  const innerSafeSlotIndex = side === "left" ? slotCount - 1 : 0;
   for (let i = 0; i < slotCount; i += 1) {
+    if (i === innerSafeSlotIndex) {
+      continue;
+    }
     const x = bandX + 39 + i * (slotW + slotGap);
     ctx.fillStyle = theme.slotBand.slot;
     ctx.strokeStyle = theme.slotBand.stroke;
@@ -3283,6 +3287,7 @@ function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
     ctx.ellipse(x + slotW * 0.68, slotY + slotH * 0.24, slotW * 0.22, slotH * 0.12, -0.24, 0, Math.PI * 2);
     ctx.fill();
   }
+  drawCollectionSlotSafeArea(ctx, bandX, bandY, bandW, bandH, slotW, slotGap, innerSafeSlotIndex, pageTheme);
 
   const decoY = bandY + bandH - 12;
   const decoKinds = pageTheme.motifSet === "ocean"
@@ -3299,6 +3304,23 @@ function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
     drawCollectionMiniMotif(ctx, "wave", bandX + bandW - 122, bandY + 28, 18, pageTheme.accent, 0);
     drawCollectionMiniMotif(ctx, "shell", bandX + bandW - 76, bandY + 34, 15, "#fff3d0", 0);
   }
+  ctx.restore();
+}
+
+function drawCollectionSlotSafeArea(ctx, bandX, bandY, bandW, bandH, slotW, slotGap, slotIndex, pageTheme) {
+  const safeX = bandX + 39 + slotIndex * (slotW + slotGap);
+  const safeCenterX = safeX + slotW / 2;
+  const safeCenterY = bandY + bandH * 0.48;
+  ctx.save();
+  ctx.globalAlpha = 0.34;
+  ctx.fillStyle = "rgba(255, 250, 226, 0.62)";
+  ctx.beginPath();
+  ctx.ellipse(safeCenterX, safeCenterY, slotW * 0.28, bandH * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const motifKind = pageTheme.motifSet === "ocean" ? "wave" : "leaf";
+  drawCollectionMiniMotif(ctx, motifKind, safeCenterX - slotW * 0.18, safeCenterY + 8, 11, pageTheme.accent, 0.2);
+  drawCollectionMiniMotif(ctx, "star", safeCenterX + slotW * 0.16, safeCenterY - 6, 10, "#fff1a8", -0.1);
   ctx.restore();
 }
 
