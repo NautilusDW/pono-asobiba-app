@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-742";
+const ASSET_VERSION = "20260620-743";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1066,6 +1066,10 @@ book.add(flutterPages.group);
 const ringGroup = createHalfRingMeshes();
 ringGroup.renderOrder = 70;
 book.add(ringGroup);
+
+function setBindingRingVisible(visible) {
+  ringGroup.visible = visible && activeAlbumMode !== "collection";
+}
 
 const topLight = new THREE.DirectionalLight(0xffffff, 1.7);
 topLight.position.set(-2.5, 3.5, 6);
@@ -2928,6 +2932,7 @@ function setAlbumMode(mode) {
   refreshPageTemplateTextures();
   updateAlbumModeUi();
   updatePage(flipProgress);
+  resize();
   syncUrl();
 }
 
@@ -6682,17 +6687,6 @@ function getCollectionSpineTexture(bookName) {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-  for (const pixelY of PAGE_RING_PIXELS) {
-    ctx.fillStyle = "rgba(255, 255, 240, 0.32)";
-    ctx.beginPath();
-    ctx.ellipse(128, pixelY, 48, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(70, 56, 24, 0.16)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(128, pixelY, 54, 22, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
   ctx.restore();
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -7034,7 +7028,7 @@ function renderCoverOpenTransition(rawProgress) {
   const gap = currentBookGap();
   const showBinding = p > 0.52;
   spine.visible = showBinding;
-  ringGroup.visible = showBinding;
+  setBindingRingVisible(showBinding);
   innerRight.visible = showBinding && activeAlbumMode !== "collection";
   collectionFold.visible = showBinding && activeAlbumMode === "collection";
   coverTurn.visible = raw < 0.985;
@@ -7101,14 +7095,14 @@ function setOpenSpreadVisible(visible) {
     coverTurn.visible = false;
   }
   spine.visible = visible;
-  ringGroup.visible = visible;
+  setBindingRingVisible(visible);
   pageStacks.group.visible = visible;
   pageStacks.left.group.visible = visible;
   pageStacks.right.group.visible = visible;
   pageStacks.collection.group.visible = false;
   if (visible && activeAlbumMode === "collection") {
     sideTabs.group.visible = true;
-    ringGroup.visible = true;
+    setBindingRingVisible(false);
     innerLeft.visible = false;
     innerRight.visible = false;
     collectionFold.visible = visible;
@@ -7130,7 +7124,7 @@ function setCoverOpeningSpreadVisible(visible) {
   collectionFold.visible = false;
   pageTurn.visible = false;
   spine.visible = false;
-  ringGroup.visible = false;
+  setBindingRingVisible(false);
   pageStacks.group.visible = visible;
   pageStacks.left.group.visible = false;
   pageStacks.right.group.visible = visible;
@@ -7176,8 +7170,11 @@ function resize() {
   const height = window.innerHeight;
   renderer.setSize(width, height, false);
 
-  const viewW = PAGE_W * 2 + GUTTER + (width < 720 ? 0.68 : 0.42);
-  const viewH = PAGE_H + (width < 720 ? 1.88 : 0.88);
+  const isCollectionLayout = activeAlbumMode === "collection";
+  const viewGap = isCollectionLayout ? COLLECTION_GUTTER : GUTTER;
+  const viewPadding = isCollectionLayout ? (width < 720 ? 0.48 : 0.24) : (width < 720 ? 0.68 : 0.42);
+  const viewW = PAGE_W * 2 + viewGap + viewPadding;
+  const viewH = PAGE_H + (isCollectionLayout ? (width < 720 ? 1.74 : 0.74) : (width < 720 ? 1.88 : 0.88));
   const aspect = width / height;
   const fov = THREE.MathUtils.degToRad(CAMERA_FOV);
   const distanceForHeight = viewH / (2 * Math.tan(fov / 2));
