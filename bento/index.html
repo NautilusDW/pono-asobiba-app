@@ -7815,6 +7815,11 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   // (basic_tut_14 は complete-result 「これで おべんとうが かんせいしたよ」 で既使用済み)。
   // v1380: 別ファイル名 okazu_more_01 で専用ナレを追加 (basic_tut_14 衝突回避)。
   'okazu-more': 'okazu_more_01',
+  // v1416: complete-result の保存ボタン案内ナレを basic_tut_15 から
+  // favorite_save_01 「おきにいりに とっとけるよ。 ほしマークを おしてね」 に差替。
+  // step ID は 'favorite-save' (現状 dispatch は voice ID 直渡しの chain 内なので
+  // map 経由 lookup されないが、 ナレ ID と step の対応を明文化する目的で登録)。
+  'favorite-save': 'favorite_save_01',
 };
 let bentoTutorialVoiceAudio = null;
 function stopBentoTutorialVoice() {
@@ -13839,7 +13844,11 @@ function tutorialStartCompleteGuidance() {
     if (!stillGuiding()) return;
     const saveBtn = document.getElementById('save-fav-btn');
     tutorialClearTrims();
-    tutorialShowBubble('きにいった おべんとうは<br>おきにいりに いれておけるよ', { topVh: '18', side: 'left' });
+    // v1416: ナレを basic_tut_15 → favorite_save_01 に差し替え。
+    // 「おきにいりに とっとけるよ。 ほしマークを おしてね」 の文に合わせて
+    // バブルも「ほしマーク」 操作を明示する短文に更新。 fallbackMs は新ナレ
+    // 約 4.12s + マージン → 5000ms。
+    tutorialShowBubble('おきにいりに とっとけるよ<br>ほしマークを おしてね', { topVh: '18', side: 'left' });
     if (saveBtn && !saveBtn.classList.contains('hidden-pre')) {
       tutorialPositionBubbleBeside(saveBtn, { gap: 12 });
       tutorialMarkTarget(saveBtn, { radius: 22, outline: false });
@@ -13847,7 +13856,7 @@ function tutorialStartCompleteGuidance() {
     } else {
       tutorialHideFinger();
     }
-    playAndThen('basic_tut_15', 6800, () => {
+    playAndThen('favorite_save_01', 5000, () => {
       if (!stillGuiding()) return;
       const detailBtn = document.getElementById('complete-detail-btn');
       tutorialClearTrims();
