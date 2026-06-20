@@ -14479,6 +14479,11 @@ function tutorialLayerDownButtonEl() {
   return toolbar.querySelector('[data-free-icon="layer-down"]:not(:disabled)')
       || tutorialEditLayerButtonEl();
 }
+function tutorialLayerUpButtonEl() {
+  const toolbar = tutorialContextToolbarEl();
+  if (!toolbar) return null;
+  return toolbar.querySelector('[data-free-icon="layer-up"]:not(:disabled)') || null;
+}
 function tutorialAnimateEditDemo(fast) {
   const sizeButton = tutorialEditSizeSliderEl();
   if (sizeButton) {
@@ -15162,6 +15167,11 @@ function tutorialRenderStep() {
     else if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
     else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
     else tutorialRetryRenderStep('cup-edit');
+    // v1389: 「矢印で前後ろも変わるよ」 ナレに合わせて layer 矢印も同時 mark
+    const layerDownBtnDemo = tutorialLayerDownButtonEl();
+    if (layerDownBtnDemo) tutorialMarkTarget(layerDownBtnDemo, { radius: 14, outline: false });
+    const layerUpBtnDemo = tutorialLayerUpButtonEl();
+    if (layerUpBtnDemo) tutorialMarkTarget(layerUpBtnDemo, { radius: 14, outline: false });
     if (firstRender && (sizeControl || toolbar)) {
       tutorialAnimateEditDemo(fast);
       tutorialHideFingerAfter(2200, 'cup-edit');
