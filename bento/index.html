@@ -7841,6 +7841,10 @@ function playBentoTutorialVoice(id, opts = {}) {
   try {
     const audio = new Audio(BENTO_TUTORIAL_VOICE_BASE + id + '.mp3');
     audio.volume = 0.95;
+    // v1409: 一部ブラウザ (iOS Safari / Chrome の一部条件) で muted=false の autoplay が
+    // user-gesture chain 外と判定されて reject されるのを避けるため、 一旦 muted=true で開始し
+    // play() resolve 直後に unmute する。 ms 単位での先頭欠落の可能性は短い 4 秒ナレでは許容範囲。
+    audio.muted = true;
     if (typeof opts.onEnded === 'function') {
       let finished = false;
       const done = () => {
@@ -7876,7 +7880,32 @@ function playBentoTutorialVoice(id, opts = {}) {
     }
     bentoTutorialVoiceAudio = audio;
     const p = audio.play();
-    if (p && typeof p.catch === 'function') p.catch(() => {});
+    // v1409: autoplay block 可視化 + muted-unmute fallback。
+    // 旧 silent .catch(() => {}) は autoplay reject 理由を握りつぶし、
+    // fallbackMs (cup-edit-try で 7600ms) 経過まで onEnded が呼ばれず stall した。
+    if (p && typeof p.then === 'function') {
+      p.then(() => {
+        // 再生開始成功 → 一旦 muted=true で始めた audio をここで unmute
+        try { audio.muted = false; } catch (_) {}
+      }).catch((err) => {
+        try {
+          var name = (err && (err.name || err.message)) || String(err);
+          console.warn('[bento tutorial] audio.play() rejected for ' + id + ':', name);
+        } catch (_) {}
+        // play 失敗時は fallbackMs を待たず即 onEnded 相当 (次 step へ進行)
+        if (typeof opts.onEnded === 'function' && !audio._bentoCancelled) {
+          try { opts.onEnded(); } catch (_) {}
+        }
+      });
+    } else if (p && typeof p.catch === 'function') {
+      // 念のため Promise 互換 (古い実装) の reject も拾う
+      p.catch((err) => {
+        try { console.warn('[bento tutorial] audio.play() rejected (legacy) for ' + id + ':', err && (err.name || err.message || err)); } catch (_) {}
+        if (typeof opts.onEnded === 'function' && !audio._bentoCancelled) {
+          try { opts.onEnded(); } catch (_) {}
+        }
+      });
+    }
     return audio;
   } catch (_) {}
   if (typeof opts.onEnded === 'function') {
@@ -13591,7 +13620,11 @@ function tutorialSetModeLabel(text, opts = {}) {
 function tutorialPlayStepVoice(step, firstRender) {
   if (!firstRender) return;
   const id = BENTO_TUTORIAL_STEP_VOICE[step];
-  if (!id || tutorialState.lastVoiceStep === step) return;
+  if (!id) return;
+  // v1409: cup-edit-try は 4 秒の短い 1 文ナレで、 advance 直後に確実に再生したいため
+  // lastVoiceStep guard を bypass する (同 step 内で何度 render されても確実に再生)。
+  // 他の step は重複再生防止のため従来通りの idempotency を維持。
+  if (step !== 'cup-edit-try' && tutorialState.lastVoiceStep === step) return;
   tutorialState.lastVoiceStep = step;
   const opts = {};
   if (step === 'cup-edit-try') {
