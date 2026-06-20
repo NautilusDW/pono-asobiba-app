@@ -1295,8 +1295,8 @@
     .daily-gacha-lever {
       position: absolute;
       left: 50%;
-      top: 62.5%;
-      width: 35%;
+      top: 62.8%;
+      width: 27%;
       aspect-ratio: 1365 / 507;
       padding: 0;
       border: 0;
@@ -1324,10 +1324,13 @@
       -webkit-user-drag: none;
     }
     .daily-gacha-modal.is-armed .daily-gacha-lever {
-      animation: dailyGachaLeverHint 1.7s ease-in-out infinite;
+      animation: dailyGachaLeverReadyPulse 1.8s ease-in-out infinite;
     }
-    .daily-gacha-modal.is-turning .daily-gacha-lever {
-      animation: dailyGachaFinalSpin .82s cubic-bezier(.18,.82,.24,1.05) both;
+    .daily-gacha-modal.is-grabbing .daily-gacha-lever {
+      cursor: grabbing;
+    }
+    .daily-gacha-modal.is-notch .daily-gacha-lever {
+      animation: dailyGachaLeverNotch .34s cubic-bezier(.16,.82,.24,1.1) both;
     }
     .daily-gacha-drop-capsule {
       position: absolute;
@@ -1343,6 +1346,21 @@
     .daily-gacha-modal.is-dropping .daily-gacha-drop-capsule {
       opacity: 1;
       animation: dailyGachaCapsuleDrop 1.12s cubic-bezier(.18,.86,.24,1) both;
+    }
+    .daily-gacha-modal[data-gacha-step="1"] .daily-gacha-machine-wrap {
+      transform: translate(2%, -1%) scale(1.045);
+    }
+    .daily-gacha-modal[data-gacha-step="2"] .daily-gacha-machine-wrap {
+      transform: translate(4%, -2%) scale(1.095);
+    }
+    .daily-gacha-modal[data-gacha-step="3"] .daily-gacha-machine-wrap {
+      transform: translate(6%, -3%) scale(1.15);
+    }
+    .daily-gacha-modal.is-final-zoom .daily-gacha-machine-wrap {
+      animation: dailyGachaMachineFinalZoom .72s cubic-bezier(.14,.84,.18,1.04) both;
+    }
+    .daily-gacha-modal.is-boom .daily-gacha-shell {
+      animation: dailyGachaShellBoom .44s ease-out both;
     }
     .daily-gacha-panel {
       position: absolute;
@@ -1528,8 +1546,7 @@
       bottom: 86px;
       z-index: 3;
       transform: translateX(-50%);
-      min-width: 260px;
-      max-width: 86%;
+      width: min(360px, 86%);
       padding: 10px 18px 12px;
       border-radius: 999px;
       background: rgba(255,255,255,.92);
@@ -1537,6 +1554,7 @@
       color: #5d3520;
       text-align: center;
       font-size: 21px;
+      line-height: 1.25;
       font-weight: 900;
       box-shadow: 0 9px 18px rgba(68, 34, 12, .2);
       opacity: 0;
@@ -1571,6 +1589,7 @@
       opacity: .18;
       filter: blur(1px);
       transform: translateX(-11%) scale(.82);
+      animation: none;
     }
     .daily-gacha-modal.is-closeup .daily-gacha-panel {
       opacity: 0;
@@ -1613,15 +1632,25 @@
       cursor: default;
       opacity: .72;
     }
-    @keyframes dailyGachaLeverHint {
-      0%, 100% { transform: translate(-50%, -50%) rotate(var(--gacha-rot, 0deg)); }
-      45% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) + 10deg)); }
-      68% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) - 5deg)); }
+    @keyframes dailyGachaLeverReadyPulse {
+      0%, 100% { filter: drop-shadow(0 8px 10px rgba(65, 34, 10, .32)); }
+      48% { filter: drop-shadow(0 10px 13px rgba(65, 34, 10, .38)) drop-shadow(0 0 8px rgba(255, 224, 94, .42)); }
     }
-    @keyframes dailyGachaFinalSpin {
-      0% { transform: translate(-50%, -50%) rotate(var(--gacha-rot, 0deg)); }
-      72% { transform: translate(-50%, -50%) rotate(390deg); }
-      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    @keyframes dailyGachaLeverNotch {
+      0% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) - 17deg)); }
+      54% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) + 7deg)); }
+      78% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) - 4deg)); }
+      100% { transform: translate(-50%, -50%) rotate(var(--gacha-rot, 0deg)); }
+    }
+    @keyframes dailyGachaMachineFinalZoom {
+      0% { transform: translate(6%, -3%) scale(1.15); filter: saturate(1) drop-shadow(0 18px 24px rgba(92, 46, 12, .22)); }
+      54% { transform: translate(11%, -7%) scale(1.32); filter: saturate(1.18) drop-shadow(0 24px 34px rgba(117, 50, 11, .3)); }
+      100% { transform: translate(9%, -6%) scale(1.26); filter: saturate(1.12) drop-shadow(0 24px 34px rgba(117, 50, 11, .28)); }
+    }
+    @keyframes dailyGachaShellBoom {
+      0%, 100% { transform: scale(1); }
+      42% { transform: scale(1.012); }
+      64% { transform: scale(.996); }
     }
     @keyframes dailyGachaCapsuleDrop {
       0% { opacity: 0; transform: translate(-50%, -40%) scale(.42) rotate(-18deg); }
@@ -1670,7 +1699,7 @@
       .daily-gacha-closeup__inner { width: 78vw; height: 74dvh; }
       .daily-gacha-reward { width: 132px; height: 132px; border-radius: 28px; }
       .daily-gacha-reward img { width: 108px; height: 108px; }
-      .daily-gacha-reward-name { bottom: 72px; font-size: 17px; min-width: 220px; }
+      .daily-gacha-reward-name { bottom: 72px; width: min(300px, 86vw); font-size: 17px; }
       .daily-gacha-closeup-book { bottom: 18px; min-height: 42px; font-size: 15px; }
     }
 
@@ -2518,7 +2547,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1210;
+    const PAGE_CACHE_VERSION = 1211;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -2905,7 +2934,9 @@
 
     // ===== Daily sticker gacha =====
     const DAILY_GACHA_KEY = 'pono_daily_sticker_gacha_v1';
-    const DAILY_GACHA_GOAL = 300;
+    const DAILY_GACHA_TURNS = 4;
+    const DAILY_GACHA_TURN_THRESHOLD = 78;
+    const DAILY_GACHA_TURN_ROTATION = 90;
     const dailyGachaEntry = document.getElementById('dailyGachaEntry');
     const dailyGachaEntrySub = document.getElementById('dailyGachaEntrySub');
     const dailyGachaModal = document.getElementById('dailyGachaModal');
@@ -2927,11 +2958,16 @@
     const dailyGachaState = {
       dragging: false,
       lastAngle: 0,
-      power: 0,
+      dragAngle: 0,
+      step: 0,
+      settledRotation: 0,
+      turnLock: false,
       complete: false,
       timers: [],
-      capsuleColor: 'pink'
+      capsuleColor: 'pink',
+      capsuleOpen: ''
     };
+    let dailyGachaAudioCtx = null;
 
     function dailyGachaTodayKey() {
       const d = new Date();
@@ -2982,47 +3018,107 @@
       if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = used ? 'また あした' : 'シールを ひこう';
     }
 
-    function setDailyGachaPower(power) {
-      dailyGachaState.power = Math.max(0, Math.min(DAILY_GACHA_GOAL, power));
-      const pct = Math.round((dailyGachaState.power / DAILY_GACHA_GOAL) * 100);
+    function setDailyGachaLeverRotation(rotation) {
+      if (dailyGachaModal) dailyGachaModal.style.setProperty('--gacha-rot', rotation + 'deg');
+    }
+
+    function setDailyGachaStep(step) {
+      dailyGachaState.step = Math.max(0, Math.min(DAILY_GACHA_TURNS, step));
+      const pct = Math.round((dailyGachaState.step / DAILY_GACHA_TURNS) * 100);
       if (dailyGachaModal) {
         dailyGachaModal.style.setProperty('--gacha-power', pct + '%');
-        dailyGachaModal.style.setProperty('--gacha-rot', dailyGachaState.power + 'deg');
+        dailyGachaModal.dataset.gachaStep = String(dailyGachaState.step);
       }
       if (dailyGachaMeter) dailyGachaMeter.style.width = pct + '%';
     }
 
-    function dailyGachaCapsuleAssets(color) {
-      const blue = color === 'blue';
-      return {
-        closed: blue
-          ? 'assets/ui/gacha/daily_gacha_capsule_closed_blue.png'
-          : 'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
-        open: blue
-          ? 'assets/ui/gacha/daily_gacha_capsule_open_blue_plain.png'
-          : 'assets/ui/gacha/daily_gacha_capsule_open_pink_plain.png'
-      };
+    function dailyGachaStepStatus(step) {
+      if (step >= DAILY_GACHA_TURNS) return 'ドーン! カプセルが くるよ';
+      if (step === 3) return 'あと ひとまわし!';
+      if (step === 2) return 'カチッ! もっと ちかづくよ';
+      if (step === 1) return 'カチッ! ちかづいたよ';
+      return 'つまみを ぐっと まわしてね';
     }
 
+    function playDailyGachaSfx(kind) {
+      try {
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return;
+        if (!dailyGachaAudioCtx) dailyGachaAudioCtx = new AudioCtor();
+        const ctx = dailyGachaAudioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        if (kind === 'boom') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(124, now);
+          osc.frequency.exponentialRampToValueAtTime(46, now + .28);
+          gain.gain.setValueAtTime(.0001, now);
+          gain.gain.exponentialRampToValueAtTime(.13, now + .02);
+          gain.gain.exponentialRampToValueAtTime(.0001, now + .34);
+          osc.start(now);
+          osc.stop(now + .36);
+        } else {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(620, now);
+          osc.frequency.exponentialRampToValueAtTime(430, now + .06);
+          gain.gain.setValueAtTime(.0001, now);
+          gain.gain.exponentialRampToValueAtTime(.045, now + .01);
+          gain.gain.exponentialRampToValueAtTime(.0001, now + .08);
+          osc.start(now);
+          osc.stop(now + .09);
+        }
+      } catch (_) {}
+    }
+
+    const DAILY_GACHA_CAPSULE_VARIANTS = [
+      {
+        color: 'pink',
+        closed: 'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
+        open: [
+          'assets/ui/gacha/daily_gacha_capsule_open_pink_plain.png',
+          'assets/ui/gacha/daily_gacha_capsule_open_pink_pono.png'
+        ]
+      },
+      {
+        color: 'blue',
+        closed: 'assets/ui/gacha/daily_gacha_capsule_closed_blue.png',
+        open: [
+          'assets/ui/gacha/daily_gacha_capsule_open_blue_plain.png',
+          'assets/ui/gacha/daily_gacha_capsule_open_blue_pono.png'
+        ]
+      }
+    ];
+
     function chooseDailyGachaCapsule() {
-      dailyGachaState.capsuleColor = Math.random() < 0.5 ? 'pink' : 'blue';
-      const assets = dailyGachaCapsuleAssets(dailyGachaState.capsuleColor);
+      const assets = DAILY_GACHA_CAPSULE_VARIANTS[Math.floor(Math.random() * DAILY_GACHA_CAPSULE_VARIANTS.length)];
+      const open = assets.open[Math.floor(Math.random() * assets.open.length)];
+      dailyGachaState.capsuleColor = assets.color;
+      dailyGachaState.capsuleOpen = open;
       if (dailyGachaDropCapsule) dailyGachaDropCapsule.src = assets.closed;
       if (dailyGachaCloseCapsule) dailyGachaCloseCapsule.src = assets.closed;
-      if (dailyGachaOpenCapsule) dailyGachaOpenCapsule.src = assets.open;
+      if (dailyGachaOpenCapsule) dailyGachaOpenCapsule.src = open;
     }
 
     function resetDailyGachaModal() {
       clearDailyGachaTimers();
       dailyGachaState.dragging = false;
       dailyGachaState.lastAngle = 0;
+      dailyGachaState.dragAngle = 0;
+      dailyGachaState.step = 0;
+      dailyGachaState.settledRotation = 0;
+      dailyGachaState.turnLock = false;
       dailyGachaState.complete = false;
       chooseDailyGachaCapsule();
-      setDailyGachaPower(0);
+      setDailyGachaStep(0);
+      setDailyGachaLeverRotation(0);
       if (dailyGachaModal) {
-        dailyGachaModal.classList.remove('is-used', 'is-armed', 'is-turning', 'is-dropping', 'is-closeup', 'is-opened');
+        dailyGachaModal.classList.remove('is-used', 'is-armed', 'is-grabbing', 'is-notch', 'is-turning', 'is-final-zoom', 'is-boom', 'is-dropping', 'is-closeup', 'is-opened');
       }
-      if (dailyGachaStatus) dailyGachaStatus.textContent = 'つまみを みぎへ まわしてね';
+      if (dailyGachaStatus) dailyGachaStatus.textContent = dailyGachaStepStatus(0);
       if (dailyGachaAssist) {
         dailyGachaAssist.hidden = false;
         dailyGachaAssist.disabled = false;
@@ -3106,26 +3202,36 @@
       return Math.atan2(event.clientY - cy, event.clientX - cx) * 180 / Math.PI;
     }
 
-    function addDailyGachaPower(delta) {
-      if (dailyGachaState.complete) return;
-      const next = dailyGachaState.power + Math.max(0, delta);
-      setDailyGachaPower(next);
-      if (dailyGachaStatus) {
-        dailyGachaStatus.textContent = next >= DAILY_GACHA_GOAL * 0.68
-          ? 'もうすこし!'
-          : 'いいかんじ!';
+    function commitDailyGachaTurn() {
+      if (dailyGachaState.complete || dailyGachaState.turnLock) return;
+      if (dailyGachaState.step >= DAILY_GACHA_TURNS) return;
+      dailyGachaState.turnLock = true;
+      dailyGachaState.dragAngle = 0;
+      const nextStep = dailyGachaState.step + 1;
+      dailyGachaState.settledRotation = nextStep * DAILY_GACHA_TURN_ROTATION;
+      setDailyGachaStep(nextStep);
+      setDailyGachaLeverRotation(dailyGachaState.settledRotation);
+      if (dailyGachaStatus) dailyGachaStatus.textContent = dailyGachaStepStatus(nextStep);
+      if (dailyGachaModal) {
+        dailyGachaModal.classList.remove('is-armed', 'is-grabbing', 'is-notch');
+        void dailyGachaModal.offsetWidth;
+        dailyGachaModal.classList.add('is-notch');
       }
-      if (dailyGachaState.power >= DAILY_GACHA_GOAL) {
-        runDailyGacha();
-      }
+      playDailyGachaSfx(nextStep >= DAILY_GACHA_TURNS ? 'boom' : 'click');
+      setDailyGachaTimer(() => {
+        dailyGachaState.turnLock = false;
+        if (dailyGachaModal) dailyGachaModal.classList.remove('is-notch');
+        if (!dailyGachaState.complete && dailyGachaModal) dailyGachaModal.classList.add('is-armed');
+      }, 360);
+      if (nextStep >= DAILY_GACHA_TURNS) runDailyGacha();
     }
 
     async function runDailyGacha() {
       if (!dailyGachaModal || dailyGachaState.complete) return;
       dailyGachaState.complete = true;
-      dailyGachaModal.classList.remove('is-armed');
-      dailyGachaModal.classList.add('is-turning');
-      if (dailyGachaStatus) dailyGachaStatus.textContent = 'カプセルが くるよ';
+      dailyGachaModal.classList.remove('is-armed', 'is-grabbing');
+      dailyGachaModal.classList.add('is-turning', 'is-final-zoom', 'is-boom');
+      if (dailyGachaStatus) dailyGachaStatus.textContent = dailyGachaStepStatus(DAILY_GACHA_TURNS);
       if (dailyGachaAssist) dailyGachaAssist.disabled = true;
       if (dailyGachaLever) dailyGachaLever.disabled = true;
 
@@ -3137,7 +3243,12 @@
       }
       if (!result) {
         dailyGachaState.complete = false;
-        dailyGachaModal.classList.remove('is-turning');
+        dailyGachaState.turnLock = false;
+        dailyGachaState.step = DAILY_GACHA_TURNS - 1;
+        dailyGachaState.settledRotation = dailyGachaState.step * DAILY_GACHA_TURN_ROTATION;
+        setDailyGachaStep(dailyGachaState.step);
+        setDailyGachaLeverRotation(dailyGachaState.settledRotation);
+        dailyGachaModal.classList.remove('is-turning', 'is-final-zoom', 'is-boom', 'is-notch');
         dailyGachaModal.classList.add('is-armed');
         if (dailyGachaStatus) dailyGachaStatus.textContent = 'シールの じゅんびちゅう';
         if (dailyGachaAssist) dailyGachaAssist.disabled = false;
@@ -3146,13 +3257,13 @@
       }
 
       setDailyGachaReward(result);
-      setDailyGachaTimer(() => dailyGachaModal.classList.add('is-dropping'), 520);
+      setDailyGachaTimer(() => dailyGachaModal.classList.add('is-dropping'), 720);
       setDailyGachaTimer(() => dailyGachaModal.classList.add('is-closeup'), 1520);
-      setDailyGachaTimer(() => dailyGachaModal.classList.add('is-opened'), 2180);
+      setDailyGachaTimer(() => dailyGachaModal.classList.add('is-opened'), 2160);
       setDailyGachaTimer(() => {
         if (dailyGachaBook) dailyGachaBook.hidden = false;
         updateDailyGachaEntry();
-      }, 2700);
+      }, 2680);
     }
 
     function showDailyGachaUsed(record) {
@@ -3162,7 +3273,10 @@
         const name = record && record.stickerName ? `「${record.stickerName}」` : 'シール';
         dailyGachaStatus.textContent = `きょうは ${name}を ゲットしたよ`;
       }
-      setDailyGachaPower(DAILY_GACHA_GOAL);
+      dailyGachaState.step = DAILY_GACHA_TURNS;
+      dailyGachaState.settledRotation = DAILY_GACHA_TURNS * DAILY_GACHA_TURN_ROTATION;
+      setDailyGachaStep(DAILY_GACHA_TURNS);
+      setDailyGachaLeverRotation(dailyGachaState.settledRotation);
       if (dailyGachaAssist) {
         dailyGachaAssist.hidden = true;
         dailyGachaAssist.disabled = true;
@@ -3211,44 +3325,71 @@
     if (dailyGachaBook) dailyGachaBook.addEventListener('click', goDailyGachaStickerBook);
     if (dailyGachaCloseupBook) dailyGachaCloseupBook.addEventListener('click', goDailyGachaStickerBook);
     if (dailyGachaAssist) {
-      dailyGachaAssist.addEventListener('click', () => addDailyGachaPower(86));
+      dailyGachaAssist.addEventListener('click', () => commitDailyGachaTurn());
     }
     if (dailyGachaLever) {
       dailyGachaLever.addEventListener('pointerdown', (event) => {
-        if (dailyGachaState.complete || dailyGachaLever.disabled) return;
+        if (dailyGachaState.complete || dailyGachaState.turnLock || dailyGachaLever.disabled) return;
         event.preventDefault();
         dailyGachaState.dragging = true;
+        dailyGachaState.dragAngle = 0;
         dailyGachaState.lastAngle = angleForDailyGachaPointer(event);
-        if (dailyGachaModal) dailyGachaModal.classList.remove('is-armed');
+        if (dailyGachaModal) {
+          dailyGachaModal.classList.remove('is-armed', 'is-notch');
+          dailyGachaModal.classList.add('is-grabbing');
+        }
         try { dailyGachaLever.setPointerCapture(event.pointerId); } catch (_) {}
       });
       dailyGachaLever.addEventListener('pointermove', (event) => {
-        if (!dailyGachaState.dragging || dailyGachaState.complete) return;
+        if (!dailyGachaState.dragging || dailyGachaState.complete || dailyGachaState.turnLock) return;
         event.preventDefault();
         const angle = angleForDailyGachaPointer(event);
         let diff = angle - dailyGachaState.lastAngle;
         if (diff > 180) diff -= 360;
         if (diff < -180) diff += 360;
         dailyGachaState.lastAngle = angle;
-        if (diff > 0) addDailyGachaPower(Math.min(54, diff * 1.08));
-        else if (diff < -8) setDailyGachaPower(dailyGachaState.power + diff * 0.1);
+        if (diff > 0) {
+          dailyGachaState.dragAngle += diff;
+        } else if (diff < 0) {
+          dailyGachaState.dragAngle = Math.max(0, dailyGachaState.dragAngle + diff * .25);
+        }
+        if (dailyGachaState.dragAngle >= DAILY_GACHA_TURN_THRESHOLD) {
+          commitDailyGachaTurn();
+          return;
+        }
+        const strain = Math.min(dailyGachaState.dragAngle, DAILY_GACHA_TURN_THRESHOLD - 1);
+        setDailyGachaLeverRotation(dailyGachaState.settledRotation + strain * .46);
       });
       dailyGachaLever.addEventListener('pointerup', (event) => {
         dailyGachaState.dragging = false;
+        dailyGachaState.dragAngle = 0;
         try { dailyGachaLever.releasePointerCapture(event.pointerId); } catch (_) {}
-        if (!dailyGachaState.complete && dailyGachaState.power > 0 && dailyGachaState.power < DAILY_GACHA_GOAL && dailyGachaStatus) {
-          dailyGachaStatus.textContent = 'もういっかい!';
+        if (!dailyGachaState.complete && !dailyGachaState.turnLock) {
+          setDailyGachaLeverRotation(dailyGachaState.settledRotation);
+          if (dailyGachaStatus) dailyGachaStatus.textContent = dailyGachaState.step ? dailyGachaStepStatus(dailyGachaState.step) : 'もっと ぐっと!';
+          if (dailyGachaModal) {
+            dailyGachaModal.classList.remove('is-grabbing');
+            dailyGachaModal.classList.add('is-armed');
+          }
+        } else if (dailyGachaModal) {
+          dailyGachaModal.classList.remove('is-grabbing');
         }
-        if (!dailyGachaState.complete && dailyGachaModal) dailyGachaModal.classList.add('is-armed');
       });
       dailyGachaLever.addEventListener('pointercancel', () => {
         dailyGachaState.dragging = false;
-        if (!dailyGachaState.complete && dailyGachaModal) dailyGachaModal.classList.add('is-armed');
+        dailyGachaState.dragAngle = 0;
+        if (!dailyGachaState.complete && !dailyGachaState.turnLock) {
+          setDailyGachaLeverRotation(dailyGachaState.settledRotation);
+          if (dailyGachaModal) {
+            dailyGachaModal.classList.remove('is-grabbing');
+            dailyGachaModal.classList.add('is-armed');
+          }
+        }
       });
       dailyGachaLever.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowRight') {
           event.preventDefault();
-          addDailyGachaPower(70);
+          commitDailyGachaTurn();
         }
       });
     }
