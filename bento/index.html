@@ -3309,11 +3309,14 @@ body.bento-complete-open .pono-dropdown {
   border-radius: 16px;
   background: #FFF8E5;
   color: #6B3E16;
-  /* v1399: 固定文を desktop 基準で読みやすく拡大 (mobile 時 0.72rem → 1.1rem) */
-  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  /* v1403: per-color span (赤/黄/緑) を 16:9 でも維持できる clamp に拡大 */
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
   font-weight: 900;
   line-height: 1.35;
 }
+.sk-intro-narration .sk-color-r { color: #E07A5F; font-weight: 900; }
+.sk-intro-narration .sk-color-y { color: #D4A017; font-weight: 900; }
+.sk-intro-narration .sk-color-g { color: #5BA378; font-weight: 900; }
 .sk-intro-note {
   color: var(--text);
   font-size: 0.8rem;
@@ -3430,12 +3433,18 @@ body.bento-complete-open .pono-dropdown {
 @media (max-height: 430px), (max-width: 700px) {
   .sk-intro-card { padding: 10px 12px 11px; border-radius: 20px; }
   .sk-intro-title { margin-bottom: 6px; }
-  .sk-intro-narration { min-height: 35px; margin-bottom: 6px; padding: 6px 9px; font-size: 0.7rem; }
+  .sk-intro-narration { min-height: 35px; margin-bottom: 6px; padding: 6px 9px; }
   .sk-intro-grid { gap: 6px; }
   .sk-intro-col { padding: 6px 5px; gap: 4px; }
   #sk-intro.is-guiding .sk-intro-col.is-focus { transform: scale(1.025); }
   .sk-intro-note { margin-top: 7px; padding: 6px 8px; font-size: 0.7rem; }
   .sk-intro-btn { margin-top: 9px; padding: 8px 28px; font-size: 1rem; }
+}
+/* v1403: 16:9 landscape (タブレット横向き) でも上部キャプションを縮小させない */
+@media (min-aspect-ratio: 16/10) and (orientation: landscape) {
+  .sk-intro-narration {
+    font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+  }
 }
 
 /* ===== Nori skip confirm modal ===== */
@@ -4948,7 +4957,7 @@ body.bento-complete-open .pono-dropdown {
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
     <div class="sk-intro-title">🍱 げんきな おべんとう 3つの なかま</div>
-    <div class="sk-intro-narration" id="sk-intro-narration" aria-live="polite">あか・きいろ・みどりを ひとつずつ いれてみよう</div>
+    <div class="sk-intro-narration" id="sk-intro-narration" aria-live="polite"><span class="sk-color-r">あか</span>・<span class="sk-color-y">きいろ</span>・<span class="sk-color-g">みどり</span>を ひとつずつ いれてみよう</div>
     <div class="sk-intro-grid">
       <!-- 赤 -->
       <div class="sk-intro-col sk-r-bg" data-sk-intro-group="r">
@@ -5011,7 +5020,6 @@ body.bento-complete-open .pono-dropdown {
         </div>
       </div>
     </div>
-    <p class="sk-intro-note">あか・きいろ・みどりを ひとつずつ いれてみよう。</p>
     <button class="sk-intro-btn" id="sk-intro-btn">わかった！</button>
   </div>
 </div>
@@ -11841,6 +11849,15 @@ function renderFreeCupEditorControls() {
   list.className = 'free-item-list';
   getCupEditorFoodItems().forEach(def => list.appendChild(makeFreePaletteButton(def)));
   frag.appendChild(list);
+  // v1403: cup-edit-try で size/OK の青枠が toolbar 再生成で消える症状を防ぐ
+  //   防御的フック (renderFreeLayoutControls 末尾の再 apply と二重実行でも idempotent)。
+  try {
+    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active
+        && tutorialState.step === 'cup-edit-try'
+        && typeof tutorialReapplyCupEditTryMarks === 'function') {
+      tutorialReapplyCupEditTryMarks();
+    }
+  } catch (_) {}
   return frag;
 }
 function renderFreeCupControls() {
@@ -11966,6 +11983,8 @@ function renderFreeLayoutControls() {
         if (typeof tutorialApplyBoxLock === 'function') tutorialApplyBoxLock();
       } else if (tutorialState.step === 'small-cup-food') {
         if (typeof tutorialApplySmallCupFoodLock === 'function') tutorialApplySmallCupFoodLock();
+      } else if (tutorialState.step === 'cup-edit-try') {
+        if (typeof tutorialReapplyCupEditTryMarks === 'function') tutorialReapplyCupEditTryMarks();
       }
     }
   } catch (_) {}
@@ -14297,6 +14316,30 @@ function tutorialApplySmallCupFoodLock() {
 function tutorialClearSmallCupFoodLock() {
   // 既存 tutorialClearBoxLock と同じ処理 (DOM 全 palette-item の lock 解除) を流用
   tutorialClearBoxLock();
+}
+// v1403: cup-edit-try step でサイズボタン (1/2/3) や ↓↑ レイヤー矢印を押すと
+//   renderFreeLayoutControls / renderFreeCupEditorControls が toolbar DOM を
+//   再生成し、 tutorialMarkTarget の SVG オーバーレイ target reference が浮いて
+//   青枠が消える症状を解消するための再 apply ヘルパー。
+function tutorialReapplyCupEditTryMarks() {
+  if (typeof tutorialState === 'undefined' || !tutorialState || !tutorialState.active) return;
+  if (tutorialState.step !== 'cup-edit-try') return;
+  try {
+    if (typeof tutorialClearTrims === 'function') tutorialClearTrims();
+    const sizeOneBtn = (typeof tutorialEditSizeButtonEl === 'function' ? tutorialEditSizeButtonEl(1) : null)
+                    || document.querySelector('[data-free-icon="size-1"]:not(:disabled)');
+    const sizeControl = (typeof tutorialEditSizeControlEl === 'function' ? tutorialEditSizeControlEl() : null);
+    const okBtn = (typeof tutorialCupOkButton === 'function' ? tutorialCupOkButton() : null);
+    const toolbar = (typeof tutorialContextToolbarEl === 'function' ? tutorialContextToolbarEl() : null);
+
+    let marked = false;
+    if (sizeOneBtn) { tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false }); marked = true; }
+    else if (sizeControl) { tutorialMarkTarget(sizeControl, { radius: 18, outline: false }); marked = true; }
+
+    if (okBtn) { tutorialMarkTarget(okBtn, { radius: 16, outline: false }); marked = true; }
+
+    if (!marked && toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+  } catch (_) {}
 }
 // パレットから type=cup の最初のボタンを取得 (accessory タブ)
 // v3.3: タブ context が一致しないときは null を返し、 各 step が誤タブの palette を掴まないようにする。
