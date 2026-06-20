@@ -35,7 +35,7 @@ const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
-const COLLECTION_TRAY_PLACEMENT_SCALE = 0.52;
+const COLLECTION_PLACEMENT_SCALE = 0.52;
 const DRAWING_COLORS = [
   "#EF4444",
   "#F97316",
@@ -427,8 +427,6 @@ if (!isLocalPreview || !params.has("spread")) {
 }
 let selectedPlacementId = null;
 let stickerDragState = null;
-let pendingCollectionStickerId = null;
-let collectionTrayDragState = null;
 let editorStateSaveTimer = 0;
 let editorStateDirty = false;
 let editorGameFilterValue = "all";
@@ -792,9 +790,8 @@ window.__stickerBookDebugState = () => ({
   rightPlacementCount: getPagePlacements(rightBookPageNumber()).length,
   leftCollectionPlacementCount: getCollectionPagePlacements(activeBookPage).length,
   rightCollectionPlacementCount: getCollectionPagePlacements(rightBookPageNumber()).length,
-  collectionTrayItemCount: availableCollectionTrayStickers().length,
-  collectionTrayVisible: Boolean(collectionStickerTray && !collectionStickerTray.hidden),
-  pendingCollectionStickerId,
+  collectionTocCardCount: Math.max(1, Math.ceil(collectionTocPageCount() / 2)),
+  collectionTocDockVisible: Boolean(collectionStickerTray && !collectionStickerTray.hidden),
   turnFrontTextureIsCanvas: frontPage.material.map?.image instanceof HTMLCanvasElement,
   turnBackTextureIsCanvas: backPage.material.map?.image instanceof HTMLCanvasElement,
 });
@@ -805,19 +802,12 @@ function setupScenePagePicking() {
     return;
   }
   canvas.addEventListener("pointermove", (event) => {
-    if (pendingCollectionStickerId && pickCollectionAlbumPage(event)) {
-      canvas.style.cursor = "copy";
-      return;
-    }
     canvas.style.cursor = pickEditablePage(event) ? "zoom-in" : "";
   });
   canvas.addEventListener("pointerleave", () => {
     canvas.style.cursor = "";
   });
   canvas.addEventListener("click", (event) => {
-    if (placePendingCollectionStickerFromEvent(event)) {
-      return;
-    }
     const pickedPage = pickEditablePage(event);
     if (!pickedPage) {
       return;
@@ -987,8 +977,6 @@ function collectionTocProgress(pageStart, pageEnd) {
 function navigateCollectionTocPage(pageStart) {
   const targetPage = spreadStartForPage(pageStart);
   closeBookPageJump();
-  pendingCollectionStickerId = null;
-  cancelCollectionTrayDrag();
   updateCollectionTraySelection();
   if (activeSurface === "cover") {
     setBookSurface("inside", targetPage);
@@ -999,21 +987,8 @@ function navigateCollectionTocPage(pageStart) {
   });
 }
 
-function availableCollectionTrayStickers() {
+function availableCollectionStickers() {
   return collectionStickerOptions.filter((sticker) => Boolean(sticker.assetUrl));
-}
-
-function collectionStickerById(stickerId) {
-  return availableCollectionTrayStickers().find((sticker) => sticker.id === stickerId) || null;
-}
-
-function canPlaceCollectionSticker() {
-  return activeAlbumMode === "collection"
-    && activeSurface === "inside"
-    && !coverOpenAnimation
-    && !spreadJumpAnimation
-    && flipProgress <= 0.001
-    && (!stickerEditor || stickerEditor.hidden);
 }
 
 function updateCollectionStickerTrayVisibility() {
@@ -1025,21 +1000,6 @@ function updateCollectionStickerTrayVisibility() {
     && collectionStickerOptions.length > 0;
   collectionStickerTray.hidden = !visible;
   document.body.classList.toggle("is-collection-tray-visible", visible);
-  updateCollectionTraySelection();
-  if (!visible) {
-    pendingCollectionStickerId = null;
-    updateCollectionTraySelection();
-    cancelCollectionTrayDrag();
-  }
-}
-
-function setPendingCollectionSticker(stickerId) {
-  pendingCollectionStickerId = collectionStickerById(stickerId)?.id || null;
-  updateCollectionTraySelection();
-}
-
-function clearPendingCollectionSticker() {
-  pendingCollectionStickerId = null;
   updateCollectionTraySelection();
 }
 
@@ -1055,152 +1015,8 @@ function updateCollectionTraySelection() {
   });
 }
 
-function beginCollectionTrayDrag(event, sticker) {
-  cancelCollectionTrayDrag();
-  setPendingCollectionSticker(sticker.id);
-  const ghost = document.createElement("img");
-  ghost.className = "collection-tray-ghost";
-  ghost.src = sticker.assetUrl;
-  ghost.alt = "";
-  ghost.draggable = false;
-  document.body.append(ghost);
-  collectionTrayDragState = {
-    sticker,
-    ghost,
-    pointerId: event.pointerId,
-  };
-  updateCollectionTrayGhost(event);
-  document.addEventListener("pointermove", handleCollectionTrayDragMove);
-  document.addEventListener("pointerup", handleCollectionTrayDragEnd);
-  document.addEventListener("pointercancel", handleCollectionTrayDragCancel);
-}
-
-function updateCollectionTrayGhost(event) {
-  if (!collectionTrayDragState?.ghost) {
-    return;
-  }
-  collectionTrayDragState.ghost.style.left = `${event.clientX}px`;
-  collectionTrayDragState.ghost.style.top = `${event.clientY}px`;
-}
-
-function handleCollectionTrayDragMove(event) {
-  if (!collectionTrayDragState || event.pointerId !== collectionTrayDragState.pointerId) {
-    return;
-  }
-  event.preventDefault();
-  updateCollectionTrayGhost(event);
-}
-
-function handleCollectionTrayDragEnd(event) {
-  if (!collectionTrayDragState || event.pointerId !== collectionTrayDragState.pointerId) {
-    return;
-  }
-  event.preventDefault();
-  const sticker = collectionTrayDragState.sticker;
-  finishCollectionTrayDrag();
-  if (placeCollectionStickerFromClientPoint(sticker, event.clientX, event.clientY)) {
-    clearPendingCollectionSticker();
-  } else {
-    setPendingCollectionSticker(sticker.id);
-  }
-}
-
-function handleCollectionTrayDragCancel(event) {
-  if (!collectionTrayDragState || event.pointerId !== collectionTrayDragState.pointerId) {
-    return;
-  }
-  finishCollectionTrayDrag();
-}
-
-function finishCollectionTrayDrag() {
-  if (!collectionTrayDragState) {
-    return;
-  }
-  collectionTrayDragState.ghost?.remove();
-  collectionTrayDragState = null;
-  document.removeEventListener("pointermove", handleCollectionTrayDragMove);
-  document.removeEventListener("pointerup", handleCollectionTrayDragEnd);
-  document.removeEventListener("pointercancel", handleCollectionTrayDragCancel);
-}
-
-function cancelCollectionTrayDrag() {
-  finishCollectionTrayDrag();
-}
-
-function placePendingCollectionStickerFromEvent(event) {
-  if (!pendingCollectionStickerId || activeAlbumMode !== "collection") {
-    return false;
-  }
-  const sticker = collectionStickerById(pendingCollectionStickerId);
-  if (!sticker) {
-    clearPendingCollectionSticker();
-    return false;
-  }
-  const placed = placeCollectionStickerFromClientPoint(sticker, event.clientX, event.clientY);
-  if (placed) {
-    event.preventDefault();
-    clearPendingCollectionSticker();
-  }
-  return placed;
-}
-
-function pickCollectionAlbumPage(event) {
-  return pickCollectionAlbumPageAt(event.clientX, event.clientY);
-}
-
-function pickCollectionAlbumPageAt(clientX, clientY) {
-  if (!canPlaceCollectionSticker()) {
-    return null;
-  }
-  const rect = canvas.getBoundingClientRect();
-  pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-  pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-  pageRaycaster.setFromCamera(pointerNdc, camera);
-  const hits = pageRaycaster.intersectObjects([rightPage, leftPageInner], false);
-  const hit = hits.find((item) => item.uv);
-  if (!hit) {
-    return null;
-  }
-  return {
-    mesh: hit.object,
-    pageNumber: pageNumberForPickedPage(hit.object),
-    uv: hit.uv.clone(),
-  };
-}
-
-function placeCollectionStickerFromClientPoint(sticker, clientX, clientY) {
-  if (document.elementFromPoint(clientX, clientY) !== canvas) {
-    return false;
-  }
-  const pickedPage = pickCollectionAlbumPageAt(clientX, clientY);
-  if (!pickedPage) {
-    return false;
-  }
-  addCollectionStickerPlacement(sticker, pickedPage.pageNumber, pickedPage.uv);
-  return true;
-}
-
-function addCollectionStickerPlacement(sticker, pageNumber, uv) {
-  const placements = getCollectionPagePlacements(pageNumber);
-  const placement = {
-    id: createPlacementId(),
-    stickerId: sticker.id,
-    label: sticker.label,
-    assetUrl: sticker.assetUrl,
-    x: THREE.MathUtils.clamp(uv.x * 100, 6, 94),
-    y: THREE.MathUtils.clamp((1 - uv.y) * 100, 6, 94),
-    scale: collectionStickerPlacementScale(sticker),
-    rotation: 0,
-    z: nextPlacementZ(placements),
-  };
-  placements.push(placement);
-  saveCollectionAlbumState();
-  refreshPageTemplateTextures();
-  return placement;
-}
-
 function collectionStickerPlacementScale(sticker) {
-  return defaultStickerScale(sticker) * COLLECTION_TRAY_PLACEMENT_SCALE;
+  return defaultStickerScale(sticker) * COLLECTION_PLACEMENT_SCALE;
 }
 
 function setupStickerEditor() {
@@ -1322,7 +1138,7 @@ function syncEditorPlacementsWithStickerPlan() {
 }
 
 function syncCollectionPlacementsWithStickerPlan() {
-  const stickersById = new Map(availableCollectionTrayStickers().map((sticker) => [sticker.id, sticker]));
+  const stickersById = new Map(availableCollectionStickers().map((sticker) => [sticker.id, sticker]));
   let changed = false;
   for (const placements of Object.values(collectionAlbumState.pages || {})) {
     if (!Array.isArray(placements)) {
@@ -2326,8 +2142,6 @@ function setAlbumMode(mode) {
   slider.value = "0";
   selectedPlacementId = null;
   stickerDragState = null;
-  pendingCollectionStickerId = null;
-  cancelCollectionTrayDrag();
   assignSpineTexture();
   assignSideTabTextures();
   applyAlbumLayout();
@@ -2358,8 +2172,6 @@ function setBookSurface(surface, page = activeBookPage) {
     spreadPosition = spreadPositionForBookPage(nextPage);
     selectedPlacementId = null;
     stickerDragState = null;
-    pendingCollectionStickerId = null;
-    cancelCollectionTrayDrag();
   }
   applyVariantState();
 }
@@ -2378,8 +2190,6 @@ function startCoverOpen(page = activeBookPage) {
   spreadPosition = spreadPositionForBookPage(nextPage);
   selectedPlacementId = null;
   stickerDragState = null;
-  pendingCollectionStickerId = null;
-  cancelCollectionTrayDrag();
   closeBookPageJump();
   refreshPageTemplateTextures();
   updateControlState();
@@ -4131,8 +3941,7 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
 
 function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, width, height, found, pageNumber) {
   const cardTheme = palette.collection.card;
-  const hasConcreteExistingAsset = sticker.assetStatus === "existing" && Boolean(sticker.assetUrl);
-  const canShowSpecificItem = hasConcreteExistingAsset || (found && Boolean(sticker.assetUrl));
+  const canShowSpecificItem = sticker.assetStatus === "existing" && Boolean(sticker.assetUrl);
   const displayLabel = canShowSpecificItem ? sticker.label || "シール" : "なにかな？";
   ctx.save();
   ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
