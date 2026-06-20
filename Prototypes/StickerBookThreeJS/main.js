@@ -463,6 +463,7 @@ let collectionStickerOptions = [];
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
 let activeCollectionTocCategoryId = "";
+let pendingCollectionTocCategoryId = "";
 let editorState = loadEditorState();
 let collectionAlbumState = loadCollectionAlbumState();
 let activeEditorPage = 1;
@@ -1102,15 +1103,16 @@ function navigateCollectionTocCategory(categoryId) {
     return;
   }
   activeCollectionTocCategoryId = category.id;
+  pendingCollectionTocCategoryId = category.id;
   const targetPage = spreadStartForPage(category.targetPage);
   closeBookPageJump();
-  updateCollectionTraySelection();
   if (activeSurface === "cover") {
-    setBookSurface("inside", targetPage);
+    setBookSurface("inside", targetPage, { preserveCollectionTocPending: true });
     return;
   }
   setBookPage(targetPage, {
     turnMode: Math.abs(targetPage - activeBookPage) <= 2 ? "single" : "jump",
+    preserveCollectionTocPending: true,
   });
 }
 
@@ -1138,11 +1140,27 @@ function updateCollectionTraySelection() {
   const categories = buildCollectionTocCategories();
   let selectedCategoryId = "";
   if (activeStart > 0) {
-    const currentCategory = categories.find((category) => category.id === activeCollectionTocCategoryId);
-    selectedCategoryId = currentCategory && collectionTocCategoryHasStickerOnSpread(currentCategory, activeStart)
-      ? currentCategory.id
-      : categories.find((category) => collectionTocCategoryHasStickerOnSpread(category, activeStart))?.id || "";
-    activeCollectionTocCategoryId = selectedCategoryId;
+    const pendingCategory = pendingCollectionTocCategoryId
+      ? categories.find((category) => category.id === pendingCollectionTocCategoryId)
+      : null;
+    if (pendingCategory) {
+      if (collectionTocCategoryHasStickerOnSpread(pendingCategory, activeStart)) {
+        selectedCategoryId = pendingCategory.id;
+        activeCollectionTocCategoryId = selectedCategoryId;
+        pendingCollectionTocCategoryId = "";
+      } else {
+        selectedCategoryId = pendingCategory.id;
+      }
+    } else {
+      if (pendingCollectionTocCategoryId) {
+        pendingCollectionTocCategoryId = "";
+      }
+      const currentCategory = categories.find((category) => category.id === activeCollectionTocCategoryId);
+      selectedCategoryId = currentCategory && collectionTocCategoryHasStickerOnSpread(currentCategory, activeStart)
+        ? currentCategory.id
+        : categories.find((category) => collectionTocCategoryHasStickerOnSpread(category, activeStart))?.id || "";
+      activeCollectionTocCategoryId = selectedCategoryId;
+    }
   }
   collectionStickerTrayItems.querySelectorAll("[data-collection-toc-category]").forEach((button) => {
     const selected = button.dataset.collectionTocCategory === selectedCategoryId;
@@ -2241,8 +2259,11 @@ function applyStickerEditorToBook() {
 }
 
 function setBookPage(page, options = {}) {
+  if (!options.preserveCollectionTocPending) {
+    pendingCollectionTocCategoryId = "";
+  }
   if (activeSurface === "cover") {
-    setBookSurface("inside", page);
+    setBookSurface("inside", page, options);
     return;
   }
   cancelCoverOpen();
@@ -2299,7 +2320,10 @@ function setAlbumMode(mode) {
   syncUrl();
 }
 
-function setBookSurface(surface, page = activeBookPage) {
+function setBookSurface(surface, page = activeBookPage, options = {}) {
+  if (!options.preserveCollectionTocPending) {
+    pendingCollectionTocCategoryId = "";
+  }
   const nextSurface = surface === "cover" ? "cover" : "inside";
   cancelSpreadJump();
   if (activeSurface === "cover" && nextSurface === "inside") {
