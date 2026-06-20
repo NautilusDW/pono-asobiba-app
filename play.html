@@ -2121,8 +2121,16 @@
 
     const CARD_TAP_MOVE_TOLERANCE = 12;
     const CARD_TAP_STATE_TTL_MS = 800;
+    // Short-press override: a quick tap (held < this many ms) always counts as
+    // a tap regardless of scroll delta. Protects against programmatic snap/
+    // teleport that mutates scrollTop between pointerdown and click and would
+    // otherwise silently drop the user's intent.
+    const CARD_TAP_FAST_MS = 300;
     let cardPointerDown = null;
     let cardPointerDownTimer = 0;
+    // Shared scroll state exposed by setupLoopScroll so isCardTap can tell
+    // user-driven scroll apart from programmatic snap/teleport.
+    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0 };
 
     function isTapIntroBlockingInput() {
       const intro = document.getElementById('tapIntro');
