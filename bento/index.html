@@ -7818,6 +7818,14 @@ function stopBentoTutorialVoice() {
     bentoTutorialVoiceAudio._bentoCancelled = true;
     bentoTutorialVoiceAudio.pause();
     bentoTutorialVoiceAudio.currentTime = 0;
+    // v1408: cuePoints listener leak 対策 — 残置 onTimeUpdate を明示 detach
+    //   (古い audio の listener が新 voice 再生に干渉する症状を回避)
+    if (bentoTutorialVoiceAudio._bentoTimeUpdateHandler) {
+      try {
+        bentoTutorialVoiceAudio.removeEventListener('timeupdate', bentoTutorialVoiceAudio._bentoTimeUpdateHandler);
+      } catch (_) {}
+      bentoTutorialVoiceAudio._bentoTimeUpdateHandler = null;
+    }
   } catch (_) {}
   bentoTutorialVoiceAudio = null;
 }
@@ -7844,11 +7852,14 @@ function playBentoTutorialVoice(id, opts = {}) {
       setTimeout(done, opts.fallbackMs || 7000);
     }
     // v1399: cuePoints 対応 — ナレ進行に同期した UI 切替 (cup-edit で size→arrows mark を順次切替)
+    // v1408: handler を audio._bentoTimeUpdateHandler に保持し、 stopBentoTutorialVoice から
+    //   明示 detach できるようにする。 また self-detach 時にも slot を null にする。
     if (Array.isArray(opts.cuePoints) && opts.cuePoints.length > 0 && typeof opts.onCue === 'function') {
       let cueIdx = 0;
       const onTimeUpdate = () => {
         if (audio._bentoCancelled) {
           try { audio.removeEventListener('timeupdate', onTimeUpdate); } catch (_) {}
+          audio._bentoTimeUpdateHandler = null;
           return;
         }
         while (cueIdx < opts.cuePoints.length && audio.currentTime >= opts.cuePoints[cueIdx].time) {
@@ -7857,8 +7868,10 @@ function playBentoTutorialVoice(id, opts = {}) {
         }
         if (cueIdx >= opts.cuePoints.length) {
           try { audio.removeEventListener('timeupdate', onTimeUpdate); } catch (_) {}
+          audio._bentoTimeUpdateHandler = null;
         }
       };
+      audio._bentoTimeUpdateHandler = onTimeUpdate;
       audio.addEventListener('timeupdate', onTimeUpdate);
     }
     bentoTutorialVoiceAudio = audio;
@@ -11851,11 +11864,19 @@ function renderFreeCupEditorControls() {
   frag.appendChild(list);
   // v1403: cup-edit-try で size/OK の青枠が toolbar 再生成で消える症状を防ぐ
   //   防御的フック (renderFreeLayoutControls 末尾の再 apply と二重実行でも idempotent)。
+  // v1408: 同フックを requestAnimationFrame で次フレームに遅延し、 DOM append 完了前に
+  //   tutorialContextToolbarEl() / tutorialCupOkButton() 等の getter が null を返して
+  //   silent fail する問題を回避する。
   try {
     if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active
-        && tutorialState.step === 'cup-edit-try'
-        && typeof tutorialReapplyCupEditTryMarks === 'function') {
-      tutorialReapplyCupEditTryMarks();
+        && tutorialState.step === 'cup-edit-try') {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+          if (typeof tutorialReapplyCupEditTryMarks === 'function') tutorialReapplyCupEditTryMarks();
+        });
+      } else if (typeof tutorialReapplyCupEditTryMarks === 'function') {
+        tutorialReapplyCupEditTryMarks();
+      }
     }
   } catch (_) {}
   return frag;
@@ -11977,6 +11998,8 @@ function renderFreeLayoutControls() {
 
   // v1370: palette 再構築 (tray.innerHTML = '') で消えるチュートリアル lock を確実に復元する。
   // タブ切替→food タブ再表示で small-cup-food / box の lock が落ちるリグレッションを防ぐフェイルセーフ。
+  // v1408: cup-edit-try の再 mark のみ requestAnimationFrame に遅延 (toolbar DOM が
+  //   appendChild される前に getter が null を返して silent fail する症状を回避)。
   try {
     if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
       if (tutorialState.step === 'box') {
@@ -11984,7 +12007,13 @@ function renderFreeLayoutControls() {
       } else if (tutorialState.step === 'small-cup-food') {
         if (typeof tutorialApplySmallCupFoodLock === 'function') tutorialApplySmallCupFoodLock();
       } else if (tutorialState.step === 'cup-edit-try') {
-        if (typeof tutorialReapplyCupEditTryMarks === 'function') tutorialReapplyCupEditTryMarks();
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => {
+            if (typeof tutorialReapplyCupEditTryMarks === 'function') tutorialReapplyCupEditTryMarks();
+          });
+        } else if (typeof tutorialReapplyCupEditTryMarks === 'function') {
+          tutorialReapplyCupEditTryMarks();
+        }
       }
     }
   } catch (_) {}
@@ -14756,6 +14785,16 @@ function tutorialOnTabSwitch(tabId) {
 function tutorialAdvance(nextStep) {
   if (!tutorialState.active) return;
   if (tutorialState.step === nextStep) return;
+  // v1408: cup-edit demo → cup-edit-try advance 時に旧 step の _fingerHideTimer や
+  //   指イラストが残置して新ステップの指デモ位置にチラ見えする問題への根本対策。
+  //   step を書き換える前に確実にクリアする。
+  if (tutorialState && tutorialState._fingerHideTimer) {
+    try { clearTimeout(tutorialState._fingerHideTimer); } catch (_) {}
+    tutorialState._fingerHideTimer = null;
+  }
+  if (typeof tutorialHideFinger === 'function') {
+    try { tutorialHideFinger(); } catch (_) {}
+  }
   tutorialState.step = nextStep;
   // step 変更時は前ステップの装飾を一旦掃除
   tutorialClearTrims();
