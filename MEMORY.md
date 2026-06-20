@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-20T00:52:16Z - クリック→リロード/マルチタップ要求バグ修正: SW二重controllerchange listener統合 + play.html isCardTap programmatic scroll除外 + tapIntro fade-out JS/CSS pointer-events同期 + safeReload 8s deadline。 5並列エージェント + 2クロスレビュー (mutation検査含む)、 CACHE_VERSION 1383→1386、 E2E regression 0、 push 完了
+- **タスク**: クリック→リロード/マルチタップ要求バグ修正: SW二重controllerchange listener統合 + play.html isCardTap programmatic scroll除外 + tapIntro fade-out JS/CSS pointer-events同期 + safeReload 8s deadline。 5並列エージェント + 2クロスレビュー (mutation検査含む)、 CACHE_VERSION 1383→1386、 E2E regression 0、 push 完了
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 52
+- **エラー数**: 3
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 8, "Agent": 16, "Bash": 24, "ToolSearch": 1, "Grep": 1, "Edit": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-20T00:51:14Z - Click-reload バグ cross-review M-1/M-2 修正 (tap-intro is-closing CSS pointer-events 同期 + safeReload 8 秒 deadline 上限)
+- **タスク**: Click-reload バグ cross-review M-1/M-2 修正 (tap-intro is-closing CSS pointer-events 同期 + safeReload 8 秒 deadline 上限)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 90
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 29, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 31, "ToolSearch": 1, "Edit": 6, "Write": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-20T00:44:36Z - SW controllerchange 二重 reload listener 統合: menu.js から削除 → sw-update.js を権威化 + pointer-aware safeReload (1500ms guard), CACHE_VERSION 1383→1384
 - **タスク**: SW controllerchange 二重 reload listener 統合: menu.js から削除 → sw-update.js を権威化 + pointer-aware safeReload (1500ms guard), CACHE_VERSION 1383→1384
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 実装前にコードベースを探索した
 - **ツール使用統計**: {"Read": 4, "Bash": 1, "Grep": 2, "Agent": 2, "Glob": 2, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-19T12:42:23Z - LP hero washi labels concentrated around CTA (left/right side bars, x 25-75% center column fully cleared) + free copy changed to むりょうで あそべるよ！; bg_soft_playmat.webp/@2x rebuilt; CACHE_VERSION bumped to 1363 (1362 was already taken)
-- **タスク**: LP hero washi labels concentrated around CTA (left/right side bars, x 25-75% center column fully cleared) + free copy changed to むりょうで あそべるよ！; bg_soft_playmat.webp/@2x rebuilt; CACHE_VERSION bumped to 1363 (1362 was already taken)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 242
-- **エラー数**: 13
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 48, "Workflow": 11, "Read": 37, "ToolSearch": 2, "DesignSync": 17, "Bash": 102, "Grep": 3, "Write": 6, "ScheduleWakeup": 14, "Skill": 1, "Glob": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-19T09:58:29Z - capture target を bento/puzzle で document.body 化、 sw v1354 へバンプ
-- **タスク**: capture target を bento/puzzle で document.body 化、 sw v1354 へバンプ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 207
-- **エラー数**: 13
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 39, "Workflow": 9, "Read": 33, "ToolSearch": 2, "DesignSync": 17, "Bash": 87, "Grep": 3, "Write": 6, "ScheduleWakeup": 9, "Skill": 1, "Glob": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

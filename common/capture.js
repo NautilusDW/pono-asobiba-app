@@ -198,6 +198,23 @@
 
     var buildOpts = { width: w, height: h, format: 'png', label: label };
 
+    // 2 重防御: build (= html2canvas) が走っている間は overlay を非描画にする。
+    //   data-capture-hide 属性 (ignoreElements 経由) が効かなくても、
+    //   visibility:hidden で実描画から外す。layout は維持されるのでフォーカス等は壊れない。
+    var prevVisibility = '';
+    var overlayHidden = false;
+    if (uiRoot && uiRoot.style) {
+      prevVisibility = uiRoot.style.visibility;
+      uiRoot.style.visibility = 'hidden';
+      overlayHidden = true;
+    }
+    function restoreOverlay() {
+      if (overlayHidden && uiRoot && uiRoot.style) {
+        uiRoot.style.visibility = prevVisibility;
+        overlayHidden = false;
+      }
+    }
+
     return Promise.resolve()
       .then(function () { return registered.build(buildOpts); })
       .then(function (src) {
@@ -215,11 +232,15 @@
         return null;
       })
       .then(function (out) {
+        // build() / compose() が終わった時点で overlay を即復元
+        // (download は別フローなので overlay 再表示を待たせない)
+        restoreOverlay();
         if (!out) return null;
         var fname = makeFileName(registered.gameId, label);
         return download(out, fname).then(function () { return fname; });
       })
       .catch(function (err) {
+        restoreOverlay();
         console.error('[PonoCapture] shoot 失敗', err);
         return null;
       });
@@ -273,6 +294,7 @@
 
     uiRoot = document.createElement('div');
     uiRoot.className = 'pono-capture-overlay';
+    uiRoot.setAttribute('data-capture-hide', '1');
     uiRoot.setAttribute('role', 'dialog');
     uiRoot.setAttribute('aria-label', 'Screenshot capture controls');
 

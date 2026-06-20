@@ -10568,7 +10568,7 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
     _hideOverlay();
   }
   if (!_rhythm.ownsBand) _rhythm.prevBandVolume = _bandVolume;
-  _setRhythmStatus('おてほんを みてね', null);
+  _setRhythmStatus('ノートを みてね', null);
   _setRhythmDemoNoteVisible(true);
   _rhythm.demoBeatScale = RHYTHM_DEMO_TIME_SCALE;
   _rhythm.demoFallMs = RHYTHM_DEMO_FALL_MS;
@@ -11927,7 +11927,7 @@ var OTO_RHYTHM_TUTORIAL_VOICE = {
   advice: 'もっと れんしゅうしたいときは、じゆうモードで あそべるよ。おてほんを みてから はじめると わかりやすいよ。',
   start: 'かえるのうたで あそぼう。はじめるを おしてね。'
 };
-var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1385';
+var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1387';
 var OTO_RHYTHM_TUTORIAL_AUDIO = {
   intro: '../assets/audio/oto/tutorial/oto_rhythm_tut_00_intro.mp3',
   songIntro: '../assets/audio/oto/tutorial/oto_rhythm_tut_01_difficulty.mp3',
@@ -12707,7 +12707,7 @@ function _makeOtoTutorialSteps(kind) {
         msg: 'これから おてほんを<br>せつめいするよ',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.intro,
         anchor: null,
-        side: 'stageTop',
+        side: 'stageTopRight',
         noDim: true,
         nextLabel: 'OK',
         showHideNext: true,
@@ -12720,7 +12720,7 @@ function _makeOtoTutorialSteps(kind) {
         msg: 'ノートが ボタンに きたら<br>タイミングよく おすよ',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.demo,
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'stageNoteRight',
+        side: 'stageTopRight',
         noSpot: true,
         hideActions: true,
         demoNoteIdx: 3,
@@ -12736,7 +12736,7 @@ function _makeOtoTutorialSteps(kind) {
         msg: 'つぎは きみのばん<br>タップして はじめるよ',
         voice: OTO_RHYTHM_TUTORIAL_VOICE.yourTurn,
         anchor: null,
-        side: 'stageTop',
+        side: 'stageTopRight',
         noDim: true,
         hideActions: true,
         advanceOnBubbleTap: true,
@@ -12751,7 +12751,7 @@ function _makeOtoTutorialSteps(kind) {
         msg: 'ファが ボタンに きたら<br>おしてね',
         skipNarration: true,
         anchor: '.instr-btn[data-idx="3"]',
-        side: 'stageNoteRight',
+        side: 'stageTopRight',
         noSpot: true,
         hideActions: true,
         userTryNoteIdx: 3,
@@ -12904,7 +12904,7 @@ function _makeOtoTutorialSteps(kind) {
         autoAdvanceAfterDemo: true,
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('おてほんを みてね', null, 'judge');
+          _setRhythmStatus('ノートを みてね', null, 'judge');
         }
       },
       {
@@ -13049,7 +13049,7 @@ function _makeOtoTutorialSteps(kind) {
         showHideNext: true,
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('おてほんを みてね', null, 'judge');
+          _setRhythmStatus('ノートを みてね', null, 'judge');
         }
       }
     ];
@@ -13078,7 +13078,7 @@ function _makeOtoTutorialSteps(kind) {
         showHideNext: true,
         before: function() {
           _prepareOtoRhythmTutorialStage();
-          _setRhythmStatus('おてほんを みてね', null, 'judge');
+          _setRhythmStatus('ノートを みてね', null, 'judge');
         }
       }
     ];
