@@ -5,6 +5,7 @@
 //   Legacy /.netlify/functions/* paths are kept so existing frontend calls work unchanged.
 
 import { Buffer } from 'node:buffer';
+import { getGoogleAccessToken } from './google-auth.js';
 
 const PROTECTED_PREFIXES = [
   '/admin/',
@@ -572,12 +573,33 @@ async function handleAiTts(request, env) {
     Leda:1,Aoede:1,Callirrhoe:1,Despina:1,Autonoe:1,Zephyr:1,Erinome:1,
     Puck:1,Orus:1,Kore:1,Charon:1,Fenrir:1,Iapetus:1,Umbriel:1,Algieba:1,Enceladus:1
   };
+  // Cloud TTS は API key 認証を 2025 末に廃止し、 OAuth2 access token 必須に。
+  // GOOGLE_SERVICE_ACCOUNT_JSON secret から JWT 署名 → access token 交換 (google-auth.js)、
+  // 取得できなければ後方互換で旧 ?key= 経路 (Cloud TTS は 401 を返す想定だが secret 登録前は壊れたまま運用可)。
+  async function cloudTtsAuth() {
+    let token = null;
+    try {
+      token = await getGoogleAccessToken(env);
+    } catch (e) {
+      console.warn('getGoogleAccessToken failed:', e && e.message);
+      token = null;
+    }
+    if (token) {
+      return { authMode: 'oauth2', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, urlSuffix: '' };
+    }
+    const cloudKey = env.GOOGLE_TTS_API_KEY || apiKey;
+    if (cloudKey) {
+      return { authMode: 'api_key', headers: { 'Content-Type': 'application/json' }, urlSuffix: '?key=' + encodeURIComponent(cloudKey) };
+    }
+    return { authMode: 'none', headers: { 'Content-Type': 'application/json' }, urlSuffix: '' };
+  }
+
   async function callChirp3(geminiVoice) {
     const cloudVoice = CHIRP3_AVAILABLE[geminiVoice] ? ('ja-JP-Chirp3-HD-' + geminiVoice) : 'ja-JP-Chirp3-HD-Leda';
-    const cloudKey = env.GOOGLE_TTS_API_KEY || apiKey;
-    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(cloudKey);
+    const auth = await cloudTtsAuth();
+    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize' + auth.urlSuffix;
     const resp = await fetch(url, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: auth.headers,
       body: JSON.stringify({
         input: { text },
         voice: { languageCode: 'ja-JP', name: cloudVoice },
@@ -585,7 +607,7 @@ async function handleAiTts(request, env) {
       })
     });
     const data = await resp.json();
-    return { resp, data, cloudVoice };
+    return { resp, data, cloudVoice, authMode: auth.authMode };
   }
   async function callCloudNeural2(geminiVoice) {
     const NEURAL2_MAP = {
@@ -595,10 +617,10 @@ async function handleAiTts(request, env) {
       Kore:'ja-JP-Neural2-D',Charon:'ja-JP-Neural2-D',Fenrir:'ja-JP-Neural2-D'
     };
     const cloudVoice = NEURAL2_MAP[geminiVoice] || 'ja-JP-Neural2-B';
-    const cloudKey = env.GOOGLE_TTS_API_KEY || apiKey;
-    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(cloudKey);
+    const auth = await cloudTtsAuth();
+    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize' + auth.urlSuffix;
     const resp = await fetch(url, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: auth.headers,
       body: JSON.stringify({
         input: { text },
         voice: { languageCode: 'ja-JP', name: cloudVoice },
@@ -606,7 +628,7 @@ async function handleAiTts(request, env) {
       })
     });
     const data = await resp.json();
-    return { resp, data, cloudVoice };
+    return { resp, data, cloudVoice, authMode: auth.authMode };
   }
 
   const isBlockedOrEmpty = r => !r.audioPart;
@@ -616,7 +638,7 @@ async function handleAiTts(request, env) {
 
     if (body.engine === 'chirp3') {
       const chirpDirect = await callChirp3(voice);
-      attemptChain.push({ model: 'chirp3-hd', status: chirpDirect.resp.status, err: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || null });
+      attemptChain.push({ model: 'chirp3-hd', authMode: chirpDirect.authMode, status: chirpDirect.resp.status, err: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || null });
       if (chirpDirect.resp.ok && chirpDirect.data && chirpDirect.data.audioContent) {
         return json(200, {
           audio: chirpDirect.data.audioContent, mime: 'audio/wav',
@@ -648,7 +670,7 @@ async function handleAiTts(request, env) {
           attemptChain, sampleRate: 24000
         });
       }
-      attemptChain.push({ model: 'chirp3-hd', status: chirpResult.resp.status, err: (chirpResult.data && chirpResult.data.error && chirpResult.data.error.message) || null });
+      attemptChain.push({ model: 'chirp3-hd', authMode: chirpResult.authMode, status: chirpResult.resp.status, err: (chirpResult.data && chirpResult.data.error && chirpResult.data.error.message) || null });
 
       const neuralResult = await callCloudNeural2(voice);
       if (neuralResult.resp.ok && neuralResult.data && neuralResult.data.audioContent) {
@@ -659,7 +681,7 @@ async function handleAiTts(request, env) {
           attemptChain, sampleRate: 24000
         });
       }
-      attemptChain.push({ model: 'cloud-tts-neural2', status: neuralResult.resp.status, err: (neuralResult.data && neuralResult.data.error && neuralResult.data.error.message) || null });
+      attemptChain.push({ model: 'cloud-tts-neural2', authMode: neuralResult.authMode, status: neuralResult.resp.status, err: (neuralResult.data && neuralResult.data.error && neuralResult.data.error.message) || null });
     }
 
     if (!result.resp.ok) {
