@@ -2392,7 +2392,7 @@
   .rhythm-victory-speech {
     position: absolute;
     left: clamp(8px, 7%, 28px);
-    top: clamp(-12px, 3%, 18px);
+    top: clamp(-110px, -9vw, -64px);
     min-width: clamp(136px, 17vw, 190px);
     max-width: clamp(156px, 21vw, 230px);
     padding: 9px 13px 10px;
@@ -2406,25 +2406,26 @@
     text-align: center;
     box-shadow: 0 9px 20px rgba(0,0,0,0.22);
     transform: rotate(-2deg);
+    text-shadow: 0.2px 0 currentColor;
   }
   .rhythm-victory-speech::before,
   .rhythm-victory-speech::after {
     content: '';
     position: absolute;
     left: 22px;
-    bottom: -15px;
+    bottom: -12px;
     width: 0;
     height: 0;
     border-style: solid;
   }
   .rhythm-victory-speech::before {
-    border-width: 15px 13px 0 13px;
+    border-width: 12px 11px 0 11px;
     border-color: rgba(255,255,255,0.92) transparent transparent transparent;
   }
   .rhythm-victory-speech::after {
     left: 25px;
-    bottom: -10px;
-    border-width: 12px 10px 0 10px;
+    bottom: -8px;
+    border-width: 9px 8px 0 8px;
     border-color: rgba(255,232,155,0.92) transparent transparent transparent;
   }
   .rhythm-victory-name {
@@ -2453,6 +2454,9 @@
     box-shadow: 0 14px 34px rgba(0,0,0,0.28);
   }
   .rhythm-complete.stage-clear .rhythm-complete-panel {
+    width: min(82%, 500px);
+    max-width: min(82%, 500px);
+    padding: 10px 18px 12px;
     border-color: rgba(255,247,173,0.96);
     background:
       linear-gradient(180deg, rgba(255,255,255,0.92), rgba(219,244,255,0.84)),
@@ -2471,6 +2475,10 @@
     line-height: 1.05;
     color: #0F3A5C;
     text-shadow: 0 2px 0 rgba(255,255,255,0.7);
+  }
+  .rhythm-complete.stage-clear .rhythm-complete-title {
+    min-height: 1.35rem;
+    font-size: clamp(1.04rem, 3.4vw, 1.5rem);
   }
   /* v1108: 「つぎのパートへ いけるよ」を ★ の右横に小さな吹き出しで出す。
      縦に伸ばさないため、.rhythm-result-stars を flex 中央寄せにし
@@ -2820,6 +2828,14 @@
     transform: scale(0.84);
     transition: transform 0.28s cubic-bezier(0.34,1.9,0.64,1), opacity 0.24s ease, filter 0.24s ease;
   }
+  .rhythm-complete.stage-clear .rhythm-result-stars {
+    min-height: 40px;
+    margin-top: 4px;
+  }
+  .rhythm-complete.stage-clear .rhythm-result-star {
+    width: 40px;
+    height: 40px;
+  }
   .rhythm-result-star.lit {
     opacity: 1;
     filter: drop-shadow(0 0 9px rgba(255,201,60,0.72)) drop-shadow(0 3px 0 rgba(142,91,0,0.28));
@@ -2906,8 +2922,10 @@
       justify-content: flex-end;
     }
     .rhythm-complete.stage-clear .rhythm-complete-panel {
-      width: min(68%, 480px);
-      max-width: min(68%, 480px);
+      width: min(58%, 430px);
+      max-width: min(58%, 430px);
+      padding: 10px 14px 12px;
+      border-radius: 18px;
     }
     .rhythm-victory-rival {
       left: max(8px, 2%);
@@ -2918,7 +2936,7 @@
     }
     .rhythm-victory-speech {
       left: 4px;
-      top: -10px;
+      top: -122px;
       min-width: 104px;
       max-width: 118px;
       padding: 7px 10px 8px;
@@ -2928,6 +2946,13 @@
     }
     .rhythm-complete-panel {
       padding: 14px 16px 16px;
+    }
+    .rhythm-complete.stage-clear .rhythm-complete-title {
+      font-size: clamp(1rem, 3.2cqh, 1.32rem);
+    }
+    .rhythm-complete.stage-clear .rhythm-result-star {
+      width: 36px;
+      height: 36px;
     }
     .rhythm-score-breakdown {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3008,6 +3033,14 @@
     background: rgba(255,255,255,0.94) !important;
     color: #1E1B4B !important;
     border: 2px solid rgba(251,191,36,0.55) !important;
+  }
+  .rhythm-complete-panel,
+  .rhythm-complete-btn,
+  .rhythm-name-input,
+  .rhythm-name-save,
+  .rhythm-name-skip {
+    font-weight: 900 !important;
+    text-shadow: 0.2px 0 currentColor;
   }
   .rhythm-name-skip {
     background: rgba(255,255,255,0.18) !important;
@@ -3705,6 +3738,7 @@
   }
   .tut-hand.hidden { display:none; }
   .tut-hand.show { opacity: 1; }
+  .tut-hand.is-ready { animation: none; }
   .tut-hand.is-pointing { animation: otoTutPoint 0.72s ease-in-out infinite; }
   .tut-hand.is-tapping { animation: otoTutTap 1.05s ease-in-out infinite; }
   .tut-hand.is-pressing { animation: otoTutPressTilt 0.98s ease-out 1 both; }
@@ -12516,6 +12550,12 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   _otoTutorialState.ownsRhythmDemo = true;
   _startRhythmDemoVisualLoop();
   var hitDelay = Math.max(900, targetDelayMs - 130);
+  var readyDelay = Math.max(260, Math.min(hitDelay - 950, targetDelayMs - 1700));
+  _otoTutorialState.demoTimers.push(setTimeout(function() {
+    if (!_otoTutorialState) return;
+    var rect = btn.getBoundingClientRect();
+    _showOtoTutorialHand({ hand: 'tapReady', tapIdx: idx, silentTap: true, anchor: '.instr-btn[data-idx="' + idx + '"]' }, rect, btn);
+  }, readyDelay));
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState) return;
     var rect = btn.getBoundingClientRect();
@@ -13170,7 +13210,7 @@ function _hideOtoTutorialHand() {
   var hand = document.getElementById('tut-hand');
   if (!hand) return;
   hand.classList.add('hidden');
-  hand.classList.remove('show', 'is-pointing', 'is-tapping', 'is-pressing');
+  hand.classList.remove('show', 'is-ready', 'is-pointing', 'is-tapping', 'is-pressing');
 }
 function _showOtoTutorialHand(step, rect, anchorEl) {
   var hand = document.getElementById('tut-hand');
@@ -13180,19 +13220,22 @@ function _showOtoTutorialHand(step, rect, anchorEl) {
     return;
   }
   _clearOtoTutorialHandTimers();
-  var kind = step.hand === 'tap' ? 'open' : 'point';
+  var isTap = step.hand === 'tap';
+  var isTapReady = step.hand === 'tapReady';
+  var usesTapPose = isTap || isTapReady;
+  var kind = usesTapPose ? 'open' : 'point';
   img.src = OTO_TUTORIAL_HAND_ASSETS[kind] || OTO_TUTORIAL_HAND_ASSETS.point;
-  var left = rect.left + rect.width * (step.hand === 'tap' ? 0.64 : 0.86);
-  var top = rect.top + rect.height * (step.hand === 'tap' ? 0.54 : 0.5);
+  var left = rect.left + rect.width * (usesTapPose ? 0.64 : 0.86);
+  var top = rect.top + rect.height * (usesTapPose ? 0.54 : 0.5);
   hand.style.left = left + 'px';
   hand.style.top = top + 'px';
-  hand.style.setProperty('--tut-hand-rotate', step.hand === 'tap' ? '-18deg' : '0deg');
-  hand.style.setProperty('--tut-hand-scale', step.hand === 'tap' ? '1.05' : '0.95');
-  hand.style.setProperty('--tut-hand-origin-x', step.hand === 'tap' ? '22%' : '50%');
-  hand.style.setProperty('--tut-hand-origin-y', step.hand === 'tap' ? '82%' : '50%');
-  hand.classList.remove('hidden', 'is-pointing', 'is-tapping', 'is-pressing');
-  hand.classList.add('show', step.hand === 'tap' ? 'is-pressing' : 'is-pointing');
-  if (step.hand !== 'tap') return;
+  hand.style.setProperty('--tut-hand-rotate', usesTapPose ? '-18deg' : '0deg');
+  hand.style.setProperty('--tut-hand-scale', usesTapPose ? '1.05' : '0.95');
+  hand.style.setProperty('--tut-hand-origin-x', usesTapPose ? '22%' : '50%');
+  hand.style.setProperty('--tut-hand-origin-y', usesTapPose ? '82%' : '50%');
+  hand.classList.remove('hidden', 'is-ready', 'is-pointing', 'is-tapping', 'is-pressing');
+  hand.classList.add('show', isTap ? 'is-pressing' : (isTapReady ? 'is-ready' : 'is-pointing'));
+  if (!isTap) return;
   var timers = _otoTutorialState ? _otoTutorialState.handTimers : [];
   timers.push(setTimeout(function() {
     if (anchorEl && anchorEl.classList) {
@@ -14626,15 +14669,34 @@ _renderRecBar();
       gameId: "oto",
       build: async function(opts) {
         // oto は 3 canvas (bgCanvas + rhythm3d-road + rhythm3d-notes) + DOM の UI が
-        // 重なる構成なので、 #app コンテナ全体を html2canvas で 1 枚にラスタライズして合成する。
-        var container = document.getElementById('app') || document.body;
+        // 重なる構成。 #app は position:fixed; inset:0 で viewport を埋めるが、 中の
+        // .stage が transform:translate(-50%,-50%) + aspect-ratio:16/9 で中央配置
+        // されているため、 #app を target にすると html2canvas が transform を
+        // 正しく展開できず、 stage が右下に押し込まれる症状が出ていた (左上 2/3 が
+        // 空の bg gradient、 右下に lane だけ小さく見える)。
+        // bento/puzzle と同様に document.body を target にし、 viewport サイズを
+        // 明示 (windowWidth/windowHeight + width/height + x/y=0) する事で、
+        // .stage の transform を viewport 基準で正しく rasterize させる。
+        var container = document.body;
         try {
           var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
           var html2canvas = mod && (mod.default || mod);
           if (typeof html2canvas !== 'function') throw new Error('html2canvas not loadable');
+          var vw = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
+          var vh = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+          var viewportOverrides = {
+            x: 0,
+            y: 0,
+            width: vw,
+            height: vh,
+            windowWidth: vw,
+            windowHeight: vh,
+            scrollX: 0,
+            scrollY: 0
+          };
           var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
-            ? window.PonoCapture.html2canvasOptions()
-            : {
+            ? window.PonoCapture.html2canvasOptions(viewportOverrides)
+            : Object.assign({
                 backgroundColor: null,
                 scale: 2,
                 useCORS: true,
@@ -14650,7 +14712,7 @@ _renderRecBar();
                   } catch (e) {}
                   return false;
                 }
-              };
+              }, viewportOverrides);
           return await html2canvas(container, h2cOpts);
         } catch (e) {
           console.warn('[capture:oto] html2canvas import failed, falling back to bgCanvas only', e);
