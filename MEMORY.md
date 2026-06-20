@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-20T07:59:12Z - LP play-cards 散らばりレイアウト + bubble微修正 + pc-visual キャラ画像化 + モーダル画像重複回避 + sw v1410
+- **タスク**: LP play-cards 散らばりレイアウト + bubble微修正 + pc-visual キャラ画像化 + モーダル画像重複回避 + sw v1410
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 134
+- **エラー数**: 17
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 62, "ToolSearch": 1, "Edit": 7, "Write": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-20T05:30:45Z - LP comprehensive copy refresh: herob lead, hiragana titles, keyword bubbles, modal details (bento/maze/oto/puzzle), section divider + book-aside restyle, sw bump v1404
 - **タスク**: LP comprehensive copy refresh: herob lead, hiragana titles, keyword bubbles, modal details (bento/maze/oto/puzzle), section divider + book-aside restyle, sw bump v1404
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 8, "Agent": 16, "Bash": 24, "ToolSearch": 1, "Grep": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-20T00:51:14Z - Click-reload バグ cross-review M-1/M-2 修正 (tap-intro is-closing CSS pointer-events 同期 + safeReload 8 秒 deadline 上限)
-- **タスク**: Click-reload バグ cross-review M-1/M-2 修正 (tap-intro is-closing CSS pointer-events 同期 + safeReload 8 秒 deadline 上限)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 90
-- **エラー数**: 2
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 29, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 31, "ToolSearch": 1, "Edit": 6, "Write": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

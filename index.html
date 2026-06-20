@@ -379,11 +379,17 @@
     .pc-stack{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:24px;}
     .pc-card{position:relative;background:#FFFDF8;border:1px solid rgba(93,78,55,.08);border-radius:24px;padding:14px 14px 22px;
       box-shadow:0 8px 26px var(--pc-shadow);animation:pc-pop .6s ease both;
-      --rot:0deg;
-      transform:rotate(var(--rot));
+      --rot:0deg; --dx:0px; --dy:0px;
+      transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--rot)) scale(.96);
+      transition:transform .35s cubic-bezier(.18,.84,.42,1.08), box-shadow .35s ease;
     }
     .pc-card:nth-child(odd){--rot:-2deg;}
     .pc-card:nth-child(even){--rot:2deg;}
+    .pc-card--mt1{--rot:-5deg; --dx:-12px; --dy:0;}
+    .pc-card--mt2{--rot:4deg; --dx:14px; --dy:-6px;}
+    .pc-card--mt3{--rot:-3deg; --dx:-8px; --dy:8px;}
+    .pc-card--mt4{--rot:6deg; --dx:10px; --dy:-4px;}
+    .pc-card--mt5{--rot:-4deg; --dx:-16px; --dy:6px;}
     .pc-card::before{content:"";position:absolute;top:-12px;width:108px;height:26px;border-radius:3px;box-shadow:0 2px 5px var(--pc-shadow);}
     .pc-card--mt1::before{left:50%;transform:translateX(-50%) rotate(-3deg);background:repeating-linear-gradient(90deg,rgba(232,90,79,.65) 0 8px,rgba(247,181,174,.75) 8px 16px);}
     .pc-card--mt2::before{left:30%;transform:translateX(-50%) rotate(4deg);background:repeating-linear-gradient(45deg,rgba(58,91,140,.65) 0 6px,rgba(159,179,208,.75) 6px 14px);}
@@ -391,12 +397,14 @@
     .pc-card--mt4::before{left:42%;transform:translateX(-50%) rotate(2deg);background:repeating-linear-gradient(0deg,rgba(95,184,159,.65) 0 7px,rgba(184,221,207,.75) 7px 16px);}
     .pc-card--mt5::before{left:55%;transform:translateX(-50%) rotate(-2deg);background:repeating-linear-gradient(60deg,rgba(139,111,181,.65) 0 6px,rgba(197,181,221,.75) 6px 14px);}
     .pc-visual{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background-size:cover;background-position:center;background-repeat:no-repeat;}
-    .pc-v-bento  {background-image:url('assets/images/bento/cooking/ui/recipe_card_frame.png'),linear-gradient(150deg,#F8CFA6,#F2A971);}
-    .pc-v-maze   {background-image:url('maze/imageStages/stage5.jpg'),linear-gradient(150deg,#B7A877,#8C9A6E);}
+    .pc-v-bento  {background-image:url('assets/images/bento/story/staff/pono_present.png'),linear-gradient(150deg,#F8CFA6,#F2A971);}
+    .pc-v-maze   {background-image:url('assets/images/characters/pono/pono_lantan.png'),linear-gradient(150deg,#B7A877,#8C9A6E);}
     .pc-v-oto    {background-image:url('assets/images/oto/title_back.jpg'),linear-gradient(150deg,#F6D79E,#EFC06B);}
     .pc-v-sticker{background-image:url('assets/images/sticker-book/sticker_book_base_kids_16x9.png'),linear-gradient(150deg,#FBD8C2,#F4B79A);}
-    .pc-v-puzzle {background-image:url('assets/images/puzzle/title_back.jpg'),linear-gradient(150deg,#B0D4E6,#89BAD4);}
-    .pc-v-quizland{background-image:url('assets/images/quizland/title_back.jpg'),linear-gradient(150deg,#D4A574,#C08A54);}
+    .pc-v-puzzle {background-image:url('assets/images/puzzle/opening/cut01.jpg'),linear-gradient(150deg,#B0D4E6,#89BAD4);}
+    .pc-v-quizland{background-image:url('assets/images/quizland/OP/quiz_start_card.webp'),linear-gradient(150deg,#D4A574,#C08A54);}
+    .pc-v-bento, .pc-v-maze {background-size:contain;}
+    .pc-v-bento{background-position:right 8% center;}
     .pc-bubble{position:absolute;top:8px;right:-6px;z-index:3;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:.82rem;letter-spacing:.04em;padding:7px 13px;border-radius:14px 14px 14px 4px;transform:rotate(5deg);box-shadow:0 4px 10px rgba(201,106,46,.35);}
     .pc-bubble--alt{background:var(--pc-primary);box-shadow:0 4px 10px rgba(242,145,90,.32);}
     .pc-body{padding:16px 8px 0;}
@@ -412,9 +420,9 @@
     .pc-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(201,106,46,.42);}
     .pc-cta:active{transform:translateY(0) scale(.98);}
     .play-cards a:focus-visible{outline:3px solid var(--pc-primary);outline-offset:3px;}
-    @keyframes pc-pop{from{opacity:0;transform:translateY(16px) rotate(0);}to{opacity:1;transform:rotate(var(--rot));}}
-    @media (prefers-reduced-motion:reduce){.play-cards *{animation:none!important;}}
-    @media (min-width:768px){.play-cards{padding:40px 32px 48px;}.pc-stack{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:30px 28px;}.pc-card:nth-child(4n+3){--rot:.6deg;}.pc-card--mt5{grid-column:1 / -1;justify-self:center;width:calc(50% - 14px);}}
+    @keyframes pc-pop{from{opacity:0;transform:translateY(20px) rotate(0) scale(.85);}to{opacity:1;transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--rot)) scale(.96);}}
+    @media (prefers-reduced-motion:reduce){.play-cards *{animation:none!important;transition:none!important;}}
+    @media (min-width:768px){.play-cards{padding:40px 32px 48px;}.pc-stack{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:30px 28px;}.pc-card--mt5{grid-column:1 / -1;justify-self:center;width:calc(50% - 14px);}}
     @media (min-width:1200px){.pc-stack{max-width:1000px;gap:38px 36px;}.pc-visual{aspect-ratio:16/10;}.pc-card--mt5{width:calc(50% - 18px);}}
 
     /* ===== Sticker extra (ゲーム外の楽しみ方) ===== */
@@ -457,8 +465,8 @@
     .book-aside-link img,.book-aside-link picture,.book-aside-link picture img{display:block;width:100%;height:auto;}
 
     /* ===== Clickable play-cards (open game-detail modal) ===== */
-    .game-card-clickable{cursor:pointer;transition:transform .25s ease,box-shadow .25s ease;}
-    .game-card-clickable:hover{transform:rotate(var(--rot)) translateY(-3px);box-shadow:0 14px 32px var(--pc-shadow);}
+    .game-card-clickable{cursor:pointer;}
+    .game-card-clickable:hover, .game-card-clickable:focus-visible{transform:translate(0,0) rotate(0deg) scale(1);z-index:5;box-shadow:0 18px 38px rgba(93,78,55,.25);}
     .game-card-clickable:focus-visible{outline:3px solid var(--pc-primary);outline-offset:4px;}
 
     /* ===== Game detail modal ===== */
@@ -472,8 +480,12 @@
     .game-modal-close:hover{background:rgba(255,255,255,.18);}
     .game-modal-close:focus-visible{outline:3px solid #fff;outline-offset:2px;}
     .game-modal-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;}
-    .game-modal-images{display:flex;flex-direction:column;gap:16px;padding:18px 20px 6px;}
-    .game-modal-images img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;}
+    .game-modal-images{display:flex;flex-direction:column;gap:22px;padding:18px 20px 6px;}
+    .game-modal-images img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;transition:transform .25s ease;}
+    .game-modal-images img:nth-child(1){transform:rotate(-2.5deg) translateX(-6px);}
+    .game-modal-images img:nth-child(2){transform:rotate(3deg) translateX(8px);}
+    .game-modal-images img:nth-child(3){transform:rotate(-1.5deg) translateX(-4px);}
+    .game-modal-images img:hover{transform:rotate(0) translateX(0) scale(1.02);}
     .game-modal-detail{font-weight:700;font-size:clamp(14px,3.6vw,16px);line-height:1.85;color:var(--text);margin:0;padding:14px 20px 20px;}
     .game-modal-cta-wrap{display:flex;justify-content:center;padding:14px 20px 22px;border-top:1px solid rgba(93,78,55,.08);background:#FFFDF8;}
     .game-modal-cta{display:inline-flex;align-items:center;gap:.5em;min-height:52px;padding:12px 30px;background:#888;color:#fff;font-weight:900;font-size:clamp(16px,4vw,19px);letter-spacing:.06em;text-decoration:none;border-radius:22px;box-shadow:0 6px 18px rgba(0,0,0,.18);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
@@ -482,7 +494,7 @@
     .game-modal-cta:focus-visible{outline:3px solid #fff;outline-offset:3px;}
     body.modal-open{overflow:hidden;}
     @keyframes gm-pop{from{opacity:0;transform:translateY(20px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
-    @media (prefers-reduced-motion:reduce){.game-modal-card{animation:none;}.game-card-clickable{transition:none;}.game-card-clickable:hover{transform:rotate(var(--rot));}}
+    @media (prefers-reduced-motion:reduce){.game-modal-card{animation:none;}.game-card-clickable{transition:none;}.game-card-clickable:hover{transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--rot)) scale(.92);}.game-modal-images img{transform:none!important;transition:none!important;}}
 
     /* ===== a11y common :focus-visible (既存要素) ===== */
     .help-link:focus-visible{outline:3px solid var(--primary);outline-offset:3px;border-radius:50px;}
@@ -523,7 +535,7 @@
       </div>
       <div class="pc-stack">
         <article class="pc-card pc-card--mt1 game-card-clickable" data-game="bento" role="button" tabindex="0" aria-label="彩り弁当の詳細を見る">
-          <div class="pc-bubble">べんとう やさん</div>
+          <div class="pc-bubble">おべんとうやさん</div>
           <div class="pc-visual pc-v-bento" role="img" aria-label="すきなおかずを選んで作る、いろどりお弁当の画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">いろどりべんとう</h3>
@@ -533,7 +545,7 @@
           </div>
         </article>
         <article class="pc-card pc-card--mt2 game-card-clickable" data-game="maze" role="button" tabindex="0" aria-label="ランタンの迷路の詳細を見る">
-          <div class="pc-bubble pc-bubble--alt">もり たんけん</div>
+          <div class="pc-bubble pc-bubble--alt">もりの めいろ</div>
           <div class="pc-visual pc-v-maze" role="img" aria-label="ランタンを持って暗い森を探検するめいろの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">ランタンの めいろ</h3>
@@ -734,7 +746,7 @@
           accentDark: '#1F5945',
           images: [
             {src:'assets/images/puzzle/title_back.jpg', alt:'ポノのなかよしパズルのタイトル画面'},
-            {src:'assets/images/puzzle/opening/cut01.jpg', alt:'ポノとなかまたちのオープニング'},
+            {src:'assets/images/puzzle/opening/cut02.jpg', alt:'パズルで あそぶ なかまたち'},
             {src:'assets/images/puzzle/stages/puzzle_stage_08_flower_field_bugs.jpg', alt:'花畑と虫のパズルステージ'}
           ],
           detail: 'ともだちの どうぶつと いっしょに、 ピースを あわせて ポノたちの えを かんせいさせよう！ かたちを みくらべる あそびで、 「しゅうちゅうの ちから」 と 「かんさつの ちから」 が そだつよ。'
@@ -746,7 +758,7 @@
           images: [
             {src:'assets/images/quizland/title_back.jpg', alt:'フクロウはかせのなぞなぞのタイトル画面'},
             {src:'assets/ui/play_quizland_title_back.webp', alt:'なぞなぞのメニューイメージ'},
-            {src:'assets/images/quizland/OP/quiz_start_card.webp', alt:'フクロウはかせのなぞなぞスタート看板'}
+            {src:'assets/images/quizland/OP/OP_BG.webp', alt:'もりの ふうけい'}
           ],
           detail: 'フクロウはかせの ふしぎな もんだいに こたえよう！ ひらめいたら ピン！ 「ことばの ちしき」 と 「すいりの ちから」 が そだつよ。'
         }
