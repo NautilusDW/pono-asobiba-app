@@ -1661,6 +1661,12 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* v1399: panel mode の ↓↑ レイヤー切替ボタンをグループ化して同段折り返しを維持 */
+.free-context-toolbar--panel .free-layer-buttons {
+  display: flex;
+  gap: 5px;
+  flex: 0 0 auto;
+}
 .free-context-toolbar--panel .free-size-slider,
 .free-context-toolbar--panel .free-size-stepper {
   flex: 1 1 138px;
@@ -3303,7 +3309,8 @@ body.bento-complete-open .pono-dropdown {
   border-radius: 16px;
   background: #FFF8E5;
   color: #6B3E16;
-  font-size: clamp(0.72rem, 1.65vw, 0.86rem);
+  /* v1399: 固定文を desktop 基準で読みやすく拡大 (mobile 時 0.72rem → 1.1rem) */
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
   font-weight: 900;
   line-height: 1.35;
 }
@@ -4941,7 +4948,7 @@ body.bento-complete-open .pono-dropdown {
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
     <div class="sk-intro-title">🍱 げんきな おべんとう 3つの なかま</div>
-    <div class="sk-intro-narration" id="sk-intro-narration" aria-live="polite">たべものには 3つの なかまが あるよ。</div>
+    <div class="sk-intro-narration" id="sk-intro-narration" aria-live="polite">あか・きいろ・みどりを ひとつずつ いれてみよう</div>
     <div class="sk-intro-grid">
       <!-- 赤 -->
       <div class="sk-intro-col sk-r-bg" data-sk-intro-group="r">
@@ -5194,7 +5201,10 @@ function applySkIntroGuideStep(index) {
   const caption = document.getElementById('sk-intro-narration');
   if (!intro || intro.classList.contains('hidden')) return false;
   const step = SK_INTRO_GUIDE_STEPS[index] || SK_INTRO_GUIDE_STEPS[0];
-  if (caption) caption.innerHTML = step.text;
+  // v1399: ローテーション文字は撲滅 — タイトル「3 つの なかま」 + 3 カードで情報十分。
+  // 初期 HTML の固定文「あか・きいろ・みどりを ひとつずつ いれてみよう」 を出しっ放しにする
+  // (caption.innerHTML を上書きしない)。 音声 sk_intro_01-05 の連続再生は維持。
+  // if (caption) caption.innerHTML = step.text;
   intro.classList.add('is-guiding');
   intro.classList.toggle('is-all-focus', step.key === 'all');
   document.querySelectorAll('.sk-intro-col').forEach(col => {
@@ -10560,8 +10570,15 @@ function createFreeContextToolbar(opts = {}) {
       const overlapIndexes = overlapUnits.map(unit => units.findIndex(u => u.key === unit.key));
       const canDown = overlapIndexes.some(i => i >= 0 && i < index);
       const canUp = overlapIndexes.some(i => i > index);
-      appendControl(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
-      appendControl(createFreeContextButton('↑', '', () => moveSelectedItemLayer(1), !canUp));
+      // v1399: ↓↑ を同一グループにまとめて panel mode の flex-wrap でも同段折り返し
+      // (グループ単位で改行されるので「↓ だけ次行に落ちる」現象を防ぐ)。
+      // data-free-icon="layer-down" / "layer-up" 属性は個々のボタンに残るため、
+      // 既存の querySelector ベースのチュートリアル mark 経路は壊れない。
+      const layerGroup = document.createElement('div');
+      layerGroup.className = 'free-layer-buttons';
+      layerGroup.appendChild(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
+      layerGroup.appendChild(createFreeContextButton('↑', '', () => moveSelectedItemLayer(1), !canUp));
+      appendControl(layerGroup);
     }
   }
 
@@ -13633,6 +13650,16 @@ function tutorialOnCompleteDetailShown() {
   tutorialHidePonoCallout();
   tutorialSetModeLabel('');
   tutorialShowBubble('ともだちが よろこぶ<br>おべんとうを たくさん<br>つくってあげよう！', { topVh: '18', side: 'left' });
+  // v1399: 詳細結果モーダル (.complete-detail-page) の近傍にバブルを動的配置
+  // (画面左上端固定でモーダル本体から遠すぎる症状を解消)。 モーダル本体を anchor に
+  // tutorialPositionBubbleBeside で寄せ、 左に置けなければ自動で右側へ回り込む。
+  try {
+    const detailEl = document.getElementById('complete-detail-page');
+    if (detailEl && !detailEl.classList.contains('hidden')
+        && typeof tutorialPositionBubbleBeside === 'function') {
+      tutorialPositionBubbleBeside(detailEl, { gap: 16 });
+    }
+  } catch (_) {}
   playBentoTutorialVoice('basic_tut_16', {
     fallbackMs: 6200,
     onEnded: () => {
@@ -15270,6 +15297,15 @@ function tutorialRenderStep() {
       const smallFood = tutorialFindCupFoodPaletteEl();
       if (smallFood) tutorialTrimPath(smallFood, { radius: 12 });
     }
+    // v1399: パレット側プチトマト要素の近傍にバブルを動的配置 (画面左端固定で
+    // パレットから遠すぎる症状を解消)。 cup-ok step と同じ tutorialPositionBubbleBeside
+    // 経路で実 DOM 座標に追従。
+    try {
+      const tomatoEl = tutorialFindCupFoodPaletteEl();
+      if (tomatoEl && typeof tutorialPositionBubbleBeside === 'function') {
+        tutorialPositionBubbleBeside(tomatoEl, { gap: 12 });
+      }
+    } catch (_) {}
     tutorialAnimateDragFromElWithRetry(
       () => tutorialFindCupFoodPaletteEl(),
       () => tutorialActiveCupPoint(),
