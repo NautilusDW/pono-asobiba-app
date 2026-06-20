@@ -432,13 +432,75 @@
     }
   }
 
+  // ── html2canvas 共通 options ──
+  // html2canvas は DOM を再レンダリングして canvas 化するため、 標準ブラウザレンダリングと
+  // 差異が出やすい。 全ゲーム共通でこの options を使うことで品質を底上げする:
+  //   - scale: 2          → 高 DPR 相当の super-sampling。 preset リサイズ時の blur を抑制。
+  //   - useCORS: true     → 外部画像 (素材) を CORS 経由で取得し taint を防ぐ
+  //   - allowTaint: false → CORS 違反は静かに失敗するので明示禁止
+  //   - imageTimeout      → 大量素材を待つ
+  //   - backgroundColor: null → 透明背景許可 (合成段で背景を載せる方針)
+  //   - logging: false    → production 用
+  //   - ignoreElements    → data-capture-hide と pono-capture-overlay の 2 重除外
+  //   - onclone           → クローン DOM の text-overflow:ellipsis を clip+wrap に変換
+  //                          (実画面の ellipsis 切れが「タコウインナーか゛」 のように
+  //                           真の文字列で焼き込まれるのを根本回避。 実画面は無影響)
+  // 各ゲームの html2canvas 呼び出しは: html2canvas(target, PonoCapture.html2canvasOptions())
+  // のように使う。 overrides で個別調整可能 (例: backgroundColor を白に固定したい等)。
+  function html2canvasOptions(overrides) {
+    var base = {
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      imageTimeout: 30000,
+      removeContainer: true,
+      ignoreElements: function (el) {
+        try {
+          if (!el) return false;
+          if (el.getAttribute && el.getAttribute('data-capture-hide') === '1') return true;
+          if (el.hasAttribute && el.hasAttribute('data-capture-hide')) return true;
+          if (el.classList && el.classList.contains && el.classList.contains('pono-capture-overlay')) return true;
+        } catch (e) {}
+        return false;
+      },
+      onclone: function (clonedDoc) {
+        try {
+          var els = clonedDoc.querySelectorAll('*');
+          for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            if (!el || !el.style) continue;
+            try {
+              var cs = clonedDoc.defaultView.getComputedStyle(el);
+              if (cs && cs.textOverflow === 'ellipsis') {
+                el.style.textOverflow = 'clip';
+                el.style.whiteSpace = 'normal';
+                el.style.overflow = 'visible';
+              }
+            } catch (e) {}
+          }
+        } catch (e) {}
+      }
+    };
+    if (overrides && typeof overrides === 'object') {
+      for (var k in overrides) {
+        if (Object.prototype.hasOwnProperty.call(overrides, k)) {
+          base[k] = overrides[k];
+        }
+      }
+    }
+    return base;
+  }
+
   // ── 公開 API ──
   window.PonoCapture = {
     register: register,
     show: show,
     shoot: shoot,
     isAllowed: isCaptureAllowed,
-    PRESETS: PRESETS.slice()
+    PRESETS: PRESETS.slice(),
+    html2canvasOptions: html2canvasOptions
   };
 
   // 起動

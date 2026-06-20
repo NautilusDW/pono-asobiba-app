@@ -159,16 +159,26 @@
               console.warn("[PonoCapture/puzzle] html2canvas not callable after import");
               return null;
             }
-            return await html2canvas(container, {
-              backgroundColor: null,
-              scale: 2,
-              useCORS: true,
-              logging: false,
-              ignoreElements: function(el) {
-                try { return el && el.hasAttribute && el.hasAttribute("data-capture-hide"); }
-                catch (e) { return false; }
-              }
-            });
+            var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === "function")
+              ? window.PonoCapture.html2canvasOptions()
+              : {
+                  backgroundColor: null,
+                  scale: 2,
+                  useCORS: true,
+                  allowTaint: false,
+                  logging: false,
+                  imageTimeout: 30000,
+                  removeContainer: true,
+                  ignoreElements: function(el) {
+                    try {
+                      if (!el) return false;
+                      if (el.hasAttribute && el.hasAttribute("data-capture-hide")) return true;
+                      if (el.classList && el.classList.contains && el.classList.contains("pono-capture-overlay")) return true;
+                    } catch (e) {}
+                    return false;
+                  }
+                };
+            return await html2canvas(container, h2cOpts);
           } catch (e) {
             console.warn("[PonoCapture/puzzle] html2canvas import failed", e);
             return null;

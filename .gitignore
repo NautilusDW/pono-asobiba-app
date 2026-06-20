@@ -61,3 +61,8 @@ test-results/
 playwright-report/
 # Visual snapshot baselines — keep tracked for now (uncomment to ignore):
 # tests/e2e/**/*-snapshots/
+
+# Screenshot capture tmp files (manual visual check artifacts, not for repo)
+tmp_capture_*.png
+tmp_capture_*.json
+_visual_capture*.mjs

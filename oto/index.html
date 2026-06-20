@@ -14632,16 +14632,26 @@ _renderRecBar();
           var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
           var html2canvas = mod && (mod.default || mod);
           if (typeof html2canvas !== 'function') throw new Error('html2canvas not loadable');
-          return await html2canvas(container, {
-            backgroundColor: null,
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            ignoreElements: function(el) {
-              try { return el && el.hasAttribute && el.hasAttribute('data-capture-hide'); }
-              catch (e) { return false; }
-            }
-          });
+          var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
+            ? window.PonoCapture.html2canvasOptions()
+            : {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                logging: false,
+                imageTimeout: 30000,
+                removeContainer: true,
+                ignoreElements: function(el) {
+                  try {
+                    if (!el) return false;
+                    if (el.hasAttribute && el.hasAttribute('data-capture-hide')) return true;
+                    if (el.classList && el.classList.contains && el.classList.contains('pono-capture-overlay')) return true;
+                  } catch (e) {}
+                  return false;
+                }
+              };
+          return await html2canvas(container, h2cOpts);
         } catch (e) {
           console.warn('[capture:oto] html2canvas import failed, falling back to bgCanvas only', e);
           return document.getElementById('bgCanvas');
