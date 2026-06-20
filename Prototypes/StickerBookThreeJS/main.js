@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-734";
+const ASSET_VERSION = "20260620-735";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -40,12 +40,16 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "bugs",
     label: "むし",
+    pageLabel: "むしずかん",
+    summary: "はねや あしの かたちを みてみよう",
     keywords: ["むし", "ちょう", "ちょうちょ", "はち", "かぶと", "あめんぼ", "butterfly", "chocho", "hachi", "kabuto", "amenbo"],
     representativeStickerIds: ["maze_hachi", "maze_chocho", "quizland_butterfly", "quizland_kabutomushi", "maze_kabuto", "maze_amenbo"],
   },
   {
     id: "animals",
     label: "どうぶつ",
+    pageLabel: "どうぶつずかん",
+    summary: "もりや まちで あえる なかまたち",
     viewIds: ["forest_friends"],
     excludeCategoryIds: ["bugs"],
     representativeStickerIds: ["quizland_kurumi", "quizland_pono", "quizland_dog", "puzzle_usagi", "bento_risu"],
@@ -53,31 +57,41 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "sea",
     label: "うみ",
+    pageLabel: "うみずかん",
+    summary: "うみの なかまや たからもの",
     viewIds: ["sea_friends"],
     representativeStickerIds: ["quizland_daiouika", "quizland_jinbeizame", "maze_kujira", "maze_kani"],
   },
   {
     id: "food",
     label: "たべもの",
+    pageLabel: "たべものずかん",
+    summary: "おいしそうな たべものを あつめよう",
     viewIds: ["food"],
     representativeStickerIds: ["bento_onigiri", "bento_tamago", "bento_karaage", "bento_broccoli"],
   },
   {
     id: "items",
     label: "もちもの",
+    pageLabel: "どうぐずかん",
+    summary: "ぼうけんや あそびで つかう どうぐ",
     viewIds: ["items"],
     representativeStickerIds: ["quizland_quiz_card", "maze_gold_key", "maze_rope_ladder", "bento_pick_star"],
   },
   {
     id: "sounds",
     label: "おと",
+    pageLabel: "おとずかん",
+    summary: "いろいろな おとや こえ",
     viewIds: ["sounds"],
     representativeStickerIds: ["oto_do", "oto_frog_note", "oto_kira_set", "wordmatch_voice_card"],
   },
   {
     id: "special",
     label: "とくべつ",
-    viewIds: ["badges"],
+    pageLabel: "とくべつずかん",
+    summary: "みつけた しるしや ふしぎなもの",
+    viewIds: ["badges", "letters", "places"],
     representativeStickerIds: ["quizland_seikai_stamp", "quizland_hakase", "oto_kero", "wordmatch_book_stamp"],
   },
 ];
@@ -967,7 +981,7 @@ function renderCollectionStickerTray() {
     button.type = "button";
     button.className = "collection-toc-card";
     button.dataset.collectionTocCategory = category.id;
-    button.setAttribute("aria-label", `${category.label}のシールへ`);
+    button.setAttribute("aria-label", `${category.label}のずかんへ`);
     button.title = category.label;
     if (!Number.isFinite(category.targetPage)) {
       button.disabled = true;
@@ -1015,10 +1029,11 @@ function renderCollectionStickerTray() {
 function buildCollectionTocCategories() {
   return COLLECTION_TOC_CATEGORY_DEFS.map((definition) => {
     const stickers = collectionStickerOptions.filter((sticker) => collectionStickerMatchesTocCategory(sticker, definition));
-    const firstStickerIndex = collectionStickerOptions.findIndex((sticker) => collectionStickerMatchesTocCategory(sticker, definition));
-    const targetPage = firstStickerIndex >= 0
-      ? Math.floor(firstStickerIndex / COLLECTION_ALBUM_STICKERS_PER_PAGE) + 1
-      : Number.NaN;
+    const firstPageIndex = collectionPageDefinitions.findIndex((pageDef) => (
+      pageDef.categoryId === definition.id
+      || collectionStickersForPageDefinition(pageDef).some((sticker) => collectionStickerMatchesTocCategory(sticker, definition))
+    ));
+    const targetPage = firstPageIndex >= 0 ? firstPageIndex + 1 : Number.NaN;
     return {
       ...definition,
       stickers,
@@ -1070,6 +1085,85 @@ function collectionStickerSearchText(sticker) {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
+}
+
+function sortCollectionStickersForZukan(stickers) {
+  return [...stickers].sort((a, b) => (
+    collectionZukanCategoryIndex(a) - collectionZukanCategoryIndex(b)
+    || collectionZukanUnlockRank(a) - collectionZukanUnlockRank(b)
+    || collectionZukanGameOrder(a.gameId) - collectionZukanGameOrder(b.gameId)
+    || collectionZukanSortValue(a) - collectionZukanSortValue(b)
+    || String(a.kana || a.label || a.id).localeCompare(String(b.kana || b.label || b.id), "ja")
+  ));
+}
+
+function collectionZukanCategoryForSticker(sticker) {
+  return COLLECTION_TOC_CATEGORY_DEFS.find((definition) => collectionStickerMatchesTocCategory(sticker, definition)) || null;
+}
+
+function collectionZukanCategoryIndex(sticker) {
+  const category = collectionZukanCategoryForSticker(sticker);
+  const index = category ? COLLECTION_TOC_CATEGORY_DEFS.findIndex((definition) => definition.id === category.id) : -1;
+  return index >= 0 ? index : COLLECTION_TOC_CATEGORY_DEFS.length;
+}
+
+function collectionZukanUnlockRank(sticker) {
+  if (sticker?.unlock === "found") {
+    return 0;
+  }
+  if (sticker?.unlock === "hidden") {
+    return 1;
+  }
+  return 2;
+}
+
+function collectionZukanGameOrder(gameId) {
+  const games = Array.isArray(stickerPlan?.games) ? stickerPlan.games : [];
+  const index = games.findIndex((game) => game.id === gameId);
+  return index >= 0 ? index : 999;
+}
+
+function collectionZukanSortValue(sticker) {
+  const parsed = Number(sticker?.sort);
+  return Number.isFinite(parsed) ? parsed : 9999;
+}
+
+function collectionZukanPageTitle(stickers) {
+  if (!stickers.length) {
+    return {
+      label: "ポノのずかん",
+      subtitle: "みつけたものを しらべよう",
+    };
+  }
+  const ranked = COLLECTION_TOC_CATEGORY_DEFS
+    .map((category, index) => ({
+      category,
+      index,
+      count: stickers.filter((sticker) => collectionStickerMatchesTocCategory(sticker, category)).length,
+    }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count || a.index - b.index);
+  const category = ranked[0]?.category || null;
+  if (!category) {
+    return {
+      label: "ポノのずかん",
+      subtitle: "いろいろな ものを しらべよう",
+    };
+  }
+  return {
+    label: category.pageLabel || `${category.label}ずかん`,
+    subtitle: category.summary || "みつけたものを しらべよう",
+  };
+}
+
+function collectionZukanCardNote(sticker, found, canShowSpecificItem) {
+  if (!canShowSpecificItem) {
+    return "まだ みつけていないよ";
+  }
+  if (!found) {
+    return "まだ しらべていないよ";
+  }
+  return sticker.listNote || "くわしく みてみよう";
 }
 
 function canShowSpecificCollectionSticker(sticker) {
@@ -1171,11 +1265,12 @@ function updateCollectionTraySelection() {
 
 function collectionTocCategoryHasStickerOnSpread(category, pageStart) {
   const pageEnd = Math.min(pageStart + 1, collectionTocPageCount());
-  const startIndex = (Math.max(1, pageStart) - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE;
-  const endIndex = Math.min(collectionStickerOptions.length, pageEnd * COLLECTION_ALBUM_STICKERS_PER_PAGE);
-  for (let index = startIndex; index < endIndex; index += 1) {
-    if (collectionStickerMatchesTocCategory(collectionStickerOptions[index], category)) {
-      return true;
+  for (let page = Math.max(1, pageStart); page <= pageEnd; page += 1) {
+    const pageDef = collectionPageDefinitions[page - 1];
+    for (const sticker of collectionStickersForPageDefinition(pageDef)) {
+      if (collectionStickerMatchesTocCategory(sticker, category)) {
+        return true;
+      }
     }
   }
   return false;
@@ -1241,12 +1336,13 @@ async function loadStickerPlanForEditor() {
       throw new Error(`plan ${response.status}`);
     }
     stickerPlan = await response.json();
-    collectionStickerOptions = stickerPlan.stickers
+    const loadedStickerOptions = stickerPlan.stickers
       .map((sticker) => ({
         ...sticker,
         assetUrl: sticker.assetPath ? stickerAssetUrl(sticker.assetPath) : "",
       }));
-    stickerOptions = collectionStickerOptions
+    collectionStickerOptions = sortCollectionStickersForZukan(loadedStickerOptions);
+    stickerOptions = loadedStickerOptions
       .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
       .map((sticker) => ({ ...sticker }));
     syncEditorPlacementsWithStickerPlan();
@@ -1348,17 +1444,50 @@ function createFallbackEditorPageDefinitions() {
 function createFallbackCollectionPageDefinitions() {
   return [{
     page: 1,
-    label: "シールアルバム",
-    shelfType: "sticker_collection",
+    label: "ポノのずかん",
+    subtitle: "みつけたものを しらべよう",
+    shelfType: "zukan_collection",
   }];
 }
 
 function buildCollectionPageDefinitions() {
-  const pageCount = Math.max(1, Math.ceil(collectionStickerOptions.length / COLLECTION_ALBUM_STICKERS_PER_PAGE));
-  return Array.from({ length: pageCount }, (_, index) => ({
+  const pages = [];
+  const usedIds = new Set();
+  for (const category of COLLECTION_TOC_CATEGORY_DEFS) {
+    const stickers = collectionStickerOptions.filter((sticker) => (
+      !usedIds.has(sticker.id) && collectionStickerMatchesTocCategory(sticker, category)
+    ));
+    for (const sticker of stickers) {
+      usedIds.add(sticker.id);
+    }
+    for (let index = 0; index < stickers.length; index += COLLECTION_ALBUM_STICKERS_PER_PAGE) {
+      pages.push({
+        label: category.pageLabel || `${category.label}ずかん`,
+        subtitle: category.summary || "みつけたものを しらべよう",
+        categoryId: category.id,
+        stickerIds: stickers.slice(index, index + COLLECTION_ALBUM_STICKERS_PER_PAGE).map((sticker) => sticker.id),
+        shelfType: "zukan_collection",
+      });
+    }
+  }
+
+  const remaining = collectionStickerOptions.filter((sticker) => !usedIds.has(sticker.id));
+  for (let index = 0; index < remaining.length; index += COLLECTION_ALBUM_STICKERS_PER_PAGE) {
+    const stickers = remaining.slice(index, index + COLLECTION_ALBUM_STICKERS_PER_PAGE);
+    const title = collectionZukanPageTitle(stickers);
+    pages.push({
+      label: title.label,
+      subtitle: title.subtitle,
+      categoryId: "other",
+      stickerIds: stickers.map((sticker) => sticker.id),
+      shelfType: "zukan_collection",
+    });
+  }
+
+  const normalizedPages = pages.length ? pages : createFallbackCollectionPageDefinitions();
+  return normalizedPages.map((pageDef, index) => ({
+    ...pageDef,
     page: index + 1,
-    label: index === 0 ? "シールアルバム" : `シール ${index + 1}`,
-    shelfType: "sticker_collection",
   }));
 }
 
@@ -2580,14 +2709,26 @@ function activeBookPageDefinition() {
 
 function stickersForPage(page) {
   if (activeAlbumMode === "collection") {
-    const start = (Math.max(1, Math.round(page)) - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE;
-    return collectionStickerOptions.slice(start, start + COLLECTION_ALBUM_STICKERS_PER_PAGE);
+    return collectionStickersForPageDefinition(collectionPageDefinitions[Math.max(1, Math.round(page)) - 1]);
   }
   const pageDef = editorPageDefinitions[page - 1];
   if (!pageDef?.gameId) {
     return stickerOptions;
   }
   return stickerOptions.filter((sticker) => sticker.gameId === pageDef.gameId);
+}
+
+function collectionStickersForPageDefinition(pageDef) {
+  if (Array.isArray(pageDef?.stickerIds)) {
+    return pageDef.stickerIds
+      .map((id) => collectionStickerOptions.find((sticker) => sticker.id === id))
+      .filter(Boolean);
+  }
+  if (!pageDef?.page) {
+    return [];
+  }
+  const start = (Math.max(1, Math.round(pageDef.page)) - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE;
+  return collectionStickerOptions.slice(start, start + COLLECTION_ALBUM_STICKERS_PER_PAGE);
 }
 
 function getActivePagePlacements() {
@@ -4084,14 +4225,14 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
   ctx.fillStyle = theme.text;
   ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(pageDef?.label || "シールアルバム", PAGE_TEXTURE_W / 2, 112);
+  ctx.fillText(pageDef?.label || "ポノのずかん", PAGE_TEXTURE_W / 2, 112);
   ctx.fillStyle = palette.sub;
-  ctx.font = '800 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(`${pageNumber} / ${editorPageCount()}`, PAGE_TEXTURE_W / 2, 150);
+  ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText(pageDef?.subtitle || "みつけたものを しらべよう", PAGE_TEXTURE_W / 2, 150);
 
   for (let i = 0; i < stickers.length; i += 1) {
     const sticker = stickers[i];
-    const globalIndex = (pageNumber - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE + i + 1;
+    const globalIndex = collectionZukanItemNumber(sticker, pageNumber, i);
     const col = i % cols;
     const row = Math.floor(i / cols);
     const x = contentX + col * (cellW + gapX);
@@ -4104,17 +4245,23 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
     ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
     ctx.font = '800 38px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
     ctx.textAlign = "center";
-    ctx.fillText("シールは まだありません", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
+    ctx.fillText("まだ みつかっていません", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
   }
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
   ctx.restore();
   texture.needsUpdate = true;
 }
 
+function collectionZukanItemNumber(sticker, pageNumber, pageIndex) {
+  const index = collectionStickerOptions.findIndex((item) => item.id === sticker?.id);
+  return index >= 0 ? index + 1 : (pageNumber - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE + pageIndex + 1;
+}
+
 function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, width, height, found, pageNumber) {
   const cardTheme = palette.collection.card;
   const canShowSpecificItem = canShowSpecificCollectionSticker(sticker);
-  const displayLabel = canShowSpecificItem ? sticker.label || "シール" : "なにかな？";
+  const displayLabel = canShowSpecificItem ? sticker.label || "なにかな？" : "なにかな？";
+  const displayNote = collectionZukanCardNote(sticker, found, canShowSpecificItem);
   ctx.save();
   ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
   ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
@@ -4131,7 +4278,7 @@ function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, 
   ctx.textAlign = "center";
   ctx.fillText(String(index).padStart(2, "0"), x + 48, y + 38);
 
-  const imageSize = Math.min(width - 64, height - 82, 160);
+  const imageSize = Math.min(width - 64, height - 116, 142);
   const imageX = x + (width - imageSize) / 2;
   const imageY = y + 50;
   if (canShowSpecificItem) {
@@ -4143,7 +4290,10 @@ function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, 
   ctx.fillStyle = found ? palette.collection.text : "rgba(51, 68, 71, 0.54)";
   ctx.font = '800 23px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(displayLabel, x + width / 2, y + height - 24, width - 28);
+  ctx.fillText(displayLabel, x + width / 2, y + height - 50, width - 28);
+  ctx.fillStyle = found ? "rgba(51, 68, 71, 0.74)" : "rgba(51, 68, 71, 0.42)";
+  ctx.font = '700 17px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText(displayNote, x + width / 2, y + height - 22, width - 28);
   ctx.restore();
 }
 
@@ -5687,10 +5837,10 @@ function updateControlState() {
 function updateAlbumModeUi() {
   document.body.classList.toggle("is-collection-album", activeAlbumMode === "collection");
   if (albumModeToggle) {
-    albumModeToggle.textContent = activeAlbumMode === "collection" ? "シールちょう" : "シールアルバム";
+    albumModeToggle.textContent = activeAlbumMode === "collection" ? "ずかん" : "シールちょう";
     albumModeToggle.setAttribute(
       "aria-label",
-      activeAlbumMode === "collection" ? "シールちょうをひらく" : "シールアルバムをひらく",
+      activeAlbumMode === "collection" ? "ずかんを表示中。シールちょうへ切りかえ" : "シールちょうを表示中。ずかんへ切りかえ",
     );
   }
   updateCollectionStickerTrayVisibility();

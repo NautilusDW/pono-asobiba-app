@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sticker Book Three.js</title>
-  <link rel="stylesheet" href="./styles.css?v=20260620-734">
+  <title>ポノのずかん Three.js</title>
+  <link rel="stylesheet" href="./styles.css?v=20260620-735">
 </head>
 <body>
   <main id="app">
-    <canvas id="scene" aria-label="Sticker book page flip preview"></canvas>
+    <canvas id="scene" aria-label="図鑑のページめくりプレビュー"></canvas>
     <div class="top-action-cluster" aria-label="Book actions">
       <button id="topBackButton" class="top-action-button" type="button" aria-label="もどる">←</button>
       <button id="topSettingsButton" class="top-action-button" type="button" aria-label="プロトタイプ設定" aria-pressed="false">⚙</button>
-      <button id="albumModeToggle" class="album-mode-toggle" type="button">シールアルバム</button>
+      <button id="albumModeToggle" class="album-mode-toggle" type="button">ずかん</button>
     </div>
     <div class="modebar" aria-label="Sticker book variant controls">
       <div class="segmented" role="group" aria-label="Book variant">
@@ -46,7 +46,7 @@
       <button id="bookNextPage" class="book-page-button book-page-button-right" type="button" aria-label="Next book page">▶</button>
       <div id="bookPageJump" class="book-page-jump" hidden aria-label="Page jump"></div>
     </div>
-    <section id="collectionStickerTray" class="collection-sticker-tray" hidden aria-label="コレクションもくじ">
+    <section id="collectionStickerTray" class="collection-sticker-tray" hidden aria-label="ずかんもくじ">
       <div id="collectionStickerTrayItems" class="collection-sticker-tray-items"></div>
     </section>
     <section id="stickerEditor" class="sticker-editor" hidden aria-label="Sticker page editor">
@@ -122,6 +122,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260620-734"></script>
+  <script type="module" src="./main.js?v=20260620-735"></script>
 </body>
 </html>
