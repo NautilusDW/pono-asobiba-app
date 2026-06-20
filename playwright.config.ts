@@ -53,6 +53,9 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-localhost',
+      // Exclude tests tagged for the prod-shim project — they require chromium
+      // host-resolver-rules launchOptions and would fail against localhost.
+      grepInvert: /@prod-shim/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:8000',
