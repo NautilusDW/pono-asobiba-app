@@ -12549,8 +12549,10 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
   _rhythm.activeNotes.push(note);
   _otoTutorialState.ownsRhythmDemo = true;
   _startRhythmDemoVisualLoop();
-  var hitDelay = Math.max(900, targetDelayMs - 130);
-  var readyDelay = Math.max(220, Math.min(650, hitDelay - 1200));
+  var pressLeadMs = 360;
+  var pressDelay = Math.max(220, targetDelayMs - pressLeadMs);
+  var hitDelay = Math.max(900, targetDelayMs);
+  var readyDelay = Math.max(220, Math.min(650, pressDelay - 1200));
   _otoTutorialState.demoTimers.push(setTimeout(function() {
     if (!_otoTutorialState) return;
     var rect = btn.getBoundingClientRect();
@@ -12560,6 +12562,9 @@ function _runOtoTutorialFallingNoteDemo(step, anchorEl) {
     if (!_otoTutorialState) return;
     var rect = btn.getBoundingClientRect();
     _showOtoTutorialHand({ hand: 'tap', tapIdx: idx, silentTap: true, anchor: '.instr-btn[data-idx="' + idx + '"]' }, rect, btn);
+  }, pressDelay));
+  _otoTutorialState.demoTimers.push(setTimeout(function() {
+    if (!_otoTutorialState) return;
     _ghSpawnHitFlash(laneIdx);
     _ghSpawnNotePop(note, { key: 'just', label: 'ジャスト!' });
     _ghSpawnNoteBurst(note, 'success');
@@ -12687,7 +12692,7 @@ function _runOtoTutorialUserFallingNoteTry(step, anchorEl) {
     if (bubble) {
       bubble.innerHTML =
         '<div class="tut-badge">もういちど</div>' +
-        '<div class="tut-msg">もういちど やってみよう<br>ファが ボタンに かさなったら おしてね</div>';
+        '<div class="tut-msg">もういちど やってみよう</div>';
       bubble.classList.add('tut-no-actions');
       bubble.classList.remove('hidden', 'is-countdown', 'tut-bubble-tap');
       bubble.style.left = '-9999px';
@@ -12788,16 +12793,30 @@ function _makeOtoTutorialSteps(kind) {
       },
       {
         badge: 'やってみよう',
-        msg: 'ファが ボタンに きたら<br>おしてね',
+        msg: '',
         skipNarration: true,
         anchor: '.instr-btn[data-idx="3"]',
         side: 'stageTopRight',
         noSpot: true,
         hideActions: true,
+        suppressBubble: true,
         userTryNoteIdx: 3,
         visibleLeadMs: RHYTHM_DEMO_FIRST_NOTE_LEAD_MS,
         before: function() {
           _prepareOtoRhythmTutorialStage({ hideHud: true });
+        }
+      },
+      {
+        badge: 'ほんばん',
+        msg: 'ここまで できたね<br>つぎは ほんばんだよ',
+        anchor: null,
+        side: 'stageTopRight',
+        noDim: true,
+        nextLabel: 'OK',
+        showHideNext: true,
+        before: function() {
+          _prepareOtoRhythmTutorialStage({ hideHud: true });
+          _setRhythmStatus('ほんばんへ いくよ', null, 'judge');
         }
       }
     ];
@@ -12965,11 +12984,12 @@ function _makeOtoTutorialSteps(kind) {
       },
       {
         badge: 'やってみよう',
-        msg: 'こんどは じぶんで<br>ファを おしてね',
+        msg: '',
         anchor: '.instr-btn[data-idx="3"]',
         side: 'stageTopRight',
         noSpot: true,
         hideActions: true,
+        suppressBubble: true,
         skipNarration: true,
         userTryNoteIdx: 3,
         before: function() {
@@ -13417,6 +13437,7 @@ function _renderOtoTutorialStep() {
     bubble.classList.toggle('tut-no-actions', !!s.hideActions);
     bubble.classList.remove('is-countdown', 'tut-bubble-tap');
     bubble.classList.remove('hidden');
+    if (s.suppressBubble) bubble.classList.add('hidden');
     bubble.style.left = '-9999px'; bubble.style.top = '-9999px';
     if (!s.skipNarration) _playOtoTutorialNarration(s);
 
