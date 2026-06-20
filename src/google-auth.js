@@ -1,6 +1,14 @@
 // src/google-auth.js
 // Google Cloud Service Account → OAuth2 access token (RS256 JWT)
 // Cloudflare Workers 専用。 Web Crypto API のみ使用。 外部依存ゼロ。
+//
+// セキュリティ:
+// - SCOPE = 'cloud-platform' は広いが Google の TTS 専用 scope は無いため必須。
+//   IAM 側で Service Account に「Cloud Text-to-Speech API ユーザー」
+//   (roles/cloudtts.user 相当) のみ付与すれば、 token が広い scope を持っても
+//   実行可能操作は TTS のみに限定される (最小権限原則)。
+// - 生成された access_token はログに出力しない、 KV のみに保存。
+// - error 内に Google からの description が含まれる可能性あり (機密情報は無いはず)。
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
@@ -69,6 +77,7 @@ async function fetchAccessToken(jwt) {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
+    signal: AbortSignal.timeout(5000),
   });
   if (!r.ok) {
     const text = await r.text().catch(() => '');
@@ -115,8 +124,14 @@ export async function getGoogleAccessToken(env) {
   }
 
   // 2. JWT 署名 → token 交換
-  const jwt = await signJwt(serviceAccount);
-  const token = await fetchAccessToken(jwt);
+  let token;
+  try {
+    const jwt = await signJwt(serviceAccount);
+    token = await fetchAccessToken(jwt);
+  } catch (e) {
+    console.warn('getGoogleAccessToken JWT/token error:', e && e.message);
+    return null;
+  }
 
   // 3. KV にキャッシュ
   if (kv && token) {
