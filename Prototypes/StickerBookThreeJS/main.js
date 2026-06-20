@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-741";
+const ASSET_VERSION = "20260620-742";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -4220,24 +4220,31 @@ function drawCollectionPageTemplate(ctx, palette, side) {
   ctx.fillRect(creaseX, -40, creaseW, PAGE_TEXTURE_H + 80);
   ctx.filter = "none";
 
-  ctx.shadowColor = theme.frameShadow;
-  ctx.shadowBlur = 24;
-  ctx.shadowOffsetY = 12;
-  ctx.fillStyle = theme.pageBorder;
-  drawCanvasRoundedRect(ctx, x - 18, y - 18, width + 36, height + 36, 76);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-
+  // The zukan artwork is printed on the page surface, not a separate mounted panel.
   const frameGradient = ctx.createLinearGradient(x, y, x + width, y + height);
   frameGradient.addColorStop(0, tintColor(pageTheme.frame, 0.16));
   frameGradient.addColorStop(0.58, pageTheme.frame);
   frameGradient.addColorStop(1, pageTheme.frameDark);
+  ctx.globalAlpha = 0.28;
   ctx.fillStyle = frameGradient;
   drawCanvasRoundedRect(ctx, x, y, width, height, 62);
   ctx.fill();
+  ctx.globalAlpha = 1;
 
-  ctx.strokeStyle = "rgba(255,255,255,0.62)";
+  ctx.strokeStyle = tintColor(pageTheme.frame, 0.14);
+  ctx.lineWidth = 26;
+  drawCanvasRoundedRect(ctx, x + 11, y + 11, width - 22, height - 22, 54);
+  ctx.stroke();
+
+  ctx.strokeStyle = pageTheme.frameDark;
+  ctx.globalAlpha = 0.5;
   ctx.lineWidth = 8;
+  drawCanvasRoundedRect(ctx, x + 4, y + 4, width - 8, height - 8, 58);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = "rgba(255,255,255,0.34)";
+  ctx.lineWidth = 5;
   drawCanvasRoundedRect(ctx, x + 14, y + 14, width - 28, height - 28, 50);
   ctx.stroke();
 
@@ -4246,22 +4253,26 @@ function drawCollectionPageTemplate(ctx, palette, side) {
   const paperW = width - 112;
   const paperH = height - 250;
   const paperGradient = ctx.createLinearGradient(0, paperY, 0, paperY + paperH);
-  paperGradient.addColorStop(0, "rgba(255, 253, 240, 0.98)");
-  paperGradient.addColorStop(0.68, "rgba(255, 248, 223, 0.96)");
-  paperGradient.addColorStop(1, "rgba(252, 237, 192, 0.92)");
+  paperGradient.addColorStop(0, "rgba(255, 253, 240, 0.58)");
+  paperGradient.addColorStop(0.68, "rgba(255, 248, 223, 0.46)");
+  paperGradient.addColorStop(1, "rgba(252, 237, 192, 0.34)");
   ctx.fillStyle = paperGradient;
   drawScallopedPanelPath(ctx, paperX, paperY, paperW, paperH, 48, 28, 9);
   ctx.fill();
 
   ctx.strokeStyle = pageTheme.innerStroke;
-  ctx.lineWidth = 5;
+  ctx.globalAlpha = 0.58;
+  ctx.lineWidth = 4;
   drawScallopedPanelPath(ctx, paperX, paperY, paperW, paperH, 48, 28, 9);
   ctx.stroke();
+  ctx.globalAlpha = 1;
 
   ctx.strokeStyle = theme.pageHighlight;
-  ctx.lineWidth = 4;
+  ctx.globalAlpha = 0.5;
+  ctx.lineWidth = 3;
   drawCanvasRoundedRect(ctx, x + 36, y + 36, width - 72, height - 72, 46);
   ctx.stroke();
+  ctx.globalAlpha = 1;
 
   drawCollectionSlotBand(ctx, theme, pageTheme, side);
   drawCollectionFrameMotifs(ctx, theme, pageTheme, side);
