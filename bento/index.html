@@ -7825,6 +7825,24 @@ function playBentoTutorialVoice(id, opts = {}) {
       audio.addEventListener('ended', done, { once: true });
       setTimeout(done, opts.fallbackMs || 7000);
     }
+    // v1399: cuePoints 対応 — ナレ進行に同期した UI 切替 (cup-edit で size→arrows mark を順次切替)
+    if (Array.isArray(opts.cuePoints) && opts.cuePoints.length > 0 && typeof opts.onCue === 'function') {
+      let cueIdx = 0;
+      const onTimeUpdate = () => {
+        if (audio._bentoCancelled) {
+          try { audio.removeEventListener('timeupdate', onTimeUpdate); } catch (_) {}
+          return;
+        }
+        while (cueIdx < opts.cuePoints.length && audio.currentTime >= opts.cuePoints[cueIdx].time) {
+          try { opts.onCue(opts.cuePoints[cueIdx]); } catch (_) {}
+          cueIdx++;
+        }
+        if (cueIdx >= opts.cuePoints.length) {
+          try { audio.removeEventListener('timeupdate', onTimeUpdate); } catch (_) {}
+        }
+      };
+      audio.addEventListener('timeupdate', onTimeUpdate);
+    }
     bentoTutorialVoiceAudio = audio;
     const p = audio.play();
     if (p && typeof p.catch === 'function') p.catch(() => {});
@@ -13515,6 +13533,14 @@ function tutorialPlayStepVoice(step, firstRender) {
     opts.onEnded = () => tutorialMarkCupOkAfterVoice(step);
     opts.fallbackMs = 7600;
   }
+  // v1399: cup-edit demo はナレ進行に同期して size mark → arrows mark を順次切替
+  if (step === 'cup-edit' && typeof tutorialOnCupEditCue === 'function') {
+    opts.cuePoints = [
+      { time: 0.0, key: 'size' },
+      { time: 2.5, key: 'arrows' },
+    ];
+    opts.onCue = (cue) => tutorialOnCupEditCue(cue.key);
+  }
   playBentoTutorialVoice(id, opts);
 }
 function tutorialMarkCupOkAfterVoice(step) {
@@ -13527,6 +13553,32 @@ function tutorialMarkCupOkAfterVoice(step) {
   const alreadyMarked = (tutorialState.trims || []).some(t => t.target === okBtn);
   tutorialMarkTarget(okBtn, { radius: 16, outline: false });
   if (!alreadyMarked) tutorialAnimateTap(okBtn);
+}
+// v1399: cup-edit demo の cue handler — basic_tut_10.mp3 の進行に合わせて
+//   key='size'   (~0.0s): サイズ ① ボタンだけを青枠 mark
+//   key='arrows' (~2.5s): サイズ mark を消して ↓↑ 矢印だけを青枠 mark
+// 既存 mark は tutorialClearTrims() で一旦消去してから新 mark を貼る (outline は cup-edit
+// では使わない設計なので trims のみで完結)。
+function tutorialOnCupEditCue(key) {
+  if (!tutorialState.active || tutorialState.step !== 'cup-edit') return;
+  // 既存 mark 全消去 (SVG trim path overlay を撤去)
+  try { tutorialClearTrims(); } catch (_) {}
+  if (key === 'size') {
+    const sizeOneBtn = tutorialEditSizeButtonEl(1);
+    const sizeControl = tutorialEditSizeControlEl();
+    const toolbar = tutorialContextToolbarEl();
+    if (sizeOneBtn) tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
+    else if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
+    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+  } else if (key === 'arrows') {
+    const layerDownBtn = tutorialLayerDownButtonEl();
+    const layerUpBtn = tutorialLayerUpButtonEl();
+    const toolbar = tutorialContextToolbarEl();
+    let marked = false;
+    if (layerDownBtn) { tutorialMarkTarget(layerDownBtn, { radius: 14, outline: false }); marked = true; }
+    if (layerUpBtn) { tutorialMarkTarget(layerUpBtn, { radius: 14, outline: false }); marked = true; }
+    if (!marked && toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+  }
 }
 function tutorialQueueCupOkHighlight(step, delay = 2600) {
   if (tutorialState._cupOkTrimTimer) {
@@ -15163,15 +15215,11 @@ function tutorialRenderStep() {
       onClick: () => tutorialAdvance('cup-edit-try'),
     });
     tutorialHideBubble();
+    // v1399: 初期 mark は size のみ — 矢印 mark は basic_tut_10.mp3 の cue (~2.5s) で tutorialOnCupEditCue が動的に切替
     if (sizeOneBtn) tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
     else if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
     else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
     else tutorialRetryRenderStep('cup-edit');
-    // v1389: 「矢印で前後ろも変わるよ」 ナレに合わせて layer 矢印も同時 mark
-    const layerDownBtnDemo = tutorialLayerDownButtonEl();
-    if (layerDownBtnDemo) tutorialMarkTarget(layerDownBtnDemo, { radius: 14, outline: false });
-    const layerUpBtnDemo = tutorialLayerUpButtonEl();
-    if (layerUpBtnDemo) tutorialMarkTarget(layerUpBtnDemo, { radius: 14, outline: false });
     if (firstRender && (sizeControl || toolbar)) {
       tutorialAnimateEditDemo(fast);
       tutorialHideFingerAfter(2200, 'cup-edit');
@@ -15180,6 +15228,10 @@ function tutorialRenderStep() {
     }
     return;
   }
+
+  // v1399: cup-edit demo の cue handler tutorialOnCupEditCue() は tutorialMarkCupOkAfterVoice
+  //   の直後 (top-level) に定義。 playBentoTutorialVoice の cuePoints (0.0s=size, 2.5s=arrows)
+  //   経由で呼ばれてサイズ mark → 矢印 mark を順次切替える。
 
   // 9c. cup-edit-try — カップ編集を試したあと、小さいおかずを入れる
   if (step === 'cup-edit-try') {
