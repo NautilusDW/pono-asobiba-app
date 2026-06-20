@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-735";
+const ASSET_VERSION = "20260620-736";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -35,6 +35,7 @@ const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
+const COLLECTION_INDEX_ITEMS_PER_PAGE = 12;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const COLLECTION_TOC_CATEGORY_DEFS = [
   {
@@ -42,57 +43,390 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
     label: "むし",
     pageLabel: "むしずかん",
     summary: "はねや あしの かたちを みてみよう",
-    keywords: ["むし", "ちょう", "ちょうちょ", "はち", "かぶと", "あめんぼ", "butterfly", "chocho", "hachi", "kabuto", "amenbo"],
-    representativeStickerIds: ["maze_hachi", "maze_chocho", "quizland_butterfly", "quizland_kabutomushi", "maze_kabuto", "maze_amenbo"],
+    representativeSubjectIds: ["bug_hachi", "bug_chocho", "bug_kabutomushi", "bug_amenbo"],
   },
   {
     id: "animals",
     label: "どうぶつ",
     pageLabel: "どうぶつずかん",
-    summary: "もりや まちで あえる なかまたち",
-    viewIds: ["forest_friends"],
-    excludeCategoryIds: ["bugs"],
-    representativeStickerIds: ["quizland_kurumi", "quizland_pono", "quizland_dog", "puzzle_usagi", "bento_risu"],
+    summary: "もりや まちで あえる いきもの",
+    representativeSubjectIds: ["animal_dog", "animal_cat", "animal_lion", "animal_penguin"],
   },
   {
     id: "sea",
     label: "うみ",
     pageLabel: "うみずかん",
-    summary: "うみの なかまや たからもの",
-    viewIds: ["sea_friends"],
-    representativeStickerIds: ["quizland_daiouika", "quizland_jinbeizame", "maze_kujira", "maze_kani"],
+    summary: "うみや みずべで くらす なかま",
+    representativeSubjectIds: ["sea_kujira", "sea_kani", "sea_jinbeizame", "sea_daiouika"],
   },
   {
     id: "food",
     label: "たべもの",
     pageLabel: "たべものずかん",
-    summary: "おいしそうな たべものを あつめよう",
-    viewIds: ["food"],
-    representativeStickerIds: ["bento_onigiri", "bento_tamago", "bento_karaage", "bento_broccoli"],
+    summary: "からだを つくる おいしい もの",
+    representativeSubjectIds: ["food_onigiri", "food_tamago", "food_karaage", "food_broccoli"],
+  },
+];
+const COLLECTION_ZUKAN_SUBJECT_DEFS = [
+  {
+    id: "bug_hachi",
+    categoryId: "bugs",
+    sourceStickerIds: ["maze_hachi"],
+    label: "はち",
+    kana: "はち",
+    habitat: "はなや きの まわり",
+    group: "こんちゅう",
+    fact: "はなの みつを あつめながら、はなから はなへ かふんを はこぶことが あります。",
+    guideSpeaker: "ポノ",
+    guideText: "しまもようと はねを そっと かんさつしよう。",
   },
   {
-    id: "items",
-    label: "もちもの",
-    pageLabel: "どうぐずかん",
-    summary: "ぼうけんや あそびで つかう どうぐ",
-    viewIds: ["items"],
-    representativeStickerIds: ["quizland_quiz_card", "maze_gold_key", "maze_rope_ladder", "bento_pick_star"],
+    id: "bug_kabutomushi",
+    categoryId: "bugs",
+    sourceStickerIds: ["quizland_kabutomushi", "maze_kabuto"],
+    label: "かぶとむし",
+    kana: "かぶとむし",
+    habitat: "もりの きや くちき",
+    group: "こんちゅう",
+    fact: "おすには おおきな つのが あり、じゅえきの でる きに あつまります。",
+    guideSpeaker: "Codex",
+    guideText: "つの、あし、からだの かたちを くらべてみよう。",
   },
   {
-    id: "sounds",
-    label: "おと",
-    pageLabel: "おとずかん",
-    summary: "いろいろな おとや こえ",
-    viewIds: ["sounds"],
-    representativeStickerIds: ["oto_do", "oto_frog_note", "oto_kira_set", "wordmatch_voice_card"],
+    id: "bug_amenbo",
+    categoryId: "bugs",
+    sourceStickerIds: ["maze_amenbo"],
+    label: "あめんぼ",
+    kana: "あめんぼ",
+    habitat: "いけや かわの みずの うえ",
+    group: "こんちゅう",
+    fact: "ほそながい あしで みずの ひょうめんに たって、すいすい うごきます。",
+    guideSpeaker: "ポノ",
+    guideText: "みずに しずまない あしの ひみつを みつけよう。",
   },
   {
-    id: "special",
-    label: "とくべつ",
-    pageLabel: "とくべつずかん",
-    summary: "みつけた しるしや ふしぎなもの",
-    viewIds: ["badges", "letters", "places"],
-    representativeStickerIds: ["quizland_seikai_stamp", "quizland_hakase", "oto_kero", "wordmatch_book_stamp"],
+    id: "bug_chocho",
+    categoryId: "bugs",
+    sourceStickerIds: ["maze_chocho", "quizland_butterfly"],
+    label: "ちょうちょ",
+    kana: "ちょうちょ",
+    habitat: "はなばたけや くさはら",
+    group: "こんちゅう",
+    fact: "はねには もようがあり、ながい くちで はなの みつを すいます。",
+    guideSpeaker: "Codex",
+    guideText: "はねの いろと もようを ゆっくり みてみよう。",
+  },
+  {
+    id: "animal_dog",
+    categoryId: "animals",
+    sourceStickerIds: ["quizland_dog", "bento_inu"],
+    label: "いぬ",
+    kana: "いぬ",
+    habitat: "ひとの くらしの そば",
+    group: "ほにゅうるい",
+    fact: "においを かぐ ちからが つよく、ひとの くらしを たすける しごとも します。",
+    guideSpeaker: "ポノ",
+    guideText: "みみや しっぽで きもちを つたえるよ。",
+  },
+  {
+    id: "animal_cat",
+    categoryId: "animals",
+    sourceStickerIds: ["quizland_cat", "bento_neko"],
+    label: "ねこ",
+    kana: "ねこ",
+    habitat: "まちや いえの まわり",
+    group: "ほにゅうるい",
+    fact: "やわらかい からだで しずかに あるき、ひげで せまい ところを たしかめます。",
+    guideSpeaker: "Codex",
+    guideText: "ひげ、つめ、めの かたちに ちゅうもく。",
+  },
+  {
+    id: "animal_lion",
+    categoryId: "animals",
+    sourceStickerIds: ["quizland_lion"],
+    label: "ライオン",
+    kana: "らいおん",
+    habitat: "アフリカの くさはら",
+    group: "ほにゅうるい",
+    fact: "なかまと むれで くらし、おすには おおきな たてがみが あります。",
+    guideSpeaker: "ポノ",
+    guideText: "たてがみは どこから どこまで あるかな。",
+  },
+  {
+    id: "animal_penguin",
+    categoryId: "animals",
+    sourceStickerIds: ["quizland_penguin"],
+    label: "ペンギン",
+    kana: "ぺんぎん",
+    habitat: "みなみの さむい うみべ",
+    group: "とり",
+    fact: "とぶことは にがてですが、うみの なかを すばやく およぎます。",
+    guideSpeaker: "Codex",
+    guideText: "つばさが およぐための ひれみたいに うごくよ。",
+  },
+  {
+    id: "animal_kuma",
+    categoryId: "animals",
+    sourceStickerIds: ["quizland_kuma"],
+    label: "くま",
+    kana: "くま",
+    habitat: "もりや やま",
+    group: "ほにゅうるい",
+    fact: "きのみや さかななど、すむ ばしょに あわせて いろいろな ものを たべます。",
+    guideSpeaker: "ポノ",
+    guideText: "おおきな てと からだの つくりを みてみよう。",
+  },
+  {
+    id: "animal_kirin",
+    categoryId: "animals",
+    sourceStickerIds: ["quizland_kirin"],
+    label: "キリン",
+    kana: "きりん",
+    habitat: "アフリカの くさはら",
+    group: "ほにゅうるい",
+    fact: "ながい くびで たかい きの はっぱを たべることが できます。",
+    guideSpeaker: "Codex",
+    guideText: "くびだけでなく、あしも とても ながいよ。",
+  },
+  {
+    id: "animal_cheetah",
+    categoryId: "animals",
+    sourceStickerIds: ["quizland_cheetah"],
+    label: "チーター",
+    kana: "ちーたー",
+    habitat: "アフリカの くさはら",
+    group: "ほにゅうるい",
+    fact: "しなやかな からだで、みじかい きょりを とても はやく はしります。",
+    guideSpeaker: "ポノ",
+    guideText: "からだの もようと ながい あしを みてみよう。",
+  },
+  {
+    id: "animal_araiguma",
+    categoryId: "animals",
+    sourceStickerIds: ["bento_araiguma"],
+    label: "あらいぐま",
+    kana: "あらいぐま",
+    habitat: "もりや みずべ",
+    group: "ほにゅうるい",
+    fact: "てを じょうずに つかい、みずべで たべものを さがすことが あります。",
+    guideSpeaker: "Codex",
+    guideText: "ての かたちと かおの もようを くらべよう。",
+  },
+  {
+    id: "animal_usagi",
+    categoryId: "animals",
+    sourceStickerIds: ["puzzle_usagi"],
+    label: "うさぎ",
+    kana: "うさぎ",
+    habitat: "くさはらや もりの まわり",
+    group: "ほにゅうるい",
+    fact: "ながい みみで まわりの おとを きき、うしろあしで ぴょんと はねます。",
+    guideSpeaker: "ポノ",
+    guideText: "みみ、しっぽ、うしろあしを じゅんばんに みてみよう。",
+  },
+  {
+    id: "animal_risu",
+    categoryId: "animals",
+    sourceStickerIds: ["puzzle_risu", "bento_risu"],
+    label: "りす",
+    kana: "りす",
+    habitat: "もりの きの うえ",
+    group: "ほにゅうるい",
+    fact: "きのみを たべたり、ほおぶくろに いれて はこんだりする なかまも います。",
+    guideSpeaker: "Codex",
+    guideText: "しっぽの ふくらみと きのみを もつ てを みてみよう。",
+  },
+  {
+    id: "animal_shika",
+    categoryId: "animals",
+    sourceStickerIds: ["puzzle_kojika", "bento_shika"],
+    label: "しか",
+    kana: "しか",
+    habitat: "もりや くさはら",
+    group: "ほにゅうるい",
+    fact: "くさや はっぱを たべ、すばやく はしって もりの なかを いどうします。",
+    guideSpeaker: "ポノ",
+    guideText: "ほそい あしと やさしい かおを かんさつしよう。",
+  },
+  {
+    id: "animal_kitsune",
+    categoryId: "animals",
+    sourceStickerIds: ["puzzle_kitsune", "zukan_fox"],
+    label: "きつね",
+    kana: "きつね",
+    habitat: "もりや くさはら",
+    group: "ほにゅうるい",
+    fact: "おおきな みみと ふさふさの しっぽを もち、よるに うごくことも あります。",
+    guideSpeaker: "Codex",
+    guideText: "みみの かたちと しっぽの ながさを くらべよう。",
+  },
+  {
+    id: "animal_karasu",
+    categoryId: "animals",
+    sourceStickerIds: ["puzzle_karasu"],
+    label: "からす",
+    kana: "からす",
+    habitat: "もりや まちの そら",
+    group: "とり",
+    fact: "くちばしを じょうずに つかい、まちでも もりでも くらすことが できます。",
+    guideSpeaker: "ポノ",
+    guideText: "くちばしと はねの くろい いろを みてみよう。",
+  },
+  {
+    id: "animal_harinezumi",
+    categoryId: "animals",
+    sourceStickerIds: ["puzzle_harinezumi"],
+    label: "はりねずみ",
+    kana: "はりねずみ",
+    habitat: "くさむらや もりの した",
+    group: "ほにゅうるい",
+    fact: "からだの はりで みを まもり、ちいさな むしなどを さがして たべます。",
+    guideSpeaker: "Codex",
+    guideText: "せなかの はりと ちいさな あしを みつけよう。",
+  },
+  {
+    id: "animal_fukurou",
+    categoryId: "animals",
+    sourceStickerIds: ["puzzle_fukurou"],
+    label: "ふくろう",
+    kana: "ふくろう",
+    habitat: "もりの きの うえ",
+    group: "とり",
+    fact: "おおきな めで くらい ところでも まわりを みつけやすい とりです。",
+    guideSpeaker: "ポノ",
+    guideText: "まるい めと はねの かたちを みてみよう。",
+  },
+  {
+    id: "animal_ahiru",
+    categoryId: "animals",
+    sourceStickerIds: ["bento_ahiru"],
+    label: "あひる",
+    kana: "あひる",
+    habitat: "いけや みずべ",
+    group: "とり",
+    fact: "みずかきの ある あしで みずの うえを およぎます。",
+    guideSpeaker: "Codex",
+    guideText: "くちばしと みずかきの あしを さがしてみよう。",
+  },
+  {
+    id: "sea_kujira",
+    categoryId: "sea",
+    sourceStickerIds: ["maze_kujira"],
+    label: "くじら",
+    kana: "くじら",
+    habitat: "ひろい うみ",
+    group: "ほにゅうるい",
+    fact: "さかなではなく、あかちゃんを うみ、はいで いきを する なかまです。",
+    guideSpeaker: "ポノ",
+    guideText: "しおを ふく あなの ばしょを そうぞうしてみよう。",
+  },
+  {
+    id: "sea_kani",
+    categoryId: "sea",
+    sourceStickerIds: ["maze_kani"],
+    label: "かに",
+    kana: "かに",
+    habitat: "うみべや いわば",
+    group: "こうかくるい",
+    fact: "かたい からと はさみを もち、よこに あるく すがたが よく みられます。",
+    guideSpeaker: "Codex",
+    guideText: "はさみと あしの かずを かぞえてみよう。",
+  },
+  {
+    id: "sea_daiouika",
+    categoryId: "sea",
+    sourceStickerIds: ["quizland_daiouika"],
+    label: "ダイオウイカ",
+    kana: "だいおういか",
+    habitat: "ふかい うみ",
+    group: "なんたいどうぶつ",
+    fact: "とても ながい あしを もち、ふかい うみで くらす おおきな イカです。",
+    guideSpeaker: "ポノ",
+    guideText: "ながい あしは どれかな。からだと くらべてみよう。",
+  },
+  {
+    id: "sea_jinbeizame",
+    categoryId: "sea",
+    sourceStickerIds: ["quizland_jinbeizame"],
+    label: "ジンベエザメ",
+    kana: "じんべえざめ",
+    habitat: "あたたかい うみ",
+    group: "さかな",
+    fact: "おおきな からだですが、ちいさな プランクトンなどを たべます。",
+    guideSpeaker: "Codex",
+    guideText: "からだの しろい もようを さがしてみよう。",
+  },
+  {
+    id: "food_onigiri",
+    categoryId: "food",
+    sourceStickerIds: ["bento_onigiri"],
+    label: "おにぎり",
+    kana: "おにぎり",
+    habitat: "おべんとうや しょくたく",
+    group: "ごはん",
+    fact: "ごはんを にぎって つくる たべもの。なかに ぐを いれることも あります。",
+    guideSpeaker: "ポノ",
+    guideText: "さんかく、まる、たわらがた。どんな かたちかな。",
+  },
+  {
+    id: "food_tamago",
+    categoryId: "food",
+    sourceStickerIds: ["bento_tamago"],
+    label: "たまごやき",
+    kana: "たまごやき",
+    habitat: "おべんとうや あさごはん",
+    group: "たまごりょうり",
+    fact: "たまごを まぜて やき、ふんわり まいた きいろい おかずです。",
+    guideSpeaker: "Codex",
+    guideText: "きいろい いろと まいた かたちを みてみよう。",
+  },
+  {
+    id: "food_karaage",
+    categoryId: "food",
+    sourceStickerIds: ["bento_karaage"],
+    label: "からあげ",
+    kana: "からあげ",
+    habitat: "おべんとうや しょくたく",
+    group: "にくりょうり",
+    fact: "したあじを つけた とりにくなどに ころもを つけて あげます。",
+    guideSpeaker: "ポノ",
+    guideText: "そとの ころもと なかの にくを くらべてみよう。",
+  },
+  {
+    id: "food_broccoli",
+    categoryId: "food",
+    sourceStickerIds: ["bento_broccoli"],
+    label: "ブロッコリー",
+    kana: "ぶろっこりー",
+    habitat: "はたけから しょくたくへ",
+    group: "やさい",
+    fact: "つぼみの あつまりを たべる やさいで、みどりの こまかい つぶが みえます。",
+    guideSpeaker: "Codex",
+    guideText: "ちいさな つぼみが たくさん あつまっているよ。",
+  },
+  {
+    id: "food_wiener",
+    categoryId: "food",
+    sourceStickerIds: ["bento_wiener"],
+    label: "ウインナー",
+    kana: "ういんなー",
+    habitat: "おべんとうや しょくたく",
+    group: "にくの かこうひん",
+    fact: "にくを こまかくして つめ、たべやすい かたちに した たべものです。",
+    guideSpeaker: "ポノ",
+    guideText: "きった かたちで たこさんにも へんしんするよ。",
+  },
+  {
+    id: "food_ichigo",
+    categoryId: "food",
+    sourceStickerIds: ["bento_fruit_ichigo"],
+    label: "いちご",
+    kana: "いちご",
+    habitat: "はたけや ハウス",
+    group: "くだもの",
+    fact: "あかく あまい くだもの。そとの つぶつぶは たねのように みえます。",
+    guideSpeaker: "Codex",
+    guideText: "あかい みと つぶつぶを かんさつしよう。",
   },
 ];
 const DRAWING_COLORS = [
@@ -856,6 +1190,18 @@ window.__stickerBookDebugState = () => ({
   turnFrontTextureIsCanvas: frontPage.material.map?.image instanceof HTMLCanvasElement,
   turnBackTextureIsCanvas: backPage.material.map?.image instanceof HTMLCanvasElement,
 });
+window.__stickerBookZukanStructure = () => collectionPageDefinitions.map((pageDef) => ({
+  page: pageDef.page,
+  type: pageDef.type,
+  categoryId: pageDef.categoryId || "",
+  subjectId: pageDef.subjectId || "",
+  subjectIds: Array.isArray(pageDef.subjectIds) ? [...pageDef.subjectIds] : [],
+  indexTargets: Array.isArray(pageDef.indexTargets) ? pageDef.indexTargets.map((target) => ({ ...target })) : [],
+}));
+window.__stickerBookZukanIndexTargets = (page = activeBookPage) => {
+  const pageDef = collectionPageDefinitions[Math.max(1, Math.round(page)) - 1] || null;
+  return collectionZukanIndexTargetsForPage(pageDef);
+};
 animate();
 
 function setupScenePagePicking() {
@@ -863,12 +1209,18 @@ function setupScenePagePicking() {
     return;
   }
   canvas.addEventListener("pointermove", (event) => {
-    canvas.style.cursor = pickEditablePage(event) ? "zoom-in" : "";
+    canvas.style.cursor = pickCollectionZukanTarget(event) ? "pointer" : pickEditablePage(event) ? "zoom-in" : "";
   });
   canvas.addEventListener("pointerleave", () => {
     canvas.style.cursor = "";
   });
   canvas.addEventListener("click", (event) => {
+    const zukanTarget = pickCollectionZukanTarget(event);
+    if (zukanTarget) {
+      event.preventDefault();
+      navigateCollectionZukanTarget(zukanTarget);
+      return;
+    }
     const pickedPage = pickEditablePage(event);
     if (!pickedPage) {
       return;
@@ -887,12 +1239,52 @@ function pickEditablePage(event) {
   ) {
     return null;
   }
+  return pickScenePageHit(event)?.object || null;
+}
+
+function pickScenePageHit(event) {
   const rect = canvas.getBoundingClientRect();
   pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   pageRaycaster.setFromCamera(pointerNdc, camera);
-  const hits = pageRaycaster.intersectObjects([rightPage, leftPageInner], false);
-  return hits[0]?.object || null;
+  return pageRaycaster.intersectObjects([rightPage, leftPageInner], false)[0] || null;
+}
+
+function pickCollectionZukanTarget(event) {
+  if (
+    activeAlbumMode !== "collection"
+    || activeSurface !== "inside"
+    || coverOpenAnimation
+    || spreadJumpAnimation
+    || (pageTurn.visible && flipProgress > 0.001)
+    || !stickerEditor
+    || !stickerEditor.hidden
+  ) {
+    return null;
+  }
+  const hit = pickScenePageHit(event);
+  if (!hit?.uv || !hit.object) {
+    return null;
+  }
+  const pageNumber = pageNumberForPickedPage(hit.object);
+  if (hit.object === rightPage && pageNumber === activeBookPage) {
+    return null;
+  }
+  const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
+  if (pageDef?.type !== "section-index") {
+    return null;
+  }
+  const x = hit.uv.x * PAGE_TEXTURE_W;
+  const y = (1 - hit.uv.y) * PAGE_TEXTURE_H;
+  const layout = collectionZukanIndexLayout();
+  const subjects = collectionStickersForPageDefinition(pageDef);
+  for (let index = 0; index < subjects.length; index += 1) {
+    const rect = collectionZukanIndexCellRect(index, layout);
+    if (x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height) {
+      return collectionZukanIndexTargetForSubject(pageDef, subjects[index].id);
+    }
+  }
+  return null;
 }
 
 function setupBookPageControls() {
@@ -1053,9 +1445,48 @@ function collectionTocPageCount() {
   );
 }
 
+function buildCollectionZukanSubjects(stickers) {
+  const stickersById = new Map(stickers.map((sticker) => [sticker.id, sticker]));
+  return COLLECTION_ZUKAN_SUBJECT_DEFS
+    .map((subjectDef, index) => {
+      const sourceStickers = (subjectDef.sourceStickerIds || [])
+        .map((id) => stickersById.get(id))
+        .filter(Boolean);
+      const sourceSticker = sourceStickers.find((sticker) => canShowSpecificCollectionSticker(sticker))
+        || sourceStickers[0]
+        || null;
+      if (!sourceSticker) {
+        return null;
+      }
+      return {
+        ...sourceSticker,
+        ...subjectDef,
+        id: subjectDef.id,
+        sourceStickerId: sourceSticker.id,
+        sourceStickerIds: [...(subjectDef.sourceStickerIds || [])],
+        gameId: sourceSticker.gameId || "zukan",
+        view: sourceSticker.view || subjectDef.categoryId,
+        label: subjectDef.label,
+        kana: subjectDef.kana || subjectDef.label,
+        sort: Number.isFinite(Number(subjectDef.sort)) ? Number(subjectDef.sort) : index + 1,
+        unlock: sourceSticker.unlock || "found",
+        listNote: subjectDef.group,
+        assetStatus: sourceSticker.assetStatus || (sourceSticker.assetUrl ? "existing" : "missing"),
+        assetPath: sourceSticker.assetPath || "",
+        assetUrl: sourceSticker.assetUrl || "",
+        nameIdeas: [subjectDef.label],
+        isZukanSubject: true,
+      };
+    })
+    .filter(Boolean);
+}
+
 function collectionStickerMatchesTocCategory(sticker, category) {
   if (!sticker || !category) {
     return false;
+  }
+  if (sticker.categoryId && sticker.categoryId === category.id) {
+    return true;
   }
   if (Array.isArray(category.excludeCategoryIds)) {
     for (const excludeId of category.excludeCategoryIds) {
@@ -1131,7 +1562,7 @@ function collectionZukanSortValue(sticker) {
 function collectionZukanPageTitle(stickers) {
   if (!stickers.length) {
     return {
-      label: "ポノのずかん",
+      label: "ずかん",
       subtitle: "みつけたものを しらべよう",
     };
   }
@@ -1146,7 +1577,7 @@ function collectionZukanPageTitle(stickers) {
   const category = ranked[0]?.category || null;
   if (!category) {
     return {
-      label: "ポノのずかん",
+      label: "ずかん",
       subtitle: "いろいろな ものを しらべよう",
     };
   }
@@ -1161,9 +1592,9 @@ function collectionZukanCardNote(sticker, found, canShowSpecificItem) {
     return "まだ みつけていないよ";
   }
   if (!found) {
-    return "まだ しらべていないよ";
+    return sticker.group || "まだ しらべていないよ";
   }
-  return sticker.listNote || "くわしく みてみよう";
+  return sticker.group || sticker.listNote || "くわしく みてみよう";
 }
 
 function canShowSpecificCollectionSticker(sticker) {
@@ -1171,9 +1602,10 @@ function canShowSpecificCollectionSticker(sticker) {
 }
 
 function representativeCollectionTocSticker(category, stickers) {
-  const preferredIds = Array.isArray(category.representativeStickerIds)
-    ? category.representativeStickerIds
-    : [];
+  const preferredIds = [
+    ...(Array.isArray(category.representativeSubjectIds) ? category.representativeSubjectIds : []),
+    ...(Array.isArray(category.representativeStickerIds) ? category.representativeStickerIds : []),
+  ];
   return stickers
     .filter((sticker) => canShowSpecificCollectionSticker(sticker))
     .map((sticker, index) => ({
@@ -1206,6 +1638,25 @@ function navigateCollectionTocCategory(categoryId) {
   }
   setBookPage(targetPage, {
     turnMode: Math.abs(targetPage - activeBookPage) <= 2 ? "single" : "jump",
+    preserveCollectionTocPending: true,
+  });
+}
+
+function navigateCollectionZukanTarget(target) {
+  const targetPage = Number(target?.targetPage);
+  if (!Number.isFinite(targetPage)) {
+    return;
+  }
+  const pageDef = collectionPageDefinitions[Math.max(1, Math.round(targetPage)) - 1] || null;
+  activeCollectionTocCategoryId = pageDef?.categoryId || target.categoryId || activeCollectionTocCategoryId;
+  pendingCollectionTocCategoryId = activeCollectionTocCategoryId;
+  closeBookPageJump();
+  if (activeSurface === "cover") {
+    setBookSurface("inside", targetPage, { preserveCollectionTocPending: true });
+    return;
+  }
+  setBookPage(targetPage, {
+    turnMode: Math.abs(spreadStartForPage(targetPage) - activeBookPage) <= 2 ? "single" : "jump",
     preserveCollectionTocPending: true,
   });
 }
@@ -1341,7 +1792,7 @@ async function loadStickerPlanForEditor() {
         ...sticker,
         assetUrl: sticker.assetPath ? stickerAssetUrl(sticker.assetPath) : "",
       }));
-    collectionStickerOptions = sortCollectionStickersForZukan(loadedStickerOptions);
+    collectionStickerOptions = sortCollectionStickersForZukan(buildCollectionZukanSubjects(loadedStickerOptions));
     stickerOptions = loadedStickerOptions
       .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
       .map((sticker) => ({ ...sticker }));
@@ -1400,7 +1851,18 @@ function syncEditorPlacementsWithStickerPlan() {
 }
 
 function syncCollectionPlacementsWithStickerPlan() {
-  const stickersById = new Map(availableCollectionStickers().map((sticker) => [sticker.id, sticker]));
+  const stickersById = new Map();
+  for (const sticker of availableCollectionStickers()) {
+    stickersById.set(sticker.id, sticker);
+    if (Array.isArray(sticker.sourceStickerIds)) {
+      for (const sourceId of sticker.sourceStickerIds) {
+        stickersById.set(sourceId, sticker);
+      }
+    }
+    if (sticker.sourceStickerId) {
+      stickersById.set(sticker.sourceStickerId, sticker);
+    }
+  }
   let changed = false;
   for (const placements of Object.values(collectionAlbumState.pages || {})) {
     if (!Array.isArray(placements)) {
@@ -1444,51 +1906,71 @@ function createFallbackEditorPageDefinitions() {
 function createFallbackCollectionPageDefinitions() {
   return [{
     page: 1,
-    label: "ポノのずかん",
-    subtitle: "みつけたものを しらべよう",
+    type: "section-index",
+    label: "ずかんもくじ",
+    subtitle: "いきものや たべものを しらべよう",
+    categoryId: "bugs",
+    subjectIds: [],
+    indexTargets: [],
     shelfType: "zukan_collection",
   }];
 }
 
 function buildCollectionPageDefinitions() {
   const pages = [];
-  const usedIds = new Set();
   for (const category of COLLECTION_TOC_CATEGORY_DEFS) {
-    const stickers = collectionStickerOptions.filter((sticker) => (
-      !usedIds.has(sticker.id) && collectionStickerMatchesTocCategory(sticker, category)
-    ));
-    for (const sticker of stickers) {
-      usedIds.add(sticker.id);
+    const subjects = collectionStickerOptions.filter((subject) => collectionStickerMatchesTocCategory(subject, category));
+    if (!subjects.length) {
+      continue;
     }
-    for (let index = 0; index < stickers.length; index += COLLECTION_ALBUM_STICKERS_PER_PAGE) {
+    for (let index = 0; index < subjects.length; index += COLLECTION_INDEX_ITEMS_PER_PAGE) {
+      const pageIndex = Math.floor(index / COLLECTION_INDEX_ITEMS_PER_PAGE);
       pages.push({
-        label: category.pageLabel || `${category.label}ずかん`,
+        type: "section-index",
+        label: pageIndex > 0 ? `${category.pageLabel || `${category.label}ずかん`} ${pageIndex + 1}` : `${category.pageLabel || `${category.label}ずかん`} もくじ`,
         subtitle: category.summary || "みつけたものを しらべよう",
         categoryId: category.id,
-        stickerIds: stickers.slice(index, index + COLLECTION_ALBUM_STICKERS_PER_PAGE).map((sticker) => sticker.id),
+        subjectIds: subjects.slice(index, index + COLLECTION_INDEX_ITEMS_PER_PAGE).map((subject) => subject.id),
+        shelfType: "zukan_collection",
+      });
+    }
+    for (const subject of subjects) {
+      pages.push({
+        type: "detail",
+        label: subject.label,
+        subtitle: category.pageLabel || `${category.label}ずかん`,
+        categoryId: category.id,
+        subjectId: subject.id,
         shelfType: "zukan_collection",
       });
     }
   }
 
-  const remaining = collectionStickerOptions.filter((sticker) => !usedIds.has(sticker.id));
-  for (let index = 0; index < remaining.length; index += COLLECTION_ALBUM_STICKERS_PER_PAGE) {
-    const stickers = remaining.slice(index, index + COLLECTION_ALBUM_STICKERS_PER_PAGE);
-    const title = collectionZukanPageTitle(stickers);
-    pages.push({
-      label: title.label,
-      subtitle: title.subtitle,
-      categoryId: "other",
-      stickerIds: stickers.map((sticker) => sticker.id),
-      shelfType: "zukan_collection",
-    });
-  }
-
   const normalizedPages = pages.length ? pages : createFallbackCollectionPageDefinitions();
-  return normalizedPages.map((pageDef, index) => ({
+  const numberedPages = normalizedPages.map((pageDef, index) => ({
     ...pageDef,
     page: index + 1,
   }));
+  const detailPageBySubjectId = new Map(
+    numberedPages
+      .filter((pageDef) => pageDef.type === "detail" && pageDef.subjectId)
+      .map((pageDef) => [pageDef.subjectId, pageDef.page]),
+  );
+  return numberedPages.map((pageDef) => {
+    if (pageDef.type !== "section-index") {
+      return pageDef;
+    }
+    const indexTargets = (pageDef.subjectIds || []).map((subjectId) => ({
+      subjectId,
+      targetPage: detailPageBySubjectId.get(subjectId) || null,
+      categoryId: pageDef.categoryId || "",
+      action: "open-zukan-detail",
+    }));
+    return {
+      ...pageDef,
+      indexTargets,
+    };
+  });
 }
 
 function activePageDefinitions() {
@@ -2719,6 +3201,15 @@ function stickersForPage(page) {
 }
 
 function collectionStickersForPageDefinition(pageDef) {
+  if (pageDef?.subjectId) {
+    const subject = collectionStickerOptions.find((sticker) => sticker.id === pageDef.subjectId);
+    return subject ? [subject] : [];
+  }
+  if (Array.isArray(pageDef?.subjectIds)) {
+    return pageDef.subjectIds
+      .map((id) => collectionStickerOptions.find((sticker) => sticker.id === id))
+      .filter(Boolean);
+  }
   if (Array.isArray(pageDef?.stickerIds)) {
     return pageDef.stickerIds
       .map((id) => collectionStickerOptions.find((sticker) => sticker.id === id))
@@ -4208,44 +4699,88 @@ function drawDynamicPageContent(ctx, texture, side, palette, pageNumber = pageNu
 }
 
 function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageNumber) {
-  const theme = palette.collection;
-  const contentX = 168;
-  const contentY = 210;
-  const contentW = PAGE_TEXTURE_W - 336;
+  if (pageDef?.type === "detail") {
+    drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, stickers[0] || null, pageNumber);
+    return;
+  }
+  drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, stickers, pageNumber);
+}
+
+function collectionZukanIndexLayout() {
+  const contentX = 132;
+  const contentY = 224;
+  const contentW = PAGE_TEXTURE_W - contentX * 2;
   const slotBandTop = PAGE_TEXTURE_H - 202;
-  const contentH = slotBandTop - contentY - 26;
-  const cols = 3;
-  const rows = 4;
+  const contentH = slotBandTop - contentY - 28;
+  const cols = 2;
+  const rows = 6;
   const gapX = 28;
-  const gapY = 24;
+  const gapY = 18;
   const cellW = (contentW - gapX * (cols - 1)) / cols;
   const cellH = (contentH - gapY * (rows - 1)) / rows;
+  return { contentX, contentY, cols, rows, gapX, gapY, cellW, cellH };
+}
+
+function collectionZukanIndexCellRect(index, layout = collectionZukanIndexLayout()) {
+  const col = index % layout.cols;
+  const row = Math.floor(index / layout.cols);
+  return {
+    x: layout.contentX + col * (layout.cellW + layout.gapX),
+    y: layout.contentY + row * (layout.cellH + layout.gapY),
+    width: layout.cellW,
+    height: layout.cellH,
+  };
+}
+
+function collectionZukanIndexTargetsForPage(pageDef) {
+  if (pageDef?.type !== "section-index" || !Array.isArray(pageDef.indexTargets)) {
+    return [];
+  }
+  return pageDef.indexTargets.filter((target) => Number.isFinite(Number(target.targetPage)));
+}
+
+function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
+  const target = collectionZukanIndexTargetsForPage(pageDef)
+    .find((item) => item.subjectId === subjectId);
+  if (!target) {
+    return null;
+  }
+  return {
+    ...target,
+    categoryId: pageDef.categoryId || "",
+  };
+}
+
+function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, pageNumber) {
+  const theme = palette.collection;
+  const layout = collectionZukanIndexLayout();
 
   ctx.save();
   ctx.fillStyle = theme.text;
   ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(pageDef?.label || "ポノのずかん", PAGE_TEXTURE_W / 2, 112);
+  ctx.fillText(pageDef?.label || "ずかんもくじ", PAGE_TEXTURE_W / 2, 112);
   ctx.fillStyle = palette.sub;
   ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(pageDef?.subtitle || "みつけたものを しらべよう", PAGE_TEXTURE_W / 2, 150);
+  ctx.fillText(pageDef?.subtitle || "いきものや たべものを しらべよう", PAGE_TEXTURE_W / 2, 150);
+  ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
+  ctx.font = '700 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText("Codexと いっしょに、きになる なかまを くわしく みよう", PAGE_TEXTURE_W / 2, 184);
 
-  for (let i = 0; i < stickers.length; i += 1) {
-    const sticker = stickers[i];
-    const globalIndex = collectionZukanItemNumber(sticker, pageNumber, i);
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const x = contentX + col * (cellW + gapX);
-    const y = contentY + row * (cellH + gapY);
-    const found = sticker.unlock === "found";
-    drawCollectionStickerCard(ctx, texture, palette, sticker, globalIndex, x, y, cellW, cellH, found, pageNumber);
+  for (let i = 0; i < subjects.length; i += 1) {
+    const subject = subjects[i];
+    const globalIndex = collectionZukanItemNumber(subject, pageNumber, i);
+    const rect = collectionZukanIndexCellRect(i, layout);
+    const target = collectionZukanIndexTargetForSubject(pageDef, subject.id);
+    const found = subject.unlock === "found";
+    drawCollectionZukanIndexCard(ctx, texture, palette, subject, globalIndex, rect, found, pageNumber, target);
   }
 
-  if (!stickers.length) {
+  if (!subjects.length) {
     ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
     ctx.font = '800 38px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
     ctx.textAlign = "center";
-    ctx.fillText("まだ みつかっていません", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
+    ctx.fillText("ずかんの なかまを じゅんびしています", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
   }
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
   ctx.restore();
@@ -4257,44 +4792,182 @@ function collectionZukanItemNumber(sticker, pageNumber, pageIndex) {
   return index >= 0 ? index + 1 : (pageNumber - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE + pageIndex + 1;
 }
 
-function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, width, height, found, pageNumber) {
+function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rect, found, pageNumber, target) {
   const cardTheme = palette.collection.card;
   const canShowSpecificItem = canShowSpecificCollectionSticker(sticker);
   const displayLabel = canShowSpecificItem ? sticker.label || "なにかな？" : "なにかな？";
   const displayNote = collectionZukanCardNote(sticker, found, canShowSpecificItem);
+  const { x, y, width, height } = rect;
   ctx.save();
-  ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
+  ctx.fillStyle = found ? "rgba(255, 253, 240, 0.84)" : cardTheme.lockedFill;
   ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
-  ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, x, y, width, height, 22);
+  ctx.lineWidth = 2.5;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 16);
   ctx.fill();
   ctx.stroke();
 
   ctx.fillStyle = found ? cardTheme.numberFill : "#9aa09b";
-  drawCanvasRoundedRect(ctx, x + 14, y + 14, 68, 34, 13);
+  drawCanvasRoundedRect(ctx, x + 18, y + 20, 72, 38, 14);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = '800 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = '800 22px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(String(index).padStart(2, "0"), x + 48, y + 38);
+  ctx.fillText(String(index).padStart(2, "0"), x + 54, y + 47);
 
-  const imageSize = Math.min(width - 64, height - 116, 142);
-  const imageX = x + (width - imageSize) / 2;
-  const imageY = y + 50;
+  const imageSize = Math.min(96, height - 30);
+  const imageX = x + 108;
+  const imageY = y + (height - imageSize) / 2;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.62)";
+  drawCanvasRoundedRect(ctx, imageX - 7, imageY - 7, imageSize + 14, imageSize + 14, 20);
+  ctx.fill();
   if (canShowSpecificItem) {
-    drawAsyncCollectionStickerImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found, pageNumber);
+    drawAsyncCollectionZukanImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found, pageNumber);
   } else {
     drawMissingStickerBadge(ctx, imageX, imageY, imageSize, imageSize);
   }
 
   ctx.fillStyle = found ? palette.collection.text : "rgba(51, 68, 71, 0.54)";
-  ctx.font = '800 23px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.textAlign = "center";
-  ctx.fillText(displayLabel, x + width / 2, y + height - 50, width - 28);
-  ctx.fillStyle = found ? "rgba(51, 68, 71, 0.74)" : "rgba(51, 68, 71, 0.42)";
-  ctx.font = '700 17px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(displayNote, x + width / 2, y + height - 22, width - 28);
+  ctx.font = '800 28px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "left";
+  ctx.fillText(displayLabel, x + 222, y + 48, width - 326);
+  ctx.fillStyle = found ? "rgba(51, 68, 71, 0.72)" : "rgba(51, 68, 71, 0.46)";
+  ctx.font = '700 19px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText(displayNote, x + 222, y + 79, width - 326);
+  if (target?.targetPage) {
+    ctx.textAlign = "right";
+    ctx.fillStyle = found ? palette.sub : "rgba(51, 68, 71, 0.38)";
+    ctx.font = '800 18px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.fillText(`p.${String(target.targetPage).padStart(2, "0")}`, x + width - 20, y + height - 22);
+  }
   ctx.restore();
+}
+
+function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, pageNumber) {
+  const theme = palette.collection;
+  const found = subject?.unlock === "found";
+  const canShowSpecificItem = canShowSpecificCollectionSticker(subject);
+  ctx.save();
+  ctx.fillStyle = theme.text;
+  ctx.font = '800 54px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(subject?.label || pageDef?.label || "ずかん", PAGE_TEXTURE_W / 2, 116);
+  ctx.fillStyle = palette.sub;
+  ctx.font = '800 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  const subjectNumber = subject ? collectionZukanItemNumber(subject, pageNumber, 0) : pageNumber;
+  ctx.fillText(`${pageDef?.subtitle || "ずかん"}　No.${String(subjectNumber).padStart(2, "0")}`, PAGE_TEXTURE_W / 2, 154);
+
+  const imageX = 174;
+  const imageY = 230;
+  const imageW = 500;
+  const imageH = 520;
+  const fieldX = 728;
+  const fieldY = 240;
+  const fieldW = 560;
+  const fieldGap = 26;
+  const fieldH = 132;
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.66)";
+  ctx.strokeStyle = found ? "rgba(94, 155, 132, 0.36)" : "rgba(116, 128, 122, 0.24)";
+  ctx.lineWidth = 4;
+  drawCanvasRoundedRect(ctx, imageX, imageY, imageW, imageH, 34);
+  ctx.fill();
+  ctx.stroke();
+  if (canShowSpecificItem) {
+    drawAsyncCollectionZukanImage(ctx, texture, subject.assetUrl, imageX + 56, imageY + 48, imageW - 112, imageH - 96, found, pageNumber);
+  } else {
+    drawMissingStickerBadge(ctx, imageX + 118, imageY + 98, imageW - 236, imageH - 196);
+  }
+
+  drawCollectionZukanField(ctx, "すんでいるところ", subject?.habitat || "しらべています", fieldX, fieldY, fieldW, fieldH, palette.sub);
+  drawCollectionZukanField(ctx, "なかま", subject?.group || "しらべています", fieldX, fieldY + (fieldH + fieldGap), fieldW, fieldH, palette.accent);
+  drawCollectionZukanField(ctx, "まめちしき", subject?.fact || "くわしい ことを じゅんびしています", fieldX, fieldY + (fieldH + fieldGap) * 2, fieldW, 210, theme.pages.right.accent);
+
+  const guideX = 176;
+  const guideY = 820;
+  const guideW = PAGE_TEXTURE_W - 352;
+  const guideH = 168;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.58)";
+  ctx.strokeStyle = "rgba(51, 68, 71, 0.14)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, guideX, guideY, guideW, guideH, 28);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = palette.sub;
+  ctx.font = '900 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "left";
+  ctx.fillText(`${subject?.guideSpeaker || "ポノ"}メモ`, guideX + 34, guideY + 48);
+  ctx.fillStyle = "rgba(51, 68, 71, 0.76)";
+  ctx.font = '800 27px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  drawWrappedCanvasText(ctx, subject?.guideText || "きになる ところを じっくり みてみよう。", guideX + 34, guideY + 88, guideW - 68, 34, 2);
+  drawCollectionPlacementLayer(ctx, texture, pageNumber);
+  ctx.restore();
+  texture.needsUpdate = true;
+}
+
+function drawAsyncCollectionZukanImage(ctx, texture, src, x, y, width, height, found, pageNumber) {
+  loadStickerImage(src)
+    .then((image) => {
+      ctx.save();
+      if (!found) {
+        ctx.globalAlpha = 0.38;
+        ctx.filter = "grayscale(1) saturate(0.18)";
+      }
+      drawImageContain(ctx, image, x, y, width, height);
+      ctx.restore();
+      queueCollectionPlacementLayer(ctx, texture, pageNumber);
+      texture.needsUpdate = true;
+    })
+    .catch(() => {});
+}
+
+function drawCollectionZukanField(ctx, title, value, x, y, width, height, accentColor) {
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.56)";
+  ctx.strokeStyle = "rgba(51, 68, 71, 0.12)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 24);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = accentColor;
+  drawCanvasRoundedRect(ctx, x + 22, y + 18, 190, 36, 16);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = '900 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(title, x + 117, y + 44, 162);
+
+  ctx.fillStyle = "rgba(51, 68, 71, 0.78)";
+  ctx.font = '800 26px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "left";
+  drawWrappedCanvasText(ctx, value, x + 28, y + 80, width - 56, 34, Math.max(1, Math.floor((height - 82) / 34) + 1));
+  ctx.restore();
+}
+
+function drawWrappedCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+  const source = String(text || "");
+  const words = source.includes(" ") ? source.split(/(\s+)/).filter(Boolean) : [...source];
+  const lines = [];
+  let line = "";
+  for (const word of words) {
+    const candidate = line ? `${line}${word}` : word;
+    if (ctx.measureText(candidate).width <= maxWidth || !line) {
+      line = candidate;
+      continue;
+    }
+    lines.push(line.trim());
+    line = word.trimStart();
+    if (lines.length >= maxLines) {
+      break;
+    }
+  }
+  if (line && lines.length < maxLines) {
+    lines.push(line.trim());
+  }
+  lines.slice(0, maxLines).forEach((lineText, index) => {
+    const display = index === maxLines - 1 && lines.length > maxLines ? `${lineText}...` : lineText;
+    ctx.fillText(display, x, y + lineHeight * index, maxWidth);
+  });
 }
 
 function drawAsyncCollectionStickerImage(ctx, texture, src, x, y, width, height, found, pageNumber) {
