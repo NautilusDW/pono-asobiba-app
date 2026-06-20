@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-736";
+const ASSET_VERSION = "20260620-741";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -4846,62 +4846,306 @@ function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, 
   const theme = palette.collection;
   const found = subject?.unlock === "found";
   const canShowSpecificItem = canShowSpecificCollectionSticker(subject);
+  const detail = collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette);
+
   ctx.save();
-  ctx.fillStyle = theme.text;
-  ctx.font = '800 54px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.textAlign = "center";
-  ctx.fillText(subject?.label || pageDef?.label || "ずかん", PAGE_TEXTURE_W / 2, 116);
-  ctx.fillStyle = palette.sub;
-  ctx.font = '800 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  const subjectNumber = subject ? collectionZukanItemNumber(subject, pageNumber, 0) : pageNumber;
-  ctx.fillText(`${pageDef?.subtitle || "ずかん"}　No.${String(subjectNumber).padStart(2, "0")}`, PAGE_TEXTURE_W / 2, 154);
-
-  const imageX = 174;
-  const imageY = 230;
-  const imageW = 500;
-  const imageH = 520;
-  const fieldX = 728;
-  const fieldY = 240;
-  const fieldW = 560;
-  const fieldGap = 26;
-  const fieldH = 132;
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.66)";
-  ctx.strokeStyle = found ? "rgba(94, 155, 132, 0.36)" : "rgba(116, 128, 122, 0.24)";
-  ctx.lineWidth = 4;
-  drawCanvasRoundedRect(ctx, imageX, imageY, imageW, imageH, 34);
-  ctx.fill();
-  ctx.stroke();
+  drawCollectionZukanDetailHeader(ctx, palette, theme, detail.header);
+  drawCollectionZukanIllustrationSlot(ctx, detail.image, found);
   if (canShowSpecificItem) {
-    drawAsyncCollectionZukanImage(ctx, texture, subject.assetUrl, imageX + 56, imageY + 48, imageW - 112, imageH - 96, found, pageNumber);
+    drawAsyncCollectionZukanImage(
+      ctx,
+      texture,
+      subject.assetUrl,
+      detail.image.x + 58,
+      detail.image.y + 66,
+      detail.image.width - 116,
+      detail.image.height - 132,
+      found,
+      pageNumber,
+    );
   } else {
-    drawMissingStickerBadge(ctx, imageX + 118, imageY + 98, imageW - 236, imageH - 196);
+    drawMissingStickerBadge(ctx, detail.image.x + 132, detail.image.y + 122, detail.image.width - 264, detail.image.height - 244);
   }
 
-  drawCollectionZukanField(ctx, "すんでいるところ", subject?.habitat || "しらべています", fieldX, fieldY, fieldW, fieldH, palette.sub);
-  drawCollectionZukanField(ctx, "なかま", subject?.group || "しらべています", fieldX, fieldY + (fieldH + fieldGap), fieldW, fieldH, palette.accent);
-  drawCollectionZukanField(ctx, "まめちしき", subject?.fact || "くわしい ことを じゅんびしています", fieldX, fieldY + (fieldH + fieldGap) * 2, fieldW, 210, theme.pages.right.accent);
-
-  const guideX = 176;
-  const guideY = 820;
-  const guideW = PAGE_TEXTURE_W - 352;
-  const guideH = 168;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.58)";
-  ctx.strokeStyle = "rgba(51, 68, 71, 0.14)";
-  ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, guideX, guideY, guideW, guideH, 28);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = palette.sub;
-  ctx.font = '900 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.textAlign = "left";
-  ctx.fillText(`${subject?.guideSpeaker || "ポノ"}メモ`, guideX + 34, guideY + 48);
-  ctx.fillStyle = "rgba(51, 68, 71, 0.76)";
-  ctx.font = '800 27px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  drawWrappedCanvasText(ctx, subject?.guideText || "きになる ところを じっくり みてみよう。", guideX + 34, guideY + 88, guideW - 68, 34, 2);
+  for (const field of detail.fields) {
+    drawCollectionZukanField(ctx, field.title, field.value, field.x, field.y, field.width, field.height, field.accentColor);
+  }
+  drawCollectionZukanMemoCard(ctx, palette, theme, detail.memo);
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
   ctx.restore();
   texture.needsUpdate = true;
+}
+
+function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
+  const theme = palette.collection;
+  const subjectNumber = subject ? collectionZukanItemNumber(subject, pageNumber, 0) : pageNumber;
+  const subjectName = collectionZukanFirstText(subject?.label, pageDef?.label, "ずかん");
+  const kana = collectionZukanFirstText(subject?.kana);
+  const subtitle = kana && kana !== subjectName
+    ? kana
+    : collectionZukanFirstText(pageDef?.subtitle, "みつけたものを かんさつしよう");
+  const fieldX = 752;
+  const fieldY = 332;
+  const fieldW = 558;
+  const fieldH = 142;
+  const fieldGap = 22;
+  return {
+    header: {
+      x: 156,
+      y: 146,
+      width: 1158,
+      height: 142,
+      number: String(subjectNumber).padStart(2, "0"),
+      name: subjectName,
+      subtitle,
+      category: collectionZukanDetailCategoryLabel(subject, pageDef),
+    },
+    image: {
+      x: 166,
+      y: 330,
+      width: 552,
+      height: 610,
+    },
+    fields: [
+      {
+        title: "すんでいるところ",
+        value: collectionZukanCompactText(subject?.habitat, "しらべています", 30),
+        x: fieldX,
+        y: fieldY,
+        width: fieldW,
+        height: fieldH,
+        accentColor: palette.sub,
+      },
+      {
+        title: "たべもの",
+        value: collectionZukanFoodText(subject),
+        x: fieldX,
+        y: fieldY + fieldH + fieldGap,
+        width: fieldW,
+        height: fieldH,
+        accentColor: theme.pages.right.accent,
+      },
+      {
+        title: "からだ",
+        value: collectionZukanBodyText(subject),
+        x: fieldX,
+        y: fieldY + (fieldH + fieldGap) * 2,
+        width: fieldW,
+        height: fieldH,
+        accentColor: palette.accent,
+      },
+    ],
+    memo: {
+      x: 166,
+      y: 972,
+      width: 1144,
+      height: 246,
+      title: collectionZukanMemoTitle(subject),
+      value: collectionZukanMemoText(subject),
+    },
+  };
+}
+
+function collectionZukanDetailCategoryLabel(subject, pageDef) {
+  const categoryId = collectionZukanFirstText(subject?.categoryId, pageDef?.categoryId);
+  const directCategory = COLLECTION_TOC_CATEGORY_DEFS.find((definition) => definition.id === categoryId);
+  const matchedCategory = subject ? collectionZukanCategoryForSticker(subject) : null;
+  return collectionZukanFirstText(directCategory?.label, matchedCategory?.label, pageDef?.subtitle, "ずかん");
+}
+
+function collectionZukanFirstText(...values) {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      const nested = collectionZukanFirstText(...value);
+      if (nested) {
+        return nested;
+      }
+      continue;
+    }
+    const text = String(value || "").replace(/\s+/g, " ").trim();
+    if (text) {
+      return text;
+    }
+  }
+  return "";
+}
+
+function collectionZukanCompactText(value, fallback = "しらべています", maxChars = 34) {
+  const text = collectionZukanFirstText(value, fallback);
+  if (text.length <= maxChars) {
+    return text;
+  }
+  const sentenceEnd = text.search(/[。！？]/);
+  if (sentenceEnd >= 0 && sentenceEnd + 1 <= maxChars + 2) {
+    return text.slice(0, sentenceEnd + 1);
+  }
+  return `${text.slice(0, Math.max(1, maxChars - 3))}...`;
+}
+
+function collectionZukanFoodText(subject) {
+  const specific = COLLECTION_ZUKAN_FOOD_TEXT_BY_ID[subject?.id || ""];
+  if (specific) {
+    return specific;
+  }
+  const direct = collectionZukanFirstText(subject?.food, subject?.foods, subject?.diet, subject?.meal, subject?.eats);
+  if (direct) {
+    return collectionZukanCompactText(direct, "しらべています", 28);
+  }
+  if (subject?.categoryId === "food") {
+    return collectionZukanCompactText(subject?.group || subject?.fact, "たべもの", 28);
+  }
+  return collectionZukanCompactText(collectionZukanExtractFoodText(subject?.fact), "しらべています", 28);
+}
+
+const COLLECTION_ZUKAN_FOOD_TEXT_BY_ID = {
+  bug_hachi: "はなの みつ",
+  bug_kabutomushi: "きの じゅえき",
+  bug_amenbo: "ちいさな むし",
+  bug_chocho: "はなの みつ",
+  animal_dog: "ドッグフードや にく",
+  animal_cat: "キャットフードや さかな",
+  animal_lion: "にく",
+  animal_penguin: "さかな",
+  animal_kuma: "きのみや さかな",
+  animal_kirin: "きの はっぱ",
+  animal_cheetah: "にく",
+  animal_araiguma: "くだものや ちいさな いきもの",
+  animal_usagi: "くさや やさい",
+  animal_risu: "きのみ",
+  animal_shika: "くさや はっぱ",
+  animal_kitsune: "ちいさな いきものや きのみ",
+  animal_karasu: "きのみや ちいさな たべもの",
+  animal_harinezumi: "ちいさな むし",
+  animal_fukurou: "ちいさな いきもの",
+  animal_ahiru: "みずくさや こくもつ",
+  sea_kujira: "プランクトンなど",
+  sea_kani: "かいそうや ちいさな たべもの",
+  sea_daiouika: "さかなや ちいさな いきもの",
+  sea_jinbeizame: "プランクトン",
+  food_onigiri: "ごはん",
+  food_tamago: "たまご",
+  food_karaage: "とりにくなど",
+  food_broccoli: "つぼみの あつまり",
+  food_wiener: "にく",
+  food_ichigo: "あかい み",
+};
+
+function collectionZukanExtractFoodText(fact) {
+  const source = collectionZukanFirstText(fact);
+  if (!source) {
+    return "";
+  }
+  const clauses = source
+    .split(/[。！？、，]/)
+    .map((clause) => clause.trim())
+    .filter(Boolean);
+  const clause = clauses.find((item) => /(たべ|食べ|すい|吸い|あつめ|さが)/.test(item)) || "";
+  if (!clause) {
+    return "";
+  }
+  const matched = clause.match(/(.+?)(?:など)?を\s*(?:たべ|食べ|すい|吸い|あつめ|さが)/);
+  if (!matched) {
+    return clause.includes("たべもの") ? "たべもの" : "";
+  }
+  return matched[1]
+    .replace(/^.*(?:で|は)\s+/, "")
+    .replace(/など$/, "など")
+    .trim();
+}
+
+function collectionZukanBodyText(subject) {
+  const direct = collectionZukanFirstText(subject?.body, subject?.bodyText, subject?.shape, subject?.feature, subject?.features);
+  if (direct) {
+    return collectionZukanCompactText(direct, "しらべています", 30);
+  }
+  return collectionZukanCompactText(subject?.guideText || subject?.group || subject?.fact, "しらべています", 30);
+}
+
+function collectionZukanMemoTitle(subject) {
+  return subject?.guideSpeaker === "ポノ" ? "ポノメモ" : "メモ";
+}
+
+function collectionZukanMemoText(subject) {
+  return collectionZukanCompactText(
+    collectionZukanFirstText(subject?.memo, subject?.fact, subject?.guideText),
+    "きになる ところを じっくり みてみよう。",
+    64,
+  );
+}
+
+function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
+  const { x, y, width, height } = header;
+  const pageAccent = theme.pages.right.accent;
+  const headerGradient = ctx.createLinearGradient(0, y, 0, y + height);
+  headerGradient.addColorStop(0, "rgba(255, 255, 255, 0.88)");
+  headerGradient.addColorStop(1, "rgba(255, 248, 224, 0.74)");
+
+  ctx.save();
+  ctx.fillStyle = headerGradient;
+  ctx.strokeStyle = "rgba(51, 68, 71, 0.13)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 34);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = palette.sub;
+  drawCanvasRoundedRect(ctx, x + 30, y + 30, 154, 58, 22);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = '900 27px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(`No.${header.number}`, x + 107, y + 68);
+
+  ctx.fillStyle = pageAccent;
+  drawCanvasRoundedRect(ctx, x + width - 256, y + 31, 218, 54, 22);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = '900 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText(header.category, x + width - 147, y + 67, 186);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = theme.text;
+  ctx.font = '900 54px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText(header.name, x + 212, y + 67, width - 506);
+  ctx.fillStyle = "rgba(51, 68, 71, 0.62)";
+  ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.fillText(header.subtitle, x + 216, y + 106, width - 520);
+  ctx.restore();
+}
+
+function drawCollectionZukanIllustrationSlot(ctx, rect, found) {
+  const { x, y, width, height } = rect;
+  const slotGradient = ctx.createLinearGradient(0, y, 0, y + height);
+  slotGradient.addColorStop(0, found ? "rgba(255, 255, 255, 0.78)" : "rgba(238, 239, 232, 0.72)");
+  slotGradient.addColorStop(1, found ? "rgba(255, 250, 228, 0.72)" : "rgba(224, 226, 218, 0.62)");
+
+  ctx.save();
+  ctx.fillStyle = slotGradient;
+  ctx.strokeStyle = found ? "rgba(94, 155, 132, 0.34)" : "rgba(116, 128, 122, 0.24)";
+  ctx.lineWidth = 4;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 36);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.44)";
+  ctx.beginPath();
+  ctx.ellipse(x + width * 0.5, y + height * 0.54, width * 0.34, height * 0.29, -0.08, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 224, 111, 0.48)";
+  ctx.beginPath();
+  ctx.arc(x + width - 78, y + 82, 34, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(85, 174, 184, 0.25)";
+  ctx.beginPath();
+  ctx.arc(x + 76, y + height - 88, 28, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.62)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, x + 20, y + 20, width - 40, height - 40, 28);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawAsyncCollectionZukanImage(ctx, texture, src, x, y, width, height, found, pageNumber) {
@@ -4922,25 +5166,63 @@ function drawAsyncCollectionZukanImage(ctx, texture, src, x, y, width, height, f
 
 function drawCollectionZukanField(ctx, title, value, x, y, width, height, accentColor) {
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.56)";
-  ctx.strokeStyle = "rgba(51, 68, 71, 0.12)";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.strokeStyle = "rgba(51, 68, 71, 0.11)";
   ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, x, y, width, height, 24);
+  drawCanvasRoundedRect(ctx, x, y, width, height, 26);
   ctx.fill();
   ctx.stroke();
 
   ctx.fillStyle = accentColor;
-  drawCanvasRoundedRect(ctx, x + 22, y + 18, 190, 36, 16);
+  drawCanvasRoundedRect(ctx, x + 24, y + 20, 230, 42, 18);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = '900 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = '900 21px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(title, x + 117, y + 44, 162);
+  ctx.fillText(title, x + 139, y + 48, 206);
+
+  ctx.fillStyle = "rgba(51, 68, 71, 0.82)";
+  ctx.font = '900 29px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "left";
+  drawWrappedCanvasText(ctx, value, x + 30, y + 96, width - 60, 36, 2);
+  ctx.restore();
+}
+
+function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
+  const { x, y, width, height } = memo;
+  const memoGradient = ctx.createLinearGradient(0, y, 0, y + height);
+  memoGradient.addColorStop(0, "rgba(255, 255, 255, 0.74)");
+  memoGradient.addColorStop(1, "rgba(255, 250, 229, 0.7)");
+
+  ctx.save();
+  ctx.fillStyle = memoGradient;
+  ctx.strokeStyle = "rgba(51, 68, 71, 0.12)";
+  ctx.lineWidth = 3;
+  drawCanvasRoundedRect(ctx, x, y, width, height, 30);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = theme.pages.right.accent;
+  drawCanvasRoundedRect(ctx, x + 34, y + 28, 178, 50, 20);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = '900 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText(memo.title, x + 123, y + 61, 146);
+
+  ctx.fillStyle = palette.sub;
+  ctx.beginPath();
+  ctx.arc(x + width - 76, y + 58, 24, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
+  ctx.beginPath();
+  ctx.arc(x + width - 124, y + 78, 14, 0, Math.PI * 2);
+  ctx.fill();
 
   ctx.fillStyle = "rgba(51, 68, 71, 0.78)";
-  ctx.font = '800 26px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = '800 30px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "left";
-  drawWrappedCanvasText(ctx, value, x + 28, y + 80, width - 56, 34, Math.max(1, Math.floor((height - 82) / 34) + 1));
+  drawWrappedCanvasText(ctx, memo.value, x + 38, y + 122, width - 76, 40, 3);
   ctx.restore();
 }
 
