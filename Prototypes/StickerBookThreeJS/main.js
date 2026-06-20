@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-716";
+const ASSET_VERSION = "20260620-725";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -29,7 +29,9 @@ const THICKNESS_DEFAULT_SCALE_Y = {
 const STICKER_PLAN_URL = "./sticker_book_content_plan.json";
 const STICKER_ASSET_PREFIX = "../../";
 const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
+const COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY = "sb3d_collection_album_placements_v1";
 const EDITOR_STATE_VERSION = 3;
+const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
@@ -274,6 +276,8 @@ const bookNextPage = document.getElementById("bookNextPage");
 const bookPageLabel = document.getElementById("bookPageLabel");
 const bookPageJump = document.getElementById("bookPageJump");
 const albumModeToggle = document.getElementById("albumModeToggle");
+const collectionStickerTray = document.getElementById("collectionStickerTray");
+const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
 
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
@@ -411,6 +415,7 @@ let collectionStickerOptions = [];
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
 let editorState = loadEditorState();
+let collectionAlbumState = loadCollectionAlbumState();
 let activeEditorPage = 1;
 const requestedInitialPage = Math.max(1, Math.round(readClampedNumber(params.get("page"), 1, 1, 999)));
 let activeBookPage = requestedInitialPage % 2 === 0 ? requestedInitialPage - 1 : requestedInitialPage;
@@ -419,6 +424,8 @@ if (!isLocalPreview || !params.has("spread")) {
 }
 let selectedPlacementId = null;
 let stickerDragState = null;
+let pendingCollectionStickerId = null;
+let collectionTrayDragState = null;
 let editorStateSaveTimer = 0;
 let editorStateDirty = false;
 let editorGameFilterValue = "all";
@@ -736,6 +743,7 @@ albumModeToggle?.addEventListener("click", () => {
 window.addEventListener("resize", resize);
 setupTuningPanel();
 setupBookPageControls();
+setupCollectionStickerTray();
 if (editorEnabled) {
   setupScenePagePicking();
   setupStickerEditor();
@@ -764,6 +772,11 @@ window.__stickerBookDebugState = () => ({
   backPageVisible: backPage.visible,
   leftPlacementCount: getPagePlacements(activeBookPage).length,
   rightPlacementCount: getPagePlacements(rightBookPageNumber()).length,
+  leftCollectionPlacementCount: getCollectionPagePlacements(activeBookPage).length,
+  rightCollectionPlacementCount: getCollectionPagePlacements(rightBookPageNumber()).length,
+  collectionTrayItemCount: availableCollectionTrayStickers().length,
+  collectionTrayVisible: Boolean(collectionStickerTray && !collectionStickerTray.hidden),
+  pendingCollectionStickerId,
   turnFrontTextureIsCanvas: frontPage.material.map?.image instanceof HTMLCanvasElement,
   turnBackTextureIsCanvas: backPage.material.map?.image instanceof HTMLCanvasElement,
 });
@@ -774,12 +787,19 @@ function setupScenePagePicking() {
     return;
   }
   canvas.addEventListener("pointermove", (event) => {
+    if (pendingCollectionStickerId && pickCollectionAlbumPage(event)) {
+      canvas.style.cursor = "copy";
+      return;
+    }
     canvas.style.cursor = pickEditablePage(event) ? "zoom-in" : "";
   });
   canvas.addEventListener("pointerleave", () => {
     canvas.style.cursor = "";
   });
   canvas.addEventListener("click", (event) => {
+    if (placePendingCollectionStickerFromEvent(event)) {
+      return;
+    }
     const pickedPage = pickEditablePage(event);
     if (!pickedPage) {
       return;
@@ -848,6 +868,262 @@ function pageNumberForPickedPage(mesh) {
   return activeBookPage;
 }
 
+function setupCollectionStickerTray() {
+  if (!collectionStickerTray || !collectionStickerTrayItems) {
+    return;
+  }
+  collectionStickerTray.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-collection-sticker-id]");
+    if (!button || !collectionStickerTray.contains(button)) {
+      return;
+    }
+    const sticker = collectionStickerById(button.dataset.collectionStickerId);
+    if (!sticker) {
+      return;
+    }
+    event.preventDefault();
+    setPendingCollectionSticker(sticker.id);
+  });
+  collectionStickerTray.addEventListener("pointerdown", (event) => {
+    const button = event.target.closest("[data-collection-sticker-id]");
+    if (!button || !collectionStickerTray.contains(button) || event.pointerType === "touch") {
+      return;
+    }
+    const sticker = collectionStickerById(button.dataset.collectionStickerId);
+    if (!sticker || !canPlaceCollectionSticker()) {
+      return;
+    }
+    event.preventDefault();
+    beginCollectionTrayDrag(event, sticker);
+  });
+  renderCollectionStickerTray();
+}
+
+function renderCollectionStickerTray() {
+  if (!collectionStickerTray || !collectionStickerTrayItems) {
+    return;
+  }
+  const stickers = availableCollectionTrayStickers();
+  const fragment = document.createDocumentFragment();
+  for (const sticker of stickers) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "collection-tray-item";
+    button.dataset.collectionStickerId = sticker.id;
+    button.setAttribute("role", "listitem");
+    button.setAttribute("aria-label", sticker.label || "シール");
+    button.title = sticker.label || "シール";
+
+    const image = document.createElement("img");
+    image.src = sticker.assetUrl;
+    image.alt = "";
+    image.draggable = false;
+    image.loading = "lazy";
+    button.append(image);
+    fragment.append(button);
+  }
+  collectionStickerTrayItems.replaceChildren(fragment);
+  updateCollectionTraySelection();
+  updateCollectionStickerTrayVisibility();
+}
+
+function availableCollectionTrayStickers() {
+  return collectionStickerOptions.filter((sticker) => Boolean(sticker.assetUrl));
+}
+
+function collectionStickerById(stickerId) {
+  return availableCollectionTrayStickers().find((sticker) => sticker.id === stickerId) || null;
+}
+
+function canPlaceCollectionSticker() {
+  return activeAlbumMode === "collection"
+    && activeSurface === "inside"
+    && !coverOpenAnimation
+    && !spreadJumpAnimation
+    && flipProgress <= 0.001
+    && (!stickerEditor || stickerEditor.hidden);
+}
+
+function updateCollectionStickerTrayVisibility() {
+  if (!collectionStickerTray) {
+    return;
+  }
+  const visible = activeAlbumMode === "collection"
+    && activeSurface === "inside"
+    && !coverOpenAnimation
+    && availableCollectionTrayStickers().length > 0;
+  collectionStickerTray.hidden = !visible;
+  document.body.classList.toggle("is-collection-tray-visible", visible);
+  if (!visible) {
+    pendingCollectionStickerId = null;
+    updateCollectionTraySelection();
+    cancelCollectionTrayDrag();
+  }
+}
+
+function setPendingCollectionSticker(stickerId) {
+  pendingCollectionStickerId = collectionStickerById(stickerId)?.id || null;
+  updateCollectionTraySelection();
+}
+
+function clearPendingCollectionSticker() {
+  pendingCollectionStickerId = null;
+  updateCollectionTraySelection();
+}
+
+function updateCollectionTraySelection() {
+  if (!collectionStickerTrayItems) {
+    return;
+  }
+  collectionStickerTrayItems.querySelectorAll("[data-collection-sticker-id]").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.collectionStickerId === pendingCollectionStickerId);
+  });
+}
+
+function beginCollectionTrayDrag(event, sticker) {
+  cancelCollectionTrayDrag();
+  setPendingCollectionSticker(sticker.id);
+  const ghost = document.createElement("img");
+  ghost.className = "collection-tray-ghost";
+  ghost.src = sticker.assetUrl;
+  ghost.alt = "";
+  ghost.draggable = false;
+  document.body.append(ghost);
+  collectionTrayDragState = {
+    sticker,
+    ghost,
+    pointerId: event.pointerId,
+  };
+  updateCollectionTrayGhost(event);
+  document.addEventListener("pointermove", handleCollectionTrayDragMove);
+  document.addEventListener("pointerup", handleCollectionTrayDragEnd);
+  document.addEventListener("pointercancel", handleCollectionTrayDragCancel);
+}
+
+function updateCollectionTrayGhost(event) {
+  if (!collectionTrayDragState?.ghost) {
+    return;
+  }
+  collectionTrayDragState.ghost.style.left = `${event.clientX}px`;
+  collectionTrayDragState.ghost.style.top = `${event.clientY}px`;
+}
+
+function handleCollectionTrayDragMove(event) {
+  if (!collectionTrayDragState || event.pointerId !== collectionTrayDragState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  updateCollectionTrayGhost(event);
+}
+
+function handleCollectionTrayDragEnd(event) {
+  if (!collectionTrayDragState || event.pointerId !== collectionTrayDragState.pointerId) {
+    return;
+  }
+  event.preventDefault();
+  const sticker = collectionTrayDragState.sticker;
+  finishCollectionTrayDrag();
+  if (placeCollectionStickerFromClientPoint(sticker, event.clientX, event.clientY)) {
+    clearPendingCollectionSticker();
+  } else {
+    setPendingCollectionSticker(sticker.id);
+  }
+}
+
+function handleCollectionTrayDragCancel(event) {
+  if (!collectionTrayDragState || event.pointerId !== collectionTrayDragState.pointerId) {
+    return;
+  }
+  finishCollectionTrayDrag();
+}
+
+function finishCollectionTrayDrag() {
+  if (!collectionTrayDragState) {
+    return;
+  }
+  collectionTrayDragState.ghost?.remove();
+  collectionTrayDragState = null;
+  document.removeEventListener("pointermove", handleCollectionTrayDragMove);
+  document.removeEventListener("pointerup", handleCollectionTrayDragEnd);
+  document.removeEventListener("pointercancel", handleCollectionTrayDragCancel);
+}
+
+function cancelCollectionTrayDrag() {
+  finishCollectionTrayDrag();
+}
+
+function placePendingCollectionStickerFromEvent(event) {
+  if (!pendingCollectionStickerId || activeAlbumMode !== "collection") {
+    return false;
+  }
+  const sticker = collectionStickerById(pendingCollectionStickerId);
+  if (!sticker) {
+    clearPendingCollectionSticker();
+    return false;
+  }
+  const placed = placeCollectionStickerFromClientPoint(sticker, event.clientX, event.clientY);
+  if (placed) {
+    event.preventDefault();
+    clearPendingCollectionSticker();
+  }
+  return placed;
+}
+
+function pickCollectionAlbumPage(event) {
+  return pickCollectionAlbumPageAt(event.clientX, event.clientY);
+}
+
+function pickCollectionAlbumPageAt(clientX, clientY) {
+  if (!canPlaceCollectionSticker()) {
+    return null;
+  }
+  const rect = canvas.getBoundingClientRect();
+  pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  pageRaycaster.setFromCamera(pointerNdc, camera);
+  const hits = pageRaycaster.intersectObjects([rightPage, leftPageInner], false);
+  const hit = hits.find((item) => item.uv);
+  if (!hit) {
+    return null;
+  }
+  return {
+    mesh: hit.object,
+    pageNumber: pageNumberForPickedPage(hit.object),
+    uv: hit.uv.clone(),
+  };
+}
+
+function placeCollectionStickerFromClientPoint(sticker, clientX, clientY) {
+  if (document.elementFromPoint(clientX, clientY) !== canvas) {
+    return false;
+  }
+  const pickedPage = pickCollectionAlbumPageAt(clientX, clientY);
+  if (!pickedPage) {
+    return false;
+  }
+  addCollectionStickerPlacement(sticker, pickedPage.pageNumber, pickedPage.uv);
+  return true;
+}
+
+function addCollectionStickerPlacement(sticker, pageNumber, uv) {
+  const placements = getCollectionPagePlacements(pageNumber);
+  const placement = {
+    id: createPlacementId(),
+    stickerId: sticker.id,
+    label: sticker.label,
+    assetUrl: sticker.assetUrl,
+    x: THREE.MathUtils.clamp(uv.x * 100, 6, 94),
+    y: THREE.MathUtils.clamp((1 - uv.y) * 100, 6, 94),
+    scale: defaultStickerScale(sticker) * 0.86,
+    rotation: 0,
+    z: nextPlacementZ(placements),
+  };
+  placements.push(placement);
+  saveCollectionAlbumState();
+  refreshPageTemplateTextures();
+  return placement;
+}
+
 function setupStickerEditor() {
   if (!stickerEditor || !editorPageCanvas) {
     return;
@@ -913,6 +1189,7 @@ async function loadStickerPlanForEditor() {
       .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
       .map((sticker) => ({ ...sticker }));
     syncEditorPlacementsWithStickerPlan();
+    syncCollectionPlacementsWithStickerPlan();
     editorPageDefinitions = buildEditorPageDefinitions();
     collectionPageDefinitions = buildCollectionPageDefinitions();
     activeBookPage = spreadStartForPage(Math.min(activeBookPage, editorPageCount()));
@@ -926,6 +1203,7 @@ async function loadStickerPlanForEditor() {
       setupEditorGameFilter();
       renderEditorShell();
     }
+    renderCollectionStickerTray();
     refreshPageTemplateTextures();
     updateControlState();
     setupTuningPanel();
@@ -961,6 +1239,30 @@ function syncEditorPlacementsWithStickerPlan() {
   }
   if (changed) {
     editorStateDirty = true;
+  }
+}
+
+function syncCollectionPlacementsWithStickerPlan() {
+  const stickersById = new Map(availableCollectionTrayStickers().map((sticker) => [sticker.id, sticker]));
+  let changed = false;
+  for (const placements of Object.values(collectionAlbumState.pages || {})) {
+    if (!Array.isArray(placements)) {
+      continue;
+    }
+    for (const placement of placements) {
+      const sticker = stickersById.get(placement.stickerId);
+      if (!sticker) {
+        continue;
+      }
+      if (placement.assetUrl !== sticker.assetUrl || placement.label !== sticker.label) {
+        placement.assetUrl = sticker.assetUrl;
+        placement.label = sticker.label;
+        changed = true;
+      }
+    }
+  }
+  if (changed) {
+    saveCollectionAlbumState();
   }
 }
 
@@ -1940,6 +2242,8 @@ function setAlbumMode(mode) {
   slider.value = "0";
   selectedPlacementId = null;
   stickerDragState = null;
+  pendingCollectionStickerId = null;
+  cancelCollectionTrayDrag();
   assignSpineTexture();
   assignSideTabTextures();
   applyAlbumLayout();
@@ -1970,6 +2274,8 @@ function setBookSurface(surface, page = activeBookPage) {
     spreadPosition = spreadPositionForBookPage(nextPage);
     selectedPlacementId = null;
     stickerDragState = null;
+    pendingCollectionStickerId = null;
+    cancelCollectionTrayDrag();
   }
   applyVariantState();
 }
@@ -1988,6 +2294,8 @@ function startCoverOpen(page = activeBookPage) {
   spreadPosition = spreadPositionForBookPage(nextPage);
   selectedPlacementId = null;
   stickerDragState = null;
+  pendingCollectionStickerId = null;
+  cancelCollectionTrayDrag();
   closeBookPageJump();
   refreshPageTemplateTextures();
   updateControlState();
@@ -1996,6 +2304,7 @@ function startCoverOpen(page = activeBookPage) {
     startTime: performance.now(),
     duration: COVER_OPEN_DURATION,
   };
+  updateCollectionStickerTrayVisibility();
   renderCoverOpenTransition(0);
   syncUrl();
 }
@@ -2012,6 +2321,7 @@ function cancelCoverOpen() {
     assignTextureObject(backPage, getPageTemplateTexture("left"));
     slider.disabled = false;
   }
+  updateCollectionStickerTrayVisibility();
 }
 
 function applyBookPageSelection(nextPage, options = {}) {
@@ -2224,6 +2534,17 @@ function getPagePlacements(page) {
   return editorState.pages[key];
 }
 
+function getCollectionPagePlacements(page) {
+  const key = String(page);
+  if (!collectionAlbumState.pages || typeof collectionAlbumState.pages !== "object") {
+    collectionAlbumState.pages = {};
+  }
+  if (!Array.isArray(collectionAlbumState.pages[key])) {
+    collectionAlbumState.pages[key] = [];
+  }
+  return collectionAlbumState.pages[key];
+}
+
 function getActivePageDrawingStrokes() {
   return getPageDrawingStrokes(activeEditorPage);
 }
@@ -2282,8 +2603,31 @@ function loadEditorState() {
   }
 }
 
+function loadCollectionAlbumState() {
+  try {
+    const raw = localStorage.getItem(COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY);
+    if (!raw) {
+      return createEmptyCollectionAlbumState();
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !parsed.pages || typeof parsed.pages !== "object") {
+      return createEmptyCollectionAlbumState();
+    }
+    return {
+      version: parsed.version || 1,
+      pages: parsed.pages,
+    };
+  } catch {
+    return createEmptyCollectionAlbumState();
+  }
+}
+
 function createEmptyEditorState() {
   return { version: EDITOR_STATE_VERSION, pages: {}, drawings: {}, defaultContentSeedVersion: 0 };
+}
+
+function createEmptyCollectionAlbumState() {
+  return { version: COLLECTION_ALBUM_STATE_VERSION, pages: {} };
 }
 
 function saveEditorState() {
@@ -2296,6 +2640,18 @@ function saveEditorState() {
     localStorage.setItem(EDITOR_STORAGE_KEY, JSON.stringify(editorState));
   } catch {
     // Local storage can be unavailable in private contexts; editing still works for the session.
+  }
+}
+
+function saveCollectionAlbumState() {
+  try {
+    collectionAlbumState.version = COLLECTION_ALBUM_STATE_VERSION;
+    if (!collectionAlbumState.pages || typeof collectionAlbumState.pages !== "object") {
+      collectionAlbumState.pages = {};
+    }
+    localStorage.setItem(COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY, JSON.stringify(collectionAlbumState));
+  } catch {
+    // Keep collection placement editing available even if storage is blocked.
   }
 }
 
@@ -3248,9 +3604,9 @@ function drawScallopedPanelPath(ctx, x, y, width, height, radius, scallopDepth, 
 
 function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
   const bandX = 98;
-  const bandY = PAGE_TEXTURE_H - 212;
+  const bandY = PAGE_TEXTURE_H - 164;
   const bandW = PAGE_TEXTURE_W - 196;
-  const bandH = 104;
+  const bandH = 56;
   const bandGradient = ctx.createLinearGradient(0, bandY, 0, bandY + bandH);
   bandGradient.addColorStop(0, tintColor(theme.slotBand.fill, 0.18));
   bandGradient.addColorStop(0.72, theme.slotBand.fill);
@@ -3265,44 +3621,35 @@ function drawCollectionSlotBand(ctx, theme, pageTheme, side) {
   drawCanvasRoundedRect(ctx, bandX + 8, bandY + 8, bandW - 16, bandH - 16, 22);
   ctx.stroke();
 
-  const slotCount = 5;
-  const slotGap = 22;
-  const slotW = (bandW - 78 - slotGap * (slotCount - 1)) / slotCount;
-  const slotH = 64;
-  const slotY = bandY + 18;
-  const innerSafeSlotIndex = side === "left" ? slotCount - 1 : 0;
-  for (let i = 0; i < slotCount; i += 1) {
-    if (i === innerSafeSlotIndex) {
-      continue;
+  ctx.strokeStyle = "rgba(255, 248, 218, 0.44)";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(bandX + 46, bandY + bandH * 0.52);
+  for (let i = 0; i <= 12; i += 1) {
+    const x = bandX + 46 + i * ((bandW - 92) / 12);
+    const y = bandY + bandH * 0.52 + Math.sin(i * 0.86) * 5;
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
     }
-    const x = bandX + 39 + i * (slotW + slotGap);
-    ctx.fillStyle = theme.slotBand.slot;
-    ctx.strokeStyle = theme.slotBand.stroke;
-    ctx.lineWidth = 2.5;
-    drawCanvasRoundedRect(ctx, x, slotY, slotW, slotH, 17);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.26)";
-    ctx.beginPath();
-    ctx.ellipse(x + slotW * 0.68, slotY + slotH * 0.24, slotW * 0.22, slotH * 0.12, -0.24, 0, Math.PI * 2);
-    ctx.fill();
   }
-  drawCollectionSlotSafeArea(ctx, bandX, bandY, bandW, bandH, slotW, slotGap, innerSafeSlotIndex, pageTheme);
+  ctx.stroke();
 
-  const decoY = bandY + bandH - 12;
+  const decoY = bandY + bandH * 0.5;
   const decoKinds = pageTheme.motifSet === "ocean"
     ? ["shell", "wave", "star", "bubble"]
     : pageTheme.motifSet === "nature"
       ? ["leaf", "flower", "star", "leaf"]
       : ["flower", "leaf", "star", "bubble"];
-  for (let i = 0; i < 9; i += 1) {
-    const x = bandX + 76 + i * ((bandW - 152) / 8);
+  for (let i = 0; i < 11; i += 1) {
+    const x = bandX + 72 + i * ((bandW - 144) / 10);
     const kind = decoKinds[i % decoKinds.length];
-    drawCollectionMiniMotif(ctx, kind, x, decoY + (i % 2) * 3, 12 + (i % 3) * 2, pageTheme.accent, i * 0.3);
+    drawCollectionMiniMotif(ctx, kind, x, decoY + ((i % 2) - 0.5) * 9, 11 + (i % 3) * 2, pageTheme.accent, i * 0.28);
   }
   if (side === "right" && pageTheme.motifSet === "ocean") {
-    drawCollectionMiniMotif(ctx, "wave", bandX + bandW - 122, bandY + 28, 18, pageTheme.accent, 0);
-    drawCollectionMiniMotif(ctx, "shell", bandX + bandW - 76, bandY + 34, 15, "#fff3d0", 0);
+    drawCollectionMiniMotif(ctx, "wave", bandX + bandW - 122, bandY + 28, 15, pageTheme.accent, 0);
+    drawCollectionMiniMotif(ctx, "shell", bandX + bandW - 76, bandY + 32, 13, "#fff3d0", 0);
   }
   ctx.restore();
 }
@@ -3656,7 +4003,7 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
   const contentX = 168;
   const contentY = 210;
   const contentW = PAGE_TEXTURE_W - 336;
-  const slotBandTop = PAGE_TEXTURE_H - 254;
+  const slotBandTop = PAGE_TEXTURE_H - 202;
   const contentH = slotBandTop - contentY - 26;
   const cols = 3;
   const rows = 4;
@@ -3682,7 +4029,7 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
     const x = contentX + col * (cellW + gapX);
     const y = contentY + row * (cellH + gapY);
     const found = sticker.unlock === "found";
-    drawCollectionStickerCard(ctx, texture, palette, sticker, globalIndex, x, y, cellW, cellH, found);
+    drawCollectionStickerCard(ctx, texture, palette, sticker, globalIndex, x, y, cellW, cellH, found, pageNumber);
   }
 
   if (!stickers.length) {
@@ -3691,11 +4038,12 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
     ctx.textAlign = "center";
     ctx.fillText("シールは まだありません", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
   }
+  drawCollectionPlacementLayer(ctx, texture, pageNumber);
   ctx.restore();
   texture.needsUpdate = true;
 }
 
-function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, width, height, found) {
+function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, width, height, found, pageNumber) {
   const cardTheme = palette.collection.card;
   ctx.save();
   ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
@@ -3717,7 +4065,7 @@ function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, 
   const imageX = x + (width - imageSize) / 2;
   const imageY = y + 50;
   if (sticker.assetUrl) {
-    drawAsyncCollectionStickerImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found);
+    drawAsyncCollectionStickerImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found, pageNumber);
   } else {
     drawMissingStickerBadge(ctx, imageX, imageY, imageSize, imageSize);
   }
@@ -3729,7 +4077,7 @@ function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, 
   ctx.restore();
 }
 
-function drawAsyncCollectionStickerImage(ctx, texture, src, x, y, width, height, found) {
+function drawAsyncCollectionStickerImage(ctx, texture, src, x, y, width, height, found, pageNumber) {
   loadStickerImage(src)
     .then((image) => {
       ctx.save();
@@ -3738,6 +4086,55 @@ function drawAsyncCollectionStickerImage(ctx, texture, src, x, y, width, height,
         ctx.filter = "grayscale(1) saturate(0.15)";
       }
       drawImageContain(ctx, image, x, y, width, height);
+      ctx.restore();
+      queueCollectionPlacementLayer(ctx, texture, pageNumber);
+      texture.needsUpdate = true;
+    })
+    .catch(() => {});
+}
+
+function queueCollectionPlacementLayer(ctx, texture, pageNumber) {
+  if (!getCollectionPagePlacements(pageNumber).length) {
+    return;
+  }
+  if (texture.userData.collectionPlacementTimer) {
+    window.clearTimeout(texture.userData.collectionPlacementTimer);
+  }
+  texture.userData.collectionPlacementTimer = window.setTimeout(() => {
+    texture.userData.collectionPlacementTimer = 0;
+    drawCollectionPlacementLayer(ctx, texture, pageNumber);
+  }, 0);
+}
+
+function drawCollectionPlacementLayer(ctx, texture, pageNumber) {
+  const placements = getCollectionPagePlacements(pageNumber)
+    .filter((placement) => placement.assetUrl)
+    .sort((a, b) => a.z - b.z);
+  for (const placement of placements) {
+    drawAsyncCollectionPlacedSticker(ctx, texture, placement);
+  }
+  texture.needsUpdate = true;
+}
+
+function drawAsyncCollectionPlacedSticker(ctx, texture, placement) {
+  loadStickerImage(placement.assetUrl)
+    .then((image) => {
+      const baseW = PAGE_TEXTURE_W * 0.18 * placement.scale;
+      const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+      const drawW = baseW;
+      const drawH = drawW / Math.max(0.2, aspect);
+      const x = (placement.x / 100) * PAGE_TEXTURE_W;
+      const y = (placement.y / 100) * PAGE_TEXTURE_H;
+      const paddedImage = getPaddedStickerImage(image);
+      const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
+      const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+      const paddedDrawW = drawW * (paddedImage.width / sourceWidth);
+      const paddedDrawH = drawH * (paddedImage.height / sourceHeight);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
+      drawStickerWhiteOutline(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
+      ctx.drawImage(paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
       texture.needsUpdate = true;
     })
@@ -5226,6 +5623,7 @@ function updateAlbumModeUi() {
       activeAlbumMode === "collection" ? "シールちょうをひらく" : "シールアルバムをひらく",
     );
   }
+  updateCollectionStickerTrayVisibility();
 }
 
 function updateSpreadJumpControls() {
@@ -5277,6 +5675,7 @@ function startSpreadJump(targetSpread, options = {}) {
   flutterPages.group.visible = true;
   clock.getDelta();
   updateSpreadJumpControls();
+  updateCollectionStickerTrayVisibility();
 }
 
 function flutterPageCountForDistance(distance) {
@@ -5304,6 +5703,7 @@ function cancelSpreadJump() {
     page.frontMaterial.opacity = 0;
     page.backMaterial.opacity = 0;
   }
+  updateCollectionStickerTrayVisibility();
 }
 
 function updateSpreadJump() {
@@ -5341,6 +5741,7 @@ function updateSpreadJump() {
     setupTuningPanel();
     updatePage(flipProgress);
     updateSpreadJumpControls();
+    updateCollectionStickerTrayVisibility();
     syncUrl();
   }
 
@@ -5488,6 +5889,7 @@ function updateCoverOpen(delta) {
     assignTextureObject(backPage, getPageTemplateTexture("left"));
     slider.disabled = false;
     updatePage(0);
+    updateCollectionStickerTrayVisibility();
     syncUrl();
   }
   return true;

@@ -12,23 +12,19 @@
   'use strict';
 
   // ── PWA SW更新チェック（全ページ共通）──
-  // SW更新時に自動リロードし、ユーザーが古いコードを使い続けないようにする
-  // iOS ホーム画面 PWA では controllerchange が発火しにくいので postMessage も併用
-  if ('serviceWorker' in navigator) {
-    var _swRefreshing = false;
-    function _ponoSwReload() {
-      if (_swRefreshing) return;
-      _swRefreshing = true;
-      window.location.reload();
+  // SW更新時の自動リロード等の処理は common/sw-update.js に集約。
+  // sw-update.js が未ロードのページでも動作するよう動的注入する。
+  if ('serviceWorker' in navigator && !window._ponoSwUpdateInited) {
+    var _sup = document.querySelector('script[data-pono-sw-update], script[src*="/common/sw-update.js"], script[src$="common/sw-update.js"]');
+    if (!_sup) {
+      try {
+        var _s = document.createElement('script');
+        _s.src = '/common/sw-update.js';
+        _s.defer = true;
+        _s.setAttribute('data-pono-sw-update', '1');
+        (document.head || document.documentElement).appendChild(_s);
+      } catch (e) {}
     }
-    navigator.serviceWorker.addEventListener('controllerchange', _ponoSwReload);
-    navigator.serviceWorker.addEventListener('message', function(e) {
-      if (e && e.data && e.data.type === 'sw-updated') _ponoSwReload();
-    });
-    // ゲームページ起動時にSW更新チェック
-    navigator.serviceWorker.ready.then(function(reg) {
-      reg.update();
-    });
   }
 
   const style = document.createElement('style');
