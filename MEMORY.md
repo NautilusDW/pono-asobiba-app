@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-20T08:31:25Z - LP ゲームカード5枚の本体ビジュアル画像を play.html メニュー用 thumb_*.webp に統一 (maze は誤参照修正) + sw.js CACHE_VERSION バンプ 1412→1413、 視覚確認エージェント + 実装エージェント + クロスレビューエージェントの3段構成で進めた
+- **タスク**: LP ゲームカード5枚の本体ビジュアル画像を play.html メニュー用 thumb_*.webp に統一 (maze は誤参照修正) + sw.js CACHE_VERSION バンプ 1412→1413、 視覚確認エージェント + 実装エージェント + クロスレビューエージェントの3段構成で進めた
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 6
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 5, "Bash": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-06-20T08:07:08Z - LP play-cards review fixes (oto image swap to title_back.jpg, scale 0.92->0.96, bento bg-position right 8%, CACHE_VERSION 1410->1411)
+- **タスク**: LP play-cards review fixes (oto image swap to title_back.jpg, scale 0.92->0.96, bento bg-position right 8%, CACHE_VERSION 1410->1411)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 134
+- **エラー数**: 18
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 62, "ToolSearch": 1, "Edit": 7, "Write": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-20T07:59:12Z - LP play-cards 散らばりレイアウト + bubble微修正 + pc-visual キャラ画像化 + モーダル画像重複回避 + sw v1410
 - **タスク**: LP play-cards 散らばりレイアウト + bubble微修正 + pc-visual キャラ画像化 + モーダル画像重複回避 + sw v1410
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 9, "Agent": 20, "Bash": 35, "ToolSearch": 1, "Grep": 1, "Edit": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-20T01:06:59Z - capture.js overlay 自身が PNG に焼き込まれていたバグを修正 (data-capture-hide 属性 + shoot 中 visibility:hidden の 2 重防御)、 CACHE_VERSION 1387→1388、 overlay-not-baked regression テスト追加 (bento + puzzle pass)、 実 PNG 視覚確認で overlay 不在を確認
-- **タスク**: capture.js overlay 自身が PNG に焼き込まれていたバグを修正 (data-capture-hide 属性 + shoot 中 visibility:hidden の 2 重防御)、 CACHE_VERSION 1387→1388、 overlay-not-baked regression テスト追加 (bento + puzzle pass)、 実 PNG 視覚確認で overlay 不在を確認
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 94
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 29, "Grep": 8, "Read": 10, "Glob": 3, "Agent": 35, "ToolSearch": 1, "Edit": 6, "Write": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-20T00:52:16Z - クリック→リロード/マルチタップ要求バグ修正: SW二重controllerchange listener統合 + play.html isCardTap programmatic scroll除外 + tapIntro fade-out JS/CSS pointer-events同期 + safeReload 8s deadline。 5並列エージェント + 2クロスレビュー (mutation検査含む)、 CACHE_VERSION 1383→1386、 E2E regression 0、 push 完了
-- **タスク**: クリック→リロード/マルチタップ要求バグ修正: SW二重controllerchange listener統合 + play.html isCardTap programmatic scroll除外 + tapIntro fade-out JS/CSS pointer-events同期 + safeReload 8s deadline。 5並列エージェント + 2クロスレビュー (mutation検査含む)、 CACHE_VERSION 1383→1386、 E2E regression 0、 push 完了
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 52
-- **エラー数**: 3
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Agent": 16, "Bash": 24, "ToolSearch": 1, "Grep": 1, "Edit": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
