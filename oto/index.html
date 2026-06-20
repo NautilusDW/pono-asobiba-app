@@ -3741,7 +3741,7 @@
   .tut-hand.is-ready { animation: none; }
   .tut-hand.is-pointing { animation: otoTutPoint 0.72s ease-in-out infinite; }
   .tut-hand.is-tapping { animation: otoTutTap 1.05s ease-in-out infinite; }
-  .tut-hand.is-pressing { animation: otoTutPressTilt 0.98s ease-out 1 both; }
+  .tut-hand.is-pressing { animation: otoTutPressTilt 1.18s cubic-bezier(0.22, 0.9, 0.24, 1) 1 both; }
   .tut-hand img {
     display:block;
     width:100%; height:100%;
@@ -3762,12 +3762,12 @@
       transform:
         translate(-50%, -50%)
         rotate(var(--tut-hand-rotate, 0deg))
-        translateY(-4px)
+        translateY(0)
         perspective(240px)
         rotateX(0deg)
         scale(var(--tut-hand-scale, 1));
     }
-    42%, 62% {
+    30%, 52% {
       transform:
         translate(-50%, -50%)
         rotate(calc(var(--tut-hand-rotate, 0deg) - 7deg))
@@ -3775,6 +3775,15 @@
         perspective(240px)
         rotateX(18deg)
         scale(calc(var(--tut-hand-scale, 1) * 0.95));
+    }
+    76% {
+      transform:
+        translate(-50%, -50%)
+        rotate(calc(var(--tut-hand-rotate, 0deg) - 2deg))
+        translateY(1px)
+        perspective(240px)
+        rotateX(5deg)
+        scale(calc(var(--tut-hand-scale, 1) * 0.99));
     }
   }
   @keyframes tutSpotPulse {
@@ -13287,6 +13296,12 @@ function _showOtoTutorialHand(step, rect, anchorEl) {
     }
     if (_otoTutorialState) _otoTutorialState.pressedEl = null;
   }, 760));
+  timers.push(setTimeout(function() {
+    if (!hand || !hand.classList || hand.classList.contains('hidden')) return;
+    if (!hand.classList.contains('is-pressing')) return;
+    hand.classList.remove('is-pressing');
+    hand.classList.add('is-ready');
+  }, 1220));
 }
 function _finishOtoTutorial(markSeen, continueFlow) {
   if (!_otoTutorialState) return;
