@@ -2059,9 +2059,10 @@
       // Start positioned at the middle copy so user can scroll either way.
       cardList.scrollTop = oneSetH();
 
-      let teleporting = false;
       let snapTimer = null;
-      let snapping = false;     // true while we're animating to a snap target
+      cardScrollState.teleporting = false;
+      cardScrollState.snapping = false;     // true while we're animating to a snap target
+      let lastScrollTop = cardList.scrollTop;
 
       // Custom easing animation — feels softer than browser smooth-scroll.
       const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
@@ -2069,7 +2070,7 @@
         const start = cardList.scrollTop;
         const dist = targetTop - start;
         if (Math.abs(dist) < 0.5) return;
-        snapping = true;
+        cardScrollState.snapping = true;
         const t0 = performance.now();
         const tick = (now) => {
           const p = Math.min(1, (now - t0) / duration);
@@ -2077,7 +2078,7 @@
           if (p < 1) {
             requestAnimationFrame(tick);
           } else {
-            snapping = false;
+            cardScrollState.snapping = false;
           }
         };
         requestAnimationFrame(tick);
@@ -2085,7 +2086,7 @@
 
       // After scrolling stops, glide to the nearest card boundary.
       const snapToNearest = () => {
-        if (teleporting || snapping) return;
+        if (cardScrollState.teleporting || cardScrollState.snapping) return;
         const cardH = cards[0].offsetHeight;
         const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
         const step = cardH + gap;
@@ -2096,22 +2097,34 @@
       };
 
       cardList.addEventListener('scroll', () => {
-        if (teleporting) return;
-        const set = oneSetH();
         const t = cardList.scrollTop;
+        // Accumulate user-driven scroll only — exclude programmatic snap/
+        // teleport so isCardTap doesn't misclassify a tap as a scroll when
+        // animateScrollTo or the wrap-around teleport fires between
+        // pointerdown and click. cardPointerDown != null gates the cost
+        // to the window where we actually care.
+        if (cardPointerDown && !cardScrollState.teleporting && !cardScrollState.snapping) {
+          cardScrollState.userScrollDelta += (t - lastScrollTop);
+        }
+        lastScrollTop = t;
+
+        if (cardScrollState.teleporting) return;
+        const set = oneSetH();
         if (t < set * 0.5) {
-          teleporting = true;
+          cardScrollState.teleporting = true;
           cardList.scrollTop = t + set;
-          requestAnimationFrame(() => { teleporting = false; });
+          lastScrollTop = cardList.scrollTop;
+          requestAnimationFrame(() => { cardScrollState.teleporting = false; });
           return;
         } else if (t > set * 1.5) {
-          teleporting = true;
+          cardScrollState.teleporting = true;
           cardList.scrollTop = t - set;
-          requestAnimationFrame(() => { teleporting = false; });
+          lastScrollTop = cardList.scrollTop;
+          requestAnimationFrame(() => { cardScrollState.teleporting = false; });
           return;
         }
         // Debounced snap: wait for the user to stop scrolling.
-        if (snapping) return;
+        if (cardScrollState.snapping) return;
         clearTimeout(snapTimer);
         snapTimer = setTimeout(snapToNearest, 140);
       }, { passive: true });
@@ -2134,7 +2147,9 @@
 
     function isTapIntroBlockingInput() {
       const intro = document.getElementById('tapIntro');
-      return !!(intro && !intro.hidden);
+      if (!intro || intro.hidden) return false;
+      if (intro.classList.contains('is-closing')) return false;
+      return true;
     }
 
     function onCardPointerDown(e) {
@@ -2147,12 +2162,14 @@
       const card = e.target.closest('.game-card');
       if (!card || (typeof e.button === 'number' && e.button > 0)) return;
       clearTimeout(cardPointerDownTimer);
+      cardScrollState.userScrollDelta = 0;
       cardPointerDown = {
         x: e.clientX,
         y: e.clientY,
         scrollTop: cardList.scrollTop,
         idx: card.dataset.idx,
-        rep: card.dataset.rep
+        rep: card.dataset.rep,
+        t: (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()
       };
       cardPointerDownTimer = setTimeout(clearCardPointerDown, CARD_TAP_STATE_TTL_MS);
     }
@@ -2167,10 +2184,19 @@
       if (!cardPointerDown) return true;
       const dx = Math.abs(e.clientX - cardPointerDown.x);
       const dy = Math.abs(e.clientY - cardPointerDown.y);
-      const ds = Math.abs(cardList.scrollTop - cardPointerDown.scrollTop);
+      // User-only scroll delta — programmatic snap/teleport between
+      // pointerdown and click is excluded by the scroll listener above.
+      // Falls back to raw delta if the listener never ran (defensive).
+      const ds = Math.abs(cardScrollState.userScrollDelta);
       const sameCard = card.dataset.idx === cardPointerDown.idx && card.dataset.rep === cardPointerDown.rep;
+      const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const heldMs = now - (cardPointerDown.t || now);
       clearCardPointerDown();
-      return sameCard && dx <= CARD_TAP_MOVE_TOLERANCE && dy <= CARD_TAP_MOVE_TOLERANCE && ds <= CARD_TAP_MOVE_TOLERANCE;
+      if (!sameCard) return false;
+      if (dx > CARD_TAP_MOVE_TOLERANCE || dy > CARD_TAP_MOVE_TOLERANCE) return false;
+      // Fast-tap override: short presses bypass the scroll-delta gate.
+      if (heldMs <= CARD_TAP_FAST_MS) return true;
+      return ds <= CARD_TAP_MOVE_TOLERANCE;
     }
 
     function onCardClick(e) {

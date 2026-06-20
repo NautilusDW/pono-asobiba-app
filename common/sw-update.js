@@ -39,12 +39,26 @@
   } catch (e) {}
 
   // ── Auto-reload guard (controllerchange fires after SKIP_WAITING) ──
+  // Gesture-aware: if a pointer/keyboard interaction is in flight, delay the
+  // reload so a user click can navigate first instead of being eaten by reload.
+  var POINTER_GUARD_MS = 1500;
+  var lastPointerTs = 0;
+  try {
+    ['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend', 'keydown'].forEach(function (ev) {
+      document.addEventListener(ev, function () { lastPointerTs = Date.now(); }, { capture: true, passive: true });
+    });
+  } catch (e) {}
   var refreshing = false;
-  function reloadOnce() {
+  function safeReload() {
     if (refreshing) return;
+    if ((Date.now() - lastPointerTs) < POINTER_GUARD_MS) {
+      setTimeout(safeReload, POINTER_GUARD_MS);
+      return;
+    }
     refreshing = true;
     window.location.reload();
   }
+  function reloadOnce() { safeReload(); }
   navigator.serviceWorker.addEventListener('controllerchange', reloadOnce);
   // iOS PWA: legacy fallback path used elsewhere in the codebase.
   navigator.serviceWorker.addEventListener('message', function (e) {
