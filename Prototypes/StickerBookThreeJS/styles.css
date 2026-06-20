@@ -1684,11 +1684,11 @@ body.is-collection-album .album-mode-toggle {
   }
 
   body.is-collection-album .collection-sticker-tray {
-    bottom: max(20px, calc(env(safe-area-inset-bottom) + 20px));
+    bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px));
   }
 
   body.is-collection-album.is-collection-tray-visible .album-mode-toggle {
-    bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px));
+    bottom: max(136px, calc(env(safe-area-inset-bottom) + 136px));
   }
 
   .sticker-editor.is-draw-mode .editor-controls {
