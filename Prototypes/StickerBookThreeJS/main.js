@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-732";
+const ASSET_VERSION = "20260620-733";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -276,6 +276,8 @@ const bookPrevPage = document.getElementById("bookPrevPage");
 const bookNextPage = document.getElementById("bookNextPage");
 const bookPageLabel = document.getElementById("bookPageLabel");
 const bookPageJump = document.getElementById("bookPageJump");
+const topBackButton = document.getElementById("topBackButton");
+const topSettingsButton = document.getElementById("topSettingsButton");
 const albumModeToggle = document.getElementById("albumModeToggle");
 const collectionStickerTray = document.getElementById("collectionStickerTray");
 const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
@@ -737,6 +739,21 @@ for (const button of spreadJumpButtons) {
   });
 }
 
+topBackButton?.addEventListener("click", () => {
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  window.location.assign("../../play.html");
+});
+
+topSettingsButton?.addEventListener("click", () => {
+  const enabled = document.body.classList.toggle("is-prototype-controls");
+  topSettingsButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+});
+
+syncTopSettingsButton();
+
 albumModeToggle?.addEventListener("click", () => {
   setAlbumMode(activeAlbumMode === "collection" ? "free" : "collection");
 });
@@ -859,6 +876,13 @@ function setupBookPageControls() {
   });
 }
 
+function syncTopSettingsButton() {
+  topSettingsButton?.setAttribute(
+    "aria-pressed",
+    document.body.classList.contains("is-prototype-controls") ? "true" : "false",
+  );
+}
+
 function pageNumberForPickedPage(mesh) {
   if (mesh === leftPageInner) {
     return activeBookPage;
@@ -874,28 +898,16 @@ function setupCollectionStickerTray() {
     return;
   }
   collectionStickerTray.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-collection-sticker-id]");
+    const button = event.target.closest("[data-collection-toc-page]");
     if (!button || !collectionStickerTray.contains(button)) {
       return;
     }
-    const sticker = collectionStickerById(button.dataset.collectionStickerId);
-    if (!sticker) {
+    const pageStart = Number(button.dataset.collectionTocPage);
+    if (!Number.isFinite(pageStart)) {
       return;
     }
     event.preventDefault();
-    setPendingCollectionSticker(sticker.id);
-  });
-  collectionStickerTray.addEventListener("pointerdown", (event) => {
-    const button = event.target.closest("[data-collection-sticker-id]");
-    if (!button || !collectionStickerTray.contains(button) || event.pointerType === "touch") {
-      return;
-    }
-    const sticker = collectionStickerById(button.dataset.collectionStickerId);
-    if (!sticker || !canPlaceCollectionSticker()) {
-      return;
-    }
-    event.preventDefault();
-    beginCollectionTrayDrag(event, sticker);
+    navigateCollectionTocPage(pageStart);
   });
   renderCollectionStickerTray();
 }
@@ -904,28 +916,87 @@ function renderCollectionStickerTray() {
   if (!collectionStickerTray || !collectionStickerTrayItems) {
     return;
   }
-  const stickers = availableCollectionTrayStickers();
   const fragment = document.createDocumentFragment();
-  for (const sticker of stickers) {
+  const title = document.createElement("span");
+  title.className = "collection-toc-title";
+  title.textContent = "もくじ";
+  title.setAttribute("aria-hidden", "true");
+  fragment.append(title);
+
+  const pageCount = collectionTocPageCount();
+  const pairCount = Math.max(1, Math.ceil(pageCount / 2));
+  for (let pairIndex = 0; pairIndex < pairCount; pairIndex += 1) {
+    const pageStart = pairIndex * 2 + 1;
+    const pageEnd = Math.min(pageStart + 1, pageCount);
+    const progress = collectionTocProgress(pageStart, pageEnd);
+    const rangeLabel = pageEnd > pageStart ? `${pageStart}-${pageEnd}` : String(pageStart);
+    const progressRatio = progress.total > 0 ? progress.found / progress.total : 0;
+
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "collection-tray-item";
-    button.dataset.collectionStickerId = sticker.id;
-    button.setAttribute("role", "listitem");
-    button.setAttribute("aria-label", sticker.label || "シール");
-    button.title = sticker.label || "シール";
+    button.className = "collection-toc-card";
+    button.dataset.collectionTocPage = String(pageStart);
+    button.setAttribute("aria-label", `${rangeLabel}ページ ${progress.found}/${progress.total} みつけた`);
+    button.title = `${rangeLabel}ページ`;
 
-    const image = document.createElement("img");
-    image.src = sticker.assetUrl;
-    image.alt = "";
-    image.draggable = false;
-    image.loading = "lazy";
-    button.append(image);
+    const range = document.createElement("span");
+    range.className = "collection-toc-range";
+    range.textContent = rangeLabel;
+
+    const count = document.createElement("span");
+    count.className = "collection-toc-count";
+    count.textContent = `${progress.found}/${progress.total}`;
+
+    const bar = document.createElement("span");
+    bar.className = "collection-toc-bar";
+    bar.setAttribute("aria-hidden", "true");
+    const fill = document.createElement("span");
+    fill.className = "collection-toc-bar-fill";
+    fill.style.width = `${Math.round(progressRatio * 100)}%`;
+    bar.append(fill);
+
+    button.append(range, count, bar);
     fragment.append(button);
   }
   collectionStickerTrayItems.replaceChildren(fragment);
   updateCollectionTraySelection();
   updateCollectionStickerTrayVisibility();
+}
+
+function collectionTocPageCount() {
+  return Math.max(
+    1,
+    collectionPageDefinitions.length,
+    Math.ceil(collectionStickerOptions.length / COLLECTION_ALBUM_STICKERS_PER_PAGE),
+  );
+}
+
+function collectionTocProgress(pageStart, pageEnd) {
+  const startIndex = (Math.max(1, pageStart) - 1) * COLLECTION_ALBUM_STICKERS_PER_PAGE;
+  const endIndex = Math.min(
+    collectionStickerOptions.length,
+    Math.max(pageStart, pageEnd) * COLLECTION_ALBUM_STICKERS_PER_PAGE,
+  );
+  const stickers = collectionStickerOptions.slice(startIndex, endIndex);
+  return {
+    found: stickers.filter((sticker) => sticker.unlock === "found").length,
+    total: stickers.length,
+  };
+}
+
+function navigateCollectionTocPage(pageStart) {
+  const targetPage = spreadStartForPage(pageStart);
+  closeBookPageJump();
+  pendingCollectionStickerId = null;
+  cancelCollectionTrayDrag();
+  updateCollectionTraySelection();
+  if (activeSurface === "cover") {
+    setBookSurface("inside", targetPage);
+    return;
+  }
+  setBookPage(targetPage, {
+    turnMode: Math.abs(targetPage - activeBookPage) <= 2 ? "single" : "jump",
+  });
 }
 
 function availableCollectionTrayStickers() {
@@ -950,11 +1021,11 @@ function updateCollectionStickerTrayVisibility() {
     return;
   }
   const visible = activeAlbumMode === "collection"
-    && activeSurface === "inside"
     && !coverOpenAnimation
-    && availableCollectionTrayStickers().length > 0;
+    && collectionStickerOptions.length > 0;
   collectionStickerTray.hidden = !visible;
   document.body.classList.toggle("is-collection-tray-visible", visible);
+  updateCollectionTraySelection();
   if (!visible) {
     pendingCollectionStickerId = null;
     updateCollectionTraySelection();
@@ -976,8 +1047,11 @@ function updateCollectionTraySelection() {
   if (!collectionStickerTrayItems) {
     return;
   }
-  collectionStickerTrayItems.querySelectorAll("[data-collection-sticker-id]").forEach((button) => {
-    button.classList.toggle("is-selected", button.dataset.collectionStickerId === pendingCollectionStickerId);
+  const activeStart = activeSurface === "inside" ? spreadStartForPage(activeBookPage) : 0;
+  collectionStickerTrayItems.querySelectorAll("[data-collection-toc-page]").forEach((button) => {
+    const selected = Number(button.dataset.collectionTocPage) === activeStart;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-current", selected ? "page" : "false");
   });
 }
 
@@ -2402,6 +2476,7 @@ function updateBookPageControls() {
       bookPageControls.hidden = false;
     }
     renderBookPageJump();
+    updateCollectionTraySelection();
     return;
   }
   const rightPageNumber = rightBookPageNumber();
@@ -2423,6 +2498,7 @@ function updateBookPageControls() {
     bookPageControls.hidden = false;
   }
   renderBookPageJump();
+  updateCollectionTraySelection();
 }
 
 function toggleBookPageJump() {
@@ -4055,6 +4131,9 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
 
 function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, width, height, found, pageNumber) {
   const cardTheme = palette.collection.card;
+  const hasConcreteExistingAsset = sticker.assetStatus === "existing" && Boolean(sticker.assetUrl);
+  const canShowSpecificItem = hasConcreteExistingAsset || (found && Boolean(sticker.assetUrl));
+  const displayLabel = canShowSpecificItem ? sticker.label || "シール" : "なにかな？";
   ctx.save();
   ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
   ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
@@ -4074,7 +4153,7 @@ function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, 
   const imageSize = Math.min(width - 64, height - 82, 160);
   const imageX = x + (width - imageSize) / 2;
   const imageY = y + 50;
-  if (sticker.assetUrl) {
+  if (canShowSpecificItem) {
     drawAsyncCollectionStickerImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found, pageNumber);
   } else {
     drawMissingStickerBadge(ctx, imageX, imageY, imageSize, imageSize);
@@ -4083,7 +4162,7 @@ function drawCollectionStickerCard(ctx, texture, palette, sticker, index, x, y, 
   ctx.fillStyle = found ? palette.collection.text : "rgba(51, 68, 71, 0.54)";
   ctx.font = '800 23px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(sticker.label || "シール", x + width / 2, y + height - 24, width - 28);
+  ctx.fillText(displayLabel, x + width / 2, y + height - 24, width - 28);
   ctx.restore();
 }
 
