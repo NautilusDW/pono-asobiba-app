@@ -473,7 +473,12 @@ async function handleAiTts(request, env) {
   }
 
   const apiKey = env.GEMINI_API_KEY || env.GOOGLE_TTS_API_KEY;
-  if (!apiKey) return json(500, { error: 'GEMINI_API_KEY not configured on server' });
+  const hasServiceAccount = !!env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!apiKey && !hasServiceAccount) {
+    return json(500, {
+      error: 'No TTS auth configured. Set GEMINI_API_KEY / GOOGLE_TTS_API_KEY / GOOGLE_SERVICE_ACCOUNT_JSON.',
+    });
+  }
 
   const adminSecret = env.TTS_ADMIN_SECRET;
   if (adminSecret) {
@@ -486,10 +491,14 @@ async function handleAiTts(request, env) {
   catch { return json(400, { error: 'Invalid JSON' }); }
 
   if (body.mode === 'list-voices') {
+    const listKey = env.GOOGLE_TTS_API_KEY || apiKey;
+    if (!listKey) {
+      return json(501, { error: 'list-voices requires GEMINI_API_KEY or GOOGLE_TTS_API_KEY (OAuth2-only env not supported for this mode).' });
+    }
     const lang = body.languageCode || 'ja-JP';
     const listUrl = 'https://texttospeech.googleapis.com/v1/voices?languageCode='
       + encodeURIComponent(lang) + '&key='
-      + encodeURIComponent(env.GOOGLE_TTS_API_KEY || apiKey);
+      + encodeURIComponent(listKey);
     try {
       const lr = await fetch(listUrl);
       const ld = await lr.json();
@@ -650,14 +659,21 @@ async function handleAiTts(request, env) {
       return json(502, { error: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || 'Chirp 3: HD error', attemptChain });
     }
 
-    let result = await callModel(MODEL_PRIMARY);
-    attemptChain.push({ model: MODEL_PRIMARY, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
+    let result;
     let modelUsed = MODEL_PRIMARY;
+    if (apiKey) {
+      result = await callModel(MODEL_PRIMARY);
+      attemptChain.push({ model: MODEL_PRIMARY, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
 
-    if (isBlockedOrEmpty(result) && MODEL_PRIMARY !== MODEL_FALLBACK) {
-      result = await callModel(MODEL_FALLBACK);
-      attemptChain.push({ model: MODEL_FALLBACK, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
-      modelUsed = MODEL_FALLBACK;
+      if (isBlockedOrEmpty(result) && MODEL_PRIMARY !== MODEL_FALLBACK) {
+        result = await callModel(MODEL_FALLBACK);
+        attemptChain.push({ model: MODEL_FALLBACK, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
+        modelUsed = MODEL_FALLBACK;
+      }
+    } else {
+      // No Gemini key — skip Gemini entirely and fall through to Cloud TTS (OAuth2) chirp3/neural2.
+      result = { resp: { ok: false, status: 502 }, data: null, audioPart: null, finishReason: 'SKIPPED', blockReason: 'no_gemini_api_key' };
+      attemptChain.push({ model: MODEL_PRIMARY, skipped: 'no_gemini_api_key' });
     }
 
     if (isBlockedOrEmpty(result)) {
@@ -685,7 +701,10 @@ async function handleAiTts(request, env) {
     }
 
     if (!result.resp.ok) {
-      const safeMsg = (result.data && result.data.error && result.data.error.message) || 'Gemini TTS API error';
+      const skippedGemini = !apiKey;
+      const safeMsg = skippedGemini
+        ? 'Cloud TTS fallback failed (Gemini skipped: no API key)'
+        : (result.data && result.data.error && result.data.error.message) || 'Gemini TTS API error';
       return json(result.resp.status >= 500 ? 502 : result.resp.status, { error: safeMsg, attemptChain });
     }
     if (!result.audioPart) {
