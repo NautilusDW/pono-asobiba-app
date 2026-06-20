@@ -11951,14 +11951,25 @@ function renderFreeCupEditorControls() {
   //   tutorialContextToolbarEl() / tutorialCupOkButton() 等の getter が null を返して
   //   silent fail する問題を回避する。
   try {
-    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active
-        && tutorialState.step === 'cup-edit-try') {
-      if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(() => {
-          if (typeof tutorialReapplyCupEditTryMarks === 'function') tutorialReapplyCupEditTryMarks();
-        });
-      } else if (typeof tutorialReapplyCupEditTryMarks === 'function') {
-        tutorialReapplyCupEditTryMarks();
+    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
+      if (tutorialState.step === 'cup-edit-try') {
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => {
+            if (typeof tutorialReapplyCupEditTryMarks === 'function') tutorialReapplyCupEditTryMarks();
+          });
+        } else if (typeof tutorialReapplyCupEditTryMarks === 'function') {
+          tutorialReapplyCupEditTryMarks();
+        }
+      } else if (tutorialState.step === 'cup-edit') {
+        // v1412: cup-edit demo でも size/arrows mark が button 押下後の toolbar 再生成で消える問題を解消。
+        //   tutorialState._cupEditCue (size/arrows) に応じて該当 mark のみ再 apply。
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => {
+            if (typeof tutorialReapplyCupEditDemoMarks === 'function') tutorialReapplyCupEditDemoMarks();
+          });
+        } else if (typeof tutorialReapplyCupEditDemoMarks === 'function') {
+          tutorialReapplyCupEditDemoMarks();
+        }
       }
     }
   } catch (_) {}
@@ -12096,6 +12107,16 @@ function renderFreeLayoutControls() {
           });
         } else if (typeof tutorialReapplyCupEditTryMarks === 'function') {
           tutorialReapplyCupEditTryMarks();
+        }
+      } else if (tutorialState.step === 'cup-edit') {
+        // v1412: cup-edit demo の size/arrows mark を toolbar 再生成後も再 apply。
+        //   tutorialState._cupEditCue (size/arrows) を見て同フェーズの mark のみ復元。
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => {
+            if (typeof tutorialReapplyCupEditDemoMarks === 'function') tutorialReapplyCupEditDemoMarks();
+          });
+        } else if (typeof tutorialReapplyCupEditDemoMarks === 'function') {
+          tutorialReapplyCupEditDemoMarks();
         }
       }
     }
@@ -13703,6 +13724,23 @@ function tutorialPlayStepVoice(step, firstRender) {
       { time: 2.5, key: 'arrows' },
     ];
     opts.onCue = (cue) => tutorialOnCupEditCue(cue.key);
+    // v1412: basic_tut_10 終了で 1 秒後に cup-edit-try に auto-advance。
+    //   ユーザーが「やってみよう」 を認識/押下せず demo に留まる問題を解消
+    //   (console ログで「cup-edit のまま size/arrow button 押下で再 render 連発、
+    //   cup-edit-try に進む log なし」が確認されたため)。
+    opts.fallbackMs = 7000;  // duration 5.08s + 余裕
+    opts.onEnded = () => {
+      try {
+        if (tutorialState && tutorialState.active && tutorialState.step === 'cup-edit') {
+          try { console.log('[bento-debug] cup-edit basic_tut_10 ended → auto-advance to cup-edit-try in 1s'); } catch (_) {}
+          setTimeout(() => {
+            if (tutorialState && tutorialState.active && tutorialState.step === 'cup-edit') {
+              if (typeof tutorialAdvance === 'function') tutorialAdvance('cup-edit-try');
+            }
+          }, 1000);
+        }
+      } catch (_) {}
+    };
   }
   try { console.log('[bento-debug] dispatching playBentoTutorialVoice', { id: id, step: step, optsKeys: Object.keys(opts) }); } catch (_) {}
   playBentoTutorialVoice(id, opts);
@@ -13725,6 +13763,9 @@ function tutorialMarkCupOkAfterVoice(step) {
 // では使わない設計なので trims のみで完結)。
 function tutorialOnCupEditCue(key) {
   if (!tutorialState.active || tutorialState.step !== 'cup-edit') return;
+  // v1412: 最新 cue key を保存し、 button 押下後の toolbar 再生成 (renderFreeLayoutControls / renderFreeCupEditorControls)
+  //   末尾 hook から tutorialReapplyCupEditDemoMarks() で同じフェーズの mark を再 apply できるようにする。
+  tutorialState._cupEditCue = key;
   // 既存 mark 全消去 (SVG trim path overlay を撤去)
   try { tutorialClearTrims(); } catch (_) {}
   if (key === 'size') {
@@ -14469,6 +14510,39 @@ function tutorialReapplyCupEditTryMarks() {
     if (!marked && toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
   } catch (_) {}
 }
+// v1412: cup-edit demo (basic_tut_10 再生中) で size/arrows 矢印ボタンを押すと
+//   renderFreeLayoutControls → toolbar DOM 再生成で SVG trim path overlay の target reference が浮き
+//   青枠 mark が消える症状を解消するため、 現在の cue フェーズ (tutorialState._cupEditCue) に応じて
+//   該当 mark のみ再 apply する。 cup-edit-try 版 (tutorialReapplyCupEditTryMarks) と同じ防御パターン。
+function tutorialReapplyCupEditDemoMarks() {
+  if (typeof tutorialState === 'undefined' || !tutorialState || !tutorialState.active) return;
+  if (tutorialState.step !== 'cup-edit') return;
+  try {
+    if (typeof tutorialClearTrims === 'function') tutorialClearTrims();
+
+    // 現在のフェーズ判定: tutorialOnCupEditCue が最後にどの key で呼ばれたかを参照。
+    // 未設定 (cue 未発火 = 再生開始直後) なら size をデフォルトとする (basic_tut_10 の 0s cue = size)。
+    const cueKey = (tutorialState && tutorialState._cupEditCue) || 'size';
+
+    if (cueKey === 'size') {
+      const sizeOneBtn = (typeof tutorialEditSizeButtonEl === 'function' ? tutorialEditSizeButtonEl(1) : null)
+                      || document.querySelector('[data-free-icon="size-1"]:not(:disabled)');
+      const sizeControl = (typeof tutorialEditSizeControlEl === 'function' ? tutorialEditSizeControlEl() : null);
+      const toolbar = (typeof tutorialContextToolbarEl === 'function' ? tutorialContextToolbarEl() : null);
+      if (sizeOneBtn) tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
+      else if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
+      else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+    } else if (cueKey === 'arrows') {
+      const layerDownBtn = (typeof tutorialLayerDownButtonEl === 'function' ? tutorialLayerDownButtonEl() : null);
+      const layerUpBtn = (typeof tutorialLayerUpButtonEl === 'function' ? tutorialLayerUpButtonEl() : null);
+      const toolbar = (typeof tutorialContextToolbarEl === 'function' ? tutorialContextToolbarEl() : null);
+      let marked = false;
+      if (layerDownBtn) { tutorialMarkTarget(layerDownBtn, { radius: 14, outline: false }); marked = true; }
+      if (layerUpBtn) { tutorialMarkTarget(layerUpBtn, { radius: 14, outline: false }); marked = true; }
+      if (!marked && toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
+    }
+  } catch (_) {}
+}
 // パレットから type=cup の最初のボタンを取得 (accessory タブ)
 // v3.3: タブ context が一致しないときは null を返し、 各 step が誤タブの palette を掴まないようにする。
 function tutorialFindCupPaletteEl() {
@@ -14893,6 +14967,12 @@ function tutorialAdvance(nextStep) {
   }
   if (typeof tutorialHideFinger === 'function') {
     try { tutorialHideFinger(); } catch (_) {}
+  }
+  // v1412: cup-edit-try に進む時は lastVoiceStep を強制リセットして確実に voice 再生 (basic_tut_11)。
+  //   cup-edit demo の cue state (_cupEditCue) もリセットして persist helper の混線を防ぐ。
+  if (nextStep === 'cup-edit-try' && tutorialState) {
+    tutorialState.lastVoiceStep = null;
+    tutorialState._cupEditCue = null;
   }
   tutorialState.step = nextStep;
   // step 変更時は前ステップの装飾を一旦掃除
