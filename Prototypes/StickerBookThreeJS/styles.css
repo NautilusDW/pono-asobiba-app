@@ -58,8 +58,8 @@ body.is-collection-album #app::before {
   inset: 0;
   background:
     linear-gradient(180deg, rgba(255, 247, 221, 0.05), rgba(17, 42, 45, 0.1)),
-    url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_image2_collection_base_tray_raw_01.png?v=20260620-729") center 52% / min(1700px, 124vw) auto no-repeat,
-    url("../../assets/ui/sticker_book_table_bg_1600.webp") center / auto 124% no-repeat;
+    url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_image2_collection_base_tray_raw_01.png?v=20260620-729") center center / cover no-repeat,
+    #17353a;
   filter: saturate(1.04) brightness(0.99);
   transform: none;
 }
@@ -350,25 +350,58 @@ input[type="range"] {
 .collection-sticker-tray {
   position: fixed;
   left: 50%;
-  bottom: max(78px, calc(env(safe-area-inset-bottom) + 78px));
+  bottom: max(42px, calc(env(safe-area-inset-bottom) + 42px));
   z-index: 3;
-  width: min(920px, calc(100vw - 136px));
-  height: 96px;
+  width: min(900px, calc(100vw - 156px));
+  height: 76px;
   box-sizing: border-box;
-  transform: translateX(-50%);
+  transform: translateX(-50%) perspective(760px) rotateX(4deg);
+  transform-origin: 50% 100%;
   display: grid;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 12px 10px;
   overflow: hidden;
-  perspective: 520px;
-  perspective-origin: 50% 78%;
-  border: 0;
-  border-radius: 18px;
-  background: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_image2_collection_tray_base_cream.png?v=20260620-727") center / 100% 100% no-repeat;
+  isolation: isolate;
+  border: 1px solid rgba(151, 111, 41, 0.24);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 250, 224, 0.16) 31%, rgba(170, 118, 38, 0.18) 100%),
+    linear-gradient(90deg, rgba(126, 91, 31, 0.13), rgba(255, 252, 229, 0.44) 17%, rgba(255, 252, 229, 0.5) 83%, rgba(126, 91, 31, 0.13)),
+    rgba(247, 226, 170, 0.56);
   box-shadow:
-    0 9px 18px rgba(73, 51, 19, 0.14),
-    0 2px 0 rgba(255, 255, 255, 0.32) inset;
-  backdrop-filter: blur(8px);
+    0 10px 18px rgba(54, 37, 14, 0.18),
+    0 2px 0 rgba(255, 255, 255, 0.56) inset,
+    0 -7px 12px rgba(120, 82, 25, 0.16) inset;
+  backdrop-filter: blur(7px);
+}
+
+.collection-sticker-tray::before,
+.collection-sticker-tray::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.collection-sticker-tray::before {
+  inset: 8px 12px 13px;
+  z-index: -1;
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(244, 225, 166, 0.1)),
+    rgba(255, 249, 224, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.48) inset,
+    0 -1px 0 rgba(125, 86, 29, 0.12) inset;
+}
+
+.collection-sticker-tray::after {
+  left: 5%;
+  right: 5%;
+  bottom: 1px;
+  height: 9px;
+  border-radius: 0 0 12px 12px;
+  background: linear-gradient(180deg, rgba(116, 80, 28, 0.18), rgba(64, 42, 14, 0.26));
+  filter: blur(0.2px);
 }
 
 .collection-sticker-tray[hidden] {
@@ -377,26 +410,26 @@ input[type="range"] {
 
 .collection-sticker-tray-items {
   min-width: 0;
-  height: 86px;
+  height: 58px;
   display: flex;
-  gap: 10px;
+  gap: 9px;
   align-items: center;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
   touch-action: pan-x;
-  padding: 4px 20px 8px;
+  padding: 3px 18px 5px;
   box-sizing: border-box;
-  transform: translateY(0) rotateX(30deg) scaleX(1.03) scaleY(0.96);
-  transform-origin: 50% 72%;
+  transform: translateY(0) scaleX(1.01);
+  transform-origin: 50% 70%;
   transform-style: preserve-3d;
   will-change: transform;
 }
 
 .collection-tray-item {
-  flex: 0 0 68px;
-  width: 68px;
-  height: 62px;
+  flex: 0 0 58px;
+  width: 58px;
+  height: 50px;
   display: grid;
   place-items: center;
   padding: 5px 6px;
@@ -428,8 +461,8 @@ input[type="range"] {
 
 .collection-tray-item img {
   display: block;
-  max-width: 56px;
-  max-height: 54px;
+  max-width: 48px;
+  max-height: 44px;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
@@ -455,15 +488,15 @@ input[type="range"] {
 }
 
 body.is-collection-tray-visible .album-mode-toggle {
-  bottom: max(188px, calc(env(safe-area-inset-bottom) + 188px));
+  bottom: max(130px, calc(env(safe-area-inset-bottom) + 130px));
 }
 
 body.is-collection-album .collection-sticker-tray {
-  bottom: max(58px, calc(env(safe-area-inset-bottom) + 58px));
+  bottom: max(34px, calc(env(safe-area-inset-bottom) + 34px));
 }
 
 body.is-collection-album.is-collection-tray-visible .album-mode-toggle {
-  bottom: max(168px, calc(env(safe-area-inset-bottom) + 168px));
+  bottom: max(120px, calc(env(safe-area-inset-bottom) + 120px));
 }
 
 .album-mode-toggle {
@@ -1294,20 +1327,18 @@ body.is-collection-album .album-mode-toggle {
   }
 
   .collection-sticker-tray {
-    bottom: max(66px, calc(env(safe-area-inset-bottom) + 66px));
-    width: min(560px, calc(100vw - 104px));
-    height: 78px;
-    padding: 8px 9px;
-    perspective: 420px;
-    perspective-origin: 50% 82%;
+    bottom: max(40px, calc(env(safe-area-inset-bottom) + 40px));
+    width: min(540px, calc(100vw - 86px));
+    height: 66px;
+    padding: 7px 9px 8px;
   }
 
   .collection-sticker-tray-items {
     gap: 8px;
-    height: 70px;
-    padding: 4px 14px 6px;
-    transform: translateY(0) rotateX(29deg) scaleX(1.025) scaleY(0.96);
-    transform-origin: 50% 74%;
+    height: 52px;
+    padding: 3px 14px 4px;
+    transform: translateY(0) scaleX(1.01);
+    transform-origin: 50% 70%;
   }
 
   .collection-tray-item {
@@ -1328,22 +1359,22 @@ body.is-collection-album .album-mode-toggle {
   }
 
   body.is-collection-tray-visible .album-mode-toggle {
-    bottom: max(152px, calc(env(safe-area-inset-bottom) + 152px));
+    bottom: max(112px, calc(env(safe-area-inset-bottom) + 112px));
   }
 
   body.is-collection-album #app::before {
     background:
       linear-gradient(180deg, rgba(255, 247, 221, 0.05), rgba(17, 42, 45, 0.1)),
-      url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_image2_collection_base_tray_raw_01.png?v=20260620-729") center 52% / min(760px, 114vw) auto no-repeat,
-      url("../../assets/ui/sticker_book_table_bg_1600.webp") center / auto 124% no-repeat;
+      url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_image2_collection_base_tray_raw_01.png?v=20260620-729") center center / cover no-repeat,
+      #17353a;
   }
 
   body.is-collection-album .collection-sticker-tray {
-    bottom: max(50px, calc(env(safe-area-inset-bottom) + 50px));
+    bottom: max(32px, calc(env(safe-area-inset-bottom) + 32px));
   }
 
   body.is-collection-album.is-collection-tray-visible .album-mode-toggle {
-    bottom: max(134px, calc(env(safe-area-inset-bottom) + 134px));
+    bottom: max(100px, calc(env(safe-area-inset-bottom) + 100px));
   }
 
   .tuning-panel {
@@ -1608,20 +1639,18 @@ body.is-collection-album .album-mode-toggle {
   }
 
   .collection-sticker-tray {
-    bottom: max(56px, calc(env(safe-area-inset-bottom) + 56px));
-    width: min(620px, calc(100vw - 118px));
-    height: 64px;
-    padding: 6px 8px;
-    perspective: 360px;
-    perspective-origin: 50% 84%;
+    bottom: max(26px, calc(env(safe-area-inset-bottom) + 26px));
+    width: min(590px, calc(100vw - 92px));
+    height: 54px;
+    padding: 5px 8px 6px;
   }
 
   .collection-sticker-tray-items {
     gap: 7px;
-    height: 58px;
-    padding: 3px 12px 5px;
-    transform: translateY(0) rotateX(27deg) scaleX(1.02) scaleY(0.96);
-    transform-origin: 50% 76%;
+    height: 44px;
+    padding: 2px 12px 3px;
+    transform: translateY(0) scaleX(1.01);
+    transform-origin: 50% 70%;
   }
 
   .collection-tray-item {
@@ -1642,7 +1671,7 @@ body.is-collection-album .album-mode-toggle {
   }
 
   body.is-collection-tray-visible .album-mode-toggle {
-    bottom: max(126px, calc(env(safe-area-inset-bottom) + 126px));
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 84px));
     min-height: 36px;
     font-size: 12px;
   }
@@ -1650,16 +1679,16 @@ body.is-collection-album .album-mode-toggle {
   body.is-collection-album #app::before {
     background:
       linear-gradient(180deg, rgba(255, 247, 221, 0.05), rgba(17, 42, 45, 0.1)),
-      url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_image2_collection_base_tray_raw_01.png?v=20260620-729") center 52% / min(760px, 114vw) auto no-repeat,
-      url("../../assets/ui/sticker_book_table_bg_1600.webp") center / auto 124% no-repeat;
+      url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_image2_collection_base_tray_raw_01.png?v=20260620-729") center center / cover no-repeat,
+      #17353a;
   }
 
   body.is-collection-album .collection-sticker-tray {
-    bottom: max(38px, calc(env(safe-area-inset-bottom) + 38px));
+    bottom: max(20px, calc(env(safe-area-inset-bottom) + 20px));
   }
 
   body.is-collection-album.is-collection-tray-visible .album-mode-toggle {
-    bottom: max(106px, calc(env(safe-area-inset-bottom) + 106px));
+    bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px));
   }
 
   .sticker-editor.is-draw-mode .editor-controls {

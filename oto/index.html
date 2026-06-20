@@ -11959,9 +11959,10 @@ var OTO_RHYTHM_TUTORIAL_VOICE = {
   yourTurn: 'つぎは きみのばん。タップして はじめるよ。',
   judge: 'ボタンに ぴったりなら、ジャスト。すこし ちかいと、ナイス。おそくても、オッケー。ぴったりほど、てんが たかいよ。',
   advice: 'もっと れんしゅうしたいときは、じゆうモードで あそべるよ。おてほんを みてから はじめると わかりやすいよ。',
+  final: 'ここまで できたね。つぎは ほんばんだよ。',
   start: 'かえるのうたで あそぼう。はじめるを おしてね。'
 };
-var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1387';
+var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1400';
 var OTO_RHYTHM_TUTORIAL_AUDIO = {
   intro: '../assets/audio/oto/tutorial/oto_rhythm_tut_00_intro.mp3',
   songIntro: '../assets/audio/oto/tutorial/oto_rhythm_tut_01_difficulty.mp3',
@@ -11973,6 +11974,7 @@ var OTO_RHYTHM_TUTORIAL_AUDIO = {
   demo: '../assets/audio/oto/tutorial/oto_rhythm_tut_06_sample_note.mp3',
   yourTurn: '../assets/audio/oto/tutorial/oto_rhythm_tut_07_player_countdown.mp3',
   judge: '../assets/audio/oto/tutorial/oto_rhythm_tut_09_judgement.mp3',
+  final: '../assets/audio/oto/tutorial/oto_rhythm_tut_12_final.mp3',
   start: '../assets/audio/oto/tutorial/oto_rhythm_tut_10_start.mp3'
 };
 var OTO_TUTORIAL_HAND_ASSETS = {
@@ -12809,6 +12811,7 @@ function _makeOtoTutorialSteps(kind) {
       {
         badge: 'ほんばん',
         msg: 'ここまで できたね<br>つぎは ほんばんだよ',
+        voice: OTO_RHYTHM_TUTORIAL_VOICE.final,
         anchor: null,
         side: 'stageTopRight',
         noDim: true,
