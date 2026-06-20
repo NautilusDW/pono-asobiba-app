@@ -35,6 +35,7 @@ const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
+const COLLECTION_TRAY_PLACEMENT_SCALE = 0.52;
 const DRAWING_COLORS = [
   "#EF4444",
   "#F97316",
@@ -1114,7 +1115,7 @@ function addCollectionStickerPlacement(sticker, pageNumber, uv) {
     assetUrl: sticker.assetUrl,
     x: THREE.MathUtils.clamp(uv.x * 100, 6, 94),
     y: THREE.MathUtils.clamp((1 - uv.y) * 100, 6, 94),
-    scale: defaultStickerScale(sticker) * 0.86,
+    scale: collectionStickerPlacementScale(sticker),
     rotation: 0,
     z: nextPlacementZ(placements),
   };
@@ -1122,6 +1123,10 @@ function addCollectionStickerPlacement(sticker, pageNumber, uv) {
   saveCollectionAlbumState();
   refreshPageTemplateTextures();
   return placement;
+}
+
+function collectionStickerPlacementScale(sticker) {
+  return defaultStickerScale(sticker) * COLLECTION_TRAY_PLACEMENT_SCALE;
 }
 
 function setupStickerEditor() {
@@ -1233,6 +1238,11 @@ function syncEditorPlacementsWithStickerPlan() {
       if (placement.assetUrl !== sticker.assetUrl || placement.label !== sticker.label) {
         placement.assetUrl = sticker.assetUrl;
         placement.label = sticker.label;
+        changed = true;
+      }
+      const nextScale = collectionStickerPlacementScale(sticker);
+      if (!Number.isFinite(Number(placement.scale)) || Number(placement.scale) > nextScale * 1.16) {
+        placement.scale = nextScale;
         changed = true;
       }
     }

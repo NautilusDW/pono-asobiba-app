@@ -344,10 +344,15 @@ input[type="range"] {
   display: grid;
   align-items: center;
   padding: 10px 12px;
-  border: 1px solid rgba(216, 241, 238, 0.28);
+  border: 1px solid rgba(218, 174, 76, 0.36);
   border-radius: 8px;
-  background: rgba(255, 253, 244, 0.86);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 229, 0.94), rgba(246, 224, 164, 0.9)),
+    radial-gradient(circle at 16% 22%, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0) 42%);
+  box-shadow:
+    0 10px 22px rgba(73, 51, 19, 0.16),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.34),
+    inset 0 -7px 0 rgba(216, 177, 82, 0.12);
   backdrop-filter: blur(12px);
 }
 
@@ -374,12 +379,13 @@ input[type="range"] {
   display: grid;
   place-items: center;
   padding: 6px;
-  border: 1px solid rgba(103, 117, 112, 0.2);
+  border: 1px solid rgba(188, 145, 54, 0.24);
   border-radius: 8px;
   background:
-    radial-gradient(circle at 64% 26%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 40%),
-    rgba(255, 249, 231, 0.9);
+    radial-gradient(circle at 64% 26%, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0) 40%),
+    linear-gradient(180deg, rgba(255, 254, 244, 0.92), rgba(255, 245, 213, 0.86));
   color: #334447;
+  box-shadow: inset 0 -2px 0 rgba(206, 161, 64, 0.12);
   cursor: grab;
   touch-action: manipulation;
 }
@@ -387,7 +393,9 @@ input[type="range"] {
 .collection-tray-item:hover,
 .collection-tray-item.is-selected {
   border-color: rgba(55, 145, 154, 0.54);
-  background: rgba(224, 247, 244, 0.94);
+  background:
+    radial-gradient(circle at 64% 26%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 40%),
+    linear-gradient(180deg, rgba(229, 250, 244, 0.94), rgba(255, 239, 178, 0.9));
 }
 
 .collection-tray-item:active {

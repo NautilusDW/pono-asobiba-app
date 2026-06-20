@@ -11921,13 +11921,13 @@ var OTO_RHYTHM_TUTORIAL_VOICE = {
   block: 'さいしょは ブロックで みじかく れんしゅうしよう。',
   fullChallenge: 'なれたら、ぜんぶで さいごまで チャレンジしよう。',
   demoReady: 'おてほんを みるよ。おてほんボタンを おしてね。',
-  demo: 'おてほんを みてね。うえから ノートが おちてくるよ。ボタンの ところに きたら、タイミングよく ボタンを おすよ。',
+  demo: 'うえから ノートが おちてくるよ。ボタンの ところに きたら、タイミングよく ボタンを おすよ。',
   yourTurn: 'つぎは きみのばん。タップして はじめるよ。',
   judge: 'ボタンに ぴったりなら、ジャスト。すこし ちかいと、ナイス。おそくても、オッケー。ぴったりほど、てんが たかいよ。',
   advice: 'もっと れんしゅうしたいときは、じゆうモードで あそべるよ。おてほんを みてから はじめると わかりやすいよ。',
   start: 'かえるのうたで あそぼう。はじめるを おしてね。'
 };
-var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1383';
+var OTO_RHYTHM_TUTORIAL_AUDIO_VERSION = 'v1385';
 var OTO_RHYTHM_TUTORIAL_AUDIO = {
   intro: '../assets/audio/oto/tutorial/oto_rhythm_tut_00_intro.mp3',
   songIntro: '../assets/audio/oto/tutorial/oto_rhythm_tut_01_difficulty.mp3',
@@ -12371,7 +12371,7 @@ function _runOtoTutorialTapCountdown(expectedSteps, expectedIndex) {
     bubble.style.left = '-9999px';
     bubble.style.top = '-9999px';
     requestAnimationFrame(function() {
-      _tutPositionBubble(bubble, null, 'stageTop');
+      _tutPositionBubble(bubble, null, 'stageTopRight');
     });
     try { _playRhythmSampleSe('ok'); } catch (e) {}
     if (label === '0') {

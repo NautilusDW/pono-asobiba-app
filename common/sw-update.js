@@ -42,7 +42,9 @@
   // Gesture-aware: if a pointer/keyboard interaction is in flight, delay the
   // reload so a user click can navigate first instead of being eaten by reload.
   var POINTER_GUARD_MS = 1500;
+  var RELOAD_DEADLINE_MS = 8000;
   var lastPointerTs = 0;
+  var reloadStartTs = 0;
   try {
     ['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend', 'keydown'].forEach(function (ev) {
       document.addEventListener(ev, function () { lastPointerTs = Date.now(); }, { capture: true, passive: true });
@@ -51,7 +53,9 @@
   var refreshing = false;
   function safeReload() {
     if (refreshing) return;
-    if ((Date.now() - lastPointerTs) < POINTER_GUARD_MS) {
+    if (reloadStartTs === 0) reloadStartTs = Date.now();
+    var sinceStart = Date.now() - reloadStartTs;
+    if (sinceStart < RELOAD_DEADLINE_MS && (Date.now() - lastPointerTs) < POINTER_GUARD_MS) {
       setTimeout(safeReload, POINTER_GUARD_MS);
       return;
     }
