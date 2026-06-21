@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-21T15:09:22Z - Stitch 完成版 coming-soon-a.html を .claude-design-bundle/components/coming-soon/ に保存 + index.html に組み込み (既存 .announce 完全削除、 .coming-soon-app scope 化、 @keyframes cs-* リネーム、 ph-pono 相対パス化、 IntersectionObserver から .announce-em 削除) → mojibake 解読が 4 箇所不正確だった (どんと→うんと、 ぐっと→わくわくしながら 等) ので Stitch 原文確定で Round 2 fix → 3 軸クロスレビュー全 APPROVED、 sw v1468→1469→1470。 Claude Design 側で chip 数調整版を作成中、 完成次第クリーン版で上書き予定
+- **タスク**: Stitch 完成版 coming-soon-a.html を .claude-design-bundle/components/coming-soon/ に保存 + index.html に組み込み (既存 .announce 完全削除、 .coming-soon-app scope 化、 @keyframes cs-* リネーム、 ph-pono 相対パス化、 IntersectionObserver から .announce-em 削除) → mojibake 解読が 4 箇所不正確だった (どんと→うんと、 ぐっと→わくわくしながら 等) ので Stitch 原文確定で Round 2 fix → 3 軸クロスレビュー全 APPROVED、 sw v1468→1469→1470。 Claude Design 側で chip 数調整版を作成中、 完成次第クリーン版で上書き予定
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 49
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 21, "Bash": 13, "Write": 2, "Read": 5, "Edit": 2, "Workflow": 6}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-21T14:56:27Z - LP announce セクションを Stitch 完成版 coming-soon-app teaser に置換 (mojibake デコード + scope 化 + @keyframes リネーム + sw.js v1469)
 - **タスク**: LP announce セクションを Stitch 完成版 coming-soon-app teaser に置換 (mojibake デコード + scope 化 + @keyframes リネーム + sw.js v1469)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 5, "Bash": 1}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-20T08:07:08Z - LP play-cards review fixes (oto image swap to title_back.jpg, scale 0.92->0.96, bento bg-position right 8%, CACHE_VERSION 1410->1411)
-- **タスク**: LP play-cards review fixes (oto image swap to title_back.jpg, scale 0.92->0.96, bento bg-position right 8%, CACHE_VERSION 1410->1411)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 134
-- **エラー数**: 18
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 62, "ToolSearch": 1, "Edit": 7, "Write": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
