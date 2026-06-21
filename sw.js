@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1438: Daily gacha uses a static open-hand guide, a blinking turn cue, one-full-turn lever input, and a smoother smaller capsule drop.
 // v1437: Bento shop opening/request narration is wired, and title adds a tap-to-place simple bento mode.
 // v1436: LP に 2 セクション追加 — Hero B 直後の「お知らせ (アプリ発売告知、 大々的)」と、 book-aside 直後の「ハードカバー応援 (控えめ)」。 既存 hero/play-cards/sticker-extra/book-aside/video-section は無改変、 純粋追加。 CSS prefix announce-* / bookcheer-* を追加。
 // v1435: Daily gacha removes the side button/meter panel, centers the machine, and adds a hand-guided direct lever spin.
@@ -134,7 +135,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1437; // v1437: Bento shop narration + simple tap-to-place mode.
+const CACHE_VERSION = 1438; // v1438: Daily gacha open-hand turn cue and smoother capsule drop.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
