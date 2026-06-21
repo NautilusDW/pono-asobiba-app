@@ -1,6 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1448: Daily gacha aligns the outlet mask to the opening, unifies cue arrow color, and moves the idle guide hand/label apart.
+// v1447: Speed up Bento opening narration with Gemini TTS.
+// v1446: Regenerate Bento opening narration with unified calm Gemini TTS.
 // v1445: Daily gacha guide hand now grips the lever's right end while turning, and capsule exit is clipped by an outlet mask.
 // v1444: Regenerate Bento opening narration with Gemini 3.1 TTS.
 // v1440: Daily gacha makes the turn cue a high-contrast animated arrow, moves the guide hand around the lever, and repositions the capsule drop to the outlet.
@@ -139,7 +142,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1447; // v1447: Speed up Bento opening narration with Gemini TTS.
+const CACHE_VERSION = 1448; // v1448: Daily gacha outlet mask and cue layout polish.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

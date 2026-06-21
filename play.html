@@ -1488,6 +1488,7 @@
       position: absolute;
       left: 50%;
       top: 66.2%;
+      --gacha-cue-color: #ff6f2f;
       z-index: 4;
       width: 31%;
       aspect-ratio: 1;
@@ -1515,7 +1516,7 @@
     }
     .daily-gacha-turn-cue__arc {
       fill: none;
-      stroke: #ff7a2f;
+      stroke: var(--gacha-cue-color);
       stroke-width: 8;
       stroke-linecap: round;
       stroke-dasharray: 165 260;
@@ -1534,7 +1535,7 @@
       top: 41%;
       width: 29%;
       height: 29%;
-      background: #ff3f24;
+      background: var(--gacha-cue-color);
       clip-path: polygon(100% 50%, 0 0, 0 100%);
       transform: rotate(120deg);
       transform-origin: 50% 50%;
@@ -1545,12 +1546,12 @@
     .daily-gacha-turn-cue__word {
       position: absolute;
       left: 50%;
-      top: -5%;
+      top: -28%;
       min-width: 96px;
       padding: 5px 14px 6px;
       border-radius: 999px;
       background: rgba(255, 245, 216, .97);
-      border: 3px solid #ff8d3b;
+      border: 3px solid var(--gacha-cue-color);
       color: #8b351c;
       font-weight: 900;
       font-size: clamp(16px, 2.8vw, 23px);
@@ -1580,13 +1581,13 @@
     }
     .daily-gacha-guide-hand {
       position: absolute;
-      left: 63%;
-      top: 61%;
+      left: 68%;
+      top: 61.5%;
       z-index: 5;
       width: clamp(82px, 16%, 132px);
       opacity: 0;
       pointer-events: none;
-      transform: translate(-58%, -60%) rotate(-24deg) scale(.88);
+      transform: translate(-46%, -58%) rotate(-24deg) scale(.88);
       transform-origin: 38% 54%;
       filter:
         drop-shadow(0 8px 10px rgba(64, 35, 13, .28))
@@ -1600,7 +1601,7 @@
     }
     .daily-gacha-modal.is-hand-ready .daily-gacha-guide-hand {
       opacity: .98;
-      transform: translate(-48%, -56%) rotate(-14deg) scale(.92);
+      transform: translate(-38%, -55%) rotate(-14deg) scale(.92);
     }
     .daily-gacha-modal.is-grabbing .daily-gacha-guide-hand {
       opacity: .98;
@@ -1634,7 +1635,7 @@
       z-index: 4;
       overflow: hidden;
       pointer-events: none;
-      clip-path: inset(72% 12% 0 12% round 10px);
+      clip-path: inset(79% 18% 0 18% round 14px);
     }
     .daily-gacha-drop-capsule {
       position: absolute;
@@ -2133,8 +2134,8 @@
         box-shadow: 0 4px 0 rgba(146, 83, 28, .2);
       }
       .daily-gacha-guide-hand {
-        left: 63%;
-        top: 61%;
+        left: 68%;
+        top: 61.5%;
         width: clamp(56px, 13%, 88px);
       }
       .daily-gacha-drop-capsule {
@@ -3023,7 +3024,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1445;
+    const PAGE_CACHE_VERSION = 1448;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
