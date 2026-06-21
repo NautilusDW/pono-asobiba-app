@@ -163,7 +163,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1479; // v1479: coming-soon を Stitch 案 B (Sticker Banner + 詳細モーダル) に置換 — 旧 .coming-soon-app (phone モック) 完全削除、 Mochiy Pop One フォント追加、 タップ展開モーダル + Esc/オーバーレイ閉じ + focus トラップ
+const CACHE_VERSION = 1480; // v1480: coming-soon-b 文言訂正 (list 3 ポノからの / foot じゅんびが できたら) + ★ aria-hidden 追加
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
