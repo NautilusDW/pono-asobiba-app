@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-757";
+const ASSET_VERSION = "20260621-758";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -484,6 +484,12 @@ const ZUKAN_PAGE_TEMPLATES = {
   index: "sb3d_image2_zukan_template_index_green_6items_alpha_user_20260621.png",
   detail: "sb3d_image2_zukan_template_detail_green_wide_labels_alpha_user_20260621.png",
 };
+const ZUKAN_TEMPLATE_PRINT_INSET = {
+  top: 58,
+  bottom: 96,
+  outer: 56,
+  inner: 92,
+};
 const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
 const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
 
@@ -683,6 +689,9 @@ const bookPageLabel = document.getElementById("bookPageLabel");
 const bookPageJump = document.getElementById("bookPageJump");
 const topBackButton = document.getElementById("topBackButton");
 const topSettingsButton = document.getElementById("topSettingsButton");
+const zukanSettingsPanel = document.getElementById("zukanSettingsPanel");
+const zukanSettingsClose = document.getElementById("zukanSettingsClose");
+const zukanSettingsButtons = [...document.querySelectorAll("[data-zukan-side][data-zukan-type]")];
 const albumModeToggle = document.getElementById("albumModeToggle");
 const collectionStickerTray = document.getElementById("collectionStickerTray");
 const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
@@ -724,6 +733,7 @@ const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v8";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
 const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v1";
+const ZUKAN_SIDE_TEMPLATE_STORAGE_KEY = "sb3d_zukan_side_template_settings_v1";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
 const TUNING_HISTORY_LIMIT = 80;
@@ -935,6 +945,7 @@ const SPREAD_PRESETS = [
 let layerTuningByPair = loadLayerTuningStore();
 let coverTuning = loadCoverTuning();
 let zukanTextTuning = loadZukanTextTuning();
+let zukanSideTemplateSettings = loadZukanSideTemplateSettings();
 let tuningUndoStack = [];
 let tuningRedoStack = [];
 let activeTuningEditLabel = "";
@@ -1284,11 +1295,11 @@ topBackButton?.addEventListener("click", () => {
 });
 
 topSettingsButton?.addEventListener("click", () => {
-  const enabled = document.body.classList.toggle("is-prototype-controls");
-  topSettingsButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+  toggleZukanSettingsPanel();
 });
 
 syncTopSettingsButton();
+setupZukanSettingsPanel();
 
 albumModeToggle?.addEventListener("click", () => {
   setAlbumMode(activeAlbumMode === "collection" ? "free" : "collection");
@@ -1524,7 +1535,8 @@ function pickZukanTextTuningTarget(event) {
   const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
   const subjects = collectionStickersForPageDefinition(pageDef);
   const point = texturePointFromPageHit(hit);
-  const targets = zukanTextTuningTargetsForPage(pageDef, subjects, pageNumber)
+  const side = hit.object === rightPage ? "right" : "left";
+  const targets = zukanTextTuningTargetsForPage(pageDef, subjects, pageNumber, side)
     .sort((a, b) => (a.width * a.height) - (b.width * b.height));
   const target = targets.find((item) => (
     point.x >= item.x
@@ -1557,13 +1569,14 @@ function pickCollectionZukanTarget(event) {
     return null;
   }
   const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
-  if (pageDef?.type !== "section-index") {
+  const side = hit.object === rightPage ? "right" : "left";
+  if (zukanTemplateTypeForSide(pageDef, side) !== "index") {
     return null;
   }
   const x = hit.uv.x * PAGE_TEXTURE_W;
   const y = (1 - hit.uv.y) * PAGE_TEXTURE_H;
   const subjects = collectionStickersForPageDefinition(pageDef);
-  const layout = collectionZukanIndexLayout(subjects.length);
+  const layout = collectionZukanIndexLayout(subjects.length, side);
   for (let index = 0; index < subjects.length; index += 1) {
     const rect = collectionZukanIndexCellRect(index, layout);
     if (x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height) {
@@ -1608,8 +1621,53 @@ function setupBookPageControls() {
 function syncTopSettingsButton() {
   topSettingsButton?.setAttribute(
     "aria-pressed",
-    document.body.classList.contains("is-prototype-controls") ? "true" : "false",
+    zukanSettingsPanel && !zukanSettingsPanel.hidden ? "true" : "false",
   );
+}
+
+function setupZukanSettingsPanel() {
+  refreshZukanSettingsControls();
+  zukanSettingsClose?.addEventListener("click", () => closeZukanSettingsPanel());
+  for (const button of zukanSettingsButtons) {
+    button.addEventListener("click", () => {
+      const side = button.dataset.zukanSide === "right" ? "right" : "left";
+      const type = normalizeZukanTemplateType(button.dataset.zukanType);
+      saveZukanSideTemplateSettings({
+        ...zukanSideTemplateSettings,
+        [side]: type,
+      });
+    });
+  }
+  document.addEventListener("pointerdown", (event) => {
+    if (!zukanSettingsPanel || zukanSettingsPanel.hidden) {
+      return;
+    }
+    if (zukanSettingsPanel.contains(event.target) || topSettingsButton?.contains(event.target)) {
+      return;
+    }
+    closeZukanSettingsPanel();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeZukanSettingsPanel();
+    }
+  });
+}
+
+function toggleZukanSettingsPanel() {
+  if (!zukanSettingsPanel) {
+    return;
+  }
+  zukanSettingsPanel.hidden = !zukanSettingsPanel.hidden;
+  syncTopSettingsButton();
+}
+
+function closeZukanSettingsPanel() {
+  if (!zukanSettingsPanel) {
+    return;
+  }
+  zukanSettingsPanel.hidden = true;
+  syncTopSettingsButton();
 }
 
 function pageNumberForPickedPage(mesh) {
@@ -3808,6 +3866,57 @@ function persistZukanTextTuning() {
   } catch {}
 }
 
+function normalizeZukanTemplateType(value) {
+  return value === "index" || value === "detail" ? value : "auto";
+}
+
+function normalizeZukanSideTemplateSettings(value) {
+  return {
+    left: normalizeZukanTemplateType(value?.left),
+    right: normalizeZukanTemplateType(value?.right),
+  };
+}
+
+function loadZukanSideTemplateSettings() {
+  try {
+    const raw = localStorage.getItem(ZUKAN_SIDE_TEMPLATE_STORAGE_KEY);
+    if (!raw) {
+      return normalizeZukanSideTemplateSettings();
+    }
+    return normalizeZukanSideTemplateSettings(JSON.parse(raw));
+  } catch {
+    return normalizeZukanSideTemplateSettings();
+  }
+}
+
+function saveZukanSideTemplateSettings(nextSettings) {
+  zukanSideTemplateSettings = normalizeZukanSideTemplateSettings(nextSettings);
+  try {
+    localStorage.setItem(ZUKAN_SIDE_TEMPLATE_STORAGE_KEY, JSON.stringify(zukanSideTemplateSettings));
+  } catch {}
+  refreshZukanSettingsControls();
+  refreshPageTemplateTextures();
+}
+
+function zukanTemplateTypeForPageDef(pageDef) {
+  return pageDef?.type === "detail" ? "detail" : "index";
+}
+
+function zukanTemplateTypeForSide(pageDef, side) {
+  const override = normalizeZukanTemplateType(zukanSideTemplateSettings?.[side]);
+  return override === "auto" ? zukanTemplateTypeForPageDef(pageDef) : override;
+}
+
+function refreshZukanSettingsControls() {
+  for (const button of zukanSettingsButtons) {
+    const side = button.dataset.zukanSide;
+    const type = normalizeZukanTemplateType(button.dataset.zukanType);
+    const active = normalizeZukanTemplateType(zukanSideTemplateSettings?.[side]) === type;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  }
+}
+
 function zukanTextOffset(key) {
   const value = Number(zukanTextTuning?.[key]);
   return Number.isFinite(value) ? value : 0;
@@ -4629,8 +4738,8 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
   drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
   if (activeAlbumMode === "collection") {
     const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
-    const templateType = pageDef?.type === "detail" ? "detail" : "index";
-    if (!drawGeneratedCollectionZukanTemplate(ctx, templateType)) {
+    const templateType = zukanTemplateTypeForSide(pageDef, side);
+    if (!drawGeneratedCollectionZukanTemplate(ctx, templateType, side)) {
       drawCollectionPageTemplate(ctx, palette, side);
     }
   } else {
@@ -4652,14 +4761,55 @@ function collectionZukanUsesGeneratedTemplate(type) {
   return Boolean(getTexture(ZUKAN_PAGE_TEMPLATES[type])?.image);
 }
 
-function drawGeneratedCollectionZukanTemplate(ctx, type) {
+function drawGeneratedCollectionZukanTemplate(ctx, type, side = "left") {
   const file = ZUKAN_PAGE_TEMPLATES[type] || ZUKAN_PAGE_TEMPLATES.index;
   const image = getTexture(file)?.image;
   if (!image) {
     return false;
   }
-  ctx.drawImage(image, 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  const rect = zukanTemplatePrintRect(side);
+  ctx.drawImage(image, rect.x, rect.y, rect.width, rect.height);
   return true;
+}
+
+function zukanTemplatePrintRect(side = "left") {
+  const left = side === "right" ? ZUKAN_TEMPLATE_PRINT_INSET.inner : ZUKAN_TEMPLATE_PRINT_INSET.outer;
+  const right = side === "left" ? ZUKAN_TEMPLATE_PRINT_INSET.inner : ZUKAN_TEMPLATE_PRINT_INSET.outer;
+  const top = ZUKAN_TEMPLATE_PRINT_INSET.top;
+  const bottom = ZUKAN_TEMPLATE_PRINT_INSET.bottom;
+  return {
+    x: left,
+    y: top,
+    width: PAGE_TEXTURE_W - left - right,
+    height: PAGE_TEXTURE_H - top - bottom,
+  };
+}
+
+function zukanTemplateTransformForSide(side = "left") {
+  const rect = zukanTemplatePrintRect(side);
+  return {
+    ...rect,
+    scaleX: rect.width / PAGE_TEXTURE_W,
+    scaleY: rect.height / PAGE_TEXTURE_H,
+  };
+}
+
+function zukanTemplateTransformRect(rect, side = "left") {
+  const transform = zukanTemplateTransformForSide(side);
+  return {
+    x: transform.x + rect.x * transform.scaleX,
+    y: transform.y + rect.y * transform.scaleY,
+    width: rect.width * transform.scaleX,
+    height: rect.height * transform.scaleY,
+  };
+}
+
+function zukanTemplateTransformPoint(x, y, side = "left") {
+  const transform = zukanTemplateTransformForSide(side);
+  return {
+    x: transform.x + x * transform.scaleX,
+    y: transform.y + y * transform.scaleY,
+  };
 }
 
 function drawPageTemplateBase(ctx, palette, side, mode = "free") {
@@ -5250,21 +5400,21 @@ function drawDynamicPageContent(ctx, texture, side, palette, pageNumber = pageNu
   const pageDef = editorPageDefinitions[pageNumber - 1] || editorPageDefinitions[0] || null;
   if (activeAlbumMode === "collection") {
     const collectionPageDef = collectionPageDefinitions[pageNumber - 1] || collectionPageDefinitions[0] || null;
-    drawCollectionAlbumPage(ctx, texture, palette, collectionPageDef, stickersForPage(pageNumber), pageNumber);
+    drawCollectionAlbumPage(ctx, texture, palette, collectionPageDef, stickersForPage(pageNumber), pageNumber, side);
     return;
   }
   drawStickerCanvasPage(ctx, texture, palette, pageDef, getPagePlacements(pageNumber), pageNumber);
 }
 
-function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageNumber) {
-  if (pageDef?.type === "detail") {
-    drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, stickers[0] || null, pageNumber);
+function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageNumber, side = "left") {
+  if (zukanTemplateTypeForSide(pageDef, side) === "detail") {
+    drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, stickers[0] || null, pageNumber, side);
     return;
   }
-  drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, stickers, pageNumber);
+  drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, stickers, pageNumber, side);
 }
 
-function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE) {
+function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE, side = "left") {
   const cols = 2;
   const rows = Math.max(2, Math.min(6, Math.ceil(Math.max(1, itemCount) / cols)));
   if (collectionZukanUsesGeneratedTemplate("index") && rows <= 3) {
@@ -5274,7 +5424,7 @@ function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE)
     const gapY = 36;
     const cellW = (PAGE_TEXTURE_W - contentX * 2 - gapX) / cols;
     const cellH = 300;
-    return { contentX, contentY, cols, rows, gapX, gapY, cellW, cellH };
+    return zukanTemplateTransformLayout({ contentX, contentY, cols, rows, gapX, gapY, cellW, cellH }, side);
   }
   const contentX = 118;
   const contentW = PAGE_TEXTURE_W - contentX * 2;
@@ -5290,6 +5440,19 @@ function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE)
   return { contentX, contentY, cols, rows, gapX, gapY, cellW, cellH };
 }
 
+function zukanTemplateTransformLayout(layout, side = "left") {
+  const transform = zukanTemplateTransformForSide(side);
+  return {
+    ...layout,
+    contentX: transform.x + layout.contentX * transform.scaleX,
+    contentY: transform.y + layout.contentY * transform.scaleY,
+    gapX: layout.gapX * transform.scaleX,
+    gapY: layout.gapY * transform.scaleY,
+    cellW: layout.cellW * transform.scaleX,
+    cellH: layout.cellH * transform.scaleY,
+  };
+}
+
 function collectionZukanIndexCellRect(index, layout = collectionZukanIndexLayout()) {
   const col = index % layout.cols;
   const row = Math.floor(index / layout.cols);
@@ -5301,15 +5464,30 @@ function collectionZukanIndexCellRect(index, layout = collectionZukanIndexLayout
   };
 }
 
-function collectionZukanIndexTargetsForPage(pageDef) {
-  if (pageDef?.type !== "section-index" || !Array.isArray(pageDef.indexTargets)) {
+function collectionZukanIndexTargetsForPage(pageDef, subjects = collectionStickersForPageDefinition(pageDef)) {
+  if (!pageDef) {
     return [];
   }
-  return pageDef.indexTargets.filter((target) => Number.isFinite(Number(target.targetPage)));
+  if (Array.isArray(pageDef.indexTargets)) {
+    return pageDef.indexTargets.filter((target) => Number.isFinite(Number(target.targetPage)));
+  }
+  return subjects
+    .map((subject) => {
+      const targetPage = pageDef.subjectId === subject.id && Number.isFinite(Number(pageDef.page))
+        ? Number(pageDef.page)
+        : collectionPageDefinitions.find((item) => item.type === "detail" && item.subjectId === subject.id)?.page;
+      return {
+        subjectId: subject.id,
+        targetPage,
+        categoryId: pageDef.categoryId || "",
+        action: "open-zukan-detail",
+      };
+    })
+    .filter((target) => Number.isFinite(Number(target.targetPage)));
 }
 
-function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
-  const target = collectionZukanIndexTargetsForPage(pageDef)
+function collectionZukanIndexTargetForSubject(pageDef, subjectId, subjects = collectionStickersForPageDefinition(pageDef)) {
+  const target = collectionZukanIndexTargetsForPage(pageDef, subjects)
     .find((item) => item.subjectId === subjectId);
   if (!target) {
     return null;
@@ -5331,37 +5509,50 @@ function zukanTuningRect(id, x, y, width, height) {
   };
 }
 
-function zukanTextTuningTargetsForPage(pageDef, subjects = [], pageNumber = activeBookPage) {
+function zukanTextTuningTargetsForPage(pageDef, subjects = [], pageNumber = activeBookPage, side = zukanSideForPageNumber(pageNumber)) {
   if (!pageDef) {
     return [];
   }
-  if (pageDef.type === "detail") {
-    return zukanDetailTuningTargets(pageDef, subjects[0] || null, pageNumber);
+  if (zukanTemplateTypeForSide(pageDef, side) === "detail") {
+    return zukanDetailTuningTargets(pageDef, subjects[0] || null, pageNumber, side);
   }
-  if (pageDef.type !== "section-index") {
-    return [];
-  }
-  return zukanIndexTuningTargets(pageDef, subjects);
+  return zukanIndexTuningTargets(pageDef, subjects, side);
 }
 
-function zukanIndexTuningTargets(pageDef, subjects = []) {
+function zukanSideForPageNumber(pageNumber) {
+  return Math.round(pageNumber) === rightBookPageNumber() ? "right" : "left";
+}
+
+function zukanIndexTuningTargets(pageDef, subjects = [], side = "left") {
+  const titlePoint = collectionZukanUsesGeneratedTemplate("index")
+    ? zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 112, side)
+    : { x: PAGE_TEXTURE_W / 2, y: 112 };
+  const subtitlePoint = collectionZukanUsesGeneratedTemplate("index")
+    ? zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 215, side)
+    : { x: PAGE_TEXTURE_W / 2, y: 215 };
+  const titleW = collectionZukanUsesGeneratedTemplate("index")
+    ? 780 * zukanTemplateTransformForSide(side).scaleX
+    : 780;
+  const subtitleW = collectionZukanUsesGeneratedTemplate("index")
+    ? 700 * zukanTemplateTransformForSide(side).scaleX
+    : 700;
   const targets = [
     zukanTuningRect(
       "indexTitle",
-      PAGE_TEXTURE_W / 2 - 390 + zukanTextOffset("indexTitleX"),
-      112 + zukanTextOffset("indexTitleY"),
-      780,
+      titlePoint.x - titleW / 2 + zukanTextOffset("indexTitleX"),
+      titlePoint.y + zukanTextOffset("indexTitleY"),
+      titleW,
       76,
     ),
     zukanTuningRect(
       "indexSubtitle",
-      PAGE_TEXTURE_W / 2 - 350 + zukanTextOffset("indexSubtitleX"),
-      215 + zukanTextOffset("indexSubtitleY"),
-      700,
+      subtitlePoint.x - subtitleW / 2 + zukanTextOffset("indexSubtitleX"),
+      subtitlePoint.y + zukanTextOffset("indexSubtitleY"),
+      subtitleW,
       48,
     ),
   ];
-  const layout = collectionZukanIndexLayout(subjects.length);
+  const layout = collectionZukanIndexLayout(subjects.length, side);
   for (let index = 0; index < subjects.length; index += 1) {
     targets.push(...zukanIndexCardTuningTargets(collectionZukanIndexCellRect(index, layout), index));
   }
@@ -5397,8 +5588,8 @@ function zukanIndexCardTuningTargets(rect, slotIndex) {
   ];
 }
 
-function zukanDetailTuningTargets(pageDef, subject, pageNumber) {
-  const detail = collectionZukanDetailTemplate(pageDef, subject, pageNumber, stickerBookTheme(activeBook));
+function zukanDetailTuningTargets(pageDef, subject, pageNumber, side = zukanSideForPageNumber(pageNumber)) {
+  const detail = collectionZukanDetailTemplate(pageDef, subject, pageNumber, stickerBookTheme(activeBook), side);
   const { header, image, fields, memo } = detail;
   const targets = [
     zukanTuningRect(
@@ -5472,11 +5663,11 @@ function drawZukanTuningSelectionOverlayForPage(ctx, pageNumber) {
   }
   const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
   const subjects = collectionStickersForPageDefinition(pageDef);
-  drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber);
+  drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber, zukanSideForPageNumber(pageNumber));
 }
 
-function drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber) {
-  const targets = zukanTextTuningTargetsForPage(pageDef, subjects, pageNumber)
+function drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber, side = zukanSideForPageNumber(pageNumber)) {
+  const targets = zukanTextTuningTargetsForPage(pageDef, subjects, pageNumber, side)
     .filter((target) => target.id === selectedZukanTuningTargetId);
   if (!targets.length) {
     return;
@@ -5517,9 +5708,9 @@ function collectionZukanIndexSubtitle(pageDef) {
   return collectionZukanFirstText(category?.summary, pageDef?.subtitle, "きになる なかまを くわしく みよう");
 }
 
-function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, pageNumber) {
+function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, pageNumber, side = "left") {
   const theme = palette.collection;
-  const layout = collectionZukanIndexLayout(subjects.length);
+  const layout = collectionZukanIndexLayout(subjects.length, side);
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("index");
   const sparseIndex = layout.rows <= 3;
 
@@ -5527,20 +5718,23 @@ function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, 
   ctx.fillStyle = theme.text;
   ctx.textAlign = "center";
   if (generatedTemplate) {
+    const titlePoint = zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 166, side);
+    const subtitlePoint = zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 246, side);
+    const scaleX = zukanTemplateTransformForSide(side).scaleX;
     ctx.font = '900 46px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
     ctx.fillText(
       collectionZukanIndexTitle(pageDef),
-      PAGE_TEXTURE_W / 2 + zukanTextOffset("indexTitleX"),
-      166 + zukanTextOffset("indexTitleY"),
-      760,
+      titlePoint.x + zukanTextOffset("indexTitleX"),
+      titlePoint.y + zukanTextOffset("indexTitleY"),
+      760 * scaleX,
     );
     ctx.fillStyle = "rgba(51, 68, 71, 0.62)";
     ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
     ctx.fillText(
       collectionZukanIndexSubtitle(pageDef),
-      PAGE_TEXTURE_W / 2 + zukanTextOffset("indexSubtitleX"),
-      246 + zukanTextOffset("indexSubtitleY"),
-      690,
+      subtitlePoint.x + zukanTextOffset("indexSubtitleX"),
+      subtitlePoint.y + zukanTextOffset("indexSubtitleY"),
+      690 * scaleX,
     );
   } else {
     const headerOffsetY = sparseIndex ? 28 : 0;
@@ -5570,7 +5764,7 @@ function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, 
     ctx.fillText("ずかんの なかまを じゅんびしています", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
   }
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
-  drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber);
+  drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber, side);
   ctx.restore();
   texture.needsUpdate = true;
 }
@@ -5647,11 +5841,11 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   ctx.restore();
 }
 
-function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, pageNumber) {
+function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, pageNumber, side = "left") {
   const theme = palette.collection;
   const found = subject?.unlock === "found";
   const canShowSpecificItem = canShowSpecificCollectionSticker(subject);
-  const detail = collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette);
+  const detail = collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette, side);
 
   ctx.save();
   drawCollectionZukanDetailHeader(ctx, palette, theme, detail.header);
@@ -5677,12 +5871,12 @@ function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, 
   }
   drawCollectionZukanMemoCard(ctx, palette, theme, detail.memo);
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
-  drawZukanTuningSelectionOverlay(ctx, pageDef, [subject].filter(Boolean), pageNumber);
+  drawZukanTuningSelectionOverlay(ctx, pageDef, [subject].filter(Boolean), pageNumber, side);
   ctx.restore();
   texture.needsUpdate = true;
 }
 
-function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
+function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette, side = "left") {
   const theme = palette.collection;
   const subjectNumber = subject ? collectionZukanItemNumber(subject, pageNumber, 0) : pageNumber;
   const subjectName = collectionZukanFirstText(subject?.label, pageDef?.label, "ずかん");
@@ -5691,62 +5885,65 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
     ? kana
     : collectionZukanFirstText(pageDef?.subtitle, "みつけたものを かんさつしよう");
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
+  const transformGeneratedRect = (rect) => generatedTemplate ? zukanTemplateTransformRect(rect, side) : rect;
   const fieldX = generatedTemplate ? 794 : 752;
   const fieldY = generatedTemplate ? 294 : 332;
   const fieldW = generatedTemplate ? 580 : 558;
   const fieldH = generatedTemplate ? 214 : 142;
   const fieldGap = generatedTemplate ? 32 : 22;
+  const headerRect = transformGeneratedRect({
+    x: generatedTemplate ? 102 : 156,
+    y: generatedTemplate ? 96 : 146,
+    width: generatedTemplate ? 1248 : 1158,
+    height: 142,
+  });
+  const imageRect = transformGeneratedRect({
+    x: generatedTemplate ? 84 : 166,
+    y: generatedTemplate ? 292 : 330,
+    width: generatedTemplate ? 674 : 552,
+    height: generatedTemplate ? 722 : 610,
+  });
+  const memoRect = transformGeneratedRect({
+    x: generatedTemplate ? 84 : 166,
+    y: generatedTemplate ? 1068 : 972,
+    width: generatedTemplate ? 1298 : 1144,
+    height: generatedTemplate ? 278 : 246,
+  });
   return {
     header: {
-      x: generatedTemplate ? 102 : 156,
-      y: generatedTemplate ? 96 : 146,
-      width: generatedTemplate ? 1248 : 1158,
-      height: 142,
+      ...headerRect,
       number: String(subjectNumber).padStart(2, "0"),
       name: subjectName,
       subtitle,
       category: collectionZukanDetailCategoryLabel(subject, pageDef),
     },
     image: {
-      x: (generatedTemplate ? 84 : 166) + zukanTextOffset("detailImageX"),
-      y: (generatedTemplate ? 292 : 330) + zukanTextOffset("detailImageY"),
-      width: generatedTemplate ? 674 : 552,
-      height: generatedTemplate ? 722 : 610,
+      ...imageRect,
+      x: imageRect.x + zukanTextOffset("detailImageX"),
+      y: imageRect.y + zukanTextOffset("detailImageY"),
     },
     fields: [
       {
         title: "すんでいるところ",
         value: collectionZukanCompactText(subject?.habitat, "しらべています", 30),
-        x: fieldX,
-        y: fieldY,
-        width: fieldW,
-        height: fieldH,
+        ...transformGeneratedRect({ x: fieldX, y: fieldY, width: fieldW, height: fieldH }),
         accentColor: theme.infoAccent || palette.sub,
       },
       {
         title: "たべもの",
         value: collectionZukanFoodText(subject),
-        x: fieldX,
-        y: fieldY + fieldH + fieldGap,
-        width: fieldW,
-        height: fieldH,
+        ...transformGeneratedRect({ x: fieldX, y: fieldY + fieldH + fieldGap, width: fieldW, height: fieldH }),
         accentColor: theme.pages.right.accent,
       },
       {
         title: "からだ",
         value: collectionZukanBodyText(subject),
-        x: fieldX,
-        y: fieldY + (fieldH + fieldGap) * 2,
-        width: fieldW,
-        height: fieldH,
+        ...transformGeneratedRect({ x: fieldX, y: fieldY + (fieldH + fieldGap) * 2, width: fieldW, height: fieldH }),
         accentColor: palette.accent,
       },
     ],
     memo: {
-      x: generatedTemplate ? 84 : 166,
-      y: generatedTemplate ? 1068 : 972,
-      width: generatedTemplate ? 1298 : 1144,
-      height: generatedTemplate ? 278 : 246,
+      ...memoRect,
       title: collectionZukanMemoTitle(subject),
       value: collectionZukanMemoText(subject),
     },

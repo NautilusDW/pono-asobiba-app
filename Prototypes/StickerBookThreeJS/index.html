@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
-  <link rel="stylesheet" href="./styles.css?v=20260621-757">
+  <link rel="stylesheet" href="./styles.css?v=20260621-758">
 </head>
 <body>
   <main id="app">
@@ -14,6 +14,28 @@
       <button id="topSettingsButton" class="top-action-button" type="button" aria-label="せってい" aria-pressed="false">⚙</button>
       <button id="albumModeToggle" class="album-mode-toggle" type="button">ずかん</button>
     </div>
+    <section id="zukanSettingsPanel" class="zukan-settings-panel" hidden aria-label="ずかんせってい">
+      <div class="zukan-settings-head">
+        <h2>ずかんせってい</h2>
+        <button id="zukanSettingsClose" class="zukan-settings-close" type="button" aria-label="とじる">×</button>
+      </div>
+      <div class="zukan-settings-row">
+        <span>ひだり</span>
+        <div class="zukan-settings-segment" role="group" aria-label="ひだりページ">
+          <button type="button" data-zukan-side="left" data-zukan-type="auto">じどう</button>
+          <button type="button" data-zukan-side="left" data-zukan-type="index">もくじ</button>
+          <button type="button" data-zukan-side="left" data-zukan-type="detail">しょうさい</button>
+        </div>
+      </div>
+      <div class="zukan-settings-row">
+        <span>みぎ</span>
+        <div class="zukan-settings-segment" role="group" aria-label="みぎページ">
+          <button type="button" data-zukan-side="right" data-zukan-type="auto">じどう</button>
+          <button type="button" data-zukan-side="right" data-zukan-type="index">もくじ</button>
+          <button type="button" data-zukan-side="right" data-zukan-type="detail">しょうさい</button>
+        </div>
+      </div>
+    </section>
     <div class="modebar" aria-label="Sticker book variant controls">
       <div class="segmented" role="group" aria-label="Book variant">
         <button type="button" data-book="boy">Adventure</button>
@@ -122,6 +144,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260621-757"></script>
+  <script type="module" src="./main.js?v=20260621-758"></script>
 </body>
 </html>

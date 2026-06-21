@@ -80,6 +80,107 @@ body {
   width: min(760px, calc(100vw - 24px));
 }
 
+.zukan-settings-panel {
+  position: fixed;
+  top: max(72px, calc(env(safe-area-inset-top) + 62px));
+  right: max(16px, env(safe-area-inset-right));
+  z-index: 8;
+  width: min(420px, calc(100vw - 32px));
+  padding: 14px;
+  border: 3px solid rgba(40, 60, 52, 0.76);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 251, 232, 0.98), rgba(242, 253, 248, 0.96));
+  box-shadow: 0 12px 30px rgba(15, 32, 28, 0.24);
+  color: #263c3e;
+}
+
+.zukan-settings-panel[hidden] {
+  display: none !important;
+}
+
+.zukan-settings-head,
+.zukan-settings-row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+}
+
+.zukan-settings-head {
+  grid-template-columns: 1fr 34px;
+  margin-bottom: 12px;
+}
+
+.zukan-settings-head h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.zukan-settings-close {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(47, 67, 62, 0.32);
+  border-radius: 9px;
+  background: #fffdf2;
+  color: #263c3e;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.zukan-settings-row {
+  grid-template-columns: 58px minmax(0, 1fr);
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.zukan-settings-segment {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.zukan-settings-segment button {
+  min-height: 38px;
+  border: 2px solid rgba(84, 161, 151, 0.34);
+  border-radius: 10px;
+  background: rgba(255, 253, 241, 0.92);
+  color: #263c3e;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.zukan-settings-segment button.is-active {
+  border-color: rgba(73, 171, 162, 0.88);
+  background: linear-gradient(180deg, #e9fff7, #d7f5ed);
+  box-shadow: inset 0 -4px 0 rgba(73, 171, 162, 0.52);
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .zukan-settings-panel {
+    top: max(54px, calc(env(safe-area-inset-top) + 46px));
+    right: max(84px, calc(env(safe-area-inset-right) + 72px));
+    width: min(360px, calc(100vw - 180px));
+    padding: 10px;
+  }
+
+  .zukan-settings-head {
+    margin-bottom: 8px;
+  }
+
+  .zukan-settings-row {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .zukan-settings-segment button {
+    min-height: 34px;
+    font-size: 13px;
+  }
+}
+
 body:not(.is-prototype-controls) .modebar,
 body:not(.is-prototype-controls) .toolbar,
 body:not(.is-prototype-controls) .spread-jumper,
