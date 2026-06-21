@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1482: Daily gacha super-rare reveal gets a dedicated luxurious fanfare SFX.
 // v1479: coming-soon を Stitch 案 B (Sticker Banner + 詳細モーダル) に置換 — 旧 .coming-soon-app (phone モック) 完全削除、 Mochiy Pop One フォント追加、 タップ展開モーダル + Esc/オーバーレイ閉じ + focus トラップ
 // v1478: StickerBookThreeJS prototype assets bypass browser cache to avoid stale zukan/book modules.
 // v1469: LP .announce を Stitch 完成版 (coming-soon-app teaser) に置換 — phone モックアップ + ポノ dance_hooray + chip 6 種 + halo glow + reduced-motion
@@ -164,7 +165,7 @@
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
-const CACHE_VERSION = 1481; // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
+const CACHE_VERSION = 1482; // v1482: Daily gacha super-rare reveal gets a dedicated luxurious fanfare SFX.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
