@@ -52,7 +52,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preload" as="image" href="assets/lp/hero/brand_logo.png?v=1376" imagesrcset="assets/lp/hero/brand_logo.png?v=1376 1x, assets/lp/hero/brand_logo@2x.png?v=1376 2x" fetchpriority="high">
   <link rel="preload" as="image" href="assets/lp/hero/bg_soft_playmat.webp" fetchpriority="high">
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -582,204 +582,73 @@
     .book-aside-link:focus-visible{outline:3px solid #F2915A;outline-offset:3px;}
     .book-aside-link img,.book-aside-link picture,.book-aside-link picture img{display:block;width:100%;height:auto;}
 
-    /* ========== Coming Soon App Teaser (Stitch 完成版 / scope: .coming-soon-app) ========== */
-    .coming-soon-app{
-      --cs-yellow:#FDE68A;
-      --cs-green:#9CCB7A;
-      --cs-text-light:#A89880;
-      display:block;
-      max-width:760px;
-      margin:18px auto;
+    /* ========== Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル / scope: .coming-soon) ========== */
+    .coming-soon{
+      --cs-bg:#FFF8F0; --cs-primary:#F2915A; --cs-primary-deep:#C96A2E; --cs-primary-light:#FDDCBF;
+      --cs-text:#5D4E37; --cs-text-light:#A89880; --cs-yellow:#FFE07A;
+      max-width:560px;margin:0 auto;font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro',sans-serif;
     }
-    .coming-soon-app .app{
-      position:relative;
-      width:100%;
-      padding:28px 24px 26px;
-      background:linear-gradient(135deg,#FDDCBF 0%,#FFF1DC 60%,#FFF8F0 100%);
-      border-radius:24px;
-      border:2px dashed #C96A2E;
-      box-shadow:0 14px 34px rgba(201,106,46,.20);
-      overflow:hidden;
-      isolation:isolate;
+    .cs-banner{
+      position:relative;display:flex;align-items:center;gap:16px;width:100%;min-height:128px;
+      padding:18px 20px;box-sizing:border-box;text-align:left;cursor:pointer;
+      background:var(--cs-bg);
+      background-image:repeating-linear-gradient(0deg, rgba(201,106,46,.07) 0 1px, transparent 1px 26px);
+      border:2px dashed var(--cs-primary-light);border-radius:18px;
+      box-shadow:0 2px 8px rgba(93,78,55,.08);font-family:inherit;color:var(--cs-text);
+      transform:rotate(-1.5deg);transition:transform .2s ease,box-shadow .2s ease;margin:8px 0;
     }
-    .coming-soon-app .app-inner{
-      display:grid;
-      grid-template-columns:1.05fr .95fr;
-      gap:22px;
-      align-items:center;
-    }
-    @media (max-width:680px){
-      .coming-soon-app .app-inner{grid-template-columns:1fr;gap:18px;}
-    }
-    .coming-soon-app .app-head{text-align:left;}
-    .coming-soon-app .app-badge{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 14px;background:#fff;color:#C96A2E;
-      border:2px solid #C96A2E;
-      border-radius:999px;font-size:12px;font-weight:900;letter-spacing:.06em;
-      box-shadow:0 4px 0 rgba(0,0,0,.06);
-      animation:cs-pulse var(--dur-breath) var(--ease-pyoko) infinite;
-      will-change:transform;
-    }
-    .coming-soon-app .app-badge .dot{
-      width:8px;height:8px;border-radius:50%;
-      background:#F2915A;box-shadow:0 0 0 4px rgba(242,145,90,.22);
-    }
-    .coming-soon-app .app-h{
-      margin:14px 0 10px;
-      font-size:clamp(22px,5.4vw,30px);
-      font-weight:900;color:var(--text);line-height:1.4;letter-spacing:.01em;
-    }
-    .coming-soon-app .app-h .u{
-      background:linear-gradient(transparent 55%, var(--cs-yellow) 55%);
-      padding:0 6px;display:inline-block;transform:rotate(-1deg);
-    }
-    .coming-soon-app .app-pitch{
-      margin:8px 0 10px;font-size:clamp(15px,3.8vw,18px);
-      font-weight:800;color:var(--text);line-height:1.6;
-    }
-    .coming-soon-app .app-pitch .hl{
-      background:linear-gradient(transparent 60%, var(--cs-green) 60%);
-      padding:0 6px;display:inline-block;
-    }
-    .coming-soon-app .app-note{
-      margin:10px 0 0;font-size:clamp(12px,3vw,14px);
-      color:var(--cs-text-light);line-height:1.7;font-weight:600;
-    }
-    .coming-soon-app .stage{
-      position:relative;width:100%;aspect-ratio:1/1.05;max-width:340px;
-      margin:0 auto;
-    }
-    .coming-soon-app .glow{
-      position:absolute;inset:8%;
-      background:radial-gradient(closest-side,rgba(255,224,122,.55),rgba(255,224,122,0) 70%);
-      filter:blur(2px);
-      animation:cs-halo 3.6s ease-in-out infinite;
-      z-index:0;
-    }
-    .coming-soon-app .chip{
-      position:absolute;width:42px;height:42px;border-radius:13px;background:#fff;
-      display:flex;align-items:center;justify-content:center;font-size:20px;
-      box-shadow:0 8px 18px rgba(93,78,55,.18);z-index:3;
-      animation:cs-chipfloat 5s ease-in-out infinite;
-    }
-    .coming-soon-app .chip.c1{top:8%;  left:calc(50% - 138px);background:#FFE0C2;animation-delay:0s;}
-    .coming-soon-app .chip.c2{top:54%; left:calc(50% - 150px);background:#D9EFC6;animation-delay:1.4s;}
-    .coming-soon-app .chip.c3{top:8%;  left:calc(50% + 98px); background:#F7D7DE;animation-delay:.4s;}
-    .coming-soon-app .chip.c4{top:54%; left:calc(50% + 110px);background:#FDEBB0;animation-delay:1.8s;}
-    .coming-soon-app .chip.c5,
-    .coming-soon-app .chip.c6{display:none;}
-    @media (min-width:760px){
-      .coming-soon-app .chip{width:46px;height:46px;font-size:22px;}
-      .coming-soon-app .chip.c1{top:6%;  left:calc(50% - 168px);}
-      .coming-soon-app .chip.c2{top:30%; left:calc(50% - 196px);background:#CFE7F5;animation-delay:.7s;}
-      .coming-soon-app .chip.c3{top:4%;  left:calc(50% + 122px);}
-      .coming-soon-app .chip.c4{top:62%; left:calc(50% + 126px);}
-      .coming-soon-app .chip.c5{display:flex;top:60%;left:calc(50% - 172px);background:#D9EFC6;animation-delay:1.4s;}
-      .coming-soon-app .chip.c6{display:flex;top:32%;left:calc(50% + 150px);background:#E7D7F2;animation-delay:1.1s;}
-    }
-    .coming-soon-app .phone{
-      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-      width:62%;aspect-ratio:9/18;
-      background:#2A241B;
-      border-radius:30px;
-      box-shadow:0 18px 40px rgba(93,78,55,.32),inset 0 0 0 3px #3B3326;
-      padding:8px;
-      z-index:2;
-      animation:cs-floaty 4.4s ease-in-out infinite;
-    }
-    .coming-soon-app .notch{
-      position:absolute;top:8px;left:50%;transform:translateX(-50%);
-      width:38%;height:14px;background:#000;border-radius:0 0 12px 12px;
-      z-index:3;
-    }
-    .coming-soon-app .pscreen{
-      position:relative;width:100%;height:100%;
-      background:linear-gradient(180deg,#FFF1DC,#FFF8F0);
-      border-radius:22px;overflow:hidden;
-      display:flex;flex-direction:column;
-    }
-    .coming-soon-app .ph-badge{
-      position:absolute;top:10px;right:-8px;z-index:3;
-      display:inline-flex;align-items:center;gap:4px;
-      padding:5px 10px 5px 8px;
-      background:#C96A2E;color:#fff;
-      border-radius:8px;font-size:10px;font-weight:900;letter-spacing:.04em;
-      transform:rotate(8deg);
-      box-shadow:0 3px 8px rgba(201,106,46,.32);
-    }
-    .coming-soon-app .ph-badge .ic{font-size:11px;}
-    .coming-soon-app .ph-top{
-      padding:22px 12px 8px;text-align:center;
-    }
-    .coming-soon-app .ph-top .ttl{
-      font-size:clamp(11px,2.5vw,13px);
-      font-weight:900;color:#C96A2E;letter-spacing:.04em;
-    }
-    .coming-soon-app .ph-grid{
-      display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
-      padding:6px 10px 4px;
-    }
-    .coming-soon-app .gt{
-      aspect-ratio:1/1;background:#fff;border-radius:10px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:18px;
-      box-shadow:0 2px 6px rgba(93,78,55,.10);
-    }
-    .coming-soon-app .gt.more{
-      font-size:10px;font-weight:900;color:#C96A2E;
-      background:linear-gradient(135deg,#FFE9B8,#FFD17A);
-      animation:cs-morepulse 1.8s ease-in-out infinite;
-    }
-    .coming-soon-app .ph-fade{
-      position:absolute;left:0;right:0;bottom:0;height:30%;
-      background:linear-gradient(180deg,rgba(255,248,240,0),rgba(255,248,240,.95));
-      pointer-events:none;z-index:1;
-    }
-    .coming-soon-app .ph-pono{
-      position:absolute;left:50%;bottom:-2%;
-      transform:translateX(-50%);
-      width:62%;height:auto;
-      z-index:2;pointer-events:none;
-    }
-    .coming-soon-app .notify{
-      margin-top:16px;text-align:center;
-      padding:10px 14px;
-      background:rgba(255,255,255,.55);
-      border-radius:14px;
-      border:1px dashed rgba(201,106,46,.45);
-      grid-column:1/-1;
-    }
-    .coming-soon-app .notify p{
-      margin:0;font-size:clamp(12px,3vw,14px);
-      color:var(--text);font-weight:800;line-height:1.6;
-    }
-    .coming-soon-app .notify p span{
-      display:block;font-size:11px;font-weight:600;color:var(--cs-text-light);
-      margin-top:2px;
-    }
-    @keyframes cs-pulse{
-      0%,100%{transform:scale(1);}
-      50%{transform:scale(1.06);}
-    }
-    @keyframes cs-halo{
-      0%,100%{transform:scale(1);opacity:.85;}
-      50%{transform:scale(1.06);opacity:1;}
-    }
-    @keyframes cs-chipfloat{
-      0%,100%{transform:translateY(0) rotate(0);}
-      50%{transform:translateY(-6px) rotate(6deg);}
-    }
-    @keyframes cs-floaty{
-      0%,100%{transform:translate(-50%,-50%);}
-      50%{transform:translate(-50%,calc(-50% - 4px));}
-    }
-    @keyframes cs-morepulse{
-      0%,100%{transform:scale(1);}
-      50%{transform:scale(1.08);}
-    }
+    .cs-banner:hover{transform:rotate(-1.5deg) translateY(-2px);box-shadow:0 6px 16px rgba(93,78,55,.14);}
+    .cs-banner:focus-visible{outline:2px solid var(--cs-primary);outline-offset:4px;}
+    .cs-copy{flex:1;min-width:0;}
+    .cs-copy .lead{display:flex;flex-direction:column;gap:3px;margin:0;text-wrap:balance;}
+    .cs-copy .l1{font-weight:700;font-size:clamp(14px,3.3vw,17px);color:var(--cs-text);letter-spacing:.02em;}
+    .cs-copy .l1 .brand{font-weight:900;color:var(--cs-primary);}
+    .cs-copy .l2{font-family:'Mochiy Pop One','Zen Maru Gothic',sans-serif;font-weight:400;
+      font-size:clamp(23px,6.2vw,31px);line-height:1.25;color:var(--cs-primary-deep);letter-spacing:.01em;}
+    .cs-copy .l2 .mark{position:relative;white-space:nowrap;z-index:0;}
+    .cs-copy .l2 .mark::after{content:"";position:absolute;left:-3%;right:-3%;bottom:.04em;height:.42em;
+      background:var(--cs-yellow);opacity:.7;z-index:-1;border-radius:3px;transform:rotate(-.6deg);}
+    .cs-copy .l3{font-weight:700;font-size:clamp(13px,3.2vw,16px);line-height:1.55;color:var(--cs-text);margin-top:4px;}
+    .cs-copy .l3 > span{display:inline-block;white-space:nowrap;}
+    .cs-copy .l3 .big{font-weight:900;color:var(--cs-primary-deep);}
+    .cs-tap{position:absolute;right:16px;bottom:9px;font-weight:700;font-size:11.5px;color:var(--cs-text-light);}
+    .cs-icon{flex:none;width:70px;height:70px;border-radius:16px;overflow:hidden;
+      background:#FBEAD6;box-shadow:0 0 0 2px var(--cs-primary),0 3px 8px rgba(0,0,0,.16);
+      transform:translateY(-8px) rotate(2.5deg);}
+    .cs-icon img{width:100%;height:100%;object-fit:cover;object-position:center 40%;transform:scale(1.05);display:block;}
+    .cs-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+      padding:20px;background:rgba(93,78,55,.45);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+      opacity:0;visibility:hidden;transition:opacity .26s ease,visibility .26s ease;}
+    .cs-modal.is-open{opacity:1;visibility:visible;}
+    .cs-modal-box{width:min(480px,92vw);max-height:90vh;overflow-y:auto;background:var(--cs-bg);
+      border-radius:24px;padding:28px 24px 24px;text-align:center;box-shadow:0 24px 60px rgba(44,36,24,.32);
+      transform:translateY(12px) scale(.98);transition:transform .26s ease;position:relative;}
+    .cs-modal.is-open .cs-modal-box{transform:none;}
+    .cs-modal-close{position:absolute;top:10px;right:10px;width:44px;height:44px;border:none;background:transparent;
+      color:var(--cs-text-light);font-size:24px;line-height:1;cursor:pointer;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;transition:background .15s;}
+    .cs-modal-close:hover{background:rgba(93,78,55,.08);}
+    .cs-modal-close:focus-visible{outline:2px solid var(--cs-primary);outline-offset:2px;}
+    .cs-modal-icon{width:130px;height:130px;border-radius:30px;overflow:hidden;margin:6px auto 0;
+      background:#FBEAD6;box-shadow:0 0 0 3px var(--cs-primary),0 6px 16px rgba(0,0,0,.14);}
+    .cs-modal-icon img{width:100%;height:100%;object-fit:cover;object-position:center 40%;transform:scale(1.05);display:block;}
+    .cs-modal-title{font-weight:900;font-size:clamp(20px,4.5vw,26px);color:var(--cs-text);margin:16px 0 0;}
+    .cs-modal-lead{font-weight:700;font-size:clamp(13px,3.2vw,15px);color:var(--cs-text);line-height:1.7;margin:10px auto 0;max-width:360px;}
+    .cs-modal-list{list-style:none;margin:18px auto 0;padding:0;max-width:320px;display:flex;flex-direction:column;gap:9px;}
+    .cs-modal-list li{display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:13px;
+      background:#FFF1E5;font-weight:900;font-size:.92rem;color:var(--cs-text);text-align:left;}
+    .cs-modal-list li .b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--cs-primary);
+      color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;}
+    .cs-modal-foot{font-weight:700;font-size:clamp(12px,3vw,14px);color:var(--cs-text-light);line-height:1.7;margin:18px 0 0;}
     @media (prefers-reduced-motion:reduce){
-      .coming-soon-app *{animation:none!important;}
+      .cs-banner{transform:rotate(-1deg);transition-duration:.01s;}
+      .cs-banner:hover{transform:rotate(-1deg);}
+      .cs-modal,.cs-modal-box{transition-duration:.01s;}
+    }
+    @media (max-width:420px){
+      .cs-banner{transform:rotate(-1deg);}
+      .cs-banner:hover{transform:rotate(-1deg) translateY(-2px);}
+      .cs-icon{width:62px;height:62px;}
     }
 
     /* ===== Bookcheer (ハードカバー応援、 本のページ風) ===== */
@@ -1119,48 +988,34 @@
       </div>
     </section>
 
-    <!-- ============ Coming Soon App Teaser (Stitch 完成版 / scope: .coming-soon-app) ============ -->
-    <section class="coming-soon-app" aria-labelledby="csa-h">
-      <div class="app">
-        <div class="app-inner">
-          <div class="app-head">
-            <span class="app-badge"><span class="dot"></span>いま つくっています</span>
-            <h2 class="app-h" id="csa-h">ポノの あそびばが<br><span class="u">アプリ</span> に なります！</h2>
-            <p class="app-pitch">ゲームも コンテンツも、<br><span class="hl">うんと ボリュームアップ。</span></p>
-            <p class="app-note">いまより ずっと たくさんの あそびが ぎゅっと つまった、 とくべつな あそびば。 わくわくする まいにちを、 いま ポノと いっしょに つくっています！</p>
-          </div>
-          <div class="stage">
-            <div class="glow"></div>
-            <span class="chip c1" aria-hidden="true">🌱</span>
-            <span class="chip c2" aria-hidden="true">🎵</span>
-            <span class="chip c3" aria-hidden="true">🧩</span>
-            <span class="chip c4" aria-hidden="true">🎮</span>
-            <span class="chip c5" aria-hidden="true">🦊</span>
-            <span class="chip c6" aria-hidden="true">⭐</span>
-            <div class="phone">
-              <div class="notch"></div>
-              <div class="ph-badge"><span class="ic">📱</span>じゅんびちゅう</div>
-              <div class="pscreen">
-                <div class="ph-top"><span class="ttl">ポノのあそびば</span></div>
-                <div class="ph-grid">
-                  <div class="gt">🌱</div>
-                  <div class="gt">🎮</div>
-                  <div class="gt">🎵</div>
-                  <div class="gt">🧩</div>
-                  <div class="gt">🦊</div>
-                  <div class="gt more">+もっと</div>
-                </div>
-                <div class="ph-fade"></div>
-                <img class="ph-pono"
-                     src="assets/images/characters/pono/dance/dance_hooray.png"
-                     srcset="assets/images/characters/pono/dance/dance_hooray.webp"
-                     alt="よろこぶ いまのポノ">
-              </div>
-            </div>
-          </div>
-          <div class="notify">
-            <p>わくわくしながら じゅんびちゅう！<span>かんせいしたら、 この あそびばで おしらせします。</span></p>
-          </div>
+    <!-- ============ Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル) ============ -->
+    <section class="coming-soon">
+      <button type="button" class="cs-banner" aria-haspopup="dialog" aria-controls="cs-modal"
+              aria-label="ポノの あそびばが アプリになる おしらせを ひらく">
+        <span class="cs-copy">
+          <span class="lead">
+            <span class="l1"><span class="brand">ポノの あそびば</span>が</span>
+            <span class="l2"><span class="mark">アプリに なります！</span></span>
+            <span class="l3"><span class="np">ゲームも コンテンツも</span> <span class="big">うんと ボリュームアップ。</span></span>
+          </span>
+        </span>
+        <span class="cs-icon"><img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></span>
+        <span class="cs-tap" aria-hidden="true">タップで ひらく →</span>
+      </button>
+
+      <div class="cs-modal" id="cs-modal" role="dialog" aria-modal="true" aria-labelledby="cs-modal-title" hidden>
+        <div class="cs-modal-box">
+          <button type="button" class="cs-modal-close" aria-label="とじる">×</button>
+          <h2 class="cs-modal-title" id="cs-modal-title">いま つくっています</h2>
+          <div class="cs-modal-icon"><img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></div>
+          <p class="cs-modal-lead">ポノの あそびばが スマホ・タブレットの アプリに。 もっと いろんなことが できるように なります。</p>
+          <ul class="cs-modal-list">
+            <li><span class="b">★</span>もっと たくさんの ゲーム</li>
+            <li><span class="b">★</span>あたらしい あそびば</li>
+            <li><span class="b">★</span>みんなの とくべつな おしらせ</li>
+            <li><span class="b">★</span>ホーム画面に ポノの アプリアイコン</li>
+          </ul>
+          <p class="cs-modal-foot">かんせいしたら、 ここで おしらせするね。</p>
         </div>
       </div>
     </section>
@@ -1536,6 +1391,38 @@
         });
       }, { threshold: 0.35, rootMargin: '0px 0px -10% 0px' });
       targets.forEach(function (el) { io.observe(el); });
+    })();
+
+    /* ===== Coming Soon (Sticker Banner) modal open/close ===== */
+    (function(){
+      var section = document.querySelector('.coming-soon');
+      if(!section) return;
+      var banner = section.querySelector('.cs-banner');
+      var modal = section.querySelector('#cs-modal');
+      if(!banner || !modal) return;
+      var closeBtn = modal.querySelector('.cs-modal-close');
+      var lastFocus = null;
+      function open(){
+        lastFocus = document.activeElement;
+        modal.hidden = false;
+        requestAnimationFrame(function(){ modal.classList.add('is-open'); closeBtn.focus(); });
+        document.addEventListener('keydown', onKey);
+      }
+      function close(){
+        modal.classList.remove('is-open');
+        document.removeEventListener('keydown', onKey);
+        var done = function(){ modal.hidden = true; modal.removeEventListener('transitionend', done); };
+        modal.addEventListener('transitionend', done);
+        setTimeout(done, 320);
+        if(lastFocus) lastFocus.focus();
+      }
+      function onKey(e){
+        if(e.key === 'Escape'){ close(); return; }
+        if(e.key === 'Tab'){ e.preventDefault(); closeBtn.focus(); }
+      }
+      banner.addEventListener('click', open);
+      closeBtn.addEventListener('click', close);
+      modal.addEventListener('click', function(e){ if(e.target === modal) close(); });
     })();
   </script>
 
