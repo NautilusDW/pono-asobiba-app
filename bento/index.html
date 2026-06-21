@@ -4415,6 +4415,29 @@ body.bento-complete-open #sk-intro {
   width: 164px;
   height: 164px;
 }
+.complete-result-page .complete-pono-slot {
+  width: clamp(132px, 15vw, 168px);
+  height: clamp(92px, 15vh, 124px);
+  overflow: hidden;
+  align-items: flex-start;
+}
+.complete-result-page .complete-pono-big {
+  width: 100%;
+  height: clamp(152px, 22vh, 198px);
+  object-position: center top;
+  margin-top: -4px;
+}
+.complete-result-page .complete-pono-slot.is-npc {
+  width: clamp(148px, 18vw, 190px);
+  height: clamp(100px, 16vh, 130px);
+  align-items: flex-start;
+}
+.complete-result-page .complete-pono-slot.is-npc .complete-pono-big {
+  width: 100%;
+  height: clamp(178px, 24vh, 220px);
+  object-position: center top;
+  margin-top: -6px;
+}
 @keyframes ponoFloat {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-5px); }
@@ -4623,7 +4646,7 @@ body.bento-complete-open #sk-intro {
   max-width: 100%;
 }
 .save-fav-btn {
-  margin-top: 4px;
+  margin-top: clamp(18px, 4vh, 40px);
   padding: 8px 20px;
   border: none;
   border-radius: 50px;
@@ -5567,7 +5590,7 @@ const FREE_COOKED_OKAZU = [
   { img: FREE_LAYOUT_ASSET_P+'fruit_kiwi.png',             name: 'キウイ',           cat: 'fruit', sk: 'g', size: 104, rotation: -1 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_broccoli.png',          name: 'ブロッコリー',       cat: 'veg',  sk: 'g', size: 108, cupSize: 88, rotation: -2 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_meatball.png',          name: 'ミートボール',       cat: 'meat', sk: 'r', size: 118, cupSize: 94, rotation: 1 },
-  { img: FREE_LAYOUT_ASSET_P+'okazu_napolitan.png',         name: 'ナポリタン',         cat: 'meat', sk: 'y', size: 150, cupSize: 110, cupAllowed: true, rotation: -1 },
+  { img: FREE_LAYOUT_ASSET_P+'okazu_napolitan.png',         name: 'ナポリタン',         cat: 'meat', sk: 'y', okazuRole: 'side', size: 132, cupSize: 104, cupAllowed: true, rotation: -1 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_gyoza.png',             name: 'ぎょうざ',           cat: 'meat', sk: 'r', size: 198, rotation: 3 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_harumaki.png',          name: 'はるまき',           cat: 'meat', sk: 'y', size: 256, rotation: -4 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_bacon_maki.png',        name: 'ベーコンまき',       cat: 'meat', sk: 'r', size: 161, rotation: 2 },
@@ -5578,8 +5601,8 @@ const FREE_COOKED_OKAZU = [
   { img: P+'banana2.webp',       name: 'バナナ',             cat: 'fruit',sk: 'y', size: 110, rotation: -2 },
   { img: P+'budou2.webp',        name: 'ぶどう',             cat: 'fruit',sk: 'g', size: 105, rotation: 2 },
 ];
-const FREE_MAIN_OKAZU_NAMES = ['タコウインナー', 'ハンバーグ', 'からあげ', 'エビフライ', 'コロッケ', 'やきざけ', 'ナポリタン', 'ぎょうざ', 'はるまき', 'ベーコンまき'];
-const FREE_SIDE_OKAZU_NAMES = ['キャベツ', 'プチトマト', 'たまごやき', 'にんじんいんげん', 'きんぴらごぼう', 'ブロッコリー', 'ミートボール', 'コーンほうれんそう', 'えだまめ', 'ポテトサラダ'];
+const FREE_MAIN_OKAZU_NAMES = ['タコウインナー', 'ハンバーグ', 'からあげ', 'エビフライ', 'コロッケ', 'やきざけ', 'ぎょうざ', 'はるまき', 'ベーコンまき'];
+const FREE_SIDE_OKAZU_NAMES = ['キャベツ', 'プチトマト', 'たまごやき', 'にんじんいんげん', 'きんぴらごぼう', 'ブロッコリー', 'ミートボール', 'ナポリタン', 'コーンほうれんそう', 'えだまめ', 'ポテトサラダ'];
 
 // ===== NPC requesters (依頼者モード用) =====
 // タイトル後に 1 体ランダム選定。 入れた食材の name が wantedFoods / perfectCombos と
@@ -7208,6 +7231,16 @@ function startNextBentoOrderRound() {
   }
   showShopOpening(req, loadStage, { skipIntro: true });
 }
+function restartSimpleBentoRound() {
+  setSimpleBentoMode(true);
+  window.__bentoShopOpeningActive = false;
+  suppressBentoIntroTutorialOverlays();
+  try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
+  setCurrentNpcRequester(null);
+  loadStage();
+  renderBentoReminder();
+  setSpeech('すきな おべんとうを つくろう！ ボタンを タップすると はいっていくよ。');
+}
 
 function getRequesterReactionMessage(req, finalEval) {
   const requestEval = finalEval.requestEval;
@@ -8241,6 +8274,7 @@ function dist(a, b) {
 }
 function getOkazuRole(def) {
   if (!def) return 'side';
+  if (def.okazuRole) return def.okazuRole;
   if (FREE_SIDE_OKAZU_NAMES.includes(def.name)) return 'side';
   if (FREE_MAIN_OKAZU_NAMES.includes(def.name)) return 'main';
   return 'other';
@@ -8253,7 +8287,7 @@ function getFreeFoodCatalog() {
       ...f,
       id: 'food_' + base,
       type: 'food',
-      okazuRole: getOkazuRole(f),
+      okazuRole: f.okazuRole || getOkazuRole(f),
       size: f.size || 176,
       layerBase: 30,
       rotation: f.rotation != null ? f.rotation : Math.round((Math.random() * 8) - 4),
@@ -8474,6 +8508,42 @@ function getActiveCup() {
 }
 function getEditingCup() {
   return placedItems.find(i => i.uid === freeCupEditorUid && i.snapTarget) || null;
+}
+function isSimpleCupSelectionStep() {
+  return !!(simpleBentoMode && isOkazuGuideStep() && String(freeGuideStep || '').endsWith('Side'));
+}
+function findCupForSimpleSelectionTap(item, point = null) {
+  if (!isSimpleCupSelectionStep() || !item) return null;
+  if (item.snapTarget) return item;
+  if (item.parentCupId) return placedItems.find(i => i.uid === item.parentCupId && i.snapTarget) || null;
+  const itemTier = getItemTier(item);
+  let best = null;
+  let bestDist = Infinity;
+  placedItems.forEach(cup => {
+    if (!cup || !cup.snapTarget) return;
+    if (getBoxTierCount() > 1 && getItemTier(cup) !== itemTier && getItemTier(cup) !== freeActiveTier) return;
+    const cupRadius = Math.max(64, cup.radius || ((cup.size || 180) * 0.62));
+    const itemRadius = Math.max(32, (item.size || 72) * (item.scale || 1) * 0.46);
+    const centerDist = dist(item, cup);
+    const tapDist = point ? dist(point, cup) : centerDist;
+    const hitsCup = tapDist <= cupRadius + 18 || centerDist <= cupRadius + itemRadius;
+    if (hitsCup && tapDist < bestDist) {
+      best = cup;
+      bestDist = tapDist;
+    }
+  });
+  return best;
+}
+function maybeOpenCupFromSimpleSelectionTap(e, item) {
+  if (!isSimpleCupSelectionStep()) return false;
+  const cup = findCupForSimpleSelectionTap(item, e ? eventToFreePoint(e) : null);
+  if (!cup) return false;
+  if (e) {
+    if (e.cancelable) e.preventDefault();
+    try { e.stopPropagation(); } catch (_) {}
+  }
+  openCupEditor(cup.uid);
+  return true;
 }
 function getCupChildren(cup) {
   if (!cup) return [];
@@ -10885,6 +10955,9 @@ function createFreePlacedElement(item, interactive) {
         showToast('がめんを タップしてね！');
         return;
       }
+      if (maybeOpenCupFromSimpleSelectionTap(ev, item)) {
+        return;
+      }
       beginFreeItemDrag(ev, item.uid);
     });
   }
@@ -12339,7 +12412,7 @@ function renderFreeCupEditorControls() {
   return frag;
 }
 function renderFreeCupControls() {
-  if (!isOkazuGuideStep()) return null;
+  if (!isOkazuGuideStep() || !String(freeGuideStep || '').endsWith('Side')) return null;
   const cups = getActiveTierCups();
   if (!cups.length) return null;
   const panel = document.createElement('div');
@@ -12431,6 +12504,9 @@ function renderFreeLayoutControls() {
 
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
+
+  const cupControls = simpleBentoMode ? renderFreeCupControls() : null;
+  if (cupControls) tray.appendChild(cupControls);
 
   const selectedToolbar = createFreeContextToolbar({ panel: true });
   if (selectedToolbar) tray.appendChild(selectedToolbar);
@@ -13248,7 +13324,8 @@ function stageComplete() {
   }
   const continueAfterCompleteClose = () => {
     if (freeLayoutMode) {
-      startNextBentoOrderRound();
+      if (simpleBentoMode) restartSimpleBentoRound();
+      else startNextBentoOrderRound();
       return;
     }
     if (inChallengeMode) {
@@ -16464,13 +16541,7 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     try { getAC(); } catch (_) {}
     if (bgmEnabled) tryPlayBgm();
     if (simple) {
-      window.__bentoShopOpeningActive = false;
-      suppressBentoIntroTutorialOverlays();
-      try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
-      setCurrentNpcRequester(null);
-      loadStage();
-      renderBentoReminder();
-      setSpeech('すきな おべんとうを つくろう！ ボタンを タップすると はいっていくよ。');
+      restartSimpleBentoRound();
       return;
     }
     // NPC モード判定 + お店の導入から注文までのオープニング演出

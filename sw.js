@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1461: Bento simple mode treats Napolitan as a cup-side okazu, makes cups easy to reselect, crops complete-screen characters to bust shots, and keeps continue in simple mode.
 // v1460: Bento tutorial frees nori choices, keeps guided targets active, refreshes size-1/tomato narration, and fixes complete-detail close guidance layout.
 // v1459: LP a11y focus/reduced-motion/isolation fixes.
 // v1458: LP 派手化 — announce + play-cards + herob-cta に統一波長 (4.8s shimmer / 2.4s breath / .42s overshoot) で「ぴょこ・ぴか・きら」演出。 5 色個別 glow / 紙吹雪 / sparkle / arrow 弾み。 既存 announce/bookcheer アクセントは維持。
@@ -153,7 +154,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1460; // v1460: Bento tutorial free nori, guided target active states, refreshed size-1/tomato narration, and complete-detail close guide layout.
+const CACHE_VERSION = 1461; // v1461: Bento simple mode Napolitan cup-side okazu, cup reselect, complete bust-shot crop, and simple continue reset.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
