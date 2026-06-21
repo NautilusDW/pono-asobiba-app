@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1465: Bottom nav swaps the top button to an official-site button using user-cleaned alpha sprites.
 // v1464: Bento simple mode requires OK to confirm box previews, clarifies tap-to-select copy, aligns side tabs, and makes cup priority start cup movement instead of editor.
 // v1463: Daily gacha hides the close X, moves reveal actions to the top right, and opens the tray landing mask.
 // v1462: StickerBook zukan page type settings and printed page margins.
@@ -157,7 +158,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1464; // v1464: Bento simple box OK confirm, clearer simple copy, aligned side tabs, and cup-priority movement.
+const CACHE_VERSION = 1465; // v1465: Bottom nav swaps the top button to an official-site button using user-cleaned alpha sprites.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

@@ -2610,7 +2610,7 @@
 
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
       <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"></button>
-      <button class="bn-item" data-action="top" type="button" aria-label="トップ"></button>
+      <button class="bn-item" data-action="official" type="button" aria-label="公式サイト"></button>
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
       <button class="bn-item" data-action="stickers" type="button" aria-label="シール"></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
@@ -3043,7 +3043,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1463;
+    const PAGE_CACHE_VERSION = 1465;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -3445,7 +3445,7 @@
       const action = btn.dataset.action;
       if (action === 'help') {
         location.href = 'help.html';
-      } else if (action === 'top') {
+      } else if (action === 'official') {
         location.href = 'index.html';
       } else if (action === 'news') {
         openModal('newsModal');
