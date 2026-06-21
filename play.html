@@ -1605,16 +1605,20 @@
     .daily-gacha-modal.is-grabbing .daily-gacha-guide-hand {
       opacity: .98;
       animation: none;
+      left: 50%;
+      top: 66.2%;
       transform:
         translate(
-          calc(-44% + var(--gacha-hand-x, 0px)),
-          calc(-54% + var(--gacha-hand-y, 0px))
+          calc(-52% + var(--gacha-hand-x, 0px)),
+          calc(-58% + var(--gacha-hand-y, 0px))
         )
         rotate(var(--gacha-hand-angle, -8deg))
         scale(.9);
     }
     .daily-gacha-modal.is-notch .daily-gacha-guide-hand {
       opacity: .96;
+      left: 50%;
+      top: 66.2%;
       animation: dailyGachaHandNotch .38s cubic-bezier(.13,.82,.2,1.12) both;
     }
     .daily-gacha-modal.is-final-zoom .daily-gacha-guide-hand,
@@ -1624,14 +1628,22 @@
       opacity: 0;
       animation: none;
     }
+    .daily-gacha-drop-mask {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      overflow: hidden;
+      pointer-events: none;
+      clip-path: inset(72% 12% 0 12% round 10px);
+    }
     .daily-gacha-drop-capsule {
       position: absolute;
       left: 50%;
       top: 83%;
-      z-index: 4;
+      z-index: 1;
       width: clamp(58px, 9.4%, 84px);
       opacity: 0;
-      transform: translate(-50%, -70%) scale(.38) rotate(-14deg);
+      transform: translate(-50%, -130%) scale(.3) rotate(-14deg);
       filter:
         drop-shadow(0 13px 12px rgba(70, 34, 12, .28))
         drop-shadow(0 0 18px rgba(255, 219, 86, .42));
@@ -2037,8 +2049,8 @@
       48% { opacity: 1; transform: translateX(-50%) scale(1.07); box-shadow: 0 5px 0 rgba(146, 83, 28, .25), 0 0 14px rgba(255, 126, 45, .54); }
     }
     @keyframes dailyGachaHandNotch {
-      0% { transform: translate(calc(-44% + var(--gacha-hand-x, 0px)), calc(-54% + var(--gacha-hand-y, 0px))) rotate(var(--gacha-hand-angle, -8deg)) scale(.9); }
-      45% { transform: translate(calc(-42% + var(--gacha-hand-x, 0px)), calc(-55% + var(--gacha-hand-y, 0px))) rotate(calc(var(--gacha-hand-angle, -8deg) + 12deg)) scale(.96); }
+      0% { transform: translate(calc(-52% + var(--gacha-hand-x, 0px)), calc(-58% + var(--gacha-hand-y, 0px))) rotate(var(--gacha-hand-angle, -8deg)) scale(.9); }
+      45% { transform: translate(calc(-50% + var(--gacha-hand-x, 0px)), calc(-59% + var(--gacha-hand-y, 0px))) rotate(calc(var(--gacha-hand-angle, -8deg) + 12deg)) scale(.96); }
       100% { transform: translate(-48%, -56%) rotate(-14deg) scale(.9); }
     }
     @keyframes dailyGachaMachineFinalZoom {
@@ -2060,11 +2072,11 @@
       68% { transform: scale(.994); }
     }
     @keyframes dailyGachaCapsuleDrop {
-      0% { opacity: 0; transform: translate(-50%, -82%) scale(.34) rotate(-18deg); }
-      8% { opacity: 1; transform: translate(-50%, -72%) scale(.42) rotate(-8deg); }
-      16% { opacity: 1; transform: translate(-50%, -58%) scale(.52) rotate(4deg); }
-      25% { opacity: 1; transform: translate(-50%, -38%) scale(.62) rotate(20deg); }
-      36% { opacity: 1; transform: translate(-50%, -12%) scale(.72) rotate(42deg); }
+      0% { opacity: 0; transform: translate(-50%, -142%) scale(.28) rotate(-18deg); }
+      8% { opacity: 1; transform: translate(-50%, -126%) scale(.36) rotate(-8deg); }
+      16% { opacity: 1; transform: translate(-50%, -102%) scale(.48) rotate(4deg); }
+      25% { opacity: 1; transform: translate(-50%, -68%) scale(.6) rotate(20deg); }
+      36% { opacity: 1; transform: translate(-50%, -28%) scale(.72) rotate(42deg); }
       48% { opacity: 1; transform: translate(-50%, 16%) scale(.82) rotate(70deg); }
       58% { opacity: 1; transform: translate(-48%, 39%) scale(.88) rotate(96deg); }
       68% { opacity: 1; transform: translate(-47%, 26%) scale(.84) rotate(120deg); }
@@ -2701,7 +2713,9 @@
           <span class="daily-gacha-turn-cue__word">まわす</span>
         </div>
         <img class="daily-gacha-guide-hand" id="dailyGachaGuideHand" src="assets/images/puzzle/ui/tutorial/hand_open_hover.png" alt="" draggable="false" aria-hidden="true">
-        <img class="daily-gacha-drop-capsule" id="dailyGachaDropCapsule" src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false">
+        <div class="daily-gacha-drop-mask" aria-hidden="true">
+          <img class="daily-gacha-drop-capsule" id="dailyGachaDropCapsule" src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false">
+        </div>
       </div>
       <div class="daily-gacha-direct-hint" id="dailyGachaDirectHint" aria-live="polite">つまみを ぐるっと まわしてね</div>
 
@@ -3009,7 +3023,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1223;
+    const PAGE_CACHE_VERSION = 1224;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -3530,10 +3544,12 @@
     function setDailyGachaHandOrbit(progress = 0) {
       if (!dailyGachaModal) return;
       const p = Math.max(0, Math.min(1, progress));
-      const rad = (-62 + p * 315) * Math.PI / 180;
-      const x = Math.cos(rad) * 28;
-      const y = Math.sin(rad) * 22;
-      const angle = -16 + p * 46;
+      const rad = (p * DAILY_GACHA_DRAG_PREVIEW_ROTATION) * Math.PI / 180;
+      const leverWidth = dailyGachaLever ? dailyGachaLever.offsetWidth : 140;
+      const radius = Math.max(36, leverWidth * .46);
+      const x = Math.cos(rad) * radius;
+      const y = Math.sin(rad) * radius;
+      const angle = -10 + p * 34;
       dailyGachaModal.style.setProperty('--gacha-hand-x', x.toFixed(1) + 'px');
       dailyGachaModal.style.setProperty('--gacha-hand-y', y.toFixed(1) + 'px');
       dailyGachaModal.style.setProperty('--gacha-hand-angle', angle.toFixed(1) + 'deg');
