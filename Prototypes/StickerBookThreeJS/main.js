@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-778";
+const ASSET_VERSION = "20260622-779";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -830,6 +830,10 @@ const STICKER_PAGE_BLOCK_DEPTH_SCALE = {
 const STICKER_COVER_BOARD_DEPTH = PAGE_H * 0.021;
 const STICKER_COVER_FACE_LIFT = PAGE_H * 0.0018;
 const STICKER_COVER_CLOSED_BOARD_Z = PAGE_H * 0.006;
+const STICKER_COVER_3D_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
+const STICKER_COVER_3D_RING_ANCHOR_X = PAGE_W * 0.066;
+const STICKER_COVER_3D_RING_REACH = PAGE_W * 0.082;
+const STICKER_COVER_3D_RING_FRONT_Z = STICKER_COVER_CLOSED_BOARD_Z + PAGE_H * 0.025;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -1151,6 +1155,10 @@ closedCover.position.set(COVER_CLOSED_X, 0, STICKER_COVER_CLOSED_BOARD_Z + STICK
 closedCover.renderOrder = 30;
 coverOnly.add(closedCover);
 
+const closedCoverRings = createCover3DRingLayer();
+closedCoverRings.group.position.set(COVER_CLOSED_X, 0, 0);
+coverOnly.add(closedCoverRings.group);
+
 const coverTurn = new THREE.Group();
 coverTurn.visible = false;
 coverTurn.position.set(COVER_CLOSED_X, 0, 0.18);
@@ -1188,6 +1196,9 @@ coverTurnDepth.group.renderOrder = 84;
 coverTurn.add(coverTurnDepth.group);
 coverTurn.add(coverTurnBack);
 coverTurn.add(coverTurnFront);
+const coverTurnRings = createCover3DRingLayer();
+coverTurnRings.group.renderOrder = 88;
+coverTurn.add(coverTurnRings.group);
 
 const spine = makePlane(BOOK_VARIANTS[activeBook].spine, SPINE_W, PAGE_H, { depth: -0.09, lit: true, transparent: true });
 spine.position.set(0, 0, -0.09);
@@ -7447,6 +7458,83 @@ function createCoverThicknessLayer() {
   return { group, plane, book: null };
 }
 
+function createCover3DRingLayer() {
+  const group = new THREE.Group();
+  const hardware = stickerBookTheme(activeBook).coverHardware;
+  const materials = {
+    ring: new THREE.MeshStandardMaterial({
+      color: hardware.ring,
+      emissive: 0x34230e,
+      emissiveIntensity: 0.035,
+      roughness: 0.48,
+      metalness: 0.08,
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+    }),
+    highlight: new THREE.MeshBasicMaterial({
+      color: hardware.ringHighlight,
+      transparent: true,
+      opacity: 0.32,
+      depthWrite: false,
+    }),
+  };
+
+  for (const pixelY of STICKER_COVER_3D_RING_PIXELS) {
+    const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
+    const ring = new THREE.Mesh(createCover3DRingGeometry(y), materials.ring);
+    ring.renderOrder = 88;
+    group.add(ring);
+
+    const highlight = new THREE.Mesh(createCover3DRingHighlightGeometry(y), materials.highlight);
+    highlight.renderOrder = 89;
+    group.add(highlight);
+  }
+
+  group.visible = false;
+  return { group, materials };
+}
+
+function createCover3DRingGeometry(baseY) {
+  const points = [];
+  for (let i = 0; i <= 28; i += 1) {
+    const t = i / 28;
+    const arch = Math.sin(t * Math.PI);
+    points.push(new THREE.Vector3(
+      STICKER_COVER_3D_RING_ANCHOR_X - arch * STICKER_COVER_3D_RING_REACH,
+      baseY + arch * PAGE_H * 0.0018,
+      STICKER_COVER_3D_RING_FRONT_Z + Math.cos(t * Math.PI) * PAGE_H * 0.0082,
+    ));
+  }
+  return new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(points),
+    42,
+    PAGE_W * 0.006,
+    14,
+    false,
+  );
+}
+
+function createCover3DRingHighlightGeometry(baseY) {
+  const points = [];
+  for (let i = 0; i <= 22; i += 1) {
+    const t = i / 22;
+    const arch = Math.sin(t * Math.PI);
+    points.push(new THREE.Vector3(
+      STICKER_COVER_3D_RING_ANCHOR_X - arch * STICKER_COVER_3D_RING_REACH * 0.82,
+      baseY + PAGE_H * 0.002 + arch * PAGE_H * 0.0012,
+      STICKER_COVER_3D_RING_FRONT_Z + PAGE_H * 0.003 + Math.cos(t * Math.PI) * PAGE_H * 0.006,
+    ));
+  }
+  return new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(points),
+    30,
+    PAGE_W * 0.0013,
+    6,
+    false,
+  );
+}
+
 function createCoverHardwareLayer() {
   const group = new THREE.Group();
   const hardware = stickerBookTheme(activeBook).coverHardware;
@@ -7856,7 +7944,18 @@ function applyCoverHardwareTheme() {
   }
   coverHardware.group.visible = shouldShowCoverHardware();
   applyStickerDepthTheme(hardware);
+  applyCover3DRingTheme(hardware);
   updateStickerDepthModeVisibility();
+}
+
+function applyCover3DRingTheme(hardware) {
+  for (const layer of [closedCoverRings, coverTurnRings]) {
+    layer.materials.ring.color.setHex(hardware.ring);
+    layer.materials.ring.emissive.setHex(0x34230e);
+    layer.materials.highlight.color.setHex(hardware.ringHighlight);
+    layer.materials.ring.needsUpdate = true;
+    layer.materials.highlight.needsUpdate = true;
+  }
 }
 
 function applyStickerDepthTheme(hardware) {
@@ -7877,6 +7976,8 @@ function updateStickerDepthModeVisibility() {
   const isStickerAlbum = activeAlbumMode !== "collection";
   closedCoverDepth.group.visible = isStickerAlbum;
   coverTurnDepth.group.visible = isStickerAlbum;
+  closedCoverRings.group.visible = isStickerAlbum;
+  coverTurnRings.group.visible = isStickerAlbum;
   if (!isStickerAlbum) {
     stickerBookDepth.group.visible = false;
   }
@@ -8874,6 +8975,7 @@ function renderCoverOpenTransition(rawProgress) {
   coverTurn.rotation.x = Math.sin(p * Math.PI) * 0.018;
   coverTurnFront.visible = p < 0.5;
   coverTurnBack.visible = p >= 0.5;
+  coverTurnRings.group.visible = activeAlbumMode !== "collection" && coverTurnFront.visible;
   flipShadow.visible = raw > 0.04 && raw < 0.95;
   flipShadow.material.opacity = 0.07 + Math.sin(p * Math.PI) * 0.16;
   pageTurn.visible = false;
