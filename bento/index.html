@@ -3031,7 +3031,9 @@ body.bento-complete-open .pono-dropdown {
   top: calc(var(--bento-complete-card-top, 0px) + clamp(58px, 9vmin, 72px)) !important;
 }
 body.bento-complete-open .tut-settings-btn,
-body.bento-complete-open .fav-header-btn {
+body.bento-complete-open .fav-header-btn,
+body.bento-complete-open .pono-menu-toggle,
+body.bento-complete-open .pono-dropdown {
   display: none !important;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -3780,7 +3782,7 @@ body.bento-complete-open #sk-intro {
   white-space: normal;
   font-size: 0.92rem;
   line-height: 1.55;
-  z-index: 9000;
+  z-index: 9810;
 }
 .tut-bubble--request {
   max-width: min(92vw, 430px);
@@ -3797,7 +3799,7 @@ body.bento-complete-open #sk-intro {
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  z-index: 9100;
+  z-index: 9810;
 }
 .tut-skip-mini {
   font-size: 0.62rem;
@@ -3827,7 +3829,7 @@ body.bento-complete-open #sk-intro {
 /* v3: trim-path (animated blue stroke that circulates around a target) */
 .tut-trim-box {
   position: absolute;
-  z-index: 9080;
+  z-index: 9805;
   pointer-events: none;
   overflow: visible;
 }
@@ -3847,7 +3849,7 @@ body.bento-complete-open #sk-intro {
 /* v3: drop target circle for overlap/layer tutorial */
 .tut-target-circle {
   position: fixed;
-  z-index: 9075;
+  z-index: 9804;
   width: 92px;
   height: 92px;
   margin-left: -46px;

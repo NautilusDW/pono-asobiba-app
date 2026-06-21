@@ -1,6 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1460: Bento tutorial frees nori choices, keeps guided targets active, refreshes size-1/tomato narration, and fixes complete-detail close guidance layout.
+// v1459: LP a11y focus/reduced-motion/isolation fixes.
 // v1458: LP 派手化 — announce + play-cards + herob-cta に統一波長 (4.8s shimmer / 2.4s breath / .42s overshoot) で「ぴょこ・ぴか・きら」演出。 5 色個別 glow / 紙吹雪 / sparkle / arrow 弾み。 既存 announce/bookcheer アクセントは維持。
 // v1457: Daily gacha reveal gets generated home buttons, returns to the game top, and smooths the tray mask/background glow.
 // v1456: StickerBook zukan six-item index and wider detail template.
@@ -151,7 +153,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1459; // v1459: a11y 修正 (focus-visible outline WCAG 適合化: 2px dashed rgba .6 → 3px solid var(--primary-deep) / reduced-motion で静的 transform 維持: transform:none 一括削除し badge/em/deco/tag の rotate を保護 / .announce に isolation:isolate 追加して ::after mix-blend-mode 漏れ防止)
+const CACHE_VERSION = 1460; // v1460: Bento tutorial free nori, guided target active states, refreshed size-1/tomato narration, and complete-detail close guide layout.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
