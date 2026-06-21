@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-06-22 - [batch:777-sticker-all-raw-quizland] Codex: user 指示「リストにあるやつを全部生成」を受領。対象は `Prototypes/StickerBookThreeJS/sticker_book_content_plan.json` の116件と解釈。全件はゲーム単位で分割し、まず `quizland` 16件を raw 生成する。`ふつう/キラ` は複数枚シート、`とくべつキラ` は単体。alpha 抜き/切り抜き/実装反映はしない。 (by Codex)
+- 2026-06-22 - [batch:777-sticker-all-raw-quizland] DONE - Codex: `quizland` 16件分を `tmp/alpha_pending/777-sticker-all-raw-quizland/` に raw 保存。通常/キラは複数枚シート、`とくべつキラ` は単体。Pono と かぶとむしは初回が弱かったため補正版を追加。`CODEX-DELIVERY.md` に配置対応と品質メモを記録。alpha 抜き/切り抜き/実装反映なし。残りは `maze` 以降100件。 (by Codex)
 - 2026-06-22 - [batch:776-sticker-rarity-pono-style-samples] Codex: Pono の既存参照を確認し、シールの `ふつう` / `キラ` / `とくべつキラ` 共通スタイル案の raw サンプル生成に着手。Pono は小さい子ども、性別を強く出さない、毛が長めのくま、白目なし黒目、目を大きくしすぎない条件を明示。alpha 抜き/切り抜きはしない。 (by Codex)
 - 2026-06-22 - [batch:776-sticker-rarity-pono-style-samples] DONE - Codex: Pono のキャラ条件を反映した raw サンプル3枚を `tmp/alpha_pending/776-sticker-rarity-pono-style-samples/` に保存。`pono_rarity_3level_style_raw_gpt_image2.png`、`pono_bento_special_kira_raw_gpt_image2.png`、`pono_lantern_special_kira_raw_gpt_image2.png` と `CODEX-DELIVERY.md` を作成。alpha 抜き/切り抜き/実装反映なし。3level の右シールはドレス寄り、bento はリボン甘め、lantern は中性的で最高レア型として良好。 (by Codex)
 - 2026-06-22 - [batch:776-sticker-rarity-pono-style-samples] DONE - Codex: user 指摘「別キャラ、肉球は白っぽく手のひらだけ、頭でかい/体太い」を反映し、補正版 raw `pono_character_calibration_corrected_raw_gpt_image2.png` / `pono_lantern_special_kira_corrected_raw_gpt_image2.png` を追加。前回より肉球・頭身・白目なし黒目は改善。まだ本家より少し丸顔/ふっくらなので、量産時は顔幅・頬毛・胴幅をさらに抑える。 (by Codex)
