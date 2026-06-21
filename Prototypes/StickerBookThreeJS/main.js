@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-747";
+const ASSET_VERSION = "20260621-748";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -41,6 +41,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "bugs",
     label: "むし",
+    indexTitle: "虫図鑑目次",
     pageLabel: "むしずかん",
     summary: "はねや あしの かたちを みてみよう",
     representativeSubjectIds: ["bug_hachi", "bug_chocho", "bug_kabutomushi", "bug_amenbo"],
@@ -48,6 +49,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "animals",
     label: "どうぶつ",
+    indexTitle: "動物図鑑目次",
     pageLabel: "どうぶつずかん",
     summary: "もりや まちで あえる いきもの",
     representativeSubjectIds: ["animal_dog", "animal_cat", "animal_lion", "animal_penguin"],
@@ -55,6 +57,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "sea",
     label: "うみ",
+    indexTitle: "海の図鑑目次",
     pageLabel: "うみずかん",
     summary: "うみや みずべで くらす なかま",
     representativeSubjectIds: ["sea_kujira", "sea_kani", "sea_jinbeizame", "sea_daiouika"],
@@ -62,6 +65,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "food",
     label: "たべもの",
+    indexTitle: "食べもの図鑑目次",
     pageLabel: "たべものずかん",
     summary: "からだを つくる おいしい もの",
     representativeSubjectIds: ["food_onigiri", "food_tamago", "food_karaage", "food_broccoli"],
@@ -4805,24 +4809,42 @@ function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
   };
 }
 
+function collectionZukanIndexTitle(pageDef) {
+  const category = COLLECTION_TOC_CATEGORY_DEFS.find((definition) => definition.id === pageDef?.categoryId);
+  return collectionZukanFirstText(category?.indexTitle, pageDef?.label, "図鑑目次");
+}
+
+function collectionZukanIndexSubtitle(pageDef) {
+  const category = COLLECTION_TOC_CATEGORY_DEFS.find((definition) => definition.id === pageDef?.categoryId);
+  return collectionZukanFirstText(category?.summary, pageDef?.subtitle, "きになる なかまを くわしく みよう");
+}
+
 function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, pageNumber) {
   const theme = palette.collection;
   const layout = collectionZukanIndexLayout(subjects.length);
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("index");
   const sparseIndex = layout.rows <= 3;
-  const headerOffsetY = generatedTemplate ? 38 : sparseIndex ? 28 : 0;
 
   ctx.save();
   ctx.fillStyle = theme.text;
-  ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(pageDef?.label || "ずかんもくじ", PAGE_TEXTURE_W / 2, 112 + headerOffsetY);
-  ctx.fillStyle = theme.infoAccent || palette.sub;
-  ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(pageDef?.subtitle || "いきものや たべものを しらべよう", PAGE_TEXTURE_W / 2, 150 + headerOffsetY);
-  ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
-  ctx.font = '700 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText("Codexと いっしょに、きになる なかまを くわしく みよう", PAGE_TEXTURE_W / 2, 184 + headerOffsetY);
+  if (generatedTemplate) {
+    ctx.font = '900 46px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.fillText(collectionZukanIndexTitle(pageDef), PAGE_TEXTURE_W / 2, 166, 760);
+    ctx.fillStyle = "rgba(51, 68, 71, 0.62)";
+    ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.fillText(collectionZukanIndexSubtitle(pageDef), PAGE_TEXTURE_W / 2, 246, 690);
+  } else {
+    const headerOffsetY = sparseIndex ? 28 : 0;
+    ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.fillText(pageDef?.label || "ずかんもくじ", PAGE_TEXTURE_W / 2, 112 + headerOffsetY);
+    ctx.fillStyle = theme.infoAccent || palette.sub;
+    ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.fillText(pageDef?.subtitle || "いきものや たべものを しらべよう", PAGE_TEXTURE_W / 2, 150 + headerOffsetY);
+    ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
+    ctx.font = '700 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+    ctx.fillText("Codexと いっしょに、きになる なかまを くわしく みよう", PAGE_TEXTURE_W / 2, 184 + headerOffsetY);
+  }
 
   for (let i = 0; i < subjects.length; i += 1) {
     const subject = subjects[i];
