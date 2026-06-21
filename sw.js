@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1236: Daily gacha rarity reveal profiles and gold capsule assets synced to develop.
 // v1234: Daily gacha one-per-day start/end copy synced to develop, with sticker-book guidance after the reveal.
 // v1233: Daily gacha final-turn stinger synced to develop, and capsule-exit SE leads the drop slightly.
 // v1232: Daily gacha switches from the top BGM to the gacha bed loop, and the help pressed mask extends to the right edge.
@@ -27,7 +28,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1235; // v1235: Daily gacha keeps the once-a-day copy but does not enforce the daily lock during verification.
+const CACHE_VERSION = 1236; // v1236: Daily gacha rarity reveal profiles and gold capsule assets synced to develop.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
