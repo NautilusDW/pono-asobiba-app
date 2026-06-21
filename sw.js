@@ -1,6 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1479: coming-soon を Stitch 案 B (Sticker Banner + 詳細モーダル) に置換 — 旧 .coming-soon-app (phone モック) 完全削除、 Mochiy Pop One フォント追加、 タップ展開モーダル + Esc/オーバーレイ閉じ + focus トラップ
+// v1478: StickerBookThreeJS prototype assets bypass browser cache to avoid stale zukan/book modules.
 // v1469: LP .announce を Stitch 完成版 (coming-soon-app teaser) に置換 — phone モックアップ + ポノ dance_hooray + chip 6 種 + halo glow + reduced-motion
 // v1468: StickerBook cover adds binder spine, rings, and a thicker back cover plate.
 // v1467: Daily gacha adds bubbles_v1 to the capsule opening moment.
@@ -161,7 +163,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1477; // v1477: Daily gacha rarity reveal profiles and gold capsule assets.
+const CACHE_VERSION = 1479; // v1479: coming-soon を Stitch 案 B (Sticker Banner + 詳細モーダル) に置換 — 旧 .coming-soon-app (phone モック) 完全削除、 Mochiy Pop One フォント追加、 タップ展開モーダル + Esc/オーバーレイ閉じ + focus トラップ
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
@@ -254,6 +256,23 @@ self.addEventListener('fetch', event => {
       || event.request.url.includes('/assets/tts/manifest.json')
       || event.request.url.includes('/assets/audio/bgm/')
       || event.request.url.includes('/assets/audio/storyboard/')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // StickerBookThreeJS はプロトタイプ調整頻度が高く、古い main.js/CSS/JSON が残ると
+  // 図鑑だけ空表示になるなどの検証事故につながるため、常にネットワーク優先で取り直す。
+  if (event.request.url.includes('/Prototypes/StickerBookThreeJS/')) {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .then(response => {
