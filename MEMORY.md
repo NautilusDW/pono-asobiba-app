@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-21T15:59:37Z - Stitch 3 案並列生成用 brief.md を .claude-design-bundle/components/coming-soon/ に新規作成 (241 行)。 ユーザー要望 3 点 (スリムバナー / クリック→詳細モーダル / ポノ顔アプリアイコン) を網羅、 確定コピー固定、 案 A (Minimal Banner 100-120px) / 案 B (Sticker Banner 130-150px 回転 dashed) / 案 C (App Preview Card 180px 2 カラム) で差別化、 既存 hero/play-cards/book-bridge brief と同骨格、 NG・トークン・モーダル仕様・a11y 完備。 brand-AD クロスレビュー APPROVED。 旧 coming-soon-a.html は履歴として保持 (README 準拠)
+- **タスク**: Stitch 3 案並列生成用 brief.md を .claude-design-bundle/components/coming-soon/ に新規作成 (241 行)。 ユーザー要望 3 点 (スリムバナー / クリック→詳細モーダル / ポノ顔アプリアイコン) を網羅、 確定コピー固定、 案 A (Minimal Banner 100-120px) / 案 B (Sticker Banner 130-150px 回転 dashed) / 案 C (App Preview Card 180px 2 カラム) で差別化、 既存 hero/play-cards/book-bridge brief と同骨格、 NG・トークン・モーダル仕様・a11y 完備。 brand-AD クロスレビュー APPROVED。 旧 coming-soon-a.html は履歴として保持 (README 準拠)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 79
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 22, "Bash": 35, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 9}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。
+
+
 ### 2026-06-21T15:18:36Z - Stitch v2 (chip 数調整版) を index.html (.coming-soon-app scope 化) + .claude-design-bundle/components/coming-soon/coming-soon-a.html (素セレクタ) の両方に CSS のみ反映。 狭幅 chip 4 個 (42px / c5,c6=display:none) + 広幅 6 個 (46px / c5,c6=display:flex で復活)、 c1-c4 位置と c2 背景色も再調整。 文言・HTML・他 CSS は無変更 (前回 Round 2 fix の確定文言を維持、 mojibake で上書きしない知見活用 [[feedback_stitch_mojibake_no_guess]])。 3 軸クロスレビュー全 APPROVED、 sw v1470→1471。 残課題は実機目視 (広幅 c2/c6 と phone 視線競合、 border-radius 統一性) 2 点
 - **タスク**: Stitch v2 (chip 数調整版) を index.html (.coming-soon-app scope 化) + .claude-design-bundle/components/coming-soon/coming-soon-a.html (素セレクタ) の両方に CSS のみ反映。 狭幅 chip 4 個 (42px / c5,c6=display:none) + 広幅 6 個 (46px / c5,c6=display:flex で復活)、 c1-c4 位置と c2 背景色も再調整。 文言・HTML・他 CSS は無変更 (前回 Round 2 fix の確定文言を維持、 mojibake で上書きしない知見活用 [[feedback_stitch_mojibake_no_guess]])。 3 軸クロスレビュー全 APPROVED、 sw v1470→1471。 残課題は実機目視 (広幅 c2/c6 と phone 視線競合、 border-radius 統一性) 2 点
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 71, "ToolSearch": 1, "Edit": 7, "Write": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-20T09:28:43Z - Cloud TTS Chirp3-HD で basic_tut_11 再生成 + favorite_save_01 新規生成 (whisper検証) → commit + push
-- **タスク**: Cloud TTS Chirp3-HD で basic_tut_11 再生成 + favorite_save_01 新規生成 (whisper検証) → commit + push
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 139
-- **エラー数**: 18
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 67, "ToolSearch": 1, "Edit": 7, "Write": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
