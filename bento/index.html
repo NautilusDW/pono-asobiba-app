@@ -7063,7 +7063,7 @@ function showShopOpening(req, onDone, options = {}) {
       line: 'ここは ポノたちの おべんとうやさん。\nポノと ふたりの こどもが、どうぶつたちの おべんとうを つくるよ。',
       next: 'つぎへ',
       voice: 'shop_opening_intro_01',
-      voiceFallbackMs: 9500,
+      voiceFallbackMs: 12000,
     },
     {
       bg: SHOP_OPENING_ORDER_BG,
@@ -7085,7 +7085,7 @@ function showShopOpening(req, onDone, options = {}) {
       emphasis: true,
       next: 'おべんとうを つくる',
       voice: req.id ? 'shop_opening_request_' + req.id : 'shop_opening_request_01',
-      voiceFallbackMs: 7000,
+      voiceFallbackMs: 11000,
     },
   ];
   const steps = options.skipIntro ? allSteps.slice(1) : allSteps;
@@ -7915,7 +7915,7 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1444-gemini31';
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1446-gemini31-calm-opening';
 const BENTO_TUTORIAL_STEP_VOICE = {
   box: 'basic_tut_01',
   'rice-place': 'basic_tut_02',
