@@ -590,6 +590,7 @@
       border:2px dashed #C96A2E;
       box-shadow:0 10px 28px rgba(201,106,46,.20);
       text-align:center;position:relative;overflow:hidden;
+      isolation:isolate; /* ::after mix-blend-mode を親へ漏らさない */
     }
     .announce-tag{
       display:inline-block;padding:6px 16px;background:#C96A2E;color:#fff;
@@ -1045,11 +1046,11 @@
       transform: scale(1.06) translateY(-1px);
     }
 
-    /* ---------- focus-visible 共通: アウトラインは控えめに ---------- */
+    /* ---------- focus-visible 共通: WCAG 2.4.11 適合 (3px solid / 不透明) ---------- */
     .announce[data-accent] .announce-tag:focus-visible,
     .announce[data-accent] .announce-badge:focus-visible,
     .bookcheer[data-accent] .bookcheer-key:focus-visible{
-      outline: 2px dashed rgba(201, 106, 46, .6);
+      outline: 3px solid var(--primary-deep, #C96A2E);
       outline-offset: 4px;
       border-radius: 4px;
     }
@@ -1073,12 +1074,9 @@
         animation: none !important;
         transition: none !important;
       }
-      .announce[data-accent],
-      .announce[data-accent] *,
-      .bookcheer[data-accent],
-      .bookcheer[data-accent] * {
-        transform: none !important;
-      }
+      /* NOTE: ここで transform: none を一括適用すると announce-badge/em/deco/tag 等の
+         静的 rotate 装飾まで剥がれて見た目が壊れる (WCAG 上もアニメ停止だけで十分)。
+         よって animation/transition のみ停止し、 静的 transform は維持する。 */
       .announce[data-accent] .announce-em,
       .bookcheer[data-accent] .bookcheer-hl{
         background-size: 100% 100% !important; /* 蛍光ペンは即時塗り */

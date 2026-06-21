@@ -3030,6 +3030,10 @@ body.bento-complete-open .pono-dropdown {
   left: calc(var(--bento-complete-card-left, 0px) + clamp(12px, 2.2vmin, 20px)) !important;
   top: calc(var(--bento-complete-card-top, 0px) + clamp(58px, 9vmin, 72px)) !important;
 }
+body.bento-complete-open .tut-settings-btn,
+body.bento-complete-open .fav-header-btn {
+  display: none !important;
+}
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ===== NPC requester intro / reaction overlays =====
@@ -3339,6 +3343,10 @@ body.bento-complete-open .pono-dropdown {
   padding: 12px;
 }
 #sk-intro.hidden { display: none; }
+body.bento-complete-open #sk-intro {
+  display: none !important;
+  pointer-events: none;
+}
 .sk-intro-card {
   background: #fff; border-radius: 24px;
   padding: 13px 15px 14px;
@@ -13082,6 +13090,7 @@ function setCompletePage(page) {
 
 function stageComplete() {
   try { if (typeof tutorialOnStageComplete === 'function') tutorialOnStageComplete(); } catch (_) {}
+  try { if (typeof suppressBentoIntroTutorialOverlays === 'function') suppressBentoIntroTutorialOverlays(); } catch (_) {}
   const completionData = freeLayoutMode
     ? syncFreeLayoutSelectionState()
     : {

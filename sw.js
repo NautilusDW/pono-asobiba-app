@@ -151,7 +151,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1458; // v1458: LP 派手化 — announce (badge pulse 強化 + tag 微振動 + deco opacity 底上げ + 紙吹雪::after + shimmer 4.8s 統一) / play-cards (overshoot scale 1.08 + 個別 glow 5 色 + visual/bubble/chip/tape 連動) / herob-cta (breath + gradient流し + glow + shimmer 4.8s + sparkle ::after + arrow 弾み + hover scale 1.12)
+const CACHE_VERSION = 1459; // v1459: a11y 修正 (focus-visible outline WCAG 適合化: 2px dashed rgba .6 → 3px solid var(--primary-deep) / reduced-motion で静的 transform 維持: transform:none 一括削除し badge/em/deco/tag の rotate を保護 / .announce に isolation:isolate 追加して ::after mix-blend-mode 漏れ防止)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
