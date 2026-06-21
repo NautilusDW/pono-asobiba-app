@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-771";
+const ASSET_VERSION = "20260622-772";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -497,7 +497,7 @@ const BOOK_VARIANTS = {
   boy: {
     insideLeft: "sb3d_boy_page_left_generated.webp",
     insideRight: "sb3d_boy_page_right_generated.webp",
-    coverFront: "sb3d_boy_cover_front_generated.webp",
+    coverFront: "sb3d_boy_cover_front_binder_image2_20260622.webp",
     coverBack: "sb3d_boy_cover_back_generated.webp",
     coverInside: "sb3d_boy_cover_inside_generated.webp",
     spine: "sb3d_boy_spine_generated.webp",
