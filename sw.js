@@ -1,6 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1457: Daily gacha reveal gets generated home buttons, returns to the game top, and smooths the tray mask/background glow.
+// v1456: StickerBook zukan six-item index and wider detail template.
 // v1455: LP .announce / .bookcheer にアクセントモーション追加 (hover bounce / 弾けるバッジ / シール peel / 黄色ハイライト wiggle / 初回ポヨン入り)
 // v1454: Bento tutorial locks guided-only items and refreshes okazu/favorite narration with Gemini 3.1 TTS.
 // v1453: Daily gacha masks the capsule behind the outlet lip and uses sticker/home image buttons on reveal.
@@ -148,7 +150,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1456; // v1456: StickerBook zukan six-item index and wider detail template.
+const CACHE_VERSION = 1457; // v1457: Daily gacha reveal gets generated home buttons, returns to the game top, and smooths the tray mask/background glow.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
