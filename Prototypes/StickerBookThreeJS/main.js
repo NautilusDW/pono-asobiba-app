@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-773";
+const ASSET_VERSION = "20260622-778";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -812,6 +812,24 @@ const COLLECTION_STACK_INNER_BOTTOM_LIFT = PAGE_H * 0.018;
 const COLLECTION_STACK_INNER_BOTTOM_TAPER = PAGE_W * 0.014;
 const COLLECTION_STACK_INNER_BOTTOM_DEPTH = PAGE_H * 0.0046;
 const COLLECTION_STACK_INNER_U_CROP = Math.min(0.065, PAGE_RADIUS / PAGE_W);
+const STICKER_PAGE_SPINE_CURVE_WIDTH = PAGE_W * 0.34;
+const STICKER_PAGE_FREE_CURVE_WIDTH = PAGE_W * 0.24;
+const STICKER_PAGE_SPINE_PULL = 0;
+const STICKER_PAGE_SPINE_DIP = PAGE_H * 0.0025;
+const STICKER_PAGE_CENTER_RAISE = PAGE_H * 0.0022;
+const STICKER_PAGE_FREE_EDGE_LIFT = PAGE_H * 0.0012;
+const STICKER_PAGE_BLOCK_DEPTH = PAGE_H * 0.032;
+const STICKER_PAGE_BLOCK_TOP_Z = -PAGE_H * 0.021;
+const STICKER_PAGE_BLOCK_DEPTH_SCALE = {
+  empty: 0,
+  small: 0.34,
+  half: 0.58,
+  mostly: 0.78,
+  full: 1,
+};
+const STICKER_COVER_BOARD_DEPTH = PAGE_H * 0.021;
+const STICKER_COVER_FACE_LIFT = PAGE_H * 0.0018;
+const STICKER_COVER_CLOSED_BOARD_Z = PAGE_H * 0.006;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -1124,8 +1142,12 @@ coverOnly.add(coverThickness.group);
 const coverHardware = createCoverHardwareLayer();
 coverOnly.add(coverHardware.group);
 
+const closedCoverDepth = createCoverDepthLayer();
+closedCoverDepth.group.position.set(COVER_CLOSED_X, 0, STICKER_COVER_CLOSED_BOARD_Z);
+coverOnly.add(closedCoverDepth.group);
+
 const closedCover = makePageSurface(coverPrintFile(activeBook), createCoverSurfaceGeometry());
-closedCover.position.set(COVER_CLOSED_X, 0, 0.04);
+closedCover.position.set(COVER_CLOSED_X, 0, STICKER_COVER_CLOSED_BOARD_Z + STICKER_COVER_FACE_LIFT);
 closedCover.renderOrder = 30;
 coverOnly.add(closedCover);
 
@@ -1146,6 +1168,7 @@ const coverTurnFront = new THREE.Mesh(
     metalness: 0.0,
   }),
 );
+const coverTurnDepth = createCoverDepthLayer();
 const coverTurnBack = new THREE.Mesh(
   coverTurnGeometry,
   new THREE.MeshStandardMaterial({
@@ -1157,8 +1180,12 @@ const coverTurnBack = new THREE.Mesh(
     metalness: 0.0,
   }),
 );
+coverTurnFront.position.z = STICKER_COVER_FACE_LIFT;
+coverTurnBack.position.z = -STICKER_COVER_BOARD_DEPTH - STICKER_COVER_FACE_LIFT;
 coverTurnFront.renderOrder = 86;
 coverTurnBack.renderOrder = 85;
+coverTurnDepth.group.renderOrder = 84;
+coverTurn.add(coverTurnDepth.group);
 coverTurn.add(coverTurnBack);
 coverTurn.add(coverTurnFront);
 
@@ -1189,6 +1216,9 @@ book.add(sideTabs.group);
 
 const pageStacks = createPageStacks();
 book.add(pageStacks.group);
+
+const stickerBookDepth = createStickerBookDepthLayer();
+book.add(stickerBookDepth.group);
 
 const leftPageOuter = makePageSurface(BOOK_VARIANTS[activeBook].coverBack, createPageSurfaceGeometry("right"));
 leftPageOuter.position.set(-PAGE_W - GUTTER / 2, 0, -0.001);
@@ -7180,7 +7210,150 @@ function createStackSide(side) {
   collectionMesh.renderOrder = 4;
   group.add(collectionMesh);
 
-  return { side, group, plane, collectionMesh, level: null, book: null };
+  const block = new THREE.Mesh(createStickerPageBlockGeometry(side), createStickerPageBlockMaterials());
+  block.visible = false;
+  block.renderOrder = 2;
+  group.add(block);
+
+  return { side, group, plane, collectionMesh, block, level: null, book: null };
+}
+
+function createStickerBookDepthLayer() {
+  const group = new THREE.Group();
+  const materials = createStickerBookDepthMaterials();
+  const spineBase = new THREE.Mesh(
+    new THREE.BoxGeometry(GUTTER * 0.5, PAGE_H * 0.9, STICKER_COVER_BOARD_DEPTH * 0.55, 1, 1, 1),
+    materials.spineBase,
+  );
+  spineBase.position.set(0, 0, -STICKER_COVER_BOARD_DEPTH * 1.48);
+  spineBase.renderOrder = 0;
+  group.add(spineBase);
+
+  const hingeRadius = PAGE_W * 0.0068;
+  for (const side of [-1, 1]) {
+    const hinge = new THREE.Mesh(
+      new THREE.CylinderGeometry(hingeRadius, hingeRadius, PAGE_H * 0.9, 18, 1, false),
+      materials.hinge,
+    );
+    hinge.position.set(side * GUTTER * 0.38, 0, -STICKER_COVER_BOARD_DEPTH * 1.04);
+    hinge.scale.x = 0.7;
+    hinge.renderOrder = 0;
+    group.add(hinge);
+  }
+
+  group.visible = false;
+  return { group, materials };
+}
+
+function createStickerBookDepthMaterials() {
+  const hardware = stickerBookTheme(activeBook).coverHardware || stickerBookTheme("boy").coverHardware;
+  return {
+    spineBase: new THREE.MeshStandardMaterial({
+      color: hardware.spineDark,
+      transparent: true,
+      opacity: 0.36,
+      roughness: 0.86,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+    hinge: new THREE.MeshStandardMaterial({
+      color: hardware.spine,
+      transparent: true,
+      opacity: 0.42,
+      roughness: 0.68,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+  };
+}
+
+function createStickerPageBlockMaterials() {
+  const face = new THREE.MeshStandardMaterial({
+    color: 0xfff4db,
+    roughness: 0.96,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+    depthWrite: true,
+  });
+  const edge = new THREE.MeshStandardMaterial({
+    color: 0xd9c69d,
+    roughness: 0.98,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+    depthWrite: true,
+  });
+  return [face, edge];
+}
+
+function createStickerPageBlockGeometry(side) {
+  const bindingSide = side === "left" ? "right" : "left";
+  const shape = createStickerPageShape(bindingSide, true);
+  const geometry = createExtrudedShapeDepthGeometry(shape, STICKER_PAGE_BLOCK_DEPTH);
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function createCoverDepthLayer() {
+  const group = new THREE.Group();
+  const materials = createCoverDepthMaterials();
+  const board = new THREE.Mesh(createCoverBoardDepthGeometry(), materials);
+  board.renderOrder = 23;
+  group.add(board);
+
+  const spineLip = new THREE.Mesh(
+    new THREE.CylinderGeometry(PAGE_W * 0.0105, PAGE_W * 0.0105, PAGE_H * 0.94, 24, 1, false),
+    materials[1],
+  );
+  spineLip.position.set(PAGE_W * 0.018, 0, -STICKER_COVER_BOARD_DEPTH * 0.54);
+  spineLip.scale.x = 0.72;
+  spineLip.renderOrder = 24;
+  group.add(spineLip);
+
+  return { group, materials, board, spineLip };
+}
+
+function createCoverDepthMaterials() {
+  const hardware = stickerBookTheme(activeBook).coverHardware || stickerBookTheme("boy").coverHardware;
+  return [
+    new THREE.MeshStandardMaterial({
+      color: hardware.board,
+      roughness: 0.9,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+    }),
+    new THREE.MeshStandardMaterial({
+      color: hardware.spineDark,
+      roughness: 0.72,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+    }),
+  ];
+}
+
+function createCoverBoardDepthGeometry() {
+  const shape = new THREE.Shape();
+  addRoundedRectPath(shape, 0, -PAGE_H / 2, PAGE_W, PAGE_H, PAGE_RADIUS);
+  const geometry = createExtrudedShapeDepthGeometry(shape, STICKER_COVER_BOARD_DEPTH);
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function createExtrudedShapeDepthGeometry(shape, depth) {
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: false,
+    curveSegments: 28,
+    steps: 1,
+  });
+  geometry.translate(0, 0, -depth);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function createCollectionStackSideGeometry(side) {
@@ -7614,6 +7787,7 @@ function positionStackSide(stack, level, tuning) {
   const isCollection = activeAlbumMode === "collection";
   stack.plane.visible = !isCollection && level !== "empty";
   stack.collectionMesh.visible = isCollection && level !== "empty";
+  stack.block.visible = !isCollection && level !== "empty";
   const tunePrefix = stack.side === "left" ? "stackLeft" : "stackRight";
   const scaleX = tuning[`${tunePrefix}ScaleX`];
   const scaleY = tuning[`${tunePrefix}ScaleY`];
@@ -7631,6 +7805,9 @@ function positionStackSide(stack, level, tuning) {
   const y = topY - scaledTextureH / 2;
   stack.plane.position.set(x, y, -0.034);
   stack.collectionMesh.position.set(x, y, -0.034);
+  const blockDepthScale = STICKER_PAGE_BLOCK_DEPTH_SCALE[level] ?? STICKER_PAGE_BLOCK_DEPTH_SCALE.full;
+  stack.block.scale.set(1, 1, blockDepthScale);
+  stack.block.position.set(pageLeft, 0, STICKER_PAGE_BLOCK_TOP_Z);
 }
 
 function hideStackThickness() {
@@ -7662,6 +7839,7 @@ function applyCoverTuning() {
   coverBackground.scale.set(coverTuning.coverBgScaleX, coverTuning.coverBgScaleY, 1);
   coverBackground.position.set(COVER_CLOSED_X, 0, -0.08);
   coverHardware.group.visible = shouldShowCoverHardware();
+  updateStickerDepthModeVisibility();
 }
 
 function applyCoverHardwareTheme() {
@@ -7677,6 +7855,36 @@ function applyCoverHardwareTheme() {
     material.needsUpdate = true;
   }
   coverHardware.group.visible = shouldShowCoverHardware();
+  applyStickerDepthTheme(hardware);
+  updateStickerDepthModeVisibility();
+}
+
+function applyStickerDepthTheme(hardware) {
+  for (const layer of [closedCoverDepth, coverTurnDepth]) {
+    layer.materials[0].color.setHex(hardware.board);
+    layer.materials[1].color.setHex(hardware.spineDark);
+    for (const material of layer.materials) {
+      material.needsUpdate = true;
+    }
+  }
+  stickerBookDepth.materials.spineBase.color.setHex(hardware.spineDark);
+  stickerBookDepth.materials.hinge.color.setHex(hardware.spine);
+  stickerBookDepth.materials.spineBase.needsUpdate = true;
+  stickerBookDepth.materials.hinge.needsUpdate = true;
+}
+
+function updateStickerDepthModeVisibility() {
+  const isStickerAlbum = activeAlbumMode !== "collection";
+  closedCoverDepth.group.visible = isStickerAlbum;
+  coverTurnDepth.group.visible = isStickerAlbum;
+  if (!isStickerAlbum) {
+    stickerBookDepth.group.visible = false;
+  }
+}
+
+function setStickerBookDepthVisible(visible) {
+  updateStickerDepthModeVisibility();
+  stickerBookDepth.group.visible = visible && activeAlbumMode !== "collection";
 }
 
 function positionCollectionStackBlock() {
@@ -7700,10 +7908,7 @@ function updateFlutterPageTextures() {
 }
 
 function createBendablePageSurfaceGeometry(bindingSide) {
-  const baseGeometry = createPageSurfaceGeometry(bindingSide);
-  const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
-  const subdivided = subdivideBendableGeometry(source);
-  return subdivided;
+  return createCurvedStickerPageSurfaceGeometry(bindingSide);
 }
 
 function createBendablePlainPageSurfaceGeometry() {
@@ -7713,12 +7918,100 @@ function createBendablePlainPageSurfaceGeometry() {
   return subdivided;
 }
 
+function createCurvedStickerPageSurfaceGeometry(bindingSide) {
+  const baseGeometry = createPageSurfaceGeometry(bindingSide);
+  const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
+  const subdivided = subdivideBendableGeometry(source);
+  curveStickerPageGeometry(subdivided, bindingSide);
+  return subdivided;
+}
+
 function createCurvedCollectionPageSurfaceGeometry(bindingSide) {
   const baseGeometry = createCollectionPageSurfaceGeometry(bindingSide);
   const source = baseGeometry.index ? baseGeometry.toNonIndexed() : baseGeometry;
   const subdivided = subdivideBendableGeometry(source);
   curveCollectionPageGeometry(subdivided, bindingSide);
   return subdivided;
+}
+
+function curveStickerPageGeometry(geometry, bindingSide) {
+  const positions = geometry.attributes.position;
+  const sideSign = bindingSide === "right" ? -1 : 1;
+
+  for (let i = 0; i < positions.count; i += 1) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    const z = positions.getZ(i);
+    const u = THREE.MathUtils.clamp(x / PAGE_W, 0, 1);
+    const v = THREE.MathUtils.clamp((y + PAGE_H / 2) / PAGE_H, 0, 1);
+    const middle = Math.sin(v * Math.PI);
+    const verticalFade = smootherstep(v / 0.1) * smootherstep((1 - v) / 0.1);
+    const verticalFold = verticalFade * (0.74 + 0.26 * Math.pow(middle, 0.7));
+    const spineDistance = bindingSide === "right" ? PAGE_W - x : x;
+    const freeDistance = bindingSide === "right" ? x : PAGE_W - x;
+    const spineT = 1 - THREE.MathUtils.clamp(spineDistance / STICKER_PAGE_SPINE_CURVE_WIDTH, 0, 1);
+    const freeT = 1 - THREE.MathUtils.clamp(freeDistance / STICKER_PAGE_FREE_CURVE_WIDTH, 0, 1);
+    const spineFold = smootherstep(spineT);
+    const freeLift = smootherstep(freeT) * verticalFade;
+    const centerRaise =
+      Math.sin(u * Math.PI) *
+      Math.pow(Math.max(0, middle), 0.68) *
+      verticalFade *
+      STICKER_PAGE_CENTER_RAISE;
+    positions.setXYZ(
+      i,
+      x + sideSign * spineFold * STICKER_PAGE_SPINE_PULL * verticalFold,
+      y,
+      z + centerRaise + freeLift * STICKER_PAGE_FREE_EDGE_LIFT - spineFold * STICKER_PAGE_SPINE_DIP * verticalFold,
+    );
+  }
+
+  positions.needsUpdate = true;
+  smoothGeometryNormalsByPosition(geometry);
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+}
+
+function smoothGeometryNormalsByPosition(geometry) {
+  geometry.computeVertexNormals();
+  const positions = geometry.attributes.position;
+  const normals = geometry.attributes.normal;
+  if (!positions || !normals) {
+    return;
+  }
+
+  const normalByPosition = new Map();
+  for (let i = 0; i < positions.count; i += 1) {
+    const key = [
+      Math.round(positions.getX(i) * 10000),
+      Math.round(positions.getY(i) * 10000),
+      Math.round(positions.getZ(i) * 10000),
+    ].join(":");
+    let normal = normalByPosition.get(key);
+    if (!normal) {
+      normal = new THREE.Vector3();
+      normalByPosition.set(key, normal);
+    }
+    normal.x += normals.getX(i);
+    normal.y += normals.getY(i);
+    normal.z += normals.getZ(i);
+  }
+
+  for (const normal of normalByPosition.values()) {
+    normal.normalize();
+  }
+  for (let i = 0; i < positions.count; i += 1) {
+    const key = [
+      Math.round(positions.getX(i) * 10000),
+      Math.round(positions.getY(i) * 10000),
+      Math.round(positions.getZ(i) * 10000),
+    ].join(":");
+    const normal = normalByPosition.get(key);
+    if (normal) {
+      normals.setXYZ(i, normal.x, normal.y, normal.z);
+    }
+  }
+  normals.needsUpdate = true;
 }
 
 function curveCollectionPageGeometry(geometry, bindingSide) {
@@ -7863,18 +8156,24 @@ function midpointGeometryPoint(a, b) {
   };
 }
 
-function createPageSurfaceGeometry(bindingSide) {
+function createStickerPageShape(bindingSide, includeHoles = true) {
   const shape = new THREE.Shape();
   addRoundedRectPath(shape, 0, -PAGE_H / 2, PAGE_W, PAGE_H, PAGE_RADIUS);
 
-  const holeX = bindingSide === "left" ? PAGE_HOLE_X : PAGE_W - PAGE_HOLE_X;
-  for (const pixelY of PAGE_RING_PIXELS) {
-    const hole = new THREE.Path();
-    const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
-    hole.absellipse(holeX, y, PAGE_HOLE_RX, PAGE_HOLE_RY, 0, Math.PI * 2, true);
-    shape.holes.push(hole);
+  if (includeHoles) {
+    const holeX = bindingSide === "left" ? PAGE_HOLE_X : PAGE_W - PAGE_HOLE_X;
+    for (const pixelY of PAGE_RING_PIXELS) {
+      const hole = new THREE.Path();
+      const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
+      hole.absellipse(holeX, y, PAGE_HOLE_RX, PAGE_HOLE_RY, 0, Math.PI * 2, true);
+      shape.holes.push(hole);
+    }
   }
+  return shape;
+}
 
+function createPageSurfaceGeometry(bindingSide) {
+  const shape = createStickerPageShape(bindingSide, true);
   const geometry = new THREE.ShapeGeometry(shape, 28);
   const positions = geometry.attributes.position;
   const uvs = [];
@@ -8064,6 +8363,7 @@ function currentBookGap() {
 
 function applyAlbumLayout() {
   const gap = currentBookGap();
+  updateStickerDepthModeVisibility();
   leftPageOuter.position.x = -PAGE_W - gap / 2;
   leftPageInner.position.x = -PAGE_W - gap / 2;
   rightPage.position.x = gap / 2;
@@ -8560,6 +8860,7 @@ function renderCoverOpenTransition(rawProgress) {
   const gap = currentBookGap();
   const showBinding = p > 0.52;
   spine.visible = showBinding;
+  setStickerBookDepthVisible(showBinding);
   setBindingRingVisible(showBinding);
   innerRight.visible = showBinding && activeAlbumMode !== "collection";
   collectionFold.visible = showBinding && activeAlbumMode === "collection";
@@ -8613,6 +8914,7 @@ function applyBookFramePosition(openProgress) {
 }
 
 function setOpenSpreadVisible(visible) {
+  setStickerBookDepthVisible(visible);
   sideTabs.group.visible = visible;
   sideTabs.left.visible = visible;
   sideTabs.right.visible = visible;
@@ -8645,6 +8947,7 @@ function setOpenSpreadVisible(visible) {
 }
 
 function setCoverOpeningSpreadVisible(visible) {
+  setStickerBookDepthVisible(false);
   sideTabs.group.visible = visible;
   sideTabs.left.visible = false;
   sideTabs.right.visible = visible;
