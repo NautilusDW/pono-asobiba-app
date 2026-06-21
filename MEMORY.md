@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-21T19:16:53Z - Stitch 案 B (Sticker Banner + 詳細モーダル) を旧 phone モック .coming-soon-app を完全削除して index.html に組み込み (sw v1479)、 ux-brand 指摘の 2 文言を brief.md 準拠に Round 2 fix (list 3 「ポノからの」 / foot 「じゅんびが できたら」、 公開断言禁止精神) + ★ 装飾に aria-hidden 追加 (sw v1480)。 git push fast-forward 成功 (309e5af、 divergence なし)、 deploy run in_progress。 [[feedback_stitch_mojibake_no_guess]] の推測復元禁止ルールを徹底活用し、 brief.md 確定文を優先 + 自信度マトリクスで透明化、 Stitch HANDOFF の mojibake テキスト推測を一切採用せず Round 2 fix も brief.md 準拠で完結。 .claude-design-bundle/components/coming-soon/coming-soon-b.html も bundle 同期
+- **タスク**: Stitch 案 B (Sticker Banner + 詳細モーダル) を旧 phone モック .coming-soon-app を完全削除して index.html に組み込み (sw v1479)、 ux-brand 指摘の 2 文言を brief.md 準拠に Round 2 fix (list 3 「ポノからの」 / foot 「じゅんびが できたら」、 公開断言禁止精神) + ★ 装飾に aria-hidden 追加 (sw v1480)。 git push fast-forward 成功 (309e5af、 divergence なし)、 deploy run in_progress。 [[feedback_stitch_mojibake_no_guess]] の推測復元禁止ルールを徹底活用し、 brief.md 確定文を優先 + 自信度マトリクスで透明化、 Stitch HANDOFF の mojibake テキスト推測を一切採用せず Round 2 fix も brief.md 準拠で完結。 .claude-design-bundle/components/coming-soon/coming-soon-b.html も bundle 同期
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 103
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 23, "Bash": 55, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 12}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。
+
+
 ### 2026-06-21T18:27:13Z - .gitignore から .claude-design-bundle/ を外して Brand Kit 全体 (22 ファイル / 5057 行) を Git tracking + push (commit 6083778、 fast-forward)。 Claude Design × Claude Code 連携で brief.md を GitHub raw URL 経由で共有可能に。 機密リスク 0 件、 repo public で明示済み、 deploy run 27913463922 in_progress (LP コード無変更で影響なし)。 1 エージェントで Recon→Implement→Verify 一括実装。 Workflow は String.raw parse エラーで失敗 → Agent に切替で安全実装
 - **タスク**: .gitignore から .claude-design-bundle/ を外して Brand Kit 全体 (22 ファイル / 5057 行) を Git tracking + push (commit 6083778、 fast-forward)。 Claude Design × Claude Code 連携で brief.md を GitHub raw URL 経由で共有可能に。 機密リスク 0 件、 repo public で明示済み、 deploy run 27913463922 in_progress (LP コード無変更で影響なし)。 1 エージェントで Recon→Implement→Verify 一括実装。 Workflow は String.raw parse エラーで失敗 → Agent に切替で安全実装
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 12, "Bash": 3}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-21T05:12:23Z - LP に『📢 お知らせ (アプリ発売告知、 大々的)』 を Hero B 直下に、 『📖 ハードカバー応援 (控えめ)』 を絵本パート直下に純粋追加 + sw.js CACHE_VERSION 1435→1436 バンプ。 調査→設計→実装→クロスレビューの4段オーケストレーションで進めた
-- **タスク**: LP に『📢 お知らせ (アプリ発売告知、 大々的)』 を Hero B 直下に、 『📖 ハードカバー応援 (控えめ)』 を絵本パート直下に純粋追加 + sw.js CACHE_VERSION 1435→1436 バンプ。 調査→設計→実装→クロスレビューの4段オーケストレーションで進めた
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 10
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 8, "Bash": 2}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
