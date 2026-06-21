@@ -7915,7 +7915,7 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1447-gemini31-faster-opening';
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1449-gemini31-soft-after-intro';
 const BENTO_TUTORIAL_STEP_VOICE = {
   box: 'basic_tut_01',
   'rice-place': 'basic_tut_02',
