@@ -635,6 +635,204 @@
 
     /* ===== a11y common :focus-visible (既存要素) ===== */
     .help-link:focus-visible{outline:3px solid var(--primary);outline-offset:3px;border-radius:50px;}
+
+    /* ============================================================
+       ポノ LP — Accent Motion (.announce / .bookcheer)
+       - 統一イージング: cubic-bezier(.34, 1.56, .64, 1)  ★overshoot
+       - GPU: transform / opacity / drop-shadow のみ
+       - iOS sticky 回避: @media (hover: hover) + :active 併用
+       ============================================================ */
+
+    /* ---------- 共通 keyframes ---------- */
+    @keyframes pono-paper-float-deco {
+      0%   { transform: translateY(-3px) rotate(-3deg); }
+      100% { transform: translateY( 1px) rotate( 3deg); }
+    }
+    @keyframes pono-paper-float-mark {
+      0%   { transform: translateY(-2px); }
+      100% { transform: translateY( 2px); }
+    }
+    @keyframes pono-page-turn {
+      0%   { transform: perspective(400px) rotateY(0deg)   scale(1);    }
+      50%  { transform: perspective(400px) rotateY(-25deg) scale(1.14); }
+      100% { transform: perspective(400px) rotateY(0deg)   scale(1);    }
+    }
+    @keyframes pono-stamp-bounce {
+      0%   { transform: rotate(-2deg) scale(1)    translateY(0);   }
+      35%  { transform: rotate(-3deg) scale(.92)  translateY(2px); }
+      70%  { transform: rotate(-5deg) scale(1.08) translateY(-3px);}
+      100% { transform: rotate(-2deg) scale(1)    translateY(0);   }
+    }
+    @keyframes pono-paint-pop-em {
+      0%   { transform: rotate(-1deg) scale(1);    }
+      60%  { transform: rotate(-1deg) scale(1.05); }
+      100% { transform: rotate(-1deg) scale(1);    }
+    }
+    @keyframes pono-paint-pop-hl {
+      0%   { transform: scale(1);    }
+      60%  { transform: scale(1.05); }
+      100% { transform: scale(1);    }
+    }
+
+    /* ---------- .announce ---------- */
+    .announce[data-accent]{
+      transition:
+        transform .35s cubic-bezier(.25,.46,.45,.94),
+        box-shadow .35s cubic-bezier(.25,.46,.45,.94);
+    }
+
+    /* ✉️: アイドル float (常時) */
+    .announce[data-accent] .announce-deco{
+      transform-origin: center;
+      animation: pono-paper-float-deco 6s ease-in-out infinite alternate;
+      will-change: transform;
+      transition: opacity .4s cubic-bezier(.25,.46,.45,.94),
+                  transform .4s cubic-bezier(.25,.46,.45,.94);
+    }
+
+    /* バッジ: transition は hover 用、アイドル pulse は据置 */
+    .announce[data-accent] .announce-badge{
+      transform-origin: top right;
+      transition: transform .45s cubic-bezier(.34,1.56,.64,1),
+                  filter   .45s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    /* タグ 🎁 */
+    .announce[data-accent] .announce-tag{
+      transform-origin: center;
+      transition: transform .5s cubic-bezier(.34,1.56,.64,1);
+      outline: none;
+    }
+
+    /* 黄色ハイライト: 塗り広げ用に background を gradient で再宣言 */
+    .announce[data-accent] .announce-em{
+      background: none;
+      background-image: linear-gradient(transparent 55%, #FFE07A 55%, #FFE07A 92%, transparent 92%);
+      background-repeat: no-repeat;
+      background-size: 0% 100%;
+      background-position: left center;
+      transition: background-size .6s ease-out;
+    }
+    .announce[data-accent] .announce-em.is-painted{ background-size: 100% 100%; }
+
+    /* ---------- .announce hover (PC のみ) ---------- */
+    @media (hover: hover) and (pointer: fine) {
+      .announce[data-accent]:hover{
+        transform: translateY(-2px);
+        box-shadow: 0 16px 36px rgba(201, 106, 46, .18);
+      }
+      .announce[data-accent]:hover .announce-em{ background-size: 100% 100%; }
+      .announce[data-accent]:hover .announce-deco{
+        opacity: .22;
+        transform: translateY(-2px) rotate(2deg) scale(1.08);
+        animation-play-state: paused;
+      }
+
+      .announce[data-accent] .announce-badge:hover,
+      .announce[data-accent] .announce-badge:focus-visible{
+        transform: rotate(-12deg) translateY(-3px) scale(1.18);
+        filter: drop-shadow(0 6px 10px rgba(201, 106, 46, .28));
+        animation-play-state: paused; /* pulse 一時停止 */
+      }
+      .announce[data-accent] .announce-tag:hover,
+      .announce[data-accent] .announce-tag:focus-visible{
+        animation: pono-stamp-bounce .5s cubic-bezier(.34,1.56,.64,1) both;
+      }
+    }
+
+    /* iOS Safari sticky 回避: :active で同等の表現 */
+    .announce[data-accent] .announce-badge:active{
+      transform: rotate(-12deg) translateY(-3px) scale(1.18);
+      filter: drop-shadow(0 6px 10px rgba(201, 106, 46, .28));
+      animation-play-state: paused;
+    }
+    .announce[data-accent] .announce-tag:active{
+      animation: pono-stamp-bounce .5s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    /* ---------- .bookcheer ---------- */
+    .bookcheer[data-accent]{
+      transition: transform .35s cubic-bezier(.25,.46,.45,.94),
+                  box-shadow .35s cubic-bezier(.25,.46,.45,.94);
+    }
+
+    .bookcheer[data-accent] .bookcheer-mark{
+      transform-origin: center;
+      animation: pono-paper-float-mark 3.6s ease-in-out infinite alternate;
+      will-change: transform;
+      transition: transform .55s cubic-bezier(.68,-0.55,.27,1.55);
+      perspective: 400px; /* page turn 用 */
+    }
+
+    .bookcheer[data-accent] .bookcheer-hl{
+      display: inline-block;
+      background: none;
+      background-image: linear-gradient(transparent 55%, #FFE07A 55%, #FFE07A 92%, transparent 92%);
+      background-repeat: no-repeat;
+      background-size: 0% 100%;
+      background-position: left center;
+      transition: background-size .6s ease-out;
+    }
+    .bookcheer[data-accent] .bookcheer-hl.is-painted{ background-size: 100% 100%; }
+
+    .bookcheer[data-accent] .bookcheer-key{
+      display: inline-block;
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+      outline: none;
+    }
+
+    /* ---------- .bookcheer hover (PC のみ) ---------- */
+    @media (hover: hover) and (pointer: fine) {
+      .bookcheer[data-accent]:hover{
+        transform: translateY(-2px) rotate(.3deg);
+      }
+      .bookcheer[data-accent]:hover .bookcheer-hl{ background-size: 100% 100%; }
+
+      .bookcheer[data-accent] .bookcheer-mark:hover,
+      .bookcheer[data-accent] .bookcheer-mark:focus-visible{
+        animation: pono-page-turn .55s cubic-bezier(.68,-0.55,.27,1.55) both;
+      }
+      .bookcheer[data-accent] .bookcheer-key:hover,
+      .bookcheer[data-accent] .bookcheer-key:focus-visible{
+        transform: scale(1.06) translateY(-1px);
+      }
+    }
+
+    /* iOS Safari sticky 回避: :active */
+    .bookcheer[data-accent] .bookcheer-mark:active{
+      animation: pono-page-turn .55s cubic-bezier(.68,-0.55,.27,1.55) both;
+    }
+    .bookcheer[data-accent] .bookcheer-key:active{
+      transform: scale(1.06) translateY(-1px);
+    }
+
+    /* ---------- focus-visible 共通: アウトラインは控えめに ---------- */
+    .announce[data-accent] .announce-tag:focus-visible,
+    .announce[data-accent] .announce-badge:focus-visible,
+    .bookcheer[data-accent] .bookcheer-key:focus-visible,
+    .bookcheer[data-accent] .bookcheer-mark:focus-visible{
+      outline: 2px dashed rgba(201, 106, 46, .6);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    /* ============================================================
+       prefers-reduced-motion: 新規 + 既存全て停止
+       ============================================================ */
+    @media (prefers-reduced-motion: reduce) {
+      .announce[data-accent],
+      .announce[data-accent] *,
+      .bookcheer[data-accent],
+      .bookcheer[data-accent] * {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+      }
+      .announce[data-accent] .announce-em,
+      .bookcheer[data-accent] .bookcheer-hl{
+        background-size: 100% 100% !important; /* 蛍光ペンは即時塗り */
+      }
+    }
   </style>
 </head>
 <body>
@@ -665,9 +863,9 @@
     </section>
 
     <!-- ============ Announce (アプリ Coming Soon ティーザー) ============ -->
-    <section class="announce" aria-labelledby="announce-h">
+    <section class="announce" data-accent="announce" aria-labelledby="announce-h">
       <span class="announce-badge" aria-hidden="true">Coming<br>Soon</span>
-      <p class="announce-tag">🎁 とくべつな おしらせ</p>
+      <p class="announce-tag" tabindex="0">🎁 とくべつな おしらせ</p>
       <h2 class="announce-h" id="announce-h">
         あたらしい あそびばが、<br>
         <span class="announce-em">もうすぐ ひらきます。</span>
@@ -777,13 +975,13 @@
     </section>
 
     <!-- ===== ハードカバー応援 (控えめ・本のページ風) ===== -->
-    <section class="bookcheer" aria-labelledby="bookcheer-h">
+    <section class="bookcheer" data-accent="bookcheer" aria-labelledby="bookcheer-h">
       <span class="bookcheer-mark" aria-hidden="true">📖</span>
       <h2 class="bookcheer-h" id="bookcheer-h">
         いつか、 <span class="bookcheer-hl">本棚のとくとう席</span>へ。
       </h2>
       <p class="bookcheer-body">
-        いま みんなが よんでくれている この えほんが、 いつか かたい <strong class="bookcheer-key">ハードカバー</strong> になって、 おうちの 本棚に ならぶ日が きたら——。<br>
+        いま みんなが よんでくれている この えほんが、 いつか かたい <strong class="bookcheer-key" tabindex="0">ハードカバー</strong> になって、 おうちの 本棚に ならぶ日が きたら——。<br>
         その ちいさな ゆめの ページを、 きょうも あなたが めくってくれています。
       </p>
       <p class="bookcheer-sign" aria-hidden="true">— ぽの</p>
@@ -1028,6 +1226,29 @@
       } else {
         bindCards();
       }
+    })();
+
+    /* ===== LP accent: .announce-em / .bookcheer-hl 蛍光ペン初回ポヨン ===== */
+    (function () {
+      'use strict';
+      var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (mq.matches) return; // reduced-motion なら CSS 側で即時 100% 塗り
+      if (!('IntersectionObserver' in window)) {
+        document.querySelectorAll('.announce-em, .bookcheer-hl')
+          .forEach(function (el) { el.classList.add('is-painted'); });
+        return;
+      }
+      var targets = document.querySelectorAll('.announce-em, .bookcheer-hl');
+      if (!targets.length) return;
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-painted');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.35, rootMargin: '0px 0px -10% 0px' });
+      targets.forEach(function (el) { io.observe(el); });
     })();
   </script>
 

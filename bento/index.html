@@ -1778,6 +1778,9 @@ html, body {
 .free-placed-item.brush-locked {
   pointer-events: none;
 }
+.free-placed-item.tutorial-locked {
+  cursor: not-allowed;
+}
 .free-mask-row {
   display: grid;
   grid-template-columns: 1.4em 1fr 4.2em;
@@ -7915,7 +7918,7 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1451-gemini31-balanced-opening';
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1454-gemini31-tutorial-locks';
 const BENTO_TUTORIAL_STEP_VOICE = {
   box: 'basic_tut_01',
   'rice-place': 'basic_tut_02',
@@ -7935,7 +7938,7 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   // v1380: 別ファイル名 okazu_more_01 で専用ナレを追加 (basic_tut_14 衝突回避)。
   'okazu-more': 'okazu_more_01',
   // v1416: complete-result の保存ボタン案内ナレを basic_tut_15 から
-  // favorite_save_01 「おきにいりに とっとけるよ。 ほしマークを おしてね」 に差替。
+  // favorite_save_01 「おきにいりに とっておけるよ。 ほしマークを おしてね」 に差替。
   // step ID は 'favorite-save' (現状 dispatch は voice ID 直渡しの chain 内なので
   // map 経由 lookup されないが、 ナレ ID と step の対応を明文化する目的で登録)。
   'favorite-save': 'favorite_save_01',
@@ -8312,6 +8315,65 @@ function canAddFoodForCurrentStep(def) {
 }
 function canAddFoodToCup(def) {
   return !!def && def.type === 'food' && ((def.okazuRole || getOkazuRole(def)) === 'side');
+}
+function getTutorialPaletteAllowance(def) {
+  const ok = { allowed: true, message: '' };
+  if (!tutorialState || !tutorialState.active || simpleBentoMode) return ok;
+  if (!def) return { allowed: false, message: 'いまは おてほんの ものを つかうよ' };
+  const step = tutorialState.step || '';
+  const id = String(def.id || '');
+  const name = String(def.name || '').trim();
+  const deny = (message) => ({ allowed: false, message });
+  if (step === 'box') {
+    return id === 'box_rect_split' ? ok : deny('きょうは このはこを つかうよ');
+  }
+  if (step === 'rice-place') {
+    return def.type === 'rice_auto' || def.type === 'rice'
+      ? ok
+      : deny('ごはんを いれようね');
+  }
+  if (step === 'decor') {
+    return id === 'nori_eye_round'
+      ? ok
+      : deny('おめめの のりを つかうよ');
+  }
+  if (step === 'okazu-red') {
+    const requested = String(tutorialGetRequestedFoodLabel ? tutorialGetRequestedFoodLabel() : '').trim();
+    return def.type === 'food' && name === requested
+      ? ok
+      : deny((requested || 'おねがいの おかず') + 'を いれようね');
+  }
+  if (step === 'okazu-overlap') {
+    return def.type === 'food' && name === 'ハンバーグ'
+      ? ok
+      : deny('ハンバーグを いれようね');
+  }
+  if (step === 'small-accessory') {
+    return def.type === 'cup' && id === 'cup_blue_dot'
+      ? ok
+      : deny('みずたまカップを つかうよ');
+  }
+  if (step === 'small-cup-food') {
+    return def.type === 'food' && name === 'プチトマト'
+      ? ok
+      : deny('プチトマトを いれようね');
+  }
+  if ([
+    'greet', 'tab-rice', 'nori-ok', 'tab-okazu', 'layer-edit', 'layer-edit-try',
+    'move-requested-food', 'okazu-more', 'layer-done', 'tab-small', 'cup-edit',
+    'cup-edit-try', 'tab-small-food', 'small-next', 'complete-result', 'done'
+  ].includes(step)) {
+    return deny(step === 'okazu-more' ? 'ちいさい おかずの ボタンを おしてね' : 'いまは おてほんの とおりに すすもうね');
+  }
+  return ok;
+}
+function isTutorialPaletteItemLocked(def) {
+  return !getTutorialPaletteAllowance(def).allowed;
+}
+function showTutorialPaletteLockToast(def) {
+  const result = getTutorialPaletteAllowance(def);
+  if (!result.allowed) showToast(result.message || 'いまは おてほんの ものを つかうよ');
+  return result.allowed;
 }
 function getCupFoodChildSize(def, cup) {
   if (!def || !cup) return 96;
@@ -9735,8 +9797,25 @@ function eventToFreePoint(e) {
     y: clamp((e.clientY - r.top) / r.height * FREE_LAYOUT_H, 0, FREE_LAYOUT_H),
   };
 }
+function canMoveFreeItemInCurrentTutorial(item) {
+  if (!tutorialState || !tutorialState.active || simpleBentoMode) return true;
+  if (!item) return false;
+  if (tutorialState.step === 'move-requested-food') {
+    const requested = tutorialFindPlacedRequestedFoodItem();
+    return !!requested && requested.uid === item.uid;
+  }
+  return false;
+}
 function beginFreeItemDrag(e, uid) {
   if (e && e.cancelable) e.preventDefault();
+  const item = placedItems.find(i => i.uid === uid);
+  if (!canMoveFreeItemInCurrentTutorial(item)) {
+    if (e) {
+      try { e.stopPropagation(); } catch (_) {}
+    }
+    showToast('いまは うごかさなくて だいじょうぶ');
+    return;
+  }
   bringFreeItemForward(uid);
   freeDragState = { uid };
   const p = e ? eventToFreePoint(e) : null;
@@ -9806,6 +9885,7 @@ function canStartFreePaletteDrag(def) {
     showToast('がめんを タップしてね！');
     return false;
   }
+  if (!showTutorialPaletteLockToast(def)) return false;
   if (def.type === 'food' && getEditingCup()) {
     if (!canAddFoodToCup(def)) {
       showToast('カップには 小さいおかずを いれよう！');
@@ -10748,8 +10828,9 @@ function createFreePlacedElement(item, interactive) {
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && !!editingCup && item.parentCupId !== editingCup.uid;
   const brushLocked = interactive && !!freeBrushStampDef;
+  const tutorialLocked = interactive && !canMoveFreeItemInCurrentTutorial(item);
   const isSelected = interactive && isItemVisuallySelected(item);
-  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : ''].filter(Boolean).join(' ');
+  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : '', tutorialLocked ? 'tutorial-locked' : ''].filter(Boolean).join(' ');
   el.dataset.freeUid = item.uid;
   el.dataset.itemId = item.id || '';
   el.dataset.type = item.type || '';
@@ -10764,6 +10845,11 @@ function createFreePlacedElement(item, interactive) {
   if (interactive && !freeBrushStampDef) {
     el.addEventListener('pointerdown', ev => {
       ev.stopPropagation();
+      if (!canMoveFreeItemInCurrentTutorial(item)) {
+        ev.preventDefault();
+        showToast('いまは うごかさなくて だいじょうぶ');
+        return;
+      }
       if (isFreeMainGuideBlocking()) {
         ev.preventDefault();
         showToast('がめんを タップしてね！');
@@ -11256,6 +11342,7 @@ function createPaletteVisual(def) {
 function shouldHighlightFreeChoice(def) {
   if (!def) return false;
   if (def.tierLocked) return false;
+  if (isTutorialPaletteItemLocked(def)) return false;
   if (getEditingCup()) return canAddFoodToCup(def);
   if (freeGuideStep === 'box') return freeLayoutTab === 'box';
   if (freeGuideStep === 'rice') return def.type === 'rice_auto';
@@ -11284,6 +11371,11 @@ function makeFreePaletteButton(def) {
   if (shouldHighlightFreeChoice(def)) {
     btn.classList.add('guide-target');
   }
+  const tutorialLocked = isTutorialPaletteItemLocked(def);
+  if (tutorialLocked) {
+    btn.classList.add('tut-locked');
+    btn.setAttribute('aria-disabled', 'true');
+  }
   if (def.tierLocked) {
     btn.classList.add('tier-locked');
     btn.setAttribute('aria-disabled', 'true');
@@ -11311,6 +11403,7 @@ function makeFreePaletteButton(def) {
   if (freeLayoutTab === 'box') {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      if (!showTutorialPaletteLockToast(def)) return;
       // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
       if (def.tierLocked && window.PonoTier) {
@@ -11332,6 +11425,7 @@ function makeFreePaletteButton(def) {
   } else {
     btn.addEventListener('pointerdown', e => {
       e.preventDefault();
+      if (!showTutorialPaletteLockToast(def)) return;
       // Phase 2 future-use: decoration/food tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
       if (def.tierLocked && window.PonoTier) {
@@ -12369,7 +12463,7 @@ function renderFreeLayoutControls() {
   if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
     const tier = getGuideTierForStep(freeGuideStep);
     actions.classList.add('has-guide-action');
-    actions.appendChild(makeSmallControlButton('小さい おかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
+    actions.appendChild(makeSmallControlButton('ちいさい おかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1));
   }
   tray.appendChild(actions);
 }
@@ -14065,10 +14159,10 @@ function tutorialStartCompleteGuidance() {
     const saveBtn = document.getElementById('save-fav-btn');
     tutorialClearTrims();
     // v1416: ナレを basic_tut_15 → favorite_save_01 に差し替え。
-    // 「おきにいりに とっとけるよ。 ほしマークを おしてね」 の文に合わせて
+    // v1454: Gemini 3.1 TTS 版に合わせて「とっておけるよ」へ整える。
     // バブルも「ほしマーク」 操作を明示する短文に更新。 fallbackMs は新ナレ
     // 約 4.12s + マージン → 5000ms。
-    tutorialShowBubble('おきにいりに とっとけるよ<br>ほしマークを おしてね', { topVh: '18', side: 'left' });
+    tutorialShowBubble('おきにいりに とっておけるよ<br>ほしマークを おしてね', { topVh: '18', side: 'left' });
     if (saveBtn && !saveBtn.classList.contains('hidden-pre')) {
       tutorialPositionBubbleBeside(saveBtn, { gap: 12 });
       tutorialMarkTarget(saveBtn, { radius: 22, outline: false });
@@ -14589,14 +14683,14 @@ function tutorialButtonLabel(btn) {
   const text = btn ? (btn.textContent || '').replace(/\s+/g, ' ').trim() : '';
   return text || 'ボタン';
 }
-// v1383: okazu-more step 専用。 実 UI の「小さい おかずへ」 primary ボタン
+// v1383: okazu-more step 専用。 実 UI の「ちいさい おかずへ」 primary ボタン
 // (.free-action-row button.primary, handler = tryFinishOkazuTier) を最優先で
 // 取得する。 ラベルが見つからない場合は tutorialCompleteButton() にフォールバック。
 function tutorialOkazuMoreAdvanceButton() {
   const buttons = document.querySelectorAll('.free-action-row button.primary');
   for (const b of buttons) {
     const t = (b.textContent || '').replace(/\s+/g, '');
-    if (t.indexOf('小さい') >= 0 && t.indexOf('おかず') >= 0) return b;
+    if ((t.indexOf('小さい') >= 0 || t.indexOf('ちいさい') >= 0) && t.indexOf('おかず') >= 0) return b;
   }
   if (typeof tutorialCompleteButton === 'function') return tutorialCompleteButton();
   return null;
@@ -14786,6 +14880,9 @@ function tutorialFindCupPaletteEl() {
   if (!list) return tutorialFirstPaletteItem();
   const btns = list.querySelectorAll('.free-palette-item');
   for (const b of btns) {
+    if (b.dataset.itemId === 'cup_blue_dot') return b;
+  }
+  for (const b of btns) {
     const name = b.querySelector('.free-palette-name');
     if (name && (name.textContent || '').indexOf('カップ') >= 0) return b;
   }
@@ -14840,14 +14937,7 @@ function tutorialFindFoodPaletteEl() {
 }
 function tutorialFindLayerDemoFoodPaletteEl() {
   if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
-  const requested = new Set(tutorialGetRequestedFoodNames().map(n => String(n || '').trim()));
-  const preferred = ['ハンバーグ', 'からあげ', 'コロッケ', 'ナポリタン'].filter(n => !requested.has(n));
-  return tutorialFindPaletteFoodByNames(preferred)
-      || Array.from(document.querySelectorAll('.free-item-list .free-palette-item')).find(btn => {
-        const name = (btn.querySelector('.free-palette-name') || btn).textContent || '';
-        return !requested.has(name.trim());
-      })
-      || tutorialFirstPaletteItem();
+  return tutorialFindPaletteFoodByNames(['ハンバーグ']);
 }
 function tutorialFindNoriPaletteEl() {
   // decor タブで「のり」を含む最初の要素
@@ -15616,16 +15706,14 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 7d2. okazu-more — メインおかずを追加で置けることを案内 (v1373 新規 / v1374 で button-only advance に修正 / v1380 でメインおかずパレットを強制)
-  // 「もっと入れてもいいよ」と促し、 おかずOK ボタン押下のみで small-accessory へ進む (v3 設計)。
+  // 7d2. okazu-more — メインおかず完了後、 ボタン押下のみで small-accessory へ進む。
+  // v1454: 指定外アイテム禁止に合わせ、 追加配置を促さず「つぎへ」を案内する。
   // 自動タイマーは廃止: 子供が追加配置している最中に勝手に進むのを防ぐため、 進行トリガは
   // tryFinishOkazuTier (= おかずOK / 2だんめOK / 3だんめOK 押下) からのフックに限定。
   // v1380: 直前 step (move-requested-food) が freeGuideStep='tier2Side' のまま終わるため、
-  // okazu-more に入った瞬間に getCurrentOkazuRole() が 'side' を返してしまい、
-  // パレットが 小さい おかず (たまごやき/プチトマト等) のままで「もっと入れてもいいよ」が
-  // メインおかずパレットに切り替わらないバグを修正。 必ず tier2Main に戻して
-  // freeLayoutTab='food' を保証する (setFreeGuideStep が setSpeech するので、
-  // 直後に上書きするため一旦 skipRender:true で更新)。
+  // okazu-more に入った瞬間に getCurrentOkazuRole() が 'side' を返してしまう。 必ず
+  // tier2Main に戻して freeLayoutTab='food' を保証する (setFreeGuideStep が setSpeech
+  // するので、 直後に上書きするため一旦 skipRender:true で更新)。
   if (step === 'okazu-more') {
     // v1383: 初回 render に限定して state 設定 + パレット再描画を行う。
     // 以前は毎フレーム setFreeGuideStep + renderFreeLayoutControls() を呼んでいて、
@@ -15643,19 +15731,19 @@ function tutorialRenderStep() {
         if (typeof renderFreeLayoutControls === 'function') renderFreeLayoutControls();
       } catch (_) {}
     }
-    // v1383: 実 UI ボタンの label に合わせて案内テキストを「小さい おかずへ」 に統一。
+    // v1383: 実 UI ボタンの label に合わせて案内テキストを「ちいさい おかずへ」 に統一。
     // 旧 (v1380 まで) は「おかずOK」 と案内していたが、 実際のボタン文言と異なるため
     // 子供が該当ボタンを見つけられず詰む致命バグだった。
-    setSpeech('すきな おかずを もっと いれてもいいよ。おわったら 「小さい おかずへ」 を おしてね');
+    setSpeech('おかずは ここまでで だいじょうぶ。つぎは ちいさい おかずの ボタンを おしてね');
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('すきな おかずを もっと<br>いれてもいいよ！<br>おわったら 「小さい おかずへ」 を おしてね');
-    tutorialSetModeLabel('もっと いれていいよ', {
+    tutorialShowPonoCallout('おかずは ここまでで<br>だいじょうぶ！<br>ちいさい おかずの ボタンを おしてね');
+    tutorialSetModeLabel('つぎへ すすもう', {
       mode: 'try',
-      note: '小さい おかずへ で つぎへ',
+      note: 'ちいさい おかずへ で つぎへ',
     });
     tutorialHideBubble();
     tutorialHideFinger();
-    // v1383: 「小さい おかずへ」 ボタンを最優先で取得。 tutorialCompleteButton は
+    // v1383: 「ちいさい おかずへ」 ボタンを最優先で取得。 tutorialCompleteButton は
     // 「おかずOK」/「できあがり」 primary 等もマッチするので、 専用ヘルパーで
     // ラベル一致 (小さい + おかず) を最優先しつつフォールバックで既存実装を使う。
     const okazuOkBtn = tutorialOkazuMoreAdvanceButton();
@@ -16183,7 +16271,7 @@ function tutorialOnItemMoved(uid) {
   const requested = tutorialFindPlacedRequestedFoodItem();
   if (!requested || requested.uid !== uid) return;
   tutorialMoveRequestedFoodToLowerPoint(requested);
-  // v1373: 「すきな おかずを もっと いれてもいいよ」step を挟む。
+  // v1454: 追加配置は促さず、 次の「ちいさい おかずへ」ボタン案内 step を挟む。
   tutorialAdvance('okazu-more');
 }
 function tutorialOnItemPlaced(item) {
