@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-22 - [batch:780-daily-gacha-super-rare-sfx] DEVELOP-SYNC - Codex: `assets/audio/gacha/daily_gacha_super_rare_reveal.mp3` と `play.html` のスーパーレア専用開封SE分岐を develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1&gachaRarity=super` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1238。 (by Codex)
 - 2026-06-22 - [batch:774-daily-gacha-disable-real-daily-lock] DEVELOP-SYNC - Codex: daily gacha は `いちにち いっかい` / `また あした` の文言と取得記録保存を残しつつ、検証期間中は localStorage 当日済み判定で入口やモーダルをロックしない変更を develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1235。検証: `git diff --check`、`node --check sw.js`、`play.html` inline script parse、Playwright local normal hidden + `?dev=1` 完走後の再オープン可・pageerror 0。 (by Codex)
 - 2026-06-22 - [batch:773-daily-gacha-once-copy] DEVELOP-SYNC - Codex: daily gacha に `いちにち いっかい まわせるよ` 開始文言、取得後の `シールちょうに はって あそぼう` / `また あした やろうね` 案内、当日済み入口 `また あした` と再オープン時の使用済み表示を追加して develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1234。 (by Codex)
 - 2026-06-22 - [batch:771-daily-gacha-final-stinger] DONE - Codex: `D:\ポノのおへや\ガチャ\sound\Short Instrumental Stinger For A Cute Premium Capsule Toy Reveal, 3 Seconds L....mp3` を3.2秒にトリムした `assets/audio/gacha/daily_gacha_final_turn_stinger.mp3` を develop へ同期。daily gacha 3回目の回転確定直後に final stinger を再生し、既存 `daily_gacha_capsule_toy_02.mp3` は排出表示より約220ms早く鳴らすよう調整。`daily_gacha_capsule_toy_01.mp3` は1〜2回目のみのまま。`sw.js` / `PAGE_CACHE_VERSION=1233`。 (by Codex)
