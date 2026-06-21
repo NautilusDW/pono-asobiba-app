@@ -1755,6 +1755,7 @@
       filter: blur(1px);
       transform: translateX(-11%) scale(.82);
       animation: none;
+      pointer-events: none;
     }
     .daily-gacha-modal.is-closeup .daily-gacha-panel {
       opacity: 0;
@@ -2734,7 +2735,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1213;
+    const PAGE_CACHE_VERSION = 1214;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -3124,6 +3125,16 @@
     const DAILY_GACHA_TURNS = 4;
     const DAILY_GACHA_TURN_THRESHOLD = 78;
     const DAILY_GACHA_TURN_ROTATION = 90;
+    const DAILY_GACHA_AUDIO_ASSETS = {
+      turn: 'assets/audio/gacha/daily_gacha_turn_roll.mp3',
+      final: 'assets/audio/gacha/daily_gacha_final_reveal.mp3',
+      bed: 'assets/audio/gacha/daily_gacha_bed_loop.mp3'
+    };
+    const DAILY_GACHA_TURN_SOUND = {
+      1: { volume: .46, rate: .96 },
+      2: { volume: .56, rate: 1 },
+      3: { volume: .67, rate: 1.035 }
+    };
     const dailyGachaEntry = document.getElementById('dailyGachaEntry');
     const dailyGachaEntrySub = document.getElementById('dailyGachaEntrySub');
     const dailyGachaModal = document.getElementById('dailyGachaModal');
@@ -3154,6 +3165,13 @@
       timers: [],
       capsuleColor: 'pink',
       capsuleOpen: ''
+    };
+    const dailyGachaAudio = {
+      ready: false,
+      turnPool: [],
+      turnIndex: 0,
+      final: null,
+      bed: null
     };
     let dailyGachaAudioCtx = null;
 
@@ -3227,7 +3245,82 @@
       return 'つまみを ぐっと まわしてね';
     }
 
-    function playDailyGachaSfx(kind) {
+    function dailyGachaAudioSrc(path) {
+      const sep = path.includes('?') ? '&' : '?';
+      return `${path}${sep}v=${PAGE_CACHE_VERSION}`;
+    }
+
+    function dailyGachaSoundMuted() {
+      try { return localStorage.getItem(SOUND_KEY) === '1'; } catch (_) { return false; }
+    }
+
+    function createDailyGachaAudio(path, options = {}) {
+      if (typeof Audio !== 'function') return null;
+      const audio = new Audio(dailyGachaAudioSrc(path));
+      audio.preload = 'auto';
+      audio.loop = !!options.loop;
+      audio.volume = options.volume ?? 1;
+      return audio;
+    }
+
+    function ensureDailyGachaAudio() {
+      if (dailyGachaAudio.ready) return;
+      dailyGachaAudio.turnPool = [
+        createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.turn),
+        createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.turn),
+        createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.turn)
+      ].filter(Boolean);
+      dailyGachaAudio.final = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.final, { volume: .82 });
+      dailyGachaAudio.bed = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.bed, { loop: true, volume: .12 });
+      dailyGachaAudio.ready = true;
+    }
+
+    function primeDailyGachaAudio() {
+      ensureDailyGachaAudio();
+      [...dailyGachaAudio.turnPool, dailyGachaAudio.final, dailyGachaAudio.bed].forEach((audio) => {
+        try { if (audio) audio.load(); } catch (_) {}
+      });
+    }
+
+    function playDailyGachaAudio(audio, options = {}) {
+      if (!audio || dailyGachaSoundMuted()) return false;
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = options.volume ?? audio.volume ?? 1;
+        audio.playbackRate = options.rate ?? 1;
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => {});
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function startDailyGachaBed() {
+      if (dailyGachaSoundMuted()) return;
+      ensureDailyGachaAudio();
+      const bed = dailyGachaAudio.bed;
+      if (!bed) return;
+      try {
+        bed.volume = .12;
+        bed.playbackRate = 1;
+        if (bed.paused) bed.currentTime = 0;
+        const p = bed.play();
+        if (p && p.catch) p.catch(() => {});
+      } catch (_) {}
+    }
+
+    function stopDailyGachaBed(reset = true) {
+      const bed = dailyGachaAudio.bed;
+      if (!bed) return;
+      try {
+        bed.pause();
+        if (reset) bed.currentTime = 0;
+      } catch (_) {}
+    }
+
+    function playDailyGachaFallbackSfx(kind) {
       try {
         const AudioCtor = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtor) return;
@@ -3259,6 +3352,22 @@
           osc.stop(now + .09);
         }
       } catch (_) {}
+    }
+
+    function playDailyGachaSfx(kind, step = 0) {
+      ensureDailyGachaAudio();
+      if (kind === 'boom') {
+        stopDailyGachaBed(false);
+        const played = playDailyGachaAudio(dailyGachaAudio.final, { volume: .84, rate: 1 });
+        if (!played) playDailyGachaFallbackSfx(kind);
+        return;
+      }
+      const profile = DAILY_GACHA_TURN_SOUND[step] || DAILY_GACHA_TURN_SOUND[1];
+      const pool = dailyGachaAudio.turnPool;
+      const audio = pool.length ? pool[dailyGachaAudio.turnIndex % pool.length] : null;
+      dailyGachaAudio.turnIndex += 1;
+      const played = playDailyGachaAudio(audio, profile);
+      if (!played) playDailyGachaFallbackSfx(kind);
     }
 
     const DAILY_GACHA_CAPSULE_VARIANTS = [
@@ -3410,7 +3519,7 @@
         void dailyGachaModal.offsetWidth;
         dailyGachaModal.classList.add('is-notch');
       }
-      playDailyGachaSfx(nextStep >= DAILY_GACHA_TURNS ? 'boom' : 'click');
+      playDailyGachaSfx(nextStep >= DAILY_GACHA_TURNS ? 'boom' : 'click', Math.min(nextStep, 3));
       setDailyGachaTimer(() => {
         dailyGachaState.turnLock = false;
         if (dailyGachaModal) dailyGachaModal.classList.remove('is-notch');
@@ -3446,6 +3555,7 @@
         if (dailyGachaStatus) dailyGachaStatus.textContent = 'シールの じゅんびちゅう';
         if (dailyGachaAssist) dailyGachaAssist.disabled = false;
         if (dailyGachaLever) dailyGachaLever.disabled = false;
+        startDailyGachaBed();
         return;
       }
 
@@ -3480,8 +3590,10 @@
 
     function armDailyGachaModal() {
       if (!dailyGachaModal) return;
+      primeDailyGachaAudio();
       dailyGachaModal.hidden = false;
       dailyGachaModal.classList.add('is-armed');
+      startDailyGachaBed();
       setTimeout(() => {
         try { dailyGachaLever && dailyGachaLever.focus({ preventScroll: true }); } catch (_) {}
       }, 80);
@@ -3502,6 +3614,7 @@
     function closeDailyGacha() {
       if (!dailyGachaModal) return;
       clearDailyGachaTimers();
+      stopDailyGachaBed();
       dailyGachaModal.hidden = true;
       resetDailyGachaModal();
       updateDailyGachaEntry();
@@ -3524,6 +3637,23 @@
     if (dailyGachaBook) dailyGachaBook.addEventListener('click', goDailyGachaStickerBook);
     if (dailyGachaCloseupRepeat) dailyGachaCloseupRepeat.addEventListener('click', restartDailyGacha);
     if (dailyGachaCloseupBook) dailyGachaCloseupBook.addEventListener('click', goDailyGachaStickerBook);
+    const dailyGachaSoundToggle = document.getElementById('soundToggle');
+    if (dailyGachaSoundToggle) {
+      dailyGachaSoundToggle.addEventListener('change', () => {
+        if (dailyGachaSoundMuted()) {
+          stopDailyGachaBed();
+        } else if (dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaState.complete) {
+          startDailyGachaBed();
+        }
+      });
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopDailyGachaBed(false);
+      } else if (dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaState.complete && !dailyGachaSoundMuted()) {
+        startDailyGachaBed();
+      }
+    });
     if (dailyGachaAssist) {
       dailyGachaAssist.addEventListener('click', () => commitDailyGachaTurn());
     }
