@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-748";
+const ASSET_VERSION = "20260621-749";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -41,7 +41,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "bugs",
     label: "むし",
-    indexTitle: "虫図鑑目次",
+    indexTitle: "むしずかんもくじ",
     pageLabel: "むしずかん",
     summary: "はねや あしの かたちを みてみよう",
     representativeSubjectIds: ["bug_hachi", "bug_chocho", "bug_kabutomushi", "bug_amenbo"],
@@ -49,7 +49,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "animals",
     label: "どうぶつ",
-    indexTitle: "動物図鑑目次",
+    indexTitle: "どうぶつずかんもくじ",
     pageLabel: "どうぶつずかん",
     summary: "もりや まちで あえる いきもの",
     representativeSubjectIds: ["animal_dog", "animal_cat", "animal_lion", "animal_penguin"],
@@ -57,7 +57,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "sea",
     label: "うみ",
-    indexTitle: "海の図鑑目次",
+    indexTitle: "うみのずかんもくじ",
     pageLabel: "うみずかん",
     summary: "うみや みずべで くらす なかま",
     representativeSubjectIds: ["sea_kujira", "sea_kani", "sea_jinbeizame", "sea_daiouika"],
@@ -65,7 +65,7 @@ const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "food",
     label: "たべもの",
-    indexTitle: "食べもの図鑑目次",
+    indexTitle: "たべものずかんもくじ",
     pageLabel: "たべものずかん",
     summary: "からだを つくる おいしい もの",
     representativeSubjectIds: ["food_onigiri", "food_tamago", "food_karaage", "food_broccoli"],
@@ -481,8 +481,8 @@ const ZUKAN_THICKNESS_STRIPS = [
   { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 117 },
 ];
 const ZUKAN_PAGE_TEMPLATES = {
-  index: "sb3d_image2_zukan_template_index_green_empty_v1.png",
-  detail: "sb3d_image2_zukan_template_detail_green_empty_v1.png",
+  index: "sb3d_image2_zukan_template_index_green_empty_alpha_v2.png",
+  detail: "sb3d_image2_zukan_template_detail_green_empty_alpha_v2.png",
 };
 const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
 const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
@@ -3074,7 +3074,7 @@ function shouldAnimateBookPageTurn(previousPage, nextPage, options) {
 function updateBookPageControls() {
   if (activeSurface === "cover") {
     if (bookPageLabel) {
-      bookPageLabel.textContent = "表紙";
+      bookPageLabel.textContent = "ひょうし";
       bookPageLabel.disabled = true;
     }
     if (bookPrevPage) {
@@ -3142,7 +3142,7 @@ function renderBookPageJump() {
   bookPageJump.replaceChildren();
   const coverButton = document.createElement("button");
   coverButton.type = "button";
-  coverButton.textContent = "表紙";
+  coverButton.textContent = "ひょうし";
   coverButton.classList.toggle("is-active", activeSurface === "cover");
   coverButton.addEventListener("click", () => {
     closeBookPageJump();
@@ -4811,7 +4811,7 @@ function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
 
 function collectionZukanIndexTitle(pageDef) {
   const category = COLLECTION_TOC_CATEGORY_DEFS.find((definition) => definition.id === pageDef?.categoryId);
-  return collectionZukanFirstText(category?.indexTitle, pageDef?.label, "図鑑目次");
+  return collectionZukanFirstText(category?.indexTitle, pageDef?.label, "ずかんもくじ");
 }
 
 function collectionZukanIndexSubtitle(pageDef) {
@@ -6890,7 +6890,7 @@ function updateAlbumModeUi() {
     albumModeToggle.textContent = activeAlbumMode === "collection" ? "ずかん" : "シールちょう";
     albumModeToggle.setAttribute(
       "aria-label",
-      activeAlbumMode === "collection" ? "ずかんを表示中。シールちょうへ切りかえ" : "シールちょうを表示中。ずかんへ切りかえ",
+      activeAlbumMode === "collection" ? "ずかんを ひょうじちゅう。シールちょうへ きりかえ" : "シールちょうを ひょうじちゅう。ずかんへ きりかえ",
     );
   }
   updateCollectionStickerTrayVisibility();
