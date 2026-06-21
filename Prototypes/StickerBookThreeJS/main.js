@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-749";
+const ASSET_VERSION = "20260621-750";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -723,6 +723,7 @@ playButton.classList.toggle("playing", isPlaying);
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v8";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
+const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v1";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
 const TUNING_HISTORY_LIMIT = 80;
@@ -803,6 +804,66 @@ const COVER_TUNING_FIELDS = [
   ["coverBgScaleY", "背景 高さ", 0.9, 1.35, 0.005],
   ["coverBgOpacity", "背景 なじみ", 0, 0.8, 0.01],
 ];
+const DEFAULT_ZUKAN_TEXT_TUNING = {
+  indexTitleX: 0,
+  indexTitleY: 0,
+  indexSubtitleX: 0,
+  indexSubtitleY: 0,
+  indexBadgeX: 0,
+  indexBadgeY: 0,
+  indexImageX: 0,
+  indexImageY: 0,
+  indexTextX: 0,
+  indexTextY: 0,
+  detailNumberX: 0,
+  detailNumberY: 0,
+  detailNameX: 0,
+  detailNameY: 0,
+  detailSubtitleX: 0,
+  detailSubtitleY: 0,
+  detailCategoryX: 0,
+  detailCategoryY: 0,
+  detailImageX: 0,
+  detailImageY: 0,
+  detailFieldTitleX: 0,
+  detailFieldTitleY: 0,
+  detailFieldTextX: 0,
+  detailFieldTextY: 0,
+  detailMemoTitleX: 0,
+  detailMemoTitleY: 0,
+  detailMemoTextX: 0,
+  detailMemoTextY: 0,
+};
+const ZUKAN_TEXT_TUNING_FIELDS = [
+  ["indexTitleX", "もくじ みだし X", -180, 180, 1],
+  ["indexTitleY", "もくじ みだし Y", -180, 180, 1],
+  ["indexSubtitleX", "もくじ せつめい X", -180, 180, 1],
+  ["indexSubtitleY", "もくじ せつめい Y", -180, 180, 1],
+  ["indexBadgeX", "もくじ ばんごう X", -120, 120, 1],
+  ["indexBadgeY", "もくじ ばんごう Y", -120, 120, 1],
+  ["indexImageX", "もくじ え X", -180, 180, 1],
+  ["indexImageY", "もくじ え Y", -180, 180, 1],
+  ["indexTextX", "もくじ なまえ X", -180, 180, 1],
+  ["indexTextY", "もくじ なまえ Y", -180, 180, 1],
+  ["detailNumberX", "しょうさい No X", -160, 160, 1],
+  ["detailNumberY", "しょうさい No Y", -160, 160, 1],
+  ["detailNameX", "しょうさい なまえ X", -220, 220, 1],
+  ["detailNameY", "しょうさい なまえ Y", -160, 160, 1],
+  ["detailSubtitleX", "しょうさい よみ X", -220, 220, 1],
+  ["detailSubtitleY", "しょうさい よみ Y", -160, 160, 1],
+  ["detailCategoryX", "しょうさい ぶんるい X", -180, 180, 1],
+  ["detailCategoryY", "しょうさい ぶんるい Y", -160, 160, 1],
+  ["detailImageX", "しょうさい え X", -220, 220, 1],
+  ["detailImageY", "しょうさい え Y", -220, 220, 1],
+  ["detailFieldTitleX", "こうもく みだし X", -180, 180, 1],
+  ["detailFieldTitleY", "こうもく みだし Y", -180, 180, 1],
+  ["detailFieldTextX", "こうもく ぶん X", -180, 180, 1],
+  ["detailFieldTextY", "こうもく ぶん Y", -180, 180, 1],
+  ["detailMemoTitleX", "メモ みだし X", -180, 180, 1],
+  ["detailMemoTitleY", "メモ みだし Y", -180, 180, 1],
+  ["detailMemoTextX", "メモ ぶん X", -180, 180, 1],
+  ["detailMemoTextY", "メモ ぶん Y", -180, 180, 1],
+];
 const SPREAD_PRESETS = [
   ["empty-full", 0, "右だけ"],
   ["small-mostly", 0.25, "右多め"],
@@ -812,6 +873,7 @@ const SPREAD_PRESETS = [
 ];
 let layerTuningByPair = loadLayerTuningStore();
 let coverTuning = loadCoverTuning();
+let zukanTextTuning = loadZukanTextTuning();
 let tuningUndoStack = [];
 let tuningRedoStack = [];
 let activeTuningEditLabel = "";
@@ -3504,6 +3566,45 @@ function persistCoverTuning() {
   } catch {}
 }
 
+function loadZukanTextTuning() {
+  try {
+    const raw = localStorage.getItem(ZUKAN_TEXT_TUNING_STORAGE_KEY);
+    if (!raw) {
+      return { ...DEFAULT_ZUKAN_TEXT_TUNING };
+    }
+    return normalizeZukanTextTuning(JSON.parse(raw));
+  } catch {
+    return { ...DEFAULT_ZUKAN_TEXT_TUNING };
+  }
+}
+
+function normalizeZukanTextTuning(value) {
+  if (!value || typeof value !== "object") {
+    return { ...DEFAULT_ZUKAN_TEXT_TUNING };
+  }
+  const next = { ...DEFAULT_ZUKAN_TEXT_TUNING };
+  for (const [key, , min, max] of ZUKAN_TEXT_TUNING_FIELDS) {
+    next[key] = readClampedNumber(value[key], DEFAULT_ZUKAN_TEXT_TUNING[key], min, max);
+  }
+  return next;
+}
+
+function saveZukanTextTuning(nextTuning) {
+  zukanTextTuning = normalizeZukanTextTuning(nextTuning);
+  persistZukanTextTuning();
+}
+
+function persistZukanTextTuning() {
+  try {
+    localStorage.setItem(ZUKAN_TEXT_TUNING_STORAGE_KEY, JSON.stringify(zukanTextTuning));
+  } catch {}
+}
+
+function zukanTextOffset(key) {
+  const value = Number(zukanTextTuning?.[key]);
+  return Number.isFinite(value) ? value : 0;
+}
+
 function getCurrentLayerTuning() {
   const pair = thicknessPairForSpread(spreadPosition);
   if (!layerTuningByPair[pair.key]) {
@@ -3600,6 +3701,7 @@ function createTuningSnapshot(label) {
     spreadPosition,
     layerTuningByPair: cloneTuningStore(),
     coverTuning: normalizeCoverTuning(coverTuning),
+    zukanTextTuning: normalizeZukanTextTuning(zukanTextTuning),
   };
 }
 
@@ -3620,8 +3722,10 @@ function restoreTuningSnapshot(snapshot) {
   spreadPosition = THREE.MathUtils.clamp(Number(snapshot.spreadPosition), 0, 1);
   layerTuningByPair = cloneTuningStore(snapshot.layerTuningByPair);
   coverTuning = normalizeCoverTuning(snapshot.coverTuning);
+  zukanTextTuning = normalizeZukanTextTuning(snapshot.zukanTextTuning);
   persistLayerTuningStore();
   persistCoverTuning();
+  persistZukanTextTuning();
   setupTuningPanel();
   updatePage(flipProgress);
   syncUrl();
@@ -3769,6 +3873,10 @@ function setupTuningPanel() {
     });
     row.append(text, range, number);
     grid.append(row);
+  }
+
+  if (activeAlbumMode === "collection") {
+    appendZukanTextTuningSection(tuningPanel);
   }
 
   const actions = document.createElement("div");
@@ -3995,6 +4103,84 @@ function appendSpreadTuningRow(grid) {
   grid.append(row);
 }
 
+function appendZukanTextTuningSection(parent) {
+  const sectionTitle = document.createElement("div");
+  sectionTitle.className = "tuning-pair";
+  sectionTitle.textContent = "ずかん もじ いち";
+  parent.append(sectionTitle);
+
+  const grid = document.createElement("div");
+  grid.className = "tuning-grid";
+  parent.append(grid);
+
+  for (const [key, label, min, max, step] of ZUKAN_TEXT_TUNING_FIELDS) {
+    const row = document.createElement("label");
+    row.className = "tuning-row";
+
+    const text = document.createElement("span");
+    text.textContent = label;
+
+    const range = document.createElement("input");
+    range.type = "range";
+    range.min = String(min);
+    range.max = String(max);
+    range.step = String(step);
+    range.value = String(zukanTextTuning[key]);
+
+    const number = document.createElement("input");
+    number.type = "number";
+    number.min = String(min);
+    number.max = String(max);
+    number.step = String(step);
+    number.value = String(zukanTextTuning[key]);
+
+    const update = (nextValue) => {
+      const parsed = Number(nextValue);
+      if (!Number.isFinite(parsed)) {
+        return;
+      }
+      const nextTuning = { ...zukanTextTuning };
+      nextTuning[key] = THREE.MathUtils.clamp(parsed, min, max);
+      saveZukanTextTuning(nextTuning);
+      range.value = String(zukanTextTuning[key]);
+      number.value = String(zukanTextTuning[key]);
+      updateTuningOutput();
+      updatePage(flipProgress);
+    };
+
+    range.addEventListener("pointerdown", () => beginTuningEdit(label));
+    range.addEventListener("keydown", () => beginTuningEdit(label));
+    range.addEventListener("input", () => {
+      beginTuningEdit(label);
+      update(range.value);
+    });
+    range.addEventListener("change", endTuningEdit);
+    range.addEventListener("pointerup", endTuningEdit);
+    range.addEventListener("blur", endTuningEdit);
+    number.addEventListener("change", () => {
+      pushTuningUndo(label);
+      update(number.value);
+    });
+    row.append(text, range, number);
+    grid.append(row);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "tuning-actions";
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.textContent = "もじリセット";
+  reset.addEventListener("click", () => {
+    pushTuningUndo("もじリセット");
+    saveZukanTextTuning(DEFAULT_ZUKAN_TEXT_TUNING);
+    setupTuningPanel();
+    updateTuningOutput();
+    updatePage(flipProgress);
+  });
+  actions.append(reset);
+  parent.append(actions);
+}
+
 function tuningExportText() {
   if (activeSurface === "cover") {
     return JSON.stringify(
@@ -4020,6 +4206,7 @@ function tuningExportText() {
       rightLevel: pair.right,
       current: getCurrentLayerTuning(),
       allPairs: layerTuningByPair,
+      zukanText: activeAlbumMode === "collection" ? zukanTextTuning : undefined,
     },
     null,
     2,
@@ -4830,10 +5017,20 @@ function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, 
   ctx.textAlign = "center";
   if (generatedTemplate) {
     ctx.font = '900 46px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-    ctx.fillText(collectionZukanIndexTitle(pageDef), PAGE_TEXTURE_W / 2, 166, 760);
+    ctx.fillText(
+      collectionZukanIndexTitle(pageDef),
+      PAGE_TEXTURE_W / 2 + zukanTextOffset("indexTitleX"),
+      166 + zukanTextOffset("indexTitleY"),
+      760,
+    );
     ctx.fillStyle = "rgba(51, 68, 71, 0.62)";
     ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-    ctx.fillText(collectionZukanIndexSubtitle(pageDef), PAGE_TEXTURE_W / 2, 246, 690);
+    ctx.fillText(
+      collectionZukanIndexSubtitle(pageDef),
+      PAGE_TEXTURE_W / 2 + zukanTextOffset("indexSubtitleX"),
+      246 + zukanTextOffset("indexSubtitleY"),
+      690,
+    );
   } else {
     const headerOffsetY = sparseIndex ? 28 : 0;
     ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
@@ -4879,8 +5076,8 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   const displayNote = collectionZukanCardNote(sticker, found, canShowSpecificItem);
   const { x, y, width, height } = rect;
   const isRoomy = height >= 220;
-  const badgeX = x + (isRoomy ? 22 : 18);
-  const badgeY = y + (isRoomy ? 22 : 20);
+  const badgeX = x + (isRoomy ? 22 : 18) + zukanTextOffset("indexBadgeX");
+  const badgeY = y + (isRoomy ? 22 : 20) + zukanTextOffset("indexBadgeY");
   const badgeW = isRoomy ? 84 : 72;
   const badgeH = isRoomy ? 42 : 38;
   const badgeRadius = isRoomy ? 15 : 14;
@@ -4890,11 +5087,13 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
     height - (isRoomy ? (generatedTemplate ? 88 : 74) : 30),
     width * (isRoomy ? (generatedTemplate ? 0.34 : 0.32) : 0.28)
   );
-  const imageX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
-  const imageY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
-  const textX = isRoomy ? imageX + imageSize + 34 : x + 232;
+  const imageBaseX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
+  const imageBaseY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
+  const imageX = imageBaseX + zukanTextOffset("indexImageX");
+  const imageY = imageBaseY + zukanTextOffset("indexImageY");
+  const textX = (isRoomy ? imageBaseX + imageSize + 34 : x + 232) + zukanTextOffset("indexTextX");
   const textMaxW = Math.max(220, x + width - textX - 28);
-  const titleY = generatedTemplate ? y + 98 : isRoomy ? y + Math.max(106, height * 0.43) : y + 48;
+  const titleY = (generatedTemplate ? y + 98 : isRoomy ? y + Math.max(106, height * 0.43) : y + 48) + zukanTextOffset("indexTextY");
   const noteY = titleY + (isRoomy ? 42 : 31);
   ctx.save();
   if (!generatedTemplate) {
@@ -4995,8 +5194,8 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
       category: collectionZukanDetailCategoryLabel(subject, pageDef),
     },
     image: {
-      x: generatedTemplate ? 84 : 166,
-      y: generatedTemplate ? 292 : 330,
+      x: (generatedTemplate ? 84 : 166) + zukanTextOffset("detailImageX"),
+      y: (generatedTemplate ? 292 : 330) + zukanTextOffset("detailImageY"),
       width: generatedTemplate ? 674 : 552,
       height: generatedTemplate ? 722 : 610,
     },
@@ -5191,7 +5390,11 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   ctx.fillStyle = "#ffffff";
   ctx.font = '900 27px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(`No.${header.number}`, x + 107, y + 68);
+  ctx.fillText(
+    `No.${header.number}`,
+    x + 107 + zukanTextOffset("detailNumberX"),
+    y + 68 + zukanTextOffset("detailNumberY"),
+  );
 
   if (!generatedTemplate) {
     ctx.fillStyle = pageAccent;
@@ -5200,15 +5403,30 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   }
   ctx.fillStyle = "#ffffff";
   ctx.font = '900 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(header.category, x + width - 147, y + 67, 186);
+  ctx.fillText(
+    header.category,
+    x + width - 147 + zukanTextOffset("detailCategoryX"),
+    y + 67 + zukanTextOffset("detailCategoryY"),
+    186,
+  );
 
   ctx.textAlign = "left";
   ctx.fillStyle = theme.text;
   ctx.font = '900 54px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(header.name, x + 212, y + 67, width - 506);
+  ctx.fillText(
+    header.name,
+    x + 212 + zukanTextOffset("detailNameX"),
+    y + 67 + zukanTextOffset("detailNameY"),
+    width - 506,
+  );
   ctx.fillStyle = "rgba(51, 68, 71, 0.62)";
   ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(header.subtitle, x + 216, y + 106, width - 520);
+  ctx.fillText(
+    header.subtitle,
+    x + 216 + zukanTextOffset("detailSubtitleX"),
+    y + 106 + zukanTextOffset("detailSubtitleY"),
+    width - 520,
+  );
   ctx.restore();
 }
 
@@ -5284,12 +5502,25 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
   ctx.fillStyle = "#ffffff";
   ctx.font = `${generatedTemplate ? "900 20px" : "900 21px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText(title, x + (generatedTemplate ? 112 : 139), y + (generatedTemplate ? 64 : 48), generatedTemplate ? 164 : 206);
+  ctx.fillText(
+    title,
+    x + (generatedTemplate ? 112 : 139) + zukanTextOffset("detailFieldTitleX"),
+    y + (generatedTemplate ? 64 : 48) + zukanTextOffset("detailFieldTitleY"),
+    generatedTemplate ? 164 : 206,
+  );
 
   ctx.fillStyle = "rgba(51, 68, 71, 0.82)";
   ctx.font = `${generatedTemplate ? "900 30px" : "900 29px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "left";
-  drawWrappedCanvasText(ctx, value, x + (generatedTemplate ? 48 : 30), y + (generatedTemplate ? 122 : 96), width - (generatedTemplate ? 84 : 60), 36, 2);
+  drawWrappedCanvasText(
+    ctx,
+    value,
+    x + (generatedTemplate ? 48 : 30) + zukanTextOffset("detailFieldTextX"),
+    y + (generatedTemplate ? 122 : 96) + zukanTextOffset("detailFieldTextY"),
+    width - (generatedTemplate ? 84 : 60),
+    36,
+    2,
+  );
   ctx.restore();
 }
 
@@ -5316,7 +5547,12 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   ctx.fillStyle = "#ffffff";
   ctx.font = '900 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(memo.title, x + 123, y + 61, 146);
+  ctx.fillText(
+    memo.title,
+    x + 123 + zukanTextOffset("detailMemoTitleX"),
+    y + 61 + zukanTextOffset("detailMemoTitleY"),
+    146,
+  );
 
   if (!generatedTemplate) {
     ctx.fillStyle = theme.infoAccent || palette.sub;
@@ -5332,7 +5568,15 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   ctx.fillStyle = "rgba(51, 68, 71, 0.78)";
   ctx.font = '800 30px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "left";
-  drawWrappedCanvasText(ctx, memo.value, x + 38, y + 122, width - 76, 40, 3);
+  drawWrappedCanvasText(
+    ctx,
+    memo.value,
+    x + 38 + zukanTextOffset("detailMemoTextX"),
+    y + 122 + zukanTextOffset("detailMemoTextY"),
+    width - 76,
+    40,
+    3,
+  );
   ctx.restore();
 }
 
