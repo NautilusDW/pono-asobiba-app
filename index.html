@@ -713,7 +713,10 @@
       background-position: left center;
       transition: background-size .6s ease-out;
     }
-    .announce[data-accent] .announce-em.is-painted{ background-size: 100% 100%; }
+    .announce[data-accent] .announce-em.is-painted{
+      background-size: 100% 100%;
+      animation: pono-paint-pop-em .35s cubic-bezier(.34,1.56,.64,1) .55s both;
+    }
 
     /* ---------- .announce hover (PC のみ) ---------- */
     @media (hover: hover) and (pointer: fine) {
@@ -761,7 +764,6 @@
       animation: pono-paper-float-mark 3.6s ease-in-out infinite alternate;
       will-change: transform;
       transition: transform .55s cubic-bezier(.68,-0.55,.27,1.55);
-      perspective: 400px; /* page turn 用 */
     }
 
     .bookcheer[data-accent] .bookcheer-hl{
@@ -773,7 +775,10 @@
       background-position: left center;
       transition: background-size .6s ease-out;
     }
-    .bookcheer[data-accent] .bookcheer-hl.is-painted{ background-size: 100% 100%; }
+    .bookcheer[data-accent] .bookcheer-hl.is-painted{
+      background-size: 100% 100%;
+      animation: pono-paint-pop-hl .35s cubic-bezier(.34,1.56,.64,1) .55s both;
+    }
 
     .bookcheer[data-accent] .bookcheer-key{
       display: inline-block;
@@ -788,8 +793,7 @@
       }
       .bookcheer[data-accent]:hover .bookcheer-hl{ background-size: 100% 100%; }
 
-      .bookcheer[data-accent] .bookcheer-mark:hover,
-      .bookcheer[data-accent] .bookcheer-mark:focus-visible{
+      .bookcheer[data-accent] .bookcheer-mark:hover{
         animation: pono-page-turn .55s cubic-bezier(.68,-0.55,.27,1.55) both;
       }
       .bookcheer[data-accent] .bookcheer-key:hover,
@@ -809,8 +813,7 @@
     /* ---------- focus-visible 共通: アウトラインは控えめに ---------- */
     .announce[data-accent] .announce-tag:focus-visible,
     .announce[data-accent] .announce-badge:focus-visible,
-    .bookcheer[data-accent] .bookcheer-key:focus-visible,
-    .bookcheer[data-accent] .bookcheer-mark:focus-visible{
+    .bookcheer[data-accent] .bookcheer-key:focus-visible{
       outline: 2px dashed rgba(201, 106, 46, .6);
       outline-offset: 4px;
       border-radius: 4px;

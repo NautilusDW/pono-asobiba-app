@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-21T08:51:45Z - LP の .announce / .bookcheer にアクセントモーションを多視点設計 → 実装 → 2 ラウンド クロスレビューで仕上げ。 Round1: 5 keyframes + 14 動作要素 + IntersectionObserver IIFE + prefers-reduced-motion + iOS :active 完備で sw v1455 まで実装。 Round1 レビューで perspective バグ (3D が出ない) と『地味解消が不完全』 (蛍光ペンに pop 無し) を検知。 Round2 fix: perspective(400px) を keyframes インライン化、 pono-paint-pop-em / pono-paint-pop-hl 追加で塗り完了直後 scale 1.05 ポヨン、 📖 scale 1.22→1.14 で Amazon CTA との階層保持、 dead code 7 行削除、 sw v1456。 Round2 で 3/3 APPROVED。 計 4 ブレスト並列 + 統合 + 実装 + 3 レビュー並列 + 修正 + 3 レビュー並列 の 13 エージェント / 60 万トークン
+- **タスク**: LP の .announce / .bookcheer にアクセントモーションを多視点設計 → 実装 → 2 ラウンド クロスレビューで仕上げ。 Round1: 5 keyframes + 14 動作要素 + IntersectionObserver IIFE + prefers-reduced-motion + iOS :active 完備で sw v1455 まで実装。 Round1 レビューで perspective バグ (3D が出ない) と『地味解消が不完全』 (蛍光ペンに pop 無し) を検知。 Round2 fix: perspective(400px) を keyframes インライン化、 pono-paint-pop-em / pono-paint-pop-hl 追加で塗り完了直後 scale 1.05 ポヨン、 📖 scale 1.22→1.14 で Amazon CTA との階層保持、 dead code 7 行削除、 sw v1456。 Round2 で 3/3 APPROVED。 計 4 ブレスト並列 + 統合 + 実装 + 3 レビュー並列 + 修正 + 3 レビュー並列 の 13 エージェント / 60 万トークン
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 28
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 13, "Bash": 8, "Write": 1, "Read": 3, "Edit": 1, "Workflow": 2}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-21T05:56:53Z - LP のお知らせを Coming Soon ティーザー (Coming Soon バッジ / 切り取り線 / shimmer / 封筒シルエット / キャッチ「あたらしい あそびばが、 もうすぐ ひらきます。」) に再設計、 ハードカバー応援を本のページ風 (h2格上げ / 上下dotted罫線 / ぽのサイン / 「いつか、 本棚のとくとう席へ。」) に再設計。 ユーザーから 「数ヶ月以内なんてプロは使わない、 マーケコピー皆無」 と強い指摘を受けたのを受けて、 コピーライターエージェント2並列 + 実装 + クロスレビューの4段で立て直し
 - **タスク**: LP のお知らせを Coming Soon ティーザー (Coming Soon バッジ / 切り取り線 / shimmer / 封筒シルエット / キャッチ「あたらしい あそびばが、 もうすぐ ひらきます。」) に再設計、 ハードカバー応援を本のページ風 (h2格上げ / 上下dotted罫線 / ぽのサイン / 「いつか、 本棚のとくとう席へ。」) に再設計。 ユーザーから 「数ヶ月以内なんてプロは使わない、 マーケコピー皆無」 と強い指摘を受けたのを受けて、 コピーライターエージェント2並列 + 実装 + クロスレビューの4段で立て直し
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 56, "ToolSearch": 1, "Edit": 7, "Write": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-20T05:08:08Z - worktree 2154f42 (Bento tutorial 3-color modal + persistent cup-edit-try marks) を develop-app に ff-merge + push
-- **タスク**: worktree 2154f42 (Bento tutorial 3-color modal + persistent cup-edit-try marks) を develop-app に ff-merge + push
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 122
-- **エラー数**: 16
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 35, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 54, "ToolSearch": 1, "Edit": 7, "Write": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
