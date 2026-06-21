@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1232: Daily gacha switches from the top BGM to the gacha bed loop, and the help pressed mask extends to the right edge.
 // v1231: Bottom nav uses the user-cleaned GPT Image 2 official-site alpha sprites and updated aspect ratio.
 // v1230: Daily gacha adds bubbles_v1 to the capsule opening moment.
 // v1229: Bottom nav swaps the top button to an official-site button using user-cleaned alpha sprites.
@@ -24,7 +25,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1231; // v1231: Bottom nav uses the user-cleaned GPT Image 2 official-site alpha sprites and updated aspect ratio.
+const CACHE_VERSION = 1232; // v1232: Daily gacha switches from the top BGM to the gacha bed loop, and the help pressed mask extends to the right edge.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
