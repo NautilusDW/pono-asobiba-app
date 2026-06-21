@@ -1288,6 +1288,7 @@
       border-radius: 28px;
       overflow: hidden;
       background:
+        radial-gradient(ellipse at 51% 66%, rgba(255, 232, 127, .18), rgba(255, 203, 84, .09) 30%, rgba(255,255,255,0) 69%),
         radial-gradient(circle at 39% 58%, rgba(255, 249, 177, var(--gacha-light)), rgba(255, 220, 96, .2) 18%, rgba(255,255,255,0) 46%),
         radial-gradient(circle at 19% 17%, rgba(255,255,255,.36), rgba(255,255,255,0) 17%),
         linear-gradient(135deg, #6F4639 0%, #4B4034 39%, #214B45 100%);
@@ -1318,7 +1319,7 @@
     .daily-gacha-lux::before {
       content: "";
       position: absolute;
-      inset: -24%;
+      inset: -34%;
       background:
         conic-gradient(from -23deg at 38% 58%,
           rgba(255,255,255,0) 0 12deg,
@@ -1331,18 +1332,16 @@
       opacity: 1;
       filter: blur(1px);
       mix-blend-mode: screen;
-      transform: scale(1.04) rotate(-2deg);
+      transform: scale(1.1) rotate(-2deg);
       transition: opacity .36s ease, transform .36s ease;
     }
     .daily-gacha-lux::after {
       content: "";
       position: absolute;
-      left: 3%;
-      right: 3%;
-      bottom: -22%;
-      height: 58%;
+      inset: -22% -22% -30%;
       background:
-        radial-gradient(ellipse at 40% 45%, rgba(255, 231, 126, var(--gacha-gold-glow)), rgba(255, 199, 88, .16) 36%, rgba(255,255,255,0) 70%);
+        radial-gradient(ellipse at 42% 44%, rgba(255, 231, 126, var(--gacha-gold-glow)), rgba(255, 199, 88, .18) 36%, rgba(255,255,255,0) 72%),
+        radial-gradient(ellipse at 66% 62%, rgba(255, 242, 164, .36), rgba(255,255,255,0) 58%);
       opacity: 1;
       mix-blend-mode: screen;
       transition: opacity .36s ease;
@@ -1635,7 +1634,7 @@
       z-index: 4;
       overflow: hidden;
       pointer-events: none;
-      clip-path: inset(79% 18% 6.5% 18% round 14px);
+      clip-path: inset(79% 18% 8.2% 18% round 14px);
     }
     .daily-gacha-drop-capsule {
       position: absolute;
@@ -1780,6 +1779,7 @@
       pointer-events: none;
       background:
         radial-gradient(circle at 50% 52%, rgba(255, 250, 201, .94), rgba(255, 221, 116, .35) 28%, rgba(255,255,255,0) 55%),
+        linear-gradient(90deg, rgba(255, 242, 167, .28), rgba(255,255,255,0) 17%, rgba(255,255,255,0) 83%, rgba(255, 242, 167, .24)),
         rgba(255, 248, 231, .62);
       overflow: hidden;
       transition: opacity .38s ease;
@@ -1787,7 +1787,7 @@
     .daily-gacha-closeup::before {
       content: "";
       position: absolute;
-      inset: -4%;
+      inset: -9%;
       z-index: 0;
       background-image: var(--gacha-reveal-bg, url("assets/ui/gacha/daily_gacha_reveal_bg_magic_book.png"));
       background-size: cover;
@@ -2092,11 +2092,11 @@
       25% { opacity: 1; transform: translate(-50%, -68%) scale(.6) rotate(20deg); }
       36% { opacity: 1; transform: translate(-50%, -28%) scale(.72) rotate(42deg); }
       48% { opacity: 1; transform: translate(-50%, 9%) scale(.79) rotate(70deg); }
-      58% { opacity: 1; transform: translate(-48%, 29%) scale(.84) rotate(96deg); }
-      68% { opacity: 1; transform: translate(-47%, 17%) scale(.81) rotate(120deg); }
-      78% { opacity: 1; transform: translate(-46%, 28%) scale(.79) rotate(140deg); }
-      88% { opacity: 1; transform: translate(-46%, 22%) scale(.78) rotate(156deg); }
-      100% { opacity: 1; transform: translate(-46%, 25%) scale(.78) rotate(168deg); }
+      58% { opacity: 1; transform: translate(-48%, 24%) scale(.84) rotate(96deg); }
+      68% { opacity: 1; transform: translate(-47%, 13%) scale(.81) rotate(120deg); }
+      78% { opacity: 1; transform: translate(-46%, 22%) scale(.79) rotate(140deg); }
+      88% { opacity: 1; transform: translate(-46%, 17%) scale(.78) rotate(156deg); }
+      100% { opacity: 1; transform: translate(-46%, 19%) scale(.78) rotate(168deg); }
     }
     @keyframes dailyGachaCapsuleLeftOpen {
       0% { opacity: 0; transform: translate(22%, -50%) scale(.9) rotate(-6deg); }
@@ -2158,7 +2158,7 @@
       .daily-gacha-title { font-size: 23px; }
       .daily-gacha-status { min-height: 38px; font-size: 15px; }
       .daily-gacha-action { min-height: 42px; font-size: 15px; }
-      .daily-gacha-drop-mask { clip-path: inset(79% 18% 7.5% 18% round 12px); }
+      .daily-gacha-drop-mask { clip-path: inset(79% 18% 8.6% 18% round 12px); }
       .daily-gacha-closeup__inner { width: 88vw; height: 76dvh; }
       .daily-gacha-closeup__open-pair { top: 55%; width: min(320px, 54vw); height: min(200px, 34vw); }
       .daily-gacha-reward { top: 25%; width: 118px; height: 118px; border-radius: 25px; border-width: 6px; }
@@ -3041,7 +3041,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1226;
+    const PAGE_CACHE_VERSION = 1227;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -4042,7 +4042,7 @@
     }
 
     function goDailyGachaHome() {
-      location.href = 'index.html';
+      closeDailyGacha();
     }
 
     if (dailyGachaEntry) {
