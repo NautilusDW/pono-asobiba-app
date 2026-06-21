@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-779";
+const ASSET_VERSION = "20260622-780";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -834,6 +834,9 @@ const STICKER_COVER_3D_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
 const STICKER_COVER_3D_RING_ANCHOR_X = PAGE_W * 0.066;
 const STICKER_COVER_3D_RING_REACH = PAGE_W * 0.082;
 const STICKER_COVER_3D_RING_FRONT_Z = STICKER_COVER_CLOSED_BOARD_Z + PAGE_H * 0.025;
+const STICKER_COVER_3D_EYELET_RADIUS = PAGE_W * 0.014;
+const STICKER_COVER_3D_EYELET_TUBE = PAGE_W * 0.0026;
+const STICKER_COVER_3D_EYELET_HOLE = PAGE_W * 0.0108;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -7478,10 +7481,51 @@ function createCover3DRingLayer() {
       opacity: 0.32,
       depthWrite: false,
     }),
+    eyelet: new THREE.MeshStandardMaterial({
+      color: hardware.ring,
+      emissive: 0x3b2a12,
+      emissiveIntensity: 0.03,
+      roughness: 0.42,
+      metalness: 0.12,
+      transparent: true,
+      opacity: 0.94,
+      depthWrite: false,
+    }),
+    eyeletHole: new THREE.MeshBasicMaterial({
+      color: hardware.spineDark,
+      transparent: true,
+      opacity: 0.62,
+      depthWrite: false,
+    }),
+    eyeletShadow: new THREE.MeshBasicMaterial({
+      color: 0x1a1008,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+    }),
   };
 
   for (const pixelY of STICKER_COVER_3D_RING_PIXELS) {
     const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
+    const shadow = new THREE.Mesh(createCover3DEyeletShadowGeometry(), materials.eyeletShadow);
+    shadow.position.set(
+      STICKER_COVER_3D_RING_ANCHOR_X + PAGE_W * 0.002,
+      y - PAGE_H * 0.002,
+      STICKER_COVER_3D_RING_FRONT_Z - PAGE_H * 0.0015,
+    );
+    shadow.renderOrder = 85;
+    group.add(shadow);
+
+    const hole = new THREE.Mesh(createCover3DEyeletHoleGeometry(), materials.eyeletHole);
+    hole.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z - PAGE_H * 0.0008);
+    hole.renderOrder = 86;
+    group.add(hole);
+
+    const eyelet = new THREE.Mesh(createCover3DEyeletGeometry(), materials.eyelet);
+    eyelet.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z + PAGE_H * 0.0005);
+    eyelet.renderOrder = 87;
+    group.add(eyelet);
+
     const ring = new THREE.Mesh(createCover3DRingGeometry(y), materials.ring);
     ring.renderOrder = 88;
     group.add(ring);
@@ -7493,6 +7537,23 @@ function createCover3DRingLayer() {
 
   group.visible = false;
   return { group, materials };
+}
+
+function createCover3DEyeletGeometry() {
+  return new THREE.TorusGeometry(
+    STICKER_COVER_3D_EYELET_RADIUS,
+    STICKER_COVER_3D_EYELET_TUBE,
+    10,
+    32,
+  );
+}
+
+function createCover3DEyeletHoleGeometry() {
+  return new THREE.CircleGeometry(STICKER_COVER_3D_EYELET_HOLE, 32);
+}
+
+function createCover3DEyeletShadowGeometry() {
+  return new THREE.CircleGeometry(STICKER_COVER_3D_EYELET_RADIUS + STICKER_COVER_3D_EYELET_TUBE * 1.4, 32);
 }
 
 function createCover3DRingGeometry(baseY) {
@@ -7953,8 +8014,13 @@ function applyCover3DRingTheme(hardware) {
     layer.materials.ring.color.setHex(hardware.ring);
     layer.materials.ring.emissive.setHex(0x34230e);
     layer.materials.highlight.color.setHex(hardware.ringHighlight);
+    layer.materials.eyelet.color.setHex(hardware.ring);
+    layer.materials.eyelet.emissive.setHex(0x3b2a12);
+    layer.materials.eyeletHole.color.setHex(hardware.spineDark);
     layer.materials.ring.needsUpdate = true;
     layer.materials.highlight.needsUpdate = true;
+    layer.materials.eyelet.needsUpdate = true;
+    layer.materials.eyeletHole.needsUpdate = true;
   }
 }
 
