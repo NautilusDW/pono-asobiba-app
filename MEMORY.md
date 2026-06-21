@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-21T15:18:36Z - Stitch v2 (chip 数調整版) を index.html (.coming-soon-app scope 化) + .claude-design-bundle/components/coming-soon/coming-soon-a.html (素セレクタ) の両方に CSS のみ反映。 狭幅 chip 4 個 (42px / c5,c6=display:none) + 広幅 6 個 (46px / c5,c6=display:flex で復活)、 c1-c4 位置と c2 背景色も再調整。 文言・HTML・他 CSS は無変更 (前回 Round 2 fix の確定文言を維持、 mojibake で上書きしない知見活用 [[feedback_stitch_mojibake_no_guess]])。 3 軸クロスレビュー全 APPROVED、 sw v1470→1471。 残課題は実機目視 (広幅 c2/c6 と phone 視線競合、 border-radius 統一性) 2 点
+- **タスク**: Stitch v2 (chip 数調整版) を index.html (.coming-soon-app scope 化) + .claude-design-bundle/components/coming-soon/coming-soon-a.html (素セレクタ) の両方に CSS のみ反映。 狭幅 chip 4 個 (42px / c5,c6=display:none) + 広幅 6 個 (46px / c5,c6=display:flex で復活)、 c1-c4 位置と c2 背景色も再調整。 文言・HTML・他 CSS は無変更 (前回 Round 2 fix の確定文言を維持、 mojibake で上書きしない知見活用 [[feedback_stitch_mojibake_no_guess]])。 3 軸クロスレビュー全 APPROVED、 sw v1470→1471。 残課題は実機目視 (広幅 c2/c6 と phone 視線競合、 border-radius 統一性) 2 点
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 53
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 21, "Bash": 14, "Write": 3, "Read": 5, "Edit": 3, "Workflow": 7}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-21T15:09:22Z - Stitch 完成版 coming-soon-a.html を .claude-design-bundle/components/coming-soon/ に保存 + index.html に組み込み (既存 .announce 完全削除、 .coming-soon-app scope 化、 @keyframes cs-* リネーム、 ph-pono 相対パス化、 IntersectionObserver から .announce-em 削除) → mojibake 解読が 4 箇所不正確だった (どんと→うんと、 ぐっと→わくわくしながら 等) ので Stitch 原文確定で Round 2 fix → 3 軸クロスレビュー全 APPROVED、 sw v1468→1469→1470。 Claude Design 側で chip 数調整版を作成中、 完成次第クリーン版で上書き予定
 - **タスク**: Stitch 完成版 coming-soon-a.html を .claude-design-bundle/components/coming-soon/ に保存 + index.html に組み込み (既存 .announce 完全削除、 .coming-soon-app scope 化、 @keyframes cs-* リネーム、 ph-pono 相対パス化、 IntersectionObserver から .announce-em 削除) → mojibake 解読が 4 箇所不正確だった (どんと→うんと、 ぐっと→わくわくしながら 等) ので Stitch 原文確定で Round 2 fix → 3 軸クロスレビュー全 APPROVED、 sw v1468→1469→1470。 Claude Design 側で chip 数調整版を作成中、 完成次第クリーン版で上書き予定
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 67, "ToolSearch": 1, "Edit": 7, "Write": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-20T08:31:25Z - LP ゲームカード5枚の本体ビジュアル画像を play.html メニュー用 thumb_*.webp に統一 (maze は誤参照修正) + sw.js CACHE_VERSION バンプ 1412→1413、 視覚確認エージェント + 実装エージェント + クロスレビューエージェントの3段構成で進めた
-- **タスク**: LP ゲームカード5枚の本体ビジュアル画像を play.html メニュー用 thumb_*.webp に統一 (maze は誤参照修正) + sw.js CACHE_VERSION バンプ 1412→1413、 視覚確認エージェント + 実装エージェント + クロスレビューエージェントの3段構成で進めた
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 6
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 5, "Bash": 1}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
