@@ -1,0 +1,161 @@
+<!-- @dsCard group="Sections" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>あそびばで できること — placeholder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    .play-cards-placeholder {
+      --bg: #FFF8F0;
+      --primary: #F2915A;
+      --primary-light: #FDDCBF;
+      --text: #5D4E37;
+      --text-light: #A89880;
+      --radius-card: 20px;
+      --shadow-card: 0 4px 14px rgba(93, 78, 55, 0.12);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg, #FFF8F0);
+      font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', 'Hiragino Maru Gothic ProN', sans-serif;
+      color: #5D4E37;
+    }
+
+    .play-cards-placeholder {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: clamp(32px, 6vw, 64px) clamp(16px, 4vw, 32px);
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .play-cards-placeholder__eyebrow {
+      display: inline-block;
+      font-weight: 700;
+      font-size: clamp(11px, 2.4vw, 13px);
+      letter-spacing: 0.18em;
+      color: var(--text-light);
+      background: var(--primary-light);
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+
+    .play-cards-placeholder__title {
+      font-weight: 900;
+      font-size: clamp(26px, 5.5vw, 44px);
+      line-height: 1.3;
+      margin: 0 0 12px;
+      color: var(--text);
+    }
+
+    .play-cards-placeholder__sub {
+      font-weight: 700;
+      font-size: clamp(14px, 3vw, 18px);
+      line-height: 1.7;
+      margin: 0 0 32px;
+      color: var(--text-light);
+    }
+
+    .play-cards-placeholder__frame {
+      border: 2px dashed var(--primary);
+      border-radius: var(--radius-card);
+      background: #fff;
+      box-shadow: var(--shadow-card);
+      padding: clamp(24px, 5vw, 48px) clamp(20px, 4vw, 36px);
+      text-align: left;
+    }
+
+    .play-cards-placeholder__label {
+      font-weight: 900;
+      font-size: clamp(15px, 3.2vw, 18px);
+      color: var(--primary);
+      margin: 0 0 12px;
+    }
+
+    .play-cards-placeholder__desc {
+      font-weight: 700;
+      font-size: clamp(13px, 2.8vw, 15px);
+      line-height: 1.8;
+      margin: 0 0 20px;
+      color: var(--text);
+    }
+
+    .play-cards-placeholder__list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 24px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .play-cards-placeholder__list li {
+      background: var(--bg);
+      border: 1px solid rgba(93, 78, 55, 0.08);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: clamp(13px, 2.8vw, 14px);
+      color: var(--text);
+    }
+
+    .play-cards-placeholder__list strong {
+      color: var(--primary);
+      font-weight: 900;
+      margin-right: 8px;
+    }
+
+    .play-cards-placeholder__note {
+      font-weight: 700;
+      font-size: clamp(11px, 2.4vw, 13px);
+      color: var(--text-light);
+      line-height: 1.7;
+      margin: 16px 0 0;
+      padding: 12px 16px;
+      background: var(--primary-light);
+      border-radius: 12px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="play-cards-placeholder" aria-label="あそびばで できること プレースホルダー">
+    <span class="play-cards-placeholder__eyebrow">SECTION PLACEHOLDER</span>
+    <h2 class="play-cards-placeholder__title">あそびばで できること</h2>
+    <p class="play-cards-placeholder__sub">ポノと いっしょに、こんな あそびが まってるよ</p>
+
+    <div class="play-cards-placeholder__frame" role="region" aria-label="生成予定セクションの内容">
+      <p class="play-cards-placeholder__label">ここに カード型ゲーム紹介セクションが入る予定</p>
+      <p class="play-cards-placeholder__desc">
+        ヒーロー B 案 直下に配置される、ファミマガ風の遊び紹介セクション。<br>
+        親には「うちの子にいい」成長効果が一目で伝わり、子供には静止画だけで「これやりたい！」とワクワクさせる、4-5 枚のゲームカードを並べます。
+      </p>
+
+      <ul class="play-cards-placeholder__list">
+        <li><strong>01</strong>ポノとつくろう いろどりべんとう (bento)</li>
+        <li><strong>02</strong>ポノとランタンのめいろ (maze)</li>
+        <li><strong>03</strong>ポノのおとタッチ (oto)</li>
+        <li><strong>04</strong>シールアルバム (sticker album)</li>
+        <li><strong>05</strong>タイトル画面 / メインビジュアル (play.html 直結)</li>
+      </ul>
+
+      <p class="play-cards-placeholder__note">
+        生成案 (A: 雑誌グラビア風 / B: 図鑑風 / C: ストーリー型) は brief.md を参照。<br>
+        各カードには visual / ふりがな付きタイトル / 「こういう遊び」1 文 / 「こういう力が育つ」1 文 が含まれます。
+      </p>
+    </div>
+  </section>
+</body>
+</html>

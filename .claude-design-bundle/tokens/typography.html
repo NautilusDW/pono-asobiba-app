@@ -1,0 +1,433 @@
+<!-- @dsCard group="Tokens" caption="現状の Zen Maru Gothic 公式ウェイトとサンプル。差し替え提案ではなく現行スペックの可視化。" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800, initial-scale=1">
+<title>Pono Typography</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+    font-weight: 400;
+    background: #FFF8F0;
+    color: #3a2a1a;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .card {
+    width: 800px;
+    margin: 0 auto;
+    padding: 48px 56px 64px;
+  }
+
+  /* ===== Card Header ===== */
+  .card-header {
+    border-bottom: 2px solid #e8d9c4;
+    padding-bottom: 24px;
+    margin-bottom: 36px;
+  }
+  .card-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: #F2915A;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .card-title {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 900;
+    font-size: 1.9rem;
+    letter-spacing: 0.04em;
+    color: #2a1d10;
+    margin-bottom: 6px;
+  }
+  .card-desc {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #6a5440;
+  }
+
+  /* ===== Weight Section ===== */
+  .weight-section {
+    padding: 32px 0;
+    border-bottom: 1px dashed #e0cdb1;
+  }
+  .weight-section:last-of-type {
+    border-bottom: none;
+  }
+
+  .weight-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .weight-num {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 900;
+    font-size: 2.6rem;
+    color: #F2915A;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .weight-name {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #4a3522;
+  }
+  .weight-tag {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    background: #FFE3D1;
+    color: #C8651F;
+    padding: 4px 10px;
+    border-radius: 10px;
+  }
+
+  .weight-usecase {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #6a5440;
+    margin: -10px 0 18px;
+    line-height: 1.55;
+  }
+
+  .sample-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 28px;
+  }
+
+  .sample {
+    background: #FFFCF6;
+    border: 1px solid #f0e0c8;
+    border-radius: 14px;
+    padding: 18px 20px 16px;
+  }
+  .sample-label {
+    font-weight: 700;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    color: #F2915A;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .ja-line {
+    font-family: 'Zen Maru Gothic';
+    color: #2a1d10;
+    margin-bottom: 6px;
+  }
+  .en-line {
+    font-family: 'Zen Maru Gothic';
+    color: #2a1d10;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Weight 400 ===== */
+  .w400 .ja-line, .w400 .en-line { font-weight: 400; }
+  .w400 .ja-headline { font-size: 1.6rem; line-height: 1.4; }
+  .w400 .ja-body     { font-size: 1.0rem; line-height: 1.7; }
+  .w400 .ja-small    { font-size: 0.78rem; line-height: 1.7; color: #6a5440; }
+  .w400 .en-headline { font-size: 1.7rem; }
+  .w400 .en-body     { font-size: 1.05rem; }
+  .w400 .en-small    { font-size: 0.78rem; color: #6a5440; }
+
+  /* ===== Weight 700 ===== */
+  .w700 .ja-line, .w700 .en-line { font-weight: 700; }
+  .w700 .ja-headline { font-size: 1.6rem; line-height: 1.4; }
+  .w700 .ja-body     { font-size: 1.0rem; line-height: 1.85; }
+  .w700 .ja-small    { font-size: 0.82rem; color: #6a5440; }
+  .w700 .en-headline { font-size: 1.7rem; }
+  .w700 .en-body     { font-size: 1.05rem; }
+  .w700 .en-small    { font-size: 0.8rem; color: #6a5440; }
+
+  /* ===== Weight 900 ===== */
+  .w900 .ja-line, .w900 .en-line { font-weight: 900; }
+  .w900 .ja-headline { font-size: 1.9rem; line-height: 1.3; letter-spacing: 0.03em; }
+  .w900 .ja-body     { font-size: 1.05rem; line-height: 1.6; }
+  .w900 .ja-small    { font-size: 0.88rem; color: #5a4028; }
+  .w900 .en-headline { font-size: 1.9rem; letter-spacing: 0.06em; }
+  .w900 .en-body     { font-size: 1.1rem; letter-spacing: 0.08em; }
+  .w900 .en-small    { font-size: 0.85rem; letter-spacing: 0.18em; color: #5a4028; }
+
+  /* ===== Token Table ===== */
+  .tokens {
+    margin-top: 44px;
+    padding-top: 32px;
+    border-top: 2px solid #e8d9c4;
+  }
+  .tokens-title {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 900;
+    font-size: 1.15rem;
+    color: #2a1d10;
+    margin-bottom: 18px;
+    letter-spacing: 0.04em;
+  }
+  .token-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .token {
+    display: grid;
+    grid-template-columns: 180px 70px 1fr;
+    gap: 14px;
+    align-items: baseline;
+    background: #FFFCF6;
+    border: 1px solid #f0e0c8;
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .token-name {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 900;
+    font-size: 0.88rem;
+    color: #3a2a1a;
+  }
+  .token-weight {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: #C8651F;
+    background: #FFE3D1;
+    padding: 3px 8px;
+    border-radius: 8px;
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
+  .token-usage {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 400;
+    font-size: 0.78rem;
+    color: #6a5440;
+    line-height: 1.55;
+  }
+
+  /* ===== Footer Micro Demo ===== */
+  .footer-micro {
+    margin-top: 30px;
+    padding: 16px 18px;
+    background: #f6ead4;
+    border-radius: 10px;
+    border: 1px solid #ecd8b4;
+  }
+  .footer-micro-row {
+    font-family: 'Zen Maru Gothic';
+    color: #6a5440;
+  }
+  .footer-micro-row.fm-1 { font-size: 0.7rem; font-weight: 400; line-height: 1.6; margin-bottom: 4px; }
+  .footer-micro-row.fm-2 { font-size: 0.7rem; font-weight: 700; line-height: 1.6; margin-bottom: 4px; }
+  .footer-micro-row.fm-3 { font-size: 0.62rem; font-weight: 400; line-height: 1.7; color: #8a6a44; }
+
+  /* ===== Use-button preview ===== */
+  .btn-preview {
+    margin-top: 18px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(180deg, #ffb84d 0%, #f08c2a 100%);
+    color: #fff;
+    padding: 16px 36px;
+    border-radius: 22px;
+    box-shadow: 0 4px 0 #c66a1a, 0 10px 22px rgba(192, 96, 18, 0.28);
+  }
+  .enter-btn-main {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 900;
+    font-size: clamp(1.4rem, 5.2vw, 1.9rem);
+    letter-spacing: 0.08em;
+    line-height: 1.15;
+  }
+  .enter-btn-iri {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 900;
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    letter-spacing: 0.18em;
+  }
+  .enter-btn-sub {
+    font-family: 'Zen Maru Gothic';
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: #fff5e2;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+
+    <header class="card-header">
+      <div class="card-eyebrow">TYPOGRAPHY TOKENS — CURRENT SPEC</div>
+      <h1 class="card-title">Pono Typography (Zen Maru Gothic 400 / 700 / 900)</h1>
+      <p class="card-desc">ポノあそびば全体で使用する日本語＋英字の正式ウェイト3段階。400=本文・補足、700=UIラベル・強調、900=見出し・タイトル。</p>
+    </header>
+
+    <!-- ============ Weight 400 ============ -->
+    <section class="weight-section w400">
+      <div class="weight-head">
+        <span class="weight-num">400</span>
+        <span class="weight-name">Regular / 既定</span>
+        <span class="weight-tag">BODY DEFAULT</span>
+      </div>
+      <p class="weight-usecase">使いどころ: 長文・読みもの本文、補足キャプション、フッター注記など、視線を流して読ませる箇所。</p>
+
+      <div class="sample-grid">
+        <div class="sample">
+          <div class="sample-label">日本語 / 見出し</div>
+          <div class="ja-line ja-headline">ポノのあそびば</div>
+          <div class="ja-line ja-body">3〜6歳の おすすめ</div>
+          <div class="ja-line ja-small">絵本『ありがとうって、うれしいね』</div>
+        </div>
+        <div class="sample">
+          <div class="sample-label">英数字 / latin</div>
+          <div class="en-line en-headline">Pono</div>
+          <div class="en-line en-body">Kodama no Mori</div>
+          <div class="en-line en-small">ABC 123</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Weight 700 ============ -->
+    <section class="weight-section w700">
+      <div class="weight-head">
+        <span class="weight-num">700</span>
+        <span class="weight-name">Bold / 本文・サブ強調</span>
+        <span class="weight-tag">BODY EMPHASIS</span>
+      </div>
+      <p class="weight-usecase">使いどころ: ボタンラベル、カード見出し、UIラベル、強調したい本文、サブタイトルなど。</p>
+
+      <div class="sample-grid">
+        <div class="sample">
+          <div class="sample-label">日本語 / 本文強調</div>
+          <div class="ja-line ja-headline">ポノのあそびば</div>
+          <div class="ja-line ja-body">3〜6歳の おすすめ</div>
+          <div class="ja-line ja-small">絵本『ありがとうって、うれしいね』</div>
+        </div>
+        <div class="sample">
+          <div class="sample-label">英数字 / latin</div>
+          <div class="en-line en-headline">Pono</div>
+          <div class="en-line en-body">Kodama no Mori</div>
+          <div class="en-line en-small">ABC 123</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Weight 900 ============ -->
+    <section class="weight-section w900">
+      <div class="weight-head">
+        <span class="weight-num">900</span>
+        <span class="weight-name">Heavy / 見出し・ボタン</span>
+        <span class="weight-tag">DISPLAY</span>
+      </div>
+      <p class="weight-usecase">使いどころ: ステージタイトル、ヒーロー見出し、エントリーボタンのメインコピーなど、最も視線を集める箇所。</p>
+
+      <div class="sample-grid">
+        <div class="sample">
+          <div class="sample-label">日本語 / 見出し</div>
+          <div class="ja-line ja-headline">ポノのあそびば</div>
+          <div class="ja-line ja-body">3〜6歳の おすすめ</div>
+          <div class="ja-line ja-small">絵本『ありがとうって、うれしいね』</div>
+        </div>
+        <div class="sample">
+          <div class="sample-label">英数字 / latin</div>
+          <div class="en-line en-headline">Pono</div>
+          <div class="en-line en-body">Kodama no Mori</div>
+          <div class="en-line en-small">ABC 123</div>
+        </div>
+      </div>
+
+      <div class="btn-preview" role="img" aria-label="Enter button preview">
+        <span class="enter-btn-main">ポノのあそびば</span>
+        <span class="enter-btn-iri">いりぐち</span>
+        <span class="enter-btn-sub">3〜6歳の おすすめ</span>
+      </div>
+    </section>
+
+    <!-- ============ Token Reference ============ -->
+    <section class="tokens">
+      <h2 class="tokens-title">Token Reference</h2>
+      <ul class="token-list">
+
+        <li class="token">
+          <div class="token-name">Body / Default</div>
+          <div class="token-weight">400</div>
+          <div class="token-usage">html, body 既定フォント — 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Bold</div>
+          <div class="token-weight">700</div>
+          <div class="token-usage">notice 本文 / author-card 本文 / sub テキスト / rights-footer (font-weight:700)</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Heavy / 見出し</div>
+          <div class="token-weight">900</div>
+          <div class="token-usage">video-label / enter-btn / author-card-title / notice-title / help-link / bookname (font-weight:900)</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Enter button main</div>
+          <div class="token-weight">900</div>
+          <div class="token-usage">enter-btn-main: clamp(1.4rem, 5.2vw, 1.9rem) / letter-spacing 0.08em / line-height 1.15</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Enter button iri</div>
+          <div class="token-weight">900</div>
+          <div class="token-usage">enter-btn-iri: clamp(1rem, 4vw, 1.3rem) / letter-spacing 0.18em</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Section label</div>
+          <div class="token-weight">900</div>
+          <div class="token-usage">video-label / author-card-title: 0.95rem</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Body S</div>
+          <div class="token-weight">700</div>
+          <div class="token-usage">author-card-body 0.88rem (line-height 1.85) / notice-body 0.82rem / help-link 0.88rem</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Caption</div>
+          <div class="token-weight">700</div>
+          <div class="token-usage">author-card-sign 0.8rem / enter-btn-sub 0.85rem / rights-footer-copy 0.82rem</div>
+        </li>
+
+        <li class="token">
+          <div class="token-name">Footer micro</div>
+          <div class="token-weight">400 / 700</div>
+          <div class="token-usage">footer 0.7rem / rights-footer-note 0.7rem / rights-footer-small 0.62rem (line-height 1.6-1.7)</div>
+        </li>
+
+      </ul>
+
+      <div class="footer-micro" aria-label="Footer micro preview">
+        <div class="footer-micro-row fm-1">© Pono no Asobiba — 子どもとおとなの あそびば</div>
+        <div class="footer-micro-row fm-2">運営: こだまのもり / お問い合わせ: info@example.jp</div>
+        <div class="footer-micro-row fm-3">本サイトに掲載されている画像・音声・テキスト等の著作権は、各権利者に帰属します。無断転載を禁じます。</div>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>

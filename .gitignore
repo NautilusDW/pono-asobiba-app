@@ -53,9 +53,6 @@ _debug*
 # Local debug log (was historically tracked; now ignored)
 debug.log
 
-# Claude Design upload bundle (locally generated, do not commit)
-.claude-design-bundle/
-
 # Playwright E2E harness artifacts
 test-results/
 playwright-report/
