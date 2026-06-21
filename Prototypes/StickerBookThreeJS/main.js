@@ -510,7 +510,7 @@ const BOOK_VARIANTS = {
     insideLeft: "sb3d_girl_page_left_generated.webp",
     insideRight: "sb3d_girl_page_right_generated.webp",
     coverPrint: "sb3d_girl_cover_front_generated.webp",
-    coverHardwareMode: "separate",
+    coverHardwareMode: "baked",
     coverFront: "sb3d_girl_cover_front_generated.webp",
     coverBack: "sb3d_girl_cover_back_generated.webp",
     coverInside: "sb3d_girl_cover_inside_generated.webp",
@@ -788,7 +788,7 @@ const COVER_CENTER_X = COVER_CLOSED_X + PAGE_W / 2;
 const BOOK_COVER_X = -COVER_CENTER_X;
 const BOOK_SWIPE_MIN_DISTANCE = 58;
 const BOOK_SWIPE_MAX_VERTICAL_RATIO = 0.72;
-const BOOK_SWIPE_MAX_DURATION_MS = 900;
+const BOOK_SWIPE_MAX_DURATION_MS = 1800;
 const BOOK_INSIDE_X = 0;
 const FLUTTER_PAGE_MIN_COUNT = 3;
 const FLUTTER_PAGE_MAX_COUNT = 6;
@@ -1018,6 +1018,7 @@ let spreadJumpAnimation = null;
 let coverOpenAnimation = null;
 let bookSwipeState = null;
 let suppressSceneClickAfterSwipe = false;
+let lastBookSwipeDebug = null;
 let stickerPlan = null;
 let stickerOptions = [];
 let collectionStickerOptions = [];
@@ -1399,6 +1400,7 @@ window.__stickerBookDebugState = () => ({
   spreadJumpCycles: spreadJumpAnimation?.cycles ?? 0,
   coverPrint: coverPrintFile(activeBook),
   coverHardwareVisible: coverHardware.group.visible,
+  lastBookSwipeDebug,
   ringGroupVisible: ringGroup.visible,
   innerLeftVisible: innerLeft.visible,
   innerRightVisible: innerRight.visible,
@@ -1708,23 +1710,46 @@ function setupBookSwipeNavigation() {
 }
 
 function canStartBookSwipe(event) {
-  return (
-    event.target === canvas
-    && event.isPrimary !== false
-    && event.button === 0
-    && !tuningEnabled
-    && !coverOpenAnimation
-    && !spreadJumpAnimation
-    && !(pageTurn.visible && flipProgress > 0.001)
-    && !zukanTuningDragState
-    && !stickerDragState
-    && !drawingPointerState
-    && (!stickerEditor || stickerEditor.hidden)
-  );
+  if (event.target !== canvas) {
+    return "target";
+  }
+  if (event.isPrimary === false) {
+    return "secondary";
+  }
+  if (event.button !== 0) {
+    return "button";
+  }
+  if (tuningEnabled) {
+    return "tuning";
+  }
+  if (coverOpenAnimation) {
+    return "cover-open";
+  }
+  if (spreadJumpAnimation) {
+    return "spread-jump";
+  }
+  if (pageTurn.visible && flipProgress > 0.001) {
+    return "page-turn";
+  }
+  if (zukanTuningDragState) {
+    return "zukan-drag";
+  }
+  if (stickerDragState) {
+    return "sticker-drag";
+  }
+  if (drawingPointerState) {
+    return "drawing";
+  }
+  if (stickerEditor && !stickerEditor.hidden) {
+    return "editor";
+  }
+  return "";
 }
 
 function handleBookSwipePointerDown(event) {
-  if (!canStartBookSwipe(event)) {
+  const blockReason = canStartBookSwipe(event);
+  if (blockReason) {
+    lastBookSwipeDebug = { stage: "blocked", reason: blockReason, x: event.clientX, y: event.clientY };
     return;
   }
   bookSwipeState = {
@@ -1733,7 +1758,8 @@ function handleBookSwipePointerDown(event) {
     startY: event.clientY,
     startTime: performance.now(),
   };
-  canvas.setPointerCapture?.(event.pointerId);
+  lastBookSwipeDebug = { stage: "start", x: event.clientX, y: event.clientY };
+  setCanvasPointerCapture(event.pointerId);
 }
 
 function handleBookSwipePointerUp(event) {
@@ -1742,7 +1768,7 @@ function handleBookSwipePointerUp(event) {
   }
   const swipe = bookSwipeState;
   bookSwipeState = null;
-  canvas.releasePointerCapture?.(event.pointerId);
+  releaseCanvasPointerCapture(event.pointerId);
 
   const dx = event.clientX - swipe.startX;
   const dy = event.clientY - swipe.startY;
@@ -1754,6 +1780,7 @@ function handleBookSwipePointerUp(event) {
     && absY <= absX * BOOK_SWIPE_MAX_VERTICAL_RATIO
     && elapsed <= BOOK_SWIPE_MAX_DURATION_MS
   );
+  lastBookSwipeDebug = { stage: "end", dx, dy, elapsed, isPageSwipe };
   if (!isPageSwipe) {
     return;
   }
@@ -1773,8 +1800,24 @@ function cancelBookSwipe(event) {
   if (event && event.pointerId !== bookSwipeState.pointerId) {
     return;
   }
-  canvas.releasePointerCapture?.(bookSwipeState.pointerId);
+  releaseCanvasPointerCapture(bookSwipeState.pointerId);
   bookSwipeState = null;
+}
+
+function setCanvasPointerCapture(pointerId) {
+  try {
+    canvas.setPointerCapture?.(pointerId);
+  } catch {
+    // Synthetic touch tests can lack an active browser pointer; swipe math still works without capture.
+  }
+}
+
+function releaseCanvasPointerCapture(pointerId) {
+  try {
+    canvas.releasePointerCapture?.(pointerId);
+  } catch {
+    // Ignore missing capture for synthetic or already-finished pointer streams.
+  }
 }
 
 function navigateBookBySwipe(direction) {
