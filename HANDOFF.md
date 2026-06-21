@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-22 - [batch:773-daily-gacha-once-copy] DEVELOP-SYNC - Codex: daily gacha に `いちにち いっかい まわせるよ` 開始文言、取得後の `シールちょうに はって あそぼう` / `また あした やろうね` 案内、当日済み入口 `また あした` と再オープン時の使用済み表示を追加して develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1234。 (by Codex)
 - 2026-06-22 - [batch:771-daily-gacha-final-stinger] DONE - Codex: `D:\ポノのおへや\ガチャ\sound\Short Instrumental Stinger For A Cute Premium Capsule Toy Reveal, 3 Seconds L....mp3` を3.2秒にトリムした `assets/audio/gacha/daily_gacha_final_turn_stinger.mp3` を develop へ同期。daily gacha 3回目の回転確定直後に final stinger を再生し、既存 `daily_gacha_capsule_toy_02.mp3` は排出表示より約220ms早く鳴らすよう調整。`daily_gacha_capsule_toy_01.mp3` は1〜2回目のみのまま。`sw.js` / `PAGE_CACHE_VERSION=1233`。 (by Codex)
 - 2026-06-22 - [batch:770-daily-gacha-bgm-switch] DONE - Codex: daily gacha 開始時にトップ画面BGM `play_bgm.mp3` を一時停止し、既存 `daily_gacha_bed_loop.mp3` を音量 `.2` で再生するよう develop へ同期。カプセル排出時は bed を止めず `.12` に下げて最終SEを邪魔しないようにし、ガチャを閉じたらトップBGMを復帰。`sw.js` / `PAGE_CACHE_VERSION=1232`。 (by Codex)
 - 2026-06-22 - [batch:769-bottom-nav-help-press-mask] DONE - Codex: 下ナビのヘルプ押下時だけ、pressed sprite の clip 範囲を `0%〜20%` から `0%〜22%` へ広げ、右側の縁/影が切れて見えるズレを develop へ同期。`sw.js` / `PAGE_CACHE_VERSION=1232`。 (by Codex)
