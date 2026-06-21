@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1228: Daily gacha hides the close X, moves reveal actions to the top right, and opens the tray landing mask.
 // v1227: Daily gacha generated home buttons and reveal polish synced to develop: home returns to play top, glow edges are smoothed, and tray clipping is retuned.
 // v1226: Daily gacha reveal polish synced to develop — capsule is clipped behind the outlet lip, reveal zoom is calmer, and the final actions use sticker/home image buttons.
 // v1225: Daily gacha cue and outlet mask polish synced to develop — arrow color unified, idle hand/label separated, and mask starts at the outlet opening.
@@ -20,7 +21,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1227; // v1227: Daily gacha generated home buttons, game-top return, glow smoothing, and tray mask polish.
+const CACHE_VERSION = 1228; // v1228: Daily gacha hides the close X, moves reveal actions to the top right, and opens the tray landing mask.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

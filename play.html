@@ -1391,6 +1391,7 @@
       animation-duration: .92s;
     }
     .daily-gacha-close {
+      display: none;
       position: absolute;
       top: 14px;
       right: 14px;
@@ -1634,7 +1635,7 @@
       z-index: 4;
       overflow: hidden;
       pointer-events: none;
-      clip-path: inset(79% 18% 8.2% 18% round 14px);
+      clip-path: inset(79% 18% 0 18% round 14px);
     }
     .daily-gacha-drop-capsule {
       position: absolute;
@@ -1926,23 +1927,24 @@
     }
     .daily-gacha-closeup-actions {
       position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      left: auto;
+      right: 10px;
+      top: 10px;
+      bottom: auto;
       z-index: 3;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      width: 100%;
-      padding: 0 18px;
+      justify-content: flex-end;
+      gap: 8px;
+      width: auto;
+      padding: 0;
       opacity: 0;
       pointer-events: none;
     }
     .daily-gacha-closeup-home,
     .daily-gacha-closeup-book {
-      flex: 0 0 clamp(86px, 16vw, 120px);
-      width: clamp(86px, 16vw, 120px);
+      flex: 0 0 clamp(56px, 8vw, 74px);
+      width: clamp(56px, 8vw, 74px);
       aspect-ratio: 1;
       border: 0;
       padding: 0;
@@ -2158,17 +2160,17 @@
       .daily-gacha-title { font-size: 23px; }
       .daily-gacha-status { min-height: 38px; font-size: 15px; }
       .daily-gacha-action { min-height: 42px; font-size: 15px; }
-      .daily-gacha-drop-mask { clip-path: inset(79% 18% 8.6% 18% round 12px); }
+      .daily-gacha-drop-mask { clip-path: inset(79% 18% 0 18% round 12px); }
       .daily-gacha-closeup__inner { width: 88vw; height: 76dvh; }
       .daily-gacha-closeup__open-pair { top: 55%; width: min(320px, 54vw); height: min(200px, 34vw); }
       .daily-gacha-reward { top: 25%; width: 118px; height: 118px; border-radius: 25px; border-width: 6px; }
       .daily-gacha-reward img { width: 96px; height: 96px; }
       .daily-gacha-reward-name { bottom: 74px; width: min(300px, 64vw); font-size: 16px; padding: 8px 14px 10px; }
-      .daily-gacha-closeup-actions { bottom: 0; padding: 0 8px; gap: 8px; }
+      .daily-gacha-closeup-actions { top: 6px; right: 6px; bottom: auto; padding: 0; gap: 5px; }
       .daily-gacha-closeup-home,
       .daily-gacha-closeup-book {
-        flex-basis: clamp(64px, 15vw, 88px);
-        width: clamp(64px, 15vw, 88px);
+        flex-basis: clamp(44px, 11vw, 58px);
+        width: clamp(44px, 11vw, 58px);
       }
     }
 
@@ -2765,10 +2767,10 @@
             <span></span><span></span><span></span><span></span>
           </div>
           <div class="daily-gacha-reward-name" id="dailyGachaRewardName">シールを ゲット</div>
-          <div class="daily-gacha-closeup-actions">
-            <button class="daily-gacha-closeup-home" id="dailyGachaCloseupHome" type="button" aria-label="トップへ"></button>
-            <button class="daily-gacha-closeup-book" id="dailyGachaCloseupBook" type="button" aria-label="シールちょうへ"></button>
-          </div>
+        </div>
+        <div class="daily-gacha-closeup-actions">
+          <button class="daily-gacha-closeup-home" id="dailyGachaCloseupHome" type="button" aria-label="トップへ"></button>
+          <button class="daily-gacha-closeup-book" id="dailyGachaCloseupBook" type="button" aria-label="シールちょうへ"></button>
         </div>
       </div>
     </div>
@@ -3041,7 +3043,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1227;
+    const PAGE_CACHE_VERSION = 1228;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
