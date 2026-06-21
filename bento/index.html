@@ -3014,7 +3014,7 @@ html, body {
 /* ===== Complete page (別ページ扱い: モーダルではなくフルスクリーン) ===== */
 .complete-overlay {
   --complete-frame-inset: clamp(4px, 1.2vmin, 12px);
-  position: fixed; inset: 0; z-index: 60;
+  position: fixed; inset: 0; z-index: 9600;
   background: linear-gradient(135deg, #FFF8F0 0%, #FFEEDD 55%, #FFE0C2 100%);
   display: flex; align-items: center; justify-content: center;
   padding: var(--complete-frame-inset);
@@ -3033,7 +3033,7 @@ body.bento-complete-open .pono-dropdown {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ===== NPC requester intro / reaction overlays =====
-   z-index 65 で complete-overlay (60) より上、 紙吹雪 (548 行目で 70+ 設定) より下。
+   完成前のリアクション用。 completion overlay は後段で別表示するため、通常ゲーム面より上で足りる。
    intro はゲーム開始前、 reaction は完成画面の前に挟む 2 段階目モーダル。 */
 .npc-overlay {
   position: fixed; inset: 0; z-index: 65;
@@ -3225,6 +3225,9 @@ body.bento-complete-open .pono-dropdown {
 .complete-pono img { width: 32px; height: 32px; object-fit: contain; }
 .complete-pono-msg { font-size: 0.72rem; font-weight: 900; color: var(--text); }
 .complete-card { position: relative; }
+.complete-card-wide.is-detail-page > .complete-close {
+  display: none;
+}
 .complete-close {
   position: absolute;
   top: 6px; right: 6px;
@@ -3250,8 +3253,8 @@ body.bento-complete-open .pono-dropdown {
 .wrong-toast.show { opacity: 1; }
 
 /* ===== Confetti ===== */
-/* z-index は complete-overlay(60) より上。結果発表ページの上に紙吹雪・キラキラが流れる */
-#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 65; overflow: hidden;
+/* z-index は complete-overlay(9600) より上。結果発表ページの上に紙吹雪・キラキラが流れる */
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 9700; overflow: hidden;
   overscroll-behavior: none; }
 .conf {
   position: absolute; width: 10px; height: 10px; border-radius: 3px;
@@ -4099,10 +4102,12 @@ body.bento-complete-open .pono-dropdown {
 .complete-detail-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   min-height: 36px;
 }
 .complete-detail-back,
+.complete-detail-close,
 .complete-detail-btn {
   border: none;
   border-radius: 999px;
@@ -4117,6 +4122,13 @@ body.bento-complete-open .pono-dropdown {
   box-shadow: 0 2px 0 rgba(93,78,55,0.2);
   border: 2px solid rgba(93,78,55,0.12);
 }
+.complete-detail-close {
+  padding: 8px 18px;
+  background: linear-gradient(180deg, #FFF4C7, #FFD86B);
+  color: #5C3A00;
+  box-shadow: 0 3px 0 #B87200;
+  border: 2px solid rgba(184,114,0,0.18);
+}
 .complete-detail-btn {
   margin-top: 2px;
   padding: 8px 16px;
@@ -4126,7 +4138,8 @@ body.bento-complete-open .pono-dropdown {
   transition: opacity 0.35s ease, transform 0.35s ease, box-shadow 0.15s;
 }
 .complete-detail-btn:active,
-.complete-detail-back:active {
+.complete-detail-back:active,
+.complete-detail-close:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 rgba(93,78,55,0.25);
 }
@@ -5209,6 +5222,7 @@ body.bento-complete-open .pono-dropdown {
     <div class="complete-detail-page hidden" id="complete-detail-page">
       <div class="complete-detail-actions">
         <button type="button" class="complete-detail-back" id="complete-detail-back">もどる</button>
+        <button type="button" class="complete-detail-close" id="complete-detail-close">とじる</button>
       </div>
       <div class="complete-detail-content" id="complete-detail-content"></div>
     </div>
@@ -7918,7 +7932,7 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1454-gemini31-tutorial-locks';
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1457-gemini31-free-nori-size1-tomato';
 const BENTO_TUTORIAL_STEP_VOICE = {
   box: 'basic_tut_01',
   'rice-place': 'basic_tut_02',
@@ -8333,9 +8347,9 @@ function getTutorialPaletteAllowance(def) {
       : deny('ごはんを いれようね');
   }
   if (step === 'decor') {
-    return id === 'nori_eye_round'
+    return def.type === 'decor'
       ? ok
-      : deny('おめめの のりを つかうよ');
+      : deny('のりを ごはんに のせようね');
   }
   if (step === 'okazu-red') {
     const requested = String(tutorialGetRequestedFoodLabel ? tutorialGetRequestedFoodLabel() : '').trim();
@@ -8374,6 +8388,12 @@ function showTutorialPaletteLockToast(def) {
   const result = getTutorialPaletteAllowance(def);
   if (!result.allowed) showToast(result.message || 'いまは おてほんの ものを つかうよ');
   return result.allowed;
+}
+function unlockTutorialPaletteButton(btn) {
+  if (!btn) return;
+  btn.classList.remove('tut-locked');
+  if (!btn.classList.contains('tier-locked')) btn.removeAttribute('aria-disabled');
+  if (tutorialState && tutorialState.active) btn.dataset.tutTarget = '1';
 }
 function getCupFoodChildSize(def, cup) {
   if (!def || !cup) return 96;
@@ -11342,11 +11362,18 @@ function createPaletteVisual(def) {
 function shouldHighlightFreeChoice(def) {
   if (!def) return false;
   if (def.tierLocked) return false;
-  if (isTutorialPaletteItemLocked(def)) return false;
+  const tutorialAllowance = getTutorialPaletteAllowance(def);
+  if (!tutorialAllowance.allowed) return false;
+  if (tutorialState && tutorialState.active && !simpleBentoMode) {
+    const step = tutorialState.step || '';
+    if (['box', 'rice-place', 'decor', 'okazu-red', 'okazu-overlap', 'small-accessory', 'small-cup-food'].includes(step)) {
+      return true;
+    }
+  }
   if (getEditingCup()) return canAddFoodToCup(def);
   if (freeGuideStep === 'box') return freeLayoutTab === 'box';
   if (freeGuideStep === 'rice') return def.type === 'rice_auto';
-  if (freeGuideStep === 'decor') return def.type === 'decor' && String(def.id || '').startsWith('nori_');
+  if (freeGuideStep === 'decor') return def.type === 'decor';
   if (isOkazuGuideStep()) {
     if (freeLayoutTab === 'food') return def.type === 'food' && canAddFoodForCurrentStep(def);
     if (freeLayoutTab === 'accessory') return def.type === 'cup' || def.type === 'divider';
@@ -11375,6 +11402,8 @@ function makeFreePaletteButton(def) {
   if (tutorialLocked) {
     btn.classList.add('tut-locked');
     btn.setAttribute('aria-disabled', 'true');
+  } else {
+    unlockTutorialPaletteButton(btn);
   }
   if (def.tierLocked) {
     btn.classList.add('tier-locked');
@@ -12157,7 +12186,7 @@ function renderFreeGuidePanel() {
     actions.appendChild(makeSmallControlButton('おべんとうばこにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'decor') {
     actions.appendChild(makeSmallControlButton('ごはんにもどる', '', goBackFreeGuideStep));
-    actions.appendChild(makeSmallControlButton(hasNoriDecorOnTier(1) ? 'のりOK' : 'つぎへ', 'primary', handleNoriOkPressed));
+    actions.appendChild(makeSmallControlButton(countDecorOnTier(1) > 0 ? 'のりOK' : 'つぎへ', 'primary', handleNoriOkPressed));
   } else if (freeGuideStep === 'tier2Main') {
     actions.appendChild(makeSmallControlButton('かざりにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'tier2Side') {
@@ -13199,6 +13228,13 @@ function stageComplete() {
   if (detailBack) {
     detailBack.onclick = () => setCompletePage('result');
   }
+  const detailClose = document.getElementById('complete-detail-close');
+  if (detailClose) {
+    detailClose.onclick = () => {
+      const closeBtn = document.getElementById('complete-btn');
+      if (closeBtn) closeBtn.click();
+    };
+  }
   const continueAfterCompleteClose = () => {
     if (freeLayoutMode) {
       startNextBentoOrderRound();
@@ -14041,18 +14077,17 @@ function tutorialPlayStepVoice(step, firstRender) {
     opts.onEnded = () => tutorialMarkCupOkAfterVoice(step);
     opts.fallbackMs = 7600;
   }
-  // v1399: cup-edit demo はナレ進行に同期して size mark → arrows mark を順次切替
+  // v1457: cup-edit demo はサイズ1とOKだけを案内する。
   if (step === 'cup-edit' && typeof tutorialOnCupEditCue === 'function') {
     opts.cuePoints = [
       { time: 0.0, key: 'size' },
-      { time: 2.5, key: 'arrows' },
     ];
     opts.onCue = (cue) => tutorialOnCupEditCue(cue.key);
     // v1412: basic_tut_10 終了で 1 秒後に cup-edit-try に auto-advance。
     //   ユーザーが「やってみよう」 を認識/押下せず demo に留まる問題を解消
     //   (console ログで「cup-edit のまま size/arrow button 押下で再 render 連発、
     //   cup-edit-try に進む log なし」が確認されたため)。
-    opts.fallbackMs = 7000;  // duration 5.08s + 余裕
+    opts.fallbackMs = 6200;
     opts.onEnded = () => {
       try {
         if (tutorialState && tutorialState.active && tutorialState.step === 'cup-edit') {
@@ -14202,7 +14237,7 @@ function tutorialOnCompleteDetailShown() {
     tutorialClearTrims();
     tutorialClearTargetCircle();
     tutorialHideFinger();
-    const closeBtn = document.getElementById('complete-btn');
+    const closeBtn = document.getElementById('complete-detail-close') || document.getElementById('complete-btn');
     tutorialShowBubble('とじるを おすと<br>ステッカーが もらえるよ', { topVh: '18', side: 'left' });
     if (closeBtn) {
       tutorialPositionBubbleBeside(closeBtn, { gap: 12 });
@@ -14750,8 +14785,7 @@ function tutorialApplyBoxLock() {
   buttons.forEach((btn, idx) => {
     // 1番目を box_rect_split として想定 (bentoBoxes 配列順)
     if (idx === 0) {
-      btn.classList.remove('tut-locked');
-      btn.dataset.tutTarget = '1';
+      unlockTutorialPaletteButton(btn);
     } else {
       btn.classList.add('tut-locked');
       if (!btn.dataset.tutLockBound) {
@@ -14791,8 +14825,7 @@ function tutorialApplySmallCupFoodLock() {
     const name = ((nameEl ? nameEl.textContent : btn.textContent) || '').trim();
     const isTomato = name.indexOf('プチトマト') >= 0;
     if (isTomato) {
-      btn.classList.remove('tut-locked');
-      btn.dataset.tutTarget = '1';
+      unlockTutorialPaletteButton(btn);
     } else {
       btn.classList.add('tut-locked');
       if (!btn.dataset.tutLockBound) {
@@ -15546,13 +15579,14 @@ function tutorialRenderStep() {
 
   // 4. decor — のりを ご飯の上に (配置済みのご飯にもトリムパスで場所を明示)
   if (step === 'decor') {
-    tutorialShowBubble('のりを ごはんの うえに のせよう', { topVh: '20' });
+    tutorialShowBubble('すきな のりを<br>ごはんの うえに のせよう', { topVh: '20' });
     if (firstRender) {
       // 配置済みの rice 要素に highlight (ご飯の場所を明示)
       const riceEls = document.querySelectorAll('.free-placed-item.type-rice');
       riceEls.forEach(rEl => tutorialTrimPath(rEl, { radius: 12 }));
     }
-    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
+    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ。
+    // v1457: ノリ候補は自由に選べる。ここでは最初の候補を手本として示すだけ。
     tutorialAnimateDragFromElWithRetry(
       () => tutorialFindNoriPaletteEl(),
       () => tutorialStageLeftHalfPoint(),
@@ -15563,7 +15597,7 @@ function tutorialRenderStep() {
 
   // 5. nori-ok — のり工程を終えておかず工程へ進む
   if (step === 'nori-ok') {
-    if (!hasNoriDecorOnTier(1)) {
+    if (countDecorOnTier(1) <= 0) {
       tutorialAdvance('decor');
       return;
     }
@@ -16261,7 +16295,8 @@ function tutorialOnLayerMoved() {
   if (tutorialState.layerMoveDone) return;
   tutorialState.layerMoveDone = true;
   if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
-    setFreeGuideStep(freeGuideStep.startsWith('tier3') ? 'tier3Side' : 'tier2Side');
+    freeGuideStep = freeGuideStep.startsWith('tier3') ? 'tier3Main' : 'tier2Main';
+    freeLayoutTab = 'food';
   }
   tutorialAdvance('move-requested-food');
 }
@@ -16339,7 +16374,7 @@ function tutorialOnItemPlaced(item) {
       return;
     }
   }
-  if (step === 'decor' && isNoriDecorItem(item) && hasNoriDecorOnTier(1)) {
+  if (step === 'decor' && item.type === 'decor' && countDecorOnTier(1) > 0) {
     tutorialAdvance('nori-ok');
     return;
   }

@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1458: LP 派手化 — announce + play-cards + herob-cta に統一波長 (4.8s shimmer / 2.4s breath / .42s overshoot) で「ぴょこ・ぴか・きら」演出。 5 色個別 glow / 紙吹雪 / sparkle / arrow 弾み。 既存 announce/bookcheer アクセントは維持。
 // v1457: Daily gacha reveal gets generated home buttons, returns to the game top, and smooths the tray mask/background glow.
 // v1456: StickerBook zukan six-item index and wider detail template.
 // v1455: LP .announce / .bookcheer にアクセントモーション追加 (hover bounce / 弾けるバッジ / シール peel / 黄色ハイライト wiggle / 初回ポヨン入り)
@@ -150,7 +151,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1457; // v1457: Daily gacha reveal gets generated home buttons, returns to the game top, and smooths the tray mask/background glow.
+const CACHE_VERSION = 1458; // v1458: LP 派手化 — announce (badge pulse 強化 + tag 微振動 + deco opacity 底上げ + 紙吹雪::after + shimmer 4.8s 統一) / play-cards (overshoot scale 1.08 + 個別 glow 5 色 + visual/bubble/chip/tape 連動) / herob-cta (breath + gradient流し + glow + shimmer 4.8s + sparkle ::after + arrow 弾み + hover scale 1.12)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
