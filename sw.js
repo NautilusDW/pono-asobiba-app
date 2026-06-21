@@ -158,7 +158,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1465; // v1465: Bottom nav swaps the top button to an official-site button using user-cleaned alpha sprites.
+const CACHE_VERSION = 1466; // v1466: StickerBook zukan tuning removes duplicate labels and adds page template placement controls.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

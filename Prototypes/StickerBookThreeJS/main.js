@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-758";
+const ASSET_VERSION = "20260621-759";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -486,7 +486,7 @@ const ZUKAN_PAGE_TEMPLATES = {
 };
 const ZUKAN_TEMPLATE_PRINT_INSET = {
   top: 58,
-  bottom: 96,
+  bottom: 46,
   outer: 56,
   inner: 92,
 };
@@ -692,6 +692,7 @@ const topSettingsButton = document.getElementById("topSettingsButton");
 const zukanSettingsPanel = document.getElementById("zukanSettingsPanel");
 const zukanSettingsClose = document.getElementById("zukanSettingsClose");
 const zukanSettingsButtons = [...document.querySelectorAll("[data-zukan-side][data-zukan-type]")];
+const zukanTuneButton = document.getElementById("zukanTuneButton");
 const albumModeToggle = document.getElementById("albumModeToggle");
 const collectionStickerTray = document.getElementById("collectionStickerTray");
 const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
@@ -699,7 +700,7 @@ const collectionStickerTrayItems = document.getElementById("collectionStickerTra
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
 const isLocalPreview = localPreviewHostnames.has(window.location.hostname);
-const tuningEnabled = isLocalPreview && params.get("tune") === "1";
+const tuningEnabled = params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 let activeBook = params.get("book") === "girl" ? "girl" : "boy";
@@ -819,6 +820,10 @@ const DEFAULT_ZUKAN_TEXT_TUNING = {
   indexTitleY: 0,
   indexSubtitleX: 0,
   indexSubtitleY: 0,
+  indexTemplateX: 0,
+  indexTemplateY: 0,
+  indexTemplateW: 0,
+  indexTemplateH: 0,
   indexBadgeX: 0,
   indexBadgeY: 0,
   indexImageX: 0,
@@ -843,6 +848,10 @@ const DEFAULT_ZUKAN_TEXT_TUNING = {
   detailMemoTitleY: 0,
   detailMemoTextX: 0,
   detailMemoTextY: 0,
+  detailTemplateX: 0,
+  detailTemplateY: 0,
+  detailTemplateW: 0,
+  detailTemplateH: 0,
 };
 const ZUKAN_INDEX_CARD_TUNING_PARTS = [
   { id: "Badge", label: "ばんごう", baseKey: "indexBadge", min: -120, max: 120 },
@@ -885,6 +894,10 @@ const ZUKAN_TEXT_TUNING_FIELDS = [
   ["indexTitleY", "もくじ みだし Y", -180, 180, 1],
   ["indexSubtitleX", "もくじ せつめい X", -180, 180, 1],
   ["indexSubtitleY", "もくじ せつめい Y", -180, 180, 1],
+  ["indexTemplateX", "もくじ ぜんたい X", -220, 220, 1],
+  ["indexTemplateY", "もくじ ぜんたい Y", -220, 220, 1],
+  ["indexTemplateW", "もくじ ぜんたい はば", -260, 260, 1],
+  ["indexTemplateH", "もくじ ぜんたい たかさ", -260, 260, 1],
   ["indexBadgeX", "もくじ ばんごう X", -120, 120, 1],
   ["indexBadgeY", "もくじ ばんごう Y", -120, 120, 1],
   ["indexImageX", "もくじ え X", -180, 180, 1],
@@ -910,10 +923,15 @@ const ZUKAN_TEXT_TUNING_FIELDS = [
   ["detailMemoTitleY", "メモ みだし Y", -180, 180, 1],
   ["detailMemoTextX", "メモ ぶん X", -180, 180, 1],
   ["detailMemoTextY", "メモ ぶん Y", -180, 180, 1],
+  ["detailTemplateX", "しょうさい ぜんたい X", -220, 220, 1],
+  ["detailTemplateY", "しょうさい ぜんたい Y", -220, 220, 1],
+  ["detailTemplateW", "しょうさい ぜんたい はば", -260, 260, 1],
+  ["detailTemplateH", "しょうさい ぜんたい たかさ", -260, 260, 1],
 ];
 const ZUKAN_TEXT_TUNING_GROUPS = [
   { id: "indexTitle", label: "もくじ みだし", keys: ["indexTitleX", "indexTitleY"] },
   { id: "indexSubtitle", label: "もくじ せつめい", keys: ["indexSubtitleX", "indexSubtitleY"] },
+  { id: "indexTemplate", label: "もくじ ぜんたい", keys: ["indexTemplateX", "indexTemplateY", "indexTemplateW", "indexTemplateH"] },
   { id: "indexBadge", label: "もくじ ばんごう", keys: ["indexBadgeX", "indexBadgeY"] },
   { id: "indexImage", label: "もくじ え", keys: ["indexImageX", "indexImageY"] },
   { id: "indexText", label: "もくじ なまえ", keys: ["indexTextX", "indexTextY"] },
@@ -927,6 +945,7 @@ const ZUKAN_TEXT_TUNING_GROUPS = [
   { id: "detailFieldText", label: "こうもく ぶん", keys: ["detailFieldTextX", "detailFieldTextY"] },
   { id: "detailMemoTitle", label: "メモ みだし", keys: ["detailMemoTitleX", "detailMemoTitleY"] },
   { id: "detailMemoText", label: "メモ ぶん", keys: ["detailMemoTextX", "detailMemoTextY"] },
+  { id: "detailTemplate", label: "しょうさい ぜんたい", keys: ["detailTemplateX", "detailTemplateY", "detailTemplateW", "detailTemplateH"] },
 ];
 const ZUKAN_TEXT_TUNING_GROUP_BY_ID = new Map(ZUKAN_TEXT_TUNING_GROUPS.map((group) => [group.id, group]));
 const ZUKAN_TEXT_TUNING_FIELD_GROUP_BY_KEY = new Map(
@@ -1638,6 +1657,7 @@ function setupZukanSettingsPanel() {
       });
     });
   }
+  zukanTuneButton?.addEventListener("click", () => openZukanTuningMode());
   document.addEventListener("pointerdown", (event) => {
     if (!zukanSettingsPanel || zukanSettingsPanel.hidden) {
       return;
@@ -1668,6 +1688,15 @@ function closeZukanSettingsPanel() {
   }
   zukanSettingsPanel.hidden = true;
   syncTopSettingsButton();
+}
+
+function openZukanTuningMode() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("album", "collection");
+  url.searchParams.set("surface", "inside");
+  url.searchParams.set("page", String(activeBookPage));
+  url.searchParams.set("tune", "1");
+  window.location.href = url.toString();
 }
 
 function pageNumberForPickedPage(mesh) {
@@ -3968,6 +3997,9 @@ function moveZukanTextTuningTarget(targetId, deltaX, deltaY, baseTuning = zukanT
   }
   const nextTuning = { ...zukanTextTuning };
   for (const key of group.keys) {
+    if (!key.endsWith("X") && !key.endsWith("Y")) {
+      continue;
+    }
     const baseValue = Number(baseTuning?.[key]) || 0;
     const delta = key.endsWith("X") ? deltaX : deltaY;
     nextTuning[key] = clampZukanTextTuningValue(key, baseValue + delta);
@@ -4767,26 +4799,43 @@ function drawGeneratedCollectionZukanTemplate(ctx, type, side = "left") {
   if (!image) {
     return false;
   }
-  const rect = zukanTemplatePrintRect(side);
+  const rect = zukanTemplatePrintRect(side, type);
   ctx.drawImage(image, rect.x, rect.y, rect.width, rect.height);
   return true;
 }
 
-function zukanTemplatePrintRect(side = "left") {
+function zukanTemplateTypeKey(type = "index") {
+  return type === "detail" ? "detail" : "index";
+}
+
+function zukanTemplatePlacementTuning(type = "index") {
+  const prefix = zukanTemplateTypeKey(type);
+  return {
+    x: zukanTextOffset(`${prefix}TemplateX`),
+    y: zukanTextOffset(`${prefix}TemplateY`),
+    width: zukanTextOffset(`${prefix}TemplateW`),
+    height: zukanTextOffset(`${prefix}TemplateH`),
+  };
+}
+
+function zukanTemplatePrintRect(side = "left", type = "index") {
   const left = side === "right" ? ZUKAN_TEMPLATE_PRINT_INSET.inner : ZUKAN_TEMPLATE_PRINT_INSET.outer;
   const right = side === "left" ? ZUKAN_TEMPLATE_PRINT_INSET.inner : ZUKAN_TEMPLATE_PRINT_INSET.outer;
   const top = ZUKAN_TEMPLATE_PRINT_INSET.top;
   const bottom = ZUKAN_TEMPLATE_PRINT_INSET.bottom;
+  const tuning = zukanTemplatePlacementTuning(type);
+  const width = PAGE_TEXTURE_W - left - right + tuning.width;
+  const height = PAGE_TEXTURE_H - top - bottom + tuning.height;
   return {
-    x: left,
-    y: top,
-    width: PAGE_TEXTURE_W - left - right,
-    height: PAGE_TEXTURE_H - top - bottom,
+    x: left + tuning.x - tuning.width / 2,
+    y: top + tuning.y - tuning.height / 2,
+    width,
+    height,
   };
 }
 
-function zukanTemplateTransformForSide(side = "left") {
-  const rect = zukanTemplatePrintRect(side);
+function zukanTemplateTransformForSide(side = "left", type = "index") {
+  const rect = zukanTemplatePrintRect(side, type);
   return {
     ...rect,
     scaleX: rect.width / PAGE_TEXTURE_W,
@@ -4794,8 +4843,8 @@ function zukanTemplateTransformForSide(side = "left") {
   };
 }
 
-function zukanTemplateTransformRect(rect, side = "left") {
-  const transform = zukanTemplateTransformForSide(side);
+function zukanTemplateTransformRect(rect, side = "left", type = "index") {
+  const transform = zukanTemplateTransformForSide(side, type);
   return {
     x: transform.x + rect.x * transform.scaleX,
     y: transform.y + rect.y * transform.scaleY,
@@ -4804,8 +4853,8 @@ function zukanTemplateTransformRect(rect, side = "left") {
   };
 }
 
-function zukanTemplateTransformPoint(x, y, side = "left") {
-  const transform = zukanTemplateTransformForSide(side);
+function zukanTemplateTransformPoint(x, y, side = "left", type = "index") {
+  const transform = zukanTemplateTransformForSide(side, type);
   return {
     x: transform.x + x * transform.scaleX,
     y: transform.y + y * transform.scaleY,
@@ -5424,7 +5473,7 @@ function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE,
     const gapY = 36;
     const cellW = (PAGE_TEXTURE_W - contentX * 2 - gapX) / cols;
     const cellH = 300;
-    return zukanTemplateTransformLayout({ contentX, contentY, cols, rows, gapX, gapY, cellW, cellH }, side);
+    return zukanTemplateTransformLayout({ contentX, contentY, cols, rows, gapX, gapY, cellW, cellH }, side, "index");
   }
   const contentX = 118;
   const contentW = PAGE_TEXTURE_W - contentX * 2;
@@ -5440,8 +5489,8 @@ function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE,
   return { contentX, contentY, cols, rows, gapX, gapY, cellW, cellH };
 }
 
-function zukanTemplateTransformLayout(layout, side = "left") {
-  const transform = zukanTemplateTransformForSide(side);
+function zukanTemplateTransformLayout(layout, side = "left", type = "index") {
+  const transform = zukanTemplateTransformForSide(side, type);
   return {
     ...layout,
     contentX: transform.x + layout.contentX * transform.scaleX,
@@ -5450,6 +5499,8 @@ function zukanTemplateTransformLayout(layout, side = "left") {
     gapY: layout.gapY * transform.scaleY,
     cellW: layout.cellW * transform.scaleX,
     cellH: layout.cellH * transform.scaleY,
+    scaleX: transform.scaleX,
+    scaleY: transform.scaleY,
   };
 }
 
@@ -5461,6 +5512,8 @@ function collectionZukanIndexCellRect(index, layout = collectionZukanIndexLayout
     y: layout.contentY + row * (layout.cellH + layout.gapY),
     width: layout.cellW,
     height: layout.cellH,
+    scaleX: zukanRectScaleX(layout),
+    scaleY: zukanRectScaleY(layout),
   };
 }
 
@@ -5509,6 +5562,16 @@ function zukanTuningRect(id, x, y, width, height) {
   };
 }
 
+function zukanRectScaleX(rect) {
+  const value = Number(rect?.scaleX);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+
+function zukanRectScaleY(rect) {
+  const value = Number(rect?.scaleY);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+
 function zukanTextTuningTargetsForPage(pageDef, subjects = [], pageNumber = activeBookPage, side = zukanSideForPageNumber(pageNumber)) {
   if (!pageDef) {
     return [];
@@ -5524,19 +5587,21 @@ function zukanSideForPageNumber(pageNumber) {
 }
 
 function zukanIndexTuningTargets(pageDef, subjects = [], side = "left") {
+  const templateRect = zukanTemplatePrintRect(side, "index");
   const titlePoint = collectionZukanUsesGeneratedTemplate("index")
-    ? zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 112, side)
+    ? zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 112, side, "index")
     : { x: PAGE_TEXTURE_W / 2, y: 112 };
   const subtitlePoint = collectionZukanUsesGeneratedTemplate("index")
-    ? zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 215, side)
+    ? zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 215, side, "index")
     : { x: PAGE_TEXTURE_W / 2, y: 215 };
   const titleW = collectionZukanUsesGeneratedTemplate("index")
-    ? 780 * zukanTemplateTransformForSide(side).scaleX
+    ? 780 * zukanTemplateTransformForSide(side, "index").scaleX
     : 780;
   const subtitleW = collectionZukanUsesGeneratedTemplate("index")
-    ? 700 * zukanTemplateTransformForSide(side).scaleX
+    ? 700 * zukanTemplateTransformForSide(side, "index").scaleX
     : 700;
   const targets = [
+    zukanTuningRect("indexTemplate", templateRect.x, templateRect.y, templateRect.width, templateRect.height),
     zukanTuningRect(
       "indexTitle",
       titlePoint.x - titleW / 2 + zukanTextOffset("indexTitleX"),
@@ -5562,24 +5627,29 @@ function zukanIndexTuningTargets(pageDef, subjects = [], side = "left") {
 function zukanIndexCardTuningTargets(rect, slotIndex) {
   const { x, y, width, height } = rect;
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("index");
+  const scaleX = zukanRectScaleX(rect);
+  const scaleY = zukanRectScaleY(rect);
+  const scale = Math.min(scaleX, scaleY);
   const isRoomy = height >= 220;
-  const badgeX = x + (isRoomy ? 22 : 18) + zukanIndexSlotTextOffset(slotIndex, "Badge", "X");
-  const badgeY = y + (isRoomy ? 22 : 20) + zukanIndexSlotTextOffset(slotIndex, "Badge", "Y");
-  const badgeW = isRoomy ? 84 : 72;
-  const badgeH = isRoomy ? 42 : 38;
-  const roomyImageLimit = generatedTemplate ? 198 : 164;
+  const badgeX = x + (isRoomy ? 22 : 18) * scaleX + zukanIndexSlotTextOffset(slotIndex, "Badge", "X");
+  const badgeY = y + (isRoomy ? 22 : 20) * scaleY + zukanIndexSlotTextOffset(slotIndex, "Badge", "Y");
+  const badgeW = (isRoomy ? 84 : 72) * scaleX;
+  const badgeH = (isRoomy ? 42 : 38) * scaleY;
+  const roomyImageLimit = (generatedTemplate ? 198 : 164) * scale;
   const sixSlotGeneratedTemplate = generatedTemplate && height >= 280;
   const imageSize = Math.min(
     isRoomy ? roomyImageLimit : 112,
     height - (isRoomy ? (generatedTemplate ? 88 : 74) : 30),
     width * (isRoomy ? (generatedTemplate ? 0.34 : 0.32) : 0.28),
   );
-  const imageBaseX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
-  const imageBaseY = generatedTemplate ? y + (sixSlotGeneratedTemplate ? 32 : 58) : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
+  const imageBaseX = generatedTemplate ? x + 38 * scaleX : x + (isRoomy ? 48 : 108);
+  const imageBaseY = generatedTemplate
+    ? y + (sixSlotGeneratedTemplate ? 32 : 58) * scaleY
+    : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
   const imageX = imageBaseX + zukanIndexSlotTextOffset(slotIndex, "Image", "X");
   const imageY = imageBaseY + zukanIndexSlotTextOffset(slotIndex, "Image", "Y");
-  const textX = (isRoomy ? imageBaseX + imageSize + 34 : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
-  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) : isRoomy ? y + Math.max(106, height * 0.43) : y + 48)
+  const textX = (isRoomy ? imageBaseX + imageSize + 34 * scaleX : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
+  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) * scaleY : isRoomy ? y + Math.max(106, height * 0.43) : y + 48)
     + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
   return [
     zukanTuningRect(zukanIndexSlotGroupId(slotIndex, "Badge"), badgeX - 12, badgeY - 12, badgeW + 24, badgeH + 24),
@@ -5591,66 +5661,74 @@ function zukanIndexCardTuningTargets(rect, slotIndex) {
 function zukanDetailTuningTargets(pageDef, subject, pageNumber, side = zukanSideForPageNumber(pageNumber)) {
   const detail = collectionZukanDetailTemplate(pageDef, subject, pageNumber, stickerBookTheme(activeBook), side);
   const { header, image, fields, memo } = detail;
+  const templateRect = zukanTemplatePrintRect(side, "detail");
+  const headerScaleX = zukanRectScaleX(header);
+  const headerScaleY = zukanRectScaleY(header);
+  const memoScaleX = zukanRectScaleX(memo);
+  const memoScaleY = zukanRectScaleY(memo);
   const targets = [
+    zukanTuningRect("detailTemplate", templateRect.x, templateRect.y, templateRect.width, templateRect.height),
     zukanTuningRect(
       "detailNumber",
-      header.x + 47 + zukanTextOffset("detailNumberX"),
-      header.y + 29 + zukanTextOffset("detailNumberY"),
-      120,
-      54,
+      header.x + 47 * headerScaleX + zukanTextOffset("detailNumberX"),
+      header.y + 29 * headerScaleY + zukanTextOffset("detailNumberY"),
+      120 * headerScaleX,
+      54 * headerScaleY,
     ),
     zukanTuningRect(
       "detailCategory",
-      header.x + header.width - 250 + zukanTextOffset("detailCategoryX"),
-      header.y + 29 + zukanTextOffset("detailCategoryY"),
-      206,
-      54,
+      header.x + header.width - 250 * headerScaleX + zukanTextOffset("detailCategoryX"),
+      header.y + 29 * headerScaleY + zukanTextOffset("detailCategoryY"),
+      206 * headerScaleX,
+      54 * headerScaleY,
     ),
     zukanTuningRect(
       "detailName",
-      header.x + 196 + zukanTextOffset("detailNameX"),
-      header.y + 14 + zukanTextOffset("detailNameY"),
-      header.width - 500,
-      70,
+      header.x + 196 * headerScaleX + zukanTextOffset("detailNameX"),
+      header.y + 14 * headerScaleY + zukanTextOffset("detailNameY"),
+      header.width - 500 * headerScaleX,
+      70 * headerScaleY,
     ),
     zukanTuningRect(
       "detailSubtitle",
-      header.x + 200 + zukanTextOffset("detailSubtitleX"),
-      header.y + 82 + zukanTextOffset("detailSubtitleY"),
-      header.width - 520,
-      42,
+      header.x + 200 * headerScaleX + zukanTextOffset("detailSubtitleX"),
+      header.y + 82 * headerScaleY + zukanTextOffset("detailSubtitleY"),
+      header.width - 520 * headerScaleX,
+      42 * headerScaleY,
     ),
     zukanTuningRect("detailImage", image.x, image.y, image.width, image.height),
     zukanTuningRect(
       "detailMemoTitle",
-      memo.x + 48 + zukanTextOffset("detailMemoTitleX"),
-      memo.y + 28 + zukanTextOffset("detailMemoTitleY"),
-      150,
-      48,
+      memo.x + 48 * memoScaleX + zukanTextOffset("detailMemoTitleX"),
+      memo.y + 28 * memoScaleY + zukanTextOffset("detailMemoTitleY"),
+      150 * memoScaleX,
+      48 * memoScaleY,
     ),
     zukanTuningRect(
       "detailMemoText",
-      memo.x + 24 + zukanTextOffset("detailMemoTextX"),
-      memo.y + 86 + zukanTextOffset("detailMemoTextY"),
-      memo.width - 48,
-      132,
+      memo.x + 24 * memoScaleX + zukanTextOffset("detailMemoTextX"),
+      memo.y + 86 * memoScaleY + zukanTextOffset("detailMemoTextY"),
+      memo.width - 48 * memoScaleX,
+      132 * memoScaleY,
     ),
   ];
   for (const field of fields) {
+    const fieldScaleX = zukanRectScaleX(field);
+    const fieldScaleY = zukanRectScaleY(field);
     targets.push(
       zukanTuningRect(
         "detailFieldTitle",
-        field.x + 4 + zukanTextOffset("detailFieldTitleX"),
-        field.y + 28 + zukanTextOffset("detailFieldTitleY"),
-        260,
-        48,
+        field.x + 4 * fieldScaleX + zukanTextOffset("detailFieldTitleX"),
+        field.y + 28 * fieldScaleY + zukanTextOffset("detailFieldTitleY"),
+        260 * fieldScaleX,
+        48 * fieldScaleY,
       ),
       zukanTuningRect(
         "detailFieldText",
-        field.x + 30 + zukanTextOffset("detailFieldTextX"),
-        field.y + 84 + zukanTextOffset("detailFieldTextY"),
-        field.width - 60,
-        92,
+        field.x + 30 * fieldScaleX + zukanTextOffset("detailFieldTextX"),
+        field.y + 84 * fieldScaleY + zukanTextOffset("detailFieldTextY"),
+        field.width - 60 * fieldScaleX,
+        92 * fieldScaleY,
       ),
     );
   }
@@ -5718,9 +5796,9 @@ function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, 
   ctx.fillStyle = theme.text;
   ctx.textAlign = "center";
   if (generatedTemplate) {
-    const titlePoint = zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 166, side);
-    const subtitlePoint = zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 246, side);
-    const scaleX = zukanTemplateTransformForSide(side).scaleX;
+    const titlePoint = zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 166, side, "index");
+    const subtitlePoint = zukanTemplateTransformPoint(PAGE_TEXTURE_W / 2, 246, side, "index");
+    const scaleX = zukanTemplateTransformForSide(side, "index").scaleX;
     ctx.font = '900 46px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
     ctx.fillText(
       collectionZukanIndexTitle(pageDef),
@@ -5781,27 +5859,32 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   const displayLabel = canShowSpecificItem ? sticker.label || "なにかな？" : "なにかな？";
   const displayNote = collectionZukanCardNote(sticker, found, canShowSpecificItem);
   const { x, y, width, height } = rect;
+  const scaleX = zukanRectScaleX(rect);
+  const scaleY = zukanRectScaleY(rect);
+  const scale = Math.min(scaleX, scaleY);
   const isRoomy = height >= 220;
-  const badgeX = x + (isRoomy ? 22 : 18) + zukanIndexSlotTextOffset(slotIndex, "Badge", "X");
-  const badgeY = y + (isRoomy ? 22 : 20) + zukanIndexSlotTextOffset(slotIndex, "Badge", "Y");
-  const badgeW = isRoomy ? 84 : 72;
-  const badgeH = isRoomy ? 42 : 38;
-  const badgeRadius = isRoomy ? 15 : 14;
-  const roomyImageLimit = generatedTemplate ? 198 : 164;
+  const badgeX = x + (isRoomy ? 22 : 18) * scaleX + zukanIndexSlotTextOffset(slotIndex, "Badge", "X");
+  const badgeY = y + (isRoomy ? 22 : 20) * scaleY + zukanIndexSlotTextOffset(slotIndex, "Badge", "Y");
+  const badgeW = (isRoomy ? 84 : 72) * scaleX;
+  const badgeH = (isRoomy ? 42 : 38) * scaleY;
+  const badgeRadius = (isRoomy ? 15 : 14) * scale;
+  const roomyImageLimit = (generatedTemplate ? 198 : 164) * scale;
   const sixSlotGeneratedTemplate = generatedTemplate && height >= 280;
   const imageSize = Math.min(
     isRoomy ? roomyImageLimit : 112,
     height - (isRoomy ? (generatedTemplate ? 88 : 74) : 30),
     width * (isRoomy ? (generatedTemplate ? 0.34 : 0.32) : 0.28)
   );
-  const imageBaseX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
-  const imageBaseY = generatedTemplate ? y + (sixSlotGeneratedTemplate ? 32 : 58) : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
+  const imageBaseX = generatedTemplate ? x + 38 * scaleX : x + (isRoomy ? 48 : 108);
+  const imageBaseY = generatedTemplate
+    ? y + (sixSlotGeneratedTemplate ? 32 : 58) * scaleY
+    : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
   const imageX = imageBaseX + zukanIndexSlotTextOffset(slotIndex, "Image", "X");
   const imageY = imageBaseY + zukanIndexSlotTextOffset(slotIndex, "Image", "Y");
-  const textX = (isRoomy ? imageBaseX + imageSize + 34 : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
+  const textX = (isRoomy ? imageBaseX + imageSize + 34 * scaleX : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
   const textMaxW = Math.max(220, x + width - textX - 28);
-  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) : isRoomy ? y + Math.max(106, height * 0.43) : y + 48) + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
-  const noteY = titleY + (isRoomy ? 42 : 31);
+  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) * scaleY : isRoomy ? y + Math.max(106, height * 0.43) : y + 48) + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
+  const noteY = titleY + (isRoomy ? 42 : 31) * scaleY;
   ctx.save();
   if (!generatedTemplate) {
     ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
@@ -5850,24 +5933,32 @@ function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, 
   ctx.save();
   drawCollectionZukanDetailHeader(ctx, palette, theme, detail.header);
   drawCollectionZukanIllustrationSlot(ctx, detail.image, found, theme);
+  const imageScaleX = zukanRectScaleX(detail.image);
+  const imageScaleY = zukanRectScaleY(detail.image);
   if (canShowSpecificItem) {
     drawAsyncCollectionZukanImage(
       ctx,
       texture,
       subject.assetUrl,
-      detail.image.x + 58,
-      detail.image.y + 66,
-      detail.image.width - 116,
-      detail.image.height - 132,
+      detail.image.x + 58 * imageScaleX,
+      detail.image.y + 66 * imageScaleY,
+      detail.image.width - 116 * imageScaleX,
+      detail.image.height - 132 * imageScaleY,
       found,
       pageNumber,
     );
   } else {
-    drawMissingStickerBadge(ctx, detail.image.x + 132, detail.image.y + 122, detail.image.width - 264, detail.image.height - 244);
+    drawMissingStickerBadge(
+      ctx,
+      detail.image.x + 132 * imageScaleX,
+      detail.image.y + 122 * imageScaleY,
+      detail.image.width - 264 * imageScaleX,
+      detail.image.height - 244 * imageScaleY,
+    );
   }
 
   for (const field of detail.fields) {
-    drawCollectionZukanField(ctx, field.title, field.value, field.x, field.y, field.width, field.height, field.accentColor);
+    drawCollectionZukanField(ctx, field.title, field.value, field.x, field.y, field.width, field.height, field.accentColor, field.scaleX, field.scaleY);
   }
   drawCollectionZukanMemoCard(ctx, palette, theme, detail.memo);
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
@@ -5885,7 +5976,13 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette, si
     ? kana
     : collectionZukanFirstText(pageDef?.subtitle, "みつけたものを かんさつしよう");
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
-  const transformGeneratedRect = (rect) => generatedTemplate ? zukanTemplateTransformRect(rect, side) : rect;
+  const templateTransform = generatedTemplate ? zukanTemplateTransformForSide(side, "detail") : { scaleX: 1, scaleY: 1 };
+  const attachScale = (rect) => ({
+    ...rect,
+    scaleX: templateTransform.scaleX,
+    scaleY: templateTransform.scaleY,
+  });
+  const transformGeneratedRect = (rect) => attachScale(generatedTemplate ? zukanTemplateTransformRect(rect, side, "detail") : rect);
   const fieldX = generatedTemplate ? 794 : 752;
   const fieldY = generatedTemplate ? 294 : 332;
   const fieldW = generatedTemplate ? 580 : 558;
@@ -6079,6 +6176,8 @@ function collectionZukanMemoText(subject) {
 
 function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   const { x, y, width, height } = header;
+  const scaleX = zukanRectScaleX(header);
+  const scaleY = zukanRectScaleY(header);
   const pageAccent = theme.pages.right.accent;
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
   const headerGradient = ctx.createLinearGradient(0, y, 0, y + height);
@@ -6103,8 +6202,8 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   ctx.textAlign = "center";
   ctx.fillText(
     `No.${header.number}`,
-    x + 107 + zukanTextOffset("detailNumberX"),
-    y + 68 + zukanTextOffset("detailNumberY"),
+    x + 107 * scaleX + zukanTextOffset("detailNumberX"),
+    y + 68 * scaleY + zukanTextOffset("detailNumberY"),
   );
 
   if (!generatedTemplate) {
@@ -6116,9 +6215,9 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   ctx.font = '900 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.fillText(
     header.category,
-    x + width - 147 + zukanTextOffset("detailCategoryX"),
-    y + 67 + zukanTextOffset("detailCategoryY"),
-    186,
+    x + width - 147 * scaleX + zukanTextOffset("detailCategoryX"),
+    y + 67 * scaleY + zukanTextOffset("detailCategoryY"),
+    186 * scaleX,
   );
 
   ctx.textAlign = "left";
@@ -6126,17 +6225,17 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   ctx.font = '900 54px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.fillText(
     header.name,
-    x + 212 + zukanTextOffset("detailNameX"),
-    y + 67 + zukanTextOffset("detailNameY"),
-    width - 506,
+    x + 212 * scaleX + zukanTextOffset("detailNameX"),
+    y + 67 * scaleY + zukanTextOffset("detailNameY"),
+    width - 506 * scaleX,
   );
   ctx.fillStyle = "rgba(51, 68, 71, 0.62)";
   ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.fillText(
     header.subtitle,
-    x + 216 + zukanTextOffset("detailSubtitleX"),
-    y + 106 + zukanTextOffset("detailSubtitleY"),
-    width - 520,
+    x + 216 * scaleX + zukanTextOffset("detailSubtitleX"),
+    y + 106 * scaleY + zukanTextOffset("detailSubtitleY"),
+    width - 520 * scaleX,
   );
   ctx.restore();
 }
@@ -6196,8 +6295,10 @@ function drawAsyncCollectionZukanImage(ctx, texture, src, x, y, width, height, f
     .catch(() => {});
 }
 
-function drawCollectionZukanField(ctx, title, value, x, y, width, height, accentColor) {
+function drawCollectionZukanField(ctx, title, value, x, y, width, height, accentColor, rectScaleX = 1, rectScaleY = 1) {
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
+  const scaleX = Number.isFinite(Number(rectScaleX)) && Number(rectScaleX) > 0 ? Number(rectScaleX) : 1;
+  const scaleY = Number.isFinite(Number(rectScaleY)) && Number(rectScaleY) > 0 ? Number(rectScaleY) : 1;
   ctx.save();
   if (!generatedTemplate) {
     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
@@ -6213,21 +6314,9 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
   }
   ctx.font = `${generatedTemplate ? "900 20px" : "900 21px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "center";
-  const titleCenterX = x + (generatedTemplate ? 112 : 139) + zukanTextOffset("detailFieldTitleX");
-  const titleBaselineY = y + (generatedTemplate ? 64 : 48) + zukanTextOffset("detailFieldTitleY");
-  const titleMaxWidth = generatedTemplate ? 220 : 206;
-  if (generatedTemplate) {
-    const labelW = Math.min(width - 54, Math.max(180, Math.ceil(ctx.measureText(title).width + 58)));
-    const labelH = 48;
-    const labelX = THREE.MathUtils.clamp(titleCenterX - labelW / 2, x + 18, x + width - labelW - 18);
-    const labelY = titleBaselineY - 34;
-    ctx.fillStyle = accentColor;
-    drawCanvasRoundedRect(ctx, labelX, labelY, labelW, labelH, 20);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(76, 112, 69, 0.22)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
+  const titleCenterX = x + (generatedTemplate ? 112 : 139) * scaleX + zukanTextOffset("detailFieldTitleX");
+  const titleBaselineY = y + (generatedTemplate ? 64 : 48) * scaleY + zukanTextOffset("detailFieldTitleY");
+  const titleMaxWidth = (generatedTemplate ? 220 : 206) * scaleX;
   ctx.fillStyle = "#ffffff";
   ctx.fillText(
     title,
@@ -6242,10 +6331,10 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
   drawWrappedCanvasText(
     ctx,
     value,
-    x + (generatedTemplate ? 48 : 30) + zukanTextOffset("detailFieldTextX"),
-    y + (generatedTemplate ? 122 : 96) + zukanTextOffset("detailFieldTextY"),
-    width - (generatedTemplate ? 84 : 60),
-    36,
+    x + (generatedTemplate ? 48 : 30) * scaleX + zukanTextOffset("detailFieldTextX"),
+    y + (generatedTemplate ? 122 : 96) * scaleY + zukanTextOffset("detailFieldTextY"),
+    width - (generatedTemplate ? 84 : 60) * scaleX,
+    36 * scaleY,
     2,
   );
   ctx.restore();
@@ -6253,6 +6342,8 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
 
 function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   const { x, y, width, height } = memo;
+  const scaleX = zukanRectScaleX(memo);
+  const scaleY = zukanRectScaleY(memo);
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
   const memoGradient = ctx.createLinearGradient(0, y, 0, y + height);
   memoGradient.addColorStop(0, "rgba(255, 255, 255, 0.74)");
@@ -6276,9 +6367,9 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   ctx.textAlign = "center";
   ctx.fillText(
     memo.title,
-    x + 123 + zukanTextOffset("detailMemoTitleX"),
-    y + 61 + zukanTextOffset("detailMemoTitleY"),
-    146,
+    x + 123 * scaleX + zukanTextOffset("detailMemoTitleX"),
+    y + 61 * scaleY + zukanTextOffset("detailMemoTitleY"),
+    146 * scaleX,
   );
 
   if (!generatedTemplate) {
@@ -6298,10 +6389,10 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   drawWrappedCanvasText(
     ctx,
     memo.value,
-    x + 38 + zukanTextOffset("detailMemoTextX"),
-    y + 122 + zukanTextOffset("detailMemoTextY"),
-    width - 76,
-    40,
+    x + 38 * scaleX + zukanTextOffset("detailMemoTextX"),
+    y + 122 * scaleY + zukanTextOffset("detailMemoTextY"),
+    width - 76 * scaleX,
+    40 * scaleY,
     3,
   );
   ctx.restore();
