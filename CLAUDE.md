@@ -918,6 +918,7 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 
 
 
+
 ## Current Difficulty Level
 
 - **レベル**: 5 - 抽象指示 (Abstract)
@@ -928,7 +929,7 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 
 > タスクを依頼する際は、上記レベルの抽象度でプロンプトを作成してください。
 
-## Auto-Extracted Best Practices (Updated: 2026-06-20)
+## Auto-Extracted Best Practices (Updated: 2026-06-21)
 
 以下のルールは過去のタスク実績から自動抽出されたベストプラクティスです。
 

@@ -4884,10 +4884,14 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   const badgeW = isRoomy ? 84 : 72;
   const badgeH = isRoomy ? 42 : 38;
   const badgeRadius = isRoomy ? 15 : 14;
-  const roomyImageLimit = generatedTemplate ? 198 : height >= 280 ? 196 : 150;
-  const imageSize = Math.min(isRoomy ? roomyImageLimit : 112, height - (isRoomy ? 88 : 30), width * (isRoomy ? 0.34 : 0.28));
+  const roomyImageLimit = generatedTemplate ? 198 : 164;
+  const imageSize = Math.min(
+    isRoomy ? roomyImageLimit : 112,
+    height - (isRoomy ? (generatedTemplate ? 88 : 74) : 30),
+    width * (isRoomy ? (generatedTemplate ? 0.34 : 0.32) : 0.28)
+  );
   const imageX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
-  const imageY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? (height >= 280 ? 18 : 28) : 0);
+  const imageY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
   const textX = isRoomy ? imageX + imageSize + 34 : x + 232;
   const textMaxW = Math.max(220, x + width - textX - 28);
   const titleY = generatedTemplate ? y + 98 : isRoomy ? y + Math.max(106, height * 0.43) : y + 48;
