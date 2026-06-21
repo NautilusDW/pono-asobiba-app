@@ -3093,7 +3093,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1475;
+    const PAGE_CACHE_VERSION = 1476;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -3650,9 +3650,8 @@
         return;
       }
       dailyGachaEntry.classList.add('is-visible');
-      const usedToday = isDailyGachaUsedToday();
-      dailyGachaEntry.classList.toggle('is-used', usedToday);
-      if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = usedToday ? 'また あした' : 'シールを ひこう';
+      dailyGachaEntry.classList.remove('is-used');
+      if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = 'シールを ひこう';
     }
 
     function setDailyGachaLeverRotation(rotation) {
@@ -4201,10 +4200,7 @@
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
       resetDailyGachaModal(true);
-      const record = getDailyGachaRecord();
-      const usedToday = !!(record && record.date === dailyGachaTodayKey());
-      if (usedToday) showDailyGachaUsed(record);
-      armDailyGachaModal(!usedToday);
+      armDailyGachaModal();
     }
 
     function closeDailyGacha() {
