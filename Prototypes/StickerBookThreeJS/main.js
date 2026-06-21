@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-780";
+const ASSET_VERSION = "20260622-781";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -834,9 +834,9 @@ const STICKER_COVER_3D_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
 const STICKER_COVER_3D_RING_ANCHOR_X = PAGE_W * 0.066;
 const STICKER_COVER_3D_RING_REACH = PAGE_W * 0.082;
 const STICKER_COVER_3D_RING_FRONT_Z = STICKER_COVER_CLOSED_BOARD_Z + PAGE_H * 0.025;
-const STICKER_COVER_3D_EYELET_RADIUS = PAGE_W * 0.014;
-const STICKER_COVER_3D_EYELET_TUBE = PAGE_W * 0.0026;
-const STICKER_COVER_3D_EYELET_HOLE = PAGE_W * 0.0108;
+const STICKER_COVER_3D_EYELET_RADIUS = PAGE_W * 0.011;
+const STICKER_COVER_3D_EYELET_TUBE = PAGE_W * 0.0023;
+const STICKER_COVER_3D_EYELET_HOLE = PAGE_W * 0.0074;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -7468,39 +7468,39 @@ function createCover3DRingLayer() {
     ring: new THREE.MeshStandardMaterial({
       color: hardware.ring,
       emissive: 0x34230e,
-      emissiveIntensity: 0.035,
-      roughness: 0.48,
-      metalness: 0.08,
+      emissiveIntensity: 0.018,
+      roughness: 0.24,
+      metalness: 0.62,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.96,
       depthWrite: false,
     }),
     highlight: new THREE.MeshBasicMaterial({
       color: hardware.ringHighlight,
       transparent: true,
-      opacity: 0.32,
+      opacity: 0.46,
       depthWrite: false,
     }),
     eyelet: new THREE.MeshStandardMaterial({
       color: hardware.ring,
       emissive: 0x3b2a12,
-      emissiveIntensity: 0.03,
-      roughness: 0.42,
-      metalness: 0.12,
+      emissiveIntensity: 0.016,
+      roughness: 0.22,
+      metalness: 0.58,
       transparent: true,
       opacity: 0.94,
       depthWrite: false,
     }),
     eyeletHole: new THREE.MeshBasicMaterial({
-      color: hardware.spineDark,
+      color: 0x050403,
       transparent: true,
-      opacity: 0.62,
+      opacity: 0.88,
       depthWrite: false,
     }),
     eyeletShadow: new THREE.MeshBasicMaterial({
       color: 0x1a1008,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.2,
       depthWrite: false,
     }),
   };
@@ -7513,26 +7513,26 @@ function createCover3DRingLayer() {
       y - PAGE_H * 0.002,
       STICKER_COVER_3D_RING_FRONT_Z - PAGE_H * 0.0015,
     );
-    shadow.renderOrder = 85;
+    shadow.renderOrder = 84;
     group.add(shadow);
+
+    const ring = new THREE.Mesh(createCover3DRingGeometry(y), materials.ring);
+    ring.renderOrder = 86;
+    group.add(ring);
+
+    const highlight = new THREE.Mesh(createCover3DRingHighlightGeometry(y), materials.highlight);
+    highlight.renderOrder = 87;
+    group.add(highlight);
 
     const hole = new THREE.Mesh(createCover3DEyeletHoleGeometry(), materials.eyeletHole);
     hole.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z - PAGE_H * 0.0008);
-    hole.renderOrder = 86;
+    hole.renderOrder = 88;
     group.add(hole);
 
     const eyelet = new THREE.Mesh(createCover3DEyeletGeometry(), materials.eyelet);
     eyelet.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z + PAGE_H * 0.0005);
-    eyelet.renderOrder = 87;
+    eyelet.renderOrder = 89;
     group.add(eyelet);
-
-    const ring = new THREE.Mesh(createCover3DRingGeometry(y), materials.ring);
-    ring.renderOrder = 88;
-    group.add(ring);
-
-    const highlight = new THREE.Mesh(createCover3DRingHighlightGeometry(y), materials.highlight);
-    highlight.renderOrder = 89;
-    group.add(highlight);
   }
 
   group.visible = false;
@@ -7558,8 +7558,9 @@ function createCover3DEyeletShadowGeometry() {
 
 function createCover3DRingGeometry(baseY) {
   const points = [];
-  for (let i = 0; i <= 28; i += 1) {
-    const t = i / 28;
+  const segments = 36;
+  for (let i = 0; i <= segments; i += 1) {
+    const t = -0.12 + (i / segments) * 1.24;
     const arch = Math.sin(t * Math.PI);
     points.push(new THREE.Vector3(
       STICKER_COVER_3D_RING_ANCHOR_X - arch * STICKER_COVER_3D_RING_REACH,
@@ -7569,9 +7570,9 @@ function createCover3DRingGeometry(baseY) {
   }
   return new THREE.TubeGeometry(
     new THREE.CatmullRomCurve3(points),
-    42,
-    PAGE_W * 0.006,
-    14,
+    50,
+    PAGE_W * 0.0072,
+    16,
     false,
   );
 }
