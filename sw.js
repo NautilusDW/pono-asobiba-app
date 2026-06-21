@@ -163,7 +163,8 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1480; // v1480: coming-soon-b 文言訂正 (list 3 ポノからの / foot じゅんびが できたら) + ★ aria-hidden 追加
+// v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
+const CACHE_VERSION = 1481; // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

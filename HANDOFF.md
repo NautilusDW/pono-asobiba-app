@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-22 - [batch:779-daily-gacha-gold-super-diff] DONE - Codex: user 指摘「まだ黄色 / キラとスーパーレアの演出差がわからない」を反映。金カプセルを黄色から濃いアンバー金 + 銀丸へ再調整し、キラは `magic_book` 背景固定で光量を抑え、スーパーレアは `holographic_pack` 背景固定 + 虹フレア/星形バースト/強発光で差を広げた。`sw.js` / `PAGE_CACHE_VERSION=1481`。検証: `git diff --check`、`node --check sw.js`、`play.html` inline script parse、Playwright local で normal/rare/super 完走・pageerror/requestfailed 0。共通 `play.html` のため develop 同期予定。 (by Codex)
 - 2026-06-22 - [batch:777-sticker-all-raw-quizland] Codex: user 指示「リストにあるやつを全部生成」を受領。対象は `Prototypes/StickerBookThreeJS/sticker_book_content_plan.json` の116件と解釈。全件はゲーム単位で分割し、まず `quizland` 16件を raw 生成する。`ふつう/キラ` は複数枚シート、`とくべつキラ` は単体。alpha 抜き/切り抜き/実装反映はしない。 (by Codex)
 - 2026-06-22 - [batch:777-sticker-all-raw-quizland] DONE - Codex: `quizland` 16件分を `tmp/alpha_pending/777-sticker-all-raw-quizland/` に raw 保存。通常/キラは複数枚シート、`とくべつキラ` は単体。Pono と かぶとむしは初回が弱かったため補正版を追加。`CODEX-DELIVERY.md` に配置対応と品質メモを記録。alpha 抜き/切り抜き/実装反映なし。残りは `maze` 以降100件。 (by Codex)
 - 2026-06-22 - [batch:776-sticker-rarity-pono-style-samples] Codex: Pono の既存参照を確認し、シールの `ふつう` / `キラ` / `とくべつキラ` 共通スタイル案の raw サンプル生成に着手。Pono は小さい子ども、性別を強く出さない、毛が長めのくま、白目なし黒目、目を大きくしすぎない条件を明示。alpha 抜き/切り抜きはしない。 (by Codex)
