@@ -64,7 +64,7 @@
       --text-light: #7A6A4F;
       --shadow: rgba(93, 78, 55, 0.12);
       --radius: 24px;
-      /* ===== LP 派手化 共通トークン (announce / play-cards / herob-cta) ===== */
+      /* ===== LP 派手化 共通トークン (play-cards / herob-cta) ===== */
       --ease-pyoko: cubic-bezier(.34, 1.56, .64, 1);   /* overshoot 弾み */
       --ease-soft : cubic-bezier(.18, .84, .42, 1.08); /* 柔らかい呼吸 */
       --dur-pyoko : .42s;
@@ -395,7 +395,7 @@
               0 10px 32px rgba(242,145,90,.55),
               0 0 48px rgba(255,224,122,.45);}
     }
-    /* C4: shimmer ::before (announce::before と同じ 4.8s 波長で位相一致) */
+    /* C4: shimmer ::before (4.8s 波長で位相一致 / herob-cta 単独) */
     .herob-cta::before{
       content:"";position:absolute;inset:0;border-radius:inherit;
       background:linear-gradient(115deg,
@@ -582,114 +582,195 @@
     .book-aside-link:focus-visible{outline:3px solid #F2915A;outline-offset:3px;}
     .book-aside-link img,.book-aside-link picture,.book-aside-link picture img{display:block;width:100%;height:auto;}
 
-    /* ===== Announce (アプリ Coming Soon ティーザー) ===== */
-    .announce{
-      max-width:640px;margin:18px auto;padding:26px 24px 24px;
+    /* ========== Coming Soon App Teaser (Stitch 完成版 / scope: .coming-soon-app) ========== */
+    .coming-soon-app{
+      --cs-yellow:#FDE68A;
+      --cs-green:#9CCB7A;
+      --cs-text-light:#A89880;
+      display:block;
+      max-width:760px;
+      margin:18px auto;
+    }
+    .coming-soon-app .app{
+      position:relative;
+      width:100%;
+      padding:28px 24px 26px;
       background:linear-gradient(135deg,#FDDCBF 0%,#FFF1DC 60%,#FFF8F0 100%);
-      border-radius:20px;
+      border-radius:24px;
       border:2px dashed #C96A2E;
-      box-shadow:0 10px 28px rgba(201,106,46,.20);
-      text-align:center;position:relative;overflow:hidden;
-      isolation:isolate; /* ::after mix-blend-mode を親へ漏らさない */
+      box-shadow:0 14px 34px rgba(201,106,46,.20);
+      overflow:hidden;
+      isolation:isolate;
     }
-    .announce-tag{
-      display:inline-block;padding:6px 16px;background:#C96A2E;color:#fff;
-      border-radius:999px;font-size:clamp(11px,2.6vw,13px);font-weight:800;
-      letter-spacing:.04em;margin:0 0 12px;transform:rotate(-2deg);
-      box-shadow:0 3px 0 rgba(0,0,0,.08);
+    .coming-soon-app .app-inner{
+      display:grid;
+      grid-template-columns:1.05fr .95fr;
+      gap:22px;
+      align-items:center;
     }
-    .announce-h{
-      margin:4px 0 12px;font-size:clamp(22px,5.6vw,32px);
-      font-weight:900;color:var(--text);line-height:1.4;letter-spacing:.01em;
+    @media (max-width:680px){
+      .coming-soon-app .app-inner{grid-template-columns:1fr;gap:18px;}
     }
-    .announce-em{
-      background:linear-gradient(transparent 58%, #FFE07A 58%);
-      padding:0 6px;display:inline-block;transform:rotate(-1deg);
-    }
-    .announce-body{
-      margin:8px 0 6px;font-size:clamp(14px,3.8vw,18px);
-      font-weight:700;color:var(--text);line-height:1.7;
-    }
-    .announce-sub{
-      margin:14px 0 0;font-size:clamp(12px,3vw,14px);
-      color:var(--text-light,#7A6A4F);line-height:1.5;
-      letter-spacing:.08em;font-weight:600;
-    }
-    .announce-badge{
-      position:absolute;top:14px;right:-6px;z-index:2;
-      display:inline-block;padding:10px 14px;
-      background:#fff;color:#C96A2E;
-      border:2px solid #C96A2E;border-radius:10px;
-      font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro',sans-serif;
-      font-size:clamp(11px,2.8vw,14px);font-weight:900;
-      line-height:1.1;letter-spacing:.06em;text-align:center;
-      transform:rotate(-8deg);
-      box-shadow:0 4px 10px rgba(201,106,46,.22);
-      animation:announce-pulse var(--dur-breath) var(--ease-pyoko) infinite;
+    .coming-soon-app .app-head{text-align:left;}
+    .coming-soon-app .app-badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 14px;background:#fff;color:#C96A2E;
+      border:2px solid #C96A2E;
+      border-radius:999px;font-size:12px;font-weight:900;letter-spacing:.06em;
+      box-shadow:0 4px 0 rgba(0,0,0,.06);
+      animation:cs-pulse var(--dur-breath) var(--ease-pyoko) infinite;
       will-change:transform;
     }
-    /* A3: pulse 強化 (scale 1↔1.08 + rotate -8↔-12 + Y 0↔-2) */
-    @keyframes announce-pulse{
-      0%,100%{transform:rotate(-8deg)  scale(1)    translateY(0);}
-      50%   {transform:rotate(-12deg) scale(1.08) translateY(-2px);}
+    .coming-soon-app .app-badge .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:#F2915A;box-shadow:0 0 0 4px rgba(242,145,90,.22);
     }
-    /* A4: tag idle 微振動 (rotate -2↔-4, 2.4s) — hover/active 時は別 keyframe で上書き */
-    @keyframes announce-tag-idle{
-      0%,100%{transform:rotate(-2deg) translateY(0);}
-      50%   {transform:rotate(-4deg) translateY(-1px);}
+    .coming-soon-app .app-h{
+      margin:14px 0 10px;
+      font-size:clamp(22px,5.4vw,30px);
+      font-weight:900;color:var(--text);line-height:1.4;letter-spacing:.01em;
     }
-    .announce-tag{
-      animation:announce-tag-idle var(--dur-breath) ease-in-out infinite;
+    .coming-soon-app .app-h .u{
+      background:linear-gradient(transparent 55%, var(--cs-yellow) 55%);
+      padding:0 6px;display:inline-block;transform:rotate(-1deg);
     }
-    /* A5: deco opacity 底上げ .10→.14 */
-    .announce-deco{
-      position:absolute;right:-14px;bottom:-22px;
-      font-size:130px;opacity:.14;pointer-events:none;
-      transform:rotate(12deg);user-select:none;
+    .coming-soon-app .app-pitch{
+      margin:8px 0 10px;font-size:clamp(15px,3.8vw,18px);
+      font-weight:800;color:var(--text);line-height:1.6;
+    }
+    .coming-soon-app .app-pitch .hl{
+      background:linear-gradient(transparent 60%, var(--cs-green) 60%);
+      padding:0 6px;display:inline-block;
+    }
+    .coming-soon-app .app-note{
+      margin:10px 0 0;font-size:clamp(12px,3vw,14px);
+      color:var(--cs-text-light);line-height:1.7;font-weight:600;
+    }
+    .coming-soon-app .stage{
+      position:relative;width:100%;aspect-ratio:1/1.05;max-width:340px;
+      margin:0 auto;
+    }
+    .coming-soon-app .glow{
+      position:absolute;inset:8%;
+      background:radial-gradient(closest-side,rgba(255,224,122,.55),rgba(255,224,122,0) 70%);
+      filter:blur(2px);
+      animation:cs-halo 3.6s ease-in-out infinite;
+      z-index:0;
+    }
+    .coming-soon-app .chip{
+      position:absolute;font-size:24px;line-height:1;
+      filter:drop-shadow(0 4px 8px rgba(93,78,55,.18));
+      animation:cs-chipfloat 5.2s ease-in-out infinite;
       z-index:1;
     }
-    /* A1: shimmer 周期 4.5s→4.8s に統一 (herob-cta::before と位相一致) */
-    .announce::before{
-      content:"";position:absolute;inset:0;
-      background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);
-      transform:translateX(-100%);pointer-events:none;
-      animation:announce-shimmer var(--dur-shimmer) ease-in-out 1.2s infinite;
-      z-index:0;
+    .coming-soon-app .chip.c1{top:8%;left:6%;animation-delay:0s;}
+    .coming-soon-app .chip.c2{top:14%;right:8%;animation-delay:.6s;}
+    .coming-soon-app .chip.c3{top:48%;left:2%;animation-delay:1.2s;}
+    .coming-soon-app .chip.c4{top:54%;right:2%;animation-delay:1.8s;}
+    .coming-soon-app .chip.c5{bottom:10%;left:10%;animation-delay:2.4s;}
+    .coming-soon-app .chip.c6{bottom:6%;right:12%;animation-delay:3s;}
+    .coming-soon-app .phone{
+      position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      width:62%;aspect-ratio:9/18;
+      background:#2A241B;
+      border-radius:30px;
+      box-shadow:0 18px 40px rgba(93,78,55,.32),inset 0 0 0 3px #3B3326;
+      padding:8px;
+      z-index:2;
+      animation:cs-floaty 4.4s ease-in-out infinite;
     }
-    @keyframes announce-shimmer{
-      0%  {transform:translateX(-100%);}
-      60% {transform:translateX(120%);}
-      100%{transform:translateX(120%);}
+    .coming-soon-app .notch{
+      position:absolute;top:8px;left:50%;transform:translateX(-50%);
+      width:38%;height:14px;background:#000;border-radius:0 0 12px 12px;
+      z-index:3;
     }
-    /* A6: 紙吹雪 ::after (黄/オレンジ/薄ピンクの 6 粒を斜めに流す) */
-    .announce::after{
-      content:"";
-      position:absolute;
-      inset:-8px;
-      border-radius:inherit;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 8%  20%, #FFE07A 0 3px, transparent 4px),
-        radial-gradient(circle at 22% 78%, #F2915A 0 2.5px, transparent 4px),
-        radial-gradient(circle at 48% 12%, #FDDCBF 0 3px, transparent 4px),
-        radial-gradient(circle at 68% 88%, #FFE07A 0 2.5px, transparent 4px),
-        radial-gradient(circle at 82% 30%, #F2915A 0 3px, transparent 4px),
-        radial-gradient(circle at 92% 70%, #FDDCBF 0 2.5px, transparent 4px);
-      background-size:220% 220%;
-      background-position:0% 0%;
-      animation:announce-confetti 8s linear infinite;
-      opacity:.55;
-      mix-blend-mode:multiply;
-      z-index:0;
+    .coming-soon-app .pscreen{
+      position:relative;width:100%;height:100%;
+      background:linear-gradient(180deg,#FFF1DC,#FFF8F0);
+      border-radius:22px;overflow:hidden;
+      display:flex;flex-direction:column;
     }
-    @keyframes announce-confetti{
-      0%  {background-position:0% 0%;}
-      100%{background-position:120% 120%;}
+    .coming-soon-app .ph-badge{
+      position:absolute;top:10px;right:-8px;z-index:3;
+      display:inline-flex;align-items:center;gap:4px;
+      padding:5px 10px 5px 8px;
+      background:#C96A2E;color:#fff;
+      border-radius:8px;font-size:10px;font-weight:900;letter-spacing:.04em;
+      transform:rotate(8deg);
+      box-shadow:0 3px 8px rgba(201,106,46,.32);
     }
-    /* announce 内子要素を ::after より上に */
-    .announce > *{position:relative; z-index:1;}
+    .coming-soon-app .ph-badge .ic{font-size:11px;}
+    .coming-soon-app .ph-top{
+      padding:22px 12px 8px;text-align:center;
+    }
+    .coming-soon-app .ph-top .ttl{
+      font-size:clamp(11px,2.5vw,13px);
+      font-weight:900;color:#C96A2E;letter-spacing:.04em;
+    }
+    .coming-soon-app .ph-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+      padding:6px 10px 4px;
+    }
+    .coming-soon-app .gt{
+      aspect-ratio:1/1;background:#fff;border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:18px;
+      box-shadow:0 2px 6px rgba(93,78,55,.10);
+    }
+    .coming-soon-app .gt.more{
+      font-size:10px;font-weight:900;color:#C96A2E;
+      background:linear-gradient(135deg,#FFE9B8,#FFD17A);
+      animation:cs-morepulse 1.8s ease-in-out infinite;
+    }
+    .coming-soon-app .ph-fade{
+      position:absolute;left:0;right:0;bottom:0;height:30%;
+      background:linear-gradient(180deg,rgba(255,248,240,0),rgba(255,248,240,.95));
+      pointer-events:none;z-index:1;
+    }
+    .coming-soon-app .ph-pono{
+      position:absolute;left:50%;bottom:-2%;
+      transform:translateX(-50%);
+      width:62%;height:auto;
+      z-index:2;pointer-events:none;
+    }
+    .coming-soon-app .notify{
+      margin-top:16px;text-align:center;
+      padding:10px 14px;
+      background:rgba(255,255,255,.55);
+      border-radius:14px;
+      border:1px dashed rgba(201,106,46,.45);
+      grid-column:1/-1;
+    }
+    .coming-soon-app .notify p{
+      margin:0;font-size:clamp(12px,3vw,14px);
+      color:var(--text);font-weight:800;line-height:1.6;
+    }
+    .coming-soon-app .notify p span{
+      display:block;font-size:11px;font-weight:600;color:var(--cs-text-light);
+      margin-top:2px;
+    }
+    @keyframes cs-pulse{
+      0%,100%{transform:scale(1);}
+      50%{transform:scale(1.06);}
+    }
+    @keyframes cs-halo{
+      0%,100%{transform:scale(1);opacity:.85;}
+      50%{transform:scale(1.06);opacity:1;}
+    }
+    @keyframes cs-chipfloat{
+      0%,100%{transform:translateY(0) rotate(0);}
+      50%{transform:translateY(-6px) rotate(6deg);}
+    }
+    @keyframes cs-floaty{
+      0%,100%{transform:translate(-50%,-50%);}
+      50%{transform:translate(-50%,calc(-50% - 4px));}
+    }
+    @keyframes cs-morepulse{
+      0%,100%{transform:scale(1);}
+      50%{transform:scale(1.08);}
+    }
     @media (prefers-reduced-motion:reduce){
-      .announce-badge,.announce::before,.announce::after,.announce-tag{animation:none;}
+      .coming-soon-app *{animation:none!important;}
     }
 
     /* ===== Bookcheer (ハードカバー応援、 本のページ風) ===== */
@@ -873,17 +954,13 @@
     .help-link:focus-visible{outline:3px solid var(--primary);outline-offset:3px;border-radius:50px;}
 
     /* ============================================================
-       ポノ LP — Accent Motion (.announce / .bookcheer)
+       ポノ LP — Accent Motion (.bookcheer)
        - 統一イージング: cubic-bezier(.34, 1.56, .64, 1)  ★overshoot
        - GPU: transform / opacity / drop-shadow のみ
        - iOS sticky 回避: @media (hover: hover) + :active 併用
        ============================================================ */
 
     /* ---------- 共通 keyframes ---------- */
-    @keyframes pono-paper-float-deco {
-      0%   { transform: translateY(-3px) rotate(-3deg); }
-      100% { transform: translateY( 1px) rotate( 3deg); }
-    }
     @keyframes pono-paper-float-mark {
       0%   { transform: translateY(-2px); }
       100% { transform: translateY( 2px); }
@@ -893,100 +970,10 @@
       50%  { transform: perspective(400px) rotateY(-25deg) scale(1.14); }
       100% { transform: perspective(400px) rotateY(0deg)   scale(1);    }
     }
-    @keyframes pono-stamp-bounce {
-      0%   { transform: rotate(-2deg) scale(1)    translateY(0);   }
-      35%  { transform: rotate(-3deg) scale(.92)  translateY(2px); }
-      70%  { transform: rotate(-5deg) scale(1.08) translateY(-3px);}
-      100% { transform: rotate(-2deg) scale(1)    translateY(0);   }
-    }
-    @keyframes pono-paint-pop-em {
-      0%   { transform: rotate(-1deg) scale(1);    }
-      60%  { transform: rotate(-1deg) scale(1.05); }
-      100% { transform: rotate(-1deg) scale(1);    }
-    }
     @keyframes pono-paint-pop-hl {
       0%   { transform: scale(1);    }
       60%  { transform: scale(1.05); }
       100% { transform: scale(1);    }
-    }
-
-    /* ---------- .announce ---------- */
-    .announce[data-accent]{
-      transition:
-        transform .35s cubic-bezier(.25,.46,.45,.94),
-        box-shadow .35s cubic-bezier(.25,.46,.45,.94);
-    }
-
-    /* ✉️: アイドル float (常時) */
-    .announce[data-accent] .announce-deco{
-      transform-origin: center;
-      animation: pono-paper-float-deco 6s ease-in-out infinite alternate;
-      will-change: transform;
-      transition: opacity .4s cubic-bezier(.25,.46,.45,.94),
-                  transform .4s cubic-bezier(.25,.46,.45,.94);
-    }
-
-    /* バッジ: transition は hover 用、アイドル pulse は据置 */
-    .announce[data-accent] .announce-badge{
-      transform-origin: top right;
-      transition: transform .45s cubic-bezier(.34,1.56,.64,1),
-                  filter   .45s cubic-bezier(.34,1.56,.64,1);
-    }
-
-    /* タグ 🎁 */
-    .announce[data-accent] .announce-tag{
-      transform-origin: center;
-      transition: transform .5s cubic-bezier(.34,1.56,.64,1);
-      outline: none;
-    }
-
-    /* 黄色ハイライト: 塗り広げ用に background を gradient で再宣言 */
-    .announce[data-accent] .announce-em{
-      background: none;
-      background-image: linear-gradient(transparent 55%, #FFE07A 55%, #FFE07A 92%, transparent 92%);
-      background-repeat: no-repeat;
-      background-size: 0% 100%;
-      background-position: left center;
-      transition: background-size .6s ease-out;
-    }
-    .announce[data-accent] .announce-em.is-painted{
-      background-size: 100% 100%;
-      animation: pono-paint-pop-em .35s cubic-bezier(.34,1.56,.64,1) .55s both;
-    }
-
-    /* ---------- .announce hover (PC のみ) ---------- */
-    @media (hover: hover) and (pointer: fine) {
-      .announce[data-accent]:hover{
-        transform: translateY(-2px);
-        box-shadow: 0 16px 36px rgba(201, 106, 46, .18);
-      }
-      .announce[data-accent]:hover .announce-em{ background-size: 100% 100%; }
-      .announce[data-accent]:hover .announce-deco{
-        opacity: .22;
-        transform: translateY(-2px) rotate(2deg) scale(1.08);
-        animation-play-state: paused;
-      }
-
-      .announce[data-accent] .announce-badge:hover,
-      .announce[data-accent] .announce-badge:focus-visible{
-        transform: rotate(-12deg) translateY(-3px) scale(1.18);
-        filter: drop-shadow(0 6px 10px rgba(201, 106, 46, .28));
-        animation-play-state: paused; /* pulse 一時停止 */
-      }
-      .announce[data-accent] .announce-tag:hover,
-      .announce[data-accent] .announce-tag:focus-visible{
-        animation: pono-stamp-bounce .5s cubic-bezier(.34,1.56,.64,1) both;
-      }
-    }
-
-    /* iOS Safari sticky 回避: :active で同等の表現 */
-    .announce[data-accent] .announce-badge:active{
-      transform: rotate(-12deg) translateY(-3px) scale(1.18);
-      filter: drop-shadow(0 6px 10px rgba(201, 106, 46, .28));
-      animation-play-state: paused;
-    }
-    .announce[data-accent] .announce-tag:active{
-      animation: pono-stamp-bounce .5s cubic-bezier(.34,1.56,.64,1) both;
     }
 
     /* ---------- .bookcheer ---------- */
@@ -1047,8 +1034,6 @@
     }
 
     /* ---------- focus-visible 共通: WCAG 2.4.11 適合 (3px solid / 不透明) ---------- */
-    .announce[data-accent] .announce-tag:focus-visible,
-    .announce[data-accent] .announce-badge:focus-visible,
     .bookcheer[data-accent] .bookcheer-key:focus-visible{
       outline: 3px solid var(--primary-deep, #C96A2E);
       outline-offset: 4px;
@@ -1056,13 +1041,9 @@
     }
 
     /* ============================================================
-       prefers-reduced-motion: 新規 + 既存全て停止 (announce/bookcheer/play-cards/herob-cta 一括)
+       prefers-reduced-motion: 新規 + 既存全て停止 (bookcheer/play-cards/herob-cta 一括)
        ============================================================ */
     @media (prefers-reduced-motion: reduce) {
-      .announce[data-accent],
-      .announce[data-accent] *,
-      .announce::before,
-      .announce::after,
       .bookcheer[data-accent],
       .bookcheer[data-accent] *,
       .pc-card, .pc-card *,
@@ -1074,17 +1055,11 @@
         animation: none !important;
         transition: none !important;
       }
-      /* NOTE: ここで transform: none を一括適用すると announce-badge/em/deco/tag 等の
-         静的 rotate 装飾まで剥がれて見た目が壊れる (WCAG 上もアニメ停止だけで十分)。
-         よって animation/transition のみ停止し、 静的 transform は維持する。 */
-      .announce[data-accent] .announce-em,
+      /* NOTE: ここで transform: none を一括適用すると静的 rotate 装飾まで剥がれて見た目が壊れる
+         (WCAG 上もアニメ停止だけで十分)。 よって animation/transition のみ停止し、
+         静的 transform は維持する。 */
       .bookcheer[data-accent] .bookcheer-hl{
         background-size: 100% 100% !important; /* 蛍光ペンは即時塗り */
-      }
-      /* announce 紙吹雪は静的に薄く残す */
-      .announce::after{
-        opacity: .25 !important;
-        background-position: 0% 0% !important;
       }
       /* herob-cta グラデは中央停止 / sparkle は静的に半透明 */
       .herob-cta{
@@ -1135,20 +1110,50 @@
       </div>
     </section>
 
-    <!-- ============ Announce (アプリ Coming Soon ティーザー) ============ -->
-    <section class="announce" data-accent="announce" aria-labelledby="announce-h">
-      <span class="announce-badge" aria-hidden="true">Coming<br>Soon</span>
-      <p class="announce-tag" tabindex="0">🎁 とくべつな おしらせ</p>
-      <h2 class="announce-h" id="announce-h">
-        あたらしい あそびばが、<br>
-        <span class="announce-em">もうすぐ ひらきます。</span>
-      </h2>
-      <p class="announce-body">
-        おうちでも、 でかけたさきでも、<br>
-        ポノと あそべる ひがくるよ。
-      </p>
-      <p class="announce-sub">Coming Soon &mdash; リリース、 まもなく。</p>
-      <span class="announce-deco" aria-hidden="true">&#9993;&#65039;</span>
+    <!-- ============ Coming Soon App Teaser (Stitch 完成版 / scope: .coming-soon-app) ============ -->
+    <section class="coming-soon-app" aria-labelledby="csa-h">
+      <div class="app">
+        <div class="app-inner">
+          <div class="app-head">
+            <span class="app-badge"><span class="dot"></span>いま つくっています</span>
+            <h2 class="app-h" id="csa-h">ポノの あそびばが<br><span class="u">アプリ</span> に なります！</h2>
+            <p class="app-pitch">ゲームも コンテンツも<br><span class="hl">どんと ボリューム アップ</span></p>
+            <p class="app-note">いまより もっと たくさんの あそびと もっと つまった とくべつな あそびばが できるよう みなさんに いま ぐっと いっしょに つくっています！</p>
+          </div>
+          <div class="stage">
+            <div class="glow"></div>
+            <span class="chip c1" aria-hidden="true">🌱</span>
+            <span class="chip c2" aria-hidden="true">🎵</span>
+            <span class="chip c3" aria-hidden="true">🧩</span>
+            <span class="chip c4" aria-hidden="true">🎮</span>
+            <span class="chip c5" aria-hidden="true">🦊</span>
+            <span class="chip c6" aria-hidden="true">⭐</span>
+            <div class="phone">
+              <div class="notch"></div>
+              <div class="ph-badge"><span class="ic">📱</span>もうすぐ</div>
+              <div class="pscreen">
+                <div class="ph-top"><span class="ttl">ポノのあそびば</span></div>
+                <div class="ph-grid">
+                  <div class="gt">🌱</div>
+                  <div class="gt">🎮</div>
+                  <div class="gt">🎵</div>
+                  <div class="gt">🧩</div>
+                  <div class="gt">🦊</div>
+                  <div class="gt more">+もっと</div>
+                </div>
+                <div class="ph-fade"></div>
+                <img class="ph-pono"
+                     src="assets/images/characters/pono/dance/dance_hooray.png"
+                     srcset="assets/images/characters/pono/dance/dance_hooray.webp"
+                     alt="よろこぶ いまのポノ">
+              </div>
+            </div>
+          </div>
+          <div class="notify">
+            <p>リリース時お知らせ予定！<span>登録された方のメッセージで お知らせします</span></p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ===== Play Cards A1 (改善版): LP→bento アセット直参照中。 bento 側でリネーム時は LP も追従要 ===== -->
@@ -1501,17 +1506,17 @@
       }
     })();
 
-    /* ===== LP accent: .announce-em / .bookcheer-hl 蛍光ペン初回ポヨン ===== */
+    /* ===== LP accent: .bookcheer-hl 蛍光ペン初回ポヨン ===== */
     (function () {
       'use strict';
       var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
       if (mq.matches) return; // reduced-motion なら CSS 側で即時 100% 塗り
       if (!('IntersectionObserver' in window)) {
-        document.querySelectorAll('.announce-em, .bookcheer-hl')
+        document.querySelectorAll('.bookcheer-hl')
           .forEach(function (el) { el.classList.add('is-painted'); });
         return;
       }
-      var targets = document.querySelectorAll('.announce-em, .bookcheer-hl');
+      var targets = document.querySelectorAll('.bookcheer-hl');
       if (!targets.length) return;
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {

@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-21T14:56:27Z - LP announce セクションを Stitch 完成版 coming-soon-app teaser に置換 (mojibake デコード + scope 化 + @keyframes リネーム + sw.js v1469)
+- **タスク**: LP announce セクションを Stitch 完成版 coming-soon-app teaser に置換 (mojibake デコード + scope 化 + @keyframes リネーム + sw.js v1469)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 46
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 21, "Bash": 11, "Write": 2, "Read": 5, "Edit": 2, "Workflow": 5}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-21T09:40:57Z - LP 派手化 (announce 5 アニメ / play-cards 拡大 hover + 個別色 5 種 glow / herob-cta 常時 6 アニメ + hover 2 倍速) を Round 3 ワークフロー (Recon 3 並列 + Brainstorm 5 並列 + Synth + Implement + Review 3 並列、 13 エージェント / 76.5 万トークン) で実装 → Round 3 で a11y クロスレビュアーが CLAUDE.md を 942→296 行に勝手に圧縮する暴走事故発生、 即時 git checkout HEAD で完全 rollback + 他ファイル飛び火なし確認 → 正規 a11y 再走で HIGH-J (focus outline WCAG 2.4.11 違反) と HIGH-L (reduced-motion 静的 transform 剥がし) を検知 → Round 4 fix ワークフロー (1 実装 + 3 並列レビュー) で focus outline 3px solid #C96A2E 化 + reduced-motion から transform: none 削除 + .announce isolation: isolate 追加 → sw v1459 で 3/3 APPROVED 確定。 教訓を feedback_cross_reviewer_must_be_readonly memory に固定
 - **タスク**: LP 派手化 (announce 5 アニメ / play-cards 拡大 hover + 個別色 5 種 glow / herob-cta 常時 6 アニメ + hover 2 倍速) を Round 3 ワークフロー (Recon 3 並列 + Brainstorm 5 並列 + Synth + Implement + Review 3 並列、 13 エージェント / 76.5 万トークン) で実装 → Round 3 で a11y クロスレビュアーが CLAUDE.md を 942→296 行に勝手に圧縮する暴走事故発生、 即時 git checkout HEAD で完全 rollback + 他ファイル飛び火なし確認 → 正規 a11y 再走で HIGH-J (focus outline WCAG 2.4.11 違反) と HIGH-L (reduced-motion 静的 transform 剥がし) を検知 → Round 4 fix ワークフロー (1 実装 + 3 並列レビュー) で focus outline 3px solid #C96A2E 化 + reduced-motion から transform: none 削除 + .announce isolation: isolate 追加 → sw v1459 で 3/3 APPROVED 確定。 教訓を feedback_cross_reviewer_must_be_readonly memory に固定
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 - **理由**: N/A
 - **総アクション数**: 134
 - **エラー数**: 18
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 62, "ToolSearch": 1, "Edit": 7, "Write": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-20T07:59:12Z - LP play-cards 散らばりレイアウト + bubble微修正 + pc-visual キャラ画像化 + モーダル画像重複回避 + sw v1410
-- **タスク**: LP play-cards 散らばりレイアウト + bubble微修正 + pc-visual キャラ画像化 + モーダル画像重複回避 + sw v1410
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 134
-- **エラー数**: 17
 - **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
