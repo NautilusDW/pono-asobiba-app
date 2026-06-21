@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1226: Daily gacha reveal polish synced to develop — capsule is clipped behind the outlet lip, reveal zoom is calmer, and the final actions use sticker/home image buttons.
 // v1225: Daily gacha cue and outlet mask polish synced to develop — arrow color unified, idle hand/label separated, and mask starts at the outlet opening.
 // v1224: Daily gacha lever grip and outlet mask synced to develop — guide hand grips the right lever end, and capsule exit is clipped at the outlet.
 // v1223: Daily gacha animated-arrow cue synced to develop — high-contrast moving arrow, guide hand orbits the lever, and capsule drop starts from the outlet.
@@ -18,7 +19,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1225; // v1225: Daily gacha cue and outlet mask polish.
+const CACHE_VERSION = 1226; // v1226: Daily gacha reveal layout and outlet lip mask polish.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
