@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260620-744";
+const ASSET_VERSION = "20260621-745";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1284,8 +1284,8 @@ function pickCollectionZukanTarget(event) {
   }
   const x = hit.uv.x * PAGE_TEXTURE_W;
   const y = (1 - hit.uv.y) * PAGE_TEXTURE_H;
-  const layout = collectionZukanIndexLayout();
   const subjects = collectionStickersForPageDefinition(pageDef);
+  const layout = collectionZukanIndexLayout(subjects.length);
   for (let index = 0; index < subjects.length; index += 1) {
     const rect = collectionZukanIndexCellRect(index, layout);
     if (x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height) {
@@ -4726,17 +4726,19 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
   drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, stickers, pageNumber);
 }
 
-function collectionZukanIndexLayout() {
-  const contentX = 132;
-  const contentY = 224;
+function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE) {
+  const contentX = 118;
+  const contentY = 218;
   const contentW = PAGE_TEXTURE_W - contentX * 2;
   const slotBandTop = PAGE_TEXTURE_H - 202;
-  const contentH = slotBandTop - contentY - 28;
   const cols = 2;
-  const rows = 6;
-  const gapX = 28;
-  const gapY = 18;
+  const rows = Math.max(2, Math.min(6, Math.ceil(Math.max(1, itemCount) / cols)));
+  const gapX = 30;
+  const gapY = rows <= 3 ? 28 : 18;
   const cellW = (contentW - gapX * (cols - 1)) / cols;
+  const availableH = slotBandTop - contentY - 36;
+  const sparseCellH = rows <= 2 ? 300 : rows === 3 ? 240 : Number.POSITIVE_INFINITY;
+  const contentH = Math.min(sparseCellH * rows + gapY * (rows - 1), availableH);
   const cellH = (contentH - gapY * (rows - 1)) / rows;
   return { contentX, contentY, cols, rows, gapX, gapY, cellW, cellH };
 }
@@ -4773,7 +4775,7 @@ function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
 
 function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, pageNumber) {
   const theme = palette.collection;
-  const layout = collectionZukanIndexLayout();
+  const layout = collectionZukanIndexLayout(subjects.length);
 
   ctx.save();
   ctx.fillStyle = theme.text;
@@ -4818,6 +4820,20 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   const displayLabel = canShowSpecificItem ? sticker.label || "なにかな？" : "なにかな？";
   const displayNote = collectionZukanCardNote(sticker, found, canShowSpecificItem);
   const { x, y, width, height } = rect;
+  const isRoomy = height >= 220;
+  const badgeX = x + (isRoomy ? 22 : 18);
+  const badgeY = y + (isRoomy ? 22 : 20);
+  const badgeW = isRoomy ? 84 : 72;
+  const badgeH = isRoomy ? 42 : 38;
+  const badgeRadius = isRoomy ? 15 : 14;
+  const roomyImageLimit = height >= 280 ? 196 : 150;
+  const imageSize = Math.min(isRoomy ? roomyImageLimit : 112, height - (isRoomy ? 88 : 30), width * (isRoomy ? 0.34 : 0.28));
+  const imageX = x + (isRoomy ? 48 : 108);
+  const imageY = y + (height - imageSize) / 2 + (isRoomy ? (height >= 280 ? 18 : 28) : 0);
+  const textX = isRoomy ? imageX + imageSize + 34 : x + 232;
+  const textMaxW = Math.max(220, x + width - textX - 28);
+  const titleY = isRoomy ? y + Math.max(106, height * 0.43) : y + 48;
+  const noteY = titleY + (isRoomy ? 42 : 31);
   ctx.save();
   ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
   ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
@@ -4827,18 +4843,15 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   ctx.stroke();
 
   ctx.fillStyle = found ? cardTheme.numberFill : "#9aa09b";
-  drawCanvasRoundedRect(ctx, x + 18, y + 20, 72, 38, 14);
+  drawCanvasRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeRadius);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
-  ctx.font = '800 22px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = `${isRoomy ? "800 24px" : "800 22px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText(String(index).padStart(2, "0"), x + 54, y + 47);
+  ctx.fillText(String(index).padStart(2, "0"), badgeX + badgeW / 2, badgeY + badgeH - 11);
 
-  const imageSize = Math.min(96, height - 30);
-  const imageX = x + 108;
-  const imageY = y + (height - imageSize) / 2;
   ctx.fillStyle = "rgba(255, 255, 255, 0.62)";
-  drawCanvasRoundedRect(ctx, imageX - 7, imageY - 7, imageSize + 14, imageSize + 14, 20);
+  drawCanvasRoundedRect(ctx, imageX - 8, imageY - 8, imageSize + 16, imageSize + 16, isRoomy ? 24 : 20);
   ctx.fill();
   if (canShowSpecificItem) {
     drawAsyncCollectionZukanImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found, pageNumber);
@@ -4847,12 +4860,12 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   }
 
   ctx.fillStyle = found ? palette.collection.text : "rgba(51, 68, 71, 0.54)";
-  ctx.font = '800 28px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = `${isRoomy ? "800 34px" : "800 28px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "left";
-  ctx.fillText(displayLabel, x + 222, y + 48, width - 326);
+  ctx.fillText(displayLabel, textX, titleY, textMaxW);
   ctx.fillStyle = found ? "rgba(51, 68, 71, 0.72)" : "rgba(51, 68, 71, 0.46)";
-  ctx.font = '700 19px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(displayNote, x + 222, y + 79, width - 326);
+  ctx.font = `${isRoomy ? "700 22px" : "700 19px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
+  ctx.fillText(displayNote, textX, noteY, textMaxW);
   ctx.restore();
 }
 
