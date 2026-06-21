@@ -633,6 +633,20 @@ body.is-collection-tray-visible .book-page-label {
   }
 }
 
+@media (min-width: 721px) and (max-aspect-ratio: 4 / 3) {
+  .collection-sticker-tray {
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 86px));
+  }
+
+  body.is-collection-tray-visible .book-page-label {
+    bottom: max(102px, calc(env(safe-area-inset-bottom) + 102px));
+  }
+
+  body.is-collection-tray-visible .book-page-jump {
+    bottom: max(188px, calc(env(safe-area-inset-bottom) + 188px));
+  }
+}
+
 @media (min-width: 1100px) and (min-aspect-ratio: 3 / 2) {
   .sticker-editor-shell {
     width: min(1400px, calc(100vw - 28px), calc((100vh - 28px) * 16 / 9));

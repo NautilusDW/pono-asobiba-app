@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-746";
+const ASSET_VERSION = "20260621-747";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -35,7 +35,7 @@ const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
-const COLLECTION_INDEX_ITEMS_PER_PAGE = 12;
+const COLLECTION_INDEX_ITEMS_PER_PAGE = 4;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const COLLECTION_TOC_CATEGORY_DEFS = [
   {
@@ -476,6 +476,10 @@ const ZUKAN_THICKNESS_STRIPS = [
   { file: "sb3d_zukan_thickness_strip_04_alpha.png", aspect: 1596 / 140 },
   { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 117 },
 ];
+const ZUKAN_PAGE_TEMPLATES = {
+  index: "sb3d_image2_zukan_template_index_green_empty_v1.png",
+  detail: "sb3d_image2_zukan_template_detail_green_empty_v1.png",
+};
 const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
 const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
 
@@ -862,6 +866,7 @@ const loader = new THREE.TextureLoader();
 const textureFiles = [
   ...new Set([
     ...Object.values(SHARED_TEXTURES),
+    ...Object.values(ZUKAN_PAGE_TEMPLATES),
     ...ZUKAN_THICKNESS_STRIPS.map(({ file }) => file),
     ...Object.values(BOOK_VARIANTS.boy),
     ...Object.values(BOOK_VARIANTS.girl),
@@ -4108,7 +4113,11 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
 
   drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
   if (activeAlbumMode === "collection") {
-    drawCollectionPageTemplate(ctx, palette, side);
+    const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
+    const templateType = pageDef?.type === "detail" ? "detail" : "index";
+    if (!drawGeneratedCollectionZukanTemplate(ctx, templateType)) {
+      drawCollectionPageTemplate(ctx, palette, side);
+    }
   } else {
     drawRightPageTemplate(ctx, palette);
     drawRingHoleGuides(ctx, side);
@@ -4122,6 +4131,20 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
   texture.needsUpdate = true;
   drawDynamicPageContent(ctx, texture, side, palette, pageNumber);
   return texture;
+}
+
+function collectionZukanUsesGeneratedTemplate(type) {
+  return Boolean(getTexture(ZUKAN_PAGE_TEMPLATES[type])?.image);
+}
+
+function drawGeneratedCollectionZukanTemplate(ctx, type) {
+  const file = ZUKAN_PAGE_TEMPLATES[type] || ZUKAN_PAGE_TEMPLATES.index;
+  const image = getTexture(file)?.image;
+  if (!image) {
+    return false;
+  }
+  ctx.drawImage(image, 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  return true;
 }
 
 function drawPageTemplateBase(ctx, palette, side, mode = "free") {
@@ -4727,11 +4750,20 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
 }
 
 function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE) {
+  const cols = 2;
+  const rows = Math.max(2, Math.min(6, Math.ceil(Math.max(1, itemCount) / cols)));
+  if (collectionZukanUsesGeneratedTemplate("index") && rows <= 2) {
+    const contentX = 126;
+    const contentY = 318;
+    const gapX = 26;
+    const gapY = 42;
+    const cellW = (PAGE_TEXTURE_W - contentX * 2 - gapX) / cols;
+    const cellH = 306;
+    return { contentX, contentY, cols, rows, gapX, gapY, cellW, cellH };
+  }
   const contentX = 118;
   const contentW = PAGE_TEXTURE_W - contentX * 2;
   const slotBandTop = PAGE_TEXTURE_H - 202;
-  const cols = 2;
-  const rows = Math.max(2, Math.min(6, Math.ceil(Math.max(1, itemCount) / cols)));
   const contentY = rows <= 3 ? 278 : 224;
   const gapX = 30;
   const gapY = rows <= 3 ? 28 : 18;
@@ -4776,8 +4808,9 @@ function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
 function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, pageNumber) {
   const theme = palette.collection;
   const layout = collectionZukanIndexLayout(subjects.length);
+  const generatedTemplate = collectionZukanUsesGeneratedTemplate("index");
   const sparseIndex = layout.rows <= 3;
-  const headerOffsetY = sparseIndex ? 28 : 0;
+  const headerOffsetY = generatedTemplate ? 38 : sparseIndex ? 28 : 0;
 
   ctx.save();
   ctx.fillStyle = theme.text;
@@ -4818,6 +4851,7 @@ function collectionZukanItemNumber(sticker, pageNumber, pageIndex) {
 
 function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rect, found, pageNumber, target) {
   const cardTheme = palette.collection.card;
+  const generatedTemplate = collectionZukanUsesGeneratedTemplate("index");
   const canShowSpecificItem = canShowSpecificCollectionSticker(sticker);
   const displayLabel = canShowSpecificItem ? sticker.label || "なにかな？" : "なにかな？";
   const displayNote = collectionZukanCardNote(sticker, found, canShowSpecificItem);
@@ -4828,21 +4862,23 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   const badgeW = isRoomy ? 84 : 72;
   const badgeH = isRoomy ? 42 : 38;
   const badgeRadius = isRoomy ? 15 : 14;
-  const roomyImageLimit = height >= 280 ? 196 : 150;
+  const roomyImageLimit = generatedTemplate ? 198 : height >= 280 ? 196 : 150;
   const imageSize = Math.min(isRoomy ? roomyImageLimit : 112, height - (isRoomy ? 88 : 30), width * (isRoomy ? 0.34 : 0.28));
-  const imageX = x + (isRoomy ? 48 : 108);
-  const imageY = y + (height - imageSize) / 2 + (isRoomy ? (height >= 280 ? 18 : 28) : 0);
+  const imageX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
+  const imageY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? (height >= 280 ? 18 : 28) : 0);
   const textX = isRoomy ? imageX + imageSize + 34 : x + 232;
   const textMaxW = Math.max(220, x + width - textX - 28);
-  const titleY = isRoomy ? y + Math.max(106, height * 0.43) : y + 48;
+  const titleY = generatedTemplate ? y + 98 : isRoomy ? y + Math.max(106, height * 0.43) : y + 48;
   const noteY = titleY + (isRoomy ? 42 : 31);
   ctx.save();
-  ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
-  ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
-  ctx.lineWidth = 2.5;
-  drawCanvasRoundedRect(ctx, x, y, width, height, 16);
-  ctx.fill();
-  ctx.stroke();
+  if (!generatedTemplate) {
+    ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
+    ctx.strokeStyle = found ? cardTheme.foundStroke : cardTheme.lockedStroke;
+    ctx.lineWidth = 2.5;
+    drawCanvasRoundedRect(ctx, x, y, width, height, 16);
+    ctx.fill();
+    ctx.stroke();
+  }
 
   ctx.fillStyle = found ? cardTheme.numberFill : "#9aa09b";
   drawCanvasRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeRadius);
@@ -4852,9 +4888,11 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   ctx.textAlign = "center";
   ctx.fillText(String(index).padStart(2, "0"), badgeX + badgeW / 2, badgeY + badgeH - 11);
 
-  ctx.fillStyle = "rgba(255, 255, 255, 0.62)";
-  drawCanvasRoundedRect(ctx, imageX - 8, imageY - 8, imageSize + 16, imageSize + 16, isRoomy ? 24 : 20);
-  ctx.fill();
+  if (!generatedTemplate) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.62)";
+    drawCanvasRoundedRect(ctx, imageX - 8, imageY - 8, imageSize + 16, imageSize + 16, isRoomy ? 24 : 20);
+    ctx.fill();
+  }
   if (canShowSpecificItem) {
     drawAsyncCollectionZukanImage(ctx, texture, sticker.assetUrl, imageX, imageY, imageSize, imageSize, found, pageNumber);
   } else {
@@ -4913,16 +4951,17 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
   const subtitle = kana && kana !== subjectName
     ? kana
     : collectionZukanFirstText(pageDef?.subtitle, "みつけたものを かんさつしよう");
-  const fieldX = 752;
-  const fieldY = 332;
-  const fieldW = 558;
-  const fieldH = 142;
-  const fieldGap = 22;
+  const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
+  const fieldX = generatedTemplate ? 794 : 752;
+  const fieldY = generatedTemplate ? 294 : 332;
+  const fieldW = generatedTemplate ? 580 : 558;
+  const fieldH = generatedTemplate ? 214 : 142;
+  const fieldGap = generatedTemplate ? 32 : 22;
   return {
     header: {
-      x: 156,
-      y: 146,
-      width: 1158,
+      x: generatedTemplate ? 102 : 156,
+      y: generatedTemplate ? 96 : 146,
+      width: generatedTemplate ? 1248 : 1158,
       height: 142,
       number: String(subjectNumber).padStart(2, "0"),
       name: subjectName,
@@ -4930,10 +4969,10 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
       category: collectionZukanDetailCategoryLabel(subject, pageDef),
     },
     image: {
-      x: 166,
-      y: 330,
-      width: 552,
-      height: 610,
+      x: generatedTemplate ? 84 : 166,
+      y: generatedTemplate ? 292 : 330,
+      width: generatedTemplate ? 674 : 552,
+      height: generatedTemplate ? 722 : 610,
     },
     fields: [
       {
@@ -4965,10 +5004,10 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette) {
       },
     ],
     memo: {
-      x: 166,
-      y: 972,
-      width: 1144,
-      height: 246,
+      x: generatedTemplate ? 84 : 166,
+      y: generatedTemplate ? 1068 : 972,
+      width: generatedTemplate ? 1298 : 1144,
+      height: generatedTemplate ? 278 : 246,
       title: collectionZukanMemoTitle(subject),
       value: collectionZukanMemoText(subject),
     },
@@ -5105,29 +5144,34 @@ function collectionZukanMemoText(subject) {
 function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
   const { x, y, width, height } = header;
   const pageAccent = theme.pages.right.accent;
+  const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
   const headerGradient = ctx.createLinearGradient(0, y, 0, y + height);
   headerGradient.addColorStop(0, "rgba(255, 255, 255, 0.88)");
   headerGradient.addColorStop(1, "rgba(255, 248, 224, 0.74)");
 
   ctx.save();
-  ctx.fillStyle = headerGradient;
-  ctx.strokeStyle = "rgba(51, 68, 71, 0.13)";
-  ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, x, y, width, height, 34);
-  ctx.fill();
-  ctx.stroke();
+  if (!generatedTemplate) {
+    ctx.fillStyle = headerGradient;
+    ctx.strokeStyle = "rgba(51, 68, 71, 0.13)";
+    ctx.lineWidth = 3;
+    drawCanvasRoundedRect(ctx, x, y, width, height, 34);
+    ctx.fill();
+    ctx.stroke();
 
-  ctx.fillStyle = theme.infoAccent || palette.sub;
-  drawCanvasRoundedRect(ctx, x + 30, y + 30, 154, 58, 22);
-  ctx.fill();
+    ctx.fillStyle = theme.infoAccent || palette.sub;
+    drawCanvasRoundedRect(ctx, x + 30, y + 30, 154, 58, 22);
+    ctx.fill();
+  }
   ctx.fillStyle = "#ffffff";
   ctx.font = '900 27px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
   ctx.fillText(`No.${header.number}`, x + 107, y + 68);
 
-  ctx.fillStyle = pageAccent;
-  drawCanvasRoundedRect(ctx, x + width - 256, y + 31, 218, 54, 22);
-  ctx.fill();
+  if (!generatedTemplate) {
+    ctx.fillStyle = pageAccent;
+    drawCanvasRoundedRect(ctx, x + width - 256, y + 31, 218, 54, 22);
+    ctx.fill();
+  }
   ctx.fillStyle = "#ffffff";
   ctx.font = '900 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.fillText(header.category, x + width - 147, y + 67, 186);
@@ -5144,6 +5188,9 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
 
 function drawCollectionZukanIllustrationSlot(ctx, rect, found, theme) {
   const { x, y, width, height } = rect;
+  if (collectionZukanUsesGeneratedTemplate("detail")) {
+    return;
+  }
   const slotGradient = ctx.createLinearGradient(0, y, 0, y + height);
   slotGradient.addColorStop(0, found ? "rgba(255, 255, 255, 0.78)" : "rgba(238, 239, 232, 0.72)");
   slotGradient.addColorStop(1, found ? "rgba(255, 250, 228, 0.72)" : "rgba(224, 226, 218, 0.62)");
@@ -5194,59 +5241,67 @@ function drawAsyncCollectionZukanImage(ctx, texture, src, x, y, width, height, f
 }
 
 function drawCollectionZukanField(ctx, title, value, x, y, width, height, accentColor) {
+  const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.strokeStyle = "rgba(51, 68, 71, 0.11)";
-  ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, x, y, width, height, 26);
-  ctx.fill();
-  ctx.stroke();
+  if (!generatedTemplate) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.strokeStyle = "rgba(51, 68, 71, 0.11)";
+    ctx.lineWidth = 3;
+    drawCanvasRoundedRect(ctx, x, y, width, height, 26);
+    ctx.fill();
+    ctx.stroke();
 
-  ctx.fillStyle = accentColor;
-  drawCanvasRoundedRect(ctx, x + 24, y + 20, 230, 42, 18);
-  ctx.fill();
+    ctx.fillStyle = accentColor;
+    drawCanvasRoundedRect(ctx, x + 24, y + 20, 230, 42, 18);
+    ctx.fill();
+  }
   ctx.fillStyle = "#ffffff";
-  ctx.font = '900 21px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = `${generatedTemplate ? "900 20px" : "900 21px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText(title, x + 139, y + 48, 206);
+  ctx.fillText(title, x + (generatedTemplate ? 112 : 139), y + (generatedTemplate ? 64 : 48), generatedTemplate ? 164 : 206);
 
   ctx.fillStyle = "rgba(51, 68, 71, 0.82)";
-  ctx.font = '900 29px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = `${generatedTemplate ? "900 30px" : "900 29px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "left";
-  drawWrappedCanvasText(ctx, value, x + 30, y + 96, width - 60, 36, 2);
+  drawWrappedCanvasText(ctx, value, x + (generatedTemplate ? 48 : 30), y + (generatedTemplate ? 122 : 96), width - (generatedTemplate ? 84 : 60), 36, 2);
   ctx.restore();
 }
 
 function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   const { x, y, width, height } = memo;
+  const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
   const memoGradient = ctx.createLinearGradient(0, y, 0, y + height);
   memoGradient.addColorStop(0, "rgba(255, 255, 255, 0.74)");
   memoGradient.addColorStop(1, "rgba(255, 250, 229, 0.7)");
 
   ctx.save();
-  ctx.fillStyle = memoGradient;
-  ctx.strokeStyle = "rgba(51, 68, 71, 0.12)";
-  ctx.lineWidth = 3;
-  drawCanvasRoundedRect(ctx, x, y, width, height, 30);
-  ctx.fill();
-  ctx.stroke();
+  if (!generatedTemplate) {
+    ctx.fillStyle = memoGradient;
+    ctx.strokeStyle = "rgba(51, 68, 71, 0.12)";
+    ctx.lineWidth = 3;
+    drawCanvasRoundedRect(ctx, x, y, width, height, 30);
+    ctx.fill();
+    ctx.stroke();
 
-  ctx.fillStyle = theme.pages.right.accent;
-  drawCanvasRoundedRect(ctx, x + 34, y + 28, 178, 50, 20);
-  ctx.fill();
+    ctx.fillStyle = theme.pages.right.accent;
+    drawCanvasRoundedRect(ctx, x + 34, y + 28, 178, 50, 20);
+    ctx.fill();
+  }
   ctx.fillStyle = "#ffffff";
   ctx.font = '900 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
   ctx.fillText(memo.title, x + 123, y + 61, 146);
 
-  ctx.fillStyle = theme.infoAccent || palette.sub;
-  ctx.beginPath();
-  ctx.arc(x + width - 76, y + 58, 24, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
-  ctx.beginPath();
-  ctx.arc(x + width - 124, y + 78, 14, 0, Math.PI * 2);
-  ctx.fill();
+  if (!generatedTemplate) {
+    ctx.fillStyle = theme.infoAccent || palette.sub;
+    ctx.beginPath();
+    ctx.arc(x + width - 76, y + 58, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
+    ctx.beginPath();
+    ctx.arc(x + width - 124, y + 78, 14, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.fillStyle = "rgba(51, 68, 71, 0.78)";
   ctx.font = '800 30px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
