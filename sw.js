@@ -1,13 +1,14 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1215: Daily gacha final reveal polish synced to develop — sticker sparkle SFX, short gear-notch turn SFX, random first-open capsule color, and reward reveal backdrops.
 // v1214: Daily gacha audio synced to develop — imported Suno-style low drum-roll turn SFX, grand reveal SFX, subtle modal bed loop, mute/visibility handling, and repeat-button pointer fix.
 // v1213: Daily gacha luxury light staging synced to develop — dark start, per-notch backlight/rays/sparkles ramp, final gold bloom, and Pono-badge open capsule as the primary/default open view.
 // v1212: Daily gacha repeat flow synced to develop: centered lever axle, centered staged zoom, repeatable "もういっかい" action, and no daily gate.
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1214; // v1214: Daily gacha staged low drum-roll SFX, grand reveal SFX, subtle modal bed loop, and repeat-button pointer fix. | v1213: Daily gacha dark-to-gold luxury light ramp, sparkle/ray bloom, and Pono-badge open capsule primary view. | v1212: Daily gacha repeat flow, centered lever axle, centered staged zoom, repeatable action, and no daily gate. | v1211: Daily gacha lever tuning with 4 hard notched turns, staged zoom, final boom/drop, and random split-capsule variants. | v1210: Play top daily sticker gacha with draggable lever, capsule drop/open reveal, and PonoGameStickers grant.
+const CACHE_VERSION = 1215; // v1215: Daily gacha sticker reveal sparkle, gear-notch turn SFX, varied capsule color first open, and reward reveal backdrops. | v1214: Daily gacha staged low drum-roll SFX, grand reveal SFX, subtle modal bed loop, and repeat-button pointer fix. | v1213: Daily gacha dark-to-gold luxury light ramp, sparkle/ray bloom, and Pono-badge open capsule primary view.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
