@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1218: Daily gacha final reveal audio synced to develop — final notch no longer repeats capsule-toy SFX 01, and opened sticker reveal layers a longer magic sparkle.
 // v1217: Daily gacha pacing and SFX synced to develop — 3 notches stay, lever drag has heavier pull-to-notch feedback, reveal suspense is restored, and capsule-toy SFX 01/02 are used for notches/exit.
 // v1216: Daily gacha reveal tightened on develop — both split capsule halves open together, drop capsule is larger, flow is 3 notches, and final zoom avoids panel clipping.
 // v1215: Daily gacha final reveal polish synced to develop — sticker sparkle SFX, short gear-notch turn SFX, random first-open capsule color, and reward reveal backdrops.
@@ -10,7 +11,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1217; // v1217: Daily gacha uses capsule-toy SFX 01 for notches, 02 only at capsule exit, with heavier lever pull and restored reveal suspense.
+const CACHE_VERSION = 1218; // v1218: Daily gacha removes the extra final 01 SFX and layers a longer sparkle at sticker reveal.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
