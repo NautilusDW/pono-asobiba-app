@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1440: Daily gacha makes the turn cue a high-contrast animated arrow, moves the guide hand around the lever, and repositions the capsule drop to the outlet.
 // v1439: StickerBook zukan page text positions can be tuned in local preview.
 // v1438: Daily gacha uses a static open-hand guide, a blinking turn cue, one-full-turn lever input, and a smoother smaller capsule drop.
 // v1437: Bento shop opening/request narration is wired, and title adds a tap-to-place simple bento mode.
@@ -136,7 +137,7 @@
 // v1232: StickerBookThreeJS inside pages now use fixed production page render textures, with spine below pages and stable left page state.
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
-const CACHE_VERSION = 1439; // v1439: StickerBook zukan text position tuning.
+const CACHE_VERSION = 1441; // v1441: LP `.announce` を Coming Soon ティーザーに再設計 (badge / shimmer / dashed border / 封筒シルエット) + `.bookcheer` を本のページ風に再設計 (`<h2>` 格上げ / 上下 dotted 罫線 / 📖 mark / サイン)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
