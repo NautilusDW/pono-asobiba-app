@@ -5267,6 +5267,16 @@ function stopSkIntroGuide() {
     col.classList.remove('is-focus', 'is-muted');
   });
 }
+function suppressBentoIntroTutorialOverlays() {
+  try { if (typeof stopSkIntroGuide === 'function') stopSkIntroGuide(); } catch (_) {}
+  const intro = document.getElementById('sk-intro');
+  if (intro) intro.classList.add('hidden');
+  const dim = document.getElementById('tut-dim');
+  const bubble = document.getElementById('tut-bubble');
+  if (dim) dim.classList.add('hidden');
+  if (bubble) bubble.classList.add('hidden');
+  document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+}
 function applySkIntroGuideStep(index) {
   const intro = document.getElementById('sk-intro');
   const caption = document.getElementById('sk-intro-narration');
@@ -5387,13 +5397,17 @@ function startSkIntroGuide() {
   // 以前はタイトル画面の上にチュートリアルが被って見える問題があった。
   if (!localStorage.getItem('bento_tut_seen_v2')) {
     function waitForReadyThenTutorial() {
+      if (simpleBentoMode) {
+        suppressBentoIntroTutorialOverlays();
+        return;
+      }
       const titleScreen = document.getElementById('title-screen');
       const npcIntro = document.getElementById('npc-intro');
       const shopOpening = document.getElementById('shop-opening');
       const titleVisible = titleScreen && !titleScreen.classList.contains('hidden');
       const npcVisible   = npcIntro && !npcIntro.classList.contains('hidden') && !npcIntro.hidden;
       const shopVisible  = shopOpening && !shopOpening.classList.contains('hidden') && !shopOpening.hidden;
-      if (titleVisible || npcVisible || shopVisible || window.innerWidth <= window.innerHeight) {
+      if (window.__bentoShopOpeningActive || titleVisible || npcVisible || shopVisible || window.innerWidth <= window.innerHeight) {
         setTimeout(waitForReadyThenTutorial, 500);
         return;
       }
@@ -5411,6 +5425,7 @@ function startSkIntroGuide() {
   // 全工程チュートリアル (v1): 初回プレイヤーのみ・NPC/タイトル/横画面が片付いたら開始
   let _fullTutorialPollCount = 0;
   function waitForReadyThenFullTutorial() {
+    if (simpleBentoMode) return;
     if (typeof tutorialReadDone === 'function' && tutorialReadDone()) return;
     if (_fullTutorialPollCount++ > 200) return; // 600ms * 200 ≈ 2分で諦め
     const titleScreen = document.getElementById('title-screen');
@@ -5421,7 +5436,7 @@ function startSkIntroGuide() {
     const npcVisible   = npcIntro && !npcIntro.classList.contains('hidden') && !npcIntro.hidden;
     const shopVisible  = shopOpening && !shopOpening.classList.contains('hidden') && !shopOpening.hidden;
     const skVisible    = skIntro && !skIntro.classList.contains('hidden');
-    if (titleVisible || npcVisible || shopVisible || skVisible || window.innerWidth <= window.innerHeight) {
+    if (window.__bentoShopOpeningActive || titleVisible || npcVisible || shopVisible || skVisible || window.innerWidth <= window.innerHeight) {
       setTimeout(waitForReadyThenFullTutorial, 600);
       return;
     }
@@ -7069,7 +7084,7 @@ function showShopOpening(req, onDone, options = {}) {
       line: req.intro,
       emphasis: true,
       next: 'おべんとうを つくる',
-      voice: 'shop_opening_request_01',
+      voice: req.id ? 'shop_opening_request_' + req.id : 'shop_opening_request_01',
       voiceFallbackMs: 7000,
     },
   ];
@@ -7078,6 +7093,8 @@ function showShopOpening(req, onDone, options = {}) {
   let stepIndex = 0;
   let renderToken = 0;
   let voiceTimer = 0;
+  window.__bentoShopOpeningActive = true;
+  suppressBentoIntroTutorialOverlays();
   const render = () => {
     const token = ++renderToken;
     const step = steps[stepIndex];
@@ -7140,6 +7157,7 @@ function showShopOpening(req, onDone, options = {}) {
     if (stepIndex >= steps.length) {
       ov.classList.add('hidden');
       ov.classList.remove('has-customer', 'is-staff-step', 'is-customer-step', 'is-request-step', 'is-entering');
+      window.__bentoShopOpeningActive = false;
       if (onDone) onDone();
       return;
     }
@@ -7897,6 +7915,7 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1439';
 const BENTO_TUTORIAL_STEP_VOICE = {
   box: 'basic_tut_01',
   'rice-place': 'basic_tut_02',
@@ -7952,7 +7971,7 @@ function playBentoTutorialVoice(id, opts = {}) {
   }
   stopBentoTutorialVoice();
   try {
-    const audio = new Audio(BENTO_TUTORIAL_VOICE_BASE + id + '.mp3');
+    const audio = new Audio(BENTO_TUTORIAL_VOICE_BASE + id + '.mp3?v=' + BENTO_TUTORIAL_VOICE_VERSION);
     try { console.log('[bento-debug] new Audio created', { src: audio.src, id: id }); } catch (_) {}
     audio.volume = 0.95;
     // v1409: 一部ブラウザ (iOS Safari / Chrome の一部条件) で muted=false の autoplay が
@@ -10005,18 +10024,13 @@ function addSimpleFreePaletteItem(def) {
     openCupEditor(item.uid);
     return item;
   }
-  if (freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
-    setTimeout(() => {
-      if (simpleBentoMode && freeGuideStep === 'decor') handleNoriOkPressed();
-    }, 220);
-  } else if ((freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') && def.type === 'food') {
+  if (simpleBentoMode && freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
+    setSpeech('いいね！ もっと かざってもいいよ。すすむときは のりOK を おしてね。');
+  } else if (simpleBentoMode && (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') && def.type === 'food') {
     const tier = getGuideTierForStep(freeGuideStep);
-    setTimeout(() => {
-      if (!simpleBentoMode) return;
-      if (freeGuideStep === 'tier2Main') setFreeGuideStep('tier2Side');
-      else if (freeGuideStep === 'tier3Main') setFreeGuideStep('tier3Side');
-      if (countOkazuRoleOnTier(tier, 'main') > 0) setSpeech('つぎは 小さい おかずを いれよう！');
-    }, 220);
+    if (countOkazuRoleOnTier(tier, 'main') > 0) {
+      setSpeech('もっと おかずを いれてもいいよ。すすむときは 小さいおかずへ を おしてね。');
+    }
   }
   return item;
 }
@@ -10946,6 +10960,7 @@ function createFreeMainGuideTapLayer() {
   return layer;
 }
 function createFreeMainGuide() {
+  if (simpleBentoMode) return null;
   if (isFreeMainGuideSuppressedByTutorial()) return null;
   const copy = getFreeGuideCopy();
   if (!copy || !copy.title) return null;
@@ -16315,6 +16330,9 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     try { getAC(); } catch (_) {}
     if (bgmEnabled) tryPlayBgm();
     if (simple) {
+      window.__bentoShopOpeningActive = false;
+      suppressBentoIntroTutorialOverlays();
+      try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
       setCurrentNpcRequester(null);
       loadStage();
       renderBentoReminder();
