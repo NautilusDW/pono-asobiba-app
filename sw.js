@@ -24,8 +24,9 @@
 // v1212: Daily gacha repeat flow synced to develop: centered lever axle, centered staged zoom, repeatable "もういっかい" action, and no daily gate.
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
+// v1233: Daily gacha final-turn stinger synced to develop, and capsule-exit SE leads the drop slightly.
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1232; // v1232: Daily gacha switches from the top BGM to the gacha bed loop, and the help pressed mask extends to the right edge.
+const CACHE_VERSION = 1233; // v1233: Daily gacha final-turn stinger synced to develop, and capsule-exit SE leads the drop slightly.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

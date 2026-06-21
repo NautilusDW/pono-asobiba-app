@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-22 - [batch:771-daily-gacha-final-stinger] DONE - Codex: `D:\ポノのおへや\ガチャ\sound\Short Instrumental Stinger For A Cute Premium Capsule Toy Reveal, 3 Seconds L....mp3` を3.2秒にトリムした `assets/audio/gacha/daily_gacha_final_turn_stinger.mp3` を develop へ同期。daily gacha 3回目の回転確定直後に final stinger を再生し、既存 `daily_gacha_capsule_toy_02.mp3` は排出表示より約220ms早く鳴らすよう調整。`daily_gacha_capsule_toy_01.mp3` は1〜2回目のみのまま。`sw.js` / `PAGE_CACHE_VERSION=1233`。 (by Codex)
 - 2026-06-22 - [batch:770-daily-gacha-bgm-switch] DONE - Codex: daily gacha 開始時にトップ画面BGM `play_bgm.mp3` を一時停止し、既存 `daily_gacha_bed_loop.mp3` を音量 `.2` で再生するよう develop へ同期。カプセル排出時は bed を止めず `.12` に下げて最終SEを邪魔しないようにし、ガチャを閉じたらトップBGMを復帰。`sw.js` / `PAGE_CACHE_VERSION=1232`。 (by Codex)
 - 2026-06-22 - [batch:769-bottom-nav-help-press-mask] DONE - Codex: 下ナビのヘルプ押下時だけ、pressed sprite の clip 範囲を `0%〜20%` から `0%〜22%` へ広げ、右側の縁/影が切れて見えるズレを develop へ同期。`sw.js` / `PAGE_CACHE_VERSION=1232`。 (by Codex)
 - 2026-06-21 - [batch:768-bottom-nav-official-alpha-v2] DONE - Codex: user が `D:\ポノのおへや\UI` に入れた alpha 済み下ナビ候補4枚を確認し、公式アイコンの矢印が看板右上にある v2 系 `レイヤー 0_20260621-231532_001.png` を normal、`レイヤー 0_20260621-231430_001.png` を pressed として採用。`assets/ui/bottom_nav_group_5_normal.png` / `bottom_nav_group_5_pressed.png` は共通 `1659x412` RGBA に正規化し、`.bottom-nav` の高さ比率を `412/1659` に更新。`sw.js` / `PAGE_CACHE_VERSION=1231`。次回生成は、素材が明るすぎない限り chroma-key ではなく白バック指定にする。develop 同期済み。 (by Codex)

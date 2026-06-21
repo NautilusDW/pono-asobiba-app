@@ -3043,7 +3043,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1232;
+    const PAGE_CACHE_VERSION = 1233;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -3437,6 +3437,7 @@
     const DAILY_GACHA_TURN_LOCK_MS = 430;
     const DAILY_GACHA_FINAL_START_DELAY = 50;
     const DAILY_GACHA_DROP_DELAY = 930;
+    const DAILY_GACHA_EXIT_SOUND_LEAD_MS = 220;
     const DAILY_GACHA_CLOSEUP_DELAY = 2600;
     const DAILY_GACHA_OPEN_DELAY = 3380;
     const DAILY_GACHA_ACTIONS_DELAY = 4080;
@@ -3449,6 +3450,7 @@
       turn: 'assets/audio/gacha/daily_gacha_capsule_toy_01.mp3',
       capsuleExit: 'assets/audio/gacha/daily_gacha_capsule_toy_02.mp3',
       bed: 'assets/audio/gacha/daily_gacha_bed_loop.mp3',
+      finalStinger: 'assets/audio/gacha/daily_gacha_final_turn_stinger.mp3',
       capsuleOpen: 'assets/sounds/se/bubbles_v1.mp3',
       sparkle: 'assets/audio/gacha/daily_gacha_sticker_sparkle.mp3',
       sparkleLong: 'assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3'
@@ -3505,6 +3507,7 @@
       turnIndex: 0,
       capsuleExit: null,
       bed: null,
+      finalStinger: null,
       capsuleOpen: null,
       sparkle: null,
       sparkleLong: null,
@@ -3669,6 +3672,7 @@
       ].filter(Boolean);
       dailyGachaAudio.capsuleExit = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.capsuleExit, { volume: .9 });
       dailyGachaAudio.bed = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.bed, { loop: true, volume: .2 });
+      dailyGachaAudio.finalStinger = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.finalStinger, { volume: .72 });
       dailyGachaAudio.capsuleOpen = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.capsuleOpen, { volume: .72 });
       dailyGachaAudio.sparkle = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.sparkle, { volume: .78 });
       dailyGachaAudio.sparkleLong = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.sparkleLong, { volume: .58 });
@@ -3681,6 +3685,7 @@
         ...dailyGachaAudio.turnPool,
         dailyGachaAudio.capsuleExit,
         dailyGachaAudio.bed,
+        dailyGachaAudio.finalStinger,
         dailyGachaAudio.capsuleOpen,
         dailyGachaAudio.sparkle,
         dailyGachaAudio.sparkleLong
@@ -3725,6 +3730,23 @@
         bed.pause();
         if (reset) bed.currentTime = 0;
       } catch (_) {}
+    }
+
+    function stopDailyGachaOneShotAudio(reset = true) {
+      [
+        ...dailyGachaAudio.turnPool,
+        dailyGachaAudio.capsuleExit,
+        dailyGachaAudio.finalStinger,
+        dailyGachaAudio.capsuleOpen,
+        dailyGachaAudio.sparkle,
+        dailyGachaAudio.sparkleLong
+      ].forEach((audio) => {
+        if (!audio) return;
+        try {
+          audio.pause();
+          if (reset) audio.currentTime = 0;
+        } catch (_) {}
+      });
     }
 
     function playDailyGachaFallbackSfx(kind) {
@@ -3795,6 +3817,11 @@
           try { dailyGachaAudio.bed.volume = .12; } catch (_) {}
         }
         const played = playDailyGachaAudio(dailyGachaAudio.capsuleExit, { volume: .92, rate: 1 });
+        if (!played) playDailyGachaFallbackSfx('boom');
+        return;
+      }
+      if (kind === 'finalStinger') {
+        const played = playDailyGachaAudio(dailyGachaAudio.finalStinger, { volume: .74, rate: 1 });
         if (!played) playDailyGachaFallbackSfx('boom');
         return;
       }
@@ -3974,7 +4001,11 @@
         void dailyGachaModal.offsetWidth;
         dailyGachaModal.classList.add('is-notch');
       }
-      if (nextStep < DAILY_GACHA_TURNS) playDailyGachaSfx('click', nextStep);
+      if (nextStep < DAILY_GACHA_TURNS) {
+        playDailyGachaSfx('click', nextStep);
+      } else {
+        playDailyGachaSfx('finalStinger');
+      }
       setDailyGachaTimer(() => {
         dailyGachaState.turnLock = false;
         setDailyGachaHandState('open');
@@ -4019,9 +4050,12 @@
       }
 
       setDailyGachaReward(result);
+      setDailyGachaTimer(
+        () => playDailyGachaSfx('capsuleExit'),
+        Math.max(0, DAILY_GACHA_DROP_DELAY - DAILY_GACHA_EXIT_SOUND_LEAD_MS)
+      );
       setDailyGachaTimer(() => {
         dailyGachaModal.classList.add('is-dropping');
-        playDailyGachaSfx('capsuleExit');
       }, DAILY_GACHA_DROP_DELAY);
       setDailyGachaTimer(() => dailyGachaModal.classList.add('is-closeup'), DAILY_GACHA_CLOSEUP_DELAY);
       setDailyGachaTimer(() => {
@@ -4077,6 +4111,7 @@
       if (!dailyGachaModal) return;
       clearDailyGachaTimers();
       stopDailyGachaBed();
+      stopDailyGachaOneShotAudio();
       dailyGachaModal.hidden = true;
       resetDailyGachaModal();
       updateDailyGachaEntry();
@@ -4109,6 +4144,7 @@
       dailyGachaSoundToggle.addEventListener('change', () => {
         if (dailyGachaSoundMuted()) {
           stopDailyGachaBed();
+          stopDailyGachaOneShotAudio();
         } else if (dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaState.complete) {
           startDailyGachaBed();
         }
