@@ -1220,6 +1220,14 @@ html, body {
   flex-shrink: 0;
   justify-items: center;
 }
+.free-tabs.is-side-tabs {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  justify-items: stretch;
+  box-sizing: border-box;
+  padding: 0 9px;
+}
 /* 見出しラベル（押せない／パレット全幅／ボタンと差別化） */
 .free-section-heading {
   width: 100%;
@@ -1251,6 +1259,13 @@ html, body {
   min-height: 31px;
   padding: 3px 2px;
   cursor: pointer;
+}
+.free-tabs.is-side-tabs .free-tab {
+  width: 100%;
+  min-height: 38px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
 }
 .free-tab.active {
   background: #FFE1A8;
@@ -7239,7 +7254,7 @@ function restartSimpleBentoRound() {
   setCurrentNpcRequester(null);
   loadStage();
   renderBentoReminder();
-  setSpeech('すきな おべんとうを つくろう！ ボタンを タップすると はいっていくよ。');
+  setSpeech('すきな おべんとうを つくろう！ ボタンを タップして えらんでね。');
 }
 
 function getRequesterReactionMessage(req, finalEval) {
@@ -8534,7 +8549,22 @@ function findCupForSimpleSelectionTap(item, point = null) {
   });
   return best;
 }
-function maybeOpenCupFromSimpleSelectionTap(e, item) {
+function selectCupForMovement(cup, opts = {}) {
+  if (!cup || !cup.snapTarget) return false;
+  freeCupEditorUid = null;
+  freeCupToolMode = 'move';
+  freeActiveCupUid = cup.uid;
+  freeSelectedItemUid = cup.uid;
+  freeBrushStampDef = null;
+  resetFreeMainGuide();
+  if (opts.message !== false) setSpeech('カップを えらんだよ。ドラッグで うごかせるよ。');
+  if (opts.render !== false) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  }
+  return true;
+}
+function maybeBeginCupMoveFromSimpleSelectionTap(e, item) {
   if (!isSimpleCupSelectionStep()) return false;
   const cup = findCupForSimpleSelectionTap(item, e ? eventToFreePoint(e) : null);
   if (!cup) return false;
@@ -8542,7 +8572,8 @@ function maybeOpenCupFromSimpleSelectionTap(e, item) {
     if (e.cancelable) e.preventDefault();
     try { e.stopPropagation(); } catch (_) {}
   }
-  openCupEditor(cup.uid);
+  selectCupForMovement(cup, { render: false, message: false });
+  beginFreeItemDrag(e, cup.uid);
   return true;
 }
 function getCupChildren(cup) {
@@ -10201,11 +10232,15 @@ function addSimpleFreePaletteItem(def) {
   spawnLandingSparkles(document.querySelector(`[data-free-uid="${item.uid}"]`) || document.getElementById('free-layout-stage'));
   playPop();
   if (def.snapTarget) {
-    openCupEditor(item.uid);
+    if (simpleBentoMode) {
+      selectCupForMovement(item);
+    } else {
+      openCupEditor(item.uid);
+    }
     return item;
   }
   if (simpleBentoMode && freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
-    setSpeech('いいね！ もっと かざってもいいよ。すすむときは のりOK を おしてね。');
+    setSpeech('いいね！ もっと かざってもいいよ。のりは うごかせるよ。すすむときは のりOK を おしてね。');
   } else if (simpleBentoMode && (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') && def.type === 'food') {
     const tier = getGuideTierForStep(freeGuideStep);
     if (countOkazuRoleOnTier(tier, 'main') > 0) {
@@ -10889,7 +10924,7 @@ function selectFreeBentoBox(id) {
     }
     if (item.snapTarget) moveCupChildren(item, dx, dy);
   });
-  setSpeech(box.name + 'に しよう！');
+  setSpeech(box.name + 'を みているよ。これに するときは OK を おしてね。');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -10955,7 +10990,7 @@ function createFreePlacedElement(item, interactive) {
         showToast('がめんを タップしてね！');
         return;
       }
-      if (maybeOpenCupFromSimpleSelectionTap(ev, item)) {
+      if (maybeBeginCupMoveFromSimpleSelectionTap(ev, item)) {
         return;
       }
       beginFreeItemDrag(ev, item.uid);
@@ -11530,9 +11565,6 @@ function makeFreePaletteButton(def) {
         return;
       }
       selectFreeBentoBox(def.id);
-      if (simpleBentoMode && freeGuideStep === 'box') {
-        confirmFreeBentoBoxSelection();
-      }
     });
   } else {
     btn.addEventListener('pointerdown', e => {
@@ -12427,7 +12459,8 @@ function renderFreeCupControls() {
   cups.forEach((cup, idx) => {
     const active = cup.uid === freeActiveCupUid || cup.uid === freeSelectedItemUid;
     list.appendChild(makeSmallControlButton(`カップ${idx + 1}を えらぶ`, active ? 'active' : '', () => {
-      openCupEditor(cup.uid);
+      if (simpleBentoMode) selectCupForMovement(cup);
+      else openCupEditor(cup.uid);
     }));
   });
   panel.appendChild(list);
@@ -12476,6 +12509,9 @@ function renderFreeLayoutControls() {
   } else {
     const tabs = document.createElement('div');
     tabs.className = 'free-tabs';
+    if (isOkazuGuideStep() && String(freeGuideStep || '').endsWith('Side')) {
+      tabs.classList.add('is-side-tabs');
+    }
     guideTabs.forEach(t => {
       const b = document.createElement('button');
       b.type = 'button';
