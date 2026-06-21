@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-756";
+const ASSET_VERSION = "20260621-757";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -35,7 +35,7 @@ const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 1;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
-const COLLECTION_INDEX_ITEMS_PER_PAGE = 4;
+const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const COLLECTION_TOC_CATEGORY_DEFS = [
   {
@@ -481,8 +481,8 @@ const ZUKAN_THICKNESS_STRIPS = [
   { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 117 },
 ];
 const ZUKAN_PAGE_TEMPLATES = {
-  index: "sb3d_image2_zukan_template_index_green_empty_alpha_user_20260621.png",
-  detail: "sb3d_image2_zukan_template_detail_green_empty_alpha_user_20260621.png",
+  index: "sb3d_image2_zukan_template_index_green_6items_alpha_user_20260621.png",
+  detail: "sb3d_image2_zukan_template_detail_green_wide_labels_alpha_user_20260621.png",
 };
 const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
 const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
@@ -5267,13 +5267,13 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
 function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE) {
   const cols = 2;
   const rows = Math.max(2, Math.min(6, Math.ceil(Math.max(1, itemCount) / cols)));
-  if (collectionZukanUsesGeneratedTemplate("index") && rows <= 2) {
-    const contentX = 126;
-    const contentY = 318;
-    const gapX = 26;
-    const gapY = 42;
+  if (collectionZukanUsesGeneratedTemplate("index") && rows <= 3) {
+    const contentX = 102;
+    const contentY = 286;
+    const gapX = 30;
+    const gapY = 36;
     const cellW = (PAGE_TEXTURE_W - contentX * 2 - gapX) / cols;
-    const cellH = 306;
+    const cellH = 300;
     return { contentX, contentY, cols, rows, gapX, gapY, cellW, cellH };
   }
   const contentX = 118;
@@ -5377,17 +5377,18 @@ function zukanIndexCardTuningTargets(rect, slotIndex) {
   const badgeW = isRoomy ? 84 : 72;
   const badgeH = isRoomy ? 42 : 38;
   const roomyImageLimit = generatedTemplate ? 198 : 164;
+  const sixSlotGeneratedTemplate = generatedTemplate && height >= 280;
   const imageSize = Math.min(
     isRoomy ? roomyImageLimit : 112,
     height - (isRoomy ? (generatedTemplate ? 88 : 74) : 30),
     width * (isRoomy ? (generatedTemplate ? 0.34 : 0.32) : 0.28),
   );
   const imageBaseX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
-  const imageBaseY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
+  const imageBaseY = generatedTemplate ? y + (sixSlotGeneratedTemplate ? 32 : 58) : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
   const imageX = imageBaseX + zukanIndexSlotTextOffset(slotIndex, "Image", "X");
   const imageY = imageBaseY + zukanIndexSlotTextOffset(slotIndex, "Image", "Y");
   const textX = (isRoomy ? imageBaseX + imageSize + 34 : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
-  const titleY = (generatedTemplate ? y + 98 : isRoomy ? y + Math.max(106, height * 0.43) : y + 48)
+  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) : isRoomy ? y + Math.max(106, height * 0.43) : y + 48)
     + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
   return [
     zukanTuningRect(zukanIndexSlotGroupId(slotIndex, "Badge"), badgeX - 12, badgeY - 12, badgeW + 24, badgeH + 24),
@@ -5593,18 +5594,19 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   const badgeH = isRoomy ? 42 : 38;
   const badgeRadius = isRoomy ? 15 : 14;
   const roomyImageLimit = generatedTemplate ? 198 : 164;
+  const sixSlotGeneratedTemplate = generatedTemplate && height >= 280;
   const imageSize = Math.min(
     isRoomy ? roomyImageLimit : 112,
     height - (isRoomy ? (generatedTemplate ? 88 : 74) : 30),
     width * (isRoomy ? (generatedTemplate ? 0.34 : 0.32) : 0.28)
   );
   const imageBaseX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
-  const imageBaseY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
+  const imageBaseY = generatedTemplate ? y + (sixSlotGeneratedTemplate ? 32 : 58) : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
   const imageX = imageBaseX + zukanIndexSlotTextOffset(slotIndex, "Image", "X");
   const imageY = imageBaseY + zukanIndexSlotTextOffset(slotIndex, "Image", "Y");
   const textX = (isRoomy ? imageBaseX + imageSize + 34 : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
   const textMaxW = Math.max(220, x + width - textX - 28);
-  const titleY = (generatedTemplate ? y + 98 : isRoomy ? y + Math.max(106, height * 0.43) : y + 48) + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
+  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) : isRoomy ? y + Math.max(106, height * 0.43) : y + 48) + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
   const noteY = titleY + (isRoomy ? 42 : 31);
   ctx.save();
   if (!generatedTemplate) {
