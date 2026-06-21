@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-745";
+const ASSET_VERSION = "20260621-746";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -4728,11 +4728,11 @@ function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageN
 
 function collectionZukanIndexLayout(itemCount = COLLECTION_INDEX_ITEMS_PER_PAGE) {
   const contentX = 118;
-  const contentY = 218;
   const contentW = PAGE_TEXTURE_W - contentX * 2;
   const slotBandTop = PAGE_TEXTURE_H - 202;
   const cols = 2;
   const rows = Math.max(2, Math.min(6, Math.ceil(Math.max(1, itemCount) / cols)));
+  const contentY = rows <= 3 ? 278 : 224;
   const gapX = 30;
   const gapY = rows <= 3 ? 28 : 18;
   const cellW = (contentW - gapX * (cols - 1)) / cols;
@@ -4776,18 +4776,20 @@ function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
 function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, pageNumber) {
   const theme = palette.collection;
   const layout = collectionZukanIndexLayout(subjects.length);
+  const sparseIndex = layout.rows <= 3;
+  const headerOffsetY = sparseIndex ? 28 : 0;
 
   ctx.save();
   ctx.fillStyle = theme.text;
   ctx.font = '800 50px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(pageDef?.label || "ずかんもくじ", PAGE_TEXTURE_W / 2, 112);
+  ctx.fillText(pageDef?.label || "ずかんもくじ", PAGE_TEXTURE_W / 2, 112 + headerOffsetY);
   ctx.fillStyle = theme.infoAccent || palette.sub;
   ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(pageDef?.subtitle || "いきものや たべものを しらべよう", PAGE_TEXTURE_W / 2, 150);
+  ctx.fillText(pageDef?.subtitle || "いきものや たべものを しらべよう", PAGE_TEXTURE_W / 2, 150 + headerOffsetY);
   ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
   ctx.font = '700 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText("Codexと いっしょに、きになる なかまを くわしく みよう", PAGE_TEXTURE_W / 2, 184);
+  ctx.fillText("Codexと いっしょに、きになる なかまを くわしく みよう", PAGE_TEXTURE_W / 2, 184 + headerOffsetY);
 
   for (let i = 0; i < subjects.length; i += 1) {
     const subject = subjects[i];
