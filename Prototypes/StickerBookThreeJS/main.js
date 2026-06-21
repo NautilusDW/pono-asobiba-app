@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260621-750";
+const ASSET_VERSION = "20260621-755";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -481,8 +481,8 @@ const ZUKAN_THICKNESS_STRIPS = [
   { file: "sb3d_zukan_thickness_strip_05_alpha.png", aspect: 1613 / 117 },
 ];
 const ZUKAN_PAGE_TEMPLATES = {
-  index: "sb3d_image2_zukan_template_index_green_empty_alpha_v2.png",
-  detail: "sb3d_image2_zukan_template_detail_green_empty_alpha_v2.png",
+  index: "sb3d_image2_zukan_template_index_green_empty_alpha_user_20260621.png",
+  detail: "sb3d_image2_zukan_template_detail_green_empty_alpha_user_20260621.png",
 };
 const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
 const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
@@ -864,6 +864,29 @@ const ZUKAN_TEXT_TUNING_FIELDS = [
   ["detailMemoTextX", "メモ ぶん X", -180, 180, 1],
   ["detailMemoTextY", "メモ ぶん Y", -180, 180, 1],
 ];
+const ZUKAN_TEXT_TUNING_GROUPS = [
+  { id: "indexTitle", label: "もくじ みだし", keys: ["indexTitleX", "indexTitleY"] },
+  { id: "indexSubtitle", label: "もくじ せつめい", keys: ["indexSubtitleX", "indexSubtitleY"] },
+  { id: "indexBadge", label: "もくじ ばんごう", keys: ["indexBadgeX", "indexBadgeY"] },
+  { id: "indexImage", label: "もくじ え", keys: ["indexImageX", "indexImageY"] },
+  { id: "indexText", label: "もくじ なまえ", keys: ["indexTextX", "indexTextY"] },
+  { id: "detailNumber", label: "しょうさい No", keys: ["detailNumberX", "detailNumberY"] },
+  { id: "detailName", label: "しょうさい なまえ", keys: ["detailNameX", "detailNameY"] },
+  { id: "detailSubtitle", label: "しょうさい よみ", keys: ["detailSubtitleX", "detailSubtitleY"] },
+  { id: "detailCategory", label: "しょうさい ぶんるい", keys: ["detailCategoryX", "detailCategoryY"] },
+  { id: "detailImage", label: "しょうさい え", keys: ["detailImageX", "detailImageY"] },
+  { id: "detailFieldTitle", label: "こうもく みだし", keys: ["detailFieldTitleX", "detailFieldTitleY"] },
+  { id: "detailFieldText", label: "こうもく ぶん", keys: ["detailFieldTextX", "detailFieldTextY"] },
+  { id: "detailMemoTitle", label: "メモ みだし", keys: ["detailMemoTitleX", "detailMemoTitleY"] },
+  { id: "detailMemoText", label: "メモ ぶん", keys: ["detailMemoTextX", "detailMemoTextY"] },
+];
+const ZUKAN_TEXT_TUNING_GROUP_BY_ID = new Map(ZUKAN_TEXT_TUNING_GROUPS.map((group) => [group.id, group]));
+const ZUKAN_TEXT_TUNING_FIELD_GROUP_BY_KEY = new Map(
+  ZUKAN_TEXT_TUNING_GROUPS.flatMap((group) => group.keys.map((key) => [key, group.id])),
+);
+const ZUKAN_TEXT_TUNING_LIMIT_BY_KEY = new Map(
+  ZUKAN_TEXT_TUNING_FIELDS.map(([key, , min, max]) => [key, { min, max }]),
+);
 const SPREAD_PRESETS = [
   ["empty-full", 0, "右だけ"],
   ["small-mostly", 0.25, "右多め"],
@@ -877,6 +900,9 @@ let zukanTextTuning = loadZukanTextTuning();
 let tuningUndoStack = [];
 let tuningRedoStack = [];
 let activeTuningEditLabel = "";
+let selectedZukanTuningTargetId = "";
+let zukanTuningDragState = null;
+let suppressZukanTuningClick = false;
 let spreadJumpAnimation = null;
 let coverOpenAnimation = null;
 let stickerPlan = null;
@@ -1287,13 +1313,33 @@ function setupScenePagePicking() {
   if (!editorEnabled) {
     return;
   }
+  canvas.addEventListener("pointerdown", handleZukanTuningPointerDown);
   canvas.addEventListener("pointermove", (event) => {
-    canvas.style.cursor = pickCollectionZukanTarget(event) ? "pointer" : pickEditablePage(event) ? "zoom-in" : "";
+    if (handleZukanTuningPointerMove(event)) {
+      return;
+    }
+    const tuningTarget = pickZukanTextTuningTarget(event);
+    canvas.style.cursor = tuningTarget
+      ? "grab"
+      : pickCollectionZukanTarget(event)
+        ? "pointer"
+        : pickEditablePage(event)
+          ? "zoom-in"
+          : "";
   });
+  canvas.addEventListener("pointerup", endZukanTuningDrag);
+  canvas.addEventListener("pointercancel", endZukanTuningDrag);
   canvas.addEventListener("pointerleave", () => {
-    canvas.style.cursor = "";
+    if (!zukanTuningDragState) {
+      canvas.style.cursor = "";
+    }
   });
   canvas.addEventListener("click", (event) => {
+    if (suppressZukanTuningClick) {
+      event.preventDefault();
+      suppressZukanTuningClick = false;
+      return;
+    }
     const zukanTarget = pickCollectionZukanTarget(event);
     if (zukanTarget) {
       event.preventDefault();
@@ -1306,6 +1352,88 @@ function setupScenePagePicking() {
     }
     openStickerEditor(pageNumberForPickedPage(pickedPage));
   });
+}
+
+function handleZukanTuningPointerDown(event) {
+  const target = pickZukanTextTuningTarget(event);
+  if (!target) {
+    return false;
+  }
+  event.preventDefault();
+  selectZukanTuningTarget(target.id, { redraw: true });
+  suppressZukanTuningClick = true;
+  zukanTuningDragState = {
+    pointerId: event.pointerId,
+    object: target.object,
+    targetId: target.id,
+    label: target.label,
+    startX: target.textureX,
+    startY: target.textureY,
+    startTuning: normalizeZukanTextTuning(zukanTextTuning),
+    undoStarted: false,
+    moved: false,
+  };
+  canvas.setPointerCapture?.(event.pointerId);
+  canvas.style.cursor = "grabbing";
+  return true;
+}
+
+function handleZukanTuningPointerMove(event) {
+  if (!zukanTuningDragState) {
+    return false;
+  }
+  if (event.pointerId !== zukanTuningDragState.pointerId) {
+    return true;
+  }
+  event.preventDefault();
+  const hit = pickScenePageHit(event);
+  if (!hit?.uv || hit.object !== zukanTuningDragState.object) {
+    return true;
+  }
+  const point = texturePointFromPageHit(hit);
+  const deltaX = Math.round(point.x - zukanTuningDragState.startX);
+  const deltaY = Math.round(point.y - zukanTuningDragState.startY);
+  if (Math.abs(deltaX) + Math.abs(deltaY) < 1) {
+    return true;
+  }
+  if (!zukanTuningDragState.undoStarted) {
+    beginTuningEdit(zukanTuningDragState.label);
+    zukanTuningDragState.undoStarted = true;
+  }
+  zukanTuningDragState.moved = true;
+  if (moveZukanTextTuningTarget(
+    zukanTuningDragState.targetId,
+    deltaX,
+    deltaY,
+    zukanTuningDragState.startTuning,
+  )) {
+    updateTuningOutput();
+    refreshPageTemplateTextures();
+    updatePage(flipProgress);
+  }
+  return true;
+}
+
+function endZukanTuningDrag(event) {
+  if (!zukanTuningDragState) {
+    return;
+  }
+  if (event?.pointerId != null && event.pointerId !== zukanTuningDragState.pointerId) {
+    return;
+  }
+  if (zukanTuningDragState.undoStarted) {
+    endTuningEdit();
+  }
+  try {
+    if (canvas.hasPointerCapture?.(zukanTuningDragState.pointerId)) {
+      canvas.releasePointerCapture(zukanTuningDragState.pointerId);
+    }
+  } catch {}
+  zukanTuningDragState = null;
+  canvas.style.cursor = "";
+  window.setTimeout(() => {
+    suppressZukanTuningClick = false;
+  }, 0);
 }
 
 function pickEditablePage(event) {
@@ -1329,8 +1457,49 @@ function pickScenePageHit(event) {
   return pageRaycaster.intersectObjects([rightPage, leftPageInner], false)[0] || null;
 }
 
+function texturePointFromPageHit(hit) {
+  return {
+    x: hit.uv.x * PAGE_TEXTURE_W,
+    y: (1 - hit.uv.y) * PAGE_TEXTURE_H,
+  };
+}
+
+function pickZukanTextTuningTarget(event) {
+  if (
+    !tuningEnabled
+    || activeAlbumMode !== "collection"
+    || activeSurface !== "inside"
+    || coverOpenAnimation
+    || spreadJumpAnimation
+    || (pageTurn.visible && flipProgress > 0.001)
+  ) {
+    return null;
+  }
+  const hit = pickScenePageHit(event);
+  if (!hit?.uv || !hit.object) {
+    return null;
+  }
+  const pageNumber = pageNumberForPickedPage(hit.object);
+  if (hit.object === rightPage && pageNumber === activeBookPage) {
+    return null;
+  }
+  const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
+  const subjects = collectionStickersForPageDefinition(pageDef);
+  const point = texturePointFromPageHit(hit);
+  const targets = zukanTextTuningTargetsForPage(pageDef, subjects, pageNumber)
+    .sort((a, b) => (a.width * a.height) - (b.width * b.height));
+  const target = targets.find((item) => (
+    point.x >= item.x
+    && point.x <= item.x + item.width
+    && point.y >= item.y
+    && point.y <= item.y + item.height
+  ));
+  return target ? { ...target, object: hit.object, textureX: point.x, textureY: point.y } : null;
+}
+
 function pickCollectionZukanTarget(event) {
   if (
+    tuningEnabled ||
     activeAlbumMode !== "collection"
     || activeSurface !== "inside"
     || coverOpenAnimation
@@ -3592,6 +3761,7 @@ function normalizeZukanTextTuning(value) {
 function saveZukanTextTuning(nextTuning) {
   zukanTextTuning = normalizeZukanTextTuning(nextTuning);
   persistZukanTextTuning();
+  refreshZukanTextTuningControls();
 }
 
 function persistZukanTextTuning() {
@@ -3603,6 +3773,73 @@ function persistZukanTextTuning() {
 function zukanTextOffset(key) {
   const value = Number(zukanTextTuning?.[key]);
   return Number.isFinite(value) ? value : 0;
+}
+
+function zukanTextTuningGroupForField(key) {
+  return ZUKAN_TEXT_TUNING_FIELD_GROUP_BY_KEY.get(key) || "";
+}
+
+function zukanTextTuningGroupLabel(id) {
+  return ZUKAN_TEXT_TUNING_GROUP_BY_ID.get(id)?.label || "えらんでいません";
+}
+
+function clampZukanTextTuningValue(key, value) {
+  const limits = ZUKAN_TEXT_TUNING_LIMIT_BY_KEY.get(key);
+  if (!limits) {
+    return Number(value) || 0;
+  }
+  return readClampedNumber(value, DEFAULT_ZUKAN_TEXT_TUNING[key], limits.min, limits.max);
+}
+
+function selectZukanTuningTarget(targetId, { redraw = false } = {}) {
+  selectedZukanTuningTargetId = ZUKAN_TEXT_TUNING_GROUP_BY_ID.has(targetId) ? targetId : "";
+  refreshZukanTextTuningControls();
+  if (redraw) {
+    refreshPageTemplateTextures();
+    updatePage(flipProgress);
+  }
+}
+
+function moveZukanTextTuningTarget(targetId, deltaX, deltaY, baseTuning = zukanTextTuning) {
+  const group = ZUKAN_TEXT_TUNING_GROUP_BY_ID.get(targetId);
+  if (!group) {
+    return false;
+  }
+  const nextTuning = { ...zukanTextTuning };
+  for (const key of group.keys) {
+    const baseValue = Number(baseTuning?.[key]) || 0;
+    const delta = key.endsWith("X") ? deltaX : deltaY;
+    nextTuning[key] = clampZukanTextTuningValue(key, baseValue + delta);
+  }
+  saveZukanTextTuning(nextTuning);
+  return true;
+}
+
+function refreshZukanTextTuningControls() {
+  const selectedLabel = document.getElementById("zukanTuningSelectedLabel");
+  if (selectedLabel) {
+    selectedLabel.textContent = `えらんでいる: ${zukanTextTuningGroupLabel(selectedZukanTuningTargetId)}`;
+  }
+  const selectedGroupId = selectedZukanTuningTargetId;
+  document.querySelectorAll("[data-zukan-tuning-target]").forEach((element) => {
+    element.classList.toggle("is-selected", element.dataset.zukanTuningTarget === selectedGroupId);
+  });
+  let firstSelectedRow = null;
+  document.querySelectorAll("[data-zukan-tuning-key]").forEach((row) => {
+    const key = row.dataset.zukanTuningKey || "";
+    const groupId = zukanTextTuningGroupForField(key);
+    const isSelected = groupId === selectedGroupId;
+    row.classList.toggle("is-selected", isSelected);
+    if (isSelected && !firstSelectedRow) {
+      firstSelectedRow = row;
+    }
+    row.querySelectorAll("input").forEach((input) => {
+      input.value = String(zukanTextTuning[key] ?? DEFAULT_ZUKAN_TEXT_TUNING[key] ?? 0);
+    });
+  });
+  if (firstSelectedRow) {
+    firstSelectedRow.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
 }
 
 function getCurrentLayerTuning() {
@@ -3793,6 +4030,10 @@ function setupTuningPanel() {
     return;
   }
 
+  if (activeAlbumMode === "collection") {
+    appendZukanTextTuningSection(tuningPanel);
+  }
+
   const pair = thicknessPairForSpread(spreadPosition);
   const pairLabel = document.createElement("div");
   pairLabel.className = "tuning-pair";
@@ -3873,10 +4114,6 @@ function setupTuningPanel() {
     });
     row.append(text, range, number);
     grid.append(row);
-  }
-
-  if (activeAlbumMode === "collection") {
-    appendZukanTextTuningSection(tuningPanel);
   }
 
   const actions = document.createElement("div");
@@ -4109,6 +4346,30 @@ function appendZukanTextTuningSection(parent) {
   sectionTitle.textContent = "ずかん もじ いち";
   parent.append(sectionTitle);
 
+  const hint = document.createElement("div");
+  hint.className = "tuning-hint";
+  hint.textContent = "プレビュー上の文字や絵をクリックして、ドラッグでうごかせます。";
+  parent.append(hint);
+
+  const selected = document.createElement("div");
+  selected.id = "zukanTuningSelectedLabel";
+  selected.className = "tuning-selected-label";
+  selected.textContent = `えらんでいる: ${zukanTextTuningGroupLabel(selectedZukanTuningTargetId)}`;
+  parent.append(selected);
+
+  const targets = document.createElement("div");
+  targets.className = "tuning-target-list";
+  for (const group of ZUKAN_TEXT_TUNING_GROUPS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tuning-target-button";
+    button.dataset.zukanTuningTarget = group.id;
+    button.textContent = group.label;
+    button.addEventListener("click", () => selectZukanTuningTarget(group.id, { redraw: true }));
+    targets.append(button);
+  }
+  parent.append(targets);
+
   const grid = document.createElement("div");
   grid.className = "tuning-grid";
   parent.append(grid);
@@ -4116,6 +4377,7 @@ function appendZukanTextTuningSection(parent) {
   for (const [key, label, min, max, step] of ZUKAN_TEXT_TUNING_FIELDS) {
     const row = document.createElement("label");
     row.className = "tuning-row";
+    row.dataset.zukanTuningKey = key;
 
     const text = document.createElement("span");
     text.textContent = label;
@@ -4142,14 +4404,20 @@ function appendZukanTextTuningSection(parent) {
       const nextTuning = { ...zukanTextTuning };
       nextTuning[key] = THREE.MathUtils.clamp(parsed, min, max);
       saveZukanTextTuning(nextTuning);
-      range.value = String(zukanTextTuning[key]);
-      number.value = String(zukanTextTuning[key]);
+      selectZukanTuningTarget(zukanTextTuningGroupForField(key));
       updateTuningOutput();
+      refreshPageTemplateTextures();
       updatePage(flipProgress);
     };
 
-    range.addEventListener("pointerdown", () => beginTuningEdit(label));
-    range.addEventListener("keydown", () => beginTuningEdit(label));
+    range.addEventListener("pointerdown", () => {
+      selectZukanTuningTarget(zukanTextTuningGroupForField(key), { redraw: true });
+      beginTuningEdit(label);
+    });
+    range.addEventListener("keydown", () => {
+      selectZukanTuningTarget(zukanTextTuningGroupForField(key), { redraw: true });
+      beginTuningEdit(label);
+    });
     range.addEventListener("input", () => {
       beginTuningEdit(label);
       update(range.value);
@@ -4161,6 +4429,7 @@ function appendZukanTextTuningSection(parent) {
       pushTuningUndo(label);
       update(number.value);
     });
+    number.addEventListener("focus", () => selectZukanTuningTarget(zukanTextTuningGroupForField(key), { redraw: true }));
     row.append(text, range, number);
     grid.append(row);
   }
@@ -4173,12 +4442,15 @@ function appendZukanTextTuningSection(parent) {
   reset.addEventListener("click", () => {
     pushTuningUndo("もじリセット");
     saveZukanTextTuning(DEFAULT_ZUKAN_TEXT_TUNING);
+    selectZukanTuningTarget("");
     setupTuningPanel();
     updateTuningOutput();
+    refreshPageTemplateTextures();
     updatePage(flipProgress);
   });
   actions.append(reset);
   parent.append(actions);
+  refreshZukanTextTuningControls();
 }
 
 function tuningExportText() {
@@ -4996,6 +5268,192 @@ function collectionZukanIndexTargetForSubject(pageDef, subjectId) {
   };
 }
 
+function zukanTuningRect(id, x, y, width, height) {
+  return {
+    id,
+    label: zukanTextTuningGroupLabel(id),
+    x: Math.max(0, x),
+    y: Math.max(0, y),
+    width: Math.min(PAGE_TEXTURE_W - Math.max(0, x), width),
+    height: Math.min(PAGE_TEXTURE_H - Math.max(0, y), height),
+  };
+}
+
+function zukanTextTuningTargetsForPage(pageDef, subjects = [], pageNumber = activeBookPage) {
+  if (!pageDef) {
+    return [];
+  }
+  if (pageDef.type === "detail") {
+    return zukanDetailTuningTargets(pageDef, subjects[0] || null, pageNumber);
+  }
+  if (pageDef.type !== "section-index") {
+    return [];
+  }
+  return zukanIndexTuningTargets(pageDef, subjects);
+}
+
+function zukanIndexTuningTargets(pageDef, subjects = []) {
+  const targets = [
+    zukanTuningRect(
+      "indexTitle",
+      PAGE_TEXTURE_W / 2 - 390 + zukanTextOffset("indexTitleX"),
+      112 + zukanTextOffset("indexTitleY"),
+      780,
+      76,
+    ),
+    zukanTuningRect(
+      "indexSubtitle",
+      PAGE_TEXTURE_W / 2 - 350 + zukanTextOffset("indexSubtitleX"),
+      215 + zukanTextOffset("indexSubtitleY"),
+      700,
+      48,
+    ),
+  ];
+  const layout = collectionZukanIndexLayout(subjects.length);
+  for (let index = 0; index < subjects.length; index += 1) {
+    targets.push(...zukanIndexCardTuningTargets(collectionZukanIndexCellRect(index, layout)));
+  }
+  return targets;
+}
+
+function zukanIndexCardTuningTargets(rect) {
+  const { x, y, width, height } = rect;
+  const generatedTemplate = collectionZukanUsesGeneratedTemplate("index");
+  const isRoomy = height >= 220;
+  const badgeX = x + (isRoomy ? 22 : 18) + zukanTextOffset("indexBadgeX");
+  const badgeY = y + (isRoomy ? 22 : 20) + zukanTextOffset("indexBadgeY");
+  const badgeW = isRoomy ? 84 : 72;
+  const badgeH = isRoomy ? 42 : 38;
+  const roomyImageLimit = generatedTemplate ? 198 : 164;
+  const imageSize = Math.min(
+    isRoomy ? roomyImageLimit : 112,
+    height - (isRoomy ? (generatedTemplate ? 88 : 74) : 30),
+    width * (isRoomy ? (generatedTemplate ? 0.34 : 0.32) : 0.28),
+  );
+  const imageBaseX = generatedTemplate ? x + 38 : x + (isRoomy ? 48 : 108);
+  const imageBaseY = generatedTemplate ? y + 58 : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
+  const imageX = imageBaseX + zukanTextOffset("indexImageX");
+  const imageY = imageBaseY + zukanTextOffset("indexImageY");
+  const textX = (isRoomy ? imageBaseX + imageSize + 34 : x + 232) + zukanTextOffset("indexTextX");
+  const titleY = (generatedTemplate ? y + 98 : isRoomy ? y + Math.max(106, height * 0.43) : y + 48)
+    + zukanTextOffset("indexTextY");
+  return [
+    zukanTuningRect("indexBadge", badgeX - 12, badgeY - 12, badgeW + 24, badgeH + 24),
+    zukanTuningRect("indexImage", imageX - 16, imageY - 16, imageSize + 32, imageSize + 32),
+    zukanTuningRect("indexText", textX - 14, titleY - 48, Math.max(220, x + width - textX - 14), 108),
+  ];
+}
+
+function zukanDetailTuningTargets(pageDef, subject, pageNumber) {
+  const detail = collectionZukanDetailTemplate(pageDef, subject, pageNumber, stickerBookTheme(activeBook));
+  const { header, image, fields, memo } = detail;
+  const targets = [
+    zukanTuningRect(
+      "detailNumber",
+      header.x + 47 + zukanTextOffset("detailNumberX"),
+      header.y + 29 + zukanTextOffset("detailNumberY"),
+      120,
+      54,
+    ),
+    zukanTuningRect(
+      "detailCategory",
+      header.x + header.width - 250 + zukanTextOffset("detailCategoryX"),
+      header.y + 29 + zukanTextOffset("detailCategoryY"),
+      206,
+      54,
+    ),
+    zukanTuningRect(
+      "detailName",
+      header.x + 196 + zukanTextOffset("detailNameX"),
+      header.y + 14 + zukanTextOffset("detailNameY"),
+      header.width - 500,
+      70,
+    ),
+    zukanTuningRect(
+      "detailSubtitle",
+      header.x + 200 + zukanTextOffset("detailSubtitleX"),
+      header.y + 82 + zukanTextOffset("detailSubtitleY"),
+      header.width - 520,
+      42,
+    ),
+    zukanTuningRect("detailImage", image.x, image.y, image.width, image.height),
+    zukanTuningRect(
+      "detailMemoTitle",
+      memo.x + 48 + zukanTextOffset("detailMemoTitleX"),
+      memo.y + 28 + zukanTextOffset("detailMemoTitleY"),
+      150,
+      48,
+    ),
+    zukanTuningRect(
+      "detailMemoText",
+      memo.x + 24 + zukanTextOffset("detailMemoTextX"),
+      memo.y + 86 + zukanTextOffset("detailMemoTextY"),
+      memo.width - 48,
+      132,
+    ),
+  ];
+  for (const field of fields) {
+    targets.push(
+      zukanTuningRect(
+        "detailFieldTitle",
+        field.x + 26 + zukanTextOffset("detailFieldTitleX"),
+        field.y + 28 + zukanTextOffset("detailFieldTitleY"),
+        196,
+        48,
+      ),
+      zukanTuningRect(
+        "detailFieldText",
+        field.x + 30 + zukanTextOffset("detailFieldTextX"),
+        field.y + 84 + zukanTextOffset("detailFieldTextY"),
+        field.width - 60,
+        92,
+      ),
+    );
+  }
+  return targets;
+}
+
+function drawZukanTuningSelectionOverlayForPage(ctx, pageNumber) {
+  if (!tuningEnabled || activeAlbumMode !== "collection" || !selectedZukanTuningTargetId) {
+    return;
+  }
+  const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
+  const subjects = collectionStickersForPageDefinition(pageDef);
+  drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber);
+}
+
+function drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber) {
+  const targets = zukanTextTuningTargetsForPage(pageDef, subjects, pageNumber)
+    .filter((target) => target.id === selectedZukanTuningTargetId);
+  if (!targets.length) {
+    return;
+  }
+  ctx.save();
+  ctx.setLineDash([14, 8]);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(255, 206, 70, 0.96)";
+  ctx.fillStyle = "rgba(255, 240, 128, 0.12)";
+  for (const target of targets) {
+    drawCanvasRoundedRect(ctx, target.x, target.y, target.width, target.height, 18);
+    ctx.fill();
+    ctx.stroke();
+  }
+  const first = targets[0];
+  ctx.setLineDash([]);
+  ctx.font = '900 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.textAlign = "left";
+  const label = zukanTextTuningGroupLabel(selectedZukanTuningTargetId);
+  const labelW = Math.min(260, Math.max(150, ctx.measureText(label).width + 30));
+  const labelX = Math.min(PAGE_TEXTURE_W - labelW - 16, Math.max(16, first.x));
+  const labelY = Math.max(18, first.y - 44);
+  ctx.fillStyle = "rgba(20, 43, 40, 0.82)";
+  drawCanvasRoundedRect(ctx, labelX, labelY, labelW, 34, 12);
+  ctx.fill();
+  ctx.fillStyle = "#fff4b8";
+  ctx.fillText(label, labelX + 15, labelY + 25, labelW - 30);
+  ctx.restore();
+}
+
 function collectionZukanIndexTitle(pageDef) {
   const category = COLLECTION_TOC_CATEGORY_DEFS.find((definition) => definition.id === pageDef?.categoryId);
   return collectionZukanFirstText(category?.indexTitle, pageDef?.label, "ずかんもくじ");
@@ -5059,6 +5517,7 @@ function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, 
     ctx.fillText("ずかんの なかまを じゅんびしています", PAGE_TEXTURE_W / 2, PAGE_TEXTURE_H / 2);
   }
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
+  drawZukanTuningSelectionOverlay(ctx, pageDef, subjects, pageNumber);
   ctx.restore();
   texture.needsUpdate = true;
 }
@@ -5164,6 +5623,7 @@ function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, 
   }
   drawCollectionZukanMemoCard(ctx, palette, theme, detail.memo);
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
+  drawZukanTuningSelectionOverlay(ctx, pageDef, [subject].filter(Boolean), pageNumber);
   ctx.restore();
   texture.needsUpdate = true;
 }
@@ -5479,6 +5939,7 @@ function drawAsyncCollectionZukanImage(ctx, texture, src, x, y, width, height, f
       drawImageContain(ctx, image, x, y, width, height);
       ctx.restore();
       queueCollectionPlacementLayer(ctx, texture, pageNumber);
+      drawZukanTuningSelectionOverlayForPage(ctx, pageNumber);
       texture.needsUpdate = true;
     })
     .catch(() => {});
@@ -5617,6 +6078,7 @@ function drawAsyncCollectionStickerImage(ctx, texture, src, x, y, width, height,
       drawImageContain(ctx, image, x, y, width, height);
       ctx.restore();
       queueCollectionPlacementLayer(ctx, texture, pageNumber);
+      drawZukanTuningSelectionOverlayForPage(ctx, pageNumber);
       texture.needsUpdate = true;
     })
     .catch(() => {});
@@ -5640,12 +6102,13 @@ function drawCollectionPlacementLayer(ctx, texture, pageNumber) {
     .filter((placement) => placement.assetUrl)
     .sort((a, b) => a.z - b.z);
   for (const placement of placements) {
-    drawAsyncCollectionPlacedSticker(ctx, texture, placement);
+    drawAsyncCollectionPlacedSticker(ctx, texture, placement, pageNumber);
   }
+  drawZukanTuningSelectionOverlayForPage(ctx, pageNumber);
   texture.needsUpdate = true;
 }
 
-function drawAsyncCollectionPlacedSticker(ctx, texture, placement) {
+function drawAsyncCollectionPlacedSticker(ctx, texture, placement, pageNumber) {
   loadStickerImage(placement.assetUrl)
     .then((image) => {
       const baseW = PAGE_TEXTURE_W * 0.18 * placement.scale;
@@ -5665,6 +6128,7 @@ function drawAsyncCollectionPlacedSticker(ctx, texture, placement) {
       drawStickerWhiteOutline(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.drawImage(paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
+      drawZukanTuningSelectionOverlayForPage(ctx, pageNumber);
       texture.needsUpdate = true;
     })
     .catch(() => {});
