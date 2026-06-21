@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-772";
+const ASSET_VERSION = "20260622-773";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -497,6 +497,8 @@ const BOOK_VARIANTS = {
   boy: {
     insideLeft: "sb3d_boy_page_left_generated.webp",
     insideRight: "sb3d_boy_page_right_generated.webp",
+    coverPrint: "sb3d_boy_cover_front_binder_image2_20260622.webp",
+    coverHardwareMode: "baked",
     coverFront: "sb3d_boy_cover_front_binder_image2_20260622.webp",
     coverBack: "sb3d_boy_cover_back_generated.webp",
     coverInside: "sb3d_boy_cover_inside_generated.webp",
@@ -507,6 +509,8 @@ const BOOK_VARIANTS = {
   girl: {
     insideLeft: "sb3d_girl_page_left_generated.webp",
     insideRight: "sb3d_girl_page_right_generated.webp",
+    coverPrint: "sb3d_girl_cover_front_generated.webp",
+    coverHardwareMode: "separate",
     coverFront: "sb3d_girl_cover_front_generated.webp",
     coverBack: "sb3d_girl_cover_back_generated.webp",
     coverInside: "sb3d_girl_cover_inside_generated.webp",
@@ -522,6 +526,15 @@ const STICKER_BOOK_THEMES = {
     sub: "#55aeb8",
     line: "#d3b35f",
     tab: "#f4e7b8",
+    coverHardware: {
+      board: 0x0b5260,
+      boardShadow: 0x063540,
+      spine: 0x0d7480,
+      spineDark: 0x07505d,
+      spineHighlight: 0x7ee0e4,
+      ring: 0xc2a060,
+      ringHighlight: 0xffedd0,
+    },
     collection: {
       paper: ["#fffbe8", "#fff2c9", "#f2dfaa"],
       text: "#334447",
@@ -584,6 +597,15 @@ const STICKER_BOOK_THEMES = {
     sub: "#7bc8c8",
     line: "#dcb6cc",
     tab: "#f5ddea",
+    coverHardware: {
+      board: 0x7d5e95,
+      boardShadow: 0x54406c,
+      spine: 0x9b81b8,
+      spineDark: 0x72598f,
+      spineHighlight: 0xf2d6ff,
+      ring: 0xd0b589,
+      ringHighlight: 0xfff2d5,
+    },
     collection: {
       paper: ["#fffbea", "#fff4d4", "#f8eac0"],
       text: "#39434a",
@@ -645,6 +667,24 @@ const STICKER_BOOK_THEMES = {
 
 function stickerBookTheme(bookName) {
   return STICKER_BOOK_THEMES[bookName] || STICKER_BOOK_THEMES.boy;
+}
+
+function coverPrintFile(bookName = activeBook) {
+  const bundle = BOOK_VARIANTS[bookName] || BOOK_VARIANTS.boy;
+  return bundle.coverPrint || bundle.coverFront;
+}
+
+function shouldShowCoverHardware(bookName = activeBook) {
+  const bundle = BOOK_VARIANTS[bookName] || BOOK_VARIANTS.boy;
+  return activeAlbumMode !== "collection" && bundle.coverHardwareMode !== "baked";
+}
+
+function isTextureFileName(value) {
+  return typeof value === "string" && /\.(?:png|jpe?g|webp)$/i.test(value);
+}
+
+function bookVariantTextureFiles(bookName) {
+  return Object.values(BOOK_VARIANTS[bookName] || {}).filter(isTextureFileName);
 }
 
 const canvas = document.getElementById("scene");
@@ -746,6 +786,9 @@ const COVER_CLOSED_X = GUTTER / 2;
 const COVER_OPEN_X = -GUTTER / 2;
 const COVER_CENTER_X = COVER_CLOSED_X + PAGE_W / 2;
 const BOOK_COVER_X = -COVER_CENTER_X;
+const BOOK_SWIPE_MIN_DISTANCE = 58;
+const BOOK_SWIPE_MAX_VERTICAL_RATIO = 0.72;
+const BOOK_SWIPE_MAX_DURATION_MS = 900;
 const BOOK_INSIDE_X = 0;
 const FLUTTER_PAGE_MIN_COUNT = 3;
 const FLUTTER_PAGE_MAX_COUNT = 6;
@@ -973,6 +1016,8 @@ let zukanTuningDragState = null;
 let suppressZukanTuningClick = false;
 let spreadJumpAnimation = null;
 let coverOpenAnimation = null;
+let bookSwipeState = null;
+let suppressSceneClickAfterSwipe = false;
 let stickerPlan = null;
 let stickerOptions = [];
 let collectionStickerOptions = [];
@@ -1028,8 +1073,8 @@ const textureFiles = [
     ...Object.values(SHARED_TEXTURES),
     ...Object.values(ZUKAN_PAGE_TEMPLATES),
     ...ZUKAN_THICKNESS_STRIPS.map(({ file }) => file),
-    ...Object.values(BOOK_VARIANTS.boy),
-    ...Object.values(BOOK_VARIANTS.girl),
+    ...bookVariantTextureFiles("boy"),
+    ...bookVariantTextureFiles("girl"),
     ...["boy", "girl"].flatMap((bookName) =>
       THICKNESS_LEVEL_NAMES.flatMap((level) => [
         `sb3d_${bookName}_page_thickness_left_${level}.webp`,
@@ -1075,7 +1120,10 @@ coverOnly.add(coverBackground);
 const coverThickness = createCoverThicknessLayer();
 coverOnly.add(coverThickness.group);
 
-const closedCover = makePageSurface(BOOK_VARIANTS[activeBook].coverFront, createCoverSurfaceGeometry());
+const coverHardware = createCoverHardwareLayer();
+coverOnly.add(coverHardware.group);
+
+const closedCover = makePageSurface(coverPrintFile(activeBook), createCoverSurfaceGeometry());
 closedCover.position.set(COVER_CLOSED_X, 0, 0.04);
 closedCover.renderOrder = 30;
 coverOnly.add(closedCover);
@@ -1089,7 +1137,7 @@ const coverTurnGeometry = createCoverSurfaceGeometry();
 const coverTurnFront = new THREE.Mesh(
   coverTurnGeometry,
   new THREE.MeshStandardMaterial({
-    map: getTexture(BOOK_VARIANTS[activeBook].coverFront),
+    map: getTexture(coverPrintFile(activeBook)),
     transparent: false,
     side: THREE.FrontSide,
     depthWrite: true,
@@ -1327,6 +1375,7 @@ albumModeToggle?.addEventListener("click", () => {
 window.addEventListener("resize", resize);
 setupTuningPanel();
 setupBookPageControls();
+setupBookSwipeNavigation();
 setupCollectionStickerTray();
 if (editorEnabled) {
   setupScenePagePicking();
@@ -1348,6 +1397,8 @@ window.__stickerBookDebugState = () => ({
   spreadJumpActive: Boolean(spreadJumpAnimation),
   spreadJumpVisiblePageCount: spreadJumpAnimation?.visiblePageCount ?? 0,
   spreadJumpCycles: spreadJumpAnimation?.cycles ?? 0,
+  coverPrint: coverPrintFile(activeBook),
+  coverHardwareVisible: coverHardware.group.visible,
   ringGroupVisible: ringGroup.visible,
   innerLeftVisible: innerLeft.visible,
   innerRightVisible: innerRight.visible,
@@ -1403,6 +1454,11 @@ function setupScenePagePicking() {
     }
   });
   canvas.addEventListener("click", (event) => {
+    if (suppressSceneClickAfterSwipe) {
+      event.preventDefault();
+      suppressSceneClickAfterSwipe = false;
+      return;
+    }
     if (suppressZukanTuningClick) {
       event.preventDefault();
       suppressZukanTuningClick = false;
@@ -1635,6 +1691,114 @@ function setupBookPageControls() {
       closeBookPageJump();
     }
   });
+}
+
+function setupBookSwipeNavigation() {
+  if (!canvas) {
+    return;
+  }
+  canvas.addEventListener("pointerdown", handleBookSwipePointerDown);
+  canvas.addEventListener("pointerup", handleBookSwipePointerUp);
+  canvas.addEventListener("pointercancel", cancelBookSwipe);
+  canvas.addEventListener("pointerleave", (event) => {
+    if (bookSwipeState?.pointerId === event.pointerId) {
+      cancelBookSwipe(event);
+    }
+  });
+}
+
+function canStartBookSwipe(event) {
+  return (
+    event.target === canvas
+    && event.isPrimary !== false
+    && event.button === 0
+    && !tuningEnabled
+    && !coverOpenAnimation
+    && !spreadJumpAnimation
+    && !(pageTurn.visible && flipProgress > 0.001)
+    && !zukanTuningDragState
+    && !stickerDragState
+    && !drawingPointerState
+    && (!stickerEditor || stickerEditor.hidden)
+  );
+}
+
+function handleBookSwipePointerDown(event) {
+  if (!canStartBookSwipe(event)) {
+    return;
+  }
+  bookSwipeState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    startTime: performance.now(),
+  };
+  canvas.setPointerCapture?.(event.pointerId);
+}
+
+function handleBookSwipePointerUp(event) {
+  if (!bookSwipeState || event.pointerId !== bookSwipeState.pointerId) {
+    return;
+  }
+  const swipe = bookSwipeState;
+  bookSwipeState = null;
+  canvas.releasePointerCapture?.(event.pointerId);
+
+  const dx = event.clientX - swipe.startX;
+  const dy = event.clientY - swipe.startY;
+  const absX = Math.abs(dx);
+  const absY = Math.abs(dy);
+  const elapsed = performance.now() - swipe.startTime;
+  const isPageSwipe = (
+    absX >= BOOK_SWIPE_MIN_DISTANCE
+    && absY <= absX * BOOK_SWIPE_MAX_VERTICAL_RATIO
+    && elapsed <= BOOK_SWIPE_MAX_DURATION_MS
+  );
+  if (!isPageSwipe) {
+    return;
+  }
+
+  event.preventDefault();
+  suppressSceneClickAfterSwipe = true;
+  window.setTimeout(() => {
+    suppressSceneClickAfterSwipe = false;
+  }, 1400);
+  navigateBookBySwipe(dx < 0 ? 1 : -1);
+}
+
+function cancelBookSwipe(event) {
+  if (!bookSwipeState) {
+    return;
+  }
+  if (event && event.pointerId !== bookSwipeState.pointerId) {
+    return;
+  }
+  canvas.releasePointerCapture?.(bookSwipeState.pointerId);
+  bookSwipeState = null;
+}
+
+function navigateBookBySwipe(direction) {
+  closeBookPageJump();
+  if (direction > 0) {
+    if (activeSurface === "cover") {
+      setBookSurface("inside", 1);
+      return;
+    }
+    const lastSpreadStart = spreadStartForPage(editorPageCount());
+    if (activeBookPage < lastSpreadStart) {
+      setBookPage(activeBookPage + 2, { turnMode: "single" });
+    }
+    return;
+  }
+
+  if (activeSurface === "cover") {
+    return;
+  }
+  if (activeBookPage <= 1) {
+    setBookSurface("cover", activeBookPage);
+    return;
+  }
+  setBookPage(activeBookPage - 2, { turnMode: "single" });
 }
 
 function syncTopSettingsButton() {
@@ -7067,6 +7231,154 @@ function createCoverThicknessLayer() {
   return { group, plane, book: null };
 }
 
+function createCoverHardwareLayer() {
+  const group = new THREE.Group();
+  const hardware = stickerBookTheme(activeBook).coverHardware;
+  const materials = {
+    backBoard: new THREE.MeshStandardMaterial({
+      color: hardware.board,
+      roughness: 0.86,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+    }),
+    spinePlate: new THREE.MeshStandardMaterial({
+      color: hardware.spine,
+      transparent: true,
+      opacity: 0.78,
+      roughness: 0.48,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+    spineEdge: new THREE.MeshStandardMaterial({
+      color: hardware.spineDark,
+      roughness: 0.4,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+    spineHighlight: new THREE.MeshBasicMaterial({
+      color: hardware.spineHighlight,
+      transparent: true,
+      opacity: 0.23,
+      depthWrite: false,
+    }),
+    ring: new THREE.MeshStandardMaterial({
+      color: hardware.ring,
+      emissive: 0x2e210e,
+      emissiveIntensity: 0.028,
+      roughness: 0.38,
+      metalness: 0.0,
+      depthWrite: false,
+    }),
+    ringHighlight: new THREE.MeshBasicMaterial({
+      color: hardware.ringHighlight,
+      transparent: true,
+      opacity: 0.34,
+      depthWrite: false,
+    }),
+  };
+
+  const backBoard = new THREE.Mesh(createCoverBackBoardGeometry(), materials.backBoard);
+  backBoard.position.set(COVER_CLOSED_X + 0.035, -0.045, -0.05);
+  backBoard.renderOrder = 20;
+  group.add(backBoard);
+
+  const spinePlate = new THREE.Mesh(createCoverSpinePlateGeometry(), materials.spinePlate);
+  spinePlate.position.set(COVER_CLOSED_X + PAGE_W * 0.078, 0, 0.086);
+  spinePlate.renderOrder = 42;
+  group.add(spinePlate);
+
+  const spineEdge = new THREE.Mesh(
+    new THREE.CylinderGeometry(PAGE_W * 0.018, PAGE_W * 0.018, PAGE_H * 0.935, 28, 1, false),
+    materials.spineEdge,
+  );
+  spineEdge.position.set(COVER_CLOSED_X + PAGE_W * 0.015, 0, 0.105);
+  spineEdge.scale.set(0.68, 1, 1.28);
+  spineEdge.renderOrder = 43;
+  group.add(spineEdge);
+
+  const spineHighlight = new THREE.Mesh(
+    new THREE.PlaneGeometry(PAGE_W * 0.008, PAGE_H * 0.84),
+    materials.spineHighlight,
+  );
+  spineHighlight.position.set(COVER_CLOSED_X + PAGE_W * 0.11, 0, 0.112);
+  spineHighlight.renderOrder = 44;
+  group.add(spineHighlight);
+
+  const coverRingPixels = [218, 452, 686, 920, 1154, 1388];
+  for (const pixelY of coverRingPixels) {
+    const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
+    const ring = new THREE.Mesh(createCoverSideRingGeometry(y), materials.ring);
+    ring.renderOrder = 46;
+    group.add(ring);
+
+    const highlight = new THREE.Mesh(createCoverSideRingHighlightGeometry(y), materials.ringHighlight);
+    highlight.renderOrder = 47;
+    group.add(highlight);
+  }
+
+  return { group, materials };
+}
+
+function createCoverBackBoardGeometry() {
+  const shape = new THREE.Shape();
+  addRoundedRectPath(
+    shape,
+    -PAGE_W * 0.012,
+    -PAGE_H / 2 - PAGE_H * 0.012,
+    PAGE_W * 1.024,
+    PAGE_H * 1.024,
+    PAGE_RADIUS * 1.04,
+  );
+  const geometry = new THREE.ShapeGeometry(shape, 28);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createCoverSpinePlateGeometry() {
+  const width = PAGE_W * 0.17;
+  const height = PAGE_H * 0.92;
+  const shape = new THREE.Shape();
+  addRoundedRectPath(shape, -width / 2, -height / 2, width, height, width * 0.42);
+  const geometry = new THREE.ShapeGeometry(shape, 20);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function createCoverSideRingGeometry(baseY) {
+  const points = [];
+  const anchorX = COVER_CLOSED_X + PAGE_W * 0.065;
+  const reach = PAGE_W * 0.08;
+  for (let i = 0; i <= 22; i += 1) {
+    const t = i / 22;
+    const arch = Math.sin(t * Math.PI);
+    points.push(new THREE.Vector3(
+      anchorX - arch * reach,
+      baseY,
+      0.155 + Math.cos(t * Math.PI) * 0.06,
+    ));
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 36, PAGE_W * 0.0062, 10, false);
+}
+
+function createCoverSideRingHighlightGeometry(baseY) {
+  const points = [];
+  const anchorX = COVER_CLOSED_X + PAGE_W * 0.064;
+  const reach = PAGE_W * 0.066;
+  for (let i = 0; i <= 18; i += 1) {
+    const t = i / 18;
+    const arch = Math.sin(t * Math.PI);
+    points.push(new THREE.Vector3(
+      anchorX - arch * reach,
+      baseY + PAGE_H * 0.0025,
+      0.174 + Math.cos(t * Math.PI) * 0.047,
+    ));
+  }
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, PAGE_W * 0.0012, 6, false);
+}
+
 function createCollectionStackBlock() {
   const group = new THREE.Group();
   const width = PAGE_W * 2 + PAGE_H * 0.16;
@@ -7306,6 +7618,22 @@ function applyCoverTuning() {
   coverBackground.material.opacity = coverTuning.coverBgOpacity;
   coverBackground.scale.set(coverTuning.coverBgScaleX, coverTuning.coverBgScaleY, 1);
   coverBackground.position.set(COVER_CLOSED_X, 0, -0.08);
+  coverHardware.group.visible = shouldShowCoverHardware();
+}
+
+function applyCoverHardwareTheme() {
+  const hardware = stickerBookTheme(activeBook).coverHardware || stickerBookTheme("boy").coverHardware;
+  const materials = coverHardware.materials;
+  materials.backBoard.color.setHex(hardware.board);
+  materials.spinePlate.color.setHex(hardware.spine);
+  materials.spineEdge.color.setHex(hardware.spineDark);
+  materials.spineHighlight.color.setHex(hardware.spineHighlight);
+  materials.ring.color.setHex(hardware.ring);
+  materials.ringHighlight.color.setHex(hardware.ringHighlight);
+  for (const material of Object.values(materials)) {
+    material.needsUpdate = true;
+  }
+  coverHardware.group.visible = shouldShowCoverHardware();
 }
 
 function positionCollectionStackBlock() {
@@ -7666,19 +7994,20 @@ function applyVariantState() {
   if (activeSurface === "inside") {
     assignTextureObject(frontPage, getPageTemplateTexture("right"));
   } else {
-    assignTexture(frontPage, bundle.coverFront);
+    assignTexture(frontPage, coverPrintFile(activeBook));
   }
   if (activeSurface === "inside") {
     assignTextureObject(backPage, getPageTemplateTexture("left"));
   } else {
     assignTexture(backPage, bundle.coverInside);
   }
-  assignTexture(closedCover, bundle.coverFront);
+  assignTexture(closedCover, coverPrintFile(activeBook));
   assignCoverTurnTextures();
   assignSpineTexture();
   assignSideTabTextures();
   applyAlbumLayout();
   applyCoverTuning();
+  applyCoverHardwareTheme();
   updateFlutterPageTextures();
   slider.disabled = activeSurface === "cover";
   updateControlState();
@@ -7938,7 +8267,7 @@ function getCollectionFoldTexture(bookName) {
 
 function assignCoverTurnTextures() {
   const bundle = BOOK_VARIANTS[activeBook];
-  assignTexture(coverTurnFront, bundle.coverFront);
+  assignTexture(coverTurnFront, coverPrintFile(activeBook));
   assignTexture(coverTurnBack, bundle.coverInside);
 }
 

@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-21T18:27:13Z - .gitignore から .claude-design-bundle/ を外して Brand Kit 全体 (22 ファイル / 5057 行) を Git tracking + push (commit 6083778、 fast-forward)。 Claude Design × Claude Code 連携で brief.md を GitHub raw URL 経由で共有可能に。 機密リスク 0 件、 repo public で明示済み、 deploy run 27913463922 in_progress (LP コード無変更で影響なし)。 1 エージェントで Recon→Implement→Verify 一括実装。 Workflow は String.raw parse エラーで失敗 → Agent に切替で安全実装
+- **タスク**: .gitignore から .claude-design-bundle/ を外して Brand Kit 全体 (22 ファイル / 5057 行) を Git tracking + push (commit 6083778、 fast-forward)。 Claude Design × Claude Code 連携で brief.md を GitHub raw URL 経由で共有可能に。 機密リスク 0 件、 repo public で明示済み、 deploy run 27913463922 in_progress (LP コード無変更で影響なし)。 1 エージェントで Recon→Implement→Verify 一括実装。 Workflow は String.raw parse エラーで失敗 → Agent に切替で安全実装
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 90
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 23, "Bash": 44, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 10}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。
+
+
 ### 2026-06-21T15:59:37Z - Stitch 3 案並列生成用 brief.md を .claude-design-bundle/components/coming-soon/ に新規作成 (241 行)。 ユーザー要望 3 点 (スリムバナー / クリック→詳細モーダル / ポノ顔アプリアイコン) を網羅、 確定コピー固定、 案 A (Minimal Banner 100-120px) / 案 B (Sticker Banner 130-150px 回転 dashed) / 案 C (App Preview Card 180px 2 カラム) で差別化、 既存 hero/play-cards/book-bridge brief と同骨格、 NG・トークン・モーダル仕様・a11y 完備。 brand-AD クロスレビュー APPROVED。 旧 coming-soon-a.html は履歴として保持 (README 準拠)
 - **タスク**: Stitch 3 案並列生成用 brief.md を .claude-design-bundle/components/coming-soon/ に新規作成 (241 行)。 ユーザー要望 3 点 (スリムバナー / クリック→詳細モーダル / ポノ顔アプリアイコン) を網羅、 確定コピー固定、 案 A (Minimal Banner 100-120px) / 案 B (Sticker Banner 130-150px 回転 dashed) / 案 C (App Preview Card 180px 2 カラム) で差別化、 既存 hero/play-cards/book-bridge brief と同骨格、 NG・トークン・モーダル仕様・a11y 完備。 brand-AD クロスレビュー APPROVED。 旧 coming-soon-a.html は履歴として保持 (README 準拠)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {"Agent": 8, "Bash": 2}
 - **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-20T10:27:04Z - 動物キャラ raw 画像を tmp/alpha_redo/animals/ に整理 (487 シートを 6 キャラフォルダに分配 + README 作成)
-- **タスク**: 動物キャラ raw 画像を tmp/alpha_redo/animals/ に整理 (487 シートを 6 キャラフォルダに分配 + README 作成)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 143
-- **エラー数**: 18
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 39, "Grep": 8, "Read": 12, "Glob": 3, "Agent": 71, "ToolSearch": 1, "Edit": 7, "Write": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
