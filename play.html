@@ -3043,7 +3043,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1469;
+    const PAGE_CACHE_VERSION = 1471;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -3410,7 +3410,7 @@
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
     const BOTTOM_NAV_PRESS_AREAS = [
-      { left: '0%', right: '20%' },
+      { left: '0%', right: '22%' },
       { left: '20%', right: '40%' },
       { left: '40%', right: '60%' },
       { left: '60%', right: '80%' },
@@ -3543,7 +3543,9 @@
       bed: null,
       capsuleOpen: null,
       sparkle: null,
-      sparkleLong: null
+      sparkleLong: null,
+      pausedTopBgm: false,
+      resumeTopBgm: false
     };
     let dailyGachaAudioCtx = null;
 
@@ -3657,6 +3659,34 @@
       try { return localStorage.getItem(SOUND_KEY) === '1'; } catch (_) { return false; }
     }
 
+    function topBgmForDailyGacha() {
+      return document.getElementById('play-bgm');
+    }
+
+    function pauseTopBgmForDailyGacha() {
+      const bgm = topBgmForDailyGacha();
+      if (!bgm || dailyGachaAudio.pausedTopBgm) return;
+      dailyGachaAudio.resumeTopBgm = !bgm.paused;
+      dailyGachaAudio.pausedTopBgm = true;
+      if (dailyGachaAudio.resumeTopBgm) {
+        try { bgm.pause(); } catch (_) {}
+      }
+    }
+
+    function resumeTopBgmAfterDailyGacha() {
+      if (!dailyGachaAudio.pausedTopBgm) return;
+      const shouldResume = dailyGachaAudio.resumeTopBgm;
+      dailyGachaAudio.pausedTopBgm = false;
+      dailyGachaAudio.resumeTopBgm = false;
+      if (!shouldResume || dailyGachaSoundMuted()) return;
+      const bgm = topBgmForDailyGacha();
+      if (!bgm) return;
+      try {
+        const p = bgm.play();
+        if (p && p.catch) p.catch(() => {});
+      } catch (_) {}
+    }
+
     function createDailyGachaAudio(path, options = {}) {
       if (typeof Audio !== 'function') return null;
       const audio = new Audio(dailyGachaAudioSrc(path));
@@ -3674,7 +3704,7 @@
         createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.turn)
       ].filter(Boolean);
       dailyGachaAudio.capsuleExit = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.capsuleExit, { volume: .9 });
-      dailyGachaAudio.bed = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.bed, { loop: true, volume: .12 });
+      dailyGachaAudio.bed = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.bed, { loop: true, volume: .2 });
       dailyGachaAudio.capsuleOpen = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.capsuleOpen, { volume: .72 });
       dailyGachaAudio.sparkle = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.sparkle, { volume: .78 });
       dailyGachaAudio.sparkleLong = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.sparkleLong, { volume: .58 });
@@ -3716,7 +3746,7 @@
       const bed = dailyGachaAudio.bed;
       if (!bed) return;
       try {
-        bed.volume = .12;
+        bed.volume = .2;
         bed.playbackRate = 1;
         if (bed.paused) bed.currentTime = 0;
         const p = bed.play();
@@ -3797,7 +3827,9 @@
         return;
       }
       if (kind === 'capsuleExit') {
-        stopDailyGachaBed(false);
+        if (dailyGachaAudio.bed) {
+          try { dailyGachaAudio.bed.volume = .12; } catch (_) {}
+        }
         const played = playDailyGachaAudio(dailyGachaAudio.capsuleExit, { volume: .92, rate: 1 });
         if (!played) playDailyGachaFallbackSfx('boom');
         return;
@@ -4064,6 +4096,7 @@
       dailyGachaModal.hidden = false;
       setDailyGachaHandState('open');
       dailyGachaModal.classList.add('is-armed');
+      pauseTopBgmForDailyGacha();
       startDailyGachaBed();
       setTimeout(() => {
         try { dailyGachaLever && dailyGachaLever.focus({ preventScroll: true }); } catch (_) {}
@@ -4083,6 +4116,7 @@
       dailyGachaModal.hidden = true;
       resetDailyGachaModal();
       updateDailyGachaEntry();
+      resumeTopBgmAfterDailyGacha();
     }
 
     function goDailyGachaStickerBook() {
