@@ -12650,7 +12650,7 @@ function renderMonsterIllust() {
 // ════════════════════════════════════════════════════════════════
 // localStorage 形式は bento/index.html 側の applyNpcPositionStyle と同期:
 //   key   = 'bento_npc_positions_v1'
-//   value = { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
+//   value = { "<charId>_<expression>": { x, y, scale, scaleX, scaleY, rotation, opacity } }
 var NPC_POS_LS_KEY = 'bento_npc_positions_v1';
 var NPC_POS_LS_BACKUP_KEY = 'bento_npc_positions_v1_backup';
 var NPC_POS_LS_HISTORY_KEY = 'bento_npc_positions_v1_history';
@@ -12661,7 +12661,7 @@ var NPC_POS_STAFF_BASE = '../assets/images/bento/story/staff/';
 var NPC_POS_PORTRAIT_VERSION = '20260621-bento-pono-wave-face-v1';
 var NPC_POS_STAFF_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
 var NPC_POS_CUSTOMER_MASK_LS_KEY = 'bento_customer_counter_mask_v1';
-var NPC_POS_DEFAULT = { x: 58, y: 23, scale: 1, rotation: 0, opacity: 1 };
+var NPC_POS_DEFAULT = { x: 58, y: 23, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 };
 var NPC_POS_STAFF_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
 var NPC_POS_CUSTOMER_MASK_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
 var NPC_POS_ANIMAL_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
@@ -12708,6 +12708,8 @@ var NPC_POS_SLIDER_DEFS = [
   { key: 'x',        label: 'x (left %)',    min: 0,   max: 100, step: 0.5 },
   { key: 'y',        label: 'y (bottom %)',  min: 0,   max: 100, step: 0.5 },
   { key: 'scale',    label: 'scale',         min: 0.5, max: 2.0, step: 0.01 },
+  { key: 'scaleX',   label: 'scale X',       min: 0.5, max: 2.0, step: 0.01 },
+  { key: 'scaleY',   label: 'scale Y',       min: 0.5, max: 2.0, step: 0.01 },
   { key: 'rotation', label: 'rotation (°)',  min: -20, max: 20,  step: 0.5 },
   { key: 'opacity',  label: 'opacity',       min: 0,   max: 1,   step: 0.01 },
 ];
@@ -12908,6 +12910,8 @@ function npcPosCurrentPayload() {
     x: _npcPosState.current.x,
     y: _npcPosState.current.y,
     scale: _npcPosState.current.scale,
+    scaleX: _npcPosState.current.scaleX,
+    scaleY: _npcPosState.current.scaleY,
     rotation: _npcPosState.current.rotation,
     opacity: _npcPosState.current.opacity,
   };
@@ -12921,6 +12925,8 @@ function npcPosClonePlacement(src) {
     x: num(src && src.x, NPC_POS_DEFAULT.x),
     y: num(src && src.y, NPC_POS_DEFAULT.y),
     scale: num(src && src.scale, NPC_POS_DEFAULT.scale),
+    scaleX: num(src && src.scaleX, NPC_POS_DEFAULT.scaleX),
+    scaleY: num(src && src.scaleY, NPC_POS_DEFAULT.scaleY),
     rotation: num(src && src.rotation, NPC_POS_DEFAULT.rotation),
     opacity: num(src && src.opacity, NPC_POS_DEFAULT.opacity),
   };
@@ -13056,6 +13062,8 @@ function npcPosGet(charId, expression) {
     x:        (typeof saved.x === 'number')        ? saved.x        : baseDefault.x,
     y:        (typeof saved.y === 'number')        ? saved.y        : baseDefault.y,
     scale:    (typeof saved.scale === 'number')    ? saved.scale    : baseDefault.scale,
+    scaleX:   (typeof saved.scaleX === 'number')   ? saved.scaleX   : baseDefault.scaleX,
+    scaleY:   (typeof saved.scaleY === 'number')   ? saved.scaleY   : baseDefault.scaleY,
     rotation: (typeof saved.rotation === 'number') ? saved.rotation : baseDefault.rotation,
     opacity:  (typeof saved.opacity === 'number')  ? saved.opacity  : baseDefault.opacity,
   };
@@ -13195,7 +13203,7 @@ function npcPosRenderExpressionButtons() {
 }
 
 function npcPosFormatVal(key, num) {
-  if (key === 'scale' || key === 'opacity') return num.toFixed(2);
+  if (key === 'scale' || key === 'scaleX' || key === 'scaleY' || key === 'opacity') return num.toFixed(2);
   if (key === 'rotation') return num.toFixed(1) + '°';
   return num.toFixed(1) + '%';
 }
@@ -13285,9 +13293,12 @@ function npcPosApplyPreview() {
     img.dataset.lastSrc = src;
   }
   var p = _npcPosState.current;
+  var renderedScaleX = p.scale * p.scaleX;
+  var renderedScaleY = p.scale * p.scaleY;
   img.style.left   = p.x + '%';
   img.style.bottom = p.y + '%';
-  img.style.transform = 'translateX(-50%) scale(' + p.scale + ') rotate(' + p.rotation + 'deg)';
+  img.style.transformOrigin = cfg.type === 'staff' ? 'center bottom' : 'center center';
+  img.style.transform = 'translateX(-50%) scale(' + renderedScaleX + ', ' + renderedScaleY + ') rotate(' + p.rotation + 'deg)';
   img.style.opacity = String(p.opacity);
   npcPosApplyMaskPreview();
 }

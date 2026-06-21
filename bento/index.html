@@ -3023,10 +3023,10 @@ body.bento-complete-open .pono-dropdown {
   animation: npcBob 2.4s ease-in-out infinite;
 }
 @keyframes npcBob {
-  /* v3.3: applyNpcPositionStyle(useAbsolute:false) からの --npc-scale / --npc-rotation を
+  /* v3.3: applyNpcPositionStyle(useAbsolute:false) からの scale / rotation を
      合成する (transform を直接上書きしないことで bob と override を共存させる) */
-  0%, 100% { transform: translateY(0)   scale(var(--npc-scale, 1)) rotate(var(--npc-rotation, 0deg)); }
-  50%      { transform: translateY(-6px) scale(var(--npc-scale, 1)) rotate(var(--npc-rotation, 0deg)); }
+  0%, 100% { transform: translateY(0)   scale(var(--npc-scale-x, var(--npc-scale, 1)), var(--npc-scale-y, var(--npc-scale, 1))) rotate(var(--npc-rotation, 0deg)); }
+  50%      { transform: translateY(-6px) scale(var(--npc-scale-x, var(--npc-scale, 1)), var(--npc-scale-y, var(--npc-scale, 1))) rotate(var(--npc-rotation, 0deg)); }
 }
 .npc-text {
   flex: 1 1 auto;
@@ -4126,7 +4126,7 @@ body.bento-complete-open .pono-dropdown {
   height: clamp(74px, 14vh, 116px);
   object-fit: contain;
   filter: drop-shadow(0 7px 10px rgba(93,78,55,0.18));
-  transform: scale(var(--npc-scale, 1)) rotate(var(--npc-rotation, 0deg));
+  transform: scale(var(--npc-scale-x, var(--npc-scale, 1)), var(--npc-scale-y, var(--npc-scale, 1))) rotate(var(--npc-rotation, 0deg));
 }
 .complete-request-copy {
   min-width: 0;
@@ -5512,16 +5512,17 @@ function getRequesterPortrait(req, mood) {
 
 // ===== NPC 位置オーバーライド (admin の NPC位置エディタで保存される) =====
 // localStorage key: 'bento_npc_positions_v1'
-// 形式: { "<charId>_<expression>": { x, y, scale, rotation, opacity } }
+// 形式: { "<charId>_<expression>": { x, y, scale, scaleX, scaleY, rotation, opacity } }
 //   - x: left %  (0-100, default 58)
 //   - y: bottom % (0-100, default 23)
-//   - scale: 倍率 (0.5-1.5, default 1)
+//   - scale: 全体倍率 (default 1)
+//   - scaleX/scaleY: 横/縦の個別倍率 (default 1)
 //   - rotation: 回転 deg (-20〜+20, default 0)
 //   - opacity: 不透明度 (0-1, default 1)
 // シーンに応じてデフォルト値が異なる (delivery=58/23, shop-opening=50/23) ため、
 // 適用側はデフォルトを引数で受け取り、 オーバーライドがあれば上書きする。
 const NPC_POSITION_LS_KEY = 'bento_npc_positions_v1';
-const NPC_POSITION_DEFAULT = { x: 58, y: 23, scale: 1, rotation: 0, opacity: 1 };
+const NPC_POSITION_DEFAULT = { x: 58, y: 23, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 };
 const NPC_MOOD_TO_EXPRESSION = {
   request: 'request',
   normal: 'normal',
@@ -5561,14 +5562,18 @@ function applyNpcPositionStyle(el, charId, mood, options) {
     x:       Number.isFinite(override.x)        ? override.x        : baseDefault.x,
     y:       Number.isFinite(override.y)        ? override.y        : baseDefault.y,
     scale:   Number.isFinite(override.scale)    ? override.scale    : baseDefault.scale,
+    scaleX:  Number.isFinite(override.scaleX)   ? override.scaleX   : baseDefault.scaleX,
+    scaleY:  Number.isFinite(override.scaleY)   ? override.scaleY   : baseDefault.scaleY,
     rotation:Number.isFinite(override.rotation) ? override.rotation : baseDefault.rotation,
     opacity: Number.isFinite(override.opacity)  ? override.opacity  : baseDefault.opacity,
   };
+  const renderedScaleX = pos.scale * pos.scaleX;
+  const renderedScaleY = pos.scale * pos.scaleY;
   const useAbsolute = opts.useAbsolute !== false;   // default true
   if (useAbsolute) {
     el.style.left   = pos.x + '%';
     el.style.bottom = pos.y + '%';
-    el.style.transform = 'translateX(-50%) scale(' + pos.scale + ') rotate(' + pos.rotation + 'deg)';
+    el.style.transform = 'translateX(-50%) scale(' + renderedScaleX + ', ' + renderedScaleY + ') rotate(' + pos.rotation + 'deg)';
   } else {
     // v3.3: overlay 内固定ボックス (npc-portrait-wrap img 等) では既存 CSS の
     // animation: npcBob (translateY) を温存するため transform を直接書き換えず、
@@ -5577,6 +5582,8 @@ function applyNpcPositionStyle(el, charId, mood, options) {
     // のように合成済み。 古い state を消すため transform は明示的にクリア。
     el.style.transform = '';
     el.style.setProperty('--npc-scale',    String(pos.scale));
+    el.style.setProperty('--npc-scale-x',  String(renderedScaleX));
+    el.style.setProperty('--npc-scale-y',  String(renderedScaleY));
     el.style.setProperty('--npc-rotation', String(pos.rotation) + 'deg');
   }
   el.style.opacity = String(pos.opacity);
