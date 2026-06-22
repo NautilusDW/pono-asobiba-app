@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-791";
+const ASSET_VERSION = "20260622-792";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -16,6 +16,9 @@ const PAGE_HOLE_X = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
 const PAGE_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
+const STICKER_SPINE_STACK_EXTENSION = PAGE_H * 0.055;
+const STICKER_SPINE_H = PAGE_H + STICKER_SPINE_STACK_EXTENSION;
+const STICKER_STACK_SPINE_OVERLAP = GUTTER * 0.24;
 const BINDING_RING_HOLE_X = GUTTER / 2 + PAGE_HOLE_X;
 const BINDING_RING_ENDPOINT_X = BINDING_RING_HOLE_X + PAGE_HOLE_RX * 2.15;
 const BINDING_RING_TUBE_RADIUS = PAGE_H * 0.0086;
@@ -783,13 +786,13 @@ document.body.classList.toggle("is-prototype-controls", prototypeControlsEnabled
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
-const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v8";
+const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v9";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
 const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v1";
 const ZUKAN_SIDE_TEMPLATE_STORAGE_KEY = "sb3d_zukan_side_template_settings_v1";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
-const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v1`;
+const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v2`;
 const TUNING_HISTORY_LIMIT = 80;
 const SPREAD_JUMP_SETTLE_PROGRESS = 0;
 const SPREAD_JUMP_MIN_DURATION = 0.28;
@@ -1127,6 +1130,7 @@ const textureFiles = [
 const textureEntries = await Promise.all(textureFiles.map(async (file) => [file, await loadTexture(file)]));
 const textureMap = new Map(textureEntries);
 const pageTemplateTextureMap = new Map();
+const stickerSpineTextureMap = new Map();
 const collectionSpineTextureMap = new Map();
 const collectionFoldTextureMap = new Map();
 const collectionTabsTextureMap = new Map();
@@ -1218,7 +1222,7 @@ const coverTurnRings = createCover3DRingLayer();
 coverTurnRings.group.renderOrder = 88;
 coverTurn.add(coverTurnRings.group);
 
-const spine = makePlane(BOOK_VARIANTS[activeBook].spine, SPINE_W, PAGE_H, { depth: -0.09, lit: true, transparent: true });
+const spine = makePlane(BOOK_VARIANTS[activeBook].spine, SPINE_W, STICKER_SPINE_H, { depth: -0.09, lit: true, transparent: true });
 spine.position.set(0, 0, -0.09);
 spine.material.depthWrite = false;
 spine.renderOrder = 1;
@@ -7969,23 +7973,28 @@ function positionStackSide(stack, level, tuning) {
   const tunePrefix = stack.side === "left" ? "stackLeft" : "stackRight";
   const scaleX = tuning[`${tunePrefix}ScaleX`];
   const scaleY = tuning[`${tunePrefix}ScaleY`];
-  stack.plane.scale.set(scaleX, scaleY, 1);
-  stack.collectionMesh.scale.set(scaleX, scaleY, 1);
 
   const isLeft = stack.side === "left";
+  const stackSpineOverlap = isCollection ? 0 : STICKER_STACK_SPINE_OVERLAP;
+  const stackWidthScale = (PAGE_W + stackSpineOverlap) / PAGE_W;
+  const stackScaleX = scaleX * stackWidthScale;
+  stack.plane.scale.set(stackScaleX, scaleY, 1);
+  stack.collectionMesh.scale.set(stackScaleX, scaleY, 1);
+
   const gap = currentBookGap();
   const pageLeft = isLeft ? -PAGE_W - gap / 2 : gap / 2;
   const pageRight = isLeft ? -gap / 2 : PAGE_W + gap / 2;
   const pageCenter = (pageLeft + pageRight) / 2;
   const scaledTextureH = THICKNESS_TEXTURE_H * scaleY;
   const topY = -PAGE_H / 2 + THICKNESS_OVERLAP + tuning[`${tunePrefix}Y`];
-  const x = pageCenter + tuning[`${tunePrefix}X`];
+  const stackCenterInset = stackSpineOverlap / 2 * (isLeft ? 1 : -1);
+  const x = pageCenter + stackCenterInset + tuning[`${tunePrefix}X`];
   const y = topY - scaledTextureH / 2;
   stack.plane.position.set(x, y, -0.034);
   stack.collectionMesh.position.set(x, y, -0.034);
   const blockDepthScale = STICKER_PAGE_BLOCK_DEPTH_SCALE[level] ?? STICKER_PAGE_BLOCK_DEPTH_SCALE.full;
-  stack.block.scale.set(1, 1, blockDepthScale);
-  stack.block.position.set(pageLeft, 0, STICKER_PAGE_BLOCK_TOP_Z);
+  stack.block.scale.set(stackWidthScale, 1, blockDepthScale);
+  stack.block.position.set(pageLeft - (isLeft ? 0 : stackSpineOverlap), 0, STICKER_PAGE_BLOCK_TOP_Z);
 }
 
 function hideStackThickness() {
@@ -8695,7 +8704,7 @@ function assignSpineTexture() {
   if (activeAlbumMode === "collection") {
     assignTextureObject(spine, getCollectionSpineTexture(activeBook));
     assignTextureObject(collectionFold, getCollectionFoldTexture(activeBook));
-    spine.scale.set(0.3, 1, 1);
+    spine.scale.set(0.3, PAGE_H / STICKER_SPINE_H, 1);
     spine.position.y = 0;
     spine.position.z = -0.055;
     spine.renderOrder = 6;
@@ -8703,11 +8712,11 @@ function assignSpineTexture() {
     return;
   }
   spine.scale.set(1, 1, 1);
-  spine.position.y = 0;
+  spine.position.y = -STICKER_SPINE_STACK_EXTENSION / 2;
   spine.position.z = -0.09;
   spine.renderOrder = 1;
   spine.material.opacity = 1;
-  assignTexture(spine, BOOK_VARIANTS[activeBook].spine);
+  assignTextureObject(spine, getStickerSpineTexture(activeBook));
 }
 
 function applyRingMaterialTheme() {
@@ -8746,6 +8755,119 @@ function applyRingMaterialTheme() {
     highlightMaterial.opacity = 0.14;
     highlightMaterial.needsUpdate = true;
   }
+}
+
+function getStickerSpineTexture(bookName) {
+  if (stickerSpineTextureMap.has(bookName)) {
+    return stickerSpineTextureMap.get(bookName);
+  }
+  const texture = createStickerSpineTexture(bookName);
+  stickerSpineTextureMap.set(bookName, texture);
+  return texture;
+}
+
+function createStickerSpineTexture(bookName) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = Math.round(1536 * (STICKER_SPINE_H / PAGE_H));
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const hardware = stickerBookTheme(bookName).coverHardware || stickerBookTheme("boy").coverHardware;
+  const bodyX = 24;
+  const bodyY = 18;
+  const bodyW = canvas.width - bodyX * 2;
+  const bodyH = canvas.height - bodyY - 18;
+  const radius = 40;
+
+  ctx.save();
+  ctx.shadowColor = rgbaFromHexNumber(hardware.boardShadow || hardware.spineDark, 0.28);
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 8;
+  const edgeGrad = ctx.createLinearGradient(bodyX, 0, bodyX + bodyW, 0);
+  edgeGrad.addColorStop(0, tintHexNumber(hardware.spineDark, 0.18));
+  edgeGrad.addColorStop(0.13, tintHexNumber(hardware.spine, 0.3));
+  edgeGrad.addColorStop(0.5, tintHexNumber(hardware.spineHighlight, 0.18));
+  edgeGrad.addColorStop(0.87, tintHexNumber(hardware.spine, 0.24));
+  edgeGrad.addColorStop(1, tintHexNumber(hardware.spineDark, 0.05));
+  ctx.fillStyle = edgeGrad;
+  drawCanvasRoundedRect(ctx, bodyX, bodyY, bodyW, bodyH, radius);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = rgbaFromHexNumber(hardware.spineDark, 0.52);
+  ctx.lineWidth = 2;
+  drawCanvasRoundedRect(ctx, bodyX + 20, bodyY + 34, bodyW - 40, bodyH - 68, 26);
+  ctx.stroke();
+
+  const grooveTop = bodyY + 76;
+  const grooveBottom = bodyY + bodyH - 58;
+  for (const x of [58, 78, 98, 118, 138, 158, 178, 198]) {
+    const groove = ctx.createLinearGradient(x - 2, 0, x + 2, 0);
+    groove.addColorStop(0, rgbaFromHexNumber(hardware.spineDark, 0.55));
+    groove.addColorStop(0.52, "rgba(255, 255, 255, 0.62)");
+    groove.addColorStop(1, rgbaFromHexNumber(hardware.spineDark, 0.36));
+    ctx.strokeStyle = groove;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x, grooveTop);
+    ctx.lineTo(x, grooveBottom);
+    ctx.stroke();
+  }
+
+  for (const pixelY of PAGE_RING_PIXELS) {
+    const y = pixelY;
+    const leftX = bodyX + 34;
+    const rightX = bodyX + bodyW - 34;
+
+    ctx.fillStyle = rgbaFromHexNumber(hardware.spineDark, 0.58);
+    ctx.beginPath();
+    ctx.ellipse(leftX, y, 23, 34, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(rightX, y, 23, 34, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(leftX, y, 29, Math.PI * 0.55, Math.PI * 1.45);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(rightX, y, 29, -Math.PI * 0.45, Math.PI * 0.45);
+    ctx.stroke();
+
+    ctx.strokeStyle = rgbaFromHexNumber(hardware.spineDark, 0.6);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(leftX + 31, y);
+    ctx.lineTo(rightX - 31, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function hexNumberToCss(number) {
+  return `#${Number(number || 0).toString(16).padStart(6, "0").slice(-6)}`;
+}
+
+function rgbaFromHexNumber(number, alpha) {
+  const value = Number(number || 0);
+  return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+}
+
+function tintHexNumber(number, amount) {
+  return tintColor(hexNumberToCss(number), amount);
 }
 
 function getCollectionSpineTexture(bookName) {
