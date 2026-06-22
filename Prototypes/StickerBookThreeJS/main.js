@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-809";
+const ASSET_VERSION = "20260623-811";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -547,6 +547,30 @@ const BOOK_VARIANTS = {
     spine: "sb3d_forest_spine_canvas_20260623.webp",
     thicknessKey: "boy",
   },
+  sakura: {
+    insideLeft: "sb3d_sakura_free_blank_page_image2_20260623.png",
+    insideRight: "sb3d_sakura_free_blank_page_image2_20260623.png",
+    freePage: "sb3d_sakura_free_blank_page_image2_20260623.png",
+    coverPrint: "sb3d_sakura_cover_front_image2_20260623.webp",
+    coverHardwareMode: "separate",
+    coverFront: "sb3d_sakura_cover_front_image2_20260623.webp",
+    coverBack: "sb3d_sakura_cover_back_image2_20260623.webp",
+    coverInside: "sb3d_sakura_cover_inside_image2_20260623.webp",
+    spine: "sb3d_sakura_spine_image2_20260623.webp",
+    thicknessKey: "girl",
+  },
+  shinobi: {
+    insideLeft: "sb3d_shinobi_free_blank_page_image2_20260623.png",
+    insideRight: "sb3d_shinobi_free_blank_page_image2_20260623.png",
+    freePage: "sb3d_shinobi_free_blank_page_image2_20260623.png",
+    coverPrint: "sb3d_shinobi_cover_front_image2_20260623.webp",
+    coverHardwareMode: "separate",
+    coverFront: "sb3d_shinobi_cover_front_image2_20260623.webp",
+    coverBack: "sb3d_shinobi_cover_back_image2_20260623.webp",
+    coverInside: "sb3d_shinobi_cover_inside_image2_20260623.webp",
+    spine: "sb3d_shinobi_spine_image2_20260623.webp",
+    thicknessKey: "boy",
+  },
 };
 
 const STICKER_BOOK_THEMES = {
@@ -763,6 +787,148 @@ const STICKER_BOOK_THEMES = {
       ],
     },
   },
+  sakura: {
+    accent: "#d46b8c",
+    sub: "#8abfba",
+    line: "#d89aac",
+    tab: "#f8dce4",
+    coverHardware: {
+      board: 0xa94f6f,
+      boardShadow: 0x733047,
+      spine: 0xc76783,
+      spineDark: 0x95465e,
+      spineHighlight: 0xffd8e2,
+      ring: 0xd4b17a,
+      ringHighlight: 0xffefd0,
+    },
+    collection: {
+      paper: ["#fff8ea", "#fff0e9", "#f8d4d8"],
+      text: "#40373b",
+      pageBorder: "#f1b6c3",
+      pageHighlight: "rgba(255, 255, 255, 0.8)",
+      frameShadow: "rgba(118, 48, 69, 0.16)",
+      infoAccent: "#cf6d8a",
+      infoAccentSoft: "rgba(207, 109, 138, 0.24)",
+      ring: 0xd4b17a,
+      ringHighlight: 0xfff1d4,
+      spine: {
+        warm: "#f0a6b8",
+        paper: "#fff8e7",
+        shadow: "#70445a",
+        seam: "#d27895",
+        foldPaper: "250, 238, 224",
+        foldWarm: "232, 165, 184",
+        foldDark: "96, 52, 72",
+      },
+      pages: {
+        left: {
+          frame: "#e7a1b4",
+          frameDark: "#c56f88",
+          accent: "#83bcae",
+          innerStroke: "#f0bfcc",
+          motifSet: "garden",
+        },
+        right: {
+          frame: "#d987a0",
+          frameDark: "#b95c79",
+          accent: "#d8b85e",
+          innerStroke: "#efb0c2",
+          motifSet: "skyGarden",
+        },
+      },
+      slotBand: {
+        fill: "#f0b7c4",
+        edge: "#cc7890",
+        slot: "rgba(255, 250, 232, 0.92)",
+        stroke: "rgba(183, 90, 112, 0.28)",
+      },
+      card: {
+        foundFill: "rgba(255, 253, 241, 0.8)",
+        lockedFill: "rgba(228, 222, 218, 0.56)",
+        foundStroke: "rgba(207, 109, 138, 0.38)",
+        lockedStroke: "rgba(125, 118, 122, 0.22)",
+        numberFill: "#cf6d8a",
+      },
+      tabs: [
+        { color: "#f3a8bc", shadow: "#d06f8b", motif: "flower" },
+        { color: "#ffd36a", shadow: "#d6a53a", motif: "star" },
+        { color: "#8ed0bd", shadow: "#66a998", motif: "sparkle" },
+        { color: "#f0b7d6", shadow: "#cc86aa", motif: "flower" },
+        { color: "#83c8dd", shadow: "#5ba4bc", motif: "cloud" },
+      ],
+    },
+  },
+  shinobi: {
+    accent: "#315d89",
+    sub: "#79b3bd",
+    line: "#bca465",
+    tab: "#dce8e2",
+    coverHardware: {
+      board: 0x244e7b,
+      boardShadow: 0x17324f,
+      spine: 0x2d5d8f,
+      spineDark: 0x1d4067,
+      spineHighlight: 0xa8cfdd,
+      ring: 0xc2a264,
+      ringHighlight: 0xffebbd,
+    },
+    collection: {
+      paper: ["#fffbe6", "#edf4e8", "#d8e5df"],
+      text: "#2d3d44",
+      pageBorder: "#90b5c6",
+      pageHighlight: "rgba(255, 255, 255, 0.78)",
+      frameShadow: "rgba(27, 52, 76, 0.16)",
+      infoAccent: "#4f8ba5",
+      infoAccentSoft: "rgba(79, 139, 165, 0.24)",
+      ring: 0xc2a264,
+      ringHighlight: 0xffedc8,
+      spine: {
+        warm: "#7ea8b6",
+        paper: "#fff8df",
+        shadow: "#30495d",
+        seam: "#315d89",
+        foldPaper: "245, 240, 216",
+        foldWarm: "128, 168, 182",
+        foldDark: "43, 66, 86",
+      },
+      pages: {
+        left: {
+          frame: "#6ba0b5",
+          frameDark: "#477f99",
+          accent: "#d5b454",
+          innerStroke: "#9ac2ce",
+          motifSet: "skyGarden",
+        },
+        right: {
+          frame: "#315d89",
+          frameDark: "#234767",
+          accent: "#7ab7a8",
+          innerStroke: "#7fa7bd",
+          motifSet: "nature",
+        },
+      },
+      slotBand: {
+        fill: "#90b5c6",
+        edge: "#5b87a0",
+        slot: "rgba(255, 252, 232, 0.92)",
+        stroke: "rgba(62, 99, 123, 0.28)",
+      },
+      card: {
+        foundFill: "rgba(255, 253, 238, 0.8)",
+        lockedFill: "rgba(220, 225, 218, 0.56)",
+        foundStroke: "rgba(79, 139, 165, 0.38)",
+        lockedStroke: "rgba(112, 122, 128, 0.22)",
+        numberFill: "#4f8ba5",
+      },
+      tabs: [
+        { color: "#315d89", shadow: "#1f405e", motif: "sparkle" },
+        { color: "#d2ad4f", shadow: "#a98531", motif: "star" },
+        { color: "#72b2bd", shadow: "#4c8b9a", motif: "cloud" },
+        { color: "#6d8fb2", shadow: "#4e6e91", motif: "sparkle" },
+        { color: "#86c596", shadow: "#5e9a70", motif: "leaf" },
+      ],
+    },
+  },
 };
 
 function stickerBookTheme(bookName) {
@@ -842,6 +1008,7 @@ const inlineStickerScale = document.getElementById("inlineStickerScale");
 const inlineStickerRotation = document.getElementById("inlineStickerRotation");
 const inlineStickerClose = document.getElementById("inlineStickerClose");
 const inlineStickerDelete = document.getElementById("inlineStickerDelete");
+const inlineStickerOk = document.getElementById("inlineStickerOk");
 
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
@@ -1220,8 +1387,7 @@ const textureFiles = [
     ...Object.values(SHARED_TEXTURES),
     ...Object.values(ZUKAN_PAGE_TEMPLATES),
     ...ZUKAN_THICKNESS_STRIPS.map(({ file }) => file),
-    ...bookVariantTextureFiles("boy"),
-    ...bookVariantTextureFiles("girl"),
+    ...Object.keys(BOOK_VARIANTS).flatMap((bookName) => bookVariantTextureFiles(bookName)),
     ...["boy", "girl"].flatMap((bookName) =>
       THICKNESS_LEVEL_NAMES.flatMap((level) => [
         `sb3d_${bookName}_page_thickness_left_${level}.webp`,
@@ -1785,7 +1951,16 @@ function setupInlineStickerControls() {
     event.stopPropagation();
     clearInlineStickerSelection();
   });
+  inlineStickerOk?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    flushEditorStateSave();
+    clearInlineStickerSelection();
+  });
   updateInlineStickerControls();
+}
+
+function isInlineStickerPanelOpen() {
+  return Boolean(inlineStickerControls && !inlineStickerControls.hidden);
 }
 
 function canUseInlineStickerEditing() {
@@ -1987,6 +2162,10 @@ function updateInlineStickerControls(syncInputs = true) {
   const visible = canUseInlineStickerEditing() && Boolean(placement);
   if (inlineStickerControls) {
     inlineStickerControls.hidden = !visible;
+  }
+  document.body.classList.toggle("is-inline-sticker-panel-open", visible);
+  if (visible) {
+    setStickerTrayPeek(false);
   }
   if (!visible) {
     return;
@@ -2405,6 +2584,10 @@ function setupStickerTrayReveal() {
   window.addEventListener("pointermove", updateStickerTrayPeekFromPointer);
   window.addEventListener("pointerleave", () => setStickerTrayPeek(false));
   window.addEventListener("touchstart", (event) => {
+    if (!canUseStickerTrayPeek()) {
+      stickerTrayTouchStartY = 0;
+      return;
+    }
     const touch = event.touches?.[0];
     stickerTrayTouchStartY = touch && touch.clientY > window.innerHeight - 76 ? touch.clientY : 0;
   }, { passive: true });
@@ -2439,7 +2622,8 @@ function canUseStickerTrayPeek() {
   return activeAlbumMode !== "collection"
     && activeSurface === "inside"
     && Boolean(collectionStickerTray)
-    && !collectionStickerTray.hidden;
+    && !collectionStickerTray.hidden
+    && !isInlineStickerPanelOpen();
 }
 
 function setStickerTrayPeek(visible) {
@@ -2568,6 +2752,7 @@ function handleStickerTrayPointerDown(event) {
     || activeSurface !== "inside"
     || coverOpenAnimation
     || spreadJumpAnimation
+    || isInlineStickerPanelOpen()
     || (stickerEditor && !stickerEditor.hidden)
   ) {
     return;
@@ -2712,6 +2897,7 @@ function stickerTrayDropTarget(event) {
     || activeSurface !== "inside"
     || coverOpenAnimation
     || spreadJumpAnimation
+    || isInlineStickerPanelOpen()
     || (stickerEditor && !stickerEditor.hidden)
   ) {
     return null;

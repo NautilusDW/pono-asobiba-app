@@ -170,7 +170,7 @@ body:not(.is-collection-album) #scene {
 }
 
 .zukan-theme-picker {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
 }
 
 .zukan-theme-picker button {
@@ -914,8 +914,8 @@ body.is-sticker-tray-dragging #scene {
 
 .inline-sticker-controls {
   position: fixed;
-  top: max(12px, calc(env(safe-area-inset-top) + 12px));
-  left: max(16px, env(safe-area-inset-left));
+  left: 50%;
+  bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
   z-index: 6;
   box-sizing: border-box;
   display: grid;
@@ -923,6 +923,7 @@ body.is-sticker-tray-dragging #scene {
   gap: 6px 7px;
   align-items: center;
   width: min(306px, calc(100vw - 32px));
+  transform: translateX(-50%);
   color: #234247;
   font-weight: 900;
   padding: 8px 9px 9px;
@@ -963,8 +964,15 @@ body.is-sticker-tray-dragging #scene {
   accent-color: #4bb7bb;
 }
 
-.inline-sticker-delete {
+.inline-sticker-actions {
   grid-column: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-sticker-delete,
+.inline-sticker-ok {
   justify-self: start;
   min-width: 42px;
   min-height: 24px;
@@ -977,6 +985,14 @@ body.is-sticker-tray-dragging #scene {
   font-weight: 900;
   box-shadow: 0 2px 8px rgba(31, 56, 48, 0.12);
   cursor: pointer;
+}
+
+.inline-sticker-ok {
+  min-width: 48px;
+  background: linear-gradient(180deg, rgba(255, 244, 190, 0.92), rgba(255, 220, 117, 0.86));
+  box-shadow:
+    0 2px 8px rgba(31, 56, 48, 0.12),
+    inset 0 -2px 0 rgba(199, 143, 43, 0.22);
 }
 
 .inline-sticker-close {
@@ -1941,8 +1957,7 @@ body.is-sticker-tray-dragging #scene {
   }
 
   .inline-sticker-controls {
-    top: max(6px, calc(env(safe-area-inset-top) + 6px));
-    left: max(8px, env(safe-area-inset-left));
+    bottom: max(8px, calc(env(safe-area-inset-bottom) + 8px));
     grid-template-columns: minmax(0, 1fr) 22px;
     width: min(276px, calc(100vw - 124px));
     gap: 6px 7px;
@@ -1958,11 +1973,16 @@ body.is-sticker-tray-dragging #scene {
     font-size: 11px;
   }
 
-  .inline-sticker-delete {
+  .inline-sticker-delete,
+  .inline-sticker-ok {
     min-width: 38px;
     min-height: 22px;
     padding: 0 10px;
     font-size: 12px;
+  }
+
+  .inline-sticker-ok {
+    min-width: 42px;
   }
 
   .inline-sticker-close {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260623-809">
+  <link rel="stylesheet" href="./styles.css?v=20260623-811">
 </head>
 <body>
   <main id="app">
@@ -26,6 +26,8 @@
           <button type="button" data-book-theme="boy">ぼうけん</button>
           <button type="button" data-book-theme="girl">うみとも</button>
           <button type="button" data-book-theme="forest">もり</button>
+          <button type="button" data-book-theme="sakura">さくら</button>
+          <button type="button" data-book-theme="shinobi">しのび</button>
         </div>
       </div>
       <div class="zukan-settings-row">
@@ -51,6 +53,8 @@
         <button type="button" data-book="boy">ぼうけん</button>
         <button type="button" data-book="girl">うみとも</button>
         <button type="button" data-book="forest">もり</button>
+        <button type="button" data-book="sakura">さくら</button>
+        <button type="button" data-book="shinobi">しのび</button>
       </div>
       <div class="segmented" role="group" aria-label="Surface mode">
         <button type="button" data-surface="inside">Inside</button>
@@ -92,7 +96,10 @@
         <span>かいてん</span>
         <input id="inlineStickerRotation" type="range" min="-180" max="180" step="1" value="0">
       </label>
-      <button id="inlineStickerDelete" class="inline-sticker-delete" type="button">けす</button>
+      <div class="inline-sticker-actions">
+        <button id="inlineStickerDelete" class="inline-sticker-delete" type="button">けす</button>
+        <button id="inlineStickerOk" class="inline-sticker-ok" type="button">OK</button>
+      </div>
     </section>
     <section id="stickerEditor" class="sticker-editor" hidden aria-label="Sticker page editor">
       <div class="sticker-editor-shell">
@@ -167,6 +174,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260623-809"></script>
+  <script type="module" src="./main.js?v=20260623-811"></script>
 </body>
 </html>
