@@ -1443,7 +1443,7 @@
     .daily-gacha-counter-foreground {
       position: absolute;
       left: 50%;
-      bottom: -30%;
+      bottom: -24%;
       z-index: 1;
       width: min(1140px, 108%);
       aspect-ratio: 1536 / 1024;
@@ -1589,7 +1589,7 @@
     .daily-gacha-machine-wrap {
       position: absolute;
       left: 50%;
-      bottom: 42px;
+      bottom: 28px;
       z-index: 2;
       --daily-gacha-machine-scale: .85;
       width: min(540px, 54%);
@@ -2472,7 +2472,8 @@
     }
     .daily-gacha-modal.is-opened .daily-gacha-reward-note--tomorrow {
       transform: scale(1);
-      animation: dailyGachaTomorrowBubblePulse 3.2s cubic-bezier(.34,1.46,.64,1) 2.32s infinite;
+      transition: opacity .72s ease 3.35s, transform .72s cubic-bezier(.18,.9,.24,1) 3.35s;
+      animation: dailyGachaTomorrowBubblePulse 3.2s cubic-bezier(.34,1.46,.64,1) 4.25s infinite;
     }
     .daily-gacha-modal.is-opened .daily-gacha-closeup-actions {
       opacity: 1;
@@ -2725,12 +2726,12 @@
         inset: -3%;
       }
       .daily-gacha-counter-foreground {
-        bottom: -34%;
+        bottom: -28%;
         width: min(1040px, 114%);
       }
       .daily-gacha-machine-wrap {
         left: 50%;
-        bottom: 23px;
+        bottom: 16px;
         width: 50%;
         height: calc(100% - 40px);
       }
@@ -3821,7 +3822,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1508;
+    const PAGE_CACHE_VERSION = 1509;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport

@@ -184,7 +184,8 @@
 // v1505: LP gacha bubble 文言を 「1日1かい」 → 「★いちにちいっかい」 に変更
 // v1506: LP gacha bubble 文言を 「★１にち１かい」 (全角１) に修正
 // v1507: daily gacha table placement, Pono start panel, and lever hit area fixed
-const CACHE_VERSION = 1508; // v1508: daily gacha table height, arrow marker, reward bubbles, and plate text alignment fixed
+// v1508: daily gacha table height, arrow marker, reward bubbles, and plate text alignment fixed
+const CACHE_VERSION = 1509; // v1509: daily gacha machine/table contact and delayed tomorrow bubble
 // v1500: daily gacha に木の部屋の奥行き背景と Pono 開始ふきだしを追加
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
