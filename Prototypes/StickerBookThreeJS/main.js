@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-792";
+const ASSET_VERSION = "20260622-793";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -18,8 +18,9 @@ const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
 const PAGE_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
 const STICKER_SPINE_STACK_EXTENSION = PAGE_H * 0.055;
 const STICKER_SPINE_H = PAGE_H + STICKER_SPINE_STACK_EXTENSION;
-const STICKER_STACK_SPINE_OVERLAP = GUTTER * 0.24;
-const BINDING_RING_HOLE_X = GUTTER / 2 + PAGE_HOLE_X;
+const STICKER_OPEN_GAP = GUTTER * 0.62;
+const STICKER_STACK_SPINE_OVERLAP = 0;
+const BINDING_RING_HOLE_X = STICKER_OPEN_GAP / 2 + PAGE_HOLE_X;
 const BINDING_RING_ENDPOINT_X = BINDING_RING_HOLE_X + PAGE_HOLE_RX * 2.15;
 const BINDING_RING_TUBE_RADIUS = PAGE_H * 0.0086;
 const BINDING_RING_ENDPOINT_Z = -0.11;
@@ -8655,7 +8656,7 @@ function applyVariantState() {
 }
 
 function currentBookGap() {
-  return activeAlbumMode === "collection" ? COLLECTION_GUTTER : GUTTER;
+  return activeAlbumMode === "collection" ? COLLECTION_GUTTER : STICKER_OPEN_GAP;
 }
 
 function applyAlbumLayout() {
@@ -8774,7 +8775,7 @@ function createStickerSpineTexture(bookName) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const hardware = stickerBookTheme(bookName).coverHardware || stickerBookTheme("boy").coverHardware;
-  const bodyX = 24;
+  const bodyX = 10;
   const bodyY = 18;
   const bodyW = canvas.width - bodyX * 2;
   const bodyH = canvas.height - bodyY - 18;
@@ -8799,12 +8800,12 @@ function createStickerSpineTexture(bookName) {
   ctx.save();
   ctx.strokeStyle = rgbaFromHexNumber(hardware.spineDark, 0.52);
   ctx.lineWidth = 2;
-  drawCanvasRoundedRect(ctx, bodyX + 20, bodyY + 34, bodyW - 40, bodyH - 68, 26);
+  drawCanvasRoundedRect(ctx, bodyX + 24, bodyY + 34, bodyW - 48, bodyH - 68, 26);
   ctx.stroke();
 
   const grooveTop = bodyY + 76;
   const grooveBottom = bodyY + bodyH - 58;
-  for (const x of [58, 78, 98, 118, 138, 158, 178, 198]) {
+  for (const x of [62, 82, 102, 122, 142, 162, 182, 202]) {
     const groove = ctx.createLinearGradient(x - 2, 0, x + 2, 0);
     groove.addColorStop(0, rgbaFromHexNumber(hardware.spineDark, 0.55));
     groove.addColorStop(0.52, "rgba(255, 255, 255, 0.62)");
@@ -8817,35 +8818,6 @@ function createStickerSpineTexture(bookName) {
     ctx.stroke();
   }
 
-  for (const pixelY of PAGE_RING_PIXELS) {
-    const y = pixelY;
-    const leftX = bodyX + 34;
-    const rightX = bodyX + bodyW - 34;
-
-    ctx.fillStyle = rgbaFromHexNumber(hardware.spineDark, 0.58);
-    ctx.beginPath();
-    ctx.ellipse(leftX, y, 23, 34, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(rightX, y, 23, 34, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.arc(leftX, y, 29, Math.PI * 0.55, Math.PI * 1.45);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(rightX, y, 29, -Math.PI * 0.45, Math.PI * 0.45);
-    ctx.stroke();
-
-    ctx.strokeStyle = rgbaFromHexNumber(hardware.spineDark, 0.6);
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(leftX + 31, y);
-    ctx.lineTo(rightX - 31, y);
-    ctx.stroke();
-  }
   ctx.restore();
 
   const texture = new THREE.CanvasTexture(canvas);
