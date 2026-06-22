@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260623-807">
+  <link rel="stylesheet" href="./styles.css?v=20260623-808">
 </head>
 <body>
   <main id="app">
@@ -15,10 +15,18 @@
       <button id="topSettingsButton" class="top-action-button" type="button" aria-label="せってい" aria-pressed="false">⚙</button>
       <button id="albumModeToggle" class="album-mode-toggle" type="button">ずかん</button>
     </div>
-    <section id="zukanSettingsPanel" class="zukan-settings-panel" hidden aria-label="ずかんせってい">
+    <section id="zukanSettingsPanel" class="zukan-settings-panel" hidden aria-label="せってい">
       <div class="zukan-settings-head">
-        <h2>ずかんせってい</h2>
+        <h2>せってい</h2>
         <button id="zukanSettingsClose" class="zukan-settings-close" type="button" aria-label="とじる">×</button>
+      </div>
+      <div class="zukan-settings-row zukan-settings-row-theme">
+        <span>きせかえ</span>
+        <div class="zukan-settings-segment zukan-theme-picker" role="group" aria-label="シールちょうきせかえ">
+          <button type="button" data-book-theme="boy">ぼうけん</button>
+          <button type="button" data-book-theme="girl">うみとも</button>
+          <button type="button" data-book-theme="forest">もり</button>
+        </div>
       </div>
       <div class="zukan-settings-row">
         <span>ひだり</span>
@@ -42,6 +50,7 @@
       <div class="segmented" role="group" aria-label="Book variant">
         <button type="button" data-book="boy">ぼうけん</button>
         <button type="button" data-book="girl">うみとも</button>
+        <button type="button" data-book="forest">もり</button>
       </div>
       <div class="segmented" role="group" aria-label="Surface mode">
         <button type="button" data-surface="inside">Inside</button>
@@ -157,6 +166,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260623-807"></script>
+  <script type="module" src="./main.js?v=20260623-808"></script>
 </body>
 </html>

@@ -1805,7 +1805,7 @@
       z-index: 4;
       overflow: hidden;
       pointer-events: none;
-      clip-path: inset(79% 18% 0 18% round 14px);
+      clip-path: inset(79% 18% 5% 18% round 14px);
     }
     .daily-gacha-drop-capsule {
       position: absolute;
@@ -1952,7 +1952,7 @@
       width: min(590px, 72vw);
     }
     .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status-pono {
-      display: block;
+      display: none;
     }
     .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status {
       z-index: 2;
@@ -1960,13 +1960,13 @@
       display: grid;
       place-items: center;
       width: 100%;
-      min-height: clamp(86px, 12vh, 104px);
-      padding: clamp(13px, 2.2vh, 20px) clamp(24px, 2.6vw, 30px) clamp(15px, 2.4vh, 22px) clamp(112px, 11vw, 130px);
+      min-height: clamp(108px, 15vh, 122px);
+      padding: clamp(14px, 2.3vh, 20px) clamp(24px, 2.6vw, 30px) clamp(15px, 2.4vh, 22px) clamp(142px, 13vw, 158px);
       border: 0;
       border-radius: 0;
-      background: transparent url("assets/ui/gacha/daily_gacha_start_panel_generated.png") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_generated.png") center / 100% 100% no-repeat;
       color: #5B2B14;
-      font-size: clamp(24px, 2.7vw, 31px);
+      font-size: clamp(23px, 2.55vw, 29px);
       line-height: 1.18;
       text-shadow: 0 2px 0 rgba(255, 255, 255, .95);
       box-shadow: none;
@@ -2140,7 +2140,7 @@
       position: absolute;
       z-index: 1;
       left: 50%;
-      top: 80%;
+      top: 74%;
       width: min(560px, 54vw);
       height: min(205px, 25vw);
       opacity: 0;
@@ -2173,7 +2173,7 @@
     .daily-gacha-reward {
       position: absolute;
       left: 50%;
-      top: 34%;
+      top: 27%;
       z-index: 2;
       width: 276px;
       height: 276px;
