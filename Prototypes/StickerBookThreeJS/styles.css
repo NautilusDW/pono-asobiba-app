@@ -1726,12 +1726,12 @@ body.is-sticker-tray-dragging #scene {
     flex-basis: 72px;
     width: 72px;
     height: 58px;
-    grid-template-rows: 34px 12px;
+    grid-template-rows: 1fr;
   }
 
   .sticker-tray-icon {
-    width: 48px;
-    height: 32px;
+    width: 58px;
+    height: 46px;
   }
 
   .sticker-tray-drag-ghost {
@@ -2095,12 +2095,12 @@ body.is-sticker-tray-dragging #scene {
     flex-basis: 66px;
     width: 66px;
     height: 52px;
-    grid-template-rows: 30px 10px;
+    grid-template-rows: 1fr;
   }
 
   .sticker-tray-icon {
-    width: 44px;
-    height: 28px;
+    width: 54px;
+    height: 42px;
   }
 
   .sticker-tray-drag-ghost {
