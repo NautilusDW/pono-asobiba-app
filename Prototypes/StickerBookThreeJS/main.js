@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-803";
+const ASSET_VERSION = "20260622-804";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1196,6 +1196,8 @@ coverTurn.position.set(COVER_CLOSED_X, 0, 0.18);
 book.add(coverTurn);
 
 const coverTurnGeometry = createCoverSurfaceGeometry();
+const coverTurnBackGeometry = createCoverSurfaceGeometry();
+mirrorGeometryUvX(coverTurnBackGeometry);
 const coverTurnFront = new THREE.Mesh(
   coverTurnGeometry,
   new THREE.MeshStandardMaterial({
@@ -1209,7 +1211,7 @@ const coverTurnFront = new THREE.Mesh(
 );
 const coverTurnDepth = createCoverDepthLayer();
 const coverTurnBack = new THREE.Mesh(
-  coverTurnGeometry,
+  coverTurnBackGeometry,
   new THREE.MeshStandardMaterial({
     map: getTexture(BOOK_VARIANTS[activeBook].coverInside),
     transparent: false,
@@ -2027,6 +2029,11 @@ function setupCollectionStickerTray() {
     navigateCollectionTocCategory(categoryId);
   });
   collectionStickerTray.addEventListener("pointerdown", handleStickerTrayPointerDown);
+  collectionStickerTray.addEventListener("dragstart", (event) => {
+    if (event.target.closest?.("[data-sticker-tray-id]")) {
+      event.preventDefault();
+    }
+  });
   window.addEventListener("pointermove", handleStickerTrayPointerMove);
   window.addEventListener("pointerup", endStickerTrayDrag);
   window.addEventListener("pointercancel", cancelStickerTrayDrag);
@@ -2117,6 +2124,7 @@ function renderStickerThumbnailTray() {
     button.type = "button";
     button.className = "collection-toc-card sticker-tray-card";
     button.dataset.stickerTrayId = sticker.id;
+    button.draggable = false;
     button.setAttribute("aria-label", `${sticker.label}を ドラッグして はる`);
     button.title = sticker.label;
 
@@ -2129,6 +2137,7 @@ function renderStickerThumbnailTray() {
     image.alt = "";
     image.loading = "lazy";
     image.decoding = "async";
+    image.draggable = false;
     icon.append(image);
 
     button.append(icon);
@@ -2165,6 +2174,12 @@ function handleStickerTrayPointerDown(event) {
     dragging: false,
     ghost: null,
   };
+  if (event.pointerType === "mouse") {
+    event.preventDefault();
+    try {
+      button.setPointerCapture?.(event.pointerId);
+    } catch {}
+  }
 }
 
 function handleStickerTrayPointerMove(event) {
@@ -9077,6 +9092,18 @@ function createCoverSurfaceGeometry() {
   }
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
+  return geometry;
+}
+
+function mirrorGeometryUvX(geometry) {
+  const uv = geometry?.attributes?.uv;
+  if (!uv) {
+    return geometry;
+  }
+  for (let index = 0; index < uv.count; index += 1) {
+    uv.setX(index, 1 - uv.getX(index));
+  }
+  uv.needsUpdate = true;
   return geometry;
 }
 
