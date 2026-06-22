@@ -1,6 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1489: Daily gacha super reveal focuses the sticker, uses a generated luxury name plate, and keeps capsule shells fully visible.
+// v1488: Daily gacha prompts use larger start text, side speech bubbles, bigger reward sticker, and separated capsule shells.
+// v1487: Daily gacha reveal layout makes the reward sticker larger and moves the play note to the top.
+// v1486: Daily gacha super rare capsule uses dedicated platinum closed/open assets.
 // v1483: Daily gacha gold capsule assets refreshed and rarity/color weights made configurable.
 // v1482: Daily gacha super-rare reveal gets a dedicated luxurious fanfare SFX.
 // v1479: coming-soon を Stitch 案 B (Sticker Banner + 詳細モーダル) に置換 — 旧 .coming-soon-app (phone モック) 完全削除、 Mochiy Pop One フォント追加、 タップ展開モーダル + Esc/オーバーレイ閉じ + focus トラップ
@@ -166,7 +170,7 @@
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
-const CACHE_VERSION = 1485; // v1485: Hero labels 案 C revert — Claude Design 側で再デザインするため一旦差し戻し (ce557cf revert)
+const CACHE_VERSION = 1490; // v1490: Hero scattered labels swap (もじ/かず/おえかき → なぞなぞ/ぼうけん/いろあそび) reflecting Claude Design output — selectors renamed, absolute positioning preserved.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

@@ -1,163 +1,1067 @@
 {
-  "version": 1,
+  "version": 2,
   "pages": {
     "quizland": {
-      "title": "フクロウはかせ",
-      "subtitle": "なぞなぞで あつめる シール",
+      "title": "なぞなぞランド",
+      "subtitle": "なぞなぞの シール",
       "icon": "🦉",
       "accent": "#7C5CFF",
+      "appOnly": false,
       "stickers": [
         {
-          "id": "quizland_owl_professor",
-          "name": "フクロウはかせ",
-          "img": "assets/images/quizland/owl_professor_guide.png",
-          "unlockOn": ["clear"]
+          "id": "quizland_good_stamp_layer_14",
+          "name": "なぞなぞ ノーマル 1",
+          "img": "assets/ui/gacha/stickers/quizland_good_stamp_layer_14.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "quizland_question_balloon",
-          "name": "なんだろう",
-          "img": "assets/images/quizland/balloons/ballon_01.png",
-          "unlockOn": ["clear"]
+          "id": "quizland_note_board_layer_13",
+          "name": "なぞなぞ ノーマル 2",
+          "img": "assets/ui/gacha/stickers/quizland_note_board_layer_13.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "quizland_final_stamp",
-          "name": "ぜんぶ できたね",
-          "img": "assets/images/quizland/stamps/zenbu_dekita.png",
-          "unlockOn": ["perfect", "clear"]
-        },
-        {
-          "id": "quizland_q5_plate",
-          "name": "だい5もん",
-          "img": "assets/images/quizland/qno_plate_5.png",
-          "unlockOn": ["perfect"]
+          "id": "quizland_owl_professor_layer_10",
+          "name": "なぞなぞ ノーマル 3",
+          "img": "assets/ui/gacha/stickers/quizland_owl_professor_layer_10.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     },
     "maze": {
-      "title": "ランタンのめいろ",
-      "subtitle": "もりの たんけんシール",
+      "title": "もりの めいろ",
+      "subtitle": "たんけんの シール",
       "icon": "🏮",
       "accent": "#6C8E3F",
+      "appOnly": false,
       "stickers": [
         {
-          "id": "maze_lantern_trail",
-          "name": "ランタンの みち",
-          "img": "assets/ui/thumb_quiz-sound.webp",
-          "unlockOn": ["stage_clear", "clear"]
+          "id": "maze_butterfly_layer_09",
+          "name": "めいろ ノーマル 1",
+          "img": "assets/ui/gacha/stickers/maze_butterfly_layer_09.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "maze_acorn_bag",
-          "name": "どんぐりぶくろ",
-          "img": "assets/images/maze/gimmicks/donguri/acorn_bag.png",
-          "unlockOn": ["stage_clear", "clear"]
+          "id": "maze_kani_special_kira_001",
+          "name": "めいろ とくべつキラ 1",
+          "img": "assets/ui/gacha/stickers/maze_kani_special_kira_001.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "maze_glove",
-          "name": "ちからの グローブ",
-          "img": "assets/images/maze/gimmicks/strength/glove_pair_item.png",
-          "unlockOn": ["stage_clear", "clear"]
+          "id": "maze_kira_01_odoke_pyon_key_ladder_001",
+          "name": "めいろ キラ 1",
+          "img": "assets/ui/gacha/stickers/maze_kira_01_odoke_pyon_key_ladder_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "maze_gold_key",
-          "name": "きんの かぎ",
-          "img": "assets/images/maze/flag/gold_key.png",
-          "unlockOn": ["clear"]
+          "id": "maze_kira_01_odoke_pyon_key_ladder_002",
+          "name": "めいろ キラ 2",
+          "img": "assets/ui/gacha/stickers/maze_kira_01_odoke_pyon_key_ladder_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_kira_01_odoke_pyon_key_ladder_003",
+          "name": "めいろ キラ 3",
+          "img": "assets/ui/gacha/stickers/maze_kira_01_odoke_pyon_key_ladder_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_kira_01_odoke_pyon_key_ladder_004",
+          "name": "めいろ キラ 4",
+          "img": "assets/ui/gacha/stickers/maze_kira_01_odoke_pyon_key_ladder_004.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_kira_02_kujira_glove_acorn_001",
+          "name": "めいろ キラ 5",
+          "img": "assets/ui/gacha/stickers/maze_kira_02_kujira_glove_acorn_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_kira_02_kujira_glove_acorn_003",
+          "name": "めいろ キラ 6",
+          "img": "assets/ui/gacha/stickers/maze_kira_02_kujira_glove_acorn_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_001",
+          "name": "めいろ ノーマル 2",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_002",
+          "name": "めいろ ノーマル 3",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_003",
+          "name": "めいろ ノーマル 4",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_004",
+          "name": "めいろ ノーマル 5",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_005",
+          "name": "めいろ ノーマル 6",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_005.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_006",
+          "name": "めいろ ノーマル 7",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_006.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_ojama_boss_special_kira_001",
+          "name": "めいろ とくべつキラ 2",
+          "img": "assets/ui/gacha/stickers/maze_ojama_boss_special_kira_001.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "maze_power_glove_item",
+          "name": "めいろ パワーグローブ",
+          "img": "assets/ui/gacha/stickers/maze_power_glove_item.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     },
     "oto": {
       "title": "おとタッチ",
-      "subtitle": "おんぷと リズムの シール",
+      "subtitle": "おとの シール",
       "icon": "🎵",
       "accent": "#19A7CE",
+      "appOnly": false,
       "stickers": [
         {
-          "id": "oto_do_key",
-          "name": "ドの ボタン",
-          "img": "assets/images/oto/buttons/btn_note_kana_do.png",
-          "unlockOn": ["clear"]
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_001",
+          "name": "おと キラ 1",
+          "img": "assets/ui/gacha/stickers/oto_kira_highdo_chimes_taiko_animal_kero_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "oto_mi_key",
-          "name": "ミの ボタン",
-          "img": "assets/images/oto/buttons/btn_note_kana_mi.png",
-          "unlockOn": ["clear"]
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_002",
+          "name": "おと キラ 2",
+          "img": "assets/ui/gacha/stickers/oto_kira_highdo_chimes_taiko_animal_kero_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "oto_stage_clear",
-          "name": "ステージ クリア",
-          "img": "assets/images/oto/rhythm/stage_clear_burst.png",
-          "unlockOn": ["clear"]
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_003",
+          "name": "おと キラ 3",
+          "img": "assets/ui/gacha/stickers/oto_kira_highdo_chimes_taiko_animal_kero_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "oto_star_score",
-          "name": "さんぼし",
-          "emoji": "⭐",
-          "unlockOn": ["perfect", "clear"]
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_004",
+          "name": "おと キラ 4",
+          "img": "assets/ui/gacha/stickers/oto_kira_highdo_chimes_taiko_animal_kero_004.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_005",
+          "name": "おと キラ 5",
+          "img": "assets/ui/gacha/stickers/oto_kira_highdo_chimes_taiko_animal_kero_005.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_001",
+          "name": "おと ノーマル 1",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_002",
+          "name": "おと ノーマル 2",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_003",
+          "name": "おと ノーマル 3",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_004",
+          "name": "おと ノーマル 4",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_005",
+          "name": "おと ノーマル 5",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_005.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_006",
+          "name": "おと ノーマル 6",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_006.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_007",
+          "name": "おと ノーマル 7",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_007.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_008",
+          "name": "おと ノーマル 8",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_008.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_special_kira_robo_gaohn_crown_note_001",
+          "name": "おと とくべつキラ 1",
+          "img": "assets/ui/gacha/stickers/oto_special_kira_robo_gaohn_crown_note_001.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_special_kira_robo_gaohn_crown_note_002",
+          "name": "おと とくべつキラ 2",
+          "img": "assets/ui/gacha/stickers/oto_special_kira_robo_gaohn_crown_note_002.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "oto_special_kira_robo_gaohn_crown_note_003",
+          "name": "おと とくべつキラ 3",
+          "img": "assets/ui/gacha/stickers/oto_special_kira_robo_gaohn_crown_note_003.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     },
     "puzzle": {
       "title": "なかよしパズル",
-      "subtitle": "できあがった えの シール",
+      "subtitle": "なかまの シール",
       "icon": "🧩",
       "accent": "#F2915A",
+      "appOnly": false,
       "stickers": [
         {
-          "id": "puzzle_usagi",
-          "name": "うさぎの なかま",
-          "img": "assets/images/puzzle/partners/partner_usagi.webp",
-          "unlockOn": ["stage_clear", "clear"]
+          "id": "puzzle_blue_piece_special_kira_001",
+          "name": "パズル とくべつキラ 1",
+          "img": "assets/ui/gacha/stickers/puzzle_blue_piece_special_kira_001.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "puzzle_risu",
-          "name": "りすの なかま",
-          "img": "assets/images/puzzle/partners/partner_risu.webp",
-          "unlockOn": ["stage_clear", "clear"]
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_001",
+          "name": "パズル キラ 1",
+          "img": "assets/ui/gacha/stickers/puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "puzzle_kojika",
-          "name": "こじかの なかま",
-          "img": "assets/images/puzzle/partners/partner_kojika.webp",
-          "unlockOn": ["stage_clear", "clear"]
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_002",
+          "name": "パズル キラ 2",
+          "img": "assets/ui/gacha/stickers/puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "puzzle_fukurou",
-          "name": "フクロウの なかま",
-          "img": "assets/images/puzzle/partners/partner_fukurou.webp",
-          "unlockOn": ["clear"]
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_003",
+          "name": "パズル キラ 3",
+          "img": "assets/ui/gacha/stickers/puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_004",
+          "name": "パズル キラ 4",
+          "img": "assets/ui/gacha/stickers/puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_004.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_005",
+          "name": "パズル キラ 5",
+          "img": "assets/ui/gacha/stickers/puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_005.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_006",
+          "name": "パズル キラ 6",
+          "img": "assets/ui/gacha/stickers/puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_006.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "puzzle_normal_usagi_risu_kojika_001",
+          "name": "パズル ノーマル 1",
+          "img": "assets/ui/gacha/stickers/puzzle_normal_usagi_risu_kojika_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "puzzle_normal_usagi_risu_kojika_002",
+          "name": "パズル ノーマル 2",
+          "img": "assets/ui/gacha/stickers/puzzle_normal_usagi_risu_kojika_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "puzzle_normal_usagi_risu_kojika_003",
+          "name": "パズル ノーマル 3",
+          "img": "assets/ui/gacha/stickers/puzzle_normal_usagi_risu_kojika_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     },
     "bento": {
       "title": "いろどりべんとう",
-      "subtitle": "おかずを あつめる シール",
+      "subtitle": "べんとうの シール",
       "icon": "🍱",
       "accent": "#F97316",
+      "appOnly": false,
       "stickers": [
         {
-          "id": "bento_tamagoyaki",
-          "name": "たまごやき",
-          "img": "assets/images/bento/cooking/egg/egg_003_done.png",
-          "unlockOn": ["complete", "clear"]
+          "id": "bento_best_lunch_special_kira_001",
+          "name": "べんとう とくべつキラ 1",
+          "img": "assets/ui/gacha/stickers/bento_best_lunch_special_kira_001.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "bento_carrot",
-          "name": "にんじん",
-          "img": "assets/images/bento/cooking/carrot/carrot_011.png",
-          "unlockOn": ["complete", "clear"]
+          "id": "bento_kira_bear_boxes_cat_bear_rice_002",
+          "name": "べんとう キラ 1",
+          "img": "assets/ui/gacha/stickers/bento_kira_bear_boxes_cat_bear_rice_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "bento_shrimp",
-          "name": "えびフライ",
-          "img": "assets/images/bento/cooking/shrimp/shrimp_003_done.png",
-          "unlockOn": ["complete", "clear"]
+          "id": "bento_kira_bear_boxes_cat_bear_rice_004",
+          "name": "べんとう キラ 2",
+          "img": "assets/ui/gacha/stickers/bento_kira_bear_boxes_cat_bear_rice_004.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "bento_salmon",
-          "name": "しゃけ",
-          "img": "assets/images/bento/cooking/salmon/salmon_003_done.png",
-          "unlockOn": ["complete", "clear"]
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_001",
+          "name": "べんとう キラ 3",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_002",
+          "name": "べんとう キラ 4",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_003",
+          "name": "べんとう キラ 5",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_004",
+          "name": "べんとう キラ 6",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_004.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_005",
+          "name": "べんとう キラ 7",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_005.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_006",
+          "name": "べんとう キラ 8",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_006.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_001",
+          "name": "べんとう キラ 9",
+          "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_002",
+          "name": "べんとう キラ 10",
+          "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_003",
+          "name": "べんとう キラ 11",
+          "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_004",
+          "name": "べんとう キラ 12",
+          "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_004.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_005",
+          "name": "べんとう キラ 13",
+          "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_005.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_staff_child_friend_pono_001",
+          "name": "べんとう キラ 14",
+          "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_staff_child_friend_pono_002",
+          "name": "べんとう キラ 15",
+          "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_kira_staff_child_friend_pono_003",
+          "name": "べんとう キラ 16",
+          "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_001",
+          "name": "べんとう ノーマル 1",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_002",
+          "name": "べんとう ノーマル 2",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_003",
+          "name": "べんとう ノーマル 3",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_004",
+          "name": "べんとう ノーマル 4",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        }
+      ]
+    },
+    "quiz-sound": {
+      "title": "おとクイズ",
+      "subtitle": "きくちからの シール",
+      "icon": "🔔",
+      "accent": "#38BDF8",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "quiz_sound_bird_frog_bell_ear_badge_002",
+          "name": "おとクイズ ノーマル 1",
+          "img": "assets/ui/gacha/stickers/quiz_sound_bird_frog_bell_ear_badge_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "quiz_sound_bird_frog_bell_ear_badge_003",
+          "name": "おとクイズ ノーマル 2",
+          "img": "assets/ui/gacha/stickers/quiz_sound_bird_frog_bell_ear_badge_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "quiz_sound_bird_frog_bell_ear_badge_004",
+          "name": "おとクイズ ノーマル 3",
+          "img": "assets/ui/gacha/stickers/quiz_sound_bird_frog_bell_ear_badge_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        }
+      ]
+    },
+    "sea-album": {
+      "title": "うみアルバム",
+      "subtitle": "しおだまりの シール",
+      "icon": "🐚",
+      "accent": "#0891B2",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_001",
+          "name": "うみ ノーマル 1",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_002",
+          "name": "うみ ノーマル 2",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_003",
+          "name": "うみ ノーマル 3",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_004",
+          "name": "うみ ノーマル 4",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_005",
+          "name": "うみ ノーマル 5",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_005.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_006",
+          "name": "うみ ノーマル 6",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_006.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "sea_album_special_kira_umigame_manta_001",
+          "name": "うみ とくべつキラ 1",
+          "img": "assets/ui/gacha/stickers/sea_album_special_kira_umigame_manta_001.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "sea_album_special_kira_umigame_manta_002",
+          "name": "うみ とくべつキラ 2",
+          "img": "assets/ui/gacha/stickers/sea_album_special_kira_umigame_manta_002.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     },
@@ -169,94 +1073,443 @@
       "appOnly": true,
       "stickers": [
         {
-          "id": "starparodier_pono_ship",
-          "name": "ポノの きたい",
-          "img": "assets/images/starparodier/player_ship_pono.png",
-          "unlockOn": ["clear"]
+          "id": "starparodier_starboat_beam_mecha_planet_001",
+          "name": "うちゅう キラ 1",
+          "img": "assets/ui/gacha/stickers/starparodier_starboat_beam_mecha_planet_001.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "starparodier_power_star",
-          "name": "パワースター",
-          "img": "assets/images/starparodier/power_star.png",
-          "unlockOn": ["clear"]
+          "id": "starparodier_starboat_beam_mecha_planet_002",
+          "name": "うちゅう キラ 2",
+          "img": "assets/ui/gacha/stickers/starparodier_starboat_beam_mecha_planet_002.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "starparodier_moon",
-          "name": "月ステージ",
-          "img": "assets/images/starparodier/moon_mid_loop.png",
-          "unlockOn": ["clear"]
+          "id": "starparodier_starboat_beam_mecha_planet_003",
+          "name": "うちゅう キラ 3",
+          "img": "assets/ui/gacha/stickers/starparodier_starboat_beam_mecha_planet_003.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "starparodier_galaxy_boss",
-          "name": "ギャラクシー親分",
-          "img": "assets/images/starparodier/galaxy_oyabun_octopus_funny_face.png",
-          "unlockOn": ["clear"]
+          "id": "starparodier_starboat_beam_mecha_planet_004",
+          "name": "うちゅう キラ 4",
+          "img": "assets/ui/gacha/stickers/starparodier_starboat_beam_mecha_planet_004.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     },
     "undersea-cave": {
-      "title": "海底洞窟",
-      "subtitle": "ひかりと ともだちの シール",
+      "title": "かいていどうくつ",
+      "subtitle": "ひかりの シール",
       "icon": "🌊",
       "accent": "#0EA5E9",
       "appOnly": true,
       "stickers": [
         {
-          "id": "undersea_whale",
-          "name": "ねむりくじら",
-          "img": "assets/images/undersea-cave/friend_whale_sleep.png",
-          "unlockOn": ["clear"]
+          "id": "undersea_cave_whale_lightfood_bubble_blueshell_001",
+          "name": "どうくつ ノーマル 1",
+          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "undersea_octopus",
-          "name": "にこにこタコ",
-          "img": "assets/images/undersea-cave/friend_octopus_happy.png",
-          "unlockOn": ["clear"]
+          "id": "undersea_cave_whale_lightfood_bubble_blueshell_002",
+          "name": "どうくつ ノーマル 2",
+          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "undersea_food",
-          "name": "ひかりのエサ",
-          "img": "assets/images/undersea-cave/item_food_pellet.png",
-          "unlockOn": ["clear"]
+          "id": "undersea_cave_whale_lightfood_bubble_blueshell_003",
+          "name": "どうくつ ノーマル 3",
+          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "undersea_pearl",
-          "name": "しんじゅの かい",
-          "img": "assets/images/undersea-cave/item_pearl_shell.png",
-          "unlockOn": ["clear"]
+          "id": "undersea_cave_whale_lightfood_bubble_blueshell_004",
+          "name": "どうくつ ノーマル 4",
+          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "undersea_special_squid_layer_15",
+          "name": "どうくつ とくべつキラ 1",
+          "img": "assets/ui/gacha/stickers/undersea_special_squid_layer_15.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "undersea_special_whale_layer_01",
+          "name": "どうくつ とくべつキラ 2",
+          "img": "assets/ui/gacha/stickers/undersea_special_whale_layer_01.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     },
-    "sea-album": {
-      "title": "海底アルバム",
-      "subtitle": "しおだまりの いきものシール",
-      "icon": "🐚",
-      "accent": "#0891B2",
+    "wordmatch": {
+      "title": "ことばあわせ",
+      "subtitle": "ことばの シール",
+      "icon": "🔤",
+      "accent": "#EC4899",
       "appOnly": true,
       "stickers": [
         {
-          "id": "sea_album_shrimp",
-          "name": "エビ",
-          "img": "assets/images/sea-album/stage1/shrimp_happy.png",
-          "unlockOn": ["card:shrimp", "clear"]
+          "id": "wordmatch_name_voice_shape_stamp_001",
+          "name": "ことば ノーマル 1",
+          "img": "assets/ui/gacha/stickers/wordmatch_name_voice_shape_stamp_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "sea_album_hermit",
-          "name": "ヤドカリ",
-          "img": "assets/images/sea-album/stage1/hermit_crab_happy.png",
-          "unlockOn": ["card:hermit", "clear"]
+          "id": "wordmatch_name_voice_shape_stamp_002",
+          "name": "ことば ノーマル 2",
+          "img": "assets/ui/gacha/stickers/wordmatch_name_voice_shape_stamp_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "sea_album_goby",
-          "name": "ハゼ",
-          "img": "assets/images/sea-album/stage1/tidepool_goby_happy.png",
-          "unlockOn": ["card:goby", "clear"]
+          "id": "wordmatch_name_voice_shape_stamp_003",
+          "name": "ことば ノーマル 3",
+          "img": "assets/ui/gacha/stickers/wordmatch_name_voice_shape_stamp_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         },
         {
-          "id": "sea_album_horseshoe",
-          "name": "カブトガニ",
-          "img": "assets/images/sea-album/stage1/horseshoe_crab_boss_happy.png",
-          "unlockOn": ["card:horseshoe", "clear"]
+          "id": "wordmatch_name_voice_shape_stamp_004",
+          "name": "ことば ノーマル 4",
+          "img": "assets/ui/gacha/stickers/wordmatch_name_voice_shape_stamp_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        }
+      ]
+    },
+    "writing-mori": {
+      "title": "もじのもり",
+      "subtitle": "もじの シール",
+      "icon": "✏️",
+      "accent": "#16A34A",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_001",
+          "name": "もじ ノーマル 1",
+          "img": "assets/ui/gacha/stickers/writing_mori_a_mirumaru_seed_flower_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_002",
+          "name": "もじ ノーマル 2",
+          "img": "assets/ui/gacha/stickers/writing_mori_a_mirumaru_seed_flower_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_003",
+          "name": "もじ ノーマル 3",
+          "img": "assets/ui/gacha/stickers/writing_mori_a_mirumaru_seed_flower_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_004",
+          "name": "もじ ノーマル 4",
+          "img": "assets/ui/gacha/stickers/writing_mori_a_mirumaru_seed_flower_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        }
+      ]
+    },
+    "zukan": {
+      "title": "もりずかん",
+      "subtitle": "いきものの シール",
+      "icon": "🌿",
+      "accent": "#65A30D",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "zukan_bear_layer_05",
+          "name": "ずかん ノーマル 1",
+          "img": "assets/ui/gacha/stickers/zukan_bear_layer_05.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_cat_layer_06",
+          "name": "ずかん ノーマル 2",
+          "img": "assets/ui/gacha/stickers/zukan_cat_layer_06.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_cheetah_layer_07",
+          "name": "ずかん ノーマル 3",
+          "img": "assets/ui/gacha/stickers/zukan_cheetah_layer_07.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_dog_layer_12",
+          "name": "ずかん ノーマル 4",
+          "img": "assets/ui/gacha/stickers/zukan_dog_layer_12.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_giraffe_layer_08",
+          "name": "ずかん ノーマル 5",
+          "img": "assets/ui/gacha/stickers/zukan_giraffe_layer_08.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_lion_layer_03",
+          "name": "ずかん ノーマル 6",
+          "img": "assets/ui/gacha/stickers/zukan_lion_layer_03.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_penguin_layer_04",
+          "name": "ずかん ノーマル 7",
+          "img": "assets/ui/gacha/stickers/zukan_penguin_layer_04.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_special_kabuto_layer_02",
+          "name": "ずかん とくべつキラ 1",
+          "img": "assets/ui/gacha/stickers/zukan_special_kabuto_layer_02.png",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_001",
+          "name": "ずかん ノーマル 8",
+          "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_001.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_002",
+          "name": "ずかん ノーマル 9",
+          "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_002.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_003",
+          "name": "ずかん ノーマル 10",
+          "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_003.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_004",
+          "name": "ずかん ノーマル 11",
+          "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_004.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
+        },
+        {
+          "id": "zukan_squirrel_layer_11",
+          "name": "ずかん ノーマル 12",
+          "img": "assets/ui/gacha/stickers/zukan_squirrel_layer_11.png",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ]
         }
       ]
     }

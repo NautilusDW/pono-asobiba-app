@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-22T01:05:36Z - Hero scattered labels で Brand Kit ワークフロー違反 → 直接 MCP higgsfield_game で 6 PNG 生成 + push (ce557cf) → ユーザー指摘 → git revert (06f564e) + sw.js v1485 強制バンプ (47670e7) + brief.md 作成 (ff949b7) でリカバリ完了。 旧 PNG (moji/kazu/oekaki + @2x) は履歴として元から残存し、 revert で hero に再表示。 .claude-design-bundle/components/hero-labels/brief.md (206 行) を Claude Design 側に渡せる状態に、 案 C 確定 + 3 案並列生成方向性 + 個別シール仕様 (nazonazo/bouken/iroasobi 文字数 4/4/5 対応) + 9 項目 NG + mojibake 回避フロー含む。 brand-AD APPROVED。 教訓は [[feedback_brand_kit_design_via_claude_design]] に固定
+- **タスク**: Hero scattered labels で Brand Kit ワークフロー違反 → 直接 MCP higgsfield_game で 6 PNG 生成 + push (ce557cf) → ユーザー指摘 → git revert (06f564e) + sw.js v1485 強制バンプ (47670e7) + brief.md 作成 (ff949b7) でリカバリ完了。 旧 PNG (moji/kazu/oekaki + @2x) は履歴として元から残存し、 revert で hero に再表示。 .claude-design-bundle/components/hero-labels/brief.md (206 行) を Claude Design 側に渡せる状態に、 案 C 確定 + 3 案並列生成方向性 + 個別シール仕様 (nazonazo/bouken/iroasobi 文字数 4/4/5 対応) + 9 項目 NG + mojibake 回避フロー含む。 brand-AD APPROVED。 教訓は [[feedback_brand_kit_design_via_claude_design]] に固定
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 117
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 23, "Bash": 64, "Write": 4, "Read": 6, "Edit": 5, "Workflow": 15}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。
+
+
+### 2026-06-22T00:55:19Z - Hero scattered labels を案 C ハイブリッド (ジャンル 3 + 育つ力 2) で実装。 ユーザー指摘 「もじ」 「おえかき」 はゲーム未実装で誇大表示 → なぞなぞ (quizland) / ぼうけん (maze) / いろあそび (bento) に置換、 おんがく/パズルは維持。 6 PNG (1x + Retina@2x) を MCP higgsfield_game で生成、 既存 ongaku のベージュクラフト紙質感 + 焦茶手書き + 端の小モチーフを完全踏襲。 index.html セレクタ rename + src 差し替え + sw v1483→v1484、 3 軸クロスレビュー全 APPROVED、 git push fast-forward 成功 (ce557cf)、 deploy run in_progress。 旧 PNG (moji/kazu/oekaki + @2x) は履歴として残存 (README 準拠)。 他作業ファイル (Codex 由来 HANDOFF/Prototypes/gacha/stickers/play.html 等) は touch せずユーザーに委ねる
+- **タスク**: Hero scattered labels を案 C ハイブリッド (ジャンル 3 + 育つ力 2) で実装。 ユーザー指摘 「もじ」 「おえかき」 はゲーム未実装で誇大表示 → なぞなぞ (quizland) / ぼうけん (maze) / いろあそび (bento) に置換、 おんがく/パズルは維持。 6 PNG (1x + Retina@2x) を MCP higgsfield_game で生成、 既存 ongaku のベージュクラフト紙質感 + 焦茶手書き + 端の小モチーフを完全踏襲。 index.html セレクタ rename + src 差し替え + sw v1483→v1484、 3 軸クロスレビュー全 APPROVED、 git push fast-forward 成功 (ce557cf)、 deploy run in_progress。 旧 PNG (moji/kazu/oekaki + @2x) は履歴として残存 (README 準拠)。 他作業ファイル (Codex 由来 HANDOFF/Prototypes/gacha/stickers/play.html 等) は touch せずユーザーに委ねる
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 113
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 23, "Bash": 63, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 14}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。
+
+
 ### 2026-06-21T19:16:53Z - Stitch 案 B (Sticker Banner + 詳細モーダル) を旧 phone モック .coming-soon-app を完全削除して index.html に組み込み (sw v1479)、 ux-brand 指摘の 2 文言を brief.md 準拠に Round 2 fix (list 3 「ポノからの」 / foot 「じゅんびが できたら」、 公開断言禁止精神) + ★ 装飾に aria-hidden 追加 (sw v1480)。 git push fast-forward 成功 (309e5af、 divergence なし)、 deploy run in_progress。 [[feedback_stitch_mojibake_no_guess]] の推測復元禁止ルールを徹底活用し、 brief.md 確定文を優先 + 自信度マトリクスで透明化、 Stitch HANDOFF の mojibake テキスト推測を一切採用せず Round 2 fix も brief.md 準拠で完結。 .claude-design-bundle/components/coming-soon/coming-soon-b.html も bundle 同期
 - **タスク**: Stitch 案 B (Sticker Banner + 詳細モーダル) を旧 phone モック .coming-soon-app を完全削除して index.html に組み込み (sw v1479)、 ux-brand 指摘の 2 文言を brief.md 準拠に Round 2 fix (list 3 「ポノからの」 / foot 「じゅんびが できたら」、 公開断言禁止精神) + ★ 装飾に aria-hidden 追加 (sw v1480)。 git push fast-forward 成功 (309e5af、 divergence なし)、 deploy run in_progress。 [[feedback_stitch_mojibake_no_guess]] の推測復元禁止ルールを徹底活用し、 brief.md 確定文を優先 + 自信度マトリクスで透明化、 Stitch HANDOFF の mojibake テキスト推測を一切採用せず Round 2 fix も brief.md 準拠で完結。 .claude-design-bundle/components/coming-soon/coming-soon-b.html も bundle 同期
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 15, "Bash": 11, "Write": 2, "Read": 4, "Edit": 2, "Workflow": 4}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-21T08:51:45Z - LP の .announce / .bookcheer にアクセントモーションを多視点設計 → 実装 → 2 ラウンド クロスレビューで仕上げ。 Round1: 5 keyframes + 14 動作要素 + IntersectionObserver IIFE + prefers-reduced-motion + iOS :active 完備で sw v1455 まで実装。 Round1 レビューで perspective バグ (3D が出ない) と『地味解消が不完全』 (蛍光ペンに pop 無し) を検知。 Round2 fix: perspective(400px) を keyframes インライン化、 pono-paint-pop-em / pono-paint-pop-hl 追加で塗り完了直後 scale 1.05 ポヨン、 📖 scale 1.22→1.14 で Amazon CTA との階層保持、 dead code 7 行削除、 sw v1456。 Round2 で 3/3 APPROVED。 計 4 ブレスト並列 + 統合 + 実装 + 3 レビュー並列 + 修正 + 3 レビュー並列 の 13 エージェント / 60 万トークン
-- **タスク**: LP の .announce / .bookcheer にアクセントモーションを多視点設計 → 実装 → 2 ラウンド クロスレビューで仕上げ。 Round1: 5 keyframes + 14 動作要素 + IntersectionObserver IIFE + prefers-reduced-motion + iOS :active 完備で sw v1455 まで実装。 Round1 レビューで perspective バグ (3D が出ない) と『地味解消が不完全』 (蛍光ペンに pop 無し) を検知。 Round2 fix: perspective(400px) を keyframes インライン化、 pono-paint-pop-em / pono-paint-pop-hl 追加で塗り完了直後 scale 1.05 ポヨン、 📖 scale 1.22→1.14 で Amazon CTA との階層保持、 dead code 7 行削除、 sw v1456。 Round2 で 3/3 APPROVED。 計 4 ブレスト並列 + 統合 + 実装 + 3 レビュー並列 + 修正 + 3 レビュー並列 の 13 エージェント / 60 万トークン
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 28
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 13, "Bash": 8, "Write": 1, "Read": 3, "Edit": 1, "Workflow": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-21T05:56:53Z - LP のお知らせを Coming Soon ティーザー (Coming Soon バッジ / 切り取り線 / shimmer / 封筒シルエット / キャッチ「あたらしい あそびばが、 もうすぐ ひらきます。」) に再設計、 ハードカバー応援を本のページ風 (h2格上げ / 上下dotted罫線 / ぽのサイン / 「いつか、 本棚のとくとう席へ。」) に再設計。 ユーザーから 「数ヶ月以内なんてプロは使わない、 マーケコピー皆無」 と強い指摘を受けたのを受けて、 コピーライターエージェント2並列 + 実装 + クロスレビューの4段で立て直し
-- **タスク**: LP のお知らせを Coming Soon ティーザー (Coming Soon バッジ / 切り取り線 / shimmer / 封筒シルエット / キャッチ「あたらしい あそびばが、 もうすぐ ひらきます。」) に再設計、 ハードカバー応援を本のページ風 (h2格上げ / 上下dotted罫線 / ぽのサイン / 「いつか、 本棚のとくとう席へ。」) に再設計。 ユーザーから 「数ヶ月以内なんてプロは使わない、 マーケコピー皆無」 と強い指摘を受けたのを受けて、 コピーライターエージェント2並列 + 実装 + クロスレビューの4段で立て直し
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 15
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 12, "Bash": 3}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
