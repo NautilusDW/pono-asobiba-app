@@ -3324,7 +3324,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1482;
+    const PAGE_CACHE_VERSION = 1483;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -3813,9 +3813,22 @@
       'とくべつきら': 'super',
       '特別キラ': 'super'
     };
+    const DAILY_GACHA_RARITY_WEIGHT_MODE = 'test';
+    const DAILY_GACHA_RARITY_WEIGHT_PRESETS = {
+      test: { normal: 70, rare: 24, super: 6 },
+      production: { normal: 90, rare: 8, super: 2 }
+    };
+    const DAILY_GACHA_RARITY_WEIGHTS =
+      DAILY_GACHA_RARITY_WEIGHT_PRESETS[DAILY_GACHA_RARITY_WEIGHT_MODE] ||
+      DAILY_GACHA_RARITY_WEIGHT_PRESETS.test;
+    const DAILY_GACHA_CAPSULE_COLOR_WEIGHTS = {
+      normal: { pink: 1, blue: 1 },
+      rare: { gold: 1 },
+      super: { gold: 1 }
+    };
     const DAILY_GACHA_RARITY_PROFILES = {
       normal: {
-        weight: 70,
+        weight: DAILY_GACHA_RARITY_WEIGHTS.normal,
         capsuleGroup: 'normal',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_magic_book.png'
@@ -3833,7 +3846,7 @@
         sparkleLongVolume: 0
       },
       rare: {
-        weight: 24,
+        weight: DAILY_GACHA_RARITY_WEIGHTS.rare,
         capsuleGroup: 'rare',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_magic_book.png'
@@ -3851,7 +3864,7 @@
         sparkleLongVolume: .56
       },
       super: {
-        weight: 6,
+        weight: DAILY_GACHA_RARITY_WEIGHTS.super,
         capsuleGroup: 'super',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_holographic_pack.png'
@@ -4371,11 +4384,32 @@
       ]
     };
 
+    function chooseDailyGachaWeightedVariant(variants, weights) {
+      if (!Array.isArray(variants) || variants.length === 0) return null;
+      const weighted = variants.map((variant) => ({
+        variant,
+        weight: Math.max(
+          0,
+          Number(weights && Object.prototype.hasOwnProperty.call(weights, variant.color) ? weights[variant.color] : 1)
+        )
+      }));
+      const total = weighted.reduce((sum, item) => sum + item.weight, 0);
+      if (total <= 0) return variants[Math.floor(Math.random() * variants.length)] || variants[0];
+      let pick = Math.random() * total;
+      for (const item of weighted) {
+        pick -= item.weight;
+        if (pick <= 0) return item.variant;
+      }
+      return weighted[weighted.length - 1].variant;
+    }
+
     function chooseDailyGachaCapsule(rarity = dailyGachaState.rarity) {
       const profile = dailyGachaRarityProfile(rarity);
       const group = profile.capsuleGroup || 'normal';
       const variants = DAILY_GACHA_CAPSULE_VARIANTS[group] || DAILY_GACHA_CAPSULE_VARIANTS.normal;
-      const assets = variants[Math.floor(Math.random() * variants.length)] || DAILY_GACHA_CAPSULE_VARIANTS.normal[0];
+      const assets =
+        chooseDailyGachaWeightedVariant(variants, DAILY_GACHA_CAPSULE_COLOR_WEIGHTS[group]) ||
+        DAILY_GACHA_CAPSULE_VARIANTS.normal[0];
       dailyGachaState.capsuleColor = assets.color;
       dailyGachaState.capsuleOpenLeft = assets.openLeft;
       dailyGachaState.capsuleOpenRight = assets.openRight;
