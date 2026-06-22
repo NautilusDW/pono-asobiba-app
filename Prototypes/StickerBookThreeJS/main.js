@@ -837,9 +837,11 @@ const STICKER_COVER_3D_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
 const STICKER_COVER_3D_RING_ANCHOR_X = PAGE_W * 0.066;
 const STICKER_COVER_3D_RING_REACH = PAGE_W * 0.082;
 const STICKER_COVER_3D_RING_FRONT_Z = STICKER_COVER_CLOSED_BOARD_Z + PAGE_H * 0.025;
+const STICKER_COVER_3D_RING_DEPTH_SCALE = 0.22;
 const STICKER_COVER_3D_EYELET_RADIUS = PAGE_W * 0.011;
 const STICKER_COVER_3D_EYELET_TUBE = PAGE_W * 0.0023;
 const STICKER_COVER_3D_EYELET_HOLE = PAGE_W * 0.0074;
+const STICKER_COVER_3D_SOCKET_DEPTH = PAGE_H * 0.025;
 const FLUTTER_TRAIL_OPACITY = 0.16;
 const DEFAULT_TUNING = {
   stackLeftX: 0,
@@ -7477,9 +7479,7 @@ function createCover3DRingLayer() {
       emissiveIntensity: 0.018,
       roughness: 0.24,
       metalness: 0.62,
-      transparent: true,
-      opacity: 0.96,
-      depthWrite: false,
+      depthWrite: true,
     }),
     highlight: new THREE.MeshBasicMaterial({
       color: hardware.ringHighlight,
@@ -7493,15 +7493,19 @@ function createCover3DRingLayer() {
       emissiveIntensity: 0.016,
       roughness: 0.22,
       metalness: 0.58,
-      transparent: true,
-      opacity: 0.94,
-      depthWrite: false,
+      depthWrite: true,
     }),
-    eyeletHole: new THREE.MeshBasicMaterial({
+    socketWall: new THREE.MeshStandardMaterial({
       color: 0x050403,
-      transparent: true,
-      opacity: 0.88,
-      depthWrite: false,
+      roughness: 0.5,
+      metalness: 0.12,
+      side: THREE.DoubleSide,
+      depthWrite: true,
+    }),
+    socketBack: new THREE.MeshBasicMaterial({
+      color: 0x020201,
+      side: THREE.DoubleSide,
+      depthWrite: true,
     }),
     eyeletShadow: new THREE.MeshBasicMaterial({
       color: 0x1a1008,
@@ -7522,23 +7526,34 @@ function createCover3DRingLayer() {
     shadow.renderOrder = 84;
     group.add(shadow);
 
+    const socketWall = new THREE.Mesh(createCover3DSocketWallGeometry(), materials.socketWall);
+    socketWall.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z - STICKER_COVER_3D_SOCKET_DEPTH * 0.32);
+    socketWall.renderOrder = 85;
+    group.add(socketWall);
+
+    const socketBack = new THREE.Mesh(createCover3DSocketBackGeometry(), materials.socketBack);
+    socketBack.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z - STICKER_COVER_3D_SOCKET_DEPTH * 0.72);
+    socketBack.renderOrder = 85;
+    group.add(socketBack);
+
     const eyelet = new THREE.Mesh(createCover3DEyeletGeometry(), materials.eyelet);
     eyelet.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z + PAGE_H * 0.0005);
-    eyelet.renderOrder = 85;
+    eyelet.renderOrder = 86;
     group.add(eyelet);
 
-    const ring = new THREE.Mesh(createCover3DRingGeometry(y), materials.ring);
-    ring.renderOrder = 86;
+    const ring = new THREE.Mesh(createCover3DRingGeometry(), materials.ring);
+    ring.position.set(STICKER_COVER_3D_RING_ANCHOR_X - STICKER_COVER_3D_RING_REACH * 0.5, y, STICKER_COVER_3D_RING_FRONT_Z);
+    ring.renderOrder = 87;
     group.add(ring);
 
-    const highlight = new THREE.Mesh(createCover3DRingHighlightGeometry(y), materials.highlight);
-    highlight.renderOrder = 87;
+    const highlight = new THREE.Mesh(createCover3DRingHighlightGeometry(), materials.highlight);
+    highlight.position.set(
+      STICKER_COVER_3D_RING_ANCHOR_X - STICKER_COVER_3D_RING_REACH * 0.5,
+      y + PAGE_H * 0.002,
+      STICKER_COVER_3D_RING_FRONT_Z + PAGE_H * 0.006,
+    );
+    highlight.renderOrder = 88;
     group.add(highlight);
-
-    const hole = new THREE.Mesh(createCover3DEyeletHoleGeometry(), materials.eyeletHole);
-    hole.position.set(STICKER_COVER_3D_RING_ANCHOR_X, y, STICKER_COVER_3D_RING_FRONT_Z - PAGE_H * 0.0008);
-    hole.renderOrder = 88;
-    group.add(hole);
   }
 
   group.visible = false;
@@ -7546,61 +7561,58 @@ function createCover3DRingLayer() {
 }
 
 function createCover3DEyeletGeometry() {
-  return new THREE.TorusGeometry(
+  const geometry = new THREE.TorusGeometry(
     STICKER_COVER_3D_EYELET_RADIUS,
     STICKER_COVER_3D_EYELET_TUBE,
     10,
     32,
   );
+  return geometry;
 }
 
-function createCover3DEyeletHoleGeometry() {
-  return new THREE.CircleGeometry(STICKER_COVER_3D_EYELET_HOLE, 32);
+function createCover3DSocketWallGeometry() {
+  const geometry = new THREE.CylinderGeometry(
+    STICKER_COVER_3D_EYELET_HOLE,
+    STICKER_COVER_3D_EYELET_HOLE,
+    STICKER_COVER_3D_SOCKET_DEPTH,
+    32,
+    1,
+    true,
+  );
+  geometry.rotateX(Math.PI / 2);
+  return geometry;
+}
+
+function createCover3DSocketBackGeometry() {
+  return new THREE.CircleGeometry(STICKER_COVER_3D_EYELET_HOLE * 0.9, 32);
 }
 
 function createCover3DEyeletShadowGeometry() {
   return new THREE.CircleGeometry(STICKER_COVER_3D_EYELET_RADIUS + STICKER_COVER_3D_EYELET_TUBE * 1.4, 32);
 }
 
-function createCover3DRingGeometry(baseY) {
-  const points = [];
-  const segments = 36;
-  for (let i = 0; i <= segments; i += 1) {
-    const t = i / segments;
-    const arch = Math.sin(t * Math.PI);
-    points.push(new THREE.Vector3(
-      STICKER_COVER_3D_RING_ANCHOR_X - arch * STICKER_COVER_3D_RING_REACH,
-      baseY + arch * PAGE_H * 0.0018,
-      STICKER_COVER_3D_RING_FRONT_Z + Math.cos(t * Math.PI) * PAGE_H * 0.0082,
-    ));
-  }
-  return new THREE.TubeGeometry(
-    new THREE.CatmullRomCurve3(points),
-    50,
+function createCover3DRingGeometry() {
+  const geometry = new THREE.TorusGeometry(
+    STICKER_COVER_3D_RING_REACH * 0.5,
     PAGE_W * 0.0072,
     16,
-    false,
+    72,
   );
+  geometry.rotateX(Math.PI / 2);
+  geometry.scale(1, 1, STICKER_COVER_3D_RING_DEPTH_SCALE);
+  return geometry;
 }
 
-function createCover3DRingHighlightGeometry(baseY) {
-  const points = [];
-  for (let i = 0; i <= 22; i += 1) {
-    const t = i / 22;
-    const arch = Math.sin(t * Math.PI);
-    points.push(new THREE.Vector3(
-      STICKER_COVER_3D_RING_ANCHOR_X - arch * STICKER_COVER_3D_RING_REACH * 0.82,
-      baseY + PAGE_H * 0.002 + arch * PAGE_H * 0.0012,
-      STICKER_COVER_3D_RING_FRONT_Z + PAGE_H * 0.003 + Math.cos(t * Math.PI) * PAGE_H * 0.006,
-    ));
-  }
-  return new THREE.TubeGeometry(
-    new THREE.CatmullRomCurve3(points),
-    30,
+function createCover3DRingHighlightGeometry() {
+  const geometry = new THREE.TorusGeometry(
+    STICKER_COVER_3D_RING_REACH * 0.5,
     PAGE_W * 0.0013,
     6,
-    false,
+    72,
   );
+  geometry.rotateX(Math.PI / 2);
+  geometry.scale(0.94, 1, STICKER_COVER_3D_RING_DEPTH_SCALE * 0.72);
+  return geometry;
 }
 
 function createCoverHardwareLayer() {
@@ -8023,11 +8035,13 @@ function applyCover3DRingTheme(hardware) {
     layer.materials.highlight.color.setHex(hardware.ringHighlight);
     layer.materials.eyelet.color.setHex(hardware.ring);
     layer.materials.eyelet.emissive.setHex(0x3b2a12);
-    layer.materials.eyeletHole.color.setHex(0x050403);
+    layer.materials.socketWall.color.setHex(0x050403);
+    layer.materials.socketBack.color.setHex(0x020201);
     layer.materials.ring.needsUpdate = true;
     layer.materials.highlight.needsUpdate = true;
     layer.materials.eyelet.needsUpdate = true;
-    layer.materials.eyeletHole.needsUpdate = true;
+    layer.materials.socketWall.needsUpdate = true;
+    layer.materials.socketBack.needsUpdate = true;
   }
 }
 
