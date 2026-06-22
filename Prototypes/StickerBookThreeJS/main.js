@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-783";
+const ASSET_VERSION = "20260622-784";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -497,6 +497,7 @@ const BOOK_VARIANTS = {
   boy: {
     insideLeft: "sb3d_boy_page_left_generated.webp",
     insideRight: "sb3d_boy_page_right_generated.webp",
+    freePage: "sb3d_boy_free_blank_page_image2_20260622.png",
     coverPrint: "sb3d_boy_cover_front_binder_image2_20260622.webp",
     coverHardwareMode: "baked",
     coverFront: "sb3d_boy_cover_front_binder_image2_20260622.webp",
@@ -509,6 +510,7 @@ const BOOK_VARIANTS = {
   girl: {
     insideLeft: "sb3d_girl_page_left_generated.webp",
     insideRight: "sb3d_girl_page_right_generated.webp",
+    freePage: "sb3d_girl_free_blank_page_image2_20260622.png",
     coverPrint: "sb3d_girl_cover_front_generated.webp",
     coverHardwareMode: "baked",
     coverFront: "sb3d_girl_cover_front_generated.webp",
@@ -526,26 +528,6 @@ const STICKER_BOOK_THEMES = {
     sub: "#55aeb8",
     line: "#d3b35f",
     tab: "#f4e7b8",
-    free: {
-      title: "ぼうけんシール",
-      subtitle: "すきなばしょに はろう",
-      paper: ["#fff9df", "#fff1c0", "#f2dda2"],
-      text: "#30484a",
-      frame: "#38a9ad",
-      frameDark: "#14717a",
-      accent: "#d79a34",
-      secondary: "#7abf5d",
-      ribbon: "#f3c451",
-      ribbonDark: "#c9881f",
-      pocket: "#8ed2c4",
-      pocketDark: "#4aa5a6",
-      tape: "#8fd6cf",
-      tapeAlt: "#f3b256",
-      slotFill: "rgba(255, 253, 236, 0.74)",
-      slotFillAlt: "rgba(232, 247, 236, 0.62)",
-      slotStroke: "rgba(64, 128, 111, 0.28)",
-      motifSet: "adventure",
-    },
     coverHardware: {
       board: 0x0b5260,
       boardShadow: 0x063540,
@@ -617,26 +599,6 @@ const STICKER_BOOK_THEMES = {
     sub: "#7bc8c8",
     line: "#dcb6cc",
     tab: "#f5ddea",
-    free: {
-      title: "うみともシール",
-      subtitle: "かわいく かざろう",
-      paper: ["#fffbea", "#fff2d3", "#f5dfbd"],
-      text: "#3b424f",
-      frame: "#b79bd9",
-      frameDark: "#8067b1",
-      accent: "#ef9b7c",
-      secondary: "#76cbbb",
-      ribbon: "#f5c664",
-      ribbonDark: "#d79a45",
-      pocket: "#aadfd6",
-      pocketDark: "#6ab9aa",
-      tape: "#f0a6bf",
-      tapeAlt: "#9bdad2",
-      slotFill: "rgba(255, 252, 240, 0.78)",
-      slotFillAlt: "rgba(235, 249, 246, 0.64)",
-      slotStroke: "rgba(132, 101, 154, 0.24)",
-      motifSet: "seaGarden",
-    },
     coverHardware: {
       board: 0x7d5e95,
       boardShadow: 0x54406c,
@@ -3278,8 +3240,9 @@ function renderEditorTemplateCanvas() {
   ctx.scale(width / PAGE_TEXTURE_W, height / PAGE_TEXTURE_H);
   const side = editorPageSide(activeEditorPage);
   const palette = editorPagePalette();
-  drawPageTemplateBase(ctx, palette, side);
-  drawStickerAlbumPageTemplate(ctx, palette, side, activeEditorPage);
+  if (!drawStickerImage2FreePageTemplate(ctx, activeBook)) {
+    drawPageTemplateBase(ctx, palette, side);
+  }
   drawRingHoleGuides(ctx, side);
   ctx.restore();
 }
@@ -5059,15 +5022,17 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
   const ctx = templateCanvas.getContext("2d");
   const palette = stickerBookTheme(bookName);
 
-  drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
   if (activeAlbumMode === "collection") {
+    drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
     const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
     const templateType = zukanTemplateTypeForSide(pageDef, side);
     if (!drawGeneratedCollectionZukanTemplate(ctx, templateType, side)) {
       drawCollectionPageTemplate(ctx, palette, side);
     }
   } else {
-    drawStickerAlbumPageTemplate(ctx, palette, side, pageNumber);
+    if (!drawStickerImage2FreePageTemplate(ctx, bookName)) {
+      drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
+    }
     drawRingHoleGuides(ctx, side);
   }
 
@@ -5697,341 +5662,44 @@ function drawLeftPageTemplate(ctx, palette) {
   ctx.restore();
 }
 
-function drawStickerAlbumPageTemplate(ctx, palette, side = "right", pageNumber = 1) {
-  const theme = stickerAlbumFreeTheme(palette);
-  const bindingInset = 178;
-  const outerInset = 112;
-  const panelX = side === "right" ? bindingInset : outerInset;
-  const panelY = 118;
-  const panelW = PAGE_TEXTURE_W - bindingInset - outerInset;
-  const panelH = PAGE_TEXTURE_H - 246;
-  const corner = 54;
-
-  ctx.save();
-  drawStickerAlbumBindingWash(ctx, theme, side);
-
-  ctx.shadowColor = "rgba(75, 52, 22, 0.16)";
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 10;
-  const panelGradient = ctx.createLinearGradient(panelX, panelY, panelX + panelW, panelY + panelH);
-  panelGradient.addColorStop(0, "rgba(255, 255, 250, 0.74)");
-  panelGradient.addColorStop(0.56, theme.slotFill);
-  panelGradient.addColorStop(1, tintColor(theme.secondary, 0.82));
-  ctx.fillStyle = panelGradient;
-  drawCanvasRoundedRect(ctx, panelX, panelY, panelW, panelH, corner);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-
-  ctx.save();
-  drawCanvasRoundedRect(ctx, panelX + 12, panelY + 12, panelW - 24, panelH - 24, corner - 10);
-  ctx.clip();
-  drawStickerAlbumPattern(ctx, theme, panelX, panelY, panelW, panelH, pageNumber, side);
-  ctx.restore();
-
-  ctx.strokeStyle = theme.frame;
-  ctx.lineWidth = 18;
-  ctx.globalAlpha = 0.42;
-  drawCanvasRoundedRect(ctx, panelX + 9, panelY + 9, panelW - 18, panelH - 18, corner - 6);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.68)";
-  ctx.lineWidth = 4;
-  ctx.setLineDash([18, 14]);
-  drawCanvasRoundedRect(ctx, panelX + 34, panelY + 34, panelW - 68, panelH - 68, 38);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  drawStickerAlbumTitle(ctx, theme, panelX, panelY, panelW, side);
-  drawStickerAlbumSlots(ctx, theme, panelX, panelY, panelW, panelH, side, pageNumber);
-  drawStickerAlbumPocket(ctx, theme, panelX, panelY, panelW, panelH, side);
-  drawStickerAlbumCornerMotifs(ctx, theme, panelX, panelY, panelW, panelH, side);
-  ctx.restore();
+function stickerFreePageFile(bookName = activeBook) {
+  const bundle = BOOK_VARIANTS[bookName] || BOOK_VARIANTS.boy;
+  return bundle.freePage || null;
 }
 
-function stickerAlbumFreeTheme(palette) {
-  return palette.free || {
-    title: "シールちょう",
-    subtitle: "すきなばしょに はろう",
-    text: "#334447",
-    frame: palette.sub || "#55aeb8",
-    frameDark: palette.line || "#d3b35f",
-    accent: palette.accent || "#d79a34",
-    secondary: palette.sub || "#55aeb8",
-    ribbon: palette.tab || "#f4e7b8",
-    ribbonDark: palette.line || "#d3b35f",
-    pocket: "#8ed2c4",
-    pocketDark: "#4aa5a6",
-    tape: "#8fd6cf",
-    tapeAlt: "#f3b256",
-    slotFill: "rgba(255, 253, 236, 0.74)",
-    slotFillAlt: "rgba(232, 247, 236, 0.62)",
-    slotStroke: "rgba(64, 128, 111, 0.28)",
-    motifSet: "adventure",
-  };
-}
-
-function drawStickerAlbumBindingWash(ctx, theme, side) {
-  const stripW = 126;
-  const x = side === "right" ? 28 : PAGE_TEXTURE_W - stripW - 28;
-  const grad = ctx.createLinearGradient(x, 0, x + stripW, 0);
-  if (side === "right") {
-    grad.addColorStop(0, "rgba(62, 48, 24, 0.13)");
-    grad.addColorStop(0.34, tintColor(theme.frame, 0.76));
-    grad.addColorStop(1, "rgba(255, 255, 245, 0)");
-  } else {
-    grad.addColorStop(0, "rgba(255, 255, 245, 0)");
-    grad.addColorStop(0.66, tintColor(theme.frame, 0.76));
-    grad.addColorStop(1, "rgba(62, 48, 24, 0.13)");
+function drawStickerImage2FreePageTemplate(ctx, bookName = activeBook) {
+  const file = stickerFreePageFile(bookName);
+  const image = file ? getTexture(file)?.image : null;
+  if (!image) {
+    return false;
   }
-  ctx.save();
-  ctx.globalAlpha = 0.34;
-  ctx.fillStyle = grad;
-  ctx.fillRect(x, 82, stripW, PAGE_TEXTURE_H - 164);
-  ctx.restore();
+  drawImageCover(ctx, image, 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  return true;
 }
 
-function drawStickerAlbumPattern(ctx, theme, x, y, width, height, pageNumber, side) {
-  const seed = Math.max(1, Math.round(pageNumber)) * 37 + (side === "right" ? 11 : 29);
-  const motifKinds = stickerAlbumMotifKinds(theme.motifSet);
-  ctx.save();
-  ctx.globalAlpha = 0.34;
-  for (let i = 0; i < 54; i += 1) {
-    const px = x + 42 + (((i * 197 + seed * 43) % 1000) / 1000) * (width - 84);
-    const py = y + 54 + (((i * 151 + seed * 61) % 1000) / 1000) * (height - 108);
-    const size = 10 + ((i + seed) % 5) * 3;
-    const kind = motifKinds[(i + seed) % motifKinds.length];
-    const color = i % 3 === 0
-      ? theme.accent
-      : i % 3 === 1
-        ? theme.secondary
-        : theme.ribbon;
-    drawCollectionMiniMotif(ctx, kind, px, py, size, color, ((i % 7) - 3) * 0.09);
+function drawImageCover(ctx, image, x, y, width, height) {
+  const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
+  const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+  const sourceAspect = sourceWidth / sourceHeight;
+  const targetAspect = width / height;
+  let sx = 0;
+  let sy = 0;
+  let sw = sourceWidth;
+  let sh = sourceHeight;
+  if (sourceAspect > targetAspect) {
+    sw = sourceHeight * targetAspect;
+    sx = (sourceWidth - sw) / 2;
+  } else if (sourceAspect < targetAspect) {
+    sh = sourceWidth / targetAspect;
+    sy = (sourceHeight - sh) / 2;
   }
-  ctx.globalAlpha = 1;
-
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.34)";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  const waveY = y + height * 0.54;
-  ctx.moveTo(x + 48, waveY);
-  for (let i = 0; i <= 14; i += 1) {
-    const px = x + 48 + i * ((width - 96) / 14);
-    const py = waveY + Math.sin((i + seed) * 0.88) * 18;
-    if (i === 0) {
-      ctx.moveTo(px, py);
-    } else {
-      ctx.quadraticCurveTo(px - (width - 96) / 28, waveY - Math.sin((i + seed) * 0.88) * 12, px, py);
-    }
-  }
-  ctx.stroke();
-  ctx.restore();
-}
-
-function stickerAlbumMotifKinds(setName) {
-  return setName === "adventure"
-    ? ["star", "cloud", "leaf", "hill", "boat", "wave"]
-    : ["flower", "shell", "bubble", "wave", "star", "cloud"];
-}
-
-function drawStickerAlbumTitle(ctx, theme, x, y, width, side) {
-  const titleW = 520;
-  const titleH = 104;
-  const titleX = x + (width - titleW) / 2 + (side === "right" ? 18 : -18);
-  const titleY = y + 38;
-  ctx.save();
-  ctx.shadowColor = "rgba(84, 52, 20, 0.17)";
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetY = 6;
-  const ribbon = ctx.createLinearGradient(0, titleY, 0, titleY + titleH);
-  ribbon.addColorStop(0, tintColor(theme.ribbon, 0.25));
-  ribbon.addColorStop(0.74, theme.ribbon);
-  ribbon.addColorStop(1, theme.ribbonDark);
-  ctx.fillStyle = ribbon;
-  drawCanvasRoundedRect(ctx, titleX, titleY, titleW, titleH, 36);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.56)";
-  ctx.lineWidth = 4;
-  drawCanvasRoundedRect(ctx, titleX + 14, titleY + 12, titleW - 28, titleH - 24, 26);
-  ctx.stroke();
-
-  ctx.fillStyle = theme.text;
-  ctx.font = '900 46px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.textAlign = "center";
-  ctx.fillText(theme.title, titleX + titleW / 2, titleY + 52);
-  ctx.fillStyle = tintColor(theme.text, 0.24);
-  ctx.font = '800 23px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(theme.subtitle, titleX + titleW / 2, titleY + 82);
-
-  const motifKinds = stickerAlbumMotifKinds(theme.motifSet);
-  drawCollectionMiniMotif(ctx, motifKinds[0], titleX + 46, titleY + 50, 30, "#fff6cf", -0.15);
-  drawCollectionMiniMotif(ctx, motifKinds[1], titleX + titleW - 48, titleY + 54, 30, theme.secondary, 0.15);
-  ctx.restore();
-}
-
-function drawStickerAlbumSlots(ctx, theme, x, y, width, height, side, pageNumber) {
-  const pocketReserve = 182;
-  const area = {
-    x: x + 54,
-    y: y + 164,
-    width: width - 108,
-    height: height - 214 - pocketReserve,
-  };
-  const slots = stickerAlbumSlotLayout(side, pageNumber);
-  for (let i = 0; i < slots.length; i += 1) {
-    const slot = slots[i];
-    drawStickerAlbumSlot(ctx, theme, {
-      ...slot,
-      x: area.x + slot.x * area.width,
-      y: area.y + slot.y * area.height,
-      width: slot.width * area.width,
-      height: slot.height * area.height,
-    }, i, pageNumber);
-  }
-}
-
-function stickerAlbumSlotLayout(side, pageNumber) {
-  const flip = side === "left" ? -1 : 1;
-  const wobble = ((Math.max(1, Math.round(pageNumber)) % 4) - 1.5) * 0.008;
-  return [
-    { x: 0.02, y: 0.03, width: 0.32, height: 0.2, shape: "ticket", rotate: -0.035 * flip + wobble },
-    { x: 0.39, y: 0.0, width: 0.24, height: 0.22, shape: "oval", rotate: 0.026 * flip - wobble },
-    { x: 0.69, y: 0.08, width: 0.27, height: 0.19, shape: "postcard", rotate: 0.04 * flip + wobble },
-    { x: 0.06, y: 0.34, width: 0.25, height: 0.26, shape: "circle", rotate: 0.02 * flip },
-    { x: 0.36, y: 0.32, width: 0.56, height: 0.21, shape: "ticket", rotate: -0.018 * flip - wobble },
-    { x: 0.02, y: 0.68, width: 0.31, height: 0.24, shape: "polaroid", rotate: 0.035 * flip },
-    { x: 0.41, y: 0.64, width: 0.22, height: 0.2, shape: "cloud", rotate: -0.025 * flip },
-    { x: 0.7, y: 0.64, width: 0.26, height: 0.25, shape: "oval", rotate: 0.03 * flip - wobble },
-  ];
-}
-
-function drawStickerAlbumSlot(ctx, theme, slot, index, pageNumber) {
-  const cx = slot.x + slot.width / 2;
-  const cy = slot.y + slot.height / 2;
-  const motifKinds = stickerAlbumMotifKinds(theme.motifSet);
-  const motifKind = motifKinds[(index + pageNumber) % motifKinds.length];
-
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(slot.rotate || 0);
-  ctx.shadowColor = "rgba(71, 49, 23, 0.13)";
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 6;
-
-  const w = slot.width;
-  const h = slot.height;
-  const fill = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-  fill.addColorStop(0, index % 2 === 0 ? theme.slotFill : "rgba(255, 255, 255, 0.72)");
-  fill.addColorStop(1, index % 2 === 0 ? theme.slotFillAlt : tintColor(theme.secondary, 0.82));
-  ctx.fillStyle = fill;
-  ctx.strokeStyle = theme.slotStroke;
-  ctx.lineWidth = 5;
-  drawStickerAlbumSlotPath(ctx, slot.shape, -w / 2, -h / 2, w, h);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-  ctx.stroke();
-
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.76)";
-  ctx.lineWidth = 4;
-  ctx.setLineDash([12, 10]);
-  drawStickerAlbumSlotPath(ctx, slot.shape, -w / 2 + 16, -h / 2 + 14, w - 32, h - 28);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.42)";
-  ctx.beginPath();
-  ctx.ellipse(w * 0.1, -h * 0.08, w * 0.24, h * 0.13, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  if (slot.shape === "polaroid") {
-    ctx.fillStyle = "rgba(255, 249, 224, 0.86)";
-    drawCanvasRoundedRect(ctx, -w / 2 + 18, h / 2 - 42, w - 36, 24, 12);
-    ctx.fill();
-  }
-
-  drawStickerSlotTape(ctx, theme, -w / 2 + 26, -h / 2 + 18, index % 2 === 0 ? -0.24 : 0.18, index % 3 === 0);
-  drawStickerSlotTape(ctx, theme, w / 2 - 56, h / 2 - 34, index % 2 === 0 ? 0.22 : -0.16, index % 3 !== 0);
-  drawCollectionMiniMotif(ctx, motifKind, w / 2 - 34, -h / 2 + 28, 22, index % 2 === 0 ? theme.accent : theme.secondary, 0.18);
-  ctx.restore();
-}
-
-function drawStickerAlbumSlotPath(ctx, shape, x, y, width, height) {
-  if (shape === "oval" || shape === "circle") {
-    const rx = width / 2;
-    const ry = shape === "circle" ? Math.min(width, height) / 2 : height / 2;
-    ctx.beginPath();
-    ctx.ellipse(x + width / 2, y + height / 2, rx, ry, 0, 0, Math.PI * 2);
-    return;
-  }
-  if (shape === "cloud") {
-    drawScallopedPanelPath(ctx, x, y, width, height, 34, 16, 6);
-    return;
-  }
-  drawCanvasRoundedRect(ctx, x, y, width, height, shape === "postcard" ? 24 : 32);
-}
-
-function drawStickerSlotTape(ctx, theme, x, y, rotation, alternate) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(rotation);
-  ctx.fillStyle = alternate ? theme.tapeAlt : theme.tape;
-  ctx.globalAlpha = 0.74;
-  drawCanvasRoundedRect(ctx, 0, 0, 72, 30, 9);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.48)";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(14, 7);
-  ctx.lineTo(58, 23);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawStickerAlbumPocket(ctx, theme, x, y, width, height, side) {
-  const pocketX = x + 74;
-  const pocketY = y + height - 148;
-  const pocketW = width - 148;
-  const pocketH = 92;
-  const grad = ctx.createLinearGradient(0, pocketY, 0, pocketY + pocketH);
-  grad.addColorStop(0, tintColor(theme.pocket, 0.18));
-  grad.addColorStop(0.7, theme.pocket);
-  grad.addColorStop(1, theme.pocketDark);
-  ctx.save();
-  ctx.fillStyle = grad;
-  drawScallopedPanelPath(ctx, pocketX, pocketY, pocketW, pocketH, 34, 18, 8);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.54)";
-  ctx.lineWidth = 4;
-  drawScallopedPanelPath(ctx, pocketX + 12, pocketY + 10, pocketW - 24, pocketH - 20, 28, 12, 7);
-  ctx.stroke();
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
-  ctx.font = '900 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.textAlign = "center";
-  ctx.fillText("きせかえポケット", pocketX + pocketW / 2, pocketY + 56);
-
-  const motifKinds = stickerAlbumMotifKinds(theme.motifSet);
-  for (let i = 0; i < 5; i += 1) {
-    const px = pocketX + 74 + i * ((pocketW - 148) / 4);
-    const py = pocketY + 30 + (i % 2) * 36;
-    drawCollectionMiniMotif(ctx, motifKinds[(i + (side === "right" ? 1 : 0)) % motifKinds.length], px, py, 18, i % 2 ? theme.ribbon : "#fff4cf", i * 0.16);
-  }
-  ctx.restore();
-}
-
-function drawStickerAlbumCornerMotifs(ctx, theme, x, y, width, height, side) {
-  const motifKinds = stickerAlbumMotifKinds(theme.motifSet);
-  ctx.save();
-  drawCollectionMiniMotif(ctx, motifKinds[2], x + 50, y + height - 50, 34, theme.secondary, -0.2);
-  drawCollectionMiniMotif(ctx, motifKinds[3], x + width - 52, y + 58, 30, theme.accent, 0.22);
-  drawCollectionMiniMotif(ctx, motifKinds[4], x + (side === "right" ? width - 92 : 92), y + height - 56, 28, theme.ribbon, -0.08);
-  ctx.restore();
+  ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
 }
 
 function drawRightPageTemplate(ctx, palette) {
-  drawStickerAlbumPageTemplate(ctx, palette, "right", pageNumberForTemplateSide("right"));
+  if (!drawStickerImage2FreePageTemplate(ctx, activeBook)) {
+    drawPageTemplateBase(ctx, palette, "right");
+  }
 }
 
 function drawDynamicPageContent(ctx, texture, side, palette, pageNumber = pageNumberForTemplateSide(side)) {
