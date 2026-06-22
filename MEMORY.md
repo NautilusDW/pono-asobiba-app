@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-22T10:06:56Z - HANDOFF v2 完全準拠で旧 sticker-extra を play-cards 2 枚 (.pc-card mt4 ガチャ + mt1 シールアルバム) に置き換え。 既存ゲーム 5 枚と完全同サイズ・同レスポンシブ。 .pc-v-gacha CSS 描画ガチャマシン + .pc-bubble--left + .pc-card--mt4::before{left:60%} + .pc-growth .lbl 追加 (24 行)。 旧 .sticker-extra* CSS は dead code 残置 (HANDOFF 指示準拠)。 sw v1501→v1502、 3 軸クロスレビュー全 APPROVED、 fast-forward push 成功 (aac012e)。 [[feedback_stitch_mojibake_no_guess]] 通りファイル直 Read で mojibake 回避、 [[feedback_brand_kit_design_via_claude_design]] の HANDOFF 優先で実装
+- **タスク**: HANDOFF v2 完全準拠で旧 sticker-extra を play-cards 2 枚 (.pc-card mt4 ガチャ + mt1 シールアルバム) に置き換え。 既存ゲーム 5 枚と完全同サイズ・同レスポンシブ。 .pc-v-gacha CSS 描画ガチャマシン + .pc-bubble--left + .pc-card--mt4::before{left:60%} + .pc-growth .lbl 追加 (24 行)。 旧 .sticker-extra* CSS は dead code 残置 (HANDOFF 指示準拠)。 sw v1501→v1502、 3 軸クロスレビュー全 APPROVED、 fast-forward push 成功 (aac012e)。 [[feedback_stitch_mojibake_no_guess]] 通りファイル直 Read で mojibake 回避、 [[feedback_brand_kit_design_via_claude_design]] の HANDOFF 優先で実装
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 206
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 25, "Bash": 130, "Write": 4, "Read": 12, "Edit": 7, "Workflow": 26, "ToolSearch": 1, "TaskStop": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-22T09:18:46Z - ユーザー指示『ガチャを LP に載せる + 中の絵キャプチャは後渡し』 に対し並列で 2 作業: (1) LP sticker-extra にガチャカード追加 (HANDOFF 完全準拠、 CSS 描画ガチャマシン + 2 カラム grid、 sw v1497 push)、 (2) play.html に capture.js Hookup + PonoCapture.register() 実装 (html2canvas + #dailyGachaModal ターゲット、 build 内動的 ESM import で lazy load、 sw v1499 push)。 ux-brand レビュアーが ESM import を register() 時点実行と誤指摘したが、 実物確認で build() async function 内 lazy import を確認、 機能的に問題なし。 [[feature_screenshot_mode]] の既存ゲーム (bento/puzzle/quizland) パターン (html2canvas + 動的 ESM import) と統一
 - **タスク**: ユーザー指示『ガチャを LP に載せる + 中の絵キャプチャは後渡し』 に対し並列で 2 作業: (1) LP sticker-extra にガチャカード追加 (HANDOFF 完全準拠、 CSS 描画ガチャマシン + 2 カラム grid、 sw v1497 push)、 (2) play.html に capture.js Hookup + PonoCapture.register() 実装 (html2canvas + #dailyGachaModal ターゲット、 build 内動的 ESM import で lazy load、 sw v1499 push)。 ux-brand レビュアーが ESM import を register() 時点実行と誤指摘したが、 実物確認で build() async function 内 lazy import を確認、 機能的に問題なし。 [[feature_screenshot_mode]] の既存ゲーム (bento/puzzle/quizland) パターン (html2canvas + 動的 ESM import) と統一
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 23, "Bash": 44, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 10}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。
-
-
-### 2026-06-21T15:59:37Z - Stitch 3 案並列生成用 brief.md を .claude-design-bundle/components/coming-soon/ に新規作成 (241 行)。 ユーザー要望 3 点 (スリムバナー / クリック→詳細モーダル / ポノ顔アプリアイコン) を網羅、 確定コピー固定、 案 A (Minimal Banner 100-120px) / 案 B (Sticker Banner 130-150px 回転 dashed) / 案 C (App Preview Card 180px 2 カラム) で差別化、 既存 hero/play-cards/book-bridge brief と同骨格、 NG・トークン・モーダル仕様・a11y 完備。 brand-AD クロスレビュー APPROVED。 旧 coming-soon-a.html は履歴として保持 (README 準拠)
-- **タスク**: Stitch 3 案並列生成用 brief.md を .claude-design-bundle/components/coming-soon/ に新規作成 (241 行)。 ユーザー要望 3 点 (スリムバナー / クリック→詳細モーダル / ポノ顔アプリアイコン) を網羅、 確定コピー固定、 案 A (Minimal Banner 100-120px) / 案 B (Sticker Banner 130-150px 回転 dashed) / 案 C (App Preview Card 180px 2 カラム) で差別化、 既存 hero/play-cards/book-bridge brief と同骨格、 NG・トークン・モーダル仕様・a11y 完備。 brand-AD クロスレビュー APPROVED。 旧 coming-soon-a.html は履歴として保持 (README 準拠)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 79
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 22, "Bash": 35, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 9}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。
 
 
