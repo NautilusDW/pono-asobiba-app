@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1498: play.html に capture.js Hookup 追加 (ガチャモーダルキャプチャ対応)
 // v1495: LP play-cards maze/bento ビジュアルをモーダル内タイトル画面画像に差し替え
 // v1494: Daily gacha reveal smooths capsule drop, separates note bubbles, centers plate text, and raises open shells.
 // v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 latest Pono LP Brand Kit handoff).
@@ -176,7 +177,7 @@
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
 // v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 最新版: COMING SOON ピル + Mochiy + 3 行構成) per Pono LP Brand Kit handoff.
 // v1497: LP に gacha セクション追加 (HANDOFF 完全準拠、 画像は後渡し)
-const CACHE_VERSION = 1497; // v1497: LP に gacha セクション追加 (HANDOFF 完全準拠、 画像は後渡し)
+const CACHE_VERSION = 1498; // v1498: play.html に capture.js Hookup 追加 (ガチャモーダルキャプチャ対応)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
