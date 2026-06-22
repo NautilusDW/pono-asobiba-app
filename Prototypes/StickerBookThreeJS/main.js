@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-797";
+const ASSET_VERSION = "20260622-801";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -18,6 +18,7 @@ const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
 const PAGE_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
 const STICKER_SPINE_STACK_EXTENSION = PAGE_H * 0.055;
 const STICKER_SPINE_H = PAGE_H + STICKER_SPINE_STACK_EXTENSION;
+const STICKER_SPINE_TOP_LIFT = PAGE_H * (5 / PAGE_TEXTURE_H);
 const STICKER_OPEN_GAP = GUTTER * 0.62;
 const STICKER_STACK_SPINE_OVERLAP = 0;
 const BINDING_RING_HOLE_X = STICKER_OPEN_GAP / 2 + PAGE_HOLE_X;
@@ -796,6 +797,7 @@ const SPREAD_JUMP_SETTLE_PROGRESS = 0;
 const SPREAD_JUMP_MIN_DURATION = 0.28;
 const SPREAD_JUMP_MAX_DURATION = 0.62;
 const COVER_OPEN_DURATION = 1.15;
+const COVER_CLOSE_DURATION = 0.95;
 const COVER_CLOSED_X = GUTTER / 2;
 const COVER_OPEN_X = -GUTTER / 2;
 const COVER_CENTER_X = COVER_CLOSED_X + PAGE_W / 2;
@@ -1129,6 +1131,7 @@ const textureEntries = await Promise.all(textureFiles.map(async (file) => [file,
 const textureMap = new Map(textureEntries);
 const pageTemplateTextureMap = new Map();
 const stickerSpineTextureMap = new Map();
+const freeSideTabsTextureMap = new Map();
 const collectionSpineTextureMap = new Map();
 const collectionFoldTextureMap = new Map();
 const collectionTabsTextureMap = new Map();
@@ -1459,6 +1462,10 @@ window.__stickerBookDebugState = () => ({
   spreadJumpActive: Boolean(spreadJumpAnimation),
   spreadJumpVisiblePageCount: spreadJumpAnimation?.visiblePageCount ?? 0,
   spreadJumpCycles: spreadJumpAnimation?.cycles ?? 0,
+  coverOpenActive: Boolean(coverOpenAnimation),
+  coverOpenDirection: coverOpenAnimation?.direction || "",
+  coverOpenAge: coverOpenAnimation ? coverOpenAnimation.elapsed || 0 : 0,
+  coverOpenDuration: coverOpenAnimation?.duration ?? 0,
   coverPrint: coverPrintFile(activeBook),
   coverHardwareVisible: coverHardware.group.visible,
   lastBookSwipeDebug,
@@ -3584,6 +3591,10 @@ function setBookSurface(surface, page = activeBookPage, options = {}) {
     startCoverOpen(page);
     return;
   }
+  if (activeSurface === "inside" && nextSurface === "cover") {
+    startCoverClose();
+    return;
+  }
   cancelCoverOpen();
   activeSurface = nextSurface;
   isPlaying = false;
@@ -3621,12 +3632,42 @@ function startCoverOpen(page = activeBookPage) {
   updateControlState();
   assignCoverTurnTextures();
   coverOpenAnimation = {
-    startTime: performance.now(),
+    startTime: 0,
+    elapsed: 0,
     duration: COVER_OPEN_DURATION,
+    direction: "open",
   };
   updateCollectionStickerTrayVisibility();
   renderCoverOpenTransition(0);
   syncUrl();
+  coverOpenAnimation.startTime = performance.now();
+}
+
+function startCoverClose() {
+  cancelCoverOpen();
+  if (activeSurface !== "inside") {
+    return;
+  }
+  isPlaying = false;
+  playButton.classList.remove("playing");
+  flipProgress = 0;
+  slider.value = "0";
+  slider.disabled = true;
+  selectedPlacementId = null;
+  stickerDragState = null;
+  closeBookPageJump();
+  refreshPageTemplateTextures();
+  updateControlState();
+  assignCoverTurnTextures();
+  coverOpenAnimation = {
+    startTime: 0,
+    elapsed: 0,
+    duration: COVER_CLOSE_DURATION,
+    direction: "close",
+  };
+  updateCollectionStickerTrayVisibility();
+  renderCoverOpenTransition(1);
+  coverOpenAnimation.startTime = performance.now();
 }
 
 function cancelCoverOpen() {
@@ -5461,6 +5502,8 @@ function drawCollectionMiniMotif(ctx, kind, x, y, size, color, rotation = 0) {
 
   if (kind === "star") {
     drawStarMotif(ctx, 0, 0, size * 0.48, size * 0.24, color);
+  } else if (kind === "sparkle") {
+    drawSparkleMotif(ctx, size, color);
   } else if (kind === "cloud") {
     drawCloudMotif(ctx, size, color);
   } else if (kind === "leaf") {
@@ -5500,6 +5543,25 @@ function drawStarMotif(ctx, x, y, outer, inner, color) {
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+}
+
+function drawSparkleMotif(ctx, size, color) {
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "rgba(129, 95, 34, 0.13)";
+  ctx.lineWidth = Math.max(1.2, size * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.5);
+  ctx.quadraticCurveTo(size * 0.08, -size * 0.12, size * 0.42, 0);
+  ctx.quadraticCurveTo(size * 0.08, size * 0.12, 0, size * 0.5);
+  ctx.quadraticCurveTo(-size * 0.08, size * 0.12, -size * 0.42, 0);
+  ctx.quadraticCurveTo(-size * 0.08, -size * 0.12, 0, -size * 0.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(size * 0.34, -size * 0.32, size * 0.09, size * 0.09, 0, 0, Math.PI * 2);
+  ctx.ellipse(-size * 0.38, size * 0.34, size * 0.07, size * 0.07, 0, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawCloudMotif(ctx, size, color) {
@@ -7075,17 +7137,17 @@ function createSideTabs() {
   });
 
   const leftMaterial = baseMaterial.clone();
-  leftMaterial.map = getTexture(BOOK_VARIANTS[activeBook].tabsLeft);
+  leftMaterial.map = getFreeSideTabsTexture(activeBook, "left");
   const left = new THREE.Mesh(new THREE.PlaneGeometry(tabW, PAGE_H), leftMaterial);
   left.position.set(leftEdge + tabCenterOffset, 0, 0);
-  left.renderOrder = 3;
+  left.renderOrder = 42;
   group.add(left);
 
   const rightMaterial = baseMaterial.clone();
-  rightMaterial.map = getTexture(BOOK_VARIANTS[activeBook].tabsRight);
+  rightMaterial.map = getFreeSideTabsTexture(activeBook, "right");
   const right = new THREE.Mesh(new THREE.PlaneGeometry(tabW, PAGE_H), rightMaterial);
   right.position.set(rightEdge - tabCenterOffset, 0, 0);
-  right.renderOrder = 3;
+  right.renderOrder = 42;
   group.add(right);
 
   return { group, left, right, tabCenterOffset };
@@ -7098,15 +7160,131 @@ function positionSideTabs(gap = currentBookGap()) {
   sideTabs.right.position.x = rightEdge - sideTabs.tabCenterOffset;
 }
 
+function positionClosedCoverTabs() {
+  const leftEdge = COVER_CLOSED_X;
+  const rightEdge = COVER_CLOSED_X + PAGE_W;
+  sideTabs.left.position.x = leftEdge + sideTabs.tabCenterOffset;
+  sideTabs.right.position.x = rightEdge - sideTabs.tabCenterOffset;
+}
+
+function positionCoverOpeningTabs(openProgress) {
+  const p = smootherstep(openProgress);
+  const gap = currentBookGap();
+  const openLeftEdge = -PAGE_W - gap / 2;
+  const openRightEdge = PAGE_W + gap / 2;
+  const closedLeftEdge = COVER_CLOSED_X;
+  const closedRightEdge = COVER_CLOSED_X + PAGE_W;
+  sideTabs.left.position.x = THREE.MathUtils.lerp(closedLeftEdge, openLeftEdge, p) + sideTabs.tabCenterOffset;
+  sideTabs.right.position.x = THREE.MathUtils.lerp(closedRightEdge, openRightEdge, p) - sideTabs.tabCenterOffset;
+  sideTabs.group.position.z = -0.04;
+}
+
+function setClosedCoverTabsVisible(visible) {
+  sideTabs.group.visible = visible;
+  sideTabs.left.visible = false;
+  sideTabs.right.visible = visible;
+  if (visible) {
+    sideTabs.group.position.z = -0.04;
+    positionClosedCoverTabs();
+  }
+}
+
 function assignSideTabTextures() {
-  const bundle = BOOK_VARIANTS[activeBook];
   if (activeAlbumMode === "collection") {
     assignTextureObject(sideTabs.left, getCollectionTabsTexture(activeBook, "left"));
     assignTextureObject(sideTabs.right, getCollectionTabsTexture(activeBook, "right"));
     return;
   }
-  assignTexture(sideTabs.left, bundle.tabsLeft);
-  assignTexture(sideTabs.right, bundle.tabsRight);
+  assignTextureObject(sideTabs.left, getFreeSideTabsTexture(activeBook, "left"));
+  assignTextureObject(sideTabs.right, getFreeSideTabsTexture(activeBook, "right"));
+}
+
+function getFreeSideTabsTexture(bookName, side) {
+  const key = `${bookName}:${side}`;
+  if (freeSideTabsTextureMap.has(key)) {
+    return freeSideTabsTextureMap.get(key);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 320;
+  canvas.height = 1536;
+  const ctx = canvas.getContext("2d");
+  const theme = stickerBookTheme(bookName).collection;
+  const tabs = theme.tabs;
+  const tabH = 166;
+  const tabGap = 36;
+  const startY = 108;
+  const tabW = 282;
+  const tabX = side === "left" ? 10 : canvas.width - tabW - 10;
+  const motifX = side === "left" ? 58 : canvas.width - 58;
+  const sparkleX = side === "left" ? 104 : canvas.width - 104;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < tabs.length; i += 1) {
+    const tab = tabs[i];
+    const y = startY + i * (tabH + tabGap);
+    const gradient = ctx.createLinearGradient(
+      side === "left" ? tabX + tabW : tabX,
+      0,
+      side === "left" ? tabX : tabX + tabW,
+      0,
+    );
+    gradient.addColorStop(0, tab.shadow);
+    gradient.addColorStop(0.18, tab.color);
+    gradient.addColorStop(0.62, tab.color);
+    gradient.addColorStop(1, "#fff2c9");
+
+    ctx.save();
+    ctx.shadowColor = "rgba(55, 42, 24, 0.2)";
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetX = side === "left" ? -3 : 3;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = gradient;
+    drawSideTabPath(ctx, tabX, y, tabW, tabH, 48, side);
+    ctx.fill();
+
+    ctx.shadowColor = "transparent";
+    const gloss = ctx.createLinearGradient(0, y, 0, y + tabH);
+    gloss.addColorStop(0, "rgba(255, 255, 255, 0.42)");
+    gloss.addColorStop(0.42, "rgba(255, 255, 255, 0.1)");
+    gloss.addColorStop(1, "rgba(91, 59, 20, 0.08)");
+    ctx.fillStyle = gloss;
+    drawSideTabPath(ctx, tabX + 4, y + 4, tabW - 8, tabH - 8, 44, side);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.62)";
+    ctx.lineWidth = 5;
+    drawSideTabPath(ctx, tabX + 13, y + 13, tabW - 26, tabH - 26, 36, side);
+    ctx.stroke();
+
+    ctx.setLineDash([10, 11]);
+    ctx.strokeStyle = "rgba(255, 248, 220, 0.58)";
+    ctx.lineWidth = 3;
+    drawSideTabPath(ctx, tabX + 25, y + 27, tabW - 50, tabH - 54, 26, side);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = tab.shadow;
+    ctx.globalAlpha = 0.22;
+    ctx.lineWidth = 4;
+    drawSideTabPath(ctx, tabX + 3, y + 5, tabW - 6, tabH - 10, 44, side);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    drawCollectionMiniMotif(ctx, tab.motif, motifX, y + tabH / 2, 34, "rgba(255, 250, 224, 0.96)", side === "left" ? -0.12 : 0.12);
+    drawCollectionMiniMotif(ctx, i % 2 === 0 ? "star" : "bubble", sparkleX, y + tabH * 0.32, 13, "rgba(255, 251, 222, 0.82)", side === "left" ? 0.22 : -0.22);
+    drawCollectionMiniMotif(ctx, "sparkle", sparkleX, y + tabH * 0.7, 10, "rgba(255, 255, 255, 0.72)", 0.18);
+    ctx.restore();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  freeSideTabsTextureMap.set(key, texture);
+  return texture;
 }
 
 function getCollectionTabsTexture(bookName, side) {
@@ -8630,7 +8808,7 @@ function assignSpineTexture() {
     return;
   }
   spine.scale.set(1, 1, 1);
-  spine.position.y = -STICKER_SPINE_STACK_EXTENSION / 2;
+  spine.position.y = -STICKER_SPINE_STACK_EXTENSION / 2 + STICKER_SPINE_TOP_LIFT;
   spine.position.z = -0.09;
   spine.renderOrder = 1;
   spine.material.opacity = 1;
@@ -9131,6 +9309,7 @@ function updatePage(progress) {
     coverTurn.visible = false;
     setOpenSpreadVisible(false);
     applyAlbumLayout();
+    setClosedCoverTabsVisible(true);
     applyCoverTuning();
     applyBookFramePosition(0);
     updateSpreadJumpControls();
@@ -9175,6 +9354,7 @@ function renderCoverOpenTransition(rawProgress) {
   }
   setCoverOpeningSpreadVisible(true);
   applyAlbumLayout();
+  positionCoverOpeningTabs(raw);
   const gap = currentBookGap();
   const showBinding = p > 0.52;
   spine.visible = showBinding;
@@ -9210,19 +9390,32 @@ function updateCoverOpen(delta) {
     return false;
   }
   const animation = coverOpenAnimation;
-  const elapsed = (performance.now() - animation.startTime) / 1000;
-  const raw = THREE.MathUtils.clamp(elapsed / animation.duration, 0, 1);
+  animation.elapsed = Math.min(animation.duration, (animation.elapsed || 0) + delta);
+  const elapsed = animation.elapsed;
+  const t = THREE.MathUtils.clamp(elapsed / animation.duration, 0, 1);
+  const isClosing = animation.direction === "close";
+  const raw = isClosing ? 1 - t : t;
   renderCoverOpenTransition(raw);
-  if (raw >= 0.995) {
+  if (t >= 0.995) {
     coverOpenAnimation = null;
     coverTurn.visible = false;
-    flipShadow.visible = true;
-    assignTextureObject(frontPage, getPageTemplateTexture("right"));
-    assignTextureObject(backPage, getPageTemplateTexture("left"));
-    slider.disabled = false;
-    updatePage(0);
-    updateCollectionStickerTrayVisibility();
-    syncUrl();
+    if (isClosing) {
+      activeSurface = "cover";
+      flipShadow.visible = false;
+      slider.disabled = true;
+      updateControlState();
+      updatePage(0);
+      updateCollectionStickerTrayVisibility();
+      syncUrl();
+    } else {
+      flipShadow.visible = true;
+      assignTextureObject(frontPage, getPageTemplateTexture("right"));
+      assignTextureObject(backPage, getPageTemplateTexture("left"));
+      slider.disabled = false;
+      updatePage(0);
+      updateCollectionStickerTrayVisibility();
+      syncUrl();
+    }
   }
   return true;
 }
@@ -9235,6 +9428,7 @@ function applyBookFramePosition(openProgress) {
 function setOpenSpreadVisible(visible) {
   setStickerBookDepthVisible(visible);
   sideTabs.group.visible = visible;
+  sideTabs.group.position.z = -0.04;
   sideTabs.left.visible = visible;
   sideTabs.right.visible = visible;
   leftPageOuter.visible = false;
@@ -9268,6 +9462,7 @@ function setOpenSpreadVisible(visible) {
 function setCoverOpeningSpreadVisible(visible) {
   setStickerBookDepthVisible(false);
   sideTabs.group.visible = visible;
+  sideTabs.group.position.z = visible ? sideTabs.group.position.z : -0.04;
   sideTabs.left.visible = false;
   sideTabs.right.visible = visible;
   leftPageOuter.visible = false;
