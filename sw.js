@@ -185,7 +185,9 @@
 // v1506: LP gacha bubble 文言を 「★１にち１かい」 (全角１) に修正
 // v1507: daily gacha table placement, Pono start panel, and lever hit area fixed
 // v1508: daily gacha table height, arrow marker, reward bubbles, and plate text alignment fixed
-const CACHE_VERSION = 1509; // v1509: daily gacha machine/table contact and delayed tomorrow bubble
+// v1509: daily gacha machine/table contact and delayed tomorrow bubble
+// v1510: daily gacha arrowhead, centered rays, stronger sparkles, and shorter start panel
+const CACHE_VERSION = 1511; // v1511: LP play-cards 5 ゲーム (bento/maze/oto/puzzle/quizland) のコピー全面刷新 — chip / play / growth / 詳細モーダル detail を更新
 // v1500: daily gacha に木の部屋の奥行き背景と Pono 開始ふきだしを追加
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
