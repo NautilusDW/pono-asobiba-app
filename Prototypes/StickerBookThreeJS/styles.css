@@ -728,8 +728,8 @@ body.is-collection-tray-visible .book-page-label {
   flex-basis: 86px;
   width: 86px;
   height: 74px;
-  grid-template-rows: 48px 14px;
-  gap: 4px;
+  grid-template-rows: 1fr;
+  gap: 0;
   cursor: grab;
   touch-action: pan-x;
 }
@@ -744,8 +744,8 @@ body.is-collection-tray-visible .book-page-label {
 }
 
 .sticker-tray-icon {
-  width: 62px;
-  height: 46px;
+  width: 70px;
+  height: 58px;
   border-radius: 10px;
 }
 
@@ -756,6 +756,7 @@ body.is-collection-tray-visible .book-page-label {
 }
 
 .sticker-tray-label {
+  display: none;
   font-size: 10px;
 }
 

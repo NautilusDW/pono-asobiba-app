@@ -179,7 +179,8 @@
 // v1497: LP に gacha セクション追加 (HANDOFF 完全準拠、 画像は後渡し)
 // v1501: play-gacha capture target を .daily-gacha-shell (ガチャ機本体) に変更 — モーダル backdrop 除外で 16:9 ピッタリ
 // v1502: LP sticker-extra を play-cards 2 枚 (ガチャ + シールアルバム) に置き換え HANDOFF v2 完全準拠
-const CACHE_VERSION = 1503; // v1503: daily gacha start panel and foreground stage fixed
+// v1503: daily gacha start panel and foreground stage fixed
+const CACHE_VERSION = 1504; // v1504: LP 1日1かい bubble (.pc-bubble--left) specificity fix — base .pc-bubble の right:-6px を上書きできず横伸びしていた問題を解消
 // v1500: daily gacha に木の部屋の奥行き背景と Pono 開始ふきだしを追加
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 

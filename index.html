@@ -535,8 +535,8 @@
     .pc-v-gacha .gacha-knob::after{content:"";position:absolute;inset:36%;border-radius:3px;background:#C96A2E;transform:rotate(45deg);}
     .pc-v-gacha .gacha-out{position:absolute;bottom:7%;left:50%;transform:translateX(-50%);width:36%;aspect-ratio:1;border-radius:50%;
       background:#FDD05E;border:3px solid #fff;box-shadow:0 3px 7px rgba(93,78,55,.25);}
-    /* ガチャ札を左上へ（右上だとテープと被るため） */
-    .pc-bubble--left{left:-6px;right:auto;transform:rotate(-5deg);border-radius:14px 14px 4px 14px;}
+    /* ガチャ札を左上へ（右上だとテープと被るため）— specificity を底上げして base .pc-bubble の right:-6px を確実に上書き */
+    .pc-bubble.pc-bubble--left{left:-6px;right:auto;transform:rotate(-5deg);border-radius:14px 14px 4px 14px;}
     /* mt4 のテープを中央右寄りに（既存 left:42% → 60%） */
     .pc-card--mt4::before{left:60%;}
     /* growth box のラベル（既存になければ追加。あれば流用） */

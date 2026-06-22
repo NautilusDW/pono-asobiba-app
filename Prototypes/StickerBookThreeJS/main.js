@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-802";
+const ASSET_VERSION = "20260622-803";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -40,12 +40,13 @@ const THICKNESS_DEFAULT_SCALE_Y = {
   full: 1,
 };
 const STICKER_PLAN_URL = "./sticker_book_content_plan.json";
+const GAME_STICKER_CATALOG_URL = "../../assets/data/game-stickers.json";
 const STICKER_ASSET_PREFIX = "../../";
 const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
 const COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY = "sb3d_collection_album_placements_v1";
 const EDITOR_STATE_VERSION = 3;
 const COLLECTION_ALBUM_STATE_VERSION = 1;
-const DEFAULT_CONTENT_SEED_VERSION = 1;
+const DEFAULT_CONTENT_SEED_VERSION = 2;
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
 const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
@@ -1069,6 +1070,7 @@ let suppressStickerTrayClick = false;
 let suppressSceneClickAfterSwipe = false;
 let lastBookSwipeDebug = null;
 let stickerPlan = null;
+let gameStickerCatalog = null;
 let stickerOptions = [];
 let collectionStickerOptions = [];
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
@@ -2010,7 +2012,6 @@ function setupCollectionStickerTray() {
     if (stickerButton && collectionStickerTray.contains(stickerButton)) {
       if (activeAlbumMode !== "collection" && activeSurface === "inside") {
         event.preventDefault();
-        addStickerFromTrayToPage(stickerButton.dataset.stickerTrayId, rightBookPageNumber(), { x: 50, y: 50 });
       }
       return;
     }
@@ -2116,7 +2117,7 @@ function renderStickerThumbnailTray() {
     button.type = "button";
     button.className = "collection-toc-card sticker-tray-card";
     button.dataset.stickerTrayId = sticker.id;
-    button.setAttribute("aria-label", `${sticker.label}を はる`);
+    button.setAttribute("aria-label", `${sticker.label}を ドラッグして はる`);
     button.title = sticker.label;
 
     const icon = document.createElement("span");
@@ -2130,11 +2131,7 @@ function renderStickerThumbnailTray() {
     image.decoding = "async";
     icon.append(image);
 
-    const label = document.createElement("span");
-    label.className = "collection-toc-label sticker-tray-label";
-    label.textContent = sticker.label;
-
-    button.append(icon, label);
+    button.append(icon);
     fragment.append(button);
   }
   collectionStickerTrayItems.replaceChildren(fragment);
@@ -2774,20 +2771,25 @@ function setupStickerEditor() {
 
 async function loadStickerPlanForEditor() {
   try {
-    const response = await fetch(`${STICKER_PLAN_URL}?v=${ASSET_VERSION}`);
-    if (!response.ok) {
-      throw new Error(`plan ${response.status}`);
-    }
-    stickerPlan = await response.json();
+    const [plan, catalog] = await Promise.all([
+      loadStickerBookPlan(),
+      loadGameStickerCatalog(),
+    ]);
+    stickerPlan = plan;
+    gameStickerCatalog = catalog;
     const loadedStickerOptions = stickerPlan.stickers
       .map((sticker) => ({
         ...sticker,
         assetUrl: sticker.assetPath ? stickerAssetUrl(sticker.assetPath) : "",
       }));
+    const catalogStickerOptions = buildStickerOptionsFromGameCatalog(gameStickerCatalog);
     collectionStickerOptions = sortCollectionStickersForZukan(buildCollectionZukanSubjects(loadedStickerOptions));
-    stickerOptions = loadedStickerOptions
+    const fallbackStickerOptions = loadedStickerOptions
       .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
       .map((sticker) => ({ ...sticker }));
+    stickerOptions = catalogStickerOptions.length
+      ? catalogStickerOptions
+      : fallbackStickerOptions;
     syncEditorPlacementsWithStickerPlan();
     syncCollectionPlacementsWithStickerPlan();
     editorPageDefinitions = buildEditorPageDefinitions();
@@ -2816,6 +2818,55 @@ async function loadStickerPlanForEditor() {
       stickerLibrary.textContent = "シールを よみこめません";
     }
   }
+}
+
+async function loadStickerBookPlan() {
+  const response = await fetch(`${STICKER_PLAN_URL}?v=${ASSET_VERSION}`);
+  if (!response.ok) {
+    throw new Error(`plan ${response.status}`);
+  }
+  return response.json();
+}
+
+async function loadGameStickerCatalog() {
+  try {
+    const response = await fetch(`${GAME_STICKER_CATALOG_URL}?v=${ASSET_VERSION}`);
+    if (!response.ok) {
+      throw new Error(`game catalog ${response.status}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.warn("Game sticker catalog load failed", error);
+    return null;
+  }
+}
+
+function buildStickerOptionsFromGameCatalog(catalog) {
+  const pages = catalog?.pages && typeof catalog.pages === "object"
+    ? Object.entries(catalog.pages)
+    : [];
+  return pages.flatMap(([gameId, page], pageIndex) => {
+    const stickers = Array.isArray(page?.stickers) ? page.stickers : [];
+    return stickers
+      .filter((sticker) => sticker?.id && sticker.img)
+      .map((sticker, stickerIndex) => ({
+        id: String(sticker.id),
+        gameId,
+        view: gameId,
+        label: sticker.name || sticker.label || page?.title || String(sticker.id),
+        kana: sticker.kana || sticker.name || sticker.label || page?.title || String(sticker.id),
+        sort: pageIndex * 1000 + stickerIndex,
+        stage: stickerIndex + 1,
+        rarity: sticker.rarity || "normal",
+        tier: page?.appOnly ? "sub" : "free",
+        unlock: "catalog",
+        listNote: page?.subtitle || "",
+        assetStatus: "existing",
+        assetPath: sticker.img,
+        assetUrl: stickerAssetUrl(sticker.img),
+        gameLabel: page?.title || gameId,
+      }));
+  });
 }
 
 function syncEditorPlacementsWithStickerPlan() {
@@ -3007,12 +3058,16 @@ function createDefaultPlacements(stickers) {
 }
 
 function seedDefaultEditorContentIfNeeded() {
-  if (!stickerOptions.length || hasAnyEditorContent()) {
+  if (!stickerOptions.length || !shouldSeedDefaultEditorContent()) {
     return;
   }
+  editorState.pages = {};
+  if (!editorState.drawings || typeof editorState.drawings !== "object") {
+    editorState.drawings = {};
+  }
   const sortedStickers = [...stickerOptions].sort((a, b) => {
-    const gameOrderA = stickerPlan?.games?.findIndex((game) => game.id === a.gameId) ?? 0;
-    const gameOrderB = stickerPlan?.games?.findIndex((game) => game.id === b.gameId) ?? 0;
+    const gameOrderA = stickerGameOrder(a.gameId);
+    const gameOrderB = stickerGameOrder(b.gameId);
     return gameOrderA - gameOrderB || String(a.id).localeCompare(String(b.id));
   });
   const pageCount = editorPageCount();
@@ -3024,6 +3079,45 @@ function seedDefaultEditorContentIfNeeded() {
   }
   editorState.defaultContentSeedVersion = DEFAULT_CONTENT_SEED_VERSION;
   editorStateDirty = true;
+}
+
+function shouldSeedDefaultEditorContent() {
+  if (!hasAnyEditorContent()) {
+    return true;
+  }
+  if ((Number(editorState.defaultContentSeedVersion) || 0) >= DEFAULT_CONTENT_SEED_VERSION) {
+    return false;
+  }
+  return editorStateLooksLikeLegacyDefaultContent();
+}
+
+function editorStateLooksLikeLegacyDefaultContent() {
+  const drawingValues = editorState.drawings && typeof editorState.drawings === "object"
+    ? Object.values(editorState.drawings)
+    : [];
+  if (drawingValues.some((strokes) => Array.isArray(strokes) && strokes.length > 0)) {
+    return false;
+  }
+  const currentStickerIds = new Set(stickerOptions.map((sticker) => sticker.id));
+  const placements = Object.values(editorState.pages || {})
+    .flatMap((pagePlacements) => (Array.isArray(pagePlacements) ? pagePlacements : []));
+  if (!placements.length) {
+    return true;
+  }
+  const missingCount = placements.filter((placement) => !currentStickerIds.has(placement.stickerId)).length;
+  return missingCount / placements.length >= 0.7;
+}
+
+function stickerGameOrder(gameId) {
+  const catalogIds = gameStickerCatalog?.pages && typeof gameStickerCatalog.pages === "object"
+    ? Object.keys(gameStickerCatalog.pages)
+    : [];
+  const catalogIndex = catalogIds.indexOf(gameId);
+  if (catalogIndex >= 0) {
+    return catalogIndex;
+  }
+  const planIndex = stickerPlan?.games?.findIndex((game) => game.id === gameId) ?? -1;
+  return planIndex >= 0 ? planIndex : 9999;
 }
 
 function hasAnyEditorContent() {
@@ -3044,7 +3138,14 @@ function setupEditorGameFilter() {
     return;
   }
   const activeGameIds = new Set(stickerOptions.map((sticker) => sticker.gameId));
-  const games = stickerPlan.games.filter((game) => activeGameIds.has(game.id));
+  const catalogGames = gameStickerCatalog?.pages && typeof gameStickerCatalog.pages === "object"
+    ? Object.entries(gameStickerCatalog.pages).map(([id, page]) => ({
+      id,
+      label: page?.title || id,
+    }))
+    : [];
+  const games = (catalogGames.length ? catalogGames : stickerPlan.games)
+    .filter((game) => activeGameIds.has(game.id));
   editorGameFilter.innerHTML = [
     '<option value="all">ぜんぶ</option>',
     ...games.map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.label)}</option>`),
@@ -9527,7 +9628,11 @@ function getCollectionFoldTexture(bookName) {
 function assignCoverTurnTextures() {
   const bundle = BOOK_VARIANTS[activeBook];
   assignTexture(coverTurnFront, coverPrintFile(activeBook));
-  assignTexture(coverTurnBack, bundle.coverInside);
+  if (activeAlbumMode !== "collection") {
+    assignTextureObject(coverTurnBack, getPageTemplateTexture("left", activeBookPage));
+  } else {
+    assignTexture(coverTurnBack, bundle.coverInside);
+  }
 }
 
 function updateControlState() {
