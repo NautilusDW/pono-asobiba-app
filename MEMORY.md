@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-22T16:26:04Z - LP 絵本アドバンテージ訴求 (hero匂わせ帯+book-prelude+puzzle/oto画像差替+SWv1514) を App staging にデプロイ
+- **タスク**: LP 絵本アドバンテージ訴求 (hero匂わせ帯+book-prelude+puzzle/oto画像差替+SWv1514) を App staging にデプロイ
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 44
+- **エラー数**: 1
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Agent": 33, "Grep": 3, "Read": 4, "Edit": 3, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-22T12:42:54Z - LP play-cards 5ゲームのコピー全面刷新を App staging にデプロイ (v1511)
 - **タスク**: LP play-cards 5ゲームのコピー全面刷新を App staging にデプロイ (v1511)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 23, "Bash": 63, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 14}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。
-
-
-### 2026-06-21T19:16:53Z - Stitch 案 B (Sticker Banner + 詳細モーダル) を旧 phone モック .coming-soon-app を完全削除して index.html に組み込み (sw v1479)、 ux-brand 指摘の 2 文言を brief.md 準拠に Round 2 fix (list 3 「ポノからの」 / foot 「じゅんびが できたら」、 公開断言禁止精神) + ★ 装飾に aria-hidden 追加 (sw v1480)。 git push fast-forward 成功 (309e5af、 divergence なし)、 deploy run in_progress。 [[feedback_stitch_mojibake_no_guess]] の推測復元禁止ルールを徹底活用し、 brief.md 確定文を優先 + 自信度マトリクスで透明化、 Stitch HANDOFF の mojibake テキスト推測を一切採用せず Round 2 fix も brief.md 準拠で完結。 .claude-design-bundle/components/coming-soon/coming-soon-b.html も bundle 同期
-- **タスク**: Stitch 案 B (Sticker Banner + 詳細モーダル) を旧 phone モック .coming-soon-app を完全削除して index.html に組み込み (sw v1479)、 ux-brand 指摘の 2 文言を brief.md 準拠に Round 2 fix (list 3 「ポノからの」 / foot 「じゅんびが できたら」、 公開断言禁止精神) + ★ 装飾に aria-hidden 追加 (sw v1480)。 git push fast-forward 成功 (309e5af、 divergence なし)、 deploy run in_progress。 [[feedback_stitch_mojibake_no_guess]] の推測復元禁止ルールを徹底活用し、 brief.md 確定文を優先 + 自信度マトリクスで透明化、 Stitch HANDOFF の mojibake テキスト推測を一切採用せず Round 2 fix も brief.md 準拠で完結。 .claude-design-bundle/components/coming-soon/coming-soon-b.html も bundle 同期
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 103
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 23, "Bash": 55, "Write": 3, "Read": 6, "Edit": 4, "Workflow": 12}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。
 
 

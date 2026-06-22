@@ -1964,10 +1964,10 @@ body.layout-editor-on .character img {
 }
 .diff-btn {
   flex: 1 1 0;
-  height: clamp(78px, 11vw, 144px);
+  height: clamp(96px, 12.6vw, 160px);
   min-height: 0;
   min-width: 0;
-  padding: clamp(10px, 1.4vw, 18px) clamp(12px, 1.8vw, 24px) clamp(12px, 1.6vw, 20px);
+  padding: clamp(12px, 1.3vw, 18px) clamp(14px, 1.8vw, 26px) clamp(18px, 2.4vw, 32px);
   border: 0;
   border-radius: 22px;
   background-color: transparent;
@@ -1981,9 +1981,12 @@ body.layout-editor-on .character img {
   cursor: pointer;
   text-align: center;
   line-height: 1.05;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: clamp(2px, 0.7vw, 8px);
+  display: grid;
+  grid-template-rows: minmax(28px, 0.95fr) minmax(44px, 0.72fr);
+  align-items: center;
+  justify-items: center;
+  justify-content: stretch;
+  gap: 0;
   filter: drop-shadow(0 6px 8px rgba(80, 50, 10, 0.18));
   text-rendering: optimizeLegibility;
   transition: transform 0.1s, filter 0.15s;
@@ -1993,22 +1996,25 @@ body.layout-editor-on .character img {
   align-items: center;
   justify-content: center;
   gap: clamp(2px, 0.5vw, 8px);
-  min-height: clamp(28px, 4.5vw, 54px);
+  min-height: clamp(26px, 3.8vw, 48px);
   font-size: 0;
   line-height: 0;
 }
 .diff-star {
-  width: clamp(30px, 4.3vw, 54px);
+  width: clamp(28px, 3.8vw, 48px);
   aspect-ratio: 1;
   display: block;
   background: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png') center / contain no-repeat;
   filter: drop-shadow(0 2px 1px rgba(95, 59, 12, 0.22));
 }
 .diff-btn .diff-label {
-  font-size: clamp(20px, 3.15vw, 38px);
+  max-width: 100%;
+  font-size: clamp(20px, 2.85vw, 36px);
   font-weight: 900;
   color: var(--text);
   letter-spacing: 0.04em;
+  line-height: 1.08;
+  white-space: nowrap;
 }
 .diff-btn:active {
   background-image: url('../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png');
@@ -2150,6 +2156,19 @@ body.layout-editor-on .character img {
   color: var(--text);
 }
 .modal-icon { font-size: 3rem; line-height: 1; }
+.modal-icon,
+.result-stamp-img {
+  pointer-events: none;
+}
+.result-actions {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 320px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
 /* 全問正解時の「ぜんぶ できたね！」スタンプ画像 (modal-icon の中身が img になる) */
 .result-stamp-img {
   width: 240px;
@@ -2183,6 +2202,8 @@ body.layout-editor-on .character img {
   /* modal 内部の縦並びは維持しつつ、 全体を flex で「スタンプ上・ボタン下」 に展開 */
   flex: 1;
   justify-content: space-between;
+  min-height: 0;
+  max-height: calc(100dvh - 24px);
   overflow: visible;
 }
 /* Perfect 時はスタンプを 2 倍 (320 → 640px)、 中央ドカン配置 + ドロップシャドウ + 黄色光彩 */
@@ -2210,11 +2231,15 @@ body.layout-editor-on .character img {
 .overlay.is-perfect .modal-msg   { font-size: 1.15rem; }
 /* ボタン群は modal の末尾にあるためフロー下端に集約される。 視認性のため影を強化 */
 .overlay.is-perfect .modal-btn {
+  position: relative;
+  z-index: 3;
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.45),
     0 2px 6px rgba(245, 158, 11, 0.55);
 }
 .overlay.is-perfect .modal-back {
+  position: relative;
+  z-index: 3;
   color: #fff;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
 }
@@ -2330,6 +2355,9 @@ body.layout-editor-on .character img {
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(245,158,11,0.4);
   transition: transform 0.1s;
+  touch-action: manipulation;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 .modal-btn:active { transform: scale(0.95); }
 .modal-back {
@@ -2337,6 +2365,9 @@ body.layout-editor-on .character img {
   color: var(--primary);
   text-decoration: none;
   font-weight: 700;
+  touch-action: manipulation;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ===== Feedback bubble ===== */
@@ -3557,9 +3588,11 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     <div class="modal-icon" id="result-icon">🎉</div>
     <div class="modal-title" id="result-title">クリア！</div>
     <div class="modal-msg" id="result-msg"></div>
-    <button class="modal-btn" id="result-btn">もういっかい ▶</button>
-    <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 なんいどをかえる</button>
-    <a href="../play.html" class="modal-back">← メニューにもどる</a>
+    <div class="result-actions">
+      <button class="modal-btn" id="result-btn">もういっかい ▶</button>
+      <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 なんいどをかえる</button>
+      <a href="../play.html" class="modal-back">← メニューにもどる</a>
+    </div>
   </div>
 </div>
 
