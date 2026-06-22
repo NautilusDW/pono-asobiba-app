@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-790";
+const ASSET_VERSION = "20260622-791";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -16,16 +16,17 @@ const PAGE_HOLE_X = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
 const PAGE_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
-const BINDING_RING_SOCKET_X = PAGE_W * 0.068;
-const BINDING_RING_TUBE_RADIUS = PAGE_H * 0.006;
-const BINDING_RING_SOCKET_RADIUS_X = PAGE_HOLE_RX * 1.35;
-const BINDING_RING_SOCKET_RADIUS_Y = PAGE_HOLE_RY * 1.35;
-const BINDING_RING_SOCKET_TUBE = PAGE_H * 0.0038;
-const BINDING_RING_SOCKET_Z = 0.142;
-const BINDING_RING_SOCKET_BACK_Z = 0.112;
-const BINDING_RING_FRONT_Z = 0.12;
-const BINDING_RING_ARCH_Z = 0.34;
-const BINDING_RING_ARCH_Y = PAGE_H * 0.011;
+const BINDING_RING_HOLE_X = GUTTER / 2 + PAGE_HOLE_X;
+const BINDING_RING_ENDPOINT_X = BINDING_RING_HOLE_X + PAGE_HOLE_RX * 2.15;
+const BINDING_RING_TUBE_RADIUS = PAGE_H * 0.0086;
+const BINDING_RING_ENDPOINT_Z = -0.11;
+const BINDING_RING_HOLE_Z = -0.075;
+const BINDING_RING_ARCH_Z = 0.44;
+const BINDING_RING_ARCH_Y = PAGE_H * 0.006;
+const BINDING_RING_BODY_COLOR = 0xd9d2bd;
+const BINDING_RING_TIP_COLOR = 0x6f9692;
+const BINDING_RING_TIP_BLEND = 0.42;
+const BINDING_RING_ENTRY_SHADOW_COLOR = 0x6f918f;
 const THICKNESS_TEXTURE_H = PAGE_H * (256 / 1536);
 const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
 const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
@@ -8457,57 +8458,36 @@ function addRoundedRectPath(shape, x, y, width, height, radius) {
 function createHalfRingMeshes() {
   const group = new THREE.Group();
   const ringMaterial = new THREE.MeshStandardMaterial({
-    color: 0xf0d58a,
-    emissive: 0x7a551d,
-    emissiveIntensity: 0.016,
-    roughness: 0.42,
-    metalness: 0.4,
+    color: 0xffffff,
+    vertexColors: true,
+    emissive: 0x1f1c16,
+    emissiveIntensity: 0.008,
+    roughness: 0.66,
+    metalness: 0.14,
     transparent: true,
     opacity: 0.9,
     depthTest: true,
     depthWrite: false,
   });
   const highlightMaterial = new THREE.MeshBasicMaterial({
-    color: 0xfff1c8,
+    color: 0xfff5d7,
     transparent: true,
     opacity: 0.34,
     depthTest: true,
     depthWrite: false,
   });
-  const socketMaterial = new THREE.MeshStandardMaterial({
-    color: 0xf0d58a,
-    emissive: 0x7a551d,
-    emissiveIntensity: 0.014,
-    roughness: 0.38,
-    metalness: 0.42,
+  const entryShadowMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    map: createBindingRingEntryShadowTexture(),
     transparent: true,
     opacity: 0.96,
-    depthTest: true,
+    depthTest: false,
     depthWrite: false,
   });
-  const socketBackMaterial = new THREE.MeshBasicMaterial({
-    color: 0x07100f,
-    transparent: true,
-    opacity: 0.78,
-    depthTest: true,
-    depthWrite: false,
-  });
+  const entryShadowGeometry = createBindingRingEntryShadowGeometry();
 
   for (const pixelY of PAGE_RING_PIXELS) {
     const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
-    for (const side of [-1, 1]) {
-      const socketX = side * BINDING_RING_SOCKET_X;
-      const socketBack = new THREE.Mesh(createBindingRingSocketBackGeometry(), socketBackMaterial);
-      socketBack.position.set(socketX, y, BINDING_RING_SOCKET_BACK_Z);
-      socketBack.renderOrder = 69;
-      group.add(socketBack);
-
-      const socket = new THREE.Mesh(createBindingRingSocketGeometry(), socketMaterial);
-      socket.position.set(socketX, y, BINDING_RING_SOCKET_Z);
-      socket.renderOrder = 74;
-      group.add(socket);
-    }
-
     const ring = new THREE.Mesh(createHalfRingTubeGeometry(y), ringMaterial);
     ring.renderOrder = 72;
     group.add(ring);
@@ -8515,60 +8495,125 @@ function createHalfRingMeshes() {
     const highlight = new THREE.Mesh(createHalfRingHighlightGeometry(y), highlightMaterial);
     highlight.renderOrder = 73;
     group.add(highlight);
+
+    for (const side of [-1, 1]) {
+      const entryShadow = new THREE.Mesh(entryShadowGeometry, entryShadowMaterial);
+      entryShadow.position.set(side * BINDING_RING_HOLE_X, y - PAGE_H * 0.004, 0.18);
+      entryShadow.renderOrder = 74;
+      group.add(entryShadow);
+    }
   }
 
   group.userData.ringMaterial = ringMaterial;
   group.userData.highlightMaterial = highlightMaterial;
-  group.userData.socketMaterial = socketMaterial;
-  group.userData.socketBackMaterial = socketBackMaterial;
+  group.userData.entryShadowMaterial = entryShadowMaterial;
   return group;
 }
 
-function createBindingRingSocketGeometry() {
-  const tubeRatio = BINDING_RING_SOCKET_TUBE / Math.max(BINDING_RING_SOCKET_RADIUS_X, BINDING_RING_SOCKET_RADIUS_Y);
-  const geometry = new THREE.TorusGeometry(1, tubeRatio, 10, 36);
-  geometry.scale(BINDING_RING_SOCKET_RADIUS_X, BINDING_RING_SOCKET_RADIUS_Y, 1);
-  return geometry;
+function createBindingRingEntryShadowGeometry() {
+  return new THREE.PlaneGeometry(PAGE_HOLE_RX * 2.25, PAGE_HOLE_RY * 2.22);
 }
 
-function createBindingRingSocketBackGeometry() {
-  const geometry = new THREE.CircleGeometry(1, 32);
-  geometry.scale(BINDING_RING_SOCKET_RADIUS_X * 0.58, BINDING_RING_SOCKET_RADIUS_Y * 0.58, 1);
-  return geometry;
+function createBindingRingEntryShadowTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(32, 32, 5, 32, 32, 31);
+  gradient.addColorStop(0, "rgba(111, 145, 143, 0.98)");
+  gradient.addColorStop(0.58, "rgba(111, 145, 143, 0.76)");
+  gradient.addColorStop(1, "rgba(111, 145, 143, 0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function createHalfRingTubeGeometry(baseY) {
   const points = [];
-  const span = BINDING_RING_SOCKET_X * 2;
-  for (let i = 0; i <= 20; i += 1) {
-    const t = i / 20;
-    const arch = Math.sin(t * Math.PI);
-    points.push(
-      new THREE.Vector3(
-        THREE.MathUtils.lerp(-span / 2, span / 2, t),
-        baseY + arch * BINDING_RING_ARCH_Y,
-        BINDING_RING_FRONT_Z + arch * BINDING_RING_ARCH_Z,
-      ),
-    );
+  for (const [x, yOffset, z] of [
+    [-BINDING_RING_ENDPOINT_X, 0, BINDING_RING_ENDPOINT_Z],
+    [-BINDING_RING_HOLE_X, 0, BINDING_RING_HOLE_Z],
+    [-BINDING_RING_HOLE_X * 0.68, BINDING_RING_ARCH_Y * 0.45, BINDING_RING_ARCH_Z * 0.45],
+    [-BINDING_RING_HOLE_X * 0.42, BINDING_RING_ARCH_Y, BINDING_RING_ARCH_Z * 0.82],
+    [0, BINDING_RING_ARCH_Y, BINDING_RING_ARCH_Z],
+    [BINDING_RING_HOLE_X * 0.42, BINDING_RING_ARCH_Y, BINDING_RING_ARCH_Z * 0.82],
+    [BINDING_RING_HOLE_X * 0.68, BINDING_RING_ARCH_Y * 0.45, BINDING_RING_ARCH_Z * 0.45],
+    [BINDING_RING_HOLE_X, 0, BINDING_RING_HOLE_Z],
+    [BINDING_RING_ENDPOINT_X, 0, BINDING_RING_ENDPOINT_Z],
+  ]) {
+    points.push(new THREE.Vector3(x, baseY + yOffset, z));
   }
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 40, BINDING_RING_TUBE_RADIUS, 14, false);
+  const tubularSegments = 56;
+  const radialSegments = 14;
+  const geometry = createTaperedTubeGeometry(points, tubularSegments, BINDING_RING_TUBE_RADIUS, radialSegments, 0.2);
+  applyRingTipVertexColors(geometry, tubularSegments, radialSegments);
+  return geometry;
 }
 
 function createHalfRingHighlightGeometry(baseY) {
   const points = [];
-  const span = BINDING_RING_SOCKET_X * 1.6;
-  for (let i = 0; i <= 16; i += 1) {
-    const t = i / 16;
-    const arch = Math.sin(t * Math.PI);
-    points.push(
-      new THREE.Vector3(
-        THREE.MathUtils.lerp(-span / 2, span / 2, t),
-        baseY + PAGE_H * 0.0044 + arch * PAGE_H * 0.005,
-        BINDING_RING_FRONT_Z + PAGE_H * 0.0067 + arch * BINDING_RING_ARCH_Z * 0.97,
-      ),
-    );
+  const lift = PAGE_H * 0.0045;
+  for (const [x, yOffset, z] of [
+    [-BINDING_RING_HOLE_X * 0.78, lift, BINDING_RING_HOLE_Z + PAGE_H * 0.015],
+    [-BINDING_RING_HOLE_X * 0.42, lift + PAGE_H * 0.004, BINDING_RING_ARCH_Z * 0.82],
+    [0, lift + PAGE_H * 0.004, BINDING_RING_ARCH_Z + PAGE_H * 0.012],
+    [BINDING_RING_HOLE_X * 0.42, lift + PAGE_H * 0.004, BINDING_RING_ARCH_Z * 0.82],
+    [BINDING_RING_HOLE_X * 0.78, lift, BINDING_RING_HOLE_Z + PAGE_H * 0.015],
+  ]) {
+    points.push(new THREE.Vector3(x, baseY + yOffset, z));
   }
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, PAGE_H * 0.0007, 6, false);
+  return createTaperedTubeGeometry(points, 28, PAGE_H * 0.00075, 6, 0.12);
+}
+
+function createTaperedTubeGeometry(points, tubularSegments, radius, radialSegments, taperLength) {
+  const curve = new THREE.CatmullRomCurve3(points);
+  const geometry = new THREE.TubeGeometry(curve, tubularSegments, radius, radialSegments, false);
+  const positions = geometry.attributes.position;
+  const rowSize = radialSegments + 1;
+  for (let i = 0; i <= tubularSegments; i += 1) {
+    const t = i / tubularSegments;
+    const edgeRatio = Math.min(1, t / taperLength, (1 - t) / taperLength);
+    const scale = smootherstep(edgeRatio);
+    const center = curve.getPointAt(t);
+    for (let j = 0; j <= radialSegments; j += 1) {
+      const index = i * rowSize + j;
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      const z = positions.getZ(index);
+      positions.setXYZ(
+        index,
+        center.x + (x - center.x) * scale,
+        center.y + (y - center.y) * scale,
+        center.z + (z - center.z) * scale,
+      );
+    }
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function applyRingTipVertexColors(geometry, tubularSegments, radialSegments) {
+  const colors = [];
+  const rowSize = radialSegments + 1;
+  const body = new THREE.Color(BINDING_RING_BODY_COLOR);
+  const tip = new THREE.Color(BINDING_RING_TIP_COLOR);
+  const color = new THREE.Color();
+  for (let i = 0; i <= tubularSegments; i += 1) {
+    const t = i / tubularSegments;
+    const edgeRatio = Math.min(t, 1 - t);
+    const bodyMix = smootherstep(THREE.MathUtils.clamp(edgeRatio / BINDING_RING_TIP_BLEND, 0, 1));
+    color.copy(tip).lerp(body, bodyMix);
+    for (let j = 0; j < rowSize; j += 1) {
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 }
 
 function applyVariantState() {
@@ -8668,15 +8713,13 @@ function assignSpineTexture() {
 function applyRingMaterialTheme() {
   const ringMaterial = ringGroup?.userData?.ringMaterial;
   const highlightMaterial = ringGroup?.userData?.highlightMaterial;
-  const socketMaterial = ringGroup?.userData?.socketMaterial;
-  const socketBackMaterial = ringGroup?.userData?.socketBackMaterial;
   if (activeAlbumMode !== "collection") {
     if (ringMaterial) {
-      ringMaterial.color.setHex(0xf0d58a);
-      ringMaterial.emissive.setHex(0x7a551d);
-      ringMaterial.emissiveIntensity = 0.016;
-      ringMaterial.roughness = 0.42;
-      ringMaterial.metalness = 0.4;
+      ringMaterial.color.setHex(0xffffff);
+      ringMaterial.emissive.setHex(0x1f1c16);
+      ringMaterial.emissiveIntensity = 0.008;
+      ringMaterial.roughness = 0.66;
+      ringMaterial.metalness = 0.14;
       ringMaterial.opacity = 0.9;
       ringMaterial.needsUpdate = true;
     }
@@ -8684,20 +8727,6 @@ function applyRingMaterialTheme() {
       highlightMaterial.color.setHex(0xfff5d7);
       highlightMaterial.opacity = 0.34;
       highlightMaterial.needsUpdate = true;
-    }
-    if (socketMaterial) {
-      socketMaterial.color.setHex(0xf0d58a);
-      socketMaterial.emissive.setHex(0x7a551d);
-      socketMaterial.emissiveIntensity = 0.014;
-      socketMaterial.roughness = 0.38;
-      socketMaterial.metalness = 0.42;
-      socketMaterial.opacity = 0.96;
-      socketMaterial.needsUpdate = true;
-    }
-    if (socketBackMaterial) {
-      socketBackMaterial.color.setHex(0x07100f);
-      socketBackMaterial.opacity = 0.78;
-      socketBackMaterial.needsUpdate = true;
     }
     return;
   }
@@ -8716,17 +8745,6 @@ function applyRingMaterialTheme() {
     highlightMaterial.color.setHex(theme.ringHighlight);
     highlightMaterial.opacity = 0.14;
     highlightMaterial.needsUpdate = true;
-  }
-  if (socketMaterial) {
-    socketMaterial.color.setHex(theme.ring);
-    socketMaterial.opacity = 0.42;
-    socketMaterial.roughness = 0.72;
-    socketMaterial.metalness = 0.08;
-    socketMaterial.needsUpdate = true;
-  }
-  if (socketBackMaterial) {
-    socketBackMaterial.opacity = 0.34;
-    socketBackMaterial.needsUpdate = true;
   }
 }
 
