@@ -2095,7 +2095,7 @@
       filter: saturate(1.08) brightness(.98);
       transition: opacity .42s ease, transform .72s ease, filter .42s ease;
     }
-    .daily-gacha-modal[data-gacha-rarity="super"] .daily-gacha-closeup::after {
+    .daily-gacha-closeup::after {
       content: "";
       position: absolute;
       inset: -18%;
@@ -2103,18 +2103,22 @@
       pointer-events: none;
       opacity: 0;
       background:
-        conic-gradient(from -36deg at 50% 53%,
-          rgba(255,255,255,0) 0 22deg,
-          rgba(255, 238, 92, .46) 34deg 48deg,
-          rgba(101, 224, 255, .32) 58deg 72deg,
-          rgba(255, 112, 220, .34) 83deg 100deg,
-          rgba(255,255,255,0) 114deg 170deg,
-          rgba(255, 255, 255, .56) 185deg 198deg,
-          rgba(255,255,255,0) 218deg 360deg),
+        repeating-conic-gradient(from -10deg at 50% 46%,
+          rgba(255,255,255,0) 0deg 7deg,
+          rgba(255, 247, 184, .34) 7deg 10deg,
+          rgba(255, 205, 72, .28) 10deg 12deg,
+          rgba(255,255,255,0) 12deg 20deg),
+        conic-gradient(from 0deg at 50% 46%,
+          rgba(255, 255, 255, .22),
+          rgba(255, 221, 92, .2),
+          rgba(115, 222, 255, .12),
+          rgba(255, 136, 224, .14),
+          rgba(255, 255, 255, .22)),
         radial-gradient(circle at 50% 46%, rgba(255,255,255,.78), rgba(255, 221, 79, .24) 22%, rgba(255,255,255,0) 52%);
-      filter: blur(9px) saturate(1.34);
+      filter: blur(8px) saturate(1.3);
       mix-blend-mode: screen;
-      transform: scale(.92) rotate(-12deg);
+      transform: scale(.9) rotate(-10deg);
+      transition: opacity .48s ease, transform .9s ease, filter .48s ease;
     }
     .daily-gacha-closeup__inner {
       position: relative;
@@ -2416,6 +2420,11 @@
       transform: scale(1);
       filter: saturate(1.2) brightness(1.08);
     }
+    .daily-gacha-modal.is-opened .daily-gacha-closeup::after {
+      opacity: .5;
+      transform: scale(1.08) rotate(12deg);
+      filter: blur(8px) saturate(1.34) brightness(1.08);
+    }
     .daily-gacha-modal.is-opened .daily-gacha-closeup__closed {
       opacity: 0;
       transform: translate(-50%, -50%) scale(.82) rotate(18deg);
@@ -2524,7 +2533,7 @@
       animation: dailyGachaSuperStarburst 1.4s ease-out .08s both;
     }
     .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-closeup__open-pair {
-      top: 79%;
+      top: 73%;
       width: min(620px, 66vw);
       height: min(168px, 19vw);
       filter:
@@ -2537,7 +2546,7 @@
       width: 42%;
     }
     .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward {
-      top: 23.5%;
+      top: 21.5%;
       width: 300px;
       height: 300px;
       filter:
@@ -2745,12 +2754,12 @@
       }
       .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-panel { top: 6px; width: min(440px, 70vw); }
       .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status {
-        min-height: clamp(58px, 13vh, 78px);
-        padding: 8px 20px 9px 78px;
+        min-height: clamp(72px, 16vh, 90px);
+        padding: 9px 18px 10px 104px;
         border: 0;
         border-radius: 0;
-        background: transparent url("assets/ui/gacha/daily_gacha_start_panel_generated.png") center / 100% 100% no-repeat;
-        font-size: clamp(17px, 3vw, 23px);
+        background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_generated.png") center / 100% 100% no-repeat;
+        font-size: clamp(15px, 2.7vw, 20px);
         line-height: 1.15;
         box-shadow: none;
         filter: drop-shadow(0 9px 13px rgba(49, 24, 7, .22));
@@ -2788,10 +2797,10 @@
         display: none;
       }
       .daily-gacha-action { min-height: 42px; font-size: 15px; }
-      .daily-gacha-drop-mask { clip-path: inset(79% 18% 0 18% round 12px); }
+      .daily-gacha-drop-mask { clip-path: inset(79% 18% 5% 18% round 12px); }
       .daily-gacha-closeup__inner { width: 88vw; height: 76dvh; }
-      .daily-gacha-closeup__open-pair { top: 84%; width: min(410px, 60vw); height: min(166px, 27vw); }
-      .daily-gacha-reward { top: 32%; width: 196px; height: 196px; }
+      .daily-gacha-closeup__open-pair { top: 78%; width: min(410px, 60vw); height: min(166px, 27vw); }
+      .daily-gacha-reward { top: 26%; width: 196px; height: 196px; }
       .daily-gacha-reward img { width: 192px; height: 192px; }
       .daily-gacha-reward-name {
         bottom: -4px;
@@ -2833,8 +2842,8 @@
         padding: 19px 11px 12px;
         font-size: clamp(9px, 2vw, 11px);
       }
-      .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-closeup__open-pair { top: 82%; width: min(390px, 60vw); height: min(98px, 18vw); }
-      .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward { top: 24%; width: 196px; height: 196px; }
+      .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-closeup__open-pair { top: 76%; width: min(390px, 60vw); height: min(98px, 18vw); }
+      .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward { top: 22%; width: 196px; height: 196px; }
       .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward img { width: 192px; height: 192px; }
       .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward-name {
         bottom: -4px;
@@ -3800,7 +3809,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1514;
+    const PAGE_CACHE_VERSION = 1515;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -4300,12 +4309,13 @@
     const DAILY_GACHA_CAPSULE_COLOR_WEIGHTS = {
       normal: { pink: 1, blue: 1 },
       rare: { gold: 1 },
-      super: { platinum: 1 }
+      super: { platinum: 1 },
+      mixed: { pink: 1, blue: 1, gold: 1 }
     };
     const DAILY_GACHA_RARITY_PROFILES = {
       normal: {
         weight: DAILY_GACHA_RARITY_WEIGHTS.normal,
-        capsuleGroup: 'normal',
+        capsuleGroup: 'mixed',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_stage_burst.png'
         ],
@@ -4323,7 +4333,7 @@
       },
       rare: {
         weight: DAILY_GACHA_RARITY_WEIGHTS.rare,
-        capsuleGroup: 'rare',
+        capsuleGroup: 'mixed',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_stage_burst.png'
         ],
@@ -4867,6 +4877,26 @@
           closed: 'assets/ui/gacha/daily_gacha_capsule_closed_super.png',
           openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_super_pono.png',
           openRight: 'assets/ui/gacha/daily_gacha_capsule_open_super_plain.png'
+        }
+      ],
+      mixed: [
+        {
+          color: 'pink',
+          closed: 'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
+          openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_pink_pono.png',
+          openRight: 'assets/ui/gacha/daily_gacha_capsule_open_pink_plain.png'
+        },
+        {
+          color: 'blue',
+          closed: 'assets/ui/gacha/daily_gacha_capsule_closed_blue.png',
+          openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_blue_pono.png',
+          openRight: 'assets/ui/gacha/daily_gacha_capsule_open_blue_plain.png'
+        },
+        {
+          color: 'gold',
+          closed: 'assets/ui/gacha/daily_gacha_capsule_closed_gold.png',
+          openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_gold_pono.png',
+          openRight: 'assets/ui/gacha/daily_gacha_capsule_open_gold_plain.png'
         }
       ]
     };
