@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260623-813">
+  <link rel="stylesheet" href="./styles.css?v=20260623-814">
 </head>
 <body>
   <main id="app">
@@ -22,6 +22,13 @@
       </div>
       <div class="zukan-settings-row zukan-settings-row-theme">
         <span>きせかえ</span>
+        <div id="bookThemePreview" class="zukan-theme-current" aria-live="polite">
+          <div id="bookThemePreviewCover" class="zukan-theme-current-cover"></div>
+          <div class="zukan-theme-current-info">
+            <strong id="bookThemePreviewName">ぼうけん</strong>
+            <div id="bookThemePreviewSwatches" class="zukan-theme-current-swatches" aria-hidden="true"></div>
+          </div>
+        </div>
         <div class="zukan-settings-segment zukan-theme-picker" role="group" aria-label="シールちょうきせかえ">
           <button type="button" data-book-theme="boy">ぼうけん</button>
           <button type="button" data-book-theme="girl">うみとも</button>
@@ -214,6 +221,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260623-813"></script>
+  <script type="module" src="./main.js?v=20260623-814"></script>
 </body>
 </html>

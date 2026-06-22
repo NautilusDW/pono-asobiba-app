@@ -97,7 +97,10 @@ body:not(.is-collection-album) #scene {
   top: max(72px, calc(env(safe-area-inset-top) + 62px));
   right: max(16px, env(safe-area-inset-right));
   z-index: 8;
-  width: min(420px, calc(100vw - 32px));
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 92px);
+  box-sizing: border-box;
+  overflow: auto;
   padding: 14px;
   border: 3px solid rgba(40, 60, 52, 0.76);
   border-radius: 14px;
@@ -147,6 +150,66 @@ body:not(.is-collection-album) #scene {
   font-weight: 900;
 }
 
+.zukan-settings-row-theme {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.zukan-settings-row-theme > span {
+  font-size: 14px;
+}
+
+.zukan-theme-current {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 92px;
+  padding: 8px;
+  border: 2px solid rgba(84, 161, 151, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 253, 241, 0.86);
+  box-shadow: inset 0 -4px 0 rgba(84, 161, 151, 0.12);
+}
+
+.zukan-theme-current-cover {
+  width: 128px;
+  height: 82px;
+  border-radius: 12px;
+  background-color: rgba(245, 250, 244, 0.9);
+  background-image: var(--book-thumb);
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 5px 10px rgba(31, 55, 54, 0.16);
+}
+
+.zukan-theme-current-info {
+  min-width: 0;
+}
+
+.zukan-theme-current-info strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.zukan-theme-current-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.zukan-theme-current-swatches span {
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+  box-shadow: 0 2px 5px rgba(31, 55, 54, 0.16);
+}
+
 .zukan-settings-segment {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -170,11 +233,47 @@ body:not(.is-collection-album) #scene {
 }
 
 .zukan-theme-picker {
-  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  max-height: min(44vh, 352px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
 }
 
 .zukan-theme-picker button {
-  min-height: 42px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: stretch;
+  gap: 5px;
+  min-height: 98px;
+  padding: 6px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.zukan-theme-picker button::before {
+  content: "";
+  display: block;
+  min-height: 58px;
+  border-radius: 10px;
+  background-color: rgba(246, 250, 244, 0.95);
+  background-image: var(--book-thumb);
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.56),
+    0 2px 6px rgba(26, 55, 55, 0.12);
+}
+
+.zukan-theme-picker button.is-active {
+  border-color: var(--book-accent, rgba(73, 171, 162, 0.88));
+}
+
+.zukan-theme-picker button.is-active::before {
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.74),
+    0 0 0 3px var(--book-accent, rgba(73, 171, 162, 0.88)),
+    0 4px 9px rgba(26, 55, 55, 0.18);
 }
 
 .zukan-tune-button {
@@ -194,7 +293,8 @@ body:not(.is-collection-album) #scene {
   .zukan-settings-panel {
     top: max(54px, calc(env(safe-area-inset-top) + 46px));
     right: max(84px, calc(env(safe-area-inset-right) + 72px));
-    width: min(360px, calc(100vw - 180px));
+    width: min(430px, calc(100vw - 180px));
+    max-height: calc(100vh - 68px);
     padding: 10px;
   }
 
@@ -211,6 +311,41 @@ body:not(.is-collection-album) #scene {
   .zukan-settings-segment button {
     min-height: 34px;
     font-size: 13px;
+  }
+
+  .zukan-theme-current {
+    grid-template-columns: 104px minmax(0, 1fr);
+    min-height: 76px;
+    gap: 8px;
+  }
+
+  .zukan-theme-current-cover {
+    width: 104px;
+    height: 66px;
+  }
+
+  .zukan-theme-current-info strong {
+    margin-bottom: 6px;
+    font-size: 16px;
+  }
+
+  .zukan-theme-current-swatches span {
+    width: 22px;
+    height: 22px;
+  }
+
+  .zukan-theme-picker {
+    grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+    max-height: min(34vh, 230px);
+  }
+
+  .zukan-theme-picker button {
+    min-height: 82px;
+    padding: 5px;
+  }
+
+  .zukan-theme-picker button::before {
+    min-height: 46px;
   }
 
   .zukan-tune-button {
@@ -275,6 +410,15 @@ body:not(.is-editor-enabled) .sticker-editor {
   padding: 0 14px;
   font-size: 13px;
   font-weight: 600;
+}
+
+.segmented button[data-book] {
+  min-height: 44px;
+  padding: 4px 10px 4px 48px;
+  background-image: var(--book-thumb);
+  background-position: 8px center;
+  background-repeat: no-repeat;
+  background-size: 34px 24px;
 }
 
 .toolbar button:hover,

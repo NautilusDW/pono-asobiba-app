@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-813";
+const ASSET_VERSION = "20260623-814";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1458,6 +1458,14 @@ function bookVariantTextureFiles(bookName) {
   return Object.values(BOOK_VARIANTS[bookName] || {}).filter(isTextureFileName);
 }
 
+function bookThemeThumbnailFile(bookName) {
+  return `theme_thumbs/sb3d_theme_thumb_${bookName}_20260623.webp`;
+}
+
+function assetCssUrl(file) {
+  return `url("${ASSET_ROOT}${file}?v=${ASSET_VERSION}")`;
+}
+
 const canvas = document.getElementById("scene");
 const slider = document.getElementById("flipSlider");
 const playButton = document.getElementById("playButton");
@@ -1505,6 +1513,10 @@ const zukanSettingsPanel = document.getElementById("zukanSettingsPanel");
 const zukanSettingsClose = document.getElementById("zukanSettingsClose");
 const zukanSettingsButtons = [...document.querySelectorAll("[data-zukan-side][data-zukan-type]")];
 const zukanTuneButton = document.getElementById("zukanTuneButton");
+const bookThemePreview = document.getElementById("bookThemePreview");
+const bookThemePreviewCover = document.getElementById("bookThemePreviewCover");
+const bookThemePreviewName = document.getElementById("bookThemePreviewName");
+const bookThemePreviewSwatches = document.getElementById("bookThemePreviewSwatches");
 const albumModeToggle = document.getElementById("albumModeToggle");
 const collectionStickerTray = document.getElementById("collectionStickerTray");
 const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
@@ -1546,6 +1558,13 @@ if (activeSurface === "cover") {
 }
 document.body.classList.toggle("is-editor-enabled", editorEnabled);
 document.body.classList.toggle("is-prototype-controls", prototypeControlsEnabled);
+const bookThemeLabels = new Map(
+  [...themeButtons, ...bookButtons].map((button) => [
+    button.dataset.bookTheme || button.dataset.book,
+    button.textContent.trim(),
+  ]),
+);
+hydrateBookThemeCards();
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
@@ -2168,6 +2187,38 @@ resetButton.addEventListener("click", () => {
   updatePage(flipProgress);
   syncUrl();
 });
+
+function hydrateBookThemeCards() {
+  for (const button of [...themeButtons, ...bookButtons]) {
+    const bookName = button.dataset.bookTheme || button.dataset.book;
+    if (!BOOK_VARIANTS[bookName]) {
+      continue;
+    }
+    const theme = stickerBookTheme(bookName);
+    const label = bookThemeLabels.get(bookName) || button.textContent.trim() || bookName;
+    button.style.setProperty("--book-thumb", assetCssUrl(bookThemeThumbnailFile(bookName)));
+    button.style.setProperty("--book-accent", theme.accent || "#49aba2");
+    button.setAttribute("aria-label", `${label}を えらぶ`);
+  }
+}
+
+function updateBookThemePreview() {
+  if (!bookThemePreview || !bookThemePreviewCover || !bookThemePreviewName || !bookThemePreviewSwatches) {
+    return;
+  }
+  const theme = stickerBookTheme(activeBook);
+  const label = bookThemeLabels.get(activeBook) || activeBook;
+  bookThemePreview.style.setProperty("--book-thumb", assetCssUrl(bookThemeThumbnailFile(activeBook)));
+  bookThemePreview.style.setProperty("--book-accent", theme.accent || "#49aba2");
+  bookThemePreviewCover.style.backgroundImage = assetCssUrl(bookThemeThumbnailFile(activeBook));
+  bookThemePreviewName.textContent = label;
+  bookThemePreviewSwatches.replaceChildren();
+  for (const color of [theme.accent, theme.sub, theme.line, theme.tab].filter(Boolean)) {
+    const swatch = document.createElement("span");
+    swatch.style.backgroundColor = color;
+    bookThemePreviewSwatches.append(swatch);
+  }
+}
 
 async function setActiveBook(nextBook) {
   const normalizedBook = BOOK_VARIANTS[nextBook] ? nextBook : "boy";
@@ -10878,6 +10929,7 @@ function updateControlState() {
   for (const button of surfaceButtons) {
     button.classList.toggle("is-active", button.dataset.surface === activeSurface);
   }
+  updateBookThemePreview();
   updateSpreadJumpControls();
   updateBookPageControls();
   updateAlbumModeUi();
