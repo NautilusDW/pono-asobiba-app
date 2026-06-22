@@ -2288,17 +2288,92 @@ function stickerTrayDropTarget(event) {
     return null;
   }
   const hit = pickScenePageHit(event);
-  if (!hit?.uv || !hit.object) {
+  if (hit?.uv && hit.object) {
+    const page = pageNumberForPickedPage(hit.object);
+    const point = texturePointFromPageHit(hit);
+    return {
+      page,
+      point: {
+        x: THREE.MathUtils.clamp((point.x / PAGE_TEXTURE_W) * 100, 4, 96),
+        y: THREE.MathUtils.clamp((point.y / PAGE_TEXTURE_H) * 100, 4, 96),
+      },
+    };
+  }
+  return projectedStickerTrayDropTarget(event);
+}
+
+function projectedStickerTrayDropTarget(event) {
+  const candidates = [rightPage, leftPageInner].filter((mesh) => mesh?.visible);
+  for (const mesh of candidates) {
+    const rect = projectedMeshClientRect(mesh);
+    if (!rect) {
+      continue;
+    }
+    const pad = 8;
+    if (
+      event.clientX < rect.left - pad
+      || event.clientX > rect.right + pad
+      || event.clientY < rect.top - pad
+      || event.clientY > rect.bottom + pad
+    ) {
+      continue;
+    }
+    return {
+      page: pageNumberForPickedPage(mesh),
+      point: {
+        x: THREE.MathUtils.clamp(((event.clientX - rect.left) / Math.max(1, rect.width)) * 100, 4, 96),
+        y: THREE.MathUtils.clamp(((event.clientY - rect.top) / Math.max(1, rect.height)) * 100, 4, 96),
+      },
+    };
+  }
+  return null;
+}
+
+function projectedMeshClientRect(mesh) {
+  if (!mesh?.geometry) {
     return null;
   }
-  const page = pageNumberForPickedPage(hit.object);
-  const point = texturePointFromPageHit(hit);
+  if (!mesh.geometry.boundingBox) {
+    mesh.geometry.computeBoundingBox();
+  }
+  const box = mesh.geometry.boundingBox;
+  if (!box) {
+    return null;
+  }
+  const canvasRect = canvas.getBoundingClientRect();
+  if (!canvasRect.width || !canvasRect.height) {
+    return null;
+  }
+  mesh.updateWorldMatrix(true, false);
+  camera.updateMatrixWorld();
+  const corners = [
+    new THREE.Vector3(box.min.x, box.min.y, box.min.z),
+    new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+    new THREE.Vector3(box.max.x, box.min.y, box.min.z),
+    new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+    new THREE.Vector3(box.min.x, box.min.y, box.max.z),
+    new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+    new THREE.Vector3(box.max.x, box.min.y, box.max.z),
+    new THREE.Vector3(box.max.x, box.max.y, box.max.z),
+  ];
+  const xs = [];
+  const ys = [];
+  for (const corner of corners) {
+    corner.applyMatrix4(mesh.matrixWorld).project(camera);
+    xs.push(canvasRect.left + ((corner.x + 1) / 2) * canvasRect.width);
+    ys.push(canvasRect.top + ((1 - corner.y) / 2) * canvasRect.height);
+  }
+  const left = Math.min(...xs);
+  const right = Math.max(...xs);
+  const top = Math.min(...ys);
+  const bottom = Math.max(...ys);
   return {
-    page,
-    point: {
-      x: THREE.MathUtils.clamp((point.x / PAGE_TEXTURE_W) * 100, 4, 96),
-      y: THREE.MathUtils.clamp((point.y / PAGE_TEXTURE_H) * 100, 4, 96),
-    },
+    left,
+    right,
+    top,
+    bottom,
+    width: right - left,
+    height: bottom - top,
   };
 }
 
