@@ -170,7 +170,7 @@
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
-const CACHE_VERSION = 1490; // v1490: Hero scattered labels swap (もじ/かず/おえかき → なぞなぞ/ぼうけん/いろあそび) reflecting Claude Design output — selectors renamed, absolute positioning preserved.
+const CACHE_VERSION = 1491; // v1491: Hero labels HANDOFF 02 完全準拠 — flex レイアウトに変更 (absolute → flex row beneath title)、 ongaku/puzzle 新デザイン上書き、 案 A (morito 承認)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
