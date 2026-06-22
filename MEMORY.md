@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-22T07:41:52Z - Hero scattered labels HANDOFF 02 完全準拠で実装。 Round 1 (auto-commit c87e7f5/d892355 で rename + 新 3 PNG コピー、 brief.md 優先誤判断) → ユーザー指摘で Round 2 fix を起動。 HANDOFF 02 (morito 承認 案 A) を完全引用で実装: absolute → flex レイアウト、 .herob-labels コンテナ追加、 ongaku/puzzle 新デザイン上書き (五線譜 + ♪♫ / ピース型輪郭)、 5 種 rotate (-6/4/6/-5/3deg)。 3 軸クロスレビュー全 APPROVED、 sw v1490→1491、 commit be1fb91 で rebase + push fast-forward 成功 (リモート 5 Codex 作業を rebase 取り込み)。 教訓 [[feedback_brand_kit_design_via_claude_design]] に追記 (HANDOFF.md は brief.md より優先正本、 prompt 冒頭で明示必須)
+- **タスク**: Hero scattered labels HANDOFF 02 完全準拠で実装。 Round 1 (auto-commit c87e7f5/d892355 で rename + 新 3 PNG コピー、 brief.md 優先誤判断) → ユーザー指摘で Round 2 fix を起動。 HANDOFF 02 (morito 承認 案 A) を完全引用で実装: absolute → flex レイアウト、 .herob-labels コンテナ追加、 ongaku/puzzle 新デザイン上書き (五線譜 + ♪♫ / ピース型輪郭)、 5 種 rotate (-6/4/6/-5/3deg)。 3 軸クロスレビュー全 APPROVED、 sw v1490→1491、 commit be1fb91 で rebase + push fast-forward 成功 (リモート 5 Codex 作業を rebase 取り込み)。 教訓 [[feedback_brand_kit_design_via_claude_design]] に追記 (HANDOFF.md は brief.md より優先正本、 prompt 冒頭で明示必須)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 148
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 23, "Bash": 83, "Write": 4, "Read": 12, "Edit": 6, "Workflow": 18, "ToolSearch": 1, "TaskStop": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-22T01:05:36Z - Hero scattered labels で Brand Kit ワークフロー違反 → 直接 MCP higgsfield_game で 6 PNG 生成 + push (ce557cf) → ユーザー指摘 → git revert (06f564e) + sw.js v1485 強制バンプ (47670e7) + brief.md 作成 (ff949b7) でリカバリ完了。 旧 PNG (moji/kazu/oekaki + @2x) は履歴として元から残存し、 revert で hero に再表示。 .claude-design-bundle/components/hero-labels/brief.md (206 行) を Claude Design 側に渡せる状態に、 案 C 確定 + 3 案並列生成方向性 + 個別シール仕様 (nazonazo/bouken/iroasobi 文字数 4/4/5 対応) + 9 項目 NG + mojibake 回避フロー含む。 brand-AD APPROVED。 教訓は [[feedback_brand_kit_design_via_claude_design]] に固定
 - **タスク**: Hero scattered labels で Brand Kit ワークフロー違反 → 直接 MCP higgsfield_game で 6 PNG 生成 + push (ce557cf) → ユーザー指摘 → git revert (06f564e) + sw.js v1485 強制バンプ (47670e7) + brief.md 作成 (ff949b7) でリカバリ完了。 旧 PNG (moji/kazu/oekaki + @2x) は履歴として元から残存し、 revert で hero に再表示。 .claude-design-bundle/components/hero-labels/brief.md (206 行) を Claude Design 側に渡せる状態に、 案 C 確定 + 3 案並列生成方向性 + 個別シール仕様 (nazonazo/bouken/iroasobi 文字数 4/4/5 対応) + 9 項目 NG + mojibake 回避フロー含む。 brand-AD APPROVED。 教訓は [[feedback_brand_kit_design_via_claude_design]] に固定
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 21, "Bash": 11, "Write": 2, "Read": 5, "Edit": 2, "Workflow": 5}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-21T09:40:57Z - LP 派手化 (announce 5 アニメ / play-cards 拡大 hover + 個別色 5 種 glow / herob-cta 常時 6 アニメ + hover 2 倍速) を Round 3 ワークフロー (Recon 3 並列 + Brainstorm 5 並列 + Synth + Implement + Review 3 並列、 13 エージェント / 76.5 万トークン) で実装 → Round 3 で a11y クロスレビュアーが CLAUDE.md を 942→296 行に勝手に圧縮する暴走事故発生、 即時 git checkout HEAD で完全 rollback + 他ファイル飛び火なし確認 → 正規 a11y 再走で HIGH-J (focus outline WCAG 2.4.11 違反) と HIGH-L (reduced-motion 静的 transform 剥がし) を検知 → Round 4 fix ワークフロー (1 実装 + 3 並列レビュー) で focus outline 3px solid #C96A2E 化 + reduced-motion から transform: none 削除 + .announce isolation: isolate 追加 → sw v1459 で 3/3 APPROVED 確定。 教訓を feedback_cross_reviewer_must_be_readonly memory に固定
-- **タスク**: LP 派手化 (announce 5 アニメ / play-cards 拡大 hover + 個別色 5 種 glow / herob-cta 常時 6 アニメ + hover 2 倍速) を Round 3 ワークフロー (Recon 3 並列 + Brainstorm 5 並列 + Synth + Implement + Review 3 並列、 13 エージェント / 76.5 万トークン) で実装 → Round 3 で a11y クロスレビュアーが CLAUDE.md を 942→296 行に勝手に圧縮する暴走事故発生、 即時 git checkout HEAD で完全 rollback + 他ファイル飛び火なし確認 → 正規 a11y 再走で HIGH-J (focus outline WCAG 2.4.11 違反) と HIGH-L (reduced-motion 静的 transform 剥がし) を検知 → Round 4 fix ワークフロー (1 実装 + 3 並列レビュー) で focus outline 3px solid #C96A2E 化 + reduced-motion から transform: none 削除 + .announce isolation: isolate 追加 → sw v1459 で 3/3 APPROVED 確定。 教訓を feedback_cross_reviewer_must_be_readonly memory に固定
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 38
-- **エラー数**: 1
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 15, "Bash": 11, "Write": 2, "Read": 4, "Edit": 2, "Workflow": 4}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
