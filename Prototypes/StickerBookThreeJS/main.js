@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-807";
+const ASSET_VERSION = "20260623-808";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -535,6 +535,18 @@ const BOOK_VARIANTS = {
     tabsLeft: "sb3d_girl_side_tabs_left_generated.webp",
     tabsRight: "sb3d_girl_side_tabs_right_generated.webp",
   },
+  forest: {
+    insideLeft: "sb3d_forest_free_blank_page_canvas_20260623.png",
+    insideRight: "sb3d_forest_free_blank_page_canvas_20260623.png",
+    freePage: "sb3d_forest_free_blank_page_canvas_20260623.png",
+    coverPrint: "sb3d_forest_cover_front_canvas_20260623.webp",
+    coverHardwareMode: "separate",
+    coverFront: "sb3d_forest_cover_front_canvas_20260623.webp",
+    coverBack: "sb3d_forest_cover_back_canvas_20260623.webp",
+    coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
+    spine: "sb3d_forest_spine_canvas_20260623.webp",
+    thicknessKey: "boy",
+  },
 };
 
 const STICKER_BOOK_THEMES = {
@@ -680,6 +692,77 @@ const STICKER_BOOK_THEMES = {
       ],
     },
   },
+  forest: {
+    accent: "#82a949",
+    sub: "#58b5a7",
+    line: "#c9b66d",
+    tab: "#e7efd0",
+    coverHardware: {
+      board: 0x2f8365,
+      boardShadow: 0x1c5f55,
+      spine: 0x3a977f,
+      spineDark: 0x206f62,
+      spineHighlight: 0xbcebd1,
+      ring: 0xc8ad72,
+      ringHighlight: 0xfff0ca,
+    },
+    collection: {
+      paper: ["#fffbe8", "#f6f1cf", "#e5e9ba"],
+      text: "#334447",
+      pageBorder: "#d8e7bc",
+      pageHighlight: "rgba(255, 255, 255, 0.8)",
+      frameShadow: "rgba(52, 79, 30, 0.16)",
+      infoAccent: "#5aa46f",
+      infoAccentSoft: "rgba(100, 172, 116, 0.25)",
+      ring: 0xc8ad72,
+      ringHighlight: 0xfff4d0,
+      spine: {
+        warm: "#cddf7a",
+        paper: "#fff9df",
+        shadow: "#647041",
+        seam: "#54a594",
+        foldPaper: "250, 244, 216",
+        foldWarm: "198, 214, 132",
+        foldDark: "73, 86, 50",
+      },
+      pages: {
+        left: {
+          frame: "#84bf74",
+          frameDark: "#5c9e57",
+          accent: "#5bb49f",
+          innerStroke: "#b7d994",
+          motifSet: "nature",
+        },
+        right: {
+          frame: "#78c5b2",
+          frameDark: "#4c9f8f",
+          accent: "#d9bd55",
+          innerStroke: "#aee0d3",
+          motifSet: "garden",
+        },
+      },
+      slotBand: {
+        fill: "#cddf7a",
+        edge: "#96b646",
+        slot: "rgba(255, 252, 232, 0.92)",
+        stroke: "rgba(106, 143, 48, 0.28)",
+      },
+      card: {
+        foundFill: "rgba(255, 253, 238, 0.8)",
+        lockedFill: "rgba(224, 226, 214, 0.56)",
+        foundStroke: "rgba(105, 174, 112, 0.38)",
+        lockedStroke: "rgba(116, 128, 122, 0.22)",
+        numberFill: "#5aa46f",
+      },
+      tabs: [
+        { color: "#c7d957", shadow: "#98ad35", motif: "leaf" },
+        { color: "#66bfa5", shadow: "#41977f", motif: "sparkle" },
+        { color: "#f1c95b", shadow: "#c99c2a", motif: "star" },
+        { color: "#8ecb72", shadow: "#68a753", motif: "leaf" },
+        { color: "#61b8d2", shadow: "#3b92aa", motif: "cloud" },
+      ],
+    },
+  },
 };
 
 function stickerBookTheme(bookName) {
@@ -712,6 +795,7 @@ const tuningPanel = document.getElementById("tuningPanel");
 const spreadJumper = document.getElementById("spreadJumper");
 const spreadJumpButtons = [...document.querySelectorAll("[data-spread-target]")];
 const bookButtons = [...document.querySelectorAll("[data-book]")];
+const themeButtons = [...document.querySelectorAll("[data-book-theme]")];
 const surfaceButtons = [...document.querySelectorAll("[data-surface]")];
 const stickerEditor = document.getElementById("stickerEditor");
 const editorClose = document.getElementById("editorClose");
@@ -764,7 +848,8 @@ const isLocalPreview = localPreviewHostnames.has(window.location.hostname);
 const tuningEnabled = params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
-let activeBook = params.get("book") === "girl" ? "girl" : "boy";
+const requestedBook = params.get("book");
+let activeBook = BOOK_VARIANTS[requestedBook] ? requestedBook : "boy";
 let activeAlbumMode = params.get("album") === "collection" ? "collection" : "free";
 const zukanFormatIndex = Math.round(
   readClampedNumber(params.get("zukanFormat"), DEFAULT_ZUKAN_FORMAT_INDEX + 1, 1, ZUKAN_THICKNESS_STRIPS.length),
@@ -1411,16 +1496,24 @@ resetButton.addEventListener("click", () => {
   syncUrl();
 });
 
+function setActiveBook(nextBook) {
+  const normalizedBook = BOOK_VARIANTS[nextBook] ? nextBook : "boy";
+  if (normalizedBook === activeBook) {
+    updateControlState();
+    return;
+  }
+  cancelSpreadJump();
+  closeBookPageJump();
+  activeBook = normalizedBook;
+  applyVariantState();
+}
+
 for (const button of bookButtons) {
-  button.addEventListener("click", () => {
-    const nextBook = button.dataset.book === "girl" ? "girl" : "boy";
-    if (nextBook === activeBook) {
-      return;
-    }
-    cancelSpreadJump();
-    activeBook = nextBook;
-    applyVariantState();
-  });
+  button.addEventListener("click", () => setActiveBook(button.dataset.book));
+}
+
+for (const button of themeButtons) {
+  button.addEventListener("click", () => setActiveBook(button.dataset.bookTheme));
 }
 
 for (const button of surfaceButtons) {
@@ -9004,7 +9097,8 @@ function thicknessLevelForAmount(amount) {
 
 function thicknessFileFor(side, level) {
   const assetLevel = THICKNESS_LEVEL_NAMES.includes(level) ? level : "full";
-  return `sb3d_${activeBook}_page_thickness_${side}_${assetLevel}.webp`;
+  const thicknessBook = BOOK_VARIANTS[activeBook]?.thicknessKey || activeBook;
+  return `sb3d_${thicknessBook}_page_thickness_${side}_${assetLevel}.webp`;
 }
 
 function positionStackSide(stack, level, tuning) {
@@ -9639,7 +9733,7 @@ function createTaperedTubeGeometry(points, tubularSegments, radius, radialSegmen
 }
 
 function applyVariantState() {
-  const bundle = BOOK_VARIANTS[activeBook];
+  const bundle = BOOK_VARIANTS[activeBook] || BOOK_VARIANTS.boy;
   assignTexture(leftPageOuter, bundle.coverBack);
   assignTextureObject(leftPageInner, getPageTemplateTexture("left"));
   assignTextureObject(rightPage, getPageTemplateTexture("right"));
@@ -10034,7 +10128,14 @@ function assignCoverTurnTextures() {
 
 function updateControlState() {
   for (const button of bookButtons) {
-    button.classList.toggle("is-active", button.dataset.book === activeBook);
+    const active = button.dataset.book === activeBook;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  }
+  for (const button of themeButtons) {
+    const active = button.dataset.bookTheme === activeBook;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
   }
   for (const button of surfaceButtons) {
     button.classList.toggle("is-active", button.dataset.surface === activeSurface);
