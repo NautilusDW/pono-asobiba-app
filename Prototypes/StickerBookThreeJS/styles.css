@@ -370,9 +370,9 @@ input[type="range"] {
   z-index: 4;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   max-width: calc(100vw - 24px);
-  padding: 4px;
+  padding: 4px 5px;
   border: 1px solid rgba(216, 241, 238, 0.24);
   border-radius: 12px;
   background: rgba(9, 30, 38, 0.58);
@@ -382,8 +382,9 @@ input[type="range"] {
 
 .top-action-button,
 .album-mode-toggle {
+  box-sizing: border-box;
   min-width: 0;
-  height: 50px;
+  height: 54px;
   border: 0;
   border-radius: 13px;
   background-color: transparent;
@@ -395,11 +396,13 @@ input[type="range"] {
   backdrop-filter: none;
   font-weight: 900;
   cursor: pointer;
+  line-height: 1;
+  text-align: center;
 }
 
 .top-action-button {
   position: relative;
-  width: 50px;
+  width: 54px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -426,6 +429,7 @@ input[type="range"] {
 
 #topSettingsButton {
   background-image: var(--sb3d-ui-button-settings);
+  background-size: 92% 92%;
 }
 
 #topSettingsButton::before {
@@ -435,12 +439,16 @@ input[type="range"] {
 .album-mode-toggle {
   position: static;
   transform: none;
-  min-width: 150px;
-  padding: 0 20px 0 58px;
+  min-width: 178px;
+  padding: 0 24px 0 66px;
+  display: grid;
+  place-items: center;
   background-image: var(--sb3d-ui-button-wide);
   color: #243b40;
   font-size: 16px;
+  letter-spacing: 0;
   white-space: nowrap;
+  overflow: hidden;
   filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
 }
 
@@ -1785,15 +1793,15 @@ body.is-sticker-tray-dragging #scene {
   }
 
   .top-action-button {
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
   }
 
   .album-mode-toggle {
-    min-width: 128px;
-    height: 42px;
-    padding: 0 16px;
-    font-size: 14px;
+    min-width: 152px;
+    height: 46px;
+    padding: 0 18px 0 54px;
+    font-size: 13px;
   }
 
   .book-page-controls {
@@ -2164,14 +2172,15 @@ body.is-sticker-tray-dragging #scene {
   }
 
   .top-action-button {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
   }
 
   .album-mode-toggle {
-    min-width: 118px;
-    height: 38px;
-    font-size: 13px;
+    min-width: 142px;
+    height: 42px;
+    padding: 0 15px 0 50px;
+    font-size: 12px;
   }
 
   .book-page-controls {
