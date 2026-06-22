@@ -189,7 +189,8 @@
 // v1510: daily gacha arrowhead, centered rays, stronger sparkles, and shorter start panel
 // v1511: LP play-cards 5 ゲーム (bento/maze/oto/puzzle/quizland) のコピー全面刷新 — chip / play / growth / 詳細モーダル detail を更新
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
-const CACHE_VERSION = 1513; // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
+// v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
+const CACHE_VERSION = 1514; // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
 // v1500: daily gacha に木の部屋の奥行き背景と Pono 開始ふきだしを追加
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 

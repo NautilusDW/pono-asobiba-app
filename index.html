@@ -513,9 +513,9 @@
     .pc-visual{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background-size:cover;background-position:center;background-repeat:no-repeat;}
     .pc-v-bento  {background-image:url('assets/images/bento/title_back.webp'),linear-gradient(150deg,#F8CFA6,#F2A971);}
     .pc-v-maze   {background-image:url('assets/ui/play_maze_title_back.webp'),linear-gradient(150deg,#B7A877,#8C9A6E);}
-    .pc-v-oto    {background-image:url('assets/ui/thumb_oto.webp'),linear-gradient(150deg,#F6D79E,#EFC06B);}
+    .pc-v-oto    {background-image:url('assets/images/oto/title_back.jpg'),linear-gradient(150deg,#F6D79E,#EFC06B);}
     .pc-v-sticker{background-image:url('assets/images/sticker-book/sticker_book_base_kids_16x9.png'),linear-gradient(150deg,#FBD8C2,#F4B79A);}
-    .pc-v-puzzle {background-image:url('assets/ui/thumb_puzzle.webp'),linear-gradient(150deg,#B0D4E6,#89BAD4);}
+    .pc-v-puzzle {background-image:url('assets/images/puzzle/title_back.jpg'),linear-gradient(150deg,#B0D4E6,#89BAD4);}
     .pc-v-quizland{background-image:url('assets/ui/thumb_quizland_owl.webp'),linear-gradient(150deg,#D4A574,#C08A54);}
     /* ガチャ visual：CSS で描いた素朴なカプセルトイ機（16/9 に収める） */
     .pc-v-gacha{display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#FCEBD6,#F6D2AE);}
@@ -541,7 +541,7 @@
     .pc-card--mt4::before{left:60%;}
     /* growth box のラベル（既存になければ追加。あれば流用） */
     .pc-growth .lbl{display:block;font-size:11px;letter-spacing:.12em;color:var(--pc-primary-deep);font-weight:900;margin-bottom:3px;}
-    .pc-v-bento, .pc-v-maze {background-size:cover;}
+    .pc-v-bento, .pc-v-maze, .pc-v-puzzle, .pc-v-oto {background-size:cover;}
     .pc-v-bento{background-position:left center;}
     .pc-bubble{position:absolute;top:8px;right:-6px;z-index:3;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:.82rem;letter-spacing:.04em;padding:7px 13px;border-radius:14px 14px 14px 4px;transform:rotate(5deg);box-shadow:0 4px 10px rgba(201,106,46,.35);}
     .pc-bubble--alt{background:var(--pc-primary);box-shadow:0 4px 10px rgba(242,145,90,.32);}
@@ -1017,6 +1017,140 @@
         filter: none !important;
       }
     }
+
+    /* ===== Hero 直下 絵本匂わせ帯 ===== */
+    .hero-bookhint{
+      max-width:680px;
+      margin:12px auto 0;
+      padding:10px 18px;
+      background:#FFF8E7;
+      border-top:1.5px dashed #E8C97B;
+      border-bottom:1.5px dashed #E8C97B;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .hero-bookhint-text{
+      margin:0;
+      font-size:clamp(12.5px, 3vw, 14.5px);
+      line-height:1.55;
+      color:#5D4E37;
+      text-align:center;
+    }
+    .hero-bookhint-free{
+      color:#E8843A;
+      font-weight:900;
+      margin-right:4px;
+    }
+    .hero-bookhint-more{
+      font-style:normal;
+      background:linear-gradient(transparent 62%, #FDDCBF 62%);
+      padding:0 .12em;
+    }
+    .hero-bookhint-banner{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      height:36px;
+      padding:4px 12px 4px 4px;
+      background:#FFFFFF;
+      border:1.5px solid #F4CE5C;
+      border-radius:18px;
+      text-decoration:none;
+      transition:transform .25s ease, box-shadow .25s ease;
+    }
+    .hero-bookhint-banner:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 10px rgba(232,132,58,.18);
+    }
+    .hero-bookhint-banner:focus-visible{
+      outline:3px solid #F2915A;
+      outline-offset:2px;
+    }
+    .hero-bookhint-thumb{
+      width:28px;
+      height:28px;
+      border-radius:50%;
+      background-image:url('assets/images/Amazon_mobile.webp');
+      background-size:340% auto;
+      background-position:14% center;
+      background-color:#FDDCBF;
+      flex-shrink:0;
+    }
+    .hero-bookhint-label{
+      font-size:12.5px;
+      font-weight:700;
+      color:#5D4E37;
+    }
+    .hero-bookhint-arrow{
+      color:#E8843A;
+      font-weight:900;
+      transition:transform .25s ease;
+    }
+    .hero-bookhint-banner:hover .hero-bookhint-arrow{
+      transform:translateX(3px);
+    }
+    @media (max-width:480px){
+      .hero-bookhint{
+        flex-direction:column;
+        gap:8px;
+        padding:12px 16px 14px;
+      }
+      .hero-bookhint-banner{
+        align-self:center;
+      }
+    }
+    html{scroll-behavior:smooth;}
+
+    /* ===== 絵本セクションそえがき (book-prelude) ===== */
+    .book-prelude{
+      max-width:560px;
+      margin:0 auto 0;
+      padding:0 16px;
+    }
+    .book-prelude-inner{
+      background:#FDDCBF;
+      border:1.5px solid #F2915A;
+      border-radius:12px;
+      padding:16px 18px;
+      text-align:center;
+    }
+    .book-prelude-headline{
+      margin:0 0 6px;
+      font-size:clamp(15px, 4vw, 18px);
+      font-weight:900;
+      color:#5D4E37;
+      line-height:1.4;
+    }
+    .book-prelude-headline strong{
+      color:#C96A2E;
+    }
+    .book-prelude-sub{
+      margin:0 0 12px;
+      font-size:clamp(12.5px, 3vw, 13.5px);
+      color:#5D4E37;
+      line-height:1.5;
+    }
+    .book-prelude-parent{
+      margin:10px 0 0;
+      padding:10px 12px;
+      background:#FFFBEC;
+      border-radius:8px;
+      font-size:11.5px;
+      line-height:1.55;
+      color:#5D4E37;
+      text-align:left;
+    }
+    .book-prelude-parent-lbl{
+      display:block;
+      font-size:10px;
+      letter-spacing:.12em;
+      color:#C96A2E;
+      font-weight:900;
+      margin-bottom:3px;
+    }
   </style>
 </head>
 <body>
@@ -1048,6 +1182,19 @@
         <a href="play.html" class="herob-cta" id="enter-btn">すぐ あそぶ <span class="arrow" aria-hidden="true">→</span></a>
         <p class="herob-free">むりょうで あそべるよ！</p>
       </div>
+    </section>
+
+    <!-- ===== Hero 直下: 絵本アドバンテージ匂わせ帯 ===== -->
+    <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
+      <p class="hero-bookhint-text">
+        <strong class="hero-bookhint-free">むりょうで あそべるよ！</strong>
+        えほんを よんで <em class="hero-bookhint-more">もっと たくさん</em> あそべるように なろう
+      </p>
+      <a class="hero-bookhint-banner" href="#book-aside" aria-label="ポノの えほんの しょうかいへ いどう">
+        <span class="hero-bookhint-thumb" aria-hidden="true"></span>
+        <span class="hero-bookhint-label">えほんは こちら</span>
+        <span class="hero-bookhint-arrow" aria-hidden="true">→</span>
+      </a>
     </section>
 
     <!-- ============ Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル) ============ -->
@@ -1200,8 +1347,24 @@
       <span class="lp-section-divider-line"></span>
     </div>
 
+    <!-- ===== 絵本セクション そえがき (book-aside の前置き) ===== -->
+    <section class="book-prelude" aria-label="絵本との つながりの あんない">
+      <div class="book-prelude-inner">
+        <p class="book-prelude-headline">
+          えほんを よむと、 あそびばが <strong>もっと ひろがる</strong>よ
+        </p>
+        <p class="book-prelude-sub">
+          ポノの ものがたりを しった キミだけの あそびが ふえるんだ
+        </p>
+        <p class="book-prelude-parent">
+          <span class="book-prelude-parent-lbl">おうちの方へ</span>
+          絵本をお持ちの方は、 無料版より 多くのステージやコンテンツを ご利用いただけます。
+        </p>
+      </div>
+    </section>
+
     <!-- ===== Amazon えほんも あるよ (compact) ===== -->
-    <section class="book-aside" aria-labelledby="book-aside-h">
+    <section id="book-aside" class="book-aside" aria-labelledby="book-aside-h">
       <p class="book-aside-h" id="book-aside-h">えほんも <span class="book-aside-em">あるよ</span></p>
       <p class="book-aside-sub">あそびばの もとに なった ポノの えほん</p>
       <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="book-aside-link" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本『ありがとうって、うれしいね』を見る">
