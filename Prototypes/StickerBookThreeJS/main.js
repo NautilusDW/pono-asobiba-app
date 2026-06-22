@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-811";
+const ASSET_VERSION = "20260623-812";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -573,6 +573,224 @@ const BOOK_VARIANTS = {
   },
 };
 
+const ENTERTAINMENT_BOOK_TEMPLATE_PRESETS = [
+  {
+    key: "hero",
+    thicknessKey: "boy",
+    accent: "#e75f3e",
+    sub: "#348dd8",
+    line: "#e1b447",
+    tab: "#ffe0b8",
+    board: 0xd94a3b,
+    boardShadow: 0x843126,
+    spine: 0xe85d4e,
+    spineDark: 0x9f352d,
+    spineHighlight: 0xffc5a3,
+    ring: 0xd6b66b,
+    ringHighlight: 0xfff0c6,
+    frame: "#e85d4e",
+    frameDark: "#b73934",
+    innerStroke: "#f5a06f",
+    motifSet: "skyGarden",
+    tabs: ["#e85d4e", "#348dd8", "#ffd45f", "#7ed0e2", "#f6974f"],
+  },
+  {
+    key: "kaiju",
+    thicknessKey: "boy",
+    accent: "#80be65",
+    sub: "#68b7d9",
+    line: "#ef9b7e",
+    tab: "#dff2c8",
+    board: 0x77b86a,
+    boardShadow: 0x4b7f40,
+    spine: 0x8dcc76,
+    spineDark: 0x5d934e,
+    spineHighlight: 0xe4f5b8,
+    ring: 0xc7aa62,
+    ringHighlight: 0xffedbd,
+    frame: "#80be65",
+    frameDark: "#5b944f",
+    innerStroke: "#b9dda2",
+    motifSet: "nature",
+    tabs: ["#8dcc76", "#76c3de", "#ffb08e", "#f7d66d", "#b5df9a"],
+  },
+  {
+    key: "idol",
+    thicknessKey: "girl",
+    accent: "#ed87c6",
+    sub: "#7cced0",
+    line: "#d8b45f",
+    tab: "#f7d4ef",
+    board: 0xdd74ba,
+    boardShadow: 0x97417d,
+    spine: 0xe58ac8,
+    spineDark: 0xae4d91,
+    spineHighlight: 0xffd4f0,
+    ring: 0xd8b45f,
+    ringHighlight: 0xfff0be,
+    frame: "#ed87c6",
+    frameDark: "#c15fa0",
+    innerStroke: "#f5b8da",
+    motifSet: "skyGarden",
+    tabs: ["#ed87c6", "#89ded4", "#d5a9f0", "#ffd76a", "#ffb4cf"],
+  },
+  {
+    key: "robot",
+    thicknessKey: "boy",
+    accent: "#5db7bd",
+    sub: "#f19a45",
+    line: "#95aeb0",
+    tab: "#d9f0ee",
+    board: 0x4baab2,
+    boardShadow: 0x2e777e,
+    spine: 0x64bdc4,
+    spineDark: 0x3c8790,
+    spineHighlight: 0xc5f0f0,
+    ring: 0xc7a66c,
+    ringHighlight: 0xffefc6,
+    frame: "#5db7bd",
+    frameDark: "#398993",
+    innerStroke: "#9cd4d4",
+    motifSet: "sparkle",
+    tabs: ["#5db7bd", "#f19a45", "#a9bec2", "#79d4e2", "#ffd56f"],
+  },
+  {
+    key: "space_live",
+    thicknessKey: "girl",
+    accent: "#6c73d9",
+    sub: "#2ec4d3",
+    line: "#f1c657",
+    tab: "#d7d4ff",
+    board: 0x514eb1,
+    boardShadow: 0x2e2a72,
+    spine: 0x6862c8,
+    spineDark: 0x3f3b91,
+    spineHighlight: 0xbfc7ff,
+    ring: 0xd3b15f,
+    ringHighlight: 0xffefbd,
+    frame: "#6c73d9",
+    frameDark: "#43459e",
+    innerStroke: "#97a5f0",
+    motifSet: "skyGarden",
+    tabs: ["#6c73d9", "#2ec4d3", "#ff78c6", "#f1c657", "#8c7cf0"],
+  },
+  {
+    key: "game_center",
+    thicknessKey: "boy",
+    accent: "#2fb6c7",
+    sub: "#ff7daf",
+    line: "#ffca4d",
+    tab: "#d8fbff",
+    board: 0x2fa8be,
+    boardShadow: 0x1d6e7c,
+    spine: 0x42c3d2,
+    spineDark: 0x248696,
+    spineHighlight: 0xb3f6ff,
+    ring: 0xd8a95a,
+    ringHighlight: 0xffecb8,
+    frame: "#2fb6c7",
+    frameDark: "#238293",
+    innerStroke: "#8bdbe2",
+    motifSet: "sparkle",
+    tabs: ["#2fb6c7", "#ff7daf", "#ffca4d", "#8c77ee", "#73dc83"],
+  },
+  {
+    key: "mascot",
+    thicknessKey: "girl",
+    accent: "#f1a070",
+    sub: "#8fc9d7",
+    line: "#dbbe63",
+    tab: "#ffe1c8",
+    board: 0xe99063,
+    boardShadow: 0x9e5a38,
+    spine: 0xf2a175,
+    spineDark: 0xb66b47,
+    spineHighlight: 0xffdac2,
+    ring: 0xcfaa60,
+    ringHighlight: 0xffedc5,
+    frame: "#f1a070",
+    frameDark: "#c77752",
+    innerStroke: "#f6c0a0",
+    motifSet: "nature",
+    tabs: ["#f1a070", "#8fc9d7", "#ffd46b", "#a9d58b", "#f6b5ce"],
+  },
+  {
+    key: "parade",
+    thicknessKey: "girl",
+    accent: "#ef805e",
+    sub: "#4fbfc9",
+    line: "#e3b94d",
+    tab: "#ffe0bb",
+    board: 0xe77854,
+    boardShadow: 0xa04b35,
+    spine: 0xf08b64,
+    spineDark: 0xb25a3f,
+    spineHighlight: 0xffd7b4,
+    ring: 0xd2ad5d,
+    ringHighlight: 0xffefc5,
+    frame: "#ef805e",
+    frameDark: "#bd5f42",
+    innerStroke: "#f6ae92",
+    motifSet: "skyGarden",
+    tabs: ["#ef805e", "#4fbfc9", "#ffd45f", "#6e91e8", "#f4a3c1"],
+  },
+  {
+    key: "secret_base",
+    thicknessKey: "boy",
+    accent: "#c98b45",
+    sub: "#4caaa0",
+    line: "#d2b15b",
+    tab: "#f2d7a8",
+    board: 0xb8793a,
+    boardShadow: 0x734820,
+    spine: 0xc98b45,
+    spineDark: 0x89592b,
+    spineHighlight: 0xf2c681,
+    ring: 0xc7a15d,
+    ringHighlight: 0xffe8b3,
+    frame: "#c98b45",
+    frameDark: "#965f2e",
+    innerStroke: "#e2bb7d",
+    motifSet: "nature",
+    tabs: ["#c98b45", "#4caaa0", "#e3c760", "#78bd7e", "#f29d70"],
+  },
+  {
+    key: "anime_studio",
+    thicknessKey: "boy",
+    accent: "#5aa6cf",
+    sub: "#f28b76",
+    line: "#d9b655",
+    tab: "#d7eff8",
+    board: 0x4f9bc4,
+    boardShadow: 0x2f6785,
+    spine: 0x65afd0,
+    spineDark: 0x3d7f9e,
+    spineHighlight: 0xbde9f5,
+    ring: 0xc9a65d,
+    ringHighlight: 0xffedc0,
+    frame: "#5aa6cf",
+    frameDark: "#3d7fa3",
+    innerStroke: "#96cce2",
+    motifSet: "sparkle",
+    tabs: ["#5aa6cf", "#f28b76", "#f6cc5e", "#8dd8c1", "#b9a6ef"],
+  },
+];
+
+for (const { key, thicknessKey } of ENTERTAINMENT_BOOK_TEMPLATE_PRESETS) {
+  BOOK_VARIANTS[key] = {
+    insideLeft: `sb3d_${key}_free_blank_page_image2_20260623.webp`,
+    insideRight: `sb3d_${key}_free_blank_page_image2_20260623.webp`,
+    freePage: `sb3d_${key}_free_blank_page_image2_20260623.webp`,
+    coverPrint: `sb3d_${key}_cover_front_image2_20260623.webp`,
+    coverHardwareMode: "separate",
+    coverFront: `sb3d_${key}_cover_front_image2_20260623.webp`,
+    coverBack: `sb3d_${key}_cover_back_image2_20260623.webp`,
+    coverInside: `sb3d_${key}_cover_inside_image2_20260623.webp`,
+    spine: `sb3d_${key}_spine_image2_20260623.webp`,
+    thicknessKey,
+  };
+}
+
 const STICKER_BOOK_THEMES = {
   boy: {
     accent: "#d79a34",
@@ -930,6 +1148,83 @@ const STICKER_BOOK_THEMES = {
     },
   },
 };
+
+for (const preset of ENTERTAINMENT_BOOK_TEMPLATE_PRESETS) {
+  STICKER_BOOK_THEMES[preset.key] = createEntertainmentStickerTheme(preset);
+}
+
+function createEntertainmentStickerTheme(preset) {
+  const tabs = preset.tabs.map((color, index) => ({
+    color,
+    shadow: index % 2 ? preset.frameDark : preset.boardShadow ? `#${preset.boardShadow.toString(16).padStart(6, "0")}` : preset.frameDark,
+    motif: ["star", "sparkle", "cloud", "flower", "leaf"][index % 5],
+  }));
+  return {
+    accent: preset.accent,
+    sub: preset.sub,
+    line: preset.line,
+    tab: preset.tab,
+    coverHardware: {
+      board: preset.board,
+      boardShadow: preset.boardShadow,
+      spine: preset.spine,
+      spineDark: preset.spineDark,
+      spineHighlight: preset.spineHighlight,
+      ring: preset.ring,
+      ringHighlight: preset.ringHighlight,
+    },
+    collection: {
+      paper: ["#fffbea", "#fff6dc", preset.tab],
+      text: "#2d3d44",
+      pageBorder: preset.frame,
+      pageHighlight: "rgba(255, 255, 255, 0.78)",
+      frameShadow: "rgba(32, 56, 64, 0.14)",
+      infoAccent: preset.accent,
+      infoAccentSoft: "rgba(90, 166, 207, 0.22)",
+      ring: preset.ring,
+      ringHighlight: preset.ringHighlight,
+      spine: {
+        warm: preset.frame,
+        paper: "#fff8df",
+        shadow: preset.frameDark,
+        seam: preset.accent,
+        foldPaper: "248, 241, 220",
+        foldWarm: "142, 190, 198",
+        foldDark: "56, 82, 96",
+      },
+      pages: {
+        left: {
+          frame: preset.frame,
+          frameDark: preset.frameDark,
+          accent: preset.sub,
+          innerStroke: preset.innerStroke,
+          motifSet: preset.motifSet,
+        },
+        right: {
+          frame: preset.sub,
+          frameDark: preset.frameDark,
+          accent: preset.line,
+          innerStroke: preset.innerStroke,
+          motifSet: preset.motifSet,
+        },
+      },
+      slotBand: {
+        fill: preset.frame,
+        edge: preset.frameDark,
+        slot: "rgba(255, 252, 232, 0.92)",
+        stroke: "rgba(64, 86, 96, 0.24)",
+      },
+      card: {
+        foundFill: "rgba(255, 253, 238, 0.8)",
+        lockedFill: "rgba(220, 225, 218, 0.56)",
+        foundStroke: "rgba(79, 139, 165, 0.34)",
+        lockedStroke: "rgba(112, 122, 128, 0.22)",
+        numberFill: preset.accent,
+      },
+      tabs,
+    },
+  };
+}
 
 function stickerBookTheme(bookName) {
   return STICKER_BOOK_THEMES[bookName] || STICKER_BOOK_THEMES.boy;
@@ -1387,7 +1682,7 @@ const textureFiles = [
     ...Object.values(SHARED_TEXTURES),
     ...Object.values(ZUKAN_PAGE_TEMPLATES),
     ...ZUKAN_THICKNESS_STRIPS.map(({ file }) => file),
-    ...Object.keys(BOOK_VARIANTS).flatMap((bookName) => bookVariantTextureFiles(bookName)),
+    ...bookVariantTextureFiles(activeBook),
     ...["boy", "girl"].flatMap((bookName) =>
       THICKNESS_LEVEL_NAMES.flatMap((level) => [
         `sb3d_${bookName}_page_thickness_left_${level}.webp`,
@@ -1398,6 +1693,7 @@ const textureFiles = [
 ];
 const textureEntries = await Promise.all(textureFiles.map(async (file) => [file, await loadTexture(file)]));
 const textureMap = new Map(textureEntries);
+const textureLoadPromises = new Map();
 const pageTemplateTextureMap = new Map();
 const stickerSpineTextureMap = new Map();
 const freeSideTabsTextureMap = new Map();
@@ -1663,10 +1959,16 @@ resetButton.addEventListener("click", () => {
   syncUrl();
 });
 
-function setActiveBook(nextBook) {
+async function setActiveBook(nextBook) {
   const normalizedBook = BOOK_VARIANTS[nextBook] ? nextBook : "boy";
   if (normalizedBook === activeBook) {
     updateControlState();
+    return;
+  }
+  try {
+    await ensureBookVariantTextures(normalizedBook);
+  } catch (error) {
+    console.error("Failed to load sticker book theme textures", normalizedBook, error);
     return;
   }
   cancelSpreadJump();
@@ -6108,6 +6410,34 @@ function loadTexture(file) {
       reject,
     );
   });
+}
+
+function ensureTexture(file) {
+  if (!isTextureFileName(file)) {
+    return Promise.resolve(null);
+  }
+  if (textureMap.has(file)) {
+    return Promise.resolve(textureMap.get(file));
+  }
+  if (!textureLoadPromises.has(file)) {
+    textureLoadPromises.set(
+      file,
+      loadTexture(file)
+        .then((texture) => {
+          textureMap.set(file, texture);
+          return texture;
+        })
+        .finally(() => {
+          textureLoadPromises.delete(file);
+        }),
+    );
+  }
+  return textureLoadPromises.get(file);
+}
+
+function ensureBookVariantTextures(bookName) {
+  const files = bookVariantTextureFiles(bookName);
+  return Promise.all(files.map((file) => ensureTexture(file)));
 }
 
 function getTexture(file) {
