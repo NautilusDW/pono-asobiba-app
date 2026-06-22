@@ -177,7 +177,7 @@
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
 // v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 最新版: COMING SOON ピル + Mochiy + 3 行構成) per Pono LP Brand Kit handoff.
 // v1497: LP に gacha セクション追加 (HANDOFF 完全準拠、 画像は後渡し)
-const CACHE_VERSION = 1498; // v1498: play.html に capture.js Hookup 追加 (ガチャモーダルキャプチャ対応)
+const CACHE_VERSION = 1499; // v1499: play.html に PonoCapture.register() 追加 (gacha モーダル html2canvas キャプチャ対応)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

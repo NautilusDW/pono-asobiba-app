@@ -3343,6 +3343,69 @@
 
   <!-- 絵本パスワード解錠ロジック (PonoTier.verifyBookPassword) を提供 -->
   <script src="common/capture.js" defer></script>
+  <!-- ===== Screenshot mode (PonoCapture) registration =====
+       play.html は LP メニュー + 各種モーダル(ガチャ等)を持つ。
+       ガチャモーダル #dailyGachaModal を target に html2canvas でラスタライズ。
+       html2canvas は ESM 動的 import (capture.js が既に DOMContentLoaded で
+       UI 起動するので register() は同期登録 or DOMContentLoaded で間に合う)。 -->
+  <script>
+  (function(){
+    function regCapture(){
+      if (!window.PonoCapture) return;
+      window.PonoCapture.register({
+        gameId: 'play-gacha',
+        defaultLabel: 'gacha',
+        build: async function(opts){
+          // ガチャモーダル本体だけを撮る。 演出 sparkle/lux/lever は
+          // #dailyGachaModal 配下に全部入っている。 モーダル外の play.html UI
+          // (背景の play メニュー) は撮影から外したいので target は #dailyGachaModal。
+          var container = document.getElementById('dailyGachaModal');
+          if (!container) {
+            console.warn('[play-gacha capture] #dailyGachaModal not found');
+            return null;
+          }
+          // モーダルが [hidden] 状態のときは撮影不可 (display:none で中身が空)
+          if (container.hasAttribute('hidden')) {
+            console.warn('[play-gacha capture] modal is hidden; open the gacha modal first');
+            return null;
+          }
+          try {
+            var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
+            var html2canvas = (mod && (mod.default || mod));
+            if (typeof html2canvas !== 'function') {
+              throw new Error('html2canvas module shape unexpected');
+            }
+            var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
+              ? window.PonoCapture.html2canvasOptions({ backgroundColor: null })
+              : {
+                  backgroundColor: null,
+                  scale: 2,
+                  useCORS: true,
+                  allowTaint: false,
+                  logging: false,
+                  imageTimeout: 30000,
+                  removeContainer: true,
+                  ignoreElements: function(el){
+                    try {
+                      if (!el) return false;
+                      if (el.hasAttribute && el.hasAttribute('data-capture-hide')) return true;
+                      if (el.classList && el.classList.contains && el.classList.contains('pono-capture-overlay')) return true;
+                    } catch(e) {}
+                    return false;
+                  }
+                };
+            return await html2canvas(container, h2cOpts);
+          } catch (e) {
+            console.warn('[play-gacha capture] html2canvas import/exec failed:', e);
+            throw e;
+          }
+        }
+      });
+    }
+    if (window.PonoCapture) regCapture();
+    else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
+  })();
+  </script>
   <script src="common/tier.js"></script>
   <script src="js/game-stickers.js"></script>
 
