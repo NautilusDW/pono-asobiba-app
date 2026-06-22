@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1492: Daily gacha super reveal uses the user-cleaned alpha luxury name plate and aligns play cache busting.
 // v1489: Daily gacha super reveal focuses the sticker, uses a generated luxury name plate, and keeps capsule shells fully visible.
 // v1488: Daily gacha prompts use larger start text, side speech bubbles, bigger reward sticker, and separated capsule shells.
 // v1487: Daily gacha reveal layout makes the reward sticker larger and moves the play note to the top.
@@ -170,7 +171,8 @@
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
-const CACHE_VERSION = 1491; // v1491: Hero labels HANDOFF 02 完全準拠 — flex レイアウトに変更 (absolute → flex row beneath title)、 ongaku/puzzle 新デザイン上書き、 案 A (morito 承認)
+// v1493: LP hero labels swap to new craft-paper set (nazonazo/bouken/iroasobi/ongaku/puzzle) and Coming Soon banner ships (HANDOFF 01/02).
+const CACHE_VERSION = 1493; // v1493: LP hero labels (nazonazo/bouken/iroasobi/ongaku/puzzle) + Coming Soon banner per HANDOFF.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
