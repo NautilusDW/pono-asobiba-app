@@ -2640,8 +2640,33 @@
       .daily-gacha-reward { top: 34%; width: 160px; height: 160px; }
       .daily-gacha-reward img { width: 156px; height: 156px; }
       .daily-gacha-reward-name { bottom: -4px; width: min(340px, 66vw); font-size: 16px; padding: 8px 14px 10px; }
-      .daily-gacha-reward-note { top: 8px; bottom: auto; width: min(340px, 56vw); font-size: 12px; padding: 6px 12px 8px; border-width: 2px; }
-      .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-closeup__open-pair { top: 89%; width: min(360px, 56vw); height: min(70px, 13vw); }
+      .daily-gacha-reward-note {
+        top: 68px;
+        right: 8px;
+        width: min(210px, 30vw);
+        font-size: 11px;
+        padding: 7px 10px 8px;
+        border-width: 2px;
+      }
+      .daily-gacha-reward-note::after {
+        top: -8px;
+        right: 22px;
+        width: 13px;
+        height: 13px;
+        border-width: 2px;
+      }
+      .daily-gacha-reward-note--tomorrow {
+        left: 10px;
+        top: 58px;
+        width: min(210px, 30vw);
+        padding: 10px 12px 11px;
+        font-size: clamp(15px, 3.3vw, 20px);
+      }
+      .daily-gacha-reward-note--tomorrow::after {
+        right: -8px;
+        top: 50%;
+      }
+      .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-closeup__open-pair { top: 82%; width: min(390px, 60vw); height: min(98px, 18vw); }
       .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward { top: 25%; width: 160px; height: 160px; }
       .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward img { width: 158px; height: 158px; }
       .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward-name {
@@ -3253,7 +3278,8 @@
             <span></span><span></span><span></span><span></span>
           </div>
           <div class="daily-gacha-reward-name" id="dailyGachaRewardName">シールを ゲット</div>
-          <div class="daily-gacha-reward-note" id="dailyGachaRewardNote">シールちょうに はって あそぼう<br>また あした やろうね</div>
+          <div class="daily-gacha-reward-note daily-gacha-reward-note--book" id="dailyGachaRewardNote">シールちょうに はって あそぼう</div>
+          <div class="daily-gacha-reward-note daily-gacha-reward-note--tomorrow" id="dailyGachaTomorrowNote">また あした<br>やろうね</div>
         </div>
         <div class="daily-gacha-closeup-actions">
           <button class="daily-gacha-closeup-home" id="dailyGachaCloseupHome" type="button" aria-label="トップへ"></button>
@@ -3530,7 +3556,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1492;
+    const PAGE_CACHE_VERSION = 1494;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -4114,6 +4140,7 @@
     const dailyGachaRewardEmoji = document.getElementById('dailyGachaRewardEmoji');
     const dailyGachaRewardName = document.getElementById('dailyGachaRewardName');
     const dailyGachaRewardNote = document.getElementById('dailyGachaRewardNote');
+    const dailyGachaTomorrowNote = document.getElementById('dailyGachaTomorrowNote');
     const dailyGachaEnabled = __isAppBuild || document.body.classList.contains('dev-mode');
     const dailyGachaState = {
       dragging: false,
@@ -4669,6 +4696,7 @@
       if (dailyGachaRewardEmoji) dailyGachaRewardEmoji.textContent = '⭐';
       if (dailyGachaRewardName) dailyGachaRewardName.textContent = 'シールを ゲット';
       if (dailyGachaRewardNote) dailyGachaRewardNote.textContent = '';
+      if (dailyGachaTomorrowNote) dailyGachaTomorrowNote.textContent = '';
       if (dailyGachaLever) dailyGachaLever.disabled = false;
     }
 
@@ -4694,7 +4722,10 @@
           : name;
       }
       if (dailyGachaRewardNote) {
-        dailyGachaRewardNote.textContent = `${DAILY_GACHA_STICKER_BOOK_PROMPT}\n${DAILY_GACHA_TOMORROW_PROMPT}`;
+        dailyGachaRewardNote.textContent = DAILY_GACHA_STICKER_BOOK_PROMPT;
+      }
+      if (dailyGachaTomorrowNote) {
+        dailyGachaTomorrowNote.textContent = DAILY_GACHA_TOMORROW_PROMPT.replace(' やろう', '\nやろう');
       }
     }
 
