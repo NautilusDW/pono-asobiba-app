@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-784";
+const ASSET_VERSION = "20260622-786";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -11,6 +11,7 @@ const GUTTER = PAGE_H * (192 / 1536);
 const COLLECTION_GUTTER = 0;
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
+const STICKER_OPEN_SPREAD_X_SCALE = 0.92;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
 const PAGE_HOLE_X = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
@@ -9085,6 +9086,13 @@ function updateCoverOpen(delta) {
 function applyBookFramePosition(openProgress) {
   const p = smootherstep(openProgress);
   book.position.x = THREE.MathUtils.lerp(BOOK_COVER_X, BOOK_INSIDE_X, p);
+  book.scale.x = THREE.MathUtils.lerp(1, stickerOpenSpreadXScale(), p);
+  book.scale.y = 1;
+  book.scale.z = 1;
+}
+
+function stickerOpenSpreadXScale() {
+  return activeAlbumMode === "free" ? STICKER_OPEN_SPREAD_X_SCALE : 1;
 }
 
 function setOpenSpreadVisible(visible) {
