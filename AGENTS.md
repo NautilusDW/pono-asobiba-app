@@ -79,6 +79,8 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 5. **`--no-verify` で git hook をスキップしない。** hook が阻止する状況には正当な理由があります。
 6. **不明な権限・モデル・API キーを使わない。** 既に `wrangler` で設定済みのものだけ使用。
 7. **画像生成モデルは GPT Image 2 以外使わない。** (Codex 側の仕事。 DALL-E / Stable Diffusion / Imagen / Flux / Nano Banana 等は使用禁止) 既存アセットがすべて GPT Image 2 で生成されているため、 別モデルを混ぜると画風が揺らぐ。 §5.1.0 と整合。
+   - ユーザー指示に「生成」「生成して」「作って」などがあり、対象がボタン・表紙・背景・シール・テンプレート・UI枠・アイコン等の見た目素材なら、**SVG / Canvas / CSS / PIL / 手書きベクター等で代用しない**。必ず GPT Image 2 で画像アセットを生成する。
+   - 例外は、ユーザーが明示的に「SVGで」「Canvasで」「コードだけで」「実行時に描画」と指定した場合、またはゲームの当たり判定・グラフ・単純な幾何図形など画像生成ではない実装上の描画に限る。
 
 ---
 
@@ -250,6 +252,8 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 >
 > **画像生成モデルはすべて GPT Image 2 を使用することを厳格に守ってください。**
 >
+> **ユーザー指示に「生成」「生成して」「作って」等があり、対象が見た目素材なら、SVG / Canvas / CSS / PIL / 手書きベクター等で代用せず、GPT Image 2 で画像アセットを生成してください。**
+>
 > **アルファチャンネル抜きと切り抜きは行わないでください。** 生成 API のレスポンスをそのまま raw 画像として保存。 後処理 (alpha 透過化、 個別 PNG 切り出し) はユーザーがローカルの Photoshop で手作業します (2026-05-06c ポリシー)。
 >
 > **背景は不必要に白以外の色にしないでください。** alpha 抜きで多少色が残っても白なら目立たないが、 ピンク/紫など濃色が残ると視覚的に強烈に気になる。 どうしても白だと色かぶりして alpha 抜きがうまくいかない場合 (例: 雪・氷・白い動物など被写体が白い) のみ、 別の色を許容するが、 **その場合もなるべく薄い色** (淡いグレー、 淡い水色など) にしてください。
@@ -258,7 +262,7 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 
 ※ クロスレビュー義務の一般ルールは §4.8 を正とする。 本節は画像生成依頼時の追加テンプレであり、 クロスレビュー対象を画像生成に限定するものではない。
 
-**画像生成モデル統一**: GPT Image 2 以外のモデル (DALL-E / Stable Diffusion / Imagen / Flux / Nano Banana 等) を混ぜると画風が揺らぐ。 既存 quizland アセットは全て GPT Image 2 で生成されているので、 新規も同モデルで揃える (§2.7 で絶対禁止に格上げ済み)。
+**画像生成モデル統一**: GPT Image 2 以外のモデル (DALL-E / Stable Diffusion / Imagen / Flux / Nano Banana 等) を混ぜると画風が揺らぐ。 既存 quizland アセットは全て GPT Image 2 で生成されているので、 新規も同モデルで揃える (§2.7 で絶対禁止に格上げ済み)。 また、ユーザーが「生成」と言った見た目素材を SVG / Canvas / CSS / PIL などのコード生成で置き換えない。
 
 **コスト無制限ポリシー (★Codex 限定)**: **画像生成のコストは Codex 経由 GPT Image 2 ルートに限り**、 ユーザー側で「気にしなくてよい」体制が確保されている。 そのため Codex は:
 - 「コスト最小化のため枚数を絞る」「再利用してコスト節約」のような遠慮は不要
@@ -430,7 +434,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>   ← または Codex
 
 | Hook / Script | 対象 | 動作 |
 |---|---|---|
-| `.git/hooks/pre-commit` | 全 commit | 機密ファイル・3MB超画像をブロック |
+| `.git/hooks/pre-commit` | 全 commit | 機密ファイル・3MB超画像・Image2ルール違反につながる生成代用記述をブロック |
 | `.git/hooks/post-commit.disabled` | 無効 | 以前の自動 `git push origin develop` hook。 現状は自動発火しない |
 | Claude Code PostToolUse | Claude の Write/Edit | `auto_optimize_image.py --hook` (assets/images/ のみ) + `docs_review_hook.py --mark` |
 | Claude Code Stop | Claude セッション終了 | `docs_review_hook.py --check` (skip flag で逃げ可) + auto push |
