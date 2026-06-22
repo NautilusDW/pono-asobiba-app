@@ -166,7 +166,7 @@
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
-const CACHE_VERSION = 1483; // v1483: Daily gacha gold capsule assets refreshed and rarity/color weights made configurable.
+const CACHE_VERSION = 1484; // v1484: Hero scattered labels 案 C 反映 — もじ/かず/おえかき を なぞなぞ/ぼうけん/いろあそび に置換 (実装ゲームに整合)、 おんがく/パズル は維持
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
