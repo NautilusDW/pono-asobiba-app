@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1239: Daily gacha gold capsule assets refreshed and rarity/color weights made configurable.
 // v1238: Daily gacha super-rare reveal fanfare synced to develop.
 // v1236: Daily gacha rarity reveal profiles and gold capsule assets synced to develop.
 // v1237: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
@@ -30,7 +31,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1238; // v1238: Daily gacha super-rare reveal fanfare synced to develop.
+const CACHE_VERSION = 1239; // v1239: Daily gacha gold capsule assets refreshed and rarity/color weights made configurable.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

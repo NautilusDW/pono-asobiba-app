@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-22 - [batch:787-daily-gacha-gold-assets-and-weights] DEVELOP-SYNC - Codex: Synced refreshed gold capsule assets and centralized gacha rarity/color weights to develop. LP hides daily gacha unless APP_BUILD/dev; check with ?dev=1&gachaRarity=super. develop PAGE/CACHE_VERSION=1239. (by Codex)
 - 2026-06-22 - [batch:780-daily-gacha-super-rare-sfx] DEVELOP-SYNC - Codex: `assets/audio/gacha/daily_gacha_super_rare_reveal.mp3` と `play.html` のスーパーレア専用開封SE分岐を develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1&gachaRarity=super` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1238。 (by Codex)
 - 2026-06-22 - [batch:774-daily-gacha-disable-real-daily-lock] DEVELOP-SYNC - Codex: daily gacha は `いちにち いっかい` / `また あした` の文言と取得記録保存を残しつつ、検証期間中は localStorage 当日済み判定で入口やモーダルをロックしない変更を develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1235。検証: `git diff --check`、`node --check sw.js`、`play.html` inline script parse、Playwright local normal hidden + `?dev=1` 完走後の再オープン可・pageerror 0。 (by Codex)
 - 2026-06-22 - [batch:773-daily-gacha-once-copy] DEVELOP-SYNC - Codex: daily gacha に `いちにち いっかい まわせるよ` 開始文言、取得後の `シールちょうに はって あそぼう` / `また あした やろうね` 案内、当日済み入口 `また あした` と再オープン時の使用済み表示を追加して develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1234。 (by Codex)
