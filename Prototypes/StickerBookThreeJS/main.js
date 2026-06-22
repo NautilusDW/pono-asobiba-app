@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-789";
+const ASSET_VERSION = "20260622-790";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -16,6 +16,16 @@ const PAGE_HOLE_X = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
 const PAGE_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
+const BINDING_RING_SOCKET_X = PAGE_W * 0.068;
+const BINDING_RING_TUBE_RADIUS = PAGE_H * 0.006;
+const BINDING_RING_SOCKET_RADIUS_X = PAGE_HOLE_RX * 1.35;
+const BINDING_RING_SOCKET_RADIUS_Y = PAGE_HOLE_RY * 1.35;
+const BINDING_RING_SOCKET_TUBE = PAGE_H * 0.0038;
+const BINDING_RING_SOCKET_Z = 0.142;
+const BINDING_RING_SOCKET_BACK_Z = 0.112;
+const BINDING_RING_FRONT_Z = 0.12;
+const BINDING_RING_ARCH_Z = 0.34;
+const BINDING_RING_ARCH_Y = PAGE_H * 0.011;
 const THICKNESS_TEXTURE_H = PAGE_H * (256 / 1536);
 const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
 const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
@@ -8458,15 +8468,46 @@ function createHalfRingMeshes() {
     depthWrite: false,
   });
   const highlightMaterial = new THREE.MeshBasicMaterial({
-    color: 0xfff5d7,
+    color: 0xfff1c8,
     transparent: true,
     opacity: 0.34,
+    depthTest: true,
+    depthWrite: false,
+  });
+  const socketMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf0d58a,
+    emissive: 0x7a551d,
+    emissiveIntensity: 0.014,
+    roughness: 0.38,
+    metalness: 0.42,
+    transparent: true,
+    opacity: 0.96,
+    depthTest: true,
+    depthWrite: false,
+  });
+  const socketBackMaterial = new THREE.MeshBasicMaterial({
+    color: 0x07100f,
+    transparent: true,
+    opacity: 0.78,
     depthTest: true,
     depthWrite: false,
   });
 
   for (const pixelY of PAGE_RING_PIXELS) {
     const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
+    for (const side of [-1, 1]) {
+      const socketX = side * BINDING_RING_SOCKET_X;
+      const socketBack = new THREE.Mesh(createBindingRingSocketBackGeometry(), socketBackMaterial);
+      socketBack.position.set(socketX, y, BINDING_RING_SOCKET_BACK_Z);
+      socketBack.renderOrder = 69;
+      group.add(socketBack);
+
+      const socket = new THREE.Mesh(createBindingRingSocketGeometry(), socketMaterial);
+      socket.position.set(socketX, y, BINDING_RING_SOCKET_Z);
+      socket.renderOrder = 74;
+      group.add(socket);
+    }
+
     const ring = new THREE.Mesh(createHalfRingTubeGeometry(y), ringMaterial);
     ring.renderOrder = 72;
     group.add(ring);
@@ -8478,41 +8519,56 @@ function createHalfRingMeshes() {
 
   group.userData.ringMaterial = ringMaterial;
   group.userData.highlightMaterial = highlightMaterial;
+  group.userData.socketMaterial = socketMaterial;
+  group.userData.socketBackMaterial = socketBackMaterial;
   return group;
+}
+
+function createBindingRingSocketGeometry() {
+  const tubeRatio = BINDING_RING_SOCKET_TUBE / Math.max(BINDING_RING_SOCKET_RADIUS_X, BINDING_RING_SOCKET_RADIUS_Y);
+  const geometry = new THREE.TorusGeometry(1, tubeRatio, 10, 36);
+  geometry.scale(BINDING_RING_SOCKET_RADIUS_X, BINDING_RING_SOCKET_RADIUS_Y, 1);
+  return geometry;
+}
+
+function createBindingRingSocketBackGeometry() {
+  const geometry = new THREE.CircleGeometry(1, 32);
+  geometry.scale(BINDING_RING_SOCKET_RADIUS_X * 0.58, BINDING_RING_SOCKET_RADIUS_Y * 0.58, 1);
+  return geometry;
 }
 
 function createHalfRingTubeGeometry(baseY) {
   const points = [];
-  const span = 0.78;
+  const span = BINDING_RING_SOCKET_X * 2;
   for (let i = 0; i <= 20; i += 1) {
     const t = i / 20;
     const arch = Math.sin(t * Math.PI);
     points.push(
       new THREE.Vector3(
         THREE.MathUtils.lerp(-span / 2, span / 2, t),
-        baseY + arch * 0.034,
-        0.12 + arch * 0.34,
+        baseY + arch * BINDING_RING_ARCH_Y,
+        BINDING_RING_FRONT_Z + arch * BINDING_RING_ARCH_Z,
       ),
     );
   }
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 40, 0.036, 14, false);
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 40, BINDING_RING_TUBE_RADIUS, 14, false);
 }
 
 function createHalfRingHighlightGeometry(baseY) {
   const points = [];
-  const span = 0.62;
+  const span = BINDING_RING_SOCKET_X * 1.6;
   for (let i = 0; i <= 16; i += 1) {
     const t = i / 16;
     const arch = Math.sin(t * Math.PI);
     points.push(
       new THREE.Vector3(
         THREE.MathUtils.lerp(-span / 2, span / 2, t),
-        baseY + 0.026 + arch * 0.03,
-        0.16 + arch * 0.33,
+        baseY + PAGE_H * 0.0044 + arch * PAGE_H * 0.005,
+        BINDING_RING_FRONT_Z + PAGE_H * 0.0067 + arch * BINDING_RING_ARCH_Z * 0.97,
       ),
     );
   }
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.004, 6, false);
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, PAGE_H * 0.0007, 6, false);
 }
 
 function applyVariantState() {
@@ -8612,6 +8668,8 @@ function assignSpineTexture() {
 function applyRingMaterialTheme() {
   const ringMaterial = ringGroup?.userData?.ringMaterial;
   const highlightMaterial = ringGroup?.userData?.highlightMaterial;
+  const socketMaterial = ringGroup?.userData?.socketMaterial;
+  const socketBackMaterial = ringGroup?.userData?.socketBackMaterial;
   if (activeAlbumMode !== "collection") {
     if (ringMaterial) {
       ringMaterial.color.setHex(0xf0d58a);
@@ -8626,6 +8684,20 @@ function applyRingMaterialTheme() {
       highlightMaterial.color.setHex(0xfff5d7);
       highlightMaterial.opacity = 0.34;
       highlightMaterial.needsUpdate = true;
+    }
+    if (socketMaterial) {
+      socketMaterial.color.setHex(0xf0d58a);
+      socketMaterial.emissive.setHex(0x7a551d);
+      socketMaterial.emissiveIntensity = 0.014;
+      socketMaterial.roughness = 0.38;
+      socketMaterial.metalness = 0.42;
+      socketMaterial.opacity = 0.96;
+      socketMaterial.needsUpdate = true;
+    }
+    if (socketBackMaterial) {
+      socketBackMaterial.color.setHex(0x07100f);
+      socketBackMaterial.opacity = 0.78;
+      socketBackMaterial.needsUpdate = true;
     }
     return;
   }
@@ -8644,6 +8716,17 @@ function applyRingMaterialTheme() {
     highlightMaterial.color.setHex(theme.ringHighlight);
     highlightMaterial.opacity = 0.14;
     highlightMaterial.needsUpdate = true;
+  }
+  if (socketMaterial) {
+    socketMaterial.color.setHex(theme.ring);
+    socketMaterial.opacity = 0.42;
+    socketMaterial.roughness = 0.72;
+    socketMaterial.metalness = 0.08;
+    socketMaterial.needsUpdate = true;
+  }
+  if (socketBackMaterial) {
+    socketBackMaterial.opacity = 0.34;
+    socketBackMaterial.needsUpdate = true;
   }
 }
 
