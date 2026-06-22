@@ -1022,15 +1022,22 @@
     .hero-bookhint{
       max-width:680px;
       margin:12px auto 0;
-      padding:10px 18px;
+      padding:14px 18px;
       background:#FFF8E7;
       border-top:1.5px dashed #E8C97B;
       border-bottom:1.5px dashed #E8C97B;
       display:flex;
+      flex-direction:column;
       align-items:center;
-      justify-content:center;
-      gap:14px;
-      flex-wrap:wrap;
+      gap:10px;
+    }
+    .hero-bookhint-free{
+      margin:0;
+      font-size:clamp(13.5px, 3.4vw, 16px);
+      font-weight:900;
+      color:#5D4E37;
+      text-align:center;
+      letter-spacing:.02em;
     }
     .hero-bookhint-text{
       margin:0;
@@ -1094,12 +1101,8 @@
     }
     @media (max-width:480px){
       .hero-bookhint{
-        flex-direction:column;
         gap:8px;
-        padding:12px 16px 14px;
-      }
-      .hero-bookhint-banner{
-        align-self:center;
+        padding:12px 16px;
       }
     }
     html{scroll-behavior:smooth;}
@@ -1180,20 +1183,20 @@
       <p class="herob-lead">3〜6さい むけ</p>
       <div class="herob-cta-wrap">
         <a href="play.html" class="herob-cta" id="enter-btn">すぐ あそぶ <span class="arrow" aria-hidden="true">→</span></a>
-        <p class="herob-free">むりょうで あそべるよ！</p>
       </div>
     </section>
 
     <!-- ===== Hero 直下: 絵本アドバンテージ匂わせ帯 ===== -->
     <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
-      <p class="hero-bookhint-text">
-        <span class="hero-bookhint-ehon">えほん</span>を よんで <em class="hero-bookhint-more">もっと たくさん</em> あそべるように なろう
-      </p>
+      <p class="hero-bookhint-free">むりょうで あそべるよ！</p>
       <a class="hero-bookhint-banner" href="#book-aside" aria-label="ポノの えほんの しょうかいへ いどう">
         <span class="hero-bookhint-thumb" aria-hidden="true"></span>
         <span class="hero-bookhint-label">えほんは こちら</span>
         <span class="hero-bookhint-arrow" aria-hidden="true">→</span>
       </a>
+      <p class="hero-bookhint-text">
+        <span class="hero-bookhint-ehon">えほん</span>を よんで <em class="hero-bookhint-more">もっと たくさん</em> あそべるように なろう
+      </p>
     </section>
 
     <!-- ============ Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル) ============ -->
