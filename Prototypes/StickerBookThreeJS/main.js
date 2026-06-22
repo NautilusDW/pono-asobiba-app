@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-794";
+const ASSET_VERSION = "20260622-795";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -8641,8 +8641,9 @@ function applyRingMaterialTheme() {
   const ringMaterial = ringGroup?.userData?.ringMaterial;
   const highlightMaterial = ringGroup?.userData?.highlightMaterial;
   if (activeAlbumMode !== "collection") {
+    const hardware = stickerBookTheme(activeBook).coverHardware || stickerBookTheme("boy").coverHardware;
     if (ringMaterial) {
-      ringMaterial.color.setHex(BINDING_RING_BODY_COLOR);
+      ringMaterial.color.setHex(hardware.ring);
       ringMaterial.emissive.setHex(0x1f1c16);
       ringMaterial.emissiveIntensity = 0.008;
       ringMaterial.roughness = 0.66;
@@ -8651,7 +8652,7 @@ function applyRingMaterialTheme() {
       ringMaterial.needsUpdate = true;
     }
     if (highlightMaterial) {
-      highlightMaterial.color.setHex(0xfff5d7);
+      highlightMaterial.color.setHex(hardware.ringHighlight);
       highlightMaterial.opacity = 0.34;
       highlightMaterial.needsUpdate = true;
     }
@@ -8693,47 +8694,73 @@ function createStickerSpineTexture(bookName) {
 
   const hardware = stickerBookTheme(bookName).coverHardware || stickerBookTheme("boy").coverHardware;
   const bodyX = 10;
-  const bodyY = 18;
+  const bodyY = 14;
   const bodyW = canvas.width - bodyX * 2;
-  const bodyH = canvas.height - bodyY - 18;
-  const radius = 40;
+  const bodyH = canvas.height - bodyY - 14;
+  const radius = 38;
 
   ctx.save();
-  ctx.shadowColor = rgbaFromHexNumber(hardware.boardShadow || hardware.spineDark, 0.28);
-  ctx.shadowBlur = 14;
+  ctx.shadowColor = rgbaFromHexNumber(hardware.boardShadow || hardware.spineDark, 0.18);
+  ctx.shadowBlur = 18;
   ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 8;
+  ctx.shadowOffsetY = 7;
   const edgeGrad = ctx.createLinearGradient(bodyX, 0, bodyX + bodyW, 0);
-  edgeGrad.addColorStop(0, tintHexNumber(hardware.spineDark, 0.18));
-  edgeGrad.addColorStop(0.13, tintHexNumber(hardware.spine, 0.3));
-  edgeGrad.addColorStop(0.5, tintHexNumber(hardware.spineHighlight, 0.18));
-  edgeGrad.addColorStop(0.87, tintHexNumber(hardware.spine, 0.24));
-  edgeGrad.addColorStop(1, tintHexNumber(hardware.spineDark, 0.05));
+  edgeGrad.addColorStop(0, tintHexNumber(hardware.spineDark, 0.1));
+  edgeGrad.addColorStop(0.16, tintHexNumber(hardware.spine, 0.16));
+  edgeGrad.addColorStop(0.48, tintHexNumber(hardware.spineHighlight, 0.08));
+  edgeGrad.addColorStop(0.72, tintHexNumber(hardware.spine, 0.18));
+  edgeGrad.addColorStop(1, tintHexNumber(hardware.spineDark, 0.12));
   ctx.fillStyle = edgeGrad;
   drawCanvasRoundedRect(ctx, bodyX, bodyY, bodyW, bodyH, radius);
   ctx.fill();
   ctx.restore();
 
   ctx.save();
-  ctx.strokeStyle = rgbaFromHexNumber(hardware.spineDark, 0.52);
-  ctx.lineWidth = 2;
-  drawCanvasRoundedRect(ctx, bodyX + 24, bodyY + 34, bodyW - 48, bodyH - 68, 26);
-  ctx.stroke();
+  drawCanvasRoundedRect(ctx, bodyX + 2, bodyY + 2, bodyW - 4, bodyH - 4, radius - 2);
+  ctx.clip();
 
-  const grooveTop = bodyY + 76;
-  const grooveBottom = bodyY + bodyH - 58;
-  for (const x of [62, 82, 102, 122, 142, 162, 182, 202]) {
-    const groove = ctx.createLinearGradient(x - 2, 0, x + 2, 0);
-    groove.addColorStop(0, rgbaFromHexNumber(hardware.spineDark, 0.55));
-    groove.addColorStop(0.52, "rgba(255, 255, 255, 0.62)");
-    groove.addColorStop(1, rgbaFromHexNumber(hardware.spineDark, 0.36));
-    ctx.strokeStyle = groove;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(x, grooveTop);
-    ctx.lineTo(x, grooveBottom);
-    ctx.stroke();
+  ctx.filter = "blur(12px)";
+  ctx.fillStyle = rgbaFromHexNumber(hardware.spineDark, 0.16);
+  ctx.fillRect(bodyX + 12, bodyY - 42, 34, bodyH + 84);
+  ctx.fillRect(bodyX + bodyW - 46, bodyY - 42, 34, bodyH + 84);
+  ctx.fillStyle = rgbaFromHexNumber(hardware.spineHighlight, 0.18);
+  ctx.fillRect(bodyX + 86, bodyY - 42, 50, bodyH + 84);
+  ctx.filter = "none";
+
+  for (const x of [74, 102, 154, 182]) {
+    const rib = ctx.createLinearGradient(x - 12, 0, x + 12, 0);
+    rib.addColorStop(0, "rgba(255, 255, 255, 0)");
+    rib.addColorStop(0.5, "rgba(255, 255, 255, 0.13)");
+    rib.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = rib;
+    ctx.fillRect(x - 12, bodyY + 32, 24, bodyH - 64);
   }
+
+  for (const x of [64, 116, 140, 192]) {
+    const seam = ctx.createLinearGradient(x - 9, 0, x + 9, 0);
+    seam.addColorStop(0, "rgba(0, 0, 0, 0)");
+    seam.addColorStop(0.5, rgbaFromHexNumber(hardware.spineDark, 0.11));
+    seam.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = seam;
+    ctx.fillRect(x - 9, bodyY + 34, 18, bodyH - 68);
+  }
+
+  const topGlow = ctx.createLinearGradient(0, bodyY, 0, bodyY + 96);
+  topGlow.addColorStop(0, "rgba(255, 255, 255, 0.24)");
+  topGlow.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = topGlow;
+  ctx.fillRect(bodyX, bodyY, bodyW, 96);
+
+  const bottomShade = ctx.createLinearGradient(0, bodyY + bodyH - 112, 0, bodyY + bodyH);
+  bottomShade.addColorStop(0, "rgba(0, 0, 0, 0)");
+  bottomShade.addColorStop(1, rgbaFromHexNumber(hardware.boardShadow || hardware.spineDark, 0.12));
+  ctx.fillStyle = bottomShade;
+  ctx.fillRect(bodyX, bodyY + bodyH - 112, bodyW, 112);
+
+  ctx.strokeStyle = rgbaFromHexNumber(hardware.spineHighlight, 0.24);
+  ctx.lineWidth = 2;
+  drawCanvasRoundedRect(ctx, bodyX + 5, bodyY + 5, bodyW - 10, bodyH - 10, radius - 4);
+  ctx.stroke();
 
   ctx.restore();
 
