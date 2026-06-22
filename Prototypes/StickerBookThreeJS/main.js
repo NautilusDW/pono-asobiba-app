@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-786";
+const ASSET_VERSION = "20260622-789";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -11,12 +11,11 @@ const GUTTER = PAGE_H * (192 / 1536);
 const COLLECTION_GUTTER = 0;
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
-const STICKER_OPEN_SPREAD_X_SCALE = 0.92;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
 const PAGE_HOLE_X = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
-const PAGE_RING_PIXELS = [170, 370, 570, 770, 970, 1170, 1370];
+const PAGE_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
 const THICKNESS_TEXTURE_H = PAGE_H * (256 / 1536);
 const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
 const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
@@ -498,7 +497,7 @@ const BOOK_VARIANTS = {
   boy: {
     insideLeft: "sb3d_boy_page_left_generated.webp",
     insideRight: "sb3d_boy_page_right_generated.webp",
-    freePage: "sb3d_boy_free_blank_page_image2_20260622.png",
+    freePage: "sb3d_boy_free_blank_page_image2_aspect_v2_20260622.png",
     coverPrint: "sb3d_boy_cover_front_binder_image2_20260622.webp",
     coverHardwareMode: "baked",
     coverFront: "sb3d_boy_cover_front_binder_image2_20260622.webp",
@@ -511,7 +510,7 @@ const BOOK_VARIANTS = {
   girl: {
     insideLeft: "sb3d_girl_page_left_generated.webp",
     insideRight: "sb3d_girl_page_right_generated.webp",
-    freePage: "sb3d_girl_free_blank_page_image2_20260622.png",
+    freePage: "sb3d_girl_free_blank_page_image2_aspect_v2_20260622.png",
     coverPrint: "sb3d_girl_cover_front_generated.webp",
     coverHardwareMode: "baked",
     coverFront: "sb3d_girl_cover_front_generated.webp",
@@ -8448,20 +8447,20 @@ function addRoundedRectPath(shape, x, y, width, height, radius) {
 function createHalfRingMeshes() {
   const group = new THREE.Group();
   const ringMaterial = new THREE.MeshStandardMaterial({
-    color: 0xcbb783,
-    emissive: 0x3b2a12,
-    emissiveIntensity: 0.025,
-    roughness: 0.76,
-    metalness: 0.0,
+    color: 0xf0d58a,
+    emissive: 0x7a551d,
+    emissiveIntensity: 0.016,
+    roughness: 0.42,
+    metalness: 0.4,
     transparent: true,
-    opacity: 1,
+    opacity: 0.9,
     depthTest: true,
     depthWrite: false,
   });
   const highlightMaterial = new THREE.MeshBasicMaterial({
     color: 0xfff5d7,
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.34,
     depthTest: true,
     depthWrite: false,
   });
@@ -8496,7 +8495,7 @@ function createHalfRingTubeGeometry(baseY) {
       ),
     );
   }
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 40, 0.064, 16, false);
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 40, 0.036, 14, false);
 }
 
 function createHalfRingHighlightGeometry(baseY) {
@@ -8513,7 +8512,7 @@ function createHalfRingHighlightGeometry(baseY) {
       ),
     );
   }
-  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.007, 6, false);
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.004, 6, false);
 }
 
 function applyVariantState() {
@@ -8615,17 +8614,17 @@ function applyRingMaterialTheme() {
   const highlightMaterial = ringGroup?.userData?.highlightMaterial;
   if (activeAlbumMode !== "collection") {
     if (ringMaterial) {
-      ringMaterial.color.setHex(0xcbb783);
-      ringMaterial.emissive.setHex(0x3b2a12);
-      ringMaterial.emissiveIntensity = 0.025;
-      ringMaterial.roughness = 0.76;
-      ringMaterial.metalness = 0.0;
-      ringMaterial.opacity = 1;
+      ringMaterial.color.setHex(0xf0d58a);
+      ringMaterial.emissive.setHex(0x7a551d);
+      ringMaterial.emissiveIntensity = 0.016;
+      ringMaterial.roughness = 0.42;
+      ringMaterial.metalness = 0.4;
+      ringMaterial.opacity = 0.9;
       ringMaterial.needsUpdate = true;
     }
     if (highlightMaterial) {
       highlightMaterial.color.setHex(0xfff5d7);
-      highlightMaterial.opacity = 0.2;
+      highlightMaterial.opacity = 0.34;
       highlightMaterial.needsUpdate = true;
     }
     return;
@@ -9100,13 +9099,6 @@ function updateCoverOpen(delta) {
 function applyBookFramePosition(openProgress) {
   const p = smootherstep(openProgress);
   book.position.x = THREE.MathUtils.lerp(BOOK_COVER_X, BOOK_INSIDE_X, p);
-  book.scale.x = THREE.MathUtils.lerp(1, stickerOpenSpreadXScale(), p);
-  book.scale.y = 1;
-  book.scale.z = 1;
-}
-
-function stickerOpenSpreadXScale() {
-  return activeAlbumMode === "free" ? STICKER_OPEN_SPREAD_X_SCALE : 1;
 }
 
 function setOpenSpreadVisible(visible) {
