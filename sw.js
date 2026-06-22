@@ -187,7 +187,8 @@
 // v1508: daily gacha table height, arrow marker, reward bubbles, and plate text alignment fixed
 // v1509: daily gacha machine/table contact and delayed tomorrow bubble
 // v1510: daily gacha arrowhead, centered rays, stronger sparkles, and shorter start panel
-const CACHE_VERSION = 1511; // v1511: LP play-cards 5 ゲーム (bento/maze/oto/puzzle/quizland) のコピー全面刷新 — chip / play / growth / 詳細モーダル detail を更新
+// v1511: LP play-cards 5 ゲーム (bento/maze/oto/puzzle/quizland) のコピー全面刷新 — chip / play / growth / 詳細モーダル detail を更新
+const CACHE_VERSION = 1512; // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1500: daily gacha に木の部屋の奥行き背景と Pono 開始ふきだしを追加
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 

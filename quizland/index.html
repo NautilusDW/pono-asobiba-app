@@ -1955,19 +1955,24 @@ body.layout-editor-on .character img {
 }
 .diff-row {
   display: flex; flex-direction: row;
-  gap: 8px;
-  width: 100%; max-width: 720px;
+  gap: clamp(8px, 1.3vw, 16px);
+  width: 100%; max-width: min(92vw, 1280px);
   justify-content: center;
   align-items: stretch;
 }
 .diff-btn {
   flex: 1 1 0;
-  min-height: 64px;
+  height: clamp(78px, 11vw, 144px);
+  min-height: 0;
   min-width: 0;
-  padding: 0.4em 0.5em;
-  border: 4px solid var(--wood-mid);
-  border-radius: 18px;
-  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  padding: clamp(10px, 1.4vw, 18px) clamp(12px, 1.8vw, 24px) clamp(12px, 1.6vw, 20px);
+  border: 0;
+  border-radius: 22px;
+  background-color: transparent;
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png');
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
   font-family: inherit;
   font-weight: 900;
   color: var(--text);
@@ -1976,33 +1981,34 @@ body.layout-editor-on .character img {
   line-height: 1.05;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 4px;
-  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 14px rgba(80,50,10,0.28);
-  transition: transform 0.1s, background 0.15s, border-color 0.15s, box-shadow 0.1s;
+  gap: clamp(2px, 0.7vw, 8px);
+  filter: drop-shadow(0 6px 8px rgba(80, 50, 10, 0.18));
+  text-rendering: optimizeLegibility;
+  transition: transform 0.1s, filter 0.15s;
 }
 .diff-btn .diff-stars {
-  font-size: clamp(20px, 4vw, 32px);
+  font-size: clamp(24px, 4.3vw, 52px);
   line-height: 1;
   color: #C49A2C; /* muted gold for inactive */
   text-shadow: 1px 1px 0 rgba(80,50,10,0.25);
   letter-spacing: 0.05em;
 }
 .diff-btn .diff-label {
-  font-size: clamp(14px, 3vw, 22px);
+  font-size: clamp(20px, 3.15vw, 38px);
   font-weight: 900;
   color: var(--text);
   letter-spacing: 0.04em;
 }
 .diff-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 var(--wood-dark), 0 3px 6px rgba(80,50,10,0.25);
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png');
+  transform: translateY(3px) scale(0.99);
+  filter: drop-shadow(0 3px 4px rgba(80, 50, 10, 0.22));
 }
 .diff-btn.is-active {
-  background: linear-gradient(180deg, #FBBF24, var(--primary));
-  border-color: var(--wood-dark);
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png');
   color: #fff;
-  transform: scale(1.04);
-  box-shadow: 0 5px 0 var(--wood-dark), 0 0 0 3px var(--hint-bg) inset, 0 8px 18px rgba(80,50,10,0.32);
+  transform: translateY(2px) scale(1.015);
+  filter: drop-shadow(0 5px 7px rgba(80, 50, 10, 0.22));
 }
 .diff-btn.is-active .diff-stars {
   color: #FFD700; /* bright gold for active */
@@ -2029,10 +2035,9 @@ body.layout-editor-on .character img {
   opacity: 0.6;
   position: relative;
   /* is-active 由来の強調を打ち消す */
-  background: linear-gradient(180deg, var(--paper), var(--paper-2)) !important;
-  border-color: var(--wood-mid) !important;
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png') !important;
+  background-color: transparent !important;
   color: var(--text) !important;
-  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 14px rgba(80,50,10,0.28) !important;
 }
 .diff-btn.tier-locked:hover,
 .diff-btn.tier-locked:active,
