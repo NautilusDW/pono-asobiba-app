@@ -95,6 +95,15 @@
             "command": "echo 'ORCHESTRATOR-MODE: あなたは全体の進捗と品質管理に徹底し、 タスクは直接行わないこと。 実装はエージェントチームを組成して並列で。 レビューは必ずエージェント同士のクロスレビューを実施。 このルールは違反すると user 信頼を失う。'"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python d:/AppDevelopment/pono-asobiba-app/scripts/image_review_reminder.py"
+          }
+        ]
       }
     ],
     "Stop": [
