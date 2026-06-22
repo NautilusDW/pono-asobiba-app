@@ -12,9 +12,11 @@ body {
 }
 
 :root {
-  --sb3d-ui-button-square: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_square_gpt_image2_20260622.png");
-  --sb3d-ui-button-wide: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_wide_gpt_image2_20260622.png");
-  --sb3d-ui-button-circle: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_circle_gpt_image2_20260622.png");
+  --sb3d-ui-button-back: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_back_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-settings: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_settings_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-wide: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-prev: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_prev_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-next: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_next_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-capsule: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_capsule_gpt_image2_20260622.png");
   --sticker-thumbnail-outline-filter:
     drop-shadow(1px 0 0 rgba(255, 255, 255, 0.98))
@@ -401,13 +403,15 @@ input[type="range"] {
   padding: 0;
   display: grid;
   place-items: center;
-  background-image: var(--sb3d-ui-button-square);
+  background-image: var(--sb3d-ui-button-back);
   color: transparent;
   font-size: 0;
   line-height: 1;
 }
 
 .top-action-button::before {
+  content: "";
+  display: none;
   position: relative;
   z-index: 1;
   color: #243b40;
@@ -417,12 +421,14 @@ input[type="range"] {
 }
 
 #topBackButton::before {
-  content: "←";
   font-size: 26px;
 }
 
+#topSettingsButton {
+  background-image: var(--sb3d-ui-button-settings);
+}
+
 #topSettingsButton::before {
-  content: "⚙";
   font-family: "Segoe UI Symbol", "Meiryo", sans-serif;
 }
 
@@ -430,7 +436,7 @@ input[type="range"] {
   position: static;
   transform: none;
   min-width: 150px;
-  padding: 0 22px;
+  padding: 0 20px 0 58px;
   background-image: var(--sb3d-ui-button-wide);
   color: #243b40;
   font-size: 16px;
@@ -480,7 +486,7 @@ body.is-collection-album .album-mode-toggle {
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background-image: var(--sb3d-ui-button-circle);
+  background-image: var(--sb3d-ui-button-prev);
   color: transparent;
   font-size: 0;
   font-weight: 900;
@@ -490,6 +496,7 @@ body.is-collection-album .album-mode-toggle {
 
 .book-page-button::before {
   content: "";
+  display: none;
   position: absolute;
   top: 50%;
   width: 0;
@@ -510,6 +517,10 @@ body.is-collection-album .album-mode-toggle {
   border-top: 13px solid transparent;
   border-bottom: 13px solid transparent;
   border-left: 20px solid #18363d;
+}
+
+.book-page-button-right {
+  background-image: var(--sb3d-ui-button-next);
 }
 
 .book-page-button:disabled {
