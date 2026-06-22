@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-795";
+const ASSET_VERSION = "20260622-796";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -8718,32 +8718,6 @@ function createStickerSpineTexture(bookName) {
   ctx.save();
   drawCanvasRoundedRect(ctx, bodyX + 2, bodyY + 2, bodyW - 4, bodyH - 4, radius - 2);
   ctx.clip();
-
-  ctx.filter = "blur(12px)";
-  ctx.fillStyle = rgbaFromHexNumber(hardware.spineDark, 0.16);
-  ctx.fillRect(bodyX + 12, bodyY - 42, 34, bodyH + 84);
-  ctx.fillRect(bodyX + bodyW - 46, bodyY - 42, 34, bodyH + 84);
-  ctx.fillStyle = rgbaFromHexNumber(hardware.spineHighlight, 0.18);
-  ctx.fillRect(bodyX + 86, bodyY - 42, 50, bodyH + 84);
-  ctx.filter = "none";
-
-  for (const x of [74, 102, 154, 182]) {
-    const rib = ctx.createLinearGradient(x - 12, 0, x + 12, 0);
-    rib.addColorStop(0, "rgba(255, 255, 255, 0)");
-    rib.addColorStop(0.5, "rgba(255, 255, 255, 0.13)");
-    rib.addColorStop(1, "rgba(255, 255, 255, 0)");
-    ctx.fillStyle = rib;
-    ctx.fillRect(x - 12, bodyY + 32, 24, bodyH - 64);
-  }
-
-  for (const x of [64, 116, 140, 192]) {
-    const seam = ctx.createLinearGradient(x - 9, 0, x + 9, 0);
-    seam.addColorStop(0, "rgba(0, 0, 0, 0)");
-    seam.addColorStop(0.5, rgbaFromHexNumber(hardware.spineDark, 0.11));
-    seam.addColorStop(1, "rgba(0, 0, 0, 0)");
-    ctx.fillStyle = seam;
-    ctx.fillRect(x - 9, bodyY + 34, 18, bodyH - 68);
-  }
 
   const topGlow = ctx.createLinearGradient(0, bodyY, 0, bodyY + 96);
   topGlow.addColorStop(0, "rgba(255, 255, 255, 0.24)");
