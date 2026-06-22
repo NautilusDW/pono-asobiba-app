@@ -171,8 +171,8 @@
 // v1231: Bento tutorial requester now uses free-tier food (araiguma with taco wiener / tomato) to avoid locked yakizake.
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
-// v1493: LP hero labels swap to new craft-paper set (nazonazo/bouken/iroasobi/ongaku/puzzle) and Coming Soon banner ships (HANDOFF 01/02).
-const CACHE_VERSION = 1493; // v1493: LP hero labels (nazonazo/bouken/iroasobi/ongaku/puzzle) + Coming Soon banner per HANDOFF.
+// v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 最新版: COMING SOON ピル + Mochiy + 3 行構成) per Pono LP Brand Kit handoff.
+const CACHE_VERSION = 1493; // v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 最新版: COMING SOON ピル + Mochiy + 3 行構成) per Pono LP Brand Kit handoff
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

@@ -39,6 +39,10 @@
   .cs-banner:hover{transform:rotate(-1.5deg) translateY(-2px);box-shadow:0 6px 16px rgba(93,78,55,.14);}
   .cs-banner:focus-visible{outline:2px solid var(--cs-primary);outline-offset:4px;}
   .cs-copy{flex:1;min-width:0;}
+  .cs-copy .cs-eyebrow{display:inline-flex;align-items:center;gap:5px;font-weight:900;font-size:10px;
+    letter-spacing:.16em;color:#fff;background:var(--cs-primary);padding:3px 10px;border-radius:999px;
+    margin:0 0 7px;box-shadow:0 2px 5px rgba(201,106,46,.3);white-space:nowrap;align-self:flex-start;}
+  .cs-copy .cs-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--cs-yellow);}
   .cs-copy .lead{display:flex;flex-direction:column;gap:3px;margin:0;text-wrap:balance;}
   .cs-copy .l1{font-weight:700;font-size:clamp(14px,3.3vw,17px);color:var(--cs-text);letter-spacing:.02em;}
   .cs-copy .l1 .brand{font-weight:900;color:var(--cs-primary);}
@@ -95,8 +99,9 @@
 <div class="preview">
   <section class="coming-soon">
     <button type="button" class="cs-banner" aria-haspopup="dialog" aria-controls="cs-modal"
-            aria-label="ポノの あそびばが アプリになる おしらせを ひらく">
+            aria-label="ポノのあそびば アプリ化のおしらせを ひらく">
       <span class="cs-copy">
+        <span class="cs-eyebrow" aria-hidden="true"><span class="dot"></span>COMING SOON</span>
         <span class="lead">
           <span class="l1"><span class="brand">ポノの あそびば</span>が</span>
           <span class="l2"><span class="mark">アプリに なります！</span></span>
@@ -104,7 +109,7 @@
         </span>
       </span>
       <span class="cs-icon"><img src="../../../assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></span>
-      <span class="cs-tap" aria-hidden="true">タップで ひらく →</span>
+      <span class="cs-tap" aria-hidden="true">タップで くわしく →</span>
     </button>
 
     <div class="cs-modal" id="cs-modal" role="dialog" aria-modal="true" aria-labelledby="cs-modal-title" hidden>
@@ -112,12 +117,12 @@
         <button type="button" class="cs-modal-close" aria-label="とじる">×</button>
         <h2 class="cs-modal-title" id="cs-modal-title">いま つくっています</h2>
         <div class="cs-modal-icon"><img src="../../../assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></div>
-        <p class="cs-modal-lead">ポノの あそびばが スマホ・タブレットの アプリに。 もっと いろんなことが できるように なります。</p>
+        <p class="cs-modal-lead">ポノの あそびばが、スマホ・タブレットの アプリに。 これから こんなことが できるように なります。</p>
         <ul class="cs-modal-list">
-          <li><span class="b" aria-hidden="true">★</span>もっと たくさんの ゲーム</li>
-          <li><span class="b" aria-hidden="true">★</span>あたらしい あそびば</li>
-          <li><span class="b" aria-hidden="true">★</span>ポノからの とくべつな おしらせ</li>
-          <li><span class="b" aria-hidden="true">★</span>ホーム画面に ポノの アプリアイコン</li>
+          <li><span class="b">✓</span>もっと たくさんの ゲーム</li>
+          <li><span class="b">✓</span>あたらしい あそびば</li>
+          <li><span class="b">✓</span>ポノからの とくべつな おしらせ</li>
+          <li><span class="b">✓</span>ホーム画面に おける アプリアイコン</li>
         </ul>
         <p class="cs-modal-foot">じゅんびが できたら、 ここで おしらせするね。</p>
       </div>
@@ -130,7 +135,6 @@
     if(!section) return;
     var banner = section.querySelector('.cs-banner');
     var modal = section.querySelector('#cs-modal');
-    if(!banner || !modal) return;
     var closeBtn = modal.querySelector('.cs-modal-close');
     var lastFocus = null;
     function open(){
