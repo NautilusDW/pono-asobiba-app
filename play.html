@@ -1948,8 +1948,8 @@
       z-index: -1;
     }
     .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-panel {
-      top: clamp(8px, 3.1vh, 26px);
-      width: min(590px, 72vw);
+      top: clamp(8px, 2.7vh, 22px);
+      width: min(580px, 64vw);
     }
     .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status-pono {
       display: none;
@@ -1960,14 +1960,15 @@
       display: grid;
       place-items: center;
       width: 100%;
-      min-height: clamp(108px, 15vh, 122px);
-      padding: clamp(14px, 2.3vh, 20px) clamp(24px, 2.6vw, 30px) clamp(15px, 2.4vh, 22px) clamp(142px, 13vw, 158px);
+      aspect-ratio: 1578 / 470;
+      min-height: 0;
+      padding: clamp(20px, 3vh, 26px) clamp(34px, 3.4vw, 42px) clamp(21px, 3vh, 27px) clamp(172px, 15.5vw, 188px);
       border: 0;
       border-radius: 0;
-      background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_generated.png") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png") center / contain no-repeat;
       color: #5B2B14;
-      font-size: clamp(23px, 2.55vw, 29px);
-      line-height: 1.18;
+      font-size: clamp(20px, 2vw, 23px);
+      line-height: 1.22;
       text-shadow: 0 2px 0 rgba(255, 255, 255, .95);
       box-shadow: none;
       filter: drop-shadow(0 12px 18px rgba(49, 24, 7, .24));
@@ -2752,15 +2753,16 @@
         height: clamp(46px, 6.2vw, 56px);
         transform: translateY(-50%);
       }
-      .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-panel { top: 6px; width: min(440px, 70vw); }
+      .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-panel { top: 6px; width: min(400px, 66vw); }
       .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status {
-        min-height: clamp(72px, 16vh, 90px);
-        padding: 9px 18px 10px 104px;
+        aspect-ratio: 1578 / 470;
+        min-height: 0;
+        padding: 13px 22px 14px 122px;
         border: 0;
         border-radius: 0;
-        background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_generated.png") center / 100% 100% no-repeat;
-        font-size: clamp(15px, 2.7vw, 20px);
-        line-height: 1.15;
+        background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png") center / contain no-repeat;
+        font-size: clamp(13px, 2.1vw, 16px);
+        line-height: 1.22;
         box-shadow: none;
         filter: drop-shadow(0 9px 13px rgba(49, 24, 7, .22));
       }
@@ -3809,7 +3811,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1516;
+    const PAGE_CACHE_VERSION = 1517;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
