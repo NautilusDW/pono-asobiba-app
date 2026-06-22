@@ -8,7 +8,7 @@ Claude Code がテキスト/ファイル名/メタデータだけで画像に関
 
 仕様:
   - stdin: UserPromptSubmit hook の payload (JSON)
-  - 画像関連 (IMAGE_NOUNS hit / attachment hit) があれば
+  - 画像関連 (IMAGE_NOUNS hit / attachment hit) または「生成」系ワードがあれば
     { "hookSpecificOutput": { "hookEventName": "UserPromptSubmit",
                               "additionalContext": "..." } }
     を stdout に出力する (既存 autonomous-trigger.py / skill-suggester.py と同形式)
@@ -51,6 +51,14 @@ JUDGE_VERBS = [
     "合ってる", "あってる", "おかしい", "どっち",
 ]
 
+# ユーザー要望 (2026-06-23):
+# 「生成」という言葉が出た場合、SVG / Canvas 等のコード生成で代用せず
+# GPT Image 2 の画像生成ルートを思い出させる。
+GENERATION_TERMS = [
+    "生成", "生成して", "作って", "つくって",
+    "create", "generate", "generated", "generation",
+]
+
 
 def _contains_any(text: str, words: list[str]) -> bool:
     if not text:
@@ -68,6 +76,10 @@ def _has_image_noun(text: str) -> bool:
 
 def _has_judge_verb(text: str) -> bool:
     return _contains_any(text, JUDGE_VERBS)
+
+
+def _has_generation_term(text: str) -> bool:
+    return _contains_any(text, GENERATION_TERMS)
 
 
 def _has_image_attachment(payload: dict) -> bool:
@@ -99,6 +111,13 @@ REMINDER = (
     "このプロジェクト (pono-asobiba-app) は画像中心です。"
     "画像に関する判断を行う前に、必ず Read tool で実物を visually view してください。"
     "テキスト/ファイル名/メタデータだけでの判断は禁止。\n"
+    "\n"
+    "## 画像生成は GPT Image 2 固定\n"
+    "\n"
+    "ユーザー指示に「生成」「生成して」「作って」等が含まれ、対象がボタン・表紙・背景・シール・"
+    "テンプレート・UI枠・アイコン等の見た目素材なら、SVG / Canvas / CSS / PIL / 手書きベクター等で"
+    "代用せず、必ず GPT Image 2 で画像アセットを生成すること。"
+    "例外はユーザーが明示的に SVG / Canvas / コード描画を指定した場合だけ。\n"
     "</system-reminder>"
 )
 
@@ -126,11 +145,12 @@ def main() -> int:
                     break
 
         noun_hit = _has_image_noun(prompt)
+        generation_hit = _has_generation_term(prompt)
         attach_hit = _has_image_attachment(payload)
 
-        # 画像名詞 hit OR attachment hit のみで trigger。
+        # 画像名詞 hit OR attachment hit OR 「生成」系 hit で trigger。
         # judge verbs 単独 (画像名詞無し) は誤検出回避のためスキップ。
-        if not (noun_hit or attach_hit):
+        if not (noun_hit or attach_hit or generation_hit):
             return 0
 
         output = {
