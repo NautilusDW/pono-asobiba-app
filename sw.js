@@ -1,6 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1495: LP play-cards maze/bento ビジュアルをモーダル内タイトル画面画像に差し替え
+// v1494: Daily gacha reveal smooths capsule drop, separates note bubbles, centers plate text, and raises open shells.
+// v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 latest Pono LP Brand Kit handoff).
 // v1492: Daily gacha super reveal uses the user-cleaned alpha luxury name plate and aligns play cache busting.
 // v1489: Daily gacha super reveal focuses the sticker, uses a generated luxury name plate, and keeps capsule shells fully visible.
 // v1488: Daily gacha prompts use larger start text, side speech bubbles, bigger reward sticker, and separated capsule shells.
@@ -172,7 +175,7 @@
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
 // v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 最新版: COMING SOON ピル + Mochiy + 3 行構成) per Pono LP Brand Kit handoff.
-const CACHE_VERSION = 1493; // v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 最新版: COMING SOON ピル + Mochiy + 3 行構成) per Pono LP Brand Kit handoff
+const CACHE_VERSION = 1495; // v1495: LP play-cards maze/bento ビジュアルをモーダル内タイトル画面画像に差し替え
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
