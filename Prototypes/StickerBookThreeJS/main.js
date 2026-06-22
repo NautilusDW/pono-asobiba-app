@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-796";
+const ASSET_VERSION = "20260622-797";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -8719,6 +8719,24 @@ function createStickerSpineTexture(bookName) {
   drawCanvasRoundedRect(ctx, bodyX + 2, bodyY + 2, bodyW - 4, bodyH - 4, radius - 2);
   ctx.clip();
 
+  for (const x of [74, 102, 154, 182]) {
+    const rib = ctx.createLinearGradient(x - 12, 0, x + 12, 0);
+    rib.addColorStop(0, "rgba(255, 255, 255, 0)");
+    rib.addColorStop(0.5, "rgba(255, 255, 255, 0.13)");
+    rib.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = rib;
+    ctx.fillRect(x - 12, bodyY + 32, 24, bodyH - 64);
+  }
+
+  for (const x of [64, 116, 140, 192]) {
+    const seam = ctx.createLinearGradient(x - 9, 0, x + 9, 0);
+    seam.addColorStop(0, "rgba(0, 0, 0, 0)");
+    seam.addColorStop(0.5, rgbaFromHexNumber(hardware.spineDark, 0.11));
+    seam.addColorStop(1, "rgba(0, 0, 0, 0)");
+    ctx.fillStyle = seam;
+    ctx.fillRect(x - 9, bodyY + 34, 18, bodyH - 68);
+  }
+
   const topGlow = ctx.createLinearGradient(0, bodyY, 0, bodyY + 96);
   topGlow.addColorStop(0, "rgba(255, 255, 255, 0.24)");
   topGlow.addColorStop(1, "rgba(255, 255, 255, 0)");
@@ -9162,7 +9180,7 @@ function renderCoverOpenTransition(rawProgress) {
   spine.visible = showBinding;
   setStickerBookDepthVisible(showBinding);
   setBindingRingVisible(showBinding);
-  innerRight.visible = showBinding && activeAlbumMode !== "collection";
+  innerRight.visible = false;
   collectionFold.visible = showBinding && activeAlbumMode === "collection";
   coverTurn.visible = raw < 0.985;
   coverTurn.position.set(
@@ -9222,8 +9240,8 @@ function setOpenSpreadVisible(visible) {
   leftPageOuter.visible = false;
   leftPageInner.visible = visible;
   rightPage.visible = visible;
-  innerLeft.visible = visible;
-  innerRight.visible = visible;
+  innerLeft.visible = false;
+  innerRight.visible = false;
   collectionFold.visible = false;
   pageTurn.visible = visible;
   if (!visible) {
