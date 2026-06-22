@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-804";
+const ASSET_VERSION = "20260622-805";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -753,6 +753,10 @@ const zukanTuneButton = document.getElementById("zukanTuneButton");
 const albumModeToggle = document.getElementById("albumModeToggle");
 const collectionStickerTray = document.getElementById("collectionStickerTray");
 const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
+const inlineStickerControls = document.getElementById("inlineStickerControls");
+const inlineStickerScale = document.getElementById("inlineStickerScale");
+const inlineStickerRotation = document.getElementById("inlineStickerRotation");
+const inlineStickerDelete = document.getElementById("inlineStickerDelete");
 
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
@@ -1087,6 +1091,10 @@ if (!isLocalPreview || !params.has("spread")) {
 }
 let selectedPlacementId = null;
 let stickerDragState = null;
+let inlineStickerDragState = null;
+let suppressInlineStickerClick = false;
+let stickerTrayTouchStartY = 0;
+let stickerTrayRevealHideTimer = 0;
 let editorStateSaveTimer = 0;
 let editorStateDirty = false;
 let editorGameFilterValue = "all";
@@ -1098,6 +1106,7 @@ let drawBrushSize = DRAWING_DEFAULT_SIZE;
 let selectedDrawingStamp = DRAWING_STAMPS[0].id;
 let drawingPointerState = null;
 const stickerImageCache = new Map();
+const stickerAspectCache = new Map();
 const drawingStampImageCache = new Map();
 seedAllTuningPairsFromRightOnlyOnce();
 
@@ -1455,6 +1464,8 @@ setupTuningPanel();
 setupBookPageControls();
 setupBookSwipeNavigation();
 setupCollectionStickerTray();
+setupInlineStickerControls();
+setupStickerTrayReveal();
 if (editorEnabled) {
   setupScenePagePicking();
   setupStickerEditor();
@@ -1516,23 +1527,30 @@ function setupScenePagePicking() {
     return;
   }
   canvas.addEventListener("pointerdown", handleZukanTuningPointerDown);
+  canvas.addEventListener("pointerdown", handleInlineStickerPointerDown);
   canvas.addEventListener("pointermove", (event) => {
+    if (handleInlineStickerPointerMove(event)) {
+      return;
+    }
     if (handleZukanTuningPointerMove(event)) {
       return;
     }
+    const stickerTarget = pickInlineStickerTarget(event);
     const tuningTarget = pickZukanTextTuningTarget(event);
     canvas.style.cursor = tuningTarget
       ? "grab"
-      : pickCollectionZukanTarget(event)
+      : stickerTarget
+        ? "grab"
+        : pickCollectionZukanTarget(event)
         ? "pointer"
-        : pickEditablePage(event)
-          ? "zoom-in"
-          : "";
+        : "";
   });
+  canvas.addEventListener("pointerup", endInlineStickerDrag);
+  canvas.addEventListener("pointercancel", cancelInlineStickerDrag);
   canvas.addEventListener("pointerup", endZukanTuningDrag);
   canvas.addEventListener("pointercancel", endZukanTuningDrag);
   canvas.addEventListener("pointerleave", () => {
-    if (!zukanTuningDragState) {
+    if (!zukanTuningDragState && !inlineStickerDragState) {
       canvas.style.cursor = "";
     }
   });
@@ -1547,17 +1565,29 @@ function setupScenePagePicking() {
       suppressZukanTuningClick = false;
       return;
     }
+    if (suppressInlineStickerClick) {
+      event.preventDefault();
+      suppressInlineStickerClick = false;
+      return;
+    }
     const zukanTarget = pickCollectionZukanTarget(event);
     if (zukanTarget) {
       event.preventDefault();
       navigateCollectionZukanTarget(zukanTarget);
       return;
     }
-    const pickedPage = pickEditablePage(event);
-    if (!pickedPage) {
+    const stickerTarget = pickInlineStickerTarget(event);
+    if (stickerTarget) {
+      event.preventDefault();
+      selectInlineSticker(stickerTarget);
       return;
     }
-    openStickerEditor(pageNumberForPickedPage(pickedPage));
+    if (pickEditablePage(event)) {
+      selectedPlacementId = null;
+      updateInlineStickerControls();
+      refreshPageTemplateTextures();
+      updatePage(flipProgress);
+    }
   });
 }
 
@@ -1641,6 +1671,229 @@ function endZukanTuningDrag(event) {
   window.setTimeout(() => {
     suppressZukanTuningClick = false;
   }, 0);
+}
+
+function setupInlineStickerControls() {
+  inlineStickerScale?.addEventListener("input", () => {
+    updateSelectedPlacement({ scale: Number(inlineStickerScale.value) });
+  });
+  inlineStickerRotation?.addEventListener("input", () => {
+    updateSelectedPlacement({ rotation: Number(inlineStickerRotation.value) });
+  });
+  for (const input of [inlineStickerScale, inlineStickerRotation]) {
+    input?.addEventListener("change", () => flushEditorStateSave());
+  }
+  inlineStickerDelete?.addEventListener("click", () => {
+    deleteSelectedPlacement();
+    refreshInlineStickerPage();
+  });
+  updateInlineStickerControls();
+}
+
+function canUseInlineStickerEditing() {
+  return activeAlbumMode !== "collection"
+    && editorEnabled
+    && activeSurface === "inside"
+    && !coverOpenAnimation
+    && !spreadJumpAnimation
+    && (!stickerEditor || stickerEditor.hidden);
+}
+
+function pickInlineStickerTarget(event) {
+  if (!canUseInlineStickerEditing()) {
+    return null;
+  }
+  const hit = pickScenePageHit(event);
+  if (!hit?.uv || !hit.object) {
+    return null;
+  }
+  const page = pageNumberForPickedPage(hit.object);
+  const point = texturePointFromPageHit(hit);
+  const placements = [...getPagePlacements(page)]
+    .filter((placement) => placement.assetUrl)
+    .sort((a, b) => (Number(b.z) || 0) - (Number(a.z) || 0));
+  for (const placement of placements) {
+    if (pointHitsPlacement(point, placement)) {
+      return { placement, page, object: hit.object, point };
+    }
+  }
+  return null;
+}
+
+function pointHitsPlacement(point, placement) {
+  const bounds = placementTextureBounds(placement);
+  const radians = THREE.MathUtils.degToRad(-(placement.rotation || 0));
+  const dx = point.x - bounds.x;
+  const dy = point.y - bounds.y;
+  const localX = dx * Math.cos(radians) - dy * Math.sin(radians);
+  const localY = dx * Math.sin(radians) + dy * Math.cos(radians);
+  return Math.abs(localX) <= bounds.width / 2 && Math.abs(localY) <= bounds.height / 2;
+}
+
+function placementTextureBounds(placement) {
+  const scale = sanitizedPlacementScale(placement?.scale);
+  const aspect = stickerAspectForPlacement(placement);
+  const width = PAGE_TEXTURE_W * 0.18 * scale * 1.24;
+  const height = width / Math.max(0.2, aspect);
+  return {
+    x: (placement.x / 100) * PAGE_TEXTURE_W,
+    y: (placement.y / 100) * PAGE_TEXTURE_H,
+    width,
+    height: height * 1.24,
+  };
+}
+
+function stickerAspectForPlacement(placement) {
+  const cached = placement?.assetUrl ? stickerAspectCache.get(placement.assetUrl) : null;
+  if (Number.isFinite(cached) && cached > 0) {
+    return cached;
+  }
+  if (placement?.assetUrl) {
+    loadStickerImage(placement.assetUrl)
+      .then((image) => {
+        const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+        stickerAspectCache.set(placement.assetUrl, Math.max(0.2, aspect));
+      })
+      .catch(() => {});
+  }
+  return 1;
+}
+
+function handleInlineStickerPointerDown(event) {
+  const target = pickInlineStickerTarget(event);
+  if (!target) {
+    return false;
+  }
+  event.preventDefault();
+  selectInlineSticker(target);
+  inlineStickerDragState = {
+    pointerId: event.pointerId,
+    page: target.page,
+    object: target.object,
+    id: target.placement.id,
+    offsetX: target.point.x - (target.placement.x / 100) * PAGE_TEXTURE_W,
+    offsetY: target.point.y - (target.placement.y / 100) * PAGE_TEXTURE_H,
+    moved: false,
+  };
+  try {
+    canvas.setPointerCapture?.(event.pointerId);
+  } catch {}
+  canvas.style.cursor = "grabbing";
+  document.body.classList.add("is-inline-sticker-editing");
+  return true;
+}
+
+function handleInlineStickerPointerMove(event) {
+  if (!inlineStickerDragState) {
+    return false;
+  }
+  if (event.pointerId !== inlineStickerDragState.pointerId) {
+    return true;
+  }
+  event.preventDefault();
+  const placement = getPlacementByIdOnPage(inlineStickerDragState.id, inlineStickerDragState.page);
+  if (!placement) {
+    return true;
+  }
+  const point = pagePointFromPointer(event, inlineStickerDragState.object);
+  if (!point) {
+    return true;
+  }
+  placement.x = THREE.MathUtils.clamp(((point.x - inlineStickerDragState.offsetX) / PAGE_TEXTURE_W) * 100, 4, 96);
+  placement.y = THREE.MathUtils.clamp(((point.y - inlineStickerDragState.offsetY) / PAGE_TEXTURE_H) * 100, 4, 96);
+  inlineStickerDragState.moved = true;
+  markEditorStateDirty();
+  refreshInlineStickerPage();
+  return true;
+}
+
+function pagePointFromPointer(event, mesh) {
+  const hit = pickScenePageHit(event);
+  if (hit?.uv && hit.object === mesh) {
+    return texturePointFromPageHit(hit);
+  }
+  const rect = projectedMeshClientRect(mesh);
+  if (!rect?.width || !rect.height) {
+    return null;
+  }
+  return {
+    x: THREE.MathUtils.clamp(((event.clientX - rect.left) / rect.width) * PAGE_TEXTURE_W, 0, PAGE_TEXTURE_W),
+    y: THREE.MathUtils.clamp(((event.clientY - rect.top) / rect.height) * PAGE_TEXTURE_H, 0, PAGE_TEXTURE_H),
+  };
+}
+
+function endInlineStickerDrag(event) {
+  if (!inlineStickerDragState) {
+    return;
+  }
+  if (event?.pointerId != null && event.pointerId !== inlineStickerDragState.pointerId) {
+    return;
+  }
+  const moved = inlineStickerDragState.moved;
+  cleanupInlineStickerDrag();
+  if (moved) {
+    suppressInlineStickerClick = true;
+    window.setTimeout(() => {
+      suppressInlineStickerClick = false;
+    }, 120);
+  }
+  flushEditorStateSave();
+}
+
+function cancelInlineStickerDrag(event) {
+  if (!inlineStickerDragState) {
+    return;
+  }
+  if (event?.pointerId != null && event.pointerId !== inlineStickerDragState.pointerId) {
+    return;
+  }
+  cleanupInlineStickerDrag();
+}
+
+function cleanupInlineStickerDrag() {
+  try {
+    if (canvas.hasPointerCapture?.(inlineStickerDragState.pointerId)) {
+      canvas.releasePointerCapture(inlineStickerDragState.pointerId);
+    }
+  } catch {}
+  inlineStickerDragState = null;
+  document.body.classList.remove("is-inline-sticker-editing");
+  canvas.style.cursor = "";
+}
+
+function selectInlineSticker(target) {
+  activeEditorPage = target.page;
+  selectedPlacementId = target.placement.id;
+  updateInlineStickerControls();
+  refreshInlineStickerPage();
+}
+
+function refreshInlineStickerPage() {
+  if (stickerEditor && !stickerEditor.hidden) {
+    return;
+  }
+  refreshPageTemplateTextures();
+  updatePage(flipProgress);
+  updateInlineStickerControls(false);
+}
+
+function updateInlineStickerControls(syncInputs = true) {
+  const placement = getSelectedPlacement();
+  const visible = canUseInlineStickerEditing() && Boolean(placement);
+  if (inlineStickerControls) {
+    inlineStickerControls.hidden = !visible;
+  }
+  if (!visible) {
+    return;
+  }
+  if (syncInputs) {
+    if (inlineStickerScale) {
+      inlineStickerScale.value = String(placement.scale);
+    }
+    if (inlineStickerRotation) {
+      inlineStickerRotation.value = String(placement.rotation || 0);
+    }
+  }
 }
 
 function pickEditablePage(event) {
@@ -1814,6 +2067,9 @@ function canStartBookSwipe(event) {
   }
   if (zukanTuningDragState) {
     return "zukan-drag";
+  }
+  if (inlineStickerDragState || pickInlineStickerTarget(event)) {
+    return "inline-sticker";
   }
   if (stickerTrayDragState) {
     return "sticker-tray-drag";
@@ -2040,6 +2296,60 @@ function setupCollectionStickerTray() {
   renderCollectionStickerTray();
 }
 
+function setupStickerTrayReveal() {
+  window.addEventListener("pointermove", updateStickerTrayPeekFromPointer);
+  window.addEventListener("pointerleave", () => setStickerTrayPeek(false));
+  window.addEventListener("touchstart", (event) => {
+    const touch = event.touches?.[0];
+    stickerTrayTouchStartY = touch && touch.clientY > window.innerHeight - 76 ? touch.clientY : 0;
+  }, { passive: true });
+  window.addEventListener("touchmove", (event) => {
+    const touch = event.touches?.[0];
+    if (!touch || !stickerTrayTouchStartY) {
+      return;
+    }
+    if (stickerTrayTouchStartY - touch.clientY > 18) {
+      setStickerTrayPeek(true);
+      scheduleStickerTrayPeekHide();
+      stickerTrayTouchStartY = 0;
+    }
+  }, { passive: true });
+}
+
+function updateStickerTrayPeekFromPointer(event) {
+  if (event.pointerType && event.pointerType !== "mouse") {
+    return;
+  }
+  if (!canUseStickerTrayPeek()) {
+    setStickerTrayPeek(false);
+    return;
+  }
+  const trayRect = collectionStickerTray?.getBoundingClientRect();
+  const inTray = trayRect && event.clientY >= trayRect.top - 8 && event.clientY <= trayRect.bottom + 8;
+  const nearBottom = event.clientY >= window.innerHeight - 92;
+  setStickerTrayPeek(Boolean(nearBottom || inTray || stickerTrayDragState));
+}
+
+function canUseStickerTrayPeek() {
+  return activeAlbumMode !== "collection"
+    && activeSurface === "inside"
+    && Boolean(collectionStickerTray)
+    && !collectionStickerTray.hidden;
+}
+
+function setStickerTrayPeek(visible) {
+  document.body.classList.toggle("is-sticker-tray-peek", Boolean(visible && canUseStickerTrayPeek()));
+}
+
+function scheduleStickerTrayPeekHide() {
+  window.clearTimeout(stickerTrayRevealHideTimer);
+  stickerTrayRevealHideTimer = window.setTimeout(() => {
+    if (!stickerTrayDragState) {
+      setStickerTrayPeek(false);
+    }
+  }, 3000);
+}
+
 function renderCollectionStickerTray() {
   if (!collectionStickerTray || !collectionStickerTrayItems) {
     return;
@@ -2161,6 +2471,10 @@ function handleStickerTrayPointerDown(event) {
   if (!button || !collectionStickerTray?.contains(button)) {
     return;
   }
+  const icon = event.target.closest(".sticker-tray-icon");
+  if (!icon || !button.contains(icon)) {
+    return;
+  }
   const sticker = stickerOptions.find((item) => item.id === button.dataset.stickerTrayId);
   if (!sticker) {
     return;
@@ -2174,8 +2488,8 @@ function handleStickerTrayPointerDown(event) {
     dragging: false,
     ghost: null,
   };
+  event.preventDefault();
   if (event.pointerType === "mouse") {
-    event.preventDefault();
     try {
       button.setPointerCapture?.(event.pointerId);
     } catch {}
@@ -2226,9 +2540,7 @@ function startStickerTrayDrag(state, event) {
   image.src = state.sticker.assetUrl;
   image.alt = "";
   image.draggable = false;
-  const label = document.createElement("span");
-  label.textContent = state.sticker.label;
-  ghost.append(image, label);
+  ghost.append(image);
   document.body.append(ghost);
   state.ghost = ghost;
   positionStickerTrayGhost(state, event.clientX, event.clientY);
@@ -2408,9 +2720,12 @@ function addStickerFromTrayToPage(stickerId, page, point = {}) {
     z: nextPlacementZ(placements),
   };
   placements.push(placement);
+  activeEditorPage = pageNumber;
+  selectedPlacementId = placement.id;
   saveEditorState();
   refreshPageTemplateTextures();
   updatePage(flipProgress);
+  updateInlineStickerControls();
 }
 
 function buildCollectionTocCategories() {
@@ -2671,7 +2986,11 @@ function updateCollectionStickerTrayVisibility() {
     && itemCount > 0;
   collectionStickerTray.hidden = !visible;
   document.body.classList.toggle("is-collection-tray-visible", visible);
+  if (!visible || activeAlbumMode === "collection") {
+    setStickerTrayPeek(false);
+  }
   updateCollectionTraySelection();
+  updateInlineStickerControls();
 }
 
 function updateCollectionTraySelection() {
@@ -3244,6 +3563,7 @@ function closeStickerEditor() {
   drawingPointerState = null;
   canvas.style.cursor = "";
   updateCollectionStickerTrayVisibility();
+  updateInlineStickerControls();
 }
 
 function renderEditorShell() {
@@ -3890,6 +4210,9 @@ function updateSelectedPlacement(patch) {
   updatePlacementElementStyle(placement);
   markEditorStateDirty();
   updateEditorControls(false);
+  if (!stickerEditor || stickerEditor.hidden) {
+    refreshInlineStickerPage();
+  }
 }
 
 function moveSelectedPlacementLayer(direction) {
@@ -3925,6 +4248,7 @@ function deleteSelectedPlacement() {
   selectedPlacementId = null;
   saveEditorState();
   updateEditorControls();
+  updateInlineStickerControls();
 }
 
 function handleEditorKeydown(event) {
@@ -4071,6 +4395,7 @@ function setBookSurface(surface, page = activeBookPage, options = {}) {
     spreadPosition = spreadPositionForBookPage(nextPage);
     selectedPlacementId = null;
     stickerDragState = null;
+    updateInlineStickerControls();
   }
   applyVariantState();
 }
@@ -4089,6 +4414,7 @@ function startCoverOpen(page = activeBookPage) {
   spreadPosition = spreadPositionForBookPage(nextPage);
   selectedPlacementId = null;
   stickerDragState = null;
+  updateInlineStickerControls();
   closeBookPageJump();
   refreshPageTemplateTextures();
   updateControlState();
@@ -4117,6 +4443,7 @@ function startCoverClose() {
   slider.disabled = true;
   selectedPlacementId = null;
   stickerDragState = null;
+  updateInlineStickerControls();
   closeBookPageJump();
   refreshPageTemplateTextures();
   updateControlState();
@@ -4153,6 +4480,7 @@ function applyBookPageSelection(nextPage, options = {}) {
     activeEditorPage = nextPage;
     selectedPlacementId = null;
     renderEditorShell();
+    updateInlineStickerControls();
   }
   refreshPageTemplateTextures();
   updateBookPageControls();
@@ -4408,6 +4736,10 @@ function getPageDrawingStrokes(page) {
 
 function getPlacementById(id) {
   return getActivePagePlacements().find((placement) => placement.id === id) || null;
+}
+
+function getPlacementByIdOnPage(id, page) {
+  return getPagePlacements(page).find((placement) => placement.id === id) || null;
 }
 
 function getSelectedPlacement() {
@@ -6211,6 +6543,11 @@ function drawStickerImage2FreePageTemplate(ctx, bookName = activeBook) {
     return false;
   }
   drawImageCover(ctx, image, 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = "rgba(255, 252, 232, 0.16)";
+  ctx.fillRect(0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  ctx.restore();
   return true;
 }
 
@@ -7374,6 +7711,7 @@ function drawStickerCanvasPage(ctx, texture, palette, pageDef, placements, pageN
     drawAsyncPlacedSticker(ctx, texture, placement, pageNumber);
   }
   drawPageDrawingLayer(ctx, pageNumber);
+  drawInlineStickerSelectionOverlay(ctx, pageNumber);
   texture.needsUpdate = true;
 }
 
@@ -7433,9 +7771,37 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
       ctx.drawImage(paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
       drawPageDrawingLayer(ctx, pageNumber);
+      drawInlineStickerSelectionOverlay(ctx, pageNumber);
       texture.needsUpdate = true;
     })
     .catch(() => {});
+}
+
+function drawInlineStickerSelectionOverlay(ctx, pageNumber) {
+  if (
+    activeAlbumMode === "collection"
+    || pageNumber !== activeEditorPage
+    || !selectedPlacementId
+    || (stickerEditor && !stickerEditor.hidden)
+  ) {
+    return;
+  }
+  const placement = getPlacementByIdOnPage(selectedPlacementId, pageNumber);
+  if (!placement) {
+    return;
+  }
+  const bounds = placementTextureBounds(placement);
+  ctx.save();
+  ctx.translate(bounds.x, bounds.y);
+  ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
+  ctx.setLineDash([16, 10]);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(255,255,255,0.92)";
+  ctx.strokeRect(-bounds.width / 2, -bounds.height / 2, bounds.width, bounds.height);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(49,145,153,0.74)";
+  ctx.strokeRect(-bounds.width / 2, -bounds.height / 2, bounds.width, bounds.height);
+  ctx.restore();
 }
 
 function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
@@ -7505,7 +7871,11 @@ function loadStickerImage(src) {
   if (!stickerImageCache.has(src)) {
     stickerImageCache.set(src, new Promise((resolve, reject) => {
       const image = new Image();
-      image.onload = () => resolve(image);
+      image.onload = () => {
+        const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+        stickerAspectCache.set(src, Math.max(0.2, aspect));
+        resolve(image);
+      };
       image.onerror = reject;
       image.decoding = "async";
       image.src = src;

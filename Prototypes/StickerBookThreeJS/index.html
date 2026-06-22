@@ -73,6 +73,17 @@
     <section id="collectionStickerTray" class="collection-sticker-tray" hidden aria-label="ずかんもくじ">
       <div id="collectionStickerTrayItems" class="collection-sticker-tray-items"></div>
     </section>
+    <section id="inlineStickerControls" class="inline-sticker-controls" hidden aria-label="シールちょうせい">
+      <label>
+        <span>おおきさ</span>
+        <input id="inlineStickerScale" type="range" min="0.35" max="2.4" step="0.01" value="1">
+      </label>
+      <label>
+        <span>かいてん</span>
+        <input id="inlineStickerRotation" type="range" min="-180" max="180" step="1" value="0">
+      </label>
+      <button id="inlineStickerDelete" type="button">けす</button>
+    </section>
     <section id="stickerEditor" class="sticker-editor" hidden aria-label="Sticker page editor">
       <div class="sticker-editor-shell">
         <aside class="sticker-menu" aria-label="Sticker picker">
@@ -146,6 +157,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260622-804"></script>
+  <script type="module" src="./main.js?v=20260622-805"></script>
 </body>
 </html>
