@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260622-793";
+const ASSET_VERSION = "20260622-794";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -12,7 +12,7 @@ const COLLECTION_GUTTER = 0;
 const SPINE_W = PAGE_H * (256 / 1536);
 const CAMERA_FOV = 34;
 const PAGE_RADIUS = PAGE_H * (92 / 1536);
-const PAGE_HOLE_X = PAGE_W * (16 / 1472);
+const PAGE_HOLE_X = PAGE_W * (38 / 1472);
 const PAGE_HOLE_RX = PAGE_W * (16 / 1472);
 const PAGE_HOLE_RY = PAGE_H * (18 / 1536);
 const PAGE_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
@@ -28,9 +28,6 @@ const BINDING_RING_HOLE_Z = -0.075;
 const BINDING_RING_ARCH_Z = 0.44;
 const BINDING_RING_ARCH_Y = PAGE_H * 0.006;
 const BINDING_RING_BODY_COLOR = 0xd9d2bd;
-const BINDING_RING_TIP_COLOR = 0x6f9692;
-const BINDING_RING_TIP_BLEND = 0.42;
-const BINDING_RING_ENTRY_SHADOW_COLOR = 0x6f918f;
 const THICKNESS_TEXTURE_H = PAGE_H * (256 / 1536);
 const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
 const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
@@ -3261,7 +3258,6 @@ function renderEditorTemplateCanvas() {
   if (!drawStickerImage2FreePageTemplate(ctx, activeBook)) {
     drawPageTemplateBase(ctx, palette, side);
   }
-  drawRingHoleGuides(ctx, side);
   ctx.restore();
 }
 
@@ -5051,7 +5047,6 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
     if (!drawStickerImage2FreePageTemplate(ctx, bookName)) {
       drawPageTemplateBase(ctx, palette, side, activeAlbumMode);
     }
-    drawRingHoleGuides(ctx, side);
   }
 
   const texture = new THREE.CanvasTexture(templateCanvas);
@@ -6995,24 +6990,6 @@ function loadStickerImage(src) {
   return stickerImageCache.get(src);
 }
 
-function drawRingHoleGuides(ctx, side) {
-  const x = side === "right" ? 38 : PAGE_TEXTURE_W - 38;
-  ctx.save();
-  for (const pixelY of PAGE_RING_PIXELS) {
-    const y = pixelY;
-    ctx.fillStyle = "rgba(22, 55, 60, 0.5)";
-    ctx.beginPath();
-    ctx.ellipse(x, y, 18, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.46)";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 24, 24, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
 function drawCanvasRoundedRect(ctx, x, y, width, height, radius) {
   const r = Math.min(radius, width / 2, height / 2);
   ctx.beginPath();
@@ -7326,7 +7303,7 @@ function createStickerPageBlockMaterials() {
 
 function createStickerPageBlockGeometry(side) {
   const bindingSide = side === "left" ? "right" : "left";
-  const shape = createStickerPageShape(bindingSide, true);
+  const shape = createStickerPageShape(bindingSide, false);
   const geometry = createExtrudedShapeDepthGeometry(shape, STICKER_PAGE_BLOCK_DEPTH);
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
@@ -8381,7 +8358,7 @@ function createStickerPageShape(bindingSide, includeHoles = true) {
 }
 
 function createPageSurfaceGeometry(bindingSide) {
-  const shape = createStickerPageShape(bindingSide, true);
+  const shape = createStickerPageShape(bindingSide, false);
   const geometry = new THREE.ShapeGeometry(shape, 28);
   const positions = geometry.attributes.position;
   const uvs = [];
@@ -8468,8 +8445,7 @@ function addRoundedRectPath(shape, x, y, width, height, radius) {
 function createHalfRingMeshes() {
   const group = new THREE.Group();
   const ringMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    vertexColors: true,
+    color: BINDING_RING_BODY_COLOR,
     emissive: 0x1f1c16,
     emissiveIntensity: 0.008,
     roughness: 0.66,
@@ -8486,15 +8462,6 @@ function createHalfRingMeshes() {
     depthTest: true,
     depthWrite: false,
   });
-  const entryShadowMaterial = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
-    map: createBindingRingEntryShadowTexture(),
-    transparent: true,
-    opacity: 0.96,
-    depthTest: false,
-    depthWrite: false,
-  });
-  const entryShadowGeometry = createBindingRingEntryShadowGeometry();
 
   for (const pixelY of PAGE_RING_PIXELS) {
     const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
@@ -8505,42 +8472,11 @@ function createHalfRingMeshes() {
     const highlight = new THREE.Mesh(createHalfRingHighlightGeometry(y), highlightMaterial);
     highlight.renderOrder = 73;
     group.add(highlight);
-
-    for (const side of [-1, 1]) {
-      const entryShadow = new THREE.Mesh(entryShadowGeometry, entryShadowMaterial);
-      entryShadow.position.set(side * BINDING_RING_HOLE_X, y - PAGE_H * 0.004, 0.18);
-      entryShadow.renderOrder = 74;
-      group.add(entryShadow);
-    }
   }
 
   group.userData.ringMaterial = ringMaterial;
   group.userData.highlightMaterial = highlightMaterial;
-  group.userData.entryShadowMaterial = entryShadowMaterial;
   return group;
-}
-
-function createBindingRingEntryShadowGeometry() {
-  return new THREE.PlaneGeometry(PAGE_HOLE_RX * 2.25, PAGE_HOLE_RY * 2.22);
-}
-
-function createBindingRingEntryShadowTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext("2d");
-  const gradient = ctx.createRadialGradient(32, 32, 5, 32, 32, 31);
-  gradient.addColorStop(0, "rgba(111, 145, 143, 0.98)");
-  gradient.addColorStop(0.58, "rgba(111, 145, 143, 0.76)");
-  gradient.addColorStop(1, "rgba(111, 145, 143, 0)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.needsUpdate = true;
-  return texture;
 }
 
 function createHalfRingTubeGeometry(baseY) {
@@ -8561,7 +8497,6 @@ function createHalfRingTubeGeometry(baseY) {
   const tubularSegments = 56;
   const radialSegments = 14;
   const geometry = createTaperedTubeGeometry(points, tubularSegments, BINDING_RING_TUBE_RADIUS, radialSegments, 0.2);
-  applyRingTipVertexColors(geometry, tubularSegments, radialSegments);
   return geometry;
 }
 
@@ -8606,24 +8541,6 @@ function createTaperedTubeGeometry(points, tubularSegments, radius, radialSegmen
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
   return geometry;
-}
-
-function applyRingTipVertexColors(geometry, tubularSegments, radialSegments) {
-  const colors = [];
-  const rowSize = radialSegments + 1;
-  const body = new THREE.Color(BINDING_RING_BODY_COLOR);
-  const tip = new THREE.Color(BINDING_RING_TIP_COLOR);
-  const color = new THREE.Color();
-  for (let i = 0; i <= tubularSegments; i += 1) {
-    const t = i / tubularSegments;
-    const edgeRatio = Math.min(t, 1 - t);
-    const bodyMix = smootherstep(THREE.MathUtils.clamp(edgeRatio / BINDING_RING_TIP_BLEND, 0, 1));
-    color.copy(tip).lerp(body, bodyMix);
-    for (let j = 0; j < rowSize; j += 1) {
-      colors.push(color.r, color.g, color.b);
-    }
-  }
-  geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 }
 
 function applyVariantState() {
@@ -8725,7 +8642,7 @@ function applyRingMaterialTheme() {
   const highlightMaterial = ringGroup?.userData?.highlightMaterial;
   if (activeAlbumMode !== "collection") {
     if (ringMaterial) {
-      ringMaterial.color.setHex(0xffffff);
+      ringMaterial.color.setHex(BINDING_RING_BODY_COLOR);
       ringMaterial.emissive.setHex(0x1f1c16);
       ringMaterial.emissiveIntensity = 0.008;
       ringMaterial.roughness = 0.66;
