@@ -175,7 +175,8 @@
 // v1230: Oto free start asks for button/stage play style, renames free view tabs, and enlarges centered 3D Pono.
 // v1481: Daily gacha gold capsule deepened and super-rare reveal made more distinct.
 // v1493: LP hero labels (HANDOFF 02) + Coming Soon banner (HANDOFF 01 最新版: COMING SOON ピル + Mochiy + 3 行構成) per Pono LP Brand Kit handoff.
-const CACHE_VERSION = 1495; // v1495: LP play-cards maze/bento ビジュアルをモーダル内タイトル画面画像に差し替え
+// v1497: LP に gacha セクション追加 (HANDOFF 完全準拠、 画像は後渡し)
+const CACHE_VERSION = 1497; // v1497: LP に gacha セクション追加 (HANDOFF 完全準拠、 画像は後渡し)
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

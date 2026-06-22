@@ -550,6 +550,40 @@
     .sticker-extra-title{font-weight:900;font-size:clamp(18px,4.5vw,22px);margin:0 0 6px;color:#5D4E37;}
     .sticker-extra-play{font-weight:700;font-size:clamp(13.5px,3.4vw,15px);line-height:1.7;color:#5D4E37;margin:0;}
 
+    /* --- ガチャ並列 追加分 --- */
+    .sticker-extra-grid{display:grid;grid-template-columns:1fr;gap:14px;}
+    @media (min-width:560px){.sticker-extra-grid{grid-template-columns:1fr 1fr;align-items:stretch;}}
+    .sticker-extra-card{display:flex;flex-direction:column;}  /* 既存 .sticker-extra-card に flex を足す（2枚の高さ揃え用） */
+
+    .se-badge{position:absolute;top:10px;left:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;
+      white-space:nowrap;background:#C96A2E;color:#fff;font-weight:900;font-size:11px;letter-spacing:.04em;
+      padding:5px 11px;border-radius:999px;box-shadow:0 3px 8px rgba(201,106,46,.32);}
+    .se-badge .dot{width:5px;height:5px;border-radius:50%;background:#FDE68A;}
+
+    .se-note{margin:14px auto 0;max-width:560px;font-weight:700;font-size:clamp(11.5px,2.8vw,12.5px);
+      color:#7A6A4F;line-height:1.65;text-align:center;}
+    .se-note b{color:#C96A2E;font-weight:900;}
+
+    /* ガチャ visual：CSS で描いた素朴なカプセルトイ機 */
+    .se-v-gacha{display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#FCEBD6,#F6D2AE);}
+    .gacha{position:relative;width:46%;max-width:130px;aspect-ratio:3/4;}
+    .gacha-dome{position:absolute;top:0;left:0;right:0;height:46%;border-radius:50% 50% 14% 14%/60% 60% 14% 14%;
+      background:radial-gradient(circle at 38% 30%,rgba(255,255,255,.9),rgba(255,255,255,.3) 55%,rgba(255,255,255,.1));
+      border:3px solid #fff;box-shadow:inset 0 -8px 16px rgba(201,106,46,.12);overflow:hidden;}
+    .gacha-caps{position:absolute;border-radius:50%;}
+    .gacha-c1{width:30%;aspect-ratio:1;left:12%;top:40%;background:#F2915A;}
+    .gacha-c2{width:26%;aspect-ratio:1;left:46%;top:28%;background:#7FB6AE;}
+    .gacha-c3{width:24%;aspect-ratio:1;left:60%;top:52%;background:#FDD05E;}
+    .gacha-c4{width:22%;aspect-ratio:1;left:28%;top:62%;background:#E8896B;}
+    .gacha-body{position:absolute;top:44%;left:6%;right:6%;bottom:0;border-radius:14px 14px 18px 18px;
+      background:linear-gradient(160deg,#F2915A,#C96A2E);box-shadow:inset 0 4px 10px rgba(255,255,255,.25),0 6px 14px rgba(201,106,46,.3);}
+    .gacha-knob{position:absolute;top:58%;left:50%;transform:translate(-50%,-50%);width:26%;aspect-ratio:1;border-radius:50%;
+      background:radial-gradient(circle at 38% 34%,#fff,#FBE6CF 60%,#E9C49E);border:3px solid #fff;box-shadow:0 3px 7px rgba(93,78,55,.3);}
+    .gacha-knob::after{content:"";position:absolute;inset:36%;border-radius:3px;background:#C96A2E;transform:rotate(45deg);}
+    .gacha-out{position:absolute;bottom:7%;left:50%;transform:translateX(-50%);width:36%;aspect-ratio:1;border-radius:50%;
+      background:#FDD05E;border:3px solid #fff;box-shadow:0 3px 7px rgba(93,78,55,.25);}
+    @media (prefers-reduced-motion:reduce){.sticker-extra *{animation:none!important;}}
+
     /* ===== セクション区切り (gameカード/シール の あと、 絵本セクションの前) ===== */
     .lp-section-divider{
       display:flex; align-items:center; gap:12px;
@@ -1088,17 +1122,48 @@
       </div>
     </section>
 
-    <!-- ===== あそびの ほかにも：ゲーム外の楽しみ方 (シールアルバム) ===== -->
+    <!-- ===== あそびの ほかにも：ゲーム外の楽しみ方 (ガチャ＋シールアルバム) ===== -->
     <section class="sticker-extra" aria-labelledby="sticker-extra-h">
       <p class="sticker-extra-h" id="sticker-extra-h">あそびの <span class="sticker-extra-em">ほかにも</span></p>
-      <p class="sticker-extra-sub">ゲームを あそぶと、シールが もらえて、アルバムに ぺたぺた はれるよ</p>
-      <article class="sticker-extra-card">
-        <div class="sticker-extra-visual" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面"></div>
-        <div class="sticker-extra-body">
-          <h3 class="sticker-extra-title">シールアルバム</h3>
-          <p class="sticker-extra-play">あそんで あつめた シールを、じぶんの アルバムに ぺたぺた はろう！ ながめるだけでも たのしいよ</p>
-        </div>
-      </article>
+      <p class="sticker-extra-sub">ゲームや ガチャで シールを あつめて、アルバムに ぺたぺた はれるよ</p>
+
+      <div class="sticker-extra-grid">
+
+        <!-- ① おたのしみガチャ（入口） -->
+        <article class="sticker-extra-card">
+          <span class="se-badge" aria-hidden="true"><span class="dot"></span>1にち1かい・むりょう</span>
+          <div class="se-v-gacha sticker-extra-visual" role="img" aria-label="1日1回まわせる、ポノのおたのしみガチャ">
+            <div class="gacha" aria-hidden="true">
+              <div class="gacha-dome">
+                <span class="gacha-caps gacha-c1"></span>
+                <span class="gacha-caps gacha-c2"></span>
+                <span class="gacha-caps gacha-c3"></span>
+                <span class="gacha-caps gacha-c4"></span>
+              </div>
+              <div class="gacha-body">
+                <span class="gacha-knob"></span>
+                <span class="gacha-out"></span>
+              </div>
+            </div>
+          </div>
+          <div class="sticker-extra-body">
+            <h3 class="sticker-extra-title">おたのしみガチャ</h3>
+            <p class="sticker-extra-play">1にち1かい、ガチャを まわすと シールが もらえるよ！ あした なにが でるかな？</p>
+          </div>
+        </article>
+
+        <!-- ② シールアルバム（受け皿） -->
+        <article class="sticker-extra-card">
+          <div class="sticker-extra-visual" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面"></div>
+          <div class="sticker-extra-body">
+            <h3 class="sticker-extra-title">シールアルバム</h3>
+            <p class="sticker-extra-play">あつめた シールを、じぶんの アルバムに ぺたぺた はろう！ ながめるだけでも たのしいよ</p>
+          </div>
+        </article>
+
+      </div>
+
+      <p class="se-note">ガチャは <b>1日1回 むりょう</b>で まわせます。おかねを つかう ことは ありません。</p>
     </section>
 
     <!-- ===== セクション区切り (ゲーム/シール → 絵本へ) ===== -->
