@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260624-840";
+const ASSET_VERSION = "20260624-841";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -3742,15 +3742,12 @@ function startStickerTutorialMoveDemo() {
   const handFrom = demo.from;
   const handTo = demo.to;
   animateStickerTutorialPlacement(4300, (progress) => {
-    const wave = Math.sin(progress * Math.PI);
-    placement.x = THREE.MathUtils.clamp(originalX + wave * 9, 4, 96);
-    placement.y = THREE.MathUtils.clamp(originalY + wave * 5, 4, 96);
-    setStickerTutorialPointVar("--tutorial-hand-x", THREE.MathUtils.lerp(handFrom.x, handTo.x, wave));
-    setStickerTutorialPointVar("--tutorial-hand-y", THREE.MathUtils.lerp(handFrom.y, handTo.y, wave));
+    placement.x = THREE.MathUtils.clamp(originalX + progress * 9, 4, 96);
+    placement.y = THREE.MathUtils.clamp(originalY + progress * 5, 4, 96);
+    setStickerTutorialHandBetween(handFrom, handTo, progress);
     refreshInlineStickerPage();
   }, () => {
-    setStickerTutorialPointVar("--tutorial-hand-x", handFrom.x);
-    setStickerTutorialPointVar("--tutorial-hand-y", handFrom.y);
+    setStickerTutorialHandBetween(handFrom, handTo, 1);
     notifyStickerTutorialAction("moveSticker");
   });
 }
@@ -3764,19 +3761,36 @@ function startStickerTutorialScaleDemo() {
   const smallScale = Math.max(0.65, startScale * 0.78);
   const largeScale = Math.min(1.9, startScale * 1.48);
   const settleScale = Math.min(1.65, Math.max(startScale * 1.14, startScale + 0.12));
+  document.body.classList.add("is-sticker-tutorial-slider-js");
+  setStickerTutorialHandKey("point");
+  const step = currentStickerTutorialStep();
+  const rect = stickerTutorialTargetRect(step);
+  const demo = stickerTutorialDemoPoints(step, rect);
+  const handFrom = demo.from;
+  const handTo = demo.to;
   animateStickerTutorialPlacement(9300, (progress) => {
     let scale;
+    let handProgress;
     if (progress < 0.24) {
-      scale = THREE.MathUtils.lerp(startScale, largeScale, smootherstep(progress / 0.24));
+      const t = smootherstep(progress / 0.24);
+      scale = THREE.MathUtils.lerp(startScale, largeScale, t);
+      handProgress = t;
     } else if (progress < 0.42) {
       scale = largeScale;
+      handProgress = 1;
     } else if (progress < 0.68) {
-      scale = THREE.MathUtils.lerp(largeScale, smallScale, smootherstep((progress - 0.42) / 0.26));
+      const t = smootherstep((progress - 0.42) / 0.26);
+      scale = THREE.MathUtils.lerp(largeScale, smallScale, t);
+      handProgress = 1 - t;
     } else if (progress < 0.84) {
       scale = smallScale;
+      handProgress = 0;
     } else {
-      scale = THREE.MathUtils.lerp(smallScale, settleScale, smootherstep((progress - 0.84) / 0.16));
+      const t = smootherstep((progress - 0.84) / 0.16);
+      scale = THREE.MathUtils.lerp(smallScale, settleScale, t);
+      handProgress = THREE.MathUtils.lerp(0, 0.42, t);
     }
+    setStickerTutorialHandBetween(handFrom, handTo, handProgress);
     placement.scale = scale;
     if (inlineStickerScale) {
       inlineStickerScale.value = scale.toFixed(2);
@@ -3794,19 +3808,36 @@ function startStickerTutorialRotateDemo() {
   const rightRotation = THREE.MathUtils.clamp(baseRotation + 28, -180, 180);
   const leftRotation = THREE.MathUtils.clamp(baseRotation - 24, -180, 180);
   const settleRotation = THREE.MathUtils.clamp(baseRotation + 14, -180, 180);
+  document.body.classList.add("is-sticker-tutorial-slider-js");
+  setStickerTutorialHandKey("point");
+  const step = currentStickerTutorialStep();
+  const rect = stickerTutorialTargetRect(step);
+  const demo = stickerTutorialDemoPoints(step, rect);
+  const handFrom = demo.from;
+  const handTo = demo.to;
   animateStickerTutorialPlacement(5200, (progress) => {
     let rotation;
+    let handProgress;
     if (progress < 0.24) {
-      rotation = THREE.MathUtils.lerp(baseRotation, rightRotation, smootherstep(progress / 0.24));
+      const t = smootherstep(progress / 0.24);
+      rotation = THREE.MathUtils.lerp(baseRotation, rightRotation, t);
+      handProgress = t;
     } else if (progress < 0.4) {
       rotation = rightRotation;
+      handProgress = 1;
     } else if (progress < 0.68) {
-      rotation = THREE.MathUtils.lerp(rightRotation, leftRotation, smootherstep((progress - 0.4) / 0.28));
+      const t = smootherstep((progress - 0.4) / 0.28);
+      rotation = THREE.MathUtils.lerp(rightRotation, leftRotation, t);
+      handProgress = 1 - t;
     } else if (progress < 0.82) {
       rotation = leftRotation;
+      handProgress = 0;
     } else {
-      rotation = THREE.MathUtils.lerp(leftRotation, settleRotation, smootherstep((progress - 0.82) / 0.18));
+      const t = smootherstep((progress - 0.82) / 0.18);
+      rotation = THREE.MathUtils.lerp(leftRotation, settleRotation, t);
+      handProgress = THREE.MathUtils.lerp(0, 0.72, t);
     }
+    setStickerTutorialHandBetween(handFrom, handTo, handProgress);
     placement.rotation = THREE.MathUtils.clamp(rotation, -180, 180);
     if (inlineStickerRotation) {
       inlineStickerRotation.value = String(Math.round(placement.rotation));
@@ -3922,7 +3953,14 @@ function stopStickerTutorialStepDemo(options = {}) {
     "is-sticker-tutorial-mode-demo",
     "is-sticker-tutorial-combo-place",
     "is-sticker-tutorial-move-js",
+    "is-sticker-tutorial-slider-js",
   );
+}
+
+function setStickerTutorialHandBetween(from, to, progress) {
+  const t = THREE.MathUtils.clamp(Number(progress) || 0, 0, 1);
+  setStickerTutorialPointVar("--tutorial-hand-x", THREE.MathUtils.lerp(from.x, to.x, t));
+  setStickerTutorialPointVar("--tutorial-hand-y", THREE.MathUtils.lerp(from.y, to.y, t));
 }
 
 function notifyStickerTutorialAction(action) {
@@ -4103,13 +4141,15 @@ function stickerTutorialDemoPoints(step, rect) {
   }
   if (step.id === "mode" || step.id === "view") {
     const bottom = rectBottom(rect);
+    const restOffset = Math.min(26, Math.max(18, rect.height * 0.34));
+    const pressOffset = Math.min(8, Math.max(4, rect.height * 0.1));
     const from = {
       x: center.x,
-      y: Math.min(window.innerHeight - 44, bottom + Math.min(70, Math.max(54, rect.height * 1.08))),
+      y: Math.min(window.innerHeight - 44, bottom + restOffset),
     };
     const to = {
       x: center.x,
-      y: Math.max(48, bottom - Math.min(8, Math.max(3, rect.height * 0.12))),
+      y: Math.min(window.innerHeight - 48, bottom + pressOffset),
     };
     return { ...base, hand: from, from, to };
   }

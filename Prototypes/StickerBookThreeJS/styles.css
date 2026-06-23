@@ -1450,7 +1450,7 @@ body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-demo .sticker-tutori
 }
 
 body.is-sticker-tutorial-step-view .sticker-tutorial-hand {
-  animation: stickerTutorialButtonPressLoop 1.45s ease-in-out infinite;
+  animation: stickerTutorialViewPressDemo 6.8s ease-in-out 1 both;
 }
 
 body.is-sticker-tutorial-step-place .sticker-tutorial-hand {
@@ -1472,6 +1472,12 @@ body.is-sticker-tutorial-step-move.is-sticker-tutorial-move-js .sticker-tutorial
 body.is-sticker-tutorial-step-scale .sticker-tutorial-hand,
 body.is-sticker-tutorial-step-rotate .sticker-tutorial-hand {
   animation: stickerTutorialSliderDemo 1.8s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-scale.is-sticker-tutorial-slider-js .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-rotate.is-sticker-tutorial-slider-js .sticker-tutorial-hand {
+  animation: none;
+  transform: translate(-50%, -50%) scale(0.96) rotate(-4deg);
 }
 
 body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
@@ -1675,28 +1681,28 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 }
 
 @keyframes stickerTutorialModePressDemo {
-  0%, 14%, 33%, 43%, 62%, 72%, 91%, 100% {
+  0%, 12%, 24%, 38%, 51%, 66%, 78%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.98) rotate(88deg);
+    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
   }
-  19%, 24%, 29%, 48%, 53%, 58%, 77%, 82%, 87% {
+  16%, 18%, 20%, 44%, 46%, 48%, 71%, 73%, 75% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.9) rotate(84deg);
+    transform: translate(-50%, -50%) scale(0.94) rotate(90deg);
   }
 }
 
-@keyframes stickerTutorialButtonPressLoop {
-  0%, 100% {
+@keyframes stickerTutorialViewPressDemo {
+  0%, 52%, 72%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(1) rotate(88deg);
+    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
   }
-  45% {
+  58%, 64% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.88) rotate(82deg);
+    transform: translate(-50%, -50%) scale(0.94) rotate(90deg);
   }
 }
 
@@ -1709,12 +1715,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0% {
     left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(1) rotate(-4deg);
+    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
   }
   30% {
     left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(1) rotate(7deg);
+    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
   }
   44% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
@@ -1754,7 +1760,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 }
 
 @keyframes stickerTutorialFindPlaceGhost {
-  0%, 47%, 100% {
+  0%, 47%, 64%, 67%, 82%, 85%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
@@ -1775,10 +1781,10 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   62% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    opacity: 0.35;
+    opacity: 0;
     transform: translate(-50%, -50%) scale(1.03);
   }
-  67% {
+  69% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
@@ -1793,10 +1799,10 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   80% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    opacity: 0.35;
+    opacity: 0;
     transform: translate(-50%, -50%) scale(1.03);
   }
-  85% {
+  87% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
@@ -1811,7 +1817,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   98% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    opacity: 0.28;
+    opacity: 0;
     transform: translate(-50%, -50%) scale(1.04);
   }
 }
