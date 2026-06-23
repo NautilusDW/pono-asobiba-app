@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-839";
+const ASSET_VERSION = "20260624-840";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1618,7 +1618,7 @@ const STICKER_TUTORIAL_STEPS = [
     card: "corner",
     text: "えらんで つかんで\nすきな ところに はろう",
     audio: ["stickerbook_tut_02_find.mp3", "stickerbook_tut_03_pick.mp3", "stickerbook_tut_04_place.mp3"],
-    hand: "grip",
+    hand: "point",
     ghost: true,
     playbackRate: 1.04,
     minAdvanceMs: 20200,
@@ -1632,7 +1632,7 @@ const STICKER_TUTORIAL_STEPS = [
     audio: "stickerbook_tut_05_move.mp3",
     hand: "grip",
     minAdvanceMs: 5000,
-    advanceOn: ["selectSticker", "moveSticker"],
+    advanceOn: ["moveSticker"],
   },
   {
     id: "scale",
@@ -3679,6 +3679,7 @@ function startStickerTutorialPlaceDemo() {
   if (!collectionStickerTrayItems) {
     return;
   }
+  setStickerTutorialHandKey("point");
   setStickerTrayPeek(true);
   document.body.classList.add("is-sticker-tutorial-combo-place");
   stickerTutorialDemoBaseScroll = collectionStickerTrayItems.scrollLeft;
@@ -3712,11 +3713,16 @@ function startStickerTutorialPlaceDemo() {
     scheduleStickerTutorialLayout();
   }, 6100);
   addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id === "place") {
+      setStickerTutorialHandKey("grip");
+    }
+  }, 8200);
+  addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
     addStickerFromTutorialDemoToPage();
-  }, 16800);
+  }, 11200);
 }
 
 function startStickerTutorialMoveDemo() {
@@ -3729,12 +3735,24 @@ function startStickerTutorialMoveDemo() {
   placement.x = originalX;
   placement.y = originalY;
   refreshInlineStickerPage();
+  document.body.classList.add("is-sticker-tutorial-move-js");
+  const step = currentStickerTutorialStep();
+  const rect = stickerTutorialTargetRect(step);
+  const demo = stickerTutorialDemoPoints(step, rect);
+  const handFrom = demo.from;
+  const handTo = demo.to;
   animateStickerTutorialPlacement(4300, (progress) => {
     const wave = Math.sin(progress * Math.PI);
     placement.x = THREE.MathUtils.clamp(originalX + wave * 9, 4, 96);
     placement.y = THREE.MathUtils.clamp(originalY + wave * 5, 4, 96);
+    setStickerTutorialPointVar("--tutorial-hand-x", THREE.MathUtils.lerp(handFrom.x, handTo.x, wave));
+    setStickerTutorialPointVar("--tutorial-hand-y", THREE.MathUtils.lerp(handFrom.y, handTo.y, wave));
     refreshInlineStickerPage();
-  }, () => notifyStickerTutorialAction("moveSticker"));
+  }, () => {
+    setStickerTutorialPointVar("--tutorial-hand-x", handFrom.x);
+    setStickerTutorialPointVar("--tutorial-hand-y", handFrom.y);
+    notifyStickerTutorialAction("moveSticker");
+  });
 }
 
 function startStickerTutorialScaleDemo() {
@@ -3903,6 +3921,7 @@ function stopStickerTutorialStepDemo(options = {}) {
   document.body.classList.remove(
     "is-sticker-tutorial-mode-demo",
     "is-sticker-tutorial-combo-place",
+    "is-sticker-tutorial-move-js",
   );
 }
 
@@ -4048,9 +4067,7 @@ function updateStickerTutorialDemo(step, rect) {
   }
   const center = rectCenter(rect);
   const handKey = step?.hand || "open";
-  if (stickerTutorialHand) {
-    stickerTutorialHand.src = STICKER_TUTORIAL_HANDS[handKey] || STICKER_TUTORIAL_HANDS.open;
-  }
+  setStickerTutorialHandKey(handKey);
   const demo = stickerTutorialDemoPoints(step, rect);
   setStickerTutorialPointVar("--tutorial-hand-x", demo.hand.x);
   setStickerTutorialPointVar("--tutorial-hand-y", demo.hand.y);
@@ -4071,6 +4088,13 @@ function updateStickerTutorialDemo(step, rect) {
   }
 }
 
+function setStickerTutorialHandKey(handKey) {
+  if (!stickerTutorialHand) {
+    return;
+  }
+  stickerTutorialHand.src = STICKER_TUTORIAL_HANDS[handKey] || STICKER_TUTORIAL_HANDS.open;
+}
+
 function stickerTutorialDemoPoints(step, rect) {
   const center = rectCenter(rect);
   const base = { hand: center, from: center, to: center, ghostSrc: "" };
@@ -4081,11 +4105,11 @@ function stickerTutorialDemoPoints(step, rect) {
     const bottom = rectBottom(rect);
     const from = {
       x: center.x,
-      y: Math.min(window.innerHeight - 44, bottom + Math.min(126, Math.max(98, rect.height * 1.82))),
+      y: Math.min(window.innerHeight - 44, bottom + Math.min(70, Math.max(54, rect.height * 1.08))),
     };
     const to = {
       x: center.x,
-      y: Math.max(48, bottom - Math.min(18, Math.max(12, rect.height * 0.25))),
+      y: Math.max(48, bottom - Math.min(8, Math.max(3, rect.height * 0.12))),
     };
     return { ...base, hand: from, from, to };
   }
