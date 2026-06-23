@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260623-823">
+  <link rel="stylesheet" href="./styles.css?v=20260623-839">
 </head>
 <body>
   <main id="app">
@@ -24,6 +24,7 @@
         <button id="zukanSettingsClose" class="zukan-settings-close" type="button" aria-label="とじる">×</button>
       </div>
       <button id="settingsBackButton" class="zukan-settings-back" type="button">もどる</button>
+      <button id="settingsTutorialButton" class="zukan-settings-help" type="button">あそびかた</button>
       <div class="zukan-settings-row">
         <span>ひだり</span>
         <div class="zukan-settings-segment" role="group" aria-label="ひだりページ">
@@ -159,6 +160,27 @@
         <button id="inlineStickerOk" class="inline-sticker-ok" type="button">OK</button>
       </div>
     </section>
+    <section id="stickerTutorial" class="sticker-tutorial" hidden aria-label="シールちょうの あそびかた">
+      <div id="stickerTutorialSpotlight" class="sticker-tutorial-spotlight" aria-hidden="true"></div>
+      <div id="stickerTutorialGhost" class="sticker-tutorial-ghost" aria-hidden="true"><img alt="" draggable="false"></div>
+      <img id="stickerTutorialHand" class="sticker-tutorial-hand" src="../../assets/images/puzzle/ui/tutorial/hand_open_hover.png" alt="" draggable="false" aria-hidden="true">
+      <div id="stickerTutorialStart" class="sticker-tutorial-start" role="dialog" aria-live="polite" aria-modal="false">
+        <p class="sticker-tutorial-start-title">シールちょうの<br>あそびかた</p>
+        <div class="sticker-tutorial-actions">
+          <button id="stickerTutorialStartSkip" type="button">あとで</button>
+          <button id="stickerTutorialStartButton" type="button">はじめる</button>
+        </div>
+      </div>
+      <div id="stickerTutorialCard" class="sticker-tutorial-card" role="dialog" aria-live="polite" aria-modal="false" hidden>
+        <div id="stickerTutorialCount" class="sticker-tutorial-count">1 / 9</div>
+        <p id="stickerTutorialText">はるモードに しよう</p>
+        <div class="sticker-tutorial-actions">
+          <button id="stickerTutorialSkip" type="button">あとで</button>
+          <button id="stickerTutorialReplay" type="button">もういちど</button>
+          <button id="stickerTutorialNext" type="button">つぎ</button>
+        </div>
+      </div>
+    </section>
     <section id="stickerEditor" class="sticker-editor" hidden aria-label="Sticker page editor">
       <div class="sticker-editor-shell">
         <aside class="sticker-menu" aria-label="Sticker picker">
@@ -232,6 +254,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260623-823"></script>
+  <script type="module" src="./main.js?v=20260623-839"></script>
 </body>
 </html>

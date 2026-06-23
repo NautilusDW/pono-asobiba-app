@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-823";
+const ASSET_VERSION = "20260623-839";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -47,6 +47,18 @@ const COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY = "sb3d_collection_album_placement
 const EDITOR_STATE_VERSION = 3;
 const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 2;
+const EMPTY_STICKER_START_VERSION = 1;
+const STICKER_TUTORIAL_SEEN_KEY = "sb3d_sticker_tutorial_seen_v1";
+const STICKER_TUTORIAL_AUDIO_BASE = "../../assets/audio/stickerbook/tutorial/";
+const STICKER_TUTORIAL_HAND_BASE = "../../assets/images/puzzle/ui/tutorial/";
+const STICKER_TUTORIAL_HANDS = {
+  open: `${STICKER_TUTORIAL_HAND_BASE}hand_open_hover.png`,
+  release: `${STICKER_TUTORIAL_HAND_BASE}hand_open_release.png`,
+  ready: `${STICKER_TUTORIAL_HAND_BASE}hand_grab_ready.png`,
+  grip: `${STICKER_TUTORIAL_HAND_BASE}hand_grip.png`,
+  pinch: `${STICKER_TUTORIAL_HAND_BASE}hand_pinch.png`,
+  point: `${STICKER_TUTORIAL_HAND_BASE}hand_point_left.png`,
+};
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
 const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
@@ -1515,6 +1527,7 @@ const zukanSettingsClose = document.getElementById("zukanSettingsClose");
 const bookThemePanel = document.getElementById("bookThemePanel");
 const bookThemeClose = document.getElementById("bookThemeClose");
 const settingsBackButton = document.getElementById("settingsBackButton");
+const settingsTutorialButton = document.getElementById("settingsTutorialButton");
 const zukanSettingsButtons = [...document.querySelectorAll("[data-zukan-side][data-zukan-type]")];
 const stickerModeButtons = [...document.querySelectorAll("[data-sticker-edit-mode]")];
 const zukanTuneButton = document.getElementById("zukanTuneButton");
@@ -1532,6 +1545,19 @@ const inlineStickerRotation = document.getElementById("inlineStickerRotation");
 const inlineStickerClose = document.getElementById("inlineStickerClose");
 const inlineStickerDelete = document.getElementById("inlineStickerDelete");
 const inlineStickerOk = document.getElementById("inlineStickerOk");
+const stickerTutorial = document.getElementById("stickerTutorial");
+const stickerTutorialSpotlight = document.getElementById("stickerTutorialSpotlight");
+const stickerTutorialGhost = document.getElementById("stickerTutorialGhost");
+const stickerTutorialHand = document.getElementById("stickerTutorialHand");
+const stickerTutorialStart = document.getElementById("stickerTutorialStart");
+const stickerTutorialStartButton = document.getElementById("stickerTutorialStartButton");
+const stickerTutorialStartSkip = document.getElementById("stickerTutorialStartSkip");
+const stickerTutorialCard = document.getElementById("stickerTutorialCard");
+const stickerTutorialText = document.getElementById("stickerTutorialText");
+const stickerTutorialCount = document.getElementById("stickerTutorialCount");
+const stickerTutorialSkip = document.getElementById("stickerTutorialSkip");
+const stickerTutorialReplay = document.getElementById("stickerTutorialReplay");
+const stickerTutorialNext = document.getElementById("stickerTutorialNext");
 
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
@@ -1574,6 +1600,101 @@ const bookThemeLabels = new Map(
 hydrateBookThemeCards();
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
+
+const STICKER_TUTORIAL_STEPS = [
+  {
+    id: "mode",
+    target: "editButton",
+    card: "corner",
+    text: "ここを おして\nはるモードに するよ",
+    audio: "stickerbook_tut_01_mode.mp3",
+    hand: "point",
+    minAdvanceMs: 5200,
+    advanceOn: ["enterEdit"],
+  },
+  {
+    id: "place",
+    target: "trayItems",
+    card: "corner",
+    text: "えらんで つかんで\nすきな ところに はろう",
+    audio: ["stickerbook_tut_02_find.mp3", "stickerbook_tut_03_pick.mp3", "stickerbook_tut_04_place.mp3"],
+    hand: "grip",
+    ghost: true,
+    playbackRate: 1.04,
+    minAdvanceMs: 20200,
+    advanceOn: ["dropSticker"],
+  },
+  {
+    id: "move",
+    target: "selectedSticker",
+    card: "corner",
+    text: "はった あとも\nうごかせるよ",
+    audio: "stickerbook_tut_05_move.mp3",
+    hand: "grip",
+    minAdvanceMs: 5000,
+    advanceOn: ["selectSticker", "moveSticker"],
+  },
+  {
+    id: "scale",
+    target: "scaleControl",
+    card: "corner",
+    text: "バーで\nおおきさを かえるよ",
+    audio: "stickerbook_tut_06_scale.mp3",
+    hand: "point",
+    playbackRate: 1.12,
+    minAdvanceMs: 10400,
+    advanceOn: ["scaleSticker"],
+  },
+  {
+    id: "rotate",
+    target: "rotationControl",
+    card: "corner",
+    text: "バーで\nむきを かえるよ",
+    audio: "stickerbook_tut_07_rotate.mp3",
+    hand: "point",
+    minAdvanceMs: 7300,
+    advanceOn: ["rotateSticker"],
+  },
+  {
+    id: "ok",
+    target: "okButton",
+    card: "corner",
+    text: "OKで\nきまり",
+    audio: "stickerbook_tut_08_ok.mp3",
+    hand: "point",
+    minAdvanceMs: 4700,
+    advanceOn: ["confirmSticker"],
+  },
+  {
+    id: "page",
+    target: "nextPageButton",
+    card: "corner",
+    text: "ページも\nめくれるよ",
+    hand: "point",
+    minAdvanceMs: 3600,
+    advanceOn: ["pageTurn"],
+  },
+  {
+    id: "view",
+    target: "editButton",
+    card: "corner",
+    text: "みるときは\nみるモード",
+    audio: "stickerbook_tut_09_view.mp3",
+    hand: "point",
+    minAdvanceMs: 6800,
+    advanceOn: ["exitEdit"],
+  },
+  {
+    id: "final",
+    target: "book",
+    card: "corner",
+    text: "すきな シールちょうを\nつくろう",
+    audio: "stickerbook_tut_10_final.mp3",
+    hand: "open",
+    minAdvanceMs: 6500,
+    finish: true,
+  },
+];
 
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v9";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
@@ -1885,6 +2006,20 @@ let inlineStickerDragState = null;
 let suppressInlineStickerClick = false;
 let stickerTrayTouchStartY = 0;
 let stickerTrayRevealHideTimer = 0;
+let stickerTutorialState = null;
+let stickerTutorialAudio = null;
+let stickerTutorialAudioBlocked = false;
+let stickerTutorialAutoStartChecked = false;
+let stickerTutorialLayoutFrame = 0;
+let stickerTutorialDemoFrame = 0;
+let stickerTutorialDemoStartTime = 0;
+let stickerTutorialDemoBaseScroll = 0;
+let stickerTutorialDemoTimers = [];
+let stickerTutorialDragPageTurnTimer = 0;
+let stickerTutorialDragPageTurnDirection = 0;
+let stickerTutorialProgrammaticTrayScroll = false;
+let stickerTutorialProgrammaticTrayScrollUntil = 0;
+let stickerTutorialSuppressModeNotify = false;
 let editorStateSaveTimer = 0;
 let editorStateDirty = false;
 let editorGameFilterValue = "all";
@@ -2285,9 +2420,19 @@ topThemeButton?.addEventListener("click", () => {
 });
 
 topEditButton?.addEventListener("click", () => {
+  const previousMode = stickerEditMode;
   setStickerEditMode(!stickerEditMode, { openInside: true });
   closeZukanSettingsPanel();
   closeBookThemePanel();
+  if (stickerTutorialSuppressModeNotify) {
+    scheduleStickerTutorialLayout();
+    return;
+  }
+  if (!previousMode && stickerEditMode) {
+    notifyStickerTutorialAction("enterEdit");
+  } else if (previousMode && !stickerEditMode) {
+    notifyStickerTutorialAction("exitEdit");
+  }
 });
 
 syncTopSettingsButton();
@@ -2304,6 +2449,7 @@ setupBookPageControls();
 setupBookSwipeNavigation();
 setupCollectionStickerTray();
 setupInlineStickerControls();
+setupStickerTutorial();
 setupStickerTrayReveal();
 if (editorEnabled) {
   setupScenePagePicking();
@@ -2516,9 +2662,11 @@ function endZukanTuningDrag(event) {
 function setupInlineStickerControls() {
   inlineStickerScale?.addEventListener("input", () => {
     updateSelectedPlacement({ scale: Number(inlineStickerScale.value) });
+    notifyStickerTutorialAction("scaleSticker");
   });
   inlineStickerRotation?.addEventListener("input", () => {
     updateSelectedPlacement({ rotation: Number(inlineStickerRotation.value) });
+    notifyStickerTutorialAction("rotateSticker");
   });
   for (const input of [inlineStickerScale, inlineStickerRotation]) {
     input?.addEventListener("change", () => flushEditorStateSave());
@@ -2535,6 +2683,7 @@ function setupInlineStickerControls() {
     event.stopPropagation();
     flushEditorStateSave();
     clearInlineStickerSelection();
+    notifyStickerTutorialAction("confirmSticker");
   });
   updateInlineStickerControls();
 }
@@ -2649,7 +2798,19 @@ function handleInlineStickerPointerMove(event) {
   if (!placement) {
     return true;
   }
-  const point = pagePointFromPointer(event, inlineStickerDragState.object);
+  const targetPage = inlineStickerDragTargetFromPointer(event);
+  if (targetPage && targetPage.page !== inlineStickerDragState.page) {
+    movePlacementBetweenPages(placement, inlineStickerDragState.page, targetPage.page);
+    inlineStickerDragState.page = targetPage.page;
+    inlineStickerDragState.object = targetPage.object;
+    inlineStickerDragState.offsetX = 0;
+    inlineStickerDragState.offsetY = 0;
+    activeEditorPage = targetPage.page;
+    selectedPlacementId = placement.id;
+  }
+  const point = targetPage?.object === inlineStickerDragState.object
+    ? targetPage.point
+    : pagePointFromPointer(event, inlineStickerDragState.object);
   if (!point) {
     return true;
   }
@@ -2658,7 +2819,36 @@ function handleInlineStickerPointerMove(event) {
   inlineStickerDragState.moved = true;
   markEditorStateDirty();
   refreshInlineStickerPage();
+  notifyStickerTutorialAction("moveSticker");
   return true;
+}
+
+function inlineStickerDragTargetFromPointer(event) {
+  const hit = pickScenePageHit(event);
+  if (!hit?.uv || (hit.object !== leftPageInner && hit.object !== rightPage)) {
+    return null;
+  }
+  return {
+    object: hit.object,
+    page: pageNumberForPickedPage(hit.object),
+    point: texturePointFromPageHit(hit),
+  };
+}
+
+function movePlacementBetweenPages(placement, fromPage, toPage) {
+  if (!placement || fromPage === toPage) {
+    return;
+  }
+  const fromPlacements = getPagePlacements(fromPage);
+  const toPlacements = getPagePlacements(toPage);
+  const index = fromPlacements.findIndex((item) => item.id === placement.id);
+  if (index >= 0) {
+    fromPlacements.splice(index, 1);
+  }
+  if (!toPlacements.some((item) => item.id === placement.id)) {
+    placement.z = nextPlacementZ(toPlacements);
+    toPlacements.push(placement);
+  }
 }
 
 function pagePointFromPointer(event, mesh) {
@@ -2720,6 +2910,7 @@ function selectInlineSticker(target) {
   selectedPlacementId = target.placement.id;
   updateInlineStickerControls();
   refreshInlineStickerPage();
+  notifyStickerTutorialAction("selectSticker");
 }
 
 function refreshInlineStickerPage() {
@@ -2740,7 +2931,9 @@ function clearInlineStickerSelection() {
 
 function updateInlineStickerControls(syncInputs = true) {
   const placement = getSelectedPlacement();
-  const visible = canUseInlineStickerEditing() && Boolean(placement);
+  const visible = canUseInlineStickerEditing()
+    && Boolean(placement)
+    && !shouldSuppressInlineStickerControlsForTutorial();
   if (inlineStickerControls) {
     inlineStickerControls.hidden = !visible;
   }
@@ -2759,6 +2952,14 @@ function updateInlineStickerControls(syncInputs = true) {
       inlineStickerRotation.value = String(placement.rotation || 0);
     }
   }
+}
+
+function shouldSuppressInlineStickerControlsForTutorial() {
+  if (!stickerTutorialState || stickerTutorial?.hidden) {
+    return false;
+  }
+  const stepId = currentStickerTutorialStep()?.id;
+  return stepId === "place" || stepId === "move";
 }
 
 function pickEditablePage(event) {
@@ -2867,16 +3068,20 @@ function setupBookPageControls() {
   bookPrevPage?.addEventListener("click", () => {
     if (activeSurface === "inside" && activeBookPage <= 1) {
       setBookSurface("cover", activeBookPage);
+      notifyStickerTutorialAction("pageTurn");
       return;
     }
     setBookPage(activeBookPage - 2, { turnMode: "single" });
+    notifyStickerTutorialAction("pageTurn");
   });
   bookNextPage?.addEventListener("click", () => {
     if (activeSurface === "cover") {
       setBookSurface("inside", 1);
+      notifyStickerTutorialAction("pageTurn");
       return;
     }
     setBookPage(activeBookPage + 2, { turnMode: "single" });
+    notifyStickerTutorialAction("pageTurn");
   });
   bookPageLabel?.addEventListener("click", () => toggleBookPageJump());
   document.addEventListener("pointerdown", (event) => {
@@ -3065,6 +3270,10 @@ function setupZukanSettingsPanel() {
   zukanSettingsClose?.addEventListener("click", () => closeZukanSettingsPanel());
   bookThemeClose?.addEventListener("click", () => closeBookThemePanel());
   settingsBackButton?.addEventListener("click", () => navigateBackToPlay());
+  settingsTutorialButton?.addEventListener("click", () => {
+    closeZukanSettingsPanel();
+    startStickerTutorial({ manual: true });
+  });
   for (const button of stickerModeButtons) {
     button.addEventListener("click", () => {
       setStickerEditMode(button.dataset.stickerEditMode === "edit", { openInside: true });
@@ -3100,6 +3309,1051 @@ function setupZukanSettingsPanel() {
       closeBookThemePanel();
     }
   });
+}
+
+function setupStickerTutorial() {
+  stickerTutorialStartSkip?.addEventListener("click", () => finishStickerTutorial({ markSeen: true }));
+  stickerTutorialStartButton?.addEventListener("click", () => beginStickerTutorialSteps());
+  stickerTutorialSkip?.addEventListener("click", () => finishStickerTutorial({ markSeen: true }));
+  stickerTutorialReplay?.addEventListener("click", () => {
+    const step = currentStickerTutorialStep();
+    if (step) {
+      playStickerTutorialAudio(step);
+    }
+  });
+  stickerTutorialNext?.addEventListener("click", () => {
+    if (!stickerTutorialState) {
+      return;
+    }
+    const step = currentStickerTutorialStep();
+    if (stickerTutorialRemainingStepMs(step) > 80) {
+      updateStickerTutorialNextAvailability(step);
+      return;
+    }
+    if (step?.finish) {
+      finishStickerTutorial({ markSeen: true });
+      return;
+    }
+    showStickerTutorialStep(stickerTutorialState.index + 1);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (!stickerTutorialState) {
+      return;
+    }
+    if (event.key === "Escape") {
+      finishStickerTutorial({ markSeen: true });
+    }
+  });
+  document.addEventListener("pointerdown", retryBlockedStickerTutorialAudio, { capture: true });
+  window.__startStickerBookTutorial = () => startStickerTutorial({ manual: true });
+}
+
+function maybeStartStickerTutorial() {
+  if (stickerTutorialAutoStartChecked) {
+    return;
+  }
+  stickerTutorialAutoStartChecked = true;
+  if (params.get("tutorial") === "0") {
+    return;
+  }
+  const forced = params.get("tutorial") === "1";
+  if (!forced && hasSeenStickerTutorial()) {
+    return;
+  }
+  window.setTimeout(() => {
+    startStickerTutorial({ manual: forced });
+  }, forced ? 320 : 900);
+}
+
+function startStickerTutorial(options = {}) {
+  if (!stickerTutorial || !STICKER_TUTORIAL_STEPS.length) {
+    return;
+  }
+  closeZukanSettingsPanel();
+  closeBookThemePanel();
+  if (activeAlbumMode === "collection") {
+    setAlbumMode("free");
+  }
+  stickerTutorialState = {
+    index: 0,
+    manual: Boolean(options.manual),
+    actionDone: false,
+    intro: true,
+  };
+  stickerTutorial.hidden = false;
+  document.body.classList.add("is-sticker-tutorial-active");
+  showStickerTutorialIntro();
+}
+
+function finishStickerTutorial(options = {}) {
+  if (!stickerTutorialState && stickerTutorial?.hidden) {
+    return;
+  }
+  stickerTutorialState = null;
+  stopStickerTutorialAudio();
+  stopStickerTutorialStepDemo();
+  if (stickerTutorial) {
+    stickerTutorial.hidden = true;
+  }
+  if (stickerTutorialStart) {
+    stickerTutorialStart.hidden = true;
+  }
+  if (stickerTutorialCard) {
+    stickerTutorialCard.hidden = true;
+  }
+  if (stickerTutorialSpotlight) {
+    stickerTutorialSpotlight.hidden = true;
+  }
+  if (stickerTutorialHand) {
+    stickerTutorialHand.hidden = true;
+  }
+  if (stickerTutorialGhost) {
+    stickerTutorialGhost.hidden = true;
+  }
+  document.body.classList.remove(
+    "is-sticker-tutorial-active",
+    "is-sticker-tutorial-card-top",
+    "is-sticker-tutorial-card-corner",
+    "is-sticker-tutorial-intro",
+    "is-sticker-tutorial-linked-scroll",
+  );
+  removeStickerTutorialStepClasses();
+  setStickerTrayPeek(false);
+  if (options.markSeen !== false) {
+    markStickerTutorialSeen();
+  }
+}
+
+function showStickerTutorialIntro() {
+  if (!stickerTutorialState) {
+    return;
+  }
+  stopStickerTutorialAudio();
+  stopStickerTutorialStepDemo();
+  stickerTutorialState.intro = true;
+  if (stickerTutorialStart) {
+    stickerTutorialStart.hidden = false;
+  }
+  if (stickerTutorialCard) {
+    stickerTutorialCard.hidden = true;
+  }
+  if (stickerTutorialSpotlight) {
+    stickerTutorialSpotlight.hidden = true;
+  }
+  if (stickerTutorialHand) {
+    stickerTutorialHand.hidden = true;
+  }
+  if (stickerTutorialGhost) {
+    stickerTutorialGhost.hidden = true;
+  }
+  document.body.classList.add("is-sticker-tutorial-intro");
+  document.body.classList.remove(
+    "is-sticker-tutorial-card-top",
+    "is-sticker-tutorial-card-corner",
+    "is-sticker-tutorial-linked-scroll",
+  );
+  removeStickerTutorialStepClasses();
+}
+
+function beginStickerTutorialSteps() {
+  if (!stickerTutorialState) {
+    return;
+  }
+  stickerTutorialState.intro = false;
+  showStickerTutorialStep(0, { replayAudio: true });
+}
+
+function currentStickerTutorialStep() {
+  if (!stickerTutorialState) {
+    return null;
+  }
+  return STICKER_TUTORIAL_STEPS[stickerTutorialState.index] || null;
+}
+
+function showStickerTutorialStep(index, options = {}) {
+  if (!stickerTutorialState) {
+    return;
+  }
+  stopStickerTutorialStepDemo();
+  if (stickerTutorialStart) {
+    stickerTutorialStart.hidden = true;
+  }
+  if (stickerTutorialCard) {
+    stickerTutorialCard.hidden = false;
+  }
+  if (stickerTutorialSpotlight) {
+    stickerTutorialSpotlight.hidden = false;
+  }
+  if (stickerTutorialHand) {
+    stickerTutorialHand.hidden = false;
+  }
+  document.body.classList.remove("is-sticker-tutorial-intro");
+  const clampedIndex = THREE.MathUtils.clamp(Math.round(index), 0, STICKER_TUTORIAL_STEPS.length - 1);
+  stickerTutorialState.index = clampedIndex;
+  stickerTutorialState.actionDone = false;
+  stickerTutorialState.intro = false;
+  stickerTutorialState.stepStartedAt = performance.now();
+  const step = currentStickerTutorialStep();
+  if (!step) {
+    finishStickerTutorial({ markSeen: true });
+    return;
+  }
+  prepareStickerTutorialStep(step);
+  if (stickerTutorialText) {
+    stickerTutorialText.textContent = step.text;
+  }
+  if (stickerTutorialCount) {
+    stickerTutorialCount.textContent = `${clampedIndex + 1} / ${STICKER_TUTORIAL_STEPS.length}`;
+  }
+  if (stickerTutorialNext) {
+    stickerTutorialNext.textContent = step.finish ? "おわる" : "つぎ";
+  }
+  updateStickerTutorialNextAvailability(step);
+  document.body.classList.toggle("is-sticker-tutorial-card-top", step.card === "top");
+  document.body.classList.toggle("is-sticker-tutorial-card-corner", step.card === "corner");
+  removeStickerTutorialStepClasses();
+  document.body.classList.add(`is-sticker-tutorial-step-${step.id}`);
+  scheduleStickerTutorialLayout();
+  window.setTimeout(scheduleStickerTutorialLayout, 180);
+  window.setTimeout(scheduleStickerTutorialLayout, 720);
+  startStickerTutorialStepDemo(step);
+  if (options.replayAudio !== false) {
+    playStickerTutorialAudio(step);
+  }
+}
+
+function prepareStickerTutorialStep(step) {
+  if (!step) {
+    return;
+  }
+  closeBookPageJump();
+  if (activeAlbumMode === "collection") {
+    setAlbumMode("free");
+  }
+  if (step.id === "mode") {
+    if (activeSurface === "cover") {
+      setBookSurface("inside", activeBookPage || 1);
+    }
+    if (stickerEditMode) {
+      setStickerEditMode(false);
+    }
+    selectedPlacementId = null;
+    updateInlineStickerControls();
+    setStickerTrayPeek(false);
+  }
+  if (["place", "move", "scale", "rotate", "ok"].includes(step.id)) {
+    if (!stickerEditMode) {
+      setStickerEditMode(true, { openInside: true });
+    } else if (activeSurface === "cover") {
+      setBookSurface("inside", activeBookPage || 1);
+    }
+    window.setTimeout(() => setStickerTrayPeek(true), 60);
+  }
+  if (["move", "scale", "rotate", "ok"].includes(step.id)) {
+    window.setTimeout(ensureStickerTutorialEditableSticker, 180);
+  }
+  if (step.id === "view") {
+    selectedPlacementId = null;
+    updateInlineStickerControls();
+  }
+}
+
+function ensureStickerTutorialEditableSticker() {
+  if (!stickerTutorialState || activeAlbumMode === "collection") {
+    return null;
+  }
+  if (activeSurface === "cover") {
+    setBookSurface("inside", activeBookPage || 1);
+    return null;
+  }
+  const current = getSelectedPlacement();
+  if (current) {
+    updateInlineStickerControls();
+    return current;
+  }
+  const pages = [activeBookPage, rightBookPageNumber()].filter((page) => page >= 1 && page <= editorPageCount());
+  for (const page of pages) {
+    const placement = getPagePlacements(page).find((item) => item?.assetUrl);
+    if (placement) {
+      activeEditorPage = page;
+      selectedPlacementId = placement.id;
+      updateInlineStickerControls();
+      refreshInlineStickerPage();
+      return placement;
+    }
+  }
+  const sticker = stickerOptions[0];
+  if (!sticker) {
+    return null;
+  }
+  const page = pages[1] || pages[0] || 1;
+  addStickerFromTrayToPage(sticker.id, page, { x: 54, y: 42 });
+  return getSelectedPlacement();
+}
+
+function startStickerTutorialStepDemo(step) {
+  if (!step) {
+    return;
+  }
+  if (step.id === "mode") {
+    startStickerTutorialModeDemo();
+    return;
+  }
+  if (step.id === "place") {
+    startStickerTutorialPlaceDemo();
+    return;
+  }
+  if (step.id === "move") {
+    startStickerTutorialMoveDemo();
+    return;
+  }
+  if (step.id === "scale") {
+    startStickerTutorialScaleDemo();
+    return;
+  }
+  if (step.id === "rotate") {
+    startStickerTutorialRotateDemo();
+    return;
+  }
+  if (step.id === "ok") {
+    startStickerTutorialOkDemo();
+    return;
+  }
+  if (step.id === "page") {
+    startStickerTutorialPageDemo();
+    return;
+  }
+  if (step.id === "view") {
+    startStickerTutorialViewDemo();
+  }
+}
+
+function startStickerTutorialModeDemo() {
+  document.body.classList.add("is-sticker-tutorial-mode-demo");
+  addStickerTutorialDemoTimer(() => {
+    triggerStickerTutorialEditButtonPress({ targetMode: true, notify: false });
+  }, 900);
+  addStickerTutorialDemoTimer(() => {
+    triggerStickerTutorialEditButtonPress({ targetMode: false, notify: false });
+  }, 2350);
+  addStickerTutorialDemoTimer(() => {
+    triggerStickerTutorialEditButtonPress({ targetMode: true, notify: true });
+  }, 3750);
+}
+
+function triggerStickerTutorialEditButtonPress(options = {}) {
+  if (!topEditButton) {
+    if (typeof options.targetMode === "boolean") {
+      setStickerEditMode(options.targetMode, { openInside: true });
+    }
+    if (options.notify !== false && options.targetMode === true) {
+      notifyStickerTutorialAction("enterEdit");
+    } else if (options.notify !== false && options.targetMode === false) {
+      notifyStickerTutorialAction("exitEdit");
+    }
+    return;
+  }
+  topEditButton.classList.add("is-tutorial-pressing");
+  addStickerTutorialDemoTimer(() => {
+    const shouldClick = typeof options.targetMode !== "boolean" || stickerEditMode !== options.targetMode;
+    if (shouldClick) {
+      stickerTutorialSuppressModeNotify = options.notify === false;
+      topEditButton.click();
+      stickerTutorialSuppressModeNotify = false;
+    }
+    if (options.targetMode === true) {
+      setStickerTrayPeek(true);
+    }
+    scheduleStickerTutorialLayout();
+    if (!shouldClick && options.notify !== false) {
+      notifyStickerTutorialAction(options.targetMode === false ? "exitEdit" : "enterEdit");
+    }
+  }, 140);
+  addStickerTutorialDemoTimer(() => {
+    topEditButton.classList.remove("is-tutorial-pressing");
+    scheduleStickerTutorialLayout();
+  }, 360);
+}
+
+function startStickerTutorialPlaceDemo() {
+  if (!collectionStickerTrayItems) {
+    return;
+  }
+  setStickerTrayPeek(true);
+  document.body.classList.add("is-sticker-tutorial-combo-place");
+  stickerTutorialDemoBaseScroll = collectionStickerTrayItems.scrollLeft;
+  stickerTutorialDemoStartTime = performance.now();
+  const maxScroll = Math.max(0, collectionStickerTrayItems.scrollWidth - collectionStickerTrayItems.clientWidth);
+  const distance = Math.min(300, Math.max(110, maxScroll * 0.32));
+  if (distance > 0) {
+    document.body.classList.add("is-sticker-tutorial-linked-scroll");
+    const duration = 5600;
+    const run = (now) => {
+      const elapsed = Math.max(0, now - stickerTutorialDemoStartTime);
+      const progress = THREE.MathUtils.clamp(elapsed / duration, 0, 1);
+      const eased = 0.5 - Math.cos(progress * Math.PI) / 2;
+      stickerTutorialProgrammaticTrayScroll = true;
+      stickerTutorialProgrammaticTrayScrollUntil = performance.now() + 140;
+      collectionStickerTrayItems.scrollLeft = THREE.MathUtils.clamp(
+        stickerTutorialDemoBaseScroll + distance * eased,
+        0,
+        maxScroll,
+      );
+      if (progress >= 1) {
+        stopStickerTutorialStepDemoFrame({ keepTrayScrollSuppression: true });
+        scheduleStickerTutorialLayout();
+        return;
+      }
+      stickerTutorialDemoFrame = requestAnimationFrame(run);
+    };
+    stickerTutorialDemoFrame = requestAnimationFrame(run);
+  }
+  addStickerTutorialDemoTimer(() => {
+    scheduleStickerTutorialLayout();
+  }, 6100);
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
+      return;
+    }
+    addStickerFromTutorialDemoToPage();
+  }, 16800);
+}
+
+function startStickerTutorialMoveDemo() {
+  const placement = ensureStickerTutorialEditableSticker();
+  if (!placement) {
+    return;
+  }
+  const originalX = THREE.MathUtils.clamp(Number(placement.x) || 52, 14, 82);
+  const originalY = THREE.MathUtils.clamp(Number(placement.y) || 42, 16, 78);
+  placement.x = originalX;
+  placement.y = originalY;
+  refreshInlineStickerPage();
+  animateStickerTutorialPlacement(4300, (progress) => {
+    const wave = Math.sin(progress * Math.PI);
+    placement.x = THREE.MathUtils.clamp(originalX + wave * 9, 4, 96);
+    placement.y = THREE.MathUtils.clamp(originalY + wave * 5, 4, 96);
+    refreshInlineStickerPage();
+  }, () => notifyStickerTutorialAction("moveSticker"));
+}
+
+function startStickerTutorialScaleDemo() {
+  const placement = ensureStickerTutorialEditableSticker();
+  if (!placement) {
+    return;
+  }
+  const startScale = THREE.MathUtils.clamp(Number(placement.scale) || 1, 0.7, 1.35);
+  const smallScale = Math.max(0.65, startScale * 0.78);
+  const largeScale = Math.min(1.9, startScale * 1.48);
+  const settleScale = Math.min(1.65, Math.max(startScale * 1.14, startScale + 0.12));
+  animateStickerTutorialPlacement(9300, (progress) => {
+    let scale;
+    if (progress < 0.24) {
+      scale = THREE.MathUtils.lerp(startScale, largeScale, smootherstep(progress / 0.24));
+    } else if (progress < 0.42) {
+      scale = largeScale;
+    } else if (progress < 0.68) {
+      scale = THREE.MathUtils.lerp(largeScale, smallScale, smootherstep((progress - 0.42) / 0.26));
+    } else if (progress < 0.84) {
+      scale = smallScale;
+    } else {
+      scale = THREE.MathUtils.lerp(smallScale, settleScale, smootherstep((progress - 0.84) / 0.16));
+    }
+    placement.scale = scale;
+    if (inlineStickerScale) {
+      inlineStickerScale.value = scale.toFixed(2);
+    }
+    refreshInlineStickerPage();
+  }, () => notifyStickerTutorialAction("scaleSticker"));
+}
+
+function startStickerTutorialRotateDemo() {
+  const placement = ensureStickerTutorialEditableSticker();
+  if (!placement) {
+    return;
+  }
+  const baseRotation = Number(placement.rotation) || 0;
+  const rightRotation = THREE.MathUtils.clamp(baseRotation + 28, -180, 180);
+  const leftRotation = THREE.MathUtils.clamp(baseRotation - 24, -180, 180);
+  const settleRotation = THREE.MathUtils.clamp(baseRotation + 14, -180, 180);
+  animateStickerTutorialPlacement(5200, (progress) => {
+    let rotation;
+    if (progress < 0.24) {
+      rotation = THREE.MathUtils.lerp(baseRotation, rightRotation, smootherstep(progress / 0.24));
+    } else if (progress < 0.4) {
+      rotation = rightRotation;
+    } else if (progress < 0.68) {
+      rotation = THREE.MathUtils.lerp(rightRotation, leftRotation, smootherstep((progress - 0.4) / 0.28));
+    } else if (progress < 0.82) {
+      rotation = leftRotation;
+    } else {
+      rotation = THREE.MathUtils.lerp(leftRotation, settleRotation, smootherstep((progress - 0.82) / 0.18));
+    }
+    placement.rotation = THREE.MathUtils.clamp(rotation, -180, 180);
+    if (inlineStickerRotation) {
+      inlineStickerRotation.value = String(Math.round(placement.rotation));
+    }
+    refreshInlineStickerPage();
+  }, () => notifyStickerTutorialAction("rotateSticker"));
+}
+
+function startStickerTutorialOkDemo() {
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id !== "ok" || stickerTutorialState?.actionDone) {
+      return;
+    }
+    inlineStickerOk?.click();
+  }, 3150);
+}
+
+function startStickerTutorialPageDemo() {
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id !== "page" || stickerTutorialState?.actionDone) {
+      return;
+    }
+    const nextPage = activeBookPage + 2;
+    if (activeSurface === "inside" && nextPage <= spreadStartForPage(editorPageCount())) {
+      setBookPage(nextPage, { turnMode: "single" });
+      notifyStickerTutorialAction("pageTurn");
+    } else {
+      notifyStickerTutorialAction("pageTurn");
+    }
+  }, 1300);
+}
+
+function startStickerTutorialViewDemo() {
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id !== "view" || stickerTutorialState?.actionDone) {
+      return;
+    }
+    triggerStickerTutorialEditButtonPress({ targetMode: false, notify: true });
+  }, 3900);
+}
+
+function animateStickerTutorialPlacement(duration, onFrame, onComplete) {
+  const startTime = performance.now();
+  const run = (now) => {
+    if (!stickerTutorialState) {
+      return;
+    }
+    const progress = THREE.MathUtils.clamp((now - startTime) / duration, 0, 1);
+    onFrame(smootherstep(progress));
+    if (progress >= 1) {
+      stickerTutorialDemoFrame = 0;
+      if (typeof onComplete === "function") {
+        onComplete();
+      }
+      return;
+    }
+    stickerTutorialDemoFrame = requestAnimationFrame(run);
+  };
+  stickerTutorialDemoFrame = requestAnimationFrame(run);
+}
+
+function addStickerFromTutorialDemoToPage() {
+  const icon = visibleStickerTrayIconForTutorial();
+  const button = icon?.closest("[data-sticker-tray-id]");
+  const sticker = stickerOptions.find((item) => item.id === button?.dataset.stickerTrayId) || stickerOptions[0];
+  if (!sticker) {
+    return;
+  }
+  const page = rightBookPageNumber();
+  addStickerFromTrayToPage(sticker.id, page, { x: 56, y: 42 });
+  const placement = getSelectedPlacement();
+  if (placement) {
+    placement.scale = THREE.MathUtils.clamp(defaultStickerScale(sticker) * 1.05, 0.45, 2.2);
+    refreshInlineStickerPage();
+  }
+}
+
+function addStickerTutorialDemoTimer(callback, delay) {
+  const timer = window.setTimeout(() => {
+    stickerTutorialDemoTimers = stickerTutorialDemoTimers.filter((item) => item !== timer);
+    callback();
+  }, delay);
+  stickerTutorialDemoTimers.push(timer);
+  return timer;
+}
+
+function clearStickerTutorialDemoTimers() {
+  for (const timer of stickerTutorialDemoTimers) {
+    window.clearTimeout(timer);
+  }
+  stickerTutorialDemoTimers = [];
+}
+
+function stopStickerTutorialStepDemoFrame(options = {}) {
+  if (stickerTutorialDemoFrame) {
+    cancelAnimationFrame(stickerTutorialDemoFrame);
+    stickerTutorialDemoFrame = 0;
+  }
+  stickerTutorialProgrammaticTrayScroll = false;
+  stickerTutorialProgrammaticTrayScrollUntil = options.keepTrayScrollSuppression
+    ? performance.now() + 420
+    : 0;
+  document.body.classList.remove("is-sticker-tutorial-linked-scroll");
+}
+
+function stopStickerTutorialStepDemo(options = {}) {
+  stopStickerTutorialStepDemoFrame(options);
+  clearStickerTutorialDemoTimers();
+  cancelStickerTutorialDragPageTurn();
+  stickerTutorialSuppressModeNotify = false;
+  topEditButton?.classList.remove("is-tutorial-pressing");
+  document.body.classList.remove(
+    "is-sticker-tutorial-mode-demo",
+    "is-sticker-tutorial-combo-place",
+  );
+}
+
+function notifyStickerTutorialAction(action) {
+  const step = currentStickerTutorialStep();
+  if (!stickerTutorialState || !step || step.finish || stickerTutorialState.actionDone) {
+    return;
+  }
+  const actions = Array.isArray(step.advanceOn) ? step.advanceOn : [];
+  if (!actions.includes(action)) {
+    return;
+  }
+  stickerTutorialState.actionDone = true;
+  const delay = stickerTutorialAdvanceDelay(step, action);
+  window.setTimeout(() => {
+    if (stickerTutorialState?.actionDone) {
+      showStickerTutorialStep(stickerTutorialState.index + 1);
+    }
+  }, delay);
+}
+
+function stickerTutorialAdvanceDelay(step, action) {
+  const fallback = action === "enterEdit" || action === "dropSticker" ? 650 : 320;
+  const remaining = stickerTutorialRemainingStepMs(step);
+  return Math.max(fallback, remaining);
+}
+
+function stickerTutorialRemainingStepMs(step) {
+  const minMs = Number(step?.minAdvanceMs) || 0;
+  if (!minMs || !stickerTutorialState?.stepStartedAt) {
+    return 0;
+  }
+  return Math.max(0, minMs - (performance.now() - stickerTutorialState.stepStartedAt));
+}
+
+function updateStickerTutorialNextAvailability(step = currentStickerTutorialStep()) {
+  if (!stickerTutorialNext) {
+    return;
+  }
+  const remaining = stickerTutorialRemainingStepMs(step);
+  const disabled = remaining > 80;
+  stickerTutorialNext.disabled = disabled;
+  stickerTutorialNext.setAttribute("aria-disabled", disabled ? "true" : "false");
+  if (disabled) {
+    addStickerTutorialDemoTimer(() => {
+      if (currentStickerTutorialStep() === step) {
+        updateStickerTutorialNextAvailability(step);
+      }
+    }, remaining + 20);
+  }
+}
+
+function retryBlockedStickerTutorialAudio() {
+  if (!stickerTutorialState || !stickerTutorialAudioBlocked) {
+    return;
+  }
+  const step = currentStickerTutorialStep();
+  if (step) {
+    playStickerTutorialAudio(step, { fromGesture: true });
+  }
+}
+
+function playStickerTutorialAudio(step) {
+  stopStickerTutorialAudio();
+  const audioFiles = (Array.isArray(step?.audio) ? step.audio : [step?.audio]).filter(Boolean);
+  if (!audioFiles.length) {
+    return;
+  }
+  const playAt = (index) => {
+    if (!stickerTutorialState || currentStickerTutorialStep() !== step || !audioFiles[index]) {
+      return;
+    }
+    const audio = new Audio(`${STICKER_TUTORIAL_AUDIO_BASE}${audioFiles[index]}?v=${ASSET_VERSION}`);
+    audio.preload = "auto";
+    audio.volume = 0.92;
+    audio.playbackRate = Number(step.playbackRate) || 1;
+    audio.addEventListener("ended", () => {
+      if (stickerTutorialAudio !== audio) {
+        return;
+      }
+      if (index + 1 < audioFiles.length) {
+        playAt(index + 1);
+      } else {
+        stickerTutorialAudio = null;
+      }
+    }, { once: true });
+    stickerTutorialAudio = audio;
+    stickerTutorialAudioBlocked = false;
+    audio.play().catch(() => {
+      // Mobile browsers may require a user gesture; visual guidance still continues.
+      if (stickerTutorialAudio === audio) {
+        stickerTutorialAudioBlocked = true;
+      }
+    });
+  };
+  playAt(0);
+}
+
+function stopStickerTutorialAudio() {
+  if (!stickerTutorialAudio) {
+    return;
+  }
+  try {
+    stickerTutorialAudio.pause();
+    stickerTutorialAudio.currentTime = 0;
+  } catch {}
+  stickerTutorialAudio = null;
+  stickerTutorialAudioBlocked = false;
+}
+
+function scheduleStickerTutorialLayout() {
+  if (!stickerTutorialState || !stickerTutorial || stickerTutorial.hidden) {
+    return;
+  }
+  if (stickerTutorialLayoutFrame) {
+    cancelAnimationFrame(stickerTutorialLayoutFrame);
+  }
+  stickerTutorialLayoutFrame = requestAnimationFrame(() => {
+    stickerTutorialLayoutFrame = 0;
+    updateStickerTutorialLayout();
+  });
+}
+
+function updateStickerTutorialLayout() {
+  const step = currentStickerTutorialStep();
+  if (!step || !stickerTutorial || stickerTutorial.hidden) {
+    return;
+  }
+  const rect = stickerTutorialTargetRect(step);
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  stickerTutorial.style.setProperty("--tutorial-x", `${centerX}px`);
+  stickerTutorial.style.setProperty("--tutorial-y", `${centerY}px`);
+  stickerTutorial.style.setProperty("--tutorial-w", `${Math.max(46, rect.width)}px`);
+  stickerTutorial.style.setProperty("--tutorial-h", `${Math.max(38, rect.height)}px`);
+  stickerTutorial.style.setProperty("--tutorial-radius", rect.radius || "18px");
+  updateStickerTutorialDemo(step, rect);
+}
+
+function updateStickerTutorialDemo(step, rect) {
+  if (!stickerTutorial || !rect) {
+    return;
+  }
+  const center = rectCenter(rect);
+  const handKey = step?.hand || "open";
+  if (stickerTutorialHand) {
+    stickerTutorialHand.src = STICKER_TUTORIAL_HANDS[handKey] || STICKER_TUTORIAL_HANDS.open;
+  }
+  const demo = stickerTutorialDemoPoints(step, rect);
+  setStickerTutorialPointVar("--tutorial-hand-x", demo.hand.x);
+  setStickerTutorialPointVar("--tutorial-hand-y", demo.hand.y);
+  setStickerTutorialPointVar("--tutorial-demo-from-x", demo.from.x);
+  setStickerTutorialPointVar("--tutorial-demo-from-y", demo.from.y);
+  setStickerTutorialPointVar("--tutorial-demo-to-x", demo.to.x);
+  setStickerTutorialPointVar("--tutorial-demo-to-y", demo.to.y);
+  setStickerTutorialPointVar("--tutorial-scroll-from-x", (demo.scrollFrom || demo.from).x);
+  setStickerTutorialPointVar("--tutorial-scroll-from-y", (demo.scrollFrom || demo.from).y);
+  setStickerTutorialPointVar("--tutorial-scroll-to-x", (demo.scrollTo || demo.to).x);
+  setStickerTutorialPointVar("--tutorial-scroll-to-y", (demo.scrollTo || demo.to).y);
+  setStickerTutorialPointVar("--tutorial-ghost-x", demo.from.x);
+  setStickerTutorialPointVar("--tutorial-ghost-y", demo.from.y);
+  updateStickerTutorialGhost(step, demo.ghostSrc);
+  if (!demo.hand) {
+    setStickerTutorialPointVar("--tutorial-hand-x", center.x);
+    setStickerTutorialPointVar("--tutorial-hand-y", center.y);
+  }
+}
+
+function stickerTutorialDemoPoints(step, rect) {
+  const center = rectCenter(rect);
+  const base = { hand: center, from: center, to: center, ghostSrc: "" };
+  if (!step) {
+    return base;
+  }
+  if (step.id === "mode" || step.id === "view") {
+    const bottom = rectBottom(rect);
+    const from = {
+      x: center.x,
+      y: Math.min(window.innerHeight - 44, bottom + Math.min(126, Math.max(98, rect.height * 1.82))),
+    };
+    const to = {
+      x: center.x,
+      y: Math.max(48, bottom - Math.min(18, Math.max(12, rect.height * 0.25))),
+    };
+    return { ...base, hand: from, from, to };
+  }
+  if (step.id === "ok" || step.id === "page") {
+    const point = {
+      x: Math.min(window.innerWidth - 44, rectRight(rect) + Math.min(52, Math.max(38, rect.width * 0.22))),
+      y: center.y,
+    };
+    return { ...base, hand: point, from: point, to: point };
+  }
+  if (step.id === "place") {
+    const trayRect = expandedElementRect(collectionStickerTrayItems || collectionStickerTray, 10, "16px") || rect;
+    const scrollFrom = {
+      x: rectRight(trayRect) - Math.min(96, trayRect.width * 0.18),
+      y: trayRect.top + trayRect.height * 0.54,
+    };
+    const scrollTo = {
+      x: trayRect.left + Math.min(96, trayRect.width * 0.18),
+      y: scrollFrom.y,
+    };
+    const source = {
+      x: trayRect.left + trayRect.width * 0.52,
+      y: trayRect.top + trayRect.height * 0.54,
+    };
+    const pageRect = stickerTutorialSidePageRect("right") || stickerTutorialPageRect() || rect;
+    const to = { x: pageRect.left + pageRect.width * 0.55, y: pageRect.top + pageRect.height * 0.42 };
+    return {
+      ...base,
+      hand: scrollFrom,
+      from: source,
+      to,
+      scrollFrom,
+      scrollTo,
+      ghostSrc: firstVisibleStickerAssetForTutorial(),
+    };
+  }
+  if (step.id === "move") {
+    const from = { x: center.x, y: center.y };
+    const to = { x: center.x + Math.min(72, Math.max(34, rect.width * 0.55)), y: center.y + Math.min(30, rect.height * 0.35) };
+    return { ...base, hand: from, from, to };
+  }
+  if (step.id === "scale" || step.id === "rotate") {
+    const from = { x: rect.left + rect.width * 0.36, y: center.y };
+    const to = { x: rect.left + rect.width * 0.78, y: center.y };
+    return { ...base, hand: from, from, to };
+  }
+  return base;
+}
+
+function updateStickerTutorialGhost(step, src) {
+  if (!stickerTutorialGhost) {
+    return;
+  }
+  const image = stickerTutorialGhost.querySelector("img");
+  const visible = Boolean(step?.ghost && src);
+  stickerTutorialGhost.hidden = !visible;
+  if (image && visible && image.getAttribute("src") !== src) {
+    image.src = src;
+  }
+}
+
+function firstVisibleStickerAssetForTutorial() {
+  const icon = visibleStickerTrayIconForTutorial();
+  const button = icon?.closest("[data-sticker-tray-id]");
+  const sticker = stickerOptions.find((item) => item.id === button?.dataset.stickerTrayId) || stickerOptions[0];
+  return sticker?.assetUrl || "";
+}
+
+function rectCenter(rect) {
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+function rectRight(rect) {
+  return Number.isFinite(Number(rect?.right)) ? Number(rect.right) : rect.left + rect.width;
+}
+
+function rectBottom(rect) {
+  return Number.isFinite(Number(rect?.bottom)) ? Number(rect.bottom) : rect.top + rect.height;
+}
+
+function setStickerTutorialPointVar(name, value) {
+  if (!stickerTutorial) {
+    return;
+  }
+  const number = Number(value);
+  stickerTutorial.style.setProperty(name, `${Number.isFinite(number) ? number : 0}px`);
+}
+
+function stickerTutorialTargetRect(step) {
+  const fallback = {
+    left: window.innerWidth * 0.24,
+    top: window.innerHeight * 0.24,
+    width: window.innerWidth * 0.52,
+    height: window.innerHeight * 0.42,
+    radius: "22px",
+  };
+  if (step.target === "editButton") {
+    return expandedElementRect(topEditButton, 8, "16px") || fallback;
+  }
+  if (step.target === "trayItems") {
+    return expandedElementRect(collectionStickerTrayItems || collectionStickerTray, 10, "16px") || fallback;
+  }
+  if (step.target === "firstSticker") {
+    const first = visibleStickerTrayIconForTutorial()
+      || collectionStickerTrayItems?.querySelector("[data-sticker-tray-id] .sticker-tray-icon");
+    return expandedElementRect(first || collectionStickerTrayItems || collectionStickerTray, 10, "16px") || fallback;
+  }
+  if (step.target === "scaleControl") {
+    return expandedElementRect(inlineStickerScale || inlineStickerControls, 12, "16px") || stickerTutorialPageRect() || fallback;
+  }
+  if (step.target === "rotationControl") {
+    return expandedElementRect(inlineStickerRotation || inlineStickerControls, 12, "16px") || stickerTutorialPageRect() || fallback;
+  }
+  if (step.target === "okButton") {
+    return expandedElementRect(inlineStickerOk || inlineStickerControls, 12, "999px") || stickerTutorialPageRect() || fallback;
+  }
+  if (step.target === "nextPageButton") {
+    return expandedElementRect(bookNextPage, 10, "999px") || fallback;
+  }
+  if (step.target === "selectedSticker") {
+    return stickerTutorialSelectedStickerRect() || stickerTutorialPageRect() || fallback;
+  }
+  if (step.target === "page") {
+    return stickerTutorialPageRect() || fallback;
+  }
+  if (step.target === "book") {
+    return stickerTutorialBookRect() || fallback;
+  }
+  return fallback;
+}
+
+function expandedElementRect(element, padding = 0, radius = "18px") {
+  if (!element || element.hidden) {
+    return null;
+  }
+  const rect = element.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    return null;
+  }
+  return {
+    left: Math.max(0, rect.left - padding),
+    top: Math.max(0, rect.top - padding),
+    width: Math.min(window.innerWidth, rect.width + padding * 2),
+    height: Math.min(window.innerHeight, rect.height + padding * 2),
+    radius,
+  };
+}
+
+function visibleStickerTrayIconForTutorial() {
+  if (!collectionStickerTrayItems) {
+    return null;
+  }
+  const trayRect = collectionStickerTrayItems.getBoundingClientRect();
+  const trayCenterX = trayRect.left + trayRect.width / 2;
+  let nearest = null;
+  let nearestDistance = Infinity;
+  collectionStickerTrayItems.querySelectorAll("[data-sticker-tray-id] .sticker-tray-icon").forEach((icon) => {
+    const rect = icon.getBoundingClientRect();
+    const visible = rect.right > trayRect.left + 4
+      && rect.left < trayRect.right - 4
+      && rect.bottom > trayRect.top + 4
+      && rect.top < trayRect.bottom - 4;
+    if (!visible) {
+      return;
+    }
+    const distance = Math.abs(rect.left + rect.width / 2 - trayCenterX);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = icon;
+    }
+  });
+  return nearest;
+}
+
+function stickerTutorialSelectedStickerRect() {
+  const placement = getSelectedPlacement();
+  if (!placement) {
+    return null;
+  }
+  const page = activeEditorPage || activeBookPage;
+  const side = Math.round(page) === rightBookPageNumber() ? "right" : "left";
+  const pageRect = stickerTutorialSidePageRect(side);
+  if (!pageRect) {
+    return null;
+  }
+  const scale = sanitizedPlacementScale(placement.scale);
+  const width = Math.max(46, Math.min(pageRect.width, pageRect.height) * 0.17 * scale);
+  const aspect = stickerAspectForPlacement(placement);
+  const height = width / Math.max(0.35, aspect);
+  const center = {
+    x: pageRect.left + (THREE.MathUtils.clamp(Number(placement.x) || 50, 4, 96) / 100) * pageRect.width,
+    y: pageRect.top + (THREE.MathUtils.clamp(Number(placement.y) || 50, 4, 96) / 100) * pageRect.height,
+  };
+  return {
+    left: center.x - width / 2,
+    top: center.y - height / 2,
+    right: center.x + width / 2,
+    bottom: center.y + height / 2,
+    width,
+    height,
+    radius: "18px",
+  };
+}
+
+function stickerTutorialSidePageRect(side) {
+  const mesh = side === "left" ? leftPageInner : rightPage;
+  return mesh?.visible ? projectedMeshClientRect(mesh) : null;
+}
+
+function stickerTutorialPageRect() {
+  const candidates = [rightPage, leftPageInner]
+    .filter((mesh) => mesh?.visible)
+    .map((mesh) => projectedMeshClientRect(mesh))
+    .filter(Boolean);
+  if (!candidates.length) {
+    return null;
+  }
+  return combineClientRects(candidates, 10, "24px");
+}
+
+function stickerTutorialBookRect() {
+  const candidates = [rightPage, leftPageInner, coverOnly]
+    .filter((mesh) => mesh?.visible)
+    .map((mesh) => projectedMeshClientRect(mesh))
+    .filter(Boolean);
+  if (!candidates.length) {
+    return stickerTutorialPageRect();
+  }
+  return combineClientRects(candidates, 12, "26px");
+}
+
+function combineClientRects(rects, padding = 0, radius = "18px") {
+  const left = Math.max(0, Math.min(...rects.map((rect) => rect.left)) - padding);
+  const top = Math.max(0, Math.min(...rects.map((rect) => rect.top)) - padding);
+  const right = Math.min(window.innerWidth, Math.max(...rects.map((rect) => rect.right)) + padding);
+  const bottom = Math.min(window.innerHeight, Math.max(...rects.map((rect) => rect.bottom)) + padding);
+  return {
+    left,
+    top,
+    width: Math.max(1, right - left),
+    height: Math.max(1, bottom - top),
+    radius,
+  };
+}
+
+function removeStickerTutorialStepClasses() {
+  for (const className of [...document.body.classList]) {
+    if (className.startsWith("is-sticker-tutorial-step-")) {
+      document.body.classList.remove(className);
+    }
+  }
+}
+
+function hasSeenStickerTutorial() {
+  try {
+    return localStorage.getItem(STICKER_TUTORIAL_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markStickerTutorialSeen() {
+  try {
+    localStorage.setItem(STICKER_TUTORIAL_SEEN_KEY, "1");
+  } catch {}
 }
 
 function toggleZukanSettingsPanel() {
@@ -3221,6 +4475,9 @@ function setupCollectionStickerTray() {
   });
   collectionStickerTrayItems.addEventListener("scroll", () => {
     window.requestAnimationFrame(updateStickerTrayCounter);
+    if (!stickerTutorialProgrammaticTrayScroll && performance.now() > stickerTutorialProgrammaticTrayScrollUntil) {
+      notifyStickerTutorialAction("trayScroll");
+    }
   }, { passive: true });
   window.addEventListener("pointermove", handleStickerTrayPointerMove);
   window.addEventListener("pointerup", endStickerTrayDrag);
@@ -3458,6 +4715,7 @@ function handleStickerTrayPointerDown(event) {
   if (!sticker) {
     return;
   }
+  notifyStickerTutorialAction("pickSticker");
   stickerTrayDragState = {
     pointerId: event.pointerId,
     startX: event.clientX,
@@ -3502,6 +4760,7 @@ function handleStickerTrayPointerMove(event) {
   }
   event.preventDefault();
   positionStickerTrayGhost(state, event.clientX, event.clientY);
+  maybeScheduleStickerDragPageTurn(event);
 }
 
 function startStickerTrayDrag(state, event) {
@@ -3533,6 +4792,77 @@ function positionStickerTrayGhost(state, x, y) {
   state.ghost.style.top = `${y}px`;
 }
 
+function maybeScheduleStickerDragPageTurn(event) {
+  const direction = stickerDragPageTurnDirection(event);
+  if (!direction) {
+    cancelStickerTutorialDragPageTurn();
+    return;
+  }
+  if (stickerTutorialDragPageTurnTimer && stickerTutorialDragPageTurnDirection === direction) {
+    return;
+  }
+  cancelStickerTutorialDragPageTurn();
+  stickerTutorialDragPageTurnDirection = direction;
+  stickerTutorialDragPageTurnTimer = window.setTimeout(() => {
+    stickerTutorialDragPageTurnTimer = 0;
+    const currentDirection = stickerTutorialDragPageTurnDirection;
+    stickerTutorialDragPageTurnDirection = 0;
+    turnPageDuringStickerDrag(currentDirection);
+  }, 620);
+}
+
+function stickerDragPageTurnDirection(event) {
+  if (activeSurface !== "inside" || coverOpenAnimation || spreadJumpAnimation) {
+    return 0;
+  }
+  if (bookNextPage && !bookNextPage.disabled && pointInExpandedElement(event, bookNextPage, 18)) {
+    return 1;
+  }
+  if (bookPrevPage && !bookPrevPage.disabled && pointInExpandedElement(event, bookPrevPage, 18)) {
+    return -1;
+  }
+  return 0;
+}
+
+function pointInExpandedElement(event, element, padding = 0) {
+  const rect = element?.getBoundingClientRect();
+  if (!rect?.width || !rect.height) {
+    return false;
+  }
+  return event.clientX >= rect.left - padding
+    && event.clientX <= rect.right + padding
+    && event.clientY >= rect.top - padding
+    && event.clientY <= rect.bottom + padding;
+}
+
+function turnPageDuringStickerDrag(direction) {
+  if (!direction || activeSurface !== "inside") {
+    return;
+  }
+  if (direction > 0) {
+    const nextPage = activeBookPage + 2;
+    if (nextPage <= spreadStartForPage(editorPageCount())) {
+      setBookPage(nextPage, { turnMode: "single", skipEditorSync: true });
+      setStickerTrayPeek(true);
+      scheduleStickerTutorialLayout();
+    }
+    return;
+  }
+  if (activeBookPage > 1) {
+    setBookPage(activeBookPage - 2, { turnMode: "single", skipEditorSync: true });
+    setStickerTrayPeek(true);
+    scheduleStickerTutorialLayout();
+  }
+}
+
+function cancelStickerTutorialDragPageTurn() {
+  if (stickerTutorialDragPageTurnTimer) {
+    window.clearTimeout(stickerTutorialDragPageTurnTimer);
+    stickerTutorialDragPageTurnTimer = 0;
+  }
+  stickerTutorialDragPageTurnDirection = 0;
+}
+
 function endStickerTrayDrag(event) {
   const state = stickerTrayDragState;
   if (!state || event.pointerId !== state.pointerId) {
@@ -3541,10 +4871,11 @@ function endStickerTrayDrag(event) {
   if (state.dragging) {
     event.preventDefault();
     const target = stickerTrayDropTarget(event);
-    if (target) {
+  if (target) {
       addStickerFromTrayToPage(state.sticker.id, target.page, target.point);
     }
   }
+  cancelStickerTutorialDragPageTurn();
   cleanupStickerTrayDrag(state.dragging);
 }
 
@@ -3555,6 +4886,7 @@ function cancelStickerTrayDrag(event) {
   if (event?.pointerId != null && event.pointerId !== stickerTrayDragState.pointerId) {
     return;
   }
+  cancelStickerTutorialDragPageTurn();
   cleanupStickerTrayDrag(stickerTrayDragState.dragging);
 }
 
@@ -3563,6 +4895,7 @@ function cleanupStickerTrayDrag(suppressClick = false) {
   if (!state) {
     return;
   }
+  cancelStickerTutorialDragPageTurn();
   state.source?.classList.remove("is-dragging");
   try {
     if (state.source?.hasPointerCapture?.(state.pointerId)) {
@@ -3706,6 +5039,7 @@ function addStickerFromTrayToPage(stickerId, page, point = {}) {
   refreshPageTemplateTextures();
   updatePage(flipProgress);
   updateInlineStickerControls();
+  notifyStickerTutorialAction("dropSticker");
 }
 
 function buildCollectionTocCategories() {
@@ -3974,6 +5308,7 @@ function updateCollectionStickerTrayVisibility() {
   updateCollectionTraySelection();
   updateStickerTrayCounter();
   updateInlineStickerControls();
+  scheduleStickerTutorialLayout();
 }
 
 function updateCollectionTraySelection() {
@@ -4116,6 +5451,7 @@ async function loadStickerPlanForEditor() {
     if (!isLocalPreview || !params.has("spread")) {
       spreadPosition = spreadPositionForBookPage(activeBookPage);
     }
+    migrateEditorStateForEmptyStart();
     ensureDefaultEditorPages();
     saveEditorState();
     if (editorEnabled) {
@@ -4128,6 +5464,7 @@ async function loadStickerPlanForEditor() {
     setupTuningPanel();
     updatePage(flipProgress);
     syncUrl();
+    maybeStartStickerTutorial();
     window.__stickerEditorPlanLoaded = true;
   } catch (error) {
     console.warn("Sticker plan load failed", error);
@@ -4342,7 +5679,98 @@ function ensureDefaultEditorPages() {
     getPagePlacements(pageDef.page);
     getPageDrawingStrokes(pageDef.page);
   }
-  seedDefaultEditorContentIfNeeded();
+  editorState.defaultContentSeedVersion = Math.max(
+    Number(editorState.defaultContentSeedVersion) || 0,
+    DEFAULT_CONTENT_SEED_VERSION,
+  );
+  editorState.emptyStartVersion = Math.max(
+    Number(editorState.emptyStartVersion) || 0,
+    EMPTY_STICKER_START_VERSION,
+  );
+  editorStateDirty = true;
+}
+
+function migrateEditorStateForEmptyStart() {
+  if ((Number(editorState.emptyStartVersion) || 0) >= EMPTY_STICKER_START_VERSION) {
+    return;
+  }
+  if (editorStateLooksLikeGeneratedSeedContent() || editorStateLooksLikeLegacyDefaultContent()) {
+    editorState.pages = {};
+    selectedPlacementId = null;
+  }
+  editorState.emptyStartVersion = EMPTY_STICKER_START_VERSION;
+  editorState.defaultContentSeedVersion = Math.max(
+    Number(editorState.defaultContentSeedVersion) || 0,
+    DEFAULT_CONTENT_SEED_VERSION,
+  );
+  editorStateDirty = true;
+}
+
+function editorStateLooksLikeGeneratedSeedContent() {
+  if (!stickerOptions.length || !hasAnyEditorContent()) {
+    return false;
+  }
+  if ((Number(editorState.defaultContentSeedVersion) || 0) <= 0) {
+    return false;
+  }
+  const drawingValues = editorState.drawings && typeof editorState.drawings === "object"
+    ? Object.values(editorState.drawings)
+    : [];
+  if (drawingValues.some((strokes) => Array.isArray(strokes) && strokes.length > 0)) {
+    return false;
+  }
+  const expectedPages = buildGeneratedSeedPages();
+  let actualTotal = 0;
+  let expectedTotal = 0;
+  let matchedTotal = 0;
+  for (let page = 1; page <= editorPageCount(); page += 1) {
+    const actual = Array.isArray(editorState.pages?.[String(page)]) ? editorState.pages[String(page)] : [];
+    const expected = expectedPages[String(page)] || [];
+    actualTotal += actual.length;
+    expectedTotal += expected.length;
+    if (actual.length !== expected.length) {
+      return false;
+    }
+    for (let index = 0; index < actual.length; index += 1) {
+      if (placementLooksLikeGeneratedSeed(actual[index], expected[index])) {
+        matchedTotal += 1;
+      }
+    }
+  }
+  return actualTotal > 0
+    && expectedTotal === actualTotal
+    && matchedTotal / actualTotal >= 0.96;
+}
+
+function buildGeneratedSeedPages() {
+  const expected = {};
+  const sortedStickers = [...stickerOptions].sort((a, b) => {
+    const gameOrderA = stickerGameOrder(a.gameId);
+    const gameOrderB = stickerGameOrder(b.gameId);
+    return gameOrderA - gameOrderB || String(a.id).localeCompare(String(b.id));
+  });
+  const pageCount = editorPageCount();
+  const stickersPerPage = Math.max(1, Math.ceil(sortedStickers.length / pageCount));
+  for (let page = 1; page <= pageCount; page += 1) {
+    const start = (page - 1) * stickersPerPage;
+    expected[String(page)] = createDefaultPlacements(sortedStickers.slice(start, start + stickersPerPage));
+  }
+  return expected;
+}
+
+function placementLooksLikeGeneratedSeed(actual, expected) {
+  if (!actual || !expected || actual.stickerId !== expected.stickerId) {
+    return false;
+  }
+  return nearlyEqualNumber(actual.x, expected.x, 0.12)
+    && nearlyEqualNumber(actual.y, expected.y, 0.12)
+    && nearlyEqualNumber(actual.scale, expected.scale, 0.015)
+    && nearlyEqualNumber(actual.rotation || 0, expected.rotation || 0, 0.05)
+    && nearlyEqualNumber(actual.z, expected.z, 0.1);
+}
+
+function nearlyEqualNumber(a, b, tolerance) {
+  return Math.abs((Number(a) || 0) - (Number(b) || 0)) <= tolerance;
 }
 
 function createDefaultPlacements(stickers) {
@@ -5762,6 +7190,7 @@ function loadEditorState() {
       pages: parsed.pages,
       drawings: parsed.drawings && typeof parsed.drawings === "object" ? parsed.drawings : {},
       defaultContentSeedVersion: parsed.defaultContentSeedVersion || 0,
+      emptyStartVersion: parsed.emptyStartVersion || 0,
     };
   } catch {
     return createEmptyEditorState();
@@ -5788,7 +7217,13 @@ function loadCollectionAlbumState() {
 }
 
 function createEmptyEditorState() {
-  return { version: EDITOR_STATE_VERSION, pages: {}, drawings: {}, defaultContentSeedVersion: 0 };
+  return {
+    version: EDITOR_STATE_VERSION,
+    pages: {},
+    drawings: {},
+    defaultContentSeedVersion: 0,
+    emptyStartVersion: EMPTY_STICKER_START_VERSION,
+  };
 }
 
 function createEmptyCollectionAlbumState() {
@@ -5802,6 +7237,7 @@ function saveEditorState() {
       editorState.drawings = {};
     }
     editorState.defaultContentSeedVersion = editorState.defaultContentSeedVersion || 0;
+    editorState.emptyStartVersion = editorState.emptyStartVersion || EMPTY_STICKER_START_VERSION;
     localStorage.setItem(EDITOR_STORAGE_KEY, JSON.stringify(editorState));
   } catch {
     // Local storage can be unavailable in private contexts; editing still works for the session.
@@ -11561,6 +12997,7 @@ function resize() {
     renderDrawingCanvas();
   }
   updateStickerTrayCounter();
+  scheduleStickerTutorialLayout();
 }
 
 function syncUrl() {

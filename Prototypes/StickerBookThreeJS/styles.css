@@ -152,7 +152,8 @@ body:not(.is-collection-album) #scene {
   font-weight: 900;
 }
 
-.zukan-settings-back {
+.zukan-settings-back,
+.zukan-settings-help {
   width: 100%;
   min-height: 40px;
   margin: 0 0 10px;
@@ -163,6 +164,12 @@ body:not(.is-collection-album) #scene {
   font-size: 15px;
   font-weight: 900;
   box-shadow: inset 0 -4px 0 rgba(210, 165, 48, 0.36);
+}
+
+.zukan-settings-help {
+  background: linear-gradient(180deg, #e8fffa, #bfeee7);
+  border-color: rgba(70, 171, 164, 0.56);
+  box-shadow: inset 0 -4px 0 rgba(61, 153, 149, 0.22);
 }
 
 .zukan-settings-row {
@@ -680,6 +687,7 @@ input[type="range"] {
   white-space: nowrap;
   overflow: hidden;
   filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+  transition: transform 120ms ease, filter 120ms ease;
 }
 
 body.is-collection-album .top-edit-button {
@@ -689,9 +697,17 @@ body.is-collection-album .top-edit-button {
 body.is-sticker-edit-mode .top-edit-button {
   background-image: var(--sb3d-ui-button-mode-paste-text);
   filter:
-    saturate(1.08)
-    brightness(1.05)
-    drop-shadow(0 8px 14px rgba(4, 24, 30, 0.16));
+    saturate(1.22)
+    brightness(1.1)
+    drop-shadow(0 9px 16px rgba(4, 24, 30, 0.18));
+}
+
+.top-edit-button.is-tutorial-pressing {
+  transform: translateY(3px) scale(0.985);
+  filter:
+    saturate(1.05)
+    brightness(0.92)
+    drop-shadow(0 4px 8px rgba(4, 24, 30, 0.18));
 }
 
 .top-edit-button .top-button-label,
@@ -996,6 +1012,12 @@ body:not(.is-collection-album) .collection-sticker-tray.is-sticker-source {
 body:not(.is-collection-album).is-sticker-tray-peek .collection-sticker-tray.is-sticker-source,
 body:not(.is-collection-album).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source,
 body:not(.is-collection-album).is-sticker-tray-dragging .collection-sticker-tray.is-sticker-source {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+body.is-sticker-tutorial-active:not(.is-collection-album).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%);
@@ -1344,6 +1366,420 @@ body.is-sticker-tray-dragging #scene {
   line-height: 1;
   box-shadow: 0 2px 7px rgba(31, 56, 48, 0.12);
   cursor: pointer;
+}
+
+.sticker-tutorial[hidden] {
+  display: none;
+}
+
+.sticker-tutorial {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  pointer-events: none;
+  color: #234247;
+  font-weight: 900;
+}
+
+.sticker-tutorial::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 29, 28, 0.12);
+  pointer-events: none;
+}
+
+.sticker-tutorial-spotlight {
+  position: fixed;
+  left: var(--tutorial-x, 50%);
+  top: var(--tutorial-y, 50%);
+  width: var(--tutorial-w, 180px);
+  height: var(--tutorial-h, 90px);
+  border: 4px solid rgba(255, 225, 104, 0.96);
+  border-radius: var(--tutorial-radius, 18px);
+  box-shadow:
+    0 0 0 9999px rgba(7, 19, 22, 0.08),
+    0 0 0 8px rgba(255, 255, 255, 0.45),
+    0 0 24px rgba(255, 220, 84, 0.9);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.sticker-tutorial-hand {
+  position: fixed;
+  z-index: 42;
+  left: var(--tutorial-hand-x, calc(var(--tutorial-x, 50%) + var(--tutorial-w, 180px) * 0.22));
+  top: var(--tutorial-hand-y, calc(var(--tutorial-y, 50%) + var(--tutorial-h, 90px) * 0.16));
+  width: clamp(68px, 7.6vw, 104px);
+  height: auto;
+  filter:
+    drop-shadow(0 8px 12px rgba(22, 48, 44, 0.22))
+    drop-shadow(0 2px 0 rgba(255, 255, 255, 0.35));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transform-origin: 54% 58%;
+}
+
+.sticker-tutorial-ghost {
+  position: fixed;
+  left: var(--tutorial-ghost-x, var(--tutorial-hand-x, 50%));
+  top: var(--tutorial-ghost-y, var(--tutorial-hand-y, 50%));
+  width: clamp(74px, 8vw, 112px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+  pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgba(22, 48, 44, 0.24));
+}
+
+.sticker-tutorial-ghost img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+body.is-sticker-tutorial-step-ok .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-page .sticker-tutorial-hand {
+  animation: stickerTutorialTap 1.35s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-demo .sticker-tutorial-hand {
+  animation: stickerTutorialModePressDemo 5.2s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-view .sticker-tutorial-hand {
+  animation: stickerTutorialButtonPressLoop 1.45s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-place .sticker-tutorial-hand {
+  animation: stickerTutorialFindPlaceHand 19.2s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
+  animation: stickerTutorialFindPlaceGhost 19.2s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-move .sticker-tutorial-hand {
+  animation: stickerTutorialMoveDemo 1.75s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-scale .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-rotate .sticker-tutorial-hand {
+  animation: stickerTutorialSliderDemo 1.8s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
+  opacity: 1;
+}
+
+.sticker-tutorial-card,
+.sticker-tutorial-start {
+  position: fixed;
+  left: 50%;
+  bottom: max(160px, calc(env(safe-area-inset-bottom) + 160px));
+  z-index: 26;
+  width: min(430px, calc(100vw - 32px));
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  padding: 14px 16px 12px;
+  border: 3px solid rgba(149, 106, 42, 0.82);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 236, 0.98), rgba(255, 242, 197, 0.96)),
+    #fff8da;
+  box-shadow:
+    0 18px 32px rgba(22, 48, 44, 0.22),
+    inset 0 -5px 0 rgba(214, 163, 61, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.82);
+  pointer-events: auto;
+}
+
+.sticker-tutorial-start {
+  bottom: 50%;
+  width: min(360px, calc(100vw - 44px));
+  padding: 24px 20px 18px;
+  transform: translate(-50%, 50%);
+}
+
+.sticker-tutorial-card[hidden],
+.sticker-tutorial-start[hidden] {
+  display: none;
+}
+
+.sticker-tutorial-start-title {
+  margin: 0 0 18px;
+  color: #234247;
+  font-size: 28px;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+body.is-sticker-tutorial-card-top .sticker-tutorial-card {
+  top: max(76px, calc(env(safe-area-inset-top) + 76px));
+  bottom: auto;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-card {
+  top: max(74px, calc(env(safe-area-inset-top) + 74px));
+  bottom: auto;
+  left: max(10px, calc(env(safe-area-inset-left) + 10px));
+  width: min(390px, calc(100vw - 20px));
+  transform: none;
+  padding: 18px 28px 15px 110px;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-count {
+  font-size: 10px;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.33;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
+  min-width: 66px;
+  min-height: 28px;
+  padding: 0 10px 2px;
+  font-size: 12px;
+}
+
+.sticker-tutorial-count {
+  position: absolute;
+  right: 28px;
+  top: 13px;
+  color: #5c7779;
+  font-size: 12px;
+  line-height: 1;
+  text-align: right;
+}
+
+.sticker-tutorial-card p {
+  margin: 0;
+  color: #234247;
+  font-size: 17px;
+  line-height: 1.34;
+  letter-spacing: 0;
+  text-align: center;
+  white-space: pre-line;
+}
+
+.sticker-tutorial-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sticker-tutorial-actions button {
+  min-width: 78px;
+  min-height: 34px;
+  padding: 0 14px 2px;
+  border: 2px solid rgba(145, 105, 42, 0.44);
+  border-radius: 999px;
+  background: rgba(255, 251, 231, 0.88);
+  color: #234247;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  box-shadow:
+    0 4px 10px rgba(31, 56, 48, 0.11),
+    inset 0 -3px 0 rgba(190, 143, 50, 0.14);
+  cursor: pointer;
+}
+
+#stickerTutorialNext {
+  min-width: 86px;
+  background: linear-gradient(180deg, #ffeeb9, #ffc75f);
+  border-color: rgba(177, 119, 34, 0.56);
+}
+
+#stickerTutorialStartButton {
+  min-width: 116px;
+  min-height: 42px;
+  background: linear-gradient(180deg, #ffeeb9, #ffc75f);
+  border-color: rgba(177, 119, 34, 0.56);
+  font-size: 15px;
+}
+
+.sticker-tutorial-card {
+  display: grid;
+  align-items: center;
+  aspect-ratio: 1578 / 470;
+  border: 0;
+  border-radius: 0;
+  background: url("../../assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png") center / 100% 100% no-repeat;
+  box-shadow: none;
+}
+
+.sticker-tutorial-card .sticker-tutorial-actions {
+  position: absolute;
+  right: 16px;
+  bottom: -22px;
+  gap: 4px;
+  opacity: 0.88;
+}
+
+.sticker-tutorial-card .sticker-tutorial-actions button {
+  min-width: 54px;
+  min-height: 22px;
+  padding: 0 8px 1px;
+  border-width: 1px;
+  font-size: 10px;
+  background: rgba(255, 250, 226, 0.88);
+  box-shadow: 0 2px 5px rgba(31, 56, 48, 0.1);
+}
+
+.sticker-tutorial-actions button:disabled {
+  opacity: 0.46;
+  cursor: default;
+  filter: grayscale(0.18);
+}
+
+.sticker-tutorial-card #stickerTutorialNext {
+  min-width: 60px;
+}
+
+@keyframes stickerTutorialSwipe {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) rotate(-7deg);
+  }
+  50% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) rotate(7deg);
+  }
+}
+
+@keyframes stickerTutorialLinkedSwipe {
+  0% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) rotate(-7deg);
+  }
+  100% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) rotate(7deg);
+  }
+}
+
+@keyframes stickerTutorialModePressDemo {
+  0%, 12%, 33%, 42%, 63%, 70%, 92%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(1) rotate(88deg);
+  }
+  18%, 23%, 28%, 48%, 53%, 58%, 76%, 81%, 86% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(0.86) rotate(82deg);
+  }
+}
+
+@keyframes stickerTutorialButtonPressLoop {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(1) rotate(88deg);
+  }
+  45% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(0.88) rotate(82deg);
+  }
+}
+
+@keyframes stickerTutorialTap {
+  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(-2deg); }
+  45% { transform: translate(-50%, -50%) scale(0.86) rotate(-7deg); }
+}
+
+@keyframes stickerTutorialFindPlaceHand {
+  0% {
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(1) rotate(-4deg);
+  }
+  30% {
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(1) rotate(7deg);
+  }
+  48% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(1) rotate(-4deg);
+  }
+  59% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(0.88) rotate(-9deg);
+  }
+  90%, 100% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(0.92) rotate(5deg);
+  }
+}
+
+@keyframes stickerTutorialFindPlaceGhost {
+  0%, 55%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.88);
+  }
+  60% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  90% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  96% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+@keyframes stickerTutorialMoveDemo {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) rotate(-6deg);
+  }
+  55% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) rotate(6deg);
+  }
+}
+
+@keyframes stickerTutorialSliderDemo {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(0.96) rotate(-4deg);
+  }
+  55% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -50%) scale(1) rotate(5deg);
+  }
 }
 
 .sticker-editor[hidden] {
