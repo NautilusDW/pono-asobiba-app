@@ -753,7 +753,7 @@
       .sticker-book-entry__icon { width: 46px; height: 46px; font-size: 1.8rem; }
       .sticker-book-entry__label { font-size: 20px; }
       .sticker-book-entry__sub { font-size: 12px; }
-      .daily-gacha-entry { width: 360px; height: 111px; bottom: 174px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 28px); }
+      .daily-gacha-entry { width: 360px; height: 111px; bottom: 114px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px); }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
@@ -781,7 +781,7 @@
       .sticker-book-entry__icon { width: 42px; height: 42px; font-size: 1.65rem; }
       .sticker-book-entry__label { font-size: 18px; }
       .sticker-book-entry__sub { display: none; }
-      .daily-gacha-entry { width: 318px; height: 98px; bottom: 154px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 24px); }
+      .daily-gacha-entry { width: 318px; height: 98px; bottom: 102px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px); }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
       /* 1280×1024 etc. (very rare). Visible canvas slice ≈ 1029.5px,
@@ -796,7 +796,7 @@
       .for-parents__label { margin-left: 80px; margin-right: 20px; font-size: 18px; }
       .sticker-book-entry { width: 238px; min-height: 56px; bottom: 100px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 32px); }
       .sticker-book-entry__label { font-size: 17px; }
-      .daily-gacha-entry { width: 296px; height: 91px; bottom: 148px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 18px); }
+      .daily-gacha-entry { width: 296px; height: 91px; bottom: 98px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px); }
     }
 
     /* ===== Bottom Navigation =====
@@ -947,8 +947,8 @@
     }
     .daily-gacha-entry {
       position: absolute;
-      bottom: 196px;
-      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 34px);
+      bottom: 122px;
+      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px);
       width: 390px;
       height: 120px;
       z-index: 92;
@@ -3825,7 +3825,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1519;
+    const PAGE_CACHE_VERSION = 1526;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
