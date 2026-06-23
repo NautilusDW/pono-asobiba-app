@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-818";
+const ASSET_VERSION = "20260623-819";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1509,8 +1509,11 @@ const bookPageLabel = document.getElementById("bookPageLabel");
 const bookPageJump = document.getElementById("bookPageJump");
 const topSettingsButton = document.getElementById("topSettingsButton");
 const topThemeButton = document.getElementById("topThemeButton");
+const topEditButton = document.getElementById("topEditButton");
 const zukanSettingsPanel = document.getElementById("zukanSettingsPanel");
 const zukanSettingsClose = document.getElementById("zukanSettingsClose");
+const bookThemePanel = document.getElementById("bookThemePanel");
+const bookThemeClose = document.getElementById("bookThemeClose");
 const settingsBackButton = document.getElementById("settingsBackButton");
 const zukanSettingsButtons = [...document.querySelectorAll("[data-zukan-side][data-zukan-type]")];
 const stickerModeButtons = [...document.querySelectorAll("[data-sticker-edit-mode]")];
@@ -2277,7 +2280,13 @@ topSettingsButton?.addEventListener("click", () => {
 });
 
 topThemeButton?.addEventListener("click", () => {
-  openZukanSettingsPanel({ focusTheme: true });
+  toggleBookThemePanel();
+});
+
+topEditButton?.addEventListener("click", () => {
+  setStickerEditMode(!stickerEditMode, { openInside: true });
+  closeZukanSettingsPanel();
+  closeBookThemePanel();
 });
 
 syncTopSettingsButton();
@@ -3041,17 +3050,19 @@ function navigateBookBySwipe(direction) {
 }
 
 function syncTopSettingsButton() {
-  const open = Boolean(zukanSettingsPanel && !zukanSettingsPanel.hidden);
+  const settingsOpen = Boolean(zukanSettingsPanel && !zukanSettingsPanel.hidden);
+  const themeOpen = Boolean(bookThemePanel && !bookThemePanel.hidden);
   topSettingsButton?.setAttribute(
     "aria-pressed",
-    open ? "true" : "false",
+    settingsOpen ? "true" : "false",
   );
-  topThemeButton?.setAttribute("aria-pressed", open ? "true" : "false");
+  topThemeButton?.setAttribute("aria-pressed", themeOpen ? "true" : "false");
 }
 
 function setupZukanSettingsPanel() {
   refreshZukanSettingsControls();
   zukanSettingsClose?.addEventListener("click", () => closeZukanSettingsPanel());
+  bookThemeClose?.addEventListener("click", () => closeBookThemePanel());
   settingsBackButton?.addEventListener("click", () => navigateBackToPlay());
   for (const button of stickerModeButtons) {
     button.addEventListener("click", () => {
@@ -3071,21 +3082,21 @@ function setupZukanSettingsPanel() {
   }
   zukanTuneButton?.addEventListener("click", () => openZukanTuningMode());
   document.addEventListener("pointerdown", (event) => {
-    if (!zukanSettingsPanel || zukanSettingsPanel.hidden) {
-      return;
+    if (zukanSettingsPanel && !zukanSettingsPanel.hidden) {
+      if (!zukanSettingsPanel.contains(event.target) && !topSettingsButton?.contains(event.target)) {
+        closeZukanSettingsPanel();
+      }
     }
-    if (
-      zukanSettingsPanel.contains(event.target)
-      || topSettingsButton?.contains(event.target)
-      || topThemeButton?.contains(event.target)
-    ) {
-      return;
+    if (bookThemePanel && !bookThemePanel.hidden) {
+      if (!bookThemePanel.contains(event.target) && !topThemeButton?.contains(event.target)) {
+        closeBookThemePanel();
+      }
     }
-    closeZukanSettingsPanel();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeZukanSettingsPanel();
+      closeBookThemePanel();
     }
   });
 }
@@ -3105,14 +3116,9 @@ function openZukanSettingsPanel(options = {}) {
   if (!zukanSettingsPanel) {
     return;
   }
+  closeBookThemePanel();
   zukanSettingsPanel.hidden = false;
   syncTopSettingsButton();
-  if (options.focusTheme) {
-    zukanSettingsPanel.querySelector(".zukan-settings-row-theme")?.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-    });
-  }
 }
 
 function closeZukanSettingsPanel() {
@@ -3120,6 +3126,34 @@ function closeZukanSettingsPanel() {
     return;
   }
   zukanSettingsPanel.hidden = true;
+  syncTopSettingsButton();
+}
+
+function toggleBookThemePanel() {
+  if (!bookThemePanel) {
+    return;
+  }
+  if (bookThemePanel.hidden) {
+    openBookThemePanel();
+  } else {
+    closeBookThemePanel();
+  }
+}
+
+function openBookThemePanel() {
+  if (!bookThemePanel) {
+    return;
+  }
+  closeZukanSettingsPanel();
+  bookThemePanel.hidden = false;
+  syncTopSettingsButton();
+}
+
+function closeBookThemePanel() {
+  if (!bookThemePanel) {
+    return;
+  }
+  bookThemePanel.hidden = true;
   syncTopSettingsButton();
 }
 
@@ -11036,6 +11070,11 @@ function setStickerEditMode(enabled, options = {}) {
 function updateStickerEditModeUi() {
   const enabled = activeAlbumMode !== "collection" && stickerEditMode;
   document.body.classList.toggle("is-sticker-edit-mode", enabled);
+  if (topEditButton) {
+    topEditButton.classList.toggle("is-active", enabled);
+    topEditButton.setAttribute("aria-pressed", enabled ? "true" : "false");
+    topEditButton.setAttribute("aria-label", enabled ? "へんしゅうを やめる" : "へんしゅうする");
+  }
   for (const button of stickerModeButtons) {
     const active = button.dataset.stickerEditMode === (enabled ? "edit" : "view");
     button.classList.toggle("is-active", active);

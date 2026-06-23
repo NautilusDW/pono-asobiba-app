@@ -13,7 +13,9 @@ body {
 
 :root {
   --sb3d-ui-button-back: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_back_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-edit: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_edit_pencil_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-settings: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_settings_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-theme: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-wide: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-prev: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_prev_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-next: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_next_wood_gpt_image2_20260623.png");
@@ -306,14 +308,6 @@ body:not(.is-collection-album) #scene {
     inset 0 0 0 3px rgba(255, 255, 255, 0.74),
     0 0 0 3px var(--book-accent, rgba(73, 171, 162, 0.88)),
     0 4px 9px rgba(26, 55, 55, 0.18);
-}
-
-.sticker-mode-segment {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-body.is-collection-album .sticker-mode-settings-row {
-  display: none;
 }
 
 .zukan-tune-button {
@@ -615,6 +609,7 @@ input[type="range"] {
 }
 
 .top-action-button,
+.top-edit-button,
 .top-theme-button,
 .album-mode-toggle {
   box-sizing: border-box;
@@ -647,6 +642,36 @@ input[type="range"] {
   line-height: 1;
 }
 
+.top-edit-button {
+  position: fixed;
+  top: max(0px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 4;
+  width: 176px;
+  padding: 0 22px 0 72px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  background-image: var(--sb3d-ui-button-edit);
+  color: #243b40;
+  font-size: 15px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+}
+
+body.is-collection-album .top-edit-button {
+  display: none;
+}
+
+body.is-sticker-edit-mode .top-edit-button {
+  filter:
+    saturate(1.08)
+    brightness(1.05)
+    drop-shadow(0 8px 14px rgba(4, 24, 30, 0.16));
+}
+
 .top-action-button::before {
   content: "";
   display: none;
@@ -668,11 +693,11 @@ input[type="range"] {
 }
 
 .top-theme-button {
-  min-width: 132px;
-  padding: 0 22px 0 26px;
+  min-width: 176px;
+  padding: 0 24px 0 72px;
   display: grid;
   place-items: center;
-  background-image: var(--sb3d-ui-button-wide);
+  background-image: var(--sb3d-ui-button-theme);
   color: #243b40;
   font-size: 14px;
   letter-spacing: 0;
@@ -698,6 +723,7 @@ input[type="range"] {
 }
 
 .top-action-button:hover,
+.top-edit-button:hover,
 .top-theme-button:hover,
 .album-mode-toggle:hover {
   filter: brightness(1.04) drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
@@ -1893,6 +1919,46 @@ body.is-sticker-tray-dragging #scene {
   }
 }
 
+@media (max-width: 1100px) {
+  .top-edit-button {
+    width: 136px;
+    padding: 0 14px 0 52px;
+    font-size: 12px;
+  }
+
+  .top-theme-button {
+    min-width: 132px;
+    padding: 0 14px 0 50px;
+    font-size: 11px;
+  }
+
+  .album-mode-toggle {
+    min-width: 160px;
+    padding: 0 16px 0 54px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 780px) {
+  .top-edit-button {
+    width: 112px;
+    padding: 0 9px 0 42px;
+    font-size: 10px;
+  }
+
+  .top-theme-button {
+    min-width: 92px;
+    padding: 0 7px 0 36px;
+    font-size: 10px;
+  }
+
+  .album-mode-toggle {
+    min-width: 126px;
+    padding: 0 11px 0 44px;
+    font-size: 10px;
+  }
+}
+
 .tuning-panel[hidden] {
   display: none;
 }
@@ -2098,18 +2164,25 @@ body.is-sticker-tray-dragging #scene {
     height: 50px;
   }
 
-  .top-theme-button {
-    min-width: 118px;
+  .top-edit-button {
+    width: 112px;
     height: 50px;
-    padding: 0 16px 0 20px;
-    font-size: 12px;
+    padding: 0 9px 0 42px;
+    font-size: 10px;
+  }
+
+  .top-theme-button {
+    min-width: 92px;
+    height: 50px;
+    padding: 0 7px 0 36px;
+    font-size: 10px;
   }
 
   .album-mode-toggle {
-    min-width: 170px;
+    min-width: 126px;
     height: 50px;
-    padding: 0 22px 0 62px;
-    font-size: 12px;
+    padding: 0 11px 0 44px;
+    font-size: 10px;
   }
 
   .book-page-controls {
@@ -2511,18 +2584,26 @@ body.is-sticker-tray-dragging #scene {
     height: 42px;
   }
 
-  .top-theme-button {
-    min-width: 104px;
+  .top-edit-button {
+    top: max(6px, env(safe-area-inset-top));
+    width: 112px;
     height: 42px;
-    padding: 0 13px 0 16px;
-    font-size: 11px;
+    padding: 0 9px 0 42px;
+    font-size: 10px;
+  }
+
+  .top-theme-button {
+    min-width: 92px;
+    height: 42px;
+    padding: 0 7px 0 36px;
+    font-size: 10px;
   }
 
   .album-mode-toggle {
-    min-width: 142px;
+    min-width: 126px;
     height: 42px;
-    padding: 0 15px 0 50px;
-    font-size: 12px;
+    padding: 0 11px 0 44px;
+    font-size: 10px;
   }
 
   .book-page-controls {
