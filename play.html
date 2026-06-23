@@ -88,6 +88,7 @@
       --canvas-w: 1920px;
       --canvas-h: 823px;        /* 21:9 outer canvas */
       --safe-w: 1463px;          /* 16:9 inner safe area at canvas-h */
+      --bottom-nav-right-inset: 56px; /* play-main right padding 24px + card-list right shadow room 32px */
     }
     .stage {
       position: relative;
@@ -141,9 +142,8 @@
       z-index: 5;
       display: grid;
       grid-template-columns: 480px 1fr;
-      /* 右パディングを 24px に詰めて、cards-col の右端を bottom-nav の
-         右端 (calc(safe-gutter + 24px)) と揃える。同時に column-gap を
-         80px に広げて、左の看板とカードの間に余白を作る。 */
+      /* 右パディング 24px。bottom-nav は card-list の右余白 32px も見込んだ
+         --bottom-nav-right-inset で、実際のゲームプレート右端へ揃える。 */
       gap: 80px;
       padding: 30px 24px 100px 40px;
       align-items: start;
@@ -735,6 +735,7 @@
          safe-w 1080 stays inside the tightest slice with ~18px buffer. */
       :root {
         --safe-w: 1080px;          /* tighter than visible 14/10..1366×1024 slices */
+        --bottom-nav-right-inset: 52px; /* play-main right padding 20px + card-list right shadow room 32px */
       }
       .play-main {
         grid-template-columns: 380px 1fr;
@@ -765,6 +766,7 @@
          so the bottom-nav (5 buttons incl. シール) is fully visible. */
       :root {
         --safe-w: 1020px;
+        --bottom-nav-right-inset: 50px; /* play-main right padding 18px + card-list right shadow room 32px */
       }
       .play-main {
         grid-template-columns: 320px 1fr;
@@ -815,8 +817,9 @@
       position: absolute;
       bottom: 18px;
       /* Offset by the canvas→safe-area gutter so the cluster sits inside
-         the 16:9 safe area (iPad/PC crops away the 21:9 side margins). */
-      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + 24px);
+         the 16:9 safe area, then align its right edge to the card plate
+         edge rather than the outer card-list clip. */
+      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset));
       left: auto;
       transform: none;
       width: var(--nav-sprite-w);
@@ -3324,7 +3327,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1239;
+    const PAGE_CACHE_VERSION = 1240;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
