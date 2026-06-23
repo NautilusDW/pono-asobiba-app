@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-817";
+const ASSET_VERSION = "20260623-818";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1632,7 +1632,13 @@ const STICKER_PAGE_BLOCK_DEPTH_SCALE = {
 const STICKER_COVER_BOARD_DEPTH = PAGE_H * 0.021;
 const STICKER_COVER_FACE_LIFT = PAGE_H * 0.0018;
 const STICKER_COVER_CLOSED_BOARD_Z = PAGE_H * 0.006;
-const STICKER_BACK_COVER_PEEK = PAGE_H * 0.068;
+const STICKER_BACK_COVER_PEEK_BY_LEVEL = {
+  empty: 0,
+  small: PAGE_H * 0.018,
+  half: PAGE_H * 0.038,
+  mostly: PAGE_H * 0.057,
+  full: PAGE_H * 0.068,
+};
 const STICKER_BACK_COVER_DEPTH = PAGE_H * 0.026;
 const STICKER_BACK_COVER_Z = -PAGE_H * 0.011;
 const STICKER_COVER_3D_RING_PIXELS = [218, 452, 686, 920, 1154, 1388];
@@ -9245,14 +9251,28 @@ function createBackCoverBoardGeometry() {
 function positionStickerBackCoverBoards(gap = currentBookGap()) {
   stickerBackCoverBoards.left.position.set(
     -PAGE_W - gap / 2,
-    -STICKER_BACK_COVER_PEEK,
+    -stickerBackCoverPeekForSide("left"),
     STICKER_BACK_COVER_Z,
   );
   stickerBackCoverBoards.right.position.set(
     gap / 2,
-    -STICKER_BACK_COVER_PEEK,
+    -stickerBackCoverPeekForSide("right"),
     STICKER_BACK_COVER_Z,
   );
+}
+
+function positionStickerBackCoverBoardForClosedCover() {
+  stickerBackCoverBoards.right.position.set(
+    COVER_CLOSED_X,
+    -STICKER_BACK_COVER_PEEK_BY_LEVEL.full,
+    STICKER_BACK_COVER_Z,
+  );
+}
+
+function stickerBackCoverPeekForSide(side) {
+  const pair = thicknessPairForSpread(spreadPosition);
+  const level = side === "left" ? pair.left : pair.right;
+  return STICKER_BACK_COVER_PEEK_BY_LEVEL[level] ?? STICKER_BACK_COVER_PEEK_BY_LEVEL.full;
 }
 
 function setStickerBackCoverVisible(visible, options = {}) {
@@ -11202,6 +11222,8 @@ function updatePage(progress) {
     coverTurn.visible = false;
     setOpenSpreadVisible(false);
     applyAlbumLayout();
+    positionStickerBackCoverBoardForClosedCover();
+    setStickerBackCoverVisible(true, { rightOnly: true });
     setClosedCoverTabsVisible(true);
     applyCoverTuning();
     applyBookFramePosition(0);
