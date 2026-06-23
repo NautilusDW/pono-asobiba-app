@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-821";
+const ASSET_VERSION = "20260623-822";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1525,6 +1525,7 @@ const bookThemePreviewSwatches = document.getElementById("bookThemePreviewSwatch
 const albumModeToggle = document.getElementById("albumModeToggle");
 const collectionStickerTray = document.getElementById("collectionStickerTray");
 const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
+const stickerTrayCounter = document.getElementById("stickerTrayCounter");
 const inlineStickerControls = document.getElementById("inlineStickerControls");
 const inlineStickerScale = document.getElementById("inlineStickerScale");
 const inlineStickerRotation = document.getElementById("inlineStickerRotation");
@@ -3218,6 +3219,9 @@ function setupCollectionStickerTray() {
       event.preventDefault();
     }
   });
+  collectionStickerTrayItems.addEventListener("scroll", () => {
+    window.requestAnimationFrame(updateStickerTrayCounter);
+  }, { passive: true });
   window.addEventListener("pointermove", handleStickerTrayPointerMove);
   window.addEventListener("pointerup", endStickerTrayDrag);
   window.addEventListener("pointercancel", cancelStickerTrayDrag);
@@ -3350,6 +3354,7 @@ function renderCollectionStickerTray() {
   collectionStickerTrayItems.replaceChildren(fragment);
   updateCollectionTraySelection();
   updateCollectionStickerTrayVisibility();
+  updateStickerTrayCounter();
 }
 
 function renderStickerThumbnailTray() {
@@ -3389,6 +3394,44 @@ function renderStickerThumbnailTray() {
   }
   collectionStickerTrayItems.replaceChildren(fragment);
   updateCollectionStickerTrayVisibility();
+  updateStickerTrayCounter();
+}
+
+function updateStickerTrayCounter() {
+  if (!stickerTrayCounter || !collectionStickerTray || !collectionStickerTrayItems) {
+    return;
+  }
+  const visible = activeAlbumMode !== "collection"
+    && stickerEditMode
+    && activeSurface === "inside"
+    && !collectionStickerTray.hidden
+    && stickerOptions.length > 0;
+  stickerTrayCounter.hidden = !visible;
+  if (!visible) {
+    return;
+  }
+  const cards = [...collectionStickerTrayItems.querySelectorAll("[data-sticker-tray-id]")];
+  if (!cards.length) {
+    stickerTrayCounter.textContent = "0 / 0";
+    stickerTrayCounter.setAttribute("aria-label", "シールは ありません");
+    return;
+  }
+  const trayRect = collectionStickerTrayItems.getBoundingClientRect();
+  const centerX = trayRect.left + trayRect.width / 2;
+  let nearestIndex = 0;
+  let nearestDistance = Infinity;
+  cards.forEach((card, index) => {
+    const rect = card.getBoundingClientRect();
+    const distance = Math.abs(rect.left + rect.width / 2 - centerX);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  });
+  const current = nearestIndex + 1;
+  const total = cards.length;
+  stickerTrayCounter.textContent = `${current} / ${total}`;
+  stickerTrayCounter.setAttribute("aria-label", `${total}このうち ${current}こめのシール`);
 }
 
 function handleStickerTrayPointerDown(event) {
@@ -3929,6 +3972,7 @@ function updateCollectionStickerTrayVisibility() {
     setStickerTrayPeek(false);
   }
   updateCollectionTraySelection();
+  updateStickerTrayCounter();
   updateInlineStickerControls();
 }
 
@@ -11061,6 +11105,9 @@ function setStickerEditMode(enabled, options = {}) {
     return;
   }
   stickerEditMode = nextMode;
+  if (stickerEditMode) {
+    closeBookPageJump();
+  }
   if (!stickerEditMode) {
     selectedPlacementId = null;
     stickerTrayDragState = null;
@@ -11512,6 +11559,7 @@ function resize() {
   if (stickerEditor && !stickerEditor.hidden) {
     renderDrawingCanvas();
   }
+  updateStickerTrayCounter();
 }
 
 function syncUrl() {

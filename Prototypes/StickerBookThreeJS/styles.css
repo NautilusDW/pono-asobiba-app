@@ -850,6 +850,10 @@ body.is-collection-album .album-mode-toggle {
   filter: brightness(1.04) saturate(1.04);
 }
 
+body:not(.is-collection-album).is-sticker-edit-mode .book-page-label {
+  display: none;
+}
+
 .book-page-jump {
   position: fixed;
   left: 50%;
@@ -995,6 +999,26 @@ body:not(.is-collection-album).is-sticker-tray-dragging .collection-sticker-tray
 }
 
 .collection-sticker-tray[hidden] {
+  display: none;
+}
+
+.sticker-tray-counter {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  z-index: 2;
+  min-width: 64px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  color: #2b454a;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.sticker-tray-counter[hidden] {
   display: none;
 }
 
