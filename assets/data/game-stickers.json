@@ -1,5 +1,5 @@
 {
-  "version": 11,
+  "version": 12,
   "pages": {
     "quizland": {
       "title": "なぞなぞランド",
@@ -53,7 +53,7 @@
         {
           "id": "bonus_quizland_bluewhale_rare",
           "name": "なぞなぞ ノーマル 4",
-          "img": "assets/ui/gacha/stickers/bonus_quizland_bluewhale_rare_20260623.png",
+          "img": "assets/ui/gacha/stickers/rarity2_007_quizland_whale_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -67,7 +67,7 @@
         {
           "id": "bonus_quizland_chocho_rare",
           "name": "なぞなぞ ノーマル 5",
-          "img": "assets/ui/gacha/stickers/bonus_quizland_chocho_rare_20260623.png",
+          "img": "assets/ui/gacha/stickers/rarity2_008_quizland_butterfly_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -104,7 +104,7 @@
         {
           "id": "maze_kira_01_odoke_pyon_key_ladder_001",
           "name": "めいろ ノーマル 1",
-          "img": "assets/ui/gacha/stickers/maze_kira_01_odoke_pyon_key_ladder_001.png",
+          "img": "assets/ui/gacha/stickers/rarity2_011_maze_moss_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -118,7 +118,7 @@
         {
           "id": "maze_kira_01_odoke_pyon_key_ladder_002",
           "name": "めいろ ノーマル 2",
-          "img": "assets/ui/gacha/stickers/maze_kira_01_odoke_pyon_key_ladder_002.png",
+          "img": "assets/ui/gacha/stickers/rarity2_012_maze_rabbit_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -146,7 +146,7 @@
         {
           "id": "maze_kira_01_odoke_pyon_key_ladder_004",
           "name": "めいろ ノーマル 3",
-          "img": "assets/ui/gacha/stickers/maze_kira_01_odoke_pyon_key_ladder_004.png",
+          "img": "assets/ui/gacha/stickers/rarity2_014_maze_ladder_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -160,7 +160,7 @@
         {
           "id": "maze_kira_02_kujira_glove_acorn_001",
           "name": "めいろ ノーマル 4",
-          "img": "assets/ui/gacha/stickers/maze_kira_02_kujira_glove_acorn_001.png",
+          "img": "assets/ui/gacha/stickers/rarity2_015_maze_whale_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -174,7 +174,7 @@
         {
           "id": "maze_kira_02_kujira_glove_acorn_003",
           "name": "めいろ ノーマル 5",
-          "img": "assets/ui/gacha/stickers/maze_kira_02_kujira_glove_acorn_003.png",
+          "img": "assets/ui/gacha/stickers/rarity2_016_maze_acorns_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -215,9 +215,9 @@
         },
         {
           "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_003",
-          "name": "めいろ ノーマル 8",
+          "name": "めいろ キラ 2",
           "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_003.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -229,7 +229,7 @@
         },
         {
           "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_004",
-          "name": "めいろ ノーマル 9",
+          "name": "めいろ ノーマル 8",
           "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_004.png",
           "rarity": "normal",
           "unlockOn": [
@@ -243,7 +243,7 @@
         },
         {
           "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_005",
-          "name": "めいろ ノーマル 10",
+          "name": "めいろ ノーマル 9",
           "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_005.png",
           "rarity": "normal",
           "unlockOn": [
@@ -257,7 +257,7 @@
         },
         {
           "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_006",
-          "name": "めいろ ノーマル 11",
+          "name": "めいろ ノーマル 10",
           "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_006.png",
           "rarity": "normal",
           "unlockOn": [
@@ -285,7 +285,7 @@
         },
         {
           "id": "maze_power_glove_item",
-          "name": "めいろ キラ 2",
+          "name": "めいろ キラ 3",
           "img": "assets/ui/gacha/stickers/maze_power_glove_item.png",
           "rarity": "rare",
           "unlockOn": [
@@ -299,7 +299,7 @@
         },
         {
           "id": "bonus_maze_pyon_normal",
-          "name": "めいろ ノーマル 12",
+          "name": "めいろ ノーマル 11",
           "img": "assets/ui/gacha/stickers/bonus_maze_pyon_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
@@ -313,7 +313,7 @@
         },
         {
           "id": "bonus_maze_mayoi_normal",
-          "name": "めいろ ノーマル 13",
+          "name": "めいろ ノーマル 12",
           "img": "assets/ui/gacha/stickers/bonus_maze_mayoi_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
@@ -327,8 +327,8 @@
         },
         {
           "id": "bonus_maze_odoke_rare",
-          "name": "めいろ ノーマル 14",
-          "img": "assets/ui/gacha/stickers/bonus_maze_odoke_rare_20260623.png",
+          "name": "めいろ ノーマル 13",
+          "img": "assets/ui/gacha/stickers/rarity2_027_maze_spider_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -341,8 +341,8 @@
         },
         {
           "id": "bonus_maze_hachi_rare",
-          "name": "めいろ ノーマル 15",
-          "img": "assets/ui/gacha/stickers/bonus_maze_hachi_rare_20260623.png",
+          "name": "めいろ ノーマル 14",
+          "img": "assets/ui/gacha/stickers/rarity2_028_maze_bee_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -355,9 +355,9 @@
         },
         {
           "id": "bonus_maze_kabuto_super",
-          "name": "めいろ ノーマル 16",
+          "name": "めいろ キラ 4",
           "img": "assets/ui/gacha/stickers/bonus_maze_kabuto_super_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -421,7 +421,7 @@
         {
           "id": "oto_kira_highdo_chimes_taiko_animal_kero_005",
           "name": "おと ノーマル 1",
-          "img": "assets/ui/gacha/stickers/oto_kira_highdo_chimes_taiko_animal_kero_005.png",
+          "img": "assets/ui/gacha/stickers/rarity2_034_oto_note_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -575,7 +575,7 @@
         {
           "id": "bonus_oto_lion_roar_rare",
           "name": "おと キラ 4",
-          "img": "assets/ui/gacha/stickers/bonus_oto_lion_roar_rare_20260623.png",
+          "img": "assets/ui/gacha/stickers/rarity2_048_oto_lion_rare_20260623.png",
           "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
@@ -746,9 +746,9 @@
         },
         {
           "id": "bento_kira_bear_boxes_cat_bear_rice_002",
-          "name": "べんとう ノーマル 1",
+          "name": "べんとう キラ 1",
           "img": "assets/ui/gacha/stickers/bento_kira_bear_boxes_cat_bear_rice_002.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -760,9 +760,9 @@
         },
         {
           "id": "bento_kira_bear_boxes_cat_bear_rice_004",
-          "name": "べんとう ノーマル 2",
+          "name": "べんとう キラ 2",
           "img": "assets/ui/gacha/stickers/bento_kira_bear_boxes_cat_bear_rice_004.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -774,9 +774,9 @@
         },
         {
           "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_001",
-          "name": "べんとう ノーマル 3",
+          "name": "べんとう キラ 3",
           "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_001.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -788,7 +788,7 @@
         },
         {
           "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_002",
-          "name": "べんとう ノーマル 4",
+          "name": "べんとう ノーマル 1",
           "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_002.png",
           "rarity": "normal",
           "unlockOn": [
@@ -802,7 +802,7 @@
         },
         {
           "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_003",
-          "name": "べんとう ノーマル 5",
+          "name": "べんとう ノーマル 2",
           "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_003.png",
           "rarity": "normal",
           "unlockOn": [
@@ -816,9 +816,9 @@
         },
         {
           "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_004",
-          "name": "べんとう ノーマル 6",
+          "name": "べんとう キラ 4",
           "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_004.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -830,9 +830,9 @@
         },
         {
           "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_005",
-          "name": "べんとう ノーマル 7",
+          "name": "べんとう キラ 5",
           "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_005.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -844,9 +844,9 @@
         },
         {
           "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_006",
-          "name": "べんとう ノーマル 8",
+          "name": "べんとう キラ 6",
           "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_006.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -858,9 +858,9 @@
         },
         {
           "id": "bento_kira_items_wiener_pick_ichigo_catboxes_003",
-          "name": "べんとう ノーマル 9",
+          "name": "べんとう キラ 7",
           "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_003.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -872,9 +872,9 @@
         },
         {
           "id": "bento_kira_items_wiener_pick_ichigo_catboxes_004",
-          "name": "べんとう ノーマル 10",
+          "name": "べんとう キラ 8",
           "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_004.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -886,7 +886,7 @@
         },
         {
           "id": "bento_kira_items_wiener_pick_ichigo_catboxes_005",
-          "name": "べんとう キラ 1",
+          "name": "べんとう キラ 9",
           "img": "assets/ui/gacha/stickers/bento_kira_items_wiener_pick_ichigo_catboxes_005.png",
           "rarity": "rare",
           "unlockOn": [
@@ -900,9 +900,9 @@
         },
         {
           "id": "bento_kira_staff_child_friend_pono_001",
-          "name": "べんとう ノーマル 11",
+          "name": "べんとう キラ 10",
           "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_001.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -914,9 +914,9 @@
         },
         {
           "id": "bento_kira_staff_child_friend_pono_002",
-          "name": "べんとう ノーマル 12",
+          "name": "べんとう キラ 11",
           "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_002.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -928,9 +928,9 @@
         },
         {
           "id": "bento_kira_staff_child_friend_pono_003",
-          "name": "べんとう ノーマル 13",
+          "name": "べんとう キラ 12",
           "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_003.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -942,7 +942,7 @@
         },
         {
           "id": "bento_normal_food_rice_tamago_karaage_broccoli_001",
-          "name": "べんとう ノーマル 14",
+          "name": "べんとう ノーマル 3",
           "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_001.png",
           "rarity": "normal",
           "unlockOn": [
@@ -956,7 +956,7 @@
         },
         {
           "id": "bento_normal_food_rice_tamago_karaage_broccoli_002",
-          "name": "べんとう ノーマル 15",
+          "name": "べんとう ノーマル 4",
           "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_002.png",
           "rarity": "normal",
           "unlockOn": [
@@ -970,7 +970,7 @@
         },
         {
           "id": "bento_normal_food_rice_tamago_karaage_broccoli_003",
-          "name": "べんとう ノーマル 16",
+          "name": "べんとう ノーマル 5",
           "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_003.png",
           "rarity": "normal",
           "unlockOn": [
@@ -984,7 +984,7 @@
         },
         {
           "id": "bento_normal_food_rice_tamago_karaage_broccoli_004",
-          "name": "べんとう ノーマル 17",
+          "name": "べんとう ノーマル 6",
           "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_004.png",
           "rarity": "normal",
           "unlockOn": [
@@ -998,7 +998,7 @@
         },
         {
           "id": "bonus_bento_shika_normal",
-          "name": "べんとう ノーマル 18",
+          "name": "べんとう ノーマル 7",
           "img": "assets/ui/gacha/stickers/bonus_bento_shika_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
@@ -1012,7 +1012,7 @@
         },
         {
           "id": "bonus_bento_cup_star_normal",
-          "name": "べんとう ノーマル 19",
+          "name": "べんとう ノーマル 8",
           "img": "assets/ui/gacha/stickers/bonus_bento_cup_star_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
@@ -1026,9 +1026,9 @@
         },
         {
           "id": "bonus_bento_risu_happy_rare",
-          "name": "べんとう ノーマル 20",
+          "name": "べんとう キラ 13",
           "img": "assets/ui/gacha/stickers/bonus_bento_risu_happy_rare_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1040,9 +1040,9 @@
         },
         {
           "id": "bonus_bento_neko_happy_rare",
-          "name": "べんとう ノーマル 21",
+          "name": "べんとう キラ 14",
           "img": "assets/ui/gacha/stickers/bonus_bento_neko_happy_rare_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1054,9 +1054,9 @@
         },
         {
           "id": "bonus_bento_ahiru_happy_rare",
-          "name": "べんとう ノーマル 22",
+          "name": "べんとう キラ 15",
           "img": "assets/ui/gacha/stickers/bonus_bento_ahiru_happy_rare_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1068,9 +1068,9 @@
         },
         {
           "id": "bonus_bento_pono_present_super",
-          "name": "べんとう ノーマル 23",
+          "name": "べんとう キラ 16",
           "img": "assets/ui/gacha/stickers/bonus_bento_pono_present_super_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1296,9 +1296,9 @@
         },
         {
           "id": "bonus_sea_album_sea_anemone_rare",
-          "name": "うみ ノーマル 8",
+          "name": "うみ キラ 3",
           "img": "assets/ui/gacha/stickers/bonus_sea_album_sea_anemone_rare_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1310,9 +1310,9 @@
         },
         {
           "id": "bonus_sea_album_clownfish_super",
-          "name": "うみ ノーマル 9",
+          "name": "うみ キラ 4",
           "img": "assets/ui/gacha/stickers/bonus_sea_album_clownfish_super_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1441,7 +1441,7 @@
         {
           "id": "undersea_cave_whale_lightfood_bubble_blueshell_001",
           "name": "どうくつ とくべつキラ 1",
-          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_001.png",
+          "img": "assets/ui/gacha/stickers/rarity2_117_undersea_shell_super_20260623.png",
           "rarity": "super",
           "unlockOn": [
             "daily_gacha",
@@ -1455,7 +1455,7 @@
         {
           "id": "undersea_cave_whale_lightfood_bubble_blueshell_002",
           "name": "どうくつ キラ 1",
-          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_002.png",
+          "img": "assets/ui/gacha/stickers/rarity2_118_undersea_whale_rare_20260623.png",
           "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
@@ -1469,7 +1469,7 @@
         {
           "id": "undersea_cave_whale_lightfood_bubble_blueshell_003",
           "name": "どうくつ キラ 2",
-          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_003.png",
+          "img": "assets/ui/gacha/stickers/rarity2_119_undersea_pearl_rare_20260623.png",
           "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
@@ -1483,7 +1483,7 @@
         {
           "id": "undersea_cave_whale_lightfood_bubble_blueshell_004",
           "name": "どうくつ キラ 3",
-          "img": "assets/ui/gacha/stickers/undersea_cave_whale_lightfood_bubble_blueshell_004.png",
+          "img": "assets/ui/gacha/stickers/rarity2_120_undersea_shield_rare_20260623.png",
           "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
@@ -1552,9 +1552,9 @@
         },
         {
           "id": "bonus_undersea_cave_whale_rare",
-          "name": "どうくつ ノーマル 2",
+          "name": "どうくつ キラ 5",
           "img": "assets/ui/gacha/stickers/bonus_undersea_cave_whale_rare_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1566,7 +1566,7 @@
         },
         {
           "id": "bonus_undersea_cave_bell_bubble_rare",
-          "name": "どうくつ キラ 5",
+          "name": "どうくつ キラ 6",
           "img": "assets/ui/gacha/stickers/bonus_undersea_cave_bell_bubble_rare_20260623.png",
           "rarity": "rare",
           "unlockOn": [
@@ -1646,7 +1646,7 @@
         {
           "id": "bonus_wordmatch_hana_rare",
           "name": "ことば ノーマル 4",
-          "img": "assets/ui/gacha/stickers/bonus_wordmatch_hana_rare_20260623.png",
+          "img": "assets/ui/gacha/stickers/rarity2_134_wordmatch_flower_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
@@ -1659,9 +1659,9 @@
         },
         {
           "id": "bonus_wordmatch_rocket_rare",
-          "name": "ことば ノーマル 5",
+          "name": "ことば キラ 2",
           "img": "assets/ui/gacha/stickers/bonus_wordmatch_rocket_rare_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1683,7 +1683,7 @@
         {
           "id": "writing_mori_a_mirumaru_seed_flower_001",
           "name": "もじ とくべつキラ 1",
-          "img": "assets/ui/gacha/stickers/writing_mori_a_mirumaru_seed_flower_001.png",
+          "img": "assets/ui/gacha/stickers/rarity2_136_writing_flower_super_20260623.png",
           "rarity": "super",
           "unlockOn": [
             "daily_gacha",
@@ -1724,9 +1724,9 @@
         },
         {
           "id": "writing_mori_a_mirumaru_seed_flower_004",
-          "name": "もじ キラ 3",
+          "name": "もじ ノーマル 1",
           "img": "assets/ui/gacha/stickers/writing_mori_a_mirumaru_seed_flower_004.png",
-          "rarity": "rare",
+          "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1738,7 +1738,7 @@
         },
         {
           "id": "bonus_writing_mori_milmaru_wave_normal",
-          "name": "もじ ノーマル 1",
+          "name": "もじ ノーマル 2",
           "img": "assets/ui/gacha/stickers/bonus_writing_mori_milmaru_wave_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
@@ -1752,9 +1752,9 @@
         },
         {
           "id": "bonus_writing_mori_milmaru_relaxed_rare",
-          "name": "もじ ノーマル 2",
+          "name": "もじ キラ 3",
           "img": "assets/ui/gacha/stickers/bonus_writing_mori_milmaru_relaxed_rare_20260623.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1817,9 +1817,9 @@
         },
         {
           "id": "zukan_giraffe_layer_08",
-          "name": "ずかん ノーマル 3",
+          "name": "ずかん キラ 1",
           "img": "assets/ui/gacha/stickers/zukan_giraffe_layer_08.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1831,9 +1831,9 @@
         },
         {
           "id": "zukan_lion_layer_03",
-          "name": "ずかん ノーマル 4",
+          "name": "ずかん キラ 2",
           "img": "assets/ui/gacha/stickers/zukan_lion_layer_03.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1845,9 +1845,9 @@
         },
         {
           "id": "zukan_penguin_layer_04",
-          "name": "ずかん ノーマル 5",
+          "name": "ずかん キラ 3",
           "img": "assets/ui/gacha/stickers/zukan_penguin_layer_04.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1874,7 +1874,7 @@
         {
           "id": "zukan_squirrel_fox_mushroom_leaf_badge_001",
           "name": "ずかん とくべつキラ 2",
-          "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_001.png",
+          "img": "assets/ui/gacha/stickers/rarity2_151_zukan_leaf_super_20260623.png",
           "rarity": "super",
           "unlockOn": [
             "daily_gacha",
@@ -1887,7 +1887,7 @@
         },
         {
           "id": "zukan_squirrel_fox_mushroom_leaf_badge_002",
-          "name": "ずかん キラ 1",
+          "name": "ずかん キラ 4",
           "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_002.png",
           "rarity": "rare",
           "unlockOn": [
@@ -1901,9 +1901,9 @@
         },
         {
           "id": "zukan_squirrel_fox_mushroom_leaf_badge_003",
-          "name": "ずかん ノーマル 6",
+          "name": "ずかん キラ 5",
           "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_003.png",
-          "rarity": "normal",
+          "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
             "clear",
@@ -1915,7 +1915,7 @@
         },
         {
           "id": "zukan_squirrel_fox_mushroom_leaf_badge_004",
-          "name": "ずかん ノーマル 7",
+          "name": "ずかん ノーマル 3",
           "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_004.png",
           "rarity": "normal",
           "unlockOn": [
@@ -1929,7 +1929,7 @@
         },
         {
           "id": "zukan_squirrel_layer_11",
-          "name": "ずかん ノーマル 8",
+          "name": "ずかん ノーマル 4",
           "img": "assets/ui/gacha/stickers/zukan_squirrel_layer_11.png",
           "rarity": "normal",
           "unlockOn": [
@@ -1943,7 +1943,7 @@
         },
         {
           "id": "bonus_zukan_penguin_normal",
-          "name": "ずかん ノーマル 9",
+          "name": "ずかん ノーマル 5",
           "img": "assets/ui/gacha/stickers/bonus_zukan_penguin_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
@@ -1957,8 +1957,8 @@
         },
         {
           "id": "bonus_zukan_kabutomushi_rare",
-          "name": "ずかん キラ 2",
-          "img": "assets/ui/gacha/stickers/bonus_zukan_kabutomushi_rare_20260623.png",
+          "name": "ずかん キラ 6",
+          "img": "assets/ui/gacha/stickers/rarity2_157_zukan_kabuto_rare_20260623.png",
           "rarity": "rare",
           "unlockOn": [
             "daily_gacha",
@@ -1971,8 +1971,8 @@
         },
         {
           "id": "bonus_zukan_shika_super",
-          "name": "ずかん ノーマル 10",
-          "img": "assets/ui/gacha/stickers/bonus_zukan_shika_super_20260623.png",
+          "name": "ずかん ノーマル 6",
+          "img": "assets/ui/gacha/stickers/rarity2_158_zukan_deer_normal_20260623.png",
           "rarity": "normal",
           "unlockOn": [
             "daily_gacha",
