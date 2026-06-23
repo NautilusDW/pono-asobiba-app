@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-814";
+const ASSET_VERSION = "20260623-815";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -539,10 +539,10 @@ const BOOK_VARIANTS = {
     insideLeft: "sb3d_forest_free_blank_page_canvas_20260623.png",
     insideRight: "sb3d_forest_free_blank_page_canvas_20260623.png",
     freePage: "sb3d_forest_free_blank_page_canvas_20260623.png",
-    coverPrint: "sb3d_forest_cover_front_canvas_20260623.webp",
+    coverPrint: "sb3d_forest_cover_front_distinct_image2_20260623.webp",
     coverHardwareMode: "separate",
-    coverFront: "sb3d_forest_cover_front_canvas_20260623.webp",
-    coverBack: "sb3d_forest_cover_back_canvas_20260623.webp",
+    coverFront: "sb3d_forest_cover_front_distinct_image2_20260623.webp",
+    coverBack: "sb3d_forest_cover_back_distinct_image2_20260623.webp",
     coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
     spine: "sb3d_forest_spine_canvas_20260623.webp",
     thicknessKey: "boy",
@@ -551,10 +551,10 @@ const BOOK_VARIANTS = {
     insideLeft: "sb3d_sakura_free_blank_page_image2_20260623.png",
     insideRight: "sb3d_sakura_free_blank_page_image2_20260623.png",
     freePage: "sb3d_sakura_free_blank_page_image2_20260623.png",
-    coverPrint: "sb3d_sakura_cover_front_image2_20260623.webp",
+    coverPrint: "sb3d_sakura_cover_front_distinct_image2_20260623.webp",
     coverHardwareMode: "separate",
-    coverFront: "sb3d_sakura_cover_front_image2_20260623.webp",
-    coverBack: "sb3d_sakura_cover_back_image2_20260623.webp",
+    coverFront: "sb3d_sakura_cover_front_distinct_image2_20260623.webp",
+    coverBack: "sb3d_sakura_cover_back_distinct_image2_20260623.webp",
     coverInside: "sb3d_sakura_cover_inside_image2_20260623.webp",
     spine: "sb3d_sakura_spine_image2_20260623.webp",
     thicknessKey: "girl",
@@ -563,10 +563,10 @@ const BOOK_VARIANTS = {
     insideLeft: "sb3d_shinobi_free_blank_page_image2_20260623.png",
     insideRight: "sb3d_shinobi_free_blank_page_image2_20260623.png",
     freePage: "sb3d_shinobi_free_blank_page_image2_20260623.png",
-    coverPrint: "sb3d_shinobi_cover_front_image2_20260623.webp",
+    coverPrint: "sb3d_shinobi_cover_front_distinct_image2_20260623.webp",
     coverHardwareMode: "separate",
-    coverFront: "sb3d_shinobi_cover_front_image2_20260623.webp",
-    coverBack: "sb3d_shinobi_cover_back_image2_20260623.webp",
+    coverFront: "sb3d_shinobi_cover_front_distinct_image2_20260623.webp",
+    coverBack: "sb3d_shinobi_cover_back_distinct_image2_20260623.webp",
     coverInside: "sb3d_shinobi_cover_inside_image2_20260623.webp",
     spine: "sb3d_shinobi_spine_image2_20260623.webp",
     thicknessKey: "boy",
@@ -991,10 +991,10 @@ for (const { key, thicknessKey } of ENTERTAINMENT_BOOK_TEMPLATE_PRESETS) {
     insideLeft: `sb3d_${key}_free_blank_page_image2_20260623.webp`,
     insideRight: `sb3d_${key}_free_blank_page_image2_20260623.webp`,
     freePage: `sb3d_${key}_free_blank_page_image2_20260623.webp`,
-    coverPrint: `sb3d_${key}_cover_front_image2_20260623.webp`,
+    coverPrint: `sb3d_${key}_cover_front_distinct_image2_20260623.webp`,
     coverHardwareMode: "separate",
-    coverFront: `sb3d_${key}_cover_front_image2_20260623.webp`,
-    coverBack: `sb3d_${key}_cover_back_image2_20260623.webp`,
+    coverFront: `sb3d_${key}_cover_front_distinct_image2_20260623.webp`,
+    coverBack: `sb3d_${key}_cover_back_distinct_image2_20260623.webp`,
     coverInside: `sb3d_${key}_cover_inside_image2_20260623.webp`,
     spine: `sb3d_${key}_spine_image2_20260623.webp`,
     thicknessKey,
