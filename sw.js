@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1542: ゲーム詳細モーダル 「ここが そだつ」 ラベルをテキスト → 画像表示 (assets/ui/growth_heading_pop_sticker_raw.png 「ココが育つ！」 ポップステッカー) に復元 — 前セッションで stash 退避されていた CSS/HTML 差し替えを再適用、 CSS で width clamp + translateY(-24%) で上下余白を crop
 // v1539: ゲーム詳細モーダルの一番上に各ゲームの 「ここがそだつ」 (growth) を追加 — GAME_MODAL_DATA に growth フィールド追加、 LP カードの pc-growth と同じ文言、 ゲームの accent 色で borders + b タグ強調
 // v1537: ゲーム詳細モーダル スクロールチェーン修正 — overscroll-behavior:contain でモーダル内スクロールが背景 LP に漏れないように、 body scroll lock も併用
 // v1535: ゲーム詳細モーダル画像のチルト (rotate) と translateX を削除して画像を真っ直ぐに表示、 縮小+左右交互配置はキープ
@@ -194,7 +195,7 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1541; // v1541: ゲーム詳細モーダルのタイトル (GAME_MODAL_DATA.title) を LP カード .pc-title と完全一致 (ひらがな/カタカナ) に統一 — 漢字混入していた 「彩り弁当」 「ランタンの迷路」 等を LP と同表記に修正
+const CACHE_VERSION = 1542; // v1542: ゲーム詳細モーダル 「ここが そだつ」 ラベルをテキスト → 画像表示 (assets/ui/growth_heading_pop_sticker_raw.png 「ココが育つ！」 ポップステッカー) に復元 — 前セッションで stash 退避されていた CSS/HTML 差し替えを再適用、 CSS で width clamp + translateY(-24%) で上下余白を crop
 // v1540: ゲーム詳細モーダル 「ここがそだつ」 パネルの枠囲い (border + background + radius) を解除し、 下端 dashed border のみで区切る形に変更
 // v1537: ゲーム詳細モーダル スクロールチェーン修正 — .game-modal-body に overscroll-behavior:contain でモーダル内 scroll が背景 LP に伝播しないように、 body.modal-open{overflow:hidden;} も併用
 // v1533: ゲーム詳細モーダル レイアウト再修正 — 画像 object-fit を contain → cover に戻す (v1532 の誤修正取り消し) + ヘッダー (60→40px) と CTA (40→36px) の高さを削減して中央スペースを拡大、 mobile での 1 画面表示時に画像が見やすく
