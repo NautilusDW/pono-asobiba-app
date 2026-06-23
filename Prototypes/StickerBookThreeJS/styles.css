@@ -1454,11 +1454,11 @@ body.is-sticker-tutorial-step-view .sticker-tutorial-hand {
 }
 
 body.is-sticker-tutorial-step-place .sticker-tutorial-hand {
-  animation: stickerTutorialFindPlaceHand 19.2s ease-in-out 1 both;
+  animation: stickerTutorialFindPlaceHand 18.5s ease-in-out 1 both;
 }
 
 body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
-  animation: stickerTutorialFindPlaceGhost 19.2s ease-in-out 1 both;
+  animation: stickerTutorialFindPlaceGhost 18.5s ease-in-out 1 both;
 }
 
 body.is-sticker-tutorial-step-move .sticker-tutorial-hand {
@@ -1477,7 +1477,7 @@ body.is-sticker-tutorial-step-rotate .sticker-tutorial-hand {
 body.is-sticker-tutorial-step-scale.is-sticker-tutorial-slider-js .sticker-tutorial-hand,
 body.is-sticker-tutorial-step-rotate.is-sticker-tutorial-slider-js .sticker-tutorial-hand {
   animation: none;
-  transform: translate(-50%, -50%) scale(0.96) rotate(-4deg);
+  transform: translate(-50%, -50%) scale(0.96) rotate(0deg);
 }
 
 body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
@@ -1658,12 +1658,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) rotate(-7deg);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
   50% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) rotate(7deg);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
 }
 
@@ -1671,12 +1671,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) rotate(-7deg);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
   100% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) rotate(7deg);
+    transform: translate(-50%, -50%) rotate(0deg);
   }
 }
 
@@ -1684,12 +1684,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0%, 12%, 24%, 38%, 51%, 66%, 78%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
   }
   16%, 18%, 20%, 44%, 46%, 48%, 71%, 73%, 75% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.94) rotate(90deg);
+    transform: translate(-50%, -50%) scale(0.94) rotate(0deg);
   }
 }
 
@@ -1697,12 +1697,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0%, 52%, 72%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
   }
   58%, 64% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.94) rotate(90deg);
+    transform: translate(-50%, -50%) scale(0.94) rotate(0deg);
   }
 }
 
@@ -1715,110 +1715,131 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0% {
     left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
   }
-  30% {
+  12% {
     left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.98) rotate(90deg);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
   }
-  44% {
+  14% {
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
+  }
+  16% {
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
+  }
+  17% {
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
+  }
+  28% {
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.98) rotate(0deg);
+  }
+  32% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
     transform: translate(-50%, -50%) scale(1) rotate(-4deg);
   }
-  49% {
+  38% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
     transform: translate(-50%, -50%) scale(0.88) rotate(-9deg);
+  }
+  52% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.92) rotate(5deg);
   }
   58% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.92) rotate(5deg);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(3deg);
   }
-  67% {
+  66% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
     transform: translate(-50%, -50%) scale(0.94) rotate(-5deg);
   }
-  76% {
-    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
-    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.92) rotate(5deg);
-  }
-  85% {
+  72% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.94) rotate(-5deg);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.88) rotate(-9deg);
   }
-  94%, 100% {
+  86% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
     transform: translate(-50%, -50%) scale(0.92) rotate(5deg);
+  }
+  92%, 100% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(3deg);
   }
 }
 
 @keyframes stickerTutorialFindPlaceGhost {
-  0%, 47%, 64%, 67%, 82%, 85%, 100% {
+  0%, 37%, 62%, 71%, 94%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.88);
   }
-  50% {
+  38% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(0.94);
+  }
+  52% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
   58% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  62% {
-    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
-    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
     transform: translate(-50%, -50%) scale(1.03);
   }
-  69% {
+  72% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(0.94);
   }
-  76% {
+  86% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
-  80% {
+  92% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
     transform: translate(-50%, -50%) scale(1.03);
-  }
-  87% {
-    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
-    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(0.94);
-  }
-  94% {
-    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
-    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  98% {
-    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
-    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.04);
   }
 }
 
@@ -1839,12 +1860,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(0.96) rotate(-4deg);
+    transform: translate(-50%, -50%) scale(0.96) rotate(0deg);
   }
   55% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -50%) scale(1) rotate(5deg);
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
   }
 }
 

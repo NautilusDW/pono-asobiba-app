@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260624-841";
+const ASSET_VERSION = "20260624-842";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -57,7 +57,7 @@ const STICKER_TUTORIAL_HANDS = {
   ready: `${STICKER_TUTORIAL_HAND_BASE}hand_grab_ready.png`,
   grip: `${STICKER_TUTORIAL_HAND_BASE}hand_grip.png`,
   pinch: `${STICKER_TUTORIAL_HAND_BASE}hand_pinch.png`,
-  point: `${STICKER_TUTORIAL_HAND_BASE}hand_point_left.png`,
+  point: "../../assets/images/quizland/illust/choice/finger.png",
 };
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
@@ -3374,12 +3374,15 @@ function startStickerTutorial(options = {}) {
   if (activeAlbumMode === "collection") {
     setAlbumMode("free");
   }
+  flushEditorStateSave();
   stickerTutorialState = {
     index: 0,
     manual: Boolean(options.manual),
     actionDone: false,
     intro: true,
+    editorSnapshot: null,
   };
+  enterStickerTutorialCleanAlbum();
   stickerTutorial.hidden = false;
   document.body.classList.add("is-sticker-tutorial-active");
   showStickerTutorialIntro();
@@ -3389,9 +3392,10 @@ function finishStickerTutorial(options = {}) {
   if (!stickerTutorialState && stickerTutorial?.hidden) {
     return;
   }
-  stickerTutorialState = null;
   stopStickerTutorialAudio();
   stopStickerTutorialStepDemo();
+  restoreStickerTutorialCleanAlbum();
+  stickerTutorialState = null;
   if (stickerTutorial) {
     stickerTutorial.hidden = true;
   }
@@ -3421,6 +3425,52 @@ function finishStickerTutorial(options = {}) {
   setStickerTrayPeek(false);
   if (options.markSeen !== false) {
     markStickerTutorialSeen();
+  }
+}
+
+function enterStickerTutorialCleanAlbum() {
+  if (!stickerTutorialState || stickerTutorialState.editorSnapshot) {
+    return;
+  }
+  stickerTutorialState.editorSnapshot = {
+    pages: cloneStickerTutorialEditorData(editorState.pages),
+    drawings: cloneStickerTutorialEditorData(editorState.drawings),
+    selectedPlacementId,
+    activeEditorPage,
+  };
+  editorState.pages = {};
+  editorState.drawings = {};
+  selectedPlacementId = null;
+  activeEditorPage = activeBookPage;
+  updateInlineStickerControls();
+  refreshPageTemplateTextures();
+  updatePage(flipProgress);
+}
+
+function restoreStickerTutorialCleanAlbum() {
+  const snapshot = stickerTutorialState?.editorSnapshot;
+  if (!snapshot) {
+    return;
+  }
+  editorState.pages = cloneStickerTutorialEditorData(snapshot.pages);
+  editorState.drawings = cloneStickerTutorialEditorData(snapshot.drawings);
+  selectedPlacementId = snapshot.selectedPlacementId || null;
+  activeEditorPage = Number(snapshot.activeEditorPage) || activeBookPage || 1;
+  if (editorStateSaveTimer) {
+    window.clearTimeout(editorStateSaveTimer);
+    editorStateSaveTimer = 0;
+  }
+  editorStateDirty = false;
+  updateInlineStickerControls();
+  refreshPageTemplateTextures();
+  updatePage(flipProgress);
+}
+
+function cloneStickerTutorialEditorData(value) {
+  try {
+    return JSON.parse(JSON.stringify(value && typeof value === "object" ? value : {}));
+  } catch {
+    return {};
   }
 }
 
@@ -3685,18 +3735,27 @@ function startStickerTutorialPlaceDemo() {
   stickerTutorialDemoBaseScroll = collectionStickerTrayItems.scrollLeft;
   stickerTutorialDemoStartTime = performance.now();
   const maxScroll = Math.max(0, collectionStickerTrayItems.scrollWidth - collectionStickerTrayItems.clientWidth);
-  const distance = Math.min(300, Math.max(110, maxScroll * 0.32));
-  if (distance > 0) {
+  const singleDistance = Math.min(210, Math.max(90, maxScroll * 0.18));
+  const totalDistance = Math.min(maxScroll - stickerTutorialDemoBaseScroll, singleDistance * 2);
+  if (totalDistance > 0) {
     document.body.classList.add("is-sticker-tutorial-linked-scroll");
-    const duration = 5600;
+    const duration = 5200;
     const run = (now) => {
       const elapsed = Math.max(0, now - stickerTutorialDemoStartTime);
       const progress = THREE.MathUtils.clamp(elapsed / duration, 0, 1);
-      const eased = 0.5 - Math.cos(progress * Math.PI) / 2;
+      const halfDistance = totalDistance / 2;
+      let offset = totalDistance;
+      if (progress < 0.42) {
+        offset = halfDistance * smootherstep(progress / 0.42);
+      } else if (progress < 0.54) {
+        offset = halfDistance;
+      } else if (progress < 0.96) {
+        offset = halfDistance + halfDistance * smootherstep((progress - 0.54) / 0.42);
+      }
       stickerTutorialProgrammaticTrayScroll = true;
       stickerTutorialProgrammaticTrayScrollUntil = performance.now() + 140;
       collectionStickerTrayItems.scrollLeft = THREE.MathUtils.clamp(
-        stickerTutorialDemoBaseScroll + distance * eased,
+        stickerTutorialDemoBaseScroll + offset,
         0,
         maxScroll,
       );
@@ -3711,18 +3770,33 @@ function startStickerTutorialPlaceDemo() {
   }
   addStickerTutorialDemoTimer(() => {
     scheduleStickerTutorialLayout();
-  }, 6100);
+  }, 5600);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("grip");
     }
-  }, 8200);
+  }, 5900);
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id === "place") {
+      setStickerTutorialHandKey("open");
+    }
+  }, 9600);
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id === "place") {
+      setStickerTutorialHandKey("grip");
+    }
+  }, 12800);
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id === "place") {
+      setStickerTutorialHandKey("open");
+    }
+  }, 16000);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
     addStickerFromTutorialDemoToPage();
-  }, 11200);
+  }, 17100);
 }
 
 function startStickerTutorialMoveDemo() {
@@ -4164,7 +4238,7 @@ function stickerTutorialDemoPoints(step, rect) {
     const trayRect = expandedElementRect(collectionStickerTrayItems || collectionStickerTray, 10, "16px") || rect;
     const scrollFrom = {
       x: rectRight(trayRect) - Math.min(96, trayRect.width * 0.18),
-      y: trayRect.top + trayRect.height * 0.54,
+      y: trayRect.top + trayRect.height * 0.72,
     };
     const scrollTo = {
       x: trayRect.left + Math.min(96, trayRect.width * 0.18),
@@ -7295,6 +7369,9 @@ function createEmptyCollectionAlbumState() {
 }
 
 function saveEditorState() {
+  if (stickerTutorialState?.editorSnapshot) {
+    return;
+  }
   try {
     editorState.version = EDITOR_STATE_VERSION;
     if (!editorState.drawings || typeof editorState.drawings !== "object") {
