@@ -126,6 +126,13 @@
       color: var(--primary);
       margin-bottom: 8px;
     }
+    .video-caption {
+      margin: 0 0 10px;
+      color: var(--text-light);
+      font-size: 0.86rem;
+      font-weight: 700;
+      line-height: 1.65;
+    }
     .video-wrap {
       position: relative;
       width: 100%;
@@ -709,9 +716,37 @@
       max-width:560px;
       margin:0 auto;
     }
+    .book-world-feature{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:14px;
+      align-items:start;
+    }
+    .book-world-action{
+      width:100%;
+      max-width:560px;
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .book-world-action .book-prelude,
+    .book-world-action .book-aside{
+      margin:0 auto;
+    }
     .book-world .video-label{
       color:#C96A2E;
-      margin-bottom:10px;
+      margin-bottom:4px;
+      font-size:clamp(18px,4.6vw,23px);
+      line-height:1.25;
+      letter-spacing:.02em;
+    }
+    .book-world .video-caption{
+      max-width:34em;
+      margin:0 auto 12px;
+      color:#5D4E37;
+      font-size:clamp(13.5px,3.4vw,15px);
     }
     .book-world .video-wrap{
       border:2px solid rgba(255,255,255,.85);
@@ -727,6 +762,94 @@
     .book-aside-link:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(93,78,55,.15);}
     .book-aside-link:focus-visible{outline:3px solid #F2915A;outline-offset:3px;}
     .book-aside-link img,.book-aside-link picture,.book-aside-link picture img{display:block;width:100%;height:auto;}
+    .book-aside-rating{
+      display:inline-flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+      gap:4px 8px;
+      max-width:100%;
+      margin:-2px auto 12px;
+      padding:6px 11px;
+      border:1px solid rgba(201,106,46,.18);
+      border-radius:999px;
+      background:rgba(255,251,244,.72);
+      color:#7A6A4F;
+      font-size:clamp(11px,2.7vw,12.5px);
+      font-weight:700;
+      line-height:1.4;
+    }
+    .book-aside-stars{
+      color:#D9952A;
+      font-size:.95em;
+      letter-spacing:.04em;
+    }
+    .book-aside-score{
+      color:#5D4E37;
+      font-weight:900;
+    }
+    @media (min-width:760px){
+      .book-world{
+        max-width:1000px;
+        padding:22px clamp(18px,3vw,30px) 26px;
+      }
+      .book-world-inner{
+        gap:18px;
+      }
+      .book-world-feature{
+        grid-template-columns:minmax(0,1.05fr) minmax(300px,.95fr);
+        gap:22px;
+        align-items:start;
+      }
+      .book-world .video-section,
+      .book-world-action{
+        max-width:none;
+        margin:0;
+      }
+      .book-world .video-section{
+        align-self:start;
+      }
+      .book-world .video-label{
+        font-size:clamp(20px,2.4vw,26px);
+      }
+      .book-world .video-caption{
+        margin-bottom:14px;
+        font-size:clamp(14px,1.5vw,16px);
+      }
+      .book-world-action{
+        align-self:stretch;
+        justify-content:center;
+      }
+      .book-world-action .book-prelude,
+      .book-world-action .book-aside{
+        max-width:none;
+      }
+      .book-world-action .book-prelude-inner{
+        padding:16px 18px 15px;
+      }
+      .book-world-action .book-prelude-headline{
+        font-size:clamp(15px,1.65vw,18px);
+      }
+      .book-world-action .book-prelude-sub,
+      .book-world-action .book-prelude-parent{
+        font-size:clamp(13px,1.35vw,14.5px);
+      }
+      .book-world-action .book-aside{
+        padding-top:12px;
+      }
+      .book-world .bookcheer{
+        max-width:none;
+      }
+    }
+    @media (min-width:1040px){
+      .book-world{
+        max-width:1040px;
+      }
+      .book-world-feature{
+        grid-template-columns:minmax(0,1.08fr) minmax(340px,.92fr);
+        gap:28px;
+      }
+    }
 
     /* ========== Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル / scope: .coming-soon) ========== */
     .coming-soon{
@@ -1473,48 +1596,57 @@
       <div class="book-world-inner">
         <h2 class="book-world-title" id="book-world-h">えほんの せかい</h2>
 
-        <!-- ミュージックビデオ -->
-        <section class="video-section">
-          <p class="video-label">🎵 ポノのうた みてね！</p>
-          <div class="video-wrap">
-            <iframe
-              src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-              loading="lazy"
-              title="ポノのうた">
-            </iframe>
-          </div>
-        </section>
+        <div class="book-world-feature">
+          <!-- ミュージックビデオ -->
+          <section class="video-section">
+            <p class="video-label">🎵 ポノのうた</p>
+            <p class="video-caption">絵本のやさしい世界が、そのまま歌になりました</p>
+            <div class="video-wrap">
+              <iframe
+                src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+                loading="lazy"
+                title="ポノのうた">
+              </iframe>
+            </div>
+          </section>
 
-        <!-- ===== 絵本セクション そえがき (book-aside の前置き) ===== -->
-        <section id="book-secret" class="book-prelude" aria-label="絵本との つながりの あんない">
-          <div class="book-prelude-inner">
-            <p class="book-prelude-headline">
-              <strong>ひみつのことば</strong>で、5つのあそびをもっと楽しめるよ
-            </p>
-            <p class="book-prelude-sub">
-              無料体験と同じ5つのあそびを、たっぷり楽しめるよ
-            </p>
-            <p class="book-prelude-parent">
-              <span class="book-prelude-parent-lbl">おうちの方へ</span>
-              絵本の最後のページにある「ひみつのことば」を入力すると、無料体験より、5つのあそびをたっぷり楽しめます。
-            </p>
-          </div>
-        </section>
+          <div class="book-world-action">
+            <!-- ===== 絵本セクション そえがき (book-aside の前置き) ===== -->
+            <section id="book-secret" class="book-prelude" aria-label="絵本との つながりの あんない">
+              <div class="book-prelude-inner">
+                <p class="book-prelude-headline">
+                  <strong>ひみつのことば</strong>で、5つのあそびをもっと楽しめるよ
+                </p>
+                <p class="book-prelude-sub">
+                  無料体験と同じ5つのあそびを、たっぷり楽しめるよ
+                </p>
+                <p class="book-prelude-parent">
+                  <span class="book-prelude-parent-lbl">おうちの方へ</span>
+                  絵本の最後のページにある「ひみつのことば」を入力すると、無料体験より、5つのあそびをたっぷり楽しめます。
+                </p>
+              </div>
+            </section>
 
-        <!-- ===== Amazon えほんも あるよ (compact) ===== -->
-        <section id="book-aside" class="book-aside" aria-labelledby="book-aside-h">
-          <p class="book-aside-h" id="book-aside-h">えほんも <span class="book-aside-em">あるよ</span></p>
-          <p class="book-aside-sub">あそびばの もとに なった ポノの えほん</p>
-          <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="book-aside-link" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本『ありがとうって、うれしいね』を見る">
-            <picture>
-              <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
-              <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
-              <img src="assets/images/Amazonリンク.png" alt="Amazonで絵本『ありがとうって、うれしいね』発売中" loading="lazy">
-            </picture>
-          </a>
-        </section>
+            <!-- ===== Amazon えほんも あるよ (compact) ===== -->
+            <section id="book-aside" class="book-aside" aria-labelledby="book-aside-h">
+              <p class="book-aside-h" id="book-aside-h">えほんも <span class="book-aside-em">あるよ</span></p>
+              <p class="book-aside-sub">あそびばの もとに なった ポノの えほん</p>
+              <div class="book-aside-rating" aria-label="Amazon評価 4.4 / 5">
+                <span class="book-aside-stars" aria-hidden="true">★</span>
+                <span class="book-aside-score">Amazon評価 4.4 / 5</span>
+              </div>
+              <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="book-aside-link" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本『ありがとうって、うれしいね』を見る">
+                <picture>
+                  <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
+                  <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
+                  <img src="assets/images/Amazonリンク.png" alt="Amazonで絵本『ありがとうって、うれしいね』発売中" loading="lazy">
+                </picture>
+              </a>
+            </section>
+          </div>
+        </div>
 
         <!-- ===== ハードカバー応援 (控えめ・本のページ風) ===== -->
         <section class="bookcheer" data-accent="bookcheer" aria-labelledby="bookcheer-h">
