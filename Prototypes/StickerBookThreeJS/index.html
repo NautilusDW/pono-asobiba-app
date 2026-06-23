@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260623-816">
+  <link rel="stylesheet" href="./styles.css?v=20260623-817">
 </head>
 <body>
   <main id="app">
     <canvas id="scene" aria-label="ずかんのページめくりプレビュー"></canvas>
     <div class="top-action-cluster" aria-label="Book actions">
-      <button id="topBackButton" class="top-action-button" type="button" aria-label="もどる">←</button>
       <button id="topSettingsButton" class="top-action-button" type="button" aria-label="せってい" aria-pressed="false">⚙</button>
+      <button id="topThemeButton" class="top-theme-button" type="button" aria-label="きせかえ" aria-pressed="false">きせかえ</button>
       <button id="albumModeToggle" class="album-mode-toggle" type="button">ずかん</button>
     </div>
     <section id="zukanSettingsPanel" class="zukan-settings-panel" hidden aria-label="せってい">
@@ -20,6 +20,7 @@
         <h2>せってい</h2>
         <button id="zukanSettingsClose" class="zukan-settings-close" type="button" aria-label="とじる">×</button>
       </div>
+      <button id="settingsBackButton" class="zukan-settings-back" type="button">もどる</button>
       <div class="zukan-settings-row zukan-settings-row-theme">
         <span>きせかえ</span>
         <div id="bookThemePreview" class="zukan-theme-current" aria-live="polite">
@@ -55,6 +56,13 @@
           <button type="button" data-book-theme="festival_night">おまつり</button>
           <button type="button" data-book-theme="sweet_gothic">ゴシック</button>
           <button type="button" data-book-theme="sports_power">スポーツ</button>
+        </div>
+      </div>
+      <div class="zukan-settings-row sticker-mode-settings-row">
+        <span>モード</span>
+        <div class="zukan-settings-segment sticker-mode-segment" role="group" aria-label="シールちょうモード">
+          <button type="button" data-sticker-edit-mode="view">みる</button>
+          <button type="button" data-sticker-edit-mode="edit">へんしゅう</button>
         </div>
       </div>
       <div class="zukan-settings-row">
@@ -221,6 +229,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260623-815"></script>
+  <script type="module" src="./main.js?v=20260623-817"></script>
 </body>
 </html>

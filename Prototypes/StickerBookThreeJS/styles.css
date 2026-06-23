@@ -145,6 +145,19 @@ body:not(.is-collection-album) #scene {
   font-weight: 900;
 }
 
+.zukan-settings-back {
+  width: 100%;
+  min-height: 40px;
+  margin: 0 0 10px;
+  border: 2px solid rgba(225, 185, 68, 0.68);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff7cc, #ffe89f);
+  color: #263c3e;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: inset 0 -4px 0 rgba(210, 165, 48, 0.36);
+}
+
 .zukan-settings-row {
   grid-template-columns: 64px minmax(0, 1fr);
   margin-top: 10px;
@@ -293,6 +306,14 @@ body:not(.is-collection-album) #scene {
     inset 0 0 0 3px rgba(255, 255, 255, 0.74),
     0 0 0 3px var(--book-accent, rgba(73, 171, 162, 0.88)),
     0 4px 9px rgba(26, 55, 55, 0.18);
+}
+
+.sticker-mode-segment {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.is-collection-album .sticker-mode-settings-row {
+  display: none;
 }
 
 .zukan-tune-button {
@@ -594,6 +615,7 @@ input[type="range"] {
 }
 
 .top-action-button,
+.top-theme-button,
 .album-mode-toggle {
   box-sizing: border-box;
   min-width: 0;
@@ -636,10 +658,6 @@ input[type="range"] {
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.65));
 }
 
-#topBackButton::before {
-  font-size: 26px;
-}
-
 #topSettingsButton {
   background-image: var(--sb3d-ui-button-settings);
   background-size: 88% 88%;
@@ -647,6 +665,20 @@ input[type="range"] {
 
 #topSettingsButton::before {
   font-family: "Segoe UI Symbol", "Meiryo", sans-serif;
+}
+
+.top-theme-button {
+  min-width: 132px;
+  padding: 0 22px 0 26px;
+  display: grid;
+  place-items: center;
+  background-image: var(--sb3d-ui-button-wide);
+  color: #243b40;
+  font-size: 14px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
 }
 
 .album-mode-toggle {
@@ -666,6 +698,7 @@ input[type="range"] {
 }
 
 .top-action-button:hover,
+.top-theme-button:hover,
 .album-mode-toggle:hover {
   filter: brightness(1.04) drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
 }
@@ -887,6 +920,7 @@ body:not(.is-collection-album) .collection-sticker-tray.is-sticker-source {
 }
 
 body:not(.is-collection-album).is-sticker-tray-peek .collection-sticker-tray.is-sticker-source,
+body:not(.is-collection-album).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source,
 body:not(.is-collection-album).is-sticker-tray-dragging .collection-sticker-tray.is-sticker-source {
   opacity: 1;
   pointer-events: auto;
@@ -2064,6 +2098,13 @@ body.is-sticker-tray-dragging #scene {
     height: 50px;
   }
 
+  .top-theme-button {
+    min-width: 118px;
+    height: 50px;
+    padding: 0 16px 0 20px;
+    font-size: 12px;
+  }
+
   .album-mode-toggle {
     min-width: 170px;
     height: 50px;
@@ -2468,6 +2509,13 @@ body.is-sticker-tray-dragging #scene {
   .top-action-button {
     width: 42px;
     height: 42px;
+  }
+
+  .top-theme-button {
+    min-width: 104px;
+    height: 42px;
+    padding: 0 13px 0 16px;
+    font-size: 11px;
   }
 
   .album-mode-toggle {
