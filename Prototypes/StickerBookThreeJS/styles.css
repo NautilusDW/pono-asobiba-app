@@ -598,7 +598,7 @@ input[type="range"] {
   z-index: 4;
   display: flex;
   align-items: flex-start;
-  gap: 2px;
+  gap: 0;
   max-width: calc(100vw - 16px);
   padding: 0;
   border: 0;
@@ -700,6 +700,7 @@ body.is-sticker-edit-mode .top-edit-button {
 }
 
 #topSettingsButton {
+  margin-left: -8px;
   background-image: var(--sb3d-ui-button-settings);
   background-size: 88% 88%;
 }
@@ -900,15 +901,16 @@ body.is-collection-tray-visible .book-page-button-right {
 
 body.is-collection-tray-visible .book-page-label {
   position: fixed;
-  right: clamp(32px, 6vw, 92px);
-  bottom: max(46px, calc(env(safe-area-inset-bottom) + 46px));
+  left: 50%;
+  right: auto;
+  bottom: max(8px, calc(env(safe-area-inset-bottom) + 8px));
   min-width: 118px;
   min-height: 34px;
   padding: 0 16px 7px;
   background-image: var(--sb3d-ui-page-label);
   box-shadow: none;
   font-size: 12px;
-  transform: none;
+  transform: translateX(-50%);
 }
 
 .book-page-jump button {
@@ -1340,7 +1342,7 @@ body.is-sticker-tray-dragging #scene {
   }
 
   body.is-collection-tray-visible .book-page-label {
-    bottom: max(102px, calc(env(safe-area-inset-bottom) + 102px));
+    bottom: max(8px, calc(env(safe-area-inset-bottom) + 8px));
   }
 
   body.is-collection-tray-visible .book-page-jump {

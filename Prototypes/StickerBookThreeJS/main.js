@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260623-820";
+const ASSET_VERSION = "20260623-821";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -11085,8 +11085,8 @@ function updateStickerEditModeUi() {
   if (topEditButton) {
     topEditButton.classList.toggle("is-active", enabled);
     topEditButton.setAttribute("aria-pressed", enabled ? "true" : "false");
-    setTopButtonLabel(topEditButton, enabled ? "みるモード" : "はるモード");
-    topEditButton.setAttribute("aria-label", enabled ? "みるモードにする" : "はるモードにする");
+    setTopButtonLabel(topEditButton, enabled ? "はるモード" : "みるモード");
+    topEditButton.setAttribute("aria-label", enabled ? "いま はるモード。みるモードにする" : "いま みるモード。はるモードにする");
   }
   for (const button of stickerModeButtons) {
     const active = button.dataset.stickerEditMode === (enabled ? "edit" : "view");
