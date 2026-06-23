@@ -271,7 +271,7 @@
 
     footer {
       margin-top: 12px;
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       color: var(--text-light);
       text-align: center;
     }
@@ -295,10 +295,10 @@
       color: var(--text);
     }
     .rights-footer-note {
-      font-size: 0.7rem;
+      font-size: clamp(11px, 2.7vw, 12.5px);
       font-weight: 700;
       color: var(--text-light);
-      line-height: 1.7;
+      line-height: 1.75;
     }
     .rights-footer-small {
       font-size: 0.75rem;
@@ -572,7 +572,7 @@
     .pc-title{font-weight:900;font-size:clamp(20px,5vw,28px);line-height:1.3;margin:0;color:var(--pc-text);display:inline-block;transform:rotate(-1.2deg);}
     .pc-title rt{font-size:.45em;font-weight:700;color:var(--pc-text-light);}
     .pc-play{font-weight:700;font-size:clamp(14px,3.6vw,17px);line-height:1.7;color:var(--pc-text);margin:10px 0 0;}
-    .pc-growth{font-weight:700;font-size:clamp(12.5px,3.2vw,14px);line-height:1.65;color:var(--pc-text);margin:10px 0 0;padding:10px 14px;background:rgba(253,220,191,.4);border-radius:12px;}
+    .pc-growth{font-weight:700;font-size:clamp(13.5px,3.3vw,15px);line-height:1.7;color:var(--pc-text);margin:10px 0 0;padding:10px 14px;background:rgba(253,220,191,.4);border-radius:12px;}
     .pc-growth b{color:var(--pc-primary-deep);}
     .pc-chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0;}
     .pc-chip{background:var(--pc-primary-light);color:var(--pc-text);font-weight:900;font-size:12px;padding:5px 12px;border-radius:999px;}
@@ -761,7 +761,7 @@
     .cs-copy .l3{font-weight:700;font-size:clamp(13px,3.2vw,16px);line-height:1.55;color:var(--cs-text);margin-top:4px;}
     .cs-copy .l3 > span{display:inline-block;white-space:nowrap;}
     .cs-copy .l3 .big{font-weight:900;color:var(--cs-primary-deep);}
-    .cs-tap{position:absolute;right:16px;bottom:9px;font-weight:700;font-size:11.5px;color:var(--cs-text-light);}
+    .cs-tap{position:absolute;right:16px;bottom:9px;font-weight:800;font-size:clamp(12px,2.9vw,13px);color:var(--cs-text-light);}
     .cs-icon{flex:none;width:70px;height:70px;border-radius:16px;overflow:hidden;
       background:#FBEAD6;box-shadow:0 0 0 2px var(--cs-primary),0 3px 8px rgba(0,0,0,.16);
       transform:translateY(-8px) rotate(2.5deg);}
@@ -846,9 +846,10 @@
     }
     .bookcheer-body{
       margin:0;
-      font-size:clamp(13px,3.3vw,15px);
+      font-size:clamp(13.5px,3.4vw,16px);
+      font-weight:700;
       color:var(--text,#5D4E37);
-      line-height:1.85;
+      line-height:1.75;
     }
     .bookcheer-key{
       font-weight:700;
@@ -1279,9 +1280,10 @@
     }
     .book-prelude-sub{
       margin:0 0 12px;
-      font-size:clamp(12.5px, 3vw, 13.5px);
+      font-size:clamp(13.5px, 3.4vw, 15px);
+      font-weight:700;
       color:#5D4E37;
-      line-height:1.5;
+      line-height:1.6;
     }
     .book-prelude-parent{
       margin:10px 0 0;
@@ -1289,15 +1291,17 @@
       background:rgba(255,255,255,.58);
       border-left:4px solid rgba(201,106,46,.34);
       border-radius:10px;
-      font-size:11.5px;
-      line-height:1.55;
+      font-size:clamp(13px, 3.4vw, 15px);
+      font-weight:700;
+      line-height:1.7;
       color:#5D4E37;
       text-align:left;
     }
     .book-prelude-parent-lbl{
       display:block;
-      font-size:10px;
-      letter-spacing:.12em;
+      font-size:clamp(11.5px, 3vw, 13px);
+      line-height:1.25;
+      letter-spacing:.06em;
       color:#C96A2E;
       font-weight:900;
       margin-bottom:3px;
@@ -1516,11 +1520,11 @@
         <section class="bookcheer" data-accent="bookcheer" aria-labelledby="bookcheer-h">
           <span class="bookcheer-mark" aria-hidden="true">📖</span>
           <h2 class="bookcheer-h" id="bookcheer-h">
-            いつか、 <span class="bookcheer-hl">本棚のとくとう席</span>へ。
+            いつか、<span class="bookcheer-hl">本棚に長くのこる一冊</span>へ。
           </h2>
           <p class="bookcheer-body">
-            いま みんなが よんでくれている この えほんが、 いつか かたい <strong class="bookcheer-key" tabindex="0">ハードカバー</strong> になって、 おうちの 本棚に ならぶ日が きたら——。<br>
-            その ちいさな ゆめの ページを、 きょうも あなたが めくってくれています。
+            この絵本が、何度も読まれて、子どもたちのそばに長く残る一冊になれたら。<br>
+            そんな思いから、いつか<strong class="bookcheer-key" tabindex="0">ハードカバー</strong>版にできる日を目指しています。絵本を楽しむこと、あそびばで遊ぶことが、ポノたちの世界を少しずつ育ててくれます。
           </p>
           <p class="bookcheer-sign" aria-hidden="true">— ぽの</p>
         </section>
