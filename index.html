@@ -583,15 +583,77 @@
     .pc-growth b{color:var(--pc-primary-deep);}
     .pc-chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0;}
     .pc-chip{background:var(--pc-primary-light);color:var(--pc-text);font-weight:900;font-size:12px;padding:5px 12px;border-radius:999px;}
-    .pc-cta-wrap{display:flex;justify-content:center;margin:36px auto 0;}
+    .pc-cta-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:36px auto 0;text-align:center;}
     .pc-cta{display:inline-flex;align-items:center;gap:.5em;min-height:56px;padding:14px 38px;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:clamp(17px,4.4vw,22px);letter-spacing:.06em;text-decoration:none;border-radius:24px;box-shadow:0 6px 20px rgba(201,106,46,.32);transition:transform .25s ease,box-shadow .25s ease;}
     .pc-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(201,106,46,.42);}
     .pc-cta:active{transform:translateY(0) scale(.98);}
+    .pc-cta-note{margin:0;font-weight:800;font-size:clamp(12.5px,3.3vw,14px);line-height:1.6;color:var(--pc-text-light);}
     .play-cards a:focus-visible{outline:3px solid var(--pc-primary);outline-offset:3px;}
     @keyframes pc-pop{from{opacity:0;transform:translateY(20px) rotate(0) scale(.85);}to{opacity:1;transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--rot)) scale(.96);}}
     @media (prefers-reduced-motion:reduce){.play-cards *{animation:none!important;transition:none!important;}}
     @media (min-width:768px){.play-cards{padding:40px 32px 48px;}.pc-stack{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:30px 28px;}.pc-card--mt5{grid-column:1 / -1;justify-self:center;width:calc(50% - 14px);}}
     @media (min-width:1200px){.pc-stack{max-width:1000px;gap:38px 36px;}.pc-visual{aspect-ratio:16/10;}.pc-card--mt5{width:calc(50% - 18px);}}
+
+    /* ===== Parent assurance band ===== */
+    .parent-assurance{
+      width:100%;
+      margin:8px 0 0;
+      padding:18px 16px 20px;
+      background:
+        radial-gradient(circle at 8% 12%,rgba(255,224,122,.36),transparent 28%),
+        linear-gradient(90deg,rgba(255,253,248,.9),rgba(253,220,191,.7),rgba(255,253,248,.9));
+      border-top:1px solid rgba(201,106,46,.12);
+      border-bottom:1px solid rgba(201,106,46,.12);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.72);
+    }
+    .parent-assurance-inner{
+      max-width:960px;
+      margin:0 auto;
+      display:grid;
+      gap:12px;
+      align-items:center;
+    }
+    .parent-assurance-title{
+      margin:0;
+      font-weight:900;
+      font-size:clamp(22px,4.8vw,32px);
+      line-height:1.25;
+      color:var(--text);
+      letter-spacing:.02em;
+    }
+    .parent-assurance-lead{
+      margin:6px 0 0;
+      font-weight:800;
+      font-size:clamp(14px,3.5vw,17px);
+      line-height:1.7;
+      color:var(--text-light);
+    }
+    .parent-assurance-chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:0;
+      padding:0;
+      list-style:none;
+    }
+    .parent-assurance-chips li{
+      max-width:100%;
+      padding:8px 13px;
+      border-radius:999px;
+      background:#FFFDF8;
+      border:1px solid rgba(201,106,46,.16);
+      box-shadow:0 3px 10px rgba(93,78,55,.08);
+      color:var(--text);
+      font-weight:900;
+      font-size:clamp(12.5px,3.1vw,14px);
+      line-height:1.25;
+      white-space:nowrap;
+    }
+    @media (min-width:760px){
+      .parent-assurance{padding:20px 32px 22px;}
+      .parent-assurance-inner{grid-template-columns:minmax(260px,.95fr) minmax(360px,1.15fr);gap:22px;}
+      .parent-assurance-chips{justify-content:flex-end;}
+    }
 
     /* ===== Sticker extra (ゲーム外の楽しみ方) ===== */
     .sticker-extra{width:100%;max-width:560px;margin:8px auto 0;padding:20px 16px 22px;text-align:center;background:rgba(255,255,255,.78);border:2px dashed #FDDCBF;border-radius:18px;box-shadow:0 4px 14px rgba(93,78,55,.1);}
@@ -993,15 +1055,6 @@
     .bookcheer-key{
       font-weight:700;
       color:#C96A2E;
-    }
-    .bookcheer-sign{
-      margin:14px 0 0;
-      font-size:clamp(11px,2.8vw,13px);
-      color:var(--text-light,#7A6A4F);
-      text-align:right;
-      opacity:.7;
-      font-style:italic;
-      letter-spacing:.05em;
     }
     @media (hover:hover){
       .bookcheer{transition:box-shadow .35s ease, transform .35s ease;}
@@ -1491,6 +1544,21 @@
       </section>
     </section>
 
+    <section class="parent-assurance" aria-labelledby="parent-assurance-h">
+      <div class="parent-assurance-inner">
+        <div>
+          <h2 class="parent-assurance-title" id="parent-assurance-h">おうちの方へ</h2>
+          <p class="parent-assurance-lead">会員登録や名前・メールの入力なしで、まずは無料で遊べます。</p>
+        </div>
+        <ul class="parent-assurance-chips" aria-label="安心ポイント">
+          <li>会員登録なし</li>
+          <li>名前・メール入力なし</li>
+          <li>課金ガチャなし</li>
+          <li>まずは無料で体験</li>
+        </ul>
+      </div>
+    </section>
+
     <!-- ===== Play Cards A1 (改善版): LP→bento アセット直参照中。 bento 側でリネーム時は LP も追従要 ===== -->
     <section class="play-cards pc-grav" aria-labelledby="pc-h2">
       <div class="pc-head">
@@ -1503,8 +1571,8 @@
           <div class="pc-visual pc-v-bento" role="img" aria-label="すきなおかずを選んで作る、いろどりお弁当の画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">いろどりべんとう</h3>
-            <p class="pc-play">ちゅうもんに こたえる 「おみせモード」 と、 すきに つくる 「じゆうモード」。 あか・きいろ・みどり そろえてね！</p>
-            <p class="pc-growth">お店モードで三色食品群のバランスを学び、 自由モードで自分の好みを形に。 <b>食への興味と段取り力</b> が育ちます</p>
+            <p class="pc-play">注文にこたえる「おみせモード」と、好きに作る「じゆうモード」。赤・黄・緑をそろえながら、お弁当づくりを楽しめます。</p>
+            <p class="pc-growth">お店モードで三色食品群のバランスを学び、 自由モードで自分の好みを形に。 <b>食への興味と段取り力</b> が育ちます。</p>
             <div class="pc-chips"><span class="pc-chip">３しょく</span><span class="pc-chip">おみせごっこ</span><span class="pc-chip">じぶんいろ</span></div>
           </div>
         </article>
@@ -1513,7 +1581,7 @@
           <div class="pc-visual pc-v-maze" role="img" aria-label="ランタンを持って暗い森を探検するめいろの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">ランタンの めいろ</h3>
-            <p class="pc-play">よるの もりで まいごに なった どうぶつを たすけに いこう。 とちゅうで おじゃまむしとの たいけつや なぞときが まってるよ！</p>
+            <p class="pc-play">夜の森で迷子になった動物を助けにいこう。途中で、おじゃまむしとの対決や謎解きが待っています。</p>
             <p class="pc-growth">道を選び直す <b>試行錯誤の力</b> と、 困っている子を放っておけない <b>やさしさ</b>、 小さな課題を乗り越える <b>集中力</b> が育ちます。</p>
             <div class="pc-chips"><span class="pc-chip">たすける</span><span class="pc-chip">なぞとき</span><span class="pc-chip">たいけつ</span></div>
           </div>
@@ -1523,8 +1591,8 @@
           <div class="pc-visual pc-v-oto" role="img" aria-label="タップでドレミが鳴る、ポノのおとタッチの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">ポノの おとタッチ</h3>
-            <p class="pc-play">タップで ドレミが なるよ！ どうぶつや たいこで じゆうに あそんだり、 ちょうせんしゃと リズムくらべで しょうぶ できるよ。</p>
-            <p class="pc-growth">自由な音さがしと、 ライバルと競うリズム遊びの両輪で <b>音感・リズム感・表現する楽しさ・集中力</b> が育ちます</p>
+            <p class="pc-play">タップでドレミが鳴る音あそび。動物やたいこで自由に遊んだり、ライバルとリズムくらべも楽しめます。</p>
+            <p class="pc-growth">自由な音さがしと、 ライバルと競うリズム遊びの両輪で <b>音感・リズム感・表現する楽しさ・集中力</b> が育ちます。</p>
             <div class="pc-chips"><span class="pc-chip">じゆうに</span><span class="pc-chip">リズムくらべ</span><span class="pc-chip">ちょうせんしゃ</span></div>
           </div>
         </article>
@@ -1533,8 +1601,8 @@
           <div class="pc-visual pc-v-puzzle" role="img" aria-label="ピースをあわせて絵を完成させる、ポノのなかよしパズルの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">ポノの なかよしパズル</h3>
-            <p class="pc-play">なかよしの ともだちと いっしょに、 「できた！」 を みつけよう。</p>
-            <p class="pc-growth">友だちと力を合わせて 「できた！」 にたどりつく協力体験を通じて、 <b>人と関わる楽しさと最後までやりぬく力</b> が育ちます</p>
+            <p class="pc-play">なかよしの友だちと一緒に、ピースを合わせて「できた！」を見つけるパズルです。</p>
+            <p class="pc-growth">友だちと力を合わせて 「できた！」 にたどりつく協力体験を通じて、 <b>人と関わる楽しさと最後までやりぬく力</b> が育ちます。</p>
             <div class="pc-chips"><span class="pc-chip">なかよし</span><span class="pc-chip">いっしょに</span><span class="pc-chip">できた！</span></div>
           </div>
         </article>
@@ -1543,14 +1611,15 @@
           <div class="pc-visual pc-v-quizland" role="img" aria-label="フクロウはかせがなぞなぞを出す、フクロウはかせのなぞなぞの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">フクロウはかせの なぞなぞ</h3>
-            <p class="pc-play">フクロウはかせの なぞなぞに ちょうせん！ よく きいて、 こたえて みよう。</p>
-            <p class="pc-growth">言葉に耳を澄ませて推理する遊びで <b>語彙力・推理力・聞く力</b> が育ちます</p>
+            <p class="pc-play">フクロウはかせのなぞなぞに挑戦。よく聞いて、考えて、答えることば遊びです。</p>
+            <p class="pc-growth">言葉に耳を澄ませて推理する遊びで <b>語彙力・推理力・聞く力</b> が育ちます。</p>
             <div class="pc-chips"><span class="pc-chip">なぞなぞ</span><span class="pc-chip">ことば</span><span class="pc-chip">かんがえる</span></div>
           </div>
         </article>
       </div>
       <div class="pc-cta-wrap">
-        <a href="play.html" class="pc-cta">ぜんぶ あそびに いく <span aria-hidden="true">→</span></a>
+        <a href="play.html" class="pc-cta">あそびにいく <span aria-hidden="true">→</span></a>
+        <p class="pc-cta-note">会員登録や名前・メールの入力なしで遊べます。</p>
       </div>
     </section>
 
@@ -1582,8 +1651,8 @@
           </div>
           <div class="pc-body">
             <h3 class="pc-title">おたのしみガチャ</h3>
-            <p class="pc-play">1にち1かい、ガチャを まわすと シールが もらえるよ！ あした なにが でるかな？</p>
-            <p class="pc-growth"><span class="lbl">おうちの方へ</span>課金は ありません。<b>1日1回 無料</b>で まわせるので、安心して「毎日のおたのしみ」に できます。</p>
+            <p class="pc-play">1日1回、ガチャをまわすとシールがもらえるよ！明日は何が出るかな？</p>
+            <p class="pc-growth"><span class="lbl">おうちの方へ</span>課金ガチャではありません。<b>1日1回無料</b>でまわせるので、安心して「毎日のおたのしみ」にできます。</p>
           </div>
         </article>
 
@@ -1593,7 +1662,7 @@
           <div class="pc-visual pc-v-sticker" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面"></div>
           <div class="pc-body">
             <h3 class="pc-title">シールアルバム</h3>
-            <p class="pc-play">あつめた シールを、じぶんの アルバムに ぺたぺた はろう！ ながめるだけでも たのしいよ。</p>
+            <p class="pc-play">集めたシールを、自分のアルバムにぺたぺた貼ろう！眺めるだけでも楽しいよ。</p>
             <p class="pc-growth"><span class="lbl">ここが そだつ</span>集めて並べる楽しさで <b>達成感とコレクション欲、整理する力</b> が育ちます。</p>
           </div>
         </article>
@@ -1675,7 +1744,6 @@
             この絵本が、何度も読まれて、子どもたちのそばに長く残る一冊になれたら。<br>
             そんな思いから、いつか<strong class="bookcheer-key" tabindex="0">ハードカバー</strong>版にできる日を目指しています。絵本を楽しむこと、あそびばで遊ぶことが、ポノたちの世界を少しずつ育ててくれます。
           </p>
-          <p class="bookcheer-sign" aria-hidden="true">— ぽの</p>
         </section>
       </div>
     </section>
@@ -1756,7 +1824,8 @@
       <div class="rights-footer-small">
         本サイトはCloudflare上で運営されています。<br>
         YouTubeの動画再生にはGoogleのサービスが使用されます。<br>
-        当サイトはお客様の個人情報を収集・保存していません。
+        Amazonへのリンクは外部サイトへ移動します。<br>
+        ポノのあそびば内で、名前やメールアドレスの入力を求めることはありません。
       </div>
     </div>
 
