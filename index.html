@@ -1082,7 +1082,10 @@
       text-align:center;
       font-weight:900;
     }
-    .hero-bookhint-ehon{
+    .hero-bookhint-line{
+      display:block;
+    }
+    .hero-bookhint-keyword{
       color:#E8843A;
       font-weight:900;
     }
@@ -1224,7 +1227,8 @@
       <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
         <p class="hero-bookhint-free">誰でも無料で遊べるよ！</p>
         <p class="hero-bookhint-text">
-          <span class="hero-bookhint-ehon">絵本</span>を 読めば <em class="hero-bookhint-more">もっとたくさん</em> あそべるよ！
+          <span class="hero-bookhint-line">絵本の最後の「<span class="hero-bookhint-keyword">ひみつのことば</span>」で、</span>
+          <span class="hero-bookhint-line">あそびばが<em class="hero-bookhint-more">もっと広がる</em>よ！</span>
         </p>
         <a class="hero-bookhint-banner" href="#book-aside" aria-label="ポノの えほんの しょうかいへ いどう">
           <span class="hero-bookhint-thumb" aria-hidden="true"></span>
@@ -1232,39 +1236,6 @@
           <span class="hero-bookhint-arrow" aria-hidden="true">→</span>
         </a>
       </section>
-    </section>
-
-    <!-- ============ Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル) ============ -->
-    <section class="coming-soon">
-      <button type="button" class="cs-banner" aria-haspopup="dialog" aria-controls="cs-modal"
-              aria-label="ポノのあそびば アプリ化のおしらせを ひらく">
-        <span class="cs-copy">
-          <span class="cs-eyebrow" aria-hidden="true"><span class="dot"></span>COMING SOON</span>
-          <span class="lead">
-            <span class="l1"><span class="brand">ポノの あそびば</span>が</span>
-            <span class="l2"><span class="mark">アプリに なります！</span></span>
-            <span class="l3"><span class="np">ゲームも コンテンツも</span> <span class="big">うんと ボリュームアップ。</span></span>
-          </span>
-        </span>
-        <span class="cs-icon"><img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></span>
-        <span class="cs-tap" aria-hidden="true">タップで くわしく →</span>
-      </button>
-
-      <div class="cs-modal" id="cs-modal" role="dialog" aria-modal="true" aria-labelledby="cs-modal-title" hidden>
-        <div class="cs-modal-box">
-          <button type="button" class="cs-modal-close" aria-label="とじる">×</button>
-          <h2 class="cs-modal-title" id="cs-modal-title">いま つくっています</h2>
-          <div class="cs-modal-icon"><img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></div>
-          <p class="cs-modal-lead">ポノの あそびばが、スマホ・タブレットの アプリに。 これから こんなことが できるように なります。</p>
-          <ul class="cs-modal-list">
-            <li><span class="b">✓</span>もっと たくさんの ゲーム</li>
-            <li><span class="b">✓</span>あたらしい あそびば</li>
-            <li><span class="b">✓</span>ポノからの とくべつな おしらせ</li>
-            <li><span class="b">✓</span>ホーム画面に おける アプリアイコン</li>
-          </ul>
-          <p class="cs-modal-foot">じゅんびが できたら、 ここで おしらせするね。</p>
-        </div>
-      </div>
     </section>
 
     <!-- ===== Play Cards A1 (改善版): LP→bento アセット直参照中。 bento 側でリネーム時は LP も追従要 ===== -->
@@ -1409,7 +1380,7 @@
         </p>
         <p class="book-prelude-parent">
           <span class="book-prelude-parent-lbl">おうちの方へ</span>
-          絵本をお持ちの方は、 無料版より 多くのステージやコンテンツを ご利用いただけます。
+          絵本の最後のページにあるパスワードを入力すると、絵本をお持ちの方向けの追加のあそびをご利用いただけます。
         </p>
       </div>
     </section>
@@ -1438,6 +1409,39 @@
         その ちいさな ゆめの ページを、 きょうも あなたが めくってくれています。
       </p>
       <p class="bookcheer-sign" aria-hidden="true">— ぽの</p>
+    </section>
+
+    <!-- ============ Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル) ============ -->
+    <section class="coming-soon">
+      <button type="button" class="cs-banner" aria-haspopup="dialog" aria-controls="cs-modal"
+              aria-label="ポノのあそびば アプリ化のおしらせを ひらく">
+        <span class="cs-copy">
+          <span class="cs-eyebrow" aria-hidden="true"><span class="dot"></span>COMING SOON</span>
+          <span class="lead">
+            <span class="l1"><span class="brand">ポノの あそびば</span>が</span>
+            <span class="l2"><span class="mark">アプリに なります！</span></span>
+            <span class="l3"><span class="np">ゲームも コンテンツも</span> <span class="big">うんと ボリュームアップ。</span></span>
+          </span>
+        </span>
+        <span class="cs-icon"><img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></span>
+        <span class="cs-tap" aria-hidden="true">タップで くわしく →</span>
+      </button>
+
+      <div class="cs-modal" id="cs-modal" role="dialog" aria-modal="true" aria-labelledby="cs-modal-title" hidden>
+        <div class="cs-modal-box">
+          <button type="button" class="cs-modal-close" aria-label="とじる">×</button>
+          <h2 class="cs-modal-title" id="cs-modal-title">いま つくっています</h2>
+          <div class="cs-modal-icon"><img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノのアプリアイコン"></div>
+          <p class="cs-modal-lead">ポノの あそびばが、スマホ・タブレットの アプリに。 これから こんなことが できるように なります。</p>
+          <ul class="cs-modal-list">
+            <li><span class="b">✓</span>もっと たくさんの ゲーム</li>
+            <li><span class="b">✓</span>あたらしい あそびば</li>
+            <li><span class="b">✓</span>ポノからの とくべつな おしらせ</li>
+            <li><span class="b">✓</span>ホーム画面に おける アプリアイコン</li>
+          </ul>
+          <p class="cs-modal-foot">じゅんびが できたら、 ここで おしらせするね。</p>
+        </div>
+      </div>
     </section>
 
     <!-- 作者コメント -->
