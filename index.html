@@ -898,10 +898,8 @@
     .game-modal-scene img{width:72%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;transition:transform .25s ease;}
     .game-modal-scene:nth-child(odd) img{margin-left:0;margin-right:auto;}
     .game-modal-scene:nth-child(even) img{margin-left:auto;margin-right:0;}
-    .game-modal-scene:nth-child(1) img{transform:rotate(-2.5deg) translateX(-6px);}
-    .game-modal-scene:nth-child(2) img{transform:rotate(3deg) translateX(8px);}
-    .game-modal-scene:nth-child(3) img{transform:rotate(-1.5deg) translateX(-4px);}
-    .game-modal-scene img:hover{transform:rotate(0) translateX(0) scale(1.02);}
+    /* v1535: nth-child(1/2/3) の rotate/translateX を削除 → 画像は真っ直ぐ表示 */
+    .game-modal-scene img:hover{transform:scale(1.02);}
     @media (max-width:480px){.game-modal-scene img{width:85%;}}
     .game-modal-caption{font-weight:700;font-size:clamp(14px,3.6vw,16px);line-height:1.8;color:var(--text);margin:0;padding:0 4px;}
     .game-modal-cta-wrap{display:flex;justify-content:center;padding:6px 16px 10px;border-top:1px solid rgba(93,78,55,.08);background:#FFFDF8;}
