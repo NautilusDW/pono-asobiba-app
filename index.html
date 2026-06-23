@@ -893,6 +893,10 @@
     .game-modal-close:hover{background:rgba(255,255,255,.18);}
     .game-modal-close:focus-visible{outline:3px solid #fff;outline-offset:2px;}
     .game-modal-body{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:0;}
+    .game-modal-growth{margin:16px 20px 0;padding:12px 14px;background:#FFFBEC;border:1.5px solid var(--accent,#C96A2E);border-radius:12px;}
+    .game-modal-growth-label{display:block;font-size:10px;letter-spacing:.12em;color:var(--accent,#C96A2E);font-weight:900;margin-bottom:4px;}
+    .game-modal-growth-text{margin:0;font-size:clamp(13px,3vw,14.5px);line-height:1.65;color:#5D4E37;font-weight:700;}
+    .game-modal-growth-text b{color:var(--accent-dark,#A33A33);font-weight:900;}
     .game-modal-scenes{display:flex;flex-direction:column;gap:28px;padding:20px 20px 18px;}
     .game-modal-scene{display:flex;flex-direction:column;gap:12px;}
     .game-modal-scene img{width:72%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;transition:transform .25s ease;}
@@ -1493,6 +1497,10 @@
         <button type="button" class="game-modal-close" data-close="1" aria-label="閉じる">×</button>
       </header>
       <div class="game-modal-body">
+        <div class="game-modal-growth" id="game-modal-growth">
+          <span class="game-modal-growth-label">ここが そだつ</span>
+          <p class="game-modal-growth-text" id="game-modal-growth-text"></p>
+        </div>
         <div class="game-modal-scenes" id="game-modal-scenes"></div>
       </div>
       <div class="game-modal-cta-wrap">
@@ -1508,6 +1516,7 @@
           title: '彩り弁当',
           accent: '#C4453C',
           accentDark: '#A33A33',
+          growth: 'お店モードで三色食品群のバランスを学び、 自由モードで自分の好みを形に。 <b>食への興味と段取り力</b> が育ちます',
           scenes: [
             {src:'assets/images/bento/title_back.webp', alt:'彩り弁当のタイトル画面', caption:'あそびかたは 2つ。 おいしくて バランスの よい おべんとうを つくろう！'},
             {src:'assets/images/bento/story/shop_order_counter.png', alt:'お弁当屋さんでお客さんを迎える画面', caption:'「おみせモード」 では、 おきゃくさんの ちゅうもんに あわせて あか・きいろ・みどりを そろえて おべんとうを とどけよう。'},
@@ -1518,6 +1527,7 @@
           title: 'ランタンの迷路',
           accent: '#3A5B8C',
           accentDark: '#2A4368',
+          growth: '道を選び直す <b>試行錯誤の力</b> と、 困っている子を放っておけない <b>やさしさ</b>、 小さな課題を乗り越える <b>集中力</b> が育ちます。',
           scenes: [
             {src:'assets/ui/play_maze_title_back.webp', alt:'ランタンの迷路のタイトル画面', caption:'ランタンを もって、 よるの もりへ。 まいごに なって ないている どうぶつが、 まっているよ。'},
             {src:'maze/imageStages/stage5.jpg', alt:'夜の森の迷路ステージ', caption:'とちゅうの みちには、 おじゃまむしが まちかまえてる。 たいけつや なぞときに ちょうせんして、 さきへ すすもう。'},
@@ -1528,6 +1538,7 @@
           title: 'ポノのおとタッチ',
           accent: '#2F7FA0',
           accentDark: '#1F5E78',
+          growth: '自由な音さがしと、 ライバルと競うリズム遊びの両輪で <b>音感・リズム感・表現する楽しさ・集中力</b> が育ちます',
           scenes: [
             {src:'assets/images/oto/title_back.jpg', alt:'ポノのおとタッチのタイトル画面', caption:'タップで ドレミが なるよ！ どうぶつや たいこで じゆうに あそんだり、 ちょうせんしゃと リズムくらべで しょうぶ できるよ。'},
             {src:'assets/ui/play_oto_title_back.webp', alt:'おとタッチのメニューイメージ', caption:'「じゆうモード」 では、 どうぶつの こえや たいこで あそべて、 すきな おとで じぶんの きょくを つくれる。'},
@@ -1538,6 +1549,7 @@
           title: 'ポノのなかよしパズル',
           accent: '#2E7A60',
           accentDark: '#1F5945',
+          growth: '友だちと力を合わせて 「できた！」 にたどりつく協力体験を通じて、 <b>人と関わる楽しさと最後までやりぬく力</b> が育ちます',
           scenes: [
             {src:'assets/images/puzzle/title_back.jpg', alt:'ポノのなかよしパズルのタイトル画面', caption:'ピースが あわないときも だいじょうぶ。 となりの ともだちが いっしょに かんがえてくれるよ。'},
             {src:'assets/images/puzzle/opening/cut02.jpg', alt:'パズルで あそぶ なかまたち', caption:'キツネさんは そっと ヒントを みせてくれて、 ハリネズミさんは あたたかく おうえんしてくれる。'},
@@ -1548,6 +1560,7 @@
           title: 'フクロウはかせの なぞなぞ',
           accent: '#8B6FB5',
           accentDark: '#6F5598',
+          growth: '言葉に耳を澄ませて推理する遊びで <b>語彙力・推理力・聞く力</b> が育ちます',
           scenes: [
             {src:'assets/images/quizland/title_back.jpg', alt:'フクロウはかせのなぞなぞのタイトル画面', caption:'フクロウはかせが なぞなぞを だしてくれるよ。 よーく きいて、 こたえを かんがえよう。'},
             {src:'assets/ui/play_quizland_title_back.webp', alt:'なぞなぞのメニューイメージ', caption:'わかったら こたえを タップ！'},
@@ -1559,6 +1572,8 @@
       var modal = document.getElementById('game-modal');
       var header = document.getElementById('game-modal-header');
       var titleEl = document.getElementById('game-modal-title');
+      var growthEl = document.getElementById('game-modal-growth');
+      var growthTextEl = document.getElementById('game-modal-growth-text');
       var scenesEl = document.getElementById('game-modal-scenes');
       var ctaEl = document.getElementById('game-modal-cta');
       var closeBtn = modal ? modal.querySelector('.game-modal-close') : null;
@@ -1579,6 +1594,21 @@
         header.style.background = data.accent;
         ctaEl.style.background = data.accent;
         currentAccentDark = data.accentDark;
+        // Pass accent colors to modal as CSS custom properties so growth box borders/<b> match the game.
+        if(modal){
+          modal.style.setProperty('--accent', data.accent);
+          modal.style.setProperty('--accent-dark', data.accentDark);
+        }
+        // growth (LP カードと同じ「ここがそだつ」文言、 HTML タグを許容するため innerHTML)
+        if(growthTextEl){
+          if(data.growth){
+            growthTextEl.innerHTML = data.growth;
+            if(growthEl) growthEl.style.display = '';
+          }else{
+            growthTextEl.innerHTML = '';
+            if(growthEl) growthEl.style.display = 'none';
+          }
+        }
         // scenes (image + caption pair, 縦並び)
         scenesEl.innerHTML = '';
         var sceneList = data.scenes || [];
