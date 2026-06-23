@@ -336,8 +336,8 @@
     .herob-title{position:relative;z-index:1;margin:0;animation:herob-rise .6s .04s ease both;}
     .herob-title-text{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;white-space:nowrap;}
     .herob-title-img{display:block;max-width:min(800px,92vw);width:100%;height:auto;margin:0 auto;}
-    .herob-lead{position:relative;z-index:1;font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:14px auto 0;animation:herob-rise .6s .06s ease both;}
-    .herob-cta-wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:8px;margin:22px auto 0;animation:herob-rise .6s .18s ease both;}
+    .herob-lead{position:relative;z-index:1;font-weight:700;font-size:clamp(13px,3.2vw,17px);color:var(--herob-text-light);margin:0;animation:herob-rise .6s .06s ease both;white-space:nowrap;}
+    .herob-cta-wrap{position:relative;z-index:1;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;margin:22px auto 0;animation:herob-rise .6s .18s ease both;}
     /* ── Hero labels: flex row beneath title (HANDOFF 02 完全準拠) ── */
     .herob-labels{
       position:relative;z-index:1;
@@ -1183,9 +1183,9 @@
         <img class="herob-label herob-label--ongaku"   src="assets/lp/hero/labels/ongaku.png"   alt="" aria-hidden="true" loading="lazy">
       </div>
 
-      <p class="herob-lead">3〜6さい むけ</p>
       <div class="herob-cta-wrap">
         <a href="play.html" class="herob-cta" id="enter-btn">すぐ あそぶ <span class="arrow" aria-hidden="true">→</span></a>
+        <span class="herob-lead">推奨年齢 3〜6歳</span>
       </div>
 
       <!-- ===== Hero 内: 絵本アドバンテージ匂わせ帯 (v1523: hero section 内に移動して playmat 黄色背景上に一体化) ===== -->
