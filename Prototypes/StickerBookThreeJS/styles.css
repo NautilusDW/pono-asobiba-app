@@ -598,7 +598,7 @@ input[type="range"] {
   z-index: 4;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 2px;
   max-width: calc(100vw - 16px);
   padding: 0;
   border: 0;
@@ -606,6 +606,18 @@ input[type="range"] {
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+.top-mode-cluster {
+  position: fixed;
+  top: max(0px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0;
+  transform: translateX(-50%);
 }
 
 .top-action-button,
@@ -630,6 +642,14 @@ input[type="range"] {
   text-align: center;
 }
 
+.top-button-label {
+  display: block;
+  max-width: 100%;
+  transform: translateY(-2px);
+  transform-origin: center;
+  pointer-events: none;
+}
+
 .top-action-button {
   position: relative;
   width: 58px;
@@ -643,15 +663,11 @@ input[type="range"] {
 }
 
 .top-edit-button {
-  position: fixed;
-  top: max(0px, env(safe-area-inset-top));
-  left: 50%;
-  z-index: 4;
   width: 176px;
-  padding: 0 22px 0 72px;
-  transform: translateX(-50%);
-  display: grid;
-  place-items: center;
+  padding: 0 16px 0 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-image: var(--sb3d-ui-button-edit);
   color: #243b40;
   font-size: 15px;
@@ -693,10 +709,11 @@ body.is-sticker-edit-mode .top-edit-button {
 }
 
 .top-theme-button {
-  min-width: 176px;
-  padding: 0 24px 0 72px;
-  display: grid;
-  place-items: center;
+  width: 176px;
+  padding: 0 16px 0 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-image: var(--sb3d-ui-button-theme);
   color: #243b40;
   font-size: 14px;
@@ -709,17 +726,22 @@ body.is-sticker-edit-mode .top-edit-button {
 .album-mode-toggle {
   position: static;
   transform: none;
-  min-width: 198px;
-  padding: 0 28px 0 72px;
-  display: grid;
-  place-items: center;
+  width: 216px;
+  padding: 0 16px 0 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-image: var(--sb3d-ui-button-wide);
   color: #243b40;
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 0;
   white-space: nowrap;
   overflow: hidden;
   filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+}
+
+.album-mode-toggle .top-button-label {
+  transform: translateY(-2px) scaleX(0.96);
 }
 
 .top-action-button:hover,
@@ -1920,21 +1942,25 @@ body.is-sticker-tray-dragging #scene {
 }
 
 @media (max-width: 1100px) {
+  .top-mode-cluster {
+    gap: 4px;
+  }
+
   .top-edit-button {
     width: 136px;
-    padding: 0 14px 0 52px;
+    padding: 0 10px 0 48px;
     font-size: 12px;
   }
 
   .top-theme-button {
-    min-width: 132px;
-    padding: 0 14px 0 50px;
+    width: 136px;
+    padding: 0 10px 0 48px;
     font-size: 11px;
   }
 
   .album-mode-toggle {
-    min-width: 160px;
-    padding: 0 16px 0 54px;
+    width: 188px;
+    padding: 0 10px 0 54px;
     font-size: 12px;
   }
 }
@@ -1942,20 +1968,20 @@ body.is-sticker-tray-dragging #scene {
 @media (max-width: 780px) {
   .top-edit-button {
     width: 112px;
-    padding: 0 9px 0 42px;
+    padding: 0 7px 0 36px;
     font-size: 10px;
   }
 
   .top-theme-button {
-    min-width: 92px;
+    width: 112px;
     padding: 0 7px 0 36px;
     font-size: 10px;
   }
 
   .album-mode-toggle {
-    min-width: 126px;
-    padding: 0 11px 0 44px;
-    font-size: 10px;
+    width: 150px;
+    padding: 0 7px 0 42px;
+    font-size: 11px;
   }
 }
 
@@ -2155,8 +2181,12 @@ body.is-sticker-tray-dragging #scene {
   .top-action-cluster {
     top: max(0px, env(safe-area-inset-top));
     right: max(6px, env(safe-area-inset-right));
-    gap: 5px;
+    gap: 2px;
     padding: 0;
+  }
+
+  .top-mode-cluster {
+    top: max(0px, env(safe-area-inset-top));
   }
 
   .top-action-button {
@@ -2167,22 +2197,22 @@ body.is-sticker-tray-dragging #scene {
   .top-edit-button {
     width: 112px;
     height: 50px;
-    padding: 0 9px 0 42px;
+    padding: 0 7px 0 36px;
     font-size: 10px;
   }
 
   .top-theme-button {
-    min-width: 92px;
+    width: 112px;
     height: 50px;
     padding: 0 7px 0 36px;
     font-size: 10px;
   }
 
   .album-mode-toggle {
-    min-width: 126px;
+    width: 150px;
     height: 50px;
-    padding: 0 11px 0 44px;
-    font-size: 10px;
+    padding: 0 7px 0 42px;
+    font-size: 11px;
   }
 
   .book-page-controls {
@@ -2579,31 +2609,35 @@ body.is-sticker-tray-dragging #scene {
     right: max(8px, env(safe-area-inset-right));
   }
 
+  .top-mode-cluster {
+    top: max(6px, env(safe-area-inset-top));
+    gap: 4px;
+  }
+
   .top-action-button {
     width: 42px;
     height: 42px;
   }
 
   .top-edit-button {
-    top: max(6px, env(safe-area-inset-top));
     width: 112px;
     height: 42px;
-    padding: 0 9px 0 42px;
+    padding: 0 7px 0 36px;
     font-size: 10px;
   }
 
   .top-theme-button {
-    min-width: 92px;
+    width: 112px;
     height: 42px;
     padding: 0 7px 0 36px;
     font-size: 10px;
   }
 
   .album-mode-toggle {
-    min-width: 126px;
+    width: 150px;
     height: 42px;
-    padding: 0 11px 0 44px;
-    font-size: 10px;
+    padding: 0 7px 0 42px;
+    font-size: 11px;
   }
 
   .book-page-controls {
