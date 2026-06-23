@@ -644,6 +644,21 @@
     .pc-card--mt4::before{left:60%;}
     /* growth box のラベル（既存になければ追加。あれば流用） */
     .pc-growth .lbl{display:block;font-size:11px;letter-spacing:.12em;color:var(--pc-primary-deep);font-weight:900;margin-bottom:3px;}
+    .pc-growth .lbl--parent-img{
+      width:min(154px,100%);
+      height:44px;
+      overflow:hidden;
+      border-radius:8px;
+      background:transparent;
+    }
+    .pc-growth .lbl--parent-img img{
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      mix-blend-mode:multiply;
+    }
     .pc-v-bento, .pc-v-maze, .pc-v-puzzle, .pc-v-oto {background-size:cover;}
     .pc-v-bento{background-position:left center;}
     .pc-bubble{position:absolute;top:8px;right:-6px;z-index:3;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:.82rem;letter-spacing:.04em;padding:7px 13px;border-radius:14px 14px 14px 4px;transform:rotate(5deg);box-shadow:0 4px 10px rgba(201,106,46,.35);}
@@ -693,6 +708,17 @@
       line-height:1.25;
       color:var(--text);
       letter-spacing:.02em;
+    }
+    .parent-assurance-title img{
+      display:block;
+      width:min(260px,100%);
+      height:clamp(74px,13vw,90px);
+      object-fit:cover;
+      object-position:center;
+      overflow:hidden;
+      border-radius:12px;
+      background:transparent;
+      mix-blend-mode:multiply;
     }
     .parent-assurance-lead{
       margin:6px 0 0;
@@ -1571,6 +1597,21 @@
       font-weight:900;
       margin-bottom:3px;
     }
+    .book-prelude-parent-lbl--img{
+      width:min(154px,100%);
+      height:44px;
+      overflow:hidden;
+      border-radius:8px;
+      background:transparent;
+    }
+    .book-prelude-parent-lbl--img img{
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      mix-blend-mode:multiply;
+    }
   </style>
 </head>
 <body>
@@ -1629,7 +1670,9 @@
     <section class="parent-assurance" aria-labelledby="parent-assurance-h">
       <div class="parent-assurance-inner">
         <div>
-          <h2 class="parent-assurance-title" id="parent-assurance-h">おうちの方へ</h2>
+          <h2 class="parent-assurance-title" id="parent-assurance-h">
+            <img src="assets/ui/parent_heading_trust_note_raw.png" alt="お家の方へ" width="1983" height="793" decoding="async">
+          </h2>
           <p class="parent-assurance-lead">会員登録や名前・メールの入力なしで、そのまま遊べます。</p>
         </div>
         <ul class="parent-assurance-chips" aria-label="安心ポイント">
@@ -1734,7 +1777,7 @@
           <div class="pc-body">
             <h3 class="pc-title">おたのしみガチャ</h3>
             <p class="pc-play">1日1回、ガチャを回すとシールがもらえます。明日は何が出るかな、という小さな楽しみを作ります。</p>
-            <p class="pc-growth"><span class="lbl">おうちの方へ</span>課金ガチャではありません。<b>1日1回</b>だけ回せるので、安心して「毎日のお楽しみ」にできます。</p>
+            <p class="pc-growth"><span class="lbl lbl--parent-img"><img src="assets/ui/parent_heading_trust_note_raw.png" alt="お家の方へ" width="1983" height="793" loading="lazy" decoding="async"></span>課金ガチャではありません。<b>1日1回</b>だけ回せるので、安心して「毎日のお楽しみ」にできます。</p>
           </div>
         </article>
 
@@ -1790,7 +1833,7 @@
                   5つのあそびを、もっとたっぷり楽しめるよ
                 </p>
                 <p class="book-prelude-parent">
-                  <span class="book-prelude-parent-lbl">おうちの方へ</span>
+                  <span class="book-prelude-parent-lbl book-prelude-parent-lbl--img"><img src="assets/ui/parent_heading_trust_note_raw.png" alt="お家の方へ" width="1983" height="793" loading="lazy" decoding="async"></span>
                   絵本の最後のページにある「ひみつのことば」を入力すると、5つのあそびをよりたっぷり楽しめる特典をご利用いただけます。
                 </p>
               </div>
