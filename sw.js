@@ -191,7 +191,8 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1533; // v1533: ゲーム詳細モーダル レイアウト再修正 — 画像 object-fit を contain → cover に戻す (v1532 の誤修正取り消し) + ヘッダー (60→40px) と CTA (40→36px) の高さを削減して中央スペースを拡大、 mobile での 1 画面表示時に画像が見やすく
+const CACHE_VERSION = 1534; // v1534: ゲーム詳細モーダル画像の縮小 (100%→72%、 mobile 85%) + 左右交互配置 (奇数番=左寄り / 偶数番=右寄り) で視覚に変化、 キャプションは無変更
+// v1533: ゲーム詳細モーダル レイアウト再修正 — 画像 object-fit を contain → cover に戻す (v1532 の誤修正取り消し) + ヘッダー (60→40px) と CTA (40→36px) の高さを削減して中央スペースを拡大、 mobile での 1 画面表示時に画像が見やすく
 // v1531: hero 匂わせ帯 2 行目 「遊べる」 → 「あそべる」 ひらがな化 + ゲーム詳細モーダルを 「画像+キャプション ×3」 の縦並びに再構成 (GAME_MODAL_DATA の scenes に caption フィールド追加、 旧 detail は削除、 モーダル JS/CSS を新構造対応)
 // v1530: hero CTA 「すぐ あそぶ」 を中央固定 + 「推奨年齢 3〜6歳」 ラベルを button 右下のバッジ風に配置 — flex row 横並びから absolute 配置のバッジに変更、 button 位置のブレを解消、 ラベルは白半透明背景で視認性確保
 // v1529: hero 匂わせ帯 文言更新 — 「無料で あそべるよ！」 → 「誰でも無料で遊べるよ！」 / 「えほんを よんで もっと たくさん あそべるように なろう」 → 「絵本を読めばもっとたくさん遊べるよ！」 (大幅漢字化+短縮、 「絵本」 オレンジ強調と 「もっとたくさん」 マーカーは維持)
