@@ -191,7 +191,7 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1522; // v1522: hero 匂わせ帯 内文言 「むりょうで あそべるよ！」 → 「無料で あそべるよ！」 (漢字化) + v1521 の背景色変更 (#FFF8E7 → #FFF1C9) を統合
+const CACHE_VERSION = 1523; // v1523: hero 匂わせ帯を hero section 内 (playmat 黄色背景上) に物理移動 — 「すぐ あそぶ」 と同じエリアに一体化、 帯の独自背景を transparent 化して playmat が透ける、 dashed border は維持
 // v1521: hero 匂わせ帯の背景色を hero と統一 (黄色系) — 帯と hero CTA「すぐ あそぶ」 周辺が一体になって見えるよう調整、 3 ブロック構造と dashed border は維持
 // v1520: hero 匂わせ帯を縦並び 3 ブロック化 — hero 内の .herob-free を削除し帯内に集約、 (1) 「むりょうで あそべるよ！」 太字 / (2) 絵本リンクバナー / (3) 「えほんを よんで…」 テキスト の順で配置、 上下 dashed border・クリーム背景は維持
 // v1516: いろあそびラベル左切れ第2弾修正 — 前回 v1515 の transform-origin:right center は数学的に逆効果 (右軸で時計回り回転は左端を更に外側に押し出す) だったため、 transform-origin:left center に変更 (左軸からの距離 0 なので左端は x 方向に動かない)

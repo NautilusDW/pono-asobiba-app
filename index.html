@@ -318,7 +318,7 @@
       width:100vw;
       margin-left:calc(50% - 50vw);
       margin-right:calc(50% - 50vw);
-      padding:24px max(18px,calc(50vw - 520px));
+      padding:24px max(18px,calc(50vw - 520px)) 32px;
       text-align:center;color:var(--herob-text);
       background-color:#FFF8F0;
       background-image:image-set(url('assets/lp/hero/bg_soft_playmat.webp') 1x, url('assets/lp/hero/bg_soft_playmat@2x.webp') 2x);
@@ -1018,13 +1018,15 @@
       }
     }
 
-    /* ===== Hero 直下 絵本匂わせ帯 ===== */
+    /* ===== Hero 内 絵本匂わせ帯 (v1523: hero section 内に物理移動、 playmat 背景を透かして一体化) ===== */
     .hero-bookhint{
+      position:relative;
+      z-index:1;
       max-width:680px;
-      margin:12px auto 0;
+      margin:18px auto 0;
       padding:14px 18px;
-      /* v1521: hero 「すぐ あそぶ」 周辺 (#FFF8F0 + playmat の暖色トーン) と一体感を出すための黄色クリーム。 帯と hero CTA が同じエリアにあるように見せる */
-      background:#FFF1C9;
+      /* v1523: hero playmat 背景画像を透かして見せて 「すぐ あそぶ」 と完全に同じ黄色エリア内にあるように見せる。 dashed border は維持で帯としての区切り感を残す */
+      background:transparent;
       border-top:1.5px dashed #E8C97B;
       border-bottom:1.5px dashed #E8C97B;
       display:flex;
@@ -1185,19 +1187,19 @@
       <div class="herob-cta-wrap">
         <a href="play.html" class="herob-cta" id="enter-btn">すぐ あそぶ <span class="arrow" aria-hidden="true">→</span></a>
       </div>
-    </section>
 
-    <!-- ===== Hero 直下: 絵本アドバンテージ匂わせ帯 ===== -->
-    <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
-      <p class="hero-bookhint-free">無料で あそべるよ！</p>
-      <a class="hero-bookhint-banner" href="#book-aside" aria-label="ポノの えほんの しょうかいへ いどう">
-        <span class="hero-bookhint-thumb" aria-hidden="true"></span>
-        <span class="hero-bookhint-label">えほんは こちら</span>
-        <span class="hero-bookhint-arrow" aria-hidden="true">→</span>
-      </a>
-      <p class="hero-bookhint-text">
-        <span class="hero-bookhint-ehon">えほん</span>を よんで <em class="hero-bookhint-more">もっと たくさん</em> あそべるように なろう
-      </p>
+      <!-- ===== Hero 内: 絵本アドバンテージ匂わせ帯 (v1523: hero section 内に移動して playmat 黄色背景上に一体化) ===== -->
+      <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
+        <p class="hero-bookhint-free">無料で あそべるよ！</p>
+        <a class="hero-bookhint-banner" href="#book-aside" aria-label="ポノの えほんの しょうかいへ いどう">
+          <span class="hero-bookhint-thumb" aria-hidden="true"></span>
+          <span class="hero-bookhint-label">えほんは こちら</span>
+          <span class="hero-bookhint-arrow" aria-hidden="true">→</span>
+        </a>
+        <p class="hero-bookhint-text">
+          <span class="hero-bookhint-ehon">えほん</span>を よんで <em class="hero-bookhint-more">もっと たくさん</em> あそべるように なろう
+        </p>
+      </section>
     </section>
 
     <!-- ============ Coming Soon (Stitch 案 B: Sticker Banner + 詳細モーダル) ============ -->
