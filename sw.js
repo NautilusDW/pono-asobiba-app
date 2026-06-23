@@ -191,7 +191,8 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1530; // v1530: hero CTA 「すぐ あそぶ」 を中央固定 + 「推奨年齢 3〜6歳」 ラベルを button 右下のバッジ風に配置 — flex row 横並びから absolute 配置のバッジに変更、 button 位置のブレを解消、 ラベルは白半透明背景で視認性確保
+const CACHE_VERSION = 1531; // v1531: hero 匂わせ帯 2 行目 「遊べる」 → 「あそべる」 ひらがな化 + ゲーム詳細モーダルを 「画像+キャプション ×3」 の縦並びに再構成 (GAME_MODAL_DATA の scenes に caption フィールド追加、 旧 detail は削除、 モーダル JS/CSS を新構造対応)
+// v1530: hero CTA 「すぐ あそぶ」 を中央固定 + 「推奨年齢 3〜6歳」 ラベルを button 右下のバッジ風に配置 — flex row 横並びから absolute 配置のバッジに変更、 button 位置のブレを解消、 ラベルは白半透明背景で視認性確保
 // v1529: hero 匂わせ帯 文言更新 — 「無料で あそべるよ！」 → 「誰でも無料で遊べるよ！」 / 「えほんを よんで もっと たくさん あそべるように なろう」 → 「絵本を読めばもっとたくさん遊べるよ！」 (大幅漢字化+短縮、 「絵本」 オレンジ強調と 「もっとたくさん」 マーカーは維持)
 // v1528: hero 推奨年齢ラベルを 「3〜6歳 向け」 → 「推奨年齢 3〜6歳」 に変更 (「向け」 削除、 「推奨年齢」 を頭に追加)
 // v1527: hero 推奨年齢ラベルを 「3〜6さい むけ」 → 「3〜6歳 向け」 (漢字化) + 「すぐ あそぶ」 CTA の右隣に位置変更 (cta-wrap 内で横並び)

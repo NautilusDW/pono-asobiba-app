@@ -892,13 +892,14 @@
     .game-modal-close:hover{background:rgba(255,255,255,.18);}
     .game-modal-close:focus-visible{outline:3px solid #fff;outline-offset:2px;}
     .game-modal-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;}
-    .game-modal-images{display:flex;flex-direction:column;gap:22px;padding:18px 20px 6px;}
-    .game-modal-images img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;transition:transform .25s ease;}
-    .game-modal-images img:nth-child(1){transform:rotate(-2.5deg) translateX(-6px);}
-    .game-modal-images img:nth-child(2){transform:rotate(3deg) translateX(8px);}
-    .game-modal-images img:nth-child(3){transform:rotate(-1.5deg) translateX(-4px);}
-    .game-modal-images img:hover{transform:rotate(0) translateX(0) scale(1.02);}
-    .game-modal-detail{font-weight:700;font-size:clamp(14px,3.6vw,16px);line-height:1.85;color:var(--text);margin:0;padding:14px 20px 20px;}
+    .game-modal-scenes{display:flex;flex-direction:column;gap:28px;padding:20px 20px 18px;}
+    .game-modal-scene{display:flex;flex-direction:column;gap:12px;}
+    .game-modal-scene img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;transition:transform .25s ease;}
+    .game-modal-scene:nth-child(1) img{transform:rotate(-2.5deg) translateX(-6px);}
+    .game-modal-scene:nth-child(2) img{transform:rotate(3deg) translateX(8px);}
+    .game-modal-scene:nth-child(3) img{transform:rotate(-1.5deg) translateX(-4px);}
+    .game-modal-scene img:hover{transform:rotate(0) translateX(0) scale(1.02);}
+    .game-modal-caption{font-weight:700;font-size:clamp(14px,3.6vw,16px);line-height:1.8;color:var(--text);margin:0;padding:0 4px;}
     .game-modal-cta-wrap{display:flex;justify-content:center;padding:14px 20px 22px;border-top:1px solid rgba(93,78,55,.08);background:#FFFDF8;}
     .game-modal-cta{display:inline-flex;align-items:center;gap:.5em;min-height:52px;padding:12px 30px;background:#888;color:#fff;font-weight:900;font-size:clamp(16px,4vw,19px);letter-spacing:.06em;text-decoration:none;border-radius:22px;box-shadow:0 6px 18px rgba(0,0,0,.18);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
     .game-modal-cta:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.26);}
@@ -906,7 +907,7 @@
     .game-modal-cta:focus-visible{outline:3px solid #fff;outline-offset:3px;}
     body.modal-open{overflow:hidden;}
     @keyframes gm-pop{from{opacity:0;transform:translateY(20px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
-    @media (prefers-reduced-motion:reduce){.game-modal-card{animation:none;}.game-card-clickable{transition:none;}.game-card-clickable:hover{transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--rot)) scale(.92);}.game-modal-images img{transform:none!important;transition:none!important;}}
+    @media (prefers-reduced-motion:reduce){.game-modal-card{animation:none;}.game-card-clickable{transition:none;}.game-card-clickable:hover{transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--rot)) scale(.92);}.game-modal-scene img{transform:none!important;transition:none!important;}}
 
     /* ===== a11y common :focus-visible (既存要素) ===== */
     .help-link:focus-visible{outline:3px solid var(--primary);outline-offset:3px;border-radius:50px;}
@@ -1214,7 +1215,7 @@
       <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
         <p class="hero-bookhint-free">誰でも無料で遊べるよ！</p>
         <p class="hero-bookhint-text">
-          <span class="hero-bookhint-ehon">絵本</span>を 読めば <em class="hero-bookhint-more">もっとたくさん</em> 遊べるよ！
+          <span class="hero-bookhint-ehon">絵本</span>を 読めば <em class="hero-bookhint-more">もっとたくさん</em> あそべるよ！
         </p>
         <a class="hero-bookhint-banner" href="#book-aside" aria-label="ポノの えほんの しょうかいへ いどう">
           <span class="hero-bookhint-thumb" aria-hidden="true"></span>
@@ -1488,8 +1489,7 @@
         <button type="button" class="game-modal-close" data-close="1" aria-label="閉じる">×</button>
       </header>
       <div class="game-modal-body">
-        <div class="game-modal-images" id="game-modal-images"></div>
-        <p class="game-modal-detail" id="game-modal-detail"></p>
+        <div class="game-modal-scenes" id="game-modal-scenes"></div>
       </div>
       <div class="game-modal-cta-wrap">
         <a href="play.html" class="game-modal-cta" id="game-modal-cta">このゲームで あそぶ <span aria-hidden="true">→</span></a>
@@ -1504,64 +1504,58 @@
           title: '彩り弁当',
           accent: '#C4453C',
           accentDark: '#A33A33',
-          images: [
-            {src:'assets/images/bento/title_back.webp', alt:'彩り弁当のタイトル画面'},
-            {src:'assets/images/bento/story/shop_order_counter.png', alt:'お弁当屋さんでお客さんを迎える画面'},
-            {src:'assets/images/bento/cooking/kitchen_bg.webp', alt:'お料理キッチンの背景'}
-          ],
-          detail: 'あそびかたは 2つ。 「おみせモード」 では おきゃくさんの ちゅうもんに あわせて、 あか・きいろ・みどりを そろえて おべんとうを とどけよう。 「じゆうモード」 では すきな おかずだけで じぶんだけの おべんとうを つくれるよ。 まいにち ちがう おべんとうが できるね。'
+          scenes: [
+            {src:'assets/images/bento/title_back.webp', alt:'彩り弁当のタイトル画面', caption:'あそびかたは 2つ。 おいしくて バランスの よい おべんとうを つくろう！'},
+            {src:'assets/images/bento/story/shop_order_counter.png', alt:'お弁当屋さんでお客さんを迎える画面', caption:'「おみせモード」 では、 おきゃくさんの ちゅうもんに あわせて あか・きいろ・みどりを そろえて おべんとうを とどけよう。'},
+            {src:'assets/images/bento/cooking/kitchen_bg.webp', alt:'お料理キッチンの背景', caption:'「じゆうモード」 では、 すきな おかずだけで じぶんだけの おべんとうを つくれるよ。 まいにち ちがう おべんとうが できるね。'}
+          ]
         },
         maze: {
           title: 'ランタンの迷路',
           accent: '#3A5B8C',
           accentDark: '#2A4368',
-          images: [
-            {src:'assets/ui/play_maze_title_back.webp', alt:'ランタンの迷路のタイトル画面'},
-            {src:'maze/imageStages/stage5.jpg', alt:'夜の森の迷路ステージ'},
-            {src:'maze/imageStages/map1.jpg', alt:'迷路の全体マップ'}
-          ],
-          detail: 'ランタンを もって、 よるの もりへ。 まいごに なって ないている どうぶつが、 まっているよ。 とちゅうの みちには、 おじゃまむしが まちかまえてる。 たいけつや なぞときに ちょうせんして、 さきへ すすもう。 いきどまりに ついたら、 もう いっかい べつの みちへ。 ぜんぶの どうぶつを おうちまで つれて かえろう。'
+          scenes: [
+            {src:'assets/ui/play_maze_title_back.webp', alt:'ランタンの迷路のタイトル画面', caption:'ランタンを もって、 よるの もりへ。 まいごに なって ないている どうぶつが、 まっているよ。'},
+            {src:'maze/imageStages/stage5.jpg', alt:'夜の森の迷路ステージ', caption:'とちゅうの みちには、 おじゃまむしが まちかまえてる。 たいけつや なぞときに ちょうせんして、 さきへ すすもう。'},
+            {src:'maze/imageStages/map1.jpg', alt:'迷路の全体マップ', caption:'いきどまりに ついたら、 もう いっかい べつの みちへ。 ぜんぶの どうぶつを おうちまで つれて かえろう。'}
+          ]
         },
         oto: {
           title: 'ポノのおとタッチ',
           accent: '#2F7FA0',
           accentDark: '#1F5E78',
-          images: [
-            {src:'assets/images/oto/title_back.jpg', alt:'ポノのおとタッチのタイトル画面'},
-            {src:'assets/ui/play_oto_title_back.webp', alt:'おとタッチのメニューイメージ'},
-            {src:'assets/images/oto/ui/free_mode_stage_screenshot_thumb.png', alt:'タップで楽器を鳴らす画面'}
-          ],
-          detail: '「じゆうモード」 では、 タップで ドレミが なるよ！ どうぶつの こえや たいこも あそべて、 すきな おとで じぶんの きょくを つくれる。 「リズムモード」 では、 いろんな ちょうせんしゃが あらわれて、 きょくに あわせて リズムくらべ。 ぴったりの タイミングで おとを ならして、 ライバルに しょうぶ しよう。'
+          scenes: [
+            {src:'assets/images/oto/title_back.jpg', alt:'ポノのおとタッチのタイトル画面', caption:'タップで ドレミが なるよ！ どうぶつや たいこで じゆうに あそんだり、 ちょうせんしゃと リズムくらべで しょうぶ できるよ。'},
+            {src:'assets/ui/play_oto_title_back.webp', alt:'おとタッチのメニューイメージ', caption:'「じゆうモード」 では、 どうぶつの こえや たいこで あそべて、 すきな おとで じぶんの きょくを つくれる。'},
+            {src:'assets/images/oto/ui/free_mode_stage_screenshot_thumb.png', alt:'タップで楽器を鳴らす画面', caption:'「リズムモード」 では、 いろんな ちょうせんしゃと きょくに あわせて リズムくらべ。 ぴったりの タイミングで おとを ならして、 ライバルに しょうぶ しよう。'}
+          ]
         },
         puzzle: {
           title: 'ポノのなかよしパズル',
           accent: '#2E7A60',
           accentDark: '#1F5945',
-          images: [
-            {src:'assets/images/puzzle/title_back.jpg', alt:'ポノのなかよしパズルのタイトル画面'},
-            {src:'assets/images/puzzle/opening/cut02.jpg', alt:'パズルで あそぶ なかまたち'},
-            {src:'assets/images/puzzle/stages/puzzle_stage_08_flower_field_bugs.jpg', alt:'花畑と虫のパズルステージ'}
-          ],
-          detail: 'ピースが あわないときも だいじょうぶ。 となりの ともだちが いっしょに かんがえてくれるよ。 キツネさんは そっと ヒントを みせてくれて、 ハリネズミさんは あたたかく おうえんしてくれる。 さいごの 1ピースが ピタッと はまったとき、 ふたりで にっこり できるよ。'
+          scenes: [
+            {src:'assets/images/puzzle/title_back.jpg', alt:'ポノのなかよしパズルのタイトル画面', caption:'ピースが あわないときも だいじょうぶ。 となりの ともだちが いっしょに かんがえてくれるよ。'},
+            {src:'assets/images/puzzle/opening/cut02.jpg', alt:'パズルで あそぶ なかまたち', caption:'キツネさんは そっと ヒントを みせてくれて、 ハリネズミさんは あたたかく おうえんしてくれる。'},
+            {src:'assets/images/puzzle/stages/puzzle_stage_08_flower_field_bugs.jpg', alt:'花畑と虫のパズルステージ', caption:'さいごの 1ピースが ピタッと はまったとき、 ふたりで にっこり できるよ。'}
+          ]
         },
         quizland: {
           title: 'フクロウはかせの なぞなぞ',
           accent: '#8B6FB5',
           accentDark: '#6F5598',
-          images: [
-            {src:'assets/images/quizland/title_back.jpg', alt:'フクロウはかせのなぞなぞのタイトル画面'},
-            {src:'assets/ui/play_quizland_title_back.webp', alt:'なぞなぞのメニューイメージ'},
-            {src:'assets/images/quizland/OP/OP_BG.webp', alt:'もりの ふうけい'}
-          ],
-          detail: 'フクロウはかせが なぞなぞを だしてくれるよ。 よーく きいて、 こたえを かんがえよう。 わかったら こたえを タップ！ せいかいすると はかせが ほめてくれるよ。'
+          scenes: [
+            {src:'assets/images/quizland/title_back.jpg', alt:'フクロウはかせのなぞなぞのタイトル画面', caption:'フクロウはかせが なぞなぞを だしてくれるよ。 よーく きいて、 こたえを かんがえよう。'},
+            {src:'assets/ui/play_quizland_title_back.webp', alt:'なぞなぞのメニューイメージ', caption:'わかったら こたえを タップ！'},
+            {src:'assets/images/quizland/OP/OP_BG.webp', alt:'もりの ふうけい', caption:'せいかいすると はかせが ほめてくれるよ。'}
+          ]
         }
       };
 
       var modal = document.getElementById('game-modal');
       var header = document.getElementById('game-modal-header');
       var titleEl = document.getElementById('game-modal-title');
-      var imagesEl = document.getElementById('game-modal-images');
-      var detailEl = document.getElementById('game-modal-detail');
+      var scenesEl = document.getElementById('game-modal-scenes');
       var ctaEl = document.getElementById('game-modal-cta');
       var closeBtn = modal ? modal.querySelector('.game-modal-close') : null;
       var lastFocused = null;
@@ -1581,19 +1575,28 @@
         header.style.background = data.accent;
         ctaEl.style.background = data.accent;
         currentAccentDark = data.accentDark;
-        // images
-        imagesEl.innerHTML = '';
-        for(var i=0;i<data.images.length;i++){
-          var info = data.images[i];
+        // scenes (image + caption pair, 縦並び)
+        scenesEl.innerHTML = '';
+        var sceneList = data.scenes || [];
+        for(var i=0;i<sceneList.length;i++){
+          var info = sceneList[i];
+          var scene = document.createElement('div');
+          scene.className = 'game-modal-scene';
           var img = document.createElement('img');
           img.src = info.src;
           img.alt = info.alt || '';
           img.loading = 'lazy';
           img.decoding = 'async';
           img.onerror = (function(el){ return function(){ applyPlaceholderOnError(el); }; })(img);
-          imagesEl.appendChild(img);
+          scene.appendChild(img);
+          if(info.caption){
+            var cap = document.createElement('p');
+            cap.className = 'game-modal-caption';
+            cap.textContent = info.caption;
+            scene.appendChild(cap);
+          }
+          scenesEl.appendChild(scene);
         }
-        detailEl.textContent = data.detail;
         modal.setAttribute('aria-hidden','false');
         document.body.classList.add('modal-open');
         // focus close button so Esc/Enter is easy to reach
