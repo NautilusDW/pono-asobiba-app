@@ -2740,16 +2740,20 @@ function pointHitsPlacement(point, placement) {
   return Math.abs(localX) <= bounds.width / 2 && Math.abs(localY) <= bounds.height / 2;
 }
 
+// keep in sync with styles.css `.placed-sticker { clip-path: inset(5%) }`
+const STICKER_PLACEMENT_INSET = 0.05;
+
 function placementTextureBounds(placement) {
   const scale = sanitizedPlacementScale(placement?.scale);
   const aspect = stickerAspectForPlacement(placement);
   const width = PAGE_TEXTURE_W * 0.18 * scale * 1.24;
   const height = width / Math.max(0.2, aspect);
+  const shrink = 1 - 2 * STICKER_PLACEMENT_INSET;
   return {
     x: (placement.x / 100) * PAGE_TEXTURE_W,
     y: (placement.y / 100) * PAGE_TEXTURE_H,
-    width,
-    height: height * 1.24,
+    width: width * shrink,
+    height: height * 1.24 * shrink,
   };
 }
 
