@@ -658,6 +658,8 @@
       object-fit:cover;
       object-position:center;
     }
+    /* v1549: シールアルバムの 「ここが育つ」 をモーダルと同じ「ココが育つ！」 ロゴ画像に統一 */
+    .pc-growth-label-img{display:block;width:clamp(100px,24vw,140px);height:auto;margin:0 0 4px -4px;vertical-align:middle;filter:drop-shadow(0 2px 3px rgba(93,78,55,.14));}
     .pc-v-bento, .pc-v-maze, .pc-v-puzzle, .pc-v-oto {background-size:cover;}
     .pc-v-bento{background-position:left center;}
     .pc-bubble{position:absolute;top:8px;right:-6px;z-index:3;background:var(--pc-primary-deep);color:#fff;font-weight:900;font-size:.82rem;letter-spacing:.04em;padding:7px 13px;border-radius:14px 14px 14px 4px;transform:rotate(5deg);box-shadow:0 4px 10px rgba(201,106,46,.35);}
@@ -1683,11 +1685,11 @@
           <h2 class="parent-assurance-title" id="parent-assurance-h">
             <img src="assets/ui/parent_heading_trust_note_alpha.png" alt="お家の方へ" width="1983" height="793" decoding="async">
           </h2>
-          <p class="parent-assurance-lead">会員登録や名前・メールの入力なしで、そのまま遊べます。</p>
+          <p class="parent-assurance-lead">名前、メールアドレスなどの個人情報を入力することなしに、そのままブラウザで遊べます。</p>
         </div>
         <ul class="parent-assurance-chips" aria-label="安心ポイント">
           <li>会員登録なし</li>
-          <li>名前・メール入力なし</li>
+          <li>個人情報の入力なし</li>
           <li>課金ガチャなし</li>
           <li>ブラウザで遊べる</li>
         </ul>
@@ -1798,7 +1800,7 @@
           <div class="pc-body">
             <h3 class="pc-title">シールアルバム</h3>
             <p class="pc-play">集めたシールを、自分のアルバムに貼って眺められます。少しずつ増えていく楽しさを味わえます。</p>
-            <p class="pc-growth"><span class="lbl">ここが育つ</span>集めて並べる楽しさで <b>達成感とコレクション欲、整理する力</b> が育ちます。</p>
+            <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_raw.png" alt="ココが育つ！" width="1774" height="887" loading="lazy" decoding="async">集めて並べる楽しさで <b>達成感とコレクション欲、整理する力</b> が育ちます。</p>
           </div>
         </article>
 
@@ -1837,7 +1839,7 @@
             <section id="book-secret" class="book-prelude" aria-label="絵本との つながりの あんない">
               <div class="book-prelude-inner">
                 <p class="book-prelude-headline">
-                  <strong>ひみつのことば</strong>で、5つのあそびをもっと楽しめるよ
+                  ※絵本の最後の「<strong>ひみつのことば</strong>」で、5つのあそびをもっと楽しめるよ！
                 </p>
                 <p class="book-prelude-sub">
                   5つのあそびを、もっとたっぷり楽しめるよ
@@ -1856,9 +1858,9 @@
         <section id="book-aside" class="book-aside" aria-labelledby="book-aside-h">
           <p class="book-aside-h" id="book-aside-h">絵本も<span class="book-aside-em">あります</span></p>
           <p class="book-aside-sub">あそびばのもとになったポノの絵本</p>
-          <div class="book-aside-rating" aria-label="Amazon評価 4.4 / 5">
+          <div class="book-aside-rating" aria-label="Amazon評価 4.4 / 5 (2026年6月24日現在)">
             <span class="book-aside-stars" aria-hidden="true">★</span>
-            <span class="book-aside-score">Amazon評価 4.4 / 5</span>
+            <span class="book-aside-score">Amazon評価 4.4 / 5 (2026年6月24日現在)</span>
           </div>
           <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="book-aside-link" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本『ありがとうって、うれしいね』を見る">
             <picture>
@@ -1875,10 +1877,9 @@
           <h2 class="bookcheer-h" id="bookcheer-h">
             いつか、<span class="bookcheer-hl">本棚に長くのこる一冊</span>へ。
           </h2>
-          <p class="bookcheer-body">
-            この絵本が、何度も読まれて、子どもたちのそばに長く残る一冊になれたら。<br>
-            そんな思いから、いつか<strong class="bookcheer-key" tabindex="0">ハードカバー</strong>版にできる日を目指しています。絵本を楽しむこと、あそびばで遊ぶことが、ポノたちの世界を少しずつ育ててくれます。
-          </p>
+          <p class="bookcheer-body">この絵本が、何度も読まれて、子どもたちのそばに長く残る一冊になれたら。</p>
+          <p class="bookcheer-body">そんな思いから、いつか<strong class="bookcheer-key" tabindex="0">ハードカバー</strong>版にできる日を目指しています。</p>
+          <p class="bookcheer-body">絵本を楽しむこと、あそびばで遊ぶことが、ポノたちの世界を少しずつ育ててくれます。</p>
         </section>
       </div>
     </section>

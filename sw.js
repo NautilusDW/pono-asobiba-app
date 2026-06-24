@@ -1,6 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1549: LP 5 fixes — お家の方へ詳細化 (個人情報の入力なし) / ひみつのことば 文頭 ※ 追加 / シールアルバム ここが育つ ロゴ画像化 / Amazon評価に日付 (2026年6月24日現在) / ハードカバー文章 1文ずつ改行
+// v1548: Daily gacha applies the remaining silver rare stickers and brightens the gold capsule.
 // v1547: Tier lock copy now routes free users to the book secret word and book users to the app.
 // v1546: Bento free tier starts in simple self-made mode only and no longer falls back to all NPC requesters.
 // v1543: play.html title bottom nav right edge aligns to the actual game plate right edge, accounting for card-list shadow padding.
@@ -198,7 +200,7 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1547; // v1547: tier lock copy routes free to book secret word and book to app.
+const CACHE_VERSION = 1549; // v1549: LP 5 fixes — parent assurance copy, hidden word marker, sticker album growth logo, Amazon rating date, hardcover paragraph splits.
 // v1540: ゲーム詳細モーダル 「ここがそだつ」 パネルの枠囲い (border + background + radius) を解除し、 下端 dashed border のみで区切る形に変更
 // v1537: ゲーム詳細モーダル スクロールチェーン修正 — .game-modal-body に overscroll-behavior:contain でモーダル内 scroll が背景 LP に伝播しないように、 body.modal-open{overflow:hidden;} も併用
 // v1533: ゲーム詳細モーダル レイアウト再修正 — 画像 object-fit を contain → cover に戻す (v1532 の誤修正取り消し) + ヘッダー (60→40px) と CTA (40→36px) の高さを削減して中央スペースを拡大、 mobile での 1 画面表示時に画像が見やすく
