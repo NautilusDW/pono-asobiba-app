@@ -9144,10 +9144,11 @@ function selectFreeBentoBox(id) {
   // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
   // isBentoBoxUnlocked() always returns true so this branch is unreachable.
   if (window.PonoTier && !window.PonoTier.isBentoBoxUnlocked(id)) {
-    window.PonoTier.showSubscribePromo({
-      title: 'おべんとうばこ が ふえているよ！',
-      body: 'えほん モード や アプリ で あたらしい かたちが あそべるよ'
-    });
+    if (typeof window.PonoTier.showTierLockPromo === 'function') {
+      window.PonoTier.showTierLockPromo();
+    } else {
+      window.PonoTier.showSubscribePromo();
+    }
     return;
   }
   selectedBentoBoxId = id;
@@ -9664,10 +9665,11 @@ function makeFreePaletteButton(def) {
       // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
       if (def.tierLocked && window.PonoTier) {
-        window.PonoTier.showSubscribePromo({
-          title: 'おべんとうばこ が ふえているよ！',
-          body: 'えほん モード や アプリ で あたらしい かたちが あそべるよ'
-        });
+        if (typeof window.PonoTier.showTierLockPromo === 'function') {
+          window.PonoTier.showTierLockPromo();
+        } else {
+          window.PonoTier.showSubscribePromo();
+        }
         return;
       }
       if (isFreeMainGuideBlocking()) {
@@ -9682,10 +9684,11 @@ function makeFreePaletteButton(def) {
       // Phase 2 future-use: decoration/food tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
       if (def.tierLocked && window.PonoTier) {
-        window.PonoTier.showSubscribePromo({
-          title: 'この たべもの は ふえているよ！',
-          body: 'えほん モード や アプリ で あそべるよ'
-        });
+        if (typeof window.PonoTier.showTierLockPromo === 'function') {
+          window.PonoTier.showTierLockPromo();
+        } else {
+          window.PonoTier.showSubscribePromo();
+        }
         return;
       }
       if (isCabbageBrushDef(def) && !getEditingCup()) {

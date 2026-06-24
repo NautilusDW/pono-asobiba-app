@@ -6151,10 +6151,11 @@ function _selectRhythmSong(id) {
   // Phase 2 future-use: rhythm song tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
   // isOtoRhythmSongUnlocked() always returns true so this branch is unreachable.
   if (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(id)) {
-    window.PonoTier.showSubscribePromo({
-      title: 'きょくが ふえているよ！',
-      body: found.name + ' は アプリ で あそべるよ'
-    });
+    if (typeof window.PonoTier.showTierLockPromo === 'function') {
+      window.PonoTier.showTierLockPromo();
+    } else {
+      window.PonoTier.showSubscribePromo();
+    }
     return;
   }
   RHYTHM_BASE_SONG = found;
@@ -8986,10 +8987,11 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
       // Phase 2 future-use: rhythm mode tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // isOtoModeUnlocked() always returns true so this branch is unreachable.
       if (window.PonoTier && !window.PonoTier.isOtoModeUnlocked('rhythm')) {
-        window.PonoTier.showSubscribePromo({
-          title: 'リズム モード が ふえているよ！',
-          body: 'リズムに あわせて えんそう できるよ。 アプリ で あそべるよ'
-        });
+        if (typeof window.PonoTier.showTierLockPromo === 'function') {
+          window.PonoTier.showTierLockPromo();
+        } else {
+          window.PonoTier.showSubscribePromo();
+        }
         return;
       }
       _showRhythmMenu();
@@ -10639,10 +10641,11 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
       // Phase 2 future-use: sound set tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // isOtoSoundSetUnlocked() always returns true so this branch is unreachable.
       if (window.PonoTier && !window.PonoTier.isOtoSoundSetUnlocked(b.dataset.set)) {
-        window.PonoTier.showSubscribePromo({
-          title: 'おとが ふえているよ！',
-          body: 'アプリ で もっと たくさんの おとが あそべるよ'
-        });
+        if (typeof window.PonoTier.showTierLockPromo === 'function') {
+          window.PonoTier.showTierLockPromo();
+        } else {
+          window.PonoTier.showSubscribePromo();
+        }
         return;
       }
       _selectSoundSet(b.dataset.set);
@@ -10658,10 +10661,11 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     // Phase 2 future-use: scale tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
     // isOtoScaleUnlocked() always returns true so this branch is unreachable.
     if (window.PonoTier && !window.PonoTier.isOtoScaleUnlocked(mode)) {
-      window.PonoTier.showSubscribePromo({
-        title: 'スケール が ふえているよ！',
-        body: 'ペンタトニック は アプリ で あそべるよ'
-      });
+      if (typeof window.PonoTier.showTierLockPromo === 'function') {
+        window.PonoTier.showTierLockPromo();
+      } else {
+        window.PonoTier.showSubscribePromo();
+      }
       return;
     }
     SCALE_MODE = mode;
@@ -10686,10 +10690,11 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     // Phase 2 future-use: chord mode tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
     // isOtoChordModeUnlocked() always returns true so this branch is unreachable.
     if (window.PonoTier && !window.PonoTier.isOtoChordModeUnlocked(mode)) {
-      window.PonoTier.showSubscribePromo({
-        title: 'コードモード が ふえているよ！',
-        body: '和音 で えんそう できるよ。 アプリ で あそべるよ'
-      });
+      if (typeof window.PonoTier.showTierLockPromo === 'function') {
+        window.PonoTier.showTierLockPromo();
+      } else {
+        window.PonoTier.showSubscribePromo();
+      }
       return;
     }
     CHORD_MODE = mode;

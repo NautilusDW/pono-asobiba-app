@@ -337,10 +337,38 @@
     return false;
   }
 
-  // ---- サブスク誘導モーダル ("伸びしろ" の見せ方) ----
+  function getTierLockPromoCopy(opts) {
+    opts = opts || {};
+    if (getTier() === 'free') {
+      return {
+        tag: opts.freeTag || 'えほんで ひらくよ',
+        title: opts.freeTitle || 'えほんの ひみつのことばで ひらくよ',
+        body: opts.freeBody || 'タイトルの えほんボタンから ことばを いれてね'
+      };
+    }
+    return {
+      tag: opts.appTag || 'アプリで もっと',
+      title: opts.appTitle || 'アプリで もっと ふえるよ',
+      body: opts.appBody || 'あたらしい あそびを じゅんびしているよ'
+    };
+  }
+
+  function showTierLockPromo(opts) {
+    opts = opts || {};
+    var copy = getTierLockPromoCopy(opts);
+    return showSubscribePromo({
+      tag: copy.tag,
+      title: copy.title,
+      body: copy.body,
+      onClose: opts.onClose
+    });
+  }
+
+  // ---- ロック誘導モーダル ----
   // opts: { title, body, onClose }
   function showSubscribePromo(opts) {
     opts = opts || {};
+    var defaultCopy = getTierLockPromoCopy(opts);
     // 既に開いていたら無視
     if (document.querySelector('.tier-promo-modal')) return;
 
@@ -373,17 +401,17 @@
       'padding:4px 14px', 'border-radius:50px',
       'letter-spacing:0.06em', 'margin-bottom:10px'
     ].join(';');
-    tag.textContent = 'まいつき ふえていくよ';
+    tag.textContent = opts.tag || defaultCopy.tag;
     box.appendChild(tag);
 
     var title = document.createElement('div');
     title.style.cssText = 'font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:10px;line-height:1.4';
-    title.textContent = opts.title || 'もっと たくさん あるよ！';
+    title.textContent = opts.title || defaultCopy.title;
     box.appendChild(title);
 
     var body = document.createElement('div');
     body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#5D4E37;line-height:1.6;margin-bottom:16px';
-    body.textContent = opts.body || 'アプリ で あたらしい なかまが まいつき ふえていくよ！';
+    body.textContent = opts.body || defaultCopy.body;
     box.appendChild(body);
 
     var btn = document.createElement('button');
@@ -436,6 +464,7 @@
     isKatakanaUnlocked: isKatakanaUnlocked,
     verifyBookPassword: verifyBookPassword,
     verifyAdminPassword: verifyAdminPassword,
+    showTierLockPromo: showTierLockPromo,
     showSubscribePromo: showSubscribePromo,
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,
     BOOK_ROOM_ITEM_IDS:         BOOK_ROOM_ITEM_IDS,
