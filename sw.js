@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1243: Bento book tier adds nori face/shape parts and furikake decoration assets.
 // v1242: Tier lock copy now routes free users to the book secret word and book users to the app.
 // v1241: Bento free tier no longer falls back to all NPC requesters; free starts as self-made bento.
 // v1240: play.html title bottom nav right edge aligns to the actual game plate right edge, accounting for card-list shadow padding.
@@ -34,7 +35,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1242; // v1242: tier lock copy routes free to book secret word and book to app.
+const CACHE_VERSION = 1243; // v1243: Bento book tier nori/furikake decoration assets.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

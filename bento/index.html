@@ -5146,7 +5146,7 @@ const FREE_GUIDE_COPY = {
     title: 'ごはん ぽんっ！',
   },
   decor: {
-    title: 'のりで かざろう！',
+    title: 'ごはんを かざろう！',
   },
   tier2Main: {
     title: '大きい おかずを えらぼう！',
@@ -5626,12 +5626,83 @@ const riceBases = [
   { id: 'rice_base_bear', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_bear.png', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
   { id: 'rice_base_cat', type: 'rice', name: 'ごはん', image: FREE_ASSET + 'rice_base_cat.png', thumbnailImage: FREE_ASSET + 'rice_thumb_cat.webp', css: 'free-css-rice-bear', sk: 'y', size: 138, layerBase: 20 },
 ];
+function bookDecorItem(def) {
+  return { ...def, minTier: 'book' };
+}
 const decorItems = [
   { id: 'nori_eye_round', type: 'decor', name: 'おめめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
   { id: 'nori_nose_bear', type: 'decor', name: 'はな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 54, layerBase: 50 },
   { id: 'nori_mouth_smile', type: 'decor', name: 'くち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 78, layerBase: 50 },
   { id: 'nori_brow_left', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
   { id: 'nori_brow_right', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
+  bookDecorItem({ id: 'nori_eye_smile_book', type: 'decor', name: 'にこめ', image: FREE_ASSET + 'book_nori_eye_smile_20260624.png', size: 38, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_eye_sleepy_book', type: 'decor', name: 'ねむりめ', image: FREE_ASSET + 'book_nori_eye_sleepy_20260624.png', size: 38, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_eye_lash_book', type: 'decor', name: 'まつげめ', image: FREE_ASSET + 'book_nori_eye_lash_20260624.png', size: 42, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_eye_kira_book', type: 'decor', name: 'きらめ', image: FREE_ASSET + 'book_nori_eye_kira_20260624.png', size: 42, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_mouth_smile_wide_book', type: 'decor', name: 'にこくち', image: FREE_ASSET + 'book_nori_mouth_smile_wide_20260624.png', size: 74, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_mouth_laugh_book', type: 'decor', name: 'わらいくち', image: FREE_ASSET + 'book_nori_mouth_laugh_20260624.png', size: 78, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_mouth_surprise_book', type: 'decor', name: 'びっくりくち', image: FREE_ASSET + 'book_nori_mouth_surprise_20260624.png', size: 46, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_mouth_henoji_book', type: 'decor', name: 'へのじくち', image: FREE_ASSET + 'book_nori_mouth_henoji_20260624.png', size: 68, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_whisker_left_book', type: 'decor', name: 'ひげひだり', image: FREE_ASSET + 'book_nori_whisker_left_20260624.png', size: 90, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_whisker_right_book', type: 'decor', name: 'ひげみぎ', image: FREE_ASSET + 'book_nori_whisker_right_20260624.png', size: 90, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_bangs_jagged_book', type: 'decor', name: 'まえがみ', image: FREE_ASSET + 'book_nori_bangs_jagged_20260624.png', size: 106, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_bangs_scallop_book', type: 'decor', name: 'ふわまえがみ', image: FREE_ASSET + 'book_nori_bangs_scallop_20260624.png', size: 104, layerBase: 50 }),
+  bookDecorItem({ id: 'nori_shape_circle_book', type: 'decor', name: 'のりまる', image: FREE_ASSET + 'book_nori_shape_circle_20260624.png', size: 66, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_triangle_book', type: 'decor', name: 'のりさんかく', image: FREE_ASSET + 'book_nori_shape_triangle_20260624.png', size: 72, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_square_book', type: 'decor', name: 'のりしかく', image: FREE_ASSET + 'book_nori_shape_square_20260624.png', size: 72, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_rect_book', type: 'decor', name: 'のりながしかく', image: FREE_ASSET + 'book_nori_shape_rect_20260624.png', size: 108, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_long_bar_book', type: 'decor', name: 'のりほそなが', image: FREE_ASSET + 'book_nori_shape_long_bar_20260624.png', size: 112, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_curve_book', type: 'decor', name: 'のりまがり', image: FREE_ASSET + 'book_nori_shape_curve_20260624.png', size: 70, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_wavy_book', type: 'decor', name: 'のりなみ', image: FREE_ASSET + 'book_nori_shape_wavy_20260624.png', size: 96, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_zigzag_book', type: 'decor', name: 'のりギザギザ', image: FREE_ASSET + 'book_nori_shape_zigzag_20260624.png', size: 98, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_tire_book', type: 'decor', name: 'のりタイヤ', image: FREE_ASSET + 'book_nori_shape_tire_20260624.png', size: 66, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_window_book', type: 'decor', name: 'のりまど', image: FREE_ASSET + 'book_nori_shape_window_car_20260624.png', size: 108, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_train_book', type: 'decor', name: 'のりでんしゃ', image: FREE_ASSET + 'book_nori_shape_train_20260624.png', size: 118, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_robot_panel_book', type: 'decor', name: 'のりロボ', image: FREE_ASSET + 'book_nori_shape_robot_panel_20260624.png', size: 64, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_ghost_book', type: 'decor', name: 'のりおばけ', image: FREE_ASSET + 'book_nori_shape_ghost_20260624.png', size: 64, layerBase: 49 }),
+  bookDecorItem({
+    id: 'furikake_goma_book',
+    type: 'decor',
+    name: 'ごま',
+    image: FREE_ASSET + 'book_furikake_goma_scatter_a_20260624.png',
+    variantImages: [
+      FREE_ASSET + 'book_furikake_goma_scatter_a_20260624.png',
+      FREE_ASSET + 'book_furikake_goma_scatter_b_20260624.png',
+      FREE_ASSET + 'book_furikake_goma_scatter_c_20260624.png',
+    ],
+    size: 84,
+    layerBase: 51
+  }),
+  bookDecorItem({
+    id: 'furikake_tamago_book',
+    type: 'decor',
+    name: 'たまご',
+    image: FREE_ASSET + 'book_furikake_tamago_scatter_a_20260624.png',
+    variantImages: [
+      FREE_ASSET + 'book_furikake_tamago_scatter_a_20260624.png',
+      FREE_ASSET + 'book_furikake_tamago_scatter_b_20260624.png',
+      FREE_ASSET + 'book_furikake_tamago_scatter_c_20260624.png',
+    ],
+    size: 86,
+    layerBase: 51
+  }),
+  bookDecorItem({
+    id: 'furikake_aonori_book',
+    type: 'decor',
+    name: 'あおのり',
+    image: FREE_ASSET + 'book_furikake_aonori_scatter_a_20260624.png',
+    variantImages: [
+      FREE_ASSET + 'book_furikake_aonori_scatter_a_20260624.png',
+      FREE_ASSET + 'book_furikake_aonori_scatter_b_20260624.png',
+      FREE_ASSET + 'book_furikake_aonori_scatter_c_20260624.png',
+    ],
+    size: 88,
+    layerBase: 51
+  }),
+  bookDecorItem({ id: 'furikake_guide_heart_book', type: 'decor', name: 'ハートがた', image: FREE_ASSET + 'book_furikake_guide_heart_20260624.png', size: 118, layerBase: 48 }),
+  bookDecorItem({ id: 'furikake_guide_star_book', type: 'decor', name: 'ほしがた', image: FREE_ASSET + 'book_furikake_guide_star_20260624.png', size: 118, layerBase: 48 }),
+  bookDecorItem({ id: 'furikake_guide_circle_book', type: 'decor', name: 'まるがた', image: FREE_ASSET + 'book_furikake_guide_circle_20260624.png', size: 118, layerBase: 48 }),
+  bookDecorItem({ id: 'furikake_guide_flower_book', type: 'decor', name: 'おはながた', image: FREE_ASSET + 'book_furikake_guide_flower_20260624.png', size: 118, layerBase: 48 }),
   { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 },
   { id: 'decor_umeboshi', type: 'decor', name: 'うめぼし', image: FREE_ASSET + 'decor_umeboshi.png', size: 54, layerBase: 52 },
   { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
@@ -6986,6 +7057,28 @@ function getFreeFoodCatalog() {
     };
   });
 }
+function getBentoCurrentTier() {
+  try {
+    if (window.PonoTier && typeof window.PonoTier.getTier === 'function') return window.PonoTier.getTier();
+  } catch (_) {}
+  try {
+    if (window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1') return 'sub';
+  } catch (_) {}
+  return 'free';
+}
+function isBentoMinTierUnlocked(minTier) {
+  if (!minTier || minTier === 'free') return true;
+  const tier = getBentoCurrentTier();
+  if (tier === 'sub') return true;
+  if (minTier === 'book') return tier === 'book';
+  return false;
+}
+function isBentoDecorUnlocked(def) {
+  return isBentoMinTierUnlocked(def && def.minTier);
+}
+function getDecorPaletteCatalog() {
+  return decorItems.filter(isBentoDecorUnlocked);
+}
 function getFreeGuideTabs() {
   if (freeGuideStep === 'box') return FREE_TABS.filter(t => t.id === 'box');
   if (freeGuideStep === 'rice') return FREE_TABS.filter(t => t.id === 'rice');
@@ -7036,7 +7129,7 @@ function hasRiceOnTier(tier = 1) {
   return placedItems.some(i => i.type === 'rice' && getItemTier(i) === tier);
 }
 function hasNoriDecorOnTier(tier = 1) {
-  return placedItems.some(i => i.type === 'decor' && getItemTier(i) === tier && String(i.id || '').startsWith('nori_'));
+  return placedItems.some(i => getItemTier(i) === tier && isRiceDecorItem(i));
 }
 function hasFoodOnTier(tier) {
   return placedItems.some(i => i.type === 'food' && getItemTier(i) === tier);
@@ -7143,7 +7236,7 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('のりで ごはんを かざろう！');
+    setSpeech('ごはんを かざろう！');
   } else if (step === 'tier2Main') {
     freeActiveTier = getGuideTierForStep('tier2Main');
     freeLayoutTab = 'food';
@@ -7198,8 +7291,9 @@ function getFreePaletteItems(tabId) {
     return foods;
   }
   if (tabId === 'decor') {
-    if (freeGuideStep === 'decor') return decorItems.filter(d => String(d.id || '').startsWith('nori_'));
-    return decorItems;
+    const decorCatalog = getDecorPaletteCatalog();
+    if (freeGuideStep === 'decor') return decorCatalog.filter(d => isRiceDecorItem(d));
+    return decorCatalog;
   }
   return [];
 }
@@ -8025,6 +8119,12 @@ function getRicePlacementBounds(box = getSelectedBentoBox()) {
 function isNoriDecorItem(item) {
   return !!item && item.type === 'decor' && String(item.id || '').startsWith('nori_');
 }
+function isFurikakeDecorItem(item) {
+  return !!item && item.type === 'decor' && String(item.id || '').startsWith('furikake_');
+}
+function isRiceDecorItem(item) {
+  return isNoriDecorItem(item) || isFurikakeDecorItem(item);
+}
 function getBoxSpotsForType(box, type) {
   if (!box) return [];
   if (type === 'rice' || type === 'template' || type === 'rice_auto') return box.riceSpots || box.safeSpots || [];
@@ -8139,7 +8239,7 @@ function makePaletteDropToast(def) {
     return 'ごはんを おべんとうばこに いれよう！';
   }
   if (def.type === 'decor') {
-    return 'のりを ごはんのうえまで もっていこう！';
+    return 'かざりを ごはんのうえまで もっていこう！';
   }
   if (def.type === 'food' && getEditingCup()) {
     return 'カップまで もっていこう！';
@@ -8211,7 +8311,7 @@ function snapPointForItem(item, x, y) {
   let point = item.type === 'food' && getParentCup(item)
     ? clampPointToCup(x, y, item, getParentCup(item))
     : clampPointToBento(x, y, item);
-  if (isNoriDecorItem(item)) {
+  if (isRiceDecorItem(item)) {
     delete item.parentCupId;
     return clampPointToRice(x, y, item);
   }
@@ -8269,7 +8369,7 @@ function setFreeItemPosition(uid, x, y) {
   const item = placedItems.find(i => i.uid === uid);
   if (!item) return;
   const parentCup = item.type === 'food' ? getParentCup(item) : null;
-  const p = isNoriDecorItem(item)
+  const p = isRiceDecorItem(item)
     ? clampPointToRice(x, y, item)
     : parentCup ? clampPointToCup(x, y, item, parentCup) : clampPointToBento(x, y, item);
   const dx = p.x - item.x;
@@ -8483,7 +8583,7 @@ function updateFreePaletteDragGhost(e) {
   if (!freePaletteDragState || !freePaletteDragState.ghost || !e) return;
   freePaletteDragState.ghost.style.left = `${e.clientX}px`;
   freePaletteDragState.ghost.style.top = `${e.clientY}px`;
-  if (isNoriDecorItem(freePaletteDragState.def)) {
+  if (isRiceDecorItem(freePaletteDragState.def)) {
     freePaletteDragState.ghost.classList.toggle('is-over-stage', !!eventToFreePoint(e));
   }
 }
@@ -8496,7 +8596,7 @@ function removeFreePaletteDragGhost() {
 function createFreePaletteDragGhost(def, e) {
   const ghost = document.createElement('div');
   ghost.className = 'free-drag-ghost';
-  if (isNoriDecorItem(def)) {
+  if (isRiceDecorItem(def)) {
     const ghostSize = Math.round(clamp((def.size || 44) * 1.12, 34, 72));
     ghost.classList.add('nori-drag-ghost');
     ghost.style.setProperty('--free-drag-ghost-size', `${ghostSize}px`);
@@ -8595,7 +8695,7 @@ function finishFreePaletteDrag(shouldFinalize) {
   }
   if ((def.type === 'rice_auto' || def.type === 'template') && freeGuideStep === 'rice') {
     setFreeGuideStep('decor');
-  } else if (freeGuideStep === 'decor' && def.type === 'decor' && String(def.id || '').startsWith('nori_')) {
+  } else if (freeGuideStep === 'decor' && isRiceDecorItem(def)) {
     setSpeech('いいね！のりOKを おしてね。');
   }
   try { if (typeof tutorialOnItemPlaced === 'function') tutorialOnItemPlaced(placed); } catch (_) {}
@@ -8702,7 +8802,7 @@ function rotateSelectedItem(deltaAngle) {
 function canShowLayerControlsForItem(item) {
   if (!item || item.type === 'rice') return false;
   if (item.parentId) return false;
-  if (String(item.id || '').startsWith('nori_')) return false;
+  if (isRiceDecorItem(item)) return false;
   return true;
 }
 function isItemVisuallySelected(item) {
@@ -9161,7 +9261,7 @@ function selectFreeBentoBox(id) {
   const box = getSelectedBentoBox();
   placedItems.forEach(item => {
     const old = { x: item.x, y: item.y };
-    const p = isNoriDecorItem(item) ? clampPointToRice(item.x, item.y, item) : clampPointToBento(item.x, item.y, item);
+    const p = isRiceDecorItem(item) ? clampPointToRice(item.x, item.y, item) : clampPointToBento(item.x, item.y, item);
     item.x = p.x; item.y = p.y;
     const dx = item.x - old.x;
     const dy = item.y - old.y;
@@ -9417,7 +9517,7 @@ function renderFreeLayoutInto(host, opts = {}) {
     ? items.filter(item => getItemTier(item) === activeTier)
     : items;
   const displayItems = useIntegratedRice && integratedRice
-    ? visibleItems.filter(item => item.uid !== integratedRice.uid && item.parentId !== integratedRice.uid)
+    ? visibleItems.filter(item => item.uid !== integratedRice.uid && (item.parentId !== integratedRice.uid || isRiceDecorItem(item)))
     : visibleItems;
   host.classList.add('free-layout-stage');
   host.onpointerdown = null;
@@ -9490,8 +9590,8 @@ function renderFreeLayoutInto(host, opts = {}) {
     applyBoxVisualMask(preview, box, host, visualMaskOptions);
     renderRoot.appendChild(preview);
   }
-  const noriItems = displayItems.filter(isNoriDecorItem);
-  const regularItems = displayItems.filter(item => !isNoriDecorItem(item));
+  const riceDecorItems = displayItems.filter(isRiceDecorItem);
+  const regularItems = displayItems.filter(item => !isRiceDecorItem(item));
   const layer = document.createElement('div');
   layer.className = 'free-layout-items free-layout-mask-space';
   const maskFrame = document.createElement('div');
@@ -9513,12 +9613,12 @@ function renderFreeLayoutInto(host, opts = {}) {
   } else {
     renderRoot.appendChild(layer);
   }
-  if (noriItems.length) {
+  if (riceDecorItems.length) {
     const riceLayer = document.createElement('div');
     riceLayer.className = 'free-layout-items free-rice-decor-layer';
     const riceClipPath = getBoundsClipPath(getRicePlacementBounds(box));
     if (riceClipPath) riceLayer.style.clipPath = riceClipPath;
-    noriItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
+    riceDecorItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
       riceLayer.appendChild(createFreePlacedElement(item, !!opts.interactive));
     });
     renderRoot.appendChild(riceLayer);
@@ -9623,7 +9723,7 @@ function shouldHighlightFreeChoice(def) {
   if (getEditingCup()) return canAddFoodToCup(def);
   if (freeGuideStep === 'box') return freeLayoutTab === 'box';
   if (freeGuideStep === 'rice') return def.type === 'rice_auto';
-  if (freeGuideStep === 'decor') return def.type === 'decor' && String(def.id || '').startsWith('nori_');
+  if (freeGuideStep === 'decor') return isRiceDecorItem(def);
   if (isOkazuGuideStep()) {
     if (freeLayoutTab === 'food') return def.type === 'food' && canAddFoodForCurrentStep(def);
     if (freeLayoutTab === 'accessory') return def.type === 'cup' || def.type === 'divider';
@@ -12694,9 +12794,9 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 4. decor — のりを ご飯の上に (配置済みのご飯にもトリムパスで場所を明示)
+  // 4. decor — かざりを ご飯の上に (配置済みのご飯にもトリムパスで場所を明示)
   if (step === 'decor') {
-    tutorialShowBubble('のりを ごはんの うえに のせよう', { topVh: '20' });
+    tutorialShowBubble('かざりを ごはんの うえに のせよう', { topVh: '20' });
     if (firstRender) {
       // 配置済みの rice 要素に highlight (ご飯の場所を明示)
       const riceEls = document.querySelectorAll('.free-placed-item.type-rice');
@@ -13063,7 +13163,7 @@ function tutorialOnItemPlaced(item) {
       return;
     }
   }
-  if (step === 'decor' && isNoriDecorItem(item) && hasNoriDecorOnTier(1)) {
+  if (step === 'decor' && isRiceDecorItem(item) && hasNoriDecorOnTier(1)) {
     tutorialAdvance('nori-ok');
     return;
   }
