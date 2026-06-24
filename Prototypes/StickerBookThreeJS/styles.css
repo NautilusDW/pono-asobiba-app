@@ -2370,6 +2370,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   cursor: grab;
   contain: layout style;
   will-change: left, top, transform;
+  clip-path: inset(5%);
 }
 
 .placed-sticker:active {
@@ -2383,7 +2384,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 .placed-sticker.is-selected::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 5%;
   box-sizing: border-box;
   border: var(--selection-border, 2px) solid rgba(70, 181, 188, 0.9);
   border-radius: var(--selection-radius, 14px);
