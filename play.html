@@ -3317,7 +3317,6 @@
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
       <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"></button>
       <button class="bn-item" data-action="official" type="button" aria-label="公式サイト"></button>
-      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
       <button class="bn-item" data-action="stickers" type="button" aria-label="シール"></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
     </nav>
@@ -3401,15 +3400,6 @@
       </div>
 
       <button class="modal-close" type="button" data-close="settingsModal">とじる</button>
-    </div>
-  </div>
-
-  <!-- ===== News Modal ===== -->
-  <div class="modal" id="newsModal" hidden role="dialog" aria-modal="true" aria-labelledby="newsTitle">
-    <div class="modal-card">
-      <h3 id="newsTitle">おしらせ</h3>
-      <p>あたらしい おしらせは ありません。</p>
-      <button class="modal-close" type="button" data-close="newsModal">とじる</button>
     </div>
   </div>
 
@@ -4195,11 +4185,10 @@
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
     const BOTTOM_NAV_PRESS_AREAS = [
-      { left: '0%', right: '22%' },
-      { left: '20%', right: '40%' },
-      { left: '40%', right: '60%' },
-      { left: '60%', right: '80%' },
-      { left: '80%', right: '100%' }
+      { left: '0%', right: '25%' },
+      { left: '25%', right: '50%' },
+      { left: '50%', right: '75%' },
+      { left: '75%', right: '100%' }
     ];
     function clearBottomNavPressed() {
       bottomNav.querySelectorAll('.bn-item.is-pressed').forEach((btn) => btn.classList.remove('is-pressed'));
@@ -4232,8 +4221,6 @@
         location.href = 'help.html';
       } else if (action === 'official') {
         location.href = 'index.html';
-      } else if (action === 'news') {
-        openModal('newsModal');
       } else if (action === 'stickers') {
         location.href = THREE_STICKER_BOOK_URL;
       } else if (action === 'settings') {
