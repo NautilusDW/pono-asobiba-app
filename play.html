@@ -5714,23 +5714,26 @@
       var today = window.PonoDailyChallenge.getToday();
       if (!today) return;
       banner.hidden = false;
-      titleEl.textContent = today.label + ' を 1かい クリア！';
+      titleEl.textContent = today.label + ' を クリア しよう！';
       if (today.claimed) {
         banner.setAttribute('data-state', 'claimed');
         subEl.textContent = 'またあした あたらしい ぼうけん！';
         ctaEl.hidden = true;
       } else if (today.completed) {
         banner.setAttribute('data-state', 'done');
-        subEl.textContent = 'やったね！ ガチャを ひこう';
+        subEl.textContent = 'やったね！ シールを もらおう';
         ctaEl.hidden = false;
       } else {
         banner.setAttribute('data-state', 'pending');
-        subEl.textContent = 'クリアしたら ガチャを ひけるよ';
+        subEl.textContent = 'クリア したら シールが もらえるよ';
         ctaEl.hidden = true;
       }
       ctaEl.onclick = function () {
-        if (!window.PonoGacha || !window.PonoDailyChallenge.claim()) return;
+        // race 防止: 先にボタンを disable → claim 試行 → 失敗時のみ復帰、
+        // 成功時のみ spin() を実行し、 Promise rejection を必ず catch する。
+        if (!window.PonoGacha) return;
         ctaEl.disabled = true;
+        if (!window.PonoDailyChallenge.claim()) { ctaEl.disabled = false; return; }
         window.PonoGacha.spin({
           gameId: today.gameId,
           onClose: function () {
@@ -5739,10 +5742,13 @@
             subEl.textContent = 'またあした あたらしい ぼうけん！';
             ctaEl.hidden = true;
           }
+        }).catch(function (err) {
+          ctaEl.disabled = false;
+          try { console.warn('[daily-quest] gacha failed:', err); } catch (e) {}
         });
       };
     }
-    setTimeout(initDailyQuest, 1200);
+    setTimeout(initDailyQuest, 2000);
 
     // ===== Service worker =====
     // 登録 + 更新検知を common/sw-update.js に集約。更新待ちUIは出さず、

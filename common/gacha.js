@@ -165,7 +165,16 @@
     return overlay;
   }
 
+  // prefers-reduced-motion ユーザーは flash / vibrate を skip。
+  // CSS 側 @media (prefers-reduced-motion: reduce) ブロックは別途残してあり
+  // 補助的に animation duration を縮める。
+  function prefersReducedMotion() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return false; }
+  }
+
   function safeVibrate(ms) {
+    if (prefersReducedMotion()) return;
     try { if (navigator && typeof navigator.vibrate === 'function') navigator.vibrate(ms); } catch (e) {}
   }
 
@@ -207,13 +216,16 @@
     // 次フレームで visible 化 → fade-in
     requestAnimationFrame(function () { overlay.classList.add('is-visible'); });
 
-    // フェーズ 2 開始時の背景フラッシュ (1.5s〜2.5s の間で 2 回)
+    // フェーズ 2 開始時の背景フラッシュ (1.5s〜2.5s の間で 2 回)。
+    // prefers-reduced-motion ユーザーは flash / vibrate ともに skip。
     setTimeout(function () {
       safeVibrate(50);
-      overlay.classList.add('is-flash');
-      setTimeout(function () { overlay.classList.remove('is-flash'); }, 90);
-      setTimeout(function () { overlay.classList.add('is-flash'); }, 380);
-      setTimeout(function () { overlay.classList.remove('is-flash'); }, 470);
+      if (!prefersReducedMotion()) {
+        overlay.classList.add('is-flash');
+        setTimeout(function () { overlay.classList.remove('is-flash'); }, 90);
+        setTimeout(function () { overlay.classList.add('is-flash'); }, 380);
+        setTimeout(function () { overlay.classList.remove('is-flash'); }, 470);
+      }
     }, 1500);
     // フェーズ 3 (蓋オープン) でもう一度バイブ
     setTimeout(function () { safeVibrate(50); }, 2500);

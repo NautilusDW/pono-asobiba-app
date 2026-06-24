@@ -136,8 +136,9 @@
     var state = readRaw();
     if (!state || state.date !== current.date) return false;
     state.claimed = true;
-    writeRaw(state);
-    return true;
+    // writeRaw が false (localStorage quota / private mode 等) を返したら
+    // claim 失敗として伝える。 呼び出し側がボタン disable を巻き戻せる。
+    return writeRaw(state);
   }
 
   function reset() {
