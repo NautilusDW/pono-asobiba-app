@@ -6517,10 +6517,11 @@ function initGame() {
     //   showSubscribePromo 分岐は実質到達しない (買い切り全機能開放方針)。
     //   Phase 2 でサブスク制を再開する場合に備えて残置している。
     if (window.PonoTier && window.PonoTier.showSubscribePromo) {
-      window.PonoTier.showSubscribePromo({
-        title: 'この むずかしさは アプリ で あそべるよ',
-        body: 'もっと たくさんの もんだいが まっているよ'
-      });
+      if (typeof window.PonoTier.showTierLockPromo === 'function') {
+        window.PonoTier.showTierLockPromo();
+      } else {
+        window.PonoTier.showSubscribePromo();
+      }
     }
     resetDiffChoice();
     document.getElementById('mode-screen').classList.remove('hidden');
@@ -8159,10 +8160,11 @@ async function startQuizlandWithDifficulty(diff) {
   if (DIFF_LEVELS.indexOf(diff) === -1) return;
   if (!isQuizlandDifficultyUnlockedLocal(diff)) {
     if (window.PonoTier && window.PonoTier.showSubscribePromo) {
-      window.PonoTier.showSubscribePromo({
-        title: 'むずかしい もんだいが ふえているよ！',
-        body: 'もっと たくさんの なぞなぞは アプリ で あそべるよ'
-      });
+      if (typeof window.PonoTier.showTierLockPromo === 'function') {
+        window.PonoTier.showTierLockPromo();
+      } else {
+        window.PonoTier.showSubscribePromo();
+      }
     }
     return;
   }
@@ -8221,10 +8223,11 @@ function chooseQuizlandDifficulty(diff) {
   if (DIFF_LEVELS.indexOf(diff) === -1) return;
   if (!isQuizlandDifficultyUnlockedLocal(diff)) {
     if (window.PonoTier && window.PonoTier.showSubscribePromo) {
-      window.PonoTier.showSubscribePromo({
-        title: 'むずかしい もんだいが ふえているよ！',
-        body: 'もっと たくさんの なぞなぞは アプリ で あそべるよ'
-      });
+      if (typeof window.PonoTier.showTierLockPromo === 'function') {
+        window.PonoTier.showTierLockPromo();
+      } else {
+        window.PonoTier.showSubscribePromo();
+      }
     }
     return;
   }

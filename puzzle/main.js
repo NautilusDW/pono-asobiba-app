@@ -7176,11 +7176,10 @@ btnNextStage.addEventListener('click', () => {
     // NOTE: MVP では common/tier.js が PONO_TIER_GAME_LOCKS_ENABLED=false を設定するため、
     // isStageUnlockedForCurrentFlow() は常に true を返し、この分岐は到達しない。
     // Phase 2 でロック機能を再有効化する際に、本ブランチが復活する想定。
-    if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
-      window.PonoTier.showSubscribePromo({
-        title: 'つぎの えは まだ あそべないよ',
-        body: 'えほん モード や アプリ で あたらしい えが ふえていくよ！'
-      });
+    if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
+      window.PonoTier.showTierLockPromo();
+    } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+      window.PonoTier.showSubscribePromo();
     }
     return;
   }
@@ -7241,7 +7240,7 @@ let resizeTimer = null;
 let lastInitW = 0, lastInitH = 0;
 const resizeObserver = new ResizeObserver(() => {
   if (!sourceImg) return;
-  // 散布アニメ実行中は canvas 再生成で破綻するので resize 由来の再初期化を抑止
+  // 散布アニメ実行中は canvas 作り直しで破綻するので resize 由来の再初期化を抑止
   if (scatterAnimating) return;
   // チュートリアル中に canvas を作り直すと、案内中の targetPiece と
   // 新しく作られた pieces 配列がズレて、ピース形状が合わなくなる。

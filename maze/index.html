@@ -9885,11 +9885,10 @@ function loadStage(idx) {
   if (!window._DEV_BYPASS_TIER
       && window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'
       && !window.PonoTier.isMazeStageUnlocked(stageNum)) {
-    if (typeof window.PonoTier.showSubscribePromo === 'function') {
-      window.PonoTier.showSubscribePromo({
-        title: 'つぎの もりは まだ あそべないよ',
-        body: 'えほん モード や アプリ で あたらしい もりが あそべるよ！'
-      });
+    if (typeof window.PonoTier.showTierLockPromo === 'function') {
+      window.PonoTier.showTierLockPromo();
+    } else if (typeof window.PonoTier.showSubscribePromo === 'function') {
+      window.PonoTier.showSubscribePromo();
     }
     return;
   }
@@ -10492,7 +10491,7 @@ _loadImageStageIndex()
 requestAnimationFrame(draw);
 
 // ---- OP 再生 (op-layout.json 駆動) ---------------------------------------
-// タイトル画面タップ後に overlay を動的生成して BG (op_scale.png) + frame +
+// タイトル画面タップ後に overlay を動的に組み立てて BG (op_scale.png) + frame +
 // ビート毎テキスト + ナレーション再生を行う。終了時に onDone() を呼ぶ。
 // fetch / 設定欠落時は overlay を出さずに onDone() を即時呼ぶ (safe fallback)。
 function _mazeOpHexToRgba(hex, alpha) {
@@ -10528,7 +10527,7 @@ async function playMazeOpening(onDone) {
     return;
   }
 
-  // overlay を動的生成 (CSS は <style> で定義済)
+  // overlay を動的に組み立て (CSS は <style> で定義済)
   // #maze-op-next (▼) は #maze-op-frame-box の子として右下に絶対配置し、
   // 明滅アニメで「次に進む」ヒントを出す。
   const tpl = ''
