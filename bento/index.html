@@ -5739,11 +5739,18 @@ function getFreeMaskEditRequest() {
   }
 }
 
-// Phase 2: ティア判定で NPC をフィルタリング。 セーフフラグ OFF 中は全 NPC 返す = 既存挙動維持。
+function isBentoRequestModeAvailable() {
+  if (!window.PonoTier || typeof window.PonoTier.isBentoNpcUnlocked !== 'function') {
+    return true;
+  }
+  return NPC_REQUESTERS.some(r => window.PonoTier.isBentoNpcUnlocked(r.id));
+}
+
+// Phase 2: ティア判定で NPC をフィルタリング。 無料版は候補 0 件のまま返す。
 function getEligibleNpcRequesters() {
-  if (!window.PonoTier) return NPC_REQUESTERS.slice();
+  if (!window.PonoTier || typeof window.PonoTier.isBentoNpcUnlocked !== 'function') return NPC_REQUESTERS.slice();
   const eligible = NPC_REQUESTERS.filter(r => window.PonoTier.isBentoNpcUnlocked(r.id));
-  return eligible.length > 0 ? eligible : NPC_REQUESTERS.slice();
+  return eligible;
 }
 
 function setCurrentNpcRequester(req) {
@@ -5781,6 +5788,10 @@ function selectNextNpcRequester() {
 }
 
 function decideNpcMode() {
+  if (!isBentoRequestModeAvailable()) {
+    setCurrentNpcRequester(null);
+    return;
+  }
   // ----- テスト用 URL パラメータ (?npc=...) -----
   // ?npc=0           → 強制 自由モード (動物来ない)
   // ?npc=1           → 強制 依頼モード (ランダム動物)
@@ -13109,6 +13120,12 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
 (function() {
   const titleScreen = document.getElementById('title-screen');
   if (!titleScreen) return;
+  const requestAvailable = isBentoRequestModeAvailable();
+  if (!requestAvailable) {
+    const startLabel = titleScreen.querySelector('.title-screen__start');
+    if (startLabel) startLabel.textContent = '▶ じぶんでつくる';
+    titleScreen.setAttribute('aria-label', 'じぶんでつくる');
+  }
   titleScreen.addEventListener('click', function() {
     titleScreen.classList.add('hidden');
     try { getAC(); } catch (_) {}
