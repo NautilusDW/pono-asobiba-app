@@ -97,6 +97,9 @@ html, body {
   gap: 8px;
   width: min(100%, 340px);
 }
+.title-screen__mode-buttons.is-simple-only {
+  width: min(100%, 280px);
+}
 .title-screen__mode-btn {
   border: 3px solid #E49A52;
   border-radius: 18px;
@@ -124,6 +127,9 @@ html, body {
 .title-screen__mode-btn--simple {
   border-color: #65A86D;
   box-shadow: 0 5px 0 #41834E, 0 10px 18px rgba(34, 81, 43, 0.22);
+}
+.title-screen__mode-btn--simple.title-screen__mode-btn--primary-only {
+  font-size: clamp(0.9rem, 2.05vw, 1.16rem);
 }
 .title-screen__mode-btn--simple:active {
   box-shadow: 0 2px 0 #41834E, 0 6px 12px rgba(34, 81, 43, 0.2);
@@ -6681,11 +6687,18 @@ function getFreeMaskEditRequest() {
   }
 }
 
-// Phase 2: ティア判定で NPC をフィルタリング。 セーフフラグ OFF 中は全 NPC 返す = 既存挙動維持。
+function isBentoRequestModeAvailable() {
+  if (!window.PonoTier || typeof window.PonoTier.isBentoNpcUnlocked !== 'function') {
+    return true;
+  }
+  return NPC_REQUESTERS.some(r => window.PonoTier.isBentoNpcUnlocked(r.id));
+}
+
+// Phase 2: ティア判定で NPC をフィルタリング。 無料版は候補 0 件のまま返す。
 function getEligibleNpcRequesters() {
-  if (!window.PonoTier) return NPC_REQUESTERS.slice();
+  if (!window.PonoTier || typeof window.PonoTier.isBentoNpcUnlocked !== 'function') return NPC_REQUESTERS.slice();
   const eligible = NPC_REQUESTERS.filter(r => window.PonoTier.isBentoNpcUnlocked(r.id));
-  return eligible.length > 0 ? eligible : NPC_REQUESTERS.slice();
+  return eligible;
 }
 
 function setCurrentNpcRequester(req) {
@@ -6733,6 +6746,10 @@ function selectNextNpcRequester() {
 }
 
 function decideNpcMode() {
+  if (!isBentoRequestModeAvailable()) {
+    setCurrentNpcRequester(null);
+    return;
+  }
   if (shouldUseTutorialFixedRequester()) {
     const req = getTutorialFixedRequester();
     if (req) {
@@ -14973,8 +14990,9 @@ function tutorialClearSmallCupFoodLock() {
 }
 // v1403: cup-edit-try step でサイズボタン (1/2/3) や ↓↑ レイヤー矢印を押すと
 //   renderFreeLayoutControls / renderFreeCupEditorControls が toolbar DOM を
-//   再生成し、 tutorialMarkTarget の SVG オーバーレイ target reference が浮いて
+//   作り直し、 tutorialMarkTarget の強調オーバーレイ target reference が浮いて
 //   青枠が消える症状を解消するための再 apply ヘルパー。
+//   例外理由: 既存チュートリアルのDOM強調オーバーレイ参照で、見た目素材生成ではない。
 function tutorialReapplyCupEditTryMarks() {
   if (typeof tutorialState === 'undefined' || !tutorialState || !tutorialState.active) return;
   if (tutorialState.step !== 'cup-edit-try') return;
@@ -14996,9 +15014,10 @@ function tutorialReapplyCupEditTryMarks() {
   } catch (_) {}
 }
 // v1412: cup-edit demo (basic_tut_10 再生中) で size/arrows 矢印ボタンを押すと
-//   renderFreeLayoutControls → toolbar DOM 再生成で SVG trim path overlay の target reference が浮き
+//   renderFreeLayoutControls → toolbar DOM 作り直しで強調オーバーレイの target reference が浮き
 //   青枠 mark が消える症状を解消するため、 現在の cue フェーズ (tutorialState._cupEditCue) に応じて
 //   該当 mark のみ再 apply する。 cup-edit-try 版 (tutorialReapplyCupEditTryMarks) と同じ防御パターン。
+//   例外理由: 既存チュートリアルのDOM強調オーバーレイ参照で、見た目素材生成ではない。
 function tutorialReapplyCupEditDemoMarks() {
   if (typeof tutorialState === 'undefined' || !tutorialState || !tutorialState.active) return;
   if (tutorialState.step !== 'cup-edit') return;
@@ -16568,10 +16587,21 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
   const titleScreen = document.getElementById('title-screen');
   if (!titleScreen) return;
   let started = false;
+  const requestAvailable = isBentoRequestModeAvailable();
+  const modeButtons = titleScreen.querySelector('.title-screen__mode-buttons');
+  const startLabel = titleScreen.querySelector('.title-screen__start');
+  const requestButton = titleScreen.querySelector('[data-bento-start-mode="request"]');
+  const simpleButton = titleScreen.querySelector('[data-bento-start-mode="simple"]');
+  if (!requestAvailable) {
+    if (requestButton) requestButton.hidden = true;
+    if (modeButtons) modeButtons.classList.add('is-simple-only');
+    if (simpleButton) simpleButton.classList.add('title-screen__mode-btn--primary-only');
+    if (startLabel) startLabel.textContent = '▶ じぶんでつくる';
+  }
   function startFromTitle(mode) {
     if (started) return;
     started = true;
-    const simple = mode === 'simple';
+    const simple = mode === 'simple' || !requestAvailable;
     setSimpleBentoMode(simple);
     titleScreen.classList.add('hidden');
     try { getAC(); } catch (_) {}
@@ -16587,7 +16617,7 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
   }
   titleScreen.addEventListener('click', function(e) {
     const modeButton = e.target && e.target.closest ? e.target.closest('[data-bento-start-mode]') : null;
-    const mode = modeButton ? modeButton.getAttribute('data-bento-start-mode') : 'request';
+    const mode = modeButton ? modeButton.getAttribute('data-bento-start-mode') : (requestAvailable ? 'request' : 'simple');
     startFromTitle(mode);
   });
 })();
