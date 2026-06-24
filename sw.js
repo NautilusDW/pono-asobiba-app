@@ -203,7 +203,7 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1558; // v1558: シール帳 配置済シールの選択枠 ギリギリサイズ化 — .placed-sticker に clip-path: inset(5%) で hit area を縮小、 .placed-sticker.is-selected::after の inset: 0 → 5% で枠も artwork に追従。 maze quiz 系の透明パディング (~5-6%) ぶんを切り落とし、 隣のシール (例: カニ脇のもずく) を選択しやすく
+const CACHE_VERSION = 1559; // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
 // v1556: お家の方へ タグライン 「つくっています」 → 「作っています」 漢字化、 注意文の 「詳しくはこちら」 リンクを改行 + 右端揃え (margin-left:auto + width:fit-content) でレイアウト整理
 // v1555: お家の方へ タグライン (あんしん・あんぜん) を 15.5px → 19px max に拡大 (約 +20%)、 ホーム画面追加注意文も 12.5px → 14px max に拡大 + font-weight 500 + 濃いブラウン色で視認性向上
