@@ -728,6 +728,27 @@
       line-height:1.7;
       color:var(--text-light);
     }
+    .parent-assurance-note{
+      margin:6px 0 0;
+      font-size:clamp(11px,2.6vw,12.5px);
+      line-height:1.55;
+      color:#7A6A4A;
+    }
+    .parent-assurance-note-mark{
+      color:#C96A2E;
+      font-weight:900;
+      margin-right:2px;
+    }
+    .parent-assurance-note-link{
+      color:#C96A2E;
+      font-weight:700;
+      text-decoration:underline;
+      text-underline-offset:2px;
+    }
+    .parent-assurance-note-link:hover,
+    .parent-assurance-note-link:focus-visible{
+      color:#A33A33;
+    }
     .parent-assurance-chips{
       display:flex;
       flex-wrap:wrap;
@@ -1775,6 +1796,10 @@
             <img src="assets/ui/parent_heading_trust_note_alpha.png" alt="お家の方へ" width="1983" height="793" decoding="async">
           </h2>
           <p class="parent-assurance-lead">名前、メールアドレスなどの個人情報を入力することなしに、そのままブラウザで遊べます。</p>
+          <p class="parent-assurance-note">
+            <span class="parent-assurance-note-mark">※</span>ただし、ホーム画面に追加してからのご利用を推奨します。
+            <a href="#parent-notice" class="parent-assurance-note-link">詳しくはこちら →</a>
+          </p>
         </div>
         <ul class="parent-assurance-chips" aria-label="安心ポイント">
           <li>会員登録なし</li>
@@ -2043,7 +2068,7 @@
     </div>
 
     <!-- 注意書き -->
-    <div class="notice-card">
+    <div class="notice-card" id="parent-notice">
       <div class="notice-title">⚠️ 保護者の方へ</div>
       <div class="notice-body">
         必ず<strong>「ホーム画面に追加」</strong>してからご利用ください。ブラウザのままだと<strong>表示が崩れます</strong>。
