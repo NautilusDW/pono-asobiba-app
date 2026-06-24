@@ -1624,6 +1624,95 @@
       object-fit:cover;
       object-position:center;
     }
+    .book-secret-list{
+      margin:12px 0 0;
+      padding:0;
+      text-align:left;
+      background:rgba(255,255,255,.5);
+      border:1px solid rgba(201,106,46,.18);
+      border-radius:12px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.68);
+      overflow:hidden;
+    }
+    .book-secret-list summary{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      min-height:44px;
+      padding:10px 12px;
+      cursor:pointer;
+      list-style:none;
+      color:#5D4E37;
+      font-weight:900;
+      font-size:clamp(13px,3.3vw,14.5px);
+      line-height:1.35;
+      user-select:none;
+    }
+    .book-secret-list summary::-webkit-details-marker{display:none;}
+    .book-secret-list summary:focus-visible{
+      outline:3px solid rgba(242,145,90,.78);
+      outline-offset:-3px;
+    }
+    .book-secret-list-summary{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .book-secret-list-title{
+      color:#C96A2E;
+      letter-spacing:.03em;
+    }
+    .book-secret-list-note{
+      color:#7A6A4F;
+      font-size:.88em;
+      font-weight:800;
+    }
+    .book-secret-list-arrow{
+      flex:0 0 auto;
+      width:28px;
+      height:28px;
+      display:grid;
+      place-items:center;
+      border-radius:50%;
+      background:#FFF7E9;
+      color:#C96A2E;
+      box-shadow:0 0 0 1px rgba(201,106,46,.15) inset;
+      transition:transform .18s ease;
+    }
+    .book-secret-list[open] .book-secret-list-arrow{
+      transform:rotate(180deg);
+    }
+    .book-secret-list ul{
+      display:grid;
+      gap:6px;
+      margin:0;
+      padding:0 10px 10px;
+      list-style:none;
+    }
+    .book-secret-list li{
+      display:grid;
+      grid-template-columns:minmax(74px,.72fr) minmax(0,1fr);
+      align-items:center;
+      gap:8px;
+      padding:8px 9px;
+      border-radius:10px;
+      background:rgba(255,247,233,.82);
+      border:1px solid rgba(201,106,46,.1);
+      color:#5D4E37;
+      font-size:clamp(12.5px,3.1vw,14px);
+      line-height:1.45;
+    }
+    .book-secret-game{
+      font-weight:900;
+      color:#8A5B2B;
+      white-space:nowrap;
+    }
+    .book-secret-benefit{
+      font-weight:800;
+      min-width:0;
+    }
   </style>
 </head>
 <body>
@@ -1842,8 +1931,24 @@
                   ※絵本の最後の「<strong>ひみつのことば</strong>」で、5つのあそびをもっと楽しめるよ！
                 </p>
                 <p class="book-prelude-sub">
-                  5つのあそびを、もっとたっぷり楽しめるよ
+                  5つのあそびが、えほんのことばでもっとたっぷりひろがるよ
                 </p>
+                <details class="book-secret-list">
+                  <summary>
+                    <span class="book-secret-list-summary">
+                      <span class="book-secret-list-title">えほんでひらくもの</span>
+                      <span class="book-secret-list-note">5つのあそびのリストを見る</span>
+                    </span>
+                    <span class="book-secret-list-arrow" aria-hidden="true">⌄</span>
+                  </summary>
+                  <ul>
+                    <li><span class="book-secret-game">なぞなぞ</span><span class="book-secret-benefit">ふつうまで</span></li>
+                    <li><span class="book-secret-game">めいろ</span><span class="book-secret-benefit">ステージ7まで</span></li>
+                    <li><span class="book-secret-game">おとタッチ</span><span class="book-secret-benefit">リズムと音色がふえる</span></li>
+                    <li><span class="book-secret-game">パズル</span><span class="book-secret-benefit">えほんセレクト9こ</span></li>
+                    <li><span class="book-secret-game">べんとう</span><span class="book-secret-benefit">おねがいキャラと食材がふえる</span></li>
+                  </ul>
+                </details>
                 <p class="book-prelude-parent">
                   <span class="book-prelude-parent-lbl book-prelude-parent-lbl--img"><img src="assets/ui/parent_heading_trust_note_alpha.png" alt="お家の方へ" width="1983" height="793" loading="lazy" decoding="async"></span>
                   絵本の最後のページにある「ひみつのことば」を入力すると、5つのあそびをよりたっぷり楽しめる特典をご利用いただけます。

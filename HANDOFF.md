@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-06-24 - [batch:841-lp-book-secret-benefit-list] DONE - Codex: `index.html` の絵本エリア「ひみつのメモ」に、クリックで開く `えほんでひらくもの` 一覧を追加。順番は title menu に合わせて `なぞなぞ → めいろ → おとタッチ → パズル → べんとう`。`sw.js` は v1550。検証: `git diff --check` / `node --check sw.js` / index inline JS parse / Playwright 390x844・844x390・768x1024・1366x768 で開閉、横はみ出しなし、pageerror 0。develop 同期は LP 系統確認後に判断。 (by Codex)
 - 2026-06-24 - [batch:840-bento-book-nori-furikake] Codex: user 指示「Bento 絵本版向け のり顔/のり形/ふりかけ粒/ふりかけ型 raw 画像を GPT Image 2 で作成」を受領。`HANDOFF.md` / recent git log / `tmp/alpha_pending/840-bento-book-nori-furikake/` を確認し、該当既存成果物なし。raw PNG のみ保存し、alpha 抜き/crop/最適化/assets 配置/コード反映は行わない。 (by Codex)
 - 2026-06-24 - [batch:840-bento-book-nori-furikake] DONE - Codex: GPT Image 2 built-in workflow で raw PNG 4点を `tmp/alpha_pending/840-bento-book-nori-furikake/` に保存。`bento_book_nori_face_parts_raw_01.png` / `bento_book_nori_shape_parts_raw_01.png` / `bento_book_furikake_granules_raw_01.png` / `bento_book_furikake_shape_guides_raw_01.png`。全て 1254x1254、1.16-1.96MB、白背景、文字/ロゴ/既存キャラ風要素なしを Codex 目視レビュー。alpha 抜き/crop/最適化/assets 配置/コード反映は未実施。`tmp/` は gitignore 対象のためローカル納品のみ。 (by Codex)
 - 2026-06-24 - [batch:839-bento-free-simple-only] Codex: user 指示「お弁当の無料版は依頼キャラなし、自分で作るだけ」を受領。`HANDOFF.md` / `git log -- bento common/tier.js play.html sw.js` / `bento/index.html` を確認し、無料 tier の NPC fallback とタイトル入口を最小修正予定。既存 Prototype 差分は触らない。共通 Bento 領域のため develop-app / develop 同期状態を完了報告に明記する。 (by Codex)
