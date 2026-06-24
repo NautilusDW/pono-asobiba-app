@@ -9965,6 +9965,7 @@ function onClear() {
   if (!isImageStage || isOfficial) {
     if (window.incrementStat) window.incrementStat('maze_clears', 1);
     if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
+    if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('maze');
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({
         gameId: 'maze',

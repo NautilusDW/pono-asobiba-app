@@ -9906,6 +9906,7 @@ function _queueRhythmStickerReward(stars) {
     event: stars >= 3 ? 'perfect' : 'clear',
     show: false
   });
+  if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('oto');
   if (!grantPromise || typeof grantPromise.then !== 'function') return;
   _rhythm.pendingStickerPromise = grantPromise;
   grantPromise.then(function(result) {

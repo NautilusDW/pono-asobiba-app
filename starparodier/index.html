@@ -1538,6 +1538,7 @@
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'starparodier', event: 'clear' });
     }
+    if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('starparodier');
     showOverlay(CURRENT_STAGE.clearTitle, CURRENT_STAGE.clearText, 'もういちど');
   }
 

@@ -7981,6 +7981,7 @@ function revealReactionWithDrama(reaction) {
           var already = window.getDailyAcorns('bento');
           var diff = (acorns | 0) - already;
           if (diff > 0) granted = window.addAcornsDaily('bento', diff, 5, { reason: 'bento_complete' });
+          if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('bento');
         }
       }
       if (acornNumEl) acornNumEl.textContent = granted > 0 ? ('+' + granted) : '0';

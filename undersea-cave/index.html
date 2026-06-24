@@ -623,6 +623,7 @@
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'undersea-cave', event: 'clear' });
     }
+    if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('undersea-cave');
   }
 
   function updateHud() {

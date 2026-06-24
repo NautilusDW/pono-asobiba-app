@@ -978,6 +978,7 @@ function showSuccessModal() {
     window[__rewardKey] = true;
     if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
     if (window.addAcornsDaily) window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear' });
+    if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('puzzle');
     processPuzzleStamps(successPartner, normalizedStageId);
 
     // スタンプラリー: プレイ記録 (1ステージ 1 回でよいので報酬付与時にまとめる)

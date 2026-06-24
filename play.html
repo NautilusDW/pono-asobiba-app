@@ -3272,6 +3272,78 @@
       border: 3px solid #fff;
       box-shadow: 0 3px 0 #B87200, 0 6px 12px rgba(0,0,0,0.25);
     }
+
+    /* ===== Daily quest banner (brand-col 下に表示) ===== */
+    .daily-quest-banner {
+      background: linear-gradient(135deg, #fff9e6 0%, #ffe9b8 100%);
+      border: 3px solid #f4b400;
+      border-radius: 16px;
+      padding: 10px 14px;
+      margin: 10px 8px 14px;
+      box-shadow: 0 3px 0 #d99500, 0 6px 14px rgba(0,0,0,.12);
+      font-family: inherit;
+      position: relative;
+    }
+    .daily-quest-banner[data-state="done"] {
+      background: linear-gradient(135deg,#eaffea 0%,#bff3bf 100%);
+      border-color:#3aa53a;
+      box-shadow:0 3px 0 #2d8a2d, 0 6px 14px rgba(0,0,0,.12);
+    }
+    .daily-quest-banner[data-state="claimed"] {
+      background: linear-gradient(135deg,#f0f0f0 0%,#dcdcdc 100%);
+      border-color:#999;
+      box-shadow:0 3px 0 #777, 0 6px 14px rgba(0,0,0,.12);
+      opacity:.85;
+    }
+    .daily-quest-banner__head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:4px;
+    }
+    .daily-quest-banner__label {
+      font-size:.78rem;
+      font-weight:700;
+      color:#8a5a00;
+      letter-spacing:.05em;
+    }
+    .daily-quest-banner__body {
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .daily-quest-banner__icon { font-size:1.8rem; }
+    .daily-quest-banner__text { flex:1; min-width:0; }
+    .daily-quest-banner__title {
+      font-size:1rem;
+      font-weight:800;
+      color:#3a2a00;
+      line-height:1.2;
+    }
+    .daily-quest-banner__sub {
+      font-size:.78rem;
+      color:#6a4a00;
+      margin-top:2px;
+    }
+    .daily-quest-banner__cta {
+      margin-top:8px;
+      width:100%;
+      padding:10px;
+      background: linear-gradient(180deg,#ff8a3d 0%,#ff5a1f 100%);
+      border:none;
+      border-radius:12px;
+      color:#fff;
+      font-weight:800;
+      font-size:1rem;
+      box-shadow:0 3px 0 #c43c0a, 0 5px 10px rgba(0,0,0,.18);
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .daily-quest-banner__cta:active {
+      transform:translateY(2px);
+      box-shadow:0 1px 0 #c43c0a, 0 2px 5px rgba(0,0,0,.18);
+    }
+    .daily-quest-banner[data-state="claimed"] .daily-quest-banner__cta { display:none; }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
@@ -3293,6 +3365,19 @@
         <div class="brand-sign">
           <img alt="ポノのあそびば" draggable="false" src="assets/ui/brand_sign_01.webp" data-src="assets/ui/brand_sign_01.webp">
           <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" src="assets/ui/brand_sign_02.webp" data-src="assets/ui/brand_sign_02.webp">
+        </div>
+        <div class="daily-quest-banner" id="dailyQuestBanner" hidden>
+          <div class="daily-quest-banner__head">
+            <span class="daily-quest-banner__label">きょうの ぼうけん</span>
+          </div>
+          <div class="daily-quest-banner__body">
+            <span class="daily-quest-banner__icon" aria-hidden="true">🎯</span>
+            <div class="daily-quest-banner__text">
+              <div class="daily-quest-banner__title" id="dailyQuestTitle">めいろ を 1かい クリア！</div>
+              <div class="daily-quest-banner__sub" id="dailyQuestSub">クリアしたら ガチャを ひけるよ</div>
+            </div>
+          </div>
+          <button class="daily-quest-banner__cta" id="dailyQuestCta" type="button" hidden>ガチャを ひく！</button>
         </div>
       </aside>
 
@@ -3572,7 +3657,9 @@
   })();
   </script>
   <script src="common/tier.js"></script>
+  <script src="common/daily-challenge.js"></script>
   <script src="js/game-stickers.js"></script>
+  <script src="common/gacha.js"></script>
 
   <script>
     'use strict';
@@ -5612,6 +5699,50 @@
     // ===== Init =====
     renderCards();
     selectGame(0);
+
+    // ===== Daily quest banner =====
+    // PonoDailyChallenge と PonoGacha を使った「きょうの ぼうけん」 バナー。
+    // 抽選 → 進行中 / 完了 / 受領済の 3 状態を表示。 完了状態で CTA タップ →
+    // PonoGacha.spin() でシール 1 枚を入手。 login bonus と被らないよう少し遅らせる。
+    function initDailyQuest() {
+      if (!window.PonoDailyChallenge) return;
+      var banner = document.getElementById('dailyQuestBanner');
+      var titleEl = document.getElementById('dailyQuestTitle');
+      var subEl = document.getElementById('dailyQuestSub');
+      var ctaEl = document.getElementById('dailyQuestCta');
+      if (!banner || !titleEl || !subEl || !ctaEl) return;
+      var today = window.PonoDailyChallenge.getToday();
+      if (!today) return;
+      banner.hidden = false;
+      titleEl.textContent = today.label + ' を 1かい クリア！';
+      if (today.claimed) {
+        banner.setAttribute('data-state', 'claimed');
+        subEl.textContent = 'またあした あたらしい ぼうけん！';
+        ctaEl.hidden = true;
+      } else if (today.completed) {
+        banner.setAttribute('data-state', 'done');
+        subEl.textContent = 'やったね！ ガチャを ひこう';
+        ctaEl.hidden = false;
+      } else {
+        banner.setAttribute('data-state', 'pending');
+        subEl.textContent = 'クリアしたら ガチャを ひけるよ';
+        ctaEl.hidden = true;
+      }
+      ctaEl.onclick = function () {
+        if (!window.PonoGacha || !window.PonoDailyChallenge.claim()) return;
+        ctaEl.disabled = true;
+        window.PonoGacha.spin({
+          gameId: today.gameId,
+          onClose: function () {
+            // 引き終わったら状態を claimed に更新
+            banner.setAttribute('data-state', 'claimed');
+            subEl.textContent = 'またあした あたらしい ぼうけん！';
+            ctaEl.hidden = true;
+          }
+        });
+      };
+    }
+    setTimeout(initDailyQuest, 1200);
 
     // ===== Service worker =====
     // 登録 + 更新検知を common/sw-update.js に集約。更新待ちUIは出さず、

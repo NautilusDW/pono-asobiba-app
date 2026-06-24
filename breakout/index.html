@@ -916,6 +916,7 @@ function onStageClear() {
   if (window.setStatMax) window.setStatMax('breakout_stages', stageIdx + 1);
   // 日次キャップ: 1 ゲーム = 1 日 5 🌰 (初回クリアでまとめて付与)
   if (window.addAcornsDaily) window.addAcornsDaily('breakout', 5, 5, { reason: 'breakout_daily' });
+  if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('breakout');
   // ★ 全ステージクリア時は宝箱演出を先に表示してから最終オーバーレイ
   if (isLast && window.triggerFirstClearReward) {
     window.triggerFirstClearReward('breakout', {
