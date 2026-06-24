@@ -2730,22 +2730,89 @@ function snapshotCurrentEditorPage(page) {
   return JSON.stringify(editorState?.pages?.[String(page)] || []);
 }
 
-function pushStickerUndoSnapshot() {
+// Entry shape (new):
+//   { [pageNumStr]: snapshotJsonString, ... }
+// Legacy entries may still be a bare string (= snapshot of the stack's primary page);
+// restoreStickerSnapshot() handles both.
+function snapshotEntryForPages(primaryPage, extraPages) {
+  const entry = {};
+  entry[String(primaryPage)] = snapshotCurrentEditorPage(primaryPage);
+  if (Array.isArray(extraPages)) {
+    for (const extra of extraPages) {
+      if (extra == null) continue;
+      const key = String(extra);
+      if (key in entry) continue;
+      entry[key] = snapshotCurrentEditorPage(extra);
+    }
+  }
+  return entry;
+}
+
+function snapshotEntriesEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (typeof a === "string" || typeof b === "string") return false;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (const k of keysA) {
+    if (a[k] !== b[k]) return false;
+  }
+  return true;
+}
+
+// extraPages: optional array of additional page numbers whose snapshot should be
+// captured alongside the active page (used for cross-page drag operations so
+// undo can revert both pages atomically).
+function pushStickerUndoSnapshot(options = {}) {
   const page = activeEditorPage;
   if (page == null) return;
   const stack = getStickerUndoStack(page);
-  const snapshot = snapshotCurrentEditorPage(page);
+  const entry = snapshotEntryForPages(page, options.extraPages);
   const last = stack[stack.length - 1];
-  if (last === snapshot) return;
-  stack.push(snapshot);
+  if (snapshotEntriesEqual(last, entry)) return;
+  stack.push(entry);
   if (stack.length > STICKER_UNDO_MAX) stack.shift();
   stickerRedoStacks[page] = [];
   refreshStickerUndoButtons();
 }
 
+// Augment the most recent undo entry (top of the active page's stack) so it
+// also captures `extraPages` if they were not already recorded. Used when a
+// drag that started single-page transitions into a cross-page move: the
+// pre-drag snapshot of the destination page must be added to the same history
+// entry so undo reverts both sides atomically. No-op if no entry exists or if
+// the destination is already covered.
+function mergeExtraPagesIntoTopSnapshot(extraPages) {
+  const page = activeEditorPage;
+  if (page == null) return;
+  if (!Array.isArray(extraPages) || extraPages.length === 0) return;
+  const stack = getStickerUndoStack(page);
+  if (stack.length === 0) return;
+  let top = stack[stack.length - 1];
+  // Promote legacy string entry to object form so we can add keys.
+  if (typeof top === "string") {
+    top = { [String(page)]: top };
+    stack[stack.length - 1] = top;
+  }
+  for (const extra of extraPages) {
+    if (extra == null) continue;
+    const key = String(extra);
+    if (key in top) continue;
+    top[key] = snapshotCurrentEditorPage(extra);
+  }
+}
+
 function restoreStickerSnapshot(page, snapshot) {
   if (!editorState.pages) editorState.pages = {};
-  editorState.pages[String(page)] = JSON.parse(snapshot);
+  if (typeof snapshot === "string") {
+    // Legacy single-page entry.
+    editorState.pages[String(page)] = JSON.parse(snapshot);
+  } else if (snapshot && typeof snapshot === "object") {
+    for (const key of Object.keys(snapshot)) {
+      editorState.pages[key] = JSON.parse(snapshot[key]);
+    }
+  }
   selectedPlacementId = null;
   saveEditorState();
   refreshPageTemplateTextures();
@@ -2754,13 +2821,30 @@ function restoreStickerSnapshot(page, snapshot) {
   updateInlineStickerControls();
 }
 
+// Capture the current state of the same set of pages an entry covers, so the
+// redo entry mirrors the undo entry's page coverage exactly.
+function captureMirrorEntry(snapshot, primaryPage) {
+  if (typeof snapshot === "string") {
+    return { [String(primaryPage)]: snapshotCurrentEditorPage(primaryPage) };
+  }
+  if (!snapshot || typeof snapshot !== "object") {
+    return { [String(primaryPage)]: snapshotCurrentEditorPage(primaryPage) };
+  }
+  const mirror = {};
+  for (const key of Object.keys(snapshot)) {
+    mirror[key] = snapshotCurrentEditorPage(key);
+  }
+  return mirror;
+}
+
 function undoStickerEdit() {
   const page = activeEditorPage;
   if (page == null) return;
   const stack = getStickerUndoStack(page);
   if (stack.length === 0) return;
-  getStickerRedoStack(page).push(snapshotCurrentEditorPage(page));
-  restoreStickerSnapshot(page, stack.pop());
+  const entry = stack.pop();
+  getStickerRedoStack(page).push(captureMirrorEntry(entry, page));
+  restoreStickerSnapshot(page, entry);
   refreshStickerUndoButtons();
 }
 
@@ -2769,8 +2853,9 @@ function redoStickerEdit() {
   if (page == null) return;
   const stack = getStickerRedoStack(page);
   if (stack.length === 0) return;
-  getStickerUndoStack(page).push(snapshotCurrentEditorPage(page));
-  restoreStickerSnapshot(page, stack.pop());
+  const entry = stack.pop();
+  getStickerUndoStack(page).push(captureMirrorEntry(entry, page));
+  restoreStickerSnapshot(page, entry);
   refreshStickerUndoButtons();
 }
 
@@ -2890,12 +2975,14 @@ function handleInlineStickerPointerDown(event) {
   pushStickerUndoSnapshot();
   inlineStickerDragState = {
     pointerId: event.pointerId,
+    originPage: target.page,
     page: target.page,
     object: target.object,
     id: target.placement.id,
     offsetX: target.point.x - (target.placement.x / 100) * PAGE_TEXTURE_W,
     offsetY: target.point.y - (target.placement.y / 100) * PAGE_TEXTURE_H,
     moved: false,
+    recordedExtraPages: new Set(),
   };
   try {
     canvas.setPointerCapture?.(event.pointerId);
@@ -2919,6 +3006,26 @@ function handleInlineStickerPointerMove(event) {
   }
   const targetPage = inlineStickerDragTargetFromPointer(event);
   if (targetPage && targetPage.page !== inlineStickerDragState.page) {
+    // Capture the pre-move state of any page this drag is about to mutate (the
+    // current carrying page and the new destination) into the original
+    // pointerdown undo entry so undo can revert both atomically. We add to
+    // stack[originPage] because that is where the pointerdown snapshot lives.
+    const originPage = inlineStickerDragState.originPage;
+    const recorded = inlineStickerDragState.recordedExtraPages;
+    const pagesToRecord = [];
+    if (inlineStickerDragState.page !== originPage && !recorded.has(String(inlineStickerDragState.page))) {
+      pagesToRecord.push(inlineStickerDragState.page);
+    }
+    if (targetPage.page !== originPage && !recorded.has(String(targetPage.page))) {
+      pagesToRecord.push(targetPage.page);
+    }
+    if (pagesToRecord.length > 0) {
+      const prevActive = activeEditorPage;
+      activeEditorPage = originPage;
+      mergeExtraPagesIntoTopSnapshot(pagesToRecord);
+      activeEditorPage = prevActive;
+      for (const p of pagesToRecord) recorded.add(String(p));
+    }
     movePlacementBetweenPages(placement, inlineStickerDragState.page, targetPage.page);
     inlineStickerDragState.page = targetPage.page;
     inlineStickerDragState.object = targetPage.object;
@@ -2926,6 +3033,7 @@ function handleInlineStickerPointerMove(event) {
     inlineStickerDragState.offsetY = 0;
     activeEditorPage = targetPage.page;
     selectedPlacementId = placement.id;
+    refreshStickerUndoButtons();
   }
   const point = targetPage?.object === inlineStickerDragState.object
     ? targetPage.point
