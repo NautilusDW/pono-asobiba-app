@@ -1551,8 +1551,6 @@ const inlineStickerRotation = document.getElementById("inlineStickerRotation");
 const inlineStickerClose = document.getElementById("inlineStickerClose");
 const inlineStickerDelete = document.getElementById("inlineStickerDelete");
 const inlineStickerOk = document.getElementById("inlineStickerOk");
-const inlineStickerUndo = document.getElementById("inlineStickerUndo");
-const inlineStickerRedo = document.getElementById("inlineStickerRedo");
 const stickerTutorial = document.getElementById("stickerTutorial");
 const stickerTutorialSpotlight = document.getElementById("stickerTutorialSpotlight");
 const stickerTutorialGhost = document.getElementById("stickerTutorialGhost");
@@ -2669,15 +2667,9 @@ function endZukanTuningDrag(event) {
 }
 
 function setupInlineStickerControls() {
-  inlineStickerScale?.addEventListener("pointerdown", () => {
-    pushStickerUndoSnapshot();
-  });
   inlineStickerScale?.addEventListener("input", () => {
     updateSelectedPlacement({ scale: Number(inlineStickerScale.value) });
     notifyStickerTutorialAction("scaleSticker");
-  });
-  inlineStickerRotation?.addEventListener("pointerdown", () => {
-    pushStickerUndoSnapshot();
   });
   inlineStickerRotation?.addEventListener("input", () => {
     updateSelectedPlacement({ rotation: Number(inlineStickerRotation.value) });
@@ -2700,88 +2692,7 @@ function setupInlineStickerControls() {
     clearInlineStickerSelection();
     notifyStickerTutorialAction("confirmSticker");
   });
-  inlineStickerUndo?.addEventListener("click", (event) => {
-    event.stopPropagation();
-    undoStickerEdit();
-  });
-  inlineStickerRedo?.addEventListener("click", (event) => {
-    event.stopPropagation();
-    redoStickerEdit();
-  });
   updateInlineStickerControls();
-  refreshStickerUndoButtons();
-}
-
-const STICKER_UNDO_MAX = 20;
-const stickerUndoStacks = {};
-const stickerRedoStacks = {};
-
-function getStickerUndoStack(page) {
-  if (!stickerUndoStacks[page]) stickerUndoStacks[page] = [];
-  return stickerUndoStacks[page];
-}
-
-function getStickerRedoStack(page) {
-  if (!stickerRedoStacks[page]) stickerRedoStacks[page] = [];
-  return stickerRedoStacks[page];
-}
-
-function snapshotCurrentEditorPage(page) {
-  return JSON.stringify(editorState?.pages?.[String(page)] || []);
-}
-
-function pushStickerUndoSnapshot() {
-  const page = activeEditorPage;
-  if (page == null) return;
-  const stack = getStickerUndoStack(page);
-  const snapshot = snapshotCurrentEditorPage(page);
-  const last = stack[stack.length - 1];
-  if (last === snapshot) return;
-  stack.push(snapshot);
-  if (stack.length > STICKER_UNDO_MAX) stack.shift();
-  stickerRedoStacks[page] = [];
-  refreshStickerUndoButtons();
-}
-
-function restoreStickerSnapshot(page, snapshot) {
-  if (!editorState.pages) editorState.pages = {};
-  editorState.pages[String(page)] = JSON.parse(snapshot);
-  selectedPlacementId = null;
-  saveEditorState();
-  refreshPageTemplateTextures();
-  updatePage(flipProgress);
-  refreshInlineStickerPage();
-  updateInlineStickerControls();
-}
-
-function undoStickerEdit() {
-  const page = activeEditorPage;
-  if (page == null) return;
-  const stack = getStickerUndoStack(page);
-  if (stack.length === 0) return;
-  getStickerRedoStack(page).push(snapshotCurrentEditorPage(page));
-  restoreStickerSnapshot(page, stack.pop());
-  refreshStickerUndoButtons();
-}
-
-function redoStickerEdit() {
-  const page = activeEditorPage;
-  if (page == null) return;
-  const stack = getStickerRedoStack(page);
-  if (stack.length === 0) return;
-  getStickerUndoStack(page).push(snapshotCurrentEditorPage(page));
-  restoreStickerSnapshot(page, stack.pop());
-  refreshStickerUndoButtons();
-}
-
-function refreshStickerUndoButtons() {
-  const page = activeEditorPage;
-  if (inlineStickerUndo) {
-    inlineStickerUndo.disabled = page == null || getStickerUndoStack(page).length === 0;
-  }
-  if (inlineStickerRedo) {
-    inlineStickerRedo.disabled = page == null || getStickerRedoStack(page).length === 0;
-  }
 }
 
 function isInlineStickerPanelOpen() {
@@ -2887,7 +2798,6 @@ function handleInlineStickerPointerDown(event) {
   }
   event.preventDefault();
   selectInlineSticker(target);
-  pushStickerUndoSnapshot();
   inlineStickerDragState = {
     pointerId: event.pointerId,
     page: target.page,
@@ -3071,7 +2981,6 @@ function updateInlineStickerControls(syncInputs = true) {
       inlineStickerRotation.value = String(placement.rotation || 0);
     }
   }
-  refreshStickerUndoButtons();
 }
 
 function shouldSuppressInlineStickerControlsForTutorial() {
@@ -5407,10 +5316,6 @@ function addStickerFromTrayToPage(stickerId, page, point = {}) {
     return;
   }
   const pageNumber = THREE.MathUtils.clamp(Math.round(page) || activeBookPage, 1, editorPageCount());
-  const prevActiveEditorPage = activeEditorPage;
-  activeEditorPage = pageNumber;
-  pushStickerUndoSnapshot();
-  activeEditorPage = prevActiveEditorPage;
   const placements = getPagePlacements(pageNumber);
   const placement = {
     id: createPlacementId(),
@@ -7042,7 +6947,6 @@ function deleteSelectedPlacement() {
   if (!selectedPlacementId) {
     return;
   }
-  pushStickerUndoSnapshot();
   const placements = getActivePagePlacements();
   const index = placements.findIndex((placement) => placement.id === selectedPlacementId);
   if (index >= 0) {
@@ -7097,7 +7001,6 @@ function setEditorPage(page) {
   stickerDragState = null;
   drawingPointerState = null;
   renderEditorShell();
-  refreshStickerUndoButtons();
 }
 
 function applyStickerEditorToBook() {
