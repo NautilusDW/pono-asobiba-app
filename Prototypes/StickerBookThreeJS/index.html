@@ -155,6 +155,16 @@
         <span>かいてん</span>
         <input id="inlineStickerRotation" type="range" min="-180" max="180" step="1" value="0">
       </label>
+      <div class="inline-sticker-undo-redo">
+        <button id="inlineStickerUndo" class="inline-sticker-undo" type="button" aria-label="もどす" disabled>
+          <span class="undo-icon" aria-hidden="true">⤺</span>
+          <span class="undo-label">もどす</span>
+        </button>
+        <button id="inlineStickerRedo" class="inline-sticker-redo" type="button" aria-label="もう一回" disabled>
+          <span class="redo-icon" aria-hidden="true">⤻</span>
+          <span class="redo-label">もう一回</span>
+        </button>
+      </div>
       <div class="inline-sticker-actions">
         <button id="inlineStickerDelete" class="inline-sticker-delete" type="button">けす</button>
         <button id="inlineStickerOk" class="inline-sticker-ok" type="button">OK</button>

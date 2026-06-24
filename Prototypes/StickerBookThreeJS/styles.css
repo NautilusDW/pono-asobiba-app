@@ -1337,6 +1337,46 @@ body.is-sticker-tray-dragging #scene {
   align-items: center;
 }
 
+.inline-sticker-undo-redo {
+  grid-column: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-sticker-undo,
+.inline-sticker-redo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 232, 196, 0.92), rgba(255, 196, 134, 0.86));
+  color: #6b3a17;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow:
+    0 2px 8px rgba(31, 56, 48, 0.12),
+    inset 0 -2px 0 rgba(180, 100, 30, 0.22);
+  cursor: pointer;
+}
+
+.inline-sticker-undo .undo-icon,
+.inline-sticker-redo .redo-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.inline-sticker-undo:disabled,
+.inline-sticker-redo:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: 0 2px 8px rgba(31, 56, 48, 0.08);
+}
+
 .inline-sticker-delete,
 .inline-sticker-ok {
   justify-self: start;
@@ -2922,6 +2962,19 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 
   .inline-sticker-ok {
     min-width: 42px;
+  }
+
+  .inline-sticker-undo,
+  .inline-sticker-redo {
+    min-width: 58px;
+    min-height: 22px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .inline-sticker-undo .undo-icon,
+  .inline-sticker-redo .redo-icon {
+    font-size: 13px;
   }
 
   .inline-sticker-close {
