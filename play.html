@@ -745,7 +745,7 @@
       .brand-sign { width: 380px; }
       .brand-sign > img.brand-ribbon { width: 345px; }
       .brand-ribbon { width: 345px; }
-      /* Shrink bottom-nav + for-parents so 4 buttons (incl. シール) fit
+      /* Shrink bottom-nav + for-parents so 5 buttons (incl. シール) fit
          inside the safe area without clipping at the right edge. */
       .bottom-nav { --nav-sprite-w: 500px !important; }
       .for-parents { width: 340px; height: 88px; }
@@ -760,7 +760,7 @@
       /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
          At 4:3 the visible canvas slice is vw × 823/vh ≈ 1097.3 canvas-px,
          so safe-w must drop well below that. 1020 leaves ~77px buffer
-         so the bottom-nav (4 buttons incl. シール) is fully visible. */
+         so the bottom-nav (5 buttons incl. シール) is fully visible. */
       :root {
         --safe-w: 1020px;
         --bottom-nav-right-inset: 50px; /* play-main right padding 18px + card-list right shadow room 32px */
@@ -802,7 +802,7 @@
     }
 
     /* ===== Bottom Navigation =====
-       Shared wooden base sprite + four transparent hit areas so the actions
+       Shared wooden base sprite + five transparent hit areas so the actions
        stay independent while the visuals read as one grouped control. */
     .bottom-nav {
       --nav-sprite-w: 520px;
@@ -819,10 +819,10 @@
       height: var(--nav-sprite-h);
       z-index: 90;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       align-items: stretch;
       justify-content: stretch;
-      background-image: url('assets/ui/bottom_nav_group_4_normal.png');
+      background-image: url('assets/ui/bottom_nav_group_5_normal.png');
       background-repeat: no-repeat;
       background-size: 100% 100%;
       background-position: center center;
@@ -837,7 +837,7 @@
       inset: 0;
       opacity: var(--press-opacity, 0);
       pointer-events: none;
-      background-image: url('assets/ui/bottom_nav_group_4_pressed.png');
+      background-image: url('assets/ui/bottom_nav_group_5_pressed.png');
       background-repeat: no-repeat;
       background-size: 100% 100%;
       background-position: center center;
@@ -846,7 +846,7 @@
     }
     .bn-item {
       position: relative;
-      flex: 1 1 25%;
+      flex: 1 1 20%;
       height: 100%;
       display: block;
       padding: 0;
