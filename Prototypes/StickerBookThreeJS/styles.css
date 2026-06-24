@@ -2373,6 +2373,10 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   clip-path: inset(5%);
 }
 
+.placed-sticker[data-genre="sea-album"] {
+  clip-path: inset(14%);
+}
+
 .placed-sticker:active {
   cursor: grabbing;
 }
@@ -2389,6 +2393,10 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   border: var(--selection-border, 2px) solid rgba(70, 181, 188, 0.9);
   border-radius: var(--selection-radius, 14px);
   pointer-events: none;
+}
+
+.placed-sticker.is-selected[data-genre="sea-album"]::after {
+  inset: 14%;
 }
 
 .placed-sticker img {

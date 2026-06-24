@@ -2740,15 +2740,33 @@ function pointHitsPlacement(point, placement) {
   return Math.abs(localX) <= bounds.width / 2 && Math.abs(localY) <= bounds.height / 2;
 }
 
-// keep in sync with styles.css `.placed-sticker { clip-path: inset(5%) }`
-const STICKER_PLACEMENT_INSET = 0.05;
+// keep in sync with styles.css `.placed-sticker { clip-path: inset(...) }` (per-genre)
+const STICKER_PLACEMENT_INSET_DEFAULT = 0.05;
+const STICKER_PLACEMENT_INSET_BY_GENRE = {
+  "sea-album": 0.14, // 透明 padding 16-22% を相殺して bbox を一段階小さく見せる
+};
+
+function resolveStickerGenre(placement) {
+  const sid = placement?.stickerId ? String(placement.stickerId) : "";
+  const fromLibrary = sid && typeof stickerOptions !== "undefined"
+    ? stickerOptions.find((item) => item?.id === sid)?.gameId
+    : null;
+  if (fromLibrary) return fromLibrary;
+  if (sid.startsWith("bonus_sea_album_") || sid.startsWith("sea_album_")) return "sea-album";
+  return "default";
+}
+
+function stickerPlacementInset(placement) {
+  const genre = resolveStickerGenre(placement);
+  return STICKER_PLACEMENT_INSET_BY_GENRE[genre] ?? STICKER_PLACEMENT_INSET_DEFAULT;
+}
 
 function placementTextureBounds(placement) {
   const scale = sanitizedPlacementScale(placement?.scale);
   const aspect = stickerAspectForPlacement(placement);
   const width = PAGE_TEXTURE_W * 0.18 * scale * 1.24;
   const height = width / Math.max(0.2, aspect);
-  const shrink = 1 - 2 * STICKER_PLACEMENT_INSET;
+  const shrink = 1 - 2 * stickerPlacementInset(placement);
   return {
     x: (placement.x / 100) * PAGE_TEXTURE_W,
     y: (placement.y / 100) * PAGE_TEXTURE_H,
@@ -6411,6 +6429,7 @@ function renderEditorCanvas() {
     <div
       class="placed-sticker${placement.id === selectedPlacementId ? " is-selected" : ""}"
       data-placement-id="${escapeHtml(placement.id)}"
+      data-genre="${escapeHtml(resolveStickerGenre(placement))}"
       style="${placementStyleVars(placement)}"
       title="${escapeHtml(placement.label)}"
     >
