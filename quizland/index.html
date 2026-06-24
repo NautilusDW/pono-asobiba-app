@@ -6477,7 +6477,6 @@ function showResult() {
     if (window.incrementStat) window.incrementStat('quizland_clears', 1);
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'quizland', event: isPerfect ? 'perfect' : 'clear' });
-      if (window.PonoDailyChallenge) window.PonoDailyChallenge.markComplete('quizland');
     }
     playFanfare();
     launchConfetti();
