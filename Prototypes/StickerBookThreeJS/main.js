@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260624-845";
+const ASSET_VERSION = "20260624-846";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1637,7 +1637,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "はった あとも\nうごかせるよ",
     audio: "stickerbook_tut_05_move.mp3",
     hand: "grip",
-    minAdvanceMs: 5000,
+    minAdvanceMs: 6500,
     advanceOn: ["moveSticker"],
   },
   {
@@ -2026,6 +2026,7 @@ let stickerTutorialDragPageTurnDirection = 0;
 let stickerTutorialProgrammaticTrayScroll = false;
 let stickerTutorialProgrammaticTrayScrollUntil = 0;
 let stickerTutorialSuppressModeNotify = false;
+const stickerTutorialSuppressedDemoActions = new Set();
 let editorStateSaveTimer = 0;
 let editorStateDirty = false;
 let editorGameFilterValue = "all";
@@ -3835,6 +3836,7 @@ function startStickerTutorialMoveDemo() {
     x: THREE.MathUtils.clamp(point.x, 9, 91),
     y: THREE.MathUtils.clamp(point.y, 12, 84),
   }));
+  stickerTutorialSuppressedDemoActions.add("moveSticker");
   animateStickerTutorialPlacement(5600, (progress) => {
     const point = interpolateStickerTutorialPath(path, progress);
     placement.x = point.x;
@@ -3847,6 +3849,7 @@ function startStickerTutorialMoveDemo() {
     placement.y = finalPoint.y;
     setStickerTutorialHandPoint(stickerTutorialScreenPointForPlacement(placement, finalPoint));
     refreshInlineStickerPage();
+    stickerTutorialSuppressedDemoActions.delete("moveSticker");
     notifyStickerTutorialAction("moveSticker");
   });
 }
@@ -3867,6 +3870,7 @@ function startStickerTutorialScaleDemo() {
   const demo = stickerTutorialDemoPoints(step, rect);
   const handFrom = demo.from;
   const handTo = demo.to;
+  stickerTutorialSuppressedDemoActions.add("scaleSticker");
   animateStickerTutorialPlacement(9300, (progress) => {
     let scale;
     let handProgress;
@@ -3895,7 +3899,10 @@ function startStickerTutorialScaleDemo() {
       inlineStickerScale.value = scale.toFixed(2);
     }
     refreshInlineStickerPage();
-  }, () => notifyStickerTutorialAction("scaleSticker"));
+  }, () => {
+    stickerTutorialSuppressedDemoActions.delete("scaleSticker");
+    notifyStickerTutorialAction("scaleSticker");
+  });
 }
 
 function startStickerTutorialRotateDemo() {
@@ -3914,6 +3921,7 @@ function startStickerTutorialRotateDemo() {
   const demo = stickerTutorialDemoPoints(step, rect);
   const handFrom = demo.from;
   const handTo = demo.to;
+  stickerTutorialSuppressedDemoActions.add("rotateSticker");
   animateStickerTutorialPlacement(5200, (progress) => {
     let rotation;
     let handProgress;
@@ -3942,7 +3950,10 @@ function startStickerTutorialRotateDemo() {
       inlineStickerRotation.value = String(Math.round(placement.rotation));
     }
     refreshInlineStickerPage();
-  }, () => notifyStickerTutorialAction("rotateSticker"));
+  }, () => {
+    stickerTutorialSuppressedDemoActions.delete("rotateSticker");
+    notifyStickerTutorialAction("rotateSticker");
+  });
 }
 
 function startStickerTutorialOkDemo() {
@@ -4045,6 +4056,7 @@ function stopStickerTutorialStepDemo(options = {}) {
   clearStickerTutorialDemoTimers();
   cancelStickerTutorialDragPageTurn();
   stickerTutorialSuppressModeNotify = false;
+  stickerTutorialSuppressedDemoActions.clear();
   topEditButton?.classList.remove("is-tutorial-pressing");
   document.body.classList.remove(
     "is-sticker-tutorial-mode-demo",
@@ -4070,6 +4082,9 @@ function setStickerTutorialHandPoint(point) {
 }
 
 function notifyStickerTutorialAction(action) {
+  if (stickerTutorialSuppressedDemoActions.has(action)) {
+    return;
+  }
   const step = currentStickerTutorialStep();
   if (!stickerTutorialState || !step || step.finish || stickerTutorialState.actionDone) {
     return;
@@ -4386,7 +4401,7 @@ function stickerTutorialPickSticker() {
       return sticker;
     }
   }
-  return stickerOptions.find((item) => /acorn|donguri|どんぐり/i.test(`${item.id} ${item.label || ""} ${item.name || ""}`))
+  return stickerOptions.find((item) => /butter|chocho|ちょう|蝶/i.test(`${item.id} ${item.label || ""} ${item.name || ""}`))
     || stickerOptions[0]
     || null;
 }
