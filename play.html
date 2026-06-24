@@ -3828,7 +3828,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1544;
+    const PAGE_CACHE_VERSION = 1545;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -4306,35 +4306,21 @@
       'キラ': 'rare',
       'きら': 'rare',
       '3': 'super',
+      gold: 'rare',
       super: 'super',
       sr: 'super',
       ssr: 'super',
       special: 'super',
-      gold: 'super',
+      platinum: 'super',
       premium: 'super',
       'とくべつ': 'super',
       'とくべつキラ': 'super',
       'とくべつきら': 'super',
       '特別キラ': 'super'
     };
-    const DAILY_GACHA_RARITY_WEIGHT_MODE = 'test';
-    const DAILY_GACHA_RARITY_WEIGHT_PRESETS = {
-      test: { normal: 70, rare: 24, super: 6 },
-      production: { normal: 90, rare: 8, super: 2 }
-    };
-    const DAILY_GACHA_RARITY_WEIGHTS =
-      DAILY_GACHA_RARITY_WEIGHT_PRESETS[DAILY_GACHA_RARITY_WEIGHT_MODE] ||
-      DAILY_GACHA_RARITY_WEIGHT_PRESETS.test;
-    const DAILY_GACHA_CAPSULE_COLOR_WEIGHTS = {
-      normal: { pink: 1, blue: 1 },
-      rare: { gold: 1 },
-      super: { platinum: 1 },
-      mixed: { pink: 1, blue: 1, gold: 1 }
-    };
     const DAILY_GACHA_RARITY_PROFILES = {
       normal: {
-        weight: DAILY_GACHA_RARITY_WEIGHTS.normal,
-        capsuleGroup: 'mixed',
+        capsuleGroup: 'normal',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_stage_burst.png'
         ],
@@ -4351,8 +4337,7 @@
         sparkleLongVolume: 0
       },
       rare: {
-        weight: DAILY_GACHA_RARITY_WEIGHTS.rare,
-        capsuleGroup: 'mixed',
+        capsuleGroup: 'rare',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_stage_burst.png'
         ],
@@ -4369,7 +4354,6 @@
         sparkleLongVolume: .56
       },
       super: {
-        weight: DAILY_GACHA_RARITY_WEIGHTS.super,
         capsuleGroup: 'super',
         backdrops: [
           'assets/ui/gacha/daily_gacha_reveal_bg_holographic_pack.png'
@@ -4485,8 +4469,8 @@
       const lower = raw.toLowerCase().replace(/[\s_-]+/g, '');
       if (DAILY_GACHA_RARITY_PROFILES[lower]) return lower;
       if (DAILY_GACHA_RARITY_ALIASES[lower]) return DAILY_GACHA_RARITY_ALIASES[lower];
-      if (lower.includes('とくべつ') || lower.includes('special') || lower.includes('super') || lower.includes('ssr') || lower.includes('gold')) return 'super';
-      if (lower.includes('キラ') || lower.includes('きら') || lower.includes('rare') || lower.includes('kira')) return 'rare';
+      if (lower.includes('とくべつ') || lower.includes('special') || lower.includes('super') || lower.includes('ssr') || lower.includes('platinum')) return 'super';
+      if (lower.includes('キラ') || lower.includes('きら') || lower.includes('rare') || lower.includes('kira') || lower.includes('gold')) return 'rare';
       if (lower.includes('normal') || lower.includes('common') || lower.includes('ふつう') || lower.includes('ノーマル')) return 'normal';
       return '';
     }
@@ -4503,19 +4487,6 @@
       } catch (_) {
         return '';
       }
-    }
-
-    function chooseDailyGachaInitialRarity() {
-      const override = dailyGachaRarityOverride();
-      if (override) return override;
-      const entries = Object.entries(DAILY_GACHA_RARITY_PROFILES);
-      const total = entries.reduce((sum, [, profile]) => sum + (profile.weight || 0), 0);
-      let pick = Math.random() * Math.max(1, total);
-      for (const [rarity, profile] of entries) {
-        pick -= profile.weight || 0;
-        if (pick <= 0) return rarity;
-      }
-      return DAILY_GACHA_RARITY_DEFAULT;
     }
 
     function applyDailyGachaRarity(rarity) {
@@ -4870,12 +4841,14 @@
     const DAILY_GACHA_CAPSULE_VARIANTS = {
       normal: [
         {
+          rarity: 'normal',
           color: 'pink',
           closed: 'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
           openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_pink_pono.png',
           openRight: 'assets/ui/gacha/daily_gacha_capsule_open_pink_plain.png'
         },
         {
+          rarity: 'normal',
           color: 'blue',
           closed: 'assets/ui/gacha/daily_gacha_capsule_closed_blue.png',
           openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_blue_pono.png',
@@ -4884,6 +4857,7 @@
       ],
       rare: [
         {
+          rarity: 'rare',
           color: 'gold',
           closed: 'assets/ui/gacha/daily_gacha_capsule_closed_gold.png',
           openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_gold_pono.png',
@@ -4892,60 +4866,38 @@
       ],
       super: [
         {
+          rarity: 'super',
           color: 'platinum',
           closed: 'assets/ui/gacha/daily_gacha_capsule_closed_super.png',
           openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_super_pono.png',
           openRight: 'assets/ui/gacha/daily_gacha_capsule_open_super_plain.png'
         }
-      ],
-      mixed: [
-        {
-          color: 'pink',
-          closed: 'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
-          openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_pink_pono.png',
-          openRight: 'assets/ui/gacha/daily_gacha_capsule_open_pink_plain.png'
-        },
-        {
-          color: 'blue',
-          closed: 'assets/ui/gacha/daily_gacha_capsule_closed_blue.png',
-          openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_blue_pono.png',
-          openRight: 'assets/ui/gacha/daily_gacha_capsule_open_blue_plain.png'
-        },
-        {
-          color: 'gold',
-          closed: 'assets/ui/gacha/daily_gacha_capsule_closed_gold.png',
-          openLeft: 'assets/ui/gacha/daily_gacha_capsule_open_gold_pono.png',
-          openRight: 'assets/ui/gacha/daily_gacha_capsule_open_gold_plain.png'
-        }
       ]
     };
+    const DAILY_GACHA_CAPSULE_ALL_VARIANTS = [
+      ...DAILY_GACHA_CAPSULE_VARIANTS.normal,
+      ...DAILY_GACHA_CAPSULE_VARIANTS.rare,
+      ...DAILY_GACHA_CAPSULE_VARIANTS.super
+    ];
 
-    function chooseDailyGachaWeightedVariant(variants, weights) {
+    function chooseDailyGachaRandomVariant(variants) {
       if (!Array.isArray(variants) || variants.length === 0) return null;
-      const weighted = variants.map((variant) => ({
-        variant,
-        weight: Math.max(
-          0,
-          Number(weights && Object.prototype.hasOwnProperty.call(weights, variant.color) ? weights[variant.color] : 1)
-        )
-      }));
-      const total = weighted.reduce((sum, item) => sum + item.weight, 0);
-      if (total <= 0) return variants[Math.floor(Math.random() * variants.length)] || variants[0];
-      let pick = Math.random() * total;
-      for (const item of weighted) {
-        pick -= item.weight;
-        if (pick <= 0) return item.variant;
-      }
-      return weighted[weighted.length - 1].variant;
+      return variants[Math.floor(Math.random() * variants.length)] || variants[0];
     }
 
-    function chooseDailyGachaCapsule(rarity = dailyGachaState.rarity) {
-      const profile = dailyGachaRarityProfile(rarity);
-      const group = profile.capsuleGroup || 'normal';
-      const variants = DAILY_GACHA_CAPSULE_VARIANTS[group] || DAILY_GACHA_CAPSULE_VARIANTS.normal;
+    function chooseDailyGachaCapsuleVariant(rarity = '') {
+      const normalized = normalizeDailyGachaRarity(rarity);
+      if (!normalized) return chooseDailyGachaRandomVariant(DAILY_GACHA_CAPSULE_ALL_VARIANTS);
+      const profile = dailyGachaRarityProfile(normalized);
+      const group = profile.capsuleGroup || normalized;
+      return chooseDailyGachaRandomVariant(DAILY_GACHA_CAPSULE_VARIANTS[group]);
+    }
+
+    function chooseDailyGachaCapsule(rarity = '') {
       const assets =
-        chooseDailyGachaWeightedVariant(variants, DAILY_GACHA_CAPSULE_COLOR_WEIGHTS[group]) ||
-        DAILY_GACHA_CAPSULE_VARIANTS.normal[0];
+        chooseDailyGachaCapsuleVariant(rarity) ||
+        DAILY_GACHA_CAPSULE_ALL_VARIANTS[0];
+      applyDailyGachaRarity(assets.rarity || DAILY_GACHA_RARITY_DEFAULT);
       dailyGachaState.capsuleColor = assets.color;
       dailyGachaState.capsuleOpenLeft = assets.openLeft;
       dailyGachaState.capsuleOpenRight = assets.openRight;
@@ -4953,6 +4905,7 @@
       if (dailyGachaCloseCapsule) dailyGachaCloseCapsule.src = assets.closed;
       if (dailyGachaOpenCapsuleLeft) dailyGachaOpenCapsuleLeft.src = assets.openLeft;
       if (dailyGachaOpenCapsuleRight) dailyGachaOpenCapsuleRight.src = assets.openRight;
+      return assets;
     }
 
     function chooseDailyGachaRevealBackdrop(rarity = dailyGachaState.rarity) {
@@ -4974,9 +4927,8 @@
       dailyGachaState.settledRotation = 0;
       dailyGachaState.turnLock = false;
       dailyGachaState.complete = false;
-      const rarity = applyDailyGachaRarity(chooseDailyGachaInitialRarity());
-      chooseDailyGachaCapsule(rarity);
-      chooseDailyGachaRevealBackdrop(rarity);
+      const capsule = chooseDailyGachaCapsule(dailyGachaRarityOverride());
+      chooseDailyGachaRevealBackdrop(capsule && capsule.rarity);
       setDailyGachaStep(0);
       setDailyGachaLeverRotation(0);
       setDailyGachaHandOrbit(0);
@@ -5058,8 +5010,8 @@
       const target = normalizeDailyGachaRarity(preferredRarity) || DAILY_GACHA_RARITY_DEFAULT;
       const pools = [
         candidates.filter((candidate) => candidate.rarity === target && !candidate.owned),
-        candidates.filter((candidate) => !candidate.owned),
         candidates.filter((candidate) => candidate.rarity === target),
+        candidates.filter((candidate) => !candidate.owned),
         candidates
       ];
       for (const pool of pools) {
