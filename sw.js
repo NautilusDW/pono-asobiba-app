@@ -202,7 +202,8 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1552; // v1552: お家の方へセクションに注意文 「ホーム画面に追加してからのご利用を推奨」 + 「詳しくはこちら →」 リンクを追加、 LP下部 .notice-card へ anchor scroll
+const CACHE_VERSION = 1553; // v1553: お家の方へセクション 「安心・安全」 を全面強調 — 「安心・安全に こだわって つくっています」 タグライン追加 (黄色ハイライト) + チップに ✓ チェックマーク追加で安心感を視覚的に明示
+// v1552: お家の方へセクションに注意文 「ホーム画面に追加してからのご利用を推奨」 + 「詳しくはこちら →」 リンクを追加、 LP下部 .notice-card へ anchor scroll
 // v1551: Bento book tier nori/furikake decoration assets.
 // v1540: ゲーム詳細モーダル 「ここがそだつ」 パネルの枠囲い (border + background + radius) を解除し、 下端 dashed border のみで区切る形に変更
 // v1537: ゲーム詳細モーダル スクロールチェーン修正 — .game-modal-body に overscroll-behavior:contain でモーダル内 scroll が背景 LP に伝播しないように、 body.modal-open{overflow:hidden;} も併用
