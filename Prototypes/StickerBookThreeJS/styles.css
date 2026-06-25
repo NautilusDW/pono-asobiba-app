@@ -1459,9 +1459,39 @@ body.is-sticker-tray-dragging #scene {
   object-fit: contain;
 }
 
-body.is-sticker-tutorial-step-ok .sticker-tutorial-hand,
-body.is-sticker-tutorial-step-page .sticker-tutorial-hand {
+body.is-sticker-tutorial-step-ok .sticker-tutorial-hand {
   animation: stickerTutorialTap 1.35s ease-in-out infinite;
+}
+
+/* step 7 (page) はタップではなく、 矢印ハイライト → 指でページめくり仕草の二段構え
+   default 状態 (highlight 中) はハンドを軽く揺らすだけ。 swipe-js class が付くと右→左へスワイプ */
+body.is-sticker-tutorial-step-page .sticker-tutorial-hand {
+  animation: stickerTutorialPageHover 1.6s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-page.is-sticker-tutorial-page-swipe-js .sticker-tutorial-hand {
+  animation: stickerTutorialPageSwipeHand 1.9s cubic-bezier(0.5, 0.05, 0.3, 1) 1 both;
+}
+
+/* 矢印ボタン (#bookNextPage) を丸で囲むハロー + パルス。 押下せず、 視覚的に「ここだよ」 だけ伝える */
+.book-page-button.is-tutorial-spotlit-arrow {
+  position: relative;
+  animation: stickerTutorialArrowPulse 1.1s ease-in-out infinite;
+  z-index: 30;
+}
+
+.book-page-button.is-tutorial-spotlit-arrow::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 170, 60, 0.95);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.42),
+    0 0 22px rgba(255, 178, 64, 0.82),
+    0 0 46px rgba(255, 210, 120, 0.6);
+  pointer-events: none;
+  animation: stickerTutorialArrowHalo 1.1s ease-in-out infinite;
 }
 
 body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-demo .sticker-tutorial-hand {
@@ -1730,6 +1760,62 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 @keyframes stickerTutorialTap {
   0%, 100% { transform: translate(-50%, -35%) scale(1) rotate(-2deg); }
   45% { transform: translate(-50%, -35%) scale(0.86) rotate(-7deg); }
+}
+
+/* step 7 page: 矢印ハイライト中の控えめなホバー揺れ (押さない/まだスワイプしない) */
+@keyframes stickerTutorialPageHover {
+  0%, 100% { transform: translate(-50%, -35%) scale(1) rotate(-3deg); }
+  50% { transform: translate(-50%, -35%) scale(1.02) rotate(2deg); }
+}
+
+/* step 7 page: 右端 (矢印付近) → 左方向への大きなページめくりスワイプ。 ハンドは指で押し出す動き */
+@keyframes stickerTutorialPageSwipeHand {
+  0% {
+    left: var(--tutorial-x, 50%);
+    top: var(--tutorial-y, 50%);
+    transform: translate(calc(-50% + 48vw), -35%) scale(0.96) rotate(8deg);
+    opacity: 0;
+  }
+  12% {
+    transform: translate(calc(-50% + 26vw), -35%) scale(1) rotate(4deg);
+    opacity: 1;
+  }
+  55% {
+    transform: translate(calc(-50% - 18vw), -35%) scale(1.04) rotate(-10deg);
+    opacity: 1;
+  }
+  88% {
+    transform: translate(calc(-50% - 36vw), -38%) scale(0.96) rotate(-16deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(calc(-50% - 44vw), -40%) scale(0.92) rotate(-20deg);
+    opacity: 0;
+  }
+}
+
+/* 矢印ボタン本体: 軽くバウンス */
+@keyframes stickerTutorialArrowPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* 矢印ボタンの外周ハロー: リング自体は呼吸、 影で目立たせる */
+@keyframes stickerTutorialArrowHalo {
+  0%, 100% {
+    opacity: 0.85;
+    box-shadow:
+      0 0 0 4px rgba(255, 255, 255, 0.42),
+      0 0 22px rgba(255, 178, 64, 0.82),
+      0 0 46px rgba(255, 210, 120, 0.6);
+  }
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 6px rgba(255, 255, 255, 0.55),
+      0 0 34px rgba(255, 178, 64, 1),
+      0 0 68px rgba(255, 210, 120, 0.8);
+  }
 }
 
 @keyframes stickerTutorialFindPlaceHand {

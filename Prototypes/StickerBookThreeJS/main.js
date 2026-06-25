@@ -3993,18 +3993,32 @@ function startStickerTutorialOkDemo() {
 }
 
 function startStickerTutorialPageDemo() {
+  // Phase A (0 - ~2400ms): "下の 矢印を 押すか" — 矢印ボタンをパルスハイライト (押下しない)
+  if (bookNextPage) {
+    bookNextPage.classList.add("is-tutorial-spotlit-arrow");
+  }
+  setStickerTutorialHandKey("point");
+  // Phase B (~2400ms): "ページを 指で めくると" — ハイライト撤去 + ハンドのページめくり仕草開始
   addStickerTutorialDemoTimer(() => {
+    bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
+    if (currentStickerTutorialStep()?.id !== "page") {
+      return;
+    }
+    document.body.classList.add("is-sticker-tutorial-page-swipe-js");
+    setStickerTutorialHandKey("open");
+  }, 2400);
+  // Phase C (~4400ms): 実際のページめくりを発火 + ハンド swipe class を撤去
+  addStickerTutorialDemoTimer(() => {
+    document.body.classList.remove("is-sticker-tutorial-page-swipe-js");
     if (currentStickerTutorialStep()?.id !== "page" || stickerTutorialState?.actionDone) {
       return;
     }
     const nextPage = activeBookPage + 2;
     if (activeSurface === "inside" && nextPage <= spreadStartForPage(editorPageCount())) {
       setBookPage(nextPage, { turnMode: "single" });
-      notifyStickerTutorialAction("pageTurn");
-    } else {
-      notifyStickerTutorialAction("pageTurn");
     }
-  }, 1300);
+    notifyStickerTutorialAction("pageTurn");
+  }, 4400);
 }
 
 function startStickerTutorialViewDemo() {
@@ -4085,11 +4099,13 @@ function stopStickerTutorialStepDemo(options = {}) {
   stickerTutorialSuppressModeNotify = false;
   stickerTutorialSuppressedDemoActions.clear();
   topEditButton?.classList.remove("is-tutorial-pressing");
+  bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
   document.body.classList.remove(
     "is-sticker-tutorial-mode-demo",
     "is-sticker-tutorial-combo-place",
     "is-sticker-tutorial-move-js",
     "is-sticker-tutorial-slider-js",
+    "is-sticker-tutorial-page-swipe-js",
   );
   if (stickerTutorialState) {
     // Keep tray silhouette ON for the whole tutorial; only drop the yellow target highlight.
