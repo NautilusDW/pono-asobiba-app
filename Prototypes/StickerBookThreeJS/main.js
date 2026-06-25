@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260624-846";
+const ASSET_VERSION = "20260625-847";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -64,6 +64,10 @@ const STICKER_TUTORIAL_PICK_STICKER_IDS = [
   "bonus_quizland_chocho_rare",
   "quizland_butterfly",
   "maze_chocho",
+];
+const STICKER_TUTORIAL_DECOY_STICKER_IDS = [
+  "bonus_quizland_batta_normal",
+  "quizland_good_stamp_layer_14",
 ];
 const STICKER_ALBUM_PAGE_COUNT = 12;
 const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
@@ -1608,6 +1612,15 @@ slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
 const STICKER_TUTORIAL_STEPS = [
+  {
+    id: "intro",
+    target: "book",
+    card: "corner",
+    text: "これから シールちょうの\nあそびかたを おしえるね",
+    audio: "stickerbook_tut_00_intro.mp3",
+    hand: "open",
+    minAdvanceMs: 4200,
+  },
   {
     id: "mode",
     target: "editButton",
@@ -4205,6 +4218,17 @@ function playStickerTutorialAudio(step) {
     audio.preload = "auto";
     audio.volume = 0.92;
     audio.playbackRate = Number(step.playbackRate) || 1;
+    audio.addEventListener("error", () => {
+      if (stickerTutorialAudio !== audio) {
+        return;
+      }
+      // mp3 が未配置 (404) でもチュートリアル進行を止めない。 minAdvanceMs 経過後に「つぎ」 で進める
+      if (index + 1 < audioFiles.length) {
+        playAt(index + 1);
+      } else {
+        stickerTutorialAudio = null;
+      }
+    }, { once: true });
     audio.addEventListener("ended", () => {
       if (stickerTutorialAudio !== audio) {
         return;
@@ -4306,6 +4330,10 @@ function updateStickerTutorialDemo(step, rect) {
   setStickerTutorialPointVar("--tutorial-demo-wander2-y", (demo.wander2 || demo.to).y);
   setStickerTutorialPointVar("--tutorial-demo-wander3-x", (demo.wander3 || demo.to).x);
   setStickerTutorialPointVar("--tutorial-demo-wander3-y", (demo.wander3 || demo.to).y);
+  setStickerTutorialPointVar("--tutorial-demo-hover-x", (demo.hover || demo.to).x);
+  setStickerTutorialPointVar("--tutorial-demo-hover-y", (demo.hover || demo.to).y);
+  setStickerTutorialPointVar("--tutorial-demo-over-target-x", (demo.overTarget || demo.from).x);
+  setStickerTutorialPointVar("--tutorial-demo-over-target-y", (demo.overTarget || demo.from).y);
   setStickerTutorialPointVar("--tutorial-ghost-x", demo.from.x);
   setStickerTutorialPointVar("--tutorial-ghost-y", demo.from.y);
   updateStickerTutorialGhost(step, demo.ghostSrc);
@@ -4381,12 +4409,32 @@ function stickerTutorialDemoPoints(step, rect) {
       x: Math.min(window.innerWidth - 58, to.x + Math.min(86, pageRect.width * 0.16)),
       y: Math.max(54, to.y - Math.min(72, pageRect.height * 0.16)),
     };
-    const midX = (source.x + to.x) / 2;
-    const midY = (source.y + to.y) / 2;
-    const wanderSpan = Math.min(110, Math.max(60, pageRect.width * 0.18));
-    const wander1 = { x: midX - wanderSpan * 0.55, y: midY - wanderSpan * 0.32 };
-    const wander2 = { x: midX + wanderSpan * 0.45, y: midY + wanderSpan * 0.28 };
-    const wander3 = { x: to.x * 0.6 + wander2.x * 0.4, y: to.y * 0.6 + wander2.y * 0.4 };
+    const wanderSpan = Math.min(150, Math.max(80, pageRect.width * 0.22));
+    const dx = to.x - source.x;
+    const dy = to.y - source.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const perpX = -dy / dist;
+    const perpY = dx / dist;
+    const wander1 = {
+      x: source.x + dx * 0.28 + perpX * wanderSpan * 0.70,
+      y: source.y + dy * 0.28 + perpY * wanderSpan * 0.70 - wanderSpan * 0.35,
+    };
+    const wander2 = {
+      x: source.x + dx * 0.55 - perpX * wanderSpan * 0.55,
+      y: source.y + dy * 0.55 - perpY * wanderSpan * 0.55 + wanderSpan * 0.20,
+    };
+    const wander3 = {
+      x: to.x - dx * 0.15,
+      y: to.y - dy * 0.15 - wanderSpan * 0.18,
+    };
+    const hover = {
+      x: to.x,
+      y: Math.max(pageRect.top + 20, to.y - wanderSpan * 0.10),
+    };
+    const overTarget = {
+      x: source.x,
+      y: source.y - Math.min(48, pageRect.height * 0.06),
+    };
     return {
       ...base,
       hand: scrollFrom,
@@ -4400,6 +4448,8 @@ function stickerTutorialDemoPoints(step, rect) {
       wander1,
       wander2,
       wander3,
+      hover,
+      overTarget,
       ghostSrc: firstVisibleStickerAssetForTutorial(),
     };
   }
@@ -4477,6 +4527,17 @@ function stickerTutorialPickSticker() {
     || null;
 }
 
+function stickerTutorialPickActiveStickers() {
+  const stickers = [];
+  const main = stickerTutorialPickSticker();
+  if (main) stickers.push(main);
+  for (const id of STICKER_TUTORIAL_DECOY_STICKER_IDS) {
+    const s = stickerOptions.find((item) => item.id === id);
+    if (s && !stickers.some((x) => x.id === s.id)) stickers.push(s);
+  }
+  return stickers;
+}
+
 function stickerTutorialTargetTrayButton() {
   const sticker = stickerTutorialPickSticker();
   if (!sticker || !collectionStickerTrayItems) {
@@ -4492,9 +4553,10 @@ function stickerTutorialTargetTrayIcon() {
 
 function updateStickerTutorialTraySilhouettes(enabled = false, withTarget = enabled) {
   document.body.classList.toggle("is-sticker-tutorial-tray-silhouette", Boolean(enabled));
-  const targetSticker = enabled && withTarget ? stickerTutorialPickSticker() : null;
+  const activeStickers = enabled && withTarget ? stickerTutorialPickActiveStickers() : [];
+  const activeIds = new Set(activeStickers.map((s) => s.id));
   collectionStickerTrayItems?.querySelectorAll("[data-sticker-tray-id]").forEach((button) => {
-    button.classList.toggle("is-tutorial-target-sticker", Boolean(targetSticker && button.dataset.stickerTrayId === targetSticker.id));
+    button.classList.toggle("is-tutorial-target-sticker", activeIds.has(button.dataset.stickerTrayId));
   });
 }
 
