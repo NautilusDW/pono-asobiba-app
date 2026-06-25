@@ -3858,7 +3858,7 @@ function startStickerTutorialPlaceDemo() {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("grip");
     }
-  }, 7000);
+  }, 8400);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("open");

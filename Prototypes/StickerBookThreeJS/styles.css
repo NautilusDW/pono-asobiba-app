@@ -3713,7 +3713,7 @@ body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-rest .sticker-tutori
   50%      { transform: translate(-50%, -33%) scale(1.02); }
 }
 
-/* === step 1 (mode) Phase 1: rest → editButton 直下 (from) へ 900ms approach (open のまま、 横向き transform で「指す」) === */
+/* === step 1 (mode) Phase 1: rest → editButton 直下 (from) へ 900ms approach (open のまま、 位置のみ移動。 transform 変形は press swap と同フレームへ委譲) === */
 body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-approach .sticker-tutorial-hand {
   animation: stickerTutorialModeApproach 0.9s ease-in-out 1 both;
 }
@@ -3727,6 +3727,6 @@ body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-approach .sticker-tu
   100% {
     left: var(--tutorial-demo-from-x, 50%);
     top: var(--tutorial-demo-from-y, 50%);
-    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+    transform: translate(-50%, -35%) scale(0.98);
   }
 }
