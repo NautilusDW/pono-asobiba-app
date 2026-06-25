@@ -1628,7 +1628,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "ここを おして\nはるモードに するよ",
     audio: "stickerbook_tut_01_mode.mp3",
     hand: "point",
-    minAdvanceMs: 5200,
+    minAdvanceMs: 4500,
     advanceOn: ["enterEdit"],
   },
   {
@@ -1640,9 +1640,8 @@ const STICKER_TUTORIAL_STEPS = [
     hand: "point",
     ghost: true,
     playbackRate: 1.04,
-    minAdvanceMs: 13500,
+    minAdvanceMs: 5000,
     advanceOn: ["dropSticker"],
-    advanceAfterAudio: true,
   },
   {
     id: "move",
@@ -1651,7 +1650,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "はった あとも\nうごかせるよ",
     audio: "stickerbook_tut_05_move.mp3",
     hand: "grip",
-    minAdvanceMs: 6500,
+    minAdvanceMs: 4500,
     advanceOn: ["moveSticker"],
   },
   {
@@ -1662,7 +1661,7 @@ const STICKER_TUTORIAL_STEPS = [
     audio: "stickerbook_tut_06_scale.mp3",
     hand: "point",
     playbackRate: 1.12,
-    minAdvanceMs: 10400,
+    minAdvanceMs: 5000,
     advanceOn: ["scaleSticker"],
   },
   {
@@ -1672,7 +1671,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "バーで\nむきを かえるよ",
     audio: "stickerbook_tut_07_rotate.mp3",
     hand: "point",
-    minAdvanceMs: 7300,
+    minAdvanceMs: 4500,
     advanceOn: ["rotateSticker"],
   },
   {
@@ -1682,7 +1681,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "OKで\nきまり",
     audio: "stickerbook_tut_08_ok.mp3",
     hand: "point",
-    minAdvanceMs: 4700,
+    minAdvanceMs: 4000,
     advanceOn: ["confirmSticker"],
   },
   {
@@ -1692,7 +1691,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "ページも\nめくれるよ",
     audio: ["stickerbook_tut_11_page.mp3"],
     hand: "point",
-    minAdvanceMs: 6600,
+    minAdvanceMs: 4500,
     advanceOn: ["pageTurn"],
   },
   {
@@ -1702,7 +1701,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "みるときは\nみるモード",
     audio: "stickerbook_tut_09_view.mp3",
     hand: "point",
-    minAdvanceMs: 6800,
+    minAdvanceMs: 4500,
     advanceOn: ["exitEdit"],
   },
   {
@@ -3607,6 +3606,7 @@ function showStickerTutorialStep(index, options = {}) {
   }
   if (stickerTutorialNext) {
     stickerTutorialNext.textContent = step.finish ? "おわる" : "つぎ";
+    stickerTutorialNext.classList.remove("is-ready-pulse");
   }
   updateStickerTutorialNextAvailability(step);
   document.body.classList.toggle("is-sticker-tutorial-card-top", step.card === "top");
@@ -4154,19 +4154,22 @@ function notifyStickerTutorialAction(action) {
   if (!actions.includes(action)) {
     return;
   }
+  // 自動 advance はしない (子供が「つぎ」 を押すまで待つ)。
+  // 代わりに「つぎ」 ボタンを即 enable + pulse 強調。
   stickerTutorialState.actionDone = true;
-  const delay = stickerTutorialAdvanceDelay(step, action);
-  window.setTimeout(() => {
-    if (stickerTutorialState?.actionDone) {
+  updateStickerTutorialNextAvailability(step, { forceReady: true });
+  if (stickerTutorialNext) {
+    stickerTutorialNext.classList.add("is-ready-pulse");
+  }
+  // セーフティ: 15s 経っても「つぎ」 を押さない場合は自動 advance (迷子防止)
+  addStickerTutorialDemoTimer(() => {
+    if (
+      stickerTutorialState?.actionDone &&
+      currentStickerTutorialStep() === step
+    ) {
       showStickerTutorialStep(stickerTutorialState.index + 1);
     }
-  }, delay);
-}
-
-function stickerTutorialAdvanceDelay(step, action) {
-  const fallback = action === "enterEdit" || action === "dropSticker" ? 650 : 320;
-  const remaining = stickerTutorialRemainingStepMs(step);
-  return Math.max(fallback, remaining);
+  }, 15000);
 }
 
 function stickerTutorialRemainingStepMs(step) {
@@ -4177,12 +4180,15 @@ function stickerTutorialRemainingStepMs(step) {
   return Math.max(0, minMs - (performance.now() - stickerTutorialState.stepStartedAt));
 }
 
-function updateStickerTutorialNextAvailability(step = currentStickerTutorialStep()) {
+function updateStickerTutorialNextAvailability(step = currentStickerTutorialStep(), opts = {}) {
   if (!stickerTutorialNext) {
     return;
   }
+  const forceReady =
+    opts.forceReady === true ||
+    Boolean(stickerTutorialState?.actionDone);
   const remaining = stickerTutorialRemainingStepMs(step);
-  const disabled = remaining > 80;
+  const disabled = !forceReady && remaining > 80;
   stickerTutorialNext.disabled = disabled;
   stickerTutorialNext.setAttribute("aria-disabled", disabled ? "true" : "false");
   if (disabled) {
@@ -4237,13 +4243,16 @@ function playStickerTutorialAudio(step) {
         playAt(index + 1);
       } else {
         stickerTutorialAudio = null;
-        if (step.advanceAfterAudio && stickerTutorialState && !stickerTutorialState.actionDone) {
-          stickerTutorialState.actionDone = true;
-          window.setTimeout(() => {
-            if (stickerTutorialState?.actionDone && currentStickerTutorialStep() === step) {
-              showStickerTutorialStep(stickerTutorialState.index + 1);
-            }
-          }, 500);
+        // 音声完了したら「つぎ」 ボタンを即 enable + pulse 強調 (自動 advance はしない)
+        if (
+          stickerTutorialState &&
+          !step.finish &&
+          currentStickerTutorialStep() === step
+        ) {
+          updateStickerTutorialNextAvailability(step, { forceReady: true });
+          if (stickerTutorialNext) {
+            stickerTutorialNext.classList.add("is-ready-pulse");
+          }
         }
       }
     }, { once: true });
@@ -4334,6 +4343,30 @@ function updateStickerTutorialDemo(step, rect) {
   setStickerTutorialPointVar("--tutorial-demo-hover-y", (demo.hover || demo.to).y);
   setStickerTutorialPointVar("--tutorial-demo-over-target-x", (demo.overTarget || demo.from).x);
   setStickerTutorialPointVar("--tutorial-demo-over-target-y", (demo.overTarget || demo.from).y);
+  setStickerTutorialPointVar(
+    "--tutorial-demo-find-wander1-x",
+    (demo.findWander1 || demo.wander1 || demo.from).x,
+  );
+  setStickerTutorialPointVar(
+    "--tutorial-demo-find-wander1-y",
+    (demo.findWander1 || demo.wander1 || demo.from).y,
+  );
+  setStickerTutorialPointVar(
+    "--tutorial-demo-find-over-target-x",
+    (demo.findOverTarget || demo.overTarget || demo.from).x,
+  );
+  setStickerTutorialPointVar(
+    "--tutorial-demo-find-over-target-y",
+    (demo.findOverTarget || demo.overTarget || demo.from).y,
+  );
+  setStickerTutorialPointVar(
+    "--tutorial-demo-overshoot-x",
+    (demo.overshoot || demo.to).x,
+  );
+  setStickerTutorialPointVar(
+    "--tutorial-demo-overshoot-y",
+    (demo.overshoot || demo.to).y,
+  );
   setStickerTutorialPointVar("--tutorial-ghost-x", demo.from.x);
   setStickerTutorialPointVar("--tutorial-ghost-y", demo.from.y);
   updateStickerTutorialGhost(step, demo.ghostSrc);
@@ -4409,23 +4442,52 @@ function stickerTutorialDemoPoints(step, rect) {
       x: Math.min(window.innerWidth - 58, to.x + Math.min(86, pageRect.width * 0.16)),
       y: Math.max(54, to.y - Math.min(72, pageRect.height * 0.16)),
     };
-    const wanderSpan = Math.min(150, Math.max(80, pageRect.width * 0.22));
+
+    // === find phase 用 (tray Y 帯に閉じ込め、 横移動オンリー) ===
+    const trayBandTop = trayRect.top + 4;
+    const trayBandBottom = trayRect.top + trayRect.height - 4;
+    const trayLeftEdge = trayRect.left + 40;
+    const trayRightEdge = trayRect.left + trayRect.width - 40;
+    const clampTrayX = (x) => Math.min(trayRightEdge, Math.max(trayLeftEdge, x));
+    const clampTrayY = (y) => Math.min(trayBandBottom, Math.max(trayBandTop, y));
+    const findWander1 = {
+      x: clampTrayX(source.x - Math.min(140, trayRect.width * 0.24)),
+      y: clampTrayY(source.y - trayRect.height * 0.18),
+    };
+    const findOverTarget = {
+      x: clampTrayX(source.x + Math.min(140, trayRect.width * 0.26)),
+      y: clampTrayY(source.y - 4),
+    };
+
+    // === place phase 用 (大振り + back-track + overshoot で「迷い」 を強調) ===
+    const wanderSpan = Math.min(
+      window.innerWidth * 0.32,
+      Math.max(180, pageRect.width * 0.45),
+    );
     const dx = to.x - source.x;
     const dy = to.y - source.y;
     const dist = Math.hypot(dx, dy) || 1;
     const perpX = -dy / dist;
     const perpY = dx / dist;
     const wander1 = {
-      x: source.x + dx * 0.28 + perpX * wanderSpan * 0.70,
-      y: source.y + dy * 0.28 + perpY * wanderSpan * 0.70 - wanderSpan * 0.35,
+      // axis 0% で perp 方向 1.20w + 上 0.50w → 反対ページ寄りまで大振り
+      x: source.x + perpX * wanderSpan * 1.20,
+      y: source.y + perpY * wanderSpan * 1.20 - wanderSpan * 0.50,
     };
     const wander2 = {
-      x: source.x + dx * 0.55 - perpX * wanderSpan * 0.55,
-      y: source.y + dy * 0.55 - perpY * wanderSpan * 0.55 + wanderSpan * 0.20,
+      // axis 0.85 まで大ジャンプ (to の手前 15% 地点) で逆 perp 0.30w
+      x: source.x + dx * 0.85 - perpX * wanderSpan * 0.30,
+      y: source.y + dy * 0.85 - perpY * wanderSpan * 0.30 + wanderSpan * 0.10,
     };
     const wander3 = {
-      x: to.x - dx * 0.15,
-      y: to.y - dy * 0.15 - wanderSpan * 0.18,
+      // axis 0.40 まで back-track ★「あれ違った」 の核
+      x: source.x + dx * 0.40 + perpX * wanderSpan * 0.20,
+      y: source.y + dy * 0.40 + perpY * wanderSpan * 0.20 - wanderSpan * 0.25,
+    };
+    const overshoot = {
+      // to を 8% 通り過ぎる (小振幅)
+      x: to.x + dx * 0.08,
+      y: to.y + dy * 0.08,
     };
     const hover = {
       x: to.x,
@@ -4450,6 +4512,9 @@ function stickerTutorialDemoPoints(step, rect) {
       wander3,
       hover,
       overTarget,
+      overshoot,
+      findWander1,
+      findOverTarget,
       ghostSrc: firstVisibleStickerAssetForTutorial(),
     };
   }

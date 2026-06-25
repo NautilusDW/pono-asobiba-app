@@ -1853,9 +1853,9 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -35%) scale(0.96) rotate(-3deg);
   }
   26% {
-    /* wander1: 右上に迷い */
-    left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
-    top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    /* findWander1: tray 内 (横移動オンリー) で左に迷い */
+    left: var(--tutorial-demo-find-wander1-x, var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%))));
+    top: var(--tutorial-demo-find-wander1-y, var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%))));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.92) rotate(-10deg);
   }
@@ -1895,9 +1895,9 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -35%) scale(0.88) rotate(9deg);
   }
   40% {
-    /* fake-out: target 真上を素通り */
-    left: var(--tutorial-demo-over-target-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
-    top: var(--tutorial-demo-over-target-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    /* fake-out: target 真横を素通り (tray Y 帯に固定) */
+    left: var(--tutorial-demo-find-over-target-x, var(--tutorial-demo-over-target-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%))));
+    top: var(--tutorial-demo-find-over-target-y, var(--tutorial-demo-over-target-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%))));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.85) rotate(-2deg);
   }
@@ -1938,11 +1938,18 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -35%) scale(0.86) rotate(-12deg);
   }
   58% {
-    /* wander1: 右上へ大逸れ */
+    /* wander1: 反対ページ寄りまで大振り */
     left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.04) rotate(-18deg);
+  }
+  59% {
+    /* wander1 hold: 同座標で立ち止まり (≈0.24s, rotate -8 へ戻して「考えてる」) */
+    left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -38%) scale(1.04) rotate(-8deg);
   }
   63% {
     /* wander2: 反対側へ往復 */
@@ -1952,11 +1959,18 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -38%) scale(1.06) rotate(14deg);
   }
   68% {
-    /* wander3: target 手前で減速 */
+    /* wander3: back-track 「あれ違った」 で axis 40% に戻る */
     left: var(--tutorial-demo-wander3-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-wander3-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -36%) scale(1.02) rotate(-6deg);
+  }
+  70% {
+    /* overshoot: to を 8% 行きすぎる (小振幅 ≈0.32s) */
+    left: var(--tutorial-demo-overshoot-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-overshoot-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -36%) scale(1.00) rotate(2deg);
   }
   72% {
     /* hover: 真上で停止 */
@@ -2023,6 +2037,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     opacity: 1;
     transform: translate(-50%, -50%) scale(0.96);
   }
+  59% {
+    /* hold with hand at wander1 */
+    left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
   63% {
     /* follow wander2 */
     left: var(--tutorial-demo-wander2-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
@@ -2031,9 +2052,16 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -50%) scale(0.98);
   }
   68% {
-    /* follow wander3 */
+    /* follow wander3 (back-track) */
     left: var(--tutorial-demo-wander3-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-wander3-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  70% {
+    /* follow overshoot */
+    left: var(--tutorial-demo-overshoot-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-overshoot-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
@@ -3550,5 +3578,28 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 
   .sticker-editor.is-draw-mode .editor-control-buttons {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* === sticker tutorial 「つぎ」 ボタン pulse (ジェスチャー完了 / 音声完了で発火) === */
+#stickerTutorialNext.is-ready-pulse:not(:disabled) {
+  animation: stickerTutorialNextPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes stickerTutorialNextPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(255, 180, 80, 0.35);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(255, 180, 80, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #stickerTutorialNext.is-ready-pulse:not(:disabled) {
+    animation: none;
+    box-shadow: 0 6px 18px rgba(255, 180, 80, 0.55);
   }
 }
