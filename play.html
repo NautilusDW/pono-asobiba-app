@@ -1202,7 +1202,7 @@
       --gacha-light: .14;
       --gacha-bg-dim: .46;
       --gacha-ray-opacity: .08;
-      --gacha-sparkle-opacity: .1;
+      --gacha-sparkle-opacity: .035;
       --gacha-gold-glow: .18;
       position: fixed;
       inset: 0;
@@ -1334,9 +1334,10 @@
     }
     .daily-gacha-shell {
       position: relative;
-      width: min(1080px, 96vw);
-      height: min(620px, 90dvh);
-      min-height: 480px;
+      width: min(1080px, 96vw, calc(90dvh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      height: auto;
+      min-height: 0;
       border-radius: 28px;
       overflow: hidden;
       background:
@@ -1994,8 +1995,8 @@
       z-index: -1;
     }
     .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-panel {
-      top: clamp(8px, 2.2vh, 18px);
-      width: min(500px, 54vw);
+      top: clamp(16px, 3.4%, 24px);
+      width: min(500px, 58%);
     }
     .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status-pono {
       display: none;
@@ -2762,9 +2763,10 @@
         padding: 8px;
       }
       .daily-gacha-shell {
-        width: calc(100vw - 16px);
-        height: min(94dvh, calc(100dvh - 16px));
-        min-height: 320px;
+        width: min(calc(100vw - 16px), calc((100dvh - 16px) * 16 / 9));
+        aspect-ratio: 16 / 9;
+        height: auto;
+        min-height: 0;
         border-radius: 22px;
       }
       .daily-gacha-room-bg {
@@ -2809,7 +2811,7 @@
         height: clamp(46px, 6.2vw, 56px);
         transform: translateY(-50%);
       }
-      .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-panel { top: 6px; width: min(340px, 58vw); }
+      .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-panel { top: 10px; width: min(340px, 58%); }
       .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status {
         aspect-ratio: 1578 / 470;
         min-height: 0;
@@ -3692,20 +3694,30 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: min(560px, 84vw);
+      width: min(650px, 74%);
+      aspect-ratio: 1785 / 658;
       z-index: 8;
-      padding: 22px 26px;
-      border: 4px solid #b88600;
-      border-radius: 24px;
-      background: #fff7e0;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4.6% 9% 15% 11%;
+      border: 0;
+      border-radius: 0;
+      background: transparent url("assets/ui/gacha/daily_gacha_start_speech_bubble.png") center / contain no-repeat;
       color: #4a3300;
       font-family: inherit;
       font-weight: 900;
-      font-size: 26px;
-      line-height: 1.35;
+      font-size: clamp(21px, 2.65vw, 30px);
+      line-height: 1.08;
       text-align: center;
       white-space: pre-line;
-      box-shadow: 0 6px 0 #b88600, 0 12px 28px rgba(0, 0, 0, .35);
+      text-shadow:
+        0 2px 0 rgba(255, 246, 210, .92),
+        0 5px 10px rgba(118, 70, 18, .16);
+      box-shadow: none;
+      filter: drop-shadow(0 16px 24px rgba(54, 28, 9, .25));
       pointer-events: none;
     }
     .daily-gacha-center-msg[hidden] { display: none; }
@@ -3761,9 +3773,9 @@
     }
     .daily-gacha-center-msg__emoji {
       display: block;
-      font-size: 44px;
+      font-size: .82em;
       line-height: 1;
-      margin-bottom: 8px;
+      margin: 0 0 .18em;
     }
     .daily-gacha-center-msg__text {
       display: block;
@@ -4458,7 +4470,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1607;
+    const PAGE_CACHE_VERSION = 1610;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
