@@ -3412,6 +3412,9 @@ function startStickerTutorial(options = {}) {
   if (!stickerTutorial || !STICKER_TUTORIAL_STEPS.length) {
     return;
   }
+  // 起動した瞬間に seen 確定 (放置 → 再訪での自動再生 防止)。
+  // 「おわる」 押下時の markStickerTutorialSeen は冪等なので二重呼びでも問題なし。
+  markStickerTutorialSeen();
   closeZukanSettingsPanel();
   closeBookThemePanel();
   if (activeAlbumMode === "collection") {
@@ -4025,31 +4028,26 @@ function startStickerTutorialOkDemo() {
 }
 
 function startStickerTutorialPageDemo() {
-  // Phase A (0 - ~2400ms): "下の 矢印を 押すか" — 矢印ボタンをパルスハイライト (押下しない)
+  // Phase A (0ms): 矢印ボタンをパルスハイライト
   if (bookNextPage) {
     bookNextPage.classList.add("is-tutorial-spotlit-arrow");
   }
-  setStickerTutorialHandKey("point");
-  // Phase B (~2400ms): "ページを 指で めくると" — ハイライト撤去 + ハンドのページめくり仕草開始
+  // Phase B (~2400ms): ハイライト撤去
   addStickerTutorialDemoTimer(() => {
     bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
-    if (currentStickerTutorialStep()?.id !== "page") {
-      return;
-    }
-    document.body.classList.add("is-sticker-tutorial-page-swipe-js");
-    setStickerTutorialHandKey("open");
   }, 2400);
-  // Phase C (~4400ms): 実際のページめくりを発火 + ハンド swipe class を撤去
+  // Phase C (~4400ms): 矢印 click 実行 (既存 click ハンドラが setBookPage + notify)
   addStickerTutorialDemoTimer(() => {
-    document.body.classList.remove("is-sticker-tutorial-page-swipe-js");
     if (currentStickerTutorialStep()?.id !== "page" || stickerTutorialState?.actionDone) {
       return;
     }
-    const nextPage = activeBookPage + 2;
-    if (activeSurface === "inside" && nextPage <= spreadStartForPage(editorPageCount())) {
-      setBookPage(nextPage, { turnMode: "single" });
+    if (bookNextPage && !bookNextPage.disabled) {
+      bookNextPage.click();
+    } else {
+      // disabled fallback: 最終 spread 等で click 不発時の保険
+      setBookPage(activeBookPage + 2, { turnMode: "single" });
+      notifyStickerTutorialAction("pageTurn");
     }
-    notifyStickerTutorialAction("pageTurn");
   }, 4400);
 }
 
@@ -4140,7 +4138,6 @@ function stopStickerTutorialStepDemo(options = {}) {
     "is-sticker-tutorial-combo-place",
     "is-sticker-tutorial-move-js",
     "is-sticker-tutorial-slider-js",
-    "is-sticker-tutorial-page-swipe-js",
   );
   if (stickerTutorialState) {
     // Keep tray silhouette ON for the whole tutorial; only drop the yellow target highlight.
@@ -4505,53 +4502,22 @@ function stickerTutorialDemoPoints(step, rect) {
       y: clampTrayY(source.y - 4),
     };
 
-    // === place phase 用 (大振り + back-track + overshoot で「迷い」 を強調) ===
-    // v1616: 上限 0.32 → 0.22 (iPad 横 1180px で wander1.x が viewport を +77px はみ出すバグ解消)
-    const wanderSpan = Math.min(
-      window.innerWidth * 0.22,
-      Math.max(180, pageRect.width * 0.45),
-    );
-    const dx = to.x - source.x;
-    const dy = to.y - source.y;
-    const dist = Math.hypot(dx, dy) || 1;
-    const perpX = -dy / dist;
-    const perpY = dx / dist;
-    const wander1 = {
-      // v1616: 1.40 → 0.95 (画面外消失を防ぎつつ「大振り」 感は維持)、 上方向係数も 0.50 → 0.45 で相応縮小
-      x: source.x + perpX * wanderSpan * 0.95,
-      y: source.y + perpY * wanderSpan * 0.95 - wanderSpan * 0.45,
-    };
-    const wander2 = {
-      // axis 0.85 まで大ジャンプ (to の手前 15% 地点) で perp +0.48w
-      // decoy が近接化したので perp 符号を反転 (-0.30 → +0.48 = 1.6 倍 + decoy 側へ寄せ)
-      x: source.x + dx * 0.85 + perpX * wanderSpan * 0.48,
-      y: source.y + dy * 0.85 + perpY * wanderSpan * 0.48 + wanderSpan * 0.10,
-    };
-    const wander3 = {
-      // axis 0.40 まで back-track ★「あれ違った」 の核 (0.20 → 0.24 = 1.2 倍 微調整)
-      x: source.x + dx * 0.40 + perpX * wanderSpan * 0.24,
-      y: source.y + dy * 0.40 + perpY * wanderSpan * 0.24 - wanderSpan * 0.25,
-    };
-    const overshoot = {
-      // to を 8% 通り過ぎる (小振幅)
-      x: to.x + dx * 0.08,
-      y: to.y + dy * 0.08,
-    };
-    const hover = {
-      x: to.x,
-      y: Math.max(pageRect.top + 20, to.y - wanderSpan * 0.10),
-    };
-    const overTarget = {
-      x: to.x,
-      y: to.y - Math.min(48, pageRect.height * 0.06),
-    };
-    // v1616: viewport 内 clamp (wanderSpan 縮小 + 係数低減後の最終防衛線、 source が tray 右端等 edge case で発動)
+    // === place phase 用: 旧 wander/overshoot 群は廃止し、 source → hover → drop の 3 stop 直行 (ゆっくり真っ直ぐ) ===
+    // clampViewport は find phase 側の互換のためだけに残す (place 経路では未使用)
     const padX = Math.max(48, window.innerWidth * 0.08);
     const padY = Math.max(48, window.innerHeight * 0.08);
     const clampViewport = (p) => ({
       x: Math.min(window.innerWidth - padX, Math.max(padX, p.x)),
       y: Math.min(window.innerHeight - padY, Math.max(padY, p.y)),
     });
+    const hover = clampViewport({
+      x: to.x,
+      y: Math.max(pageRect.top + 20, to.y - Math.min(56, pageRect.height * 0.10)),
+    });
+    const overTarget = {
+      x: to.x,
+      y: to.y - Math.min(48, pageRect.height * 0.06),
+    };
     return {
       ...base,
       hand: scrollFrom,
@@ -4562,12 +4528,8 @@ function stickerTutorialDemoPoints(step, rect) {
       chooseRight,
       scrollFrom,
       scrollTo,
-      wander1: clampViewport(wander1),
-      wander2: clampViewport(wander2),
-      wander3: clampViewport(wander3),
-      hover: clampViewport(hover),
+      hover,
       overTarget,
-      overshoot: clampViewport(overshoot),
       findWander1,
       findOverTarget,
       ghostSrc: firstVisibleStickerAssetForTutorial(),
@@ -4578,9 +4540,18 @@ function stickerTutorialDemoPoints(step, rect) {
     const to = { x: center.x + Math.min(72, Math.max(34, rect.width * 0.55)), y: center.y + Math.min(30, rect.height * 0.35) };
     return { ...base, hand: from, from, to };
   }
-  if (step.id === "scale" || step.id === "rotate") {
+  if (step.id === "scale") {
     const from = { x: rect.left + rect.width * 0.36, y: center.y };
     const to = { x: rect.left + rect.width * 0.78, y: center.y };
+    return { ...base, hand: from, from, to };
+  }
+  if (step.id === "rotate") {
+    // value=0 中央スタート、 demo は -24°→+28° の狭い範囲 sweep。
+    // input padding (~12px の thumb 半径相当) を考慮した実 track 上で 43% → 58% に合わせる
+    const trackPad = 12;
+    const innerW = Math.max(rect.width - trackPad * 2, 0);
+    const from = { x: rect.left + trackPad + innerW * 0.43, y: center.y };
+    const to   = { x: rect.left + trackPad + innerW * 0.58, y: center.y };
     return { ...base, hand: from, from, to };
   }
   return base;
