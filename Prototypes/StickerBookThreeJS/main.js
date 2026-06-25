@@ -1677,8 +1677,9 @@ const STICKER_TUTORIAL_STEPS = [
     target: "nextPageButton",
     card: "corner",
     text: "ページも\nめくれるよ",
+    audio: ["stickerbook_tut_11_page.mp3"],
     hand: "point",
-    minAdvanceMs: 3600,
+    minAdvanceMs: 6600,
     advanceOn: ["pageTurn"],
   },
   {

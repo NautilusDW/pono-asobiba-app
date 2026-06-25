@@ -338,6 +338,23 @@ tr:hover { background: #FFFAF0; }
 </style>
 </head>
 <body>
+<script src="../common/debug-mode.js"></script>
+<script>
+(function () {
+  try {
+    var allowed = window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function'
+      ? window.PonoDebugMode.isAllowed()
+      : false;
+    if (!allowed) {
+      document.title = 'Not Found';
+      document.body.innerHTML = '<div style="font-family:sans-serif;padding:40px;text-align:center;color:#333"><h1>Not Found</h1><p>The requested page was not found.</p></div>';
+    }
+  } catch (_e) {
+    document.title = 'Not Found';
+    document.body.innerHTML = '<div style="font-family:sans-serif;padding:40px;text-align:center;color:#333"><h1>Not Found</h1><p>The requested page was not found.</p></div>';
+  }
+})();
+</script>
 
 <div class="header">
   <div style="display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto">
@@ -1793,7 +1810,8 @@ var PUZZLE_TTS_PRESETS = [
       { id: 'stickerbook_tut_07_rotate', file: 'stickerbook_tut_07_rotate.mp3', text: '回転の バーを 動かすと、 シールの 向きが 変わるよ' },
       { id: 'stickerbook_tut_08_ok',     file: 'stickerbook_tut_08_ok.mp3',     text: 'これで よければ、 OKを 押してね' },
       { id: 'stickerbook_tut_09_view',   file: 'stickerbook_tut_09_view.mp3',   text: '見るモードに すると、 シールは 動かないよ。 ゆっくり 眺めよう' },
-      { id: 'stickerbook_tut_10_final',  file: 'stickerbook_tut_10_final.mp3',  text: '好きな シールを いっぱい 貼って、 自分だけの シール帳を 作ろう' }
+      { id: 'stickerbook_tut_10_final',  file: 'stickerbook_tut_10_final.mp3',  text: '好きな シールを いっぱい 貼って、 自分だけの シール帳を 作ろう' },
+      { id: 'stickerbook_tut_11_page',   file: 'stickerbook_tut_11_page.mp3',   text: '下の 矢印を 押すか、 ページを 指で めくると、 次の ページに 行けるよ' }
     ]
   }
 ];
