@@ -3745,13 +3745,18 @@ function startStickerTutorialModeDemo() {
     document.body.classList.add("is-sticker-tutorial-mode-press");
   }, 2000);
   // Phase 3: 押下 3 回 (Phase 2 開始基準 +400/+1850/+3250 = 絶対 2400/3850/5250ms)
+  // 各 press 直前に setStickerTutorialHandKey("point") を再保証して、
+  // updateStickerTutorialDemo の重複発火で open に戻されても確実に point で押す
   addStickerTutorialDemoTimer(() => {
+    setStickerTutorialHandKey("point");
     triggerStickerTutorialEditButtonPress({ targetMode: true, notify: false });
   }, 2400);
   addStickerTutorialDemoTimer(() => {
+    setStickerTutorialHandKey("point");
     triggerStickerTutorialEditButtonPress({ targetMode: false, notify: false });
   }, 3850);
   addStickerTutorialDemoTimer(() => {
+    setStickerTutorialHandKey("point");
     triggerStickerTutorialEditButtonPress({ targetMode: true, notify: true });
   }, 5250);
 }
@@ -4332,8 +4337,15 @@ function updateStickerTutorialDemo(step, rect) {
   }
   const center = rectCenter(rect);
   const handKey = step?.hand || "open";
-  // step "mode" は Phase 0 = open hand 右下出現 で開始するので、 初期画像は強制 open
-  const initialHandKey = step?.id === "mode" ? "open" : handKey;
+  // step "mode" は Phase 0 (rest) / Phase 1 (approach) の間だけ open を強制する。
+  // Phase 2 (press) 以降は step.hand="point" を尊重しないと、 後続の
+  // scheduleStickerTutorialLayout() が走るたびに hand が open に戻ってしまい、
+  // 「open のまま押している」 不一致が発生する (バグ修正: v1601)
+  const inModeRestOrApproach =
+    step?.id === "mode" &&
+    (document.body.classList.contains("is-sticker-tutorial-mode-rest") ||
+      document.body.classList.contains("is-sticker-tutorial-mode-approach"));
+  const initialHandKey = inModeRestOrApproach ? "open" : handKey;
   setStickerTutorialHandKey(initialHandKey);
   const demo = stickerTutorialDemoPoints(step, rect);
   // step "mode" は初期 hand 位置を rest (右下) に固定。 keyframe 内で left/top を上書きしながら遷移する
