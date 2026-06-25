@@ -3322,7 +3322,7 @@
     }
 
     /* ===== お題 + ショップ phase 4 統合 (v1570→v1575: バッジ削除 / 誘導モーダル削除) ===== */
-    .donguri-shop { position:fixed; inset:0; z-index:99990; background:#fff7e0; display:flex; flex-direction:column; overflow:hidden; }
+    .donguri-shop { position:fixed; inset:0; z-index:99990; background:#3b2c1c; display:grid; place-items:center; overflow:hidden; }
     .donguri-shop[hidden] { display:none; }
     .donguri-shop__head { display:flex; align-items:center; gap:12px; padding:14px 16px; background:linear-gradient(180deg,#ffd98a,#ffc05a); border-bottom:3px solid #b88600; box-shadow:0 2px 6px rgba(0,0,0,.15); }
     .donguri-shop__close { width:44px; height:44px; border:2px solid #8a4a00; background:#fff; color:#6e4a00; font-size:24px; border-radius:50%; cursor:pointer; line-height:1; }
@@ -3389,7 +3389,24 @@
       @keyframes pono-shop-pop-rm { 0%,80%{transform:scale(1);opacity:1;} 100%{transform:scale(1);opacity:0;} }
     }
 
-    /* ===== v1607: donguri shop v3 (squirrel shopkeeper + separated shop layers) ===== */
+    /* ===== v1611: donguri shop v3 (21:9 background + 16:9 safe UI + Komorebiya hanging sign) ===== */
+    .donguri-shop-v2-stage {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #2d1d10;
+    }
+    .donguri-shop-v2-safe {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(100vw, calc(100vh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      max-height: 100vh;
+      transform: translate(-50%, -50%);
+      z-index: 4;
+      pointer-events: none;
+    }
     .donguri-shop-v2-backdrop {
       position: absolute; inset: 0;
       background-image: url("assets/ui/shop/sticker_shop_background_empty_20260625.png");
@@ -3397,10 +3414,10 @@
       pointer-events: none; z-index: 0;
     }
     .donguri-shop-v2-counter {
-      position: absolute; left: 0; right: 0; bottom: -1%;
-      width: 100%; height: 56%;
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
       background-image: url("assets/ui/shop/sticker_shop_counter_angled_20260625.png");
-      background-size: 100% 100%; background-position: center bottom; background-repeat: no-repeat;
+      background-size: cover; background-position: center bottom; background-repeat: no-repeat;
       pointer-events: none; z-index: 3;
     }
     .donguri-shop-v2-machine {
@@ -3426,27 +3443,31 @@
     .donguri-shop-v2-bubble {
       position: absolute; left: 7%; bottom: 22%;
       width: min(25%, 330px);
-      min-height: 74px;
+      aspect-ratio: 1195 / 313;
+      box-sizing: border-box;
       z-index: 5;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_20260625.png") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_20260625.png") center / contain no-repeat;
       border: 0; border-radius: 0;
-      padding: 12px 28px 14px 52px;
-      color: #5a3a00; font-weight: 900; font-size: 14px; text-align: center; line-height: 1.3;
+      padding: 0 clamp(12px, 2vw, 28px) 0 clamp(30px, 4vw, 52px);
+      color: #5a3a00; font-weight: 900; font-size: clamp(8px, 1.05vw, 14px); text-align: center; line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
       filter: drop-shadow(0 6px 10px rgba(38, 19, 4, .22));
     }
     .donguri-shop-v2-bubble::after { content: none; }
     .donguri-shop-v2-head {
-      position: absolute; top: 8px; left: 0; right: 0;
+      position: absolute; top: 0; left: 0; right: 0;
       display: grid; align-items: center;
-      grid-template-columns: minmax(48px, 76px) minmax(230px, 520px) minmax(102px, 150px);
+      grid-template-columns: clamp(48px, 5.2vw, 76px) minmax(0, 1fr) clamp(102px, 11vw, 150px);
       justify-content: space-between; gap: 10px;
       padding: 0 14px; z-index: 6;
       pointer-events: none;
     }
     .donguri-shop-v2-close {
       pointer-events: auto;
-      width: clamp(48px, 7vw, 68px); height: clamp(48px, 7vw, 68px);
+      width: clamp(48px, 7vw, 68px);
+      aspect-ratio: 255 / 254;
       border: 0;
       background: transparent url("assets/ui/shop/sticker_shop_ui_close_frame_20260625.png") center / contain no-repeat;
       color: #6e4a00;
@@ -3457,22 +3478,28 @@
     .donguri-shop-v2-close:active { transform: translateY(2px); filter: drop-shadow(0 2px 4px rgba(48, 27, 10, .22)); }
     .donguri-shop-v2-title {
       margin: 0;
-      height: clamp(52px, 8vw, 78px);
+      width: min(45vw, 520px);
+      aspect-ratio: 1763 / 519;
+      box-sizing: border-box;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/sticker_shop_ui_title_plaque_20260625.png") center / 100% 100% no-repeat;
-      color: #5a3a00; text-align: center;
-      font-size: clamp(18px, 2.6vw, 28px);
-      text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 3px 6px rgba(96, 48, 8, .22);
+      background: transparent url("assets/ui/shop/komorebiya_hanging_shop_sign_20260625.png") center / contain no-repeat;
+      color: transparent; text-align: center;
+      font-size: 0;
+      text-shadow: none;
       font-weight: 900;
       position: relative; z-index: 6;
+      overflow: hidden;
+      justify-self: center;
     }
     .donguri-shop-v2-balance {
       pointer-events: auto;
       display: inline-flex; align-items: center; gap: 6px;
       justify-content: center;
-      height: clamp(42px, 6.3vw, 56px);
-      padding: 0 18px 0 52px;
-      background: transparent url("assets/ui/shop/sticker_shop_ui_balance_badge_20260625.png") center / 100% 100% no-repeat;
+      width: clamp(104px, 11vw, 150px);
+      aspect-ratio: 339 / 169;
+      box-sizing: border-box;
+      padding: 0 14% 0 44%;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_balance_badge_20260625.png") center / contain no-repeat;
       border: 0; border-radius: 999px;
       font-size: clamp(16px, 2.2vw, 22px); font-weight: 900; color: #6e4a00;
       min-width: 104px;
@@ -3483,23 +3510,26 @@
       position: absolute; left: 34%; right: 4.5%; bottom: 17%;
       display: flex; gap: 2.1%; justify-content: center; align-items: flex-end;
       z-index: 4;
+      pointer-events: auto;
     }
     .donguri-shop-v2-slot {
       flex: 1 1 0;
       min-width: 76px;
       max-width: 30%;
       aspect-ratio: 462 / 701;
-      background: transparent url("assets/ui/shop/sticker_shop_card_normal_20260625.png") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/shop/sticker_shop_card_normal_20260625.png") center / contain no-repeat;
       border: 0; border-radius: 18px;
       padding: 10.5% 9% 5.5%;
       display: flex; flex-direction: column; align-items: center; gap: 0;
       box-shadow: none;
       filter: drop-shadow(0 10px 14px rgba(34, 17, 4, .25));
       position: relative;
+      pointer-events: auto;
       animation: pono-shop-v2-float 2.6s ease-in-out infinite;
     }
-    .donguri-shop-v2-slot.is-buyable { background-image: url("assets/ui/shop/sticker_shop_card_highlight_20260625.png"); }
-    .donguri-shop-v2-slot.is-unavailable,
+    .donguri-shop-v2-slot.is-buyable { background-image: url("assets/ui/shop/sticker_shop_card_highlight_buy_20260625.png"); background-size: contain; }
+    .donguri-shop-v2-slot.is-buyable.is-pressing { background-image: url("assets/ui/shop/sticker_shop_card_highlight_buy_pressed_20260625.png"); }
+    .donguri-shop-v2-slot.is-unavailable { background-image: url("assets/ui/shop/sticker_shop_card_muted_buy_20260625.png"); background-size: contain; }
     .donguri-shop-v2-slot.is-owned { background-image: url("assets/ui/shop/sticker_shop_card_muted_20260625.png"); }
     .donguri-shop-v2-slot:nth-child(2) { animation-delay: .2s; }
     .donguri-shop-v2-slot:nth-child(3) { animation-delay: .4s; }
@@ -3509,18 +3539,19 @@
     }
     .donguri-shop-v2-thumb {
       position: absolute;
-      left: 15.5%;
-      top: 17%;
-      width: 69%;
-      height: 39%;
+      left: 15%;
+      top: 11%;
+      width: 70%;
+      height: 45%;
       display: flex; align-items: center; justify-content: center;
       background: transparent; border-radius: 14px; overflow: hidden;
       border: 0;
     }
     .donguri-shop-v2-thumb img {
-      max-width: 112%;
-      max-height: 112%;
-      transform: scale(1.55);
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transform: none;
       filter: drop-shadow(0 5px 6px rgba(84, 45, 8, .22));
     }
     .donguri-shop-v2-thumb-fallback { font-size: clamp(42px, 7vw, 74px); }
@@ -3529,10 +3560,10 @@
     .donguri-shop-v2-thumb { max-height: none; }
     .donguri-shop-v2-thumb.is-hearting img { animation: pono-shop-v2-heartjump 600ms ease-out; }
     @keyframes pono-shop-v2-heartjump {
-      0% { transform: translateY(0) scale(1.55); }
-      30% { transform: translateY(-18px) scale(1.72); }
-      60% { transform: translateY(0) scale(1.48); }
-      100% { transform: translateY(0) scale(1.55); }
+      0% { transform: translateY(0) scale(1); }
+      30% { transform: translateY(-18px) scale(1.12); }
+      60% { transform: translateY(0) scale(.96); }
+      100% { transform: translateY(0) scale(1); }
     }
     .donguri-shop-v2-heart-burst {
       position: absolute; left: 50%; top: 30%;
@@ -3548,11 +3579,11 @@
     }
     .donguri-shop-v2-price {
       position: absolute;
-      left: 44%;
-      top: 61%;
+      left: 43.5%;
+      top: 68.4%;
       transform: translateY(-50%);
-      width: 30%;
-      min-height: 8%;
+      width: 31%;
+      min-height: 7.5%;
       margin: 0;
       padding-left: 0;
       display: flex; align-items: center; justify-content: center;
@@ -3567,13 +3598,13 @@
       margin: 0;
       border: 0; border-radius: 12px;
       background: transparent;
-      color: #fff; font-size: clamp(13px, 1.8vw, 18px); font-weight: 900; cursor: pointer;
-      text-shadow: 0 1px 0 rgba(110, 58, 0, .45), 0 2px 3px rgba(68, 32, 0, .25);
+      color: transparent; font-size: 0 !important; font-weight: 900; cursor: pointer;
+      text-shadow: none;
       box-shadow: none;
     }
     .donguri-shop-v2-buy:active { transform: translateY(2px); box-shadow: none; }
     .donguri-shop-v2-buy:disabled {
-      background: transparent; color: #6e4a00; cursor: not-allowed;
+      background: transparent; color: transparent; cursor: not-allowed;
       box-shadow: none; opacity: .85;
     }
     .donguri-shop-v2-owned-label {
@@ -3619,13 +3650,13 @@
     }
     @media (max-width: 900px) {
       .donguri-shop-v2-head {
-        top: 6px;
-        grid-template-columns: minmax(44px, 58px) minmax(210px, 420px) minmax(88px, 124px);
+        top: 0;
+        grid-template-columns: clamp(42px, 10vw, 58px) minmax(0, 1fr) clamp(84px, 18vw, 124px);
         padding: 0 10px;
       }
-      .donguri-shop-v2-title { height: 56px; font-size: 20px; }
+      .donguri-shop-v2-title { width: min(46vw, 330px); font-size: 0; }
       .donguri-shop-v2-shopkeeper { left: 3.2%; bottom: 17%; width: 22%; min-width: 92px; }
-      .donguri-shop-v2-bubble { left: 7%; bottom: 22%; width: min(25%, 220px); min-height: 58px; padding: 9px 18px 10px 36px; font-size: 12px; }
+      .donguri-shop-v2-bubble { left: 7%; bottom: 22%; width: min(25%, 220px); padding: 0 clamp(12px, 2vw, 18px) 0 clamp(28px, 4vw, 36px); font-size: clamp(8px, 1.4vw, 12px); }
       .donguri-shop-v2-slots { left: 31%; right: 3%; bottom: 14.5%; gap: 1.3%; }
       .donguri-shop-v2-slot { min-width: 66px; max-width: 31%; padding: 10.5% 8.4% 5%; }
       .donguri-shop-v2-price { font-size: 12px; }
@@ -4072,23 +4103,27 @@
 
   <!-- ===== Donguri Shop v2 (v1582: 3 slot rotation, hedgehog NPC, atarashii badge) ===== -->
   <div class="donguri-shop" id="donguriShop" hidden role="dialog" aria-modal="true" aria-labelledby="donguriShopTitle">
-    <div class="donguri-shop-v2-backdrop" aria-hidden="true"></div>
-    <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
-    <!-- v1604: shopkeeper is a generated squirrel asset. The gacha machine remains scoped to #dailyGachaModal. -->
-    <div class="donguri-shop-v2-shopkeeper" aria-hidden="true">
-      <img src="assets/ui/shop/sticker_shopkeeper_squirrel_small_blackeyes_20260625.png" alt="" draggable="false" />
-    </div>
-    <div class="donguri-shop-v2-bubble" id="donguriShopBubble" role="status" aria-live="polite">もうすぐ かわるよ</div>
-    <header class="donguri-shop-v2-head">
-      <button class="donguri-shop-v2-close" id="donguriShopClose" type="button" aria-label="閉じる">×</button>
-      <h2 class="donguri-shop-v2-title" id="donguriShopTitle">シールの おみせ</h2>
-      <div class="donguri-shop-v2-balance">
-        <span aria-hidden="true">🌰</span>
-        <span id="donguriShopBalance">0</span>
+    <div class="donguri-shop-v2-stage">
+      <div class="donguri-shop-v2-backdrop" aria-hidden="true"></div>
+      <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
+      <div class="donguri-shop-v2-safe">
+        <!-- v1604: shopkeeper is a generated squirrel asset. The gacha machine remains scoped to #dailyGachaModal. -->
+        <div class="donguri-shop-v2-shopkeeper" aria-hidden="true">
+          <img src="assets/ui/shop/sticker_shopkeeper_squirrel_small_blackeyes_20260625.png" alt="" draggable="false" />
+        </div>
+        <div class="donguri-shop-v2-bubble" id="donguriShopBubble" role="status" aria-live="polite">もうすぐ かわるよ</div>
+        <header class="donguri-shop-v2-head">
+          <button class="donguri-shop-v2-close" id="donguriShopClose" type="button" aria-label="閉じる">×</button>
+          <h2 class="donguri-shop-v2-title" id="donguriShopTitle">もりのおみせ こもれびや</h2>
+          <div class="donguri-shop-v2-balance">
+            <span aria-hidden="true">🌰</span>
+            <span id="donguriShopBalance">0</span>
+          </div>
+        </header>
+        <div class="donguri-shop-v2-slots" id="donguriShopSlots" role="list"></div>
+        <!-- v1595: #donguriShopCountdown を削除 — countdown text は #donguriShopBubble に統合 (hedgehog 右下隣) -->
       </div>
-    </header>
-    <div class="donguri-shop-v2-slots" id="donguriShopSlots" role="list"></div>
-    <!-- v1595: #donguriShopCountdown を削除 — countdown text は #donguriShopBubble に統合 (hedgehog 右下隣) -->
+    </div>
   </div>
 
   <!-- v1571 phase 5: ショップ購入演出オーバーレイ (zoom-in + 紙吹雪) -->
@@ -4470,7 +4505,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1610;
+    const PAGE_CACHE_VERSION = 1613;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -6183,11 +6218,11 @@
             if (ownState.owned) {
               actionHtml = '<button class="donguri-shop-v2-owned-label" type="button" data-action="heart">💗 もう なかよし♪</button>';
             } else if (canBuy) {
-              actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy">かう</button>';
+              actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" aria-label="かう"></button>';
             } else {
               // canPurchase=false かつ未所持 = balance不足 / rotation外。
               // v1607: generated card has a visible button plate, so keep the command label but disable it.
-              actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" disabled>かう</button>';
+              actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" aria-label="かう" disabled></button>';
             }
             slot.innerHTML =
               badgeHtml +
@@ -6196,7 +6231,21 @@
               actionHtml;
             var btn = slot.querySelector('[data-action="buy"]');
             if (btn) {
+              var setBuyPressing = function (on) {
+                if (btn.disabled) return;
+                slot.classList.toggle('is-pressing', !!on);
+              };
+              btn.addEventListener('pointerdown', function () { setBuyPressing(true); });
+              btn.addEventListener('pointerup', function () { setBuyPressing(false); });
+              btn.addEventListener('pointercancel', function () { setBuyPressing(false); });
+              btn.addEventListener('pointerleave', function () { setBuyPressing(false); });
+              btn.addEventListener('blur', function () { setBuyPressing(false); });
+              btn.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') setBuyPressing(true);
+              });
+              btn.addEventListener('keyup', function () { setBuyPressing(false); });
               btn.addEventListener('click', function () {
+                setBuyPressing(false);
                 btn.disabled = true;
                 Promise.resolve(window.PonoDonguriShop.purchase(sid)).then(function (r) {
                   if (r && r.success) {
