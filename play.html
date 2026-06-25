@@ -3872,6 +3872,492 @@
     @media (prefers-reduced-motion: reduce) {
       .acorn-balance-badge.is-bumping { animation: none; }
     }
+
+    /* ===== title screen reference redesign (v1617) ===== */
+    .play-main {
+      grid-template-columns: minmax(390px, 37%) minmax(0, 1fr);
+      gap: 54px;
+      padding: 22px 30px 118px 34px;
+      align-items: start;
+    }
+    .brand-col {
+      align-items: stretch;
+      gap: 0;
+      padding-top: 10px;
+      min-width: 0;
+    }
+    .brand-sign {
+      width: min(468px, 100%);
+      align-self: center;
+      margin-bottom: 0;
+    }
+    .brand-sign > img.brand-ribbon,
+    .brand-ribbon {
+      display: none;
+      width: min(422px, 91%);
+    }
+    .brand-ribbon {
+      margin-top: -48px;
+      transform: translateX(16px);
+    }
+    .title-side-stack {
+      width: min(424px, 100%);
+      margin: 10px auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .book-unlock-entry {
+      min-height: 92px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 18px 12px 16px;
+      border: 3px solid rgba(132, 84, 31, .86);
+      border-radius: 24px 28px 22px 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 36%),
+        radial-gradient(circle at 18% 18%, rgba(255, 236, 161, .9), rgba(255,255,255,0) 36%),
+        linear-gradient(180deg, #fff8dc 0%, #f6dfaa 64%, #deb16a 100%);
+      color: #4b2b10;
+      font-family: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow:
+        0 5px 0 rgba(120, 74, 23, .38),
+        0 11px 22px rgba(42, 24, 8, .24),
+        inset 0 2px 0 rgba(255,255,255,.75);
+      transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .book-unlock-entry[hidden] { display: none; }
+    .book-unlock-entry:hover {
+      filter: brightness(1.035);
+      box-shadow:
+        0 6px 0 rgba(120, 74, 23, .38),
+        0 13px 24px rgba(42, 24, 8, .26),
+        inset 0 2px 0 rgba(255,255,255,.8);
+    }
+    .book-unlock-entry:active {
+      transform: translateY(3px);
+      box-shadow:
+        0 2px 0 rgba(120, 74, 23, .42),
+        0 6px 14px rgba(42, 24, 8, .2),
+        inset 0 2px 0 rgba(255,255,255,.7);
+    }
+    .book-unlock-entry:focus-visible,
+    .daily-quest-info-banner:focus-visible,
+    .daily-gacha-entry:focus-visible,
+    .game-card:focus-visible,
+    .bn-item:focus-visible,
+    .settings-action:focus-visible {
+      outline: 4px solid rgba(255, 236, 145, .96);
+      outline-offset: 4px;
+    }
+    .book-unlock-entry__icon {
+      position: relative;
+      flex: 0 0 74px;
+      height: 64px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: rgba(255, 251, 231, .78);
+      box-shadow:
+        inset 0 0 0 2px rgba(167, 112, 42, .28),
+        0 5px 10px rgba(72, 44, 16, .18);
+    }
+    .book-unlock-entry__book {
+      font-size: 43px;
+      line-height: 1;
+      transform: rotate(-7deg);
+    }
+    .book-unlock-entry__key {
+      position: absolute;
+      right: 4px;
+      bottom: -5px;
+      font-size: 31px;
+      line-height: 1;
+      filter: drop-shadow(0 2px 1px rgba(92, 56, 12, .24));
+      transform: rotate(-18deg);
+    }
+    .book-unlock-entry__text {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: flex-start;
+      text-align: left;
+      pointer-events: none;
+    }
+    .book-unlock-entry__main {
+      font-size: 26px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      white-space: nowrap;
+      text-shadow: 0 1px 0 rgba(255,248,224,.9);
+    }
+    .book-unlock-entry__sub {
+      font-size: 17px;
+      line-height: 1.1;
+      color: #76512a;
+    }
+    .book-unlock-entry__arrow,
+    .daily-quest-info-banner__arrow {
+      flex: 0 0 auto;
+      color: #7b4518;
+      font-size: 40px;
+      line-height: 1;
+      text-shadow: 0 1px 0 rgba(255,248,224,.8);
+      pointer-events: none;
+    }
+    .daily-quest-info-banner {
+      position: relative;
+      left: auto;
+      bottom: auto;
+      width: 100%;
+      height: 76px;
+      z-index: 91;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 15px 10px 14px;
+      border: 3px solid rgba(116, 73, 25, .68);
+      border-radius: 20px 22px 18px 24px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,0) 42%),
+        linear-gradient(180deg, #fff8dc 0%, #f6dfad 100%);
+      color: #4a2a10;
+      font-family: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      filter: drop-shadow(0 7px 12px rgba(48, 27, 10, .18));
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.72);
+      transition: transform .12s ease, filter .12s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .daily-quest-info-banner[hidden] { display: none; }
+    .daily-quest-info-banner:hover { filter: brightness(1.03) drop-shadow(0 9px 14px rgba(48, 27, 10, .2)); }
+    .daily-quest-info-banner:active { transform: translateY(2px); filter: drop-shadow(0 4px 8px rgba(48, 27, 10, .16)); }
+    .daily-quest-info-banner__title {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      clip-path: none;
+      white-space: nowrap;
+      flex: 0 0 142px;
+      align-self: flex-start;
+      margin-top: 3px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(137, 86, 35, .14);
+      color: #6d431d;
+      font-size: 16px;
+      line-height: 1;
+      text-align: center;
+    }
+    .daily-quest-info-banner__main {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .daily-quest-info-banner__icon {
+      flex: 0 0 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      background: #fff8dc;
+      box-shadow:
+        inset 0 0 0 2px rgba(175, 127, 59, .26),
+        0 4px 8px rgba(80, 48, 18, .15);
+      font-size: 26px;
+      line-height: 1;
+    }
+    .daily-quest-info-banner__body {
+      position: static;
+      inset: auto;
+      display: block;
+      color: #563014;
+      font-size: 24px;
+      line-height: 1.08;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 0 rgba(255,248,224,.95);
+      transform: scale(var(--daily-quest-body-scale, 1));
+      transform-origin: left center;
+    }
+    .daily-gacha-entry {
+      position: relative;
+      left: auto;
+      bottom: auto;
+      width: 100%;
+      height: 118px;
+      z-index: 92;
+      flex: 0 0 auto;
+      border-radius: 28px;
+      background-size: 100% 100%;
+      filter: drop-shadow(0 10px 16px rgba(48, 27, 10, .24));
+    }
+    .daily-gacha-entry.is-visible { display: inline-flex; }
+    .cards-col {
+      padding-top: 86px;
+      padding-bottom: 120px;
+    }
+    .scroll-hint { display: none; }
+    .card-list {
+      gap: 10px;
+      padding-left: 14px;
+      padding-right: 18px;
+      -webkit-mask-image: none;
+              mask-image: none;
+      --gc-aspect: 5.8 / 1;
+      --gc-thumb-h-pct: 73%;
+      --gc-play-h-pct: 52%;
+      --gc-side-w-pct: 3%;
+      --gc-text-left-w-pct: 17%;
+      --gc-text-right-w-pct: 13%;
+    }
+    .game-card {
+      max-height: 122px;
+      padding: 0 10px;
+      filter:
+        drop-shadow(0 2px 2px rgba(20, 10, 0, .34))
+        drop-shadow(0 5px 9px rgba(20, 10, 0, .38));
+    }
+    .game-card:hover {
+      filter:
+        drop-shadow(0 3px 3px rgba(20, 10, 0, .38))
+        drop-shadow(0 7px 12px rgba(20, 10, 0, .42));
+    }
+    .game-card__peek,
+    .game-card:hover .game-card__peek,
+    .game-card:focus-visible .game-card__peek,
+    body.peek-always .game-card__peek {
+      opacity: 0;
+    }
+    .game-card__text { gap: 6px; }
+    .game-card__title,
+    .game-card[data-id] .game-card__title,
+    .game-card:hover .game-card__title,
+    .game-card:focus-visible .game-card__title {
+      color: #4a2a10;
+      font-size: 32px;
+      line-height: 1.08;
+      text-shadow:
+        1.2px 0 0 rgba(255, 250, 230, .96),
+        -1.2px 0 0 rgba(255, 250, 230, .96),
+        0 1.2px 0 rgba(255, 250, 230, .96),
+        0 -1.2px 0 rgba(255, 250, 230, .96),
+        0 3px 5px rgba(80, 50, 20, .22);
+    }
+    .game-card__desc,
+    .game-card:hover .game-card__desc,
+    .game-card:focus-visible .game-card__desc {
+      color: #72593d;
+      font-size: 20px;
+      line-height: 1.16;
+      letter-spacing: 0;
+      text-shadow: 0 1px 0 rgba(255, 250, 230, .75);
+    }
+    .game-card__play {
+      pointer-events: none;
+      opacity: .86;
+      filter:
+        drop-shadow(0 3px 5px rgba(60, 35, 10, .24))
+        drop-shadow(0 1px 1px rgba(60, 35, 10, .18));
+    }
+    .game-card:focus-visible .game-card__play,
+    .game-card:hover .game-card__play {
+      opacity: 1;
+    }
+    .bottom-nav {
+      --nav-sprite-w: 446px;
+      --nav-sprite-h: 96px;
+      bottom: 20px;
+      width: var(--nav-sprite-w);
+      height: var(--nav-sprite-h);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 38%),
+        linear-gradient(90deg, #9d652e 0%, #d39a4b 8%, #b87433 48%, #8d5527 100%);
+      border: 3px solid rgba(84, 48, 18, .72);
+      border-radius: 24px;
+      overflow: visible;
+      filter: drop-shadow(0 8px 14px rgba(20, 10, 0, .36));
+    }
+    .bottom-nav::after { display: none; }
+    .bn-item {
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: 2px solid rgba(118, 73, 25, .74);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.62), rgba(255,255,255,0) 36%),
+        linear-gradient(180deg, #fff5d2 0%, #f1d58c 100%);
+      color: #5a3517;
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.82),
+        0 3px 0 rgba(100, 60, 20, .34);
+    }
+    .bn-item:hover { filter: brightness(1.04); }
+    .bn-item:active {
+      transform: translateY(2px);
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.68),
+        0 1px 0 rgba(100, 60, 20, .34);
+    }
+    .bn-item__icon {
+      font-size: 29px;
+      line-height: 1;
+      font-weight: 900;
+    }
+    .bn-item__label {
+      display: block;
+      max-width: 100%;
+      font-size: 15px;
+      line-height: 1;
+      font-weight: 900;
+      white-space: nowrap;
+      letter-spacing: 0;
+    }
+    .modal-card { max-width: 390px; }
+    .settings-action-list {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0 8px;
+    }
+    .settings-action {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 12px;
+      border: 2px solid rgba(242, 145, 90, .42);
+      border-radius: 16px;
+      background: #fffdfa;
+      color: var(--text);
+      font: inherit;
+      font-weight: 900;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 0 rgba(171, 104, 54, .16);
+    }
+    .settings-action:active { transform: translateY(2px); box-shadow: none; }
+    .settings-action:disabled { opacity: .68; cursor: progress; }
+    .settings-action__icon {
+      flex: 0 0 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #fff1c4;
+      color: #6a3c14;
+      font-size: 24px;
+      line-height: 1;
+    }
+    .settings-action__text {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .settings-action__main {
+      font-size: 16px;
+      line-height: 1.08;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .settings-action__sub {
+      font-size: 12px;
+      line-height: 1.1;
+      color: var(--text-light);
+      font-weight: 800;
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
+      .play-main {
+        grid-template-columns: minmax(350px, 37%) minmax(0, 1fr);
+        gap: 38px;
+        padding: 22px 24px 112px 28px;
+      }
+      .brand-sign { width: min(400px, 100%); }
+      .brand-sign > img.brand-ribbon,
+      .brand-ribbon { width: min(360px, 91%); }
+      .title-side-stack { width: min(360px, 100%); gap: 10px; margin-top: 8px; }
+      .book-unlock-entry { min-height: 84px; padding: 10px 15px; }
+      .book-unlock-entry__icon { flex-basis: 64px; height: 56px; }
+      .book-unlock-entry__book { font-size: 37px; }
+      .book-unlock-entry__key { font-size: 27px; }
+      .book-unlock-entry__main { font-size: 23px; }
+      .book-unlock-entry__sub { font-size: 15px; }
+      .daily-quest-info-banner { height: 70px; gap: 9px; }
+      .daily-quest-info-banner__title { flex-basis: 126px; font-size: 14px; padding-inline: 8px; }
+      .daily-quest-info-banner__icon { flex-basis: 38px; height: 38px; font-size: 23px; }
+      .daily-quest-info-banner__body { font-size: 22px; }
+      .daily-gacha-entry { height: 106px; }
+      .cards-col { padding-top: 82px; }
+      .game-card__title,
+      .game-card[data-id] .game-card__title { font-size: 29px; }
+      .game-card__desc { font-size: 18px; }
+      .bottom-nav { --nav-sprite-w: 420px; --nav-sprite-h: 90px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+      .play-main {
+        grid-template-columns: minmax(292px, 37%) minmax(0, 1fr);
+        gap: 26px;
+        padding: 18px 18px 100px 22px;
+      }
+      .brand-sign { width: min(312px, 100%); }
+      .brand-sign > img.brand-ribbon,
+      .brand-ribbon { width: min(284px, 91%); }
+      .brand-ribbon { margin-top: -40px; }
+      .title-side-stack { width: min(300px, 100%); gap: 8px; margin-top: 6px; }
+      .book-unlock-entry { min-height: 74px; gap: 9px; border-width: 2px; border-radius: 19px; }
+      .book-unlock-entry__icon { flex-basis: 52px; height: 48px; border-radius: 14px; }
+      .book-unlock-entry__book { font-size: 31px; }
+      .book-unlock-entry__key { font-size: 22px; right: 2px; bottom: -3px; }
+      .book-unlock-entry__main { font-size: 19px; }
+      .book-unlock-entry__sub { font-size: 13px; }
+      .book-unlock-entry__arrow,
+      .daily-quest-info-banner__arrow { font-size: 30px; }
+      .daily-quest-info-banner { height: 60px; padding: 7px 10px; gap: 7px; border-width: 2px; border-radius: 17px; }
+      .daily-quest-info-banner__title { flex-basis: 105px; font-size: 12px; padding: 4px 6px; }
+      .daily-quest-info-banner__main { gap: 6px; }
+      .daily-quest-info-banner__icon { flex-basis: 32px; height: 32px; font-size: 20px; border-radius: 10px; }
+      .daily-quest-info-banner__body { font-size: 18px; }
+      .daily-gacha-entry { height: 88px; }
+      .cards-col { padding-top: 70px; padding-bottom: 104px; }
+      .card-list { gap: 8px; padding-left: 10px; padding-right: 12px; }
+      .game-card { max-height: 106px; }
+      .game-card__title,
+      .game-card[data-id] .game-card__title { font-size: 24px; }
+      .game-card__desc { font-size: 15px; }
+      .bottom-nav { --nav-sprite-w: 350px; --nav-sprite-h: 80px; bottom: 16px; gap: 6px; padding: 6px; border-radius: 20px; }
+      .bn-item { border-radius: 14px; }
+      .bn-item__icon { font-size: 24px; }
+      .bn-item__label { font-size: 13px; }
+    }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
@@ -3893,6 +4379,31 @@
         <div class="brand-sign">
           <img alt="ポノのあそびば" draggable="false" src="assets/ui/brand_sign_01.webp" data-src="assets/ui/brand_sign_01.webp">
           <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" src="assets/ui/brand_sign_02.webp" data-src="assets/ui/brand_sign_02.webp">
+        </div>
+        <div class="title-side-stack" aria-label="おすすめ">
+          <button class="book-unlock-entry" id="bookUnlockEntry" type="button" hidden aria-label="えほんの あいことば とくてんを ひらく">
+            <span class="book-unlock-entry__icon" aria-hidden="true">
+              <span class="book-unlock-entry__book">📗</span>
+              <span class="book-unlock-entry__key">🔑</span>
+            </span>
+            <span class="book-unlock-entry__text">
+              <span class="book-unlock-entry__main">えほんの あいことば</span>
+              <span class="book-unlock-entry__sub">とくてんを ひらく</span>
+            </span>
+            <span class="book-unlock-entry__arrow" aria-hidden="true">›</span>
+          </button>
+          <button class="daily-quest-info-banner" id="dailyQuestInfo" type="button" hidden aria-label="きょうの チャレンジ">
+            <span class="daily-quest-info-banner__title" id="dailyQuestInfoTitle">きょうの チャレンジ</span>
+            <span class="daily-quest-info-banner__main">
+              <span class="daily-quest-info-banner__icon" id="dailyQuestInfoIcon" aria-hidden="true">🗺️</span>
+              <span class="daily-quest-info-banner__body" id="dailyQuestInfoBody">よみこみちゅう</span>
+            </span>
+            <span class="daily-quest-info-banner__arrow" aria-hidden="true">›</span>
+          </button>
+          <button class="daily-gacha-entry" id="dailyGachaEntry" type="button" aria-label="1にち1かい シールがもらえる ポノのガチャガチャ">
+            <span class="daily-gacha-entry__icon" aria-hidden="true"><img src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false"></span>
+            <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
+          </button>
         </div>
       </aside>
 
@@ -3921,27 +4432,14 @@
     </div>
 
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
-      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"></button>
-      <button class="bn-item" data-action="official" type="button" aria-label="公式サイト"></button>
-      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"></button>
-      <button class="bn-item" data-action="stickers" type="button" aria-label="シール"></button>
-      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"></button>
+      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"><span class="bn-item__icon" aria-hidden="true">?</span><span class="bn-item__label">ヘルプ</span></button>
+      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true">🔔</span><span class="bn-item__label">おしらせ</span></button>
+      <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true">📒</span><span class="bn-item__label">シール</span></button>
+      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true">⚙</span><span class="bn-item__label">せってい</span></button>
     </nav>
     <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
       <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
       <span class="sticker-book-entry__label"><span>シールちょう</span><span class="sticker-book-entry__sub">あつめた シール</span></span>
-    </button>
-    <div class="daily-quest-info-banner" id="dailyQuestInfo" role="button" tabindex="0" hidden aria-label="きょうの チャレンジ">
-      <span class="daily-quest-info-banner__title" id="dailyQuestInfoTitle">きょうの チャレンジ</span>
-      <span class="daily-quest-info-banner__body" id="dailyQuestInfoBody">よみこみちゅう</span>
-    </div>
-    <button class="daily-gacha-entry" id="dailyGachaEntry" type="button" aria-label="1にち1かい シールがもらえる ポノのガチャガチャ">
-      <span class="daily-gacha-entry__icon" aria-hidden="true"><img src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false"></span>
-      <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
-    </button>
-    <button class="for-parents" id="forParentsBtn" type="button" aria-label="えほんをもっているおともだちへ">
-      <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
-      <span class="for-parents__label"><span>えほんをもっている</span><span>おともだちへ</span></span>
     </button>
   </div><!-- /.stage -->
 
@@ -3993,6 +4491,29 @@
           <input type="checkbox" id="soundToggle">
           <span class="toggle-slider"></span>
         </label>
+      </div>
+      <div class="settings-action-list" aria-label="そのほか">
+        <button class="settings-action" id="settingsBookUnlockBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">🔑</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">えほんの あいことば</span>
+            <span class="settings-action__sub" id="settingsBookUnlockSub">あいことばを いれる</span>
+          </span>
+        </button>
+        <button class="settings-action" id="settingsRefreshBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">↻</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">こうしんする</span>
+            <span class="settings-action__sub" id="settingsRefreshSub">あたらしくする</span>
+          </span>
+        </button>
+        <a class="settings-action" href="index.html">
+          <span class="settings-action__icon" aria-hidden="true">⌂</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">こうしきサイト</span>
+            <span class="settings-action__sub">おうちのひとと みる</span>
+          </span>
+        </a>
       </div>
       <a href="play-all.html" class="dev-link">📋 ぜんぶみる（開発用）</a>
 
@@ -4138,14 +4659,14 @@
   <div class="modal" id="passwordUnlockModal" hidden role="dialog" aria-modal="true" aria-labelledby="passwordUnlockTitle">
     <div class="password-modal-card">
       <div class="password-modal-inner">
-        <h3 id="passwordUnlockTitle" class="password-modal-title">えほん の パスワード</h3>
-        <p class="password-modal-help">えほんの うらに かいてある<br>パスワードを いれてね</p>
-        <input type="text" class="password-modal-input" id="passwordUnlockInput" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
-        <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">かいじょ！</button>
+        <h3 id="passwordUnlockTitle" class="password-modal-title">えほんの あいことば</h3>
+        <p class="password-modal-help">えほんの うらに かいてある<br>あいことばを いれてね</p>
+        <input type="text" class="password-modal-input" id="passwordUnlockInput" placeholder="あいことば" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
+        <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">ひらく！</button>
         <div class="password-modal-error" id="passwordUnlockError" hidden>ちがうよ！ もういちど！</div>
         <div class="password-modal-success" id="passwordUnlockSuccess" hidden>
-          <div class="password-modal-success-tag">✨ えほん モード が ひらいたよ ✨</div>
-          <p class="password-modal-success-body">あたらしい ゲームや ステージ、<br>たべものが あそべるように なったよ！</p>
+          <div class="password-modal-success-tag">✨ えほんの とくてんが ひらいたよ ✨</div>
+          <p class="password-modal-success-body">あたらしい ステージや<br>あそびが ひらいたよ！</p>
           <button class="password-modal-close" type="button" data-close="passwordUnlockModal">あそびに もどる</button>
           <button class="password-modal-reset" id="passwordUnlockReset" type="button">🔄 デバッグ: フリーに もどす</button>
         </div>
@@ -4455,11 +4976,14 @@
       } catch (_) {}
       return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
     })();
-    const MENU_GAMES = GAMES.filter((game) => {
-      if (game.id === 'quiz-sound') return false;
-      if (game.tier === 'sub' && !__isAppBuild) return false;
-      return true;
-    });
+    const TITLE_MENU_IDS = ['quizland', 'maze', 'oto', 'puzzle'];
+    const MENU_GAMES = TITLE_MENU_IDS
+      .map((id) => GAMES.find((game) => game.id === id))
+      .filter(Boolean)
+      .filter((game) => {
+        if (game.tier === 'sub' && !__isAppBuild) return false;
+        return true;
+      });
 
     let currentIdx = 0;
     let activeBgEl = 'A';
@@ -4510,15 +5034,12 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1615;
+    const PAGE_CACHE_VERSION = 1617;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
-    // Infinite-scroll loop: render the catalog 3× and silently teleport
-    // scrollTop when the user crosses a set boundary. data-idx stays the
-    // canonical 0..GAMES.length-1 index; data-rep is just the copy number.
-    // NOTE: 3 → 2 への削減は scroll teleport 計算 (start = oneSetH() の中央コピー基準、
-    // 境界 set*0.5 / set*1.5) を壊すので変更しない (2026-05-14 リスク回避)。
-    const LOOP_COPIES = 3;
+    // Reference-style title menu: the first screen intentionally shows four
+    // fixed cards, so the old infinite-scroll duplicate copies stay disabled.
+    const LOOP_COPIES = 1;
 
     function cardMarkup(g, i, rep) {
       // is-coming-soon: 通常の準備中カード (彩度↓ + play 半透明)
@@ -4548,7 +5069,7 @@
         ? '<span class="game-card__thumbPlaceholder" aria-hidden="true">?</span>'
         : `<img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">`;
       return `
-        <div class="game-card${comingClass}" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" role="button" tabindex="0" aria-pressed="false" aria-label="${esc(g.title)}" style="--card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
+        <button class="game-card${comingClass}" type="button" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" aria-label="${esc(g.title)} ${esc(g.subtitle)}" style="--card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
           <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
@@ -4559,10 +5080,10 @@
             <div class="game-card__desc">${decorateKana(g.subtitle)}</div>
           </div>
           ${comingBadge}
-          <button class="game-card__play" type="button" aria-label="はじめる" data-action="start">
+          <span class="game-card__play" aria-hidden="true">
             <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.webp'))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
-          </button>
-        </div>
+          </span>
+        </button>
       `;
     }
 
@@ -4577,7 +5098,6 @@
       cardList.addEventListener('pointerdown', onCardPointerDown, { passive: true });
       cardList.addEventListener('pointercancel', clearCardPointerDown, { passive: true });
       cardList.addEventListener('click', onCardClick);
-      cardList.addEventListener('keydown', onCardKeyDown);
 
       // Mark broken images so CSS fallbacks kick in (local preview without assets).
       // iOS Safari ではメモリ圧迫で <img> が一時的にロード失敗することがあるので、
@@ -4600,8 +5120,7 @@
         });
       });
 
-      // Wire the infinite-loop scroll teleport. Defer one frame so layout
-      // is committed and we can measure one set's height.
+      // Defer one frame so layout is committed and we can measure card height.
       requestAnimationFrame(setupLoopScroll);
     }
 
@@ -4641,6 +5160,13 @@
       // Final safety pass after layout settles
       setTimeout(recomputeHeight, 300);
       setTimeout(recomputeHeight, 1000);
+
+      if (LOOP_COPIES <= 1) {
+        cardList.scrollTop = 0;
+        cardScrollState.teleporting = false;
+        cardScrollState.snapping = false;
+        return;
+      }
 
       // One set's height = N cards + N gaps (the gap *after* the last card
       // of a set is what separates it from the next set's first card).
@@ -4846,12 +5372,12 @@
       if (!game) return;
       currentIdx = idx;
 
-      // Update card highlight + aria-pressed
+      // Update card highlight + current state
       const cards = cardList.querySelectorAll('.game-card');
-      cards.forEach((c, i) => {
-        const sel = (i === idx);
+      cards.forEach((c) => {
+        const sel = (Number(c.dataset.idx) === idx);
         c.classList.toggle('is-selected', sel);
-        c.setAttribute('aria-pressed', sel ? 'true' : 'false');
+        c.toggleAttribute('aria-current', sel);
       });
 
       // Crossfade backgrounds — encode URI to keep CSS url() value safe
@@ -4877,11 +5403,10 @@
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
     const BOTTOM_NAV_PRESS_AREAS = [
-      { left: '0%', right: '22%' },
-      { left: '20%', right: '40%' },
-      { left: '40%', right: '60%' },
-      { left: '60%', right: '80%' },
-      { left: '80%', right: '100%' }
+      { left: '0%', right: '25%' },
+      { left: '25%', right: '50%' },
+      { left: '50%', right: '75%' },
+      { left: '75%', right: '100%' }
     ];
     function clearBottomNavPressed() {
       bottomNav.querySelectorAll('.bn-item.is-pressed').forEach((btn) => btn.classList.remove('is-pressed'));
@@ -4912,8 +5437,6 @@
       const action = btn.dataset.action;
       if (action === 'help') {
         location.href = 'help.html';
-      } else if (action === 'official') {
-        location.href = 'index.html';
       } else if (action === 'news') {
         openModal('newsModal');
       } else if (action === 'stickers') {
@@ -6061,11 +6584,20 @@
       var banner = document.getElementById('dailyQuestInfo');
       var titleEl = document.getElementById('dailyQuestInfoTitle');
       var bodyEl  = document.getElementById('dailyQuestInfoBody');
+      var iconEl  = document.getElementById('dailyQuestInfoIcon');
       if (!banner || !titleEl || !bodyEl) return;
       if (!window.PonoDailyQuest) { banner.hidden = true; return; }
       var q;
       try { q = window.PonoDailyQuest.getToday(); } catch (_) { banner.hidden = true; return; }
       if (!q) { banner.hidden = true; return; }
+      var questIcon = {
+        maze: '🗺️',
+        quizland: '🦉',
+        puzzle: '🧩',
+        oto: '🎵',
+        bento: '🍱'
+      }[q.questId] || '⭐';
+      if (iconEl) iconEl.textContent = questIcon;
       if (q.bonusUsedAt) {
         // 達成済 + ボーナス消費後: クリア表示
         banner.hidden = false;
@@ -6309,9 +6841,6 @@
       });
       if (infoBanner) {
         infoBanner.addEventListener('click', _dailyQuestBannerActivate);
-        infoBanner.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _dailyQuestBannerActivate(); }
-        });
       }
       // 初回描画 + 可視性復帰時に再描画
       try { renderDailyQuestInfoBanner(); } catch (_) {}
@@ -6594,47 +7123,65 @@
       });
     }
 
-    // ===== 「えほんをもっているおともだちへ」 button → unlock flow =====
+    // ===== えほんのあいことば → unlock flow =====
     // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。
     // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
     // パスワード検証は common/tier.js の PonoTier.verifyBookPassword に集約。
-    // モーダル open 時の解錠 state スナップショット (close 時の reload 判定に使う)
+    // モーダル open 時の解錠 state スナップショット (close 時の表示更新に使う)
     let pwSnapshot = null;
-    const fpBtn = document.getElementById('forParentsBtn');
-    if (fpBtn) {
-      fpBtn.addEventListener('click', () => {
-        // 既に解錠済みなら成功メッセージを表示しつつ、 入力欄も常に表示して
-        // 上書き (例: 管理用 abcd → sub_active 付与) を可能にする
-        const already = (function() {
-          try { return localStorage.getItem('pono_premium') === '1'; } catch (e) { return false; }
-        })();
-        const errEl = document.getElementById('passwordUnlockError');
-        const successEl = document.getElementById('passwordUnlockSuccess');
-        const inputEl = document.getElementById('passwordUnlockInput');
-        const helpEl = document.querySelector('.password-modal-help');
-        const pwSubmitEl = document.getElementById('passwordUnlockSubmit');
-        if (errEl) errEl.hidden = true;
-        if (successEl) successEl.hidden = !already;
-        if (helpEl) helpEl.style.display = already ? 'none' : '';
-        // submit 成功時に input/submit を display:none にしているので、
-        // 再 open 時 (reload が走らないパス含む) は必ず可視化 + value クリア。
-        if (inputEl) {
-          inputEl.style.display = '';
-          inputEl.value = '';
-        }
-        if (pwSubmitEl) pwSubmitEl.style.display = '';
-        // close 時に「このセッション中に state が変わったか」を判定するため snapshot
-        try {
-          pwSnapshot = {
-            premium: localStorage.getItem('pono_premium'),
-            sub: localStorage.getItem('pono_sub_active'),
-          };
-        } catch (e) {
-          pwSnapshot = null;
-        }
-        openModal('passwordUnlockModal');
-      });
+    const bookUnlockEntry = document.getElementById('bookUnlockEntry');
+    const settingsBookUnlockBtn = document.getElementById('settingsBookUnlockBtn');
+    const settingsBookUnlockSub = document.getElementById('settingsBookUnlockSub');
+
+    function isBookBenefitUnlocked() {
+      try { return localStorage.getItem('pono_premium') === '1'; } catch (e) { return false; }
     }
+
+    function updateBookUnlockEntry() {
+      const unlocked = isBookBenefitUnlocked();
+      if (bookUnlockEntry) bookUnlockEntry.hidden = unlocked;
+      if (settingsBookUnlockSub) settingsBookUnlockSub.textContent = unlocked ? 'もういちど いれる' : 'あいことばを いれる';
+      if (settingsBookUnlockBtn) {
+        settingsBookUnlockBtn.setAttribute(
+          'aria-label',
+          unlocked ? 'えほんの あいことば もういちど いれる' : 'えほんの あいことば あいことばを いれる'
+        );
+      }
+    }
+
+    function openPasswordUnlockModal() {
+      // 既に解錠済みなら成功メッセージを表示しつつ、入力欄も常に表示して
+      // あいことばの再入力や管理用コード入力を可能にする。
+      const already = isBookBenefitUnlocked();
+      const errEl = document.getElementById('passwordUnlockError');
+      const successEl = document.getElementById('passwordUnlockSuccess');
+      const inputEl = document.getElementById('passwordUnlockInput');
+      const helpEl = document.querySelector('.password-modal-help');
+      const pwSubmitEl = document.getElementById('passwordUnlockSubmit');
+      if (errEl) errEl.hidden = true;
+      if (successEl) successEl.hidden = !already;
+      if (helpEl) helpEl.style.display = already ? 'none' : '';
+      // submit 成功時に input/submit を display:none にしているので、
+      // 再 open 時は必ず可視化 + value クリア。
+      if (inputEl) {
+        inputEl.style.display = '';
+        inputEl.value = '';
+      }
+      if (pwSubmitEl) pwSubmitEl.style.display = '';
+      try {
+        pwSnapshot = {
+          premium: localStorage.getItem('pono_premium'),
+          sub: localStorage.getItem('pono_sub_active'),
+        };
+      } catch (e) {
+        pwSnapshot = null;
+      }
+      openModal('passwordUnlockModal');
+      if (inputEl && !already) setTimeout(() => inputEl.focus(), 40);
+    }
+    if (bookUnlockEntry) bookUnlockEntry.addEventListener('click', openPasswordUnlockModal);
+    if (settingsBookUnlockBtn) settingsBookUnlockBtn.addEventListener('click', openPasswordUnlockModal);
+    updateBookUnlockEntry();
 
     // パスワード送信ハンドラ
     const pwSubmit = document.getElementById('passwordUnlockSubmit');
@@ -6662,6 +7209,7 @@
           pwSubmit.style.display = 'none';
           if (helpEl) helpEl.style.display = 'none';
           if (successEl) successEl.hidden = false;
+          updateBookUnlockEntry();
         } else {
           if (errEl) errEl.hidden = false;
           if (input) {
@@ -6686,9 +7234,8 @@
       });
     }
 
-    // パスワード解錠モーダルを閉じた時に、 「このモーダルセッション中に
-    // 解錠 state が変わった」場合だけリロードしてメニューを再描画する。
-    // (毎回 reload すると既解錠状態で開閉するだけでもリロードされてしまう)
+    // パスワード解錠モーダルを閉じた時に、 このモーダルセッション中の
+    // 解錠 state 変化をタイトル画面へ即時反映する。
     // 閉じパス ([data-close] / backdrop click) のどちらでも同じ処理を走らせるため
     // ヘルパに切り出して、 pwSnapshot と同じ IIFE モジュールスコープで 1 度だけ宣言。
     function handlePasswordModalClose() {
@@ -6697,7 +7244,7 @@
           const curPremium = localStorage.getItem('pono_premium');
           const curSub = localStorage.getItem('pono_sub_active');
           if (curPremium !== pwSnapshot.premium || curSub !== pwSnapshot.sub) {
-            setTimeout(() => location.reload(), 100);
+            updateBookUnlockEntry();
           }
         }
       } catch (e) {}
@@ -6739,6 +7286,51 @@
         e.target.hidden = true;
       }
     });
+
+    // ===== Settings: app refresh entry =====
+    const settingsRefreshBtn = document.getElementById('settingsRefreshBtn');
+    const settingsRefreshSub = document.getElementById('settingsRefreshSub');
+    function setSettingsRefreshText(text) {
+      if (settingsRefreshSub) settingsRefreshSub.textContent = text;
+    }
+    function reloadFromSettingsRefresh(delay) {
+      window.setTimeout(() => { location.reload(); }, delay || 500);
+    }
+    function requestSettingsRefresh() {
+      if (!settingsRefreshBtn || settingsRefreshBtn.disabled) return;
+      settingsRefreshBtn.disabled = true;
+      setSettingsRefreshText('かくにんちゅう');
+      if (!('serviceWorker' in navigator) || !navigator.serviceWorker.getRegistration) {
+        setSettingsRefreshText('よみなおすよ');
+        reloadFromSettingsRefresh(450);
+        return;
+      }
+      navigator.serviceWorker.getRegistration()
+        .then((reg) => {
+          if (!reg) {
+            setSettingsRefreshText('よみなおすよ');
+            reloadFromSettingsRefresh(450);
+            return null;
+          }
+          return reg.update().then(() => {
+            const waiting = reg.waiting;
+            if (waiting) {
+              setSettingsRefreshText('こうしんちゅう');
+              try { waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (_) {}
+              reloadFromSettingsRefresh(1400);
+            } else {
+              setSettingsRefreshText('よみなおすよ');
+              reloadFromSettingsRefresh(450);
+            }
+            return null;
+          });
+        })
+        .catch(() => {
+          setSettingsRefreshText('よみなおすよ');
+          reloadFromSettingsRefresh(450);
+        });
+    }
+    if (settingsRefreshBtn) settingsRefreshBtn.addEventListener('click', requestSettingsRefresh);
 
     // ===== Sound toggle (persisted) =====
     const SOUND_KEY = 'pono_sound_off';
@@ -7017,14 +7609,14 @@
     // Defaults mirror the original CSS (.card-list custom properties).
     // Aspect is stored as width:height numbers so we can drive a slider.
     const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-      "aspectW": 3.7,
-      "aspectH": 1.6,
+      "aspectW": 5.8,
+      "aspectH": 1,
       "radius": 22,
-      "thumbHPct": 82,
+      "thumbHPct": 73,
       "thumbZoom": 1.15,
-      "playHPct": 47,
-      "sideWPct": 4.6,
-      "textLeftWPct": 30.5,
+      "playHPct": 52,
+      "sideWPct": 3,
+      "textLeftWPct": 17,
       "textRightWPct": 13,
       "maskFile1": 1,
       "maskX1": 50,
