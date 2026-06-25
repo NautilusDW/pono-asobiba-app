@@ -1561,6 +1561,47 @@
       box-shadow: 0 4px 0 rgba(142, 83, 24, .28), 0 9px 18px rgba(58, 33, 11, .18);
     }
     .daily-gacha-close:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(142, 83, 24, .28); }
+    .daily-gacha-fixed-actions {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      z-index: 9;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      width: auto;
+      pointer-events: auto;
+    }
+    .daily-gacha-fixed-home,
+    .daily-gacha-shop-link {
+      flex: 0 0 clamp(58px, 7vw, 74px);
+      width: clamp(58px, 7vw, 74px);
+      aspect-ratio: 1;
+      border: 0;
+      padding: 0;
+      border-radius: 20px;
+      background-color: transparent;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
+      color: transparent;
+      font-size: 0;
+      cursor: pointer;
+      filter:
+        drop-shadow(0 8px 12px rgba(70, 38, 14, .23))
+        drop-shadow(0 0 10px rgba(255, 230, 128, .22));
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .1s ease, filter .1s ease;
+    }
+    .daily-gacha-fixed-home { background-image: url("assets/ui/gacha/daily_gacha_action_home_normal.png"); }
+    .daily-gacha-fixed-home:active { background-image: url("assets/ui/gacha/daily_gacha_action_home_pressed.png"); }
+    .daily-gacha-shop-link { background-image: url("assets/ui/daily_gacha_shop_button_acorn_v2_20260625.png"); }
+    .daily-gacha-fixed-home:active,
+    .daily-gacha-shop-link:active {
+      transform: translateY(3px) scale(.985);
+      filter: drop-shadow(0 4px 8px rgba(70, 38, 14, .2));
+    }
     .daily-gacha-machine-wrap {
       position: absolute;
       left: 50%;
@@ -3299,8 +3340,6 @@
     .donguri-shop__buy:active { transform:translateY(2px); box-shadow:0 1px 0 #8a4a00; }
     .donguri-shop__buy:disabled { background:#d8c89a; color:#6e4a00; cursor:not-allowed; box-shadow:0 3px 0 #8a6a00; opacity:.85; }
     .donguri-shop__empty { text-align:center; padding:24px; color:#6e4a00; font-size:16px; }
-    .daily-gacha-shop-link { border:2px solid #8a4a00; background:#fff; color:#6e4a00; font-size:14px; font-weight:bold; padding:8px 14px; border-radius:999px; cursor:pointer; margin-top:6px; box-shadow:0 2px 0 #8a4a00; }
-    .daily-gacha-shop-link:active { transform:translateY(1px); box-shadow:0 1px 0 #8a4a00; }
     .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-lux::before { filter:brightness(1.3) saturate(1.4); }
     .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-sparkles span { filter:drop-shadow(0 0 4px #ffd34d); }
 
@@ -3557,16 +3596,16 @@
     /* A1: チャレンジ情報バナー — ガチャエントリの真上、 生成プレート画像 */
     .daily-quest-info-banner {
       position: absolute;
-      bottom: 264px;
+      bottom: 272px;
       left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 24px);
-      width: 360px;
-      height: 98px;
+      width: 340px;
+      height: 105px;
       z-index: 91;
       display: block;
       padding: 0;
       border: 0;
       border-radius: 0;
-      background: transparent url("assets/ui/daily_challenge_banner_generated_20260625.png") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/daily_challenge_banner_gacha_style_20260625.png") center / 100% 100% no-repeat;
       color: #5a2d10;
       font-family: inherit;
       font-weight: 900;
@@ -3589,15 +3628,15 @@
     }
     .daily-quest-info-banner__body {
       position: absolute;
-      left: 44px;
-      right: 44px;
-      top: 52%;
-      bottom: 13px;
+      left: 48px;
+      right: 48px;
+      top: 56%;
+      bottom: 15px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #693512;
-      font-size: 21px;
+      font-size: 20px;
       line-height: 1.05;
       text-align: center;
       white-space: nowrap;
@@ -3632,46 +3671,24 @@
     }
     .daily-gacha-center-msg[hidden] { display: none; }
 
-    /* A3: ショップアイコン 常時 active で見やすく */
-    .daily-gacha-shop-link {
-      position: absolute;
-      top: 10px;
-      right: -96px;
-      z-index: 8;
-      width: 86px;
-      height: 86px;
-      border: 0;
-      background: transparent url("assets/ui/daily_gacha_shop_button_acorn_20260625.png") center / contain no-repeat;
-      color: transparent;
-      font-size: 0;
-      padding: 0;
-      border-radius: 20px;
-      cursor: pointer;
-      margin-top: 4px;
-      filter: drop-shadow(0 5px 8px rgba(48, 27, 10, .28));
-      -webkit-tap-highlight-color: transparent;
-    }
-    .daily-gacha-shop-link:active { transform: translateY(2px) scale(.98); filter: drop-shadow(0 3px 5px rgba(48, 27, 10, .22)); }
-    .daily-gacha-modal[data-gacha-step="1"] .daily-gacha-shop-link,
-    .daily-gacha-modal[data-gacha-step="2"] .daily-gacha-shop-link,
-    .daily-gacha-modal[data-gacha-step="3"] .daily-gacha-shop-link {
-      top: calc(100% + 8px);
-      right: 0;
-    }
-
     /* レスポンシブ: 既存 .daily-gacha-entry の縮小ブレークポイントに合わせてバナーも縮める */
     @media (max-width: 1200px) {
-      .daily-quest-info-banner { width: 340px; height: 92px; bottom: 256px; }
-      .daily-quest-info-banner__body { left: 42px; right: 42px; bottom: 12px; font-size: 20px; }
+      .daily-quest-info-banner { width: 320px; height: 99px; bottom: 266px; }
+      .daily-quest-info-banner__body { left: 46px; right: 46px; bottom: 14px; font-size: 19px; }
     }
     @media (max-width: 900px) {
-      .daily-quest-info-banner { width: 300px; height: 81px; bottom: 270px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 18px); }
-      .daily-quest-info-banner__body { left: 36px; right: 36px; bottom: 10px; font-size: 17px; }
+      .daily-quest-info-banner { width: 280px; height: 87px; bottom: 282px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 18px); }
+      .daily-quest-info-banner__body { left: 40px; right: 40px; bottom: 12px; font-size: 17px; }
     }
     @media (max-width: 720px) {
-      .daily-quest-info-banner { width: 280px; height: 76px; bottom: 276px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 14px); }
-      .daily-quest-info-banner__body { left: 34px; right: 34px; bottom: 9px; font-size: 16px; }
-      .daily-gacha-shop-link { width: 78px; height: 78px; right: -84px; top: 6px; }
+      .daily-quest-info-banner { width: 260px; height: 80px; bottom: 286px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 14px); }
+      .daily-quest-info-banner__body { left: 36px; right: 36px; bottom: 11px; font-size: 16px; }
+      .daily-gacha-fixed-actions { left: 10px; top: 10px; gap: 6px; }
+      .daily-gacha-fixed-home,
+      .daily-gacha-shop-link {
+        flex-basis: 62px;
+        width: 62px;
+      }
     }
 
     /* ===== v1577 M2: 鍵なし / 引き済み レバータップ feedback =====
@@ -3926,6 +3943,10 @@
     <div class="daily-gacha-shell">
       <div class="daily-gacha-room-bg" aria-hidden="true"></div>
       <button class="daily-gacha-close" id="dailyGachaClose" type="button" aria-label="とじる">×</button>
+      <div class="daily-gacha-fixed-actions" aria-label="ガチャのメニュー">
+        <button class="daily-gacha-fixed-home" id="dailyGachaFixedHome" type="button" aria-label="トップへ">トップ</button>
+        <button class="daily-gacha-shop-link" id="dailyGachaShopLink" type="button" aria-label="シールの おみせ">おみせ</button>
+      </div>
       <div class="daily-gacha-center-msg" id="dailyGachaCenterMsg" hidden aria-live="polite"></div>
       <div class="daily-gacha-lux" aria-hidden="true">
         <span></span><span></span><span></span><span></span>
@@ -3970,7 +3991,6 @@
         <div class="daily-gacha-actions">
           <button class="daily-gacha-action daily-gacha-action--assist" id="dailyGachaAssist" type="button" hidden>もういっかい まわす</button>
           <button class="daily-gacha-action daily-gacha-action--sub" id="dailyGachaBook" type="button" hidden>シールちょうへ</button>
-          <button class="daily-gacha-shop-link" id="dailyGachaShopLink" type="button" aria-label="シールの おみせ">おみせ</button>
         </div>
       </section>
 
@@ -3991,7 +4011,6 @@
           <div class="daily-gacha-reward-name" id="dailyGachaRewardName">シールを ゲット</div>
         </div>
         <div class="daily-gacha-closeup-actions">
-          <button class="daily-gacha-closeup-home" id="dailyGachaCloseupHome" type="button" aria-label="トップへ"></button>
           <button class="daily-gacha-closeup-book" id="dailyGachaCloseupBook" type="button" aria-label="シールちょうへ"></button>
         </div>
         <div class="daily-gacha-reward-note daily-gacha-reward-note--book" id="dailyGachaRewardNote"><span class="daily-gacha-reward-note__text">シールちょうに<br>はって あそぼう</span></div>
@@ -4400,7 +4419,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1595;
+    const PAGE_CACHE_VERSION = 1599;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -4958,7 +4977,7 @@
     const dailyGachaStatus = document.getElementById('dailyGachaStatus');
     const dailyGachaDirectHint = document.getElementById('dailyGachaDirectHint');
     const dailyGachaBook = document.getElementById('dailyGachaBook');
-    const dailyGachaCloseupHome = document.getElementById('dailyGachaCloseupHome');
+    const dailyGachaFixedHome = document.getElementById('dailyGachaFixedHome');
     const dailyGachaCloseupBook = document.getElementById('dailyGachaCloseupBook');
     const dailyGachaDropCapsule = document.getElementById('dailyGachaDropCapsule');
     const dailyGachaCloseCapsule = document.getElementById('dailyGachaCloseCapsule');
@@ -6337,7 +6356,7 @@
       });
     }
     if (dailyGachaBook) dailyGachaBook.addEventListener('click', goDailyGachaStickerBook);
-    if (dailyGachaCloseupHome) dailyGachaCloseupHome.addEventListener('click', goDailyGachaHome);
+    if (dailyGachaFixedHome) dailyGachaFixedHome.addEventListener('click', goDailyGachaHome);
     if (dailyGachaCloseupBook) dailyGachaCloseupBook.addEventListener('click', goDailyGachaStickerBook);
     const dailyGachaSoundToggle = document.getElementById('soundToggle');
     if (dailyGachaSoundToggle) {
