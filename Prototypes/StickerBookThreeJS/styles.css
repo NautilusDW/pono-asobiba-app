@@ -1797,6 +1797,24 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.88) rotate(-9deg);
   }
+  54% {
+    left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.90) rotate(-12deg);
+  }
+  60% {
+    left: var(--tutorial-demo-wander2-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-wander2-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.90) rotate(6deg);
+  }
+  65% {
+    left: var(--tutorial-demo-wander3-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-wander3-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.91) rotate(-4deg);
+  }
   70% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));

@@ -1627,8 +1627,9 @@ const STICKER_TUTORIAL_STEPS = [
     hand: "point",
     ghost: true,
     playbackRate: 1.04,
-    minAdvanceMs: 18500,
+    minAdvanceMs: 13500,
     advanceOn: ["dropSticker"],
+    advanceAfterAudio: true,
   },
   {
     id: "move",
@@ -3543,6 +3544,7 @@ function beginStickerTutorialSteps() {
     return;
   }
   stickerTutorialState.intro = false;
+  updateStickerTutorialTraySilhouettes(true, false);
   showStickerTutorialStep(0, { replayAudio: true });
 }
 
@@ -3558,6 +3560,7 @@ function showStickerTutorialStep(index, options = {}) {
     return;
   }
   stopStickerTutorialStepDemo();
+  updateStickerTutorialTraySilhouettes(true, false);
   if (stickerTutorialStart) {
     stickerTutorialStart.hidden = true;
   }
@@ -3609,6 +3612,7 @@ function prepareStickerTutorialStep(step) {
   if (!step) {
     return;
   }
+  updateStickerTutorialTraySilhouettes(true, step.id === "place");
   closeBookPageJump();
   if (activeAlbumMode === "collection") {
     setAlbumMode("free");
@@ -3764,7 +3768,7 @@ function startStickerTutorialPlaceDemo() {
   }
   setStickerTutorialHandKey("point");
   setStickerTrayPeek(true);
-  updateStickerTutorialTraySilhouettes(true);
+  updateStickerTutorialTraySilhouettes(true, true);
   document.body.classList.add("is-sticker-tutorial-combo-place");
   stickerTutorialDemoBaseScroll = collectionStickerTrayItems.scrollLeft;
   stickerTutorialDemoStartTime = performance.now();
@@ -4085,9 +4089,14 @@ function stopStickerTutorialStepDemo(options = {}) {
     "is-sticker-tutorial-combo-place",
     "is-sticker-tutorial-move-js",
     "is-sticker-tutorial-slider-js",
-    "is-sticker-tutorial-tray-silhouette",
   );
-  updateStickerTutorialTraySilhouettes(false);
+  if (stickerTutorialState) {
+    // Keep tray silhouette ON for the whole tutorial; only drop the yellow target highlight.
+    updateStickerTutorialTraySilhouettes(true, false);
+  } else {
+    document.body.classList.remove("is-sticker-tutorial-tray-silhouette");
+    updateStickerTutorialTraySilhouettes(false);
+  }
 }
 
 function setStickerTutorialHandBetween(from, to, progress) {
@@ -4187,6 +4196,14 @@ function playStickerTutorialAudio(step) {
         playAt(index + 1);
       } else {
         stickerTutorialAudio = null;
+        if (step.advanceAfterAudio && stickerTutorialState && !stickerTutorialState.actionDone) {
+          stickerTutorialState.actionDone = true;
+          window.setTimeout(() => {
+            if (stickerTutorialState?.actionDone && currentStickerTutorialStep() === step) {
+              showStickerTutorialStep(stickerTutorialState.index + 1);
+            }
+          }, 500);
+        }
       }
     }, { once: true });
     stickerTutorialAudio = audio;
@@ -4266,6 +4283,12 @@ function updateStickerTutorialDemo(step, rect) {
   setStickerTutorialPointVar("--tutorial-demo-choose-left-y", (demo.chooseLeft || demo.from).y);
   setStickerTutorialPointVar("--tutorial-demo-choose-right-x", (demo.chooseRight || demo.from).x);
   setStickerTutorialPointVar("--tutorial-demo-choose-right-y", (demo.chooseRight || demo.from).y);
+  setStickerTutorialPointVar("--tutorial-demo-wander1-x", (demo.wander1 || demo.from).x);
+  setStickerTutorialPointVar("--tutorial-demo-wander1-y", (demo.wander1 || demo.from).y);
+  setStickerTutorialPointVar("--tutorial-demo-wander2-x", (demo.wander2 || demo.to).x);
+  setStickerTutorialPointVar("--tutorial-demo-wander2-y", (demo.wander2 || demo.to).y);
+  setStickerTutorialPointVar("--tutorial-demo-wander3-x", (demo.wander3 || demo.to).x);
+  setStickerTutorialPointVar("--tutorial-demo-wander3-y", (demo.wander3 || demo.to).y);
   setStickerTutorialPointVar("--tutorial-ghost-x", demo.from.x);
   setStickerTutorialPointVar("--tutorial-ghost-y", demo.from.y);
   updateStickerTutorialGhost(step, demo.ghostSrc);
@@ -4341,6 +4364,12 @@ function stickerTutorialDemoPoints(step, rect) {
       x: Math.min(window.innerWidth - 58, to.x + Math.min(86, pageRect.width * 0.16)),
       y: Math.max(54, to.y - Math.min(72, pageRect.height * 0.16)),
     };
+    const midX = (source.x + to.x) / 2;
+    const midY = (source.y + to.y) / 2;
+    const wanderSpan = Math.min(110, Math.max(60, pageRect.width * 0.18));
+    const wander1 = { x: midX - wanderSpan * 0.55, y: midY - wanderSpan * 0.32 };
+    const wander2 = { x: midX + wanderSpan * 0.45, y: midY + wanderSpan * 0.28 };
+    const wander3 = { x: to.x * 0.6 + wander2.x * 0.4, y: to.y * 0.6 + wander2.y * 0.4 };
     return {
       ...base,
       hand: scrollFrom,
@@ -4351,6 +4380,9 @@ function stickerTutorialDemoPoints(step, rect) {
       chooseRight,
       scrollFrom,
       scrollTo,
+      wander1,
+      wander2,
+      wander3,
       ghostSrc: firstVisibleStickerAssetForTutorial(),
     };
   }
@@ -4441,9 +4473,9 @@ function stickerTutorialTargetTrayIcon() {
   return stickerTutorialTargetTrayButton()?.querySelector(".sticker-tray-icon") || visibleStickerTrayIconForTutorial();
 }
 
-function updateStickerTutorialTraySilhouettes(enabled = false) {
+function updateStickerTutorialTraySilhouettes(enabled = false, withTarget = enabled) {
   document.body.classList.toggle("is-sticker-tutorial-tray-silhouette", Boolean(enabled));
-  const targetSticker = enabled ? stickerTutorialPickSticker() : null;
+  const targetSticker = enabled && withTarget ? stickerTutorialPickSticker() : null;
   collectionStickerTrayItems?.querySelectorAll("[data-sticker-tray-id]").forEach((button) => {
     button.classList.toggle("is-tutorial-target-sticker", Boolean(targetSticker && button.dataset.stickerTrayId === targetSticker.id));
   });
@@ -4945,7 +4977,12 @@ function renderStickerThumbnailTray() {
     fragment.append(button);
   }
   collectionStickerTrayItems.replaceChildren(fragment);
-  updateStickerTutorialTraySilhouettes(currentStickerTutorialStep()?.id === "place");
+  if (stickerTutorialState) {
+    const tutorialStepId = currentStickerTutorialStep()?.id;
+    updateStickerTutorialTraySilhouettes(true, tutorialStepId === "place");
+  } else {
+    updateStickerTutorialTraySilhouettes(false);
+  }
   updateCollectionStickerTrayVisibility();
   updateStickerTrayCounter();
 }
