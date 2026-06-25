@@ -1845,77 +1845,84 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     opacity: 1;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
-  /* === find phase: 20-50% (中継 5 点 + fake-out + micro-vibration, 約 4.74s) === */
-  20% {
+  28% {
+    /* スライド完了後の hold: scroll-from 位置で hand 横向き継続 (find phase 突入直前まで覗き込みポーズに切替えない) */
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  /* === find phase: 30-50% (中継 5 点 + fake-out + micro-vibration, 約 3.16s に圧縮) === */
+  30% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.96) rotate(-3deg);
   }
-  26% {
+  34% {
     /* findWander1: tray 内 (横移動オンリー) で左に迷い */
     left: var(--tutorial-demo-find-wander1-x, var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%))));
     top: var(--tutorial-demo-find-wander1-y, var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%))));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.92) rotate(-10deg);
   }
-  30% {
+  36.5% {
     /* chooseLeft: 覗き込み hover */
     left: var(--tutorial-demo-choose-left-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-choose-left-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -33%) scale(0.90) rotate(-14deg);
   }
-  33% {
+  38.5% {
     /* chooseRight: 反対側へ振り戻し */
     left: var(--tutorial-demo-choose-right-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-choose-right-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.88) rotate(12deg);
   }
-  34.5% {
+  39.5% {
     /* micro-vibration 1 */
     left: var(--tutorial-demo-choose-right-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-choose-right-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(calc(-50% + 6px), -35%) scale(0.88) rotate(8deg);
   }
-  35.5% {
+  40.5% {
     /* micro-vibration 2 */
     left: var(--tutorial-demo-choose-right-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-choose-right-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(calc(-50% - 6px), -35%) scale(0.88) rotate(13deg);
   }
-  36% {
+  41% {
     /* micro-vibration 3 */
     left: var(--tutorial-demo-choose-right-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-choose-right-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.88) rotate(9deg);
   }
-  40% {
+  43% {
     /* fake-out: target 真横を素通り (tray Y 帯に固定) */
     left: var(--tutorial-demo-find-over-target-x, var(--tutorial-demo-over-target-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%))));
     top: var(--tutorial-demo-find-over-target-y, var(--tutorial-demo-over-target-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%))));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.85) rotate(-2deg);
   }
-  43% {
+  45.5% {
     /* chooseLeft 側に少し戻る */
     left: var(--tutorial-demo-choose-left-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-choose-left-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.86) rotate(-7deg);
   }
-  46% {
+  47.5% {
     /* source 着地 + 頷き bobbing 1 (沈み) */
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.86) rotate(-4deg);
   }
-  48% {
+  49% {
     /* 頷き bobbing 2 (浮き) */
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
@@ -1930,82 +1937,95 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -35%) scale(0.88) rotate(0deg);
   }
   /* === place phase: 53-80% (中継 5 段階 + 真上ホバリング + ためらい振動, 約 4.27s) === */
+  /* Phase 1 応急対応: 各 keyframe に animation-timing-function 個別付与
+     (easeOutCirc / Fitts ベース / back overshoot / 慎重減速) で segment 別 cubic-bezier 化 */
   53% {
-    /* pickup grab */
+    /* pickup grab (easeOutCirc: 軽快な持ち上げ) */
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.86) rotate(-12deg);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
   58% {
-    /* wander1: 反対ページ寄りまで大振り */
+    /* wander1: 反対ページ寄りまで大振り (Fitts ベース 探索移動) */
     left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.04) rotate(-18deg);
+    animation-timing-function: cubic-bezier(0.34, 0.04, 0.30, 0.96);
   }
   59% {
-    /* wander1 hold: 同座標で立ち止まり (≈0.24s, rotate -8 へ戻して「考えてる」) */
+    /* wander1 hold: 同座標で立ち止まり (≈0.24s, rotate -8 へ戻して「考えてる」) (Fitts ベース) */
     left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.04) rotate(-8deg);
+    animation-timing-function: cubic-bezier(0.34, 0.04, 0.30, 0.96);
   }
   63% {
-    /* wander2: 反対側へ往復 */
+    /* wander2: 反対側へ往復 (Fitts ベース) */
     left: var(--tutorial-demo-wander2-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-wander2-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.06) rotate(14deg);
+    animation-timing-function: cubic-bezier(0.34, 0.04, 0.30, 0.96);
   }
   68% {
-    /* wander3: back-track 「あれ違った」 で axis 40% に戻る */
+    /* wander3 / overshoot: back-track 「あれ違った」 で axis 40% に戻る (back overshoot, ためらい揺り戻し) */
     left: var(--tutorial-demo-wander3-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-wander3-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -36%) scale(1.02) rotate(-6deg);
+    animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);
   }
   70% {
-    /* overshoot: to を 8% 行きすぎる (小振幅 ≈0.32s) */
+    /* overshoot: to を 8% 行きすぎる (小振幅 ≈0.32s) (back overshoot 継続) */
     left: var(--tutorial-demo-overshoot-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-overshoot-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -36%) scale(1.00) rotate(2deg);
+    animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);
   }
   72% {
-    /* hover: 真上で停止 */
+    /* hover: 真上で停止 (慎重な減速) */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -36%) scale(1.00) rotate(3deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   73.5% {
-    /* ためらい振動 1 (左) */
+    /* ためらい振動 1 (左) (慎重な減速) */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(calc(-50% - 4px), -36%) scale(1.00) rotate(-3deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   75% {
-    /* ためらい振動 2 (戻) */
+    /* ためらい振動 2 (戻) (慎重な減速) */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(calc(-50% + 3px), -36%) scale(1.00) rotate(2deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   77% {
-    /* drop 押し付け ぐっ */
+    /* drop 押し付け ぐっ (置く所作) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -33%) scale(0.92) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   80% {
-    /* release lift */
+    /* release lift (置く所作) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.04) rotate(2deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   83%, 100% {
     /* away */

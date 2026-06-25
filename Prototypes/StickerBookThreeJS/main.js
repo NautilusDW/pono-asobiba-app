@@ -4470,19 +4470,20 @@ function stickerTutorialDemoPoints(step, rect) {
     const perpX = -dy / dist;
     const perpY = dx / dist;
     const wander1 = {
-      // axis 0% で perp 方向 1.20w + 上 0.50w → 反対ページ寄りまで大振り
-      x: source.x + perpX * wanderSpan * 1.20,
-      y: source.y + perpY * wanderSpan * 1.20 - wanderSpan * 0.50,
+      // axis 0% で perp 方向 1.40w + 上 0.50w → 反対ページ寄りまで大振り (1.20 → 1.40 = 1.4 倍)
+      x: source.x + perpX * wanderSpan * 1.40,
+      y: source.y + perpY * wanderSpan * 1.40 - wanderSpan * 0.50,
     };
     const wander2 = {
-      // axis 0.85 まで大ジャンプ (to の手前 15% 地点) で逆 perp 0.30w
-      x: source.x + dx * 0.85 - perpX * wanderSpan * 0.30,
-      y: source.y + dy * 0.85 - perpY * wanderSpan * 0.30 + wanderSpan * 0.10,
+      // axis 0.85 まで大ジャンプ (to の手前 15% 地点) で perp +0.48w
+      // decoy が近接化したので perp 符号を反転 (-0.30 → +0.48 = 1.6 倍 + decoy 側へ寄せ)
+      x: source.x + dx * 0.85 + perpX * wanderSpan * 0.48,
+      y: source.y + dy * 0.85 + perpY * wanderSpan * 0.48 + wanderSpan * 0.10,
     };
     const wander3 = {
-      // axis 0.40 まで back-track ★「あれ違った」 の核
-      x: source.x + dx * 0.40 + perpX * wanderSpan * 0.20,
-      y: source.y + dy * 0.40 + perpY * wanderSpan * 0.20 - wanderSpan * 0.25,
+      // axis 0.40 まで back-track ★「あれ違った」 の核 (0.20 → 0.24 = 1.2 倍 微調整)
+      x: source.x + dx * 0.40 + perpX * wanderSpan * 0.24,
+      y: source.y + dy * 0.40 + perpY * wanderSpan * 0.24 - wanderSpan * 0.25,
     };
     const overshoot = {
       // to を 8% 通り過ぎる (小振幅)
@@ -4596,14 +4597,40 @@ function stickerTutorialPickActiveStickers() {
   const stickers = [];
   const main = stickerTutorialPickSticker();
   if (main) stickers.push(main);
-  for (const id of STICKER_TUTORIAL_DECOY_STICKER_IDS) {
-    const s = stickerOptions.find((item) => item.id === id);
-    if (s && !stickers.some((x) => x.id === s.id)) stickers.push(s);
+  // 1) MAIN の DOM index ±1, ±2, ±3 を順に試行して decoy 2 個を viewport 内に揃える
+  const trayButtons = collectionStickerTrayItems
+    ? [...collectionStickerTrayItems.querySelectorAll("[data-sticker-tray-id]")]
+    : [];
+  if (main && trayButtons.length) {
+    const mainIndex = trayButtons.findIndex((btn) => btn.dataset.stickerTrayId === main.id);
+    if (mainIndex >= 0) {
+      const offsets = [-1, 1, -2, 2, -3, 3];
+      for (const offset of offsets) {
+        if (stickers.length >= 3) break;
+        const idx = mainIndex + offset;
+        if (idx < 0 || idx >= trayButtons.length) continue;
+        const id = trayButtons[idx].dataset.stickerTrayId;
+        if (!id) continue;
+        const candidate = stickerOptions.find((item) => item.id === id);
+        if (!candidate || stickers.some((x) => x.id === candidate.id)) continue;
+        stickers.push(candidate);
+      }
+    }
   }
-  // fallback: decoy が足りない時は stickerOptions の先頭から補完
-  for (const candidate of stickerOptions) {
-    if (stickers.length >= 3) break;
-    if (!stickers.some((x) => x.id === candidate.id)) stickers.push(candidate);
+  // 2) 揃わなかった場合のみ fallback: 既存 STICKER_TUTORIAL_DECOY_STICKER_IDS を使う
+  if (stickers.length < 3) {
+    for (const id of STICKER_TUTORIAL_DECOY_STICKER_IDS) {
+      if (stickers.length >= 3) break;
+      const s = stickerOptions.find((item) => item.id === id);
+      if (s && !stickers.some((x) => x.id === s.id)) stickers.push(s);
+    }
+  }
+  // 3) それでも足りない時は stickerOptions の先頭から補完 (空配列防御)
+  if (stickers.length < 3) {
+    for (const candidate of stickerOptions) {
+      if (stickers.length >= 3) break;
+      if (!stickers.some((x) => x.id === candidate.id)) stickers.push(candidate);
+    }
   }
   return stickers;
 }
