@@ -1861,7 +1861,8 @@
       width: min(500px, 84vw);
       pointer-events: none;
       transform: translateX(-50%);
-      transition: opacity .2s ease, transform .2s ease;
+      /* v1594: スライド演出削除 — step 0→1 の transform/right 切替で「真ん中→右」 にスライドしていたため transition を除去 */
+      transition: opacity .2s ease;
     }
     .daily-gacha-direct-hint {
       position: absolute;
@@ -3369,17 +3370,27 @@
     }
     .donguri-shop-v2-machine img { width:100%; height:auto; display:block; }
     .donguri-shop-v2-hedgehog {
-      /* v1591: hedgehog 縮小 (28%→20% / max 260→170 / bottom 14%→6%) — タイトル/カードを覆わない、 カウンター上端から顔だけ覗くサイズ */
+      /* v1591: hedgehog 縮小 (28%→20% / max 260→170 / bottom 14%→6%) — タイトル/カードを覆わない、 カウンター上端から顔だけ覗くサイズ
+         v1594: drop-shadow を除去 (partner_harinezumi.webp が RGB 不透明 = 四角全体に影が落ちて白い枠が見えていた)。
+         画像は cream/白い背景込みなので img 側に mix-blend-mode: multiply で白い四角を背景に同化させる。 */
       position: absolute; left: 4%; bottom: 6%;
       width: 20%; max-width: 170px; min-width: 96px;
       z-index: 3; pointer-events: none;
-      filter: drop-shadow(0 6px 10px rgba(0,0,0,.3));
+      background: transparent;
+      border: 0;
     }
-    .donguri-shop-v2-hedgehog img { width:100%; height:auto; display:block; }
+    .donguri-shop-v2-hedgehog img {
+      width:100%; height:auto; display:block;
+      background: transparent;
+      aspect-ratio: auto;
+      mix-blend-mode: multiply;
+    }
     .donguri-shop-v2-bubble {
-      /* v1591: bubble 縮小 (max 56%→44% / font 17→14 / padding 10/16→6/12) — hedgehog 縮小に伴い位置調整 */
-      position: absolute; left: 4%; top: 6%;
-      max-width: 44%;
+      /* v1595: countdown bubble 重複解消 — #donguriShopCountdown を削除して 1 つに統合。
+         位置を hedgehog (left:4%, bottom:6%, width:20%) の右下隣に再配置し tail を左下向きに。
+         user 指示「ハリネズミのすぐ右下あたり」 */
+      position: absolute; left: 24%; bottom: 10%;
+      max-width: 32%;
       z-index: 4;
       background: #fffbe8; border: 3px solid #b88600; border-radius: 18px;
       padding: 6px 12px;
@@ -3387,10 +3398,12 @@
       box-shadow: 0 3px 0 #b88600, 0 6px 12px rgba(0,0,0,.18);
     }
     .donguri-shop-v2-bubble::after {
-      content: ''; position: absolute; left: 22%; bottom: -14px;
-      width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent;
-      border-top: 16px solid #fffbe8;
-      filter: drop-shadow(0 2px 0 #b88600);
+      /* v1595: tail 方向を bubble の左辺 → hedgehog (左下) へ向ける。
+         元は bubble 下辺中央付近に下向き三角だった。 今は左辺中央やや下に左向き三角。 */
+      content: ''; position: absolute; left: -14px; bottom: 18%;
+      width: 0; height: 0; border-top: 12px solid transparent; border-bottom: 12px solid transparent;
+      border-right: 16px solid #fffbe8;
+      filter: drop-shadow(-2px 0 0 #b88600);
     }
     .donguri-shop-v2-head {
       position: absolute; top: 0; left: 0; right: 0;
@@ -3424,22 +3437,27 @@
       /* v1588 NTH3: slot row 全幅を 64% -> 80% に拡張 (chubby finger に窮屈解消)。
          right: 4% は gacha machine clearance を維持、 left を 32% -> 16% に詰めて hedgehog 上に張り出す。
          v1591: hedgehog 縮小に伴い left 16%→26% に詰め (hedgehog の右側に綺麗に並ぶ)、 縦中央寄せのため
-         bottom 22%→26% に少し上げて countdown bubble との重複を解消。 */
-      position: absolute; left: 26%; right: 4%; bottom: 26%;
+         bottom 22%→26% に少し上げて countdown bubble との重複を解消。
+         v1594: bottom 26%→14% に下げて「テーブル面に近い」 配置に、 right 4%→6% (gacha 機削除で clearance 不要 → 反対に余裕を持たせる) */
+      position: absolute; left: 26%; right: 6%; bottom: 14%;
       display: flex; gap: 2.5%; justify-content: center; align-items: flex-end;
       z-index: 4;
     }
     .donguri-shop-v2-slot {
       flex: 1 1 0;
       /* v1588 NTH3: 1 slot あたり最小 56px (タップターゲット確保) + 上限 30%
-         v1591: padding 10/8/10 → 6/6/6、 gap 6→4 に詰め、 縦サイズを 70% スケールへ */
+         v1591: padding 10/8/10 → 6/6/6、 gap 6→4 に詰め、 縦サイズを 70% スケールへ
+         v1594: カード縮小 (max-width 30%→24% / padding 6→4) + 「テーブルの上に浮いてる」 二段 drop-shadow へ強化 */
       min-width: 56px;
-      max-width: 30%;
+      max-width: 24%;
       background: linear-gradient(180deg, #fff8e0, #ffe9a8);
       border: 3px solid #b88600; border-radius: 16px;
-      padding: 6px 6px 6px;
+      padding: 4px 4px 4px;
       display: flex; flex-direction: column; align-items: center; gap: 4px;
-      box-shadow: 0 3px 0 #b88600, 0 6px 14px rgba(48,27,10,.22);
+      box-shadow:
+        0 3px 0 #b88600,
+        0 8px 16px rgba(0,0,0,.28),
+        0 2px 4px rgba(0,0,0,.18);
       position: relative;
       animation: pono-shop-v2-float 2.6s ease-in-out infinite;
     }
@@ -3458,8 +3476,9 @@
     }
     .donguri-shop-v2-thumb img { max-width: 86%; max-height: 86%; }
     .donguri-shop-v2-thumb-fallback { font-size: 34px; }
-    /* v1591: thumb の最大高を制限してカード縦サイズを抑制 */
-    .donguri-shop-v2-thumb { max-height: 140px; }
+    /* v1591: thumb の最大高を制限してカード縦サイズを抑制
+       v1594: 140→100 に縮小 (カード全体を一回り小さく) */
+    .donguri-shop-v2-thumb { max-height: 100px; }
     .donguri-shop-v2-thumb.is-hearting img { animation: pono-shop-v2-heartjump 600ms ease-out; }
     @keyframes pono-shop-v2-heartjump {
       0% { transform: translateY(0) scale(1); }
@@ -3523,20 +3542,8 @@
       0%, 100% { transform: rotate(-8deg) scale(1); }
       50% { transform: rotate(-8deg) scale(1.08); }
     }
-    .donguri-shop-v2-countdown {
-      /* v1591: countdown bubble をタイトル直下に移動 (bottom→top:62px) 子供の視線移動が title→countdown→cards で自然に。
-         max-width 60% で modal 内に確実に収まる、 z-index も head (5) と同層に */
-      position: absolute; left: 50%; top: 62px;
-      transform: translateX(-50%);
-      max-width: 60%;
-      padding: 6px 16px;
-      background: rgba(255, 247, 224, .92);
-      border: 2px solid #b88600; border-radius: 999px;
-      color: #5a3a00; font-size: 13px; font-weight: 900;
-      text-align: center;
-      box-shadow: 0 3px 0 #b88600;
-      z-index: 5;
-    }
+    /* v1595: .donguri-shop-v2-countdown rule を削除 — 中央上 countdown plate と hedgehog 横 bubble の
+       重複表示を解消するため #donguriShopCountdown DOM ごと撤去。 countdown text は .donguri-shop-v2-bubble に統合。 */
     @media (prefers-reduced-motion: reduce) {
       .donguri-shop-v2-slot,
       .donguri-shop-v2-slot:nth-child(2),
@@ -3547,49 +3554,59 @@
     }
 
     /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
-    /* A1: チャレンジ情報バナー — ガチャエントリの真上、 木製 cream cardlet */
+    /* A1: チャレンジ情報バナー — ガチャエントリの真上、 生成プレート画像 */
     .daily-quest-info-banner {
       position: absolute;
-      bottom: 246px;
-      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px);
-      width: 390px;
-      min-height: 76px;
-      z-index: 92;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: flex-start;
-      gap: 4px;
-      padding: 12px 20px;
-      border: 3px solid #b88600;
-      border-radius: 18px;
-      background: linear-gradient(180deg, #fff7d8, #ffe9a8);
-      color: #4a3300;
+      bottom: 264px;
+      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 24px);
+      width: 360px;
+      height: 98px;
+      z-index: 91;
+      display: block;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent url("assets/ui/daily_challenge_banner_generated_20260625.png") center / 100% 100% no-repeat;
+      color: #5a2d10;
       font-family: inherit;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: 0 4px 0 #b88600, 0 8px 18px rgba(48, 27, 10, 0.22);
+      filter: drop-shadow(0 8px 12px rgba(48, 27, 10, 0.22));
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
     .daily-quest-info-banner[hidden] { display: none; }
-    .daily-quest-info-banner:active { transform: translateY(2px); box-shadow: 0 2px 0 #b88600, 0 4px 10px rgba(48, 27, 10, 0.18); }
+    .daily-quest-info-banner:active { transform: translateY(2px); filter: drop-shadow(0 4px 8px rgba(48, 27, 10, 0.18)); }
     .daily-quest-info-banner:focus-visible { outline: 3px solid #ffd34d; outline-offset: 3px; }
     .daily-quest-info-banner__title {
-      font-size: 16px;
-      letter-spacing: .04em;
-      color: #8a4a00;
-      line-height: 1.1;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .daily-quest-info-banner__body {
-      font-size: 22px;
-      line-height: 1.15;
-      color: #4a2a10;
-      white-space: pre-line;
+      position: absolute;
+      left: 44px;
+      right: 44px;
+      top: 52%;
+      bottom: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #693512;
+      font-size: 21px;
+      line-height: 1.05;
+      text-align: center;
+      white-space: nowrap;
+      text-shadow: 0 1px 0 rgba(255, 248, 219, .95), 0 2px 4px rgba(255, 248, 219, .35);
+      transform: scale(var(--daily-quest-body-scale, 1));
+      transform-origin: center;
     }
-    .daily-quest-info-banner[data-state="done"] { background: linear-gradient(180deg, #fff2d0, #ffd884); border-color: #a35200; }
-    .daily-quest-info-banner[data-state="done"] .daily-quest-info-banner__title { color: #a35200; }
-    .daily-quest-info-banner[data-state="cleared"] { background: linear-gradient(180deg, #fff7e0, #f0e0b8); }
+    .daily-quest-info-banner[data-state="done"] .daily-quest-info-banner__body { color: #8a3f00; }
+    .daily-quest-info-banner[data-state="cleared"] .daily-quest-info-banner__body { color: #6a5432; }
 
     /* A2: ガチャモーダル中央メッセージ — 鍵なし / 引き済みの説明テキスト */
     .daily-gacha-center-msg {
@@ -3617,34 +3634,34 @@
 
     /* A3: ショップアイコン 常時 active で見やすく */
     .daily-gacha-shop-link {
-      border: 3px solid #8a4a00;
-      background: linear-gradient(180deg, #ffd98a, #ffb04a);
-      color: #4a2a10;
-      font-size: 17px;
-      font-weight: 900;
-      padding: 12px 20px;
-      border-radius: 999px;
+      width: 86px;
+      height: 86px;
+      border: 0;
+      background: transparent url("assets/ui/daily_gacha_shop_button_acorn_20260625.png") center / contain no-repeat;
+      color: transparent;
+      font-size: 0;
+      padding: 0;
+      border-radius: 20px;
       cursor: pointer;
-      margin-top: 8px;
-      box-shadow: 0 4px 0 #8a4a00, 0 6px 14px rgba(0, 0, 0, .2);
-      letter-spacing: .02em;
+      margin-top: 4px;
+      filter: drop-shadow(0 5px 8px rgba(48, 27, 10, .28));
+      -webkit-tap-highlight-color: transparent;
     }
-    .daily-gacha-shop-link:active { transform: translateY(2px); box-shadow: 0 2px 0 #8a4a00, 0 3px 8px rgba(0, 0, 0, .18); }
+    .daily-gacha-shop-link:active { transform: translateY(2px) scale(.98); filter: drop-shadow(0 3px 5px rgba(48, 27, 10, .22)); }
 
     /* レスポンシブ: 既存 .daily-gacha-entry の縮小ブレークポイントに合わせてバナーも縮める */
     @media (max-width: 1200px) {
-      .daily-quest-info-banner { width: 360px; bottom: 235px; min-height: 70px; padding: 10px 18px; }
-      .daily-quest-info-banner__title { font-size: 15px; }
-      .daily-quest-info-banner__body { font-size: 20px; }
+      .daily-quest-info-banner { width: 340px; height: 92px; bottom: 250px; }
+      .daily-quest-info-banner__body { left: 42px; right: 42px; bottom: 12px; font-size: 20px; }
     }
     @media (max-width: 900px) {
-      .daily-quest-info-banner { width: 318px; bottom: 210px; min-height: 64px; padding: 9px 16px; }
-      .daily-quest-info-banner__title { font-size: 14px; }
-      .daily-quest-info-banner__body { font-size: 18px; }
+      .daily-quest-info-banner { width: 300px; height: 81px; bottom: 218px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 18px); }
+      .daily-quest-info-banner__body { left: 36px; right: 36px; bottom: 10px; font-size: 17px; }
     }
     @media (max-width: 720px) {
-      .daily-quest-info-banner { width: 296px; bottom: 200px; min-height: 60px; padding: 8px 14px; }
-      .daily-quest-info-banner__body { font-size: 17px; }
+      .daily-quest-info-banner { width: 280px; height: 76px; bottom: 206px; left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 14px); }
+      .daily-quest-info-banner__body { left: 34px; right: 34px; bottom: 9px; font-size: 16px; }
+      .daily-gacha-shop-link { width: 78px; height: 78px; }
     }
 
     /* ===== v1577 M2: 鍵なし / 引き済み レバータップ feedback =====
@@ -3943,7 +3960,7 @@
         <div class="daily-gacha-actions">
           <button class="daily-gacha-action daily-gacha-action--assist" id="dailyGachaAssist" type="button" hidden>もういっかい まわす</button>
           <button class="daily-gacha-action daily-gacha-action--sub" id="dailyGachaBook" type="button" hidden>シールちょうへ</button>
-          <button class="daily-gacha-shop-link" id="dailyGachaShopLink" type="button">🛍️ シール ショップ</button>
+          <button class="daily-gacha-shop-link" id="dailyGachaShopLink" type="button" aria-label="シールの おみせ">おみせ</button>
         </div>
       </section>
 
@@ -3977,9 +3994,7 @@
   <div class="donguri-shop" id="donguriShop" hidden role="dialog" aria-modal="true" aria-labelledby="donguriShopTitle">
     <div class="donguri-shop-v2-backdrop" aria-hidden="true"></div>
     <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
-    <div class="donguri-shop-v2-machine" aria-hidden="true">
-      <img src="assets/ui/gacha/daily_gacha_machine.png" alt="" draggable="false" />
-    </div>
+    <!-- v1594: ショップからガチャ機を削除 (ガチャ機は #dailyGachaModal 専用、 ショップ overlay には不要)。 .donguri-shop-v2-machine CSS rule は残置 (orphan、 影響なし) -->
     <div class="donguri-shop-v2-hedgehog" aria-hidden="true">
       <img src="assets/images/puzzle/partners/partner_harinezumi.webp" alt="" draggable="false" />
     </div>
@@ -3993,7 +4008,7 @@
       </div>
     </header>
     <div class="donguri-shop-v2-slots" id="donguriShopSlots" role="list"></div>
-    <div class="donguri-shop-v2-countdown" id="donguriShopCountdown" hidden>もうすぐ かわるよ</div>
+    <!-- v1595: #donguriShopCountdown を削除 — countdown text は #donguriShopBubble に統合 (hedgehog 右下隣) -->
   </div>
 
   <!-- v1571 phase 5: ショップ購入演出オーバーレイ (zoom-in + 紙吹雪) -->
@@ -4375,7 +4390,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1578;
+    const PAGE_CACHE_VERSION = 1595;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -5906,6 +5921,20 @@
       closeDailyGacha();
     }
 
+    function fitDailyQuestInfoBody() {
+      var bodyEl = document.getElementById('dailyQuestInfoBody');
+      var banner = document.getElementById('dailyQuestInfo');
+      if (!bodyEl || !banner || banner.hidden) return;
+      bodyEl.style.setProperty('--daily-quest-body-scale', '1');
+      window.requestAnimationFrame(function () {
+        if (!bodyEl || !banner || banner.hidden) return;
+        var available = bodyEl.clientWidth || 1;
+        var needed = bodyEl.scrollWidth || available;
+        var scale = needed > available ? Math.max(0.78, available / needed) : 1;
+        bodyEl.style.setProperty('--daily-quest-body-scale', String(Math.round(scale * 1000) / 1000));
+      });
+    }
+
     // ===== お題 + ショップ phase 4→v1575 (バナー + 中央メッセージ + 常時ショップ) =====
     // チャレンジ情報バナー描画 (ガチャエントリの真上、 ボタン増設ではなく純情報)
     function renderDailyQuestInfoBanner() {
@@ -5934,8 +5963,10 @@
         banner.hidden = false;
         banner.setAttribute('data-state', 'pending');
         titleEl.textContent = 'きょうの チャレンジ';
-        bodyEl.textContent = (q.label || 'おだい') + ' で あそぼう！';
+        bodyEl.textContent = q.label || 'おだい';
       }
+      banner.setAttribute('aria-label', titleEl.textContent + ' ' + bodyEl.textContent);
+      fitDailyQuestInfoBody();
     }
     function _dailyQuestBannerActivate() {
       if (!window.PonoDailyQuest) return;
@@ -6023,13 +6054,12 @@
       var slotsEl    = document.getElementById('donguriShopSlots');
       var balEl      = document.getElementById('donguriShopBalance');
       var bubbleEl   = document.getElementById('donguriShopBubble');
-      var countEl    = document.getElementById('donguriShopCountdown');
+      // v1595: countEl (#donguriShopCountdown) 削除 — countdown text は bubbleEl 1 箇所に集約
       if (!slotsEl) return;
       var balance = (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0;
       if (balEl) balEl.textContent = String(balance);
       var countdownText = _formatShopCountdown();
       if (bubbleEl) bubbleEl.textContent = countdownText;
-      if (countEl) { countEl.textContent = countdownText; countEl.hidden = false; }
       if (!window.PonoDonguriShop) {
         slotsEl.innerHTML = '<div class="donguri-shop-v2-slot"><div class="donguri-shop-v2-thumb"><span class="donguri-shop-v2-thumb-fallback">…</span></div></div>';
         return;
@@ -6073,10 +6103,9 @@
             } else if (canBuy) {
               actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy">かう</button>';
             } else {
-              // canPurchase=false かつ未所持 = balance不足 / rotation外 (= UI 表示中の rotation 外は通常発生しない)。
-              var shortBy = Math.max(0, 50 - balance);
-              var btnLabel = shortBy > 0 ? ('あと' + shortBy + ' 🌰') : 'かえないよ';
-              actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" disabled>' + btnLabel + '</button>';
+              // canPurchase=false かつ未所持 = balance不足 / rotation外。
+              // v1594: 「あと N 🌰」 「かえないよ」 等のテキスト表示を廃止 — silent disabled (カード/値段は表示するがボタンは出さない)。
+              actionHtml = '';
             }
             slot.innerHTML =
               badgeHtml +
@@ -6157,6 +6186,9 @@
       });
       window.addEventListener('pageshow', function () {
         try { renderDailyQuestInfoBanner(); } catch (_) {}
+      });
+      window.addEventListener('resize', function () {
+        try { fitDailyQuestInfoBody(); } catch (_) {}
       });
     })();
 
