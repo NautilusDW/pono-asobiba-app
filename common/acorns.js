@@ -20,7 +20,9 @@
 
   function add(n, opts) {
     // MVP: どんぐりを LS に書き込まない。get() は 0 のまま。
-    if (window.PONO_MVP_NO_REWARDS) return 0;
+    // v1592: carve-out — PONO_MVP_ENABLE_ACORNS = true ならどんぐりだけ通す。
+    //         アクアリウム / 部屋 / ログインボーナスは引き続き block。
+    if (window.PONO_MVP_NO_REWARDS && !window.PONO_MVP_ENABLE_ACORNS) return 0;
     var delta = n | 0;
     if (delta === 0) return get();
     var before = get();
@@ -97,7 +99,8 @@
   function addDaily(gameId, n, cap, opts) {
     // MVP: 日次キャップ判定もスキップ、加算もしない。各ゲームの clear モーダルは
     // 戻り値 0 を受けて「+0」表示になるが、その表示自体は CSS で隠してある。
-    if (window.PONO_MVP_NO_REWARDS) return 0;
+    // v1592: carve-out — PONO_MVP_ENABLE_ACORNS = true ならどんぐりだけ通す。
+    if (window.PONO_MVP_NO_REWARDS && !window.PONO_MVP_ENABLE_ACORNS) return 0;
     var wanted = n | 0;
     var gameLimit = (cap | 0) > 0 ? (cap | 0) : 5;
     if (wanted <= 0) return 0;
