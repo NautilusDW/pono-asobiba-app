@@ -1496,7 +1496,9 @@ body.is-sticker-tutorial-step-rotate .sticker-tutorial-hand {
 body.is-sticker-tutorial-step-scale.is-sticker-tutorial-slider-js .sticker-tutorial-hand,
 body.is-sticker-tutorial-step-rotate.is-sticker-tutorial-slider-js .sticker-tutorial-hand {
   animation: none;
-  transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.96);
+  /* 90° 回転 + scaleX(-1) で指先 (画像 local 32%H, 50%W) が handY に乗るよう translate Y を +36.5% に補正。
+     基本ステート (translate(-50%, -35%)) は非回転前提の値なので、回転後は逆方向のオフセットが必要 */
+  transform: translate(-50%, 36.5%) scaleX(-1) rotate(90deg) scale(0.96);
 }
 
 body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
@@ -1879,12 +1881,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   0%, 100% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.96);
+    /* slider-js steady-state と同じ補正値 (rotate 90° 後の指先 → handY) */
+    transform: translate(-50%, 36.5%) scaleX(-1) rotate(90deg) scale(0.96);
   }
   55% {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(1);
+    transform: translate(-50%, 36.5%) scaleX(-1) rotate(90deg) scale(1);
   }
 }
 
