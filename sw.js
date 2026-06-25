@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1615: おみせの前景テーブルを下げ、リス店員を別ポーズに差し替えてテーブル背面レイヤーへ分離。
 // v1614: おみせの「こうかんする」カード、リス店員の接地位置、こもれびや看板ロゴを調整。
 // v1613: もりのおみせ こもれびや の吊り看板と「かう」押下カード素材を配信キャッシュへ反映。
 // v1612: シール帳チュートリアル mode step の approach 中 hand 翻りを解消 (open のまま位置のみ移動、 press swap と同フレームで反転)。 find phase の grip 切替を 7000ms → 8400ms へ遅延し、 蝶々上で静止した直後に grip するよう調整。 Prototypes/StickerBookThreeJS/main.js + styles.css のみ編集。
