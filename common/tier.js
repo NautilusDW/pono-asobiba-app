@@ -27,6 +27,25 @@
 (function() {
   'use strict';
 
+  // ---- PonoDebugMode gating helper ----
+  // common/debug-mode.js が定義する window.PonoDebugMode.isAllowed() を一元参照。
+  // staging-only (localhost/127.0.0.1/*staging*) + sessionStorage('pono_debug_mode_session'==='1') を
+  // 同時に満たした時のみ true を返す。 本番ホスト or unlock 前は常に false。
+  //
+  // 本ヘルパーは「クライアント側だけで完結する unlock 抜け穴」 (localStorage 'pono_premium' /
+  // sessionStorage 'pono_capture_tier_override' / window.__APP_BUILD__ / 印字パスワード /
+  // 管理用マスター) のゲートに使う。 正規の paid book/sub は将来 Stripe/IAP の
+  // サーバ検証経由になるため、 ここでは無関係。
+  function isTierUnlockAllowedClientSide() {
+    try {
+      var dm = window.PonoDebugMode;
+      if (!dm || typeof dm.isAllowed !== 'function') return false;
+      return !!dm.isAllowed();
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Phase 1: 共通5本のロックを全て無効化するセーフフラグ。 Phase 2 で true に切替。
   // DevTools / 後から読み込まれる任意のスクリプト / 旧 sw キャッシュ等による誤上書きを避けるため
   // Object.defineProperty で writable:false にする。 Phase 2 で恒久的に true 動作へ移行する時は
@@ -49,9 +68,16 @@
   // ---- APP_BUILD 判定 ----
   // アプリ版 (APP_BUILD=1) は URL 自体がアプリ版用ビルドであることを示すため、
   // localStorage 経由ではなく window.__APP_BUILD__ を見て tier を決定する。
+  //
+  // __APP_BUILD__ は wrangler.toml の [env.staging-app.vars] で staging-app 限定で
+  // 立つフラグであり、 production には立たない。 つまりこのフラグ自体が server-side
+  // で staging-app 環境を識別する正当ルートになっているため、 PonoDebugMode 経由の
+  // 追加 gate は不要 (gate を入れると staging-app の sub tier ゲームが消える事故になる)。
+  // v1581 で PonoDebugMode 縛りを撤去し、 staging-app 経由を正当経路として復活。
   function isAppBuild() {
-    try { return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1'; }
-    catch (e) { return false; }
+    try {
+      return (window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1');
+    } catch (e) { return false; }
   }
 
   // ---- capture mode 用 tier override ----
@@ -63,7 +89,11 @@
   var CAPTURE_OVERRIDE_KEY = 'pono_capture_tier_override';
   function isCaptureOverride() {
     try {
-      return sessionStorage.getItem(CAPTURE_OVERRIDE_KEY) === '1';
+      if (sessionStorage.getItem(CAPTURE_OVERRIDE_KEY) !== '1') return false;
+      // SECURITY: sessionStorage に手で '1' を入れるだけで sub 化できる抜け穴を塞ぐ。
+      // capture mode は staging host 上での dev 機能なので debug-mode unlock 必須にしても
+      // legitimate なスクショ撮影フロー (capture.js は staging host 限定で起動) を壊さない。
+      return isTierUnlockAllowedClientSide();
     } catch (e) { return false; }
   }
   function setCaptureOverride(on) {
@@ -80,8 +110,16 @@
     // アプリ版 (APP_BUILD=1) は無条件で sub tier (アプリ版 URL に来た時点で sub 想定)
     if (isAppBuild()) return 'sub';
     // 本版: localStorage 状態で book / free のみ。 sub には絶対到達しない
+    //
+    // pono_premium === '1' は verifyBookPassword 経由で立てた正当な永続フラグ
+    // (絵本奥付パスワードを親が入力 → book tier 解放)。 v1581 で PonoDebugMode 縛りを撤去し、
+    // 既存 book 購入者が本番で free に degrade する事故を解消。
+    // 将来 Stripe/IAP で book 配信する時は server-set HttpOnly cookie or signed receipt 経由に
+    // 置換する想定。
     try {
-      if (localStorage.getItem('pono_premium') === '1') return 'book';
+      if (localStorage.getItem('pono_premium') === '1') {
+        return 'book';
+      }
     } catch (e) {}
     return 'free';
   }
@@ -333,6 +371,9 @@
   // 覗き見されにくい (完全な秘匿ではないが casual friction を維持)。
   var BOOK_PASSWORDS = ['1234'];  // Web MVP: 全機能無料公開のため book/sub 区分は休眠。将来 IAP 復活時にここを埋める
   function verifyBookPassword(val) {
+    // v1581: 親が紙絵本の奥付に印字されたパスワードを入力する正当ルート。
+    // PonoDebugMode 縛りを撤去 (本番で book 解錠不能になる事故を解消)。
+    // 将来 IAP 配備時はサーバ検証 (signed receipt) に置換する想定。
     if (val == null) return false;
     var raw = String(val).trim();
     if (!raw) return false;
@@ -347,6 +388,9 @@
   // 管理用マスターパスワード。book + sub 両方を解放
   var ADMIN_PASSWORDS = ['abcd'];
   function verifyAdminPassword(val) {
+    // v1581: 管理用マスターパスワード (book + sub 両方を解放)。 admin tools 本体は
+    // Basic Auth + KV で保護されており、 ここはクライアント側 UX 用の柔らかいゲート。
+    // PonoDebugMode 縛りを撤去 (本番 admin 経路を壊さない)。
     if (val == null) return false;
     var raw = String(val).trim();
     if (!raw) return false;
@@ -476,6 +520,7 @@
   // ---- export ----
   window.PonoTier = {
     getTier: getTier,
+    isTierUnlockAllowedClientSide: isTierUnlockAllowedClientSide,
     isAppBuild: isAppBuild,
     isFree: isFree,
     isBook: isBook,

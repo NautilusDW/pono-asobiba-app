@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="../common/menu.js"></script>
+<script src="../common/debug-mode.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="../js/game-stickers.js"></script>
 <style>
@@ -445,7 +446,11 @@
     boss: null
   };
   try {
-    if (new URLSearchParams(location.search).get('dev') === '1') {
+    // v1581: ?dev=1 だけだと本番でも DevTools 経由で state を露出できるため、
+    // PonoDebugMode.isAllowed() (= staging host + sessionStorage unlock) との AND に変更
+    if (window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function'
+        && window.PonoDebugMode.isAllowed()
+        && new URLSearchParams(location.search).get('dev') === '1') {
       window.__starparodierState = state;
       window.__starparodierAudioDebug = () => ({
         state: audioCtx ? audioCtx.state : 'none',
@@ -796,6 +801,7 @@
 
   function getDebugPhase() {
     try {
+      if (!(window.PonoDebugMode && window.PonoDebugMode.isAllowed && window.PonoDebugMode.isAllowed())) return '';
       const params = new URLSearchParams(location.search);
       if (params.get('dev') !== '1') return '';
       return params.get('phase') || '';

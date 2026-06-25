@@ -1147,6 +1147,7 @@
   <script src="room/items.js"></script>
   <script src="common/treasure.js"></script>
   <link rel="stylesheet" href="common/promo.css">
+  <script src="common/debug-mode.js"></script>
   <script src="common/tier.js"></script>
   <script src="common/promo.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
@@ -1339,7 +1340,7 @@
 
   // 絵本/サブスクで遊べるプレミアムコンテンツの紹介定義。
   // id は play.html のカード要素 id と 1:1 対応（promo.js の showLockedPreview から参照）。
-  // スクショは assets/images/previews/*.png に差し替えてください（未配置時は canvas 生成のダミー画像にフォールバック）。
+  // スクショは assets/images/previews/*.png に差し替えてください（未配置時は canvas 生成のダミー画像にフォールバック）。 ※ legacy fallback コメント、 GPT Image 2 ルール例外: 既存 dev 用ダミー (PNG 配置後は不要)
   // L2024 付近の lockedCards 配列との対応:
   //   lockedCards = ['card-writing','card-drawing','card-bowling','card-breakout','card-slide']
   //   ↑ クリック遮断対象。coloring/room/aquarium は pointer-events:none なので遮断不要（タップが届かない）
@@ -1857,11 +1858,7 @@
         background:#FEE2E2; color:#EF4444; font-family:inherit;
         font-size:0.85rem; font-weight:900; cursor:pointer;
       ">🔄 ぜんぶリセット</button>
-      <button id="debugToggleBtn" style="
-        padding:10px 24px; border:2px solid #6366F1; border-radius:50px;
-        background:#EEF2FF; color:#6366F1; font-family:inherit;
-        font-size:0.85rem; font-weight:900; cursor:pointer;
-      ">🛠 デバッグ OFF</button>
+      <!-- v1581: pono_debug UI toggle button 削除 (商品ユーザーに見えないようにする / PonoDebugMode 経由に集約) -->
       <a href="room/furniture_adjuster.html" style="
         padding:10px 24px; border:2px solid #F59E0B; border-radius:50px;
         background:#FEF3C7; color:#D97706; font-family:inherit;
@@ -2141,7 +2138,8 @@
           localStorage.removeItem('pono_room_unlocked');
         }
       }
-      var _debugOn  = localStorage.getItem('pono_debug')   === '1';
+      // v1581: pono_debug 並列パスを PonoDebugMode に集約 (staging host + sessionStorage unlock のみ)
+      var _debugOn  = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
       var _premium  = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
         ? !window.PonoTier.isFree()
         : (localStorage.getItem('pono_premium') === '1');
@@ -3712,26 +3710,7 @@
       location.reload();
     });
 
-    // デバッグモード トグル
-    (function() {
-      var btn = document.getElementById('debugToggleBtn');
-      var KEY = 'pono_debug';
-      function sync() {
-        var on = localStorage.getItem(KEY) === '1';
-        btn.textContent = on ? '🛠 デバッグ ON' : '🛠 デバッグ OFF';
-        btn.style.background = on ? '#6366F1' : '#EEF2FF';
-        btn.style.color = on ? '#fff' : '#6366F1';
-      }
-      sync();
-      btn.addEventListener('click', function() {
-        var on = localStorage.getItem(KEY) === '1';
-        localStorage.setItem(KEY, on ? '0' : '1');
-        sync();
-        alert(on ? 'デバッグモード OFF' : 'デバッグモード ON\nおうちアンロック＆全家具配置自由');
-        // ロック状態を即反映するため再読み込み
-        location.reload();
-      });
-    })();
+    // v1581: pono_debug デバッグモードトグル削除 (PonoDebugMode に集約、 brand-sign click → promptUnlock 経由)
 
   </script>
 
@@ -3775,7 +3754,8 @@
             alert('スタンプカードの表示に失敗しました');
           }
         } else if (action === 'room') {
-          var debugOn = localStorage.getItem('pono_debug')   === '1';
+          // v1581: pono_debug 並列パスを PonoDebugMode に集約
+          var debugOn = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
           var premium = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
             ? !window.PonoTier.isFree()
             : (localStorage.getItem('pono_premium') === '1');

@@ -15,10 +15,12 @@
 //   2. キーボード Shift+Alt+C (3 キー同時押し、 修飾必須、 タッチ不可)
 //   3. window.PonoCapture.show() (admin パネル経由、 Phase 3 で使う)
 //
-// ホスト名ガード:
-//   localhost / 127.0.0.1 / *-staging.ndw.workers.dev では 3 トリガとも有効。
-//   本番 (pono.kodama-no-mori.com / pono-asobiba-app.ndw.workers.dev 等) では
-//   sessionStorage.admin_capture_unlocked が立っているときだけ有効。
+// 単一ゲート (v1579〜): PonoDebugMode に完全委譲。
+//   - 旧: 独自の STAGING_HOSTS リスト + sessionStorage.admin_capture_unlocked
+//   - 新: window.PonoDebugMode.isAllowed()
+//     (= staging host 判定 + sessionStorage.pono_debug_mode_session === '1')
+//   ※ common/debug-mode.js を必ず capture.js より前にロードすること。
+//     PonoDebugMode が未定義の場合は安全側に倒して常に false (= 機能 OFF)。
 //
 // 多重初期化防止: window._ponoCaptureInited を guard 化 (sw-update.js と同じパターン)。
 
@@ -29,28 +31,16 @@
   if (window._ponoCaptureInited) return;
   window._ponoCaptureInited = true;
 
-  // ── ホスト名ガード ──
-  // staging / local では誰でも (URL/キー/admin) で起動可。
-  // 本番では sessionStorage の admin gate を通った場合のみ。
-  var STAGING_HOSTS = [
-    'pono-asobiba-app-staging.ndw.workers.dev',
-    'pono-asobiba-staging.ndw.workers.dev',
-    'localhost',
-    '127.0.0.1'
-  ];
-  function isStagingHost() {
-    try {
-      var h = String(location.hostname || '').toLowerCase();
-      return STAGING_HOSTS.indexOf(h) >= 0;
-    } catch (e) { return false; }
-  }
-  function isAdminUnlocked() {
-    try {
-      return sessionStorage.getItem('admin_capture_unlocked') === '1';
-    } catch (e) { return false; }
-  }
+  // ── 単一ゲート: PonoDebugMode への委譲 ──
+  // capture.js は固有の host/session 判定を持たない。
+  // PonoDebugMode が未ロード時は false (= UI も shortcut も URL trigger も無効)。
   function isCaptureAllowed() {
-    return isStagingHost() || isAdminUnlocked();
+    try {
+      var dm = window.PonoDebugMode;
+      return !!(dm && typeof dm.isAllowed === 'function' && dm.isAllowed());
+    } catch (e) {
+      return false;
+    }
   }
 
   // ── 内部状態 ──

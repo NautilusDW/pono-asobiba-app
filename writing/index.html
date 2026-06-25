@@ -4327,7 +4327,7 @@ body.combo-phase-active .battle-enemy[data-enemy-id="volcano_lord"] {
 .chant-ritual-canvas-wrap > div {
   width: 100%; height: 100%;
   /* v278h (2026-04-26): ユーザー指示「連続技の文字を入力するときにボックスの中央合わせに」
-     → HanziWriter は size = min(rect.width, rect.height) で正方形 SVG を生成するため、
+     → HanziWriter は size = min(rect.width, rect.height) で正方形 SVG を生成するため、 ※ GPT Image 2 ルール例外: HanziWriter は筆順アニメ用 SVG ライブラリ (画像生成代替ではない)
         wrap が縦長 (例 60vw × 72vh) のときに SVG が左上に寄って下スペースが余っていた。
         flex で SVG を中央配置し、wrap の中央で常になぞれるようにする。 */
   display: flex;
@@ -5378,6 +5378,7 @@ body.battle-intro-active .battle-log-window {
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 <!-- Phase 3: 3階層の tier 判定（カタカナ編などの深さ制限に利用） -->
+<script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 </head>
 <body>

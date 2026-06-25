@@ -11,6 +11,7 @@
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="../js/game-stickers.js"></script>
@@ -9511,6 +9512,13 @@ async function fetchFreeMaskServerDefaults(options = {}) {
   return freeMaskServerDefaultsFetchPromise;
 }
 function getFreeMaskAdminPassword() {
+  // Admin behavior gated through PonoDebugMode (staging + unlocked session only).
+  if (!(window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function' && window.PonoDebugMode.isAllowed())) {
+    try {
+      sessionStorage.removeItem(FREE_MASK_ADMIN_PASSWORD_SESSION_KEY);
+    } catch (e) {}
+    return '';
+  }
   try {
     const saved = sessionStorage.getItem(FREE_MASK_ADMIN_PASSWORD_SESSION_KEY);
     if (saved) return saved;

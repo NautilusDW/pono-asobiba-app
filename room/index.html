@@ -870,6 +870,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 <!-- Phase 3: tier 判定 (絵本層は家具・かざり 10種に制限、サブスクは全種) -->
+<script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -1246,7 +1247,8 @@ function getRowColFromPoint(areaEl, clientX, clientY) {
 // ─── Item lookup ──────────────────────────────────────
 function getItem(id) { return ROOM_ITEMS.find(x => x.id === id); }
 
-const DEBUG_MODE = localStorage.getItem('pono_debug') === '1';
+// v1581: pono_debug 並列パスを PonoDebugMode に集約 (staging host + sessionStorage unlock 時のみ)
+const DEBUG_MODE = !!(window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function' && window.PonoDebugMode.isAllowed());
 function isOwned(id)  { return DEBUG_MODE || state.inventory.includes(id); }
 function isPlaced(id) {
   return Object.values(state.config).some(cfg => {

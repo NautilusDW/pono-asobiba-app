@@ -3501,6 +3501,9 @@
       .daily-gacha-lever.is-blocked-bump { animation: none; }
       .daily-gacha-center-msg.is-blocked-pulse { animation: none; }
     }
+    /* v1578: shop link must remain clickable even when an ancestor (.daily-gacha-panel)
+       inherits/sets pointer-events:none in center-msg states. */
+    .daily-gacha-shop-link { pointer-events: auto; }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
@@ -3762,6 +3765,7 @@
   </div>
 
   <!-- 絵本パスワード解錠ロジック (PonoTier.verifyBookPassword) を提供 -->
+  <script src="common/debug-mode.js"></script>
   <script src="common/capture.js" defer></script>
   <!-- ===== Screenshot mode (PonoCapture) registration =====
        play.html は LP メニュー + 各種モーダル(ガチャ等)を持つ。
@@ -3833,6 +3837,39 @@
     else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
   })();
   </script>
+  <!-- v1578: brand-sign click → PonoDebugMode.promptUnlock (staging-only, silent on production) -->
+  <script>
+  (function () {
+    'use strict';
+    function bindBrandSignDebug() {
+      var sign = document.querySelector('.brand-sign');
+      if (!sign) return;
+      if (sign.dataset.debugBound === '1') return;
+      sign.dataset.debugBound = '1';
+      // Cursor/title hints only when on staging host (avoid leaking affordance on prod).
+      try {
+        if (window.PonoDebugMode && typeof window.PonoDebugMode.isStagingHost === 'function'
+            && window.PonoDebugMode.isStagingHost()) {
+          sign.style.cursor = 'pointer';
+          sign.setAttribute('title', 'Debug mode');
+        }
+      } catch (_e) { /* noop */ }
+      sign.addEventListener('click', function (ev) {
+        if (typeof window.PonoDebugMode === 'undefined') return;
+        if (!window.PonoDebugMode.isStagingHost || !window.PonoDebugMode.isStagingHost()) return;
+        if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+        if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+        try { window.PonoDebugMode.promptUnlock(); } catch (_e) { /* noop */ }
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindBrandSignDebug, { once: true });
+    } else {
+      bindBrandSignDebug();
+    }
+  })();
+  </script>
+  <!-- v1581: 重複 <script src="common/debug-mode.js"> を削除 (L3768 で既に読込済) -->
   <script src="common/tier.js"></script>
   <script src="js/game-stickers.js"></script>
   <!-- お題 (daily-quest) + どんぐりショップ phase 4 統合 (v1570) -->
@@ -5457,10 +5494,12 @@
 
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
+      // v1578: debug mode (staging-only, sessionStorage-unlocked) bypasses both gates → unlimited pulls
+      var __debugBypass = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
       // v1575: 3 状態いずれもガチャモーダルを開く (ショップは内部から常時アクセス可能)
       // 鍵なし / 引き済み は中央メッセージモードで lever を停止
-      var usedToday = (typeof isDailyGachaUsedToday === 'function') && isDailyGachaUsedToday();
-      var lacksKey  = !!(window.PonoDailyQuest && !window.PonoDailyQuest.isClearedToday());
+      var usedToday = !__debugBypass && (typeof isDailyGachaUsedToday === 'function') && isDailyGachaUsedToday();
+      var lacksKey  = !__debugBypass && !!(window.PonoDailyQuest && !window.PonoDailyQuest.isClearedToday());
       if (usedToday) {
         resetDailyGachaModal();
         armDailyGachaModal(false);
