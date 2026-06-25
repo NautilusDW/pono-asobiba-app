@@ -3803,9 +3803,8 @@ function startStickerTutorialPlaceDemo() {
   setStickerTrayPeek(true);
   updateStickerTutorialTraySilhouettes(true, true);
   document.body.classList.add("is-sticker-tutorial-combo-place");
-  stickerTutorialDemoBaseScroll = collectionStickerTrayItems.scrollLeft;
-  stickerTutorialDemoStartTime = performance.now();
   const maxScroll = Math.max(0, collectionStickerTrayItems.scrollWidth - collectionStickerTrayItems.clientWidth);
+  const currentScroll = collectionStickerTrayItems.scrollLeft;
   const targetButton = stickerTutorialTargetTrayButton();
   const targetScroll = targetButton
     ? THREE.MathUtils.clamp(
@@ -3813,23 +3812,36 @@ function startStickerTutorialPlaceDemo() {
       0,
       maxScroll,
     )
-    : Math.min(maxScroll, stickerTutorialDemoBaseScroll + Math.min(420, Math.max(180, maxScroll * 0.36)));
-  const totalDistance = THREE.MathUtils.clamp(targetScroll - stickerTutorialDemoBaseScroll, 0, maxScroll);
+    : THREE.MathUtils.clamp(currentScroll + Math.min(420, Math.max(180, maxScroll * 0.36)), 0, maxScroll);
+  const demoDistance = Math.min(
+    maxScroll,
+    Math.max(120, Math.min(420, collectionStickerTrayItems.clientWidth * 0.52)),
+  );
+  let scrollEnd = targetScroll;
+  if (maxScroll > 0 && scrollEnd < Math.min(120, maxScroll * 0.45)) {
+    scrollEnd = Math.min(maxScroll, demoDistance);
+  }
+  let scrollStart = THREE.MathUtils.clamp(scrollEnd - demoDistance, 0, maxScroll);
+  const minVisibleDistance = Math.min(80, maxScroll);
+  if (scrollEnd - scrollStart < minVisibleDistance) {
+    scrollStart = 0;
+    scrollEnd = Math.min(maxScroll, Math.max(scrollEnd, demoDistance));
+  }
+  const totalDistance = THREE.MathUtils.clamp(scrollEnd - scrollStart, 0, maxScroll);
+  stickerTutorialDemoBaseScroll = scrollStart;
+  stickerTutorialDemoStartTime = performance.now();
+  if (Math.abs(collectionStickerTrayItems.scrollLeft - scrollStart) > 1) {
+    stickerTutorialProgrammaticTrayScroll = true;
+    stickerTutorialProgrammaticTrayScrollUntil = performance.now() + 220;
+    collectionStickerTrayItems.scrollLeft = scrollStart;
+  }
   if (totalDistance > 0) {
     document.body.classList.add("is-sticker-tutorial-linked-scroll");
-    const duration = 4500;
+    const duration = 3100;
     const run = (now) => {
       const elapsed = Math.max(0, now - stickerTutorialDemoStartTime);
       const progress = THREE.MathUtils.clamp(elapsed / duration, 0, 1);
-      const halfDistance = totalDistance / 2;
-      let offset = totalDistance;
-      if (progress < 0.43) {
-        offset = halfDistance * smootherstep(progress / 0.43);
-      } else if (progress < 0.57) {
-        offset = halfDistance;
-      } else if (progress < 0.98) {
-        offset = halfDistance + halfDistance * smootherstep((progress - 0.57) / 0.41);
-      }
+      const offset = totalDistance * smootherstep(progress);
       stickerTutorialProgrammaticTrayScroll = true;
       stickerTutorialProgrammaticTrayScrollUntil = performance.now() + 140;
       collectionStickerTrayItems.scrollLeft = THREE.MathUtils.clamp(
@@ -3848,33 +3860,28 @@ function startStickerTutorialPlaceDemo() {
   }
   addStickerTutorialDemoTimer(() => {
     scheduleStickerTutorialLayout();
-  }, 4550);
-  addStickerTutorialDemoTimer(() => {
-    if (currentStickerTutorialStep()?.id === "place") {
-      setStickerTutorialHandKey("open");
-    }
-  }, 5000);
+  }, 3200);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("grip");
     }
-  }, 8850);
+  }, 6600);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("release");
     }
-  }, 13400);
+  }, 10150);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("open");
     }
-  }, 14500);
+  }, 11000);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
     addStickerFromTutorialDemoToPage();
-  }, 13750);
+  }, 10300);
 }
 
 function startStickerTutorialMoveDemo() {
@@ -4188,15 +4195,6 @@ function notifyStickerTutorialAction(action) {
   if (stickerTutorialNext) {
     stickerTutorialNext.classList.add("is-ready-pulse");
   }
-  // セーフティ: 15s 経っても「つぎ」 を押さない場合は自動 advance (迷子防止)
-  addStickerTutorialDemoTimer(() => {
-    if (
-      stickerTutorialState?.actionDone &&
-      currentStickerTutorialStep() === step
-    ) {
-      showStickerTutorialStep(stickerTutorialState.index + 1);
-    }
-  }, 15000);
 }
 
 function stickerTutorialRemainingStepMs(step) {
@@ -4524,15 +4522,15 @@ function stickerTutorialDemoPoints(step, rect) {
       y: clampTrayY(chooseRight.y),
     };
 
-    // === place phase 用 (同じページ内で候補位置を小さく試す) ===
-    const nudgeX = Math.min(92, pageRect.width * 0.14);
-    const nudgeY = Math.min(72, pageRect.height * 0.12);
-    const wander1 = clampPagePoint(to.x - nudgeX, to.y + nudgeY * 0.45);
-    const wander2 = clampPagePoint(to.x + nudgeX * 0.75, to.y - nudgeY * 0.8);
-    const wander3 = clampPagePoint(to.x - nudgeX * 0.35, to.y - nudgeY * 0.32);
-    const overshoot = clampPagePoint(to.x + nudgeX * 0.22, to.y + nudgeY * 0.14);
-    const hover = clampPagePoint(to.x, to.y - nudgeY * 0.28);
-    const overTarget = clampPagePoint(to.x, to.y - nudgeY * 0.5);
+    // === place phase 用 (貼る場所の近くで軽く迷うだけにする) ===
+    const nudgeX = Math.min(54, pageRect.width * 0.08);
+    const nudgeY = Math.min(42, pageRect.height * 0.07);
+    const wander1 = clampPagePoint(to.x - nudgeX, to.y + nudgeY * 0.26);
+    const wander2 = clampPagePoint(to.x + nudgeX * 0.44, to.y - nudgeY * 0.22);
+    const wander3 = clampPagePoint(to.x, to.y - nudgeY * 0.18);
+    const overshoot = clampPagePoint(to.x + nudgeX * 0.16, to.y + nudgeY * 0.08);
+    const hover = clampPagePoint(to.x, to.y - nudgeY * 0.22);
+    const overTarget = hover;
     return {
       ...base,
       hand: scrollFrom,

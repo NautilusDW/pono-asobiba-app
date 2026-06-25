@@ -1512,12 +1512,12 @@ body.is-sticker-tutorial-step-place .sticker-tutorial-hand {
   filter:
     drop-shadow(0 10px 14px rgba(22, 48, 44, 0.32))
     drop-shadow(0 2px 0 rgba(255, 255, 255, 0.4));
-  /* 15.8s → 17.6s (find phase を長めに取り、3候補を見比べる間を作る) */
-  animation: stickerTutorialFindPlaceHand 17.6s ease-in-out 1 both;
+  /* 初手は point 指のまま 1 回スワイプし、その後は大きな迷いだけに絞る */
+  animation: stickerTutorialFindPlaceHand 13.8s ease-in-out 1 both;
 }
 
 body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
-  animation: stickerTutorialFindPlaceGhost 17.6s ease-in-out 1 both;
+  animation: stickerTutorialFindPlaceGhost 13.8s ease-in-out 1 both;
 }
 
 body.is-sticker-tutorial-step-move .sticker-tutorial-hand {
@@ -2146,6 +2146,133 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
     transform: translate(-50%, -50%) scale(1.03);
+  }
+}
+
+/* v1605: place step は初手から指画像で、1 回のスワイプ + 大きめの候補移動だけに絞る */
+@keyframes stickerTutorialFindPlaceHand {
+  0% {
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.96) rotate(0deg);
+  }
+  21% {
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.96) rotate(0deg);
+  }
+  23% {
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scale(0.96) rotate(0deg);
+  }
+  25% {
+    left: var(--tutorial-demo-find-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-find-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 0;
+    transform: translate(-50%, -35%) scale(0.94) rotate(-3deg);
+  }
+  28% {
+    left: var(--tutorial-demo-find-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-find-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.92) rotate(-4deg);
+  }
+  33% {
+    left: var(--tutorial-demo-choose-left-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-choose-left-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.92) rotate(-5deg);
+  }
+  38% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.9) rotate(0deg);
+  }
+  43% {
+    left: var(--tutorial-demo-choose-right-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-choose-right-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.92) rotate(4deg);
+  }
+  47%, 49% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.88) rotate(-3deg);
+  }
+  59% {
+    left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -37%) scale(1) rotate(-4deg);
+  }
+  65%, 68% {
+    left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -36%) scale(0.99) rotate(1deg);
+  }
+  74% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -33%) scale(0.93) rotate(0deg);
+  }
+  78% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -38%) scale(1.03) rotate(1deg);
+  }
+  84%, 100% {
+    left: var(--tutorial-demo-away-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-away-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(1) rotate(1deg);
+  }
+}
+
+@keyframes stickerTutorialFindPlaceGhost {
+  0%, 48% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.88);
+  }
+  49% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  59% {
+    left: var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+  65%, 68% {
+    left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  74% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+  78%, 100% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.02);
   }
 }
 
