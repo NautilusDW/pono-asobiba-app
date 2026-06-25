@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1606: daily gacha shop button uses single-color icon style matching top/sticker buttons; sync play.html PAGE_CACHE_VERSION.
 // v1603: シール帳チュートリアル place step 自然化 — find phase の micro-vibration を廃止し、3 つのシールを左→中央→右→選択の短い滞在で見比べる動きへ変更。place phase は右ページ内に中継点を clamp し、画面外・反対方向へ飛ぶ大振りをやめて、貼る位置の近くで小さく迷ってから release する流れに変更。Prototypes/StickerBookThreeJS/main.js + styles.css のみ編集。
 // v1601: シール帳 step 1 (mode) 「open のまま押している」 バグ修正 — (A) updateStickerTutorialDemo の hand リセット条件を強化: 旧仕様は `step?.id === "mode" ? "open" : handKey` で mode step である限り、 Phase 2 (press) 開始後も scheduleStickerTutorialLayout() が呼ばれるたびに hand を open に再上書きしていた。 新仕様は body classList の `is-sticker-tutorial-mode-rest` / `is-sticker-tutorial-mode-approach` を gate に追加し、 Phase 2 以降は step.hand="point" を尊重するように修正。 (B) startStickerTutorialModeDemo の 3 回の press タイマーで、 triggerStickerTutorialEditButtonPress 呼び出し直前に setStickerTutorialHandKey("point") を再保証 (補強案)、 タイミング上書きへの defensive layer を追加。 Prototypes/StickerBookThreeJS/main.js のみ変更、 styles.css / keyframe / 他 step / 他 hand 切替ロジック 全て無改変。
 // v1600: シール帳チュートリアル find phase 2 回スワイプ完全復活 — @keyframes stickerTutorialFindPlaceHand 0-30% を 6 stop (0/12/13/14.5/15.5/26/27/29/30 の 9 stop) に再構成。 v1598/v1599 で 2 回目スワイプを削除した結果、 12.6-26% (約 2.36s) hand 完全不在になり 「2 回目が消えた + 消してほしい区間が空白で残った」 ユーザー指摘を解消。 新仕様: 0-12% 1 回目スワイプ (scroll-from→scroll-to) → 13% fade out → 14.5% scroll-from へ不可視ワープ → 15.5% fade in → 15.5-26% 2 回目スワイプ → 27% fade out → 29% demo-from 座標 + 縦向き transform へ不可視ワープ → 30% find phase 開始 fade in (次 30.5% findWander1 へ連続)。 30% 以降の find phase / 50% 以降の place phase は完全据置。 アニメ全体 17.6s 維持、 sw.js のみ version bump。 Prototypes/StickerBookThreeJS/styles.css 1855-1925 のみ編集、 main.js / ghost keyframe / 他ファイル無変更。
@@ -219,7 +220,7 @@
 // v1512: QuizLand difficulty buttons use GPT Image 2 wooden normal/pressed alpha frames.
 // v1513: QuizLand difficulty selection uses generated star icons, no initial selection, and confirm-before-start.
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
-const CACHE_VERSION = 1604;
+const CACHE_VERSION = 1606;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
