@@ -1825,30 +1825,46 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 }
 
 @keyframes stickerTutorialFindPlaceHand {
-  /* === tray scroll: 0-18% (1 往復のみ, 約 2.85s) === */
+  /* === tray scroll: 0-28% (2 連続スワイプ, 約 4.42s, JS scroll 4500ms と同期) === */
   0% {
+    /* 1 回目スワイプ起点: 右端 */
     left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
-  14% {
+  12% {
+    /* 1 回目スワイプ終端: 左端 (JS halfDistance 到達 = 43% ≒ CSS 12.04%) */
     left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
-  17% {
-    /* 逆スライド戻し */
+  13% {
+    /* 即時 fade out (左端で消失) */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  14.5% {
+    /* 不可視中に右端へワープ (JS hold 区間 12.25–16.24% 内に完全に収まる) */
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  15.5% {
+    /* 右端で fade in (JS が 2 回目前進を開始する 57% ≒ CSS 15.96% の直前) */
     left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
   28% {
-    /* スライド完了後の hold: scroll-from 位置で hand 横向き継続 (find phase 突入直前まで覗き込みポーズに切替えない) */
-    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
-    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    /* 2 回目スワイプ終端: 左端 (JS 98% = totalDistance 到達 = CSS 27.42% にほぼ一致, hold 区間で詰める) */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
