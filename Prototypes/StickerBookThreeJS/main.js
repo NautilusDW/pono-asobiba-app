@@ -1649,7 +1649,7 @@ const STICKER_TUTORIAL_STEPS = [
     card: "corner",
     text: "はった あとも\nうごかせるよ",
     audio: "stickerbook_tut_05_move.mp3",
-    hand: "grip",
+    hand: "point",
     minAdvanceMs: 4500,
     advanceOn: ["moveSticker"],
   },
@@ -3730,15 +3730,17 @@ function startStickerTutorialStepDemo(step) {
 }
 
 function startStickerTutorialModeDemo() {
-  // Phase 0 (0-1100ms): open hand を book 右下 rest 位置にフェードイン + 呼吸
+  // Phase 0 (0-1100ms): 最初から point hand を book 右下 rest 位置にフェードイン + 呼吸
+  setStickerTutorialHandKey("point");
   document.body.classList.add("is-sticker-tutorial-mode-demo");
   document.body.classList.add("is-sticker-tutorial-mode-rest");
-  // Phase 1 (1100-2000ms): rest → editButton から手前へ approach (open のまま)
+  // Phase 1 (1100-2000ms): rest → editButton から手前へ approach (point のまま)
   addStickerTutorialDemoTimer(() => {
+    setStickerTutorialHandKey("point");
     document.body.classList.remove("is-sticker-tutorial-mode-rest");
     document.body.classList.add("is-sticker-tutorial-mode-approach");
   }, 1100);
-  // Phase 2 (2000ms): point に切替 + press keyframe 開始
+  // Phase 2 (2000ms): point のまま press keyframe 開始
   addStickerTutorialDemoTimer(() => {
     setStickerTutorialHandKey("point");
     document.body.classList.remove("is-sticker-tutorial-mode-approach");
@@ -3862,21 +3864,6 @@ function startStickerTutorialPlaceDemo() {
     scheduleStickerTutorialLayout();
   }, 3200);
   addStickerTutorialDemoTimer(() => {
-    if (currentStickerTutorialStep()?.id === "place") {
-      setStickerTutorialHandKey("grip");
-    }
-  }, 6600);
-  addStickerTutorialDemoTimer(() => {
-    if (currentStickerTutorialStep()?.id === "place") {
-      setStickerTutorialHandKey("release");
-    }
-  }, 10150);
-  addStickerTutorialDemoTimer(() => {
-    if (currentStickerTutorialStep()?.id === "place") {
-      setStickerTutorialHandKey("open");
-    }
-  }, 11000);
-  addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
@@ -3895,7 +3882,7 @@ function startStickerTutorialMoveDemo() {
   placement.y = originalY;
   refreshInlineStickerPage();
   document.body.classList.add("is-sticker-tutorial-move-js");
-  setStickerTutorialHandKey("grip");
+  setStickerTutorialHandKey("point");
   const path = [
     { x: originalX, y: originalY },
     { x: originalX - 13, y: originalY - 10 },
@@ -4340,16 +4327,7 @@ function updateStickerTutorialDemo(step, rect) {
   }
   const center = rectCenter(rect);
   const handKey = step?.hand || "open";
-  // step "mode" は Phase 0 (rest) / Phase 1 (approach) の間だけ open を強制する。
-  // Phase 2 (press) 以降は step.hand="point" を尊重しないと、 後続の
-  // scheduleStickerTutorialLayout() が走るたびに hand が open に戻ってしまい、
-  // 「open のまま押している」 不一致が発生する (バグ修正: v1601)
-  const inModeRestOrApproach =
-    step?.id === "mode" &&
-    (document.body.classList.contains("is-sticker-tutorial-mode-rest") ||
-      document.body.classList.contains("is-sticker-tutorial-mode-approach"));
-  const initialHandKey = inModeRestOrApproach ? "open" : handKey;
-  setStickerTutorialHandKey(initialHandKey);
+  setStickerTutorialHandKey(handKey);
   const demo = stickerTutorialDemoPoints(step, rect);
   // step "mode" は初期 hand 位置を rest (右下) に固定。 keyframe 内で left/top を上書きしながら遷移する
   const initialHand = step?.id === "mode" && demo.rest ? demo.rest : demo.hand;
