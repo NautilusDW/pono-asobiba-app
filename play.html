@@ -3273,6 +3273,116 @@
       box-shadow: 0 3px 0 #B87200, 0 6px 12px rgba(0,0,0,0.25);
     }
 
+    /* ===== お題 + ショップ phase 4 統合 (v1570) — 新規セレクタのみ、 既存は無改変 ===== */
+    .daily-gacha-entry__quest-badge { position:absolute; top:6px; right:6px; width:32px; height:32px; border-radius:50%; background:#ffd34d; border:2px solid #b88600; box-shadow:0 2px 4px rgba(0,0,0,.25); pointer-events:none; z-index:2; }
+    .daily-gacha-entry__quest-badge::before { content:'⭐'; display:block; font-size:18px; line-height:28px; text-align:center; }
+    .daily-gacha-entry__quest-badge[data-state="done"] { background:#ffe680; border-color:#c89400; animation:pono-quest-badge-sparkle .8s ease-out; }
+    .daily-gacha-entry__quest-badge[data-state="bonus"] { background:linear-gradient(135deg,#ffd34d,#ff9a3c); border-color:#a35200; box-shadow:0 0 12px #ffcd5a, 0 2px 4px rgba(0,0,0,.25); }
+    .daily-gacha-entry__quest-badge[data-state="bonus"]::before { content:'✨'; }
+    @keyframes pono-quest-badge-sparkle { 0%{transform:scale(1);filter:brightness(1);} 40%{transform:scale(1.3);filter:brightness(1.6) drop-shadow(0 0 6px #fff);} 100%{transform:scale(1);filter:brightness(1);} }
+    .quest-prompt-modal { position:fixed; inset:0; z-index:99980; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; padding:20px; }
+    .quest-prompt-modal[hidden] { display:none; }
+    .quest-prompt-modal__panel { width:min(360px,92vw); background:#fff7e0; border:4px solid #b88600; border-radius:24px; padding:28px 24px 24px; box-shadow:0 12px 32px rgba(0,0,0,.35); position:relative; text-align:center; }
+    .quest-prompt-modal__close { position:absolute; top:8px; right:12px; width:40px; height:40px; border:none; background:transparent; font-size:28px; color:#6e4a00; cursor:pointer; line-height:1; }
+    .quest-prompt-modal__title { margin:0 0 12px; font-size:22px; color:#6e4a00; }
+    .quest-prompt-modal__msg { margin:0 0 20px; font-size:17px; color:#4a3300; line-height:1.5; }
+    .quest-prompt-modal__msg strong { color:#c25400; }
+    .quest-prompt-modal__actions { display:flex; flex-direction:column; gap:12px; }
+    .quest-prompt-modal__primary, .quest-prompt-modal__secondary { min-height:60px; border-radius:16px; border:3px solid #8a4a00; font-size:18px; font-weight:bold; cursor:pointer; padding:0 16px; }
+    .quest-prompt-modal__primary { background:linear-gradient(180deg,#ffaa3c,#ee7a1c); color:#fff; box-shadow:0 4px 0 #8a4a00; }
+    .quest-prompt-modal__primary:active { transform:translateY(2px); box-shadow:0 2px 0 #8a4a00; }
+    .quest-prompt-modal__secondary { background:#fbe7b8; color:#6e4a00; border-color:#b88600; box-shadow:0 4px 0 #b88600; }
+    .quest-prompt-modal__secondary:active { transform:translateY(2px); box-shadow:0 2px 0 #b88600; }
+    .donguri-shop { position:fixed; inset:0; z-index:99990; background:#fff7e0; display:flex; flex-direction:column; overflow:hidden; }
+    .donguri-shop[hidden] { display:none; }
+    .donguri-shop__head { display:flex; align-items:center; gap:12px; padding:14px 16px; background:linear-gradient(180deg,#ffd98a,#ffc05a); border-bottom:3px solid #b88600; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+    .donguri-shop__close { width:44px; height:44px; border:2px solid #8a4a00; background:#fff; color:#6e4a00; font-size:24px; border-radius:50%; cursor:pointer; line-height:1; }
+    .donguri-shop__title { margin:0; flex:1; font-size:22px; color:#6e4a00; text-align:center; }
+    .donguri-shop__balance { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#fff; border:2px solid #b88600; border-radius:999px; font-size:18px; font-weight:bold; color:#6e4a00; min-width:70px; justify-content:center; }
+    .donguri-shop__balance-icon { font-size:20px; }
+    .donguri-shop__catalog { flex:1; list-style:none; margin:0; padding:16px; display:grid; grid-template-columns:repeat(2,1fr); gap:14px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+    .donguri-shop__item { background:#fff; border:3px solid #b88600; border-radius:18px; padding:12px 10px 10px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 3px 0 #b88600; min-height:220px; }
+    .donguri-shop__item.is-owned { opacity:.7; background:#f5ecd5; }
+    .donguri-shop__thumb { width:88px; height:88px; display:flex; align-items:center; justify-content:center; background:#fff7e0; border-radius:14px; overflow:hidden; }
+    .donguri-shop__thumb img { max-width:100%; max-height:100%; }
+    .donguri-shop__thumb-fallback { font-size:40px; }
+    .donguri-shop__name { font-size:14px; font-weight:bold; color:#4a3300; text-align:center; line-height:1.3; min-height:36px; }
+    .donguri-shop__price { font-size:15px; color:#6e4a00; font-weight:bold; }
+    .donguri-shop__owned-label { font-size:12px; color:#8a6a00; }
+    .donguri-shop__buy { width:100%; min-height:48px; border:2px solid #8a4a00; border-radius:12px; background:linear-gradient(180deg,#ffaa3c,#ee7a1c); color:#fff; font-size:16px; font-weight:bold; cursor:pointer; box-shadow:0 3px 0 #8a4a00; }
+    .donguri-shop__buy:active { transform:translateY(2px); box-shadow:0 1px 0 #8a4a00; }
+    .donguri-shop__buy:disabled { background:#d8c89a; color:#6e4a00; cursor:not-allowed; box-shadow:0 3px 0 #8a6a00; opacity:.85; }
+    .donguri-shop__empty { text-align:center; padding:24px; color:#6e4a00; font-size:16px; }
+    .daily-gacha-shop-link { border:2px solid #8a4a00; background:#fff; color:#6e4a00; font-size:14px; font-weight:bold; padding:8px 14px; border-radius:999px; cursor:pointer; margin-top:6px; box-shadow:0 2px 0 #8a4a00; }
+    .daily-gacha-shop-link:active { transform:translateY(1px); box-shadow:0 1px 0 #8a4a00; }
+    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-lux::before { filter:brightness(1.3) saturate(1.4); }
+    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-sparkles span { filter:drop-shadow(0 0 4px #ffd34d); }
+
+    /* ===== お題 + ショップ phase 5 視覚仕上げ (v1571) — 3-6歳向け「やった！」演出強化 ===== */
+    /* 1) ⭐お題達成スパークル: バウンス + 放射状キラキラ */
+    .daily-gacha-entry__quest-badge[data-state="done"] { animation:pono-quest-bounce .8s ease-out; }
+    .daily-gacha-entry__quest-badge[data-state="done"]::after {
+      content:''; position:absolute; left:50%; top:50%; width:6px; height:6px; border-radius:50%; background:#fff; transform:translate(-50%,-50%);
+      pointer-events:none; opacity:0;
+      box-shadow:
+        0 0 0 #fff7c0, 0 0 0 #ffd34d, 0 0 0 #fff7c0,
+        0 0 0 #ffd34d, 0 0 0 #fff7c0, 0 0 0 #ffd34d;
+      animation:pono-quest-rays .8s ease-out forwards;
+    }
+    @keyframes pono-quest-bounce { 0%{transform:scale(1);} 25%{transform:scale(1.3);} 55%{transform:scale(.95);} 100%{transform:scale(1);} }
+    @keyframes pono-quest-rays {
+      0%   { opacity:0;  box-shadow:0 0 0 1px #fff7c0, 0 0 0 1px #ffd34d, 0 0 0 1px #fff7c0, 0 0 0 1px #ffd34d, 0 0 0 1px #fff7c0, 0 0 0 1px #ffd34d; }
+      20%  { opacity:1; }
+      100% { opacity:0;
+        box-shadow:
+          0 -28px 0 1px #fff7c0, 24px -14px 0 1px #ffd34d, 24px 14px 0 1px #fff7c0,
+          0 28px 0 1px #ffd34d, -24px 14px 0 1px #fff7c0, -24px -14px 0 1px #ffd34d;
+      }
+    }
+    /* 2) ガチャ ボーナス: 金縁グロー + ✨ボーナス✨リボン + 薄い金色オーラ */
+    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-card,
+    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-modal__card,
+    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-panel {
+      box-shadow:0 0 24px 4px #ffd34d, 0 0 48px 8px rgba(255,170,60,.55), 0 8px 24px rgba(0,0,0,.35) !important;
+      animation:pono-bonus-glow 2.4s ease-in-out infinite;
+    }
+    .daily-gacha-modal[data-quest-bonus="1"]::before {
+      content:'✨ ボーナス ✨'; position:absolute; top:18px; left:50%; transform:translateX(-50%);
+      padding:6px 18px; background:linear-gradient(135deg,#ffd34d,#ff9a3c); color:#5a2f00;
+      border:2px solid #b87200; border-radius:999px; font-size:15px; font-weight:bold; letter-spacing:.04em;
+      box-shadow:0 3px 0 #8a4a00, 0 0 12px #ffd34d; z-index:5; pointer-events:none;
+      animation:pono-bonus-ribbon 1.8s ease-in-out infinite;
+    }
+    @keyframes pono-bonus-glow { 0%,100%{filter:brightness(1);} 50%{filter:brightness(1.08);} }
+    @keyframes pono-bonus-ribbon { 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(-3px);} }
+    /* 3) ショップ購入演出: zoom-in サムネ + 紙吹雪 */
+    .donguri-shop-celebration { position:fixed; inset:0; z-index:99995; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    .donguri-shop-celebration[hidden] { display:none; }
+    .donguri-shop-celebration__thumb {
+      width:160px; height:160px; display:flex; align-items:center; justify-content:center;
+      background:#fff7e0; border:5px solid #ffd34d; border-radius:24px;
+      box-shadow:0 0 32px 8px #ffd34d, 0 12px 32px rgba(0,0,0,.4); font-size:96px;
+      animation:pono-shop-pop 1.2s ease-out forwards;
+    }
+    .donguri-shop-celebration__thumb img { max-width:80%; max-height:80%; }
+    @keyframes pono-shop-pop { 0%{transform:scale(.2);opacity:0;} 25%{transform:scale(1.15);opacity:1;} 55%{transform:scale(1);} 85%{transform:scale(1);opacity:1;} 100%{transform:scale(1.05);opacity:0;} }
+    .donguri-shop-celebration__confetti { position:absolute; left:50%; top:50%; width:10px; height:14px; border-radius:2px; pointer-events:none;
+      animation:pono-shop-confetti 1.1s cubic-bezier(.2,.7,.3,1) forwards; opacity:0; }
+    @keyframes pono-shop-confetti {
+      0%   { transform:translate(-50%,-50%) rotate(0deg) scale(.4); opacity:1; }
+      100% { transform:translate(calc(-50% + var(--cx,0px)), calc(-50% + var(--cy,0px))) rotate(var(--cr,360deg)) scale(1); opacity:0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .daily-gacha-entry__quest-badge[data-state="done"] { animation:none; }
+      .daily-gacha-entry__quest-badge[data-state="done"]::after { animation:none; opacity:0; }
+      .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-card,
+      .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-modal__card,
+      .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-panel { animation:none; }
+      .daily-gacha-modal[data-quest-bonus="1"]::before { animation:none; }
+      .donguri-shop-celebration__thumb { animation:pono-shop-pop-rm 1.2s linear forwards; }
+      .donguri-shop-celebration__confetti { display:none; }
+      @keyframes pono-shop-pop-rm { 0%,80%{transform:scale(1);opacity:1;} 100%{transform:scale(1);opacity:0;} }
+    }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
@@ -3329,6 +3439,7 @@
     <button class="daily-gacha-entry" id="dailyGachaEntry" type="button" aria-label="1にち1かい シールがもらえる ポノのガチャガチャ">
       <span class="daily-gacha-entry__icon" aria-hidden="true"><img src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false"></span>
       <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
+      <span class="daily-gacha-entry__quest-badge" id="dailyGachaQuestBadge" aria-hidden="true" hidden></span>
     </button>
     <button class="for-parents" id="forParentsBtn" type="button" aria-label="えほんをもっているおともだちへ">
       <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
@@ -3462,6 +3573,7 @@
         <div class="daily-gacha-actions">
           <button class="daily-gacha-action daily-gacha-action--assist" id="dailyGachaAssist" type="button" hidden>もういっかい まわす</button>
           <button class="daily-gacha-action daily-gacha-action--sub" id="dailyGachaBook" type="button" hidden>シールちょうへ</button>
+          <button class="daily-gacha-shop-link" id="dailyGachaShopLink" type="button">🛍️ シール ショップ</button>
         </div>
       </section>
 
@@ -3490,6 +3602,36 @@
       </div>
     </div>
   </div>
+
+  <!-- ===== Quest Prompt Modal (お題誘導: 鍵なし時に表示、 既存ガチャ動線非破壊) ===== -->
+  <div class="quest-prompt-modal" id="questPromptModal" hidden role="dialog" aria-modal="true" aria-labelledby="questPromptTitle">
+    <div class="quest-prompt-modal__panel">
+      <button class="quest-prompt-modal__close" id="questPromptClose" type="button" aria-label="閉じる">×</button>
+      <h2 class="quest-prompt-modal__title" id="questPromptTitle">きょうの ぼうけん</h2>
+      <p class="quest-prompt-modal__msg">きょうは <strong id="questPromptName">めいろ</strong>で あそんで ガチャ できるよ！</p>
+      <div class="quest-prompt-modal__actions">
+        <button class="quest-prompt-modal__primary" id="questPromptGo" type="button">お題を やろう</button>
+        <button class="quest-prompt-modal__secondary" id="questPromptShop" type="button">ショップへ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Donguri Shop (どんぐりショップ: 50 acorns で好きなシール 1 枚) ===== -->
+  <div class="donguri-shop" id="donguriShop" hidden role="dialog" aria-modal="true" aria-labelledby="donguriShopTitle">
+    <header class="donguri-shop__head">
+      <button class="donguri-shop__close" id="donguriShopClose" type="button" aria-label="閉じる">×</button>
+      <h2 class="donguri-shop__title" id="donguriShopTitle">シールショップ</h2>
+      <div class="donguri-shop__balance">
+        <span class="donguri-shop__balance-icon" aria-hidden="true">🌰</span>
+        <span id="donguriShopBalance">0</span>
+      </div>
+    </header>
+    <ul class="donguri-shop__catalog" id="donguriShopCatalog" role="list"></ul>
+    <p class="donguri-shop__empty" id="donguriShopEmpty" hidden>カタログを よみこみちゅう…</p>
+  </div>
+
+  <!-- v1571 phase 5: ショップ購入演出オーバーレイ (zoom-in + 紙吹雪) -->
+  <div class="donguri-shop-celebration" id="donguriShopCelebration" hidden aria-hidden="true"></div>
 
   <!-- ===== Password Unlock Modal (絵本パスワード入力 → premium 解錠) ===== -->
   <div class="modal" id="passwordUnlockModal" hidden role="dialog" aria-modal="true" aria-labelledby="passwordUnlockTitle">
@@ -3584,6 +3726,10 @@
   </script>
   <script src="common/tier.js"></script>
   <script src="js/game-stickers.js"></script>
+  <!-- お題 (daily-quest) + どんぐりショップ phase 4 統合 (v1570) -->
+  <script src="common/acorns.js"></script>
+  <script src="js/daily-quest.js"></script>
+  <script src="js/donguri-shop.js"></script>
 
   <script>
     'use strict';
@@ -4527,6 +4673,23 @@
       dailyGachaEntry.classList.add('is-visible');
       dailyGachaEntry.classList.remove('is-used');
       if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = 'シールを ひこう';
+
+      // daily-quest badge sync (既存 daily-gacha-entry CSS には触らず、 child element だけ操作)
+      if (window.PonoDailyQuest) {
+        var badge = document.getElementById('dailyGachaQuestBadge');
+        if (badge) {
+          var quest = window.PonoDailyQuest.getToday();
+          if (quest.bonusUsedAt) {
+            badge.hidden = true;
+          } else if (quest.clearedAt) {
+            badge.hidden = false;
+            badge.setAttribute('data-state', 'bonus');
+          } else {
+            badge.hidden = false;
+            badge.setAttribute('data-state', 'pending');
+          }
+        }
+      }
     }
 
     function setDailyGachaLeverRotation(rotation) {
@@ -5198,6 +5361,29 @@
 
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
+      // v1573 phase 6 must-fix #3: 今日もう引いた? 引いてたら used モーダルを表示
+      // (existing dailyGachaTodayKey は local-tz だが、 JST 統一は影響範囲が広いので現状維持。
+      //  最大 9h の境界差はあるが「もう引いた」 旨の表示は出るので致命的ではない)
+      if (typeof isDailyGachaUsedToday === 'function' && isDailyGachaUsedToday()) {
+        armDailyGachaModal(false);
+        if (typeof showDailyGachaUsed === 'function') {
+          try { showDailyGachaUsed(getDailyGachaRecord()); } catch (_) { showDailyGachaUsed(); }
+        }
+        return;
+      }
+      // お題ゲート: 鍵なし (= 今日のお題未クリア) なら誘導モーダルを出して return
+      if (window.PonoDailyQuest && !window.PonoDailyQuest.isClearedToday()) {
+        showQuestPromptModal();
+        return;
+      }
+      // ⭐ボーナス FX: 既存抽選は無改変、 演出のみ適用
+      var isBonus = !!(window.PonoDailyQuest && window.PonoDailyQuest.isBonusActive());
+      if (isBonus) {
+        dailyGachaModal.setAttribute('data-quest-bonus', '1');
+        try { window.PonoDailyQuest.markBonusUsed(); } catch (_) {}
+      } else {
+        dailyGachaModal.removeAttribute('data-quest-bonus');
+      }
       resetDailyGachaModal();
       armDailyGachaModal();
     }
@@ -5220,6 +5406,288 @@
     function goDailyGachaHome() {
       closeDailyGacha();
     }
+
+    // ===== お題 + ショップ phase 4 統合 (v1570) =====
+    // 既存 openDailyGacha / grantDailyGachaSticker 等の中身は無改変、
+    // ここでは「鍵ゲート → 誘導モーダル / ショップ」 ＋ バッジ sync ＋ ガチャ後 sparkle のみを扱う。
+    function showQuestPromptModal() {
+      var modal = document.getElementById('questPromptModal');
+      var nameEl = document.getElementById('questPromptName');
+      if (!modal || !window.PonoDailyQuest) return;
+      var q = window.PonoDailyQuest.getToday();
+      if (nameEl) nameEl.textContent = q.label || 'お題';
+      modal.hidden = false;
+    }
+    function hideQuestPromptModal() {
+      var modal = document.getElementById('questPromptModal');
+      if (modal) modal.hidden = true;
+    }
+    function showShop() {
+      var shop = document.getElementById('donguriShop');
+      if (!shop) return;
+      shop.hidden = false;
+      renderShopCatalog();
+    }
+    function hideShop() {
+      var shop = document.getElementById('donguriShop');
+      if (shop) shop.hidden = true;
+    }
+    function renderShopCatalog() {
+      var list = document.getElementById('donguriShopCatalog');
+      var balEl = document.getElementById('donguriShopBalance');
+      var empty = document.getElementById('donguriShopEmpty');
+      if (!list) return;
+      var balance = (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0;
+      if (balEl) balEl.textContent = String(balance);
+      if (!window.PonoDonguriShop) {
+        list.innerHTML = '';
+        if (empty) { empty.hidden = false; empty.textContent = 'ショップを よみこめません'; }
+        return;
+      }
+      // v1573 phase 6 must-fix #4B (extension): resolveAsset は path string を受けるので、
+      // catalog の sticker.img を見て解決する。 catalog 取得は async なので、
+      // sync では emoji fallback、 解決後に img を patch する 2-phase 描画。
+      var thumbFor = function (it) {
+        return '<span class="donguri-shop__thumb-fallback" aria-hidden="true">🌟</span>';
+      };
+      var stickerImgIndex = {}; // gameId|stickerId -> resolved url
+      var apiSt = window.PonoGameStickers;
+      var catalogReady = (apiSt && typeof apiSt.loadCatalog === 'function')
+        ? Promise.resolve(apiSt.loadCatalog()).then(function (raw) {
+            try {
+              var pages = (raw && raw.pages) || {};
+              Object.keys(pages).forEach(function (gid) {
+                var page = pages[gid] || {};
+                var stickers = page.stickers || [];
+                stickers.forEach(function (s) {
+                  if (s && s.id && s.img && typeof apiSt.resolveAsset === 'function') {
+                    try { stickerImgIndex[gid + '|' + s.id] = apiSt.resolveAsset(s.img); } catch (_) {}
+                  }
+                });
+              });
+            } catch (_) {}
+          }, function () {})
+        : Promise.resolve();
+      Promise.resolve(window.PonoDonguriShop.getCatalog()).then(function (items) {
+        list.innerHTML = '';
+        if (!items || !items.length) {
+          if (empty) { empty.hidden = false; empty.textContent = 'カタログが まだ ないよ'; }
+          return;
+        }
+        if (empty) empty.hidden = true;
+        items.forEach(function (it) {
+          var li = document.createElement('li');
+          li.className = 'donguri-shop__item' + (it.owned ? ' is-owned' : '');
+          li.setAttribute('role', 'listitem');
+          li.setAttribute('data-game-id', it.gameId);
+          li.setAttribute('data-sticker-id', it.id);
+          var canBuy = balance >= it.costAcorns;
+          var btnLabel = canBuy ? 'かう' : ('あと' + (it.costAcorns - balance) + ' 🌰');
+          var ownedNote = it.owned ? '<div class="donguri-shop__owned-label">もう もってるよ</div>' : '';
+          li.innerHTML =
+            '<div class="donguri-shop__thumb">' + thumbFor(it) + '</div>' +
+            '<div class="donguri-shop__name">' + (it.name || it.id) + '</div>' +
+            '<div class="donguri-shop__price">' + it.costAcorns + ' 🌰</div>' +
+            ownedNote +
+            '<button class="donguri-shop__buy" type="button"' + (canBuy ? '' : ' disabled') + '>' + btnLabel + '</button>';
+          var btn = li.querySelector('.donguri-shop__buy');
+          if (btn) {
+            btn.addEventListener('click', function () {
+              btn.disabled = true;
+              Promise.resolve(window.PonoDonguriShop.purchase(it.id)).then(function (r) {
+                if (r && r.success) {
+                  if (typeof window.showStickerToast === 'function' && r.stickerResult) {
+                    try { window.showStickerToast(r.stickerResult, { immediate: true }); } catch (_) {}
+                  }
+                  renderShopCatalog();
+                } else {
+                  // race / 残高不足の保険: 再描画して disabled state を更新
+                  renderShopCatalog();
+                }
+              });
+            });
+          }
+          list.appendChild(li);
+        });
+        // catalog resolve 完了後に thumb を img に差し替え
+        catalogReady.then(function () {
+          var nodes = list.querySelectorAll('.donguri-shop__item');
+          for (var i = 0; i < nodes.length; i++) {
+            var node = nodes[i];
+            var gid = node.getAttribute('data-game-id');
+            var sid = node.getAttribute('data-sticker-id');
+            var url = stickerImgIndex[gid + '|' + sid];
+            if (!url) continue;
+            var thumb = node.querySelector('.donguri-shop__thumb');
+            if (thumb) thumb.innerHTML = '<img src="' + url + '" alt="" draggable="false" />';
+          }
+        });
+      });
+    }
+
+    // モーダル / ショップ DOM listener wire
+    (function wireQuestAndShop() {
+      var promptModal = document.getElementById('questPromptModal');
+      var promptClose = document.getElementById('questPromptClose');
+      var promptGo    = document.getElementById('questPromptGo');
+      var promptShop  = document.getElementById('questPromptShop');
+      var shopModal   = document.getElementById('donguriShop');
+      var shopClose   = document.getElementById('donguriShopClose');
+      var gachaShop   = document.getElementById('dailyGachaShopLink');
+      if (promptClose) promptClose.addEventListener('click', hideQuestPromptModal);
+      if (promptGo) promptGo.addEventListener('click', function () {
+        if (!window.PonoDailyQuest) { hideQuestPromptModal(); return; }
+        var q = window.PonoDailyQuest.getToday();
+        if (q && q.href) {
+          location.href = q.href;
+        } else {
+          hideQuestPromptModal();
+        }
+      });
+      if (promptShop) promptShop.addEventListener('click', function () {
+        hideQuestPromptModal();
+        showShop();
+      });
+      if (promptModal) promptModal.addEventListener('click', function (e) {
+        if (e.target === promptModal) hideQuestPromptModal();
+      });
+      if (shopClose) shopClose.addEventListener('click', hideShop);
+      if (shopModal) shopModal.addEventListener('click', function (e) {
+        if (e.target === shopModal) hideShop();
+      });
+      if (gachaShop) gachaShop.addEventListener('click', function () {
+        // 既存ガチャモーダルを閉じずにショップを overlay (z-index 99990 で勝つ)
+        showShop();
+      });
+    })();
+
+    // v1573 phase 6 must-fix #1: pending sticker queue を drain して daily-quest にフォワード
+    // ゲーム pages (maze/quizland/...) は PonoGameStickerGranted を子 window で dispatch するため
+    // play.html では subscribe できない。 game-stickers.js が LS persist している pending を
+    // play.html に戻ってきた時に消化して markCleared を呼ぶ。
+    (function drainPendingStickerGrants() {
+      function drain() {
+        if (!window.PonoGameStickers || !window.PonoDailyQuest) return;
+        var consume = window.PonoGameStickers.consumePending;
+        if (typeof consume !== 'function') return;
+        var pending = null;
+        try { pending = consume(); } catch (_) { pending = null; }
+        if (!Array.isArray(pending) || !pending.length) return;
+        var CLEAR_EVENTS = ['clear', 'stage_clear', 'perfect', 'complete'];
+        pending.forEach(function (r) {
+          if (!r || !r.gameId) return;
+          var ev = r.event || 'clear';
+          if (CLEAR_EVENTS.indexOf(ev) < 0) return;
+          try {
+            var result = window.PonoDailyQuest.markCleared(r.gameId);
+            if (result && result.wasMatch && !result.alreadyCleared) {
+              try {
+                window.dispatchEvent(new CustomEvent('PonoDailyQuestCleared', {
+                  detail: { questId: r.gameId, date: result.state && result.state.date }
+                }));
+              } catch (_) {}
+            }
+          } catch (_) {}
+        });
+      }
+      // 起動時 drain
+      drain();
+      // tab 切り替え時 (ゲーム → play.html visible) でもう一度
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') drain();
+      });
+      // pageshow (bfcache 復帰) でも drain
+      window.addEventListener('pageshow', function () { drain(); });
+    })();
+
+    // v1571 phase 5: PonoDonguriShopPurchased → 中央 zoom + 紙吹雪
+    // v1573 phase 6 must-fix #4B: resolveAsset は path string を受けるので catalog lookup で正しい path を取得
+    function _resolveStickerImgUrl(gameId, stickerId) {
+      return new Promise(function (resolve) {
+        try {
+          var api = window.PonoGameStickers;
+          if (!api || typeof api.loadCatalog !== 'function' || typeof api.resolveAsset !== 'function') {
+            resolve(null); return;
+          }
+          if (!gameId || !stickerId) { resolve(null); return; }
+          Promise.resolve(api.loadCatalog()).then(function (raw) {
+            try {
+              var page = raw && raw.pages && raw.pages[gameId];
+              var list = (page && page.stickers) || [];
+              for (var i = 0; i < list.length; i++) {
+                if (list[i] && list[i].id === stickerId) {
+                  var path = list[i].img || '';
+                  if (path) { resolve(api.resolveAsset(path) || null); return; }
+                  resolve(null); return;
+                }
+              }
+              resolve(null);
+            } catch (_) { resolve(null); }
+          }, function () { resolve(null); });
+        } catch (_) { resolve(null); }
+      });
+    }
+
+    function _renderPurchaseCelebration(url) {
+      var host = document.getElementById('donguriShopCelebration');
+      if (!host) return;
+      host.innerHTML = '';
+      var thumb = document.createElement('div');
+      thumb.className = 'donguri-shop-celebration__thumb';
+      thumb.innerHTML = url ? ('<img src="' + url + '" alt="" draggable="false" />') : '⭐';
+      host.appendChild(thumb);
+      var palette = ['#ffd34d','#ff9a3c','#7ed957','#5ec8ff','#ff6fb5','#fff7c0'];
+      for (var i = 0; i < 12; i++) {
+        var p = document.createElement('div');
+        p.className = 'donguri-shop-celebration__confetti';
+        var ang = (Math.PI * 2 * i) / 12 + (Math.random() * .35);
+        var dist = 140 + Math.random() * 80;
+        p.style.setProperty('--cx', Math.cos(ang) * dist + 'px');
+        p.style.setProperty('--cy', Math.sin(ang) * dist + 'px');
+        p.style.setProperty('--cr', (Math.random() * 720 - 360) + 'deg');
+        p.style.background = palette[i % palette.length];
+        p.style.animationDelay = (Math.random() * .08) + 's';
+        host.appendChild(p);
+      }
+      host.hidden = false;
+      window.setTimeout(function () { host.hidden = true; host.innerHTML = ''; }, 1200);
+    }
+
+    window.addEventListener('PonoDonguriShopPurchased', function (e) {
+      var detail = (e && e.detail) || {};
+      var gameId = detail.gameId;
+      var stickerId = detail.stickerId || detail.id;
+      _resolveStickerImgUrl(gameId, stickerId).then(function (url) {
+        _renderPurchaseCelebration(url);
+      });
+    });
+
+    // PonoDailyQuestCleared: バッジに ⭐ done 演出 → bonus へ遷移
+    window.addEventListener('PonoDailyQuestCleared', function () {
+      var badge = document.getElementById('dailyGachaQuestBadge');
+      if (badge) {
+        badge.hidden = false;
+        badge.setAttribute('data-state', 'done');
+      }
+      window.setTimeout(function () { updateDailyGachaEntry(); }, 800);
+    });
+
+    // 初回 play.html 訪問でフクロウ TTS 自動発話 (mp3 未生成のため graceful skip)
+    (function tryQuestNarration() {
+      try {
+        if (sessionStorage.getItem('pono_quest_narrated_today') === '1') return;
+      } catch (_) { return; }
+      if (!window.PonoDailyQuest) return;
+      var n = window.Narration || window.PonoNarration;
+      if (!n || typeof n.play !== 'function') return;
+      try {
+        var q = window.PonoDailyQuest.getToday();
+        var key = 'pono_quest_' + q.questId + '_intro';
+        if (typeof n.has === 'function' && !n.has(key)) return;
+        n.play(key);
+        try { sessionStorage.setItem('pono_quest_narrated_today', '1'); } catch (_) {}
+      } catch (_) { /* graceful skip */ }
+    })();
 
     if (dailyGachaEntry) {
       updateDailyGachaEntry();
