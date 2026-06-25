@@ -1596,7 +1596,7 @@
     }
     .daily-gacha-fixed-home { background-image: url("assets/ui/gacha/daily_gacha_action_home_normal.png"); }
     .daily-gacha-fixed-home:active { background-image: url("assets/ui/gacha/daily_gacha_action_home_pressed.png"); }
-    .daily-gacha-shop-link { background-image: url("assets/ui/daily_gacha_shop_button_home_match_20260625.png"); }
+    .daily-gacha-shop-link { background-image: url("assets/ui/daily_gacha_shop_button_illustrated_20260625.png"); }
     .daily-gacha-fixed-home:active,
     .daily-gacha-shop-link:active {
       transform: translateY(3px) scale(.985);
@@ -4419,7 +4419,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1602;
+    const PAGE_CACHE_VERSION = 1603;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
