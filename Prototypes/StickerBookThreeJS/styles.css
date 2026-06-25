@@ -1853,40 +1853,68 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 }
 
 @keyframes stickerTutorialFindPlaceHand {
-  /* === tray scroll: 0-26% (1 回スワイプのみ表示、 2 回目は不可視維持、 全体 17.6s) === */
+  /* === tray scroll: 0-26% (1 回目 + 2 回目 両方表示、 26-30% で fade out + ワープ + fade in、 全体 17.6s) ===
+     ユーザー要望: 「2 回目が消えちゃっています。 その後の、 消してほしいところが残っています」
+       → 1 回目 (0-12%) と 2 回目 (15.5-26%) を両方復活、 12-15.5% で短い fade+warp、 26-30% で消えてから find phase で再出現 */
   0% {
-    /* 1 回目スワイプ起点: 右端 */
+    /* 1 回目スワイプ起点: 右端 (--tutorial-scroll-from-x) */
     left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
-  10.8% {
-    /* 1 回目スワイプ終端: 左端 (JS halfDistance 到達 = 43% × 4500ms / 17600ms ≒ 11.0%) */
+  12% {
+    /* 1 回目スワイプ終端: 左端 (--tutorial-scroll-to-x) */
     left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
-  12.6% {
-    /* fade out (横向き transform 維持、 関数列を維持して 14% 以降の補間 flicker を抑止) */
+  13% {
+    /* 短い fade out (左端で消える) ≒ 176ms */
     left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
   }
-  /* 12.6-26% (約 2.36s): 不可視維持。 JS は 2 回目 scroll を続けるが hand は完全不在
-     (ユーザー要望: 「迷い始めるところでまた手が出てくれば？」 を実装) */
+  14.5% {
+    /* 不可視のまま右端 (scroll-from) へワープ ≒ 264ms 不可視 */
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  15.5% {
+    /* 2 回目スワイプ起点で fade in ≒ 176ms */
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
   26% {
-    /* find phase 開始直前に demo-from 座標 + 縦向き transform へ事前ワープ (不可視のままなので flicker なし)
-       transform 関数列を 28→30% で同形 (translate + scale + rotate) に揃えて補間 flicker 根絶 */
+    /* 2 回目スワイプ終端: 左端 (--tutorial-scroll-to-x、 「消してほしい」 区間の入口) */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  27% {
+    /* 2 回目完了後 fade out (左端で消える、 ≒ 176ms) → ユーザー指摘 「消してほしいところ」 を実体化 */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  29% {
+    /* 不可視のまま demo-from 座標 + 縦向き transform へ事前ワープ (≒ 352ms 不可視 = 「迷い始める直前の間」)
+       transform 関数列を find phase keyframe (30.5%+) と同形に揃えて補間 flicker 根絶 */
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
     transform: translate(-50%, -35%) scale(0.96) rotate(-3deg);
   }
-  26.9% {
-    /* fade in しつつ find phase 開始 */
+  30% {
+    /* fade in → find phase 開始 (≒ 176ms fade)、 次の 30.5% findWander1 (opacity:1, scale:0.92, rotate:-10) へ連続 */
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
