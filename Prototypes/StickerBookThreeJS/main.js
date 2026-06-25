@@ -4432,8 +4432,8 @@ function stickerTutorialDemoPoints(step, rect) {
       y: Math.max(pageRect.top + 20, to.y - wanderSpan * 0.10),
     };
     const overTarget = {
-      x: source.x,
-      y: source.y - Math.min(48, pageRect.height * 0.06),
+      x: to.x,
+      y: to.y - Math.min(48, pageRect.height * 0.06),
     };
     return {
       ...base,
@@ -4534,6 +4534,11 @@ function stickerTutorialPickActiveStickers() {
   for (const id of STICKER_TUTORIAL_DECOY_STICKER_IDS) {
     const s = stickerOptions.find((item) => item.id === id);
     if (s && !stickers.some((x) => x.id === s.id)) stickers.push(s);
+  }
+  // fallback: decoy が足りない時は stickerOptions の先頭から補完
+  for (const candidate of stickerOptions) {
+    if (stickers.length >= 3) break;
+    if (!stickers.some((x) => x.id === candidate.id)) stickers.push(candidate);
   }
   return stickers;
 }
