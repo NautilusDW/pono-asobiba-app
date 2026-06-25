@@ -1649,7 +1649,7 @@ const STICKER_TUTORIAL_STEPS = [
     card: "corner",
     text: "はった あとも\nうごかせるよ",
     audio: "stickerbook_tut_05_move.mp3",
-    hand: "point",
+    hand: "grip",
     minAdvanceMs: 4500,
     advanceOn: ["moveSticker"],
   },
@@ -3730,17 +3730,15 @@ function startStickerTutorialStepDemo(step) {
 }
 
 function startStickerTutorialModeDemo() {
-  // Phase 0 (0-1100ms): 最初から point hand を book 右下 rest 位置にフェードイン + 呼吸
-  setStickerTutorialHandKey("point");
+  // Phase 0 (0-1100ms): open hand を book 右下 rest 位置にフェードイン + 呼吸
   document.body.classList.add("is-sticker-tutorial-mode-demo");
   document.body.classList.add("is-sticker-tutorial-mode-rest");
-  // Phase 1 (1100-2000ms): rest → editButton から手前へ approach (point のまま)
+  // Phase 1 (1100-2000ms): rest → editButton から手前へ approach (open のまま)
   addStickerTutorialDemoTimer(() => {
-    setStickerTutorialHandKey("point");
     document.body.classList.remove("is-sticker-tutorial-mode-rest");
     document.body.classList.add("is-sticker-tutorial-mode-approach");
   }, 1100);
-  // Phase 2 (2000ms): point のまま press keyframe 開始
+  // Phase 2 (2000ms): point に切替 + press keyframe 開始
   addStickerTutorialDemoTimer(() => {
     setStickerTutorialHandKey("point");
     document.body.classList.remove("is-sticker-tutorial-mode-approach");
@@ -3805,8 +3803,9 @@ function startStickerTutorialPlaceDemo() {
   setStickerTrayPeek(true);
   updateStickerTutorialTraySilhouettes(true, true);
   document.body.classList.add("is-sticker-tutorial-combo-place");
+  stickerTutorialDemoBaseScroll = collectionStickerTrayItems.scrollLeft;
+  stickerTutorialDemoStartTime = performance.now();
   const maxScroll = Math.max(0, collectionStickerTrayItems.scrollWidth - collectionStickerTrayItems.clientWidth);
-  const currentScroll = collectionStickerTrayItems.scrollLeft;
   const targetButton = stickerTutorialTargetTrayButton();
   const targetScroll = targetButton
     ? THREE.MathUtils.clamp(
@@ -3814,36 +3813,23 @@ function startStickerTutorialPlaceDemo() {
       0,
       maxScroll,
     )
-    : THREE.MathUtils.clamp(currentScroll + Math.min(420, Math.max(180, maxScroll * 0.36)), 0, maxScroll);
-  const demoDistance = Math.min(
-    maxScroll,
-    Math.max(120, Math.min(420, collectionStickerTrayItems.clientWidth * 0.52)),
-  );
-  let scrollEnd = targetScroll;
-  if (maxScroll > 0 && scrollEnd < Math.min(120, maxScroll * 0.45)) {
-    scrollEnd = Math.min(maxScroll, demoDistance);
-  }
-  let scrollStart = THREE.MathUtils.clamp(scrollEnd - demoDistance, 0, maxScroll);
-  const minVisibleDistance = Math.min(80, maxScroll);
-  if (scrollEnd - scrollStart < minVisibleDistance) {
-    scrollStart = 0;
-    scrollEnd = Math.min(maxScroll, Math.max(scrollEnd, demoDistance));
-  }
-  const totalDistance = THREE.MathUtils.clamp(scrollEnd - scrollStart, 0, maxScroll);
-  stickerTutorialDemoBaseScroll = scrollStart;
-  stickerTutorialDemoStartTime = performance.now();
-  if (Math.abs(collectionStickerTrayItems.scrollLeft - scrollStart) > 1) {
-    stickerTutorialProgrammaticTrayScroll = true;
-    stickerTutorialProgrammaticTrayScrollUntil = performance.now() + 220;
-    collectionStickerTrayItems.scrollLeft = scrollStart;
-  }
+    : Math.min(maxScroll, stickerTutorialDemoBaseScroll + Math.min(420, Math.max(180, maxScroll * 0.36)));
+  const totalDistance = THREE.MathUtils.clamp(targetScroll - stickerTutorialDemoBaseScroll, 0, maxScroll);
   if (totalDistance > 0) {
     document.body.classList.add("is-sticker-tutorial-linked-scroll");
-    const duration = 3100;
+    const duration = 4500;
     const run = (now) => {
       const elapsed = Math.max(0, now - stickerTutorialDemoStartTime);
       const progress = THREE.MathUtils.clamp(elapsed / duration, 0, 1);
-      const offset = totalDistance * smootherstep(progress);
+      const halfDistance = totalDistance / 2;
+      let offset = totalDistance;
+      if (progress < 0.43) {
+        offset = halfDistance * smootherstep(progress / 0.43);
+      } else if (progress < 0.57) {
+        offset = halfDistance;
+      } else if (progress < 0.98) {
+        offset = halfDistance + halfDistance * smootherstep((progress - 0.57) / 0.41);
+      }
       stickerTutorialProgrammaticTrayScroll = true;
       stickerTutorialProgrammaticTrayScrollUntil = performance.now() + 140;
       collectionStickerTrayItems.scrollLeft = THREE.MathUtils.clamp(
@@ -3862,13 +3848,28 @@ function startStickerTutorialPlaceDemo() {
   }
   addStickerTutorialDemoTimer(() => {
     scheduleStickerTutorialLayout();
-  }, 3200);
+  }, 4550);
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id === "place") {
+      setStickerTutorialHandKey("open");
+    }
+  }, 5000);
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id === "place") {
+      setStickerTutorialHandKey("grip");
+    }
+  }, 7000);
+  addStickerTutorialDemoTimer(() => {
+    if (currentStickerTutorialStep()?.id === "place") {
+      setStickerTutorialHandKey("open");
+    }
+  }, 11300);
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
     addStickerFromTutorialDemoToPage();
-  }, 10300);
+  }, 11600);
 }
 
 function startStickerTutorialMoveDemo() {
@@ -3882,7 +3883,7 @@ function startStickerTutorialMoveDemo() {
   placement.y = originalY;
   refreshInlineStickerPage();
   document.body.classList.add("is-sticker-tutorial-move-js");
-  setStickerTutorialHandKey("point");
+  setStickerTutorialHandKey("grip");
   const path = [
     { x: originalX, y: originalY },
     { x: originalX - 13, y: originalY - 10 },
@@ -4182,6 +4183,15 @@ function notifyStickerTutorialAction(action) {
   if (stickerTutorialNext) {
     stickerTutorialNext.classList.add("is-ready-pulse");
   }
+  // セーフティ: 15s 経っても「つぎ」 を押さない場合は自動 advance (迷子防止)
+  addStickerTutorialDemoTimer(() => {
+    if (
+      stickerTutorialState?.actionDone &&
+      currentStickerTutorialStep() === step
+    ) {
+      showStickerTutorialStep(stickerTutorialState.index + 1);
+    }
+  }, 15000);
 }
 
 function stickerTutorialRemainingStepMs(step) {
@@ -4327,7 +4337,16 @@ function updateStickerTutorialDemo(step, rect) {
   }
   const center = rectCenter(rect);
   const handKey = step?.hand || "open";
-  setStickerTutorialHandKey(handKey);
+  // step "mode" は Phase 0 (rest) / Phase 1 (approach) の間だけ open を強制する。
+  // Phase 2 (press) 以降は step.hand="point" を尊重しないと、 後続の
+  // scheduleStickerTutorialLayout() が走るたびに hand が open に戻ってしまい、
+  // 「open のまま押している」 不一致が発生する (バグ修正: v1601)
+  const inModeRestOrApproach =
+    step?.id === "mode" &&
+    (document.body.classList.contains("is-sticker-tutorial-mode-rest") ||
+      document.body.classList.contains("is-sticker-tutorial-mode-approach"));
+  const initialHandKey = inModeRestOrApproach ? "open" : handKey;
+  setStickerTutorialHandKey(initialHandKey);
   const demo = stickerTutorialDemoPoints(step, rect);
   // step "mode" は初期 hand 位置を rest (右下) に固定。 keyframe 内で left/top を上書きしながら遷移する
   const initialHand = step?.id === "mode" && demo.rest ? demo.rest : demo.hand;
@@ -4449,66 +4468,82 @@ function stickerTutorialDemoPoints(step, rect) {
     };
     const targetIcon = stickerTutorialTargetTrayIcon();
     const targetIconRect = targetIcon?.getBoundingClientRect();
-    const targetIconVisible = targetIconRect?.width
-      && targetIconRect.right > trayRect.left + 4
-      && targetIconRect.left < rectRight(trayRect) - 4
-      && targetIconRect.bottom > trayRect.top + 4
-      && targetIconRect.top < rectBottom(trayRect) - 4;
-    const source = targetIconVisible
+    const source = targetIconRect?.width
       ? rectCenter(targetIconRect)
       : {
         x: trayRect.left + trayRect.width * 0.52,
         y: trayRect.top + trayRect.height * 0.54,
       };
+    const chooseLeft = {
+      x: Math.max(trayRect.left + 58, source.x - Math.min(92, trayRect.width * 0.16)),
+      y: source.y + 3,
+    };
+    const chooseRight = {
+      x: Math.min(rectRight(trayRect) - 58, source.x + Math.min(92, trayRect.width * 0.16)),
+      y: source.y - 2,
+    };
+    const pageRect = stickerTutorialSidePageRect("right") || stickerTutorialPageRect() || rect;
+    const to = { x: pageRect.left + pageRect.width * 0.55, y: pageRect.top + pageRect.height * 0.42 };
+    const away = {
+      x: Math.min(window.innerWidth - 58, to.x + Math.min(86, pageRect.width * 0.16)),
+      y: Math.max(54, to.y - Math.min(72, pageRect.height * 0.16)),
+    };
+
+    // === find phase 用 (tray Y 帯に閉じ込め、 横移動オンリー) ===
     const trayBandTop = trayRect.top + 4;
     const trayBandBottom = trayRect.top + trayRect.height - 4;
     const trayLeftEdge = trayRect.left + 40;
     const trayRightEdge = trayRect.left + trayRect.width - 40;
     const clampTrayX = (x) => Math.min(trayRightEdge, Math.max(trayLeftEdge, x));
     const clampTrayY = (y) => Math.min(trayBandBottom, Math.max(trayBandTop, y));
-    const choiceCenters = stickerTutorialChoiceCentersForSource(source, trayRect);
-    const fallbackChoiceGap = Math.min(86, trayRect.width * 0.14);
-    const chooseLeftSource = choiceCenters.left || { x: source.x - fallbackChoiceGap, y: source.y };
-    const chooseRightSource = choiceCenters.right || { x: source.x + fallbackChoiceGap, y: source.y };
-    const chooseLeft = {
-      x: clampTrayX(chooseLeftSource.x),
-      y: clampTrayY(chooseLeftSource.y + 2),
-    };
-    const chooseRight = {
-      x: clampTrayX(chooseRightSource.x),
-      y: clampTrayY(chooseRightSource.y - 2),
-    };
-    const pageRect = stickerTutorialSidePageRect("right") || stickerTutorialPageRect() || rect;
-    const pageMarginX = Math.max(28, Math.min(70, pageRect.width * 0.08));
-    const pageMarginY = Math.max(26, Math.min(72, pageRect.height * 0.08));
-    const clampPagePoint = (x, y) => ({
-      x: Math.min(pageRect.left + pageRect.width - pageMarginX, Math.max(pageRect.left + pageMarginX, x)),
-      y: Math.min(pageRect.top + pageRect.height - pageMarginY, Math.max(pageRect.top + pageMarginY, y)),
-    });
-    const to = clampPagePoint(pageRect.left + pageRect.width * 0.55, pageRect.top + pageRect.height * 0.42);
-    const away = {
-      ...clampPagePoint(to.x + pageRect.width * 0.1, to.y - pageRect.height * 0.1),
-    };
-
-    // === find phase 用 (3 つのシールをなぞる。 tray Y 帯に閉じ込め、 横移動オンリー) ===
     const findWander1 = {
-      x: clampTrayX(chooseLeft.x - Math.min(18, trayRect.width * 0.025)),
-      y: clampTrayY(chooseLeft.y),
+      x: clampTrayX(source.x - Math.min(140, trayRect.width * 0.24)),
+      y: clampTrayY(source.y - trayRect.height * 0.18),
     };
     const findOverTarget = {
-      x: clampTrayX(chooseRight.x + Math.min(18, trayRect.width * 0.025)),
-      y: clampTrayY(chooseRight.y),
+      x: clampTrayX(source.x + Math.min(140, trayRect.width * 0.26)),
+      y: clampTrayY(source.y - 4),
     };
 
-    // === place phase 用 (貼る場所の近くで軽く迷うだけにする) ===
-    const nudgeX = Math.min(54, pageRect.width * 0.08);
-    const nudgeY = Math.min(42, pageRect.height * 0.07);
-    const wander1 = clampPagePoint(to.x - nudgeX, to.y + nudgeY * 0.26);
-    const wander2 = clampPagePoint(to.x + nudgeX * 0.44, to.y - nudgeY * 0.22);
-    const wander3 = clampPagePoint(to.x, to.y - nudgeY * 0.18);
-    const overshoot = clampPagePoint(to.x + nudgeX * 0.16, to.y + nudgeY * 0.08);
-    const hover = clampPagePoint(to.x, to.y - nudgeY * 0.22);
-    const overTarget = hover;
+    // === place phase 用 (大振り + back-track + overshoot で「迷い」 を強調) ===
+    const wanderSpan = Math.min(
+      window.innerWidth * 0.32,
+      Math.max(180, pageRect.width * 0.45),
+    );
+    const dx = to.x - source.x;
+    const dy = to.y - source.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const perpX = -dy / dist;
+    const perpY = dx / dist;
+    const wander1 = {
+      // axis 0% で perp 方向 1.40w + 上 0.50w → 反対ページ寄りまで大振り (1.20 → 1.40 = 1.4 倍)
+      x: source.x + perpX * wanderSpan * 1.40,
+      y: source.y + perpY * wanderSpan * 1.40 - wanderSpan * 0.50,
+    };
+    const wander2 = {
+      // axis 0.85 まで大ジャンプ (to の手前 15% 地点) で perp +0.48w
+      // decoy が近接化したので perp 符号を反転 (-0.30 → +0.48 = 1.6 倍 + decoy 側へ寄せ)
+      x: source.x + dx * 0.85 + perpX * wanderSpan * 0.48,
+      y: source.y + dy * 0.85 + perpY * wanderSpan * 0.48 + wanderSpan * 0.10,
+    };
+    const wander3 = {
+      // axis 0.40 まで back-track ★「あれ違った」 の核 (0.20 → 0.24 = 1.2 倍 微調整)
+      x: source.x + dx * 0.40 + perpX * wanderSpan * 0.24,
+      y: source.y + dy * 0.40 + perpY * wanderSpan * 0.24 - wanderSpan * 0.25,
+    };
+    const overshoot = {
+      // to を 8% 通り過ぎる (小振幅)
+      x: to.x + dx * 0.08,
+      y: to.y + dy * 0.08,
+    };
+    const hover = {
+      x: to.x,
+      y: Math.max(pageRect.top + 20, to.y - wanderSpan * 0.10),
+    };
+    const overTarget = {
+      x: to.x,
+      y: to.y - Math.min(48, pageRect.height * 0.06),
+    };
     return {
       ...base,
       hand: scrollFrom,
@@ -4657,40 +4692,6 @@ function stickerTutorialTargetTrayButton() {
 
 function stickerTutorialTargetTrayIcon() {
   return stickerTutorialTargetTrayButton()?.querySelector(".sticker-tray-icon") || visibleStickerTrayIconForTutorial();
-}
-
-function stickerTutorialChoiceCentersForSource(source, trayRect) {
-  if (!collectionStickerTrayItems || !source || !trayRect) {
-    return {};
-  }
-  const activeIds = new Set(stickerTutorialPickActiveStickers().map((sticker) => sticker.id));
-  if (!activeIds.size) {
-    return {};
-  }
-  const centers = [];
-  collectionStickerTrayItems.querySelectorAll("[data-sticker-tray-id]").forEach((button) => {
-    if (!activeIds.has(button.dataset.stickerTrayId)) {
-      return;
-    }
-    const icon = button.querySelector(".sticker-tray-icon");
-    const rect = icon?.getBoundingClientRect();
-    const visible = rect?.width
-      && rect.right > trayRect.left + 4
-      && rect.left < rectRight(trayRect) - 4
-      && rect.bottom > trayRect.top + 4
-      && rect.top < rectBottom(trayRect) - 4;
-    if (!visible) {
-      return;
-    }
-    centers.push(rectCenter(rect));
-  });
-  centers.sort((a, b) => a.x - b.x);
-  const leftCandidates = centers.filter((point) => point.x < source.x - 8);
-  const rightCandidates = centers.filter((point) => point.x > source.x + 8);
-  return {
-    left: leftCandidates.length ? leftCandidates[leftCandidates.length - 1] : null,
-    right: rightCandidates.length ? rightCandidates[0] : null,
-  };
 }
 
 function updateStickerTutorialTraySilhouettes(enabled = false, withTarget = enabled) {
