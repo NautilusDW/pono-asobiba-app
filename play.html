@@ -3420,7 +3420,7 @@
       background-image: url("assets/ui/shop/sticker_shop_counter_angled_20260625.png");
       background-size: cover; background-position: center bottom; background-repeat: no-repeat;
       pointer-events: none; z-index: 3;
-      transform: translateY(7.2%);
+      transform: translateY(12.4%);
       transform-origin: center bottom;
     }
     .donguri-shop-v2-machine {
@@ -3485,7 +3485,7 @@
       aspect-ratio: 1763 / 519;
       box-sizing: border-box;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/komorebiya_hanging_shop_sign_logo_20260625.png") center / contain no-repeat;
+      background: transparent url("assets/ui/shop/komorebiya_dark_wood_sign_logo_20260626.png") center / contain no-repeat;
       color: transparent; text-align: center;
       font-size: 0;
       text-shadow: none;
@@ -4632,7 +4632,7 @@
       <div class="donguri-shop-v2-character-safe" aria-hidden="true">
         <!-- v1615: shopkeeper is separated from the UI safe layer so the foreground counter can hide the lower body. -->
         <div class="donguri-shop-v2-shopkeeper">
-          <img src="assets/ui/shop/sticker_shopkeeper_squirrel_wave_small_blackeyes_20260626.png" alt="" draggable="false" />
+          <img src="assets/ui/shop/sticker_shopkeeper_squirrel_wave_large_blackeyes_20260626.png" alt="" draggable="false" />
         </div>
       </div>
       <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
@@ -5034,7 +5034,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1617;
+    const PAGE_CACHE_VERSION = 1619;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Reference-style title menu: the first screen intentionally shows four
