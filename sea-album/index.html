@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="../js/game-stickers.js"></script>
+<script src="../common/acorns.js" defer></script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/capture.js" defer></script>
 <style>
@@ -1568,6 +1569,7 @@
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'sea-album', event: 'clear' });
     }
+    if (window.addAcornsDaily) window.addAcornsDaily('sea-album', 5, 5, { reason: 'sea_album_clear' });
     setTimeout(() => { finishOverlay.hidden = false; }, 800);
   }
 

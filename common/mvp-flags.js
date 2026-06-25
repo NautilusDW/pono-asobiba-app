@@ -1,12 +1,12 @@
 /* ============================================================
    common/mvp-flags.js  (MVP Phase 1 用 中央フラグ)
 
-   目的:
-     2026-04-27 ユーザー指示。MVP は無料ゲームのみで先行リリース。
-     報酬制度を封印し、進捗系も完全に no-op にしてフレッシュスタートを
-     担保する (2026-04-28 追加方針)。
+   ★ v1590 で MVP gate を解除。 tier system は復活済 (sw1066)、 rewards
+     システムも有効化。 acorns/achievements/stickers の全 reward 経路が
+     活性化し、 どんぐり経済 (1 ゲーム = 1 日 N 個 / 無料 25・有料 35 の
+     1 日トータル cap / どんぐり 50 = シール 1 枚) が初めて完全動作する。
 
-   PONO_MVP_NO_REWARDS = true のとき:
+   PONO_MVP_NO_REWARDS = true のとき (旧 MVP モード, 現在は false):
      - どんぐり (acorn) / ありがとう (thankyou) / 宝箱 / 祝賀モーダル を全部抑止
      - スタンプ・実績・ログインシール・どんぐり加算を全部 no-op
      - 進捗系 LS (pono_stats / pono_stamp_log / pono_acorns / pono_thankyou /
@@ -15,13 +15,15 @@
        ボタンを CSS で非表示
 
    ※ ゲームクリア時の confetti / モーダル / ポノの褒めは累積じゃないので維持。
-   ※ 再公開する時は PONO_MVP_NO_REWARDS = false に戻すだけで全機能が復活。
+   ※ 緊急封印したい時は PONO_MVP_NO_REWARDS = true に戻すだけで全機能が抑止。
        LS は空のままなので、全ユーザーが「最初の 1 個目」をフレッシュに体験できる。
    ============================================================ */
 (function() {
   'use strict';
 
-  window.PONO_MVP_NO_REWARDS = true;
+  // v1590: MVP gate 解除。 rewards 全経路 (acorns / achievements / stickers /
+  //         daily-quest / どんぐりショップ) を活性化。
+  window.PONO_MVP_NO_REWARDS = false;
 
   if (!window.PONO_MVP_NO_REWARDS) return;
 

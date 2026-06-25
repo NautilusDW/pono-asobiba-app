@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="../js/game-stickers.js"></script>
+<script src="../common/acorns.js" defer></script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/capture.js" defer></script>
 <style>
@@ -624,6 +625,7 @@
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'undersea-cave', event: 'clear' });
     }
+    if (window.addAcornsDaily) window.addAcornsDaily('undersea-cave', 5, 5, { reason: 'undersea_cave_clear' });
   }
 
   function updateHud() {

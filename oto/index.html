@@ -15,6 +15,7 @@
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
 <script src="../js/game-stickers.js"></script>
+<script src="../common/acorns.js" defer></script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 <script src="../common/capture.js" defer></script>
@@ -10003,6 +10004,7 @@ function _showRhythmComplete(result) {
   if (clearedFullSong) _markRhythmSongCleared(stars);
   if (clearedFullSong) _queueRhythmStickerReward(stars);
   else _clearRhythmStickerReward();
+  if (clearedFullSong && window.addAcornsDaily) window.addAcornsDaily('oto', 5, 5, { reason: 'oto_clear' });
   document.body.classList.add('rhythm-complete-active');
   var partialRivalLine = hasNextPart ? 'いいぞ でも まだまだ これからケロ！' : 'ブロックは できたな ほんばんも こい！';
   _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'taunt', clearedFullSong ? null : partialRivalLine, _rhythmPonoLine('clear'));

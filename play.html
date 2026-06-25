@@ -3688,6 +3688,44 @@
     /* v1578: shop link must remain clickable even when an ancestor (.daily-gacha-panel)
        inherits/sets pointer-events:none in center-msg states. */
     .daily-gacha-shop-link { pointer-events: auto; }
+
+    /* v1589: 🌰 acorn balance badge — top-right safe-area HUD chip.
+       Mirrors the daily-gacha-entry left-anchor formula but on the right.
+       Visual vocabulary reuses .donguri-shop-v2-balance (cream pill, brown border). */
+    .acorn-balance-badge {
+      position: absolute;
+      top: 18px;
+      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px);
+      z-index: 93;
+      pointer-events: none; /* HUD only — no interaction */
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px;
+      background: #fff8e0;
+      border: 2px solid #b88600;
+      border-radius: 999px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #6e4a00;
+      min-width: 70px;
+      justify-content: center;
+      box-shadow: 0 3px 0 #b88600, 0 6px 14px rgba(48,27,10,.20);
+      font-family: inherit;
+      letter-spacing: .02em;
+      will-change: transform;
+      transform: translateZ(0);
+    }
+    .acorn-balance-badge__icon { font-size: 20px; line-height: 1; }
+    .acorn-balance-badge__count { font-variant-numeric: tabular-nums; }
+    @keyframes acorn-balance-bump {
+      0%   { transform: scale(1)    translateZ(0); }
+      40%  { transform: scale(1.15) translateZ(0); }
+      70%  { transform: scale(0.97) translateZ(0); }
+      100% { transform: scale(1)    translateZ(0); }
+    }
+    .acorn-balance-badge.is-bumping { animation: acorn-balance-bump .4s ease-out; }
+    @media (prefers-reduced-motion: reduce) {
+      .acorn-balance-badge.is-bumping { animation: none; }
+    }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
@@ -3729,6 +3767,12 @@
         </div>
       </section>
     </main>
+
+    <!-- v1589: 🌰 acorn balance badge (top-right HUD chip, live-updated via pono-acorns-changed) -->
+    <div class="acorn-balance-badge" id="acornBalanceBadge" aria-live="polite" aria-label="どんぐりのこすう">
+      <span class="acorn-balance-badge__icon" aria-hidden="true">🌰</span>
+      <span class="acorn-balance-badge__count" id="acornBalanceCount">0</span>
+    </div>
 
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
       <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"></button>
@@ -6640,6 +6684,75 @@
     // ===== Init =====
     renderCards();
     selectGame(0);
+
+    // ===== v1590: 🌰 acorn balance badge wiring (MF3: 戻り時 bump 発火対応) =====
+    (function wireAcornBalanceBadge() {
+      var el = document.getElementById('acornBalanceBadge');
+      var countEl = document.getElementById('acornBalanceCount');
+      if (!el || !countEl) return;
+
+      // v1590 MF3 fix: MVP flag が true なら badge 非表示 (defensive)
+      if (window.PONO_MVP_NO_REWARDS === true) {
+        el.hidden = true;
+        return;
+      }
+
+      var SS_LAST_SEEN = 'pono_acorns_last_seen_v1';
+      var bumpTimer = null;
+
+      function render(newAmount) {
+        var v = (typeof newAmount === 'number')
+          ? newAmount
+          : ((typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0);
+        countEl.textContent = String(v | 0);
+      }
+      function bump() {
+        if (bumpTimer) { clearTimeout(bumpTimer); bumpTimer = null; }
+        el.classList.remove('is-bumping');
+        // force reflow so the animation re-triggers even on consecutive deltas
+        void el.offsetWidth;
+        el.classList.add('is-bumping');
+        bumpTimer = setTimeout(function () {
+          el.classList.remove('is-bumping');
+          bumpTimer = null;
+        }, 500);
+      }
+
+      // game→戻り時の差分検出 (MF3 fix): pageshow / visibilitychange の度に
+      // 前回見た残高と現残高を比較し、 増えていれば bump 演出。
+      function checkChangeSinceLastSeen() {
+        var current = (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0;
+        try {
+          var raw = sessionStorage.getItem(SS_LAST_SEEN);
+          var lastSeen = parseInt(raw || '0', 10);
+          if (!isNaN(lastSeen) && current > lastSeen) {
+            bump();
+          }
+          sessionStorage.setItem(SS_LAST_SEEN, String(current));
+        } catch (_) { /* private mode etc. */ }
+        render(current);
+      }
+
+      // 同セッション内 同ページ内 加算リスナー (acorns.js dispatch)
+      window.addEventListener('pono-acorns-changed', function (e) {
+        var after = (e && e.detail && typeof e.detail.after === 'number') ? e.detail.after : null;
+        render(after);
+        var delta = (e && e.detail && typeof e.detail.delta === 'number') ? e.detail.delta : 0;
+        if (delta > 0) bump();
+        try {
+          if (after !== null) sessionStorage.setItem(SS_LAST_SEEN, String(after));
+        } catch (_) {}
+      });
+
+      // 初期 paint + 戻り時差分検出
+      checkChangeSinceLastSeen();
+
+      // visibilitychange / pageshow でも再チェック (タブ切替戻り / bfcache)
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') checkChangeSinceLastSeen();
+      });
+      window.addEventListener('pageshow', function () { checkChangeSinceLastSeen(); });
+    })();
 
     // ===== Service worker =====
     // 登録 + 更新検知を common/sw-update.js に集約。更新待ちUIは出さず、

@@ -13,6 +13,7 @@
 <script src="../common/debug-mode.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="../js/game-stickers.js"></script>
+<script src="../common/acorns.js" defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1544,6 +1545,7 @@
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'starparodier', event: 'clear' });
     }
+    if (window.addAcornsDaily) window.addAcornsDaily('starparodier', 5, 5, { reason: 'starparodier_clear' });
     showOverlay(CURRENT_STAGE.clearTitle, CURRENT_STAGE.clearText, 'もういちど');
   }
 
