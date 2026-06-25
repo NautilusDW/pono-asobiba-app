@@ -3387,19 +3387,19 @@
       @keyframes pono-shop-pop-rm { 0%,80%{transform:scale(1);opacity:1;} 100%{transform:scale(1);opacity:0;} }
     }
 
-    /* ===== v1582: donguri shop v2 (3 slot rotation, hedgehog NPC, atarashii badge, heart-on-owned) ===== */
+    /* ===== v1607: donguri shop v3 (squirrel shopkeeper + separated shop layers) ===== */
     .donguri-shop-v2-backdrop {
       position: absolute; inset: 0;
-      background-image: url('assets/ui/gacha/daily_gacha_room_backdrop.png');
+      background-image: url("assets/ui/shop/sticker_shop_background_empty_20260625.png");
       background-size: cover; background-position: center bottom; background-repeat: no-repeat;
       pointer-events: none; z-index: 0;
     }
     .donguri-shop-v2-counter {
-      position: absolute; left: 0; right: 0; bottom: 0;
-      width: 100%; height: 42%;
-      background-image: url('assets/ui/gacha/daily_gacha_counter_foreground.png');
-      background-size: cover; background-position: center bottom; background-repeat: no-repeat;
-      pointer-events: none; z-index: 1;
+      position: absolute; left: 0; right: 0; bottom: -1%;
+      width: 100%; height: 56%;
+      background-image: url("assets/ui/shop/sticker_shop_counter_angled_20260625.png");
+      background-size: 100% 100%; background-position: center bottom; background-repeat: no-repeat;
+      pointer-events: none; z-index: 3;
     }
     .donguri-shop-v2-machine {
       position: absolute; right: 4%; bottom: 6%;
@@ -3408,122 +3408,129 @@
       filter: drop-shadow(0 6px 12px rgba(0,0,0,.35));
     }
     .donguri-shop-v2-machine img { width:100%; height:auto; display:block; }
-    .donguri-shop-v2-hedgehog {
-      /* v1591: hedgehog 縮小 (28%→20% / max 260→170 / bottom 14%→6%) — タイトル/カードを覆わない、 カウンター上端から顔だけ覗くサイズ
-         v1594: drop-shadow を除去 (partner_harinezumi.webp が RGB 不透明 = 四角全体に影が落ちて白い枠が見えていた)。
-         画像は cream/白い背景込みなので img 側に mix-blend-mode: multiply で白い四角を背景に同化させる。 */
-      position: absolute; left: 4%; bottom: 6%;
-      width: 20%; max-width: 170px; min-width: 96px;
-      z-index: 3; pointer-events: none;
+    .donguri-shop-v2-shopkeeper {
+      position: absolute; left: 4.2%; bottom: 18%;
+      width: 23%; max-width: 250px; min-width: 118px;
+      z-index: 2; pointer-events: none;
       background: transparent;
       border: 0;
+      filter: drop-shadow(0 10px 14px rgba(32, 17, 6, .34));
     }
-    .donguri-shop-v2-hedgehog img {
+    .donguri-shop-v2-shopkeeper img {
       width:100%; height:auto; display:block;
       background: transparent;
       aspect-ratio: auto;
-      mix-blend-mode: multiply;
     }
     .donguri-shop-v2-bubble {
-      /* v1595: countdown bubble 重複解消 — #donguriShopCountdown を削除して 1 つに統合。
-         位置を hedgehog (left:4%, bottom:6%, width:20%) の右下隣に再配置し tail を左下向きに。
-         user 指示「ハリネズミのすぐ右下あたり」 */
-      position: absolute; left: 24%; bottom: 10%;
-      max-width: 32%;
-      z-index: 4;
-      background: #fffbe8; border: 3px solid #b88600; border-radius: 18px;
-      padding: 6px 12px;
+      position: absolute; left: 7%; bottom: 22%;
+      width: min(25%, 330px);
+      min-height: 74px;
+      z-index: 5;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_20260625.png") center / 100% 100% no-repeat;
+      border: 0; border-radius: 0;
+      padding: 12px 28px 14px 52px;
       color: #5a3a00; font-weight: 900; font-size: 14px; text-align: center; line-height: 1.3;
-      box-shadow: 0 3px 0 #b88600, 0 6px 12px rgba(0,0,0,.18);
+      filter: drop-shadow(0 6px 10px rgba(38, 19, 4, .22));
     }
-    .donguri-shop-v2-bubble::after {
-      /* v1595: tail 方向を bubble の左辺 → hedgehog (左下) へ向ける。
-         元は bubble 下辺中央付近に下向き三角だった。 今は左辺中央やや下に左向き三角。 */
-      content: ''; position: absolute; left: -14px; bottom: 18%;
-      width: 0; height: 0; border-top: 12px solid transparent; border-bottom: 12px solid transparent;
-      border-right: 16px solid #fffbe8;
-      filter: drop-shadow(-2px 0 0 #b88600);
-    }
+    .donguri-shop-v2-bubble::after { content: none; }
     .donguri-shop-v2-head {
-      position: absolute; top: 0; left: 0; right: 0;
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 14px; z-index: 5;
+      position: absolute; top: 8px; left: 0; right: 0;
+      display: grid; align-items: center;
+      grid-template-columns: minmax(48px, 76px) minmax(230px, 520px) minmax(102px, 150px);
+      justify-content: space-between; gap: 10px;
+      padding: 0 14px; z-index: 6;
       pointer-events: none;
     }
     .donguri-shop-v2-close {
       pointer-events: auto;
-      width: 44px; height: 44px; border: 2px solid #8a4a00; background: #fff; color: #6e4a00;
+      width: clamp(48px, 7vw, 68px); height: clamp(48px, 7vw, 68px);
+      border: 0;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_close_frame_20260625.png") center / contain no-repeat;
+      color: #6e4a00;
       font-size: 24px; border-radius: 50%; cursor: pointer; line-height: 1;
-      box-shadow: 0 3px 0 #8a4a00;
+      box-shadow: none;
+      filter: drop-shadow(0 5px 8px rgba(48, 27, 10, .25));
     }
-    .donguri-shop-v2-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4a00; }
+    .donguri-shop-v2-close:active { transform: translateY(2px); filter: drop-shadow(0 2px 4px rgba(48, 27, 10, .22)); }
     .donguri-shop-v2-title {
-      /* v1591: title をはっきり前面化 — z-index は親 .donguri-shop-v2-head (z:5) で確保、 white plate 風 text-shadow 強化 */
-      margin: 0; flex: 1; font-size: 22px; color: #5a3a00; text-align: center;
-      text-shadow: 0 2px 0 #fff, 0 -2px 0 #fff, 2px 0 0 #fff, -2px 0 0 #fff, 0 4px 8px rgba(0,0,0,.35);
+      margin: 0;
+      height: clamp(52px, 8vw, 78px);
+      display: flex; align-items: center; justify-content: center;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_title_plaque_20260625.png") center / 100% 100% no-repeat;
+      color: #5a3a00; text-align: center;
+      font-size: clamp(18px, 2.6vw, 28px);
+      text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 3px 6px rgba(96, 48, 8, .22);
       font-weight: 900;
       position: relative; z-index: 6;
     }
     .donguri-shop-v2-balance {
       pointer-events: auto;
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 14px; background: #fff; border: 2px solid #b88600; border-radius: 999px;
-      font-size: 18px; font-weight: bold; color: #6e4a00;
-      min-width: 70px; justify-content: center;
-      box-shadow: 0 3px 0 #b88600;
+      justify-content: center;
+      height: clamp(42px, 6.3vw, 56px);
+      padding: 0 18px 0 52px;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_balance_badge_20260625.png") center / 100% 100% no-repeat;
+      border: 0; border-radius: 999px;
+      font-size: clamp(16px, 2.2vw, 22px); font-weight: 900; color: #6e4a00;
+      min-width: 104px;
+      filter: drop-shadow(0 4px 7px rgba(48, 27, 10, .22));
     }
+    .donguri-shop-v2-balance span[aria-hidden="true"] { display: none; }
     .donguri-shop-v2-slots {
-      /* v1588 NTH3: slot row 全幅を 64% -> 80% に拡張 (chubby finger に窮屈解消)。
-         right: 4% は gacha machine clearance を維持、 left を 32% -> 16% に詰めて hedgehog 上に張り出す。
-         v1591: hedgehog 縮小に伴い left 16%→26% に詰め (hedgehog の右側に綺麗に並ぶ)、 縦中央寄せのため
-         bottom 22%→26% に少し上げて countdown bubble との重複を解消。
-         v1594: bottom 26%→14% に下げて「テーブル面に近い」 配置に、 right 4%→6% (gacha 機削除で clearance 不要 → 反対に余裕を持たせる) */
-      position: absolute; left: 26%; right: 6%; bottom: 14%;
-      display: flex; gap: 2.5%; justify-content: center; align-items: flex-end;
+      position: absolute; left: 34%; right: 4.5%; bottom: 17%;
+      display: flex; gap: 2.1%; justify-content: center; align-items: flex-end;
       z-index: 4;
     }
     .donguri-shop-v2-slot {
       flex: 1 1 0;
-      /* v1588 NTH3: 1 slot あたり最小 56px (タップターゲット確保) + 上限 30%
-         v1591: padding 10/8/10 → 6/6/6、 gap 6→4 に詰め、 縦サイズを 70% スケールへ
-         v1594: カード縮小 (max-width 30%→24% / padding 6→4) + 「テーブルの上に浮いてる」 二段 drop-shadow へ強化 */
-      min-width: 56px;
-      max-width: 24%;
-      background: linear-gradient(180deg, #fff8e0, #ffe9a8);
-      border: 3px solid #b88600; border-radius: 16px;
-      padding: 4px 4px 4px;
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      box-shadow:
-        0 3px 0 #b88600,
-        0 8px 16px rgba(0,0,0,.28),
-        0 2px 4px rgba(0,0,0,.18);
+      min-width: 76px;
+      max-width: 30%;
+      aspect-ratio: 462 / 701;
+      background: transparent url("assets/ui/shop/sticker_shop_card_normal_20260625.png") center / 100% 100% no-repeat;
+      border: 0; border-radius: 18px;
+      padding: 10.5% 9% 5.5%;
+      display: flex; flex-direction: column; align-items: center; gap: 0;
+      box-shadow: none;
+      filter: drop-shadow(0 10px 14px rgba(34, 17, 4, .25));
       position: relative;
       animation: pono-shop-v2-float 2.6s ease-in-out infinite;
     }
+    .donguri-shop-v2-slot.is-buyable { background-image: url("assets/ui/shop/sticker_shop_card_highlight_20260625.png"); }
+    .donguri-shop-v2-slot.is-unavailable,
+    .donguri-shop-v2-slot.is-owned { background-image: url("assets/ui/shop/sticker_shop_card_muted_20260625.png"); }
     .donguri-shop-v2-slot:nth-child(2) { animation-delay: .2s; }
     .donguri-shop-v2-slot:nth-child(3) { animation-delay: .4s; }
     @keyframes pono-shop-v2-float {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-2px); }
     }
-    .donguri-shop-v2-slot.is-owned { background: linear-gradient(180deg, #ffe7f1, #ffd0e3); }
     .donguri-shop-v2-thumb {
-      width: 100%; aspect-ratio: 1 / 1;
+      position: absolute;
+      left: 15.5%;
+      top: 17%;
+      width: 69%;
+      height: 39%;
       display: flex; align-items: center; justify-content: center;
-      background: #fff7e0; border-radius: 14px; overflow: hidden;
-      border: 2px solid #d8a84a;
+      background: transparent; border-radius: 14px; overflow: hidden;
+      border: 0;
     }
-    .donguri-shop-v2-thumb img { max-width: 86%; max-height: 86%; }
-    .donguri-shop-v2-thumb-fallback { font-size: 34px; }
+    .donguri-shop-v2-thumb img {
+      max-width: 112%;
+      max-height: 112%;
+      transform: scale(1.55);
+      filter: drop-shadow(0 5px 6px rgba(84, 45, 8, .22));
+    }
+    .donguri-shop-v2-thumb-fallback { font-size: clamp(42px, 7vw, 74px); }
     /* v1591: thumb の最大高を制限してカード縦サイズを抑制
        v1594: 140→100 に縮小 (カード全体を一回り小さく) */
-    .donguri-shop-v2-thumb { max-height: 100px; }
+    .donguri-shop-v2-thumb { max-height: none; }
     .donguri-shop-v2-thumb.is-hearting img { animation: pono-shop-v2-heartjump 600ms ease-out; }
     @keyframes pono-shop-v2-heartjump {
-      0% { transform: translateY(0) scale(1); }
-      30% { transform: translateY(-18px) scale(1.12); }
-      60% { transform: translateY(0) scale(.96); }
-      100% { transform: translateY(0) scale(1); }
+      0% { transform: translateY(0) scale(1.55); }
+      30% { transform: translateY(-18px) scale(1.72); }
+      60% { transform: translateY(0) scale(1.48); }
+      100% { transform: translateY(0) scale(1.55); }
     }
     .donguri-shop-v2-heart-burst {
       position: absolute; left: 50%; top: 30%;
@@ -3538,33 +3545,50 @@
       100% { opacity: 0; transform: translate(-50%, -110%) scale(1); }
     }
     .donguri-shop-v2-price {
-      /* v1591: 14px → 13px */
-      font-size: 13px; color: #6e4a00; font-weight: bold;
+      position: absolute;
+      left: 44%;
+      top: 61%;
+      transform: translateY(-50%);
+      width: 30%;
+      min-height: 8%;
+      margin: 0;
+      padding-left: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(12px, 1.7vw, 16px); color: #6e4a00; font-weight: 900;
+      line-height: 1;
     }
     .donguri-shop-v2-buy {
-      /* v1591: min-height 44 維持 (タッチターゲット要件)、 font 15→14 のみ縮小 */
-      width: 100%; min-height: 44px;
-      border: 2px solid #8a4a00; border-radius: 12px;
-      background: linear-gradient(180deg, #ffaa3c, #ee7a1c);
-      color: #fff; font-size: 14px; font-weight: bold; cursor: pointer;
-      box-shadow: 0 3px 0 #8a4a00;
+      position: absolute;
+      left: 7%;
+      bottom: 6%;
+      width: 86%; min-height: 13%;
+      margin: 0;
+      border: 0; border-radius: 12px;
+      background: transparent;
+      color: #fff; font-size: clamp(13px, 1.8vw, 18px); font-weight: 900; cursor: pointer;
+      text-shadow: 0 1px 0 rgba(110, 58, 0, .45), 0 2px 3px rgba(68, 32, 0, .25);
+      box-shadow: none;
     }
-    .donguri-shop-v2-buy:active { transform: translateY(2px); box-shadow: 0 1px 0 #8a4a00; }
+    .donguri-shop-v2-buy:active { transform: translateY(2px); box-shadow: none; }
     .donguri-shop-v2-buy:disabled {
-      background: #d8c89a; color: #6e4a00; cursor: not-allowed;
-      box-shadow: 0 3px 0 #8a6a00; opacity: .85;
+      background: transparent; color: #6e4a00; cursor: not-allowed;
+      box-shadow: none; opacity: .85;
     }
     .donguri-shop-v2-owned-label {
-      width: 100%; min-height: 44px;
+      position: absolute;
+      left: 7%;
+      bottom: 6%;
+      width: 86%; min-height: 13%;
+      margin: 0;
       display: flex; align-items: center; justify-content: center;
       gap: 4px;
-      background: linear-gradient(180deg, #ff9ec7, #ff6fb5);
-      color: #fff; font-size: 14px; font-weight: bold;
-      border: 2px solid #b8407a; border-radius: 12px;
-      box-shadow: 0 3px 0 #b8407a;
+      background: transparent;
+      color: #6e4a00; font-size: clamp(11px, 1.5vw, 15px); font-weight: 900;
+      border: 0; border-radius: 12px;
+      box-shadow: none;
       cursor: pointer; -webkit-tap-highlight-color: transparent;
     }
-    .donguri-shop-v2-owned-label:active { transform: translateY(2px); box-shadow: 0 1px 0 #b8407a; }
+    .donguri-shop-v2-owned-label:active { transform: translateY(2px); box-shadow: none; }
     .donguri-shop-v2-badge {
       position: absolute; top: -10px; right: -8px;
       padding: 4px 10px;
@@ -3590,6 +3614,21 @@
       .donguri-shop-v2-badge { animation: none; }
       .donguri-shop-v2-thumb.is-hearting img { animation: none; }
       .donguri-shop-v2-heart-burst { animation: none; opacity: 1; }
+    }
+    @media (max-width: 900px) {
+      .donguri-shop-v2-head {
+        top: 6px;
+        grid-template-columns: minmax(44px, 58px) minmax(210px, 420px) minmax(88px, 124px);
+        padding: 0 10px;
+      }
+      .donguri-shop-v2-title { height: 56px; font-size: 20px; }
+      .donguri-shop-v2-shopkeeper { left: 3.2%; bottom: 17%; width: 22%; min-width: 92px; }
+      .donguri-shop-v2-bubble { left: 7%; bottom: 22%; width: min(25%, 220px); min-height: 58px; padding: 9px 18px 10px 36px; font-size: 12px; }
+      .donguri-shop-v2-slots { left: 31%; right: 3%; bottom: 14.5%; gap: 1.3%; }
+      .donguri-shop-v2-slot { min-width: 66px; max-width: 31%; padding: 10.5% 8.4% 5%; }
+      .donguri-shop-v2-price { font-size: 12px; }
+      .donguri-shop-v2-buy { font-size: 13px; }
+      .donguri-shop-v2-owned-label { font-size: 11px; }
     }
 
     /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
@@ -4023,9 +4062,9 @@
   <div class="donguri-shop" id="donguriShop" hidden role="dialog" aria-modal="true" aria-labelledby="donguriShopTitle">
     <div class="donguri-shop-v2-backdrop" aria-hidden="true"></div>
     <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
-    <!-- v1594: ショップからガチャ機を削除 (ガチャ機は #dailyGachaModal 専用、 ショップ overlay には不要)。 .donguri-shop-v2-machine CSS rule は残置 (orphan、 影響なし) -->
-    <div class="donguri-shop-v2-hedgehog" aria-hidden="true">
-      <img src="assets/images/puzzle/partners/partner_harinezumi.webp" alt="" draggable="false" />
+    <!-- v1604: shopkeeper is a generated squirrel asset. The gacha machine remains scoped to #dailyGachaModal. -->
+    <div class="donguri-shop-v2-shopkeeper" aria-hidden="true">
+      <img src="assets/ui/shop/sticker_shopkeeper_squirrel_small_blackeyes_20260625.png" alt="" draggable="false" />
     </div>
     <div class="donguri-shop-v2-bubble" id="donguriShopBubble" role="status" aria-live="polite">もうすぐ かわるよ</div>
     <header class="donguri-shop-v2-head">
@@ -4419,7 +4458,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1606;
+    const PAGE_CACHE_VERSION = 1607;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Infinite-scroll loop: render the catalog 3× and silently teleport
@@ -6113,8 +6152,12 @@
             try { ownState = window.PonoDonguriShop.getOwnershipState(sid) || ownState; } catch (_) {}
             var isNew = false;
             try { isNew = !!window.PonoDonguriShop.isNew(sid); } catch (_) {}
+            // v1607: card frame background has normal / highlighted / muted variants.
+            // canPurchase remains the source of truth for the buyable visual state.
+            var canBuy = false;
+            try { canBuy = !!window.PonoDonguriShop.canPurchase(sid); } catch (_) {}
             var slot = document.createElement('div');
-            slot.className = 'donguri-shop-v2-slot' + (ownState.owned ? ' is-owned' : '');
+            slot.className = 'donguri-shop-v2-slot' + (ownState.owned ? ' is-owned' : (canBuy ? ' is-buyable' : ' is-unavailable'));
             slot.setAttribute('role', 'listitem');
             slot.setAttribute('data-sticker-id', sid);
             slot.setAttribute('data-game-id', info.gameId || '');
@@ -6124,8 +6167,6 @@
               : '<span class="donguri-shop-v2-thumb-fallback" aria-hidden="true">🌟</span>';
             // v1588 NTH2: canPurchase を single source of truth として採用。
             // getOwnershipState は heart 演出判定のみに使う。
-            var canBuy = false;
-            try { canBuy = !!window.PonoDonguriShop.canPurchase(sid); } catch (_) {}
             var actionHtml;
             if (ownState.owned) {
               actionHtml = '<button class="donguri-shop-v2-owned-label" type="button" data-action="heart">💗 もう なかよし♪</button>';
@@ -6133,13 +6174,13 @@
               actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy">かう</button>';
             } else {
               // canPurchase=false かつ未所持 = balance不足 / rotation外。
-              // v1594: 「あと N 🌰」 「かえないよ」 等のテキスト表示を廃止 — silent disabled (カード/値段は表示するがボタンは出さない)。
-              actionHtml = '';
+              // v1607: generated card has a visible button plate, so keep the command label but disable it.
+              actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" disabled>かう</button>';
             }
             slot.innerHTML =
               badgeHtml +
               '<div class="donguri-shop-v2-thumb">' + thumbInner + '</div>' +
-              '<div class="donguri-shop-v2-price">50 🌰</div>' +
+              '<div class="donguri-shop-v2-price">50</div>' +
               actionHtml;
             var btn = slot.querySelector('[data-action="buy"]');
             if (btn) {
