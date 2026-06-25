@@ -1628,7 +1628,7 @@ const STICKER_TUTORIAL_STEPS = [
     text: "ここを おして\nはるモードに するよ",
     audio: "stickerbook_tut_01_mode.mp3",
     hand: "point",
-    minAdvanceMs: 4500,
+    minAdvanceMs: 6000,
     advanceOn: ["enterEdit"],
   },
   {
@@ -3730,16 +3730,30 @@ function startStickerTutorialStepDemo(step) {
 }
 
 function startStickerTutorialModeDemo() {
+  // Phase 0 (0-1100ms): open hand を book 右下 rest 位置にフェードイン + 呼吸
   document.body.classList.add("is-sticker-tutorial-mode-demo");
+  document.body.classList.add("is-sticker-tutorial-mode-rest");
+  // Phase 1 (1100-2000ms): rest → editButton から手前へ approach (open のまま)
+  addStickerTutorialDemoTimer(() => {
+    document.body.classList.remove("is-sticker-tutorial-mode-rest");
+    document.body.classList.add("is-sticker-tutorial-mode-approach");
+  }, 1100);
+  // Phase 2 (2000ms): point に切替 + press keyframe 開始
+  addStickerTutorialDemoTimer(() => {
+    setStickerTutorialHandKey("point");
+    document.body.classList.remove("is-sticker-tutorial-mode-approach");
+    document.body.classList.add("is-sticker-tutorial-mode-press");
+  }, 2000);
+  // Phase 3: 押下 3 回 (Phase 2 開始基準 +400/+1850/+3250 = 絶対 2400/3850/5250ms)
   addStickerTutorialDemoTimer(() => {
     triggerStickerTutorialEditButtonPress({ targetMode: true, notify: false });
-  }, 900);
+  }, 2400);
   addStickerTutorialDemoTimer(() => {
     triggerStickerTutorialEditButtonPress({ targetMode: false, notify: false });
-  }, 2350);
+  }, 3850);
   addStickerTutorialDemoTimer(() => {
     triggerStickerTutorialEditButtonPress({ targetMode: true, notify: true });
-  }, 3750);
+  }, 5250);
 }
 
 function triggerStickerTutorialEditButtonPress(options = {}) {
@@ -4115,6 +4129,9 @@ function stopStickerTutorialStepDemo(options = {}) {
   bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
   document.body.classList.remove(
     "is-sticker-tutorial-mode-demo",
+    "is-sticker-tutorial-mode-rest",
+    "is-sticker-tutorial-mode-approach",
+    "is-sticker-tutorial-mode-press",
     "is-sticker-tutorial-combo-place",
     "is-sticker-tutorial-move-js",
     "is-sticker-tutorial-slider-js",
@@ -4315,10 +4332,18 @@ function updateStickerTutorialDemo(step, rect) {
   }
   const center = rectCenter(rect);
   const handKey = step?.hand || "open";
-  setStickerTutorialHandKey(handKey);
+  // step "mode" は Phase 0 = open hand 右下出現 で開始するので、 初期画像は強制 open
+  const initialHandKey = step?.id === "mode" ? "open" : handKey;
+  setStickerTutorialHandKey(initialHandKey);
   const demo = stickerTutorialDemoPoints(step, rect);
-  setStickerTutorialPointVar("--tutorial-hand-x", demo.hand.x);
-  setStickerTutorialPointVar("--tutorial-hand-y", demo.hand.y);
+  // step "mode" は初期 hand 位置を rest (右下) に固定。 keyframe 内で left/top を上書きしながら遷移する
+  const initialHand = step?.id === "mode" && demo.rest ? demo.rest : demo.hand;
+  setStickerTutorialPointVar("--tutorial-hand-x", initialHand.x);
+  setStickerTutorialPointVar("--tutorial-hand-y", initialHand.y);
+  if (step?.id === "mode" && demo.rest) {
+    setStickerTutorialPointVar("--tutorial-demo-rest-x", demo.rest.x);
+    setStickerTutorialPointVar("--tutorial-demo-rest-y", demo.rest.y);
+  }
   setStickerTutorialPointVar("--tutorial-demo-from-x", demo.from.x);
   setStickerTutorialPointVar("--tutorial-demo-from-y", demo.from.y);
   setStickerTutorialPointVar("--tutorial-demo-to-x", demo.to.x);
@@ -4401,6 +4426,15 @@ function stickerTutorialDemoPoints(step, rect) {
       x: center.x,
       y: Math.min(window.innerHeight - 48, bottom + pressOffset),
     };
+    if (step.id === "mode") {
+      // Phase 0 (rest): book 右下相当に open hand を出す
+      // viewport ベース で clamp、 editButton が右側にあるケースを想定して右下へ
+      const rest = {
+        x: Math.min(window.innerWidth - 80, center.x + Math.max(180, rect.width * 1.8)),
+        y: Math.min(window.innerHeight - 80, from.y + Math.max(120, rect.height * 1.4)),
+      };
+      return { ...base, hand: rest, from, to, rest };
+    }
     return { ...base, hand: from, from, to };
   }
   if (step.id === "ok" || step.id === "page") {
