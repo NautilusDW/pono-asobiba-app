@@ -2044,7 +2044,11 @@
       transition: width .16s ease;
     }
     .daily-gacha-actions {
-      display: none;
+      /* v1577 M1: rework — ガチャモーダル 3 状態どこでも常時 ショップ link を見せるため
+         parent を flex に開放。 兄弟ボタン (#dailyGachaAssist / #dailyGachaBook) は
+         自身の hidden 属性 + .daily-gacha-action[hidden] { display:none } で個別非表示。 */
+      display: flex;
+      justify-content: center;
       flex-wrap: wrap;
       gap: 10px;
       margin-top: auto;
@@ -3273,26 +3277,7 @@
       box-shadow: 0 3px 0 #B87200, 0 6px 12px rgba(0,0,0,0.25);
     }
 
-    /* ===== お題 + ショップ phase 4 統合 (v1570) — 新規セレクタのみ、 既存は無改変 ===== */
-    .daily-gacha-entry__quest-badge { position:absolute; top:6px; right:6px; width:32px; height:32px; border-radius:50%; background:#ffd34d; border:2px solid #b88600; box-shadow:0 2px 4px rgba(0,0,0,.25); pointer-events:none; z-index:2; }
-    .daily-gacha-entry__quest-badge::before { content:'⭐'; display:block; font-size:18px; line-height:28px; text-align:center; }
-    .daily-gacha-entry__quest-badge[data-state="done"] { background:#ffe680; border-color:#c89400; animation:pono-quest-badge-sparkle .8s ease-out; }
-    .daily-gacha-entry__quest-badge[data-state="bonus"] { background:linear-gradient(135deg,#ffd34d,#ff9a3c); border-color:#a35200; box-shadow:0 0 12px #ffcd5a, 0 2px 4px rgba(0,0,0,.25); }
-    .daily-gacha-entry__quest-badge[data-state="bonus"]::before { content:'✨'; }
-    @keyframes pono-quest-badge-sparkle { 0%{transform:scale(1);filter:brightness(1);} 40%{transform:scale(1.3);filter:brightness(1.6) drop-shadow(0 0 6px #fff);} 100%{transform:scale(1);filter:brightness(1);} }
-    .quest-prompt-modal { position:fixed; inset:0; z-index:99980; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; padding:20px; }
-    .quest-prompt-modal[hidden] { display:none; }
-    .quest-prompt-modal__panel { width:min(360px,92vw); background:#fff7e0; border:4px solid #b88600; border-radius:24px; padding:28px 24px 24px; box-shadow:0 12px 32px rgba(0,0,0,.35); position:relative; text-align:center; }
-    .quest-prompt-modal__close { position:absolute; top:8px; right:12px; width:40px; height:40px; border:none; background:transparent; font-size:28px; color:#6e4a00; cursor:pointer; line-height:1; }
-    .quest-prompt-modal__title { margin:0 0 12px; font-size:22px; color:#6e4a00; }
-    .quest-prompt-modal__msg { margin:0 0 20px; font-size:17px; color:#4a3300; line-height:1.5; }
-    .quest-prompt-modal__msg strong { color:#c25400; }
-    .quest-prompt-modal__actions { display:flex; flex-direction:column; gap:12px; }
-    .quest-prompt-modal__primary, .quest-prompt-modal__secondary { min-height:60px; border-radius:16px; border:3px solid #8a4a00; font-size:18px; font-weight:bold; cursor:pointer; padding:0 16px; }
-    .quest-prompt-modal__primary { background:linear-gradient(180deg,#ffaa3c,#ee7a1c); color:#fff; box-shadow:0 4px 0 #8a4a00; }
-    .quest-prompt-modal__primary:active { transform:translateY(2px); box-shadow:0 2px 0 #8a4a00; }
-    .quest-prompt-modal__secondary { background:#fbe7b8; color:#6e4a00; border-color:#b88600; box-shadow:0 4px 0 #b88600; }
-    .quest-prompt-modal__secondary:active { transform:translateY(2px); box-shadow:0 2px 0 #b88600; }
+    /* ===== お題 + ショップ phase 4 統合 (v1570→v1575: バッジ削除 / 誘導モーダル削除) ===== */
     .donguri-shop { position:fixed; inset:0; z-index:99990; background:#fff7e0; display:flex; flex-direction:column; overflow:hidden; }
     .donguri-shop[hidden] { display:none; }
     .donguri-shop__head { display:flex; align-items:center; gap:12px; padding:14px 16px; background:linear-gradient(180deg,#ffd98a,#ffc05a); border-bottom:3px solid #b88600; box-shadow:0 2px 6px rgba(0,0,0,.15); }
@@ -3318,27 +3303,7 @@
     .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-lux::before { filter:brightness(1.3) saturate(1.4); }
     .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-sparkles span { filter:drop-shadow(0 0 4px #ffd34d); }
 
-    /* ===== お題 + ショップ phase 5 視覚仕上げ (v1571) — 3-6歳向け「やった！」演出強化 ===== */
-    /* 1) ⭐お題達成スパークル: バウンス + 放射状キラキラ */
-    .daily-gacha-entry__quest-badge[data-state="done"] { animation:pono-quest-bounce .8s ease-out; }
-    .daily-gacha-entry__quest-badge[data-state="done"]::after {
-      content:''; position:absolute; left:50%; top:50%; width:6px; height:6px; border-radius:50%; background:#fff; transform:translate(-50%,-50%);
-      pointer-events:none; opacity:0;
-      box-shadow:
-        0 0 0 #fff7c0, 0 0 0 #ffd34d, 0 0 0 #fff7c0,
-        0 0 0 #ffd34d, 0 0 0 #fff7c0, 0 0 0 #ffd34d;
-      animation:pono-quest-rays .8s ease-out forwards;
-    }
-    @keyframes pono-quest-bounce { 0%{transform:scale(1);} 25%{transform:scale(1.3);} 55%{transform:scale(.95);} 100%{transform:scale(1);} }
-    @keyframes pono-quest-rays {
-      0%   { opacity:0;  box-shadow:0 0 0 1px #fff7c0, 0 0 0 1px #ffd34d, 0 0 0 1px #fff7c0, 0 0 0 1px #ffd34d, 0 0 0 1px #fff7c0, 0 0 0 1px #ffd34d; }
-      20%  { opacity:1; }
-      100% { opacity:0;
-        box-shadow:
-          0 -28px 0 1px #fff7c0, 24px -14px 0 1px #ffd34d, 24px 14px 0 1px #fff7c0,
-          0 28px 0 1px #ffd34d, -24px 14px 0 1px #fff7c0, -24px -14px 0 1px #ffd34d;
-      }
-    }
+    /* ===== お題 + ショップ phase 5 視覚仕上げ (v1571→v1575: バッジ演出削除) ===== */
     /* 2) ガチャ ボーナス: 金縁グロー + ✨ボーナス✨リボン + 薄い金色オーラ */
     .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-card,
     .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-modal__card,
@@ -3373,8 +3338,6 @@
       100% { transform:translate(calc(-50% + var(--cx,0px)), calc(-50% + var(--cy,0px))) rotate(var(--cr,360deg)) scale(1); opacity:0; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .daily-gacha-entry__quest-badge[data-state="done"] { animation:none; }
-      .daily-gacha-entry__quest-badge[data-state="done"]::after { animation:none; opacity:0; }
       .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-card,
       .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-modal__card,
       .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-panel { animation:none; }
@@ -3382,6 +3345,161 @@
       .donguri-shop-celebration__thumb { animation:pono-shop-pop-rm 1.2s linear forwards; }
       .donguri-shop-celebration__confetti { display:none; }
       @keyframes pono-shop-pop-rm { 0%,80%{transform:scale(1);opacity:1;} 100%{transform:scale(1);opacity:0;} }
+    }
+
+    /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
+    /* A1: チャレンジ情報バナー — ガチャエントリの真上、 木製 cream cardlet */
+    .daily-quest-info-banner {
+      position: absolute;
+      bottom: 246px;
+      left: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px);
+      width: 390px;
+      min-height: 76px;
+      z-index: 92;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 4px;
+      padding: 12px 20px;
+      border: 3px solid #b88600;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #fff7d8, #ffe9a8);
+      color: #4a3300;
+      font-family: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #b88600, 0 8px 18px rgba(48, 27, 10, 0.22);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .daily-quest-info-banner[hidden] { display: none; }
+    .daily-quest-info-banner:active { transform: translateY(2px); box-shadow: 0 2px 0 #b88600, 0 4px 10px rgba(48, 27, 10, 0.18); }
+    .daily-quest-info-banner:focus-visible { outline: 3px solid #ffd34d; outline-offset: 3px; }
+    .daily-quest-info-banner__title {
+      font-size: 16px;
+      letter-spacing: .04em;
+      color: #8a4a00;
+      line-height: 1.1;
+    }
+    .daily-quest-info-banner__body {
+      font-size: 22px;
+      line-height: 1.15;
+      color: #4a2a10;
+      white-space: pre-line;
+    }
+    .daily-quest-info-banner[data-state="done"] { background: linear-gradient(180deg, #fff2d0, #ffd884); border-color: #a35200; }
+    .daily-quest-info-banner[data-state="done"] .daily-quest-info-banner__title { color: #a35200; }
+    .daily-quest-info-banner[data-state="cleared"] { background: linear-gradient(180deg, #fff7e0, #f0e0b8); }
+
+    /* A2: ガチャモーダル中央メッセージ — 鍵なし / 引き済みの説明テキスト */
+    .daily-gacha-center-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(560px, 84vw);
+      z-index: 8;
+      padding: 22px 26px;
+      border: 4px solid #b88600;
+      border-radius: 24px;
+      background: #fff7e0;
+      color: #4a3300;
+      font-family: inherit;
+      font-weight: 900;
+      font-size: 26px;
+      line-height: 1.35;
+      text-align: center;
+      white-space: pre-line;
+      box-shadow: 0 6px 0 #b88600, 0 12px 28px rgba(0, 0, 0, .35);
+      pointer-events: none;
+    }
+    .daily-gacha-center-msg[hidden] { display: none; }
+
+    /* A3: ショップアイコン 常時 active で見やすく */
+    .daily-gacha-shop-link {
+      border: 3px solid #8a4a00;
+      background: linear-gradient(180deg, #ffd98a, #ffb04a);
+      color: #4a2a10;
+      font-size: 17px;
+      font-weight: 900;
+      padding: 12px 20px;
+      border-radius: 999px;
+      cursor: pointer;
+      margin-top: 8px;
+      box-shadow: 0 4px 0 #8a4a00, 0 6px 14px rgba(0, 0, 0, .2);
+      letter-spacing: .02em;
+    }
+    .daily-gacha-shop-link:active { transform: translateY(2px); box-shadow: 0 2px 0 #8a4a00, 0 3px 8px rgba(0, 0, 0, .18); }
+
+    /* レスポンシブ: 既存 .daily-gacha-entry の縮小ブレークポイントに合わせてバナーも縮める */
+    @media (max-width: 1200px) {
+      .daily-quest-info-banner { width: 360px; bottom: 235px; min-height: 70px; padding: 10px 18px; }
+      .daily-quest-info-banner__title { font-size: 15px; }
+      .daily-quest-info-banner__body { font-size: 20px; }
+    }
+    @media (max-width: 900px) {
+      .daily-quest-info-banner { width: 318px; bottom: 210px; min-height: 64px; padding: 9px 16px; }
+      .daily-quest-info-banner__title { font-size: 14px; }
+      .daily-quest-info-banner__body { font-size: 18px; }
+    }
+    @media (max-width: 720px) {
+      .daily-quest-info-banner { width: 296px; bottom: 200px; min-height: 60px; padding: 8px 14px; }
+      .daily-quest-info-banner__body { font-size: 17px; }
+    }
+
+    /* ===== v1577 M2: 鍵なし / 引き済み レバータップ feedback =====
+       文字が読めない 3-6 歳児が無反応で離脱しないように、 tap で
+       (1) レバーがぷるぷる揺れる
+       (2) 中央メッセージが pulse
+       (3) アシストボタン内にイラスト寄りの hint を出す */
+    .daily-gacha-lever[data-blocked="1"] {
+      cursor: default;
+      filter: saturate(.85) brightness(.96);
+    }
+    .daily-gacha-lever.is-blocked-bump {
+      animation: ponoDailyGachaLeverBlockedShake .36s cubic-bezier(.36,.07,.19,.97) both;
+      transform-origin: 50% 80%;
+    }
+    @keyframes ponoDailyGachaLeverBlockedShake {
+      0%   { transform: translateX(0)   rotate(0deg); }
+      18%  { transform: translateX(-3px) rotate(-1.4deg); }
+      36%  { transform: translateX(3px)  rotate(1.4deg); }
+      54%  { transform: translateX(-2px) rotate(-.9deg); }
+      72%  { transform: translateX(2px)  rotate(.9deg); }
+      100% { transform: translateX(0)   rotate(0deg); }
+    }
+    .daily-gacha-center-msg.is-blocked-pulse {
+      animation: ponoDailyGachaCenterMsgPulse .42s ease-out both;
+    }
+    @keyframes ponoDailyGachaCenterMsgPulse {
+      0%   { transform: translate(-50%, -50%) scale(1); }
+      45%  { transform: translate(-50%, -50%) scale(1.06); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+    .daily-gacha-center-msg__emoji {
+      display: block;
+      font-size: 44px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .daily-gacha-center-msg__text {
+      display: block;
+      white-space: pre-line;
+    }
+    /* assist hint モード — 鍵なし / 引き済み 時のイラスト寄り柔らかいメッセージ。
+       既存 .daily-gacha-action--assist のスタイルを引き継ぎつつ、 tap 無効 (visual only)。 */
+    .daily-gacha-action--assist[data-mode="hint"] {
+      pointer-events: none;
+      cursor: default;
+      background: linear-gradient(180deg, #FFFEF8, #FFE9B0);
+      color: #6e4a00;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .daily-gacha-lever.is-blocked-bump { animation: none; }
+      .daily-gacha-center-msg.is-blocked-pulse { animation: none; }
     }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
@@ -3436,10 +3554,13 @@
       <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
       <span class="sticker-book-entry__label"><span>シールちょう</span><span class="sticker-book-entry__sub">あつめた シール</span></span>
     </button>
+    <div class="daily-quest-info-banner" id="dailyQuestInfo" role="button" tabindex="0" hidden aria-label="きょうの チャレンジ">
+      <span class="daily-quest-info-banner__title" id="dailyQuestInfoTitle">きょうの チャレンジ</span>
+      <span class="daily-quest-info-banner__body" id="dailyQuestInfoBody">よみこみちゅう</span>
+    </div>
     <button class="daily-gacha-entry" id="dailyGachaEntry" type="button" aria-label="1にち1かい シールがもらえる ポノのガチャガチャ">
       <span class="daily-gacha-entry__icon" aria-hidden="true"><img src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false"></span>
       <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
-      <span class="daily-gacha-entry__quest-badge" id="dailyGachaQuestBadge" aria-hidden="true" hidden></span>
     </button>
     <button class="for-parents" id="forParentsBtn" type="button" aria-label="えほんをもっているおともだちへ">
       <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/ui/button_bottom_001.png" alt="" draggable="false">
@@ -3530,6 +3651,7 @@
     <div class="daily-gacha-shell">
       <div class="daily-gacha-room-bg" aria-hidden="true"></div>
       <button class="daily-gacha-close" id="dailyGachaClose" type="button" aria-label="とじる">×</button>
+      <div class="daily-gacha-center-msg" id="dailyGachaCenterMsg" hidden aria-live="polite"></div>
       <div class="daily-gacha-lux" aria-hidden="true">
         <span></span><span></span><span></span><span></span>
         <span></span><span></span><span></span><span></span>
@@ -3599,19 +3721,6 @@
         </div>
         <div class="daily-gacha-reward-note daily-gacha-reward-note--book" id="dailyGachaRewardNote"><span class="daily-gacha-reward-note__text">シールちょうに<br>はって あそぼう</span></div>
         <div class="daily-gacha-reward-note daily-gacha-reward-note--tomorrow" id="dailyGachaTomorrowNote"><span class="daily-gacha-reward-note__text">また あした<br>やろうね</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== Quest Prompt Modal (お題誘導: 鍵なし時に表示、 既存ガチャ動線非破壊) ===== -->
-  <div class="quest-prompt-modal" id="questPromptModal" hidden role="dialog" aria-modal="true" aria-labelledby="questPromptTitle">
-    <div class="quest-prompt-modal__panel">
-      <button class="quest-prompt-modal__close" id="questPromptClose" type="button" aria-label="閉じる">×</button>
-      <h2 class="quest-prompt-modal__title" id="questPromptTitle">きょうの ぼうけん</h2>
-      <p class="quest-prompt-modal__msg">きょうは <strong id="questPromptName">めいろ</strong>で あそんで ガチャ できるよ！</p>
-      <div class="quest-prompt-modal__actions">
-        <button class="quest-prompt-modal__primary" id="questPromptGo" type="button">お題を やろう</button>
-        <button class="quest-prompt-modal__secondary" id="questPromptShop" type="button">ショップへ</button>
       </div>
     </div>
   </div>
@@ -4673,23 +4782,6 @@
       dailyGachaEntry.classList.add('is-visible');
       dailyGachaEntry.classList.remove('is-used');
       if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = 'シールを ひこう';
-
-      // daily-quest badge sync (既存 daily-gacha-entry CSS には触らず、 child element だけ操作)
-      if (window.PonoDailyQuest) {
-        var badge = document.getElementById('dailyGachaQuestBadge');
-        if (badge) {
-          var quest = window.PonoDailyQuest.getToday();
-          if (quest.bonusUsedAt) {
-            badge.hidden = true;
-          } else if (quest.clearedAt) {
-            badge.hidden = false;
-            badge.setAttribute('data-state', 'bonus');
-          } else {
-            badge.hidden = false;
-            badge.setAttribute('data-state', 'pending');
-          }
-        }
-      }
     }
 
     function setDailyGachaLeverRotation(rotation) {
@@ -5105,6 +5197,7 @@
         dailyGachaAssist.hidden = true;
         dailyGachaAssist.disabled = true;
         dailyGachaAssist.textContent = 'もういっかい まわす';
+        dailyGachaAssist.removeAttribute('data-mode'); // v1577 M2: hint mode を解除
       }
       if (dailyGachaBook) dailyGachaBook.hidden = true;
       if (dailyGachaReward) dailyGachaReward.classList.remove('is-emoji');
@@ -5113,10 +5206,14 @@
         dailyGachaRewardImg.alt = '';
       }
       if (dailyGachaRewardEmoji) dailyGachaRewardEmoji.textContent = '⭐';
-      if (dailyGachaRewardName) dailyGachaRewardName.textContent = 'シールを ゲット';
+      if (dailyGachaRewardName) { dailyGachaRewardName.textContent = ''; dailyGachaRewardName.hidden = true; }
       setDailyGachaNoteText(dailyGachaRewardNote, '');
       setDailyGachaNoteText(dailyGachaTomorrowNote, '');
-      if (dailyGachaLever) dailyGachaLever.disabled = false;
+      if (dailyGachaLever) {
+        dailyGachaLever.disabled = false;
+        delete dailyGachaLever.dataset.blocked; // v1577 M2: blocked フラグも reset
+        dailyGachaLever.classList.remove('is-blocked-bump');
+      }
     }
 
     function setDailyGachaReward(result) {
@@ -5135,10 +5232,9 @@
         if (dailyGachaRewardEmoji) dailyGachaRewardEmoji.textContent = sticker.emoji || '⭐';
       }
       if (dailyGachaRewardName) {
-        const name = sticker.name || 'シール';
-        dailyGachaRewardName.textContent = page.title && page.title !== name
-          ? `${name}\n${page.title}`
-          : name;
+        // v1575: シール名の露出を停止 (sticker.name は触らず、 表示要素のみ非表示)
+        dailyGachaRewardName.textContent = '';
+        dailyGachaRewardName.hidden = true;
       }
       setDailyGachaNoteText(dailyGachaRewardNote, DAILY_GACHA_STICKER_BOOK_PROMPT);
       setDailyGachaNoteText(dailyGachaTomorrowNote, DAILY_GACHA_TOMORROW_PROMPT.replace(' やろう', '\nやろう'));
@@ -5361,22 +5457,32 @@
 
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
-      // v1573 phase 6 must-fix #3: 今日もう引いた? 引いてたら used モーダルを表示
-      // (existing dailyGachaTodayKey は local-tz だが、 JST 統一は影響範囲が広いので現状維持。
-      //  最大 9h の境界差はあるが「もう引いた」 旨の表示は出るので致命的ではない)
-      if (typeof isDailyGachaUsedToday === 'function' && isDailyGachaUsedToday()) {
+      // v1575: 3 状態いずれもガチャモーダルを開く (ショップは内部から常時アクセス可能)
+      // 鍵なし / 引き済み は中央メッセージモードで lever を停止
+      var usedToday = (typeof isDailyGachaUsedToday === 'function') && isDailyGachaUsedToday();
+      var lacksKey  = !!(window.PonoDailyQuest && !window.PonoDailyQuest.isClearedToday());
+      if (usedToday) {
+        resetDailyGachaModal();
         armDailyGachaModal(false);
-        if (typeof showDailyGachaUsed === 'function') {
-          try { showDailyGachaUsed(getDailyGachaRecord()); } catch (_) { showDailyGachaUsed(); }
-        }
+        showDailyGachaCenterMsg('used');
+        // v1577 M2: disabled 属性は pointer event を dispatch しないので使わず、
+        // data-blocked + listener 内ガード + tap 時 feedback で sub-silent化を回避
+        if (dailyGachaLever) { dailyGachaLever.disabled = false; dailyGachaLever.dataset.blocked = '1'; }
+        showDailyGachaAssistHint('used');
+        dailyGachaModal.removeAttribute('data-quest-bonus');
         return;
       }
-      // お題ゲート: 鍵なし (= 今日のお題未クリア) なら誘導モーダルを出して return
-      if (window.PonoDailyQuest && !window.PonoDailyQuest.isClearedToday()) {
-        showQuestPromptModal();
+      if (lacksKey) {
+        resetDailyGachaModal();
+        armDailyGachaModal(false);
+        showDailyGachaCenterMsg('locked');
+        if (dailyGachaLever) { dailyGachaLever.disabled = false; dailyGachaLever.dataset.blocked = '1'; }
+        showDailyGachaAssistHint('locked');
+        dailyGachaModal.removeAttribute('data-quest-bonus');
         return;
       }
-      // ⭐ボーナス FX: 既存抽選は無改変、 演出のみ適用
+      // 鍵あり + 未引き: 通常 lever 演出 + bonus FX (該当時)
+      hideDailyGachaCenterMsg();
       var isBonus = !!(window.PonoDailyQuest && window.PonoDailyQuest.isBonusActive());
       if (isBonus) {
         dailyGachaModal.setAttribute('data-quest-bonus', '1');
@@ -5388,6 +5494,102 @@
       armDailyGachaModal();
     }
 
+    function showDailyGachaCenterMsg(mode) {
+      var el = document.getElementById('dailyGachaCenterMsg');
+      if (!el) return;
+      var text = '';
+      var emoji = '';
+      if (mode === 'locked') {
+        var label = 'おだい';
+        try {
+          if (window.PonoDailyQuest) {
+            var q = window.PonoDailyQuest.getToday();
+            if (q && q.label) label = q.label;
+          }
+        } catch (_) {}
+        text = 'きょうは ' + label + ' で\nあそんでから ガチャ できるよ';
+        emoji = '🎯'; // v1577 M2: 文字が読めなくても「目印」 が分かる視覚アンカー
+      } else if (mode === 'used') {
+        text = 'きょうは もう ひいたよ\nまた あしたね';
+        emoji = '🌙'; // v1577 M2: 「またあした」 の意味を 1 文字で伝える
+      }
+      if (!text) {
+        el.hidden = true;
+        el.textContent = '';
+        return;
+      }
+      // v1577 M2: emoji + text を 2 行構造で出す (CSS 子クラスでサイズ制御)
+      el.textContent = '';
+      var eEm = document.createElement('span');
+      eEm.className = 'daily-gacha-center-msg__emoji';
+      eEm.setAttribute('aria-hidden', 'true');
+      eEm.textContent = emoji;
+      var eTx = document.createElement('span');
+      eTx.className = 'daily-gacha-center-msg__text';
+      eTx.textContent = text;
+      el.appendChild(eEm);
+      el.appendChild(eTx);
+      el.hidden = false;
+    }
+    function hideDailyGachaCenterMsg() {
+      var el = document.getElementById('dailyGachaCenterMsg');
+      if (el) { el.hidden = true; el.textContent = ''; el.classList.remove('is-blocked-pulse'); }
+    }
+
+    // v1577 M2: 鍵なし / 引き済み 時のアシスト hint。
+    // 既存 dailyGachaAssist DOM を再利用し、 data-mode="hint" で tap 無効 + 文言差替。
+    // 注: 「ショップで かぎを かおう」 は誤り (鍵はお題ゲームをクリアしてゲット)。 採用しない。
+    function showDailyGachaAssistHint(mode) {
+      if (!dailyGachaAssist) return;
+      var label = 'おだい';
+      try {
+        if (window.PonoDailyQuest) {
+          var q = window.PonoDailyQuest.getToday();
+          if (q && q.label) label = q.label;
+        }
+      } catch (_) {}
+      var text = '';
+      if (mode === 'locked') {
+        text = '👉 ' + label + ' で あそんで かぎを ゲット！';
+      } else if (mode === 'used') {
+        text = '🌅 あした また あえるよ！';
+      }
+      if (!text) {
+        dailyGachaAssist.hidden = true;
+        dailyGachaAssist.disabled = true;
+        dailyGachaAssist.removeAttribute('data-mode');
+        return;
+      }
+      dailyGachaAssist.textContent = text;
+      dailyGachaAssist.setAttribute('data-mode', 'hint');
+      dailyGachaAssist.hidden = false;
+      dailyGachaAssist.disabled = true; // visual only (CSS pointer-events:none も併用)
+    }
+
+    // v1577 M2: blocked lever tap 時の触覚 + 視覚 feedback。
+    // lever shake + center msg pulse + vibration (任意)。
+    function triggerDailyGachaBlockedFeedback() {
+      if (dailyGachaLever) {
+        dailyGachaLever.classList.remove('is-blocked-bump');
+        // reflow を強制して同 frame 内連打でも再生
+        void dailyGachaLever.offsetWidth;
+        dailyGachaLever.classList.add('is-blocked-bump');
+        setTimeout(function () {
+          if (dailyGachaLever) dailyGachaLever.classList.remove('is-blocked-bump');
+        }, 420);
+      }
+      var msg = document.getElementById('dailyGachaCenterMsg');
+      if (msg && !msg.hidden) {
+        msg.classList.remove('is-blocked-pulse');
+        void msg.offsetWidth;
+        msg.classList.add('is-blocked-pulse');
+        setTimeout(function () {
+          if (msg) msg.classList.remove('is-blocked-pulse');
+        }, 480);
+      }
+      try { if (navigator.vibrate) navigator.vibrate(30); } catch (_) {}
+    }
+
     function closeDailyGacha() {
       if (!dailyGachaModal) return;
       clearDailyGachaTimers();
@@ -5395,7 +5597,9 @@
       stopDailyGachaOneShotAudio();
       dailyGachaModal.hidden = true;
       resetDailyGachaModal();
+      hideDailyGachaCenterMsg();
       updateDailyGachaEntry();
+      try { renderDailyQuestInfoBanner(); } catch (_) {}
       resumeTopBgmAfterDailyGacha();
     }
 
@@ -5407,20 +5611,44 @@
       closeDailyGacha();
     }
 
-    // ===== お題 + ショップ phase 4 統合 (v1570) =====
-    // 既存 openDailyGacha / grantDailyGachaSticker 等の中身は無改変、
-    // ここでは「鍵ゲート → 誘導モーダル / ショップ」 ＋ バッジ sync ＋ ガチャ後 sparkle のみを扱う。
-    function showQuestPromptModal() {
-      var modal = document.getElementById('questPromptModal');
-      var nameEl = document.getElementById('questPromptName');
-      if (!modal || !window.PonoDailyQuest) return;
-      var q = window.PonoDailyQuest.getToday();
-      if (nameEl) nameEl.textContent = q.label || 'お題';
-      modal.hidden = false;
+    // ===== お題 + ショップ phase 4→v1575 (バナー + 中央メッセージ + 常時ショップ) =====
+    // チャレンジ情報バナー描画 (ガチャエントリの真上、 ボタン増設ではなく純情報)
+    function renderDailyQuestInfoBanner() {
+      var banner = document.getElementById('dailyQuestInfo');
+      var titleEl = document.getElementById('dailyQuestInfoTitle');
+      var bodyEl  = document.getElementById('dailyQuestInfoBody');
+      if (!banner || !titleEl || !bodyEl) return;
+      if (!window.PonoDailyQuest) { banner.hidden = true; return; }
+      var q;
+      try { q = window.PonoDailyQuest.getToday(); } catch (_) { banner.hidden = true; return; }
+      if (!q) { banner.hidden = true; return; }
+      if (q.bonusUsedAt) {
+        // 達成済 + ボーナス消費後: クリア表示
+        banner.hidden = false;
+        banner.setAttribute('data-state', 'cleared');
+        titleEl.textContent = 'きょうの チャレンジ';
+        bodyEl.textContent = 'クリア！';
+      } else if (q.clearedAt) {
+        // 達成済 + ボーナス未消費
+        banner.hidden = false;
+        banner.setAttribute('data-state', 'done');
+        titleEl.textContent = 'やったね！';
+        bodyEl.textContent = 'ガチャに ボーナス！';
+      } else {
+        // 未達成
+        banner.hidden = false;
+        banner.setAttribute('data-state', 'pending');
+        titleEl.textContent = 'きょうの チャレンジ';
+        bodyEl.textContent = (q.label || 'おだい') + ' で あそぼう！';
+      }
     }
-    function hideQuestPromptModal() {
-      var modal = document.getElementById('questPromptModal');
-      if (modal) modal.hidden = true;
+    function _dailyQuestBannerActivate() {
+      if (!window.PonoDailyQuest) return;
+      var q;
+      try { q = window.PonoDailyQuest.getToday(); } catch (_) { return; }
+      if (q && q.href && !q.clearedAt) {
+        location.href = q.href;
+      }
     }
     function showShop() {
       var shop = document.getElementById('donguriShop');
@@ -5525,39 +5753,35 @@
       });
     }
 
-    // モーダル / ショップ DOM listener wire
+    // バナー + ショップ DOM listener wire (v1575: 誘導モーダル削除済)
     (function wireQuestAndShop() {
-      var promptModal = document.getElementById('questPromptModal');
-      var promptClose = document.getElementById('questPromptClose');
-      var promptGo    = document.getElementById('questPromptGo');
-      var promptShop  = document.getElementById('questPromptShop');
       var shopModal   = document.getElementById('donguriShop');
       var shopClose   = document.getElementById('donguriShopClose');
       var gachaShop   = document.getElementById('dailyGachaShopLink');
-      if (promptClose) promptClose.addEventListener('click', hideQuestPromptModal);
-      if (promptGo) promptGo.addEventListener('click', function () {
-        if (!window.PonoDailyQuest) { hideQuestPromptModal(); return; }
-        var q = window.PonoDailyQuest.getToday();
-        if (q && q.href) {
-          location.href = q.href;
-        } else {
-          hideQuestPromptModal();
-        }
-      });
-      if (promptShop) promptShop.addEventListener('click', function () {
-        hideQuestPromptModal();
-        showShop();
-      });
-      if (promptModal) promptModal.addEventListener('click', function (e) {
-        if (e.target === promptModal) hideQuestPromptModal();
-      });
+      var infoBanner  = document.getElementById('dailyQuestInfo');
       if (shopClose) shopClose.addEventListener('click', hideShop);
       if (shopModal) shopModal.addEventListener('click', function (e) {
         if (e.target === shopModal) hideShop();
       });
       if (gachaShop) gachaShop.addEventListener('click', function () {
-        // 既存ガチャモーダルを閉じずにショップを overlay (z-index 99990 で勝つ)
+        // ガチャモーダルの 3 状態どこでも常時 active: モーダルを閉じずに overlay (z-index 99990 で勝つ)
         showShop();
+      });
+      if (infoBanner) {
+        infoBanner.addEventListener('click', _dailyQuestBannerActivate);
+        infoBanner.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); _dailyQuestBannerActivate(); }
+        });
+      }
+      // 初回描画 + 可視性復帰時に再描画
+      try { renderDailyQuestInfoBanner(); } catch (_) {}
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+          try { renderDailyQuestInfoBanner(); } catch (_) {}
+        }
+      });
+      window.addEventListener('pageshow', function () {
+        try { renderDailyQuestInfoBanner(); } catch (_) {}
       });
     })();
 
@@ -5662,14 +5886,10 @@
       });
     });
 
-    // PonoDailyQuestCleared: バッジに ⭐ done 演出 → bonus へ遷移
+    // PonoDailyQuestCleared: 情報バナーを再描画 (バッジ削除済み / v1575)
     window.addEventListener('PonoDailyQuestCleared', function () {
-      var badge = document.getElementById('dailyGachaQuestBadge');
-      if (badge) {
-        badge.hidden = false;
-        badge.setAttribute('data-state', 'done');
-      }
-      window.setTimeout(function () { updateDailyGachaEntry(); }, 800);
+      try { renderDailyQuestInfoBanner(); } catch (_) {}
+      window.setTimeout(function () { updateDailyGachaEntry(); }, 200);
     });
 
     // 初回 play.html 訪問でフクロウ TTS 自動発話 (mp3 未生成のため graceful skip)
@@ -5721,12 +5941,21 @@
       }
     });
     if (dailyGachaAssist) {
-      dailyGachaAssist.addEventListener('click', () => commitDailyGachaTurn());
+      dailyGachaAssist.addEventListener('click', () => {
+        // v1577 M2: hint モードでは click は no-op (CSS pointer-events:none も併用しているが二重防御)
+        if (dailyGachaAssist.getAttribute('data-mode') === 'hint') return;
+        commitDailyGachaTurn();
+      });
     }
     if (dailyGachaLever) {
+      // v1577 M2: blocked (鍵なし / 引き済み) 判定 helper
+      // disabled 属性は pointer event を dispatch しないため使わず data-blocked を見る
+      var isDailyGachaLeverBlocked = function () {
+        return dailyGachaLever.dataset && dailyGachaLever.dataset.blocked === '1';
+      };
       dailyGachaLever.addEventListener('pointerenter', (event) => {
         if (event.pointerType !== 'mouse') return;
-        if (dailyGachaState.complete || dailyGachaState.turnLock || dailyGachaLever.disabled) return;
+        if (dailyGachaState.complete || dailyGachaState.turnLock || dailyGachaLever.disabled || isDailyGachaLeverBlocked()) return;
         setDailyGachaHandState('ready');
       });
       dailyGachaLever.addEventListener('pointerleave', (event) => {
@@ -5735,6 +5964,12 @@
         setDailyGachaHandState('open');
       });
       dailyGachaLever.addEventListener('pointerdown', (event) => {
+        // v1577 M2: blocked 状態なら turn は始めず、 代わりに shake + pulse + vibration
+        if (isDailyGachaLeverBlocked()) {
+          event.preventDefault();
+          triggerDailyGachaBlockedFeedback();
+          return;
+        }
         if (dailyGachaState.complete || dailyGachaState.turnLock || dailyGachaLever.disabled) return;
         event.preventDefault();
         dailyGachaState.dragging = true;
@@ -5806,6 +6041,11 @@
       dailyGachaLever.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowRight') {
           event.preventDefault();
+          // v1577 M2: blocked 状態ならキーボードでも feedback のみ
+          if (isDailyGachaLeverBlocked()) {
+            triggerDailyGachaBlockedFeedback();
+            return;
+          }
           commitDailyGachaTurn();
         }
       });
