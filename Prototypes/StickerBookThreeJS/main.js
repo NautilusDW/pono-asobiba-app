@@ -4506,8 +4506,9 @@ function stickerTutorialDemoPoints(step, rect) {
     };
 
     // === place phase 用 (大振り + back-track + overshoot で「迷い」 を強調) ===
+    // v1616: 上限 0.32 → 0.22 (iPad 横 1180px で wander1.x が viewport を +77px はみ出すバグ解消)
     const wanderSpan = Math.min(
-      window.innerWidth * 0.32,
+      window.innerWidth * 0.22,
       Math.max(180, pageRect.width * 0.45),
     );
     const dx = to.x - source.x;
@@ -4516,9 +4517,9 @@ function stickerTutorialDemoPoints(step, rect) {
     const perpX = -dy / dist;
     const perpY = dx / dist;
     const wander1 = {
-      // axis 0% で perp 方向 1.40w + 上 0.50w → 反対ページ寄りまで大振り (1.20 → 1.40 = 1.4 倍)
-      x: source.x + perpX * wanderSpan * 1.40,
-      y: source.y + perpY * wanderSpan * 1.40 - wanderSpan * 0.50,
+      // v1616: 1.40 → 0.95 (画面外消失を防ぎつつ「大振り」 感は維持)、 上方向係数も 0.50 → 0.45 で相応縮小
+      x: source.x + perpX * wanderSpan * 0.95,
+      y: source.y + perpY * wanderSpan * 0.95 - wanderSpan * 0.45,
     };
     const wander2 = {
       // axis 0.85 まで大ジャンプ (to の手前 15% 地点) で perp +0.48w
@@ -4544,6 +4545,13 @@ function stickerTutorialDemoPoints(step, rect) {
       x: to.x,
       y: to.y - Math.min(48, pageRect.height * 0.06),
     };
+    // v1616: viewport 内 clamp (wanderSpan 縮小 + 係数低減後の最終防衛線、 source が tray 右端等 edge case で発動)
+    const padX = Math.max(48, window.innerWidth * 0.08);
+    const padY = Math.max(48, window.innerHeight * 0.08);
+    const clampViewport = (p) => ({
+      x: Math.min(window.innerWidth - padX, Math.max(padX, p.x)),
+      y: Math.min(window.innerHeight - padY, Math.max(padY, p.y)),
+    });
     return {
       ...base,
       hand: scrollFrom,
@@ -4554,12 +4562,12 @@ function stickerTutorialDemoPoints(step, rect) {
       chooseRight,
       scrollFrom,
       scrollTo,
-      wander1,
-      wander2,
-      wander3,
-      hover,
+      wander1: clampViewport(wander1),
+      wander2: clampViewport(wander2),
+      wander3: clampViewport(wander3),
+      hover: clampViewport(hover),
       overTarget,
-      overshoot,
+      overshoot: clampViewport(overshoot),
       findWander1,
       findOverTarget,
       ghostSrc: firstVisibleStickerAssetForTutorial(),
