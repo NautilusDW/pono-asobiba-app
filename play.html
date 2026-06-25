@@ -5523,9 +5523,11 @@
         if (dailyGachaRewardEmoji) dailyGachaRewardEmoji.textContent = sticker.emoji || '⭐';
       }
       if (dailyGachaRewardName) {
-        // v1575: シール名の露出を停止 (sticker.name は触らず、 表示要素のみ非表示)
-        dailyGachaRewardName.textContent = '';
-        dailyGachaRewardName.hidden = true;
+        // v1593: シール内部 display name は出さない (v1575 ユーザー指示)。
+        // ただし空文字 + hidden だと茶色プレート枠が縦潰れして空っぽに見えるため、
+        // プレートに「やったね！」を入れて埋める (祝祭テキスト)。sticker.name は不変。
+        dailyGachaRewardName.textContent = 'やったね！';
+        dailyGachaRewardName.hidden = false;
       }
       setDailyGachaNoteText(dailyGachaRewardNote, DAILY_GACHA_STICKER_BOOK_PROMPT);
       setDailyGachaNoteText(dailyGachaTomorrowNote, DAILY_GACHA_TOMORROW_PROMPT.replace(' やろう', '\nやろう'));
