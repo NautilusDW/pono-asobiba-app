@@ -510,18 +510,24 @@
       pointer-events: none;
       z-index: 1;
     }
-    .game-card:hover .game-card__peek,
-    .game-card:focus-visible .game-card__peek {
-      opacity: 0.92;
+    /* Desktop only: avoid iPad sticky :hover keeping peek layer visible. */
+    @media (hover: hover) {
+      .game-card:hover .game-card__peek,
+      .game-card:focus-visible .game-card__peek {
+        opacity: 0.92;
+      }
+      .game-card.is-coming-soon:hover .game-card__peek,
+      .game-card.is-coming-soon:focus-visible .game-card__peek {
+        opacity: 0;          /* don't tease previews for unreleased games */
+      }
     }
     /* Tweak mode: keep all peek layers visible so the user can adjust
        mask alignment without having to hover each card. */
     body.peek-always .game-card__peek {
       opacity: 0.92;
     }
-    .game-card.is-coming-soon:hover .game-card__peek,
-    .game-card.is-coming-soon:focus-visible .game-card__peek {
-      opacity: 0;          /* don't tease previews for unreleased games */
+    @media (prefers-reduced-motion: reduce) {
+      .game-card__peek { transition: none; }
     }
     /* Make sure title/desc still sit above the peek layer.
        Round thumb (z 2) and play button (no explicit z; needs lifting)
@@ -4642,12 +4648,6 @@
         drop-shadow(0 3px 3px rgba(20, 10, 0, .38))
         drop-shadow(0 7px 12px rgba(20, 10, 0, .42));
     }
-    .game-card__peek,
-    .game-card:hover .game-card__peek,
-    .game-card:focus-visible .game-card__peek,
-    body.peek-always .game-card__peek {
-      opacity: 0;
-    }
     .game-card__text { gap: 6px; }
     .game-card__title,
     .game-card[data-id] .game-card__title,
@@ -5655,7 +5655,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1663;
+    const PAGE_CACHE_VERSION = 1665;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
