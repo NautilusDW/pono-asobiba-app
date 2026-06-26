@@ -998,8 +998,9 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
   align-items: center;
   justify-content: center;
   gap: 0.15em;
-  /* 矢印 + ◯ で最大 5 トークン (N → ◯ → M) になるため clamp 上限をやや控えめに */
-  font-size: clamp(80px, 20vmin, 220px);
+  /* 1600x900 stage 基準で固定し、viewport 比率による見た目の揺れを防ぐ。 */
+  font-size: 132px;
+  line-height: 1;
   font-weight: 800;
   font-family: 'Zen Maru Gothic', sans-serif;
   /* sw v976+: paper/wood テーマ整合のためブルー系 (#2a3a5a) を廃止し、 wood-dark (濃いブラウンオレンジ) に統一 */
