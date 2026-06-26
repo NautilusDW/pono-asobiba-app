@@ -2,6 +2,7 @@
 // Network-first + version-based cache busting
 
 // v1674: シールのおみせ開店案内に Gemini TTS 音声2本と音声タイミング字幕を追加。play.html PAGE_CACHE_VERSION と同期。
+// v1673: ゲームカード タイトル背景の自動オーバーレイ middle-3 化 (peek hover は併存)
 // v1672: タイトル画面 acorn badge を bottom-nav 内移設 + card-list 上方拡張 + blur fade + dots 撤去 + scroll-hint 復活
 // v1671: LP リロード修正 Round 2 — bfcache + beforeunload キャンセルケースで isNavigating reset 追加 (common/sw-update.js)。 pageshow リスナーで bfcache 復元時に isNavigating=false を強制リセット (back button 経由で LP に戻った後の click 沈黙バグ防止)。 beforeunload/pagehide 時に scheduleNavigationReset() を発火し、 user が 「Stay」 を選んだ場合も 5 秒で stuck 状態を解除。 既存 POINTER_GUARD_MS / RELOAD_DEADLINE_MS / refreshing flag は無改変。
 // v1670: LP「すぐあそぶ」 リロードバグ修正 (sw-update.js navigation guard + index.html click retry) — controllerchange/sw-updated 経路の safeReload に isNavigating ガード (beforeunload + pagehide 検知) を追加し、 deploy 直後の navigation 中 reload が pending request をキャンセルして LP に戻る race を遮断。 index.html 「すぐあそぶ」 ボタンに HEAD 生存確認 + 400ms wait の 2 回 retry click handler を追加し、 仮に SW reload と競合しても最終的に play.html 遷移が成立するよう多層防御。 play.html PAGE_CACHE_VERSION と同期。
