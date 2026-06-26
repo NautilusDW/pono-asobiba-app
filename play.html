@@ -4373,16 +4373,16 @@
     }
     .bottom-nav::after { display: none; }
     .bottom-nav[data-pressed="help"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_help_20260626.png");
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_help_masked_20260626.png");
     }
     .bottom-nav[data-pressed="news"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_news_20260626.png");
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_news_masked_20260626.png");
     }
     .bottom-nav[data-pressed="stickers"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_stickers_20260626.png");
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_stickers_masked_20260626.png");
     }
     .bottom-nav[data-pressed="settings"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_settings_20260626.png");
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.png");
     }
     .bn-item {
       min-width: 0;
@@ -5176,7 +5176,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1641;
+    const PAGE_CACHE_VERSION = 1642;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
