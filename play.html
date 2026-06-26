@@ -4250,8 +4250,8 @@
       position: absolute;
       left: 23.5%;
       right: 12.5%;
-      top: 56%;
-      height: 25%;
+      top: 48%;
+      height: 34%;
       min-width: 0;
       display: flex;
       align-items: center;
@@ -4276,6 +4276,15 @@
       text-shadow: 0 1px 0 rgba(255,248,224,.95);
       transform: scale(var(--daily-quest-body-scale, 1));
       transform-origin: left center;
+    }
+    .daily-quest-info-banner[data-title-lines="2"] .daily-quest-info-banner__body {
+      width: 100%;
+      line-height: 1.02;
+      white-space: normal;
+      transform: none;
+    }
+    .daily-quest-info-banner[data-title-lines="2"] .game-title-break {
+      display: block;
     }
     .daily-gacha-entry {
       position: relative;
@@ -4350,6 +4359,7 @@
       font-weight: 900;
     }
     .game-title-accent--pono { color: #D96A36; }
+    .game-title-accent--owl { color: #9A6B2F; }
     .game-title-accent--quizland { color: #8B6FB5; }
     .game-title-accent--maze { color: #3A5B8C; }
     .game-title-accent--oto { color: #2F7FA0; }
@@ -5214,11 +5224,14 @@
     function gameTitleParticle(text) {
       return `<span class="game-title-particle">${esc(text)}</span>`;
     }
+    function gameTitleBreak() {
+      return '<wbr><span class="game-title-break" aria-hidden="true"></span>';
+    }
     function decorateGameTitle(gameId, rawTitle) {
       switch (gameId) {
         case 'quizland':
           return [
-            gameTitleAccent('quizland', 'フクロウ'),
+            gameTitleAccent('owl', 'フクロウ'),
             esc('はかせ'),
             gameTitleParticle('の'),
             gameTitleAccent('quizland', 'なぞなぞ')
@@ -5227,7 +5240,7 @@
           return [
             gameTitleAccent('pono', 'ポノ'),
             gameTitleParticle('と'),
-            gameTitleAccent('maze', 'ランタン'),
+            esc('ランタン'),
             gameTitleParticle('の'),
             gameTitleAccent('maze', 'めいろ')
           ].join('');
@@ -5250,6 +5263,7 @@
             gameTitleAccent('pono', 'ポノ'),
             gameTitleParticle('と'),
             esc('つくろう '),
+            gameTitleBreak(),
             gameTitleAccent('bento', 'いろどりべんとう')
           ].join('');
         default:
@@ -5264,7 +5278,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1649;
+    const PAGE_CACHE_VERSION = 1651;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -6803,12 +6817,25 @@
       var bodyEl = document.getElementById('dailyQuestInfoBody');
       var banner = document.getElementById('dailyQuestInfo');
       if (!bodyEl || !banner || banner.hidden) return;
+      banner.setAttribute('data-title-lines', '1');
       bodyEl.style.setProperty('--daily-quest-body-scale', '1');
       window.requestAnimationFrame(function () {
         if (!bodyEl || !banner || banner.hidden) return;
+        if (banner.getAttribute('data-state') === 'pending' && banner.getAttribute('data-quest-id') === 'bento') {
+          banner.setAttribute('data-title-lines', '2');
+          bodyEl.style.setProperty('--daily-quest-body-scale', '1');
+          return;
+        }
         var available = bodyEl.clientWidth || 1;
         var needed = bodyEl.scrollWidth || available;
-        var scale = needed > available ? Math.max(0.72, available / needed) : 1;
+        var scale = needed > available ? available / needed : 1;
+        if (scale < 0.9) {
+          banner.setAttribute('data-title-lines', '2');
+          bodyEl.style.setProperty('--daily-quest-body-scale', '1');
+          return;
+        }
+        banner.setAttribute('data-title-lines', '1');
+        scale = needed > available ? Math.max(0.9, scale) : 1;
         bodyEl.style.setProperty('--daily-quest-body-scale', String(Math.round(scale * 1000) / 1000));
       });
     }
