@@ -9,7 +9,9 @@
   var LS_KEY = 'pono_donguri_shop_v1';
   var LS_ROT = 'pono_donguri_shop_rotation_v1';
   var LS_RESERVE = 'pono_donguri_shop_reservation_v1';
-  var SCHEMA = 1, ROT_SCHEMA = 2, RESERVE_SCHEMA = 1, COST = 50, ROT_SIZE = 3;
+  var SCHEMA = 1, ROT_SCHEMA = 2, RESERVE_SCHEMA = 1, ROT_SIZE = 3;
+  var PRICE_BY_RARITY = { normal: 15, rare: 25, super: 35 };
+  var DEFAULT_COST = PRICE_BY_RARITY.normal;
   var MORNING_HOUR = 6, EVENING_HOUR = 18;
 
   var catalogCache = null;       // [{ id, gameId, name, owned, count, rarity, costAcorns }]
@@ -80,6 +82,13 @@
       t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+  }
+  function _normalizeRarity(rarity) {
+    if (rarity === 'super' || rarity === 'rare' || rarity === 'normal') return rarity;
+    return 'normal';
+  }
+  function _priceForRarity(rarity) {
+    return PRICE_BY_RARITY[_normalizeRarity(rarity)] || DEFAULT_COST;
   }
 
   // ----- purchases persistent record -----
@@ -206,16 +215,17 @@
           var rec = ownedDict[s.id];
           var count = rec && typeof rec === 'object' && typeof rec.count === 'number' ? rec.count : (rec ? 1 : 0);
           var isOwned = count > 0;
+          var rarity = _normalizeRarity(s.rarity || 'normal');
           var entry = {
             id: s.id,
             gameId: gameId,
             name: s.name || s.id,
             owned: isOwned,
             count: count,
-            rarity: s.rarity || 'normal',
-            costAcorns: COST
+            rarity: rarity,
+            costAcorns: _priceForRarity(rarity)
           };
-          stickerIndex[s.id] = { gameId: gameId, name: entry.name, rarity: entry.rarity };
+          stickerIndex[s.id] = { gameId: gameId, name: entry.name, rarity: entry.rarity, costAcorns: entry.costAcorns };
           (isOwned ? owned : unowned).push(entry);
         });
       });
@@ -380,6 +390,10 @@
     if (!stickerId) return null;
     return stickerIndex[stickerId] || null;
   }
+  function getPrice(stickerId) {
+    var entry = _stickerEntry(stickerId);
+    return entry && entry.costAcorns ? entry.costAcorns : DEFAULT_COST;
+  }
   function _balance() {
     try { return (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0; }
     catch (e) { return 0; }
@@ -435,21 +449,22 @@
     if (!_stickerEntry(stickerId)) return false;
     if (!_isInRotation(stickerId) && !_reservationMatches(stickerId)) return false;
     if (getOwnershipState(stickerId).owned) return false; // 「もう なかよし♪」 UX
-    return _balance() >= COST;
+    return _balance() >= getPrice(stickerId);
   }
 
   function purchase(stickerId) {
     var entry = _stickerEntry(stickerId);
     if (!entry) return Promise.resolve({ success: false, reason: 'invalid_sticker' });
     if (!_isInRotation(stickerId) && !_reservationMatches(stickerId)) return Promise.resolve({ success: false, reason: 'not_in_rotation' });
-    if (_balance() < COST) return Promise.resolve({ success: false, reason: 'insufficient_acorns' });
+    var cost = getPrice(stickerId);
+    if (_balance() < cost) return Promise.resolve({ success: false, reason: 'insufficient_acorns' });
     var spend = window.spendAcorns;
-    if (typeof spend !== 'function' || !spend(COST)) {
+    if (typeof spend !== 'function' || !spend(cost)) {
       return Promise.resolve({ success: false, reason: 'insufficient_acorns' });
     }
     var purchasedAt = _isoNow();
     var rec = _readRecord();
-    rec.purchases.push({ stickerId: stickerId, purchasedAt: purchasedAt, costAcorns: COST });
+    rec.purchases.push({ stickerId: stickerId, purchasedAt: purchasedAt, costAcorns: cost });
     _writeRecord(rec);
 
     var stickers = window.PonoGameStickers;
@@ -468,7 +483,7 @@
         catch (e2) { balanceAfter = null; }
         window.dispatchEvent(new window.CustomEvent('PonoDonguriShopPurchased', {
           detail: {
-            gameId: entry.gameId, stickerId: stickerId, costAcorns: COST,
+            gameId: entry.gameId, stickerId: stickerId, costAcorns: cost,
             balanceAfter: balanceAfter, stickerResult: stickerResult
           }
         }));
@@ -510,10 +525,16 @@
     canReserve: canReserve,
     reserve: reserve,
     clearReservation: clearReservation,
+    getPrice: getPrice,
     canPurchase: canPurchase,
     purchase: purchase,
     getPurchaseHistory: getPurchaseHistory,
-    COST_PER_STICKER: COST,
+    COST_PER_STICKER: DEFAULT_COST,
+    PRICE_BY_RARITY: {
+      normal: PRICE_BY_RARITY.normal,
+      rare: PRICE_BY_RARITY.rare,
+      super: PRICE_BY_RARITY.super
+    },
     __resetRotationLock: __resetRotationLock,
     __clearRotationStore: __clearRotationStore,
     __clearReservationStore: __clearReservationStore
