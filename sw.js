@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1659: daily gacha の主要画像 preload を decode 完了待ち直列から短間隔バッチ開始へ変更し、初回表示前にリクエストを揃える。
 // v1658: シールのおみせのリス吹き出しを GPT Image 2 PNGへ差し替え、商品カード影と看板中央揃えを調整。daily gacha は初回表示前に主要画像を idle preload/decode。
 // v1653: ゲームページ内でも、クリア時の `pono-acorns-changed` を拾ってどんぐり獲得モーダルを表示。タイトル戻り時の二重表示も抑止。
 // v1650: シール帳 チュートリアル 3 件根治修正 — (1) ちらつき (cover-open 中 card 動く): showStickerTutorialStep で coverOpenAnimation 進行中 (または activeSurface !== "inside") なら .sticker-tutorial-card に .is-await-cover-open を付与し opacity:0 で潜伏、 updateCoverOpen の open 完了ブランチで rAF 1 つ挟んでから外す → 左ページ rect 確定後の fade-in (550ms)。 step.id ではなく coverOpenAnimation truthy を直接見るので将来 setBookSurface 追加にも自動追従、 intro step は coverOpenAnimation null なので影響なし。 (2) place 貼ったシールが消える: canvas click handler に suppressSceneClickAfterStickerDrop (250ms TTL、 cleanupStickerTrayDrag で起動) gate を追加し drop 直後の合成 click を完全 skip。 さらに place phase=complete|try の間は pickInlineStickerTarget / pickEditablePage 両 branch を early-return (refreshPageTemplateTextures 2 回目発火による blank frame 防止)。 addStickerFromTrayToPage を async 化し refreshPageTemplateTextures 前に await loadStickerImage で decode 完了を保証 (microtask 1 つだけ)、 drawAsyncPlacedSticker の .catch で stickerImageCache.delete(assetUrl) を呼び失敗 Promise 永久キャッシュを回避。 (3) tray 全 silhouette: styles.css の body.is-sticker-tutorial-tray-silhouette blanket selector を撤去し per-card class (.is-rarity-super-silhouette) 単独に統一。 target ハイライトも body class gate を外して単独 selector 化。 body class toggle 自体は main.js 側で温存 (他参照箇所への副作用回避)。 過去 commit (a681f99 selectedPlacementId protect / b43544f suppressStickerTrayClick / daa5543 SR ±2 silhouette) を上塗りで完成形に。 Prototypes/StickerBookThreeJS/{main.js, styles.css, index.html (cache-bust v=1650)} + sw.js のみ編集 (play.html PAGE_CACHE_VERSION は他作業中のため意図的に据え置き、 sw.js network-first で十分に新版配信される)。
@@ -274,7 +275,7 @@
 // v1655: フクロウはかせのなぞなぞは同日再挑戦時にベスト報酬との差分だけ付与。
 // v1656: シールのおみせ — 看板下の入れ替え案内を下げ、リス吹き出しを下しっぽ風に移動。一時リアクション後は idle ポーズへ戻す。play.html PAGE_CACHE_VERSION と同期。
 // v1657: フクロウ博士のなぞなぞ — 本番用フレームから編集用中心点を除去し、編集ツールバーを折りたためるようにする。
-const CACHE_VERSION = 1658;
+const CACHE_VERSION = 1659;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
