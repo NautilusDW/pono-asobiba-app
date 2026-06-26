@@ -258,6 +258,40 @@
       50%      { transform: translate(-50%, 6px); }
     }
 
+    /* ===== Card position dots (Phase 2: position indicator) =====
+       右側に縦並びでカード位置を示すドット。 active dot のみ強調。 */
+    .card-dots {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 11;
+    }
+    .card-dots__dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 248, 226, 0.32);
+      filter: drop-shadow(0 1px 2px rgba(40, 24, 8, 0.5));
+      transition: background 180ms ease-out, transform 180ms ease-out;
+    }
+    .card-dots__dot.is-active {
+      background: rgba(255, 248, 226, 0.85);
+      transform: scale(1.18);
+    }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); border: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .card-dots__dot { transition: none; }
+    }
+
     /* ===== Card List (wood-card layout) =====
        Infinite-scroll: contents are tripled in JS so the user can scroll
        up/down forever; we silently teleport scrollTop when they cross a
@@ -281,18 +315,19 @@
       /* Soft 1-line fade at top + bottom so the snap edges feel less harsh.
          The visible window is exactly 4 cards (set by JS) so no 5th card
          peeks through; the fade only softens the cut. */
+      /* bottom fade 強化: 98% → 92% でピーク 5 枚目が霞んで消える演出 */
       -webkit-mask-image: linear-gradient(
         180deg,
         transparent 0%,
         #000 2%,
-        #000 98%,
+        #000 92%,
         transparent 100%
       );
               mask-image: linear-gradient(
         180deg,
         transparent 0%,
         #000 2%,
-        #000 98%,
+        #000 92%,
         transparent 100%
       );
       /* Hide scrollbar everywhere */
@@ -4919,6 +4954,8 @@
             <path d="M14 2 L32 14 L50 2"></path>
           </svg>
         </div>
+        <div class="card-dots" id="cardDots" aria-hidden="true"></div>
+        <div class="sr-only" id="cardDotsLive" aria-live="polite" aria-atomic="true"></div>
       </section>
     </main>
 
@@ -5425,19 +5462,6 @@
         tier: 'free'
       },
       {
-        id: 'puzzle',
-        title: 'ポノのなかよしパズル',
-        subtitle: 'ピースを あわせて えを かんせい',
-        icon: '🧩',
-        bg: 'assets/ui/play_puzzle_title_back.webp',
-        href: 'puzzle/index.html',
-        panel: 'assets/ui/menu_card_base_03.webp',
-        thumb: 'assets/ui/thumb_puzzle.webp',
-        thumbPos: '36% 52%',
-        peekPos: '39% 49%',
-        tier: 'free'
-      },
-      {
         id: 'bento',
         title: 'ポノとつくろう いろどりべんとう',
         subtitle: 'すきな おかずを つめよう',
@@ -5448,6 +5472,19 @@
         thumb: 'assets/ui/thumb_bento.webp',
         thumbPos: '31% 58%',
         peekPos: '36% 52%',
+        tier: 'free'
+      },
+      {
+        id: 'puzzle',
+        title: 'ポノのなかよしパズル',
+        subtitle: 'ピースを あわせて えを かんせい',
+        icon: '🧩',
+        bg: 'assets/ui/play_puzzle_title_back.webp',
+        href: 'puzzle/index.html',
+        panel: 'assets/ui/menu_card_base_03.webp',
+        thumb: 'assets/ui/thumb_puzzle.webp',
+        thumbPos: '36% 52%',
+        peekPos: '39% 49%',
         tier: 'free'
       },
       {
@@ -5520,6 +5557,23 @@
         debugPlayable: true,
         tier: 'sub'
       },
+      // cooking (コトコト もりのキッチン) は iredori bento と対になる料理ゲーム。
+      // アセット (bg / thumb / panel) は launch 前に正規素材へ差し替え予定 (memory: feature_cooking_game)。
+      {
+        id: 'cooking',
+        title: 'コトコト もりのキッチン',
+        subtitle: 'ぐつぐつ おりょうりタイム',
+        icon: '🍳',
+        bg: 'assets/ui/play_quizland_title_back.webp',
+        href: '#',
+        panel: 'assets/ui/menu_card_base_02.webp',
+        thumb: 'assets/ui/thumb_bento.webp',
+        thumbPos: '50% 50%',
+        peekPos: '50% 50%',
+        tier: 'sub',
+        comingSoon: true,
+        debugPlayable: true
+      },
       // ----- Hidden from menu (filtered out by MENU_GAMES) -----
       {
         id: 'quiz-sound',
@@ -5544,11 +5598,13 @@
       } catch (_) {}
       return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
     })();
-    const TITLE_MENU_IDS = ['quizland', 'maze', 'oto', 'puzzle', 'bento'];
+    const TITLE_MENU_IDS = ['quizland', 'maze', 'oto', 'bento', 'puzzle', 'writing-mori', 'cooking'];
     const MENU_GAMES = TITLE_MENU_IDS
       .map((id) => GAMES.find((game) => game.id === id))
       .filter(Boolean)
       .filter((game) => {
+        // coming-soon entries は tier に関わらず常に表示 (マーケティング露出)
+        if (game.comingSoon) return true;
         if (game.tier === 'sub' && !__isAppBuild) return false;
         return true;
       });
@@ -5741,8 +5797,48 @@
         });
       });
 
+      buildDots();
+
       // Defer one frame so layout is committed and we can measure card height.
       requestAnimationFrame(setupLoopScroll);
+    }
+
+    // ===== Phase 2: Card position dots =====
+    function buildDots() {
+      const dots = document.getElementById('cardDots');
+      if (!dots) return;
+      dots.innerHTML = '';
+      for (let i = 0; i < MENU_GAMES.length; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'card-dots__dot';
+        dot.dataset.idx = String(i);
+        dots.appendChild(dot);
+      }
+    }
+
+    let lastDotIdx = -1;
+    function updateActiveDot() {
+      const cards = cardList.querySelectorAll('.game-card');
+      if (!cards.length) return;
+      if (cardScrollState.teleporting) return;  // teleport 中の不自然遷移を防ぐ
+      const cardH = cards[0].offsetHeight;
+      if (!cardH) return;
+      const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
+      const step = cardH + gap;
+      if (!step) return;
+      const viewportCenter = cardList.scrollTop + cardList.clientHeight / 2;
+      const CLIP_PAD = 6;
+      const rawIdx = Math.floor((viewportCenter - CLIP_PAD) / step);
+      const idx = ((rawIdx % MENU_GAMES.length) + MENU_GAMES.length) % MENU_GAMES.length;
+      if (idx === lastDotIdx) return;
+      lastDotIdx = idx;
+      const all = document.querySelectorAll('.card-dots__dot');
+      all.forEach((d, i) => d.classList.toggle('is-active', i === idx));
+      const live = document.getElementById('cardDotsLive');
+      if (live) {
+        const game = MENU_GAMES[idx];
+        if (game) live.textContent = `${idx + 1}ばんめ ${game.title}`;
+      }
     }
 
     function setupLoopScroll() {
@@ -5754,6 +5850,7 @@
       // images finish loading (their natural size pushes the card height
       // up after layout) and on viewport resize.
       const VISIBLE = 4;
+      const PEEK_RATIO = 0.38;  // 5 枚目を 38% 下から覗かせる (Phase 2 ピーク戦略)
       // Reserve a few px of vertical padding inside the list so sub-pixel
       // rounding doesn't let prev/next cards peek through at the top/bottom
       // edges. The padding extends the clip box; cards still snap to the
@@ -5767,7 +5864,9 @@
         const cardH = cards[0].offsetHeight;
         if (!cardH) return;
         const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
-        const visibleH = cardH * VISIBLE + gap * (VISIBLE - 1) + CLIP_PAD * 2;
+        const peek = Math.round(cardH * PEEK_RATIO);
+        // 4 枚 + 4 gap (5 枚目分の gap も加算) + ピーク + CLIP_PAD×2
+        const visibleH = cardH * VISIBLE + gap * VISIBLE + peek + CLIP_PAD * 2;
         cardList.style.height = visibleH + 'px';
       };
       recomputeHeight();
@@ -5871,8 +5970,66 @@
         if (cardScrollState.snapping) return;
         clearTimeout(snapTimer);
         snapTimer = setTimeout(snapToNearest, 140);
+
+        // Phase 2: dot indicator update — rAF throttled
+        if (dotRaf) return;
+        dotRaf = requestAnimationFrame(() => { dotRaf = 0; updateActiveDot(); });
       }, { passive: true });
+
+      // 初回 dot を点灯
+      updateActiveDot();
+
+      // 初回 auto-scroll hint (Phase 2)
+      setTimeout(playIntroScrollHint, 1600);
+
+      // ====== Phase 2: auto-scroll hint (初回のみ) ======
+      function playIntroScrollHint() {
+        try {
+          if (localStorage.getItem('pono_cards_intro_hint_shown_v1') === '1') return;
+        } catch (e) { return; }
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          try { localStorage.setItem('pono_cards_intro_hint_shown_v1', '1'); } catch (e) {}
+          return;
+        }
+        const startTop = cardList.scrollTop;
+        const HINT_DISTANCE = 60;
+        const FORWARD_MS = 600;
+        const PAUSE_MS = 180;
+        const RETURN_MS = 500;
+        const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+        const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+        cardScrollState.snapping = true;  // 既存 snap を抑止
+        let cancelled = false;
+        const t0 = performance.now();
+        const cleanup = () => {
+          cardScrollState.snapping = false;
+          try { localStorage.setItem('pono_cards_intro_hint_shown_v1', '1'); } catch (e) {}
+          cardList.removeEventListener('pointerdown', onInterrupt);
+        };
+        const onInterrupt = () => { cancelled = true; };
+        cardList.addEventListener('pointerdown', onInterrupt, { once: true, passive: true });
+        const tick = (now) => {
+          if (cancelled) { cleanup(); return; }
+          const elapsed = now - t0;
+          if (elapsed < FORWARD_MS) {
+            const p = elapsed / FORWARD_MS;
+            cardList.scrollTop = startTop + HINT_DISTANCE * easeOutCubic(p);
+          } else if (elapsed < FORWARD_MS + PAUSE_MS) {
+            cardList.scrollTop = startTop + HINT_DISTANCE;
+          } else if (elapsed < FORWARD_MS + PAUSE_MS + RETURN_MS) {
+            const p = (elapsed - FORWARD_MS - PAUSE_MS) / RETURN_MS;
+            cardList.scrollTop = startTop + HINT_DISTANCE * (1 - easeInOutSine(p));
+          } else {
+            cardList.scrollTop = startTop;
+            cleanup();
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }
     }
+    let dotRaf = 0;
 
     function pulseStartBtn() { /* removed: start button no longer exists */ }
 
