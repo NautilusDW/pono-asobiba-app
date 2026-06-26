@@ -1218,7 +1218,11 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   height: 58px;
   border-radius: 10px;
   cursor: grab;
-  touch-action: none;
+  /* v1646 (task 5): touch-action: none → pan-x。 アイコン上で指を置いて横スライドしたときに
+     native scroll を奪わない (place TRY 中の tray スライド可否はここに依存)。 縦/斜め drag は
+     handleStickerTrayPointerMove の threshold + verticalDrag 判定で startStickerTrayDrag が起動し、
+     その時点で preventDefault される (pan-x なので縦方向は JS 側でキャンセル可能)。 */
+  touch-action: pan-x;
 }
 
 .sticker-tray-icon:active {
@@ -4157,4 +4161,24 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete.is-sticker-tu
   0%   { box-shadow: 0 0 0 0 rgba(255, 198, 92, 0.0); }
   50%  { box-shadow: 0 0 0 14px rgba(255, 198, 92, 0.42); }
   100% { box-shadow: 0 0 0 22px rgba(255, 198, 92, 0.0); }
+}
+
+/* === v1646 (task 2): TRY 成功時の褒め言葉 pop アニメ ===
+   setStickerTutorialPhase("complete") で stickerTutorialText に is-praise-pop を 650ms 付与し、
+   1.12 倍までの scale + 暖色 (orange) の一瞬切替で「正解できたよ」 を視覚的に強調。
+   その後通常表示 (色/scale 戻り) で「つぎ」 ボタンの pulse に視線誘導。 */
+.sticker-tutorial-text.is-praise-pop {
+  animation: stickerTutorialPraisePop 0.6s ease-out;
+}
+
+@keyframes stickerTutorialPraisePop {
+  0%   { transform: scale(1);    color: #3a2618; }
+  35%  { transform: scale(1.12); color: #ff8a3d; }
+  100% { transform: scale(1);    color: #3a2618; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker-tutorial-text.is-praise-pop {
+    animation: none;
+  }
 }

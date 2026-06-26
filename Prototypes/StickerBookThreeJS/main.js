@@ -1621,7 +1621,7 @@ slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
 // v1637: チュートリアル 2 段階モーダル化。
-// 各 step は `textDemo` (ポノが見せるとき) と `textTry` (子供が操作するとき) を持つ。
+// 各 step は `textDemo` (お手本フェーズ — 話者中立) と `textTry` (子供が操作するとき) を持つ。
 // intro / final は `textTry` を省略し旧来の demo → 「つぎ」 click 待ちを維持。
 // tryMaxMs は try フェーズ無操作タイムアウト (経過後 「とばす」 ボタンを自動表示)。
 const STICKER_TUTORIAL_STEPS = [
@@ -1638,7 +1638,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "mode",
     target: "editButton",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nここを おすよ",
+    textDemo: "まずは おてほん だよ\nここを おすよ",
     textTry: "やって みよう！\nここを おしてね",
     audio: "stickerbook_tut_01_mode.mp3",
     hand: "point",
@@ -1650,7 +1650,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "place",
     target: "trayItems",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nえらんで すきな ところに はるよ",
+    textDemo: "まずは おてほん だよ\nえらんで すきな ところに はるよ",
     textTry: "やって みよう！\nシールを えらんで はろう",
     audio: ["stickerbook_tut_02_find.mp3", "stickerbook_tut_03_pick.mp3", "stickerbook_tut_04_place.mp3"],
     hand: "point",
@@ -1664,7 +1664,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "move",
     target: "selectedSticker",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nはった あとも うごかせるよ",
+    textDemo: "まずは おてほん だよ\nはった あとも うごかせるよ",
     textTry: "やって みよう！\nシールを うごかしてね",
     audio: "stickerbook_tut_05_move.mp3",
     hand: "grip",
@@ -1676,7 +1676,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "scale",
     target: "scaleControl",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nバーで おおきさを かえるよ",
+    textDemo: "まずは おてほん だよ\nバーで おおきさを かえるよ",
     textTry: "やって みよう！\nバーで おおきさを かえてね",
     audio: "stickerbook_tut_06_scale.mp3",
     hand: "point",
@@ -1689,7 +1689,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "rotate",
     target: "rotationControl",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nバーで むきを かえるよ",
+    textDemo: "まずは おてほん だよ\nバーで むきを かえるよ",
     textTry: "やって みよう！\nバーで むきを かえてね",
     audio: "stickerbook_tut_07_rotate.mp3",
     hand: "point",
@@ -1701,7 +1701,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "ok",
     target: "okButton",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nOKで きまり",
+    textDemo: "まずは おてほん だよ\nOKで きまり",
     textTry: "やって みよう！\nOKを おしてね",
     audio: "stickerbook_tut_08_ok.mp3",
     hand: "point",
@@ -1713,7 +1713,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "page",
     target: "nextPageButton",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nページも めくれるよ",
+    textDemo: "まずは おてほん だよ\nページも めくれるよ",
     textTry: "やって みよう！\nつぎの ページに めくってね",
     audio: ["stickerbook_tut_11_page.mp3"],
     hand: "point",
@@ -1725,7 +1725,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "view",
     target: "editButton",
     card: "corner",
-    textDemo: "ポノが やって みせるね\nみるときは みるモード",
+    textDemo: "まずは おてほん だよ\nみるときは みるモード",
     textTry: "やって みよう！\nここを おして みるモードに してね",
     audio: "stickerbook_tut_09_view.mp3",
     hand: "point",
@@ -1745,11 +1745,28 @@ const STICKER_TUTORIAL_STEPS = [
   },
 ];
 
+// v1646 (task 2): 全 TRY step 共通の「褒め一言」 マップ。
+// TRY 成功 (advanceOn ヒット) で phase=complete 突入時に stickerTutorialText を 1.6s 差し替え、
+// 「つぎ」 ボタン pulse と同時に達成感を言語化する (子供は何で褒められたか分かると再現できる)。
+// place は 既存 (sw1640 で追加) の 「ぺったん！」 をそのまま採用。
+const STICKER_TUTORIAL_PRAISE_BY_STEP = {
+  mode:   "できたね！\nはる モードに なったよ",
+  place:  "ぺったん！\nじょうずに はれたね",
+  move:   "すごい！\nじょうずに うごかせたね",
+  scale:  "おおきさ かえられたね\nじょうず！",
+  rotate: "くるん！\nむきも かえられたね",
+  ok:     "きまり！\nシールを はりつけたよ",
+  page:   "めくれた！\nつぎの ページに きたよ",
+  view:   "みるモードに なったよ\nじょうずに できたね",
+};
+
 // v1637: try phase 中の「明らかな間違い操作」 定義。 該当 action が notify されたら failCount++。
 // 3 回到達で 「とばす」 ボタンを表示 (子供がスタックしない救済)。
 const STICKER_TUTORIAL_STEP_WRONG_ACTIONS = {
   mode:   ["exitEdit"],
-  place:  ["selectSticker", "trayScroll", "enterEdit", "exitEdit"],
+  // v1646 (task 5): tray scroll を「明らかな誤操作」 から除外。 .sticker-tray-icon の touch-action: pan-x
+  // 緩和で意図的な横スライドが正常動作になったため、 シール探索のため tray を流すのは「正しい操作」。
+  place:  ["selectSticker", "enterEdit", "exitEdit"],
   move:   ["scaleSticker", "rotateSticker", "confirmSticker", "exitEdit"],
   scale:  ["rotateSticker", "moveSticker", "confirmSticker"],
   rotate: ["scaleSticker", "moveSticker", "confirmSticker"],
@@ -2645,7 +2662,17 @@ function setupScenePagePicking() {
       return;
     }
     if (pickEditablePage(event)) {
-      selectedPlacementId = null;
+      // v1646 (task 3): place TRY 完了 〜 「つぎ」 押下までは selectedPlacementId を保護
+      // (空きエリアタップで spotlight が外れ、 「貼ったシールが消えた」 体感になる事故防止)。
+      const tutorialStep = currentStickerTutorialStep?.();
+      const tutorialPhase = stickerTutorialState?.phase;
+      const protectPlacement = (
+        tutorialStep?.id === "place"
+        && (tutorialPhase === "complete" || tutorialPhase === "try")
+      );
+      if (!protectPlacement) {
+        selectedPlacementId = null;
+      }
       updateInlineStickerControls();
       refreshPageTemplateTextures();
       updatePage(flipProgress);
@@ -3528,6 +3555,7 @@ function startStickerTutorial(options = {}) {
     failCount: 0,         // v1637: try 中の誤操作カウンタ (step 切替で 0 リセット)
     skipShown: false,     // v1637: 「とばす」 ボタン visible 化済みフラグ
     completeStartedAt: 0, // v1643: complete phase 開始時刻 (place min-hold gate 用)
+    praiseShown: false,   // v1646: TRY 成功 → complete 時の褒め言葉差し替え多重発火防止
   };
   enterStickerTutorialCleanAlbum();
   stickerTutorial.hidden = false;
@@ -4476,18 +4504,24 @@ function setStickerTutorialPhase(phase) {
     stickerTutorialDemoDo.hidden = !(phase === "demo" && canTry);
   }
   // v1643 (task 5): complete phase 開始時刻を記録 (place 専用 min-hold gate で使用)。
+  // v1646 (task 2): 全 8 TRY step に「褒め一言」 を追加 — 1.6s 表示 + 600ms scale pop で
+  // 「正解できたよ」 を子供にはっきり伝える。 音声は別途事前生成のため textContent 上書きのみで安全。
   if (phase === "complete") {
     stickerTutorialState.completeStartedAt = performance.now();
-    // place TRY 完了時の専用演出:
-    //   - 直前まで貼ったシールが spotlight に乗らず 「何も起きてない」 体感だった反省 (sw1640) を解消
-    //   - spotlight の rect は stickerTutorialTargetRect の place 分岐 (下記) で selectedSticker に再アンカー
-    //   - テキストを 「ぺったん！\nじょうずに はれたね」 に差し替えて達成感を明示
-    if (step?.id === "place" && stickerTutorialText) {
-      stickerTutorialText.textContent = "ぺったん！\nじょうずに はれたね";
+    const praise = step?.id ? STICKER_TUTORIAL_PRAISE_BY_STEP[step.id] : null;
+    if (praise && stickerTutorialText && !stickerTutorialState.praiseShown) {
+      stickerTutorialState.praiseShown = true;
+      stickerTutorialText.textContent = praise;
+      stickerTutorialText.classList.add("is-praise-pop");
+      addStickerTutorialDemoTimer(() => {
+        stickerTutorialText?.classList.remove("is-praise-pop");
+      }, 650);
     }
     scheduleStickerTutorialLayout();
   } else {
     stickerTutorialState.completeStartedAt = 0;
+    stickerTutorialState.praiseShown = false;
+    stickerTutorialText?.classList.remove("is-praise-pop");
   }
   // try フェーズ突入時: テキストを textTry に差し替え + tryMaxMs タイムアウト起動。
   clearStickerTutorialTryTimeout();
@@ -4834,12 +4868,14 @@ function updateStickerTutorialLayout() {
   // 直近の有効 rect を保持して chip がワープしないようにする。
   const leftPageRect = stickerTutorialSidePageRect("left") || stickerTutorialPageRect();
   if (leftPageRect && Number.isFinite(leftPageRect.left) && Number.isFinite(leftPageRect.top)) {
-    // 帆船イラスト等の上端寄せ — テキスト枠はページ上半分 (上 8% offset、 高さ 40%) に固定。
-    // 余白を取りすぎるとイラストを塞ぐので width は 84%、 left padding 8% で中央寄せ。
-    const textTop = leftPageRect.top + leftPageRect.height * 0.08;
-    const textHeight = leftPageRect.height * 0.40;
-    const textLeft = leftPageRect.left + leftPageRect.width * 0.08;
-    const textWidth = leftPageRect.width * 0.84;
+    // v1646 (task 1): 左ページ overlay を中央 70% に再配置。
+    // 旧 (08% offset / 84% 幅) は AABB 由来で 「左上に押し込まれている」 体感が強かったため、
+    // 左右対称 15% 余白 + 上下対称 18% offset で 「ページ中央寄り」 に矯正。
+    // textHeight は 36% でボタン群 (page-block flex 子) と帆船イラスト下半分の干渉を回避。
+    const textTop = leftPageRect.top + leftPageRect.height * 0.18;
+    const textHeight = leftPageRect.height * 0.36;
+    const textLeft = leftPageRect.left + leftPageRect.width * 0.15;
+    const textWidth = leftPageRect.width * 0.70;
     stickerTutorial.style.setProperty("--tutorial-leftpage-x", `${textLeft}px`);
     stickerTutorial.style.setProperty("--tutorial-leftpage-y", `${textTop}px`);
     stickerTutorial.style.setProperty("--tutorial-leftpage-w", `${textWidth}px`);
@@ -5940,7 +5976,10 @@ function handleStickerTrayPointerDown(event) {
     dragging: false,
     ghost: null,
   };
-  event.preventDefault();
+  // v1646 (task 5): pointerdown 即時 preventDefault は廃止。
+  // .sticker-tray-icon の touch-action: pan-x と組み合わせ、 横スライドは native scroll に委譲。
+  // threshold (8px) を超えた pointermove 側 (handleStickerTrayPointerMove L~5976) で preventDefault する。
+  // マウスは pointercapture を維持しないと drag 中に focus 喪失するため pointerType==="mouse" 分岐は据置。
   if (event.pointerType === "mouse") {
     try {
       button.setPointerCapture?.(event.pointerId);
@@ -6085,8 +6124,21 @@ function endStickerTrayDrag(event) {
   }
   if (state.dragging) {
     event.preventDefault();
-    const target = stickerTrayDropTarget(event);
-  if (target) {
+    let target = stickerTrayDropTarget(event);
+    // v1646 (task 3): place TRY 中だけ、 drop が miss しても本ページ中央に貼れる「サルベージ」 を有効化。
+    // 子供の指がページ AABB から外れる事故 (8px pad 外し) で 「貼ったつもりが消えた」 体感を排除。
+    if (!target) {
+      const tutorialStep = currentStickerTutorialStep?.();
+      const tutorialPhase = stickerTutorialState?.phase;
+      if (tutorialStep?.id === "place" && tutorialPhase === "try") {
+        const fallbackMesh = (rightPage?.visible ? rightPage : (leftPageInner?.visible ? leftPageInner : null));
+        if (fallbackMesh) {
+          const fallbackPage = pageNumberForPickedPage(fallbackMesh);
+          target = { page: fallbackPage, point: { x: 54, y: 42 } };
+        }
+      }
+    }
+    if (target) {
       addStickerFromTrayToPage(state.sticker.id, target.page, target.point);
     }
   }
