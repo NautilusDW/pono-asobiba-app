@@ -4890,6 +4890,12 @@ function firstVisibleStickerAssetForTutorial() {
 }
 
 function stickerTutorialPickSticker() {
+  // [追加] grant 動線から渡された pasteId を最優先
+  if (requestedPasteStickerId) {
+    const requested = stickerOptions.find((item) => item.id === requestedPasteStickerId);
+    if (requested) return requested;
+    // catalog 未マッチ / load race の場合は既存 fallback chain に落とす
+  }
   for (const id of STICKER_TUTORIAL_PICK_STICKER_IDS) {
     const sticker = stickerOptions.find((item) => item.id === id);
     if (sticker) {
