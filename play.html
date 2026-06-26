@@ -3585,15 +3585,15 @@
       56% { transform: translateX(3px) rotate(.8deg); }
     }
     .donguri-shop-v2-bubble {
-      position: absolute; left: 7.2%; bottom: 56.5%;
-      width: min(30%, 390px);
-      aspect-ratio: 1897 / 829;
+      position: absolute; left: 12.5%; bottom: 62%;
+      width: min(27%, 350px);
+      aspect-ratio: 1774 / 887;
       box-sizing: border-box;
       z-index: 5;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_down_tail_20260626.png") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_tail_right_20260626.png") center / 100% 100% no-repeat;
       border: 0; border-radius: 0;
-      padding: clamp(9px, 1.05vw, 14px) clamp(16px, 2vw, 28px) clamp(20px, 3vw, 36px);
+      padding: clamp(8px, .95vw, 12px) clamp(14px, 1.8vw, 24px) clamp(20px, 3.1vw, 34px);
       color: #5a3a00; font-weight: 900; font-size: clamp(10px, 1.12vw, 15px); text-align: center; line-height: 1.12;
       white-space: nowrap;
       overflow: visible;
@@ -3608,8 +3608,8 @@
     }
     .donguri-shop-v2-head > .donguri-shop-v2-close {
       position: absolute;
-      left: 14px;
-      top: 0;
+      left: clamp(18px, 2vw, 26px);
+      top: clamp(8px, 1.1vw, 14px);
     }
     .donguri-shop-v2-head > .donguri-shop-v2-title {
       position: absolute;
@@ -3619,17 +3619,17 @@
     }
     .donguri-shop-v2-head > .donguri-shop-v2-balance {
       position: absolute;
-      right: 14px;
-      top: 0;
+      right: clamp(18px, 2vw, 26px);
+      top: clamp(8px, 1.1vw, 14px);
     }
     .donguri-shop-v2-close {
       pointer-events: auto;
-      width: clamp(48px, 7vw, 68px);
+      width: clamp(40px, 5.3vw, 54px);
       aspect-ratio: 255 / 254;
       border: 0;
       background: transparent url("assets/ui/shop/sticker_shop_ui_close_frame_20260625.png") center / contain no-repeat;
       color: #6e4a00;
-      font-size: 24px; border-radius: 50%; cursor: pointer; line-height: 1;
+      font-size: clamp(16px, 2vw, 20px); border-radius: 50%; cursor: pointer; line-height: 1;
       box-shadow: none;
       filter: drop-shadow(0 5px 8px rgba(48, 27, 10, .25));
     }
@@ -3681,17 +3681,17 @@
       pointer-events: auto;
       display: inline-flex; align-items: center;
       justify-content: flex-start;
-      width: clamp(104px, 11vw, 150px);
+      width: clamp(90px, 9.5vw, 126px);
       aspect-ratio: 339 / 169;
       box-sizing: border-box;
-      padding: 0 clamp(12px, 1.3vw, 20px) 0 clamp(9px, .9vw, 14px);
-      gap: clamp(3px, .6vw, 7px);
+      padding: 0 clamp(10px, 1.05vw, 16px) 0 clamp(8px, .75vw, 12px);
+      gap: clamp(3px, .45vw, 6px);
       background:
         linear-gradient(180deg, rgba(255, 252, 238, .98) 0%, rgba(255, 239, 203, .98) 100%);
       border: clamp(3px, .35vw, 5px) solid #b66c00;
       border-radius: 999px;
-      font-size: clamp(16px, 2.2vw, 22px); font-weight: 900; color: #6e4a00;
-      min-width: 104px;
+      font-size: clamp(14px, 1.8vw, 20px); font-weight: 900; color: #6e4a00;
+      min-width: 90px;
       box-shadow:
         inset 0 0 0 2px rgba(255, 255, 246, .95),
         inset 0 0 0 5px rgba(235, 168, 33, .46),
@@ -3700,7 +3700,7 @@
     }
     .donguri-shop-v2-balance-icon {
       display: inline-block;
-      width: clamp(23px, 2.5vw, 34px);
+      width: clamp(19px, 2.1vw, 28px);
       aspect-ratio: 85 / 103;
       flex: 0 0 auto;
       background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
@@ -4028,12 +4028,15 @@
         top: 0;
         height: clamp(42px, 10vw, 58px);
       }
-      .donguri-shop-v2-head > .donguri-shop-v2-close { left: 10px; }
-      .donguri-shop-v2-head > .donguri-shop-v2-balance { right: 10px; }
+      .donguri-shop-v2-head > .donguri-shop-v2-close { left: 14px; top: 6px; }
+      .donguri-shop-v2-head > .donguri-shop-v2-balance { right: 14px; top: 6px; }
+      .donguri-shop-v2-close { width: clamp(36px, 8vw, 46px); font-size: clamp(15px, 3.2vw, 18px); }
+      .donguri-shop-v2-balance { width: clamp(86px, 17vw, 104px); min-width: 86px; font-size: clamp(13px, 3vw, 17px); padding-left: clamp(7px, 1.9vw, 10px); padding-right: clamp(9px, 2.1vw, 12px); }
+      .donguri-shop-v2-balance-icon { width: clamp(18px, 4.2vw, 24px); }
       .donguri-shop-v2-title { width: min(39vw, 280px); font-size: 0; }
       .donguri-shop-v2-rotation-note { top: 25.4%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
-      .donguri-shop-v2-bubble { left: 6.2%; bottom: 54.8%; width: min(30%, 258px); font-size: clamp(8px, 1.35vw, 12px); }
+      .donguri-shop-v2-bubble { left: 12.5%; bottom: 62%; width: min(27%, 238px); font-size: clamp(8px, 1.35vw, 12px); }
       .donguri-shop-v2-reserve { left: 6.5%; bottom: 4.2%; width: min(25%, 210px); min-width: 126px; height: clamp(72px, 18vw, 90px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
       .donguri-shop-v2-reserve-title { font-size: 9px; }
       .donguri-shop-v2-reserve-name { font-size: 9px; line-height: 1.12; }
@@ -5652,7 +5655,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1661;
+    const PAGE_CACHE_VERSION = 1663;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
