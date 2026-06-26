@@ -5860,7 +5860,10 @@
       // on the card and provide a sensible default --card-mask.
       const panelMatch = String(g.panel || '').match(/menu_card_base_0?(\d+)\.(?:png|webp)/i);
       const panelN = panelMatch ? parseInt(panelMatch[1], 10) : ((i % 4) + 1);
-      const defaultMaskPath = `assets/ui/wood_panel_mask${panelN}.png`;
+      // v1678: paper-only mask derived from each panel itself
+      // (same pixel size + aspect as the panel, so CSS mask-image lines up
+      // 1:1 with the cream area and never leaks onto the wood frame).
+      const defaultMaskPath = `assets/ui/menu_card_paper_mask_0${panelN}.png`;
       // 最初に見える copy と中央 copy は eager にして、loop 初期位置へ移動した直後の
       // blank を避ける。最後の copy は teleport 用なので lazy のままで memory を節約。
       // 全カードに loading="lazy" を付けると iOS Safari の intersection observer 経路で
