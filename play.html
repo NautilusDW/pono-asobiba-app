@@ -4283,6 +4283,7 @@
       bottom: auto;
       width: 100%;
       height: 118px;
+      margin-top: -10px;
       z-index: 92;
       flex: 0 0 auto;
       border-radius: 28px;
@@ -4344,6 +4345,28 @@
         0 1.2px 0 rgba(255, 250, 230, .96),
         0 -1.2px 0 rgba(255, 250, 230, .96),
         0 3px 5px rgba(80, 50, 20, .22);
+    }
+    .game-title-accent {
+      font-weight: 900;
+    }
+    .game-title-accent--pono { color: #D96A36; }
+    .game-title-accent--quizland { color: #8B6FB5; }
+    .game-title-accent--maze { color: #3A5B8C; }
+    .game-title-accent--oto { color: #2F7FA0; }
+    .game-title-accent--puzzle { color: #2E7A60; }
+    .game-title-accent--bento { color: #C4453C; }
+    .game-title-particle,
+    .game-card__title .hira {
+      display: inline-block;
+      font-size: .72em;
+      line-height: 1;
+      letter-spacing: 0;
+      margin: 0 .015em;
+      vertical-align: baseline;
+    }
+    .daily-quest-info-banner__body .game-title-particle,
+    .daily-quest-info-banner__body .hira {
+      font-size: .74em;
     }
     .game-card__desc,
     .game-card:hover .game-card__desc,
@@ -5185,6 +5208,55 @@
       );
     }
 
+    function gameTitleAccent(kind, text) {
+      return `<span class="game-title-accent game-title-accent--${kind}">${esc(text)}</span>`;
+    }
+    function gameTitleParticle(text) {
+      return `<span class="game-title-particle">${esc(text)}</span>`;
+    }
+    function decorateGameTitle(gameId, rawTitle) {
+      switch (gameId) {
+        case 'quizland':
+          return [
+            gameTitleAccent('quizland', 'フクロウ'),
+            esc('はかせ'),
+            gameTitleParticle('の'),
+            gameTitleAccent('quizland', 'なぞなぞ')
+          ].join('');
+        case 'maze':
+          return [
+            gameTitleAccent('pono', 'ポノ'),
+            gameTitleParticle('と'),
+            gameTitleAccent('maze', 'ランタン'),
+            gameTitleParticle('の'),
+            gameTitleAccent('maze', 'めいろ')
+          ].join('');
+        case 'oto':
+          return [
+            gameTitleAccent('pono', 'ポノ'),
+            gameTitleParticle('の'),
+            gameTitleAccent('oto', 'おと'),
+            esc('タッチ')
+          ].join('');
+        case 'puzzle':
+          return [
+            gameTitleAccent('pono', 'ポノ'),
+            gameTitleParticle('の'),
+            esc('なかよし'),
+            gameTitleAccent('puzzle', 'パズル')
+          ].join('');
+        case 'bento':
+          return [
+            gameTitleAccent('pono', 'ポノ'),
+            gameTitleParticle('と'),
+            esc('つくろう '),
+            gameTitleAccent('bento', 'いろどりべんとう')
+          ].join('');
+        default:
+          return decorateKana(rawTitle);
+      }
+    }
+
     // ===== Render cards =====
     // Cache-buster for Claude preview only (skirts a stale service worker
     // that returns broken responses for <img> while fetch() works).
@@ -5192,7 +5264,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1647;
+    const PAGE_CACHE_VERSION = 1648;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -5234,7 +5306,7 @@
             ${thumbMarkup}
           </div>
           <div class="game-card__text">
-            <div class="game-card__title">${decorateKana(g.title)}</div>
+            <div class="game-card__title">${decorateGameTitle(g.id, g.title)}</div>
             <div class="game-card__desc">${decorateKana(g.subtitle)}</div>
           </div>
           ${comingBadge}
@@ -6719,7 +6791,7 @@
       quizland: 'フクロウはかせのなぞなぞ',
       oto: 'ポノのおとタッチ',
       puzzle: 'ポノのなかよしパズル',
-      bento: 'ポノのおべんとう'
+      bento: 'ポノとつくろう いろどりべんとう'
     };
 
     function getDailyQuestTitleLabel(q) {
@@ -6779,7 +6851,7 @@
         banner.hidden = false;
         banner.setAttribute('data-state', 'pending');
         titleEl.textContent = 'きょうの チャレンジ';
-        bodyEl.textContent = getDailyQuestTitleLabel(q);
+        bodyEl.innerHTML = decorateGameTitle(questCardId, getDailyQuestTitleLabel(q));
       }
       banner.setAttribute('aria-label', titleEl.textContent + ' ' + bodyEl.textContent);
       fitDailyQuestInfoBody();
