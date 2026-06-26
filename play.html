@@ -40,6 +40,11 @@
   <link rel="preload" as="image" href="assets/ui/thumb_bento.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_puzzle.webp">
   <link rel="preload" as="image" href="assets/ui/thumb_starparodier.webp">
+  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_generated_20260626.png">
+  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_help_masked_20260626.png">
+  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_news_masked_20260626.png">
+  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_stickers_masked_20260626.png">
+  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.png">
   <link rel="preload" as="image" href="assets/images/undersea-cave/friend_whale_sleep.png">
   <link rel="preload" as="image" href="assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png">
 
@@ -4357,7 +4362,8 @@
     .bottom-nav {
       --nav-sprite-w: 500px;
       --nav-sprite-h: 158px;
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_generated_20260626.png");
+      --bottom-nav-normal-bg: url("assets/ui/title/title_bottom_nav_4_generated_20260626.png");
+      --bottom-nav-bg: var(--bottom-nav-normal-bg);
       bottom: 20px;
       width: var(--nav-sprite-w);
       height: var(--nav-sprite-h);
@@ -4365,7 +4371,11 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 0;
       padding: 0 18px;
-      background: transparent var(--bottom-nav-bg) center / 100% 100% no-repeat;
+      background-color: transparent;
+      background-image: var(--bottom-nav-bg), var(--bottom-nav-normal-bg);
+      background-position: center, center;
+      background-size: 100% 100%, 100% 100%;
+      background-repeat: no-repeat, no-repeat;
       border: 0;
       border-radius: 0;
       overflow: visible;
@@ -5176,7 +5186,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1643;
+    const PAGE_CACHE_VERSION = 1644;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
