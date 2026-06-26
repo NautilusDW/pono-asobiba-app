@@ -267,7 +267,8 @@
 // v1648: タイトル画面のゲーム名は助詞を小さくし、ポノ/フクロウ/主題語へLPアクセント色を適用。左下ガチャバナーを少し上へ移動。
 // v1649: シール帳 チュートリアル — 「やってみる」 (DemoDo) ボタンを廃止し、 TRY 開始の合図を stickerTutorialText の脈動 (色 #3a2618 ⇄ #c2531a + 黄 glow + scale 1.0 ⇄ 1.04, 1.4s loop) で表現。 index.html / main.js / styles.css の 3 ファイルで DemoDo の DOM・JS handler・CSS 色定義・pointer-events allowlist を削除し、 新 body.is-sticker-tutorial-phase-try #stickerTutorialText の @keyframes stickerTutorialTryGlow + reduced-motion フォールバックを追加。 phase-complete に切替わると pulse は自動停止 → 既存 .is-praise-pop (scale 1.12 / color #ff8a3d / 0.6s) と競合せず連続再生される設計。 intro / final finish step は phase-try に入らないため発火しない。 cache-bust と PAGE_CACHE_VERSION も 1649 に同期。
 // v1651: タイトル画面のフクロウ色を分離、ランタンは通常色へ戻し、きょうのチャレンジ名を1行/2行で中央寄せ。
-const CACHE_VERSION = 1651;
+// v1652: フクロウ博士のなぞなぞ — 難易度ボタンの星位置、博士ヒント文字サイズ、最終問題 2 枚バナーの収まりを調整。play.html PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 1652;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)

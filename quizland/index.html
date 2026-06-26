@@ -1798,10 +1798,10 @@ body.sheet-on .chip.wrong.reading-active[data-idx="3"] {
   text-align: center;
   padding: 10px 18px;
   box-sizing: border-box;
-  /* 長文時は font-size を縮めて 5:2 の中に収める。 base 18px → clamp で 13〜18px */
-  font-size: clamp(13px, 3.2vmin, 18px);
+  /* stage 全体が transform で縮小されるため、viewport 依存ではなく論理 px で読める大きさを保つ。 */
+  font-size: 26px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.18;
   color: #4a3a1a;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   white-space: normal;
@@ -1813,6 +1813,10 @@ body.sheet-on .chip.wrong.reading-active[data-idx="3"] {
    そのまま改行として表示する。 textContent 経由でも pre-line なら \n が反映される。
    `word-break: keep-all` は親 .char-hint から継承される。 */
 #char-hint-text {
+  display: block;
+  max-width: 100%;
+  font-size: inherit;
+  line-height: inherit;
   white-space: pre-line;
 }
 .character {
@@ -1966,7 +1970,7 @@ body.layout-editor-on .character img {
 }
 .diff-btn {
   flex: 1 1 0;
-  height: clamp(96px, 12.6vw, 160px);
+  height: clamp(96px, 12.2vw, 152px);
   min-height: 0;
   min-width: 0;
   padding: clamp(12px, 1.3vw, 18px) clamp(14px, 1.8vw, 26px) clamp(18px, 2.4vw, 32px);
@@ -1984,7 +1988,7 @@ body.layout-editor-on .character img {
   text-align: center;
   line-height: 1.05;
   display: grid;
-  grid-template-rows: minmax(28px, 0.95fr) minmax(44px, 0.72fr);
+  grid-template-rows: minmax(34px, 0.82fr) minmax(44px, 0.82fr);
   align-items: center;
   justify-items: center;
   justify-content: stretch;
@@ -1997,13 +2001,15 @@ body.layout-editor-on .character img {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(2px, 0.5vw, 8px);
-  min-height: clamp(26px, 3.8vw, 48px);
+  align-self: end;
+  gap: clamp(2px, 0.45vw, 7px);
+  min-height: clamp(24px, 3.2vw, 40px);
   font-size: 0;
   line-height: 0;
+  transform: translateY(clamp(4px, 0.6vw, 8px));
 }
 .diff-star {
-  width: clamp(28px, 3.8vw, 48px);
+  width: clamp(24px, 3.2vw, 40px);
   aspect-ratio: 1;
   display: block;
   background: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png') center / contain no-repeat;
@@ -3393,6 +3399,10 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   justify-content: center;
   gap: clamp(6px, 1.5vh, 18px);
 }
+.qno-plate-overlay.is-final-question .qno-plate-stack {
+  gap: clamp(0px, 0.8vh, 8px);
+  transform: translateY(clamp(-74px, -10vh, -42px));
+}
 .qno-plate-img {
   max-width: 70vw;
   max-height: 50vh;
@@ -3422,6 +3432,10 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     max-height: 38vh;
   }
 }
+.qno-plate-overlay.is-final-question .qno-plate-img {
+  max-width: min(58vw, 560px);
+  max-height: 30vh;
+}
 /* 最終問題の中央表示。Dr.owl'quiz/No フォルダ提供の画像を使用。 */
 #qno-final-balloon {
   position: relative;
@@ -3430,6 +3444,9 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   transform: scale(0);
   opacity: 0;
   transition: opacity 0.22s ease-out;
+}
+.qno-plate-overlay.is-final-question #qno-final-balloon {
+  width: min(30vw, 300px);
 }
 #qno-final-balloon-img {
   position: relative;
@@ -3450,6 +3467,16 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 @media (max-width: 540px) {
   #qno-final-balloon {
     width: 64vw;
+  }
+  .qno-plate-overlay.is-final-question .qno-plate-stack {
+    transform: translateY(clamp(-66px, -8vh, -34px));
+  }
+  .qno-plate-overlay.is-final-question .qno-plate-img {
+    max-width: 78vw;
+    max-height: 32vh;
+  }
+  .qno-plate-overlay.is-final-question #qno-final-balloon {
+    width: 56vw;
   }
 }
 </style>
@@ -3983,7 +4010,7 @@ window._applyHakaseTextSize = function(sizeMap) {
   const baseSize = sizeMap.base || '';
   let css = '';
   if (baseSize) {
-    css += '#char-hint-text { font-size: ' + baseSize + ' !important; }\n';
+    css += '#char-hint-text { font-size: max(24px, ' + baseSize + ') !important; }\n';
   }
   styleEl.textContent = css;
 };
@@ -8028,14 +8055,18 @@ async function playQuestionNumberPlate(qIdx) {
   const finalBalloonImg = document.getElementById('qno-final-balloon-img');
   if (finalBalloon) {
     if (totalQuestions > 1 && qIdx === totalQuestions - 1) {
+      root.classList.add('is-final-question');
       if (finalBalloonImg) finalBalloonImg.src = '../assets/images/quizland/final_q_balloon_no.png';
       finalBalloon.classList.add('show');
       finalBalloon.setAttribute('aria-hidden', 'false');
     } else {
+      root.classList.remove('is-final-question');
       finalBalloon.classList.remove('show');
       if (finalBalloonImg) finalBalloonImg.src = '';
       finalBalloon.setAttribute('aria-hidden', 'true');
     }
+  } else {
+    root.classList.remove('is-final-question');
   }
 
   // タップで「即フェードアウト」させる (旧仕様: cancelled で即座に hide)
@@ -8094,6 +8125,7 @@ function hideQuestionNumberPlate() {
       if (finalBalloonImg) finalBalloonImg.src = '';
       finalBalloon.setAttribute('aria-hidden', 'true');
     }
+    root.classList.remove('is-final-question');
     _qnoRunning = false;
   }, 240); // CSS transition (0.22s) と一致 (R2: 早めの fade out + 多少 OL)
 }
