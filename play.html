@@ -3946,37 +3946,27 @@
       align-items: stretch;
     }
     .book-unlock-entry {
-      min-height: 92px;
+      position: relative;
       width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 12px 18px 12px 16px;
-      border: 3px solid rgba(132, 84, 31, .86);
-      border-radius: 24px 28px 22px 30px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 36%),
-        radial-gradient(circle at 18% 18%, rgba(255, 236, 161, .9), rgba(255,255,255,0) 36%),
-        linear-gradient(180deg, #fff8dc 0%, #f6dfaa 64%, #deb16a 100%);
+      aspect-ratio: 1973 / 632;
+      min-height: 0;
+      display: block;
+      padding: 0;
+      border: 0;
+      border-radius: 26px;
+      background: transparent url("assets/ui/title/title_book_unlock_card_generated_20260626.png") center / 100% 100% no-repeat;
       color: #4b2b10;
       font-family: inherit;
       font-weight: 900;
       cursor: pointer;
-      box-shadow:
-        0 5px 0 rgba(120, 74, 23, .38),
-        0 11px 22px rgba(42, 24, 8, .24),
-        inset 0 2px 0 rgba(255,255,255,.75);
-      transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+      filter: drop-shadow(0 10px 15px rgba(42, 24, 8, .2));
+      transition: filter .12s ease;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
     .book-unlock-entry[hidden] { display: none; }
     .book-unlock-entry:hover {
-      filter: brightness(1.035);
-      box-shadow:
-        0 6px 0 rgba(120, 74, 23, .38),
-        0 13px 24px rgba(42, 24, 8, .26),
-        inset 0 2px 0 rgba(255,255,255,.8);
+      filter: brightness(1.035) drop-shadow(0 11px 16px rgba(42, 24, 8, .22));
     }
     .book-unlock-entry:focus-visible,
     .daily-quest-info-banner:focus-visible,
@@ -3987,38 +3977,19 @@
       outline: 4px solid rgba(255, 236, 145, .96);
       outline-offset: 4px;
     }
-    .book-unlock-entry__icon {
-      position: relative;
-      flex: 0 0 74px;
-      height: 64px;
-      display: grid;
-      place-items: center;
-      border-radius: 18px;
-      background: rgba(255, 251, 231, .78);
-      box-shadow:
-        inset 0 0 0 2px rgba(167, 112, 42, .28),
-        0 5px 10px rgba(72, 44, 16, .18);
-    }
-    .book-unlock-entry__book {
-      font-size: 43px;
-      line-height: 1;
-      transform: rotate(-7deg);
-    }
-    .book-unlock-entry__key {
-      position: absolute;
-      right: 4px;
-      bottom: -5px;
-      font-size: 31px;
-      line-height: 1;
-      filter: drop-shadow(0 2px 1px rgba(92, 56, 12, .24));
-      transform: rotate(-18deg);
-    }
+    .book-unlock-entry__icon,
+    .book-unlock-entry__arrow { display: none; }
     .book-unlock-entry__text {
-      flex: 1 1 auto;
+      position: absolute;
+      left: 31%;
+      right: 11%;
+      top: 29%;
+      bottom: 24%;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      justify-content: center;
+      gap: 3px;
       align-items: flex-start;
       text-align: left;
       pointer-events: none;
@@ -4035,88 +4006,80 @@
       line-height: 1.1;
       color: #76512a;
     }
-    .book-unlock-entry__arrow,
-    .daily-quest-info-banner__arrow {
-      flex: 0 0 auto;
-      color: #7b4518;
-      font-size: 40px;
-      line-height: 1;
-      text-shadow: 0 1px 0 rgba(255,248,224,.8);
-      pointer-events: none;
-    }
     .daily-quest-info-banner {
       position: relative;
       left: auto;
       bottom: auto;
       width: 100%;
-      height: 76px;
+      aspect-ratio: 1773 / 600;
+      height: auto;
+      margin-bottom: 6px;
       z-index: 91;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 9px 15px 10px 14px;
-      border: 3px solid rgba(116, 73, 25, .68);
-      border-radius: 20px 22px 18px 24px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,0) 42%),
-        linear-gradient(180deg, #fff8dc 0%, #f6dfad 100%);
+      display: block;
+      padding: 0;
+      border: 0;
+      border-radius: 22px;
+      background: transparent var(--daily-quest-card-bg, url("assets/ui/title/title_daily_challenge_maze_generated_20260626.png")) center / 100% 100% no-repeat;
       color: #4a2a10;
       font-family: inherit;
       font-weight: 900;
       cursor: pointer;
       filter: drop-shadow(0 7px 12px rgba(48, 27, 10, .18));
-      box-shadow: inset 0 2px 0 rgba(255,255,255,.72);
-      transition: transform .12s ease, filter .12s ease;
+      transition: filter .12s ease;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
     .daily-quest-info-banner[hidden] { display: none; }
     .daily-quest-info-banner:hover { filter: brightness(1.03) drop-shadow(0 9px 14px rgba(48, 27, 10, .2)); }
+    .daily-quest-info-banner[data-quest-id="maze"] { --daily-quest-card-bg: url("assets/ui/title/title_daily_challenge_maze_generated_20260626.png"); }
+    .daily-quest-info-banner[data-quest-id="quizland"] { --daily-quest-card-bg: url("assets/ui/title/title_daily_challenge_quizland_generated_20260626.png"); }
+    .daily-quest-info-banner[data-quest-id="oto"] { --daily-quest-card-bg: url("assets/ui/title/title_daily_challenge_oto_generated_20260626.png"); }
+    .daily-quest-info-banner[data-quest-id="puzzle"] { --daily-quest-card-bg: url("assets/ui/title/title_daily_challenge_puzzle_generated_20260626.png"); }
+    .daily-quest-info-banner[data-quest-id="bento"] { --daily-quest-card-bg: url("assets/ui/title/title_daily_challenge_bento_generated_20260626.png"); }
     .daily-quest-info-banner__title {
-      position: static;
-      width: auto;
-      height: auto;
+      position: absolute;
+      left: 8.2%;
+      top: 14.5%;
+      width: 32%;
+      height: 20%;
       overflow: visible;
       clip: auto;
       clip-path: none;
       white-space: nowrap;
-      flex: 0 0 142px;
-      align-self: flex-start;
-      margin-top: 3px;
-      padding: 5px 10px;
-      border-radius: 999px;
-      background: rgba(137, 86, 35, .14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
       color: #6d431d;
       font-size: 16px;
       line-height: 1;
       text-align: center;
+      pointer-events: none;
     }
     .daily-quest-info-banner__main {
-      flex: 1 1 auto;
+      position: absolute;
+      left: 26%;
+      right: 12%;
+      top: 53%;
+      height: 28%;
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0;
+      pointer-events: none;
     }
-    .daily-quest-info-banner__icon {
-      flex: 0 0 42px;
-      height: 42px;
-      display: grid;
-      place-items: center;
-      border-radius: 13px;
-      background: #fff8dc;
-      box-shadow:
-        inset 0 0 0 2px rgba(175, 127, 59, .26),
-        0 4px 8px rgba(80, 48, 18, .15);
-      font-size: 26px;
-      line-height: 1;
-    }
+    .daily-quest-info-banner__icon,
+    .daily-quest-info-banner__arrow { display: none; }
     .daily-quest-info-banner__body {
       position: static;
       inset: auto;
       display: block;
+      width: 100%;
+      min-width: 0;
       color: #563014;
-      font-size: 24px;
+      font-size: 26px;
       line-height: 1.08;
       text-align: left;
       white-space: nowrap;
@@ -4215,20 +4178,18 @@
       opacity: 1;
     }
     .bottom-nav {
-      --nav-sprite-w: 446px;
-      --nav-sprite-h: 96px;
+      --nav-sprite-w: 500px;
+      --nav-sprite-h: 158px;
       bottom: 20px;
       width: var(--nav-sprite-w);
       height: var(--nav-sprite-h);
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      padding: 8px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0) 38%),
-        linear-gradient(90deg, #9d652e 0%, #d39a4b 8%, #b87433 48%, #8d5527 100%);
-      border: 3px solid rgba(84, 48, 18, .72);
-      border-radius: 24px;
+      gap: 0;
+      padding: 0 18px;
+      background: transparent url("assets/ui/title/title_bottom_nav_4_generated_20260626.png") center / 100% 100% no-repeat;
+      border: 0;
+      border-radius: 0;
       overflow: visible;
       filter: drop-shadow(0 8px 14px rgba(20, 10, 0, .36));
     }
@@ -4236,36 +4197,16 @@
     .bn-item {
       min-width: 0;
       height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      border: 2px solid rgba(118, 73, 25, .74);
-      border-radius: 18px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.62), rgba(255,255,255,0) 36%),
-        linear-gradient(180deg, #fff5d2 0%, #f1d58c 100%);
-      color: #5a3517;
-      box-shadow:
-        inset 0 2px 0 rgba(255,255,255,.82),
-        0 3px 0 rgba(100, 60, 20, .34);
-    }
-    .bn-item:hover { filter: brightness(1.04); }
-    .bn-item__icon {
-      font-size: 29px;
-      line-height: 1;
-      font-weight: 900;
-    }
-    .bn-item__label {
       display: block;
-      max-width: 100%;
-      font-size: 15px;
-      line-height: 1;
-      font-weight: 900;
-      white-space: nowrap;
-      letter-spacing: 0;
+      border: 0;
+      border-radius: 22px;
+      background: transparent;
+      color: transparent;
+      box-shadow: none;
     }
+    .bn-item:hover { filter: none; }
+    .bn-item__icon,
+    .bn-item__label { display: none; }
     .modal-card { max-width: 390px; }
     .settings-action-list {
       display: grid;
@@ -4297,7 +4238,7 @@
       display: grid;
       place-items: center;
       border-radius: 12px;
-      background: #fff1c4;
+      background-color: #fff1c4;
       color: #6a3c14;
       font-size: 24px;
       line-height: 1;
@@ -4331,22 +4272,17 @@
       .brand-sign > img.brand-ribbon,
       .brand-ribbon { width: min(360px, 91%); }
       .title-side-stack { width: min(360px, 100%); gap: 10px; margin-top: 8px; }
-      .book-unlock-entry { min-height: 84px; padding: 10px 15px; }
-      .book-unlock-entry__icon { flex-basis: 64px; height: 56px; }
-      .book-unlock-entry__book { font-size: 37px; }
-      .book-unlock-entry__key { font-size: 27px; }
       .book-unlock-entry__main { font-size: 23px; }
       .book-unlock-entry__sub { font-size: 15px; }
-      .daily-quest-info-banner { height: 70px; gap: 9px; }
-      .daily-quest-info-banner__title { flex-basis: 126px; font-size: 14px; padding-inline: 8px; }
-      .daily-quest-info-banner__icon { flex-basis: 38px; height: 38px; font-size: 23px; }
+      .daily-quest-info-banner { margin-bottom: 5px; }
+      .daily-quest-info-banner__title { font-size: 14px; }
       .daily-quest-info-banner__body { font-size: 22px; }
       .daily-gacha-entry { height: 106px; }
       .cards-col { padding-top: 82px; }
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 29px; }
       .game-card__desc { font-size: 18px; }
-      .bottom-nav { --nav-sprite-w: 420px; --nav-sprite-h: 90px; }
+      .bottom-nav { --nav-sprite-w: 430px; --nav-sprite-h: 136px; padding-inline: 15px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       .play-main {
@@ -4359,30 +4295,20 @@
       .brand-ribbon { width: min(284px, 91%); }
       .brand-ribbon { margin-top: -40px; }
       .title-side-stack { width: min(300px, 100%); gap: 8px; margin-top: 6px; }
-      .book-unlock-entry { min-height: 74px; gap: 9px; border-width: 2px; border-radius: 19px; }
-      .book-unlock-entry__icon { flex-basis: 52px; height: 48px; border-radius: 14px; }
-      .book-unlock-entry__book { font-size: 31px; }
-      .book-unlock-entry__key { font-size: 22px; right: 2px; bottom: -3px; }
       .book-unlock-entry__main { font-size: 19px; }
       .book-unlock-entry__sub { font-size: 13px; }
-      .book-unlock-entry__arrow,
-      .daily-quest-info-banner__arrow { font-size: 30px; }
-      .daily-quest-info-banner { height: 60px; padding: 7px 10px; gap: 7px; border-width: 2px; border-radius: 17px; }
-      .daily-quest-info-banner__title { flex-basis: 105px; font-size: 12px; padding: 4px 6px; }
-      .daily-quest-info-banner__main { gap: 6px; }
-      .daily-quest-info-banner__icon { flex-basis: 32px; height: 32px; font-size: 20px; border-radius: 10px; }
+      .daily-quest-info-banner { margin-bottom: 4px; }
+      .daily-quest-info-banner__title { font-size: 11px; }
       .daily-quest-info-banner__body { font-size: 18px; }
       .daily-gacha-entry { height: 88px; }
-      .cards-col { padding-top: 70px; padding-bottom: 104px; }
+      .cards-col { padding-top: 70px; padding-bottom: 128px; }
       .card-list { gap: 8px; padding-left: 10px; padding-right: 12px; }
       .game-card { max-height: 106px; }
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 24px; }
       .game-card__desc { font-size: 15px; }
-      .bottom-nav { --nav-sprite-w: 350px; --nav-sprite-h: 80px; bottom: 16px; gap: 6px; padding: 6px; border-radius: 20px; }
+      .bottom-nav { --nav-sprite-w: 360px; --nav-sprite-h: 114px; bottom: 14px; padding-inline: 13px; }
       .bn-item { border-radius: 14px; }
-      .bn-item__icon { font-size: 24px; }
-      .bn-item__label { font-size: 13px; }
     }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
@@ -4408,10 +4334,7 @@
         </div>
         <div class="title-side-stack" aria-label="おすすめ">
           <button class="book-unlock-entry" id="bookUnlockEntry" type="button" hidden aria-label="えほんの あいことば とくてんを ひらく">
-            <span class="book-unlock-entry__icon" aria-hidden="true">
-              <span class="book-unlock-entry__book">📗</span>
-              <span class="book-unlock-entry__key">🔑</span>
-            </span>
+            <span class="book-unlock-entry__icon" aria-hidden="true"></span>
             <span class="book-unlock-entry__text">
               <span class="book-unlock-entry__main">えほんの あいことば</span>
               <span class="book-unlock-entry__sub">とくてんを ひらく</span>
@@ -4421,7 +4344,7 @@
           <button class="daily-quest-info-banner" id="dailyQuestInfo" type="button" hidden aria-label="きょうの チャレンジ">
             <span class="daily-quest-info-banner__title" id="dailyQuestInfoTitle">きょうの チャレンジ</span>
             <span class="daily-quest-info-banner__main">
-              <span class="daily-quest-info-banner__icon" id="dailyQuestInfoIcon" aria-hidden="true">🗺️</span>
+              <span class="daily-quest-info-banner__icon" id="dailyQuestInfoIcon" aria-hidden="true"></span>
               <span class="daily-quest-info-banner__body" id="dailyQuestInfoBody">よみこみちゅう</span>
             </span>
             <span class="daily-quest-info-banner__arrow" aria-hidden="true">›</span>
@@ -4458,10 +4381,10 @@
     </div>
 
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
-      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"><span class="bn-item__icon" aria-hidden="true">?</span><span class="bn-item__label">ヘルプ</span></button>
-      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true">🔔</span><span class="bn-item__label">おしらせ</span></button>
-      <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true">📒</span><span class="bn-item__label">シール</span></button>
-      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true">⚙</span><span class="bn-item__label">せってい</span></button>
+      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ヘルプ</span></button>
+      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">おしらせ</span></button>
+      <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">シール</span></button>
+      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">せってい</span></button>
     </nav>
     <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
       <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
@@ -5060,7 +4983,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1625;
+    const PAGE_CACHE_VERSION = 1626;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Reference-style title menu: the first screen intentionally shows four
@@ -6589,14 +6512,15 @@
       var q;
       try { q = window.PonoDailyQuest.getToday(); } catch (_) { banner.hidden = true; return; }
       if (!q) { banner.hidden = true; return; }
-      var questIcon = {
-        maze: '🗺️',
-        quizland: '🦉',
-        puzzle: '🧩',
-        oto: '🎵',
-        bento: '🍱'
-      }[q.questId] || '⭐';
-      if (iconEl) iconEl.textContent = questIcon;
+      var questCardId = {
+        maze: 'maze',
+        quizland: 'quizland',
+        puzzle: 'puzzle',
+        oto: 'oto',
+        bento: 'bento'
+      }[q.questId] || 'maze';
+      banner.setAttribute('data-quest-id', questCardId);
+      if (iconEl) iconEl.textContent = '';
       if (q.bonusUsedAt) {
         // 達成済 + ボーナス消費後: クリア表示
         banner.hidden = false;

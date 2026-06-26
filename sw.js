@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1626: タイトル画面の右下メニュー、えほんのあいことば、きょうのチャレンジを生成PNG土台へ差し替え。
 // v1624: シール帳チュートリアル place step 2 件改善 — (1) tray scroll の base 位置を targetScroll より大きく左にプリセット (desiredTravel = min(maxScroll, max(700px, clientWidth*0.9))) し、 「右から大きく流れて蝶々で止まる」 演出に。 旧仕様は base = 現在の scrollLeft (通常 0) で、 蝶々が tray 前方にあると totalDistance ≒ 0-420px しかなく 「全然スライドしてない」 印象だった。 duration 4500ms 据置 = CSS keyframe 0-26% hand swipe 同期維持。 (2) open 切替 11300ms → 13350ms (75.85% = drop press) に遅延、 シール配置 11600ms → 13500ms (76.71%) に同期。 旧 open は hover 直前 (64.20%) で発火していたため、 hover→to の 1.50s 真下降下の最中に手だけ開く不整合 (「下がりながら手を開いてる」) が出ていた。 drop press と同期で 「ぐっ → 開く → release lift」 の自然な所作に整える。 Prototypes/StickerBookThreeJS/main.js のみ編集、 styles.css keyframe / ghost / 他 step (intro/mode/find/scale/rotate/ok/page/view/final) / grip 切替 8400ms / hand 消去・再出現 全て無改変。
 // v1623: Donguri shop switches to twice-daily rotation with one guaranteed new slot and one reservation.
 // v1622: Shop sign asset now has baked text; foreground counter regenerated lower and cuter.
@@ -239,7 +240,7 @@
 // v1616: シール帳チュートリアル hand 動き 3 件改修 — find 中継 12→6 拍 (2.0x slower) + place 座標 viewport clamp (wanderSpan 0.32→0.22 + wander1 係数 1.40→0.95) + segment 別 cubic-bezier で「機械的」 解消
 // v1619: シール帳チュートリアル 5 件一括改修 — place 直行 (wander 全廃, source→hover→drop 3 stop, rotate 0deg 固定) + rotate hand 位置補正 (rect 内 43→58%) + ok 押下後 tray 隠蔽 (:not(.is-sticker-tutorial-step-ok)) + page step hand 廃止 (矢印パルス + 自動 click) + 起動直後 markStickerTutorialSeen で再訪自動再生防止
 // v1625: シール帳チュートリアル 3 件修正 — (1) scale demo を scale 値→thumb fraction 直マッピングに置換、 thumb 半径 8px 補正で起動瞬間 ~10% ズレ + settle phase 不整合を構造的に解消 (2) rotate demo を rotation 値→thumb fraction 直マッピングに置換、 right→left phase で hand が thumb を 14% 取り残す問題を解消 (3) OK ボタン押下動作実装 (triggerStickerTutorialOkButtonPress + .inline-sticker-ok.is-tutorial-pressing で押下風 translateY+scale+黄リング glow) + OK click 後の黄枠ページ飛び解消 (stickerTutorialLastOkRect cache)
-const CACHE_VERSION = 1625;
+const CACHE_VERSION = 1626;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
