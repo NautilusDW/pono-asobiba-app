@@ -3396,6 +3396,17 @@ function setupZukanSettingsPanel() {
   settingsBackButton?.addEventListener("click", () => navigateBackToPlay());
   settingsTutorialButton?.addEventListener("click", () => {
     closeZukanSettingsPanel();
+    // v1650: チュートリアル中に 「あそびかた」 が押されたら二重起動を避けるため
+    // 一度 finishStickerTutorial で内部 state / timer / class を完全クリーンアップ
+    // (markSeen:false で 「みた」 を立てない) してから restart する。
+    const tutorialActive = document.body.classList.contains(
+      "is-sticker-tutorial-active",
+    );
+    if (tutorialActive) {
+      try {
+        finishStickerTutorial({ markSeen: false });
+      } catch (_) {}
+    }
     startStickerTutorial({ manual: true });
   });
   for (const button of stickerModeButtons) {
