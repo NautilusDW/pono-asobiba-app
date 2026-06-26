@@ -1186,6 +1186,14 @@
     .dev-grid a:active { background: var(--primary-light); }
     .settings-action[hidden] { display: none !important; }
     .debug-board-card { max-width: 390px; }
+    .debug-board-help {
+      margin: 0 0 10px;
+      color: var(--text-light);
+      font-size: .86rem;
+      font-weight: 800;
+      line-height: 1.45;
+      text-align: center;
+    }
     .debug-board-panel {
       display: grid;
       gap: 10px;
@@ -3564,21 +3572,43 @@
       56% { transform: translateX(3px) rotate(.8deg); }
     }
     .donguri-shop-v2-bubble {
-      position: absolute; left: 7%; bottom: 57%;
-      width: min(24%, 318px);
-      aspect-ratio: 1195 / 360;
+      position: absolute; left: 6.6%; bottom: 64.8%;
+      width: min(26%, 330px);
+      aspect-ratio: 1195 / 313;
       box-sizing: border-box;
       z-index: 5;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_20260625.png") center bottom / 100% 88% no-repeat;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_20260625.png") right center / 112% 100% no-repeat;
       border: 0; border-radius: 0;
-      padding: clamp(4px, .8vw, 10px) clamp(18px, 2.2vw, 32px) 0 clamp(38px, 4.5vw, 58px);
+      padding: clamp(4px, .75vw, 9px) clamp(30px, 3.6vw, 48px) clamp(4px, .8vw, 10px);
       color: #5a3a00; font-weight: 900; font-size: clamp(8px, 1.05vw, 14px); text-align: center; line-height: 1.15;
       white-space: nowrap;
       overflow: visible;
       filter: drop-shadow(0 6px 10px rgba(38, 19, 4, .22));
     }
-    .donguri-shop-v2-bubble::after { content: none; }
+    .donguri-shop-v2-bubble::before,
+    .donguri-shop-v2-bubble::after {
+      content: "";
+      position: absolute;
+      left: 48%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+    .donguri-shop-v2-bubble::before {
+      bottom: -14px;
+      border-left: 17px solid transparent;
+      border-right: 17px solid transparent;
+      border-top: 22px solid #a96100;
+      filter: drop-shadow(0 4px 3px rgba(54, 28, 7, .18));
+    }
+    .donguri-shop-v2-bubble::after {
+      bottom: -8px;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 16px solid #fff2cf;
+    }
     .donguri-shop-v2-head {
       position: absolute; top: 0; left: 0; right: 0;
       display: grid; align-items: center;
@@ -3617,7 +3647,7 @@
     .donguri-shop-v2-rotation-note {
       position: absolute;
       left: 50%;
-      top: 19.6%;
+      top: 23.2%;
       transform: translateX(-50%);
       width: min(48vw, 540px);
       z-index: 5;
@@ -3991,9 +4021,11 @@
         padding: 0 10px;
       }
       .donguri-shop-v2-title { width: min(42vw, 300px); font-size: 0; }
-      .donguri-shop-v2-rotation-note { top: 22.6%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
+      .donguri-shop-v2-rotation-note { top: 25.4%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
-      .donguri-shop-v2-bubble { left: 7%; bottom: 56%; width: min(24%, 210px); padding: clamp(3px, .8vw, 7px) clamp(14px, 2.2vw, 20px) 0 clamp(32px, 4.6vw, 42px); font-size: clamp(8px, 1.4vw, 12px); }
+      .donguri-shop-v2-bubble { left: 4.8%; bottom: 61.4%; width: min(23%, 206px); padding: clamp(3px, .8vw, 7px) clamp(15px, 2.4vw, 22px) clamp(3px, .8vw, 7px); font-size: clamp(8px, 1.4vw, 12px); }
+      .donguri-shop-v2-bubble::before { bottom: -10px; border-left-width: 12px; border-right-width: 12px; border-top-width: 16px; }
+      .donguri-shop-v2-bubble::after { bottom: -6px; border-left-width: 8px; border-right-width: 8px; border-top-width: 11px; }
       .donguri-shop-v2-reserve { left: 6.5%; bottom: 4.2%; width: min(25%, 210px); min-width: 126px; height: clamp(72px, 18vw, 90px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
       .donguri-shop-v2-reserve-title { font-size: 9px; }
       .donguri-shop-v2-reserve-name { font-size: 9px; line-height: 1.12; }
@@ -5014,6 +5046,7 @@
   <div class="modal" id="debugBoardModal" hidden role="dialog" aria-modal="true" aria-labelledby="debugBoardTitle">
     <div class="modal-card debug-board-card">
       <h3 id="debugBoardTitle">デバッグボード</h3>
+      <p class="debug-board-help">すうじを いれて<br>どんぐりの かずを かえられるよ</p>
       <div class="debug-board-panel" aria-label="どんぐりを ちょうせい">
         <div class="debug-board-panel__head">
           <span>いまの どんぐり</span>
@@ -5037,7 +5070,7 @@
             <span class="debug-board-label">かずを きめる</span>
             <input class="debug-board-input" id="debugAcornSetAmount" type="number" min="0" max="9999" step="1" inputmode="numeric" value="0">
           </label>
-          <button class="debug-board-btn" id="debugAcornSetBtn" type="button">このかず</button>
+          <button class="debug-board-btn" id="debugAcornSetBtn" type="button">このかずにする</button>
         </div>
         <div class="debug-board-status" id="debugAcornStatus" role="status" aria-live="polite"></div>
       </div>
@@ -5611,7 +5644,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1653;
+    const PAGE_CACHE_VERSION = 1656;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -7248,6 +7281,7 @@
     function hideShop() {
       var shop = document.getElementById('donguriShop');
       if (shop) shop.hidden = true;
+      _clearShopkeeperNeutralTimer();
       // v1591: shop を閉じたらメイン残高バッジを復帰
       var badge = document.getElementById('acornBalanceBadge');
       if (badge) badge.classList.remove('is-occluded');
@@ -7283,15 +7317,18 @@
       surprise: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_surprise_highlight_20260626.png'
     };
     var DONGURI_SHOPKEEPER_REACTIONS = {
-      welcome: { pose: 'idle', motion: 'welcome', text: 'いらっしゃい' },
+      welcome: { pose: 'idle', motion: 'calm', text: 'いらっしゃい' },
       guide: { pose: 'present', motion: 'guide', text: 'とっておけるよ' },
       reserve: { pose: 'point', motion: 'reserve', text: 'とっておいたよ' },
       happy: { pose: 'cheer', motion: 'happy', text: 'こうかん ありがとう' },
       worry: { pose: 'sad', motion: 'worry', text: 'どんぐり たりないよ' },
       think: { pose: 'think', motion: 'worry', text: 'どんぐり あつめよう' },
       full: { pose: 'surprise', motion: 'worry', text: 'とりおきは 1つまで' },
-      calm: { pose: 'idle', motion: 'welcome', text: 'ならべているよ' }
+      calm: { pose: 'idle', motion: 'calm', text: 'いらっしゃい' }
     };
+    var DONGURI_SHOPKEEPER_NEUTRAL_REACTION = 'calm';
+    var donguriShopkeeperNeutral = { reaction: 'calm', text: 'いらっしゃい' };
+    var donguriShopkeeperNeutralTimer = 0;
     function _shopReactionForMessage(messageText) {
       var text = String(messageText || '');
       if (/1つまで/.test(text)) return 'full';
@@ -7302,21 +7339,48 @@
       if (/ならべ|みて/.test(text)) return 'guide';
       return 'welcome';
     }
-    function _setShopkeeperReaction(reactionKey, messageText) {
+    function _clearShopkeeperNeutralTimer() {
+      if (donguriShopkeeperNeutralTimer) {
+        window.clearTimeout(donguriShopkeeperNeutralTimer);
+        donguriShopkeeperNeutralTimer = 0;
+      }
+    }
+    function _rememberShopkeeperNeutral(reactionKey, text) {
+      donguriShopkeeperNeutral = {
+        reaction: DONGURI_SHOPKEEPER_NEUTRAL_REACTION,
+        text: text || (DONGURI_SHOPKEEPER_REACTIONS[reactionKey] && DONGURI_SHOPKEEPER_REACTIONS[reactionKey].text) || 'いらっしゃい'
+      };
+    }
+    function _restoreShopkeeperNeutral() {
+      var shop = document.getElementById('donguriShop');
+      if (!shop || shop.hidden) return;
+      _setShopkeeperReaction(donguriShopkeeperNeutral.reaction, donguriShopkeeperNeutral.text, { sticky: true, skipRemember: true });
+    }
+    function _setShopkeeperReaction(reactionKey, messageText, options) {
+      options = options || {};
       var key = reactionKey || _shopReactionForMessage(messageText);
       var data = DONGURI_SHOPKEEPER_REACTIONS[key] || DONGURI_SHOPKEEPER_REACTIONS.welcome;
       var keeper = document.querySelector('.donguri-shop-v2-shopkeeper');
       var img = document.getElementById('donguriShopkeeperImg');
       var bubble = document.getElementById('donguriShopBubble');
       var poseSrc = DONGURI_SHOPKEEPER_POSES[data.pose] || DONGURI_SHOPKEEPER_POSES.idle;
+      _clearShopkeeperNeutralTimer();
       if (img && img.getAttribute('src') !== poseSrc) img.setAttribute('src', poseSrc);
       if (bubble) bubble.textContent = messageText || data.text || _formatShopCountdown();
+      if (!options.transient && !options.skipRemember) {
+        _rememberShopkeeperNeutral(key, messageText || data.text);
+      }
       if (keeper) {
         keeper.dataset.pose = data.pose;
         keeper.dataset.reaction = data.motion || key;
         keeper.classList.remove('is-reacting');
-        void keeper.offsetWidth;
-        keeper.classList.add('is-reacting');
+        if ((data.motion || key) !== 'calm') {
+          void keeper.offsetWidth;
+          keeper.classList.add('is-reacting');
+        }
+      }
+      if (options.transient) {
+        donguriShopkeeperNeutralTimer = window.setTimeout(_restoreShopkeeperNeutral, options.duration || 2400);
       }
     }
     function _shopDefaultReaction(balance, stickerIds, reservation) {
@@ -7332,10 +7396,10 @@
           hasHoldable = !ownState.owned && isGuaranteed && canReserve;
         });
       } catch (_) { hasHoldable = false; }
-      if (hasHoldable) return { reaction: 'guide', text: 'とっておけるよ' };
-      if (reservation && reservation.stickerId) return { reaction: 'reserve', text: 'とりおきも あるよ' };
-      if ((balance | 0) < 15) return { reaction: 'think', text: 'どんぐり あつめよう' };
-      return { reaction: 'welcome', text: 'いらっしゃい' };
+      if (hasHoldable) return { reaction: 'calm', text: 'とっておけるよ' };
+      if (reservation && reservation.stickerId) return { reaction: 'calm', text: 'とりおきも あるよ' };
+      if ((balance | 0) < 15) return { reaction: 'calm', text: 'どんぐり あつめよう' };
+      return { reaction: 'calm', text: 'いらっしゃい' };
     }
     // v1582: load full catalog so stickerIndex (gameId/name/img) is hydrated for rotation rendering.
     function _hydrateShopCatalog() {
@@ -7479,12 +7543,12 @@
       var balance = (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0;
       if (balEl) balEl.textContent = String(balance);
       var countdownText = messageText || _formatShopCountdown();
-      if (messageText) _setShopkeeperReaction(null, messageText);
+      if (messageText) _setShopkeeperReaction(null, messageText, { transient: true });
       else if (bubbleEl) bubbleEl.textContent = countdownText;
       if (!window.PonoDonguriShop) {
         slotsEl.innerHTML = '<div class="donguri-shop-v2-slot"><div class="donguri-shop-v2-thumb"><span class="donguri-shop-v2-thumb-fallback">…</span></div></div>';
         _renderShopReservationPanel(reserveEl, null, {});
-        if (!messageText) _setShopkeeperReaction('calm', countdownText);
+        if (!messageText) _setShopkeeperReaction('calm', countdownText, { sticky: true });
         return;
       }
       // Phase 1: hydrate full catalog to populate internal stickerIndex; then read rotation; then resolve images.
@@ -7498,10 +7562,12 @@
           }
         } catch (_) { reservation = null; }
         var stickerIds = _shopDisplayStickerIds(rotation, reservation);
-        if (!messageText) {
           var defaultReaction = _shopDefaultReaction(balance, stickerIds, reservation);
-          _setShopkeeperReaction(defaultReaction.reaction, defaultReaction.text);
-        }
+          if (!messageText) {
+            _setShopkeeperReaction(defaultReaction.reaction, defaultReaction.text, { sticky: true });
+          } else {
+            _rememberShopkeeperNeutral(defaultReaction.reaction, defaultReaction.text);
+          }
         var resolveIds = stickerIds.slice();
         if (reservation && reservation.stickerId && resolveIds.indexOf(reservation.stickerId) < 0) {
           resolveIds.push(reservation.stickerId);
