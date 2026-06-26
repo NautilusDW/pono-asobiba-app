@@ -1,20 +1,23 @@
 // ── js/donguri-shop.js ──
-// どんぐりショップ: 3h x 8 slot ローテーション (JST)。 各スロット 3 枚を重み付き抽選。
-// 同じ JST 3h 窓では全クライアント同一 (fnv1a + mulberry32 deterministic seed)。
-// In-session lock: getRotation 初回呼び出しでセッション固定。 スロット越え後も同セッション内は据え置き。
-// LS: pono_donguri_shop_v1 (購入履歴) + pono_donguri_shop_rotation_v1 (ローテキャッシュ)。
+// どんぐりショップ: JST 朝/夕の 1日2回ローテーション。3枠のうち1枠は未所持確定。
+// 同じ JST 窓では全クライアント同一 (fnv1a + mulberry32 deterministic seed)。
+// LS: pono_donguri_shop_v1 (購入履歴) + pono_donguri_shop_rotation_v1 (ローテキャッシュ)
+//   + pono_donguri_shop_reservation_v1 (取り置き1件)。
 (function (window) {
   'use strict';
 
   var LS_KEY = 'pono_donguri_shop_v1';
   var LS_ROT = 'pono_donguri_shop_rotation_v1';
-  var SCHEMA = 1, ROT_SCHEMA = 1, COST = 50, ROT_SIZE = 3, SLOT_HOURS = 3;
+  var LS_RESERVE = 'pono_donguri_shop_reservation_v1';
+  var SCHEMA = 1, ROT_SCHEMA = 2, RESERVE_SCHEMA = 1, COST = 50, ROT_SIZE = 3;
+  var MORNING_HOUR = 6, EVENING_HOUR = 18;
 
-  var catalogCache = null;     // [{ id, gameId, name, owned, costAcorns }]
-  var stickerIndex = {};       // stickerId -> { gameId, name }
-  var memoryStore = null;      // LS-write-failure fallback for purchases
-  var memoryRotation = null;   // LS-write-failure fallback for rotation
-  var _currentRotation = null; // in-session lock
+  var catalogCache = null;       // [{ id, gameId, name, owned, count, rarity, costAcorns }]
+  var stickerIndex = {};         // stickerId -> { gameId, name, rarity }
+  var memoryStore = null;        // LS-write-failure fallback for purchases
+  var memoryRotation = null;     // LS-write-failure fallback for rotation
+  var memoryReservation = null;  // LS-write-failure fallback for reservation
+  var _currentRotation = null;   // per-current-shopKey in-session cache
 
   function _ls() { return (window && window.localStorage) || null; }
 
@@ -27,12 +30,41 @@
   }
   function _jstNow() { return new Date(_nowMs() + 9 * 3600 * 1000); }
   function _pad2(n) { return (n < 10 ? '0' : '') + n; }
-  function _todayKeyJST() {
-    var j = _jstNow();
-    return j.getUTCFullYear() + '-' + _pad2(j.getUTCMonth() + 1) + '-' + _pad2(j.getUTCDate());
+  function _dateKeyFromJSTDate(d) {
+    return d.getUTCFullYear() + '-' + _pad2(d.getUTCMonth() + 1) + '-' + _pad2(d.getUTCDate());
   }
-  function _slotIdJST() { return Math.floor(_jstNow().getUTCHours() / SLOT_HOURS); }
-  function _shopKey() { return _todayKeyJST() + ':' + _slotIdJST(); }
+  function _todayKeyJST() { return _dateKeyFromJSTDate(_jstNow()); }
+  function _addJstDays(d, days) {
+    return new Date(Date.UTC(
+      d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + days,
+      d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds()
+    ));
+  }
+  function _periodInfoJST() {
+    var j = _jstNow();
+    var h = j.getUTCHours();
+    var date = j;
+    var period = 'morning';
+    var next;
+    if (h < MORNING_HOUR) {
+      date = _addJstDays(j, -1);
+      period = 'evening';
+      next = new Date(Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate(), MORNING_HOUR, 0, 0, 0));
+    } else if (h < EVENING_HOUR) {
+      period = 'morning';
+      next = new Date(Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate(), EVENING_HOUR, 0, 0, 0));
+    } else {
+      period = 'evening';
+      next = new Date(Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate() + 1, MORNING_HOUR, 0, 0, 0));
+    }
+    return {
+      dateKey: _dateKeyFromJSTDate(date),
+      period: period,
+      shopKey: _dateKeyFromJSTDate(date) + ':' + period,
+      nextSlotJST: next
+    };
+  }
+  function _shopKey() { return _periodInfoJST().shopKey; }
 
   function _fnv1aHash(str) {
     var h = 0x811c9dc5;
@@ -84,6 +116,7 @@
       if (!p || typeof p !== 'object' || p.schemaVersion !== ROT_SCHEMA) return null;
       if (typeof p.shopKey !== 'string' || !Array.isArray(p.stickerIds)) return null;
       if (!Array.isArray(p.prevStickerIds)) p.prevStickerIds = [];
+      if (typeof p.guaranteedStickerId !== 'string') p.guaranteedStickerId = '';
       return p;
     } catch (e) { return null; }
   }
@@ -93,6 +126,7 @@
       shopKey: rot.shopKey,
       stickerIds: rot.stickerIds.slice(),
       prevStickerIds: rot.prevStickerIds.slice(),
+      guaranteedStickerId: rot.guaranteedStickerId || '',
       generatedAt: rot.generatedAt
     };
     var ls = _ls();
@@ -101,6 +135,42 @@
       catch (e) { memoryRotation = payload; return; }
     }
     memoryRotation = payload;
+  }
+
+  // ----- reservation persistent record -----
+  function _freshReservation() {
+    return { schemaVersion: RESERVE_SCHEMA, stickerId: '', reservedAt: '', sourceShopKey: '' };
+  }
+  function _readReservationRaw() {
+    if (memoryReservation) return memoryReservation;
+    var ls = _ls(); if (!ls) return _freshReservation();
+    var raw; try { raw = ls.getItem(LS_RESERVE); } catch (e) { raw = null; }
+    if (!raw) return _freshReservation();
+    try {
+      var p = JSON.parse(raw);
+      if (!p || typeof p !== 'object' || p.schemaVersion !== RESERVE_SCHEMA) return _freshReservation();
+      if (typeof p.stickerId !== 'string') p.stickerId = '';
+      if (typeof p.reservedAt !== 'string') p.reservedAt = '';
+      if (typeof p.sourceShopKey !== 'string') p.sourceShopKey = '';
+      return p;
+    } catch (e) { return _freshReservation(); }
+  }
+  function _writeReservationRaw(rec) {
+    var payload = {
+      schemaVersion: RESERVE_SCHEMA,
+      stickerId: rec && rec.stickerId ? String(rec.stickerId) : '',
+      reservedAt: rec && rec.reservedAt ? String(rec.reservedAt) : '',
+      sourceShopKey: rec && rec.sourceShopKey ? String(rec.sourceShopKey) : ''
+    };
+    var ls = _ls();
+    if (ls && !memoryReservation) {
+      try {
+        if (payload.stickerId) ls.setItem(LS_RESERVE, JSON.stringify(payload));
+        else ls.removeItem(LS_RESERVE);
+        return;
+      } catch (e) { memoryReservation = payload; return; }
+    }
+    memoryReservation = payload;
   }
 
   function _isoNow() {
@@ -133,9 +203,19 @@
         catch (e) { ownedDict = {}; }
         list.forEach(function (s) {
           if (!s || !s.id) return;
-          var isOwned = !!ownedDict[s.id];
-          var entry = { id: s.id, gameId: gameId, name: s.name || s.id, owned: isOwned, costAcorns: COST };
-          stickerIndex[s.id] = { gameId: gameId, name: entry.name };
+          var rec = ownedDict[s.id];
+          var count = rec && typeof rec === 'object' && typeof rec.count === 'number' ? rec.count : (rec ? 1 : 0);
+          var isOwned = count > 0;
+          var entry = {
+            id: s.id,
+            gameId: gameId,
+            name: s.name || s.id,
+            owned: isOwned,
+            count: count,
+            rarity: s.rarity || 'normal',
+            costAcorns: COST
+          };
+          stickerIndex[s.id] = { gameId: gameId, name: entry.name, rarity: entry.rarity };
           (isOwned ? owned : unowned).push(entry);
         });
       });
@@ -147,36 +227,81 @@
   function getCatalog() { return _buildCatalog(); }
 
   // ----- weighted pick (3 distinct, seeded by shopKey) -----
+  function _summary(pool) {
+    var out = { total: pool.length, owned: 0, byGame: {}, byRarity: {} };
+    pool.forEach(function (e) {
+      if (e.owned) out.owned++;
+      var g = out.byGame[e.gameId] || (out.byGame[e.gameId] = { total: 0, owned: 0 });
+      g.total++;
+      if (e.owned) g.owned++;
+      var r = out.byRarity[e.rarity] || (out.byRarity[e.rarity] = { total: 0, owned: 0 });
+      r.total++;
+      if (e.owned) r.owned++;
+    });
+    return out;
+  }
+  function _rarityBase(rarity) {
+    if (rarity === 'super') return 0.24;
+    if (rarity === 'rare') return 0.58;
+    return 1;
+  }
+  function _entryWeight(entry, summary, mode) {
+    var ownedRatio = summary.total ? summary.owned / summary.total : 0;
+    var game = summary.byGame[entry.gameId] || { total: 1, owned: 0 };
+    var rarity = summary.byRarity[entry.rarity] || { total: 1, owned: 0 };
+    var gameRatio = game.total ? game.owned / game.total : 0;
+    var rarityRatio = rarity.total ? rarity.owned / rarity.total : 0;
+    if (entry.owned) {
+      var count = Math.max(1, entry.count || 1);
+      return 0.11 * _rarityBase(entry.rarity) / Math.min(5, count + 1);
+    }
+    var weight = _rarityBase(entry.rarity);
+    weight *= 1 + Math.min(1.4, ownedRatio * 1.35);
+    weight *= 1 + Math.min(0.75, gameRatio * 0.75);
+    weight *= 1 + Math.min(0.45, rarityRatio * 0.45);
+    if (mode === 'guaranteed') weight *= 1.25;
+    return Math.max(0.01, weight);
+  }
+  function _weightedEntry(pool, rng, summary, mode) {
+    if (!pool.length) return null;
+    var weights = pool.map(function (e) { return _entryWeight(e, summary, mode); });
+    var sum = 0;
+    for (var i = 0; i < weights.length; i++) sum += weights[i];
+    if (sum <= 0) return pool[Math.floor(rng() * pool.length) % pool.length];
+    var roll = rng() * sum;
+    var acc = 0;
+    for (var j = 0; j < pool.length; j++) {
+      acc += weights[j];
+      if (roll < acc) return pool[j];
+    }
+    return pool[pool.length - 1];
+  }
   function _pickRotation(shopKey) {
-    var pool = (catalogCache || []).slice();
-    var total = pool.length;
-    if (total === 0) return [];
-    var ownedN = 0;
-    for (var i = 0; i < total; i++) if (pool[i].owned) ownedN++;
-    var r = ownedN / total;
-    // weight[unowned] = (1 + r) * (1 + ownedN): スケールが完成度に比例して急騰し、
-    // 残り少ない非所持シールが必ず近いうちにローテに登場するピティ機構
-    var pity = 1 + ownedN;
-    var weights = pool.map(function (e) { return e.owned ? 0.3 : (1 + r) * pity; });
+    var all = (catalogCache || []).slice();
+    if (!all.length) return { stickerIds: [], guaranteedStickerId: '' };
+    var summary = _summary(all);
+    var reserved = _readReservationRaw();
+    var reservedId = reserved && reserved.stickerId ? reserved.stickerId : '';
     var rng = _mulberry32(_fnv1aHash(shopKey));
     rng(); // discard first (mulberry32 low-entropy bias)
+
     var picks = [];
-    var size = Math.min(ROT_SIZE, total);
-    for (var n = 0; n < size; n++) {
-      var sum = 0;
-      for (var k = 0; k < pool.length; k++) sum += weights[k];
-      if (sum <= 0) { for (var k2 = 0; k2 < pool.length; k2++) weights[k2] = 1; sum = pool.length; }
-      var roll = rng() * sum;
-      var acc = 0, chosen = pool.length - 1;
-      for (var j = 0; j < pool.length; j++) {
-        acc += weights[j];
-        if (roll < acc) { chosen = j; break; }
-      }
-      picks.push(pool[chosen].id);
-      pool.splice(chosen, 1);
-      weights.splice(chosen, 1);
+    var guaranteedPool = all.filter(function (e) { return !e.owned && e.id !== reservedId; });
+    if (!guaranteedPool.length) guaranteedPool = all.filter(function (e) { return !e.owned; });
+    var guaranteed = _weightedEntry(guaranteedPool.length ? guaranteedPool : all, rng, summary, 'guaranteed');
+    var guaranteedId = guaranteed ? guaranteed.id : '';
+    if (guaranteedId) picks.push(guaranteedId);
+
+    while (picks.length < Math.min(ROT_SIZE, all.length)) {
+      var pool = all.filter(function (e) {
+        return picks.indexOf(e.id) < 0 && e.id !== reservedId;
+      });
+      if (!pool.length) pool = all.filter(function (e) { return picks.indexOf(e.id) < 0; });
+      var next = _weightedEntry(pool, rng, summary, 'random');
+      if (!next) break;
+      picks.push(next.id);
     }
-    return picks;
+    return { stickerIds: picks, guaranteedStickerId: guaranteedId };
   }
 
   function _cloneRot(r) {
@@ -184,44 +309,51 @@
       shopKey: r.shopKey,
       stickerIds: r.stickerIds.slice(),
       prevStickerIds: r.prevStickerIds.slice(),
+      guaranteedStickerId: r.guaranteedStickerId || '',
       generatedAt: r.generatedAt
     };
   }
 
   function getRotation() {
     var shopKey = _shopKey();
-    if (_currentRotation) return _cloneRot(_currentRotation);
+    if (_currentRotation && _currentRotation.shopKey === shopKey) return _cloneRot(_currentRotation);
     var ls = _readRotLS();
     if (ls && ls.shopKey === shopKey) {
       _currentRotation = {
-        shopKey: ls.shopKey, stickerIds: ls.stickerIds.slice(),
-        prevStickerIds: ls.prevStickerIds.slice(), generatedAt: ls.generatedAt
+        shopKey: ls.shopKey,
+        stickerIds: ls.stickerIds.slice(),
+        prevStickerIds: ls.prevStickerIds.slice(),
+        guaranteedStickerId: ls.guaranteedStickerId || '',
+        generatedAt: ls.generatedAt
       };
       return _cloneRot(_currentRotation);
     }
     var prev = (ls && Array.isArray(ls.stickerIds)) ? ls.stickerIds.slice() : [];
-    var picks = _pickRotation(shopKey);
-    _currentRotation = { shopKey: shopKey, stickerIds: picks, prevStickerIds: prev, generatedAt: _isoNow() };
+    var picked = _pickRotation(shopKey);
+    _currentRotation = {
+      shopKey: shopKey,
+      stickerIds: picked.stickerIds,
+      prevStickerIds: prev,
+      guaranteedStickerId: picked.guaranteedStickerId || '',
+      generatedAt: _isoNow()
+    };
     _writeRotLS(_currentRotation);
     return _cloneRot(_currentRotation);
   }
 
   function isNew(stickerId) {
     if (!stickerId) return false;
-    var r = getRotation();
-    if (r.stickerIds.indexOf(stickerId) < 0) return false;
-    // v1588 NTH1: 初回 rotation (prev 空) は誰も「あたらしい！」 にしない (= isAlwaysNew 錯覚を防止)
-    if (!r.prevStickerIds || r.prevStickerIds.length === 0) return false;
-    return r.prevStickerIds.indexOf(stickerId) < 0;
+    return getRotation().guaranteedStickerId === stickerId;
   }
+  function isGuaranteed(stickerId) { return isNew(stickerId); }
 
   function getSlotTimeUntilNext() {
     var j = _jstNow();
-    var nextHour = (Math.floor(j.getUTCHours() / SLOT_HOURS) + 1) * SLOT_HOURS;
-    var nextJst = new Date(Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate(), nextHour, 0, 0, 0));
+    var info = _periodInfoJST();
+    var nextJst = info.nextSlotJST;
     var delta = nextJst.getTime() - j.getTime();
     if (delta < 0) delta += 86400000;
-    return { nextSlotJST: nextJst, hoursRemaining: delta / 3600000 };
+    return { nextSlotJST: nextJst, hoursRemaining: delta / 3600000, period: info.period, shopKey: info.shopKey };
   }
 
   function getOwnershipState(stickerId) {
@@ -253,10 +385,55 @@
     catch (e) { return 0; }
   }
   function _isInRotation(stickerId) { return getRotation().stickerIds.indexOf(stickerId) >= 0; }
+  function _reservationMatches(stickerId) {
+    var r = _readReservationRaw();
+    return !!(stickerId && r && r.stickerId === stickerId);
+  }
+
+  function getReservation() {
+    var r = _readReservationRaw();
+    if (!r || !r.stickerId) return null;
+    var state = getOwnershipState(r.stickerId);
+    if (state && state.owned) {
+      _writeReservationRaw(_freshReservation());
+      return null;
+    }
+    return { stickerId: r.stickerId, reservedAt: r.reservedAt, sourceShopKey: r.sourceShopKey };
+  }
+  function isReserved(stickerId) {
+    var r = getReservation();
+    return !!(stickerId && r && r.stickerId === stickerId);
+  }
+  function canReserve(stickerId) {
+    if (!_stickerEntry(stickerId)) return false;
+    if (!isGuaranteed(stickerId)) return false;
+    if (getOwnershipState(stickerId).owned) return false;
+    var current = getReservation();
+    return !current || current.stickerId === stickerId;
+  }
+  function reserve(stickerId) {
+    if (!_stickerEntry(stickerId)) return { success: false, reason: 'invalid_sticker' };
+    if (!isGuaranteed(stickerId)) return { success: false, reason: 'not_guaranteed' };
+    if (getOwnershipState(stickerId).owned) return { success: false, reason: 'already_owned' };
+    var current = getReservation();
+    if (current && current.stickerId && current.stickerId !== stickerId) {
+      return { success: false, reason: 'reservation_full', reservation: current };
+    }
+    var rec = { schemaVersion: RESERVE_SCHEMA, stickerId: stickerId, reservedAt: _isoNow(), sourceShopKey: _shopKey() };
+    _writeReservationRaw(rec);
+    return { success: true, reservation: { stickerId: rec.stickerId, reservedAt: rec.reservedAt, sourceShopKey: rec.sourceShopKey } };
+  }
+  function clearReservation(stickerId) {
+    var current = _readReservationRaw();
+    if (!current || !current.stickerId) return { success: true };
+    if (stickerId && current.stickerId !== stickerId) return { success: false, reason: 'different_reservation' };
+    _writeReservationRaw(_freshReservation());
+    return { success: true };
+  }
 
   function canPurchase(stickerId) {
     if (!_stickerEntry(stickerId)) return false;
-    if (!_isInRotation(stickerId)) return false;
+    if (!_isInRotation(stickerId) && !_reservationMatches(stickerId)) return false;
     if (getOwnershipState(stickerId).owned) return false; // 「もう なかよし♪」 UX
     return _balance() >= COST;
   }
@@ -264,7 +441,7 @@
   function purchase(stickerId) {
     var entry = _stickerEntry(stickerId);
     if (!entry) return Promise.resolve({ success: false, reason: 'invalid_sticker' });
-    if (!_isInRotation(stickerId)) return Promise.resolve({ success: false, reason: 'not_in_rotation' });
+    if (!_isInRotation(stickerId) && !_reservationMatches(stickerId)) return Promise.resolve({ success: false, reason: 'not_in_rotation' });
     if (_balance() < COST) return Promise.resolve({ success: false, reason: 'insufficient_acorns' });
     var spend = window.spendAcorns;
     if (typeof spend !== 'function' || !spend(COST)) {
@@ -298,9 +475,10 @@
       } catch (e) {}
       if (catalogCache) {
         for (var i = 0; i < catalogCache.length; i++) {
-          if (catalogCache[i].id === stickerId) { catalogCache[i].owned = true; break; }
+          if (catalogCache[i].id === stickerId) { catalogCache[i].owned = true; catalogCache[i].count = Math.max(1, catalogCache[i].count || 0); break; }
         }
       }
+      if (_reservationMatches(stickerId)) clearReservation(stickerId);
       return { success: true, stickerResult: stickerResult };
     });
   }
@@ -314,18 +492,30 @@
     var ls = _ls();
     if (ls) { try { ls.removeItem(LS_ROT); } catch (e) {} }
   }
+  function __clearReservationStore() {
+    memoryReservation = null;
+    var ls = _ls();
+    if (ls) { try { ls.removeItem(LS_RESERVE); } catch (e) {} }
+  }
 
   window.PonoDonguriShop = {
     getCatalog: getCatalog,
     getRotation: getRotation,
     isNew: isNew,
+    isGuaranteed: isGuaranteed,
     getSlotTimeUntilNext: getSlotTimeUntilNext,
     getOwnershipState: getOwnershipState,
+    getReservation: getReservation,
+    isReserved: isReserved,
+    canReserve: canReserve,
+    reserve: reserve,
+    clearReservation: clearReservation,
     canPurchase: canPurchase,
     purchase: purchase,
     getPurchaseHistory: getPurchaseHistory,
     COST_PER_STICKER: COST,
     __resetRotationLock: __resetRotationLock,
-    __clearRotationStore: __clearRotationStore
+    __clearRotationStore: __clearRotationStore,
+    __clearReservationStore: __clearReservationStore
   };
 })(typeof window !== 'undefined' ? window : this);

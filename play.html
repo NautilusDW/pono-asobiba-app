@@ -3534,6 +3534,9 @@
     .donguri-shop-v2-slot.is-buyable.is-pressing { background-image: url("assets/ui/shop/sticker_shop_card_highlight_exchange_pressed_20260625.png"); }
     .donguri-shop-v2-slot.is-unavailable { background-image: url("assets/ui/shop/sticker_shop_card_muted_exchange_20260625.png"); background-size: contain; }
     .donguri-shop-v2-slot.is-owned { background-image: url("assets/ui/shop/sticker_shop_card_muted_20260625.png"); }
+    .donguri-shop-v2-slot.is-held {
+      filter: drop-shadow(0 10px 14px rgba(34, 17, 4, .25)) drop-shadow(0 0 10px rgba(255, 214, 92, .34));
+    }
     .donguri-shop-v2-slot:nth-child(2) { animation-delay: .2s; }
     .donguri-shop-v2-slot:nth-child(3) { animation-delay: .4s; }
     @keyframes pono-shop-v2-float {
@@ -3625,6 +3628,38 @@
       cursor: pointer; -webkit-tap-highlight-color: transparent;
     }
     .donguri-shop-v2-owned-label:active { transform: translateY(2px); box-shadow: none; }
+    .donguri-shop-v2-hold {
+      position: absolute;
+      left: 12%;
+      top: 57.2%;
+      min-width: 48%;
+      min-height: 8.5%;
+      padding: 0 7px 1px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(134, 88, 29, .72);
+      border-radius: 999px;
+      background: linear-gradient(180deg, #fff7d7, #ffd98b);
+      color: #67420f;
+      font: 900 clamp(9px, 1.15vw, 13px)/1 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+      box-shadow: 0 2px 0 rgba(120, 77, 20, .22), 0 3px 8px rgba(63, 34, 8, .18);
+      z-index: 8;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .donguri-shop-v2-hold:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(120, 77, 20, .22); }
+    .donguri-shop-v2-hold:disabled {
+      opacity: .72;
+      cursor: not-allowed;
+      filter: saturate(.72);
+    }
+    .donguri-shop-v2-hold.is-held {
+      background: linear-gradient(180deg, #e7fff2, #9be6be);
+      color: #285833;
+      border-color: rgba(55, 123, 69, .68);
+    }
     .donguri-shop-v2-badge {
       position: absolute; top: -10px; right: -8px;
       padding: 4px 10px;
@@ -3636,6 +3671,9 @@
       box-shadow: 0 2px 6px rgba(0,0,0,.25);
       z-index: 7;
       animation: pono-shop-v2-badge-pulse 1.8s ease-in-out infinite;
+    }
+    .donguri-shop-v2-badge--hold {
+      background: linear-gradient(135deg, #63c37c, #2a9f8a);
     }
     @keyframes pono-shop-v2-badge-pulse {
       0%, 100% { transform: rotate(-8deg) scale(1); }
@@ -5022,7 +5060,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1622;
+    const PAGE_CACHE_VERSION = 1625;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Reference-style title menu: the first screen intentionally shows four
@@ -6605,7 +6643,7 @@
       var badge = document.getElementById('acornBalanceBadge');
       if (badge) badge.classList.remove('is-occluded');
     }
-    // v1588 MF2: countdown を時間帯表現に置換 (3-4 歳に「N じかん」 が抽象的すぎたため)
+    // v1623: shop rotation is twice daily (morning/evening), so countdown copy uses those anchors.
     function _formatShopCountdown() {
       try {
         if (!window.PonoDonguriShop || typeof window.PonoDonguriShop.getSlotTimeUntilNext !== 'function') {
@@ -6619,14 +6657,8 @@
         // nextSlotJST は js/donguri-shop.js が UTC fields に JST 時刻を埋めた Date
         var jstHour = nextSlotJST.getUTCHours();
         var phrases = {
-          0: 'ねんねの あと',
-          3: 'ねんねの あと',
           6: 'あさごはんの あと',
-          9: 'あさあそびの あと',
-          12: 'おひるごはんの あと',
-          15: 'おやつの あと',
-          18: 'ばんごはんの あと',
-          21: 'ねるまえに'
+          18: 'ばんごはんの あと'
         };
         return (phrases[jstHour] || 'もうすぐ') + ' かわるよ';
       } catch (_) { return 'もうすぐ かわるよ'; }
@@ -6663,7 +6695,16 @@
         return out;
       }, function () { return out; });
     }
-    function renderShopCatalog() {
+    function _shopDisplayStickerIds(rotation, reservation) {
+      var stickerIds = (rotation && rotation.stickerIds) ? rotation.stickerIds.slice() : [];
+      if (!reservation || !reservation.stickerId || stickerIds.indexOf(reservation.stickerId) >= 0) return stickerIds;
+      var out = [reservation.stickerId];
+      stickerIds.forEach(function (sid) {
+        if (out.length < 3 && out.indexOf(sid) < 0) out.push(sid);
+      });
+      return out;
+    }
+    function renderShopCatalog(messageText) {
       var slotsEl    = document.getElementById('donguriShopSlots');
       var balEl      = document.getElementById('donguriShopBalance');
       var bubbleEl   = document.getElementById('donguriShopBubble');
@@ -6671,7 +6712,7 @@
       if (!slotsEl) return;
       var balance = (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0;
       if (balEl) balEl.textContent = String(balance);
-      var countdownText = _formatShopCountdown();
+      var countdownText = messageText || _formatShopCountdown();
       if (bubbleEl) bubbleEl.textContent = countdownText;
       if (!window.PonoDonguriShop) {
         slotsEl.innerHTML = '<div class="donguri-shop-v2-slot"><div class="donguri-shop-v2-thumb"><span class="donguri-shop-v2-thumb-fallback">…</span></div></div>';
@@ -6680,8 +6721,14 @@
       // Phase 1: hydrate full catalog to populate internal stickerIndex; then read rotation; then resolve images.
       _hydrateShopCatalog().then(function () {
         var rotation;
-        try { rotation = window.PonoDonguriShop.getRotation(); } catch (_) { rotation = { stickerIds: [], prevStickerIds: [] }; }
-        var stickerIds = (rotation && rotation.stickerIds) || [];
+        var reservation = null;
+        try { rotation = window.PonoDonguriShop.getRotation(); } catch (_) { rotation = { stickerIds: [], prevStickerIds: [], guaranteedStickerId: '' }; }
+        try {
+          if (typeof window.PonoDonguriShop.getReservation === 'function') {
+            reservation = window.PonoDonguriShop.getReservation();
+          }
+        } catch (_) { reservation = null; }
+        var stickerIds = _shopDisplayStickerIds(rotation, reservation);
         return _resolveRotationStickerImages(stickerIds).then(function (imgIndex) {
           slotsEl.innerHTML = '';
           if (!stickerIds.length) {
@@ -6695,18 +6742,31 @@
             var info = imgIndex[sid] || { gameId: '', name: sid, url: null };
             var ownState = { owned: false, count: 0 };
             try { ownState = window.PonoDonguriShop.getOwnershipState(sid) || ownState; } catch (_) {}
-            var isNew = false;
-            try { isNew = !!window.PonoDonguriShop.isNew(sid); } catch (_) {}
+            var isGuaranteed = false;
+            var isHeld = !!(reservation && reservation.stickerId === sid);
+            try {
+              if (typeof window.PonoDonguriShop.isGuaranteed === 'function') {
+                isGuaranteed = !!window.PonoDonguriShop.isGuaranteed(sid);
+              } else {
+                isGuaranteed = !!window.PonoDonguriShop.isNew(sid);
+              }
+            } catch (_) {}
+            var showsGuaranteed = isGuaranteed && !ownState.owned;
             // v1607: card frame background has normal / highlighted / muted variants.
             // canPurchase remains the source of truth for the buyable visual state.
             var canBuy = false;
             try { canBuy = !!window.PonoDonguriShop.canPurchase(sid); } catch (_) {}
             var slot = document.createElement('div');
-            slot.className = 'donguri-shop-v2-slot' + (ownState.owned ? ' is-owned' : (canBuy ? ' is-buyable' : ' is-unavailable'));
+            slot.className = 'donguri-shop-v2-slot'
+              + (ownState.owned ? ' is-owned' : (canBuy ? ' is-buyable' : ' is-unavailable'))
+              + (showsGuaranteed ? ' is-guaranteed' : '')
+              + (isHeld ? ' is-held' : '');
             slot.setAttribute('role', 'listitem');
             slot.setAttribute('data-sticker-id', sid);
             slot.setAttribute('data-game-id', info.gameId || '');
-            var badgeHtml = isNew ? '<div class="donguri-shop-v2-badge" aria-label="あたらしい">あたらしい！</div>' : '';
+            var badgeHtml = isHeld
+              ? '<div class="donguri-shop-v2-badge donguri-shop-v2-badge--hold" aria-label="とりおき">とりおき</div>'
+              : (showsGuaranteed ? '<div class="donguri-shop-v2-badge" aria-label="あたらしい">あたらしい！</div>' : '');
             var thumbInner = info.url
               ? '<img src="' + info.url + '" alt="" draggable="false" />'
               : '<span class="donguri-shop-v2-thumb-fallback" aria-hidden="true">🌟</span>';
@@ -6722,8 +6782,23 @@
               // v1607: generated card has a visible button plate, so keep the command label but disable it.
               actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" aria-label="こうかんする" disabled></button>';
             }
+            var reserveHtml = '';
+            if (!ownState.owned && (showsGuaranteed || isHeld)) {
+              if (isHeld) {
+                reserveHtml = '<button class="donguri-shop-v2-hold is-held" type="button" data-action="hold-clear" aria-label="とりおきを やめる">やめる</button>';
+              } else {
+                var canReserve = false;
+                try {
+                  canReserve = !!(window.PonoDonguriShop.canReserve && window.PonoDonguriShop.canReserve(sid));
+                } catch (_) { canReserve = false; }
+                reserveHtml = canReserve
+                  ? '<button class="donguri-shop-v2-hold" type="button" data-action="hold" aria-label="とっておく">とっておく</button>'
+                  : '';
+              }
+            }
             slot.innerHTML =
               badgeHtml +
+              reserveHtml +
               '<div class="donguri-shop-v2-thumb">' + thumbInner + '</div>' +
               '<div class="donguri-shop-v2-price">50</div>' +
               actionHtml;
@@ -6752,8 +6827,23 @@
                     }
                   }
                   // either way: re-render so owned state / disabled flips correctly
-                  renderShopCatalog();
+                  renderShopCatalog(r && r.success ? 'こうかんしたよ' : undefined);
                 });
+              });
+            }
+            var holdBtn = slot.querySelector('[data-action="hold"]');
+            if (holdBtn) {
+              holdBtn.addEventListener('click', function () {
+                var result = { success: false };
+                try { result = window.PonoDonguriShop.reserve(sid) || result; } catch (_) {}
+                renderShopCatalog(result.success ? 'とっておいたよ' : 'とりおきは 1つまで');
+              });
+            }
+            var holdClearBtn = slot.querySelector('[data-action="hold-clear"]');
+            if (holdClearBtn) {
+              holdClearBtn.addEventListener('click', function () {
+                try { window.PonoDonguriShop.clearReservation(sid); } catch (_) {}
+                renderShopCatalog('また ならべるよ');
               });
             }
             var heartBtn = slot.querySelector('[data-action="heart"]');
