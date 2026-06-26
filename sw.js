@@ -270,8 +270,8 @@
 // v1651: タイトル画面のフクロウ色を分離、ランタンは通常色へ戻し、きょうのチャレンジ名を1行/2行で中央寄せ。
 // v1652: フクロウ博士のなぞなぞ — 難易度ボタンの星位置、博士ヒント文字サイズ、最終問題 2 枚バナーの収まりを調整。play.html PAGE_CACHE_VERSION と同期。
 // v1653: クリア時のどんぐり獲得モーダルをタイトル画面とゲームページ内の両方で表示。
-// v1654: フクロウはかせのなぞなぞは完走時に正解数ベースで 3〜5 どんぐりを付与。
-const CACHE_VERSION = 1654;
+// v1655: フクロウはかせのなぞなぞは同日再挑戦時にベスト報酬との差分だけ付与。
+const CACHE_VERSION = 1655;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)

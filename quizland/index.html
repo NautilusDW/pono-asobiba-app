@@ -6517,7 +6517,11 @@ function showResult() {
     }
   }
   if (rewardAcorns > 0 && window.addAcornsDaily) {
-    window.addAcornsDaily('quizland', rewardAcorns, 5, { reason: cleared ? 'quizland_clear' : 'quizland_finish' });
+    var alreadyAcorns = window.getDailyAcorns ? (window.getDailyAcorns('quizland') | 0) : 0;
+    var acornDiff = Math.max(0, rewardAcorns - alreadyAcorns);
+    if (acornDiff > 0) {
+      window.addAcornsDaily('quizland', acornDiff, 5, { reason: cleared ? 'quizland_clear' : 'quizland_finish' });
+    }
   }
 }
 
