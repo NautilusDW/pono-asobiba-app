@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-26T15:22:24Z - Phase 1 デプロイ Option A: stash退避→ff-pull→peek修正再適用 (hover-media + reduced-motion)→ベータ素材を2論理コミットで分離→push (sw v1664→1665)
+- **タスク**: Phase 1 デプロイ Option A: stash退避→ff-pull→peek修正再適用 (hover-media + reduced-motion)→ベータ素材を2論理コミットで分離→push (sw v1664→1665)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 23
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Bash": 4, "Grep": 1, "Read": 1, "Agent": 11, "ToolSearch": 2, "Write": 1, "SendMessage": 3}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-25T06:38:51Z - v1590 critical 3件適用 (MF1 5ゲームacorns.js / MF2 PONO_MVP_NO_REWARDS=false / MF3 play.html badge sessionStorage同期)
 - **タスク**: v1590 critical 3件適用 (MF1 5ゲームacorns.js / MF2 PONO_MVP_NO_REWARDS=false / MF3 play.html badge sessionStorage同期)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 40, "ToolSearch": 2, "SendMessage": 3, "Grep": 2, "Bash": 3, "Workflow": 2, "Read": 2}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-24T16:02:06Z - シール帳 undo H1 修正: ページ間ドラッグで両ページ snapshot 保存 (multi-page entry 拡張)
-- **タスク**: シール帳 undo H1 修正: ページ間ドラッグで両ページ snapshot 保存 (multi-page entry 拡張)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 26
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 18, "ToolSearch": 1, "Bash": 3, "Workflow": 1, "Read": 3}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
