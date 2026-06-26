@@ -517,14 +517,15 @@
 
     /* Hover-peek layer: a snapshot of the game's title background that
        fades in over the cream paper area when the card is hovered.
-       v1674: PNG mask は panel image (object-fit: fill で縦 stretch) と
-       aspect が合わずに paper 領域からはみ出ていたため廃止。
-       代わりに per-panel の clip-path: inset() で paper 矩形を直接縛る。
-       inset の % は panel native PNG の paper bbox 実測値 (alpha 検出) を
-       そのまま使える。 panel と peek は同じ padded-box (.game-card 内 inset:0)
-       を共有し、 panel の縦 stretch は peek inset% にも同じ比率でかかるので
-       viewport breakpoint 切替でもズレない。
-       insets は data-panel-n="1..4" ごとに下の selector で上書きする。 */
+       Clipped to the wood-panel paper shape via mask-image (per-card).
+       Position/size are tweakable per-card via CSS custom props so the
+       paper shape can be aligned visually inside the wood-frame canvas.
+       v1677: v1676 の clip-path: inset() を撤回し PNG mask 経路を復元。
+       per-panel の mask vars (--card-mask / --mask-x / --mask-y /
+       --mask-w / --mask-h) は applyTweaks() 経由で JS から注入される
+       (TWEAK_DEFAULTS の maskFileN/maskXN/maskYN/maskWN/maskHN を消費)。
+       mask-size 値は paper 実測 % ÷ mask PNG の white α 領域 % で
+       補正して card box 内の paper 領域に一致させる。 */
     .game-card__peek {
       position: absolute;
       inset: 0;
@@ -532,58 +533,21 @@
       background-size: var(--card-peek-size, cover);
       background-position: var(--card-peek-pos, center);
       background-repeat: no-repeat;
-      /* per-panel paper clip; defaults are panel-01 numbers,
-         上書きは .game-card[data-panel-n="N"] selector で行う。 */
-      -webkit-clip-path: inset(
-        var(--peek-inset-top, 2.1%)
-        var(--peek-inset-right, 3.55%)
-        var(--peek-inset-bottom, 14.3%)
-        var(--peek-inset-left, 3.35%)
-        round var(--peek-inset-radius, 10px)
-      );
-              clip-path: inset(
-        var(--peek-inset-top, 2.1%)
-        var(--peek-inset-right, 3.55%)
-        var(--peek-inset-bottom, 14.3%)
-        var(--peek-inset-left, 3.35%)
-        round var(--peek-inset-radius, 10px)
-      );
+      /* Mask placement, tweakable per-card.
+           --mask-w / --mask-h : size in % of card.   default 100% / 100%
+           --mask-x / --mask-y : position in % of card. default 0% / 0% */
+      -webkit-mask-image: var(--card-mask, none);
+      -webkit-mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
+              mask-image: var(--card-mask, none);
+              mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
+              mask-repeat: no-repeat;
+              mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
       opacity: 0;
       transition: opacity 0.35s ease;
       pointer-events: none;
       z-index: 1;
-    }
-    /* Per-panel paper region (measured from panel PNG alpha bbox).
-       数値根拠: scripts (recon) で panel_0N の cream RGB 領域を bbox 検出
-         panel_01 → W 93.1%, H 83.6%, ctr (49.9%, 43.9%)
-         panel_02 → W 94.0%, H 78.9%, ctr (49.7%, 42.8%)
-         panel_03 → W 94.1%, H 83.2%, ctr (49.9%, 44.5%)
-         panel_04 → W 93.7%, H 81.3%, ctr (49.9%, 44.2%)
-       全 panel で paper 縦中心が 42-45% (= 木枠が下に厚い) のため
-       top inset < bottom inset の非対称になる。 */
-    .game-card[data-panel-n="1"] {
-      --peek-inset-top: 2.1%;
-      --peek-inset-right: 3.55%;
-      --peek-inset-bottom: 14.3%;
-      --peek-inset-left: 3.35%;
-    }
-    .game-card[data-panel-n="2"] {
-      --peek-inset-top: 3.35%;
-      --peek-inset-right: 3.0%;
-      --peek-inset-bottom: 17.75%;
-      --peek-inset-left: 3.3%;
-    }
-    .game-card[data-panel-n="3"] {
-      --peek-inset-top: 2.9%;
-      --peek-inset-right: 3.05%;
-      --peek-inset-bottom: 12.9%;
-      --peek-inset-left: 3.05%;
-    }
-    .game-card[data-panel-n="4"] {
-      --peek-inset-top: 3.55%;
-      --peek-inset-right: 3.25%;
-      --peek-inset-bottom: 15.15%;
-      --peek-inset-left: 3.05%;
     }
     /* Desktop only: avoid iPad sticky :hover keeping peek layer visible. */
     @media (hover: hover) {
@@ -5861,7 +5825,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1676;
+    const PAGE_CACHE_VERSION = 1677;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -9216,25 +9180,25 @@
       "textLeftWPct": 17,
       "textRightWPct": 13,
       "maskFile1": 1,
-      "maskX1": 50,
-      "maskY1": 50,
-      "maskW1": 94.5,
-      "maskH1": 77,
+      "maskX1": 49.9,
+      "maskY1": 43.9,
+      "maskW1": 93.7,
+      "maskH1": 89.2,
       "maskFile2": 4,
-      "maskX2": 44.9,
-      "maskY2": 47.5,
-      "maskW2": 94.5,
-      "maskH2": 73.5,
+      "maskX2": 49.7,
+      "maskY2": 42.8,
+      "maskW2": 94.4,
+      "maskH2": 85.7,
       "maskFile3": 2,
-      "maskX3": 46.6,
-      "maskY3": 53.4,
-      "maskW3": 94.5,
-      "maskH3": 75,
+      "maskX3": 49.9,
+      "maskY3": 44.5,
+      "maskW3": 94.4,
+      "maskH3": 87.2,
       "maskFile4": 3,
-      "maskX4": 46.6,
-      "maskY4": 61,
-      "maskW4": 94.5,
-      "maskH4": 78.5,
+      "maskX4": 49.9,
+      "maskY4": 44.2,
+      "maskW4": 94.3,
+      "maskH4": 86.7,
       "peekAlways": false
     }/*EDITMODE-END*/;
 
