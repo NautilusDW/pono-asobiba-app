@@ -291,6 +291,23 @@
     @media (prefers-reduced-motion: reduce) {
       .card-dots__dot { transition: none; }
     }
+    /* iPad mini portrait (768px) 含む狭幅では bottom-nav 衝突回避のため dots を非表示。
+       peek 38% + mask fade が代替で「もっとある」 を伝える。 */
+    @media (max-width: 768px) {
+      .card-dots { display: none; }
+    }
+    /* reduced-motion 時は scroll-hint の bobbing も停止 (静的 chevron 表示) */
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-hint--up,
+      .scroll-hint--down {
+        animation: none;
+      }
+      /* reduced-motion 時は auto-scroll hint が走らないため、 静的 chevron を永続表示 */
+      .scroll-hint--down {
+        display: block;
+        opacity: 0.7;
+      }
+    }
 
     /* ===== Card List (wood-card layout) =====
        Infinite-scroll: contents are tripled in JS so the user can scroll
@@ -4708,6 +4725,7 @@
     .game-title-accent--oto { color: #2F7FA0; }
     .game-title-accent--puzzle { color: #2E7A60; }
     .game-title-accent--bento { color: #C4453C; }
+    .game-title-accent--cooking { color: #B85A2A; }
     .game-title-particle,
     .game-card__title .hira {
       display: inline-block;
@@ -5699,6 +5717,16 @@
             gameTitleBreak(),
             gameTitleAccent('bento', 'いろどりべんとう')
           ].join('');
+        case 'cooking':
+          // 「コトコト もりのキッチン」 (12 文字) は狭幅で wrap しやすいため、
+          // 「コトコト」 と「もりのキッチン」 の境界に <wbr>+space を入れて
+          // 必要に応じて改行を許可。 1 行に収まれば 1 行のまま表示。
+          return [
+            esc('コトコト'),
+            gameTitleBreak(),
+            esc(' '),
+            gameTitleAccent('cooking', 'もりのキッチン')
+          ].join('');
         default:
           return decorateKana(rawTitle);
       }
@@ -5711,7 +5739,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1666;
+    const PAGE_CACHE_VERSION = 1668;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -5818,6 +5846,9 @@
 
     let lastDotIdx = -1;
     let dotRaf = 0;
+    // SR (aria-live) 連投回避用 debounce timer。 視覚 dots は即時更新のまま、
+    // 高速スクロール中の「1ばんめ … 3ばんめ …」 連続読み上げだけを抑制する。
+    let dotLiveDebounceTimer = 0;
     function updateActiveDot() {
       const cards = cardList.querySelectorAll('.game-card');
       if (!cards.length) return;
@@ -5838,7 +5869,12 @@
       const live = document.getElementById('cardDotsLive');
       if (live) {
         const game = MENU_GAMES[idx];
-        if (game) live.textContent = `${idx + 1}ばんめ ${game.title}`;
+        if (game) {
+          clearTimeout(dotLiveDebounceTimer);
+          dotLiveDebounceTimer = setTimeout(() => {
+            live.textContent = `${idx + 1}ばんめ ${game.title}`;
+          }, 200);
+        }
       }
     }
 
@@ -5981,7 +6017,9 @@
       updateActiveDot();
 
       // 初回 auto-scroll hint (Phase 2)
-      setTimeout(playIntroScrollHint, 1600);
+      // 1600 → 2200ms に後ろ倒し: 子供 (3歳〜) の視線が画面に届いてから動かす方が、
+      // hint アニメ自体を伸ばすより注意持続を稼げる (アニメ延長は「自動操作」 感が出る)。
+      setTimeout(playIntroScrollHint, 2200);
 
       // ====== Phase 2: auto-scroll hint (初回のみ) ======
       function playIntroScrollHint() {
@@ -5989,6 +6027,8 @@
           if (localStorage.getItem('pono_cards_intro_hint_shown_v1') === '1') return;
         } catch (e) { return; }
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          // 静的 chevron 表示は CSS の @media (prefers-reduced-motion: reduce) ブロックが担当 (単一ソース)
+          // ここでは LS フラグ更新のみ
           try { localStorage.setItem('pono_cards_intro_hint_shown_v1', '1'); } catch (e) {}
           return;
         }

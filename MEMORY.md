@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-26T16:02:52Z - 並走衝突対策: AGENTS_CLAIMS.md (claim board) + scripts/hooks/pre-push (behind 時 push block、 作業ツリー non-touch) + install スクリプトを新規追加、 AGENTS.md §4.9/§11/§11.1 + CLAUDE.md トリガ表 + Base Rules 5 を追記。 並列 4 実装 + Explore 2 体クロスレビュー (read-only)、 HIGH 2 件 + MEDIUM 2 件を反映後 commit/push 済
+- **タスク**: 並走衝突対策: AGENTS_CLAIMS.md (claim board) + scripts/hooks/pre-push (behind 時 push block、 作業ツリー non-touch) + install スクリプトを新規追加、 AGENTS.md §4.9/§11/§11.1 + CLAUDE.md トリガ表 + Base Rules 5 を追記。 並列 4 実装 + Explore 2 体クロスレビュー (read-only)、 HIGH 2 件 + MEDIUM 2 件を反映後 commit/push 済
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 33
+- **エラー数**: 2
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 8, "Bash": 15, "Agent": 8, "ToolSearch": 1, "Edit": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-26T15:22:24Z - Phase 1 デプロイ Option A: stash退避→ff-pull→peek修正再適用 (hover-media + reduced-motion)→ベータ素材を2論理コミットで分離→push (sw v1664→1665)
 - **タスク**: Phase 1 デプロイ Option A: stash退避→ff-pull→peek修正再適用 (hover-media + reduced-motion)→ベータ素材を2論理コミットで分離→push (sw v1664→1665)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Agent": 23, "ToolSearch": 1, "Bash": 3, "Workflow": 1, "Read": 3}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-24T23:26:23Z - どんぐりショップ js/donguri-shop.js を TDD で新規実装 (50 acorns/シール、 PonoGameStickers/spendAcorns 連携、 LS memory fallback、 schemaVersion guard)
-- **タスク**: どんぐりショップ js/donguri-shop.js を TDD で新規実装 (50 acorns/シール、 PonoGameStickers/spendAcorns 連携、 LS memory fallback、 schemaVersion guard)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 54
-- **エラー数**: 5
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 40, "ToolSearch": 2, "SendMessage": 3, "Grep": 2, "Bash": 3, "Workflow": 2, "Read": 2}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
