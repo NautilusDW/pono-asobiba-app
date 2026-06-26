@@ -3821,7 +3821,8 @@ function startStickerTutorialPlaceDemo() {
   // v1624: base を targetScroll より大きく左にプリセット = 「画面が右から大きく流れて蝶々で止まる」 演出。
   // 旧仕様は scrollLeft 現在値 (通常 0) を base にしていたため、 蝶々が tray 前方にあると totalDistance ≒ 0-420px
   // しかなく 「全然スライドしてない」 印象に。 desiredTravel を min(maxScroll, max(700px, viewport90%)) で強制。
-  const desiredTravel = Math.min(maxScroll, Math.max(700, clientWidth * 0.9));
+  // v1627: 700→1100 / 0.9vw→1.4vw へ 1.5x 拡大 (cc4d20f → ユーザー「まだ動きが小さい」 指摘)。
+  const desiredTravel = Math.min(maxScroll, Math.max(1100, clientWidth * 1.4));
   const adjustedBase = THREE.MathUtils.clamp(targetScroll - desiredTravel, 0, maxScroll);
   // programmatic scroll 抑制中に一瞬で base 位置へジャンプ (listener 抑制は run() 内 stickerTutorialProgrammaticTrayScroll で行う)
   stickerTutorialProgrammaticTrayScroll = true;
@@ -4051,9 +4052,19 @@ function triggerStickerTutorialOkButtonPress() {
     notifyStickerTutorialAction("confirmSticker");
     return;
   }
+  // v1627: press 直前に hand=point を再保証 (scheduleLayout で他 pose に流れていた場合の救済)。
+  setStickerTutorialHandKey("point");
   inlineStickerOk.classList.add("is-tutorial-pressing");
   addStickerTutorialDemoTimer(() => {
+    // v1627: click 瞬間も point pose 再保証。
+    setStickerTutorialHandKey("point");
     inlineStickerOk?.click();
+    // v1627: OK click 後 spotlight 黄枠が click 跡地 (cache rect) に居座る問題への対処。
+    // 即 hidden=true で消し、 次 step (page) 遷移時に showStickerTutorialStep() が hidden=false に戻す既存挙動に任せる。
+    // cache 機構 (v1625) は将来別経路の再表示で安全側のため温存。
+    if (stickerTutorialSpotlight) {
+      stickerTutorialSpotlight.hidden = true;
+    }
   }, 140);
   addStickerTutorialDemoTimer(() => {
     inlineStickerOk?.classList.remove("is-tutorial-pressing");
@@ -4543,8 +4554,11 @@ function stickerTutorialDemoPoints(step, rect) {
     const clampTrayX = (x) => Math.min(trayRightEdge, Math.max(trayLeftEdge, x));
     const clampTrayY = (y) => Math.min(trayBandBottom, Math.max(trayBandTop, y));
     const findWander1 = {
+      // v1627: 左上中継点 (Y -18%) を排除し横移動オンリーに。
+      // 旧仕様は CSS keyframe (v1621 rotate/scale) と組み合わさって 「上に上がって下に降りる」 Y ジグザグが目立っていた。
+      // X 方向の 「左に振って戻る」 迷い演出は chooseLeft → findOverTarget の左右往復で温存。
       x: clampTrayX(source.x - Math.min(140, trayRect.width * 0.24)),
-      y: clampTrayY(source.y - trayRect.height * 0.18),
+      y: clampTrayY(source.y),
     };
     const findOverTarget = {
       x: clampTrayX(source.x + Math.min(140, trayRect.width * 0.26)),
@@ -5236,6 +5250,7 @@ function renderStickerThumbnailTray() {
   title.setAttribute("aria-hidden", "true");
   fragment.append(title);
 
+  const pendingImages = [];
   for (const sticker of stickerOptions) {
     const button = document.createElement("button");
     button.type = "button";
@@ -5252,15 +5267,36 @@ function renderStickerThumbnailTray() {
     image.className = "collection-toc-image";
     image.src = sticker.assetUrl;
     image.alt = "";
-    image.loading = "lazy";
+    // v1627: lazy → eager に変更し tray 表示時点で全 sticker を並列 fetch 開始 (切替時の「グレー空欄」 対策)。
+    image.loading = "eager";
     image.decoding = "async";
     image.draggable = false;
+    pendingImages.push(image);
     icon.append(image);
 
     button.append(icon);
     fragment.append(button);
   }
   collectionStickerTrayItems.replaceChildren(fragment);
+  // v1627: 全 icon ロード完了まで tray を visibility:hidden で隠して切替時の点滅を防止 (CLS 回避のため opacity ではなく visibility)。
+  // error も resolve でブロックせず (1 個 404 で全体停止防止)、 最終的に必ず class を外す。
+  collectionStickerTrayItems.classList.add("is-loading");
+  const waitFor = (img) => new Promise((resolve) => {
+    if (img.complete && img.naturalWidth > 0) {
+      resolve();
+      return;
+    }
+    const done = () => {
+      img.removeEventListener("load", done);
+      img.removeEventListener("error", done);
+      resolve();
+    };
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+  });
+  Promise.all(pendingImages.map(waitFor)).then(() => {
+    collectionStickerTrayItems?.classList.remove("is-loading");
+  });
   if (stickerTutorialState) {
     const tutorialStepId = currentStickerTutorialStep()?.id;
     updateStickerTutorialTraySilhouettes(true, tutorialStepId === "place");
