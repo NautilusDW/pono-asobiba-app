@@ -294,6 +294,7 @@
 // v1678: シールのおみせの4:3レイアウトを接地感優先で調整し、debug mode では初回ナレーションを毎回強制再生。
 // v1674: シールのおみせ開店案内に Gemini TTS 音声2本と音声タイミング字幕を追加。play.html PAGE_CACHE_VERSION と同期。
 // v1672: シールのおみせ — リス吹き出しを左寄せし、初回来店/再訪問の開店セリフと字幕案内を追加。play.html PAGE_CACHE_VERSION と同期。
+// v1678: タイトル画面 menu-card mask スケール大幅縮小 (W 93-94% → 80%、 H 85-89% → 65-68%) で paper 領域内側に確実収納、 木枠への peek 漏れを解消 + middle-3 検知ロジック (updateMiddleOverlay) を cardList.scrollTop+clientHeight/2 ベース → getBoundingClientRect ベースに全面刷新、 padding/peek 込みの幾何中央ズレを排除し aspect 5.8:1/16:9 等の breakpoint 跨ぎでも中央 3 枚が正しく overlay 発火するように修正。
 // v1672: セーブデータ JSON エクスポート/インポート機能追加 (common/data-export.js 新規) + ヘルプ文言書き直し (help.html L185-186 Q&A 全面改稿 + データ管理セクション追加) + play.html 修正 (settingsModal 内に data 管理エントリ + tap-intro に「以前あそんだことがある方はこちら →」リンク + data-export.js script tag)。 sw.js は network-first 単独構成 (precache list 不在) のため CACHE_VERSION bump のみで配信。 セキュリティ層 4 段防御 (Object.create(null) sanitize / __proto__ 等の forbidden key / value string-only / tier/unlocked/admin denylist) で tier 詐欺を遮断。
 // v1669: reduced-motion 静的 chevron CSS specificity 修正 (.scroll-hint.scroll-hint--down で L4677 global hide を上書き)
 // v1668: card-dots breakpoint 640→768px (iPad mini 対応) + reduced-motion 静的 chevron CSS 単一ソース化

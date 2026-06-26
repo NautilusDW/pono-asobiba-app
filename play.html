@@ -5979,29 +5979,28 @@
         updateScrollHints();
         if (typeof updateMiddleOverlay === 'function') updateMiddleOverlay();
       };
-      // v1673: viewport 中央付近の 3 カードに .is-overlay-active を付与。
-      // LOOP_COPIES=3 で同一 data-id の DOM が複数存在するが、 距離で純粋に
-      // 上位 3 件選ぶので middle copy (rep=1) のカードが自然に選ばれる
-      // (中央 viewport にあるのは大抵 rep=1)。
-      // 距離計算は cardList の scroll 座標系で統一 (offsetTop 利用)。
+      // v1678: viewport 中央付近の 3 カードに .is-overlay-active を付与。
+      // aspect/breakpoint 依存をなくすため getBoundingClientRect ベースに全面刷新。
+      // cardList の padding を除いた content-box 上端から (4 枚 + 3 gap) の中央を
+      // 「視覚的に見えている 4 枚帯のセンター」 として採用し、 各カード DOM の
+      // viewport 中心 y との距離で上位 3 件を選ぶ。 LOOP_COPIES=3 でも純粋に距離
+      // のみで判定するので、 中央 viewport にある rep=1 の 3 枚が自然に選ばれる。
       const updateMiddleOverlay = () => {
         if (!cards.length) return;
-        const viewCenter = cardList.scrollTop + cardList.clientHeight / 2;
-        // 各カードの中心 y と viewport 中央との距離を計算
+        const listRect = cardList.getBoundingClientRect();
+        const cs = getComputedStyle(cardList);
+        const padTop = parseFloat(cs.paddingTop) || 0;
+        const cardH = cards[0].offsetHeight || 0;
+        const gap = parseFloat(cs.rowGap || cs.gap) || 0;
+        // padding を除いた content-top + (4 枚帯 + 3 gap) の幾何中央 (viewport 絶対座標)
+        const contentTop = listRect.top + padTop;
+        const visibleCenterY = contentTop + (cardH * 4 + gap * 3) / 2;
+        // 各カードの viewport 中心 y と visibleCenterY との距離を計算
         const ranked = [];
         for (let i = 0; i < cards.length; i++) {
-          const c = cards[i];
-          // cardList が relative/scroll container 想定。 offsetParent が
-          // cardList でない場合は getBoundingClientRect ベースに fallback。
-          let centerY;
-          if (c.offsetParent === cardList) {
-            centerY = c.offsetTop + c.offsetHeight / 2;
-          } else {
-            const rect = c.getBoundingClientRect();
-            const listRect = cardList.getBoundingClientRect();
-            centerY = (rect.top - listRect.top) + cardList.scrollTop + c.offsetHeight / 2;
-          }
-          ranked.push({ el: c, dist: Math.abs(centerY - viewCenter) });
+          const r = cards[i].getBoundingClientRect();
+          const cy = r.top + r.height / 2;
+          ranked.push({ el: cards[i], dist: Math.abs(cy - visibleCenterY) });
         }
         ranked.sort((a, b) => a.dist - b.dist);
         const winners = new Set(ranked.slice(0, 3).map((r) => r.el));
@@ -9342,23 +9341,23 @@
       "maskFile1": 1,
       "maskX1": 49.9,
       "maskY1": 43.9,
-      "maskW1": 93.7,
-      "maskH1": 89.2,
+      "maskW1": 80.0,
+      "maskH1": 68.0,
       "maskFile2": 4,
       "maskX2": 49.7,
       "maskY2": 42.8,
-      "maskW2": 94.4,
-      "maskH2": 85.7,
+      "maskW2": 80.0,
+      "maskH2": 65.0,
       "maskFile3": 2,
       "maskX3": 49.9,
       "maskY3": 44.5,
-      "maskW3": 94.4,
-      "maskH3": 87.2,
+      "maskW3": 80.0,
+      "maskH3": 66.0,
       "maskFile4": 3,
       "maskX4": 49.9,
       "maskY4": 44.2,
-      "maskW4": 94.3,
-      "maskH4": 86.7,
+      "maskW4": 80.0,
+      "maskH4": 65.0,
       "peekAlways": false
     }/*EDITMODE-END*/;
 
