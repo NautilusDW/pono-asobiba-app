@@ -517,9 +517,14 @@
 
     /* Hover-peek layer: a snapshot of the game's title background that
        fades in over the cream paper area when the card is hovered.
-       Clipped to the wood-panel paper shape via mask-image (per-card).
-       Position/size are tweakable per-card via CSS custom props so the
-       paper shape can be aligned visually inside the wood-frame canvas. */
+       v1674: PNG mask は panel image (object-fit: fill で縦 stretch) と
+       aspect が合わずに paper 領域からはみ出ていたため廃止。
+       代わりに per-panel の clip-path: inset() で paper 矩形を直接縛る。
+       inset の % は panel native PNG の paper bbox 実測値 (alpha 検出) を
+       そのまま使える。 panel と peek は同じ padded-box (.game-card 内 inset:0)
+       を共有し、 panel の縦 stretch は peek inset% にも同じ比率でかかるので
+       viewport breakpoint 切替でもズレない。
+       insets は data-panel-n="1..4" ごとに下の selector で上書きする。 */
     .game-card__peek {
       position: absolute;
       inset: 0;
@@ -527,21 +532,58 @@
       background-size: var(--card-peek-size, cover);
       background-position: var(--card-peek-pos, center);
       background-repeat: no-repeat;
-      /* Mask placement, tweakable per-card.
-           --mask-w / --mask-h : size in % of card.   default 100% / 100%
-           --mask-x / --mask-y : position in % of card. default 0% / 0% */
-      -webkit-mask-image: var(--card-mask, none);
-      -webkit-mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
-      -webkit-mask-repeat: no-repeat;
-      -webkit-mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
-              mask-image: var(--card-mask, none);
-              mask-size: var(--mask-w, 100%) var(--mask-h, 100%);
-              mask-repeat: no-repeat;
-              mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
+      /* per-panel paper clip; defaults are panel-01 numbers,
+         上書きは .game-card[data-panel-n="N"] selector で行う。 */
+      -webkit-clip-path: inset(
+        var(--peek-inset-top, 2.1%)
+        var(--peek-inset-right, 3.55%)
+        var(--peek-inset-bottom, 14.3%)
+        var(--peek-inset-left, 3.35%)
+        round var(--peek-inset-radius, 10px)
+      );
+              clip-path: inset(
+        var(--peek-inset-top, 2.1%)
+        var(--peek-inset-right, 3.55%)
+        var(--peek-inset-bottom, 14.3%)
+        var(--peek-inset-left, 3.35%)
+        round var(--peek-inset-radius, 10px)
+      );
       opacity: 0;
       transition: opacity 0.35s ease;
       pointer-events: none;
       z-index: 1;
+    }
+    /* Per-panel paper region (measured from panel PNG alpha bbox).
+       数値根拠: scripts (recon) で panel_0N の cream RGB 領域を bbox 検出
+         panel_01 → W 93.1%, H 83.6%, ctr (49.9%, 43.9%)
+         panel_02 → W 94.0%, H 78.9%, ctr (49.7%, 42.8%)
+         panel_03 → W 94.1%, H 83.2%, ctr (49.9%, 44.5%)
+         panel_04 → W 93.7%, H 81.3%, ctr (49.9%, 44.2%)
+       全 panel で paper 縦中心が 42-45% (= 木枠が下に厚い) のため
+       top inset < bottom inset の非対称になる。 */
+    .game-card[data-panel-n="1"] {
+      --peek-inset-top: 2.1%;
+      --peek-inset-right: 3.55%;
+      --peek-inset-bottom: 14.3%;
+      --peek-inset-left: 3.35%;
+    }
+    .game-card[data-panel-n="2"] {
+      --peek-inset-top: 3.35%;
+      --peek-inset-right: 3.0%;
+      --peek-inset-bottom: 17.75%;
+      --peek-inset-left: 3.3%;
+    }
+    .game-card[data-panel-n="3"] {
+      --peek-inset-top: 2.9%;
+      --peek-inset-right: 3.05%;
+      --peek-inset-bottom: 12.9%;
+      --peek-inset-left: 3.05%;
+    }
+    .game-card[data-panel-n="4"] {
+      --peek-inset-top: 3.55%;
+      --peek-inset-right: 3.25%;
+      --peek-inset-bottom: 15.15%;
+      --peek-inset-left: 3.05%;
     }
     /* Desktop only: avoid iPad sticky :hover keeping peek layer visible. */
     @media (hover: hover) {
@@ -3692,7 +3734,6 @@
       font-size: clamp(9px, .9vw, 13px);
       line-height: 1.2;
       text-align: center;
-      white-space: pre-line;
       text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
       pointer-events: none;
       filter: drop-shadow(0 5px 8px rgba(22, 10, 2, .22));
@@ -5820,7 +5861,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1674;
+    const PAGE_CACHE_VERSION = 1676;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -7684,14 +7725,15 @@
       var isFirstVisit = !_hasSeenShopIntro();
       if (isFirstVisit) {
         _markShopIntroSeen();
+        _setShopSubtitle(DONGURI_SHOP_FIRST_SUBTITLE, { duration: 7200 });
+      } else {
+        _setShopSubtitle(DONGURI_SHOP_RETURN_SUBTITLE, { duration: 4200 });
       }
-      _startShopOpeningGuide(isFirstVisit ? 'first' : 'return');
       renderShopCatalog(DONGURI_SHOP_OPENING_MESSAGE, { duration: isFirstVisit ? 5200 : 3800 });
     }
     function hideShop() {
       var shop = document.getElementById('donguriShop');
       if (shop) shop.hidden = true;
-      _stopShopNarration();
       _clearShopkeeperNeutralTimer();
       _setShopSubtitle('');
       // v1591: shop を閉じたらメイン残高バッジを復帰
@@ -7702,32 +7744,7 @@
     var DONGURI_SHOP_OPENING_MESSAGE = 'いらっしゃい\nきょうは なににする？';
     var DONGURI_SHOP_FIRST_SUBTITLE = 'どんぐりで シールと こうかんできるよ';
     var DONGURI_SHOP_RETURN_SUBTITLE = 'きょうは なににする？';
-    var DONGURI_SHOP_NARRATION = {
-      first: {
-        src: 'assets/audio/shop/donguri_shop_welcome_first_20260627.mp3',
-        volume: .94,
-        captionDuration: 8800,
-        captions: [
-          { at: 0, text: 'いらっしゃい' },
-          { at: 2200, text: DONGURI_SHOP_RETURN_SUBTITLE },
-          { at: 4900, text: 'どんぐりで シールと\nこうかんできるよ' }
-        ]
-      },
-      return: {
-        src: 'assets/audio/shop/donguri_shop_welcome_return_20260627.mp3',
-        volume: .94,
-        captionDuration: 4200,
-        captions: [
-          { at: 0, text: 'いらっしゃい' },
-          { at: 1900, text: DONGURI_SHOP_RETURN_SUBTITLE }
-        ]
-      }
-    };
     var donguriShopSubtitleTimer = 0;
-    var donguriShopSubtitleSequenceTimers = [];
-    var donguriShopNarrationAudio = {};
-    var donguriShopNarrationPreloadStarted = false;
-    var donguriShopCurrentNarration = null;
     function _hasSeenShopIntro() {
       try { return window.localStorage && window.localStorage.getItem(DONGURI_SHOP_INTRO_SEEN_KEY) === '1'; }
       catch (_) { return false; }
@@ -7736,132 +7753,26 @@
       try { if (window.localStorage) window.localStorage.setItem(DONGURI_SHOP_INTRO_SEEN_KEY, '1'); }
       catch (_) {}
     }
-    function _clearShopSubtitleTimers() {
+    function _setShopSubtitle(text, options) {
+      options = options || {};
+      var subtitle = document.getElementById('donguriShopSubtitle');
       if (donguriShopSubtitleTimer) {
         window.clearTimeout(donguriShopSubtitleTimer);
         donguriShopSubtitleTimer = 0;
       }
-      if (donguriShopSubtitleSequenceTimers.length) {
-        donguriShopSubtitleSequenceTimers.forEach(function (timerId) {
-          window.clearTimeout(timerId);
-        });
-        donguriShopSubtitleSequenceTimers = [];
-      }
-    }
-    function _showShopSubtitle(text) {
-      var subtitle = document.getElementById('donguriShopSubtitle');
       if (!subtitle) return;
       subtitle.textContent = text || '';
       subtitle.hidden = !text;
-    }
-    function _setShopSubtitle(text, options) {
-      options = options || {};
-      _clearShopSubtitleTimers();
-      _showShopSubtitle(text);
       if (text && options.duration) {
         donguriShopSubtitleTimer = window.setTimeout(function () {
-          _showShopSubtitle('');
+          var current = document.getElementById('donguriShopSubtitle');
+          if (current) {
+            current.textContent = '';
+            current.hidden = true;
+          }
           donguriShopSubtitleTimer = 0;
         }, options.duration);
       }
-    }
-    function _runShopSubtitleSequence(captions, duration) {
-      _clearShopSubtitleTimers();
-      (captions || []).forEach(function (caption) {
-        var at = Math.max(0, Number(caption && caption.at) || 0);
-        if (at <= 0) {
-          _showShopSubtitle(caption.text || '');
-        } else {
-          donguriShopSubtitleSequenceTimers.push(window.setTimeout(function () {
-            _showShopSubtitle(caption.text || '');
-          }, at));
-        }
-      });
-      if (duration) {
-        donguriShopSubtitleTimer = window.setTimeout(function () {
-          _showShopSubtitle('');
-          donguriShopSubtitleTimer = 0;
-        }, duration);
-      }
-    }
-    function _shopNarrationMuted() {
-      try { return window.localStorage && window.localStorage.getItem('pono_sound_off') === '1'; }
-      catch (_) { return false; }
-    }
-    function _shopNarrationSrc(path) {
-      return dailyGachaVersionedAsset(path);
-    }
-    function _ensureShopNarrationAudio(kind) {
-      var config = DONGURI_SHOP_NARRATION[kind];
-      if (!config || typeof Audio !== 'function') return null;
-      if (!donguriShopNarrationAudio[kind]) {
-        var audio = new Audio(_shopNarrationSrc(config.src));
-        audio.preload = 'auto';
-        audio.volume = config.volume == null ? .94 : config.volume;
-        donguriShopNarrationAudio[kind] = audio;
-      }
-      return donguriShopNarrationAudio[kind];
-    }
-    function _primeShopNarrationAudio() {
-      if (donguriShopNarrationPreloadStarted) return;
-      donguriShopNarrationPreloadStarted = true;
-      Object.keys(DONGURI_SHOP_NARRATION).forEach(function (kind) {
-        var audio = _ensureShopNarrationAudio(kind);
-        try { if (audio) audio.load(); } catch (_) {}
-      });
-    }
-    function _scheduleShopNarrationPreload() {
-      if (donguriShopNarrationPreloadStarted) return;
-      var run = function () { _primeShopNarrationAudio(); };
-      window.setTimeout(run, 900);
-      if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(run, { timeout: 1600 });
-      }
-    }
-    function _stopShopNarrationAudio() {
-      Object.keys(donguriShopNarrationAudio).forEach(function (kind) {
-        var audio = donguriShopNarrationAudio[kind];
-        if (!audio) return;
-        try {
-          audio.pause();
-          audio.currentTime = 0;
-        } catch (_) {}
-      });
-      donguriShopCurrentNarration = null;
-    }
-    function _stopShopNarration() {
-      _stopShopNarrationAudio();
-      _clearShopSubtitleTimers();
-    }
-    function _playShopNarration(kind) {
-      if (_shopNarrationMuted()) return false;
-      var config = DONGURI_SHOP_NARRATION[kind];
-      var audio = _ensureShopNarrationAudio(kind);
-      if (!config || !audio) return false;
-      _stopShopNarrationAudio();
-      try {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.volume = config.volume == null ? .94 : config.volume;
-        audio.playbackRate = 1;
-        donguriShopCurrentNarration = kind;
-        var played = audio.play();
-        if (played && played.catch) {
-          played.catch(function () {
-            if (donguriShopCurrentNarration === kind) donguriShopCurrentNarration = null;
-          });
-        }
-        return true;
-      } catch (_) {
-        donguriShopCurrentNarration = null;
-        return false;
-      }
-    }
-    function _startShopOpeningGuide(kind) {
-      var config = DONGURI_SHOP_NARRATION[kind] || DONGURI_SHOP_NARRATION.return;
-      _stopShopNarration();
-      _runShopSubtitleSequence(config.captions, config.captionDuration);
-      _playShopNarration(kind);
     }
     // v1623: shop rotation is twice daily (morning/evening), so countdown copy uses those anchors.
     function _formatShopCountdown() {
@@ -8458,10 +8369,7 @@
     if (dailyGachaEntry) {
       updateDailyGachaEntry();
       scheduleDailyGachaImagePreload();
-      _scheduleShopNarrationPreload();
       dailyGachaEntry.addEventListener('click', openDailyGacha);
-    } else {
-      _scheduleShopNarrationPreload();
     }
     if (dailyGachaClose) dailyGachaClose.addEventListener('click', closeDailyGacha);
     if (dailyGachaModal) {
@@ -8478,7 +8386,6 @@
         if (dailyGachaSoundMuted()) {
           stopDailyGachaBed();
           stopDailyGachaOneShotAudio();
-          _stopShopNarrationAudio();
         } else if (dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaState.complete) {
           startDailyGachaBed();
         }
@@ -8487,7 +8394,6 @@
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         stopDailyGachaBed(false);
-        _stopShopNarrationAudio();
       } else if (dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaState.complete && !dailyGachaSoundMuted()) {
         startDailyGachaBed();
       }
