@@ -3527,6 +3527,7 @@ function startStickerTutorial(options = {}) {
     phase: "demo",        // v1637: "demo" | "try" | "complete"
     failCount: 0,         // v1637: try 中の誤操作カウンタ (step 切替で 0 リセット)
     skipShown: false,     // v1637: 「とばす」 ボタン visible 化済みフラグ
+    completeStartedAt: 0, // v1643: complete phase 開始時刻 (place min-hold gate 用)
   };
   enterStickerTutorialCleanAlbum();
   stickerTutorial.hidden = false;
@@ -3709,6 +3710,8 @@ function showStickerTutorialStep(index, options = {}) {
   // v1637: step 切替時は必ず failCount / skipShown を 0 リセット (累積で skip が早く出すぎる事故防止)。
   stickerTutorialState.failCount = 0;
   stickerTutorialState.skipShown = false;
+  // v1643: 前 step の complete 開始時刻もリセット (place min-hold gate が次 step に持ち越されないように)。
+  stickerTutorialState.completeStartedAt = 0;
   hideStickerTutorialStepSkipButton();
   setStickerTutorialPhase("demo");
   const step = currentStickerTutorialStep();
@@ -3872,6 +3875,7 @@ function startStickerTutorialModeDemo() {
   // v1637: 操作型化 — 自動 press は 1 回のみ「演示」 し、 最後に setPhase("try") で子供にバトンタッチ。
   // 旧 3 連 press (絶対 2400/3850/5250ms) は削除。 演示後 はるモードに入った状態のまま try フェーズに移行する
   // (place step が editMode 前提のため、 視覚状態は保持)。
+  const startStep = currentStickerTutorialStep();
   document.body.classList.add("is-sticker-tutorial-mode-demo");
   document.body.classList.add("is-sticker-tutorial-mode-rest");
   // Phase 1 (1100-2000ms): rest → editButton から手前へ approach (open のまま)
@@ -3898,14 +3902,19 @@ function startStickerTutorialModeDemo() {
   }, 3850);
   // Phase 5 (5250ms): try フェーズ移行。
   addStickerTutorialDemoTimer(() => {
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   }, 5250);
 }
 
 // v1637: demo 完了時に try フェーズへ遷移する共通 helper (intro / final は textTry が無いので complete へ直行)。
-function finishStickerTutorialDemoToTry() {
+// v1643: expectedStep ガードで stale timer 防止 (前 step の setTimeout が次 step に遷移後に発火しても無視)。
+function finishStickerTutorialDemoToTry(expectedStep = null) {
   const step = currentStickerTutorialStep();
   if (!stickerTutorialState || !step) {
+    return;
+  }
+  if (expectedStep && expectedStep !== step) {
+    // 次 step に遷移済 → 前 step の stale timer なので無視
     return;
   }
   if (stickerTutorialState.phase !== "demo") {
@@ -3956,6 +3965,7 @@ function startStickerTutorialPlaceDemo() {
   if (!collectionStickerTrayItems) {
     return;
   }
+  const startStep = currentStickerTutorialStep();
   setStickerTutorialHandKey("point");
   setStickerTrayPeek(true);
   updateStickerTutorialTraySilhouettes(true, true);
@@ -4054,7 +4064,7 @@ function startStickerTutorialPlaceDemo() {
   // v1637: 操作型化 — 旧 addStickerFromTutorialDemoToPage の自動配置を削除。
   // hand grip ジェスチャだけ見せて、 実 sticker 配置は子供のドラッグに任せる。
   addStickerTutorialDemoTimer(() => {
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   }, 11400);
 }
 
@@ -4063,6 +4073,7 @@ function startStickerTutorialMoveDemo() {
   if (!placement) {
     return;
   }
+  const startStep = currentStickerTutorialStep();
   const originalX = THREE.MathUtils.clamp(Number(placement.x) || 52, 14, 82);
   const originalY = THREE.MathUtils.clamp(Number(placement.y) || 42, 16, 78);
   placement.x = originalX;
@@ -4096,7 +4107,7 @@ function startStickerTutorialMoveDemo() {
     setStickerTutorialHandPoint(stickerTutorialScreenPointForPlacement(placement, { x: originalX, y: originalY }));
     refreshInlineStickerPage();
     stickerTutorialSuppressedDemoActions.delete("moveSticker");
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   });
 }
 
@@ -4105,6 +4116,7 @@ function startStickerTutorialScaleDemo() {
   if (!placement) {
     return;
   }
+  const startStep = currentStickerTutorialStep();
   const startScale = THREE.MathUtils.clamp(Number(placement.scale) || 1, 0.7, 1.35);
   const smallScale = Math.max(0.65, startScale * 0.78);
   const largeScale = Math.min(1.9, startScale * 1.48);
@@ -4156,7 +4168,7 @@ function startStickerTutorialScaleDemo() {
     setStickerTutorialHandPoint({ x: xFor(startScale), y: centerY });
     refreshInlineStickerPage();
     stickerTutorialSuppressedDemoActions.delete("scaleSticker");
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   });
 }
 
@@ -4165,13 +4177,14 @@ function startStickerTutorialRotateDemo() {
   if (!placement) {
     return;
   }
+  const startStep = currentStickerTutorialStep();
   const baseRotation = Number(placement.rotation) || 0;
   const rightRotation = THREE.MathUtils.clamp(baseRotation + 28, -180, 180);
   const leftRotation = THREE.MathUtils.clamp(baseRotation - 24, -180, 180);
   const settleRotation = THREE.MathUtils.clamp(baseRotation + 14, -180, 180);
   document.body.classList.add("is-sticker-tutorial-slider-js");
   setStickerTutorialHandKey("point");
-  const step = currentStickerTutorialStep();
+  const step = startStep;
   const rect = stickerTutorialTargetRect(step);
   // v1625: rotation 値 → 実 thumb fraction で直接 hand x を打つ (handProgress 概念廃止)。
   // 旧実装は from=baseRotation(0°) / to=rightRotation(+28°) の 2 点 lerp で 4 phase (base→right→left→settle) を回していたため、
@@ -4218,7 +4231,7 @@ function startStickerTutorialRotateDemo() {
     setStickerTutorialHandPoint({ x: xFor(baseRotation), y: centerY });
     refreshInlineStickerPage();
     stickerTutorialSuppressedDemoActions.delete("rotateSticker");
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   });
 }
 
@@ -4253,6 +4266,7 @@ function triggerStickerTutorialOkButtonPress() {
 function startStickerTutorialOkDemo() {
   // v1637: 操作型化 — 自動 click を削除。 ボタン側の is-tutorial-pressing class add だけで「押し込み」 を
   // 視覚的に見せ、 実 click は子供に任せる。 keyframe 52% (1560ms) に合わせて class add → 360ms 後 remove。
+  const startStep = currentStickerTutorialStep();
   setStickerTutorialHandKey("point");
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "ok" || stickerTutorialState?.actionDone) {
@@ -4269,26 +4283,28 @@ function startStickerTutorialOkDemo() {
   }, 1560);
   // demo 完了 → try フェーズ。 keyframe 終了 (~3000ms) と OK 押し込み演出完了後に遷移。
   addStickerTutorialDemoTimer(() => {
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   }, 3200);
 }
 
 function startStickerTutorialPageDemo() {
   // v1637: 操作型化 — 矢印ボタンの spot ハイライトだけ見せ、 click は子供に任せる。
+  const startStep = currentStickerTutorialStep();
   if (bookNextPage) {
     bookNextPage.classList.add("is-tutorial-spotlit-arrow");
   }
   // Phase B (~2400ms): ハイライトはそのまま残す (try 中も spot 強調で「ここを押す」 と伝える)。
   // 旧 4400ms の bookNextPage.click() は削除。 demo 完了 → try フェーズ。
   addStickerTutorialDemoTimer(() => {
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   }, 2800);
 }
 
 function startStickerTutorialViewDemo() {
   // v1637: 操作型化 — editButton の自動 click を削除。 demo 期間は hand cursor のみ見せて try フェーズへ。
+  const startStep = currentStickerTutorialStep();
   addStickerTutorialDemoTimer(() => {
-    finishStickerTutorialDemoToTry();
+    finishStickerTutorialDemoToTry(startStep);
   }, 3000);
 }
 
@@ -4459,6 +4475,20 @@ function setStickerTutorialPhase(phase) {
   if (stickerTutorialDemoDo) {
     stickerTutorialDemoDo.hidden = !(phase === "demo" && canTry);
   }
+  // v1643 (task 5): complete phase 開始時刻を記録 (place 専用 min-hold gate で使用)。
+  if (phase === "complete") {
+    stickerTutorialState.completeStartedAt = performance.now();
+    // place TRY 完了時の専用演出:
+    //   - 直前まで貼ったシールが spotlight に乗らず 「何も起きてない」 体感だった反省 (sw1640) を解消
+    //   - spotlight の rect は stickerTutorialTargetRect の place 分岐 (下記) で selectedSticker に再アンカー
+    //   - テキストを 「ぺったん！\nじょうずに はれたね」 に差し替えて達成感を明示
+    if (step?.id === "place" && stickerTutorialText) {
+      stickerTutorialText.textContent = "ぺったん！\nじょうずに はれたね";
+    }
+    scheduleStickerTutorialLayout();
+  } else {
+    stickerTutorialState.completeStartedAt = 0;
+  }
   // try フェーズ突入時: テキストを textTry に差し替え + tryMaxMs タイムアウト起動。
   clearStickerTutorialTryTimeout();
   if (phase === "try") {
@@ -4528,10 +4558,38 @@ function updateStickerTutorialNextAvailability(step = currentStickerTutorialStep
     opts.forceReady === true ||
     Boolean(stickerTutorialState?.actionDone);
   const remaining = stickerTutorialRemainingStepMs(step);
-  const disabled = !forceReady && remaining > 80;
+  // v1643 (task 4): DEMO 中は forceReady でなければ常に 「つぎ」 を disable。
+  // - 旧仕様は minAdvanceMs (4-6s) を満たした瞬間 enable + 音声 ended で forceReady → 子供が
+  //   demo を見終わる前に「つぎ」 を押せて DEMO→TRY 強制ループが成立せず、 帆船の意図と乖離。
+  // - 新仕様: DEMO 中は actionDone / opts.forceReady がない限り disable 固定 (try に入って初めて enable)。
+  // - place step は actionDone でも「貼った直後 1.5s」 だけ追加で disable に保つ (min-hold gate)。
+  const isDemoPhase = stickerTutorialState?.phase === "demo";
+  let disabled = !forceReady && remaining > 80;
+  if (isDemoPhase && !forceReady) {
+    disabled = true;
+  }
+  // place complete 直後の min-hold gate: 「貼ったシール」 を 1.5s 残してから次に進めるようにする。
+  const completeStartedAt = stickerTutorialState?.completeStartedAt || 0;
+  const placeHoldMs = 1500;
+  if (
+    !disabled
+    && step?.id === "place"
+    && stickerTutorialState?.phase === "complete"
+    && completeStartedAt > 0
+  ) {
+    const heldFor = performance.now() - completeStartedAt;
+    if (heldFor < placeHoldMs) {
+      disabled = true;
+      addStickerTutorialDemoTimer(() => {
+        if (currentStickerTutorialStep() === step) {
+          updateStickerTutorialNextAvailability(step);
+        }
+      }, placeHoldMs - heldFor + 20);
+    }
+  }
   stickerTutorialNext.disabled = disabled;
   stickerTutorialNext.setAttribute("aria-disabled", disabled ? "true" : "false");
-  if (disabled) {
+  if (disabled && remaining > 80 && !isDemoPhase) {
     addStickerTutorialDemoTimer(() => {
       if (currentStickerTutorialStep() === step) {
         updateStickerTutorialNextAvailability(step);
@@ -4680,15 +4738,23 @@ function playStickerTutorialAudio(step) {
         playAt(index + 1);
       } else {
         stickerTutorialAudio = null;
-        // 音声完了したら「つぎ」 ボタンを即 enable + pulse 強調 (自動 advance はしない)
+        // v1643 (task 4): 音声完了 → DEMO 中なら 「つぎ」 を enable しない。
+        // - 旧仕様は音声 ended で forceReady=true → DEMO→TRY 強制ループが破綻 (子供が demo 中に進める)。
+        // - 新仕様: DEMO 中は何もせず demo 終了 (finishStickerTutorialDemoToTry) で phase=try に入った後、
+        //   try 完了 (advanceOn 一致) で notifyStickerTutorialAction が forceReady を立てる。
+        // - intro / final (textTry なし = step.finish もしくは textTry 未定義) のみ従来通り音声完了で enable。
         if (
           stickerTutorialState &&
           !step.finish &&
           currentStickerTutorialStep() === step
         ) {
-          updateStickerTutorialNextAvailability(step, { forceReady: true });
-          if (stickerTutorialNext) {
-            stickerTutorialNext.classList.add("is-ready-pulse");
+          const isDemoStep = Boolean(step.textTry);
+          const isDemoPhase = stickerTutorialState.phase === "demo";
+          if (!isDemoStep || !isDemoPhase) {
+            updateStickerTutorialNextAvailability(step, { forceReady: true });
+            if (stickerTutorialNext) {
+              stickerTutorialNext.classList.add("is-ready-pulse");
+            }
           }
         }
       }
@@ -4778,16 +4844,8 @@ function updateStickerTutorialLayout() {
     stickerTutorial.style.setProperty("--tutorial-leftpage-y", `${textTop}px`);
     stickerTutorial.style.setProperty("--tutorial-leftpage-w", `${textWidth}px`);
     stickerTutorial.style.setProperty("--tutorial-leftpage-h", `${textHeight}px`);
-    // v1640 (task 2): 操作ボタン群を 「画面下端中央固定」 → 「左ページ下部 overlay (テキストの真下)」 に移動。
-    // ページめくり時もテキスト+ボタンが一体で追従する。 縦位置はページ高さ 78% から、 横幅は 90% 中央寄せ。
-    const btnTop = leftPageRect.top + leftPageRect.height * 0.78;
-    const btnHeight = leftPageRect.height * 0.18;
-    const btnLeft = leftPageRect.left + leftPageRect.width * 0.05;
-    const btnWidth = leftPageRect.width * 0.90;
-    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-x", `${btnLeft}px`);
-    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-y", `${btnTop}px`);
-    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-w", `${btnWidth}px`);
-    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-h", `${btnHeight}px`);
+    // v1643 (task 3): 操作ボタン群を 「左ページ下部固定 overlay」 → 「page-block 内 flex 子 (テキスト直下)」
+    // に再編。 leftpage-btn-* CSS 変数は廃止 (styles.css 側も position: static + flex-column で描画)。
   }
   updateStickerTutorialDemo(step, rect);
 }
@@ -5296,6 +5354,16 @@ function stickerTutorialTargetRect(step) {
     return expandedElementRect(topEditButton, 8, "16px") || fallback;
   }
   if (step.target === "trayItems") {
+    // v1643 (task 5): place 完了直後は spotlight を 「貼ったシール」 に再アンカー。
+    // 旧仕様は trayItems 固定で 「何も起きてない」 体感だった (シールが画面に乗っているのに
+    // 黄枠が tray に残り続けるため達成感が消失)。 complete phase かつ placement があれば
+    // selectedSticker rect を優先し、 取れなければ従来 tray rect にフォールバック。
+    if (stickerTutorialState?.phase === "complete" && step.id === "place") {
+      const placedRect = stickerTutorialSelectedStickerRect();
+      if (placedRect) {
+        return placedRect;
+      }
+    }
     return expandedElementRect(collectionStickerTrayItems || collectionStickerTray, 10, "16px") || fallback;
   }
   if (step.target === "firstSticker") {

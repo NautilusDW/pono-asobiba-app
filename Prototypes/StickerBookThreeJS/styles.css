@@ -1734,17 +1734,29 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   display: none;
 }
 
-/* v1640 (task 1): 「便箋カード」 → 「本に直書き」 へ全面退行。
-   - background / border-radius / box-shadow / inset border を全廃 (= ノートに直接書いた文字)
-   - mix-blend-mode: multiply + text-shadow で凹凸 (= ペン書き立体感)
-   - rotate(-1.6deg) で軽く傾けて 「手書きで貼ったメモ」 感を出す
-   - フォントは現状の Zen Maru Gothic 維持 (案A 採用: PWA キャッシュ競合回避のため外部 Google Fonts は追加しない) */
-.sticker-tutorial-page-text {
+/* v1643 (task 2): 左ページ overlay を 「テキスト + ボタン」 一体ブロックに再編。
+   .sticker-tutorial-page-block が leftpage rect 全体を占有し、 内部で flex-column。
+   - rotate を 0deg に矯正 (v1640 の -1.6deg は実ページと不一致で「ズレてる」 印象)
+   - AABB 膨張で画面左 5% に飛ぶ問題は left/width をページ中央寄せ (08% offset, 84% 幅) で根本回避済
+   - mix-blend-mode は text 側のみ。 ブロックレベルでは normal を維持 (ボタン背景を保護) */
+.sticker-tutorial-page-block {
   position: absolute;
   left: var(--tutorial-leftpage-x, 8vw);
   top: var(--tutorial-leftpage-y, 14vh);
   width: var(--tutorial-leftpage-w, 38vw);
-  max-height: calc(var(--tutorial-leftpage-h, 40vh) + 4vh);
+  max-height: calc(var(--tutorial-leftpage-h, 40vh) + 8vh);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(6px, 1.0vw, 14px);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* v1640 (task 1): 「便箋カード」 → 「本に直書き」 へ全面退行。
+   v1643: rotate を -1.6deg → 0deg に矯正 (実ページと水平統一)。 page-block の中で static 配置に変更。 */
+.sticker-tutorial-page-text {
+  position: static;
   padding: clamp(6px, 1.0vw, 14px) clamp(8px, 1.2vw, 18px);
   pointer-events: none;
   /* 直書き: 背景 / 角丸 / 影 / 枠 すべて 0 */
@@ -1754,7 +1766,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   box-shadow: none;
   /* multiply 合成でページ素材 (帆船イラストや紙地) に文字が「染み込む」 */
   mix-blend-mode: multiply;
-  transform: rotate(-1.6deg);
+  transform: none;
   transform-origin: left top;
   font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
   font-weight: 700;
@@ -1787,24 +1799,29 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     0 2px 1px rgba(60, 40, 20, 0.12);
 }
 
-/* v1640 (task 2): 操作ボタンを 「画面下端中央固定」 → 「左ページ下部 overlay (テキストの真下)」 に移動。
-   - position: absolute + CSS 変数 (--tutorial-leftpage-btn-{x,y,w,h}) でページ rect に追従
-   - 木製スタンプ風 dashed border + 微回転 (rotate(-0.8deg)) で 「本に押したスタンプ」 感
-   - flex-wrap で 5 ボタン (あとで/もういちど/やってみる/とばす/つぎ) 同時表示 + 小型端末縮退対応 */
+/* v1643 (task 3): 操作ボタンを 「左ページ下部固定 overlay」 → 「テキスト直下 (page-block 内 flex 子)」 に移動。
+   - page-block の flex-column 内に静的配置 → テキスト終端の直下に自然と並ぶ (帆船イラスト回避)
+   - leftpage-btn-* CSS 変数は廃止 (main.js 側でも書き込み停止)
+   - mix-blend-mode を multiply → normal + isolation: isolate で page-text の合成がボタンに伝播しない
+   - 木製スタンプ風 dashed border + 互い違い微回転は維持 */
 .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions {
-  position: absolute;
-  left: var(--tutorial-leftpage-btn-x, 50%);
-  top: var(--tutorial-leftpage-btn-y, auto);
-  width: var(--tutorial-leftpage-btn-w, auto);
-  min-height: var(--tutorial-leftpage-btn-h, auto);
+  position: static;
+  left: auto;
+  top: auto;
   bottom: auto;
+  width: 100%;
+  min-height: 0;
   transform: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: clamp(4px, 0.7vw, 8px);
+  padding: 0 clamp(4px, 0.6vw, 10px);
   pointer-events: auto;
+  /* page-text の multiply がボタン背景に染み込まないよう独立合成コンテキスト化 */
+  mix-blend-mode: normal;
+  isolation: isolate;
 }
 
 .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button {
@@ -1822,6 +1839,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     0 2px 6px rgba(60, 40, 20, 0.14),
     inset 0 -2px 0 rgba(190, 143, 50, 0.18);
   transform: rotate(-0.8deg);
+  mix-blend-mode: normal;
 }
 
 .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button:nth-child(even) {
@@ -4035,4 +4053,108 @@ body.is-sticker-tutorial-active #stickerTutorialNext,
 body.is-sticker-tutorial-active #stickerTutorialStartButton,
 body.is-sticker-tutorial-active #stickerTutorialStartSkip {
   pointer-events: auto !important;
+}
+
+/* === v1643 (task 1): intro (1/10) のみ画面中央モーダル化 ===
+   step 2 以降は左ページ直書き (page-block 配置)、 intro のみ便箋風モーダルに退行。
+   card-corner / card-top の compound override も intro 時は中央寄せを優先。 */
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed,
+body.is-sticker-tutorial-step-intro.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed,
+body.is-sticker-tutorial-step-intro.is-sticker-tutorial-card-top .sticker-tutorial-card.is-page-inscribed {
+  position: fixed;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(420px, calc(100vw - 36px));
+  max-width: none;
+  max-height: none;
+  transform: translate(-50%, -50%);
+  padding: 22px 22px 18px;
+  border: 3px solid rgba(149, 106, 42, 0.82);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 236, 0.98), rgba(255, 242, 197, 0.96)),
+    #fff8da;
+  box-shadow:
+    0 18px 32px rgba(22, 48, 44, 0.22),
+    inset 0 -5px 0 rgba(214, 163, 61, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.82);
+  pointer-events: auto;
+  aspect-ratio: auto;
+  z-index: 32;
+}
+
+/* intro モーダル内: page-block は static + 中央寄せ (絶対配置 leftpage rect を解除)。
+   テキストは multiply を切って便箋背景の上で読みやすく、 ボタンはフレックス中央。 */
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-block {
+  position: static;
+  left: auto;
+  top: auto;
+  width: 100%;
+  max-height: none;
+  align-items: stretch;
+  gap: 16px;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-text {
+  position: static;
+  padding: 4px 6px 0;
+  mix-blend-mode: normal;
+  transform: none;
+  color: #234247;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-text .sticker-tutorial-count {
+  text-align: right;
+  color: #5c7779;
+  font-size: 12px;
+  text-shadow: none;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-text .sticker-tutorial-text {
+  color: #234247;
+  font-size: clamp(16px, 4.4vw, 20px);
+  line-height: 1.4;
+  text-align: center;
+  text-shadow: none;
+}
+
+/* intro モーダル内ボタン: ページに「貼った」 演出は不要 → 通常便箋ボタンに戻す。 */
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions {
+  padding: 0;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button {
+  transform: none;
+  border-style: solid;
+  border-color: rgba(145, 105, 42, 0.44);
+  background: rgba(255, 251, 231, 0.92);
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button:nth-child(even) {
+  transform: none;
+}
+
+/* === v1643 (task 4): DEMO 中 「つぎ」 を視覚的にも disable 強調 (forceReady なしでは押せない) ===
+   updateStickerTutorialNextAvailability が DEMO phase 時は disabled 強制 → 既存
+   .sticker-tutorial-actions button:disabled の opacity 0.46 がそのまま効く。 ここでは
+   demo phase の Next を更に弱める保険 (filter で見た目を明確に分離)。 */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #stickerTutorialNext:disabled {
+  filter: grayscale(0.55) brightness(0.96);
+  background: linear-gradient(180deg, #f4ead4, #d9c79a);
+}
+
+/* === v1643 (task 5): place TRY 完了時の spotlight 再アンカー演出 ===
+   spotlight 自体は updateStickerTutorialLayout が CSS 変数を書き換えるだけで自動追従するが、
+   complete phase に入った瞬間は pulse を強めに当てて「ここに貼れたよ」 を明示。 */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete.is-sticker-tutorial-step-place .sticker-tutorial-spotlight {
+  animation: stickerTutorialPlaceCompletePulse 0.9s ease-out 2;
+}
+
+@keyframes stickerTutorialPlaceCompletePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 198, 92, 0.0); }
+  50%  { box-shadow: 0 0 0 14px rgba(255, 198, 92, 0.42); }
+  100% { box-shadow: 0 0 0 22px rgba(255, 198, 92, 0.0); }
 }
