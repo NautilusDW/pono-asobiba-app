@@ -1243,6 +1243,18 @@ body.is-sticker-tutorial-tray-silhouette .sticker-tray-card.is-tutorial-target-s
     0 8px 18px rgba(42, 70, 61, 0.14);
 }
 
+/* v1636: チュート中、 target ±2 内の未取得 SR (rarity=super) を silhouette 化。
+   既存 body.is-sticker-tutorial-tray-silhouette と独立 (per-card class)、 target 自身は強制解除。 */
+.sticker-tray-card.is-rarity-super-silhouette .sticker-tray-icon img {
+  opacity: 0.46;
+  filter: brightness(0) saturate(0) opacity(0.62);
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+.sticker-tray-card.is-tutorial-target-sticker.is-rarity-super-silhouette .sticker-tray-icon img {
+  opacity: 1;
+  filter: none;
+}
+
 .sticker-tray-label {
   display: none;
   font-size: 10px;

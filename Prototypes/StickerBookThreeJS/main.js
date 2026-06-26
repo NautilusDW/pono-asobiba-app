@@ -3488,6 +3488,7 @@ function finishStickerTutorial(options = {}) {
     "is-sticker-tutorial-tray-silhouette",
   );
   updateStickerTutorialTraySilhouettes(false);
+  updateRaritySuperSilhouettes(false);
   removeStickerTutorialStepClasses();
   setStickerTrayPeek(false);
   if (options.markSeen !== false) {
@@ -3571,6 +3572,7 @@ function showStickerTutorialIntro() {
     "is-sticker-tutorial-tray-silhouette",
   );
   updateStickerTutorialTraySilhouettes(false);
+  updateRaritySuperSilhouettes(false);
   removeStickerTutorialStepClasses();
 }
 
@@ -3580,6 +3582,7 @@ function beginStickerTutorialSteps() {
   }
   stickerTutorialState.intro = false;
   updateStickerTutorialTraySilhouettes(true, false);
+  updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
   showStickerTutorialStep(0, { replayAudio: true });
 }
 
@@ -3596,6 +3599,7 @@ function showStickerTutorialStep(index, options = {}) {
   }
   stopStickerTutorialStepDemo();
   updateStickerTutorialTraySilhouettes(true, false);
+  updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
   if (stickerTutorialStart) {
     stickerTutorialStart.hidden = true;
   }
@@ -3664,6 +3668,7 @@ function prepareStickerTutorialStep(step) {
     return;
   }
   updateStickerTutorialTraySilhouettes(true, step.id === "place");
+  updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
   closeBookPageJump();
   if (activeAlbumMode === "collection") {
     setAlbumMode("free");
@@ -3839,6 +3844,7 @@ function startStickerTutorialPlaceDemo() {
   setStickerTutorialHandKey("point");
   setStickerTrayPeek(true);
   updateStickerTutorialTraySilhouettes(true, true);
+  updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
   document.body.classList.add("is-sticker-tutorial-combo-place");
   stickerTutorialDemoStartTime = performance.now();
   const maxScroll = Math.max(0, collectionStickerTrayItems.scrollWidth - collectionStickerTrayItems.clientWidth);
@@ -4252,9 +4258,11 @@ function stopStickerTutorialStepDemo(options = {}) {
   if (stickerTutorialState) {
     // Keep tray silhouette ON for the whole tutorial; only drop the yellow target highlight.
     updateStickerTutorialTraySilhouettes(true, false);
+    updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
   } else {
     document.body.classList.remove("is-sticker-tutorial-tray-silhouette");
     updateStickerTutorialTraySilhouettes(false);
+    updateRaritySuperSilhouettes(false);
   }
 }
 
@@ -4971,6 +4979,67 @@ function updateStickerTutorialTraySilhouettes(enabled = false, withTarget = enab
   });
 }
 
+// v1636: target ±2 内の未取得 SR (rarity=super) を silhouette 化するための補助関数群。
+// 既存 updateStickerTutorialTraySilhouettes と独立、 per-card class のみで動作。
+function readOwnedStickerIds() {
+  const owned = new Set();
+  try {
+    if (window.PonoGameStickers && typeof window.PonoGameStickers.getOwned === "function") {
+      const raw = window.PonoGameStickers.getOwned();
+      // shape: { "<gameId>": { owned: { "<stickerId>": {count,...} } } } or { stickerId: {...} }
+      Object.values(raw || {}).forEach((page) => {
+        const map = page && page.owned ? page.owned : page;
+        Object.entries(map || {}).forEach(([id, entry]) => {
+          if (entry && entry.count > 0) owned.add(id);
+        });
+      });
+    } else {
+      const raw = JSON.parse(localStorage.getItem("pono_game_stickers_v1") || "{}");
+      Object.values(raw.pages || {}).forEach((page) => {
+        Object.entries((page && page.owned) || {}).forEach(([id, entry]) => {
+          if (entry && entry.count > 0) owned.add(id);
+        });
+      });
+    }
+  } catch (_) {}
+  return owned;
+}
+
+function pickNearbySuperSilhouetteIds(mainStickerId, ownedSet) {
+  if (!collectionStickerTrayItems || !mainStickerId) return [];
+  const trayButtons = [...collectionStickerTrayItems.querySelectorAll("[data-sticker-tray-id]")];
+  const mainIndex = trayButtons.findIndex((btn) => btn.dataset.stickerTrayId === mainStickerId);
+  if (mainIndex < 0) return [];
+  const offsets = [-2, -1, 1, 2]; // ±2 厳守 (main 自身は除外)
+  const ids = [];
+  for (const offset of offsets) {
+    const idx = mainIndex + offset;
+    if (idx < 0 || idx >= trayButtons.length) continue;
+    const id = trayButtons[idx].dataset.stickerTrayId;
+    const sticker = stickerOptions.find((s) => s.id === id);
+    if (!sticker) continue;
+    if (sticker.rarity !== "super") continue; // SR 限定
+    if (ownedSet.has(id)) continue;            // 取得済みは除外
+    ids.push(id);
+  }
+  return ids;
+}
+
+function updateRaritySuperSilhouettes(enabled, mainStickerId) {
+  if (!collectionStickerTrayItems) return;
+  const cards = collectionStickerTrayItems.querySelectorAll(".sticker-tray-card");
+  if (!enabled || !mainStickerId) {
+    cards.forEach((c) => c.classList.remove("is-rarity-super-silhouette"));
+    return;
+  }
+  const ownedSet = readOwnedStickerIds();
+  const targetIds = new Set(pickNearbySuperSilhouetteIds(mainStickerId, ownedSet));
+  cards.forEach((card) => {
+    const id = card.dataset.stickerTrayId;
+    card.classList.toggle("is-rarity-super-silhouette", targetIds.has(id));
+  });
+}
+
 function rectCenter(rect) {
   return {
     x: rect.left + rect.width / 2,
@@ -5502,8 +5571,10 @@ function renderStickerThumbnailTray() {
   if (stickerTutorialState) {
     const tutorialStepId = currentStickerTutorialStep()?.id;
     updateStickerTutorialTraySilhouettes(true, tutorialStepId === "place");
+    updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
   } else {
     updateStickerTutorialTraySilhouettes(false);
+    updateRaritySuperSilhouettes(false);
   }
   updateCollectionStickerTrayVisibility();
   updateStickerTrayCounter();
