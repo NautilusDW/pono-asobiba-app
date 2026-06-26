@@ -47,6 +47,19 @@
   <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.png">
   <link rel="preload" as="image" href="assets/images/undersea-cave/friend_whale_sleep.png">
   <link rel="preload" as="image" href="assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png">
+  <!-- Core daily gacha surfaces are low-priority preloads; secondary reward
+       frames still load through the idle JS helper after the title is ready. -->
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_room_backdrop.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_counter_foreground.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_machine.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_lever.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_pink.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_blue.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_gold.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_super.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_action_home_normal.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/daily_gacha_shop_button_single_color_20260625.png">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -5639,7 +5652,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1660;
+    const PAGE_CACHE_VERSION = 1661;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
