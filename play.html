@@ -302,8 +302,9 @@
       .scroll-hint--down {
         animation: none;
       }
-      /* reduced-motion 時は auto-scroll hint が走らないため、 静的 chevron を永続表示 */
-      .scroll-hint--down {
+      /* L4677 の .scroll-hint { display: none; } (global, specificity 0,1,0) を上書きするため、
+         .scroll-hint.scroll-hint--down で specificity 0,2,0 にする */
+      .scroll-hint.scroll-hint--down {
         display: block;
         opacity: 0.7;
       }
@@ -5739,7 +5740,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1668;
+    const PAGE_CACHE_VERSION = 1669;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
