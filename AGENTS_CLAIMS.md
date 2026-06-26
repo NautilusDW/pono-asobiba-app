@@ -60,6 +60,7 @@
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
+- 2026-06-27 02:44 - by Codex - [batch:862-shop-narration-audio] - play.html, sw.js, assets/audio/shop/**, HANDOFF.md - シールのおみせ開店案内のTTS音声とタイミング字幕を追加 [overlap: batch:860-data-export-import]
 
 ---
 
