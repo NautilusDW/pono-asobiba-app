@@ -3757,3 +3757,82 @@ body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-approach .sticker-tu
     transform: translate(-50%, -35%) scale(0.98);
   }
 }
+
+/* シール帳 正本統一: firstEver=1 専用 welcome overlay */
+.sticker-first-ever-welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 14, 22, 0.62);
+  padding: 18px;
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  animation: stickerFirstEverFade 0.22s ease-out;
+}
+.sticker-first-ever-welcome[hidden] {
+  display: none;
+}
+.sticker-first-ever-welcome__panel {
+  width: min(380px, calc(100vw - 36px));
+  background: linear-gradient(180deg, rgba(255, 253, 236, 0.98), rgba(255, 242, 197, 0.96));
+  border: 4px solid #F2915A;
+  border-radius: 26px;
+  padding: 26px 22px 20px;
+  text-align: center;
+  color: #4A3726;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34), 0 0 46px rgba(255, 216, 94, 0.28), inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  animation: stickerFirstEverPanelIn 0.42s cubic-bezier(0.2, 0.86, 0.2, 1.08);
+}
+.sticker-first-ever-welcome__title {
+  margin: 0 0 12px;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.32;
+  color: #7C2D12;
+  text-shadow: 0 1px 0 #fff;
+}
+.sticker-first-ever-welcome__body {
+  margin: 0 0 18px;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: #5D4E37;
+}
+.sticker-first-ever-welcome__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.sticker-first-ever-welcome__btn {
+  border: 0;
+  border-radius: 999px;
+  font-weight: 900;
+  padding: 11px 18px;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 15px;
+  box-shadow: 0 3px 0 rgba(81, 50, 19, 0.18);
+}
+.sticker-first-ever-welcome__btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(81, 50, 19, 0.18);
+}
+.sticker-first-ever-welcome__btn--sub {
+  background: #EEE6DD;
+  color: #5D4E37;
+}
+.sticker-first-ever-welcome__btn--main {
+  background: #F2915A;
+  color: #fff;
+}
+@keyframes stickerFirstEverFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes stickerFirstEverPanelIn {
+  0% { opacity: 0; transform: translateY(-8px) scale(1.18); }
+  60% { opacity: 1; transform: translateY(2px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}

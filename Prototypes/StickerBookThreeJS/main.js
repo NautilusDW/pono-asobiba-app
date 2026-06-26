@@ -1594,6 +1594,13 @@ let spreadPosition = isLocalPreview && params.has("spread")
   ? readClampedNumber(params.get("spread"), 0.5, 0, 1)
   : 0;
 let isPlaying = params.get("play") === "1";
+// シール帳 正本統一: grant 動線から渡される query (game / pasteId / firstEver) を受け取る。
+// game=<gameId> → catalog page を該当ページへ auto-open。
+// pasteId=<stickerId> → 対象シール強調 + ページ移動 (gameId を内包するため pasteId 優先)。
+// firstEver=1 → 初回専用 welcome overlay + tutorial 強制起動。
+const requestedGameId = (params.get("game") || "").trim();
+const requestedPasteStickerId = (params.get("pasteId") || "").trim();
+const requestedFirstEver = params.get("firstEver") === "1";
 const clock = new THREE.Clock();
 if (activeSurface === "cover") {
   flipProgress = 0;
@@ -6305,8 +6312,16 @@ async function loadStickerPlanForEditor() {
     updateControlState();
     setupTuningPanel();
     updatePage(flipProgress);
+    // シール帳 正本統一: grant 動線から渡された query を反映 (pasteId 優先 > game)。
+    applyStickerEntryQueryNavigation();
     syncUrl();
-    maybeStartStickerTutorial();
+    // firstEver=1 のときは welcome overlay → tap → tutorial 強制起動 のチェイン。
+    // それ以外は従来通り maybeStartStickerTutorial の hasSeen 判定に従う。
+    if (requestedFirstEver) {
+      showStickerFirstEverWelcome();
+    } else {
+      maybeStartStickerTutorial();
+    }
     window.__stickerEditorPlanLoaded = true;
   } catch (error) {
     console.warn("Sticker plan load failed", error);
@@ -6430,7 +6445,26 @@ function syncCollectionPlacementsWithStickerPlan() {
 }
 
 function buildEditorPageDefinitions() {
-  return createFallbackEditorPageDefinitions();
+  // シール帳 正本統一: catalog の page 順序に従い page→gameId マップを確立。
+  // STICKER_ALBUM_PAGE_COUNT を固定長として既存ユーザの editorState.pages keying を維持
+  // (順序が変わると保存位置がズレるため、 catalog 末尾追加でも先頭順序を保持)。
+  const catalogIds = gameStickerCatalog?.pages && typeof gameStickerCatalog.pages === "object"
+    ? Object.keys(gameStickerCatalog.pages)
+    : [];
+  if (!catalogIds.length) {
+    return createFallbackEditorPageDefinitions();
+  }
+  return Array.from({ length: STICKER_ALBUM_PAGE_COUNT }, (_, index) => {
+    const gameId = catalogIds[index] || "";
+    const pageEntry = gameId ? gameStickerCatalog.pages[gameId] : null;
+    const label = pageEntry?.title || `ページ ${index + 1}`;
+    return {
+      page: index + 1,
+      gameId,
+      label,
+      shelfType: "sticker_album",
+    };
+  });
 }
 
 function createFallbackEditorPageDefinitions() {
@@ -6440,6 +6474,98 @@ function createFallbackEditorPageDefinitions() {
     label: `ページ ${index + 1}`,
     shelfType: "sticker_album",
   }));
+}
+
+function findEditorPageByGameId(gameId) {
+  if (!gameId || !Array.isArray(editorPageDefinitions)) return 0;
+  const match = editorPageDefinitions.find((pageDef) => pageDef.gameId === gameId);
+  return match && Number.isFinite(match.page) ? match.page : 0;
+}
+
+function findEditorPageByStickerId(stickerId) {
+  if (!stickerId) return 0;
+  const sticker = stickerOptions.find((s) => s && s.id === stickerId);
+  if (!sticker) return 0;
+  return findEditorPageByGameId(sticker.gameId);
+}
+
+// シール帳 正本統一: grant 動線の query (game / pasteId) を受け取り該当ページへ移動する。
+// pasteId が先に評価 (gameId を内包するため)、 fallback で game。
+// catalog 未マッチや無効 gameId は console.warn のみで cover 維持 (R3 緩和策)。
+function applyStickerEntryQueryNavigation() {
+  let targetPage = 0;
+  let resolvedGameId = "";
+  if (requestedPasteStickerId) {
+    targetPage = findEditorPageByStickerId(requestedPasteStickerId);
+    const sticker = stickerOptions.find((s) => s && s.id === requestedPasteStickerId);
+    if (sticker) resolvedGameId = sticker.gameId || "";
+    if (!targetPage) {
+      console.warn("[sticker-book] pasteId not found in catalog:", requestedPasteStickerId);
+    }
+  }
+  if (!targetPage && requestedGameId) {
+    targetPage = findEditorPageByGameId(requestedGameId);
+    if (targetPage) resolvedGameId = requestedGameId;
+    else console.warn("[sticker-book] game id not found in catalog:", requestedGameId);
+  }
+  if (!targetPage) return;
+  // 該当ページの game filter を選択 (pasteId のシールをトレイ内で見つけやすく)
+  if (resolvedGameId && editorGameFilter) {
+    const hasOption = [...editorGameFilter.options].some((o) => o.value === resolvedGameId);
+    if (hasOption) {
+      editorGameFilterValue = resolvedGameId;
+      editorGameFilter.value = resolvedGameId;
+    }
+  }
+  // cover の場合は inside へ open + 指定ページへ。 既に inside なら setBookPage で移動のみ。
+  if (activeSurface === "cover") {
+    setBookSurface("inside", targetPage);
+  } else {
+    setBookPage(targetPage);
+  }
+}
+
+// シール帳 正本統一: 初回 (firstEver=1) 専用 welcome overlay。
+// tap → tutorial 強制起動 のチェイン (R4: tutorial と二重表示しない排他制御)。
+function showStickerFirstEverWelcome() {
+  const overlay = document.getElementById("stickerFirstEverWelcome");
+  if (!overlay) {
+    // overlay 不在 fallback: 直接 tutorial を強制起動
+    startStickerTutorial({ manual: true });
+    return;
+  }
+  overlay.hidden = false;
+  document.body.classList.add("is-sticker-first-ever-welcome");
+  const dismiss = () => {
+    overlay.hidden = true;
+    document.body.classList.remove("is-sticker-first-ever-welcome");
+    overlay.removeEventListener("click", onClick);
+    const startBtn = overlay.querySelector("[data-firstever-start]");
+    const skipBtn = overlay.querySelector("[data-firstever-skip]");
+    if (startBtn) startBtn.removeEventListener("click", onStart);
+    if (skipBtn) skipBtn.removeEventListener("click", onSkip);
+  };
+  const onStart = (event) => {
+    event.stopPropagation();
+    dismiss();
+    startStickerTutorial({ manual: true });
+  };
+  const onSkip = (event) => {
+    event.stopPropagation();
+    dismiss();
+    markStickerTutorialSeen();
+  };
+  const onClick = (event) => {
+    if (event.target === overlay) {
+      dismiss();
+      startStickerTutorial({ manual: true });
+    }
+  };
+  const startBtn = overlay.querySelector("[data-firstever-start]");
+  const skipBtn = overlay.querySelector("[data-firstever-skip]");
+  if (startBtn) startBtn.addEventListener("click", onStart);
+  if (skipBtn) skipBtn.addEventListener("click", onSkip);
+  overlay.addEventListener("click", onClick);
 }
 
 function createFallbackCollectionPageDefinitions() {
@@ -13864,6 +13990,11 @@ function syncUrl() {
   } else {
     next.delete("play");
   }
+  // シール帳 正本統一: grant 動線の transient query は URL に残さない。
+  // firstEver は一度起動したら剥がす (R5: URL 汚染防止 + 再起動で welcome 二重表示防止)。
+  next.delete("firstEver");
+  next.delete("game");
+  next.delete("pasteId");
   const query = next.toString();
   history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
 }

@@ -255,6 +255,17 @@
       </div>
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
+    <!-- シール帳 正本統一: firstEver=1 で表示される初回 welcome overlay。 tap → tutorial 強制起動。 -->
+    <div id="stickerFirstEverWelcome" class="sticker-first-ever-welcome" hidden role="dialog" aria-live="polite" aria-modal="true" aria-label="シールちょうへ ようこそ">
+      <div class="sticker-first-ever-welcome__panel">
+        <p class="sticker-first-ever-welcome__title">シールちょうへ<br>ようこそ!</p>
+        <p class="sticker-first-ever-welcome__body">あつめた シールを<br>ペタッと はろう</p>
+        <div class="sticker-first-ever-welcome__actions">
+          <button type="button" data-firstever-skip class="sticker-first-ever-welcome__btn sticker-first-ever-welcome__btn--sub">あとで</button>
+          <button type="button" data-firstever-start class="sticker-first-ever-welcome__btn sticker-first-ever-welcome__btn--main">あそびかたを みる</button>
+        </div>
+      </div>
+    </div>
   </main>
   <script type="module" src="./main.js?v=20260626-1630"></script>
 </body>
