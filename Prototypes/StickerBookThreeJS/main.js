@@ -1568,7 +1568,6 @@ const stickerTutorialCount = document.getElementById("stickerTutorialCount");
 const stickerTutorialSkip = document.getElementById("stickerTutorialSkip");
 const stickerTutorialReplay = document.getElementById("stickerTutorialReplay");
 const stickerTutorialNext = document.getElementById("stickerTutorialNext");
-const stickerTutorialDemoDo = document.getElementById("stickerTutorialDemoDo");      // v1637: demo 中の「やってみる」 早押し
 const stickerTutorialStepSkip = document.getElementById("stickerTutorialStepSkip");  // v1637: try 中 3 失敗 or 30s で表示
 
 const params = new URLSearchParams(window.location.search);
@@ -3464,18 +3463,6 @@ function setupStickerTutorial() {
     startStickerTutorialStepDemo(step);
     playStickerTutorialAudio(step);
   });
-  stickerTutorialDemoDo?.addEventListener("click", () => {
-    // v1637: demo 中の早押し → 残 timer 全停止し try フェーズに即移行。
-    if (!stickerTutorialState || stickerTutorialState.phase !== "demo") {
-      return;
-    }
-    const step = currentStickerTutorialStep();
-    if (!step || step.finish || !step.textTry) {
-      return;
-    }
-    stopStickerTutorialStepDemo();
-    setStickerTutorialPhase("try");
-  });
   stickerTutorialStepSkip?.addEventListener("click", () => {
     // v1637: 「とばす」 → 次 step へ。 markSeen は触らない (チュートリアル全体は続行)。
     if (!stickerTutorialState) {
@@ -4409,10 +4396,6 @@ function stopStickerTutorialStepDemo(options = {}) {
   topEditButton?.classList.remove("is-tutorial-pressing");
   inlineStickerOk?.classList.remove("is-tutorial-pressing");
   bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
-  // v1637: 「やってみる」 早押し helper も demo 停止と同期して消す。
-  if (stickerTutorialDemoDo) {
-    stickerTutorialDemoDo.hidden = true;
-  }
   // v1625: 次 step に遷移したら OK の last-rect cache をクリア (現 step が ok でない場合のみ)
   if (currentStickerTutorialStep()?.id !== "ok") {
     stickerTutorialLastOkRect = null;
@@ -4497,12 +4480,7 @@ function setStickerTutorialPhase(phase) {
   document.body.classList.toggle("is-sticker-tutorial-phase-demo", phase === "demo");
   document.body.classList.toggle("is-sticker-tutorial-phase-try", phase === "try");
   document.body.classList.toggle("is-sticker-tutorial-phase-complete", phase === "complete");
-  // 「やってみる」 は demo 中かつ try フェーズに移行可能な step (textTry あり) のみ表示。
   const step = currentStickerTutorialStep();
-  const canTry = Boolean(step && !step.finish && step.textTry);
-  if (stickerTutorialDemoDo) {
-    stickerTutorialDemoDo.hidden = !(phase === "demo" && canTry);
-  }
   // v1643 (task 5): complete phase 開始時刻を記録 (place 専用 min-hold gate で使用)。
   // v1646 (task 2): 全 8 TRY step に「褒め一言」 を追加 — 1.6s 表示 + 600ms scale pop で
   // 「正解できたよ」 を子供にはっきり伝える。 音声は別途事前生成のため textContent 上書きのみで安全。

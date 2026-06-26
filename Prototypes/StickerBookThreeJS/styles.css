@@ -3958,14 +3958,7 @@ body.is-sticker-tutorial-phase-complete .sticker-tutorial-spotlight {
   }
 }
 
-/* 「やってみる」 (demo 早押し) と 「とばす」 (try 救済) は既存 .sticker-tutorial-actions button のスタイルを継承。
-   visibility は JS の hidden 属性で制御するため CSS 側は色差別化のみ。 */
-#stickerTutorialDemoDo {
-  background: linear-gradient(180deg, #d8efff, #8fc9f5);
-  border-color: rgba(40, 110, 165, 0.56);
-  color: #15384f;
-}
-
+/* 「とばす」 (try 救済) は既存 .sticker-tutorial-actions button のスタイルを継承。 */
 #stickerTutorialStepSkip {
   background: linear-gradient(180deg, #ffe4d4, #ffb583);
   border-color: rgba(180, 80, 30, 0.56);
@@ -3991,8 +3984,7 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerDel
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerClose,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #bookNextPage,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #bookPrevPage,
-body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #albumModeToggle,
-body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topSettingsButton {
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #albumModeToggle {
   pointer-events: none !important;
 }
 
@@ -4008,8 +4000,7 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerDele
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerClose,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #bookNextPage,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #bookPrevPage,
-body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #albumModeToggle,
-body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topSettingsButton {
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #albumModeToggle {
   pointer-events: none !important;
 }
 
@@ -4041,6 +4032,15 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutoria
   pointer-events: auto !important;
 }
 
+/* v1647: 設定ボタンとモーダルはチュートリアル中も常時操作可
+   ユーザーがいつでも 「もどる」 「いちをなおす」 を選べる安全弁。
+   panel 内部要素はもともと blocklist 対象外だが、 将来追加要素にも備えて明示宣言。 */
+body.is-sticker-tutorial-active #topSettingsButton,
+body.is-sticker-tutorial-active #zukanSettingsPanel,
+body.is-sticker-tutorial-active #zukanSettingsPanel * {
+  pointer-events: auto !important;
+}
+
 /* COMPLETE phase: 操作は終わっているので step に応じた要素のみ auto (移動した結果を見せる) */
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete .sticker-tutorial-actions,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete .sticker-tutorial-actions button {
@@ -4051,7 +4051,6 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete .sticker-tuto
    Risk-6 対策: 排他制御で 「とばす」 自体が押せなくなる事故防止。 */
 body.is-sticker-tutorial-active #stickerTutorialSkip,
 body.is-sticker-tutorial-active #stickerTutorialReplay,
-body.is-sticker-tutorial-active #stickerTutorialDemoDo,
 body.is-sticker-tutorial-active #stickerTutorialStepSkip,
 body.is-sticker-tutorial-active #stickerTutorialNext,
 body.is-sticker-tutorial-active #stickerTutorialStartButton,
@@ -4180,5 +4179,50 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete.is-sticker-tu
 @media (prefers-reduced-motion: reduce) {
   .sticker-tutorial-text.is-praise-pop {
     animation: none;
+  }
+}
+
+/* === v1648 (本タスク): TRY フェーズの「やって みよう！」 を光らせる ===
+   「やってみる」 (DemoDo) ボタン廃止に伴い、 TRY 開始の合図を
+   stickerTutorialText 全体の脈動 (色 + glow + scale) で明示する。
+   - 適用範囲: body.is-sticker-tutorial-phase-try のみ
+     → intro/start (phase 未設定) / final finish step (textTry 空) では発火しない
+   - phase-complete に入ると body class が外れて pulse 停止 → 直後に既存
+     .is-praise-pop (scale 1.12 / color #ff8a3d / 0.6s) が起動 → 競合なし
+   - reduced-motion: animation 停止 + 静的 highlight (color/glow のみ) でフォールバック
+   - textTry は step テーブル (main.js:1642-1729) で全 8 step に「やって みよう！」 prefix
+     固定。 段落全体を均等に光らせる前提の設計。 */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #stickerTutorialText {
+  animation: stickerTutorialTryGlow 1.4s ease-in-out infinite;
+}
+
+@keyframes stickerTutorialTryGlow {
+  0%, 100% {
+    color: #3a2618;
+    text-shadow:
+      0 1px 0 rgba(255, 250, 235, 0.55),
+      0 2px 1px rgba(60, 40, 20, 0.12),
+      0 0 0 rgba(255, 184, 60, 0);
+    transform: scale(1);
+  }
+  50% {
+    color: #c2531a;
+    text-shadow:
+      0 1px 0 rgba(255, 250, 235, 0.55),
+      0 2px 1px rgba(60, 40, 20, 0.12),
+      0 0 12px rgba(255, 184, 60, 0.85),
+      0 0 24px rgba(255, 218, 110, 0.6);
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #stickerTutorialText {
+    animation: none;
+    color: #c2531a;
+    text-shadow:
+      0 1px 0 rgba(255, 250, 235, 0.55),
+      0 2px 1px rgba(60, 40, 20, 0.12),
+      0 0 10px rgba(255, 200, 90, 0.65);
   }
 }
