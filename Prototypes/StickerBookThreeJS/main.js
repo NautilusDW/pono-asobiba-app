@@ -2029,6 +2029,17 @@ let stickerTrayRevealHideTimer = 0;
 let stickerTutorialState = null;
 let stickerTutorialAudio = null;
 let stickerTutorialAudioBlocked = false;
+// === BGM (loop track) ===
+// pono_bgm_enabled は他ゲーム (maze 等) と共有する横断キー。 ユーザーが一度 OFF にしたら全ゲーム共通でミュート。
+const STICKER_BGM_URL = "../../assets/audio/stickerbook/bgm/sticker-album-morning.mp3";
+const STICKER_BGM_BASE_VOLUME = 0.28;   // 通常時
+const STICKER_BGM_DUCK_VOLUME = 0.08;   // チュートリアル ナレ中
+const STICKER_BGM_FADE_MS = 600;        // 起動/停止 フェード長
+let stickerBgmAudio = null;
+let stickerBgmEnabled = localStorage.getItem("pono_bgm_enabled") !== "off";
+let stickerBgmUnlocked = false;
+let stickerBgmFadeTimer = null;
+let stickerBgmDucked = false;
 let stickerTutorialAutoStartChecked = false;
 let stickerTutorialLayoutFrame = 0;
 let stickerTutorialDemoFrame = 0;
@@ -3877,21 +3888,24 @@ function startStickerTutorialPlaceDemo() {
   // v1624: open 切替を 11300ms (64.20% / hover 直前) → 13350ms (75.85% / drop press 「ぐっ」) に移動。
   // 旧タイミングは hover 到達直前で発火していたため、 hover→to (64.5%→73% = 1.50s) を真下に降ろす最中に
   // 手だけ開く不整合 (「下がりながら手を開いてる」) が発生していた。 drop press と同期させて 「ぐっ → 開く →
-  // release lift (79%)」 の自然な所作に整える。
+  // release lift」 の自然な所作に整える。
+  // v1627: hover→drop 区間圧縮で 13350 → 12200ms に前倒し (CSS keyframe 69.32% = drop press と完全同期)。
+  // 体感「シール置く瞬間が約 1.15s 早く来る」。 「ぐっ」 と open の同フレーム同期 (v1624 不変条件) は維持。
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("open");
     }
-  }, 13350);
-  // v1624: シール配置も 11600ms → 13500ms (76.71%) に同期。 open 切替 (13350ms) の 150ms 後 = 「開いた手の下に
-  // シールが残る」 順序を維持。 release lift (79% = 13904ms) より前なので、 release lift で手だけ持ち上がりシール
-  // は page に残るという視覚整合も保たれる。
+  }, 12200);
+  // v1624: シール配置も 11600ms → 13500ms (76.71%) に同期。 open 切替の 150ms 後 = 「開いた手の下にシールが残る」 順序を維持。
+  // release lift より前なので、 release lift で手だけ持ち上がりシールは page に残るという視覚整合も保たれる。
+  // v1627: open 12200ms に合わせて addSticker も 12350ms に前倒し (+150ms オフセット不変)。
+  // CSS release lift (72.5% = 12760ms) より前 = 視覚整合維持。
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
     addStickerFromTutorialDemoToPage();
-  }, 13500);
+  }, 12350);
 }
 
 function startStickerTutorialMoveDemo() {
@@ -4072,14 +4086,20 @@ function triggerStickerTutorialOkButtonPress() {
 }
 
 function startStickerTutorialOkDemo() {
-  // v1625: 3150ms 時点で押下演出 (是 add → click → release) を入れて 「OK を押した」 ことを子供に伝える。
+  // v1627: stickerTutorialOkPressDemo keyframe (3.0s, 1 回) と同期。
+  // keyframe 52% ≒ 1560ms で「指が OK ボタン中央に降りて押し込み」 = ボタン側 is-tutorial-pressing class add も
+  // 同タイミングに合わせる (元 3150ms は keyframe 終了後で「離れた場所で勝手にボタンが光った」 違和感を生んでいた)。
+  // class add から 140ms 後 (≒ 1700ms) に click → keyframe 60% (1800ms) の lift とほぼ同フレーム = 「押した瞬間に
+  // 手が離れ、 ボタン側演出も完了に向かう」 自然な所作。
   setStickerTutorialHandKey("point");
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "ok" || stickerTutorialState?.actionDone) {
       return;
     }
+    // v1627: keyframe 進行中に hand src が他 pose に流れていないか念のため再保証。
+    setStickerTutorialHandKey("point");
     triggerStickerTutorialOkButtonPress();
-  }, 3150);
+  }, 1560);
 }
 
 function startStickerTutorialPageDemo() {
@@ -4289,8 +4309,105 @@ function retryBlockedStickerTutorialAudio() {
   }
 }
 
+// === BGM control ===
+// SW pre-cache に登録していないので、 cache-bust クエリは付けない
+// (URL 不一致を避け、 SW runtime cache (network-first) に素直に乗せる)。
+function ensureStickerBgmElement() {
+  if (stickerBgmAudio) return stickerBgmAudio;
+  const a = new Audio(STICKER_BGM_URL);
+  a.loop = true;
+  a.preload = "auto";
+  a.volume = 0;
+  stickerBgmAudio = a;
+  return a;
+}
+
+function fadeStickerBgmTo(targetVol, durationMs) {
+  const a = stickerBgmAudio;
+  if (!a) return;
+  if (stickerBgmFadeTimer) { clearInterval(stickerBgmFadeTimer); stickerBgmFadeTimer = null; }
+  const start = a.volume;
+  const t0 = performance.now();
+  stickerBgmFadeTimer = setInterval(() => {
+    const t = Math.min(1, (performance.now() - t0) / Math.max(1, durationMs));
+    a.volume = start + (targetVol - start) * t;
+    if (t >= 1) {
+      clearInterval(stickerBgmFadeTimer);
+      stickerBgmFadeTimer = null;
+      if (targetVol <= 0.001) { try { a.pause(); } catch (_) {} }
+    }
+  }, 30);
+}
+
+function startStickerBgm() {
+  if (!stickerBgmEnabled) return;
+  const a = ensureStickerBgmElement();
+  const target = stickerBgmDucked ? STICKER_BGM_DUCK_VOLUME : STICKER_BGM_BASE_VOLUME;
+  const p = a.play();
+  if (p && p.catch) p.catch(() => { stickerBgmUnlocked = false; });
+  stickerBgmUnlocked = true;
+  fadeStickerBgmTo(target, STICKER_BGM_FADE_MS);
+}
+
+function stopStickerBgm() {
+  if (!stickerBgmAudio) return;
+  fadeStickerBgmTo(0, STICKER_BGM_FADE_MS);
+}
+
+function duckStickerBgm() {
+  stickerBgmDucked = true;
+  if (stickerBgmAudio && !stickerBgmAudio.paused) {
+    fadeStickerBgmTo(STICKER_BGM_DUCK_VOLUME, 280);
+  }
+}
+
+function unduckStickerBgm() {
+  stickerBgmDucked = false;
+  if (stickerBgmEnabled && stickerBgmAudio && !stickerBgmAudio.paused) {
+    fadeStickerBgmTo(STICKER_BGM_BASE_VOLUME, 420);
+  }
+}
+
+function toggleStickerBgm() {
+  stickerBgmEnabled = !stickerBgmEnabled;
+  localStorage.setItem("pono_bgm_enabled", stickerBgmEnabled ? "on" : "off");
+  if (stickerBgmEnabled) startStickerBgm(); else stopStickerBgm();
+}
+
+// 外部 (admin/menu 等) から制御できるよう公開
+window.__stickerBookToggleBgm = toggleStickerBgm;
+window.__stickerBookStartBgm = startStickerBgm;
+window.__stickerBookStopBgm = stopStickerBgm;
+
+function _sbBgmPause() {
+  if (stickerBgmAudio && !stickerBgmAudio.paused) {
+    try { stickerBgmAudio.pause(); } catch (_) {}
+  }
+}
+function _sbBgmResume() {
+  if (stickerBgmEnabled && stickerBgmUnlocked) {
+    const a = ensureStickerBgmElement();
+    const p = a.play();
+    if (p && p.catch) p.catch(() => {});
+  }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) _sbBgmPause(); else _sbBgmResume();
+});
+window.addEventListener("blur", _sbBgmPause);
+window.addEventListener("focus", _sbBgmResume);
+window.addEventListener("pagehide", _sbBgmPause);
+window.addEventListener("pageshow", _sbBgmResume);
+
+// autoplay unlock (初回 pointerdown で BGM を起動)
+document.addEventListener("pointerdown", function _bgmUnlock() {
+  if (stickerBgmEnabled && !stickerBgmUnlocked) startStickerBgm();
+  document.removeEventListener("pointerdown", _bgmUnlock, { capture: true });
+}, { capture: true, passive: true });
+
 function playStickerTutorialAudio(step) {
   stopStickerTutorialAudio();
+  duckStickerBgm();
   const audioFiles = (Array.isArray(step?.audio) ? step.audio : [step?.audio]).filter(Boolean);
   if (!audioFiles.length) {
     return;
@@ -4349,6 +4466,8 @@ function playStickerTutorialAudio(step) {
 
 function stopStickerTutorialAudio() {
   if (!stickerTutorialAudio) {
+    // 既に音声が停止していても duck 解除は実施 (チュートリアル終了時など)
+    unduckStickerBgm();
     return;
   }
   try {
@@ -4357,6 +4476,7 @@ function stopStickerTutorialAudio() {
   } catch {}
   stickerTutorialAudio = null;
   stickerTutorialAudioBlocked = false;
+  unduckStickerBgm();
 }
 
 function scheduleStickerTutorialLayout() {
