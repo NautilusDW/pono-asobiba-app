@@ -8861,11 +8861,23 @@
         // click のみでデータ管理モーダルを開く。
         const restoreBtn = intro.querySelector('#tapIntroRestore');
         if (restoreBtn) {
+          // v1672 (review fix): iOS Safari の一部経路で touchstart/touchend が
+          // pointer event より先に親 (.tap-intro) の dismiss 系へ届く可能性に
+          // 備えて、 pointer/touch 両系統で stopPropagation を入れる
+          // (touchstart 側は preventDefault も付与し、 合成 click が親に
+          // 伝播するのを防ぐ; passive:false 必須)。
           ['pointerdown', 'pointerup'].forEach(evt => {
             restoreBtn.addEventListener(evt, (e) => {
               e.stopPropagation();
             });
           });
+          restoreBtn.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault();
+          }, { passive: false });
+          restoreBtn.addEventListener('touchend', (e) => {
+            e.stopPropagation();
+          }, { passive: true });
           restoreBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (e.cancelable) e.preventDefault();

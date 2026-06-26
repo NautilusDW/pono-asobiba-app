@@ -389,6 +389,18 @@
       if (dup) continue;
       wrong.push(s);
     }
+    // v1672 (review fix): 50 試行で wrong が埋まらなかった場合の fallback。
+    // 「undefined」 ボタンが出る事故を防ぐため、 合計 10 にならない安全な定数を順に補充。
+    var WRONG_FALLBACKS = ['3 と 5', '2 と 4', '6 と 1', '7 と 2', '8 と 5'];
+    for (var f = 0; f < WRONG_FALLBACKS.length && wrong.length < 2; f++) {
+      var fb = WRONG_FALLBACKS[f];
+      if (fb === correctStr) continue;
+      var already = false;
+      for (var w = 0; w < wrong.length; w++) {
+        if (wrong[w] === fb) { already = true; break; }
+      }
+      if (!already) wrong.push(fb);
+    }
 
     // シャッフル
     var choices = [correctStr, wrong[0], wrong[1]];
