@@ -3963,6 +3963,21 @@
       pointer-events: none;
     }
     .daily-gacha-center-msg[hidden] { display: none; }
+    .daily-gacha-center-msg[data-msg-mode="locked"] {
+      width: min(600px, 64%);
+      min-height: clamp(140px, 25%, 188px);
+      aspect-ratio: auto;
+      padding: clamp(28px, 3.4vw, 42px) clamp(44px, 5.2vw, 72px);
+      border: clamp(18px, 2.4vw, 30px) solid transparent;
+      border-image-source: url("assets/images/quizland/OP/frame_1_1.png");
+      border-image-slice: 165 fill;
+      border-image-width: 1;
+      border-image-repeat: stretch;
+      background: rgba(255, 240, 190, .92);
+      font-size: clamp(23px, 2.7vw, 32px);
+      line-height: 1.22;
+      filter: drop-shadow(0 14px 18px rgba(54, 28, 9, .28));
+    }
 
     /* レスポンシブ: 既存 .daily-gacha-entry の縮小ブレークポイントに合わせてバナーも縮める */
     @media (max-width: 1200px) {
@@ -4019,6 +4034,7 @@
       line-height: 1;
       margin: 0 0 .18em;
     }
+    .daily-gacha-center-msg[data-msg-mode="locked"] .daily-gacha-center-msg__emoji { display: none; }
     .daily-gacha-center-msg__text {
       display: block;
       white-space: pre-line;
@@ -5160,7 +5176,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1640;
+    const PAGE_CACHE_VERSION = 1641;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -6583,15 +6599,7 @@
       var text = '';
       var emoji = '';
       if (mode === 'locked') {
-        var label = 'おだい';
-        try {
-          if (window.PonoDailyQuest) {
-            var q = window.PonoDailyQuest.getToday();
-            if (q && q.label) label = q.label;
-          }
-        } catch (_) {}
-        text = 'きょうは ' + label + ' で\nあそんでから ガチャ できるよ';
-        emoji = '🎯'; // v1577 M2: 文字が読めなくても「目印」 が分かる視覚アンカー
+        text = 'きょうの チャレンジが\nおわったら ガチャ できるよ';
       } else if (mode === 'used') {
         text = 'きょうは もう ひいたよ\nまた あしたね';
         emoji = '🌙'; // v1577 M2: 「またあした」 の意味を 1 文字で伝える
@@ -6599,24 +6607,27 @@
       if (!text) {
         el.hidden = true;
         el.textContent = '';
+        el.removeAttribute('data-msg-mode');
         return;
       }
-      // v1577 M2: emoji + text を 2 行構造で出す (CSS 子クラスでサイズ制御)
+      el.setAttribute('data-msg-mode', mode);
       el.textContent = '';
-      var eEm = document.createElement('span');
-      eEm.className = 'daily-gacha-center-msg__emoji';
-      eEm.setAttribute('aria-hidden', 'true');
-      eEm.textContent = emoji;
+      if (emoji) {
+        var eEm = document.createElement('span');
+        eEm.className = 'daily-gacha-center-msg__emoji';
+        eEm.setAttribute('aria-hidden', 'true');
+        eEm.textContent = emoji;
+        el.appendChild(eEm);
+      }
       var eTx = document.createElement('span');
       eTx.className = 'daily-gacha-center-msg__text';
       eTx.textContent = text;
-      el.appendChild(eEm);
       el.appendChild(eTx);
       el.hidden = false;
     }
     function hideDailyGachaCenterMsg() {
       var el = document.getElementById('dailyGachaCenterMsg');
-      if (el) { el.hidden = true; el.textContent = ''; el.classList.remove('is-blocked-pulse'); }
+      if (el) { el.hidden = true; el.textContent = ''; el.removeAttribute('data-msg-mode'); el.classList.remove('is-blocked-pulse'); }
     }
 
     // v1577 M2: 鍵なし / 引き済み 時のアシスト hint。
@@ -6624,16 +6635,9 @@
     // 注: 「ショップで かぎを かおう」 は誤り (鍵はお題ゲームをクリアしてゲット)。 採用しない。
     function showDailyGachaAssistHint(mode) {
       if (!dailyGachaAssist) return;
-      var label = 'おだい';
-      try {
-        if (window.PonoDailyQuest) {
-          var q = window.PonoDailyQuest.getToday();
-          if (q && q.label) label = q.label;
-        }
-      } catch (_) {}
       var text = '';
       if (mode === 'locked') {
-        text = '👉 ' + label + ' で あそんで かぎを ゲット！';
+        text = 'チャレンジが おわったら ガチャできるよ';
       } else if (mode === 'used') {
         text = '🌅 あした また あえるよ！';
       }
