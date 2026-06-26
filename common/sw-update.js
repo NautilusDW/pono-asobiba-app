@@ -50,15 +50,41 @@
       document.addEventListener(ev, function () { lastPointerTs = Date.now(); }, { capture: true, passive: true });
     });
   } catch (e) {}
+  // navigation 中 (ブラウザが別ページへ遷移中) は reload しない。
+  // reload が pending navigation をキャンセルして元のページに戻すバグを防ぐ。
+  var isNavigating = false;
+  // beforeunload ダイアログで user が「Stay」 を選んでナビゲーションがキャンセルされた場合、
+  // pageshow が fire しないので、 タイマー reset で stuck 状態を回避。
+  // 5 秒以内に navigation が実際に起きれば、 ページがアンロードされて timer は無関係になる。
+  function scheduleNavigationReset() {
+    setTimeout(function () { isNavigating = false; }, 5000);
+  }
+  try {
+    window.addEventListener('beforeunload', function () {
+      isNavigating = true;
+      scheduleNavigationReset();
+    }, { capture: true });
+    window.addEventListener('pagehide', function () {
+      isNavigating = true;
+      scheduleNavigationReset();
+    }, { capture: true });
+    // bfcache (back-forward cache) からの復元時に isNavigating を解除。
+    // pageshow は通常 load 時にも fire するので、 persisted フラグに関わらず常に reset で安全側。
+    window.addEventListener('pageshow', function () {
+      isNavigating = false;
+    }, { capture: true });
+  } catch (e) {}
   var refreshing = false;
   function safeReload() {
     if (refreshing) return;
+    if (isNavigating) return;  // navigation 中は reload しない (race 防止)
     if (reloadStartTs === 0) reloadStartTs = Date.now();
     var sinceStart = Date.now() - reloadStartTs;
     if (sinceStart < RELOAD_DEADLINE_MS && (Date.now() - lastPointerTs) < POINTER_GUARD_MS) {
       setTimeout(safeReload, POINTER_GUARD_MS);
       return;
     }
+    if (isNavigating) return;  // setTimeout 経過中に navigation が始まった場合の最終ガード
     refreshing = true;
     window.location.reload();
   }

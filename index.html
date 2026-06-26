@@ -2381,5 +2381,47 @@
        common/sw-update.js に集約。auto-reload と postMessage('sw-updated') の旧フォールバックも
        スクリプト側で保持しているので動作互換あり。 -->
   <script src="/common/sw-update.js" defer></script>
+
+  <!-- 「すぐあそぶ」 ボタン: deploy 直後の race で /play.html が一瞬 404 を返したり、
+       SW reload が navigation を中断するケースがあるため、 click 時に HEAD で
+       生存確認 → 失敗時は短い wait + retry してから遷移する defensive 措置。
+       (sw-update.js 側の isNavigating ガードと併用してリロード戻りバグを多層防御) -->
+  <script>
+    (function setupEnterBtnGuard() {
+      var btn = document.getElementById('enter-btn');
+      if (!btn) return;
+      var navigating = false;
+      btn.addEventListener('click', function (e) {
+        if (navigating) { e.preventDefault(); return; }
+        navigating = true;
+        e.preventDefault();
+        var target = btn.getAttribute('href') || 'play.html';
+        function tryNavigate(attempt) {
+          fetch(target, { method: 'HEAD', cache: 'no-store' })
+            .then(function (res) {
+              if (res && res.ok) {
+                window.location.href = target;
+                return;
+              }
+              if (attempt < 2) {
+                setTimeout(function () { tryNavigate(attempt + 1); }, 400);
+                return;
+              }
+              // 最終的に失敗しても navigation 試行 (404 page でも何もしないよりはマシ)
+              window.location.href = target;
+            })
+            .catch(function () {
+              // network エラー時も retry → 最終的に navigate
+              if (attempt < 2) {
+                setTimeout(function () { tryNavigate(attempt + 1); }, 400);
+                return;
+              }
+              window.location.href = target;
+            });
+        }
+        tryNavigate(0);
+      });
+    })();
+  </script>
 </body>
 </html>
