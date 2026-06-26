@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ポノのあそびば おためし版 参加のご案内</title>
+<style>
+@page { size: A4; margin: 15mm; }
+
+:root {
+  --ink: #1d2733;
+  --accent: #1a4d7a;
+  --accent-soft: #2f6ea3;
+  --muted: #6b7785;
+  --rule: #c9d3df;
+  --bg: #ffffff;
+  --code-bg: #f4f6f9;
+  --code-border: #dde3ec;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+  font-size: 11pt;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--accent);
+  page-break-after: avoid;
+}
+
+h1 {
+  font-size: 22pt;
+  margin: 1.6em 0 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 3px double var(--accent);
+  page-break-before: always;
+}
+h1:first-of-type,
+main > h1:first-child {
+  page-break-before: auto;
+  margin-top: 0.2em;
+}
+
+h2 {
+  font-size: 16pt;
+  margin: 1.5em 0 0.5em;
+  padding: 0.2em 0 0.2em 0.6em;
+  border-left: 6px solid var(--accent);
+  background: linear-gradient(to right, rgba(26,77,122,0.06), transparent);
+}
+
+h3 {
+  font-size: 13pt;
+  margin: 1.3em 0 0.4em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px dashed var(--rule);
+}
+
+h4 { font-size: 12pt; margin: 1.2em 0 0.3em; }
+h5 { font-size: 11pt; margin: 1.1em 0 0.3em; }
+h6 { font-size: 10.5pt; margin: 1.0em 0 0.3em; color: var(--muted); }
+
+p {
+  margin: 0.6em 0;
+  orphans: 3;
+  widows: 3;
+}
+
+strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+em { font-style: italic; }
+
+a {
+  color: var(--accent-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:visited { color: var(--accent-soft); }
+
+ul, ol {
+  margin: 0.5em 0 0.8em;
+  padding-left: 1.6em;
+}
+li { margin: 0.2em 0; }
+li > ul, li > ol { margin: 0.2em 0 0.3em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 1.6em 0;
+}
+
+/* hr.page-break クラスを付ければ印刷時に改ページ可能 */
+hr.page-break {
+  border: none;
+  margin: 0;
+  height: 0;
+  page-break-after: always;
+}
+
+blockquote {
+  margin: 0.8em 0;
+  padding: 0.6em 1em;
+  border-left: 4px solid var(--accent-soft);
+  background: rgba(47,110,163,0.06);
+  color: var(--muted);
+}
+blockquote p { margin: 0.3em 0; }
+
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.92em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  line-height: 1.5;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.88em;
+  white-space: pre;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.9em 0;
+  page-break-inside: avoid;
+  font-size: 0.95em;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: rgba(26,77,122,0.08);
+  font-weight: 700;
+  color: var(--accent);
+}
+tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+
+img { max-width: 100%; height: auto; }
+
+@media print {
+  body { font-size: 10.5pt; }
+  main { max-width: 100%; padding: 0; }
+  a { color: var(--ink); text-decoration: none; }
+  pre, table, blockquote { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>ポノのあそびば おためし版 参加のご案内</h1>
+<p><strong>主催</strong>: ndw (個人開発者)
+<strong>期間</strong>: <code>[開始日]</code> 〜 <code>[終了日]</code> (約2週間)
+<strong>対象</strong>: 日本国内のご家庭 (海外からの参加はお受けしておりません)</p>
+<hr>
+<h2>このおためし版について</h2>
+<p>お子さんと一緒に web で遊べる知育アプリ 「ポノのあそびば」 のおためし版です。 ご家庭で2週間ほど遊んでいただき (保育園は内容を見ません)、 簡単なアンケートにお答えいただけたら助かります。 ご負担は全部あわせて 30分以内 を目安にしています。</p>
+<p>この情報は、 保育園には一切共有されません。</p>
+<hr>
+<h2>3つのお約束</h2>
+<ol>
+<li><strong>お子さんを特定できる情報 (お名前・顔写真・声・位置情報) は、 一切収集しません。</strong></li>
+<li><strong>データはボタンを押した時だけ送られます。</strong> こちらが勝手に送信することはありません。</li>
+<li><strong>いつでも、 理由なくやめられます (遊ぶのをやめるだけで、 ご連絡不要)。</strong> 遊ぶのをやめていただくだけで OK です。</li>
+<li><strong>このチラシ・QR コード・URL は、 保育園以外の方には共有しないでください。</strong></li>
+</ol>
+<hr>
+<h2>集めるもの (すべて匿名)</h2>
+<ul>
+<li>どのゲームを何分プレイしたか</li>
+<li>保護者の方が書いてくださったメモ</li>
+<li>アンケートの回答 (お子さんの年齢層のみ)</li>
+</ul>
+<h2>集めないもの</h2>
+<ul>
+<li>お名前・顔写真・声・位置情報</li>
+<li>カメラ・マイクへのアクセス (アプリで一切使いません)</li>
+</ul>
+<p>集めたデータは (お子さんの年齢層は統計集計後に削除) <strong>2026年12月31日までに、 すべて削除</strong> します。</p>
+<hr>
+<h2>お願い (大切なお約束)</h2>
+<p><strong>お子さんが嫌がった場合は、 すぐに遊ぶのをやめてください。</strong> このおためし版は完走を求めるものではありません。 お子さんの気持ちが最優先です。</p>
+<hr>
+<h2>参加特典 (創設メンバー特典)</h2>
+<p>ご参加いただいた方には、 以下をお贈りします。</p>
+<ul>
+<li>アプリ内のデジタルシール (参加してすぐお渡しします)</li>
+<li>正式版 (¥980 で販売予定) を <strong>永久無料</strong></li>
+<li>「創設メンバー」 としてアプリ内にお名前掲載 (任意・Web/紙の別途チェックボックスで掲載の可否をお選びください。 後からの取消もいつでも ndwss2023@gmail.com にご連絡ください)</li>
+</ul>
+<hr>
+<h2>お子さん本人への説明 (アセント)</h2>
+<p>お子さんに、 下記の内容を年齢に合わせてお伝えください。</p>
+<blockquote><p>このアプリで、 お名前や顔写真は一切集めません。 ゲームをプレイした時間と、 ママ・パパが書いたメモだけをお預かりします。 いやだと思ったら、 いつでもやめて OK です。</p></blockquote>
+<hr>
+<h2>同意欄</h2>
+<p>下記をご確認のうえ、 チェックとご記入をお願いします。</p>
+<ul>
+<li>[ ] 上記の内容を読み、 おためし版への参加に同意します。</li>
+<li>[ ] お子さんが嫌がった場合は、 すぐに遊ぶのをやめます。</li>
+<li>[ ] お子さんに上記の内容を説明し、 理解を得たことを確認します。</li>
+<li>[ ] 「創設メンバー」 としてアプリ内にお名前掲載に同意します (任意・チェックなしでも参加可)。</li>
+</ul>
+<p><strong>保護者氏名</strong>: ______________________________</p>
+<p><strong>お子さんの年齢層</strong> (該当に○):  3-4歳  /  5-6歳  /  7-8歳</p>
+<p><strong>ご記入日</strong>: 2026年 ____ 月 ____ 日</p>
+<blockquote><p>紙での記入が難しい場合は、 おためし版 URL にアクセスして、 Web 上の同意画面で同じ内容をご同意いただけます。 <strong>紙版と Web 版どちらか一方の提出で構いません</strong> (両方の提出は不要です)。 Web 版の場合はメールアドレスを入力いただくことで保護者様を特定できるため、 氏名欄は省略できます。 Web 版でご同意後に紙版を改めて提出する必要はありません。</p></blockquote>
+<hr>
+<div style="page-break-before: always;"></div>
+<h1>よくあるご質問 (Q&A)</h1>
+<h2>Q1. 保育園は、 アプリの内容や遊び方を見ますか?</h2>
+<p><strong>いいえ、 見ません。</strong> 保育園は、 このご案内チラシをラックに置いてくださっているだけです。 お子さんの遊び方やアンケート回答が保育園に共有されることは一切ありません。 連絡帳への記載もありません。</p>
+<h2>Q2. 途中でやめたい時は、 どうすればいいですか?</h2>
+<p><strong>遊ぶのをやめていただくだけで OK です。</strong> こちらにご連絡いただく必要はありません。 ブラウザの履歴を消したり、 設定を変えたりする必要もありません。 そのまま閉じていただいて大丈夫です。</p>
+<h2>Q3. データを削除してほしい時は?</h2>
+<p>(途中でやめるだけではなく、 すでに集まったデータを削除してほしい場合)</p>
+<p>メールで一言ご連絡ください。 翌営業日以降に削除し、 完了をご返信します。</p>
+<ul>
+<li>宛先: <strong>ndwss2023@gmail.com</strong></li>
+<li>件名は自由で構いません (例: 「データ削除のお願い」)</li>
+<li><strong>紙の同意書でご参加いただいた場合</strong>: ご家庭を特定するため、 同意書記入時の 「保護者氏名」 と 「記入日」 をメールに添えていただけるとスムーズです。</li>
+<li><strong>Web で同意いただいた場合</strong>: 自動に識別コードが記録されるため、 ご連絡時に何も添えていただく必要はありません (ご登録のメールアドレスからご連絡いただければ特定できます)。</li>
+</ul>
+<p>なお、 集めたデータは <strong>2026年12月31日までに全件削除</strong> しますので、 ご連絡いただかない場合も自動で消えます。</p>
+<h2>Q4. 海外からも遊べますか?</h2>
+<p><strong>今回のおためし版は、 日本国内のご家庭が対象です。</strong> 海外からのご参加はお受けしておりません。 ご旅行などで一時的に海外からアクセスされた場合も、 おためし版のデータ送信は停止する設計になっています。</p>
+<h2>Q5. 連絡は LINE で取れますか?</h2>
+<p><strong>LINE 公式アカウントは用意していません。</strong> すべて <strong>メール (ndwss2023@gmail.com) 一本化</strong> とさせてください。 お返事にお時間をいただく場合があります。 急ぎのご相談でも、 同じ宛先で大丈夫です。</p>
+<hr>
+<h2>運営・お問い合わせ</h2>
+<ul>
+<li><strong>運営</strong>: ndw (個人開発者)</li>
+<li><strong>連絡先</strong>: ndwss2023@gmail.com</li>
+<li><strong>プライバシーポリシー</strong>: https://pono.kodama-no-mori.com/privacy</li>
+</ul>
+<p>ご参加いただき、 本当にありがとうございます。 お子さんと一緒に遊んでいただいた感想が、 アプリをよりよくする一番の力になります。</p>
+</main>
+</body>
+</html>

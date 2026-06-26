@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ポノのあそびば おためし募集チラシ (A4 1枚 / 配布用)</title>
+<style>
+@page { size: A4; margin: 15mm; }
+
+:root {
+  --ink: #1d2733;
+  --accent: #1a4d7a;
+  --accent-soft: #2f6ea3;
+  --muted: #6b7785;
+  --rule: #c9d3df;
+  --bg: #ffffff;
+  --code-bg: #f4f6f9;
+  --code-border: #dde3ec;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+  font-size: 11pt;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--accent);
+  page-break-after: avoid;
+}
+
+h1 {
+  font-size: 22pt;
+  margin: 1.6em 0 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 3px double var(--accent);
+  page-break-before: always;
+}
+h1:first-of-type,
+main > h1:first-child {
+  page-break-before: auto;
+  margin-top: 0.2em;
+}
+
+h2 {
+  font-size: 16pt;
+  margin: 1.5em 0 0.5em;
+  padding: 0.2em 0 0.2em 0.6em;
+  border-left: 6px solid var(--accent);
+  background: linear-gradient(to right, rgba(26,77,122,0.06), transparent);
+}
+
+h3 {
+  font-size: 13pt;
+  margin: 1.3em 0 0.4em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px dashed var(--rule);
+}
+
+h4 { font-size: 12pt; margin: 1.2em 0 0.3em; }
+h5 { font-size: 11pt; margin: 1.1em 0 0.3em; }
+h6 { font-size: 10.5pt; margin: 1.0em 0 0.3em; color: var(--muted); }
+
+p {
+  margin: 0.6em 0;
+  orphans: 3;
+  widows: 3;
+}
+
+strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+em { font-style: italic; }
+
+a {
+  color: var(--accent-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:visited { color: var(--accent-soft); }
+
+ul, ol {
+  margin: 0.5em 0 0.8em;
+  padding-left: 1.6em;
+}
+li { margin: 0.2em 0; }
+li > ul, li > ol { margin: 0.2em 0 0.3em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 1.6em 0;
+}
+
+/* hr.page-break クラスを付ければ印刷時に改ページ可能 */
+hr.page-break {
+  border: none;
+  margin: 0;
+  height: 0;
+  page-break-after: always;
+}
+
+blockquote {
+  margin: 0.8em 0;
+  padding: 0.6em 1em;
+  border-left: 4px solid var(--accent-soft);
+  background: rgba(47,110,163,0.06);
+  color: var(--muted);
+}
+blockquote p { margin: 0.3em 0; }
+
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.92em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  line-height: 1.5;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.88em;
+  white-space: pre;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.9em 0;
+  page-break-inside: avoid;
+  font-size: 0.95em;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: rgba(26,77,122,0.08);
+  font-weight: 700;
+  color: var(--accent);
+}
+tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+
+img { max-width: 100%; height: auto; }
+
+@media print {
+  body { font-size: 10.5pt; }
+  main { max-width: 100%; padding: 0; }
+  a { color: var(--ink); text-decoration: none; }
+  pre, table, blockquote { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>ポノのあそびば おためし募集チラシ (A4 1枚 / 配布用)</h1>
+<blockquote><p>A4 縦・印刷時は本文 11pt 前後 / 見出しは太字で。QR は中央 60mm 角。1色刷りでも読めるようコントラスト重視で作っています。</p></blockquote>
+<hr>
+<h2>1. キャッチコピー</h2>
+<h3>メイン案 (推奨)</h3>
+<p><strong>おうちで5分。 ポノとあそんでみませんか？</strong></p>
+<h3>別案</h3>
+<p><strong>スマホひとつで、 こどものあそびばが ひらきます。</strong></p>
+<blockquote><p>※ 印刷時はメイン案を上に大きく (24-28pt 目安)、 別案は使わない場合は省略可。 紙面に余裕があればサブコピーとして小さく添える運用もアリ。</p></blockquote>
+<hr>
+<h2>2. イントロ</h2>
+<p>地元の個人開発者 ndw が、 未就学のお子さん向けに作っている
+Web あそびアプリ <strong>「ポノのあそびば」</strong> の おためし版ができました。</p>
+<p>正式リリース前に、 少しだけ遊んで感想を聞かせてくれる
+ご家族を 10組ほど さがしています。</p>
+<hr>
+<h2>3. なにをすれば？</h2>
+<ul>
+<li>スマホのカメラで 下の QR コードを 読み込むだけ</li>
+<li><strong>アプリのインストールは 要りません</strong> (ブラウザでひらきます)</li>
+<li>1回 5〜10分、 好きな時間に あそぶだけ</li>
+</ul>
+<hr>
+<h2>4. 期間</h2>
+<p><strong>[開始日] 〜 [終了日] の 2週間</strong></p>
+<blockquote><p>※ 日付は配布直前に確定して印刷してください。</p></blockquote>
+<hr>
+<h2>5. お願いするのは これだけ</h2>
+<ul>
+<li>紹介動画の視聴 (約3分)</li>
+<li>1週目おわりの 中間アンケート (約3分)</li>
+<li>2週目おわりの 最終アンケート (約7-8分)</li>
+</ul>
+<p><strong>3分のご協力で 完了します。</strong></p>
+<blockquote><p>アプリでお子さんと遊ぶ時間は ご家庭のペースで OK。 「遊ばなきゃ」 のプレッシャーは いりません。 アンケートはお子さんが寝た後でも、 すきま時間にどうぞ。</p></blockquote>
+<hr>
+<h2>6. お礼</h2>
+<p>参加してくれたご家族には、 ささやかですが —</p>
+<ul>
+<li>アプリの中で つかえる <strong>デジタルシール</strong> (すぐお渡し)</li>
+<li><strong>正式版をずっと無料でお使いいただけます</strong></li>
+<li><strong>「創設メンバー」</strong> として ずっと残ります</li>
+</ul>
+<hr>
+<h2>7. 大切なこと</h2>
+<ul>
+<li>お子さんの <strong>個人識別情報は 一切保管しません</strong></li>
+<li>途中でやめても OK です。 <strong>ご連絡も不要</strong></li>
+<li>ご相談は下の連絡先まで直接どうぞ。 <strong>詳細は QR先のプライバシーポリシーをご確認ください</strong></li>
+<li>保育園以外の方には、 このチラシ・QR コード・URL を共有しないでください</li>
+</ul>
+<hr>
+<h2>8. QR コード</h2>
+<pre><code>┌──────────────────┐
+│                  │
+│                  │
+│   [ QR ここ ]    │   ← 60mm × 60mm
+│                  │      (fid: [fid] を埋め込み)
+│                  │
+│                  │
+└──────────────────┘</code></pre>
+<blockquote><p>配布前に <code>?fid=XXXXXX</code> を含んだ QR を生成し、 ここに差し替えてください。
+中央寄せ、 周囲 5mm 以上のクワイエットゾーンを確保。</p></blockquote>
+<hr>
+<h2>9. QR が読めないとき</h2>
+<p><strong>メール (ndwss2023@gmail.com) でお問い合わせください。</strong>
+こちらから 直接 ご案内 URL をお送りします。</p>
+<hr>
+<h2>10. 連絡先</h2>
+<ul>
+<li>運営: <strong>個人開発者 ndw</strong></li>
+<li>メール: <strong>ndwss2023@gmail.com</strong></li>
+<li>一人で開発しているため、 お返事にお時間をいただく場合があります</li>
+</ul>
+<hr>
+<h2>11. 詳細について</h2>
+<p><strong>くわしい説明と 参加同意のご案内は、 QR を読み込んだ先の ページで ご確認いただけます。</strong>
+このチラシは あくまで お知らせ用です。 ご記入いただくものは ありません。</p>
+<hr>
+<h2>印刷時の注意</h2>
+<ul>
+<li><strong>用紙</strong>: A4 縦 / 普通紙 OK (光沢紙だと QR の反射に注意)</li>
+<li><strong>余白</strong>: 上下左右 15mm 以上 (園のラックに差した時に文字が切れないように)</li>
+<li><strong>本文</strong>: 11pt 前後、 行間 1.5倍を推奨</li>
+<li><strong>見出し</strong>: 太字 + 1〜2サイズ大きく</li>
+<li><strong>QR コード</strong>: <strong>60mm × 60mm</strong>、 中央寄せ、 周囲に 5mm 以上のクワイエットゾーン</li>
+<li><strong>色</strong>:
+<ul>
+<li><strong>1色刷り (黒) でも 全項目が読める設計</strong> にしてあります</li>
+<li>カラーで刷る場合は アクセント色を1色だけ (例: やわらかい黄緑 / 木のぬくもり系) に絞ると、 子ども向けの空気感が出ます</li>
+<li>赤や原色は使わない (チラシ全体の 「押し付けない」 トーンが崩れます)</li>
+<li><strong>配置の順序</strong>: 上記 1 → 11 の順を守ってください。 視線誘導と「お願い→お礼→注意→QR」 の心理的な流れを設計しています</li>
+<li><strong>配布方法</strong>: 園のラックに 2週間 置くだけ。 先生からの声かけ・連絡帳への記載は お願いしません</li>
+</ul></li>
+</ul>
+</main>
+</body>
+</html>

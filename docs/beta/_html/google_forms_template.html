@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ポノのあそびば βテスト Google Forms コピペシート</title>
+<style>
+@page { size: A4; margin: 15mm; }
+
+:root {
+  --ink: #1d2733;
+  --accent: #1a4d7a;
+  --accent-soft: #2f6ea3;
+  --muted: #6b7785;
+  --rule: #c9d3df;
+  --bg: #ffffff;
+  --code-bg: #f4f6f9;
+  --code-border: #dde3ec;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+  font-size: 11pt;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--accent);
+  page-break-after: avoid;
+}
+
+h1 {
+  font-size: 22pt;
+  margin: 1.6em 0 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 3px double var(--accent);
+  page-break-before: always;
+}
+h1:first-of-type,
+main > h1:first-child {
+  page-break-before: auto;
+  margin-top: 0.2em;
+}
+
+h2 {
+  font-size: 16pt;
+  margin: 1.5em 0 0.5em;
+  padding: 0.2em 0 0.2em 0.6em;
+  border-left: 6px solid var(--accent);
+  background: linear-gradient(to right, rgba(26,77,122,0.06), transparent);
+}
+
+h3 {
+  font-size: 13pt;
+  margin: 1.3em 0 0.4em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px dashed var(--rule);
+}
+
+h4 { font-size: 12pt; margin: 1.2em 0 0.3em; }
+h5 { font-size: 11pt; margin: 1.1em 0 0.3em; }
+h6 { font-size: 10.5pt; margin: 1.0em 0 0.3em; color: var(--muted); }
+
+p {
+  margin: 0.6em 0;
+  orphans: 3;
+  widows: 3;
+}
+
+strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+em { font-style: italic; }
+
+a {
+  color: var(--accent-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:visited { color: var(--accent-soft); }
+
+ul, ol {
+  margin: 0.5em 0 0.8em;
+  padding-left: 1.6em;
+}
+li { margin: 0.2em 0; }
+li > ul, li > ol { margin: 0.2em 0 0.3em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 1.6em 0;
+}
+
+/* hr.page-break クラスを付ければ印刷時に改ページ可能 */
+hr.page-break {
+  border: none;
+  margin: 0;
+  height: 0;
+  page-break-after: always;
+}
+
+blockquote {
+  margin: 0.8em 0;
+  padding: 0.6em 1em;
+  border-left: 4px solid var(--accent-soft);
+  background: rgba(47,110,163,0.06);
+  color: var(--muted);
+}
+blockquote p { margin: 0.3em 0; }
+
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.92em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  line-height: 1.5;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.88em;
+  white-space: pre;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.9em 0;
+  page-break-inside: avoid;
+  font-size: 0.95em;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: rgba(26,77,122,0.08);
+  font-weight: 700;
+  color: var(--accent);
+}
+tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+
+img { max-width: 100%; height: auto; }
+
+@media print {
+  body { font-size: 10.5pt; }
+  main { max-width: 100%; padding: 0; }
+  a { color: var(--ink); text-decoration: none; }
+  pre, table, blockquote { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>ポノのあそびば βテスト Google Forms コピペシート</h1>
+<blockquote><p>このファイルは Google Forms に<strong>そのままコピペして 2本のアンケート (中間 / 最終) を作る</strong>ためのテンプレート集です。
+並走する手順書: <a href="./google_forms_setup_guide.html"><code>google_forms_setup_guide.md</code></a> を先に読んでから戻ってきてください。</p></blockquote>
+<hr>
+<h2>設問の意図 (作る前に 30秒で目を通す)</h2>
+<h3>中間アンケート (Week 1 末・5問・90秒)</h3>
+<ul>
+<li><strong>Q1</strong>: 子供から「もう一回やりたい」と自発的にリクエストがあったか → <strong>リテンション先行指標</strong>。 数字より行動の有無で測る。</li>
+<li><strong>Q2</strong>: 操作で迷った画面 → <strong>UX 詰まりポイント</strong>の早期発見。 自由記述ではなく選択式にして集計を軽くする。</li>
+<li><strong>Q3</strong>: Q2 の詳細を任意で書ける長文欄 → 選択式では拾えない一次情報を、 書きたい人だけが書ける形で補完。</li>
+<li><strong>Q4</strong>: クラッシュ/フリーズ/真っ白の有無 → <strong>安定性 P0 バグ</strong>を 1週間で炙り出す。</li>
+<li><strong>Q5</strong>: Q4 の詳細を任意で書ける長文欄 → どのゲーム/どの操作かを書きたい人だけ書く再現情報の窓口。</li>
+</ul>
+<h3>最終アンケート (Week 3 頭・13問・7-8分)</h3>
+<ul>
+<li><strong>子の体験 (Q1-Q4)</strong>: 楽しさ・繰り返し度・お気に入りゲーム・年齢適合性 → アプリそのものの評価軸</li>
+<li><strong>親評価 (Q5-Q9)</strong>: 安心して渡せたか・操作迷い (Q7 で詳細任意記述)・広告/課金圧の不快感・親が知育として価値を感じたか</li>
+<li><strong>推奨意向 (Q10-Q12)</strong>: 5段階満足度 / NPS / 創設メンバー継続意向 → go/no-go 判定の数値根拠</li>
+<li><strong>自由記述 (Q13)</strong>: 言葉にならない引っかかりと、 次の v1.1 で欲しい機能</li>
+</ul>
+<hr>
+<h1>【アンケート 1】 中間アンケート</h1>
+<h2>フォーム基本設定</h2>
+<ul>
+<li><strong>タイトル</strong>: <code>ポノのあそびば おためし版 中間アンケート</code></li>
+<li><strong>説明文</strong> (タイトル直下にコピペ):</li>
+</ul>
+<pre><code>ポノのあそびば のβテストに ご参加いただき ありがとうございます。
+1週間 つかってみての ざっくりした感想を 5問だけ おしえてください。
+所要時間は 約90秒です。
+
+回答は匿名で集計され、 個人を特定できる情報 (お名前/お顔/お声/位置情報) は一切収集しません。
+ご回答いただいたデータは 2026年12月31日までに 全て削除します。</code></pre>
+<hr>
+<h2>Q0 (Hidden / 自動付与) — fid</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>【記入不要】参加コード</code></li>
+<li><strong>回答形式</strong>: <strong>記述式 (短文回答)</strong></li>
+<li><strong>必須</strong>: いいえ (任意)</li>
+<li><strong>ヘルプテキスト</strong> (説明欄):
+```
+このコードは自動で入力されます。 そのまま次に進んでください。 (空欄でも回答できます)
+```</li>
+<li><strong>備考</strong>: この質問の <strong>entry ID を控えること</strong> (手順書「フォームに事前入力する」 参照)。 配布時の短縮 URL から自動 prefill されます。</li>
+</ul>
+<hr>
+<h2>Q1 — 自発リクエスト</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>この1週間で お子さまから 「もう一回 ポノのあそびばで あそびたい」と 自発的に リクエストがありましたか？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>選択肢</strong> (1行ずつコピペ):</li>
+</ul>
+<pre><code>何回もあった (3回以上)
+2-3回あった
+1回だけあった
+リクエストはなかった
+わからない / 覚えていない</code></pre>
+<hr>
+<h2>Q2 — 分かりにくい画面</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>この1週間で お子さまが 「どうすればいいか分からなくて 困っていた」 画面はありましたか？ (複数選択可)</code></li>
+<li><strong>回答形式</strong>: <strong>チェックボックス</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+あてはまるもの 全てを選んでください。 「特になし」 を選んだ場合は 他は選ばないでください。
+```</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>特になし
+タイトル画面 (どのゲームをえらぶか)
+ゲームの遊び方 (ルールが伝わらなかった)
+ゲーム中の操作 (タップ/ドラッグ がうまくいかなかった)
+ゲームクリア後 (次にどこへ行くか分からない)
+スタンプ帳 / シール画面
+その他 (最終アンケートで詳しく教えてください)</code></pre>
+<hr>
+<h2>Q3 — Q2 の詳細 (任意)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>Q2 で『分かりにくかった画面』 を選んだ場合、 もしよろしければ詳しく教えてください (任意)</code></li>
+<li><strong>回答形式</strong>: <strong>段落 (長文回答)</strong></li>
+<li><strong>必須</strong>: いいえ (任意)</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+例: 「タイトル画面で どのゲームを選べばいいか 分からなかった」 等。 空欄でも送信できます。
+```</li>
+</ul>
+<hr>
+<h2>Q4 — 起動安定性</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>アプリの 起動や動作で 困ったことはありましたか？ (複数選択可)</code></li>
+<li><strong>回答形式</strong>: <strong>チェックボックス</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+発生した場合 どのゲームで起きたかは 最終アンケートで詳しく教えてください。
+```</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>特に問題なかった
+画面が真っ白のまま 開かなかった
+アプリが途中で 止まった/フリーズした
+ゲームの音が出なかった
+画面の表示が おかしかった (絵が崩れる/重なる)
+動作が とても重かった/カクついた
+その他のトラブル</code></pre>
+<hr>
+<h2>Q5 — Q4 の詳細 (任意)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>Q4 で 起動・動作のトラブルがあった場合、 もしよろしければ詳しく教えてください (任意)</code></li>
+<li><strong>回答形式</strong>: <strong>段落 (長文回答)</strong></li>
+<li><strong>必須</strong>: いいえ (任意)</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+例: 「『ポノとつくろう いろどりべんとう』 を開いたら画面が真っ白だった」 等。 空欄でも送信できます。
+```</li>
+</ul>
+<hr>
+<hr>
+<h1>【アンケート 2】 最終アンケート</h1>
+<h2>フォーム基本設定</h2>
+<ul>
+<li><strong>タイトル</strong>: <code>ポノのあそびば おためし版 最終アンケート</code></li>
+<li><strong>説明文</strong>:</li>
+</ul>
+<pre><code>ポノのあそびば βテスト 2週間 おつかれさまでした。
+最後に 少しだけ詳しく ご感想を聞かせてください。 全13問・約7-8分です。
+
+ご回答くださった方には、 アプリ内デジタルシール (即配布) と、
+正式版 (¥980 で販売予定) の永久無料アクセス権、
+創設メンバーとしてのお名前掲載 (希望者のみ) をお届けします。
+
+回答は匿名で集計し、 個人を特定できる情報は収集しません。
+データは 2026年12月31日までに 全て削除します。
+
+ご不明点は ndwss2023@gmail.com まで。 一人で開発しているため、 お返事にお時間をいただく場合があります。</code></pre>
+<hr>
+<h2>Q0 (Hidden / 自動付与) — fid</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>【記入不要】参加コード</code></li>
+<li><strong>回答形式</strong>: <strong>記述式 (短文回答)</strong></li>
+<li><strong>必須</strong>: いいえ</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+このコードは自動で入力されます。 そのまま次に進んでください。 (空欄でも回答できます)
+```</li>
+<li><strong>備考</strong>: 中間アンケートと同様、 <strong>entry ID を控えること</strong>。</li>
+</ul>
+<hr>
+<h2>セクション区切り 1: 子の体験について</h2>
+<blockquote><p><strong>セクション挿入手順</strong>: 右側ツールバーの「セクションを追加」 (二本線アイコン) をクリック。
+セクションタイトル: <code>1. お子さまの体験について (4問)</code>
+説明: <code>お子さまの様子を 思い出しながら お答えください。</code></p></blockquote>
+<hr>
+<h2>Q1 — 楽しさ (5段階)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>お子さまは ポノのあそびばを どのくらい 楽しんでいましたか？</code></li>
+<li><strong>回答形式</strong>: <strong>均等目盛 (5段階評価)</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>目盛範囲</strong>: <code>1</code> から <code>5</code></li>
+<li><strong>ラベル</strong>:
+<ul>
+<li><code>1</code> のラベル: <code>ぜんぜん楽しんでいなかった</code></li>
+<li><code>5</code> のラベル: <code>すごく楽しんでいた</code></li>
+</ul></li>
+</ul>
+<hr>
+<h2>Q2 — 一番くりかえし遊んだゲーム</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>この2週間で お子さまが 一番くりかえし遊んだゲームは どれですか？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+「だいたいこれが多かった」 という感覚で 1つ選んでください。
+```</li>
+<li><strong>選択肢</strong> (各選択肢に<strong>ゲームアイコン画像を添付</strong>する):</li>
+</ul>
+<pre><code>ポノとつくろう いろどりべんとう
+ポノのなかよしパズル
+ポノとランタンのめいろ
+フクロウはかせのなぞなぞ
+ポノのおとタッチ
+シールちょう
+どれもだいたい同じくらい
+あまり遊ばなかった</code></pre>
+<ul>
+<li><strong>画像添付指示</strong> (各選択肢ごと):
+<ul>
+<li>ポノとつくろう いろどりべんとう: <code>assets/ui/title/bento.png</code></li>
+<li>ポノのなかよしパズル: <code>assets/ui/title/puzzle.png</code></li>
+<li>ポノとランタンのめいろ: <code>assets/ui/title/maze.png</code></li>
+<li>フクロウはかせのなぞなぞ: <code>assets/ui/title/quizland.png</code></li>
+<li>ポノのおとタッチ: <code>assets/ui/title/oto.png</code></li>
+<li>シールちょう: (画像不要、 テキストのみ。 もし <code>assets/ui/title/sticker.png</code> 等の適切な画像があれば後付け可)</li>
+<li><strong>添付手順</strong>: Forms 編集画面で 選択肢の右端にマウスを当てると現れる <strong>画像アイコン</strong> → アップロード → 上記パスの画像を指定。</li>
+</ul></li>
+</ul>
+<hr>
+<h2>Q3 — 自発的にもう一回 (再リテンション)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>2週間の間に お子さまから 「もう一回 ポノのあそびばを やりたい」 と 自発的に リクエストがあった頻度は？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>ほぼ毎日 (週5回以上)
+週に2-4回くらい
+週に1回くらい
+2週間で 1-2回程度
+ほとんど/全くなかった</code></pre>
+<hr>
+<h2>Q4 — 年齢適合性</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>お子さまの年齢に対して 難しさや内容は 合っていましたか？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>ちょうど良かった
+やや簡単すぎた
+やや難しすぎた
+ゲームによって バラつきがあった
+よく分からなかった</code></pre>
+<hr>
+<h2>セクション区切り 2: 親の評価について</h2>
+<blockquote><p>セクションタイトル: <code>2. 保護者の方のご評価 (5問)</code>
+説明: <code>お子さまに渡す立場として どう感じたかを お答えください。</code></p></blockquote>
+<hr>
+<h2>Q5 — 安心して渡せたか</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>お子さまに ポノのあそびばを 一人で渡しても 安心できる作りでしたか？</code></li>
+<li><strong>回答形式</strong>: <strong>均等目盛 (5段階評価)</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>目盛範囲</strong>: <code>1</code> から <code>5</code></li>
+<li><strong>ラベル</strong>:
+<ul>
+<li><code>1</code> のラベル: <code>不安だった</code></li>
+<li><code>5</code> のラベル: <code>安心して渡せた</code></li>
+</ul></li>
+</ul>
+<hr>
+<h2>Q6 — 操作で親が迷ったか</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>アプリの仕組みで 迷ったところはありましたか？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>特に迷わなかった
+アンケートへの行き方で迷った
+データ削除/退会の方法が分からなかった
+その他 (Q13 で記載)</code></pre>
+<hr>
+<h2>Q7 — Q6 の詳細 (任意)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>Q6 で『迷ったところ』 を選んだ場合、 もしよろしければ詳しく教えてください (任意)</code></li>
+<li><strong>回答形式</strong>: <strong>段落 (長文回答)</strong></li>
+<li><strong>必須</strong>: いいえ (任意)</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+例: 「データを消したくて設定を探したが見つからなかった」 等。 空欄でも送信できます。
+```</li>
+</ul>
+<hr>
+<h2>Q8 — 広告/課金圧</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>アプリ内の 広告や課金への誘導は どのくらい気になりましたか？</code></li>
+<li><strong>回答形式</strong>: <strong>均等目盛 (5段階評価)</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>目盛範囲</strong>: <code>1</code> から <code>5</code></li>
+<li><strong>ラベル</strong>:
+<ul>
+<li><code>1</code> のラベル: <code>全く気にならなかった</code></li>
+<li><code>5</code> のラベル: <code>とても不快だった</code></li>
+</ul></li>
+</ul>
+<hr>
+<h2>Q9 — 知育としての価値</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>保護者の方ご自身は ポノのあそびばを 「知育として価値がある」 と感じましたか？</code></li>
+<li><strong>回答形式</strong>: <strong>均等目盛 (5段階評価)</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>目盛範囲</strong>: <code>1</code> から <code>5</code></li>
+<li><strong>ラベル</strong>:
+<ul>
+<li><code>1</code> のラベル: <code>感じなかった</code></li>
+<li><code>5</code> のラベル: <code>とても感じた</code></li>
+</ul></li>
+</ul>
+<hr>
+<h2>セクション区切り 3: 推奨意向</h2>
+<blockquote><p>セクションタイトル: <code>3. 今後についての ご意向 (3問)</code>
+説明: <code>正式版に向けての お気持ちを お聞かせください。</code></p></blockquote>
+<hr>
+<h2>Q10 — 総合満足度</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>ポノのあそびば 2週間つかってみての 総合的なご感想は？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>😀 すごく良い
+🙂 良い
+😐 ふつう
+😕 いまいち
+😞 良くなかった</code></pre>
+<hr>
+<h2>Q11 — NPS (推奨意向)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>ポノのあそびばを、 同じくらいの年齢のお子さんがいる お友達や ご家族に 勧めたいと思いますか？</code></li>
+<li><strong>回答形式</strong>: <strong>均等目盛 (11段階評価)</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>目盛範囲</strong>: <code>0</code> から <code>10</code></li>
+<li><strong>ラベル</strong>:
+<ul>
+<li><code>0</code> のラベル: <code>全く勧めたくない</code></li>
+<li><code>10</code> のラベル: <code>ぜひ勧めたい</code></li>
+</ul></li>
+</ul>
+<hr>
+<h2>Q12 — 創設メンバー継続意向 / 課金意向</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>正式版 (¥980予定) は βテスト参加者の方は永久無料で お使いいただけます。 もし無料特典がなかったとして、 ¥980 を払って 正式版を使い続けたいと思いますか？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+本音でお答えください。 「払わない」 と答えても 永久無料特典は維持されます。
+```</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>ぜひ払って使い続けたい
+内容次第では払っても良い
+無料なら使うが お金は払わない
+正式版は使わないと思う
+分からない</code></pre>
+<hr>
+<h2>セクション区切り 4: 自由記述</h2>
+<blockquote><p>セクションタイトル: <code>4. 自由記述 (1問)</code>
+説明: <code>言葉にしづらい引っかかりや、 「こういう機能が欲しい」 等あれば 何でも書いてください。 (Q6 で「その他」 を選んだ場合の詳細は Q7 でお書きいただけます)</code></p></blockquote>
+<hr>
+<h2>Q13 — 自由記述</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>その他、 ご感想・改善要望・バグ報告 など 自由にお書きください。</code></li>
+<li><strong>回答形式</strong>: <strong>段落 (長文回答)</strong></li>
+<li><strong>必須</strong>: いいえ (任意)</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+・「このゲームで こういうバグがあった」 (どのゲーム/どの操作のときか)
+・「正式版では こういう機能が欲しい」
+・「ここが特に良かった」
+・お子さまの反応で 印象的だったエピソード
+など、 自由にお書きください。 空欄でも送信できます。
+```</li>
+</ul>
+<hr>
+<h2>最終ページ設定</h2>
+<ul>
+<li><strong>確認メッセージ</strong> (Forms 設定 → プレゼンテーション → 確認メッセージ):</li>
+</ul>
+<pre><code>ご回答ありがとうございました！
+創設メンバー特典 (アプリ内デジタルシール / 正式版永久無料) は
+3日以内に配布手順を ご案内します。
+
+ご不明点は ndwss2023@gmail.com まで。 一人で開発しているため、 お返事にお時間をいただく場合があります。</code></pre>
+</main>
+</body>
+</html>

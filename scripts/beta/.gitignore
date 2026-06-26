@@ -1,0 +1,5 @@
+# βテスト配布物 (fid + URL + QR PNG) はリポジトリに含めない
+out/
+
+# qrcode を --no-save でインストールしたが node_modules がここに作られるケース用
+node_modules/

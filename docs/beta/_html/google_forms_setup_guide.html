@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ポノのあそびば βテスト Google Forms 設定手順書</title>
+<style>
+@page { size: A4; margin: 15mm; }
+
+:root {
+  --ink: #1d2733;
+  --accent: #1a4d7a;
+  --accent-soft: #2f6ea3;
+  --muted: #6b7785;
+  --rule: #c9d3df;
+  --bg: #ffffff;
+  --code-bg: #f4f6f9;
+  --code-border: #dde3ec;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+  font-size: 11pt;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--accent);
+  page-break-after: avoid;
+}
+
+h1 {
+  font-size: 22pt;
+  margin: 1.6em 0 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 3px double var(--accent);
+  page-break-before: always;
+}
+h1:first-of-type,
+main > h1:first-child {
+  page-break-before: auto;
+  margin-top: 0.2em;
+}
+
+h2 {
+  font-size: 16pt;
+  margin: 1.5em 0 0.5em;
+  padding: 0.2em 0 0.2em 0.6em;
+  border-left: 6px solid var(--accent);
+  background: linear-gradient(to right, rgba(26,77,122,0.06), transparent);
+}
+
+h3 {
+  font-size: 13pt;
+  margin: 1.3em 0 0.4em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px dashed var(--rule);
+}
+
+h4 { font-size: 12pt; margin: 1.2em 0 0.3em; }
+h5 { font-size: 11pt; margin: 1.1em 0 0.3em; }
+h6 { font-size: 10.5pt; margin: 1.0em 0 0.3em; color: var(--muted); }
+
+p {
+  margin: 0.6em 0;
+  orphans: 3;
+  widows: 3;
+}
+
+strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+em { font-style: italic; }
+
+a {
+  color: var(--accent-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:visited { color: var(--accent-soft); }
+
+ul, ol {
+  margin: 0.5em 0 0.8em;
+  padding-left: 1.6em;
+}
+li { margin: 0.2em 0; }
+li > ul, li > ol { margin: 0.2em 0 0.3em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 1.6em 0;
+}
+
+/* hr.page-break クラスを付ければ印刷時に改ページ可能 */
+hr.page-break {
+  border: none;
+  margin: 0;
+  height: 0;
+  page-break-after: always;
+}
+
+blockquote {
+  margin: 0.8em 0;
+  padding: 0.6em 1em;
+  border-left: 4px solid var(--accent-soft);
+  background: rgba(47,110,163,0.06);
+  color: var(--muted);
+}
+blockquote p { margin: 0.3em 0; }
+
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.92em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  line-height: 1.5;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.88em;
+  white-space: pre;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.9em 0;
+  page-break-inside: avoid;
+  font-size: 0.95em;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: rgba(26,77,122,0.08);
+  font-weight: 700;
+  color: var(--accent);
+}
+tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+
+img { max-width: 100%; height: auto; }
+
+@media print {
+  body { font-size: 10.5pt; }
+  main { max-width: 100%; padding: 0; }
+  a { color: var(--ink); text-decoration: none; }
+  pre, table, blockquote { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>ポノのあそびば βテスト Google Forms 設定手順書</h1>
+<blockquote><p>想定所要時間: <strong>約10分 × 2本 = 20分</strong>
+並走するコピペシート: <a href="./google_forms_template.html"><code>google_forms_template.md</code></a>
+困ったら末尾 <strong>FAQ / トラブルシュート</strong> へ。</p></blockquote>
+<hr>
+<h2>0. 用語ミニ辞典 (最初に 30秒)</h2>
+<table>
+<thead>
+<tr>
+<th>用語</th>
+<th>意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Google Forms</strong></td>
+<td>Google のアンケート作成ツール。 ブラウザだけで使える、 無料。</td>
+</tr>
+<tr>
+<td><strong>質問形式 (回答形式)</strong></td>
+<td>ラジオボタン / チェックボックス / 記述式 / 段落 / 均等目盛 など、 回答の入力方法。</td>
+</tr>
+<tr>
+<td><strong>ラジオボタン</strong></td>
+<td>1つだけ選べる丸印。 「単一選択」。</td>
+</tr>
+<tr>
+<td><strong>チェックボックス</strong></td>
+<td>複数選べる四角印。 「複数選択可」。</td>
+</tr>
+<tr>
+<td><strong>記述式 (短文回答)</strong></td>
+<td>1行のテキスト入力。</td>
+</tr>
+<tr>
+<td><strong>段落 (長文回答)</strong></td>
+<td>複数行のテキスト入力。</td>
+</tr>
+<tr>
+<td><strong>均等目盛</strong></td>
+<td>1-5 や 0-10 のような 段階評価のバー。</td>
+</tr>
+<tr>
+<td><strong>セクション</strong></td>
+<td>質問のグループ分け。 ページ区切りにもなる。</td>
+</tr>
+<tr>
+<td><strong>事前入力リンク</strong></td>
+<td>URL に値を埋め込んでおいて、 回答者が開いた時に最初から入力された状態にする仕組み。 fid 自動付与に使う。</td>
+</tr>
+<tr>
+<td><strong>entry ID</strong></td>
+<td>各質問の内部 ID (例: <code>entry.123456789</code>)。 事前入力リンクに必要。</td>
+</tr>
+<tr>
+<td><strong>応答 (Responses)</strong></td>
+<td>集まった回答データ。 スプレッドシートに自動連携できる。</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>1. 中間アンケートを作る (10分)</h2>
+<h3>Step 1-1. 新規フォームを作成 (1分)</h3>
+<ol>
+<li>ブラウザで <https://forms.google.com> を開く</li>
+<li>左上の <strong>「空白のフォーム」</strong> (+ アイコン) をクリック</li>
+<li>画面上部の <strong>「無題のフォーム」</strong> をクリック → タイトルを以下に変更:
+```
+ポノのあそびば おためし版 中間アンケート
+```</li>
+<li>タイトル直下の <strong>「フォームの説明」</strong> をクリック → コピペシートの「説明文」 をペースト</li>
+</ol>
+<h3>Step 1-2. 匿名化設定 (1分)</h3>
+<ol>
+<li>画面上部 <strong>「設定 (Settings)」</strong> タブをクリック</li>
+<li><strong>「回答」</strong> セクションを展開:
+<ul>
+<li><strong>「メールアドレスを収集する」</strong> → <strong>OFF</strong> (回収しない)</li>
+<li><strong>「ログインを必須にする」</strong> → <strong>OFF</strong> (Google アカウントを要求しない)</li>
+<li><strong>「回答を 1 回に制限する」</strong> → <strong>OFF</strong> (※ON にすると Google ログイン必須になるため、 βでは OFF 推奨。 fid で重複検出する設計)</li>
+<li><strong>「プレゼンテーション」</strong> セクションを展開:</li>
+<li><strong>「進行状況バーを表示」</strong> → <strong>ON</strong></li>
+<li><strong>「確認メッセージ」</strong> にコピペシート末尾の確認メッセージをペースト</li>
+</ul></li>
+</ol>
+<h3>Step 1-3. 質問を順番に追加 (5-6分)</h3>
+<ol>
+<li>上部 <strong>「質問」</strong> タブに戻る</li>
+<li>デフォルトで 1つ目の質問枠が表示されているので、 <strong>コピペシートの Q0 (fid)</strong> から順に作成</li>
+<li>各質問の作成手順:
+<ol>
+<li><strong>質問テキスト欄</strong>にコピペシートの「質問タイトル」 を貼る</li>
+<li>右上の <strong>質問形式プルダウン</strong>をクリックして、 コピペシートの「回答形式」 を選ぶ</li>
+<li>選択肢タイプ (ラジオ/チェックボックス) なら 「選択肢を追加」 を繰り返してコピペシートの選択肢を 1行ずつ貼る</li>
+<li>右下 <strong>「必須」</strong> トグルをコピペシートに従って ON/OFF</li>
+<li>質問枠の右下 <strong>「︙」 (3点メニュー) → 「説明 (Description)」</strong> を ON にして、 ヘルプテキストを貼る (必要な場合のみ)</li>
+<li>右側ツールバーの <strong>「+」 (質問を追加)</strong> をクリックして次の質問へ</li>
+<li>Q5 (最終問) まで完成したら、 画面右上 <strong>「目のアイコン (プレビュー)」</strong> で全体確認</li>
+</ol></li>
+</ol>
+<h3>Step 1-4. fid の entry ID を取得 (★ 重要・2分)</h3>
+<blockquote><p>fid を URL から自動付与するために必要な作業。 1回だけで OK。</p></blockquote>
+<ol>
+<li>画面右上 <strong>「︙」 (3点メニュー)</strong> をクリック</li>
+<li><strong>「フォームに事前入力する」</strong> をクリック (英: <code>Get pre-filled link</code>)</li>
+<li>プレビュー画面が開く → <strong>Q0 の fid 欄</strong>に仮の値 <code>SAMPLE</code> を入力 (他の必須欄も適当に埋める)</li>
+<li>下部の <strong>「リンクを取得」</strong> ボタンをクリック</li>
+<li>上部に出てくる URL を <strong>「リンクをコピー」</strong> でコピー</li>
+<li>メモ帳などに貼り付けて、 <code>entry.数字=SAMPLE</code> の部分を探す
+<ul>
+<li>例: <code>https://docs.google.com/forms/d/e/xxx/viewform?entry.1234567890=SAMPLE&amp;entry.9876543210=...</code></li>
+<li>この <code>entry.1234567890</code> が <strong>fid 用の entry ID</strong></li>
+<li><strong><code>entry.1234567890</code> を控える</strong> (この後 fid 発行スクリプト/配布物 URL に使う)</li>
+</ul></li>
+</ol>
+<h3>Step 1-5. 公開 URL を取得 (1分)</h3>
+<ol>
+<li>画面右上 <strong>「送信」</strong> ボタンをクリック</li>
+<li>上部タブで <strong>「リンク」 アイコン</strong> (鎖マーク) を選択</li>
+<li><strong>「URL を短縮」</strong> にチェックを入れると <code>https://forms.gle/xxxxx</code> の短い URL が得られる (任意)</li>
+<li><strong>「コピー」</strong> で URL を取得 → 控える</li>
+</ol>
+<h3>Step 1-6. スプレッドシート連携 (1分)</h3>
+<ol>
+<li>画面上部 <strong>「回答 (Responses)」</strong> タブをクリック</li>
+<li><strong>「スプレッドシートにリンク」</strong> (緑のアイコン) をクリック</li>
+<li><strong>「新しいスプレッドシートを作成」</strong> を選択 → デフォルト名でOK → <strong>「作成」</strong></li>
+<li>新しいタブでスプレッドシートが開けば成功 → 以後、 回答が自動で行追加される</li>
+</ol>
+<hr>
+<h2>2. 最終アンケートを作る (10分)</h2>
+<h3>画像ファイルの準備 (★ 着手前に必ず実施・2分)</h3>
+<blockquote><p>Q2 のゲームアイコン画像を 5枚 事前にダウンロードしておく。 これを飛ばすと作業途中で詰まり、 10分以内完成の約束が守れません。</p></blockquote>
+<ol>
+<li><strong>入手元</strong>: GitHub リポジトリ <code>assets/ui/title/</code> フォルダ
+<ul>
+<li>URL: <https://github.com/ndwss2023/pono-asobiba-app/tree/master/assets/ui/title></li>
+<li>またはローカルクローン済みであれば <code>D:\AppDevelopment\pono-asobiba-app\assets\ui\title\</code> から直接コピー</li>
+<li><strong>ダウンロードすべきファイル (5枚すべて)</strong>:
+```
+bento.png
+puzzle.png
+maze.png
+quizland.png
+oto.png
+```
+※「シールちょう」「どれもだいたい同じくらい」「あまり遊ばなかった」 の 3選択肢は画像なしでテキストのみ</li>
+<li><strong>形式の確認</strong>: 拡張子が <strong>必ず <code>.png</code></strong> であること</li>
+<li><code>.webp</code> ファイルがあっても <strong>使わない</strong> (Forms で「壊れた画像」 と表示されることがある: FAQ 参照)</li>
+<li>PNG 版が見当たらない場合は ndwss2023@gmail.com に連絡 → 即変換して再配布</li>
+<li>ダウンロード先は デスクトップなど分かる場所に <strong><code>pono-icons</code> フォルダ</strong>を作って 5枚まとめて入れておく (アップロード時にすぐ選べる)</li>
+</ul></li>
+</ol>
+<hr>
+<p>基本は中間と同じ手順 (Step 1-1 〜 1-6)。 違いだけ列挙:</p>
+<ul>
+<li><strong>タイトル</strong>: <code>ポノのあそびば おためし版 最終アンケート</code></li>
+<li><strong>質問数</strong>: 14 (fid + Q1-Q13)</li>
+<li><strong>セクション (ページ区切り) を 4つ挿入</strong>:
+<ul>
+<li>セクション 1 (Q1 の前): <code>1. お子さまの体験について (4問)</code></li>
+<li>セクション 2 (Q5 の前): <code>2. 保護者の方のご評価 (5問)</code></li>
+<li>セクション 3 (Q10 の前): <code>3. 今後についての ご意向 (3問)</code></li>
+<li>セクション 4 (Q13 の前): <code>4. 自由記述 (1問)</code></li>
+<li><strong>挿入手順</strong>: 右側ツールバーの <strong>「セクションを追加」</strong> (二本線アイコン) → セクションタイトルと説明を貼る</li>
+<li><strong>Q2 (一番くりかえし遊んだゲーム) に画像添付</strong>:</li>
+<li>Q2 の選択肢を 8個 すべて入力する</li>
+<li>各選択肢の<strong>右端にマウスを当てる</strong>と現れる <strong>「画像アイコン (山と太陽の絵)」</strong> をクリック</li>
+<li><strong>「アップロード」</strong> タブを選択</li>
+<li><strong>「画像ファイルの準備」</strong> で <code>pono-icons</code> フォルダにまとめた PNG (<code>bento.png</code> 等) を 該当する選択肢ごとにアップロード</li>
+<li>アップロード後、 選択肢の横にサムネイルが表示されれば成功</li>
+<li>5つの画像対応選択肢すべて繰り返す (「シール帳」「どれもだいたい同じくらい」「あまり遊ばなかった」 は画像なし)</li>
+<li><strong>※ 万一 画像準備を飛ばしてしまった場合のみ</strong>: テキストのみで先に進めて構わないが、 配布前の最終チェックリストで「Q2 のゲームアイコン 5枚 表示確認」 が必ず必要。 原則は事前準備を完了してから着手すること。</li>
+<li><strong>均等目盛 (Q1, Q5, Q8, Q9, Q11) の設定手順</strong>:</li>
+<li>質問形式プルダウンで <strong>「均等目盛」</strong> を選択</li>
+<li>数値範囲を指定 (Q11 のみ 0-10、 他は 1-5)</li>
+<li>左端ラベル / 右端ラベル を コピペシートに従って入力</li>
+<li><strong>fid の entry ID は中間と別</strong>: 同じ手順 (Step 1-4) でこのフォーム用の <code>entry.XXXXX</code> を取得 → 控える</li>
+</ul></li>
+</ul>
+<hr>
+<h2>3. 配布前の最終チェックリスト</h2>
+<p>両フォーム完成後、 以下を控えておくと配布スクリプト/チラシ作成がスムーズです:</p>
+<h3>✅ チェックリスト</h3>
+<ul>
+<li>[ ] 中間アンケート <strong>公開 URL</strong>: <code>https://forms.gle/__________</code></li>
+<li>[ ] 中間アンケート <strong>Form ID</strong> (URL の <code>/d/e/</code> と <code>/viewform</code> の間): <code>__________</code></li>
+<li>[ ] 中間アンケート <strong>fid 用 entry ID</strong>: <code>entry.__________</code></li>
+<li>[ ] 中間アンケート <strong>回答スプレッドシート URL</strong>: <code>__________</code></li>
+<li>[ ] 最終アンケート <strong>公開 URL</strong>: <code>https://forms.gle/__________</code></li>
+<li>[ ] 最終アンケート <strong>Form ID</strong>: <code>__________</code></li>
+<li>[ ] 最終アンケート <strong>fid 用 entry ID</strong>: <code>entry.__________</code></li>
+<li>[ ] 最終アンケート <strong>回答スプレッドシート URL</strong>: <code>__________</code></li>
+<li>[ ] 両フォームともプレビューで全質問が表示されることを確認</li>
+<li>[ ] 両フォームともテスト回答を 1件 送信し、 スプレッドシートに行が追加されることを確認</li>
+<li>[ ] 事前入力リンク (<code>?entry.XXXX=TESTFID</code>) でアクセスすると fid 欄が <code>TESTFID</code> で埋まることを確認</li>
+<li>[ ] Q2 (最終アンケート) のゲームアイコン 5枚 が全て表示されることを確認</li>
+</ul>
+<h3>配布 URL の組み立て方</h3>
+<p>fid <code>ABC234</code> の家族に最終アンケートを送る場合:</p>
+<pre><code>https://docs.google.com/forms/d/e/[FORM_ID]/viewform?entry.[ENTRY_ID]=ABC234</code></pre>
+<p>これをそのまま LINE/メール/アプリ内バナーから開かせれば fid が自動入力されます。</p>
+<hr>
+<h2>4. FAQ / トラブルシュート</h2>
+<h3>Q. 「フォームに事前入力する」 が見つかりません</h3>
+<p>A. 画面右上の <strong>「︙」 (縦3点メニュー)</strong> の中にあります。 質問編集中ではなく <strong>フォーム全体の編集画面</strong> (URL が <code>/edit</code> で終わる画面) で開いてください。 セクション内の質問の「︙」 とは別物です。</p>
+<h3>Q. fid 欄を回答者に編集されたくない</h3>
+<p>A. 残念ながら Google Forms には「読み取り専用フィールド」 機能がありません。 ヘルプテキスト (<code>このコードは自動で入力されます。 そのまま次に進んでください。 (空欄でも回答できます)</code>) で抑止し、 集計時に短縮 URL とのクロスチェックで弾く運用にします。 万一改ざんがあっても fid 長 6文字 base32 + 配布リスト突き合わせで検出可能です。</p>
+<h3>Q. 画像をアップロードしたのに 「壊れた画像」 マークが出る</h3>
+<p>A. 画像形式が <code>webp</code> の場合、 まれに Forms が表示できないことがあります。 PNG または JPEG に変換してから再アップロードしてください (このプロジェクトは <code>assets/ui/title/</code> 下に PNG 版があれば PNG を優先)。</p>
+<h3>Q. 「回答を 1回に制限」 を ON にできない</h3>
+<p>A. Google アカウントへのログインが必須になる設定のため、 βテストでは <strong>OFF</strong> が正解です。 重複回答の検出は fid (匿名 ID) で行います。</p>
+<h3>Q. スプレッドシート連携を忘れたまま回答が来てしまった</h3>
+<p>A. 後から連携しても <strong>過去の回答も自動で取り込まれる</strong>ので大丈夫です。 「回答」 タブ → 「スプレッドシートにリンク」 を後から実行してください。</p>
+<h3>Q. 質問の順番を入れ替えたい</h3>
+<p>A. 質問枠を <strong>マウスでドラッグ</strong> (枠の上端の点々が並んだ部分をつかむ) すれば移動できます。 ただし fid 質問は <strong>必ず先頭</strong> に置いてください (entry ID は変わりませんが、 回答者が混乱しないため)。</p>
+<hr>
+<h2>5. 完成後の運用フロー (参考)</h2>
+<ol>
+<li><strong>Day 0 (配布開始)</strong>: チラシ/同意書/アプリ起動時に <code>?fid=XXXXXX</code> 付き URL を配布</li>
+<li><strong>Day 7 (中間アンケート配信)</strong>: アプリ内バナー + メール で中間アンケート URL (fid prefill 付き) を案内</li>
+<li><strong>Day 14 (最終アンケート配信)</strong>: 同様に最終アンケート URL を案内</li>
+<li><strong>Day 14-16</strong>: スプレッドシートで集計、 go/no-go 判定:
+<ul>
+<li>D7 継続率 ≥ 40%</li>
+<li>「😀すごく良い + 🙂良い」 (Q10) ≥ 60%</li>
+<li>NPS 7以上 (Q11) ≥ 30%</li>
+<li><strong>Day 17-21</strong>: 創設メンバー特典を配布 (シール即配布 / 永久無料権付与)</li>
+</ul></li>
+</ol>
+<hr>
+<p>以上で βテスト用 Google Forms のセットアップは完了です。 ご不明点は ndwss2023@gmail.com まで。 一人で開発しているため、 お返事にお時間をいただく場合があります。</p>
+</main>
+</body>
+</html>

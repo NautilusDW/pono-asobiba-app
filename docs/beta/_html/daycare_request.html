@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>daycare_request</title>
+<style>
+@page { size: A4; margin: 15mm; }
+
+:root {
+  --ink: #1d2733;
+  --accent: #1a4d7a;
+  --accent-soft: #2f6ea3;
+  --muted: #6b7785;
+  --rule: #c9d3df;
+  --bg: #ffffff;
+  --code-bg: #f4f6f9;
+  --code-border: #dde3ec;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+  font-size: 11pt;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--accent);
+  page-break-after: avoid;
+}
+
+h1 {
+  font-size: 22pt;
+  margin: 1.6em 0 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 3px double var(--accent);
+  page-break-before: always;
+}
+h1:first-of-type,
+main > h1:first-child {
+  page-break-before: auto;
+  margin-top: 0.2em;
+}
+
+h2 {
+  font-size: 16pt;
+  margin: 1.5em 0 0.5em;
+  padding: 0.2em 0 0.2em 0.6em;
+  border-left: 6px solid var(--accent);
+  background: linear-gradient(to right, rgba(26,77,122,0.06), transparent);
+}
+
+h3 {
+  font-size: 13pt;
+  margin: 1.3em 0 0.4em;
+  padding-bottom: 0.15em;
+  border-bottom: 1px dashed var(--rule);
+}
+
+h4 { font-size: 12pt; margin: 1.2em 0 0.3em; }
+h5 { font-size: 11pt; margin: 1.1em 0 0.3em; }
+h6 { font-size: 10.5pt; margin: 1.0em 0 0.3em; color: var(--muted); }
+
+p {
+  margin: 0.6em 0;
+  orphans: 3;
+  widows: 3;
+}
+
+strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+em { font-style: italic; }
+
+a {
+  color: var(--accent-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:visited { color: var(--accent-soft); }
+
+ul, ol {
+  margin: 0.5em 0 0.8em;
+  padding-left: 1.6em;
+}
+li { margin: 0.2em 0; }
+li > ul, li > ol { margin: 0.2em 0 0.3em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 1.6em 0;
+}
+
+/* hr.page-break クラスを付ければ印刷時に改ページ可能 */
+hr.page-break {
+  border: none;
+  margin: 0;
+  height: 0;
+  page-break-after: always;
+}
+
+blockquote {
+  margin: 0.8em 0;
+  padding: 0.6em 1em;
+  border-left: 4px solid var(--accent-soft);
+  background: rgba(47,110,163,0.06);
+  color: var(--muted);
+}
+blockquote p { margin: 0.3em 0; }
+
+code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.92em;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  page-break-inside: avoid;
+  line-height: 1.5;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: 0.88em;
+  white-space: pre;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.9em 0;
+  page-break-inside: avoid;
+  font-size: 0.95em;
+}
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45em 0.7em;
+  vertical-align: top;
+  text-align: left;
+}
+th {
+  background: rgba(26,77,122,0.08);
+  font-weight: 700;
+  color: var(--accent);
+}
+tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+
+img { max-width: 100%; height: auto; }
+
+@media print {
+  body { font-size: 10.5pt; }
+  main { max-width: 100%; padding: 0; }
+  a { color: var(--ink); text-decoration: none; }
+  pre, table, blockquote { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+<p>[配布日]</p>
+<p>[保育園名] 園長 [氏名] 先生 / 主任 [氏名] 先生</p>
+<h2>件名: 子ども向け Web あそびアプリ『ポノのあそびば』 おためし版 ご協力のお願い</h2>
+<p>いつも娘 / 息子 [園児氏名] が大変お世話になっております。 保護者の ndw と申します。</p>
+<p>私事で恐縮ですが、 個人で子ども向けの Web あそびアプリ『ポノのあそびば』 を開発しております。 このたび在園のご家庭から数家族におためしいただく短期テストを企画しており、 お忙しい中誠に恐れ入りますが、 1点だけ園のお力をお借りできないかと思いご相談に伺いました。</p>
+<p>なお本件は私個人の活動であり、 園や運営法人様にご負担・ご責任の生じる性質のものではございません。 ご判断のうえ、 もしご無理であれば遠慮なくお断りいただければと存じます。</p>
+<p><strong>本テストへのご参加は全て在園保護者様の個別ご判断です。 園の推奨・強制ではございません。</strong></p>
+<hr>
+<h3>■ 園にお願いするのは1つだけです</h3>
+<p><strong>保護者宛のチラシ (A5 1枚) を、 お迎え時の配布物ラックに 2週間置いていただくこと。</strong></p>
+<ul>
+<li>期間: <strong>[開始日] 〜 [終了日]</strong> (2週間)</li>
+<li>部数: 30部程度 (こちらで用意・補充)</li>
+<li>設置場所: 既存の配布物ラックの空きスペースで構いません</li>
+<li>期間終了後はこちらで残部を回収いたします</li>
+</ul>
+<h3>■ 園にお願いしないこと (ご負担をおかけしません)</h3>
+<p>以下については一切お願いいたしません。 念のため明記いたします。</p>
+<ol>
+<li><strong>園児名簿の提供</strong> — 不要です。 名簿は一切いただきません。</li>
+<li><strong>先生方から保護者への声かけ・推奨</strong> — 不要です。 むしろお控えいただきたくお願いいたします。 (保護者が自発的にチラシを手に取った場合のみ参加いただく形にしたいためです)</li>
+<li><strong>連絡帳・お便り・園内掲示への記載</strong> — 不要です。</li>
+<li><strong>参加家族の管理・取りまとめ</strong> — すべて当方で行います。 園を経由する連絡は発生しません。</li>
+<li><strong>保護者からの問い合わせ対応</strong> — チラシに当方の連絡先を明記しております。 万一園にお問い合わせがあった場合の対応は別添 Q&A カードをご参照ください。</li>
+</ol>
+<h3>■ 期間終了後</h3>
+<ul>
+<li>参加いただいた家族数のみご報告いたします。 詳細なご感想は保護者様個別のご判断でのご共有となります。</li>
+<li>参加いただいたご家族には、 正式版 (将来 ¥980 で販売予定) を <strong>永久無料</strong> でご提供し、 「創設メンバー」 として記録させていただきます。</li>
+</ul>
+<h3>■ 営利性について (重要)</h3>
+<ul>
+<li>将来的に ¥980 で販売予定のアプリですが、 <strong>本テスト期間中は完全無料</strong>です。</li>
+<li>アプリ内・チラシ内のいずれにおいても <strong>商品購入の勧誘は行いません</strong>。</li>
+<li>参加保護者への <strong>金銭・商品券・物品の授受は一切ございません</strong> (お礼はアプリ内デジタルシール + 正式版永久無料権のみ)。</li>
+<li>個人の開発活動の一環であり、 営利目的の販促活動ではございません。</li>
+</ul>
+<h3>■ 個人情報の取り扱い</h3>
+<ul>
+<li>子どもの <strong>氏名・顔写真・声・位置情報・カメラ・マイク</strong> は一切収集しません。</li>
+<li>集めるのは匿名のプレイ時間、 ゲーム ID、 保護者の任意メモ、 年齢層のみのアンケート回答です。</li>
+<li>データは <strong>2026年12月31日までに全て削除</strong> いたします。</li>
+</ul>
+<hr>
+<p>来週〇曜日〇時ごろに訪問させていただく予定です。 ご都合がつかない場合はお声がけください。 本日は資料をお渡しするのみで、 即答は不要でございます。</p>
+<p>ご多忙のところ恐縮ではございますが、 ご検討のほどよろしくお願い申し上げます。</p>
+<hr>
+<p><strong>ndw</strong> ([園児氏名] 保護者・個人開発者)</p>
+<ul>
+<li>住所: [住所]</li>
+<li>メール: ndwss2023@gmail.com</li>
+<li>電話: [電話]</li>
+<li>Web: https://pono.kodama-no-mori.com/</li>
+</ul>
+</main>
+</body>
+</html>
