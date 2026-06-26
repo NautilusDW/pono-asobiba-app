@@ -2061,6 +2061,12 @@ let bookSwipeState = null;
 let stickerTrayDragState = null;
 let suppressStickerTrayClick = false;
 let suppressSceneClickAfterSwipe = false;
+// v1650 (task 2): tray drop 直後の合成 click (canvas 側) を 250ms 抑止。
+// suppressStickerTrayClick は collectionStickerTray 専用で canvas には届かないため別フラグ。
+// これがないと drop → 合成 click → pickEditablePage ヒット → refreshPageTemplateTextures
+// 2 回目発火 → loadStickerImage の microtask 解決前なので blank canvas が 1-2 フレーム描画され、
+// spotlight pulse と組み合わさって 「貼ったシールが消えた」 視覚バグになる。
+let suppressSceneClickAfterStickerDrop = false;
 let lastBookSwipeDebug = null;
 let stickerPlan = null;
 let gameStickerCatalog = null;
@@ -2648,30 +2654,45 @@ function setupScenePagePicking() {
       suppressInlineStickerClick = false;
       return;
     }
+    // v1650 (task 2): tray drop 直後 250ms は canvas click を全 skip。
+    // drop で走った #1 refreshPageTemplateTextures の async draw が完了する前に
+    // canvas click handler が #2 refreshPageTemplateTextures を打って blank frame を作る事故を防止。
+    if (suppressSceneClickAfterStickerDrop) {
+      event.preventDefault();
+      return;
+    }
     const zukanTarget = pickCollectionZukanTarget(event);
     if (zukanTarget) {
       event.preventDefault();
       navigateCollectionZukanTarget(zukanTarget);
       return;
     }
+    // v1650 (task 2): place TRY 完了 〜 「つぎ」 押下までは selectedPlacementId を保護。
+    // 単に selectedPlacementId 保護だけでは pickInlineStickerTarget/refreshInlineStickerPage が
+    // refreshPageTemplateTextures を打って blank frame を生むので、 protect 中は両 branch を
+    // 完全 early-return する (a681f99 (v1646) は guard 不完全だった真因)。
+    const tutorialStep = currentStickerTutorialStep?.();
+    const tutorialPhase = stickerTutorialState?.phase;
+    const protectPlacement = (
+      tutorialStep?.id === "place"
+      && (tutorialPhase === "complete" || tutorialPhase === "try")
+    );
     const stickerTarget = pickInlineStickerTarget(event);
     if (stickerTarget) {
       event.preventDefault();
+      if (protectPlacement) {
+        // 自分自身を再選択するだけでも refreshInlineStickerPage が走るので skip。
+        return;
+      }
       selectInlineSticker(stickerTarget);
       return;
     }
     if (pickEditablePage(event)) {
-      // v1646 (task 3): place TRY 完了 〜 「つぎ」 押下までは selectedPlacementId を保護
-      // (空きエリアタップで spotlight が外れ、 「貼ったシールが消えた」 体感になる事故防止)。
-      const tutorialStep = currentStickerTutorialStep?.();
-      const tutorialPhase = stickerTutorialState?.phase;
-      const protectPlacement = (
-        tutorialStep?.id === "place"
-        && (tutorialPhase === "complete" || tutorialPhase === "try")
-      );
-      if (!protectPlacement) {
-        selectedPlacementId = null;
+      if (protectPlacement) {
+        event.preventDefault();
+        return;
       }
+      selectedPlacementId = null;
       updateInlineStickerControls();
       refreshPageTemplateTextures();
       updatePage(flipProgress);
@@ -3719,6 +3740,19 @@ function showStickerTutorialStep(index, options = {}) {
   }
   if (stickerTutorialCard) {
     stickerTutorialCard.hidden = false;
+    // v1650 (task 1): cover-open 中 (swing 1150ms 進行中) または activeSurface !== "inside" の場合、
+    // 左ページ rect が未確定なので card を opacity:0 で潜伏。 updateCoverOpen の open 完了ブランチで
+    // rAF 1 つ挟んで is-await-cover-open を外し fade-in (550ms)。
+    // 旧仕様は swing 中も card を表示 → rightPage rect を「左ページ rect」 として fallback 取得 →
+    // book.position.x 補間で card が動く → 完了瞬間に左ページに大ジャンプ、 の視覚バグが発生していた。
+    // step.id 判定ではなく coverOpenAnimation truthy + activeSurface を直接見るので、 将来 place/ok 等で
+    // setBookSurface("inside") が追加されても自動追従。
+    // intro step は setBookSurface を呼ばない (coverOpenAnimation null) ので影響なし。
+    if (coverOpenAnimation || activeSurface !== "inside") {
+      stickerTutorialCard.classList.add("is-await-cover-open");
+    } else {
+      stickerTutorialCard.classList.remove("is-await-cover-open");
+    }
   }
   // v1628: spotlight の visible 化を「位置確定後」 に遅延 (下記 updateStickerTutorialLayout 直後)。
   // 旧仕様は hidden=false → rAF 内で layout 更新 の順だったため、 前 step の CSS 変数 (--tutorial-x/y/w/h)
@@ -6166,6 +6200,12 @@ function cleanupStickerTrayDrag(suppressClick = false) {
     window.setTimeout(() => {
       suppressStickerTrayClick = false;
     }, 180);
+    // v1650 (task 2): canvas 側の合成 click も 250ms 抑止。 drop 直後の
+    // refreshPageTemplateTextures 2 回目発火 (blank canvas → spotlight pulse 空打ち) を防止。
+    suppressSceneClickAfterStickerDrop = true;
+    window.setTimeout(() => {
+      suppressSceneClickAfterStickerDrop = false;
+    }, 250);
   }
 }
 
@@ -6270,7 +6310,7 @@ function projectedMeshClientRect(mesh) {
   };
 }
 
-function addStickerFromTrayToPage(stickerId, page, point = {}) {
+async function addStickerFromTrayToPage(stickerId, page, point = {}) {
   const sticker = stickerOptions.find((item) => item.id === stickerId);
   if (!sticker || activeAlbumMode === "collection") {
     return;
@@ -6292,6 +6332,13 @@ function addStickerFromTrayToPage(stickerId, page, point = {}) {
   activeEditorPage = pageNumber;
   selectedPlacementId = placement.id;
   saveEditorState();
+  // v1650 (task 2): refreshPageTemplateTextures より前に decode 完了を待つ。
+  // 旧仕様は loadStickerImage(...).then(...) を fire-and-forget して直ぐ
+  // refreshPageTemplateTextures → 新 CanvasTexture を空 canvas のまま GPU upload してしまい、
+  // microtask 解決後の drawAsyncPlacedSticker は GPU 反映に更に 1 フレーム遅れていた。
+  // ここで 1 回 await することで decode 済 (同期 drawImage 可能) 状態を保証 → blank frame ゼロ化。
+  // 失敗時は無視して既存挙動 (after-the-fact 描画) にフォールバック。
+  await loadStickerImage(placement.assetUrl).catch(() => null);
   refreshPageTemplateTextures();
   updatePage(flipProgress);
   updateInlineStickerControls();
@@ -11605,7 +11652,12 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
       drawInlineStickerSelectionOverlay(ctx, pageNumber);
       texture.needsUpdate = true;
     })
-    .catch(() => {});
+    .catch(() => {
+      // v1650 (task 2): 失敗 Promise が stickerImageCache に永久キャッシュされると
+      // 以後同じ URL の sticker が永久に描画されなくなる (低確率だが詰む)。
+      // 次回 refresh で再 load を許可するために cache から削除。
+      stickerImageCache.delete(placement.assetUrl);
+    });
 }
 
 function drawInlineStickerSelectionOverlay(ctx, pageNumber) {
@@ -14245,6 +14297,15 @@ function updateCoverOpen(delta) {
       updatePage(0);
       updateCollectionStickerTrayVisibility();
       syncUrl();
+      // v1650 (task 1): swing 完了直後の同フレームで is-await-cover-open を外すと、
+      // leftPageInner.visible=true 確定前 (updatePage(0) 内 p=0 のとき leftPageInner は visible 化されるが
+      // CSS 変数の rect 再計算は次フレーム scheduleStickerTutorialLayout 経由) に card fade-in が始まる懸念。
+      // rAF 1 つ挟んで 「左ページ rect が --tutorial-leftpage-* に確定書き込み」 された後で fade-in。
+      if (stickerTutorialCard?.classList.contains("is-await-cover-open")) {
+        requestAnimationFrame(() => {
+          stickerTutorialCard?.classList.remove("is-await-cover-open");
+        });
+      }
     }
   }
   return true;

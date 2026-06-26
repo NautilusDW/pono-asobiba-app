@@ -1235,12 +1235,15 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   filter: var(--sticker-thumbnail-outline-filter);
 }
 
-body.is-sticker-tutorial-tray-silhouette .sticker-tray-card:not(.is-tutorial-target-sticker) .sticker-tray-icon img {
-  opacity: 0.46;
-  filter: brightness(0) saturate(0) opacity(0.62);
-}
-
-body.is-sticker-tutorial-tray-silhouette .sticker-tray-card.is-tutorial-target-sticker .sticker-tray-icon {
+/* v1650 (task 3): 旧 body.is-sticker-tutorial-tray-silhouette blanket selector を撤去。
+   旧仕様は チュート中ずっと「target 以外全 silhouette」 になっていたため、 daa5543 の
+   「target ±2 内 SR のみ silhouette」 per-card class が二重塗りで効かず、 また place 以外の
+   step (intro/mode/view/move/scale/rotate/ok) では target が 0 枚なので tray 全カードが silhouette
+   になっていた。 現仕様は per-card class (.is-rarity-super-silhouette) のみに統一。
+   target ハイライトは body class gate を外し、 単独 selector で常時発現。
+   body class .is-sticker-tutorial-tray-silhouette の toggle 自体は main.js 側で温存
+   (将来用 + 他参照箇所への副作用回避)。 */
+.sticker-tray-card.is-tutorial-target-sticker .sticker-tray-icon {
   background: rgba(255, 247, 206, 0.94);
   box-shadow:
     0 0 0 3px rgba(255, 216, 87, 0.82),
@@ -1248,7 +1251,8 @@ body.is-sticker-tutorial-tray-silhouette .sticker-tray-card.is-tutorial-target-s
 }
 
 /* v1636: チュート中、 target ±2 内の未取得 SR (rarity=super) を silhouette 化。
-   既存 body.is-sticker-tutorial-tray-silhouette と独立 (per-card class)、 target 自身は強制解除。 */
+   per-card class (main.js:updateRaritySuperSilhouettes で付与)、 target 自身は強制解除。
+   v1650: 旧 body class blanket が撤去されたため、 ここが silhouette の唯一の発生源になる。 */
 .sticker-tray-card.is-rarity-super-silhouette .sticker-tray-icon img {
   opacity: 0.46;
   filter: brightness(0) saturate(0) opacity(0.62);
@@ -1613,6 +1617,21 @@ body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
 .sticker-tutorial-card[hidden],
 .sticker-tutorial-start[hidden] {
   display: none;
+}
+
+/* v1650 (task 1): cover-open swing 中 card 潜伏 → 完了後 fade-in (550ms)。
+   旧仕様は swing 1150ms 中ずっと rightPage rect を「左ページ rect」 として誤参照 →
+   book.position.x 補間で card が動き、 swing 完了瞬間に左ページに大ジャンプしていた。
+   現仕様: showStickerTutorialStep 時に coverOpenAnimation 進行中なら is-await-cover-open を付与、
+   updateCoverOpen の open 完了ブランチで rAF 経由で外す → 左ページ rect 確定後の fade-in。 */
+.sticker-tutorial-card.is-await-cover-open {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease-out;
+}
+.sticker-tutorial-card:not(.is-await-cover-open) {
+  opacity: 1;
+  transition: opacity 0.55s ease-out;
 }
 
 .sticker-tutorial-start-title {
