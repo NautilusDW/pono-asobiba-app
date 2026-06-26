@@ -233,6 +233,14 @@ body.sheet-on .answer-tray {
   box-shadow: none;
 }
 
+body.sheet-on.layout-editor-on .board::before {
+  background-image: url('../assets/images/quizland/Fukuro_frame_001_editor_marked.png');
+}
+
+body.sheet-on.layout-editor-on .answer-tray {
+  background-image: url('../assets/images/quizland/Fukuro_frame_002_editor_marked.png');
+}
+
 /* 押下状態: チップごとに対応する四分割の pressed 画像を当てる。
    chip の data-idx (0=TL, 1=TR, 2=BL, 3=BR) で 4 種を出し分け。
    sheet-on モードでは chip 自体の border / box-shadow / transform / 黄色グラデ
@@ -1452,6 +1460,26 @@ body.layout-editor-on #char-hint-bubble {
   visibility: visible !important;
   opacity: 0.95 !important;
 }
+body.layout-editor-on .le-toolbar .qz-editor-toolbar-toggle {
+  background: #f6f0df;
+  color: #2f2418;
+  border-color: #d9b46b;
+  font-weight: 800;
+}
+body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar {
+  min-height: 34px;
+  max-height: 42px;
+  overflow: hidden;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  align-items: flex-start;
+}
+body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar > :not(.qz-editor-toolbar-toggle) {
+  display: none !important;
+}
+body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar .qz-editor-toolbar-toggle {
+  display: inline-flex !important;
+}
 
 /* ===== Answer column (right) ===== */
 .a-col {
@@ -1818,6 +1846,14 @@ body.sheet-on .chip.wrong.reading-active[data-idx="3"] {
   font-size: inherit;
   line-height: inherit;
   white-space: pre-line;
+}
+#char-hint-text.qz-hakase-long {
+  font-size: clamp(20px, 0.92em, 30px) !important;
+  line-height: 1.18;
+}
+#char-hint-text.qz-hakase-xlong {
+  font-size: clamp(20px, 0.84em, 28px) !important;
+  line-height: 1.12;
 }
 .character {
   width: 200px; height: 220px;
@@ -4052,7 +4088,12 @@ function setHakaseDialogue(text) {
   const el = document.getElementById('char-hint-text');
   if (!el) return;
   try { if (window.PonoBabble && typeof window.PonoBabble.cancelAll === 'function') window.PonoBabble.cancelAll(); } catch (e) {}
-  el.textContent = (text == null) ? '' : String(text);
+  const value = (text == null) ? '' : String(text);
+  el.textContent = value;
+  const lineCount = value.split(/\n/).length;
+  const compactScore = value.replace(/\s/g, '').length + Math.max(0, lineCount - 2) * 8;
+  el.classList.toggle('qz-hakase-long', compactScore >= 30);
+  el.classList.toggle('qz-hakase-xlong', compactScore >= 48 || lineCount >= 5);
 }
 // E3: layout-editor のセリフ編集パネル (ライブプレビュー) から呼べるよう window に露出
 window.setHakaseDialogue = setHakaseDialogue;
@@ -4249,6 +4290,76 @@ let _qzUpdateDiagLabel = null;
 })();
 
 fitStage();
+
+(function setupQuizlandEditorToolbarCollapse() {
+  const STORAGE_KEY = 'quizland:layout-editor-toolbar-collapsed';
+  let retryTimer = null;
+  let retryCount = 0;
+
+  function syncToolbarHeight(toolbar) {
+    if (!toolbar) return;
+    requestAnimationFrame(function() {
+      document.documentElement.style.setProperty('--le-toolbar-h', toolbar.offsetHeight + 'px');
+      try { window.dispatchEvent(new Event('resize')); } catch (_) {}
+    });
+  }
+
+  function applyCollapsed(toolbar, collapsed) {
+    document.body.classList.toggle('qz-editor-toolbar-collapsed', !!collapsed);
+    const btn = document.getElementById('qz-editor-toolbar-toggle');
+    if (btn) {
+      btn.textContent = collapsed ? '☰ メニューを開く' : '☰ メニューを閉じる';
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      btn.title = collapsed ? 'レイアウトエディタのメニューを開く' : 'レイアウトエディタのメニューを閉じる';
+    }
+    try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (_) {}
+    syncToolbarHeight(toolbar);
+  }
+
+  function attach(toolbar) {
+    if (!toolbar || toolbar.querySelector('#qz-editor-toolbar-toggle')) return true;
+    const btn = document.createElement('button');
+    btn.id = 'qz-editor-toolbar-toggle';
+    btn.type = 'button';
+    btn.className = 'qz-editor-toolbar-toggle';
+    btn.addEventListener('click', function() {
+      applyCollapsed(toolbar, !document.body.classList.contains('qz-editor-toolbar-collapsed'));
+    });
+    toolbar.insertBefore(btn, toolbar.firstChild);
+    let initial = false;
+    try { initial = localStorage.getItem(STORAGE_KEY) === '1'; } catch (_) {}
+    applyCollapsed(toolbar, initial);
+    return true;
+  }
+
+  function tryAttach() {
+    const toolbar = document.getElementById('le-toolbar');
+    if (!toolbar) return false;
+    return attach(toolbar);
+  }
+
+  function scheduleRetry() {
+    if (retryTimer || retryCount >= 40) return;
+    retryTimer = setTimeout(function tick() {
+      retryTimer = null;
+      retryCount += 1;
+      if (tryAttach()) return;
+      scheduleRetry();
+    }, 100);
+  }
+
+  if (tryAttach()) return;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryAttach, { once: true });
+  } else {
+    setTimeout(tryAttach, 0);
+  }
+  scheduleRetry();
+  const observer = new MutationObserver(function() {
+    if (tryAttach()) observer.disconnect();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();
 
 // ═══════════════════════════════════════════════════════════
 // Saved-layout loader (common/layout システム経由)
