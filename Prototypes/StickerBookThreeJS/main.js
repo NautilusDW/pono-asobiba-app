@@ -4544,6 +4544,23 @@ function updateStickerTutorialLayout() {
     stickerTutorialSpotlight.style.setProperty("--tutorial-h", `${heightPx}px`);
     stickerTutorialSpotlight.style.setProperty("--tutorial-radius", radiusVal);
   }
+  // v1630: ノート直書き chip — 左ページ rect を CSS 変数で公開し
+  // .sticker-tutorial-page-text を mesh に追従させる (mesh は Three.js 描画なので getBoundingClientRect 不可、
+  // projectedMeshClientRect で 2D 画面 rect に射影)。 ページめくり等で leftPageInner.visible=false の間は
+  // 直近の有効 rect を保持して chip がワープしないようにする。
+  const leftPageRect = stickerTutorialSidePageRect("left") || stickerTutorialPageRect();
+  if (leftPageRect && Number.isFinite(leftPageRect.left) && Number.isFinite(leftPageRect.top)) {
+    // 帆船イラスト等の上端寄せ — テキスト枠はページ上半分 (上 8% offset、 高さ 40%) に固定。
+    // 余白を取りすぎるとイラストを塞ぐので width は 84%、 left padding 8% で中央寄せ。
+    const textTop = leftPageRect.top + leftPageRect.height * 0.08;
+    const textHeight = leftPageRect.height * 0.40;
+    const textLeft = leftPageRect.left + leftPageRect.width * 0.08;
+    const textWidth = leftPageRect.width * 0.84;
+    stickerTutorial.style.setProperty("--tutorial-leftpage-x", `${textLeft}px`);
+    stickerTutorial.style.setProperty("--tutorial-leftpage-y", `${textTop}px`);
+    stickerTutorial.style.setProperty("--tutorial-leftpage-w", `${textWidth}px`);
+    stickerTutorial.style.setProperty("--tutorial-leftpage-h", `${textHeight}px`);
+  }
   updateStickerTutorialDemo(step, rect);
 }
 
@@ -4675,11 +4692,14 @@ function stickerTutorialDemoPoints(step, rect) {
   if (step.id === "ok") {
     // v1628: OK step は from=rest (ボタン右隣)、 to=center (ボタン中央 = 押下接触点) に分離。
     // stickerTutorialOkPressDemo keyframe が from↔to を動的に往復し「指で押している」 を表現。
+    // v1630: press.y を rect center → 上 1/3 に補正 (rect は padding=12 で上下に膨張しているため
+    // center.y は実 button の中心より低く出る。 keyframe 52% の translate(-50%, -28%) と合わさり
+    // 指が button 下にめり込んでいた → press.y を rect.top + h*0.30 に上げて着地点を実 button 中央へ)。
     const rest = {
       x: Math.min(window.innerWidth - 44, rectRight(rect) + Math.min(52, Math.max(38, rect.width * 0.22))),
       y: center.y,
     };
-    const press = { x: center.x, y: center.y };
+    const press = { x: center.x, y: rect.top + rect.height * 0.30 };
     return { ...base, hand: rest, from: rest, to: press };
   }
   if (step.id === "place") {

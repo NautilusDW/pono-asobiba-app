@@ -1489,10 +1489,17 @@ body.is-sticker-tutorial-step-ok .sticker-tutorial-hand {
 /* step 7 (page) は hand 非表示 + 矢印ボタン強調 + 自動 click。
    旧 page-swipe / pageHoverVertical 演出は廃止 (display:none 側で hand を消す)。 */
 
-/* 矢印ボタン (#bookNextPage) を丸で囲むハロー + パルス。 押下せず、 視覚的に「ここだよ」 だけ伝える */
+/* 矢印ボタン (#bookNextPage) を丸で囲むハロー + パルス。 押下せず、 視覚的に「ここだよ」 だけ伝える。
+   v1630: ボタン本体の scale(1↔1.12) を完全停止。 理由は:
+   1) getBoundingClientRect は CSS transform を含むため、 pulse 進行中フレームで rect が 12% 拡縮
+   2) viewport 右端固定 (position:fixed; right:16px) のため、 拡大フレームで右側だけ
+      Math.min(window.innerWidth, ...) でクランプされ centerX が左に偏る (非対称クランプ)
+   3) showStickerTutorialStep が 3 回 (即時/180ms/720ms) サンプルするため毎回違う rect → 黄枠が左にずれる
+   呼吸演出は ::after ハロー (pseudo-element は親 rect に影響しない) で完結。 */
 .book-page-button.is-tutorial-spotlit-arrow {
   position: relative;
-  animation: stickerTutorialArrowPulse 1.1s ease-in-out infinite;
+  animation: none !important;
+  transform: none !important;
   z-index: 30;
 }
 
@@ -1690,32 +1697,98 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   font-size: 15px;
 }
 
-.sticker-tutorial-card {
-  display: grid;
-  align-items: center;
-  aspect-ratio: 1578 / 470;
+/* v1630: ポノ吹き出し PNG を廃止し、 ノート 左ページに直書き レイアウトへ。
+   - .sticker-tutorial-card 自体は画面全面のヒットレイヤーに格下げ (pointer-events: none)
+   - .sticker-tutorial-page-text を JS が左ページ rect (CSS 変数) に追従させて配置
+   - 操作ボタン (あとで/もういちど/つぎ) は誤タップ防止のため画面下端中央に固定 */
+.sticker-tutorial-card.is-page-inscribed {
+  position: fixed;
+  inset: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  padding: 0;
   border: 0;
   border-radius: 0;
-  background: url("../../assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png") center / 100% 100% no-repeat;
+  background: none;
   box-shadow: none;
+  pointer-events: none;
+  aspect-ratio: auto;
 }
 
-.sticker-tutorial-card .sticker-tutorial-actions {
+.sticker-tutorial-card.is-page-inscribed[hidden] {
+  display: none;
+}
+
+.sticker-tutorial-page-text {
   position: absolute;
-  right: 16px;
-  bottom: -22px;
-  gap: 4px;
-  opacity: 0.88;
+  left: var(--tutorial-leftpage-x, 8vw);
+  top: var(--tutorial-leftpage-y, 14vh);
+  width: var(--tutorial-leftpage-w, 38vw);
+  max-height: calc(var(--tutorial-leftpage-h, 40vh) + 4vh);
+  padding: clamp(10px, 1.6vw, 22px) clamp(14px, 2vw, 28px);
+  pointer-events: none;
+  /* ノート 便箋風: 帆船イラストの上でも文字が抜けない半透明背景 */
+  background:
+    linear-gradient(180deg, rgba(255, 253, 243, 0.92), rgba(255, 248, 225, 0.88));
+  border-radius: 10px;
+  box-shadow:
+    0 4px 18px rgba(60, 40, 20, 0.10),
+    inset 0 0 0 1px rgba(180, 130, 60, 0.18);
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+  font-weight: 700;
+  color: #3a2a16;
+  line-height: 1.45;
+  box-sizing: border-box;
 }
 
-.sticker-tutorial-card .sticker-tutorial-actions button {
-  min-width: 54px;
-  min-height: 22px;
-  padding: 0 8px 1px;
-  border-width: 1px;
-  font-size: 10px;
-  background: rgba(255, 250, 226, 0.88);
-  box-shadow: 0 2px 5px rgba(31, 56, 48, 0.1);
+.sticker-tutorial-page-text .sticker-tutorial-count {
+  position: static;
+  margin: 0 0 6px;
+  font-size: clamp(11px, 1vw, 13px);
+  color: #8a6a3c;
+  letter-spacing: 0.06em;
+  text-align: left;
+}
+
+.sticker-tutorial-page-text .sticker-tutorial-text {
+  margin: 0;
+  color: #3a2a16;
+  font-size: clamp(15px, 1.5vw, 22px);
+  line-height: 1.45;
+  text-align: left;
+  white-space: pre-line;
+}
+
+/* 操作ボタンは画面下端中央固定 (safe-area 対応)。 ページ追従しない。 */
+.sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions {
+  position: absolute;
+  left: 50%;
+  bottom: max(20px, calc(env(safe-area-inset-bottom) + 16px));
+  transform: translateX(-50%);
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button {
+  /* baseline .sticker-tutorial-actions button を踏襲 (PNG モード時の縮小 override は廃止) */
+  min-width: 78px;
+  min-height: 34px;
+  padding: 0 14px 2px;
+  font-size: 13px;
+  border-width: 2px;
+  background: rgba(255, 251, 231, 0.92);
+  box-shadow:
+    0 4px 10px rgba(31, 56, 48, 0.18),
+    inset 0 -3px 0 rgba(190, 143, 50, 0.16);
+}
+
+.sticker-tutorial-card.is-page-inscribed #stickerTutorialNext {
+  min-width: 86px;
+  background: linear-gradient(180deg, #ffeeb9, #ffc75f);
+  border-color: rgba(177, 119, 34, 0.56);
 }
 
 .sticker-tutorial-actions button:disabled {
@@ -1724,8 +1797,16 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   filter: grayscale(0.18);
 }
 
-.sticker-tutorial-card #stickerTutorialNext {
-  min-width: 60px;
+/* card-top / card-corner クラスは旧 PNG 吹き出しの位置切替用。
+   ノート直書きモードでは位置は左ページ rect 追従なので、 全面ヒットレイヤーに正規化して影響を消す。 */
+body.is-sticker-tutorial-card-top .sticker-tutorial-card.is-page-inscribed,
+body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0;
+  transform: none;
 }
 
 @keyframes stickerTutorialSwipe {
@@ -1835,10 +1916,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     animation-timing-function: ease-in;
   }
   52% {
-    /* 押下接触 (=「ぐっ」 = JS triggerStickerTutorialOkButtonPress の class add とほぼ同タイミング) */
+    /* 押下接触 (=「ぐっ」 = JS triggerStickerTutorialOkButtonPress の class add とほぼ同タイミング)
+       v1630: -28% → -38% に修正。 48% の -42% から「3-4px だけ控えめに沈み込む」 自然な押下に。
+       元値 -28% は 7px ほど指が button 中央から下にめり込んで「行き過ぎ」 として知覚された */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
-    transform: translate(-50%, -28%) scale(0.90) rotate(0deg);
+    transform: translate(-50%, -38%) scale(0.90) rotate(0deg);
     animation-timing-function: ease-out;
   }
   60% {

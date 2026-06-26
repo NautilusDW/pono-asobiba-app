@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260626-1629">
+  <link rel="stylesheet" href="./styles.css?v=20260626-1630">
 </head>
 <body>
   <main id="app">
@@ -171,9 +171,11 @@
           <button id="stickerTutorialStartButton" type="button">はじめる</button>
         </div>
       </div>
-      <div id="stickerTutorialCard" class="sticker-tutorial-card" role="dialog" aria-live="polite" aria-modal="false" hidden>
-        <div id="stickerTutorialCount" class="sticker-tutorial-count">1 / 10</div>
-        <p id="stickerTutorialText">はるモードに しよう</p>
+      <div id="stickerTutorialCard" class="sticker-tutorial-card is-page-inscribed" role="dialog" aria-live="polite" aria-modal="false" hidden>
+        <div class="sticker-tutorial-page-text">
+          <div id="stickerTutorialCount" class="sticker-tutorial-count">1 / 10</div>
+          <p id="stickerTutorialText" class="sticker-tutorial-text">はるモードに しよう</p>
+        </div>
         <div class="sticker-tutorial-actions">
           <button id="stickerTutorialSkip" type="button">あとで</button>
           <button id="stickerTutorialReplay" type="button">もういちど</button>
@@ -254,6 +256,6 @@
     </section>
     <aside id="tuningPanel" class="tuning-panel" hidden aria-label="Layer tuning"></aside>
   </main>
-  <script type="module" src="./main.js?v=20260626-1629"></script>
+  <script type="module" src="./main.js?v=20260626-1630"></script>
 </body>
 </html>
