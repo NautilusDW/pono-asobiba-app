@@ -3698,6 +3698,7 @@
       font-size: clamp(9px, .9vw, 13px);
       line-height: 1.2;
       text-align: center;
+      white-space: pre-line;
       text-shadow: 0 1px 2px rgba(0, 0, 0, .45);
       pointer-events: none;
       filter: drop-shadow(0 5px 8px rgba(22, 10, 2, .22));
@@ -4155,6 +4156,16 @@
       .donguri-shop-v2-price { font-size: 12px; }
       .donguri-shop-v2-buy { font-size: 13px; }
       .donguri-shop-v2-owned-label { font-size: 11px; }
+    }
+    @media (min-width: 901px) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 3/2) {
+      .donguri-shop-v2-head > .donguri-shop-v2-title { top: -4.2%; }
+      .donguri-shop-v2-rotation-note { top: 19.8%; }
+      .donguri-shop-v2-shopkeeper { left: 4.8%; bottom: 15.2%; width: 23.4%; max-width: 250px; }
+      .donguri-shop-v2-bubble { left: 6.7%; bottom: 73%; width: min(26.5%, 310px); }
+      .donguri-shop-v2-subtitle { left: 5.7%; bottom: 65.2%; width: min(30%, 340px); }
+      .donguri-shop-v2-reserve { left: 7%; bottom: 6.2%; }
+      .donguri-shop-v2-slots { left: 35%; right: 4.5%; bottom: 8.7%; gap: 1.9%; }
+      .donguri-shop-v2-slot { max-width: 31.5%; }
     }
 
     /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
@@ -5825,7 +5836,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1677;
+    const PAGE_CACHE_VERSION = 1678;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -7686,18 +7697,18 @@
       // v1591: shop 表示中はメイン残高バッジを hide (shop 内に balance pill があり重複 + 隅で見切れる)
       var badge = document.getElementById('acornBalanceBadge');
       if (badge) badge.classList.add('is-occluded');
+      var forceFirstGuide = _isShopDebugNarrationForced();
       var isFirstVisit = !_hasSeenShopIntro();
       if (isFirstVisit) {
         _markShopIntroSeen();
-        _setShopSubtitle(DONGURI_SHOP_FIRST_SUBTITLE, { duration: 7200 });
-      } else {
-        _setShopSubtitle(DONGURI_SHOP_RETURN_SUBTITLE, { duration: 4200 });
       }
-      renderShopCatalog(DONGURI_SHOP_OPENING_MESSAGE, { duration: isFirstVisit ? 5200 : 3800 });
+      _startShopOpeningGuide((forceFirstGuide || isFirstVisit) ? 'first' : 'return', { forceAudio: forceFirstGuide });
+      renderShopCatalog(DONGURI_SHOP_OPENING_MESSAGE, { duration: (forceFirstGuide || isFirstVisit) ? 5200 : 3800 });
     }
     function hideShop() {
       var shop = document.getElementById('donguriShop');
       if (shop) shop.hidden = true;
+      _stopShopNarration();
       _clearShopkeeperNeutralTimer();
       _setShopSubtitle('');
       // v1591: shop を閉じたらメイン残高バッジを復帰
@@ -7708,7 +7719,32 @@
     var DONGURI_SHOP_OPENING_MESSAGE = 'いらっしゃい\nきょうは なににする？';
     var DONGURI_SHOP_FIRST_SUBTITLE = 'どんぐりで シールと こうかんできるよ';
     var DONGURI_SHOP_RETURN_SUBTITLE = 'きょうは なににする？';
+    var DONGURI_SHOP_NARRATION = {
+      first: {
+        src: 'assets/audio/shop/donguri_shop_welcome_first_20260627.mp3',
+        volume: .94,
+        captionDuration: 8800,
+        captions: [
+          { at: 0, text: 'いらっしゃい' },
+          { at: 2200, text: DONGURI_SHOP_RETURN_SUBTITLE },
+          { at: 4900, text: 'どんぐりで シールと\nこうかんできるよ' }
+        ]
+      },
+      return: {
+        src: 'assets/audio/shop/donguri_shop_welcome_return_20260627.mp3',
+        volume: .94,
+        captionDuration: 4200,
+        captions: [
+          { at: 0, text: 'いらっしゃい' },
+          { at: 1900, text: DONGURI_SHOP_RETURN_SUBTITLE }
+        ]
+      }
+    };
     var donguriShopSubtitleTimer = 0;
+    var donguriShopSubtitleSequenceTimers = [];
+    var donguriShopNarrationAudio = {};
+    var donguriShopNarrationPreloadStarted = false;
+    var donguriShopCurrentNarration = null;
     function _hasSeenShopIntro() {
       try { return window.localStorage && window.localStorage.getItem(DONGURI_SHOP_INTRO_SEEN_KEY) === '1'; }
       catch (_) { return false; }
@@ -7717,26 +7753,141 @@
       try { if (window.localStorage) window.localStorage.setItem(DONGURI_SHOP_INTRO_SEEN_KEY, '1'); }
       catch (_) {}
     }
-    function _setShopSubtitle(text, options) {
-      options = options || {};
-      var subtitle = document.getElementById('donguriShopSubtitle');
+    function _isShopDebugNarrationForced() {
+      try {
+        return !!(window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function' && window.PonoDebugMode.isAllowed());
+      } catch (_) { return false; }
+    }
+    function _clearShopSubtitleTimers() {
       if (donguriShopSubtitleTimer) {
         window.clearTimeout(donguriShopSubtitleTimer);
         donguriShopSubtitleTimer = 0;
       }
+      if (donguriShopSubtitleSequenceTimers.length) {
+        donguriShopSubtitleSequenceTimers.forEach(function (timerId) {
+          window.clearTimeout(timerId);
+        });
+        donguriShopSubtitleSequenceTimers = [];
+      }
+    }
+    function _showShopSubtitle(text) {
+      var subtitle = document.getElementById('donguriShopSubtitle');
       if (!subtitle) return;
       subtitle.textContent = text || '';
       subtitle.hidden = !text;
+    }
+    function _setShopSubtitle(text, options) {
+      options = options || {};
+      _clearShopSubtitleTimers();
+      _showShopSubtitle(text);
       if (text && options.duration) {
         donguriShopSubtitleTimer = window.setTimeout(function () {
-          var current = document.getElementById('donguriShopSubtitle');
-          if (current) {
-            current.textContent = '';
-            current.hidden = true;
-          }
+          _showShopSubtitle('');
           donguriShopSubtitleTimer = 0;
         }, options.duration);
       }
+    }
+    function _runShopSubtitleSequence(captions, duration) {
+      _clearShopSubtitleTimers();
+      (captions || []).forEach(function (caption) {
+        var at = Math.max(0, Number(caption && caption.at) || 0);
+        if (at <= 0) {
+          _showShopSubtitle(caption.text || '');
+        } else {
+          donguriShopSubtitleSequenceTimers.push(window.setTimeout(function () {
+            _showShopSubtitle(caption.text || '');
+          }, at));
+        }
+      });
+      if (duration) {
+        donguriShopSubtitleTimer = window.setTimeout(function () {
+          _showShopSubtitle('');
+          donguriShopSubtitleTimer = 0;
+        }, duration);
+      }
+    }
+    function _shopNarrationMuted(options) {
+      options = options || {};
+      if (options.forceAudio) return false;
+      try { return window.localStorage && window.localStorage.getItem('pono_sound_off') === '1'; }
+      catch (_) { return false; }
+    }
+    function _shopNarrationSrc(path) {
+      return dailyGachaVersionedAsset(path);
+    }
+    function _ensureShopNarrationAudio(kind) {
+      var config = DONGURI_SHOP_NARRATION[kind];
+      if (!config || typeof Audio !== 'function') return null;
+      if (!donguriShopNarrationAudio[kind]) {
+        var audio = new Audio(_shopNarrationSrc(config.src));
+        audio.preload = 'auto';
+        audio.volume = config.volume == null ? .94 : config.volume;
+        donguriShopNarrationAudio[kind] = audio;
+      }
+      return donguriShopNarrationAudio[kind];
+    }
+    function _primeShopNarrationAudio() {
+      if (donguriShopNarrationPreloadStarted) return;
+      donguriShopNarrationPreloadStarted = true;
+      Object.keys(DONGURI_SHOP_NARRATION).forEach(function (kind) {
+        var audio = _ensureShopNarrationAudio(kind);
+        try { if (audio) audio.load(); } catch (_) {}
+      });
+    }
+    function _scheduleShopNarrationPreload() {
+      if (donguriShopNarrationPreloadStarted) return;
+      var run = function () { _primeShopNarrationAudio(); };
+      window.setTimeout(run, 900);
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(run, { timeout: 1600 });
+      }
+    }
+    function _stopShopNarrationAudio() {
+      Object.keys(donguriShopNarrationAudio).forEach(function (kind) {
+        var audio = donguriShopNarrationAudio[kind];
+        if (!audio) return;
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+        } catch (_) {}
+      });
+      donguriShopCurrentNarration = null;
+    }
+    function _stopShopNarration() {
+      _stopShopNarrationAudio();
+      _clearShopSubtitleTimers();
+    }
+    function _playShopNarration(kind, options) {
+      options = options || {};
+      if (_shopNarrationMuted(options)) return false;
+      var config = DONGURI_SHOP_NARRATION[kind];
+      var audio = _ensureShopNarrationAudio(kind);
+      if (!config || !audio) return false;
+      _stopShopNarrationAudio();
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = config.volume == null ? .94 : config.volume;
+        audio.playbackRate = 1;
+        donguriShopCurrentNarration = kind;
+        var played = audio.play();
+        if (played && played.catch) {
+          played.catch(function () {
+            if (donguriShopCurrentNarration === kind) donguriShopCurrentNarration = null;
+          });
+        }
+        return true;
+      } catch (_) {
+        donguriShopCurrentNarration = null;
+        return false;
+      }
+    }
+    function _startShopOpeningGuide(kind, options) {
+      options = options || {};
+      var config = DONGURI_SHOP_NARRATION[kind] || DONGURI_SHOP_NARRATION.return;
+      _stopShopNarration();
+      _runShopSubtitleSequence(config.captions, config.captionDuration);
+      _playShopNarration(kind, options);
     }
     // v1623: shop rotation is twice daily (morning/evening), so countdown copy uses those anchors.
     function _formatShopCountdown() {
@@ -8333,7 +8484,10 @@
     if (dailyGachaEntry) {
       updateDailyGachaEntry();
       scheduleDailyGachaImagePreload();
+      _scheduleShopNarrationPreload();
       dailyGachaEntry.addEventListener('click', openDailyGacha);
+    } else {
+      _scheduleShopNarrationPreload();
     }
     if (dailyGachaClose) dailyGachaClose.addEventListener('click', closeDailyGacha);
     if (dailyGachaModal) {
@@ -8350,6 +8504,7 @@
         if (dailyGachaSoundMuted()) {
           stopDailyGachaBed();
           stopDailyGachaOneShotAudio();
+          _stopShopNarrationAudio();
         } else if (dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaState.complete) {
           startDailyGachaBed();
         }
@@ -8358,6 +8513,7 @@
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         stopDailyGachaBed(false);
+        _stopShopNarrationAudio();
       } else if (dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaState.complete && !dailyGachaSoundMuted()) {
         startDailyGachaBed();
       }
@@ -8827,6 +8983,7 @@
     soundToggle.addEventListener('change', () => {
       const on = soundToggle.checked;
       try { localStorage.setItem(SOUND_KEY, on ? '0' : '1'); } catch(_) {}
+      if (!on) _stopShopNarrationAudio();
     });
     loadSoundPref();
 
