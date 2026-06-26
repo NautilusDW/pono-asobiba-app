@@ -4245,8 +4245,132 @@
     .acorn-balance-badge.is-bumping { animation: acorn-balance-bump .4s ease-out; }
     /* v1591: donguri shop 表示中はメイン残高バッジを隠す (shop 内に同等表示があり重複 + overlay 端で見切れる) */
     .acorn-balance-badge.is-occluded { display: none; }
+    .acorn-reward-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 140;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(42, 27, 14, .26);
+      font-family: "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+    }
+    .acorn-reward-modal[hidden] { display: none; }
+    .acorn-reward-card {
+      position: relative;
+      width: min(520px, 92vw);
+      aspect-ratio: 1200 / 600;
+      min-height: 214px;
+      max-height: calc(100dvh - 34px);
+      box-sizing: border-box;
+      padding: clamp(40px, 6.8vw, 58px) clamp(48px, 8vw, 70px) clamp(34px, 5.8vw, 50px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+      align-items: center;
+      justify-items: center;
+      gap: clamp(8px, 1.8vw, 14px);
+      background: transparent url("assets/images/quizland/Fukuro_frame_001.png") center / 100% 100% no-repeat;
+      color: #5a3515;
+      text-align: center;
+      filter: drop-shadow(0 18px 22px rgba(39, 24, 11, .36));
+      transform: scale(.92);
+      opacity: 0;
+    }
+    .acorn-reward-modal.is-visible .acorn-reward-card {
+      animation: acorn-reward-pop .42s cubic-bezier(.18, .86, .22, 1.08) both;
+    }
+    .acorn-reward-close {
+      position: absolute;
+      top: clamp(16px, 3vw, 24px);
+      right: clamp(20px, 3.8vw, 32px);
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(117, 75, 27, .48);
+      border-radius: 50%;
+      background: linear-gradient(180deg, #fff8df, #f4c46a);
+      color: #6e3d09;
+      font: 900 24px/1 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+      box-shadow: 0 3px 0 rgba(118, 66, 0, .38);
+      cursor: pointer;
+    }
+    .acorn-reward-close:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(118, 66, 0, .38);
+    }
+    .acorn-reward-kicker {
+      align-self: end;
+      color: #8b4e12;
+      font-size: clamp(22px, 5vw, 33px);
+      font-weight: 900;
+      line-height: 1.05;
+      text-shadow: 0 2px 0 rgba(255, 246, 214, .95);
+      white-space: nowrap;
+    }
+    .acorn-reward-bottom {
+      align-self: start;
+      display: grid;
+      justify-items: center;
+      gap: clamp(7px, 1.5vw, 10px);
+    }
+    .acorn-reward-label {
+      color: #5c3717;
+      font-size: clamp(16px, 3.6vw, 22px);
+      font-weight: 900;
+      line-height: 1.12;
+      text-shadow: 0 1px 0 rgba(255, 250, 231, .95);
+      white-space: nowrap;
+    }
+    .acorn-reward-amount.donguri-shop-v2-balance {
+      width: clamp(146px, 31vw, 194px);
+      min-width: 146px;
+      font-size: clamp(21px, 4.8vw, 30px);
+      padding-left: clamp(12px, 2vw, 18px);
+      padding-right: clamp(15px, 2.6vw, 22px);
+      filter: drop-shadow(0 5px 8px rgba(73, 38, 5, .24));
+      animation: acorn-reward-amount-pop .5s .22s cubic-bezier(.18, .86, .22, 1.08) both;
+    }
+    .acorn-reward-amount .donguri-shop-v2-balance-icon {
+      width: clamp(30px, 6vw, 42px);
+    }
+    .acorn-reward-amount-text {
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    @keyframes acorn-reward-pop {
+      0% { opacity: 0; transform: translateY(10px) scale(.86); }
+      58% { opacity: 1; transform: translateY(-4px) scale(1.035); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes acorn-reward-amount-pop {
+      0% { transform: scale(.74); opacity: .4; }
+      70% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
     @media (prefers-reduced-motion: reduce) {
       .acorn-balance-badge.is-bumping { animation: none; }
+      .acorn-reward-modal.is-visible .acorn-reward-card,
+      .acorn-reward-amount.donguri-shop-v2-balance { animation: none; opacity: 1; transform: none; }
+    }
+    @media (max-height: 430px) and (orientation: landscape) {
+      .acorn-reward-card {
+        width: min(470px, 82vw);
+        min-height: 184px;
+        padding: 32px 52px 28px;
+      }
+      .acorn-reward-close {
+        top: 14px;
+        right: 24px;
+        width: 32px;
+        height: 32px;
+        font-size: 21px;
+      }
+      .acorn-reward-kicker { font-size: 24px; }
+      .acorn-reward-label { font-size: 17px; }
+      .acorn-reward-amount.donguri-shop-v2-balance {
+        width: 154px;
+        min-width: 154px;
+        font-size: 23px;
+      }
     }
 
     /* ===== title screen reference redesign (v1617) ===== */
@@ -4772,6 +4896,20 @@
       <span class="sticker-book-entry__label"><span>シールちょう</span><span class="sticker-book-entry__sub">あつめた シール</span></span>
     </button>
   </div><!-- /.stage -->
+
+  <div class="acorn-reward-modal" id="acornRewardModal" hidden role="dialog" aria-modal="true" aria-labelledby="acornRewardTitle">
+    <div class="acorn-reward-card">
+      <button class="acorn-reward-close" id="acornRewardClose" type="button" aria-label="とじる">×</button>
+      <div class="acorn-reward-kicker">やったね！</div>
+      <div class="acorn-reward-bottom">
+        <div class="acorn-reward-label" id="acornRewardTitle">どんぐりを ゲットしたよ</div>
+        <div class="donguri-shop-v2-balance acorn-reward-amount" id="acornRewardAmountPill" aria-label="どんぐり">
+          <span class="donguri-shop-v2-balance-icon" aria-hidden="true"></span>
+          <span class="acorn-reward-amount-text"><span aria-hidden="true">×</span><span id="acornRewardAmount">0</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== Top BGM (initial-touch unlock; no modal needed) =====
        The audio element lives outside .stage so it isn't affected by the
@@ -5473,7 +5611,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1652;
+    const PAGE_CACHE_VERSION = 1653;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -8296,12 +8434,40 @@
 
       var SS_LAST_SEEN = 'pono_acorns_last_seen_v1';
       var bumpTimer = null;
+      var rewardModal = document.getElementById('acornRewardModal');
+      var rewardClose = document.getElementById('acornRewardClose');
+      var rewardAmount = document.getElementById('acornRewardAmount');
+      var rewardAmountPill = document.getElementById('acornRewardAmountPill');
+      var rewardTimer = null;
 
       function render(newAmount) {
         var v = (typeof newAmount === 'number')
           ? newAmount
           : ((typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0);
         countEl.textContent = String(v | 0);
+      }
+      function hideRewardModal() {
+        if (!rewardModal) return;
+        if (rewardTimer) {
+          clearTimeout(rewardTimer);
+          rewardTimer = null;
+        }
+        rewardModal.hidden = true;
+        rewardModal.classList.remove('is-visible');
+      }
+      function showRewardModal(delta, after) {
+        delta = delta | 0;
+        if (delta <= 0 || !rewardModal || !rewardAmount) return;
+        rewardAmount.textContent = String(delta);
+        if (rewardAmountPill) {
+          rewardAmountPill.setAttribute('aria-label', 'どんぐり ' + delta + 'こ');
+        }
+        rewardModal.hidden = false;
+        rewardModal.classList.remove('is-visible');
+        void rewardModal.offsetWidth;
+        rewardModal.classList.add('is-visible');
+        if (rewardTimer) clearTimeout(rewardTimer);
+        rewardTimer = setTimeout(hideRewardModal, 4200);
       }
       function bump() {
         if (bumpTimer) { clearTimeout(bumpTimer); bumpTimer = null; }
@@ -8322,8 +8488,11 @@
         try {
           var raw = sessionStorage.getItem(SS_LAST_SEEN);
           var lastSeen = parseInt(raw || '0', 10);
-          if (!isNaN(lastSeen) && current > lastSeen) {
+          var hasLastSeen = raw !== null;
+          if (hasLastSeen && !isNaN(lastSeen) && current > lastSeen) {
+            var delta = current - lastSeen;
             bump();
+            showRewardModal(delta, current);
           }
           sessionStorage.setItem(SS_LAST_SEEN, String(current));
         } catch (_) { /* private mode etc. */ }
@@ -8335,11 +8504,24 @@
         var after = (e && e.detail && typeof e.detail.after === 'number') ? e.detail.after : null;
         render(after);
         var delta = (e && e.detail && typeof e.detail.delta === 'number') ? e.detail.delta : 0;
-        if (delta > 0) bump();
+        if (delta > 0) {
+          bump();
+          showRewardModal(delta, after);
+        }
         try {
           if (after !== null) sessionStorage.setItem(SS_LAST_SEEN, String(after));
         } catch (_) {}
       });
+
+      if (rewardClose) rewardClose.addEventListener('click', hideRewardModal);
+      if (rewardModal) {
+        rewardModal.addEventListener('click', function (event) {
+          if (event.target === rewardModal) hideRewardModal();
+        });
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape' && !rewardModal.hidden) hideRewardModal();
+        });
+      }
 
       // 初期 paint + 戻り時差分検出
       checkChangeSinceLastSeen();

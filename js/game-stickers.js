@@ -11,6 +11,12 @@
   var toastQueue = [];
   var toastDrainTimer = 0;
   var toastObserver = null;
+  var GAME_COMPLETION_EVENTS = {
+    clear: true,
+    stage_clear: true,
+    perfect: true,
+    complete: true
+  };
 
   function _scriptSrc() {
     var scripts = document.getElementsByTagName('script');
@@ -149,6 +155,114 @@
     } catch (e) {}
   }
 
+  function _isGameCompletionOnly(options) {
+    var eventName = (options && (options.event || options.reason)) || 'clear';
+    return !!GAME_COMPLETION_EVENTS[eventName];
+  }
+
+  function _completionOnlyResult(options) {
+    var now = Date.now();
+    return {
+      gameId: options.gameId,
+      stickerId: '',
+      sticker: null,
+      page: null,
+      count: 0,
+      first: false,
+      event: options.event || options.reason || 'clear',
+      completionOnly: true,
+      ts: now
+    };
+  }
+
+  function _ensureAcornRewardStyle() {
+    if (document.getElementById('game-acorn-reward-style')) return;
+    var style = document.createElement('style');
+    style.id = 'game-acorn-reward-style';
+    style.textContent = [
+      '#game-acorn-reward{position:fixed;inset:0;z-index:99997;display:grid;place-items:center;padding:18px;background:rgba(42,27,14,.26);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;}',
+      '#game-acorn-reward[hidden]{display:none!important;}',
+      '#game-acorn-reward .game-acorn-reward-card{position:relative;width:min(520px,92vw);aspect-ratio:1200/600;min-height:214px;max-height:calc(100dvh - 34px);box-sizing:border-box;padding:clamp(40px,6.8vw,58px) clamp(48px,8vw,70px) clamp(34px,5.8vw,50px);display:grid;grid-template-rows:auto 1fr;align-items:center;justify-items:center;gap:clamp(8px,1.8vw,14px);background:transparent url("' + _esc(resolveAsset('assets/images/quizland/Fukuro_frame_001.png')) + '") center/100% 100% no-repeat;color:#5a3515;text-align:center;filter:drop-shadow(0 18px 22px rgba(39,24,11,.36));transform:scale(.92);opacity:0;}',
+      '#game-acorn-reward.is-visible .game-acorn-reward-card{animation:gameAcornRewardPop .42s cubic-bezier(.18,.86,.22,1.08) both;}',
+      '#game-acorn-reward .game-acorn-reward-close{position:absolute;top:clamp(16px,3vw,24px);right:clamp(20px,3.8vw,32px);width:36px;height:36px;border:3px solid rgba(117,75,27,.48);border-radius:50%;background:linear-gradient(180deg,#fff8df,#f4c46a);color:#6e3d09;font:900 24px/1 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;box-shadow:0 3px 0 rgba(118,66,0,.38);cursor:pointer;}',
+      '#game-acorn-reward .game-acorn-reward-close:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(118,66,0,.38);}',
+      '#game-acorn-reward .game-acorn-reward-kicker{align-self:end;color:#8b4e12;font-size:clamp(22px,5vw,33px);font-weight:900;line-height:1.05;text-shadow:0 2px 0 rgba(255,246,214,.95);white-space:nowrap;}',
+      '#game-acorn-reward .game-acorn-reward-bottom{align-self:start;display:grid;justify-items:center;gap:clamp(7px,1.5vw,10px);}',
+      '#game-acorn-reward .game-acorn-reward-label{color:#5c3717;font-size:clamp(16px,3.6vw,22px);font-weight:900;line-height:1.12;text-shadow:0 1px 0 rgba(255,250,231,.95);white-space:nowrap;}',
+      '#game-acorn-reward .game-acorn-reward-amount{pointer-events:auto;display:inline-flex;align-items:center;justify-content:flex-start;width:clamp(146px,31vw,194px);min-width:146px;aspect-ratio:339/169;box-sizing:border-box;padding:0 clamp(15px,2.6vw,22px) 0 clamp(12px,2vw,18px);gap:clamp(3px,.6vw,7px);background:linear-gradient(180deg,rgba(255,252,238,.98) 0%,rgba(255,239,203,.98) 100%);border:clamp(3px,.35vw,5px) solid #b66c00;border-radius:999px;font-size:clamp(21px,4.8vw,30px);font-weight:900;color:#6e4a00;box-shadow:inset 0 0 0 2px rgba(255,255,246,.95),inset 0 0 0 5px rgba(235,168,33,.46),0 3px 0 rgba(118,66,0,.38);filter:drop-shadow(0 5px 8px rgba(73,38,5,.24));animation:gameAcornRewardAmount .5s .22s cubic-bezier(.18,.86,.22,1.08) both;}',
+      '#game-acorn-reward .game-acorn-reward-icon{display:inline-block;width:clamp(30px,6vw,42px);aspect-ratio:85/103;flex:0 0 auto;background:transparent url("' + _esc(resolveAsset('assets/ui/shop/donguri_shop_acorn_icon_20260626.png')) + '") center/contain no-repeat;transform:translateY(-2px);filter:drop-shadow(0 2px 2px rgba(91,48,6,.28));}',
+      '#game-acorn-reward .game-acorn-reward-text{flex:1 1 auto;min-width:0;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap;}',
+      '@keyframes gameAcornRewardPop{0%{opacity:0;transform:translateY(10px) scale(.86)}58%{opacity:1;transform:translateY(-4px) scale(1.035)}100%{opacity:1;transform:translateY(0) scale(1)}}',
+      '@keyframes gameAcornRewardAmount{0%{transform:scale(.74);opacity:.4}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}',
+      '@media (prefers-reduced-motion:reduce){#game-acorn-reward.is-visible .game-acorn-reward-card,#game-acorn-reward .game-acorn-reward-amount{animation:none;opacity:1;transform:none;}}',
+      '@media (max-height:430px) and (orientation:landscape){#game-acorn-reward .game-acorn-reward-card{width:min(470px,82vw);min-height:184px;padding:32px 52px 28px;}#game-acorn-reward .game-acorn-reward-close{top:14px;right:24px;width:32px;height:32px;font-size:21px;}#game-acorn-reward .game-acorn-reward-kicker{font-size:24px;}#game-acorn-reward .game-acorn-reward-label{font-size:17px;}#game-acorn-reward .game-acorn-reward-amount{width:154px;min-width:154px;font-size:23px;}}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+
+  function _hideAcornRewardModal() {
+    var overlay = document.getElementById('game-acorn-reward');
+    if (!overlay) return;
+    var timer = overlay.__gameAcornRewardTimer;
+    if (timer) {
+      window.clearTimeout(timer);
+      overlay.__gameAcornRewardTimer = 0;
+    }
+    overlay.hidden = true;
+    overlay.classList.remove('is-visible');
+  }
+
+  function _showAcornRewardModal(delta, after) {
+    delta = delta | 0;
+    if (delta <= 0 || !document.body) return;
+    if (document.getElementById('acornRewardModal')) return;
+    _ensureAcornRewardStyle();
+
+    var overlay = document.getElementById('game-acorn-reward');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'game-acorn-reward';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'gameAcornRewardTitle');
+      overlay.innerHTML =
+        '<div class="game-acorn-reward-card">' +
+          '<button class="game-acorn-reward-close" type="button" aria-label="とじる">×</button>' +
+          '<div class="game-acorn-reward-kicker">やったね！</div>' +
+          '<div class="game-acorn-reward-bottom">' +
+            '<div class="game-acorn-reward-label" id="gameAcornRewardTitle">どんぐりを ゲットしたよ</div>' +
+            '<div class="game-acorn-reward-amount" aria-label="どんぐり">' +
+              '<span class="game-acorn-reward-icon" aria-hidden="true"></span>' +
+              '<span class="game-acorn-reward-text"><span aria-hidden="true">×</span><span data-acorn-amount>0</span></span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      var closeBtn = overlay.querySelector('.game-acorn-reward-close');
+      if (closeBtn) closeBtn.addEventListener('click', _hideAcornRewardModal);
+      overlay.addEventListener('click', function (event) {
+        if (event.target === overlay) _hideAcornRewardModal();
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !overlay.hidden) _hideAcornRewardModal();
+      });
+    }
+
+    var amountEl = overlay.querySelector('[data-acorn-amount]');
+    if (amountEl) amountEl.textContent = String(delta);
+    var amountPill = overlay.querySelector('.game-acorn-reward-amount');
+    if (amountPill) amountPill.setAttribute('aria-label', 'どんぐり ' + delta + 'こ');
+    overlay.hidden = false;
+    overlay.classList.remove('is-visible');
+    void overlay.offsetWidth;
+    overlay.classList.add('is-visible');
+    if (overlay.__gameAcornRewardTimer) window.clearTimeout(overlay.__gameAcornRewardTimer);
+    overlay.__gameAcornRewardTimer = window.setTimeout(_hideAcornRewardModal, 4200);
+    try {
+      if (typeof after === 'number') sessionStorage.setItem('pono_acorns_last_seen_v1', String(after | 0));
+    } catch (e) {}
+  }
+
   function _removeToast() {
     var old = document.getElementById('game-sticker-toast');
     if (old && old.parentNode) old.parentNode.removeChild(old);
@@ -252,8 +366,15 @@
   }
 
   function showStickerToast(result, options) {
-    if (!result || !result.sticker || !document.body) return;
     options = options || {};
+    if (!result || result.completionOnly || !result.sticker || !document.body) {
+      if (typeof options.onClose === 'function') {
+        window.setTimeout(function () {
+          try { options.onClose(result || null); } catch (e) {}
+        }, 0);
+      }
+      return;
+    }
     _removeToast();
 
     var sticker = result.sticker;
@@ -386,6 +507,18 @@
     var gameId = options.gameId;
     if (!gameId) return Promise.resolve(null);
 
+    if (_isGameCompletionOnly(options)) {
+      var completionResult = _completionOnlyResult(options);
+      _queuePending(completionResult);
+      _dispatch(completionResult);
+      if (typeof options.onClose === 'function') {
+        window.setTimeout(function () {
+          try { options.onClose(completionResult); } catch (e) {}
+        }, 0);
+      }
+      return Promise.resolve(completionResult);
+    }
+
     return loadCatalog().then(function (catalog) {
       var page = catalog && catalog.pages && catalog.pages[gameId];
       if (!page) return null;
@@ -441,6 +574,13 @@
     localStorage.removeItem(LS_PENDING);
     return Array.isArray(pending) ? pending : [];
   }
+
+  window.addEventListener('pono-acorns-changed', function (event) {
+    var detail = event && event.detail ? event.detail : {};
+    var delta = (typeof detail.delta === 'number') ? detail.delta : 0;
+    var after = (typeof detail.after === 'number') ? detail.after : null;
+    if (delta > 0) _showAcornRewardModal(delta, after);
+  });
 
   window.PonoGameStickers = {
     loadCatalog: loadCatalog,
