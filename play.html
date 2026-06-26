@@ -3496,6 +3496,22 @@
       overflow: hidden;
       justify-self: center;
     }
+    .donguri-shop-v2-rotation-note {
+      position: absolute;
+      left: 50%;
+      top: 17.2%;
+      transform: translateX(-50%);
+      width: min(48vw, 540px);
+      z-index: 6;
+      pointer-events: none;
+      color: #fff8df;
+      font: 900 clamp(10px, 1.12vw, 15px)/1.15 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+      text-align: center;
+      white-space: nowrap;
+      text-shadow:
+        0 2px 3px rgba(51, 26, 5, .82),
+        0 0 8px rgba(92, 48, 10, .62);
+    }
     .donguri-shop-v2-balance {
       pointer-events: auto;
       display: inline-flex; align-items: center;
@@ -3535,10 +3551,10 @@
     .donguri-shop-v2-reserve {
       position: absolute;
       left: 7%;
-      bottom: 12.5%;
+      bottom: 9.8%;
       width: min(24%, 318px);
       min-width: 156px;
-      height: clamp(68px, 8.4vw, 96px);
+      height: clamp(100px, 10.8vw, 130px);
       box-sizing: border-box;
       z-index: 5;
       pointer-events: auto;
@@ -3593,16 +3609,19 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 2px;
+      justify-content: space-evenly;
+      gap: 4px;
     }
     .donguri-shop-v2-reserve-name {
       min-width: 0;
       color: #5a3a00;
-      font: 900 clamp(9px, 1.05vw, 13px)/1.05 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
-      white-space: nowrap;
+      font: 900 clamp(9px, 1.05vw, 13px)/1.12 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+      min-height: 1.1em;
+      white-space: normal;
       overflow: hidden;
-      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
     }
     .donguri-shop-v2-reserve-price {
       display: inline-flex;
@@ -3772,9 +3791,10 @@
     .donguri-shop-v2-owned-label:active { transform: translateY(2px); box-shadow: none; }
     .donguri-shop-v2-hold {
       position: absolute;
-      left: 12%;
-      top: 57.2%;
-      min-width: 48%;
+      left: 50%;
+      top: 54.2%;
+      min-width: 42%;
+      max-width: 58%;
       min-height: 8.5%;
       padding: 0 7px 1px;
       display: inline-flex;
@@ -3790,8 +3810,9 @@
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       white-space: nowrap;
+      transform: translateX(-50%);
     }
-    .donguri-shop-v2-hold:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(120, 77, 20, .22); }
+    .donguri-shop-v2-hold:active { transform: translate(-50%, 1px); box-shadow: 0 1px 0 rgba(120, 77, 20, .22); }
     .donguri-shop-v2-hold:disabled {
       opacity: .72;
       cursor: not-allowed;
@@ -3838,14 +3859,16 @@
         padding: 0 10px;
       }
       .donguri-shop-v2-title { width: min(42vw, 300px); font-size: 0; }
+      .donguri-shop-v2-rotation-note { top: 21.2%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
       .donguri-shop-v2-bubble { left: 7%; bottom: 56%; width: min(24%, 210px); padding: clamp(3px, .8vw, 7px) clamp(14px, 2.2vw, 20px) 0 clamp(32px, 4.6vw, 42px); font-size: clamp(8px, 1.4vw, 12px); }
-      .donguri-shop-v2-reserve { left: 6.5%; bottom: 7.5%; width: min(25%, 210px); min-width: 126px; height: clamp(50px, 13vw, 64px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
+      .donguri-shop-v2-reserve { left: 6.5%; bottom: 4.2%; width: min(25%, 210px); min-width: 126px; height: clamp(72px, 18vw, 90px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
       .donguri-shop-v2-reserve-title { font-size: 9px; }
-      .donguri-shop-v2-reserve-name { font-size: 9px; }
+      .donguri-shop-v2-reserve-name { font-size: 9px; line-height: 1.12; }
       .donguri-shop-v2-reserve-price { font-size: 9px; }
       .donguri-shop-v2-reserve-actions { gap: 3px; }
       .donguri-shop-v2-reserve button { min-height: 18px; padding: 0 5px 1px; font-size: 8px; }
+      .donguri-shop-v2-hold { top: 51.8%; min-width: 45%; }
       .donguri-shop-v2-slots { left: 31%; right: 3%; bottom: 13.3%; gap: 1.3%; }
       .donguri-shop-v2-slot { min-width: 66px; max-width: 31%; padding: 10.5% 8.4% 5%; }
       .donguri-shop-v2-price { font-size: 12px; }
@@ -4748,6 +4771,7 @@
             <span id="donguriShopBalance">0</span>
           </div>
         </header>
+        <div class="donguri-shop-v2-rotation-note">まいにち あさ6じ・ゆうがた6じに ならびかわるよ</div>
         <div class="donguri-shop-v2-slots" id="donguriShopSlots" role="list"></div>
         <!-- v1595: #donguriShopCountdown を削除 — countdown text は #donguriShopBubble に統合 (hedgehog 右下隣) -->
       </div>
@@ -5136,7 +5160,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1638;
+    const PAGE_CACHE_VERSION = 1639;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
