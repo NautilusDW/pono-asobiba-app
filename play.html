@@ -228,6 +228,7 @@
     /* ===== Scroll-hint chevrons (decorative) =====
        Two stacked roof-shaped lines pointing up at the top and down at the
        bottom of the card list, with a soft bob to suggest scrollability. */
+    /* v1672: scroll-hint 復活 — 動的色 (active=オレンジ / inactive=薄グレー) */
     .scroll-hint {
       position: absolute;
       left: 50%;
@@ -236,19 +237,38 @@
       height: 28px;
       pointer-events: none;
       z-index: 12;
-      opacity: 0.85;
-      filter: drop-shadow(0 2px 4px rgba(40, 24, 8, 0.5));
+      opacity: 0.95;
+      filter: drop-shadow(0 2px 4px rgba(40, 24, 8, 0.55));
+      transition: opacity 220ms ease-out;
     }
-    .scroll-hint--up   { top: 0px;     animation: hintBobUp 2.4s ease-in-out infinite; }
-    .scroll-hint--down { bottom: 64px; animation: hintBobDown 2.4s ease-in-out infinite; }
-    .scroll-hint svg { width: 100%; height: 100%; display: block; }
+    .scroll-hint--up {
+      top: 18px;                  /* card-list 上端から 18px 下 (mask fade 帯の上に重ねる) */
+      animation: hintBobUp 2.4s ease-in-out infinite;
+    }
+    .scroll-hint--down {
+      bottom: 138px;              /* bottom-nav (158px) より上、 card-list 下 fade 帯と重なる位置 */
+      animation: hintBobDown 2.4s ease-in-out infinite;
+    }
+    .scroll-hint svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
     .scroll-hint path {
       fill: none;
-      stroke: #fff8e2;
+      stroke: #b8a99055;          /* デフォルト = 薄グレー (スクロール不可方向) */
       stroke-width: 5;
       stroke-linecap: round;
       stroke-linejoin: round;
+      transition: stroke 220ms ease-out;
     }
+    .scroll-hint.is-active path {
+      stroke: #d96a36;            /* オレンジ (スクロール可能方向) */
+    }
+    .scroll-hint.is-active {
+      opacity: 1;
+    }
+
     @keyframes hintBobUp {
       0%, 100% { transform: translate(-50%, 0); }
       50%      { transform: translate(-50%, -6px); }
@@ -258,55 +278,10 @@
       50%      { transform: translate(-50%, 6px); }
     }
 
-    /* ===== Card position dots (Phase 2: position indicator) =====
-       右側に縦並びでカード位置を示すドット。 active dot のみ強調。 */
-    .card-dots {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      pointer-events: none;
-      z-index: 11;
-    }
-    .card-dots__dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: rgba(255, 248, 226, 0.32);
-      filter: drop-shadow(0 1px 2px rgba(40, 24, 8, 0.5));
-      transition: background 180ms ease-out, transform 180ms ease-out;
-    }
-    .card-dots__dot.is-active {
-      background: rgba(255, 248, 226, 0.85);
-      transform: scale(1.18);
-    }
-    .sr-only {
-      position: absolute; width: 1px; height: 1px;
-      padding: 0; margin: -1px; overflow: hidden;
-      clip: rect(0,0,0,0); border: 0;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .card-dots__dot { transition: none; }
-    }
-    /* iPad mini portrait (768px) 含む狭幅では bottom-nav 衝突回避のため dots を非表示。
-       peek 38% + mask fade が代替で「もっとある」 を伝える。 */
-    @media (max-width: 768px) {
-      .card-dots { display: none; }
-    }
-    /* reduced-motion 時は scroll-hint の bobbing も停止 (静的 chevron 表示) */
     @media (prefers-reduced-motion: reduce) {
       .scroll-hint--up,
       .scroll-hint--down {
         animation: none;
-      }
-      /* L4677 の .scroll-hint { display: none; } (global, specificity 0,1,0) を上書きするため、
-         .scroll-hint.scroll-hint--down で specificity 0,2,0 にする */
-      .scroll-hint.scroll-hint--down {
-        display: block;
-        opacity: 0.7;
       }
     }
 
@@ -330,24 +305,29 @@
       /* Horizontal padding still needed for shadow room; vertical padding
          removed so the visible viewport equals exactly 4 cards + 3 gaps. */
       padding: 0 32px 0 24px;
-      /* Soft 1-line fade at top + bottom so the snap edges feel less harsh.
-         The visible window is exactly 4 cards (set by JS) so no 5th card
-         peeks through; the fade only softens the cut. */
-      /* bottom fade 強化: 98% → 92% でピーク 5 枚目が霞んで消える演出 */
+      /* v1672: blur 風 fade — 上下の fade 帯を太く + 中間段階で霞み感 */
       -webkit-mask-image: linear-gradient(
         180deg,
         transparent 0%,
-        #000 2%,
-        #000 92%,
+        rgba(0, 0, 0, 0.4) 4%,
+        #000 12%,
+        #000 82%,
+        rgba(0, 0, 0, 0.4) 94%,
         transparent 100%
       );
               mask-image: linear-gradient(
         180deg,
         transparent 0%,
-        #000 2%,
-        #000 92%,
+        rgba(0, 0, 0, 0.4) 4%,
+        #000 12%,
+        #000 82%,
+        rgba(0, 0, 0, 0.4) 94%,
         transparent 100%
       );
+      -webkit-mask-size: 100% 100%;
+              mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat;
+              mask-repeat: no-repeat;
       /* Hide scrollbar everywhere */
       scrollbar-width: none;             /* Firefox */
       -ms-overflow-style: none;          /* old Edge / IE */
@@ -4339,42 +4319,52 @@
        inherits/sets pointer-events:none in center-msg states. */
     .daily-gacha-shop-link { pointer-events: auto; }
 
-    /* v1589: 🌰 acorn balance badge — top-right safe-area HUD chip.
-       Mirrors the daily-gacha-entry left-anchor formula but on the right.
-       Visual vocabulary reuses .donguri-shop-v2-balance (cream pill, brown border). */
-    .acorn-balance-badge {
+    /* v1672: acorn balance badge — bottom-nav 左端外に並置する nav-mounted variant */
+    .acorn-balance-badge--nav {
       position: absolute;
-      top: 18px;
-      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + 16px);
-      z-index: 93;
-      pointer-events: none; /* HUD only — no interaction */
-      display: inline-flex; align-items: center; gap: 6px;
+      /* bottom-nav の grid (4列固定) を崩さず、 左外側へ並置 */
+      left: -82px;                /* nav 左端から外へ 82px (badge 幅 ~70px + 余白 12px) */
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;                 /* nav 内重なり順 */
+      pointer-events: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       padding: 8px 14px;
+      min-width: 70px;
       background: #fff8e0;
       border: 2px solid #b88600;
       border-radius: 999px;
+      box-shadow: 0 2px 6px rgba(40, 24, 8, 0.25);
+      color: #6b3a00;
+      font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
+      font-weight: 700;
       font-size: 20px;
-      font-weight: 900;
-      color: #6e4a00;
-      min-width: 70px;
-      justify-content: center;
-      box-shadow: 0 3px 0 #b88600, 0 6px 14px rgba(48,27,10,.20);
-      font-family: inherit;
-      letter-spacing: .02em;
-      will-change: transform;
-      transform: translateZ(0);
+      line-height: 1;
+      user-select: none;
+      -webkit-user-select: none;
     }
-    .acorn-balance-badge__icon { font-size: 20px; line-height: 1; }
-    .acorn-balance-badge__count { font-variant-numeric: tabular-nums; }
-    @keyframes acorn-balance-bump {
-      0%   { transform: scale(1)    translateZ(0); }
-      40%  { transform: scale(1.15) translateZ(0); }
-      70%  { transform: scale(0.97) translateZ(0); }
-      100% { transform: scale(1)    translateZ(0); }
+    .acorn-balance-badge--nav .acorn-balance-badge__icon {
+      font-size: 22px;
+      line-height: 1;
+      filter: drop-shadow(0 1px 1px rgba(40, 24, 8, 0.2));
     }
-    .acorn-balance-badge.is-bumping { animation: acorn-balance-bump .4s ease-out; }
-    /* v1591: donguri shop 表示中はメイン残高バッジを隠す (shop 内に同等表示があり重複 + overlay 端で見切れる) */
-    .acorn-balance-badge.is-occluded { display: none; }
+    .acorn-balance-badge--nav .acorn-balance-badge__count {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.5px;
+    }
+    .acorn-balance-badge--nav.is-bumping {
+      animation: acorn-balance-bump-nav .4s ease-out;
+    }
+    @keyframes acorn-balance-bump-nav {
+      0%   { transform: translateY(-50%) scale(1); }
+      40%  { transform: translateY(-50%) scale(1.22); }
+      100% { transform: translateY(-50%) scale(1); }
+    }
+    .acorn-balance-badge--nav.is-occluded {
+      display: none;
+    }
     .acorn-reward-modal {
       position: fixed;
       inset: 0;
@@ -4699,17 +4689,15 @@
       transform: none;
       filter: drop-shadow(0 10px 16px rgba(48, 27, 10, .24));
     }
+    /* v1672: acorn 退去で上方 36px 回収 (86→50)。 bottom は nav 干渉回避で据置 */
     .cards-col {
-      padding-top: 86px;
+      padding-top: 50px;
       padding-bottom: 120px;
     }
-    .scroll-hint { display: none; }
     .card-list {
       gap: 10px;
       padding-left: 14px;
       padding-right: 18px;
-      -webkit-mask-image: none;
-              mask-image: none;
       --gc-aspect: 5.8 / 1;
       --gc-thumb-h-pct: 73%;
       --gc-play-h-pct: 52%;
@@ -4908,7 +4896,7 @@
       .daily-quest-info-banner__title { font-size: 14px; }
       .daily-quest-info-banner__body { font-size: 22px; }
       .daily-gacha-entry { height: 106px; }
-      .cards-col { padding-top: 82px; }
+      .cards-col { padding-top: 46px; }
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 29px; }
       .game-card__desc { font-size: 18px; }
@@ -4931,7 +4919,7 @@
       .daily-quest-info-banner__title { font-size: 11px; }
       .daily-quest-info-banner__body { font-size: 18px; }
       .daily-gacha-entry { height: 88px; }
-      .cards-col { padding-top: 70px; padding-bottom: 128px; }
+      .cards-col { padding-top: 40px; padding-bottom: 128px; }
       .card-list { gap: 8px; padding-left: 10px; padding-right: 12px; }
       .game-card { max-height: 106px; }
       .game-card__title,
@@ -4939,6 +4927,26 @@
       .game-card__desc { font-size: 15px; }
       .bottom-nav { --nav-sprite-w: 360px; --nav-sprite-h: 114px; bottom: 14px; padding-inline: 13px; }
       .bn-item { border-radius: 14px; }
+    }
+
+    /* v1672: nav-mounted acorn badge — landscape レスポンシブ縮小 */
+    @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
+      .acorn-balance-badge--nav {
+        left: -74px;
+        padding: 7px 12px;
+        min-width: 62px;
+        font-size: 18px;
+      }
+      .acorn-balance-badge--nav .acorn-balance-badge__icon { font-size: 20px; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+      .acorn-balance-badge--nav {
+        left: -66px;
+        padding: 6px 10px;
+        min-width: 54px;
+        font-size: 16px;
+      }
+      .acorn-balance-badge--nav .acorn-balance-badge__icon { font-size: 18px; }
     }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
@@ -5001,18 +5009,15 @@
             <path d="M14 2 L32 14 L50 2"></path>
           </svg>
         </div>
-        <div class="card-dots" id="cardDots" aria-hidden="true"></div>
-        <div class="sr-only" id="cardDotsLive" aria-live="polite" aria-atomic="true"></div>
       </section>
     </main>
 
-    <!-- v1589: 🌰 acorn balance badge (top-right HUD chip, live-updated via pono-acorns-changed) -->
-    <div class="acorn-balance-badge" id="acornBalanceBadge" aria-live="polite" aria-label="どんぐりのこすう">
-      <span class="acorn-balance-badge__icon" aria-hidden="true">🌰</span>
-      <span class="acorn-balance-badge__count" id="acornBalanceCount">0</span>
-    </div>
-
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
+      <!-- v1672: acorn balance badge — bottom-nav 左端外へ並置 (HUD as nav sibling-in-DOM, visual-left) -->
+      <div class="acorn-balance-badge acorn-balance-badge--nav" id="acornBalanceBadge" aria-live="polite" aria-label="どんぐりのこすう">
+        <span class="acorn-balance-badge__icon" aria-hidden="true">🌰</span>
+        <span class="acorn-balance-badge__count" id="acornBalanceCount">0</span>
+      </div>
       <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ヘルプ</span></button>
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">おしらせ</span></button>
       <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">シール</span></button>
@@ -5855,57 +5860,26 @@
         });
       });
 
-      buildDots();
-
       // Defer one frame so layout is committed and we can measure card height.
       requestAnimationFrame(setupLoopScroll);
     }
 
-    // ===== Phase 2: Card position dots =====
-    function buildDots() {
-      const dots = document.getElementById('cardDots');
-      if (!dots) return;
-      dots.innerHTML = '';
-      for (let i = 0; i < MENU_GAMES.length; i++) {
-        const dot = document.createElement('span');
-        dot.className = 'card-dots__dot';
-        dot.dataset.idx = String(i);
-        dots.appendChild(dot);
-      }
-    }
+    // ===== v1672: scroll-hint dynamic color (up=orange when scrollable up, down=orange when scrollable down) =====
+    const scrollHintUp = document.querySelector('.scroll-hint--up');
+    const scrollHintDown = document.querySelector('.scroll-hint--down');
+    let scrollHintRaf = 0;
 
-    let lastDotIdx = -1;
-    let dotRaf = 0;
-    // SR (aria-live) 連投回避用 debounce timer。 視覚 dots は即時更新のまま、
-    // 高速スクロール中の「1ばんめ … 3ばんめ …」 連続読み上げだけを抑制する。
-    let dotLiveDebounceTimer = 0;
-    function updateActiveDot() {
-      const cards = cardList.querySelectorAll('.game-card');
-      if (!cards.length) return;
-      if (cardScrollState.teleporting) return;  // teleport 中の不自然遷移を防ぐ
-      const cardH = cards[0].offsetHeight;
-      if (!cardH) return;
-      const gap = parseFloat(getComputedStyle(cardList).rowGap || getComputedStyle(cardList).gap) || 0;
-      const step = cardH + gap;
-      if (!step) return;
-      const viewportCenter = cardList.scrollTop + cardList.clientHeight / 2;
-      const CLIP_PAD = 6;
-      const rawIdx = Math.floor((viewportCenter - CLIP_PAD) / step);
-      const idx = ((rawIdx % MENU_GAMES.length) + MENU_GAMES.length) % MENU_GAMES.length;
-      if (idx === lastDotIdx) return;
-      lastDotIdx = idx;
-      const all = document.querySelectorAll('.card-dots__dot');
-      all.forEach((d, i) => d.classList.toggle('is-active', i === idx));
-      const live = document.getElementById('cardDotsLive');
-      if (live) {
-        const game = MENU_GAMES[idx];
-        if (game) {
-          clearTimeout(dotLiveDebounceTimer);
-          dotLiveDebounceTimer = setTimeout(() => {
-            live.textContent = `${idx + 1}ばんめ ${game.title}`;
-          }, 200);
-        }
-      }
+    function updateScrollHints() {
+      if (!scrollHintUp || !scrollHintDown) return;
+      const list = document.getElementById('cardList');
+      if (!list) return;
+      const sTop = list.scrollTop;
+      const sMax = list.scrollHeight - list.clientHeight;
+      // しきい値 2px (rounding 誤差吸収)
+      const canUp = sTop > 2;
+      const canDown = sTop < (sMax - 2);
+      scrollHintUp.classList.toggle('is-active', canUp);
+      scrollHintDown.classList.toggle('is-active', canDown);
     }
 
     function setupLoopScroll() {
@@ -5935,6 +5909,8 @@
         // 4 枚 + 4 gap (5 枚目分の gap も加算) + ピーク + CLIP_PAD×2
         const visibleH = cardH * VISIBLE + gap * VISIBLE + peek + CLIP_PAD * 2;
         cardList.style.height = visibleH + 'px';
+        // v1672: card-list 寸法が変わると scrollHeight/clientHeight も変わるため scroll-hint 再判定
+        updateScrollHints();
       };
       recomputeHeight();
       // Re-measure after every image finishes loading (panel + thumb + play)
@@ -6038,13 +6014,17 @@
         clearTimeout(snapTimer);
         snapTimer = setTimeout(snapToNearest, 140);
 
-        // Phase 2: dot indicator update — rAF throttled
-        if (dotRaf) return;
-        dotRaf = requestAnimationFrame(() => { dotRaf = 0; updateActiveDot(); });
+        // v1672: scroll-hint 色更新 — rAF throttled
+        if (!scrollHintRaf) {
+          scrollHintRaf = requestAnimationFrame(() => {
+            scrollHintRaf = 0;
+            updateScrollHints();
+          });
+        }
       }, { passive: true });
 
-      // 初回 dot を点灯
-      updateActiveDot();
+      // 初回 scroll-hint 状態反映
+      updateScrollHints();
 
       // 初回 auto-scroll hint (Phase 2)
       // 1600 → 2200ms に後ろ倒し: 子供 (3歳〜) の視線が画面に届いてから動かす方が、
