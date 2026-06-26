@@ -562,6 +562,20 @@
     @media (prefers-reduced-motion: reduce) {
       .game-card__peek { transition: none; }
     }
+    /* v1673: viewport 中央付近の 3 カードは scroll 連動で自動 overlay
+       (タッチデバイスでも hover 無しで title 背景を覗ける)。
+       既存 hover/focus-visible/peek-always と同じ opacity 値で衝突回避。 */
+    .game-card.is-overlay-active .game-card__peek {
+      opacity: 0.92;
+    }
+    /* is-coming-soon カードは peekStyle='none' なので背景は出ないが、
+       念のため明示的に 0 にして将来 bg が入っても tease しないよう二重ガード。 */
+    .game-card.is-coming-soon.is-overlay-active .game-card__peek {
+      opacity: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      /* reduced-motion でも overlay 自体は出すが、 transition 即時化は既存ルールで担保済み。 */
+    }
     /* Make sure title/desc still sit above the peek layer.
        Round thumb (z 2) and play button (no explicit z; needs lifting)
        must also sit ABOVE the peek so the peek doesn't bleed onto them. */
@@ -5805,7 +5819,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1672;
+    const PAGE_CACHE_VERSION = 1673;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -5899,6 +5913,7 @@
     const scrollHintUp = document.querySelector('.scroll-hint--up');
     const scrollHintDown = document.querySelector('.scroll-hint--down');
     let scrollHintRaf = 0;
+    let middleOverlayRaf = 0;  // v1673: middle-3 overlay 更新 rAF throttle
 
     function updateScrollHints() {
       if (!scrollHintUp || !scrollHintDown) return;
@@ -5942,6 +5957,44 @@
         cardList.style.height = visibleH + 'px';
         // v1672: card-list 寸法が変わると scrollHeight/clientHeight も変わるため scroll-hint 再判定
         updateScrollHints();
+        if (typeof updateMiddleOverlay === 'function') updateMiddleOverlay();
+      };
+      // v1673: viewport 中央付近の 3 カードに .is-overlay-active を付与。
+      // LOOP_COPIES=3 で同一 data-id の DOM が複数存在するが、 距離で純粋に
+      // 上位 3 件選ぶので middle copy (rep=1) のカードが自然に選ばれる
+      // (中央 viewport にあるのは大抵 rep=1)。
+      // 距離計算は cardList の scroll 座標系で統一 (offsetTop 利用)。
+      const updateMiddleOverlay = () => {
+        if (!cards.length) return;
+        const viewCenter = cardList.scrollTop + cardList.clientHeight / 2;
+        // 各カードの中心 y と viewport 中央との距離を計算
+        const ranked = [];
+        for (let i = 0; i < cards.length; i++) {
+          const c = cards[i];
+          // cardList が relative/scroll container 想定。 offsetParent が
+          // cardList でない場合は getBoundingClientRect ベースに fallback。
+          let centerY;
+          if (c.offsetParent === cardList) {
+            centerY = c.offsetTop + c.offsetHeight / 2;
+          } else {
+            const rect = c.getBoundingClientRect();
+            const listRect = cardList.getBoundingClientRect();
+            centerY = (rect.top - listRect.top) + cardList.scrollTop + c.offsetHeight / 2;
+          }
+          ranked.push({ el: c, dist: Math.abs(centerY - viewCenter) });
+        }
+        ranked.sort((a, b) => a.dist - b.dist);
+        const winners = new Set(ranked.slice(0, 3).map((r) => r.el));
+        // class toggle (差分のみ DOM 操作)
+        for (let i = 0; i < cards.length; i++) {
+          const c = cards[i];
+          const shouldOn = winners.has(c);
+          if (shouldOn && !c.classList.contains('is-overlay-active')) {
+            c.classList.add('is-overlay-active');
+          } else if (!shouldOn && c.classList.contains('is-overlay-active')) {
+            c.classList.remove('is-overlay-active');
+          }
+        }
       };
       recomputeHeight();
       // Re-measure after every image finishes loading (panel + thumb + play)
@@ -5975,6 +6028,12 @@
       };
       // Start positioned at the middle copy so user can scroll either way.
       cardList.scrollTop = oneSetH();
+
+      // v1673: 初期表示で middle-3 を即 overlay (scroll 待ち回避)
+      requestAnimationFrame(updateMiddleOverlay);
+      // 画像 lazy-load 後の height 確定で middle 候補がズレることがあるので safety pass
+      setTimeout(updateMiddleOverlay, 350);
+      setTimeout(updateMiddleOverlay, 1100);
 
       let snapTimer = null;
       cardScrollState.teleporting = false;
@@ -6050,6 +6109,13 @@
           scrollHintRaf = requestAnimationFrame(() => {
             scrollHintRaf = 0;
             updateScrollHints();
+          });
+        }
+        // v1673: middle-3 overlay 更新 (rAF throttle、 scrollHintRaf と同パターン)
+        if (!middleOverlayRaf) {
+          middleOverlayRaf = requestAnimationFrame(() => {
+            middleOverlayRaf = 0;
+            updateMiddleOverlay();
           });
         }
       }, { passive: true });
