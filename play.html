@@ -3418,11 +3418,11 @@
       position: absolute; inset: 0;
       width: 100%; height: 100%;
       background-image: url("assets/ui/shop/sticker_shop_counter_cute_low_20260626.png");
-      background-size: max(145%, calc(145vh * 16 / 9)) auto;
+      background-size: max(136%, calc(136vh * 16 / 9)) auto;
       background-position: center bottom;
       background-repeat: no-repeat;
       pointer-events: none; z-index: 3;
-      transform: translateY(20%);
+      transform: translateY(18%);
       transform-origin: center bottom;
     }
     .donguri-shop-v2-machine {
@@ -3454,10 +3454,10 @@
       display: flex; align-items: center; justify-content: center;
       background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_20260625.png") center / contain no-repeat;
       border: 0; border-radius: 0;
-      padding: 0 clamp(12px, 2vw, 28px) 0 clamp(30px, 4vw, 52px);
+      padding: 0 clamp(18px, 2.2vw, 32px) 0 clamp(38px, 4.5vw, 58px);
       color: #5a3a00; font-weight: 900; font-size: clamp(8px, 1.05vw, 14px); text-align: center; line-height: 1.15;
       white-space: nowrap;
-      overflow: hidden;
+      overflow: visible;
       filter: drop-shadow(0 6px 10px rgba(38, 19, 4, .22));
     }
     .donguri-shop-v2-bubble::after { content: none; }
@@ -3503,14 +3503,29 @@
       width: clamp(104px, 11vw, 150px);
       aspect-ratio: 339 / 169;
       box-sizing: border-box;
-      padding: 0 14% 0 44%;
-      background: transparent url("assets/ui/shop/sticker_shop_ui_balance_badge_20260625.png") center / contain no-repeat;
-      border: 0; border-radius: 999px;
+      padding: 0 clamp(14px, 1.2vw, 20px);
+      gap: clamp(8px, 1vw, 12px);
+      background:
+        linear-gradient(180deg, rgba(255, 252, 238, .98) 0%, rgba(255, 239, 203, .98) 100%);
+      border: clamp(3px, .35vw, 5px) solid #b66c00;
+      border-radius: 999px;
       font-size: clamp(16px, 2.2vw, 22px); font-weight: 900; color: #6e4a00;
       min-width: 104px;
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 255, 246, .95),
+        inset 0 0 0 5px rgba(235, 168, 33, .46),
+        0 3px 0 rgba(118, 66, 0, .38);
       filter: drop-shadow(0 4px 7px rgba(48, 27, 10, .22));
     }
-    .donguri-shop-v2-balance span[aria-hidden="true"] { display: none; }
+    .donguri-shop-v2-balance-icon {
+      display: inline-block;
+      width: clamp(31px, 3.3vw, 44px);
+      aspect-ratio: 85 / 103;
+      flex: 0 0 auto;
+      background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
+      transform: translateY(-2px);
+      filter: drop-shadow(0 2px 2px rgba(91, 48, 6, .28));
+    }
     .donguri-shop-v2-slots {
       position: absolute; left: 34%; right: 4.5%; bottom: 15.8%;
       display: flex; gap: 2.1%; justify-content: center; align-items: flex-end;
@@ -3699,7 +3714,7 @@
       }
       .donguri-shop-v2-title { width: min(42vw, 300px); font-size: 0; }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
-      .donguri-shop-v2-bubble { left: 7%; bottom: 22%; width: min(25%, 220px); padding: 0 clamp(12px, 2vw, 18px) 0 clamp(28px, 4vw, 36px); font-size: clamp(8px, 1.4vw, 12px); }
+      .donguri-shop-v2-bubble { left: 7%; bottom: 22%; width: min(26%, 230px); padding: 0 clamp(14px, 2.2vw, 20px) 0 clamp(32px, 4.6vw, 42px); font-size: clamp(8px, 1.4vw, 12px); }
       .donguri-shop-v2-slots { left: 31%; right: 3%; bottom: 13.3%; gap: 1.3%; }
       .donguri-shop-v2-slot { min-width: 66px; max-width: 31%; padding: 10.5% 8.4% 5%; }
       .donguri-shop-v2-price { font-size: 12px; }
@@ -4598,7 +4613,7 @@
           <button class="donguri-shop-v2-close" id="donguriShopClose" type="button" aria-label="閉じる">×</button>
           <h2 class="donguri-shop-v2-title" id="donguriShopTitle">もりのおみせ こもれびや</h2>
           <div class="donguri-shop-v2-balance">
-            <span aria-hidden="true">🌰</span>
+            <span class="donguri-shop-v2-balance-icon" aria-hidden="true"></span>
             <span id="donguriShopBalance">0</span>
           </div>
         </header>
@@ -4990,7 +5005,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1630;
+    const PAGE_CACHE_VERSION = 1631;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Reference-style title menu: the first screen intentionally shows four
