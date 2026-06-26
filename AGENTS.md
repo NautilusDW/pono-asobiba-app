@@ -275,6 +275,29 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 
 軽微な typo 修正、 1 行の文言変更、 調査だけでファイル変更がない場合は対象外でよい。
 
+### 4.9 ★アクティブ・クレーム・ボード (2026-06-27 追加)
+
+複数の AI セッション (Claude / Codex) や人間が並行で同じプロジェクトを触る前提なので、 リポジトリ直下の [`AGENTS_CLAIMS.md`](./AGENTS_CLAIMS.md) を **アクティブな編集スコープの可視化ボード** として運用する。 `HANDOFF.md` (履歴・申し送り) とは役割を分ける:
+
+| ファイル | 役割 | 寿命 |
+|---|---|---|
+| `AGENTS_CLAIMS.md` | **いま** 誰が何を触っているか (= 衝突予防の lock 相当) | 作業中だけ。 終わったら **行を削除** |
+| `HANDOFF.md` | 完了報告 / 引き継ぎ / 進捗ログ | append-only。 古い Done は気付いた人が掃除 |
+
+**MUST ルール:**
+
+1. **作業開始時 (新規バッチを切る瞬間)** — `AGENTS_CLAIMS.md` を読む → 衝突なしを確認 → 自分の行を追記 → `git pull --rebase origin <current-branch>` してから編集開始
+2. **作業終了時 (push 完了直後)** — 自分の claim 行を削除して commit (`chore(claims): remove finished claim (no sw)` 等)。 HANDOFF.md への完了報告は別途残す (役割が違う)
+3. **push 直前** — もう一度 `git pull --rebase origin <current-branch>` を実行。 `.git/hooks/pre-push` が behind を検出して block したら、 必ず pull --rebase してから再 push (`--no-verify` 禁止)
+4. **claim の衝突発見時** — 他者の active claim と自分のスコープが被ったら自走しない。 ユーザーに 1 行確認
+5. **ゾンビ claim** — 以下の **両方** を満たす他者の claim を見つけたら、 ユーザーに「これまだ生きてる?」 と確認して削除して良い:
+   - claim のタイムスタンプが 4 時間以上前
+   - かつ、 そのタイムスタンプ以降の git log に当該作業者 (Claude / Codex / Human) の新規 commit がない
+
+`AGENTS_CLAIMS.md` の行フォーマットと例は同ファイル冒頭参照。
+
+**設計意図**: HANDOFF.md は履歴が積み上がるため「**今アクティブな**ものだけを瞬時に見る」 用途には不向きになった。 claim ボードを別ファイルにして **「常に短い」「常に最新」** を維持することで衝突検出を高速化する。
+
 ---
 
 ## 5. 画像追加・差し替え手順
@@ -495,8 +518,19 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>   ← または Codex
 | Claude Code PostToolUse | Claude の Write/Edit | `auto_optimize_image.py --hook` (assets/images/ のみ) + `docs_review_hook.py --mark` |
 | Claude Code Stop | Claude セッション終了 | `docs_review_hook.py --check` (skip flag で逃げ可) + auto push |
 | GitHub Actions | develop / master push | Cloudflare Workers staging / production に自動デプロイ |
+| `.git/hooks/pre-push` | 全 push (Claude / Codex / 手動) | 自分のローカルが origin より behind なら push を block + `git pull --rebase` を促す。 作業ツリーは触らない (§4.9 / 安全策) |
 
 **Codex 側は有効な git hook と GitHub Actions の恩恵を自動的に受けます。** Claude 専用の UserPromptSubmit / PostToolUse / Stop hook は Codex の編集に対しては発火しません。 したがって Codex のクロスレビューは hook 強制ではなく、 §4.8 の運用ルールとして明示的に実施します。
+
+### 11.1 git hooks の初回 install (2026-06-27 追加)
+
+`.git/hooks/` は git 管理外なので、 リポジトリ側に正本を置いている (`scripts/hooks/` 配下)。 新規 clone / hook 更新時は次のコマンドで `.git/hooks/` へコピーする:
+
+```bash
+bash scripts/install-git-hooks.sh
+```
+
+既存の `pre-commit` (機密ファイル / 3MB 超画像 / Image2 違反の block) は維持される。 新たに `pre-push` (behind block / §4.9) が追加される。
 
 ---
 
