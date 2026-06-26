@@ -1478,7 +1478,12 @@ body.is-sticker-tray-dragging #scene {
 }
 
 body.is-sticker-tutorial-step-ok .sticker-tutorial-hand {
-  animation: stickerTutorialTap 1.35s ease-in-out infinite;
+  /* v1628: 旧 stickerTutorialTap (1.35s infinite, OK ボタン右隣で「呼吸」 するだけ) を廃止。
+     stickerTutorialOkPressDemo (3.0s, 1 回再生) に置換: 指が rest (右隣) → OK ボタン中央へ実際に降りて押し込み →
+     離す → 戻る、 の所作で「指で押している」 ことを子供に伝える。 keyframe 50% 押下と
+     triggerStickerTutorialOkButtonPress の class add (≈ 1500ms 後) を同期。 1 回再生で終わるので
+     ボタン消滅 (click 後 inlineStickerControls hidden) 後も指が見えない不整合を排除。 */
+  animation: stickerTutorialOkPressDemo 3s ease-in-out 1 both;
 }
 
 /* step 7 (page) は hand 非表示 + 矢印ボタン強調 + 自動 click。
@@ -1801,9 +1806,54 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   }
 }
 
-@keyframes stickerTutorialTap {
-  0%, 100% { transform: translate(-50%, -35%) scale(1) rotate(-2deg); }
-  45% { transform: translate(-50%, -35%) scale(0.86) rotate(-7deg); }
+@keyframes stickerTutorialOkPressDemo {
+  /* v1628 OK step 新規 keyframe (3.0s, 1 回再生):
+     0-25%   rest (右隣で待機、 軽い「ここだよ」 sway)
+     25-48%  rest → OK center へ斜めに降下 (easeIn)
+     48-56%  押下 (scale 0.92, translateY 強め) ← JS triggerStickerTutorialOkButtonPress と同期 (≈ 1500ms)
+     56-72%  リリース (lift)、 OK center 真上
+     72-100% rest に戻る (見えない時間 / ボタン click 後の余韻)
+     hand src は point pose 固定 (main.js step.hand="point" / setStickerTutorialHandKey("point") で保証)。 */
+  0% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scale(1) rotate(-3deg);
+    animation-timing-function: ease-in-out;
+  }
+  20% {
+    /* sway: rest 微小に動かして注意喚起 */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scale(0.96) rotate(-6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  }
+  48% {
+    /* 押下直前: OK center 真上 (まだ触れていない) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -42%) scale(0.96) rotate(-2deg);
+    animation-timing-function: ease-in;
+  }
+  52% {
+    /* 押下接触 (=「ぐっ」 = JS triggerStickerTutorialOkButtonPress の class add とほぼ同タイミング) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -28%) scale(0.90) rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  60% {
+    /* リリース (lift) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -45%) scale(1.02) rotate(-2deg);
+    animation-timing-function: ease-in-out;
+  }
+  75%, 100% {
+    /* rest に戻る (ボタン click 後の余韻、 ボタン消えても hand は rest で穏やかに留まる) */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scale(1) rotate(-3deg);
+  }
 }
 
 /* step 7 page: 旧 pageHoverVertical / pageSwipeHand keyframe は廃止 (hand 非表示化に伴う) */
@@ -1949,7 +1999,11 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -35%) scale(0.88) rotate(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  /* === place phase: 50.65-100% (旧 wander/overshoot 12 stop → 5 stop 直行に簡素化、 rotate 0deg 固定で迷い揺れ排除) === */
+  /* === place phase: 50.65-100% (旧 wander/overshoot 12 stop → 5 stop 直行に簡素化、 rotate 0deg 固定で迷い揺れ排除) ===
+     v1628: hover→drop 区間を圧縮し体感を約 1.15s 早める。 hover 64.5%→61% (11352→10736ms)、 to 73%→66% (12848→11616ms)、
+     drop 75.85%→69.32% (13350→12200ms)、 release 79%→72.5% (13904→12760ms)、 away 82.15%→75.5% (14458→13288ms)。
+     pickup grab 50.65% は find phase 接続のため不変。 hover→to を 1.50s → 0.79s に半減し「真下に降りる」 待ち時間短縮。
+     JS open timer (main.js) も 13350→12200ms、 addSticker 13500→12350ms に同期 (open 切替 → +150ms → addSticker の関係不変)。 */
   50.65% {
     /* pickup grab (easeOutCirc: 軽快な持ち上げ) */
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
@@ -1958,40 +2012,40 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -30%) scale(0.86) rotate(-12deg);
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  64.5% {
-    /* hover: 真上の高い位置でゆっくり減速 (v1621: 56.5% → 64.5% で pickup→hover を 1.03s → 2.44s に延長 = じっくり持っていく)、 ここから to まで 8.5pp ≒ 1.50s で素直に降ろす */
+  61% {
+    /* hover: 真上の高い位置でゆっくり減速 (v1628: 64.5% → 61%、 10736ms)、 ここから to まで 5pp ≒ 0.88s で素直に降ろす */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.00) rotate(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  73% {
-    /* to: ゆっくり真っ直ぐ降ろした到着点 */
+  66% {
+    /* to: ゆっくり真っ直ぐ降ろした到着点 (v1628: 73% → 66%、 11616ms) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -38%) scale(0.95) rotate(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  75.85% {
-    /* drop 押し付け ぐっ (置く所作) */
+  69.32% {
+    /* drop 押し付け ぐっ (置く所作) (v1628: 75.85% → 69.32%、 12200ms = JS open timer と同期) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -33%) scale(0.92) rotate(0deg);
     animation-timing-function: ease-in-out;
   }
-  79% {
-    /* release lift (置く所作) */
+  72.5% {
+    /* release lift (置く所作) (v1628: 79% → 72.5%、 12760ms) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.04) rotate(0deg);
     animation-timing-function: ease-in-out;
   }
-  82.15%, 100% {
-    /* away */
+  75.5%, 100% {
+    /* away (v1628: 82.15% → 75.5%、 13288ms) */
     left: var(--tutorial-demo-away-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-away-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
@@ -2000,8 +2054,9 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 }
 
 @keyframes stickerTutorialFindPlaceGhost {
-  /* hand keyframe と同じ 5 stop に集約 (50.65 出現 / 64.5 hover 追従 / 73 to 追従 / 75.85 drop / 79+100 fade out)
-     v1621: 各 stop に hand と同一の animation-timing-function を付与 = ghost が hand 指先から離脱する不整合を解消 */
+  /* hand keyframe と同じ 5 stop に集約 (50.65 出現 / 61 hover 追従 / 66 to 追従 / 69.32 drop / 72.5+100 fade out)
+     v1621: 各 stop に hand と同一の animation-timing-function を付与 = ghost が hand 指先から離脱する不整合を解消
+     v1628: hand keyframe の hover→drop 圧縮 (64.5/73/75.85/79 → 61/66/69.32/72.5) と完全同期 */
   0%, 49.5% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
@@ -2016,15 +2071,15 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -50%) scale(0.94);
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  64.5% {
-    /* follow hover (v1621: hand と同 64.5% タイミング / 同 bezier に揃え) */
+  61% {
+    /* follow hover (v1628: hand と同 61% タイミング / 同 bezier に揃え) */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  73% {
+  66% {
     /* follow to (ゆっくり真っ直ぐ降下) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
@@ -2032,7 +2087,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -50%) scale(1);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  75.85% {
+  69.32% {
     /* drop */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
@@ -2040,7 +2095,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -50%) scale(1.03);
     animation-timing-function: ease-in-out;
   }
-  79%, 100% {
+  72.5%, 100% {
     /* fade out */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));

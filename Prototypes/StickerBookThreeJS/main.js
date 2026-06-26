@@ -3595,9 +3595,10 @@ function showStickerTutorialStep(index, options = {}) {
   if (stickerTutorialCard) {
     stickerTutorialCard.hidden = false;
   }
-  if (stickerTutorialSpotlight) {
-    stickerTutorialSpotlight.hidden = false;
-  }
+  // v1628: spotlight の visible 化を「位置確定後」 に遅延 (下記 updateStickerTutorialLayout 直後)。
+  // 旧仕様は hidden=false → rAF 内で layout 更新 の順だったため、 前 step の CSS 変数 (--tutorial-x/y/w/h)
+  // が残った状態で 1 フレームだけ描画され、 ok → page 遷移で「黄枠が一瞬下 (OK ボタン位置) にずれる」 視覚バグが発生していた。
+  // 解決: hidden 状態のまま prepare + 同期 layout で正しい rect を CSS 変数に書き込み → 初めて hidden=false。
   if (stickerTutorialHand) {
     stickerTutorialHand.hidden = false;
   }
@@ -3628,6 +3629,16 @@ function showStickerTutorialStep(index, options = {}) {
   document.body.classList.toggle("is-sticker-tutorial-card-corner", step.card === "corner");
   removeStickerTutorialStepClasses();
   document.body.classList.add(`is-sticker-tutorial-step-${step.id}`);
+  // v1628: 同期で layout 1 回実行 → CSS 変数を新 step rect に確定させてから spotlight を visible 化。
+  // updateStickerTutorialLayout は stickerTutorial.hidden が true でも CSS 変数を書き込む実装 (現在 hidden は
+  // tutorial 全体 root の hidden で、 各 step では false 状態を維持) なので問題なく動作する。
+  // 注: hidden=true ガードは stickerTutorial 全体 (root) を見ているが、 currentStickerTutorialStep が null だと
+  // 早期 return するため安全。 ここでは step を取れた直後なので OK。
+  updateStickerTutorialLayout();
+  if (stickerTutorialSpotlight) {
+    stickerTutorialSpotlight.hidden = false;
+  }
+  // 後続: DOM 変化 (setStickerEditMode 等で sticker 描画が一拍遅延するケース) に追従するための保険を残す。
   scheduleStickerTutorialLayout();
   window.setTimeout(scheduleStickerTutorialLayout, 180);
   window.setTimeout(scheduleStickerTutorialLayout, 720);
@@ -4626,12 +4637,22 @@ function stickerTutorialDemoPoints(step, rect) {
     }
     return { ...base, hand: from, from, to };
   }
-  if (step.id === "ok" || step.id === "page") {
+  if (step.id === "page") {
     const point = {
       x: Math.min(window.innerWidth - 44, rectRight(rect) + Math.min(52, Math.max(38, rect.width * 0.22))),
       y: center.y,
     };
     return { ...base, hand: point, from: point, to: point };
+  }
+  if (step.id === "ok") {
+    // v1628: OK step は from=rest (ボタン右隣)、 to=center (ボタン中央 = 押下接触点) に分離。
+    // stickerTutorialOkPressDemo keyframe が from↔to を動的に往復し「指で押している」 を表現。
+    const rest = {
+      x: Math.min(window.innerWidth - 44, rectRight(rect) + Math.min(52, Math.max(38, rect.width * 0.22))),
+      y: center.y,
+    };
+    const press = { x: center.x, y: center.y };
+    return { ...base, hand: rest, from: rest, to: press };
   }
   if (step.id === "place") {
     const trayRect = expandedElementRect(collectionStickerTrayItems || collectionStickerTray, 10, "16px") || rect;
