@@ -579,6 +579,12 @@
     var detail = event && event.detail ? event.detail : {};
     var delta = (typeof detail.delta === 'number') ? detail.delta : 0;
     var after = (typeof detail.after === 'number') ? detail.after : null;
+    if (detail.suppressRewardModal) {
+      try {
+        if (typeof after === 'number') sessionStorage.setItem('pono_acorns_last_seen_v1', String(after | 0));
+      } catch (e) {}
+      return;
+    }
     if (delta > 0) _showAcornRewardModal(delta, after);
   });
 

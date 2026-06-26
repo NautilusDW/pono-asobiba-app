@@ -2222,6 +2222,77 @@ body.layout-editor-on .character img {
   object-fit: contain;
   filter: drop-shadow(0 6px 14px rgba(120, 83, 20, 0.25));
 }
+.result-acorn-reward {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  color: #6d3b07;
+  text-align: center;
+  line-height: 1;
+}
+.result-acorn-reward[hidden] {
+  display: none !important;
+}
+.result-acorn-reward__main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.5vw, 14px);
+}
+.result-acorn-reward__icon {
+  display: inline-block;
+  width: clamp(48px, 8vw, 78px);
+  aspect-ratio: 85 / 103;
+  background: transparent url('../assets/ui/shop/donguri_shop_acorn_icon_20260626.png') center/contain no-repeat;
+  filter:
+    drop-shadow(0 5px 8px rgba(71, 38, 6, 0.34))
+    drop-shadow(0 0 10px rgba(255, 221, 105, 0.58));
+}
+.result-acorn-reward__amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-weight: 900;
+  color: #ffef8a;
+  font-size: clamp(38px, 8.4vw, 78px);
+  letter-spacing: 0;
+  text-shadow:
+    0 4px 0 #8b4b00,
+    0 8px 16px rgba(40, 18, 0, 0.45),
+    0 0 18px rgba(255, 224, 92, 0.82);
+  -webkit-text-stroke: 2px rgba(89, 43, 0, 0.34);
+}
+.result-acorn-reward__times {
+  font-size: .52em;
+  transform: translateY(-.08em);
+}
+.result-acorn-reward__copy {
+  color: #fff7ca;
+  font-size: clamp(18px, 3vw, 28px);
+  font-weight: 900;
+  line-height: 1.05;
+  text-shadow:
+    0 3px 0 #7d4708,
+    0 6px 12px rgba(45, 20, 0, 0.45);
+  white-space: nowrap;
+}
+.overlay.has-acorn-result .modal-title,
+.overlay.has-acorn-result .modal-msg {
+  display: none;
+}
+.overlay:not(.is-perfect).has-acorn-result .modal {
+  max-width: min(440px, 92vw);
+  padding: 18px 22px 20px;
+  gap: 10px;
+}
+.overlay:not(.is-perfect).has-acorn-result .result-stamp-img {
+  width: clamp(108px, 26vw, 156px);
+  height: clamp(108px, 26vw, 156px);
+}
+.overlay:not(.is-perfect).has-acorn-result .result-acorn-reward__copy {
+  color: #6d3b07;
+  text-shadow: 0 2px 0 rgba(255, 244, 203, 0.96);
+}
 /* ===== Perfect (5/5 全問正解) 専用 演出 (2026-05-12 R3 リデザイン) =====
    背景: 図書室で踊るポノとフクロウ博士+リス。
    スタンプは「ドカン！」 と画面中央に巨大表示 (= 2x size + drop-shadow + 黄色光彩)。
@@ -2275,6 +2346,30 @@ body.layout-editor-on .character img {
 }
 .overlay.is-perfect .modal-title { font-size: 2rem; }
 .overlay.is-perfect .modal-msg   { font-size: 1.15rem; }
+.overlay.is-perfect .result-acorn-reward {
+  flex: 0 0 auto;
+  margin-top: clamp(-10px, -1.2vh, -2px);
+  margin-bottom: clamp(4px, 1vh, 12px);
+  opacity: 0;
+  transform: translateY(8px) scale(.96);
+}
+.overlay.is-perfect.is-animated .result-acorn-reward {
+  animation: resultRewardSettle .32s .52s cubic-bezier(.18,.86,.22,1.08) both;
+}
+.overlay.is-perfect .result-acorn-reward__icon,
+.overlay.is-perfect .result-acorn-reward__amount,
+.overlay.is-perfect .result-acorn-reward__copy {
+  opacity: 0;
+}
+.overlay.is-perfect.is-animated .result-acorn-reward__icon {
+  animation: resultAcornPop .42s .62s cubic-bezier(.18,.86,.22,1.08) both;
+}
+.overlay.is-perfect.is-animated .result-acorn-reward__amount {
+  animation: resultNumberBoom .5s .86s cubic-bezier(.18,.86,.22,1.08) both;
+}
+.overlay.is-perfect.is-animated .result-acorn-reward__copy {
+  animation: resultCopyIn .24s 1.08s ease-out both;
+}
 /* ボタン群は modal の末尾にあるためフロー下端に集約される。 視認性のため影を強化 */
 .overlay.is-perfect .modal-btn {
   position: relative;
@@ -2302,6 +2397,25 @@ body.layout-editor-on .character img {
   0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
   20%  { opacity: 0.55; }
   100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+@keyframes resultRewardSettle {
+  0%   { opacity: 0; transform: translateY(8px) scale(.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes resultAcornPop {
+  0%   { opacity: 0; transform: scale(.34) rotate(-16deg); }
+  68%  { opacity: 1; transform: scale(1.16) rotate(6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+}
+@keyframes resultNumberBoom {
+  0%   { opacity: 0; transform: scale(.28) rotate(8deg); }
+  62%  { opacity: 1; transform: scale(1.24) rotate(-3deg); }
+  82%  { opacity: 1; transform: scale(.94) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes resultCopyIn {
+  0%   { opacity: 0; transform: translateY(-4px) scale(.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 .overlay.is-perfect.is-animated .result-stamp-img {
   animation: stampImpact 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -2361,12 +2475,77 @@ body.layout-editor-on .character img {
   }
   .overlay.is-perfect .modal-title { font-size: 1.5rem; }
   .overlay.is-perfect .modal-msg { font-size: 0.95rem; }
+  .overlay.is-perfect .result-acorn-reward__icon {
+    width: clamp(42px, 8vw, 58px);
+  }
+  .overlay.is-perfect .result-acorn-reward__amount {
+    font-size: clamp(34px, 8vw, 54px);
+  }
+  .overlay.is-perfect .result-acorn-reward__copy {
+    font-size: clamp(16px, 3.4vw, 21px);
+  }
   .overlay.is-perfect .modal-btn {
     padding: 10px 24px;
     font-size: 0.95rem;
   }
   .overlay.is-perfect .result-actions {
     gap: 8px;
+  }
+}
+@media (max-height: 430px) and (orientation: landscape) {
+  .overlay.is-perfect {
+    padding: 8px 16px 12px;
+  }
+  .overlay.is-perfect .modal {
+    justify-content: flex-start;
+    gap: 5px;
+    max-height: calc(100dvh - 20px);
+  }
+  .overlay.is-perfect .modal-icon {
+    flex: 0 0 clamp(126px, 34vh, 144px);
+  }
+  .overlay.is-perfect .result-stamp-img,
+  .overlay.is-perfect .modal-icon::after {
+    width: clamp(118px, 33vh, 138px);
+    height: clamp(118px, 33vh, 138px);
+  }
+  .overlay.is-perfect .result-acorn-reward {
+    margin-top: 0;
+    margin-bottom: 3px;
+    gap: 2px;
+  }
+  .overlay.is-perfect .result-acorn-reward__main {
+    gap: 8px;
+  }
+  .overlay.is-perfect .result-acorn-reward__icon {
+    width: clamp(34px, 8vh, 44px);
+  }
+  .overlay.is-perfect .result-acorn-reward__amount {
+    font-size: clamp(32px, 9vh, 42px);
+    text-shadow:
+      0 3px 0 #8b4b00,
+      0 6px 12px rgba(40, 18, 0, 0.42),
+      0 0 14px rgba(255, 224, 92, 0.78);
+  }
+  .overlay.is-perfect .result-acorn-reward__copy {
+    font-size: clamp(14px, 4vh, 17px);
+  }
+  .overlay.is-perfect .modal-btn {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
+  .overlay.is-perfect .result-actions {
+    gap: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay.is-perfect.is-animated .result-acorn-reward,
+  .overlay.is-perfect.is-animated .result-acorn-reward__icon,
+  .overlay.is-perfect.is-animated .result-acorn-reward__amount,
+  .overlay.is-perfect.is-animated .result-acorn-reward__copy {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
 /* 正解時の「せいかい！」スタンプ (一瞬だけ画面中央に、 320→960 に拡大 2026-05-06) */
@@ -3676,8 +3855,17 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 <div class="overlay hidden" id="result-overlay">
   <div class="modal">
     <div class="modal-icon" id="result-icon">🎉</div>
-    <div class="modal-title" id="result-title">クリア！</div>
+    <div class="modal-title" id="result-title"></div>
     <div class="modal-msg" id="result-msg"></div>
+    <div class="result-acorn-reward" id="result-acorn-reward" hidden aria-live="polite">
+      <div class="result-acorn-reward__main">
+        <span class="result-acorn-reward__icon" aria-hidden="true"></span>
+        <span class="result-acorn-reward__amount" aria-hidden="true">
+          <span class="result-acorn-reward__times">×</span><span id="result-acorn-count">0</span>
+        </span>
+      </div>
+      <div class="result-acorn-reward__copy" id="result-acorn-copy">どんぐりを ゲット！</div>
+    </div>
     <div class="result-actions">
       <button class="modal-btn" id="result-btn">もういっかい ▶</button>
       <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 なんいどをかえる</button>
@@ -6594,19 +6782,39 @@ function showResult() {
   showClearDialogue(correctCount, totalQuestions);
   const cleared = correctCount >= Math.ceil(totalQuestions * 0.7); // 70% 以上で clear
   const rewardAcorns = totalQuestions > 0 ? Math.max(3, Math.min(5, correctCount | 0)) : 0;
+  let grantedAcorns = 0;
+  if (rewardAcorns > 0 && window.addAcornsDaily) {
+    var alreadyAcorns = window.getDailyAcorns ? (window.getDailyAcorns('quizland') | 0) : 0;
+    var acornDiff = Math.max(0, rewardAcorns - alreadyAcorns);
+    if (acornDiff > 0) {
+      grantedAcorns = window.addAcornsDaily('quizland', acornDiff, 5, {
+        reason: cleared ? 'quizland_clear' : 'quizland_finish',
+        suppressRewardModal: true
+      }) | 0;
+    }
+  }
   // セッション完走 (5 問サイクル完了) を祝福する「ぜんぶ できたね！」スタンプ。
   // 正解率に関わらず常に表示 (= 完走の証)。 cleared/not の差は title テキストで表現。
   document.getElementById('result-icon').innerHTML =
     '<img src="../assets/images/quizland/stamps/zenbu_dekita.png" alt="" class="result-stamp-img">';
-  document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
-  document.getElementById('result-msg').textContent = cleared
-    ? toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい！'
-    : toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい。\nもういちど やってみよう！';
+  document.getElementById('result-title').textContent = '';
+  document.getElementById('result-msg').textContent = '';
+  const rewardEl = document.getElementById('result-acorn-reward');
+  const rewardCountEl = document.getElementById('result-acorn-count');
+  const rewardCopyEl = document.getElementById('result-acorn-copy');
+  if (rewardEl) {
+    const showAcornNum = Math.max(0, grantedAcorns | 0);
+    if (rewardCountEl) rewardCountEl.textContent = String(showAcornNum);
+    if (rewardCopyEl) rewardCopyEl.textContent = showAcornNum > 0 ? 'どんぐりを ゲット！' : 'きょうは もう もらったよ';
+    rewardEl.setAttribute('aria-label', showAcornNum > 0 ? ('どんぐり ' + showAcornNum + 'こを ゲット') : 'きょうは もう もらったよ');
+    rewardEl.hidden = false;
+  }
   // Perfect (5/5 全問正解) 時は背景画像 + 大きなスタンプ押印アニメーションを発動。
   // is-perfect で背景画像とスタイル、 is-animated でアニメーションを起動 (reflow で確実に再生)。
   const overlayEl = document.getElementById('result-overlay');
   const isPerfect = (correctCount === totalQuestions && totalQuestions > 0);
   overlayEl.classList.toggle('is-perfect', isPerfect);
+  overlayEl.classList.add('has-acorn-result');
   overlayEl.classList.remove('is-animated');
   overlayEl.classList.remove('hidden');
   if (isPerfect) {
@@ -6628,13 +6836,6 @@ function showResult() {
       try { window.triggerFirstClearReward('quizland'); } catch (e) {}
     }
   }
-  if (rewardAcorns > 0 && window.addAcornsDaily) {
-    var alreadyAcorns = window.getDailyAcorns ? (window.getDailyAcorns('quizland') | 0) : 0;
-    var acornDiff = Math.max(0, rewardAcorns - alreadyAcorns);
-    if (acornDiff > 0) {
-      window.addAcornsDaily('quizland', acornDiff, 5, { reason: cleared ? 'quizland_clear' : 'quizland_finish' });
-    }
-  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -6653,6 +6854,9 @@ function initGame() {
   correctCount = 0;
   const _rov = document.getElementById('result-overlay');
   _rov.classList.add('hidden');
+  _rov.classList.remove('has-acorn-result');
+  const _reward = document.getElementById('result-acorn-reward');
+  if (_reward) _reward.hidden = true;
   // Perfect 演出用クラスをクリア (次の 5/5 で再発動できるように)
   _rov.classList.remove('is-perfect', 'is-animated');
   if (playlist.length === 0) {

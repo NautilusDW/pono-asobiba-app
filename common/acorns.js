@@ -34,7 +34,8 @@
           before: before,
           after: after,
           delta: after - before,
-          reason: (opts && opts.reason) || ''
+          reason: (opts && opts.reason) || '',
+          suppressRewardModal: !!(opts && opts.suppressRewardModal)
         }
       }));
     } catch (e) { /* older browsers */ }
@@ -113,7 +114,8 @@
     setDaily(gameId, already + grant);
     setDailyTotal(totalAlready + grant);
     add(grant, {
-      reason: (opts && opts.reason) || ('daily:' + gameId)
+      reason: (opts && opts.reason) || ('daily:' + gameId),
+      suppressRewardModal: !!(opts && opts.suppressRewardModal)
     });
     return grant;
   }
