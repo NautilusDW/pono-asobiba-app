@@ -289,7 +289,7 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 1. **作業開始時 (新規バッチを切る瞬間)** — `AGENTS_CLAIMS.md` を読む → 衝突なしを確認 → 自分の行を追記 → `git pull --rebase origin <current-branch>` してから編集開始
 2. **作業終了時 (push 完了直後)** — 自分の claim 行を削除して commit (`chore(claims): remove finished claim (no sw)` 等)。 HANDOFF.md への完了報告は別途残す (役割が違う)
 3. **push 直前** — もう一度 `git pull --rebase origin <current-branch>` を実行。 `.git/hooks/pre-push` が behind を検出して block したら、 必ず pull --rebase してから再 push (`--no-verify` 禁止)
-4. **claim の衝突発見時** — 他者の active claim と自分のスコープが被ったら自走しない。 ユーザーに 1 行確認
+4. **claim の衝突発見時** — 他者の active claim と自分のスコープが被っていたら、 ユーザーに 1 行 ping (「○○ と被るけど続行します」 と宣言) してから **作業を開始** する (返答待ちで止まらない)。 同時に自分の claim 行の末尾に `[overlap: <相手の batch ID>]` を付記。 物理衝突 (= 同じ行/関数の編集) は `.git/hooks/pre-push` の behind block と `git pull --rebase` 時の merge conflict で確実に検知されるので、 そこを最後の砦として運用する。 ユーザーから明示的に「待って」 と言われた時だけ停止
 5. **ゾンビ claim** — 以下の **両方** を満たす他者の claim を見つけたら、 ユーザーに「これまだ生きてる?」 と確認して削除して良い:
    - claim のタイムスタンプが 4 時間以上前
    - かつ、 そのタイムスタンプ以降の git log に当該作業者 (Claude / Codex / Human) の新規 commit がない
