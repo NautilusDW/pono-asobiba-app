@@ -3417,10 +3417,10 @@
     .donguri-shop-v2-counter {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
-      background-image: url("assets/ui/shop/sticker_shop_counter_angled_20260625.png");
+      background-image: url("assets/ui/shop/sticker_shop_counter_cute_low_20260626.png");
       background-size: cover; background-position: center bottom; background-repeat: no-repeat;
       pointer-events: none; z-index: 3;
-      transform: translateY(12.4%);
+      transform: translateY(18%);
       transform-origin: center bottom;
     }
     .donguri-shop-v2-machine {
@@ -3485,7 +3485,7 @@
       aspect-ratio: 1763 / 519;
       box-sizing: border-box;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/komorebiya_dark_wood_sign_logo_20260626.png") center / contain no-repeat;
+      background: transparent url("assets/ui/shop/komorebiya_cute_text_baked_sign_20260626.png") center / contain no-repeat;
       color: transparent; text-align: center;
       font-size: 0;
       text-shadow: none;
@@ -5022,7 +5022,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1620;
+    const PAGE_CACHE_VERSION = 1622;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Reference-style title menu: the first screen intentionally shows four

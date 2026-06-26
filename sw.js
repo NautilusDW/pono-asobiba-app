@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1622: Shop sign asset now has baked text; foreground counter regenerated lower and cuter.
 // v1621: シール帳チュートリアル 5 件統合修正 — (1) find 冒頭 中央→左 ワープ解消 (styles.css L1885 30.5% → 32.5%、 88ms → 440ms slower)、 (2) ghost を hand と完全同期 (place phase 4 stop に per-stop animation-timing-function 追加、 styles.css L1991/1998/2005/2012)、 (3) hover→to 降下を速く (styles.css L1942/1998 56.5% → 64.5%、 hover→to 2.90s → 1.50s に短縮、 pickup→hover は逆に 1.03s → 2.44s 延長で「じっくり持っていく」 強化)、 (4) scale slider 指位置を thumb 追従化 (main.js L4543-4546 を rotate 分岐と同じ trackPad 補正パターン + 実 scale 値マッピングに置換、 commit 9a23803 で rotate のみ修正された差分を解消)、 (5) rotate slider 初期位置を value=0 thumb 中央 (50%) に補正 (main.js L4548-4555、 0.43/0.58 マジック数値を baseRotation/rightRotation 実値マッピングに置換)。 b3efa06 (slider transform)、 9a23803 (place 直行 + rotate 補正パターン)、 0bbd082 (find 2 回スワイプ)、 4189da8 (mode 3 連) の既存設計は全て温存。 アニメ duration 17.6s / 5.2s / 9.3s 不変、 keyframe stop 数 不変、 座標 CSS var 名 全て不変。 Prototypes/StickerBookThreeJS/styles.css + main.js のみ編集。
 // v1620: タイトル画面の共通ボタンは今回押下表現なし。active の沈み込み・下ナビ pressed 状態を無効化。
 // v1618: おみせのリス店員を大きい黒目版に変更し、前景テーブルをさらに下げ、こもれびや看板を濃い木彫り調へ差し替え。
@@ -235,7 +236,7 @@
 // v1514: LP に絵本アドバンテージ訴求追加 — hero 直下匂わせ帯 + 絵本セクションそえがき + Puzzle/Oto カード画像を title_back.jpg に差し替え + book-aside に id 付与
 // v1616: シール帳チュートリアル hand 動き 3 件改修 — find 中継 12→6 拍 (2.0x slower) + place 座標 viewport clamp (wanderSpan 0.32→0.22 + wander1 係数 1.40→0.95) + segment 別 cubic-bezier で「機械的」 解消
 // v1619: シール帳チュートリアル 5 件一括改修 — place 直行 (wander 全廃, source→hover→drop 3 stop, rotate 0deg 固定) + rotate hand 位置補正 (rect 内 43→58%) + ok 押下後 tray 隠蔽 (:not(.is-sticker-tutorial-step-ok)) + page step hand 廃止 (矢印パルス + 自動 click) + 起動直後 markStickerTutorialSeen で再訪自動再生防止
-const CACHE_VERSION = 1621;
+const CACHE_VERSION = 1622;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
