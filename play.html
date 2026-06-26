@@ -3572,50 +3572,42 @@
       56% { transform: translateX(3px) rotate(.8deg); }
     }
     .donguri-shop-v2-bubble {
-      position: absolute; left: 6.6%; bottom: 64.8%;
-      width: min(26%, 330px);
-      aspect-ratio: 1195 / 313;
+      position: absolute; left: 7.2%; bottom: 56.5%;
+      width: min(30%, 390px);
+      aspect-ratio: 1897 / 829;
       box-sizing: border-box;
       z-index: 5;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_20260625.png") right center / 112% 100% no-repeat;
+      background: transparent url("assets/ui/shop/sticker_shop_ui_speech_bubble_down_tail_20260626.png") center / 100% 100% no-repeat;
       border: 0; border-radius: 0;
-      padding: clamp(4px, .75vw, 9px) clamp(30px, 3.6vw, 48px) clamp(4px, .8vw, 10px);
-      color: #5a3a00; font-weight: 900; font-size: clamp(8px, 1.05vw, 14px); text-align: center; line-height: 1.15;
+      padding: clamp(9px, 1.05vw, 14px) clamp(16px, 2vw, 28px) clamp(20px, 3vw, 36px);
+      color: #5a3a00; font-weight: 900; font-size: clamp(10px, 1.12vw, 15px); text-align: center; line-height: 1.12;
       white-space: nowrap;
       overflow: visible;
-      filter: drop-shadow(0 6px 10px rgba(38, 19, 4, .22));
-    }
-    .donguri-shop-v2-bubble::before,
-    .donguri-shop-v2-bubble::after {
-      content: "";
-      position: absolute;
-      left: 48%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      pointer-events: none;
-    }
-    .donguri-shop-v2-bubble::before {
-      bottom: -14px;
-      border-left: 17px solid transparent;
-      border-right: 17px solid transparent;
-      border-top: 22px solid #a96100;
-      filter: drop-shadow(0 4px 3px rgba(54, 28, 7, .18));
-    }
-    .donguri-shop-v2-bubble::after {
-      bottom: -8px;
-      border-left: 12px solid transparent;
-      border-right: 12px solid transparent;
-      border-top: 16px solid #fff2cf;
+      filter: drop-shadow(0 8px 12px rgba(38, 19, 4, .24));
     }
     .donguri-shop-v2-head {
       position: absolute; top: 0; left: 0; right: 0;
-      display: grid; align-items: center;
-      grid-template-columns: clamp(48px, 5.2vw, 76px) minmax(0, 1fr) clamp(102px, 11vw, 150px);
-      justify-content: space-between; gap: 10px;
-      padding: 0 14px; z-index: 6;
+      height: clamp(48px, 7vw, 76px);
+      display: block;
+      padding: 0; z-index: 6;
       pointer-events: none;
+    }
+    .donguri-shop-v2-head > .donguri-shop-v2-close {
+      position: absolute;
+      left: 14px;
+      top: 0;
+    }
+    .donguri-shop-v2-head > .donguri-shop-v2-title {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+    }
+    .donguri-shop-v2-head > .donguri-shop-v2-balance {
+      position: absolute;
+      right: 14px;
+      top: 0;
     }
     .donguri-shop-v2-close {
       pointer-events: auto;
@@ -3642,7 +3634,6 @@
       font-weight: 900;
       position: relative; z-index: 6;
       overflow: hidden;
-      justify-self: center;
     }
     .donguri-shop-v2-rotation-note {
       position: absolute;
@@ -3847,7 +3838,9 @@
       padding: 10.5% 9% 5.5%;
       display: flex; flex-direction: column; align-items: center; gap: 0;
       box-shadow: none;
-      filter: drop-shadow(0 10px 14px rgba(34, 17, 4, .25));
+      filter:
+        drop-shadow(0 8px 8px rgba(34, 17, 4, .18))
+        drop-shadow(0 21px 16px rgba(29, 14, 3, .18));
       position: relative;
       pointer-events: auto;
       animation: pono-shop-v2-float 2.6s ease-in-out infinite;
@@ -3857,7 +3850,10 @@
     .donguri-shop-v2-slot.is-unavailable { background-image: url("assets/ui/shop/sticker_shop_card_muted_exchange_20260625.png"); background-size: contain; }
     .donguri-shop-v2-slot.is-owned { background-image: url("assets/ui/shop/sticker_shop_card_muted_20260625.png"); }
     .donguri-shop-v2-slot.is-held {
-      filter: drop-shadow(0 10px 14px rgba(34, 17, 4, .25)) drop-shadow(0 0 10px rgba(255, 214, 92, .34));
+      filter:
+        drop-shadow(0 8px 8px rgba(34, 17, 4, .18))
+        drop-shadow(0 21px 16px rgba(29, 14, 3, .18))
+        drop-shadow(0 0 10px rgba(255, 214, 92, .34));
     }
     .donguri-shop-v2-slot:nth-child(2) { animation-delay: .2s; }
     .donguri-shop-v2-slot:nth-child(3) { animation-delay: .4s; }
@@ -4017,15 +4013,14 @@
     @media (max-width: 900px) {
       .donguri-shop-v2-head {
         top: 0;
-        grid-template-columns: clamp(42px, 10vw, 58px) minmax(0, 1fr) clamp(84px, 18vw, 124px);
-        padding: 0 10px;
+        height: clamp(42px, 10vw, 58px);
       }
-      .donguri-shop-v2-title { width: min(42vw, 300px); font-size: 0; }
+      .donguri-shop-v2-head > .donguri-shop-v2-close { left: 10px; }
+      .donguri-shop-v2-head > .donguri-shop-v2-balance { right: 10px; }
+      .donguri-shop-v2-title { width: min(39vw, 280px); font-size: 0; }
       .donguri-shop-v2-rotation-note { top: 25.4%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
-      .donguri-shop-v2-bubble { left: 4.8%; bottom: 61.4%; width: min(23%, 206px); padding: clamp(3px, .8vw, 7px) clamp(15px, 2.4vw, 22px) clamp(3px, .8vw, 7px); font-size: clamp(8px, 1.4vw, 12px); }
-      .donguri-shop-v2-bubble::before { bottom: -10px; border-left-width: 12px; border-right-width: 12px; border-top-width: 16px; }
-      .donguri-shop-v2-bubble::after { bottom: -6px; border-left-width: 8px; border-right-width: 8px; border-top-width: 11px; }
+      .donguri-shop-v2-bubble { left: 6.2%; bottom: 54.8%; width: min(30%, 258px); font-size: clamp(8px, 1.35vw, 12px); }
       .donguri-shop-v2-reserve { left: 6.5%; bottom: 4.2%; width: min(25%, 210px); min-width: 126px; height: clamp(72px, 18vw, 90px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
       .donguri-shop-v2-reserve-title { font-size: 9px; }
       .donguri-shop-v2-reserve-name { font-size: 9px; line-height: 1.12; }
@@ -5644,7 +5639,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1656;
+    const PAGE_CACHE_VERSION = 1658;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -6194,6 +6189,26 @@
         turnRateBonus: .02
       }
     };
+    const DAILY_GACHA_STATIC_PRELOAD_IMAGES = [
+      'assets/ui/gacha/daily_gacha_room_backdrop.png',
+      'assets/ui/gacha/daily_gacha_counter_foreground.png',
+      'assets/ui/gacha/daily_gacha_machine.png',
+      'assets/ui/gacha/daily_gacha_lever.png',
+      'assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png',
+      'assets/ui/gacha/daily_gacha_turn_arrow_generated.png',
+      'assets/ui/gacha/daily_gacha_turn_word_badge_generated.png',
+      'assets/ui/gacha/daily_gacha_more_turn_bubble_generated.png',
+      'assets/ui/gacha/daily_gacha_reward_speech_bubble.png',
+      'assets/ui/gacha/daily_gacha_book_speech_bubble.png',
+      'assets/ui/gacha/daily_gacha_super_name_plate_luxury.png',
+      'assets/ui/gacha/daily_gacha_action_home_normal.png',
+      'assets/ui/gacha/daily_gacha_action_home_pressed.png',
+      'assets/ui/gacha/daily_gacha_action_sticker_book_normal.png',
+      'assets/ui/gacha/daily_gacha_action_sticker_book_pressed.png',
+      'assets/ui/daily_gacha_shop_button_single_color_20260625.png',
+      'assets/ui/daily_challenge_banner_gacha_style_20260625.png',
+      'assets/images/characters/pono/pono_face_circle.webp'
+    ];
     const dailyGachaEntry = document.getElementById('dailyGachaEntry');
     const dailyGachaEntrySub = document.getElementById('dailyGachaEntrySub');
     const dailyGachaModal = document.getElementById('dailyGachaModal');
@@ -6698,6 +6713,71 @@
       ...DAILY_GACHA_CAPSULE_VARIANTS.rare,
       ...DAILY_GACHA_CAPSULE_VARIANTS.super
     ];
+    const DAILY_GACHA_VERSIONED_PRELOAD_IMAGES = new Set([
+      ...DAILY_GACHA_REVEAL_BACKDROPS,
+      ...Object.values(DAILY_GACHA_HAND_IMAGES)
+    ]);
+    let dailyGachaImagePreloadStarted = false;
+    const dailyGachaImagePreloadCache = [];
+
+    function dailyGachaPreloadImageSource(path) {
+      return DAILY_GACHA_VERSIONED_PRELOAD_IMAGES.has(path) ? dailyGachaVersionedAsset(path) : path;
+    }
+
+    function dailyGachaImagePreloadList() {
+      const capsuleImages = DAILY_GACHA_CAPSULE_ALL_VARIANTS.flatMap((variant) => [
+        variant.closed,
+        variant.openLeft,
+        variant.openRight
+      ]);
+      return Array.from(new Set([
+        ...DAILY_GACHA_STATIC_PRELOAD_IMAGES,
+        ...DAILY_GACHA_REVEAL_BACKDROPS,
+        ...Object.values(DAILY_GACHA_HAND_IMAGES),
+        ...capsuleImages
+      ]));
+    }
+
+    function preloadDailyGachaImage(path) {
+      return new Promise((resolve) => {
+        if (!path) { resolve(); return; }
+        const img = new Image();
+        dailyGachaImagePreloadCache.push(img);
+        img.decoding = 'async';
+        img.loading = 'eager';
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = dailyGachaPreloadImageSource(path);
+        if (img.decode) {
+          img.decode().then(resolve).catch(resolve);
+        }
+      });
+    }
+
+    function startDailyGachaImagePreload() {
+      if (!dailyGachaEnabled || dailyGachaImagePreloadStarted) return;
+      dailyGachaImagePreloadStarted = true;
+      const images = dailyGachaImagePreloadList();
+      let index = 0;
+      const loadBatch = () => {
+        const batch = images.slice(index, index + 4);
+        index += batch.length;
+        Promise.all(batch.map(preloadDailyGachaImage)).finally(() => {
+          if (index < images.length) window.setTimeout(loadBatch, 80);
+        });
+      };
+      loadBatch();
+    }
+
+    function scheduleDailyGachaImagePreload() {
+      if (!dailyGachaEnabled || dailyGachaImagePreloadStarted) return;
+      const run = () => startDailyGachaImagePreload();
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(run, { timeout: 2400 });
+      } else {
+        window.setTimeout(run, 700);
+      }
+    }
 
     function chooseDailyGachaRandomVariant(variants) {
       if (!Array.isArray(variants) || variants.length === 0) return null;
@@ -7022,6 +7102,7 @@
 
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
+      startDailyGachaImagePreload();
       // v1578: debug mode (staging-only, sessionStorage-unlocked) bypasses both gates → unlimited pulls
       var __debugBypass = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
       // v1575: 3 状態いずれもガチャモーダルを開く (ショップは内部から常時アクセス可能)
@@ -7879,6 +7960,7 @@
 
     if (dailyGachaEntry) {
       updateDailyGachaEntry();
+      scheduleDailyGachaImagePreload();
       dailyGachaEntry.addEventListener('click', openDailyGacha);
     }
     if (dailyGachaClose) dailyGachaClose.addEventListener('click', closeDailyGacha);
