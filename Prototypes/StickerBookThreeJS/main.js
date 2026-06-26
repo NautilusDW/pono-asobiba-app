@@ -3635,7 +3635,11 @@ function showStickerTutorialStep(index, options = {}) {
   // 注: hidden=true ガードは stickerTutorial 全体 (root) を見ているが、 currentStickerTutorialStep が null だと
   // 早期 return するため安全。 ここでは step を取れた直後なので OK。
   updateStickerTutorialLayout();
+  // v1629: 強制 reflow を挟み cascaded style を flush。 updateStickerTutorialLayout で書いた CSS 変数 (親 + spotlight 自身)
+  // が確実に computed style に反映された状態で hidden=false → first paint で新 step rect を必ず使う。
+  // iOS Safari の inherited var cascade 遅延への保険 (spotlight 自身への inline 複写 + reflow + 後 hidden=false の三重防護)。
   if (stickerTutorialSpotlight) {
+    void stickerTutorialSpotlight.offsetWidth;
     stickerTutorialSpotlight.hidden = false;
   }
   // 後続: DOM 変化 (setStickerEditMode 等で sticker 描画が一拍遅延するケース) に追従するための保険を残す。
@@ -3844,7 +3848,11 @@ function startStickerTutorialPlaceDemo() {
   // 旧仕様は scrollLeft 現在値 (通常 0) を base にしていたため、 蝶々が tray 前方にあると totalDistance ≒ 0-420px
   // しかなく 「全然スライドしてない」 印象に。 desiredTravel を min(maxScroll, max(700px, viewport90%)) で強制。
   // v1627: 700→1100 / 0.9vw→1.4vw へ 1.5x 拡大 (cc4d20f → ユーザー「まだ動きが小さい」 指摘)。
-  const desiredTravel = Math.min(maxScroll, Math.max(1100, clientWidth * 1.4));
+  // v1629: 1100→2400 / 1.4vw→3.0vw へ さらに 2.0x+ 拡大 (af35de7 後ユーザー「もっと」 3 回目)。
+  //        viewport 約 3 個分流れる体感 (PC 2800px / タブ 2400px) = 「全部流れる」 体感を確立。
+  //        さらに maxScroll が物理上 5000px 以上ある場合は targetScroll 自体を起点 (= 必ず tray 先頭から流す) を許容するため
+  //        clamp 上限を maxScroll そのまま (= 最大 targetScroll まで使い切り) に。 蝶々が tray 前方なら短く、 後方なら長く。
+  const desiredTravel = Math.min(maxScroll, Math.max(2400, clientWidth * 3.0, targetScroll));
   const adjustedBase = THREE.MathUtils.clamp(targetScroll - desiredTravel, 0, maxScroll);
   // programmatic scroll 抑制中に一瞬で base 位置へジャンプ (listener 抑制は run() 内 stickerTutorialProgrammaticTrayScroll で行う)
   stickerTutorialProgrammaticTrayScroll = true;
@@ -3902,21 +3910,25 @@ function startStickerTutorialPlaceDemo() {
   // release lift」 の自然な所作に整える。
   // v1627: hover→drop 区間圧縮で 13350 → 12200ms に前倒し (CSS keyframe 69.32% = drop press と完全同期)。
   // 体感「シール置く瞬間が約 1.15s 早く来る」。 「ぐっ」 と open の同フレーム同期 (v1624 不変条件) は維持。
+  // v1629: drop 最小化で 12200 → 11176ms に前倒し (CSS keyframe 63.5% = drop press と完全同期)。
+  // hover→to を 5pp→2pp に短縮 (体感「シュッと真下に降りる」)、 to→drop を 3.32pp→0.5pp に短縮 (=同フレーム)。
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("open");
     }
-  }, 12200);
+  }, 11176);
   // v1624: シール配置も 11600ms → 13500ms (76.71%) に同期。 open 切替の 150ms 後 = 「開いた手の下にシールが残る」 順序を維持。
   // release lift より前なので、 release lift で手だけ持ち上がりシールは page に残るという視覚整合も保たれる。
   // v1627: open 12200ms に合わせて addSticker も 12350ms に前倒し (+150ms オフセット不変)。
   // CSS release lift (72.5% = 12760ms) より前 = 視覚整合維持。
+  // v1629: 「手が静止 = パッと離す = 同時にシールが貼られる」 を体感最優先するため +150ms オフセットを廃止、 +24ms (≒同フレーム) に短縮。
+  // addSticker 12350 → 11200ms (open +24ms)。 CSS release lift (64.5% = 11352ms) より +152ms 前 = 視覚整合維持 (open → addSticker → release lift の順序不変)。
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
     addStickerFromTutorialDemoToPage();
-  }, 12350);
+  }, 11200);
 }
 
 function startStickerTutorialMoveDemo() {
@@ -4511,11 +4523,27 @@ function updateStickerTutorialLayout() {
   const rect = stickerTutorialTargetRect(step);
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
+  const widthPx = Math.max(46, rect.width);
+  const heightPx = Math.max(38, rect.height);
+  const radiusVal = rect.radius || "18px";
   stickerTutorial.style.setProperty("--tutorial-x", `${centerX}px`);
   stickerTutorial.style.setProperty("--tutorial-y", `${centerY}px`);
-  stickerTutorial.style.setProperty("--tutorial-w", `${Math.max(46, rect.width)}px`);
-  stickerTutorial.style.setProperty("--tutorial-h", `${Math.max(38, rect.height)}px`);
-  stickerTutorial.style.setProperty("--tutorial-radius", rect.radius || "18px");
+  stickerTutorial.style.setProperty("--tutorial-w", `${widthPx}px`);
+  stickerTutorial.style.setProperty("--tutorial-h", `${heightPx}px`);
+  stickerTutorial.style.setProperty("--tutorial-radius", radiusVal);
+  // v1629: 真因対応 (spotlight stale paint root cause)。
+  // 旧仕様は親 stickerTutorial にのみ CSS 変数を書いていたため、 子 stickerTutorialSpotlight が hidden=false に
+  // 切り替わった瞬間、 inherited cascade の flush 遅延 (iOS Safari/WebKit で顕著) で 1 frame だけ前 step の値
+  // (OK ボタン位置 = 画面下端) で描画される → 「黄枠が一瞬下にずれる」 視覚バグ。
+  // 解決: spotlight 要素自身にも同じ変数を inline で複写する (= 子は自分の inline style を優先するため
+  // cascade 遅延の影響を受けない)。 v1628 の 「位置確定後に hidden=false」 と併用して二重防護。
+  if (stickerTutorialSpotlight) {
+    stickerTutorialSpotlight.style.setProperty("--tutorial-x", `${centerX}px`);
+    stickerTutorialSpotlight.style.setProperty("--tutorial-y", `${centerY}px`);
+    stickerTutorialSpotlight.style.setProperty("--tutorial-w", `${widthPx}px`);
+    stickerTutorialSpotlight.style.setProperty("--tutorial-h", `${heightPx}px`);
+    stickerTutorialSpotlight.style.setProperty("--tutorial-radius", radiusVal);
+  }
   updateStickerTutorialDemo(step, rect);
 }
 

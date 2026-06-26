@@ -2003,7 +2003,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
      v1628: hover→drop 区間を圧縮し体感を約 1.15s 早める。 hover 64.5%→61% (11352→10736ms)、 to 73%→66% (12848→11616ms)、
      drop 75.85%→69.32% (13350→12200ms)、 release 79%→72.5% (13904→12760ms)、 away 82.15%→75.5% (14458→13288ms)。
      pickup grab 50.65% は find phase 接続のため不変。 hover→to を 1.50s → 0.79s に半減し「真下に降りる」 待ち時間短縮。
-     JS open timer (main.js) も 13350→12200ms、 addSticker 13500→12350ms に同期 (open 切替 → +150ms → addSticker の関係不変)。 */
+     JS open timer (main.js) も 13350→12200ms、 addSticker 13500→12350ms に同期 (open 切替 → +150ms → addSticker の関係不変)。
+     v1629: ユーザー指摘 「下に下がるのが遅い + 静止と同時にパッと離す + シールが貼られる」 を満たすため drop 動作を最小化。
+            hover 61% (10736ms) は維持、 to 66→63% (11616→11088ms = hover→to 880→352ms へ 60% 短縮 = 真下に「シュッ」 と降ろす)。
+            drop press 69.32→63.5% (12200→11176ms = to+88ms ≒ 同フレーム)、
+            release lift 72.5→64.5% (12760→11352ms = drop+176ms = 「離す」 を即時化)、
+            away 75.5→67.5% (13288→11880ms)。 hover→away 全体を 2552ms → 1144ms に 55% 短縮。
+            JS open timer (main.js) も 12200→11176ms、 addSticker 12350→11200ms に同期 (+150ms オフセットは廃止、 ≒同時 24ms に短縮)。 */
   50.65% {
     /* pickup grab (easeOutCirc: 軽快な持ち上げ) */
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
@@ -2013,39 +2019,39 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
   61% {
-    /* hover: 真上の高い位置でゆっくり減速 (v1628: 64.5% → 61%、 10736ms)、 ここから to まで 5pp ≒ 0.88s で素直に降ろす */
+    /* hover: 真上の高い位置でゆっくり減速 (10736ms)、 ここから to まで 2pp ≒ 0.35s で「シュッ」 と素早く降ろす */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.00) rotate(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  66% {
-    /* to: ゆっくり真っ直ぐ降ろした到着点 (v1628: 73% → 66%、 11616ms) */
+  63% {
+    /* to: パッと真っ直ぐ降ろした到着点 (v1629: 66% → 63%、 11088ms = hover+352ms) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -38%) scale(0.95) rotate(0deg);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  69.32% {
-    /* drop 押し付け ぐっ (置く所作) (v1628: 75.85% → 69.32%、 12200ms = JS open timer と同期) */
+  63.5% {
+    /* drop 押し付け ぐっ (v1629: 69.32% → 63.5%、 11176ms = JS open timer と同期 / to+88ms ≒ 同フレーム) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -33%) scale(0.92) rotate(0deg);
     animation-timing-function: ease-in-out;
   }
-  72.5% {
-    /* release lift (置く所作) (v1628: 79% → 72.5%、 12760ms) */
+  64.5% {
+    /* release lift (v1629: 72.5% → 64.5%、 11352ms = drop+176ms = 即離す) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -38%) scale(1.04) rotate(0deg);
     animation-timing-function: ease-in-out;
   }
-  75.5%, 100% {
-    /* away (v1628: 82.15% → 75.5%、 13288ms) */
+  67.5%, 100% {
+    /* away (v1629: 75.5% → 67.5%、 11880ms) */
     left: var(--tutorial-demo-away-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-away-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
@@ -2054,9 +2060,10 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 }
 
 @keyframes stickerTutorialFindPlaceGhost {
-  /* hand keyframe と同じ 5 stop に集約 (50.65 出現 / 61 hover 追従 / 66 to 追従 / 69.32 drop / 72.5+100 fade out)
+  /* hand keyframe と同じ 5 stop に集約 (50.65 出現 / 61 hover 追従 / 63 to 追従 / 63.5 drop / 64.5+100 fade out)
      v1621: 各 stop に hand と同一の animation-timing-function を付与 = ghost が hand 指先から離脱する不整合を解消
-     v1628: hand keyframe の hover→drop 圧縮 (64.5/73/75.85/79 → 61/66/69.32/72.5) と完全同期 */
+     v1628: hand keyframe の hover→drop 圧縮 (64.5/73/75.85/79 → 61/66/69.32/72.5) と完全同期
+     v1629: hand keyframe の drop 最小化 (66/69.32/72.5 → 63/63.5/64.5) と完全同期 = ghost も「真下シュッ + 同時離脱」 */
   0%, 49.5% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
@@ -2072,31 +2079,31 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
   61% {
-    /* follow hover (v1628: hand と同 61% タイミング / 同 bezier に揃え) */
+    /* follow hover (hand と同 61% タイミング / 同 bezier に揃え) */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  66% {
-    /* follow to (ゆっくり真っ直ぐ降下) */
+  63% {
+    /* follow to (パッと真っ直ぐ降下) (v1629: 66% → 63%) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
     animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
-  69.32% {
-    /* drop */
+  63.5% {
+    /* drop (v1629: 69.32% → 63.5%) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.03);
     animation-timing-function: ease-in-out;
   }
-  72.5%, 100% {
-    /* fade out */
+  64.5%, 100% {
+    /* fade out (v1629: 72.5% → 64.5% = release lift と同期 = 手が持ち上がる時にシールは page に残るが ghost は消える) */
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 0;
