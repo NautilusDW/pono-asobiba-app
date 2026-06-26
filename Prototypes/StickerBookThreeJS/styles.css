@@ -1881,9 +1881,9 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     opacity: 1;
     transform: translate(-50%, -35%) scale(0.96) rotate(-3deg);
   }
-  /* === find phase: 30.5-47.5% (v1616 で 12 stop → 6 stop に削減、 1 stop あたり 0.25s → 0.50s で 2.0x slower、 segment 個別 bezier で「機械的」 解消) === */
-  30.5% {
-    /* findWander1: tray 内 (横移動オンリー) で左に迷い (easeOutCirc: 軽快な滑り出し) */
+  /* === find phase: 32.5-47.5% (v1621 で findWander1 を 30.5% → 32.5% へ後ろ倒し、 30% fade in から 440ms かけて滑らかに左へ = 旧 88ms ワープを 5x slower、 chooseLeft までは 0.79s → 0.44s に短縮されるが距離小なので OK) === */
+  32.5% {
+    /* findWander1: 30% fade in から 440ms かけて滑らかに左へ (旧 88ms ワープを 5x slower、 easeOutCirc) */
     left: var(--tutorial-demo-find-wander1-x, var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%))));
     top: var(--tutorial-demo-find-wander1-y, var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%))));
     opacity: 1;
@@ -1939,8 +1939,8 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     transform: translate(-50%, -30%) scale(0.86) rotate(-12deg);
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  56.5% {
-    /* hover: 真上の高い位置でゆっくり減速、 ここから to まで 16.5pp ≒ 2.90s 単一 segment */
+  64.5% {
+    /* hover: 真上の高い位置でゆっくり減速 (v1621: 56.5% → 64.5% で pickup→hover を 1.03s → 2.44s に延長 = じっくり持っていく)、 ここから to まで 8.5pp ≒ 1.50s で素直に降ろす */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
@@ -1981,7 +1981,8 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
 }
 
 @keyframes stickerTutorialFindPlaceGhost {
-  /* hand keyframe と同じ 5 stop に集約 (50.65 出現 / 56.5 hover 追従 / 73 to 追従 / 75.85 drop / 79+100 fade out) */
+  /* hand keyframe と同じ 5 stop に集約 (50.65 出現 / 64.5 hover 追従 / 73 to 追従 / 75.85 drop / 79+100 fade out)
+     v1621: 各 stop に hand と同一の animation-timing-function を付与 = ghost が hand 指先から離脱する不整合を解消 */
   0%, 49.5% {
     left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
@@ -1994,13 +1995,15 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(0.94);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  56.5% {
-    /* follow hover */
+  64.5% {
+    /* follow hover (v1621: hand と同 64.5% タイミング / 同 bezier に揃え) */
     left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
     top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   73% {
     /* follow to (ゆっくり真っ直ぐ降下) */
@@ -2008,6 +2011,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
   }
   75.85% {
     /* drop */
@@ -2015,6 +2019,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     opacity: 1;
     transform: translate(-50%, -50%) scale(1.03);
+    animation-timing-function: ease-in-out;
   }
   79%, 100% {
     /* fade out */

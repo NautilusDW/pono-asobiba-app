@@ -4541,17 +4541,36 @@ function stickerTutorialDemoPoints(step, rect) {
     return { ...base, hand: from, from, to };
   }
   if (step.id === "scale") {
-    const from = { x: rect.left + rect.width * 0.36, y: center.y };
-    const to = { x: rect.left + rect.width * 0.78, y: center.y };
+    // v1621: scale slider min=0.35 max=2.4。 demo は startScale*0.78(=small) ↔ *1.48(=large) を sweep。
+    // input padding (~12px = thumb 半径相当) を考慮した実 track 上で handProgress=0→smallScale thumb 中央 / =1→largeScale thumb 中央 に合わせる
+    // (rotate 分岐と同じ trackPad 補正パターン、 commit 9a23803 で rotate のみ修正された差分を解消)
+    const placement = (typeof getSelectedPlacement === "function") ? getSelectedPlacement() : null;
+    const startScale = THREE.MathUtils.clamp(Number(placement?.scale) || 1, 0.7, 1.35);
+    const smallScale = Math.max(0.65, startScale * 0.78);
+    const largeScale = Math.min(1.9, startScale * 1.48);
+    const sliderMin = 0.35, sliderMax = 2.4, sliderRange = sliderMax - sliderMin;
+    const trackPad = 12;
+    const innerW = Math.max(rect.width - trackPad * 2, 0);
+    const smallFrac = THREE.MathUtils.clamp((smallScale - sliderMin) / sliderRange, 0, 1);
+    const largeFrac = THREE.MathUtils.clamp((largeScale - sliderMin) / sliderRange, 0, 1);
+    const from = { x: rect.left + trackPad + innerW * smallFrac, y: center.y };
+    const to   = { x: rect.left + trackPad + innerW * largeFrac, y: center.y };
     return { ...base, hand: from, from, to };
   }
   if (step.id === "rotate") {
-    // value=0 中央スタート、 demo は -24°→+28° の狭い範囲 sweep。
-    // input padding (~12px の thumb 半径相当) を考慮した実 track 上で 43% → 58% に合わせる
+    // v1621: value=0 で thumb 中央スタート、 demo は baseRotation(0°) ↔ rightRotation(+28°) を主に sweep (phase 2 で leftRotation -24° も訪れるが最初の目立つ瞬間優先)。
+    // 0.43/0.58 マジック数値を baseRotation/rightRotation 実値マッピングに置換 → 「最初だけずれてる」 を解消。
+    // input padding (~12px = thumb 半径相当) を考慮した実 track 上で thumb 中心に合わせる
+    const placement = (typeof getSelectedPlacement === "function") ? getSelectedPlacement() : null;
+    const baseRotation = Number(placement?.rotation) || 0;
+    const rightRotation = THREE.MathUtils.clamp(baseRotation + 28, -180, 180);
+    const sliderMin = -180, sliderMax = 180, sliderRange = sliderMax - sliderMin;
     const trackPad = 12;
     const innerW = Math.max(rect.width - trackPad * 2, 0);
-    const from = { x: rect.left + trackPad + innerW * 0.43, y: center.y };
-    const to   = { x: rect.left + trackPad + innerW * 0.58, y: center.y };
+    const baseFrac = THREE.MathUtils.clamp((baseRotation - sliderMin) / sliderRange, 0, 1);
+    const rightFrac = THREE.MathUtils.clamp((rightRotation - sliderMin) / sliderRange, 0, 1);
+    const from = { x: rect.left + trackPad + innerW * baseFrac, y: center.y };
+    const to   = { x: rect.left + trackPad + innerW * rightFrac, y: center.y };
     return { ...base, hand: from, from, to };
   }
   return base;
