@@ -182,12 +182,77 @@ li { margin-bottom: 6px; }
   <div class="faq-q">Q. 対象年齢は何歳ですか？</div>
   <div class="faq-a">3歳〜6歳を対象に制作しています。「お弁当作り」や「おえかき」は3歳から、パズル・なぞなぞ・音遊びは4歳以上におすすめです。</div>
 
-  <div class="faq-q">Q. データは保存されますか？</div>
-  <div class="faq-a">ゲームの進行状況やポイントはお使いの端末に保存されます。別の端末との共有や、アプリを削除した場合のデータ復元はできません。</div>
+  <div class="faq-q">Q. あそびのきろくは保存されますか？</div>
+  <div class="faq-a">
+    どんぐりや図鑑、おえかきなどの「あそびのきろく」は、お子さまの端末のブラウザのなかに大切にしまわれます。同じ端末・同じブラウザでひらけば、いつでも続きから遊べます。<br>
+    ただし、ブラウザを変えたり、ブラウザのデータを消したり、別の端末でひらいたりすると、きろくは引き継がれません。<br>
+    機種変更や乗り換えの前に、ゲーム画面の「保護者の方へ → データ管理 → データを 保存」 で、ファイル（JSON）にして保管してください。新しい端末では「データを ロード」 から読み込めば、続きから遊べます。<br>
+    将来、合言葉で別の端末にデータを引き継げる仕組みと、アプリ版（ネイティブ）リリース時のデータ移行も準備を進めています。
+  </div>
 
   <div class="faq-q">Q. 通信量はかかりますか？</div>
   <div class="faq-a">初回アクセス時、更新時、新しいゲームやページを開くときに通信が発生します。一度読み込んだ一部のデータは端末に残る場合がありますが、すべてのゲームをオフラインで遊べる状態ではないため、通信できる環境でのご利用をおすすめします。</div>
 </div>
+
+<!-- データ管理 (保護者向け) v1672 -->
+<div class="section" id="data-management">
+  <h2>💾 データ管理（保護者の方へ）</h2>
+  <p>機種変更やブラウザ変更の前に、 セーブデータを ファイル（JSON）として 保存できます。<br>
+  新しい端末では 「データを ロード」 から 読み込めば、 続きから遊べます。</p>
+  <div class="step-box" style="display:flex;flex-direction:column;gap:10px;align-items:stretch;">
+    <button id="helpDataExportBtn" type="button" style="padding:12px;border:none;border-radius:50px;background:linear-gradient(180deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 3px 0 #B87200;">
+      データを 保存（ダウンロード）
+    </button>
+    <button id="helpDataImportBtn" type="button" style="padding:12px;border:2px solid #c0a877;border-radius:50px;background:linear-gradient(180deg,#fff,#f4ecd8);color:#5D4E37;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 3px 0 #c0a877;">
+      データを ロード（ファイルを選ぶ）
+    </button>
+    <input type="file" id="helpDataImportFile" accept="application/json,.json" style="display:none;">
+  </div>
+  <p style="font-size:0.78rem;color:#8a7359;margin-top:8px;">
+    ※ ロード時は たし算の保護者確認が出ます。 <strong>いまのデータは上書きされます。</strong><br>
+    ※ tier (絵本パスワード) や 解放アイテムなどの状態は、 安全のため ロード時に そのまま引き継がれます (上書きされません)。
+  </p>
+</div>
+
+<!-- v1672: PonoDataExport を common/data-export.js から読み込み -->
+<script src="common/data-export.js?v=1672"></script>
+<script>
+(function () {
+  'use strict';
+  function ready(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else { fn(); }
+  }
+  ready(function () {
+    var exportBtn = document.getElementById('helpDataExportBtn');
+    var importBtn = document.getElementById('helpDataImportBtn');
+    var importInput = document.getElementById('helpDataImportFile');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        if (window.PonoDataExport && typeof window.PonoDataExport.exportData === 'function') {
+          window.PonoDataExport.exportData();
+        } else {
+          alert('データ管理モジュールの 読み込みに しっぱい しました。 ページを 再読込してください。');
+        }
+      });
+    }
+    if (importBtn && importInput) {
+      importBtn.addEventListener('click', function () { importInput.click(); });
+      importInput.addEventListener('change', function () {
+        var file = importInput.files && importInput.files[0];
+        importInput.value = '';
+        if (!file) return;
+        if (window.PonoDataExport && typeof window.PonoDataExport.importData === 'function') {
+          window.PonoDataExport.importData(file);
+        } else {
+          alert('データ管理モジュールの 読み込みに しっぱい しました。 ページを 再読込してください。');
+        }
+      });
+    }
+  });
+})();
+</script>
 
 </body>
 </html>

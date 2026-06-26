@@ -3413,6 +3413,25 @@
       animation: tapIntroPulse 1.2s ease-in-out infinite;
       text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
     }
+    /* v1672: 「以前あそんだことがある方はこちら →」 リンク (保護者向け、 控えめに) */
+    .tap-intro-restore {
+      display: inline-block;
+      margin: 0 auto 12px;
+      padding: 8px 14px;
+      font-family: inherit;
+      font-size: clamp(11px, 1.6vw, 14px);
+      font-weight: 700;
+      color: #fff8e1;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1.5px dashed rgba(255, 248, 225, 0.55);
+      border-radius: 999px;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tap-intro-restore:hover { background: rgba(0, 0, 0, 0.32); }
+    .tap-intro-restore:active { transform: translateY(1px); }
     @keyframes tapIntroBounce {
       0%, 100% { transform: translateY(0); }
       50%      { transform: translateY(-8px); }
@@ -5058,6 +5077,9 @@
     <div class="tap-intro-card">
       <img class="tap-intro-logo" src="assets/ui/brand_sign_01.webp" alt="ポノのあそびば" draggable="false">
       <div class="tap-intro-sub">タップして はじめよう</div>
+      <button class="tap-intro-restore" id="tapIntroRestore" type="button" aria-label="以前あそんだことがある方はデータをロード">
+        以前あそんだことがある方はこちら →
+      </button>
       <div class="tap-intro-ad" aria-label="広告">
         <div class="tap-intro-ad-label"><span class="tap-intro-ad-badge">PR</span> ポノの絵本 はつばいちゅう</div>
         <a class="tap-intro-ad-link" href="https://www.amazon.co.jp/dp/B0FFTBS9TM" target="_blank" rel="noopener noreferrer" aria-label="絵本『ありがとうって、うれしいね』をAmazonで見る">
@@ -5105,6 +5127,13 @@
           <span class="settings-action__text">
             <span class="settings-action__main">こうしんする</span>
             <span class="settings-action__sub" id="settingsRefreshSub">あたらしくする</span>
+          </span>
+        </button>
+        <button class="settings-action" id="settingsDataManageBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">💾</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">データかんり (保護者の方へ)</span>
+            <span class="settings-action__sub">きしゅへんこう・ブラウザ変更時に</span>
           </span>
         </button>
         <button class="settings-action" id="settingsDebugBoardBtn" type="button" hidden>
@@ -5432,6 +5461,8 @@
   <script src="common/acorns.js"></script>
   <script src="js/daily-quest.js"></script>
   <script src="js/donguri-shop.js"></script>
+  <!-- v1672: セーブデータ JSON エクスポート/インポート (PonoDataExport) -->
+  <script src="common/data-export.js?v=1672"></script>
 
   <script>
     'use strict';
@@ -8600,6 +8631,20 @@
     }
     if (settingsRefreshBtn) settingsRefreshBtn.addEventListener('click', requestSettingsRefresh);
 
+    // ===== Settings: data management (v1672 - export/import) =====
+    const settingsDataManageBtn = document.getElementById('settingsDataManageBtn');
+    if (settingsDataManageBtn) {
+      settingsDataManageBtn.addEventListener('click', () => {
+        // settings モーダルを閉じてからデータ管理モーダルを開く
+        closeModal('settingsModal');
+        if (window.PonoDataExport && typeof window.PonoDataExport.openModal === 'function') {
+          window.PonoDataExport.openModal();
+        } else {
+          console.warn('[play] PonoDataExport not loaded');
+        }
+      });
+    }
+
     // ===== Manage debug board: acorn balance tools =====
     const settingsDebugBoardBtn = document.getElementById('settingsDebugBoardBtn');
     const debugAcornCurrent = document.getElementById('debugAcornCurrent');
@@ -8808,6 +8853,27 @@
             adLink.addEventListener(evt, (e) => {
               e.stopPropagation();
             });
+          });
+        }
+        // v1672: 「以前あそんだことがある方はこちら →」 リンク。
+        // tap-intro の dismiss / BGM unlock は走らせない (誤タップで splash 抜けて
+        // しまうと保護者操作の途中でスタートしてしまう)。 stopPropagation + 明示
+        // click のみでデータ管理モーダルを開く。
+        const restoreBtn = intro.querySelector('#tapIntroRestore');
+        if (restoreBtn) {
+          ['pointerdown', 'pointerup'].forEach(evt => {
+            restoreBtn.addEventListener(evt, (e) => {
+              e.stopPropagation();
+            });
+          });
+          restoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.cancelable) e.preventDefault();
+            if (window.PonoDataExport && typeof window.PonoDataExport.openModal === 'function') {
+              window.PonoDataExport.openModal();
+            } else {
+              console.warn('[play] PonoDataExport not loaded (tapIntroRestore)');
+            }
           });
         }
       }

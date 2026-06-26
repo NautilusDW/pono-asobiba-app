@@ -286,6 +286,7 @@
 // v1663: シールのおみせの吹き出し再作成と上部ボタン小型化を反映。
 // v1664: フクロウはかせの結果画面は正解数コピーをやめ、どんぐり数のポップ演出を表示。
 // v1672: シールのおみせ — リス吹き出しを左寄せし、初回来店/再訪問の開店セリフと字幕案内を追加。play.html PAGE_CACHE_VERSION と同期。
+// v1672: セーブデータ JSON エクスポート/インポート機能追加 (common/data-export.js 新規) + ヘルプ文言書き直し (help.html L185-186 Q&A 全面改稿 + データ管理セクション追加) + play.html 修正 (settingsModal 内に data 管理エントリ + tap-intro に「以前あそんだことがある方はこちら →」リンク + data-export.js script tag)。 sw.js は network-first 単独構成 (precache list 不在) のため CACHE_VERSION bump のみで配信。 セキュリティ層 4 段防御 (Object.create(null) sanitize / __proto__ 等の forbidden key / value string-only / tier/unlocked/admin denylist) で tier 詐欺を遮断。
 // v1669: reduced-motion 静的 chevron CSS specificity 修正 (.scroll-hint.scroll-hint--down で L4677 global hide を上書き)
 // v1668: card-dots breakpoint 640→768px (iPad mini 対応) + reduced-motion 静的 chevron CSS 単一ソース化
 // v1667: タイトル画面 a11y/UX 修正 — card-dots 狭幅 hide (max-width:640px) + SR aria-live 200ms debounce + auto-scroll hint 発火 1600→2200ms + reduced-motion 時 ↓ chevron 静的表示 + cooking タイトル <wbr> 折返し対応 (game-title-accent--cooking 色追加)。play.html PAGE_CACHE_VERSION と同期。
