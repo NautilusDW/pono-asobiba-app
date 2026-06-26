@@ -3537,6 +3537,32 @@
       background: transparent;
       aspect-ratio: auto;
     }
+    .donguri-shop-v2-shopkeeper.is-reacting[data-reaction="happy"],
+    .donguri-shop-v2-shopkeeper.is-reacting[data-reaction="welcome"] {
+      animation: donguriShopkeeperHappy .58s cubic-bezier(.22,.9,.26,1.22) both;
+    }
+    .donguri-shop-v2-shopkeeper.is-reacting[data-reaction="guide"],
+    .donguri-shop-v2-shopkeeper.is-reacting[data-reaction="reserve"] {
+      animation: donguriShopkeeperGuide .62s ease-out both;
+    }
+    .donguri-shop-v2-shopkeeper.is-reacting[data-reaction="worry"] {
+      animation: donguriShopkeeperWorry .46s ease-out both;
+    }
+    @keyframes donguriShopkeeperHappy {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      42% { transform: translateY(-7px) rotate(-1.8deg); }
+      70% { transform: translateY(1px) rotate(1deg); }
+    }
+    @keyframes donguriShopkeeperGuide {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      35% { transform: translateX(4px) rotate(1.4deg); }
+      66% { transform: translateX(-2px) rotate(-.8deg); }
+    }
+    @keyframes donguriShopkeeperWorry {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      28% { transform: translateX(-4px) rotate(-1deg); }
+      56% { transform: translateX(3px) rotate(.8deg); }
+    }
     .donguri-shop-v2-bubble {
       position: absolute; left: 7%; bottom: 57%;
       width: min(24%, 318px);
@@ -3591,10 +3617,10 @@
     .donguri-shop-v2-rotation-note {
       position: absolute;
       left: 50%;
-      top: 17.2%;
+      top: 19.6%;
       transform: translateX(-50%);
       width: min(48vw, 540px);
-      z-index: 6;
+      z-index: 5;
       pointer-events: none;
       color: #fff8df;
       font: 900 clamp(10px, 1.12vw, 15px)/1.15 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
@@ -3956,6 +3982,7 @@
       .donguri-shop-v2-badge { animation: none; }
       .donguri-shop-v2-thumb.is-hearting img { animation: none; }
       .donguri-shop-v2-heart-burst { animation: none; opacity: 1; }
+      .donguri-shop-v2-shopkeeper.is-reacting { animation: none; }
     }
     @media (max-width: 900px) {
       .donguri-shop-v2-head {
@@ -3964,7 +3991,7 @@
         padding: 0 10px;
       }
       .donguri-shop-v2-title { width: min(42vw, 300px); font-size: 0; }
-      .donguri-shop-v2-rotation-note { top: 21.2%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
+      .donguri-shop-v2-rotation-note { top: 22.6%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
       .donguri-shop-v2-bubble { left: 7%; bottom: 56%; width: min(24%, 210px); padding: clamp(3px, .8vw, 7px) clamp(14px, 2.2vw, 20px) 0 clamp(32px, 4.6vw, 42px); font-size: clamp(8px, 1.4vw, 12px); }
       .donguri-shop-v2-reserve { left: 6.5%; bottom: 4.2%; width: min(25%, 210px); min-width: 126px; height: clamp(72px, 18vw, 90px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
@@ -4069,19 +4096,15 @@
     }
     .daily-gacha-center-msg[hidden] { display: none; }
     .daily-gacha-center-msg[data-msg-mode="locked"] {
-      width: min(600px, 64%);
-      min-height: clamp(140px, 25%, 188px);
-      aspect-ratio: auto;
-      padding: clamp(28px, 3.4vw, 42px) clamp(44px, 5.2vw, 72px);
-      border: clamp(18px, 2.4vw, 30px) solid transparent;
-      border-image-source: url("assets/images/quizland/OP/frame_1_1.png");
-      border-image-slice: 165 fill;
-      border-image-width: 1;
-      border-image-repeat: stretch;
-      background: rgba(255, 240, 190, .92);
-      font-size: clamp(23px, 2.7vw, 32px);
-      line-height: 1.22;
+      width: min(520px, 58%);
+      aspect-ratio: 1200 / 506;
+      padding: 5.4% 7% 5.1%;
+      gap: clamp(7px, .9vw, 12px);
+      background: transparent url("assets/images/zukan/frames/ui_question_frame.png") center / contain no-repeat;
+      font-size: clamp(18px, 2.1vw, 26px);
+      line-height: 1.18;
       filter: drop-shadow(0 14px 18px rgba(54, 28, 9, .28));
+      pointer-events: auto;
     }
 
     /* レスポンシブ: 既存 .daily-gacha-entry の縮小ブレークポイントに合わせてバナーも縮める */
@@ -4143,6 +4166,30 @@
     .daily-gacha-center-msg__text {
       display: block;
       white-space: pre-line;
+    }
+    .daily-gacha-center-msg[data-msg-mode="locked"] .daily-gacha-center-msg__text {
+      max-width: 92%;
+    }
+    .daily-gacha-center-msg__action {
+      appearance: none;
+      border: clamp(2px, .22vw, 3px) solid #a96500;
+      border-radius: 999px;
+      min-height: clamp(32px, 3.2vw, 40px);
+      padding: 0 clamp(18px, 2.2vw, 28px) 2px;
+      background: linear-gradient(180deg, #fff8dd 0%, #f3c875 100%);
+      color: #5b3600;
+      font: 900 clamp(14px, 1.65vw, 20px)/1 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .80),
+        0 3px 0 rgba(116, 67, 9, .55);
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    .daily-gacha-center-msg__action:active {
+      transform: translateY(2px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .72),
+        0 1px 0 rgba(116, 67, 9, .55);
     }
     /* assist hint モード — 鍵なし / 引き済み 時のイラスト寄り柔らかいメッセージ。
        既存 .daily-gacha-action--assist のスタイルを引き継ぎつつ、 tap 無効 (visual only)。 */
@@ -4957,7 +5004,7 @@
       <div class="donguri-shop-v2-character-safe" aria-hidden="true">
         <!-- v1615: shopkeeper is separated from the UI safe layer so the foreground counter can hide the lower body. -->
         <div class="donguri-shop-v2-shopkeeper">
-          <img src="assets/ui/shop/sticker_shopkeeper_squirrel_wave_large_blackeyes_20260626.png" alt="" draggable="false" />
+          <img id="donguriShopkeeperImg" src="assets/ui/shop/sticker_shopkeeper_squirrel_pose_idle_highlight_20260626.png" alt="" draggable="false" />
         </div>
       </div>
       <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
@@ -6849,7 +6896,7 @@
       var text = '';
       var emoji = '';
       if (mode === 'locked') {
-        text = 'きょうの チャレンジが\nおわったら ガチャ できるよ';
+        text = 'きょうの チャレンジを\nクリアすると まわせるよ';
       } else if (mode === 'used') {
         text = 'きょうは もう ひいたよ\nまた あしたね';
         emoji = '🌙'; // v1577 M2: 「またあした」 の意味を 1 文字で伝える
@@ -6873,6 +6920,18 @@
       eTx.className = 'daily-gacha-center-msg__text';
       eTx.textContent = text;
       el.appendChild(eTx);
+      if (mode === 'locked') {
+        var action = document.createElement('button');
+        action.className = 'daily-gacha-center-msg__action';
+        action.type = 'button';
+        action.textContent = 'チャレンジへ';
+        action.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          _dailyQuestBannerActivate();
+        });
+        el.appendChild(action);
+      }
       el.hidden = false;
     }
     function hideDailyGachaCenterMsg() {
@@ -6887,7 +6946,7 @@
       if (!dailyGachaAssist) return;
       var text = '';
       if (mode === 'locked') {
-        text = 'チャレンジが おわったら ガチャできるよ';
+        text = 'チャレンジを クリアすると まわせるよ';
       } else if (mode === 'used') {
         text = '🌅 あした また あえるよ！';
       }
@@ -7075,6 +7134,71 @@
         return (phrases[jstHour] || 'もうすぐ') + ' かわるよ';
       } catch (_) { return 'もうすぐ かわるよ'; }
     }
+    var DONGURI_SHOPKEEPER_POSES = {
+      idle: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_idle_highlight_20260626.png',
+      wave: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_wave_highlight_20260626.png',
+      present: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_present_highlight_20260626.png',
+      point: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_point_highlight_20260626.png',
+      cheer: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_cheer_highlight_20260626.png',
+      think: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_think_highlight_20260626.png',
+      sad: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_sad_highlight_20260626.png',
+      surprise: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_surprise_highlight_20260626.png'
+    };
+    var DONGURI_SHOPKEEPER_REACTIONS = {
+      welcome: { pose: 'idle', motion: 'welcome', text: 'いらっしゃい' },
+      guide: { pose: 'present', motion: 'guide', text: 'とっておけるよ' },
+      reserve: { pose: 'point', motion: 'reserve', text: 'とっておいたよ' },
+      happy: { pose: 'cheer', motion: 'happy', text: 'こうかん ありがとう' },
+      worry: { pose: 'sad', motion: 'worry', text: 'どんぐり たりないよ' },
+      think: { pose: 'think', motion: 'worry', text: 'どんぐり あつめよう' },
+      full: { pose: 'surprise', motion: 'worry', text: 'とりおきは 1つまで' },
+      calm: { pose: 'idle', motion: 'welcome', text: 'ならべているよ' }
+    };
+    function _shopReactionForMessage(messageText) {
+      var text = String(messageText || '');
+      if (/1つまで/.test(text)) return 'full';
+      if (/たりない|できない/.test(text)) return 'worry';
+      if (/あつめよう/.test(text)) return 'think';
+      if (/とって|とりおき/.test(text)) return 'reserve';
+      if (/こうかん|なかよし|ありがとう/.test(text)) return 'happy';
+      if (/ならべ|みて/.test(text)) return 'guide';
+      return 'welcome';
+    }
+    function _setShopkeeperReaction(reactionKey, messageText) {
+      var key = reactionKey || _shopReactionForMessage(messageText);
+      var data = DONGURI_SHOPKEEPER_REACTIONS[key] || DONGURI_SHOPKEEPER_REACTIONS.welcome;
+      var keeper = document.querySelector('.donguri-shop-v2-shopkeeper');
+      var img = document.getElementById('donguriShopkeeperImg');
+      var bubble = document.getElementById('donguriShopBubble');
+      var poseSrc = DONGURI_SHOPKEEPER_POSES[data.pose] || DONGURI_SHOPKEEPER_POSES.idle;
+      if (img && img.getAttribute('src') !== poseSrc) img.setAttribute('src', poseSrc);
+      if (bubble) bubble.textContent = messageText || data.text || _formatShopCountdown();
+      if (keeper) {
+        keeper.dataset.pose = data.pose;
+        keeper.dataset.reaction = data.motion || key;
+        keeper.classList.remove('is-reacting');
+        void keeper.offsetWidth;
+        keeper.classList.add('is-reacting');
+      }
+    }
+    function _shopDefaultReaction(balance, stickerIds, reservation) {
+      var hasHoldable = false;
+      try {
+        (stickerIds || []).forEach(function (sid) {
+          if (hasHoldable || !window.PonoDonguriShop) return;
+          var ownState = window.PonoDonguriShop.getOwnershipState ? (window.PonoDonguriShop.getOwnershipState(sid) || {}) : {};
+          var isGuaranteed = window.PonoDonguriShop.isGuaranteed
+            ? !!window.PonoDonguriShop.isGuaranteed(sid)
+            : !!window.PonoDonguriShop.isNew(sid);
+          var canReserve = window.PonoDonguriShop.canReserve ? !!window.PonoDonguriShop.canReserve(sid) : false;
+          hasHoldable = !ownState.owned && isGuaranteed && canReserve;
+        });
+      } catch (_) { hasHoldable = false; }
+      if (hasHoldable) return { reaction: 'guide', text: 'とっておけるよ' };
+      if (reservation && reservation.stickerId) return { reaction: 'reserve', text: 'とりおきも あるよ' };
+      if ((balance | 0) < 15) return { reaction: 'think', text: 'どんぐり あつめよう' };
+      return { reaction: 'welcome', text: 'いらっしゃい' };
+    }
     // v1582: load full catalog so stickerIndex (gameId/name/img) is hydrated for rotation rendering.
     function _hydrateShopCatalog() {
       if (!window.PonoDonguriShop || typeof window.PonoDonguriShop.getCatalog !== 'function') {
@@ -7217,10 +7341,12 @@
       var balance = (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0;
       if (balEl) balEl.textContent = String(balance);
       var countdownText = messageText || _formatShopCountdown();
-      if (bubbleEl) bubbleEl.textContent = countdownText;
+      if (messageText) _setShopkeeperReaction(null, messageText);
+      else if (bubbleEl) bubbleEl.textContent = countdownText;
       if (!window.PonoDonguriShop) {
         slotsEl.innerHTML = '<div class="donguri-shop-v2-slot"><div class="donguri-shop-v2-thumb"><span class="donguri-shop-v2-thumb-fallback">…</span></div></div>';
         _renderShopReservationPanel(reserveEl, null, {});
+        if (!messageText) _setShopkeeperReaction('calm', countdownText);
         return;
       }
       // Phase 1: hydrate full catalog to populate internal stickerIndex; then read rotation; then resolve images.
@@ -7234,6 +7360,10 @@
           }
         } catch (_) { reservation = null; }
         var stickerIds = _shopDisplayStickerIds(rotation, reservation);
+        if (!messageText) {
+          var defaultReaction = _shopDefaultReaction(balance, stickerIds, reservation);
+          _setShopkeeperReaction(defaultReaction.reaction, defaultReaction.text);
+        }
         var resolveIds = stickerIds.slice();
         if (reservation && reservation.stickerId && resolveIds.indexOf(reservation.stickerId) < 0) {
           resolveIds.push(reservation.stickerId);
