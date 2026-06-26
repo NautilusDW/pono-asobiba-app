@@ -4168,7 +4168,7 @@
       left: auto;
       bottom: auto;
       width: 100%;
-      aspect-ratio: 1773 / 600;
+      aspect-ratio: 1773 / 680;
       height: auto;
       margin-bottom: 6px;
       z-index: 91;
@@ -4333,6 +4333,18 @@
       filter: drop-shadow(0 8px 14px rgba(20, 10, 0, .36));
     }
     .bottom-nav::after { display: none; }
+    .bottom-nav[data-pressed="help"] {
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_help_20260626.png");
+    }
+    .bottom-nav[data-pressed="news"] {
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_news_20260626.png");
+    }
+    .bottom-nav[data-pressed="stickers"] {
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_stickers_20260626.png");
+    }
+    .bottom-nav[data-pressed="settings"] {
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_settings_20260626.png");
+    }
     .bn-item {
       min-width: 0;
       height: 100%;
@@ -4343,22 +4355,6 @@
       background: transparent;
       color: transparent;
       box-shadow: none;
-    }
-    .bn-item::after {
-      content: "";
-      position: absolute;
-      inset: 10% 8% 13%;
-      border-radius: 22px;
-      background: transparent url("assets/ui/title/title_bottom_nav_pressed_tile_overlay_20260626.png") center / 100% 100% no-repeat;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .08s ease;
-    }
-    .bottom-nav[data-pressed="help"] .bn-item[data-action="help"]::after,
-    .bottom-nav[data-pressed="news"] .bn-item[data-action="news"]::after,
-    .bottom-nav[data-pressed="stickers"] .bn-item[data-action="stickers"]::after,
-    .bottom-nav[data-pressed="settings"] .bn-item[data-action="settings"]::after {
-      opacity: .45;
     }
     .bn-item:hover { filter: none; }
     .bn-item__icon,
@@ -5082,7 +5078,7 @@
       } catch (_) {}
       return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
     })();
-    const TITLE_MENU_IDS = ['quizland', 'maze', 'oto', 'puzzle'];
+    const TITLE_MENU_IDS = ['quizland', 'maze', 'oto', 'puzzle', 'bento'];
     const MENU_GAMES = TITLE_MENU_IDS
       .map((id) => GAMES.find((game) => game.id === id))
       .filter(Boolean)
@@ -5140,12 +5136,12 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1634;
+    const PAGE_CACHE_VERSION = 1638;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
-    // Reference-style title menu: the first screen intentionally shows four
-    // fixed cards, so the old infinite-scroll duplicate copies stay disabled.
-    const LOOP_COPIES = 1;
+    // Keep the old vertical loop behavior: the viewport shows four cards,
+    // with the fifth game reachable by scrolling up/down through duplicate sets.
+    const LOOP_COPIES = 3;
 
     function cardMarkup(g, i, rep) {
       // is-coming-soon: 通常の準備中カード (彩度↓ + play 半透明)
@@ -5165,11 +5161,11 @@
       const panelMatch = String(g.panel || '').match(/menu_card_base_0?(\d+)\.(?:png|webp)/i);
       const panelN = panelMatch ? parseInt(panelMatch[1], 10) : ((i % 4) + 1);
       const defaultMaskPath = `assets/ui/wood_panel_mask${panelN}.png`;
-      // LOOP_COPIES の最初のコピー (rep===0) はファーストビュー上に必ず存在するため eager 読み込み。
-      // 残り 2 コピー (rep 1,2 = scroll loop teleport 用の予備) は lazy のままで memory を節約。
+      // 最初に見える copy と中央 copy は eager にして、loop 初期位置へ移動した直後の
+      // blank を避ける。最後の copy は teleport 用なので lazy のままで memory を節約。
       // 全カードに loading="lazy" を付けると iOS Safari の intersection observer 経路で
       // ファーストビューのカードも初回 blank になる事故 (2026-05 修正済) の再発防止。
-      const loadingAttr = (rep === 0) ? 'eager' : 'lazy';
+      const loadingAttr = (rep <= 1) ? 'eager' : 'lazy';
       const peekStyle = g.comingSoon ? 'none' : `url('${esc(__bust(g.bg))}')`;
       const thumbMarkup = g.comingSoon
         ? '<span class="game-card__thumbPlaceholder" aria-hidden="true">?</span>'
