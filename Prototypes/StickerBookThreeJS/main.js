@@ -3575,6 +3575,7 @@ function startStickerTutorial(options = {}) {
     skipShown: false,     // v1637: 「とばす」 ボタン visible 化済みフラグ
     completeStartedAt: 0, // v1643: complete phase 開始時刻 (place min-hold gate 用)
     praiseShown: false,   // v1646: TRY 成功 → complete 時の褒め言葉差し替え多重発火防止
+    coverFadeTimer: 0,    // v1675: is-await-cover-open 2000ms fail-safe timer id
   };
   enterStickerTutorialCleanAlbum();
   stickerTutorial.hidden = false;
@@ -3588,6 +3589,11 @@ function finishStickerTutorial(options = {}) {
   }
   // v1637: try タイムアウト + skip ボタンを必ず片付ける (phase class も後段 classList.remove で除去)。
   clearStickerTutorialTryTimeout();
+  // v1675 (task 1, fail-safe leak prevention): 2000ms cover-fade fail-safe timer もここで必ずクリア。
+  if (stickerTutorialState?.coverFadeTimer) {
+    clearTimeout(stickerTutorialState.coverFadeTimer);
+    stickerTutorialState.coverFadeTimer = 0;
+  }
   hideStickerTutorialStepSkipButton();
   stopStickerTutorialAudio();
   stopStickerTutorialStepDemo();
@@ -3740,15 +3746,15 @@ function showStickerTutorialStep(index, options = {}) {
   }
   if (stickerTutorialCard) {
     stickerTutorialCard.hidden = false;
-    // v1650 (task 1): cover-open 中 (swing 1150ms 進行中) または activeSurface !== "inside" の場合、
-    // 左ページ rect が未確定なので card を opacity:0 で潜伏。 updateCoverOpen の open 完了ブランチで
-    // rAF 1 つ挟んで is-await-cover-open を外し fade-in (550ms)。
-    // 旧仕様は swing 中も card を表示 → rightPage rect を「左ページ rect」 として fallback 取得 →
-    // book.position.x 補間で card が動く → 完了瞬間に左ページに大ジャンプ、 の視覚バグが発生していた。
-    // step.id 判定ではなく coverOpenAnimation truthy + activeSurface を直接見るので、 将来 place/ok 等で
-    // setBookSurface("inside") が追加されても自動追従。
-    // intro step は setBookSurface を呼ばない (coverOpenAnimation null) ので影響なし。
-    if (coverOpenAnimation || activeSurface !== "inside") {
+    // v1675 (task 1, iPad stuck fix): cover-open swing **open 方向進行中** に限り潜伏。
+    // 旧: `coverOpenAnimation || activeSurface !== "inside"` だと intro step (setBookSurface 未呼び/
+    // activeSurface === "cover" のまま) で永久に opacity:0 + pointer-events:none となり、
+    // iOS Safari は親 opacity:0 のヒットテストを skip するため「つぎ」 が押せない致命バグ。
+    // 修正: open swing が実際に動いている step (mode/place/move/scale/rotate/ok 経路) のみ潜伏。
+    // intro / view / final / corner 系は最初から可視。
+    const needsCoverOpenWait =
+      coverOpenAnimation && coverOpenAnimation.direction !== "close";
+    if (needsCoverOpenWait) {
       stickerTutorialCard.classList.add("is-await-cover-open");
     } else {
       stickerTutorialCard.classList.remove("is-await-cover-open");
@@ -3814,6 +3820,16 @@ function showStickerTutorialStep(index, options = {}) {
   window.setTimeout(scheduleStickerTutorialLayout, 180);
   window.setTimeout(scheduleStickerTutorialLayout, 720);
   startStickerTutorialStepDemo(step);
+  // v1675 (task 1, fail-safe): 何らかの理由で updateCoverOpen の open 完了ブランチが走らず
+  // is-await-cover-open が残っても、 2000ms 上限で必ず外す。 stuck の最終防護。
+  if (stickerTutorialState.coverFadeTimer) {
+    clearTimeout(stickerTutorialState.coverFadeTimer);
+    stickerTutorialState.coverFadeTimer = 0;
+  }
+  stickerTutorialState.coverFadeTimer = window.setTimeout(() => {
+    stickerTutorialCard?.classList.remove("is-await-cover-open");
+    stickerTutorialState.coverFadeTimer = 0;
+  }, 2000);
   if (options.replayAudio !== false) {
     playStickerTutorialAudio(step);
   }
@@ -14304,6 +14320,10 @@ function updateCoverOpen(delta) {
       if (stickerTutorialCard?.classList.contains("is-await-cover-open")) {
         requestAnimationFrame(() => {
           stickerTutorialCard?.classList.remove("is-await-cover-open");
+          if (stickerTutorialState?.coverFadeTimer) {
+            clearTimeout(stickerTutorialState.coverFadeTimer);
+            stickerTutorialState.coverFadeTimer = 0;
+          }
         });
       }
     }
