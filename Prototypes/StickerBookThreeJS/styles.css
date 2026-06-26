@@ -1734,73 +1734,108 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
   display: none;
 }
 
+/* v1640 (task 1): 「便箋カード」 → 「本に直書き」 へ全面退行。
+   - background / border-radius / box-shadow / inset border を全廃 (= ノートに直接書いた文字)
+   - mix-blend-mode: multiply + text-shadow で凹凸 (= ペン書き立体感)
+   - rotate(-1.6deg) で軽く傾けて 「手書きで貼ったメモ」 感を出す
+   - フォントは現状の Zen Maru Gothic 維持 (案A 採用: PWA キャッシュ競合回避のため外部 Google Fonts は追加しない) */
 .sticker-tutorial-page-text {
   position: absolute;
   left: var(--tutorial-leftpage-x, 8vw);
   top: var(--tutorial-leftpage-y, 14vh);
   width: var(--tutorial-leftpage-w, 38vw);
   max-height: calc(var(--tutorial-leftpage-h, 40vh) + 4vh);
-  padding: clamp(10px, 1.6vw, 22px) clamp(14px, 2vw, 28px);
+  padding: clamp(6px, 1.0vw, 14px) clamp(8px, 1.2vw, 18px);
   pointer-events: none;
-  /* ノート 便箋風: 帆船イラストの上でも文字が抜けない半透明背景 */
-  background:
-    linear-gradient(180deg, rgba(255, 253, 243, 0.92), rgba(255, 248, 225, 0.88));
-  border-radius: 10px;
-  box-shadow:
-    0 4px 18px rgba(60, 40, 20, 0.10),
-    inset 0 0 0 1px rgba(180, 130, 60, 0.18);
+  /* 直書き: 背景 / 角丸 / 影 / 枠 すべて 0 */
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  /* multiply 合成でページ素材 (帆船イラストや紙地) に文字が「染み込む」 */
+  mix-blend-mode: multiply;
+  transform: rotate(-1.6deg);
+  transform-origin: left top;
   font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
   font-weight: 700;
-  color: #3a2a16;
+  color: #3a2618;
   line-height: 1.45;
   box-sizing: border-box;
 }
 
 .sticker-tutorial-page-text .sticker-tutorial-count {
   position: static;
-  margin: 0 0 6px;
-  font-size: clamp(11px, 1vw, 13px);
+  margin: 0 0 4px;
+  font-size: clamp(10px, 0.95vw, 12px);
   color: #8a6a3c;
   letter-spacing: 0.06em;
   text-align: left;
+  /* 直書きカウント: 影は控えめ */
+  text-shadow: 0 1px 0 rgba(255, 250, 235, 0.4);
 }
 
 .sticker-tutorial-page-text .sticker-tutorial-text {
   margin: 0;
-  color: #3a2a16;
-  font-size: clamp(15px, 1.5vw, 22px);
+  color: #3a2618;
+  font-size: clamp(16px, 1.6vw, 24px);
   line-height: 1.45;
   text-align: left;
   white-space: pre-line;
+  /* ペン書き凹凸: 紙のハイライトと影で 「本に書いた」 立体感 */
+  text-shadow:
+    0 1px 0 rgba(255, 250, 235, 0.55),
+    0 2px 1px rgba(60, 40, 20, 0.12);
 }
 
-/* 操作ボタンは画面下端中央固定 (safe-area 対応)。 ページ追従しない。 */
+/* v1640 (task 2): 操作ボタンを 「画面下端中央固定」 → 「左ページ下部 overlay (テキストの真下)」 に移動。
+   - position: absolute + CSS 変数 (--tutorial-leftpage-btn-{x,y,w,h}) でページ rect に追従
+   - 木製スタンプ風 dashed border + 微回転 (rotate(-0.8deg)) で 「本に押したスタンプ」 感
+   - flex-wrap で 5 ボタン (あとで/もういちど/やってみる/とばす/つぎ) 同時表示 + 小型端末縮退対応 */
 .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions {
   position: absolute;
-  left: 50%;
-  bottom: max(20px, calc(env(safe-area-inset-bottom) + 16px));
-  transform: translateX(-50%);
-  gap: 8px;
+  left: var(--tutorial-leftpage-btn-x, 50%);
+  top: var(--tutorial-leftpage-btn-y, auto);
+  width: var(--tutorial-leftpage-btn-w, auto);
+  min-height: var(--tutorial-leftpage-btn-h, auto);
+  bottom: auto;
+  transform: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.7vw, 8px);
   pointer-events: auto;
 }
 
 .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button {
-  /* baseline .sticker-tutorial-actions button を踏襲 (PNG モード時の縮小 override は廃止) */
-  min-width: 78px;
-  min-height: 34px;
-  padding: 0 14px 2px;
-  font-size: 13px;
+  /* 木製スタンプ風: dashed border + 微回転 + 半透明背景でページに溶け込む */
+  min-width: clamp(60px, 7vw, 78px);
+  min-height: clamp(28px, 3vw, 34px);
+  padding: 0 clamp(8px, 1vw, 14px) 2px;
+  font-size: clamp(11px, 1.6vw, 14px);
   border-width: 2px;
-  background: rgba(255, 251, 231, 0.92);
+  border-style: dashed;
+  border-color: rgba(145, 105, 42, 0.62);
+  border-radius: 14px;
+  background: rgba(255, 251, 231, 0.88);
   box-shadow:
-    0 4px 10px rgba(31, 56, 48, 0.18),
-    inset 0 -3px 0 rgba(190, 143, 50, 0.16);
+    0 2px 6px rgba(60, 40, 20, 0.14),
+    inset 0 -2px 0 rgba(190, 143, 50, 0.18);
+  transform: rotate(-0.8deg);
+}
+
+.sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button:nth-child(even) {
+  /* 互い違いに微回転で「貼り付けた感」 を強調 */
+  transform: rotate(0.9deg);
 }
 
 .sticker-tutorial-card.is-page-inscribed #stickerTutorialNext {
-  min-width: 86px;
+  /* 「つぎ」 は山吹色で明示的に強調 (主要動線) */
+  min-width: clamp(72px, 8vw, 92px);
   background: linear-gradient(180deg, #ffeeb9, #ffc75f);
-  border-color: rgba(177, 119, 34, 0.56);
+  border-color: rgba(177, 119, 34, 0.72);
+  border-style: solid;
+  font-weight: 800;
 }
 
 .sticker-tutorial-actions button:disabled {
@@ -3857,6 +3892,21 @@ body.is-sticker-tutorial-phase-complete .sticker-tutorial-hand {
   display: none;
 }
 
+/* v1640 (task 3): place step demo の ghost / hand keyframe は 17.6s だが、
+   finishStickerTutorialDemoToTry が 11.4s で try phase に切替えるため、 残り 6.2s 間
+   ghost が「ポノが置いた残骸」 として浮かび続けて TRY 文言 + spotlight を潰す。
+   try / complete phase では ghost を完全非表示 + hand keyframe を停止して、
+   子供が「やってみよう！」 を視認 → 自分の指で操作する空間を確保する。 */
+body.is-sticker-tutorial-phase-try .sticker-tutorial-ghost,
+body.is-sticker-tutorial-phase-complete .sticker-tutorial-ghost {
+  display: none !important;
+}
+
+body.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-place .sticker-tutorial-hand,
+body.is-sticker-tutorial-phase-complete.is-sticker-tutorial-step-place .sticker-tutorial-hand {
+  animation: none !important;
+}
+
 body.is-sticker-tutorial-phase-demo .sticker-tutorial-spotlight {
   opacity: 0.55;
 }
@@ -3898,4 +3948,91 @@ body.is-sticker-tutorial-phase-complete .sticker-tutorial-spotlight {
   background: linear-gradient(180deg, #ffe4d4, #ffb583);
   border-color: rgba(180, 80, 30, 0.56);
   color: #4a1e0a;
+}
+
+/* v1640 (task 5): step 排他制御 — DEMO 中 / TRY 中の不正操作を物理ブロック。
+   - DEMO 中: 全 interactive 要素を pointer-events: none (副作用ゼロでポノの演示を見せる)
+   - TRY 中: 当該 step の対象操作のみ auto に解放 (例: scale step なら scale slider のみ)
+   - ナレ系ボタン (やめる/もういちど/やってみる/とばす/つぎ) は phase/step 問わず常時 auto
+   - canvas (#scene) は move/place step の TRY 中だけ auto (ドラッグ操作のため)
+   - 「とばす」 「やってみる」 の救済 UI を必ず押せるようにする (Risk-6 対策) */
+
+/* DEMO 中: 主要 interactive 要素を全ブロック (ナレ系は後段 override で auto) */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #scene,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topEditButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topThemeButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #collectionStickerTrayItems,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerScale,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerRotation,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerOk,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerDelete,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerClose,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #bookNextPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #bookPrevPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #albumModeToggle,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topSettingsButton {
+  pointer-events: none !important;
+}
+
+/* TRY 中の汎用ブロック: まず全部止めてから、 step ごとに必要要素を auto に戻す */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #scene,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topEditButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topThemeButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #collectionStickerTrayItems,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerScale,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerRotation,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerOk,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerDelete,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerClose,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #bookNextPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #bookPrevPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #albumModeToggle,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topSettingsButton {
+  pointer-events: none !important;
+}
+
+/* TRY 中 step 別 allowlist: 当該 step の操作要素を auto に戻す */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-mode #topEditButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-view #topEditButton {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-place #collectionStickerTrayItems,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-place #scene,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-move #scene {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-scale #inlineStickerScale {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-rotate #inlineStickerRotation {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-ok #inlineStickerOk {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-page #bookNextPage {
+  pointer-events: auto !important;
+}
+
+/* COMPLETE phase: 操作は終わっているので step に応じた要素のみ auto (移動した結果を見せる) */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete .sticker-tutorial-actions,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete .sticker-tutorial-actions button {
+  pointer-events: auto !important;
+}
+
+/* ナレ系ボタン: phase / step 問わず必ず押せる (常時 auto)。
+   Risk-6 対策: 排他制御で 「とばす」 自体が押せなくなる事故防止。 */
+body.is-sticker-tutorial-active #stickerTutorialSkip,
+body.is-sticker-tutorial-active #stickerTutorialReplay,
+body.is-sticker-tutorial-active #stickerTutorialDemoDo,
+body.is-sticker-tutorial-active #stickerTutorialStepSkip,
+body.is-sticker-tutorial-active #stickerTutorialNext,
+body.is-sticker-tutorial-active #stickerTutorialStartButton,
+body.is-sticker-tutorial-active #stickerTutorialStartSkip {
+  pointer-events: auto !important;
 }

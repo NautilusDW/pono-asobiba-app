@@ -3818,7 +3818,11 @@ function ensureStickerTutorialEditableSticker() {
       return placement;
     }
   }
-  const sticker = stickerOptions[0];
+  // v1640 (task 4): fallback も ✓ (stickerOptions[0] = quizland_good_stamp) ではなく
+  // チュートリアル正本シール (蝶々 or grant pasteId) を貼る。 ensureStickerTutorialEditableSticker
+  // は move/scale/rotate/ok step で「画面上に編集対象が無い時の最後の保険」 として呼ばれるため、
+  // 「貼ったのは ✓ なのに画面では蝶々のお話」 という素材ズレを根本回避。
+  const sticker = stickerTutorialPickSticker("try") || stickerOptions[0];
   if (!sticker) {
     return null;
   }
@@ -4309,7 +4313,9 @@ function animateStickerTutorialPlacement(duration, onFrame, onComplete) {
 }
 
 function addStickerFromTutorialDemoToPage() {
-  const sticker = stickerTutorialPickSticker() || stickerOptions[0];
+  // v1640 (task 4): DEMO 中の自動配置 helper (現在の v1637 では呼ばれないが保険的に維持)。
+  // phase は "demo" 扱い (= 蝶々固定) で素材ズレを防止。
+  const sticker = stickerTutorialPickSticker("demo") || stickerOptions[0];
   if (!sticker) {
     return;
   }
@@ -4473,6 +4479,14 @@ function setStickerTutorialPhase(phase) {
       }, tryMaxMs);
     }
   }
+  // v1640 (task 3/4): phase 切替時に tray silhouette + spotlight rect を再計算。
+  // - try 突入で DEMO 中の per-step デコイ強調 (place の蝶々ハイライト等) を確実に反映
+  // - spotlight CSS 変数を新 step / 新 phase に基づき再注入し、 残骸描画を防止
+  if (stickerTutorialState) {
+    updateStickerTutorialTraySilhouettes(true, false);
+    updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
+  }
+  scheduleStickerTutorialLayout();
 }
 
 function clearStickerTutorialTryTimeout() {
@@ -4764,6 +4778,16 @@ function updateStickerTutorialLayout() {
     stickerTutorial.style.setProperty("--tutorial-leftpage-y", `${textTop}px`);
     stickerTutorial.style.setProperty("--tutorial-leftpage-w", `${textWidth}px`);
     stickerTutorial.style.setProperty("--tutorial-leftpage-h", `${textHeight}px`);
+    // v1640 (task 2): 操作ボタン群を 「画面下端中央固定」 → 「左ページ下部 overlay (テキストの真下)」 に移動。
+    // ページめくり時もテキスト+ボタンが一体で追従する。 縦位置はページ高さ 78% から、 横幅は 90% 中央寄せ。
+    const btnTop = leftPageRect.top + leftPageRect.height * 0.78;
+    const btnHeight = leftPageRect.height * 0.18;
+    const btnLeft = leftPageRect.left + leftPageRect.width * 0.05;
+    const btnWidth = leftPageRect.width * 0.90;
+    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-x", `${btnLeft}px`);
+    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-y", `${btnTop}px`);
+    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-w", `${btnWidth}px`);
+    stickerTutorial.style.setProperty("--tutorial-leftpage-btn-h", `${btnHeight}px`);
   }
   updateStickerTutorialDemo(step, rect);
 }
@@ -5082,13 +5106,21 @@ function stickerTutorialScreenPointForPlacement(placement, point = placement) {
 }
 
 function firstVisibleStickerAssetForTutorial() {
-  const sticker = stickerTutorialPickSticker() || stickerOptions[0];
+  // v1640 (task 4): ghost 画像 (DEMO 中に「ここに置くよ」 と見せる残像) は必ず DEMO 素材 (蝶々) を使う。
+  // pasteId が ✓ だと ghost が ✓ になり 「お手本」 と誤解される事故を防止。
+  const sticker = stickerTutorialPickSticker("demo") || stickerOptions[0];
   return sticker?.assetUrl || "";
 }
 
-function stickerTutorialPickSticker() {
-  // [追加] grant 動線から渡された pasteId を最優先
-  if (requestedPasteStickerId) {
+function stickerTutorialPickSticker(phase) {
+  // v1640 (task 4): phase を引数化 (default は現在の phase)。
+  // - "demo" / 既定: 必ず STICKER_TUTORIAL_PICK_STICKER_IDS (蝶々) 固定。
+  //   pasteId が ✓ (quizland_good_stamp_layer_14) の時に DEMO が ✓ にハイライトされて
+  //   「これがお手本」 と誤解させる事故を構造的に防ぐ。
+  // - "try": pasteId を最優先 (grant 動線で「いま渡されたシール」 を実際に貼って試させる)。
+  // 後方互換: 既存 callsite (引数なし) は phase undefined → "demo" 扱い = 蝶々固定。
+  const effectivePhase = phase || stickerTutorialState?.phase || "demo";
+  if (effectivePhase === "try" && requestedPasteStickerId) {
     const requested = stickerOptions.find((item) => item.id === requestedPasteStickerId);
     if (requested) return requested;
     // catalog 未マッチ / load race の場合は既存 fallback chain に落とす
