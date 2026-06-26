@@ -354,7 +354,7 @@
         drop-shadow(0 3px 3px rgba(20, 10, 0, 0.6))
         drop-shadow(0 6px 10px rgba(20, 10, 0, 0.8));
     }
-    .game-card:active { transform: scale(0.985); }
+    .game-card:active { transform: none; }
     /* "Selected" used to add a yellow halo + swap the play button to a
        different PNG, which made the top card look different from the rest.
        The user wants all 4 cards to read identically — keep the class for
@@ -977,8 +977,8 @@
       filter: brightness(1.04) drop-shadow(0 12px 18px rgba(48, 27, 10, 0.28));
     }
     .daily-gacha-entry:active {
-      transform: translateY(3px);
-      filter: brightness(.98) drop-shadow(0 5px 9px rgba(48, 27, 10, 0.2));
+      transform: none;
+      filter: drop-shadow(0 10px 16px rgba(48, 27, 10, 0.24));
     }
     .daily-gacha-entry:focus-visible {
       outline: 3px solid rgba(255, 250, 210, 0.95);
@@ -3690,7 +3690,6 @@
       touch-action: manipulation;
     }
     .daily-quest-info-banner[hidden] { display: none; }
-    .daily-quest-info-banner:active { transform: translateY(2px); filter: drop-shadow(0 4px 8px rgba(48, 27, 10, 0.18)); }
     .daily-quest-info-banner:focus-visible { outline: 3px solid #ffd34d; outline-offset: 3px; }
     .daily-quest-info-banner__title {
       position: absolute;
@@ -3941,13 +3940,6 @@
         0 13px 24px rgba(42, 24, 8, .26),
         inset 0 2px 0 rgba(255,255,255,.8);
     }
-    .book-unlock-entry:active {
-      transform: translateY(3px);
-      box-shadow:
-        0 2px 0 rgba(120, 74, 23, .42),
-        0 6px 14px rgba(42, 24, 8, .2),
-        inset 0 2px 0 rgba(255,255,255,.7);
-    }
     .book-unlock-entry:focus-visible,
     .daily-quest-info-banner:focus-visible,
     .daily-gacha-entry:focus-visible,
@@ -4042,7 +4034,6 @@
     }
     .daily-quest-info-banner[hidden] { display: none; }
     .daily-quest-info-banner:hover { filter: brightness(1.03) drop-shadow(0 9px 14px rgba(48, 27, 10, .2)); }
-    .daily-quest-info-banner:active { transform: translateY(2px); filter: drop-shadow(0 4px 8px rgba(48, 27, 10, .16)); }
     .daily-quest-info-banner__title {
       position: static;
       width: auto;
@@ -4110,6 +4101,10 @@
       filter: drop-shadow(0 10px 16px rgba(48, 27, 10, .24));
     }
     .daily-gacha-entry.is-visible { display: inline-flex; }
+    .daily-gacha-entry:active {
+      transform: none;
+      filter: drop-shadow(0 10px 16px rgba(48, 27, 10, .24));
+    }
     .cards-col {
       padding-top: 86px;
       padding-bottom: 120px;
@@ -4219,12 +4214,6 @@
         0 3px 0 rgba(100, 60, 20, .34);
     }
     .bn-item:hover { filter: brightness(1.04); }
-    .bn-item:active {
-      transform: translateY(2px);
-      box-shadow:
-        inset 0 2px 0 rgba(255,255,255,.68),
-        0 1px 0 rgba(100, 60, 20, .34);
-    }
     .bn-item__icon {
       font-size: 29px;
       line-height: 1;
@@ -4263,7 +4252,6 @@
       cursor: pointer;
       box-shadow: 0 2px 0 rgba(171, 104, 54, .16);
     }
-    .settings-action:active { transform: translateY(2px); box-shadow: none; }
     .settings-action:disabled { opacity: .68; cursor: progress; }
     .settings-action__icon {
       flex: 0 0 38px;
@@ -5034,7 +5022,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1619;
+    const PAGE_CACHE_VERSION = 1620;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Reference-style title menu: the first screen intentionally shows four
@@ -5402,33 +5390,6 @@
 
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
-    const BOTTOM_NAV_PRESS_AREAS = [
-      { left: '0%', right: '25%' },
-      { left: '25%', right: '50%' },
-      { left: '50%', right: '75%' },
-      { left: '75%', right: '100%' }
-    ];
-    function clearBottomNavPressed() {
-      bottomNav.querySelectorAll('.bn-item.is-pressed').forEach((btn) => btn.classList.remove('is-pressed'));
-      bottomNav.style.setProperty('--press-opacity', '0');
-    }
-    bottomNav.addEventListener('pointerdown', (e) => {
-      const btn = e.target.closest('.bn-item');
-      if (!btn) return;
-      clearBottomNavPressed();
-      btn.classList.add('is-pressed');
-      const buttons = Array.from(bottomNav.querySelectorAll('.bn-item'));
-      const idx = buttons.indexOf(btn);
-      const area = BOTTOM_NAV_PRESS_AREAS[idx];
-      if (area) {
-        bottomNav.style.setProperty('--press-left', area.left);
-        bottomNav.style.setProperty('--press-right', area.right);
-        bottomNav.style.setProperty('--press-opacity', '1');
-      }
-    });
-    bottomNav.addEventListener('pointerleave', clearBottomNavPressed);
-    document.addEventListener('pointerup', clearBottomNavPressed);
-    document.addEventListener('pointercancel', clearBottomNavPressed);
     const THREE_STICKER_BOOK_URL = 'Prototypes/StickerBookThreeJS/?book=boy&surface=cover';
 
     bottomNav.addEventListener('click', (e) => {
