@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1674: シールのおみせ開店案内に Gemini TTS 音声2本と音声タイミング字幕を追加。play.html PAGE_CACHE_VERSION と同期。
 // v1672: タイトル画面 acorn badge を bottom-nav 内移設 + card-list 上方拡張 + blur fade + dots 撤去 + scroll-hint 復活
 // v1671: LP リロード修正 Round 2 — bfcache + beforeunload キャンセルケースで isNavigating reset 追加 (common/sw-update.js)。 pageshow リスナーで bfcache 復元時に isNavigating=false を強制リセット (back button 経由で LP に戻った後の click 沈黙バグ防止)。 beforeunload/pagehide 時に scheduleNavigationReset() を発火し、 user が 「Stay」 を選んだ場合も 5 秒で stuck 状態を解除。 既存 POINTER_GUARD_MS / RELOAD_DEADLINE_MS / refreshing flag は無改変。
 // v1670: LP「すぐあそぶ」 リロードバグ修正 (sw-update.js navigation guard + index.html click retry) — controllerchange/sw-updated 経路の safeReload に isNavigating ガード (beforeunload + pagehide 検知) を追加し、 deploy 直後の navigation 中 reload が pending request をキャンセルして LP に戻る race を遮断。 index.html 「すぐあそぶ」 ボタンに HEAD 生存確認 + 400ms wait の 2 回 retry click handler を追加し、 仮に SW reload と競合しても最終的に play.html 遷移が成立するよう多層防御。 play.html PAGE_CACHE_VERSION と同期。
@@ -285,6 +286,7 @@
 // v1662: フクロウ博士のなぞなぞ — かずのじゅん問題の数字表示を1600x900ステージ基準の固定サイズにし、4:3/16:9でのサイズ揺れを解消。
 // v1663: シールのおみせの吹き出し再作成と上部ボタン小型化を反映。
 // v1664: フクロウはかせの結果画面は正解数コピーをやめ、どんぐり数のポップ演出を表示。
+// v1674: シールのおみせ開店案内に Gemini TTS 音声2本と音声タイミング字幕を追加。play.html PAGE_CACHE_VERSION と同期。
 // v1672: シールのおみせ — リス吹き出しを左寄せし、初回来店/再訪問の開店セリフと字幕案内を追加。play.html PAGE_CACHE_VERSION と同期。
 // v1672: セーブデータ JSON エクスポート/インポート機能追加 (common/data-export.js 新規) + ヘルプ文言書き直し (help.html L185-186 Q&A 全面改稿 + データ管理セクション追加) + play.html 修正 (settingsModal 内に data 管理エントリ + tap-intro に「以前あそんだことがある方はこちら →」リンク + data-export.js script tag)。 sw.js は network-first 単独構成 (precache list 不在) のため CACHE_VERSION bump のみで配信。 セキュリティ層 4 段防御 (Object.create(null) sanitize / __proto__ 等の forbidden key / value string-only / tier/unlocked/admin denylist) で tier 詐欺を遮断。
 // v1669: reduced-motion 静的 chevron CSS specificity 修正 (.scroll-hint.scroll-hint--down で L4677 global hide を上書き)
@@ -292,7 +294,7 @@
 // v1667: タイトル画面 a11y/UX 修正 — card-dots 狭幅 hide (max-width:640px) + SR aria-live 200ms debounce + auto-scroll hint 発火 1600→2200ms + reduced-motion 時 ↓ chevron 静的表示 + cooking タイトル <wbr> 折返し対応 (game-title-accent--cooking 色追加)。play.html PAGE_CACHE_VERSION と同期。
 // v1666: タイトル画面 メニュー再構成 (puzzle↔bento swap + writing-mori/cooking coming-soon 追加) + ピーク戦略 (5 枚目 38% reveal) + auto-scroll hint + ドットインジケータ
 // v1665: タイトル画面 game-card peek hover regression 修正 (desktop 限定 + a11y 対応)。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1673;
+const CACHE_VERSION = 1674;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
