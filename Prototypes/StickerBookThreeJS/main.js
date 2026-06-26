@@ -3806,17 +3806,27 @@ function startStickerTutorialPlaceDemo() {
   setStickerTrayPeek(true);
   updateStickerTutorialTraySilhouettes(true, true);
   document.body.classList.add("is-sticker-tutorial-combo-place");
-  stickerTutorialDemoBaseScroll = collectionStickerTrayItems.scrollLeft;
   stickerTutorialDemoStartTime = performance.now();
   const maxScroll = Math.max(0, collectionStickerTrayItems.scrollWidth - collectionStickerTrayItems.clientWidth);
+  const clientWidth = collectionStickerTrayItems.clientWidth;
   const targetButton = stickerTutorialTargetTrayButton();
   const targetScroll = targetButton
     ? THREE.MathUtils.clamp(
-      targetButton.offsetLeft + targetButton.offsetWidth / 2 - collectionStickerTrayItems.clientWidth / 2,
+      targetButton.offsetLeft + targetButton.offsetWidth / 2 - clientWidth / 2,
       0,
       maxScroll,
     )
-    : Math.min(maxScroll, stickerTutorialDemoBaseScroll + Math.min(420, Math.max(180, maxScroll * 0.36)));
+    : Math.min(maxScroll, collectionStickerTrayItems.scrollLeft + Math.min(420, Math.max(180, maxScroll * 0.36)));
+  // v1624: base を targetScroll より大きく左にプリセット = 「画面が右から大きく流れて蝶々で止まる」 演出。
+  // 旧仕様は scrollLeft 現在値 (通常 0) を base にしていたため、 蝶々が tray 前方にあると totalDistance ≒ 0-420px
+  // しかなく 「全然スライドしてない」 印象に。 desiredTravel を min(maxScroll, max(700px, viewport90%)) で強制。
+  const desiredTravel = Math.min(maxScroll, Math.max(700, clientWidth * 0.9));
+  const adjustedBase = THREE.MathUtils.clamp(targetScroll - desiredTravel, 0, maxScroll);
+  // programmatic scroll 抑制中に一瞬で base 位置へジャンプ (listener 抑制は run() 内 stickerTutorialProgrammaticTrayScroll で行う)
+  stickerTutorialProgrammaticTrayScroll = true;
+  stickerTutorialProgrammaticTrayScrollUntil = performance.now() + 200;
+  collectionStickerTrayItems.scrollLeft = adjustedBase;
+  stickerTutorialDemoBaseScroll = adjustedBase;
   const totalDistance = THREE.MathUtils.clamp(targetScroll - stickerTutorialDemoBaseScroll, 0, maxScroll);
   if (totalDistance > 0) {
     document.body.classList.add("is-sticker-tutorial-linked-scroll");
@@ -3862,17 +3872,24 @@ function startStickerTutorialPlaceDemo() {
       setStickerTutorialHandKey("grip");
     }
   }, 8400);
+  // v1624: open 切替を 11300ms (64.20% / hover 直前) → 13350ms (75.85% / drop press 「ぐっ」) に移動。
+  // 旧タイミングは hover 到達直前で発火していたため、 hover→to (64.5%→73% = 1.50s) を真下に降ろす最中に
+  // 手だけ開く不整合 (「下がりながら手を開いてる」) が発生していた。 drop press と同期させて 「ぐっ → 開く →
+  // release lift (79%)」 の自然な所作に整える。
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id === "place") {
       setStickerTutorialHandKey("open");
     }
-  }, 11300);
+  }, 13350);
+  // v1624: シール配置も 11600ms → 13500ms (76.71%) に同期。 open 切替 (13350ms) の 150ms 後 = 「開いた手の下に
+  // シールが残る」 順序を維持。 release lift (79% = 13904ms) より前なので、 release lift で手だけ持ち上がりシール
+  // は page に残るという視覚整合も保たれる。
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
       return;
     }
     addStickerFromTutorialDemoToPage();
-  }, 11600);
+  }, 13500);
 }
 
 function startStickerTutorialMoveDemo() {
