@@ -1568,6 +1568,8 @@ const stickerTutorialCount = document.getElementById("stickerTutorialCount");
 const stickerTutorialSkip = document.getElementById("stickerTutorialSkip");
 const stickerTutorialReplay = document.getElementById("stickerTutorialReplay");
 const stickerTutorialNext = document.getElementById("stickerTutorialNext");
+const stickerTutorialDemoDo = document.getElementById("stickerTutorialDemoDo");      // v1637: demo 中の「やってみる」 早押し
+const stickerTutorialStepSkip = document.getElementById("stickerTutorialStepSkip");  // v1637: try 中 3 失敗 or 30s で表示
 
 const params = new URLSearchParams(window.location.search);
 const localPreviewHostnames = new Set(["", "localhost", "127.0.0.1", "::1"]);
@@ -1618,12 +1620,16 @@ hydrateBookThemeCards();
 slider.value = String(THREE.MathUtils.clamp(flipProgress, 0, 1));
 playButton.classList.toggle("playing", isPlaying);
 
+// v1637: チュートリアル 2 段階モーダル化。
+// 各 step は `textDemo` (ポノが見せるとき) と `textTry` (子供が操作するとき) を持つ。
+// intro / final は `textTry` を省略し旧来の demo → 「つぎ」 click 待ちを維持。
+// tryMaxMs は try フェーズ無操作タイムアウト (経過後 「とばす」 ボタンを自動表示)。
 const STICKER_TUTORIAL_STEPS = [
   {
     id: "intro",
     target: "book",
     card: "corner",
-    text: "これから シールちょうの\nあそびかたを おしえるね",
+    textDemo: "これから シールちょうの\nあそびかたを おしえるね",
     audio: "stickerbook_tut_00_intro.mp3",
     hand: "open",
     minAdvanceMs: 4200,
@@ -1632,96 +1638,125 @@ const STICKER_TUTORIAL_STEPS = [
     id: "mode",
     target: "editButton",
     card: "corner",
-    text: "ここを おして\nはるモードに するよ",
+    textDemo: "ポノが やって みせるね\nここを おすよ",
+    textTry: "やって みよう！\nここを おしてね",
     audio: "stickerbook_tut_01_mode.mp3",
     hand: "point",
     minAdvanceMs: 6000,
+    tryMaxMs: 30000,
     advanceOn: ["enterEdit"],
   },
   {
     id: "place",
     target: "trayItems",
     card: "corner",
-    text: "えらんで つかんで\nすきな ところに はろう",
+    textDemo: "ポノが やって みせるね\nえらんで すきな ところに はるよ",
+    textTry: "やって みよう！\nシールを えらんで はろう",
     audio: ["stickerbook_tut_02_find.mp3", "stickerbook_tut_03_pick.mp3", "stickerbook_tut_04_place.mp3"],
     hand: "point",
     ghost: true,
     playbackRate: 1.04,
     minAdvanceMs: 5000,
+    tryMaxMs: 30000,
     advanceOn: ["dropSticker"],
   },
   {
     id: "move",
     target: "selectedSticker",
     card: "corner",
-    text: "はった あとも\nうごかせるよ",
+    textDemo: "ポノが やって みせるね\nはった あとも うごかせるよ",
+    textTry: "やって みよう！\nシールを うごかしてね",
     audio: "stickerbook_tut_05_move.mp3",
     hand: "grip",
     minAdvanceMs: 4500,
+    tryMaxMs: 30000,
     advanceOn: ["moveSticker"],
   },
   {
     id: "scale",
     target: "scaleControl",
     card: "corner",
-    text: "バーで\nおおきさを かえるよ",
+    textDemo: "ポノが やって みせるね\nバーで おおきさを かえるよ",
+    textTry: "やって みよう！\nバーで おおきさを かえてね",
     audio: "stickerbook_tut_06_scale.mp3",
     hand: "point",
     playbackRate: 1.12,
     minAdvanceMs: 5000,
+    tryMaxMs: 30000,
     advanceOn: ["scaleSticker"],
   },
   {
     id: "rotate",
     target: "rotationControl",
     card: "corner",
-    text: "バーで\nむきを かえるよ",
+    textDemo: "ポノが やって みせるね\nバーで むきを かえるよ",
+    textTry: "やって みよう！\nバーで むきを かえてね",
     audio: "stickerbook_tut_07_rotate.mp3",
     hand: "point",
     minAdvanceMs: 4500,
+    tryMaxMs: 30000,
     advanceOn: ["rotateSticker"],
   },
   {
     id: "ok",
     target: "okButton",
     card: "corner",
-    text: "OKで\nきまり",
+    textDemo: "ポノが やって みせるね\nOKで きまり",
+    textTry: "やって みよう！\nOKを おしてね",
     audio: "stickerbook_tut_08_ok.mp3",
     hand: "point",
     minAdvanceMs: 4000,
+    tryMaxMs: 30000,
     advanceOn: ["confirmSticker"],
   },
   {
     id: "page",
     target: "nextPageButton",
     card: "corner",
-    text: "ページも\nめくれるよ",
+    textDemo: "ポノが やって みせるね\nページも めくれるよ",
+    textTry: "やって みよう！\nつぎの ページに めくってね",
     audio: ["stickerbook_tut_11_page.mp3"],
     hand: "point",
     minAdvanceMs: 4500,
+    tryMaxMs: 30000,
     advanceOn: ["pageTurn"],
   },
   {
     id: "view",
     target: "editButton",
     card: "corner",
-    text: "みるときは\nみるモード",
+    textDemo: "ポノが やって みせるね\nみるときは みるモード",
+    textTry: "やって みよう！\nここを おして みるモードに してね",
     audio: "stickerbook_tut_09_view.mp3",
     hand: "point",
     minAdvanceMs: 4500,
+    tryMaxMs: 30000,
     advanceOn: ["exitEdit"],
   },
   {
     id: "final",
     target: "book",
     card: "corner",
-    text: "すきな シールちょうを\nつくろう",
+    textDemo: "すきな シールちょうを\nつくろう",
     audio: "stickerbook_tut_10_final.mp3",
     hand: "open",
     minAdvanceMs: 6500,
     finish: true,
   },
 ];
+
+// v1637: try phase 中の「明らかな間違い操作」 定義。 該当 action が notify されたら failCount++。
+// 3 回到達で 「とばす」 ボタンを表示 (子供がスタックしない救済)。
+const STICKER_TUTORIAL_STEP_WRONG_ACTIONS = {
+  mode:   ["exitEdit"],
+  place:  ["selectSticker", "trayScroll", "enterEdit", "exitEdit"],
+  move:   ["scaleSticker", "rotateSticker", "confirmSticker", "exitEdit"],
+  scale:  ["rotateSticker", "moveSticker", "confirmSticker"],
+  rotate: ["scaleSticker", "moveSticker", "confirmSticker"],
+  ok:     ["moveSticker", "scaleSticker", "rotateSticker"],
+  page:   ["enterEdit", "exitEdit"],
+  view:   ["enterEdit", "pageTurn"],
+};
 
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v9";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
@@ -2053,6 +2088,7 @@ let stickerTutorialDemoFrame = 0;
 let stickerTutorialDemoStartTime = 0;
 let stickerTutorialDemoBaseScroll = 0;
 let stickerTutorialDemoTimers = [];
+let stickerTutorialTryTimeoutTimer = 0;          // v1637: try phase の無操作タイムアウト用 (setTimeout id)
 let stickerTutorialDragPageTurnTimer = 0;
 let stickerTutorialDragPageTurnDirection = 0;
 let stickerTutorialProgrammaticTrayScroll = false;
@@ -3378,10 +3414,52 @@ function setupStickerTutorial() {
   stickerTutorialStartButton?.addEventListener("click", () => beginStickerTutorialSteps());
   stickerTutorialSkip?.addEventListener("click", () => finishStickerTutorial({ markSeen: true }));
   stickerTutorialReplay?.addEventListener("click", () => {
+    // v1637: complete 状態でも push → demo phase に戻して再演示。 actionDone をリセットしないと
+    // 「もういちど」 押下後すぐに try に入っても advanceOn 判定が「既に正解済」 で弾かれる。
     const step = currentStickerTutorialStep();
-    if (step) {
-      playStickerTutorialAudio(step);
+    if (!step || !stickerTutorialState) {
+      return;
     }
+    stopStickerTutorialStepDemo();
+    setStickerTutorialPhase("demo");
+    stickerTutorialState.actionDone = false;
+    stickerTutorialState.failCount = 0;
+    stickerTutorialState.skipShown = false;
+    hideStickerTutorialStepSkipButton();
+    if (stickerTutorialNext) {
+      stickerTutorialNext.classList.remove("is-ready-pulse");
+    }
+    stickerTutorialState.stepStartedAt = performance.now();
+    if (stickerTutorialText) {
+      stickerTutorialText.textContent = step.textDemo || step.text || "";
+    }
+    updateStickerTutorialNextAvailability(step);
+    startStickerTutorialStepDemo(step);
+    playStickerTutorialAudio(step);
+  });
+  stickerTutorialDemoDo?.addEventListener("click", () => {
+    // v1637: demo 中の早押し → 残 timer 全停止し try フェーズに即移行。
+    if (!stickerTutorialState || stickerTutorialState.phase !== "demo") {
+      return;
+    }
+    const step = currentStickerTutorialStep();
+    if (!step || step.finish || !step.textTry) {
+      return;
+    }
+    stopStickerTutorialStepDemo();
+    setStickerTutorialPhase("try");
+  });
+  stickerTutorialStepSkip?.addEventListener("click", () => {
+    // v1637: 「とばす」 → 次 step へ。 markSeen は触らない (チュートリアル全体は続行)。
+    if (!stickerTutorialState) {
+      return;
+    }
+    const step = currentStickerTutorialStep();
+    if (step?.finish) {
+      finishStickerTutorial({ markSeen: true });
+      return;
+    }
+    showStickerTutorialStep(stickerTutorialState.index + 1);
   });
   stickerTutorialNext?.addEventListener("click", () => {
     if (!stickerTutorialState) {
@@ -3446,6 +3524,9 @@ function startStickerTutorial(options = {}) {
     actionDone: false,
     intro: true,
     editorSnapshot: null,
+    phase: "demo",        // v1637: "demo" | "try" | "complete"
+    failCount: 0,         // v1637: try 中の誤操作カウンタ (step 切替で 0 リセット)
+    skipShown: false,     // v1637: 「とばす」 ボタン visible 化済みフラグ
   };
   enterStickerTutorialCleanAlbum();
   stickerTutorial.hidden = false;
@@ -3457,6 +3538,9 @@ function finishStickerTutorial(options = {}) {
   if (!stickerTutorialState && stickerTutorial?.hidden) {
     return;
   }
+  // v1637: try タイムアウト + skip ボタンを必ず片付ける (phase class も後段 classList.remove で除去)。
+  clearStickerTutorialTryTimeout();
+  hideStickerTutorialStepSkipButton();
   stopStickerTutorialAudio();
   stopStickerTutorialStepDemo();
   restoreStickerTutorialCleanAlbum();
@@ -3486,6 +3570,9 @@ function finishStickerTutorial(options = {}) {
     "is-sticker-tutorial-intro",
     "is-sticker-tutorial-linked-scroll",
     "is-sticker-tutorial-tray-silhouette",
+    "is-sticker-tutorial-phase-demo",
+    "is-sticker-tutorial-phase-try",
+    "is-sticker-tutorial-phase-complete",
   );
   updateStickerTutorialTraySilhouettes(false);
   updateRaritySuperSilhouettes(false);
@@ -3619,6 +3706,11 @@ function showStickerTutorialStep(index, options = {}) {
   stickerTutorialState.actionDone = false;
   stickerTutorialState.intro = false;
   stickerTutorialState.stepStartedAt = performance.now();
+  // v1637: step 切替時は必ず failCount / skipShown を 0 リセット (累積で skip が早く出すぎる事故防止)。
+  stickerTutorialState.failCount = 0;
+  stickerTutorialState.skipShown = false;
+  hideStickerTutorialStepSkipButton();
+  setStickerTutorialPhase("demo");
   const step = currentStickerTutorialStep();
   if (!step) {
     finishStickerTutorial({ markSeen: true });
@@ -3626,7 +3718,8 @@ function showStickerTutorialStep(index, options = {}) {
   }
   prepareStickerTutorialStep(step);
   if (stickerTutorialText) {
-    stickerTutorialText.textContent = step.text;
+    // v1637: phase=demo 開始時は必ず textDemo を表示 (旧 step.text フォールバック維持)。
+    stickerTutorialText.textContent = step.textDemo || step.text || "";
   }
   if (stickerTutorialCount) {
     stickerTutorialCount.textContent = `${clampedIndex + 1} / ${STICKER_TUTORIAL_STEPS.length}`;
@@ -3772,7 +3865,9 @@ function startStickerTutorialStepDemo(step) {
 }
 
 function startStickerTutorialModeDemo() {
-  // Phase 0 (0-1100ms): open hand を book 右下 rest 位置にフェードイン + 呼吸
+  // v1637: 操作型化 — 自動 press は 1 回のみ「演示」 し、 最後に setPhase("try") で子供にバトンタッチ。
+  // 旧 3 連 press (絶対 2400/3850/5250ms) は削除。 演示後 はるモードに入った状態のまま try フェーズに移行する
+  // (place step が editMode 前提のため、 視覚状態は保持)。
   document.body.classList.add("is-sticker-tutorial-mode-demo");
   document.body.classList.add("is-sticker-tutorial-mode-rest");
   // Phase 1 (1100-2000ms): rest → editButton から手前へ approach (open のまま)
@@ -3786,21 +3881,37 @@ function startStickerTutorialModeDemo() {
     document.body.classList.remove("is-sticker-tutorial-mode-approach");
     document.body.classList.add("is-sticker-tutorial-mode-press");
   }, 2000);
-  // Phase 3: 押下 3 回 (Phase 2 開始基準 +400/+1850/+3250 = 絶対 2400/3850/5250ms)
-  // 各 press 直前に setStickerTutorialHandKey("point") を再保証して、
-  // updateStickerTutorialDemo の重複発火で open に戻されても確実に point で押す
+  // Phase 3 (2400ms): 1 回だけ press して「ここを押すと変わる」 ことを見せる (notify は飛ばさない)。
+  // press 後は state を元に戻すため、 すぐに exit (notify false) を 1 回叩いて初期 (= みるモード) に復帰させる。
   addStickerTutorialDemoTimer(() => {
     setStickerTutorialHandKey("point");
     triggerStickerTutorialEditButtonPress({ targetMode: true, notify: false });
   }, 2400);
+  // Phase 4 (3850ms): demo 完了 → みるモード に戻して (notify false)、 setPhase("try") で子供に渡す。
   addStickerTutorialDemoTimer(() => {
     setStickerTutorialHandKey("point");
     triggerStickerTutorialEditButtonPress({ targetMode: false, notify: false });
   }, 3850);
+  // Phase 5 (5250ms): try フェーズ移行。
   addStickerTutorialDemoTimer(() => {
-    setStickerTutorialHandKey("point");
-    triggerStickerTutorialEditButtonPress({ targetMode: true, notify: true });
+    finishStickerTutorialDemoToTry();
   }, 5250);
+}
+
+// v1637: demo 完了時に try フェーズへ遷移する共通 helper (intro / final は textTry が無いので complete へ直行)。
+function finishStickerTutorialDemoToTry() {
+  const step = currentStickerTutorialStep();
+  if (!stickerTutorialState || !step) {
+    return;
+  }
+  if (stickerTutorialState.phase !== "demo") {
+    return;
+  }
+  if (step.finish || !step.textTry) {
+    setStickerTutorialPhase("complete");
+    return;
+  }
+  setStickerTutorialPhase("try");
 }
 
 function triggerStickerTutorialEditButtonPress(options = {}) {
@@ -3936,12 +4047,11 @@ function startStickerTutorialPlaceDemo() {
   // CSS release lift (72.5% = 12760ms) より前 = 視覚整合維持。
   // v1629: 「手が静止 = パッと離す = 同時にシールが貼られる」 を体感最優先するため +150ms オフセットを廃止、 +24ms (≒同フレーム) に短縮。
   // addSticker 12350 → 11200ms (open +24ms)。 CSS release lift (64.5% = 11352ms) より +152ms 前 = 視覚整合維持 (open → addSticker → release lift の順序不変)。
+  // v1637: 操作型化 — 旧 addStickerFromTutorialDemoToPage の自動配置を削除。
+  // hand grip ジェスチャだけ見せて、 実 sticker 配置は子供のドラッグに任せる。
   addStickerTutorialDemoTimer(() => {
-    if (currentStickerTutorialStep()?.id !== "place" || stickerTutorialState?.actionDone) {
-      return;
-    }
-    addStickerFromTutorialDemoToPage();
-  }, 11200);
+    finishStickerTutorialDemoToTry();
+  }, 11400);
 }
 
 function startStickerTutorialMoveDemo() {
@@ -3968,6 +4078,8 @@ function startStickerTutorialMoveDemo() {
     y: THREE.MathUtils.clamp(point.y, 12, 84),
   }));
   stickerTutorialSuppressedDemoActions.add("moveSticker");
+  // v1637: 操作型化 — demo 終了後は placement を元位置に戻して try フェーズへ。
+  // 「ポノが触ったあと」 を残さないことで、 子供が「自分で動かす」 体験を妨げない。
   animateStickerTutorialPlacement(5600, (progress) => {
     const point = interpolateStickerTutorialPath(path, progress);
     placement.x = point.x;
@@ -3975,13 +4087,12 @@ function startStickerTutorialMoveDemo() {
     setStickerTutorialHandPoint(stickerTutorialScreenPointForPlacement(placement, point));
     refreshInlineStickerPage();
   }, () => {
-    const finalPoint = path[path.length - 1];
-    placement.x = finalPoint.x;
-    placement.y = finalPoint.y;
-    setStickerTutorialHandPoint(stickerTutorialScreenPointForPlacement(placement, finalPoint));
+    placement.x = originalX;
+    placement.y = originalY;
+    setStickerTutorialHandPoint(stickerTutorialScreenPointForPlacement(placement, { x: originalX, y: originalY }));
     refreshInlineStickerPage();
     stickerTutorialSuppressedDemoActions.delete("moveSticker");
-    notifyStickerTutorialAction("moveSticker");
+    finishStickerTutorialDemoToTry();
   });
 }
 
@@ -4010,6 +4121,7 @@ function startStickerTutorialScaleDemo() {
   const centerY = rect.top + rect.height / 2;
   const xFor = (s) => inputLeft + thumbR + usableW * THREE.MathUtils.clamp((s - sliderMin) / sliderRange, 0, 1);
   stickerTutorialSuppressedDemoActions.add("scaleSticker");
+  // v1637: 操作型化 — demo 終了後は scale を元に戻して try フェーズへ。
   animateStickerTutorialPlacement(9300, (progress) => {
     let scale;
     if (progress < 0.24) {
@@ -4033,8 +4145,14 @@ function startStickerTutorialScaleDemo() {
     }
     refreshInlineStickerPage();
   }, () => {
+    placement.scale = startScale;
+    if (inlineStickerScale) {
+      inlineStickerScale.value = startScale.toFixed(2);
+    }
+    setStickerTutorialHandPoint({ x: xFor(startScale), y: centerY });
+    refreshInlineStickerPage();
     stickerTutorialSuppressedDemoActions.delete("scaleSticker");
-    notifyStickerTutorialAction("scaleSticker");
+    finishStickerTutorialDemoToTry();
   });
 }
 
@@ -4064,6 +4182,7 @@ function startStickerTutorialRotateDemo() {
   const centerY = rect.top + rect.height / 2;
   const xFor = (r) => inputLeft + thumbR + usableW * THREE.MathUtils.clamp((r - sliderMin) / sliderRange, 0, 1);
   stickerTutorialSuppressedDemoActions.add("rotateSticker");
+  // v1637: 操作型化 — demo 終了後は rotation を元に戻して try フェーズへ。
   animateStickerTutorialPlacement(5200, (progress) => {
     let rotation;
     if (progress < 0.24) {
@@ -4088,8 +4207,14 @@ function startStickerTutorialRotateDemo() {
     }
     refreshInlineStickerPage();
   }, () => {
+    placement.rotation = baseRotation;
+    if (inlineStickerRotation) {
+      inlineStickerRotation.value = String(Math.round(baseRotation));
+    }
+    setStickerTutorialHandPoint({ x: xFor(baseRotation), y: centerY });
+    refreshInlineStickerPage();
     stickerTutorialSuppressedDemoActions.delete("rotateSticker");
-    notifyStickerTutorialAction("rotateSticker");
+    finishStickerTutorialDemoToTry();
   });
 }
 
@@ -4122,53 +4247,45 @@ function triggerStickerTutorialOkButtonPress() {
 }
 
 function startStickerTutorialOkDemo() {
-  // v1627: stickerTutorialOkPressDemo keyframe (3.0s, 1 回) と同期。
-  // keyframe 52% ≒ 1560ms で「指が OK ボタン中央に降りて押し込み」 = ボタン側 is-tutorial-pressing class add も
-  // 同タイミングに合わせる (元 3150ms は keyframe 終了後で「離れた場所で勝手にボタンが光った」 違和感を生んでいた)。
-  // class add から 140ms 後 (≒ 1700ms) に click → keyframe 60% (1800ms) の lift とほぼ同フレーム = 「押した瞬間に
-  // 手が離れ、 ボタン側演出も完了に向かう」 自然な所作。
+  // v1637: 操作型化 — 自動 click を削除。 ボタン側の is-tutorial-pressing class add だけで「押し込み」 を
+  // 視覚的に見せ、 実 click は子供に任せる。 keyframe 52% (1560ms) に合わせて class add → 360ms 後 remove。
   setStickerTutorialHandKey("point");
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "ok" || stickerTutorialState?.actionDone) {
       return;
     }
-    // v1627: keyframe 進行中に hand src が他 pose に流れていないか念のため再保証。
     setStickerTutorialHandKey("point");
-    triggerStickerTutorialOkButtonPress();
+    // 視覚的「指が降りて押し込み」 のみ実行。 inlineStickerOk?.click() は呼ばない。
+    if (inlineStickerOk && !inlineStickerOk.hidden) {
+      inlineStickerOk.classList.add("is-tutorial-pressing");
+      addStickerTutorialDemoTimer(() => {
+        inlineStickerOk?.classList.remove("is-tutorial-pressing");
+      }, 360);
+    }
   }, 1560);
+  // demo 完了 → try フェーズ。 keyframe 終了 (~3000ms) と OK 押し込み演出完了後に遷移。
+  addStickerTutorialDemoTimer(() => {
+    finishStickerTutorialDemoToTry();
+  }, 3200);
 }
 
 function startStickerTutorialPageDemo() {
-  // Phase A (0ms): 矢印ボタンをパルスハイライト
+  // v1637: 操作型化 — 矢印ボタンの spot ハイライトだけ見せ、 click は子供に任せる。
   if (bookNextPage) {
     bookNextPage.classList.add("is-tutorial-spotlit-arrow");
   }
-  // Phase B (~2400ms): ハイライト撤去
+  // Phase B (~2400ms): ハイライトはそのまま残す (try 中も spot 強調で「ここを押す」 と伝える)。
+  // 旧 4400ms の bookNextPage.click() は削除。 demo 完了 → try フェーズ。
   addStickerTutorialDemoTimer(() => {
-    bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
-  }, 2400);
-  // Phase C (~4400ms): 矢印 click 実行 (既存 click ハンドラが setBookPage + notify)
-  addStickerTutorialDemoTimer(() => {
-    if (currentStickerTutorialStep()?.id !== "page" || stickerTutorialState?.actionDone) {
-      return;
-    }
-    if (bookNextPage && !bookNextPage.disabled) {
-      bookNextPage.click();
-    } else {
-      // disabled fallback: 最終 spread 等で click 不発時の保険
-      setBookPage(activeBookPage + 2, { turnMode: "single" });
-      notifyStickerTutorialAction("pageTurn");
-    }
-  }, 4400);
+    finishStickerTutorialDemoToTry();
+  }, 2800);
 }
 
 function startStickerTutorialViewDemo() {
+  // v1637: 操作型化 — editButton の自動 click を削除。 demo 期間は hand cursor のみ見せて try フェーズへ。
   addStickerTutorialDemoTimer(() => {
-    if (currentStickerTutorialStep()?.id !== "view" || stickerTutorialState?.actionDone) {
-      return;
-    }
-    triggerStickerTutorialEditButtonPress({ targetMode: false, notify: true });
-  }, 3900);
+    finishStickerTutorialDemoToTry();
+  }, 3000);
 }
 
 function animateStickerTutorialPlacement(duration, onFrame, onComplete) {
@@ -4242,6 +4359,10 @@ function stopStickerTutorialStepDemo(options = {}) {
   topEditButton?.classList.remove("is-tutorial-pressing");
   inlineStickerOk?.classList.remove("is-tutorial-pressing");
   bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
+  // v1637: 「やってみる」 早押し helper も demo 停止と同期して消す。
+  if (stickerTutorialDemoDo) {
+    stickerTutorialDemoDo.hidden = true;
+  }
   // v1625: 次 step に遷移したら OK の last-rect cache をクリア (現 step が ok でない場合のみ)
   if (currentStickerTutorialStep()?.id !== "ok") {
     stickerTutorialLastOkRect = null;
@@ -4287,26 +4408,94 @@ function notifyStickerTutorialAction(action) {
   if (!stickerTutorialState || !step || step.finish || stickerTutorialState.actionDone) {
     return;
   }
-  const actions = Array.isArray(step.advanceOn) ? step.advanceOn : [];
-  if (!actions.includes(action)) {
+  // v1637: phase ゲート — demo 中の notify は無視 (子供がいじっても「先回り正解」 扱いしない)。
+  if (stickerTutorialState.phase === "demo") {
     return;
   }
-  // 自動 advance はしない (子供が「つぎ」 を押すまで待つ)。
-  // 代わりに「つぎ」 ボタンを即 enable + pulse 強調。
-  stickerTutorialState.actionDone = true;
-  updateStickerTutorialNextAvailability(step, { forceReady: true });
-  if (stickerTutorialNext) {
-    stickerTutorialNext.classList.add("is-ready-pulse");
-  }
-  // セーフティ: 15s 経っても「つぎ」 を押さない場合は自動 advance (迷子防止)
-  addStickerTutorialDemoTimer(() => {
-    if (
-      stickerTutorialState?.actionDone &&
-      currentStickerTutorialStep() === step
-    ) {
-      showStickerTutorialStep(stickerTutorialState.index + 1);
+  const actions = Array.isArray(step.advanceOn) ? step.advanceOn : [];
+  if (actions.includes(action)) {
+    // 正解 — try フェーズ完了 → complete + 「つぎ」 pulse。 自動 advance はしない (子供主導)。
+    stickerTutorialState.actionDone = true;
+    setStickerTutorialPhase("complete");
+    updateStickerTutorialNextAvailability(step, { forceReady: true });
+    if (stickerTutorialNext) {
+      stickerTutorialNext.classList.add("is-ready-pulse");
     }
-  }, 15000);
+    return;
+  }
+  // v1637: 操作型化に伴う「明らかな誤操作」 カウンタ。 3 回到達で「とばす」 ボタン表示。
+  // try フェーズのみカウント (complete 後は無視)。
+  if (stickerTutorialState.phase !== "try") {
+    return;
+  }
+  const wrongs = STICKER_TUTORIAL_STEP_WRONG_ACTIONS[step.id] || [];
+  if (!wrongs.includes(action)) {
+    return;
+  }
+  stickerTutorialState.failCount = (stickerTutorialState.failCount || 0) + 1;
+  if (stickerTutorialState.failCount >= 3 && !stickerTutorialState.skipShown) {
+    showStickerTutorialStepSkipButton();
+  }
+}
+
+// v1637: phase 切替 — body class + DOM 可視性 + try timeout タイマ管理を一元化。
+function setStickerTutorialPhase(phase) {
+  if (!stickerTutorialState) {
+    return;
+  }
+  stickerTutorialState.phase = phase;
+  document.body.classList.toggle("is-sticker-tutorial-phase-demo", phase === "demo");
+  document.body.classList.toggle("is-sticker-tutorial-phase-try", phase === "try");
+  document.body.classList.toggle("is-sticker-tutorial-phase-complete", phase === "complete");
+  // 「やってみる」 は demo 中かつ try フェーズに移行可能な step (textTry あり) のみ表示。
+  const step = currentStickerTutorialStep();
+  const canTry = Boolean(step && !step.finish && step.textTry);
+  if (stickerTutorialDemoDo) {
+    stickerTutorialDemoDo.hidden = !(phase === "demo" && canTry);
+  }
+  // try フェーズ突入時: テキストを textTry に差し替え + tryMaxMs タイムアウト起動。
+  clearStickerTutorialTryTimeout();
+  if (phase === "try") {
+    if (stickerTutorialText && step?.textTry) {
+      stickerTutorialText.textContent = step.textTry;
+    }
+    const tryMaxMs = Number(step?.tryMaxMs) || 30000;
+    if (tryMaxMs > 0) {
+      stickerTutorialTryTimeoutTimer = window.setTimeout(() => {
+        stickerTutorialTryTimeoutTimer = 0;
+        if (
+          stickerTutorialState?.phase === "try" &&
+          currentStickerTutorialStep() === step &&
+          !stickerTutorialState.skipShown
+        ) {
+          showStickerTutorialStepSkipButton();
+        }
+      }, tryMaxMs);
+    }
+  }
+}
+
+function clearStickerTutorialTryTimeout() {
+  if (stickerTutorialTryTimeoutTimer) {
+    window.clearTimeout(stickerTutorialTryTimeoutTimer);
+    stickerTutorialTryTimeoutTimer = 0;
+  }
+}
+
+function showStickerTutorialStepSkipButton() {
+  if (!stickerTutorialState) {
+    return;
+  }
+  stickerTutorialState.skipShown = true;
+  if (stickerTutorialStepSkip) {
+    stickerTutorialStepSkip.hidden = false;
+  }
+}
+
+function hideStickerTutorialStepSkipButton() {
+  if (stickerTutorialStepSkip) {
+    stickerTutorialStepSkip.hidden = true;
+  }
 }
 
 function stickerTutorialRemainingStepMs(step) {

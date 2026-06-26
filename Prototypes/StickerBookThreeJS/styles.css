@@ -3848,3 +3848,54 @@ body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-approach .sticker-tu
   60% { opacity: 1; transform: translateY(2px) scale(0.96); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* v1637: チュートリアル 2 段階モーダル化 (demo → try → complete)。
+   - hand cursor は demo phase のみ表示 (try / complete では子供の手に渡す)。
+   - spotlight は try phase で強調 pulse、 complete では穏やかに静止。 */
+body.is-sticker-tutorial-phase-try .sticker-tutorial-hand,
+body.is-sticker-tutorial-phase-complete .sticker-tutorial-hand {
+  display: none;
+}
+
+body.is-sticker-tutorial-phase-demo .sticker-tutorial-spotlight {
+  opacity: 0.55;
+}
+
+body.is-sticker-tutorial-phase-try .sticker-tutorial-spotlight {
+  opacity: 1;
+  animation: stickerTutorialSpotlightTryPulse 1.4s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-phase-complete .sticker-tutorial-spotlight {
+  opacity: 0.7;
+  animation: none;
+}
+
+@keyframes stickerTutorialSpotlightTryPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 6px rgba(255, 255, 255, 0.32),
+      0 0 32px rgba(255, 220, 84, 1),
+      0 0 72px rgba(255, 240, 150, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(255, 255, 255, 0.18),
+      0 0 48px rgba(255, 220, 84, 0.55),
+      0 0 96px rgba(255, 240, 150, 0.32);
+  }
+}
+
+/* 「やってみる」 (demo 早押し) と 「とばす」 (try 救済) は既存 .sticker-tutorial-actions button のスタイルを継承。
+   visibility は JS の hidden 属性で制御するため CSS 側は色差別化のみ。 */
+#stickerTutorialDemoDo {
+  background: linear-gradient(180deg, #d8efff, #8fc9f5);
+  border-color: rgba(40, 110, 165, 0.56);
+  color: #15384f;
+}
+
+#stickerTutorialStepSkip {
+  background: linear-gradient(180deg, #ffe4d4, #ffb583);
+  border-color: rgba(180, 80, 30, 0.56);
+  color: #4a1e0a;
+}
