@@ -2040,6 +2040,7 @@ let stickerTutorialDragPageTurnDirection = 0;
 let stickerTutorialProgrammaticTrayScroll = false;
 let stickerTutorialProgrammaticTrayScrollUntil = 0;
 let stickerTutorialSuppressModeNotify = false;
+let stickerTutorialLastOkRect = null;  // v1625: OK click 後 inlineStickerControls が hidden になっても黄枠が page rect に飛ばないよう直近を保持
 const stickerTutorialSuppressedDemoActions = new Set();
 let editorStateSaveTimer = 0;
 let editorStateDirty = false;
@@ -3946,33 +3947,35 @@ function startStickerTutorialScaleDemo() {
   setStickerTutorialHandKey("point");
   const step = currentStickerTutorialStep();
   const rect = stickerTutorialTargetRect(step);
-  const demo = stickerTutorialDemoPoints(step, rect);
-  const handFrom = demo.from;
-  const handTo = demo.to;
+  // v1625: scale 値 → 実 thumb fraction で直接 hand x を打つ (handProgress 概念廃止)。
+  // 「最初 (startScale=1.0) のフレームで hand が smallFrac に居て thumb と ~10% ズレる」 + 「settle phase で handProgress が固定値 0.42 → scale との不整合」 を構造的に解消。
+  // 加えて thumb 半径 (~8px) を考慮した usable track (input.left+thumbR ~ input.right-thumbR) 上の位置に補正。
+  const sliderMin = 0.35, sliderMax = 2.4, sliderRange = sliderMax - sliderMin;
+  const trackPad = 12;  // rect は expandedElementRect で 12px 外側に拡張済 → input 実 left = rect.left + trackPad
+  const thumbR = 8;     // ブラウザ既定 thumb 半径相当 (Chrome/Safari/Firefox で 6-10px、 中央値 8)
+  const inputLeft = rect.left + trackPad;
+  const inputW = Math.max(rect.width - trackPad * 2, 0);
+  const usableW = Math.max(inputW - thumbR * 2, 0);
+  const centerY = rect.top + rect.height / 2;
+  const xFor = (s) => inputLeft + thumbR + usableW * THREE.MathUtils.clamp((s - sliderMin) / sliderRange, 0, 1);
   stickerTutorialSuppressedDemoActions.add("scaleSticker");
   animateStickerTutorialPlacement(9300, (progress) => {
     let scale;
-    let handProgress;
     if (progress < 0.24) {
       const t = smootherstep(progress / 0.24);
       scale = THREE.MathUtils.lerp(startScale, largeScale, t);
-      handProgress = t;
     } else if (progress < 0.42) {
       scale = largeScale;
-      handProgress = 1;
     } else if (progress < 0.68) {
       const t = smootherstep((progress - 0.42) / 0.26);
       scale = THREE.MathUtils.lerp(largeScale, smallScale, t);
-      handProgress = 1 - t;
     } else if (progress < 0.84) {
       scale = smallScale;
-      handProgress = 0;
     } else {
       const t = smootherstep((progress - 0.84) / 0.16);
       scale = THREE.MathUtils.lerp(smallScale, settleScale, t);
-      handProgress = THREE.MathUtils.lerp(0, 0.42, t);
     }
-    setStickerTutorialHandBetween(handFrom, handTo, handProgress);
+    setStickerTutorialHandPoint({ x: xFor(scale), y: centerY });
     placement.scale = scale;
     if (inlineStickerScale) {
       inlineStickerScale.value = scale.toFixed(2);
@@ -3997,36 +4000,40 @@ function startStickerTutorialRotateDemo() {
   setStickerTutorialHandKey("point");
   const step = currentStickerTutorialStep();
   const rect = stickerTutorialTargetRect(step);
-  const demo = stickerTutorialDemoPoints(step, rect);
-  const handFrom = demo.from;
-  const handTo = demo.to;
+  // v1625: rotation 値 → 実 thumb fraction で直接 hand x を打つ (handProgress 概念廃止)。
+  // 旧実装は from=baseRotation(0°) / to=rightRotation(+28°) の 2 点 lerp で 4 phase (base→right→left→settle) を回していたため、
+  // phase 3 (右→左 +28°→-24°) で hand は to→from (28° 分) しか戻らず、 thumb は -24° まで行って innerW × 14.4% の置き去りズレが発生していた。
+  // scale demo と同じ thumb 半径補正パターンで rotation 値から直接 x を計算する。
+  const sliderMin = -180, sliderMax = 180, sliderRange = sliderMax - sliderMin;
+  const trackPad = 12;
+  const thumbR = 8;
+  const inputLeft = rect.left + trackPad;
+  const inputW = Math.max(rect.width - trackPad * 2, 0);
+  const usableW = Math.max(inputW - thumbR * 2, 0);
+  const centerY = rect.top + rect.height / 2;
+  const xFor = (r) => inputLeft + thumbR + usableW * THREE.MathUtils.clamp((r - sliderMin) / sliderRange, 0, 1);
   stickerTutorialSuppressedDemoActions.add("rotateSticker");
   animateStickerTutorialPlacement(5200, (progress) => {
     let rotation;
-    let handProgress;
     if (progress < 0.24) {
       const t = smootherstep(progress / 0.24);
       rotation = THREE.MathUtils.lerp(baseRotation, rightRotation, t);
-      handProgress = t;
     } else if (progress < 0.4) {
       rotation = rightRotation;
-      handProgress = 1;
     } else if (progress < 0.68) {
       const t = smootherstep((progress - 0.4) / 0.28);
       rotation = THREE.MathUtils.lerp(rightRotation, leftRotation, t);
-      handProgress = 1 - t;
     } else if (progress < 0.82) {
       rotation = leftRotation;
-      handProgress = 0;
     } else {
       const t = smootherstep((progress - 0.82) / 0.18);
       rotation = THREE.MathUtils.lerp(leftRotation, settleRotation, t);
-      handProgress = THREE.MathUtils.lerp(0, 0.72, t);
     }
-    setStickerTutorialHandBetween(handFrom, handTo, handProgress);
-    placement.rotation = THREE.MathUtils.clamp(rotation, -180, 180);
+    const clamped = THREE.MathUtils.clamp(rotation, -180, 180);
+    setStickerTutorialHandPoint({ x: xFor(clamped), y: centerY });
+    placement.rotation = clamped;
     if (inlineStickerRotation) {
-      inlineStickerRotation.value = String(Math.round(placement.rotation));
+      inlineStickerRotation.value = String(Math.round(clamped));
     }
     refreshInlineStickerPage();
   }, () => {
@@ -4035,12 +4042,32 @@ function startStickerTutorialRotateDemo() {
   });
 }
 
+function triggerStickerTutorialOkButtonPress() {
+  // v1625: OK ボタン押下を視覚化 (top-edit-button.is-tutorial-pressing と同思想)。
+  // CSS .inline-sticker-ok.is-tutorial-pressing で translateY(2px) + scale(0.94) + 黄リング glow。
+  // 140ms class add → click → 360ms class remove。 click が clearInlineStickerSelection → confirmSticker notify を発火。
+  if (!inlineStickerOk || inlineStickerOk.hidden) {
+    // フォールバック: ボタンが無ければ直接 notify (既存ハンドラ非対応のケースを救済)
+    notifyStickerTutorialAction("confirmSticker");
+    return;
+  }
+  inlineStickerOk.classList.add("is-tutorial-pressing");
+  addStickerTutorialDemoTimer(() => {
+    inlineStickerOk?.click();
+  }, 140);
+  addStickerTutorialDemoTimer(() => {
+    inlineStickerOk?.classList.remove("is-tutorial-pressing");
+  }, 360);
+}
+
 function startStickerTutorialOkDemo() {
+  // v1625: 3150ms 時点で押下演出 (是 add → click → release) を入れて 「OK を押した」 ことを子供に伝える。
+  setStickerTutorialHandKey("point");
   addStickerTutorialDemoTimer(() => {
     if (currentStickerTutorialStep()?.id !== "ok" || stickerTutorialState?.actionDone) {
       return;
     }
-    inlineStickerOk?.click();
+    triggerStickerTutorialOkButtonPress();
   }, 3150);
 }
 
@@ -4146,7 +4173,12 @@ function stopStickerTutorialStepDemo(options = {}) {
   stickerTutorialSuppressModeNotify = false;
   stickerTutorialSuppressedDemoActions.clear();
   topEditButton?.classList.remove("is-tutorial-pressing");
+  inlineStickerOk?.classList.remove("is-tutorial-pressing");
   bookNextPage?.classList.remove("is-tutorial-spotlit-arrow");
+  // v1625: 次 step に遷移したら OK の last-rect cache をクリア (現 step が ok でない場合のみ)
+  if (currentStickerTutorialStep()?.id !== "ok") {
+    stickerTutorialLastOkRect = null;
+  }
   document.body.classList.remove(
     "is-sticker-tutorial-mode-demo",
     "is-sticker-tutorial-mode-rest",
@@ -4558,37 +4590,42 @@ function stickerTutorialDemoPoints(step, rect) {
     return { ...base, hand: from, from, to };
   }
   if (step.id === "scale") {
-    // v1621: scale slider min=0.35 max=2.4。 demo は startScale*0.78(=small) ↔ *1.48(=large) を sweep。
-    // input padding (~12px = thumb 半径相当) を考慮した実 track 上で handProgress=0→smallScale thumb 中央 / =1→largeScale thumb 中央 に合わせる
-    // (rotate 分岐と同じ trackPad 補正パターン、 commit 9a23803 で rotate のみ修正された差分を解消)
+    // v1625: thumb 半径補正版。 initial hand 位置を startScale (現在の thumb 位置) に合わせて起動瞬間のズレを解消。
+    // from/to は CSS keyframe (stickerTutorialSliderDemo, JS 起動前の数フレーム) と setStickerTutorialHandBetween の汎用 lerp 用に残置するが、 JS demo は scale → fraction 直マッピングで使わない。
     const placement = (typeof getSelectedPlacement === "function") ? getSelectedPlacement() : null;
     const startScale = THREE.MathUtils.clamp(Number(placement?.scale) || 1, 0.7, 1.35);
     const smallScale = Math.max(0.65, startScale * 0.78);
     const largeScale = Math.min(1.9, startScale * 1.48);
     const sliderMin = 0.35, sliderMax = 2.4, sliderRange = sliderMax - sliderMin;
     const trackPad = 12;
-    const innerW = Math.max(rect.width - trackPad * 2, 0);
-    const smallFrac = THREE.MathUtils.clamp((smallScale - sliderMin) / sliderRange, 0, 1);
-    const largeFrac = THREE.MathUtils.clamp((largeScale - sliderMin) / sliderRange, 0, 1);
-    const from = { x: rect.left + trackPad + innerW * smallFrac, y: center.y };
-    const to   = { x: rect.left + trackPad + innerW * largeFrac, y: center.y };
-    return { ...base, hand: from, from, to };
+    const thumbR = 8;
+    const inputLeft = rect.left + trackPad;
+    const inputW = Math.max(rect.width - trackPad * 2, 0);
+    const usableW = Math.max(inputW - thumbR * 2, 0);
+    const xFor = (s) => inputLeft + thumbR + usableW * THREE.MathUtils.clamp((s - sliderMin) / sliderRange, 0, 1);
+    const from = { x: xFor(smallScale), y: center.y };
+    const to   = { x: xFor(largeScale), y: center.y };
+    const start = { x: xFor(startScale), y: center.y };
+    return { ...base, hand: start, from, to };
   }
   if (step.id === "rotate") {
-    // v1621: value=0 で thumb 中央スタート、 demo は baseRotation(0°) ↔ rightRotation(+28°) を主に sweep (phase 2 で leftRotation -24° も訪れるが最初の目立つ瞬間優先)。
-    // 0.43/0.58 マジック数値を baseRotation/rightRotation 実値マッピングに置換 → 「最初だけずれてる」 を解消。
-    // input padding (~12px = thumb 半径相当) を考慮した実 track 上で thumb 中心に合わせる
+    // v1625: thumb 半径補正版。 initial hand 位置を baseRotation (現在の thumb 位置) に合わせる。
+    // from/to は left↔right の sweep 範囲 (CSS keyframe 用)、 JS demo は rotation → fraction 直マッピング。
     const placement = (typeof getSelectedPlacement === "function") ? getSelectedPlacement() : null;
     const baseRotation = Number(placement?.rotation) || 0;
     const rightRotation = THREE.MathUtils.clamp(baseRotation + 28, -180, 180);
+    const leftRotation = THREE.MathUtils.clamp(baseRotation - 24, -180, 180);
     const sliderMin = -180, sliderMax = 180, sliderRange = sliderMax - sliderMin;
     const trackPad = 12;
-    const innerW = Math.max(rect.width - trackPad * 2, 0);
-    const baseFrac = THREE.MathUtils.clamp((baseRotation - sliderMin) / sliderRange, 0, 1);
-    const rightFrac = THREE.MathUtils.clamp((rightRotation - sliderMin) / sliderRange, 0, 1);
-    const from = { x: rect.left + trackPad + innerW * baseFrac, y: center.y };
-    const to   = { x: rect.left + trackPad + innerW * rightFrac, y: center.y };
-    return { ...base, hand: from, from, to };
+    const thumbR = 8;
+    const inputLeft = rect.left + trackPad;
+    const inputW = Math.max(rect.width - trackPad * 2, 0);
+    const usableW = Math.max(inputW - thumbR * 2, 0);
+    const xFor = (r) => inputLeft + thumbR + usableW * THREE.MathUtils.clamp((r - sliderMin) / sliderRange, 0, 1);
+    const from = { x: xFor(leftRotation), y: center.y };
+    const to   = { x: xFor(rightRotation), y: center.y };
+    const start = { x: xFor(baseRotation), y: center.y };
+    return { ...base, hand: start, from, to };
   }
   return base;
 }
@@ -4767,7 +4804,17 @@ function stickerTutorialTargetRect(step) {
     return expandedElementRect(inlineStickerRotation || inlineStickerControls, 12, "16px") || stickerTutorialPageRect() || fallback;
   }
   if (step.target === "okButton") {
-    return expandedElementRect(inlineStickerOk || inlineStickerControls, 12, "999px") || stickerTutorialPageRect() || fallback;
+    // v1625: OK click 直後 inlineStickerControls が hidden になる → live rect が null → fallback で黄枠がページ全体に飛ぶ違和感を解消。
+    // live が取れる間は更新し、 hidden 化後 (actionDone=true) は最後の rect を保持して次 step 遷移で自然に消える。
+    const live = expandedElementRect(inlineStickerOk, 12, "999px") || expandedElementRect(inlineStickerControls, 12, "999px");
+    if (live) {
+      stickerTutorialLastOkRect = live;
+      return live;
+    }
+    if (stickerTutorialLastOkRect && stickerTutorialState?.actionDone) {
+      return stickerTutorialLastOkRect;
+    }
+    return stickerTutorialPageRect() || fallback;
   }
   if (step.target === "nextPageButton") {
     return expandedElementRect(bookNextPage, 10, "999px") || fallback;

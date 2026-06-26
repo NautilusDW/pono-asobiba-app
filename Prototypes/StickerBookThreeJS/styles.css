@@ -1358,6 +1358,19 @@ body.is-sticker-tray-dragging #scene {
   box-shadow:
     0 2px 8px rgba(31, 56, 48, 0.12),
     inset 0 -2px 0 rgba(199, 143, 43, 0.22);
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, filter 120ms ease-out;
+}
+
+.inline-sticker-ok.is-tutorial-pressing {
+  /* v1625: シール帳チュートリアル OK ボタン押下演出 (top-edit-button.is-tutorial-pressing と同思想)。
+     pill 形状 (border-radius:999px) なので outline ではなく box-shadow 3px リングで押下瞬間の光を表現。 */
+  transform: translateY(2px) scale(0.94);
+  background: linear-gradient(180deg, rgba(255, 232, 150, 0.96), rgba(245, 198, 84, 0.92));
+  box-shadow:
+    0 1px 4px rgba(31, 56, 48, 0.18),
+    inset 0 -1px 0 rgba(160, 110, 24, 0.32),
+    0 0 0 3px rgba(255, 244, 190, 0.55);
+  filter: brightness(0.96);
 }
 
 .inline-sticker-close {
