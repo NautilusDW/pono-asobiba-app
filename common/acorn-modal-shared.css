@@ -13,19 +13,38 @@
  *   game-acorn-reward (実装値 99997) よりも上、 quizland の
  *   .result-acorn-reward (9999) よりも上に配置。 system toast 等が
  *   さらに上に出る場合はそちら側で z-index を引き上げる方針。
+ *   ▼ stacking 検証メモ: quizland/index.html では本ファイル (link) が
+ *     先、 .result-acorn-reward (inline <style>) が後に load される。
+ *     セレクタは BEM prefix が違うので競合しないが、 同一 fixed root に
+ *     並んだとき --acorn-z (99999) > .result-acorn-reward (9999) のため
+ *     どんぐりモーダルは確実に Perfect 演出より上層に来る。 Perfect 演出
+ *     自体は acorn-modal が出ていない通常時は 9999 で従来通り表示される。
  * - ゲーム別アクセントカラーは [data-game-id="..."] フックを ready しておく
  *   (Phase 1 で各ゲームが上書きする)。
  *
- * IMPORTANT: 純 CSS のみ。 JS から呼ぶ class 名は以下:
+ * IMPORTANT: 純 CSS のみ。 acorn-modal.js が実際に作成する class 名は以下:
  *   .pono-acorn-modal              (overlay 兼コンテナ; fixed full-screen)
  *   .pono-acorn-modal__panel       (中央の獲得表示パネル)
- *   .pono-acorn-modal__title       (任意の見出し; 例: 「クリア！」)
+ *   .pono-acorn-modal__dismiss     (右上 × 閉じるボタン; 44x44 確保)
+ *   .pono-acorn-modal__kicker      (上段の「やったね！」等のキャッチ)
+ *   .pono-acorn-modal__bottom      (label + amount 縦並びラッパ)
+ *   .pono-acorn-modal__label       (補足コピー; 例: 「ゲット！」)
  *   .pono-acorn-modal__icon        (どんぐりアイコン)
- *   .pono-acorn-modal__amount      (×N の数値)
- *   .pono-acorn-modal__copy        (補足コピー; 例: 「ゲット！」)
+ *   .pono-acorn-modal__amount      (×N の数値ブロック)
+ *   .pono-acorn-modal__amount-text (×N をまとめる inline 親)
+ *   .pono-acorn-modal__amount-mult (「×」 半角記号)
+ *   .pono-acorn-modal__amount-num  (数値; data-acorn-amount 属性付き)
+ *   .pono-acorn-modal__progress    (「きょう N / M」 表記)
  *   .pono-acorn-modal--armed       (表示開始: opacity 0 → アニメ前の初期姿勢)
  *   .pono-acorn-modal--animated    (アニメ発火: keyframes 走る)
+ *   .pono-acorn-modal--static      (prefers-reduced-motion 時の静止表示)
  *   .pono-acorn-modal--perfect     (Perfect 演出: 金色強発光 + スタンプ揺れ)
+ *   .pono-acorn-modal--capped      (デイリーキャップ到達状態; Phase 2 で styling)
+ *
+ * 旧 schema (__title / __copy) は acorn-copy.json の field 名で、 JS の
+ * normalizeCopy() が __kicker / __label に変換する。 CSS 側の
+ * .pono-acorn-modal__title / __copy ルールは旧 quizland 互換のため残存し、
+ * 現 DOM では未使用。 Phase 2 cleanup で削除予定。
  * ============================================================= */
 
 :root {
@@ -509,4 +528,91 @@
   .pono-acorn-modal--perfect .pono-acorn-modal__panel::after {
     display: none !important;
   }
+
+  /* maze override の motion 寄り装飾も reduce 時は静止/簡略化 (WCAG SC 2.3.3) */
+  [data-game-id="maze"] .pono-acorn-modal__panel {
+    background: #F6E2B0 !important;
+    box-shadow: none !important;
+  }
+  [data-game-id="maze"] .pono-acorn-modal__kicker {
+    text-shadow: none !important;
+  }
+  [data-game-id="maze"] .pono-acorn-modal__label {
+    text-shadow: none !important;
+  }
+
+  /* oto override の motion 寄り装飾も reduce 時は静止/簡略化 (WCAG SC 2.3.3) */
+  [data-game-id="oto"] .pono-acorn-modal__panel {
+    background: #0D2547 !important;
+    box-shadow: none !important;
+  }
+  [data-game-id="oto"] .pono-acorn-modal__kicker {
+    text-shadow: none !important;
+  }
+  [data-game-id="oto"] .pono-acorn-modal__label {
+    text-shadow: none !important;
+  }
+  [data-game-id="oto"] .pono-acorn-modal__amount-num {
+    text-shadow: none !important;
+  }
+}
+
+/* ============================
+   Game-specific overrides
+   ============================ */
+[data-game-id="maze"].pono-acorn-modal {
+  --acorn-accent: #6C8E3F;
+  --acorn-modal-bg-overlay: rgba(35, 50, 22, 0.32);
+}
+[data-game-id="maze"] .pono-acorn-modal__panel {
+  background:
+    radial-gradient(ellipse at 50% 18%, #FFF6E0 0%, #F6E2B0 38%, #D9B97A 62%, #C8965A 88%) padding-box,
+    /* TODO Phase 1.5: maze_acorn_modal_frame.webp を border-image で外周に当てる (brand kit brief.md 参照) */
+    /* TODO Phase 1.5: maze_acorn_modal_leaves.webp を ::before で上端装飾 */
+    /* TODO Phase 1.5: maze_acorn_burst_glow.webp を ::after で中央放射 */
+    transparent border-box;
+  border: 4px solid rgba(107, 62, 31, 0.42);
+  box-shadow: 0 18px 28px rgba(45, 24, 6, 0.32), inset 0 0 18px rgba(255, 240, 200, 0.45);
+}
+[data-game-id="maze"] .pono-acorn-modal__kicker {
+  color: #5A3515;
+  text-shadow: 0 2px 0 rgba(255, 244, 200, 0.92);
+}
+[data-game-id="maze"] .pono-acorn-modal__label {
+  color: #FFF7CA;
+  text-shadow: 0 3px 0 #6B3E1F, 0 6px 12px rgba(45, 20, 0, 0.45);
+  background: rgba(95, 50, 18, 0.82);
+  padding: 0.32em 0.8em;
+  border-radius: 999px;
+}
+
+[data-game-id="oto"].pono-acorn-modal {
+  --acorn-accent: #66E9FF;
+  --acorn-modal-bg-overlay: rgba(8, 24, 56, 0.42);
+}
+[data-game-id="oto"] .pono-acorn-modal__panel {
+  background:
+    radial-gradient(ellipse at 50% 18%, #1d4a8f 0%, #163872 38%, #0d2547 70%, #051730 100%) padding-box,
+    /* TODO Phase 1.5: record_disc_underwater.png を ::before で中央配置 */
+    /* TODO Phase 1.5: bubble_s/m/l.png を周囲に float anim で配置 */
+    /* TODO Phase 1.5: underwater_light_shaft.png を上端から差し込み */
+    transparent border-box;
+  border: 3px solid rgba(102, 233, 255, 0.62);
+  box-shadow: 0 18px 28px rgba(0, 12, 32, 0.62), inset 0 0 22px rgba(102, 233, 255, 0.32);
+}
+[data-game-id="oto"] .pono-acorn-modal__kicker {
+  color: #BEF5FF;
+  text-shadow: 0 2px 0 rgba(0, 18, 45, 0.82), 0 0 18px rgba(102, 233, 255, 0.62);
+}
+[data-game-id="oto"] .pono-acorn-modal__label {
+  color: #FFF7CA;
+  text-shadow: 0 3px 0 #0c2a52, 0 0 14px rgba(102, 233, 255, 0.48);
+  background: rgba(13, 37, 71, 0.84);
+  padding: 0.32em 0.8em;
+  border-radius: 999px;
+  border: 1px solid rgba(102, 233, 255, 0.42);
+}
+[data-game-id="oto"] .pono-acorn-modal__amount-num {
+  color: #FFEF8A;
+  text-shadow: 0 0 22px rgba(255, 239, 138, 0.62), 0 4px 0 #0c2a52;
 }

@@ -81,6 +81,13 @@
   // play(gameId, opts?) -> Promise<HTMLAudioElement | null>
   // opts: { volume?: number, src?: string } — overrides for one-shot playback.
   // Always resolves; autoplay failures are caught silently (returns null).
+  //
+  // Phase 1 callers (acorn-modal.js playSafe, game-stickers.js
+  // _playRewardImpactSfx) intentionally ignore the returned Promise — audio is
+  // non-critical and we preserve the legacy fire-and-forget behavior.
+  // Callers MAY optionally await play() to detect autoplay rejection
+  // (e.g. iOS Safari without user gesture) and surface a UI hint. Phase 2
+  // may add retry-on-user-gesture logic.
   function play(gameId, opts) {
     var cfg = get(gameId);
     var src = (opts && typeof opts.src === 'string' && opts.src.trim()) ? opts.src.trim() : cfg.impact;

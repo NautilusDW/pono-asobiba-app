@@ -9514,8 +9514,12 @@ updateHUD();
 </script>
 <!-- Phase 1: 共通どんぐりモーダル API を先読みしておく (このフェーズでは未呼び出し)。
      Phase 2 で showResult() の DOM 直書きから window.PonoAcornModal.show() に
-     差し替える際にここでロード済みであれば再リソース取得不要。 -->
+     差し替える際にここでロード済みであれば再リソース取得不要。
+     IMPORTANT: acorn-copy-loader.js は acorn-modal.js より前に load すること
+     (modal は window.PonoAcornCopy.get(gameId,state) を参照する)。
+     defer 同士は記述順で実行されるので順序を変えないこと。 -->
 <script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
 <script src="../common/acorn-modal.js" defer></script>
 </body>
 </html>

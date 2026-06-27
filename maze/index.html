@@ -2097,10 +2097,10 @@ body.image-stage-mode .game-wrap {
   48% {
     opacity: 1;
     filter: drop-shadow(0 12px 13px rgba(0,0,0,0.22)) brightness(1.05);
-    transform: translate3d(112%, -34%, -42px) rotate(-4deg) rotateX(2deg) rotateY(7deg) scale(0.88);
+    transform: translate3d(112%, -34%, 64px) rotate(-4deg) rotateX(2deg) rotateY(7deg) scale(0.88);
   }
   62% {
-    transform: translate3d(122%, -38%, -50px) rotate(-2deg) rotateX(0deg) rotateY(4deg) scale(0.84);
+    transform: translate3d(122%, -38%, 60px) rotate(-2deg) rotateX(0deg) rotateY(4deg) scale(0.84);
   }
   100% {
     opacity: 0.92;
@@ -2115,10 +2115,10 @@ body.image-stage-mode .game-wrap {
   48% {
     opacity: 1;
     filter: drop-shadow(0 12px 13px rgba(0,0,0,0.22)) brightness(1.05);
-    transform: translate3d(-112%, -34%, -42px) rotate(4deg) rotateX(2deg) rotateY(-7deg) scale(0.88);
+    transform: translate3d(-112%, -34%, 64px) rotate(4deg) rotateX(2deg) rotateY(-7deg) scale(0.88);
   }
   62% {
-    transform: translate3d(-122%, -38%, -50px) rotate(2deg) rotateX(0deg) rotateY(-4deg) scale(0.84);
+    transform: translate3d(-122%, -38%, 60px) rotate(2deg) rotateX(0deg) rotateY(-4deg) scale(0.84);
   }
   100% {
     opacity: 0.92;
@@ -2850,8 +2850,9 @@ body.image-stage-mode .game-wrap {
   user-select: none;
 }
 </style>
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
 </head>
-<body>
+<body data-game-id="maze">
 
 <!-- BGM (loop) -->
 <audio id="bgm" loop preload="auto" src="../assets/audio/maze_bgm.mp3"></audio>
@@ -10140,9 +10141,13 @@ function onClear() {
   // Without this guard, a crafted ?image=... JSON could farm rewards.
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
+  // Phase 1: AcornModal で中間ステージの どんぐり獲得演出を出すため、 granted を後段に渡せるよう保持する。
+  let _mazeGrantedAcorns = 0;
   if (!isImageStage || isOfficial) {
     if (window.incrementStat) window.incrementStat('maze_clears', 1);
-    if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
+    if (window.addAcornsDaily) {
+      _mazeGrantedAcorns = window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear', suppressRewardModal: true }) || 0;
+    }
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({
         gameId: 'maze',
@@ -10175,20 +10180,32 @@ function onClear() {
           } else {
             _showMazeFinalOverlay();
           }
-        } else if (_shouldShowStage3Teaser()) {
-          // stage3 クリア後の予告ビート (free tier のみ)。1 枚パネル内に 3 枚のコラージュ。
-          _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
         } else {
-          loadStage(stageIdx + 1);
+          // 中間ステージ: どんぐり獲得演出 (AcornModal) → 次ステージ / stage3 teaser
+          const proceedAfterAcorn = function() {
+            if (_shouldShowStage3Teaser()) {
+              _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
+            } else {
+              loadStage(stageIdx + 1);
+            }
+          };
+          _showMazeAcornModalOrProceed(_mazeGrantedAcorns, isImageStage, isOfficial, proceedAfterAcorn);
         }
       });
     } else {
-      showStageClearOverlay();
+      // 最終ステージは AcornModal を介さず直接 final overlay に流す
+      // (showStageClearOverlay 内で再度 modal を作る無駄を避ける)。
+      const _isLastNoStory = stageIdx >= STAGES.length - 1;
+      if (_isLastNoStory) {
+        showStageClearOverlay(0);
+      } else {
+        showStageClearOverlay(_mazeGrantedAcorns);
+      }
     }
   }, 2200);
 }
 
-function showStageClearOverlay() {
+function showStageClearOverlay(grantedAcorns) {
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
   const isLast = stageIdx >= STAGES.length - 1;
@@ -10205,19 +10222,59 @@ function showStageClearOverlay() {
       _showMazeFinalOverlay();
     }
   } else {
-    ovTitle.textContent = 'ステージ クリア！';
-    ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！' + _dailyAcornTail('maze');
-    ovBtn.textContent = 'つぎへ ▶';
-    ovBtn.onclick = function() {
-      hideOverlay();
-      if (_shouldShowStage3Teaser()) {
-        _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
-      } else {
-        loadStage(stageIdx + 1);
-      }
+    // 中間ステージ: AcornModal → stage clear overlay
+    const renderOverlay = function() {
+      ovTitle.textContent = 'ステージ クリア！';
+      ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！' + _dailyAcornTail('maze');
+      ovBtn.textContent = 'つぎへ ▶';
+      ovBtn.onclick = function() {
+        hideOverlay();
+        if (_shouldShowStage3Teaser()) {
+          _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
+        } else {
+          loadStage(stageIdx + 1);
+        }
+      };
+      _setOverlayAnimalIcon(stage && stage.story);
+      showOverlay();
     };
-    _setOverlayAnimalIcon(stage && stage.story);
-    showOverlay();
+    _showMazeAcornModalOrProceed(grantedAcorns | 0, isImageStage, isOfficial, renderOverlay);
+  }
+}
+
+// AcornModal (中間ステージ共通) を出すヘルパ。
+// granted > 0 + 非最終 + 非 image-preview のときだけ表示し、 dismiss 後に proceed() を呼ぶ。
+// PonoAcornModal 未ロード / image 非公式 / granted 0 のときは即 proceed() (既存挙動維持)。
+function _showMazeAcornModalOrProceed(granted, isImageStage, isOfficial, proceed) {
+  // dismiss と autoHide が同一 tick で両方発火するレースを防ぐため、
+  // proceed() は最大 1 回しか呼ばないようガードを噛ませる。
+  var _proceeded = false;
+  function _proceedOnce() {
+    if (_proceeded) return;
+    _proceeded = true;
+    try { proceed(); } catch (_) {}
+  }
+  try {
+    if (!proceed) return;
+    if (!(granted > 0)) { _proceedOnce(); return; }
+    if (isImageStage && !isOfficial) { _proceedOnce(); return; }
+    if (!window.PonoAcornModal) { _proceedOnce(); return; }
+    var dailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+    var dailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+    var isCapped = (dailyTotal != null) && (dailyTotal >= dailyCap);
+    var modal = new window.PonoAcornModal({
+      gameId: 'maze',
+      granted: granted,
+      dailyTotal: dailyTotal,
+      dailyCap: dailyCap,
+      state: isCapped ? 'capped' : 'idle',
+      autoHide: 4200,
+      onDismiss: function() { _proceedOnce(); }
+    });
+    modal.show();
+  } catch (e) {
+    // フォールバック: 例外時は既存挙動を維持
+    _proceedOnce();
   }
 }
 
@@ -10921,5 +10978,10 @@ async function playMazeOpening(onDone) {
   else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
 })();
 </script>
+
+<!-- Phase 1: AcornModal 共通基盤 (どんぐり獲得演出) -->
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </body>
 </html>

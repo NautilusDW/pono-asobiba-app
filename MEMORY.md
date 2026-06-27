@@ -145,6 +145,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-27T19:45:58Z - v1713 緊急修正: 謎 splash の発火条件 3 段ガード (back_forward/sessionStorage/localStorage 既存ユーザー判定) で真の初回訪問のみに絞り込み + bento FOUC 真因 3 点 (selector/decode wait/fallback color) を完全修正、 worktree base ズレで失敗した batch:873 を現 HEAD 直接編集で立て直し
+- **タスク**: v1713 緊急修正: 謎 splash の発火条件 3 段ガード (back_forward/sessionStorage/localStorage 既存ユーザー判定) で真の初回訪問のみに絞り込み + bento FOUC 真因 3 点 (selector/decode wait/fallback color) を完全修正、 worktree base ズレで失敗した batch:873 を現 HEAD 直接編集で立て直し
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 91
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 57, "Read": 10, "Edit": 14, "Workflow": 8, "Grep": 1, "Write": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-06-27T19:17:45Z - Phase 1 oto AcornModal 統合 (data-game-id, CSS, scripts, suppressRewardModal+manual show with 1000ms setTimeout)
+- **タスク**: Phase 1 oto AcornModal 統合 (data-game-id, CSS, scripts, suppressRewardModal+manual show with 1000ms setTimeout)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 21
+- **エラー数**: 2
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 5, "Bash": 13, "Read": 1, "Edit": 1, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
+
+### 2026-06-27T19:11:17Z - maze 旗あげ合戦に TTS 音声 9 本 + HP=4 ゲージ制 (1 ミス即敗北→3 ミス猶予) 実装。 planner→implementer+voice 並列→3 軸 cross-review (logic/UX/audio) →adversarial verify→9 fix 統合 →verifier ready_to_ship→deploy (sw v1711) →memory feedback 2 件追記まで完遂
+- **タスク**: maze 旗あげ合戦に TTS 音声 9 本 + HP=4 ゲージ制 (1 ミス即敗北→3 ミス猶予) 実装。 planner→implementer+voice 並列→3 軸 cross-review (logic/UX/audio) →adversarial verify→9 fix 統合 →verifier ready_to_ship→deploy (sw v1711) →memory feedback 2 件追記まで完遂
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 36
+- **エラー数**: 3
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 8, "Read": 8, "Glob": 2, "Grep": 5, "Edit": 1, "ToolSearch": 1, "Agent": 5, "Workflow": 3, "Write": 3}
+- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-27T18:32:47Z - v1709 真因特定+修正: staging は v1706 反映済だが旧SW active でユーザー端末側に新版が降りていなかった真因を Playwright 計測で発見、 SW 自動更新 UX (今すぐ更新 toast + first-visit catch-up overlay) を追加。 14エージェント並列+クロスレビュー3並列で critical 3件全件反映、 v1706→v1709 同期 bump
 - **タスク**: v1709 真因特定+修正: staging は v1706 反映済だが旧SW active でユーザー端末側に新版が降りていなかった真因を Playwright 計測で発見、 SW 自動更新 UX (今すぐ更新 toast + first-visit catch-up overlay) を追加。 14エージェント並列+クロスレビュー3並列で critical 3件全件反映、 v1706→v1709 同期 bump
 - **結果**: 成功
@@ -220,45 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 19, "Read": 8, "Agent": 21, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-27T11:38:12Z - こもれびや v1699 — 専用 BGM (sticker-album-morning.mp3) を <audio id=shop-bgm> として組込み、 startDonguriShopBgm/stopDonguriShopBgm 新設、 showShop/hideShop で play-bgm pause/resume と同期。 isMuted (localStorage 'pono_sound_off') 尊重、 volume 0.32、 batch866 と play.html を共有しつつ git apply --cached でハンク単位分離して衝突回避
-- **タスク**: こもれびや v1699 — 専用 BGM (sticker-album-morning.mp3) を <audio id=shop-bgm> として組込み、 startDonguriShopBgm/stopDonguriShopBgm 新設、 showShop/hideShop で play-bgm pause/resume と同期。 isMuted (localStorage 'pono_sound_off') 尊重、 volume 0.32、 batch866 と play.html を共有しつつ git apply --cached でハンク単位分離して衝突回避
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 54
-- **エラー数**: 1
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 18, "Read": 8, "Agent": 19, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-27T10:04:03Z - 画像描画パフォーマンス改善: 4並列調査+3並列敵対的検証で真因特定(SW no-store/preload独占/innerHTML burst)→v1695で3提案実装+3並列クロスレビュー→v1697で実機Playwright計測+真犯人特定(bottom-nav pressed PNG 7.1MB)+preload-helper.js追加
-- **タスク**: 画像描画パフォーマンス改善: 4並列調査+3並列敵対的検証で真因特定(SW no-store/preload独占/innerHTML burst)→v1695で3提案実装+3並列クロスレビュー→v1697で実機Playwright計測+真犯人特定(bottom-nav pressed PNG 7.1MB)+preload-helper.js追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 25
-- **エラー数**: 2
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 15, "Read": 2, "Edit": 4, "Workflow": 3, "Grep": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-27T06:45:26Z - こもれびや v1696: 16:9 ローテーションnote上げ(top16%→10%) + リス吹き出し復活 (実装/レビュー両エージェントで並列実行)
-- **タスク**: こもれびや v1696: 16:9 ローテーションnote上げ(top16%→10%) + リス吹き出し復活 (実装/レビュー両エージェントで並列実行)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 29
-- **エラー数**: 0
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 9, "Read": 4, "Glob": 4, "Edit": 2, "Grep": 8, "Agent": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。
 
 

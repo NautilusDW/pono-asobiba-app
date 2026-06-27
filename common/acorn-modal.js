@@ -33,7 +33,9 @@
 
   // ---- copy fallback ----------------------------------------------------
   // PonoAcornCopy が無いときに使う最低限の文言 catalog。
-  // 実際の本文は common/acorn-copy.js (= window.PonoAcornCopy) 側で確定する。
+  // 実際の本文は common/acorn-copy-loader.js が common/acorn-copy.json を
+  // fetch して window.PonoAcornCopy.get(gameId, state) を露出する。
+  // loader が未読込 / fetch 失敗時は下記 DEFAULT_COPY が使われる。
   var DEFAULT_COPY = {
     idle: {
       kicker: 'やったね！',
@@ -169,6 +171,12 @@
     overlay.setAttribute('aria-modal', 'true');
     overlay.setAttribute('aria-live', 'polite');
     overlay.setAttribute('aria-label', copy.ariaLabel || 'どんぐりを ゲット');
+    // data-game-id を overlay に伝搬し、 acorn-modal-shared.css の
+    // [data-game-id="maze"] 等のゲーム別 override セレクタにマッチさせる。
+    // 親 (html/body) に属性が無くても overlay 自身に乗せれば selector が解決する。
+    if (this.gameId) {
+      overlay.setAttribute('data-game-id', this.gameId);
+    }
     if (this.state === 'perfect') {
       overlay.classList.add('pono-acorn-modal--perfect');
     }
@@ -276,23 +284,71 @@
         self.hide();
         return;
       }
-      // focus trap: Tab を panel 内に閉じ込める
+      // focus trap: Tab を panel 内に閉じ込める。
+      // Phase 1 ではフォーカス可能要素は dismissBtn のみだが、
+      // Phase 2+ で追加 (例: copy ボタン、 アクションボタン) されても
+      // 自動で対応できるよう、 query で動的に取得する。
       if (ev.key === 'Tab' || ev.keyCode === 9) {
-        // 現状フォーカス可能な要素は dismissBtn のみ。常にそこへ戻す。
         ev.preventDefault();
-        try { self._dismissBtn.focus(); } catch (e) { /* noop */ }
+        var focusables = self._getFocusables();
+        if (!focusables.length) {
+          try { self._dismissBtn.focus(); } catch (e) { /* noop */ }
+          return;
+        }
+        var active = null;
+        try { active = document.activeElement; } catch (e) { active = null; }
+        var idx = focusables.indexOf(active);
+        var next;
+        if (ev.shiftKey) {
+          next = idx <= 0 ? focusables[focusables.length - 1] : focusables[idx - 1];
+        } else {
+          next = (idx === -1 || idx >= focusables.length - 1)
+            ? focusables[0]
+            : focusables[idx + 1];
+        }
+        try { next.focus(); } catch (e) { /* noop */ }
       }
     };
     document.addEventListener('keydown', this._keydownHandler, true);
 
-    // focus trap (補助): フォーカスが overlay 外に逃げたら戻す
+    // focus trap (補助): フォーカスが overlay 外に逃げたら最初の focusable に戻す
     this._focusInHandler = function (ev) {
       if (!self._isShown || !self._overlay) return;
       if (!self._overlay.contains(ev.target)) {
-        try { self._dismissBtn.focus(); } catch (e) { /* noop */ }
+        var focusables = self._getFocusables();
+        var target = focusables[0] || self._dismissBtn;
+        try { if (target) target.focus(); } catch (e) { /* noop */ }
       }
     };
     document.addEventListener('focusin', this._focusInHandler, true);
+  };
+
+  // Overlay 内のフォーカス可能要素を順序通りに収集する。
+  // Phase 1 では dismissBtn だけだが、 Phase 2 で button や [tabindex] が
+  // 追加されても自動で trap 対象に含まれる。
+  PonoAcornModal.prototype._getFocusables = function () {
+    if (!this._overlay) return [];
+    var sel = 'button:not([disabled]), [href], input:not([disabled]), ' +
+              'select:not([disabled]), textarea:not([disabled]), ' +
+              '[tabindex]:not([tabindex="-1"])';
+    var nodes;
+    try {
+      nodes = this._overlay.querySelectorAll(sel);
+    } catch (e) {
+      return this._dismissBtn ? [this._dismissBtn] : [];
+    }
+    var out = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      // 表示中 (offsetParent !== null) のみ trap 対象に。
+      // pointer-events:none パネル内のボタンは offsetParent が出ないことが
+      // あるので、 dismissBtn は必ず含める保険を後段で入れる。
+      if (el && (el.offsetParent !== null || el === this._dismissBtn)) {
+        out.push(el);
+      }
+    }
+    if (!out.length && this._dismissBtn) out.push(this._dismissBtn);
+    return out;
   };
 
   PonoAcornModal.prototype._unbindEvents = function () {

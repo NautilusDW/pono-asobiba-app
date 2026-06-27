@@ -5155,8 +5155,9 @@
     opacity: 0.8;
   }
 </style>
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
 </head>
-<body>
+<body data-game-id="oto">
 <!-- チュートリアル用: 暗幕 / スポットライト / 吹き出し -->
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-spot hidden" id="tut-spot"></div>
@@ -10023,7 +10024,26 @@ function _showRhythmComplete(result) {
   if (clearedFullSong) _markRhythmSongCleared(stars);
   if (clearedFullSong) _queueRhythmStickerReward(stars);
   else _clearRhythmStickerReward();
-  if (clearedFullSong && window.addAcornsDaily) window.addAcornsDaily('oto', 5, 5, { reason: 'oto_clear' });
+  if (clearedFullSong && window.addAcornsDaily) {
+    var _otoGranted = window.addAcornsDaily('oto', 5, 5, { reason: 'oto_clear', suppressRewardModal: true }) || 0;
+    if (_otoGranted > 0 && window.PonoAcornModal) {
+      setTimeout(function() {
+        try {
+          var dailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+          var dailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+          var isCapped = (dailyTotal != null) && (dailyTotal >= dailyCap);
+          new window.PonoAcornModal({
+            gameId: 'oto',
+            granted: _otoGranted,
+            dailyTotal: dailyTotal,
+            dailyCap: dailyCap,
+            state: isCapped ? 'capped' : 'idle',
+            autoHide: 4200,
+          }).show();
+        } catch (e) { console.warn('[oto] PonoAcornModal show failed', e); }
+      }, 1000);
+    }
+  }
   document.body.classList.add('rhythm-complete-active');
   var partialRivalLine = hasNextPart ? 'いいぞ でも まだまだ これからケロ！' : 'ブロックは できたな ほんばんも こい！';
   _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'taunt', clearedFullSong ? null : partialRivalLine, _rhythmPonoLine('clear'));
@@ -14854,5 +14874,10 @@ _renderRecBar();
   else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
 })();
 </script>
+
+<!-- Phase 1: AcornModal 共通基盤 (どんぐり獲得演出) -->
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </body>
 </html>
