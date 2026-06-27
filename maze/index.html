@@ -3474,6 +3474,45 @@ function _playFlagVoice(key) {
     });
   } catch (_) {}
 }
+
+// ── 共通: maze 系 8 ミニゲームのナレーション (janken / truefalse / simon /
+//   silhouette / oddone / water_bridge / strength_push / kumo) ──
+// 配置規約: assets/audio/narration/maze/{gameKey}/{voiceKey}.mp3
+// _playFlagVoice は flag 専用の preload/prefetch ロジックを持つため温存し、
+// 新規 8 ゲームはこの汎用 helper を使う。
+const _MAZE_VOICE_BASE = '../assets/audio/narration/maze/';
+const _mazeVoiceCache = Object.create(null);
+
+function _playMazeVoice(gameKey, key) {
+  if (!gameKey || !key) return;
+  const cacheKey = gameKey + '/' + key;
+  try {
+    var a = _mazeVoiceCache[cacheKey];
+    if (!a) {
+      a = new Audio(_MAZE_VOICE_BASE + cacheKey + '.mp3');
+      a.volume = 0.75;
+      _mazeVoiceCache[cacheKey] = a;
+    }
+    try { a.currentTime = 0; } catch (_) {}
+    a.play().catch(function(err) {
+      try { console.warn('[mz-voice]', cacheKey, err && err.name); } catch (_) {}
+    });
+  } catch (_) {}
+}
+
+function _preloadMazeVoices(gameKey, keys) {
+  if (!gameKey || !keys || !keys.length) return;
+  keys.forEach(function(k) {
+    const cacheKey = gameKey + '/' + k;
+    if (_mazeVoiceCache[cacheKey]) return;
+    try {
+      var a = new Audio(_MAZE_VOICE_BASE + cacheKey + '.mp3');
+      a.volume = 0.75;
+      a.preload = 'auto';
+      _mazeVoiceCache[cacheKey] = a;
+    } catch (_) {}
+  });
+}
 function _playMzSePitch(name, semitones) {
   try {
     const url = _MZ_SE_PATHS[name];
@@ -6016,6 +6055,7 @@ function _showEncounterStart() {
 
 function _showJankenChoices() {
   _setEncounterMode('janken');
+  _preloadMazeVoices('janken', ['start','call_jan','call_ken','call_pon','win_01','lose_01','lose_02','draw_01']);
   const c = _currentCreature || {};
   const data = _creatureData(c);
   const creatureImg = data.imageUrl || data.emoji || '';
@@ -6044,6 +6084,7 @@ function _showJankenChoices() {
   encStageEl.querySelectorAll('.janken-controls .enc-btn.choice').forEach(function(b) {
     b.addEventListener('click', function() { _resolveJanken(b.dataset.hand); }, { once: true });
   });
+  _playMazeVoice('janken', 'start');
 }
 
 function _jankenHandMarkup(side, hand, ready) {
@@ -6106,13 +6147,16 @@ function _resolveJanken(playerHand) {
   setHands('rock', 'rock', true);
   resultEl.textContent = '';
   callEl.textContent = 'ジャン';
+  _playMazeVoice('janken', 'call_jan');
   setTimeout(function() {
     if (!_encounterActive) return;
     callEl.textContent = 'ケン';
+    _playMazeVoice('janken', 'call_ken');
   }, 520);
   setTimeout(function() {
     if (!_encounterActive) return;
     callEl.textContent = 'ポン！';
+    _playMazeVoice('janken', 'call_pon');
     setHands(playerHand, cpuHand, false);
     ponoSlot.classList.toggle('is-win', outcome === 'win');
     ponoSlot.classList.toggle('is-lose', outcome === 'lose');
@@ -6129,6 +6173,14 @@ function _resolveJanken(playerHand) {
       if (_isStage2FirstJankenCreature(_currentCreature) && encounterKey) {
         _jankenGuaranteedWinKeys[encounterKey] = true;
       }
+    }
+    // ナレーション: 結果通知 (jan/ken/pon コール直後)
+    if (outcome === 'win') {
+      _playMazeVoice('janken', 'win_01');
+    } else if (outcome === 'lose') {
+      _playMazeVoice('janken', _jankenLossStreak >= 2 ? 'lose_02' : 'lose_01');
+    } else {
+      _playMazeVoice('janken', 'draw_01');
     }
     controlsEl.innerHTML = outcome === 'draw'
       ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
@@ -6326,6 +6378,7 @@ function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 let _peekState = null;
 function _showPeekChoices() {
   _setEncounterMode(null);
+  _preloadMazeVoices('silhouette', ['start','hint_more','correct','wrong']);
   const ans = _pick(PEEK_QUIZ_POOL);
   // 別カテゴリにならないよう、PEEK_QUIZ_POOL から ans 以外を 2 つランダム抽出
   const others = _shuffleArray(PEEK_QUIZ_POOL.filter(function(p) { return p.id !== ans.id; })).slice(0, 2);
@@ -6367,6 +6420,7 @@ function _showPeekChoices() {
     rowEl.appendChild(btn);
   });
   encStageEl.appendChild(rowEl);
+  _playMazeVoice('silhouette', 'start');
 
   // 画像をロードしてから canvas を描画
   const canv = document.getElementById('peekCanvas');
@@ -6399,6 +6453,7 @@ function _showPeekChoices() {
       // ヒント追加 (穴をもう 1 つ別の場所に)
       _peekState.holes = _peekState.holes.concat(_peekRandomHoles(1, _peekState.holes));
       _peekRender(canv, img, _peekState.holes);
+      _playMazeVoice('silhouette', 'hint_more');
       // 0.5s ちょっと止め
       const buttons = encStageEl.querySelectorAll('.peek-choice');
       buttons.forEach(function(bb) { bb.disabled = true; bb.style.opacity = '0.5'; });
@@ -6496,6 +6551,7 @@ function _createImageChoiceButton(item, index) {
 
 function _showTrueFalseChoices() {
   _setEncounterMode(null);
+  _preloadMazeVoices('truefalse', ['start','correct','wrong']);
   const q = _pick(QUIZ_TRUEFALSE);
   encStageEl.textContent = '';
   const result = document.createElement('div');
@@ -6526,11 +6582,13 @@ function _showTrueFalseChoices() {
       _resolveQuiz(playerSaid === q.a);
     });
   });
+  _playMazeVoice('truefalse', 'start');
 }
 
 // ── なかまはずれ ──
 function _showOddOneOutChoices() {
   _setEncounterMode(null);
+  _preloadMazeVoices('oddone', ['start','correct','wrong']);
   const q = _pick(QUIZ_ODDONE);
   encStageEl.textContent = '';
   const title = document.createElement('div');
@@ -6557,6 +6615,7 @@ function _showOddOneOutChoices() {
       _resolveQuiz(parseInt(b.dataset.i, 10) === q.odd);
     });
   });
+  _playMazeVoice('oddone', 'start');
 }
 
 // ── リズムまね (Simon) ──
@@ -6581,6 +6640,7 @@ function _simonPlayTone(freq, ms) {
 
 function _showSimonGame() {
   _setEncounterMode(null);
+  _preloadMazeVoices('simon', ['start','your_turn','correct','wrong']);
   // Generate a random sequence
   _simonSeq = [];
   for (let i = 0; i < SIMON_LENGTH; i++) _simonSeq.push(_pick(SIMON_COLORS));
@@ -6595,6 +6655,7 @@ function _showSimonGame() {
         '<span class="simon-dot" style="background:' + c.color + '"></span></button>';
     }).join('') +
     '</div>';
+  _playMazeVoice('simon', 'start');
   // Play sequence
   let step = 0;
   function flashNext() {
@@ -6608,6 +6669,7 @@ function _showSimonGame() {
       });
       const r = encStageEl.querySelector('.enc-result');
       if (r) r.textContent = 'おなじ じゅんに タップしてね！';
+      _playMazeVoice('simon', 'your_turn');
       return;
     }
     const c = _simonSeq[step];
@@ -6725,6 +6787,7 @@ const WATER_BUG_LEFTS = ['17%', '50%', '83%'];
 
 function _showWaterBridgeGame() {
   _setEncounterMode('water_bridge');
+  _preloadMazeVoices('water_bridge', ['start','wrong_slot','splash','place_ok','win','crossing']);
   _clearWaterGimmickTimers();
   _waterGameState = {
     step: 0,
@@ -6751,6 +6814,7 @@ function _showWaterBridgeGame() {
     '<div class="water-game__status" id="waterStatus"></div>';
   encStageEl.appendChild(wrap);
   _renderWaterBridgeGame();
+  _playMazeVoice('water_bridge', 'start');
   _waterGameState.intervalId = setInterval(_advanceWaterBug, 720);
 }
 
@@ -6802,6 +6866,7 @@ function _onWaterSlotTap(index) {
   if (!gs || gs.locked) return;
   if (index !== gs.step) {
     gs.status = 'ひかっている ところから ならべてね';
+    _playMazeVoice('water_bridge', 'wrong_slot');
     _renderWaterBridgeGame();
     return;
   }
@@ -6810,6 +6875,7 @@ function _onWaterSlotTap(index) {
     gs.splashing = true;
     gs.status = 'アメンボが じゃました！ もういちど';
     playMzSe('wrong');
+    _playMazeVoice('water_bridge', 'splash');
     _renderWaterBridgeGame();
     _waterGimmickSetTimeout(function() {
       if (!_waterGameState) return;
@@ -6828,6 +6894,7 @@ function _onWaterSlotTap(index) {
     return;
   }
   gs.status = 'いいね！ つぎの いたを おこう';
+  _playMazeVoice('water_bridge', 'place_ok');
   _renderWaterBridgeGame();
 }
 
@@ -6837,6 +6904,7 @@ function _resolveWaterBridgeGame() {
   _updateFlagInventoryHud();
   _clearWaterGimmickTimers();
   _waterGameState = null;
+  _playMazeVoice('water_bridge', 'win');
   _showWaterBridgeCompleteScene();
   _waterGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);
@@ -6861,6 +6929,7 @@ function _showWaterBridgeCompleteScene() {
       '</div>' +
       '<div class="water-complete-status">ポノが はしを わたるよ！</div>' +
     '</div>';
+  _playMazeVoice('water_bridge', 'crossing');
 }
 
 function _clearFlagRoundTimer() {
@@ -7140,6 +7209,15 @@ function _showFlagRewardSequence() {
 function _resolveQuiz(correct) {
   _simonCancelled = true; // 進行中の simon タイマーがあれば停止
   playMzSe(correct ? 'correct' : 'wrong');
+  // ナレーション: 4 ゲーム (truefalse / simon / silhouette / oddone) の正誤分岐
+  switch (_currentGame) {
+    case 'truefalse':
+    case 'simon':
+    case 'silhouette':
+    case 'oddone':
+      _playMazeVoice(_currentGame, correct ? 'correct' : 'wrong');
+      break;
+  }
   encStageEl.innerHTML =
     '<div class="enc-result ' + (correct ? 'win' : 'lose') + '">' +
       (correct ? 'せいかい！' : 'ざんねん…') +
@@ -7203,6 +7281,7 @@ function _strengthRockStageIndex(count) {
 
 function _showStrengthPushGame() {
   _setEncounterMode('strength_push');
+  _preloadMazeVoices('strength_push', ['start','crack_progress','almost','win','fail']);
   _clearStrengthGimmickTimers();
   _strengthGameState = {
     tapCount: 0,
@@ -7212,6 +7291,8 @@ function _showStrengthPushGame() {
     lastPunchHand: 'left',
     punchSeq: 0,
     punchTimer: null,
+    crackPlayed: false,
+    almostPlayed: false,
     status: 'たたいて ひびを ひろげよう！',
   };
   encStageEl.textContent = '';
@@ -7249,6 +7330,7 @@ function _showStrengthPushGame() {
   const rockBtn = document.getElementById('strengthRockBtn');
   if (rockBtn) rockBtn.addEventListener('click', _onStrengthRockTap);
   _renderStrengthPushGame();
+  _playMazeVoice('strength_push', 'start');
   const intervalId = setInterval(_renderStrengthPushGame, 45);
   _strengthGameState.intervalId = intervalId;
   _strengthGimmickTimers.push(intervalId);
@@ -7364,6 +7446,15 @@ function _onStrengthRockTap() {
   gs.status = finalHit
     ? 'くだけた！'
     : (damageRatio >= 0.7 ? 'あと もうすこし！' : (damageRatio >= 0.4 ? 'ひびが はいってきた！' : 'れんだして くだこう！'));
+  if (!finalHit) {
+    if (damageRatio >= 0.7 && !gs.almostPlayed) {
+      gs.almostPlayed = true;
+      _playMazeVoice('strength_push', 'almost');
+    } else if (damageRatio >= 0.4 && !gs.crackPlayed) {
+      gs.crackPlayed = true;
+      _playMazeVoice('strength_push', 'crack_progress');
+    }
+  }
   playRockHit(finalHit);
   _spawnStrengthDebrisBurst(finalHit);
   _spawnStrengthImpactEffect(finalHit, punchHand, gs.tapCount);
@@ -7400,6 +7491,7 @@ function _failStrengthPushGame() {
   gs.locked = true;
   gs.status = 'もういちど やってみよう';
   playMzSe('wrong');
+  _playMazeVoice('strength_push', 'fail');
   _renderStrengthPushGame();
   _strengthGimmickSetTimeout(function() {
     if (!_strengthGameState) return;
@@ -7418,6 +7510,7 @@ function _resolveStrengthPushGame() {
   _clearStrengthGimmickTimers();
   _strengthGameState = null;
   playMzSe('correct');
+  _playMazeVoice('strength_push', 'win');
   encStageEl.innerHTML =
     '<div class="enc-result win strength-clear">' +
       '<img class="strength-clear__burst" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="">' +
@@ -7840,6 +7933,7 @@ function _layoutBowlPins(gs, layoutId) {
 
 function _showBowlGame(c) {
   _setEncounterMode('web_sweep'); // 互換トークン: card レイアウトは既存を流用
+  _preloadMazeVoices('kumo', ['start','pin_clear','boss_appear','boss_phase_start','milestone_10','boss_defeated','win']);
   const reducedMotion = _bowlReducedMotion();
   _clearWebGimmickTimers();
   _bowlEncounterCount = (_bowlEncounterCount + 1) | 0;
@@ -7861,6 +7955,7 @@ function _showBowlGame(c) {
     '</div>';
   encStageEl.innerHTML = '';
   encStageEl.appendChild(wrap);
+  _playMazeVoice('kumo', 'start');
 
   const stageEl  = wrap.querySelector('#bowlStage');
   const canvasEl = wrap.querySelector('#bowlCanvas');
@@ -7878,6 +7973,7 @@ function _showBowlGame(c) {
     bossHits: 0,
     lastBossHitAt: 0,
     bossHitCombo: 0,
+    lastVoicePhase: null,
     lastThrowAt: 0, locked: false,
     rafId: null, lastTs: 0,
     bgSeed: (_bowlEncounterCount * 1013904223) | 0,
@@ -8151,6 +8247,17 @@ function _showBowlBossIntro(gs, now) {
   for (let i = 0; i < gs.pins.length; i++) {
     if (gs.pins[i].fallen) gs.pins[i].fallProgress = 1;
   }
+  // ナレーション (1 phase 1 回): pin_clear 即時 → boss_appear ~500ms 遅延
+  if (gs.lastVoicePhase !== 'pin_clear') {
+    gs.lastVoicePhase = 'pin_clear';
+    _playMazeVoice('kumo', 'pin_clear');
+    _webGimmickSetTimeout(function() {
+      if (gs !== _bowlGameState) return;
+      if (gs.lastVoicePhase === 'boss_appear' || gs.lastVoicePhase === 'boss_phase_start') return;
+      gs.lastVoicePhase = 'boss_appear';
+      _playMazeVoice('kumo', 'boss_appear');
+    }, 500);
+  }
   if (gs.noteEl) gs.noteEl.textContent = 'ボスが あらわれた！';
   if (gs.bossIntroEl) gs.bossIntroEl.hidden = false;
   if (gs.bossIntroBtn) {
@@ -8185,6 +8292,10 @@ function _startBowlBossPhase(gs, now) {
     if (gs.pins[i].fallen) gs.pins[i].fallProgress = 1;
   }
   if (gs.noteEl) gs.noteEl.textContent = 'なんども おして ボスに あてよう！';
+  if (gs.lastVoicePhase !== 'boss_phase_start') {
+    gs.lastVoicePhase = 'boss_phase_start';
+    _playMazeVoice('kumo', 'boss_phase_start');
+  }
   _bowlFloatText(gs, 'ボスだ！', gs.w * 0.5, gs.h * 0.32);
   try { _playMzSePitch('correct', 3); } catch (_) { try { playTap(); } catch (__) {} }
   _updateBowlBossMotion(gs, now);
@@ -8231,6 +8342,7 @@ function _registerBowlBossHit(gs, now, x, y) {
   if (gs.bossHits % 10 === 0) {
     _bowlFloatText(gs, gs.bossHits + ' HIT!', x, y - boss.r * 0.35);
     try { _playMzSePitch('correct', 4); } catch (_) {}
+    _playMazeVoice('kumo', 'milestone_10');
   } else if (gs.bossHitCombo >= 4) {
     _bowlFloatText(gs, 'タップ！', x, y - boss.r * 0.28);
   } else {
@@ -9679,6 +9791,7 @@ function _finishBowlGame(gs) {
     gs.boss.flashUntil = now + BOWL_BOSS_DEFEAT_MS * 0.45;
   }
   if (gs.noteEl) gs.noteEl.textContent = 'ボスが とんでいった！';
+  _playMazeVoice('kumo', 'boss_defeated');
   _bowlFloatText(gs, 'やった！', gs.w * 0.5, gs.h * 0.28);
   try { _playMzSePitch('correct', 2); } catch (_) {}
   _drawBowlScene(gs, now);
@@ -9710,6 +9823,7 @@ function _resolveBowlGame() {
           : 'おじゃま虫が どいてくれたよ！') +
       '</div>' +
     '</div>';
+  _playMazeVoice('kumo', 'win');
   _webGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);
   }, 950);
