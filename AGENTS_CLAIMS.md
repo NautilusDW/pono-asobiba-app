@@ -61,7 +61,6 @@
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-27 14:50 - by Claude - [batch:864-perf-measure-and-next] - play.html, sw.js, assets/**, common/** - staging 実機計測 → ボトルネック特定 → #4/#5/#6 のうち最大効果を実装
-- 2026-06-27 15:00 - by Claude - [batch:865-shop-layout-fix] - shop/index.html, sw.js - こもれびや 16:9 で営業時間テキスト位置上げ + リスの吹き出し復活
 
 ---
 
