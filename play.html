@@ -682,13 +682,6 @@
     .game-card[data-id="starparodier"] .game-card__title { color: #7dffe0; } /* space mint */
     .game-card[data-id="undersea-cave"] .game-card__title { color: #86f5ff; } /* cave aqua */
     .game-card[data-id="sea-album"] .game-card__title { color: #fff08a; } /* shallow-sea gold */
-    /* v1690: bento/cooking タイトルは長文 (「ポノとつくろう いろどりべんとう」 14文字+space、
-       「コトコト もりのキッチン」 11文字+space) のため、 全 aspect 共通で font-size を縮小して
-       white-space:nowrap でも 1 行に収まるよう保証。 4:3 media block (5147-5148) はこの値
-       と一致 (再宣言扱い)。 他 breakpoint の `.game-card[data-id]` 29-32px 一律指定より後置
-       のため確実に勝つ。 */
-    .game-card[data-id="bento"]      .game-card__title { font-size: 24px; }
-    .game-card[data-id="cooking"]    .game-card__title { font-size: 26px; }
     /* On the dark "maze" card the cream halo would clash — switch to a
        warm dark halo so the yellow title still pops on the night panel. */
     .game-card[data-id="maze"] .game-card__title {
@@ -5199,6 +5192,15 @@
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 32px; }  /* v1681: 18→32 */
     }
+
+    /* v1690: bento/cooking タイトル 全 aspect 共通 font-size 縮小 (1 行強制保証)。
+       スタイルシート末尾に置き、 他 breakpoint の `.game-card[data-id]` 29-32px 一律
+       指定 (source order が後の媒介クエリ内宣言) より後置で確実に勝つ。
+       根拠: bento 「ポノとつくろう いろどりべんとう」 24px / cooking 「コトコト もりのキッチン」 26px で
+       全 landscape aspect の text-box 幅 (~400-465px) に余裕で収まる。 万一はみ出した場合は
+       .game-card__title 共通の white-space:nowrap + text-overflow:ellipsis で安全 fail。 */
+    .game-card[data-id="bento"]   .game-card__title { font-size: 24px; }
+    .game-card[data-id="cooking"] .game-card__title { font-size: 26px; }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
@@ -6038,7 +6040,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1689;
+    const PAGE_CACHE_VERSION = 1690;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
