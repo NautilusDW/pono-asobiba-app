@@ -61,6 +61,8 @@
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 02:40 - by Claude - [batch:870-perf-verify-and-fix] - play.html, sw.js, common/**, bento/**, 各ゲーム/** - v1706 staging 実機計測 → 効いていない場所を特定して修正 [overlap: batch:869-gacha-rarity-lettermarks (play.html/sw.js)]
+- 2026-06-28 02:55 - by Claude - [batch:871-acorn-modal-phase0] - common/acorn-modal-shared.css, common/acorn-modal.js, common/acorn-audio.js, common/acorn-copy.json, scripts/audit-suppress-reward-modal.mjs, js/game-stickers.js, quizland/index.html, sw.js - どんぐり獲得モーダル Phase 0 (共通基盤) 整備 + quizland 移行 [overlap: batch:860 (common/**, js/**, sw.js), batch:869 (sw.js), batch:870 (common/**, sw.js)]
+- 2026-06-28 03:00 - by Claude - [batch:872-flag-game-voice-hp] - maze/index.html, assets/voice/maze/flag/**, sw.js - 旗あげミニゲーム TTS 音声化 + HP ゲージ制 (3-4 ミスまで許容) 導入 [overlap: batch:870 (maze/** 含む可能性), batch:871 (sw.js)]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
