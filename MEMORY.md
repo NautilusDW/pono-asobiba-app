@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-27T04:55:13Z - こもれびや v1692 — reactive bubble text 全削除 + 16:9 base 看板/rotation-note/bubble/subtitle 重なり解消
+- **タスク**: こもれびや v1692 — reactive bubble text 全削除 + 16:9 base 看板/rotation-note/bubble/subtitle 重なり解消
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 49
+- **エラー数**: 1
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 18, "Read": 8, "Agent": 14, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
+
 ### 2026-06-27T04:40:44Z - bento/cookingタイトル1行強制再修正(wbr撤廃+nowrap戻し+全aspect共通font-size override)
 - **タスク**: bento/cookingタイトル1行強制再修正(wbr撤廃+nowrap戻し+全aspect共通font-size override)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた
 - **ツール使用統計**: {"Bash": 9, "Read": 2, "Agent": 5, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 2}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。
-
-
-### 2026-06-27T02:34:16Z - play.html 4:3 縦中央寄せ + bento タイトル 2 行 + desc 8 方向ハロー可読性向上 + subtitle 校正 4 件 + acorn badge 2x スケール + SW v1681
-- **タスク**: play.html 4:3 縦中央寄せ + bento タイトル 2 行 + desc 8 方向ハロー可読性向上 + subtitle 校正 4 件 + acorn badge 2x スケール + SW v1681
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 5
-- **エラー数**: 0
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した
-- **ツール使用統計**: {"Bash": 1, "Read": 2, "Agent": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。
 
 
