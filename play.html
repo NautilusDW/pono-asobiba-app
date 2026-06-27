@@ -3690,7 +3690,8 @@
       56% { transform: translateX(3px) rotate(.8deg); }
     }
     .donguri-shop-v2-bubble {
-      position: absolute; left: 5.8%; bottom: 54%;
+      /* v1692: bottom 54%→48% で吹き出し全体を下げ、 看板/rotation-note との重なりを 720p で解消 */
+      position: absolute; left: 5.8%; bottom: 48%;
       width: min(27%, 350px);
       aspect-ratio: 1774 / 887;
       box-sizing: border-box;
@@ -3710,9 +3711,10 @@
       display: none;
     }
     .donguri-shop-v2-subtitle {
+      /* v1692: bottom 47%→41% で bubble 追従、 字幕と看板の縦間隔を確保 */
       position: absolute;
       left: 5.8%;
-      bottom: 47%;
+      bottom: 41%;
       width: min(30%, 390px);
       min-height: clamp(20px, 2.5vw, 32px);
       box-sizing: border-box;
@@ -3749,9 +3751,10 @@
       top: clamp(8px, 1.1vw, 14px);
     }
     .donguri-shop-v2-head > .donguri-shop-v2-title {
+      /* v1692: top -16%→-34% で看板を大胆に head 外へ突き出し、 rotation-note/bubble との縦衝突を回避 (head 76px の 34% ≒ 26px 上)。 4:3/mobile block は別 selector で上書き */
       position: absolute;
       left: 50%;
-      top: -16%;
+      top: -34%;
       transform: translateX(-50%);
     }
     .donguri-shop-v2-head > .donguri-shop-v2-balance {
@@ -3786,9 +3789,10 @@
       overflow: hidden;
     }
     .donguri-shop-v2-rotation-note {
+      /* v1692: top 17%→16% で看板下端の真下に配置 (看板を -34% で大胆に上げた分、 1% ぶん rotation-note も上に追従) */
       position: absolute;
       left: 50%;
-      top: 17%;
+      top: 16%;
       transform: translateX(-50%);
       width: min(48vw, 540px);
       z-index: 5;
@@ -6043,7 +6047,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1691;
+    const PAGE_CACHE_VERSION = 1692;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -8139,18 +8143,21 @@
       sad: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_sad_highlight_20260626.png',
       surprise: 'assets/ui/shop/sticker_shopkeeper_squirrel_pose_surprise_highlight_20260626.png'
     };
+    // v1692: text フィールドは全削除 (v1689 の reactive bubble 残滓を根絶)。
+    // pose / motion のみ残し、 bubble 表示は messageText 明示時に限定 (_setShopkeeperReaction 参照)。
     var DONGURI_SHOPKEEPER_REACTIONS = {
-      welcome: { pose: 'idle', motion: 'calm', text: DONGURI_SHOP_OPENING_MESSAGE },
-      guide: { pose: 'present', motion: 'guide', text: 'とっておけるよ' },
-      reserve: { pose: 'point', motion: 'reserve', text: 'とっておいたよ' },
-      happy: { pose: 'cheer', motion: 'happy', text: 'こうかん ありがとう' },
-      worry: { pose: 'sad', motion: 'worry', text: 'どんぐり たりないよ' },
-      think: { pose: 'think', motion: 'worry', text: 'どんぐり あつめよう' },
-      full: { pose: 'surprise', motion: 'worry', text: 'とりおきは 1つまで' },
-      calm: { pose: 'idle', motion: 'calm', text: DONGURI_SHOP_OPENING_MESSAGE }
+      welcome: { pose: 'idle', motion: 'calm' },
+      guide: { pose: 'present', motion: 'guide' },
+      reserve: { pose: 'point', motion: 'reserve' },
+      happy: { pose: 'cheer', motion: 'happy' },
+      worry: { pose: 'sad', motion: 'worry' },
+      think: { pose: 'think', motion: 'worry' },
+      full: { pose: 'surprise', motion: 'worry' },
+      calm: { pose: 'idle', motion: 'calm' }
     };
     var DONGURI_SHOPKEEPER_NEUTRAL_REACTION = 'calm';
-    var donguriShopkeeperNeutral = { reaction: 'calm', text: DONGURI_SHOP_OPENING_MESSAGE };
+    // v1692: text 初期値を空文字化 (bubble は :empty で隠蔽、 ナレーション字幕時のみ表示)。
+    var donguriShopkeeperNeutral = { reaction: 'calm', text: '' };
     var donguriShopkeeperNeutralTimer = 0;
     function _shopReactionForMessage(messageText) {
       var text = String(messageText || '');
@@ -8169,9 +8176,10 @@
       }
     }
     function _rememberShopkeeperNeutral(reactionKey, text) {
+      // v1692: reaction map から text 削除。 fallback は明示渡し text のみ、 なければ空文字 (bubble は :empty で隠れる)。
       donguriShopkeeperNeutral = {
         reaction: DONGURI_SHOPKEEPER_NEUTRAL_REACTION,
-        text: text || (DONGURI_SHOPKEEPER_REACTIONS[reactionKey] && DONGURI_SHOPKEEPER_REACTIONS[reactionKey].text) || DONGURI_SHOP_OPENING_MESSAGE
+        text: text || ''
       };
     }
     function _restoreShopkeeperNeutral() {
@@ -8193,7 +8201,8 @@
       // (data.text reaction map / _formatShopCountdown フォールバックは廃止)
       if (bubble) bubble.textContent = messageText ? messageText : '';
       if (!options.transient && !options.skipRemember) {
-        _rememberShopkeeperNeutral(key, messageText || data.text);
+        // v1692: data.text 廃止、 messageText のみで neutral を記憶 (なければ空文字)。
+        _rememberShopkeeperNeutral(key, messageText || '');
       }
       if (keeper) {
         keeper.dataset.pose = data.pose;
@@ -8221,10 +8230,11 @@
           hasHoldable = !ownState.owned && isGuaranteed && canReserve;
         });
       } catch (_) { hasHoldable = false; }
-      if (hasHoldable) return { reaction: 'calm', text: 'とっておけるよ' };
-      if (reservation && reservation.stickerId) return { reaction: 'calm', text: 'とりおきも あるよ' };
-      if ((balance | 0) < 15) return { reaction: 'calm', text: 'どんぐり あつめよう' };
-      return { reaction: 'calm', text: DONGURI_SHOP_OPENING_MESSAGE };
+      // v1692: text 全削除 — bubble はナレーション字幕時のみ表示 (CSS :empty で隠蔽)。
+      if (hasHoldable) return { reaction: 'calm' };
+      if (reservation && reservation.stickerId) return { reaction: 'calm' };
+      if ((balance | 0) < 15) return { reaction: 'calm' };
+      return { reaction: 'calm' };
     }
     // v1582: load full catalog so stickerIndex (gameId/name/img) is hydrated for rotation rendering.
     function _hydrateShopCatalog() {
