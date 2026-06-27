@@ -60,7 +60,6 @@
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
-- 2026-06-28 02:37 - by Codex - [batch:869-gacha-rarity-lettermarks] - play.html, sw.js, assets/ui/gacha/**, tmp/alpha_pending/869-gacha-rarity-lettermarks/**, HANDOFF.md - ガチャ結果R/SRを台座ではなく装飾文字ロゴへ差し替え [overlap: batch:860-data-export-import]
 - 2026-06-28 02:40 - by Claude - [batch:870-perf-verify-and-fix] - play.html, sw.js, common/**, bento/**, 各ゲーム/** - v1706 staging 実機計測 → 効いていない場所を特定して修正 [overlap: batch:869-gacha-rarity-lettermarks (play.html/sw.js)]
 ---
 
