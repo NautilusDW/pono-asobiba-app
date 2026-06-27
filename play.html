@@ -6023,10 +6023,13 @@
           ].join('');
         case 'cooking':
           // v1690: 同上 (wbr 撤廃 + space は inline-block particle で wrap 不可化)。
+          // v1691: 「もりのキッチン」 の 「の」 を particle 化 (他カードと同一規約)。
           return [
             esc('コトコト'),
             gameTitleParticle(' '),
-            gameTitleAccent('cooking', 'もりのキッチン')
+            gameTitleAccent('cooking', 'もり'),
+            gameTitleParticle('の'),
+            gameTitleAccent('cooking', 'キッチン')
           ].join('');
         default:
           return decorateKana(rawTitle);
@@ -6040,7 +6043,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1690;
+    const PAGE_CACHE_VERSION = 1691;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
