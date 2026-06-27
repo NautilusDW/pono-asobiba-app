@@ -6030,7 +6030,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1685;
+    const PAGE_CACHE_VERSION = 1686;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -9518,8 +9518,26 @@
       // memory snapshot をそのまま再表示することがある (event.persisted = true)。
       // その状態だと scale 計算 / SW更新後の最新アセットがどちらも適用されず、
       // 黒帯が出たり一部画像 (例: 図鑑サムネ) が抜けたりする。検出して 1回だけリロード。
+      //
+      // v1686 緊急 fix: 「リロード ループ」 再発対応。
+      // 旧実装は無条件 location.reload() のため、 sw-update.js の controllerchange→safeReload と
+      // 同時発火するとリロード後に再度 pageshow→reload が走り、 体感「ずっと考え中」 のまま停滞。
+      // 多層ガード:
+      //   1) sessionStorage で「このタブで bfcache reload 既に実行済」 を記録 → 1 セッション 1 回限定
+      //   2) SW がまさに更新通知中 (sw-update.js が pendingReload を立てている) なら任せる
+      //   3) sw-update.js の isNavigating ガードと race しないよう先に window.__isReloading フラグを立てる
       window.addEventListener('pageshow', (e) => {
-        if (e.persisted) location.reload();
+        if (!e.persisted) return;
+        try {
+          if (window.__isReloading) return;
+          if (sessionStorage.getItem('__bfcacheReloaded') === '1') return;
+          sessionStorage.setItem('__bfcacheReloaded', '1');
+          window.__isReloading = true;
+        } catch (_) {
+          // sessionStorage 不可 (private mode 等) — 安全側に倒し reload しない
+          return;
+        }
+        location.reload();
       });
     })();
   </script>
