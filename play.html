@@ -6074,7 +6074,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1699;
+    const PAGE_CACHE_VERSION = 1701;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -7068,12 +7068,11 @@
 
     function pauseTopBgmForDailyGacha() {
       const bgm = topBgmForDailyGacha();
-      if (!bgm || dailyGachaAudio.pausedTopBgm) return;
+      if (!bgm) return;
+      // v1701: 無条件 pause (冪等)、 ガード撤去で残留フラグ問題を回避
       dailyGachaAudio.resumeTopBgm = !bgm.paused;
+      try { bgm.pause(); } catch (_) {}
       dailyGachaAudio.pausedTopBgm = true;
-      if (dailyGachaAudio.resumeTopBgm) {
-        try { bgm.pause(); } catch (_) {}
-      }
     }
 
     function resumeTopBgmAfterDailyGacha() {
@@ -7097,12 +7096,11 @@
     }
     function pauseTopBgmForDonguriShop() {
       var bgm = topBgmForDonguriShop();
-      if (!bgm || donguriShopAudio.pausedTopBgm) return;
+      if (!bgm) return;
+      // v1701: 無条件 pause (冪等)、 ガード撤去で残留フラグ問題を回避
       donguriShopAudio.resumeTopBgm = !bgm.paused;
-      if (donguriShopAudio.resumeTopBgm) {
-        try { bgm.pause(); } catch (_) {}
-        donguriShopAudio.pausedTopBgm = true;
-      }
+      try { bgm.pause(); } catch (_) {}
+      donguriShopAudio.pausedTopBgm = true;
     }
     function resumeTopBgmAfterDonguriShop() {
       var bgm = topBgmForDonguriShop();
@@ -7135,7 +7133,10 @@
         bgm.currentTime = 0;
         bgm.volume = 0.32;
         var p = bgm.play();
-        if (p && p.catch) p.catch(function () {});
+        if (p && p.catch) p.catch(function () {
+          // v1701: autoplay block 等で fail したら 1 秒後にもう一度試す (user interaction 後にはほぼ通る)
+          setTimeout(function () { try { bgm.play(); } catch (_) {} }, 1000);
+        });
       } catch (_) {}
     }
     function stopDonguriShopBgm() {
@@ -7164,7 +7165,7 @@
         createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.turn)
       ].filter(Boolean);
       dailyGachaAudio.capsuleExit = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.capsuleExit, { volume: .9 });
-      dailyGachaAudio.bed = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.bed, { loop: true, volume: .2 });
+      dailyGachaAudio.bed = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.bed, { loop: true, volume: .5 });
       dailyGachaAudio.finalStinger = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.finalStinger, { volume: .72 });
       dailyGachaAudio.superReveal = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.superReveal, { volume: .86 });
       dailyGachaAudio.capsuleOpen = createDailyGachaAudio(DAILY_GACHA_AUDIO_ASSETS.capsuleOpen, { volume: .72 });
