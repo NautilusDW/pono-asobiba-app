@@ -699,12 +699,39 @@
     .game-card__desc {
       font-size: 20px;
       line-height: 1.2;
-      font-weight: 700;
-      color: #6a4a2b;
+      font-weight: 800;                                /* v1681: 700→800 (title 900 とのコントラスト維持) */
+      color: #4a2e15;                                  /* v1681: #6a4a2b→#4a2e15 (濃化で可読性UP) */
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       letter-spacing: 0.04em;
+      /* v1681: 8 方向クリームハロー + 暗影 — title と同等のレベルで写真背景に乗せる
+         (maze 夜空 / starparodier 宇宙 / undersea-cave 岩壁 / sea-album panorama 対応) */
+      text-shadow:
+        1.1px 0 0 rgba(255, 250, 230, .96),
+        -1.1px 0 0 rgba(255, 250, 230, .96),
+        0 1.1px 0 rgba(255, 250, 230, .96),
+        0 -1.1px 0 rgba(255, 250, 230, .96),
+        0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        0 2px 4px rgba(80, 50, 20, .35);
+    }
+    /* v1681: maze カード (夜マップ) は title 同様 dark halo へ切替 — クリームハロー
+       だと夜空に溶けて読めなくなるため、 #fff0c8 文字 + 焦げ茶アウトラインへ反転。 */
+    .game-card[data-id="maze"] .game-card__desc {
+      color: #fff0c8;
+      text-shadow:
+        1.1px 0 0 rgba(40, 24, 8, .96),
+        -1.1px 0 0 rgba(40, 24, 8, .96),
+        0 1.1px 0 rgba(40, 24, 8, .96),
+        0 -1.1px 0 rgba(40, 24, 8, .96),
+        0.8px 0.8px 0 rgba(40, 24, 8, .96),
+        -0.8px 0.8px 0 rgba(40, 24, 8, .96),
+        0.8px -0.8px 0 rgba(40, 24, 8, .96),
+        -0.8px -0.8px 0 rgba(40, 24, 8, .96),
+        0 2px 4px rgba(0, 0, 0, .5);
     }
     .game-card.is-coming-soon .game-card__title,
     .game-card.is-coming-soon:hover .game-card__title,
@@ -3762,25 +3789,26 @@
       width: min(48vw, 540px);
       z-index: 5;
       pointer-events: none;
-      color: #fff8df;
-      font: 900 clamp(10px, 1.12vw, 15px)/1.15 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+      color: #fff4cb;
+      font: 900 clamp(11px, 1.28vw, 17px)/1.15 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
       text-align: center;
       white-space: nowrap;
       text-shadow:
-        0 2px 3px rgba(51, 26, 5, .82),
-        0 0 8px rgba(92, 48, 10, .62);
+        0 2px 3px rgba(40, 18, 2, .92),
+        0 1px 1px rgba(60, 28, 4, .9),
+        0 0 10px rgba(110, 56, 12, .68);
     }
     .donguri-shop-v2-rotation-note__time {
       display: inline-block;
       margin: 0 .12em;
-      padding: 0 .22em .08em;
+      padding: 0 .3em .1em;
       border-radius: .42em;
-      background: rgba(83, 42, 10, .46);
-      color: #fff2a6;
-      font-size: 1.14em;
+      background: rgba(72, 32, 5, .6);
+      color: #ffe066;
+      font-size: 1.18em;
       text-shadow:
-        0 2px 2px rgba(43, 21, 3, .95),
-        0 0 7px rgba(255, 223, 116, .55);
+        0 2px 2px rgba(38, 16, 1, .98),
+        0 0 8px rgba(255, 210, 90, .7);
       transform: translateY(-.02em);
     }
     .donguri-shop-v2-balance {
@@ -3957,12 +3985,27 @@
       padding: 10.5% 9% 5.5%;
       display: flex; flex-direction: column; align-items: center; gap: 0;
       box-shadow: none;
-      filter:
-        drop-shadow(0 8px 8px rgba(34, 17, 4, .18))
-        drop-shadow(0 21px 16px rgba(29, 14, 3, .18));
+      filter: drop-shadow(0 4px 4px rgba(34, 17, 4, .14));
       position: relative;
       pointer-events: auto;
       animation: pono-shop-v2-float 2.6s ease-in-out infinite;
+    }
+    /* v1682: カウンター天板上に置いた 3D 物体の影 — 細長い楕円ぼかしを slot 下に */
+    .donguri-shop-v2-slot::after {
+      content: "";
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      bottom: -6%;
+      height: 9%;
+      background: radial-gradient(ellipse at center,
+        rgba(20, 8, 2, .46) 0%,
+        rgba(20, 8, 2, .26) 42%,
+        rgba(20, 8, 2, .08) 68%,
+        rgba(20, 8, 2, 0) 82%);
+      filter: blur(7px);
+      z-index: -1;
+      pointer-events: none;
     }
     .donguri-shop-v2-slot.is-buyable { background-image: url("assets/ui/shop/sticker_shop_card_highlight_exchange_20260625.png"); background-size: contain; }
     .donguri-shop-v2-slot.is-buyable.is-pressing { background-image: url("assets/ui/shop/sticker_shop_card_highlight_exchange_pressed_20260625.png"); }
@@ -3970,9 +4013,8 @@
     .donguri-shop-v2-slot.is-owned { background-image: url("assets/ui/shop/sticker_shop_card_muted_20260625.png"); }
     .donguri-shop-v2-slot.is-held {
       filter:
-        drop-shadow(0 8px 8px rgba(34, 17, 4, .18))
-        drop-shadow(0 21px 16px rgba(29, 14, 3, .18))
-        drop-shadow(0 0 10px rgba(255, 214, 92, .34));
+        drop-shadow(0 4px 4px rgba(34, 17, 4, .14))
+        drop-shadow(0 0 10px rgba(255, 214, 92, .42));
     }
     .donguri-shop-v2-slot:nth-child(2) { animation-delay: .2s; }
     .donguri-shop-v2-slot:nth-child(3) { animation-delay: .4s; }
@@ -4140,7 +4182,7 @@
       .donguri-shop-v2-balance { width: clamp(86px, 17vw, 104px); min-width: 86px; font-size: clamp(13px, 3vw, 17px); padding-left: clamp(7px, 1.9vw, 10px); padding-right: clamp(9px, 2.1vw, 12px); }
       .donguri-shop-v2-balance-icon { width: clamp(18px, 4.2vw, 24px); }
       .donguri-shop-v2-title { width: min(39vw, 280px); font-size: 0; }
-      .donguri-shop-v2-rotation-note { top: 25.4%; width: min(62vw, 380px); font-size: clamp(7px, 1.35vw, 10px); }
+      .donguri-shop-v2-rotation-note { top: 25.4%; width: min(62vw, 380px); font-size: clamp(8.5px, 1.55vw, 11.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
       .donguri-shop-v2-bubble { left: 3.8%; bottom: 62%; width: min(27%, 238px); font-size: clamp(8px, 1.35vw, 12px); }
       .donguri-shop-v2-subtitle { left: 4.2%; bottom: 54.8%; width: min(32%, 250px); min-height: clamp(16px, 4vw, 24px); padding: 2px 6px; font-size: clamp(7px, 1.28vw, 10px); border-width: 1.5px; }
@@ -4158,20 +4200,23 @@
       .donguri-shop-v2-owned-label { font-size: 11px; }
     }
     @media (min-width: 901px) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 3/2) {
-      .donguri-shop-v2-head > .donguri-shop-v2-title { top: -12%; }
-      .donguri-shop-v2-title { width: min(43vw, 440px); }
-      .donguri-shop-v2-rotation-note { top: 21.3%; font-size: clamp(12px, 1.32vw, 15px); }
+      /* v1682: 4:3 上部 letterbox 領域を活用 — 看板 / close / balance をさらに上へ持ち上げ + 看板拡大 */
+      .donguri-shop-v2-head > .donguri-shop-v2-title { top: -22%; }
+      .donguri-shop-v2-head > .donguri-shop-v2-close { top: -8%; }
+      .donguri-shop-v2-head > .donguri-shop-v2-balance { top: -8%; }
+      .donguri-shop-v2-title { width: min(52vw, 540px); }
+      .donguri-shop-v2-rotation-note { top: 18.6%; font-size: clamp(13px, 1.5vw, 17.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.8%; bottom: 8.4%; width: 25.8%; max-width: 270px; }
       .donguri-shop-v2-bubble {
         left: 5.4%;
-        bottom: 70.8%;
+        bottom: 62%;
         width: min(27.5%, 310px);
         padding: 12px 20px 30px;
         font-size: clamp(14px, 1.45vw, 16px);
       }
       .donguri-shop-v2-subtitle {
         left: 5.7%;
-        bottom: 62.8%;
+        bottom: 53.5%;
         width: min(31.5%, 340px);
         min-height: 30px;
         padding: 4px 10px;
@@ -4179,7 +4224,7 @@
       }
       .donguri-shop-v2-reserve {
         left: 7%;
-        bottom: 3.2%;
+        bottom: 1.4%;
         width: min(27%, 280px);
         min-width: 224px;
         height: clamp(124px, 12.8vw, 138px);
@@ -4398,43 +4443,47 @@
        inherits/sets pointer-events:none in center-msg states. */
     .daily-gacha-shop-link { pointer-events: auto; }
 
-    /* v1672: acorn balance badge — bottom-nav 左端外に並置する nav-mounted variant */
+    /* v1672: acorn balance badge — bottom-nav 左端外に並置する nav-mounted variant
+       v1681: 2x スケール化 (font-size 20→40, padding 8/14→16/28, min-width 70→140,
+       icon 22→44, gap 6→12, border 2→3, left -82→-164)。 bump scale は 1.22→1.12
+       に抑制 (2x 後の peak 突き抜け回避)。 */
     .acorn-balance-badge--nav {
       position: absolute;
       /* bottom-nav の grid (4列固定) を崩さず、 左外側へ並置 */
-      left: -82px;                /* nav 左端から外へ 82px (badge 幅 ~70px + 余白 12px) */
+      left: -164px;               /* v1681: -82→-164 (2x: badge 幅 ~140 + 余白 24px) */
       top: 50%;
       transform: translateY(-50%);
       z-index: 2;                 /* nav 内重なり順 */
       pointer-events: none;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      min-width: 70px;
+      gap: 12px;                  /* v1681: 6→12 */
+      padding: 16px 28px;         /* v1681: 8 14→16 28 */
+      min-width: 140px;           /* v1681: 70→140 */
       background: #fff8e0;
-      border: 2px solid #b88600;
+      border: 3px solid #b88600;  /* v1681: 2→3 (2x で線細りすぎ回避) */
       border-radius: 999px;
-      box-shadow: 0 2px 6px rgba(40, 24, 8, 0.25);
+      box-shadow: 0 4px 12px rgba(40, 24, 8, 0.28);  /* v1681: 0 2 6→0 4 12 (2x 影) */
       color: #6b3a00;
       font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
       font-weight: 700;
-      font-size: 20px;
+      font-size: 40px;            /* v1681: 20→40 */
       line-height: 1;
       user-select: none;
       -webkit-user-select: none;
     }
     /* v1680: nav badge icon を🌰 emoji から店内残高と同じ PNG ロゴへ統一。
        background-image 方式 (.donguri-shop-v2-balance-icon と一貫)、 width で
-       縮小制御するので landscape の font-size override も width override に揃える。 */
+       縮小制御するので landscape の font-size override も width override に揃える。
+       v1681: 2x (22→44) */
     .acorn-balance-badge--nav .acorn-balance-badge__icon {
       display: inline-block;
-      width: 22px;
+      width: 44px;                /* v1681: 22→44 */
       aspect-ratio: 85 / 103;
       flex: 0 0 auto;
       background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
-      filter: drop-shadow(0 1px 1px rgba(40, 24, 8, 0.2));
-      transform: translateY(-1px);
+      filter: drop-shadow(0 2px 2px rgba(40, 24, 8, 0.22));  /* v1681: 0 1 1→0 2 2 */
+      transform: translateY(-2px);                            /* v1681: -1→-2 */
     }
     .acorn-balance-badge--nav .acorn-balance-badge__count {
       font-variant-numeric: tabular-nums;
@@ -4445,7 +4494,7 @@
     }
     @keyframes acorn-balance-bump-nav {
       0%   { transform: translateY(-50%) scale(1); }
-      40%  { transform: translateY(-50%) scale(1.22); }
+      40%  { transform: translateY(-50%) scale(1.12); }       /* v1681: 1.22→1.12 (2x 後の突出抑制) */
       100% { transform: translateY(-50%) scale(1); }
     }
     .acorn-balance-badge--nav.is-occluded {
@@ -4845,11 +4894,39 @@
     .game-card__desc,
     .game-card:hover .game-card__desc,
     .game-card:focus-visible .game-card__desc {
-      color: #72593d;
+      color: #4a2e15;                                  /* v1681: #72593d→#4a2e15 (濃化) */
       font-size: 20px;
       line-height: 1.16;
       letter-spacing: 0;
-      text-shadow: 0 1px 0 rgba(255, 250, 230, .75);
+      font-weight: 800;                                /* v1681: 追加 (title 900 とのコントラスト) */
+      /* v1681: 8 方向クリームハロー — 既存の 1px 下方向影 1 本では写真背景に
+         溶けて読めない事故が出ていた問題を解決。 base 層と同パターン。 */
+      text-shadow:
+        1.1px 0 0 rgba(255, 250, 230, .96),
+        -1.1px 0 0 rgba(255, 250, 230, .96),
+        0 1.1px 0 rgba(255, 250, 230, .96),
+        0 -1.1px 0 rgba(255, 250, 230, .96),
+        0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        0 2px 4px rgba(80, 50, 20, .35);
+    }
+    /* v1681: maze overlay desc も dark halo へ */
+    .game-card[data-id="maze"] .game-card__desc,
+    .game-card[data-id="maze"]:hover .game-card__desc,
+    .game-card[data-id="maze"]:focus-visible .game-card__desc {
+      color: #fff0c8;
+      text-shadow:
+        1.1px 0 0 rgba(40, 24, 8, .96),
+        -1.1px 0 0 rgba(40, 24, 8, .96),
+        0 1.1px 0 rgba(40, 24, 8, .96),
+        0 -1.1px 0 rgba(40, 24, 8, .96),
+        0.8px 0.8px 0 rgba(40, 24, 8, .96),
+        -0.8px 0.8px 0 rgba(40, 24, 8, .96),
+        0.8px -0.8px 0 rgba(40, 24, 8, .96),
+        -0.8px -0.8px 0 rgba(40, 24, 8, .96),
+        0 2px 4px rgba(0, 0, 0, .5);
     }
     .game-card__play {
       pointer-events: none;
@@ -5021,8 +5098,13 @@
       .daily-quest-info-banner__body { font-size: 22px; }            /* v1680: 18→22 */
       .daily-gacha-entry { height: 104px; }                          /* v1680: 88→104 */
       .cards-col {
-        padding-top: 18px;                                           /* v1680: 40→18 */
-        padding-bottom: 110px;                                       /* v1680: 128→110 */
+        /* v1681: 上 padding 廃止 + justify-content: center で card-list を縦中央寄せ。
+           上下 scroll-hint も flex 子要素として in-flow になり、 group 全体が canvas
+           中央軸に揃う。 bottom-nav (114px / bottom:14px) クリアランスのみ 80px 確保。 */
+        padding-top: 0;                                              /* v1681: 18→0 */
+        padding-bottom: 80px;                                        /* v1681: 110→80 */
+        justify-content: center;                                     /* NEW v1681 */
+        gap: 6px;                                                    /* NEW v1681 (arrows と card-list 間) */
       }
       .card-list {
         gap: 10px;                                                   /* v1680: 8→10 */
@@ -5031,30 +5113,62 @@
       }
       .game-card { max-height: 124px; }                              /* v1680: 106→124 (+17%) */
       .game-card__title,
-      .game-card[data-id] .game-card__title { font-size: 30px; }     /* v1680: 24→30 (+25%) */
+      .game-card[data-id] .game-card__title {
+        font-size: 30px;                                             /* v1680: 24→30 (+25%) */
+        /* v1681: nowrap 解除 + game-title-break <span> を block 化で 2 行折り返しを
+           明示制御 (iOS Safari の inline-block 連続 + nowrap 暴発バグ回避)。 */
+        white-space: normal;                                         /* NEW v1681 */
+        text-overflow: clip;                                         /* NEW v1681 */
+        line-height: 1.05;                                           /* NEW v1681 */
+      }
+      .game-card__title .game-title-break {
+        display: block;                                              /* NEW v1681 (bento/cooking 2 行化) */
+      }
       .game-card__desc { font-size: 18px; }                          /* v1680: 15→18 */
+      /* v1681: 4:3 のみ scroll-hint を absolute → in-flow へ。 cards-col flex column
+         + justify-content: center により card-list の真上/真下に追従。 bob 動作は
+         translateX(-50%) を含まない landscape 専用 keyframes に差し替え。 */
+      .scroll-hint--up,
+      .scroll-hint--down {
+        position: relative;
+        top: auto;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        align-self: center;
+        margin: 0;
+      }
+      .scroll-hint--up   { animation: hintBobUp43   2.4s ease-in-out infinite; }
+      .scroll-hint--down { animation: hintBobDown43 2.4s ease-in-out infinite; }
       .bottom-nav { --nav-sprite-w: 360px; --nav-sprite-h: 114px; bottom: 14px; padding-inline: 13px; }
       .bn-item { border-radius: 14px; }
     }
+    /* v1681: 4:3 専用 bob (translateX なし) — in-flow scroll-hint 用 */
+    @keyframes hintBobUp43   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes hintBobDown43 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY( 6px); } }
 
-    /* v1672: nav-mounted acorn badge — landscape レスポンシブ縮小 */
+    /* v1672: nav-mounted acorn badge — landscape レスポンシブ縮小
+       v1681: 各 breakpoint も 2x (16:9~ は 2x、 4:3 は nav 高さ占有率を考慮し 1.75x 抑制) */
     @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
       .acorn-balance-badge--nav {
-        left: -74px;
-        padding: 7px 12px;
-        min-width: 62px;
-        font-size: 18px;
+        left: -148px;             /* v1681: -74→-148 */
+        padding: 14px 24px;       /* v1681: 7 12→14 24 */
+        min-width: 124px;         /* v1681: 62→124 */
+        font-size: 36px;          /* v1681: 18→36 */
       }
-      .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 20px; }
+      .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 40px; }  /* v1681: 20→40 */
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+      /* v1681: 4:3 (iPad横) は nav 高さ 114px に対する badge 高さ占有率が過半に
+         達するため、 単純 2x ではなく 1.75x に抑制 (font 28 / padding 10 18 / icon 32)。
+         left offset は badge 幅 ~96 + 余白 22 = -118。 */
       .acorn-balance-badge--nav {
-        left: -66px;
-        padding: 6px 10px;
-        min-width: 54px;
-        font-size: 16px;
+        left: -118px;             /* v1681: -66→-118 (1.75x) */
+        padding: 10px 18px;       /* v1681: 6 10→10 18 */
+        min-width: 96px;          /* v1681: 54→96 */
+        font-size: 28px;          /* v1681: 16→28 */
       }
-      .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 18px; }
+      .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 32px; }  /* v1681: 18→32 */
     }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
@@ -5650,7 +5764,7 @@
       {
         id: 'puzzle',
         title: 'ポノのなかよしパズル',
-        subtitle: 'ピースを あわせて えを かんせい',
+        subtitle: 'ピースを あわせて えを つくろう',
         icon: '🧩',
         bg: 'assets/ui/play_puzzle_title_back.webp',
         href: 'puzzle/index.html',
@@ -5663,7 +5777,7 @@
       {
         id: 'starparodier',
         title: 'ポノのスターパロジャー',
-        subtitle: '宇宙で メカと たたかおう',
+        subtitle: 'うちゅうで メカと たたかおう',
         icon: '🚀',
         bg: 'assets/ui/play_starparodier_title_back.webp',
         href: 'starparodier/index.html',
@@ -5689,7 +5803,7 @@
       {
         id: 'sea-album',
         title: 'ポノの海底アルバム',
-        subtitle: '生き物を しらべて カードを あつめよう',
+        subtitle: 'いきものを しらべて カードを あつめよう',
         icon: '🐚',
         bg: 'assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png',
         href: 'sea-album/index.html',
@@ -5703,7 +5817,7 @@
       {
         id: 'writing-mori',
         title: 'もじっこファーム',
-        subtitle: 'ひらがなを なぞって ミルマルと そだとう',
+        subtitle: 'ひらがなを なぞって ミルマルを そだてよう',
         icon: '✏️',
         bg: 'assets/ui/play_wordmatch_title_back.webp',
         href: 'writing-mori/index.html',
@@ -5894,7 +6008,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1680;
+    const PAGE_CACHE_VERSION = 1682;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
