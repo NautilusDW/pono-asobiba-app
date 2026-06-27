@@ -60,6 +60,7 @@
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
+- 2026-06-28 00:30 - by Claude - [batch:868-perf-gacha-and-remaining-games] - play.html, sw.js, common/**, starparodier/**, undersea-cave/**, sea-album/**, bubble/**, aquarium/**, breakout/** - ガチャ画面 preload 化 + 未対応ゲームに preload-helper 展開
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
