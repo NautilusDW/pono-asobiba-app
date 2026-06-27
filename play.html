@@ -6071,7 +6071,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1697;
+    const PAGE_CACHE_VERSION = 1698;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -8008,7 +8008,13 @@
     function showShop() {
       var shop = document.getElementById('donguriShop');
       if (!shop) return;
-      pauseTopBgmForDonguriShop();
+      // v1698: shop 中 BGM 復活 — v1693 の pauseTopBgmForDonguriShop() 呼出を撤回。
+      //        play-bgm を shop 中も流す方針へ (専用 BGM 素材が入るまでの暫定)。
+      //        ヘルパー関数定義 (L7090-7115) は将来再有効化のため残置。
+      // pauseTopBgmForDonguriShop();
+      // v1698: daily-gacha → shop 遷移で bed_loop が漏れていた場合に備えて確実に止める
+      //        (これが v1693 で観測された「二重再生」 の真因)。
+      try { if (typeof stopDailyGachaBed === 'function') stopDailyGachaBed(); } catch (_) {}
       shop.hidden = false;
       // v1591: shop 表示中はメイン残高バッジを hide (shop 内に balance pill があり重複 + 隅で見切れる)
       var badge = document.getElementById('acornBalanceBadge');
@@ -8029,7 +8035,9 @@
       _stopShopNarration();
       _clearShopkeeperNeutralTimer();
       _setShopSubtitle('');
-      resumeTopBgmAfterDonguriShop();
+      // v1698: shop 中 BGM 復活 — v1693 の resumeTopBgmAfterDonguriShop() 呼出を撤回。
+      //        showShop 側で pause していないので resume も不要。
+      // resumeTopBgmAfterDonguriShop();
       // v1591: shop を閉じたらメイン残高バッジを復帰
       var badge = document.getElementById('acornBalanceBadge');
       if (badge) badge.classList.remove('is-occluded');
