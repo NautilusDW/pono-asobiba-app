@@ -3468,7 +3468,9 @@ function _playFlagVoice(key) {
       _flagVoiceCache[key] = a;
     }
     try { a.currentTime = 0; } catch (_) {}
-    a.play().catch(function() {});
+    a.play().catch(function(err) {
+      try { console.warn('[flag-voice] play failed:', key, err && err.name); } catch (_) {}
+    });
   } catch (_) {}
 }
 function _playMzSePitch(name, semitones) {
@@ -6871,6 +6873,10 @@ function _clearFlagRoundTimer() {
     cancelAnimationFrame(gs.rafId);
     gs.rafId = null;
   }
+  if (gs.missVoiceId) {
+    clearTimeout(gs.missVoiceId);
+    gs.missVoiceId = null;
+  }
 }
 
 function _paintFlagTimer(remainingMs) {
@@ -6905,6 +6911,19 @@ function _startFlagRoundTimer() {
 function _showFlagGame() {
   _setEncounterMode('flag');
   _flagGameState = { step: 0, pose: 'down', locked: false, hp: FLAG_HP_INITIAL, steps: _buildFlagGameSteps() };
+  // AF-04: iOS Safari user-gesture-chain アンロック: 全 voice を preload (まだ user gesture 内)
+  ['cmd_red_up','cmd_white_up','cmd_red_down','cmd_white_down',
+   'cmd_red_down_keep','cmd_white_down_keep',
+   'miss_01','miss_02','win'].forEach(function(k) {
+    if (!_flagVoiceCache[k]) {
+      try {
+        const a = new Audio(_FLAG_VOICE_BASE + k + '.mp3');
+        a.volume = 0.75;
+        a.preload = 'auto';
+        _flagVoiceCache[k] = a;
+      } catch (_) {}
+    }
+  });
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'flag-game';
@@ -7019,16 +7038,30 @@ function _flagApplyMiss(reason) {
   const prevHp = gs.hp;
   gs.hp = Math.max(0, prevHp - 1);
   _renderFlagHp(gs.hp, prevHp);
-  playMzSe('wrong');
-  setTimeout(function() {
-    _playFlagVoice('miss_0' + (1 + Math.floor(Math.random() * 2)));
-  }, 160);
   if (gs.hp <= 0) {
-    _resolveFlagGame(false, 'hp');
+    // F3: HP=0 では wrong SE / miss voice を再生せず、 ハート消灯アニメを 600ms 見せてから resolve
+    const defeatReason = (reason === 'time') ? 'time' : 'hp';
+    _flagTunnelSetTimeout(function() {
+      if (!_flagGameState) return;
+      _resolveFlagGame(false, defeatReason);
+    }, 600);
     return;
   }
+  playMzSe('wrong');
+  // AF-02: 初回ミス (prevHp === FLAG_HP_INITIAL) のみ miss_02 (「おしい」 励まし), 2 回目以降 miss_01 (「ちがうよー」 明確否定)
+  const missKey = (prevHp === FLAG_HP_INITIAL) ? 'miss_02' : 'miss_01';
+  // F1: tracked + state guarded
+  gs.missVoiceId = _flagTunnelSetTimeout(function() {
+    if (!_flagGameState) return;
+    _flagGameState.missVoiceId = null;
+    _playFlagVoice(missKey);
+  }, 160);
+  // F4: cmd voice / round timer を 900ms 遅延 (ミス→励まし→再コマンドの自然順)
   gs.locked = false;
-  _renderFlagStep(true);
+  _flagTunnelSetTimeout(function() {
+    if (!_flagGameState) return;
+    _renderFlagStep(true);
+  }, 900);
 }
 
 function _onFlagTap(flag) {
@@ -7060,7 +7093,9 @@ function _resolveFlagGame(won, reason) {
   _flagGameState = null;
   playMzSe(won ? 'correct' : 'wrong');
   if (!won) {
-    const text = reason === 'time' ? 'じかんぎれ…' : 'ちがった…';
+    const text = reason === 'time' ? 'じかんぎれ…'
+               : reason === 'hp'   ? 'ハートが ぜんぶ なくなった…'
+               : 'ちがった…';
     encStageEl.innerHTML =
       '<div class="enc-result lose">' + text + '</div>' +
       '<div class="row"><button class="enc-btn lose" id="flagBackBtn">もどる ▶</button></div>';
@@ -7072,7 +7107,10 @@ function _resolveFlagGame(won, reason) {
 }
 
 function _showFlagRewardSequence() {
-  _playFlagVoice('win');
+  // AF-03: 勝利 SE (correct) と win voice が同タイミングで被るので 180ms 遅延
+  _flagTunnelSetTimeout(function() {
+    _playFlagVoice('win');
+  }, 180);
   const st = _flagTunnelState;
   if (st) {
     st.unlocked = true;
@@ -9694,8 +9732,8 @@ function _closeEncounter(playerWon) {
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
   const wasStrengthPush = _currentGame === 'strength_push';
   if (_currentGame === 'flag') {
-    _flagGameState = null;
     _clearFlagTunnelTimers();
+    _flagGameState = null;
   }
   if (_currentGame === 'water_bridge') {
     _waterGameState = null;
