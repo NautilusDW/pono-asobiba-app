@@ -5331,6 +5331,9 @@
        Safari's autoplay restriction without showing a tap-to-start screen. -->
   <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
 
+  <!-- ===== Shop BGM (v1699: sticker-album-morning.mp3 をシティポップ調 shop BGM として再利用) ===== -->
+  <audio id="shop-bgm" src="assets/audio/stickerbook/bgm/sticker-album-morning.mp3" loop preload="auto"></audio>
+
   <!-- ===== Tap-to-start intro overlay (first session only; landscape only) =====
        Single tap dismisses, unlocks BGM autoplay, and reveals the title screen
        behind. Suppressed automatically if Settings has muted audio or if the
@@ -6071,7 +6074,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1698;
+    const PAGE_CACHE_VERSION = 1699;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -7114,6 +7117,36 @@
       donguriShopAudio.resumeTopBgm = false;
     }
 
+    // v1699: shop 専用 BGM (sticker-album-morning.mp3) の再生制御。
+    // play-bgm 用の mute フラグ (localStorage 'pono_sound_off') を尊重する。
+    function shopBgmElement() {
+      return document.getElementById('shop-bgm');
+    }
+    function _shopBgmIsMuted() {
+      try { return localStorage.getItem('pono_sound_off') === '1'; } catch (_) { return false; }
+    }
+    function startDonguriShopBgm() {
+      var bgm = shopBgmElement();
+      if (!bgm) return;
+      // v1699: グローバル mute (play-bgm 用) を尊重 — mute 中は shop でも無音
+      if (_shopBgmIsMuted()) return;
+      try {
+        // 再生前に毎回頭出し (前回の半端な位置から復活して途切れて聞こえないよう)
+        bgm.currentTime = 0;
+        bgm.volume = 0.32;
+        var p = bgm.play();
+        if (p && p.catch) p.catch(function () {});
+      } catch (_) {}
+    }
+    function stopDonguriShopBgm() {
+      var bgm = shopBgmElement();
+      if (!bgm) return;
+      try {
+        bgm.pause();
+        bgm.currentTime = 0;
+      } catch (_) {}
+    }
+
     function createDailyGachaAudio(path, options = {}) {
       if (typeof Audio !== 'function') return null;
       const audio = new Audio(dailyGachaAudioSrc(path));
@@ -8008,13 +8041,14 @@
     function showShop() {
       var shop = document.getElementById('donguriShop');
       if (!shop) return;
-      // v1698: shop 中 BGM 復活 — v1693 の pauseTopBgmForDonguriShop() 呼出を撤回。
-      //        play-bgm を shop 中も流す方針へ (専用 BGM 素材が入るまでの暫定)。
-      //        ヘルパー関数定義 (L7090-7115) は将来再有効化のため残置。
-      // pauseTopBgmForDonguriShop();
+      // v1699: shop 専用 BGM (sticker-album-morning.mp3) を導入。 play-bgm を pause + shop-bgm を start。
+      //        v1698 でコメントアウトしていた pauseTopBgmForDonguriShop() を復活、
+      //        さらに startDonguriShopBgm() を新規追加。 ヘルパー定義は L7090-7160 付近。
       // v1698: daily-gacha → shop 遷移で bed_loop が漏れていた場合に備えて確実に止める
       //        (これが v1693 で観測された「二重再生」 の真因)。
       try { if (typeof stopDailyGachaBed === 'function') stopDailyGachaBed(); } catch (_) {}
+      pauseTopBgmForDonguriShop();
+      startDonguriShopBgm();
       shop.hidden = false;
       // v1591: shop 表示中はメイン残高バッジを hide (shop 内に balance pill があり重複 + 隅で見切れる)
       var badge = document.getElementById('acornBalanceBadge');
@@ -8035,9 +8069,9 @@
       _stopShopNarration();
       _clearShopkeeperNeutralTimer();
       _setShopSubtitle('');
-      // v1698: shop 中 BGM 復活 — v1693 の resumeTopBgmAfterDonguriShop() 呼出を撤回。
-      //        showShop 側で pause していないので resume も不要。
-      // resumeTopBgmAfterDonguriShop();
+      // v1699: shop 専用 BGM を停止して play-bgm を復帰。 順序固定 (stop shop → resume top)。
+      stopDonguriShopBgm();
+      resumeTopBgmAfterDonguriShop();
       // v1591: shop を閉じたらメイン残高バッジを復帰
       var badge = document.getElementById('acornBalanceBadge');
       if (badge) badge.classList.remove('is-occluded');
