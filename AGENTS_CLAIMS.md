@@ -62,6 +62,7 @@
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-27 13:40 - by Claude - [batch:862-oto-rhythm-alps-fixes] - oto/index.html, sw.js - リズムチュートリアル座標スマホズレ + 君の番ナレ + アルプス音程修正 + かえる3回勝負告知
 - 2026-06-27 13:50 - by Claude - [batch:863-perf-image-loading] - 調査のみ (read-only) - 全体的な描画パフォーマンス: 画像が上から順次バラバラ表示される原因究明とプリロード戦略提案
+- 2026-06-27 14:00 - by Claude - [batch:864-shop-bgm-double] - play.html, sw.js - こもれびや shop の play-bgm 二重再生バグ修正 (daily-gacha pattern 流用)
 
 ---
 

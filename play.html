@@ -6047,7 +6047,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1692;
+    const PAGE_CACHE_VERSION = 1693;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -7021,6 +7021,33 @@
       } catch (_) {}
     }
 
+    // v1693: shop 内 BGM 制御。 daily-gacha のパターンを踏襲。
+    var donguriShopAudio = { pausedTopBgm: false, resumeTopBgm: false };
+    function topBgmForDonguriShop() {
+      return document.getElementById('play-bgm');
+    }
+    function pauseTopBgmForDonguriShop() {
+      var bgm = topBgmForDonguriShop();
+      if (!bgm || donguriShopAudio.pausedTopBgm) return;
+      donguriShopAudio.resumeTopBgm = !bgm.paused;
+      if (donguriShopAudio.resumeTopBgm) {
+        try { bgm.pause(); } catch (_) {}
+        donguriShopAudio.pausedTopBgm = true;
+      }
+    }
+    function resumeTopBgmAfterDonguriShop() {
+      var bgm = topBgmForDonguriShop();
+      if (!bgm) return;
+      if (donguriShopAudio.pausedTopBgm && donguriShopAudio.resumeTopBgm) {
+        try {
+          var p = bgm.play();
+          if (p && p.catch) p.catch(function () {});
+        } catch (_) {}
+      }
+      donguriShopAudio.pausedTopBgm = false;
+      donguriShopAudio.resumeTopBgm = false;
+    }
+
     function createDailyGachaAudio(path, options = {}) {
       if (typeof Audio !== 'function') return null;
       const audio = new Audio(dailyGachaAudioSrc(path));
@@ -7915,6 +7942,7 @@
     function showShop() {
       var shop = document.getElementById('donguriShop');
       if (!shop) return;
+      pauseTopBgmForDonguriShop();
       shop.hidden = false;
       // v1591: shop 表示中はメイン残高バッジを hide (shop 内に balance pill があり重複 + 隅で見切れる)
       var badge = document.getElementById('acornBalanceBadge');
@@ -7935,6 +7963,7 @@
       _stopShopNarration();
       _clearShopkeeperNeutralTimer();
       _setShopSubtitle('');
+      resumeTopBgmAfterDonguriShop();
       // v1591: shop を閉じたらメイン残高バッジを復帰
       var badge = document.getElementById('acornBalanceBadge');
       if (badge) badge.classList.remove('is-occluded');
@@ -8045,6 +8074,7 @@
       if (!donguriShopNarrationAudio[kind]) {
         var audio = new Audio(_shopNarrationSrc(config.src));
         audio.preload = 'auto';
+        audio.loop = false;  // v1693: 明示的に loop 禁止 (将来 narration 復活時に重複再生回避)
         audio.volume = config.volume == null ? .94 : config.volume;
         donguriShopNarrationAudio[kind] = audio;
       }
