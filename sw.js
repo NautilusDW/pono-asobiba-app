@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1710: ガチャ落下カプセルの受け皿マスクを調整。前壁の外縁ではなく、厚み分だけ奥側の内壁ラインで隠れるよう `.daily-gacha-drop-mask` の bottom inset を 5% → 9% に変更。play.html PAGE_CACHE_VERSION と同期。
 // v1709: クロスレビュー finalize batch:869-bff (4 fixes 統合) — Fix 1: play.html FOUC guard + #pono-game-splash overlay (oto 型 4 層マスキング、 タップ/Enter で dismiss、 a11y tabindex 対応)。 Fix 2: bento/index.html FOUC guard を #shop-opening / .shop-opening / .free-bottom-guide にも拡張 (将来 shop intro merge 時に forward-compatible)。 Fix 3: common/preload-helper.js gacha 配列を 6→11 件 (chrome 5 件追加 = start_panel/more_turn/counter/action_home/shop_button)、 play.html startDailyGachaImagePreload を FAST_BATCH_SIZE=8 gap=0 / 16 件以降 90ms gap に変更 (モーダル open 後 chrome paint -600ms)。 Fix 4: common/sw-update.js に opt-in トースト「今すぐ更新」 追加 (toastShown 多重防止)、 play.html に first-visit catch-up overlay (sessionStorage FLAG + lastSeen 比較 + __isReloading 2s cleanup でループ防止)。 play.html PAGE_CACHE_VERSION と同期。
 // v1708: どんぐり獲得モーダル共通化リファクタ — common/acorn-modal-shared.css / common/acorn-modal.js / common/acorn-audio.js / common/acorn-copy.json を新規追加し precache list (CRITICAL_ASSETS_SCRIPTS) に登録。 quizland/index.html を CRITICAL_ASSETS_HTML に追加して daily-quest 経由のクリア演出 cold start 解消。 既存 network-first / cache-first 戦略は無改変。 skipWaiting/clients.claim は install/activate で呼ばない設計を維持。
 // v1707: ガチャ結果のR/SR表示を台座型から装飾文字ロゴへ差し替え。Rは銀、SRは虹+白金の透過PNG lettermark とし、下プレートはレア度別の喜び一言 + シール名を表示。play.html PAGE_CACHE_VERSION と同期。
@@ -335,7 +336,7 @@
 // v1704: ガチャ結果のレア/スーパーレア判別用に、シール右上へ R/SR バッジを追加。GPT Image 2 生成の銀台座/虹白金台座を透過PNG化し、文字はHTML重ねで視認性を確保。play.html PAGE_CACHE_VERSION と同期。
 // v1703: モバイル portrait のガチャ画面 status bar 領域に出る薄い黒長方形を修正。 .daily-gacha-modal に env(safe-area-inset-top/bottom) padding を当てて、 .daily-gacha-shell::before の dim layer が status bar 領域に被らないように (@media max-width:900px and orientation:portrait 独立 block)。 desktop / landscape / iPad 影響なし、 rarity 演出の dim 強度も変更なし。 play.html PAGE_CACHE_VERSION と同期。
 // v1702: Stream B finalize — common/preload-helper.js GAME_WARM_ASSETS bento 8 件を .png → .webp 修正 (hamburg2/ebi_fry2/rice_umeboshi/korokke2/fries2/broccoli2/mini_tomato2/ichigo2)。 PNG 実体は assets/images/Bento_parts/ に存在しない (WebP 移行済み) ため、 旧 path だと warm fetch が 404 → console error + 帯域浪費していた。 karaage2 のみ PNG 残存のため未変更。 play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1709;
+const CACHE_VERSION = 1710;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
