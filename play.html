@@ -4200,23 +4200,29 @@
       .donguri-shop-v2-owned-label { font-size: 11px; }
     }
     @media (min-width: 901px) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 3/2) {
-      /* v1682: 4:3 上部 letterbox 領域を活用 — 看板 / close / balance をさらに上へ持ち上げ + 看板拡大 */
-      .donguri-shop-v2-head > .donguri-shop-v2-title { top: -22%; }
-      .donguri-shop-v2-head > .donguri-shop-v2-close { top: -8%; }
-      .donguri-shop-v2-head > .donguri-shop-v2-balance { top: -8%; }
+      /* v1685: 4:3 上部 letterbox 領域 (viewport top から safe frame まで 96px) を head bar 全体で活用。
+         head を top: -10vh で letterbox 上部に押し上げ、 看板 top は -22%→-4% で head 内に収納し
+         rotation-note (z-index 5) との衝突を解消。 close/balance も head 上昇に追従 (-8%→8%)。 */
+      .donguri-shop-v2-head {
+        top: -10vh;
+        height: clamp(56px, 8vw, 88px);
+      }
+      .donguri-shop-v2-head > .donguri-shop-v2-title { top: -4%; }
+      .donguri-shop-v2-head > .donguri-shop-v2-close { top: 8%; }
+      .donguri-shop-v2-head > .donguri-shop-v2-balance { top: 8%; }
       .donguri-shop-v2-title { width: min(52vw, 540px); }
-      .donguri-shop-v2-rotation-note { top: 18.6%; font-size: clamp(13px, 1.5vw, 17.5px); }
+      .donguri-shop-v2-rotation-note { top: 14%; font-size: clamp(13px, 1.5vw, 17.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.8%; bottom: 8.4%; width: 25.8%; max-width: 270px; }
       .donguri-shop-v2-bubble {
         left: 5.4%;
-        bottom: 62%;
+        bottom: 58%;
         width: min(27.5%, 310px);
         padding: 12px 20px 30px;
         font-size: clamp(14px, 1.45vw, 16px);
       }
       .donguri-shop-v2-subtitle {
         left: 5.7%;
-        bottom: 53.5%;
+        bottom: 49%;
         width: min(31.5%, 340px);
         min-height: 30px;
         padding: 4px 10px;
@@ -6024,7 +6030,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1684;
+    const PAGE_CACHE_VERSION = 1685;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
