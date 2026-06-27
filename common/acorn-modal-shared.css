@@ -190,6 +190,106 @@
 }
 
 /* =============================================================
+ * 追加 BEM 要素 (acorn-modal.js が生成する DOM 構造に対応)
+ *  - __dismiss   閉じるボタン (×)
+ *  - __kicker    上段の「やったね！」等のキャッチ
+ *  - __bottom    label + amount を縦並びにする下段ラッパ
+ *  - __label     補足コピー (= __copy 相当)
+ *  - __amount-text  ×N をまとめる inline 親
+ *  - __amount-mult  「×」 半角記号
+ *  - __amount-num   数値 (例: 5)
+ *  - __progress     「きょう N / M」 表記
+ *
+ *  __dismiss は最低 44x44px (WCAG SC 2.5.5 / 子供向け誤タップ防止) で確保。
+ * ============================================================= */
+.pono-acorn-modal__dismiss {
+  position: absolute;
+  top: clamp(16px, 3vw, 24px);
+  right: clamp(20px, 3.8vw, 32px);
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(117, 75, 27, 0.48);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff8df, #f4c46a);
+  color: #6e3d09;
+  font: 900 24px/1 var(--acorn-modal-font);
+  box-shadow: 0 3px 0 rgba(118, 66, 0, 0.38);
+  cursor: pointer;
+  pointer-events: auto; /* overlay は pointer-events: none なので個別に復活 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.pono-acorn-modal__dismiss:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(118, 66, 0, 0.38);
+}
+
+.pono-acorn-modal__panel {
+  position: relative; /* __dismiss の absolute 基点 */
+  pointer-events: auto; /* パネル内のインタラクションを許可 */
+}
+
+.pono-acorn-modal__kicker {
+  align-self: end;
+  color: #8b4e12;
+  font-size: clamp(22px, 5vw, 33px);
+  font-weight: 900;
+  line-height: 1.05;
+  text-shadow: 0 2px 0 rgba(255, 246, 214, 0.95);
+  white-space: nowrap;
+  margin-bottom: var(--acorn-modal-gap);
+}
+
+.pono-acorn-modal__bottom {
+  display: grid;
+  justify-items: center;
+  gap: clamp(7px, 1.5vw, 10px);
+}
+
+.pono-acorn-modal__label {
+  color: var(--acorn-copy-color-nonperfect);
+  font-size: clamp(16px, 3.6vw, 22px);
+  font-weight: 900;
+  line-height: 1.12;
+  text-shadow: var(--acorn-copy-shadow-nonperfect);
+  white-space: nowrap;
+}
+
+.pono-acorn-modal__amount-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pono-acorn-modal__amount-mult {
+  font-size: 0.52em;
+  transform: translateY(-0.08em);
+}
+
+.pono-acorn-modal__amount-num {
+  display: inline-block;
+}
+
+.pono-acorn-modal__progress {
+  margin-top: var(--acorn-modal-gap);
+  color: var(--acorn-copy-color-nonperfect);
+  font-size: clamp(12px, 2.4vw, 16px);
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.pono-acorn-modal--perfect .pono-acorn-modal__label,
+.pono-acorn-modal--perfect .pono-acorn-modal__progress {
+  color: var(--acorn-copy-color-perfect);
+  text-shadow: var(--acorn-copy-shadow-perfect);
+}
+
+/* =============================================================
  * 状態モディファイア
  * ============================================================= */
 /* armed: 表示開始したが、 keyframes はまだ走っていない初期姿勢。
@@ -204,6 +304,32 @@
 .pono-acorn-modal--armed .pono-acorn-modal__panel {
   opacity: 0;
   transform: translateY(8px) scale(.96);
+}
+
+/* static: prefers-reduced-motion 時に JS が付与する状態。
+   keyframes/transition を一切走らせず、 最終姿勢で静止表示する。
+   --animated とは排他で、 armed が残っていても上書き優先。 */
+.pono-acorn-modal--static,
+.pono-acorn-modal--static .pono-acorn-modal__panel,
+.pono-acorn-modal--static .pono-acorn-modal__icon,
+.pono-acorn-modal--static .pono-acorn-modal__amount,
+.pono-acorn-modal--static .pono-acorn-modal__amount-text,
+.pono-acorn-modal--static .pono-acorn-modal__copy,
+.pono-acorn-modal--static .pono-acorn-modal__label,
+.pono-acorn-modal--static .pono-acorn-modal__kicker,
+.pono-acorn-modal--static .pono-acorn-modal__progress,
+.pono-acorn-modal--static.pono-acorn-modal--perfect .pono-acorn-modal__panel::after {
+  animation: none !important;
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  transition: none !important;
+  transition-delay: 0s !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.pono-acorn-modal--static.pono-acorn-modal--perfect .pono-acorn-modal__panel::after {
+  display: none !important;
 }
 
 /* animated: 実際に keyframes を発火 (quizland の is-animated 相当) */

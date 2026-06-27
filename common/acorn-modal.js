@@ -52,20 +52,44 @@
     }
   };
 
+  // acorn-copy.json は { title, main, copy } の 3 フィールド schema、
+  // 内部 DEFAULT_COPY は { kicker, label, ariaLabel } schema。
+  // catalog から取れた値はここで内部 schema に正規化する。
+  //
+  //   title → kicker / ariaLabel フォールバック
+  //   main  → label  / kicker フォールバック (title 欠落時)
+  //   copy  → (補助; 現在の panel DOM では未使用)
+  //   既に kicker/label/ariaLabel が入っていればそれを優先 (Phase 2+ 互換)。
+  function normalizeCopy(raw, fallback) {
+    var base = fallback || DEFAULT_COPY.idle;
+    if (!raw || typeof raw !== 'object') return base;
+    var kicker = raw.kicker || raw.title || base.kicker || '';
+    var label = raw.label || raw.main || raw.copy || base.label || '';
+    var ariaLabel = raw.ariaLabel || raw.title || label || base.ariaLabel || '';
+    return {
+      kicker: kicker,
+      label: label,
+      ariaLabel: ariaLabel
+    };
+  }
+
   function resolveCopy(gameId, state, override) {
-    if (override && typeof override === 'object') return override;
+    var fallback = DEFAULT_COPY[state] || DEFAULT_COPY.idle;
+    if (override && typeof override === 'object') {
+      return normalizeCopy(override, fallback);
+    }
     var catalog = window.PonoAcornCopy;
     if (catalog && typeof catalog.get === 'function') {
       try {
         var fromCatalog = catalog.get(gameId, state);
         if (fromCatalog && typeof fromCatalog === 'object') {
-          return fromCatalog;
+          return normalizeCopy(fromCatalog, fallback);
         }
       } catch (e) {
         // fallthrough to default
       }
     }
-    return DEFAULT_COPY[state] || DEFAULT_COPY.idle;
+    return fallback;
   }
 
   function prefersReducedMotion() {
@@ -77,15 +101,21 @@
     }
   }
 
-  function playSafe(name) {
+  // playSafe(gameId, state)
+  //  - PonoAcornAudio.play は (gameId, opts?) シグネチャで、
+  //    gameId 未登録なら don.mp3 にフォールバックする。
+  //  - state は 'perfect' のとき音量を少し上げる程度の hint として扱う。
+  //    state 固有の SFX が欲しいゲームは acorn-audio.js 側で
+  //    別 gameId として register すること。
+  function playSafe(gameId, state) {
     var audio = window.PonoAcornAudio;
-    if (!audio) return;
+    if (!audio || typeof audio.play !== 'function') return;
+    var opts = null;
+    if (state === 'perfect') {
+      opts = { volume: 0.6 };
+    }
     try {
-      if (typeof audio.play === 'function') {
-        audio.play(name);
-      } else if (typeof audio[name] === 'function') {
-        audio[name]();
-      }
+      audio.play(gameId, opts);
     } catch (e) {
       // 音声は hard requirement ではない
     }
@@ -315,13 +345,14 @@
     });
 
     // reflow → rAF x2 → animated クラス付与 (quizland 流の確実発動)
-    // prefers-reduced-motion 時は animated を付けても CSS 側で停止する想定。
+    // prefers-reduced-motion 時は --animated を付けず --static を付与。
+    // CSS 側に .pono-acorn-modal--static の static 表示ルールあり。
     /* eslint-disable no-unused-expressions */
     this._overlay.offsetWidth;
     /* eslint-enable no-unused-expressions */
 
     if (prefersReducedMotion()) {
-      // animated を付けない (CSS でも :not(.pono-acorn-modal--animated) は静的表示)
+      // animated を付けない。 --static (CSS で animation:none + opacity:1) を付与。
       this._overlay.classList.add('pono-acorn-modal--static');
     } else {
       requestAnimationFrame(function () {
@@ -341,7 +372,8 @@
     }
 
     // 効果音 (hard requirement ではない)
-    playSafe(this.state === 'perfect' ? 'perfect' : 'reward');
+    // PonoAcornAudio.play(gameId) は未登録なら don.mp3 にフォールバック。
+    playSafe(this.gameId, this.state);
 
     // auto-hide
     var hideMs = prefersReducedMotion() ? REDUCED_AUTOHIDE_MS : this.autoHide;

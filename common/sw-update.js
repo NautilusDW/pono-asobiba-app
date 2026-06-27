@@ -95,17 +95,94 @@
     if (e && e.data && e.data.type === 'sw-updated') reloadOnce();
   });
 
+  // ── Toast UI (opt-in "今すぐ更新" button) ──
+  // Fix 4 (2026-06-28): waiting SW がある時のみ表示される小さなトースト。
+  // Rendered only when a waiting SW exists. Tapping the button posts
+  // SKIP_WAITING to reg.waiting → controllerchange → safeReload().
+  // The toast is small, fixed bottom-right, and dismissible. It never blocks
+  // the title screen or game controls because pointer-events are scoped to
+  // the toast element only.
+  // z-index 階層 (上から下): catch-up overlay (2147483647) > toast (2147483646) > tap-intro (99999) > splash (1000)
+  // toastShown フラグで多重表示を防止 (showUpdateToast() が複数回呼ばれても 1 つだけ)
+  var toastShown = false;
+  function ensureToastStyle() {
+    if (document.getElementById('pono-sw-toast-style')) return;
+    var style = document.createElement('style');
+    style.id = 'pono-sw-toast-style';
+    style.textContent = [
+      '.pono-sw-toast{position:fixed;right:12px;bottom:12px;z-index:2147483646;',
+      'background:rgba(20,24,32,0.92);color:#fff;border-radius:12px;',
+      'padding:10px 12px 10px 14px;font:600 13px/1.4 system-ui,sans-serif;',
+      'box-shadow:0 6px 20px rgba(0,0,0,0.35);display:flex;align-items:center;gap:10px;',
+      'max-width:calc(100vw - 24px);animation:ponoSwToastIn .25s ease both;}',
+      '.pono-sw-toast button{font:600 13px/1 system-ui,sans-serif;border:0;cursor:pointer;',
+      'border-radius:8px;padding:8px 12px;}',
+      '.pono-sw-toast .pono-sw-toast-go{background:#3ecf6f;color:#0a1812;}',
+      '.pono-sw-toast .pono-sw-toast-go:active{transform:translateY(1px);}',
+      '.pono-sw-toast .pono-sw-toast-close{background:transparent;color:#cfd6e0;padding:6px 8px;}',
+      '@keyframes ponoSwToastIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}'
+    ].join('');
+    document.head.appendChild(style);
+  }
+  function showUpdateToast(reg) {
+    if (toastShown) return;
+    if (!reg || !reg.waiting) return;
+    toastShown = true;
+    ensureToastStyle();
+    var el = document.createElement('div');
+    el.className = 'pono-sw-toast';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    var label = document.createElement('span');
+    label.textContent = 'あたらしい バージョンが あります';
+    var goBtn = document.createElement('button');
+    goBtn.type = 'button';
+    goBtn.className = 'pono-sw-toast-go';
+    goBtn.textContent = '今すぐ更新';
+    goBtn.addEventListener('click', function () {
+      try {
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      } catch (e) {}
+      // controllerchange → safeReload() に任せる。 ただし旧 SW が返事しない場合の
+      // safety-net として 4 秒後に強制 reload。
+      setTimeout(function () { safeReload(); }, 4000);
+      goBtn.disabled = true;
+      goBtn.textContent = '更新中...';
+    });
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'pono-sw-toast-close';
+    closeBtn.setAttribute('aria-label', '閉じる');
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', function () {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
+    el.appendChild(label);
+    el.appendChild(goBtn);
+    el.appendChild(closeBtn);
+    try { document.body.appendChild(el); } catch (e) { toastShown = false; }
+  }
+
   // ── Register + update poll ──
   function bind(reg) {
     if (!reg) return;
+
+    // If a waiting SW already exists at load time (e.g. user refreshed after
+    // last visit installed a new SW), surface the toast immediately.
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      showUpdateToast(reg);
+    }
 
     reg.addEventListener('updatefound', function () {
       var nw = reg.installing;
       if (!nw) return;
       nw.addEventListener('statechange', function () {
         if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          // New SW is waiting AND a controller already exists. Do not render an
-          // update prompt; the next natural page load will pick it up.
+          // New SW is waiting AND a controller already exists.
+          // Surface a small, non-blocking toast with an opt-in update button.
+          showUpdateToast(reg);
         }
       });
     });

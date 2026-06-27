@@ -6294,7 +6294,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1707;
+    const PAGE_CACHE_VERSION = 1709;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -7694,12 +7694,24 @@
       if (!dailyGachaEnabled || dailyGachaImagePreloadStarted) return;
       dailyGachaImagePreloadStarted = true;
       const images = dailyGachaImagePreloadList();
+      // Fix 3 (2026-06-28): chrome (start_panel / counter / home / shop / machine 等)
+      // と機械/ステータス周りの最初の 16 枚は即時連続発火 (gap=0)、 reveal/closeup の
+      // 後続バッチのみ 90ms gap を維持して main thread を圧迫しないようにする。
+      // 報告2+3 のモーダル open 後 chrome paint 1014ms→400ms (-600ms) を狙う。
+      const FAST_BATCH_SIZE = 8;
+      const SLOW_BATCH_SIZE = 4;
+      const FAST_THRESHOLD = 16;
       let index = 0;
       const loadBatch = () => {
-        const batch = images.slice(index, index + 4);
+        const inFast = index < FAST_THRESHOLD;
+        const size = inFast ? FAST_BATCH_SIZE : SLOW_BATCH_SIZE;
+        const batch = images.slice(index, index + size);
         index += batch.length;
         batch.forEach(preloadDailyGachaImage);
-        if (index < images.length) window.setTimeout(loadBatch, 90);
+        if (index < images.length) {
+          const gap = index < FAST_THRESHOLD ? 0 : 90;
+          window.setTimeout(loadBatch, gap);
+        }
       };
       loadBatch();
     }
@@ -9933,6 +9945,73 @@
       s.src = '/common/sw-update.js?v=' + encodeURIComponent(String(PAGE_CACHE_VERSION));
       s.defer = true;
       document.head.appendChild(s);
+    })();
+
+    // ===== First-visit SW catch-up overlay (Fix 4 / 2026-06-28) =====
+    // 「v1709 を push したのに体感変わらない」 メタ症状対策:
+    // 初回 visit でクライアントが PAGE_CACHE_VERSION 未到達 (lastSeen が古い or 未設定) の場合、
+    // splash に小さなローディング overlay を 500ms 出して、 そのまま自動 reload する。
+    // sessionStorage で 1 回限定 (リロードループ防止)。
+    //
+    // CRITICAL: PAGE_CACHE_VERSION は sw.js の CACHE_VERSION と必ず同期させること。
+    // 両者が divergeすると lastSeenCacheVer < PAGE_CACHE_VERSION でも SW が新しくならず
+    // catch-up が空振り → 無限 reload ループの恐れあり (sessionStorage FLAG で抑止しているが)。
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        if (/claudeusercontent\.com$/.test(location.hostname)) return;
+      } catch (e) { return; }
+      var FLAG = '__ponoSwCatchupV' + PAGE_CACHE_VERSION;
+      var LAST = 'ponoLastSeenCacheVer';
+      var lastSeen = null;
+      try { lastSeen = parseInt(localStorage.getItem(LAST) || '0', 10) || 0; } catch (e) {}
+      // 既に最新を見ている → 何もしない
+      if (lastSeen >= PAGE_CACHE_VERSION) return;
+      // このセッションで既に catch-up 済 → 何もしない
+      try { if (sessionStorage.getItem(FLAG) === '1') return; } catch (e) { return; }
+      // 初回 (lastSeen=0) かつ controller が無い → SW 自体まだ未登録なので reload しても意味なし
+      if (!navigator.serviceWorker.controller && lastSeen === 0) {
+        try { localStorage.setItem(LAST, String(PAGE_CACHE_VERSION)); } catch (e) {}
+        return;
+      }
+      // controller あり & lastSeen < 現バージョン → 旧 SW が動いてる可能性大。
+      // 短い overlay を出して 1 度だけ reload。
+      try { sessionStorage.setItem(FLAG, '1'); } catch (e) { return; }
+      var overlay = document.createElement('div');
+      overlay.id = 'ponoSwCatchupOverlay';
+      overlay.style.cssText = [
+        'position:fixed;inset:0;z-index:2147483647;',
+        'background:rgba(10,14,22,0.86);color:#fff;',
+        'display:flex;flex-direction:column;align-items:center;justify-content:center;',
+        'font:600 16px/1.5 system-ui,sans-serif;text-align:center;padding:24px;',
+        'animation:ponoSwCatchupFade .2s ease both;'
+      ].join('');
+      overlay.innerHTML = [
+        '<div style="font-size:28px;margin-bottom:12px;">🔄</div>',
+        '<div>あたらしい バージョンに こうしんしています...</div>',
+        '<div style="font-size:13px;opacity:.75;margin-top:8px;">すこし まってね</div>',
+        '<style>@keyframes ponoSwCatchupFade{from{opacity:0}to{opacity:1}}</style>'
+      ].join('');
+      // body がまだなら DOMContentLoaded を待つ
+      function mount() {
+        try { document.body.appendChild(overlay); } catch (e) {}
+        try { localStorage.setItem(LAST, String(PAGE_CACHE_VERSION)); } catch (e) {}
+        setTimeout(function () {
+          try { window.__isReloading = true; } catch (e) {}
+          // __isReloading は通常 reload navigation で page unload するので
+          // 自動解除されるが、 reload が navigate しなかった (失敗/キャンセル)
+          // 場合に備えて 2 秒後にフラグを解除して stale 状態を防ぐ。
+          setTimeout(function () {
+            try { window.__isReloading = false; } catch (e) {}
+          }, 2000);
+          window.location.reload();
+        }, 500);
+      }
+      if (document.body) {
+        mount();
+      } else {
+        document.addEventListener('DOMContentLoaded', mount, { once: true });
+      }
     })();
   </script>
 
