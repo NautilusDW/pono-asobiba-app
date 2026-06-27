@@ -5125,6 +5125,22 @@
         display: block;                                              /* NEW v1681 (bento/cooking 2 行化) */
       }
       .game-card__desc { font-size: 18px; }                          /* v1680: 15→18 */
+      /* v1684: bento / cooking のみ、 4:3 (iPad 横) で title が 2 行折り返し
+         → desc 1 行と合算で視覚 3 行に見える問題を解消。
+         (1) desc を hide → title だけになり物理 2 行で確定
+         (2) text-align: center で 2 行を行内中央寄せ
+         (3) 左右 padding を 17%/17% の対称に揃え (right を 13→17% へ拡大)、
+             text-box 自体も card 中央軸に揃える
+         (4) desc が無くなることで text-box flex 子 = title 1 個になり、
+             既存の top:50% + translateY(-50%) + justify-content:center により
+             title 中心 = card 中心 = アイコン中心 が自動一致 (縦位置 fix も兼ねる) */
+      .game-card[data-id="bento"]   .game-card__desc,
+      .game-card[data-id="cooking"] .game-card__desc { display: none; }
+      .game-card[data-id="bento"]   .game-card__text,
+      .game-card[data-id="cooking"] .game-card__text {
+        right: 17%;            /* 13 → 17 で左右対称 (text-box 中心 = card 中心) */
+        text-align: center;    /* 2 行 title を行内中央寄せ */
+      }
       /* v1681: 4:3 のみ scroll-hint を absolute → in-flow へ。 cards-col flex column
          + justify-content: center により card-list の真上/真下に追従。 bob 動作は
          translateX(-50%) を含まない landscape 専用 keyframes に差し替え。 */
@@ -6008,7 +6024,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1683;
+    const PAGE_CACHE_VERSION = 1684;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
