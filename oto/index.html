@@ -441,6 +441,19 @@
     perspective-origin: 50% calc(var(--gh-hit-y, 80%) + 80px);
     transform-style: preserve-3d;
   }
+  /* v(next) MOBILE ALIGNMENT FIX: 狭い viewport では perspective: clamp(...) の下限 (520px) でも
+     コンテナ幅 (78vw ≒ 280-400px) に対して相対的に強い 3D 距離となり、ノートが鍵盤に到達する
+     直前の見た目位置が、ボタンの 2D 矩形 (getBoundingClientRect) からズレて知覚される。
+     チュートリアル「タイミングよく おす」で「ちょっとズレてる」 と感じる原因。
+     → モバイル幅では perspective を大きく (= 3D を浅く) して、ノートの見た目落下位置と
+        ボタンの実 hitbox / 手のひらガイドの位置を一致させる。
+     ヒット判定は時間ベース (handleRhythmTap) なので副作用なし。
+     PC / タブレットでは既存の perspective: clamp(520px, 62vw, 1040px) を維持。 */
+  @media (max-width: 640px) {
+    #rhythm-lanes {
+      perspective: clamp(900px, 240vw, 1600px);
+    }
+  }
   body.rhythm-layout #rhythm-lanes { display: block; }
   /* v717 CRITICAL FIX: リズムモードでは 8 鍵盤を画面下端 (bottom:28px) に横一列で出すが、
      base CSS では .band-group(z:11) / .sound-sets-box(z:11) / .mode-switch(z:12) / .chord-pill(z:8) が
@@ -6719,25 +6732,25 @@ var RHYTHM_SONGS = [
       {
         name: '1',
         note: 'アルプス',
-        notes: [0, 0, 1, 2, 0, 2, 1, 4, 0, 0, 1, 2, 0, 6, 5, 4],
+        notes: [0, 0, 1, 2, 0, 2, 1, 4, 0, 0, 1, 2, 3, 2, 1, 0],
         beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
       },
       {
         name: '2',
         note: 'おどろう',
-        notes: [0, 0, 1, 2, 3, 2, 1, 0, 6, 4, 5, 6, 7, 7],
+        notes: [0, 0, 1, 2, 0, 2, 1, 0, 0, 1, 2, 3, 2, 1],
         beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2]
       },
       {
         name: '3',
         note: 'はやいぞ',
-        notes: [3, 3, 4, 5, 3, 5, 4, 2, 0, 0, 1, 2, 0, 6, 5, 4],
+        notes: [3, 3, 3, 4, 5, 3, 5, 4, 3, 3, 3, 4, 5, 3, 5, 4],
         beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
       },
       {
         name: '4',
         note: 'さいご',
-        notes: [3, 3, 4, 5, 3, 5, 4, 2, 0, 2, 1, 4, 0, 0],
+        notes: [3, 3, 4, 5, 3, 5, 4, 2, 3, 2, 1, 4, 0, 0],
         beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2]
       }
     ]
@@ -6988,8 +7001,9 @@ var RHYTHM_RIVALS = {
 var RHYTHM_OPENING_SCENES = {
   kaeru: [
     { speaker: 'rival', state: 'taunt', text: 'オレは DJ ケロック！' },
-    { speaker: 'rival', state: 'happy', text: 'リズムたいけつなら だれにも まけないぜ！' },
-    { speaker: 'rival', state: 'attack', text: 'したのボタンで うけてみろケロ！' }
+    { speaker: 'rival', state: 'happy', text: '3きょく しょうぶで うけてみろケロ！' },
+    { speaker: 'rival', state: 'happy', text: 'まずは かえるのうた からだケロ！' },
+    { speaker: 'rival', state: 'attack', text: 'したのボタンで リズム とるケロ！' }
   ],
   mary: [
     { speaker: 'rival', state: 'taunt', text: 'おなじ おとが つづくケロ！' },
@@ -12061,7 +12075,8 @@ function _stopOtoTutorialNarration() {
 function _playOtoTutorialNarration(step) {
   var src = _otoTutorialNarrationSrc(step);
   _stopOtoTutorialNarration();
-  if (!src || _otoAudioShouldBlock()) return;
+  // tutorial narrations bypass _otoWindowInactive (spurious mobile blur) but still respect document.hidden
+  if (!src || document.hidden) return;
   try {
     var audio = new Audio(src + '?' + OTO_RHYTHM_TUTORIAL_AUDIO_VERSION);
     var ownerState = _otoTutorialState;
@@ -12997,7 +13012,8 @@ function _makeOtoTutorialSteps(kind) {
         noDim: true,
         hideActions: true,
         hiddenPrompt: true,
-        autoNextMs: 280,
+        // autoNextMs must outlast yourTurn audio (~3.5s) — fallback when queue mechanism misses due to mobile play() rejection
+        autoNextMs: 4500,
         countdownBeforeAdvance: true,
         before: function() {
           _prepareOtoRhythmTutorialStage();

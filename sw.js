@@ -1,6 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1695: 音タッチ 4 件修正 — (1) アルプス一万尺の音程を Yankee Doodle 準拠の C メジャーに書き直し、 不自然な 6=シ / 7=高ド オクターブ跳躍を全削除 (Section 1/2/3/4 全 60 音再構成、 element count と beats は不変)。 (2) かえるのうたステージ opening dialog に「3きょく しょうぶ」 announce を追加 (3 → 4 line, kaeru → mary → twinkle 3 連戦を子供に予告)。 (3) リズムチュートリアル「つぎは きみのばん」 narration 不発を修正 — _playOtoTutorialNarration の guard を _otoAudioShouldBlock() (iOS Safari 偽 blur で誤発火) から document.hidden に絞り、 yourTurn cue の autoNextMs 280 → 4500 (narration 完了まで countdown 抑止)。 (4) リズム lane の mobile (≤640px) perspective を clamp(900px, 240vw, 1600px) に shallow 化し、 3D 透視による note 落下位置とボタン 2D rect の視覚ズレを解消。 play.html PAGE_CACHE_VERSION と同期。
+// v1694: タイトル画面 cards-only 再描画化に伴うクロスレビュー反映 — (1) 画像 cache-bust 規約を統一: 既存規約 ?v= に加え tools/maze-editor.html 由来の ?t= も bypass 対象に追加 (sw.js L519-530, /[?&](?:v|t)=/)。 これにより admin/illustrator/pivot 系の動的差替が cache-first 戦略下でも即時反映。 (2) Same-URL Same-Filename Overwrite Risk を sw.js 内コメントで明文化 — 同名画像を上書き push すると次の CACHE_VERSION bump まで旧画像が居座るため、 画像更新時は (a) 新ファイル名 / (b) ?v=<ts> 付き参照 / (c) CACHE_VERSION bump のいずれか必須。 (3) CACHE_VERSION bump 規約コメントを TODO 表記から運用説明へ整理。 play.html PAGE_CACHE_VERSION と同期。
 // v1693: もりのおみせ「こもれびや」 — BGM 二重再生バグ修正。 daily-gacha と同じ pattern で shop open/close 時に play-bgm を pause/resume。 pauseTopBgmForDonguriShop / resumeTopBgmAfterDonguriShop を新設、 showShop/hideShop で呼出。 shop narration audio に loop=false 明示。 play.html PAGE_CACHE_VERSION と同期。
 // v1689: タイトル画面 (4:3 / iPad 横) bento / cooking カード — v1684 (desc hide + text-align center + right 17%) と v1681 の .game-title-break{display:block} を全廃。 「desc を隠して title を 2 行化」 方針は誤り (ユーザー指摘: desc は他カードと同じく見せたい)。 正解は title を 1 行に収めるための font-size 縮小 (bento 30→24px / cooking 30→26px)。 これで title 1 行 + desc 1 行 = 合計 2 行となり他カードと視覚揃え、 text-box left-align / right:13% も他カードと完全一致。 wbr 自体は inline ゼロ幅で残置 (font-size 縮小で 1 行に収まる想定だが、 横幅が更に狭まる端末向けの保険)。 play.html PAGE_CACHE_VERSION と同期。
 // v1688: もりのおみせ「こもれびや」 — (1) slot::after シャドウを bottom -6%→-14% で下げ、 透明度 .46→.38 で「カウンター天板の離れた影」 感へ。 (2) bubble フォント拡大 (base 10-15→12-18, line-height 1.12→1.2 / 4:3 14-16→15-19 / mobile 8-12→10-13.5) で読みやすく。 (3) reserve title/name/price/empty フォント拡大 (base title 9-13→12-16, name 9-13→11-15, price 9-12→11-14, empty 「なし」 10-13→14-18 / 4:3 13-15→15-17, name 13-15→14-17, price 13-15→14-17, empty 14-16→16-19) で動的振り分け (短文 empty は大幅 UP、 長文 name は line-height 1.16 で詰めて 2 行折り返し緩和)。 (4) 16:9 base で title top 0→-16% / rotation-note 23.2→17% / bubble 62→54% / subtitle 55.8→47% で看板-rotation-note-吹き出し の重なり解消。 4:3 / mobile block の同種値は据え置き。 play.html PAGE_CACHE_VERSION と同期。
@@ -319,7 +321,7 @@
 // v1691: タイトル画面 cooking タイトル — 「もりのキッチン」 の 「の」 を `.game-title-particle` で包んで小粒化 (他カードの 「の」「と」「は」 と同一規約)。 decorateGameTitle case 'cooking' のみ修正 (「コトコト もりのキッチン」 → 「コトコト」 + space particle + 「もり」 accent + 「の」 particle + 「キッチン」 accent)。 他 case は既に particle 化済みで対応不要 (quizland 「の」 / maze 「と・の」 / oto 「の」 / puzzle 「の」 / bento 「と」)。 play.html PAGE_CACHE_VERSION と同期。
 // v1690: タイトル画面 bento/cooking タイトル 1 行強制 (再修正)。 (a) decorateGameTitle bento/cooking から `<wbr><span class="game-title-break">` を完全撤廃 — iOS Safari 等が wbr + inline-block 連続箇所を「優先 break point」 と誤認して 2 行 wrap する事故 (v1689 で再発) を根本停止。 (b) 単語間半角空白を inline-block `.game-title-particle` で包み、 plain text としての break opportunity を消す。 (c) `.game-card__title` 共通 CSS を white-space:normal+clip → nowrap+ellipsis に戻す (はみ出し時は安全 fail)。 (d) bento 24px / cooking 26px を全 aspect 共通の overrides として `</style>` 直前に追加 — 他 breakpoint の `.game-card[data-id]` 29-32px を source order で上書き。 play.html PAGE_CACHE_VERSION と同期。
 // v1689: もりのおみせ「こもれびや」 — 吹き出しはリス声ナレーションが乗る時のみ表示。 (1) shop open の welcome narration (_startShopOpeningGuide first/return) を停止 (音声がリス声でないため)。 (2) bubble の reactive text 設定 (こうかんしたよ / もうすぐかわるよ / とりおき系) を全削除し空文字化。 (3) _setShopkeeperReaction の bubble fallback (data.text / countdown) を削除し、 messageText 明示時のみ表示。 (4) CSS で .donguri-shop-v2-bubble:empty { display:none } で PNG bubble ごと隠蔽。 play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1693;
+const CACHE_VERSION = 1695;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
@@ -344,11 +346,103 @@ const CACHE_VERSION = 1693;
 // v1515: LP 微修正 — いろあそびラベルの左切れ解消 (transform-origin) / hero 匂わせ帯の重複削除&強調再調整 / ガチャ親向け 「むりょう」→「無料」 漢字化
 // v1500: daily gacha に木の部屋の奥行き背景と Pono 開始ふきだしを追加
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
+// CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
+// 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
+
+// ── Critical asset precache list ──
+// 目的: SW 更新後の完全コールドスタートを避け、 install 時にファーストビュー必須資産を
+// 一括で取得しキャッシュへ載せる。 加えて fetch handler を cache-first に倒して
+// 同一セッション内の HTTP 往復を排除する。
+//
+// 選定指針 (タスク提案 #2):
+// - play.html (entry)
+// - common/ 配下の必須 JS (sw-update.js, tier dispatcher, capture, acorns, data-export,
+//   debug-mode, mvp-flags) + play.html が <script src> で読む js/ 3 本
+// - カードサムネ thumb_*.webp 8 枚 (play.html L37-42 + bento/kitchen の予備)
+// - メニューカード台座 menu_card_base_*.webp 4 枚 + paper_mask_*.png 4 枚 (タイトル4枚カード必須)
+// - 任意: 主要 webp 系のみ。 bottom-nav PNG 5 枚 (合計 ~9MB) は <link rel=preload> で
+//   ブラウザ HTTP cache に乗るため、 ここでは意図的に外す (precache 2MB 制約)。
+//
+// 合計見積: ~1.2MB (4G モバイルで許容範囲、 2MB 目標内)
+const CRITICAL_ASSETS_HTML = ['/play.html'];
+const CRITICAL_ASSETS_SCRIPTS = [
+  '/common/sw-update.js',
+  '/common/debug-mode.js',
+  '/common/capture.js',
+  '/common/tier.js',
+  '/common/acorns.js',
+  '/common/data-export.js',
+  '/common/mvp-flags.js',
+  '/js/game-stickers.js',
+  '/js/daily-quest.js',
+  '/js/donguri-shop.js',
+];
+const CRITICAL_ASSETS_THUMBS = [
+  '/assets/ui/thumb_quizland_owl.webp',
+  '/assets/ui/thumb_quiz-sound.webp',
+  '/assets/ui/thumb_oto.webp',
+  '/assets/ui/thumb_bento.webp',
+  '/assets/ui/thumb_puzzle.webp',
+  '/assets/ui/thumb_starparodier.webp',
+  '/assets/ui/thumb_maze.webp',
+  '/assets/ui/thumb_kitchen.webp',
+];
+const CRITICAL_ASSETS_CARDS = [
+  '/assets/ui/menu_card_base_01.webp',
+  '/assets/ui/menu_card_base_02.webp',
+  '/assets/ui/menu_card_base_03.webp',
+  '/assets/ui/menu_card_base_04.webp',
+  '/assets/ui/menu_card_paper_mask_01.png',
+  '/assets/ui/menu_card_paper_mask_02.png',
+  '/assets/ui/menu_card_paper_mask_03.png',
+  '/assets/ui/menu_card_paper_mask_04.png',
+];
+
+// precache を 4 グループに分割: 1 グループ全失敗しても他は通る (allSettled)。
+const CRITICAL_ASSET_GROUPS = [
+  CRITICAL_ASSETS_HTML,
+  CRITICAL_ASSETS_SCRIPTS,
+  CRITICAL_ASSETS_THUMBS,
+  CRITICAL_ASSETS_CARDS,
+];
+
+// 個別 asset の失敗で install が落ちないように、 asset 単位の try/catch でラップする。
+function precacheAssetGroup(cache, urls) {
+  return Promise.allSettled(
+    urls.map(url =>
+      // cache: 'reload' で ブラウザ HTTP cache をバイパスし、 新版 SW の install 時に必ず
+      // 最新を取得する。 個別 fetch で失敗しても他をブロックしない。
+      fetch(new Request(url, { cache: 'reload' }))
+        .then(response => {
+          if (!response || !response.ok) {
+            throw new Error('precache fetch failed: ' + url + ' status=' + (response && response.status));
+          }
+          return cache.put(url, response);
+        })
+        .catch(err => {
+          // install 全体は失敗させない。 個別 asset の失敗は WARN レベルで握りつぶす。
+          try { console.warn('[sw] precache skip', url, err && err.message); } catch (e) {}
+        })
+    )
+  );
+}
 
 self.addEventListener('install', event => {
   // 開いているゲームへ新しいSWを即時適用すると、controllerchange経由で
   // ページがリロードされ、ゲームがタイトル状態へ戻ってしまう。
   // 待機状態にして、次回起動/遷移時に自然に切り替える。
+  //
+  // ただし precache は install 中に行い、 ファーストビュー資産だけは新版 SW でも
+  // 即座に提供できるようにする (cold start 解消)。
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(
+        CRITICAL_ASSET_GROUPS.map(group => precacheAssetGroup(cache, group))
+      )
+    ).catch(err => {
+      try { console.warn('[sw] precache open failed', err && err.message); } catch (e) {}
+    })
+  );
 });
 
 // ── Legacy skip-waiting message hook (v1137-) ──
@@ -361,12 +455,25 @@ self.addEventListener('message', event => {
 });
 
 self.addEventListener('activate', event => {
-  // 旧キャッシュを削除する。既存クライアントは claim せず、プレイ中の
-  // ページを中断しない。新しいSWは次回のページ読み込みから担当する。
+  // 旧キャッシュは「最新1世代だけ残す」 warm migration 方式に変更 (旧: 全削除)。
+  // - 既存クライアントは claim せず、プレイ中のページを中断しない。
+  // - 新 SW activate 直後、 旧 SW (1世代前) の cache を即削除すると
+  //   再 fetch 嵐になる (cold start)。 旧版を 1 世代残しておけば、
+  //   キャッシュ突合せ目的で再利用できる + image cache-first の hit 確率も上がる。
+  // - 'pono-v' で始まる cache のうち、 現行 CACHE_NAME 以外を新しい順に並べて
+  //   最新1件(=1世代前)だけ残し、 それ以前を削除する。
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(k => caches.delete(k)))
-    )
+    caches.keys().then(keys => {
+      const ponoKeys = keys.filter(k => k.startsWith('pono-v') && k !== CACHE_NAME);
+      // pono-v<NUM> の NUM 降順 (= 新しい順) でソートし、 先頭 (= 1世代前) は残す。
+      ponoKeys.sort((a, b) => {
+        const na = parseInt(a.replace(/^pono-v/, ''), 10) || 0;
+        const nb = parseInt(b.replace(/^pono-v/, ''), 10) || 0;
+        return nb - na;
+      });
+      const toDelete = ponoKeys.slice(1); // 2世代以上前のみ削除
+      return Promise.all(toDelete.map(k => caches.delete(k)));
+    })
   );
 });
 
@@ -404,13 +511,50 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 画像は SW キャッシュをスキップして常にネットワーク取得
-  // （ピボットツールでスワップした画像が即反映されるように）
-  // オフライン時のみ既存キャッシュにフォールバック
+  // 画像は cache-first 戦略 (旧: 常に network no-store)。
+  // 理由: SW 更新のたびにすべての画像が完全コールドスタートしていた問題を解消し、
+  // 同一ページ内・同一セッションでの重複参照を CF エッジへ往復させない。
+  //
+  // ピボットツール / admin / illustrator 系から画像を差し替える際の cache-bust 規約:
+  //   - 正本は ?v=<timestamp> (例: ?v=1693, ?v=20260627)
+  //   - 既存実装の互換のため ?t=<timestamp> (tools/maze-editor.html 4374/4405/4408) も bypass 対象
+  //   - 上記いずれかが URL に含まれていれば cache を bypass し、 必ず最新を取得する
+  //   - 取得後は cache.put で更新もしておく (次回 cache-first hit 用)
+  // ⚠️ 同名ファイルの上書きは NG (Same-URL Same-Filename Overwrite Risk):
+  //   menu_card_base_01.webp などをそのまま上書き push すると、 cache-first 戦略下では
+  //   旧 client は次の CACHE_VERSION bump (= 全 cache 退役) まで旧画像を引き続ける。
+  //   画像更新は必ず (a) 新ファイル名、 (b) ?v=<ts> 付き参照、 (c) CACHE_VERSION bump
+  //   のいずれかを伴うこと。 詳細は AGENTS.md / CLAUDE.md のデプロイ規約参照。
   if (event.request.destination === 'image') {
+    const imgUrl = event.request.url;
+    const bypassCache = /[?&](?:v|t)=/.test(imgUrl);
+    if (bypassCache) {
+      event.respondWith(
+        fetch(event.request, { cache: 'no-store' })
+          .then(response => {
+            if (response && response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            }
+            return response;
+          })
+          .catch(() => caches.match(event.request))
+      );
+      return;
+    }
     event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .catch(() => caches.match(event.request))
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request)
+          .then(response => {
+            if (response && response.ok) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            }
+            return response;
+          })
+          .catch(() => caches.match(event.request));
+      })
     );
     return;
   }

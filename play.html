@@ -34,32 +34,36 @@
        that 404 preload requests just ignore the hint — no functional cost.) -->
   <!-- NOTE: maze カードは本物のめいろ絵 (ランタン+小道) が入っている
        assets/ui/thumb_quiz-sound.webp を流用している。 -->
-  <link rel="preload" as="image" href="assets/ui/thumb_quizland_owl.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_quiz-sound.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_oto.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_bento.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_puzzle.webp">
-  <link rel="preload" as="image" href="assets/ui/thumb_starparodier.webp">
-  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_generated_20260626.png">
-  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_help_masked_20260626.png">
-  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_news_masked_20260626.png">
-  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_stickers_masked_20260626.png">
-  <link rel="preload" as="image" href="assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.png">
-  <link rel="preload" as="image" href="assets/images/undersea-cave/friend_whale_sleep.png">
-  <link rel="preload" as="image" href="assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png">
-  <!-- Core daily gacha surfaces are low-priority preloads; secondary reward
-       frames still load through the idle JS helper after the title is ready. -->
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_room_backdrop.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_counter_foreground.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_machine.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_lever.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_pink.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_blue.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_gold.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_capsule_closed_super.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/gacha/daily_gacha_action_home_normal.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/daily_gacha_shop_button_single_color_20260625.png">
+  <!-- ===== First-view priority (high): card thumbnails ===== -->
+  <!-- これらは起動直後 renderCards() が wood-card に貼る絵。
+       ファーストビューに必ず出るので fetchpriority=high で網帯域を握らせる。 -->
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_quizland_owl.webp">
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_quiz-sound.webp">
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_oto.webp">
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_bento.webp">
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_puzzle.webp">
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_starparodier.webp">
+  <!-- ===== ファーストビュー直後 (low): bottom-nav PNG 5 枚 (≈9MB) =====
+       これらが auto/high で先頭に走るとカードサムネ webp の decode が
+       数 100ms 遅れて「上から順番にバラバラに出る」見え方になる。
+       fetchpriority=low に降格して、 サムネ後ろに並べる。
+       .bottom-nav は background-color: transparent + drop-shadow なので
+       PNG 未到着でも UI は壊れない (nav 領域が一瞬透明になるだけ)。 -->
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_generated_20260626.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_help_masked_20260626.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_news_masked_20260626.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_stickers_masked_20260626.png">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.png">
+  <!-- ===== 削除: ファーストビュー外の素材 =====
+       下記は play.html ファーストビュー (タイトル画面) には登場しない:
+         - undersea-cave/friend_whale_sleep.png  (undersea-cave ゲーム内)
+         - sea-album/stage1_tidepool_scroll_panorama.png (1.6MB / sea-album 内)
+         - daily-gacha/*.png 11 枚 (10-11MB / ガチャ画面遷移後)
+       これらは該当ゲーム遷移時に動的 preload する設計 (別タスクで実装) に
+       移譲する。 現状 daily-gacha は body 内の requestIdleCallback バッチ
+       (L7366 / L8095) でタイトル安定後に読み込まれているので、 head から
+       消しても初回ガチャ遷移時の体感はほぼ変わらない。 -->
+
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -414,7 +418,17 @@
       /* intentionally empty */
     }
 
-    /* 1. 木枠の背景画像 (絶対配置で全面) */
+    /* 1. 木枠の背景画像 (絶対配置で全面)
+       v1694: <img class="game-card__bg"> を廃止し、 .game-card 自体の
+       background-image (--card-panel) に置換。 同フレームでの 21 並列
+       request を避けつつ、 DOM <img> 数を 1 枚 (thumb) に絞る。
+       旧 .game-card__bg 互換ルールは broken state fallback 用に残置。 */
+    .game-card {
+      background-image: var(--card-panel, none);
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
     .game-card__bg {
       position: absolute;
       inset: 0;
@@ -794,6 +808,20 @@
     }
     .game-card__play:active .game-card__playImg {
       content: url('assets/ui/play_button_pressed.webp');
+    }
+    /* v1694: 21 枚 × <img class="game-card__playImg"> を撤廃し、
+       .game-card__play 自体の background-image に置換 (全カード同 URL なので
+       実 request は 1 本だが、 DOM <img> 要素自体を消すことでパース/装飾コスト
+       と recomputeHeight() の load イベントトリガを大幅削減する)。
+       :active 時の pressed 画像差し替えは CSS variable で表現。 */
+    .game-card__play {
+      background-image: var(--play-btn-normal, none);
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .game-card__play:active {
+      background-image: var(--play-btn-pressed, var(--play-btn-normal, none));
     }
 
     /* ===== Landscape (21:9 etc): cards column gets a wider thumb if room ===== */
@@ -6047,12 +6075,21 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1693;
+    const PAGE_CACHE_VERSION = 1695;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
     const LOOP_COPIES = 3;
+
+    // v1694: FV (initial scroll = middle copy = rep 1) に物理的に入る最初の
+    // 5 枚だけ eager+sync+high。 残りは lazy+async+low で同フレーム同時 request
+    // を激減させる (旧: 21 枚 × 3 img = 63 img、 panel/play は loadingAttr=
+    // 'eager' (rep<=1) で 14 並列発射 → 上下バラバラ paint の直接原因)。
+    const PRIORITY_EAGER_COUNT = 5;
+    const PRIORITY_REP = 1;          // 初期 scrollTop = oneSetH() の copy
+    const PLAY_BTN_NORMAL_URL  = __bust('assets/ui/play_button_normal.webp');
+    const PLAY_BTN_PRESSED_URL = __bust('assets/ui/play_button_pressed.webp');
 
     function cardMarkup(g, i, rep) {
       // is-coming-soon: 通常の準備中カード (彩度↓ + play 半透明)
@@ -6075,18 +6112,23 @@
       // (same pixel size + aspect as the panel, so CSS mask-image lines up
       // 1:1 with the cream area and never leaks onto the wood frame).
       const defaultMaskPath = `assets/ui/menu_card_paper_mask_0${panelN}.png`;
-      // 最初に見える copy と中央 copy は eager にして、loop 初期位置へ移動した直後の
-      // blank を避ける。最後の copy は teleport 用なので lazy のままで memory を節約。
-      // 全カードに loading="lazy" を付けると iOS Safari の intersection observer 経路で
-      // ファーストビューのカードも初回 blank になる事故 (2026-05 修正済) の再発防止。
-      const loadingAttr = (rep <= 1) ? 'eager' : 'lazy';
+      // v1694: 旧 (rep<=1) eager 規則を撤廃。 FV (rep=PRIORITY_REP, i<5) のみ
+      // 高優先 (eager+sync+high)、 それ以外は lazy+async+low に揃える。
+      // thumb は唯一の <img> なので fetchpriority を仕分けて並列発射を抑制。
+      const isPriority = (rep === PRIORITY_REP) && (i < PRIORITY_EAGER_COUNT);
+      const loadingAttr   = isPriority ? 'eager' : 'lazy';
+      const decodingAttr  = isPriority ? 'sync'  : 'async';
+      const priorityAttr  = isPriority ? 'high'  : 'low';
       const peekStyle = g.comingSoon ? 'none' : `url('${esc(__bust(g.bg))}')`;
+      const panelUrl  = __bust(g.panel);
       const thumbMarkup = g.comingSoon
         ? '<span class="game-card__thumbPlaceholder" aria-hidden="true">?</span>'
-        : `<img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">`;
+        : `<img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="${decodingAttr}" fetchpriority="${priorityAttr}">`;
+      // v1694: panel と play ボタンは <img> を廃止し CSS background-image に。
+      // panel は per-card URL なので inline style、 play ボタンは全カード共通
+      // URL なので :root の CSS variable から継承。
       return `
-        <button class="game-card${comingClass}" type="button" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" aria-label="${esc(g.title)} ${esc(g.subtitle)}" style="--card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
-          <img class="game-card__bg" src="${esc(__bust(g.panel))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
+        <button class="game-card${comingClass}" type="button" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" aria-label="${esc(g.title)} ${esc(g.subtitle)}" style="--card-panel: url('${esc(panelUrl)}'); --card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
             ${thumbMarkup}
@@ -6096,21 +6138,39 @@
             <div class="game-card__desc">${decorateKana(g.subtitle)}</div>
           </div>
           ${comingBadge}
-          <span class="game-card__play" aria-hidden="true">
-            <img class="game-card__playImg" src="${esc(__bust('assets/ui/play_button_normal.webp'))}" alt="" draggable="false" loading="${loadingAttr}" decoding="async">
-          </span>
+          <span class="game-card__play" aria-hidden="true"></span>
         </button>
       `;
     }
 
     function renderCards() {
-      let html = '';
+      // v1694: innerHTML 一括書換 → DocumentFragment + 直列 appendChild に変更。
+      // 一時 container に各カードを HTML パースし、 fragment へ順に push。
+      // ブラウザは fragment を 1 回の DOM 挿入でコミットするので reflow は 1 回。
+      // 同フレーム request 数: 旧 63 img (panel 21 + thumb 21 + play 21、 うち
+      // 14 eager) → 新 21 img (thumb のみ。 うち 5 が eager+sync+high、 残り
+      // 16 は lazy で intersection 待ち)。 panel/play は CSS background-image
+      // (panel: per-card 21 url、 play: 全カード共通 1 url) として
+      // ブラウザのスタイル解決後、 表示要素のみ順次取得される。
+      // 全カード共通の play ボタン URL を :root に注入 (CSS bg の :active 切替用)。
+      const root = document.documentElement;
+      root.style.setProperty('--play-btn-normal',  `url('${PLAY_BTN_NORMAL_URL}')`);
+      root.style.setProperty('--play-btn-pressed', `url('${PLAY_BTN_PRESSED_URL}')`);
+
+      const frag = document.createDocumentFragment();
+      const tmp = document.createElement('template');
       for (let rep = 0; rep < LOOP_COPIES; rep++) {
         for (let i = 0; i < MENU_GAMES.length; i++) {
-          html += cardMarkup(MENU_GAMES[i], i, rep);
+          tmp.innerHTML = cardMarkup(MENU_GAMES[i], i, rep).trim();
+          // template.content の最初の子 = 1 枚分の <button.game-card>
+          const node = tmp.content.firstElementChild;
+          if (node) frag.appendChild(node);
         }
       }
-      cardList.innerHTML = html;
+      // 既存内容をクリアしてから fragment を 1 発で挿入 (reflow 1 回)。
+      cardList.textContent = '';
+      cardList.appendChild(frag);
+
       cardList.addEventListener('pointerdown', onCardPointerDown, { passive: true });
       cardList.addEventListener('pointercancel', clearCardPointerDown, { passive: true });
       cardList.addEventListener('click', onCardClick);
@@ -6120,6 +6180,7 @@
       // 最大 2 回まで自動 retry を試みてからフォールバックする (2026-05-14 トップページ
       // 画像部分読込バグ対策)。retry は同 URL を一旦外してから次フレームで再代入する
       // ことでブラウザに再リクエストを強制させる。
+      // v1694: 残った <img> は .game-card__thumb のみ (panel/play は CSS bg)。
       cardList.querySelectorAll('img').forEach((img) => {
         img.addEventListener('error', () => {
           const retries = Number(img.dataset.retries || 0);
@@ -6176,7 +6237,12 @@
       const CLIP_PAD = 6;
       cardList.style.paddingTop = CLIP_PAD + 'px';
       cardList.style.paddingBottom = CLIP_PAD + 'px';
-      const recomputeHeight = () => {
+      // v1694: 連続 onload (thumb 21 枚) で同期実行されると layout thrash
+      // を誘発するため rAF debounce。 同 frame 内の複数リクエストは 1 回に
+      // 畳み込まれる。 実計算は recomputeHeightImpl()。
+      let recomputeRaf = 0;
+      const recomputeHeightImpl = () => {
+        recomputeRaf = 0;
         // Use offsetHeight (unscaled layout height), not getBoundingClientRect
         // which returns the post-transform value when an ancestor is scaled.
         const cardH = cards[0].offsetHeight;
@@ -6189,6 +6255,10 @@
         // v1672: card-list 寸法が変わると scrollHeight/clientHeight も変わるため scroll-hint 再判定
         updateScrollHints();
         if (typeof updateMiddleOverlay === 'function') updateMiddleOverlay();
+      };
+      const recomputeHeight = () => {
+        if (recomputeRaf) return;
+        recomputeRaf = requestAnimationFrame(recomputeHeightImpl);
       };
       // v1680: middle-3 検知を完全 getBoundingClientRect ベースに統一。
       // v1678 では listRect.top (scaled) に padTop / cardH*4+gap*3 (unscaled) を
