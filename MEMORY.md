@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-27T03:00:10Z - シールのおみせ v1685 4:3 head bar letterbox 押し上げ + 看板/rotation-note 衝突解消
+- **タスク**: シールのおみせ v1685 4:3 head bar letterbox 押し上げ + 看板/rotation-note 衝突解消
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 29
+- **エラー数**: 1
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 12, "Read": 4, "Agent": 7, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 3}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
+
 ### 2026-06-27T02:53:40Z - タイトル画面 v1684 bento/cooking title 2行化+中央寄せ デプロイ
 - **タスク**: タイトル画面 v1684 bento/cooking title 2行化+中央寄せ デプロイ
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 4, "Grep": 7, "Read": 8, "Agent": 24, "ToolSearch": 2, "Write": 1, "SendMessage": 3}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-26T16:02:52Z - 並走衝突対策: AGENTS_CLAIMS.md (claim board) + scripts/hooks/pre-push (behind 時 push block、 作業ツリー non-touch) + install スクリプトを新規追加、 AGENTS.md §4.9/§11/§11.1 + CLAUDE.md トリガ表 + Base Rules 5 を追記。 並列 4 実装 + Explore 2 体クロスレビュー (read-only)、 HIGH 2 件 + MEDIUM 2 件を反映後 commit/push 済
-- **タスク**: 並走衝突対策: AGENTS_CLAIMS.md (claim board) + scripts/hooks/pre-push (behind 時 push block、 作業ツリー non-touch) + install スクリプトを新規追加、 AGENTS.md §4.9/§11/§11.1 + CLAUDE.md トリガ表 + Base Rules 5 を追記。 並列 4 実装 + Explore 2 体クロスレビュー (read-only)、 HIGH 2 件 + MEDIUM 2 件を反映後 commit/push 済
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 33
-- **エラー数**: 2
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 8, "Bash": 15, "Agent": 8, "ToolSearch": 1, "Edit": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
