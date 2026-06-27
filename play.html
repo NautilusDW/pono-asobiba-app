@@ -50,10 +50,10 @@
        .bottom-nav は background-color: transparent + drop-shadow なので
        PNG 未到着でも UI は壊れない (nav 領域が一瞬透明になるだけ)。 -->
   <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_generated_20260626.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_help_masked_20260626.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_news_masked_20260626.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_stickers_masked_20260626.png">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.png">
+  <!-- pressed PNG 4 枚 (~7.1MB) は cold start 帯域を食うので <head> preload から外し、
+       common/preload-helper.js が requestIdleCallback または最初の pointerdown で
+       <link rel=preload> を動的注入する (v1697 / cross-review perf-regression + sw-pivot)。 -->
+  <script src="common/preload-helper.js" defer></script>
   <!-- ===== 削除: ファーストビュー外の素材 =====
        下記は play.html ファーストビュー (タイトル画面) には登場しない:
          - undersea-cave/friend_whale_sleep.png  (undersea-cave ゲーム内)
@@ -6071,7 +6071,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1696;
+    const PAGE_CACHE_VERSION = 1697;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
