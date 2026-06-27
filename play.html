@@ -2486,33 +2486,21 @@
     }
     .daily-gacha-rarity-badge {
       position: absolute;
-      right: -9%;
-      top: -8%;
+      right: -4%;
+      top: -9%;
       z-index: 2;
-      width: 39%;
+      width: 44%;
       aspect-ratio: 1;
-      display: grid;
-      place-items: center;
+      display: block;
       box-sizing: border-box;
-      padding: 12% 13% 14%;
+      padding: 0;
       border: 0;
       background-position: center;
       background-repeat: no-repeat;
       background-size: contain;
-      color: #566b82;
-      font-size: clamp(32px, 4vw, 54px);
-      line-height: .9;
-      font-weight: 900;
-      letter-spacing: 0;
-      text-align: center;
-      text-shadow:
-        0 1px 0 rgba(255, 255, 255, .95),
-        0 -1px 0 rgba(83, 99, 117, .42),
-        0 2px 4px rgba(40, 24, 12, .28),
-        0 0 8px rgba(255, 255, 255, .9);
       filter:
-        drop-shadow(0 7px 9px rgba(30, 18, 8, .24))
-        drop-shadow(0 0 10px rgba(255, 245, 188, .48));
+        drop-shadow(0 7px 9px rgba(30, 18, 8, .28))
+        drop-shadow(0 0 10px rgba(255, 255, 245, .64));
       transform: rotate(9deg) scale(.9);
       opacity: 0;
       pointer-events: none;
@@ -2521,26 +2509,17 @@
       display: none;
     }
     .daily-gacha-rarity-badge[data-rarity="rare"] {
-      background-image: url("assets/ui/gacha/daily_gacha_rarity_badge_rare_silver_20260627.png");
+      background-image: url("assets/ui/gacha/daily_gacha_rarity_lettermark_r_silver_20260628.png");
     }
     .daily-gacha-rarity-badge[data-rarity="super"] {
       right: -11%;
-      top: -10%;
-      width: 44%;
-      padding: 13% 12% 14%;
-      background-image: url("assets/ui/gacha/daily_gacha_rarity_badge_super_rainbow_gold_20260627.png");
-      color: #9d5f08;
-      font-size: clamp(28px, 3.5vw, 46px);
-      text-shadow:
-        0 1px 0 rgba(255, 255, 255, .98),
-        0 -1px 0 rgba(112, 59, 0, .38),
-        0 2px 4px rgba(49, 22, 2, .34),
-        0 0 8px rgba(255, 255, 245, .96),
-        0 0 14px rgba(255, 216, 90, .7);
+      top: -11%;
+      width: 56%;
+      background-image: url("assets/ui/gacha/daily_gacha_rarity_lettermark_sr_rainbow_gold_20260628.png");
       filter:
-        drop-shadow(0 8px 10px rgba(38, 16, 4, .28))
-        drop-shadow(0 0 14px rgba(255, 225, 88, .74))
-        drop-shadow(0 0 18px rgba(95, 226, 255, .36));
+        drop-shadow(0 8px 10px rgba(38, 16, 4, .34))
+        drop-shadow(0 0 14px rgba(255, 225, 88, .82))
+        drop-shadow(0 0 18px rgba(95, 226, 255, .42));
     }
     .daily-gacha-reward__emoji {
       display: none;
@@ -2598,6 +2577,26 @@
       box-shadow: none;
       filter: drop-shadow(0 14px 22px rgba(25, 11, 6, .38));
       opacity: 0;
+    }
+    .daily-gacha-reward-name[data-gacha-rarity="normal"] {
+      color: #fff3d0;
+    }
+    .daily-gacha-reward-name[data-gacha-rarity="rare"] {
+      color: #fff8dc;
+      text-shadow:
+        0 2px 0 rgba(43, 18, 8, .7),
+        0 0 9px rgba(255, 242, 160, .58);
+    }
+    .daily-gacha-reward-name[data-gacha-rarity="super"] {
+      color: #fffbe4;
+      text-shadow:
+        0 2px 0 rgba(43, 18, 8, .76),
+        0 0 9px rgba(255, 241, 149, .72),
+        0 0 16px rgba(255, 124, 222, .34);
+    }
+    .daily-gacha-reward-name[data-long-name="1"] {
+      font-size: 18px;
+      line-height: 1.06;
     }
     .daily-gacha-reward-note {
       position: absolute;
@@ -2928,6 +2927,10 @@
       box-shadow: none;
       filter: drop-shadow(0 14px 22px rgba(25, 11, 6, .38));
     }
+    .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward-name[data-long-name="1"] {
+      font-size: 18px;
+      line-height: 1.06;
+    }
     .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-sparkles span {
       filter:
         drop-shadow(0 0 11px rgba(255, 231, 88, .98))
@@ -3163,16 +3166,14 @@
       .daily-gacha-reward { top: 21%; width: 196px; height: 196px; }
       .daily-gacha-reward img { width: 192px; height: 192px; }
       .daily-gacha-rarity-badge {
-        right: -8%;
-        top: -7%;
-        width: 40%;
-        font-size: clamp(26px, 9.2vw, 38px);
+        right: -4%;
+        top: -8%;
+        width: 45%;
       }
       .daily-gacha-rarity-badge[data-rarity="super"] {
         right: -10%;
-        top: -9%;
-        width: 45%;
-        font-size: clamp(22px, 7.4vw, 33px);
+        top: -10%;
+        width: 58%;
       }
       .daily-gacha-reward-name {
         bottom: -2px;
@@ -3182,6 +3183,10 @@
         font-size: 14px;
         line-height: 1.08;
         padding: 15px 42px 10px;
+      }
+      .daily-gacha-reward-name[data-long-name="1"] {
+        font-size: 13px;
+        line-height: 1.04;
       }
       .daily-gacha-reward-note {
         top: 68px;
@@ -3227,6 +3232,10 @@
         padding: 16px 44px 11px;
         font-size: 15px;
         line-height: 1.08;
+      }
+      .daily-gacha-modal[data-gacha-rarity="super"].is-opened .daily-gacha-reward-name[data-long-name="1"] {
+        font-size: 13px;
+        line-height: 1.04;
       }
       .daily-gacha-closeup-actions { top: 6px; right: 6px; bottom: auto; padding: 0; gap: 5px; }
       .daily-gacha-closeup-home,
@@ -6173,7 +6182,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1706;
+    const PAGE_CACHE_VERSION = 1707;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -6928,8 +6937,8 @@
       'assets/ui/gacha/daily_gacha_reward_speech_bubble.png',
       'assets/ui/gacha/daily_gacha_book_speech_bubble.png',
       'assets/ui/gacha/daily_gacha_super_name_plate_luxury.png',
-      'assets/ui/gacha/daily_gacha_rarity_badge_rare_silver_20260627.png',
-      'assets/ui/gacha/daily_gacha_rarity_badge_super_rainbow_gold_20260627.png',
+      'assets/ui/gacha/daily_gacha_rarity_lettermark_r_silver_20260628.png',
+      'assets/ui/gacha/daily_gacha_rarity_lettermark_sr_rainbow_gold_20260628.png',
       'assets/ui/gacha/daily_gacha_action_home_normal.png',
       'assets/ui/gacha/daily_gacha_action_home_pressed.png',
       'assets/ui/gacha/daily_gacha_action_sticker_book_normal.png',
@@ -7065,13 +7074,22 @@
       const normalized = normalizeDailyGachaRarity(rarity);
       if (normalized === 'rare' || normalized === 'super') {
         dailyGachaRarityBadge.dataset.rarity = normalized;
-        dailyGachaRarityBadge.textContent = normalized === 'super' ? 'SR' : 'R';
+        dailyGachaRarityBadge.textContent = '';
         dailyGachaRarityBadge.hidden = false;
         return;
       }
       dailyGachaRarityBadge.hidden = true;
       dailyGachaRarityBadge.textContent = '';
       dailyGachaRarityBadge.removeAttribute('data-rarity');
+    }
+
+    function dailyGachaRewardTitleText(result, rarity) {
+      const sticker = result && result.sticker ? result.sticker : {};
+      const name = String(sticker.name || 'シール').trim() || 'シール';
+      const normalized = normalizeDailyGachaRarity(rarity) || 'normal';
+      if (normalized === 'super') return `やったー！すごい！\n${name}が でたよ！`;
+      if (normalized === 'rare') return `すごいね！\n${name}を ゲット`;
+      return `やったね！\n${name}を ゲット`;
     }
 
     function dailyGachaRarityFromResult(result) {
@@ -7659,7 +7677,12 @@
       }
       if (dailyGachaRewardEmoji) dailyGachaRewardEmoji.textContent = '⭐';
       setDailyGachaRarityBadge('');
-      if (dailyGachaRewardName) { dailyGachaRewardName.textContent = ''; dailyGachaRewardName.hidden = true; }
+      if (dailyGachaRewardName) {
+        dailyGachaRewardName.textContent = '';
+        dailyGachaRewardName.hidden = true;
+        dailyGachaRewardName.removeAttribute('data-gacha-rarity');
+        dailyGachaRewardName.removeAttribute('data-long-name');
+      }
       setDailyGachaNoteText(dailyGachaRewardNote, '');
       setDailyGachaNoteText(dailyGachaTomorrowNote, '');
       if (dailyGachaLever) {
@@ -7670,7 +7693,8 @@
     }
 
     function setDailyGachaReward(result) {
-      setDailyGachaRarityBadge(dailyGachaRarityFromResult(result) || dailyGachaState.rarity);
+      const resultRarity = dailyGachaRarityFromResult(result) || dailyGachaState.rarity;
+      setDailyGachaRarityBadge(resultRarity);
       const sticker = result && result.sticker ? result.sticker : {};
       const page = result && result.page ? result.page : {};
       const resolver = window.PonoGameStickers && window.PonoGameStickers.resolveAsset;
@@ -7686,10 +7710,10 @@
         if (dailyGachaRewardEmoji) dailyGachaRewardEmoji.textContent = sticker.emoji || '⭐';
       }
       if (dailyGachaRewardName) {
-        // v1593: シール内部 display name は出さない (v1575 ユーザー指示)。
-        // ただし空文字 + hidden だと茶色プレート枠が縦潰れして空っぽに見えるため、
-        // プレートに「やったね！」を入れて埋める (祝祭テキスト)。sticker.name は不変。
-        dailyGachaRewardName.textContent = 'やったね！';
+        const titleText = dailyGachaRewardTitleText(result, resultRarity);
+        dailyGachaRewardName.textContent = titleText;
+        dailyGachaRewardName.dataset.gachaRarity = normalizeDailyGachaRarity(resultRarity) || 'normal';
+        dailyGachaRewardName.dataset.longName = titleText.replace(/\s/g, '').length > 16 ? '1' : '0';
         dailyGachaRewardName.hidden = false;
       }
       setDailyGachaNoteText(dailyGachaRewardNote, DAILY_GACHA_STICKER_BOOK_PROMPT);
