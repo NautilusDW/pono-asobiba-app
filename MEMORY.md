@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-27T04:40:44Z - bento/cookingタイトル1行強制再修正(wbr撤廃+nowrap戻し+全aspect共通font-size override)
+- **タスク**: bento/cookingタイトル1行強制再修正(wbr撤廃+nowrap戻し+全aspect共通font-size override)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 42
+- **エラー数**: 1
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 16, "Read": 6, "Agent": 12, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 5}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
+
 ### 2026-06-27T04:37:42Z - こもれびや v1689 — リス NPC 吹き出しをリス声ナレーション時のみ表示に刷新 (welcome narration停止 / reactive text空文字化 / fallback削除 / CSS :empty非表示)
 - **タスク**: こもれびや v1689 — リス NPC 吹き出しをリス声ナレーション時のみ表示に刷新 (welcome narration停止 / reactive text空文字化 / fallback削除 / CSS :empty非表示)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した
 - **ツール使用統計**: {"Bash": 1, "Read": 2, "Agent": 1, "Edit": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。
-
-
-### 2026-06-26T23:53:29Z - play.html メニューカード mask スケール縮小 (W80 H65-68) + middle-3 検知を getBoundingClientRect ベースに刷新 (aspect非依存) + sw1678 bump
-- **タスク**: play.html メニューカード mask スケール縮小 (W80 H65-68) + middle-3 検知を getBoundingClientRect ベースに刷新 (aspect非依存) + sw1678 bump
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 104
-- **エラー数**: 6
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 32, "Grep": 10, "Read": 11, "Agent": 35, "ToolSearch": 3, "Write": 1, "SendMessage": 4, "Workflow": 7, "TaskStop": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
