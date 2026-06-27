@@ -3196,6 +3196,11 @@ function applyMazeStageStoryFallback(stageDef, slot) {
   const fallback = MAZE_STAGE_STORY_FALLBACKS[slot | 0];
   if (!fallback) return stageDef;
   stageDef.story = Object.assign({}, fallback, stageDef.story || {});
+  // Fix: fallback が当たる slot は MAZE_STAGE_STORY_FALLBACKS に明示エントリがある
+  // = 公式 stage slot (1-7) なので、 _loadImageStageIndex の async 完了を待たずに公式扱いにする。
+  // これにより _loadImageStageIndex 未完了でも AcornModal / triggerFirstClearReward / addAcornsDaily が発火する。
+  // ?image=URL 経由の preview は slot 番号が MAZE_STAGE_STORY_FALLBACKS にエントリのない位置を使うため影響なし。
+  stageDef._official = true;
   return stageDef;
 }
 
