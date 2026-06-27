@@ -3154,6 +3154,19 @@
       }
     }
 
+    /* v1703: モバイル portrait で gacha modal が status bar 領域まで延びると、
+       .daily-gacha-shell::before の dim layer (rgba 32,23,19 × multiply) が
+       薄い黒長方形として上端に見える。 safe-area-inset-top 分の padding を
+       modal に与えて dim を status bar 外に追い出す。 desktop / landscape は
+       影響を受けない (上の max-width:820px ブロックとは AND ではなく独立 block)。 */
+    @media (max-width: 900px) and (orientation: portrait) {
+      .daily-gacha-modal {
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-sizing: border-box;
+      }
+    }
+
     /* ===== Password Unlock Modal (絵本シリアル入力) ===== */
     /* 背景フレームは assets/images/bento/cooking/ui/recipe_card_frame.png (406x545) を使う。
        中央まで装飾された絵本風カード。タイトル画面の配色 (--primary / --text / --bg) と統一。 */
@@ -6077,7 +6090,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1702;
+    const PAGE_CACHE_VERSION = 1703;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
