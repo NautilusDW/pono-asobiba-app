@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-27T11:53:29Z - A+B+C+D 一括パフォーマンス改善: 大型PNG 17枚 WebP化(35MB→3.8MB/-89%) + 全ゲーム5本に preload-helper 拡張 + bottom-nav downscale + bgm preload=metadata 化、 4並列クロスレビューで critical 0、 v1702 push 完了
+- **タスク**: A+B+C+D 一括パフォーマンス改善: 大型PNG 17枚 WebP化(35MB→3.8MB/-89%) + 全ゲーム5本に preload-helper 拡張 + bottom-nav downscale + bgm preload=metadata 化、 4並列クロスレビューで critical 0、 v1702 push 完了
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 41
+- **エラー数**: 3
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 26, "Read": 4, "Edit": 6, "Workflow": 4, "Grep": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-27T11:47:39Z - BGM 制御 v1701 — shop pause 無条件化 + gacha bed audible + shop-bgm retry (play.html + sw.js)
 - **タスク**: BGM 制御 v1701 — shop pause 無条件化 + gacha bed audible + shop-bgm retry (play.html + sw.js)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 16, "Read": 6, "Agent": 12, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-27T04:37:42Z - こもれびや v1689 — リス NPC 吹き出しをリス声ナレーション時のみ表示に刷新 (welcome narration停止 / reactive text空文字化 / fallback削除 / CSS :empty非表示)
-- **タスク**: こもれびや v1689 — リス NPC 吹き出しをリス声ナレーション時のみ表示に刷新 (welcome narration停止 / reactive text空文字化 / fallback削除 / CSS :empty非表示)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 124
-- **エラー数**: 6
-- **検出された良いパターン**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 46, "Grep": 10, "Read": 11, "Agent": 35, "ToolSearch": 3, "Write": 1, "SendMessage": 4, "Workflow": 13, "TaskStop": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
