@@ -60,6 +60,7 @@
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
+- 2026-06-27 10:05 - by Codex - [batch:865-gacha-rarity-badges] - play.html, sw.js, assets/ui/gacha/**, tmp/alpha_pending/865-gacha-rarity-badges/**, HANDOFF.md - ガチャ結果のR/SRバッジ生成と右上表示 [overlap: batch:860-data-export-import]
 
 ---
 
