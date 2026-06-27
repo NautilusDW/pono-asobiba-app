@@ -3,6 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  <!-- ===== FOUC GUARD (oto 型 4 層マスキング: inline 背景 + .page visibility + splash overlay + hard cut) ===== -->
+  <!-- 1) inline 背景グラデで CSS 取得前の白フラッシュを抑制 -->
+  <!-- 2) .page を visibility:hidden、 body.pono-game-ready で解放 (順次塗りを 1 枚塗りに集約) -->
+  <!-- 3) #pono-game-splash overlay で main UI 露出までの間 完全遮蔽 -->
+  <!-- 4) splash タップ/Enter で display:none (hard cut)。 既存 #pono-tap-intro と排他 (音声未解禁時はそちら優先) -->
+  <style id="pono-fouc-guard">
+    html, body {
+      background: linear-gradient(180deg, #FFF8F0 0%, #FDDCBF 100%);
+    }
+    .page { visibility: hidden; }
+    body.pono-game-ready .page { visibility: visible; }
+    #pono-game-splash {
+      position: fixed; inset: 0; z-index: 1000;
+      background: #FFF8F0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px;
+      cursor: pointer;
+      animation: ponoSplashIn 0.3s ease-out;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+    #pono-game-splash[hidden] { display: none !important; }
+    #pono-game-splash img {
+      width: 140px; height: 140px;
+      border-radius: 50%; object-fit: cover;
+      background: #fff;
+      box-shadow: 0 6px 16px rgba(93,78,55,0.18);
+    }
+    #pono-game-splash .pgs-title {
+      font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+      font-size: 1.4rem; font-weight: 900; color: #F2742A;
+      text-shadow: 2px 2px 0 #fff; margin: 0;
+    }
+    #pono-game-splash .pgs-btn {
+      padding: 14px 36px; border-radius: 999px; border: none;
+      background: #FFD84D; color: #7A4A00;
+      font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+      font-weight: 900; font-size: 1.15rem;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+      cursor: pointer;
+      animation: ponoSplashPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes ponoSplashIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes ponoSplashPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.06); }
+    }
+  </style>
+  <script>
+    (function(){
+      // 2 RAF 待ちで .page を可視化 (CSS 評価完了 + 1 フレーム描画後)
+      function ready(){
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){
+            document.body.classList.add('pono-game-ready');
+          });
+        });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ready, { once: true });
+      } else {
+        ready();
+      }
+      // splash 自動非表示判定: #pono-tap-intro が出る局面 (= 音声未解禁 かつ BGM オン) では
+      // そちらが既に全面覆っているので game-splash は不要 → 2 重表示しない
+      // 注: sessionStorage 不可 (private/incognito) 環境では splash を残し、 タップ/Enter で
+      //     dismiss 可能とする (安全側 fallback、 機能ブロックは絶対に避ける)
+      document.addEventListener('DOMContentLoaded', function(){
+        try {
+          var splash = document.getElementById('pono-game-splash');
+          if (!splash) return;
+          var unlocked = sessionStorage.getItem('pono_audio_unlocked') === '1';
+          var bgmOff   = localStorage.getItem('pono_bgm_enabled') === 'off';
+          // pono-tap-intro が出ない条件 = 既に解禁済み or BGM オフ → game-splash で覆う
+          if (!(unlocked || bgmOff)) {
+            splash.hidden = true; // pono-tap-intro に主役を譲る
+            return;
+          }
+          var dismiss = function(e){
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            splash.hidden = true;
+            splash.removeEventListener('pointerdown', dismiss);
+            splash.removeEventListener('click', dismiss);
+            splash.removeEventListener('keydown', onKey);
+          };
+          var onKey = function(e){
+            if (e.key === 'Enter' || e.key === ' ') {
+              dismiss(e);
+            }
+          };
+          splash.addEventListener('pointerdown', dismiss, { passive: false });
+          splash.addEventListener('click', dismiss);
+          splash.addEventListener('keydown', onKey);
+          // a11y: フォーカス可能にして Enter で dismiss できるようにする
+          try { splash.setAttribute('tabindex', '0'); splash.focus(); } catch(_) {}
+        } catch (_) { /* sessionStorage 禁止環境では splash 出し続け → タップ/Enter で消える */ }
+      });
+    })();
+  </script>
+  <!-- LCP 候補 (タイトル背景) の先行ロード -->
+  <link rel="preload" as="image" href="assets/images/BG_03.webp" fetchpriority="high">
+  <!-- ===== /FOUC GUARD ===== -->
+
   <title>あそびば｜ポノのあそびば</title>
   <meta name="description" content="ポノと一緒にひらがな・パズル・ぬりえなどのミニゲームで楽しく学ぼう！">
   <meta name="author" content="こだまのもり出版">
@@ -5340,6 +5445,13 @@
   <!-- The tweaks panel JSX below is kept inert during normal app loads. -->
 </head>
 <body>
+
+<!-- FOUC GUARD: game splash overlay (hard cut on tap)。 既存 #pono-tap-intro が出る局面では JS が hidden 化 -->
+<div id="pono-game-splash" role="button" aria-label="はじめる">
+  <img src="assets/images/characters/pono/pono_face_circle.png" alt="" onerror="this.style.display='none'">
+  <h1 class="pgs-title">ポノのあそびば</h1>
+  <button type="button" class="pgs-btn">はじめる</button>
+</div>
 
   <!-- 21:9 fixed canvas — JS scales to fit viewport -->
   <div class="stage" id="stage">

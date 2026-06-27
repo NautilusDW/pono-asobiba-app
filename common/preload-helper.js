@@ -254,10 +254,20 @@
     // play.html からの呼び出しは相対 ('assets/…') になるため、 ここでは
     // 'assets/…' (../ 無し) を採用。 他ゲームは /<game>/index.html 配下のため
     // '../assets/…' だが、 gacha は play.html 直下なので注意。
+    // Fix 3 (2026-06-28) - chrome 主要 5 件 (start_panel / more_turn / counter /
+    // action_home / shop_button) を頭出しに追加。 これにより gacha モーダル
+    // open 直後の 1014ms→400ms 短縮 (-600ms) を狙う (報告2+3 の「2秒バナー」 解消)。
+    // 全 11 件で累計 ~1.6MB (上限 1.5MB をわずかに超過するが、 banner png が
+    // user-visible で LCP に直結するため許容)。
     gacha: [
-      'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
       'assets/ui/gacha/daily_gacha_machine.webp',
       'assets/ui/gacha/daily_gacha_room_backdrop.webp',
+      'assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png',
+      'assets/ui/gacha/daily_gacha_more_turn_bubble_generated.png',
+      'assets/ui/gacha/daily_gacha_counter_foreground.png',
+      'assets/ui/gacha/daily_gacha_action_home_normal.png',
+      'assets/ui/daily_gacha_shop_button_single_color_20260625.png',
+      'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
       'assets/ui/gacha/daily_gacha_reveal_bg_magic_book.webp',
       'assets/ui/gacha/daily_gacha_reveal_bg_holographic_pack.webp',
       'assets/ui/gacha/daily_gacha_reveal_bg_stage_burst.webp'

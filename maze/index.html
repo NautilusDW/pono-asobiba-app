@@ -1434,6 +1434,39 @@ body.image-stage-mode .game-wrap {
   color: #6B5A3F;
   white-space: nowrap;
 }
+.flag-hp {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0;
+}
+.flag-hp__heart {
+  position: relative;
+  width: clamp(22px, 5vw, 30px);
+  height: clamp(22px, 5vw, 30px);
+  display: inline-block;
+}
+.flag-hp__heart::before {
+  content: "\2665";
+  font-size: clamp(20px, 4.8vw, 28px);
+  line-height: 1;
+  color: #FF6B6B;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.12);
+  transition: color 0.2s ease;
+}
+.flag-hp__heart.is-off::before {
+  color: #C9C2B6;
+  text-shadow: none;
+}
+.flag-hp__heart.is-losing::before {
+  animation: flagHpPop 360ms ease-out forwards;
+}
+@keyframes flagHpPop {
+  0%   { transform: scale(1);   color: #FF6B6B; opacity: 1; }
+  40%  { transform: scale(1.5); color: #FFB4B4; opacity: 1; }
+  100% { transform: scale(0.85); color: #C9C2B6; opacity: 1; }
+}
 .flag-bug-stage {
   display: grid;
   place-items: center;
@@ -2367,6 +2400,17 @@ body.image-stage-mode .game-wrap {
   .flag-bug-img {
     max-width: min(23vw, 96px);
     max-height: min(28dvh, 110px) !important;
+  }
+  .flag-hp {
+    margin-top: 2px;
+    gap: 4px;
+  }
+  .flag-hp__heart {
+    width: 20px;
+    height: 20px;
+  }
+  .flag-hp__heart::before {
+    font-size: 18px;
   }
   .flag-controls {
     gap: clamp(20px, 7vw, 34px);
@@ -3408,6 +3452,24 @@ function playMzSe(name) {
     catch (e) { return; }
   }
   try { a.currentTime = 0; a.play().catch(function(){}); } catch (e) {}
+}
+
+// 旗あげミニゲーム TTS ナレーション (cmd_red_up / cmd_white_up / cmd_red_down / cmd_white_down /
+//   cmd_red_down_keep / cmd_white_down_keep / win / miss_01 / miss_02 を順次配置予定)
+const _FLAG_VOICE_BASE = '../assets/audio/narration/maze/flag/';
+const _flagVoiceCache = {};
+function _playFlagVoice(key) {
+  if (!key) return;
+  try {
+    let a = _flagVoiceCache[key];
+    if (!a) {
+      a = new Audio(_FLAG_VOICE_BASE + key + '.mp3');
+      a.volume = 0.75;
+      _flagVoiceCache[key] = a;
+    }
+    try { a.currentTime = 0; } catch (_) {}
+    a.play().catch(function() {});
+  } catch (_) {}
 }
 function _playMzSePitch(name, semitones) {
   try {
@@ -6592,6 +6654,7 @@ const FLAG_POSE_SRC = {
 };
 const FLAG_GAME_STEP_COUNT = 5;
 const FLAG_ROUND_MS = 6500;
+const FLAG_HP_INITIAL = 4;  // ハート 4 つで開始 (3 ミス耐える)
 
 function _flagPoseHas(pose, flag) {
   return pose === 'both' || pose === flag;
@@ -6616,6 +6679,14 @@ function _flagCommandText(pose, flag, up) {
   return flag === 'red' ? 'あか さげて！' : 'しろ さげて！';
 }
 
+function _flagCommandVoiceKey(pose, flag, up) {
+  if (up) return flag === 'red' ? 'cmd_red_up' : 'cmd_white_up';
+  if (pose === 'both') {
+    return flag === 'red' ? 'cmd_red_down_keep' : 'cmd_white_down_keep';
+  }
+  return flag === 'red' ? 'cmd_red_down' : 'cmd_white_down';
+}
+
 function _buildFlagGameSteps() {
   const steps = [];
   let pose = 'down';
@@ -6635,6 +6706,7 @@ function _buildFlagGameSteps() {
     const next = _flagPoseAfter(pose, chosen.flag, chosen.up);
     steps.push({
       text: _flagCommandText(pose, chosen.flag, chosen.up),
+      voice: _flagCommandVoiceKey(pose, chosen.flag, chosen.up),
       flag: chosen.flag,
       next: next,
     });
@@ -6817,7 +6889,7 @@ function _startFlagRoundTimer() {
   gs.deadline = performance.now() + FLAG_ROUND_MS;
   gs.timeoutId = setTimeout(function() {
     if (gs !== _flagGameState || gs.locked) return;
-    _resolveFlagGame(false, 'time');
+    _flagApplyMiss('time');
   }, FLAG_ROUND_MS);
   function tick() {
     if (gs !== _flagGameState || gs.locked) return;
@@ -6832,7 +6904,7 @@ function _startFlagRoundTimer() {
 
 function _showFlagGame() {
   _setEncounterMode('flag');
-  _flagGameState = { step: 0, pose: 'down', locked: false, steps: _buildFlagGameSteps() };
+  _flagGameState = { step: 0, pose: 'down', locked: false, hp: FLAG_HP_INITIAL, steps: _buildFlagGameSteps() };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'flag-game';
@@ -6846,6 +6918,17 @@ function _showFlagGame() {
     '<div class="flag-timer__track"><div class="flag-timer__bar" id="flagTimerBar"></div></div>' +
     '<div class="flag-timer__text" id="flagTimerText">あと 7</div>';
   wrap.appendChild(timer);
+  const hpEl = document.createElement('div');
+  hpEl.className = 'flag-hp';
+  hpEl.id = 'flagHp';
+  hpEl.setAttribute('aria-label', 'のこり HP ' + FLAG_HP_INITIAL);
+  for (let i = 0; i < FLAG_HP_INITIAL; i++) {
+    const h = document.createElement('span');
+    h.className = 'flag-hp__heart';
+    h.dataset.index = String(i);
+    hpEl.appendChild(h);
+  }
+  wrap.appendChild(hpEl);
   const stageEl = document.createElement('div');
   stageEl.className = 'flag-bug-stage';
   const img = document.createElement('img');
@@ -6896,6 +6979,56 @@ function _renderFlagStep(startTimer) {
   if (startTimer !== false && !_flagGameState.locked && step) {
     _startFlagRoundTimer();
   }
+  if (startTimer !== false && step && step.voice) {
+    _playFlagVoice(step.voice);
+  }
+}
+
+function _renderFlagHp(currentHp, prevHp) {
+  const hpEl = document.getElementById('flagHp');
+  if (!hpEl) return;
+  const hearts = hpEl.querySelectorAll('.flag-hp__heart');
+  const total = hearts.length;
+  const safeCurrent = Math.max(0, Math.min(total, currentHp | 0));
+  hpEl.setAttribute('aria-label', 'のこり HP ' + safeCurrent);
+  hearts.forEach(function(node, idx) {
+    if (idx < safeCurrent) {
+      node.classList.remove('is-off');
+      node.classList.remove('is-losing');
+    } else if (prevHp != null && idx < prevHp && idx >= safeCurrent) {
+      // losing this heart: animate then mark off
+      node.classList.remove('is-off');
+      node.classList.remove('is-losing');
+      void node.offsetWidth;
+      node.classList.add('is-losing');
+      setTimeout(function() {
+        node.classList.remove('is-losing');
+        node.classList.add('is-off');
+      }, 360);
+    } else {
+      node.classList.remove('is-losing');
+      node.classList.add('is-off');
+    }
+  });
+}
+
+function _flagApplyMiss(reason) {
+  const gs = _flagGameState;
+  if (!gs) return;
+  _clearFlagRoundTimer();
+  const prevHp = gs.hp;
+  gs.hp = Math.max(0, prevHp - 1);
+  _renderFlagHp(gs.hp, prevHp);
+  playMzSe('wrong');
+  setTimeout(function() {
+    _playFlagVoice('miss_0' + (1 + Math.floor(Math.random() * 2)));
+  }, 160);
+  if (gs.hp <= 0) {
+    _resolveFlagGame(false, 'hp');
+    return;
+  }
+  gs.locked = false;
+  _renderFlagStep(true);
 }
 
 function _onFlagTap(flag) {
@@ -6904,7 +7037,7 @@ function _onFlagTap(flag) {
   if (!step) return;
   _clearFlagRoundTimer();
   if (flag !== step.flag) {
-    _resolveFlagGame(false);
+    _flagApplyMiss('wrong');
     return;
   }
   _flagGameState.locked = true;
@@ -6939,6 +7072,7 @@ function _resolveFlagGame(won, reason) {
 }
 
 function _showFlagRewardSequence() {
+  _playFlagVoice('win');
   const st = _flagTunnelState;
   if (st) {
     st.unlocked = true;

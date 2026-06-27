@@ -7,6 +7,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>フクロウ博士のなぞなぞ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- Phase 1: 共通どんぐりモーダル shared CSS (BEM .pono-acorn-modal__*).
+     既存 .result-acorn-reward__* CSS とはセレクタが重ならないので併存可能。
+     Phase 2 で JS を window.PonoAcornModal に置換する想定。 -->
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
 <!-- FOUC guard: start-screen は visible のまま、 game UI (header/hud/stage) を init 完了まで非表示 -->
 <style>html,body{background:linear-gradient(170deg,#FFF8E7 0%,#FEF3C7 50%,#FDE68A 100%)}.header,.hud,.stage{visibility:hidden}body.pono-game-ready .header,body.pono-game-ready .hud,body.pono-game-ready .stage{visibility:visible}</style>
 <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
@@ -9508,5 +9512,10 @@ updateHUD();
   else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
 })();
 </script>
+<!-- Phase 1: 共通どんぐりモーダル API を先読みしておく (このフェーズでは未呼び出し)。
+     Phase 2 で showResult() の DOM 直書きから window.PonoAcornModal.show() に
+     差し替える際にここでロード済みであれば再リソース取得不要。 -->
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </body>
 </html>

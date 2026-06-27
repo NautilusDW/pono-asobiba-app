@@ -95,14 +95,23 @@
     return _rootPrefix() + path;
   }
 
-  function _playRewardImpactSfx() {
+  function _playRewardImpactSfx(gameId) {
+    // 共通基盤 (common/acorn-audio.js) が読み込まれていれば PonoAcornAudio 経由で再生。
+    // PonoAcornAudio.play(gameId) は内部で未登録ゲームを default (don.mp3 @ 0.48) に fallback してくれる。
+    // 共通基盤が未ロードのページ (旧シェル / 部分配信中) のために、既存の don.mp3 直接再生 fallback を残す。
+    if (window.PonoAcornAudio && typeof window.PonoAcornAudio.play === 'function') {
+      try {
+        window.PonoAcornAudio.play(gameId);
+        return;
+      } catch (e) {}
+    }
     try {
       var audio = new Audio(resolveAsset('assets/audio/sfx/quiz/don.mp3'));
       audio.volume = 0.48;
       audio.currentTime = 0;
       var p = audio.play();
       if (p && typeof p.catch === 'function') p.catch(function () {});
-    } catch (e) {}
+    } catch (e2) {}
   }
 
   function _eventMatches(sticker, eventName) {
@@ -417,7 +426,7 @@
 
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-    _playRewardImpactSfx();
+    _playRewardImpactSfx(result && result.gameId);
 
     var style = document.getElementById('game-sticker-style');
     if (!style) {

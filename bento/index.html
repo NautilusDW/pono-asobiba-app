@@ -7,9 +7,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ポノとつくろう いろどりべんとう | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<!-- FOUC guard: ゲーム本体 (#app) を init 完了まで非表示にしてタイトル/CSS ロード前のチラ見えを防止 -->
-<style>html,body{background:linear-gradient(135deg,#FFF8F0 0%,#FFEEDD 100%)}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
-<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<!-- FOUC guard: ゲーム本体 (#app) を init 完了まで非表示にしてタイトル/CSS ロード前のチラ見えを防止
+     Fix 2 (2026-06-28): #shop-opening / .shop-opening / .free-bottom-guide も guard 対象に追加。
+     これらは shop intro 機能 (将来 merge 予定) 用の forward-compatible selector で、 現状未存在でも
+     副作用なし。 selector が将来 active になった時点で同じ guard が効くようになる。 -->
+<style>html,body{background:linear-gradient(135deg,#FFF8F0 0%,#FFEEDD 100%)}body:not(.pono-game-ready) #app,body:not(.pono-game-ready) #shop-opening,body:not(.pono-game-ready) .shop-opening,body:not(.pono-game-ready) .free-bottom-guide{visibility:hidden}</style>
+<script>(function(){function r(){document.body&&document.body.classList.add('pono-game-ready')}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(r)})},{once:true})}else{requestAnimationFrame(function(){requestAnimationFrame(r)})}})();</script>
 <script src="../common/mvp-flags.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
