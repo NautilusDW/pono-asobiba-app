@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-27T11:57:02Z - ガチャ v1703 — モバイル portrait status bar 領域の薄い黒長方形を修正 (.daily-gacha-modal に env(safe-area-inset-top/bottom) padding)
+- **タスク**: ガチャ v1703 — モバイル portrait status bar 領域の薄い黒長方形を修正 (.daily-gacha-modal に env(safe-area-inset-top/bottom) padding)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 60
+- **エラー数**: 2
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 20, "Read": 8, "Agent": 23, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
+
 ### 2026-06-27T11:53:29Z - A+B+C+D 一括パフォーマンス改善: 大型PNG 17枚 WebP化(35MB→3.8MB/-89%) + 全ゲーム5本に preload-helper 拡張 + bottom-nav downscale + bgm preload=metadata 化、 4並列クロスレビューで critical 0、 v1702 push 完了
 - **タスク**: A+B+C+D 一括パフォーマンス改善: 大型PNG 17枚 WebP化(35MB→3.8MB/-89%) + 全ゲーム5本に preload-helper 拡張 + bottom-nav downscale + bgm preload=metadata 化、 4並列クロスレビューで critical 0、 v1702 push 完了
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: なし
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 18, "Read": 8, "Agent": 14, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-27T04:40:44Z - bento/cookingタイトル1行強制再修正(wbr撤廃+nowrap戻し+全aspect共通font-size override)
-- **タスク**: bento/cookingタイトル1行強制再修正(wbr撤廃+nowrap戻し+全aspect共通font-size override)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 42
-- **エラー数**: 1
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 16, "Read": 6, "Agent": 12, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 5}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。
 
 
