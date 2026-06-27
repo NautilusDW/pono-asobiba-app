@@ -3746,7 +3746,7 @@
       aspect-ratio: 1763 / 519;
       box-sizing: border-box;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/komorebiya_cute_text_baked_sign_20260626.png") center / contain no-repeat;
+      background: transparent url("assets/ui/shop/komorebiya_cute_text_baked_sign_20260626.png") center / 100% 100% no-repeat;
       color: transparent; text-align: center;
       font-size: 0;
       text-shadow: none;
@@ -4158,14 +4158,43 @@
       .donguri-shop-v2-owned-label { font-size: 11px; }
     }
     @media (min-width: 901px) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 3/2) {
-      .donguri-shop-v2-head > .donguri-shop-v2-title { top: -4.2%; }
-      .donguri-shop-v2-rotation-note { top: 19.8%; }
-      .donguri-shop-v2-shopkeeper { left: 4.8%; bottom: 15.2%; width: 23.4%; max-width: 250px; }
-      .donguri-shop-v2-bubble { left: 6.7%; bottom: 73%; width: min(26.5%, 310px); }
-      .donguri-shop-v2-subtitle { left: 5.7%; bottom: 65.2%; width: min(30%, 340px); }
-      .donguri-shop-v2-reserve { left: 7%; bottom: 6.2%; }
-      .donguri-shop-v2-slots { left: 35%; right: 4.5%; bottom: 8.7%; gap: 1.9%; }
-      .donguri-shop-v2-slot { max-width: 31.5%; }
+      .donguri-shop-v2-head > .donguri-shop-v2-title { top: -12%; }
+      .donguri-shop-v2-title { width: min(43vw, 440px); }
+      .donguri-shop-v2-rotation-note { top: 21.3%; font-size: clamp(12px, 1.32vw, 15px); }
+      .donguri-shop-v2-shopkeeper { left: 3.8%; bottom: 8.4%; width: 25.8%; max-width: 270px; }
+      .donguri-shop-v2-bubble {
+        left: 5.4%;
+        bottom: 70.8%;
+        width: min(27.5%, 310px);
+        padding: 12px 20px 30px;
+        font-size: clamp(14px, 1.45vw, 16px);
+      }
+      .donguri-shop-v2-subtitle {
+        left: 5.7%;
+        bottom: 62.8%;
+        width: min(31.5%, 340px);
+        min-height: 30px;
+        padding: 4px 10px;
+        font-size: clamp(12px, 1.25vw, 14px);
+      }
+      .donguri-shop-v2-reserve {
+        left: 7%;
+        bottom: 3.2%;
+        width: min(27%, 280px);
+        min-width: 224px;
+        height: clamp(124px, 12.8vw, 138px);
+        padding: 10px 12px;
+        grid-template-columns: 30% minmax(0, 1fr);
+        gap: 4px 10px;
+      }
+      .donguri-shop-v2-reserve-title { font-size: clamp(13px, 1.35vw, 15px); }
+      .donguri-shop-v2-reserve-name { font-size: clamp(13px, 1.35vw, 15px); line-height: 1.14; }
+      .donguri-shop-v2-reserve-price { font-size: clamp(13px, 1.25vw, 15px); }
+      .donguri-shop-v2-reserve-price::before { width: clamp(16px, 1.7vw, 20px); }
+      .donguri-shop-v2-reserve-empty { font-size: clamp(14px, 1.45vw, 16px); }
+      .donguri-shop-v2-reserve button { min-height: 30px; padding: 0 10px 1px; font-size: clamp(11px, 1.15vw, 13px); }
+      .donguri-shop-v2-slots { left: 34.7%; right: 3.4%; bottom: 4.1%; gap: 1.8%; }
+      .donguri-shop-v2-slot { min-width: 86px; max-width: 33.2%; }
     }
 
     /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
@@ -5836,7 +5865,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1678;
+    const PAGE_CACHE_VERSION = 1679;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
