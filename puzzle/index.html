@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>ポノのなかよしパズル | ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <!-- FOUC guard: .page-wrapper 全体を init 完了まで非表示にしてパズル画面のチラ見えを防ぐ -->
+  <style>html,body{background:#FFF8F0}.page-wrapper{visibility:hidden}body.pono-game-ready .page-wrapper{visibility:visible}</style>
+  <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=1326">

@@ -6173,7 +6173,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1704;
+    const PAGE_CACHE_VERSION = 1705;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -8977,6 +8977,31 @@
     if (dailyGachaEntry) {
       updateDailyGachaEntry();
       scheduleDailyGachaImagePreload();
+      // ---- A: ガチャ画面 critical asset を idle warm (Stream A 2026-06-28) ----
+      // preload-helper.js の GAME_WARM_ASSETS['gacha'] を <link rel=preload> で
+      // バックグラウンド注入。 上記 scheduleDailyGachaImagePreload() は
+      // new Image() ベースで browser の preload キャッシュには載らないが、
+      // こちらは Cache API / Disk Cache に確実に乗る (二重保険)。
+      try {
+        if (window.PonoPreload && typeof window.PonoPreload.warmGameAssets === 'function') {
+          window.PonoPreload.warmGameAssets('gacha', { fetchpriority: 'low' });
+        }
+      } catch (_) { /* preload-helper 未ロード時は静かにスキップ */ }
+      // ---- A: ガチャボタン hover/touch で preload を前倒し (ユーザー意図検知) ----
+      // click 発火前に pointerenter / touchstart で startDailyGachaImagePreload を
+      // 強制発火。 PC では hover で ~200-500ms、 iPad では touchstart で
+      // ~50-150ms の head-start が稼げる。 idle 経路は dailyGachaImagePreloadStarted
+      // flag で二重実行抑止されている。
+      var __gachaWarmIntent = function () {
+        try { startDailyGachaImagePreload(); } catch (_) {}
+        try {
+          if (window.PonoPreload && typeof window.PonoPreload.warmGameAssets === 'function') {
+            window.PonoPreload.warmGameAssets('gacha', { fetchpriority: 'high' });
+          }
+        } catch (_) {}
+      };
+      dailyGachaEntry.addEventListener('pointerenter', __gachaWarmIntent, { once: true, passive: true });
+      dailyGachaEntry.addEventListener('touchstart', __gachaWarmIntent, { once: true, passive: true, capture: true });
       _scheduleShopNarrationPreload();
       dailyGachaEntry.addEventListener('click', openDailyGacha);
     } else {

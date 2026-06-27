@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ポノのおとタッチ｜ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: #app (canvas + ポノ + stage UI) を init 完了まで非表示。 intro overlay は visible のままタイトル相当として表示 -->
+<style>html,body{background:linear-gradient(180deg,hsl(200,55%,55%) 0%,hsl(215,60%,25%) 100%)}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="../common/mvp-flags.js"></script>

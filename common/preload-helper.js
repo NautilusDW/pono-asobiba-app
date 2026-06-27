@@ -237,11 +237,183 @@
       '../assets/images/maze/stump.png',
       '../assets/images/maze/rock.png',
       '../assets/images/word/ringo.png'
-    ]
+    ],
 
-    // NOTE: starparodier / undersea-cave / sea-album / aquarium 等は
-    //       worktree 内に存在しないため、 ここでは map に含めない。
-    //       Stream finalize で main repo の対応 game id を追加可。
+    // ----- gacha (play.html 内モーダル: ../path ではなく play.html 同階層) -----
+    // Stream A finalize (2026-06-28):
+    // 初回モーダル open 直後の描画 critical asset:
+    //   - daily_gacha_capsule_closed_pink.png (~836KB) ← play.html バナー (banner img)
+    //   - daily_gacha_machine.webp (~139KB)            ← モーダル open 直後 LCP 候補
+    //   - daily_gacha_room_backdrop.webp (~95KB)       ← 同時に背景表示
+    //   - reveal_bg_* 3 枚 (~620KB)                    ← drop 時 (capsule 出現後 ~1s)
+    // 推定累計: ~1.6MB (上限 1.5MB をわずかに超過するが、 banner png が user-visible
+    // で LCP に直結するため許容)。 lever.png (~836KB) と start_panel.png (~614KB)
+    // は内部 UI で頻度低めのため、 起動時 warm からは除外し、
+    // startDailyGachaImagePreload() の従来パスに任せる。
+    //
+    // play.html からの呼び出しは相対 ('assets/…') になるため、 ここでは
+    // 'assets/…' (../ 無し) を採用。 他ゲームは /<game>/index.html 配下のため
+    // '../assets/…' だが、 gacha は play.html 直下なので注意。
+    gacha: [
+      'assets/ui/gacha/daily_gacha_capsule_closed_pink.png',
+      'assets/ui/gacha/daily_gacha_machine.webp',
+      'assets/ui/gacha/daily_gacha_room_backdrop.webp',
+      'assets/ui/gacha/daily_gacha_reveal_bg_magic_book.webp',
+      'assets/ui/gacha/daily_gacha_reveal_bg_holographic_pack.webp',
+      'assets/ui/gacha/daily_gacha_reveal_bg_stage_burst.webp'
+    ],
+
+    // ============================================================
+    // Stream B finalize (2026-06-28) - 未対応ゲーム拡張
+    // ------------------------------------------------------------
+    // 各ゲームの初回描画 / 初回操作で critical な画像のみ列挙。
+    // dynamic 選択される素材 (stage 解放後の bg / ガチャ capsule 等) は
+    // 対象外。 path は /<game>/index.html からの相対 ('../assets/…')。
+    // ============================================================
+
+    // aquarium (PIXI ベース水族館 / Ocean assets)
+    // 初回描画: ocean BG + 主要生き物スプライト (octpus/JellyFish/Turtle/Fish)。
+    // OceanRocks シリーズは dynamic 配置のため warm から除外。
+    // 推定累計: ~1.0MB
+    aquarium: [
+      '../assets/images/ocean/BG_A.png',
+      '../assets/images/ocean/octpus/octpus_001.png',
+      '../assets/images/ocean/JellyFish/JellyFish_001.png',
+      '../assets/images/ocean/Turtle/Turtle_001.png',
+      '../assets/images/ocean/Fish_S01/Fish_S01_001.png',
+      '../assets/images/ocean/Submarine/Submarine_001.png'
+    ],
+
+    // breakout (デフォルト解放 stage1 のみ)
+    // 他 stage は unlock 条件付き / 動的選択のため対象外。
+    // 推定累計: ~2.2MB → 1 枚で枠超え気味だが BG なので例外的に許容。
+    breakout: [
+      '../assets/images/Block/stage1_forest_light.png'
+    ],
+
+    // slide (stage1 がオープニング BG。 他 stage は順次出現)
+    // 推定累計: ~2.2MB (BG 1 枚のみ)
+    slide: [
+      '../assets/images/Slide/stage1_forest_light.png'
+    ],
+
+    // starparodier (cold start: ASSET_BASE = ../assets/images/starparodier/)
+    // 初回描画: player ship + 最初の zako enemy + power star + 背景3層 (moon)。
+    // boss / mid-boss / 爆発エフェクトは敵 wave 到来まで非クリティカル。
+    // 推定累計: ~1.3MB (player ~50KB + zako/star ~50KB + moon 3 枚 ~1.2MB)
+    starparodier: [
+      '../assets/images/starparodier/player_ship_pono.png',
+      '../assets/images/starparodier/zako_enemy.png',
+      '../assets/images/starparodier/power_star.png',
+      '../assets/images/starparodier/moon_far_loop.png'
+    ],
+
+    // undersea-cave (ASSET_BASE = ../assets/images/undersea-cave/)
+    // 初回描画: 洞窟内 BG 3 層 + Submarine + 友達生物 normal state。
+    // 食べ物/真珠/わかめなど item は徐々に出現するため warm 不要。
+    // 推定累計: ~1.3MB
+    'undersea-cave': [
+      '../assets/images/undersea-cave/bg_ceiling.png',
+      '../assets/images/undersea-cave/bg_floor_sand.png',
+      '../assets/images/undersea-cave/bg_wall_near.png',
+      '../assets/images/undersea-cave/bg_wall_far.png',
+      '../assets/images/ocean/Submarine/Submarine_003.png',
+      '../assets/images/undersea-cave/friend_whale_sleep.png',
+      '../assets/images/undersea-cave/friend_octopus_smile.png'
+    ],
+
+    // sea-album (stage1 tidepool が initial scene)
+    // panorama scroll BG が初回描画のメイン。 stage2-6 は別途解放まで warm 不要。
+    // 推定累計: ~1.4MB
+    'sea-album': [
+      '../assets/images/sea-album/stage1/stage1_tidepool_background.png',
+      '../assets/images/sea-album/stage1/hermit_crab_normal.png',
+      '../assets/images/sea-album/stage1/shrimp_normal.png',
+      '../assets/images/sea-album/stage1/sea_star_normal.png'
+    ],
+
+    // wordmatch (forestdex)
+    // タイトル画面: title_logo + title_back.jpg、 ゲーム画面: gameplay_frame。
+    // collection_frame は図鑑ボタンタップ後のため warm 後段に回す。
+    // 推定累計: ~1.5MB (title_back ~小 + frame 大)
+    wordmatch: [
+      '../assets/images/wordmatch/title_logo.png',
+      '../assets/images/wordmatch/title_back.jpg',
+      '../assets/images/wordmatch/forestdex_gameplay_frame.png'
+    ],
+
+    // shop (ポノのお店 - exterior が初回シーン)
+    // counter は店内入場後だがほぼ即遷移するため warm 対象に含める。
+    // 推定累計: ~5.2MB → 上限超過のため exterior のみ。
+    shop: [
+      '../assets/images/shop/exterior.png'
+    ],
+
+    // zukan (もりのずかん SPA)
+    // 初回描画: title_bg + title_logo + outer 21:9 BG。 ui_question_frame は
+    // search 画面遷移後のため warm 二段目候補。
+    // 推定累計: ~1.0MB
+    zukan: [
+      '../assets/zukan/title/title_bg.png',
+      '../assets/zukan/title/title_logo.png',
+      '../assets/zukan/bg/zukan_outer_bg_21x9.png',
+      '../assets/zukan/map/world_map.png'
+    ],
+
+    // bubble (シャボン玉パーティー / 小規模)
+    // 主要素材は pono face のみ (~50KB)
+    bubble: [
+      '../assets/images/characters/pono/pono_face_circle.png'
+    ],
+
+    // bowling (デフォルト解放 bg は circuit / colorful)
+    // pins/ は同一ディレクトリで bowling/pins/ にあるため warm 不要 (即時参照)。
+    // 推定累計: ~600KB (webp 2 枚)
+    bowling: [
+      '../assets/images/Bowling/BG/boy/circuit.webp',
+      '../assets/images/Bowling/BG/girl/colorful.webp'
+    ],
+
+    // coloring (ぬりえ - selection 画面が最初)
+    // selection BG (BG_03.webp) + nurie001 (デフォルト onload)。
+    // 推定累計: ~400KB
+    coloring: [
+      '../assets/images/BG_03.webp',
+      '../assets/images/nurie001.webp'
+    ],
+
+    // drawing (おえかき - canvas + キャラクター)
+    // 背景 BG_03 + ポノ 側面立ち絵。 アイコン群は CSS で読まれる。
+    // 推定累計: ~400KB
+    drawing: [
+      '../assets/images/BG_03.webp',
+      '../assets/images/characters/pono_side_fullbody.webp'
+    ],
+
+    // message (作者より - 静的ページ)
+    // 共通 BG + ポノ立ち絵のみ。 推定累計: ~400KB
+    message: [
+      '../assets/images/BG_03.webp',
+      '../assets/images/characters/pono_side_fullbody.webp'
+    ],
+
+    // egg (たまごのにわ - yard scene が最初)
+    // PIXI.Assets.load で green_sm.webp / hatake_crop.webp を順に load。
+    // 推定累計: ~600KB
+    egg: [
+      '../assets/images/yard/green_sm.webp',
+      '../assets/images/yard/hatake_crop.webp'
+    ],
+
+    // fossil (かせきはっくつ - pono dance + hedgehog)
+    // canvas dig 画面で imgPono / dance スプライト群が即使われる。
+    // 推定累計: ~500KB
+    fossil: [
+      '../assets/images/characters/pono/pono_001.png',
+      '../assets/images/characters/pono/dance/dance_hooray.png',
+      '../assets/images/characters/pono/dance/dance_wave.png',
+      '../assets/images/characters/headgehog/headgehog_smilewavinghands.png'
+    ]
   };
 
   /**

@@ -7,6 +7,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>びっくりボウリング | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: start-screen は visible のまま、 canvas#c を init 完了まで非表示 -->
+<style>html,body{background:#1a5c3a}canvas#c{visibility:hidden}body.pono-game-ready canvas#c{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<script src="../common/preload-helper.js" defer></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('bowling');});</script>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap"></noscript>
 <style>
