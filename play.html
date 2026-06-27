@@ -835,12 +835,12 @@
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* iPad 1024×768, iPad Pro 12.9 2048×1536, etc.
-         At 4:3 the visible canvas slice is vw × 823/vh ≈ 1097.3 canvas-px,
-         so safe-w must drop well below that. 1020 leaves ~77px buffer
-         so the bottom-nav (5 buttons incl. シール) is fully visible. */
+         At 4:3 the visible canvas slice is vw × 823/vh ≈ 1097.3 canvas-px.
+         v1680: safe-w 1020→1080 (visible slice 1097 のうち 17px buffer)、
+         bottom-nav-right-inset 50→40 で 4:3 全体の窓ふち寄せレイアウト。 */
       :root {
-        --safe-w: 1020px;
-        --bottom-nav-right-inset: 50px; /* play-main right padding 18px + card-list right shadow room 32px */
+        --safe-w: 1080px;
+        --bottom-nav-right-inset: 40px; /* play-main right padding 14px + card-list right shadow room 26px */
       }
       .play-main {
         grid-template-columns: 320px 1fr;
@@ -4424,10 +4424,17 @@
       user-select: none;
       -webkit-user-select: none;
     }
+    /* v1680: nav badge icon を🌰 emoji から店内残高と同じ PNG ロゴへ統一。
+       background-image 方式 (.donguri-shop-v2-balance-icon と一貫)、 width で
+       縮小制御するので landscape の font-size override も width override に揃える。 */
     .acorn-balance-badge--nav .acorn-balance-badge__icon {
-      font-size: 22px;
-      line-height: 1;
+      display: inline-block;
+      width: 22px;
+      aspect-ratio: 85 / 103;
+      flex: 0 0 auto;
+      background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
       filter: drop-shadow(0 1px 1px rgba(40, 24, 8, 0.2));
+      transform: translateY(-1px);
     }
     .acorn-balance-badge--nav .acorn-balance-badge__count {
       font-variant-numeric: tabular-nums;
@@ -4982,28 +4989,50 @@
       .bottom-nav { --nav-sprite-w: 430px; --nav-sprite-h: 136px; padding-inline: 15px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+      /* v1680: 4:3 (iPad landscape) は visible 1097 のうち safe-w 1080 まで使い切り、
+         看板拡大 (380px) + 左寄せ、 カード max-height +17%, タイトル +25%, cards-col 上下余白圧縮、
+         で「窓ふちに張り付くフルブリード」 印象へ。 既存 :root の safe-w / inset 変更と連動。 */
       .play-main {
-        grid-template-columns: minmax(292px, 37%) minmax(0, 1fr);
-        gap: 26px;
-        padding: 18px 18px 100px 22px;
+        grid-template-columns: minmax(360px, 38%) minmax(0, 1fr);   /* v1680: 292→360, 37→38% */
+        gap: 22px;                                                   /* v1680: 26→22 */
+        padding: 14px 14px 96px 12px;                                /* v1680: left 22→12, top 18→14 */
       }
-      .brand-sign { width: min(312px, 100%); }
+      .brand-col {
+        padding-top: 6px;                                            /* v1680: 10→6 */
+        align-items: flex-start;                                     /* v1680: stretch→flex-start (左寄せ) */
+      }
+      .brand-sign {
+        width: min(380px, 100%);                                     /* v1680: 312→380 (+22%) */
+        align-self: flex-start;                                      /* v1680: center→flex-start */
+        margin-left: -6px;                                           /* v1680: 透明枠分さらに左へ */
+      }
       .brand-sign > img.brand-ribbon,
       .brand-ribbon { width: min(284px, 91%); }
       .brand-ribbon { margin-top: -40px; }
-      .title-side-stack { width: min(300px, 100%); gap: 8px; margin-top: 6px; }
-      .book-unlock-entry__main { font-size: 19px; }
-      .book-unlock-entry__sub { font-size: 13px; }
+      .title-side-stack {
+        width: min(360px, 100%);                                     /* v1680: 300→360 */
+        gap: 8px;
+        margin: 10px 0 0;                                            /* v1680: auto 廃止 (左寄せ維持) */
+      }
+      .book-unlock-entry__main { font-size: 22px; }                  /* v1680: 19→22 */
+      .book-unlock-entry__sub  { font-size: 15px; }                  /* v1680: 13→15 */
       .daily-quest-info-banner { margin-bottom: 4px; }
       .daily-quest-info-banner__title { font-size: 11px; }
-      .daily-quest-info-banner__body { font-size: 18px; }
-      .daily-gacha-entry { height: 88px; }
-      .cards-col { padding-top: 40px; padding-bottom: 128px; }
-      .card-list { gap: 8px; padding-left: 10px; padding-right: 12px; }
-      .game-card { max-height: 106px; }
+      .daily-quest-info-banner__body { font-size: 22px; }            /* v1680: 18→22 */
+      .daily-gacha-entry { height: 104px; }                          /* v1680: 88→104 */
+      .cards-col {
+        padding-top: 18px;                                           /* v1680: 40→18 */
+        padding-bottom: 110px;                                       /* v1680: 128→110 */
+      }
+      .card-list {
+        gap: 10px;                                                   /* v1680: 8→10 */
+        padding-left: 10px;
+        padding-right: 12px;
+      }
+      .game-card { max-height: 124px; }                              /* v1680: 106→124 (+17%) */
       .game-card__title,
-      .game-card[data-id] .game-card__title { font-size: 24px; }
-      .game-card__desc { font-size: 15px; }
+      .game-card[data-id] .game-card__title { font-size: 30px; }     /* v1680: 24→30 (+25%) */
+      .game-card__desc { font-size: 18px; }                          /* v1680: 15→18 */
       .bottom-nav { --nav-sprite-w: 360px; --nav-sprite-h: 114px; bottom: 14px; padding-inline: 13px; }
       .bn-item { border-radius: 14px; }
     }
@@ -5016,7 +5045,7 @@
         min-width: 62px;
         font-size: 18px;
       }
-      .acorn-balance-badge--nav .acorn-balance-badge__icon { font-size: 20px; }
+      .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 20px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       .acorn-balance-badge--nav {
@@ -5025,7 +5054,7 @@
         min-width: 54px;
         font-size: 16px;
       }
-      .acorn-balance-badge--nav .acorn-balance-badge__icon { font-size: 18px; }
+      .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 18px; }
     }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
@@ -5094,7 +5123,7 @@
     <nav class="bottom-nav" id="bottomNav" aria-label="メニュー">
       <!-- v1672: acorn balance badge — bottom-nav 左端外へ並置 (HUD as nav sibling-in-DOM, visual-left) -->
       <div class="acorn-balance-badge acorn-balance-badge--nav" id="acornBalanceBadge" aria-live="polite" aria-label="どんぐりのこすう">
-        <span class="acorn-balance-badge__icon" aria-hidden="true">🌰</span>
+        <span class="acorn-balance-badge__icon" aria-hidden="true"></span>
         <span class="acorn-balance-badge__count" id="acornBalanceCount">0</span>
       </div>
       <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ヘルプ</span></button>
@@ -5865,7 +5894,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1679;
+    const PAGE_CACHE_VERSION = 1680;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -6008,28 +6037,37 @@
         updateScrollHints();
         if (typeof updateMiddleOverlay === 'function') updateMiddleOverlay();
       };
-      // v1678: viewport 中央付近の 3 カードに .is-overlay-active を付与。
-      // aspect/breakpoint 依存をなくすため getBoundingClientRect ベースに全面刷新。
-      // cardList の padding を除いた content-box 上端から (4 枚 + 3 gap) の中央を
-      // 「視覚的に見えている 4 枚帯のセンター」 として採用し、 各カード DOM の
-      // viewport 中心 y との距離で上位 3 件を選ぶ。 LOOP_COPIES=3 でも純粋に距離
-      // のみで判定するので、 中央 viewport にある rep=1 の 3 枚が自然に選ばれる。
+      // v1680: middle-3 検知を完全 getBoundingClientRect ベースに統一。
+      // v1678 では listRect.top (scaled) に padTop / cardH*4+gap*3 (unscaled) を
+      // 加算しており、 ancestor scale や peek 込みの実高さとズレるとランキングが
+      // 下方/上方に偏る不具合があった (16:9 実機で 「最下端しか overlay されない」 症状)。
+      // 今は visible 帯の物理中央 = listRect の物理中央 と素直に定義し、
+      // cardList の clip box 外のカードは候補から除外する。
       const updateMiddleOverlay = () => {
         if (!cards.length) return;
         const listRect = cardList.getBoundingClientRect();
-        const cs = getComputedStyle(cardList);
-        const padTop = parseFloat(cs.paddingTop) || 0;
-        const cardH = cards[0].offsetHeight || 0;
-        const gap = parseFloat(cs.rowGap || cs.gap) || 0;
-        // padding を除いた content-top + (4 枚帯 + 3 gap) の幾何中央 (viewport 絶対座標)
-        const contentTop = listRect.top + padTop;
-        const visibleCenterY = contentTop + (cardH * 4 + gap * 3) / 2;
-        // 各カードの viewport 中心 y と visibleCenterY との距離を計算
+        // cardList 自体が scroll container なので listRect の物理中央が
+        // 「ユーザーに見えている帯の真ん中」。 padding/gap/peek は無視してよい
+        // (すべて scale 後の値に既に反映されている)。
+        const visibleCenterY = listRect.top + listRect.height / 2;
+        const top = listRect.top;
+        const bottom = listRect.bottom;
         const ranked = [];
         for (let i = 0; i < cards.length; i++) {
           const r = cards[i].getBoundingClientRect();
           const cy = r.top + r.height / 2;
+          // カード中心が clip box 内に居るものだけランキング対象
+          if (cy < top || cy > bottom) continue;
           ranked.push({ el: cards[i], dist: Math.abs(cy - visibleCenterY) });
+        }
+        // 対象 < 3 枚なら全カード fallback (初期 layout 中など)
+        if (ranked.length < 3) {
+          ranked.length = 0;
+          for (let i = 0; i < cards.length; i++) {
+            const r = cards[i].getBoundingClientRect();
+            const cy = r.top + r.height / 2;
+            ranked.push({ el: cards[i], dist: Math.abs(cy - visibleCenterY) });
+          }
         }
         ranked.sort((a, b) => a.dist - b.dist);
         const winners = new Set(ranked.slice(0, 3).map((r) => r.el));
