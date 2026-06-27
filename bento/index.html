@@ -11,8 +11,32 @@
      Fix 2 (2026-06-28): #shop-opening / .shop-opening / .free-bottom-guide も guard 対象に追加。
      これらは shop intro 機能 (将来 merge 予定) 用の forward-compatible selector で、 現状未存在でも
      副作用なし。 selector が将来 active になった時点で同じ guard が効くようになる。 -->
-<style>html,body{background:linear-gradient(135deg,#FFF8F0 0%,#FFEEDD 100%)}body:not(.pono-game-ready) #app,body:not(.pono-game-ready) #shop-opening,body:not(.pono-game-ready) .shop-opening,body:not(.pono-game-ready) .free-bottom-guide{visibility:hidden}</style>
-<script>(function(){function r(){document.body&&document.body.classList.add('pono-game-ready')}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(r)})},{once:true})}else{requestAnimationFrame(function(){requestAnimationFrame(r)})}})();</script>
+<style>html,body{background:#f5e6c8;background:linear-gradient(135deg,#FFF8F0 0%,#FFEEDD 100%)}body{background-color:#f5e6c8}body:not(.pono-game-ready) #app,body:not(.pono-game-ready) #shop-opening,body:not(.pono-game-ready) .shop-opening,body:not(.pono-game-ready) .free-bottom-guide{visibility:hidden}#title-screen{background-color:#f5e6c8 !important}</style>
+<script>(function(){
+  // Fix (2026-06-28): bento FOUC 完全解消。 title_back.webp decode 完了を待ってから pono-game-ready 付与。
+  // (A) #title-screen に opaque fallback (#f5e6c8) を入れて画像 decode 前の透け対策。
+  // (B) DOMContentLoaded + fonts.ready + titleImg.onload (or 2s safety timeout) を待つ。
+  function markReady(){document.body&&document.body.classList.add('pono-game-ready')}
+  function whenDomReady(cb){if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',cb,{once:true})}else{cb()}}
+  function whenFonts(){try{return (document.fonts&&document.fonts.ready)||Promise.resolve()}catch(_){return Promise.resolve()}}
+  function whenTitleImg(){return new Promise(function(resolve){
+    try{
+      var img=new Image();
+      var done=false;var fin=function(){if(done)return;done=true;resolve()};
+      img.onload=fin;img.onerror=fin;
+      img.src='../assets/images/bento/title_back.webp';
+      // safety: 画像ハング時に永久 hidden を防ぐ
+      setTimeout(fin,2000);
+    }catch(_){resolve()}
+  })}
+  whenDomReady(function(){
+    Promise.all([whenFonts(),whenTitleImg()]).then(function(){
+      requestAnimationFrame(function(){requestAnimationFrame(markReady)});
+    });
+    // 全体 safety: 何があっても 2.5s 後には必ず ready
+    setTimeout(markReady,2500);
+  });
+})();</script>
 <script src="../common/mvp-flags.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>

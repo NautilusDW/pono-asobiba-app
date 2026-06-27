@@ -61,7 +61,9 @@
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 02:55 - by Claude - [batch:871-acorn-modal-phase0] - common/acorn-modal-shared.css, common/acorn-modal.js, common/acorn-audio.js, common/acorn-copy.json, scripts/audit-suppress-reward-modal.mjs, js/game-stickers.js, quizland/index.html, sw.js - どんぐり獲得モーダル Phase 0 (共通基盤) 整備 + quizland 移行 [overlap: batch:860 (common/**, js/**, sw.js), batch:869 (sw.js), batch:870 (common/**, sw.js)]
-- 2026-06-28 03:10 - by Claude - [batch:873-fix-rogue-splash-and-bento-fouc] - play.html, sw.js, common/sw-update.js, bento/index.html - 緊急: ゲーム戻り時の謎 splash 画面削除/修正 + bento FOUC 根本修正 [overlap: batch:860/871 (common/sw.js)]
+- 2026-06-28 03:30 - by Claude - [batch:874-flag-rhythm-voice-v2] - maze/index.html, assets/audio/narration/maze/flag/**, sw.js - 旗あげ音声を日本語旗揚げゲーム風リズム (「あか〜 あげて！」) に再生成 + テンポ調整 [overlap: batch:873 (sw.js)]
+- 2026-06-28 03:30 - by Claude - [batch:875-strength-glove-zorder] - maze/index.html, sw.js - パワーグローブが岩より下レイヤーになっている z-order 修正 [overlap: batch:873/874 (maze/sw.js)]
+- 2026-06-28 03:30 - by Claude - [batch:876-all-minigame-narration] - maze/index.html, assets/audio/narration/maze/**, sw.js - 全ミニゲーム (janken/truefalse/simon/silhouette/oddone/water_bridge/strength_push/kumo) にナレーション追加 [overlap: batch:873/874/875 (maze/sw.js)]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか

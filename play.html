@@ -76,6 +76,37 @@
         try {
           var splash = document.getElementById('pono-game-splash');
           if (!splash) return;
+          // === ゲーム戻り / 既存ユーザー / セッション 2 回目以降の誤発火ガード ===
+          // 1) ブラウザ back/forward ナビゲーションなら overlay 不要 (ゲームから戻ってきた局面)
+          var navType = '';
+          try {
+            var navEntry = (performance && performance.getEntriesByType) ? performance.getEntriesByType('navigation')[0] : null;
+            navType = navEntry ? navEntry.type : '';
+          } catch (_) {}
+          if (navType === 'back_forward') {
+            splash.hidden = true;
+            return;
+          }
+          // 2) このセッションで既に 1 度出していれば 2 回目以降は出さない
+          var splashShown = false;
+          try { splashShown = sessionStorage.getItem('pono_splash_shown_v1') === '1'; } catch (_) {}
+          if (splashShown) {
+            splash.hidden = true;
+            return;
+          }
+          // 3) localStorage に何らかの pono_* 履歴があれば既存ユーザー → overlay skip
+          var hasHistory = false;
+          try {
+            for (var i = 0; i < localStorage.length; i++) {
+              var k = localStorage.key(i);
+              if (k && k.indexOf('pono_') === 0) { hasHistory = true; break; }
+            }
+          } catch (_) {}
+          if (hasHistory) {
+            splash.hidden = true;
+            try { sessionStorage.setItem('pono_splash_shown_v1', '1'); } catch (_) {}
+            return;
+          }
           var unlocked = sessionStorage.getItem('pono_audio_unlocked') === '1';
           var bgmOff   = localStorage.getItem('pono_bgm_enabled') === 'off';
           // pono-tap-intro が出ない条件 = 既に解禁済み or BGM オフ → game-splash で覆う
@@ -83,6 +114,8 @@
             splash.hidden = true; // pono-tap-intro に主役を譲る
             return;
           }
+          // ここまで来たら真の初回訪問 → overlay 表示。 セッション flag を立てて重複防止
+          try { sessionStorage.setItem('pono_splash_shown_v1', '1'); } catch (_) {}
           var dismiss = function(e){
             if (e) { e.preventDefault(); e.stopPropagation(); }
             splash.hidden = true;
@@ -6294,7 +6327,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1710;
+    const PAGE_CACHE_VERSION = 1713;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
