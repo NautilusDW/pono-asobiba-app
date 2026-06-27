@@ -176,15 +176,15 @@
     // 初回描画: お弁当箱パレット (左) + ご飯/おかず/フルーツ 主要パーツ。
     // 推定累計: ~1.2MB (各 ~100-150KB × 9)
     bento: [
-      '../assets/images/Bento_parts/hamburg2.png',
+      '../assets/images/Bento_parts/hamburg2.webp',
       '../assets/images/Bento_parts/karaage2.png',
-      '../assets/images/Bento_parts/ebi_fry2.png',
-      '../assets/images/Bento_parts/rice_umeboshi.png',
-      '../assets/images/Bento_parts/korokke2.png',
-      '../assets/images/Bento_parts/fries2.png',
-      '../assets/images/Bento_parts/broccoli2.png',
-      '../assets/images/Bento_parts/mini_tomato2.png',
-      '../assets/images/Bento_parts/ichigo2.png',
+      '../assets/images/Bento_parts/ebi_fry2.webp',
+      '../assets/images/Bento_parts/rice_umeboshi.webp',
+      '../assets/images/Bento_parts/korokke2.webp',
+      '../assets/images/Bento_parts/fries2.webp',
+      '../assets/images/Bento_parts/broccoli2.webp',
+      '../assets/images/Bento_parts/mini_tomato2.webp',
+      '../assets/images/Bento_parts/ichigo2.webp',
       '../assets/images/characters/pono/pono_face_circle.png'
     ],
 
