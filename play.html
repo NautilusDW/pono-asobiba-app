@@ -6173,7 +6173,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1705;
+    const PAGE_CACHE_VERSION = 1706;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -8982,11 +8982,21 @@
       // バックグラウンド注入。 上記 scheduleDailyGachaImagePreload() は
       // new Image() ベースで browser の preload キャッシュには載らないが、
       // こちらは Cache API / Disk Cache に確実に乗る (二重保険)。
-      try {
-        if (window.PonoPreload && typeof window.PonoPreload.warmGameAssets === 'function') {
-          window.PonoPreload.warmGameAssets('gacha', { fetchpriority: 'low' });
-        }
-      } catch (_) { /* preload-helper 未ロード時は静かにスキップ */ }
+      // ※ preload-helper.js は <script defer> なので、 この inline script の同期実行時点では
+      // まだ未ロード (window.PonoPreload === undefined)。 DOMContentLoaded を待ってから発火する。
+      // 既に DOM 解析が完了している (readyState === 'interactive' | 'complete') 場合は即時実行。
+      var __gachaIdleWarm = function () {
+        try {
+          if (window.PonoPreload && typeof window.PonoPreload.warmGameAssets === 'function') {
+            window.PonoPreload.warmGameAssets('gacha', { fetchpriority: 'low' });
+          }
+        } catch (_) { /* preload-helper 未ロード時は静かにスキップ */ }
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', __gachaIdleWarm, { once: true });
+      } else {
+        __gachaIdleWarm();
+      }
       // ---- A: ガチャボタン hover/touch で preload を前倒し (ユーザー意図検知) ----
       // click 発火前に pointerenter / touchstart で startDailyGachaImagePreload を
       // 強制発火。 PC では hover で ~200-500ms、 iPad では touchstart で
