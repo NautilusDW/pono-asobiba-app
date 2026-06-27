@@ -3734,10 +3734,6 @@
       overflow: visible;
       filter: drop-shadow(0 8px 12px rgba(38, 19, 4, .24));
     }
-    /* v1689: bubble が空 (=ナレーション字幕を流していない時) は PNG 吹き出しごと完全に隠す */
-    .donguri-shop-v2-bubble:empty {
-      display: none;
-    }
     .donguri-shop-v2-subtitle {
       /* v1692: bottom 47%→41% で bubble 追従、 字幕と看板の縦間隔を確保 */
       position: absolute;
@@ -3817,10 +3813,10 @@
       overflow: hidden;
     }
     .donguri-shop-v2-rotation-note {
-      /* v1692: top 17%→16% で看板下端の真下に配置 (看板を -34% で大胆に上げた分、 1% ぶん rotation-note も上に追従) */
+      /* v1696: 16:9 で看板下端に密着させる (rotation-note と看板の縦間隔を圧縮)。 top 16%→10% */
       position: absolute;
       left: 50%;
-      top: 16%;
+      top: 10%;
       transform: translateX(-50%);
       width: min(48vw, 540px);
       z-index: 5;
@@ -5575,7 +5571,7 @@
       </div>
       <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
       <div class="donguri-shop-v2-safe">
-        <div class="donguri-shop-v2-bubble" id="donguriShopBubble" role="status" aria-live="polite"></div><!-- v1689: 初期文言を撤廃。 ナレーション再生時のみ字幕を流す。 CSS :empty で PNG bubble ごと非表示 -->
+        <div class="donguri-shop-v2-bubble" id="donguriShopBubble" role="status" aria-live="polite">もうすぐ かわるよ</div>
         <div class="donguri-shop-v2-subtitle" id="donguriShopSubtitle" role="note" aria-live="polite" hidden></div>
         <div class="donguri-shop-v2-reserve is-empty" id="donguriShopReserve" aria-live="polite"></div>
         <header class="donguri-shop-v2-head">
@@ -6075,7 +6071,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1695;
+    const PAGE_CACHE_VERSION = 1696;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -8022,10 +8018,10 @@
       if (isFirstVisit) {
         _markShopIntroSeen();
       }
-      // v1689: welcome narration の音声がリス声ではないため、 shop open 時の bubble + ナレーションを停止。
-      // 将来チュートリアル (本物のリス声) を入れる時にこの行を再度有効化する。
+      // 音声 narration はリス声でないため停止 (旧 v1689)。 字幕 bubble は表示する (v1696)。
+      // 将来チュートリアル (本物のリス声) を入れる時に下の行を再度有効化する。
       // _startShopOpeningGuide((forceFirstGuide || isFirstVisit) ? 'first' : 'return', { forceAudio: forceFirstGuide });
-      renderShopCatalog('', { duration: (forceFirstGuide || isFirstVisit) ? 5200 : 3800 });
+      renderShopCatalog(DONGURI_SHOP_OPENING_MESSAGE, { duration: (forceFirstGuide || isFirstVisit) ? 5200 : 3800 });
     }
     function hideShop() {
       var shop = document.getElementById('donguriShop');
@@ -8297,9 +8293,8 @@
       var poseSrc = DONGURI_SHOPKEEPER_POSES[data.pose] || DONGURI_SHOPKEEPER_POSES.idle;
       _clearShopkeeperNeutralTimer();
       if (img && img.getAttribute('src') !== poseSrc) img.setAttribute('src', poseSrc);
-      // v1689: ナレーション字幕以外は bubble を出さない。 messageText が明示指定された時のみ流す。
-      // (data.text reaction map / _formatShopCountdown フォールバックは廃止)
-      if (bubble) bubble.textContent = messageText ? messageText : '';
+      // bubble は messageText > data.text > countdown の優先順で常に何かを表示 (v1696 復活)
+      if (bubble) bubble.textContent = messageText || data.text || _formatShopCountdown();
       if (!options.transient && !options.skipRemember) {
         // v1692: data.text 廃止、 messageText のみで neutral を記憶 (なければ空文字)。
         _rememberShopkeeperNeutral(key, messageText || '');
@@ -8450,8 +8445,7 @@
           if (r && r.success && typeof window.showStickerToast === 'function' && r.stickerResult) {
             try { window.showStickerToast(r.stickerResult, { immediate: true }); } catch (_) {}
           }
-          // v1689: 反応字幕「こうかんしたよ」 はナレーション音声がないため bubble を出さない (空文字)
-          renderShopCatalog('');
+          renderShopCatalog(r && r.success ? 'こうかんしたよ' : undefined);
         });
       });
       actions.appendChild(buy);
@@ -8462,8 +8456,7 @@
       clear.setAttribute('aria-label', 'とりおきを やめる');
       clear.addEventListener('click', function () {
         try { window.PonoDonguriShop.clearReservation(sid); } catch (_) {}
-        // v1689: 反応字幕「また ならべるよ」 を bubble に出さない (空文字)
-        renderShopCatalog('');
+        renderShopCatalog('また ならべるよ');
       });
       actions.appendChild(clear);
 
@@ -8480,11 +8473,10 @@
       if (!slotsEl) return;
       var balance = (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0;
       if (balEl) balEl.textContent = String(balance);
-      // v1689: countdown「もうすぐ かわるよ」 はナレーション音声がないため bubble に出さない。
-      // messageText が空 (renderShopCatalog('') / 引数なし) の時は bubble を空にして CSS :empty で隠す。
+      // countdown text を bubble に表示 (音声 narration は別系統)
       var countdownText = messageText || _formatShopCountdown();
       if (messageText) _setShopkeeperReaction(null, messageText, { transient: true, duration: options.duration || 2400 });
-      else if (bubbleEl) bubbleEl.textContent = '';
+      else if (bubbleEl) bubbleEl.textContent = countdownText;
       if (!window.PonoDonguriShop) {
         slotsEl.innerHTML = '<div class="donguri-shop-v2-slot"><div class="donguri-shop-v2-thumb"><span class="donguri-shop-v2-thumb-fallback">…</span></div></div>';
         _renderShopReservationPanel(reserveEl, null, {});
@@ -8612,8 +8604,7 @@
                     }
                   }
                   // either way: re-render so owned state / disabled flips correctly
-                  // v1689: 反応字幕「こうかんしたよ」 を bubble に出さない (空文字)
-                  renderShopCatalog('');
+                  renderShopCatalog(r && r.success ? 'こうかんしたよ' : undefined);
                 });
               });
             }
@@ -8622,16 +8613,14 @@
               holdBtn.addEventListener('click', function () {
                 var result = { success: false };
                 try { result = window.PonoDonguriShop.reserve(sid) || result; } catch (_) {}
-                // v1689: 反応字幕「とっておいたよ」/「とりおきは 1つまで」 を bubble に出さない (空文字)
-                renderShopCatalog('');
+                renderShopCatalog(result.success ? 'とっておいたよ' : 'とりおきは 1つまで');
               });
             }
             var holdClearBtn = slot.querySelector('[data-action="hold-clear"]');
             if (holdClearBtn) {
               holdClearBtn.addEventListener('click', function () {
                 try { window.PonoDonguriShop.clearReservation(sid); } catch (_) {}
-                // v1689: 反応字幕「また ならべるよ」 を bubble に出さない (空文字)
-                renderShopCatalog('');
+                renderShopCatalog('また ならべるよ');
               });
             }
             var heartBtn = slot.querySelector('[data-action="heart"]');
