@@ -682,6 +682,13 @@
     .game-card[data-id="starparodier"] .game-card__title { color: #7dffe0; } /* space mint */
     .game-card[data-id="undersea-cave"] .game-card__title { color: #86f5ff; } /* cave aqua */
     .game-card[data-id="sea-album"] .game-card__title { color: #fff08a; } /* shallow-sea gold */
+    /* v1690: bento/cooking タイトルは長文 (「ポノとつくろう いろどりべんとう」 14文字+space、
+       「コトコト もりのキッチン」 11文字+space) のため、 全 aspect 共通で font-size を縮小して
+       white-space:nowrap でも 1 行に収まるよう保証。 4:3 media block (5147-5148) はこの値
+       と一致 (再宣言扱い)。 他 breakpoint の `.game-card[data-id]` 29-32px 一律指定より後置
+       のため確実に勝つ。 */
+    .game-card[data-id="bento"]      .game-card__title { font-size: 24px; }
+    .game-card[data-id="cooking"]    .game-card__title { font-size: 26px; }
     /* On the dark "maze" card the cream halo would clash — switch to a
        warm dark halo so the yellow title still pops on the night panel. */
     .game-card[data-id="maze"] .game-card__title {
@@ -5127,12 +5134,13 @@
       .game-card__title,
       .game-card[data-id] .game-card__title {
         font-size: 30px;                                             /* v1680: 24→30 (+25%) */
-        /* v1681: nowrap 解除 + game-title-break <span> を block 化で 2 行折り返しを
-           明示制御 (iOS Safari の inline-block 連続 + nowrap 暴発バグ回避)。
-           v1689: 1 行運用に統一したため block 化は撤回 (下記ルール削除)。 wbr 自体は
-           inline ゼロ幅で残置 (1 行に収まれば改行されない、 はみ出し時のみ折り返し)。 */
-        white-space: normal;                                         /* NEW v1681 */
-        text-overflow: clip;                                         /* NEW v1681 */
+        /* v1690: white-space: normal (v1681) → nowrap 戻し。 wbr + inline-block 連続箇所が
+           iOS Safari 等で「優先 break point」 と誤認され、 box 幅に余裕があっても 2 行 wrap
+           する事故 (sw1689 で再発) を根本停止。 万一 text-box 幅を超えた場合は ellipsis
+           で安全 fail。 decorateGameTitle 側も wbr 撤廃 + 空白を inline-block particle 化 */
+        white-space: nowrap;                                         /* v1690: normal→nowrap */
+        overflow: hidden;                                            /* v1690: clip 廃止 */
+        text-overflow: ellipsis;                                     /* v1690: clip→ellipsis */
         line-height: 1.05;                                           /* NEW v1681 */
       }
       .game-card__desc { font-size: 18px; }                          /* v1680: 15→18 */
@@ -6000,21 +6008,22 @@
             gameTitleAccent('puzzle', 'パズル')
           ].join('');
         case 'bento':
+          // v1690: wbr / 半角空白 break opportunity を完全排除 (iOS Safari の inline-block
+          // 連続箇所が「優先 break point」 と誤認され 2 行 wrap する事故対策)。
+          // CSS 側で white-space: nowrap に戻すため、ここも 1 行強制 markup に統一。
+          // 単語間スペースは inline-block の particle として包み、break opportunity を消す。
           return [
             gameTitleAccent('pono', 'ポノ'),
             gameTitleParticle('と'),
-            esc('つくろう '),
-            gameTitleBreak(),
+            esc('つくろう'),
+            gameTitleParticle(' '),
             gameTitleAccent('bento', 'いろどりべんとう')
           ].join('');
         case 'cooking':
-          // 「コトコト もりのキッチン」 (12 文字) は狭幅で wrap しやすいため、
-          // 「コトコト」 と「もりのキッチン」 の境界に <wbr>+space を入れて
-          // 必要に応じて改行を許可。 1 行に収まれば 1 行のまま表示。
+          // v1690: 同上 (wbr 撤廃 + space は inline-block particle で wrap 不可化)。
           return [
             esc('コトコト'),
-            gameTitleBreak(),
-            esc(' '),
+            gameTitleParticle(' '),
             gameTitleAccent('cooking', 'もりのキッチン')
           ].join('');
         default:
