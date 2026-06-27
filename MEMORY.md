@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-27T11:47:39Z - BGM 制御 v1701 — shop pause 無条件化 + gacha bed audible + shop-bgm retry (play.html + sw.js)
+- **タスク**: BGM 制御 v1701 — shop pause 無条件化 + gacha bed audible + shop-bgm retry (play.html + sw.js)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 57
+- **エラー数**: 2
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 19, "Read": 8, "Agent": 21, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
+
+### 2026-06-27T11:38:12Z - こもれびや v1699 — 専用 BGM (sticker-album-morning.mp3) を <audio id=shop-bgm> として組込み、 startDonguriShopBgm/stopDonguriShopBgm 新設、 showShop/hideShop で play-bgm pause/resume と同期。 isMuted (localStorage 'pono_sound_off') 尊重、 volume 0.32、 batch866 と play.html を共有しつつ git apply --cached でハンク単位分離して衝突回避
+- **タスク**: こもれびや v1699 — 専用 BGM (sticker-album-morning.mp3) を <audio id=shop-bgm> として組込み、 startDonguriShopBgm/stopDonguriShopBgm 新設、 showShop/hideShop で play-bgm pause/resume と同期。 isMuted (localStorage 'pono_sound_off') 尊重、 volume 0.32、 batch866 と play.html を共有しつつ git apply --cached でハンク単位分離して衝突回避
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 54
+- **エラー数**: 1
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 18, "Read": 8, "Agent": 19, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。
+
+
 ### 2026-06-27T10:04:03Z - 画像描画パフォーマンス改善: 4並列調査+3並列敵対的検証で真因特定(SW no-store/preload独占/innerHTML burst)→v1695で3提案実装+3並列クロスレビュー→v1697で実機Playwright計測+真犯人特定(bottom-nav pressed PNG 7.1MB)+preload-helper.js追加
 - **タスク**: 画像描画パフォーマンス改善: 4並列調査+3並列敵対的検証で真因特定(SW no-store/preload独占/innerHTML burst)→v1695で3提案実装+3並列クロスレビュー→v1697で実機Playwright計測+真犯人特定(bottom-nav pressed PNG 7.1MB)+preload-helper.js追加
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 46, "Grep": 10, "Read": 11, "Agent": 35, "ToolSearch": 3, "Write": 1, "SendMessage": 4, "Workflow": 13, "TaskStop": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-27T04:33:28Z - v1688 デプロイ: bento/cooking title 1 行 + desc 1 行 統一
-- **タスク**: v1688 デプロイ: bento/cooking title 1 行 + desc 1 行 統一
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 41
-- **エラー数**: 1
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 15, "Read": 6, "Agent": 12, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 5}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-27T04:25:53Z - こもれびや v1688 — slot::after シャドウ下げ + bubble/reserve 文字拡大 + 16:9 base レイアウト (title -16%/rotation-note 17%/bubble 54%/subtitle 47%) で重なり解消
-- **タスク**: こもれびや v1688 — slot::after シャドウ下げ + bubble/reserve 文字拡大 + 16:9 base レイアウト (title -16%/rotation-note 17%/bubble 54%/subtitle 47%) で重なり解消
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 37
-- **エラー数**: 1
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 13, "Read": 6, "Agent": 10, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 5}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。
 
 
