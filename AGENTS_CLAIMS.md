@@ -61,7 +61,6 @@
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-27 15:30 - by Claude - [batch:866-perf-webp-allpages-bgm] - play.html, sw.js, common/**, assets/**, bento/**, puzzle/**, maze/**, oto/**, quizland/**, starparodier/**, undersea-cave/**, sea-album/** - A+B+C+D 一括: 大型PNG→WebP + 全ゲームページに preload-helper 展開 + nav 圧縮 + play_bgm 対策
-- 2026-06-27 16:00 - by Claude - [batch:867-komorebi-shop-bgm] - play.html, sw.js - こもれびや専用 BGM (sticker-album-morning.mp3) 組込み + v1699 bump
 
 ---
 
