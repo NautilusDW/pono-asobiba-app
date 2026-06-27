@@ -60,6 +60,7 @@
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
+- 2026-06-27 09:12 - by Codex - [batch:864-shop-4x3-readable-layout] - play.html, sw.js, HANDOFF.md - シールのおみせ4:3再調整 + 文字サイズ/看板比率確認 [overlap: batch:860-data-export-import]
 
 ---
 
