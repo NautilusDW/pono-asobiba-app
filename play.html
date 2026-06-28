@@ -1538,6 +1538,87 @@
       font-weight: 900;
       text-align: center;
     }
+    /* v1731: tabbed debug board (acorn / features) */
+    .debug-board-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 0 0 12px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(242, 145, 90, .12);
+    }
+    .debug-board-tab {
+      min-height: 36px;
+      padding: 0 12px 2px;
+      border: 2px solid transparent;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-light);
+      font: 900 .82rem/1 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
+      cursor: pointer;
+      transition: background .15s ease, color .15s ease;
+    }
+    .debug-board-tab[aria-selected="true"] {
+      background: #fff;
+      border-color: rgba(184, 134, 0, .42);
+      color: #6e4a00;
+      box-shadow: 0 1px 0 rgba(126, 77, 11, .18);
+    }
+    .debug-board-tab:focus-visible {
+      outline: 2px solid #f2915a;
+      outline-offset: 2px;
+    }
+    .debug-board-panel[hidden] { display: none !important; }
+    .debug-features-list {
+      display: grid;
+      gap: 8px;
+      max-height: 50vh;
+      overflow-y: auto;
+      padding: 4px 2px;
+    }
+    .debug-feature-item {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 8px 10px;
+      align-items: start;
+      padding: 10px 12px;
+      border: 2px solid rgba(184, 134, 0, .28);
+      border-radius: 14px;
+      background: rgba(255, 253, 250, .82);
+    }
+    .debug-feature-item.is-on {
+      border-color: rgba(184, 134, 0, .55);
+      background: #fffaea;
+    }
+    .debug-feature-check {
+      grid-row: 1 / span 2;
+      width: 22px;
+      height: 22px;
+      margin-top: 2px;
+      accent-color: #f2915a;
+      cursor: pointer;
+    }
+    .debug-feature-label {
+      color: var(--text);
+      font-weight: 900;
+      font-size: .9rem;
+      line-height: 1.3;
+      cursor: pointer;
+    }
+    .debug-feature-desc {
+      color: var(--text-light);
+      font-size: .74rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .debug-features-empty {
+      padding: 12px;
+      color: var(--text-light);
+      font-size: .82rem;
+      font-weight: 900;
+      text-align: center;
+    }
     .modal-close {
       display: block;
       width: 100%;
@@ -6069,6 +6150,8 @@
 
   <!-- 絵本パスワード解錠ロジック (PonoTier.verifyBookPassword) を提供 -->
   <script src="common/debug-mode.js"></script>
+  <!-- v1731: 個別機能トグル catalog (PonoDebugFeatures)。 debug-mode.js の後に読む。 -->
+  <script src="common/debug-features.js"></script>
   <script src="common/capture.js" defer></script>
   <!-- ===== Screenshot mode (PonoCapture) registration =====
        play.html は LP メニュー + 各種モーダル(ガチャ等)を持つ。
