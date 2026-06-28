@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260629-920";
+const ASSET_VERSION = "20260629-924";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1064,6 +1064,39 @@ for (const key of SIMPLE_JP_BOOK_TEMPLATE_KEYS) {
   });
 }
 
+const PERSONALITY_JP_BOOK_TEMPLATE_KEYS = [
+  "girl",
+  "shinobi",
+  "hero",
+  "kaiju",
+  "space_live",
+  "game_center",
+  "mascot",
+  "secret_base",
+  "anime_studio",
+  "cyber_grid",
+  "sweet_gothic",
+  "neon_city",
+];
+
+for (const key of PERSONALITY_JP_BOOK_TEMPLATE_KEYS) {
+  const bundle = BOOK_VARIANTS[key];
+  if (!bundle) {
+    continue;
+  }
+  Object.assign(bundle, {
+    insideLeft: `sb3d_${key}_free_blank_page_personality_jp_20260629.webp`,
+    insideRight: `sb3d_${key}_free_blank_page_personality_jp_20260629.webp`,
+    freePage: `sb3d_${key}_free_blank_page_personality_jp_20260629.webp`,
+    coverPrint: `sb3d_${key}_cover_front_personality_jp_20260629.webp`,
+    coverHardwareMode: "separate",
+    coverFront: `sb3d_${key}_cover_front_personality_jp_20260629.webp`,
+    coverBack: `sb3d_${key}_cover_back_personality_jp_20260629.webp`,
+    coverInside: `sb3d_${key}_cover_inside_personality_jp_20260629.webp`,
+    spine: `sb3d_${key}_spine_personality_jp_20260629.webp`,
+  });
+}
+
 const STICKER_BOOK_THEMES = {
   boy: {
     accent: "#d79a34",
@@ -1522,7 +1555,7 @@ function bookVariantTextureFiles(bookName) {
 }
 
 function bookThemeThumbnailFile(bookName) {
-  return `theme_thumbs/sb3d_theme_thumb_${bookName}_20260623.webp`;
+  return coverPrintFile(bookName);
 }
 
 function assetCssUrl(file) {
