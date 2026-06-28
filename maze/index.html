@@ -10303,9 +10303,12 @@ function onClear() {
   // Without this guard, a crafted ?image=... JSON could farm rewards.
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
+  // preview-mode 判定: ?image=<url> 経由で読み込んだ stage は reward farming 防止のため対象外
+  // _official フラグは _loadImageStageIndex の async 完了に依存して race condition の原因だったため URL ベースに切替 (v1717)
+  const _isPreviewMode = (typeof location !== 'undefined' && /[?&]image=/.test(location.search || ''));
   // Phase 1: AcornModal で中間ステージの どんぐり獲得演出を出すため、 granted を後段に渡せるよう保持する。
   let _mazeGrantedAcorns = 0;
-  if (!isImageStage || isOfficial) {
+  if (!_isPreviewMode) {
     if (window.incrementStat) window.incrementStat('maze_clears', 1);
     if (window.addAcornsDaily) {
       _mazeGrantedAcorns = window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear', suppressRewardModal: true }) || 0;
@@ -10333,7 +10336,7 @@ function onClear() {
         const isImageStage = stage && stage.type === 'image';
         const isOfficial   = stage && stage._official === true;
         if (isLast) {
-          if (window.triggerFirstClearReward && (!isImageStage || isOfficial)) {
+          if (window.triggerFirstClearReward && !_isPreviewMode) {
             window.triggerFirstClearReward('maze', {
               onClose: function() { _showMazeFinalOverlay(); }
             }).then(function(shown) {
@@ -10370,11 +10373,12 @@ function onClear() {
 function showStageClearOverlay(grantedAcorns) {
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
+  const _isPreviewMode = (typeof location !== 'undefined' && /[?&]image=/.test(location.search || ''));
   const isLast = stageIdx >= STAGES.length - 1;
   if (isLast) {
     // 最終ステージ: 初回クリア報酬を試みる (グリッドステージ + 公式 image ステージのみ)。
     // ?image=<name> でアクセスした非公式 image ステージは報酬対象外。
-    if (window.triggerFirstClearReward && (!isImageStage || isOfficial)) {
+    if (window.triggerFirstClearReward && !_isPreviewMode) {
       window.triggerFirstClearReward('maze', {
         onClose: function() { _showMazeFinalOverlay(); }
       }).then(function(shown) {
@@ -10418,15 +10422,16 @@ function _showMazeAcornModalOrProceed(granted, isImageStage, isOfficial, proceed
   }
   try {
     if (!proceed) return;
-    if (!(granted > 0)) { _proceedOnce(); return; }
-    if (isImageStage && !isOfficial) { _proceedOnce(); return; }
+    var _isPreviewMode2 = (typeof location !== 'undefined' && /[?&]image=/.test(location.search || ''));
+    if (_isPreviewMode2) { _proceedOnce(); return; }
     if (!window.PonoAcornModal) { _proceedOnce(); return; }
     var dailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
     var dailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
-    var isCapped = (dailyTotal != null) && (dailyTotal >= dailyCap);
+    var _grantedSafe = Math.max(0, granted | 0);
+    var isCapped = (_grantedSafe <= 0) || ((dailyTotal != null) && (dailyTotal >= dailyCap));
     var modal = new window.PonoAcornModal({
       gameId: 'maze',
-      granted: granted,
+      granted: _grantedSafe,
       dailyTotal: dailyTotal,
       dailyCap: dailyCap,
       state: isCapped ? 'capped' : 'idle',

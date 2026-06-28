@@ -151,6 +151,19 @@
     _setJSON(LS_PENDING, pending);
   }
 
+  // ごかんそう (rating) chain: triggerFirstClearReward の Promise 解決後 800ms 遅延で
+  // PonoRating.maybeShowAfterClear(gameId) を発火。 ratings module 未ロード時は no-op。
+  // 4 ゲート (既評価 / 7 日クールダウン / 累積 3 回 / 50% 確率) は PonoRating 側で判定。
+  function _scheduleRatingPrompt(gameId) {
+    setTimeout(function () {
+      try {
+        if (window.PonoRating && typeof window.PonoRating.maybeShowAfterClear === 'function') {
+          window.PonoRating.maybeShowAfterClear(gameId);
+        }
+      } catch (e) { /* silent: rating モーダル失敗で本編動線を止めない */ }
+    }, 800);
+  }
+
   // 外部 API: ゲームから呼ばれる
   // 引数: gameId (string), opts (object, 省略可)
   //   opts.onClose: 宝箱を閉じた時に呼ばれるコールバック（次の画面遷移に使う）
@@ -163,9 +176,10 @@
     // ゲームをもう一度クリアした時点でリワードが正規に発火する。
     if (window.PONO_MVP_NO_REWARDS) {
       try { if (typeof opts.onClose === 'function') opts.onClose(); } catch (e) {}
+      _scheduleRatingPrompt(gameId);
       return Promise.resolve(false);
     }
-    if (_isAlreadyGranted(gameId)) return Promise.resolve(false);
+    if (_isAlreadyGranted(gameId)) { _scheduleRatingPrompt(gameId); return Promise.resolve(false); }
 
     return fetch(_rewardsPath() + '?_=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -248,6 +262,11 @@
         console.warn('[first-clear] failed to load rewards.json:', e);
         // 失敗時はスキップ扱いなので、呼び出し元は fallback 処理に入る
         return false;
+      })
+      .then(function (result) {
+        // ごかんそう連鎖: 成功/失敗/スキップ いずれも 800ms 後に PonoRating を試行 (内部 4 ゲートで間引く)
+        _scheduleRatingPrompt(gameId);
+        return result;
       });
   };
 

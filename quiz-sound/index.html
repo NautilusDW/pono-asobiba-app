@@ -60,6 +60,12 @@
     <a href="../wordmatch/index.html">もりずかんを ひらく</a>
   </main>
   <script>
+    // ごかんそう (rating) 4 ゲート chain — quiz-sound は first-clear.js 連鎖に乗らないため個別 wire
+    setTimeout(() => {
+      if (window.PonoRating?.maybeShowAfterClear) {
+        window.PonoRating.maybeShowAfterClear('quiz-sound');
+      }
+    }, 800);
     location.replace("../wordmatch/index.html");
   </script>
 </body>

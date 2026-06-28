@@ -6844,6 +6844,12 @@ function showResult() {
     if (typeof window.triggerFirstClearReward === 'function') {
       try { window.triggerFirstClearReward('quizland'); } catch (e) {}
     }
+    // ごかんそう (rating) 4 ゲート chain — quizland は first-clear.js 連鎖に乗らないため個別 wire
+    setTimeout(() => {
+      if (window.PonoRating?.maybeShowAfterClear) {
+        window.PonoRating.maybeShowAfterClear('quizland');
+      }
+    }, 800);
   }
 }
 
