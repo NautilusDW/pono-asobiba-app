@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-28T19:50:33Z - v1775: oto acorn modal copy 「リズム ぴったり！」 + 進捗カウンター白文字 + 4 bubble word-break (defeat line ケロ!)
+- **タスク**: v1775: oto acorn modal copy 「リズム ぴったり！」 + 進捗カウンター白文字 + 4 bubble word-break (defeat line ケロ!)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 122
+- **エラー数**: 9
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 46, "Read": 18, "Glob": 2, "Edit": 21, "ToolSearch": 1, "Agent": 24, "Grep": 10}
+- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-28T19:34:39Z - v1773: oto tutorial cancel→story mode 修正 + ライバルセリフ word-break + bundled gacha mobile mask CSS
 - **タスク**: v1773: oto tutorial cancel→story mode 修正 + ライバルセリフ word-break + bundled gacha mobile mask CSS
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Workflow": 12, "Read": 9, "ToolSearch": 1, "Bash": 5, "Agent": 21, "Grep": 2}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-28T08:53:15Z - batch:888-toggle-ui-readable + batch:889-jargon-cleanup (機能トグル UI ラベル平易化 + 装飾線削除 + jargon 排除、 sw v1755 App staging deploy 確認済)
-- **タスク**: batch:888-toggle-ui-readable + batch:889-jargon-cleanup (機能トグル UI ラベル平易化 + 装飾線削除 + jargon 排除、 sw v1755 App staging deploy 確認済)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 23
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 4, "Edit": 3, "Workflow": 7}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

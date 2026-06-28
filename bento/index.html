@@ -1136,13 +1136,15 @@ html, body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+  transform: scale(var(--visual-scale, 1));
+  transform-origin: center;
 }
 .free-placed-item.selected img {
   filter: none;
 }
 .free-placed-item.type-pick img {
   clip-path: inset(0 0 18% 0);
-  transform: translateY(7%);
+  transform: translateY(7%) scale(var(--visual-scale, 1));
 }
 .free-css-item {
   position: relative;
@@ -2218,6 +2220,8 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  transform: scale(var(--palette-visual-scale, 1));
+  transform-origin: center;
 }
 .free-palette-name {
   max-width: 100%;
@@ -6680,15 +6684,15 @@ function bookDecorItem(def) {
   return { ...def, minTier: 'book' };
 }
 const decorItems = [
+  { id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50 },
+  { id: 'nori_face_set_bear', type: 'decor', name: 'くまセット', image: FREE_ASSET + 'nori_nose_bear.png', faceSet: 'bear', size: 78, layerBase: 50 },
+  { id: 'nori_face_set_cat_book', type: 'decor', name: 'ねこセット', image: FREE_ASSET + 'book_nori_whisker_left_20260624.png', faceSet: 'cat', size: 92, layerBase: 50 },
   { id: 'nori_eye_round', type: 'decor', name: 'おめめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
   { id: 'nori_nose_bear', type: 'decor', name: 'はな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 54, layerBase: 50 },
   { id: 'nori_mouth_smile', type: 'decor', name: 'くち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 78, layerBase: 50 },
   { id: 'nori_brow_left', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
   { id: 'nori_brow_right', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
   { id: 'nori_bento_sheet', type: 'decor', name: 'のりべん', image: FREE_ASSET + 'nori_bento_sheet.png', size: 230, layerBase: 49 },
-  { id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50 },
-  { id: 'nori_face_set_bear', type: 'decor', name: 'くまセット', image: FREE_ASSET + 'nori_nose_bear.png', faceSet: 'bear', size: 78, layerBase: 50 },
-  bookDecorItem({ id: 'nori_face_set_cat_book', type: 'decor', name: 'ねこセット', image: FREE_ASSET + 'book_nori_whisker_left_20260624.png', faceSet: 'cat', size: 92, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_smile_book', type: 'decor', name: 'にこめ', image: FREE_ASSET + 'book_nori_eye_smile_20260624.png', size: 38, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_sleepy_book', type: 'decor', name: 'ねむりめ', image: FREE_ASSET + 'book_nori_eye_sleepy_20260624.png', size: 38, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_lash_book', type: 'decor', name: 'まつげめ', image: FREE_ASSET + 'book_nori_eye_lash_20260624.png', size: 42, layerBase: 50 }),
@@ -8663,8 +8667,60 @@ function isBentoMinTierUnlocked(minTier) {
 function isBentoDecorUnlocked(def) {
   return isBentoMinTierUnlocked(def && def.minTier);
 }
+const SIMPLE_DECOR_PALETTE_ORDER = [
+  'nori_face_set_smile',
+  'nori_face_set_bear',
+  'nori_face_set_cat_book',
+  'nori_eye_round',
+  'nori_nose_bear',
+  'nori_mouth_smile',
+  'nori_brow_left',
+  'nori_brow_right',
+  'nori_whisker_left_book',
+  'nori_whisker_right_book',
+  'nori_bento_sheet',
+  'nori_shape_circle_book',
+  'nori_shape_triangle_book',
+  'nori_shape_square_book',
+  'nori_shape_rect_book',
+  'nori_shape_long_bar_book',
+  'nori_shape_curve_book',
+  'nori_shape_wavy_book',
+  'nori_shape_zigzag_book',
+  'furikake_goma_book',
+  'furikake_tamago_book',
+  'furikake_aonori_book',
+  'ketchup_cheek',
+  'decor_umeboshi',
+];
+const SIMPLE_DECOR_PALETTE_HIDDEN = new Set([
+  'furikake_guide_heart_book',
+  'furikake_guide_star_book',
+  'furikake_guide_circle_book',
+  'furikake_guide_flower_book',
+  'nori_shape_tire_book',
+  'nori_shape_window_book',
+  'nori_shape_train_book',
+  'nori_shape_robot_panel_book',
+  'nori_shape_ghost_book',
+]);
+function shouldShowSimpleDecorPaletteItem(def) {
+  if (!def || def.type !== 'decor') return false;
+  if (SIMPLE_DECOR_PALETTE_HIDDEN.has(def.id)) return false;
+  return true;
+}
+function getSimpleDecorPaletteRank(def) {
+  const idx = SIMPLE_DECOR_PALETTE_ORDER.indexOf(def && def.id);
+  return idx >= 0 ? idx : SIMPLE_DECOR_PALETTE_ORDER.length + 1;
+}
 function getDecorPaletteCatalog() {
-  return decorItems.filter(isBentoDecorUnlocked);
+  const catalog = decorItems.filter(isBentoDecorUnlocked);
+  if (simpleBentoMode || freeGuideStep === 'decor') {
+    return catalog
+      .filter(shouldShowSimpleDecorPaletteItem)
+      .sort((a, b) => getSimpleDecorPaletteRank(a) - getSimpleDecorPaletteRank(b));
+  }
+  return catalog;
 }
 function getFreeGuideTabs() {
   if (freeGuideStep === 'box') return FREE_TABS.filter(t => t.id === 'box');
@@ -10173,6 +10229,22 @@ function getSimpleDecorSize(def, kind = getSimpleDecorKind(def)) {
   if (kind === 'scatter') return Math.round(clamp(base, 88, 126));
   return Math.round(clamp(base, 34, 148));
 }
+function getDecorInsetVisualScale(def, kind = getSimpleDecorKind(def)) {
+  const id = String(def && def.id || '');
+  if (def && def.faceSet) return 0.86;
+  if (kind === 'shape') return 0.78;
+  if (kind === 'sheet') return 0.84;
+  if (id.indexOf('furikake_') === 0) return 0.82;
+  return 1;
+}
+function getPaletteVisualScale(def) {
+  if (!def || def.type !== 'decor') return 1;
+  return getDecorInsetVisualScale(def);
+}
+function getSimpleDecorVisualScale(def) {
+  if (!def || def.type !== 'decor') return 1;
+  return getDecorInsetVisualScale(def);
+}
 function countSimpleFaceSlotPrefix(tier, prefix) {
   return placedItems.filter(item =>
     getItemTier(item) === tier &&
@@ -10854,6 +10926,7 @@ function createSimpleDecorPlacedItem(def, tier) {
     rotation: placement.rotation,
     tier,
     brushLevel: def.brushItem ? 1 : def.brushLevel,
+    visualScale: getSimpleDecorVisualScale(def),
     skipRender: true,
   });
   if (!item) return null;
@@ -11134,6 +11207,7 @@ function addFreeLayoutItem(def, opts = {}) {
     brushLevel: opts.brushLevel != null ? opts.brushLevel : (def.brushLevel != null ? def.brushLevel : 1),
     layerGroup: opts.layerGroup || def.layerGroup || getFreeLayerGroupForDef(def, itemTier, parentCupId),
     variantGroup: getFreeVariantGroup(def),
+    visualScale: opts.visualScale || def.visualScale || 1,
     variantImages,
     variantIndex: variantIndex >= 0 ? variantIndex : 0,
     parentId: opts.parentId || null,
@@ -11727,6 +11801,7 @@ function createFreePlacedElement(item, interactive) {
   el.style.zIndex = item.layer || 1;
   el.style.setProperty('--rot', (item.rotation || 0) + 'deg');
   el.style.setProperty('--scale', item.scale || 1);
+  el.style.setProperty('--visual-scale', item.visualScale || 1);
   el.appendChild(createFreeVisual(item));
   if (interactive && !freeBrushStampDef) {
     el.addEventListener('pointerdown', ev => {
