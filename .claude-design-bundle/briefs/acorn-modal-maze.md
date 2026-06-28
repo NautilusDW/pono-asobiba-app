@@ -1,5 +1,29 @@
 # acorn-modal-maze brief
 
+> ## ⚠️ Phase 1.5 一時保留メモ (2026-06-28 追加)
+>
+> Phase 1.1 で maze の AcornModal デザイン方針が転換した:
+>
+> - 旧案 (= 本 brief 本文): 装飾 3 枚 (frame / leaves / burst glow) を新規生成し、 重ね合わせで maze 固有の絵本テイストを作る
+> - 新案 (Phase 1.1 で staging 反映済): quizland 「フクロウ博士ウィンドウ」 のデザインを流用し、 Phase 0 base (cream パネル + amber 枠 + gold 数値) + owl_professor_guide.webp をパネル上端に重ねる軽量実装
+>
+> 新案で十分子供向けの「先生キャラ + 喜び表現 + 大きな数字」 構造が成立しているため、 本 brief の **3 素材 (maze_acorn_modal_frame.webp / maze_acorn_modal_leaves.webp / maze_acorn_burst_glow.webp) の発注は一旦保留**。
+>
+> 復活トリガ (どれかが満たされたら本 brief を再起動):
+>
+> 1. quizland 流用版で 「maze の世界観 (森・どんぐり・冒険) が表現できていない」 とユーザー判断が出た場合
+> 2. 他ゲーム (oto / bento / puzzle 等) のモーダルでも装飾レイヤー素材を共通発注することになり、 シリーズとして再設計する場合
+> 3. Phase 1.5 で maze 専用のスペシャル演出 (stage クリア祝祭) が独立要件として立ち上がった場合
+>
+> 復活時の作業:
+>
+> - 本 brief をそのまま Claude Design に渡し、 3 素材 (案 a / 案 b) を並列生成
+> - 採用案を `assets/ui/maze/acorn-modal/` に配置
+> - `common/acorn-modal-shared.css` の `[data-game-id="maze"]` ブロックに `border-image` / `::before` (leaves) / `::after` (burst) を再追加
+> - 既存の owl_professor_guide.webp 重畳は維持するか、 リス系キャラに差し替えるかをユーザー判断
+>
+> ---
+
 > このファイルは Claude Design (Pono LP Brand Kit) で、 pono-asobiba-app の maze (めいろ) ゲーム ステージクリア時に表示する 「どんぐり獲得モーダル」 に使う 3 つの装飾画像を発注するための仕様書 (実画像は Claude Design 側で GPT Image 2 系の画像エンジンを呼んで作成、 ここはあくまで brief)。 Phase 0 共通基盤 (PonoAcornModal / acorn-modal-shared.css / acorn-copy.json) は完成済で、 本 brief はその BEM ベースの DOM 構造に **重ねる装飾レイヤー** の素材を発注する。 morito が採用案を選定 → Claude Code が `assets/ui/maze/acorn-modal/` に保存 → maze 側 hookup → `sw.js` の precache list 追加 + `CACHE_VERSION` バンプの流れ。
 
 ---

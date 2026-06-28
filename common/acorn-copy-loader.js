@@ -61,10 +61,23 @@
     return ready;
   }
 
+  // acorn-copy.json の default.tapToDismiss を露出する。
+  // acorn-modal.js が autoHide=0 (tap-only) のときの hint コピーとして使う。
+  // catalog 未読込/未定義時は null。
+  function getDefaultTapHint() {
+    if (!ready || !data) return null;
+    var d = data['default'];
+    if (d && typeof d === 'object' && typeof d.tapToDismiss === 'string') {
+      return d.tapToDismiss;
+    }
+    return null;
+  }
+
   var api = {
     __pono_acorn_copy__: true,
     get: get,
-    isReady: isReady
+    isReady: isReady,
+    getDefaultTapHint: getDefaultTapHint
   };
 
   try {

@@ -302,6 +302,52 @@
   opacity: 0.85;
 }
 
+/* =============================================================
+ * tap-only hint (autoHide:0 のとき限定の吹き出し風 hint)
+ *  - acorn-modal.js は overlay に .pono-acorn-modal--tap-only と
+ *    .pono-acorn-modal__tap-hint をセットで生成する。
+ *  - 文言は acorn-copy.json の default.tapToDismiss (またはゲーム別
+ *    entry.tapToDismiss) から渡される。 JS 内では hard-code しない。
+ *  - 吹き出し三角は ::before、 自動消失せず JS の onclick/ESC/× を
+ *    待つ UX を視覚的に伝える役割。 panel 下に少し離して配置。
+ *  - autoHide が positive のゲーム (oto:4200 等) では DOM 自体が
+ *    生成されないので、 既存挙動には影響しない。
+ * ============================================================= */
+.pono-acorn-modal__tap-hint {
+  position: relative;
+  margin-top: clamp(14px, 2.6vw, 22px);
+  padding: 0.5em 1.1em;
+  background: rgba(255, 247, 220, 0.96);
+  color: #6d3b07;
+  font-size: clamp(13px, 2.6vw, 18px);
+  font-weight: 800;
+  line-height: 1.15;
+  border-radius: 999px;
+  box-shadow:
+    0 3px 0 rgba(118, 66, 0, 0.28),
+    0 6px 14px rgba(45, 20, 0, 0.22);
+  white-space: nowrap;
+  pointer-events: none;
+  /* 子供視認用に小さな pulse (CPU 軽い opacity アニメ) */
+  animation: pono-acorn-tapHintPulse 1.6s ease-in-out infinite;
+}
+
+.pono-acorn-modal__tap-hint::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid rgba(255, 247, 220, 0.96);
+}
+
+@keyframes pono-acorn-tapHintPulse {
+  0%, 100% { opacity: 0.86; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(-2px); }
+}
+
 .pono-acorn-modal--perfect .pono-acorn-modal__label,
 .pono-acorn-modal--perfect .pono-acorn-modal__progress {
   color: var(--acorn-copy-color-perfect);
@@ -529,16 +575,21 @@
     display: none !important;
   }
 
-  /* maze override の motion 寄り装飾も reduce 時は静止/簡略化 (WCAG SC 2.3.3) */
+  /* tap-hint の pulse も reduce 時は停止 (SC 2.3.3) */
+  .pono-acorn-modal__tap-hint {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  /* maze override (quizland 流用デザイン) の reduce 時静止化。
+     panel/character ::before の drop-shadow は柔らかい光なので残しても
+     SC 2.3.3 抵触しないが、 安全側で box-shadow / filter を簡略化する。 */
   [data-game-id="maze"] .pono-acorn-modal__panel {
-    background: #F6E2B0 !important;
     box-shadow: none !important;
   }
-  [data-game-id="maze"] .pono-acorn-modal__kicker {
-    text-shadow: none !important;
-  }
-  [data-game-id="maze"] .pono-acorn-modal__label {
-    text-shadow: none !important;
+  [data-game-id="maze"] .pono-acorn-modal__panel::before {
+    filter: none !important;
   }
 
   /* oto override の motion 寄り装飾も reduce 時は静止/簡略化 (WCAG SC 2.3.3) */
@@ -560,30 +611,55 @@
 /* ============================
    Game-specific overrides
    ============================ */
+/* -------------------------------------------------------------
+ * maze: quizland 「フクロウ博士ウィンドウ」 流用方針 (Phase 1.1 改修)
+ *
+ * 旧 override (重い木目グラデパネル + 茶色 pill ラベル + 4px wood border)
+ * は撤去し、 Phase 0 base (= quizland 互換の cream / amber / gold 数値) を
+ * 主役にする。 BEM クラス側は base 値 (kicker #8b4e12 / label #6d3b07 /
+ * amount gold gradient) をそのまま継承するため、 ここで override する
+ * のは 「accent カラー」 と 「上端に重ねる キャラクター画像 (フクロウ博士)」
+ * だけに絞る。
+ *
+ * - --acorn-accent: 森の緑系を維持 (maze の世界観カラー)
+ * - --acorn-modal-bg-overlay: ベースの茶色オーバーレイをそのまま使う
+ *   (forest 緑にしない: quizland 流用前提なので茶系で統一)
+ * - 上端中央に owl_professor_guide.webp を ::before で重畳 (子供向けの
+ *   「先生キャラ + 喜び表現 + 大きな数字」 構造をシンプルに再現)
+ * - panel 本体は base の cream パネル相当を維持。 ::before の位置確保のため
+ *   padding-top のみ拡張する。
+ *
+ * 旧 wood-gradient / pill label / wood border は Phase 1.5 装飾画像 (frame /
+ * leaves / burst glow) が来た時に再導入する想定で一時撤去。 brief.md に
+ * 「Phase 1.5 は一時保留」 のメモを追記済。
+ * ============================================================= */
 [data-game-id="maze"].pono-acorn-modal {
   --acorn-accent: #6C8E3F;
-  --acorn-modal-bg-overlay: rgba(35, 50, 22, 0.32);
 }
 [data-game-id="maze"] .pono-acorn-modal__panel {
+  /* Phase 0 base ベースに cream パネル + amber 枠 (quizland 非 Perfect modal の
+     白カードを森色寄せ)。 amount は base の gold グラデをそのまま継承。 */
+  background: #FFF6E0;
+  border: 3px solid rgba(201, 139, 58, 0.62); /* amber (--acorn-accent quizland と同系) */
+  border-radius: 24px;
+  box-shadow: 0 12px 22px rgba(45, 24, 6, 0.28);
+  padding-top: clamp(120px, 20vw, 168px);
+}
+[data-game-id="maze"] .pono-acorn-modal__panel::before {
+  content: '';
+  position: absolute;
+  top: clamp(-44px, -7vw, -28px);
+  left: 50%;
+  width: clamp(120px, 22vw, 168px);
+  aspect-ratio: 1 / 1;
   background:
-    radial-gradient(ellipse at 50% 18%, #FFF6E0 0%, #F6E2B0 38%, #D9B97A 62%, #C8965A 88%) padding-box,
-    /* TODO Phase 1.5: maze_acorn_modal_frame.webp を border-image で外周に当てる (brand kit brief.md 参照) */
-    /* TODO Phase 1.5: maze_acorn_modal_leaves.webp を ::before で上端装飾 */
-    /* TODO Phase 1.5: maze_acorn_burst_glow.webp を ::after で中央放射 */
-    transparent border-box;
-  border: 4px solid rgba(107, 62, 31, 0.42);
-  box-shadow: 0 18px 28px rgba(45, 24, 6, 0.32), inset 0 0 18px rgba(255, 240, 200, 0.45);
-}
-[data-game-id="maze"] .pono-acorn-modal__kicker {
-  color: #5A3515;
-  text-shadow: 0 2px 0 rgba(255, 244, 200, 0.92);
-}
-[data-game-id="maze"] .pono-acorn-modal__label {
-  color: #FFF7CA;
-  text-shadow: 0 3px 0 #6B3E1F, 0 6px 12px rgba(45, 20, 0, 0.45);
-  background: rgba(95, 50, 18, 0.82);
-  padding: 0.32em 0.8em;
-  border-radius: 999px;
+    url('../assets/images/quizland/owl_professor_guide.webp')
+    center / contain no-repeat;
+  transform: translateX(-50%);
+  filter:
+    drop-shadow(0 6px 10px rgba(71, 38, 6, 0.42))
+    drop-shadow(0 0 14px rgba(255, 221, 105, 0.55));
+  pointer-events: none;
 }
 
 [data-game-id="oto"].pono-acorn-modal {

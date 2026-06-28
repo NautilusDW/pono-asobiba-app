@@ -28,29 +28,57 @@
 
   var DEFAULT_AUTOHIDE_MS = 4200;
   var REDUCED_AUTOHIDE_MS = 2500;
+  // v1718: 各 game サブディレクトリから読まれるため、 document base 相対だと
+  // /maze/assets/... の 404 を引く。 本スクリプト src を基点に site root prefix を
+  // 算出して絶対 URL で解決する。
+  function _rootPrefixFromScript() {
+    try {
+      var s = (document.currentScript && document.currentScript.src) || '';
+      if (!s) {
+        var scripts = document.getElementsByTagName('script');
+        for (var i = scripts.length - 1; i >= 0; i--) {
+          if (scripts[i].src && /acorn-modal\.js/.test(scripts[i].src)) {
+            s = scripts[i].src;
+            break;
+          }
+        }
+      }
+      var m = s.match(/^(.*?)common\/acorn-modal\.js/);
+      if (m && m[1]) return m[1];
+    } catch (e) {}
+    return '';
+  }
   var DEFAULT_ICON_SRC =
-    'assets/shop/donguri_shop_acorn_icon_20260626.png';
+    _rootPrefixFromScript() + 'assets/ui/shop/donguri_shop_acorn_icon_20260626.png';
 
   // ---- copy fallback ----------------------------------------------------
   // PonoAcornCopy が無いときに使う最低限の文言 catalog。
   // 実際の本文は common/acorn-copy-loader.js が common/acorn-copy.json を
   // fetch して window.PonoAcornCopy.get(gameId, state) を露出する。
   // loader が未読込 / fetch 失敗時は下記 DEFAULT_COPY が使われる。
+  // tapToDismiss は autoHide=0 (tap-only) のときだけ panel 下に
+  // 吹き出し風 hint として表示される 1 行コピー。 catalog 側の
+  // default.tapToDismiss でグローバル既定を上書きできる。
+  var DEFAULT_TAP_HINT = 'タップして つぎへ';
+
   var DEFAULT_COPY = {
     idle: {
       kicker: 'やったね！',
       label: 'どんぐりを ゲットしたよ',
-      ariaLabel: 'どんぐりを ゲット'
+      ariaLabel: 'どんぐりを ゲット',
+      tapToDismiss: DEFAULT_TAP_HINT
     },
     capped: {
       kicker: 'おしまい！',
       label: 'きょうのぶんは いっぱいだよ',
-      ariaLabel: 'どんぐり きょうのぶんは いっぱい'
+      ariaLabel: 'どんぐり きょうのぶんは いっぱい',
+      tapToDismiss: DEFAULT_TAP_HINT
     },
     perfect: {
       kicker: 'パーフェクト！',
       label: 'すごい！どんぐりを ゲット！',
-      ariaLabel: 'パーフェクト どんぐり ゲット'
+      ariaLabel: 'パーフェクト どんぐり ゲット',
+      tapToDismiss: DEFAULT_TAP_HINT
     }
   };
 
@@ -68,19 +96,38 @@
     var kicker = raw.kicker || raw.title || base.kicker || '';
     var label = raw.label || raw.main || raw.copy || base.label || '';
     var ariaLabel = raw.ariaLabel || raw.title || label || base.ariaLabel || '';
+    // tapToDismiss: catalog 側で entry/state/default に置けるよう
+    // raw → fallback → DEFAULT_TAP_HINT の順で resolve する。
+    var tapToDismiss = raw.tapToDismiss || base.tapToDismiss || DEFAULT_TAP_HINT;
     return {
       kicker: kicker,
       label: label,
-      ariaLabel: ariaLabel
+      ariaLabel: ariaLabel,
+      tapToDismiss: tapToDismiss
     };
   }
 
   function resolveCopy(gameId, state, override) {
     var fallback = DEFAULT_COPY[state] || DEFAULT_COPY.idle;
+    // catalog の default root (default.tapToDismiss) を fallback に注入し、
+    // ゲーム別 entry が tapToDismiss を持たなくても、 グローバル既定が拾える
+    // ようにする。 失敗時は in-JS の DEFAULT_TAP_HINT が後段で kick-in。
+    var catalog = window.PonoAcornCopy;
+    var globalTapHint = null;
+    if (catalog && typeof catalog.getDefaultTapHint === 'function') {
+      try { globalTapHint = catalog.getDefaultTapHint(); } catch (e) { /* noop */ }
+    }
+    if (globalTapHint) {
+      fallback = {
+        kicker: fallback.kicker,
+        label: fallback.label,
+        ariaLabel: fallback.ariaLabel,
+        tapToDismiss: globalTapHint
+      };
+    }
     if (override && typeof override === 'object') {
       return normalizeCopy(override, fallback);
     }
-    var catalog = window.PonoAcornCopy;
     if (catalog && typeof catalog.get === 'function') {
       try {
         var fromCatalog = catalog.get(gameId, state);
@@ -139,9 +186,20 @@
       : 'idle';
     this.copyOverride = opts.copy || null;
     this.iconSrc = opts.iconSrc || DEFAULT_ICON_SRC;
-    this.autoHide = (typeof opts.autoHide === 'number' && opts.autoHide >= 0)
-      ? opts.autoHide
-      : DEFAULT_AUTOHIDE_MS;
+    // autoHide:
+    //   - undefined        → DEFAULT_AUTOHIDE_MS (後方互換)
+    //   - 0 / null / false → 自動 dismiss 無効 (tap/ESC/× ボタンのみ)
+    //                        prefers-reduced-motion 時の REDUCED_AUTOHIDE_MS
+    //                        短縮も同様に適用しない (一貫性のため)
+    //   - positive number  → そのままミリ秒として採用 (oto:4200 等)
+    //   - 非数値/負値       → DEFAULT_AUTOHIDE_MS にフォールバック
+    if (opts.autoHide === 0 || opts.autoHide === null || opts.autoHide === false) {
+      this.autoHide = 0;
+    } else if (typeof opts.autoHide === 'number' && opts.autoHide > 0) {
+      this.autoHide = opts.autoHide;
+    } else {
+      this.autoHide = DEFAULT_AUTOHIDE_MS;
+    }
     this.onDismiss = typeof opts.onDismiss === 'function'
       ? opts.onDismiss
       : null;
@@ -254,6 +312,20 @@
       panel.appendChild(progress);
     }
 
+    // tap-only hint (autoHide=0 のとき限定で表示する吹き出し風 hint)。
+    // 文言は acorn-copy.json (default.tapToDismiss / 各ゲーム entry の
+    // tapToDismiss) で差し替え可能。 JS 内では hard-code しない。
+    // overlay 自体に modifier を付与し、 CSS 側で表示制御する
+    // (autoHide が positive のゲームでは非表示)。
+    if (this.autoHide === 0) {
+      overlay.classList.add('pono-acorn-modal--tap-only');
+      var tapHint = document.createElement('div');
+      tapHint.className = 'pono-acorn-modal__tap-hint';
+      tapHint.setAttribute('aria-hidden', 'true');
+      tapHint.textContent = copy.tapToDismiss || '';
+      panel.appendChild(tapHint);
+    }
+
     overlay.appendChild(panel);
 
     this._overlay = overlay;
@@ -276,6 +348,20 @@
       ev.stopPropagation();
       self.hide();
     });
+
+    // tap-only mode (autoHide=0): panel 本体のタップでも dismiss する。
+    // 通常の autoHide>0 では auto dismiss が走るので panel 自体は非反応のまま。
+    // dismissBtn の click は stopPropagation で先に消費されるため二重発火しない。
+    if (this.autoHide === 0 && this._panel) {
+      this._panel.addEventListener('click', function (ev) {
+        // dismissBtn 経由は stopPropagation 済みだが、 念のため再ガード。
+        if (ev.target === self._dismissBtn ||
+            (self._dismissBtn && self._dismissBtn.contains(ev.target))) {
+          return;
+        }
+        self.hide();
+      });
+    }
 
     this._keydownHandler = function (ev) {
       if (!self._isShown) return;
@@ -432,11 +518,17 @@
     playSafe(this.gameId, this.state);
 
     // auto-hide
-    var hideMs = prefersReducedMotion() ? REDUCED_AUTOHIDE_MS : this.autoHide;
-    if (hideMs > 0) {
-      this._hideTimer = window.setTimeout(function () {
-        self.hide();
-      }, hideMs);
+    //  - this.autoHide === 0 のときは setTimeout を一切発火させず、
+    //    prefers-reduced-motion 時の REDUCED_AUTOHIDE_MS 短縮も適用しない。
+    //    (tap/ESC/× のみで dismiss する maze 等の tap-only UX に対応)
+    //  - positive のときのみ、 prefers-reduced-motion なら短縮版を使う。
+    if (this.autoHide > 0) {
+      var hideMs = prefersReducedMotion() ? REDUCED_AUTOHIDE_MS : this.autoHide;
+      if (hideMs > 0) {
+        this._hideTimer = window.setTimeout(function () {
+          self.hide();
+        }, hideMs);
+      }
     }
 
     return this._showPromise;

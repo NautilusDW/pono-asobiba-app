@@ -197,13 +197,22 @@ img { max-width: 100%; height: auto; }
 <li><strong>Q4</strong>: クラッシュ/フリーズ/真っ白の有無 → <strong>安定性 P0 バグ</strong>を 1週間で炙り出す。</li>
 <li><strong>Q5</strong>: Q4 の詳細を任意で書ける長文欄 → どのゲーム/どの操作かを書きたい人だけ書く再現情報の窓口。</li>
 </ul>
-<h3>最終アンケート (Week 3 頭・13問・7-8分)</h3>
+<h3>最終アンケート (Week 3 頭・16問・8-10分)</h3>
 <ul>
 <li><strong>子の体験 (Q1-Q4)</strong>: 楽しさ・繰り返し度・お気に入りゲーム・年齢適合性 → アプリそのものの評価軸</li>
 <li><strong>親評価 (Q5-Q9)</strong>: 安心して渡せたか・操作迷い (Q7 で詳細任意記述)・広告/課金圧の不快感・親が知育として価値を感じたか</li>
-<li><strong>推奨意向 (Q10-Q12)</strong>: 5段階満足度 / NPS / 創設メンバー継続意向 → go/no-go 判定の数値根拠</li>
-<li><strong>自由記述 (Q13)</strong>: 言葉にならない引っかかりと、 次の v1.1 で欲しい機能</li>
+<li><strong>推奨意向 (Q10-Q15)</strong>:
+<ul>
+<li><strong>Q10</strong>: 5段階総合満足度 → ざっくり感情温度</li>
+<li><strong>Q11</strong>: NPS (0-10、 推奨意向) → 「他人に勧めたい度」 の数値根拠 (PMF とは別軸)</li>
+<li><strong>Q12</strong>: <strong>Sean Ellis PMF</strong> (もし使えなくなったらどう感じるか、 4択) → 「とても残念」 40%以上で product-market fit 達成シグナル。 NPS とは独立指標</li>
+<li><strong>Q13</strong>: <strong>紹介時の言葉 (Word-of-Mouth voice)</strong> 自由記述 → LP/広告コピーの一次素材として、 ユーザーが実際に使う言葉を回収 ([[feedback_lp_marketing_copy_rewrite]] 準拠)</li>
+<li><strong>Q14</strong>: <strong>新規購入意向 (¥980)</strong> ラジオ → β特典抜きで、 一般ユーザー視点で ¥980 を払う意思があるか。 Q15 (convert-from-free) とは別軸</li>
+<li><strong>Q15</strong>: 創設メンバー継続意向 (無料特典がなかったら払うか) → 既に使った人の retention 価格弾力性</li>
+<li><strong>自由記述 (Q16)</strong>: 言葉にならない引っかかりと、 次の v1.1 で欲しい機能</li>
+</ul></li>
 </ul>
+<blockquote><p><strong>注意</strong>: Q11 (NPS) は 「他人に勧める意向」 を測るが、 product-market-fit (使えなくなった時の喪失感) を直接測るのは Q12 (Sean Ellis PMF) のみ。 NPS が高くても PMF が低いケース (悪くないけど無くても困らない) は launch 判断を見送る根拠になる。 Q14/Q15 は購入意向を 「新規視点」 と 「既存ユーザー視点」 の二軸で分けて測る。</p></blockquote>
 <hr>
 <h1>【アンケート 1】 中間アンケート</h1>
 <h2>フォーム基本設定</h2>
@@ -311,7 +320,7 @@ img { max-width: 100%; height: auto; }
 <li><strong>説明文</strong>:</li>
 </ul>
 <pre><code>ポノのあそびば βテスト 2週間 おつかれさまでした。
-最後に 少しだけ詳しく ご感想を聞かせてください。 全13問・約7-8分です。
+最後に 少しだけ詳しく ご感想を聞かせてください。 全16問・約8-10分です。
 
 ご回答くださった方には、 アプリ内デジタルシール (即配布) と、
 正式版 (¥980 で販売予定) の永久無料アクセス権、
@@ -361,24 +370,28 @@ img { max-width: 100%; height: auto; }
 ```
 「だいたいこれが多かった」 という感覚で 1つ選んでください。
 ```</li>
-<li><strong>選択肢</strong> (各選択肢に<strong>ゲームアイコン画像を添付</strong>する):</li>
+<li><strong>選択肢</strong> (各選択肢に<strong>ゲームアイコン画像を添付</strong>する) — タイトル画面のメニュー順 + シール + その他選択肢:</li>
 </ul>
-<pre><code>ポノとつくろう いろどりべんとう
-ポノのなかよしパズル
+<pre><code>フクロウはかせのなぞなぞ
 ポノとランタンのめいろ
-フクロウはかせのなぞなぞ
 ポノのおとタッチ
+ポノとつくろう いろどりべんとう
+ポノのなかよしパズル
+もじっこファーム (じゅんびちゅう)
+コトコト もりのキッチン (じゅんびちゅう)
 シールちょう
 どれもだいたい同じくらい
 あまり遊ばなかった</code></pre>
 <ul>
 <li><strong>画像添付指示</strong> (各選択肢ごと):
 <ul>
+<li>フクロウはかせのなぞなぞ: <code>assets/ui/title/quizland.png</code></li>
+<li>ポノとランタンのめいろ: <code>assets/ui/title/maze.png</code></li>
+<li>ポノのおとタッチ: <code>assets/ui/title/oto.png</code></li>
 <li>ポノとつくろう いろどりべんとう: <code>assets/ui/title/bento.png</code></li>
 <li>ポノのなかよしパズル: <code>assets/ui/title/puzzle.png</code></li>
-<li>ポノとランタンのめいろ: <code>assets/ui/title/maze.png</code></li>
-<li>フクロウはかせのなぞなぞ: <code>assets/ui/title/quizland.png</code></li>
-<li>ポノのおとタッチ: <code>assets/ui/title/oto.png</code></li>
+<li>もじっこファーム (じゅんびちゅう): (画像不要、 「じゅんびちゅう」ゲームは現時点で実装中のため後付け可)</li>
+<li>コトコト もりのキッチン (じゅんびちゅう): (画像不要、 「じゅんびちゅう」ゲームは現時点で実装中のため後付け可)</li>
 <li>シールちょう: (画像不要、 テキストのみ。 もし <code>assets/ui/title/sticker.png</code> 等の適切な画像があれば後付け可)</li>
 <li><strong>添付手順</strong>: Forms 編集画面で 選択肢の右端にマウスを当てると現れる <strong>画像アイコン</strong> → アップロード → 上記パスの画像を指定。</li>
 </ul></li>
@@ -437,7 +450,7 @@ img { max-width: 100%; height: auto; }
 <pre><code>特に迷わなかった
 アンケートへの行き方で迷った
 データ削除/退会の方法が分からなかった
-その他 (Q13 で記載)</code></pre>
+その他 (Q16 で記載)</code></pre>
 <hr>
 <h2>Q7 — Q6 の詳細 (任意)</h2>
 <ul>
@@ -477,7 +490,7 @@ img { max-width: 100%; height: auto; }
 </ul>
 <hr>
 <h2>セクション区切り 3: 推奨意向</h2>
-<blockquote><p>セクションタイトル: <code>3. 今後についての ご意向 (3問)</code>
+<blockquote><p>セクションタイトル: <code>3. 今後についての ご意向 (6問)</code>
 説明: <code>正式版に向けての お気持ちを お聞かせください。</code></p></blockquote>
 <hr>
 <h2>Q10 — 総合満足度</h2>
@@ -506,7 +519,56 @@ img { max-width: 100%; height: auto; }
 </ul></li>
 </ul>
 <hr>
-<h2>Q12 — 創設メンバー継続意向 / 課金意向</h2>
+<h2>Q12 — Sean Ellis PMF (使えなくなったらどう感じるか)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>もし明日から ポノのあそびばが 二度と使えなくなったら、 お子さま (または保護者の方) は どう感じると思いますか？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+Sean Ellis の Product-Market Fit 質問です。 「とても残念」 と答える方が 40%以上いれば
+正式リリースの重要な判断材料になります。 本音でお答えください。
+```</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>とても残念に感じる (代わりになるものが思いつかない)
+やや残念に感じる (似たアプリを探すと思う)
+特に残念には感じない (他のもので十分代用できる)
+分からない / 該当しない</code></pre>
+<hr>
+<h2>Q13 — 紹介時の言葉 (Word-of-Mouth Voice)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>もしお友達やご家族に ポノのあそびばを 勧めるとしたら、 どんなふうに説明しますか？ (ご自身の言葉で 一言・短文どちらでも歓迎)</code></li>
+<li><strong>回答形式</strong>: <strong>段落 (長文回答)</strong></li>
+<li><strong>必須</strong>: いいえ (任意)</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+例: 「広告ゼロで親も安心」 「お絵描きと知育がセットになってる」 等。
+ご回答内容は LP や紹介文の素材として 匿名で参考にさせていただく場合があります。
+(個人が特定される情報は含めないでください)
+```</li>
+</ul>
+<hr>
+<h2>Q14 — 新規購入意向 (¥980 一般ユーザー視点)</h2>
+<ul>
+<li><strong>質問タイトル</strong>: <code>仮にβテスト特典 (永久無料) が無く、 一般のお客さまとして 初めてこのアプリを ¥980 で見かけたとしたら、 購入しますか？</code></li>
+<li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
+<li><strong>必須</strong>: はい</li>
+<li><strong>ヘルプテキスト</strong>:
+```
+Q15 (継続意向) とは別の質問です。 こちらは 「もし新規ユーザーだったら 980円払って買うか」
+を伺うものです。 本音でお答えください。
+```</li>
+<li><strong>選択肢</strong>:</li>
+</ul>
+<pre><code>即決で買うと思う
+内容紹介を見て 良さそうなら買う
+セールや割引があれば買う
+無料体験版があれば試してから判断する
+¥980 だと買わないと思う (もっと安ければ別)
+価格に関わらず買わないと思う</code></pre>
+<hr>
+<h2>Q15 — 創設メンバー継続意向 / 課金意向</h2>
 <ul>
 <li><strong>質問タイトル</strong>: <code>正式版 (¥980予定) は βテスト参加者の方は永久無料で お使いいただけます。 もし無料特典がなかったとして、 ¥980 を払って 正式版を使い続けたいと思いますか？</code></li>
 <li><strong>回答形式</strong>: <strong>ラジオボタン</strong></li>
@@ -514,6 +576,7 @@ img { max-width: 100%; height: auto; }
 <li><strong>ヘルプテキスト</strong>:
 ```
 本音でお答えください。 「払わない」 と答えても 永久無料特典は維持されます。
+Q14 (新規購入意向) とは別軸で、 こちらは 「既に2週間使ったユーザーとして 継続のために払うか」 を伺うものです。
 ```</li>
 <li><strong>選択肢</strong>:</li>
 </ul>
@@ -527,7 +590,7 @@ img { max-width: 100%; height: auto; }
 <blockquote><p>セクションタイトル: <code>4. 自由記述 (1問)</code>
 説明: <code>言葉にしづらい引っかかりや、 「こういう機能が欲しい」 等あれば 何でも書いてください。 (Q6 で「その他」 を選んだ場合の詳細は Q7 でお書きいただけます)</code></p></blockquote>
 <hr>
-<h2>Q13 — 自由記述</h2>
+<h2>Q16 — 自由記述</h2>
 <ul>
 <li><strong>質問タイトル</strong>: <code>その他、 ご感想・改善要望・バグ報告 など 自由にお書きください。</code></li>
 <li><strong>回答形式</strong>: <strong>段落 (長文回答)</strong></li>

@@ -10435,7 +10435,7 @@ function _showMazeAcornModalOrProceed(granted, isImageStage, isOfficial, proceed
       dailyTotal: dailyTotal,
       dailyCap: dailyCap,
       state: isCapped ? 'capped' : 'idle',
-      autoHide: 4200,
+      autoHide: 0, // tap/ESC/× のみで dismiss (Phase 1.1 maze feedback)
       onDismiss: function() { _proceedOnce(); }
     });
     modal.show();
