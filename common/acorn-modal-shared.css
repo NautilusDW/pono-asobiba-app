@@ -582,12 +582,11 @@
     opacity: 1 !important;
   }
 
-  /* maze override (quizland 流用デザイン) の reduce 時静止化。
-     L648-663 で定義した owl_professor_guide ::before に対する filter 簡略化を
-     ここで行う。 Phase 1.5 で frame/leaves/glow 装飾を再導入する場合は、
-     この block の selector も併せて見直すこと (orphan rule 化を避ける)。
-     depth 用の drop-shadow(0 6px 10px ...) は残し、 motion 寄り shimmer の
-     drop-shadow(0 0 14px ...) glow だけを落とす方針 (HIGH#5 反映)。 */
+  /* maze override (quizland 問題ウィンドウ枠流用) の reduce 時静止化。
+     Phase 1.2 でキャラ重畳 (owl_professor_guide) を完全撤去、 quizland の
+     問題出題モーダル枠 (cream paper + 茶木枠 + 葉飾り PNG) を流用する方針へ
+     刷新。 ここでは panel 背景画像 / leaf ::before 装飾の motion 寄り効果
+     (glow / shimmer) を静止化し、 depth 表現の drop-shadow のみ残す。 */
   [data-game-id="maze"] .pono-acorn-modal__panel {
     box-shadow: none !important;
   }
@@ -626,54 +625,69 @@
    Game-specific overrides
    ============================ */
 /* -------------------------------------------------------------
- * maze: quizland 「フクロウ博士ウィンドウ」 流用方針 (Phase 1.1 改修)
+ * maze: quizland 「問題出題ウィンドウ枠」 流用方針 (Phase 1.2 改修)
  *
- * 旧 override (重い木目グラデパネル + 茶色 pill ラベル + 4px wood border)
- * は撤去し、 Phase 0 base (= quizland 互換の cream / amber / gold 数値) を
- * 主役にする。 BEM クラス側は base 値 (kicker #8b4e12 / label #6d3b07 /
- * amount gold gradient) をそのまま継承するため、 ここで override する
- * のは 「accent カラー」 と 「上端に重ねる キャラクター画像 (フクロウ博士)」
- * だけに絞る。
+ * Phase 1.1 で試行した owl_professor_guide.webp のキャラ重畳は完全撤去。
+ * ユーザー意図は 「quizland のなぞなぞ問題提示ウィンドウの枠デザインを流用」 で
+ * あり、 キャラクター追加ではない。 ここでは quizland の question modal
+ * (`.q-text-card` / `.board` / `.answer-tray`) で使われている
+ * cream paper (#f5e9c4 → #e8d293) + 木枠 (#6e4520) + 葉飾り (Fukuro_frame_001.png)
+ * のビジュアル言語を [data-game-id="maze"] スコープ内で再現する。
  *
- * - --acorn-accent: 森の緑系を維持 (maze の世界観カラー)
- * - --acorn-modal-bg-overlay: ベースの茶色オーバーレイをそのまま使う
- *   (forest 緑にしない: quizland 流用前提なので茶系で統一)
- * - 上端中央に owl_professor_guide.webp を ::before で重畳 (子供向けの
- *   「先生キャラ + 喜び表現 + 大きな数字」 構造をシンプルに再現)
- * - panel 本体は base の cream パネル相当を維持。 ::before の位置確保のため
- *   padding-top のみ拡張する。
+ * 流用したい視覚要素:
+ *   - cream → amber グラデ背景 (--paper / --paper-2 と同値)
+ *   - 木枠 5px border (--wood-dark と同値)
+ *   - 木枠下影 6px (box-shadow)
+ *   - 葉飾り PNG (Fukuro_frame_001.png; ボード枠 + 葉) を ::before に重畳
  *
- * 旧 wood-gradient / pill label / wood border は Phase 1.5 装飾画像 (frame /
- * leaves / burst glow) が来た時に再導入する想定で一時撤去。 brief.md に
- * 「Phase 1.5 は一時保留」 のメモを追記済。
+ * 注意:
+ *   - quizland inline CSS (preview/full/index.html 等) は touch しない。
+ *     ここの override は [data-game-id="maze"] スコープのみ。
+ *   - 葉飾り PNG は素材の透明余白を活用するため margin で要素を超過配置
+ *     (quizland の sheet-on モード参考、 line 217-236 の board::before)。
+ *   - キャラ (くま/フクロウ博士/りす) は乗せない。 ユーザー明示要件。
  * ============================================================= */
 [data-game-id="maze"].pono-acorn-modal {
   --acorn-accent: #6C8E3F;
+
+  /* quizland question modal と同じカラートークン (流用のため値固定) */
+  --maze-paper: #f5e9c4;
+  --maze-paper-2: #e8d293;
+  --maze-paper-shadow: rgba(80, 50, 10, 0.3);
+  --maze-wood-dark: #6e4520;
 }
 [data-game-id="maze"] .pono-acorn-modal__panel {
-  /* Phase 0 base ベースに cream パネル + amber 枠 (quizland 非 Perfect modal の
-     白カードを森色寄せ)。 amount は base の gold グラデをそのまま継承。 */
-  background: #FFF6E0;
-  border: 3px solid rgba(201, 139, 58, 0.62); /* amber (--acorn-accent quizland と同系) */
-  border-radius: 24px;
-  box-shadow: 0 12px 22px rgba(45, 24, 6, 0.28);
-  padding-top: clamp(120px, 20vw, 168px);
+  /* quizland .q-text-card / .board の paper グラデ + 木枠 + 下影を再現。
+     葉飾り PNG は ::before に重ねるので、 panel 本体は CSS で枠を作る。 */
+  background: linear-gradient(180deg, var(--maze-paper), var(--maze-paper-2));
+  border: 5px solid var(--maze-wood-dark);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 -4px 0 rgba(120, 80, 20, 0.15),
+    0 6px 0 var(--maze-wood-dark),
+    0 8px 16px var(--maze-paper-shadow);
 }
 [data-game-id="maze"] .pono-acorn-modal__panel::before {
+  /* quizland .board::before (sheet-on モード, line 224-232) と同手法で
+     Fukuro_frame_001.png (ボード枠 + 葉飾り) を panel に重畳。
+     PNG は左右に葉の透明余白があるので margin で要素を超過配置する。 */
   content: '';
   position: absolute;
-  top: clamp(-44px, -7vw, -28px);
-  left: 50%;
-  width: clamp(120px, 22vw, 168px);
-  aspect-ratio: 1 / 1;
+  inset: 0;
+  margin: -4px -14px;
   background:
-    url('../assets/images/quizland/owl_professor_guide.webp')
-    center / contain no-repeat;
-  transform: translateX(-50%);
-  filter:
-    drop-shadow(0 6px 10px rgba(71, 38, 6, 0.42))
-    drop-shadow(0 0 14px rgba(255, 221, 105, 0.55));
+    url('../assets/images/quizland/Fukuro_frame_001.png')
+    center / 100% 100% no-repeat;
   pointer-events: none;
+  z-index: 0;
+  filter:
+    drop-shadow(0 6px 10px rgba(71, 38, 6, 0.32))
+    drop-shadow(0 0 14px rgba(255, 239, 138, 0.42));
+}
+/* 葉飾り ::before の上にコンテンツ (kicker / icon / amount / label) を出す */
+[data-game-id="maze"] .pono-acorn-modal__panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 [data-game-id="oto"].pono-acorn-modal {

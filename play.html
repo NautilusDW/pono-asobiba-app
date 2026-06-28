@@ -3537,6 +3537,106 @@
       color: var(--text);
     }
 
+    /* ===== Password Unlock Modal: 3 tabs (serial / order / quiz) =====
+       既存 #passwordUnlockModal を 3 経路に拡張するための追加スタイル。
+       タブヘッダ + パネル本体 + ヒント + クイズ問題ボックス + リロールボタン。
+       WCAG: focus-visible 強調 / prefers-reduced-motion で transition 無効化。 */
+    .password-modal-tabs {
+      display: flex;
+      gap: 4px;
+      width: 100%;
+      margin: 4px 0 6px;
+      background: rgba(245, 168, 0, 0.10);
+      border-radius: 14px;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+    .pw-tab {
+      flex: 1;
+      min-height: 40px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 0.72rem;
+      color: #8B7355;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+      padding: 2px 4px;
+      box-sizing: border-box;
+    }
+    .pw-tab:focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 2px;
+    }
+    .pw-tab.is-active {
+      background: linear-gradient(135deg, #FFD84D, #F5A800);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(245, 168, 0, 0.35);
+    }
+    .pw-tab-icon { font-size: 1.0rem; line-height: 1; }
+    .pw-tab-label { font-size: 0.66rem; letter-spacing: 0.02em; }
+    .pw-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .pw-panel[hidden] { display: none !important; }
+    .pw-panel-lead {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-align: center;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .pw-hint {
+      font-size: 0.66rem;
+      font-weight: 700;
+      color: #6B5340;
+      opacity: 0.92;
+      text-align: center;
+      margin: 0;
+      line-height: 1.35;
+    }
+    .pw-quiz-question {
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: #5D4E37;
+      background: rgba(255, 255, 255, 0.7);
+      border: 2px dashed rgba(245, 168, 0, 0.5);
+      border-radius: 12px;
+      padding: 8px 10px;
+      text-align: center;
+      line-height: 1.5;
+      width: 92%;
+      box-sizing: border-box;
+      margin: 0;
+    }
+    .pw-quiz-reroll {
+      background: transparent;
+      border: 1px dashed rgba(93, 78, 55, 0.4);
+      border-radius: 50px;
+      padding: 4px 12px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #8B7355;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .pw-quiz-reroll:hover { background: rgba(255, 248, 224, 0.5); color: var(--text); }
+    @media (prefers-reduced-motion: reduce) {
+      .pw-tab, .pw-tab.is-active { transition: none; }
+    }
+
     /* ===== Toggle Switch ===== */
     .toggle {
       position: relative;
@@ -5856,15 +5956,78 @@
   <!-- v1571 phase 5: ショップ購入演出オーバーレイ (zoom-in + 紙吹雪) -->
   <div class="donguri-shop-celebration" id="donguriShopCelebration" hidden aria-hidden="true"></div>
 
-  <!-- ===== Password Unlock Modal (絵本パスワード入力 → premium 解錠) ===== -->
+  <!-- ===== Password Unlock Modal (絵本パスワード入力 → premium 解錠) =====
+       v1722: book tier unlock 3 経路化 (シリアル / Amazon 注文番号 / 絵本クイズ)。
+       - .password-modal-help は後方互換のため class を維持しつつ id を付与し、
+         success 表示時に display:none で隠す既存ロジックと共存。
+       - 旧 #passwordUnlockInput / #passwordUnlockSubmit は シリアルタブ内に同 id で残置 (DOM 参照後方互換)。 -->
   <div class="modal" id="passwordUnlockModal" hidden role="dialog" aria-modal="true" aria-labelledby="passwordUnlockTitle">
     <div class="password-modal-card">
       <div class="password-modal-inner">
-        <h3 id="passwordUnlockTitle" class="password-modal-title">えほんの あいことば</h3>
-        <p class="password-modal-help">えほんの うらに かいてある<br>あいことばを いれてね</p>
-        <input type="text" class="password-modal-input" id="passwordUnlockInput" placeholder="あいことば" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
-        <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">ひらく！</button>
-        <div class="password-modal-error" id="passwordUnlockError" hidden>ちがうよ！ もういちど！</div>
+        <h3 id="passwordUnlockTitle" class="password-modal-title">えほんを もっているひとへ</h3>
+        <p class="password-modal-help" id="passwordUnlockHelp">したの どれか ひとつで<br>book メンバーが ひらくよ</p>
+
+        <!-- 3 経路タブ (WAI-ARIA Tabs Pattern, Manual Activation) -->
+        <div class="password-modal-tabs" role="tablist" aria-label="unlock ほうほう">
+          <button type="button" class="pw-tab is-active" role="tab" id="pwTabSerial"
+                  data-pw-tab="serial" aria-selected="true" aria-controls="pwPanelSerial" tabindex="0">
+            <span class="pw-tab-icon" aria-hidden="true">🔑</span>
+            <span class="pw-tab-label">あいことば</span>
+          </button>
+          <button type="button" class="pw-tab" role="tab" id="pwTabOrder"
+                  data-pw-tab="order" aria-selected="false" aria-controls="pwPanelOrder" tabindex="-1">
+            <span class="pw-tab-icon" aria-hidden="true">📦</span>
+            <span class="pw-tab-label">Amazon</span>
+          </button>
+          <button type="button" class="pw-tab" role="tab" id="pwTabQuiz"
+                  data-pw-tab="quiz" aria-selected="false" aria-controls="pwPanelQuiz" tabindex="-1">
+            <span class="pw-tab-icon" aria-hidden="true">🐾</span>
+            <span class="pw-tab-label">クイズ</span>
+          </button>
+        </div>
+
+        <!-- Panel: シリアル (既存 #passwordUnlockInput / #passwordUnlockSubmit を内包) -->
+        <section class="pw-panel" id="pwPanelSerial" role="tabpanel"
+                 aria-labelledby="pwTabSerial" data-pw-panel="serial">
+          <p class="pw-panel-lead">えほんの うらに かいてある<br>あいことばを いれてね</p>
+          <input type="text" class="password-modal-input" id="passwordUnlockInput"
+                 placeholder="あいことば" autocomplete="off" autocorrect="off"
+                 spellcheck="false" inputmode="text" aria-describedby="pwHintSerial">
+          <p class="pw-hint" id="pwHintSerial">れい: 1234 など</p>
+          <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">ひらく！</button>
+        </section>
+
+        <!-- Panel: Amazon 注文番号 -->
+        <section class="pw-panel" id="pwPanelOrder" role="tabpanel" hidden
+                 aria-labelledby="pwTabOrder" data-pw-panel="order">
+          <p class="pw-panel-lead">Amazonで かった ひとは<br>ちゅうもんばんごうを いれてね</p>
+          <input type="text" class="password-modal-input" id="pwOrderInput"
+                 placeholder="250-1234567-1234567"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 inputmode="numeric" maxlength="19"
+                 aria-describedby="pwHintOrder">
+          <p class="pw-hint" id="pwHintOrder">3けた-7けた-7けた の すうじ</p>
+          <button class="password-modal-submit" id="pwSubmitOrder" type="button">ひらく！</button>
+        </section>
+
+        <!-- Panel: 絵本クイズ -->
+        <section class="pw-panel" id="pwPanelQuiz" role="tabpanel" hidden
+                 aria-labelledby="pwTabQuiz" data-pw-panel="quiz">
+          <p class="pw-panel-lead">えほんを よんだひとなら わかる クイズ</p>
+          <div class="pw-quiz-question" id="pwQuizQuestion" aria-live="polite" data-qid="">
+            (もんだいを よみこんでいるよ)
+          </div>
+          <input type="text" class="password-modal-input" id="pwQuizInput"
+                 placeholder="こたえ" autocomplete="off" autocorrect="off"
+                 spellcheck="false" inputmode="text" aria-describedby="pwHintQuiz">
+          <p class="pw-hint" id="pwHintQuiz">ひらがな・カタカナ・かんじ どれでも OK</p>
+          <button class="password-modal-submit" id="pwSubmitQuiz" type="button">ひらく！</button>
+          <button type="button" class="pw-quiz-reroll" id="pwQuizReroll" aria-label="べつの もんだいに する">
+            🔄 べつの もんだい
+          </button>
+        </section>
+
+        <div class="password-modal-error" id="passwordUnlockError" hidden role="alert" aria-live="assertive">ちがうよ！ もういちど！</div>
         <div class="password-modal-success" id="passwordUnlockSuccess" hidden>
           <div class="password-modal-success-tag" id="passwordUnlockSuccessTag">✨ えほんの とくてんが ひらいたよ ✨</div>
           <p class="password-modal-success-body" id="passwordUnlockSuccessBody">あたらしい ステージや<br>あそびが ひらいたよ！</p>
@@ -6335,7 +6498,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1719;
+    const PAGE_CACHE_VERSION = 1722;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -9418,9 +9581,9 @@
     }
 
     // ===== えほんのあいことば → unlock flow =====
-    // 紙の本にあるシリアルを入れて 有料ステージ/ずかんを解除するための導線。
+    // 紙の本にあるシリアル / Amazon 注文番号 / 絵本クイズ で book tier を解除する 3 経路の導線。
     // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
-    // パスワード検証は common/tier.js の PonoTier.verifyBookPassword に集約。
+    // 検証は common/tier.js の PonoTier.{verifySerialCode, verifyBookPassword, verifyOrderId, verifyQuizAnswer, verifyAdminPassword} に集約。
     // モーダル open 時の解錠 state スナップショット (close 時の表示更新に使う)
     let pwSnapshot = null;
     const bookUnlockEntry = document.getElementById('bookUnlockEntry');
@@ -9431,6 +9594,11 @@
       try { return localStorage.getItem('pono_premium') === '1'; } catch (e) { return false; }
     }
 
+    /**
+     * 成功時の success-tag / success-body コピーを mode で切替える。
+     * 既存 'book' / 'debug' に加えて 'serial' / 'order_id' / 'quiz' / 'admin' を追加。
+     * @param {'book'|'debug'|'serial'|'order_id'|'quiz'|'admin'} mode
+     */
     function setPasswordUnlockSuccessCopy(mode) {
       const tagEl = document.getElementById('passwordUnlockSuccessTag');
       const bodyEl = document.getElementById('passwordUnlockSuccessBody');
@@ -9439,6 +9607,17 @@
         if (bodyEl) bodyEl.innerHTML = 'せっていから<br>デバッグボードを つかえるよ';
         return;
       }
+      if (mode === 'order_id') {
+        if (tagEl) tagEl.textContent = '📦 おかいあげ ありがとう！';
+        if (bodyEl) bodyEl.innerHTML = 'あなたの えほんで<br>ひらいたよ！';
+        return;
+      }
+      if (mode === 'quiz') {
+        if (tagEl) tagEl.textContent = '🐾 ピンポン！ せいかい！';
+        if (bodyEl) bodyEl.innerHTML = 'えほんを よんでくれて<br>ありがとう！';
+        return;
+      }
+      // 'book' / 'serial' / 'admin' / default
       if (tagEl) tagEl.textContent = '✨ えほんの とくてんが ひらいたよ ✨';
       if (bodyEl) bodyEl.innerHTML = 'あたらしい ステージや<br>あそびが ひらいたよ！';
     }
@@ -9455,26 +9634,149 @@
       }
     }
 
+    // ===== タブ切替 (WAI-ARIA Tabs Pattern / Manual Activation) =====
+    const PW_TAB_IDS = ['serial', 'order', 'quiz'];
+    const pwTabEls = {
+      serial: document.getElementById('pwTabSerial'),
+      order:  document.getElementById('pwTabOrder'),
+      quiz:   document.getElementById('pwTabQuiz'),
+    };
+    const pwPanelEls = {
+      serial: document.getElementById('pwPanelSerial'),
+      order:  document.getElementById('pwPanelOrder'),
+      quiz:   document.getElementById('pwPanelQuiz'),
+    };
+    const pwPanelInputs = {
+      serial: () => document.getElementById('passwordUnlockInput'),
+      order:  () => document.getElementById('pwOrderInput'),
+      quiz:   () => document.getElementById('pwQuizInput'),
+    };
+    let pwActiveTab = 'serial';
+
+    function activatePwTab(tabId, opts) {
+      if (PW_TAB_IDS.indexOf(tabId) < 0) return;
+      pwActiveTab = tabId;
+      PW_TAB_IDS.forEach((id) => {
+        const tab = pwTabEls[id];
+        const panel = pwPanelEls[id];
+        const isActive = id === tabId;
+        if (tab) {
+          tab.classList.toggle('is-active', isActive);
+          tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          tab.setAttribute('tabindex', isActive ? '0' : '-1');
+        }
+        if (panel) panel.hidden = !isActive;
+      });
+      // タブ切替時は error / success を非表示に戻す (panel ごとの体験を独立させる)
+      const errEl = document.getElementById('passwordUnlockError');
+      if (errEl) errEl.hidden = true;
+      // quiz タブを開いた瞬間に問題未表示なら抽選
+      if (tabId === 'quiz') ensurePwQuizQuestion();
+      // focus 移動 (init 時は skipFocus)
+      if (!opts || !opts.skipFocus) {
+        const inp = pwPanelInputs[tabId] && pwPanelInputs[tabId]();
+        if (inp) setTimeout(() => { try { inp.focus(); } catch(e){} }, 30);
+      }
+    }
+
+    // タブクリック + キーボードナビゲーション (ArrowLeft/Right/Home/End/Enter/Space)
+    PW_TAB_IDS.forEach((id) => {
+      const tab = pwTabEls[id];
+      if (!tab) return;
+      tab.addEventListener('click', () => activatePwTab(id));
+      tab.addEventListener('keydown', (e) => {
+        const cur = PW_TAB_IDS.indexOf(id);
+        if (cur < 0) return;
+        let nextIdx = -1;
+        if (e.key === 'ArrowRight') nextIdx = (cur + 1) % PW_TAB_IDS.length;
+        else if (e.key === 'ArrowLeft') nextIdx = (cur - 1 + PW_TAB_IDS.length) % PW_TAB_IDS.length;
+        else if (e.key === 'Home') nextIdx = 0;
+        else if (e.key === 'End') nextIdx = PW_TAB_IDS.length - 1;
+        else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activatePwTab(id);
+          return;
+        }
+        else return;
+        e.preventDefault();
+        const nextId = PW_TAB_IDS[nextIdx];
+        const nextTab = pwTabEls[nextId];
+        if (nextTab) {
+          // Manual Activation: focus を移すだけ、 activate は Enter/Space で
+          PW_TAB_IDS.forEach((tid) => {
+            const t = pwTabEls[tid];
+            if (t) t.setAttribute('tabindex', tid === nextId ? '0' : '-1');
+          });
+          nextTab.focus();
+        }
+      });
+    });
+
+    // ===== クイズ問題の抽選・表示 =====
+    function ensurePwQuizQuestion(opts) {
+      const qBox = document.getElementById('pwQuizQuestion');
+      if (!qBox) return;
+      const tier = window.PonoTier || {};
+      if (typeof tier.pickRandomQuiz !== 'function') {
+        qBox.textContent = 'クイズが よみこめなかったよ';
+        qBox.dataset.qid = '';
+        return;
+      }
+      // すでに表示中で reroll 指定なしなら何もしない (タブ切替時の問題保持)
+      if (qBox.dataset.qid && !(opts && opts.reroll)) return;
+      const q = tier.pickRandomQuiz();
+      if (!q) {
+        qBox.textContent = 'クイズが まだ ないよ';
+        qBox.dataset.qid = '';
+        return;
+      }
+      qBox.textContent = q.q;
+      qBox.dataset.qid = q.id;
+      const quizInput = document.getElementById('pwQuizInput');
+      if (quizInput) quizInput.value = '';
+    }
+
+    const pwQuizReroll = document.getElementById('pwQuizReroll');
+    if (pwQuizReroll) {
+      pwQuizReroll.addEventListener('click', () => {
+        ensurePwQuizQuestion({ reroll: true });
+        const errEl = document.getElementById('passwordUnlockError');
+        if (errEl) errEl.hidden = true;
+        const quizInput = document.getElementById('pwQuizInput');
+        if (quizInput) { try { quizInput.focus(); } catch(e){} }
+      });
+    }
+
+    // ===== モーダル open =====
     function openPasswordUnlockModal() {
-      // 既に解錠済みなら成功メッセージを表示しつつ、入力欄も常に表示して
-      // あいことばの再入力や管理用コード入力を可能にする。
       const already = isBookBenefitUnlocked();
       const errEl = document.getElementById('passwordUnlockError');
       const successEl = document.getElementById('passwordUnlockSuccess');
-      const inputEl = document.getElementById('passwordUnlockInput');
-      const helpEl = document.querySelector('.password-modal-help');
-      const pwSubmitEl = document.getElementById('passwordUnlockSubmit');
+      const helpEl = document.getElementById('passwordUnlockHelp');
+      const tabsEl = document.querySelector('.password-modal-tabs');
       if (errEl) errEl.hidden = true;
       if (successEl) successEl.hidden = !already;
       setPasswordUnlockSuccessCopy('book');
       if (helpEl) helpEl.style.display = already ? 'none' : '';
-      // submit 成功時に input/submit を display:none にしているので、
-      // 再 open 時は必ず可視化 + value クリア。
-      if (inputEl) {
-        inputEl.style.display = '';
-        inputEl.value = '';
-      }
-      if (pwSubmitEl) pwSubmitEl.style.display = '';
+      if (tabsEl) tabsEl.style.display = already ? 'none' : '';
+      // 各 panel の input/submit を可視化 + value クリア (前回 success で display:none した分の復活)
+      ['serial', 'order', 'quiz'].forEach((id) => {
+        const panel = pwPanelEls[id];
+        if (panel && !already) panel.hidden = (id !== pwActiveTab);
+        else if (panel) panel.hidden = true;
+        const inp = pwPanelInputs[id] && pwPanelInputs[id]();
+        if (inp) {
+          inp.style.display = '';
+          inp.value = '';
+        }
+      });
+      // 全 submit ボタンを可視化
+      ['passwordUnlockSubmit', 'pwSubmitOrder', 'pwSubmitQuiz'].forEach((bid) => {
+        const b = document.getElementById(bid);
+        if (b) b.style.display = '';
+      });
+      // クイズ問題抽選 (初回 / 未表示時)
+      ensurePwQuizQuestion();
       try {
         pwSnapshot = {
           premium: localStorage.getItem('pono_premium'),
@@ -9484,56 +9786,182 @@
         pwSnapshot = null;
       }
       openModal('passwordUnlockModal');
-      if (inputEl && !already) setTimeout(() => inputEl.focus(), 40);
+      if (!already) {
+        const inp = pwPanelInputs[pwActiveTab] && pwPanelInputs[pwActiveTab]();
+        if (inp) setTimeout(() => { try { inp.focus(); } catch(e){} }, 40);
+      }
     }
     if (bookUnlockEntry) bookUnlockEntry.addEventListener('click', openPasswordUnlockModal);
     if (settingsBookUnlockBtn) settingsBookUnlockBtn.addEventListener('click', openPasswordUnlockModal);
     updateBookUnlockEntry();
 
-    // パスワード送信ハンドラ
+    // ===== unlock 成功時の共通 finalize =====
+    /**
+     * 解錠成功時の UI 共通処理。 method ごとに localStorage 記録とコピー切替。
+     * @param {'serial'|'admin'|'order_id'|'quiz'|'debug'} method
+     * @param {{orderId?: string}=} extras
+     */
+    function pwFinalizeSuccess(method, extras) {
+      extras = extras || {};
+      const errEl = document.getElementById('passwordUnlockError');
+      const successEl = document.getElementById('passwordUnlockSuccess');
+      const helpEl = document.getElementById('passwordUnlockHelp');
+      const tabsEl = document.querySelector('.password-modal-tabs');
+      // debug 経路は localStorage を触らず developer access UI 側で扱う
+      if (method !== 'debug') {
+        try {
+          localStorage.setItem('pono_premium', '1');
+          localStorage.setItem('pono_book_unlock_method', method);
+          localStorage.setItem('pono_book_unlock_at', new Date().toISOString());
+          if (method === 'order_id' && extras.orderId) {
+            let arr = [];
+            try { arr = JSON.parse(localStorage.getItem('pono_unlocked_orders') || '[]'); } catch (e) { arr = []; }
+            if (!Array.isArray(arr)) arr = [];
+            if (arr.indexOf(extras.orderId) < 0) arr.push(extras.orderId);
+            while (arr.length > 30) arr.shift();
+            localStorage.setItem('pono_unlocked_orders', JSON.stringify(arr));
+          }
+        } catch (e) {}
+      }
+      if (errEl) errEl.hidden = true;
+      // すべての panel を hidden に + すべての submit を非表示
+      ['serial', 'order', 'quiz'].forEach((id) => {
+        const panel = pwPanelEls[id];
+        if (panel) panel.hidden = true;
+      });
+      ['passwordUnlockSubmit', 'pwSubmitOrder', 'pwSubmitQuiz'].forEach((bid) => {
+        const b = document.getElementById(bid);
+        if (b) b.style.display = 'none';
+      });
+      if (helpEl) helpEl.style.display = 'none';
+      if (tabsEl) tabsEl.style.display = 'none';
+      setPasswordUnlockSuccessCopy(method);
+      if (successEl) successEl.hidden = false;
+      if (method === 'debug' && typeof refreshDeveloperAccessUI === 'function') refreshDeveloperAccessUI();
+      updateBookUnlockEntry();
+    }
+
+    /**
+     * 失敗時の UI 共通処理。 error 表示 + input クリア + 再 focus。
+     * @param {HTMLInputElement|null} inputEl
+     * @param {string=} msg
+     * @param {{keepValue?:boolean}=} opts
+     */
+    function pwShowError(inputEl, msg, opts) {
+      opts = opts || {};
+      const errEl = document.getElementById('passwordUnlockError');
+      if (errEl) {
+        errEl.textContent = msg || 'ちがうよ！ もういちど！';
+        errEl.hidden = false;
+      }
+      if (inputEl) {
+        if (!opts.keepValue) inputEl.value = '';
+        try { inputEl.focus(); } catch (e) {}
+      }
+    }
+
+    // ===== Serial / Admin / Debug 経路 (既存 #passwordUnlockSubmit 互換) =====
     const pwSubmit = document.getElementById('passwordUnlockSubmit');
     if (pwSubmit) {
       pwSubmit.addEventListener('click', () => {
         const input = document.getElementById('passwordUnlockInput');
         const val = (input && input.value) || '';
+        if (!String(val).trim()) {
+          pwShowError(input, 'なにか いれてね');
+          return;
+        }
         const tier = window.PonoTier || {};
-        const bookOk = typeof tier.verifyBookPassword === 'function' && tier.verifyBookPassword(val);
-        const adminOk = !bookOk
+        // 新 verifySerialCode は内部で BOOK_PASSWORDS + SERIAL_CODES の両方を見るが、
+        // 万一未提供のビルドでも壊さないよう verifyBookPassword フォールバックを残す
+        const serialOk = (typeof tier.verifySerialCode === 'function' && tier.verifySerialCode(val))
+                      || (typeof tier.verifyBookPassword === 'function' && tier.verifyBookPassword(val));
+        const adminOk = !serialOk
           && typeof tier.verifyAdminPassword === 'function'
           && tier.verifyAdminPassword(val);
-        const debugOk = !bookOk && !adminOk
+        const debugOk = !serialOk && !adminOk
           && window.PonoDebugMode
           && typeof window.PonoDebugMode.unlock === 'function'
           && window.PonoDebugMode.unlock(val);
-        const ok = bookOk || adminOk || debugOk;
-        const errEl = document.getElementById('passwordUnlockError');
-        const successEl = document.getElementById('passwordUnlockSuccess');
-        const helpEl = document.querySelector('.password-modal-help');
-        if (ok) {
-          if (!debugOk) {
-            try {
-              localStorage.setItem('pono_premium', '1');
-              // sub tier は APP_BUILD で決まるため、 localStorage に pono_sub_active は書かない
-              // (本版で 'abcd' を入れても book までしか上がらない)
-            } catch (e) {}
-          }
-          if (errEl) errEl.hidden = true;
-          if (input) input.style.display = 'none';
-          pwSubmit.style.display = 'none';
-          if (helpEl) helpEl.style.display = 'none';
-          setPasswordUnlockSuccessCopy(debugOk ? 'debug' : 'book');
-          if (successEl) successEl.hidden = false;
-          if (debugOk) refreshDeveloperAccessUI();
-          updateBookUnlockEntry();
-        } else {
-          if (errEl) errEl.hidden = false;
-          if (input) {
-            input.value = '';
-            input.focus();
-          }
+        if (serialOk)      pwFinalizeSuccess('serial');
+        else if (adminOk)  pwFinalizeSuccess('admin');
+        else if (debugOk)  pwFinalizeSuccess('debug');
+        else               pwShowError(input, 'ちがうよ！ もういちど あいことばを かくにんしてね');
+      });
+    }
+
+    // ===== Amazon 注文番号 経路 =====
+    const pwSubmitOrder = document.getElementById('pwSubmitOrder');
+    if (pwSubmitOrder) {
+      pwSubmitOrder.addEventListener('click', () => {
+        const input = document.getElementById('pwOrderInput');
+        const val = (input && input.value) || '';
+        if (!String(val).trim()) {
+          pwShowError(input, 'ばんごうを いれてね');
+          return;
+        }
+        const tier = window.PonoTier || {};
+        const ok = typeof tier.verifyOrderId === 'function' && tier.verifyOrderId(val);
+        if (!ok) {
+          pwShowError(input, 'ばんごうの かたちが ちがうよ (れい: 250-1234567-1234567)', { keepValue: true });
+          return;
+        }
+        // 重複利用検知 (柔らかい通知のみ。 unlock は通す)
+        let isDuplicate = false;
+        try {
+          const norm = String(val).trim()
+            .replace(/[\s　]/g, '')
+            .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+            .replace(/[ー–—−]/g, '-');
+          const arr = JSON.parse(localStorage.getItem('pono_unlocked_orders') || '[]');
+          if (Array.isArray(arr) && arr.indexOf(norm) >= 0) isDuplicate = true;
+          pwFinalizeSuccess('order_id', { orderId: norm });
+        } catch (e) {
+          pwFinalizeSuccess('order_id', { orderId: String(val).trim() });
+        }
+        // duplicate は success body にだけ柔らかく追記 (block はしない)
+        if (isDuplicate) {
+          const bodyEl = document.getElementById('passwordUnlockSuccessBody');
+          if (bodyEl) bodyEl.innerHTML = 'この ばんごうは すでに つかってあるよ —<br>そのまま ひらいたよ';
         }
       });
     }
+
+    // ===== 絵本クイズ 経路 =====
+    const pwSubmitQuiz = document.getElementById('pwSubmitQuiz');
+    if (pwSubmitQuiz) {
+      pwSubmitQuiz.addEventListener('click', () => {
+        const input = document.getElementById('pwQuizInput');
+        const qBox = document.getElementById('pwQuizQuestion');
+        const qid = (qBox && qBox.dataset && qBox.dataset.qid) || '';
+        const val = (input && input.value) || '';
+        if (!String(val).trim()) {
+          pwShowError(input, 'こたえを いれてね');
+          return;
+        }
+        if (!qid) {
+          pwShowError(input, 'クイズが よみこめなかったよ');
+          return;
+        }
+        const tier = window.PonoTier || {};
+        const ok = typeof tier.verifyQuizAnswer === 'function' && tier.verifyQuizAnswer(qid, val);
+        if (ok) pwFinalizeSuccess('quiz');
+        else    pwShowError(input, 'おしい！ えほんを よみかえしてみて', { keepValue: true });
+      });
+    }
+
+    // Enter キーで panel 内 submit を発火 (a11y / キーボードユーザー対応)
+    [
+      ['passwordUnlockInput', 'passwordUnlockSubmit'],
+      ['pwOrderInput', 'pwSubmitOrder'],
+      ['pwQuizInput', 'pwSubmitQuiz'],
+    ].forEach(([inputId, btnId]) => {
+      const inp = document.getElementById(inputId);
+      const btn = document.getElementById(btnId);
+      if (!inp || !btn) return;
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); btn.click(); }
+      });
+    });
 
     // デバッグ用リセットボタン: 解錠状態を解除して free に戻す
     // (success div 内に存在するため、success が hidden の間は表示されない)
@@ -9544,6 +9972,9 @@
           localStorage.removeItem('pono_premium');
           localStorage.removeItem('pono_sub_active');
           localStorage.removeItem('pono_welcome_book_seen');
+          localStorage.removeItem('pono_book_unlock_method');
+          localStorage.removeItem('pono_book_unlock_at');
+          localStorage.removeItem('pono_unlocked_orders');
         } catch (e) {}
         setTimeout(() => location.reload(), 100);
       });

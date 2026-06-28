@@ -402,6 +402,131 @@
     return false;
   }
 
+  // ============================================================
+  // ---- Book Tier Unlock 拡張: シリアル / Amazon 注文番号 / 絵本クイズ ----
+  //
+  // 既存 verifyBookPassword (BOOK_PASSWORDS) は 「シリアル」 タブの一次経路として継続使用。
+  // 追加で以下 3 種のクライアント側 verifier を提供する:
+  //   1) verifySerialCode(val)             … BOOK_PASSWORDS 互換 + SERIAL_CODES 追加
+  //   2) verifyOrderId(val)                … Amazon 注文番号の形式 (3-7-7) のみ照合
+  //   3) verifyQuizAnswer(questionId, val) … 絵本内容クイズの正解判定 (答え揺らぎ吸収)
+  // ヘルパー pickRandomQuiz() / QUIZ_QUESTIONS / normalizeAnswer も合わせて公開。
+  //
+  // 設計方針:
+  //   - すべて client side のみで完結 (server 検証は将来 Stripe/IAP 経路で別途実装)
+  //   - 注文番号は形式 spoofing 可能 (サーバ無しでは原理的に防げない) ため
+  //     friction 低めの導線として割り切り、 重複 ID 検知だけ別途呼び出し側で行う想定
+  //   - クイズ答え揺らぎは normalizeAnswer (全角→半角 / カナ→ひらがな / 空白除去 /
+  //     語尾敬称除去 + lowercase) で吸収。 漢字バリアントは answers 配列に明示列挙
+  // ============================================================
+
+  // 印字シリアル候補 (将来 増刷時はここに追記)。 BOOK_PASSWORDS と論理的に同等扱い。
+  var SERIAL_CODES = [];
+
+  // Amazon 注文番号 (3桁-7桁-7桁)
+  var ORDER_ID_RE = /^\d{3}-\d{7}-\d{7}$/;
+
+  // 絵本内容クイズ (現状 1 問。 将来 admin から差替 or 配列追加)
+  var QUIZ_QUESTIONS = [
+    {
+      id: 'pono_first_friend',
+      q: 'えほんで さいしょに でてくる ポノの おともだちの どうぶつは？',
+      answers: ['ハリネズミ', 'はりねずみ', '針鼠', 'ハリちゃん', 'ハリ']
+    }
+  ];
+
+  /**
+   * 答え揺らぎ吸収のための正規化関数。
+   *  - trim 前後空白
+   *  - 全角英数記号 (Ｕ＋ＦＦ０１..ＵＦＦ５Ｅ) → 半角 (0xFEE0 オフセット)
+   *  - カタカナ (U+30A1..U+30F6) → ひらがな (-0x60)
+   *  - 空白 / 全角空白 / 中黒 (・) を削除
+   *  - 語尾 「くん」 「さん」 「ちゃん」 「さま」 「様」 を 1 度だけ削除
+   *  - 最後に toLowerCase
+   * @param {string} s 入力文字列
+   * @returns {string} 正規化済み文字列 (照合用)
+   */
+  function normalizeAnswer(s) {
+    if (s == null) return '';
+    var t = String(s).trim();
+    t = t.replace(/[！-～]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0); });
+    t = t.replace(/[ァ-ヶ]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0) - 0x60); });
+    t = t.replace(/[\s　・]/g, '');
+    t = t.replace(/(くん|さん|ちゃん|さま|様)$/, '');
+    return t.toLowerCase();
+  }
+
+  /**
+   * 印字シリアル / 旧 BOOK_PASSWORD を検証する。
+   * 大文字小文字は無視。 BOOK_PASSWORDS と SERIAL_CODES の両方を試す。
+   * @param {string} val ユーザー入力
+   * @returns {boolean}
+   */
+  function verifySerialCode(val) {
+    if (val == null) return false;
+    var raw = String(val).trim();
+    if (!raw) return false;
+    var upper = raw.toUpperCase();
+    var i, p;
+    for (i = 0; i < BOOK_PASSWORDS.length; i++) {
+      p = BOOK_PASSWORDS[i];
+      if (p === raw || p === upper || p.toUpperCase() === upper) return true;
+    }
+    for (i = 0; i < SERIAL_CODES.length; i++) {
+      p = SERIAL_CODES[i];
+      if (p === raw || p === upper || p.toUpperCase() === upper) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Amazon 注文番号 (3桁-7桁-7桁) を検証する。
+   * 形式チェックのみ。 全角数字 / 各種ダッシュ / 空白を半角ハイフンに正規化してから regex 照合。
+   * @param {string} val ユーザー入力
+   * @returns {boolean}
+   */
+  function verifyOrderId(val) {
+    if (val == null) return false;
+    var raw = String(val).trim()
+      .replace(/[\s　]/g, '-')
+      .replace(/[０-９]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0); })
+      .replace(/[ー–—−]/g, '-')
+      .replace(/-+/g, '-');
+    return ORDER_ID_RE.test(raw);
+  }
+
+  /**
+   * 絵本クイズの解答を検証する。
+   * 内部で normalizeAnswer を通してから answers と比較。
+   * @param {string} questionId QUIZ_QUESTIONS の id
+   * @param {string} val ユーザー入力
+   * @returns {boolean}
+   */
+  function verifyQuizAnswer(questionId, val) {
+    if (!questionId) return false;
+    var q = null;
+    for (var i = 0; i < QUIZ_QUESTIONS.length; i++) {
+      if (QUIZ_QUESTIONS[i].id === questionId) { q = QUIZ_QUESTIONS[i]; break; }
+    }
+    if (!q) return false;
+    var n = normalizeAnswer(val);
+    if (!n) return false;
+    for (var j = 0; j < q.answers.length; j++) {
+      if (normalizeAnswer(q.answers[j]) === n) return true;
+    }
+    return false;
+  }
+
+  /**
+   * QUIZ_QUESTIONS からランダムに 1 問を返す。 配列が空なら null。
+   * @returns {{id:string, q:string, answers:string[]} | null}
+   */
+  function pickRandomQuiz() {
+    if (!QUIZ_QUESTIONS.length) return null;
+    var idx = Math.floor(Math.random() * QUIZ_QUESTIONS.length);
+    return QUIZ_QUESTIONS[idx];
+  }
+
   function getTierLockPromoCopy(opts) {
     opts = opts || {};
     if (getTier() === 'free') {
@@ -532,6 +657,13 @@
     isKatakanaUnlocked: isKatakanaUnlocked,
     verifyBookPassword: verifyBookPassword,
     verifyAdminPassword: verifyAdminPassword,
+    // Book Tier Unlock 拡張 (シリアル / Amazon 注文番号 / 絵本クイズ)
+    verifySerialCode: verifySerialCode,
+    verifyOrderId: verifyOrderId,
+    verifyQuizAnswer: verifyQuizAnswer,
+    pickRandomQuiz: pickRandomQuiz,
+    normalizeAnswer: normalizeAnswer,
+    QUIZ_QUESTIONS: QUIZ_QUESTIONS,
     showTierLockPromo: showTierLockPromo,
     showSubscribePromo: showSubscribePromo,
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,

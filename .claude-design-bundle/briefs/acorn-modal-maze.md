@@ -9,18 +9,25 @@
 >
 > 新案で十分子供向けの「先生キャラ + 喜び表現 + 大きな数字」 構造が成立しているため、 本 brief の **3 素材 (maze_acorn_modal_frame.webp / maze_acorn_modal_leaves.webp / maze_acorn_burst_glow.webp) の発注は一旦保留**。
 >
+> ### Phase 1.2 訂正 (2026-06-28 v1722)
+>
+> - Phase 1.1 で誤って owl_professor_guide.webp (フクロウ博士キャラ) を maze panel::before に重畳していたが、 ユーザー指摘により撤去 (Phase 1.2 v1722)
+> - ユーザーの真の要望は「quizland (フクロウ博士のなぞなぞ) で使われている問題提示ウィンドウの **枠デザイン** を流用」 = キャラではなく cream / 茶木枠 / 葉装飾の panel skin (ウィンドウ枠) のみ流用
+> - Phase 1.2 では maze panel に quizland 互換の panel skin (枠のみ) を適用し、 フクロウ博士キャラは乗せない
+>
 > 復活トリガ (どれかが満たされたら本 brief を再起動):
 >
 > 1. quizland 流用版で 「maze の世界観 (森・どんぐり・冒険) が表現できていない」 とユーザー判断が出た場合
 > 2. 他ゲーム (oto / bento / puzzle 等) のモーダルでも装飾レイヤー素材を共通発注することになり、 シリーズとして再設計する場合
 > 3. Phase 1.5 で maze 専用のスペシャル演出 (stage クリア祝祭) が独立要件として立ち上がった場合
+> 4. **フクロウ博士キャラを再度乗せる場合はユーザー明示確認必須 (今回の誤読は二度と起こさない)**
 >
 > 復活時の作業:
 >
 > - 本 brief をそのまま Claude Design に渡し、 3 素材 (案 a / 案 b) を並列生成
 > - 採用案を `assets/ui/maze/acorn-modal/` に配置
 > - `common/acorn-modal-shared.css` の `[data-game-id="maze"]` ブロックに `border-image` / `::before` (leaves) / `::after` (burst) を再追加
-> - 既存の owl_professor_guide.webp 重畳は維持するか、 リス系キャラに差し替えるかをユーザー判断
+> - owl_professor_guide.webp 重畳を再導入する場合は、 ユーザー明示確認後に panel::before へ追加 (Phase 1.2 訂正の経緯を必ず引用)
 >
 > ---
 
