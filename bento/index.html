@@ -5109,8 +5109,12 @@ body.bento-complete-open #sk-intro {
 .fav-close:active { transform: scale(0.9); }
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </head>
-<body>
+<body data-game-id="bento">
 
 <!-- BGM (loop) -->
 <audio id="bgm" loop preload="auto" src="../assets/audio/bento_bgm.mp3"></audio>
@@ -5121,8 +5125,8 @@ body.bento-complete-open #sk-intro {
     <div class="title-screen__start">▶ あそびかたを えらぶ</div>
     <div class="title-screen__mode-buttons" aria-label="あそびかた">
       <button type="button" class="title-screen__mode-btn" data-bento-start-mode="request">
-        <span class="title-screen__mode-badge" id="title-screen-difficulty-badge" data-difficulty="" role="img" aria-label="難易度 ふつう" hidden>
-          <span class="title-screen__mode-badge-stars" aria-hidden="true">★★</span><span class="title-screen__mode-badge-label">ふつう</span>
+        <span class="title-screen__mode-badge" id="title-screen-difficulty-badge" data-difficulty="" role="img" aria-label="" hidden>
+          <span class="title-screen__mode-badge-stars" aria-hidden="true"></span><span class="title-screen__mode-badge-label"></span>
         </span>
         おねがいモード
         <small>どうぶつの おべんとうを つくる</small>
@@ -8056,7 +8060,23 @@ function revealReactionWithDrama(reaction) {
         if (window.addAcornsDaily && window.getDailyAcorns) {
           var already = window.getDailyAcorns('bento');
           var diff = (acorns | 0) - already;
-          if (diff > 0) granted = window.addAcornsDaily('bento', diff, 5, { reason: 'bento_complete' });
+          if (diff > 0) granted = window.addAcornsDaily('bento', diff, 5, { reason: 'bento_complete', suppressRewardModal: true });
+        }
+        // Phase 2: PonoAcornModal を autoHide:0 (tap/ESC/× のみで dismiss) で表示
+        if (granted > 0 && window.PonoAcornModal) {
+          try {
+            var _bentoDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+            var _bentoDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+            var _bentoIsCapped = (_bentoDailyTotal != null) && (_bentoDailyTotal >= _bentoDailyCap);
+            new window.PonoAcornModal({
+              gameId: 'bento',
+              granted: granted,
+              dailyTotal: _bentoDailyTotal,
+              dailyCap: _bentoDailyCap,
+              state: _bentoIsCapped ? 'capped' : 'idle',
+              autoHide: 0
+            }).show();
+          } catch (e) { try { console.warn('[bento] PonoAcornModal show failed', e); } catch (_) {} }
         }
       }
       if (acornNumEl) acornNumEl.textContent = granted > 0 ? ('+' + granted) : '0';

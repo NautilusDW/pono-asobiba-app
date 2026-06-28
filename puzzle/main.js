@@ -977,7 +977,26 @@ function showSuccessModal() {
   if (!window[__rewardKey]) {
     window[__rewardKey] = true;
     if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
-    if (window.addAcornsDaily) window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear' });
+    var _puzzleGranted = 0;
+    if (window.addAcornsDaily) {
+      _puzzleGranted = window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear', suppressRewardModal: true }) || 0;
+    }
+    // Phase 2: PonoAcornModal を autoHide:0 (tap/ESC/× のみで dismiss) で表示
+    if (_puzzleGranted > 0 && window.PonoAcornModal) {
+      try {
+        var _puzzleDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+        var _puzzleDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+        var _puzzleIsCapped = (_puzzleDailyTotal != null) && (_puzzleDailyTotal >= _puzzleDailyCap);
+        new window.PonoAcornModal({
+          gameId: 'puzzle',
+          granted: _puzzleGranted,
+          dailyTotal: _puzzleDailyTotal,
+          dailyCap: _puzzleDailyCap,
+          state: _puzzleIsCapped ? 'capped' : 'idle',
+          autoHide: 0
+        }).show();
+      } catch (e) { try { console.warn('[puzzle] PonoAcornModal show failed', e); } catch (_) {} }
+    }
     processPuzzleStamps(successPartner, normalizedStageId);
 
     // スタンプラリー: プレイ記録 (1ステージ 1 回でよいので報酬付与時にまとめる)

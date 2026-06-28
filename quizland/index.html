@@ -22,6 +22,7 @@
 <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('quizland');});</script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/difficulty.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="../common/narration.js"></script>
 <script src="../js/quizland-babble.js"></script>
@@ -3731,7 +3732,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
       <span class="diff-stars" aria-label="ほし ひとつ">
         <span class="diff-star" aria-hidden="true"></span>
       </span>
-      <span class="diff-label">かんたん</span>
+      <span class="diff-label">やさしい</span>
     </button>
     <button class="diff-btn" data-diff="normal" aria-pressed="false">
       <span class="diff-stars" aria-label="ほし ふたつ">
@@ -4002,12 +4003,21 @@ function isPlaytestInEditor() {
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
 let selectedCategories = Object.fromEntries(ALL_CATS.map(k => [k, true]));
 // 難易度
-// Lv1 = かんたん, Lv2 = ふつう, Lv3 = むずかしい。カテゴリは分けずに全体から混ぜる。
+// Lv1 = やさしい, Lv2 = ふつう, Lv3 = むずかしい。カテゴリは分けずに全体から混ぜる。
 // 各レベルだけを抽出するために min == max のレンジで指定する
+// 表示ラベルは common/difficulty.js (PonoDifficulty) で一元化。 旧 'かんたん' は
+// PonoDifficulty.normalizeLabel() が EASY に吸収するため localStorage 互換維持。
 const DIFF_LEVELS = ['easy', 'normal', 'hard'];
 const DIFF_MIN_LEVEL = { easy: 1, normal: 2, hard: 3 };
 const DIFF_MAX_LEVEL = { easy: 1, normal: 2, hard: 3 };
-const DIFF_LABELS = { easy: 'かんたん', normal: 'ふつう', hard: 'むずかしい' };
+const DIFF_LABELS = (function () {
+  var PD = (typeof window !== 'undefined') ? window.PonoDifficulty : null;
+  if (PD && PD.DIFFICULTY) {
+    return { easy: PD.DIFFICULTY.EASY.label, normal: PD.DIFFICULTY.NORMAL.label, hard: PD.DIFFICULTY.HARD.label };
+  }
+  // PonoDifficulty 未読込時のフォールバック (新ラベルに統一)
+  return { easy: 'やさしい', normal: 'ふつう', hard: 'むずかしい' };
+})();
 const DIFF_STORAGE_KEY = 'pono_quizland_difficulty';
 let selectedDifficulty = null; // 確認後にだけ 'easy'|'normal'|'hard' を入れる
 let pendingDifficulty = null;  // 難易度画面で一時選択中の値

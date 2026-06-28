@@ -1726,12 +1726,12 @@ body.image-stage-mode .game-wrap {
 }
 .water-rider__pono {
   position: absolute;
-  left: 44%;
-  top: -26%;
-  width: 29%;
+  left: 43%;
+  top: -7%;
+  width: 22%;
   max-height: none !important;
   object-fit: contain;
-  transform: translateX(-50%) rotate(-4deg);
+  transform: translateX(-50%) rotate(-8deg);
   filter: drop-shadow(0 4px 6px rgba(33,75,83,0.22));
 }
 .water-skate-guide {
@@ -1798,7 +1798,7 @@ body.image-stage-mode .game-wrap {
   left: 15%;
   right: 13%;
   top: 55%;
-  height: 22%;
+  height: 10%;
   transform: translateY(-50%) rotate(-8deg);
   border-radius: 999px;
   background:
@@ -2460,25 +2460,6 @@ body.image-stage-mode .game-wrap {
     padding: 5px 10px;
     font-size: 0.78rem;
   }
-  .water-slots {
-    left: 6%;
-    right: 6%;
-    top: 50%;
-    bottom: auto;
-    height: 58px;
-    max-height: calc(100% - 16px);
-    transform: translateY(-50%);
-    gap: 6px;
-  }
-  .water-slot {
-    min-height: 58px;
-    border-width: 2px;
-    border-radius: 12px;
-    font-size: 0.76rem;
-  }
-  .water-slot img {
-    max-height: 46px !important;
-  }
   .water-amenbo {
     width: min(18vw, 82px);
     max-height: min(22dvh, 66px) !important;
@@ -2509,21 +2490,6 @@ body.image-stage-mode .game-wrap {
     top: 52%;
     height: 40%;
     max-height: none;
-  }
-  .water-complete-planks {
-    left: 10%;
-    right: 10%;
-    top: 52%;
-    height: 42%;
-    max-height: none;
-    gap: 3px;
-  }
-  .water-complete-planks img {
-    max-height: min(23dvh, 96px) !important;
-  }
-  .water-complete-pono-track {
-    width: clamp(40px, 8.2vw, 58px);
-    top: 52%;
   }
   .water-complete-status {
     min-height: 1.45em;
@@ -7015,6 +6981,11 @@ function _waterSkateSetRider(point, state) {
   }
 }
 
+function _waterSkateSetGuide(text) {
+  const guide = document.getElementById('waterSkateGuide');
+  if (guide) guide.textContent = text || '';
+}
+
 function _waterSkateAddRipple(x, y) {
   const gs = _waterGameState;
   if (!gs) return;
@@ -7063,6 +7034,7 @@ function _onWaterSkatePointerDown(ev) {
   gs.glide = null;
   gs.points = [start, p];
   gs.status = 'ひかる みずを かいてね';
+  _waterSkateSetGuide('そのまま むこうへ なぞってね');
   _waterSkateAddRipple(p.x, p.y);
   _waterSkateAddSparkles(p.x, p.y, 7);
 }
@@ -7091,6 +7063,7 @@ function _onWaterSkatePointerUp(ev) {
   gs.phase = 'gliding';
   gs.success = success;
   gs.status = success ? 'すいすいー！' : 'もうすこし とおくまで かこう';
+  _waterSkateSetGuide('すいすいー！');
   const len = Math.max(1, _waterSkatePathLength(gs.points));
   gs.glide = {
     startedAt: performance.now(),
@@ -7241,6 +7214,7 @@ function _waterSkateLoop(now) {
       gs.glide = null;
       gs.status = 'もういちど みずの みちを かこう';
       _waterSkateSetRider(_waterSkateAnchor('start'), 'idle');
+      _waterSkateSetGuide('ここから むこうまで なぞってね');
       _renderWaterBridgeGame();
     }
   }

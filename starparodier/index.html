@@ -332,8 +332,12 @@
     }
   }
 </style>
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </head>
-<body>
+<body data-game-id="starparodier">
 <div id="app">
   <canvas id="gameCanvas" aria-label="ポノのスターパロジャー"></canvas>
 
@@ -1547,7 +1551,26 @@
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'starparodier', event: 'clear' });
     }
-    if (window.addAcornsDaily) window.addAcornsDaily('starparodier', 5, 5, { reason: 'starparodier_clear' });
+    var _starparoGranted = 0;
+    if (window.addAcornsDaily) {
+      _starparoGranted = window.addAcornsDaily('starparodier', 5, 5, { reason: 'starparodier_clear', suppressRewardModal: true }) || 0;
+    }
+    // Phase 2: PonoAcornModal を autoHide:0 (tap/ESC/× のみで dismiss) で表示
+    if (_starparoGranted > 0 && window.PonoAcornModal) {
+      try {
+        var _starparoDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+        var _starparoDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+        var _starparoIsCapped = (_starparoDailyTotal != null) && (_starparoDailyTotal >= _starparoDailyCap);
+        new window.PonoAcornModal({
+          gameId: 'starparodier',
+          granted: _starparoGranted,
+          dailyTotal: _starparoDailyTotal,
+          dailyCap: _starparoDailyCap,
+          state: _starparoIsCapped ? 'capped' : 'idle',
+          autoHide: 0
+        }).show();
+      } catch (e) { try { console.warn('[starparodier] PonoAcornModal show failed', e); } catch (_) {} }
+    }
     showOverlay(CURRENT_STAGE.clearTitle, CURRENT_STAGE.clearText, 'もういちど');
   }
 

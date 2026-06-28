@@ -302,8 +302,12 @@
     }
   }
 </style>
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </head>
-<body>
+<body data-game-id="undersea-cave">
 <div id="app">
   <canvas id="gameCanvas" aria-label="ポノの海底洞窟たんけん"></canvas>
   <div class="hud" aria-live="polite">
@@ -627,7 +631,26 @@
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({ gameId: 'undersea-cave', event: 'clear' });
     }
-    if (window.addAcornsDaily) window.addAcornsDaily('undersea-cave', 5, 5, { reason: 'undersea_cave_clear' });
+    var _underseaGranted = 0;
+    if (window.addAcornsDaily) {
+      _underseaGranted = window.addAcornsDaily('undersea-cave', 5, 5, { reason: 'undersea_cave_clear', suppressRewardModal: true }) || 0;
+    }
+    // Phase 2: PonoAcornModal を autoHide:0 (tap/ESC/× のみで dismiss) で表示
+    if (_underseaGranted > 0 && window.PonoAcornModal) {
+      try {
+        var _underseaDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+        var _underseaDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+        var _underseaIsCapped = (_underseaDailyTotal != null) && (_underseaDailyTotal >= _underseaDailyCap);
+        new window.PonoAcornModal({
+          gameId: 'undersea-cave',
+          granted: _underseaGranted,
+          dailyTotal: _underseaDailyTotal,
+          dailyCap: _underseaDailyCap,
+          state: _underseaIsCapped ? 'capped' : 'idle',
+          autoHide: 0
+        }).show();
+      } catch (e) { try { console.warn('[undersea-cave] PonoAcornModal show failed', e); } catch (_) {} }
+    }
   }
 
   function updateHud() {

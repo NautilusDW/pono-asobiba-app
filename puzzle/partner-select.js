@@ -89,11 +89,19 @@ window.PonoPartnerSelect = (function () {
 
   function buildDifficultyBadge(difficulty) {
     if (!difficulty) return null;
+    // 表示ラベルは common/difficulty.js (PonoDifficulty) で一元化。 未読込時のみ
+    // フォールバックで埋め込み定義を使う (旧 'かんたん' → 'やさしい' に統一)。
     var label = '';
-    if (difficulty === 'easy')        { label = 'かんたん';   }
-    else if (difficulty === 'normal') { label = 'ふつう';     }
-    else if (difficulty === 'tricky') { label = 'むずかしい'; }
-    else return null;
+    var PD = (typeof window !== 'undefined') ? window.PonoDifficulty : null;
+    if (difficulty === 'easy') {
+      label = (PD && PD.DIFFICULTY && PD.DIFFICULTY.EASY) ? PD.DIFFICULTY.EASY.label : 'やさしい';
+    } else if (difficulty === 'normal') {
+      label = (PD && PD.DIFFICULTY && PD.DIFFICULTY.NORMAL) ? PD.DIFFICULTY.NORMAL.label : 'ふつう';
+    } else if (difficulty === 'tricky') {
+      label = (PD && PD.DIFFICULTY && PD.DIFFICULTY.HARD) ? PD.DIFFICULTY.HARD.label : 'むずかしい';
+    } else {
+      return null;
+    }
 
     var badge = document.createElement('div');
     badge.className = 'pono-pselect__difficulty pono-pselect__difficulty--' + difficulty;
@@ -179,7 +187,7 @@ window.PonoPartnerSelect = (function () {
     );
     if (locked) card.setAttribute('aria-disabled', 'true');
 
-    // 難易度ラベル (かんたん / ふつう / むずかしい) — カード最上部
+    // 難易度ラベル (やさしい / ふつう / むずかしい) — カード最上部
     var difficulty = resolveDifficulty(p);
     var diffBadge = buildDifficultyBadge(difficulty);
     if (diffBadge) {
