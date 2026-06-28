@@ -310,52 +310,6 @@
   opacity: 0.85;
 }
 
-/* =============================================================
- * tap-only hint (autoHide:0 のとき限定の吹き出し風 hint)
- *  - acorn-modal.js は overlay に .pono-acorn-modal--tap-only と
- *    .pono-acorn-modal__tap-hint をセットで生成する。
- *  - 文言は acorn-copy.json の default.tapToDismiss (またはゲーム別
- *    entry.tapToDismiss) から渡される。 JS 内では hard-code しない。
- *  - 吹き出し三角は ::before、 自動消失せず JS の onclick/ESC/× を
- *    待つ UX を視覚的に伝える役割。 panel 下に少し離して配置。
- *  - autoHide が positive のゲーム (oto:4200 等) では DOM 自体が
- *    生成されないので、 既存挙動には影響しない。
- * ============================================================= */
-.pono-acorn-modal__tap-hint {
-  position: relative;
-  margin-top: clamp(14px, 2.6vw, 22px);
-  padding: 0.5em 1.1em;
-  background: rgba(255, 247, 220, 0.96);
-  color: #6d3b07;
-  font-size: clamp(13px, 2.6vw, 18px);
-  font-weight: 800;
-  line-height: 1.15;
-  border-radius: 999px;
-  box-shadow:
-    0 3px 0 rgba(118, 66, 0, 0.28),
-    0 6px 14px rgba(45, 20, 0, 0.22);
-  white-space: nowrap;
-  pointer-events: none;
-  /* 子供視認用に小さな pulse (CPU 軽い opacity アニメ) */
-  animation: pono-acorn-tapHintPulse 1.6s ease-in-out infinite;
-}
-
-.pono-acorn-modal__tap-hint::before {
-  content: '';
-  position: absolute;
-  top: -7px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid rgba(255, 247, 220, 0.96);
-}
-
-@keyframes pono-acorn-tapHintPulse {
-  0%, 100% { opacity: 0.86; transform: translateY(0); }
-  50%      { opacity: 1;    transform: translateY(-2px); }
-}
-
 .pono-acorn-modal--perfect .pono-acorn-modal__label,
 .pono-acorn-modal--perfect .pono-acorn-modal__progress {
   color: var(--acorn-copy-color-perfect);

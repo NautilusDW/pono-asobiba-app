@@ -56,29 +56,21 @@
   // 実際の本文は common/acorn-copy-loader.js が common/acorn-copy.json を
   // fetch して window.PonoAcornCopy.get(gameId, state) を露出する。
   // loader が未読込 / fetch 失敗時は下記 DEFAULT_COPY が使われる。
-  // tapToDismiss は autoHide=0 (tap-only) のときだけ panel 下に
-  // 吹き出し風 hint として表示される 1 行コピー。 catalog 側の
-  // default.tapToDismiss でグローバル既定を上書きできる。
-  var DEFAULT_TAP_HINT = 'タップして つぎへ';
-
   var DEFAULT_COPY = {
     idle: {
       kicker: 'やったね！',
       label: 'どんぐりを ゲットしたよ',
-      ariaLabel: 'どんぐりを ゲット',
-      tapToDismiss: DEFAULT_TAP_HINT
+      ariaLabel: 'どんぐりを ゲット'
     },
     capped: {
       kicker: 'おしまい！',
       label: 'きょうのぶんは いっぱいだよ',
-      ariaLabel: 'どんぐり きょうのぶんは いっぱい',
-      tapToDismiss: DEFAULT_TAP_HINT
+      ariaLabel: 'どんぐり きょうのぶんは いっぱい'
     },
     perfect: {
       kicker: 'パーフェクト！',
       label: 'すごい！どんぐりを ゲット！',
-      ariaLabel: 'パーフェクト どんぐり ゲット',
-      tapToDismiss: DEFAULT_TAP_HINT
+      ariaLabel: 'パーフェクト どんぐり ゲット'
     }
   };
 
@@ -96,35 +88,16 @@
     var kicker = raw.kicker || raw.title || base.kicker || '';
     var label = raw.label || raw.main || raw.copy || base.label || '';
     var ariaLabel = raw.ariaLabel || raw.title || label || base.ariaLabel || '';
-    // tapToDismiss: catalog 側で entry/state/default に置けるよう
-    // raw → fallback → DEFAULT_TAP_HINT の順で resolve する。
-    var tapToDismiss = raw.tapToDismiss || base.tapToDismiss || DEFAULT_TAP_HINT;
     return {
       kicker: kicker,
       label: label,
-      ariaLabel: ariaLabel,
-      tapToDismiss: tapToDismiss
+      ariaLabel: ariaLabel
     };
   }
 
   function resolveCopy(gameId, state, override) {
     var fallback = DEFAULT_COPY[state] || DEFAULT_COPY.idle;
-    // catalog の default root (default.tapToDismiss) を fallback に注入し、
-    // ゲーム別 entry が tapToDismiss を持たなくても、 グローバル既定が拾える
-    // ようにする。 失敗時は in-JS の DEFAULT_TAP_HINT が後段で kick-in。
     var catalog = window.PonoAcornCopy;
-    var globalTapHint = null;
-    if (catalog && typeof catalog.getDefaultTapHint === 'function') {
-      try { globalTapHint = catalog.getDefaultTapHint(); } catch (e) { /* noop */ }
-    }
-    if (globalTapHint) {
-      fallback = {
-        kicker: fallback.kicker,
-        label: fallback.label,
-        ariaLabel: fallback.ariaLabel,
-        tapToDismiss: globalTapHint
-      };
-    }
     if (override && typeof override === 'object') {
       return normalizeCopy(override, fallback);
     }
@@ -310,20 +283,6 @@
       progress.textContent =
         'きょう ' + this.dailyTotal + ' / ' + this.dailyCap;
       panel.appendChild(progress);
-    }
-
-    // tap-only hint (autoHide=0 のとき限定で表示する吹き出し風 hint)。
-    // 文言は acorn-copy.json (default.tapToDismiss / 各ゲーム entry の
-    // tapToDismiss) で差し替え可能。 JS 内では hard-code しない。
-    // overlay 自体に modifier を付与し、 CSS 側で表示制御する
-    // (autoHide が positive のゲームでは非表示)。
-    if (this.autoHide === 0) {
-      overlay.classList.add('pono-acorn-modal--tap-only');
-      var tapHint = document.createElement('div');
-      tapHint.className = 'pono-acorn-modal__tap-hint';
-      tapHint.setAttribute('aria-hidden', 'true');
-      tapHint.textContent = copy.tapToDismiss || '';
-      panel.appendChild(tapHint);
     }
 
     overlay.appendChild(panel);
