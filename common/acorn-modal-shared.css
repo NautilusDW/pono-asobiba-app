@@ -537,13 +537,6 @@
     display: none !important;
   }
 
-  /* tap-hint の pulse も reduce 時は停止 (SC 2.3.3) */
-  .pono-acorn-modal__tap-hint {
-    animation: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
-
   /* maze override (quizland 問題ウィンドウ枠流用) の reduce 時静止化。
      Phase 1.2 でキャラ重畳 (owl_professor_guide) を完全撤去、 quizland の
      問題出題モーダル枠 (cream paper + 茶木枠 + 葉飾り PNG) を流用する方針へ
@@ -661,46 +654,6 @@
   z-index: 1;
 }
 
-/* -------------------------------------------------------------
- * maze tap-hint: panel 外配置 (Phase 1.4 btn-fit)
- *
- * 課題: panel に aspect-ratio: 1200/609 + align-content: center を適用した結果、
- *   tap-hint が Fukuro_frame_001.png の下端葉装飾と衝突 or panel 下端から
- *   はみ出して見えるバグ (research の rootCause)。
- *
- * 解決方針 (research の fix 案 2 を採用):
- *   tap-hint を absolute で panel 下に浮かせ、 葉飾り PNG の領域とは
- *   別ゾーンとして視覚分離する。 これにより:
- *     - aspect-ratio: 1200/609 と Fukuro frame の contain 配置は無改変
- *       (画像 AR 禁則ルール 100% 遵守)
- *     - 親 panel の grid alignment / padding にも触れない
- *     - 他ゲーム (oto/quizland/bento 等) の tap-hint には影響しない
- *       (selector scope が [data-game-id="maze"])
- *
- * 位置:
- *   - 親 panel が relative なので bottom: 負値で panel 下に浮かせる
- *   - 水平センターは left:0 + right:0 + margin-inline:auto + width:max-content
- *     (transform を避け、 pono-acorn-tapHintPulse keyframe の translateY と
- *     干渉しないようにする)
- *   - margin-top は base CSS の値 (clamp(14px, 2.6vw, 22px)) を 0 に
- *     上書きして、 grid の自然なフロー位置から外す
- *   - ::before の吹き出し三角は そのまま継承 (上向き、 panel 側を指す)
- * ------------------------------------------------------------- */
-[data-game-id="maze"] .pono-acorn-modal__tap-hint {
-  /* 中央寄せは left:0/right:0 + margin-inline:auto + width:max-content で行う。
-     transform を使わないのは、 base CSS の pono-acorn-tapHintPulse keyframe が
-     transform: translateY(...) を上書きするため、 transform:translateX(-50%) と
-     衝突して水平センターが壊れるリスクを避ける目的。 */
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: clamp(-72px, -9vw, -56px);
-  margin-inline: auto;
-  margin-top: 0;
-  width: max-content;
-  max-width: 92vw;
-  z-index: 2;
-}
 /* dismiss (×) は panel の grid (align-content/justify-items: center) に
    引きずられないよう absolute 配置を再宣言。 Fukuro_frame_001.png の
    右上葉装飾と重ならないよう top/right を base より内側に寄せる
