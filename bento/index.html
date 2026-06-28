@@ -5669,7 +5669,7 @@ const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', size: 130, rotation: 3 },
   { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', size: 292, rotation: -4 },
   { img: FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', name: 'キャベツ',    cat: 'veg',  sk: 'g', size: 170, rotation: 0, brushItem: true, brushLevel: 1, stackTarget: true, brushImages: [FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_small.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_large.png'] },
-  { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 72, rotation: -4 },
+  { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', size: 72, cupSize: 82, rotation: -4 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_ninjin_ingen.png',     name: 'にんじんいんげん', cat: 'veg',  sk: 'g', size: 112, cupSize: 92, rotation: 1 },
   { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', size: 136, rotation: -1 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_ichigo.png',           name: 'いちご',           cat: 'fruit', sk: 'g', size: 115, rotation: -5 },
@@ -8874,7 +8874,9 @@ function getCupFoodChildSize(def, cup) {
   if (simpleBentoMode) {
     const max = Math.max(112, Math.round((cup.size || 190) * 0.74));
     if (def.brushItem) return clamp(Math.round((cup.size || 190) * 0.68), 116, Math.min(142, max));
-    return clamp(def.cupSize || def.size || 128, 106, Math.min(142, max));
+    const base = def.cupSize || def.size || 128;
+    const min = def.cupSize && def.cupSize < 106 ? 64 : 106;
+    return clamp(base, min, Math.min(142, max));
   }
   if (def.brushItem) return Math.min(126, Math.round((cup.size || 190) * 0.66));
   return Math.min(def.cupSize || def.size || 120, Math.round((cup.size || 190) * 0.78));
@@ -10148,22 +10150,34 @@ function getSimpleDecorSlots(box, tier) {
   ];
   return points.map((p, idx) => makeSimpleSlot('decor', tier, idx, p));
 }
+function getSimpleFoodSpreadPoints(box) {
+  const b = getFoodPlacementBounds(box);
+  const xLeft = b.x + b.w * 0.24;
+  const xRight = b.x + b.w * 0.76;
+  const yTop = b.y + b.h * 0.28;
+  const yBottom = b.y + b.h * 0.72;
+  return [
+    { x: xLeft, y: yTop },
+    { x: xRight, y: yTop },
+    { x: xLeft, y: yBottom },
+    { x: xRight, y: yBottom },
+    { x: b.x + b.w * 0.50, y: b.y + b.h * 0.52 },
+  ];
+}
+function getSimpleFoodSlots(kind, box, tier) {
+  const points = getSimpleFoodSpreadPoints(box);
+  const order = kind === 'main-food' ? [0, 1] : [2, 3, 4];
+  return order
+    .map(idx => points[idx])
+    .filter(Boolean)
+    .map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
+}
 function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) {
   const box = getSelectedBentoBox();
   const kind = getSimpleSlotKind(def);
   if (!box || !kind) return [];
   if (kind === 'decor') return getSimpleDecorSlots(box, tier);
-  if (kind === 'main-food') {
-    const points = (box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice();
-    const limit = Math.max(1, Math.min(2, points.length));
-    return points.slice(0, limit).map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
-  }
-  if (kind === 'side-food') {
-    const points = (box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice();
-    const sideStart = points.length >= 4 ? Math.max(2, points.length - 3) : Math.max(0, points.length - 2);
-    const sidePoints = points.slice(sideStart);
-    return sidePoints.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
-  }
+  if (kind === 'main-food' || kind === 'side-food') return getSimpleFoodSlots(kind, box, tier);
   if (kind === 'accessory') {
     const points = (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, 3);
     return points.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
@@ -10399,12 +10413,25 @@ function clampPointToCup(x, y, item, cup) {
 function getCupChildSlot(cup, index, childSize, total = 1) {
   const inner = getCupInnerRadius(cup, { size: childSize });
   if (total <= 1) return { x: cup.x, y: cup.y };
-  const radius = Math.min(inner * 0.72, Math.max(24, childSize * 0.58));
-  const angleOffset = total === 2 ? Math.PI : -Math.PI / 2;
+  const layouts = {
+    2: [[-1, 0.03], [1, -0.03]],
+    3: [[0, -1], [-0.88, 0.64], [0.88, 0.64]],
+  };
+  const layout = layouts[Math.min(total, 3)];
+  if (layout && layout[index]) {
+    const spreadX = Math.min(inner * 0.82, Math.max(30, childSize * 0.70));
+    const spreadY = Math.min(inner * 0.68, Math.max(24, childSize * 0.54));
+    return {
+      x: cup.x + layout[index][0] * spreadX,
+      y: cup.y + layout[index][1] * spreadY,
+    };
+  }
+  const radius = Math.min(inner * 0.84, Math.max(30, childSize * 0.64));
+  const angleOffset = -Math.PI / 2;
   const angle = angleOffset + (Math.PI * 2 * index / total);
   return {
     x: cup.x + Math.cos(angle) * radius,
-    y: cup.y + Math.sin(angle) * radius * 0.72,
+    y: cup.y + Math.sin(angle) * radius * 0.78,
   };
 }
 function layoutCupChildren(cup) {
