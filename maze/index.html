@@ -1660,7 +1660,6 @@ body.image-stage-mode .game-wrap {
   border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.02), rgba(16, 89, 101, 0.10)),
-    url('../assets/images/maze/gimmicks/water/water_line_skate_bg_20260628.png') center / cover no-repeat,
     radial-gradient(ellipse at 50% 54%, rgba(88, 177, 215, 0.88) 0 58%, rgba(63, 139, 188, 0.82) 72%, rgba(231, 249, 255, 0.86) 100%);
   overflow: hidden;
   touch-action: none;
@@ -1681,6 +1680,29 @@ body.image-stage-mode .game-wrap {
   z-index: 1;
   animation: waterSurfaceSheen 5.6s ease-in-out infinite;
 }
+.water-game__stage.is-water-scrolling .water-skate-start,
+.water-game__stage.is-water-scrolling .water-skate-goal {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.82);
+}
+.water-game__stage.is-water-scrolling .water-rider {
+  opacity: 0;
+  transform: translate(-50%, -54%) translateY(-10px) scale(0.92);
+}
+.water-game__stage.is-water-hit {
+  animation: waterHitShake 0.38s ease-out;
+}
+.water-game__stage.is-water-hit .water-hazard__zone {
+  border-color: rgba(255, 255, 255, 0.95);
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.40), transparent 32%),
+    rgba(255, 89, 66, 0.36);
+  box-shadow: 0 0 30px rgba(255,86,68,0.52), inset 0 0 30px rgba(255,244,186,0.34);
+}
+.water-game__stage.is-water-hit .water-skate-guide {
+  background: rgba(255, 248, 220, 0.94);
+  color: #b65235;
+}
 .water-skate-scroll-bg,
 .water-skate-course {
   position: absolute;
@@ -1691,14 +1713,53 @@ body.image-stage-mode .game-wrap {
   transform: translate3d(calc(var(--water-camera-x, 0) * -100% / var(--water-segments, 3)), 0, 0);
   transition: transform 0.72s cubic-bezier(.2, .82, .2, 1);
   pointer-events: none;
+  will-change: transform;
 }
 .water-skate-scroll-bg {
   z-index: 0;
+  display: flex;
+  background: #62d8df;
+  opacity: 1;
+  overflow: hidden;
+}
+.water-skate-bg-panel {
+  position: relative;
+  flex: 0 0 calc(100% / var(--water-segments, 3));
+  height: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.water-skate-bg-panel--1 {
+  background-image: url('../assets/images/maze/gimmicks/water/water_skate_panel_1_20260629.webp');
+}
+.water-skate-bg-panel--2 {
+  background-image: url('../assets/images/maze/gimmicks/water/water_skate_panel_2_20260629.webp');
+}
+.water-skate-bg-panel--3 {
+  background-image: url('../assets/images/maze/gimmicks/water/water_skate_panel_3_20260629.webp');
+}
+.water-skate-bg-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background:
-    repeating-linear-gradient(100deg, transparent 0 13%, rgba(255,255,255,0.12) 14%, transparent 16% 31%),
-    repeating-linear-gradient(18deg, transparent 0 18%, rgba(90, 218, 240, 0.10) 19%, transparent 21% 37%);
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(18, 112, 138, 0.08)),
+    radial-gradient(circle at 72% 26%, rgba(255,255,255,0.16), transparent 18%);
   mix-blend-mode: screen;
-  opacity: 0.32;
+  pointer-events: none;
+}
+.water-skate-bg-panel + .water-skate-bg-panel::before {
+  content: "";
+  position: absolute;
+  left: -3%;
+  top: 0;
+  z-index: 1;
+  width: 6%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(118, 224, 228, 0), rgba(207, 255, 255, 0.18), rgba(118, 224, 228, 0));
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
 .water-skate-course {
   z-index: 3;
@@ -1780,11 +1841,11 @@ body.image-stage-mode .game-wrap {
 .water-hazard__zone {
   position: absolute;
   inset: 0;
-  border: 3px dashed rgba(255, 255, 255, 0.76);
+  border: 4px dashed rgba(255, 255, 255, 0.82);
   background:
-    radial-gradient(circle, rgba(255,255,255,0.30), transparent 34%),
-    rgba(255, 128, 94, 0.24);
-  box-shadow: 0 0 20px rgba(255,122,83,0.28), inset 0 0 24px rgba(255,244,186,0.26);
+    radial-gradient(circle, rgba(255,255,255,0.34), transparent 34%),
+    rgba(255, 128, 94, 0.30);
+  box-shadow: 0 0 26px rgba(255,122,83,0.40), inset 0 0 28px rgba(255,244,186,0.30);
   animation: waterDangerPulse 1.45s ease-in-out infinite;
 }
 .water-hazard--sweep-y .water-hazard__zone,
@@ -1803,7 +1864,7 @@ body.image-stage-mode .game-wrap {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: clamp(42px, 6vw, 78px);
+  width: clamp(58px, 8.5vw, 102px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 6px 8px rgba(56, 55, 40, 0.26));
@@ -1834,6 +1895,7 @@ body.image-stage-mode .game-wrap {
   aspect-ratio: 1;
   border-radius: 50%;
   transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
   pointer-events: none;
 }
 .water-skate-start {
@@ -1877,6 +1939,7 @@ body.image-stage-mode .game-wrap {
   width: clamp(132px, 20vw, 240px);
   transform: translate(-50%, -54%);
   transform-origin: 50% 56%;
+  transition: opacity 0.22s ease, transform 0.22s ease;
   pointer-events: none;
   will-change: left, top, transform;
 }
@@ -1956,7 +2019,7 @@ body.image-stage-mode .game-wrap {
   border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.02), rgba(16, 89, 101, 0.10)),
-    url('../assets/images/maze/gimmicks/water/water_line_skate_bg_20260628.png') center / cover no-repeat,
+    url('../assets/images/maze/gimmicks/water/water_skate_panel_3_20260629.webp') right center / cover no-repeat,
     radial-gradient(ellipse at 50% 54%, rgba(88, 177, 215, 0.88) 0 58%, rgba(63, 139, 188, 0.82) 72%, rgba(231, 249, 255, 0.86) 100%);
   overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.7), 0 4px 14px rgba(0,0,0,0.12);
@@ -2029,9 +2092,17 @@ body.image-stage-mode .game-wrap {
   0%, 100% { opacity: 0.56; transform: translate3d(-1.2%, 0, 0) scale(1.01); }
   50%      { opacity: 0.86; transform: translate3d(1.2%, -1.4%, 0) scale(1.03); }
 }
+@keyframes waterHitShake {
+  0%   { transform: translateX(0); }
+  18%  { transform: translateX(-7px); }
+  38%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  82%  { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
 @keyframes waterDangerPulse {
-  0%, 100% { opacity: 0.72; transform: scale(0.985); }
-  50%      { opacity: 0.96; transform: scale(1.02); }
+  0%, 100% { opacity: 0.84; transform: scale(0.985); }
+  50%      { opacity: 1; transform: scale(1.03); }
 }
 @keyframes waterBugSweepY {
   0%, 100% { transform: translate(-50%, -138%) rotate(-7deg); }
@@ -2708,7 +2779,7 @@ body.image-stage-mode .game-wrap {
     width: min(28vw, 180px);
   }
   .water-hazard__bug {
-    width: clamp(32px, 6.5vw, 50px);
+    width: clamp(44px, 8vw, 66px);
   }
   .water-skate-start,
   .water-skate-goal {
@@ -7259,7 +7330,7 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'ぶつからない みちで こじまへ',
     statusReady: 'いっこめ こじまへ',
     hazards: [
-      { kind: 'sweep-y', x: 0.52, y: 0.50, w: 0.20, h: 0.58, hit: { kind: 'capsule', x1: 0.52, y1: 0.22, x2: 0.52, y2: 0.78, r: 0.105 } }
+      { kind: 'sweep-y', x: 0.52, y: 0.50, w: 0.28, h: 0.62, hit: { kind: 'capsule', x1: 0.52, y1: 0.25, x2: 0.52, y2: 0.75, r: 0.14 } }
     ]
   },
   {
@@ -7270,7 +7341,7 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'まわりこんで こじまへ',
     statusReady: 'ふたつめ こじまへ',
     hazards: [
-      { kind: 'spin', x: 0.53, y: 0.50, w: 0.30, h: 0.42, hit: { kind: 'circle', x: 0.53, y: 0.50, r: 0.18 } }
+      { kind: 'spin', x: 0.53, y: 0.50, w: 0.42, h: 0.54, hit: { kind: 'circle', x: 0.53, y: 0.50, r: 0.24 } }
     ]
   },
   {
@@ -7281,7 +7352,7 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'おおきく まわって むこうぎしへ',
     statusReady: 'さいご むこうぎしへ',
     hazards: [
-      { kind: 'drift', x: 0.54, y: 0.55, w: 0.30, h: 0.45, rotate: -12, hit: { kind: 'ellipse', x: 0.54, y: 0.55, rx: 0.15, ry: 0.225, rotate: -12 } }
+      { kind: 'drift', x: 0.54, y: 0.55, w: 0.42, h: 0.58, rotate: -12, hit: { kind: 'ellipse', x: 0.54, y: 0.55, rx: 0.22, ry: 0.29, rotate: -12 } }
     ]
   }
 ];
@@ -7311,7 +7382,11 @@ function _showWaterBridgeGame() {
   wrap.innerHTML =
     '<div class="water-game__title">みずの みちを かこう！</div>' +
     '<div class="water-game__stage" id="waterSkateStage">' +
-      '<div class="water-skate-scroll-bg" id="waterSkateWorldBg" aria-hidden="true"></div>' +
+      '<div class="water-skate-scroll-bg" id="waterSkateWorldBg" aria-hidden="true">' +
+        '<div class="water-skate-bg-panel water-skate-bg-panel--1"></div>' +
+        '<div class="water-skate-bg-panel water-skate-bg-panel--2"></div>' +
+        '<div class="water-skate-bg-panel water-skate-bg-panel--3"></div>' +
+      '</div>' +
       '<div class="water-skate-course" id="waterSkateCourse" aria-hidden="true">' + _waterSkateCourseHtml() + '</div>' +
       '<canvas class="water-skate-canvas" id="waterSkateCanvas" aria-label="みずの みちを かくところ"></canvas>' +
       '<div class="water-skate-start" data-label="ここから" aria-hidden="true"></div>' +
@@ -7352,9 +7427,7 @@ function _waterSkateCourseHtml() {
   let html = '';
   WATER_SKATE_SEGMENTS.forEach(function(seg, idx) {
     html += '<div class="water-island" style="left:' + _waterSkateWorldPct(idx, seg.start.x) + ';top:' + (seg.start.y * 100).toFixed(2) + '%;"></div>';
-    if (idx === WATER_SKATE_SEGMENT_COUNT - 1) {
-      html += '<div class="water-bank" style="left:' + _waterSkateWorldPct(idx, 0.92) + ';top:50%;"></div>';
-    } else {
+    if (idx !== WATER_SKATE_SEGMENT_COUNT - 1) {
       html += '<div class="water-island" style="left:' + _waterSkateWorldPct(idx, seg.goal.x) + ';top:' + (seg.goal.y * 100).toFixed(2) + '%;"></div>';
     }
     (seg.hazards || []).forEach(function(h) {
@@ -7519,6 +7592,49 @@ function _waterSkatePathHitsHazard(points, seg, rect) {
   return false;
 }
 
+function _waterSkateCurrentPathHitsHazard() {
+  const gs = _waterGameState;
+  const rect = _waterSkateStageRect();
+  if (!gs || !rect) return false;
+  return _waterSkatePathHitsHazard(gs.points, _waterSkateCurrentSegment(), rect);
+}
+
+function _waterSkateTriggerHit(point) {
+  const gs = _waterGameState;
+  if (!gs || gs.phase === 'hit' || gs.phase === 'scrolling' || gs.phase === 'complete') return;
+  const hitPoint = point || (gs.points && gs.points[gs.points.length - 1]) || _waterSkateAnchor('start');
+  gs.phase = 'hit';
+  gs.success = false;
+  gs.failReason = 'hazard';
+  gs.glide = null;
+  gs.status = 'おじゃまムシに ぶつかった！';
+  _waterSkateSetGuide('よける みちを かこう');
+  _waterSkateSetStatus(gs.status);
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    stageEl.classList.remove('is-water-scrolling');
+    stageEl.classList.add('is-water-hit');
+  }
+  for (let i = 0; i < 4; i++) {
+    _waterSkateAddRipple(hitPoint.x + (Math.random() - 0.5) * 28, hitPoint.y + (Math.random() - 0.5) * 20);
+  }
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, -24, 1.35);
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, 156, 1.15);
+  _waterSkateAddSparkles(hitPoint.x, hitPoint.y, 18);
+  playMzSe('wrong');
+  _waterGimmickSetTimeout(function() {
+    if (!_waterGameState || _waterGameState.phase !== 'hit') return;
+    const currentStage = document.getElementById('waterSkateStage');
+    if (currentStage) currentStage.classList.remove('is-water-hit');
+    _waterGameState.phase = 'ready';
+    _waterGameState.points = [];
+    _waterGameState.glide = null;
+    _waterGameState.failReason = '';
+    _waterGameState.status = (_waterSkateCurrentSegment() || {}).statusReady || 'もういちど';
+    _renderWaterBridgeGame();
+  }, 760);
+}
+
 function _waterSkateCompletePoints() {
   const st = _waterGimmickState;
   const pts = st && st.lastSkatePoints;
@@ -7531,11 +7647,18 @@ function _waterSkateCompletePoints() {
 function _waterSkateTracePath(ctx, points) {
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length; i++) {
-    const midX = (points[i - 1].x + points[i].x) / 2;
-    const midY = (points[i - 1].y + points[i].y) / 2;
-    ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].y, midX, midY);
+  if (points.length === 2) {
+    ctx.lineTo(points[1].x, points[1].y);
+    return;
   }
+  for (let i = 1; i < points.length - 1; i++) {
+    const midX = (points[i].x + points[i + 1].x) / 2;
+    const midY = (points[i].y + points[i + 1].y) / 2;
+    ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+  }
+  const prev = points[points.length - 2];
+  const last = points[points.length - 1];
+  ctx.quadraticCurveTo(prev.x, prev.y, last.x, last.y);
 }
 
 function _waterSkateIsSuccess(points) {
@@ -7631,6 +7754,11 @@ function _renderWaterBridgeGame() {
   const gs = _waterGameState;
   if (!gs) return;
   const seg = _waterSkateCurrentSegment();
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    if (gs.phase !== 'scrolling') stageEl.classList.remove('is-water-scrolling');
+    if (gs.phase !== 'hit') stageEl.classList.remove('is-water-hit');
+  }
   _waterSkateUpdateAnchors();
   const title = document.querySelector('.water-game__title');
   const guide = document.getElementById('waterSkateGuide');
@@ -7666,6 +7794,9 @@ function _onWaterSkatePointerDown(ev) {
   _waterSkateAddRipple(p.x, p.y);
   _waterSkateAddWake(p.x, p.y, _waterSkateAngleBetween(start, p), 0.8);
   _waterSkateAddSparkles(p.x, p.y, 7);
+  if (_waterSkateCurrentPathHitsHazard()) {
+    _waterSkateTriggerHit(p);
+  }
 }
 
 function _onWaterSkatePointerMove(ev) {
@@ -7681,6 +7812,9 @@ function _onWaterSkatePointerMove(ev) {
     _waterSkateAddWake((last.x + p.x) / 2, (last.y + p.y) / 2, angle, 0.72);
     _waterSkateAddSparkles(p.x, p.y, 3);
     if (gs.points.length % 5 === 0) _waterSkateAddRipple(p.x, p.y);
+    if (_waterSkateCurrentPathHitsHazard()) {
+      _waterSkateTriggerHit(p);
+    }
   }
 }
 
@@ -7691,6 +7825,10 @@ function _onWaterSkatePointerUp(ev) {
   const p = _waterSkatePointFromEvent(ev);
   if (p) gs.points.push(p);
   const check = _waterSkateCheckRoute(gs.points);
+  if (!check.ok && check.reason === 'hazard') {
+    _waterSkateTriggerHit(p);
+    return;
+  }
   gs.phase = 'gliding';
   gs.success = check.ok;
   gs.failReason = check.reason;
@@ -7703,7 +7841,7 @@ function _onWaterSkatePointerUp(ev) {
     duration: Math.max(850, Math.min(2200, len * 3.4)),
     length: len,
   };
-  playMzSe('correct');
+  playMzSe(check.ok ? 'correct' : 'wrong');
 }
 
 function _waterSkateAdvanceSegment() {
@@ -7719,7 +7857,7 @@ function _waterSkateAdvanceSegment() {
     return;
   }
   gs.phase = 'scrolling';
-  gs.segmentIndex = next;
+  gs.segmentIndex = current;
   gs.points = [];
   gs.glide = null;
   gs.success = false;
@@ -7727,15 +7865,25 @@ function _waterSkateAdvanceSegment() {
   gs.particles = [];
   gs.ripples = [];
   gs.wakes = [];
-  gs.status = WATER_SKATE_SEGMENTS[next].statusReady || 'つぎへ';
-  _renderWaterBridgeGame();
+  gs.status = 'つぎへ すいー！';
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    stageEl.classList.remove('is-water-hit');
+    stageEl.classList.add('is-water-scrolling');
+  }
+  _waterSkateSetGuide('つぎへ すいー！');
+  _waterSkateSetStatus(gs.status);
+  _waterSkateSetCamera(next);
   playMzSe('correct');
   _waterGimmickSetTimeout(function() {
-    if (!_waterGameState || _waterGameState.segmentIndex !== next) return;
+    if (!_waterGameState || _waterGameState.phase !== 'scrolling') return;
+    _waterGameState.segmentIndex = next;
     _waterGameState.phase = 'ready';
     _waterGameState.status = WATER_SKATE_SEGMENTS[next].statusReady || 'つぎへ';
+    const currentStage = document.getElementById('waterSkateStage');
+    if (currentStage) currentStage.classList.remove('is-water-scrolling');
     _renderWaterBridgeGame();
-  }, 680);
+  }, 780);
   gs.animationId = requestAnimationFrame(_waterSkateLoop);
 }
 
@@ -7768,7 +7916,6 @@ function _showWaterBridgeCompleteScene() {
       '<div class="water-complete-title">すいすい わたれた！</div>' +
       '<div class="water-complete-stage">' +
         '<canvas class="water-complete-canvas" id="waterCompleteCanvas" aria-hidden="true"></canvas>' +
-        '<div class="water-complete-bank" aria-hidden="true"></div>' +
         '<div class="water-complete-sparkles" aria-hidden="true"></div>' +
         '<div class="water-rider is-gliding" style="left:' + riderLeft.toFixed(1) + '%;top:' + riderTop.toFixed(1) + '%;" aria-hidden="true">' +
           '<img class="water-rider__amenbo" src="' + WATER_SKATE_HAPPY_SRC + '" alt="">' +
