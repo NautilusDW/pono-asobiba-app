@@ -3488,8 +3488,30 @@ function _playFlagVoice(key) {
 const _MAZE_VOICE_BASE = '../assets/audio/narration/maze/';
 const _mazeVoiceCache = Object.create(null);
 
+// 実配置済 voice の whitelist (preload/再生 対象を絞る → quota 未復活 key の 404 防止)
+// janken / water_bridge / strength_push の追加 voice / kumo の start・boss_defeated は
+// batch:880-quota-retry で TTS quota 復活後に生成予定。
+const _MAZE_VOICE_BUNDLED = {
+  // janken: quota 復活待ち (batch:880-quota-retry で生成予定)
+  truefalse: { start: true, correct: true, wrong: true },
+  simon: { start: true, your_turn: true, correct: true, wrong: true },
+  silhouette: { start: true, hint_more: true, correct: true, wrong: true },
+  oddone: { start: true, correct: true, wrong: true },
+  // water_bridge: quota 復活待ち
+  strength_push: { start: true /* crack_progress, almost, win, fail: quota 復活待ち */ },
+  kumo: {
+    // start は whisper 誤判定 (はなそう → へのそう) で削除済、 quota 復活後に再生成
+    pin_clear: true, boss_appear: true, boss_phase_start: true,
+    milestone_10: true,
+    // boss_defeated は quota 復活待ち
+    win: true,
+  },
+};
+
 function _playMazeVoice(gameKey, key) {
   if (!gameKey || !key) return;
+  const bundle = _MAZE_VOICE_BUNDLED[gameKey] || {};
+  if (!bundle[key]) return;  // whitelist 外は silent skip (404 fetch なし)
   const cacheKey = gameKey + '/' + key;
   try {
     var a = _mazeVoiceCache[cacheKey];
@@ -3507,7 +3529,9 @@ function _playMazeVoice(gameKey, key) {
 
 function _preloadMazeVoices(gameKey, keys) {
   if (!gameKey || !keys || !keys.length) return;
+  const bundle = _MAZE_VOICE_BUNDLED[gameKey] || {};
   keys.forEach(function(k) {
+    if (!bundle[k]) return;  // whitelist 外は skip (preload 404 防止)
     const cacheKey = gameKey + '/' + k;
     if (_mazeVoiceCache[cacheKey]) return;
     try {
@@ -3515,6 +3539,19 @@ function _preloadMazeVoices(gameKey, keys) {
       a.volume = 0.75;
       a.preload = 'auto';
       _mazeVoiceCache[cacheKey] = a;
+    } catch (_) {}
+  });
+}
+
+// 共通: 全 maze 系 voice を停止 (_closeEncounter 等から呼ぶ、 in-flight voice の混線防止)
+function _stopAllMazeVoices() {
+  Object.keys(_mazeVoiceCache).forEach(function(k) {
+    try {
+      const a = _mazeVoiceCache[k];
+      if (a) {
+        a.pause();
+        try { a.currentTime = 0; } catch (_) {}
+      }
     } catch (_) {}
   });
 }
@@ -7503,6 +7540,9 @@ function _failStrengthPushGame() {
     _strengthGameState.tapCount = 0;
     _strengthGameState.deadline = performance.now() + STRENGTH_TAP_MS;
     _strengthGameState.locked = false;
+    // retry 時は progress voice flag も reset (一度鳴った crack/almost を再度鳴らせるように)
+    _strengthGameState.crackPlayed = false;
+    _strengthGameState.almostPlayed = false;
     _strengthGameState.status = 'たたいて ひびを ひろげよう！';
     _renderStrengthPushGame();
   }, 900);
@@ -9849,6 +9889,7 @@ const _GAME_STARTERS = {
 };
 
 function _closeEncounter(playerWon) {
+  _stopAllMazeVoices(); // モーダル閉じる時 in-flight voice (kumo 等) を必ず停止
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
   const wasStrengthPush = _currentGame === 'strength_push';
   if (_currentGame === 'flag') {
@@ -9856,12 +9897,14 @@ function _closeEncounter(playerWon) {
     _flagGameState = null;
   }
   if (_currentGame === 'water_bridge') {
-    _waterGameState = null;
+    // 順序: timer を先に止めてから state を null (timer cb が null state を参照しないように)
     _clearWaterGimmickTimers();
+    _waterGameState = null;
   }
   if (_currentGame === 'strength_push') {
-    _strengthGameState = null;
+    // 順序: timer を先に止めてから state を null (punchTimer cb 等の race 防止)
     _clearStrengthGimmickTimers();
+    _strengthGameState = null;
   }
   if (_currentGame === 'web_sweep' || _currentGame === 'donguri_bowl') {
     _detachBowlListeners(_bowlGameState);
