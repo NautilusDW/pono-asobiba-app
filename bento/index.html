@@ -6848,6 +6848,7 @@ let freeMaskBoundsOverrides = loadFreeMaskBoundsOverrides();
 let freeCompleteLayoutOverrides = loadFreeCompleteLayoutOverrides();
 let freeMaskBoundsServerDefaults = {};
 let freeCompleteLayoutServerDefaults = {};
+let freeSlotLayoutServerDefaults = {};
 let freeMaskServerDefaultsUpdatedAt = '';
 let freeMaskServerDefaultsFetchPromise = null;
 let freeMaskResizeRefreshTimer = 0;
@@ -9740,6 +9741,47 @@ function sortFreeEditorMap(map) {
   });
   return sorted;
 }
+const SIMPLE_SLOT_LAYOUT_LIMITS = {
+  'main-food': 2,
+  'side-food': 3,
+  cup: 3,
+  divider: 3,
+  other: 3,
+};
+function normalizeSimpleSlotPoint(point) {
+  const x = Number(point && point.x);
+  const y = Number(point && point.y);
+  return {
+    x: Number.isFinite(x) ? Math.round(clamp(x, 0, FREE_LAYOUT_W) * 10) / 10 : FREE_LAYOUT_W / 2,
+    y: Number.isFinite(y) ? Math.round(clamp(y, 0, FREE_LAYOUT_H) * 10) / 10 : FREE_LAYOUT_H / 2,
+  };
+}
+function normalizeSimpleSlotLayoutMap(map) {
+  const normalized = {};
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
+  Object.keys(map).sort().forEach(boxId => {
+    if (!boxId) return;
+    const boxLayout = map[boxId];
+    if (!boxLayout || typeof boxLayout !== 'object' || Array.isArray(boxLayout)) return;
+    const entry = {};
+    Object.keys(SIMPLE_SLOT_LAYOUT_LIMITS).forEach(kind => {
+      const rawList = Array.isArray(boxLayout[kind]) ? boxLayout[kind] : [];
+      const points = rawList
+        .slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind])
+        .filter(point => point && typeof point === 'object' && !Array.isArray(point))
+        .map(normalizeSimpleSlotPoint);
+      if (points.length) entry[kind] = points;
+    });
+    if (Object.keys(entry).length) normalized[boxId] = entry;
+  });
+  return normalized;
+}
+function getSimpleSlotLayoutPoints(box, kind) {
+  if (!box || !kind) return [];
+  const layout = freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
+  const list = layout && Array.isArray(layout[kind]) ? layout[kind] : [];
+  return list.map(normalizeSimpleSlotPoint);
+}
 function normalizeFreeMaskDefaultExportEntry(entry) {
   const rel = getFreeEditorEntryValue(entry, ['rel']);
   return rel ? { rel: normalizeMaskRelative(rel) } : null;
@@ -9776,6 +9818,9 @@ function getFreeCompleteDefaultOverridesForExport() {
     if (entry) normalized[key] = entry;
   });
   return sortFreeEditorMap(normalized);
+}
+function getFreeSlotLayoutDefaultsForExport() {
+  return sortFreeEditorMap(normalizeSimpleSlotLayoutMap(freeSlotLayoutServerDefaults));
 }
 function serializeFreeMaskDefaultsForCode() {
   refreshFreeMaskBoundsOverrides();
@@ -9817,6 +9862,7 @@ function applyFreeMaskServerDefaults(data) {
   if (!data || data.ok === false) return false;
   freeMaskBoundsServerDefaults = cloneFreeEditorMap(data.maskBounds || {});
   freeCompleteLayoutServerDefaults = cloneFreeEditorMap(data.completeLayout || {});
+  freeSlotLayoutServerDefaults = normalizeSimpleSlotLayoutMap(data.slotLayout || {});
   npcPositionServerOverrides = normalizeNpcPositionMap(data.npcPositions || {});
   shopCounterServerMasks = {
     staff: data.staffCounterMask ? normalizeShopStaffCounterMask(data.staffCounterMask) : null,
@@ -9899,6 +9945,7 @@ async function saveFreeMaskDefaultsToServer(retry = true) {
   const body = {
     maskBounds: getFreeMaskDefaultOverridesForExport(),
     completeLayout: getFreeCompleteDefaultOverridesForExport(),
+    slotLayout: getFreeSlotLayoutDefaultsForExport(),
   };
   try {
     const resp = await fetch(FREE_MASK_SYNC_API, {
@@ -10041,14 +10088,14 @@ function getFreeDropBoundsForDef(def, box = getSelectedBentoBox()) {
   if (def.type === 'rice' || def.type === 'rice_auto' || def.type === 'template') return getRicePlacementBounds(box);
   if (def.type === 'decor') return getRicePlacementBounds(box);
   if (def.type === 'food') return getFoodPlacementBounds(box);
-  if (def.type === 'cup' || def.type === 'divider') return getAccessoryPlacementBounds(box);
+  if (def.type === 'cup' || def.type === 'divider' || def.type === 'pick') return getAccessoryPlacementBounds(box);
   return getPlacementBounds(box);
 }
 function getFreePlacementBoundsForItem(item, box = getSelectedBentoBox()) {
   if (!item) return getPlacementBounds(box);
   if (item.type === 'rice' || isRiceDecorItem(item) || item.type === 'decor') return getRicePlacementBounds(box);
   if (item.type === 'food' && !getParentCup(item)) return getFoodPlacementBounds(box);
-  if (item.type === 'cup' || item.type === 'divider' || item.snapTarget) return getAccessoryPlacementBounds(box);
+  if (item.type === 'cup' || item.type === 'divider' || item.type === 'pick' || item.snapTarget) return getAccessoryPlacementBounds(box);
   return getPlacementBounds(box);
 }
 function isPointInsideBounds(point, bounds, inset = 0) {
@@ -10112,7 +10159,9 @@ function getSimpleSlotKind(def) {
   if (!def) return '';
   if (def.type === 'rice' || def.type === 'rice_auto' || def.type === 'template') return 'rice';
   if (def.type === 'decor') return 'decor';
-  if (def.type === 'cup' || def.type === 'divider' || def.snapTarget) return 'accessory';
+  if (def.type === 'cup' || def.snapTarget) return 'cup';
+  if (def.type === 'divider') return 'divider';
+  if (def.type === 'pick') return 'other';
   if (def.type === 'food') {
     return (def.okazuRole || getOkazuRole(def)) === 'side' ? 'side-food' : 'main-food';
   }
@@ -10122,7 +10171,9 @@ function getSimpleSlotKindForItem(item) {
   if (!item) return '';
   if (item.type === 'rice') return 'rice';
   if (item.type === 'decor') return 'decor';
-  if (item.type === 'cup' || item.type === 'divider' || item.snapTarget) return 'accessory';
+  if (item.type === 'cup' || item.snapTarget) return 'cup';
+  if (item.type === 'divider') return 'divider';
+  if (item.type === 'pick') return 'other';
   if (item.type === 'food') {
     return (item.okazuRole || getOkazuRole(item)) === 'side' ? 'side-food' : 'main-food';
   }
@@ -10165,6 +10216,8 @@ function getSimpleFoodSpreadPoints(box) {
   ];
 }
 function getSimpleFoodSlots(kind, box, tier) {
+  const configured = getSimpleSlotLayoutPoints(box, kind);
+  if (configured.length) return configured.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
   const points = getSimpleFoodSpreadPoints(box);
   const order = kind === 'main-food' ? [0, 1] : [2, 3, 4];
   return order
@@ -10178,8 +10231,11 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (!box || !kind) return [];
   if (kind === 'decor') return getSimpleDecorSlots(box, tier);
   if (kind === 'main-food' || kind === 'side-food') return getSimpleFoodSlots(kind, box, tier);
-  if (kind === 'accessory') {
-    const points = (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, 3);
+  if (kind === 'cup' || kind === 'divider' || kind === 'other') {
+    const configured = getSimpleSlotLayoutPoints(box, kind);
+    const points = configured.length
+      ? configured
+      : (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, 3);
     return points.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
   }
   return [];
@@ -11047,6 +11103,8 @@ function addSimpleFixedPaletteItem(def) {
     setSpeech(role === 'side'
       ? '小さい おかずが はいったよ。'
       : 'メインの おかずが はいったよ。');
+  } else if (def.type === 'pick') {
+    setSpeech('ピックを おいたよ。');
   }
   renderFreeLayoutStage();
   renderFreeLayoutControls();

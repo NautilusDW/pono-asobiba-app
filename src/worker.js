@@ -262,6 +262,42 @@ function normalizeBentoCompleteLayoutMap(map) {
   return normalized;
 }
 
+const BENTO_SLOT_LAYOUT_LIMITS = {
+  'main-food': 2,
+  'side-food': 3,
+  cup: 3,
+  divider: 3,
+  other: 3
+};
+
+function normalizeBentoSlotPoint(point) {
+  return {
+    x: clampBentoMaskNumber(point && point.x, 0, 760, 380, 1),
+    y: clampBentoMaskNumber(point && point.y, 0, 460, 230, 1)
+  };
+}
+
+function normalizeBentoSlotLayoutMap(map) {
+  const normalized = {};
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
+  Object.keys(map).sort().forEach(boxId => {
+    if (!/^[a-z0-9_:-]{1,80}$/i.test(boxId)) return;
+    const box = map[boxId];
+    if (!box || typeof box !== 'object' || Array.isArray(box)) return;
+    const entry = {};
+    Object.keys(BENTO_SLOT_LAYOUT_LIMITS).forEach(kind => {
+      const list = Array.isArray(box[kind]) ? box[kind] : [];
+      const points = list
+        .slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind])
+        .filter(point => point && typeof point === 'object' && !Array.isArray(point))
+        .map(normalizeBentoSlotPoint);
+      if (points.length) entry[kind] = points;
+    });
+    if (Object.keys(entry).length) normalized[boxId] = entry;
+  });
+  return normalized;
+}
+
 function normalizeBentoNpcPositionsMap(map) {
   const normalized = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
@@ -314,10 +350,12 @@ async function handleBentoMaskDefaults(request, env) {
         version: 1,
         updatedAt: null,
         maskBounds: {},
-        completeLayout: {}
+        completeLayout: {},
+        slotLayout: {}
       };
       const merged = {
         ...base,
+        slotLayout: normalizeBentoSlotLayoutMap(base.slotLayout || {}),
         npcPositions: normalizeBentoNpcPositionsMap(npcStored && (npcStored.data || npcStored.npcPositions)),
         npcUpdatedAt: (npcStored && (npcStored.updated_at || npcStored.updatedAt)) || null,
         staffCounterMask: npcStored && npcStored.staffCounterMask
@@ -360,7 +398,8 @@ async function handleBentoMaskDefaults(request, env) {
     version: 1,
     updatedAt: new Date().toISOString(),
     maskBounds: normalizeBentoMaskBoundsMap(body.maskBounds || body.mask || {}),
-    completeLayout: normalizeBentoCompleteLayoutMap(body.completeLayout || body.complete || {})
+    completeLayout: normalizeBentoCompleteLayoutMap(body.completeLayout || body.complete || {}),
+    slotLayout: normalizeBentoSlotLayoutMap(body.slotLayout || body.slots || {})
   };
 
   try {
