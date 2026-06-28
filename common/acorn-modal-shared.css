@@ -685,6 +685,7 @@
     /* TODO Phase 1.5: underwater_light_shaft.png を上端から差し込み */
     transparent border-box;
   border: 3px solid rgba(102, 233, 255, 0.62);
+  border-radius: clamp(20px, 3.5vw, 32px);
   box-shadow: 0 18px 28px rgba(0, 12, 32, 0.62), inset 0 0 22px rgba(102, 233, 255, 0.32);
 }
 [data-game-id="oto"] .pono-acorn-modal__kicker {
@@ -702,4 +703,8 @@
 [data-game-id="oto"] .pono-acorn-modal__amount-num {
   color: #FFEF8A;
   text-shadow: 0 0 22px rgba(255, 239, 138, 0.62), 0 4px 0 #0c2a52;
+}
+[data-game-id="oto"] .pono-acorn-modal__progress {
+  color: #BEF5FF;
+  text-shadow: 0 1px 2px rgba(0, 18, 45, 0.62);
 }

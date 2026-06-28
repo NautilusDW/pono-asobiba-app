@@ -11325,8 +11325,10 @@ var BENTO_SLOT_HIDDEN_KEY = 'bento_simple_slot_hidden_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
-var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 3, cup: 3, divider: 3, other: 3 };
+var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 3, cup: 1, divider: 3, other: 1 };
+var BENTO_SLOT_SHARED_KINDS = { cup: true, other: true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, divider: 65, other: 24 };
+var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, divider: 8, other: 6 };
 var BENTO_SLOT_BOXES = [
   { id: 'box_rect_split', name: 'ふつうの おべんとう', image: '../assets/images/bento/ui/rect_bento_box_coral.webp', bounds: { x: 50, y: 22, w: 660, h: 422 }, placeBounds: { x: 78, y: 78, w: 579, h: 314 }, foodSpots: [{ x: 494, y: 174 }, { x: 572, y: 174 }, { x: 494, y: 296 }, { x: 572, y: 296 }, { x: 553, y: 235 }], accessorySpots: [{ x: 500, y: 236 }, { x: 572, y: 236 }, { x: 556, y: 176 }] },
   { id: 'box_square', name: 'しかくい おべんとう', image: '../assets/images/bento/free-layout/box_square.webp', bounds: { x: 76, y: 54, w: 608, h: 354 }, placeBounds: { x: 124, y: 92, w: 512, h: 276 }, foodSpots: [{ x: 274, y: 234 }, { x: 382, y: 188 }, { x: 490, y: 234 }, { x: 318, y: 306 }, { x: 446, y: 306 }], accessorySpots: [{ x: 292, y: 250 }, { x: 470, y: 250 }, { x: 382, y: 206 }] },
@@ -11354,20 +11356,16 @@ var BENTO_SLOT_PRODUCTION_MASK_DEFAULTS = {
 var _bentoSlotMaskCache = {};
 var _bentoSlotMaskPending = {};
 var BENTO_SLOT_DEFS = [
-  { kind: 'main-food', index: 0, label: '大きいおかずA', color: '#EF4444' },
-  { kind: 'main-food', index: 1, label: '大きいおかずB', color: '#EF4444' },
-  { kind: 'side-food', index: 0, label: '小さいおかずA', color: '#22C55E' },
-  { kind: 'side-food', index: 1, label: '小さいおかずB', color: '#22C55E' },
-  { kind: 'side-food', index: 2, label: '小さいおかずC', color: '#22C55E' },
-  { kind: 'cup', index: 0, label: 'カップA', color: '#0EA5E9' },
-  { kind: 'cup', index: 1, label: 'カップB', color: '#0EA5E9' },
-  { kind: 'cup', index: 2, label: 'カップC', color: '#0EA5E9' },
-  { kind: 'divider', index: 0, label: '仕切りA', color: '#A855F7' },
-  { kind: 'divider', index: 1, label: '仕切りB', color: '#A855F7' },
-  { kind: 'divider', index: 2, label: '仕切りC', color: '#A855F7' },
-  { kind: 'other', index: 0, label: 'その他A', color: '#64748B' },
-  { kind: 'other', index: 1, label: 'その他B', color: '#64748B' },
-  { kind: 'other', index: 2, label: 'その他C', color: '#64748B' }
+  { kind: 'main-food', index: 0, label: '大きいおかずA', shortLabel: '大A', color: '#EF4444' },
+  { kind: 'main-food', index: 1, label: '大きいおかずB', shortLabel: '大B', color: '#EF4444' },
+  { kind: 'side-food', index: 0, label: '小さいおかずA', shortLabel: '小A', color: '#22C55E' },
+  { kind: 'side-food', index: 1, label: '小さいおかずB', shortLabel: '小B', color: '#22C55E' },
+  { kind: 'side-food', index: 2, label: '小さいおかずC', shortLabel: '小C', color: '#22C55E' },
+  { kind: 'cup', index: 0, label: 'カップ共通', shortLabel: 'C', color: '#0EA5E9' },
+  { kind: 'divider', index: 0, label: '仕切りA', shortLabel: 'DA', color: '#A855F7' },
+  { kind: 'divider', index: 1, label: '仕切りB', shortLabel: 'DB', color: '#A855F7' },
+  { kind: 'divider', index: 2, label: '仕切りC', shortLabel: 'DC', color: '#A855F7' },
+  { kind: 'other', index: 0, label: 'ピック共通', shortLabel: 'P', color: '#64748B' }
 ];
 var BENTO_SLOT_SAMPLE_ITEMS = {
   'main-food': [
@@ -11398,32 +11396,8 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
   cup: [
     {
       id: 'cup_blue_dot',
-      name: 'みずたまカップ',
+      name: 'カップ共通',
       image: '../assets/images/bento/free-layout/cup_blue_dot.png',
-      size: 190,
-      rotation: 0,
-      layer: 10
-    },
-    {
-      id: 'cup_flower',
-      name: 'おはなカップ',
-      image: '../assets/images/bento/free-layout/cup_flower.png',
-      size: 190,
-      rotation: 0,
-      layer: 10
-    },
-    {
-      id: 'cup_star',
-      name: 'ほしカップ',
-      image: '../assets/images/bento/free-layout/cup_star.png',
-      size: 190,
-      rotation: 0,
-      layer: 10
-    },
-    {
-      id: 'cup_check',
-      name: 'チェックカップ',
-      image: '../assets/images/bento/free-layout/cup_check.png',
       size: 190,
       rotation: 0,
       layer: 10
@@ -11435,10 +11409,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'divider_wood', name: 'きのしきり', image: '../assets/images/bento/free-layout/divider_wood.png', size: 178, rotation: 0, layer: 20 }
   ],
   other: [
-    { id: 'pick_star', name: 'ほしピック', image: '../assets/images/bento/free-layout/pick_star.png', size: 64, rotation: -8, layer: 70 },
-    { id: 'pick_flower', name: 'おはなピック', image: '../assets/images/bento/free-layout/pick_flower.png', size: 66, rotation: 6, layer: 70 },
-    { id: 'pick_flag', name: 'はたピック', image: '../assets/images/bento/free-layout/pick_flag.png', size: 66, rotation: -3, layer: 70 },
-    { id: 'pick_heart', name: 'ハートピック', image: '../assets/images/bento/free-layout/pick_heart.png', size: 66, rotation: 3, layer: 70 }
+    { id: 'pick_flag', name: 'ピック共通', image: '../assets/images/bento/free-layout/pick_flag.png', size: 66, rotation: -3, layer: 70 }
   ]
 };
 var BENTO_SLOT_SAMPLE_MODES = { selected: true, kind: true, all: true, none: true };
@@ -11671,7 +11642,10 @@ function bentoSlotNormalizeLayout(map) {
     var entry = {};
     Object.keys(BENTO_SLOT_LIMITS).forEach(function(kind) {
       var list = Array.isArray(box[kind]) ? box[kind] : [];
-      var points = list.slice(0, BENTO_SLOT_LIMITS[kind]).filter(function(p) { return p && typeof p === 'object'; }).map(function(p, index) {
+      var source = BENTO_SLOT_SHARED_KINDS[kind]
+        ? list.filter(function(p) { return p && typeof p === 'object'; }).slice(0, 1)
+        : list.slice(0, BENTO_SLOT_LIMITS[kind]).filter(function(p) { return p && typeof p === 'object'; });
+      var points = source.map(function(p, index) {
         return bentoSlotEntry(p, { kind: kind, index: index });
       });
       if (points.length) entry[kind] = points;
@@ -11772,10 +11746,12 @@ function bentoSlotKindBounds(box, kind) {
 function bentoSlotClampPointForDef(box, def, point) {
   var p = bentoSlotPoint(point);
   var bounds = bentoSlotKindBounds(box, def.kind);
-  var margin = BENTO_SLOT_KIND_MARGINS[def.kind] || 24;
+  var verticalBounds = bentoSlotGetMaskBounds(box) || bounds;
+  var marginX = BENTO_SLOT_KIND_MARGINS[def.kind] || 24;
+  var marginY = BENTO_SLOT_KIND_VERTICAL_MARGINS[def.kind] || 8;
   return bentoSlotPoint({
-    x: bentoSlotClamp(p.x, bounds.x + margin, bounds.x + bounds.w - margin, p.x),
-    y: bentoSlotClamp(p.y, bounds.y + margin, bounds.y + bounds.h - margin, p.y)
+    x: bentoSlotClamp(p.x, bounds.x + marginX, bounds.x + bounds.w - marginX, p.x),
+    y: bentoSlotClamp(p.y, verticalBounds.y + marginY, verticalBounds.y + verticalBounds.h - marginY, p.y)
   });
 }
 function bentoSlotDefaultPoint(box, def) {
@@ -12132,7 +12108,7 @@ function bentoSlotRenderPreview() {
     marker.type = 'button';
     marker.dataset.slotKey = key;
     marker.title = def.label;
-    marker.textContent = def.label.replace('大きいおかず', '大').replace('小さいおかず', '小').replace('カップ', 'C').replace('仕切り', 'D').replace('その他', 'O');
+    marker.textContent = def.shortLabel || def.label.replace('大きいおかず', '大').replace('小さいおかず', '小').replace('カップ', 'C').replace('仕切り', 'D').replace('その他', 'O');
     var selected = key === _bentoSlotState.slotKey;
     var hidden = bentoSlotIsHidden(box.id, def);
     marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : def.color) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:0.62rem;font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden ? '0.45' : '1') + ';z-index:' + (selected ? 181 : 180) + ';';

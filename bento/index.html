@@ -128,45 +128,48 @@ html, body {
   pointer-events: auto;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
-  width: min(100%, 340px);
+  gap: 7px;
+  width: min(100%, 360px);
 }
 .title-screen__mode-buttons.is-simple-only {
-  width: min(100%, 280px);
+  width: min(100%, 320px);
 }
 .title-screen__mode-btn {
-  border: 3px solid #E49A52;
-  border-radius: 18px;
-  background: rgba(255, 244, 216, 0.94);
-  color: #6B3E0A;
+  border: 0;
+  border-radius: 20px;
+  background: transparent url('../assets/images/quizland/Fukuro_frame_003.png') center / 100% 100% no-repeat;
+  color: #5B3514;
   font-family: 'Zen Maru Gothic', sans-serif;
   font-weight: 900;
   font-size: clamp(0.82rem, 1.9vw, 1.08rem);
   line-height: 1.15;
-  padding: 10px 14px;
-  box-shadow: 0 5px 0 #B86F2E, 0 10px 18px rgba(55, 29, 8, 0.22);
+  min-height: 62px;
+  padding: 13px 26px 14px;
+  box-shadow: 0 9px 18px rgba(55, 29, 8, 0.20);
   cursor: pointer;
+  filter: drop-shadow(0 2px 0 rgba(72, 38, 12, 0.18));
 }
 .title-screen__mode-btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 2px 0 #B86F2E, 0 6px 12px rgba(55, 29, 8, 0.2);
+  transform: translateY(2px) scale(0.992);
+  box-shadow: 0 5px 12px rgba(55, 29, 8, 0.18);
+  filter: brightness(0.98) drop-shadow(0 1px 0 rgba(72, 38, 12, 0.16));
 }
 .title-screen__mode-btn small {
   display: block;
-  margin-top: 3px;
-  color: #8A653C;
+  margin-top: 4px;
+  color: #7A5630;
   font-size: 0.76em;
   font-weight: 700;
 }
 .title-screen__mode-btn--simple {
-  border-color: #65A86D;
-  box-shadow: 0 5px 0 #41834E, 0 10px 18px rgba(34, 81, 43, 0.22);
+  color: #4D3B18;
+  box-shadow: 0 9px 18px rgba(45, 58, 24, 0.20);
 }
 .title-screen__mode-btn--simple.title-screen__mode-btn--primary-only {
   font-size: clamp(0.9rem, 2.05vw, 1.16rem);
 }
 .title-screen__mode-btn--simple:active {
-  box-shadow: 0 2px 0 #41834E, 0 6px 12px rgba(34, 81, 43, 0.2);
+  box-shadow: 0 5px 12px rgba(45, 58, 24, 0.18);
 }
 /* 難易度バッジ (common/difficulty.js 連動)。 quizland の難易度ラベルと視覚整合 */
 .title-screen__mode-btn { position: relative; }
@@ -230,14 +233,14 @@ html, body {
     padding: 5px 13px;
   }
   .title-screen__mode-buttons {
-    width: min(100%, 280px);
+    width: min(100%, 300px);
     gap: 6px;
   }
   .title-screen__mode-btn {
-    border-width: 2px;
-    border-radius: 14px;
+    border-radius: 18px;
     font-size: clamp(0.72rem, 2.5vw, 0.9rem);
-    padding: 7px 10px;
+    min-height: 52px;
+    padding: 10px 20px 11px;
   }
 }
 
@@ -9744,10 +9747,11 @@ function sortFreeEditorMap(map) {
 const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 3,
-  cup: 3,
+  cup: 1,
   divider: 3,
-  other: 3,
+  other: 1,
 };
+const SIMPLE_SHARED_SLOT_KINDS = new Set(['cup', 'other']);
 const SIMPLE_CUP_SLOT_SIZES = [150, 190, 230];
 function normalizeSimpleSlotSize(size, kind) {
   const n = Math.round(clamp(Number(size), 32, 340) * 10) / 10;
@@ -9779,9 +9783,11 @@ function normalizeSimpleSlotLayoutMap(map) {
     const entry = {};
     Object.keys(SIMPLE_SLOT_LAYOUT_LIMITS).forEach(kind => {
       const rawList = Array.isArray(boxLayout[kind]) ? boxLayout[kind] : [];
-      const points = rawList
-        .slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind])
-        .filter(point => point && typeof point === 'object' && !Array.isArray(point))
+      const validPoints = rawList.filter(point => point && typeof point === 'object' && !Array.isArray(point));
+      const source = SIMPLE_SHARED_SLOT_KINDS.has(kind)
+        ? validPoints.slice(0, 1)
+        : validPoints.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind]);
+      const points = source
         .map(point => normalizeSimpleSlotPoint(point, kind));
       if (points.length) entry[kind] = points;
     });
@@ -10249,9 +10255,10 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (kind === 'main-food' || kind === 'side-food') return getSimpleFoodSlots(kind, box, tier);
   if (kind === 'cup' || kind === 'divider' || kind === 'other') {
     const configured = getSimpleSlotLayoutPoints(box, kind);
+    const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
     const points = configured.length
       ? configured
-      : (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, 3);
+      : (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, fallbackLimit);
     return points.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
   }
   return [];
