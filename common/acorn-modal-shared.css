@@ -149,6 +149,11 @@
   text-align: center;
   line-height: 1;
   padding: var(--acorn-modal-padding);
+  /* __dismiss を右上 absolute で固定するための基点 (全ゲーム共通)。
+     base-dismiss-css 統一フェーズ (v1731): grid centering の影響を受けず
+     右上に出すため、 全ゲームで panel を positioning context にする。 */
+  position: relative;
+  pointer-events: auto; /* パネル内のインタラクションを許可 */
 }
 
 /* =============================================================
@@ -228,11 +233,17 @@
      env() が未対応な環境では fallback 0px が使われ、 既存の clamp 値が維持される。 */
   top: max(clamp(16px, 3vw, 24px), env(safe-area-inset-top, 0px));
   right: max(clamp(20px, 3.8vw, 32px), env(safe-area-inset-right, 0px));
-  /* z-index: 2 で panel の ::before 装飾 (z-index: 0) と
-     content (z-index: 1) の上に浮かせる。 grid panel (e.g. maze) で
-     absolute 配置が grid track centering の影響を受けないよう
-     stacking context を明示。 */
-  z-index: 2;
+  /* base-dismiss-css 統一フェーズ (v1731): 全ゲーム共通仕様で右上固定を保証。
+     z-index: 3 で panel の ::before 装飾 (z-index: 0) と
+     content (z-index: 1) より確実に前面に出す (maze の葉飾り PNG / oto の
+     bubble 装飾 / 将来 puzzle/bento/starparodier の panel 装飾でも安全)。
+     justify-self/align-self は grid panel (aspect-ratio + align-content:center
+     を当てるゲーム) で absolute 要素が grid centering に巻き込まれて中央へ
+     飛ぶリスクを潰すための保険 (absolute なので通常は無視されるが、
+     一部ブラウザの古い実装で grid item 扱いされたときの fallback)。 */
+  z-index: 3;
+  justify-self: end;
+  align-self: start;
   min-width: 44px;
   min-height: 44px;
   width: 44px;
@@ -253,11 +264,6 @@
 .pono-acorn-modal__dismiss:active {
   transform: translateY(2px);
   box-shadow: 0 1px 0 rgba(118, 66, 0, 0.38);
-}
-
-.pono-acorn-modal__panel {
-  position: relative; /* __dismiss の absolute 基点 */
-  pointer-events: auto; /* パネル内のインタラクションを許可 */
 }
 
 .pono-acorn-modal__kicker {

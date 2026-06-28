@@ -10038,7 +10038,7 @@ function _showRhythmComplete(result) {
             dailyTotal: dailyTotal,
             dailyCap: dailyCap,
             state: isCapped ? 'capped' : 'idle',
-            autoHide: 4200,
+            autoHide: 0, // tap/ESC/× のみで dismiss (Phase 2: 全ゲーム統一)
           }).show();
         } catch (e) { console.warn('[oto] PonoAcornModal show failed', e); }
       }, 1000);
