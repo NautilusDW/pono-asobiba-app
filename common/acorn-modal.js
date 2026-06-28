@@ -304,16 +304,22 @@
     this._overlay.addEventListener('click', this._overlayClickHandler);
 
     this._dismissBtn.addEventListener('click', function (ev) {
+      // 明示的な handled フラグ: panel listener が後から bubble を拾っても
+      // 二重 hide() しないように、 stopPropagation 失敗時の保険として機能する。
+      ev.__ponoAcornDismissed = true;
       ev.stopPropagation();
       self.hide();
     });
 
     // tap-only mode (autoHide=0): panel 本体のタップでも dismiss する。
     // 通常の autoHide>0 では auto dismiss が走るので panel 自体は非反応のまま。
-    // dismissBtn の click は stopPropagation で先に消費されるため二重発火しない。
+    // dismissBtn の click は stopPropagation + handled フラグで二重発火しない。
     if (this.autoHide === 0 && this._panel) {
       this._panel.addEventListener('click', function (ev) {
-        // dismissBtn 経由は stopPropagation 済みだが、 念のため再ガード。
+        // dismissBtn 経由は handled フラグ + stopPropagation 済み。
+        // 将来 Phase 2 で panel 内部に child button が増えても、
+        // child が ev.__ponoAcornDismissed = true を立てれば dismiss を抑止できる。
+        if (ev.__ponoAcornDismissed) return;
         if (ev.target === self._dismissBtn ||
             (self._dismissBtn && self._dismissBtn.contains(ev.target))) {
           return;
