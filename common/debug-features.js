@@ -20,8 +20,8 @@
     },
     {
       id: 'play-dev-mode',
-      label: 'ホーム画面：開発者メニュー表示',
-      description: 'URL に ?dev=1 を付けると、 デイリーガチャ等の開発者向け要素が出る',
+      label: 'ホーム画面：管理者向けの隠しボタンを表示',
+      description: 'URL に ?dev=1 を付けて開くと、 デイリーガチャ等の管理者向け要素が見えるようになる',
       default: false
     },
     {
@@ -44,8 +44,8 @@
     },
     {
       id: 'bento-maskedit',
-      label: 'おべんとう：型枠エディタを開く',
-      description: 'URL に ?maskedit=1 を付けて開くと、 お弁当箱の型枠を編集できる管理画面が出る',
+      label: 'おべんとう：お弁当箱の型枠を編集',
+      description: 'URL に ?maskedit=1 を付けて開くと、 お弁当箱のどこに何を置けるかを編集する管理画面が出る',
       default: false
     },
     {
@@ -56,8 +56,8 @@
     },
     {
       id: 'bento-debug-log',
-      label: 'おべんとう：開発ログを出す',
-      description: 'ブラウザ開発者ツールに [bento-debug] のログが出るようになる',
+      label: 'おべんとう：裏側の動きを表示',
+      description: 'ブラウザの開発者ツールを開いておくと、 おべんとう内部の細かい動き ([bento-debug] というメモ) が見えるようになる',
       default: false
     },
     {
