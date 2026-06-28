@@ -62,6 +62,7 @@
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 09:45 - by Claude - [batch:880-quota-retry] - assets/audio/narration/maze/**, maze/index.html, sw.js - TTS quota 復活後に janken×8/water_bridge×6/strength_push×4/kumo×2/flag cmd_white_down_keep×1 計 21 本 retry + _MAZE_VOICE_BUNDLED whitelist 拡張 + sw bump
+- 2026-06-28 10:15 - by Claude - [batch:881-gacha-twice-daily] - play.html, sw.js - ガチャガチャ 1 日 2 回仕様化 (フリー 1 + チャレンジ報酬 1) + JST 6 時境界統一 + sw bump
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか

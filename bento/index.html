@@ -13547,6 +13547,12 @@ function stageComplete() {
     if (rightEl) rightEl.classList.remove('flashing','gloomy');
     document.getElementById('complete-overlay').classList.add('hidden');
     syncCompleteChromeSafeArea();
+    // ごかんそう (rating) 4 ゲート chain — bento は first-clear.js 連鎖に乗らないため個別 wire
+    setTimeout(() => {
+      if (window.PonoRating?.maybeShowAfterClear) {
+        window.PonoRating.maybeShowAfterClear('bento');
+      }
+    }, 800);
     if (shouldGrantTutorialSticker && typeof tutorialGrantPendingStickerAfterClose === 'function') {
       tutorialGrantPendingStickerAfterClose(continueAfterCompleteClose);
       return;

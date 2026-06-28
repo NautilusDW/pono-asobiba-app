@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-28T00:48:28Z - batch:874/875/876 統合 deploy: maze 旗あげリズム v3 + グローブ z-order + 8 ミニゲームナレーション基盤 (whitelist 経由 404 silent skip + strength_push retry flag reset + _stopAllMazeVoices helper + kumo/start.mp3 物理削除) を sw v1717 で develop-app push 完了
+- **タスク**: batch:874/875/876 統合 deploy: maze 旗あげリズム v3 + グローブ z-order + 8 ミニゲームナレーション基盤 (whitelist 経由 404 silent skip + strength_push retry flag reset + _stopAllMazeVoices helper + kumo/start.mp3 物理削除) を sw v1717 で develop-app push 完了
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 79
+- **エラー数**: 9
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 5, "Bash": 49, "Read": 10, "Edit": 7, "ToolSearch": 1, "Agent": 7}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-27T20:30:26Z - Batch C simon voice 4 本生成 (whisper 検証ループ)
 - **タスク**: Batch C simon voice 4 本生成 (whisper 検証ループ)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 20, "Read": 8, "Agent": 23, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-27T11:53:29Z - A+B+C+D 一括パフォーマンス改善: 大型PNG 17枚 WebP化(35MB→3.8MB/-89%) + 全ゲーム5本に preload-helper 拡張 + bottom-nav downscale + bgm preload=metadata 化、 4並列クロスレビューで critical 0、 v1702 push 完了
-- **タスク**: A+B+C+D 一括パフォーマンス改善: 大型PNG 17枚 WebP化(35MB→3.8MB/-89%) + 全ゲーム5本に preload-helper 拡張 + bottom-nav downscale + bgm preload=metadata 化、 4並列クロスレビューで critical 0、 v1702 push 完了
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 41
-- **エラー数**: 3
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 26, "Read": 4, "Edit": 6, "Workflow": 4, "Grep": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

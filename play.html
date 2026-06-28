@@ -7166,11 +7166,37 @@
     let dailyGachaAudioCtx = null;
 
     function dailyGachaTodayKey() {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
+      // v1719: JST 6 時境界 (js/daily-quest.js と統一)。 JST = UTC+9、 6 時前は前日扱い。
+      const now = new Date();
+      // JST 時刻 (UTC + 9h) → さらに 6 時ぶん戻して 6 時境界を 0 時に揃える
+      const jstShifted = now.getTime() + 9 * 3600 * 1000 - 6 * 3600 * 1000;
+      const jst = new Date(jstShifted);
+      const y = jst.getUTCFullYear();
+      const m = String(jst.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(jst.getUTCDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
+    }
+
+    // v1719: 今日の pull 数 (0/1/2)。 旧 record (count フィールド無し) は stickerId があれば 1 として後方互換。
+    function getDailyGachaCount() {
+      try {
+        const raw = localStorage.getItem(DAILY_GACHA_KEY);
+        if (!raw) return 0;
+        const rec = JSON.parse(raw);
+        if (!rec || rec.date !== dailyGachaTodayKey()) return 0;
+        if (typeof rec.count === 'number') return rec.count;
+        return rec.stickerId ? 1 : 0;
+      } catch (_) { return 0; }
+    }
+
+    // v1719: いま引けるか (count<2 かつ (count=0 または チャレンジクリア済))
+    function canPullDailyGachaNow() {
+      const count = getDailyGachaCount();
+      if (count >= 2) return false;
+      if (count === 0) return true; // フリー pull はチャレンジ問わず
+      try {
+        return !!(window.PonoDailyQuest && window.PonoDailyQuest.isClearedToday());
+      } catch (_) { return false; }
     }
 
     function getDailyGachaRecord() {
@@ -7271,8 +7297,8 @@
     }
 
     function isDailyGachaUsedToday() {
-      const record = getDailyGachaRecord();
-      return !!(record && record.date === dailyGachaTodayKey());
+      // v1719: count>=2 で「今日はもう終わり」 (フリー 1 + チャレンジ報酬 1 を消化)
+      return getDailyGachaCount() >= 2;
     }
 
     function updateDailyGachaEntry() {
@@ -7894,11 +7920,20 @@
       setDailyGachaNoteText(dailyGachaTomorrowNote, DAILY_GACHA_TOMORROW_PROMPT.replace(' やろう', '\nやろう'));
     }
 
-    function dailyGachaRecordFromResult(result) {
+    function dailyGachaRecordFromResult(result, prevRecord) {
       const sticker = result && result.sticker ? result.sticker : {};
       const page = result && result.page ? result.page : {};
+      // v1719: 引いた回数を carry-over。 prevRecord が同じ JST 日なら +1、 そうでなければ 1。
+      // 旧 record (count フィールドなし) は stickerId 有を count=1 として後方互換扱い。
+      const today = dailyGachaTodayKey();
+      let prevCount = 0;
+      if (prevRecord && prevRecord.date === today) {
+        if (typeof prevRecord.count === 'number') prevCount = prevRecord.count;
+        else if (prevRecord.stickerId) prevCount = 1;
+      }
       return {
-        date: dailyGachaTodayKey(),
+        date: today,
+        count: prevCount + 1,
         gameId: result.gameId,
         stickerId: result.stickerId,
         stickerName: sticker.name || 'シール',
@@ -7968,7 +8003,8 @@
       if (result && result.sticker) {
         const resultRarity = dailyGachaRarityFromResult(result) || candidate.rarity;
         if (resultRarity) result.rarity = resultRarity;
-        setDailyGachaRecord(dailyGachaRecordFromResult(result));
+        // v1719: prev record を渡して count を加算 (1 or 2)
+        setDailyGachaRecord(dailyGachaRecordFromResult(result, getDailyGachaRecord()));
         return result;
       }
       return null;
@@ -8052,7 +8088,8 @@
         applyDailyGachaRarity(resultRarity);
         chooseDailyGachaCapsule(resultRarity);
         chooseDailyGachaRevealBackdrop(resultRarity);
-        setDailyGachaRecord(dailyGachaRecordFromResult(result));
+        // v1719: pullDailyGachaSticker で既に count++ された record を読み直して再 save (count は不変)
+        setDailyGachaRecord(dailyGachaRecordFromResult(result, getDailyGachaRecord()));
       }
       const revealProfile = dailyGachaRarityProfile();
       setDailyGachaReward(result);

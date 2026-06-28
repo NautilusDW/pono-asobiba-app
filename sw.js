@@ -399,6 +399,11 @@ const CRITICAL_ASSETS_SCRIPTS = [
   '/common/acorn-modal.js',
   '/common/acorn-audio.js',
   '/common/acorn-copy.json',
+  // v1718: ごかんそう (rating) — 別エージェント並列作成中。 未配備でも precache は asset 単位
+  // try/catch でラップされる (precacheAssetGroup の allSettled gate) ため install 失敗にならない。
+  '/common/rating-modal.js',
+  '/common/rating-modal.css',
+  '/assets/ui/icon_feedback_20260628.png',
   '/js/game-stickers.js',
   '/js/daily-quest.js',
   '/js/donguri-shop.js',
