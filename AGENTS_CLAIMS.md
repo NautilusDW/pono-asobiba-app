@@ -61,9 +61,6 @@
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
-- 2026-06-28 09:45 - by Claude - [batch:880-quota-retry] - assets/audio/narration/maze/**, maze/index.html, sw.js - TTS quota 復活後に janken×8/water_bridge×6/strength_push×4/kumo×2/flag cmd_white_down_keep×1 計 21 本 retry + _MAZE_VOICE_BUNDLED whitelist 拡張 + sw bump
-- 2026-06-28 10:00 - by Claude - [batch:882-tts-source-audit-regen] - assets/audio/narration/maze/**, sw.js - 既存 mp3 audit (Gemini 3.1 以外で生成された voice を特定) → Gemini Aoede で再生成 [overlap: batch:880 (同 audio dir)]
-- 2026-06-28 10:00 - by Claude - [batch:883-oddone-image-replace] - maze/index.html, assets/images/maze/quiz/**, assets/images/word/**, sw.js - oddone のライオン/ゾウ画像が縦伸びの旧版のまま → 過去 commit の差し替え版を再適用 [overlap: batch:882 (sw.js)]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
