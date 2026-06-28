@@ -26,8 +26,8 @@
   }
 
   var DEFAULT_CONFIG = Object.freeze({
-    impact: 'assets/audio/sfx/quiz/don.mp3',
-    volume: 0.48
+    impact: 'assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3',
+    volume: 0.55
   });
 
   // Map<gameId, { impact, volume }>

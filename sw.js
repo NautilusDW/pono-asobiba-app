@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1745: AcornModal default SE を universfield-game-bonus-03 (1.20s 祝祭ジングル) に置換、 brief.md WIRED 更新
 // v1744: AcornModal Phase 2 統合 fix を一括反映 — (1) common/acorn-modal.js show() の playSafe() に Promise rejection 防御 (.catch silent fail) を補強し iOS Safari の autoplay reject 時の uncaught promise を完全抑制、 (2) maze 「力の手袋: 岩くだき」 の岩砕き fallback timer (_strengthGimmickTimers に積む 6 秒 safety net) を再点検し setTimeout reference を確実に _clearStrengthGimmickTimers (_closeEncounter / 再 encounter) で掃除、 (3) common/acorn-modal-shared.css の .pono-acorn-modal__dismiss top/right を max(clamp(...), env(safe-area-inset-top/right, 0px)) 構文に統一し notched 端末で × button が安全圏外に出ないよう保証、 (4) tap padding を全 dismiss button で 44x44 物理 px 以上 (WCAG SC 2.5.5 Target Size) に揃え子供のタップ精度を底上げ、 (5) v1738-v1743 で並走 push されていた AcornModal 系 CRITICAL/HIGH (close button 位置 / SE 確実発火 / 祝祭ジングル / strength_push countdown / sk_intro 音声) の cross-review 残課題を Phase 2.5 として一括 close。 既存 cache strategy / skipWaiting / clients.claim (install/activate で呼ばない) 設計は無改変、 acorn_get_festive 系 SE の precache 追加はユーザー判断で見送り (default don.mp3 を維持)、 acorn-copy.json / acorn-audio.js の登録テーブルは無改変、 maze の panel framework / Fukuro_frame / dev bypass / capped state も無改変。 play.html PAGE_CACHE_VERSION と同期。
 // v1743: AcornModal default SE を「祝祭系 (チラーン + キラキラ + 鈴 + ホルン)」 ジングルに置き換え、 共通基盤の音響を子供向けに凝った仕上げに。
 // v1741: AcornModal show() 時に PonoAcornAudio.play(gameId) を呼んで どんぐり獲得 SE を確実に再生 (default don.mp3、 ゲーム別 register で上書き可能)。
@@ -369,7 +370,7 @@
 // v1703: モバイル portrait のガチャ画面 status bar 領域に出る薄い黒長方形を修正。 .daily-gacha-modal に env(safe-area-inset-top/bottom) padding を当てて、 .daily-gacha-shell::before の dim layer が status bar 領域に被らないように (@media max-width:900px and orientation:portrait 独立 block)。 desktop / landscape / iPad 影響なし、 rarity 演出の dim 強度も変更なし。 play.html PAGE_CACHE_VERSION と同期。
 // v1702: Stream B finalize — common/preload-helper.js GAME_WARM_ASSETS bento 8 件を .png → .webp 修正 (hamburg2/ebi_fry2/rice_umeboshi/korokke2/fries2/broccoli2/mini_tomato2/ichigo2)。 PNG 実体は assets/images/Bento_parts/ に存在しない (WebP 移行済み) ため、 旧 path だと warm fetch が 404 → console error + 帯域浪費していた。 karaage2 のみ PNG 残存のため未変更。 play.html PAGE_CACHE_VERSION と同期。
 // v1711: 迷路の旗あげ合戦に TTS 音声 9 本 (cmd 6 + miss 2 + win) + HP=4 ハートゲージ制 (1 ミス即敗北を 3 ミス猶予化) を実装 (batch:872-flag-game-voice-hp)。 9 cross-review fixes 統合: F1 miss voice setTimeout を _flagTunnelSetTimeout でトラッキング + 状態 guard、 F2 _resolveFlagGame に reason='hp' 分岐「ハートが ぜんぶ なくなった…」、 F3 HP=0 時の playMzSe('wrong') 二重発火抑制、 F4 cmd voice 900ms 遅延で「ミス→励まし→再コマンド」 順序化、 F5 _closeEncounter で _clearFlagTunnelTimers→null 化の順、 F6 gs.missVoiceId 追跡で確実 cancel、 AF-01 cmd_white_up/down 再生成 (whisper「シーロー」→「白あげて/白下げて」)、 AF-02 初回 miss = miss_02 (励まし) / 2 回目以降 = miss_01 (明確否定)、 AF-03 win voice を 180ms 遅延 (correct SE 被り回避)、 AF-04 _showFlagGame 冒頭で 9 voice preload (iOS user gesture 内)。 narration mp3 は runtime cache 任せ (precache list 不変)。
-const CACHE_VERSION = 1744;
+const CACHE_VERSION = 1745;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
@@ -433,6 +434,8 @@ const CRITICAL_ASSETS_SCRIPTS = [
   '/js/game-stickers.js',
   '/js/daily-quest.js',
   '/js/donguri-shop.js',
+  // v1745: AcornModal default SE (祝祭ジングル 1.20s)。 既存 don.mp3 と並列で precache。
+  '/assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3',
 ];
 const CRITICAL_ASSETS_IMAGES = [
   // v1718: ごかんそう (rating) — PNG asset; CRITICAL_ASSETS_SCRIPTS から分離 (semantic 整理)。

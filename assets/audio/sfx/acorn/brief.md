@@ -1,6 +1,6 @@
 # Acorn Get Festive SE - 生成発注 brief
 
-> **status**: AWAITING MANUAL GENERATION (Claude Code session で MCP 音声生成不可と判明、 ユーザー手動発注に委譲)
+> **status**: WIRED (v1745) - using universfield-game-bonus-03
 > **created**: 2026-06-28
 > **target file**: `assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3`
 > **deploy target**: develop-app → App staging (`pono-asobiba-app-staging.ndw.workers.dev`) で実機検証 → master
