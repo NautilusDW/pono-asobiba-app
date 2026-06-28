@@ -61,6 +61,7 @@
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
+- 2026-06-28 12:41 - by Codex - [batch:884-maze-water-line-skate] - maze/index.html, assets/images/maze/gimmicks/water/**, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - アメンボを味方にした水面ラインスケートへ置換 [overlap: batch:860-data-export-import, batch:877-gacha-tray-mask-lower]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
