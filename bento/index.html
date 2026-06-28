@@ -6845,6 +6845,7 @@ let freeFullMaskRefreshTimer = 0;
 let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
 let simpleBentoMode = false;
+let simpleReplaceSlotUid = null;
 
 // ===== NPC 依頼者モード state =====
 // セッション中の現在の依頼者。完成後は次の依頼者に切り替えて注文シーンから再開する。
@@ -6919,6 +6920,7 @@ function setCurrentNpcRequester(req) {
 
 function setSimpleBentoMode(enabled) {
   simpleBentoMode = !!enabled;
+  simpleReplaceSlotUid = null;
   try {
     sessionStorage.setItem(BENTO_MODE_SESSION_KEY, simpleBentoMode ? 'simple' : 'request');
   } catch (_) {}
@@ -8900,6 +8902,7 @@ function selectCupForMovement(cup, opts = {}) {
   freeCupToolMode = 'move';
   freeActiveCupUid = cup.uid;
   freeSelectedItemUid = cup.uid;
+  if (simpleBentoMode) simpleReplaceSlotUid = cup.uid;
   freeBrushStampDef = null;
   resetFreeMainGuide();
   if (opts.message !== false) {
@@ -8938,9 +8941,11 @@ function handleSimplePlacedItemTap(item) {
     }
   }
   freeSelectedItemUid = item.uid;
-  if (item.simpleSlot && item.type !== 'rice') {
-    setSpeech((item.name || 'おかず') + 'を えらんだよ。つぎに えらぶと ここに はいるよ。');
+  if (item.simpleSlot && item.type !== 'rice' && item.type !== 'decor') {
+    simpleReplaceSlotUid = item.uid;
+    setSpeech((item.name || 'おかず') + 'を えらんだよ。つぎに えらぶと ここを いれかえるよ。');
   } else {
+    simpleReplaceSlotUid = null;
     setSpeech((item.name || 'これ') + 'を えらんだよ。');
   }
   renderFreeLayoutStage();
@@ -10077,12 +10082,13 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (kind === 'decor') return getSimpleDecorSlots(box, tier);
   if (kind === 'main-food') {
     const points = (box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice();
-    const limit = Math.max(1, Math.min(3, points.length));
+    const limit = Math.max(1, Math.min(2, points.length));
     return points.slice(0, limit).map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
   }
   if (kind === 'side-food') {
     const points = (box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice();
-    const sidePoints = points.length >= 4 ? points.slice(Math.max(0, points.length - 3)) : points;
+    const sideStart = points.length >= 4 ? Math.max(2, points.length - 3) : Math.max(0, points.length - 2);
+    const sidePoints = points.slice(sideStart);
     return sidePoints.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
   }
   if (kind === 'accessory') {
@@ -10098,10 +10104,15 @@ function getSimpleSlotItem(slot) {
 function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) {
   const slots = getSimpleFixedSlots(def, tier);
   if (!slots.length) return null;
-  const selected = getSelectedFreeItem();
-  if (selected && selected.simpleSlot && getSimpleSlotKindForItem(selected) === slots[0].kind) {
-    const currentSlot = slots.find(slot => slot.key === selected.simpleSlot);
-    if (currentSlot) return { ...currentSlot, replaceUid: selected.uid };
+  const replaceItem = simpleReplaceSlotUid
+    ? placedItems.find(item => item.uid === simpleReplaceSlotUid)
+    : null;
+  if (replaceItem
+      && replaceItem.simpleSlot
+      && getItemTier(replaceItem) === tier
+      && getSimpleSlotKindForItem(replaceItem) === slots[0].kind) {
+    const currentSlot = slots.find(slot => slot.key === replaceItem.simpleSlot);
+    if (currentSlot) return { ...currentSlot, replaceUid: replaceItem.uid };
   }
   const empty = slots.find(slot => !getSimpleSlotItem(slot));
   if (empty) return empty;
@@ -10122,6 +10133,32 @@ function getSimpleSlotSize(def, slot) {
     return clamp(def.size || 156, 126, getBoxTierCount() <= 1 ? 156 : 168);
   }
   return def.size || 72;
+}
+function getSimpleDecorFreePoint(def, tier = getTargetTierForType(def && def.type)) {
+  const box = getSelectedBentoBox();
+  const riceBounds = getRicePlacementBounds(box);
+  const center = (box && box.riceSpots && box.riceSpots[0]) || {
+    x: riceBounds.x + riceBounds.w / 2,
+    y: riceBounds.y + riceBounds.h / 2,
+  };
+  const offsets = [
+    [-0.12, -0.10],
+    [0.12, -0.10],
+    [0, 0.12],
+    [-0.22, 0.04],
+    [0.22, 0.04],
+    [0, -0.22],
+    [-0.14, 0.22],
+    [0.14, 0.22],
+  ];
+  const count = placedItems.filter(item => item.type === 'decor' && getItemTier(item) === tier).length;
+  const offset = offsets[count % offsets.length];
+  const wave = Math.floor(count / offsets.length);
+  return clampPointToRice(
+    center.x + riceBounds.w * offset[0] + wave * 10,
+    center.y + riceBounds.h * offset[1] + wave * 6,
+    { type: 'decor', size: getSimpleSlotSize(def), scale: def && def.scale ? def.scale : 1 }
+  );
 }
 function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
@@ -10660,6 +10697,7 @@ function addSimpleFoodToCup(def, cup) {
   item.manualCupPosition = true;
   freeActiveCupUid = cup.uid;
   freeSelectedItemUid = item.uid;
+  simpleReplaceSlotUid = null;
   layoutCupChildren(cup);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -10671,6 +10709,30 @@ function addSimpleFoodToCup(def, cup) {
       if (freeCupEditorUid === cup.uid) closeCupEditor();
     }, 220);
   }
+  return item;
+}
+function addSimpleDecorPaletteItem(def) {
+  if (!def) return null;
+  const tier = getTargetTierForType(def.type);
+  const point = getSimpleDecorFreePoint(def, tier);
+  const item = addFreeLayoutItem(def, {
+    x: point.x,
+    y: point.y,
+    size: getSimpleSlotSize(def),
+    rotation: def.rotation != null ? def.rotation : 0,
+    tier,
+    brushLevel: def.brushItem ? 1 : def.brushLevel,
+    skipRender: true,
+  });
+  if (!item) return null;
+  item.simpleSlot = '';
+  freeSelectedItemUid = item.uid;
+  simpleReplaceSlotUid = null;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  spawnLandingSparkles(document.querySelector(`[data-free-uid="${item.uid}"]`) || document.getElementById('free-layout-stage'));
+  playPop();
+  setSpeech('のりは すきな ところに うごかせるよ。できたら のりOK を おしてね。');
   return item;
 }
 function addSimpleFixedPaletteItem(def) {
@@ -10700,6 +10762,7 @@ function addSimpleFixedPaletteItem(def) {
   if (!item) return null;
   item.simpleSlot = slot.key;
   freeSelectedItemUid = item.uid;
+  simpleReplaceSlotUid = null;
   if (item.snapTarget) {
     freeActiveCupUid = item.uid;
     freeCupToolMode = 'move';
@@ -10721,6 +10784,9 @@ function addSimpleFixedPaletteItem(def) {
 function addSimpleFreePaletteItem(def) {
   if (!def) return;
   if (!canStartFreePaletteDrag(def)) return;
+  if (def.type === 'decor') {
+    return addSimpleDecorPaletteItem(def);
+  }
   const editingCup = def.type === 'food' ? getEditingCup() : null;
   if (editingCup) {
     addSimpleFoodToCup(def, editingCup);
@@ -10736,11 +10802,13 @@ function addSimpleFreePaletteItem(def) {
   let item = null;
   if (def.type === 'rice_auto') {
     item = addAutoRiceForSelectedBox();
+    simpleReplaceSlotUid = null;
     playPop();
     return item;
   }
   if (def.type === 'template') {
     item = addRiceFaceTemplate(def.templateId);
+    simpleReplaceSlotUid = null;
     playPop();
     return item;
   }
@@ -10932,6 +11000,7 @@ function removeFreeItemData(uid) {
   if (freeActiveCupUid && removeIds.has(freeActiveCupUid)) freeActiveCupUid = null;
   if (freeCupEditorUid && removeIds.has(freeCupEditorUid)) freeCupEditorUid = null;
   if (freePendingCupEditorUid && removeIds.has(freePendingCupEditorUid)) freePendingCupEditorUid = null;
+  if (simpleReplaceSlotUid && removeIds.has(simpleReplaceSlotUid)) simpleReplaceSlotUid = null;
   if (item.parentCupId) layoutCupChildren(placedItems.find(i => i.uid === item.parentCupId && i.snapTarget));
   return item;
 }
@@ -11494,6 +11563,10 @@ function createFreePlacedElement(item, interactive) {
       ev.stopPropagation();
       if (simpleBentoMode) {
         if (ev.cancelable) ev.preventDefault();
+        if (item.type === 'decor' || isRiceDecorItem(item)) {
+          beginFreeItemDrag(ev, item.uid);
+          return;
+        }
         handleSimplePlacedItemTap(item);
         return;
       }
@@ -13177,6 +13250,7 @@ function loadFreeLayoutStage() {
   freePendingCupEditorUid = null;
   freeBrushStampDef = null;
   freeBrushStampLevel = 1;
+  simpleReplaceSlotUid = null;
   const maskEdit = getFreeMaskEditRequest();
   freeMaskEditorMode = !!maskEdit;
   freeMaskEditorOpen = false;
