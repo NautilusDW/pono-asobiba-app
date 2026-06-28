@@ -9748,7 +9748,15 @@ const SIMPLE_SLOT_LAYOUT_LIMITS = {
   divider: 3,
   other: 3,
 };
-function normalizeSimpleSlotPoint(point) {
+const SIMPLE_CUP_SLOT_SIZES = [150, 190, 230];
+function normalizeSimpleSlotSize(size, kind) {
+  const n = Math.round(clamp(Number(size), 32, 340) * 10) / 10;
+  if (kind !== 'cup' || !Number.isFinite(n)) return n;
+  return SIMPLE_CUP_SLOT_SIZES.reduce((best, value) => (
+    Math.abs(value - n) < Math.abs(best - n) ? value : best
+  ), SIMPLE_CUP_SLOT_SIZES[1]);
+}
+function normalizeSimpleSlotPoint(point, kind = '') {
   const x = Number(point && point.x);
   const y = Number(point && point.y);
   const normalized = {
@@ -9756,7 +9764,7 @@ function normalizeSimpleSlotPoint(point) {
     y: Number.isFinite(y) ? Math.round(clamp(y, 0, FREE_LAYOUT_H) * 10) / 10 : FREE_LAYOUT_H / 2,
   };
   const size = Number(point && point.size);
-  if (Number.isFinite(size)) normalized.size = Math.round(clamp(size, 32, 340) * 10) / 10;
+  if (Number.isFinite(size)) normalized.size = normalizeSimpleSlotSize(size, kind);
   const sampleId = String((point && point.sampleId) || '').trim();
   if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) normalized.sampleId = sampleId;
   return normalized;
@@ -9774,7 +9782,7 @@ function normalizeSimpleSlotLayoutMap(map) {
       const points = rawList
         .slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind])
         .filter(point => point && typeof point === 'object' && !Array.isArray(point))
-        .map(normalizeSimpleSlotPoint);
+        .map(point => normalizeSimpleSlotPoint(point, kind));
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;
@@ -9785,7 +9793,7 @@ function getSimpleSlotLayoutPoints(box, kind) {
   if (!box || !kind) return [];
   const layout = freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
   const list = layout && Array.isArray(layout[kind]) ? layout[kind] : [];
-  return list.map(normalizeSimpleSlotPoint);
+  return list.map(point => normalizeSimpleSlotPoint(point, kind));
 }
 function normalizeFreeMaskDefaultExportEntry(entry) {
   const rel = getFreeEditorEntryValue(entry, ['rel']);
