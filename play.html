@@ -5481,15 +5481,17 @@
        全て画像に内包されているため CSS から除去。 :active で pressed 版に差し替え + 1px 押し込み。 */
     .bn-item--feedback {
       position: absolute;
-      left: -104px;               /* sw1751: -96→-104 (アイコン拡大 78→120 に合わせ、どんぐり右端 -120 + gap 16 で揃え) */
+      left: -174px;               /* sw1756: -104→-174 (ボタン 158px + gap 16 で sprite 左端 0 から確実に離す) */
       top: 50%;
       transform: translateY(-50%);
-      /* sw1751: 既存 4 ボタン sprite (1 タイル ≈ 125x158px @ default、107x136 @ 16:9、90x114 @ 4:3)
-         に対して .bn-item--feedback が 78x78 で「半分以下サイズ」 に見える事故を修正。
-         アイコン本体サイズを sprite 1 タイル幅とほぼ揃え、 3 breakpoint で width/height を同期。
-         height は sprite 高さの 75% 前後に抑え (背景透過余白を考慮しアイコン本体と整合)。 */
-      width: 120px;
-      height: 120px;
+      /* sw1756: 前回 sw1751 の 120x120 では既存 sprite 1 タイル (125x158 @ default) より小さく
+         見える事故 + 16:9 で gap 不足の事故を再修正。
+         画像 (icon_feedback_20260628.png 64x64) は木枠+座布団+ラベル baked in の単タイルデザイン
+         なので、 既存 sprite 高さに完全一致させてサイズ感を揃える。
+         left は どんぐり基準でなく sprite 左端 (0) からの gap 16 ベースに変更:
+         left = -(width + 16) → default -174 / 16:9 -152 / 4:3 -130。 */
+      width: 158px;
+      height: 158px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -5688,12 +5690,13 @@
         font-size: 36px;          /* v1681: 18→36 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 40px; }  /* v1681: 20→40 */
-      /* sw1751: 16:9 sprite 1 タイル ≈ 107x136 に合わせ width/height を 104 へ。
-         left は どんぐり右端 (-244+124=-120) + gap 16 = -104 で default と同一。 */
+      /* sw1756: 16:9 sprite 1 タイル ≈ 107x136 に合わせ height 136、 width も 136 (画像は正方形)。
+         left は sprite 左端 0 から gap 16 確保 → -(136+16) = -152。
+         どんぐり右端は -244+124 = -120、 ボタン左端 -152 との gap = 32px (くっつき解消)。 */
       .bn-item--feedback {
-        left: -104px;
-        width: 104px;
-        height: 104px;
+        left: -152px;
+        width: 136px;
+        height: 136px;
       }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
@@ -5702,18 +5705,20 @@
          left offset は badge 幅 ~96 + 余白 22 = -118。
          sw1738: ごかんそう 96px 分を更に左へ → -118 - 96 = -214。 */
       .acorn-balance-badge--nav {
-        left: -214px;             /* sw1738: -118 → -214 (ごかんそう 96px 分を更に左へ) */
+        left: -240px;             /* sw1756: -214 → -240 (ごかんそう 114px + box-sizing:border-box 考慮、 どんぐり右端 -240+96=-144 + gap 14 = ボタン左端 -130) */
         padding: 10px 18px;       /* v1681: 6 10→10 18 */
         min-width: 96px;          /* v1681: 54→96 */
         font-size: 28px;          /* v1681: 16→28 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 32px; }  /* v1681: 18→32 */
-      /* sw1751: 4:3 sprite 1 タイル ≈ 90x114 に合わせ width/height を 88 へ。
-         left は どんぐり右端 (-214+96=-118) + gap 14 = -104 で default と同一。 */
+      /* sw1756: 4:3 sprite 1 タイル ≈ 90x114 に合わせ height 114、 width も 114 (画像は正方形)。
+         left は sprite 左端 0 から gap 16 確保 → -(114+16) = -130。
+         どんぐり右端 -214+96 = -118 と ボタン左端 -130 の gap = 12 → 余裕を取り
+         どんぐり left を -214→-228 に押し出して gap 14 を確保。 */
       .bn-item--feedback {
-        left: -104px;
-        width: 88px;
-        height: 88px;
+        left: -130px;
+        width: 114px;
+        height: 114px;
       }
     }
 
@@ -6683,7 +6688,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1755;
+    const PAGE_CACHE_VERSION = 1756;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
