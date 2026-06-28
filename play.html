@@ -2209,7 +2209,7 @@
       z-index: 4;
       overflow: hidden;
       pointer-events: none;
-      clip-path: inset(79% 18% 9% 18% round 14px);
+      clip-path: inset(79% 18% 6% 18% round 14px);
     }
     .daily-gacha-drop-capsule {
       position: absolute;
@@ -3298,7 +3298,7 @@
         display: none;
       }
       .daily-gacha-action { min-height: 42px; font-size: 15px; }
-      .daily-gacha-drop-mask { clip-path: inset(79% 18% 9% 18% round 12px); }
+      .daily-gacha-drop-mask { clip-path: inset(79% 18% 6% 18% round 12px); }
       .daily-gacha-closeup__inner { width: min(88vw, 100%); height: 76dvh; }
       .daily-gacha-closeup__open-pair { top: 78%; width: min(410px, 60vw); height: min(166px, 27vw); }
       .daily-gacha-reward { top: 21%; width: 196px; height: 196px; }
@@ -6332,7 +6332,8 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1715;
+    const PAGE_CACHE_VERSION = 1718;
+    const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     window.PONO_FEEDBACK_FORMS_URL = '[FORMS_URL_PLACEHOLDER]';
     window.PONO_FEEDBACK_FORMS_FIELDS = {
@@ -6342,7 +6343,6 @@
       play_sum: '[ENTRY_ID_PLACEHOLDER]',
       ref: '[ENTRY_ID_PLACEHOLDER]',
     };
-    const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
