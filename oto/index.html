@@ -2650,8 +2650,9 @@
     display: none !important;
   }
   .rhythm-name-skip {
-    margin-left: 8px;
-    padding: 10px 16px;
+    /* v(name-row-overflow-fix): margin-left:8px は flex gap:8px と二重計上だったため除去。
+       padding 16→12 にして label「のこさない」 (5字) が 375px 幅で行内に収まるよう調整。 */
+    padding: 10px 12px;
     border: none;
     border-radius: 12px;
     background: rgba(255,255,255,0.12);
@@ -2659,6 +2660,7 @@
     font-family: inherit;
     font-weight: 700;
     font-size: 14px;
+    white-space: nowrap;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
@@ -2694,6 +2696,9 @@
   .rhythm-name-row {
     display: flex;
     gap: 8px;
+    /* v(name-row-overflow-fix): 狭幅 (≤375px) でも 3 子要素 (input + のこす + のこさない)
+       が overflow しないよう wrap を許可。column 化トリガ (≤540px) と併存しても問題なし。 */
+    flex-wrap: wrap;
   }
   .rhythm-name-input {
     flex: 1;
@@ -2709,16 +2714,20 @@
     background: rgba(255,255,255,0.94);
   }
   .rhythm-name-save {
-    min-width: 86px;
+    /* v(name-row-overflow-fix): 固定 min-width:86px は font-weight:900 のグリフ実寸に対し
+       不十分な保険値 (clip リスク) だったため max-content に変更し、 ラベル「のこす」 が
+       自身の rendered width 未満には絶対に縮まないように保証する。 */
+    min-width: max-content;
     border: none;
     border-radius: 12px;
-    padding: 8px 12px;
+    padding: 8px 14px;
     font-family: inherit;
     font-size: 0.96rem;
     font-weight: 900;
     color: #064E3B;
     background: linear-gradient(135deg, #86EFAC, #22C55E);
     box-shadow: 0 4px 10px rgba(0,0,0,0.16);
+    white-space: nowrap;
     cursor: pointer;
     touch-action: manipulation;
   }
@@ -3006,8 +3015,13 @@
     .rhythm-name-row {
       flex-direction: column;
     }
-    .rhythm-name-save {
+    .rhythm-name-save,
+    .rhythm-name-skip {
+      /* v(name-row-overflow-fix): column 化したら入力欄と幅を揃え、
+         「のこす」「のこさない」 ラベルが押しやすい横幅を確保。 */
       min-height: 42px;
+      width: 100%;
+      align-self: stretch;
     }
   }
 
@@ -5519,6 +5533,12 @@
 // ────────────────────────────────
 let _ac = null;
 var _otoWindowInactive = false;
+// batch913 Fix-A: PonoAcornModal 提示中は window 'blur' 起因の BGM 停止を抑止する。
+// PonoAcornModal.show() は dismissBtn.focus() を呼ぶため iOS Safari では一瞬
+// 'blur' が発火し、 _silenceOtoAudioForInactive('blur') が clear BGM (loop:true)
+// を pause/suspend してしまう事故が起きていた。 modal の onDismiss で false に戻す。
+// visibility hidden (本物の app switch) は別 path なので影響を受けない。
+var _otoAcornModalActive = false;
 function _otoAudioShouldBlock() {
   return !!(document.hidden || _otoWindowInactive);
 }
@@ -5753,6 +5773,10 @@ document.addEventListener('visibilitychange', function() {
   else _resumeOtoAudioAfterInactive();
 });
 window.addEventListener('blur', function() {
+  // batch913 Fix-A: PonoAcornModal の focus 操作で一瞬発火する偽 'blur' で
+  // BGM が止まる事故を防ぐ。 本物の app switch は visibilitychange (document.hidden)
+  // で確実に拾われるので、 こちらを skip しても安全。
+  if (_otoAcornModalActive) return;
   _silenceOtoAudioForInactive('blur');
 });
 window.addEventListener('focus', function() {
@@ -6742,39 +6766,45 @@ var RHYTHM_SONGS = [
     ]
   },
   {
-    id: 'alps',
-    name: 'アルプスいちまんじゃく',
+    id: 'oldclock',
+    name: 'おおきな ふるどけい',
     note: '難しい',
     stage: 7,
     difficulty: '難しい',
-    bpm: 112,
-    bandSongId: 'alps112',
+    bpm: 104,
+    bandSongId: 'oldclock104',
     bandStems: ['drums'],
-    bandVolume: 0.32,
+    bandVolume: 0.30,
     sections: [
       {
         name: '1',
-        note: 'アルプス',
-        notes: [0, 0, 1, 2, 0, 2, 1, 4, 0, 0, 1, 2, 3, 2, 1, 0],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        note: 'おおきな',
+        // G G C E E E E D E F D C C C
+        // おおきな のっぽの ふるどけい
+        notes: [4, 4, 0, 2, 2, 2, 2, 1, 2, 3, 1, 0, 0, 0],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
       },
       {
         name: '2',
-        note: 'おどろう',
-        notes: [0, 0, 1, 2, 0, 2, 1, 0, 0, 1, 2, 3, 2, 1],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2]
+        note: 'おじいさん',
+        // おじいさんの とけいさ — A2 short verse resolves to tonic
+        notes: [4, 4, 0, 2, 1, 0, 1, 0, 4, 4, 3, 2, 1, 0],
+        beats: [1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2]
       },
       {
         name: '3',
-        note: 'はやいぞ',
-        notes: [3, 3, 3, 4, 5, 3, 5, 4, 3, 3, 3, 4, 5, 3, 5, 4],
+        note: 'チクタク',
+        // ひゃくねん いつも うごいてた / チクタク チクタク
+        // C E G G E C E D | E E F F E D C C
+        notes: [0, 2, 4, 4, 2, 0, 2, 1, 2, 2, 3, 3, 2, 1, 0, 0],
         beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
       },
       {
         name: '4',
-        note: 'さいご',
-        notes: [3, 3, 4, 5, 3, 5, 4, 2, 3, 2, 1, 4, 0, 0],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2]
+        note: 'おしまい',
+        // いまは もう うごかない その とけい — resolves to low C
+        notes: [4, 4, 0, 2, 2, 1, 0, 2, 1, 4, 3, 2, 1, 0],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
       }
     ]
   }
@@ -7050,9 +7080,10 @@ var RHYTHM_OPENING_SCENES = {
     { speaker: 'rival', state: 'happy', text: 'リズムたいけつなら だれにも まけん！' },
     { speaker: 'rival', state: 'attack', text: 'よろこびの おとで しょうぶだ！' }
   ],
-  alps: [
-    { speaker: 'rival', state: 'taunt', text: 'こんどは アルプスの はやわざだ！' },
-    { speaker: 'rival', state: 'attack', text: 'おうかんノートに ついてこい！' }
+  oldclock: [
+    { speaker: 'rival', state: 'taunt', text: 'オレさまは ビートキング ガオーン！' },
+    { speaker: 'rival', state: 'happy', text: 'さいごの きょくは ふるどけいだ！' },
+    { speaker: 'rival', state: 'attack', text: 'チクタクの リズム きざんでみろ！' }
   ]
 };
 Object.keys(RHYTHM_RIVALS).forEach(function(key) {
@@ -9773,6 +9804,10 @@ function _hideRhythmComplete() {
   _clearRhythmFinishTimer();
   var complete = document.getElementById('rhythm-complete');
   if (complete) complete.classList.remove('show', 'stage-clear');
+  // batch913 Fix-B: result panel を閉じたら 保留中の どんぐりモーダル発火予約も破棄する。
+  // 「次のステージへ」「もどる」 タップで結果画面を離脱したのに、 数秒後に唐突に
+  // モーダルが出てくる事故を防ぐ。
+  if (_rhythm) _rhythm.pendingAcornModal = null;
   if (_otoBgmState.currentKey === 'clear') _stopOtoBgm(360);
   document.body.classList.remove('rhythm-complete-active');
   _updateRhythmVictoryRival(false);
@@ -10053,6 +10088,41 @@ function _afterRhythmStickerReward(callback) {
   }
   done();
 }
+// batch913: どんぐりモーダル発火ヘルパ。
+//
+// Fix-A (BGM 継続):
+//   PonoAcornModal.show() は内部で dismissBtn.focus() を呼び、 iOS Safari では
+//   この瞬間に window 'blur' が 1 フレームだけ発火する。 oto の blur ハンドラ
+//   (_silenceOtoAudioForInactive) は全 BGM を pause/suspend するため、 結果として
+//   clear BGM (loop:true) が止まって聞こえる事故が起きる。 modal 提示中は
+//   _otoAcornModalActive=true を立て、 blur ハンドラ側で「modal 起因の blur」を
+//   無視させる。 visibility/hidden や real な app switch は別 path で扱うので影響なし。
+//
+// Fix-B (タイミング):
+//   _showRhythmComplete から呼ばれた時に _rhythm.pendingAcornModal を消費 (1 回限り)。
+//   呼ばれない経路 (qualifies=true 時の name-form submit/skip) でも同じ関数を経由する。
+function _maybeFireOtoAcornModal() {
+  var p = _rhythm && _rhythm.pendingAcornModal;
+  if (!p) return;
+  _rhythm.pendingAcornModal = null; // 二重発火防止
+  if (!window.PonoAcornModal) return;
+  try {
+    _otoAcornModalActive = true;
+    var modal = new window.PonoAcornModal({
+      gameId: 'oto',
+      granted: p.granted,
+      dailyTotal: p.dailyTotal,
+      dailyCap: p.dailyCap,
+      state: p.state,
+      autoHide: 0, // tap/ESC/× のみで dismiss (Phase 2: 全ゲーム統一)
+      onDismiss: function() { _otoAcornModalActive = false; }
+    });
+    modal.show();
+  } catch (e) {
+    _otoAcornModalActive = false;
+    console.warn('[oto] PonoAcornModal show failed', e);
+  }
+}
 function _showRhythmComplete(result) {
   _hideRhythmMenu();
   _clearRhythmCompleteTimers();
@@ -10068,21 +10138,19 @@ function _showRhythmComplete(result) {
   if (clearedFullSong && window.addAcornsDaily) {
     var _otoGranted = window.addAcornsDaily('oto', 5, 5, { reason: 'oto_clear', suppressRewardModal: true }) || 0;
     if (_otoGranted > 0 && window.PonoAcornModal) {
-      setTimeout(function() {
-        try {
-          var dailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
-          var dailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
-          var isCapped = (dailyTotal != null) && (dailyTotal >= dailyCap);
-          new window.PonoAcornModal({
-            gameId: 'oto',
-            granted: _otoGranted,
-            dailyTotal: dailyTotal,
-            dailyCap: dailyCap,
-            state: isCapped ? 'capped' : 'idle',
-            autoHide: 0, // tap/ESC/× のみで dismiss (Phase 2: 全ゲーム統一)
-          }).show();
-        } catch (e) { console.warn('[oto] PonoAcornModal show failed', e); }
-      }, 1000);
+      // batch913 Fix-B: どんぐりモーダルは ハイスコア ネームフォームの提出 / スキップ
+      // 後に出す (qualifies=true の場合)。 圏外 (qualifies=false) なら _showRhythmComplete
+      // 末尾で 1 秒後に発火する。 どちらの経路でも _maybeFireOtoAcornModal() が 1 回だけ
+      // 発火する設計 (stash + flag で二重発火防止)。
+      var _otoAcornDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+      var _otoAcornDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+      var _otoAcornIsCapped = (_otoAcornDailyTotal != null) && (_otoAcornDailyTotal >= _otoAcornDailyCap);
+      _rhythm.pendingAcornModal = {
+        granted: _otoGranted,
+        dailyTotal: _otoAcornDailyTotal,
+        dailyCap: _otoAcornDailyCap,
+        state: _otoAcornIsCapped ? 'capped' : 'idle',
+      };
     }
   }
   document.body.classList.add('rhythm-complete-active');
@@ -10153,6 +10221,14 @@ function _showRhythmComplete(result) {
     }
     if (actions) actions.classList.remove('hidden');
   }, 900));
+  // batch913 Fix-B: 圏外 (qualifies=false) のときは ネームフォームが出ないので
+  // 1 秒後に直接 どんぐりモーダルを発火。 qualifies=true の場合は name-form の
+  // submit/skip handler で _maybeFireOtoAcornModal() が呼ばれる。
+  if (clearedFullSong && !qualifies) {
+    _rhythm.completeTimers.push(setTimeout(function() {
+      _maybeFireOtoAcornModal();
+    }, 1000));
+  }
 }
 function _scheduleRhythmFinish() {
   if (!_rhythm.enabled || _rhythm.finishTimer) return;
@@ -11345,6 +11421,9 @@ if (rhythmNameForm) rhythmNameForm.addEventListener('submit', function(e) {
   _renderRhythmLeaderboard(entry.key, entry.id);
   // v1116: 保存が終わったらネームゲートを解除し通常結果表示に戻す
   document.body.classList.remove('rhythm-namegate');
+  // batch913 Fix-B: ハイスコア提出が完了してから どんぐりモーダルを発火。
+  // 数フレーム空けて結果パネルの再描画とフォーカス復帰を先に走らせる。
+  setTimeout(function() { _maybeFireOtoAcornModal(); }, 400);
 });
 // v1116: 「あとで」ボタンでネームゲートをスキップ (匿名で保存しない)
 var rhythmNameSkip = document.getElementById('rhythm-name-skip');
@@ -11354,6 +11433,8 @@ if (rhythmNameSkip) rhythmNameSkip.addEventListener('click', function(e) {
   document.body.classList.remove('rhythm-namegate');
   var form = document.getElementById('rhythm-name-form');
   if (form) form.classList.add('hidden');
+  // batch913 Fix-B: スキップ時も同様に少し遅延してから どんぐりモーダルを出す。
+  setTimeout(function() { _maybeFireOtoAcornModal(); }, 400);
 });
 _renderRhythmSongMenu();
 _updateRhythmMenuActions();
@@ -11385,11 +11466,16 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
   }
   btn.addEventListener('pointerdown', function(e) {
     e.preventDefault();
-    try { btn.setPointerCapture(e.pointerId); } catch(_) {}
-    if (_rhythm.demoActive) {
+    // ライバルダイアログ表示中 (オープニング演出 / 退場アニメ中) は
+    // .rhythm-opening-character や ::before が pointer-events:none のため
+    // 中央バンドのタップが下層 .instr-btn にすり抜ける。
+    // 音/視覚エフェクト両方を完全に抑止して、ダイアログ閉じる前のステイ音漏れを防ぐ。
+    if (_rhythm.demoActive || _rhythm.openingActive || _rhythm.openingSettling) {
       e.stopPropagation();
+      try { btn.releasePointerCapture(e.pointerId); } catch(_) {}
       return;
     }
+    try { btn.setPointerCapture(e.pointerId); } catch(_) {}
     var idx = parseInt(btn.dataset.idx, 10);
     // 押下アニメ
     btn.classList.add('press');
@@ -13978,7 +14064,7 @@ var SONGS = [
   { id: 'choucho90',  name: 'ちょうちょう', type: 'synth', bpm: 90, bars: 4, chords: ['C','G','C','G'] },
   { id: 'london90',   name: 'ロンドン', type: 'synth', bpm: 90,  bars: 4, chords: ['C','G','C','G'] },
   { id: 'ode100',     name: 'よろこび', type: 'synth', bpm: 100, bars: 8, chords: ['C','G','C','G','C','F','G','C'] },
-  { id: 'alps112',    name: 'アルプス', type: 'synth', bpm: 112, bars: 16, chords: ['C','C','G','C','C','F','G','C','F','F','C','C','F','F','C','G'] }
+  { id: 'oldclock104', name: 'ふるどけい', type: 'synth', bpm: 104, bars: 16, chords: ['C','C','G','G','C','C','F','C','C','Am','F','G','C','F','G','C'] }
 ];
 var _curSongIdx = 0;
 function _currentSong() { return SONGS[_curSongIdx]; }
