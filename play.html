@@ -5706,18 +5706,17 @@
          left offset は badge 幅 ~96 + 余白 22 = -118。
          sw1738: ごかんそう 96px 分を更に左へ → -118 - 96 = -214。 */
       .acorn-balance-badge--nav {
-        left: -254px;             /* sw1757: -240→-254 (どんぐりを 14px 左へ) */
+        left: -264px;             /* sw1760: -254→-264 (ごかんそう -130 化に追従、 gap 維持で 10px 左へ) */
         padding: 10px 18px;       /* v1681: 6 10→10 18 */
         min-width: 96px;          /* v1681: 54→96 */
         font-size: 28px;          /* v1681: 16→28 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 32px; }  /* v1681: 18→32 */
-      /* sw1756: 4:3 sprite 1 タイル ≈ 90x114 に合わせ height 114、 width も 114 (画像は正方形)。
+      /* sw1760: 4:3 sprite 1 タイル ≈ 90x114 に合わせ height 114、 width も 114 (画像は正方形)。
          left は sprite 左端 0 から gap 16 確保 → -(114+16) = -130。
-         どんぐり右端 -214+96 = -118 と ボタン左端 -130 の gap = 12 → 余裕を取り
-         どんぐり left を -214→-228 に押し出して gap 14 を確保。 */
+         どんぐり右端 -264+96 = -168 と ボタン左端 -130 の gap = 38px 確保 (どんぐり-ボタン)。 */
       .bn-item--feedback {
-        left: -120px;             /* sw1757: -130→-120 (10px 右へ) */
+        left: -130px;             /* sw1760: -120→-130 (sprite gap 16px 確保) */
         width: 114px;
         height: 114px;
       }
@@ -6689,7 +6688,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1759;
+    const PAGE_CACHE_VERSION = 1760;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.

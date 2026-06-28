@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-28T10:35:16Z - play.html 4:3 breakpoint feedback button gap fix (-120→-130) + acorn badge follow (-254→-264) + cache bump 1759→1760
+- **タスク**: play.html 4:3 breakpoint feedback button gap fix (-120→-130) + acorn badge follow (-254→-264) + cache bump 1759→1760
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 64
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 12, "Read": 10, "ToolSearch": 2, "Bash": 11, "Agent": 25, "Grep": 3, "WebFetch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-28T09:14:39Z - play.html bottom-nav 配置微調整: ごかんそう 10px 右 / どんぐり 14px 左 (3 breakpoint) + sw1757 bump
 - **タスク**: play.html bottom-nav 配置微調整: ごかんそう 10px 右 / どんぐり 14px 左 (3 breakpoint) + sw1757 bump
 - **結果**: 成功
@@ -238,19 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-06-28T05:25:06Z - maze 力の手袋ミニゲームに 3-2-1-GO! カウントダウン (SE + ナレ同期) を追加
 - **タスク**: maze 力の手袋ミニゲームに 3-2-1-GO! カウントダウン (SE + ナレ同期) を追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 125
-- **エラー数**: 12
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 15, "Bash": 81, "Read": 11, "Edit": 8, "ToolSearch": 1, "Agent": 8, "Write": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-28T05:23:47Z - AcornModal show() で SE を user gesture 同期 frame 内に前倒し + _seFired ガードで二重発火防止 (sw v1739)
-- **タスク**: AcornModal show() で SE を user gesture 同期 frame 内に前倒し + _seFired ガードで二重発火防止 (sw v1739)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 125
