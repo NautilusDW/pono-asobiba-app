@@ -660,17 +660,16 @@
   z-index: 1;
 }
 
-/* dismiss (×) は panel の grid (align-content/justify-items: center) に
-   引きずられないよう absolute 配置を再宣言。 Fukuro_frame_001.png の
-   右上葉装飾と重ならないよう top/right を base より内側に寄せる
-   (clamp 8-14px)。 z-index: 3 で葉飾り (0) と content (1) より前面。
-   その他のゲーム (oto / quizland) は base ルール (top: 16-24px /
-   right: 20-32px) のままで影響を受けない。 */
+/* dismiss (×) は base で position: absolute / z-index: 3 / 右上 clamp
+   配置が保証されているので、 maze override では Fukuro_frame_001.png の
+   右上葉装飾と重ならないよう top/right を base (clamp 16-24px /
+   20-32px) より内側に寄せる調整のみを行う (clamp 8-14px)。
+   base-dismiss-css 統一フェーズ (v1731) で position/z-index の再宣言は
+   削除済。 その他のゲーム (oto / quizland / undersea-cave 等) は base
+   ルールのまま右上固定が効く。 */
 [data-game-id="maze"] .pono-acorn-modal__dismiss {
-  position: absolute;
   top: clamp(8px, 2vw, 14px);
   right: clamp(8px, 2vw, 14px);
-  z-index: 3;
 }
 
 [data-game-id="oto"].pono-acorn-modal {

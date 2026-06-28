@@ -45,6 +45,7 @@
 <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('bento');});</script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/difficulty.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="../js/game-stickers.js"></script>
 <style>
@@ -166,6 +167,45 @@ html, body {
 }
 .title-screen__mode-btn--simple:active {
   box-shadow: 0 2px 0 #41834E, 0 6px 12px rgba(34, 81, 43, 0.2);
+}
+/* 難易度バッジ (common/difficulty.js 連動)。 quizland の難易度ラベルと視覚整合 */
+.title-screen__mode-btn { position: relative; }
+.title-screen__mode-badge {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 248, 230, 0.96);
+  border: 2px solid #E49A52;
+  color: #8B4513;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.1;
+  box-shadow: 0 2px 6px rgba(55, 29, 8, 0.22);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.title-screen__mode-badge[hidden] { display: none; }
+.title-screen__mode-badge .title-screen__mode-badge-stars {
+  margin-right: 3px;
+  color: #E49A52;
+  letter-spacing: 0.5px;
+}
+.title-screen__mode-badge[data-difficulty="easy"]   { border-color: #65A86D; }
+.title-screen__mode-badge[data-difficulty="easy"]   .title-screen__mode-badge-stars { color: #65A86D; }
+.title-screen__mode-badge[data-difficulty="normal"] { border-color: #E49A52; }
+.title-screen__mode-badge[data-difficulty="normal"] .title-screen__mode-badge-stars { color: #E49A52; }
+.title-screen__mode-badge[data-difficulty="hard"]   { border-color: #C25E3B; }
+.title-screen__mode-badge[data-difficulty="hard"]   .title-screen__mode-badge-stars { color: #C25E3B; }
+@media (max-width: 900px) {
+  .title-screen__mode-badge {
+    top: -7px;
+    right: -4px;
+    padding: 2px 8px;
+    font-size: 0.54rem;
+    border-width: 1.5px;
+  }
 }
 @keyframes titleTapPulse {
   0%, 100% { opacity: 0.92; transform: scale(1); }
@@ -5081,6 +5121,9 @@ body.bento-complete-open #sk-intro {
     <div class="title-screen__start">▶ あそびかたを えらぶ</div>
     <div class="title-screen__mode-buttons" aria-label="あそびかた">
       <button type="button" class="title-screen__mode-btn" data-bento-start-mode="request">
+        <span class="title-screen__mode-badge" id="title-screen-difficulty-badge" data-difficulty="" role="img" aria-label="難易度 ふつう" hidden>
+          <span class="title-screen__mode-badge-stars" aria-hidden="true">★★</span><span class="title-screen__mode-badge-label">ふつう</span>
+        </span>
         おねがいモード
         <small>どうぶつの おべんとうを つくる</small>
       </button>
@@ -16747,6 +16790,31 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     if (simpleButton) simpleButton.classList.add('title-screen__mode-btn--primary-only');
     if (startLabel) startLabel.textContent = '▶ じぶんでつくる';
   }
+  // 難易度バッジ: PonoTier (free/book/sub) → PonoDifficulty で表示。
+  // simple モードは中立 (バッジ無し)。 チュートリアル未完了時も非表示 (UI 混乱回避)。
+  (function syncDifficultyBadge() {
+    const badge = document.getElementById('title-screen-difficulty-badge');
+    if (!badge || !requestButton || !requestAvailable) return;
+    if (!window.PonoDifficulty || typeof window.PonoDifficulty.forTier !== 'function') return;
+    let tierKey = 'free';
+    try {
+      if (window.PonoTier && typeof window.PonoTier.getTier === 'function') {
+        tierKey = window.PonoTier.getTier() || 'free';
+      }
+    } catch (_) { tierKey = 'free'; }
+    const diff = window.PonoDifficulty.forTier(tierKey);
+    if (!diff) return;
+    const starsEl = badge.querySelector('.title-screen__mode-badge-stars');
+    const labelEl = badge.querySelector('.title-screen__mode-badge-label');
+    if (starsEl) starsEl.textContent = diff.stars;
+    if (labelEl) labelEl.textContent = diff.label;
+    badge.setAttribute('data-difficulty', diff.key);
+    badge.setAttribute('aria-label', '難易度 ' + diff.label);
+    // チュートリアル未完了中は非表示 (初回プレイ時 UI 混乱を避ける)
+    let tutorialDone = true;
+    try { tutorialDone = localStorage.getItem(BENTO_TUTORIAL_STORAGE_KEY) === '1'; } catch (_) { tutorialDone = true; }
+    badge.hidden = !tutorialDone;
+  })();
   function startFromTitle(mode) {
     if (started) return;
     started = true;

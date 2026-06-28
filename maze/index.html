@@ -58,9 +58,49 @@ html, body {
   padding: 3px 8px; font-size: 0.85rem; font-weight: 700;
   flex-shrink: 0; gap: 8px;
 }
-#hud-stage { color: var(--primary); }
+#hud-stage { color: var(--primary); display: inline-flex; align-items: center; gap: 6px; }
 #hud-apples { color: var(--accent); }
 #hud-moves { color: var(--text); }
+
+/* ── 難易度バッジ (やさしい/ふつう/むずかしい)
+   common/difficulty.js の値をもとに HUD と image-stage ラベルの直後に挿入。
+   quizland の diff-label と視覚的に整合 (小さめ・★併記・半透明背景)。
+   年齢数字は絶対に出さない (CLAUDE.md ルール準拠)。 */
+.pono-diff-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  background: rgba(255, 248, 224, 0.85);
+  color: #5D3A00;
+  border: 1.2px solid rgba(164, 199, 109, 0.55);
+  text-shadow: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.pono-diff-badge .pono-diff-stars {
+  font-size: 0.78rem;
+  color: #E0A02C;
+  letter-spacing: 0;
+  line-height: 1;
+}
+.pono-diff-badge[data-diff="easy"]   { background: rgba(232, 245, 215, 0.92); border-color: rgba(164, 199, 109, 0.7); color: #3F5A1E; }
+.pono-diff-badge[data-diff="normal"] { background: rgba(255, 244, 208, 0.92); border-color: rgba(224, 160, 44, 0.7);  color: #6A4400; }
+.pono-diff-badge[data-diff="hard"]   { background: rgba(255, 220, 220, 0.92); border-color: rgba(200, 90, 90, 0.7);   color: #762020; }
+/* image-stage-mode 上部ラベル内の badge: 背景が暗いので白系で見やすく */
+#imgStageLabel .pono-diff-badge {
+  background: rgba(255, 248, 224, 0.18);
+  color: rgba(255, 248, 224, 0.95);
+  border-color: rgba(255, 248, 224, 0.4);
+  font-size: 0.78rem;
+  margin-left: 6px;
+}
+#imgStageLabel .pono-diff-badge .pono-diff-stars {
+  color: #FFD86A;
+}
 
 .game-wrap {
   flex: 1; min-height: 0;
@@ -2994,6 +3034,7 @@ body.image-stage-mode .game-wrap {
 <script src="../js/game-stickers.js"></script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/difficulty.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="image-runtime.js"></script>
 
@@ -3599,6 +3640,37 @@ const ovBtn = document.getElementById('ov-btn');
 const hudStage = document.getElementById('hud-stage');
 const hudMoves = document.getElementById('hud-moves');
 const hudApples = document.getElementById('hud-apples');
+
+// ── 難易度バッジ更新ヘルパー (common/difficulty.js 連携) ──
+// stageIdx (1-based) を渡すと #hud-stage と #imgStageLabel の末尾に
+// 「やさしい/ふつう/むずかしい」 + ★バッジを差し込む。 年齢数字は出さない。
+// common/difficulty.js が読まれていない / 範囲外 stage の時は no-op。
+function _mzUpdateDifficultyBadges(stageIdx) {
+  try {
+    if (!window.PonoDifficulty || typeof window.PonoDifficulty.forStage !== 'function') return;
+    var diff = window.PonoDifficulty.forStage('maze', stageIdx);
+    if (!diff) return;
+    var badgeHtml = '<span class="pono-diff-badge" data-diff="' + diff.key
+      + '" role="img" aria-label="難易度: ' + diff.label + '">'
+      + '<span class="pono-diff-stars" aria-hidden="true">' + diff.stars + '</span>'
+      + '<span>' + diff.label + '</span>'
+      + '</span>';
+    // #hud-stage: 既存バッジを除去してから追加 (再ロード対策)
+    var hudEl = document.getElementById('hud-stage');
+    if (hudEl) {
+      var oldHud = hudEl.querySelector('.pono-diff-badge');
+      if (oldHud) oldHud.remove();
+      hudEl.insertAdjacentHTML('beforeend', badgeHtml);
+    }
+    // #imgStageLabel: image-stage-mode 上部ラベルにも同様に追加
+    var labelEl = document.getElementById('imgStageLabel');
+    if (labelEl) {
+      var oldLabel = labelEl.querySelector('.pono-diff-badge');
+      if (oldLabel) oldLabel.remove();
+      labelEl.insertAdjacentHTML('beforeend', badgeHtml);
+    }
+  } catch (e) { /* silent: HUD だけのバッジなので失敗してもゲーム進行に影響させない */ }
+}
 const hint = document.getElementById('hint');
 const voice = document.getElementById('voice');
 const flagInventoryHud = document.getElementById('flagInventoryHud');
@@ -3940,6 +4012,8 @@ function imgLoadStage(def) {
   if (labelEl) {
     labelEl.textContent = 'ステージ ' + stageIdx;
   }
+  // 難易度バッジ (やさしい/ふつう/むずかしい) を HUD と上部ラベルに差し込む
+  _mzUpdateDifficultyBadges(stageIdx);
   voice.style.display = '';
   encounter.classList.remove('show');
   // Hide charm bar in image mode (Phase 1: charms not supported)
@@ -10484,6 +10558,8 @@ function loadStage(idx) {
   hudStage.textContent = stage.name;
   hudMoves.textContent = 'てかず: 0';
   hudApples.textContent = '🍎 0/' + stage.totalApples;
+  // 難易度バッジ (やさしい/ふつう/むずかしい) を HUD に差し込む (grid stage 経路)
+  _mzUpdateDifficultyBadges(stageIdx);
   voice.style.display = '';
   encounter.classList.remove('show');
   resizeCanvas();

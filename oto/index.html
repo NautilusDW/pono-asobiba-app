@@ -23,6 +23,7 @@
 <script src="../common/acorns.js" defer></script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/difficulty.js"></script>
 <script src="../common/capture.js" defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1669,7 +1670,7 @@
     flex: 0 0 auto;
     margin-top: 10px;
   }
-  /* Region 1: 難易度タブ (かんたん / ふつう / 難しい) */
+  /* Region 1: 難易度タブ (やさしい / ふつう / むずかしい — data-diff は旧キー保持) */
   .rhythm-diff-tabs {
     display: none; width: 100%; gap: 6px; margin-bottom: 4px;
     border-radius: 18px;
@@ -1681,6 +1682,10 @@
     color: rgba(255,255,255,0.78);
     font-family: inherit; font-weight: 800; font-size: 0.9rem;
     cursor: pointer; -webkit-tap-highlight-color: transparent;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .rhythm-diff-stars {
+    font-size: 0.7rem; opacity: 0.85; letter-spacing: -0.5px;
   }
   .rhythm-diff-tab.active {
     background: linear-gradient(135deg, #FDE68A, #F59E0B);
@@ -5358,10 +5363,10 @@
           <div class="rhythm-menu-title">ステージを えらぼう</div>
           <div class="rhythm-menu-guide">クリアした ステージと、つぎの ステージで あそべるよ。</div>
           <div class="rhythm-stage-status" id="rhythm-stage-status"></div>
-          <div class="rhythm-diff-tabs" role="tablist">
-            <button class="rhythm-diff-tab active" type="button" data-diff="かんたん" role="tab" aria-selected="true">かんたん</button>
-            <button class="rhythm-diff-tab" type="button" data-diff="ふつう" role="tab" aria-selected="false">ふつう</button>
-            <button class="rhythm-diff-tab" type="button" data-diff="難しい" role="tab" aria-selected="false">難しい</button>
+          <div class="rhythm-diff-tabs" role="tablist" aria-label="むずかしさを えらぶ">
+            <button class="rhythm-diff-tab active" type="button" data-diff="かんたん" role="tab" aria-selected="true" aria-label="やさしい (★)"><span class="rhythm-diff-stars" aria-hidden="true">★</span>やさしい</button>
+            <button class="rhythm-diff-tab" type="button" data-diff="ふつう" role="tab" aria-selected="false" aria-label="ふつう (★★)"><span class="rhythm-diff-stars" aria-hidden="true">★★</span>ふつう</button>
+            <button class="rhythm-diff-tab" type="button" data-diff="難しい" role="tab" aria-selected="false" aria-label="むずかしい (★★★)"><span class="rhythm-diff-stars" aria-hidden="true">★★★</span>むずかしい</button>
           </div>
           <div class="rhythm-song-list" id="rhythm-song-list"></div>
           <div class="rhythm-menu-actions">
@@ -7137,10 +7142,32 @@ var RHYTHM_SCORE_KEY = 'pono_oto_rhythm_scores_v1';
 var RHYTHM_SCORE_NAME_KEY = 'pono_oto_rhythm_score_name_v1';
 
 function _normalizeRhythmDiffLabel(diff) {
+  // 内部キー (data-diff / RHYTHM_CURRENT_DIFF / 曲データの difficulty/note) は
+  // 旧 'かんたん/ふつう/難しい' を維持。 これは selectors / tutorial / 進捗保存と
+  // 完全互換を保つため。 子供画面の表示テキストは _displayRhythmDiffLabel() を使う。
   if (diff === 'むずかしめ') return '難しい';
-  if (diff === '難しい') return '難しい';
+  if (diff === '難しい' || diff === 'むずかしい') return '難しい';
   if (diff === 'ふつう') return 'ふつう';
+  if (diff === 'やさしい') return 'かんたん';
   return 'かんたん';
+}
+// 子供画面表示用ラベル統一: 'やさしい / ふつう / むずかしい' (★/★★/★★★)
+// common/difficulty.js (PonoDifficulty) が未ロードでも動くよう内部フォールバックを持つ。
+function _displayRhythmDiffLabel(diff) {
+  var key = _normalizeRhythmDiffLabel(diff);
+  if (window.PonoDifficulty && window.PonoDifficulty.normalizeLabel) {
+    var d = window.PonoDifficulty.normalizeLabel(key);
+    if (d) return d.label;
+  }
+  if (key === '難しい') return 'むずかしい';
+  if (key === 'ふつう') return 'ふつう';
+  return 'やさしい';
+}
+function _displayRhythmDiffStars(diff) {
+  var key = _normalizeRhythmDiffLabel(diff);
+  if (key === '難しい') return '★★★';
+  if (key === 'ふつう') return '★★';
+  return '★';
 }
 
 function _rhythmRivalKeyForSong(song) {
@@ -7913,7 +7940,8 @@ function _updateRhythmMenuActions() {
   if (start) start.textContent = 'はじめる';
   if (demo) demo.classList.remove('hidden');
 }
-// Region 1.2: 曲一覧を難易度タブ (かんたん/ふつう/難しい) で絞り込む
+// Region 1.2: 曲一覧を難易度タブで絞り込む。
+// data-diff (内部キー) は旧 'かんたん/ふつう/難しい' を保持、 表示は やさしい/ふつう/むずかしい。
 var RHYTHM_CURRENT_DIFF = 'かんたん';
 function _renderRhythmSongMenu() {
   var list = document.getElementById('rhythm-song-list');
@@ -7949,10 +7977,11 @@ function _renderRhythmSongMenu() {
     var cleared = _rhythmSongCleared(song, progress);
     var stars = _rhythmSongStars(song, progress);
     var statusText = stageLocked ? 'まだ' : (cleared ? ('★'.repeat(Math.max(1, stars))) : 'えらべる');
-    var diffText = _normalizeRhythmDiffLabel(song.difficulty || song.note);
+    var diffText = _displayRhythmDiffLabel(song.difficulty || song.note);
+    var diffStars = _displayRhythmDiffStars(song.difficulty || song.note);
     var disabled = stageLocked ? ' disabled aria-disabled="true"' : '';
     return '<button class="rhythm-song-choice' + active + locked + '" data-song="' + song.id + '"' + disabled + '>' +
-      '<span class="rhythm-song-meta"><span class="rhythm-stage-badge">ステージ' + _rhythmSongStage(song) + '</span><span class="rhythm-clear-badge">' + statusText + '</span><span class="rhythm-clear-badge">' + diffText + '</span></span>' +
+      '<span class="rhythm-song-meta"><span class="rhythm-stage-badge">ステージ' + _rhythmSongStage(song) + '</span><span class="rhythm-clear-badge">' + statusText + '</span><span class="rhythm-clear-badge" aria-label="むずかしさ ' + diffText + '"><span aria-hidden="true">' + diffStars + '</span> ' + diffText + '</span></span>' +
       '<span class="rhythm-song-name">' + song.name + '</span></button>';
   }).join('');
   list.querySelectorAll('.rhythm-song-choice').forEach(function(btn) {
