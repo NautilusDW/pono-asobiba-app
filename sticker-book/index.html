@@ -13,11 +13,11 @@
   ?game= 等の grant 動線 query は引継ぐ (3D book main.js が吸収)。
   数バージョン安定後にこのファイル自体を git rm する予定。
 -->
-<meta http-equiv="refresh" content="0; url=../Prototypes/StickerBookThreeJS/?book=boy&surface=cover">
+<meta http-equiv="refresh" content="0; url=../Prototypes/StickerBookThreeJS/?book=forest&surface=cover">
 <script>
 (function () {
   var base = '../Prototypes/StickerBookThreeJS/';
-  var defaultQuery = '?book=boy&surface=cover';
+  var defaultQuery = '?book=forest&surface=cover';
   var search = window.location.search || '';
   var hash = window.location.hash || '';
   var target;
@@ -26,7 +26,7 @@
     // book / surface は既存値があれば優先、 無ければ default を merge。
     try {
       var current = new URLSearchParams(search);
-      if (!current.has('book')) current.set('book', 'boy');
+      if (!current.has('book')) current.set('book', 'forest');
       if (!current.has('surface')) current.set('surface', 'cover');
       target = base + '?' + current.toString() + hash;
     } catch (e) {
@@ -50,7 +50,7 @@ html, body { margin: 0; background: #26180f; color: #fff8da; font-family: "Hirag
 </head>
 <body>
 <div class="fallback">
-  <p>シールちょうへ いどう しています...<br><a href="../Prototypes/StickerBookThreeJS/?book=boy&surface=cover">いどう しない ばあいは ここを タップ</a></p>
+  <p>シールちょうへ いどう しています...<br><a href="../Prototypes/StickerBookThreeJS/?book=forest&surface=cover">いどう しない ばあいは ここを タップ</a></p>
 </div>
 </body>
 </html>

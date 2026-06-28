@@ -1024,14 +1024,11 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   transform: translateX(-50%);
 }
 
-/* v1675 (task 2, iPad page-turn fix): sticker-edit 時 tray を上に逃がし、
-   .book-page-button (bottom 18px + 54px → 上端 72px) と重ならないようにする。
-   旧: tray は bottom 14px、 高さ 124px → 上端 138px。
-   ボタン横幅 54px は iPad portrait で tray 横幅 ~704px に完全内包され、 z:3 vs z:2 で tap が tray に吸われていた。
-   修正: tray bottom 90px (上端 214px) で物理的に分離。 ボタン 72px との余白 18px。 */
+/* v905: sticker-edit のシール選択トレイは下端固定へ戻す。
+   ページボタンは z-index:4、 tray は z-index:3 なので、重なり回避のために tray 全体を上げない。 */
 body:not(.is-collection-album):not(.is-sticker-tutorial-step-ok).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source,
 body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collection-album).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source {
-  bottom: max(90px, calc(env(safe-area-inset-bottom) + 90px));
+  bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
 }
 
 .collection-sticker-tray::before {
@@ -1558,6 +1555,11 @@ body.is-sticker-tutorial-step-view .sticker-tutorial-hand {
   animation: stickerTutorialViewPressDemo 6.8s ease-in-out 1 both;
 }
 
+body.is-sticker-tutorial-step-mode.is-sticker-tutorial-phase-try .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-view.is-sticker-tutorial-phase-try .sticker-tutorial-hand {
+  animation: stickerTutorialButtonPointNudge 1.05s ease-in-out infinite;
+}
+
 body.is-sticker-tutorial-step-place .sticker-tutorial-hand {
   /* base 68/7.6vw/104 → +18% で「迷い/置き」 のジェスチャーを存在感ある大きさで見せる */
   width: clamp(82px, 9.2vw, 124px);
@@ -1639,7 +1641,11 @@ body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
 .sticker-tutorial-card.is-await-cover-open {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.5s ease-out;
+  transition: none;
+}
+.sticker-tutorial-card.is-page-inscribed.is-await-cover-open {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 .sticker-tutorial-card:not(.is-await-cover-open) {
   opacity: 1;
@@ -1984,6 +1990,19 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
     top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
     transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.94);
+  }
+}
+
+@keyframes stickerTutorialButtonPointNudge {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  48%, 58% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -38%) scaleX(-1) rotate(90deg) scale(0.92);
   }
 }
 

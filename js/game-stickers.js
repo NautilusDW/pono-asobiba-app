@@ -491,7 +491,7 @@
       window.setTimeout(function () {
         // シール帳 正本統一: 全 grant 動線を 3D book (Prototypes/StickerBookThreeJS) に統一。
         // game / pasteId / firstEver query は 3D book main.js 側で吸収 (page auto-open / 強調 / welcome)。
-        var url = _rootPrefix() + 'Prototypes/StickerBookThreeJS/?book=boy&surface=cover';
+        var url = _rootPrefix() + 'Prototypes/StickerBookThreeJS/?book=forest&surface=cover';
         if (result.gameId) url += '&game=' + encodeURIComponent(result.gameId);
         if (result.stickerId) url += '&pasteId=' + encodeURIComponent(result.stickerId);
         url += '&firstEver=' + (result.first ? '1' : '0');

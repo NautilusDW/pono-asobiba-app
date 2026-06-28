@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260625-847";
+const ASSET_VERSION = "20260629-905";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -561,10 +561,10 @@ const BOOK_VARIANTS = {
     insideLeft: "sb3d_forest_free_blank_page_canvas_20260623.png",
     insideRight: "sb3d_forest_free_blank_page_canvas_20260623.png",
     freePage: "sb3d_forest_free_blank_page_canvas_20260623.png",
-    coverPrint: "sb3d_forest_cover_front_distinct_image2_20260623.webp",
+    coverPrint: "sb3d_forest_cover_front_canvas_20260623.webp",
     coverHardwareMode: "separate",
-    coverFront: "sb3d_forest_cover_front_distinct_image2_20260623.webp",
-    coverBack: "sb3d_forest_cover_back_distinct_image2_20260623.webp",
+    coverFront: "sb3d_forest_cover_front_canvas_20260623.webp",
+    coverBack: "sb3d_forest_cover_back_canvas_20260623.webp",
     coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
     spine: "sb3d_forest_spine_canvas_20260623.webp",
     thicknessKey: "boy",
@@ -1577,7 +1577,7 @@ const tuningEnabled = params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 const requestedBook = params.get("book");
-let activeBook = BOOK_VARIANTS[requestedBook] ? requestedBook : "boy";
+let activeBook = BOOK_VARIANTS[requestedBook] ? requestedBook : "forest";
 let activeAlbumMode = params.get("album") === "collection" ? "collection" : "free";
 let stickerEditMode = activeAlbumMode !== "collection" && params.get("edit") === "1";
 const zukanFormatIndex = Math.round(
@@ -3786,6 +3786,11 @@ function showStickerTutorialStep(index, options = {}) {
     return;
   }
   prepareStickerTutorialStep(step);
+  // mode step は prepareStickerTutorialStep() 内で cover open を開始するため、
+  // 判定をここでも行い、表紙が完全に静止するまで左ページ直書きテキストを出さない。
+  if (stickerTutorialCard && coverOpenAnimation && coverOpenAnimation.direction !== "close") {
+    stickerTutorialCard.classList.add("is-await-cover-open");
+  }
   if (stickerTutorialText) {
     // v1637: phase=demo 開始時は必ず textDemo を表示 (旧 step.text フォールバック維持)。
     stickerTutorialText.textContent = step.textDemo || step.text || "";
@@ -3829,7 +3834,7 @@ function showStickerTutorialStep(index, options = {}) {
   stickerTutorialState.coverFadeTimer = window.setTimeout(() => {
     stickerTutorialCard?.classList.remove("is-await-cover-open");
     stickerTutorialState.coverFadeTimer = 0;
-  }, 2000);
+  }, 2600);
   if (options.replayAudio !== false) {
     playStickerTutorialAudio(step);
   }
@@ -3871,6 +3876,35 @@ function prepareStickerTutorialStep(step) {
     selectedPlacementId = null;
     updateInlineStickerControls();
   }
+}
+
+function releaseStickerTutorialCardAfterCoverOpen() {
+  if (!stickerTutorialCard?.classList.contains("is-await-cover-open")) {
+    return;
+  }
+  const state = stickerTutorialState;
+  requestAnimationFrame(() => {
+    if (!state || stickerTutorialState !== state) {
+      return;
+    }
+    scheduleStickerTutorialLayout();
+    requestAnimationFrame(() => {
+      if (stickerTutorialState !== state) {
+        return;
+      }
+      updateStickerTutorialLayout();
+      window.setTimeout(() => {
+        if (stickerTutorialState !== state) {
+          return;
+        }
+        stickerTutorialCard?.classList.remove("is-await-cover-open");
+        if (stickerTutorialState?.coverFadeTimer) {
+          clearTimeout(stickerTutorialState.coverFadeTimer);
+          stickerTutorialState.coverFadeTimer = 0;
+        }
+      }, 120);
+    });
+  });
 }
 
 function ensureStickerTutorialEditableSticker() {
@@ -14317,15 +14351,7 @@ function updateCoverOpen(delta) {
       // leftPageInner.visible=true 確定前 (updatePage(0) 内 p=0 のとき leftPageInner は visible 化されるが
       // CSS 変数の rect 再計算は次フレーム scheduleStickerTutorialLayout 経由) に card fade-in が始まる懸念。
       // rAF 1 つ挟んで 「左ページ rect が --tutorial-leftpage-* に確定書き込み」 された後で fade-in。
-      if (stickerTutorialCard?.classList.contains("is-await-cover-open")) {
-        requestAnimationFrame(() => {
-          stickerTutorialCard?.classList.remove("is-await-cover-open");
-          if (stickerTutorialState?.coverFadeTimer) {
-            clearTimeout(stickerTutorialState.coverFadeTimer);
-            stickerTutorialState.coverFadeTimer = 0;
-          }
-        });
-      }
+      releaseStickerTutorialCardAfterCoverOpen();
     }
   }
   return true;
