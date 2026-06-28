@@ -5330,7 +5330,11 @@
       width: var(--nav-sprite-w);
       height: var(--nav-sprite-h);
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      /* sw1723: 5 番目「ごかんそう」 ボタン用の 5 列 sprite が未配備のため、
+         grid は 4 列に戻し既存 sprite (4 アイコン) とボタン位置を再整合。
+         5 番目ボタンは grid 外へ絶対配置で並置 (.bn-item--feedback)。
+         5 列 sprite が用意でき次第、 grid を 5 列に戻し下記絶対配置を撤去。 */
+      grid-template-columns: repeat(4, 1fr);
       gap: 0;
       padding: 0 18px;
       background-color: transparent;
@@ -5373,6 +5377,31 @@
     .bn-item:hover { filter: none; }
     .bn-item__icon,
     .bn-item__label { display: none; }
+    /* sw1723: ごかんそう ボタンは grid 外配置 (4 アイコン sprite との整合のため)。
+       5 列 sprite が用意でき次第このルールは撤去する。 暫定で label/icon を可視化 */
+    .bn-item--feedback {
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 78px;
+      height: 78px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 6px 4px;
+      border: 2px solid rgba(242, 145, 90, .42);
+      border-radius: 18px;
+      background: #fffdfa;
+      color: var(--text);
+      font-weight: 900;
+      box-shadow: 0 3px 0 rgba(171, 104, 54, .18);
+    }
+    .bn-item--feedback .bn-item__icon { display: block; font-size: 26px; line-height: 1; }
+    .bn-item--feedback .bn-item__icon::before { content: "\1F4DD"; }
+    .bn-item--feedback .bn-item__label { display: block; font-size: 11px; line-height: 1.1; color: var(--text); }
     .modal-card { max-width: 390px; }
     .settings-action-list {
       display: grid;
@@ -5659,7 +5688,7 @@
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">おしらせ</span></button>
       <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">シール</span></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">せってい</span></button>
-      <button class="bn-item" data-action="feedback" type="button" aria-label="ごかんそう"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ごかんそう</span></button>
+      <button class="bn-item bn-item--feedback" data-action="feedback" type="button" aria-label="ごかんそう"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ごかんそう</span></button>
     </nav>
     <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
       <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
@@ -6498,7 +6527,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1736;
+    const PAGE_CACHE_VERSION = 1738;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
