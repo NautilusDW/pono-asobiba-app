@@ -352,6 +352,27 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 
 **背景色ポリシー**: デフォルトは**白 (#FFFFFF)**。 これは alpha 抜きの残り誤差を視覚的に隠すため。 被写体が白い (雪原・白い動物・氷など) で色かぶり問題が出る場合のみ、 **淡いグレー (#E5E5E5) や淡い水色 (#E0F0FF)** など主張しない色にフォールバック。 ピンク・紫・原色などの濃色背景は禁止。
 
+#### 5.1.0.1 画像縦横比 (Aspect Ratio) 絶対遵守ルール
+
+生成済み画像 (PNG/WebP) を CSS/HTML で **stretch して縦横比を変えるのは絶対禁止**。
+
+禁則 (どんな理由でもやらない):
+- `background-size: 100% 100%` (stretch)
+- `object-fit: fill` (stretch)
+- `<img width=N height=M>` で画像本来の AR と一致しない指定
+- container と画像 AR が一致しない時に画像を引き伸ばす
+
+OK:
+- `background-size: cover / contain / auto`
+- `object-fit: cover / contain`
+- `aspect-ratio: <w>/<h>` で container 側を画像 AR に合わせる
+- `border-image` (slice/repeat で AR を保ちつつ内側を拡張)
+- container と画像が同じ AR を持つよう明示的に width/height をセット
+
+画像を使う前に Read tool で実 PNG を visually view し、 AR を実測すること (画像レビュー必須ルールと連動)。 AR が container と合わない場合は (a) container 側を画像 AR に合わせる (推奨) / (b) 別の AR が合う画像を選ぶ / (c) GPT Image 2 で container AR に合わせた版を生成、 のいずれか。
+
+理由: 葉装飾やキャラ・木枠が歪んで子供向け絵本品質を毀損する。 ユーザーから複数回指摘済 (2026-06-28 Fukuro_frame_001.png AR 違反事故、 など)。
+
 ### 5.1.1 ★アセットシート方式 (2026-05-06 追加 / 必須)
 
 **ペア対比やバリエーション (例: 同じドアの開/閉、 同じ棚の上/下、 同じ男の子の前/後、 「すき/きらい」等の表情対比) を Codex に依頼する場合は、 別々に複数枚生成しない**。 必ず以下のとおり:

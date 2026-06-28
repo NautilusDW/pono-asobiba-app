@@ -657,27 +657,36 @@
   --maze-wood-dark: #6e4520;
 }
 [data-game-id="maze"] .pono-acorn-modal__panel {
-  /* quizland .q-text-card / .board の paper グラデ + 木枠 + 下影を再現。
-     葉飾り PNG は ::before に重ねるので、 panel 本体は CSS で枠を作る。 */
-  background: linear-gradient(180deg, var(--maze-paper), var(--maze-paper-2));
-  border: 5px solid var(--maze-wood-dark);
-  border-radius: 18px;
-  box-shadow:
-    inset 0 -4px 0 rgba(120, 80, 20, 0.15),
-    0 6px 0 var(--maze-wood-dark),
-    0 8px 16px var(--maze-paper-shadow);
+  /* AR 維持版 (2026-06-28): Fukuro_frame_001.png (1200x609, AR ≈ 1.97) を
+     ::before で contain 配置するため、 panel container 側を画像 AR に
+     合わせて aspect-ratio を明示。 background-size: 100% 100% による
+     stretch は禁止 (恒久ルール: 生成画像の AR を変えない)。
+     content (kicker/icon/amount/label) は align-content: center で
+     横長 paper 内に縦中央寄せ、 葉飾り PNG の左右透明余白には
+     padding-inline で余白を確保 (== 旧 margin: -4px -14px の逆)。
+     CSS で描いていた木枠 + 下影 + paper グラデは PNG に視覚情報が
+     完全に含まれるので border / background / box-shadow は撤去。 */
+  width: min(640px, 92vw);
+  max-width: min(720px, 92vw);
+  aspect-ratio: 1200 / 609;
+  align-content: center;
+  justify-items: center;
+  padding: clamp(28px, 4.8vw, 44px) clamp(64px, 10vw, 110px);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 [data-game-id="maze"] .pono-acorn-modal__panel::before {
-  /* quizland .board::before (sheet-on モード, line 224-232) と同手法で
-     Fukuro_frame_001.png (ボード枠 + 葉飾り) を panel に重畳。
-     PNG は左右に葉の透明余白があるので margin で要素を超過配置する。 */
+  /* Fukuro_frame_001.png を contain (AR 維持) で配置。
+     container 側を画像 AR (1200/609) に揃えているので contain でも
+     panel 全域を埋め、 葉飾り PNG の透明余白がそのまま panel 内側
+     padding として機能する。 100% 100% / object-fit: fill は永久 NG。 */
   content: '';
   position: absolute;
   inset: 0;
-  margin: -4px -14px;
   background:
     url('../assets/images/quizland/Fukuro_frame_001.png')
-    center / 100% 100% no-repeat;
+    center / contain no-repeat;
   pointer-events: none;
   z-index: 0;
   filter:
