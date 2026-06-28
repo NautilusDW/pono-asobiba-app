@@ -2104,16 +2104,20 @@
         drop-shadow(0 0 22px rgba(255, 226, 117, .42));
     }
     .daily-gacha-lever {
+      --gacha-lever-visual-scale: 1;
       position: absolute;
       left: 50%;
       top: 66.2%;
       width: 27%;
       aspect-ratio: 1365 / 507;
+      box-sizing: border-box;
       padding: 0;
       border: 0;
       background: transparent;
       cursor: grab;
       touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow: visible;
       transform: translate(-50%, -50%) scale(var(--gacha-lever-scale, 1));
       transform-origin: 50% 50%;
       filter: drop-shadow(0 8px 10px rgba(65, 34, 10, .32));
@@ -2127,15 +2131,22 @@
       border-radius: 999px;
     }
     .daily-gacha-lever img {
-      width: 100%;
-      height: 100%;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: calc(100% * var(--gacha-lever-visual-scale, 1));
+      height: auto;
+      aspect-ratio: 1365 / 507;
       display: block;
       object-fit: contain;
       pointer-events: none;
       user-select: none;
       -webkit-user-drag: none;
-      transform: rotate(var(--gacha-rot, 0deg));
+      transform: translate(-50%, -50%) rotate(var(--gacha-rot, 0deg));
       transform-origin: 50% 50%;
+      backface-visibility: hidden;
+      transform-style: flat;
+      will-change: transform;
     }
     .daily-gacha-modal.is-armed .daily-gacha-lever {
       animation: dailyGachaLeverReadyPulse 1.8s ease-in-out infinite;
@@ -3185,10 +3196,10 @@
       48% { filter: drop-shadow(0 10px 13px rgba(65, 34, 10, .38)) drop-shadow(0 0 8px rgba(255, 224, 94, .42)); }
     }
     @keyframes dailyGachaLeverNotch {
-      0% { transform: rotate(calc(var(--gacha-rot, 0deg) - 30deg)) scale(1.02); }
-      44% { transform: rotate(calc(var(--gacha-rot, 0deg) + 12deg)) scale(1.035); }
-      72% { transform: rotate(calc(var(--gacha-rot, 0deg) - 7deg)) scale(1.01); }
-      100% { transform: rotate(var(--gacha-rot, 0deg)) scale(1); }
+      0% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) - 30deg)) scale(1.02); }
+      44% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) + 12deg)) scale(1.035); }
+      72% { transform: translate(-50%, -50%) rotate(calc(var(--gacha-rot, 0deg) - 7deg)) scale(1.01); }
+      100% { transform: translate(-50%, -50%) rotate(var(--gacha-rot, 0deg)) scale(1); }
     }
     @keyframes dailyGachaTurnCueSpin {
       0% { transform: rotate(-18deg) scale(.96); }
@@ -3318,6 +3329,12 @@
       .daily-gacha-turn-cue {
         top: 66%;
         width: 34%;
+      }
+      .daily-gacha-lever {
+        width: 42%;
+        min-width: 132px;
+        min-height: 58px;
+        --gacha-lever-visual-scale: .643;
       }
       .daily-gacha-turn-cue__word {
         min-width: 76px;
@@ -3481,21 +3498,25 @@
       }
     }
 
-    /* v1774: Mobile compositors can render transparent PNG layers with CSS
+    /* v1776: Mobile compositors can render transparent PNG layers with CSS
        drop-shadow as a dark rectangular backing. Keep the gacha art baked-in
-       shadows on touch devices and avoid filter-created mask artifacts. */
-    @media (hover: none) and (pointer: coarse) {
+       shadows on phone-sized/short viewports and avoid filter-created mask artifacts. */
+    @media (hover: none), (pointer: coarse), (max-width: 900px), (max-height: 540px) {
       .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status,
       .daily-gacha-modal[data-gacha-step="1"] .daily-gacha-status,
       .daily-gacha-modal[data-gacha-step="2"] .daily-gacha-status,
       .daily-gacha-modal[data-gacha-step="3"] .daily-gacha-status,
       .daily-gacha-lever,
+      .daily-gacha-lever[data-blocked="1"],
       .daily-gacha-modal.is-grabbing .daily-gacha-lever,
       .daily-gacha-turn-cue,
       .daily-gacha-turn-cue__arrowhead,
       .daily-gacha-turn-cue__word,
       .daily-gacha-guide-hand {
         filter: none !important;
+      }
+      .daily-gacha-modal.is-armed .daily-gacha-lever {
+        animation: none;
       }
       .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status {
         overflow: visible;
@@ -4877,12 +4898,12 @@
       transform-origin: 50% 80%;
     }
     @keyframes ponoDailyGachaLeverBlockedShake {
-      0%   { transform: translateX(0)   rotate(0deg); }
-      18%  { transform: translateX(-3px) rotate(-1.4deg); }
-      36%  { transform: translateX(3px)  rotate(1.4deg); }
-      54%  { transform: translateX(-2px) rotate(-.9deg); }
-      72%  { transform: translateX(2px)  rotate(.9deg); }
-      100% { transform: translateX(0)   rotate(0deg); }
+      0%   { transform: translate(-50%, -50%) translateX(0)   scale(var(--gacha-lever-scale, 1)) rotate(0deg); }
+      18%  { transform: translate(-50%, -50%) translateX(-3px) scale(var(--gacha-lever-scale, 1)) rotate(-1.4deg); }
+      36%  { transform: translate(-50%, -50%) translateX(3px)  scale(var(--gacha-lever-scale, 1)) rotate(1.4deg); }
+      54%  { transform: translate(-50%, -50%) translateX(-2px) scale(var(--gacha-lever-scale, 1)) rotate(-.9deg); }
+      72%  { transform: translate(-50%, -50%) translateX(2px)  scale(var(--gacha-lever-scale, 1)) rotate(.9deg); }
+      100% { transform: translate(-50%, -50%) translateX(0)   scale(var(--gacha-lever-scale, 1)) rotate(0deg); }
     }
     .daily-gacha-center-msg.is-blocked-pulse {
       animation: ponoDailyGachaCenterMsgPulse .42s ease-out both;
@@ -6722,7 +6743,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1775;
+    const PAGE_CACHE_VERSION = 1776;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
