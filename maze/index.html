@@ -7282,33 +7282,34 @@ function _showWaterBridgeCompleteScene() {
 
 function _waterSkateDrawWaterSurface(ctx, w, h, now) {
   const t = now * 0.001;
+  const surfaceBoost = Math.min(1.42, Math.max(1, Math.sqrt((w * h) / (660 * 290))));
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   _waterSkateDrawIdleDisplacement(ctx, w, h, now);
 
-  for (let row = 0; row < 7; row++) {
-    const baseY = h * (0.13 + row * 0.13) + Math.sin(t * 0.7 + row * 1.6) * 9;
+  for (let row = 0; row < 9; row++) {
+    const baseY = h * (0.10 + row * 0.105) + Math.sin(t * 0.7 + row * 1.6) * 11 * surfaceBoost;
     ctx.beginPath();
-    for (let x = -80; x <= w + 100; x += 82) {
-      const y = baseY + Math.sin((x * 0.012) + t * 1.7 + row) * 8;
+    for (let x = -80; x <= w + 100; x += 68) {
+      const y = baseY + Math.sin((x * 0.012) + t * 1.7 + row) * 10 * surfaceBoost;
       if (x <= -79) {
         ctx.moveTo(x, y);
       } else {
         const cpX = x - 42;
-        const cpY = y + Math.cos(t * 1.1 + row + x * 0.01) * 11;
+        const cpY = y + Math.cos(t * 1.1 + row + x * 0.01) * 13 * surfaceBoost;
         ctx.quadraticCurveTo(cpX, cpY, x, y);
       }
     }
     ctx.strokeStyle = row % 2
-      ? 'rgba(179, 255, 255, 0.09)'
-      : 'rgba(255, 255, 255, 0.075)';
-    ctx.lineWidth = row % 2 ? 1.2 : 1.7;
+      ? 'rgba(179, 255, 255, 0.16)'
+      : 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = (row % 2 ? 1.7 : 2.2) * surfaceBoost;
     ctx.stroke();
   }
 
-  for (let i = 0; i < 17; i++) {
+  for (let i = 0; i < 23; i++) {
     const x = ((i * 0.173 + 0.08 + Math.sin(t * 0.18 + i) * 0.012) % 1) * w;
     const y = ((i * 0.317 + 0.12 + Math.cos(t * 0.15 + i) * 0.018) % 1) * h;
     const blink = Math.max(0, Math.sin(t * 2.2 + i * 1.91));
@@ -7329,60 +7330,61 @@ function _waterSkateDrawWaterSurface(ctx, w, h, now) {
 
 function _waterSkateDrawIdleDisplacement(ctx, w, h, now) {
   const t = now * 0.001;
+  const surfaceBoost = Math.min(1.45, Math.max(1, Math.sqrt((w * h) / (660 * 290))));
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
   ctx.globalCompositeOperation = 'source-over';
-  for (let band = 0; band < 8; band++) {
-    const baseY = h * (0.11 + band * 0.115) + Math.sin(t * 0.42 + band * 1.3) * 8;
+  for (let band = 0; band < 10; band++) {
+    const baseY = h * (0.08 + band * 0.097) + Math.sin(t * 0.42 + band * 1.3) * 10 * surfaceBoost;
     ctx.beginPath();
-    for (let x = -60; x <= w + 80; x += 34) {
-      const drift = Math.sin(x * 0.018 + t * 1.15 + band) * (4.5 + band % 3);
+    for (let x = -70; x <= w + 90; x += 32) {
+      const drift = Math.sin(x * 0.018 + t * 1.15 + band) * (6 + band % 3) * surfaceBoost;
       const y = baseY + drift;
-      if (x <= -59) {
+      if (x <= -69) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
       }
     }
-    ctx.strokeStyle = 'rgba(16, 120, 156, 0.035)';
-    ctx.lineWidth = 5.5;
+    ctx.strokeStyle = 'rgba(11, 96, 140, 0.070)';
+    ctx.lineWidth = 6.8 * surfaceBoost;
     ctx.stroke();
   }
 
   ctx.globalCompositeOperation = 'screen';
-  for (let band = 0; band < 9; band++) {
-    const y = h * (0.08 + band * 0.105) + Math.cos(t * 0.38 + band * 1.7) * 10;
+  for (let band = 0; band < 12; band++) {
+    const y = h * (0.06 + band * 0.083) + Math.cos(t * 0.38 + band * 1.7) * 13 * surfaceBoost;
     ctx.beginPath();
-    for (let x = -80; x <= w + 120; x += 42) {
-      const shimmer = Math.sin(x * 0.021 + t * 1.35 + band * 0.9) * 7;
+    for (let x = -90; x <= w + 130; x += 38) {
+      const shimmer = Math.sin(x * 0.021 + t * 1.35 + band * 0.9) * 9 * surfaceBoost;
       const yy = y + shimmer;
-      if (x <= -79) {
+      if (x <= -89) {
         ctx.moveTo(x, yy);
       } else {
         const cpX = x - 21;
-        const cpY = yy + Math.cos(t * 0.9 + x * 0.014 + band) * 5;
+        const cpY = yy + Math.cos(t * 0.9 + x * 0.014 + band) * 6.5 * surfaceBoost;
         ctx.quadraticCurveTo(cpX, cpY, x, yy);
       }
     }
     ctx.strokeStyle = band % 2
-      ? 'rgba(210, 255, 255, 0.070)'
-      : 'rgba(255, 255, 255, 0.052)';
-    ctx.lineWidth = band % 2 ? 1.7 : 1.2;
+      ? 'rgba(210, 255, 255, 0.14)'
+      : 'rgba(255, 255, 255, 0.10)';
+    ctx.lineWidth = (band % 2 ? 2.4 : 1.7) * surfaceBoost;
     ctx.stroke();
   }
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 14; i++) {
     const x = ((i * 0.211 + 0.04 + Math.sin(t * 0.16 + i) * 0.028) % 1) * w;
     const y = ((i * 0.137 + 0.20 + Math.cos(t * 0.13 + i * 1.6) * 0.032) % 1) * h;
-    const sx = 22 + (i % 4) * 11 + Math.sin(t * 0.7 + i) * 6;
-    const sy = 7 + (i % 3) * 3;
+    const sx = (25 + (i % 4) * 13 + Math.sin(t * 0.7 + i) * 7) * surfaceBoost;
+    const sy = (8 + (i % 3) * 3.5) * surfaceBoost;
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(Math.sin(t * 0.32 + i) * 0.34);
-    ctx.strokeStyle = 'rgba(217, 255, 255, 0.055)';
-    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(217, 255, 255, 0.115)';
+    ctx.lineWidth = 1.8 * surfaceBoost;
     ctx.beginPath();
     ctx.ellipse(0, 0, sx, sy, 0, 0, Math.PI * 2);
     ctx.stroke();
