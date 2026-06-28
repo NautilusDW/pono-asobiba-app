@@ -5749,6 +5749,7 @@ function getRequesterPortrait(req, mood) {
 // 適用側はデフォルトを引数で受け取り、 オーバーライドがあれば上書きする。
 const NPC_POSITION_LS_KEY = 'bento_npc_positions_v1';
 const NPC_POSITION_DEFAULT = { x: 58, y: 23, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 };
+let npcPositionServerOverrides = {};
 const NPC_MOOD_TO_EXPRESSION = {
   request: 'request',
   normal: 'normal',
@@ -5757,13 +5758,47 @@ const NPC_MOOD_TO_EXPRESSION = {
   almost: 'almost',
   sad: 'sad',
 };
+function cloneNpcPositionMap(map) {
+  if (!map || typeof map !== 'object') return {};
+  try { return JSON.parse(JSON.stringify(map)); } catch (_) { return {}; }
+}
+function normalizeNpcPositionValue(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const entry = {};
+  ['x', 'y', 'scale', 'scaleX', 'scaleY', 'rotation', 'opacity'].forEach(key => {
+    const n = Number(raw[key]);
+    if (Number.isFinite(n)) entry[key] = n;
+  });
+  return Object.keys(entry).length ? entry : null;
+}
+function normalizeNpcPositionMap(map) {
+  const normalized = {};
+  if (!map || typeof map !== 'object') return normalized;
+  Object.keys(map).forEach(key => {
+    if (!/^[a-z0-9_:-]{1,100}$/i.test(key)) return;
+    const entry = normalizeNpcPositionValue(map[key]);
+    if (entry) normalized[key] = entry;
+  });
+  return normalized;
+}
+function shouldUseLocalNpcPositionOverrides() {
+  try {
+    return !!(window.PonoDebugMode
+      && typeof window.PonoDebugMode.isAllowed === 'function'
+      && window.PonoDebugMode.isAllowed());
+  } catch (_) {
+    return false;
+  }
+}
 function loadNpcPositionOverrides() {
+  const serverMap = cloneNpcPositionMap(npcPositionServerOverrides);
+  if (!shouldUseLocalNpcPositionOverrides()) return serverMap;
   try {
     const raw = localStorage.getItem(NPC_POSITION_LS_KEY);
-    if (!raw) return {};
+    if (!raw) return serverMap;
     const obj = JSON.parse(raw);
-    return (obj && typeof obj === 'object') ? obj : {};
-  } catch { return {}; }
+    return { ...serverMap, ...normalizeNpcPositionMap(obj) };
+  } catch { return serverMap; }
 }
 function getNpcPositionOverride(charId, expression) {
   if (!charId) return null;
@@ -7099,6 +7134,7 @@ const SHOP_STAFF_COUNTER_MASK_LEGACY_DEFAULT = { x: 0, y: 51, width: 100, height
 const SHOP_CUSTOMER_COUNTER_MASK_LS_KEY = 'bento_customer_counter_mask_v1';
 const SHOP_CUSTOMER_COUNTER_MASK_DEFAULT = { x: 0, y: 73, width: 100, height: 27, opacity: 1 };
 const SHOP_CUSTOMER_COUNTER_MASK_LEGACY_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
+let shopCounterServerMasks = { staff: null, customer: null };
 const SHOP_STAFF_MEMBERS = [
   {
     id: 'staffpono',
@@ -7187,8 +7223,19 @@ function shopCounterMaskMatches(mask, target) {
   if (!mask || !target) return false;
   return ['x', 'y', 'width', 'height', 'opacity'].every(key => Math.abs(Number(mask[key]) - Number(target[key])) < 0.01);
 }
+function shouldUseLocalShopCounterMasks() {
+  try {
+    return !!(window.PonoDebugMode
+      && typeof window.PonoDebugMode.isAllowed === 'function'
+      && window.PonoDebugMode.isAllowed());
+  } catch (_) {
+    return false;
+  }
+}
 
 function loadShopStaffCounterMask() {
+  if (shopCounterServerMasks.staff) return normalizeShopStaffCounterMask(shopCounterServerMasks.staff);
+  if (!shouldUseLocalShopCounterMasks()) return normalizeShopStaffCounterMask(null);
   try {
     const raw = localStorage.getItem(SHOP_STAFF_COUNTER_MASK_LS_KEY);
     const normalized = normalizeShopStaffCounterMask(raw ? JSON.parse(raw) : null);
@@ -7201,6 +7248,8 @@ function loadShopStaffCounterMask() {
 }
 
 function loadShopCustomerCounterMask() {
+  if (shopCounterServerMasks.customer) return normalizeShopCustomerCounterMask(shopCounterServerMasks.customer);
+  if (!shouldUseLocalShopCounterMasks()) return normalizeShopCustomerCounterMask(null);
   try {
     const raw = localStorage.getItem(SHOP_CUSTOMER_COUNTER_MASK_LS_KEY);
     const normalized = normalizeShopCustomerCounterMask(raw ? JSON.parse(raw) : null);
@@ -9639,8 +9688,15 @@ function applyFreeMaskServerDefaults(data) {
   if (!data || data.ok === false) return false;
   freeMaskBoundsServerDefaults = cloneFreeEditorMap(data.maskBounds || {});
   freeCompleteLayoutServerDefaults = cloneFreeEditorMap(data.completeLayout || {});
+  npcPositionServerOverrides = normalizeNpcPositionMap(data.npcPositions || {});
+  shopCounterServerMasks = {
+    staff: data.staffCounterMask ? normalizeShopStaffCounterMask(data.staffCounterMask) : null,
+    customer: data.customerCounterMask ? normalizeShopCustomerCounterMask(data.customerCounterMask) : null,
+  };
   freeMaskServerDefaultsUpdatedAt = data.updatedAt || '';
   freeFullMaskCache.clear();
+  applyShopStaffCounterMaskStyle();
+  applyShopCustomerCounterMaskStyle();
   scheduleFullMaskRefresh();
   if (document.getElementById('app')?.classList.contains('free-layout-active')) {
     renderFreeLayoutStage();
@@ -16920,10 +16976,11 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     try { tutorialDone = localStorage.getItem(BENTO_TUTORIAL_STORAGE_KEY) === '1'; } catch (_) { tutorialDone = true; }
     badge.hidden = !tutorialDone;
   })();
-  function startFromTitle(mode) {
+  async function startFromTitle(mode) {
     if (started) return;
     started = true;
     const simple = mode === 'simple' || !requestAvailable;
+    try { await fetchFreeMaskServerDefaults({ force: false }); } catch (_) {}
     setSimpleBentoMode(simple);
     titleScreen.classList.add('hidden');
     try { getAC(); } catch (_) {}

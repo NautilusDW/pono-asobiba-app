@@ -1182,7 +1182,8 @@ tr:hover { background: #FFFAF0; }
       おべんとう <code>delivery</code>/<code>shop-opening</code> シーンに登場する動物NPCと店員キャラの位置を、
       <strong>キャラクター × 表情/ポーズ</strong> ごとに調整します。<br>
       本体側では来店、注文前モーダル、配達、結果リアクション、結果詳細のNPC表示に反映されます。<br>
-      設定は <code>localStorage['bento_npc_positions_v1']</code> に保存され、 <strong>ブラウザのキャッシュをまたいで保持</strong>されます。<br>
+      スライダー操作中も <code>localStorage['bento_npc_positions_v1']</code> に下書き保存し、保存ボタンでサーバーにも同期します。<br>
+      別ブラウザ/別端末へ反映するには、右上の同期表示が <strong>サーバー保存OK</strong> になるまで待ってください。<br>
       動物NPCは delivery 画面、店員キャラは最初の shop-opening 画面を想定した絶対値です。<br>
       <code>happy</code> は画像が <code>normal</code> と共通なので、happy 未保存時は normal の位置を引き継ぎます。
     </div>
@@ -12703,8 +12704,10 @@ var NPC_POS_PORTRAIT_VERSION = '20260621-bento-pono-wave-face-v1';
 var NPC_POS_STAFF_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
 var NPC_POS_CUSTOMER_MASK_LS_KEY = 'bento_customer_counter_mask_v1';
 var NPC_POS_DEFAULT = { x: 58, y: 23, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, opacity: 1 };
-var NPC_POS_STAFF_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
-var NPC_POS_CUSTOMER_MASK_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
+var NPC_POS_STAFF_MASK_DEFAULT = { x: 0, y: 44, width: 100, height: 38, opacity: 1 };
+var NPC_POS_STAFF_MASK_LEGACY_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
+var NPC_POS_CUSTOMER_MASK_DEFAULT = { x: 0, y: 73, width: 100, height: 27, opacity: 1 };
+var NPC_POS_CUSTOMER_MASK_LEGACY_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
 var NPC_POS_ANIMAL_EXPRS = ['request', 'normal', 'happy', 'super_happy', 'almost', 'sad'];
 var NPC_POS_CHAR_CONFIGS = {
   risu:     { type: 'npc', name: 'りすちゃん', exprs: NPC_POS_ANIMAL_EXPRS, defaults: NPC_POS_DEFAULT },
@@ -12784,37 +12787,73 @@ function npcPosGetDefault(charId) {
   return Object.assign({}, NPC_POS_DEFAULT, cfg.defaults || {});
 }
 
-function npcPosLoadAll() {
+function npcPosParseStorageMap(raw) {
+  if (!raw) return null;
   try {
-    var raw = localStorage.getItem(NPC_POS_LS_KEY);
-    if (!raw) return {};
     var obj = JSON.parse(raw);
-    return (obj && typeof obj === 'object') ? obj : {};
-  } catch (e) { return {}; }
+    return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : null;
+  } catch (e) { return null; }
 }
-function npcPosSaveAll(obj) {
+function npcPosLoadAll() {
+  var raw = null;
+  try {
+    raw = localStorage.getItem(NPC_POS_LS_KEY);
+    var current = npcPosParseStorageMap(raw);
+    if (current) return current;
+  } catch (e) {}
+  try {
+    raw = localStorage.getItem(NPC_POS_LS_BACKUP_KEY);
+    var backup = npcPosParseStorageMap(raw);
+    if (backup) {
+      localStorage.setItem(NPC_POS_LS_KEY, JSON.stringify(backup));
+      return backup;
+    }
+  } catch (e) {}
+  try {
+    raw = localStorage.getItem(NPC_POS_LS_HISTORY_KEY);
+    var hist = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(hist) && hist.length) {
+      for (var i = hist.length - 1; i >= 0; i--) {
+        var entry = hist[i] && hist[i].data;
+        if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+          localStorage.setItem(NPC_POS_LS_KEY, JSON.stringify(entry));
+          return entry;
+        }
+      }
+    }
+  } catch (e) {}
+  return {};
+}
+function npcPosSaveAll(obj, options) {
+  var opts = options || {};
   try {
     var newJson = JSON.stringify(obj || {});
     // 冗長化: 旧 v1 を _backup に退避 (1 step back)
-    try {
-      var prev = localStorage.getItem(NPC_POS_LS_KEY);
-      if (prev != null) localStorage.setItem(NPC_POS_LS_BACKUP_KEY, prev);
-    } catch (e1) { /* backup 書き込み失敗は致命ではない */ }
+    if (opts.backup !== false) {
+      try {
+        var prev = localStorage.getItem(NPC_POS_LS_KEY);
+        if (prev != null) localStorage.setItem(NPC_POS_LS_BACKUP_KEY, prev);
+      } catch (e1) { /* backup 書き込み失敗は致命ではない */ }
+    }
     // 冗長化: 履歴 (最大 NPC_POS_HISTORY_MAX 件)
-    try {
-      var histRaw = localStorage.getItem(NPC_POS_LS_HISTORY_KEY);
-      var hist = [];
-      if (histRaw) {
-        try { var parsed = JSON.parse(histRaw); if (Array.isArray(parsed)) hist = parsed; } catch (eh) { hist = []; }
-      }
-      hist.push({ data: (obj || {}), ts: new Date().toISOString() });
-      if (hist.length > NPC_POS_HISTORY_MAX) hist = hist.slice(hist.length - NPC_POS_HISTORY_MAX);
-      localStorage.setItem(NPC_POS_LS_HISTORY_KEY, JSON.stringify(hist));
-    } catch (e2) { /* history 書き込み失敗は致命ではない */ }
+    if (opts.history !== false) {
+      try {
+        var histRaw = localStorage.getItem(NPC_POS_LS_HISTORY_KEY);
+        var hist = [];
+        if (histRaw) {
+          try { var parsed = JSON.parse(histRaw); if (Array.isArray(parsed)) hist = parsed; } catch (eh) { hist = []; }
+        }
+        hist.push({ data: (obj || {}), ts: new Date().toISOString() });
+        if (hist.length > NPC_POS_HISTORY_MAX) hist = hist.slice(hist.length - NPC_POS_HISTORY_MAX);
+        localStorage.setItem(NPC_POS_LS_HISTORY_KEY, JSON.stringify(hist));
+      } catch (e2) { /* history 書き込み失敗は致命ではない */ }
+    }
     // 本体
     localStorage.setItem(NPC_POS_LS_KEY, newJson);
     // KV へ非同期同期 (fire-and-forget; UX をブロックしない)
-    try { npcPosSyncToServer(obj || {}); } catch (e3) {}
+    if (opts.sync !== false) {
+      try { npcPosSyncToServer(obj || {}); } catch (e3) {}
+    }
     return true;
   } catch (e) { return false; }
 }
@@ -12836,7 +12875,11 @@ function npcPosSyncToServer(positions) {
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: positions || {} }),
+    body: JSON.stringify({
+      data: positions || {},
+      staffCounterMask: npcPosLoadStaffMask(),
+      customerCounterMask: npcPosLoadCustomerMask(),
+    }),
     cache: 'no-store'
   }).then(function(r) {
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -12864,6 +12907,12 @@ function npcPosSeedFromServerIfEmpty() {
     var data = (payload && payload.data && typeof payload.data === 'object') ? payload.data : null;
     if (!data) { npcPosSetSyncStatus('', ''); return; }
     try { localStorage.setItem(NPC_POS_LS_KEY, JSON.stringify(data)); } catch (e) {}
+    if (payload.staffCounterMask && typeof payload.staffCounterMask === 'object') {
+      try { localStorage.setItem(NPC_POS_STAFF_MASK_LS_KEY, JSON.stringify(npcPosNormalizeStaffMask(payload.staffCounterMask))); } catch (e) {}
+    }
+    if (payload.customerCounterMask && typeof payload.customerCounterMask === 'object') {
+      try { localStorage.setItem(NPC_POS_CUSTOMER_MASK_LS_KEY, JSON.stringify(npcPosNormalizeCustomerMask(payload.customerCounterMask))); } catch (e) {}
+    }
     npcPosSetSyncStatus('ok', 'サーバーから設定を復元しました');
     try { if (typeof npcPosLoadCurrent === 'function') npcPosLoadCurrent(); } catch (e) {}
   }).catch(function(err) {
@@ -12896,6 +12945,12 @@ function npcPosNormalizeStaffMask(raw) {
 function npcPosNormalizeCustomerMask(raw) {
   return npcPosNormalizeCounterMask(raw, NPC_POS_CUSTOMER_MASK_DEFAULT);
 }
+function npcPosCounterMaskMatches(mask, target) {
+  if (!mask || !target) return false;
+  return ['x', 'y', 'width', 'height', 'opacity'].every(function(key) {
+    return Math.abs(Number(mask[key]) - Number(target[key])) < 0.01;
+  });
+}
 function npcPosCurrentMaskType() {
   return npcPosGetConfig(_npcPosState.charId).type === 'staff' ? 'staff' : 'customer';
 }
@@ -12911,7 +12966,10 @@ function npcPosNormalizeCurrentMask(raw) {
 function npcPosLoadStaffMask() {
   try {
     var raw = localStorage.getItem(NPC_POS_STAFF_MASK_LS_KEY);
-    return npcPosNormalizeStaffMask(raw ? JSON.parse(raw) : null);
+    var normalized = npcPosNormalizeStaffMask(raw ? JSON.parse(raw) : null);
+    return npcPosCounterMaskMatches(normalized, NPC_POS_STAFF_MASK_LEGACY_DEFAULT)
+      ? npcPosNormalizeStaffMask(null)
+      : normalized;
   } catch (e) {
     return npcPosNormalizeStaffMask(null);
   }
@@ -12919,7 +12977,10 @@ function npcPosLoadStaffMask() {
 function npcPosLoadCustomerMask() {
   try {
     var raw = localStorage.getItem(NPC_POS_CUSTOMER_MASK_LS_KEY);
-    return npcPosNormalizeCustomerMask(raw ? JSON.parse(raw) : null);
+    var normalized = npcPosNormalizeCustomerMask(raw ? JSON.parse(raw) : null);
+    return npcPosCounterMaskMatches(normalized, NPC_POS_CUSTOMER_MASK_LEGACY_DEFAULT)
+      ? npcPosNormalizeCustomerMask(null)
+      : normalized;
   } catch (e) {
     return npcPosNormalizeCustomerMask(null);
   }
@@ -12932,6 +12993,19 @@ function npcPosSaveCurrentMask(mask) {
     localStorage.setItem(npcPosCurrentMaskKey(), JSON.stringify(npcPosNormalizeCurrentMask(mask)));
     return true;
   } catch (e) { return false; }
+}
+function npcPosAutosaveCurrentPosition() {
+  var all = npcPosLoadAll();
+  var payload = npcPosCurrentPayload();
+  var exprs = npcPosTargetExprs();
+  exprs.forEach(function(expr) {
+    all[npcPosMakeKey(_npcPosState.charId, expr)] = Object.assign({}, payload);
+  });
+  return npcPosSaveAll(all, { backup: false, history: false, sync: false });
+}
+function npcPosAutosaveCurrentMask() {
+  _npcPosState.mask = npcPosNormalizeCurrentMask(_npcPosState.mask);
+  return npcPosSaveCurrentMask(_npcPosState.mask);
 }
 function npcPosStaffMaskInsets(mask) {
   var m = npcPosNormalizeCurrentMask(mask);
@@ -13163,6 +13237,7 @@ function npcPosBuildSliders() {
         _npcPosState.current[def.key] = num;
         val.textContent = npcPosFormatVal(def.key, num);
         npcPosApplyPreview();
+        npcPosAutosaveCurrentPosition();
       }
     });
     input.addEventListener('change', function() { npcPosEndUndoForInput(input); });
@@ -13207,6 +13282,7 @@ function npcPosBuildMaskSliders() {
         _npcPosState.mask = npcPosNormalizeCurrentMask(_npcPosState.mask);
         npcPosSyncMaskSlidersFromState();
         npcPosApplyMaskPreview();
+        npcPosAutosaveCurrentMask();
       }
     });
     input.addEventListener('change', function() { npcPosEndUndoForInput(input); });
@@ -13411,6 +13487,7 @@ function npcPosBindControls() {
     if (npcPosSaveCurrentMask(_npcPosState.mask)) {
       npcPosSyncMaskSlidersFromState();
       npcPosApplyMaskPreview();
+      try { npcPosSyncToServer(npcPosLoadAll()); } catch (e) {}
       npcPosSetStatus((isStaff ? '店員側' : 'お客さん側') + 'カウンターマスクを保存しました', false);
     } else {
       npcPosSetStatus('マスク保存失敗 (localStorage に書き込めません)', true);
@@ -13516,7 +13593,7 @@ function npcPosBindControls() {
             var v = positionsObj[k];
             if (!v || typeof v !== 'object') return;
             var entry = Object.create(null);
-            ['x','y','scale','rotation','opacity'].forEach(function(prop) {
+            ['x','y','scale','scaleX','scaleY','rotation','opacity'].forEach(function(prop) {
               if (typeof v[prop] === 'number' && isFinite(v[prop])) entry[prop] = v[prop];
             });
             if (Object.keys(entry).length > 0) { cleaned[k] = entry; count++; }
@@ -13533,13 +13610,14 @@ function npcPosBindControls() {
           message += '。よろしいですか？';
           if (!confirm(message)) return;
           npcPosPushUndo('インポート');
-          npcPosSaveAll(cleaned);
+          npcPosSaveAll(cleaned, { sync: false });
           if (importStaffMask) {
             npcPosRestoreStorageRaw(NPC_POS_STAFF_MASK_LS_KEY, JSON.stringify(npcPosNormalizeStaffMask(staffMaskObj)));
           }
           if (importCustomerMask) {
             npcPosRestoreStorageRaw(NPC_POS_CUSTOMER_MASK_LS_KEY, JSON.stringify(npcPosNormalizeCustomerMask(customerMaskObj)));
           }
+          try { npcPosSyncToServer(cleaned); } catch (e) {}
           npcPosLoadCurrent();
           npcPosSetStatus('インポート完了: 位置 ' + count + ' 件' + ((importStaffMask || importCustomerMask) ? ' + カウンターマスク' : ''), false);
         } catch (e) {

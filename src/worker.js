@@ -262,6 +262,41 @@ function normalizeBentoCompleteLayoutMap(map) {
   return normalized;
 }
 
+function normalizeBentoNpcPositionsMap(map) {
+  const normalized = {};
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
+  Object.keys(map).sort().forEach(key => {
+    if (!/^[a-z0-9_:-]{1,100}$/i.test(key)) return;
+    const src = map[key];
+    if (!src || typeof src !== 'object' || Array.isArray(src)) return;
+    const entry = {};
+    if (Number.isFinite(Number(src.x))) entry.x = clampBentoMaskNumber(src.x, 0, 100, 58, 1);
+    if (Number.isFinite(Number(src.y))) entry.y = clampBentoMaskNumber(src.y, 0, 100, 23, 1);
+    if (Number.isFinite(Number(src.scale))) entry.scale = clampBentoMaskNumber(src.scale, 0.5, 2, 1, 2);
+    if (Number.isFinite(Number(src.scaleX))) entry.scaleX = clampBentoMaskNumber(src.scaleX, 0.5, 2, 1, 2);
+    if (Number.isFinite(Number(src.scaleY))) entry.scaleY = clampBentoMaskNumber(src.scaleY, 0.5, 2, 1, 2);
+    if (Number.isFinite(Number(src.rotation))) entry.rotation = clampBentoMaskNumber(src.rotation, -20, 20, 0, 1);
+    if (Number.isFinite(Number(src.opacity))) entry.opacity = clampBentoMaskNumber(src.opacity, 0, 1, 1, 2);
+    if (Object.keys(entry).length) normalized[key] = entry;
+  });
+  return normalized;
+}
+
+function normalizeBentoCounterMask(mask, defaults) {
+  const fallback = defaults || { x: 0, y: 0, width: 100, height: 100, opacity: 1 };
+  const src = mask && typeof mask === 'object' && !Array.isArray(mask) ? mask : {};
+  const normalized = {
+    x: clampBentoMaskNumber(src.x, 0, 100, fallback.x, 1),
+    y: clampBentoMaskNumber(src.y, 0, 100, fallback.y, 1),
+    width: clampBentoMaskNumber(src.width, 1, 100, fallback.width, 1),
+    height: clampBentoMaskNumber(src.height, 1, 100, fallback.height, 1),
+    opacity: clampBentoMaskNumber(src.opacity, 0, 1, fallback.opacity, 2)
+  };
+  if (normalized.x + normalized.width > 100) normalized.width = Math.max(1, roundBentoMaskNumber(100 - normalized.x, fallback.width, 1));
+  if (normalized.y + normalized.height > 100) normalized.height = Math.max(1, roundBentoMaskNumber(100 - normalized.y, fallback.height, 1));
+  return normalized;
+}
+
 async function handleBentoMaskDefaults(request, env) {
   if (request.method === 'OPTIONS') {
     return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
@@ -272,14 +307,27 @@ async function handleBentoMaskDefaults(request, env) {
   if (request.method === 'GET') {
     try {
       const stored = await env.BENTO_MASK_CONFIG.get(BENTO_MASK_CONFIG_KEY, 'json');
-      return json(200, stored || {
+      const npcStored = await env.BENTO_MASK_CONFIG.get(NPC_POSITIONS_CURRENT_KEY, 'json').catch(() => null);
+      const base = stored || {
         ok: true,
         exists: false,
         version: 1,
         updatedAt: null,
         maskBounds: {},
         completeLayout: {}
-      }, noStoreHeaders());
+      };
+      const merged = {
+        ...base,
+        npcPositions: normalizeBentoNpcPositionsMap(npcStored && (npcStored.data || npcStored.npcPositions)),
+        npcUpdatedAt: (npcStored && (npcStored.updated_at || npcStored.updatedAt)) || null,
+        staffCounterMask: npcStored && npcStored.staffCounterMask
+          ? normalizeBentoCounterMask(npcStored.staffCounterMask, { x: 0, y: 44, width: 100, height: 38, opacity: 1 })
+          : null,
+        customerCounterMask: npcStored && npcStored.customerCounterMask
+          ? normalizeBentoCounterMask(npcStored.customerCounterMask, { x: 0, y: 73, width: 100, height: 27, opacity: 1 })
+          : null
+      };
+      return json(200, merged, noStoreHeaders());
     } catch (e) {
       return json(500, { ok: false, error: e.message }, noStoreHeaders());
     }
@@ -372,7 +420,16 @@ async function handleBentoNpcPositionsPost(request, env) {
   }
 
   const updatedAt = new Date().toISOString();
-  const payload = { data: body.data, updated_at: updatedAt };
+  const payload = {
+    data: normalizeBentoNpcPositionsMap(body.data),
+    staffCounterMask: body.staffCounterMask
+      ? normalizeBentoCounterMask(body.staffCounterMask, { x: 0, y: 44, width: 100, height: 38, opacity: 1 })
+      : null,
+    customerCounterMask: body.customerCounterMask
+      ? normalizeBentoCounterMask(body.customerCounterMask, { x: 0, y: 73, width: 100, height: 27, opacity: 1 })
+      : null,
+    updated_at: updatedAt
+  };
   const serialized = JSON.stringify(payload);
 
   try {
