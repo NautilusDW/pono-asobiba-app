@@ -309,7 +309,7 @@ html, body {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   clip-path: inset(
-    var(--staff-counter-mask-top, 51%)
+    var(--staff-counter-mask-top, 44%)
     var(--staff-counter-mask-right, 0%)
     var(--staff-counter-mask-bottom, 18%)
     var(--staff-counter-mask-left, 0%)
@@ -328,7 +328,7 @@ html, body {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   clip-path: inset(
-    var(--customer-counter-mask-top, 61%)
+    var(--customer-counter-mask-top, 73%)
     var(--customer-counter-mask-right, 0%)
     var(--customer-counter-mask-bottom, 0%)
     var(--customer-counter-mask-left, 0%)
@@ -507,7 +507,7 @@ html, body {
   background-size: 100% 100%;
   background-repeat: no-repeat;
   clip-path: inset(
-    var(--customer-counter-mask-top, 61%)
+    var(--customer-counter-mask-top, 73%)
     var(--customer-counter-mask-right, 0%)
     var(--customer-counter-mask-bottom, 0%)
     var(--customer-counter-mask-left, 0%)
@@ -1264,6 +1264,8 @@ html, body {
   gap: 5px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   min-height: 0;
   padding-right: 2px;
 }
@@ -2044,6 +2046,8 @@ html, body {
   min-height: 72px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   padding-right: 2px;
 }
 .free-palette-item {
@@ -2063,7 +2067,7 @@ html, body {
   box-shadow: none;
   font-family: inherit;
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-y;
 }
 .free-palette-item > * {
   position: relative;
@@ -3700,6 +3704,7 @@ body.bento-complete-open #sk-intro {
   }
 }
 .tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+.tut-stop-btn { margin-left:8px; background:linear-gradient(135deg,#E5E7EB,#CBD5E1); color:#5D4E37; }
 .tut-highlight { position:relative;z-index:9996;box-shadow:0 0 0 4000px rgba(93,78,55,0.6);border-radius:16px; }
 .tut-blue-outline {
   outline: 3px solid #1E7FD8 !important;
@@ -5423,6 +5428,7 @@ const SK_INTRO_GUIDE_STEPS = [
 const SK_INTRO_VOICE_IDS = ['sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05'];
 const SK_INTRO_VOICE_GAP_MS = 600;
 const SK_INTRO_VOICE_FALLBACK_MS = 10000;
+const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 let skIntroGuideTimer = null;
 let skIntroGuideIndex = 0;
 function stopSkIntroGuide() {
@@ -5445,6 +5451,18 @@ function suppressBentoIntroTutorialOverlays() {
   if (dim) dim.classList.add('hidden');
   if (bubble) bubble.classList.add('hidden');
   document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+}
+function markBentoTutorialsDone() {
+  try {
+    localStorage.setItem('bento_sk_intro_done', '1');
+    localStorage.setItem('bento_tut_seen', '1');
+    localStorage.setItem('bento_tut_seen_v2', '1');
+    localStorage.setItem(BENTO_TUTORIAL_STORAGE_KEY, '1');
+  } catch (_) {}
+}
+function dismissBentoTutorialsForGood() {
+  markBentoTutorialsDone();
+  suppressBentoIntroTutorialOverlays();
 }
 function applySkIntroGuideStep(index) {
   const intro = document.getElementById('sk-intro');
@@ -5524,42 +5542,8 @@ function startSkIntroGuide() {
   const intro = document.getElementById('sk-intro');
   // sk-introボタンのハンドラを常に登録（showTutorialから表示される）
   document.getElementById('sk-intro-btn').addEventListener('click', function() {
-    stopSkIntroGuide();
-    localStorage.setItem('bento_sk_intro_done', '1');
-    localStorage.setItem('bento_tut_seen_v2', '1');
     window.__bentoSkIntroShownThisRun = true;
-    intro.classList.add('hidden');
-    const freeStage = document.getElementById('free-layout-stage');
-    if (freeStage) {
-      localStorage.setItem('bento_tut_seen', '1');
-      return;
-    }
-    // Step 2: 食材説明チュートリアルを表示
-    setTimeout(function() {
-      var dim = document.getElementById('tut-dim');
-      var bubble = document.getElementById('tut-bubble');
-      if (!dim || !bubble) return;
-      var foodTray = document.querySelector('.food-tray');
-      dim.classList.remove('hidden');
-      if (foodTray) foodTray.classList.add('tut-highlight');
-      bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-      bubble.innerHTML = '🍱 みぎの しょくざいを タップして<br>おべんとうに いれよう！<br><button class="tut-next-btn" id="tut-step2-next">つぎ →</button>';
-      bubble.classList.remove('hidden');
-      document.getElementById('tut-step2-next').addEventListener('pointerdown', function(e) {
-        e.preventDefault(); e.stopPropagation();
-        if (foodTray) foodTray.classList.remove('tut-highlight');
-        bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-        bubble.innerHTML = '3つの グループを そろえると<br>げんきな おべんとうに なるよ！<br><button class="tut-next-btn" id="tut-step2-end">つくろう！</button>';
-        document.getElementById('tut-step2-end').addEventListener('pointerdown', function(ev) {
-          ev.preventDefault(); ev.stopPropagation();
-          dim.classList.add('hidden');
-          bubble.classList.add('hidden');
-          document.querySelectorAll('.tut-highlight').forEach(function(el) { el.classList.remove('tut-highlight'); });
-          localStorage.setItem('bento_tut_seen', '1');
-          localStorage.setItem('bento_tut_seen_v2', '1');
-        });
-      });
-    }, 400);
+    dismissBentoTutorialsForGood();
   });
   // チュートリアル未表示なら、 タイトル画面と NPC 訪問モーダルが両方
   // 閉じてから (= ユーザーがタップして遊び始める準備が整ってから) 表示する。
@@ -5911,7 +5895,6 @@ const NPC_REQUESTERS = [
   },
 ];
 
-const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 const TUTORIAL_FIXED_REQUESTER_ID = 'araiguma';
 
 function isTutorialResetRequested() {
@@ -7111,9 +7094,11 @@ const SHOP_CUSTOMER_ENTER_DELAY_MS = 420;
 const SHOP_STAFF_ASSET_VERSION = '20260621-bento-pono-wave-face-v1';
 const SHOP_STAFF_ASSET_BASE = '../assets/images/bento/story/staff/';
 const SHOP_STAFF_COUNTER_MASK_LS_KEY = 'bento_staff_counter_mask_v1';
-const SHOP_STAFF_COUNTER_MASK_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
+const SHOP_STAFF_COUNTER_MASK_DEFAULT = { x: 0, y: 44, width: 100, height: 38, opacity: 1 };
+const SHOP_STAFF_COUNTER_MASK_LEGACY_DEFAULT = { x: 0, y: 51, width: 100, height: 31, opacity: 1 };
 const SHOP_CUSTOMER_COUNTER_MASK_LS_KEY = 'bento_customer_counter_mask_v1';
-const SHOP_CUSTOMER_COUNTER_MASK_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
+const SHOP_CUSTOMER_COUNTER_MASK_DEFAULT = { x: 0, y: 73, width: 100, height: 27, opacity: 1 };
+const SHOP_CUSTOMER_COUNTER_MASK_LEGACY_DEFAULT = { x: 0, y: 61, width: 100, height: 39, opacity: 1 };
 const SHOP_STAFF_MEMBERS = [
   {
     id: 'staffpono',
@@ -7198,10 +7183,18 @@ function normalizeShopCustomerCounterMask(raw) {
   return normalizeShopCounterMask(raw, SHOP_CUSTOMER_COUNTER_MASK_DEFAULT);
 }
 
+function shopCounterMaskMatches(mask, target) {
+  if (!mask || !target) return false;
+  return ['x', 'y', 'width', 'height', 'opacity'].every(key => Math.abs(Number(mask[key]) - Number(target[key])) < 0.01);
+}
+
 function loadShopStaffCounterMask() {
   try {
     const raw = localStorage.getItem(SHOP_STAFF_COUNTER_MASK_LS_KEY);
-    return normalizeShopStaffCounterMask(raw ? JSON.parse(raw) : null);
+    const normalized = normalizeShopStaffCounterMask(raw ? JSON.parse(raw) : null);
+    return shopCounterMaskMatches(normalized, SHOP_STAFF_COUNTER_MASK_LEGACY_DEFAULT)
+      ? normalizeShopStaffCounterMask(null)
+      : normalized;
   } catch {
     return normalizeShopStaffCounterMask(null);
   }
@@ -7210,7 +7203,10 @@ function loadShopStaffCounterMask() {
 function loadShopCustomerCounterMask() {
   try {
     const raw = localStorage.getItem(SHOP_CUSTOMER_COUNTER_MASK_LS_KEY);
-    return normalizeShopCustomerCounterMask(raw ? JSON.parse(raw) : null);
+    const normalized = normalizeShopCustomerCounterMask(raw ? JSON.parse(raw) : null);
+    return shopCounterMaskMatches(normalized, SHOP_CUSTOMER_COUNTER_MASK_LEGACY_DEFAULT)
+      ? normalizeShopCustomerCounterMask(null)
+      : normalized;
   } catch {
     return normalizeShopCustomerCounterMask(null);
   }
@@ -8121,20 +8117,22 @@ function revealReactionWithDrama(reaction) {
           var diff = (acorns | 0) - already;
           if (diff > 0) granted = window.addAcornsDaily('bento', diff, 5, { reason: 'bento_complete', suppressRewardModal: true });
         }
-        // Phase 2: PonoAcornModal を autoHide:0 (tap/ESC/× のみで dismiss) で表示
         if (granted > 0 && window.PonoAcornModal) {
           try {
             var _bentoDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
             var _bentoDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
             var _bentoIsCapped = (_bentoDailyTotal != null) && (_bentoDailyTotal >= _bentoDailyCap);
-            new window.PonoAcornModal({
+            hideBentoAcornModal();
+            bentoAcornModalInstance = new window.PonoAcornModal({
               gameId: 'bento',
               granted: granted,
               dailyTotal: _bentoDailyTotal,
               dailyCap: _bentoDailyCap,
               state: _bentoIsCapped ? 'capped' : 'idle',
-              autoHide: 0
-            }).show();
+              autoHide: 2600,
+              onDismiss: function () { bentoAcornModalInstance = null; }
+            });
+            bentoAcornModalInstance.show();
           } catch (e) { try { console.warn('[bento] PonoAcornModal show failed', e); } catch (_) {} }
         }
       }
@@ -10538,7 +10536,7 @@ function addSimpleFreePaletteItem(def) {
   return item;
 }
 function beginFreePaletteDrag(e, def) {
-  if (e && e.cancelable) e.preventDefault();
+  if (e && e.cancelable && e.pointerType !== 'touch') e.preventDefault();
   if (!canStartFreePaletteDrag(def)) return;
   freePaletteDragState = { def, uid: null };
   createFreePaletteDragGhost(def, e);
@@ -11838,7 +11836,7 @@ function makeFreePaletteButton(def) {
   }
   if (freeLayoutTab === 'box') {
     btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
+      if (e.pointerType !== 'touch') e.preventDefault();
       if (!showTutorialPaletteLockToast(def)) return;
       // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
@@ -11858,7 +11856,7 @@ function makeFreePaletteButton(def) {
     });
   } else {
     btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
+      if (e.pointerType !== 'touch') e.preventDefault();
       if (!showTutorialPaletteLockToast(def)) return;
       // Phase 2 future-use: decoration/food tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
@@ -13475,12 +13473,22 @@ function queueCompleteChromeSafeAreaSync() {
   setTimeout(syncCompleteChromeSafeArea, 900);
 }
 
+let bentoAcornModalInstance = null;
+function hideBentoAcornModal() {
+  if (!bentoAcornModalInstance) return;
+  try {
+    if (typeof bentoAcornModalInstance.hide === 'function') bentoAcornModalInstance.hide();
+  } catch (_) {}
+  bentoAcornModalInstance = null;
+}
+
 function setCompletePage(page) {
   const detailMode = page === 'detail';
   const card = document.querySelector('#complete-overlay .complete-card-wide');
   const resultPage = document.getElementById('complete-result-page');
   const detailPage = document.getElementById('complete-detail-page');
   const title = document.getElementById('complete-title');
+  if (detailMode) hideBentoAcornModal();
   if (card) card.classList.toggle('is-detail-page', detailMode);
   if (resultPage) resultPage.classList.toggle('hidden', detailMode);
   if (detailPage) detailPage.classList.toggle('hidden', !detailMode);
@@ -14163,7 +14171,7 @@ function showTutorial() {
   // Step 0: 導入メッセージ
   dim.classList.remove('hidden');
   bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-  bubble.innerHTML = '🍱 どうぶつの おねがいと<br>3つの グループを みながら<br>おべんとうを つくろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button>';
+  bubble.innerHTML = '🍱 どうぶつの おねがいと<br>3つの グループを みながら<br>おべんとうを つくろう！<br><button class="tut-next-btn" id="tut-next">つぎ →</button><button class="tut-next-btn tut-stop-btn" id="tut-stop">やめる</button>';
   bubble.classList.remove('hidden');
   document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
     e.preventDefault(); e.stopPropagation();
@@ -14173,6 +14181,10 @@ function showTutorial() {
     var skIntro = document.getElementById('sk-intro');
     skIntro.classList.remove('hidden');
     startSkIntroGuide();
+  });
+  document.getElementById('tut-stop').addEventListener('pointerdown', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    dismissBentoTutorialsForGood();
   });
 }
 
@@ -15923,6 +15935,7 @@ function tutorialRenderStep() {
     const html =
       'いっしょに おべんとう つくろう！'
       + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>'
+      + '<button class="tut-next-btn tut-stop-btn" id="tut-greet-stop">やめる</button>'
       + '<label class="tut-skip-mini"><input type="checkbox" id="tut-skip-checkbox"><span>つぎから スキップする</span></label>';
     tutorialShowBubble(html, { center: true });
     tutorialHideFinger();
@@ -15932,13 +15945,17 @@ function tutorialRenderStep() {
         e.preventDefault(); e.stopPropagation();
         const skip = document.getElementById('tut-skip-checkbox');
         if (skip && skip.checked) {
-          try { localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); } catch (_) {}
-          tutorialState.active = false;
-          tutorialState.step = 'done';
-          tutorialTeardown();
+          markBentoTutorialsDone();
+          tutorialMarkDone();
           return;
         }
         tutorialShowGroupIntroThen('box');
+      }, { once: true });
+      const stopBtn = document.getElementById('tut-greet-stop');
+      if (stopBtn) stopBtn.addEventListener('pointerdown', e => {
+        e.preventDefault(); e.stopPropagation();
+        markBentoTutorialsDone();
+        tutorialMarkDone();
       }, { once: true });
     }
     return;
