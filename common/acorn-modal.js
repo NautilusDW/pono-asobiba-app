@@ -129,17 +129,26 @@
   //  - state は 'perfect' のとき音量を少し上げる程度の hint として扱う。
   //    state 固有の SFX が欲しいゲームは acorn-audio.js 側で
   //    別 gameId として register すること。
+  //  - 返り値: Promise<HTMLAudioElement|null>。 呼び出し側は無視可。
+  //    PonoAcornAudio.play() 自身が autoplay reject を catch して resolve(null)
+  //    するため、 ここで await/then しなくても安全 (silent fail)。
   function playSafe(gameId, state) {
     var audio = window.PonoAcornAudio;
-    if (!audio || typeof audio.play !== 'function') return;
+    if (!audio || typeof audio.play !== 'function') {
+      return Promise.resolve(null);
+    }
     var opts = null;
     if (state === 'perfect') {
       opts = { volume: 0.6 };
     }
     try {
-      audio.play(gameId, opts);
+      var p = audio.play(gameId, opts);
+      // PonoAcornAudio.play は常に Promise を返す契約だが、
+      // 古い実装が undefined を返しても落ちないよう正規化する。
+      return (p && typeof p.then === 'function') ? p : Promise.resolve(null);
     } catch (e) {
       // 音声は hard requirement ではない
+      return Promise.resolve(null);
     }
   }
 
@@ -191,6 +200,9 @@
     this._keydownHandler = null;
     this._overlayClickHandler = null;
     this._focusInHandler = null;
+    // SE 二重発火防止フラグ。 同一 show() 呼び出しで playSafe() を 2 回鳴らさない
+    // ためのガード。 hide() で false に戻す (次回 show で 1 回鳴らす)。
+    this._seFired = false;
   }
 
   PonoAcornModal.prototype._buildDom = function () {
@@ -423,6 +435,21 @@
       return this._showPromise;
     }
 
+    // SE は DOM 構築前に発火させる。
+    //  - 呼び出し元 (puzzle/oto/bento 等の clear handler) は user gesture の
+    //    callback 内で modal.show() を呼ぶ。 iOS Safari の autoplay policy は
+    //    user gesture の同期 stack frame 内で audio.play() を呼べば許可する
+    //    ため、 _buildDom() / appendChild / reflow の手前で playSafe() を
+    //    呼んで gesture 連続性を最大化する。
+    //  - _seFired ガードで同一 show() 内 2 重発火を防ぐ。
+    //    hide() で false に戻すので 次回 show() では正常に鳴る。
+    //  - playSafe() は Promise を返すが、 fire-and-forget で OK
+    //    (autoplay reject は内部 catch で silent fail)。
+    if (!this._seFired) {
+      this._seFired = true;
+      playSafe(this.gameId, this.state);
+    }
+
     // 既に DOM があれば一旦剥がして作り直す (state/granted を新規反映するため)
     if (this._overlay && this._overlay.parentNode) {
       this._overlay.parentNode.removeChild(this._overlay);
@@ -478,9 +505,15 @@
       // noop
     }
 
-    // 効果音 (hard requirement ではない)
-    // PonoAcornAudio.play(gameId) は未登録なら don.mp3 にフォールバック。
-    playSafe(this.gameId, this.state);
+    // 効果音は show() 冒頭 (_buildDom 前) で playSafe() 済み。
+    // ここでは _seFired ガードにより 2 重発火しない設計。
+    // 仮に _seFired === false (将来の改修で reset 経路ができた場合) でも、
+    // 念のため再試行する保険を残す: user gesture context 外なら autoplay
+    // reject されるだけで silent fail (副作用なし)。
+    if (!this._seFired) {
+      this._seFired = true;
+      playSafe(this.gameId, this.state);
+    }
 
     // auto-hide
     //  - this.autoHide === 0 のときは setTimeout を一切発火させず、
@@ -540,6 +573,8 @@
     this._panel = null;
     this._dismissBtn = null;
     this._amountEl = null;
+    // 次回 show() で SE を 1 回だけ確実に鳴らすため、 ガードを解除する
+    this._seFired = false;
   };
 
   // 露出

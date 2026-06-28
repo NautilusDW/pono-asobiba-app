@@ -2059,6 +2059,44 @@ body.image-stage-mode .game-wrap {
   color: #8D6C36;
   line-height: 1.2;
 }
+/* sw1380: 力の手袋カウントダウン (3,2,1,GO!) */
+.strength-countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 9;
+}
+.strength-countdown__num {
+  font-family: 'Hiragino Maru Gothic Pro', 'Yu Gothic', sans-serif;
+  font-weight: 900;
+  font-size: clamp(5rem, 18vw, 9rem);
+  color: #FFF6C2;
+  text-shadow:
+    0 0 12px rgba(255, 196, 76, 0.85),
+    0 4px 0 #C66A1E,
+    0 6px 16px rgba(0,0,0,0.45);
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.4);
+  animation: strengthCountdownPop 1s ease-out forwards;
+}
+.strength-countdown__num.is-go {
+  color: #FFFCD8;
+  text-shadow:
+    0 0 18px rgba(255, 220, 90, 0.95),
+    0 4px 0 #2E8A3A,
+    0 8px 20px rgba(0,0,0,0.45);
+  font-size: clamp(4rem, 14vw, 7rem);
+}
+@keyframes strengthCountdownPop {
+  0%   { opacity: 0; transform: scale(0.4); }
+  18%  { opacity: 1; transform: scale(1.15); }
+  35%  { opacity: 1; transform: scale(1); }
+  85%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.25); }
+}
 .strength-clear {
   position: relative;
   display: grid;
@@ -3429,11 +3467,14 @@ function playRockHit(finalHit) {
 }
 function playStageClearMz() { playMzSe('mazeClear'); }
 
-// SE (mp3) — おじゃま虫クイズ + ステージクリア用
+// SE (mp3) — おじゃま虫クイズ + ステージクリア用 + 力の手袋カウントダウン
 const _MZ_SE_PATHS = {
   correct:   '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
   wrong:     '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
   mazeClear: '../assets/audio/sfx/quiz/' + encodeURIComponent('迷路クリア') + '.mp3',
+  // sw1380: strength_push カウントダウン用 (既存 oto SE 流用 / 新規 brief 不要)
+  countdownTick: '../assets/audio/sfx/oto/close-hit.mp3',
+  countdownGo:   '../assets/audio/sfx/oto/game-start.mp3',
 };
 const _MZ_SE_VOLUME = 0.45;
 const _mzSeCache = {};
@@ -7576,14 +7617,15 @@ function _showStrengthPushGame() {
   _strengthGameState = {
     tapCount: 0,
     required: STRENGTH_TAP_REQUIRED,
-    deadline: performance.now() + STRENGTH_TAP_MS,
-    locked: false,
+    // sw1380: deadline はカウントダウン完了時に確定 (_startStrengthPushPlay 内で設定)
+    deadline: 0,
+    locked: true,  // sw1380: カウントダウン中はタップ無効
     lastPunchHand: 'left',
     punchSeq: 0,
     punchTimer: null,
     crackPlayed: false,
     almostPlayed: false,
-    status: 'たたいて ひびを ひろげよう！',
+    status: 'よく きいて！',
   };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
@@ -7591,7 +7633,7 @@ function _showStrengthPushGame() {
   wrap.innerHTML =
     '<div class="strength-game__title">いわを れんだ！</div>' +
     '<div class="strength-game__stage">' +
-      '<button class="strength-rock-btn" id="strengthRockBtn" type="button" aria-label="いわを たたく">' +
+      '<button class="strength-rock-btn" id="strengthRockBtn" type="button" aria-label="いわを たたく" disabled>' +
         '<div class="strength-game__impact-zone">' +
           '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
           '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
@@ -7603,6 +7645,7 @@ function _showStrengthPushGame() {
           '<span class="strength-game__glove strength-game__glove--right" aria-hidden="true">' +
             '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_punch_right.png" alt="">' +
           '</span>' +
+          '<div class="strength-countdown" id="strengthCountdown" aria-hidden="true"></div>' +
         '</div>' +
       '</button>' +
     '</div>' +
@@ -7619,10 +7662,141 @@ function _showStrengthPushGame() {
   encStageEl.appendChild(wrap);
   const rockBtn = document.getElementById('strengthRockBtn');
   if (rockBtn) rockBtn.addEventListener('click', _onStrengthRockTap);
+
+  // sw1380: 静的な初期表示 (タイムバー満タン、 HP 100%)
+  const bar0 = document.getElementById('strengthTimeBar');
+  if (bar0) bar0.style.transform = 'scaleX(1)';
+  const durBar0 = document.getElementById('strengthDurabilityBar');
+  if (durBar0) durBar0.style.transform = 'scaleX(1)';
+
+  // sw1380: ナレーション再生 → onended → カウントダウン → ゲーム開始
+  _kickStrengthIntroSequence();
+}
+
+// sw1380: 力の手袋ミニゲームのイントロ (ナレーション → 3,2,1,GO カウントダウン → ゲーム開始)
+function _kickStrengthIntroSequence() {
+  const introAudio = _getStrengthIntroAudio();
+  let countdownStarted = false;
+  const startCountdown = function() {
+    if (countdownStarted) return;
+    countdownStarted = true;
+    _runStrengthCountdown();
+  };
+  if (!introAudio) {
+    // ナレ取得失敗時は即カウントダウン (UX 破壊回避)
+    startCountdown();
+    return;
+  }
+  // 念のため end 後にも remove (cache 再利用想定で onended ハンドラが残らないように)
+  const onEnd = function() {
+    try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
+    startCountdown();
+  };
+  try { introAudio.addEventListener('ended', onEnd); } catch (_) {}
+  // 安全網: 音声が再生失敗 / duration 取得失敗時に備え、 最大 6 秒で強制発火
+  const fallbackTimer = _strengthGimmickSetTimeout(function() {
+    try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
+    startCountdown();
+  }, 6000);
+  // play() は user gesture 内なので OK。 失敗時は即 countdown 開始
+  try {
+    introAudio.currentTime = 0;
+  } catch (_) {}
+  try {
+    const p = introAudio.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(function() {
+        try { clearTimeout(fallbackTimer); } catch (_) {}
+        try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
+        startCountdown();
+      });
+    }
+  } catch (_) {
+    try { clearTimeout(fallbackTimer); } catch (_) {}
+    startCountdown();
+  }
+}
+
+// _playMazeVoice 内部と同じ cache をシェアして Audio 取得 (whitelist チェック含む)
+function _getStrengthIntroAudio() {
+  const bundle = _MAZE_VOICE_BUNDLED['strength_push'] || {};
+  if (!bundle['start']) return null;
+  const cacheKey = 'strength_push/start';
+  try {
+    var a = _mazeVoiceCache[cacheKey];
+    if (!a) {
+      a = new Audio(_MAZE_VOICE_BASE + cacheKey + '.mp3');
+      a.volume = 0.75;
+      _mazeVoiceCache[cacheKey] = a;
+    }
+    return a;
+  } catch (_) {
+    return null;
+  }
+}
+
+// 3 → 2 → 1 → GO のカウントダウン UI + SE
+function _runStrengthCountdown() {
+  const host = document.getElementById('strengthCountdown');
+  if (!host) {
+    _startStrengthPushPlay();
+    return;
+  }
+  if (_strengthGameState) {
+    _strengthGameState.status = 'はじまるよ！';
+  }
+  const showNum = function(label, isGo) {
+    host.textContent = '';
+    const el = document.createElement('div');
+    el.className = 'strength-countdown__num' + (isGo ? ' is-go' : '');
+    el.textContent = label;
+    host.appendChild(el);
+  };
+  const tickSe = function() {
+    try { playMzSe('countdownTick'); } catch (_) {}
+  };
+  const goSe = function() {
+    try { playMzSe('countdownGo'); } catch (_) {}
+  };
+  // 0ms: 3
+  showNum('3', false); tickSe();
+  // 1000ms: 2
+  _strengthGimmickSetTimeout(function() {
+    showNum('2', false); tickSe();
+  }, 1000);
+  // 2000ms: 1
+  _strengthGimmickSetTimeout(function() {
+    showNum('1', false); tickSe();
+  }, 2000);
+  // 3000ms: GO! + ゲーム開始
+  _strengthGimmickSetTimeout(function() {
+    showNum('GO!', true); goSe();
+    _startStrengthPushPlay();
+  }, 3000);
+  // 4000ms: カウントダウン UI 撤去 (animation の fade-out 完了後)
+  _strengthGimmickSetTimeout(function() {
+    if (host && host.parentNode) {
+      host.textContent = '';
+    }
+  }, 4000);
+}
+
+// カウントダウン 0 (GO!) のタイミングでゲーム本体を起動
+function _startStrengthPushPlay() {
+  const gs = _strengthGameState;
+  if (!gs) return;
+  // 既に起動済み (再入防止)
+  if (gs.intervalId) return;
+  gs.deadline = performance.now() + STRENGTH_TAP_MS;
+  gs.locked = false;
+  gs.status = 'たたいて ひびを ひろげよう！';
+  const rockBtn = document.getElementById('strengthRockBtn');
+  if (rockBtn) {
+    try { rockBtn.disabled = false; } catch (_) {}
+  }
   _renderStrengthPushGame();
-  _playMazeVoice('strength_push', 'start');
   const intervalId = setInterval(_renderStrengthPushGame, 45);
-  _strengthGameState.intervalId = intervalId;
+  gs.intervalId = intervalId;
   _strengthGimmickTimers.push(intervalId);
 }
 

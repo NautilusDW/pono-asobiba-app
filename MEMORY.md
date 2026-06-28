@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-28T05:23:47Z - AcornModal show() で SE を user gesture 同期 frame 内に前倒し + _seFired ガードで二重発火防止 (sw v1739)
+- **タスク**: AcornModal show() で SE を user gesture 同期 frame 内に前倒し + _seFired ガードで二重発火防止 (sw v1739)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 125
+- **エラー数**: 12
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 15, "Bash": 81, "Read": 11, "Edit": 8, "ToolSearch": 1, "Agent": 8, "Write": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-28T04:32:25Z - Phase 3 クロスレビュー Critical/High 反映 (quizland「かんたん」UI 露出/puzzle partner-select.js/bento aria-label hardcode)
 - **タスク**: Phase 3 クロスレビュー Critical/High 反映 (quizland「かんたん」UI 露出/puzzle partner-select.js/bento aria-label hardcode)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Workflow": 5, "Bash": 13, "Read": 1, "Edit": 1, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-27T19:11:17Z - maze 旗あげ合戦に TTS 音声 9 本 + HP=4 ゲージ制 (1 ミス即敗北→3 ミス猶予) 実装。 planner→implementer+voice 並列→3 軸 cross-review (logic/UX/audio) →adversarial verify→9 fix 統合 →verifier ready_to_ship→deploy (sw v1711) →memory feedback 2 件追記まで完遂
-- **タスク**: maze 旗あげ合戦に TTS 音声 9 本 + HP=4 ゲージ制 (1 ミス即敗北→3 ミス猶予) 実装。 planner→implementer+voice 並列→3 軸 cross-review (logic/UX/audio) →adversarial verify→9 fix 統合 →verifier ready_to_ship→deploy (sw v1711) →memory feedback 2 件追記まで完遂
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 36
-- **エラー数**: 3
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 8, "Read": 8, "Glob": 2, "Grep": 5, "Edit": 1, "ToolSearch": 1, "Agent": 5, "Workflow": 3, "Write": 3}
-- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
