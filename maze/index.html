@@ -1654,6 +1654,7 @@ body.image-stage-mode .game-wrap {
   opacity: 0.72;
   pointer-events: none;
   z-index: 1;
+  animation: waterSurfaceSheen 5.6s ease-in-out infinite;
 }
 .water-skate-canvas {
   position: absolute;
@@ -1710,12 +1711,15 @@ body.image-stage-mode .game-wrap {
 .water-skate-start::after { content: "ここから"; }
 .water-skate-goal::after { content: "むこう"; }
 .water-rider {
+  --water-amenbo-face: -1;
+  --water-amenbo-tilt: 0deg;
   position: absolute;
   z-index: 4;
   left: 16%;
   top: 72%;
   width: clamp(132px, 20vw, 240px);
   transform: translate(-50%, -54%);
+  transform-origin: 50% 56%;
   pointer-events: none;
   will-change: left, top, transform;
 }
@@ -1727,6 +1731,8 @@ body.image-stage-mode .game-wrap {
   width: 100%;
   max-height: min(25dvh, 150px) !important;
   object-fit: contain;
+  transform: rotate(var(--water-amenbo-tilt)) scaleX(var(--water-amenbo-face));
+  transform-origin: 50% 52%;
   filter: drop-shadow(0 7px 10px rgba(20,65,81,0.28));
 }
 .water-rider__pono {
@@ -1844,6 +1850,10 @@ body.image-stage-mode .game-wrap {
 @keyframes waterSparkleDrift {
   0%, 100% { opacity: 0.74; transform: translateY(0); }
   50%      { opacity: 1; transform: translateY(-4px); }
+}
+@keyframes waterSurfaceSheen {
+  0%, 100% { opacity: 0.56; transform: translate3d(-1.2%, 0, 0) scale(1.01); }
+  50%      { opacity: 0.86; transform: translate3d(1.2%, -1.4%, 0) scale(1.03); }
 }
 
 .strength-game {
@@ -6930,6 +6940,7 @@ function _showWaterBridgeGame() {
     points: [],
     particles: [],
     ripples: [],
+    wakes: [],
     glide: null,
     success: false,
     status: 'ゆびで みずの みちを かこう',
@@ -7012,6 +7023,20 @@ function _waterSkatePointAt(points, distance) {
   return points[points.length - 1];
 }
 
+function _waterSkateAngleBetween(a, b) {
+  if (!a || !b) return -32;
+  return Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+}
+
+function _waterSkateDirectionAt(points, distance) {
+  if (!points || points.length < 2) {
+    return _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal'));
+  }
+  const before = _waterSkatePointAt(points, Math.max(0, distance - 22));
+  const after = _waterSkatePointAt(points, Math.min(_waterSkatePathLength(points), distance + 22));
+  return _waterSkateAngleBetween(before, after);
+}
+
 function _waterSkateNormalizePoints(points) {
   const rect = _waterSkateStageRect();
   if (!rect || rect.width <= 1 || rect.height <= 1 || !points || points.length < 2) {
@@ -7053,12 +7078,19 @@ function _waterSkateIsSuccess(points) {
   return length > rect.width * 0.35 && (nearGoal || crossedWater);
 }
 
-function _waterSkateSetRider(point, state) {
+function _waterSkateSetRider(point, state, angleDeg) {
   const rider = document.getElementById('waterRider');
   const amenbo = document.getElementById('waterAmenbo');
   if (!rider) return;
   rider.style.left = point.x + 'px';
   rider.style.top = point.y + 'px';
+  const fallbackAngle = _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal'));
+  const angle = Number.isFinite(angleDeg) ? angleDeg : fallbackAngle;
+  const rad = angle * Math.PI / 180;
+  const movingRight = Math.cos(rad) >= 0;
+  const tilt = Math.max(-8, Math.min(8, Math.sin(rad) * 8));
+  rider.style.setProperty('--water-amenbo-face', movingRight ? '-1' : '1');
+  rider.style.setProperty('--water-amenbo-tilt', tilt.toFixed(1) + 'deg');
   rider.classList.toggle('is-gliding', state === 'glide');
   if (amenbo) {
     amenbo.src = state === 'happy' ? WATER_SKATE_HAPPY_SRC : (state === 'glide' ? WATER_SKATE_GLIDE_SRC : WATER_SKATE_IDLE_SRC);
@@ -7075,6 +7107,22 @@ function _waterSkateAddRipple(x, y) {
   if (!gs) return;
   gs.ripples.push({ x: x, y: y, age: 0, max: 520 + Math.random() * 220 });
   if (gs.ripples.length > 18) gs.ripples.shift();
+}
+
+function _waterSkateAddWake(x, y, angleDeg, strength) {
+  const gs = _waterGameState;
+  if (!gs) return;
+  gs.wakes = gs.wakes || [];
+  gs.wakes.push({
+    x: x,
+    y: y,
+    angle: (Number.isFinite(angleDeg) ? angleDeg : -24) * Math.PI / 180,
+    age: 0,
+    max: 860 + Math.random() * 360,
+    strength: strength || 1,
+    drift: (Math.random() - 0.5) * 10,
+  });
+  if (gs.wakes.length > 42) gs.wakes.splice(0, gs.wakes.length - 42);
 }
 
 function _waterSkateAddSparkles(x, y, count) {
@@ -7102,7 +7150,7 @@ function _renderWaterBridgeGame() {
   const status = document.getElementById('waterStatus');
   if (guide) guide.textContent = gs.phase === 'drawing' ? 'そのまま むこうへ なぞってね' : (gs.phase === 'gliding' ? 'すいすいー！' : 'ここから むこうまで なぞってね');
   if (status) status.textContent = gs.status || '';
-  _waterSkateSetRider(_waterSkateAnchor('start'), 'idle');
+  _waterSkateSetRider(_waterSkateAnchor('start'), 'idle', _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal')));
 }
 
 function _onWaterSkatePointerDown(ev) {
@@ -7120,6 +7168,7 @@ function _onWaterSkatePointerDown(ev) {
   gs.status = 'ひかる みずを かいてね';
   _waterSkateSetGuide('そのまま むこうへ なぞってね');
   _waterSkateAddRipple(p.x, p.y);
+  _waterSkateAddWake(p.x, p.y, _waterSkateAngleBetween(start, p), 0.8);
   _waterSkateAddSparkles(p.x, p.y, 7);
 }
 
@@ -7131,7 +7180,9 @@ function _onWaterSkatePointerMove(ev) {
   ev.preventDefault();
   const last = gs.points[gs.points.length - 1];
   if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 5) {
+    const angle = _waterSkateAngleBetween(last, p);
     gs.points.push(p);
+    _waterSkateAddWake((last.x + p.x) / 2, (last.y + p.y) / 2, angle, 0.72);
     _waterSkateAddSparkles(p.x, p.y, 3);
     if (gs.points.length % 5 === 0) _waterSkateAddRipple(p.x, p.y);
   }
@@ -7196,6 +7247,92 @@ function _showWaterBridgeCompleteScene() {
   playMzSe('correct');
 }
 
+function _waterSkateDrawWaterSurface(ctx, w, h, now) {
+  const t = now * 0.001;
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  for (let row = 0; row < 7; row++) {
+    const baseY = h * (0.13 + row * 0.13) + Math.sin(t * 0.7 + row * 1.6) * 9;
+    ctx.beginPath();
+    for (let x = -80; x <= w + 100; x += 82) {
+      const y = baseY + Math.sin((x * 0.012) + t * 1.7 + row) * 8;
+      if (x <= -79) {
+        ctx.moveTo(x, y);
+      } else {
+        const cpX = x - 42;
+        const cpY = y + Math.cos(t * 1.1 + row + x * 0.01) * 11;
+        ctx.quadraticCurveTo(cpX, cpY, x, y);
+      }
+    }
+    ctx.strokeStyle = row % 2
+      ? 'rgba(179, 255, 255, 0.09)'
+      : 'rgba(255, 255, 255, 0.075)';
+    ctx.lineWidth = row % 2 ? 1.2 : 1.7;
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 17; i++) {
+    const x = ((i * 0.173 + 0.08 + Math.sin(t * 0.18 + i) * 0.012) % 1) * w;
+    const y = ((i * 0.317 + 0.12 + Math.cos(t * 0.15 + i) * 0.018) % 1) * h;
+    const blink = Math.max(0, Math.sin(t * 2.2 + i * 1.91));
+    if (blink < 0.66) continue;
+    const s = 2.4 + blink * 4.2;
+    ctx.globalAlpha = (blink - 0.62) * 1.4;
+    ctx.strokeStyle = i % 3 === 0 ? 'rgba(255, 244, 160, 0.78)' : 'rgba(255, 255, 255, 0.88)';
+    ctx.lineWidth = 1.15;
+    ctx.beginPath();
+    ctx.moveTo(x - s * 1.9, y);
+    ctx.lineTo(x + s * 1.9, y);
+    ctx.moveTo(x, y - s * 1.35);
+    ctx.lineTo(x, y + s * 1.35);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _waterSkateDrawPathRefraction(ctx, points, now, intensity) {
+  if (!points || points.length < 2) return;
+  const t = now * 0.004;
+  const offsets = [-30, -18, 18, 30];
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  offsets.forEach(function(offset, idx) {
+    ctx.beginPath();
+    let started = false;
+    for (let i = 1; i < points.length; i += 2) {
+      const a = points[i - 1];
+      const b = points[i];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < 0.01) continue;
+      const nx = -(b.y - a.y) / len;
+      const ny = (b.x - a.x) / len;
+      const wobble = Math.sin(t + i * 0.7 + offset * 0.13) * (idx < 2 ? 5 : 3);
+      const x = b.x + nx * (offset + wobble);
+      const y = b.y + ny * (offset + wobble);
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        const p = points[Math.max(0, i - 2)];
+        ctx.quadraticCurveTo(p.x + nx * offset, p.y + ny * offset, x, y);
+      }
+    }
+    if (started) {
+      ctx.strokeStyle = offset < 0
+        ? 'rgba(207, 255, 255, ' + (0.09 * intensity).toFixed(3) + ')'
+        : 'rgba(102, 226, 255, ' + (0.085 * intensity).toFixed(3) + ')';
+      ctx.lineWidth = idx < 2 ? 2.1 : 1.45;
+      ctx.stroke();
+    }
+  });
+  ctx.restore();
+}
+
 function _waterSkateDrawPath(ctx, points) {
   if (!points || points.length < 2) return;
   ctx.save();
@@ -7257,7 +7394,7 @@ function _waterSkateDrawCompleteRoute(ctx, points) {
   ctx.restore();
 }
 
-function _renderWaterCompletePath() {
+function _renderWaterCompletePath(now) {
   const canvas = document.getElementById('waterCompleteCanvas');
   if (!canvas) return;
   const stageEl = canvas.closest('.water-complete-stage');
@@ -7279,10 +7416,47 @@ function _renderWaterCompletePath() {
   const points = _waterSkateCompletePoints().map(function(p) {
     return { x: p.x * rect.width, y: p.y * rect.height };
   });
+  _waterSkateDrawWaterSurface(ctx2, rect.width, rect.height, now || performance.now());
+  _waterSkateDrawPathRefraction(ctx2, points, now || performance.now(), 0.72);
   _waterSkateDrawCompleteRoute(ctx2, points);
+  if (stageEl) {
+    const rider = stageEl.querySelector('.water-rider');
+    if (rider && points.length >= 2) {
+      const endAngle = _waterSkateAngleBetween(points[points.length - 2], points[points.length - 1]);
+      const rad = endAngle * Math.PI / 180;
+      rider.style.setProperty('--water-amenbo-face', Math.cos(rad) >= 0 ? '-1' : '1');
+      rider.style.setProperty('--water-amenbo-tilt', Math.max(-8, Math.min(8, Math.sin(rad) * 8)).toFixed(1) + 'deg');
+    }
+  }
+  if (canvas.isConnected) requestAnimationFrame(_renderWaterCompletePath);
 }
 
 function _waterSkateDrawParticles(ctx, gs, dt) {
+  if (gs.wakes) {
+    for (let i = gs.wakes.length - 1; i >= 0; i--) {
+      const w = gs.wakes[i];
+      w.age += dt;
+      const t = Math.min(1, w.age / w.max);
+      if (t >= 1) { gs.wakes.splice(i, 1); continue; }
+      const alpha = (1 - t) * 0.34 * (w.strength || 1);
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.translate(w.x + Math.sin(t * Math.PI) * w.drift, w.y);
+      ctx.rotate(w.angle);
+      ctx.scale(1, 0.34 + t * 0.2);
+      ctx.strokeStyle = 'rgba(210, 255, 255, ' + alpha.toFixed(3) + ')';
+      ctx.lineWidth = 2.2 - t * 0.9;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 16 + t * 56, 9 + t * 22, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(91, 224, 255, ' + (alpha * 0.72).toFixed(3) + ')';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 28 + t * 74, 14 + t * 28, 0, -Math.PI * 0.72, Math.PI * 0.72);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
   for (let i = gs.ripples.length - 1; i >= 0; i--) {
     const r = gs.ripples[i];
     r.age += dt;
@@ -7347,13 +7521,18 @@ function _waterSkateLoop(now) {
   ctx2.clearRect(0, 0, rect.width, rect.height);
   const dt = gs.lastNow ? Math.min(42, now - gs.lastNow) : 16;
   gs.lastNow = now;
+  _waterSkateDrawWaterSurface(ctx2, rect.width, rect.height, now);
+  _waterSkateDrawPathRefraction(ctx2, gs.points, now, gs.phase === 'drawing' ? 1 : 0.72);
   _waterSkateDrawPath(ctx2, gs.points);
   if (gs.phase === 'gliding' && gs.glide) {
     const t = Math.min(1, (now - gs.glide.startedAt) / gs.glide.duration);
-    const p = _waterSkatePointAt(gs.points, gs.glide.length * t);
-    _waterSkateSetRider(p, 'glide');
+    const distance = gs.glide.length * t;
+    const p = _waterSkatePointAt(gs.points, distance);
+    const angle = _waterSkateDirectionAt(gs.points, distance);
+    _waterSkateSetRider(p, 'glide', angle);
     if (Math.random() < 0.7) {
       _waterSkateAddSparkles(p.x - 12, p.y + 12, 2);
+      if (Math.random() < 0.34) _waterSkateAddWake(p.x, p.y + 7, angle, 0.5);
       if (Math.random() < 0.14) _waterSkateAddRipple(p.x, p.y + 18);
     }
     if (t >= 1) {
@@ -7366,7 +7545,7 @@ function _waterSkateLoop(now) {
       gs.points = [];
       gs.glide = null;
       gs.status = 'もういちど みずの みちを かこう';
-      _waterSkateSetRider(_waterSkateAnchor('start'), 'idle');
+      _waterSkateSetRider(_waterSkateAnchor('start'), 'idle', _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal')));
       _waterSkateSetGuide('ここから むこうまで なぞってね');
       _renderWaterBridgeGame();
     }
