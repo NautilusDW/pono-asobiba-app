@@ -381,7 +381,7 @@
       z-index: 12;
       opacity: 0.95;
       filter: drop-shadow(0 2px 4px rgba(40, 24, 8, 0.55));
-      transition: opacity 220ms ease-out;
+      transition: opacity 220ms ease-out, filter 220ms ease-out;
     }
     .scroll-hint--up {
       top: 18px;                  /* card-list 上端から 18px 下 (mask fade 帯の上に重ねる) */
@@ -402,13 +402,18 @@
       stroke-width: 5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      transition: stroke 220ms ease-out;
+      transition: stroke 220ms ease-out, stroke-width 220ms ease-out;
     }
     .scroll-hint.is-active path {
-      stroke: #d96a36;            /* オレンジ (スクロール可能方向) */
+      stroke: #f0782f;            /* オレンジ (スクロール可能方向) */
+      stroke-width: 5.6;
     }
     .scroll-hint.is-active {
       opacity: 1;
+      filter:
+        drop-shadow(0 2px 3px rgba(40, 24, 8, 0.48))
+        drop-shadow(0 0 7px rgba(255, 124, 46, 0.86))
+        drop-shadow(0 0 16px rgba(255, 196, 76, 0.62));
     }
 
     @keyframes hintBobUp {
@@ -5281,6 +5286,13 @@
     }
     .daily-quest-info-banner[data-title-lines="2"] .game-title-break {
       display: block;
+      height: 0;
+      line-height: 0;
+      font-size: 0;
+    }
+    .daily-quest-info-banner[data-quest-id="bento"][data-title-lines="2"] .daily-quest-info-banner__body {
+      font-size: clamp(20px, 2.1vw, 24px);
+      line-height: 0.98;
     }
     .daily-gacha-entry {
       position: relative;
@@ -6618,8 +6630,9 @@
     function gameTitleParticle(text) {
       return `<span class="game-title-particle">${esc(text)}</span>`;
     }
-    function gameTitleBreak() {
-      return '<wbr><span class="game-title-break" aria-hidden="true"></span>';
+    function gameTitleBreak(modifierClass) {
+      const extraClass = modifierClass ? ` ${esc(modifierClass)}` : '';
+      return `<span class="game-title-break${extraClass}" aria-hidden="true"> </span>`;
     }
     function decorateGameTitle(gameId, rawTitle) {
       switch (gameId) {
@@ -6653,15 +6666,13 @@
             gameTitleAccent('puzzle', 'パズル')
           ].join('');
         case 'bento':
-          // v1690: wbr / 半角空白 break opportunity を完全排除 (iOS Safari の inline-block
-          // 連続箇所が「優先 break point」 と誤認され 2 行 wrap する事故対策)。
-          // CSS 側で white-space: nowrap に戻すため、ここも 1 行強制 markup に統一。
-          // 単語間スペースは inline-block の particle として包み、break opportunity を消す。
+          // v1765: きょうのチャレンジでは「ポノとつくろう」直後を明示改行点にする。
+          // 通常カード側は nowrap のままなので、同じ marker は半角スペースとして表示される。
           return [
             gameTitleAccent('pono', 'ポノ'),
             gameTitleParticle('と'),
             esc('つくろう'),
-            gameTitleParticle(' '),
+            gameTitleBreak('game-title-break--bento'),
             gameTitleAccent('bento', 'いろどりべんとう')
           ].join('');
         case 'cooking':
@@ -6686,7 +6697,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1763;
+    const PAGE_CACHE_VERSION = 1765;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
