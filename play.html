@@ -3481,6 +3481,28 @@
       }
     }
 
+    /* v1774: Mobile compositors can render transparent PNG layers with CSS
+       drop-shadow as a dark rectangular backing. Keep the gacha art baked-in
+       shadows on touch devices and avoid filter-created mask artifacts. */
+    @media (hover: none) and (pointer: coarse) {
+      .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status,
+      .daily-gacha-modal[data-gacha-step="1"] .daily-gacha-status,
+      .daily-gacha-modal[data-gacha-step="2"] .daily-gacha-status,
+      .daily-gacha-modal[data-gacha-step="3"] .daily-gacha-status,
+      .daily-gacha-lever,
+      .daily-gacha-modal.is-grabbing .daily-gacha-lever,
+      .daily-gacha-turn-cue,
+      .daily-gacha-turn-cue__arrowhead,
+      .daily-gacha-turn-cue__word,
+      .daily-gacha-guide-hand {
+        filter: none !important;
+      }
+      .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status {
+        overflow: visible;
+        isolation: auto;
+      }
+    }
+
     /* v1703: モバイル portrait で gacha modal が status bar 領域まで延びると、
        .daily-gacha-shell::before の dim layer (rgba 32,23,19 × multiply) が
        薄い黒長方形として上端に見える。 safe-area-inset-top 分の padding を
@@ -6700,7 +6722,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1772;
+    const PAGE_CACHE_VERSION = 1773;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.

@@ -2249,6 +2249,8 @@
     line-height: 1.35;
     text-shadow: none;
     box-shadow: 0 16px 28px rgba(0,0,0,0.32), inset 0 -4px 0 rgba(15,23,42,0.08);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   .rhythm-opening-line::before,
   .rhythm-opening-line::after {
@@ -4986,6 +4988,8 @@
     line-height: 1.08;
     text-align: center;
     text-shadow: 0 2px 0 rgba(0,0,0,0.42);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
   .rhythm-rival-line {
     background: rgba(126,34,206,0.76);
@@ -13614,7 +13618,7 @@ function _renderOtoTutorialStep() {
     if (skip) skip.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      _finishOtoTutorial(true, false);
+      _finishOtoTutorial(true, true);
     }, { once: true });
     if (btn) {
       var btnAdvanced = false;
