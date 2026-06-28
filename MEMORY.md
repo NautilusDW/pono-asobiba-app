@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-28T01:23:46Z - β配布物の¥980をEarly Access期間限定セール価格として正しく文脈付け (Forms 2本/同意書/園長依頼)
+- **タスク**: β配布物の¥980をEarly Access期間限定セール価格として正しく文脈付け (Forms 2本/同意書/園長依頼)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 89
+- **エラー数**: 11
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 6, "Bash": 58, "Read": 10, "Edit": 7, "ToolSearch": 1, "Agent": 7}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-28T00:48:28Z - batch:874/875/876 統合 deploy: maze 旗あげリズム v3 + グローブ z-order + 8 ミニゲームナレーション基盤 (whitelist 経由 404 silent skip + strength_push retry flag reset + _stopAllMazeVoices helper + kumo/start.mp3 物理削除) を sw v1717 で develop-app push 完了
 - **タスク**: batch:874/875/876 統合 deploy: maze 旗あげリズム v3 + グローブ z-order + 8 ミニゲームナレーション基盤 (whitelist 経由 404 silent skip + strength_push retry flag reset + _stopAllMazeVoices helper + kumo/start.mp3 物理削除) を sw v1717 で develop-app push 完了
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 34, "Read": 5, "Edit": 8, "Workflow": 5, "Grep": 1}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-27T11:57:02Z - ガチャ v1703 — モバイル portrait status bar 領域の薄い黒長方形を修正 (.daily-gacha-modal に env(safe-area-inset-top/bottom) padding)
-- **タスク**: ガチャ v1703 — モバイル portrait status bar 領域の薄い黒長方形を修正 (.daily-gacha-modal に env(safe-area-inset-top/bottom) padding)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 60
-- **エラー数**: 2
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 20, "Read": 8, "Agent": 23, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。
 
 
