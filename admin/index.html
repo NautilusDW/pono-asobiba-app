@@ -339,22 +339,6 @@ tr:hover { background: #FFFAF0; }
 </head>
 <body>
 <script src="../common/debug-mode.js"></script>
-<script>
-(function () {
-  try {
-    var allowed = window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function'
-      ? window.PonoDebugMode.isAllowed()
-      : false;
-    if (!allowed) {
-      document.title = 'Not Found';
-      document.body.innerHTML = '<div style="font-family:sans-serif;padding:40px;text-align:center;color:#333"><h1>Not Found</h1><p>The requested page was not found.</p></div>';
-    }
-  } catch (_e) {
-    document.title = 'Not Found';
-    document.body.innerHTML = '<div style="font-family:sans-serif;padding:40px;text-align:center;color:#333"><h1>Not Found</h1><p>The requested page was not found.</p></div>';
-  }
-})();
-</script>
 
 <div class="header">
   <div style="display:flex;justify-content:space-between;align-items:center;max-width:900px;margin:0 auto">
