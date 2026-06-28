@@ -96,11 +96,86 @@
     } catch (_e) { /* noop */ }
   }
 
+  // ===== Per-feature opt-in toggles (v1731) =====
+  // Feature flags live in localStorage under pono_debug_feature_<id>.
+  // Gated by isAllowed() so the toggles only act on staging + after manage unlock.
+  // Catalog itself lives in common/debug-features.js (window.PonoDebugFeatures).
+  var FEATURE_KEY_PREFIX = 'pono_debug_feature_';
+
+  function sanitizeFeatureKey(featureKey) {
+    if (typeof featureKey !== 'string') return '';
+    // Allow alnum + dash/underscore only; matches the catalog ids.
+    if (!/^[a-zA-Z0-9_-]+$/.test(featureKey)) return '';
+    return featureKey;
+  }
+
+  function getLS() {
+    try {
+      return global.localStorage || null;
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  function isFeatureEnabled(featureKey) {
+    if (!isAllowed()) return false;
+    var key = sanitizeFeatureKey(featureKey);
+    if (!key) return false;
+    var ls = getLS();
+    if (!ls) return false;
+    try {
+      return ls.getItem(FEATURE_KEY_PREFIX + key) === '1';
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function setFeatureEnabled(featureKey, on) {
+    // Writes are also gated by manage unlock so a non-dev session can't
+    // turn flags on programmatically.
+    if (!isAllowed()) return false;
+    var key = sanitizeFeatureKey(featureKey);
+    if (!key) return false;
+    var ls = getLS();
+    if (!ls) return false;
+    try {
+      if (on) {
+        ls.setItem(FEATURE_KEY_PREFIX + key, '1');
+      } else {
+        ls.removeItem(FEATURE_KEY_PREFIX + key);
+      }
+      return true;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function listFeatures() {
+    // Snapshot copy so callers can't mutate the registered catalog.
+    var raw = (global.PonoDebugFeatures && global.PonoDebugFeatures.length)
+      ? global.PonoDebugFeatures : [];
+    var out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var f = raw[i] || {};
+      if (!f.id) continue;
+      out.push({
+        id: String(f.id),
+        label: String(f.label || f.id),
+        description: String(f.description || ''),
+        default: !!f.default
+      });
+    }
+    return out;
+  }
+
   global.PonoDebugMode = {
     isAllowed: isAllowed,
     isStagingHost: isStagingHost,
     unlock: unlock,
     lock: lock,
     promptUnlock: promptUnlock,
+    isFeatureEnabled: isFeatureEnabled,
+    setFeatureEnabled: setFeatureEnabled,
+    listFeatures: listFeatures,
   };
 })(typeof window !== 'undefined' ? window : this);

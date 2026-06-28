@@ -417,6 +417,7 @@ const CRITICAL_ASSETS_HTML = ['/play.html', '/quizland/index.html'];
 const CRITICAL_ASSETS_SCRIPTS = [
   '/common/sw-update.js',
   '/common/debug-mode.js',
+  '/common/debug-features.js',
   '/common/capture.js',
   '/common/tier.js',
   '/common/difficulty.js',
