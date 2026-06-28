@@ -5230,7 +5230,7 @@
       width: var(--nav-sprite-w);
       height: var(--nav-sprite-h);
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, 1fr);
       gap: 0;
       padding: 0 18px;
       background-color: transparent;
@@ -5255,6 +5255,9 @@
     }
     .bottom-nav[data-pressed="settings"] {
       --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.webp");
+    }
+    .bottom-nav[data-pressed="feedback"] {
+      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_5_pressed_feedback_masked_20260628.webp");
     }
     .bn-item {
       min-width: 0;
@@ -5556,7 +5559,7 @@
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">おしらせ</span></button>
       <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">シール</span></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">せってい</span></button>
-      <button class="bn-item" data-action="feedback" type="button" aria-label="ごかんそう"><img src="/assets/ui/icon_feedback_20260628.png" alt="ごかんそう" class="bn-item__icon"><span class="bn-item__label">ごかんそう</span></button>
+      <button class="bn-item" data-action="feedback" type="button" aria-label="ごかんそう"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ごかんそう</span></button>
     </nav>
     <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
       <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
@@ -6332,9 +6335,11 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1718;
+    const PAGE_CACHE_VERSION = 1719;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
+    // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
+    // rating-modal.js の buildFormsUrl() は PLACEHOLDER 検知時に空文字を返して Forms ボタンを無効化する。
     window.PONO_FEEDBACK_FORMS_URL = '[FORMS_URL_PLACEHOLDER]';
     window.PONO_FEEDBACK_FORMS_FIELDS = {
       anon_sid: '[ENTRY_ID_PLACEHOLDER]',
@@ -7166,11 +7171,10 @@
     let dailyGachaAudioCtx = null;
 
     function dailyGachaTodayKey() {
-      // v1719: JST 6 時境界 (js/daily-quest.js と統一)。 JST = UTC+9、 6 時前は前日扱い。
-      const now = new Date();
-      // JST 時刻 (UTC + 9h) → さらに 6 時ぶん戻して 6 時境界を 0 時に揃える
-      const jstShifted = now.getTime() + 9 * 3600 * 1000 - 6 * 3600 * 1000;
-      const jst = new Date(jstShifted);
+      // v1719: JST 境界 (js/daily-quest.js todayKeyJST と一致)。 JST = UTC+9、 日付は JST 0 時で切替。
+      // 旧実装は new Date().getFullYear()/getMonth()/getDate() で local TZ 依存。 端末タイムゾーンが
+      // JST 以外でも日付が一致するよう、 UTC + 9h を計算し getUTC*() で文字列化する。
+      const jst = new Date(Date.now() + 9 * 60 * 60 * 1000);
       const y = jst.getUTCFullYear();
       const m = String(jst.getUTCMonth() + 1).padStart(2, '0');
       const day = String(jst.getUTCDate()).padStart(2, '0');
@@ -8088,8 +8092,12 @@
         applyDailyGachaRarity(resultRarity);
         chooseDailyGachaCapsule(resultRarity);
         chooseDailyGachaRevealBackdrop(resultRarity);
-        // v1719: pullDailyGachaSticker で既に count++ された record を読み直して再 save (count は不変)
-        setDailyGachaRecord(dailyGachaRecordFromResult(result, getDailyGachaRecord()));
+        // v1719: pullDailyGachaSticker で既に count++ 済み。 ここでは rarity だけ更新し count は不変にする。
+        const existing = getDailyGachaRecord();
+        if (existing && existing.date === dailyGachaTodayKey()) {
+          existing.rarity = resultRarity;
+          setDailyGachaRecord(existing);
+        }
       }
       const revealProfile = dailyGachaRarityProfile();
       setDailyGachaReward(result);
@@ -8151,11 +8159,14 @@
       startDailyGachaImagePreload();
       // v1578: debug mode (staging-only, sessionStorage-unlocked) bypasses both gates → unlimited pulls
       var __debugBypass = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
-      // v1575: 3 状態いずれもガチャモーダルを開く (ショップは内部から常時アクセス可能)
-      // 鍵なし / 引き済み は中央メッセージモードで lever を停止
-      var usedToday = !__debugBypass && (typeof isDailyGachaUsedToday === 'function') && isDailyGachaUsedToday();
-      var lacksKey  = !__debugBypass && !!(window.PonoDailyQuest && !window.PonoDailyQuest.isClearedToday());
-      if (usedToday) {
+      // v1719: 1 日 2 回仕様。 状態は count (0/1/2) で判定。
+      //   count===0: フリー pull (チャレンジ不要、 毎日 1 回保証)
+      //   count===1 && !cleared: ロック (チャレンジクリアで解放)
+      //   count===1 &&  cleared: 2 回目 pull (bonus 演出)
+      //   count>=2: 引き済 (used)
+      var count = __debugBypass ? 0 : getDailyGachaCount();
+      var questCleared = !!(window.PonoDailyQuest && window.PonoDailyQuest.isClearedToday());
+      if (count >= 2) {
         resetDailyGachaModal();
         armDailyGachaModal(false);
         showDailyGachaCenterMsg('used');
@@ -8166,7 +8177,8 @@
         dailyGachaModal.removeAttribute('data-quest-bonus');
         return;
       }
-      if (lacksKey) {
+      if (count === 1 && !questCleared) {
+        // フリー 1 回目を消化済み、 チャレンジ未達 → 2 回目はロック
         resetDailyGachaModal();
         armDailyGachaModal(false);
         showDailyGachaCenterMsg('locked');
@@ -8175,14 +8187,25 @@
         dailyGachaModal.removeAttribute('data-quest-bonus');
         return;
       }
-      // 鍵あり + 未引き: 通常 lever 演出 + bonus FX (該当時)
+      // フリー (count===0) または チャレンジ達成済 (count===1 && cleared) → 通常 pull
       hideDailyGachaCenterMsg();
-      var isBonus = !!(window.PonoDailyQuest && window.PonoDailyQuest.isBonusActive());
+      // v1719: bonus FX 判定。 2 回目 (count===1 && cleared) は必ず bonus 演出に。
+      var isBonus = false;
+      if (count === 1 && questCleared) {
+        isBonus = true;
+      } else if (window.PonoDailyQuest && typeof window.PonoDailyQuest.isBonusActive === 'function') {
+        try { isBonus = !!window.PonoDailyQuest.isBonusActive(); } catch (_) {}
+      }
       if (isBonus) {
         dailyGachaModal.setAttribute('data-quest-bonus', '1');
-        try { window.PonoDailyQuest.markBonusUsed(); } catch (_) {}
+        try { window.PonoDailyQuest && window.PonoDailyQuest.markBonusUsed && window.PonoDailyQuest.markBonusUsed(); } catch (_) {}
       } else {
         dailyGachaModal.removeAttribute('data-quest-bonus');
+      }
+      // data-blocked / disabled を念のため解除 (再 open 時の引き継ぎ防止)
+      if (dailyGachaLever) {
+        dailyGachaLever.disabled = false;
+        delete dailyGachaLever.dataset.blocked;
       }
       resetDailyGachaModal();
       armDailyGachaModal();
@@ -8194,7 +8217,9 @@
       var text = '';
       var emoji = '';
       if (mode === 'locked') {
-        text = 'きょうの チャレンジを\nクリアすると まわせるよ';
+        // v1719: 「フリー 1 + チャレンジ報酬 1 = 1 日 2 回」 仕様化に伴い文言調整。
+        // 「もう1かい まわせるよ」 で 1 回目は無料、 2 回目はチャレンジ達成のご褒美 という UX を明示。
+        text = 'チャレンジを クリアすると\nもう1かい まわせるよ';
       } else if (mode === 'used') {
         text = 'きょうは もう ひいたよ\nまた あしたね';
         emoji = '🌙'; // v1577 M2: 「またあした」 の意味を 1 文字で伝える
