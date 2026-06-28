@@ -271,13 +271,13 @@
   }
 
   // CSS px per world px.
-  // Landscape stages: fit image height to viewport (96% margin), let width scroll horizontally.
-  // Edge case: if the image's aspect ratio is taller than viewport's, height-fit would make
-  // the image wider than the viewport, which is fine (horizontal scroll). If the image is
-  // narrower than viewport at fit-height, we'd see letterboxing on left/right — acceptable.
+  // Image stages are full-bleed: cover the viewport so the map never sits inside
+  // a visible shrunken frame. 4:3 screens scroll horizontally; extra-wide screens
+  // crop/follow vertically instead of showing side letterbox.
   function computeScale(stage, viewportW, viewportH) {
-    var fitH = (viewportH * 0.96) / stage.viewBox.h;
-    return fitH;
+    var fitW = viewportW / stage.viewBox.w;
+    var fitH = viewportH / stage.viewBox.h;
+    return Math.max(fitW, fitH);
   }
 
   function worldToScreen(stage, x, y, viewportW, viewportH, scale) {

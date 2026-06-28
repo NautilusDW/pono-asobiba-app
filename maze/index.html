@@ -1693,11 +1693,10 @@ body.image-stage-mode .game-wrap {
   animation: waterHitShake 0.38s ease-out;
 }
 .water-game__stage.is-water-hit .water-hazard__zone {
-  border-color: rgba(255, 255, 255, 0.95);
   background:
-    radial-gradient(circle, rgba(255,255,255,0.40), transparent 32%),
-    rgba(255, 89, 66, 0.36);
-  box-shadow: 0 0 30px rgba(255,86,68,0.52), inset 0 0 30px rgba(255,244,186,0.34);
+    radial-gradient(circle, rgba(255,255,255,0.32), transparent 34%),
+    rgba(255, 89, 66, 0.18);
+  box-shadow: 0 0 20px rgba(255,86,68,0.24), inset 0 0 24px rgba(255,244,186,0.18);
 }
 .water-game__stage.is-water-hit .water-skate-guide {
   background: rgba(255, 248, 220, 0.94);
@@ -1841,11 +1840,12 @@ body.image-stage-mode .game-wrap {
 .water-hazard__zone {
   position: absolute;
   inset: 0;
-  border: 4px dashed rgba(255, 255, 255, 0.82);
+  border: 0;
   background:
-    radial-gradient(circle, rgba(255,255,255,0.34), transparent 34%),
-    rgba(255, 128, 94, 0.30);
-  box-shadow: 0 0 26px rgba(255,122,83,0.40), inset 0 0 28px rgba(255,244,186,0.30);
+    radial-gradient(circle, rgba(255,255,255,0.18), transparent 35%),
+    radial-gradient(ellipse, rgba(255, 240, 176, 0.16), rgba(255,255,255,0.02) 62%, transparent 74%);
+  box-shadow: inset 0 0 24px rgba(255,244,186,0.12);
+  opacity: 0.42;
   animation: waterDangerPulse 1.45s ease-in-out infinite;
 }
 .water-hazard--sweep-y .water-hazard__zone,
@@ -3767,22 +3767,45 @@ let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
 // ── Audio: BGM + 効果音（WebAudio合成）──
 const bgmEl = document.getElementById('bgm');
-if (bgmEl) bgmEl.volume = 0.25;
-function tryPlayBgm() {
-  if (!bgmEl || !bgmEnabled) return;
+if (bgmEl) bgmEl.volume = 0.28;
+let _mzBgmKickTimer = null;
+function tryPlayBgm(force) {
+  if (!bgmEl || !bgmEnabled || document.hidden) return;
+  if (!force && !bgmEl.paused && !bgmEl.ended) return;
+  try { if (bgmEl.preload !== 'auto') bgmEl.preload = 'auto'; } catch (_) {}
   var p = bgmEl.play();
   if (p && typeof p.catch === 'function') p.catch(function(){});
 }
+function _mzKickBgmForStage() {
+  if (!bgmEnabled || document.hidden) return;
+  if (_mzBgmKickTimer) {
+    window.clearInterval(_mzBgmKickTimer);
+    _mzBgmKickTimer = null;
+  }
+  tryPlayBgm(true);
+  var attempts = 0;
+  _mzBgmKickTimer = window.setInterval(function() {
+    attempts++;
+    tryPlayBgm(true);
+    if (attempts >= 10) {
+      window.clearInterval(_mzBgmKickTimer);
+      _mzBgmKickTimer = null;
+    }
+  }, 420);
+}
 function stopBgm() { if (bgmEl) bgmEl.pause(); }
-// ユーザー初回操作で BGM 起動（iOS Safari 対策）
+// ユーザー操作で BGM 起動（iOS Safari 対策）。OP 後や復帰後も再試行できるよう常駐させる。
 ['touchstart','click','pointerdown'].forEach(function(ev){
   document.addEventListener(ev, function _bgmUnlock(){
-    if (bgmEnabled) tryPlayBgm();
-    document.removeEventListener(ev, _bgmUnlock);
-  }, { passive: true });
+    if (bgmEnabled) _mzKickBgmForStage();
+  }, { passive: true, capture: true });
 });
 // アプリが非アクティブ (タブ切替 / iPhone スクリーン OFF / 別アプリへ) になったら音声を即停止
 function _mzPauseAllAudio() {
+  if (_mzBgmKickTimer) {
+    window.clearInterval(_mzBgmKickTimer);
+    _mzBgmKickTimer = null;
+  }
   stopBgm();
   // WebAudio 効果音用 AudioContext も suspend してバックグラウンドで鳴らない様に
   try { if (_mzAC && _mzAC.state === 'running') _mzAC.suspend(); } catch (_) {}
@@ -4440,6 +4463,7 @@ function imgLoadStage(def) {
   resizeCanvas();
   imgShowArrows();
   imgUpdateLandscapeOverlay();
+  _mzKickBgmForStage();
   showHint('やじるしを タップしてね', 2500);
   // ストーリー紹介モーダル (animal が定義されてる + 初回のみ)
   imgMaybeShowStoryIntro(stage, stageIdx);
@@ -7326,8 +7350,8 @@ const WATER_SKATE_SEGMENTS = [
     step: 'いっこめ',
     start: { x: 0.16, y: 0.72, label: 'ここから' },
     goal: { x: 0.84, y: 0.34, label: 'こじま' },
-    guideReady: 'よこぎりムシを よけて こじまへ',
-    guideDrawing: 'ぶつからない みちで こじまへ',
+    guideReady: 'ムシに ぶつからないで こじまへ',
+    guideDrawing: 'タイミングをみて すいすい',
     statusReady: 'いっこめ こじまへ',
     hazards: [
       { kind: 'sweep-y', x: 0.52, y: 0.50, w: 0.28, h: 0.62, hit: { kind: 'capsule', x1: 0.52, y1: 0.25, x2: 0.52, y2: 0.75, r: 0.14 } }
@@ -7337,8 +7361,8 @@ const WATER_SKATE_SEGMENTS = [
     step: 'ふたつめ',
     start: { x: 0.18, y: 0.34, label: 'こじま' },
     goal: { x: 0.82, y: 0.67, label: 'こじま' },
-    guideReady: 'くるくるムシの そとを とおろう',
-    guideDrawing: 'まわりこんで こじまへ',
+    guideReady: 'まわるムシに ぶつからないで',
+    guideDrawing: 'あいてる ところを すいすい',
     statusReady: 'ふたつめ こじまへ',
     hazards: [
       { kind: 'spin', x: 0.53, y: 0.50, w: 0.42, h: 0.54, hit: { kind: 'circle', x: 0.53, y: 0.50, r: 0.24 } }
@@ -7348,8 +7372,8 @@ const WATER_SKATE_SEGMENTS = [
     step: 'さいご',
     start: { x: 0.18, y: 0.67, label: 'こじま' },
     goal: { x: 0.84, y: 0.46, label: 'むこうぎし' },
-    guideReady: 'ぷかぷかムシを よけて むこうぎしへ',
-    guideDrawing: 'おおきく まわって むこうぎしへ',
+    guideReady: 'ぷかぷかムシを すりぬけよう',
+    guideDrawing: 'すきまを みて すいすい',
     statusReady: 'さいご むこうぎしへ',
     hazards: [
       { kind: 'drift', x: 0.54, y: 0.55, w: 0.42, h: 0.58, rotate: -12, hit: { kind: 'ellipse', x: 0.54, y: 0.55, rx: 0.22, ry: 0.29, rotate: -12 } }
@@ -7430,9 +7454,9 @@ function _waterSkateCourseHtml() {
     if (idx !== WATER_SKATE_SEGMENT_COUNT - 1) {
       html += '<div class="water-island" style="left:' + _waterSkateWorldPct(idx, seg.goal.x) + ';top:' + (seg.goal.y * 100).toFixed(2) + '%;"></div>';
     }
-    (seg.hazards || []).forEach(function(h) {
+    (seg.hazards || []).forEach(function(h, hazardIdx) {
       const rotate = Number.isFinite(h.rotate) ? h.rotate : 0;
-      html += '<div class="water-hazard water-hazard--' + h.kind + '" style="left:' + _waterSkateWorldPct(idx, h.x) + ';top:' + (h.y * 100).toFixed(2) + '%;width:' + _waterSkateWorldDim(h.w) + ';height:' + (h.h * 100).toFixed(2) + '%;transform:translate(-50%,-50%) rotate(' + rotate.toFixed(1) + 'deg);">' +
+      html += '<div class="water-hazard water-hazard--' + h.kind + '" data-segment="' + idx + '" data-hazard="' + hazardIdx + '" style="left:' + _waterSkateWorldPct(idx, h.x) + ';top:' + (h.y * 100).toFixed(2) + '%;width:' + _waterSkateWorldDim(h.w) + ';height:' + (h.h * 100).toFixed(2) + '%;transform:translate(-50%,-50%) rotate(' + rotate.toFixed(1) + 'deg);">' +
         '<div class="water-hazard__zone"></div>' +
         '<div class="water-hazard__bug"><img src="' + WATER_SKATE_OJAMA_SRC + '" alt=""></div>' +
       '</div>';
@@ -7542,50 +7566,43 @@ function _waterSkateNormalizePoints(points) {
   });
 }
 
-function _waterSkateDistanceToSegment(p, a, b) {
-  const vx = b.x - a.x;
-  const vy = b.y - a.y;
-  const len2 = vx * vx + vy * vy;
-  if (len2 <= 0.00001) return Math.hypot(p.x - a.x, p.y - a.y);
-  const t = Math.max(0, Math.min(1, ((p.x - a.x) * vx + (p.y - a.y) * vy) / len2));
-  return Math.hypot(p.x - (a.x + vx * t), p.y - (a.y + vy * t));
+function _waterSkateActiveBugHitCircles(rect) {
+  const gs = _waterGameState;
+  const stageEl = document.getElementById('waterSkateStage');
+  if (!gs || !stageEl || !rect) return [];
+  const segIndex = Math.max(0, Math.min(WATER_SKATE_SEGMENT_COUNT - 1, gs.segmentIndex || 0));
+  const bugs = stageEl.querySelectorAll('.water-hazard[data-segment="' + segIndex + '"] .water-hazard__bug');
+  const circles = [];
+  bugs.forEach(function(bug) {
+    const br = bug.getBoundingClientRect();
+    if (!br || br.width <= 1 || br.height <= 1) return;
+    circles.push({
+      x: br.left + br.width / 2 - rect.left,
+      y: br.top + br.height / 2 - rect.top,
+      r: Math.max(16, Math.min(br.width, br.height) * 0.36),
+    });
+  });
+  return circles;
 }
 
-function _waterSkatePointHitsHazard(p, hazard) {
-  const hit = hazard && hazard.hit;
-  if (!hit) return false;
-  if (hit.kind === 'capsule') {
-    return _waterSkateDistanceToSegment(p, { x: hit.x1, y: hit.y1 }, { x: hit.x2, y: hit.y2 }) <= hit.r;
-  }
-  if (hit.kind === 'circle') {
-    return Math.hypot(p.x - hit.x, p.y - hit.y) <= hit.r;
-  }
-  if (hit.kind === 'ellipse') {
-    const rad = -((hit.rotate || 0) * Math.PI / 180);
-    const dx = p.x - hit.x;
-    const dy = p.y - hit.y;
-    const rx = dx * Math.cos(rad) - dy * Math.sin(rad);
-    const ry = dx * Math.sin(rad) + dy * Math.cos(rad);
-    return ((rx * rx) / (hit.rx * hit.rx) + (ry * ry) / (hit.ry * hit.ry)) <= 1;
-  }
-  return false;
-}
-
-function _waterSkatePathHitsHazard(points, seg, rect) {
-  if (!points || points.length < 2 || !seg || !seg.hazards || !seg.hazards.length || !rect) return false;
+function _waterSkatePathHitsHazard(points, rect) {
+  if (!points || points.length < 2 || !rect) return false;
+  const circles = _waterSkateActiveBugHitCircles(rect);
+  if (!circles.length) return false;
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1];
     const b = points[i];
     const dist = Math.hypot(b.x - a.x, b.y - a.y);
-    const steps = Math.max(1, Math.ceil(dist / 10));
+    const steps = Math.max(1, Math.ceil(dist / 8));
     for (let s = 0; s <= steps; s++) {
       const t = s / steps;
       const p = {
-        x: (a.x + (b.x - a.x) * t) / rect.width,
-        y: (a.y + (b.y - a.y) * t) / rect.height,
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
       };
-      for (let h = 0; h < seg.hazards.length; h++) {
-        if (_waterSkatePointHitsHazard(p, seg.hazards[h])) return true;
+      for (let h = 0; h < circles.length; h++) {
+        const c = circles[h];
+        if (Math.hypot(p.x - c.x, p.y - c.y) <= c.r) return true;
       }
     }
   }
@@ -7596,7 +7613,8 @@ function _waterSkateCurrentPathHitsHazard() {
   const gs = _waterGameState;
   const rect = _waterSkateStageRect();
   if (!gs || !rect) return false;
-  return _waterSkatePathHitsHazard(gs.points, _waterSkateCurrentSegment(), rect);
+  if (!gs.points || gs.points.length < 2) return false;
+  return _waterSkatePathHitsHazard(gs.points.slice(-2), rect);
 }
 
 function _waterSkateTriggerHit(point) {
@@ -7676,7 +7694,6 @@ function _waterSkateCheckRoute(points) {
   const nearGoal = goalDist < Math.min(rect.width, rect.height) * 0.24;
   const crossedGoal = end.x > rect.width * Math.max(0.62, seg.goal.x - 0.10) && Math.abs(end.y - goal.y) < rect.height * 0.25;
   if (length <= rect.width * 0.28 || (!nearGoal && !crossedGoal)) return { ok: false, reason: 'goal' };
-  if (_waterSkatePathHitsHazard(points, seg, rect)) return { ok: false, reason: 'hazard' };
   return { ok: true, reason: 'ok' };
 }
 
@@ -7824,15 +7841,15 @@ function _onWaterSkatePointerUp(ev) {
   ev.preventDefault();
   const p = _waterSkatePointFromEvent(ev);
   if (p) gs.points.push(p);
-  const check = _waterSkateCheckRoute(gs.points);
-  if (!check.ok && check.reason === 'hazard') {
+  if (_waterSkateCurrentPathHitsHazard()) {
     _waterSkateTriggerHit(p);
     return;
   }
+  const check = _waterSkateCheckRoute(gs.points);
   gs.phase = 'gliding';
   gs.success = check.ok;
   gs.failReason = check.reason;
-  gs.status = check.ok ? 'すいすいー！' : (check.reason === 'hazard' ? 'おじゃまムシを よけてね' : 'もうすこし とおくまで かこう');
+  gs.status = check.ok ? 'すいすいー！' : 'もうすこし とおくまで かこう';
   _waterSkateSetGuide('すいすいー！');
   _waterSkateSetStatus(gs.status);
   const len = Math.max(1, _waterSkatePathLength(gs.points));
@@ -11759,6 +11776,7 @@ function loadStage(idx) {
   encounter.classList.remove('show');
   resizeCanvas();
   showArrows();
+  _mzKickBgmForStage();
   updateCharmsUI();
   showHint('やじるしを タップしてね', 2500);
 }
