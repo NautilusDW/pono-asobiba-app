@@ -271,10 +271,18 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
 };
 
 function normalizeBentoSlotPoint(point) {
-  return {
+  const normalized = {
     x: clampBentoMaskNumber(point && point.x, 0, 760, 380, 1),
     y: clampBentoMaskNumber(point && point.y, 0, 460, 230, 1)
   };
+  if (Number.isFinite(Number(point && point.size))) {
+    normalized.size = clampBentoMaskNumber(point.size, 32, 340, 120, 1);
+  }
+  const sampleId = String((point && point.sampleId) || '').trim();
+  if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) {
+    normalized.sampleId = sampleId;
+  }
+  return normalized;
 }
 
 function normalizeBentoSlotLayoutMap(map) {

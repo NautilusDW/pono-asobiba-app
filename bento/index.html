@@ -9751,10 +9751,15 @@ const SIMPLE_SLOT_LAYOUT_LIMITS = {
 function normalizeSimpleSlotPoint(point) {
   const x = Number(point && point.x);
   const y = Number(point && point.y);
-  return {
+  const normalized = {
     x: Number.isFinite(x) ? Math.round(clamp(x, 0, FREE_LAYOUT_W) * 10) / 10 : FREE_LAYOUT_W / 2,
     y: Number.isFinite(y) ? Math.round(clamp(y, 0, FREE_LAYOUT_H) * 10) / 10 : FREE_LAYOUT_H / 2,
   };
+  const size = Number(point && point.size);
+  if (Number.isFinite(size)) normalized.size = Math.round(clamp(size, 32, 340) * 10) / 10;
+  const sampleId = String((point && point.sampleId) || '').trim();
+  if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) normalized.sampleId = sampleId;
+  return normalized;
 }
 function normalizeSimpleSlotLayoutMap(map) {
   const normalized = {};
@@ -10180,13 +10185,16 @@ function getSimpleSlotKindForItem(item) {
   return item.type || '';
 }
 function makeSimpleSlot(kind, tier, idx, point) {
-  return {
+  const slot = {
     key: ['simple', selectedBentoBoxId, tier, kind, idx].join(':'),
     kind,
     tier,
     x: point.x,
     y: point.y,
   };
+  if (Number.isFinite(Number(point && point.size))) slot.size = Number(point.size);
+  if (point && point.sampleId) slot.sampleId = point.sampleId;
+  return slot;
 }
 function getSimpleDecorSlots(box, tier) {
   const riceBounds = getRicePlacementBounds(box);
@@ -10400,6 +10408,7 @@ function getSimpleDecorPlacement(def, tier = getTargetTierForType(def && def.typ
 }
 function getSimpleSlotSize(def, slot) {
   if (!def) return 72;
+  if (slot && Number.isFinite(Number(slot.size))) return clamp(Number(slot.size), 32, 340);
   if (def.type === 'decor') return getSimpleDecorSize(def);
   if (def.type === 'cup' || def.snapTarget) return clamp(def.size || 176, 130, 176);
   if (def.type === 'divider') return clamp(def.size || 180, 130, 190);
