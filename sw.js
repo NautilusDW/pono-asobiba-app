@@ -404,10 +404,13 @@ const CRITICAL_ASSETS_SCRIPTS = [
   // try/catch でラップされる (precacheAssetGroup の allSettled gate) ため install 失敗にならない。
   '/common/rating-modal.js',
   '/common/rating-modal.css',
-  '/assets/ui/icon_feedback_20260628.png',
   '/js/game-stickers.js',
   '/js/daily-quest.js',
   '/js/donguri-shop.js',
+];
+const CRITICAL_ASSETS_IMAGES = [
+  // v1718: ごかんそう (rating) — PNG asset; CRITICAL_ASSETS_SCRIPTS から分離 (semantic 整理)。
+  '/assets/ui/icon_feedback_20260628.png',
 ];
 const CRITICAL_ASSETS_THUMBS = [
   '/assets/ui/thumb_quizland_owl.webp',
@@ -430,12 +433,13 @@ const CRITICAL_ASSETS_CARDS = [
   '/assets/ui/menu_card_paper_mask_04.png',
 ];
 
-// precache を 4 グループに分割: 1 グループ全失敗しても他は通る (allSettled)。
+// precache を 5 グループに分割: 1 グループ全失敗しても他は通る (allSettled)。
 const CRITICAL_ASSET_GROUPS = [
   CRITICAL_ASSETS_HTML,
   CRITICAL_ASSETS_SCRIPTS,
   CRITICAL_ASSETS_THUMBS,
   CRITICAL_ASSETS_CARDS,
+  CRITICAL_ASSETS_IMAGES,
 ];
 
 // 個別 asset の失敗で install が落ちないように、 asset 単位の try/catch でラップする。
