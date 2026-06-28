@@ -5684,19 +5684,20 @@
        v1681: 各 breakpoint も 2x (16:9~ は 2x、 4:3 は nav 高さ占有率を考慮し 1.75x 抑制) */
     @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
       .acorn-balance-badge--nav {
-        left: -258px;             /* sw1757: -244→-258 (どんぐりを 14px 左へ) */
+        left: -304px;             /* sw1758: -258→-304 (ごかんそう 150px 化に合わせ更に左へ) */
         padding: 14px 24px;       /* v1681: 7 12→14 24 */
         min-width: 124px;         /* v1681: 62→124 */
         font-size: 36px;          /* v1681: 18→36 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 40px; }  /* v1681: 20→40 */
-      /* sw1756: 16:9 sprite 1 タイル ≈ 107x136 に合わせ height 136、 width も 136 (画像は正方形)。
-         left は sprite 左端 0 から gap 16 確保 → -(136+16) = -152。
-         どんぐり右端は -244+124 = -120、 ボタン左端 -152 との gap = 32px (くっつき解消)。 */
+      /* sw1758: 16:9 sprite 1 タイル実表示 ≈ 107.5x136 (--nav-sprite-w 430 / 4)。
+         contain 余白を見越して button box を +10% 補正 → 150x150 で 1 タイル実描画と同寸に。
+         sprite 左端 0 から gap 16 確保 → -(150+16) = -166。
+         どんぐり右端 -304+124 = -180、 ボタン左端 -166 との gap = 14px 確保。 */
       .bn-item--feedback {
-        left: -142px;             /* sw1757: -152→-142 (10px 右へ) */
-        width: 136px;
-        height: 136px;
+        left: -166px;             /* sw1758: -142→-166 (sprite gap 16px 確保) */
+        width: 150px;             /* sw1758: 136→150 (既存タイル 107.5 を contain 余白考慮で +40%) */
+        height: 150px;            /* sw1758: 136→150 */
       }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
@@ -6688,7 +6689,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1757;
+    const PAGE_CACHE_VERSION = 1758;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
