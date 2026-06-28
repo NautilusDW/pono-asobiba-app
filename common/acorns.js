@@ -8,6 +8,19 @@
   var DAILY_TOTAL_PREFIX = 'pono_acorns_daily_total_';
   var TOTAL_CAP_FREE = 25;
   var TOTAL_CAP_PAID = 35;
+  // ---- DEV bypass (maze only, ?dev=1) ----
+  // 本番ユーザーの既存挙動に影響しないよう、 URL params を厳密一致で判定 +
+  // 取得分は本番財布 (pono_acorns) には書かず、 dev 専用キーに隔離する。
+  // common/acorns.js は他ゲームでも load されるが、 gameId === 'maze' に絞り、
+  // 他ゲームの cap には影響しない設計。
+  var DEV_BYPASS_KEY = 'pono_acorns_dev_v1';
+  function _isDevBypass(gameId) {
+    if (gameId !== 'maze') return false;
+    try {
+      var params = new URLSearchParams(window.location.search);
+      return params.get('dev') === '1';
+    } catch (e) { return false; }
+  }
 
   function get() {
     var n = parseInt(localStorage.getItem(LS_KEY) || '0', 10);
@@ -103,8 +116,21 @@
     // v1592: carve-out — PONO_MVP_ENABLE_ACORNS = true ならどんぐりだけ通す。
     if (window.PONO_MVP_NO_REWARDS && !window.PONO_MVP_ENABLE_ACORNS) return 0;
     var wanted = n | 0;
-    var gameLimit = (cap | 0) > 0 ? (cap | 0) : 5;
     if (wanted <= 0) return 0;
+    // DEV bypass: ?dev=1 + gameId='maze' のみ。 cap を無視して wanted 全量を返す。
+    // 本番財布 (pono_acorns) や daily/total LS には書き込まず、 dev 専用キーに記録。
+    // pono-acorns-changed event は dispatch しない (UI/HUD 連動を avoid)。
+    if (_isDevBypass(gameId)) {
+      try {
+        var k = DEV_BYPASS_KEY + '_' + todayKey() + '_' + gameId;
+        var prev = parseInt(localStorage.getItem(k) || '0', 10);
+        if (isNaN(prev)) prev = 0;
+        localStorage.setItem(k, String(prev + wanted));
+      } catch (e) { /* ignore storage errors */ }
+      try { console.warn('[acorns] DEV bypass: granted ' + wanted + ' to ' + gameId + ' (not added to wallet)'); } catch (e) {}
+      return wanted;
+    }
+    var gameLimit = (cap | 0) > 0 ? (cap | 0) : 5;
     var already = getDaily(gameId);
     var gameRemaining = Math.max(0, gameLimit - already);
     var totalAlready = getDailyTotal();

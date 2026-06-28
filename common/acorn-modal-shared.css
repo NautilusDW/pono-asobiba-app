@@ -225,6 +225,11 @@
   position: absolute;
   top: clamp(16px, 3vw, 24px);
   right: clamp(20px, 3.8vw, 32px);
+  /* z-index: 2 で panel の ::before 装飾 (z-index: 0) と
+     content (z-index: 1) の上に浮かせる。 grid panel (e.g. maze) で
+     absolute 配置が grid track centering の影響を受けないよう
+     stacking context を明示。 */
+  z-index: 2;
   min-width: 44px;
   min-height: 44px;
   width: 44px;
@@ -697,6 +702,59 @@
 [data-game-id="maze"] .pono-acorn-modal__panel > * {
   position: relative;
   z-index: 1;
+}
+
+/* -------------------------------------------------------------
+ * maze tap-hint: panel 外配置 (Phase 1.4 btn-fit)
+ *
+ * 課題: panel に aspect-ratio: 1200/609 + align-content: center を適用した結果、
+ *   tap-hint が Fukuro_frame_001.png の下端葉装飾と衝突 or panel 下端から
+ *   はみ出して見えるバグ (research の rootCause)。
+ *
+ * 解決方針 (research の fix 案 2 を採用):
+ *   tap-hint を absolute で panel 下に浮かせ、 葉飾り PNG の領域とは
+ *   別ゾーンとして視覚分離する。 これにより:
+ *     - aspect-ratio: 1200/609 と Fukuro frame の contain 配置は無改変
+ *       (画像 AR 禁則ルール 100% 遵守)
+ *     - 親 panel の grid alignment / padding にも触れない
+ *     - 他ゲーム (oto/quizland/bento 等) の tap-hint には影響しない
+ *       (selector scope が [data-game-id="maze"])
+ *
+ * 位置:
+ *   - 親 panel が relative なので bottom: 負値で panel 下に浮かせる
+ *   - 水平センターは left:0 + right:0 + margin-inline:auto + width:max-content
+ *     (transform を避け、 pono-acorn-tapHintPulse keyframe の translateY と
+ *     干渉しないようにする)
+ *   - margin-top は base CSS の値 (clamp(14px, 2.6vw, 22px)) を 0 に
+ *     上書きして、 grid の自然なフロー位置から外す
+ *   - ::before の吹き出し三角は そのまま継承 (上向き、 panel 側を指す)
+ * ------------------------------------------------------------- */
+[data-game-id="maze"] .pono-acorn-modal__tap-hint {
+  /* 中央寄せは left:0/right:0 + margin-inline:auto + width:max-content で行う。
+     transform を使わないのは、 base CSS の pono-acorn-tapHintPulse keyframe が
+     transform: translateY(...) を上書きするため、 transform:translateX(-50%) と
+     衝突して水平センターが壊れるリスクを避ける目的。 */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(-72px, -9vw, -56px);
+  margin-inline: auto;
+  margin-top: 0;
+  width: max-content;
+  max-width: 92vw;
+  z-index: 2;
+}
+/* dismiss (×) は panel の grid (align-content/justify-items: center) に
+   引きずられないよう absolute 配置を再宣言。 Fukuro_frame_001.png の
+   右上葉装飾と重ならないよう top/right を base より内側に寄せる
+   (clamp 8-14px)。 z-index: 3 で葉飾り (0) と content (1) より前面。
+   その他のゲーム (oto / quizland) は base ルール (top: 16-24px /
+   right: 20-32px) のままで影響を受けない。 */
+[data-game-id="maze"] .pono-acorn-modal__dismiss {
+  position: absolute;
+  top: clamp(8px, 2vw, 14px);
+  right: clamp(8px, 2vw, 14px);
+  z-index: 3;
 }
 
 [data-game-id="oto"].pono-acorn-modal {
