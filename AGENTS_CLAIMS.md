@@ -63,7 +63,6 @@
 - 2026-06-28 03:30 - by Claude - [batch:874-flag-rhythm-voice-v2] - maze/index.html, assets/audio/narration/maze/flag/**, sw.js - 旗あげ音声を日本語旗揚げゲーム風リズム (「あか〜 あげて！」) に再生成 + テンポ調整 [overlap: batch:873 (sw.js)]
 - 2026-06-28 03:30 - by Claude - [batch:875-strength-glove-zorder] - maze/index.html, sw.js - パワーグローブが岩より下レイヤーになっている z-order 修正 [overlap: batch:873/874 (maze/sw.js)]
 - 2026-06-28 03:30 - by Claude - [batch:876-all-minigame-narration] - maze/index.html, assets/audio/narration/maze/**, sw.js - 全ミニゲーム (janken/truefalse/simon/silhouette/oddone/water_bridge/strength_push/kumo) にナレーション追加 [overlap: batch:873/874/875 (maze/sw.js)]
-- 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import, batch:874-flag-rhythm-voice-v2, batch:875-strength-glove-zorder, batch:876-all-minigame-narration]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
