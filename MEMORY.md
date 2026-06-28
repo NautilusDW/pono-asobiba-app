@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-28T08:53:15Z - batch:888-toggle-ui-readable + batch:889-jargon-cleanup (機能トグル UI ラベル平易化 + 装飾線削除 + jargon 排除、 sw v1755 App staging deploy 確認済)
+- **タスク**: batch:888-toggle-ui-readable + batch:889-jargon-cleanup (機能トグル UI ラベル平易化 + 装飾線削除 + jargon 排除、 sw v1755 App staging deploy 確認済)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 23
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 4, "Edit": 3, "Workflow": 7}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-28T08:31:57Z - bottom-nav ごかんそうボタンの不釣り合いサイズ修正 (78→120/104/88px 3 breakpoint 同期 + どんぐり位置整合 + CACHE_VERSION 1750→1751)
 - **タスク**: bottom-nav ごかんそうボタンの不釣り合いサイズ修正 (78→120/104/88px 3 breakpoint 同期 + どんぐり位置整合 + CACHE_VERSION 1750→1751)
 - **結果**: 成功
@@ -238,19 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-06-28T04:27:15Z - puzzle 難易度ラベル統一 Phase 2: album.html/album.js/album.css に PonoDifficulty 連動の難易度バッジ追加
 - **タスク**: puzzle 難易度ラベル統一 Phase 2: album.html/album.js/album.css に PonoDifficulty 連動の難易度バッジ追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 44
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 12, "Read": 9, "ToolSearch": 1, "Bash": 5, "Agent": 15, "Grep": 2}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-28T04:26:39Z - icon_feedback brief.md のモチーフを 吹き出し+★ から 紙+鉛筆 に変更 (★お気に入り紛らわしさ解消)
-- **タスク**: icon_feedback brief.md のモチーフを 吹き出し+★ から 紙+鉛筆 に変更 (★お気に入り紛らわしさ解消)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 44
