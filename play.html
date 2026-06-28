@@ -4909,11 +4909,14 @@
     /* v1672: acorn balance badge — bottom-nav 左端外に並置する nav-mounted variant
        v1681: 2x スケール化 (font-size 20→40, padding 8/14→16/28, min-width 70→140,
        icon 22→44, gap 6→12, border 2→3, left -82→-164)。 bump scale は 1.22→1.12
-       に抑制 (2x 後の peak 突き抜け回避)。 */
+       に抑制 (2x 後の peak 突き抜け回避)。
+       sw1738: ごかんそうボタンをどんぐりの右隣 (= sprite 左外, 旧右外側からの移動) に置く
+       ため、 どんぐり自体をさらに左へシフト (-164 → -260)。 -260 = -164 (badge 自身) - 96
+       (feedback 78px + 余白 18px)。 */
     .acorn-balance-badge--nav {
       position: absolute;
       /* bottom-nav の grid (4列固定) を崩さず、 左外側へ並置 */
-      left: -164px;               /* v1681: -82→-164 (2x: badge 幅 ~140 + 余白 24px) */
+      left: -260px;               /* sw1738: -164→-260 (ごかんそう 96px 分を更に左へ) */
       top: 50%;
       transform: translateY(-50%);
       z-index: 2;                 /* nav 内重なり順 */
@@ -5459,10 +5462,13 @@
     .bn-item__icon,
     .bn-item__label { display: none; }
     /* sw1723: ごかんそう ボタンは grid 外配置 (4 アイコン sprite との整合のため)。
-       5 列 sprite が用意でき次第このルールは撤去する。 暫定で label/icon を可視化 */
+       5 列 sprite が用意でき次第このルールは撤去する。 暫定で label/icon を可視化。
+       sw1738: 画面右端切れ対策で sprite 右外 (left: calc(100% + 8px)) → 左外へ移動。
+       どんぐりバッジ (-260px) の右隣に 置く: -260 + 140 (badge width) + 24 (gap) ≈ -96。
+       bottom-nav は画面右寄せ配置 (right: calc(...)) なので、 左外には十分な空きあり。 */
     .bn-item--feedback {
       position: absolute;
-      left: calc(100% + 8px);
+      left: -96px;                /* sw1738: calc(100% + 8px) → -96 (sprite 左外、 どんぐりの右隣) */
       top: 50%;
       transform: translateY(-50%);
       width: 78px;
@@ -5656,7 +5662,7 @@
        v1681: 各 breakpoint も 2x (16:9~ は 2x、 4:3 は nav 高さ占有率を考慮し 1.75x 抑制) */
     @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
       .acorn-balance-badge--nav {
-        left: -148px;             /* v1681: -74→-148 */
+        left: -244px;             /* sw1738: -148 → -244 (ごかんそう 96px 分を更に左へ) */
         padding: 14px 24px;       /* v1681: 7 12→14 24 */
         min-width: 124px;         /* v1681: 62→124 */
         font-size: 36px;          /* v1681: 18→36 */
@@ -5666,9 +5672,10 @@
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* v1681: 4:3 (iPad横) は nav 高さ 114px に対する badge 高さ占有率が過半に
          達するため、 単純 2x ではなく 1.75x に抑制 (font 28 / padding 10 18 / icon 32)。
-         left offset は badge 幅 ~96 + 余白 22 = -118。 */
+         left offset は badge 幅 ~96 + 余白 22 = -118。
+         sw1738: ごかんそう 96px 分を更に左へ → -118 - 96 = -214。 */
       .acorn-balance-badge--nav {
-        left: -118px;             /* v1681: -66→-118 (1.75x) */
+        left: -214px;             /* sw1738: -118 → -214 (ごかんそう 96px 分を更に左へ) */
         padding: 10px 18px;       /* v1681: 6 10→10 18 */
         min-width: 96px;          /* v1681: 54→96 */
         font-size: 28px;          /* v1681: 16→28 */
@@ -5910,8 +5917,17 @@
   <div class="modal" id="debugBoardModal" hidden role="dialog" aria-modal="true" aria-labelledby="debugBoardTitle">
     <div class="modal-card debug-board-card">
       <h3 id="debugBoardTitle">デバッグボード</h3>
-      <p class="debug-board-help">すうじを いれて<br>どんぐりの かずを かえられるよ</p>
-      <div class="debug-board-panel" aria-label="どんぐりを ちょうせい">
+      <!-- v1731: タブ切替 (どんぐり調整 / 機能トグル) -->
+      <div class="debug-board-tabs" role="tablist" aria-label="デバッグボード タブ">
+        <button class="debug-board-tab" id="debugBoardTabAcorn" type="button"
+                role="tab" aria-selected="true" aria-controls="debugBoardPanelAcorn"
+                data-debug-board-tab="acorn">どんぐり調整</button>
+        <button class="debug-board-tab" id="debugBoardTabFeatures" type="button"
+                role="tab" aria-selected="false" aria-controls="debugBoardPanelFeatures"
+                data-debug-board-tab="features" tabindex="-1">機能トグル</button>
+      </div>
+      <div class="debug-board-panel" id="debugBoardPanelAcorn" role="tabpanel" aria-labelledby="debugBoardTabAcorn" aria-label="どんぐりを ちょうせい">
+        <p class="debug-board-help">すうじを いれて<br>どんぐりの かずを かえられるよ</p>
         <div class="debug-board-panel__head">
           <span>いまの どんぐり</span>
           <strong class="debug-board-current" id="debugAcornCurrent">0</strong>
@@ -5937,6 +5953,13 @@
           <button class="debug-board-btn" id="debugAcornSetBtn" type="button">このかずにする</button>
         </div>
         <div class="debug-board-status" id="debugAcornStatus" role="status" aria-live="polite"></div>
+      </div>
+      <div class="debug-board-panel" id="debugBoardPanelFeatures" role="tabpanel" aria-labelledby="debugBoardTabFeatures" aria-label="機能トグル" hidden>
+        <p class="debug-board-help">スタッフ用の機能トグル<br>(staging + manage 解錠時のみ反映)</p>
+        <div class="debug-features-list" id="debugFeaturesList" role="group" aria-label="機能トグル いちらん">
+          <p class="debug-features-empty" id="debugFeaturesEmpty" hidden>機能トグルは まだ ないよ</p>
+        </div>
+        <div class="debug-board-status" id="debugFeaturesStatus" role="status" aria-live="polite"></div>
       </div>
       <button class="modal-close" type="button" data-close="debugBoardModal">とじる</button>
     </div>
@@ -6610,7 +6633,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1745;
+    const PAGE_CACHE_VERSION = 1748;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -9695,7 +9718,8 @@
     // ===== えほんのあいことば → unlock flow =====
     // 紙の本にあるシリアル / Amazon 注文番号 / 絵本クイズ で book tier を解除する 3 経路の導線。
     // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
-    // 検証は common/tier.js の PonoTier.{verifySerialCode, verifyBookPassword, verifyOrderId, verifyQuizAnswer, verifyAdminPassword} に集約。
+    // 検証は common/tier.js の PonoTier.{verifySerialCode, verifyBookPassword, verifyOrderId, verifyQuizAnswer} に集約。
+    // (v17XX: verifyAdminPassword 廃止、 BOOK_PASSWORDS = ['arigato_pono2026'] 1 本化)
     // モーダル open 時の解錠 state スナップショット (close 時の表示更新に使う)
     let pwSnapshot = null;
     const bookUnlockEntry = document.getElementById('bookUnlockEntry');
@@ -9984,18 +10008,16 @@
         }
         const tier = window.PonoTier || {};
         // 新 verifySerialCode は内部で BOOK_PASSWORDS + SERIAL_CODES の両方を見るが、
-        // 万一未提供のビルドでも壊さないよう verifyBookPassword フォールバックを残す
+        // 万一未提供のビルドでも壊さないよう verifyBookPassword フォールバックを残す。
+        // v17XX: verifyAdminPassword (abcd) は廃止。 BOOK_PASSWORDS = ['arigato_pono2026'] に
+        // 統合済なので、 旧 admin 経路の入力もこの serialOk 1 本で解錠される。
         const serialOk = (typeof tier.verifySerialCode === 'function' && tier.verifySerialCode(val))
                       || (typeof tier.verifyBookPassword === 'function' && tier.verifyBookPassword(val));
-        const adminOk = !serialOk
-          && typeof tier.verifyAdminPassword === 'function'
-          && tier.verifyAdminPassword(val);
-        const debugOk = !serialOk && !adminOk
+        const debugOk = !serialOk
           && window.PonoDebugMode
           && typeof window.PonoDebugMode.unlock === 'function'
           && window.PonoDebugMode.unlock(val);
         if (serialOk)      pwFinalizeSuccess('serial');
-        else if (adminOk)  pwFinalizeSuccess('admin');
         else if (debugOk)  pwFinalizeSuccess('debug');
         else               pwShowError(input, 'ちがうよ！ もういちど あいことばを かくにんしてね');
       });
@@ -10281,6 +10303,9 @@
         if (!refreshDeveloperAccessUI()) return;
         renderDebugAcornBoard();
         setDebugAcornStatus('');
+        // v1731: 開くたびに acorn タブへ戻し、 機能トグル一覧を最新化
+        try { selectDebugBoardTab('acorn'); } catch (_) {}
+        try { renderDebugFeatureToggles(); } catch (_) {}
         openModal('debugBoardModal');
       });
     }
@@ -10302,6 +10327,146 @@
     });
     window.addEventListener('pono-acorns-changed', renderDebugAcornBoard);
     renderDebugAcornBoard();
+
+    // ===== v1731: Manage debug board — tab switch + feature toggles =====
+    // 「どんぐり調整」 と 「機能トグル」 をタブ切替。 機能トグルは
+    // window.PonoDebugFeatures (catalog) と PonoDebugMode.{isFeatureEnabled,
+    // setFeatureEnabled} を介して localStorage に保存。 staging + manage 解錠時のみ
+    // 効果が出る (PonoDebugMode 側で isAllowed gate)。
+    const debugBoardTabAcorn = document.getElementById('debugBoardTabAcorn');
+    const debugBoardTabFeatures = document.getElementById('debugBoardTabFeatures');
+    const debugBoardPanelAcorn = document.getElementById('debugBoardPanelAcorn');
+    const debugBoardPanelFeatures = document.getElementById('debugBoardPanelFeatures');
+    const debugFeaturesList = document.getElementById('debugFeaturesList');
+    const debugFeaturesEmpty = document.getElementById('debugFeaturesEmpty');
+    const debugFeaturesStatus = document.getElementById('debugFeaturesStatus');
+
+    function selectDebugBoardTab(tabKey) {
+      var isFeatures = (tabKey === 'features');
+      if (debugBoardTabAcorn) {
+        debugBoardTabAcorn.setAttribute('aria-selected', isFeatures ? 'false' : 'true');
+        debugBoardTabAcorn.tabIndex = isFeatures ? -1 : 0;
+      }
+      if (debugBoardTabFeatures) {
+        debugBoardTabFeatures.setAttribute('aria-selected', isFeatures ? 'true' : 'false');
+        debugBoardTabFeatures.tabIndex = isFeatures ? 0 : -1;
+      }
+      if (debugBoardPanelAcorn) debugBoardPanelAcorn.hidden = isFeatures;
+      if (debugBoardPanelFeatures) debugBoardPanelFeatures.hidden = !isFeatures;
+      if (isFeatures) {
+        // タブ切替のたびに最新の localStorage 状態に追従
+        try { renderDebugFeatureToggles(); } catch (_) {}
+      }
+    }
+
+    function setDebugFeaturesStatus(text) {
+      if (debugFeaturesStatus) debugFeaturesStatus.textContent = text || '';
+    }
+
+    function getDebugFeatureCatalog() {
+      try {
+        if (window.PonoDebugMode && typeof window.PonoDebugMode.listFeatures === 'function') {
+          return window.PonoDebugMode.listFeatures();
+        }
+      } catch (_) {}
+      return [];
+    }
+
+    function isDebugFeatureCurrentlyEnabled(id) {
+      try {
+        return !!(window.PonoDebugMode
+          && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+          && window.PonoDebugMode.isFeatureEnabled(id));
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function setDebugFeatureCurrentlyEnabled(id, on) {
+      try {
+        return !!(window.PonoDebugMode
+          && typeof window.PonoDebugMode.setFeatureEnabled === 'function'
+          && window.PonoDebugMode.setFeatureEnabled(id, !!on));
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function renderDebugFeatureToggles() {
+      if (!debugFeaturesList) return;
+      var features = getDebugFeatureCatalog();
+      // 既存項目 (empty placeholder 以外) を全削除して再構築。
+      // (項目数は 10 件前後なので innerHTML 再構築コストは無視できる)
+      var children = debugFeaturesList.querySelectorAll('.debug-feature-item');
+      for (var i = 0; i < children.length; i++) {
+        debugFeaturesList.removeChild(children[i]);
+      }
+      if (!features.length) {
+        if (debugFeaturesEmpty) debugFeaturesEmpty.hidden = false;
+        return;
+      }
+      if (debugFeaturesEmpty) debugFeaturesEmpty.hidden = true;
+      for (var j = 0; j < features.length; j++) {
+        var f = features[j];
+        var on = isDebugFeatureCurrentlyEnabled(f.id);
+        var item = document.createElement('div');
+        item.className = 'debug-feature-item' + (on ? ' is-on' : '');
+        item.setAttribute('data-debug-feature-id', f.id);
+
+        var inputId = 'debugFeatureChk_' + f.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.className = 'debug-feature-check';
+        chk.id = inputId;
+        chk.checked = on;
+        chk.setAttribute('data-debug-feature-toggle', f.id);
+
+        var labelEl = document.createElement('label');
+        labelEl.className = 'debug-feature-label';
+        labelEl.htmlFor = inputId;
+        labelEl.textContent = f.label;
+
+        item.appendChild(chk);
+        item.appendChild(labelEl);
+
+        if (f.description) {
+          var desc = document.createElement('p');
+          desc.className = 'debug-feature-desc';
+          desc.textContent = f.description;
+          item.appendChild(desc);
+        }
+        debugFeaturesList.appendChild(item);
+      }
+    }
+
+    if (debugBoardTabAcorn) {
+      debugBoardTabAcorn.addEventListener('click', function () { selectDebugBoardTab('acorn'); });
+    }
+    if (debugBoardTabFeatures) {
+      debugBoardTabFeatures.addEventListener('click', function () { selectDebugBoardTab('features'); });
+    }
+
+    if (debugFeaturesList) {
+      debugFeaturesList.addEventListener('change', function (e) {
+        var target = e && e.target;
+        if (!target || !target.matches || !target.matches('[data-debug-feature-toggle]')) return;
+        var featureId = target.getAttribute('data-debug-feature-toggle') || '';
+        if (!featureId) return;
+        // manage 解錠が外れている場合は setFeatureEnabled が false を返す。
+        var ok = setDebugFeatureCurrentlyEnabled(featureId, !!target.checked);
+        if (!ok) {
+          // 失敗時は checkbox 表示を実状態に戻す
+          target.checked = isDebugFeatureCurrentlyEnabled(featureId);
+          setDebugFeaturesStatus('manage 解錠が必要だよ');
+          return;
+        }
+        var item = target.closest('.debug-feature-item');
+        if (item) item.classList.toggle('is-on', !!target.checked);
+        setDebugFeaturesStatus(target.checked
+          ? (featureId + ' を ON にしたよ')
+          : (featureId + ' を OFF にしたよ'));
+      });
+    }
 
     // ===== Sound toggle (persisted) =====
     const SOUND_KEY = 'pono_sound_off';

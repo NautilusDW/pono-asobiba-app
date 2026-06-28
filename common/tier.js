@@ -369,11 +369,17 @@
   // 大文字/小文字どちらでも通るよう両方試す (子供/保護者が手入力するため)。
   // Closure に閉じるので window.PonoTier からは見えず、DevTools 経由で
   // 覗き見されにくい (完全な秘匿ではないが casual friction を維持)。
-  var BOOK_PASSWORDS = ['1234'];  // Web MVP: 全機能無料公開のため book/sub 区分は休眠。将来 IAP 復活時にここを埋める
+  // v17XX: abcd/1234 廃止、arigato_pono2026 1 本化。
+  //   旧: BOOK_PASSWORDS = ['1234']  /  ADMIN_PASSWORDS = ['abcd']
+  //   新: BOOK_PASSWORDS = ['arigato_pono2026'] 一本化、 ADMIN_PASSWORDS は撤去 (verifyAdminPassword も削除)
+  //       理由: テスト用の弱パスワード (1234/abcd) が staging 経路から漏洩しても被害が出ない
+  //       ように、 絵本奥付の本パスワード相当に統合。 callsite は全て verifyBookPassword に寄せる。
+  var BOOK_PASSWORDS = ['arigato_pono2026'];
   function verifyBookPassword(val) {
-    // v1581: 親が紙絵本の奥付に印字されたパスワードを入力する正当ルート。
-    // PonoDebugMode 縛りを撤去 (本番で book 解錠不能になる事故を解消)。
+    // 親が紙絵本の奥付に印字されたパスワードを入力する正当ルート。
+    // PonoDebugMode 縛りは撤去済 (本番で book 解錠不能になる事故を解消)。
     // 将来 IAP 配備時はサーバ検証 (signed receipt) に置換する想定。
+    // 比較は case-insensitive (raw / upper / 配列要素の upper を全て試す)。
     if (val == null) return false;
     var raw = String(val).trim();
     if (!raw) return false;
@@ -384,23 +390,9 @@
     }
     return false;
   }
-
-  // 管理用マスターパスワード。book + sub 両方を解放
-  var ADMIN_PASSWORDS = ['abcd'];
-  function verifyAdminPassword(val) {
-    // v1581: 管理用マスターパスワード (book + sub 両方を解放)。 admin tools 本体は
-    // Basic Auth + KV で保護されており、 ここはクライアント側 UX 用の柔らかいゲート。
-    // PonoDebugMode 縛りを撤去 (本番 admin 経路を壊さない)。
-    if (val == null) return false;
-    var raw = String(val).trim();
-    if (!raw) return false;
-    var upper = raw.toUpperCase();
-    for (var i = 0; i < ADMIN_PASSWORDS.length; i++) {
-      var p = ADMIN_PASSWORDS[i];
-      if (p === raw || p === upper || p.toUpperCase() === upper) return true;
-    }
-    return false;
-  }
+  // v17XX: ADMIN_PASSWORDS / verifyAdminPassword は削除済。
+  // 管理用マスター解錠は廃止し、 admin tools 本体側の Basic Auth + KV ルートに一本化。
+  // クライアント側で book 相当の追加解錠が必要な場合は verifyBookPassword (arigato_pono2026) を使用する。
 
   // ============================================================
   // ---- Book Tier Unlock 拡張: シリアル / Amazon 注文番号 / 絵本クイズ ----
@@ -656,7 +648,7 @@
     isRoomItemUnlocked: isRoomItemUnlocked,
     isKatakanaUnlocked: isKatakanaUnlocked,
     verifyBookPassword: verifyBookPassword,
-    verifyAdminPassword: verifyAdminPassword,
+    // verifyAdminPassword: 削除済 (v17XX: abcd 廃止、 arigato_pono2026 1 本化)。
     // Book Tier Unlock 拡張 (シリアル / Amazon 注文番号 / 絵本クイズ)
     verifySerialCode: verifySerialCode,
     verifyOrderId: verifyOrderId,
