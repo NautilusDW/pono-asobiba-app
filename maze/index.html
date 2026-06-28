@@ -3492,18 +3492,21 @@ const _mazeVoiceCache = Object.create(null);
 // janken / water_bridge / strength_push の追加 voice / kumo の start・boss_defeated は
 // batch:880-quota-retry で TTS quota 復活後に生成予定。
 const _MAZE_VOICE_BUNDLED = {
-  // janken: quota 復活待ち (batch:880-quota-retry で生成予定)
+  // janken: quota 復活待ち (batch:880-quota-retry も HTTP 429 で全 skip、次の reset 待ち)
   truefalse: { start: true, correct: true, wrong: true },
   simon: { start: true, your_turn: true, correct: true, wrong: true },
   silhouette: { start: true, hint_more: true, correct: true, wrong: true },
   oddone: { start: true, correct: true, wrong: true },
-  // water_bridge: quota 復活待ち
-  strength_push: { start: true /* crack_progress, almost, win, fail: quota 復活待ち */ },
+  water_bridge: {
+    start: true, wrong_slot: true, splash: true,
+    place_ok: true, win: true, crossing: true,
+  },
+  strength_push: { start: true /* crack_progress, almost, win, fail: quota 復活待ち (batch:880 retry も 429) */ },
   kumo: {
     // start は whisper 誤判定 (はなそう → へのそう) で削除済、 quota 復活後に再生成
     pin_clear: true, boss_appear: true, boss_phase_start: true,
     milestone_10: true,
-    // boss_defeated は quota 復活待ち
+    // boss_defeated は quota 復活待ち (batch:880 retry も 429)
     win: true,
   },
 };
@@ -6320,6 +6323,11 @@ function _mzMazeAnimal(name, label) {
     kirin: MAZE_QUIZ_IMG + 'kirin.png',
     kuma: MAZE_QUIZ_IMG + 'kuma.png',
     kujira: _mzLocalQuizSrc('kujira') || (MAZE_QUIZ_IMG + 'kujira.png'),
+    // batch:883 で追加: word/lion.png, word/zou.png は古い縦伸びキャンバス (244x235→512x512
+    // 詰め込みで content AR が不自然) なので、 cdb3e31 で kirin/kuma 系を切り替えたのと
+    // 同じく choice/ 配下の新版 watercolor (lion 512x512 / zou 292x270) に差し替え。
+    lion: MAZE_QUIZ_IMG + 'lion.png',
+    zou: MAZE_QUIZ_IMG + 'zou.png',
   };
   return _mzAsset(assets[name] || (MAZE_WORD_IMG + name + '.png'), label);
 }
@@ -6337,10 +6345,10 @@ const PEEK_QUIZ_POOL = [
   _mzPeek('kuma',   'くま',    _mzMazeAnimal('kuma', 'くま')),
   _mzPeek('panda',  'ぱんだ',  _mzWord('panda', 'ぱんだ')),
   _mzPeek('kirin',  'きりん',  _mzMazeAnimal('kirin', 'きりん')),
-  _mzPeek('lion',   'らいおん', _mzWord('lion', 'らいおん')),
+  _mzPeek('lion',   'らいおん', _mzMazeAnimal('lion', 'らいおん')),
   _mzPeek('saru',   'さる',    _mzWord('saru', 'さる')),
   _mzPeek('shika',  'しか',    _mzWord('shika', 'しか')),
-  _mzPeek('zou',    'ぞう',    _mzWord('zou', 'ぞう')),
+  _mzPeek('zou',    'ぞう',    _mzMazeAnimal('zou', 'ぞう')),
   _mzPeek('fukuro', 'ふくろ',  _mzWord('fukuro', 'ふくろ')),
   _mzPeek('kujira', 'くじら',  _mzMazeAnimal('kujira', 'くじら')),
   _mzPeek('iruka',  'いるか',  _mzMazeAnimal('iruka', 'いるか')),
@@ -6357,7 +6365,7 @@ const QUIZ_TRUEFALSE = [
   { q: 'いぬは ニャーと なく？', a: false, icon: _mzWord('inu', 'いぬ') },
   { q: 'りんごは くだもの？', a: true, icon: _mzWord('ringo', 'りんご') },
   { q: 'あめの しずくは みず？', a: true, icon: _mzQuiz('rain_drop', 'あめのしずく') },
-  { q: 'ぞうは とても ちいさい？', a: false, icon: _mzWord('zou', 'ぞう') },
+  { q: 'ぞうは とても ちいさい？', a: false, icon: _mzMazeAnimal('zou', 'ぞう') },
   { q: 'さかなは みずの なかで くらす？', a: true, icon: _mzQuiz('sakana', 'さかな') },
   { q: 'くるまは そらを とぶ？', a: false, icon: _mzWord('kuruma', 'くるま') },
   { q: 'ほしは よるに みえる？', a: true, icon: _mzWord('hoshi', 'ほし') },
@@ -6384,7 +6392,7 @@ const QUIZ_ODDONE = [
   { items: [_mzWord('ki','き'), _mzWord('kusa','くさ'), _mzWord('kinoko','きのこ'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'もりに あるもの' },
   { items: [_mzWord('taiyou','たいよう'), _mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('banana','バナナ')], odd: 3, hint: 'そら' },
   { items: [_mzWord('ninjin','にんじん'), _mzWord('tomato','トマト'), _mzWord('kyuuri','きゅうり'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'やさい' },
-  { items: [_mzWord('lion','らいおん'), _mzMazeAnimal('kirin','きりん'), _mzWord('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzMazeAnimal('lion','らいおん'), _mzMazeAnimal('kirin','きりん'), _mzMazeAnimal('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
   { items: [_mzWord('ringo','りんご'), _mzWord('inu','いぬ'), _mzWord('mikan','みかん'), _mzWord('banana','バナナ')], odd: 1, hint: 'くだもの' },
   { items: [_mzWord('kuruma','くるま'), _mzWord('neko','ねこ'), _mzWord('taxi','タクシー'), _mzWord('bus','バス')], odd: 1, hint: 'のりもの' },
   { items: [_mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('hana','はな'), _mzWord('taiyou','たいよう')], odd: 2, hint: 'そらに あるもの' },
