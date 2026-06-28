@@ -231,8 +231,8 @@
   /* notched 端末 (iPhone notch / Dynamic Island) でも tap target が safe-area 内に
      収まるよう env(safe-area-inset-*) と max() で下限を保証 (WCAG SC 1.4.11)。
      env() が未対応な環境では fallback 0px が使われ、 既存の clamp 値が維持される。 */
-  top: max(clamp(4px, 1vw, 10px), env(safe-area-inset-top, 0px));
-  right: max(clamp(4px, 1vw, 10px), env(safe-area-inset-right, 0px));
+  top: max(clamp(8px, 1.2vw, 14px), env(safe-area-inset-top, 0px));
+  right: max(clamp(8px, 1.2vw, 14px), env(safe-area-inset-right, 0px));
   /* base-dismiss-css 統一フェーズ (v1731): 全ゲーム共通仕様で右上固定を保証。
      z-index: 3 で panel の ::before 装飾 (z-index: 0) と
      content (z-index: 1) より確実に前面に出す (maze の葉飾り PNG / oto の
@@ -668,8 +668,8 @@
    削除済。 その他のゲーム (oto / quizland / undersea-cave 等) は base
    ルールのまま右上固定が効く。 */
 [data-game-id="maze"] .pono-acorn-modal__dismiss {
-  top: clamp(2px, 0.6vw, 6px);
-  right: clamp(2px, 0.6vw, 6px);
+  top: max(clamp(4px, 0.8vw, 10px), env(safe-area-inset-top, 0px));
+  right: max(clamp(4px, 0.8vw, 10px), env(safe-area-inset-right, 0px));
 }
 
 [data-game-id="oto"].pono-acorn-modal {

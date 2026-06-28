@@ -115,7 +115,7 @@
     }
 
     if (p && typeof p.then === 'function') {
-      return p.then(function () { return audio; }, function () { return null; });
+      return p.then(function () { return audio; }, function () { return null; }).catch(function () { return null; });
     }
     // Older browsers return undefined from play(); treat as fire-and-forget success.
     return Promise.resolve(audio);

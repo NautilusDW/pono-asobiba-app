@@ -101,7 +101,8 @@
     // 共通基盤が未ロードのページ (旧シェル / 部分配信中) のために、既存の don.mp3 直接再生 fallback を残す。
     if (window.PonoAcornAudio && typeof window.PonoAcornAudio.play === 'function') {
       try {
-        window.PonoAcornAudio.play(gameId);
+        var pRew = window.PonoAcornAudio.play(gameId);
+        if (pRew && typeof pRew.catch === 'function') pRew.catch(function () {});
         return;
       } catch (e) {}
     }

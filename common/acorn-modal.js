@@ -447,7 +447,8 @@
     //    (autoplay reject は内部 catch で silent fail)。
     if (!this._seFired) {
       this._seFired = true;
-      playSafe(this.gameId, this.state);
+      var _seP = playSafe(this.gameId, this.state);
+      if (_seP && typeof _seP.catch === 'function') _seP.catch(function () {});
     }
 
     // 既に DOM があれば一旦剥がして作り直す (state/granted を新規反映するため)
@@ -512,7 +513,8 @@
     // reject されるだけで silent fail (副作用なし)。
     if (!this._seFired) {
       this._seFired = true;
-      playSafe(this.gameId, this.state);
+      var _seP = playSafe(this.gameId, this.state);
+      if (_seP && typeof _seP.catch === 'function') _seP.catch(function () {});
     }
 
     // auto-hide

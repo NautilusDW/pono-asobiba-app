@@ -3585,6 +3585,18 @@ function _stopAllMazeVoices() {
       }
     } catch (_) {}
   });
+  // sw1744: encounter close 時に SE (countdownTick/countdownGo 等) も停止して残響を防ぐ
+  try {
+    Object.keys(_mzSeCache).forEach(function(k) {
+      try {
+        const a = _mzSeCache[k];
+        if (a) {
+          a.pause();
+          try { a.currentTime = 0; } catch (_) {}
+        }
+      } catch (_) {}
+    });
+  } catch (_) {}
 }
 function _playMzSePitch(name, semitones) {
   try {
@@ -7688,13 +7700,16 @@ function _kickStrengthIntroSequence() {
     return;
   }
   // 念のため end 後にも remove (cache 再利用想定で onended ハンドラが残らないように)
+  // fallbackTimer は後で代入 (closure 経由で onEnd / reject から参照)
+  let fallbackTimer = null;
   const onEnd = function() {
+    try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
     try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
     startCountdown();
   };
   try { introAudio.addEventListener('ended', onEnd); } catch (_) {}
   // 安全網: 音声が再生失敗 / duration 取得失敗時に備え、 最大 6 秒で強制発火
-  const fallbackTimer = _strengthGimmickSetTimeout(function() {
+  fallbackTimer = _strengthGimmickSetTimeout(function() {
     try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
     startCountdown();
   }, 6000);
@@ -7705,14 +7720,17 @@ function _kickStrengthIntroSequence() {
   try {
     const p = introAudio.play();
     if (p && typeof p.catch === 'function') {
-      p.catch(function() {
-        try { clearTimeout(fallbackTimer); } catch (_) {}
+      p.catch(function(err) {
+        try { console.warn('[maze strength intro] play rejected', err); } catch (_) {}
+        try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
         try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
         startCountdown();
       });
     }
-  } catch (_) {
-    try { clearTimeout(fallbackTimer); } catch (_) {}
+  } catch (e) {
+    try { console.warn('[maze strength intro] play threw', e); } catch (_) {}
+    try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
+    try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
     startCountdown();
   }
 }
