@@ -2946,6 +2946,96 @@ body.image-stage-mode .game-wrap {
   0%, 100% { opacity: 0.92; transform: translateX(-50%) scale(1); }
   50%      { opacity: 1;    transform: translateX(-50%) scale(1.05); }
 }
+/* ===== batch:890: ステージセレクト ボタン + modal (DEV toggle ON 時のみ表示) ===== */
+#title-stage-select-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+  color: #fff;
+  background: rgba(58, 38, 24, 0.86);
+  border: 2px solid rgba(255, 220, 140, 0.55);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+#title-stage-select-btn:active { transform: translateY(1px); }
+.stage-select-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300; /* #title-screen (250) よりも上 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.62);
+  padding: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage-select-modal[hidden] { display: none; }
+.stage-select-modal__card {
+  background: #FFF6E0;
+  color: #3A2A1A;
+  border-radius: 18px;
+  padding: 20px 22px 18px;
+  width: min(92vw, 480px);
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  text-align: center;
+}
+.stage-select-modal__title {
+  font-size: clamp(1.05rem, 3vw, 1.3rem);
+  font-weight: 700;
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+.stage-select-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stage-select-modal__btn {
+  display: block;
+  width: 100%;
+  padding: 14px 10px;
+  font-family: inherit;
+  font-size: clamp(0.92rem, 2.4vw, 1.05rem);
+  color: #fff;
+  background: #6E4A2E;
+  border: 2px solid #4A3220;
+  border-radius: 12px;
+  cursor: pointer;
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage-select-modal__btn:active { transform: translateY(1px); }
+.stage-select-modal__btn-num {
+  display: block;
+  font-size: 0.78em;
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+.stage-select-modal__close {
+  display: inline-block;
+  font-family: inherit;
+  font-size: clamp(0.85rem, 2.2vw, 1rem);
+  color: #3A2A1A;
+  background: #E8D9B5;
+  border: 2px solid #B89B6A;
+  border-radius: 999px;
+  padding: 8px 22px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage-select-modal__close:active { transform: translateY(1px); }
 
 /* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
 /* ※ maze は既に landscape-notice (id) を別途持っているのでクラス名を変えて競合回避 */
@@ -3107,6 +3197,17 @@ body.image-stage-mode .game-wrap {
 <div id="title-screen" role="button" aria-label="タップしてスタート">
   <img class="title-logo" src="../assets/images/maze/title_logo.png" alt="ポノとランタンのめいろ">
   <div class="title-tap-cta">▶ タップしてスタート</div>
+  <!-- batch:890: debug toggle ON 時のみ表示するステージセレクトボタン (右下) -->
+  <button type="button" id="title-stage-select-btn" hidden>ステージセレクト</button>
+</div>
+
+<!-- batch:890: ステージセレクト modal (debug toggle ON 時のみ開く) -->
+<div id="stage-select-modal" class="stage-select-modal" role="dialog" aria-modal="true" aria-labelledby="stage-select-modal-title" aria-hidden="true" hidden>
+  <div class="stage-select-modal__card">
+    <div class="stage-select-modal__title" id="stage-select-modal-title">ステージセレクト (DEV)</div>
+    <div class="stage-select-modal__grid" id="stage-select-modal-grid"></div>
+    <button type="button" class="stage-select-modal__close" id="stage-select-modal-close" aria-label="閉じる">× とじる</button>
+  </div>
 </div>
 
 <!-- 縦持ち時の警告オーバーレイ -->
@@ -4959,6 +5060,7 @@ let _flagGameState = null;
 let _flagTunnelTimers = [];
 let _waterGimmickState = null;
 let _waterGameState = null;
+let _waterSkateLastCompletePoints = null;
 let _waterGimmickTimers = [];
 let _strengthGimmickState = null;
 let _strengthGameState = null;
@@ -7188,6 +7290,7 @@ const WATER_SKATE_SEGMENT_COUNT = WATER_SKATE_SEGMENTS.length;
 function _showWaterBridgeGame() {
   _setEncounterMode('water_bridge');
   _clearWaterGimmickTimers();
+  _waterSkateLastCompletePoints = null;
   _waterGameState = {
     phase: 'ready',
     segmentIndex: 0,
@@ -7420,7 +7523,9 @@ function _waterSkateCompletePoints() {
   const st = _waterGimmickState;
   const pts = st && st.lastSkatePoints;
   const fallback = WATER_SKATE_SEGMENTS[WATER_SKATE_SEGMENT_COUNT - 1] || { start: WATER_SKATE_START, goal: WATER_SKATE_GOAL };
-  return pts && pts.length >= 2 ? pts : [fallback.start, fallback.goal];
+  if (pts && pts.length >= 2) return pts;
+  if (_waterSkateLastCompletePoints && _waterSkateLastCompletePoints.length >= 2) return _waterSkateLastCompletePoints;
+  return [fallback.start, fallback.goal];
 }
 
 function _waterSkateTracePath(ctx, points) {
@@ -7637,11 +7742,12 @@ function _waterSkateAdvanceSegment() {
 function _resolveWaterBridgeGame() {
   const st = _waterGimmickState;
   if (_waterGameState) _waterGameState.phase = 'complete';
+  if (_waterGameState && _waterGameState.points) {
+    _waterSkateLastCompletePoints = _waterSkateNormalizePoints(_waterGameState.points);
+  }
   if (st) {
     st.bridgeBuilt = true;
-    if (_waterGameState && _waterGameState.points) {
-      st.lastSkatePoints = _waterSkateNormalizePoints(_waterGameState.points);
-    }
+    if (_waterSkateLastCompletePoints) st.lastSkatePoints = _waterSkateLastCompletePoints;
   }
   _updateFlagInventoryHud();
   _clearWaterGimmickTimers();
@@ -12075,11 +12181,17 @@ updateCharmsUI();
 // 1) Load _index.json (overrides STAGES with image stages at specified slots)
 // 2) Then handle ?image=<name> (one-off preview, takes precedence)
 // 3) Then loadStage(<initial>)  — defaults to 0 (tutorial), or ?stage=N to jump
+// batch:890 maze-stage-select-ux: ?stage=N は DEV toggle ON のときだけ尊重する
+// (本番ユーザーが URL いじっても順番に遊ぶ仕様を維持)。
 function _getInitialStageIdx() {
   try {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('stage');
     if (raw == null) return 1; // ステージ 0 は使わない方針 → デフォルトは slot 1 から
+    if (!window._DEV_BYPASS_TIER) {
+      console.warn('[maze] ?stage=' + raw + ' ignored: DEV bypass toggle is OFF');
+      return 1;
+    }
     const n = parseInt(raw, 10);
     // n >= 1 に揃えて方針一致 (?stage=0 はそもそも slot 0 が null なので fallback されるが、一貫性のため拒否)
     if (Number.isInteger(n) && n >= 1 && n < STAGES.length) return n;
@@ -12087,10 +12199,11 @@ function _getInitialStageIdx() {
   } catch (e) { /* ignore */ }
   return 1;
 }
-// ---- DEV bypass: ?dev=1 で tier check を session 内のみ無視 ----
-// localStorage には書き込まない。リロードや別タブには引き継がない。
+// ---- DEV bypass: manage トグル ON で tier check を session 内のみ無視 ----
+// localStorage には書き込まない。リロードや別タブに引き継がないのは PonoDebugMode 側の責務 (manage unlock 状態の永続性に従う)。
 // batch:887 admin-debug-leak-fix — 本番ユーザーで誤って bypass されないよう、
 // PonoDebugMode の manage unlock + "maze-dev-bypass" feature ON を必須化。
+// batch:890 maze-stage-select-ux — URL ?dev=1 の追加要件を廃止し、 トグル ON 単体で active。
 // PonoDebugMode が未 load または未 unlock なら常に false。
 try {
   var _mzDevAllowed = false;
@@ -12099,9 +12212,7 @@ try {
       && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
       && window.PonoDebugMode.isFeatureEnabled('maze-dev-bypass'));
   } catch (_e) { _mzDevAllowed = false; }
-  var _mzDevParam = false;
-  try { _mzDevParam = new URLSearchParams(window.location.search).get('dev') === '1'; } catch (_e2) {}
-  window._DEV_BYPASS_TIER = _mzDevAllowed && _mzDevParam;
+  window._DEV_BYPASS_TIER = _mzDevAllowed;
   if (window._DEV_BYPASS_TIER) {
     console.warn('[maze] DEV mode: tier check bypassed for this session');
     // 右下にひかえめな DEV indicator (CSS インラインのみ)
@@ -12336,10 +12447,88 @@ async function playMazeOpening(onDone) {
 
 // タイトル画面タップ → (OP 再生 →) 初回 loadStage
 // ?stage=N / ?image=<name> 直リンク時は OP をスキップして即 loadStage (デバッグ/直リンク用途)
+// batch:890 maze-stage-select-ux: タイトル右下のステージセレクトボタン (DEV toggle ON 時のみ表示) と、
+// modal からの直接ジャンプ (loadStage(N)) を追加。 modal を開いたら title click を消費しない。
 (function() {
   var ts = document.getElementById('title-screen');
   if (!ts) return;
-  ts.addEventListener('click', function() {
+
+  // ---- Stage select button + modal (DEV only) ----
+  var devOn = !!window._DEV_BYPASS_TIER;
+  var stageBtn = document.getElementById('title-stage-select-btn');
+  var modal = document.getElementById('stage-select-modal');
+  var modalGrid = document.getElementById('stage-select-modal-grid');
+  var modalClose = document.getElementById('stage-select-modal-close');
+
+  if (devOn && stageBtn) { stageBtn.hidden = false; }
+
+  function hideModal() {
+    if (!modal) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  function showModal() {
+    if (!modal) return;
+    // Build grid lazily (毎回 rebuild = STAGES が後から index.json で増えても追従)
+    if (modalGrid) {
+      modalGrid.innerHTML = '';
+      // 1-7 ボタンを並べる (slot 7 は枠だけだが grid 表示は許可、 押下時に loadStage fallback に委ねる)
+      for (var i = 1; i <= 7; i++) {
+        (function(n) {
+          var def = STAGES[n];
+          var label = (def && def.name) ? String(def.name) : ('ステージ ' + n);
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'stage-select-modal__btn';
+          b.setAttribute('aria-label', 'ステージ ' + n + ' へ');
+          b.innerHTML = '<span class="stage-select-modal__btn-num">ステージ ' + n + '</span>' +
+            label.replace(/[<>&]/g, function(ch) {
+              return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[ch];
+            });
+          b.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            hideModal();
+            ts.classList.add('hidden');
+            // 直リンク同様 OP をスキップして即起動
+            try { loadStage(n); } catch (e) { console.warn('[maze] stage select loadStage failed', e); }
+          });
+          modalGrid.appendChild(b);
+        })(i);
+      }
+    }
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  if (stageBtn) {
+    stageBtn.addEventListener('click', function(ev) {
+      ev.stopPropagation(); // title-screen の click まで bubble させない
+      showModal();
+    });
+  }
+  if (modalClose) {
+    modalClose.addEventListener('click', function(ev) {
+      ev.stopPropagation();
+      hideModal();
+    });
+  }
+  if (modal) {
+    // 背景タップで閉じる (card 内のクリックは stopPropagation)
+    modal.addEventListener('click', function(ev) {
+      if (ev.target === modal) hideModal();
+    });
+    var card = modal.querySelector('.stage-select-modal__card');
+    if (card) card.addEventListener('click', function(ev) { ev.stopPropagation(); });
+  }
+
+  // ---- Title click → (OP →) 初回 loadStage ----
+  function onTitleClick(ev) {
+    // モーダルやステージセレクトボタン由来の click は無視 (stopPropagation で来ないはずだが念のため)
+    if (ev && ev.target) {
+      if (stageBtn && (ev.target === stageBtn || (stageBtn.contains && stageBtn.contains(ev.target)))) return;
+      if (modal && (ev.target === modal || (modal.contains && modal.contains(ev.target)))) return;
+    }
+    ts.removeEventListener('click', onTitleClick);
     ts.classList.add('hidden');
     var params;
     try { params = new URLSearchParams(window.location.search); } catch (_) { params = null; }
@@ -12351,7 +12540,8 @@ async function playMazeOpening(onDone) {
     } else {
       playMazeOpening(function() { loadStage(_getInitialStageIdx()); });
     }
-  }, { once: true });
+  }
+  ts.addEventListener('click', onTitleClick);
 })();
 </script>
 

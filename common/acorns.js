@@ -8,15 +8,17 @@
   var DAILY_TOTAL_PREFIX = 'pono_acorns_daily_total_';
   var TOTAL_CAP_FREE = 25;
   var TOTAL_CAP_PAID = 35;
-  // ---- DEV bypass (maze only, ?dev=1) ----
-  // 本番ユーザーの既存挙動に影響しないよう、 URL params を厳密一致で判定 +
+  // ---- DEV bypass (maze only) ----
+  // 本番ユーザーの既存挙動に影響しないよう、 PonoDebugMode の manage unlock +
+  // "maze-dev-bypass" feature ON の組み合わせを必須化。
   // 取得分は本番財布 (pono_acorns) には書かず、 dev 専用キーに隔離する。
   // common/acorns.js は他ゲームでも load されるが、 gameId === 'maze' に絞り、
   // 他ゲームの cap には影響しない設計。
+  // batch:890 maze-stage-select-ux: URL ?dev=1 の追加要件を廃止し、 トグル ON 単体で active。
   var DEV_BYPASS_KEY = 'pono_acorns_dev_v1';
   function _isDevBypass(gameId) {
     if (gameId !== 'maze') return false;
-    // batch:887 admin-debug-leak-fix — URL bypass は manage debug board で
+    // batch:887 admin-debug-leak-fix — manage debug board で
     // "maze-dev-bypass" を ON にした session のみ許可 (本番ユーザーは PonoDebugMode 未 unlock → 常に false)。
     try {
       if (!window.PonoDebugMode
@@ -25,10 +27,7 @@
         return false;
       }
     } catch (e) { return false; }
-    try {
-      var params = new URLSearchParams(window.location.search);
-      return params.get('dev') === '1';
-    } catch (e) { return false; }
+    return true;
   }
 
   function get() {
