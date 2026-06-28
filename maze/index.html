@@ -1840,6 +1840,7 @@ body.image-stage-mode .game-wrap {
 .water-hazard__zone {
   position: absolute;
   inset: 0;
+  display: none;
   border: 0;
   background:
     radial-gradient(circle, rgba(255,255,255,0.18), transparent 35%),
@@ -7351,7 +7352,7 @@ const WATER_SKATE_SEGMENTS = [
     start: { x: 0.16, y: 0.72, label: 'ここから' },
     goal: { x: 0.84, y: 0.34, label: 'こじま' },
     guideReady: 'ムシに ぶつからないで こじまへ',
-    guideDrawing: 'タイミングをみて すいすい',
+    guideDrawing: 'ムシが いない ときに すいすい',
     statusReady: 'いっこめ こじまへ',
     hazards: [
       { kind: 'sweep-y', x: 0.52, y: 0.50, w: 0.28, h: 0.62, hit: { kind: 'capsule', x1: 0.52, y1: 0.25, x2: 0.52, y2: 0.75, r: 0.14 } }
@@ -7362,7 +7363,7 @@ const WATER_SKATE_SEGMENTS = [
     start: { x: 0.18, y: 0.34, label: 'こじま' },
     goal: { x: 0.82, y: 0.67, label: 'こじま' },
     guideReady: 'まわるムシに ぶつからないで',
-    guideDrawing: 'あいてる ところを すいすい',
+    guideDrawing: 'ムシが いない ときに すいすい',
     statusReady: 'ふたつめ こじまへ',
     hazards: [
       { kind: 'spin', x: 0.53, y: 0.50, w: 0.42, h: 0.54, hit: { kind: 'circle', x: 0.53, y: 0.50, r: 0.24 } }
@@ -7373,7 +7374,7 @@ const WATER_SKATE_SEGMENTS = [
     start: { x: 0.18, y: 0.67, label: 'こじま' },
     goal: { x: 0.84, y: 0.46, label: 'むこうぎし' },
     guideReady: 'ぷかぷかムシを すりぬけよう',
-    guideDrawing: 'すきまを みて すいすい',
+    guideDrawing: 'ムシが いない ときに すいすい',
     statusReady: 'さいご むこうぎしへ',
     hazards: [
       { kind: 'drift', x: 0.54, y: 0.55, w: 0.42, h: 0.58, rotate: -12, hit: { kind: 'ellipse', x: 0.54, y: 0.55, rx: 0.22, ry: 0.29, rotate: -12 } }
@@ -7395,6 +7396,7 @@ function _showWaterBridgeGame() {
     ripples: [],
     wakes: [],
     glide: null,
+    hazardStartedAt: performance.now(),
     success: false,
     failReason: '',
     status: 'ゆびで みずの みちを かこう',
@@ -7566,28 +7568,82 @@ function _waterSkateNormalizePoints(points) {
   });
 }
 
-function _waterSkateActiveBugHitCircles(rect) {
-  const gs = _waterGameState;
-  const stageEl = document.getElementById('waterSkateStage');
-  if (!gs || !stageEl || !rect) return [];
-  const segIndex = Math.max(0, Math.min(WATER_SKATE_SEGMENT_COUNT - 1, gs.segmentIndex || 0));
-  const bugs = stageEl.querySelectorAll('.water-hazard[data-segment="' + segIndex + '"] .water-hazard__bug');
-  const circles = [];
-  bugs.forEach(function(bug) {
+function _waterSkateBugVisualSize(rect) {
+  const bug = document.querySelector('.water-hazard__bug');
+  if (bug) {
     const br = bug.getBoundingClientRect();
-    if (!br || br.width <= 1 || br.height <= 1) return;
-    circles.push({
-      x: br.left + br.width / 2 - rect.left,
-      y: br.top + br.height / 2 - rect.top,
-      r: Math.max(16, Math.min(br.width, br.height) * 0.36),
-    });
-  });
-  return circles;
+    if (br && br.width > 1 && br.height > 1) return Math.min(br.width, br.height);
+  }
+  return Math.max(34, Math.min(82, Math.min(rect.width, rect.height) * 0.22));
 }
 
-function _waterSkatePathHitsHazard(points, rect) {
+function _waterSkateEaseInOut(t) {
+  const x = Math.max(0, Math.min(1, t));
+  return 0.5 - Math.cos(x * Math.PI) * 0.5;
+}
+
+function _waterSkatePingPong(nowMs, periodMs) {
+  const phase = ((nowMs || 0) % periodMs) / periodMs;
+  const raw = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+  return _waterSkateEaseInOut(raw);
+}
+
+function _waterSkateRotateOffset(offset, degrees) {
+  const rad = (degrees || 0) * Math.PI / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return {
+    x: offset.x * cos - offset.y * sin,
+    y: offset.x * sin + offset.y * cos,
+  };
+}
+
+function _waterSkateBugCenterForHazard(hazard, rect, nowMs, bugSize) {
+  const base = {
+    x: rect.width * (hazard.x || 0.5),
+    y: rect.height * (hazard.y || 0.5),
+  };
+  let offset = { x: 0, y: 0 };
+  if (hazard.kind === 'sweep-y') {
+    const p = _waterSkatePingPong(nowMs, 2250);
+    offset.y = (-0.88 + p * 1.76) * bugSize;
+  } else if (hazard.kind === 'sweep-x') {
+    const p = _waterSkatePingPong(nowMs, 2100);
+    offset.x = (-0.98 + p * 1.96) * bugSize;
+  } else if (hazard.kind === 'spin') {
+    const theta = ((nowMs || 0) % 3100) / 3100 * Math.PI * 2;
+    offset.x = Math.cos(theta) * bugSize * 0.78;
+    offset.y = Math.sin(theta) * bugSize * 0.78;
+  } else if (hazard.kind === 'drift') {
+    const p = _waterSkatePingPong(nowMs, 2800);
+    offset.x = (-0.16 + p * 0.32) * bugSize;
+    offset.y = (-0.28 + p * 0.54) * bugSize;
+  }
+  offset = _waterSkateRotateOffset(offset, hazard.rotate || 0);
+  return { x: base.x + offset.x, y: base.y + offset.y };
+}
+
+function _waterSkateActiveBugHitCircles(rect, nowMs) {
+  const gs = _waterGameState;
+  if (!gs || !rect) return [];
+  const segIndex = Math.max(0, Math.min(WATER_SKATE_SEGMENT_COUNT - 1, gs.segmentIndex || 0));
+  const seg = WATER_SKATE_SEGMENTS[segIndex] || WATER_SKATE_SEGMENTS[0];
+  const hazards = (seg && seg.hazards) || [];
+  const bugSize = _waterSkateBugVisualSize(rect);
+  const elapsed = Math.max(0, (Number.isFinite(nowMs) ? nowMs : performance.now()) - (gs.hazardStartedAt || 0));
+  return hazards.map(function(hazard) {
+    const center = _waterSkateBugCenterForHazard(hazard, rect, elapsed, bugSize);
+    return {
+      x: center.x,
+      y: center.y,
+      r: Math.max(13, bugSize * 0.31),
+    };
+  });
+}
+
+function _waterSkatePathHitsHazard(points, rect, nowMs) {
   if (!points || points.length < 2 || !rect) return false;
-  const circles = _waterSkateActiveBugHitCircles(rect);
+  const circles = _waterSkateActiveBugHitCircles(rect, nowMs);
   if (!circles.length) return false;
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1];
@@ -7614,7 +7670,7 @@ function _waterSkateCurrentPathHitsHazard() {
   const rect = _waterSkateStageRect();
   if (!gs || !rect) return false;
   if (!gs.points || gs.points.length < 2) return false;
-  return _waterSkatePathHitsHazard(gs.points.slice(-2), rect);
+  return _waterSkatePathHitsHazard(gs.points.slice(-2), rect, performance.now());
 }
 
 function _waterSkateTriggerHit(point) {

@@ -6686,6 +6686,9 @@ const decorItems = [
   { id: 'nori_brow_left', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
   { id: 'nori_brow_right', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
   { id: 'nori_bento_sheet', type: 'decor', name: 'のりべん', image: FREE_ASSET + 'nori_bento_sheet.png', size: 230, layerBase: 49 },
+  { id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50 },
+  { id: 'nori_face_set_bear', type: 'decor', name: 'くまセット', image: FREE_ASSET + 'nori_nose_bear.png', faceSet: 'bear', size: 78, layerBase: 50 },
+  bookDecorItem({ id: 'nori_face_set_cat_book', type: 'decor', name: 'ねこセット', image: FREE_ASSET + 'book_nori_whisker_left_20260624.png', faceSet: 'cat', size: 92, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_smile_book', type: 'decor', name: 'にこめ', image: FREE_ASSET + 'book_nori_eye_smile_20260624.png', size: 38, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_sleepy_book', type: 'decor', name: 'ねむりめ', image: FREE_ASSET + 'book_nori_eye_sleepy_20260624.png', size: 38, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_lash_book', type: 'decor', name: 'まつげめ', image: FREE_ASSET + 'book_nori_eye_lash_20260624.png', size: 42, layerBase: 50 }),
@@ -6807,6 +6810,11 @@ const riceFaceTemplates = {
     ],
   },
 };
+const SIMPLE_FACE_SET_PARTS = {
+  smile: ['nori_eye_round', 'nori_eye_round', 'nori_mouth_smile', 'ketchup_cheek', 'ketchup_cheek'],
+  bear: ['nori_eye_round', 'nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile', 'ketchup_cheek', 'ketchup_cheek'],
+  cat: ['nori_eye_round', 'nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile', 'nori_whisker_left_book', 'nori_whisker_right_book'],
+};
 
 // ===== State =====
 let stageIdx = 0, stepIdx = 0, okazuSlots = [], okazuFillCount = 0, pickedInStep = 0;
@@ -6846,6 +6854,7 @@ let freeBrushStampDef = null;
 let freeBrushStampLevel = 1;
 let simpleBentoMode = false;
 let simpleReplaceSlotUid = null;
+const SIMPLE_CUP_FOOD_LIMIT = 3;
 
 // ===== NPC 依頼者モード state =====
 // セッション中の現在の依頼者。完成後は次の依頼者に切り替えて注文シーンから再開する。
@@ -8803,6 +8812,11 @@ function unlockTutorialPaletteButton(btn) {
 }
 function getCupFoodChildSize(def, cup) {
   if (!def || !cup) return 96;
+  if (simpleBentoMode) {
+    const max = Math.max(112, Math.round((cup.size || 190) * 0.74));
+    if (def.brushItem) return clamp(Math.round((cup.size || 190) * 0.68), 116, Math.min(142, max));
+    return clamp(def.cupSize || def.size || 128, 106, Math.min(142, max));
+  }
   if (def.brushItem) return Math.min(126, Math.round((cup.size || 190) * 0.66));
   return Math.min(def.cupSize || def.size || 120, Math.round((cup.size || 190) * 0.78));
 }
@@ -10122,43 +10136,138 @@ function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) 
     .sort((a, b) => (a.item.layer || 0) - (b.item.layer || 0))[0];
   return oldest ? { ...oldest.slot, replaceUid: oldest.item.uid } : slots[0];
 }
-function getSimpleSlotSize(def, slot) {
-  if (!def) return 72;
-  if (def.type === 'decor') return clamp(def.size || 66, 26, 126);
-  if (def.type === 'cup' || def.snapTarget) return clamp(def.size || 176, 130, 176);
-  if (def.type === 'divider') return clamp(def.size || 180, 130, 190);
-  if (def.type === 'food') {
-    const role = def.okazuRole || getOkazuRole(def);
-    if (role === 'side') return clamp(def.size || def.cupSize || 116, 88, 126);
-    return clamp(def.size || 156, 126, getBoxTierCount() <= 1 ? 156 : 168);
-  }
-  return def.size || 72;
+function getSimpleDecorKind(def) {
+  const id = String(def && def.id || '');
+  if (!def) return 'scatter';
+  if (def.faceSet) return 'face-set';
+  if (id.indexOf('whisker_left') >= 0) return 'whisker-left';
+  if (id.indexOf('whisker_right') >= 0) return 'whisker-right';
+  if (id.indexOf('bangs') >= 0) return 'bangs';
+  if (id.indexOf('brow') >= 0) return 'brow';
+  if (id.indexOf('eye') >= 0) return 'eye';
+  if (id.indexOf('nose') >= 0) return 'nose';
+  if (id.indexOf('mouth') >= 0) return 'mouth';
+  if (id.indexOf('cheek') >= 0) return 'cheek';
+  if (id === 'nori_bento_sheet') return 'sheet';
+  if (id.indexOf('nori_shape') === 0) return 'shape';
+  if (id.indexOf('furikake_') === 0) return 'scatter';
+  return 'scatter';
 }
-function getSimpleDecorFreePoint(def, tier = getTargetTierForType(def && def.type)) {
+function isSimpleFaceDecorKind(kind) {
+  return ['eye', 'brow', 'nose', 'mouth', 'whisker-left', 'whisker-right', 'bangs', 'cheek'].includes(kind);
+}
+function isSimpleFaceDecorItem(item) {
+  return !!(item && item.type === 'decor' && isSimpleFaceDecorKind(getSimpleDecorKind(item)));
+}
+function getSimpleDecorSize(def, kind = getSimpleDecorKind(def)) {
+  const base = def && def.size ? def.size : 66;
+  if (kind === 'eye') return Math.round(clamp(base * 1.18, 34, 48));
+  if (kind === 'brow') return Math.round(clamp(base * 1.32, 52, 64));
+  if (kind === 'nose') return Math.round(clamp(base * 1.16, 58, 72));
+  if (kind === 'mouth') return Math.round(clamp(base * 1.14, 78, 96));
+  if (kind === 'whisker-left' || kind === 'whisker-right') return Math.round(clamp(base * 1.45, 122, 148));
+  if (kind === 'bangs') return Math.round(clamp(base * 1.28, 126, 158));
+  if (kind === 'cheek') return Math.round(clamp(base * 1.12, 48, 64));
+  if (kind === 'sheet') return Math.round(clamp(base, 150, 230));
+  if (kind === 'shape') return Math.round(clamp(base, 68, 132));
+  if (kind === 'scatter') return Math.round(clamp(base, 88, 126));
+  return Math.round(clamp(base, 34, 148));
+}
+function countSimpleFaceSlotPrefix(tier, prefix) {
+  return placedItems.filter(item =>
+    getItemTier(item) === tier &&
+    typeof item.simpleFaceSlot === 'string' &&
+    item.simpleFaceSlot.indexOf(prefix + ':') === 0
+  ).length;
+}
+function getPairedSimpleFaceSide(def, tier, prefix) {
+  const id = String(def && def.id || '');
+  if (id.indexOf('_left') >= 0 || id.indexOf('left_') >= 0 || id.indexOf('ひだり') >= 0) return 'left';
+  if (id.indexOf('_right') >= 0 || id.indexOf('right_') >= 0 || id.indexOf('みぎ') >= 0) return 'right';
+  return (countSimpleFaceSlotPrefix(tier, prefix) % 2) === 0 ? 'left' : 'right';
+}
+function makeSimpleFacePoint(center, riceBounds, xRatio, yRatio) {
+  return {
+    x: center.x + riceBounds.w * xRatio,
+    y: center.y + riceBounds.h * yRatio,
+  };
+}
+function getSimpleDecorPlacement(def, tier = getTargetTierForType(def && def.type)) {
   const box = getSelectedBentoBox();
   const riceBounds = getRicePlacementBounds(box);
   const center = (box && box.riceSpots && box.riceSpots[0]) || {
     x: riceBounds.x + riceBounds.w / 2,
     y: riceBounds.y + riceBounds.h / 2,
   };
-  const offsets = [
-    [-0.12, -0.10],
-    [0.12, -0.10],
-    [0, 0.12],
-    [-0.22, 0.04],
-    [0.22, 0.04],
-    [0, -0.22],
-    [-0.14, 0.22],
-    [0.14, 0.22],
-  ];
-  const count = placedItems.filter(item => item.type === 'decor' && getItemTier(item) === tier).length;
-  const offset = offsets[count % offsets.length];
-  const wave = Math.floor(count / offsets.length);
-  return clampPointToRice(
-    center.x + riceBounds.w * offset[0] + wave * 10,
-    center.y + riceBounds.h * offset[1] + wave * 6,
-    { type: 'decor', size: getSimpleSlotSize(def), scale: def && def.scale ? def.scale : 1 }
-  );
+  const kind = getSimpleDecorKind(def);
+  const size = getSimpleDecorSize(def, kind);
+  let point = null;
+  let faceSlot = '';
+  let rotation = def && def.rotation != null ? def.rotation : 0;
+  if (kind === 'eye') {
+    const side = getPairedSimpleFaceSide(def, tier, 'eye');
+    point = makeSimpleFacePoint(center, riceBounds, side === 'left' ? -0.17 : 0.17, -0.13);
+    faceSlot = 'eye:' + side;
+  } else if (kind === 'brow') {
+    const side = getPairedSimpleFaceSide(def, tier, 'brow');
+    point = makeSimpleFacePoint(center, riceBounds, side === 'left' ? -0.17 : 0.17, -0.25);
+    faceSlot = 'brow:' + side;
+    rotation = side === 'left' ? -6 : 6;
+  } else if (kind === 'nose') {
+    point = makeSimpleFacePoint(center, riceBounds, 0, 0.02);
+    faceSlot = 'nose:center';
+  } else if (kind === 'mouth') {
+    point = makeSimpleFacePoint(center, riceBounds, 0, 0.17);
+    faceSlot = 'mouth:center';
+  } else if (kind === 'whisker-left' || kind === 'whisker-right') {
+    const side = kind === 'whisker-left' ? 'left' : 'right';
+    point = makeSimpleFacePoint(center, riceBounds, side === 'left' ? -0.24 : 0.24, 0.08);
+    faceSlot = 'whisker:' + side;
+  } else if (kind === 'bangs') {
+    point = makeSimpleFacePoint(center, riceBounds, 0, -0.31);
+    faceSlot = 'bangs:center';
+  } else if (kind === 'cheek') {
+    const side = getPairedSimpleFaceSide(def, tier, 'cheek');
+    point = makeSimpleFacePoint(center, riceBounds, side === 'left' ? -0.28 : 0.28, 0.09);
+    faceSlot = 'cheek:' + side;
+  }
+  if (!point) {
+    const offsets = [
+      [-0.12, -0.10],
+      [0.12, -0.10],
+      [0, 0.12],
+      [-0.22, 0.04],
+      [0.22, 0.04],
+      [0, -0.22],
+      [-0.14, 0.22],
+      [0.14, 0.22],
+    ];
+    const count = placedItems.filter(item => item.type === 'decor' && !isSimpleFaceDecorItem(item) && getItemTier(item) === tier).length;
+    const offset = offsets[count % offsets.length];
+    const wave = Math.floor(count / offsets.length);
+    point = {
+      x: center.x + riceBounds.w * offset[0] + wave * 10,
+      y: center.y + riceBounds.h * offset[1] + wave * 6,
+    };
+  }
+  const clamped = clampPointToRice(point.x, point.y, { type: 'decor', size, scale: def && def.scale ? def.scale : 1 });
+  return { ...clamped, size, rotation, faceSlot };
+}
+function getSimpleSlotSize(def, slot) {
+  if (!def) return 72;
+  if (def.type === 'decor') return getSimpleDecorSize(def);
+  if (def.type === 'cup' || def.snapTarget) return clamp(def.size || 176, 130, 176);
+  if (def.type === 'divider') return clamp(def.size || 180, 130, 190);
+  if (def.type === 'food') {
+    const role = def.okazuRole || getOkazuRole(def);
+    if (role === 'side') return clamp(def.size || def.cupSize || 132, 112, 146);
+    return clamp(def.size || 174, 150, getBoxTierCount() <= 1 ? 180 : 190);
+  }
+  return def.size || 72;
+}
+function getSimpleDecorFreePoint(def, tier = getTargetTierForType(def && def.type)) {
+  const placement = getSimpleDecorPlacement(def, tier);
+  return { x: placement.x, y: placement.y };
 }
 function clampPointToBento(x, y, item) {
   const box = getSelectedBentoBox();
@@ -10228,6 +10337,17 @@ function layoutCupChildren(cup) {
   // カップ内アイテムは自動整列せず、落とした位置 (またはユーザーが動かした位置) に固定する。
   // 初回ドロップ位置は呼び出し側で getCupChildSlot 等を使って決め、その後はここで clamp と layer 更新のみ行う。
   const children = placedItems.filter(child => child.parentCupId === cup.uid);
+  if (simpleBentoMode) {
+    children.forEach((child, index) => {
+      child.manualCupPosition = true;
+      const slot = getCupChildSlot(cup, index, child.size || getCupFoodChildSize(child, cup), children.length);
+      const p = clampPointToCup(slot.x, slot.y, child, cup);
+      child.x = p.x;
+      child.y = p.y;
+      child.layer = Math.max(child.layer || 1, (cup.layer || 1) + 1 + index);
+    });
+    return;
+  }
   children.forEach((child, index) => {
     child.manualCupPosition = true;
     const p = clampPointToCup(child.x, child.y, child, cup);
@@ -10680,7 +10800,16 @@ function tutorialLockCupDropToTarget(def, uid) {
 }
 function addSimpleFoodToCup(def, cup) {
   if (!def || !cup || !canAddFoodToCup(def)) return null;
-  const children = getCupChildren(cup);
+  let children = getCupChildren(cup);
+  let replacedCupFood = false;
+  if (simpleBentoMode && children.length >= SIMPLE_CUP_FOOD_LIMIT) {
+    const oldest = children.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0))[0];
+    if (oldest) {
+      removeFreeItemData(oldest.uid);
+      replacedCupFood = true;
+      children = getCupChildren(cup);
+    }
+  }
   const childSize = getCupFoodChildSize(def, cup);
   const slot = getCupChildSlot(cup, children.length, childSize, children.length + 1);
   const item = addFreeLayoutItem(def, {
@@ -10703,7 +10832,7 @@ function addSimpleFoodToCup(def, cup) {
   renderFreeLayoutControls();
   spawnLandingSparkles(document.querySelector(`[data-free-uid="${item.uid}"]`) || document.getElementById('free-layout-stage'));
   playPop();
-  setSpeech('カップに はいったよ！');
+  setSpeech(replacedCupFood ? 'カップは みっつまで。いれかえたよ！' : 'カップに はいったよ！');
   if (simpleBentoMode) {
     setTimeout(() => {
       if (freeCupEditorUid === cup.uid) closeCupEditor();
@@ -10711,21 +10840,62 @@ function addSimpleFoodToCup(def, cup) {
   }
   return item;
 }
-function addSimpleDecorPaletteItem(def) {
+function createSimpleDecorPlacedItem(def, tier) {
   if (!def) return null;
-  const tier = getTargetTierForType(def.type);
-  const point = getSimpleDecorFreePoint(def, tier);
+  const placement = getSimpleDecorPlacement(def, tier);
+  if (placement.faceSlot) {
+    const current = placedItems.find(item => getItemTier(item) === tier && item.simpleFaceSlot === placement.faceSlot);
+    if (current) removeFreeItemData(current.uid);
+  }
   const item = addFreeLayoutItem(def, {
-    x: point.x,
-    y: point.y,
-    size: getSimpleSlotSize(def),
-    rotation: def.rotation != null ? def.rotation : 0,
+    x: placement.x,
+    y: placement.y,
+    size: placement.size,
+    rotation: placement.rotation,
     tier,
     brushLevel: def.brushItem ? 1 : def.brushLevel,
     skipRender: true,
   });
   if (!item) return null;
   item.simpleSlot = '';
+  item.simpleFaceSlot = placement.faceSlot || '';
+  return item;
+}
+function getSimpleFaceSetPartDefs(faceSet) {
+  const ids = SIMPLE_FACE_SET_PARTS[faceSet] || [];
+  return ids
+    .map(id => decorItems.find(item => item.id === id))
+    .filter(def => def && isBentoDecorUnlocked(def));
+}
+function addSimpleFaceSetPaletteItem(def) {
+  if (!def || !def.faceSet) return null;
+  const tier = getTargetTierForType(def.type);
+  placedItems
+    .filter(item => getItemTier(item) === tier && isSimpleFaceDecorItem(item))
+    .map(item => item.uid)
+    .forEach(removeFreeItemData);
+  const parts = getSimpleFaceSetPartDefs(def.faceSet);
+  let lastItem = null;
+  parts.forEach(partDef => {
+    const item = createSimpleDecorPlacedItem(partDef, tier);
+    if (item) lastItem = item;
+  });
+  if (!lastItem) return null;
+  freeSelectedItemUid = lastItem.uid;
+  simpleReplaceSlotUid = null;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  spawnLandingSparkles(document.querySelector(`[data-free-uid="${lastItem.uid}"]`) || document.getElementById('free-layout-stage'));
+  playPop();
+  setSpeech('おかおが できたよ。のりは すきな ところに うごかせるよ。');
+  return lastItem;
+}
+function addSimpleDecorPaletteItem(def) {
+  if (!def) return null;
+  if (def.faceSet) return addSimpleFaceSetPaletteItem(def);
+  const tier = getTargetTierForType(def.type);
+  const item = createSimpleDecorPlacedItem(def, tier);
+  if (!item) return null;
   freeSelectedItemUid = item.uid;
   simpleReplaceSlotUid = null;
   renderFreeLayoutStage();
