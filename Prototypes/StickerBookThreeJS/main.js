@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260629-914";
+const ASSET_VERSION = "20260629-915";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -47,7 +47,7 @@ const COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY = "sb3d_collection_album_placement
 const EDITOR_STATE_VERSION = 3;
 const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 2;
-const EMPTY_STICKER_START_VERSION = 1;
+const EMPTY_STICKER_START_VERSION = 2;
 const STICKER_TUTORIAL_SEEN_KEY = "sb3d_sticker_tutorial_seen_v1";
 const STICKER_TUTORIAL_AUDIO_BASE = "../../assets/audio/stickerbook/tutorial/";
 const STICKER_TUTORIAL_HAND_BASE = "../../assets/images/puzzle/ui/tutorial/";
@@ -558,12 +558,12 @@ const BOOK_VARIANTS = {
     tabsRight: "sb3d_girl_side_tabs_right_generated.webp",
   },
   forest: {
-    insideLeft: "sb3d_forest_free_blank_page_canvas_20260623.png",
-    insideRight: "sb3d_forest_free_blank_page_canvas_20260623.png",
-    freePage: "sb3d_forest_free_blank_page_canvas_20260623.png",
-    coverPrint: "sb3d_forest_cover_front_pono_official_20260629.webp",
+    insideLeft: "sb3d_forest_free_blank_page_image2_20260629.webp",
+    insideRight: "sb3d_forest_free_blank_page_image2_20260629.webp",
+    freePage: "sb3d_forest_free_blank_page_image2_20260629.webp",
+    coverPrint: "sb3d_forest_cover_front_pono_hedgehog_20260629.webp",
     coverHardwareMode: "separate",
-    coverFront: "sb3d_forest_cover_front_pono_official_20260629.webp",
+    coverFront: "sb3d_forest_cover_front_pono_hedgehog_20260629.webp",
     coverBack: "sb3d_forest_cover_back_canvas_20260623.webp",
     coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
     spine: "sb3d_forest_spine_canvas_20260623.webp",
@@ -7163,11 +7163,13 @@ function ensureDefaultEditorPages() {
 }
 
 function migrateEditorStateForEmptyStart() {
-  if ((Number(editorState.emptyStartVersion) || 0) >= EMPTY_STICKER_START_VERSION) {
+  const currentEmptyStartVersion = Number(editorState.emptyStartVersion) || 0;
+  if (currentEmptyStartVersion >= EMPTY_STICKER_START_VERSION) {
     return;
   }
-  if (editorStateLooksLikeGeneratedSeedContent() || editorStateLooksLikeLegacyDefaultContent()) {
+  if (hasAnyEditorContent()) {
     editorState.pages = {};
+    editorState.drawings = {};
     selectedPlacementId = null;
   }
   editorState.emptyStartVersion = EMPTY_STICKER_START_VERSION;
