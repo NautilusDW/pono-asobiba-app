@@ -5495,7 +5495,11 @@
       padding: 0;
       border: 0;
       border-radius: 0;
-      background: url('/assets/ui/icon_feedback_20260628.png') center / contain no-repeat;
+      background: url('/assets/ui/icon_feedback_20260628.png') center / 130% 130% no-repeat;
+      /* sw1761: 画像内透過余白が 45-50% で contain だと中身が既存 sprite より 20-30% 小さく見える事故。
+         background-size を 130% 130% (枠より 30% 大きく描画) に変更し、 余白を視覚的にトリム。
+         center 配置で枠の輪郭は ±15% 内側になるが、 木枠 outline 自体が画像中央寄りに baked されているため
+         実用上の枠切れは発生しない想定。 万一切れが目立つ場合は 120% に下げる。 */
       box-shadow: none;
       color: transparent;
       font-size: 0;
@@ -6688,7 +6692,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1760;
+    const PAGE_CACHE_VERSION = 1761;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
