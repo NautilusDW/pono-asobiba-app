@@ -1026,6 +1026,17 @@ body.image-stage-mode .game-wrap {
   grid-template-columns: 1fr;
   padding: 18px 20px;
 }
+.encounter-modal .enc-card.is-water {
+  box-sizing: border-box;
+  width: min(98vw, 1280px);
+  height: min(94dvh, 820px);
+  max-height: calc(100dvh - 16px);
+  padding: clamp(8px, 1.4vw, 16px);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  justify-items: stretch;
+  row-gap: 0;
+}
 .encounter-modal .enc-card.is-strength {
   width: min(98vw, 1180px);
   height: min(96dvh, 720px);
@@ -1052,6 +1063,14 @@ body.image-stage-mode .game-wrap {
   min-height: 0;
   max-height: none;
   overflow: visible;
+}
+.encounter-modal .enc-card.is-water .enc-stage {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  align-items: stretch;
+  justify-content: stretch;
 }
 .encounter-modal .enc-card.is-janken .enc-left {
   display: none;
@@ -1613,24 +1632,28 @@ body.image-stage-mode .game-wrap {
 
 .water-game {
   display: grid;
-  grid-template-rows: auto minmax(250px, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  min-height: min(70dvh, 560px);
+  grid-template-rows: minmax(1.45em, auto) minmax(0, 1fr) minmax(1.4em, auto);
+  gap: clamp(6px, 1.2dvh, 10px);
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 .water-game__title {
-  min-height: 2em;
+  min-height: 1.35em;
   display: grid;
   place-items: center;
-  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-size: clamp(1.05rem, 2.6vw, 1.65rem);
   font-weight: 900;
   color: #5D4E37;
   line-height: 1.2;
 }
 .water-game__stage {
   position: relative;
-  min-height: clamp(250px, 45dvh, 430px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   border: 4px solid #BFD88A;
   border-radius: 20px;
   background:
@@ -1764,10 +1787,10 @@ body.image-stage-mode .game-wrap {
   pointer-events: none;
 }
 .water-game__status {
-  min-height: 2.2em;
+  min-height: 1.35em;
   display: grid;
   place-items: center;
-  font-size: clamp(0.98rem, 2.4vw, 1.25rem);
+  font-size: clamp(0.9rem, 2.1vw, 1.16rem);
   font-weight: 900;
   color: #4F8A9C;
   line-height: 1.2;
@@ -2377,6 +2400,13 @@ body.image-stage-mode .game-wrap {
     width: min(96vw, 650px);
     max-height: calc(100dvh - 18px);
   }
+  .encounter-modal .enc-card.is-water {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    padding: 6px 8px;
+    border-width: 4px;
+  }
   .encounter-modal .enc-card.is-water-complete {
     width: calc(100vw - 16px);
     height: calc(100dvh - 16px);
@@ -2479,16 +2509,18 @@ body.image-stage-mode .game-wrap {
     gap: 6px;
   }
   .water-game {
-    grid-template-rows: 1.55em minmax(150px, 1fr) 1.45em;
-    gap: 6px;
-    min-height: min(78dvh, 310px);
+    grid-template-rows: 1.35em minmax(0, 1fr) 1.25em;
+    gap: 5px;
+    min-height: 0;
+    height: 100%;
   }
   .water-game__title {
-    min-height: 1.5em;
-    font-size: clamp(1rem, 4vw, 1.3rem);
+    min-height: 1.25em;
+    font-size: clamp(0.98rem, 3.7vw, 1.22rem);
   }
   .water-game__stage {
-    min-height: 150px;
+    min-height: 0;
+    height: 100%;
     border-width: 3px;
     border-radius: 14px;
   }
@@ -2517,8 +2549,8 @@ body.image-stage-mode .game-wrap {
     max-height: min(22dvh, 66px) !important;
   }
   .water-game__status {
-    min-height: 1.45em;
-    font-size: 0.86rem;
+    min-height: 1.2em;
+    font-size: 0.82rem;
   }
   .water-complete-scene {
     grid-template-rows: 1.7em minmax(0, 1fr) 1.6em;
@@ -4727,6 +4759,7 @@ function _setEncounterMode(mode) {
   if (!encCardEl) return;
   encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'water_bridge_complete' || mode === 'strength_push' || mode === 'web_sweep' || mode === 'donguri_bowl');
   encCardEl.classList.toggle('is-strength', mode === 'strength_push');
+  encCardEl.classList.toggle('is-water', mode === 'water_bridge' || mode === 'water_bridge_complete');
   encCardEl.classList.toggle('is-water-complete', mode === 'water_bridge_complete');
 }
 
