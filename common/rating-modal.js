@@ -464,11 +464,11 @@
       btn.classList.remove('is-preview');
       if (idx <= stars) {
         btn.classList.add('is-selected');
-        btn.setAttribute('aria-checked', idx === stars ? 'true' : 'false');
       } else {
         btn.classList.remove('is-selected');
-        btn.setAttribute('aria-checked', 'false');
       }
+      // ARIA 1.2 radiogroup: 選択された 1 つだけ aria-checked='true'、 他は全て 'false'
+      btn.setAttribute('aria-checked', idx === stars ? 'true' : 'false');
       btn.disabled = true;
     }
 
