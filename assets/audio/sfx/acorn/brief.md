@@ -1,6 +1,6 @@
 # Acorn Get Festive SE - 生成発注 brief
 
-> **status**: WIRED (v1745) - using universfield-game-bonus-03
+> **status**: WIRED (v1746) - using SUNO Short Cheerful Game Jingle (1).mp3
 > **created**: 2026-06-28
 > **target file**: `assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3`
 > **deploy target**: develop-app → App staging (`pono-asobiba-app-staging.ndw.workers.dev`) で実機検証 → master
