@@ -1297,10 +1297,19 @@ tr:hover { background: #FFFAF0; }
 
       <div style="min-width:0;">
         <div style="font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">プレビュー（760 × 460 座標）</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 8px;">
+          <span style="font-size:0.72rem;font-weight:700;color:#8B7355;">サンプル表示</span>
+          <div id="bento-slot-sample-mode" role="group" aria-label="サンプル表示" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" data-mode="selected" style="padding:5px 9px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">選択中</button>
+            <button type="button" data-mode="kind" style="padding:5px 9px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">同じ種類</button>
+            <button type="button" data-mode="all" style="padding:5px 9px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">全部</button>
+            <button type="button" data-mode="none" style="padding:5px 9px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">目隠し</button>
+          </div>
+        </div>
         <div id="bento-slot-preview" style="position:relative;width:100%;aspect-ratio:760/460;background:#fff7e6;border:2px solid #C7894A;border-radius:12px;overflow:hidden;touch-action:none;">
         </div>
         <div style="font-size:0.72rem;color:#8B7355;margin-top:8px;line-height:1.45;">
-          実際の Bento と同じ座標系です。食材画像の中心が配置中心になります。丸いマーカーはドラッグ用のつまみです。
+          実際の Bento と同じ座標系です。食材画像の中心が配置中心になります。丸いマーカーはドラッグ用のつまみです。普段は選択中だけを見て、全体確認の時だけ「全部」に切り替えてください。
         </div>
       </div>
     </div>
@@ -11304,6 +11313,7 @@ function _openBentoReplaceModal(itemId, itemName) {
 // 📍 Bento Slot Layout Editor
 // ════════════════════════════════════════════════════════════════
 var BENTO_SLOT_LAYOUT_KEY = 'bento_simple_slot_layout_v1';
+var BENTO_SLOT_SAMPLE_MODE_KEY = 'bento_simple_slot_sample_mode_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
@@ -11390,7 +11400,8 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { name: 'はたピック', image: '../assets/images/bento/free-layout/pick_flag.png', size: 66, rotation: -3, layer: 70 }
   ]
 };
-var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', layout: {}, serverPayload: null, dragging: false };
+var BENTO_SLOT_SAMPLE_MODES = { selected: true, kind: true, all: true, none: true };
+var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', sampleMode: bentoSlotLoadSampleMode(), layout: {}, serverPayload: null, dragging: false };
 
 function bentoSlotClamp(value, min, max, fallback) {
   var n = Number(value);
@@ -11421,6 +11432,18 @@ function bentoSlotNormalizeLayout(map) {
 }
 function bentoSlotLoadLayout() {
   try { return bentoSlotNormalizeLayout(JSON.parse(localStorage.getItem(BENTO_SLOT_LAYOUT_KEY) || '{}')); } catch(e) { return {}; }
+}
+function bentoSlotLoadSampleMode() {
+  try {
+    var mode = localStorage.getItem(BENTO_SLOT_SAMPLE_MODE_KEY) || 'selected';
+    return BENTO_SLOT_SAMPLE_MODES[mode] ? mode : 'selected';
+  } catch(e) {
+    return 'selected';
+  }
+}
+function bentoSlotSetSampleMode(mode) {
+  _bentoSlotState.sampleMode = BENTO_SLOT_SAMPLE_MODES[mode] ? mode : 'selected';
+  try { localStorage.setItem(BENTO_SLOT_SAMPLE_MODE_KEY, _bentoSlotState.sampleMode); } catch(e) {}
 }
 function bentoSlotSaveLocal() {
   _bentoSlotState.layout = bentoSlotNormalizeLayout(_bentoSlotState.layout);
@@ -11574,6 +11597,14 @@ function bentoSlotSampleForDef(def) {
   var list = BENTO_SLOT_SAMPLE_ITEMS[def.kind] || [];
   return list[def.index % Math.max(1, list.length)] || null;
 }
+function bentoSlotShouldRenderSample(def) {
+  var mode = _bentoSlotState.sampleMode || 'selected';
+  if (mode === 'none') return false;
+  if (mode === 'all') return true;
+  var selected = bentoSlotGetDef();
+  if (mode === 'kind') return def.kind === selected.kind;
+  return (def.kind + ':' + def.index) === _bentoSlotState.slotKey;
+}
 function bentoSlotAppendSampleImage(stage, sample, point, extra) {
   if (!stage || !sample || !sample.image || !point) return;
   var opts = extra || {};
@@ -11603,7 +11634,7 @@ function bentoSlotRenderSamples(stage, box) {
   var entries = BENTO_SLOT_DEFS.map(function(def) {
     return { def: def, sample: bentoSlotSampleForDef(def), point: bentoSlotGetPoint(box.id, def) };
   }).filter(function(entry) {
-    return !!entry.sample;
+    return !!entry.sample && bentoSlotShouldRenderSample(entry.def);
   }).sort(function(a, b) {
     return (a.sample.layer || 30) - (b.sample.layer || 30);
   });
@@ -11651,7 +11682,7 @@ function bentoSlotRenderPreview() {
     marker.title = def.label;
     marker.textContent = def.label.replace('大きいおかず', '大').replace('小さいおかず', '小').replace('カップ', 'C').replace('仕切り', 'D').replace('その他', 'O');
     var selected = key === _bentoSlotState.slotKey;
-    marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + def.color + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:0.62rem;font-weight:900;line-height:1;cursor:grab;z-index:' + (selected ? 4 : 3) + ';';
+    marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + def.color + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:0.62rem;font-weight:900;line-height:1;cursor:grab;z-index:' + (selected ? 181 : 180) + ';';
     marker.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       _bentoSlotState.slotKey = key;
@@ -11685,6 +11716,12 @@ function bentoSlotRender() {
     var active = btn.dataset.slotKey === _bentoSlotState.slotKey;
     btn.style.background = active ? '#5D4E37' : '#fff';
     btn.style.color = active ? '#fff' : '#5D4E37';
+  });
+  document.querySelectorAll('#bento-slot-sample-mode button').forEach(function(btn) {
+    var active = btn.dataset.mode === (_bentoSlotState.sampleMode || 'selected');
+    btn.style.background = active ? '#5D4E37' : '#fff';
+    btn.style.color = active ? '#fff' : '#5D4E37';
+    btn.style.borderColor = active ? '#5D4E37' : '#C7894A';
   });
   bentoSlotSyncSliders(bentoSlotGetPoint(box.id, selected));
   bentoSlotRenderPreview();
@@ -11721,6 +11758,12 @@ function bentoSlotSaveServer() {
 function bentoSlotBindControls() {
   var boxSelect = document.getElementById('bento-slot-box');
   if (boxSelect) boxSelect.addEventListener('change', function() { _bentoSlotState.boxId = boxSelect.value || BENTO_SLOT_BOXES[0].id; bentoSlotRender(); });
+  document.querySelectorAll('#bento-slot-sample-mode button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      bentoSlotSetSampleMode(btn.dataset.mode);
+      bentoSlotRender();
+    });
+  });
   var save = document.getElementById('bento-slot-save');
   if (save) save.addEventListener('click', bentoSlotSaveServer);
   var resetOne = document.getElementById('bento-slot-reset-one');
