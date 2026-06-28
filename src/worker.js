@@ -269,14 +269,23 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
   divider: 3,
   other: 3
 };
+const BENTO_CUP_SLOT_SIZES = [150, 190, 230];
 
-function normalizeBentoSlotPoint(point) {
+function normalizeBentoSlotSize(size, kind) {
+  const n = clampBentoMaskNumber(size, 32, 340, 120, 1);
+  if (kind !== 'cup') return n;
+  return BENTO_CUP_SLOT_SIZES.reduce((best, value) => (
+    Math.abs(value - n) < Math.abs(best - n) ? value : best
+  ), BENTO_CUP_SLOT_SIZES[1]);
+}
+
+function normalizeBentoSlotPoint(point, kind) {
   const normalized = {
     x: clampBentoMaskNumber(point && point.x, 0, 760, 380, 1),
     y: clampBentoMaskNumber(point && point.y, 0, 460, 230, 1)
   };
   if (Number.isFinite(Number(point && point.size))) {
-    normalized.size = clampBentoMaskNumber(point.size, 32, 340, 120, 1);
+    normalized.size = normalizeBentoSlotSize(point.size, kind);
   }
   const sampleId = String((point && point.sampleId) || '').trim();
   if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) {
@@ -298,7 +307,7 @@ function normalizeBentoSlotLayoutMap(map) {
       const points = list
         .slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind])
         .filter(point => point && typeof point === 'object' && !Array.isArray(point))
-        .map(normalizeBentoSlotPoint);
+        .map(point => normalizeBentoSlotPoint(point, kind));
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;

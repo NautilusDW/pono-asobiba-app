@@ -1289,9 +1289,12 @@ tr:hover { background: #FFFAF0; }
           <label id="bento-slot-sample-label" for="bento-slot-sample-select" style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">サンプル</label>
           <select id="bento-slot-sample-select" style="width:100%;padding:8px 10px;border:2px solid #C7894A;border-radius:8px;background:#fff;font-family:inherit;font-size:0.86rem;font-weight:700;color:#5D4E37;"></select>
         </div>
+        <div id="bento-slot-size-presets" style="display:none;flex-wrap:wrap;gap:6px;margin:0 0 12px;"></div>
         <div id="bento-slot-sliders" style="display:flex;flex-direction:column;gap:10px;margin-top:14px;"></div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">
           <button id="bento-slot-save" type="button" style="padding:7px 14px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">💾 保存</button>
+          <button id="bento-slot-hide-toggle" type="button" style="padding:7px 14px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">このスロットを隠す</button>
+          <button id="bento-slot-show-all" type="button" style="padding:7px 14px;background:#64748B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">全部表示</button>
           <button id="bento-slot-reset-one" type="button" style="padding:7px 14px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↺ この位置を初期値へ</button>
           <button id="bento-slot-reset-box" type="button" style="padding:7px 14px;background:#EF4444;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">🗑 この箱を初期値へ</button>
           <button id="bento-slot-fetch" type="button" style="padding:7px 14px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↻ サーバー読込</button>
@@ -11318,6 +11321,7 @@ function _openBentoReplaceModal(itemId, itemName) {
 // ════════════════════════════════════════════════════════════════
 var BENTO_SLOT_LAYOUT_KEY = 'bento_simple_slot_layout_v1';
 var BENTO_SLOT_SAMPLE_MODE_KEY = 'bento_simple_slot_sample_mode_v1';
+var BENTO_SLOT_HIDDEN_KEY = 'bento_simple_slot_hidden_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
@@ -11362,66 +11366,50 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'tako_wiener', name: 'タコウインナー', image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', size: 110, rotation: -6, layer: 39 }
   ],
   'side-food': [
-    { id: 'tomato', name: 'プチトマト', image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 112, rotation: -4, layer: 40 },
-    { id: 'meatball', name: 'ミートボール', image: '../assets/images/bento/free-layout/okazu_meatball.png', size: 118, rotation: 1, layer: 41 },
-    { id: 'broccoli', name: 'ブロッコリー', image: '../assets/images/bento/free-layout/okazu_broccoli.png', size: 112, rotation: -2, layer: 42 },
-    { id: 'corn_spinach', name: 'コーンほうれんそう', image: '../assets/images/bento/free-layout/okazu_corn_spinach.png', size: 118, rotation: -2, layer: 43 },
-    { id: 'edamame', name: 'えだまめ', image: '../assets/images/bento/free-layout/okazu_edamame.png', size: 108, rotation: 0, layer: 44 },
-    { id: 'potato_salad', name: 'ポテトサラダ', image: '../assets/images/bento/free-layout/okazu_potato_salad.png', size: 126, rotation: 1, layer: 45 },
-    { id: 'ninjin_ingen', name: 'にんじんいんげん', image: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', size: 112, rotation: 1, layer: 46 },
-    { id: 'napolitan', name: 'ナポリタン', image: '../assets/images/bento/free-layout/okazu_napolitan.png', size: 132, rotation: -1, layer: 47 },
-    { id: 'cabbage', name: 'キャベツ', image: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', size: 170, rotation: 0, layer: 48 },
-    { id: 'ichigo', name: 'いちご', image: '../assets/images/bento/free-layout/fruit_ichigo.png', size: 115, rotation: -5, layer: 49 },
-    { id: 'mikan', name: 'みかん', image: '../assets/images/bento/free-layout/fruit_mikan.png', size: 108, rotation: -2, layer: 50 }
+    { id: 'tomato', name: 'プチトマト', image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 82, cupSizes: { small: 58, medium: 70, large: 82 }, defaultCupSizeKey: 'large', rotation: -4, layer: 40 },
+    { id: 'meatball', name: 'ミートボール', image: '../assets/images/bento/free-layout/okazu_meatball.png', size: 118, cupSizes: { small: 86, medium: 102, large: 118 }, defaultCupSizeKey: 'large', rotation: 1, layer: 41 },
+    { id: 'broccoli', name: 'ブロッコリー', image: '../assets/images/bento/free-layout/okazu_broccoli.png', size: 108, cupSizes: { small: 78, medium: 94, large: 108 }, defaultCupSizeKey: 'large', rotation: -2, layer: 42 },
+    { id: 'corn_spinach', name: 'コーンほうれんそう', image: '../assets/images/bento/free-layout/okazu_corn_spinach.png', size: 118, cupSizes: { small: 84, medium: 100, large: 118 }, defaultCupSizeKey: 'large', rotation: -2, layer: 43 },
+    { id: 'edamame', name: 'えだまめ', image: '../assets/images/bento/free-layout/okazu_edamame.png', size: 108, cupSizes: { small: 78, medium: 94, large: 108 }, defaultCupSizeKey: 'large', rotation: 0, layer: 44 },
+    { id: 'potato_salad', name: 'ポテトサラダ', image: '../assets/images/bento/free-layout/okazu_potato_salad.png', size: 126, cupSizes: { small: 88, medium: 108, large: 126 }, defaultCupSizeKey: 'large', rotation: 1, layer: 45 },
+    { id: 'ninjin_ingen', name: 'にんじんいんげん', image: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', size: 112, cupSizes: { small: 80, medium: 96, large: 112 }, defaultCupSizeKey: 'large', rotation: 1, layer: 46 },
+    { id: 'napolitan', name: 'ナポリタン', image: '../assets/images/bento/free-layout/okazu_napolitan.png', size: 132, cupSizes: { small: 94, medium: 112, large: 132 }, defaultCupSizeKey: 'large', rotation: -1, layer: 47 },
+    { id: 'cabbage', name: 'キャベツ', image: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', size: 170, cupSizes: { small: 116, medium: 142, large: 170 }, defaultCupSizeKey: 'large', rotation: 0, layer: 48 },
+    { id: 'ichigo', name: 'いちご', image: '../assets/images/bento/free-layout/fruit_ichigo.png', size: 115, cupSizes: { small: 78, medium: 96, large: 115 }, defaultCupSizeKey: 'large', rotation: -5, layer: 49 },
+    { id: 'mikan', name: 'みかん', image: '../assets/images/bento/free-layout/fruit_mikan.png', size: 108, cupSizes: { small: 74, medium: 90, large: 108 }, defaultCupSizeKey: 'large', rotation: -2, layer: 50 }
   ],
   cup: [
     {
       id: 'cup_blue_dot',
       name: 'みずたまカップ',
       image: '../assets/images/bento/free-layout/cup_blue_dot.png',
-      size: 176,
+      size: 190,
       rotation: 0,
-      layer: 10,
-      children: [
-        { image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 58, x: -23, y: -4, rotation: -8 },
-        { image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 58, x: 23, y: 0, rotation: 6 }
-      ]
+      layer: 10
     },
     {
       id: 'cup_flower',
       name: 'おはなカップ',
       image: '../assets/images/bento/free-layout/cup_flower.png',
-      size: 176,
+      size: 190,
       rotation: 0,
-      layer: 10,
-      children: [
-        { image: '../assets/images/bento/free-layout/okazu_edamame.png', size: 64, x: -18, y: 0, rotation: -4 },
-        { image: '../assets/images/bento/free-layout/okazu_broccoli.png', size: 62, x: 20, y: -2, rotation: 5 }
-      ]
+      layer: 10
     },
     {
       id: 'cup_star',
       name: 'ほしカップ',
       image: '../assets/images/bento/free-layout/cup_star.png',
-      size: 176,
+      size: 190,
       rotation: 0,
-      layer: 10,
-      children: [
-        { image: '../assets/images/bento/free-layout/okazu_corn_spinach.png', size: 70, x: -15, y: -1, rotation: -3 },
-        { image: '../assets/images/bento/free-layout/okazu_meatball.png', size: 62, x: 22, y: 1, rotation: 4 }
-      ]
+      layer: 10
     },
     {
       id: 'cup_check',
       name: 'チェックカップ',
       image: '../assets/images/bento/free-layout/cup_check.png',
-      size: 176,
+      size: 190,
       rotation: 0,
-      layer: 10,
-      children: [
-        { image: '../assets/images/bento/free-layout/okazu_potato_salad.png', size: 64, x: -18, y: 0, rotation: -2 },
-        { image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 56, x: 22, y: 1, rotation: 5 }
-      ]
+      layer: 10
     }
   ],
   divider: [
@@ -11439,7 +11427,12 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
 var BENTO_SLOT_SAMPLE_MODES = { selected: true, kind: true, all: true, none: true };
 var BENTO_SLOT_SIZE_MIN = 32;
 var BENTO_SLOT_SIZE_MAX = 340;
-var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', sampleMode: bentoSlotLoadSampleMode(), layout: {}, serverPayload: null, dragging: false };
+var BENTO_SLOT_CUP_SIZE_PRESETS = [
+  { key: 'small', label: 'カップ小', size: 150 },
+  { key: 'medium', label: 'カップ中', size: 190 },
+  { key: 'large', label: 'カップ大', size: 230 }
+];
+var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', sampleMode: bentoSlotLoadSampleMode(), hidden: bentoSlotLoadHidden(), layout: {}, serverPayload: null, dragging: false };
 
 function bentoSlotClamp(value, min, max, fallback) {
   var n = Number(value);
@@ -11458,10 +11451,28 @@ function bentoSlotFindSampleById(kind, sampleId) {
   if (!id) return null;
   return bentoSlotSamplesForKind(kind).find(function(sample) { return sample.id === id; }) || null;
 }
-function bentoSlotNormalizeSize(size, fallback) {
+function bentoSlotNearestCupPreset(size) {
+  var target = Number(size);
+  if (!isFinite(target)) target = 190;
+  return BENTO_SLOT_CUP_SIZE_PRESETS.reduce(function(best, preset) {
+    return Math.abs(preset.size - target) < Math.abs(best.size - target) ? preset : best;
+  }, BENTO_SLOT_CUP_SIZE_PRESETS[1]);
+}
+function bentoSlotDefaultSizeForSample(def, sample) {
+  if (!sample) return 120;
+  if (def && def.kind === 'cup') return bentoSlotNearestCupPreset(sample.size || 190).size;
+  if (def && def.kind === 'side-food' && sample.cupSizes) {
+    var key = sample.defaultCupSizeKey || 'large';
+    return sample.cupSizes[key] || sample.size || 120;
+  }
+  return sample.size || 120;
+}
+function bentoSlotNormalizeSizeForDef(size, fallback, def, sample) {
   var n = Number(size);
   var fb = Number(fallback);
-  return bentoSlotRound(bentoSlotClamp(n, BENTO_SLOT_SIZE_MIN, BENTO_SLOT_SIZE_MAX, isFinite(fb) ? fb : 120));
+  var value = bentoSlotRound(bentoSlotClamp(n, BENTO_SLOT_SIZE_MIN, BENTO_SLOT_SIZE_MAX, isFinite(fb) ? fb : 120));
+  if (def && def.kind === 'cup') return bentoSlotNearestCupPreset(value).size;
+  return value;
 }
 function bentoSlotPoint(point) {
   return {
@@ -11473,7 +11484,7 @@ function bentoSlotEntry(point, def) {
   var sample = bentoSlotFindSampleById(def && def.kind, point && point.sampleId);
   var fallback = sample || bentoSlotDefaultSampleForDef(def);
   var entry = bentoSlotPoint(point);
-  if (point && isFinite(Number(point.size))) entry.size = bentoSlotNormalizeSize(point.size, fallback && fallback.size);
+  if (point && isFinite(Number(point.size))) entry.size = bentoSlotNormalizeSizeForDef(point.size, bentoSlotDefaultSizeForSample(def, fallback), def, fallback);
   if (sample && sample.id) entry.sampleId = sample.id;
   return entry;
 }
@@ -11509,6 +11520,43 @@ function bentoSlotLoadSampleMode() {
 function bentoSlotSetSampleMode(mode) {
   _bentoSlotState.sampleMode = BENTO_SLOT_SAMPLE_MODES[mode] ? mode : 'selected';
   try { localStorage.setItem(BENTO_SLOT_SAMPLE_MODE_KEY, _bentoSlotState.sampleMode); } catch(e) {}
+}
+function bentoSlotLoadHidden() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(BENTO_SLOT_HIDDEN_KEY) || '{}');
+    var out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function(boxId) {
+      var boxMap = raw[boxId];
+      if (!boxMap || typeof boxMap !== 'object' || Array.isArray(boxMap)) return;
+      var entry = {};
+      Object.keys(boxMap).forEach(function(slotKey) {
+        if (boxMap[slotKey]) entry[slotKey] = true;
+      });
+      if (Object.keys(entry).length) out[boxId] = entry;
+    });
+    return out;
+  } catch(e) {
+    return {};
+  }
+}
+function bentoSlotSaveHidden() {
+  try { localStorage.setItem(BENTO_SLOT_HIDDEN_KEY, JSON.stringify(_bentoSlotState.hidden || {})); } catch(e) {}
+}
+function bentoSlotKey(def) {
+  return def.kind + ':' + def.index;
+}
+function bentoSlotIsHidden(boxId, def) {
+  var map = _bentoSlotState.hidden && _bentoSlotState.hidden[boxId];
+  return !!(map && map[bentoSlotKey(def)]);
+}
+function bentoSlotSetHidden(boxId, def, hidden) {
+  if (!_bentoSlotState.hidden) _bentoSlotState.hidden = {};
+  if (!_bentoSlotState.hidden[boxId]) _bentoSlotState.hidden[boxId] = {};
+  if (hidden) _bentoSlotState.hidden[boxId][bentoSlotKey(def)] = true;
+  else delete _bentoSlotState.hidden[boxId][bentoSlotKey(def)];
+  if (!Object.keys(_bentoSlotState.hidden[boxId]).length) delete _bentoSlotState.hidden[boxId];
+  bentoSlotSaveHidden();
 }
 function bentoSlotSaveLocal() {
   _bentoSlotState.layout = bentoSlotNormalizeLayout(_bentoSlotState.layout);
@@ -11577,7 +11625,7 @@ function bentoSlotDefaultEntry(box, def) {
   return bentoSlotClampEntryForDef(box, def, {
     x: bentoSlotDefaultPoint(box, def).x,
     y: bentoSlotDefaultPoint(box, def).y,
-    size: sample && sample.size,
+    size: bentoSlotDefaultSizeForSample(def, sample),
     sampleId: sample && sample.id
   });
 }
@@ -11624,8 +11672,9 @@ function bentoSlotSetPoint(boxId, def, point) {
 }
 function bentoSlotSetSize(boxId, def, size) {
   var existing = bentoSlotGetEntry(boxId, def);
+  var sample = bentoSlotSampleForDef(def, existing);
   return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
-    size: bentoSlotNormalizeSize(size, existing.size)
+    size: bentoSlotNormalizeSizeForDef(size, existing.size, def, sample)
   }));
 }
 function bentoSlotSetSampleId(boxId, def, sampleId) {
@@ -11633,7 +11682,7 @@ function bentoSlotSetSampleId(boxId, def, sampleId) {
   var existing = bentoSlotGetEntry(boxId, def);
   return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
     sampleId: sample && sample.id,
-    size: sample && sample.size
+    size: bentoSlotDefaultSizeForSample(def, sample)
   }));
 }
 function bentoSlotSetStatus(message, isError) {
@@ -11707,14 +11756,63 @@ function bentoSlotSyncSampleSelect(def, entry) {
   select.value = (entry && entry.sampleId) || (samples[0] && samples[0].id) || '';
   if (label) label.textContent = def.kind === 'main-food' || def.kind === 'side-food' ? 'サンプル食材' : 'サンプル';
 }
+function bentoSlotSizePresetsForDef(def, entry) {
+  if (!def) return [];
+  var sample = bentoSlotSampleForDef(def, entry);
+  if (def.kind === 'cup') return BENTO_SLOT_CUP_SIZE_PRESETS;
+  if (def.kind === 'side-food' && sample && sample.cupSizes) {
+    return BENTO_SLOT_CUP_SIZE_PRESETS.map(function(preset) {
+      return { key: preset.key, label: preset.label, size: sample.cupSizes[preset.key] || sample.size || 120 };
+    });
+  }
+  return [];
+}
+function bentoSlotActivePresetKey(presets, size) {
+  if (!presets.length) return '';
+  var target = Number(size);
+  if (!isFinite(target)) return '';
+  var exact = presets.find(function(preset) { return Math.abs(preset.size - target) < 0.5; });
+  if (exact) return exact.key;
+  return presets.reduce(function(best, preset) {
+    return Math.abs(preset.size - target) < Math.abs(best.size - target) ? preset : best;
+  }, presets[0]).key;
+}
+function bentoSlotSyncSizePresets(def, entry) {
+  var wrap = document.getElementById('bento-slot-size-presets');
+  if (!wrap) return;
+  var presets = bentoSlotSizePresetsForDef(def, entry);
+  wrap.innerHTML = '';
+  if (!presets.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  var activeKey = bentoSlotActivePresetKey(presets, entry && entry.size);
+  presets.forEach(function(preset) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.sizePreset = preset.key;
+    btn.textContent = preset.label + ' ' + Math.round(preset.size);
+    var active = preset.key === activeKey;
+    btn.style.cssText = 'padding:5px 9px;border:2px solid ' + (active ? '#5D4E37' : '#C7894A') + ';border-radius:999px;background:' + (active ? '#5D4E37' : '#fff') + ';color:' + (active ? '#fff' : '#5D4E37') + ';font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;';
+    btn.addEventListener('click', function() {
+      bentoSlotSetSize(_bentoSlotState.boxId, def, preset.size);
+      bentoSlotRender();
+      bentoSlotSetStatus('サイズを ' + preset.label + ' にしました。保存で反映されます。', false);
+    });
+    wrap.appendChild(btn);
+  });
+}
 function bentoSlotSyncSliders(point) {
   var sliders = document.getElementById('bento-slot-sliders');
   if (!sliders) return;
+  var def = bentoSlotGetDef();
+  var sample = bentoSlotSampleForDef(def, point);
   ['x', 'y', 'size'].forEach(function(axis) {
     var input = sliders.querySelector('input[data-axis="' + axis + '"]');
     var val = sliders.querySelector('span[data-axis="' + axis + '"]');
     var value = axis === 'size'
-      ? bentoSlotNormalizeSize(point && point.size, 120)
+      ? bentoSlotNormalizeSizeForDef(point && point.size, bentoSlotDefaultSizeForSample(def, sample), def, sample)
       : bentoSlotRound(point && point[axis]);
     if (input) input.value = String(Math.round(value));
     if (val) val.textContent = axis === 'size' ? Math.round(value) + 'px' : value.toFixed(1);
@@ -11734,6 +11832,7 @@ function bentoSlotSampleForDef(def, entry) {
   return bentoSlotFindSampleById(def.kind, selected && selected.sampleId) || bentoSlotDefaultSampleForDef(def);
 }
 function bentoSlotShouldRenderSample(def) {
+  if (bentoSlotIsHidden(_bentoSlotState.boxId, def)) return false;
   var mode = _bentoSlotState.sampleMode || 'selected';
   if (mode === 'none') return false;
   if (mode === 'all') return true;
@@ -11778,20 +11877,7 @@ function bentoSlotRenderSamples(stage, box) {
   });
   entries.forEach(function(entry) {
     var sampleSize = entry.point.size || entry.sample.size;
-    var sampleScale = sampleSize / Math.max(1, entry.sample.size || sampleSize || 1);
     bentoSlotAppendSampleImage(stage, entry.sample, entry.point, { size: sampleSize });
-    if (Array.isArray(entry.sample.children)) {
-      entry.sample.children.forEach(function(child) {
-        bentoSlotAppendSampleImage(stage, child, {
-          x: entry.point.x + (Number(child.x) || 0) * sampleScale,
-          y: entry.point.y + (Number(child.y) || 0) * sampleScale
-        }, {
-          size: (child.size || 60) * sampleScale,
-          rotation: child.rotation,
-          layer: (entry.sample.layer || 10) + 8
-        });
-      });
-    }
   });
 }
 function bentoSlotRenderPreview() {
@@ -11822,7 +11908,8 @@ function bentoSlotRenderPreview() {
     marker.title = def.label;
     marker.textContent = def.label.replace('大きいおかず', '大').replace('小さいおかず', '小').replace('カップ', 'C').replace('仕切り', 'D').replace('その他', 'O');
     var selected = key === _bentoSlotState.slotKey;
-    marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + def.color + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:0.62rem;font-weight:900;line-height:1;cursor:grab;z-index:' + (selected ? 181 : 180) + ';';
+    var hidden = bentoSlotIsHidden(box.id, def);
+    marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : def.color) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:0.62rem;font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden ? '0.45' : '1') + ';z-index:' + (selected ? 181 : 180) + ';';
     marker.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       _bentoSlotState.slotKey = key;
@@ -11854,8 +11941,13 @@ function bentoSlotRender() {
   var selected = bentoSlotGetDef();
   document.querySelectorAll('#bento-slot-buttons button').forEach(function(btn) {
     var active = btn.dataset.slotKey === _bentoSlotState.slotKey;
+    var def = bentoSlotGetDef(btn.dataset.slotKey);
+    var hidden = bentoSlotIsHidden(box.id, def);
     btn.style.background = active ? '#5D4E37' : '#fff';
     btn.style.color = active ? '#fff' : '#5D4E37';
+    btn.style.opacity = hidden ? '0.48' : '1';
+    btn.style.textDecoration = hidden ? 'line-through' : 'none';
+    btn.style.borderStyle = hidden ? 'dashed' : 'solid';
   });
   document.querySelectorAll('#bento-slot-sample-mode button').forEach(function(btn) {
     var active = btn.dataset.mode === (_bentoSlotState.sampleMode || 'selected');
@@ -11865,7 +11957,14 @@ function bentoSlotRender() {
   });
   var selectedEntry = bentoSlotGetEntry(box.id, selected);
   bentoSlotSyncSampleSelect(selected, selectedEntry);
+  bentoSlotSyncSizePresets(selected, selectedEntry);
   bentoSlotSyncSliders(selectedEntry);
+  var hideBtn = document.getElementById('bento-slot-hide-toggle');
+  if (hideBtn) {
+    var hiddenSelected = bentoSlotIsHidden(box.id, selected);
+    hideBtn.textContent = hiddenSelected ? 'このスロットを表示' : 'このスロットを隠す';
+    hideBtn.style.background = hiddenSelected ? '#0EA5E9' : '#6B7280';
+  }
   bentoSlotRenderPreview();
 }
 function bentoSlotFetchServer() {
@@ -11913,6 +12012,23 @@ function bentoSlotBindControls() {
       bentoSlotRender();
     });
   });
+  var hideToggle = document.getElementById('bento-slot-hide-toggle');
+  if (hideToggle) hideToggle.addEventListener('click', function() {
+    var box = bentoSlotGetBox();
+    var def = bentoSlotGetDef();
+    var hidden = !bentoSlotIsHidden(box.id, def);
+    bentoSlotSetHidden(box.id, def, hidden);
+    bentoSlotRender();
+    bentoSlotSetStatus(hidden ? 'このスロットをプレビューで隠しました。' : 'このスロットを表示しました。', false);
+  });
+  var showAll = document.getElementById('bento-slot-show-all');
+  if (showAll) showAll.addEventListener('click', function() {
+    var box = bentoSlotGetBox();
+    if (_bentoSlotState.hidden) delete _bentoSlotState.hidden[box.id];
+    bentoSlotSaveHidden();
+    bentoSlotRender();
+    bentoSlotSetStatus('この箱の目隠しを解除しました。', false);
+  });
   var save = document.getElementById('bento-slot-save');
   if (save) save.addEventListener('click', bentoSlotSaveServer);
   var resetOne = document.getElementById('bento-slot-reset-one');
@@ -11920,6 +12036,7 @@ function bentoSlotBindControls() {
     var box = bentoSlotGetBox();
     var def = bentoSlotGetDef();
     bentoSlotSetEntry(box.id, def, bentoSlotDefaultEntry(box, def));
+    bentoSlotSetHidden(box.id, def, false);
     bentoSlotRender();
     bentoSlotSetStatus('このスロットを初期値に戻しました。保存で反映されます。', false);
   });
@@ -11928,7 +12045,9 @@ function bentoSlotBindControls() {
     var box = bentoSlotGetBox();
     if (!confirm(box.name + ' のスロット上書きを削除します。よろしいですか？')) return;
     delete _bentoSlotState.layout[box.id];
+    if (_bentoSlotState.hidden) delete _bentoSlotState.hidden[box.id];
     bentoSlotSaveLocal();
+    bentoSlotSaveHidden();
     bentoSlotRender();
     bentoSlotSetStatus('この箱を初期値に戻しました。保存で反映されます。', false);
   });
