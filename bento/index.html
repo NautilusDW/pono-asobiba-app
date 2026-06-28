@@ -8687,9 +8687,6 @@ const SIMPLE_DECOR_PALETTE_ORDER = [
   'nori_shape_curve_book',
   'nori_shape_wavy_book',
   'nori_shape_zigzag_book',
-  'furikake_goma_book',
-  'furikake_tamago_book',
-  'furikake_aonori_book',
   'ketchup_cheek',
   'decor_umeboshi',
 ];
@@ -8703,10 +8700,14 @@ const SIMPLE_DECOR_PALETTE_HIDDEN = new Set([
   'nori_shape_train_book',
   'nori_shape_robot_panel_book',
   'nori_shape_ghost_book',
+  'furikake_goma_book',
+  'furikake_tamago_book',
+  'furikake_aonori_book',
 ]);
 function shouldShowSimpleDecorPaletteItem(def) {
   if (!def || def.type !== 'decor') return false;
   if (SIMPLE_DECOR_PALETTE_HIDDEN.has(def.id)) return false;
+  if (String(def.id || '').indexOf('furikake_') === 0) return false;
   return true;
 }
 function getSimpleDecorPaletteRank(def) {
@@ -8714,7 +8715,9 @@ function getSimpleDecorPaletteRank(def) {
   return idx >= 0 ? idx : SIMPLE_DECOR_PALETTE_ORDER.length + 1;
 }
 function getDecorPaletteCatalog() {
-  const catalog = decorItems.filter(isBentoDecorUnlocked);
+  const catalog = decorItems
+    .filter(isBentoDecorUnlocked)
+    .filter(def => String(def && def.id || '').indexOf('furikake_') !== 0);
   if (simpleBentoMode || freeGuideStep === 'decor') {
     return catalog
       .filter(shouldShowSimpleDecorPaletteItem)
@@ -12285,6 +12288,8 @@ function renderFreeLayoutStage() {
 function createPaletteVisual(def) {
   const wrap = document.createElement('div');
   wrap.className = 'free-palette-visual';
+  const visualScale = getPaletteVisualScale(def);
+  if (visualScale !== 1) wrap.style.setProperty('--palette-visual-scale', visualScale);
   if (def.img || def.image) {
     const img = document.createElement('img');
     img.src = def.img || def.image;
