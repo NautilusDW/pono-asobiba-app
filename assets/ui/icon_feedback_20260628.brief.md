@@ -12,8 +12,10 @@
 |---|---|---|
 | 通常 | `assets/ui/icon_feedback_20260628.png` | 64x64 PNG / RGBA / 背景完全透過 |
 | 押下 | `assets/ui/icon_feedback_20260628_pressed.png` | 64x64 PNG / RGBA / 背景完全透過 |
+| 通常・実表示用 | `assets/ui/icon_feedback_20260628_512.png` | 512x512 PNG / RGBA / 背景完全透過 |
+| 押下・実表示用 | `assets/ui/icon_feedback_20260628_pressed_512.png` | 512x512 PNG / RGBA / 背景完全透過 |
 
-生成は GPT Image 2 を使い、1024px 相当の raw から透過処理後に Lanczos で 64x64 へ縮小する。
+生成は GPT Image 2 を使い、1024px 相当の raw から透過処理後に Lanczos で 64x64 / 512x512 へ縮小する。`play.html` の bottom-nav 表示では 64px 版を拡大すると低解像度に見えるため、512px 版を使う。
 
 ## デザイン
 
@@ -45,3 +47,4 @@
 - raw: `tmp/alpha_pending/891-feedback-icon-label-pressed/`
 - 通常/押下とも GPT Image 2 built-in workflow で生成。
 - 参照: ユーザー添付の「せってい」ボタン、`title_bottom_nav_4_generated_20260626.webp`、既存 `button_bottom_005.png`。
+- 2026-06-28: 実表示用に 512px 版を追加。1024px 透過中間から再縮小し、64px 版のアップスケールは使わない。
