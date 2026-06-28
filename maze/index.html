@@ -1650,6 +1650,8 @@ body.image-stage-mode .game-wrap {
   line-height: 1.2;
 }
 .water-game__stage {
+  --water-camera-x: 0;
+  --water-segments: 3;
   position: relative;
   width: 100%;
   height: 100%;
@@ -1681,23 +1683,22 @@ body.image-stage-mode .game-wrap {
 }
 .water-skate-scroll-bg,
 .water-skate-course {
-  --water-camera-x: 0;
-  --water-segments: 3;
   position: absolute;
   top: 0;
   left: 0;
-  width: calc(100% * var(--water-segments));
+  width: calc(100% * var(--water-segments, 3));
   height: 100%;
-  transform: translate3d(calc(var(--water-camera-x) * -100% / var(--water-segments)), 0, 0);
+  transform: translate3d(calc(var(--water-camera-x, 0) * -100% / var(--water-segments, 3)), 0, 0);
   transition: transform 0.72s cubic-bezier(.2, .82, .2, 1);
   pointer-events: none;
 }
 .water-skate-scroll-bg {
   z-index: 0;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(19, 115, 135, 0.08)),
-    url('../assets/images/maze/gimmicks/water/water_line_skate_bg_20260628.png') center / auto 100% repeat-x;
-  opacity: 0.74;
+    repeating-linear-gradient(100deg, transparent 0 13%, rgba(255,255,255,0.12) 14%, transparent 16% 31%),
+    repeating-linear-gradient(18deg, transparent 0 18%, rgba(90, 218, 240, 0.10) 19%, transparent 21% 37%);
+  mix-blend-mode: screen;
+  opacity: 0.32;
 }
 .water-skate-course {
   z-index: 3;
@@ -7249,7 +7250,7 @@ function _waterSkateCourseHtml() {
   WATER_SKATE_SEGMENTS.forEach(function(seg, idx) {
     html += '<div class="water-island" style="left:' + _waterSkateWorldPct(idx, seg.start.x) + ';top:' + (seg.start.y * 100).toFixed(2) + '%;"></div>';
     if (idx === WATER_SKATE_SEGMENT_COUNT - 1) {
-      html += '<div class="water-bank" style="left:' + _waterSkateWorldPct(idx, 0.98) + ';top:50%;"></div>';
+      html += '<div class="water-bank" style="left:' + _waterSkateWorldPct(idx, 0.92) + ';top:50%;"></div>';
     } else {
       html += '<div class="water-island" style="left:' + _waterSkateWorldPct(idx, seg.goal.x) + ';top:' + (seg.goal.y * 100).toFixed(2) + '%;"></div>';
     }
@@ -7635,6 +7636,7 @@ function _waterSkateAdvanceSegment() {
 
 function _resolveWaterBridgeGame() {
   const st = _waterGimmickState;
+  if (_waterGameState) _waterGameState.phase = 'complete';
   if (st) {
     st.bridgeBuilt = true;
     if (_waterGameState && _waterGameState.points) {
