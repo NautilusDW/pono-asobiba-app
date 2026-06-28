@@ -14,56 +14,56 @@
   global.PonoDebugFeatures = [
     {
       id: 'maze-dev-bypass',
-      label: 'めいろ ?dev=1 (tier+どんぐり cap 撤廃)',
-      description: 'めいろの dev=1 URL bypass を許可。 tier ロック解除 + どんぐり消費 cap を一時的に外す (session 限定)。',
+      label: 'めいろ：全ステージ + どんぐり制限なし',
+      description: 'URL に ?dev=1 を付けて開くと、 ロック中のステージも遊べて、 どんぐり取得制限もなくなる',
       default: false
     },
     {
       id: 'play-dev-mode',
-      label: 'play.html ?dev=1 (dev-mode UI + dailyGacha 表示)',
-      description: 'play.html の dev=1 を許可。 dev-mode クラスが付き、 dailyGacha デバッグ UI など開発者向け要素が出現。',
+      label: 'ホーム画面：開発者メニュー表示',
+      description: 'URL に ?dev=1 を付けると、 デイリーガチャ等の開発者向け要素が出る',
       default: false
     },
     {
       id: 'gacha-rarity-override',
-      label: '?gachaRarity=X (sticker rarity 強制)',
-      description: 'デイリーガチャの rarity を URL パラメータで強制 (例: ?gachaRarity=rare)。 通常の確率テーブルを bypass。',
+      label: 'デイリーガチャ：レア度を指定',
+      description: 'URL に ?gachaRarity=normal / rare / super を付けると、 そのレア度確定でガチャが回せる',
       default: false
     },
     {
       id: 'quizland-debug-all',
-      label: 'quizland ?debug=all (169問全プレイ)',
-      description: 'quizland の debug=all を許可。 出題プールを全 169 問に拡大し、 出題順チェックや QA 用に使う。',
+      label: 'クイズ：全 169 問まとめてプレイ',
+      description: 'URL に ?debug=all を付けると、 通常 5 問のところ全問を順番にプレイできる',
       default: false
     },
     {
       id: 'bento-tutreset',
-      label: 'bento ?tutreset=1 (チュートリアル reset)',
-      description: 'bento の初回チュートリアル進捗 (localStorage) をページ遷移時にクリア。 sk-intro と 10 step チュートリアルを再生。',
+      label: 'おべんとう：チュートリアルやり直し',
+      description: 'URL に ?tutreset=1 を付けて開くと、 初回チュートリアルが再表示される',
       default: false
     },
     {
       id: 'bento-maskedit',
-      label: 'bento ?maskedit=1 (mask editor)',
-      description: 'bento の mask editor (NPC 配置・透過マスク微調整 UI) を有効化。 admin 向けの bento タブ補助ツール。',
+      label: 'おべんとう：型枠エディタを開く',
+      description: 'URL に ?maskedit=1 を付けて開くと、 お弁当箱の型枠を編集できる管理画面が出る',
       default: false
     },
     {
       id: 'bento-npc-force',
-      label: 'bento ?npc=X (NPC 強制選択)',
-      description: 'bento の NPC を URL パラメータで強制 (例: ?npc=3)。 ランダム選定を bypass して特定キャラ動線を検証。',
+      label: 'おべんとう：注文キャラを指定',
+      description: 'URL に ?npc=risu / inu / ahiru / shika / lesser_panda / neko を付けると、 そのキャラの注文だけ出せる',
       default: false
     },
     {
       id: 'bento-debug-log',
-      label: 'bento [bento-debug] console.log 出力',
-      description: 'bento ゲーム内の [bento-debug] prefix な console.log を解禁。 通常配信では noop。',
+      label: 'おべんとう：開発ログを出す',
+      description: 'ブラウザ開発者ツールに [bento-debug] のログが出るようになる',
       default: false
     },
     {
       id: 'first-clear-reset',
-      label: 'window.resetFirstClearRewards 公開',
-      description: '初回クリア祝福 (first-clear rewards) のフラグを window.resetFirstClearRewards() で全消去できるようにする。 演出の再検証用。',
+      label: 'はじめてクリア報酬：記録をリセット',
+      description: 'ブラウザコンソールから window.resetFirstClearRewards() で初回クリア報酬の付与記録を消せる',
       default: false
     }
   ];
