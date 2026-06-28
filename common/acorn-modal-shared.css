@@ -223,8 +223,11 @@
  * ============================================================= */
 .pono-acorn-modal__dismiss {
   position: absolute;
-  top: clamp(16px, 3vw, 24px);
-  right: clamp(20px, 3.8vw, 32px);
+  /* notched 端末 (iPhone notch / Dynamic Island) でも tap target が safe-area 内に
+     収まるよう env(safe-area-inset-*) と max() で下限を保証 (WCAG SC 1.4.11)。
+     env() が未対応な環境では fallback 0px が使われ、 既存の clamp 値が維持される。 */
+  top: max(clamp(16px, 3vw, 24px), env(safe-area-inset-top, 0px));
+  right: max(clamp(20px, 3.8vw, 32px), env(safe-area-inset-right, 0px));
   /* z-index: 2 で panel の ::before 装飾 (z-index: 0) と
      content (z-index: 1) の上に浮かせる。 grid panel (e.g. maze) で
      absolute 配置が grid track centering の影響を受けないよう
