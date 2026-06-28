@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260629-918";
+const ASSET_VERSION = "20260629-920";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1021,6 +1021,47 @@ for (const { key, thicknessKey } of ENTERTAINMENT_BOOK_TEMPLATE_PRESETS) {
     spine: `sb3d_${key}_spine_image2_20260623.webp`,
     thicknessKey,
   };
+}
+
+const SIMPLE_JP_BOOK_TEMPLATE_KEYS = [
+  "hero",
+  "kaiju",
+  "idol",
+  "robot",
+  "space_live",
+  "game_center",
+  "mascot",
+  "parade",
+  "secret_base",
+  "anime_studio",
+  "neon_city",
+  "candy_pop",
+  "manga_action",
+  "cyber_grid",
+  "rainbow_dream",
+  "midnight_magic",
+  "pop_art",
+  "festival_night",
+  "sweet_gothic",
+  "sports_power",
+];
+
+for (const key of SIMPLE_JP_BOOK_TEMPLATE_KEYS) {
+  const bundle = BOOK_VARIANTS[key];
+  if (!bundle) {
+    continue;
+  }
+  Object.assign(bundle, {
+    insideLeft: `sb3d_${key}_free_blank_page_simple_jp_20260629.webp`,
+    insideRight: `sb3d_${key}_free_blank_page_simple_jp_20260629.webp`,
+    freePage: `sb3d_${key}_free_blank_page_simple_jp_20260629.webp`,
+    coverPrint: `sb3d_${key}_cover_front_simple_jp_20260629.webp`,
+    coverHardwareMode: "separate",
+    coverFront: `sb3d_${key}_cover_front_simple_jp_20260629.webp`,
+    coverBack: `sb3d_${key}_cover_back_simple_jp_20260629.webp`,
+    coverInside: `sb3d_${key}_cover_inside_simple_jp_20260629.webp`,
+    spine: `sb3d_${key}_spine_simple_jp_20260629.webp`,
+  });
 }
 
 const STICKER_BOOK_THEMES = {
