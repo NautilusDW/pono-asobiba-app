@@ -5475,6 +5475,10 @@
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
 
+  <!-- ごかんそう (rating) modal — common/rating-modal.{js,css} は別エージェント並列作成中。
+       ファイル未配備でも tag だけ先行登録 (404 silent fallback)。 -->
+  <link rel="stylesheet" href="/common/rating-modal.css">
+
   <!-- The tweaks panel JSX below is kept inert during normal app loads. -->
 </head>
 <body>
@@ -5552,6 +5556,7 @@
       <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">おしらせ</span></button>
       <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">シール</span></button>
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">せってい</span></button>
+      <button class="bn-item" data-action="feedback" type="button" aria-label="ごかんそう"><img src="/assets/ui/icon_feedback_20260628.png" alt="ごかんそう" class="bn-item__icon"><span class="bn-item__label">ごかんそう</span></button>
     </nav>
     <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
       <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
@@ -6327,7 +6332,16 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1713;
+    const PAGE_CACHE_VERSION = 1715;
+    // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
+    window.PONO_FEEDBACK_FORMS_URL = '[FORMS_URL_PLACEHOLDER]';
+    window.PONO_FEEDBACK_FORMS_FIELDS = {
+      anon_sid: '[ENTRY_ID_PLACEHOLDER]',
+      dfp: '[ENTRY_ID_PLACEHOLDER]',
+      last_star: '[ENTRY_ID_PLACEHOLDER]',
+      play_sum: '[ENTRY_ID_PLACEHOLDER]',
+      ref: '[ENTRY_ID_PLACEHOLDER]',
+    };
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
@@ -6933,6 +6947,9 @@
         location.href = THREE_STICKER_BOOK_URL;
       } else if (action === 'settings') {
         openModal('settingsModal');
+      } else if (action === 'feedback') {
+        // ごかんそう: PonoRating モーダルをタイトル経由で開く (defer ロード前は no-op)
+        try { window.PonoRating && window.PonoRating.openFromTitle && window.PonoRating.openFromTitle(); } catch (e) {}
       }
     });
 
@@ -10312,5 +10329,7 @@
 
     ReactDOM.createRoot(document.getElementById('tweaksRoot')).render(<CardTweaks />);
   </script>
+  <!-- ごかんそう (rating) modal — 別エージェント並列作成中。 defer で他 init 妨害なし。 -->
+  <script src="/common/rating-modal.js" defer></script>
 </body>
 </html>
