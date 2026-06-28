@@ -63,7 +63,6 @@
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]
 - 2026-06-28 13:30 - by Claude - [batch:886-difficulty-label-sw-bump-1736] - sw.js, play.html - 難易度ラベル統一 Phase 2+4 fix を v1735→v1736 でバンプ (maze HUD / oto タブ / puzzle album / bento title / quizland UI / partner-select / common/difficulty.js は既登録) [overlap: batch:885-difficulty-label-phase3-fix]
-- 2026-06-28 20:11 - by Codex - [batch:897-feedback-nav-position-resolution] - play.html, sw.js, assets/ui/icon_feedback_20260628_512.png, assets/ui/icon_feedback_20260628_pressed_512.png, AGENTS_CLAIMS.md, HANDOFF.md - ごかんそうボタンの高解像度化と右寄せ/どんぐり重なり修正 [overlap: batch:860-data-export-import,batch:877-gacha-tray-mask-lower,batch:886-difficulty-label-sw-bump-1736]
 - 2026-06-28 21:05 - by Codex - [batch:898-bento-tutorial-mask-scroll-reward] - bento/index.html, AGENTS_CLAIMS.md, HANDOFF.md - Bento 導入画像/マスク位置、チュートリアル抑止、スマホ選択肢スクロール、どんぐり詳細重なり修正 [overlap: batch:885-difficulty-label-phase3-fix]
 ---
 
