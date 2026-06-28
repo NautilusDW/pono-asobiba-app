@@ -5472,11 +5472,15 @@
        全て画像に内包されているため CSS から除去。 :active で pressed 版に差し替え + 1px 押し込み。 */
     .bn-item--feedback {
       position: absolute;
-      left: -96px;                /* sw1738: calc(100% + 8px) → -96 (sprite 左外、 どんぐりの右隣) */
+      left: -104px;               /* sw1751: -96→-104 (アイコン拡大 78→120 に合わせ、どんぐり右端 -120 + gap 16 で揃え) */
       top: 50%;
       transform: translateY(-50%);
-      width: 78px;
-      height: 78px;
+      /* sw1751: 既存 4 ボタン sprite (1 タイル ≈ 125x158px @ default、107x136 @ 16:9、90x114 @ 4:3)
+         に対して .bn-item--feedback が 78x78 で「半分以下サイズ」 に見える事故を修正。
+         アイコン本体サイズを sprite 1 タイル幅とほぼ揃え、 3 breakpoint で width/height を同期。
+         height は sprite 高さの 75% 前後に抑え (背景透過余白を考慮しアイコン本体と整合)。 */
+      width: 120px;
+      height: 120px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -5675,6 +5679,13 @@
         font-size: 36px;          /* v1681: 18→36 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 40px; }  /* v1681: 20→40 */
+      /* sw1751: 16:9 sprite 1 タイル ≈ 107x136 に合わせ width/height を 104 へ。
+         left は どんぐり右端 (-244+124=-120) + gap 16 = -104 で default と同一。 */
+      .bn-item--feedback {
+        left: -104px;
+        width: 104px;
+        height: 104px;
+      }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* v1681: 4:3 (iPad横) は nav 高さ 114px に対する badge 高さ占有率が過半に
@@ -5688,6 +5699,13 @@
         font-size: 28px;          /* v1681: 16→28 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 32px; }  /* v1681: 18→32 */
+      /* sw1751: 4:3 sprite 1 タイル ≈ 90x114 に合わせ width/height を 88 へ。
+         left は どんぐり右端 (-214+96=-118) + gap 14 = -104 で default と同一。 */
+      .bn-item--feedback {
+        left: -104px;
+        width: 88px;
+        height: 88px;
+      }
     }
 
     /* v1690: bento/cooking タイトル 全 aspect 共通 font-size 縮小 (1 行強制保証)。
@@ -6649,7 +6667,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1750;
+    const PAGE_CACHE_VERSION = 1751;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
