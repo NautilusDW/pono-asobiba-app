@@ -5716,6 +5716,13 @@
        .game-card__title 共通の white-space:nowrap + text-overflow:ellipsis で安全 fail。 */
     .game-card[data-id="bento"]   .game-card__title { font-size: 24px; }
     .game-card[data-id="cooking"] .game-card__title { font-size: 26px; }
+
+    /* v1752: 16:9 (and wider) では右側に余裕があるので bento/cooking title を base 32px と同じに復活。
+       4:3 (max-aspect-ratio: 4/3) や 5:4 では上の 24/26px が引き続き効く。 */
+    @media (min-aspect-ratio: 16/10) {
+      .game-card[data-id="bento"]   .game-card__title { font-size: 32px; }
+      .game-card[data-id="cooking"] .game-card__title { font-size: 32px; }
+    }
   </style>
   <!-- common/mvp-flags.js is part of the production app shell, not the preview.
        Skip it here so the preview sandbox doesn't 404 on every reload. -->
@@ -6667,7 +6674,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1751;
+    const PAGE_CACHE_VERSION = 1752;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
