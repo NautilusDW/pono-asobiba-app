@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260629-924";
+const ASSET_VERSION = "20260629-928";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1094,6 +1094,30 @@ for (const key of PERSONALITY_JP_BOOK_TEMPLATE_KEYS) {
     coverBack: `sb3d_${key}_cover_back_personality_jp_20260629.webp`,
     coverInside: `sb3d_${key}_cover_inside_personality_jp_20260629.webp`,
     spine: `sb3d_${key}_spine_personality_jp_20260629.webp`,
+  });
+}
+
+const REFINED_JP_BOOK_TEMPLATE_KEYS = [
+  "kaiju",
+  "mascot",
+  "hero",
+];
+
+for (const key of REFINED_JP_BOOK_TEMPLATE_KEYS) {
+  const bundle = BOOK_VARIANTS[key];
+  if (!bundle) {
+    continue;
+  }
+  Object.assign(bundle, {
+    insideLeft: `sb3d_${key}_free_blank_page_refine_jp_20260629.webp`,
+    insideRight: `sb3d_${key}_free_blank_page_refine_jp_20260629.webp`,
+    freePage: `sb3d_${key}_free_blank_page_refine_jp_20260629.webp`,
+    coverPrint: `sb3d_${key}_cover_front_refine_jp_20260629.webp`,
+    coverHardwareMode: "separate",
+    coverFront: `sb3d_${key}_cover_front_refine_jp_20260629.webp`,
+    coverBack: `sb3d_${key}_cover_back_refine_jp_20260629.webp`,
+    coverInside: `sb3d_${key}_cover_inside_refine_jp_20260629.webp`,
+    spine: `sb3d_${key}_spine_refine_jp_20260629.webp`,
   });
 }
 
