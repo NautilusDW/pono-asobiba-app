@@ -62,6 +62,33 @@
       return !!document.hidden || inactiveByFocus;
     }
 
+    function blockedPlayResult() {
+      if (!global.Promise) return undefined;
+      var err;
+      try {
+        err = new DOMException('Audio playback is blocked while the page is inactive.', 'AbortError');
+      } catch (_) {
+        err = new Error('Audio playback is blocked while the page is inactive.');
+        err.name = 'AbortError';
+      }
+      var p = global.Promise.reject(err);
+      p.catch(function () {});
+      return p;
+    }
+
+    function clearFocusInactiveIfVisible() {
+      if (document.hidden) return;
+      inactiveByFocus = false;
+      audioContexts.forEach(function (ctx) {
+        try {
+          if (ctx && ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+            var p = ctx.resume();
+            if (p && typeof p.catch === 'function') p.catch(function () {});
+          }
+        } catch (_) {}
+      });
+    }
+
     function trackMedia(el) {
       if (el && typeof el.pause === 'function') mediaEls.add(el);
       return el;
@@ -112,7 +139,7 @@
         trackMedia(this);
         if (isInactive()) {
           pauseMedia(this);
-          return global.Promise ? global.Promise.resolve() : undefined;
+          return blockedPlayResult();
         }
         return nativePlay.apply(this, arguments);
       };
@@ -182,11 +209,15 @@
       inactiveByFocus = true;
       pauseAll('freeze');
     }, true);
+    ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(function (type) {
+      document.addEventListener(type, clearFocusInactiveIfVisible, true);
+    });
 
     global.PonoVisibilityAudioGuard = {
       installed: true,
       pauseAll: pauseAll,
-      trackMedia: trackMedia
+      trackMedia: trackMedia,
+      clearFocusInactiveIfVisible: clearFocusInactiveIfVisible
     };
   }
 
