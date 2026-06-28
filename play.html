@@ -4925,7 +4925,7 @@
     .acorn-balance-badge--nav {
       position: absolute;
       /* bottom-nav の grid (4列固定) を崩さず、 左外側へ並置 */
-      left: -274px;               /* sw1757: -260→-274 (どんぐりを 14px 左へ → ごかんそうとの gap 確保) */
+      left: -290px;               /* sw1759: -274→-290 (どんぐりをさらに 16px 左へ → ごかんそう左シフト分追従、 gap 維持) */
       top: 50%;
       transform: translateY(-50%);
       z-index: 2;                 /* nav 内重なり順 */
@@ -5481,7 +5481,7 @@
        全て画像に内包されているため CSS から除去。 :active で pressed 版に差し替え + 1px 押し込み。 */
     .bn-item--feedback {
       position: absolute;
-      left: -164px;               /* sw1757: -174→-164 (10px 右へ → sprite との gap 縮める) */
+      left: -180px;               /* sw1759: -164→-180 (16px 左へ → sprite との gap 16px 確保 / default は 16:9 より横長 desktop で発火、 gap -6px の重なり修正) */
       top: 50%;
       transform: translateY(-50%);
       /* sw1756: 前回 sw1751 の 120x120 では既存 sprite 1 タイル (125x158 @ default) より小さく
@@ -6689,7 +6689,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1758;
+    const PAGE_CACHE_VERSION = 1759;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
