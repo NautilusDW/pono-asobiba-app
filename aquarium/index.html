@@ -11,7 +11,7 @@
   <!-- FOUC guard: intro-overlay は z-index:500 で visible のまま、 #pixi-canvas / #selection-screen を init 完了まで非表示 -->
   <style>html,body{background:#0a1a3a}#pixi-canvas,#selection-screen{visibility:hidden}body.pono-game-ready #pixi-canvas,body.pono-game-ready #selection-screen{visibility:visible}</style>
   <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
-  <script src="../common/preload-helper.js" defer></script>
+  <script src="../common/preload-helper.js"></script>
   <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('aquarium');});</script>
   <script src="../common/achievements.js"></script>
   <script src="../common/menu.js"></script>

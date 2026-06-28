@@ -29,7 +29,7 @@
  * warm リストを公開: window.PonoPreload.warmGameAssets('<gameId>')
  *
  * 呼出側 (各ゲームの index.html) からは:
- *   <script src="../common/preload-helper.js" defer></script>
+ *   <script src="../common/preload-helper.js"></script>
  *   <script>window.addEventListener('DOMContentLoaded',
  *     () => window.PonoPreload && window.PonoPreload.warmGameAssets('bento')
  *   );</script>
@@ -48,6 +48,147 @@
 
   /** @type {Set<string>} */
   var injected = new Set();
+
+  installVisibilityAudioGuard();
+
+  function installVisibilityAudioGuard() {
+    if (global.PonoVisibilityAudioGuard && global.PonoVisibilityAudioGuard.installed) return;
+
+    var mediaEls = new Set();
+    var audioContexts = new Set();
+    var inactiveByFocus = !!document.hidden;
+
+    function isInactive() {
+      return !!document.hidden || inactiveByFocus;
+    }
+
+    function trackMedia(el) {
+      if (el && typeof el.pause === 'function') mediaEls.add(el);
+      return el;
+    }
+
+    function pauseMedia(el) {
+      try {
+        if (el && typeof el.pause === 'function' && !el.paused) el.pause();
+      } catch (_) {}
+    }
+
+    function suspendContext(ctx) {
+      try {
+        if (ctx && ctx.state === 'running' && typeof ctx.suspend === 'function') {
+          var p = ctx.suspend();
+          if (p && typeof p.catch === 'function') p.catch(function () {});
+        }
+      } catch (_) {}
+    }
+
+    function emitStopEvent(reason) {
+      try {
+        global.dispatchEvent(new CustomEvent('PonoAudioVisibilityStop', {
+          detail: { reason: reason || '' }
+        }));
+      } catch (_) {
+        try {
+          var ev = document.createEvent('CustomEvent');
+          ev.initCustomEvent('PonoAudioVisibilityStop', false, false, { reason: reason || '' });
+          global.dispatchEvent(ev);
+        } catch (__) {}
+      }
+    }
+
+    function pauseAll(reason) {
+      try {
+        document.querySelectorAll('audio,video').forEach(trackMedia);
+      } catch (_) {}
+      mediaEls.forEach(pauseMedia);
+      audioContexts.forEach(suspendContext);
+      emitStopEvent(reason);
+    }
+
+    var mediaProto = global.HTMLMediaElement && global.HTMLMediaElement.prototype;
+    if (mediaProto && mediaProto.play && !mediaProto.play.__ponoVisibilityGuarded) {
+      var nativePlay = mediaProto.play;
+      var guardedPlay = function () {
+        trackMedia(this);
+        if (isInactive()) {
+          pauseMedia(this);
+          return global.Promise ? global.Promise.resolve() : undefined;
+        }
+        return nativePlay.apply(this, arguments);
+      };
+      guardedPlay.__ponoVisibilityGuarded = true;
+      guardedPlay.__nativePlay = nativePlay;
+      mediaProto.play = guardedPlay;
+    }
+
+    if (global.Audio && !global.Audio.__ponoVisibilityGuarded) {
+      var NativeAudio = global.Audio;
+      var GuardedAudio = function (src) {
+        var audio = arguments.length ? new NativeAudio(src) : new NativeAudio();
+        trackMedia(audio);
+        if (isInactive()) pauseMedia(audio);
+        return audio;
+      };
+      GuardedAudio.prototype = NativeAudio.prototype;
+      try { Object.setPrototypeOf(GuardedAudio, NativeAudio); } catch (_) {}
+      GuardedAudio.__ponoVisibilityGuarded = true;
+      GuardedAudio.__NativeAudio = NativeAudio;
+      global.Audio = GuardedAudio;
+    }
+
+    function wrapAudioContext(name) {
+      var NativeContext = global[name];
+      if (!NativeContext || NativeContext.__ponoVisibilityGuarded) return;
+      var GuardedContext = function (options) {
+        var ctx = arguments.length ? new NativeContext(options) : new NativeContext();
+        audioContexts.add(ctx);
+        if (isInactive()) setTimeout(function () { suspendContext(ctx); }, 0);
+        return ctx;
+      };
+      GuardedContext.prototype = NativeContext.prototype;
+      try { Object.setPrototypeOf(GuardedContext, NativeContext); } catch (_) {}
+      GuardedContext.__ponoVisibilityGuarded = true;
+      GuardedContext.__NativeContext = NativeContext;
+      global[name] = GuardedContext;
+    }
+
+    wrapAudioContext('AudioContext');
+    wrapAudioContext('webkitAudioContext');
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        inactiveByFocus = true;
+        pauseAll('visibilitychange');
+      } else {
+        inactiveByFocus = false;
+      }
+    }, true);
+
+    global.addEventListener('pagehide', function () {
+      inactiveByFocus = true;
+      pauseAll('pagehide');
+    }, true);
+    global.addEventListener('pageshow', function () {
+      if (!document.hidden) inactiveByFocus = false;
+    }, true);
+    global.addEventListener('blur', function () {
+      inactiveByFocus = true;
+      pauseAll('blur');
+    }, true);
+    global.addEventListener('focus', function () {
+      if (!document.hidden) inactiveByFocus = false;
+    }, true);
+    global.addEventListener('freeze', function () {
+      inactiveByFocus = true;
+      pauseAll('freeze');
+    }, true);
+
+    global.PonoVisibilityAudioGuard = {
+      installed: true,
+      pauseAll: pauseAll,
+      trackMedia: trackMedia
+    };
+  }
 
   /**
    * 1 件の preload link を <head> に注入する (重複防止つき)。

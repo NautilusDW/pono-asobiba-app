@@ -11,7 +11,7 @@
   <!-- FOUC guard: story-overlay は z-index 高くて visible のまま、 #pixi-canvas を init 完了まで非表示 -->
   <style>html,body{background:#87CEEB}#pixi-canvas{visibility:hidden}body.pono-game-ready #pixi-canvas{visibility:visible}</style>
   <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
-  <script src="../common/preload-helper.js" defer></script>
+  <script src="../common/preload-helper.js"></script>
   <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('egg');});</script>
   <script src="../common/achievements.js"></script>
   <script src="../common/menu.js"></script>

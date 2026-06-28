@@ -11,7 +11,7 @@
 <!-- FOUC guard: start-screen は z-index:9999 で visible、 canvas#c (game本体) を init 完了まで非表示にしてチラ見えを防ぐ -->
 <style>html,body{background:#000}canvas#c{visibility:hidden}body.pono-game-ready canvas#c{visibility:visible}</style>
 <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
-<script src="../common/preload-helper.js" defer></script>
+<script src="../common/preload-helper.js"></script>
 <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('bubble');});</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');

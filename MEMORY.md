@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-28T18:07:16Z - batch:890-maze-stage-select-ux (toggle 単体 bypass + タイトル画面ステージセレクト UI + ?stage=N 直ジャンプ、 sw v1769 App staging deploy 確認済)
+- **タスク**: batch:890-maze-stage-select-ux (toggle 単体 bypass + タイトル画面ステージセレクト UI + ?stage=N 直ジャンプ、 sw v1769 App staging deploy 確認済)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 26
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 6, "Edit": 3, "Workflow": 8}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-06-28T18:06:31Z - batch:890 maze-stage-select-ux を Codex 並走中に安全 commit + push + deploy 検証 (whitelist commit + CACHE_VERSION 衝突回避)
+- **タスク**: batch:890 maze-stage-select-ux を Codex 並走中に安全 commit + push + deploy 検証 (whitelist commit + CACHE_VERSION 衝突回避)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 25
+- **エラー数**: 4
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 5, "Edit": 3, "Workflow": 8}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-28T10:54:46Z - bottom-nav ごかんそうボタン background-size 130%→contain revert (sw1761見切れ事故修正、CACHE_VERSION 1761→1762)
 - **タスク**: bottom-nav ごかんそうボタン background-size 130%→contain revert (sw1761見切れ事故修正、CACHE_VERSION 1761→1762)
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 21, "Read": 8, "Agent": 26, "Edit": 1, "ToolSearch": 1, "SendMessage": 1, "Grep": 6}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。
-
-
-### 2026-06-28T08:27:10Z - admin-debug-leak-fix-rollout batch:887 (6 fleet 並走: Foundation/Password/Comments/URL-backdoors/BentoDebug/Shop) + residual cleanup + App staging push (sw v1750)
-- **タスク**: admin-debug-leak-fix-rollout batch:887 (6 fleet 並走: Foundation/Password/Comments/URL-backdoors/BentoDebug/Shop) + residual cleanup + App staging push (sw v1750)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 20
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 3, "Edit": 3, "Workflow": 5}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-28T08:26:30Z - batch:887 push + App staging デプロイ確認 (v1750)
-- **タスク**: batch:887 push + App staging デプロイ確認 (v1750)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 19
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 2, "Edit": 3, "Workflow": 5}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 

@@ -41,7 +41,7 @@
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
-<script src="../common/preload-helper.js" defer></script>
+<script src="../common/preload-helper.js"></script>
 <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('bento');});</script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
@@ -1262,11 +1262,13 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1 1 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
   min-height: 0;
+  max-height: 100%;
   padding-right: 2px;
 }
 .food-tray.free-layout-controls.guide-blocking > * {
@@ -2044,6 +2046,7 @@ html, body {
   gap: 5px;
   flex: 1 1 72px;
   min-height: 72px;
+  max-height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -2639,6 +2642,8 @@ html, body {
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
   padding: 14px 14px 12px;
   background: center / 100% 100% no-repeat url('../assets/images/bento/ui/picker_panel_blank.webp');
   box-sizing: border-box;
@@ -5452,11 +5457,16 @@ function suppressBentoIntroTutorialOverlays() {
   if (bubble) bubble.classList.add('hidden');
   document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
 }
-function markBentoTutorialsDone() {
+function markBentoSkIntroSeen() {
   try {
     localStorage.setItem('bento_sk_intro_done', '1');
     localStorage.setItem('bento_tut_seen', '1');
     localStorage.setItem('bento_tut_seen_v2', '1');
+  } catch (_) {}
+}
+function markBentoTutorialsDone() {
+  try {
+    markBentoSkIntroSeen();
     localStorage.setItem(BENTO_TUTORIAL_STORAGE_KEY, '1');
   } catch (_) {}
 }
@@ -5542,39 +5552,13 @@ function startSkIntroGuide() {
   const intro = document.getElementById('sk-intro');
   // sk-introボタンのハンドラを常に登録（showTutorialから表示される）
   document.getElementById('sk-intro-btn').addEventListener('click', function() {
+    stopSkIntroGuide();
+    if (intro) intro.classList.add('hidden');
     window.__bentoSkIntroShownThisRun = true;
-    dismissBentoTutorialsForGood();
+    markBentoSkIntroSeen();
   });
-  // チュートリアル未表示なら、 タイトル画面と NPC 訪問モーダルが両方
-  // 閉じてから (= ユーザーがタップして遊び始める準備が整ってから) 表示する。
-  // 以前はタイトル画面の上にチュートリアルが被って見える問題があった。
-  if (!localStorage.getItem('bento_tut_seen_v2')) {
-    function waitForReadyThenTutorial() {
-      if (simpleBentoMode) {
-        suppressBentoIntroTutorialOverlays();
-        return;
-      }
-      const titleScreen = document.getElementById('title-screen');
-      const npcIntro = document.getElementById('npc-intro');
-      const shopOpening = document.getElementById('shop-opening');
-      const titleVisible = titleScreen && !titleScreen.classList.contains('hidden');
-      const npcVisible   = npcIntro && !npcIntro.classList.contains('hidden') && !npcIntro.hidden;
-      const shopVisible  = shopOpening && !shopOpening.classList.contains('hidden') && !shopOpening.hidden;
-      if (window.__bentoShopOpeningActive || titleVisible || npcVisible || shopVisible || window.innerWidth <= window.innerHeight) {
-        setTimeout(waitForReadyThenTutorial, 500);
-        return;
-      }
-      if (document.getElementById('free-layout-stage')) {
-        setTimeout(() => {
-          intro.classList.remove('hidden');
-          startSkIntroGuide();
-        }, 400);
-        return;
-      }
-      setTimeout(showTutorial, 400);
-    }
-    setTimeout(waitForReadyThenTutorial, 600);
-  }
+  // v1769: 3 色説明だけを初回自動表示しない。必ず全工程チュートリアルの
+  // 「はじめる」押下後に tutorialShowGroupIntroThen() から開く。
   // 全工程チュートリアル (v1): 初回プレイヤーのみ・NPC/タイトル/横画面が片付いたら開始
   let _fullTutorialPollCount = 0;
   function waitForReadyThenFullTutorial() {
@@ -8274,17 +8258,25 @@ function stopBgm() { if (bgmEl) bgmEl.pause(); }
 });
 if (bgmEnabled) tryPlayBgm();
 
-// タブが背景に行く / 画面が消える時は BGM を一時停止し、 戻ってきたら再開する
-// (他ゲーム maze/oto/play-all 等と同じ挙動)。
+function stopBentoAudioForInactive() {
+  stopBgm();
+  try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
+  try { if (typeof stopSkIntroGuide === 'function') stopSkIntroGuide(); } catch (_) {}
+  try { if (typeof tutorialClearCompleteGuideTimers === 'function') tutorialClearCompleteGuideTimers(); } catch (_) {}
+}
+
+// タブが背景に行く / 画面が消える時は BGM とナレーションを止め、
+// 戻ってきた時だけ BGM の再開判定を行う。
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) {
-    stopBgm();
+    stopBentoAudioForInactive();
   } else if (bgmEnabled && !isMaskEditorAudioMuted()) {
     tryPlayBgm();
   }
 });
 // pagehide: iOS Safari でホーム画面に戻る / アプリ切替 / 画面ロック時に発火。
-window.addEventListener('pagehide', stopBgm);
+window.addEventListener('pagehide', stopBentoAudioForInactive);
+window.addEventListener('PonoAudioVisibilityStop', stopBentoAudioForInactive);
 function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.exponentialRampToValueAtTime(900,t+0.08); g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12); o.start(t);o.stop(t+0.12); }
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
@@ -11841,6 +11833,33 @@ function shouldHighlightFreeChoice(def) {
   }
   return false;
 }
+function bindFreePalettePress(btn, onPress) {
+  let touchPress = null;
+  const resetTouchPress = () => { touchPress = null; };
+  btn.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') {
+      touchPress = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+      return;
+    }
+    e.preventDefault();
+    onPress(e);
+  });
+  btn.addEventListener('pointermove', e => {
+    if (!touchPress || e.pointerId !== touchPress.id) return;
+    if (Math.abs(e.clientX - touchPress.x) > 10 || Math.abs(e.clientY - touchPress.y) > 10) {
+      touchPress.moved = true;
+    }
+  }, { passive: true });
+  btn.addEventListener('pointerup', e => {
+    if (!touchPress || e.pointerId !== touchPress.id) return;
+    const press = touchPress;
+    resetTouchPress();
+    if (press.moved) return;
+    e.preventDefault();
+    onPress(e);
+  });
+  btn.addEventListener('pointercancel', resetTouchPress, { passive: true });
+}
 function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -11891,8 +11910,7 @@ function makeFreePaletteButton(def) {
     btn.appendChild(name);
   }
   if (freeLayoutTab === 'box') {
-    btn.addEventListener('pointerdown', e => {
-      if (e.pointerType !== 'touch') e.preventDefault();
+    bindFreePalettePress(btn, e => {
       if (!showTutorialPaletteLockToast(def)) return;
       // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
@@ -11911,8 +11929,7 @@ function makeFreePaletteButton(def) {
       selectFreeBentoBox(def.id);
     });
   } else {
-    btn.addEventListener('pointerdown', e => {
-      if (e.pointerType !== 'touch') e.preventDefault();
+    bindFreePalettePress(btn, e => {
       if (!showTutorialPaletteLockToast(def)) return;
       // Phase 2 future-use: decoration/food tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
       // def.tierLocked is always false so this branch is unreachable.
@@ -14220,6 +14237,21 @@ function loadChallengeOkazu() {
 
 // ===== Tutorial =====
 function showTutorial() {
+  if (typeof tutorialStart === 'function') {
+    suppressBentoIntroTutorialOverlays();
+    try { localStorage.removeItem(BENTO_TUTORIAL_STORAGE_KEY); } catch (_) {}
+    try {
+      if (typeof tutorialState !== 'undefined' && tutorialState) {
+        tutorialTeardown();
+        tutorialState.active = false;
+        tutorialState.step = null;
+        tutorialState.groupIntroShown = false;
+      }
+    } catch (_) {}
+    tutorialStart();
+    return;
+  }
+
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
@@ -14321,7 +14353,10 @@ function tutorialReadDone() {
   try { return localStorage.getItem(TUTORIAL_STORAGE_KEY) === '1'; } catch (_) { return false; }
 }
 function tutorialMarkDone() {
-  try { localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); } catch (_) {}
+  try {
+    markBentoSkIntroSeen();
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, '1');
+  } catch (_) {}
   tutorialState.active = false;
   tutorialState.step = 'done';
   tutorialTeardown();
@@ -14835,6 +14870,7 @@ function tutorialShowGroupIntroThen(nextStep) {
   startSkIntroGuide();
   const resume = () => {
     window.__bentoSkIntroShownThisRun = true;
+    markBentoSkIntroSeen();
     if (!tutorialState.active || tutorialState.step !== 'greet') return;
     setTimeout(() => {
       if (tutorialState.active && tutorialState.step === 'greet') tutorialAdvance(nextStep);
@@ -16661,7 +16697,7 @@ function tutorialClearCompletePulse() {
   document.querySelectorAll('.tut-complete-pulse').forEach(el => el.classList.remove('tut-complete-pulse'));
 }
 function tutorialTeardown() {
-  stopBentoTutorialVoice();
+  stopSkIntroGuide();
   tutorialClearCompleteGuideTimers();
   if (tutorialState.resizeHandler) {
     window.removeEventListener('resize', tutorialState.resizeHandler);

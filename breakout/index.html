@@ -10,7 +10,7 @@
 <!-- FOUC guard: タイトル overlay が無いゲームなので #app を init 完了まで非表示 -->
 <style>html,body{background:#FFF8F0}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
 <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
-<script src="../common/preload-helper.js" defer></script>
+<script src="../common/preload-helper.js"></script>
 <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('breakout');});</script>
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
