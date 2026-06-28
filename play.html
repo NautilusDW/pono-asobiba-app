@@ -4925,7 +4925,7 @@
     .acorn-balance-badge--nav {
       position: absolute;
       /* bottom-nav の grid (4列固定) を崩さず、 左外側へ並置 */
-      left: -260px;               /* sw1738: -164→-260 (ごかんそう 96px 分を更に左へ) */
+      left: -274px;               /* sw1757: -260→-274 (どんぐりを 14px 左へ → ごかんそうとの gap 確保) */
       top: 50%;
       transform: translateY(-50%);
       z-index: 2;                 /* nav 内重なり順 */
@@ -5481,7 +5481,7 @@
        全て画像に内包されているため CSS から除去。 :active で pressed 版に差し替え + 1px 押し込み。 */
     .bn-item--feedback {
       position: absolute;
-      left: -174px;               /* sw1756: -104→-174 (ボタン 158px + gap 16 で sprite 左端 0 から確実に離す) */
+      left: -164px;               /* sw1757: -174→-164 (10px 右へ → sprite との gap 縮める) */
       top: 50%;
       transform: translateY(-50%);
       /* sw1756: 前回 sw1751 の 120x120 では既存 sprite 1 タイル (125x158 @ default) より小さく
@@ -5684,7 +5684,7 @@
        v1681: 各 breakpoint も 2x (16:9~ は 2x、 4:3 は nav 高さ占有率を考慮し 1.75x 抑制) */
     @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
       .acorn-balance-badge--nav {
-        left: -244px;             /* sw1738: -148 → -244 (ごかんそう 96px 分を更に左へ) */
+        left: -258px;             /* sw1757: -244→-258 (どんぐりを 14px 左へ) */
         padding: 14px 24px;       /* v1681: 7 12→14 24 */
         min-width: 124px;         /* v1681: 62→124 */
         font-size: 36px;          /* v1681: 18→36 */
@@ -5694,7 +5694,7 @@
          left は sprite 左端 0 から gap 16 確保 → -(136+16) = -152。
          どんぐり右端は -244+124 = -120、 ボタン左端 -152 との gap = 32px (くっつき解消)。 */
       .bn-item--feedback {
-        left: -152px;
+        left: -142px;             /* sw1757: -152→-142 (10px 右へ) */
         width: 136px;
         height: 136px;
       }
@@ -5705,7 +5705,7 @@
          left offset は badge 幅 ~96 + 余白 22 = -118。
          sw1738: ごかんそう 96px 分を更に左へ → -118 - 96 = -214。 */
       .acorn-balance-badge--nav {
-        left: -240px;             /* sw1756: -214 → -240 (ごかんそう 114px + box-sizing:border-box 考慮、 どんぐり右端 -240+96=-144 + gap 14 = ボタン左端 -130) */
+        left: -254px;             /* sw1757: -240→-254 (どんぐりを 14px 左へ) */
         padding: 10px 18px;       /* v1681: 6 10→10 18 */
         min-width: 96px;          /* v1681: 54→96 */
         font-size: 28px;          /* v1681: 16→28 */
@@ -5716,7 +5716,7 @@
          どんぐり右端 -214+96 = -118 と ボタン左端 -130 の gap = 12 → 余裕を取り
          どんぐり left を -214→-228 に押し出して gap 14 を確保。 */
       .bn-item--feedback {
-        left: -130px;
+        left: -120px;             /* sw1757: -130→-120 (10px 右へ) */
         width: 114px;
         height: 114px;
       }
@@ -6688,7 +6688,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1756;
+    const PAGE_CACHE_VERSION = 1757;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
