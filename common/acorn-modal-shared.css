@@ -583,13 +583,27 @@
   }
 
   /* maze override (quizland 流用デザイン) の reduce 時静止化。
-     panel/character ::before の drop-shadow は柔らかい光なので残しても
-     SC 2.3.3 抵触しないが、 安全側で box-shadow / filter を簡略化する。 */
+     L648-663 で定義した owl_professor_guide ::before に対する filter 簡略化を
+     ここで行う。 Phase 1.5 で frame/leaves/glow 装飾を再導入する場合は、
+     この block の selector も併せて見直すこと (orphan rule 化を避ける)。
+     depth 用の drop-shadow(0 6px 10px ...) は残し、 motion 寄り shimmer の
+     drop-shadow(0 0 14px ...) glow だけを落とす方針 (HIGH#5 反映)。 */
   [data-game-id="maze"] .pono-acorn-modal__panel {
     box-shadow: none !important;
   }
   [data-game-id="maze"] .pono-acorn-modal__panel::before {
-    filter: none !important;
+    filter: drop-shadow(0 6px 10px rgba(71, 38, 6, 0.42)) !important;
+  }
+  /* maze kicker/label の text-shadow は base 継承 (#8b4e12 / #6d3b07) だが、
+     reduce 時は oto 同様に明示的に静止化して将来の override 漏れを防ぐ。 */
+  [data-game-id="maze"] .pono-acorn-modal__kicker {
+    text-shadow: none !important;
+  }
+  [data-game-id="maze"] .pono-acorn-modal__label {
+    text-shadow: none !important;
+  }
+  [data-game-id="maze"] .pono-acorn-modal__amount-num {
+    text-shadow: none !important;
   }
 
   /* oto override の motion 寄り装飾も reduce 時は静止/簡略化 (WCAG SC 2.3.3) */
