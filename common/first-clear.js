@@ -271,9 +271,27 @@
   };
 
   // デバッグ用: 付与記録をリセット（開発時のみ）
-  window.resetFirstClearRewards = function () {
-    localStorage.removeItem(LS_GRANTED);
-    localStorage.removeItem(LS_PENDING);
-    console.log('[first-clear] reset granted + pending');
-  };
+  // batch:887 admin-debug-leak-fix — manage unlock 後 + "first-clear-reset" feature ON
+  // でのみ window.resetFirstClearRewards を露出。 disable 時は undefined のまま (本番ユーザーは触れない)。
+  // 注意: first-clear.js は一部ページで debug-mode.js より先に読まれるため、 IIFE 段階で
+  // window.PonoDebugMode を見ても未定義のことがある → DOMContentLoaded 後に評価する。
+  function _maybeExposeFirstClearReset() {
+    var allowed = false;
+    try {
+      allowed = !!(window.PonoDebugMode
+        && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+        && window.PonoDebugMode.isFeatureEnabled('first-clear-reset'));
+    } catch (_e) { allowed = false; }
+    if (!allowed) return;
+    window.resetFirstClearRewards = function () {
+      localStorage.removeItem(LS_GRANTED);
+      localStorage.removeItem(LS_PENDING);
+      console.log('[first-clear] reset granted + pending');
+    };
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _maybeExposeFirstClearReset, { once: true });
+  } else {
+    _maybeExposeFirstClearReset();
+  }
 })();

@@ -5462,10 +5462,14 @@
     .bn-item__icon,
     .bn-item__label { display: none; }
     /* sw1723: ごかんそう ボタンは grid 外配置 (4 アイコン sprite との整合のため)。
-       5 列 sprite が用意でき次第このルールは撤去する。 暫定で label/icon を可視化。
+       5 列 sprite が用意でき次第このルールは撤去する。
        sw1738: 画面右端切れ対策で sprite 右外 (left: calc(100% + 8px)) → 左外へ移動。
        どんぐりバッジ (-260px) の右隣に 置く: -260 + 140 (badge width) + 24 (gap) ≈ -96。
-       bottom-nav は画面右寄せ配置 (right: calc(...)) なので、 左外には十分な空きあり。 */
+       bottom-nav は画面右寄せ配置 (right: calc(...)) なので、 左外には十分な空きあり。
+       sw1750: 焼き込み済み 画像 icon (木枠 + クリーム座布団 + 紙鉛筆 + 「ごかんそう」 ラベル)
+       に差し替え。 既存 button_bottom_005.png (ベル) と同じデザイン言語で 4 アイコン sprite との
+       統一感を獲得。 border / box-shadow / background-color / 擬似要素絵文字 / label テキストは
+       全て画像に内包されているため CSS から除去。 :active で pressed 版に差し替え + 1px 押し込み。 */
     .bn-item--feedback {
       position: absolute;
       left: -96px;                /* sw1738: calc(100% + 8px) → -96 (sprite 左外、 どんぐりの右隣) */
@@ -5473,22 +5477,25 @@
       transform: translateY(-50%);
       width: 78px;
       height: 78px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      padding: 6px 4px;
-      border: 2px solid rgba(242, 145, 90, .42);
-      border-radius: 18px;
-      background: #fffdfa;
-      color: var(--text);
-      font-weight: 900;
-      box-shadow: 0 3px 0 rgba(171, 104, 54, .18);
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: url('/assets/ui/icon_feedback_20260628.png') center / contain no-repeat;
+      box-shadow: none;
+      color: transparent;
+      font-size: 0;
+      transition: transform .08s ease-out, background-image 0s;
     }
-    .bn-item--feedback .bn-item__icon { display: block; font-size: 26px; line-height: 1; }
-    .bn-item--feedback .bn-item__icon::before { content: "\1F4DD"; }
-    .bn-item--feedback .bn-item__label { display: block; font-size: 11px; line-height: 1.1; color: var(--text); }
+    .bn-item--feedback:active {
+      background-image: url('/assets/ui/icon_feedback_20260628_pressed.png');
+      transform: translate(0, calc(-50% + 1px));
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .bn-item--feedback { transition: none; }
+      .bn-item--feedback:active { transform: translateY(-50%); }
+    }
+    .bn-item--feedback .bn-item__icon,
+    .bn-item--feedback .bn-item__label { display: none; }
     .modal-card { max-width: 390px; }
     .settings-action-list {
       display: grid;
@@ -6126,7 +6133,7 @@
           <input type="text" class="password-modal-input" id="passwordUnlockInput"
                  placeholder="あいことば" autocomplete="off" autocorrect="off"
                  spellcheck="false" inputmode="text" aria-describedby="pwHintSerial">
-          <p class="pw-hint" id="pwHintSerial">れい: 1234 など</p>
+          <p class="pw-hint" id="pwHintSerial">えほんの うらを みてね</p>
           <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">ひらく！</button>
         </section>
 
@@ -6299,8 +6306,17 @@
       }
     }
     function refreshDeveloperAccessUI() {
-      var urlDev = false;
-      try { urlDev = new URLSearchParams(location.search).get('dev') === '1'; } catch (_) {}
+      // batch:887 admin-debug-leak-fix — ?dev=1 は manage unlock 後 + "play-dev-mode" ON でのみ有効。
+      // 本番ユーザー (PonoDebugMode 未 unlock) は URL を直叩きしても dev-mode クラスが付かない。
+      var urlDevParam = false;
+      try { urlDevParam = new URLSearchParams(location.search).get('dev') === '1'; } catch (_) {}
+      var urlDevAllowed = false;
+      try {
+        urlDevAllowed = !!(window.PonoDebugMode
+          && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+          && window.PonoDebugMode.isFeatureEnabled('play-dev-mode'));
+      } catch (_) {}
+      var urlDev = urlDevParam && urlDevAllowed;
       var manageDebug = isManageDebugAllowed();
       document.body.classList.toggle('dev-mode', !!(urlDev || manageDebug));
       document.body.classList.toggle('manage-debug-mode', !!manageDebug);
@@ -6633,7 +6649,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1748;
+    const PAGE_CACHE_VERSION = 1750;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -7544,6 +7560,15 @@
     }
 
     function dailyGachaRarityOverride() {
+      // batch:887 admin-debug-leak-fix — ?gachaRarity / ?gacha は manage unlock 後 +
+      // "gacha-rarity-override" feature ON でのみ反映。 本番ユーザーは常に '' (= 通常ガチャ確率テーブル)。
+      try {
+        if (!window.PonoDebugMode
+            || typeof window.PonoDebugMode.isFeatureEnabled !== 'function'
+            || !window.PonoDebugMode.isFeatureEnabled('gacha-rarity-override')) {
+          return '';
+        }
+      } catch (_) { return ''; }
       try {
         const params = new URLSearchParams(location.search);
         return normalizeDailyGachaRarity(params.get('gachaRarity') || params.get('gacha'));
@@ -9732,8 +9757,9 @@
 
     /**
      * 成功時の success-tag / success-body コピーを mode で切替える。
-     * 既存 'book' / 'debug' に加えて 'serial' / 'order_id' / 'quiz' / 'admin' を追加。
-     * @param {'book'|'debug'|'serial'|'order_id'|'quiz'|'admin'} mode
+     * 既存 'book' / 'debug' に加えて 'serial' / 'order_id' / 'quiz' を追加。
+     * (v17XX: 'admin' mode は verifyAdminPassword 廃止に伴い撤去。 'serial' に統合)
+     * @param {'book'|'debug'|'serial'|'order_id'|'quiz'} mode
      */
     function setPasswordUnlockSuccessCopy(mode) {
       const tagEl = document.getElementById('passwordUnlockSuccessTag');
@@ -9753,7 +9779,7 @@
         if (bodyEl) bodyEl.innerHTML = 'えほんを よんでくれて<br>ありがとう！';
         return;
       }
-      // 'book' / 'serial' / 'admin' / default
+      // 'book' / 'serial' / default  (v17XX: 'admin' 撤去)
       if (tagEl) tagEl.textContent = '✨ えほんの とくてんが ひらいたよ ✨';
       if (bodyEl) bodyEl.innerHTML = 'あたらしい ステージや<br>あそびが ひらいたよ！';
     }
@@ -9934,7 +9960,8 @@
     // ===== unlock 成功時の共通 finalize =====
     /**
      * 解錠成功時の UI 共通処理。 method ごとに localStorage 記録とコピー切替。
-     * @param {'serial'|'admin'|'order_id'|'quiz'|'debug'} method
+     * (v17XX: 'admin' method は廃止 → 'serial' に統合)
+     * @param {'serial'|'order_id'|'quiz'|'debug'} method
      * @param {{orderId?: string}=} extras
      */
     function pwFinalizeSuccess(method, extras) {

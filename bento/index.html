@@ -5390,6 +5390,24 @@ body.bento-complete-open #sk-intro {
   fit();
 })();
 
+// [bento-debug] gated logger — 本番では PonoDebugMode で feature flag 'bento-debug-log' を
+// 立てた時のみ console に出る。 staging/開発時の cup-edit-try ナレ診断ログを本番でも残せる
+// よう、 既存の `console.log('[bento-debug] ...')` を機械的に置換する受け皿。
+function _bentoDebugLog() {
+  try {
+    if (!window.PonoDebugMode || typeof window.PonoDebugMode.isFeatureEnabled !== 'function') return;
+    if (!window.PonoDebugMode.isFeatureEnabled('bento-debug-log')) return;
+    console.log.apply(console, arguments);
+  } catch (_) {}
+}
+function _bentoDebugWarn() {
+  try {
+    if (!window.PonoDebugMode || typeof window.PonoDebugMode.isFeatureEnabled !== 'function') return;
+    if (!window.PonoDebugMode.isFeatureEnabled('bento-debug-log')) return;
+    console.warn.apply(console, arguments);
+  } catch (_) {}
+}
+
 // 三色食品群の説明は、ナレーション台本と同じ短文を順番に見せる。
 const SK_INTRO_GUIDE_STEPS = [
   { key: 'all', text: 'たべものには 3つの なかまが あるよ。' },
@@ -5897,6 +5915,15 @@ const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 const TUTORIAL_FIXED_REQUESTER_ID = 'araiguma';
 
 function isTutorialResetRequested() {
+  // batch:887 admin-debug-leak-fix — ?tutreset=1 は manage unlock 後 +
+  // "bento-tutreset" feature ON でのみ反映。 本番ユーザーは常に false (= 通常進行)。
+  try {
+    if (!window.PonoDebugMode
+        || typeof window.PonoDebugMode.isFeatureEnabled !== 'function'
+        || !window.PonoDebugMode.isFeatureEnabled('bento-tutreset')) {
+      return false;
+    }
+  } catch (_) { return false; }
   try { return new URLSearchParams(location.search).get('tutreset') === '1'; } catch (_) { return false; }
 }
 function isTutorialPendingForNpcSelection() {
@@ -5925,10 +5952,15 @@ function shouldUseTutorialFixedRequester() {
   if (!freeLayoutMode) return false;
   if (simpleBentoMode) return false;
   if (!isTutorialPendingForNpcSelection()) return false;
-  try {
-    const sp = new URLSearchParams(location.search);
-    if (sp.has('npc') && !isTutorialResetRequested()) return false;
-  } catch (_) {}
+  // batch:887 admin-debug-leak-fix — ?npc= で tutorial override する裏口は
+  // "bento-npc-force" ON のときのみ有効 (本番ユーザーは sp.has('npc') を見ずに
+  // tutorial 固定 NPC を維持する)。
+  if (_isBentoNpcForceAllowed()) {
+    try {
+      const sp = new URLSearchParams(location.search);
+      if (sp.has('npc') && !isTutorialResetRequested()) return false;
+    } catch (_) {}
+  }
   return true;
 }
 
@@ -6821,7 +6853,28 @@ const NPC_DECIDED_KEY = 'bento_npc_decided';
 const NPC_REQUEST_RATE = 1.00;
 const BENTO_MODE_SESSION_KEY = 'bento_play_mode';
 
+// batch:887 admin-debug-leak-fix — ?npc=<id> による NPC 強制選択は manage unlock 後 +
+// "bento-npc-force" feature ON でのみ反映。 本番ユーザーは常に false (= 通常ランダム選定)。
+function _isBentoNpcForceAllowed() {
+  try {
+    return !!(window.PonoDebugMode
+      && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+      && window.PonoDebugMode.isFeatureEnabled('bento-npc-force'));
+  } catch (_) {
+    return false;
+  }
+}
+
 function getFreeMaskEditRequest() {
+  // batch:887 admin-debug-leak-fix — ?maskedit / ?edit / ?box / ?view は
+  // manage unlock 後 + "bento-maskedit" feature ON でのみ反映。 本番ユーザーは常に null。
+  try {
+    if (!window.PonoDebugMode
+        || typeof window.PonoDebugMode.isFeatureEnabled !== 'function'
+        || !window.PonoDebugMode.isFeatureEnabled('bento-maskedit')) {
+      return null;
+    }
+  } catch (_) { return null; }
   try {
     const sp = new URLSearchParams(location.search);
     const wants = sp.get('maskedit') === '1' || sp.get('edit') === '1';
@@ -6881,17 +6934,20 @@ function pickRandomNpcRequester(excludeId) {
 }
 
 function selectNextNpcRequester() {
-  try {
-    const sp = new URLSearchParams(location.search);
-    const force = sp.get('npc');
-    if (force !== null) {
-      if (force === '0' || force === 'free' || force === 'off') return setCurrentNpcRequester(null);
-      if (force !== '1' && force !== 'random' && force !== 'on') {
-        const found = NPC_REQUESTERS.find(r => r.id === force);
-        if (found) return setCurrentNpcRequester(found);
+  // batch:887 admin-debug-leak-fix — ?npc= 強制選択は "bento-npc-force" ON のみ。
+  if (_isBentoNpcForceAllowed()) {
+    try {
+      const sp = new URLSearchParams(location.search);
+      const force = sp.get('npc');
+      if (force !== null) {
+        if (force === '0' || force === 'free' || force === 'off') return setCurrentNpcRequester(null);
+        if (force !== '1' && force !== 'random' && force !== 'on') {
+          const found = NPC_REQUESTERS.find(r => r.id === force);
+          if (found) return setCurrentNpcRequester(found);
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
   if (Math.random() >= NPC_REQUEST_RATE) return setCurrentNpcRequester(null);
   return setCurrentNpcRequester(pickRandomNpcRequester(currentRequester && currentRequester.id));
 }
@@ -6913,23 +6969,26 @@ function decideNpcMode() {
   // ?npc=1           → 強制 依頼モード (ランダム動物)
   // ?npc=<id>        → 特定の動物を指名 (risu / inu / ahiru / shika / araiguma / neko)
   // どれも sessionStorage より優先 (= リロードしても URL に乗せ続ければ固定)
-  try {
-    const sp = new URLSearchParams(location.search);
-    const force = sp.get('npc');
-    if (force !== null) {
-      if (force === '0' || force === 'free' || force === 'off') {
-        setCurrentNpcRequester(null);
-        return;
+  // batch:887 admin-debug-leak-fix — manage unlock 後 + "bento-npc-force" ON のみ反映。
+  if (_isBentoNpcForceAllowed()) {
+    try {
+      const sp = new URLSearchParams(location.search);
+      const force = sp.get('npc');
+      if (force !== null) {
+        if (force === '0' || force === 'free' || force === 'off') {
+          setCurrentNpcRequester(null);
+          return;
+        }
+        if (force === '1' || force === 'random' || force === 'on') {
+          setCurrentNpcRequester(pickRandomNpcRequester());
+          return;
+        }
+        const found = NPC_REQUESTERS.find(r => r.id === force);
+        if (found) { setCurrentNpcRequester(found); return; }
+        // 不明な id → フォールスルーして通常判定
       }
-      if (force === '1' || force === 'random' || force === 'on') {
-        setCurrentNpcRequester(pickRandomNpcRequester());
-        return;
-      }
-      const found = NPC_REQUESTERS.find(r => r.id === force);
-      if (found) { setCurrentNpcRequester(found); return; }
-      // 不明な id → フォールスルーして通常判定
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 
   // ----- 通常: 1 セッション 1 回判定 (sessionStorage キャッシュ) -----
   try {
@@ -8138,6 +8197,15 @@ const bgmEl = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 if (bgmEl) bgmEl.volume = 0.25;
 function isMaskEditorAudioMuted() {
+  // batch:887 admin-debug-leak-fix — ?maskedit / ?editmask による BGM mute も
+  // "bento-maskedit" feature ON のみで反映。 本番ユーザーは常に false (= 通常 BGM)。
+  try {
+    if (!window.PonoDebugMode
+        || typeof window.PonoDebugMode.isFeatureEnabled !== 'function'
+        || !window.PonoDebugMode.isFeatureEnabled('bento-maskedit')) {
+      return false;
+    }
+  } catch (e) { return false; }
   try {
     const sp = new URLSearchParams(window.location.search || '');
     return sp.has('maskedit') || sp.has('editmask');
@@ -8219,10 +8287,10 @@ function stopBentoTutorialVoice() {
 }
 function playBentoTutorialVoice(id, opts = {}) {
   // v1410: 大量診断ログ — cup-edit-try ナレ不再生の切り分け用
-  try { console.log('[bento-debug] playBentoTutorialVoice called', { id: id, hasOpts: !!opts, fallbackMs: opts && opts.fallbackMs, hasOnEnded: !!(opts && opts.onEnded), hasCuePoints: !!(opts && Array.isArray(opts.cuePoints)) }); } catch (_) {}
+  try { _bentoDebugLog('[bento-debug] playBentoTutorialVoice called', { id: id, hasOpts: !!opts, fallbackMs: opts && opts.fallbackMs, hasOnEnded: !!(opts && opts.onEnded), hasCuePoints: !!(opts && Array.isArray(opts.cuePoints)) }); } catch (_) {}
   if (!id) return null;
   if (isMaskEditorAudioMuted()) {
-    try { console.log('[bento-debug] skip: muted (isMaskEditorAudioMuted=true)', { id: id }); } catch (_) {}
+    try { _bentoDebugLog('[bento-debug] skip: muted (isMaskEditorAudioMuted=true)', { id: id }); } catch (_) {}
     if (typeof opts.onEnded === 'function') {
       setTimeout(opts.onEnded, opts.fallbackMs || 5000);
     }
@@ -8231,7 +8299,7 @@ function playBentoTutorialVoice(id, opts = {}) {
   stopBentoTutorialVoice();
   try {
     const audio = new Audio(BENTO_TUTORIAL_VOICE_BASE + id + '.mp3?v=' + BENTO_TUTORIAL_VOICE_VERSION);
-    try { console.log('[bento-debug] new Audio created', { src: audio.src, id: id }); } catch (_) {}
+    try { _bentoDebugLog('[bento-debug] new Audio created', { src: audio.src, id: id }); } catch (_) {}
     audio.volume = 0.95;
     // v1409: 一部ブラウザ (iOS Safari / Chrome の一部条件) で muted=false の autoplay が
     // user-gesture chain 外と判定されて reject されるのを避けるため、 一旦 muted=true で開始し
@@ -8272,19 +8340,19 @@ function playBentoTutorialVoice(id, opts = {}) {
     }
     bentoTutorialVoiceAudio = audio;
     const p = audio.play();
-    try { console.log('[bento-debug] audio.play() called', { id: id, returnedType: typeof p, isPromise: !!(p && typeof p.then === 'function') }); } catch (_) {}
+    try { _bentoDebugLog('[bento-debug] audio.play() called', { id: id, returnedType: typeof p, isPromise: !!(p && typeof p.then === 'function') }); } catch (_) {}
     // v1409: autoplay block 可視化 + muted-unmute fallback。
     // 旧 silent .catch(() => {}) は autoplay reject 理由を握りつぶし、
     // fallbackMs (cup-edit-try で 7600ms) 経過まで onEnded が呼ばれず stall した。
     if (p && typeof p.then === 'function') {
       p.then(() => {
-        try { console.log('[bento-debug] audio.play() resolved, unmuting', { id: id, currentTime: audio.currentTime }); } catch (_) {}
+        try { _bentoDebugLog('[bento-debug] audio.play() resolved, unmuting', { id: id, currentTime: audio.currentTime }); } catch (_) {}
         // 再生開始成功 → 一旦 muted=true で始めた audio をここで unmute
         try { audio.muted = false; } catch (_) {}
       }).catch((err) => {
         try {
           var name = (err && (err.name || err.message)) || String(err);
-          console.warn('[bento-debug] audio.play() rejected for ' + id + ':', name);
+          _bentoDebugWarn('[bento-debug] audio.play() rejected for ' + id + ':', name);
         } catch (_) {}
         // play 失敗時は fallbackMs を待たず即 onEnded 相当 (次 step へ進行)
         if (typeof opts.onEnded === 'function' && !audio._bentoCancelled) {
@@ -8294,7 +8362,7 @@ function playBentoTutorialVoice(id, opts = {}) {
     } else if (p && typeof p.catch === 'function') {
       // 念のため Promise 互換 (古い実装) の reject も拾う
       p.catch((err) => {
-        try { console.warn('[bento-debug] audio.play() rejected (legacy) for ' + id + ':', err && (err.name || err.message || err)); } catch (_) {}
+        try { _bentoDebugWarn('[bento-debug] audio.play() rejected (legacy) for ' + id + ':', err && (err.name || err.message || err)); } catch (_) {}
         if (typeof opts.onEnded === 'function' && !audio._bentoCancelled) {
           try { opts.onEnded(); } catch (_) {}
         }
@@ -8302,7 +8370,7 @@ function playBentoTutorialVoice(id, opts = {}) {
     }
     return audio;
   } catch (e) {
-    try { console.warn('[bento-debug] playBentoTutorialVoice threw:', e && (e.message || e), { id: id }); } catch (_) {}
+    try { _bentoDebugWarn('[bento-debug] playBentoTutorialVoice threw:', e && (e.message || e), { id: id }); } catch (_) {}
   }
   if (typeof opts.onEnded === 'function') {
     setTimeout(opts.onEnded, opts.fallbackMs || 5000);
@@ -8317,24 +8385,24 @@ try {
   window.bentoDebug = {
     testVoiceFile: function (id) {
       var url = BENTO_TUTORIAL_VOICE_BASE + (id || 'basic_tut_11') + '.mp3';
-      try { console.log('[bento-debug] testing voice file', url); } catch (_) {}
+      try { _bentoDebugLog('[bento-debug] testing voice file', url); } catch (_) {}
       return fetch(url, { cache: 'no-store' }).then(function (r) {
-        try { console.log('[bento-debug] fetch result:', { status: r.status, ok: r.ok, size: r.headers.get('content-length'), type: r.headers.get('content-type') }); } catch (_) {}
+        try { _bentoDebugLog('[bento-debug] fetch result:', { status: r.status, ok: r.ok, size: r.headers.get('content-length'), type: r.headers.get('content-type') }); } catch (_) {}
         return { status: r.status, ok: r.ok, contentLength: r.headers.get('content-length'), contentType: r.headers.get('content-type') };
       }).catch(function (e) {
-        try { console.warn('[bento-debug] fetch failed:', e && (e.message || e)); } catch (_) {}
+        try { _bentoDebugWarn('[bento-debug] fetch failed:', e && (e.message || e)); } catch (_) {}
         return { error: e && (e.message || String(e)) };
       });
     },
     playVoiceFile: function (id) {
       var url = BENTO_TUTORIAL_VOICE_BASE + (id || 'basic_tut_11') + '.mp3';
-      try { console.log('[bento-debug] direct play test', url); } catch (_) {}
+      try { _bentoDebugLog('[bento-debug] direct play test', url); } catch (_) {}
       var audio = new Audio(url);
       audio.volume = 1.0;
       var p = audio.play();
       if (p && typeof p.then === 'function') {
-        p.then(function () { try { console.log('[bento-debug] direct play OK', { currentTime: audio.currentTime, duration: audio.duration }); } catch (_) {} })
-         .catch(function (e) { try { console.warn('[bento-debug] direct play failed:', e && (e.name || e.message || e)); } catch (_) {} });
+        p.then(function () { try { _bentoDebugLog('[bento-debug] direct play OK', { currentTime: audio.currentTime, duration: audio.duration }); } catch (_) {} })
+         .catch(function (e) { try { _bentoDebugWarn('[bento-debug] direct play failed:', e && (e.name || e.message || e)); } catch (_) {} });
       }
       return audio;
     },
@@ -8349,11 +8417,11 @@ try {
         voiceAudio: va ? { src: va.src, paused: va.paused, muted: va.muted, currentTime: va.currentTime, duration: va.duration, readyState: va.readyState } : null,
         isMuted: (typeof isMaskEditorAudioMuted === 'function') ? isMaskEditorAudioMuted() : null,
       };
-      try { console.log('[bento-debug] state snapshot', snap); } catch (_) {}
+      try { _bentoDebugLog('[bento-debug] state snapshot', snap); } catch (_) {}
       return snap;
     },
   };
-  try { console.log('[bento-debug] window.bentoDebug installed. Use bentoDebug.testVoiceFile(id) / playVoiceFile(id) / state().'); } catch (_) {}
+  try { _bentoDebugLog('[bento-debug] window.bentoDebug installed. Use bentoDebug.testVoiceFile(id) / playVoiceFile(id) / state().'); } catch (_) {}
 } catch (_) {}
 function playFanfare() { const ac=getAC(),t=ac.currentTime; [523,659,784,1047].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.12;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.2,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.45);o.start(s);o.stop(s+0.45);}); }
 function playDrumroll() {
@@ -14407,21 +14475,21 @@ function tutorialSetModeLabel(text, opts = {}) {
 }
 function tutorialPlayStepVoice(step, firstRender) {
   // v1410: 大量診断ログ — cup-edit-try ナレ不再生の切り分け用
-  try { console.log('[bento-debug] tutorialPlayStepVoice called', { step: step, firstRender: firstRender, lastVoiceStep: (typeof tutorialState !== 'undefined' && tutorialState) ? tutorialState.lastVoiceStep : '(no tutorialState)' }); } catch (_) {}
+  try { _bentoDebugLog('[bento-debug] tutorialPlayStepVoice called', { step: step, firstRender: firstRender, lastVoiceStep: (typeof tutorialState !== 'undefined' && tutorialState) ? tutorialState.lastVoiceStep : '(no tutorialState)' }); } catch (_) {}
   if (!firstRender) {
-    try { console.log('[bento-debug] skip: firstRender=false', { step: step }); } catch (_) {}
+    try { _bentoDebugLog('[bento-debug] skip: firstRender=false', { step: step }); } catch (_) {}
     return;
   }
   const id = BENTO_TUTORIAL_STEP_VOICE[step];
   if (!id) {
-    try { console.log('[bento-debug] skip: no voice id for step', { step: step }); } catch (_) {}
+    try { _bentoDebugLog('[bento-debug] skip: no voice id for step', { step: step }); } catch (_) {}
     return;
   }
   // v1409: cup-edit-try は 4 秒の短い 1 文ナレで、 advance 直後に確実に再生したいため
   // lastVoiceStep guard を bypass する (同 step 内で何度 render されても確実に再生)。
   // 他の step は重複再生防止のため従来通りの idempotency を維持。
   if (step !== 'cup-edit-try' && tutorialState.lastVoiceStep === step) {
-    try { console.log('[bento-debug] skip: lastVoiceStep guard', { step: step }); } catch (_) {}
+    try { _bentoDebugLog('[bento-debug] skip: lastVoiceStep guard', { step: step }); } catch (_) {}
     return;
   }
   tutorialState.lastVoiceStep = step;
@@ -14444,7 +14512,7 @@ function tutorialPlayStepVoice(step, firstRender) {
     opts.onEnded = () => {
       try {
         if (tutorialState && tutorialState.active && tutorialState.step === 'cup-edit') {
-          try { console.log('[bento-debug] cup-edit basic_tut_10 ended → auto-advance to cup-edit-try in 1s'); } catch (_) {}
+          try { _bentoDebugLog('[bento-debug] cup-edit basic_tut_10 ended → auto-advance to cup-edit-try in 1s'); } catch (_) {}
           setTimeout(() => {
             if (tutorialState && tutorialState.active && tutorialState.step === 'cup-edit') {
               if (typeof tutorialAdvance === 'function') tutorialAdvance('cup-edit-try');
@@ -14454,7 +14522,7 @@ function tutorialPlayStepVoice(step, firstRender) {
       } catch (_) {}
     };
   }
-  try { console.log('[bento-debug] dispatching playBentoTutorialVoice', { id: id, step: step, optsKeys: Object.keys(opts) }); } catch (_) {}
+  try { _bentoDebugLog('[bento-debug] dispatching playBentoTutorialVoice', { id: id, step: step, optsKeys: Object.keys(opts) }); } catch (_) {}
   playBentoTutorialVoice(id, opts);
 }
 function tutorialMarkCupOkAfterVoice(step) {
@@ -15685,14 +15753,14 @@ function tutorialAdvance(nextStep) {
       && audio.currentTime > 0
       && audio.currentTime < (audioDuration || Infinity);
     if (isPlaying && !tutorialState._advanceQueued) {
-      try { console.log('[bento-debug] tutorialAdvance queued (voice still playing)', { nextStep: nextStep, currentTime: audio.currentTime, duration: audioDuration }); } catch (_) {}
+      try { _bentoDebugLog('[bento-debug] tutorialAdvance queued (voice still playing)', { nextStep: nextStep, currentTime: audio.currentTime, duration: audioDuration }); } catch (_) {}
       tutorialState._advanceQueued = nextStep;
       const onVoiceEnd = function () {
         try { audio.removeEventListener('ended', onVoiceEnd); } catch (_) {}
         const queuedStep = tutorialState._advanceQueued;
         tutorialState._advanceQueued = null;
         if (queuedStep && tutorialState && tutorialState.active && tutorialState.step !== queuedStep) {
-          try { console.log('[bento-debug] voice ended → firing queued advance', { queuedStep: queuedStep }); } catch (_) {}
+          try { _bentoDebugLog('[bento-debug] voice ended → firing queued advance', { queuedStep: queuedStep }); } catch (_) {}
           tutorialAdvance(queuedStep);
         }
       };
@@ -15700,7 +15768,7 @@ function tutorialAdvance(nextStep) {
       // 保険: ended が来ない iOS Safari 等のための hard timeout
       setTimeout(function () {
         if (tutorialState._advanceQueued === nextStep && tutorialState && tutorialState.active && tutorialState.step !== nextStep) {
-          try { console.warn('[bento-debug] queued advance timeout → firing now', { nextStep: nextStep }); } catch (_) {}
+          try { _bentoDebugWarn('[bento-debug] queued advance timeout → firing now', { nextStep: nextStep }); } catch (_) {}
           tutorialState._advanceQueued = null;
           tutorialAdvance(nextStep);
         }
@@ -16272,7 +16340,7 @@ function tutorialRenderStep() {
 
   // 9c. cup-edit-try — カップ編集を試したあと、小さいおかずを入れる
   if (step === 'cup-edit-try') {
-    try { console.log('[bento-debug] cup-edit-try renderer entered', { firstRender: firstRender, hasVoiceAudio: !!bentoTutorialVoiceAudio, voiceSrc: bentoTutorialVoiceAudio ? bentoTutorialVoiceAudio.src : null, voicePaused: bentoTutorialVoiceAudio ? bentoTutorialVoiceAudio.paused : null }); } catch (_) {}
+    try { _bentoDebugLog('[bento-debug] cup-edit-try renderer entered', { firstRender: firstRender, hasVoiceAudio: !!bentoTutorialVoiceAudio, voiceSrc: bentoTutorialVoiceAudio ? bentoTutorialVoiceAudio.src : null, voicePaused: bentoTutorialVoiceAudio ? bentoTutorialVoiceAudio.paused : null }); } catch (_) {}
     // v1410: tutorialPlayStepVoice 経路で何らかの理由で再生されない場合の belt-and-suspenders フォールバック。
     // firstRender 時に 200ms 後に「まだ basic_tut_11 が再生されていない」 ことを確認して直接 play。
     if (firstRender) {
@@ -16283,14 +16351,14 @@ function tutorialRenderStep() {
             || audio.paused
             || (audio.src && audio.src.indexOf('basic_tut_11.mp3') < 0);
           if (stillNothing) {
-            try { console.warn('[bento-debug] cup-edit-try voice fallback: directly playing basic_tut_11', { hadAudio: !!audio, paused: audio ? audio.paused : null, src: audio ? audio.src : null }); } catch (_) {}
+            try { _bentoDebugWarn('[bento-debug] cup-edit-try voice fallback: directly playing basic_tut_11', { hadAudio: !!audio, paused: audio ? audio.paused : null, src: audio ? audio.src : null }); } catch (_) {}
             try { tutorialState.lastVoiceStep = null; } catch (_) {}
             playBentoTutorialVoice('basic_tut_11', { fallbackMs: 5500, onEnded: function () { try { tutorialMarkCupOkAfterVoice('cup-edit-try'); } catch (_) {} } });
           } else {
-            try { console.log('[bento-debug] cup-edit-try voice already playing', { paused: audio.paused, src: audio.src, currentTime: audio.currentTime }); } catch (_) {}
+            try { _bentoDebugLog('[bento-debug] cup-edit-try voice already playing', { paused: audio.paused, src: audio.src, currentTime: audio.currentTime }); } catch (_) {}
           }
         } catch (e) {
-          try { console.warn('[bento-debug] cup-edit-try fallback check threw:', e && (e.message || e)); } catch (_) {}
+          try { _bentoDebugWarn('[bento-debug] cup-edit-try fallback check threw:', e && (e.message || e)); } catch (_) {}
         }
       }, 200);
     }

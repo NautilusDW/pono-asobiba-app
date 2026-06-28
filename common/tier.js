@@ -46,20 +46,23 @@
     }
   }
 
-  // Phase 1: 共通5本のロックを全て無効化するセーフフラグ。 Phase 2 で true に切替。
+  // Phase 2 (3-tier locks active) として運用中。 free / book / sub の解錠範囲は
+  // 本ファイル下部の各 isXxxUnlocked 関数 (isQuizlandQuestionUnlocked / isMazeStageUnlocked /
+  // isOtoSoundSetUnlocked / isPuzzleStageUnlocked / isBentoFoodUnlocked 等) を参照。
+  //
   // DevTools / 後から読み込まれる任意のスクリプト / 旧 sw キャッシュ等による誤上書きを避けるため
-  // Object.defineProperty で writable:false にする。 Phase 2 で恒久的に true 動作へ移行する時は
-  // configurable:true なので再定義で切替可能。
+  // Object.defineProperty で writable:false にする。 configurable:true なので、 将来運用方針が
+  // 変わった場合 (緊急の全面無料化キャンペーン等) は再定義で切替可能。
   if (typeof window.PONO_TIER_GAME_LOCKS_ENABLED === 'undefined') {
     try {
       Object.defineProperty(window, 'PONO_TIER_GAME_LOCKS_ENABLED', {
-        value: true,  // Web MVP: 全機能無料公開 (Amazon 絵本購入者向け)
+        value: true,  // 3-tier (free / book / sub) ロック有効。 ユーザー確定方針 (2026-06-28)
         writable: false,
         configurable: true,
         enumerable: true
       });
     } catch (e) {
-      // 古いブラウザ等で defineProperty が失敗したらフォールバック (Web MVP: ロック無効。Phase 2 復活時は true に戻すこと)
+      // 古いブラウザ等で defineProperty が失敗したらフォールバック (3-tier ロック有効を維持)
       window.PONO_TIER_GAME_LOCKS_ENABLED = true;
     }
   }
@@ -235,11 +238,12 @@
     return getTier() === 'sub';
   }
 
-  // ---- Phase 1: 共通5本のロック判定 (セーフフラグ OFF の間は常に true) ----
+  // ---- 共通5本のロック判定 (Phase 2: 3-tier locks active) ----
+  // PONO_TIER_GAME_LOCKS_ENABLED=true で稼働中。 各関数は gameLocksEnabled() が false の場合のみ
+  // 全開放 (true) を返すフェイルセーフを維持 (緊急の全面無料化キャンペーン等で切替可能)。
   // NOTE: プラン本文見出しでは「判定関数14個」と書かれているが、 同セクションの仕様列挙は
-  // 12 関数 (下記) のみ。 ここでは列挙された 12 関数だけを実装し、 残り 2 関数 (もし必要なら)
-  // は Phase 2 wiring 時に planner と仕様合意の上で追加する方針。
-  // 既存の verifyBookPassword + showSubscribePromo を含めて 14 と数える解釈もありえる。
+  // 12 関数 (下記) のみ。 ここでは列挙された 12 関数を実装。 既存の verifyBookPassword +
+  // showSubscribePromo を含めて 14 と数える解釈もありえる。
   function isQuizlandQuestionUnlocked(qid, category, level) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
@@ -247,11 +251,10 @@
     if (t === 'book') {
       return (level || 1) <= BOOK_QUIZLAND_MAX_LEVEL;
     }
-    // free: 固定リスト (Phase 2 で qid 埋める)。
-    // 空配列の間はフェイルセーフで true (= 全開放) を返し、 セーフフラグを ON にした瞬間に
+    // free: 固定リスト (FREE_QUIZLAND_QUESTION_IDS) に含まれる qid のみ解放。
+    // 空配列の場合はフェイルセーフで true (= 全開放) を返し、 万一 list が空になった瞬間に
     // free ユーザーの全クイズが false 判定で完全ロックされる事故を防ぐ。
-    // Phase 2 で FREE_QUIZLAND_QUESTION_IDS に 26問の qid を埋めた時点で自動的に
-    // 通常の indexOf 判定に切り替わる。
+    // 通常は L164-173 で 26 問が登録済 → 通常の indexOf 判定に切り替わる。
     if (FREE_QUIZLAND_QUESTION_IDS.length === 0) return true;
     return FREE_QUIZLAND_QUESTION_IDS.indexOf(qid) >= 0;
   }

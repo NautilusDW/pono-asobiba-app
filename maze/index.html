@@ -11413,8 +11413,19 @@ function _getInitialStageIdx() {
 }
 // ---- DEV bypass: ?dev=1 で tier check を session 内のみ無視 ----
 // localStorage には書き込まない。リロードや別タブには引き継がない。
+// batch:887 admin-debug-leak-fix — 本番ユーザーで誤って bypass されないよう、
+// PonoDebugMode の manage unlock + "maze-dev-bypass" feature ON を必須化。
+// PonoDebugMode が未 load または未 unlock なら常に false。
 try {
-  window._DEV_BYPASS_TIER = new URLSearchParams(window.location.search).get('dev') === '1';
+  var _mzDevAllowed = false;
+  try {
+    _mzDevAllowed = !!(window.PonoDebugMode
+      && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+      && window.PonoDebugMode.isFeatureEnabled('maze-dev-bypass'));
+  } catch (_e) { _mzDevAllowed = false; }
+  var _mzDevParam = false;
+  try { _mzDevParam = new URLSearchParams(window.location.search).get('dev') === '1'; } catch (_e2) {}
+  window._DEV_BYPASS_TIER = _mzDevAllowed && _mzDevParam;
   if (window._DEV_BYPASS_TIER) {
     console.warn('[maze] DEV mode: tier check bypassed for this session');
     // 右下にひかえめな DEV indicator (CSS インラインのみ)

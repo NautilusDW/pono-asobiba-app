@@ -266,16 +266,14 @@
 <div class="toast" id="toast"></div>
 
 <script src="../common/acorns.js"></script>
+<script src="../js/game-stickers.js"></script>
+<script src="../js/donguri-shop.js"></script>
 <script>
-  // サンプル商品（家具）
-  const SHOP_ITEMS = [
-    { id: 'furn_bookshelf_w', name: 'しろい ほんだな', price: 30,
-      img: '../assets/images/Rooms/furnitures_final/BookShelf01_A.png' },
-    { id: 'furn_bed_wood',    name: 'きの ベッド',     price: 40,
-      img: '../assets/images/Rooms/furnitures_final/bed_A_01.png' },
-    { id: 'furn_desk',        name: 'あおい つくえ',   price: 25,
-      img: '../assets/images/Rooms/furnitures_final/desk_A_01.png' },
-  ];
+  // ===== どんぐりショップ (シール販売 + 配布) =====
+  // 商品は js/donguri-shop.js が JST 朝/夕で回転させる 3 枠シール。
+  // 旧 SHOP_ITEMS (家具) は launch までに room 配布ロジックが無いため UI から外す。
+  //   - 払い損絶対 NG ルール: spendAcorns 成功後に grant が null を返したら addAcorns で必ず refund。
+  //   - PonoDonguriShop.purchase() 内部で spendAcorns→grant 順に走るので、 grant null を検知して refund する。
 
   const exterior = document.getElementById('exterior');
   const interior = document.getElementById('interior');
@@ -284,28 +282,106 @@
   const acornEl  = document.getElementById('acornCount');
   const toast    = document.getElementById('toast');
 
+  let rotationCache = []; // [{ id, name, gameId, price, rarity, img, owned }]
+  let renderBusy = false;
+
+  function _stickerImageFromCatalog(catalog, gameId, stickerId) {
+    try {
+      const page = catalog && catalog.pages && catalog.pages[gameId];
+      if (!page || !Array.isArray(page.stickers)) return '';
+      var s = page.stickers.find(function (x) { return x && x.id === stickerId; });
+      if (!s || !s.img) return '';
+      // game-stickers.js の resolveAsset と同じく shop/ から見ると ../ プレフィクス
+      if (/^(https?:|data:|\/|\.\.?\/)/.test(s.img)) return s.img;
+      return '../' + s.img;
+    } catch (e) { return ''; }
+  }
+
   function renderCounter() {
     counter.innerHTML = '';
-    SHOP_ITEMS.forEach((it, i) => {
-      const slot = document.createElement('div');
+    if (!window.PonoDonguriShop || !window.PonoGameStickers) {
+      counter.innerHTML = '<div style="color:#5D2E08;font-weight:900;padding:20px;text-align:center;">よみこみちゅう…</div>';
+      return;
+    }
+    Promise.all([
+      window.PonoGameStickers.loadCatalog(),
+      window.PonoDonguriShop.getCatalog()
+    ]).then(function (results) {
+      var catalog = results[0];
+      // getCatalog の戻り値は使わず、 rotation だけ参照 (3 枠ローテ)
+      var rot = window.PonoDonguriShop.getRotation();
+      var ids = (rot && rot.stickerIds) || [];
+      rotationCache = ids.map(function (sid) {
+        var owned = window.PonoDonguriShop.getOwnershipState(sid);
+        return {
+          id: sid,
+          price: window.PonoDonguriShop.getPrice(sid),
+          img: _stickerImageFromCatalog(catalog, _resolveGameId(catalog, sid), sid),
+          name: _resolveName(catalog, sid),
+          gameId: _resolveGameId(catalog, sid),
+          owned: !!(owned && owned.owned)
+        };
+      });
+      _paintSlots();
+    }).catch(function (err) {
+      try { console.warn('[shop] failed to load rotation:', err); } catch (e) {}
+      counter.innerHTML = '<div style="color:#5D2E08;font-weight:900;padding:20px;text-align:center;">よみこみに しっぱいしたよ</div>';
+    });
+  }
+
+  function _resolveName(catalog, stickerId) {
+    var pages = (catalog && catalog.pages) || {};
+    var keys = Object.keys(pages);
+    for (var i = 0; i < keys.length; i++) {
+      var list = (pages[keys[i]] && pages[keys[i]].stickers) || [];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j] && list[j].id === stickerId) return list[j].name || stickerId;
+      }
+    }
+    return stickerId;
+  }
+  function _resolveGameId(catalog, stickerId) {
+    var pages = (catalog && catalog.pages) || {};
+    var keys = Object.keys(pages);
+    for (var i = 0; i < keys.length; i++) {
+      var list = (pages[keys[i]] && pages[keys[i]].stickers) || [];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j] && list[j].id === stickerId) return keys[i];
+      }
+    }
+    return '';
+  }
+
+  function _paintSlots() {
+    counter.innerHTML = '';
+    if (!rotationCache.length) {
+      counter.innerHTML = '<div style="color:#5D2E08;font-weight:900;padding:20px;text-align:center;">きょうの シールは おやすみ</div>';
+      return;
+    }
+    rotationCache.forEach(function (it, i) {
+      var slot = document.createElement('div');
       slot.className = 'item-slot';
       slot.dataset.slot = i;
-      slot.innerHTML = `
-        <div class="item-float">
-          <img class="item-img" src="${it.img}" alt="${it.name}"
-               onerror="this.style.display='none';this.nextElementSibling && (this.nextElementSibling.style.display='block')">
-          <span class="item-emoji" style="display:none;">📦</span>
-          <div class="magic-disc"></div>
-          <div class="sparkle s1"></div>
-          <div class="sparkle s2"></div>
-          <div class="sparkle s3"></div>
-        </div>
-        <div class="item-card">
-          <div class="item-name">${it.name}</div>
-          <div class="item-price">🌰 ${it.price}</div>
-        </div>
-      `;
-      slot.addEventListener('click', () => tryBuy(it));
+      slot.dataset.stickerId = it.id;
+      var ownedTag = it.owned ? '<div class="item-name" style="color:#888;font-size:0.72rem;">もう なかよし♪</div>' : '';
+      var imgHtml = it.img
+        ? '<img class="item-img" src="' + it.img + '" alt="' + (it.name || '') + '" onerror="this.style.display=\'none\';this.nextElementSibling && (this.nextElementSibling.style.display=\'block\')">'
+        : '';
+      slot.innerHTML =
+        '<div class="item-float">' +
+          imgHtml +
+          '<span class="item-emoji"' + (it.img ? ' style="display:none;"' : '') + '>🌟</span>' +
+          '<div class="magic-disc"></div>' +
+          '<div class="sparkle s1"></div>' +
+          '<div class="sparkle s2"></div>' +
+          '<div class="sparkle s3"></div>' +
+        '</div>' +
+        '<div class="item-card">' +
+          '<div class="item-name">' + (it.name || 'シール') + '</div>' +
+          '<div class="item-price">🌰 ' + it.price + '</div>' +
+          ownedTag +
+        '</div>';
+      slot.addEventListener('click', function () { tryBuy(it); });
       counter.appendChild(slot);
     });
   }
@@ -319,38 +395,102 @@
   function showToast(msg) {
     toast.textContent = msg;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1800);
+    setTimeout(function () { toast.classList.remove('show'); }, 1800);
   }
 
   function tryBuy(item) {
-    if (typeof window.spendAcorns !== 'function') return;
-    const have = window.getAcorns();
-    if (have < item.price) {
-      showToast(`🌰 たりないよ〜 (あと ${item.price - have}こ)`);
+    if (renderBusy) return;
+    if (!item || !item.id) return;
+    if (!window.PonoDonguriShop || typeof window.PonoDonguriShop.purchase !== 'function') return;
+    if (typeof window.spendAcorns !== 'function' || typeof window.getAcorns !== 'function') return;
+
+    if (item.owned) {
+      showToast('🎀 もう なかよし♪');
       return;
     }
-    if (window.spendAcorns(item.price)) {
-      showToast(`🎉 ${item.name} を てにいれた！`);
-      // TODO: room 所持品に追加
+    var have = window.getAcorns();
+    if (have < item.price) {
+      showToast('🌰 たりないよ〜 (あと ' + (item.price - have) + 'こ)');
+      return;
     }
+
+    // PonoDonguriShop.purchase 内部:
+    //   1) spendAcorns(price)
+    //   2) PonoGameStickers.grant({gameId, stickerId, event:'donguri_shop', show:false})
+    // grant が null を返したら money は引かれたまま → ここで必ず addAcorns で refund。
+    renderBusy = true;
+    var preBalance = window.getAcorns();
+    var preDelta = preBalance; // refund 計算用 fallback (実 cost は item.price)
+
+    window.PonoDonguriShop.purchase(item.id).then(function (res) {
+      renderBusy = false;
+      if (!res || !res.success) {
+        // spend 自体に失敗 → 何もしない (money は無事)
+        var reason = (res && res.reason) || 'unknown';
+        if (reason === 'insufficient_acorns') {
+          showToast('🌰 たりないよ〜');
+        } else if (reason === 'invalid_sticker' || reason === 'not_in_rotation') {
+          showToast('🌀 きょうは うりきれ');
+        } else {
+          showToast('😢 かえなかった');
+        }
+        return;
+      }
+      // success かつ stickerResult が null/false → grant 失敗 (catalog エラー等)。 必ず refund。
+      if (!res.stickerResult) {
+        try {
+          if (typeof window.addAcorns === 'function') {
+            window.addAcorns(item.price, { reason: 'shop_refund', suppressRewardModal: true });
+          }
+        } catch (e) {}
+        showToast('😢 ふしぎなことが おきたよ。 どんぐりは もどしたよ');
+        updateAcorns();
+        renderCounter();
+        return;
+      }
+      // 正常購入完了
+      showToast('🎉 ' + (item.name || 'シール') + ' を ゲット！');
+      // game-stickers.js の grant({show:false}) なので toast popup は出ない。
+      // 「ペタッとはる」 動線は別途 sticker book で。 ここでは shop 内で完結。
+      updateAcorns();
+      // 在庫表示更新 (owned=true に)
+      renderCounter();
+    }).catch(function (err) {
+      renderBusy = false;
+      try { console.warn('[shop] purchase failed:', err); } catch (e) {}
+      // purchase が throw した場合: spendAcorns 済かは不明。 安全側で残高差分から refund 推定。
+      try {
+        var nowBal = (typeof window.getAcorns === 'function') ? window.getAcorns() : preBalance;
+        var spent = preBalance - nowBal;
+        if (spent > 0 && typeof window.addAcorns === 'function') {
+          window.addAcorns(spent, { reason: 'shop_refund_exception', suppressRewardModal: true });
+        }
+      } catch (e2) {}
+      showToast('😢 エラー。 どんぐりは もどしたよ');
+      updateAcorns();
+    });
   }
 
   // 外観タップで店内へ
-  exterior.addEventListener('click', () => {
+  exterior.addEventListener('click', function () {
     exterior.classList.add('fade-out');
-    setTimeout(() => {
+    setTimeout(function () {
       interior.classList.add('show');
       updateAcorns();
+      renderCounter();
     }, 300);
   });
 
   // 戻る
-  backBtn.addEventListener('click', () => {
+  backBtn.addEventListener('click', function () {
     location.href = '../play.html';
   });
 
   // イベントで自動更新
   window.addEventListener('pono-acorns-changed', updateAcorns);
+  window.addEventListener('PonoDonguriShopPurchased', function () {
+    updateAcorns();
+  });
 
   renderCounter();
   updateAcorns();

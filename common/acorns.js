@@ -16,6 +16,15 @@
   var DEV_BYPASS_KEY = 'pono_acorns_dev_v1';
   function _isDevBypass(gameId) {
     if (gameId !== 'maze') return false;
+    // batch:887 admin-debug-leak-fix — URL bypass は manage debug board で
+    // "maze-dev-bypass" を ON にした session のみ許可 (本番ユーザーは PonoDebugMode 未 unlock → 常に false)。
+    try {
+      if (!window.PonoDebugMode
+          || typeof window.PonoDebugMode.isFeatureEnabled !== 'function'
+          || !window.PonoDebugMode.isFeatureEnabled('maze-dev-bypass')) {
+        return false;
+      }
+    } catch (e) { return false; }
     try {
       var params = new URLSearchParams(window.location.search);
       return params.get('dev') === '1';

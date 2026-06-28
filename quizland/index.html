@@ -3969,6 +3969,15 @@ let locked = false;
 //   debug ナビは無効化する (DOM は付くが操作は通常通り、進行はそのまま全問を回す)。
 //   通常ユーザー (?debug=all なし) では一切挙動が変わらないこと。
 const QZ_DEBUG_ALL = (function () {
+  // batch:887 admin-debug-leak-fix — ?debug=all は manage unlock 後 +
+  // "quizland-debug-all" feature ON のみ。 本番ユーザーは常に false (= 通常出題)。
+  try {
+    if (!window.PonoDebugMode
+        || typeof window.PonoDebugMode.isFeatureEnabled !== 'function'
+        || !window.PonoDebugMode.isFeatureEnabled('quizland-debug-all')) {
+      return false;
+    }
+  } catch (_) { return false; }
   try {
     const sp = new URLSearchParams(window.location.search);
     return sp.get('debug') === 'all';

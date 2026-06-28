@@ -126,7 +126,7 @@ BOOK_BENTO_NPCS       = ['risu', 'inu', 'shika']
 
 判定関数: `isBentoFoodUnlocked` ([common/tier.js L283](../common/tier.js)) / `isBentoBoxUnlocked` ([L293](../common/tier.js)) / `isBentoNpcUnlocked` ([L302](../common/tier.js))。
 
-`PONO_TIER_GAME_LOCKS_ENABLED = true` ([common/tier.js L37](../common/tier.js)) で**ロック有効**。 ただし Web MVP の運用ルールとして実際の絵本パスワード `BOOK_PASSWORDS = ['1234']` は仮置き。
+`PONO_TIER_GAME_LOCKS_ENABLED = true` ([common/tier.js L37](../common/tier.js)) で**ロック有効**。 絵本パスワードは v17XX で `BOOK_PASSWORDS = ['arigato_pono2026']` に統合 (旧 `['1234']` テスト用 + `ADMIN_PASSWORDS=['abcd']` を 1 本化)。
 
 ---
 

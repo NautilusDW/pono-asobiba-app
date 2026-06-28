@@ -100,7 +100,7 @@
 - **maze の `____.png` `____1_____.png` `森の入口.png` `hf_20260427_*.png`** など旧 draft 約 5MB がデプロイ対象に
 - **リポジトリ直下の開発残骸**: `_smoke.js` (0 byte), `_probe_frame.png` (433KB 魔法陣), `debug.log` (15KB), `tmp_extracted_script.js` (224KB) が `wrangler.toml directory='./'` で全配信
 - **`assets/images/Bowling/レイヤー 0_002.png 〜 015.png`** (Procreate 書き出し原本 13 枚 ~2.8MB) がマルチバイト名のままデプロイ
-- **`assets/images/Block/nautilus1105_*.png`** (Midjourney 生ファイル名 7 枚 ~13MB、うち 6 枚は stage1-5,6 と md5 完全一致)
+- **`assets/images/Block/nautilus1105_*.png`** (Midjourney 生ファイル名 7 枚 ~13MB、うち 6 枚は stage1-5,6 と md5 完全一致) — ※過去の残骸ファイル名の記述のみ。 新規生成は Midjourney 禁止 (GPT Image 2 のみ)
 - **OG 画像が `A+用ヘッダー.jpg`** という日本語+記号ファイル名 (SNS シェアで URL エンコード事故の温床)
 
 ---
@@ -301,3 +301,13 @@
 2. ストア配信は iOS / Android どっち優先 or 両方か
 
 → この 2 つを確定してから、次フェーズの実装エージェントチーム編成に入る。
+
+---
+
+## 7. 監査後の方針確定（2026-06-28 追記）
+
+§1-1（サブスク誘導とティアロックが全機能で稼働中）で blocker として挙げた `PONO_TIER_GAME_LOCKS_ENABLED = true` は、 ユーザー判断により **3-tier (free / book / sub) 運用が正しい方針** と再確認された。 当時の「Amazon 購入者には無料で全機能」前提（= MVP 全面無料化）は撤回し、 free=限定体験 / book=Amazon 絵本購入者奥付パスワード解錠 / sub=アプリ購入者全機能解錠（book 範囲 + α）の 3 階層を維持する。
+
+→ §1-1 の「tier.js 一括無効化 + 各ゲーム個別の lockedCards / showSubscribePromo / premium gate を一斉解除」は blocker として無効化（実施しない）。 一次ソースは `common/tier.js` および `docs/TIER_POLICY.md` §11「運用方針確定（2026-06-28）」を参照。
+
+§1-1 以外の blocker（テスト用残骸の `_tut_seen` removeItem、 絵本タイトル表記ゆれ、 開発用 UI の本番露出、 画像品質、 データ整合性バグ、 ファイル名地雷）は引き続き有効。
