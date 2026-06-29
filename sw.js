@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1795: えほんの あいことば モーダル (#passwordUnlockModal) の .password-modal-inner で max-height 66%→80% + overflow-y: auto を追加。 クイズタブの content が下端で見切れる bug を修正。 スクロールバーは subtle (thin + cream tone)。 play.html PAGE_CACHE_VERSION と同期。
 // v1793: bento 監査 fix 3件 (batch:937) — pointercancel追加 / completeChromeSafeArea debounce / 「あとで いれよう」変数化。play.html PAGE_CACHE_VERSION と同期。
 // v1792: quizland 監査 fix 6 件 (batch:936) — 不正解チップ複数赤クリア / 答え中ナレ停止 / キーボード対応 / ロック視覚FB / TTS 4→7s / ロック理由表示 + 軽量化。play.html PAGE_CACHE_VERSION と同期。
 // v1791: 音タッチ モード選択画面の iPhone 17 portrait (393x852) layout 修正 (batch:942-oto-mode-select-title-overlap-iphone17)。 「あそびかたを えらぼう」 画面でロゴが下落して 「リズム ストーリーモード」 ボタンに被る問題を修正。 新規 `@media (max-width: 480px) and (orientation: portrait)` ブロックを追加し (1) `.intro__content { top: 16%; transform: translateY(0); width: min(62vw, 360px) }` でロゴを上部に固定 (2) `.start-mode-choice { padding-top: 6vh; align-items: flex-start }` で panel を上端 anchor (3) `.start-mode-panel { margin-top: clamp(180px, 36vh, 340px); transform: none }` で見出し + ボタンを下に押し下げ。 iPhone 17 で logo 中心 ~111px / panel 上端 ~358px / clear gap ~197px、 desktop/tablet/landscape は無改造。 play.html PAGE_CACHE_VERSION と同期。
@@ -418,7 +419,7 @@
 // v1780: base AcornModal __progress を白 → 焦げ茶 #6d3b07 (cream/maze 等で視認性確保)、 oto override #BEF5FF は維持、 dark panel ゲームは個別 override 追加。
 // v1779: oto AcornModal 専用調整 — (1) __progress を白系に (海底ネイビーで視認性確保) (2) panel に大きめ border-radius で角丸化、 他ゲーム焦茶色は base 維持。
 // v1794: puzzle 監査 fix 5件 (batch:938) — loadStage null check / currentStageIndex 範囲チェック / OP narration 3.5s fallback / btnPlayAgain dead code 削除 / album STAGE_TITLES sync コメント + 軽量化。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1794;
+const CACHE_VERSION = 1795;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)

@@ -3557,7 +3557,11 @@
       /* フレーム上部〜中央のクリーム塗りに載せる (下部のリボン・葉っぱ装飾を残す) */
       width: 78%;
       height: auto;
-      max-height: 66%;
+      max-height: 80%;             /* v1795: 66% → 80% に拡張 (クイズタブの content 全部入る余裕) */
+      overflow-y: auto;            /* v1795: max-height 越えたら内部スクロール許可 */
+      -webkit-overflow-scrolling: touch;  /* iOS で慣性スクロール */
+      scrollbar-width: thin;
+      scrollbar-color: rgba(126, 78, 18, .45) transparent;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -3568,6 +3572,16 @@
       font-family: inherit;
       padding: 8px 7px;
       box-sizing: border-box;
+    }
+    .password-modal-inner::-webkit-scrollbar {
+      width: 4px;
+    }
+    .password-modal-inner::-webkit-scrollbar-thumb {
+      background: rgba(126, 78, 18, .45);
+      border-radius: 999px;
+    }
+    .password-modal-inner::-webkit-scrollbar-track {
+      background: transparent;
     }
     .password-modal-title {
       font-size: 1.02rem;
@@ -6743,7 +6757,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1794;
+    const PAGE_CACHE_VERSION = 1795;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
