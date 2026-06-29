@@ -66,8 +66,6 @@
 - 2026-06-29 14:18 - by Codex - [batch:911-maze-water-bug-body-collision] - maze/index.html, AGENTS_CLAIMS.md, HANDOFF.md - みずすべりを場所判定ではなく動いているおじゃま虫本体のタイミング判定へ修正 [overlap: batch:909-gacha-mobile-mask-artifact, batch:910-bento-face-food-zones]
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
-- 2026-06-30 05:30 - by Claude - [batch:966-quizland-linked-targets-exclude-audio] - common/layout/layout-editor.js, sw.js, play.html - findLinkedTargets 経由で個別 resize 時に .q-text-card .audio (speaker) が巻き込まれる経路を hard skip
-- 2026-06-30 05:18 - by Codex - [batch:967-bento-marker-only-cup-size] - admin/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - Bento 管理画面の押す丸だけ表示をカップ実寸に近い大きな円へ変更 [overlap: batch:860-data-export-import, batch:877-gacha-tray-mask-lower, batch:966-quizland-linked-targets-exclude-audio]
 
 ## なぜ HANDOFF.md と別ファイルなのか
 

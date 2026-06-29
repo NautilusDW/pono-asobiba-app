@@ -12543,8 +12543,19 @@ function bentoSlotPointFromDragEvent(e) {
   });
 }
 function bentoSlotPositionMarker(marker, point) {
-  marker.style.left = 'calc(' + (point.x / BENTO_SLOT_W * 100) + '% - 19px)';
-  marker.style.top = 'calc(' + (point.y / BENTO_SLOT_H * 100) + '% - 19px)';
+  var coordinateSize = Number(marker && marker.dataset && marker.dataset.coordinateSize);
+  if (isFinite(coordinateSize) && coordinateSize > 0) {
+    marker.style.left = 'calc(' + (point.x / BENTO_SLOT_W * 100) + '% - ' + (coordinateSize / 2 / BENTO_SLOT_W * 100) + '%)';
+    marker.style.top = 'calc(' + (point.y / BENTO_SLOT_H * 100) + '% - ' + (coordinateSize / 2 / BENTO_SLOT_H * 100) + '%)';
+    return;
+  }
+  var pixelSize = Number(marker && marker.dataset && marker.dataset.pixelSize) || 38;
+  marker.style.left = 'calc(' + (point.x / BENTO_SLOT_W * 100) + '% - ' + (pixelSize / 2) + 'px)';
+  marker.style.top = 'calc(' + (point.y / BENTO_SLOT_H * 100) + '% - ' + (pixelSize / 2) + 'px)';
+}
+function bentoSlotMarkerOnlyDiameter() {
+  var preset = BENTO_SLOT_CUP_SIZE_PRESETS.find(function(item) { return item && item.key === 'small'; }) || BENTO_SLOT_CUP_SIZE_PRESETS[0];
+  return Number(preset && preset.size) || 150;
 }
 function bentoSlotSampleForDef(def, entry) {
   var selected = entry || bentoSlotGetEntry(_bentoSlotState.boxId, def);
@@ -12780,7 +12791,14 @@ function bentoSlotRenderPreview() {
     var selected = key === _bentoSlotState.slotKey;
     var hidden = bentoSlotIsHidden(box.id, def);
     var markerColor = editMarker ? '#0EA5E9' : def.color;
-    marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : markerColor) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:' + (editMarker ? '0.76rem' : '0.62rem') + ';font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden && !editMarker ? '0.45' : '1') + ';z-index:' + (editMarker ? (selected ? 191 : 190) : (selected ? 181 : 180)) + ';';
+    if (markerOnly && editMarker) {
+      var diameter = bentoSlotMarkerOnlyDiameter();
+      marker.dataset.coordinateSize = String(diameter);
+      marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - ' + (diameter / 2 / BENTO_SLOT_W * 100) + '%);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - ' + (diameter / 2 / BENTO_SLOT_H * 100) + '%);width:' + (diameter / BENTO_SLOT_W * 100) + '%;height:' + (diameter / BENTO_SLOT_H * 100) + '%;border-radius:999px;border:' + (selected ? '5px' : '3px') + ' solid ' + (hidden ? '#9CA3AF' : '#0EA5E9') + ';background:' + (hidden ? 'rgba(156,163,175,0.18)' : 'rgba(14,165,233,0.18)') + ';color:' + (hidden ? '#4B5563' : '#075985') + ';box-shadow:0 2px 10px rgba(3,105,161,0.22), inset 0 0 0 3px rgba(255,255,255,0.72);font-family:inherit;font-size:1.05rem;font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden ? '0.55' : '1') + ';z-index:' + (selected ? 195 : 194) + ';';
+    } else {
+      marker.dataset.pixelSize = '38';
+      marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : markerColor) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:' + (editMarker ? '0.76rem' : '0.62rem') + ';font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden && !editMarker ? '0.45' : '1') + ';z-index:' + (editMarker ? (selected ? 191 : 190) : (selected ? 181 : 180)) + ';';
+    }
     marker.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       _bentoSlotState.slotKey = key;

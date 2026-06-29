@@ -2633,6 +2633,35 @@
 
     var linkingDisabled = e.ctrlKey || e.metaKey;
     var linkedTargets = (isGroupCornerScale || linkingDisabled) ? [] : findLinkedTargets(el, primarySides);
+    // 2026-06-30 (batch:966): 個別 resize 経路でも GROUP_SCALE_PROTECTED_SELECTORS を
+    //   尊重する。 batch:964 は group corner scale (multi-select) のみを対象として
+    //   いたので、 単一要素のコーナードラッグだと findLinkedTargets が
+    //   .q-text-card .audio (右上スピーカー) を「右辺/上辺隣接」として拾い、
+    //   performResize ループで一緒に伸縮させていた (= 「相変わらず巻き込まれる」 の根本)。
+    //   ここで selector match した要素を hard skip。
+    linkedTargets = linkedTargets.filter(function (t) {
+      if (!t || !t.el) return false;
+      for (var pi = 0; pi < GROUP_SCALE_PROTECTED_SELECTORS.length; pi++) {
+        try {
+          if (t.el.matches && t.el.matches(GROUP_SCALE_PROTECTED_SELECTORS[pi])) {
+            return false;
+          }
+        } catch (eMatches) { /* invalid selector — skip */ }
+      }
+      return true;
+    });
+    // 2026-06-30 (batch:966): 親子 (祖先・子孫) 関係にある要素も linked から除外。
+    //   findLinkedTargets のエッジ隣接検出 (EPS=8px) は「隣接した別要素」 を想定して
+    //   いるが、 .q-text-card のように親 rect の辺と子 (.audio 等) rect の辺が偶然
+    //   一致するケースで親自体を拾ってしまう。 画像 (.emoji-display.phase-question)
+    //   のコーナードラッグで .q-text-card 親が一緒に scale するのはユーザー意図と
+    //   合わないので除外。 兄弟の隣接 link (例: 質問テキスト と background) は
+    //   contains 関係にないので影響を受けない。
+    linkedTargets = linkedTargets.filter(function (t) {
+      if (!t || !t.el) return false;
+      if (el && (el.contains(t.el) || t.el.contains(el))) return false;
+      return true;
+    });
     linkedTargets.forEach(captureTarget);
     linkedTargets.forEach(function (t) { t.el.classList.add('edge-linked'); });
 
