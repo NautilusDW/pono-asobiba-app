@@ -14398,8 +14398,8 @@ function getSimpleStageMarkerBounds(box, kind) {
   const bounds = source || getPlacementBounds(box);
   const w = Math.max(1, Number(bounds && bounds.w) || FREE_LAYOUT_W);
   const h = Math.max(1, Number(bounds && bounds.h) || FREE_LAYOUT_H);
-  const padX = Math.min(w * 0.28, Math.max(34, w * 0.18));
-  const padY = Math.min(h * 0.28, Math.max(30, h * 0.18));
+  const padX = Math.min(w * 0.22, Math.max(26, w * 0.14));
+  const padY = Math.min(h * 0.22, Math.max(24, h * 0.14));
   return {
     x: (Number(bounds && bounds.x) || 0) + padX,
     y: (Number(bounds && bounds.y) || 0) + padY,

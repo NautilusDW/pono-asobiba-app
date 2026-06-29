@@ -67,7 +67,7 @@
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
 - 2026-06-30 03:05 - by Codex - [batch:960-bento-marker-display-grid] - bento/index.html, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento 配置先丸の表示座標を実配置座標から分離して見た目用2x2グリッドへ変更 [overlap: batch:860-data-export-import, batch:885-difficulty-label-phase3-fix, batch:886-difficulty-label-sw-bump-1736]
-- 2026-06-30 03:30 - by Claude - [batch:961-quizland-q113-rainbow-swap] - quizland/data/questions.js, sw.js, play.html, AGENTS_CLAIMS.md - Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png イラストに差し替え
+
 ## なぜ HANDOFF.md と別ファイルなのか
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。

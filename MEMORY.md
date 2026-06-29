@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T18:38:29Z - quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (emoji_name→trivia + framed:true, sw v1821 / batch:961)
+- **タスク**: quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (emoji_name→trivia + framed:true, sw v1821 / batch:961)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 45
+- **エラー数**: 6
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 18, "Read": 8, "Glob": 3, "Grep": 12, "Agent": 2, "Edit": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-29T17:56:32Z - quizland Q113 (実 qid: weather_lv2_010) を Q119 (weather_lv3_016) と同じレイアウトに合わせる + 誤った weather_lv2_002 エントリ削除
 - **タスク**: quizland Q113 (実 qid: weather_lv2_010) を Q119 (weather_lv3_016) と同じレイアウトに合わせる + 誤った weather_lv2_002 エントリ削除
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Bash": 6, "Agent": 17, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T00:39:52Z - ショップ BGM 差し替え (honey_bell_shop.mp3) を develop-app に push + App staging デプロイ完了確認。 Push Agent → Deploy Verification Agent の2段階でオーケストレーション、 GitHub Actions 1m29s success + CACHE_VERSION 1784 反映 + 新旧BGM両方の配信実機検証 pass
-- **タスク**: ショップ BGM 差し替え (honey_bell_shop.mp3) を develop-app に push + App staging デプロイ完了確認。 Push Agent → Deploy Verification Agent の2段階でオーケストレーション、 GitHub Actions 1m29s success + CACHE_VERSION 1784 反映 + 新旧BGM両方の配信実機検証 pass
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 20
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Bash": 5, "Agent": 13, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
