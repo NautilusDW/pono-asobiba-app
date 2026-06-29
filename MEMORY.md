@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T19:54:16Z - quizland レイアウト保存→デフォルト戻りの根本修正 (★1 toggle 永続化 / ★2 save guard / ★3 group corner scale で speaker 除外 + CSS hook / ★4 deep-merge save / ★5 欠損ヒント、 batch:962+964、 sw v1822+v1824)
+- **タスク**: quizland レイアウト保存→デフォルト戻りの根本修正 (★1 toggle 永続化 / ★2 save guard / ★3 group corner scale で speaker 除外 + CSS hook / ★4 deep-merge save / ★5 欠損ヒント、 batch:962+964、 sw v1822+v1824)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 103
+- **エラー数**: 12
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 51, "Read": 13, "Glob": 3, "Grep": 13, "Agent": 11, "Edit": 9, "ToolSearch": 1, "SendMessage": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-29T19:46:44Z - quizland editor の group corner scale で .q-text-card .audio (right-top speaker) を巻き込まない selector exclusion 修正 (batch:964 / sw v1824)
 - **タスク**: quizland editor の group corner scale で .q-text-card .audio (right-top speaker) を巻き込まない selector exclusion 修正 (batch:964 / sw v1824)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 84, "Read": 31, "Glob": 2, "Edit": 45, "ToolSearch": 1, "Agent": 44, "Grep": 18, "Workflow": 2}
-- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T02:24:59Z - OTO mode-select iPhone portrait CSS fix: separate intro logo and start-mode-panel vertically
-- **タスク**: OTO mode-select iPhone portrait CSS fix: separate intro logo and start-mode-panel vertically
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 210
-- **エラー数**: 15
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 79, "Read": 28, "Glob": 2, "Edit": 40, "ToolSearch": 1, "Agent": 42, "Grep": 16, "Workflow": 2}
 - **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
