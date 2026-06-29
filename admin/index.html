@@ -11486,7 +11486,13 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
   ],
   divider: [
     { id: 'divider_wave', name: 'なみなみしきり', image: '../assets/images/bento/free-layout/divider_wave.png', size: 184, rotation: 0, layer: 20 },
-    { id: 'divider_wood', name: 'きのしきり', image: '../assets/images/bento/free-layout/divider_wood.png', size: 178, rotation: 0, layer: 20 }
+    { id: 'divider_wood', name: 'きのしきり', image: '../assets/images/bento/free-layout/divider_wood.png', size: 178, rotation: 0, layer: 20 },
+    { id: 'divider_wave_vertical_back', name: 'みどり縦（奥）', image: '../assets/images/bento/free-layout/divider_wave_vertical_back.png', size: 42, rotation: 0, layer: 20 },
+    { id: 'divider_wave_vertical_mid', name: 'みどり縦（中）', image: '../assets/images/bento/free-layout/divider_wave_vertical_mid.png', size: 46, rotation: 0, layer: 20 },
+    { id: 'divider_wave_vertical_front', name: 'みどり縦（手前）', image: '../assets/images/bento/free-layout/divider_wave_vertical_front.png', size: 50, rotation: 0, layer: 20 },
+    { id: 'divider_wood_vertical_back', name: '木縦（奥）', image: '../assets/images/bento/free-layout/divider_wood_vertical_back.png', size: 42, rotation: 0, layer: 20 },
+    { id: 'divider_wood_vertical_mid', name: '木縦（中）', image: '../assets/images/bento/free-layout/divider_wood_vertical_mid.png', size: 46, rotation: 0, layer: 20 },
+    { id: 'divider_wood_vertical_front', name: '木縦（手前）', image: '../assets/images/bento/free-layout/divider_wood_vertical_front.png', size: 50, rotation: 0, layer: 20 }
   ],
   other: [
     { id: 'pick_flag', name: 'ピック共通', image: '../assets/images/bento/free-layout/pick_flag.png', size: 66, rotation: -3, layer: 70 }
@@ -11665,8 +11671,24 @@ function bentoSlotGetFullMaskUrl(box) {
 function bentoSlotSamplesForKind(kind) {
   return BENTO_SLOT_SAMPLE_ITEMS[kind] || [];
 }
+var BENTO_SLOT_DEFAULT_SAMPLE_IDS = {
+  divider: [
+    'divider_wave_vertical_back',
+    'divider_wave',
+    'divider_wave_vertical_mid',
+    'divider_wood',
+    'divider_wave_vertical_front',
+    'divider_wave'
+  ]
+};
 function bentoSlotDefaultSampleForDef(def) {
   var list = bentoSlotSamplesForKind(def && def.kind);
+  var defaults = BENTO_SLOT_DEFAULT_SAMPLE_IDS[def && def.kind];
+  var defaultId = defaults && defaults[def && def.index || 0];
+  if (defaultId) {
+    var match = list.find(function(sample) { return sample.id === defaultId; });
+    if (match) return match;
+  }
   return list[(def && def.index || 0) % Math.max(1, list.length)] || null;
 }
 function bentoSlotFindSampleById(kind, sampleId) {

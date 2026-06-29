@@ -6718,6 +6718,16 @@ const bentoAccessories = [
   { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 136, size: 190, sizeKey: 'medium', layerBase: 10 },
   { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: 0 },
   { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0 },
+  { id: 'divider_wave_vertical', type: 'divider', name: 'みどりたてしきり', image: FREE_ASSET + 'divider_wave_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wave_vertical_mid', slotVariantImages: [
+    { key: 'back', sampleId: 'divider_wave_vertical_back', image: FREE_ASSET + 'divider_wave_vertical_back.png', size: 42, renderAspect: 2.55 },
+    { key: 'mid', sampleId: 'divider_wave_vertical_mid', image: FREE_ASSET + 'divider_wave_vertical_mid.png', size: 46, renderAspect: 2.74 },
+    { key: 'front', sampleId: 'divider_wave_vertical_front', image: FREE_ASSET + 'divider_wave_vertical_front.png', size: 50, renderAspect: 2.48 },
+  ] },
+  { id: 'divider_wood_vertical', type: 'divider', name: 'きのたてしきり', image: FREE_ASSET + 'divider_wood_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wood_vertical_mid', slotVariantImages: [
+    { key: 'back', sampleId: 'divider_wood_vertical_back', image: FREE_ASSET + 'divider_wood_vertical_back.png', size: 42, renderAspect: 2.45 },
+    { key: 'mid', sampleId: 'divider_wood_vertical_mid', image: FREE_ASSET + 'divider_wood_vertical_mid.png', size: 46, renderAspect: 2.74 },
+    { key: 'front', sampleId: 'divider_wood_vertical_front', image: FREE_ASSET + 'divider_wood_vertical_front.png', size: 50, renderAspect: 2.48 },
+  ] },
 ];
 const bentoLeafItems = [
   { id: 'leaf_cabbage', type: 'leaf', name: 'キャベツ', image: COOKING_P + 'cabbage/cabbage_002.png', css: 'free-css-divider', sk: 'g', size: 150, sizeKey: 'medium', layerBase: 12, rotation: -2, stackTarget: true, simpleSampleId: 'leaf_cabbage' },
@@ -10392,12 +10402,50 @@ function makeSimpleSlot(kind, tier, idx, point) {
     key: ['simple', selectedBentoBoxId, tier, kind, idx].join(':'),
     kind,
     tier,
+    index: idx,
     x: point.x,
     y: point.y,
   };
   if (Number.isFinite(Number(point && point.size))) slot.size = Number(point.size);
   if (point && point.sampleId) slot.sampleId = point.sampleId;
   return slot;
+}
+function getSimpleDividerDepthKeyForSlot(slot) {
+  const index = Number(slot && slot.index);
+  const row = Math.max(0, Math.min(2, Math.floor((Number.isFinite(index) ? index : 0) / 2)));
+  return ['back', 'mid', 'front'][row] || 'mid';
+}
+function getSimpleSlotVariantDef(def, slot) {
+  if (!def || !Array.isArray(def.slotVariantImages) || !def.slotVariantImages.length) return def;
+  const key = getSimpleDividerDepthKeyForSlot(slot);
+  const variant = def.slotVariantImages.find(entry => entry && entry.key === key)
+    || def.slotVariantImages.find(entry => entry && entry.key === 'mid')
+    || def.slotVariantImages[0];
+  if (!variant) return def;
+  return {
+    ...def,
+    image: variant.image || def.image,
+    img: variant.image || def.img || def.image,
+    size: variant.size || def.size,
+    renderAspect: variant.renderAspect || def.renderAspect,
+    rotation: variant.rotation != null ? variant.rotation : def.rotation,
+    simpleSampleId: variant.sampleId || def.simpleSampleId,
+    slotVariantKey: variant.key || '',
+  };
+}
+function orderSimpleSlotsForDef(def, slots) {
+  if (!def || !def.verticalDivider || !Array.isArray(slots) || slots.length <= 1) return slots;
+  const order = [0, 2, 4, 1, 3, 5];
+  const used = new Set();
+  const ordered = order
+    .map(index => slots.find(slot => slot && slot.index === index))
+    .filter(Boolean)
+    .filter(slot => {
+      if (used.has(slot.key)) return false;
+      used.add(slot.key);
+      return true;
+    });
+  return ordered.concat(slots.filter(slot => slot && !used.has(slot.key)));
 }
 function getSimpleSlotPointForDef(point, def, kind) {
   if (!point) return point;
@@ -10508,7 +10556,11 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
     const points = configured.length
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
       : fallbackPoints;
-    return points.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind)));
+    const slots = points.map((p, idx) => {
+      const variantDef = getSimpleSlotVariantDef(def, { index: idx });
+      return makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, variantDef, kind));
+    });
+    return orderSimpleSlotsForDef(def, slots);
   }
   if (kind === 'cup' || kind === 'other') {
     const configured = getSimpleSlotLayoutPoints(box, kind);
@@ -10685,6 +10737,7 @@ function getSimpleSlotSize(def, slot) {
   if (slot && Number.isFinite(Number(slot.size))) return clamp(Number(slot.size), 32, 340);
   if (def.type === 'decor') return getSimpleDecorSize(def);
   if (def.type === 'leaf') return clamp(def.size || 170, 110, 240);
+  if (def.type === 'divider' && def.verticalDivider) return clamp(def.size || 46, 36, 74);
   if (def.type === 'divider') return clamp(def.size || 180, 130, 190);
   if (def.type === 'food') {
     const role = def.okazuRole || getOkazuRole(def);
@@ -11394,15 +11447,16 @@ function addSimpleFixedPaletteItem(def) {
     return null;
   }
   if (slot.replaceUid) removeFreeItemData(slot.replaceUid);
-  const item = addFreeLayoutItem(def, {
+  const placementDef = getSimpleSlotVariantDef(def, slot);
+  const item = addFreeLayoutItem(placementDef, {
     x: slot.x,
     y: slot.y,
-    size: getSimpleSlotSize(def, slot),
-    rotation: def.type === 'food' || def.type === 'decor'
-      ? (def.rotation != null ? def.rotation : 0)
-      : (def.rotation || 0),
+    size: getSimpleSlotSize(placementDef, slot),
+    rotation: placementDef.type === 'food' || placementDef.type === 'decor'
+      ? (placementDef.rotation != null ? placementDef.rotation : 0)
+      : (placementDef.rotation || 0),
     tier,
-    brushLevel: def.brushItem ? 1 : def.brushLevel,
+    brushLevel: placementDef.brushItem ? 1 : placementDef.brushLevel,
     simpleSlot: slot.key,
     skipRender: true,
   });
@@ -11618,6 +11672,7 @@ function addFreeLayoutItem(def, opts = {}) {
     variantImages,
     variantIndex: variantIndex >= 0 ? variantIndex : 0,
     clusterImages: Array.isArray(def.clusterImages) ? def.clusterImages.map(piece => ({ ...piece })) : null,
+    renderAspect: opts.renderAspect || def.renderAspect || 1,
     parentId: opts.parentId || null,
     parentCupId,
     simpleSlot: opts.simpleSlot || '',
@@ -12289,7 +12344,7 @@ function createFreePlacedElement(item, interactive) {
   el.style.left = toPctX(item.x);
   el.style.top = toPctY(item.y);
   el.style.width = toPctSize(item.size || 72);
-  el.style.height = toPctY(item.size || 72);
+  el.style.height = toPctY((item.size || 72) * (Number(item.renderAspect) || 1));
   el.style.zIndex = getFreeItemRenderLayer(item);
   el.style.setProperty('--rot', (item.rotation || 0) + 'deg');
   el.style.setProperty('--scale', item.scale || 1);
