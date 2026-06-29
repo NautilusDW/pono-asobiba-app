@@ -3621,6 +3621,28 @@
       gap: 8px;
     }
   }
+  /* iPhone-portrait: タイトル(intro logo) と モードえらびパネルが
+     高さ不足で重なるので、 タイトルは上に、 「あそびかたを えらぼう」
+     ヘディング+ボタン群は下にずらして余白を確保する */
+  @media (max-width: 480px) and (orientation: portrait) {
+    .intro__content {
+      top: 16%;
+      width: min(62vw, 360px);
+      transform: translateY(0);
+    }
+    .start-mode-choice {
+      padding-top: 6vh;
+      align-items: flex-start;
+    }
+    .start-mode-panel {
+      transform: none;
+      margin-top: clamp(180px, 36vh, 340px);
+    }
+    .start-mode-choice.free-step .start-mode-panel {
+      transform: none;
+      margin-top: clamp(180px, 36vh, 340px);
+    }
+  }
 
   /* ── チュートリアル (puzzle の実UIチュートリアルに寄せる) ── */
   .tut-dim { position:fixed; inset:0; z-index:9995; background:rgba(2,6,23,0.62); pointer-events:auto; }
