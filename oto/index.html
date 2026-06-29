@@ -2678,15 +2678,16 @@
   }
   .rhythm-name-skip {
     /* v(name-row-overflow-fix): margin-left:8px は flex gap:8px と二重計上だったため除去。
-       padding 16→12 にして label「のこさない」 (5字) が 375px 幅で行内に収まるよう調整。 */
-    padding: 10px 12px;
+       batch:941: label を「ほぞんしない」(6字) に変更したため、 375px 幅でも flex 行内に
+       収まるよう padding を 10px 12px→10px 8px、 font-size を 14px→13px に縮めた。 */
+    padding: 10px 8px;
     border: none;
     border-radius: 12px;
     background: rgba(255,255,255,0.12);
     color: rgba(255,255,255,0.85);
     font-family: inherit;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     white-space: nowrap;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -5539,7 +5540,7 @@
             <div class="rhythm-name-row">
               <input class="rhythm-name-input" id="rhythm-name-input" type="text" maxlength="8" autocomplete="off" inputmode="text" placeholder="なまえ">
               <button class="rhythm-name-save" type="submit">のこす</button>
-              <button class="rhythm-name-skip" type="button" id="rhythm-name-skip">あとで</button>
+              <button class="rhythm-name-skip" type="button" id="rhythm-name-skip">ほぞんしない</button>
             </div>
           </form>
           <div class="rhythm-ranking" id="rhythm-ranking">
@@ -11584,26 +11585,17 @@ if (rhythmNameForm) rhythmNameForm.addEventListener('submit', function(e) {
   // 数フレーム空けて結果パネルの再描画とフォーカス復帰を先に走らせる。
   setTimeout(function() { _maybeFireOtoAcornModal(); }, 400);
 });
-// v1116→batch:940 Fix#4: 「あとで」でもスコアは失わないよう、 既定名「ポノ」で匿名保存にフォールバック。
+// batch:941: 「ほぞんしない」(旧「あとで」) ボタンは設計どおり「保存せずスキップ」する。
+// batch:940 Fix#4 の自動保存は ユーザー意図 (匿名保存はせず本人選択を尊重) に合わないため revert。
 var rhythmNameSkip = document.getElementById('rhythm-name-skip');
 if (rhythmNameSkip) rhythmNameSkip.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
-  // batch:940 Fix#4: pendingScoreEntry があれば既定名で保存してから gate を閉じる (子のスコア消失防止)。
-  try {
-    var pending = _rhythm && _rhythm.pendingScoreEntry;
-    if (pending) {
-      var rank = _saveRhythmScoreEntry(pending, 'ポノ');
-      _rhythm.pendingScoreEntry = null;
-      var label = document.getElementById('rhythm-name-label');
-      if (label && rank) label.textContent = rank + 'いに のこったよ';
-      try { _renderRhythmLeaderboard(pending.key, pending.id); } catch(_) {}
-    }
-  } catch(_) {}
+  if (_rhythm) _rhythm.pendingScoreEntry = null;
   document.body.classList.remove('rhythm-namegate');
   var form = document.getElementById('rhythm-name-form');
   if (form) form.classList.add('hidden');
-  // batch913 Fix-B: スキップ時も同様に少し遅延してから どんぐりモーダルを出す。
+  // batch913 Fix-B: スキップ時も少し遅延してから どんぐりモーダルを出す。
   setTimeout(function() { _maybeFireOtoAcornModal(); }, 400);
 });
 _renderRhythmSongMenu();
