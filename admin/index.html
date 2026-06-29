@@ -12219,7 +12219,19 @@ function bentoSlotShouldRenderSample(def) {
   if (mode === 'kind') return def.kind === selected.kind;
   return (def.kind + ':' + def.index) === _bentoSlotState.slotKey;
 }
+function bentoSlotIsBottomLayerSample(kind, sample) {
+  var id = String(sample && sample.id || '');
+  var name = String(sample && sample.name || '');
+  var image = String(sample && sample.image || '');
+  return id === 'cabbage'
+    || id === 'divider_lettuce'
+    || name.indexOf('キャベツ') >= 0
+    || name.indexOf('レタス') >= 0
+    || image.indexOf('cabbage_shreds') >= 0
+    || image.indexOf('divider_lettuce') >= 0;
+}
 function bentoSlotRenderLayerBase(kind, sample) {
+  if (bentoSlotIsBottomLayerSample(kind, sample)) return 29;
   if (kind === 'cup' || kind === 'divider' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
   return Math.max(1, Math.floor(Number(sample && sample.layer) || 30));
 }

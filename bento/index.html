@@ -11685,12 +11685,30 @@ function getDefaultFreeRenderLayerBase(item) {
   return 30;
 }
 function getFreeRenderLayerBase(item) {
+  if (isFreeBottomLayerItem(item) && !item.parentCupId) return 29;
   if (shouldDepthSortFreeItem(item)) return 30;
   const base = Number(item && item.layerBase);
   return Number.isFinite(base) ? base : getDefaultFreeRenderLayerBase(item);
 }
+function isFreeBottomLayerItem(item) {
+  if (!item) return false;
+  const id = String(item.id || '');
+  const name = String(item.name || '');
+  const img = String(item.img || item.image || '');
+  const layerGroup = String(item.layerGroup || '');
+  return !!item.stackTarget
+    || !!item.brushItem
+    || layerGroup.indexOf('cabbage:') === 0
+    || id === 'cabbage'
+    || id === 'divider_lettuce'
+    || name.indexOf('キャベツ') >= 0
+    || name.indexOf('レタス') >= 0
+    || img.indexOf('cabbage_shreds') >= 0
+    || img.indexOf('divider_lettuce') >= 0;
+}
 function shouldDepthSortFreeItem(item) {
   if (!item) return false;
+  if (isFreeBottomLayerItem(item)) return true;
   if (item.brushItem || item.stackTarget || item.layerGroup) return false;
   return item.type === 'food' || item.type === 'cup' || item.type === 'divider' || item.type === 'pick';
 }
@@ -11698,6 +11716,16 @@ function getFreeItemRenderLayer(item) {
   const base = getFreeRenderLayerBase(item);
   const layer = Number(item && item.layer);
   const manualTie = Number.isFinite(layer) ? layer % 100 : 0;
+  if (item && item.parentCupId) {
+    const parentCup = placedItems.find(parent => parent.uid === item.parentCupId && parent.snapTarget);
+    if (parentCup) {
+      const cupLayer = getFreeItemRenderLayer(parentCup);
+      const childOffset = isFreeBottomLayerItem(item) ? 1000 : 2000;
+      const x = clamp(Number(item.x) || 0, 0, FREE_LAYOUT_W);
+      const y = clamp(Number(item.y) || 0, 0, FREE_LAYOUT_H);
+      return Math.round(cupLayer + childOffset + y / 10 + x / 100 + manualTie / 100);
+    }
+  }
   if (!shouldDepthSortFreeItem(item)) {
     return Math.round(base * 100000 + (Number.isFinite(layer) ? layer : base) * 100);
   }
