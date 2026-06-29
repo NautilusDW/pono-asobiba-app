@@ -5248,7 +5248,7 @@ body.bento-complete-open #sk-intro {
             <span>おにく</span>
           </div>
           <div class="sk-intro-example">
-            <img src="../assets/images/bento/cooking/salmon/salmon_003_done.png" alt="おさかな">
+            <img src="../assets/images/bento/cooking/salmon/salmon_halves_003_done.png" alt="おさかな">
             <span>おさかな</span>
           </div>
           <div class="sk-intro-example">
@@ -5721,7 +5721,7 @@ const FREE_COOKED_OKAZU = [
   { img: COOKING_P+'shrimp/shrimp_003_done.png',           name: 'エビフライ',       cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'shrimp', size: 222, rotation: 8 },
   { img: COOKING_P+'korokke/korokke_003_done.png',         name: 'コロッケ',         cat: 'meat', sk: 'y', okazuRole: 'main', simpleSampleId: 'korokke', size: 170, rotation: -3 },
   { img: COOKING_P+'egg/egg_003_done.png',                 name: 'たまごやき',       cat: 'meat', sk: 'r', okazuRole: 'side', simpleSampleId: 'egg', size: 130, cupSize: 112, rotation: 3 },
-  { img: COOKING_P+'salmon/salmon_003_done.png',           name: 'やきざけ',         cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'salmon', size: 292, rotation: -4 },
+  { img: COOKING_P+'salmon/salmon_halves_003_done.png',    name: 'やきざけ',         cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'salmon', size: 190, rotation: -3 },
   { img: FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', name: 'キャベツ',    cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'cabbage', size: 170, rotation: 0, brushItem: true, brushLevel: 1, stackTarget: true, brushImages: [FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_small.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_medium.png', FREE_LAYOUT_ASSET_P+'cabbage_shreds_patch_large.png'] },
   { img: COOKING_P+'tomato/tomato_001.png',                name: 'プチトマト',       cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'tomato', size: 82, cupSize: 82, rotation: -4 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_ninjin_ingen.png',     name: 'にんじんいんげん', cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'ninjin_ingen', size: 112, cupSize: 92, rotation: 1 },
@@ -11674,6 +11674,36 @@ function duplicateSelectedBrushItem() {
   spawnLandingSparkles(document.getElementById('free-layout-stage'));
   playPop();
 }
+function getDefaultFreeRenderLayerBase(item) {
+  if (!item) return 30;
+  if (item.type === 'cup' || item.snapTarget) return 10;
+  if (item.type === 'divider') return 12;
+  if (item.type === 'rice') return 20;
+  if (item.type === 'food') return 30;
+  if (item.type === 'decor') return 50;
+  if (item.type === 'pick') return 60;
+  return 30;
+}
+function getFreeRenderLayerBase(item) {
+  const base = Number(item && item.layerBase);
+  return Number.isFinite(base) ? base : getDefaultFreeRenderLayerBase(item);
+}
+function shouldDepthSortFreeItem(item) {
+  if (!item) return false;
+  if (item.brushItem || item.stackTarget || item.layerGroup) return false;
+  return item.type === 'food' || item.type === 'cup' || item.type === 'divider' || item.type === 'pick';
+}
+function getFreeItemRenderLayer(item) {
+  const base = getFreeRenderLayerBase(item);
+  const layer = Number(item && item.layer);
+  const manualTie = Number.isFinite(layer) ? layer % 100 : 0;
+  if (!shouldDepthSortFreeItem(item)) {
+    return Math.round(base * 100000 + (Number.isFinite(layer) ? layer : base) * 100);
+  }
+  const x = clamp(Number(item && item.x) || 0, 0, FREE_LAYOUT_W);
+  const y = clamp(Number(item && item.y) || 0, 0, FREE_LAYOUT_H);
+  return Math.round(base * 100000 + y * 100 + x / 10 + manualTie / 100);
+}
 function getLayerContextItems(item) {
   if (!item) return [];
   const parentCupId = item.parentCupId || null;
@@ -11731,8 +11761,9 @@ function buildLayerUnits(item) {
     const unit = units.get(key);
     unit.items.push(other);
     unit.bounds = mergeLayerBounds(unit.bounds, getLayerItemBounds(other));
-    unit.layerMin = Math.min(unit.layerMin, other.layer || 0);
-    unit.layerMax = Math.max(unit.layerMax, other.layer || 0);
+    const renderLayer = getFreeItemRenderLayer(other);
+    unit.layerMin = Math.min(unit.layerMin, renderLayer);
+    unit.layerMax = Math.max(unit.layerMax, renderLayer);
   });
   return Array.from(units.values()).sort((a, b) => (a.layerMin - b.layerMin) || (a.layerMax - b.layerMax));
 }
@@ -11753,7 +11784,7 @@ function getOrderedLayerUnitItems(unit) {
   return unit.items.slice().sort((a, b) => {
     if (a.snapTarget && b.parentCupId === a.uid) return -1;
     if (b.snapTarget && a.parentCupId === b.uid) return 1;
-    return (a.layer || 0) - (b.layer || 0);
+    return getFreeItemRenderLayer(a) - getFreeItemRenderLayer(b);
   });
 }
 function applyLayerUnitOrder(units) {
@@ -12086,7 +12117,7 @@ function createFreePlacedElement(item, interactive) {
   el.style.top = toPctY(item.y);
   el.style.width = toPctSize(item.size || 72);
   el.style.height = toPctY(item.size || 72);
-  el.style.zIndex = item.layer || 1;
+  el.style.zIndex = getFreeItemRenderLayer(item);
   el.style.setProperty('--rot', (item.rotation || 0) + 'deg');
   el.style.setProperty('--scale', item.scale || 1);
   el.style.setProperty('--visual-scale', item.visualScale || 1);
@@ -12489,7 +12520,7 @@ function renderFreeLayoutInto(host, opts = {}) {
     const clipPath = getBoxClipPath(box);
     if (clipPath) layer.style.clipPath = clipPath;
   }
-  regularItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
+  regularItems.slice().sort((a, b) => getFreeItemRenderLayer(a) - getFreeItemRenderLayer(b)).forEach(item => {
     layer.appendChild(createFreePlacedElement(item, !!opts.interactive));
   });
   if (hasVisualMask) {
@@ -12503,7 +12534,7 @@ function renderFreeLayoutInto(host, opts = {}) {
     riceLayer.className = 'free-layout-items free-rice-decor-layer';
     const riceClipPath = getBoundsClipPath(getRicePlacementBounds(box));
     if (riceClipPath) riceLayer.style.clipPath = riceClipPath;
-    riceDecorItems.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach(item => {
+    riceDecorItems.slice().sort((a, b) => getFreeItemRenderLayer(a) - getFreeItemRenderLayer(b)).forEach(item => {
       riceLayer.appendChild(createFreePlacedElement(item, !!opts.interactive));
     });
     renderRoot.appendChild(riceLayer);

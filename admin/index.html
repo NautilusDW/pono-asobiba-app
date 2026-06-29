@@ -11380,7 +11380,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
       { image: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_02_done.png', x: 0.18, y: 0.07, w: 0.72, rotation: 8 }
     ] },
     { id: 'korokke', name: 'コロッケ', image: '../assets/images/bento/cooking/korokke/korokke_003_done.png', size: 170, rotation: -3, layer: 33 },
-    { id: 'salmon', name: 'やきざけ', image: '../assets/images/bento/cooking/salmon/salmon_003_done.png', size: 292, rotation: -4, layer: 35 },
+    { id: 'salmon', name: 'やきざけ', image: '../assets/images/bento/cooking/salmon/salmon_halves_003_done.png', size: 190, rotation: -3, layer: 35 },
     { id: 'gyoza', name: 'ぎょうざ', image: '../assets/images/bento/free-layout/okazu_gyoza.png', size: 198, rotation: 3, layer: 36 },
     { id: 'harumaki', name: 'はるまき', image: '../assets/images/bento/free-layout/okazu_harumaki.png', size: 256, rotation: -4, layer: 37 },
     { id: 'bacon_maki', name: 'ベーコンまき', image: '../assets/images/bento/free-layout/okazu_bacon_maki.png', size: 161, rotation: 2, layer: 38 },
@@ -12219,6 +12219,23 @@ function bentoSlotShouldRenderSample(def) {
   if (mode === 'kind') return def.kind === selected.kind;
   return (def.kind + ':' + def.index) === _bentoSlotState.slotKey;
 }
+function bentoSlotRenderLayerBase(kind, sample) {
+  if (kind === 'cup') return 10;
+  if (kind === 'divider') return 12;
+  if (kind === 'other') return 60;
+  if (kind === 'main-food' || kind === 'side-food') return 30;
+  return Math.max(1, Math.floor(Number(sample && sample.layer) || 30));
+}
+function bentoSlotSampleRenderLayer(entry) {
+  if (!entry) return 30;
+  var sample = entry.sample || {};
+  var point = entry.point || {};
+  var base = bentoSlotRenderLayerBase(entry.def && entry.def.kind, sample);
+  var x = bentoSlotClamp(point.x, 0, BENTO_SLOT_W, BENTO_SLOT_W / 2);
+  var y = bentoSlotClamp(point.y, 0, BENTO_SLOT_H, BENTO_SLOT_H / 2);
+  var tie = Number(sample.layer);
+  return Math.round(base * 100000 + y * 100 + x / 10 + (isFinite(tie) ? (tie % 100) / 100 : 0));
+}
 function bentoSlotAppendSampleImage(stage, sample, point, extra) {
   if (!stage || !sample || !sample.image || !point) return;
   var opts = extra || {};
@@ -12244,7 +12261,7 @@ function bentoSlotAppendSampleImage(stage, sample, point, extra) {
     'object-fit:contain',
     'pointer-events:none',
     'filter:drop-shadow(0 2px 3px rgba(92,54,20,0.20))',
-    'z-index:' + (opts.layer || sample.layer || 30)
+    'z-index:' + (opts.layer != null ? opts.layer : (sample.layer || 30))
   ].join(';');
   if (hasCluster) {
     sample.clusterImages.forEach(function(piece) {
@@ -12334,11 +12351,11 @@ function bentoSlotRenderSamples(stage, box) {
   }).filter(function(entry) {
     return !!entry.sample && bentoSlotShouldRenderSample(entry.def);
   }).sort(function(a, b) {
-    return (a.sample.layer || 30) - (b.sample.layer || 30);
+    return bentoSlotSampleRenderLayer(a) - bentoSlotSampleRenderLayer(b);
   });
   entries.forEach(function(entry) {
     var sampleSize = entry.point.size || entry.sample.size;
-    bentoSlotAppendSampleImage(stage, entry.sample, entry.point, { size: sampleSize });
+    bentoSlotAppendSampleImage(stage, entry.sample, entry.point, { size: sampleSize, layer: bentoSlotSampleRenderLayer(entry) });
   });
 }
 function bentoSlotRenderPreview() {
