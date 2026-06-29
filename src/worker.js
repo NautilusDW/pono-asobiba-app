@@ -317,7 +317,16 @@ function normalizeBentoSlotSampleOverrides(point, kind) {
   return normalized;
 }
 
-function normalizeBentoSlotPoint(point, kind) {
+function normalizeBentoSlotSampleId(kind, index, sampleId) {
+  const id = String(sampleId || '').trim();
+  if (kind === 'divider' && index === 6) {
+    if (id === 'divider_wood') return 'divider_wood_vertical_front';
+    if (id === 'divider_wave') return 'divider_wave_vertical_front';
+  }
+  return id;
+}
+
+function normalizeBentoSlotPoint(point, kind, index = null) {
   const normalized = {
     x: clampBentoMaskNumber(point && point.x, 0, 760, 380, 1),
     y: clampBentoMaskNumber(point && point.y, 0, 460, 230, 1)
@@ -325,7 +334,7 @@ function normalizeBentoSlotPoint(point, kind) {
   if (Number.isFinite(Number(point && point.size))) {
     normalized.size = normalizeBentoSlotSize(point.size, kind);
   }
-  const sampleId = String((point && point.sampleId) || '').trim();
+  const sampleId = normalizeBentoSlotSampleId(kind, index, point && point.sampleId);
   if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) {
     normalized.sampleId = sampleId;
   }
@@ -425,7 +434,7 @@ function normalizeBentoSlotLayoutMap(map) {
       const source = BENTO_SHARED_SLOT_KINDS.has(kind)
         ? validPoints.slice(0, 1)
         : validPoints.slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind]);
-      const points = source.map(point => normalizeBentoSlotPoint(point, kind));
+      const points = source.map((point, index) => normalizeBentoSlotPoint(point, kind, index));
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;

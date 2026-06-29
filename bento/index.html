@@ -9926,7 +9926,15 @@ function normalizeSimpleSlotSampleOverrides(point, kind = '') {
   });
   return normalized;
 }
-function normalizeSimpleSlotPoint(point, kind = '') {
+function normalizeSimpleSlotSampleId(kind, index, sampleId) {
+  const id = String(sampleId || '').trim();
+  if (kind === 'divider' && index === 6) {
+    if (id === 'divider_wood') return 'divider_wood_vertical_front';
+    if (id === 'divider_wave') return 'divider_wave_vertical_front';
+  }
+  return id;
+}
+function normalizeSimpleSlotPoint(point, kind = '', index = null) {
   const x = Number(point && point.x);
   const y = Number(point && point.y);
   const normalized = {
@@ -9935,7 +9943,7 @@ function normalizeSimpleSlotPoint(point, kind = '') {
   };
   const size = Number(point && point.size);
   if (Number.isFinite(size)) normalized.size = normalizeSimpleSlotSize(size, kind);
-  const sampleId = String((point && point.sampleId) || '').trim();
+  const sampleId = normalizeSimpleSlotSampleId(kind, index, point && point.sampleId);
   if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) normalized.sampleId = sampleId;
   const sampleOverrides = normalizeSimpleSlotSampleOverrides(point, kind);
   if (Object.keys(sampleOverrides).length) normalized.sampleOverrides = sampleOverrides;
@@ -9959,7 +9967,7 @@ function normalizeSimpleSlotLayoutMap(map) {
         ? validPoints.slice(0, 1)
         : validPoints.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind]);
       const points = source
-        .map(point => normalizeSimpleSlotPoint(point, kind));
+        .map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;
@@ -9970,7 +9978,7 @@ function getSimpleSlotLayoutPoints(box, kind) {
   if (!box || !kind) return [];
   const layout = freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
   const list = layout && Array.isArray(layout[kind]) ? layout[kind] : [];
-  return list.map(point => normalizeSimpleSlotPoint(point, kind));
+  return list.map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
 }
 function getSimpleSlotCountForBox(box, kind) {
   const boxLayout = box && freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
@@ -10435,7 +10443,7 @@ function getSimpleSlotVariantDef(def, slot) {
 }
 function orderSimpleSlotsForDef(def, slots) {
   if (!def || !def.verticalDivider || !Array.isArray(slots) || slots.length <= 1) return slots;
-  const order = [0, 2, 4, 1, 3, 5];
+  const order = [0, 2, 4, 6, 1, 3, 5];
   const used = new Set();
   const ordered = order
     .map(index => slots.find(slot => slot && slot.index === index))

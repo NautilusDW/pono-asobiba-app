@@ -11680,7 +11680,7 @@ var BENTO_SLOT_DEFAULT_SAMPLE_IDS = {
     'divider_wood',
     'divider_wave_vertical_front',
     'divider_wave',
-    'divider_wood'
+    'divider_wood_vertical_front'
   ]
 };
 function bentoSlotDefaultSampleForDef(def) {
@@ -11697,6 +11697,14 @@ function bentoSlotFindSampleById(kind, sampleId) {
   var id = String(sampleId || '').trim();
   if (!id) return null;
   return bentoSlotSamplesForKind(kind).find(function(sample) { return sample.id === id; }) || null;
+}
+function bentoSlotNormalizeSampleIdForDef(def, sampleId) {
+  var id = String(sampleId || '').trim();
+  if (def && def.kind === 'divider' && def.index === 6) {
+    if (id === 'divider_wood') return 'divider_wood_vertical_front';
+    if (id === 'divider_wave') return 'divider_wave_vertical_front';
+  }
+  return id;
 }
 function bentoSlotNearestCupPreset(size) {
   var target = Number(size);
@@ -11753,7 +11761,8 @@ function bentoSlotNormalizeSampleOverrides(raw, def, fallbackPoint) {
   return out;
 }
 function bentoSlotEntry(point, def) {
-  var sample = bentoSlotFindSampleById(def && def.kind, point && point.sampleId);
+  var sampleId = bentoSlotNormalizeSampleIdForDef(def, point && point.sampleId);
+  var sample = bentoSlotFindSampleById(def && def.kind, sampleId);
   var fallback = sample || bentoSlotDefaultSampleForDef(def);
   var entry = bentoSlotPoint(point);
   if (point && isFinite(Number(point.size))) entry.size = bentoSlotNormalizeSizeForDef(point.size, bentoSlotDefaultSizeForSample(def, fallback), def, fallback);
@@ -11944,7 +11953,7 @@ function bentoSlotDefaultEntry(box, def) {
 }
 function bentoSlotClampEntryForDef(box, def, entry) {
   var p = bentoSlotClampPointForDef(box, def, entry);
-  var sample = bentoSlotFindSampleById(def.kind, entry && entry.sampleId) || bentoSlotDefaultSampleForDef(def);
+  var sample = bentoSlotFindSampleById(def.kind, bentoSlotNormalizeSampleIdForDef(def, entry && entry.sampleId)) || bentoSlotDefaultSampleForDef(def);
   var normalized = bentoSlotEntry({
     x: p.x,
     y: p.y,
