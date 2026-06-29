@@ -6649,6 +6649,52 @@ var NOTE_LABELS_ABC = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'];
 function _rhythmNoteLabel(idx) {
   return (NOTE_BUTTON_NOTATION === 'abc' ? NOTE_LABELS_ABC : NOTE_LABELS)[idx] || '';
 }
+var RHYTHM_EXTENDED_FREQS = {
+  '-3': 196.00,  // low G
+  '-2': 220.00,  // low A
+  '-1': 246.94,  // low B
+  0: 261.63,
+  1: 293.66,
+  2: 329.63,
+  3: 349.23,
+  4: 392.00,
+  5: 440.00,
+  6: 493.88,
+  7: 523.25
+};
+var RHYTHM_PITCH_NOTES = {
+  lowG: { lane: 4, pitch: -3 },
+  lowA: { lane: 5, pitch: -2 },
+  lowB: { lane: 6, pitch: -1 },
+  C: { lane: 0, pitch: 0 },
+  D: { lane: 1, pitch: 1 },
+  E: { lane: 2, pitch: 2 },
+  F: { lane: 3, pitch: 3 },
+  G: { lane: 4, pitch: 4 },
+  A: { lane: 5, pitch: 5 },
+  B: { lane: 6, pitch: 6 },
+  highC: { lane: 7, pitch: 7 }
+};
+var RPN = RHYTHM_PITCH_NOTES;
+function _rhythmNoteObject(note) {
+  return note && typeof note === 'object';
+}
+function _rhythmNoteLane(note) {
+  var lane = _rhythmNoteObject(note) && note.lane != null ? note.lane : note;
+  lane = Number(lane);
+  if (!isFinite(lane)) lane = 0;
+  return Math.max(0, Math.min(7, Math.round(lane)));
+}
+function _rhythmNotePitch(note) {
+  var pitch = _rhythmNoteObject(note) && note.pitch != null ? note.pitch : _rhythmNoteLane(note);
+  pitch = Number(pitch);
+  if (!isFinite(pitch)) pitch = 0;
+  return Math.round(pitch);
+}
+function _rhythmPitchFreq(pitch) {
+  var key = String(_rhythmNotePitch({ pitch: pitch, lane: 0 }));
+  return RHYTHM_EXTENDED_FREQS[key] || DOREMI_FREQS[_rhythmNoteLane(pitch)] || DOREMI_FREQS[0] || 440;
+}
 var RHYTHM_SONGS = [
   {
     id: 'kaeru',
@@ -6820,32 +6866,28 @@ var RHYTHM_SONGS = [
       {
         name: '1',
         note: 'おおきな',
-        // G G C E E E E D E F D C C C
-        // おおきな のっぽの ふるどけい
-        notes: [4, 4, 0, 2, 2, 2, 2, 1, 2, 3, 1, 0, 0, 0],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+        // Opening contour: low G -> C -> low B -> C. Keep lane = solfege button,
+        // pitch = register so the first jump rises instead of flipping downward.
+        notes: [RPN.lowG, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E, RPN.A],
+        beats: [1, 2, 0.5, 0.5, 1, 0.5, 0.5, 1, 1, 0.5, 0.5, 2]
       },
       {
         name: '2',
-        note: 'おじいさん',
-        // おじいさんの とけいさ — A2 short verse resolves to tonic
-        notes: [4, 4, 0, 2, 1, 0, 1, 0, 4, 4, 3, 2, 1, 0],
-        beats: [1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2]
+        note: 'ふるどけい',
+        notes: [RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
+        beats: [1, 1, 1, 1, 1, 2, 0.5, 0.5, 3]
       },
       {
         name: '3',
-        note: 'チクタク',
-        // ひゃくねん いつも うごいてた / チクタク チクタク
-        // C E G G E C E D | E E F F E D C C
-        notes: [0, 2, 4, 4, 2, 0, 2, 1, 2, 2, 3, 3, 2, 1, 0, 0],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        note: 'とけいの おと',
+        notes: [RPN.C, RPN.E, RPN.G, RPN.E, RPN.D, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.lowB, RPN.lowA, RPN.lowG],
+        beats: [1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
       },
       {
         name: '4',
         note: 'おしまい',
-        // いまは もう うごかない その とけい — resolves to low C
-        notes: [4, 4, 0, 2, 2, 1, 0, 2, 1, 4, 3, 2, 1, 0],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+        notes: [RPN.E, RPN.G, RPN.G, RPN.C, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E, RPN.A, RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 0.5, 0.5, 1, 1, 1, 1, 1, 1, 2, 0.5, 0.5, 3]
       }
     ]
   }
@@ -7905,11 +7947,14 @@ function _rhythmRingLeadMs() {
 }
 function _rhythmExpectedIdx(offset) {
   offset = offset || 0;
-  var notes = RHYTHM_SONG.notes;
-  return notes[(_rhythm.idx + offset) % notes.length];
+  return _rhythmNoteLane(_rhythmNoteAt(_rhythm.idx + offset));
 }
 function _rhythmIdxAt(seqIndex) {
+  return _rhythmNoteLane(_rhythmNoteAt(seqIndex));
+}
+function _rhythmNoteAt(seqIndex) {
   var notes = RHYTHM_SONG.notes;
+  if (!notes || !notes.length) return 0;
   return notes[((seqIndex % notes.length) + notes.length) % notes.length];
 }
 function _rhythmBeatLengthAt(index) {
@@ -9664,7 +9709,8 @@ function _ghSpawnNote(seqIndex) {
   var notes = RHYTHM_SONG.notes;
   if (!notes || !notes.length) return;
   if (seqIndex >= notes.length) return; // ループ末端で停止
-  var laneIdx = _ghBtnIdxToLaneIdx(_rhythmIdxAt(seqIndex));
+  var noteRaw = _rhythmNoteAt(seqIndex);
+  var laneIdx = _ghBtnIdxToLaneIdx(_rhythmNoteLane(noteRaw));
   var targetTime = _rhythmTargetTimeFor(seqIndex);
   var color = RHYTHM_LANE_COLORS[laneIdx] || { hi: '#FDE68A', lo: '#F59E0B' };
   var noteSkin = _rhythmNoteSkinFor(seqIndex, laneIdx);
@@ -9691,6 +9737,7 @@ function _ghSpawnNote(seqIndex) {
     lane: laneIdx,
     targetTime: targetTime,
     el: el,
+    noteRaw: noteRaw,
     noteSkin: noteSkin,
     bonusScore: noteSkin.bonusScore || 0,
     beatLen: beatLen,
@@ -10521,8 +10568,8 @@ function _clearRhythmCountdown() {
   // v722: 取り消し時は予約していた小節線アンカーも破棄 (次回開始時に再計算)
   _rhythm._pendingStartAcTime = 0;
 }
-function _rhythmNoteFreq(idx) {
-  return DOREMI_FREQS[idx] || DOREMI_FREQS[0] || 440;
+function _rhythmNoteFreq(note) {
+  return _rhythmPitchFreq(_rhythmNotePitch(note));
 }
 var RHYTHM_CHORD_FREQS = [
   [261.63, 329.63, 392.00],
@@ -10534,9 +10581,10 @@ var RHYTHM_CHORD_FREQS = [
   [493.88, 587.33, 698.46],
   [523.25, 659.25, 783.99]
 ];
-function _rhythmNoteFreqs(idx) {
-  if (CHORD_MODE === 'on') return RHYTHM_CHORD_FREQS[idx] || [_rhythmNoteFreq(idx)];
-  return [_rhythmNoteFreq(idx)];
+function _rhythmNoteFreqs(note) {
+  var lane = _rhythmNoteLane(note);
+  if (CHORD_MODE === 'on' && !_rhythmNoteObject(note)) return RHYTHM_CHORD_FREQS[lane] || [_rhythmNoteFreq(note)];
+  return [_rhythmNoteFreq(note)];
 }
 function _clearRhythmMelodySchedule() {
   (_rhythm.melodyNodes || []).forEach(function(node) {
@@ -10840,18 +10888,19 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
   _scheduleRhythmMelody(0.18);
   _startRhythmDemoVisualLoop();
   var elapsed = 0;
-  RHYTHM_SONG.notes.forEach(function(noteIdx, seqIndex) {
+  RHYTHM_SONG.notes.forEach(function(note, seqIndex) {
     var noteMs = _rhythmBeatLengthAt(seqIndex) * beatMs;
     var targetPerf = _rhythmTargetTimeFor(seqIndex);
     _rhythm.demoTimers.push(setTimeout(function() {
       if (!_rhythm.demoActive) return;
       _rhythm.idx = seqIndex;
       _renderRhythmTarget();
-      _setRhythmStatus('おてほん ' + _rhythmNoteLabel(noteIdx), null);
-      var laneIdx = _ghBtnIdxToLaneIdx(noteIdx);
+      var laneIdx = _rhythmNoteLane(note);
+      _setRhythmStatus('おてほん ' + _rhythmNoteLabel(laneIdx), null);
+      laneIdx = _ghBtnIdxToLaneIdx(laneIdx);
       _ghSpawnHitFlash(laneIdx);
       _ghSpawnNoteBurst(laneIdx, 'success');
-      var btn = _rhythmButton(noteIdx);
+      var btn = _rhythmButton(_rhythmNoteLane(note));
       if (btn) {
         _pulseRhythmButton(btn, 'rhythm-hit');
         var rect = btn.getBoundingClientRect();
@@ -11191,7 +11240,7 @@ function handleRhythmTap(idx, btn) {
     var delta = judgeNow - best.targetTime;
     if (delta < -RHYTHM_OK_MS) {
       // まだ早すぎ → ノートは残す
-      _playRhythmTapPitch(laneIdx, { key: 'close' }, 190);
+      _playRhythmTapPitch(best.noteRaw || laneIdx, { key: 'close' }, 190);
       _setRhythmStatus('もうすこし', 'warn');
       _updateRhythmBattlePanel('taunt', null, 'もうすこし！');
       return;
@@ -11236,7 +11285,7 @@ function handleRhythmTap(idx, btn) {
       _ghSpawnNoteBurst(best, bonusScore > 0 ? 'bonus' : 'success');
     }
     _ghRemoveNote(best);
-    _playRhythmTapPitch(laneIdx, judge, tapDurationMs);
+    _playRhythmTapPitch(best.noteRaw || laneIdx, judge, tapDurationMs);
     _playRhythmBlockSfx('success', laneIdx, judge);
     _pulseRhythmButton(btn, 'rhythm-hit' + (judge.key === 'just' ? ' rhythm-hit-just' : (judge.key === 'nice' ? ' rhythm-hit-nice' : '')));
     _spawnRhythmJudgePop(laneIdx, judge, addedScore, btn);
@@ -11271,7 +11320,7 @@ function handleRhythmTap(idx, btn) {
   } else {
     _setRhythmStatus(ringJudge.label, 'warn');
   }
-  _playRhythmTapPitch(idx, ringJudge, _rhythmTapPitchDurationForBeatLen(_rhythmBeatLengthAt(_rhythm.idx)));
+  _playRhythmTapPitch(_rhythmNoteAt(_rhythm.idx), ringJudge, _rhythmTapPitchDurationForBeatLen(_rhythmBeatLengthAt(_rhythm.idx)));
   _playRhythmBlockSfx('success', idx, ringJudge);
   _pulseRhythmButton(btn, 'rhythm-hit' + (ringJudge.key === 'just' ? ' rhythm-hit-just' : (ringJudge.key === 'nice' ? ' rhythm-hit-nice' : '')));
   _spawnRhythmJudgePop(idx, ringJudge, ringHit.added, btn);
