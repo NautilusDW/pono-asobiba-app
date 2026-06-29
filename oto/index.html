@@ -6862,32 +6862,33 @@ var RHYTHM_SONGS = [
     bandSongId: 'oldclock104',
     bandStems: ['drums'],
     bandVolume: 0.30,
+    pickupBeats: 1,
     sections: [
       {
         name: '1',
         note: 'おおきな',
-        // Opening contour: low G -> C -> low B -> C. Keep lane = solfege button,
-        // pitch = register so the first jump rises instead of flipping downward.
-        notes: [RPN.lowG, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E, RPN.A],
-        beats: [1, 2, 0.5, 0.5, 1, 0.5, 0.5, 1, 1, 0.5, 0.5, 2]
+        pickupBeats: 1,
+        notes: [RPN.lowG, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E],
+        beats: [1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1]
       },
       {
         name: '2',
         note: 'ふるどけい',
-        notes: [RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
-        beats: [1, 1, 1, 1, 1, 2, 0.5, 0.5, 3]
+        notes: [RPN.A, RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
+        beats: [2, 1, 1, 2, 1, 1, 2, 1, 1, 6]
       },
       {
         name: '3',
         note: 'とけいの おと',
-        notes: [RPN.C, RPN.E, RPN.G, RPN.E, RPN.D, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.lowB, RPN.lowA, RPN.lowG],
-        beats: [1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
+        pickupBeats: 2,
+        notes: [RPN.lowG, RPN.lowG, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E],
+        beats: [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1]
       },
       {
         name: '4',
         note: 'おしまい',
-        notes: [RPN.E, RPN.G, RPN.G, RPN.C, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E, RPN.A, RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 0.5, 0.5, 1, 1, 1, 1, 1, 1, 2, 0.5, 0.5, 3]
+        notes: [RPN.A, RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
+        beats: [2, 1, 1, 2, 1, 1, 2, 1, 1, 4]
       }
     ]
   }
@@ -7769,6 +7770,7 @@ function _buildRhythmSong(song) {
     bandSongId: song.bandSongId,
     bandStems: song.bandStems,
     bandVolume: song.bandVolume,
+    pickupBeats: RHYTHM_PRACTICE_MODE === 'full' ? (song.pickupBeats || 0) : (section.pickupBeats || 0),
     notes: part.notes.slice(),
     beats: part.beats.slice()
   };
@@ -8508,6 +8510,18 @@ function _rhythmKickIntervalSec() {
   // DRUM_PATTERN は 8分グリッドで kick が step0/step4。つまり2拍ごとにバスドラが来る。
   return (60 / bpm) * 2;
 }
+function _rhythmBarIntervalSec() {
+  var song = _rhythmBandSong();
+  var bpm = song && song.bpm ? song.bpm : RHYTHM_SONG.bpm;
+  return (60 / bpm) * 4;
+}
+function _rhythmPickupBeats() {
+  var raw = RHYTHM_SONG && RHYTHM_SONG.pickupBeats != null
+    ? RHYTHM_SONG.pickupBeats
+    : (RHYTHM_BASE_SONG && RHYTHM_BASE_SONG.pickupBeats);
+  var beats = Number(raw);
+  return isFinite(beats) && beats > 0 ? beats : 0;
+}
 function _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc) {
   var interval = _rhythmKickIntervalSec();
   if (!drumStartAc || !desiredFirstNoteAc || !isFinite(drumStartAc) || !isFinite(desiredFirstNoteAc) || interval <= 0) {
@@ -8515,6 +8529,18 @@ function _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc) {
   }
   var steps = Math.max(1, Math.ceil((desiredFirstNoteAc - drumStartAc) / interval));
   return drumStartAc + steps * interval;
+}
+function _rhythmFirstNoteAtOrAfter(drumStartAc, desiredFirstNoteAc) {
+  var pickupBeats = _rhythmPickupBeats();
+  if (pickupBeats <= 0) return _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc);
+  var barSec = _rhythmBarIntervalSec();
+  var pickupSec = pickupBeats * (barSec / 4);
+  if (!drumStartAc || !desiredFirstNoteAc || !isFinite(drumStartAc) || !isFinite(desiredFirstNoteAc) || barSec <= 0) {
+    return desiredFirstNoteAc;
+  }
+  var desiredAnchorAc = desiredFirstNoteAc + pickupSec;
+  var bars = Math.max(1, Math.ceil((desiredAnchorAc - drumStartAc) / barSec));
+  return drumStartAc + bars * barSec - pickupSec;
 }
 function _ensureRhythmBand(startAtAc) {
   var songIdx = _songIndexById(RHYTHM_SONG.bandSongId);
@@ -10503,17 +10529,18 @@ function _startRhythmMode() {
     // bandStartAC は伴奏ループの開始 AC 時刻 (秒)。負値もあり得る (ループ 2 周目以降)。
     var fallSec = RHYTHM_FALL_MS / 1000;
     if (isGH) {
-      // v722: _beginRhythmCountdown で算出した「次の小節線」AC 時刻があればそれを採用。
-      // これにより count "スタート!" = ドラムの拍頭 = 主旋律 1 ノート目ヒットライン到達 が完全一致。
+      // v722+: _beginRhythmCountdown で算出した 1 ノート目の AC 時刻があればそれを採用。
+      // pickupBeats がある曲は、1 ノート目を小節頭の少し前へ置く。
       if (_rhythm._pendingStartAcTime && _rhythm._pendingStartAcTime > ac.currentTime - 0.05) {
         _rhythm.startAcTime = _rhythm._pendingStartAcTime;
       } else {
-        // フォールバック: 「次の小節線」を bar 単位で snap (拍ではなく)
+        // フォールバック: 小節線を bar 単位で snap し、弱起ぶんだけ 1 ノート目を前へ出す。
         var barSec = 4 * beatSec;
-        var requiredAnchorAC = ac.currentTime + fallSec;
+        var pickupSec = _rhythmPickupBeats() * beatSec;
+        var requiredAnchorAC = ac.currentTime + fallSec + pickupSec;
         var deltaSec = requiredAnchorAC - bandStartAC;
         var nBars = Math.max(1, Math.ceil(deltaSec / barSec));
-        _rhythm.startAcTime = bandStartAC + nBars * barSec;
+        _rhythm.startAcTime = bandStartAC + nBars * barSec - pickupSec;
       }
     } else {
       _rhythm.startAcTime = ac.currentTime + _rhythmRingLeadMs() / 1000;
@@ -10565,7 +10592,7 @@ function _clearRhythmCountdown() {
   _rhythm.countdownTimers.forEach(function(id) { clearTimeout(id); });
   _rhythm.countdownTimers = [];
   _hideOverlay();
-  // v722: 取り消し時は予約していた小節線アンカーも破棄 (次回開始時に再計算)
+  // v722+: 取り消し時は予約していた 1 ノート目 AC 時刻も破棄 (次回開始時に再計算)
   _rhythm._pendingStartAcTime = 0;
 }
 function _rhythmNoteFreq(note) {
@@ -10875,7 +10902,7 @@ function _runRhythmDemoSequence(thenStart, overlayHoldMs) {
   if (ac) {
     drumStartAc = ac.currentTime + RHYTHM_DRUM_INTRO_START_DELAY_MS / 1000;
     var desiredFirstNoteAc = ac.currentTime + demoFirstLeadMs / 1000;
-    _rhythm.startAcTime = _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc);
+    _rhythm.startAcTime = _rhythmFirstNoteAtOrAfter(drumStartAc, desiredFirstNoteAc);
     demoFirstLeadMs = (_rhythm.startAcTime - ac.currentTime) * 1000;
     _rhythm.startPerfTime = performance.now() + (_rhythm.startAcTime - ac.currentTime) * 1000;
   } else {
@@ -10971,12 +10998,12 @@ function _beginRhythmCountdown() {
   var targetPerfMs = desiredStartEnginePerf + playLeadMs;
   var drumStartAc = 0;
   if (ac) {
-    // 「スタート!」直後からリズムだけ先に鳴らし、その clock 上の次のバスドラへ最初のドを置く。
-    // これで待ち時間はドラムで埋まりつつ、最初のドは必ず kick と同時になる。
+    // 「スタート!」直後からリズムだけ先に鳴らし、その clock 上へ 1 ノート目を置く。
+    // 通常曲は kick と同時、弱起曲は次の小節頭の手前に置く。
     var countdownDoneAc = ac.currentTime + Math.max(0.05, (countdownDonePerf - nowPerf) / 1000);
     drumStartAc = countdownDoneAc + RHYTHM_DRUM_INTRO_START_DELAY_MS / 1000;
     var desiredFirstNoteAc = ac.currentTime + Math.max(0.05, (targetPerfMs - nowPerf) / 1000);
-    pendingAc = _rhythmFirstKickAtOrAfter(drumStartAc, desiredFirstNoteAc);
+    pendingAc = _rhythmFirstNoteAtOrAfter(drumStartAc, desiredFirstNoteAc);
     targetPerfMs = nowPerf + (pendingAc - ac.currentTime) * 1000;
   }
   _rhythm._pendingStartAcTime = pendingAc;
@@ -11010,8 +11037,9 @@ function _beginRhythmCountdown() {
     // 'スタート!' のファンファーレSEは削除 (タイミングがドラム開始 +120ms とズレて違和感あったため)
     // _playRhythmSampleSe('gameStart');
   });
-  // 少し見せてから overlay クリア
-  schedule(countdownDonePerf + RHYTHM_START_OVERLAY_MS, function() { _clearRhythmCountdown(); });
+  // 少し見せてから overlay だけ消す。ここで countdown timers を消すと、弱起曲で
+  // startEnginePerf が少し後ろへ伸びた時に開始タイマーまで消してしまう。
+  schedule(countdownDonePerf + RHYTHM_START_OVERLAY_MS, function() { _hideOverlay(); });
 }
 function _showRhythmMenu() {
   if (_rhythm.enabled) _stopRhythmMode();
