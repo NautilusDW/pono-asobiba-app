@@ -1277,7 +1277,7 @@ body.image-stage-mode .game-wrap {
 .janken-arena {
   display: grid;
   grid-template-columns: minmax(120px, 170px) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 170px);
-  grid-template-rows: 2.8em minmax(128px, 1fr) 2.2em 64px;
+  grid-template-rows: 2.8em minmax(128px, 1fr) 2.2em clamp(76px, 12dvh, 96px);
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -1364,7 +1364,10 @@ body.image-stage-mode .game-wrap {
 .janken-hand--rock::before { background-position-x: 0%; }
 .janken-hand--scissors::before { background-position-x: 50%; }
 .janken-hand--paper::before { background-position-x: 100%; }
-.janken-hand--pono { transform: rotate(0deg); }
+.janken-hand--pono {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
 .janken-hand--bug {
   transform: rotate(0deg);
   transform-origin: 78% 54%;
@@ -1400,25 +1403,36 @@ body.image-stage-mode .game-wrap {
   justify-content: center;
   align-items: center;
   flex-wrap: nowrap;
-  height: 64px;
+  height: clamp(76px, 12dvh, 96px);
   min-height: 0;
   overflow: hidden;
 }
 .janken-controls .enc-btn {
-  min-width: clamp(88px, 18vw, 120px);
-  height: 52px;
+  min-width: clamp(86px, 15vw, 124px);
+  width: clamp(86px, 15vw, 124px);
+  height: clamp(70px, 11dvh, 88px);
   box-sizing: border-box;
   display: inline-grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   place-items: center;
   line-height: 1;
 }
 .janken-controls .enc-btn.choice {
-  padding: 6px 16px;
-  font-size: clamp(1.25rem, 3vw, 1.6rem);
+  padding: 4px 8px 5px;
+  gap: 1px;
+}
+.janken-choice-hand {
+  width: min(clamp(44px, 7vw, 66px), calc(100% - 10px));
+}
+.janken-choice-label {
+  font-size: clamp(0.72rem, 1.6vw, 0.9rem);
+  font-weight: 900;
+  color: #2F2F2F;
+  line-height: 1;
 }
 @keyframes jankenReadyPono {
-  from { transform: translateY(-6px) rotate(-7deg); }
-  to   { transform: translateY( 6px) rotate(7deg); }
+  from { transform: translateY(-6px) rotate(-97deg); }
+  to   { transform: translateY( 6px) rotate(-83deg); }
 }
 @keyframes jankenReadyBug {
   from { transform: translateY(-6px) rotate(7deg); }
@@ -2668,9 +2682,9 @@ body.image-stage-mode .game-wrap {
   }
   .janken-arena {
     grid-template-columns: minmax(56px, 74px) minmax(76px, 1fr) minmax(76px, 1fr) minmax(56px, 74px);
-    grid-template-rows: 1.7em minmax(68px, 1fr) 1.45em 44px;
+    grid-template-rows: 1.7em minmax(68px, 1fr) 1.45em 56px;
     gap: 6px;
-    height: min(68dvh, 230px);
+    height: min(72dvh, 250px);
     min-height: 0;
   }
   .janken-side { gap: 2px; }
@@ -2930,16 +2944,22 @@ body.image-stage-mode .game-wrap {
     font-size: 0.95rem;
   }
   .janken-controls {
-    gap: 6px;
-    height: 44px;
+    gap: 8px;
+    height: 56px;
     min-height: 0;
   }
   .janken-controls .enc-btn {
-    min-width: 76px;
-    height: 36px;
-    padding: 7px 10px;
-    font-size: 0.86rem;
+    min-width: 68px;
+    width: clamp(68px, 17vw, 86px);
+    height: 52px;
+    padding: 2px 6px 3px;
     border-radius: 11px;
+  }
+  .janken-choice-hand {
+    width: min(clamp(32px, 7vw, 42px), calc(100% - 8px));
+  }
+  .janken-choice-label {
+    font-size: 0.62rem;
   }
 }
 
@@ -4444,7 +4464,7 @@ function imgLoadStage(def) {
   hintActiveUntil = 0;
   hintCells.clear();
   _imgLastFrameTs = 0;
-  _jankenGuaranteedWinKeys = Object.create(null);
+  _jankenNextPlayerWinKeys = Object.create(null);
   hudStage.textContent = stage.name;
   hudMoves.textContent = 'てかず: 0';
   hudApples.textContent = ''; // PoC: no apples yet
@@ -5165,8 +5185,7 @@ let _strengthGimmickTimers = [];
 let _webGimmickState = null;
 let _bowlGameState = null;
 let _webGimmickTimers = [];
-let _jankenLossStreak = 0;
-let _jankenGuaranteedWinKeys = Object.create(null);
+let _jankenNextPlayerWinKeys = Object.create(null);
 let _suppressDeadEndBubbleUntil = 0;
 
 const MAZE_ITEM_HINTS = {
@@ -6574,6 +6593,12 @@ const _GAME_DIALOGS = {
   donguri_bowl: '奥へ ころがそう！<br>どんぐりで おじゃま虫を たおしてね',
 };
 
+const JANKEN_HAND_LABELS = {
+  rock: 'グー',
+  scissors: 'チョキ',
+  paper: 'パー',
+};
+
 // 'donguri_bowl' は新しい記述的トークン、'web_sweep' は旧名の互換エイリアス。
 // どちらでもステージ JSON / creature.defaultGame に使えるよう、入口で正規化する。
 function _normalizeGameToken(token) {
@@ -6630,9 +6655,9 @@ function _showJankenChoices() {
       '<div class="janken-slot janken-slot--bug" id="jankenBugSlot">' + _jankenHandMarkup('bug', 'rock', false) + '</div>' +
       '<div class="janken-result" id="jankenResult">グー・チョキ・パーを えらんでね</div>' +
       '<div class="janken-controls" id="jankenControls">' +
-        '<button class="enc-btn choice" data-hand="rock">グー</button>' +
-        '<button class="enc-btn choice" data-hand="scissors">チョキ</button>' +
-        '<button class="enc-btn choice" data-hand="paper">パー</button>' +
+        _jankenChoiceButtonMarkup('rock') +
+        _jankenChoiceButtonMarkup('scissors') +
+        _jankenChoiceButtonMarkup('paper') +
       '</div>' +
     '</div>';
   encStageEl.querySelectorAll('.janken-controls .enc-btn.choice').forEach(function(b) {
@@ -6641,12 +6666,25 @@ function _showJankenChoices() {
   _playMazeVoice('janken', 'start');
 }
 
-function _jankenHandMarkup(side, hand, ready) {
+function _jankenSafeHand(hand) {
+  return hand === 'paper' ? 'paper' : (hand === 'scissors' ? 'scissors' : 'rock');
+}
+
+function _jankenHandMarkup(side, hand, ready, extraClass) {
   const safeSide = side === 'bug' ? 'bug' : 'pono';
-  const safeHand = hand === 'paper' ? 'paper' : (hand === 'scissors' ? 'scissors' : 'rock');
+  const safeHand = _jankenSafeHand(hand);
   return '<span class="janken-hand janken-hand--' + safeSide +
-    ' janken-hand--' + safeHand + (ready ? ' is-ready' : '') +
-    '" role="img" aria-label="' + ({ rock: 'グー', scissors: 'チョキ', paper: 'パー' }[safeHand]) + '"></span>';
+    ' janken-hand--' + safeHand + (extraClass ? ' ' + extraClass : '') + (ready ? ' is-ready' : '') +
+    '" role="img" aria-label="' + JANKEN_HAND_LABELS[safeHand] + '"></span>';
+}
+
+function _jankenChoiceButtonMarkup(hand) {
+  const safeHand = _jankenSafeHand(hand);
+  const label = JANKEN_HAND_LABELS[safeHand];
+  return '<button class="enc-btn choice" data-hand="' + safeHand + '" aria-label="' + label + '">' +
+    _jankenHandMarkup('pono', safeHand, false, 'janken-choice-hand') +
+    '<span class="janken-choice-label">' + label + '</span>' +
+  '</button>';
 }
 
 function _jankenEncounterKey(c) {
@@ -6654,27 +6692,29 @@ function _jankenEncounterKey(c) {
   return String(stageIdx) + ':' + (c.id || (c.x + ',' + c.y));
 }
 
-function _isStage2FirstJankenCreature(c) {
-  return !!(stageIdx === 2 && c && (c.id === 'c1' || (!c.id && c.kind === 'mayoi')) && _gameForCreature(c) === 'janken');
+function _jankenCpuHandForPlayerWin(playerHand) {
+  const beatenByPlayer = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+  return beatenByPlayer[_jankenSafeHand(playerHand)];
+}
+
+function _jankenCpuHandForPlayerLoss(playerHand) {
+  const beatsPlayer = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
+  return beatsPlayer[_jankenSafeHand(playerHand)];
 }
 
 function _chooseJankenCpuHand(playerHand) {
-  const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
-  const losesTo = { rock: 'paper', paper: 'scissors', scissors: 'rock' };
-  const safePlayer = beats[playerHand] ? playerHand : 'rock';
-  if (_jankenGuaranteedWinKeys[_jankenEncounterKey(_currentCreature)]) {
-    return beats[safePlayer];
+  const safePlayer = _jankenSafeHand(playerHand);
+  if (_jankenNextPlayerWinKeys[_jankenEncounterKey(_currentCreature)]) {
+    return _jankenCpuHandForPlayerWin(safePlayer);
   }
-  const lossStreak = Math.max(0, _jankenLossStreak);
-  const playerWinChance = Math.min(0.75, (1 / 3) + lossStreak * 0.15);
-  const drawChance = (1 - playerWinChance) / 2;
   const roll = Math.random();
-  if (roll < playerWinChance) return beats[safePlayer];
-  if (roll < playerWinChance + drawChance) return safePlayer;
-  return losesTo[safePlayer];
+  if (roll < 1 / 3) return _jankenCpuHandForPlayerWin(safePlayer);
+  if (roll < 2 / 3) return safePlayer;
+  return _jankenCpuHandForPlayerLoss(safePlayer);
 }
 
 function _resolveJanken(playerHand) {
+  playerHand = _jankenSafeHand(playerHand);
   const callEl = document.getElementById('jankenCall');
   const resultEl = document.getElementById('jankenResult');
   const controlsEl = document.getElementById('jankenControls');
@@ -6720,19 +6760,15 @@ function _resolveJanken(playerHand) {
     resultEl.textContent = outcome === 'win' ? 'かった！' : outcome === 'lose' ? 'まけた…' : 'あいこ！';
     const encounterKey = _jankenEncounterKey(_currentCreature);
     if (outcome === 'win') {
-      _jankenLossStreak = 0;
-      if (encounterKey) delete _jankenGuaranteedWinKeys[encounterKey];
+      if (encounterKey) delete _jankenNextPlayerWinKeys[encounterKey];
     } else if (outcome === 'lose') {
-      _jankenLossStreak = Math.min(5, _jankenLossStreak + 1);
-      if (_isStage2FirstJankenCreature(_currentCreature) && encounterKey) {
-        _jankenGuaranteedWinKeys[encounterKey] = true;
-      }
+      if (encounterKey) _jankenNextPlayerWinKeys[encounterKey] = true;
     }
     // ナレーション: 結果通知 (jan/ken/pon コール直後)
     if (outcome === 'win') {
       _playMazeVoice('janken', 'win_01');
     } else if (outcome === 'lose') {
-      _playMazeVoice('janken', _jankenLossStreak >= 2 ? 'lose_02' : 'lose_01');
+      _playMazeVoice('janken', 'lose_01');
     } else {
       _playMazeVoice('janken', 'draw_01');
     }
