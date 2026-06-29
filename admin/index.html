@@ -11380,7 +11380,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
       { image: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_02_done.png', x: 0.18, y: 0.07, w: 0.72, rotation: 8 }
     ] },
     { id: 'korokke', name: 'コロッケ', image: '../assets/images/bento/cooking/korokke/korokke_003_done.png', size: 170, rotation: -3, layer: 33 },
-    { id: 'salmon', name: 'やきざけ', image: '../assets/images/bento/cooking/salmon/salmon_halves_003_done.png', size: 190, rotation: -3, layer: 35 },
+    { id: 'salmon', name: 'やきざけ', image: '../assets/images/bento/cooking/salmon/salmon_half_003_done.png', size: 190, rotation: -3, layer: 35 },
     { id: 'gyoza', name: 'ぎょうざ', image: '../assets/images/bento/free-layout/okazu_gyoza.png', size: 198, rotation: 3, layer: 36 },
     { id: 'harumaki', name: 'はるまき', image: '../assets/images/bento/free-layout/okazu_harumaki.png', size: 256, rotation: -4, layer: 37 },
     { id: 'bacon_maki', name: 'ベーコンまき', image: '../assets/images/bento/free-layout/okazu_bacon_maki.png', size: 161, rotation: 2, layer: 38 },
@@ -12220,10 +12220,7 @@ function bentoSlotShouldRenderSample(def) {
   return (def.kind + ':' + def.index) === _bentoSlotState.slotKey;
 }
 function bentoSlotRenderLayerBase(kind, sample) {
-  if (kind === 'cup') return 10;
-  if (kind === 'divider') return 12;
-  if (kind === 'other') return 60;
-  if (kind === 'main-food' || kind === 'side-food') return 30;
+  if (kind === 'cup' || kind === 'divider' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
   return Math.max(1, Math.floor(Number(sample && sample.layer) || 30));
 }
 function bentoSlotSampleRenderLayer(entry) {
