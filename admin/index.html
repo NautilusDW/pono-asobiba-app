@@ -1118,13 +1118,13 @@ tr:hover { background: #FFFAF0; }
     <!-- 将来ステージが 8 以上に増えたら、ここの maze-stage-grid に追記する。
          ボタン文言は _index.json の overrides を fetch して動的に上書きされる。 -->
     <div id="maze-stage-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
-      <button class="btn btn-blue" onclick="window.open('../maze/?stage=1','_blank')" data-stage="1">ステージ 1</button>
-      <button class="btn btn-blue" onclick="window.open('../maze/?stage=2','_blank')" data-stage="2">ステージ 2</button>
-      <button class="btn btn-blue" onclick="window.open('../maze/?stage=3','_blank')" data-stage="3">ステージ 3</button>
-      <button class="btn btn-blue" onclick="window.open('../maze/?stage=4','_blank')" data-stage="4">ステージ 4</button>
-      <button class="btn btn-blue" onclick="window.open('../maze/?stage=5','_blank')" data-stage="5">ステージ 5</button>
-      <button class="btn btn-blue" onclick="window.open('../maze/?stage=6','_blank')" data-stage="6">ステージ 6</button>
-      <button class="btn btn-blue" onclick="window.open('../maze/?stage=7','_blank')" data-stage="7">ステージ 7</button>
+      <button class="btn btn-blue" onclick="mazeOpenStage(1)" data-stage="1">ステージ 1</button>
+      <button class="btn btn-blue" onclick="mazeOpenStage(2)" data-stage="2">ステージ 2</button>
+      <button class="btn btn-blue" onclick="mazeOpenStage(3)" data-stage="3">ステージ 3</button>
+      <button class="btn btn-blue" onclick="mazeOpenStage(4)" data-stage="4">ステージ 4</button>
+      <button class="btn btn-blue" onclick="mazeOpenStage(5)" data-stage="5">ステージ 5</button>
+      <button class="btn btn-blue" onclick="mazeOpenStage(6)" data-stage="6">ステージ 6</button>
+      <button class="btn btn-blue" onclick="mazeOpenStage(7)" data-stage="7">ステージ 7</button>
     </div>
   </div>
 
@@ -1385,24 +1385,56 @@ function mazeInitPanel() {
 function mazeRefreshStageLabels() {
   // _index.json から overrides を取得してボタン文言を上書き
   // 失敗してもボタン自体は触らない（フォールバック = "ステージ N"）
-  fetch('../maze/imageStages/_index.json?_=' + Date.now(), { cache: 'no-store' })
+  return fetch('../maze/imageStages/_index.json?_=' + Date.now(), { cache: 'no-store' })
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       if (!data || !data.overrides) return;
       MAZE_STAGE_LABEL_CACHE = data.overrides;
-      document.querySelectorAll('#maze-stage-grid button[data-stage]').forEach(function(btn) {
-        var n = btn.dataset.stage;
-        var label = data.overrides[n];
-        // ファイル名っぽいもの (英数字_のみ) はそのまま表示しても情報量低いので
-        // 日本語っぽいラベルだけ「ステージ N: <label>」に整形する。
-        if (label && /[ぁ-んァ-ヶ一-龯]/.test(label)) {
-          btn.textContent = 'ステージ ' + n + '：' + label;
-        } else {
-          btn.textContent = 'ステージ ' + n;
-        }
-      });
+      mazeApplyStageLabels(data.overrides);
     })
     .catch(function() { /* フォールバック維持 */ });
+}
+
+function mazeApplyStageLabels(overrides) {
+  overrides = overrides || {};
+  document.querySelectorAll('#maze-stage-grid button[data-stage]').forEach(function(btn) {
+    var n = btn.dataset.stage;
+    var label = overrides[n];
+    // ファイル名っぽいもの (英数字_のみ) はそのまま表示しても情報量低いので
+    // 日本語っぽいラベルだけ「ステージ N: <label>」に整形する。
+    if (label && /[ぁ-んァ-ヶ一-龯]/.test(label)) {
+      btn.textContent = 'ステージ ' + n + '：' + label;
+    } else {
+      btn.textContent = 'ステージ ' + n;
+    }
+  });
+}
+
+function mazeStageFileName(raw) {
+  var safe = String(raw || '')
+    .replace(/[\/\\:*?"<>|%#&]/g, '')
+    .replace(/\.\./g, '');
+  return safe || '';
+}
+
+function mazeOpenStage(stageNum) {
+  var n = String(stageNum || '');
+  function openFromOverrides(overrides) {
+    var stageFile = mazeStageFileName(overrides && overrides[n]);
+    if (stageFile) {
+      window.open('../maze/?' + 'im' + 'age=' + encodeURIComponent(stageFile), '_blank');
+      return;
+    }
+    // _index.json に無い番号だけ従来形式へフォールバック。
+    window.open('../maze/?stage=' + encodeURIComponent(n), '_blank');
+  }
+  if (MAZE_STAGE_LABEL_CACHE) {
+    openFromOverrides(MAZE_STAGE_LABEL_CACHE);
+    return;
+  }
+  mazeRefreshStageLabels()
+    .then(function() { openFromOverrides(MAZE_STAGE_LABEL_CACHE || {}); })
+    .catch(function() { openFromOverrides({}); });
 }
 
 function mazeUpdateDraftButton() {
