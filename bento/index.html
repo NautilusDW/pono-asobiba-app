@@ -14579,7 +14579,7 @@ function createSimpleStageTargetLayer() {
   for (let idx = 0; idx < markerCount; idx += 1) {
     const cup = cupsBySlotIndex.get(idx);
     if (cup) {
-      const point = cupMarkerPoints[idx] || sideMarkerPoints[idx] || cup;
+      const point = sideMarkerPoints[idx] || cupMarkerPoints[idx] || cup;
       if (!point) continue;
       const marker = createFreeStageTargetMarker({
         kind: 'cup',
