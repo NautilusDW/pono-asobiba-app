@@ -453,14 +453,16 @@
   }
 
   // 2026-05-08: server (assets バンドル) と local の新旧を判定。
-  //   - local が __savedAt を持ち、5 分以内なら local 優先（deploy ラグ想定）
+  //   - local が __savedAt を持ち、 一定時間以内なら local 優先（deploy ラグ想定）
   //   - それ以外は server 優先（別端末更新の伝播を尊重）
   //   - 一方しか無ければ存在する方
+  // 2026-06-30 (batch:968): 「保存しても消える」 問題対策で 5 分 → 2 分に短縮。
+  //   別端末の保存反映を素早く拾えるようにする。 CF deploy ラグ実測は 30-90 秒なので 2 分で十分。
   function pickFreshestData(server, local) {
     if (!local) return server || null;
     if (!server) return local;
     if (typeof local.__savedAt !== 'number') return server;
-    var DEPLOY_LAG_WINDOW_MS = 5 * 60 * 1000;
+    var DEPLOY_LAG_WINDOW_MS = 2 * 60 * 1000;
     var ageMs = Date.now() - local.__savedAt;
     if (ageMs > DEPLOY_LAG_WINDOW_MS) return server;
     return local;
@@ -549,9 +551,26 @@
     if (!btn) return;
     var keys = _collectPerQOverrideKeysForCurrentQ();
     var has = keys.length > 0;
+    // 2026-06-30 (batch:968): 現在質問が saved-layout-frozen.json でロック済みかを判定。
+    //   _qzFrozenLayoutData (quizland 側で fetch) に `*|*@qid` キーが 1 件以上あれば lock 済み。
+    var qid = getCurrentQid();
+    var frozenLocked = false;
+    try {
+      var frozen = (typeof window !== 'undefined') ? window._qzFrozenLayoutData : null;
+      if (frozen && typeof frozen === 'object' && qid) {
+        var suffix = '@' + qid;
+        var fks = Object.keys(frozen);
+        for (var fi = 0; fi < fks.length; fi++) {
+          if (fks[fi].length > suffix.length && fks[fi].slice(-suffix.length) === suffix) {
+            frozenLocked = true; break;
+          }
+        }
+      }
+    } catch (_) { /* noop */ }
     if (!btn.dataset.baseTitle) btn.dataset.baseTitle = btn.title || '';
     btn.textContent = (state.perQScopeThisQ ? '🎯 この質問だけ' : '🌐 すべての質問') +
-                      (has ? ' ⚠個別あり' : '');
+                      (has ? ' ⚠個別あり' : '') +
+                      (frozenLocked ? ' 🔒ロック済' : '');
     btn.classList.toggle('active', state.perQScopeThisQ);
     // 2026-06-30 (batch:962 ★5): 現在質問に per-Q キーが 1 つも無い場合、 🌐 のままだと
     //   global キーへ流れて (= ユーザーが「保存したつもり」 でも実際は個別保存ゼロ) 個別 stub が
@@ -559,9 +578,13 @@
     var perQMissingHint = (!has && !state.perQScopeThisQ)
       ? '\n\nℹ この質問には個別レイアウトが未保存です。 質問固有の配置にしたい場合は 🎯 に切替えて保存してください'
       : '';
+    // 2026-06-30 (batch:968): frozen lock 状態を tooltip にも明示
+    var frozenHint = frozenLocked
+      ? '\n\n🔒 この質問のレイアウトは saved-layout-frozen.json で永続ロック済みです。 通常 💾 保存で編集しても disk-applied されません。 解除は frozen.json を直接編集してください。'
+      : '';
     btn.title = btn.dataset.baseTitle + ((has && !state.perQScopeThisQ)
       ? '\n\n⚠ この質問は個別レイアウト適用中です。🌐 のままの質問カード・音声ボタン編集は保存されません (個別値が優先表示)。🎯 に切替えて編集するか、🧹 で個別設定を削除してください'
-      : perQMissingHint);
+      : perQMissingHint) + frozenHint;
     var clearBtn = tb.querySelector('#le-perq-clear');
     if (clearBtn) {
       clearBtn.style.display = '';
@@ -651,13 +674,24 @@
         var baseKey = sel + '|' + i;
         var isPerQChipChild = isChipScoped && !isChipSelfSel && _isPerQSelector(sel);
         if (isChipScoped && !isChipSelfSel && !isPerQChipChild && !state.individualOverrides.has(baseKey)) return;
-        // 2026-06-11 (critical fix): 🌐 モードで per-Q オーバーライド適用中の toggle 対象
-        //   要素は base キーへ書き出さない。 applier が `@qid` 値を DOM に当てているため
-        //   画面上のジオメトリは個別値であり共通値ではない — これを共通キーで snapshot
-        //   すると 💾 保存 (GET→merge→PUT) や動的再スキャン (mergeSnapshotOver) 経由で
-        //   全質問の共通値が個別値に汚染される。 skip しても merge により既存の
-        //   共通キーは保持される。
-        if (!state.perQScopeThisQ && _perQOverrideKeyIfAny(sel, i, frozenQid)) return;
+        // 2026-06-30 (batch:968 ★Fix #1): 旧コードは 🌐 モードで per-Q override が存在する
+        //   toggle 対象要素を snapshot から完全に skip していた。 ところがこれは
+        //   - 🌐 モードでユーザーが編集した変更 (drag/resize) を snapshot が捨てる
+        //   - その結果 save() の snap には新値を表す key が無いので、 deepMergeForSave で
+        //     base key も per-Q key も「既存値のまま」 → ユーザーの編集が永続化失敗
+        //     ＝ 「保存しても消える」 問題の主原因。
+        //   修正方針 (Option A): **snapshot は完全な状態を出す**。 base key を必ず出力し、
+        //   その値は現在の DOM (= per-Q 値を applier が当てた見た目) とする。 結果:
+        //     - 🌐 save 時、 base key には DOM の値 (= per-Q geometry) が書かれる
+        //     - per-Q key は disk 側で温存 (deepMergeForSave が existing を温存するため)
+        //     - 読み出し時、 applier の _lookupChain は per-Q を base より先に評価するので、
+        //       per-Q がある質問の表示は変わらない (per-Q 値が勝つ)
+        //     - per-Q が無い質問の表示は、 新しい base 値 (= 直前に編集した質問の per-Q 値)
+        //       に追従する。 これは「🌐 すべての質問の共通値として保存」 という UI 意図と
+        //       一致する (= ユーザーは今見ている位置を共通に焼くつもり)。
+        //   注意: 旧 skip が抑止していた「base 共通値汚染」 リスクは、 ユーザーが
+        //   🎯 / 🌐 トグルを意識的に切替える運用で吸収する想定。 save() 前段 (line 1726)
+        //   の confirm でも per-Q 存在質問の 🌐 保存はガード済。
         var key = makeElKey(sel, i, { qid: frozenQid });
         data[key] = {
           w: el.style.width || '',
@@ -1855,6 +1889,90 @@
       emit('save:error', err);
       // dirty flag remains true so user can retry
       return { local: true, remote: false, error: err };
+    });
+  }
+
+  // 2026-06-30 (batch:968): saved-layout-frozen.json への「🔒 ロック」転記。
+  //   現在質問の per-Q キー (`${sel}|${i}@${qid}`) を saved-layout-frozen.json に
+  //   merge して GH PUT する。 frozen 層は LayoutApplier 側 (quizland では beforeApply
+  //   経由) で base layer の上に優先 merge されるので、 通常 save では絶対に書き換わらない
+  //   「凍結値」 として永続化される。
+  //   - 対象は state._perQScopeToggleSelectors の per-Q キーのみ (base key は対象外)
+  //   - 個別 chip override 等は対象外 (頻繁に編集される性質のため)
+  //   - 既存 frozen JSON は merge ベースに使い、 他質問の lock 済みキーを温存
+  function lockToFrozen() {
+    var qid = getCurrentQid();
+    if (!qid) {
+      showToast('現在の問題 ID が取れません (lock を中止)', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-qid' });
+    }
+    var perQKeys = _collectPerQOverrideKeysForCurrentQ();
+    if (!perQKeys || !perQKeys.length) {
+      showToast('この質問には per-Q レイアウト (🎯 個別保存) がありません。 まず 🎯 で個別保存してから 🔒 ロックしてください', 'warn');
+      return Promise.resolve({ ok: false, reason: 'no-perq' });
+    }
+    if (!confirm('この質問のレイアウト ' + perQKeys.length + ' 件を saved-layout-frozen.json に転記して永続ロックします。\n\n'
+                 + 'ロック後は通常の💾保存では変更できなくなります。\n'
+                 + '(後で解除したい場合は saved-layout-frozen.json をテキストエディタで直接編集してください)\n\n'
+                 + '続けますか？')) {
+      return Promise.resolve({ ok: false, reason: 'user-cancel' });
+    }
+    var srcData = window._currentLayoutData;
+    if (!srcData || typeof srcData !== 'object') {
+      showToast('現在のレイアウトデータが空です (lock を中止)', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-data' });
+    }
+    // 凍結する key/value を抽出
+    var freezeSnap = {};
+    perQKeys.forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(srcData, k)) {
+        freezeSnap[k] = srcData[k];
+      }
+    });
+    if (!Object.keys(freezeSnap).length) {
+      showToast('ロック対象のキーが見つかりません', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-keys' });
+    }
+    // saved-layout-frozen.json のパスは saved-layout.json と兄弟 (同ディレクトリ)。
+    //   ghPath() = 'quizland/saved-layout.json' から拡張子前を差し替えて派生させる。
+    var path = ghPath();
+    if (!path) {
+      showToast('GH path 未設定のためロックできません', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-gh-path' });
+    }
+    var frozenPath = path.replace(/saved-layout\.json$/i, 'saved-layout-frozen.json');
+    if (frozenPath === path) {
+      showToast('frozen path 派生失敗 (ghPath が saved-layout.json で終わっていません)', 'error');
+      return Promise.resolve({ ok: false, reason: 'bad-path-derive' });
+    }
+    showToast('🔒 ロック中…');
+    return ghGetContentsWithRetry(frozenPath).then(function (result) {
+      var existing = result.contents;
+      var sha = existing ? existing.sha : null;
+      var existingFrozen = _decodeGhJson(existing) || {};
+      // frozen の merge: 既存 frozen のキーを保持しつつ、 今回 lock したキーで上書き
+      var mergedFrozen = Object.assign({}, existingFrozen);
+      Object.keys(freezeSnap).forEach(function (k) { mergedFrozen[k] = freezeSnap[k]; });
+      // __savedAt 等の冗長メタは frozen には書かない (純粋なロックレジストリ)
+      if (Object.prototype.hasOwnProperty.call(mergedFrozen, '__savedAt')) delete mergedFrozen.__savedAt;
+      var pretty = JSON.stringify(mergedFrozen, null, 2) + '\n';
+      var msg = 'chore(layout-frozen): lock per-Q layout for ' + qid + ' (' + Object.keys(freezeSnap).length + ' keys)';
+      return ghPutContents(frozenPath, utf8Btoa(pretty), msg, sha).then(function () {
+        // ローカルキャッシュ (window._qzFrozenLayoutData) も同期して、 即時 lock 反映を演出
+        try {
+          if (typeof window !== 'undefined') {
+            window._qzFrozenLayoutData = mergedFrozen;
+          }
+        } catch (_) {}
+        showToast('🔒 ロックしました (' + Object.keys(freezeSnap).length + ' 件)', 'success');
+        emit('lock:success', { qid: qid, count: Object.keys(freezeSnap).length });
+        return { ok: true, count: Object.keys(freezeSnap).length };
+      });
+    }).catch(function (err) {
+      console.warn('[LayoutEditor] lockToFrozen failed', err);
+      showToast('🔒 ロック失敗: ' + (err && err.message ? err.message.slice(0, 80) : 'unknown'), 'error');
+      emit('lock:error', err);
+      return { ok: false, reason: 'gh-error', error: err };
     });
   }
 
@@ -6762,6 +6880,11 @@
       //   @qid キーを保存データから削除し、 共通位置へ戻して即保存する。
       //   個別設定が無い質問では disabled (updatePerQScopeUI が管理)。
       '<button id="le-perq-clear" title="この質問の個別レイアウト設定 (@qid キー) を削除し、共通位置に戻して保存します" aria-label="この質問の個別設定を削除" style="display:none;" disabled>🧹 この質問の個別設定を削除</button>' +
+      // 🔒 このレイアウトをロック (2026-06-30 batch:968): 現在質問の per-Q キーを read-only
+      //   saved-layout-frozen.json に転記。 通常 save では絶対に上書きされない「凍結層」
+      //   として永続保護する。 frozen ファイルが空 ({}) または当該質問の per-Q が無いときは disabled。
+      //   ※ saved-layout-frozen.json の存在を前提とするため、 quizland 以外では未対応 (display:none 既定)。
+      '<button id="le-perq-lock" title="この質問の現在のレイアウト (per-Q キー) を saved-layout-frozen.json に転記して永続ロック&#10;ロック後は通常の💾保存では変更できなくなります" aria-label="この質問のレイアウトをロック" style="display:none;">🔒 このレイアウトをロック</button>' +
       // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
       //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
       //   他ページでは非表示。
@@ -6907,6 +7030,7 @@
     //   dirty baseline をトグル後のキー形式で取り直し、 誤 dirty 検知を防ぐ。
     var perqScopeBtn = tb.querySelector('#le-perq-scope');
     var perqClearBtn = tb.querySelector('#le-perq-clear');
+    var perqLockBtn  = tb.querySelector('#le-perq-lock');
     if (perqScopeBtn && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
       perqScopeBtn.style.display = '';
       perqScopeBtn.addEventListener('click', function () {
@@ -6963,6 +7087,23 @@
           try { refreshElementList(); } catch (e) { /* noop */ }
           save(); // GET→merge→削除キー適用→PUT で削除を永続化
         });
+      }
+      // 🔒 このレイアウトをロック (2026-06-30 batch:968): per-Q キーを saved-layout-frozen.json
+      //   に転記して永続保護する。 quizland 以外では非表示のまま (saved-layout-frozen.json 未対応)。
+      //   有効化条件: saved-layout-frozen.json をサポートする quizland 文脈 (ghPath が
+      //   `quizland/saved-layout.json` で終わる) のときだけ表示。
+      if (perqLockBtn) {
+        try {
+          var gp = (state.config && state.config.ghPath) || (function () {
+            var lu = (state.config && state.config.layoutUrl) || '';
+            return lu.replace(/^\.\//, '').replace(/^\//, '');
+          })();
+          var frozenSupported = /saved-layout\.json$/i.test(gp || '');
+          if (frozenSupported) {
+            perqLockBtn.style.display = '';
+            perqLockBtn.addEventListener('click', function () { lockToFrozen(); });
+          }
+        } catch (_) { /* 表示しないだけ — fatal にしない */ }
       }
       // 保存成功 (🎯 保存で @qid キーが増えた / 🧹 で減った) に ⚠個別あり バッジを追従
       var perqSaveListener = function () { updatePerQScopeUI(); };

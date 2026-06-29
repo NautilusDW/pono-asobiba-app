@@ -4808,8 +4808,81 @@ function _qzApplyChipText(el, originalText, qKey, slot) {
   _qzApplyChipTextStyle(el, qKey, slot);
 }
 
+// 2026-06-30 (batch:968): saved-layout-frozen.json — read-only な並列「ロック層」。
+//   通常の saved-layout.json とは別ファイルで、 editor の 🔒 ロックボタン経由でしか
+//   書き込まれない。 LayoutApplier が saved-layout.json を読む直前に frozen を fetch し、
+//   両者をマージ (frozen を勝たせる) してから applier に渡す。 結果:
+//     - frozen にあるキーは絶対に saved-layout.json で上書きされない
+//     - 編集者が誤って通常 save しても、 frozen のキーは disk-applied されない (= 永続保護)
+//   frozen が空 ({}) のときは従来動作と完全に同一。
+function _qzKickoffFrozenLayoutFetch() {
+  if (window._qzFrozenLayoutPromise) return window._qzFrozenLayoutPromise;
+  // cache-bust で必ず最新 frozen を取りに行く (saved-layout.json と同じパターン)。
+  var url = './saved-layout-frozen.json?t=' + Date.now();
+  window._qzFrozenLayoutPromise = fetch(url, { cache: 'no-store' })
+    .then(function (r) { return r && r.ok ? r.json() : null; })
+    .catch(function (_) { return null; })
+    .then(function (data) {
+      if (data && typeof data === 'object') {
+        window._qzFrozenLayoutData = data;
+      } else {
+        window._qzFrozenLayoutData = null;
+      }
+      return window._qzFrozenLayoutData;
+    });
+  return window._qzFrozenLayoutPromise;
+}
+// 即時 kick off (script load 時に並行 fetch 開始 → main layout fetch と同タイミングで完了)
+try {
+  _qzKickoffFrozenLayoutFetch().then(function (frozen) {
+    // frozen が遅れて到着した場合、 既に apply 済みの base に on-top でマージして再適用。
+    //   beforeApply が呼ばれた時点で _qzFrozenLayoutData が null なら frozen 値は反映され
+    //   ていない。 _qzScheduleStageLayoutRestore は authoritative cache を起点に再 apply
+    //   するが、 frozen はそこに含まれないので、 明示的に authoritative + frozen を merge
+    //   してから _currentLayoutData を差し替える。
+    if (!frozen || typeof frozen !== 'object' || !Object.keys(frozen).length) return;
+    try {
+      var cur = window._currentLayoutData;
+      if (cur && typeof cur === 'object') {
+        var merged = _qzMergeFrozenOverBase(cur, frozen);
+        window._currentLayoutData = merged;
+        // authoritative cache も frozen 反映済み版に更新 (後段の restore 経路で frozen が消えないように)
+        try { _qzRememberAuthoritativeLayoutData(merged); } catch (_) {}
+      }
+      // applier が存在すれば即時再 apply (visual 上の遅延 paint を避ける)
+      if (window.LayoutApplier && window._currentLayoutData) {
+        var stage = document.getElementById('stage-area') || document.getElementById('stage') || document.body;
+        var qid = (typeof window.QUIZLAND_GET_CURRENT_QID === 'function') ? window.QUIZLAND_GET_CURRENT_QID() : null;
+        window.LayoutApplier.apply(window._currentLayoutData, stage, {
+          selectors: (typeof QZ_RESIZABLE_SELECTORS !== 'undefined') ? QZ_RESIZABLE_SELECTORS : [],
+          perQuestionSelectors: (typeof QZ_PER_QUESTION_SELECTORS !== 'undefined') ? QZ_PER_QUESTION_SELECTORS : null,
+          qid: qid,
+        });
+      }
+    } catch (_) { /* late frozen merge is best-effort; do not crash */ }
+  });
+} catch (_) { /* noop */ }
+
+// frozen layer を base layer に on-top merge。 frozen のキーが base を上書きする。
+//   個別オブジェクト ({w,h,tx,ty} 等) は shallow replace で十分。 入力 base は mutate しない。
+function _qzMergeFrozenOverBase(base, frozen) {
+  if (!frozen || typeof frozen !== 'object') return base;
+  if (!base || typeof base !== 'object') {
+    // base が null → frozen のみ。 が、 frozen に __savedAt 等の冗長キーは含まないので
+    // そのまま deep clone して返す。
+    try { return JSON.parse(JSON.stringify(frozen)); } catch (_) { return Object.assign({}, frozen); }
+  }
+  var out = Object.assign({}, base);
+  Object.keys(frozen).forEach(function (k) { out[k] = frozen[k]; });
+  return out;
+}
+
 function _qzPickFreshLayoutData(serverData) {
-  var DEPLOY_LAG_WINDOW_MS = 10 * 60 * 1000;
+  // batch:968 (2026-06-30): 「保存しても消える」 問題対策の一環で 10 分 → 2 分に短縮。
+  //   旧値だと別端末・別ブラウザの保存が CF deploy 完了後も 10 分間ローカル cache に
+  //   隠されて、 同じ端末上でロールバック表示が長く続く副作用があった。 deploy ラグの
+  //   実測は 30-90 秒程度なので 2 分窓で十分実用域。
+  var DEPLOY_LAG_WINDOW_MS = 2 * 60 * 1000;
   var candidates = [
     'le_layout_' + (location.pathname || '/'),
     'le_layout_/quizland/',
@@ -4933,7 +5006,14 @@ window.EditorBootstrapConfig = {
   // エディター保存直後は GitHub commit → staging deploy の反映ラグがあるため、
   // 同じ端末では短時間だけ localStorage の保存済み layout を通常表示にも優先する。
   beforeApply: function(data) {
-    return _qzRememberAuthoritativeLayoutData(_qzPickFreshLayoutData(data));
+    // 2026-06-30 (batch:968): saved-layout-frozen.json (read-only ロック層) を base layer の
+    //   うえに merge (frozen 勝ち)。 通常 save では決して上書きされないキーをここで合成。
+    //   frozen fetch がまだ未完了の場合は _qzFrozenLayoutData が null → そのまま base 返す。
+    //   完了後 (rAF/setTimeout の _qzScheduleStageLayoutRestore 経路) で再 apply されて
+    //   遅れて frozen が反映される。
+    var picked = _qzPickFreshLayoutData(data);
+    var merged = _qzMergeFrozenOverBase(picked, window._qzFrozenLayoutData);
+    return _qzRememberAuthoritativeLayoutData(merged);
   },
 
   // E2 (2026-05-13): saved-layout.json 内の `__hakase_dialogue_text_size`
