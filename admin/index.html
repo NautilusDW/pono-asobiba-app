@@ -11333,11 +11333,11 @@ var BENTO_SLOT_HIDDEN_KEY = 'bento_simple_slot_hidden_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
-var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 3, divider: 3, other: 1 };
+var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 3, leaf: 6, divider: 6, other: 1 };
 var BENTO_SLOT_SHARED_KINDS = { other: true };
-var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true };
-var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, divider: 65, other: 24 };
-var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, divider: 8, other: 6 };
+var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true, leaf: true };
+var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, leaf: 34, divider: 36, other: 24 };
+var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, leaf: 8, divider: 8, other: 6 };
 var BENTO_SLOT_BOXES = [
   { id: 'box_rect_split', name: 'ふつうの おべんとう', image: '../assets/images/bento/ui/rect_bento_box_coral.webp', bounds: { x: 50, y: 22, w: 660, h: 422 }, placeBounds: { x: 78, y: 78, w: 579, h: 314 }, sideFoodSlotCount: 4, foodSpots: [{ x: 494, y: 174 }, { x: 572, y: 174 }, { x: 494, y: 296 }, { x: 572, y: 296 }, { x: 553, y: 235 }], accessorySpots: [{ x: 500, y: 236 }, { x: 572, y: 236 }, { x: 556, y: 176 }, { x: 556, y: 300 }] },
   { id: 'box_square', name: 'しかくい おべんとう', image: '../assets/images/bento/free-layout/box_square.webp', bounds: { x: 76, y: 54, w: 608, h: 354 }, placeBounds: { x: 124, y: 92, w: 512, h: 276 }, foodSpots: [{ x: 274, y: 234 }, { x: 382, y: 188 }, { x: 490, y: 234 }, { x: 318, y: 306 }, { x: 446, y: 306 }], accessorySpots: [{ x: 292, y: 250 }, { x: 470, y: 250 }, { x: 382, y: 206 }] },
@@ -11374,9 +11374,18 @@ var BENTO_SLOT_DEFS = [
   { kind: 'cup', index: 0, label: 'カップA（柄共通）', shortLabel: 'CA', color: '#0EA5E9' },
   { kind: 'cup', index: 1, label: 'カップB（柄共通）', shortLabel: 'CB', color: '#0EA5E9' },
   { kind: 'cup', index: 2, label: 'カップC（柄共通）', shortLabel: 'CC', color: '#0EA5E9' },
+  { kind: 'leaf', index: 0, label: '葉物A', shortLabel: '葉A', color: '#65A30D' },
+  { kind: 'leaf', index: 1, label: '葉物B', shortLabel: '葉B', color: '#65A30D' },
+  { kind: 'leaf', index: 2, label: '葉物C', shortLabel: '葉C', color: '#65A30D' },
+  { kind: 'leaf', index: 3, label: '葉物D', shortLabel: '葉D', color: '#65A30D' },
+  { kind: 'leaf', index: 4, label: '葉物E', shortLabel: '葉E', color: '#65A30D' },
+  { kind: 'leaf', index: 5, label: '葉物F', shortLabel: '葉F', color: '#65A30D' },
   { kind: 'divider', index: 0, label: '仕切りA', shortLabel: 'DA', color: '#A855F7' },
   { kind: 'divider', index: 1, label: '仕切りB', shortLabel: 'DB', color: '#A855F7' },
   { kind: 'divider', index: 2, label: '仕切りC', shortLabel: 'DC', color: '#A855F7' },
+  { kind: 'divider', index: 3, label: '仕切りD', shortLabel: 'DD', color: '#A855F7' },
+  { kind: 'divider', index: 4, label: '仕切りE', shortLabel: 'DE', color: '#A855F7' },
+  { kind: 'divider', index: 5, label: '仕切りF', shortLabel: 'DF', color: '#A855F7' },
   { kind: 'other', index: 0, label: 'ピック共通', shortLabel: 'P', color: '#64748B' }
 ];
 function bentoSlotClampSlotCount(kind, count, fallback) {
@@ -11458,7 +11467,6 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'potato_salad', name: 'ポテトサラダ', image: '../assets/images/bento/free-layout/okazu_potato_salad.png', size: 126, cupSizes: { small: 88, medium: 108, large: 126 }, defaultCupSizeKey: 'large', rotation: 1, layer: 45 },
     { id: 'ninjin_ingen', name: 'にんじんいんげん', image: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', size: 112, cupSizes: { small: 80, medium: 96, large: 112 }, defaultCupSizeKey: 'large', rotation: 1, layer: 46 },
     { id: 'napolitan', name: 'ナポリタン', image: '../assets/images/bento/free-layout/okazu_napolitan.png', size: 132, cupSizes: { small: 94, medium: 112, large: 132 }, defaultCupSizeKey: 'large', rotation: -1, layer: 47 },
-    { id: 'cabbage', name: 'キャベツ', image: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', size: 170, cupSizes: { small: 116, medium: 142, large: 170 }, defaultCupSizeKey: 'large', rotation: 0, layer: 48 },
     { id: 'ichigo', name: 'いちご', image: '../assets/images/bento/free-layout/fruit_ichigo.png', size: 115, cupSizes: { small: 78, medium: 96, large: 115 }, defaultCupSizeKey: 'large', rotation: -5, layer: 49 },
     { id: 'mikan', name: 'みかん', image: '../assets/images/bento/free-layout/fruit_mikan.png', size: 108, cupSizes: { small: 74, medium: 90, large: 108 }, defaultCupSizeKey: 'large', rotation: -2, layer: 50 }
   ],
@@ -11472,8 +11480,11 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
       layer: 10
     }
   ],
+  leaf: [
+    { id: 'leaf_cabbage', name: 'キャベツ', image: '../assets/images/bento/cooking/cabbage/cabbage_002.png', size: 150, rotation: -2, layer: 20 },
+    { id: 'leaf_lettuce', name: 'レタス', image: '../assets/images/bento/free-layout/divider_lettuce.png', size: 190, rotation: -8, layer: 20 }
+  ],
   divider: [
-    { id: 'divider_lettuce', name: 'レタスしきり', image: '../assets/images/bento/free-layout/divider_lettuce.png', size: 190, rotation: -8, layer: 20 },
     { id: 'divider_wave', name: 'なみなみしきり', image: '../assets/images/bento/free-layout/divider_wave.png', size: 184, rotation: 0, layer: 20 },
     { id: 'divider_wood', name: 'きのしきり', image: '../assets/images/bento/free-layout/divider_wood.png', size: 178, rotation: 0, layer: 20 }
   ],
@@ -11849,8 +11860,8 @@ function bentoSlotAccessoryBounds(box) {
   return bentoSlotBoundsFromSpots(box.accessorySpots || box.foodSpots, bentoSlotGetMaskBounds(box) || box.placeBounds || box.bounds, 112);
 }
 function bentoSlotKindBounds(box, kind) {
-  if (kind === 'main-food' || kind === 'side-food') return bentoSlotFoodBounds(box);
-  if (kind === 'cup' || kind === 'divider' || kind === 'other') return bentoSlotAccessoryBounds(box);
+  if (kind === 'main-food' || kind === 'side-food' || kind === 'leaf' || kind === 'divider') return bentoSlotFoodBounds(box);
+  if (kind === 'cup' || kind === 'other') return bentoSlotAccessoryBounds(box);
   return bentoSlotGetMaskBounds(box) || box.placeBounds || box.bounds || { x: 0, y: 0, w: BENTO_SLOT_W, h: BENTO_SLOT_H };
 }
 function bentoSlotClampPointForDef(box, def, point) {
@@ -11865,6 +11876,17 @@ function bentoSlotClampPointForDef(box, def, point) {
   });
 }
 function bentoSlotDefaultPoint(box, def) {
+  if (def.kind === 'leaf' || def.kind === 'divider') {
+    var grid = bentoSlotFoodBounds(box);
+    var cols = [0.30, 0.70];
+    var rows = [0.24, 0.50, 0.76];
+    var col = def.index % 2;
+    var row = Math.floor(def.index / 2) % 3;
+    return bentoSlotClampPointForDef(box, def, {
+      x: grid.x + grid.w * cols[col],
+      y: grid.y + grid.h * rows[row]
+    });
+  }
   if (def.kind === 'main-food' || def.kind === 'side-food') {
     var b = bentoSlotFoodBounds(box);
     var points = [
@@ -12311,16 +12333,20 @@ function bentoSlotIsBottomLayerSample(kind, sample) {
   var id = String(sample && sample.id || '');
   var name = String(sample && sample.name || '');
   var image = String(sample && sample.image || '');
-  return id === 'cabbage'
+  return kind === 'leaf'
+    || id === 'cabbage'
+    || id === 'leaf_cabbage'
+    || id === 'leaf_lettuce'
     || id === 'divider_lettuce'
     || name.indexOf('キャベツ') >= 0
     || name.indexOf('レタス') >= 0
     || image.indexOf('cabbage_shreds') >= 0
+    || image.indexOf('/cabbage/cabbage_') >= 0
     || image.indexOf('divider_lettuce') >= 0;
 }
 function bentoSlotRenderLayerBase(kind, sample) {
   if (bentoSlotIsBottomLayerSample(kind, sample)) return 29;
-  if (kind === 'cup' || kind === 'divider' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
+  if (kind === 'cup' || kind === 'divider' || kind === 'leaf' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
   return Math.max(1, Math.floor(Number(sample && sample.layer) || 30));
 }
 function bentoSlotSampleRenderLayer(entry) {

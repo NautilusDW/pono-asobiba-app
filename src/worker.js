@@ -266,11 +266,12 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 4,
   cup: 3,
-  divider: 3,
+  leaf: 6,
+  divider: 6,
   other: 1
 };
 const BENTO_SHARED_SLOT_KINDS = new Set(['other']);
-const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food']);
+const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food', 'leaf']);
 const BENTO_SLOT_BOX_ORDER = [
   'box_rect_split',
   'box_square',
