@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1800: maze 監査 fix 2件 (batch:939) — クリア後 2.2s 遅延→ 並行起動 + pointer-events ガード / grid-stage dead code クリーンアップ。play.html PAGE_CACHE_VERSION と同期 (was sw v1799 / play v1798 diverged, this batch realigns both)。
 // v1799: Bento 小さいおかずD選択維持 + キャベツ/レタスを自由な葉物枠へ分離 + 仕切り/葉物を2列×3段の6枠化。
 // v1798: Maze janken player-win rescue logic, no cumulative chance drift, and hand-art choices.
 // v1797: 旗あげ 6 voice 1 ショット連続生成 (Aoede 統一 リズム/テンション完全統一) + janken×8 + strength_push 4 + kumo 2 + audit-regen 13 (truefalse/simon/silhouette/oddone を Gemini 2.5 fallback/Higgsfield から 3.1 Aoede に再生成) = 計 33 voice 追加/上書き → 全 49 voice が Gemini 3.1 Aoede 統一 (batch:922/923)。 maze/index.html `_MAZE_VOICE_BUNDLED` whitelist を janken/strength_push/kumo 全 key 対応に拡張。 play.html PAGE_CACHE_VERSION と同期。
@@ -423,7 +424,7 @@
 // v1779: oto AcornModal 専用調整 — (1) __progress を白系に (海底ネイビーで視認性確保) (2) panel に大きめ border-radius で角丸化、 他ゲーム焦茶色は base 維持。
 // v1796: えほんの unlock モーダル (#passwordUnlockModal) を 2 タブ仕様 (あいことば + 注文番号) に整理。 クイズタブ (#pwTabQuiz / #pwPanelQuiz) は display:none で非表示、 ただし DOM / JS / common/tier.js の verifyQuizAnswer は dormant 保持 (緊急時に display:none を消すだけで復活可能)。 .password-modal-tabs は flexbox (display:flex; gap:4px / .pw-tab flex:1) なので 3 番目を display:none にするだけで残り 2 タブが自動 reflow、 grid-template-columns 書換は不要。 ヘルプ文言 「したの どれか ひとつで」 → 「したの どちらかで」 に微調整 (2 タブ整合)。 play.html PAGE_CACHE_VERSION と同期。
 // v1794: puzzle 監査 fix 5件 (batch:938) — loadStage null check / currentStageIndex 範囲チェック / OP narration 3.5s fallback / btnPlayAgain dead code 削除 / album STAGE_TITLES sync コメント + 軽量化。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1799;
+const CACHE_VERSION = 1800;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
