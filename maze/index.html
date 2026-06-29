@@ -3937,11 +3937,13 @@ function _playFlagVoice(key) {
 const _MAZE_VOICE_BASE = '../assets/audio/narration/maze/';
 const _mazeVoiceCache = Object.create(null);
 
-// 実配置済 voice の whitelist (preload/再生 対象を絞る → quota 未復活 key の 404 防止)
-// janken / water_bridge / strength_push の追加 voice / kumo の start・boss_defeated は
-// batch:880-quota-retry で TTS quota 復活後に生成予定。
+// 実配置済 voice の whitelist (preload/再生 対象を絞る → 404 防止)
+// batch:922/923 で 49 voice 全て Gemini 3.1 Aoede 統一達成。
 const _MAZE_VOICE_BUNDLED = {
-  // janken: quota 復活待ち (batch:880-quota-retry も HTTP 429 で全 skip、次の reset 待ち)
+  janken: {
+    start: true, call_jan: true, call_ken: true, call_pon: true,
+    win_01: true, lose_01: true, lose_02: true, draw_01: true,
+  },
   truefalse: { start: true, correct: true, wrong: true },
   simon: { start: true, your_turn: true, correct: true, wrong: true },
   silhouette: { start: true, hint_more: true, correct: true, wrong: true },
@@ -3950,13 +3952,12 @@ const _MAZE_VOICE_BUNDLED = {
     start: true, wrong_slot: true, splash: true,
     place_ok: true, win: true, crossing: true,
   },
-  strength_push: { start: true /* crack_progress, almost, win, fail: quota 復活待ち (batch:880 retry も 429) */ },
+  strength_push: {
+    start: true, crack_progress: true, almost: true, win: true, fail: true,
+  },
   kumo: {
-    // start は whisper 誤判定 (はなそう → へのそう) で削除済、 quota 復活後に再生成
-    pin_clear: true, boss_appear: true, boss_phase_start: true,
-    milestone_10: true,
-    // boss_defeated は quota 復活待ち (batch:880 retry も 429)
-    win: true,
+    start: true, pin_clear: true, boss_appear: true, boss_phase_start: true,
+    milestone_10: true, boss_defeated: true, win: true,
   },
 };
 
