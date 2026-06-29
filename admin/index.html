@@ -1272,7 +1272,7 @@ tr:hover { background: #FFFAF0; }
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
       主菜A/B、小さいおかずA/B/C、カップA/B/C（柄は共通）、仕切りA/B/C、ピック共通を設定できます。<br>
-      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。食材サンプルを切り替えると、同じスロット内でも食材ごとに x/y/サイズを別々に保存できます。<br>
+      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。食材サンプルを切り替えると、食材ごとに位置を保存できます。主菜/副菜のサイズは同じ食材なら A/B/C 間で共有されます。<br>
       マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。カップは同じ柄を使いつつ A/B/C の置き場所を別々に設定し、ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
     </div>
 
@@ -1317,7 +1317,7 @@ tr:hover { background: #FFFAF0; }
         <div id="bento-slot-preview" style="position:relative;width:100%;aspect-ratio:760/460;background:#fff7e6;border:2px solid #C7894A;border-radius:12px;overflow:hidden;touch-action:none;">
         </div>
         <div style="font-size:0.72rem;color:#8B7355;margin-top:8px;line-height:1.45;">
-          実際の Bento と同じ座標系です。食材画像の中心が配置中心になります。サンプル食材の種類はプレビュー用、size は本体のかんたん配置にも反映されます。丸いマーカーはドラッグ用のつまみです。
+          実際の Bento と同じ座標系です。食材画像の中心が配置中心になります。サンプル食材の種類はプレビュー用、size は本体のかんたん配置にも反映されます。同じ主菜/副菜サンプルの size はスロット間で共有されます。丸いマーカーはドラッグ用のつまみです。
         </div>
       </div>
     </div>
@@ -11328,6 +11328,7 @@ var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
 var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 3, cup: 3, divider: 3, other: 1 };
 var BENTO_SLOT_SHARED_KINDS = { other: true };
+var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, divider: 65, other: 24 };
 var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, divider: 8, other: 6 };
 var BENTO_SLOT_BOXES = [
@@ -11888,6 +11889,78 @@ function bentoSlotSetEntry(boxId, def, entry) {
   bentoSlotSaveLocal();
   return list[def.index];
 }
+function bentoSlotShouldShareSampleSize(def) {
+  return !!(def && BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS[def.kind]);
+}
+function bentoSlotReadSampleSize(entry, sampleId) {
+  if (!entry || !sampleId) return null;
+  var override = entry.sampleOverrides && entry.sampleOverrides[sampleId];
+  if (override && isFinite(Number(override.size))) return Number(override.size);
+  if (entry.sampleId === sampleId && isFinite(Number(entry.size))) return Number(entry.size);
+  return null;
+}
+function bentoSlotFindSharedSampleSize(boxId, def, sample) {
+  if (!bentoSlotShouldShareSampleSize(def) || !sample || !sample.id) return null;
+  var boxLayout = _bentoSlotState.layout[boxId];
+  var list = boxLayout && Array.isArray(boxLayout[def.kind]) ? boxLayout[def.kind] : [];
+  for (var i = 0; i < list.length; i++) {
+    var size = bentoSlotReadSampleSize(list[i], sample.id);
+    if (isFinite(Number(size))) {
+      return bentoSlotNormalizeSizeForDef(size, bentoSlotDefaultSizeForSample(def, sample), def, sample);
+    }
+  }
+  return null;
+}
+function bentoSlotSyncSampleSizeAcrossSlots(boxId, def, sample, size, skipSave) {
+  if (!bentoSlotShouldShareSampleSize(def) || !sample || !sample.id || !isFinite(Number(size))) return false;
+  var box = bentoSlotGetBoxById(boxId);
+  var list = bentoSlotEnsureKindList(boxId, def, box);
+  var normalizedSize = bentoSlotNormalizeSizeForDef(size, bentoSlotDefaultSizeForSample(def, sample), def, sample);
+  for (var i = 0; i < BENTO_SLOT_LIMITS[def.kind]; i++) {
+    var slotDef = { kind: def.kind, index: i };
+    var entry = bentoSlotClampEntryForDef(box, slotDef, list[i] || bentoSlotDefaultEntry(box, slotDef));
+    var overrides = Object.assign({}, entry.sampleOverrides || {});
+    var current = overrides[sample.id] || (entry.sampleId === sample.id ? entry : null) || entry;
+    overrides[sample.id] = {
+      x: isFinite(Number(current.x)) ? current.x : entry.x,
+      y: isFinite(Number(current.y)) ? current.y : entry.y,
+      size: normalizedSize
+    };
+    var next = Object.assign({}, entry, { sampleOverrides: overrides });
+    if (entry.sampleId === sample.id) next.size = normalizedSize;
+    list[i] = bentoSlotClampEntryForDef(box, slotDef, next);
+  }
+  if (!skipSave) bentoSlotSaveLocal();
+  return true;
+}
+function bentoSlotSyncAllSharedSampleSizes(skipSave) {
+  var changed = false;
+  Object.keys(_bentoSlotState.layout || {}).forEach(function(boxId) {
+    ['main-food', 'side-food'].forEach(function(kind) {
+      var boxLayout = _bentoSlotState.layout[boxId];
+      var list = boxLayout && Array.isArray(boxLayout[kind]) ? boxLayout[kind] : [];
+      var sizes = {};
+      list.forEach(function(entry) {
+        if (!entry) return;
+        if (entry.sampleId && isFinite(Number(entry.size)) && sizes[entry.sampleId] == null) sizes[entry.sampleId] = Number(entry.size);
+        var overrides = entry.sampleOverrides || {};
+        Object.keys(overrides).sort().forEach(function(sampleId) {
+          if (sizes[sampleId] != null) return;
+          var override = overrides[sampleId];
+          if (override && isFinite(Number(override.size))) sizes[sampleId] = Number(override.size);
+        });
+      });
+      Object.keys(sizes).forEach(function(sampleId) {
+        var sample = bentoSlotFindSampleById(kind, sampleId);
+        if (sample) {
+          changed = bentoSlotSyncSampleSizeAcrossSlots(boxId, { kind: kind, index: 0 }, sample, sizes[sampleId], true) || changed;
+        }
+      });
+    });
+  });
+  if (changed && !skipSave) bentoSlotSaveLocal();
+  return changed;
+}
 function bentoSlotSetActiveSampleEntry(boxId, def, sample, values) {
   var existing = bentoSlotGetStoredEntry(boxId, def);
   var activeSample = sample || bentoSlotSampleForDef(def, existing);
@@ -11915,13 +11988,18 @@ function bentoSlotSetActiveSampleEntry(boxId, def, sample, values) {
       size: nextActive.size
     };
   }
-  return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
+  var updated = bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
     x: nextActive.x,
     y: nextActive.y,
     size: nextActive.size,
     sampleId: activeSample && activeSample.id,
     sampleOverrides: overrides
   }));
+  if (activeSample && activeSample.id && values && Object.prototype.hasOwnProperty.call(values, 'size')) {
+    bentoSlotSyncSampleSizeAcrossSlots(boxId, def, activeSample, nextActive.size);
+    updated = bentoSlotGetEntry(boxId, def);
+  }
+  return updated;
 }
 function bentoSlotSetPoint(boxId, def, point) {
   var existing = bentoSlotGetStoredEntry(boxId, def);
@@ -11938,10 +12016,12 @@ function bentoSlotSetSampleId(boxId, def, sampleId) {
   var sample = bentoSlotFindSampleById(def.kind, sampleId) || bentoSlotDefaultSampleForDef(def);
   var existing = bentoSlotGetStoredEntry(boxId, def);
   var saved = sample && existing.sampleOverrides && existing.sampleOverrides[sample.id];
+  var sharedSize = bentoSlotFindSharedSampleSize(boxId, def, sample);
+  if (saved && sharedSize != null) saved = Object.assign({}, saved, { size: sharedSize });
   return bentoSlotSetActiveSampleEntry(boxId, def, sample, saved || {
     x: existing.x,
     y: existing.y,
-    size: bentoSlotDefaultSizeForSample(def, sample)
+    size: sharedSize != null ? sharedSize : bentoSlotDefaultSizeForSample(def, sample)
   });
 }
 function bentoSlotSetStatus(message, isError) {
