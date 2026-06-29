@@ -3410,7 +3410,7 @@ function _applyGimmickItemsToDef(def) {
     if (meta.isObstacleProxy) return;
     const item = (state.gimmickItems || []).find(function(x) { return x && x.kind === kind; });
     const existing = state.gimmickConfigs && state.gimmickConfigs[meta.configKey];
-    if (!existing) return;
+    if (!existing && !item) return;
     const cfg = _jsonClone(existing) || _defaultGimmickConfig(meta.configKey);
     if (item) {
       cfg[meta.itemKey] = {
