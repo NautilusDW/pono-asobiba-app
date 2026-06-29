@@ -271,6 +271,15 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
 };
 const BENTO_SHARED_SLOT_KINDS = new Set(['other']);
 const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food']);
+const BENTO_SLOT_BOX_ORDER = [
+  'box_rect_split',
+  'box_square',
+  'box_round',
+  'box_bear',
+  'box_bear_pink',
+  'box_cat_blue',
+  'box_cat'
+];
 const BENTO_CUP_SLOT_SIZES = [150, 190, 230];
 
 function normalizeBentoSlotSize(size, kind) {
@@ -327,9 +336,27 @@ function getBentoSlotPointSampleSize(point, sampleId, kind) {
   return null;
 }
 
-function syncBentoSlotSampleSizes(points, kind) {
-  if (!BENTO_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !Array.isArray(points)) return points;
-  const sizes = {};
+function getBentoSlotLayoutBoxIds(map) {
+  const seen = new Set();
+  const ids = [];
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return ids;
+  BENTO_SLOT_BOX_ORDER.forEach(boxId => {
+    if (Object.prototype.hasOwnProperty.call(map, boxId) && !seen.has(boxId)) {
+      seen.add(boxId);
+      ids.push(boxId);
+    }
+  });
+  Object.keys(map).sort().forEach(boxId => {
+    if (/^[a-z0-9_:-]{1,80}$/i.test(boxId) && !seen.has(boxId)) {
+      seen.add(boxId);
+      ids.push(boxId);
+    }
+  });
+  return ids;
+}
+
+function collectBentoSlotSampleSizes(points, kind, sizes = {}) {
+  if (!BENTO_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !Array.isArray(points)) return sizes;
   points.forEach(point => {
     if (!point || typeof point !== 'object' || Array.isArray(point)) return;
     if (point.sampleId && sizes[point.sampleId] == null) {
@@ -345,6 +372,12 @@ function syncBentoSlotSampleSizes(points, kind) {
       if (size != null) sizes[sampleId] = size;
     });
   });
+  return sizes;
+}
+
+function syncBentoSlotSampleSizes(points, kind, sharedSizes) {
+  if (!BENTO_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !Array.isArray(points)) return points;
+  const sizes = sharedSizes || collectBentoSlotSampleSizes(points, kind, {});
   if (!Object.keys(sizes).length) return points;
   return points.map(point => {
     const next = { ...point };
@@ -368,7 +401,7 @@ function syncBentoSlotSampleSizes(points, kind) {
 function normalizeBentoSlotLayoutMap(map) {
   const normalized = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
-  Object.keys(map).sort().forEach(boxId => {
+  getBentoSlotLayoutBoxIds(map).forEach(boxId => {
     if (!/^[a-z0-9_:-]{1,80}$/i.test(boxId)) return;
     const box = map[boxId];
     if (!box || typeof box !== 'object' || Array.isArray(box)) return;
@@ -379,11 +412,24 @@ function normalizeBentoSlotLayoutMap(map) {
       const source = BENTO_SHARED_SLOT_KINDS.has(kind)
         ? validPoints.slice(0, 1)
         : validPoints.slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind]);
-      const points = syncBentoSlotSampleSizes(source
-        .map(point => normalizeBentoSlotPoint(point, kind)), kind);
+      const points = source.map(point => normalizeBentoSlotPoint(point, kind));
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;
+  });
+  BENTO_SHARED_SAMPLE_SIZE_KINDS.forEach(kind => {
+    const sizes = {};
+    getBentoSlotLayoutBoxIds(normalized).forEach(boxId => {
+      const box = normalized[boxId];
+      collectBentoSlotSampleSizes(box && box[kind], kind, sizes);
+    });
+    if (!Object.keys(sizes).length) return;
+    getBentoSlotLayoutBoxIds(normalized).forEach(boxId => {
+      const box = normalized[boxId];
+      if (box && Array.isArray(box[kind])) {
+        box[kind] = syncBentoSlotSampleSizes(box[kind], kind, sizes);
+      }
+    });
   });
   return normalized;
 }

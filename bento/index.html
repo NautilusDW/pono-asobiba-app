@@ -9881,6 +9881,24 @@ function getSimpleSlotLayoutPoints(box, kind) {
   const list = layout && Array.isArray(layout[kind]) ? layout[kind] : [];
   return list.map(point => normalizeSimpleSlotPoint(point, kind));
 }
+function getSimpleSlotLayoutBoxIds() {
+  const layout = freeSlotLayoutServerDefaults || {};
+  const seen = new Set();
+  const ids = [];
+  bentoBoxes.forEach(box => {
+    if (box && box.id && layout[box.id] && !seen.has(box.id)) {
+      seen.add(box.id);
+      ids.push(box.id);
+    }
+  });
+  Object.keys(layout).sort().forEach(boxId => {
+    if (!seen.has(boxId)) {
+      seen.add(boxId);
+      ids.push(boxId);
+    }
+  });
+  return ids;
+}
 function normalizeFreeMaskDefaultExportEntry(entry) {
   const rel = getFreeEditorEntryValue(entry, ['rel']);
   return rel ? { rel: normalizeMaskRelative(rel) } : null;
@@ -10301,23 +10319,34 @@ function getSimpleSlotPointForDef(point, def, kind) {
   }
   return point;
 }
-function getSimpleSlotSharedSampleSize(points, kind, sampleId) {
-  if (!SIMPLE_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !sampleId || !Array.isArray(points)) return null;
-  for (const point of points) {
-    if (!point || typeof point !== 'object' || Array.isArray(point)) continue;
-    const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
-      ? point.sampleOverrides
-      : null;
-    const override = overrides && overrides[sampleId];
-    if (override && Number.isFinite(Number(override.size))) return normalizeSimpleSlotSize(override.size, kind);
-    if (point.sampleId === sampleId && Number.isFinite(Number(point.size))) return normalizeSimpleSlotSize(point.size, kind);
+function getSimpleSlotPointSampleSize(point, kind, sampleId) {
+  if (!point || !sampleId || typeof point !== 'object' || Array.isArray(point)) return null;
+  const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
+    ? point.sampleOverrides
+    : null;
+  const override = overrides && overrides[sampleId];
+  if (override && Number.isFinite(Number(override.size))) return normalizeSimpleSlotSize(override.size, kind);
+  if (point.sampleId === sampleId && Number.isFinite(Number(point.size))) return normalizeSimpleSlotSize(point.size, kind);
+  return null;
+}
+function getSimpleSlotSharedSampleSize(kind, sampleId) {
+  if (!SIMPLE_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !sampleId) return null;
+  const layout = freeSlotLayoutServerDefaults || {};
+  const boxIds = getSimpleSlotLayoutBoxIds();
+  for (const boxId of boxIds) {
+    const boxLayout = layout[boxId];
+    const points = boxLayout && Array.isArray(boxLayout[kind]) ? boxLayout[kind] : [];
+    for (const point of points) {
+      const size = getSimpleSlotPointSampleSize(point, kind, sampleId);
+      if (size != null) return size;
+    }
   }
   return null;
 }
-function getSimpleSlotPointForDefWithSharedSize(point, def, kind, points) {
+function getSimpleSlotPointForDefWithSharedSize(point, def, kind) {
   const sampleId = getSimpleSlotSampleIdForDef(def);
   const base = getSimpleSlotPointForDef(point, def, kind);
-  const sharedSize = getSimpleSlotSharedSampleSize(points, kind, sampleId);
+  const sharedSize = getSimpleSlotSharedSampleSize(kind, sampleId);
   if (sharedSize == null) return base;
   return normalizeSimpleSlotPoint(Object.assign({}, base, { size: sharedSize, sampleId }), kind);
 }
@@ -10350,7 +10379,7 @@ function getSimpleFoodSpreadPoints(box) {
 }
 function getSimpleFoodSlots(kind, box, tier, def) {
   const configured = getSimpleSlotLayoutPoints(box, kind);
-  if (configured.length) return configured.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind, configured)));
+  if (configured.length) return configured.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind)));
   const points = getSimpleFoodSpreadPoints(box);
   const order = kind === 'main-food' ? [0, 1] : [2, 3, 4];
   return order
