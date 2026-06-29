@@ -10537,7 +10537,7 @@ function getSimpleDecorSize(def, kind = getSimpleDecorKind(def)) {
   if (kind === 'brow') return Math.round(clamp(base * 1.32, 52, 64));
   if (kind === 'nose') return Math.round(clamp(base * 1.16, 58, 72));
   if (kind === 'mouth') return Math.round(clamp(base * 1.14, 78, 96));
-  if (kind === 'whisker-left' || kind === 'whisker-right') return Math.round(clamp(base * 1.45, 122, 148));
+  if (kind === 'whisker-left' || kind === 'whisker-right') return Math.round(clamp(base * 1.08, 96, 112));
   if (kind === 'bangs') return Math.round(clamp(base * 1.28, 126, 158));
   if (kind === 'cheek') return Math.round(clamp(base * 1.12, 48, 64));
   if (kind === 'sheet') return Math.round(clamp(base, 150, 230));
