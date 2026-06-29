@@ -6521,7 +6521,11 @@ function _stopChoiceNarration() {
       try { _playAllChoicesAudio.pause(); } catch(_) {}
       _playAllChoicesAudio = null;
     }
-    if (typeof speechSynthesis !== 'undefined') {
+    // Bug-C fix (2026-06-30): speechSynthesis.cancel() を _playAllChoicesRunning が真のときだけ呼ぶ。
+    // 過去仕様: onChoice 冒頭で常に cancel() を打っていたため、
+    // loadQuestion 直後の質問ナレーション (kurumi mp3 ended コールバックで Web Speech フォールバック予約済)
+    // も巻き添えで停止していた → Q1 ナレーションが鳴らない事故。
+    if (_playAllChoicesRunning && typeof speechSynthesis !== 'undefined') {
       try { speechSynthesis.cancel(); } catch(_) {}
     }
     if (typeof Narration !== 'undefined' && Narration.stop) {
