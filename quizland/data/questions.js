@@ -143,7 +143,7 @@ const QUIZLAND_QUESTIONS = {
     { level:1, type:'emoji_name', category:'weather', img:'Rain/Rain_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','くもり','あめ','ゆき'] },
     { level:1, type:'emoji_name', category:'weather', img:'Cloud/Cloud_normal_1.png', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','ゆき'] },
     { level:1, type:'emoji_name', category:'weather', img:'Snow_cloud/Snow_cloud_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','あめ','ゆき','くもり'] },
-    { level:1, type:'emoji_name', category:'weather', img:'Rainbow/Rainbow_normal_1.png', q:'これは なに？', answer:2, choices:['かみなり','くもり','にじ','あめ'] },
+    { level:1, type:'trivia', category:'weather', img:'stage_weather_rainbow_arc.png', framed:true, q:'これは なに？', answer:2, choices:['かみなり','くもり','にじ','あめ'] },
     { level:1, type:'emoji_name', category:'weather', img:'Thunder/Thunder_normal_1.png', q:'これは なに？', answer:0, choices:['かみなり','はれ','くもり','にじ'] },
     { level:1, type:'emoji_name', category:'weather', img:'Wind/Wind_normal_1.png', q:'これは なに？', answer:2, choices:['あめ','くもり','かぜ','ゆき'] },
     // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存

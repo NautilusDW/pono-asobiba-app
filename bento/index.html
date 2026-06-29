@@ -14393,6 +14393,51 @@ function getActiveSimpleCupSlotIndex(slots) {
   }
   return getNextEmptySimpleSlotIndex(slots);
 }
+function getSimpleStageMarkerBounds(box, kind) {
+  const source = kind === 'cup' ? getAccessoryPlacementBounds(box) : getFoodPlacementBounds(box);
+  const bounds = source || getPlacementBounds(box);
+  const w = Math.max(1, Number(bounds && bounds.w) || FREE_LAYOUT_W);
+  const h = Math.max(1, Number(bounds && bounds.h) || FREE_LAYOUT_H);
+  const padX = Math.min(w * 0.28, Math.max(34, w * 0.18));
+  const padY = Math.min(h * 0.28, Math.max(30, h * 0.18));
+  return {
+    x: (Number(bounds && bounds.x) || 0) + padX,
+    y: (Number(bounds && bounds.y) || 0) + padY,
+    w: Math.max(1, w - padX * 2),
+    h: Math.max(1, h - padY * 2),
+  };
+}
+function getSimpleStageMarkerGridPoints(box, kind, count = 4) {
+  const n = clamp(Math.round(Number(count) || 4), 1, 4);
+  const b = getSimpleStageMarkerBounds(box, kind);
+  const centerX = b.x + b.w * 0.5;
+  const centerY = b.y + b.h * 0.5;
+  if (n === 1) return [{ x: centerX, y: centerY }];
+  if (n === 2) {
+    return [
+      { x: b.x, y: centerY },
+      { x: b.x + b.w, y: centerY },
+    ];
+  }
+  if (n === 3) {
+    return [
+      { x: b.x, y: b.y },
+      { x: b.x + b.w, y: b.y },
+      { x: centerX, y: b.y + b.h },
+    ];
+  }
+  return [
+    { x: b.x, y: b.y },
+    { x: b.x + b.w, y: b.y },
+    { x: b.x, y: b.y + b.h },
+    { x: b.x + b.w, y: b.y + b.h },
+  ];
+}
+function getSimpleCupMarkerSlotIndex(cup, fallbackIndex = 0) {
+  const fromKey = getSimpleSlotIndexFromKey(cup && cup.simpleSlot);
+  const raw = Number.isFinite(fromKey) ? fromKey : fallbackIndex;
+  return clamp(Math.round(Number(raw) || 0), 0, Math.max(0, (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) - 1));
+}
 function createFreeStageTargetMarker(opts = {}) {
   if (!Number.isFinite(Number(opts.x)) || !Number.isFinite(Number(opts.y))) return null;
   const button = document.createElement('button');
@@ -14408,6 +14453,8 @@ function createFreeStageTargetMarker(opts = {}) {
   button.style.top = toPctY(opts.y);
   button.textContent = opts.label || '';
   button.setAttribute('aria-label', opts.ariaLabel || opts.label || 'ここ');
+  if (opts.kind) button.dataset.kind = opts.kind;
+  if (opts.slotIndex != null) button.dataset.slotIndex = String(opts.slotIndex);
   button.addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
@@ -14427,15 +14474,18 @@ function createSimpleStageTargetLayer() {
     const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
     const slots = getSimpleFixedSlots(cupDef, tier);
     const activeIndex = getActiveSimpleCupSlotIndex(slots);
+    const markerPoints = getSimpleStageMarkerGridPoints(box, 'cup', slots.length);
     slots.forEach((slot, idx) => {
       const current = getSimpleSlotItem(slot);
+      const point = markerPoints[idx] || slot;
       const marker = createFreeStageTargetMarker({
         kind: 'cup',
+        slotIndex: idx,
         emptyCup: !current,
         filled: !!current,
         active: idx === activeIndex,
-        x: current && current.snapTarget ? current.x : slot.x,
-        y: current && current.snapTarget ? current.y : slot.y,
+        x: point.x,
+        y: point.y,
         label: String(idx + 1),
         ariaLabel: 'カップを おく ばしょ ' + (idx + 1),
         onSelect: () => selectCupSlotForSimplePlacement(idx),
@@ -14449,33 +14499,51 @@ function createSimpleStageTargetLayer() {
   const sideCount = getSimpleSlotCountForBox(box, 'side-food');
   const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, sideCount);
   const activeSideIndex = selectedCup ? -1 : getActiveSimpleSideSlotIndex(sideSlots);
-  sideSlots.forEach((slot, idx) => {
+  const cupsBySlotIndex = new Map();
+  getActiveTierCups().forEach((cup, fallbackIndex) => {
+    const idx = getSimpleCupMarkerSlotIndex(cup, fallbackIndex);
+    if (!cupsBySlotIndex.has(idx)) cupsBySlotIndex.set(idx, cup);
+  });
+  const markerCount = Math.max(
+    sideCount,
+    ...Array.from(cupsBySlotIndex.keys()).map(idx => idx + 1),
+    1
+  );
+  const markerPoints = getSimpleStageMarkerGridPoints(box, 'side-food', markerCount);
+  for (let idx = 0; idx < markerCount; idx += 1) {
+    const cup = cupsBySlotIndex.get(idx);
+    const point = markerPoints[idx] || markerPoints[markerPoints.length - 1];
+    if (cup && point) {
+      const marker = createFreeStageTargetMarker({
+        kind: 'cup',
+        slotIndex: idx,
+        filled: getCupChildren(cup).length > 0,
+        active: !!selectedCup && selectedCup.uid === cup.uid,
+        x: point.x,
+        y: point.y,
+        label: 'カ',
+        ariaLabel: 'カップ ' + (idx + 1) + 'に いれる',
+        onSelect: () => selectCupForMovement(cup),
+      });
+      if (marker) layer.appendChild(marker);
+      continue;
+    }
+    const slot = sideSlots[idx];
+    if (!slot || !point) continue;
     const current = getSimpleSlotItem(slot);
     const marker = createFreeStageTargetMarker({
       kind: 'side',
+      slotIndex: idx,
       filled: !!current,
       active: idx === activeSideIndex,
-      x: current && !current.parentCupId ? current.x : slot.x,
-      y: current && !current.parentCupId ? current.y : slot.y,
+      x: point.x,
+      y: point.y,
       label: String(idx + 1),
       ariaLabel: getSimpleSideSlotPositionLabel(idx) + 'に そのまま おく',
       onSelect: () => selectNoCupSlotForSimplePlacement(idx),
     });
     if (marker) layer.appendChild(marker);
-  });
-  getActiveTierCups().forEach((cup, idx) => {
-    const marker = createFreeStageTargetMarker({
-      kind: 'cup',
-      filled: getCupChildren(cup).length > 0,
-      active: !!selectedCup && selectedCup.uid === cup.uid,
-      x: cup.x,
-      y: cup.y,
-      label: 'カ',
-      ariaLabel: 'カップ ' + (idx + 1) + 'に いれる',
-      onSelect: () => selectCupForMovement(cup),
-    });
-    if (marker) layer.appendChild(marker);
-  });
+  }
   return layer.childNodes.length ? layer : null;
 }
 function renderFreeCupControls() {

@@ -1,6 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1821: quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (batch:961) — emoji_name → trivia + framed:true。play.html PAGE_CACHE_VERSION と同期。
+// v1820: Bento 小おかず/カップ配置丸 (batch:960) — 管理ツールの実配置座標とは別に、ゲーム画面の選択丸だけ見た目用2x2グリッドへ分離。クリック後の実配置は従来どおり side-food / cup スロットを参照。play.html PAGE_CACHE_VERSION と同期。
 // v1819: quizland Q113 関連 batch:944/945/946 のみを surgical revert (batch:948) — 直前 batch:947 (revert workflow) が他バッチの 13 エントリも巻き添えで消した分はバックアップから復元。私の誤 qid 修正だけを綺麗に巻き戻し。play.html PAGE_CACHE_VERSION と同期。
 // v1817: Q113 を真の qid weather_lv1_004 に修正 (batch:946) — 直前バッチ944/945 は誤 qid で空振り。stale エントリ削除 + 正しいエントリ追加。
 // v1812: Bento カップ修正 (batch:958) — カップ枠を4つに拡張、カップ内は1品入れ替え式に変更、配置先パネルを横スクロールの省スペースUIへ変更。play.html PAGE_CACHE_VERSION と同期。
@@ -443,7 +445,7 @@
 // v1810: oto ハイスコア入力「あとで」を「ほぞんしない」にラベル正直化 + 自動保存 revert (batch:941) — 元設計『保存しない選択肢』を復活、ユーザー意図反映。play.html PAGE_CACHE_VERSION と同期。
 // v1805: oto 監査 fix 8件 (batch:940) — PonoSprite indexOf誤判定 / リズムmobile perspective ズレ調整 / チュートリアル cleanup / 「あとで」ボタン自動保存化 / silent fallback に console.warn / ★ repeat 静的キャッシュ / _clearTriggered リセット / Oscillator listener once 化 + 軽量化。play.html PAGE_CACHE_VERSION と同期。
 // v1794: puzzle 監査 fix 5件 (batch:938) — loadStage null check / currentStageIndex 範囲チェック / OP narration 3.5s fallback / btnPlayAgain dead code 削除 / album STAGE_TITLES sync コメント + 軽量化。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1819;
+const CACHE_VERSION = 1821;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
