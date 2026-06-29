@@ -6853,42 +6853,39 @@ var RHYTHM_SONGS = [
     ]
   },
   {
-    id: 'oldclock',
-    name: 'おおきな ふるどけい',
+    id: 'saints',
+    name: 'せいじゃの こうしん',
     note: '難しい',
     stage: 7,
     difficulty: '難しい',
-    bpm: 104,
-    bandSongId: 'oldclock104',
+    bpm: 96,
+    bandSongId: 'saints96',
     bandStems: ['drums'],
     bandVolume: 0.30,
-    pickupBeats: 1,
     sections: [
       {
         name: '1',
-        note: 'おおきな',
-        pickupBeats: 1,
-        notes: [RPN.lowG, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E],
-        beats: [1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1]
+        note: 'いくよ',
+        notes: [RPN.C, RPN.E, RPN.F, RPN.G, RPN.C, RPN.E, RPN.F, RPN.G],
+        beats: [1, 1, 1, 3, 1, 1, 1, 3]
       },
       {
         name: '2',
-        note: 'ふるどけい',
-        notes: [RPN.A, RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
-        beats: [2, 1, 1, 2, 1, 1, 2, 1, 1, 6]
+        note: 'こうしん',
+        notes: [RPN.C, RPN.E, RPN.F, RPN.G, RPN.E, RPN.C, RPN.E, RPN.D],
+        beats: [1, 1, 1, 1, 1, 1, 1, 3]
       },
       {
         name: '3',
-        note: 'とけいの おと',
-        pickupBeats: 2,
-        notes: [RPN.lowG, RPN.lowG, RPN.C, RPN.lowB, RPN.C, RPN.D, RPN.C, RPN.D, RPN.E, RPN.E, RPN.F, RPN.E],
-        beats: [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1]
+        note: 'おなじ おと',
+        notes: [RPN.E, RPN.E, RPN.D, RPN.C, RPN.E, RPN.G, RPN.G, RPN.F],
+        beats: [1, 1, 1, 2, 1, 1, 1, 3]
       },
       {
         name: '4',
         note: 'おしまい',
-        notes: [RPN.A, RPN.D, RPN.D, RPN.C, RPN.C, RPN.C, RPN.lowB, RPN.lowA, RPN.lowB, RPN.C],
-        beats: [2, 1, 1, 2, 1, 1, 2, 1, 1, 4]
+        notes: [RPN.F, RPN.E, RPN.F, RPN.G, RPN.E, RPN.C, RPN.D, RPN.C],
+        beats: [1, 1, 1, 1, 1, 1, 1, 4]
       }
     ]
   }
@@ -7164,10 +7161,10 @@ var RHYTHM_OPENING_SCENES = {
     { speaker: 'rival', state: 'happy', text: 'リズムたいけつなら だれにも まけん！' },
     { speaker: 'rival', state: 'attack', text: 'よろこびの おとで しょうぶだ！' }
   ],
-  oldclock: [
+  saints: [
     { speaker: 'rival', state: 'taunt', text: 'オレさまは ビートキング ガオーン！' },
-    { speaker: 'rival', state: 'happy', text: 'さいごの きょくは ふるどけいだ！' },
-    { speaker: 'rival', state: 'attack', text: 'チクタクの リズム きざんでみろ！' }
+    { speaker: 'rival', state: 'happy', text: 'さいごの きょくは こうしんだ！' },
+    { speaker: 'rival', state: 'attack', text: '5つの おとで ついてこい！' }
   ]
 };
 Object.keys(RHYTHM_RIVALS).forEach(function(key) {
@@ -14195,7 +14192,7 @@ var SONGS = [
   { id: 'choucho90',  name: 'ちょうちょう', type: 'synth', bpm: 90, bars: 4, chords: ['C','G','C','G'] },
   { id: 'london90',   name: 'ロンドン', type: 'synth', bpm: 90,  bars: 4, chords: ['C','G','C','G'] },
   { id: 'ode100',     name: 'よろこび', type: 'synth', bpm: 100, bars: 8, chords: ['C','G','C','G','C','F','G','C'] },
-  { id: 'oldclock104', name: 'ふるどけい', type: 'synth', bpm: 104, bars: 16, chords: ['C','C','G','G','C','C','F','C','C','Am','F','G','C','F','G','C'] }
+  { id: 'saints96',   name: 'せいじゃ', type: 'synth', bpm: 96,  bars: 8, chords: ['C','C','C','G','C','C','F','C'] }
 ];
 var _curSongIdx = 0;
 function _currentSong() { return SONGS[_curSongIdx]; }
