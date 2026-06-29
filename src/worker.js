@@ -280,6 +280,22 @@ function normalizeBentoSlotSize(size, kind) {
   ), BENTO_CUP_SLOT_SIZES[1]);
 }
 
+function normalizeBentoSlotSampleOverrides(point, kind) {
+  const raw = point && point.sampleOverrides;
+  const normalized = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return normalized;
+  Object.keys(raw).sort().forEach(sampleId => {
+    const id = String(sampleId || '').trim();
+    const src = raw[sampleId];
+    if (!/^[a-z0-9_:-]{1,80}$/i.test(id) || !src || typeof src !== 'object' || Array.isArray(src)) return;
+    const override = normalizeBentoSlotPoint(src, kind);
+    delete override.sampleId;
+    delete override.sampleOverrides;
+    normalized[id] = override;
+  });
+  return normalized;
+}
+
 function normalizeBentoSlotPoint(point, kind) {
   const normalized = {
     x: clampBentoMaskNumber(point && point.x, 0, 760, 380, 1),
@@ -291,6 +307,10 @@ function normalizeBentoSlotPoint(point, kind) {
   const sampleId = String((point && point.sampleId) || '').trim();
   if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) {
     normalized.sampleId = sampleId;
+  }
+  const sampleOverrides = normalizeBentoSlotSampleOverrides(point, kind);
+  if (Object.keys(sampleOverrides).length) {
+    normalized.sampleOverrides = sampleOverrides;
   }
   return normalized;
 }

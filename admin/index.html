@@ -1272,6 +1272,7 @@ tr:hover { background: #FFFAF0; }
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
       主菜A/B、小さいおかずA/B/C、カップA/B/C（柄は共通）、仕切りA/B/C、ピック共通を設定できます。<br>
+      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。食材サンプルを切り替えると、同じスロット内でも食材ごとに x/y/サイズを別々に保存できます。<br>
       マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。カップは同じ柄を使いつつ A/B/C の置き場所を別々に設定し、ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
     </div>
 
@@ -11373,9 +11374,11 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
   'main-food': [
     { id: 'hamburger', name: 'ハンバーグ', image: '../assets/images/bento/cooking/mince_patty/patty_003_done.png', size: 170, rotation: 2, layer: 30 },
     { id: 'shrimp', name: 'エビフライ', image: '../assets/images/bento/cooking/shrimp/shrimp_003_done.png', size: 222, rotation: 8, layer: 31 },
-    { id: 'karaage', name: 'からあげ', image: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', size: 118, rotation: -5, layer: 32 },
+    { id: 'karaage', name: 'からあげセット', image: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', size: 156, rotation: -5, layer: 32, clusterImages: [
+      { image: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', x: -0.16, y: -0.03, w: 0.72, rotation: -9 },
+      { image: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_02_done.png', x: 0.18, y: 0.07, w: 0.72, rotation: 8 }
+    ] },
     { id: 'korokke', name: 'コロッケ', image: '../assets/images/bento/cooking/korokke/korokke_003_done.png', size: 170, rotation: -3, layer: 33 },
-    { id: 'egg', name: 'たまごやき', image: '../assets/images/bento/cooking/egg/egg_003_done.png', size: 130, rotation: 3, layer: 34 },
     { id: 'salmon', name: 'やきざけ', image: '../assets/images/bento/cooking/salmon/salmon_003_done.png', size: 292, rotation: -4, layer: 35 },
     { id: 'gyoza', name: 'ぎょうざ', image: '../assets/images/bento/free-layout/okazu_gyoza.png', size: 198, rotation: 3, layer: 36 },
     { id: 'harumaki', name: 'はるまき', image: '../assets/images/bento/free-layout/okazu_harumaki.png', size: 256, rotation: -4, layer: 37 },
@@ -11383,6 +11386,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'tako_wiener', name: 'タコウインナー', image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', size: 110, rotation: -6, layer: 39 }
   ],
   'side-food': [
+    { id: 'egg', name: 'たまごやき', image: '../assets/images/bento/cooking/egg/egg_003_done.png', size: 130, cupSizes: { small: 92, medium: 112, large: 130 }, defaultCupSizeKey: 'large', rotation: 3, layer: 34 },
     { id: 'tomato', name: 'プチトマト', image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 82, cupSizes: { small: 58, medium: 70, large: 82 }, defaultCupSizeKey: 'large', rotation: -4, layer: 40 },
     { id: 'meatball', name: 'ミートボール', image: '../assets/images/bento/free-layout/okazu_meatball.png', size: 118, cupSizes: { small: 86, medium: 102, large: 118 }, defaultCupSizeKey: 'large', rotation: 1, layer: 41 },
     { id: 'broccoli', name: 'ブロッコリー', image: '../assets/images/bento/free-layout/okazu_broccoli.png', size: 108, cupSizes: { small: 78, medium: 94, large: 108 }, defaultCupSizeKey: 'large', rotation: -2, layer: 42 },
@@ -11627,12 +11631,38 @@ function bentoSlotPoint(point) {
     y: bentoSlotRound(bentoSlotClamp(point && point.y, 0, BENTO_SLOT_H, BENTO_SLOT_H / 2))
   };
 }
+function bentoSlotSampleOverridePoint(point, def, sample, fallbackPoint) {
+  var fallback = fallbackPoint || {};
+  var base = bentoSlotPoint({
+    x: isFinite(Number(point && point.x)) ? point.x : fallback.x,
+    y: isFinite(Number(point && point.y)) ? point.y : fallback.y
+  });
+  base.size = bentoSlotNormalizeSizeForDef(
+    point && isFinite(Number(point.size)) ? point.size : (fallback.size || bentoSlotDefaultSizeForSample(def, sample)),
+    bentoSlotDefaultSizeForSample(def, sample),
+    def,
+    sample
+  );
+  return base;
+}
+function bentoSlotNormalizeSampleOverrides(raw, def, fallbackPoint) {
+  var out = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  bentoSlotSamplesForKind(def && def.kind).forEach(function(sample) {
+    var src = raw[sample.id];
+    if (!src || typeof src !== 'object' || Array.isArray(src)) return;
+    out[sample.id] = bentoSlotSampleOverridePoint(src, def, sample, fallbackPoint);
+  });
+  return out;
+}
 function bentoSlotEntry(point, def) {
   var sample = bentoSlotFindSampleById(def && def.kind, point && point.sampleId);
   var fallback = sample || bentoSlotDefaultSampleForDef(def);
   var entry = bentoSlotPoint(point);
   if (point && isFinite(Number(point.size))) entry.size = bentoSlotNormalizeSizeForDef(point.size, bentoSlotDefaultSizeForSample(def, fallback), def, fallback);
   if (sample && sample.id) entry.sampleId = sample.id;
+  var overrides = bentoSlotNormalizeSampleOverrides(point && point.sampleOverrides, def, entry);
+  if (Object.keys(overrides).length) entry.sampleOverrides = overrides;
   return entry;
 }
 function bentoSlotNormalizeLayout(map) {
@@ -11796,18 +11826,46 @@ function bentoSlotDefaultEntry(box, def) {
 function bentoSlotClampEntryForDef(box, def, entry) {
   var p = bentoSlotClampPointForDef(box, def, entry);
   var sample = bentoSlotFindSampleById(def.kind, entry && entry.sampleId) || bentoSlotDefaultSampleForDef(def);
-  return bentoSlotEntry({
+  var normalized = bentoSlotEntry({
     x: p.x,
     y: p.y,
     size: entry && isFinite(Number(entry.size)) ? entry.size : (sample && sample.size),
-    sampleId: sample && sample.id
+    sampleId: sample && sample.id,
+    sampleOverrides: entry && entry.sampleOverrides
   }, def);
+  if (normalized.sampleOverrides) {
+    Object.keys(normalized.sampleOverrides).forEach(function(sampleId) {
+      var overrideSample = bentoSlotFindSampleById(def.kind, sampleId);
+      var override = normalized.sampleOverrides[sampleId];
+      if (!overrideSample || !override) {
+        delete normalized.sampleOverrides[sampleId];
+        return;
+      }
+      var op = bentoSlotClampPointForDef(box, def, override);
+      normalized.sampleOverrides[sampleId] = bentoSlotSampleOverridePoint({
+        x: op.x,
+        y: op.y,
+        size: override.size
+      }, def, overrideSample, normalized);
+    });
+    if (!Object.keys(normalized.sampleOverrides).length) delete normalized.sampleOverrides;
+  }
+  return normalized;
 }
-function bentoSlotGetEntry(boxId, def) {
-  var box = bentoSlotGetBox();
+function bentoSlotGetStoredEntry(boxId, def) {
+  var box = bentoSlotGetBoxById(boxId);
   var boxLayout = _bentoSlotState.layout[boxId];
   var list = boxLayout && Array.isArray(boxLayout[def.kind]) ? boxLayout[def.kind] : [];
   return list[def.index] ? bentoSlotClampEntryForDef(box, def, list[def.index]) : bentoSlotDefaultEntry(box, def);
+}
+function bentoSlotGetActiveEntry(entry, def) {
+  var sample = bentoSlotSampleForDef(def, entry);
+  var override = sample && entry && entry.sampleOverrides && entry.sampleOverrides[sample.id];
+  if (!override) return entry;
+  return Object.assign({}, entry, override, { sampleId: sample.id });
+}
+function bentoSlotGetEntry(boxId, def) {
+  return bentoSlotGetActiveEntry(bentoSlotGetStoredEntry(boxId, def), def);
 }
 function bentoSlotGetPoint(boxId, def) {
   return bentoSlotGetEntry(boxId, def);
@@ -11824,30 +11882,67 @@ function bentoSlotEnsureKindList(boxId, def, boxOverride) {
   return _bentoSlotState.layout[boxId][def.kind];
 }
 function bentoSlotSetEntry(boxId, def, entry) {
-  var box = bentoSlotGetBox();
+  var box = bentoSlotGetBoxById(boxId);
   var list = bentoSlotEnsureKindList(boxId, def);
   list[def.index] = bentoSlotClampEntryForDef(box, def, entry);
   bentoSlotSaveLocal();
   return list[def.index];
 }
+function bentoSlotSetActiveSampleEntry(boxId, def, sample, values) {
+  var existing = bentoSlotGetStoredEntry(boxId, def);
+  var activeSample = sample || bentoSlotSampleForDef(def, existing);
+  var overrides = Object.assign({}, existing.sampleOverrides || {});
+  var current = Object.assign(
+    {},
+    {
+      x: existing.x,
+      y: existing.y,
+      size: existing.size || bentoSlotDefaultSizeForSample(def, activeSample)
+    },
+    activeSample && overrides[activeSample.id] ? overrides[activeSample.id] : {}
+  );
+  var nextActive = Object.assign({}, current, values || {});
+  if (activeSample && activeSample.id) {
+    nextActive.size = bentoSlotNormalizeSizeForDef(
+      nextActive.size,
+      bentoSlotDefaultSizeForSample(def, activeSample),
+      def,
+      activeSample
+    );
+    overrides[activeSample.id] = {
+      x: nextActive.x,
+      y: nextActive.y,
+      size: nextActive.size
+    };
+  }
+  return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
+    x: nextActive.x,
+    y: nextActive.y,
+    size: nextActive.size,
+    sampleId: activeSample && activeSample.id,
+    sampleOverrides: overrides
+  }));
+}
 function bentoSlotSetPoint(boxId, def, point) {
-  var existing = bentoSlotGetEntry(boxId, def);
-  return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, bentoSlotPoint(point)));
+  var existing = bentoSlotGetStoredEntry(boxId, def);
+  return bentoSlotSetActiveSampleEntry(boxId, def, bentoSlotSampleForDef(def, existing), bentoSlotPoint(point));
 }
 function bentoSlotSetSize(boxId, def, size) {
-  var existing = bentoSlotGetEntry(boxId, def);
+  var existing = bentoSlotGetStoredEntry(boxId, def);
   var sample = bentoSlotSampleForDef(def, existing);
-  return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
+  return bentoSlotSetActiveSampleEntry(boxId, def, sample, {
     size: bentoSlotNormalizeSizeForDef(size, existing.size, def, sample)
-  }));
+  });
 }
 function bentoSlotSetSampleId(boxId, def, sampleId) {
   var sample = bentoSlotFindSampleById(def.kind, sampleId) || bentoSlotDefaultSampleForDef(def);
-  var existing = bentoSlotGetEntry(boxId, def);
-  return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
-    sampleId: sample && sample.id,
+  var existing = bentoSlotGetStoredEntry(boxId, def);
+  var saved = sample && existing.sampleOverrides && existing.sampleOverrides[sample.id];
+  return bentoSlotSetActiveSampleEntry(boxId, def, sample, saved || {
+    x: existing.x,
+    y: existing.y,
     size: bentoSlotDefaultSizeForSample(def, sample)
-  }));
+  });
 }
 function bentoSlotSetStatus(message, isError) {
   var el = document.getElementById('bento-slot-status');
@@ -12007,11 +12102,14 @@ function bentoSlotShouldRenderSample(def) {
 function bentoSlotAppendSampleImage(stage, sample, point, extra) {
   if (!stage || !sample || !sample.image || !point) return;
   var opts = extra || {};
-  var item = document.createElement('img');
+  var hasCluster = Array.isArray(sample.clusterImages) && sample.clusterImages.length;
+  var item = document.createElement(hasCluster ? 'div' : 'img');
   item.className = 'bento-slot-sample-item';
   if (sample.id) item.dataset.sampleId = sample.id;
-  item.src = sample.image;
-  item.alt = '';
+  if (!hasCluster) {
+    item.src = sample.image;
+    item.alt = '';
+  }
   item.title = sample.name || '';
   var size = Number(opts.size != null ? opts.size : sample.size) || 100;
   var rotation = Number(opts.rotation != null ? opts.rotation : sample.rotation) || 0;
@@ -12020,7 +12118,7 @@ function bentoSlotAppendSampleImage(stage, sample, point, extra) {
     'left:' + (point.x / BENTO_SLOT_W * 100) + '%',
     'top:' + (point.y / BENTO_SLOT_H * 100) + '%',
     'width:' + (size / BENTO_SLOT_W * 100) + '%',
-    'height:auto',
+    'height:' + (hasCluster ? (size / BENTO_SLOT_H * 100) + '%' : 'auto'),
     'transform:translate(-50%,-50%) rotate(' + rotation + 'deg)',
     'transform-origin:center center',
     'object-fit:contain',
@@ -12028,6 +12126,27 @@ function bentoSlotAppendSampleImage(stage, sample, point, extra) {
     'filter:drop-shadow(0 2px 3px rgba(92,54,20,0.20))',
     'z-index:' + (opts.layer || sample.layer || 30)
   ].join(';');
+  if (hasCluster) {
+    sample.clusterImages.forEach(function(piece) {
+      var src = piece && (piece.image || piece.img);
+      if (!src) return;
+      var img = document.createElement('img');
+      img.src = src;
+      img.alt = '';
+      img.style.cssText = [
+        'position:absolute',
+        'left:' + (((Number(piece.x) || 0) * 100) + 50) + '%',
+        'top:' + (((Number(piece.y) || 0) * 100) + 50) + '%',
+        'width:' + ((Number(piece.w) || 0.72) * 100) + '%',
+        'height:auto',
+        'transform:translate(-50%,-50%) rotate(' + (Number(piece.rotation) || 0) + 'deg)',
+        'transform-origin:center center',
+        'object-fit:contain',
+        'pointer-events:none'
+      ].join(';');
+      item.appendChild(img);
+    });
+  }
   stage.appendChild(item);
 }
 function bentoSlotCreateMaskFrame(box, className) {
@@ -12252,10 +12371,17 @@ function bentoSlotBindControls() {
   if (resetOne) resetOne.addEventListener('click', function() {
     var box = bentoSlotGetBox();
     var def = bentoSlotGetDef();
-    bentoSlotSetEntry(box.id, def, bentoSlotDefaultEntry(box, def));
+    var existing = bentoSlotGetStoredEntry(box.id, def);
+    var sample = bentoSlotSampleForDef(def, existing);
+    var defaults = bentoSlotDefaultEntry(box, def);
+    bentoSlotSetActiveSampleEntry(box.id, def, sample, {
+      x: defaults.x,
+      y: defaults.y,
+      size: bentoSlotDefaultSizeForSample(def, sample)
+    });
     bentoSlotSetHidden(box.id, def, false);
     bentoSlotRender();
-    bentoSlotSetStatus('このスロットを初期値に戻しました。保存で反映されます。', false);
+    bentoSlotSetStatus('選択中の食材だけ初期値に戻しました。保存で反映されます。', false);
   });
   var resetBox = document.getElementById('bento-slot-reset-box');
   if (resetBox) resetBox.addEventListener('click', function() {
