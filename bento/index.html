@@ -14049,6 +14049,74 @@ function renderFreeCupEditorControls() {
   } catch (_) {}
   return frag;
 }
+function makeFreeVisualChoiceButton(className, ariaLabel, active, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className + (active ? ' active' : '');
+  button.setAttribute('aria-label', ariaLabel);
+  button.title = ariaLabel;
+  button.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (isFreeMainGuideBlocking()) {
+      showToast('がめんを タップしてね！');
+      return;
+    }
+    onClick();
+  });
+  return button;
+}
+function createFreePlaceMap(targetIndex, slotCount, opts = {}) {
+  const map = document.createElement('span');
+  map.className = 'free-place-map' + (opts.auto ? ' free-place-map--auto' : '');
+  map.setAttribute('aria-hidden', 'true');
+  for (let idx = 0; idx < 4; idx += 1) {
+    const cell = document.createElement('span');
+    cell.className = 'free-place-map-cell';
+    if (idx >= slotCount) cell.classList.add('is-disabled');
+    if (idx === targetIndex) cell.classList.add('is-target');
+    if (opts.auto && idx < slotCount) cell.classList.add('is-open');
+    map.appendChild(cell);
+  }
+  return map;
+}
+function makeFreePlaceChoiceButton(kind, options = {}) {
+  const active = !!options.active;
+  const index = Number.isFinite(Number(options.index)) ? Number(options.index) : -1;
+  const label = kind === 'auto' ? 'あき' : 'ここ';
+  const ariaLabel = kind === 'auto'
+    ? 'あいている ところに そのまま おく'
+    : getSimpleSideSlotPositionLabel(index) + 'に そのまま おく';
+  const button = makeFreeVisualChoiceButton('free-place-choice free-place-choice--' + kind, ariaLabel, active, options.onClick);
+  button.appendChild(createFreePlaceMap(index, options.slotCount || 4, { auto: kind === 'auto' }));
+  const text = document.createElement('span');
+  text.className = 'free-place-choice-label';
+  text.textContent = label;
+  button.appendChild(text);
+  return button;
+}
+function makeFreeCupChoiceButton(cup, index, active, onClick) {
+  const ariaLabel = 'カップ ' + (index + 1) + 'に いれる';
+  const button = makeFreeVisualChoiceButton('free-place-choice free-place-choice--cup', ariaLabel, active, onClick);
+  const visual = document.createElement('span');
+  visual.className = 'free-cup-choice-visual';
+  const imgSrc = cup && (cup.img || cup.image);
+  if (imgSrc) {
+    const img = document.createElement('img');
+    img.src = imgSrc;
+    img.alt = '';
+    visual.appendChild(img);
+  }
+  const badge = document.createElement('span');
+  badge.className = 'free-cup-choice-index';
+  badge.textContent = String(index + 1);
+  visual.appendChild(badge);
+  button.appendChild(visual);
+  const text = document.createElement('span');
+  text.className = 'free-place-choice-label';
+  text.textContent = 'カップ';
+  button.appendChild(text);
+  return button;
+}
 function renderFreeCupControls() {
   if (!isOkazuGuideStep() || !String(freeGuideStep || '').endsWith('Side')) return null;
   const cups = getActiveTierCups();
@@ -14056,35 +14124,42 @@ function renderFreeCupControls() {
   panel.className = 'free-cup-panel';
   const title = document.createElement('div');
   title.className = 'free-cup-title';
-  title.textContent = 'おく ばしょを えらべるよ';
+  title.textContent = 'どこに おく？';
   panel.appendChild(title);
 
   const list = document.createElement('div');
-  list.className = 'free-cup-list';
+  list.className = 'free-cup-list free-cup-list--visual';
   const selectedCup = getSimpleSelectedCupForPlacement(freeActiveTier);
   const noCupActive = !selectedCup;
-  list.appendChild(makeSmallControlButton('あいてる ところ', (noCupActive && simpleNoCupSlotIndex == null) ? 'active' : '', () => {
-    freeActiveCupUid = null;
-    freeSelectedItemUid = null;
-    simpleReplaceSlotUid = null;
-    simpleNoCupSlotIndex = null;
-    freeCupEditorUid = null;
-    freeLayoutTab = 'food';
-    setSpeech('カップなしで あいている ところに おけるよ。');
-    renderFreeLayoutStage();
-    renderFreeLayoutControls();
-  }));
   const box = getSelectedBentoBox();
   const sideCount = getSimpleSlotCountForBox(box, 'side-food');
+  list.appendChild(makeFreePlaceChoiceButton('auto', {
+    active: noCupActive && simpleNoCupSlotIndex == null,
+    slotCount: sideCount,
+    onClick: () => {
+      freeActiveCupUid = null;
+      freeSelectedItemUid = null;
+      simpleReplaceSlotUid = null;
+      simpleNoCupSlotIndex = null;
+      freeCupEditorUid = null;
+      freeLayoutTab = 'food';
+      setSpeech('カップなしで あいている ところに おけるよ。');
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    },
+  }));
   for (let idx = 0; idx < sideCount; idx += 1) {
     const active = noCupActive && simpleNoCupSlotIndex === idx;
-    list.appendChild(makeSmallControlButton(getSimpleSideSlotLabel(idx) + 'に そのまま', active ? 'active' : '', () => {
-      selectNoCupSlotForSimplePlacement(idx);
+    list.appendChild(makeFreePlaceChoiceButton('slot', {
+      active,
+      index: idx,
+      slotCount: sideCount,
+      onClick: () => selectNoCupSlotForSimplePlacement(idx),
     }));
   }
   cups.forEach((cup, idx) => {
     const active = cup.uid === freeActiveCupUid || cup.uid === freeSelectedItemUid;
-    list.appendChild(makeSmallControlButton(`カップ${idx + 1}を えらぶ`, active ? 'active' : '', () => {
+    list.appendChild(makeFreeCupChoiceButton(cup, idx, active, () => {
       if (simpleBentoMode) selectCupForMovement(cup);
       else openCupEditor(cup.uid);
     }));

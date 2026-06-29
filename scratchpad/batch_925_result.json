@@ -1,0 +1,310 @@
+{
+  "probe": "ok",
+  "probe_pcm_size": 55680,
+  "start": {
+    "ok": true,
+    "attempts": [
+      {
+        "attempt": 1,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "ok": true,
+        "transcript": "じゃんけんしようどの手でいく",
+        "duration_ms": 2600,
+        "size_mp3": 21548,
+        "sha1": "8fa8b4e0aec00f9e6103a0eff4a59925d7aad658",
+        "kw_hits": [
+          "じゃんけん",
+          "しよう"
+        ],
+        "kw_ok": true
+      }
+    ],
+    "final": {
+      "path": "start.mp3",
+      "transcript": "じゃんけんしようどの手でいく",
+      "duration_ms": 2600,
+      "size": 21548,
+      "sha1": "8fa8b4e0aec00f9e6103a0eff4a59925d7aad658"
+    }
+  },
+  "oneshot": {
+    "ok": false,
+    "attempts": [
+      {
+        "attempt": 1,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "ok": false,
+        "segments_found": 3,
+        "full_duration_ms": 2080,
+        "full_sha1": "a45a176dd2c7d432109fef4154067d2731df3468",
+        "full_size": 17324,
+        "full_transcript": "じゃんけんぽん",
+        "first_sweep_count": 1,
+        "sweep_used": {
+          "min_silence_len": 200,
+          "silence_thresh": -30,
+          "keep_silence": 60
+        },
+        "seg_results": [
+          {
+            "fname": "call_jan.mp3",
+            "idx": 0,
+            "duration_ms": 503,
+            "size": 4652,
+            "sha1": "5e911a5ca3be09af32074eded6dbbcb7384f8636",
+            "transcript": "じゃん!",
+            "kw_hits": [
+              "じゃん"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 4652
+          },
+          {
+            "fname": "call_ken.mp3",
+            "idx": 1,
+            "duration_ms": 443,
+            "size": 4268,
+            "sha1": "febb9c294dafbcc6fe7a003f6d3290259a017867",
+            "transcript": "ゲーム",
+            "kw_hits": [
+              null
+            ],
+            "kw_ok": false,
+            "mp3_bytes_len": 4268
+          },
+          {
+            "fname": "call_pon.mp3",
+            "idx": 2,
+            "duration_ms": 277,
+            "size": 2924,
+            "sha1": "edfec2876015bc890c24d94945598cefc63defad",
+            "transcript": "ポン!",
+            "kw_hits": [
+              "ポン"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 2924
+          }
+        ]
+      },
+      {
+        "attempt": 2,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "ok": false,
+        "segments_found": null,
+        "full_duration_ms": 2280,
+        "full_sha1": "68434aac8b3f076af790f9cd10192cb736d6f724",
+        "full_size": 18860,
+        "full_transcript": "じゃんけんぽん",
+        "first_sweep_count": 1,
+        "error": "segmentation-failed; got non-3 across all sweeps"
+      },
+      {
+        "attempt": 3,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "ok": false,
+        "segments_found": 3,
+        "full_duration_ms": 2520,
+        "full_sha1": "8afdb402f0a6c3563b7a362b24c306bba7b08700",
+        "full_size": 20780,
+        "full_transcript": "じゃ、けん、ぽん!",
+        "sweep_used": {
+          "min_silence_len": 300,
+          "silence_thresh": -40,
+          "keep_silence": 80
+        },
+        "seg_results": [
+          {
+            "fname": "call_jan.mp3",
+            "idx": 0,
+            "duration_ms": 317,
+            "size": 3308,
+            "sha1": "15e28cb53cbd6a6fd6fbb113b06cb71d986d7918",
+            "transcript": "じゃん",
+            "kw_hits": [
+              "じゃん"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 3308
+          },
+          {
+            "fname": "call_ken.mp3",
+            "idx": 1,
+            "duration_ms": 351,
+            "size": 3500,
+            "sha1": "c7a86e3842a40ca44441a1fc0b0d42363634e62d",
+            "transcript": "ゲーム",
+            "kw_hits": [
+              null
+            ],
+            "kw_ok": false,
+            "mp3_bytes_len": 3500
+          },
+          {
+            "fname": "call_pon.mp3",
+            "idx": 2,
+            "duration_ms": 287,
+            "size": 2924,
+            "sha1": "ee344fd934c2c86306102e9f8640c941825d4689",
+            "transcript": "ポン!",
+            "kw_hits": [
+              "ポン"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 2924
+          }
+        ]
+      },
+      {
+        "attempt": 4,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "ok": false,
+        "segments_found": 3,
+        "full_duration_ms": 2280,
+        "full_sha1": "dbc59f3cf39539d242e4969a82c54aadc3d275b8",
+        "full_size": 18860,
+        "full_transcript": "じゃんけんぽん",
+        "first_sweep_count": 2,
+        "sweep_used": {
+          "min_silence_len": 250,
+          "silence_thresh": -35,
+          "keep_silence": 80
+        },
+        "seg_results": [
+          {
+            "fname": "call_jan.mp3",
+            "idx": 0,
+            "duration_ms": 528,
+            "size": 4844,
+            "sha1": "41cabebb172f5a649f05671b7cf85be3957c1435",
+            "transcript": "じゃん!",
+            "kw_hits": [
+              "じゃん"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 4844
+          },
+          {
+            "fname": "call_ken.mp3",
+            "idx": 1,
+            "duration_ms": 433,
+            "size": 4268,
+            "sha1": "f7eee2e5729a76bcdfd40c2a5ffbde6d2b1ef248",
+            "transcript": "キャンプ",
+            "kw_hits": [
+              null
+            ],
+            "kw_ok": false,
+            "mp3_bytes_len": 4268
+          },
+          {
+            "fname": "call_pon.mp3",
+            "idx": 2,
+            "duration_ms": 336,
+            "size": 3308,
+            "sha1": "eaa3e2a187e65756b0c6704e5208b3368be1e50a",
+            "transcript": "ポン!",
+            "kw_hits": [
+              "ポン"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 3308
+          }
+        ]
+      },
+      {
+        "attempt": 5,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "ok": false,
+        "segments_found": 3,
+        "full_duration_ms": 2120,
+        "full_sha1": "aada39fc126c9aa0b4241e5705cb982002602bc4",
+        "full_size": 17708,
+        "full_transcript": "じゃんけんぽん",
+        "first_sweep_count": 1,
+        "sweep_used": {
+          "min_silence_len": 200,
+          "silence_thresh": -30,
+          "keep_silence": 60
+        },
+        "seg_results": [
+          {
+            "fname": "call_jan.mp3",
+            "idx": 0,
+            "duration_ms": 454,
+            "size": 4268,
+            "sha1": "74bb683140912f28a4abfa6807a7b95d6a4d846a",
+            "transcript": "じゃん!",
+            "kw_hits": [
+              "じゃん"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 4268
+          },
+          {
+            "fname": "call_ken.mp3",
+            "idx": 1,
+            "duration_ms": 410,
+            "size": 4076,
+            "sha1": "dcf466a22a6824ebdc6323333295bc86fd168d4d",
+            "transcript": "ゲーム",
+            "kw_hits": [
+              null
+            ],
+            "kw_ok": false,
+            "mp3_bytes_len": 4076
+          },
+          {
+            "fname": "call_pon.mp3",
+            "idx": 2,
+            "duration_ms": 230,
+            "size": 2540,
+            "sha1": "3dd7c111bdcec2a476d75138e56ef3e2091f5582",
+            "transcript": "ポン!",
+            "kw_hits": [
+              "ポン"
+            ],
+            "kw_ok": true,
+            "mp3_bytes_len": 2540
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T11:46:00Z - batch:922 maze オープニング fade-in + 画像preload + ナレ遅延発火 — ユーザー希望の load→fade→narration sequence (Image.decode 並列 + 500ms fade + 200ms 余白 + 2500ms safety + tap skip)、 Codex batch:911 と merge conflict を 7 箇所 resolve済 (status キャッシュラグで一時誤検知)
+- **タスク**: batch:922 maze オープニング fade-in + 画像preload + ナレ遅延発火 — ユーザー希望の load→fade→narration sequence (Image.decode 並列 + 500ms fade + 200ms 余白 + 2500ms safety + tap skip)、 Codex batch:911 と merge conflict を 7 箇所 resolve済 (status キャッシュラグで一時誤検知)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 104
+- **エラー数**: 10
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 64, "Read": 12, "Edit": 16, "Workflow": 9, "Grep": 1, "Write": 1, "Agent": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-29T07:38:51Z - えほんの unlock モーダル v1796 — クイズタブを display:none で非表示 (DOM/JS dormant 保持、 2 経路に整理)
 - **タスク**: えほんの unlock モーダル v1796 — クイズタブを display:none で非表示 (DOM/JS dormant 保持、 2 経路に整理)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 78, "Read": 28, "Glob": 2, "Edit": 39, "ToolSearch": 1, "Agent": 40, "Grep": 16, "Workflow": 2}
-- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T00:07:38Z - v1781: oto 3-fix bundle — tutorial BGM 復旧 + rival 発話中 note 漏れ CSS+JS 完全封じ + clear modal landscape overflow
-- **タスク**: v1781: oto 3-fix bundle — tutorial BGM 復旧 + rival 発話中 note 漏れ CSS+JS 完全封じ + clear modal landscape overflow
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 180
-- **エラー数**: 13
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 67, "Read": 26, "Glob": 2, "Edit": 34, "ToolSearch": 1, "Agent": 35, "Grep": 13, "Workflow": 2}
 - **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
