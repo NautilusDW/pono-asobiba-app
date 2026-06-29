@@ -270,6 +270,7 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
   other: 1
 };
 const BENTO_SHARED_SLOT_KINDS = new Set(['other']);
+const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food']);
 const BENTO_CUP_SLOT_SIZES = [150, 190, 230];
 
 function normalizeBentoSlotSize(size, kind) {
@@ -315,6 +316,55 @@ function normalizeBentoSlotPoint(point, kind) {
   return normalized;
 }
 
+function getBentoSlotPointSampleSize(point, sampleId, kind) {
+  if (!point || !sampleId) return null;
+  const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
+    ? point.sampleOverrides
+    : null;
+  const override = overrides && overrides[sampleId];
+  if (override && Number.isFinite(Number(override.size))) return normalizeBentoSlotSize(override.size, kind);
+  if (point.sampleId === sampleId && Number.isFinite(Number(point.size))) return normalizeBentoSlotSize(point.size, kind);
+  return null;
+}
+
+function syncBentoSlotSampleSizes(points, kind) {
+  if (!BENTO_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !Array.isArray(points)) return points;
+  const sizes = {};
+  points.forEach(point => {
+    if (!point || typeof point !== 'object' || Array.isArray(point)) return;
+    if (point.sampleId && sizes[point.sampleId] == null) {
+      const activeSize = getBentoSlotPointSampleSize(point, point.sampleId, kind);
+      if (activeSize != null) sizes[point.sampleId] = activeSize;
+    }
+    const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
+      ? point.sampleOverrides
+      : {};
+    Object.keys(overrides).sort().forEach(sampleId => {
+      if (sizes[sampleId] != null) return;
+      const size = getBentoSlotPointSampleSize(point, sampleId, kind);
+      if (size != null) sizes[sampleId] = size;
+    });
+  });
+  if (!Object.keys(sizes).length) return points;
+  return points.map(point => {
+    const next = { ...point };
+    const overrides = next.sampleOverrides && typeof next.sampleOverrides === 'object' && !Array.isArray(next.sampleOverrides)
+      ? { ...next.sampleOverrides }
+      : {};
+    Object.keys(sizes).forEach(sampleId => {
+      const override = overrides[sampleId] || {};
+      overrides[sampleId] = {
+        x: Number.isFinite(Number(override.x)) ? override.x : next.x,
+        y: Number.isFinite(Number(override.y)) ? override.y : next.y,
+        size: sizes[sampleId]
+      };
+      if (next.sampleId === sampleId) next.size = sizes[sampleId];
+    });
+    if (Object.keys(overrides).length) next.sampleOverrides = overrides;
+    return normalizeBentoSlotPoint(next, kind);
+  });
+}
+
 function normalizeBentoSlotLayoutMap(map) {
   const normalized = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
@@ -329,8 +379,8 @@ function normalizeBentoSlotLayoutMap(map) {
       const source = BENTO_SHARED_SLOT_KINDS.has(kind)
         ? validPoints.slice(0, 1)
         : validPoints.slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind]);
-      const points = source
-        .map(point => normalizeBentoSlotPoint(point, kind));
+      const points = syncBentoSlotSampleSizes(source
+        .map(point => normalizeBentoSlotPoint(point, kind)), kind);
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;

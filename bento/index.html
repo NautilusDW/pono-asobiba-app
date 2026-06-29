@@ -9814,6 +9814,7 @@ const SIMPLE_SLOT_LAYOUT_LIMITS = {
   other: 1,
 };
 const SIMPLE_SHARED_SLOT_KINDS = new Set(['other']);
+const SIMPLE_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food']);
 const SIMPLE_CUP_SLOT_SIZES = [150, 190, 230];
 function normalizeSimpleSlotSize(size, kind) {
   const n = Math.round(clamp(Number(size), 32, 340) * 10) / 10;
@@ -10300,6 +10301,26 @@ function getSimpleSlotPointForDef(point, def, kind) {
   }
   return point;
 }
+function getSimpleSlotSharedSampleSize(points, kind, sampleId) {
+  if (!SIMPLE_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !sampleId || !Array.isArray(points)) return null;
+  for (const point of points) {
+    if (!point || typeof point !== 'object' || Array.isArray(point)) continue;
+    const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
+      ? point.sampleOverrides
+      : null;
+    const override = overrides && overrides[sampleId];
+    if (override && Number.isFinite(Number(override.size))) return normalizeSimpleSlotSize(override.size, kind);
+    if (point.sampleId === sampleId && Number.isFinite(Number(point.size))) return normalizeSimpleSlotSize(point.size, kind);
+  }
+  return null;
+}
+function getSimpleSlotPointForDefWithSharedSize(point, def, kind, points) {
+  const sampleId = getSimpleSlotSampleIdForDef(def);
+  const base = getSimpleSlotPointForDef(point, def, kind);
+  const sharedSize = getSimpleSlotSharedSampleSize(points, kind, sampleId);
+  if (sharedSize == null) return base;
+  return normalizeSimpleSlotPoint(Object.assign({}, base, { size: sharedSize, sampleId }), kind);
+}
 function getSimpleDecorSlots(box, tier) {
   const riceBounds = getRicePlacementBounds(box);
   const center = (box.riceSpots && box.riceSpots[0]) || {
@@ -10329,7 +10350,7 @@ function getSimpleFoodSpreadPoints(box) {
 }
 function getSimpleFoodSlots(kind, box, tier, def) {
   const configured = getSimpleSlotLayoutPoints(box, kind);
-  if (configured.length) return configured.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDef(p, def, kind)));
+  if (configured.length) return configured.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind, configured)));
   const points = getSimpleFoodSpreadPoints(box);
   const order = kind === 'main-food' ? [0, 1] : [2, 3, 4];
   return order

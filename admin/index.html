@@ -12074,7 +12074,7 @@ function bentoSlotBuildControls() {
           p = bentoSlotSetPoint(_bentoSlotState.boxId, def, p);
         }
         bentoSlotRender();
-        bentoSlotSetStatus('下書き保存済み。サーバーへ反映するには保存を押してください。', false);
+        bentoSlotSetStatus(axis.key === 'size' ? '同じ食材のサイズを同期しました。保存で反映されます。' : '下書き保存済み。サーバーへ反映するには保存を押してください。', false);
       });
       sliders.appendChild(row);
     });
@@ -12137,7 +12137,7 @@ function bentoSlotSyncSizePresets(def, entry) {
     btn.addEventListener('click', function() {
       bentoSlotSetSize(_bentoSlotState.boxId, def, preset.size);
       bentoSlotRender();
-      bentoSlotSetStatus('サイズを ' + preset.label + ' にしました。保存で反映されます。', false);
+      bentoSlotSetStatus('サイズを ' + preset.label + ' にして、同じ食材にも同期しました。保存で反映されます。', false);
     });
     wrap.appendChild(btn);
   });
@@ -12390,6 +12390,7 @@ function bentoSlotFetchServer() {
 function bentoSlotSaveServer() {
   bentoSlotSetStatus('サーバーへ保存中...', false);
   bentoSlotEnsureAllDefaults();
+  bentoSlotSyncAllSharedSampleSizes(true);
   var layout = bentoSlotNormalizeLayout(_bentoSlotState.layout);
   return bentoSlotFetchServer().catch(function() { return _bentoSlotState.serverPayload || {}; }).then(function(payload) {
     return fetch(BENTO_SLOT_ENDPOINT, {
@@ -12420,7 +12421,7 @@ function bentoSlotBindControls() {
     var def = bentoSlotGetDef();
     bentoSlotSetSampleId(_bentoSlotState.boxId, def, sampleSelect.value);
     bentoSlotRender();
-    bentoSlotSetStatus('サンプルとサイズを下書き保存しました。サーバーへ反映するには保存を押してください。', false);
+    bentoSlotSetStatus('サンプルを下書き保存しました。同じ食材のサイズは共有されます。', false);
   });
   document.querySelectorAll('#bento-slot-sample-mode button').forEach(function(btn) {
     btn.addEventListener('click', function() {
