@@ -18,6 +18,12 @@
 
   function _finite(n) { return typeof n === 'number' && Number.isFinite(n); }
   function _validPoint(p) { return p && _finite(p.x) && _finite(p.y); }
+  function _cacheBustStageAssetUrl(url) {
+    if (typeof url !== 'string' || !url) return url;
+    if (/^(data|blob):/i.test(url)) return url;
+    if (url.indexOf('imageStages/') < 0 && url.indexOf('/maze/imageStages/') < 0) return url;
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
+  }
 
   function buildStage(stageDef) {
     if (!stageDef || stageDef.type !== 'image') {
@@ -81,19 +87,21 @@
       // Multi-image stage: N images laid out side by side, each viewBox.w/N wide.
       // Draw loop checks .complete per image, so no onload bookkeeping needed.
       imageEls = stageDef.imageUrls.map(function (url) {
+        var imageUrl = _cacheBustStageAssetUrl(url);
         var img = new Image();
         img.onerror = function () {
           try { console.warn('[MazeImage] image failed to load:', url); } catch (e) {}
         };
-        img.src = url;
+        img.src = imageUrl;
         return img;
       });
     } else if (stageDef.imageUrl) {
+      var imageUrl = _cacheBustStageAssetUrl(stageDef.imageUrl);
       imageEl = new Image();
       imageEl.onerror = function () {
         try { console.warn('[MazeImage] image failed to load:', stageDef.imageUrl); } catch (e) {}
       };
-      imageEl.src = stageDef.imageUrl;
+      imageEl.src = imageUrl;
     }
 
     // Screen count for cameraMode 'screen': one screen per image,

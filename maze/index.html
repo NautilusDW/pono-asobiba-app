@@ -9872,7 +9872,6 @@ function showHint(msg, ms) {
 
 // ====== Stage loading ======
 function loadStage(idx) {
-  document.body.classList.add('maze-started');
   // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
   // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
   // セーフフラグ OFF の間は true 返却 → 実ロックは発動しない（保険として window.PonoTier の存在もチェック）
@@ -9916,11 +9915,13 @@ function loadStage(idx) {
     def = STAGES[fallbackIdx];
   }
   if (def && def.type === 'image') {
+    document.body.classList.add('maze-started');
     applyMazeStageStoryFallback(def, stageIdx);
     imgLoadStage(def);
     return;
   }
   // Grid stage: revert from image-stage mode if previously set
+  document.body.classList.add('maze-started');
   _initFlagTunnelForStage(null);
   _initWaterGimmickForStage(null);
   _initStrengthGimmickForStage(null);
@@ -10484,9 +10485,14 @@ try {
 // 起動時は image stage index と ?image=<name> のみ解決し、loadStage は保留。
 // タイトル画面タップ後に OP を再生してから初回 loadStage を呼ぶことで、
 // 起動時にいきなり storyIntro モーダルが被さる旧バグを根本回避する。
-_loadImageStageIndex()
+var _mazeStagePreloadPromise = _loadImageStageIndex()
   .then(function() { return _loadImageStageFromURL(); })
   .catch(function(e) { console.warn('[maze] preload chain failed', e); });
+function _mazeLoadInitialStageAfterPreload() {
+  return _mazeStagePreloadPromise
+    .catch(function(e) { console.warn('[maze] preload wait failed', e); })
+    .then(function() { loadStage(_getInitialStageIdx()); });
+}
 requestAnimationFrame(draw);
 
 // ---- OP 再生 (op-layout.json 駆動) ---------------------------------------
@@ -10715,9 +10721,9 @@ async function playMazeOpening(onDone) {
     var hasImageParam = params && params.has('image');
     if (hasStageParam || hasImageParam) {
       // 直リンク (デバッグ含む) は OP スキップ
-      loadStage(_getInitialStageIdx());
+      _mazeLoadInitialStageAfterPreload();
     } else {
-      playMazeOpening(function() { loadStage(_getInitialStageIdx()); });
+      playMazeOpening(_mazeLoadInitialStageAfterPreload);
     }
   }, { once: true });
 })();
