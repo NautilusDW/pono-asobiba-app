@@ -9018,6 +9018,29 @@ function getCupEditorFoodItems() {
 function getActiveTierCups() {
   return placedItems.filter(i => i.snapTarget && (getBoxTierCount() <= 1 || getItemTier(i) === freeActiveTier));
 }
+function getSimpleSelectedCupForPlacement(tier) {
+  const selected = simpleReplaceSlotUid
+    ? placedItems.find(item => item.uid === simpleReplaceSlotUid)
+    : null;
+  if (selected && selected.snapTarget && getItemTier(selected) === tier) return selected;
+  const active = getActiveCup();
+  if (active && freeSelectedItemUid === active.uid && getItemTier(active) === tier) return active;
+  return null;
+}
+function getSimpleCupForFoodPlacement(def, tier = getTargetTierForType(def && def.type), opts = {}) {
+  if (!simpleBentoMode || !canAddFoodToCup(def)) return null;
+  const selectedCup = getSimpleSelectedCupForPlacement(tier);
+  if (selectedCup) return selectedCup;
+  const cups = placedItems.filter(cup => cup && cup.snapTarget && getItemTier(cup) === tier);
+  if (!cups.length) return null;
+  const sorted = cups.slice().sort((a, b) => {
+    const ac = getCupChildren(a).length;
+    const bc = getCupChildren(b).length;
+    return (ac - bc) || ((a.layer || 0) - (b.layer || 0));
+  });
+  const available = sorted.find(cup => getCupChildren(cup).length < SIMPLE_CUP_FOOD_LIMIT);
+  return available || (opts.allowFull ? sorted[0] : null);
+}
 function getSelectedCup() {
   const item = getSelectedFreeItem();
   if (item && item.snapTarget) return item;
@@ -11180,6 +11203,36 @@ function addSimpleFoodToCup(def, cup) {
   }
   return item;
 }
+function attachSimpleSideFoodToCup(item, cup) {
+  if (!simpleBentoMode || !item || !cup || !cup.snapTarget || !canAddFoodToCup(item)) return false;
+  if (item.parentCupId === cup.uid) return true;
+  const def = getFreeFoodCatalog().find(f => f.id === item.id || f.name === item.name) || item;
+  item.parentCupId = cup.uid;
+  item.simpleSlot = '';
+  item.tier = getItemTier(cup);
+  item.size = getCupFoodChildSize(def, cup);
+  item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
+  item.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
+  item.manualCupPosition = true;
+  return true;
+}
+function attachExistingSimpleSideFoodsToCups(tier) {
+  if (!simpleBentoMode) return false;
+  const sideFoods = placedItems
+    .filter(item => item.type === 'food' && !item.parentCupId && canAddFoodToCup(item) && getItemTier(item) === tier)
+    .sort((a, b) => (a.layer || 0) - (b.layer || 0));
+  const touched = new Set();
+  sideFoods.forEach(item => {
+    const cup = getSimpleCupForFoodPlacement(item, tier, { allowFull: false });
+    if (!cup) return;
+    if (attachSimpleSideFoodToCup(item, cup)) touched.add(cup.uid);
+  });
+  touched.forEach(uid => {
+    const cup = placedItems.find(item => item.uid === uid && item.snapTarget);
+    if (cup) layoutCupChildren(cup);
+  });
+  return touched.size > 0;
+}
 function createSimpleDecorPlacedItem(def, tier) {
   if (!def) return null;
   const placement = getSimpleDecorPlacement(def, tier);
@@ -11277,7 +11330,10 @@ function addSimpleFixedPaletteItem(def) {
   if (item.snapTarget) {
     freeActiveCupUid = item.uid;
     freeCupToolMode = 'move';
-    setSpeech('カップを おいたよ。小さいおかずを えらぶと はいるよ。');
+    const movedSideFood = attachExistingSimpleSideFoodsToCups(tier);
+    setSpeech(movedSideFood
+      ? 'カップに 小さいおかずを いれたよ。'
+      : 'カップを おいたよ。小さいおかずを えらぶと はいるよ。');
   } else if (def.type === 'decor') {
     setSpeech('いいね！ もっと かざってもいいよ。すすむときは のりOK を おしてね。');
   } else if (def.type === 'food') {
@@ -11302,15 +11358,13 @@ function addSimpleFreePaletteItem(def) {
   }
   const editingCup = def.type === 'food' ? getEditingCup() : null;
   if (editingCup) {
-    addSimpleFoodToCup(def, editingCup);
-    return;
+    return addSimpleFoodToCup(def, editingCup);
   }
-  const activeCup = def.type === 'food' && canAddFoodToCup(def) && String(freeGuideStep || '').endsWith('Side')
-    ? getActiveCup()
+  const activeCup = def.type === 'food' && canAddFoodToCup(def)
+    ? getSimpleCupForFoodPlacement(def, getTargetTierForType(def.type), { allowFull: true })
     : null;
   if (activeCup) {
-    addSimpleFoodToCup(def, activeCup);
-    return;
+    return addSimpleFoodToCup(def, activeCup);
   }
   let item = null;
   if (def.type === 'rice_auto') {

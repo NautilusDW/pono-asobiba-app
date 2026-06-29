@@ -12237,6 +12237,9 @@ function bentoSlotRenderLayerBase(kind, sample) {
 }
 function bentoSlotSampleRenderLayer(entry) {
   if (!entry) return 30;
+  if (entry.anchoredCupEntry) {
+    return bentoSlotSampleRenderLayer(entry.anchoredCupEntry) + 2000;
+  }
   var sample = entry.sample || {};
   var point = entry.point || {};
   var base = bentoSlotRenderLayerBase(entry.def && entry.def.kind, sample);
@@ -12244,6 +12247,41 @@ function bentoSlotSampleRenderLayer(entry) {
   var y = bentoSlotClamp(point.y, 0, BENTO_SLOT_H, BENTO_SLOT_H / 2);
   var tie = Number(sample.layer);
   return Math.round(base * 100000 + y * 100 + x / 10 + (isFinite(tie) ? (tie % 100) / 100 : 0));
+}
+function bentoSlotCupSizeKeyForEntry(entry) {
+  var size = Number(entry && entry.point && entry.point.size);
+  if (!isFinite(size)) size = Number(entry && entry.sample && entry.sample.size);
+  var best = BENTO_SLOT_CUP_SIZE_PRESETS[1];
+  BENTO_SLOT_CUP_SIZE_PRESETS.forEach(function(preset) {
+    if (Math.abs(preset.size - size) < Math.abs(best.size - size)) best = preset;
+  });
+  return best.key;
+}
+function bentoSlotCupFoodSize(sample, cupEntry) {
+  if (!sample) return 96;
+  var key = bentoSlotCupSizeKeyForEntry(cupEntry);
+  if (sample.cupSizes && isFinite(Number(sample.cupSizes[key]))) return Number(sample.cupSizes[key]);
+  return Number(sample.size) || 96;
+}
+function bentoSlotAnchorSideFoodEntriesToCups(entries) {
+  var cupByIndex = {};
+  entries.forEach(function(entry) {
+    if (entry && entry.def && entry.def.kind === 'cup') cupByIndex[entry.def.index] = entry;
+  });
+  return entries.map(function(entry) {
+    if (!entry || !entry.def || entry.def.kind !== 'side-food') return entry;
+    var cupEntry = cupByIndex[entry.def.index];
+    if (!cupEntry || !cupEntry.point) return entry;
+    var size = bentoSlotCupFoodSize(entry.sample, cupEntry);
+    return Object.assign({}, entry, {
+      anchoredCupEntry: cupEntry,
+      point: Object.assign({}, entry.point, {
+        x: cupEntry.point.x,
+        y: cupEntry.point.y,
+        size: size
+      })
+    });
+  });
 }
 function bentoSlotAppendSampleImage(stage, sample, point, extra) {
   if (!stage || !sample || !sample.image || !point) return;
@@ -12354,12 +12392,12 @@ function bentoSlotAppendMaskedSampleLayer(stage, box) {
   return true;
 }
 function bentoSlotRenderSamples(stage, box) {
-  var entries = BENTO_SLOT_DEFS.map(function(def) {
+  var entries = bentoSlotAnchorSideFoodEntriesToCups(BENTO_SLOT_DEFS.map(function(def) {
     var entry = bentoSlotGetEntry(box.id, def);
     return { def: def, sample: bentoSlotSampleForDef(def, entry), point: entry };
   }).filter(function(entry) {
     return !!entry.sample && bentoSlotShouldRenderSample(entry.def);
-  }).sort(function(a, b) {
+  })).sort(function(a, b) {
     return bentoSlotSampleRenderLayer(a) - bentoSlotSampleRenderLayer(b);
   });
   entries.forEach(function(entry) {
