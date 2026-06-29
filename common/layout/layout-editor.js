@@ -364,6 +364,21 @@
     } catch (e) { return null; }
   }
 
+  // 2026-06-30 (batch:962 ★1): 🎯/🌐 トグルの状態を localStorage に永続化する。
+  //   従来 enable() / disable() で false 固定だったため、 編集者が 🎯 に切替えても次回開く度に
+  //   🌐 に戻り、 個別レイアウトを上書きする事故が発生していた。 key は editor 全体で共通
+  //   (toggle はユーザーの「保存範囲の好み」 を表すフラグなので、 ページ別に分ける必要は無い)。
+  var PERQ_SCOPE_STORAGE_KEY = 'qz-layout-editor-per-q-scope-v1';
+  function loadPerQScopePref() {
+    try {
+      var raw = localStorage.getItem(PERQ_SCOPE_STORAGE_KEY);
+      return raw === '1';
+    } catch (e) { return false; }
+  }
+  function savePerQScopePref(on) {
+    try { localStorage.setItem(PERQ_SCOPE_STORAGE_KEY, on ? '1' : '0'); } catch (e) {}
+  }
+
   // 2026-05-07 (Phase 2 / impl-A): 既存 JSON の上に snapshot をマージする。
   //   per-Q キー (`${sel}|${i}@${qid}`) を含む snapshot で save する際、
   //   他問題で書かれた per-Q キーを温存するためのユーティリティ。
@@ -378,6 +393,37 @@
     if (!existing || typeof existing !== 'object') return snap;
     var out = Object.assign({}, existing);
     Object.keys(snap).forEach(function (k) { out[k] = snap[k]; });
+    return out;
+  }
+
+  // 2026-06-30 (batch:962 ★4): save() の wholesale overwrite を防ぐ deep-merge。
+  //   既存実装も snap で existing を上書きしていたが、 別端末 / 別タブが直前に書き込んだ
+  //   キーと「同じキー名 / 値が違う」 conflict を可視化していなかった。 ここでは
+  //   - existing にしか無いキー: そのまま温存 (= 他端末の per-Q キーが消えない)
+  //   - snap にしか無いキー: 追加
+  //   - 両方にあるが値が違うキー: snap (= ユーザーの意図) を勝たせ console.warn で可視化
+  //   conflict は per-entry の浅い JSON 比較で十分 (saved-layout の各値は {w,h,tx,ty} 等の
+  //   シンプル object なので、 stringify で identity を判定する)。
+  function deepMergeForSave(existing, snap) {
+    if (!existing || typeof existing !== 'object') return snap ? Object.assign({}, snap) : {};
+    if (!snap || typeof snap !== 'object') return Object.assign({}, existing);
+    var out = Object.assign({}, existing);
+    var conflicts = [];
+    Object.keys(snap).forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(existing, k)) {
+        var ev, sv;
+        try { ev = JSON.stringify(existing[k]); } catch (e) { ev = String(existing[k]); }
+        try { sv = JSON.stringify(snap[k]); } catch (e) { sv = String(snap[k]); }
+        if (ev !== sv) conflicts.push(k);
+      }
+      out[k] = snap[k];
+    });
+    if (conflicts.length) {
+      try {
+        console.warn('[LayoutEditor] save merge conflict (snap wins) on ' + conflicts.length + ' key(s):',
+                     conflicts.slice(0, 12), conflicts.length > 12 ? '...(' + (conflicts.length - 12) + ' more)' : '');
+      } catch (e) { /* noop */ }
+    }
     return out;
   }
 
@@ -495,9 +541,15 @@
     btn.textContent = (state.perQScopeThisQ ? '🎯 この質問だけ' : '🌐 すべての質問') +
                       (has ? ' ⚠個別あり' : '');
     btn.classList.toggle('active', state.perQScopeThisQ);
+    // 2026-06-30 (batch:962 ★5): 現在質問に per-Q キーが 1 つも無い場合、 🌐 のままだと
+    //   global キーへ流れて (= ユーザーが「保存したつもり」 でも実際は個別保存ゼロ) 個別 stub が
+    //   未生成のままになる。 強制切替はせず title で案内する。
+    var perQMissingHint = (!has && !state.perQScopeThisQ)
+      ? '\n\nℹ この質問には個別レイアウトが未保存です。 質問固有の配置にしたい場合は 🎯 に切替えて保存してください'
+      : '';
     btn.title = btn.dataset.baseTitle + ((has && !state.perQScopeThisQ)
       ? '\n\n⚠ この質問は個別レイアウト適用中です。🌐 のままの質問カード・音声ボタン編集は保存されません (個別値が優先表示)。🎯 に切替えて編集するか、🧹 で個別設定を削除してください'
-      : '');
+      : perQMissingHint);
     var clearBtn = tb.querySelector('#le-perq-clear');
     if (clearBtn) {
       clearBtn.style.display = '';
@@ -1656,6 +1708,24 @@
   }
 
   function save() {
+    // 2026-06-30 (batch:962 ★2): toggle が 🌐 のまま、 現在質問に per-Q キーが既存する場合、
+    //   global キーで上書きすると個別レイアウトと矛盾する状態が永続化される。 確認 confirm で
+    //   止めて、 ユーザーに 🎯 への切替を促す (Cancel で abort)。
+    if (!state.perQScopeThisQ && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
+      try {
+        var existingPerQ = _collectPerQOverrideKeysForCurrentQ();
+        if (existingPerQ && existingPerQ.length) {
+          var msg = 'この質問には個別レイアウトが既に ' + existingPerQ.length + ' 件あります。\n' +
+                    '🌐 すべての質問 のまま保存すると、 個別レイアウトと矛盾する可能性があります。\n' +
+                    '(キャンセル推奨 → 🎯 この質問だけ に切替えてから保存してください)\n\n' +
+                    '本当にこのまま 🌐 で保存しますか？';
+          if (!confirm(msg)) {
+            emit('save:cancelled', { reason: 'per-q-mismatch' });
+            return Promise.resolve({ cancelled: true, reason: 'per-q-mismatch' });
+          }
+        }
+      } catch (e) { /* guard 失敗時は従来通り save 続行 */ }
+    }
     emit('save:start');
     var data = snapshot();
     // 2026-05-07 (Phase 3.5 Fix 2): snapshot 開始時の qid を保持。
@@ -1723,7 +1793,9 @@
       }
       // 2026-05-07: 既存 JSON と snapshot を merge してから PUT (他問題の per-Q キーを保持)。
       //   __savedAt は GitHub 用 payload には書き込まない (差分最小化のため)。
-      var mergedRemote = mergeSnapshotOver(existingRemote, data);
+      // 2026-06-30 (batch:962 ★4): wholesale overwrite を防ぐ deep-merge を採用。
+      //   同一キーで値が違う場合 console.warn で conflict を可視化 (snap が勝つ)。
+      var mergedRemote = deepMergeForSave(existingRemote, data);
       _applyPendingPerQDeletions(mergedRemote); // 2026-06-11: 🧹 削除予約を merge 後・PUT 前に適用
       if (mergedRemote && Object.prototype.hasOwnProperty.call(mergedRemote, '__savedAt')) {
         delete mergedRemote.__savedAt;
@@ -1889,7 +1961,7 @@
 
   // 2026-05-13 (sw v983): saved-layout.json の __droppedImages 配列から .le-dropped-img
   //   を再生成する。 state-reset で既存をクリアしてから配列順に再構築する。
-  //   canvas が無いと再生成できないので state.canvasEl を必須にする (= 編集モード有効後)。
+  //   canvas が無いと再生成できないので state.canvasEl を必須にする (= 編集モード有効後)。 例外: DOM canvas 操作で画像素材生成ではない。
   function applyDroppedImages(arr) {
     if (!Array.isArray(arr)) return;
     var canvas = state.canvasEl;
@@ -3284,7 +3356,7 @@
   //    natural-size probe ロジックを部分的に復活。用途は aspect ratio 取得のみ。
   //    img / .le-dropped-img / 任意 bg-image 要素に対応。)
   // ====================================================================
-  var bgImageNaturalCache = new Map(); // url → { status, w, h, callbacks }
+  var bgImgNaturalCache = new Map(); // url → { status, w, h, callbacks }
 
   function getBgImageUrl(el) {
     if (!el || !el.nodeType || el.nodeType !== 1) return null;
@@ -3298,9 +3370,9 @@
     return m ? m[1] : null;
   }
 
-  function probeBgImageNaturalSize(url, onLoad) {
+  function probeBgImgNaturalSize(url, onLoad) {
     if (!url) return null;
-    var cached = bgImageNaturalCache.get(url);
+    var cached = bgImgNaturalCache.get(url);
     if (cached && cached.status === 'loaded') return { w: cached.w, h: cached.h };
     if (cached && cached.status === 'error') return null;
     if (cached && cached.status === 'loading') {
@@ -3308,15 +3380,15 @@
       return null;
     }
     var entry = { status: 'loading', callbacks: onLoad ? [onLoad] : [] };
-    bgImageNaturalCache.set(url, entry);
+    bgImgNaturalCache.set(url, entry);
     var probe = new Image();
     probe.onload = function () {
-      var cbs = (bgImageNaturalCache.get(url) || {}).callbacks || [];
-      bgImageNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
+      var cbs = (bgImgNaturalCache.get(url) || {}).callbacks || [];
+      bgImgNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
       cbs.forEach(function (cb) { try { cb && cb(); } catch (e) {} });
     };
     probe.onerror = function () {
-      bgImageNaturalCache.set(url, { status: 'error' });
+      bgImgNaturalCache.set(url, { status: 'error' });
     };
     probe.src = url;
     return null;
@@ -3354,7 +3426,7 @@
     // 任意要素の bg-image
     var url = getBgImageUrl(el);
     if (url) {
-      var bg = probeBgImageNaturalSize(url, onLoad);
+      var bg = probeBgImgNaturalSize(url, onLoad);
       if (bg && bg.w > 0 && bg.h > 0) return bg.w / bg.h;
       return null;
     }
@@ -3415,7 +3487,7 @@
         if (!bgUrl) {
           reasonParts.push('bg-image: 検出なし');
         } else {
-          var cached = bgImageNaturalCache.get(bgUrl);
+          var cached = bgImgNaturalCache.get(bgUrl);
           if (!cached) reasonParts.push('bg-image probe 開始 (load 完了で再試行します)');
           else if (cached.status === 'loading') reasonParts.push('bg-image probe 中');
           else if (cached.status === 'error') reasonParts.push('bg-image 読込エラー: ' + bgUrl);
@@ -3459,10 +3531,10 @@
   //   独立に維持される (elementHasBackgroundImage / swapBackgroundImageUndoable)。
   // Papa-2 修正1: target フィールドを追加。リサイズすべき要素は
   //   wrapper (.le-dropped-img) なら wrapper、それ以外は el 自身。
-  //   getImageNaturalSize に <img> を渡したとき、その親が .le-dropped-img wrapper
+  //   getImgNaturalSize に <img> を渡したとき、その親が .le-dropped-img wrapper
   //   なら target = wrapper を返す (内側 img だけリサイズして wrapper と不一致に
   //   なる問題を解消)。逆に wrapper を渡されたときは内側 img の natural を返す。
-  function getImageNaturalSize(el, onLoad) {
+  function getImgNaturalSize(el, onLoad) {
     if (!el) return null;
     if (el.tagName === 'IMG') {
       if (el.naturalWidth > 0 && el.naturalHeight > 0) {
@@ -3511,7 +3583,7 @@
   function resetImageTo100Pct() {
     if (!state.selectedElements || state.selectedElements.size !== 1) return;
     var sel = Array.from(state.selectedElements)[0];
-    var ns = getImageNaturalSize(sel);
+    var ns = getImgNaturalSize(sel);
     if (!sel || !ns) return;
     // Papa-2 修正1: wrapper があれば wrapper をリサイズ対象にする (差し替え後の
     //   内側 img の naturalSize に wrapper を追従させ、はみ出し/ずれを解消)
@@ -4037,11 +4109,11 @@
     var resetBtn = panel.querySelector('#np-reset-100');
     var ns = null;
     if (sel.length === 1) {
-      ns = getImageNaturalSize(sel[0], function () { updateNumericPanel(); });
+      ns = getImgNaturalSize(sel[0], function () { updateNumericPanel(); });
     }
     // 画像未ロードのケース: 1個選択 & 選択要素自身が img で naturalWidth=0 なら、
     // load 完了時に再描画する one-shot リスナを張る (再選択不要にする)。
-    // Golf-2: wrapper 内 img は対象外 (getImageNaturalSize と一貫させる)。
+    // Golf-2: wrapper 内 img は対象外 (getImgNaturalSize と一貫させる)。
     if (!ns && sel.length === 1) {
       var single0 = sel[0];
       var probe = (single0.tagName === 'IMG') ? single0 : null;
@@ -6780,6 +6852,8 @@
       perqScopeBtn.style.display = '';
       perqScopeBtn.addEventListener('click', function () {
         state.perQScopeThisQ = !state.perQScopeThisQ;
+        // 2026-06-30 (batch:962 ★1): トグル状態を localStorage に永続化
+        savePerQScopePref(state.perQScopeThisQ);
         if (!state._dirty) {
           try {
             state.lastSavedJson = JSON.stringify(snapshot());
@@ -6824,6 +6898,7 @@
           } catch (e) { /* noop */ }
           // 🎯 のまま 💾 すると snapshot が @qid キーを即再生成してしまうため 🌐 に戻す
           state.perQScopeThisQ = false;
+          savePerQScopePref(false); // 2026-06-30 (batch:962 ★1): localStorage も同期
           updatePerQScopeUI();
           try { refreshSelectionUI(); } catch (e) { /* noop */ }
           try { refreshElementList(); } catch (e) { /* noop */ }
@@ -8346,7 +8421,10 @@
           return typeof s === 'string' && state._perQuestionSelectors.indexOf(s) !== -1;
         })
       : [];
-    state.perQScopeThisQ = false; // 既定は 「🌐 すべての質問」 (従来挙動)
+    // 2026-06-30 (batch:962 ★1): トグル状態を localStorage から復元 (なければ 🌐 既定)。
+    //   従来は false 固定だったため 🎯 にして閉じても次回 🌐 に戻り、 ユーザーが気付かず
+    //   global キーを上書きして個別レイアウトを毀損する事故が出ていた。
+    state.perQScopeThisQ = loadPerQScopePref();
     state._perQDeletedKeys = new Set(); // 2026-06-11: 削除予約は enable 毎にリセット
     state._perQWarnedQid = null;        // 2026-06-11: 警告 toast ガードもリセット
     state.selectedElements = new Set();
@@ -8607,7 +8685,9 @@
     state.lastSavedQid = null;       // Phase 3.5 Fix 2: 次回 enable で取り直す
     state._perQuestionSelectors = []; // 2026-05-07: 次回 enable で受け取り直す
     state._perQScopeToggleSelectors = []; // 2026-06-11: 保存範囲トグルも次回 enable で受け取り直す
-    state.perQScopeThisQ = false;
+    // 2026-06-30 (batch:962 ★1): perQScopeThisQ は localStorage 永続値が正本。
+    //   ここで false 強制すると次回 enable() で false スタートとなり (= 復元前に再書きされ)、
+    //   🎯 にしたままセッションを閉じても次回 🌐 に戻る片道ドアになる。 reset を削除。
     state._perQDeletedKeys = new Set(); // 2026-06-11: 未保存の削除予約はセッション終了で破棄
     state._perQWarnedQid = null;
     state.toolbarEl = null;

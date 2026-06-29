@@ -831,7 +831,16 @@ body.sheet-on .hdr-right .ctrl-btn {
      質問テキスト領域を確保 (q175 等の長文質問 1 行収まり対応)。 */
   right: 8px;
   top: 50%;
-  transform: translateY(-50%);
+  /* 2026-06-30 (batch:962B): 親 `.q-text-card` が CSS `transform: scale()` を
+     持った場合に、 子要素 (このスピーカー) も継承して巻き込まれるのを打ち消す
+     ための CSS 変数受け口。 default `--qz-tts-counter-scale: 1` のため通常時は
+     何も変わらない (= 既存挙動の改変なし)。 layout-editor (Part A) が
+     `.q-text-card` を scale する経路を持つ場合、 当該経路で逆数 `calc(1 / N)`
+     をこの要素に set すれば視覚サイズが据え置きになる (打ち消し受け口)。
+     scale() は translateY(-50%) の後に乗ることで、 transform-origin の
+     default (center) を維持 — hover/active 時の拡大支点を変えない。 */
+  --qz-tts-counter-scale: 1;
+  transform: translateY(-50%) scale(var(--qz-tts-counter-scale, 1));
   transition: transform 0.2s ease;
   box-shadow: none;
 }
@@ -843,10 +852,10 @@ body.sheet-on .hdr-right .ctrl-btn {
 }
 .q-text-card .audio:hover,
 .q-text-card .audio:focus-visible {
-  transform: translateY(-50%) scale(1.05);
+  transform: translateY(-50%) scale(calc(var(--qz-tts-counter-scale, 1) * 1.05));
 }
 .q-text-card .audio:active {
-  transform: translateY(-50%) scale(0.95);
+  transform: translateY(-50%) scale(calc(var(--qz-tts-counter-scale, 1) * 0.95));
 }
 
 /* ===== Board (問題コンテンツの紙ボード) ===== */
