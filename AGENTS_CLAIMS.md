@@ -67,7 +67,6 @@
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
 - 2026-06-30 01:47 - by Codex - [batch:958-bento-cup-4-replace-compact] - admin/index.html, bento/index.html, src/worker.js, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento カップ4枠化・カップ内1品入れ替え・配置先UI圧縮 [overlap: batch:885-difficulty-label-phase3-fix, batch:886-difficulty-label-sw-bump-1736, batch:941-oto-highscore-skip-honest-label, batch:942-quizland-bug-fix-bc]
-- 2026-06-30 02:00 - by Claude - [batch:943-quizland-emoji-main-img-cleanup] - quizland/index.html, quizland/saved-layout.json, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 画像本体 (.emoji-main-img) を resizable 対象から外して 2 ボックス問題と「左上に貼り付き」を根治 (Approach A+B 統合: QZ_RESIZABLE_SELECTORS/QZ_PER_QUESTION_SELECTORS から .emoji-main-img 系除去 + saved-layout.json の .emoji-main-img|* 全削除)
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
