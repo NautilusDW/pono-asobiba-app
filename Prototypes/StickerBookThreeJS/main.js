@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260629-928";
+const ASSET_VERSION = "20260629-931";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1118,6 +1118,21 @@ for (const key of REFINED_JP_BOOK_TEMPLATE_KEYS) {
     coverBack: `sb3d_${key}_cover_back_refine_jp_20260629.webp`,
     coverInside: `sb3d_${key}_cover_inside_refine_jp_20260629.webp`,
     spine: `sb3d_${key}_spine_refine_jp_20260629.webp`,
+  });
+}
+
+const COVER_ONLY_BOOK_TEXTURE_OVERRIDES = {
+  mascot: "sb3d_mascot_cover_front_single_bear_jp_20260629.webp",
+};
+
+for (const [key, coverFront] of Object.entries(COVER_ONLY_BOOK_TEXTURE_OVERRIDES)) {
+  const bundle = BOOK_VARIANTS[key];
+  if (!bundle) {
+    continue;
+  }
+  Object.assign(bundle, {
+    coverPrint: coverFront,
+    coverFront,
   });
 }
 
