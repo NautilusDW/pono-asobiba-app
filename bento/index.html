@@ -2015,6 +2015,7 @@ html, body {
   white-space: nowrap;
 }
 .free-place-map {
+  position: relative;
   width: 46px;
   height: 31px;
   border: 2px solid #DCA45A;
@@ -2036,6 +2037,18 @@ html, body {
 .free-place-map-cell.is-disabled {
   opacity: 0.22;
 }
+.free-place-map-cell.is-open::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #F4B34F;
+  opacity: 0.72;
+  transform: translate(-50%, -50%);
+}
 .free-place-map-cell.is-target::after {
   content: '';
   position: absolute;
@@ -2048,10 +2061,6 @@ html, body {
   border: 1px solid #FFFFFF;
   transform: translate(-50%, -50%);
   box-shadow: 0 1px 2px rgba(116, 36, 20, 0.28);
-}
-.free-place-map--auto::after {
-  content: '';
-  position: absolute;
 }
 .free-cup-choice-visual {
   width: 46px;

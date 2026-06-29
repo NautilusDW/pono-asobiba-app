@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T11:51:33Z - batch:925 janken voice 1ショット連続発話で再生成 (call_jan/ken/pon + start)
+- **タスク**: batch:925 janken voice 1ショット連続発話で再生成 (call_jan/ken/pon + start)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 104
+- **エラー数**: 11
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 64, "Read": 12, "Edit": 16, "Workflow": 9, "Grep": 1, "Write": 1, "Agent": 1}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-06-29T11:46:00Z - batch:922 maze オープニング fade-in + 画像preload + ナレ遅延発火 — ユーザー希望の load→fade→narration sequence (Image.decode 並列 + 500ms fade + 200ms 余白 + 2500ms safety + tap skip)、 Codex batch:911 と merge conflict を 7 箇所 resolve済 (status キャッシュラグで一時誤検知)
 - **タスク**: batch:922 maze オープニング fade-in + 画像preload + ナレ遅延発火 — ユーザー希望の load→fade→narration sequence (Image.decode 並列 + 500ms fade + 200ms 余白 + 2500ms safety + tap skip)、 Codex batch:911 と merge conflict を 7 箇所 resolve済 (status キャッシュラグで一時誤検知)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Bash": 3, "Agent": 11, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T00:26:05Z - v1783: oto tutorial BGM 再修正 (showTutorial state order) + ステージ random sound CSS+JS gate
-- **タスク**: v1783: oto tutorial BGM 再修正 (showTutorial state order) + ステージ random sound CSS+JS gate
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 206
-- **エラー数**: 15
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Bash": 78, "Read": 28, "Glob": 2, "Edit": 39, "ToolSearch": 1, "Agent": 40, "Grep": 16, "Workflow": 2}
-- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
