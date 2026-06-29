@@ -1,6 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1824: quizland group corner scale で .q-text-card .audio (右上スピーカー) を巻き込まない (batch:964) — selector exclusion で scale factor 適用対象から除外、 親 .q-text-card だけ resize される。 batch:962 の counter-transform hook と組合せて UI 巻き込み問題を完全解消。 play.html PAGE_CACHE_VERSION と同期。
+// v1823: Bento 管理画面のおかず配置エディタで「押す丸」を初期選択から押しても、小さいおかずAへ自動切替して丸編集モードを有効化する (batch:965)。play.html PAGE_CACHE_VERSION と同期。
 // v1822: quizland レイアウト保存→デフォルト回帰の根本修正 (batch:962) — common/layout/layout-editor.js: ★1 per-Q toggle 状態を localStorage 永続化 (key qz-layout-editor-per-q-scope-v1) / ★2 save 時 toggle/per-Q 不整合 confirm guard / ★4 GH PUT 前 deepMergeForSave で同時編集 conflict 可視化 / ★5 per-Q キー欠損時に toggle button title へ情報ヒント。 quizland/index.html: .q-text-card .audio に CSS 変数 --qz-tts-counter-scale (default 1) hook 追加 (group corner scale 巻き込み対策の receiver、 trigger は batch:963 で実装予定)。 play.html PAGE_CACHE_VERSION と同期。
 // v1821: quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (batch:961) — emoji_name → trivia + framed:true。play.html PAGE_CACHE_VERSION と同期。
 // v1820: Bento 小おかず/カップ配置丸 (batch:960) — 管理ツールの実配置座標とは別に、ゲーム画面の選択丸だけ見た目用2x2グリッドへ分離。クリック後の実配置は従来どおり side-food / cup スロットを参照。play.html PAGE_CACHE_VERSION と同期。
@@ -446,7 +448,7 @@
 // v1810: oto ハイスコア入力「あとで」を「ほぞんしない」にラベル正直化 + 自動保存 revert (batch:941) — 元設計『保存しない選択肢』を復活、ユーザー意図反映。play.html PAGE_CACHE_VERSION と同期。
 // v1805: oto 監査 fix 8件 (batch:940) — PonoSprite indexOf誤判定 / リズムmobile perspective ズレ調整 / チュートリアル cleanup / 「あとで」ボタン自動保存化 / silent fallback に console.warn / ★ repeat 静的キャッシュ / _clearTriggered リセット / Oscillator listener once 化 + 軽量化。play.html PAGE_CACHE_VERSION と同期。
 // v1794: puzzle 監査 fix 5件 (batch:938) — loadStage null check / currentStageIndex 範囲チェック / OP narration 3.5s fallback / btnPlayAgain dead code 削除 / album STAGE_TITLES sync コメント + 軽量化。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1822;
+const CACHE_VERSION = 1824;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)

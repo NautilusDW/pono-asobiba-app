@@ -11861,9 +11861,24 @@ function bentoSlotKey(def) {
 function bentoSlotCanEditMarker(def) {
   return !!(def && (def.kind === 'side-food' || def.kind === 'cup'));
 }
+function bentoSlotGetFirstMarkerDef() {
+  return bentoSlotActiveDefsForBox(_bentoSlotState.boxId).find(function(def) {
+    return bentoSlotCanEditMarker(def);
+  }) || null;
+}
+function bentoSlotActivateMarkerMode() {
+  var def = bentoSlotGetDef();
+  if (!bentoSlotCanEditMarker(def)) {
+    def = bentoSlotGetFirstMarkerDef();
+    if (def) _bentoSlotState.slotKey = bentoSlotKey(def);
+  }
+  if (!def) return false;
+  _bentoSlotState.targetMode = 'marker';
+  return true;
+}
 function bentoSlotEnsureTargetMode() {
   if (_bentoSlotState.targetMode === 'marker' && !bentoSlotCanEditMarker(bentoSlotGetDef())) {
-    _bentoSlotState.targetMode = 'place';
+    if (!bentoSlotActivateMarkerMode()) _bentoSlotState.targetMode = 'place';
   }
 }
 function bentoSlotIsMarkerEditMode() {
@@ -12822,13 +12837,16 @@ function bentoSlotRender() {
   });
   document.querySelectorAll('#bento-slot-target-mode button').forEach(function(btn) {
     var mode = btn.dataset.targetMode || 'place';
-    var canMarker = bentoSlotCanEditMarker(selected);
+    var canMarker = !!bentoSlotGetFirstMarkerDef();
     var active = mode === (_bentoSlotState.targetMode || 'place');
     btn.disabled = mode === 'marker' && !canMarker;
     btn.style.background = active ? (mode === 'marker' ? '#0EA5E9' : '#5D4E37') : '#fff';
     btn.style.color = active ? '#fff' : '#5D4E37';
     btn.style.borderColor = active ? (mode === 'marker' ? '#0284C7' : '#5D4E37') : (mode === 'marker' ? '#0EA5E9' : '#C7894A');
     btn.style.opacity = btn.disabled ? '0.45' : '1';
+    btn.title = mode === 'marker' && !bentoSlotCanEditMarker(selected) && canMarker
+      ? '小さいおかずAに切り替えて、押す丸を編集します'
+      : '';
   });
   var selectedEntry = bentoSlotGetEntry(box.id, selected);
   bentoSlotSyncSampleSelect(selected, selectedEntry);
@@ -12903,8 +12921,11 @@ function bentoSlotBindControls() {
   document.querySelectorAll('#bento-slot-target-mode button').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var mode = btn.dataset.targetMode || 'place';
-      if (mode === 'marker' && !bentoSlotCanEditMarker(bentoSlotGetDef())) return;
-      _bentoSlotState.targetMode = mode === 'marker' ? 'marker' : 'place';
+      if (mode === 'marker') {
+        if (!bentoSlotActivateMarkerMode()) return;
+      } else {
+        _bentoSlotState.targetMode = 'place';
+      }
       bentoSlotRender();
       bentoSlotSetStatus(_bentoSlotState.targetMode === 'marker' ? '押す丸の位置を編集します。実際のおかず位置は変わりません。' : 'おかずやカップの実配置を編集します。', false);
     });
