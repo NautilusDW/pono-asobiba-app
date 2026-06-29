@@ -1999,6 +1999,16 @@
     filter: saturate(0.7);
     transition: opacity 200ms ease, filter 200ms ease;
   }
+  /* v1782: ライバルダイアログ表示中 (active + settling) は #stage 自体への
+     pointer events も封じる。 .instr-btn の CSS gate を擦り抜けて
+     stage 背景タップが拾われ、 spawnBubbleAt → playSetSoundFor で
+     ランダムな C-major 音が鳴る事故を根本封じ。
+     .rhythm-opening overlay は z-index:18 + pointer-events:auto なので、
+     #stage を無効化してもダイアログボタン (SKIP / つぎへ) は引き続き動作する。 */
+  body.rhythm-opening-active #stage,
+  body.rhythm-opening-settle #stage {
+    pointer-events: none !important;
+  }
   .rhythm-opening-character {
     position: relative;
     grid-row: 2;
@@ -11609,7 +11619,7 @@ function spawnFreeTapMagic(x, y, colorIdx, strong) {
 }
 
 _stageEl.addEventListener('pointerdown', function(e) {
-  if (_rhythm.demoActive) {
+  if (_rhythm.demoActive || _rhythm.openingActive || _rhythm.openingSettling) {
     e.preventDefault();
     _drag.active = false;
     return;
@@ -11635,7 +11645,7 @@ _stageEl.addEventListener('pointerdown', function(e) {
 });
 
 _stageEl.addEventListener('pointermove', function(e) {
-  if (_rhythm.demoActive) {
+  if (_rhythm.demoActive || _rhythm.openingActive || _rhythm.openingSettling) {
     _drag.active = false;
     return;
   }
@@ -13881,6 +13891,7 @@ function _renderOtoTutorialStep() {
 }
 
 function showTutorial(kind, opts) {
+  _otoWindowInactive = false;
   kind = kind || _currentOtoTutorialKind();
   if (kind === 'rhythm') kind = 'rhythmStart';
   opts = opts || {};
@@ -13888,7 +13899,6 @@ function showTutorial(kind, opts) {
   if (!steps || !steps.length) return;
   var startsWithBlackCover = kind === 'rhythmMenu' || kind === 'rhythmStart';
   _finishOtoTutorial(false);
-  if (startsWithBlackCover) _showOtoTutorialBlackCover();
   _otoTutorialState = {
     kind: kind,
     index: 0,
@@ -13900,6 +13910,7 @@ function showTutorial(kind, opts) {
     pressedEl: null,
     force: !!opts.force
   };
+  if (startsWithBlackCover) _showOtoTutorialBlackCover();
   document.body.classList.add('oto-tutorial-open');
   _startOtoTutorialBgm();
   if (kind === 'rhythmMenu' || kind === 'rhythmStart') {

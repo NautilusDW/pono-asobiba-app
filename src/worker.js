@@ -265,11 +265,11 @@ function normalizeBentoCompleteLayoutMap(map) {
 const BENTO_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 3,
-  cup: 1,
+  cup: 3,
   divider: 3,
   other: 1
 };
-const BENTO_SHARED_SLOT_KINDS = new Set(['cup', 'other']);
+const BENTO_SHARED_SLOT_KINDS = new Set(['other']);
 const BENTO_CUP_SLOT_SIZES = [150, 190, 230];
 
 function normalizeBentoSlotSize(size, kind) {

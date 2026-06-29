@@ -88,8 +88,8 @@ html, body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(36, 22, 12, 0.14) 0%, rgba(36, 22, 12, 0.42) 100%),
-    radial-gradient(circle at 50% 34%, rgba(255, 243, 214, 0.16) 0%, rgba(255, 243, 214, 0) 42%);
+    linear-gradient(180deg, rgba(36, 22, 12, 0.06) 0%, rgba(36, 22, 12, 0.24) 100%),
+    radial-gradient(circle at 50% 34%, rgba(255, 243, 214, 0.10) 0%, rgba(255, 243, 214, 0) 42%);
 }
 .title-screen__content {
   position: absolute;
@@ -147,7 +147,7 @@ html, body {
   padding: 13px 26px 14px;
   box-shadow: 0 9px 18px rgba(55, 29, 8, 0.20);
   cursor: pointer;
-  filter: drop-shadow(0 2px 0 rgba(72, 38, 12, 0.18));
+  filter: brightness(0.95) saturate(0.96) drop-shadow(0 2px 0 rgba(72, 38, 12, 0.18));
 }
 .title-screen__mode-btn:active {
   transform: translateY(2px) scale(0.992);
@@ -9747,11 +9747,11 @@ function sortFreeEditorMap(map) {
 const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 3,
-  cup: 1,
+  cup: 3,
   divider: 3,
   other: 1,
 };
-const SIMPLE_SHARED_SLOT_KINDS = new Set(['cup', 'other']);
+const SIMPLE_SHARED_SLOT_KINDS = new Set(['other']);
 const SIMPLE_CUP_SLOT_SIZES = [150, 190, 230];
 function normalizeSimpleSlotSize(size, kind) {
   const n = Math.round(clamp(Number(size), 32, 340) * 10) / 10;
@@ -10256,9 +10256,10 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (kind === 'cup' || kind === 'divider' || kind === 'other') {
     const configured = getSimpleSlotLayoutPoints(box, kind);
     const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
+    const fallbackPoints = (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, fallbackLimit);
     const points = configured.length
-      ? configured
-      : (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, fallbackLimit);
+      ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
+      : fallbackPoints;
     return points.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
   }
   return [];

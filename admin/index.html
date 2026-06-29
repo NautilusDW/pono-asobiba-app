@@ -1271,8 +1271,8 @@ tr:hover { background: #FFFAF0; }
     <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
-      主菜A/B、小さいおかずA/B/C、カップ共通、仕切りA/B/C、ピック共通を設定できます。<br>
-      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。カップとピックは代表1つを全種類で共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
+      主菜A/B、小さいおかずA/B/C、カップA/B/C（柄は共通）、仕切りA/B/C、ピック共通を設定できます。<br>
+      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。カップは同じ柄を使いつつ A/B/C の置き場所を別々に設定し、ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;align-items:start;">
@@ -11325,8 +11325,8 @@ var BENTO_SLOT_HIDDEN_KEY = 'bento_simple_slot_hidden_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
-var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 3, cup: 1, divider: 3, other: 1 };
-var BENTO_SLOT_SHARED_KINDS = { cup: true, other: true };
+var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 3, cup: 3, divider: 3, other: 1 };
+var BENTO_SLOT_SHARED_KINDS = { other: true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, divider: 65, other: 24 };
 var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, divider: 8, other: 6 };
 var BENTO_SLOT_BOXES = [
@@ -11361,7 +11361,9 @@ var BENTO_SLOT_DEFS = [
   { kind: 'side-food', index: 0, label: '小さいおかずA', shortLabel: '小A', color: '#22C55E' },
   { kind: 'side-food', index: 1, label: '小さいおかずB', shortLabel: '小B', color: '#22C55E' },
   { kind: 'side-food', index: 2, label: '小さいおかずC', shortLabel: '小C', color: '#22C55E' },
-  { kind: 'cup', index: 0, label: 'カップ共通', shortLabel: 'C', color: '#0EA5E9' },
+  { kind: 'cup', index: 0, label: 'カップA（柄共通）', shortLabel: 'CA', color: '#0EA5E9' },
+  { kind: 'cup', index: 1, label: 'カップB（柄共通）', shortLabel: 'CB', color: '#0EA5E9' },
+  { kind: 'cup', index: 2, label: 'カップC（柄共通）', shortLabel: 'CC', color: '#0EA5E9' },
   { kind: 'divider', index: 0, label: '仕切りA', shortLabel: 'DA', color: '#A855F7' },
   { kind: 'divider', index: 1, label: '仕切りB', shortLabel: 'DB', color: '#A855F7' },
   { kind: 'divider', index: 2, label: '仕切りC', shortLabel: 'DC', color: '#A855F7' },
@@ -11654,6 +11656,15 @@ function bentoSlotNormalizeLayout(map) {
   });
   return out;
 }
+function bentoSlotEnsureAllDefaults() {
+  BENTO_SLOT_BOXES.forEach(function(boxDef) {
+    var boxId = boxDef.id;
+    var box = bentoSlotGetBoxById(boxId);
+    BENTO_SLOT_DEFS.forEach(function(def) {
+      bentoSlotEnsureKindList(boxId, def, box);
+    });
+  });
+}
 function bentoSlotLoadLayout() {
   try { return bentoSlotNormalizeLayout(JSON.parse(localStorage.getItem(BENTO_SLOT_LAYOUT_KEY) || '{}')); } catch(e) { return {}; }
 }
@@ -11710,8 +11721,11 @@ function bentoSlotSaveLocal() {
   _bentoSlotState.layout = bentoSlotNormalizeLayout(_bentoSlotState.layout);
   try { localStorage.setItem(BENTO_SLOT_LAYOUT_KEY, JSON.stringify(_bentoSlotState.layout)); return true; } catch(e) { return false; }
 }
+function bentoSlotGetBoxById(boxId) {
+  return bentoSlotWithProductionMask(BENTO_SLOT_BOXES.find(function(box) { return box.id === boxId; }) || BENTO_SLOT_BOXES[0]);
+}
 function bentoSlotGetBox() {
-  return bentoSlotWithProductionMask(BENTO_SLOT_BOXES.find(function(box) { return box.id === _bentoSlotState.boxId; }) || BENTO_SLOT_BOXES[0]);
+  return bentoSlotGetBoxById(_bentoSlotState.boxId);
 }
 function bentoSlotGetDef(key) {
   var target = key || _bentoSlotState.slotKey;
@@ -11798,8 +11812,8 @@ function bentoSlotGetEntry(boxId, def) {
 function bentoSlotGetPoint(boxId, def) {
   return bentoSlotGetEntry(boxId, def);
 }
-function bentoSlotEnsureKindList(boxId, def) {
-  var box = bentoSlotGetBox();
+function bentoSlotEnsureKindList(boxId, def, boxOverride) {
+  var box = boxOverride || bentoSlotGetBoxById(boxId);
   if (!_bentoSlotState.layout[boxId]) _bentoSlotState.layout[boxId] = {};
   if (!_bentoSlotState.layout[boxId][def.kind]) _bentoSlotState.layout[boxId][def.kind] = [];
   for (var i = 0; i < BENTO_SLOT_LIMITS[def.kind]; i++) {
@@ -12176,6 +12190,7 @@ function bentoSlotFetchServer() {
 }
 function bentoSlotSaveServer() {
   bentoSlotSetStatus('サーバーへ保存中...', false);
+  bentoSlotEnsureAllDefaults();
   var layout = bentoSlotNormalizeLayout(_bentoSlotState.layout);
   return bentoSlotFetchServer().catch(function() { return _bentoSlotState.serverPayload || {}; }).then(function(payload) {
     return fetch(BENTO_SLOT_ENDPOINT, {
