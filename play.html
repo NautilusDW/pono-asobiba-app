@@ -3788,6 +3788,12 @@
       font-family: inherit;
     }
     .pw-quiz-reroll:hover { background: rgba(255, 248, 224, 0.5); color: var(--text); }
+    /* v1796: クイズタブ (あいことば + 注文番号 の 2 経路に整理、 クイズは緊急時用に dormant 保持)
+       DOM / JS / common/tier.js の verifyQuizAnswer は残置。 display:none を消すだけで復活可能。 */
+    #pwTabQuiz,
+    #pwPanelQuiz {
+      display: none !important;
+    }
     @media (prefers-reduced-motion: reduce) {
       .pw-tab, .pw-tab.is-active { transition: none; }
     }
@@ -6214,7 +6220,7 @@
     <div class="password-modal-card">
       <div class="password-modal-inner">
         <h3 id="passwordUnlockTitle" class="password-modal-title">えほんを もっているひとへ</h3>
-        <p class="password-modal-help" id="passwordUnlockHelp">したの どれか ひとつで<br>book メンバーが ひらくよ</p>
+        <p class="password-modal-help" id="passwordUnlockHelp">したの どちらかで<br>book メンバーが ひらくよ</p>
 
         <!-- 3 経路タブ (WAI-ARIA Tabs Pattern, Manual Activation) -->
         <div class="password-modal-tabs" role="tablist" aria-label="unlock ほうほう">
@@ -6757,7 +6763,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1795;
+    const PAGE_CACHE_VERSION = 1796;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
