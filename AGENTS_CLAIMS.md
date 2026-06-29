@@ -66,7 +66,6 @@
 - 2026-06-29 14:18 - by Codex - [batch:911-maze-water-bug-body-collision] - maze/index.html, AGENTS_CLAIMS.md, HANDOFF.md - みずすべりを場所判定ではなく動いているおじゃま虫本体のタイミング判定へ修正 [overlap: batch:909-gacha-mobile-mask-artifact, batch:910-bento-face-food-zones]
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
-- 2026-06-29 20:21 - by Codex - [batch:955-bento-side-cup-category-size] - bento/index.html, admin/index.html, src/worker.js, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento プチトマト2個セット化・小おかず配置先指定・カップ/仕切り/敷き野菜分類整理・サイズ共有を修正 [overlap: batch:885-difficulty-label-phase3-fix, batch:940-oto-audit-fix-all-8 (sw.js/play.html)]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
