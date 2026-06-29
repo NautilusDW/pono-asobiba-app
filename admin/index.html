@@ -1326,6 +1326,7 @@ tr:hover { background: #FFFAF0; }
             <button type="button" data-mode="kind" style="padding:5px 9px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">同じ種類</button>
             <button type="button" data-mode="all" style="padding:5px 9px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">全部</button>
             <button type="button" data-mode="none" style="padding:5px 9px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">目隠し</button>
+            <button type="button" data-mode="marker-only" style="padding:5px 9px;border:2px solid #0EA5E9;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.72rem;font-weight:800;cursor:pointer;">押す丸だけ</button>
           </div>
         </div>
         <div id="bento-slot-preview" style="position:relative;width:100%;aspect-ratio:760/460;background:#fff7e6;border:2px solid #C7894A;border-radius:12px;overflow:hidden;touch-action:none;">
@@ -11508,7 +11509,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'pick_flag', name: 'ピック共通', image: '../assets/images/bento/free-layout/pick_flag.png', size: 66, rotation: -3, layer: 70 }
   ]
 };
-var BENTO_SLOT_SAMPLE_MODES = { selected: true, kind: true, all: true, none: true };
+var BENTO_SLOT_SAMPLE_MODES = { selected: true, kind: true, all: true, none: true, 'marker-only': true };
 var BENTO_SLOT_SIZE_MIN = 32;
 var BENTO_SLOT_SIZE_MAX = 340;
 var BENTO_SLOT_CUP_SIZE_PRESETS = [
@@ -11877,12 +11878,19 @@ function bentoSlotActivateMarkerMode() {
   return true;
 }
 function bentoSlotEnsureTargetMode() {
+  if (_bentoSlotState.sampleMode === 'marker-only' && _bentoSlotState.targetMode !== 'marker') {
+    if (!bentoSlotActivateMarkerMode()) bentoSlotSetSampleMode('selected');
+    return;
+  }
   if (_bentoSlotState.targetMode === 'marker' && !bentoSlotCanEditMarker(bentoSlotGetDef())) {
     if (!bentoSlotActivateMarkerMode()) _bentoSlotState.targetMode = 'place';
   }
 }
 function bentoSlotIsMarkerEditMode() {
   return _bentoSlotState.targetMode === 'marker' && bentoSlotCanEditMarker(bentoSlotGetDef());
+}
+function bentoSlotIsMarkerOnlyPreview() {
+  return _bentoSlotState.sampleMode === 'marker-only' && bentoSlotIsMarkerEditMode();
 }
 function bentoSlotIsHidden(boxId, def) {
   var map = _bentoSlotState.hidden && _bentoSlotState.hidden[boxId];
@@ -12545,7 +12553,7 @@ function bentoSlotSampleForDef(def, entry) {
 function bentoSlotShouldRenderSample(def) {
   if (bentoSlotIsHidden(_bentoSlotState.boxId, def)) return false;
   var mode = _bentoSlotState.sampleMode || 'selected';
-  if (mode === 'none') return false;
+  if (mode === 'none' || mode === 'marker-only') return false;
   if (mode === 'all') return true;
   var selected = bentoSlotGetDef();
   if (mode === 'kind') return def.kind === selected.kind;
@@ -12755,10 +12763,12 @@ function bentoSlotRenderPreview() {
   bentoSlotAppendMaskGuide(stage, box);
   bentoSlotAppendMaskedSampleLayer(stage, box);
   var markerMode = bentoSlotIsMarkerEditMode();
+  var markerOnly = bentoSlotIsMarkerOnlyPreview();
   var selectedDef = bentoSlotGetDef();
   bentoSlotActiveDefsForBox(box.id).forEach(function(def) {
     var key = def.kind + ':' + def.index;
     var editMarker = markerMode && def.kind === selectedDef.kind && bentoSlotCanEditMarker(def);
+    if (markerOnly && !editMarker) return;
     var p = editMarker ? bentoSlotGetMarkerPoint(box.id, def) : bentoSlotGetPoint(box.id, def);
     var marker = document.createElement('button');
     marker.type = 'button';
@@ -12831,9 +12841,10 @@ function bentoSlotRender() {
   });
   document.querySelectorAll('#bento-slot-sample-mode button').forEach(function(btn) {
     var active = btn.dataset.mode === (_bentoSlotState.sampleMode || 'selected');
-    btn.style.background = active ? '#5D4E37' : '#fff';
+    var markerOnlyMode = btn.dataset.mode === 'marker-only';
+    btn.style.background = active ? (markerOnlyMode ? '#0EA5E9' : '#5D4E37') : '#fff';
     btn.style.color = active ? '#fff' : '#5D4E37';
-    btn.style.borderColor = active ? '#5D4E37' : '#C7894A';
+    btn.style.borderColor = active ? (markerOnlyMode ? '#0284C7' : '#5D4E37') : (markerOnlyMode ? '#0EA5E9' : '#C7894A');
   });
   document.querySelectorAll('#bento-slot-target-mode button').forEach(function(btn) {
     var mode = btn.dataset.targetMode || 'place';
@@ -12914,8 +12925,10 @@ function bentoSlotBindControls() {
   });
   document.querySelectorAll('#bento-slot-sample-mode button').forEach(function(btn) {
     btn.addEventListener('click', function() {
+      if (btn.dataset.mode === 'marker-only' && !bentoSlotActivateMarkerMode()) return;
       bentoSlotSetSampleMode(btn.dataset.mode);
       bentoSlotRender();
+      if (btn.dataset.mode === 'marker-only') bentoSlotSetStatus('押す丸だけを表示します。実際のおかず位置は変わりません。', false);
     });
   });
   document.querySelectorAll('#bento-slot-target-mode button').forEach(function(btn) {
@@ -12925,6 +12938,7 @@ function bentoSlotBindControls() {
         if (!bentoSlotActivateMarkerMode()) return;
       } else {
         _bentoSlotState.targetMode = 'place';
+        if (_bentoSlotState.sampleMode === 'marker-only') bentoSlotSetSampleMode('selected');
       }
       bentoSlotRender();
       bentoSlotSetStatus(_bentoSlotState.targetMode === 'marker' ? '押す丸の位置を編集します。実際のおかず位置は変わりません。' : 'おかずやカップの実配置を編集します。', false);
