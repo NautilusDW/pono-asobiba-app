@@ -1986,6 +1986,16 @@
     opacity: 0;
     transform: translateX(-8px) scale(0.96);
   }
+  /* v1779: ライバルダイアログ表示中 + 退場演出中 (settling 430ms) は
+     楽器ボタン (.instr-btn) のポインタイベントを完全に無効化し、
+     pointerdown gate を擦り抜ける pointerup/pointerleave/pointercancel による
+     stopHeldNote() のステイ音漏れを根本封じする (CSS catch-all)。
+     openingActive クラスは _showRhythmOpening で add され、settling 終了 (_hideRhythmOpening)
+     まで残るため、settling 期間中もカバーされる。 */
+  body.rhythm-opening-active .instr-btn,
+  body.rhythm-opening-settle .instr-btn {
+    pointer-events: none !important;
+  }
   .rhythm-opening-character {
     position: relative;
     grid-row: 2;
@@ -5776,7 +5786,9 @@ window.addEventListener('blur', function() {
   // batch913 Fix-A: PonoAcornModal の focus 操作で一瞬発火する偽 'blur' で
   // BGM が止まる事故を防ぐ。 本物の app switch は visibilitychange (document.hidden)
   // で確実に拾われるので、 こちらを skip しても安全。
-  if (_otoAcornModalActive) return;
+  // tutorial 中も同様に、 DOM 操作起因の偽 'blur' で tutorial BGM が始まらない
+  // 事故を防ぐ。 本物の app switch は visibilitychange 側で拾う。
+  if (_otoAcornModalActive || _otoTutorialState) return;
   _silenceOtoAudioForInactive('blur');
 });
 window.addEventListener('focus', function() {
@@ -11517,9 +11529,21 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
       triggerFinale();
     }
   });
-  btn.addEventListener('pointerup',     function() { stopHeldNote(btn); releaseButtonVisual(); });
-  btn.addEventListener('pointerleave',  function() { stopHeldNote(btn); releaseButtonVisual(); });
-  btn.addEventListener('pointercancel', function() { stopHeldNote(btn); releaseButtonVisual(); });
+  // v1779: pointerdown は v1778 で gate 済みだが、pointerup/leave/cancel は素通しだったため
+  // ダイアログ表示中/settling 中に stopHeldNote() がステイ音を発火させる race があった。
+  // CSS (body.rhythm-opening-active/-settle で pointer-events:none) が主防御。JS gate は fallback。
+  btn.addEventListener('pointerup',     function() {
+    if (_rhythm.demoActive || _rhythm.openingActive || _rhythm.openingSettling) return;
+    stopHeldNote(btn); releaseButtonVisual();
+  });
+  btn.addEventListener('pointerleave',  function() {
+    if (_rhythm.demoActive || _rhythm.openingActive || _rhythm.openingSettling) return;
+    stopHeldNote(btn); releaseButtonVisual();
+  });
+  btn.addEventListener('pointercancel', function() {
+    if (_rhythm.demoActive || _rhythm.openingActive || _rhythm.openingSettling) return;
+    stopHeldNote(btn); releaseButtonVisual();
+  });
   // 誤二重発火防止
   btn.addEventListener('click', function(e) { e.preventDefault(); });
 });
