@@ -7040,7 +7040,8 @@ let freeBrushStampLevel = 1;
 let simpleBentoMode = false;
 let simpleReplaceSlotUid = null;
 let simpleNoCupSlotIndex = null;
-const SIMPLE_CUP_FOOD_LIMIT = 3;
+const SIMPLE_CUP_FOOD_LIMIT = 1;
+const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
 
 // ===== NPC 依頼者モード state =====
 // セッション中の現在の依頼者。完成後は次の依頼者に切り替えて注文シーンから再開する。
@@ -9104,7 +9105,51 @@ function getCupFoodChildSize(def, cup) {
 }
 function getCupFoodSetCount(def) {
   const count = Math.round(Number(def && def.cupSetCount) || 1);
-  return clamp(count, 1, SIMPLE_CUP_FOOD_LIMIT);
+  return clamp(count, 1, SIMPLE_CUP_FOOD_CLUSTER_LIMIT);
+}
+function getCupFoodClusterSize(childSize, count) {
+  if (count <= 1) return childSize;
+  const multiplier = count === 2 ? 1.42 : 1.56;
+  return Math.round(clamp(childSize * multiplier, childSize, Math.max(childSize, FREE_FIXED_CUP_SIZE * 0.76)));
+}
+function getCupFoodClusterImages(def, count) {
+  if (count <= 1) return null;
+  const src = def && (def.img || def.image);
+  if (!src) return null;
+  const layouts = {
+    2: [
+      { x: -0.18, y: 0.06, w: 0.66, rotation: -7 },
+      { x: 0.18, y: -0.06, w: 0.66, rotation: 6 },
+    ],
+    3: [
+      { x: 0, y: -0.18, w: 0.58, rotation: -2 },
+      { x: -0.22, y: 0.16, w: 0.58, rotation: -8 },
+      { x: 0.22, y: 0.16, w: 0.58, rotation: 8 },
+    ],
+  };
+  const layout = layouts[count] || layouts[2];
+  return layout.slice(0, count).map(piece => ({ img: src, ...piece }));
+}
+function applyCupFoodVisual(item, def, cup) {
+  if (!item) return item;
+  const count = getCupFoodSetCount(def);
+  const childSize = getCupFoodChildSize(def || item, cup);
+  item.size = getCupFoodClusterSize(childSize, count);
+  item.clusterImages = getCupFoodClusterImages(def || item, count);
+  item.cupSetCount = count;
+  item.cupSetIndex = 0;
+  item.renderAspect = (def && def.renderAspect) || item.renderAspect || 1;
+  return item;
+}
+function removeCupChildrenForReplacement(cup, exceptUid = '') {
+  if (!cup) return false;
+  let removed = false;
+  getCupChildren(cup).forEach(child => {
+    if (child.uid === exceptUid) return;
+    removeFreeItemData(child.uid);
+    removed = true;
+  });
+  return removed;
 }
 function findCupOverlappingFood(item, preferredCup = null) {
   if (!item || item.type !== 'food' || item.parentCupId || !canAddFoodToCup(item)) return null;
@@ -9135,9 +9180,10 @@ function attachFoodToCupIfOverlaps(item, preferredCup = null, opts = {}) {
   const cup = findCupOverlappingFood(item, preferredCup);
   if (!cup) return false;
   const def = getFreeFoodCatalog().find(f => f.id === item.id || f.name === item.name) || item;
+  removeCupChildrenForReplacement(cup, item.uid);
   item.parentCupId = cup.uid;
   item.tier = getItemTier(cup);
-  item.size = getCupFoodChildSize(def, cup);
+  applyCupFoodVisual(item, def, cup);
   item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
   item.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
   item.manualCupPosition = true;
@@ -9167,6 +9213,7 @@ function getSimpleSelectedCupForPlacement(tier) {
   if (selected && selected.snapTarget && getItemTier(selected) === tier) return selected;
   const active = getActiveCup();
   if (active && freeSelectedItemUid === active.uid && getItemTier(active) === tier) return active;
+  if (simpleBentoMode && active && freeActiveCupUid === active.uid && getItemTier(active) === tier) return active;
   return null;
 }
 function getSimpleSideSlotLabel(index) {
@@ -10031,7 +10078,7 @@ function sortFreeEditorMap(map) {
 const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 4,
-  cup: 3,
+  cup: 4,
   leaf: 6,
   divider: 7,
   other: 1,
@@ -11296,9 +11343,11 @@ function beginFreeItemDrag(e, uid) {
     return;
   }
   bringFreeItemForward(uid);
-  freeDragState = { uid };
   const p = e ? eventToFreePoint(e) : null;
-  if (p) setFreeItemPosition(uid, p.x, p.y);
+  const offset = p && item
+    ? { x: item.x - p.x, y: item.y - p.y }
+    : { x: 0, y: 0 };
+  freeDragState = { uid, offset };
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
@@ -11311,7 +11360,8 @@ function onFreeItemDragMove(e) {
   if (e.cancelable) e.preventDefault();
   const p = eventToFreePoint(e);
   if (!p) return;
-  setFreeItemPosition(freeDragState.uid, p.x, p.y);
+  const offset = freeDragState.offset || { x: 0, y: 0 };
+  setFreeItemPosition(freeDragState.uid, p.x + (Number(offset.x) || 0), p.y + (Number(offset.y) || 0));
   const item = placedItems.find(i => i.uid === freeDragState.uid);
   if (!item) return;
   const el = document.querySelector(`[data-free-uid="${freeDragState.uid}"]`);
@@ -11510,39 +11560,22 @@ function tutorialLockCupDropToTarget(def, uid) {
 }
 function addSimpleFoodToCup(def, cup) {
   if (!def || !cup || !canAddFoodToCup(def)) return null;
-  let children = getCupChildren(cup);
-  const setCount = getCupFoodSetCount(def);
-  let replacedCupFood = false;
-  while (simpleBentoMode && children.length + setCount > SIMPLE_CUP_FOOD_LIMIT) {
-    const oldest = children.slice().sort((a, b) => (a.layer || 0) - (b.layer || 0))[0];
-    if (oldest) {
-      removeFreeItemData(oldest.uid);
-      replacedCupFood = true;
-      children = getCupChildren(cup);
-    } else break;
-  }
+  const replacedCupFood = removeCupChildrenForReplacement(cup);
   const childSize = getCupFoodChildSize(def, cup);
-  const total = children.length + setCount;
-  const addedItems = [];
-  for (let i = 0; i < setCount; i += 1) {
-    const slot = getCupChildSlot(cup, children.length + i, childSize, total);
-    const item = addFreeLayoutItem(def, {
-      x: slot.x,
-      y: slot.y,
-      size: childSize,
-      tier: getItemTier(cup),
-      parentCupId: cup.uid,
-      brushLevel: def.brushItem ? 1 : def.brushLevel,
-      skipRender: true,
-    });
-    if (!item) continue;
-    item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
-    item.manualCupPosition = true;
-    item.cupSetIndex = i;
-    addedItems.push(item);
-  }
-  if (!addedItems.length) return null;
-  const selectedItem = addedItems[addedItems.length - 1];
+  const slot = getCupChildSlot(cup, 0, childSize, SIMPLE_CUP_FOOD_LIMIT);
+  const selectedItem = addFreeLayoutItem(def, {
+    x: slot.x,
+    y: slot.y,
+    size: childSize,
+    tier: getItemTier(cup),
+    parentCupId: cup.uid,
+    brushLevel: def.brushItem ? 1 : def.brushLevel,
+    skipRender: true,
+  });
+  if (!selectedItem) return null;
+  selectedItem.layer = Math.max(selectedItem.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
+  selectedItem.manualCupPosition = true;
+  applyCupFoodVisual(selectedItem, def, cup);
   freeActiveCupUid = cup.uid;
   freeSelectedItemUid = selectedItem.uid;
   simpleReplaceSlotUid = null;
@@ -11553,8 +11586,8 @@ function addSimpleFoodToCup(def, cup) {
   spawnLandingSparkles(document.querySelector(`[data-free-uid="${selectedItem.uid}"]`) || document.getElementById('free-layout-stage'));
   playPop();
   setSpeech(replacedCupFood
-    ? 'カップは みっつまで。いれかえたよ！'
-    : (setCount > 1 ? (def.name || 'おかず') + 'を ふたつ いれたよ！' : 'カップに はいったよ！'));
+    ? 'カップの なかを いれかえたよ！'
+    : (getCupFoodSetCount(def) > 1 ? (def.name || 'おかず') + 'を セットで いれたよ！' : 'カップに はいったよ！'));
   if (simpleBentoMode) {
     setTimeout(() => {
       if (freeCupEditorUid === cup.uid) closeCupEditor();
@@ -11566,10 +11599,11 @@ function attachSimpleSideFoodToCup(item, cup) {
   if (!simpleBentoMode || !item || !cup || !cup.snapTarget || !canAddFoodToCup(item)) return false;
   if (item.parentCupId === cup.uid) return true;
   const def = getFreeFoodCatalog().find(f => f.id === item.id || f.name === item.name) || item;
+  removeCupChildrenForReplacement(cup, item.uid);
   item.parentCupId = cup.uid;
   item.simpleSlot = '';
   item.tier = getItemTier(cup);
-  item.size = getCupFoodChildSize(def, cup);
+  applyCupFoodVisual(item, def, cup);
   item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
   item.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
   item.manualCupPosition = true;
@@ -12365,30 +12399,22 @@ function addFoodToSelectedCup(def) {
     showToast('カップには 小さいおかずを いれよう！');
     return null;
   }
-  const childCount = placedItems.filter(i => i.parentCupId === cup.uid).length;
+  removeCupChildrenForReplacement(cup);
   const isBrushFood = !!def.brushItem;
   const childSize = getCupFoodChildSize(def, cup);
-  const setCount = getCupFoodSetCount(def);
-  const total = childCount + setCount;
-  const addedItems = [];
-  for (let i = 0; i < setCount; i += 1) {
-    const slot = getCupChildSlot(cup, childCount + i, childSize, total);
-    const item = addFreeLayoutItem(def, {
-      x: slot.x,
-      y: slot.y,
-      size: childSize,
-      tier: getItemTier(cup),
-      parentCupId: cup.uid,
-      brushLevel: isBrushFood ? 0 : def.brushLevel,
-      skipRender: true,
-    });
-    if (!item) continue;
-    item.layer = Math.max(item.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
-    item.cupSetIndex = i;
-    addedItems.push(item);
-  }
-  if (!addedItems.length) return null;
-  const selectedItem = addedItems[addedItems.length - 1];
+  const slot = getCupChildSlot(cup, 0, childSize, SIMPLE_CUP_FOOD_LIMIT);
+  const selectedItem = addFreeLayoutItem(def, {
+    x: slot.x,
+    y: slot.y,
+    size: childSize,
+    tier: getItemTier(cup),
+    parentCupId: cup.uid,
+    brushLevel: isBrushFood ? 0 : def.brushLevel,
+    skipRender: true,
+  });
+  if (!selectedItem) return null;
+  selectedItem.layer = Math.max(selectedItem.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
+  applyCupFoodVisual(selectedItem, def, cup);
   layoutCupChildren(cup);
   freeSelectedItemUid = selectedItem.uid;
   freeActiveCupUid = cup.uid;
@@ -12598,6 +12624,11 @@ function createFreePlacedElement(item, interactive) {
       ev.stopPropagation();
       if (simpleBentoMode) {
         if (ev.cancelable) ev.preventDefault();
+        if (item.snapTarget) {
+          selectCupForMovement(item, { render: false, message: true });
+          beginFreeItemDrag(ev, item.uid);
+          return;
+        }
         if (item.type === 'decor' || isRiceDecorItem(item)) {
           beginFreeItemDrag(ev, item.uid);
           return;
