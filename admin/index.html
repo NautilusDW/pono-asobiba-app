@@ -1271,9 +1271,9 @@ tr:hover { background: #FFFAF0; }
     <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
-      主菜A/B、小さいおかずA/B/C/D、カップA/B/C（柄は共通）、敷き野菜A-F、仕切りA-G、ピック共通を設定できます。<br>
+      主菜A/B、小さいおかずA/B/C/D、カップA/B/C/D（柄は共通）、敷き野菜A-F、仕切りA-G、ピック共通を設定できます。<br>
       主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。敷き野菜はレタスやキャベツなど下に敷くもの、仕切りはバランや木の区切りです。サンプルを切り替えると、サンプルごとに位置を保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。<br>
-      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。カップは同じ柄・小サイズ固定で、A/B/C の置き場所を別々に設定します。ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
+      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。「押す丸」では、ゲーム中に子どもがタップする丸の位置だけを実配置とは別に調整できます。カップは同じ柄・小サイズ固定で、A/B/C/D の置き場所を別々に設定します。ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;align-items:start;">
@@ -1296,6 +1296,13 @@ tr:hover { background: #FFFAF0; }
         <div style="margin-bottom:12px;">
           <label id="bento-slot-sample-label" for="bento-slot-sample-select" style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">サンプル</label>
           <select id="bento-slot-sample-select" style="width:100%;padding:8px 10px;border:2px solid #C7894A;border-radius:8px;background:#fff;font-family:inherit;font-size:0.86rem;font-weight:700;color:#5D4E37;"></select>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">編集するもの</label>
+          <div id="bento-slot-target-mode" role="group" aria-label="編集するもの" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" data-target-mode="place" style="padding:6px 12px;border:2px solid #C7894A;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.76rem;font-weight:800;cursor:pointer;">配置</button>
+            <button type="button" data-target-mode="marker" style="padding:6px 12px;border:2px solid #0EA5E9;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.76rem;font-weight:800;cursor:pointer;">押す丸</button>
+          </div>
         </div>
         <div id="bento-slot-size-presets" style="display:none;flex-wrap:wrap;gap:6px;margin:0 0 12px;"></div>
         <div id="bento-slot-sliders" style="display:flex;flex-direction:column;gap:10px;margin-top:14px;"></div>
@@ -11443,6 +11450,7 @@ function bentoSlotEnsureSelectedDefActive() {
   if (def.kind === 'side-food' && def.index >= bentoSlotGetBoxSlotCount(_bentoSlotState.boxId, 'side-food')) {
     _bentoSlotState.slotKey = 'side-food:' + (bentoSlotGetBoxSlotCount(_bentoSlotState.boxId, 'side-food') - 1);
   }
+  bentoSlotEnsureTargetMode();
 }
 var BENTO_SLOT_SAMPLE_ITEMS = {
   'main-food': [
@@ -11506,7 +11514,7 @@ var BENTO_SLOT_SIZE_MAX = 340;
 var BENTO_SLOT_CUP_SIZE_PRESETS = [
   { key: 'small', label: 'カップ小', size: 150 }
 ];
-var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', sampleMode: bentoSlotLoadSampleMode(), hidden: bentoSlotLoadHidden(), layout: {}, serverPayload: null, dragging: false };
+var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', targetMode: 'place', sampleMode: bentoSlotLoadSampleMode(), hidden: bentoSlotLoadHidden(), layout: {}, serverPayload: null, dragging: false };
 
 function bentoSlotClamp(value, min, max, fallback) {
   var n = Number(value);
@@ -11766,6 +11774,11 @@ function bentoSlotEntry(point, def) {
   var sample = bentoSlotFindSampleById(def && def.kind, sampleId);
   var fallback = sample || bentoSlotDefaultSampleForDef(def);
   var entry = bentoSlotPoint(point);
+  if (bentoSlotCanEditMarker(def) && isFinite(Number(point && point.markerX)) && isFinite(Number(point && point.markerY))) {
+    var markerPoint = bentoSlotPoint({ x: point.markerX, y: point.markerY });
+    entry.markerX = markerPoint.x;
+    entry.markerY = markerPoint.y;
+  }
   if (point && isFinite(Number(point.size))) entry.size = bentoSlotNormalizeSizeForDef(point.size, bentoSlotDefaultSizeForSample(def, fallback), def, fallback);
   if (sample && sample.id) entry.sampleId = sample.id;
   var overrides = bentoSlotNormalizeSampleOverrides(point && point.sampleOverrides, def, entry);
@@ -11844,6 +11857,17 @@ function bentoSlotSaveHidden() {
 }
 function bentoSlotKey(def) {
   return def.kind + ':' + def.index;
+}
+function bentoSlotCanEditMarker(def) {
+  return !!(def && (def.kind === 'side-food' || def.kind === 'cup'));
+}
+function bentoSlotEnsureTargetMode() {
+  if (_bentoSlotState.targetMode === 'marker' && !bentoSlotCanEditMarker(bentoSlotGetDef())) {
+    _bentoSlotState.targetMode = 'place';
+  }
+}
+function bentoSlotIsMarkerEditMode() {
+  return _bentoSlotState.targetMode === 'marker' && bentoSlotCanEditMarker(bentoSlotGetDef());
 }
 function bentoSlotIsHidden(boxId, def) {
   var map = _bentoSlotState.hidden && _bentoSlotState.hidden[boxId];
@@ -11981,10 +12005,17 @@ function bentoSlotClampEntryForDef(box, def, entry) {
   var normalized = bentoSlotEntry({
     x: p.x,
     y: p.y,
+    markerX: entry && entry.markerX,
+    markerY: entry && entry.markerY,
     size: entry && isFinite(Number(entry.size)) ? entry.size : (sample && sample.size),
     sampleId: sample && sample.id,
     sampleOverrides: entry && entry.sampleOverrides
   }, def);
+  if (bentoSlotCanEditMarker(def) && isFinite(Number(normalized.markerX)) && isFinite(Number(normalized.markerY))) {
+    var mp = bentoSlotClampPointForDef(box, def, { x: normalized.markerX, y: normalized.markerY });
+    normalized.markerX = mp.x;
+    normalized.markerY = mp.y;
+  }
   if (normalized.sampleOverrides) {
     Object.keys(normalized.sampleOverrides).forEach(function(sampleId) {
       var overrideSample = bentoSlotFindSampleById(def.kind, sampleId);
@@ -12021,6 +12052,96 @@ function bentoSlotGetEntry(boxId, def) {
 }
 function bentoSlotGetPoint(boxId, def) {
   return bentoSlotGetEntry(boxId, def);
+}
+function bentoSlotMarkerBounds(box, kind) {
+  var source = kind === 'cup' ? bentoSlotAccessoryBounds(box) : bentoSlotFoodBounds(box);
+  var bounds = source || bentoSlotGetMaskBounds(box) || box.placeBounds || box.bounds || { x: 0, y: 0, w: BENTO_SLOT_W, h: BENTO_SLOT_H };
+  var w = Math.max(1, Number(bounds.w) || BENTO_SLOT_W);
+  var h = Math.max(1, Number(bounds.h) || BENTO_SLOT_H);
+  var padX = Math.min(w * 0.22, Math.max(26, w * 0.14));
+  var padY = Math.min(h * 0.22, Math.max(24, h * 0.14));
+  return {
+    x: (Number(bounds.x) || 0) + padX,
+    y: (Number(bounds.y) || 0) + padY,
+    w: Math.max(1, w - padX * 2),
+    h: Math.max(1, h - padY * 2)
+  };
+}
+function bentoSlotMarkerGridPoints(box, kind, count) {
+  var n = bentoSlotClamp(Math.round(Number(count) || 4), 1, 4, 4);
+  var b = bentoSlotMarkerBounds(box, kind);
+  var centerX = b.x + b.w * 0.5;
+  var centerY = b.y + b.h * 0.5;
+  if (n === 1) return [{ x: centerX, y: centerY }];
+  if (n === 2) return [{ x: b.x, y: centerY }, { x: b.x + b.w, y: centerY }];
+  if (n === 3) return [{ x: b.x, y: b.y }, { x: b.x + b.w, y: b.y }, { x: centerX, y: b.y + b.h }];
+  return [
+    { x: b.x, y: b.y },
+    { x: b.x + b.w, y: b.y },
+    { x: b.x, y: b.y + b.h },
+    { x: b.x + b.w, y: b.y + b.h }
+  ];
+}
+function bentoSlotAutoMarkerPoints(boxId, kind) {
+  var box = bentoSlotGetBoxById(boxId);
+  var defs = bentoSlotActiveDefsForBox(boxId).filter(function(def) { return def.kind === kind; });
+  var n = bentoSlotClamp(defs.length || 4, 1, 4, 4);
+  var grid = bentoSlotMarkerGridPoints(box, kind, n);
+  var pointsBySlot = grid.slice();
+  var entries = defs.slice(0, n).map(function(def) {
+    var point = bentoSlotGetEntry(boxId, def);
+    return { slotIndex: def.index, x: Number(point && point.x), y: Number(point && point.y) };
+  }).filter(function(entry) {
+    return isFinite(entry.x) && isFinite(entry.y);
+  });
+  function assignRows(rowCounts) {
+    var ordered = entries.slice().sort(function(a, b) { return (a.y - b.y) || (a.x - b.x); });
+    var sourceOffset = 0;
+    var targetOffset = 0;
+    rowCounts.forEach(function(rowCount) {
+      var row = ordered.slice(sourceOffset, sourceOffset + rowCount).sort(function(a, b) { return (a.x - b.x) || (a.y - b.y); });
+      row.forEach(function(entry, rowIndex) {
+        var targetIndex = targetOffset + rowIndex;
+        if (grid[targetIndex]) pointsBySlot[entry.slotIndex] = grid[targetIndex];
+      });
+      sourceOffset += rowCount;
+      targetOffset += rowCount;
+    });
+  }
+  if (entries.length >= 2 && grid.length >= 2) {
+    if (n === 4) assignRows([2, 2]);
+    else if (n === 3) assignRows([2, 1]);
+    else if (n === 2) {
+      entries.slice().sort(function(a, b) { return (a.x - b.x) || (a.y - b.y); }).forEach(function(entry, idx) {
+        if (grid[idx]) pointsBySlot[entry.slotIndex] = grid[idx];
+      });
+    }
+  }
+  return pointsBySlot;
+}
+function bentoSlotGetMarkerPoint(boxId, def) {
+  var entry = bentoSlotGetStoredEntry(boxId, def);
+  if (bentoSlotCanEditMarker(def) && isFinite(Number(entry && entry.markerX)) && isFinite(Number(entry && entry.markerY))) {
+    return bentoSlotPoint({ x: entry.markerX, y: entry.markerY });
+  }
+  var fallback = bentoSlotAutoMarkerPoints(boxId, def.kind)[def.index] || bentoSlotGetEntry(boxId, def);
+  return bentoSlotPoint(fallback);
+}
+function bentoSlotSetMarkerPoint(boxId, def, point) {
+  if (!bentoSlotCanEditMarker(def)) return bentoSlotGetEntry(boxId, def);
+  var existing = bentoSlotGetStoredEntry(boxId, def);
+  var markerPoint = bentoSlotClampPointForDef(bentoSlotGetBoxById(boxId), def, point);
+  return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
+    markerX: markerPoint.x,
+    markerY: markerPoint.y
+  }));
+}
+function bentoSlotClearMarkerPoint(boxId, def) {
+  if (!bentoSlotCanEditMarker(def)) return bentoSlotGetEntry(boxId, def);
+  var existing = Object.assign({}, bentoSlotGetStoredEntry(boxId, def));
+  delete existing.markerX;
+  delete existing.markerY;
+  return bentoSlotSetEntry(boxId, def, existing);
 }
 function bentoSlotEnsureKindList(boxId, def, boxOverride) {
   var box = boxOverride || bentoSlotGetBoxById(boxId);
@@ -12273,15 +12394,24 @@ function bentoSlotBuildControls() {
       var input = row.querySelector('input');
       input.addEventListener('input', function() {
         var def = bentoSlotGetDef();
-        var p = axis.key === 'size'
-          ? bentoSlotSetSize(_bentoSlotState.boxId, def, Number(input.value))
-          : bentoSlotGetPoint(_bentoSlotState.boxId, def);
-        if (axis.key !== 'size') {
+        var markerMode = bentoSlotIsMarkerEditMode();
+        var p;
+        if (markerMode) {
+          if (axis.key === 'size') return;
+          p = bentoSlotGetMarkerPoint(_bentoSlotState.boxId, def);
           p[axis.key] = Number(input.value);
-          p = bentoSlotSetPoint(_bentoSlotState.boxId, def, p);
+          p = bentoSlotSetMarkerPoint(_bentoSlotState.boxId, def, p);
+        } else {
+          p = axis.key === 'size'
+            ? bentoSlotSetSize(_bentoSlotState.boxId, def, Number(input.value))
+            : bentoSlotGetPoint(_bentoSlotState.boxId, def);
+          if (axis.key !== 'size') {
+            p[axis.key] = Number(input.value);
+            p = bentoSlotSetPoint(_bentoSlotState.boxId, def, p);
+          }
         }
         bentoSlotRender();
-        bentoSlotSetStatus(axis.key === 'size' ? '同じ食材のサイズを同期しました。保存で反映されます。' : '下書き保存済み。サーバーへ反映するには保存を押してください。', false);
+        bentoSlotSetStatus(markerMode ? '押す丸の位置を下書き保存しました。保存で反映されます。' : (axis.key === 'size' ? '同じ食材のサイズを同期しました。保存で反映されます。' : '下書き保存済み。サーバーへ反映するには保存を押してください。'), false);
       });
       sliders.appendChild(row);
     });
@@ -12328,7 +12458,7 @@ function bentoSlotSyncSizePresets(def, entry) {
   if (!wrap) return;
   var presets = bentoSlotSizePresetsForDef(def, entry);
   wrap.innerHTML = '';
-  if (!presets.length) {
+  if (bentoSlotIsMarkerEditMode() || !presets.length) {
     wrap.style.display = 'none';
     return;
   }
@@ -12354,20 +12484,26 @@ function bentoSlotSyncSliders(point) {
   if (!sliders) return;
   var def = bentoSlotGetDef();
   var sample = bentoSlotSampleForDef(def, point);
+  var markerMode = bentoSlotIsMarkerEditMode();
+  var markerPoint = markerMode ? bentoSlotGetMarkerPoint(_bentoSlotState.boxId, def) : null;
   ['x', 'y', 'size'].forEach(function(axis) {
     var input = sliders.querySelector('input[data-axis="' + axis + '"]');
     var val = sliders.querySelector('span[data-axis="' + axis + '"]');
-    var sizeLocked = axis === 'size' && def && def.kind === 'cup';
-    var value = axis === 'size'
+    var row = input && input.closest ? input.closest('.npc-pos-slider-row') : null;
+    if (row) row.style.display = markerMode && axis === 'size' ? 'none' : '';
+    var sizeLocked = axis === 'size' && (markerMode || (def && def.kind === 'cup'));
+    var value = markerMode && axis !== 'size'
+      ? bentoSlotRound(markerPoint && markerPoint[axis])
+      : axis === 'size'
       ? bentoSlotNormalizeSizeForDef(point && point.size, bentoSlotDefaultSizeForSample(def, sample), def, sample)
       : bentoSlotRound(point && point[axis]);
     if (input) {
       input.value = String(Math.round(value));
       input.disabled = sizeLocked;
-      input.title = sizeLocked ? 'カップは小サイズ固定です' : '';
+      input.title = markerMode && axis === 'size' ? '押す丸にはサイズがありません' : (sizeLocked ? 'カップは小サイズ固定です' : '');
       input.style.opacity = sizeLocked ? '0.45' : '';
     }
-    if (val) val.textContent = axis === 'size' ? Math.round(value) + 'px' + (sizeLocked ? ' 固定' : '') : value.toFixed(1);
+    if (val) val.textContent = axis === 'size' ? Math.round(value) + 'px' + (sizeLocked && !markerMode ? ' 固定' : '') : value.toFixed(1);
   });
 }
 function bentoSlotPointFromEvent(e) {
@@ -12603,22 +12739,28 @@ function bentoSlotRenderPreview() {
   stage.appendChild(img);
   bentoSlotAppendMaskGuide(stage, box);
   bentoSlotAppendMaskedSampleLayer(stage, box);
+  var markerMode = bentoSlotIsMarkerEditMode();
+  var selectedDef = bentoSlotGetDef();
   bentoSlotActiveDefsForBox(box.id).forEach(function(def) {
     var key = def.kind + ':' + def.index;
-    var p = bentoSlotGetPoint(box.id, def);
+    var editMarker = markerMode && def.kind === selectedDef.kind && bentoSlotCanEditMarker(def);
+    var p = editMarker ? bentoSlotGetMarkerPoint(box.id, def) : bentoSlotGetPoint(box.id, def);
     var marker = document.createElement('button');
     marker.type = 'button';
     marker.dataset.slotKey = key;
-    marker.title = def.label;
-    marker.textContent = def.shortLabel || def.label.replace('大きいおかず', '大').replace('小さいおかず', '小').replace('カップ', 'C').replace('仕切り', 'D').replace('その他', 'O');
+    marker.title = editMarker ? (def.label + ' の押す丸') : def.label;
+    marker.textContent = editMarker
+      ? (def.kind === 'cup' ? 'カ' : String(def.index + 1))
+      : (def.shortLabel || def.label.replace('大きいおかず', '大').replace('小さいおかず', '小').replace('カップ', 'C').replace('仕切り', 'D').replace('その他', 'O'));
     var selected = key === _bentoSlotState.slotKey;
     var hidden = bentoSlotIsHidden(box.id, def);
-    marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : def.color) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:0.62rem;font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden ? '0.45' : '1') + ';z-index:' + (selected ? 181 : 180) + ';';
+    var markerColor = editMarker ? '#0EA5E9' : def.color;
+    marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : markerColor) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:' + (editMarker ? '0.76rem' : '0.62rem') + ';font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden && !editMarker ? '0.45' : '1') + ';z-index:' + (editMarker ? (selected ? 191 : 190) : (selected ? 181 : 180)) + ';';
     marker.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       _bentoSlotState.slotKey = key;
       _bentoSlotState.dragging = true;
-      var current = bentoSlotGetPoint(box.id, def);
+      var current = editMarker ? bentoSlotGetMarkerPoint(box.id, def) : bentoSlotGetPoint(box.id, def);
       var pointer = bentoSlotPointFromEvent(e);
       _bentoSlotState.dragOffset = { x: current.x - pointer.x, y: current.y - pointer.y };
       marker.setPointerCapture(e.pointerId);
@@ -12628,7 +12770,9 @@ function bentoSlotRenderPreview() {
     marker.addEventListener('pointermove', function(e) {
       if (!_bentoSlotState.dragging || _bentoSlotState.slotKey !== key) return;
       e.preventDefault();
-      var point = bentoSlotSetPoint(box.id, def, bentoSlotPointFromDragEvent(e));
+      var point = editMarker
+        ? bentoSlotSetMarkerPoint(box.id, def, bentoSlotPointFromDragEvent(e))
+        : bentoSlotSetPoint(box.id, def, bentoSlotPointFromDragEvent(e));
       bentoSlotSyncSliders(point);
       bentoSlotPositionMarker(marker, point);
     });
@@ -12640,7 +12784,7 @@ function bentoSlotRenderPreview() {
         if (e && e.pointerId != null && marker.hasPointerCapture(e.pointerId)) marker.releasePointerCapture(e.pointerId);
       } catch (_) {}
       bentoSlotRender();
-      bentoSlotSetStatus('下書き保存済み。サーバーへ反映するには保存を押してください。', false);
+      bentoSlotSetStatus(editMarker ? '押す丸の位置を下書き保存しました。保存で反映されます。' : '下書き保存済み。サーバーへ反映するには保存を押してください。', false);
     }
     marker.addEventListener('pointerup', finishMarkerDrag);
     marker.addEventListener('pointercancel', finishMarkerDrag);
@@ -12675,6 +12819,16 @@ function bentoSlotRender() {
     btn.style.background = active ? '#5D4E37' : '#fff';
     btn.style.color = active ? '#fff' : '#5D4E37';
     btn.style.borderColor = active ? '#5D4E37' : '#C7894A';
+  });
+  document.querySelectorAll('#bento-slot-target-mode button').forEach(function(btn) {
+    var mode = btn.dataset.targetMode || 'place';
+    var canMarker = bentoSlotCanEditMarker(selected);
+    var active = mode === (_bentoSlotState.targetMode || 'place');
+    btn.disabled = mode === 'marker' && !canMarker;
+    btn.style.background = active ? (mode === 'marker' ? '#0EA5E9' : '#5D4E37') : '#fff';
+    btn.style.color = active ? '#fff' : '#5D4E37';
+    btn.style.borderColor = active ? (mode === 'marker' ? '#0284C7' : '#5D4E37') : (mode === 'marker' ? '#0EA5E9' : '#C7894A');
+    btn.style.opacity = btn.disabled ? '0.45' : '1';
   });
   var selectedEntry = bentoSlotGetEntry(box.id, selected);
   bentoSlotSyncSampleSelect(selected, selectedEntry);
@@ -12746,6 +12900,15 @@ function bentoSlotBindControls() {
       bentoSlotRender();
     });
   });
+  document.querySelectorAll('#bento-slot-target-mode button').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var mode = btn.dataset.targetMode || 'place';
+      if (mode === 'marker' && !bentoSlotCanEditMarker(bentoSlotGetDef())) return;
+      _bentoSlotState.targetMode = mode === 'marker' ? 'marker' : 'place';
+      bentoSlotRender();
+      bentoSlotSetStatus(_bentoSlotState.targetMode === 'marker' ? '押す丸の位置を編集します。実際のおかず位置は変わりません。' : 'おかずやカップの実配置を編集します。', false);
+    });
+  });
   var hideToggle = document.getElementById('bento-slot-hide-toggle');
   if (hideToggle) hideToggle.addEventListener('click', function() {
     var box = bentoSlotGetBox();
@@ -12769,6 +12932,12 @@ function bentoSlotBindControls() {
   if (resetOne) resetOne.addEventListener('click', function() {
     var box = bentoSlotGetBox();
     var def = bentoSlotGetDef();
+    if (bentoSlotIsMarkerEditMode()) {
+      bentoSlotClearMarkerPoint(box.id, def);
+      bentoSlotRender();
+      bentoSlotSetStatus('押す丸の位置を自動配置に戻しました。保存で反映されます。', false);
+      return;
+    }
     var existing = bentoSlotGetStoredEntry(box.id, def);
     var sample = bentoSlotSampleForDef(def, existing);
     var defaults = bentoSlotDefaultEntry(box, def);

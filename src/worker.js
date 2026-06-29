@@ -312,6 +312,8 @@ function normalizeBentoSlotSampleOverrides(point, kind) {
     const override = normalizeBentoSlotPoint(src, kind);
     delete override.sampleId;
     delete override.sampleOverrides;
+    delete override.markerX;
+    delete override.markerY;
     normalized[id] = override;
   });
   return normalized;
@@ -331,6 +333,12 @@ function normalizeBentoSlotPoint(point, kind, index = null) {
     x: clampBentoMaskNumber(point && point.x, 0, 760, 380, 1),
     y: clampBentoMaskNumber(point && point.y, 0, 460, 230, 1)
   };
+  if ((kind === 'side-food' || kind === 'cup')
+      && Number.isFinite(Number(point && point.markerX))
+      && Number.isFinite(Number(point && point.markerY))) {
+    normalized.markerX = clampBentoMaskNumber(point.markerX, 0, 760, 380, 1);
+    normalized.markerY = clampBentoMaskNumber(point.markerY, 0, 460, 230, 1);
+  }
   if (Number.isFinite(Number(point && point.size))) {
     normalized.size = normalizeBentoSlotSize(point.size, kind);
   }

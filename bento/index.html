@@ -10212,6 +10212,8 @@ function normalizeSimpleSlotSampleOverrides(point, kind = '') {
     const override = normalizeSimpleSlotPoint(src, kind);
     delete override.sampleId;
     delete override.sampleOverrides;
+    delete override.markerX;
+    delete override.markerY;
     normalized[id] = override;
   });
   return normalized;
@@ -10231,6 +10233,12 @@ function normalizeSimpleSlotPoint(point, kind = '', index = null) {
     x: Number.isFinite(x) ? Math.round(clamp(x, 0, FREE_LAYOUT_W) * 10) / 10 : FREE_LAYOUT_W / 2,
     y: Number.isFinite(y) ? Math.round(clamp(y, 0, FREE_LAYOUT_H) * 10) / 10 : FREE_LAYOUT_H / 2,
   };
+  const markerX = Number(point && point.markerX);
+  const markerY = Number(point && point.markerY);
+  if ((kind === 'side-food' || kind === 'cup') && Number.isFinite(markerX) && Number.isFinite(markerY)) {
+    normalized.markerX = Math.round(clamp(markerX, 0, FREE_LAYOUT_W) * 10) / 10;
+    normalized.markerY = Math.round(clamp(markerY, 0, FREE_LAYOUT_H) * 10) / 10;
+  }
   const size = Number(point && point.size);
   if (Number.isFinite(size)) normalized.size = normalizeSimpleSlotSize(size, kind);
   const sampleId = normalizeSimpleSlotSampleId(kind, index, point && point.sampleId);
@@ -10706,6 +10714,10 @@ function makeSimpleSlot(kind, tier, idx, point) {
   };
   if (Number.isFinite(Number(point && point.size))) slot.size = Number(point.size);
   if (point && point.sampleId) slot.sampleId = point.sampleId;
+  if (Number.isFinite(Number(point && point.markerX)) && Number.isFinite(Number(point && point.markerY))) {
+    slot.markerX = Number(point.markerX);
+    slot.markerY = Number(point.markerY);
+  }
   if (point && point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)) {
     slot.sampleOverrides = point.sampleOverrides;
   }
@@ -14433,6 +14445,57 @@ function getSimpleStageMarkerGridPoints(box, kind, count = 4) {
     { x: b.x + b.w, y: b.y + b.h },
   ];
 }
+function getSimpleStageMarkerDisplayPoints(box, kind, slots, count = 4) {
+  const n = clamp(Math.round(Number(count) || (slots && slots.length) || 4), 1, 4);
+  const gridPoints = getSimpleStageMarkerGridPoints(box, kind, n);
+  const pointsBySlot = gridPoints.slice();
+  const entries = (Array.isArray(slots) ? slots : []).slice(0, n)
+    .map((slot, idx) => ({
+      slotIndex: idx,
+      x: Number(slot && slot.x),
+      y: Number(slot && slot.y),
+    }))
+    .filter(entry => Number.isFinite(entry.x) && Number.isFinite(entry.y));
+
+  const assignRows = rowCounts => {
+    const orderedByY = entries.slice().sort((a, b) => (a.y - b.y) || (a.x - b.x));
+    let sourceOffset = 0;
+    let targetOffset = 0;
+    rowCounts.forEach(rowCount => {
+      const row = orderedByY.slice(sourceOffset, sourceOffset + rowCount)
+        .sort((a, b) => (a.x - b.x) || (a.y - b.y));
+      row.forEach((entry, rowIndex) => {
+        const targetIndex = targetOffset + rowIndex;
+        if (gridPoints[targetIndex]) pointsBySlot[entry.slotIndex] = gridPoints[targetIndex];
+      });
+      sourceOffset += rowCount;
+      targetOffset += rowCount;
+    });
+  };
+
+  if (entries.length >= 2 && gridPoints.length >= 2) {
+    if (n === 4) {
+      assignRows([2, 2]);
+    } else if (n === 3) {
+      assignRows([2, 1]);
+    } else if (n === 2) {
+      entries.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y)).forEach((entry, idx) => {
+        if (gridPoints[idx]) pointsBySlot[entry.slotIndex] = gridPoints[idx];
+      });
+    }
+  }
+  (Array.isArray(slots) ? slots : []).slice(0, n).forEach((slot, idx) => {
+    const markerX = Number(slot && slot.markerX);
+    const markerY = Number(slot && slot.markerY);
+    if (Number.isFinite(markerX) && Number.isFinite(markerY)) {
+      pointsBySlot[idx] = {
+        x: Math.round(clamp(markerX, 0, FREE_LAYOUT_W) * 10) / 10,
+        y: Math.round(clamp(markerY, 0, FREE_LAYOUT_H) * 10) / 10,
+      };
+    }
+  });
+  return pointsBySlot;
+}
 function getSimpleCupMarkerSlotIndex(cup, fallbackIndex = 0) {
   const fromKey = getSimpleSlotIndexFromKey(cup && cup.simpleSlot);
   const raw = Number.isFinite(fromKey) ? fromKey : fallbackIndex;
@@ -14474,7 +14537,7 @@ function createSimpleStageTargetLayer() {
     const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
     const slots = getSimpleFixedSlots(cupDef, tier);
     const activeIndex = getActiveSimpleCupSlotIndex(slots);
-    const markerPoints = getSimpleStageMarkerGridPoints(box, 'cup', slots.length);
+    const markerPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, slots.length);
     slots.forEach((slot, idx) => {
       const current = getSimpleSlotItem(slot);
       const point = markerPoints[idx] || slot;
@@ -14498,6 +14561,8 @@ function createSimpleStageTargetLayer() {
   const selectedCup = getSimpleSelectedCupForPlacement(tier);
   const sideCount = getSimpleSlotCountForBox(box, 'side-food');
   const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, sideCount);
+  const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
+  const cupSlots = getSimpleFixedSlots(cupDef, tier);
   const activeSideIndex = selectedCup ? -1 : getActiveSimpleSideSlotIndex(sideSlots);
   const cupsBySlotIndex = new Map();
   getActiveTierCups().forEach((cup, fallbackIndex) => {
@@ -14509,11 +14574,13 @@ function createSimpleStageTargetLayer() {
     ...Array.from(cupsBySlotIndex.keys()).map(idx => idx + 1),
     1
   );
-  const markerPoints = getSimpleStageMarkerGridPoints(box, 'side-food', markerCount);
+  const sideMarkerPoints = getSimpleStageMarkerDisplayPoints(box, 'side-food', sideSlots, sideCount);
+  const cupMarkerPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', cupSlots, cupSlots.length);
   for (let idx = 0; idx < markerCount; idx += 1) {
     const cup = cupsBySlotIndex.get(idx);
-    const point = markerPoints[idx] || markerPoints[markerPoints.length - 1];
-    if (cup && point) {
+    if (cup) {
+      const point = cupMarkerPoints[idx] || sideMarkerPoints[idx] || cup;
+      if (!point) continue;
       const marker = createFreeStageTargetMarker({
         kind: 'cup',
         slotIndex: idx,
@@ -14529,6 +14596,7 @@ function createSimpleStageTargetLayer() {
       continue;
     }
     const slot = sideSlots[idx];
+    const point = sideMarkerPoints[idx] || slot;
     if (!slot || !point) continue;
     const current = getSimpleSlotItem(slot);
     const marker = createFreeStageTargetMarker({
