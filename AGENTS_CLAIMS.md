@@ -67,6 +67,7 @@
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
 - 2026-06-29 20:00 - by Claude - [batch:940-oto-audit-fix-all-8] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 監査8件 fix + 軽量化 (#1 PonoSprite indexOf誤判定 / #2 リズムmodeモバイル perspective ズレ / #3 チュートリアル cleanup 漏れ / #4 ハイスコア「あとで」自動保存化 / #5 silent fallback に console.warn / #6 ★ repeat 静的キャッシュ / #7 _clearTriggered リセット / #8 Oscillator ended リスナー once 化)
+- 2026-06-29 20:21 - by Codex - [batch:955-bento-side-cup-category-size] - bento/index.html, admin/index.html, src/worker.js, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento プチトマト2個セット化・小おかず配置先指定・カップ/仕切り/バラン分類整理・サイズ共有を修正 [overlap: batch:885-difficulty-label-phase3-fix, batch:940-oto-audit-fix-all-8 (sw.js)]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
