@@ -1997,6 +1997,92 @@ html, body {
   border-color: var(--primary);
   color: #8B4513;
 }
+.free-cup-list--visual {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.free-cup-list button.free-place-choice {
+  min-height: 54px;
+  padding: 4px 3px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.free-place-choice-label {
+  font-size: 0.46rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+.free-place-map {
+  width: 46px;
+  height: 31px;
+  border: 2px solid #DCA45A;
+  border-radius: 8px;
+  background: #FFF4D5;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+  padding: 3px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset;
+}
+.free-place-map-cell {
+  position: relative;
+  border-radius: 5px;
+  background: #FFE7AE;
+  border: 1px solid rgba(190, 128, 46, 0.22);
+}
+.free-place-map-cell.is-disabled {
+  opacity: 0.22;
+}
+.free-place-map-cell.is-target::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 34% 30%, #FFEEE8 0 12%, #E73F33 36%, #BD1D1A 100%);
+  border: 1px solid #FFFFFF;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 2px rgba(116, 36, 20, 0.28);
+}
+.free-place-map--auto::after {
+  content: '';
+  position: absolute;
+}
+.free-cup-choice-visual {
+  width: 46px;
+  height: 32px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.free-cup-choice-visual img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  transform: translateY(-3px);
+  pointer-events: none;
+}
+.free-cup-choice-index {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 2px solid #F39B4A;
+  color: #8B4513;
+  display: grid;
+  place-items: center;
+  font-size: 0.45rem;
+  font-weight: 900;
+  line-height: 1;
+}
 .free-guide-actions button:disabled {
   opacity: 0.45;
   cursor: default;
@@ -3049,6 +3135,9 @@ html, body {
   .free-cup-list button {
     min-height: 40px;
     font-size: 0.7rem;
+  }
+  .free-cup-list button.free-place-choice {
+    min-height: 58px;
   }
   .free-item-list {
     gap: 8px;
@@ -9068,6 +9157,9 @@ function getSimpleSelectedCupForPlacement(tier) {
 function getSimpleSideSlotLabel(index) {
   return ['A', 'B', 'C', 'D'][index] || String(index + 1);
 }
+function getSimpleSideSlotPositionLabel(index) {
+  return ['ひだりうえ', 'みぎうえ', 'ひだりした', 'みぎした'][index] || 'ここ';
+}
 function getSimpleSlotIndexFromKey(key) {
   const parts = String(key || '').split(':');
   const n = Number(parts[parts.length - 1]);
@@ -9085,7 +9177,7 @@ function selectNoCupSlotForSimplePlacement(index) {
   freeCupEditorUid = null;
   freeCupToolMode = 'move';
   freeLayoutTab = 'food';
-  setSpeech('小さい おかずを ' + getSimpleSideSlotLabel(normalized) + 'に そのまま おけるよ。');
+  setSpeech('小さい おかずを ' + getSimpleSideSlotPositionLabel(normalized) + 'に そのまま おけるよ。');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   return true;
@@ -10863,8 +10955,16 @@ function clampPointToCup(x, y, item, cup) {
 function getCupChildSlot(cup, index, childSize, total = 1) {
   const inner = getCupInnerRadius(cup, { size: childSize });
   if (total <= 1) return { x: cup.x, y: cup.y };
+  if (total === 2) {
+    const spreadX = Math.min(inner * 0.52, Math.max(18, childSize * 0.34));
+    const spreadY = Math.min(inner * 0.16, Math.max(2, childSize * 0.05));
+    const side = index === 0 ? -1 : 1;
+    return {
+      x: cup.x + side * spreadX,
+      y: cup.y + (index === 0 ? spreadY : -spreadY),
+    };
+  }
   const layouts = {
-    2: [[-1, 0.03], [1, -0.03]],
     3: [[0, -1], [-0.88, 0.64], [0.88, 0.64]],
   };
   const layout = layouts[Math.min(total, 3)];

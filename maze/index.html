@@ -1707,18 +1707,10 @@ body.image-stage-mode .game-wrap {
   animation: waterHitShake 0.38s ease-out;
 }
 .water-game__stage.is-water-hit .water-hazard__zone {
-<<<<<<< Updated upstream
   background:
     radial-gradient(circle, rgba(255,255,255,0.32), transparent 34%),
     rgba(255, 89, 66, 0.18);
   box-shadow: 0 0 20px rgba(255,86,68,0.24), inset 0 0 24px rgba(255,244,186,0.18);
-=======
-  border-color: rgba(255, 255, 255, 0.95);
-  background:
-    radial-gradient(circle, rgba(255,255,255,0.40), transparent 32%),
-    rgba(255, 89, 66, 0.36);
-  box-shadow: 0 0 30px rgba(255,86,68,0.52), inset 0 0 30px rgba(255,244,186,0.34);
->>>>>>> Stashed changes
 }
 .water-game__stage.is-water-hit .water-skate-guide {
   background: rgba(255, 248, 220, 0.94);
@@ -1862,7 +1854,6 @@ body.image-stage-mode .game-wrap {
 .water-hazard__zone {
   position: absolute;
   inset: 0;
-<<<<<<< Updated upstream
   display: none;
   border: 0;
   background:
@@ -1870,13 +1861,6 @@ body.image-stage-mode .game-wrap {
     radial-gradient(ellipse, rgba(255, 240, 176, 0.16), rgba(255,255,255,0.02) 62%, transparent 74%);
   box-shadow: inset 0 0 24px rgba(255,244,186,0.12);
   opacity: 0.42;
-=======
-  border: 4px dashed rgba(255, 255, 255, 0.82);
-  background:
-    radial-gradient(circle, rgba(255,255,255,0.34), transparent 34%),
-    rgba(255, 128, 94, 0.30);
-  box-shadow: 0 0 26px rgba(255,122,83,0.40), inset 0 0 28px rgba(255,244,186,0.30);
->>>>>>> Stashed changes
   animation: waterDangerPulse 1.45s ease-in-out infinite;
 }
 .water-hazard--sweep-y .water-hazard__zone,
@@ -7385,12 +7369,8 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'ムシが いない ときに すすもう',
     statusReady: 'いっこめ こじまへ',
     hazards: [
-<<<<<<< Updated upstream
       { kind: 'sweep-y', x: 0.48, y: 0.52, w: 0.26, h: 0.58, phase: 0, hit: { kind: 'capsule', x1: 0.48, y1: 0.29, x2: 0.48, y2: 0.75, r: 0.13 } },
       { kind: 'sweep-x', x: 0.66, y: 0.43, w: 0.32, h: 0.24, phase: 850, hit: { kind: 'capsule', x1: 0.51, y1: 0.43, x2: 0.81, y2: 0.43, r: 0.13 } }
-=======
-      { kind: 'sweep-y', x: 0.52, y: 0.50, w: 0.28, h: 0.62, hit: { kind: 'capsule', x1: 0.52, y1: 0.25, x2: 0.52, y2: 0.75, r: 0.14 } }
->>>>>>> Stashed changes
     ]
   },
   {
@@ -7401,12 +7381,8 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'ムシが いない ときに すすもう',
     statusReady: 'ふたつめ こじまへ',
     hazards: [
-<<<<<<< Updated upstream
       { kind: 'sweep-y', x: 0.48, y: 0.50, w: 0.26, h: 0.56, phase: 0, hit: { kind: 'capsule', x1: 0.48, y1: 0.28, x2: 0.48, y2: 0.72, r: 0.13 } },
       { kind: 'sweep-x', x: 0.64, y: 0.52, w: 0.34, h: 0.26, phase: 900, hit: { kind: 'capsule', x1: 0.48, y1: 0.52, x2: 0.80, y2: 0.52, r: 0.13 } }
-=======
-      { kind: 'spin', x: 0.53, y: 0.50, w: 0.42, h: 0.54, hit: { kind: 'circle', x: 0.53, y: 0.50, r: 0.24 } }
->>>>>>> Stashed changes
     ]
   },
   {
@@ -7417,12 +7393,8 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'ムシが いない ときに すすもう',
     statusReady: 'さいご むこうぎしへ',
     hazards: [
-<<<<<<< Updated upstream
       { kind: 'sweep-x', x: 0.47, y: 0.48, w: 0.34, h: 0.24, phase: 300, hit: { kind: 'capsule', x1: 0.31, y1: 0.48, x2: 0.63, y2: 0.48, r: 0.13 } },
       { kind: 'drift', x: 0.66, y: 0.57, w: 0.34, h: 0.46, rotate: -12, phase: 1250, hit: { kind: 'ellipse', x: 0.66, y: 0.57, rx: 0.18, ry: 0.23, rotate: -12 } }
-=======
-      { kind: 'drift', x: 0.54, y: 0.55, w: 0.42, h: 0.58, rotate: -12, hit: { kind: 'ellipse', x: 0.54, y: 0.55, rx: 0.22, ry: 0.29, rotate: -12 } }
->>>>>>> Stashed changes
     ]
   }
 ];
@@ -8067,11 +8039,8 @@ function _waterSkateAdvanceSegment() {
     _waterGameState.segmentIndex = next;
     _waterGameState.phase = 'ready';
     _waterGameState.status = WATER_SKATE_SEGMENTS[next].statusReady || 'つぎへ';
-<<<<<<< Updated upstream
     _waterGameState.drawDistance = 0;
     _waterGameState.drawTargetDistance = 0;
-=======
->>>>>>> Stashed changes
     const currentStage = document.getElementById('waterSkateStage');
     if (currentStage) currentStage.classList.remove('is-water-scrolling');
     _renderWaterBridgeGame();
@@ -12950,14 +12919,10 @@ async function playMazeOpening(onDone) {
             hideModal();
             ts.classList.add('hidden');
             // 直リンク同様 OP をスキップして即起動
-<<<<<<< Updated upstream
             _mazeStagePreloadPromise
               .catch(function(e) { console.warn('[maze] stage select preload wait failed', e); })
               .then(function() { loadStage(n); })
               .catch(function(e) { console.warn('[maze] stage select loadStage failed', e); });
-=======
-            try { loadStage(n); } catch (e) { console.warn('[maze] stage select loadStage failed', e); }
->>>>>>> Stashed changes
           });
           modalGrid.appendChild(b);
         })(i);
