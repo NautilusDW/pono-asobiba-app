@@ -10,7 +10,7 @@
 <!-- FOUC guard: タイトル overlay が無いゲームなので、 #gameCanvas を init 完了まで非表示にして暗転で耐える -->
 <style>html,body{background:#FFF8F0}#gameCanvas{visibility:hidden}body.pono-game-ready #gameCanvas{visibility:visible}</style>
 <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
-<script src="../common/preload-helper.js" defer></script>
+<script src="../common/preload-helper.js"></script>
 <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('maze');});</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -1707,10 +1707,18 @@ body.image-stage-mode .game-wrap {
   animation: waterHitShake 0.38s ease-out;
 }
 .water-game__stage.is-water-hit .water-hazard__zone {
+<<<<<<< Updated upstream
   background:
     radial-gradient(circle, rgba(255,255,255,0.32), transparent 34%),
     rgba(255, 89, 66, 0.18);
   box-shadow: 0 0 20px rgba(255,86,68,0.24), inset 0 0 24px rgba(255,244,186,0.18);
+=======
+  border-color: rgba(255, 255, 255, 0.95);
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.40), transparent 32%),
+    rgba(255, 89, 66, 0.36);
+  box-shadow: 0 0 30px rgba(255,86,68,0.52), inset 0 0 30px rgba(255,244,186,0.34);
+>>>>>>> Stashed changes
 }
 .water-game__stage.is-water-hit .water-skate-guide {
   background: rgba(255, 248, 220, 0.94);
@@ -1854,6 +1862,7 @@ body.image-stage-mode .game-wrap {
 .water-hazard__zone {
   position: absolute;
   inset: 0;
+<<<<<<< Updated upstream
   display: none;
   border: 0;
   background:
@@ -1861,6 +1870,13 @@ body.image-stage-mode .game-wrap {
     radial-gradient(ellipse, rgba(255, 240, 176, 0.16), rgba(255,255,255,0.02) 62%, transparent 74%);
   box-shadow: inset 0 0 24px rgba(255,244,186,0.12);
   opacity: 0.42;
+=======
+  border: 4px dashed rgba(255, 255, 255, 0.82);
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.34), transparent 34%),
+    rgba(255, 128, 94, 0.30);
+  box-shadow: 0 0 26px rgba(255,122,83,0.40), inset 0 0 28px rgba(255,244,186,0.30);
+>>>>>>> Stashed changes
   animation: waterDangerPulse 1.45s ease-in-out infinite;
 }
 .water-hazard--sweep-y .water-hazard__zone,
@@ -3166,7 +3182,13 @@ body.image-stage-mode .game-wrap {
 /* ===== Maze OP Overlay (タイトル → OP → loadStage) =====
    タイトル画面タップ後に再生される導入アニメーション。
    op-layout.json を fetch して BG (op_scale.png) + frame + ビート毎テキスト + ナレーション再生。
-   ビート進行はフレーム右下の▼ (明滅) をタップ。右上のボタンでスキップ可能。 */
+   ビート進行はフレーム右下の▼ (明滅) をタップ。右上のボタンでスキップ可能。
+
+   batch:912 op-preload-fadein: 旧実装は画像 preload なしで showBeat(0) を即実行し、
+   音声 (373KB) が画像 decode 前に再生されて「音は流れているが背景がカクカク表示される」
+   状態を子供に見せていた。 現実装は BG (op_scale.png 1.4MB) + frame.src を Image.decode()
+   で並列 preload → fade-in (500ms) → showBeat(0) の順で発火し、 視覚と音声を同期させる。
+   ユーザーが fade-in 中にタップしたら fade を skip して即座に showBeat(0) へ進む。 */
 #maze-op-overlay {
   position: fixed; inset: 0;
   z-index: 300;
@@ -3176,8 +3198,11 @@ body.image-stage-mode .game-wrap {
   justify-content: center;
   padding: 16px;
   box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 500ms ease-out;
 }
 #maze-op-overlay.is-active { display: flex; }
+#maze-op-overlay.is-visible { opacity: 1; }
 #maze-op-stage {
   position: relative;
   width: 100%;
@@ -7360,8 +7385,12 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'ムシが いない ときに すすもう',
     statusReady: 'いっこめ こじまへ',
     hazards: [
+<<<<<<< Updated upstream
       { kind: 'sweep-y', x: 0.48, y: 0.52, w: 0.26, h: 0.58, phase: 0, hit: { kind: 'capsule', x1: 0.48, y1: 0.29, x2: 0.48, y2: 0.75, r: 0.13 } },
       { kind: 'sweep-x', x: 0.66, y: 0.43, w: 0.32, h: 0.24, phase: 850, hit: { kind: 'capsule', x1: 0.51, y1: 0.43, x2: 0.81, y2: 0.43, r: 0.13 } }
+=======
+      { kind: 'sweep-y', x: 0.52, y: 0.50, w: 0.28, h: 0.62, hit: { kind: 'capsule', x1: 0.52, y1: 0.25, x2: 0.52, y2: 0.75, r: 0.14 } }
+>>>>>>> Stashed changes
     ]
   },
   {
@@ -7372,8 +7401,12 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'ムシが いない ときに すすもう',
     statusReady: 'ふたつめ こじまへ',
     hazards: [
+<<<<<<< Updated upstream
       { kind: 'sweep-y', x: 0.48, y: 0.50, w: 0.26, h: 0.56, phase: 0, hit: { kind: 'capsule', x1: 0.48, y1: 0.28, x2: 0.48, y2: 0.72, r: 0.13 } },
       { kind: 'sweep-x', x: 0.64, y: 0.52, w: 0.34, h: 0.26, phase: 900, hit: { kind: 'capsule', x1: 0.48, y1: 0.52, x2: 0.80, y2: 0.52, r: 0.13 } }
+=======
+      { kind: 'spin', x: 0.53, y: 0.50, w: 0.42, h: 0.54, hit: { kind: 'circle', x: 0.53, y: 0.50, r: 0.24 } }
+>>>>>>> Stashed changes
     ]
   },
   {
@@ -7384,8 +7417,12 @@ const WATER_SKATE_SEGMENTS = [
     guideDrawing: 'ムシが いない ときに すすもう',
     statusReady: 'さいご むこうぎしへ',
     hazards: [
+<<<<<<< Updated upstream
       { kind: 'sweep-x', x: 0.47, y: 0.48, w: 0.34, h: 0.24, phase: 300, hit: { kind: 'capsule', x1: 0.31, y1: 0.48, x2: 0.63, y2: 0.48, r: 0.13 } },
       { kind: 'drift', x: 0.66, y: 0.57, w: 0.34, h: 0.46, rotate: -12, phase: 1250, hit: { kind: 'ellipse', x: 0.66, y: 0.57, rx: 0.18, ry: 0.23, rotate: -12 } }
+=======
+      { kind: 'drift', x: 0.54, y: 0.55, w: 0.42, h: 0.58, rotate: -12, hit: { kind: 'ellipse', x: 0.54, y: 0.55, rx: 0.22, ry: 0.29, rotate: -12 } }
+>>>>>>> Stashed changes
     ]
   }
 ];
@@ -7731,6 +7768,49 @@ function _waterSkateTriggerHit(point) {
   }, 760);
 }
 
+function _waterSkateCurrentPathHitsHazard() {
+  const gs = _waterGameState;
+  const rect = _waterSkateStageRect();
+  if (!gs || !rect) return false;
+  return _waterSkatePathHitsHazard(gs.points, _waterSkateCurrentSegment(), rect);
+}
+
+function _waterSkateTriggerHit(point) {
+  const gs = _waterGameState;
+  if (!gs || gs.phase === 'hit' || gs.phase === 'scrolling' || gs.phase === 'complete') return;
+  const hitPoint = point || (gs.points && gs.points[gs.points.length - 1]) || _waterSkateAnchor('start');
+  gs.phase = 'hit';
+  gs.success = false;
+  gs.failReason = 'hazard';
+  gs.glide = null;
+  gs.status = 'おじゃまムシに ぶつかった！';
+  _waterSkateSetGuide('よける みちを かこう');
+  _waterSkateSetStatus(gs.status);
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    stageEl.classList.remove('is-water-scrolling');
+    stageEl.classList.add('is-water-hit');
+  }
+  for (let i = 0; i < 4; i++) {
+    _waterSkateAddRipple(hitPoint.x + (Math.random() - 0.5) * 28, hitPoint.y + (Math.random() - 0.5) * 20);
+  }
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, -24, 1.35);
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, 156, 1.15);
+  _waterSkateAddSparkles(hitPoint.x, hitPoint.y, 18);
+  playMzSe('wrong');
+  _waterGimmickSetTimeout(function() {
+    if (!_waterGameState || _waterGameState.phase !== 'hit') return;
+    const currentStage = document.getElementById('waterSkateStage');
+    if (currentStage) currentStage.classList.remove('is-water-hit');
+    _waterGameState.phase = 'ready';
+    _waterGameState.points = [];
+    _waterGameState.glide = null;
+    _waterGameState.failReason = '';
+    _waterGameState.status = (_waterSkateCurrentSegment() || {}).statusReady || 'もういちど';
+    _renderWaterBridgeGame();
+  }, 760);
+}
+
 function _waterSkateCompletePoints() {
   const st = _waterGimmickState;
   const pts = st && st.lastSkatePoints;
@@ -7891,6 +7971,9 @@ function _onWaterSkatePointerDown(ev) {
   _waterSkateAddRipple(p.x, p.y);
   _waterSkateAddWake(p.x, p.y, _waterSkateAngleBetween(start, p), 0.8);
   _waterSkateAddSparkles(p.x, p.y, 7);
+  if (_waterSkateCurrentPathHitsHazard()) {
+    _waterSkateTriggerHit(p);
+  }
 }
 
 function _onWaterSkatePointerMove(ev) {
@@ -7911,6 +7994,9 @@ function _onWaterSkatePointerMove(ev) {
     _waterSkateAddWake((last.x + p.x) / 2, (last.y + p.y) / 2, angle, 0.72);
     _waterSkateAddSparkles(p.x, p.y, 3);
     if (gs.points.length % 5 === 0) _waterSkateAddRipple(p.x, p.y);
+    if (_waterSkateCurrentPathHitsHazard()) {
+      _waterSkateTriggerHit(p);
+    }
   }
 }
 
@@ -7922,6 +8008,10 @@ function _onWaterSkatePointerUp(ev) {
   if (p) gs.points.push(p);
   gs.drawTargetDistance = _waterSkatePathLength(gs.points);
   const check = _waterSkateCheckRoute(gs.points);
+  if (!check.ok && check.reason === 'hazard') {
+    _waterSkateTriggerHit(p);
+    return;
+  }
   gs.phase = 'gliding';
   gs.success = check.ok;
   gs.failReason = check.reason;
@@ -7977,8 +8067,11 @@ function _waterSkateAdvanceSegment() {
     _waterGameState.segmentIndex = next;
     _waterGameState.phase = 'ready';
     _waterGameState.status = WATER_SKATE_SEGMENTS[next].statusReady || 'つぎへ';
+<<<<<<< Updated upstream
     _waterGameState.drawDistance = 0;
     _waterGameState.drawTargetDistance = 0;
+=======
+>>>>>>> Stashed changes
     const currentStage = document.getElementById('waterSkateStage');
     if (currentStage) currentStage.classList.remove('is-water-scrolling');
     _renderWaterBridgeGame();
@@ -12607,12 +12700,28 @@ async function playMazeOpening(onDone) {
   textEl.style.textAlign     = tx.align || 'center';
   textEl.style.letterSpacing = (Number(tx.letterSpacing) || 0) + 'em';
 
+  // batch:912 op-preload-fadein: overlay は is-active で display:flex にして
+  // レイアウト計算を済ませるが、 opacity: 0 のまま画像 decode を待つ。
+  // 画像 preload (BG op_scale.png + frame.src) を Image.decode() で並列待機し、
+  // 完了したら is-visible class を付けて 500ms fade-in、 fade-in 完了 + 200ms 後に
+  // showBeat(0) でナレ再生。 ユーザーが fade 中にタップしたら fade を skip して即発火。
   overlay.classList.add('is-active');
 
   // ビート進行制御
   let idx = 0;
   let currentAudio = null;
   let _finished = false;
+  let _opReady = false;          // showBeat(0) が走った後 true (fade 完了 / skip 済)
+  let _readyResolve = null;
+  const _readyPromise = new Promise(function(resolve) { _readyResolve = resolve; });
+  function _markReady() {
+    if (_opReady) return;
+    _opReady = true;
+    if (typeof _readyResolve === 'function') {
+      const r = _readyResolve; _readyResolve = null;
+      try { r(); } catch (_) {}
+    }
+  }
 
   function stopAudio() {
     if (currentAudio) {
@@ -12665,10 +12774,19 @@ async function playMazeOpening(onDone) {
 
   // ▼ ボタンと overlay 全体タップの両方で進めるよう共通の advance 関数に集約。
   // 子供が画面のどこをタップしても次ビートへ進める (▼ は視覚ヒントとして残す)。
+  // batch:912: fade-in 中 (_opReady=false) のタップは「待たされ感」 を消すため
+  // fade を skip して即 showBeat(0) を実行 (ビート進行はそこから開始)。
   function advance(e) {
     if (_finished) return;
     // ▼ click が overlay へ bubble して二重発火するのを防止
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (!_opReady) {
+      // fade 中 → 即 opacity 1 にして showBeat(0) を発火
+      try { overlay.classList.add('is-visible'); } catch (_) {}
+      _markReady();
+      try { showBeat(0); } catch (err) { console.warn('[maze-op] showBeat(0) skip-fire failed:', err); }
+      return;
+    }
     if (idx < beats.length - 1) {
       idx++;
       showBeat(idx);
@@ -12697,8 +12815,94 @@ async function playMazeOpening(onDone) {
     advance(e);
   });
 
-  // 初回ビート表示
-  showBeat(0);
+  // batch:912 op-preload-fadein: 画像 preload → fade-in (500ms) → +200ms → showBeat(0)
+  // フォールバック: preload が 2500ms 経っても完了しない場合は強制的に fade-in に進む
+  // (HUD ハングを避ける)。 ユーザーが fade 中にタップした場合は advance() で skip。
+  (function _startOpeningSequence() {
+    function _preloadImage(src) {
+      return new Promise(function(resolve) {
+        if (!src) { resolve(null); return; }
+        try {
+          const img = new Image();
+          // decode() が使えるブラウザでは decode 完了まで待つ (paint 直前まで完全に decoded)。
+          // 使えない / 失敗時は onload で fallback。
+          img.onload = function() {
+            if (typeof img.decode === 'function') {
+              img.decode().then(function() { resolve(img); }).catch(function() { resolve(img); });
+            } else {
+              resolve(img);
+            }
+          };
+          img.onerror = function() { resolve(null); };
+          img.src = src;
+        } catch (_) { resolve(null); }
+      });
+    }
+
+    // BG (op_scale.png) は CSS background なので明示 preload。 frame.src は probe で既に
+    // 一度読まれている可能性が高いがブラウザキャッシュ前提で重複コストは低い。
+    const bgSrc    = '../assets/images/maze/OP/op_scale.png';
+    const frameSrc = (fr && fr.enabled && fr.src) ? String(fr.src).replace(/['"\\)]/g, '') : null;
+
+    // narration[0] も preload (Audio canplaythrough 待ち)。 失敗・タイムアウトしても続行。
+    function _preloadAudio(src) {
+      return new Promise(function(resolve) {
+        if (!src) { resolve(null); return; }
+        try {
+          const a = new Audio();
+          a.preload = 'auto';
+          const done = function() { cleanup(); resolve(a); };
+          const fail = function() { cleanup(); resolve(null); };
+          function cleanup() {
+            a.removeEventListener('canplaythrough', done);
+            a.removeEventListener('loadeddata', done);
+            a.removeEventListener('error', fail);
+          }
+          a.addEventListener('canplaythrough', done, { once: true });
+          a.addEventListener('loadeddata', done, { once: true });
+          a.addEventListener('error', fail, { once: true });
+          a.src = src;
+          // load() を明示呼び出ししないと preload 属性無視のブラウザがある
+          try { a.load(); } catch (_) {}
+        } catch (_) { resolve(null); }
+      });
+    }
+
+    const preloadAll = Promise.all([
+      _preloadImage(bgSrc),
+      _preloadImage(frameSrc),
+      _preloadAudio(audios[0])
+    ]);
+
+    // 2500ms safety timeout
+    const timeoutPromise = new Promise(function(resolve) {
+      setTimeout(function() { resolve('timeout'); }, 2500);
+    });
+
+    Promise.race([preloadAll, timeoutPromise]).then(function(r) {
+      if (_finished || _opReady) return; // 既に skip/finish されていたら何もしない
+      if (r === 'timeout') {
+        console.warn('[maze-op] preload timeout (2500ms), proceeding without full decode');
+      }
+      // fade-in 開始
+      // 念のため reflow を挟んで transition を確実に発火させる
+      try { void overlay.offsetWidth; } catch (_) {}
+      overlay.classList.add('is-visible');
+      // fade-in (500ms) + 視覚マージン 200ms 後に showBeat(0)
+      setTimeout(function() {
+        if (_finished || _opReady) return;
+        _markReady();
+        try { showBeat(0); } catch (e) { console.warn('[maze-op] showBeat(0) failed:', e); }
+      }, 700);
+    }).catch(function(e) {
+      // catch は念のため。 _preloadImage/_preloadAudio は reject しないが万一に備える
+      console.warn('[maze-op] preload chain failed:', e);
+      if (_finished || _opReady) return;
+      overlay.classList.add('is-visible');
+      _markReady();
+      try { showBeat(0); } catch (_) {}
+    });
+  })();
 }
 
 // タイトル画面タップ → (OP 再生 →) 初回 loadStage
@@ -12746,10 +12950,14 @@ async function playMazeOpening(onDone) {
             hideModal();
             ts.classList.add('hidden');
             // 直リンク同様 OP をスキップして即起動
+<<<<<<< Updated upstream
             _mazeStagePreloadPromise
               .catch(function(e) { console.warn('[maze] stage select preload wait failed', e); })
               .then(function() { loadStage(n); })
               .catch(function(e) { console.warn('[maze] stage select loadStage failed', e); });
+=======
+            try { loadStage(n); } catch (e) { console.warn('[maze] stage select loadStage failed', e); }
+>>>>>>> Stashed changes
           });
           modalGrid.appendChild(b);
         })(i);
