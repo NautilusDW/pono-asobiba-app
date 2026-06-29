@@ -11,8 +11,14 @@
 (function () {
   'use strict';
 
-  // BASE_STAGES (main.js) と同期したステージ名テーブル。
-  // 変更時は main.js 側と二重メンテすること。
+  // ============================================================
+  // ⚠️ MANUAL SYNC REQUIRED — KEEP IN SYNC WITH main.js:BASE_STAGES
+  //   Source of truth: puzzle/main.js BASE_STAGES (around lines 171-275)
+  //   When adding / removing / renaming any stage in BASE_STAGES,
+  //   update this table at the same time. main.js cannot be imported
+  //   here (it triggers puzzle init on load), so titles are duplicated.
+  //   batch:938 fix #6 — explicit sync notice (no refactor)
+  // ============================================================
   var STAGE_TITLES = {
     1:  'あかい りんご',
     2:  'そらの ふうせん',

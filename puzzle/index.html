@@ -10,6 +10,10 @@
   <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+  <!-- batch:938 perf — preload opening cutscene cuts so first frame appears without a network stall -->
+  <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut01.webp" type="image/webp">
+  <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut02.webp" type="image/webp">
+  <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut03.webp" type="image/webp">
   <link rel="stylesheet" href="style.css?v=1326">
   <link rel="stylesheet" href="partner-select.css?v=1326">
   <script src="../common/mvp-flags.js"></script>

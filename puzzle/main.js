@@ -435,7 +435,7 @@ const modalStageInfo  = document.getElementById('modal-stage-info');
 const modalChallengeInfo = document.getElementById('modal-challenge-info');
 const modalDailyAcorn = document.getElementById('modal-daily-acorn');
 const btnNextStage    = document.getElementById('btn-next-stage');
-const btnPlayAgain    = document.getElementById('btn-play-again');
+// batch:938 fix #5 — btn-play-again element does not exist in puzzle/index.html, removed dead reference
 const confettiContainer = document.getElementById('confetti-container');
 const titleScreen     = document.getElementById('title-screen');
 const titleGuideChoice = document.getElementById('title-guide-choice');
@@ -2534,11 +2534,19 @@ function showHintNotice() {
 }
 
 // 黄色 pulse ring + 金色星 演出の rAF ループ。 必要時のみ起動・停止。
+// batch:938 perf — 60fps 上限化 (120Hz/144Hz 端末で 2 倍焼かないように lastDraw で間引き)
+var hintAnimLastDraw = 0;
 function ensureHintAnimLoop() {
   if (hintAnimRafHandle != null) return;
   function loop() {
     hintAnimRafHandle = null;
     var now = Date.now();
+    // batch:938 perf — 60fps 上限 (16ms 未満で来た tick は redraw を skip)
+    if (now - hintAnimLastDraw < 16) {
+      hintAnimRafHandle = requestAnimationFrame(loop);
+      return;
+    }
+    hintAnimLastDraw = now;
     var needYellow = !!(selectedPieceForHint && !selectedPieceForHint.snapped);
     var needGold   = !!(hintFlashPiece && now < hintFlashUntil);
     // 共有フラグ: ヒント選択中は assist の発光を抑えてもらう
@@ -6838,8 +6846,18 @@ function loadStage(index) {
   var oldNotice = document.getElementById('hint-notice-bubble');
   if (oldNotice && oldNotice.parentNode) oldNotice.parentNode.removeChild(oldNotice);
 
+  // batch:938 fix #2 — range guard (defends against next-stage overshoot)
+  if (index < 0 || index >= STAGES.length) {
+    console.warn('[puzzle] loadStage: index out of range', index, '/ STAGES.length=', STAGES.length, '— defaulting to 0');
+    index = 0;
+  }
   currentStageIndex = index;
   const stage = STAGES[index];
+  // batch:938 fix #1 — null-check backstop (catches sparse / undefined STAGES entries)
+  if (!stage) {
+    console.warn('[puzzle] loadStage: invalid index', index, '— skipping');
+    return;
+  }
   var currentPartnerForStage = getCurrentPartner();
 
   // ステージ毎のヒント回数を初期化 → ボタン表示を更新
@@ -7208,11 +7226,7 @@ btnNextStage.addEventListener('click', () => {
   });
 });
 
-if (btnPlayAgain) btnPlayAgain.addEventListener('click', () => {
-  hideSuccessModal();
-  dragPiece = null;
-  shufflePieces();
-});
+// batch:938 fix #5 — btn-play-again listener removed (element does not exist in puzzle/index.html)
 
 // ===== BGM =====
 const bgm    = document.getElementById('bgm');
@@ -7705,7 +7719,8 @@ function runOpeningCutscene(onDone) {
   if (!overlay || !audio || !narrEl || !imgA || !imgB) { if (onDone) onDone(); return; }
 
   // mobile autoplay ブロック時の保険タイマー (秒)。actual mp3 はもっと短いが余裕を持たせる。
-  const FALLBACK_CUT_MS = 10000;
+  // batch:938 fix #3 — 10s→3.5s for humane wait on asset 404 / autoplay block
+  const FALLBACK_CUT_MS = 3500;
   const FADE_MS = 500;     // overlay → 黒
   const HOLD_BLACK_MS = 300;
   const CROSSFADE_MS = 250;
@@ -7782,6 +7797,13 @@ function runOpeningCutscene(onDone) {
     };
     audio._endedHandler = endedHandler;
     audio.addEventListener('ended', endedHandler);
+    // batch:938 fix #3 — if audio asset 404/decode-error, advance quickly instead of waiting fallback timer
+    const errorHandler = () => {
+      audio.removeEventListener('error', errorHandler);
+      try { console.warn('[puzzle] opening narration audio error:', cut.audioMp3); } catch (_) {}
+      if (myGen === cutGeneration && !ended) advanceOrFinish();
+    };
+    audio.addEventListener('error', errorHandler, { once: true });
     const playP = audio.play();
     clearFallback();
     if (playP && typeof playP.then === 'function') {
