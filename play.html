@@ -2479,7 +2479,7 @@
       padding: clamp(17px, 2.5vh, 23px) clamp(30px, 3vw, 38px) clamp(18px, 2.5vh, 24px) clamp(148px, 13.4vw, 166px);
       border: 0;
       border-radius: 0;
-      background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png") center / contain no-repeat;
+      background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_alpha_bleed_20260629.png") center / contain no-repeat;
       color: #5B2B14;
       font-size: clamp(18px, 1.75vw, 21px);
       line-height: 1.22;
@@ -2521,7 +2521,7 @@
       min-height: 0;
       padding: 10px 20px 12px 38px;
       border-radius: 0;
-      background: transparent url("assets/ui/gacha/daily_gacha_more_turn_bubble_generated.png") center / contain no-repeat;
+      background: transparent url("assets/ui/gacha/daily_gacha_more_turn_bubble_alpha_bleed_20260629.png") center / contain no-repeat;
       border: 0;
       color: #5B2B14;
       font-size: clamp(16px, 1.5vw, 21px);
@@ -3368,7 +3368,7 @@
         padding: 11px 18px 12px 104px;
         border: 0;
         border-radius: 0;
-        background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png") center / contain no-repeat;
+        background: transparent url("assets/ui/gacha/daily_gacha_start_panel_pono_alpha_bleed_20260629.png") center / contain no-repeat;
         font-size: clamp(12px, 1.85vw, 14px);
         line-height: 1.22;
         box-shadow: none;
@@ -3404,7 +3404,7 @@
         border-width: 0;
         font-size: clamp(11px, 1.9vw, 14px);
         line-height: 1.08;
-        background: transparent url("assets/ui/gacha/daily_gacha_more_turn_bubble_generated.png") center / contain no-repeat;
+        background: transparent url("assets/ui/gacha/daily_gacha_more_turn_bubble_alpha_bleed_20260629.png") center / contain no-repeat;
         filter: drop-shadow(0 7px 10px rgba(55, 28, 9, .2));
       }
       .daily-gacha-modal[data-gacha-step="1"] .daily-gacha-status::after,
@@ -6743,7 +6743,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1783;
+    const PAGE_CACHE_VERSION = 1785;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -7505,10 +7505,10 @@
       'assets/ui/gacha/daily_gacha_counter_foreground.png',
       'assets/ui/gacha/daily_gacha_machine.webp',
       'assets/ui/gacha/daily_gacha_lever.png',
-      'assets/ui/gacha/daily_gacha_start_panel_pono_fixed.png',
+      'assets/ui/gacha/daily_gacha_start_panel_pono_alpha_bleed_20260629.png',
       'assets/ui/gacha/daily_gacha_turn_arrow_generated.png',
       'assets/ui/gacha/daily_gacha_turn_word_badge_generated.png',
-      'assets/ui/gacha/daily_gacha_more_turn_bubble_generated.png',
+      'assets/ui/gacha/daily_gacha_more_turn_bubble_alpha_bleed_20260629.png',
       'assets/ui/gacha/daily_gacha_reward_speech_bubble.png',
       'assets/ui/gacha/daily_gacha_book_speech_bubble.png',
       'assets/ui/gacha/daily_gacha_super_name_plate_luxury.png',
@@ -7577,6 +7577,7 @@
       resumeTopBgm: false
     };
     let dailyGachaAudioCtx = null;
+    let dailyGachaBedRetryTimer = 0;
 
     function dailyGachaTodayKey() {
       // v1719: JST 境界 (js/daily-quest.js todayKeyJST と一致)。 JST = UTC+9、 日付は JST 0 時で切替。
@@ -7952,7 +7953,17 @@
       }
     }
 
-    function startDailyGachaBed() {
+    function clearDailyGachaBedRetry() {
+      if (!dailyGachaBedRetryTimer) return;
+      clearTimeout(dailyGachaBedRetryTimer);
+      dailyGachaBedRetryTimer = 0;
+    }
+
+    function shouldDailyGachaBedRun() {
+      return !!(dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaSoundMuted());
+    }
+
+    function startDailyGachaBed(allowRetry = true) {
       if (dailyGachaSoundMuted()) return;
       ensureDailyGachaAudio();
       const bed = dailyGachaAudio.bed;
@@ -7963,11 +7974,19 @@
         bed.playbackRate = 1;
         if (bed.paused) bed.currentTime = 0;
         const p = bed.play();
-        if (p && p.catch) p.catch(() => {});
+        if (p && p.catch) p.catch(() => {
+          if (!allowRetry || !shouldDailyGachaBedRun()) return;
+          clearDailyGachaBedRetry();
+          dailyGachaBedRetryTimer = setTimeout(() => {
+            dailyGachaBedRetryTimer = 0;
+            if (shouldDailyGachaBedRun()) startDailyGachaBed(false);
+          }, 450);
+        });
       } catch (_) {}
     }
 
     function stopDailyGachaBed(reset = true) {
+      clearDailyGachaBedRetry();
       const bed = dailyGachaAudio.bed;
       if (!bed) return;
       try {
@@ -8563,8 +8582,8 @@
       setDailyGachaHandState('open');
       if (interactive) dailyGachaModal.classList.add('is-armed');
       pauseTopBgmForDailyGacha();
+      startDailyGachaBed();
       if (interactive) {
-        startDailyGachaBed();
         setTimeout(() => {
           try { dailyGachaLever && dailyGachaLever.focus({ preventScroll: true }); } catch (_) {}
         }, 80);
@@ -9715,6 +9734,14 @@
         }
       });
     }
+    const resumeDailyGachaBedFromVisibleGesture = () => {
+      if (shouldDailyGachaBedRun()) startDailyGachaBed();
+    };
+    document.addEventListener('pointerdown', resumeDailyGachaBedFromVisibleGesture, { capture: true, passive: true });
+    document.addEventListener('touchstart', resumeDailyGachaBedFromVisibleGesture, { capture: true, passive: true });
+    document.addEventListener('keydown', resumeDailyGachaBedFromVisibleGesture, { capture: true });
+    window.addEventListener('focus', resumeDailyGachaBedFromVisibleGesture, true);
+    window.addEventListener('pageshow', resumeDailyGachaBedFromVisibleGesture, true);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         stopDailyGachaBed(false);
