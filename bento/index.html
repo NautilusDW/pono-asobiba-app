@@ -9884,7 +9884,7 @@ const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'side-food': 4,
   cup: 3,
   leaf: 6,
-  divider: 6,
+  divider: 7,
   other: 1,
 };
 const SIMPLE_SHARED_SLOT_KINDS = new Set(['other']);
@@ -10517,7 +10517,7 @@ function getSimpleFoodSpreadPoints(box) {
     { x: b.x + b.w * 0.50, y: b.y + b.h * 0.78 },
   ];
 }
-function getSimpleLeafDividerSpreadPoints(box) {
+function getSimpleLeafDividerSpreadPoints(box, kind) {
   const b = getFoodPlacementBounds(box);
   const cols = [0.30, 0.70];
   const rows = [0.24, 0.50, 0.76];
@@ -10527,6 +10527,7 @@ function getSimpleLeafDividerSpreadPoints(box) {
       points.push({ x: b.x + b.w * col, y: b.y + b.h * row });
     });
   });
+  if (kind === 'divider') points.push({ x: b.x + b.w * 0.50, y: b.y + b.h * 0.50 });
   return points;
 }
 function getSimpleFoodSlots(kind, box, tier, def) {
@@ -10552,7 +10553,7 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (kind === 'leaf' || kind === 'divider') {
     const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 6;
     const configured = getSimpleSlotLayoutPoints(box, kind).slice(0, fallbackLimit);
-    const fallbackPoints = getSimpleLeafDividerSpreadPoints(box).slice(0, fallbackLimit);
+    const fallbackPoints = getSimpleLeafDividerSpreadPoints(box, kind).slice(0, fallbackLimit);
     const points = configured.length
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
       : fallbackPoints;

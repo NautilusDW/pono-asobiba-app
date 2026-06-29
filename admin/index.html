@@ -11333,7 +11333,7 @@ var BENTO_SLOT_HIDDEN_KEY = 'bento_simple_slot_hidden_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
-var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 3, leaf: 6, divider: 6, other: 1 };
+var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 3, leaf: 6, divider: 7, other: 1 };
 var BENTO_SLOT_SHARED_KINDS = { other: true };
 var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true, leaf: true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, leaf: 34, divider: 36, other: 24 };
@@ -11386,6 +11386,7 @@ var BENTO_SLOT_DEFS = [
   { kind: 'divider', index: 3, label: '仕切りD', shortLabel: 'DD', color: '#A855F7' },
   { kind: 'divider', index: 4, label: '仕切りE', shortLabel: 'DE', color: '#A855F7' },
   { kind: 'divider', index: 5, label: '仕切りF', shortLabel: 'DF', color: '#A855F7' },
+  { kind: 'divider', index: 6, label: '仕切りG', shortLabel: 'DG', color: '#A855F7' },
   { kind: 'other', index: 0, label: 'ピック共通', shortLabel: 'P', color: '#64748B' }
 ];
 function bentoSlotClampSlotCount(kind, count, fallback) {
@@ -11678,7 +11679,8 @@ var BENTO_SLOT_DEFAULT_SAMPLE_IDS = {
     'divider_wave_vertical_mid',
     'divider_wood',
     'divider_wave_vertical_front',
-    'divider_wave'
+    'divider_wave',
+    'divider_wood'
   ]
 };
 function bentoSlotDefaultSampleForDef(def) {
@@ -11902,6 +11904,12 @@ function bentoSlotDefaultPoint(box, def) {
     var grid = bentoSlotFoodBounds(box);
     var cols = [0.30, 0.70];
     var rows = [0.24, 0.50, 0.76];
+    if (def.kind === 'divider' && def.index === 6) {
+      return bentoSlotClampPointForDef(box, def, {
+        x: grid.x + grid.w * 0.50,
+        y: grid.y + grid.h * 0.50
+      });
+    }
     var col = def.index % 2;
     var row = Math.floor(def.index / 2) % 3;
     return bentoSlotClampPointForDef(box, def, {

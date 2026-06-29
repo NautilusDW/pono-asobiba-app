@@ -267,7 +267,7 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
   'side-food': 4,
   cup: 3,
   leaf: 6,
-  divider: 6,
+  divider: 7,
   other: 1
 };
 const BENTO_SHARED_SLOT_KINDS = new Set(['other']);

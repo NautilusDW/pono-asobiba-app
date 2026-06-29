@@ -67,6 +67,7 @@
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
 - 2026-06-29 17:30 - by Claude - [batch:939-maze-audit-fix-2-of-3] - maze/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 監査2件 fix (#1 クリア後 2.2s 遅延→ 並行起動 + pointer-events ガード / #2 grid-stage dead code クリーンアップ) ※ #3 水関連はスキップ (発展途上) [overlap: batch:911-maze-water-bug-body-collision, batch:952-bento-vertical-dividers (sw.js)]
+- 2026-06-29 18:25 - by Codex - [batch:953-bento-divider-g-slot] - admin/index.html, bento/index.html, src/worker.js, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento 仕切りだけA〜Gの7枠へ拡張し、縦仕切り3枠+通常仕切り用の余白を確保 [overlap: batch:885-difficulty-label-phase3-fix, batch:939-maze-audit-fix-2-of-3 (sw.js)]
 ---
 
 ## なぜ HANDOFF.md と別ファイルなのか
