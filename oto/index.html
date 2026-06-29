@@ -457,7 +457,9 @@
      PC / タブレットでは既存の perspective: clamp(520px, 62vw, 1040px) を維持。 */
   @media (max-width: 640px) {
     #rhythm-lanes {
-      perspective: clamp(900px, 240vw, 1600px);
+      /* batch:940 Fix#2: 1200px / 300vw / 1800px へ控えめに引き上げて 3D を更に浅く、
+         ノート見た目落下位置と hitbox のズレを縮小。 desktop 既定値 (clamp(520,62vw,1040)) には影響なし。 */
+      perspective: clamp(1200px, 300vw, 1800px);
     }
   }
   body.rhythm-layout #rhythm-lanes { display: block; }
@@ -5937,7 +5939,7 @@ function preloadRhythmSampleSeBuffers() {
       return ac.decodeAudioData(buf.slice(0));
     }).then(function(decoded){
       if (decoded) _rhythmSampleSeBuffers[scenario] = decoded;
-    }).catch(function(){ /* 失敗時は synth 単独にフォールバック */ });
+    }).catch(function(err){ /* batch:940 Fix#5: 失敗時は synth 単独にフォールバック (sample SE load) */ try { console.warn('[oto] rhythm sample SE load failed:', scenario, err); } catch(_){} });
   });
 }
 // AC が後から作られるケース (iOS) 用に未デコード分を再デコード
@@ -5949,7 +5951,7 @@ function _ensureRhythmSampleSeDecoded() {
       try {
         ac.decodeAudioData(raw.slice(0)).then(function(decoded){
           if (decoded) _rhythmSampleSeBuffers[scenario] = decoded;
-        }).catch(function(){});
+        }).catch(function(err){ /* batch:940 Fix#5 */ try { console.warn('[oto] rhythm sample SE decode failed:', scenario, err); } catch(_){} });
       } catch(e) {}
     }
   });
@@ -6146,12 +6148,12 @@ function startHeldNote(btn, set, idx) {
         gOne.gain.exponentialRampToValueAtTime(0.001, tK2 + 1.2 - i * 0.2);
         oOne.connect(gOne); gOne.connect(ac.destination);
         oOne.start(tK2); oOne.stop(tK2 + 1.3);
-        // ended で disconnect (メモリ衛生)
+        // ended で disconnect (メモリ衛生) — batch:940 Fix#8: { once:true } でリスナー蓄積防止。
         (function(_o, _g) {
           _o.addEventListener('ended', function() {
             try { _o.disconnect(); } catch(e){}
             try { _g.disconnect(); } catch(e){}
-          });
+          }, { once: true });
         })(oOne, gOne);
       });
 
@@ -6308,10 +6310,11 @@ function stopHeldNote(btn) {
     try { note.lfo.stop(t + 0.05); } catch(e){}
     try {
       var _lfo = note.lfo, _lfoG = note.lfoGain;
+      // batch:940 Fix#8: { once:true } でリスナー蓄積防止。
       _lfo.addEventListener('ended', function() {
         try { _lfo.disconnect(); } catch(e){}
         try { if (_lfoG) _lfoG.disconnect(); } catch(e){}
-      });
+      }, { once: true });
     } catch(e){}
   }
   // kira ハイブリッドは持続倍音のみの release (鐘本体は既に減衰中) なので 80ms で fade
@@ -6328,12 +6331,12 @@ function stopHeldNote(btn) {
         o.gain.gain.exponentialRampToValueAtTime(0.001, t + releaseSec);
       }
       o.osc.stop(t + stopSec);
-      // stop 後に ended イベントで disconnect (osc + gain どちらも解放)
+      // stop 後に ended イベントで disconnect (osc + gain どちらも解放) — batch:940 Fix#8: { once:true }。
       var _o = o.osc, _g = o.gain;
       _o.addEventListener('ended', function() {
         try { _o.disconnect(); } catch(e){}
         try { _g.disconnect(); } catch(e){}
-      });
+      }, { once: true });
     } catch(e){}
   });
   _heldNotes.delete(btn);
@@ -6378,7 +6381,7 @@ function preloadAnimalBuffers() {
         return ac.decodeAudioData(buf.slice(0));
       })
       .then(function(decoded){ if (decoded) _animalBuffers[i] = decoded; })
-      .catch(function(){});
+      .catch(function(err){ /* batch:940 Fix#5 */ try { console.warn('[oto] animal SE load failed:', file, err); } catch(_){} });
   });
 }
 function _ensureAnimalDecoded() {
@@ -6386,7 +6389,7 @@ function _ensureAnimalDecoded() {
   _animalRawBuffers.forEach(function(raw, i) {
     if (raw && !_animalBuffers[i]) {
       try {
-        ac.decodeAudioData(raw.slice(0)).then(function(d) { _animalBuffers[i] = d; }).catch(function(){});
+        ac.decodeAudioData(raw.slice(0)).then(function(d) { _animalBuffers[i] = d; }).catch(function(err){ /* batch:940 Fix#5 */ try { console.warn('[oto] animal SE decode failed idx:', i, err); } catch(_){} });
       } catch(e) {}
     }
   });
@@ -6406,11 +6409,11 @@ function playTone(kind, idx) {
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
     o.connect(g); g.connect(ac.destination);
     o.start(t); o.stop(t + 0.85);
-    // stop 後に ended イベントで disconnect (将来のメモリ衛生)
+    // stop 後に ended イベントで disconnect (将来のメモリ衛生) — batch:940 Fix#8: { once:true }。
     o.addEventListener('ended', function() {
       try { o.disconnect(); } catch(e){}
       try { g.disconnect(); } catch(e){}
-    });
+    }, { once: true });
   } else if (kind === 'taiko') {
     playDrum(ac, TAIKO_KINDS[idx] || 'kick');
   }
@@ -8095,6 +8098,8 @@ function _updateRhythmMenuActions() {
 // Region 1.2: 曲一覧を難易度タブで絞り込む。
 // data-diff (内部キー) は旧 'かんたん/ふつう/難しい' を保持、 表示は やさしい/ふつう/むずかしい。
 var RHYTHM_CURRENT_DIFF = 'かんたん';
+// batch:940 Fix#6: '★'.repeat(n) を _renderRhythmSongMenu の song map 内で呼ぶと n*m の文字列生成が走るためテーブル化。
+var _RHYTHM_STAR_DISPLAYS = { 0: '', 1: '★', 2: '★★', 3: '★★★', 4: '★★★★', 5: '★★★★★' };
 function _renderRhythmSongMenu() {
   var list = document.getElementById('rhythm-song-list');
   if (!list) return;
@@ -8110,12 +8115,21 @@ function _renderRhythmSongMenu() {
   // 1度だけハンドラを束ねる (window flag でガード)
   if (!window._rhythmDiffTabsBound) {
     window._rhythmDiffTabsBound = true;
+    // batch:940 Perf#3: 連打 (50ms 以内) で複数回 re-render するのを debounce。
+    var _rhythmDiffTabTimer = null;
+    function _queueRhythmMenuRender() {
+      if (_rhythmDiffTabTimer) clearTimeout(_rhythmDiffTabTimer);
+      _rhythmDiffTabTimer = setTimeout(function() {
+        _rhythmDiffTabTimer = null;
+        _renderRhythmSongMenu();
+      }, 50);
+    }
     tabs.forEach(function(tab) {
       tab.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
         RHYTHM_CURRENT_DIFF = tab.dataset.diff;
-        _renderRhythmSongMenu();
+        _queueRhythmMenuRender();
       });
     });
   }
@@ -8128,7 +8142,7 @@ function _renderRhythmSongMenu() {
     var locked = stageLocked ? ' locked' : (tierLocked ? ' tier-locked' : '');
     var cleared = _rhythmSongCleared(song, progress);
     var stars = _rhythmSongStars(song, progress);
-    var statusText = stageLocked ? 'まだ' : (cleared ? ('★'.repeat(Math.max(1, stars))) : 'えらべる');
+    var statusText = stageLocked ? 'まだ' : (cleared ? (_RHYTHM_STAR_DISPLAYS[Math.max(1, stars)] || '★') : 'えらべる'); // batch:940 Fix#6
     var diffText = _displayRhythmDiffLabel(song.difficulty || song.note);
     var diffStars = _displayRhythmDiffStars(song.difficulty || song.note);
     var disabled = stageLocked ? ' disabled aria-disabled="true"' : '';
@@ -8136,14 +8150,18 @@ function _renderRhythmSongMenu() {
       '<span class="rhythm-song-meta"><span class="rhythm-stage-badge">ステージ' + _rhythmSongStage(song) + '</span><span class="rhythm-clear-badge">' + statusText + '</span><span class="rhythm-clear-badge" aria-label="むずかしさ ' + diffText + '"><span aria-hidden="true">' + diffStars + '</span> ' + diffText + '</span></span>' +
       '<span class="rhythm-song-name">' + song.name + '</span></button>';
   }).join('');
-  list.querySelectorAll('.rhythm-song-choice').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (btn.disabled || btn.classList.contains('locked')) return;
-      _selectRhythmSong(btn.dataset.song);
-    });
-  });
+  // batch:940 Perf#2: querySelectorAll の結果を一度だけ取得して reuse。
+  var songBtns = list.querySelectorAll('.rhythm-song-choice');
+  for (var bi = 0; bi < songBtns.length; bi++) {
+    (function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (btn.disabled || btn.classList.contains('locked')) return;
+        _selectRhythmSong(btn.dataset.song);
+      });
+    })(songBtns[bi]);
+  }
   _renderRhythmPracticeControls();
 }
 function _renderRhythmPracticeControls() {
@@ -10688,7 +10706,7 @@ function _playRhythmToneAt(idx, whenAc, durationMs, peakGain) {
     if (idxInList >= 0) _rhythm.melodyNodes.splice(idxInList, 1);
   }
   oscillators.forEach(function(osc) {
-    osc.addEventListener('ended', cleanup);
+    osc.addEventListener('ended', cleanup, { once: true }); // batch:940 Fix#8
   });
 }
 function _scheduleRhythmMelody(peakGain) {
@@ -11231,6 +11249,8 @@ function setFreeViewMode(mode, persist) {
 function setPlayMode(mode) {
   mode = mode === 'rhythm' ? 'rhythm' : 'free';
   _playMode = mode;
+  // batch:940 Fix#7: モード切替時に 12タップクリア trigger をリセット (前モードの残留で次モード初回が誤発火する bug 防止)。
+  try { _clearTriggered = false; tapCount = 0; } catch(e) {}
   if (mode === 'rhythm') {
     _setModeButtons(mode);
     _startRhythmMode();
@@ -11564,11 +11584,22 @@ if (rhythmNameForm) rhythmNameForm.addEventListener('submit', function(e) {
   // 数フレーム空けて結果パネルの再描画とフォーカス復帰を先に走らせる。
   setTimeout(function() { _maybeFireOtoAcornModal(); }, 400);
 });
-// v1116: 「あとで」ボタンでネームゲートをスキップ (匿名で保存しない)
+// v1116→batch:940 Fix#4: 「あとで」でもスコアは失わないよう、 既定名「ポノ」で匿名保存にフォールバック。
 var rhythmNameSkip = document.getElementById('rhythm-name-skip');
 if (rhythmNameSkip) rhythmNameSkip.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
+  // batch:940 Fix#4: pendingScoreEntry があれば既定名で保存してから gate を閉じる (子のスコア消失防止)。
+  try {
+    var pending = _rhythm && _rhythm.pendingScoreEntry;
+    if (pending) {
+      var rank = _saveRhythmScoreEntry(pending, 'ポノ');
+      _rhythm.pendingScoreEntry = null;
+      var label = document.getElementById('rhythm-name-label');
+      if (label && rank) label.textContent = rank + 'いに のこったよ';
+      try { _renderRhythmLeaderboard(pending.key, pending.id); } catch(_) {}
+    }
+  } catch(_) {}
   document.body.classList.remove('rhythm-namegate');
   var form = document.getElementById('rhythm-name-form');
   if (form) form.classList.add('hidden');
@@ -12177,7 +12208,11 @@ var _ponoDanceFrames = [
   '../assets/images/characters/pono/dance/dance_hooray.png'
 ];
 // プリロード (タップ時にチラつかず即差し替え)
-_ponoDanceFrames.forEach(function(src) { var im = new Image(); im.src = src; });
+// batch:940 Perf#1: dedup-pool で同一 src の Image 二重生成を防ぐ。
+var _ponoDanceImgPool = {};
+_ponoDanceFrames.forEach(function(src) {
+  if (!_ponoDanceImgPool[src]) { var im = new Image(); im.src = src; _ponoDanceImgPool[src] = im; }
+});
 var _lastFrameIdx = -1;
 function _pickDanceFrame() {
   // 連続で同じポーズが出ないよう、直前と違うフレームを選ぶ
@@ -12189,12 +12224,13 @@ function _pickDanceFrame() {
   return _ponoDanceFrames[idx];
 }
 function _setPonoSpriteSrc(src) {
+  // batch:940 Fix#1: 部分一致 (indexOf) だと 'cool.png' が 'dance_cool.png' に誤マッチするため endsWith に変更。
   var needle = src.replace('../','');
-  if (_ponoEl && _ponoEl.src.indexOf(needle) < 0) _ponoEl.src = src;
+  if (_ponoEl && !_ponoEl.src.endsWith(needle)) _ponoEl.src = src;
   var rhythmPono = document.getElementById('rhythm-pono-sprite');
-  if (rhythmPono && rhythmPono.src.indexOf(needle) < 0) rhythmPono.src = src;
+  if (rhythmPono && !rhythmPono.src.endsWith(needle)) rhythmPono.src = src;
   var freeStagePono = document.getElementById('free-stage-pono-sprite');
-  if (freeStagePono && freeStagePono.src.indexOf(needle) < 0) freeStagePono.src = src;
+  if (freeStagePono && !freeStagePono.src.endsWith(needle)) freeStagePono.src = src;
 }
 function bumpPono() {
   var rhythmPono = document.getElementById('rhythm-pono-sprite');
@@ -12375,6 +12411,16 @@ function _stopOtoTutorialNarration() {
   try { audio.pause(); } catch(e) {}
   try { audio.currentTime = 0; } catch(e) {}
 }
+// batch:940 Fix#3: ページ離脱で tutorial state / narration audio をリセット (再入場時の stale 参照防止)。
+(function() {
+  function _otoTutorialPageCleanup() {
+    try { _stopOtoTutorialNarration(); } catch(e) {}
+    _otoTutorialState = null;
+    try { _clearTriggered = false; } catch(e) {} // batch:940 Fix#7 と統合: クリア trigger も同時にリセット
+  }
+  window.addEventListener('beforeunload', _otoTutorialPageCleanup);
+  window.addEventListener('pagehide', _otoTutorialPageCleanup);
+})();
 function _playOtoTutorialNarration(step) {
   var src = _otoTutorialNarrationSrc(step);
   _stopOtoTutorialNarration();
@@ -12398,8 +12444,10 @@ function _playOtoTutorialNarration(step) {
     audio.addEventListener('ended', markDone, { once: true });
     audio.addEventListener('error', markDone, { once: true });
     var p = audio.play();
-    if (p && typeof p.catch === 'function') p.catch(markDone);
+    // batch:940 Fix#5: 再生失敗時に warn を出してから markDone (黙殺廃止)。
+    if (p && typeof p.catch === 'function') p.catch(function(err){ try { console.warn('[oto] tutorial narration play failed:', src, err); } catch(_){} markDone(); });
   } catch(e) {
+    try { console.warn('[oto] tutorial narration setup failed:', e); } catch(_){} // batch:940 Fix#5
     if (_otoTutorialState) _otoTutorialState.narrationPending = false;
   }
 }
@@ -14518,7 +14566,7 @@ function _playRhythmBackingChordAt(ac, freqs, t, dur, level) {
     if (idx >= 0) _rhythmBackingNodes.splice(idx, 1);
   }
   oscillators.forEach(function(osc) {
-    osc.addEventListener('ended', cleanup);
+    osc.addEventListener('ended', cleanup, { once: true }); // batch:940 Fix#8
   });
 }
 
