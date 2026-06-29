@@ -66,8 +66,7 @@
 - 2026-06-29 14:18 - by Codex - [batch:911-maze-water-bug-body-collision] - maze/index.html, AGENTS_CLAIMS.md, HANDOFF.md - みずすべりを場所判定ではなく動いているおじゃま虫本体のタイミング判定へ修正 [overlap: batch:909-gacha-mobile-mask-artifact, batch:910-bento-face-food-zones]
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
-- 2026-06-30 00:30 - by Claude - [batch:941-oto-highscore-skip-honest-label] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - batch:940 Fix#4 を Option B にチューニング: 「あとで」自動保存を revert + ボタン「あとで」→「ほぞんしない」にラベル正直化 (元の設計『保存しない選択肢』を復活、ユーザー意図反映)
-- 2026-06-30 00:35 - by Claude - [batch:942-quizland-bug-fix-bc] - quizland/index.html, quizland/saved-layout.json, common/layout/layout-applier.js, common/layout/layout-editor.js, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - quizland 監査後バグ Bug-B/C 修正 (Bug-B: emoji-main-img の tx:0/ty:0 ノイズで Q112象等が左上に飛ぶ → applier ガード + saved-layout.json クリーンアップ + editor snapshot 監査 / Bug-C: batch:936 リグレッション=onChoice 内の speechSynthesis.cancel が無条件で Q1 ナレ巻き添え → _playAllChoicesRunning ガード追加 + locked=false タイミング見直し)
+- 2026-06-30 01:47 - by Codex - [batch:958-bento-cup-4-replace-compact] - admin/index.html, bento/index.html, src/worker.js, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento カップ4枠化・カップ内1品入れ替え・配置先UI圧縮 [overlap: batch:885-difficulty-label-phase3-fix, batch:886-difficulty-label-sw-bump-1736, batch:941-oto-highscore-skip-honest-label, batch:942-quizland-bug-fix-bc]
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
