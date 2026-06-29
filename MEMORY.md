@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T17:56:32Z - quizland Q113 (実 qid: weather_lv2_010) を Q119 (weather_lv3_016) と同じレイアウトに合わせる + 誤った weather_lv2_002 エントリ削除
+- **タスク**: quizland Q113 (実 qid: weather_lv2_010) を Q119 (weather_lv3_016) と同じレイアウトに合わせる + 誤った weather_lv2_002 エントリ削除
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 141
+- **エラー数**: 11
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 44, "Bash": 34, "Grep": 12, "Glob": 5, "Workflow": 31, "Agent": 2, "ToolSearch": 1, "Edit": 12}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-29T11:51:33Z - batch:925 janken voice 1ショット連続発話で再生成 (call_jan/ken/pon + start)
 - **タスク**: batch:925 janken voice 1ショット連続発話で再生成 (call_jan/ken/pon + start)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 1, "Bash": 5, "Agent": 13, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T00:33:20Z - ショップ BGM を Suno生成のhoney_bell_shop.mp3 に差し替え (sticker-bookとの兼用解消) + sw v1784バンプ。 Discovery 2並列 → Implementation Agent → Cross-review Agent の3フェーズで実施、 commit 未実行で user 判断待ち
-- **タスク**: ショップ BGM を Suno生成のhoney_bell_shop.mp3 に差し替え (sticker-bookとの兼用解消) + sw v1784バンプ。 Discovery 2並列 → Implementation Agent → Cross-review Agent の3フェーズで実施、 commit 未実行で user 判断待ち
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 16
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Bash": 3, "Agent": 11, "ToolSearch": 1}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

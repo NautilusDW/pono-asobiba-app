@@ -2098,6 +2098,66 @@ html, body {
   font-weight: 900;
   line-height: 1;
 }
+.free-stage-target-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+}
+.free-stage-target-marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(36px, 5.2vw, 48px);
+  height: clamp(36px, 5.2vw, 48px);
+  border: 3px dashed #D8A15B;
+  border-radius: 999px;
+  background: rgba(255, 246, 220, 0.78);
+  color: #8B4513;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  font-family: inherit;
+  font-size: clamp(0.56rem, 1.2vw, 0.72rem);
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,0.78) inset,
+    0 4px 10px rgba(92, 53, 18, 0.18);
+}
+.free-stage-target-marker.is-active {
+  border-style: solid;
+  border-color: #17A766;
+  background: linear-gradient(180deg, rgba(210, 255, 230, 0.96), rgba(102, 214, 142, 0.92));
+  color: #064E3B;
+  box-shadow:
+    0 2px 0 rgba(255,255,255,0.82) inset,
+    0 0 0 4px rgba(255,255,255,0.72),
+    0 0 0 7px rgba(34, 197, 94, 0.28),
+    0 6px 14px rgba(22, 101, 52, 0.26);
+}
+.free-stage-target-marker.is-filled:not(.is-active) {
+  background: rgba(255, 237, 190, 0.86);
+  border-style: solid;
+}
+.free-stage-target-marker.is-cup-target {
+  border-color: #4EA6D9;
+  background: rgba(231, 248, 255, 0.82);
+  color: #1F5877;
+}
+.free-stage-target-marker.is-cup-target.is-active {
+  border-color: #17A766;
+  color: #064E3B;
+}
+.free-stage-target-marker.is-empty-cup-target {
+  opacity: 0.82;
+}
+.free-stage-target-marker:active {
+  transform: translate(-50%, -50%) scale(0.94);
+}
 .free-guide-actions button:disabled {
   opacity: 0.45;
   cursor: default;
@@ -7040,6 +7100,7 @@ let freeBrushStampLevel = 1;
 let simpleBentoMode = false;
 let simpleReplaceSlotUid = null;
 let simpleNoCupSlotIndex = null;
+let simpleCupSlotIndex = null;
 const SIMPLE_CUP_FOOD_LIMIT = 1;
 const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
 
@@ -7118,6 +7179,7 @@ function setSimpleBentoMode(enabled) {
   simpleBentoMode = !!enabled;
   simpleReplaceSlotUid = null;
   simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
   try {
     sessionStorage.setItem(BENTO_MODE_SESSION_KEY, simpleBentoMode ? 'simple' : 'request');
   } catch (_) {}
@@ -9233,6 +9295,7 @@ function selectNoCupSlotForSimplePlacement(index) {
   const count = getSimpleSlotCountForBox(box, 'side-food');
   const normalized = clamp(Math.round(Number(index)), 0, Math.max(0, count - 1));
   simpleNoCupSlotIndex = normalized;
+  simpleCupSlotIndex = null;
   simpleReplaceSlotUid = null;
   freeActiveCupUid = null;
   freeSelectedItemUid = null;
@@ -9240,6 +9303,33 @@ function selectNoCupSlotForSimplePlacement(index) {
   freeCupToolMode = 'move';
   freeLayoutTab = 'food';
   setSpeech('小さい おかずを ' + getSimpleSideSlotPositionLabel(normalized) + 'に そのまま おけるよ。');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+  return true;
+}
+function selectCupSlotForSimplePlacement(index) {
+  if (!simpleBentoMode) return false;
+  const cupDef = bentoAccessories.find(a => a && a.snapTarget);
+  const slots = getSimpleFixedSlots(cupDef || { type: 'cup', snapTarget: true }, getTargetTierForType('cup'));
+  const normalized = clamp(Math.round(Number(index)), 0, Math.max(0, slots.length - 1));
+  const slot = slots[normalized];
+  const current = slot ? getSimpleSlotItem(slot) : null;
+  simpleCupSlotIndex = normalized;
+  simpleNoCupSlotIndex = null;
+  freeCupEditorUid = null;
+  freeCupToolMode = 'move';
+  freeBrushStampDef = null;
+  if (current && current.snapTarget) {
+    selectCupForMovement(current, { render: false, message: false });
+    simpleCupSlotIndex = normalized;
+    setSpeech('この カップの ばしょを えらんだよ。カップを えらぶと いれかえるよ。');
+  } else {
+    simpleReplaceSlotUid = null;
+    freeActiveCupUid = null;
+    freeSelectedItemUid = null;
+    setSpeech('カップを おく まるを えらんだよ。');
+  }
+  freeLayoutTab = 'accessory';
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   return true;
@@ -9303,6 +9393,7 @@ function selectCupForMovement(cup, opts = {}) {
   freeSelectedItemUid = cup.uid;
   if (simpleBentoMode) simpleReplaceSlotUid = cup.uid;
   simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
   freeBrushStampDef = null;
   resetFreeMainGuide();
   if (opts.message !== false) {
@@ -9345,13 +9436,16 @@ function handleSimplePlacedItemTap(item) {
     simpleReplaceSlotUid = item.uid;
     if (simpleBentoMode && getSimpleSlotKindForItem(item) === 'side-food') {
       simpleNoCupSlotIndex = getSimpleSlotIndexFromKey(item.simpleSlot);
+      simpleCupSlotIndex = null;
     } else {
       simpleNoCupSlotIndex = null;
+      simpleCupSlotIndex = null;
     }
     setSpeech((item.name || 'おかず') + 'を えらんだよ。つぎに えらぶと ここを いれかえるよ。');
   } else {
     simpleReplaceSlotUid = null;
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     setSpeech((item.name || 'これ') + 'を えらんだよ。');
   }
   renderFreeLayoutStage();
@@ -10838,6 +10932,13 @@ function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) 
       return current ? { ...target, replaceUid: current.uid } : target;
     }
   }
+  if (simpleBentoMode && slots[0].kind === 'cup' && simpleCupSlotIndex != null) {
+    const target = slots[clamp(Math.round(Number(simpleCupSlotIndex)), 0, slots.length - 1)];
+    if (target) {
+      const current = getSimpleSlotItem(target);
+      return current ? { ...target, replaceUid: current.uid } : target;
+    }
+  }
   const empty = slots.find(slot => !getSimpleSlotItem(slot));
   if (empty) return empty;
   const oldest = slots
@@ -11580,6 +11681,7 @@ function addSimpleFoodToCup(def, cup) {
   freeSelectedItemUid = selectedItem.uid;
   simpleReplaceSlotUid = null;
   simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
   layoutCupChildren(cup);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -11723,26 +11825,32 @@ function addSimpleFixedPaletteItem(def) {
   simpleReplaceSlotUid = null;
   if (item.snapTarget) {
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     freeActiveCupUid = item.uid;
     freeCupToolMode = 'move';
     if (simpleBentoMode && isOkazuGuideStep()) freeLayoutTab = 'food';
     setSpeech('カップを おいたよ。いれたいときは カップを えらんでね。');
   } else if (def.type === 'leaf') {
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     setSpeech('したに しいたよ。うえに おかずを のせられるよ。');
   } else if (def.type === 'decor') {
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     setSpeech('いいね！ もっと かざってもいいよ。すすむときは のりOK を おしてね。');
   } else if (def.type === 'food') {
+    simpleCupSlotIndex = null;
     const role = def.okazuRole || getOkazuRole(def);
     setSpeech(role === 'side'
       ? '小さい おかずが はいったよ。'
       : 'メインの おかずが はいったよ。');
   } else if (def.type === 'divider') {
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     setSpeech('しきりを おいたよ。');
   } else if (def.type === 'pick') {
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     setSpeech('ピックを おいたよ。');
   }
   renderFreeLayoutStage();
@@ -11772,6 +11880,7 @@ function addSimpleFreePaletteItem(def) {
     item = addAutoRiceForSelectedBox();
     simpleReplaceSlotUid = null;
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     playPop();
     return item;
   }
@@ -11779,6 +11888,7 @@ function addSimpleFreePaletteItem(def) {
     item = addRiceFaceTemplate(def.templateId);
     simpleReplaceSlotUid = null;
     simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
     playPop();
     return item;
   }
@@ -13043,6 +13153,10 @@ function renderFreeLayoutInto(host, opts = {}) {
     renderRoot.appendChild(riceLayer);
   }
   if (opts.interactive) {
+    const targetLayer = createSimpleStageTargetLayer();
+    if (targetLayer) renderRoot.appendChild(targetLayer);
+  }
+  if (opts.interactive) {
     if (freeBrushStampDef) {
       const hint = document.createElement('div');
       hint.className = 'free-brush-stamp-hint';
@@ -14246,6 +14360,124 @@ function makeFreeCupChoiceButton(cup, index, active, onClick) {
   button.appendChild(text);
   return button;
 }
+function shouldUseSimpleStageTargetMarkers() {
+  return !!(
+    simpleBentoMode
+    && isOkazuGuideStep()
+    && String(freeGuideStep || '').endsWith('Side')
+    && !freeMaskEditorMode
+  );
+}
+function getNextEmptySimpleSlotIndex(slots) {
+  const empty = (slots || []).findIndex(slot => !getSimpleSlotItem(slot));
+  return empty >= 0 ? empty : 0;
+}
+function getActiveSimpleSideSlotIndex(slots) {
+  if (!slots || !slots.length) return -1;
+  if (simpleNoCupSlotIndex != null) {
+    return clamp(Math.round(Number(simpleNoCupSlotIndex)), 0, slots.length - 1);
+  }
+  return getNextEmptySimpleSlotIndex(slots);
+}
+function getActiveSimpleCupSlotIndex(slots) {
+  if (!slots || !slots.length) return -1;
+  if (simpleCupSlotIndex != null) {
+    return clamp(Math.round(Number(simpleCupSlotIndex)), 0, slots.length - 1);
+  }
+  const selected = simpleReplaceSlotUid
+    ? placedItems.find(item => item.uid === simpleReplaceSlotUid)
+    : getActiveCup();
+  if (selected && selected.snapTarget && selected.simpleSlot) {
+    const selectedIndex = slots.findIndex(slot => slot.key === selected.simpleSlot);
+    if (selectedIndex >= 0) return selectedIndex;
+  }
+  return getNextEmptySimpleSlotIndex(slots);
+}
+function createFreeStageTargetMarker(opts = {}) {
+  if (!Number.isFinite(Number(opts.x)) || !Number.isFinite(Number(opts.y))) return null;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = [
+    'free-stage-target-marker',
+    opts.kind === 'cup' ? 'is-cup-target' : '',
+    opts.emptyCup ? 'is-empty-cup-target' : '',
+    opts.active ? 'is-active' : '',
+    opts.filled ? 'is-filled' : '',
+  ].filter(Boolean).join(' ');
+  button.style.left = toPctX(opts.x);
+  button.style.top = toPctY(opts.y);
+  button.textContent = opts.label || '';
+  button.setAttribute('aria-label', opts.ariaLabel || opts.label || 'ここ');
+  button.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof opts.onSelect === 'function') opts.onSelect();
+  });
+  return button;
+}
+function createSimpleStageTargetLayer() {
+  if (!shouldUseSimpleStageTargetMarkers()) return null;
+  if (freeLayoutTab !== 'food' && freeLayoutTab !== 'accessory') return null;
+  const box = getSelectedBentoBox();
+  const tier = getTargetTierForType(freeLayoutTab === 'accessory' ? 'cup' : 'food');
+  const layer = document.createElement('div');
+  layer.className = 'free-stage-target-layer';
+
+  if (freeLayoutTab === 'accessory') {
+    const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
+    const slots = getSimpleFixedSlots(cupDef, tier);
+    const activeIndex = getActiveSimpleCupSlotIndex(slots);
+    slots.forEach((slot, idx) => {
+      const current = getSimpleSlotItem(slot);
+      const marker = createFreeStageTargetMarker({
+        kind: 'cup',
+        emptyCup: !current,
+        filled: !!current,
+        active: idx === activeIndex,
+        x: current && current.snapTarget ? current.x : slot.x,
+        y: current && current.snapTarget ? current.y : slot.y,
+        label: String(idx + 1),
+        ariaLabel: 'カップを おく ばしょ ' + (idx + 1),
+        onSelect: () => selectCupSlotForSimplePlacement(idx),
+      });
+      if (marker) layer.appendChild(marker);
+    });
+    return layer.childNodes.length ? layer : null;
+  }
+
+  const selectedCup = getSimpleSelectedCupForPlacement(tier);
+  const sideCount = getSimpleSlotCountForBox(box, 'side-food');
+  const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, sideCount);
+  const activeSideIndex = selectedCup ? -1 : getActiveSimpleSideSlotIndex(sideSlots);
+  sideSlots.forEach((slot, idx) => {
+    const current = getSimpleSlotItem(slot);
+    const marker = createFreeStageTargetMarker({
+      kind: 'side',
+      filled: !!current,
+      active: idx === activeSideIndex,
+      x: current && !current.parentCupId ? current.x : slot.x,
+      y: current && !current.parentCupId ? current.y : slot.y,
+      label: String(idx + 1),
+      ariaLabel: getSimpleSideSlotPositionLabel(idx) + 'に そのまま おく',
+      onSelect: () => selectNoCupSlotForSimplePlacement(idx),
+    });
+    if (marker) layer.appendChild(marker);
+  });
+  getActiveTierCups().forEach((cup, idx) => {
+    const marker = createFreeStageTargetMarker({
+      kind: 'cup',
+      filled: getCupChildren(cup).length > 0,
+      active: !!selectedCup && selectedCup.uid === cup.uid,
+      x: cup.x,
+      y: cup.y,
+      label: 'カ',
+      ariaLabel: 'カップ ' + (idx + 1) + 'に いれる',
+      onSelect: () => selectCupForMovement(cup),
+    });
+    if (marker) layer.appendChild(marker);
+  });
+  return layer.childNodes.length ? layer : null;
+}
 function renderFreeCupControls() {
   if (!isOkazuGuideStep() || !String(freeGuideStep || '').endsWith('Side')) return null;
   const cups = getActiveTierCups();
@@ -14355,6 +14587,8 @@ function renderFreeLayoutControls() {
         e.preventDefault();
         freeLayoutTab = t.id;
         if (t.id !== 'food') freeBrushStampDef = null;
+        if (t.id !== 'food') simpleNoCupSlotIndex = null;
+        if (t.id !== 'accessory') simpleCupSlotIndex = null;
         renderFreeLayoutControls();
       });
       tabs.appendChild(b);
@@ -14374,7 +14608,7 @@ function renderFreeLayoutControls() {
   const brushControls = renderSelectedBrushControls();
   if (brushControls) tray.appendChild(brushControls);
 
-  const cupControls = simpleBentoMode ? renderFreeCupControls() : null;
+  const cupControls = simpleBentoMode && !shouldUseSimpleStageTargetMarkers() ? renderFreeCupControls() : null;
 
   const selectedToolbar = createFreeContextToolbar({ panel: true });
   if (selectedToolbar) tray.appendChild(selectedToolbar);
@@ -14468,6 +14702,7 @@ function loadFreeLayoutStage() {
   freeBrushStampLevel = 1;
   simpleReplaceSlotUid = null;
   simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
   const maskEdit = getFreeMaskEditRequest();
   freeMaskEditorMode = !!maskEdit;
   freeMaskEditorOpen = false;
