@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1793: bento 監査 fix 3件 (batch:937) — pointercancel追加 / completeChromeSafeArea debounce / 「あとで いれよう」変数化。play.html PAGE_CACHE_VERSION と同期。
 // v1792: quizland 監査 fix 6 件 (batch:936) — 不正解チップ複数赤クリア / 答え中ナレ停止 / キーボード対応 / ロック視覚FB / TTS 4→7s / ロック理由表示 + 軽量化。play.html PAGE_CACHE_VERSION と同期。
 // v1791: 音タッチ モード選択画面の iPhone 17 portrait (393x852) layout 修正 (batch:942-oto-mode-select-title-overlap-iphone17)。 「あそびかたを えらぼう」 画面でロゴが下落して 「リズム ストーリーモード」 ボタンに被る問題を修正。 新規 `@media (max-width: 480px) and (orientation: portrait)` ブロックを追加し (1) `.intro__content { top: 16%; transform: translateY(0); width: min(62vw, 360px) }` でロゴを上部に固定 (2) `.start-mode-choice { padding-top: 6vh; align-items: flex-start }` で panel を上端 anchor (3) `.start-mode-panel { margin-top: clamp(180px, 36vh, 340px); transform: none }` で見出し + ボタンを下に押し下げ。 iPhone 17 で logo 中心 ~111px / panel 上端 ~358px / clear gap ~197px、 desktop/tablet/landscape は無改造。 play.html PAGE_CACHE_VERSION と同期。
 // v1790: 音タッチの開始演出で、ライバル退場中に左下へ一瞬出ていた黄色い炎エフェクトを非表示化。play.html PAGE_CACHE_VERSION と同期。

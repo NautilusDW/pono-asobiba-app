@@ -6030,6 +6030,8 @@ const SK_GROUP_INFO = {
   g: { label: 'みどりの グループ', role: 'ちょうしを ととのえる', foods: 'やさい・くだもの' },
 };
 const SK_GROUP_SHORT_LABELS = { r: 'あか', y: 'きいろ', g: 'みどり' };
+// batch:937 fix#3 — extract complete-detail empty-state copy to constant (was inline at renderCompleteDetailContent)
+const COMPLETE_MESSAGES = { groupsEmpty: 'あとで いれよう' };
 function getSkGroupClass(sk) {
   return sk && SK_GROUP_SHORT_LABELS[sk] ? 'sk-group-' + sk : '';
 }
@@ -8102,7 +8104,7 @@ function renderCompleteDetailContent(el, finalEval, completionData, requester) {
     head.appendChild(text);
     const foods = document.createElement('div');
     foods.className = 'complete-group-foods';
-    appendCompleteFoodMinis(foods, allFoods.filter(food => food && food.sk === key), 'あとで いれよう', 4);
+    appendCompleteFoodMinis(foods, allFoods.filter(food => food && food.sk === key), COMPLETE_MESSAGES.groupsEmpty, 4);
     card.appendChild(head);
     card.appendChild(foods);
     groupGrid.appendChild(card);
@@ -10961,6 +10963,8 @@ function beginFreeItemDrag(e, uid) {
   renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
   window.addEventListener('pointerup', onFreeItemDragEnd, { once: true });
+  // batch:937 fix#1 — register pointercancel mirror so freeDragState cleanup never leaks
+  window.addEventListener('pointercancel', onFreeItemDragEnd, { once: true });
 }
 function onFreeItemDragMove(e) {
   if (!freeDragState) return;
@@ -11004,6 +11008,9 @@ function onFreeItemDragEnd(e) {
   const uid = freeDragState.uid;
   freeDragState = null;
   window.removeEventListener('pointermove', onFreeItemDragMove);
+  // batch:937 fix#1 — drop pointercancel sibling so once-fired pointerup path doesn't leak the other listener
+  window.removeEventListener('pointercancel', onFreeItemDragEnd);
+  window.removeEventListener('pointerup', onFreeItemDragEnd);
   finalizeFreeItemPosition(uid);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -14445,12 +14452,10 @@ function syncCompleteChromeSafeArea() {
   document.body.classList.add('bento-complete-open');
 }
 function queueCompleteChromeSafeAreaSync() {
+  // batch:937 fix#2 — collapse 4-step setTimeout cascade (80/240/520/900) into single 400ms trailing call to cut layout thrash on low-spec devices
   syncCompleteChromeSafeArea();
   requestAnimationFrame(syncCompleteChromeSafeArea);
-  setTimeout(syncCompleteChromeSafeArea, 80);
-  setTimeout(syncCompleteChromeSafeArea, 240);
-  setTimeout(syncCompleteChromeSafeArea, 520);
-  setTimeout(syncCompleteChromeSafeArea, 900);
+  setTimeout(syncCompleteChromeSafeArea, 400);
 }
 
 let bentoAcornModalInstance = null;
@@ -17976,10 +17981,9 @@ function updateNotice() {
 }
 updateNotice();
 window.addEventListener('orientationchange', () => {
-  setTimeout(updateNotice, 100);
-  setTimeout(updateNotice, 500);
-  setTimeout(syncCompleteChromeSafeArea, 100);
-  setTimeout(syncCompleteChromeSafeArea, 500);
+  // batch:937 fix#2 — single trailing call per handler (was 2 each) to halve post-rotation layout reads
+  setTimeout(updateNotice, 300);
+  setTimeout(syncCompleteChromeSafeArea, 300);
 });
 window.addEventListener('resize', () => {
   updateNotice();
