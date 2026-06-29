@@ -66,7 +66,7 @@
 - 2026-06-29 14:18 - by Codex - [batch:911-maze-water-bug-body-collision] - maze/index.html, AGENTS_CLAIMS.md, HANDOFF.md - みずすべりを場所判定ではなく動いているおじゃま虫本体のタイミング判定へ修正 [overlap: batch:909-gacha-mobile-mask-artifact, batch:910-bento-face-food-zones]
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
-- 2026-06-30 03:05 - by Codex - [batch:960-bento-marker-display-grid] - bento/index.html, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento 配置先丸の表示座標を実配置座標から分離して見た目用2x2グリッドへ変更 [overlap: batch:860-data-export-import, batch:885-difficulty-label-phase3-fix, batch:886-difficulty-label-sw-bump-1736]
+- 2026-06-30 03:55 - by Claude - [batch:962-quizland-layout-persistence-rca-fix] - common/layout/layout-editor.js, quizland/index.html, sw.js, play.html - quizland レイアウト保存→デフォルト回帰の根本修正 5 件 (toggle 永続化 / save 時 guard / scale scope 修正 / deep-merge save / 欠損 stub 警告)
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
