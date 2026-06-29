@@ -66,7 +66,6 @@
 - 2026-06-29 14:18 - by Codex - [batch:911-maze-water-bug-body-collision] - maze/index.html, AGENTS_CLAIMS.md, HANDOFF.md - みずすべりを場所判定ではなく動いているおじゃま虫本体のタイミング判定へ修正 [overlap: batch:909-gacha-mobile-mask-artifact, batch:910-bento-face-food-zones]
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
-- 2026-06-29 14:30 - by Claude - [batch:922-maze-opening-fade-and-narration-sync] - maze/index.html, sw.js - maze タイトル+オープニング fade-in + 画像 preload + ナレーション遅延発火 (画面が揃ってから音声) [overlap: batch:911-maze-water-bug-body-collision (maze/**)]
 - 2026-06-29 20:30 - by Claude - [batch:925-janken-rhythm-fix] - assets/audio/narration/maze/janken/start.mp3 + call_jan.mp3 + call_ken.mp3 + call_pon.mp3, sw.js, AGENTS_CLAIMS.md - ジャンケンポンを 1 ショット連続発話で切出し統一 (リズム再現)
 - 2026-06-29 20:58 - by Codex - [batch:956-bento-cup-placement-visual-ui] - bento/index.html, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento プチトマト2個セットの距離を詰め、カップ/そのまま配置UIを文字依存から視覚ボタンへ変更 [overlap: batch:885-difficulty-label-phase3-fix, batch:860-data-export-import, batch:886-difficulty-label-sw-bump-1736, batch:925-janken-rhythm-fix (sw.js/play.html)]
 ---
