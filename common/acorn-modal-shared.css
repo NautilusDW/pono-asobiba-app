@@ -310,11 +310,11 @@
 
 .pono-acorn-modal__progress {
   margin-top: var(--acorn-modal-gap);
-  color: #ffffff;
+  color: #6d3b07;
   font-size: clamp(12px, 2.4vw, 16px);
   font-weight: 700;
   opacity: 1;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 0 rgba(255, 244, 203, 0.96);
 }
 
 .pono-acorn-modal--perfect .pono-acorn-modal__label,
@@ -707,4 +707,20 @@
 [data-game-id="oto"] .pono-acorn-modal__progress {
   color: #BEF5FF;
   text-shadow: 0 1px 2px rgba(0, 18, 45, 0.62);
+}
+
+/* =============================================================
+ * Dark-theme games progress override (Phase 2.8 extension)
+ *  - starparodier (#030614 space) / bowling (#1a5c3a deep green) /
+ *    bubble (#000 dark) は acorn-modal panel が base fallback だが
+ *    ゲーム背景が暗いため、 brown #6d3b07 progress では視認性不足の
+ *    可能性が高い。 oto と同様の bright cream で contrast を確保。
+ *  - label/kicker は base 既定 (#6d3b07 / #8b4e12 + cream shadow) のまま。
+ *    progress のみ panel から距離が出やすい位置のため個別 override。
+ * ============================================================= */
+[data-game-id="starparodier"] .pono-acorn-modal__progress,
+[data-game-id="bowling"] .pono-acorn-modal__progress,
+[data-game-id="bubble"] .pono-acorn-modal__progress {
+  color: #FFF7CA;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.62);
 }

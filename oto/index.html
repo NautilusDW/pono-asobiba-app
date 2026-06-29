@@ -1995,6 +1995,9 @@
   body.rhythm-opening-active .instr-btn,
   body.rhythm-opening-settle .instr-btn {
     pointer-events: none !important;
+    opacity: 0.55;
+    filter: saturate(0.7);
+    transition: opacity 200ms ease, filter 200ms ease;
   }
   .rhythm-opening-character {
     position: relative;
@@ -3032,6 +3035,22 @@
       min-height: 42px;
       width: 100%;
       align-self: stretch;
+    }
+    /* v(stage-clear-landscape-overflow-fix): landscape ≤520px tall で
+       6 ボタン 2 列 × 3 行が panel max-height を超えて見切れる問題を回避。
+       gap/margin/padding/min-height を縮めて自然に収める。
+       万一はみ出した場合は panel 自身の overflow: auto (base rule) で
+       全体スクロールに任せる (nested scroll は kids 2-5 に不可視のため回避)。
+       Default desktop layout はこの media query 外なので影響なし。 */
+    .rhythm-complete-actions {
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .rhythm-complete-btn {
+      min-height: 44px;
+      min-width: 110px;
+      padding: 8px 12px;
+      font-size: 0.95rem;
     }
   }
 
