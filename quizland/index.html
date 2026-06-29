@@ -4616,10 +4616,9 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.emoji-display.phase-answer',   'wh', 'ステージ枠 [答え]'],
   ['.stage-img-wrap.phase-question', 'wh', 'ステージ画像枠 [問題]'],
   ['.stage-img-wrap.phase-answer',   'wh', 'ステージ画像枠 [答え]'],
-  ['.emoji-main-img.phase-question', 'wh', 'ステージ画像 (挿絵) [問題]'],
-  ['.emoji-main-img.phase-answer',   'wh', 'ステージ画像 (挿絵) [答え]'],
+  // batch:943: .emoji-main-img を resizable 対象から外す (画像本体は .stage-img-wrap で間接管理)
+  // → 二重バウンディングボックス問題と「左上に貼り付き」を根治
   ['.stage-img-wrap',          'wh', 'ステージ画像枠'],
-  ['.emoji-main-img',          'wh', 'ステージ画像 (挿絵)'],
   ['.shape-display',           'wh', 'ステージ枠 (かたち)'],
   ['.shape-img',               'wh', 'ステージ画像 (かたち)'],
   ['.count-stack',             'wh', 'ステージ枠 (かず)'],
@@ -4639,6 +4638,8 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.char-hint',               'wh', 'キャラ吹き出し'],
   ['.stage-pono',              'wh', 'ステージポノ (左下)'],
 ];
+// batch:943: .emoji-main-img を resizable 対象から外す (画像本体は .stage-img-wrap で間接管理)
+// → 二重バウンディングボックス問題と「左上に貼り付き」を根治
 const QZ_PER_QUESTION_SELECTORS = [
   '.emoji-display.phase-question',
   '.emoji-display.phase-answer',
@@ -4646,9 +4647,6 @@ const QZ_PER_QUESTION_SELECTORS = [
   '.stage-img-wrap.phase-question',
   '.stage-img-wrap.phase-answer',
   '.stage-img-wrap',
-  '.emoji-main-img.phase-question',
-  '.emoji-main-img.phase-answer',
-  '.emoji-main-img',
   '.shape-display',
   '.shape-img',
   '.count-stack',
