@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1790: 音タッチの開始演出で、ライバル退場中に左下へ一瞬出ていた黄色い炎エフェクトを非表示化。play.html PAGE_CACHE_VERSION と同期。
 // v1789: 音タッチ最終ステージを 1 オクターブ超の「おおきな ふるどけい」から、C〜G の5音に収まる「せいじゃの こうしん」へ差し替え。低音オクターブの見た目/実音分離を最終曲で使わない構成に変更。play.html PAGE_CACHE_VERSION と同期。
 // v1788: 音タッチ最終ステージ「おおきな ふるどけい」のリズム再修正。弱起 pickupBeats を追加し、1音目を小節頭の手前へ同期。譜面の詰まりすぎていた拍を四分/二分中心へ戻し、カウントダウン overlay 消去で開始タイマーを消さないよう修正。play.html PAGE_CACHE_VERSION と同期。
 // v1787: 謎々NA 7セリフ差し替え/追加 (weather_puddle あめのとき q121_a + opposite_suki よい q139_b + shape_name:22 ノート問題 5本 q182_q/a/b/c/d)。manifest.json に shape_name:22 の 5 エントリを追加。
@@ -413,7 +414,7 @@
 // v1711: 迷路の旗あげ合戦に TTS 音声 9 本 (cmd 6 + miss 2 + win) + HP=4 ハートゲージ制 (1 ミス即敗北を 3 ミス猶予化) を実装 (batch:872-flag-game-voice-hp)。 9 cross-review fixes 統合: F1 miss voice setTimeout を _flagTunnelSetTimeout でトラッキング + 状態 guard、 F2 _resolveFlagGame に reason='hp' 分岐「ハートが ぜんぶ なくなった…」、 F3 HP=0 時の playMzSe('wrong') 二重発火抑制、 F4 cmd voice 900ms 遅延で「ミス→励まし→再コマンド」 順序化、 F5 _closeEncounter で _clearFlagTunnelTimers→null 化の順、 F6 gs.missVoiceId 追跡で確実 cancel、 AF-01 cmd_white_up/down 再生成 (whisper「シーロー」→「白あげて/白下げて」)、 AF-02 初回 miss = miss_02 (励まし) / 2 回目以降 = miss_01 (明確否定)、 AF-03 win voice を 180ms 遅延 (correct SE 被り回避)、 AF-04 _showFlagGame 冒頭で 9 voice preload (iOS user gesture 内)。 narration mp3 は runtime cache 任せ (precache list 不変)。
 // v1780: base AcornModal __progress を白 → 焦げ茶 #6d3b07 (cream/maze 等で視認性確保)、 oto override #BEF5FF は維持、 dark panel ゲームは個別 override 追加。
 // v1779: oto AcornModal 専用調整 — (1) __progress を白系に (海底ネイビーで視認性確保) (2) panel に大きめ border-radius で角丸化、 他ゲーム焦茶色は base 維持。
-const CACHE_VERSION = 1789;
+const CACHE_VERSION = 1790;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
