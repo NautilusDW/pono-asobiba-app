@@ -11423,9 +11423,7 @@ var BENTO_SLOT_SAMPLE_MODES = { selected: true, kind: true, all: true, none: tru
 var BENTO_SLOT_SIZE_MIN = 32;
 var BENTO_SLOT_SIZE_MAX = 340;
 var BENTO_SLOT_CUP_SIZE_PRESETS = [
-  { key: 'small', label: 'カップ小', size: 150 },
-  { key: 'medium', label: 'カップ中', size: 190 },
-  { key: 'large', label: 'カップ大', size: 230 }
+  { key: 'medium', label: 'カップ中', size: 190 }
 ];
 var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', sampleMode: bentoSlotLoadSampleMode(), hidden: bentoSlotLoadHidden(), layout: {}, serverPayload: null, dragging: false };
 
@@ -11606,9 +11604,10 @@ function bentoSlotFindSampleById(kind, sampleId) {
 function bentoSlotNearestCupPreset(size) {
   var target = Number(size);
   if (!isFinite(target)) target = 190;
+  var fallback = BENTO_SLOT_CUP_SIZE_PRESETS.find(function(preset) { return preset.key === 'medium'; }) || BENTO_SLOT_CUP_SIZE_PRESETS[0] || { key: 'medium', label: 'カップ中', size: 190 };
   return BENTO_SLOT_CUP_SIZE_PRESETS.reduce(function(best, preset) {
     return Math.abs(preset.size - target) < Math.abs(best.size - target) ? preset : best;
-  }, BENTO_SLOT_CUP_SIZE_PRESETS[1]);
+  }, fallback);
 }
 function bentoSlotDefaultSizeForSample(def, sample) {
   if (!sample) return 120;
@@ -12190,11 +12189,17 @@ function bentoSlotSyncSliders(point) {
   ['x', 'y', 'size'].forEach(function(axis) {
     var input = sliders.querySelector('input[data-axis="' + axis + '"]');
     var val = sliders.querySelector('span[data-axis="' + axis + '"]');
+    var sizeLocked = axis === 'size' && def && def.kind === 'cup';
     var value = axis === 'size'
       ? bentoSlotNormalizeSizeForDef(point && point.size, bentoSlotDefaultSizeForSample(def, sample), def, sample)
       : bentoSlotRound(point && point[axis]);
-    if (input) input.value = String(Math.round(value));
-    if (val) val.textContent = axis === 'size' ? Math.round(value) + 'px' : value.toFixed(1);
+    if (input) {
+      input.value = String(Math.round(value));
+      input.disabled = sizeLocked;
+      input.title = sizeLocked ? 'カップは中サイズ固定です' : '';
+      input.style.opacity = sizeLocked ? '0.45' : '';
+    }
+    if (val) val.textContent = axis === 'size' ? Math.round(value) + 'px' + (sizeLocked ? ' 固定' : '') : value.toFixed(1);
   });
 }
 function bentoSlotPointFromEvent(e) {
@@ -12251,7 +12256,7 @@ function bentoSlotSampleRenderLayer(entry) {
 function bentoSlotCupSizeKeyForEntry(entry) {
   var size = Number(entry && entry.point && entry.point.size);
   if (!isFinite(size)) size = Number(entry && entry.sample && entry.sample.size);
-  var best = BENTO_SLOT_CUP_SIZE_PRESETS[1];
+  var best = BENTO_SLOT_CUP_SIZE_PRESETS.find(function(preset) { return preset.key === 'medium'; }) || BENTO_SLOT_CUP_SIZE_PRESETS[0] || { key: 'medium', label: 'カップ中', size: 190 };
   BENTO_SLOT_CUP_SIZE_PRESETS.forEach(function(preset) {
     if (Math.abs(preset.size - size) < Math.abs(best.size - size)) best = preset;
   });
