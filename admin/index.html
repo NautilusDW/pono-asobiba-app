@@ -1271,9 +1271,9 @@ tr:hover { background: #FFFAF0; }
     <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
-      主菜A/B、小さいおかずA/B/C/D、カップA/B/C（柄は共通）、仕切りA/B/C、ピック共通を設定できます。<br>
-      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。食材サンプルを切り替えると、食材ごとに位置を保存できます。主菜/副菜のサイズは同じ食材なら A/B/C/D 間とお弁当箱間で共有されます。<br>
-      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。カップは同じ柄を使いつつ A/B/C の置き場所を別々に設定し、ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
+      主菜A/B、小さいおかずA/B/C/D、カップA/B/C（柄は共通）、敷き野菜A-F、仕切りA-G、ピック共通を設定できます。<br>
+      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。敷き野菜はレタスやキャベツなど下に敷くもの、仕切りはバランや木の区切りです。サンプルを切り替えると、サンプルごとに位置を保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。<br>
+      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。カップは同じ柄・小サイズ固定で、A/B/C の置き場所を別々に設定します。ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;align-items:start;">
@@ -1324,7 +1324,7 @@ tr:hover { background: #FFFAF0; }
         <div id="bento-slot-preview" style="position:relative;width:100%;aspect-ratio:760/460;background:#fff7e6;border:2px solid #C7894A;border-radius:12px;overflow:hidden;touch-action:none;">
         </div>
         <div style="font-size:0.72rem;color:#8B7355;margin-top:8px;line-height:1.45;">
-          実際の Bento と同じ座標系です。食材画像の中心が配置中心になります。サンプル食材の種類はプレビュー用、size は本体のかんたん配置にも反映されます。同じ主菜/副菜サンプルの size はスロット間・お弁当箱間で共有されます。丸いマーカーはドラッグ用のつまみです。
+          実際の Bento と同じ座標系です。食材画像の中心が配置中心になります。サンプルの種類はプレビュー用、size は本体のかんたん配置にも反映されます。同じサンプルの size はスロット間・お弁当箱間で共有されます。丸いマーカーはドラッグ用のつまみです。
         </div>
       </div>
     </div>
@@ -11335,7 +11335,7 @@ var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
 var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 3, leaf: 6, divider: 7, other: 1 };
 var BENTO_SLOT_SHARED_KINDS = { other: true };
-var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true, leaf: true };
+var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true, leaf: true, divider: true, other: true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, leaf: 34, divider: 36, other: 24 };
 var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, leaf: 8, divider: 8, other: 6 };
 var BENTO_SLOT_BOXES = [
@@ -11374,12 +11374,12 @@ var BENTO_SLOT_DEFS = [
   { kind: 'cup', index: 0, label: 'カップA（柄共通）', shortLabel: 'CA', color: '#0EA5E9' },
   { kind: 'cup', index: 1, label: 'カップB（柄共通）', shortLabel: 'CB', color: '#0EA5E9' },
   { kind: 'cup', index: 2, label: 'カップC（柄共通）', shortLabel: 'CC', color: '#0EA5E9' },
-  { kind: 'leaf', index: 0, label: '葉物A', shortLabel: '葉A', color: '#65A30D' },
-  { kind: 'leaf', index: 1, label: '葉物B', shortLabel: '葉B', color: '#65A30D' },
-  { kind: 'leaf', index: 2, label: '葉物C', shortLabel: '葉C', color: '#65A30D' },
-  { kind: 'leaf', index: 3, label: '葉物D', shortLabel: '葉D', color: '#65A30D' },
-  { kind: 'leaf', index: 4, label: '葉物E', shortLabel: '葉E', color: '#65A30D' },
-  { kind: 'leaf', index: 5, label: '葉物F', shortLabel: '葉F', color: '#65A30D' },
+  { kind: 'leaf', index: 0, label: '敷き野菜A', shortLabel: '敷A', color: '#65A30D' },
+  { kind: 'leaf', index: 1, label: '敷き野菜B', shortLabel: '敷B', color: '#65A30D' },
+  { kind: 'leaf', index: 2, label: '敷き野菜C', shortLabel: '敷C', color: '#65A30D' },
+  { kind: 'leaf', index: 3, label: '敷き野菜D', shortLabel: '敷D', color: '#65A30D' },
+  { kind: 'leaf', index: 4, label: '敷き野菜E', shortLabel: '敷E', color: '#65A30D' },
+  { kind: 'leaf', index: 5, label: '敷き野菜F', shortLabel: '敷F', color: '#65A30D' },
   { kind: 'divider', index: 0, label: '仕切りA', shortLabel: 'DA', color: '#A855F7' },
   { kind: 'divider', index: 1, label: '仕切りB', shortLabel: 'DB', color: '#A855F7' },
   { kind: 'divider', index: 2, label: '仕切りC', shortLabel: 'DC', color: '#A855F7' },
@@ -11460,7 +11460,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
   ],
   'side-food': [
     { id: 'egg', name: 'たまごやき', image: '../assets/images/bento/cooking/egg/egg_003_done.png', size: 130, cupSizes: { small: 92, medium: 112, large: 130 }, defaultCupSizeKey: 'large', rotation: 3, layer: 34 },
-    { id: 'tomato', name: 'プチトマト', image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 82, cupSizes: { small: 58, medium: 70, large: 82 }, defaultCupSizeKey: 'large', rotation: -4, layer: 40 },
+    { id: 'tomato', name: 'プチトマト', image: '../assets/images/bento/cooking/tomato/tomato_001.png', size: 82, cupSizes: { small: 70, medium: 76, large: 82 }, defaultCupSizeKey: 'large', rotation: -4, layer: 40 },
     { id: 'meatball', name: 'ミートボール', image: '../assets/images/bento/free-layout/okazu_meatball.png', size: 118, cupSizes: { small: 86, medium: 102, large: 118 }, defaultCupSizeKey: 'large', rotation: 1, layer: 41 },
     { id: 'broccoli', name: 'ブロッコリー', image: '../assets/images/bento/free-layout/okazu_broccoli.png', size: 108, cupSizes: { small: 78, medium: 94, large: 108 }, defaultCupSizeKey: 'large', rotation: -2, layer: 42 },
     { id: 'corn_spinach', name: 'コーンほうれんそう', image: '../assets/images/bento/free-layout/okazu_corn_spinach.png', size: 118, cupSizes: { small: 84, medium: 100, large: 118 }, defaultCupSizeKey: 'large', rotation: -2, layer: 43 },
@@ -11476,7 +11476,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
       id: 'cup_blue_dot',
       name: 'カップ共通',
       image: '../assets/images/bento/free-layout/cup_blue_dot.png',
-      size: 190,
+      size: 150,
       rotation: 0,
       layer: 10
     }
@@ -11503,7 +11503,7 @@ var BENTO_SLOT_SAMPLE_MODES = { selected: true, kind: true, all: true, none: tru
 var BENTO_SLOT_SIZE_MIN = 32;
 var BENTO_SLOT_SIZE_MAX = 340;
 var BENTO_SLOT_CUP_SIZE_PRESETS = [
-  { key: 'medium', label: 'カップ中', size: 190 }
+  { key: 'small', label: 'カップ小', size: 150 }
 ];
 var _bentoSlotState = { initialised: false, boxId: 'box_rect_split', slotKey: 'main-food:0', sampleMode: bentoSlotLoadSampleMode(), hidden: bentoSlotLoadHidden(), layout: {}, serverPayload: null, dragging: false };
 
@@ -11708,8 +11708,8 @@ function bentoSlotNormalizeSampleIdForDef(def, sampleId) {
 }
 function bentoSlotNearestCupPreset(size) {
   var target = Number(size);
-  if (!isFinite(target)) target = 190;
-  var fallback = BENTO_SLOT_CUP_SIZE_PRESETS.find(function(preset) { return preset.key === 'medium'; }) || BENTO_SLOT_CUP_SIZE_PRESETS[0] || { key: 'medium', label: 'カップ中', size: 190 };
+  if (!isFinite(target)) target = 150;
+  var fallback = BENTO_SLOT_CUP_SIZE_PRESETS.find(function(preset) { return preset.key === 'small'; }) || BENTO_SLOT_CUP_SIZE_PRESETS[0] || { key: 'small', label: 'カップ小', size: 150 };
   return BENTO_SLOT_CUP_SIZE_PRESETS.reduce(function(best, preset) {
     return Math.abs(preset.size - target) < Math.abs(best.size - target) ? preset : best;
   }, fallback);
@@ -12340,7 +12340,7 @@ function bentoSlotSyncSliders(point) {
     if (input) {
       input.value = String(Math.round(value));
       input.disabled = sizeLocked;
-      input.title = sizeLocked ? 'カップは中サイズ固定です' : '';
+      input.title = sizeLocked ? 'カップは小サイズ固定です' : '';
       input.style.opacity = sizeLocked ? '0.45' : '';
     }
     if (val) val.textContent = axis === 'size' ? Math.round(value) + 'px' + (sizeLocked ? ' 固定' : '') : value.toFixed(1);
@@ -12404,7 +12404,7 @@ function bentoSlotSampleRenderLayer(entry) {
 function bentoSlotCupSizeKeyForEntry(entry) {
   var size = Number(entry && entry.point && entry.point.size);
   if (!isFinite(size)) size = Number(entry && entry.sample && entry.sample.size);
-  var best = BENTO_SLOT_CUP_SIZE_PRESETS.find(function(preset) { return preset.key === 'medium'; }) || BENTO_SLOT_CUP_SIZE_PRESETS[0] || { key: 'medium', label: 'カップ中', size: 190 };
+  var best = BENTO_SLOT_CUP_SIZE_PRESETS.find(function(preset) { return preset.key === 'small'; }) || BENTO_SLOT_CUP_SIZE_PRESETS[0] || { key: 'small', label: 'カップ小', size: 150 };
   BENTO_SLOT_CUP_SIZE_PRESETS.forEach(function(preset) {
     if (Math.abs(preset.size - size) < Math.abs(best.size - size)) best = preset;
   });

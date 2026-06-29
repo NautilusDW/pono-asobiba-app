@@ -271,7 +271,7 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
   other: 1
 };
 const BENTO_SHARED_SLOT_KINDS = new Set(['other']);
-const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food', 'leaf']);
+const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food', 'leaf', 'divider', 'other']);
 const BENTO_SLOT_BOX_ORDER = [
   'box_rect_split',
   'box_square',
@@ -281,7 +281,7 @@ const BENTO_SLOT_BOX_ORDER = [
   'box_cat_blue',
   'box_cat'
 ];
-const BENTO_CUP_SLOT_SIZES = [150, 190, 230];
+const BENTO_CUP_SLOT_SIZES = [150];
 
 function normalizeBentoSlotCounts(raw) {
   const normalized = {};
@@ -298,7 +298,7 @@ function normalizeBentoSlotSize(size, kind) {
   if (kind !== 'cup') return n;
   return BENTO_CUP_SLOT_SIZES.reduce((best, value) => (
     Math.abs(value - n) < Math.abs(best - n) ? value : best
-  ), BENTO_CUP_SLOT_SIZES[1]);
+  ), BENTO_CUP_SLOT_SIZES[0]);
 }
 
 function normalizeBentoSlotSampleOverrides(point, kind) {

@@ -1,6 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1806: Bento かんたん配置修正 (batch:955) — カップを小サイズ固定、プチトマトをカップ内2個セット、カップ/しきり/したにしくタブ分離、カップなし小おかず A-D 配置先指定、敷き野菜/仕切り/ピックのサンプルサイズ共有を追加。
 // v1804: 音タッチ 8件まとめ修正 + perf 3件 (batch:940) — Pono sprite endsWith / mobile perspective 1200-1800px / tutorial pagehide cleanup / 「あとで」匿名保存 / silent catch→console.warn / star.repeat → table / mode 切替で _clearTriggered reset / 'ended' listener once:true / dance Image pool / songBtns querySelector cache / diff tab debounce。play.html PAGE_CACHE_VERSION と同期。
 // v1803: Bento 仕切りGを追加の縦仕切り枠として扱う。Admin 既定DGを縦画像へ変更し、本体の縦仕切り優先順を A→C→E→G に修正。旧保存の G=横仕切りも縦仕切りへ正規化。
 // v1802: Bento 仕切りだけ A〜G の7枠へ拡張。縦仕切り3枠 + 通常仕切り4枠を同時に使えるようにする。
@@ -429,7 +430,7 @@
 // v1796: えほんの unlock モーダル (#passwordUnlockModal) を 2 タブ仕様 (あいことば + 注文番号) に整理。 クイズタブ (#pwTabQuiz / #pwPanelQuiz) は display:none で非表示、 ただし DOM / JS / common/tier.js の verifyQuizAnswer は dormant 保持 (緊急時に display:none を消すだけで復活可能)。 .password-modal-tabs は flexbox (display:flex; gap:4px / .pw-tab flex:1) なので 3 番目を display:none にするだけで残り 2 タブが自動 reflow、 grid-template-columns 書換は不要。 ヘルプ文言 「したの どれか ひとつで」 → 「したの どちらかで」 に微調整 (2 タブ整合)。 play.html PAGE_CACHE_VERSION と同期。
 // v1805: oto 監査 fix 8件 (batch:940) — PonoSprite indexOf誤判定 / リズムmobile perspective ズレ調整 / チュートリアル cleanup / 「あとで」ボタン自動保存化 / silent fallback に console.warn / ★ repeat 静的キャッシュ / _clearTriggered リセット / Oscillator listener once 化 + 軽量化。play.html PAGE_CACHE_VERSION と同期。
 // v1794: puzzle 監査 fix 5件 (batch:938) — loadStage null check / currentStageIndex 範囲チェック / OP narration 3.5s fallback / btnPlayAgain dead code 削除 / album STAGE_TITLES sync コメント + 軽量化。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1805;
+const CACHE_VERSION = 1806;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
