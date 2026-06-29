@@ -265,7 +265,7 @@ function normalizeBentoCompleteLayoutMap(map) {
 const BENTO_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 4,
-  cup: 3,
+  cup: 4,
   leaf: 6,
   divider: 7,
   other: 1

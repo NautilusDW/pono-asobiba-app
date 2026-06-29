@@ -11333,7 +11333,7 @@ var BENTO_SLOT_HIDDEN_KEY = 'bento_simple_slot_hidden_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
-var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 3, leaf: 6, divider: 7, other: 1 };
+var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 4, leaf: 6, divider: 7, other: 1 };
 var BENTO_SLOT_SHARED_KINDS = { other: true };
 var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true, leaf: true, divider: true, other: true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, leaf: 34, divider: 36, other: 24 };
@@ -11374,6 +11374,7 @@ var BENTO_SLOT_DEFS = [
   { kind: 'cup', index: 0, label: 'カップA（柄共通）', shortLabel: 'CA', color: '#0EA5E9' },
   { kind: 'cup', index: 1, label: 'カップB（柄共通）', shortLabel: 'CB', color: '#0EA5E9' },
   { kind: 'cup', index: 2, label: 'カップC（柄共通）', shortLabel: 'CC', color: '#0EA5E9' },
+  { kind: 'cup', index: 3, label: 'カップD（柄共通）', shortLabel: 'CD', color: '#0EA5E9' },
   { kind: 'leaf', index: 0, label: '敷き野菜A', shortLabel: '敷A', color: '#65A30D' },
   { kind: 'leaf', index: 1, label: '敷き野菜B', shortLabel: '敷B', color: '#65A30D' },
   { kind: 'leaf', index: 2, label: '敷き野菜C', shortLabel: '敷C', color: '#65A30D' },
@@ -11892,6 +11893,27 @@ function bentoSlotFoodBounds(box) {
 function bentoSlotAccessoryBounds(box) {
   return bentoSlotBoundsFromSpots(box.accessorySpots || box.foodSpots, bentoSlotGetMaskBounds(box) || box.placeBounds || box.bounds, 112);
 }
+function bentoSlotCupFallbackPoints(box) {
+  var existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];
+  var b = bentoSlotAccessoryBounds(box);
+  var fallback = [
+    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.34 },
+    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.34 },
+    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.68 },
+    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.68 }
+  ];
+  var points = existing.slice(0, BENTO_SLOT_LIMITS.cup || 4);
+  fallback.forEach(function(point) {
+    if (points.length >= (BENTO_SLOT_LIMITS.cup || 4)) return;
+    var near = points.some(function(existingPoint) {
+      var dx = existingPoint.x - point.x;
+      var dy = existingPoint.y - point.y;
+      return Math.sqrt(dx * dx + dy * dy) < 28;
+    });
+    if (!near) points.push(point);
+  });
+  return points.concat(fallback).slice(0, BENTO_SLOT_LIMITS.cup || 4);
+}
 function bentoSlotKindBounds(box, kind) {
   if (kind === 'main-food' || kind === 'side-food' || kind === 'leaf' || kind === 'divider') return bentoSlotFoodBounds(box);
   if (kind === 'cup' || kind === 'other') return bentoSlotAccessoryBounds(box);
@@ -11939,7 +11961,9 @@ function bentoSlotDefaultPoint(box, def) {
     var order = def.kind === 'main-food' ? [0, 1] : [2, 3, 4, 5];
     return bentoSlotClampPointForDef(box, def, points[order[def.index] || 0]);
   }
-  var accessory = box.accessorySpots || box.foodSpots || [{ x: box.bounds.x + box.bounds.w / 2, y: box.bounds.y + box.bounds.h / 2 }];
+  var accessory = def.kind === 'cup'
+    ? bentoSlotCupFallbackPoints(box)
+    : (box.accessorySpots || box.foodSpots || [{ x: box.bounds.x + box.bounds.w / 2, y: box.bounds.y + box.bounds.h / 2 }]);
   return bentoSlotClampPointForDef(box, def, accessory[def.index % accessory.length]);
 }
 function bentoSlotDefaultEntry(box, def) {

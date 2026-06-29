@@ -1998,11 +1998,21 @@ html, body {
   color: #8B4513;
 }
 .free-cup-list--visual {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  grid-template-columns: none;
+  gap: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  padding: 1px 1px 4px;
+  scrollbar-width: thin;
 }
 .free-cup-list button.free-place-choice {
-  min-height: 54px;
-  padding: 4px 3px 3px;
+  flex: 0 0 52px;
+  min-width: 52px;
+  min-height: 47px;
+  padding: 3px 3px 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2016,8 +2026,8 @@ html, body {
 }
 .free-place-map {
   position: relative;
-  width: 46px;
-  height: 31px;
+  width: 40px;
+  height: 27px;
   border: 2px solid #DCA45A;
   border-radius: 8px;
   background: #FFF4D5;
@@ -2050,8 +2060,8 @@ html, body {
   opacity: 0.18;
 }
 .free-place-map-dot.is-target {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background: radial-gradient(circle at 34% 30%, #FFEEE8 0 12%, #E73F33 36%, #BD1D1A 100%);
   border: 1px solid #FFFFFF;
   box-shadow: 0 1px 2px rgba(116, 36, 20, 0.28);
@@ -2059,17 +2069,17 @@ html, body {
   z-index: 2;
 }
 .free-cup-choice-visual {
-  width: 46px;
-  height: 32px;
+  width: 40px;
+  height: 27px;
   position: relative;
   display: grid;
   place-items: center;
 }
 .free-cup-choice-visual img {
-  width: 42px;
-  height: 42px;
+  width: 37px;
+  height: 37px;
   object-fit: contain;
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   pointer-events: none;
 }
 .free-cup-choice-index {
@@ -2096,14 +2106,14 @@ html, body {
   border: 2px solid #CDEBFF;
   border-radius: 12px;
   background: #F2FBFF;
-  padding: 5px 6px;
+  padding: 4px 5px 3px;
   flex-shrink: 0;
 }
 .free-cup-title {
   color: #36546A;
-  font-size: 0.52rem;
+  font-size: 0.48rem;
   font-weight: 900;
-  line-height: 1.15;
+  line-height: 1;
 }
 .free-cup-editor-actions {
   display: flex;
@@ -10688,6 +10698,23 @@ function getSimpleLeafDividerSpreadPoints(box, kind) {
   if (kind === 'divider') points.push({ x: b.x + b.w * 0.50, y: b.y + b.h * 0.50 });
   return points;
 }
+function getSimpleCupFallbackPoints(box) {
+  const existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];
+  const b = getAccessoryPlacementBounds(box);
+  const fallback = [
+    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.34 },
+    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.34 },
+    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.68 },
+    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.68 },
+  ];
+  const points = existing.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
+  fallback.forEach(point => {
+    if (points.length >= (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4)) return;
+    if (points.some(existingPoint => dist(existingPoint, point) < 28)) return;
+    points.push(point);
+  });
+  return points.concat(fallback).slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
+}
 function getSimpleFoodSlots(kind, box, tier, def) {
   const limit = kind === 'side-food' ? getSimpleSlotCountForBox(box, kind) : (SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3);
   const points = getSimpleFoodSpreadPoints(box);
@@ -10724,7 +10751,10 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (kind === 'cup' || kind === 'other') {
     const configured = getSimpleSlotLayoutPoints(box, kind);
     const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
-    const fallbackPoints = (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)]).slice(0, fallbackLimit);
+    const fallbackPoints = (kind === 'cup'
+      ? getSimpleCupFallbackPoints(box)
+      : (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)])
+    ).slice(0, fallbackLimit);
     const points = configured.length
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
       : fallbackPoints;
@@ -14192,7 +14222,7 @@ function renderFreeCupControls() {
   panel.className = 'free-cup-panel';
   const title = document.createElement('div');
   title.className = 'free-cup-title';
-  title.textContent = 'どこに おく？';
+  title.textContent = 'どこ？';
   panel.appendChild(title);
 
   const list = document.createElement('div');
@@ -17020,37 +17050,17 @@ function tutorialArrangeTomatoesInCup(cup) {
   const tomatoes = placedItems.filter(child => child.parentCupId === cup.uid && String(child.name || '') === 'プチトマト');
   if (!tomatoes.length) return false;
   const def = getFreeFoodCatalog().find(f => f.name === 'プチトマト') || tomatoes[0];
-  const childSize = getCupFoodChildSize(def, cup);
   const first = tomatoes[0];
-  first.size = childSize;
-  first.x = cup.x - Math.max(14, childSize * 0.24);
-  first.y = cup.y + Math.max(4, childSize * 0.08);
+  tomatoes.slice(1).forEach(item => removeFreeItemData(item.uid));
+  applyCupFoodVisual(first, def, cup);
+  first.x = cup.x;
+  first.y = cup.y;
   first.manualCupPosition = true;
-  let second = tomatoes[1];
-  if (!second) {
-    second = addFreeLayoutItem(def, {
-      x: cup.x + Math.max(16, childSize * 0.28),
-      y: cup.y - Math.max(5, childSize * 0.10),
-      size: childSize,
-      tier: getItemTier(cup),
-      parentCupId: cup.uid,
-      skipRender: true,
-      skipTutorialPlace: true,
-    });
-  }
-  if (second) {
-    second.size = childSize;
-    second.x = cup.x + Math.max(16, childSize * 0.28);
-    second.y = cup.y - Math.max(5, childSize * 0.10);
-    second.manualCupPosition = true;
-    second.layer = Math.max(second.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
-  }
-  [first, second].filter(Boolean).forEach(child => {
-    const p = clampPointToCup(child.x, child.y, child, cup);
-    child.x = p.x;
-    child.y = p.y;
-    child.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
-  });
+  const p = clampPointToCup(first.x, first.y, first, cup);
+  first.x = p.x;
+  first.y = p.y;
+  first.layer = Math.max(first.layer || 1, (cup.layer || 1) + (++freeLayerSeq));
+  first.layerGroup = getFreeLayerGroupForDef(def, getItemTier(cup), cup.uid);
   layoutCupChildren(cup);
   freeActiveCupUid = cup.uid;
   freeSelectedItemUid = first.uid;
