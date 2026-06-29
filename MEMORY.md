@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T00:26:05Z - v1783: oto tutorial BGM 再修正 (showTutorial state order) + ステージ random sound CSS+JS gate
+- **タスク**: v1783: oto tutorial BGM 再修正 (showTutorial state order) + ステージ random sound CSS+JS gate
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 206
+- **エラー数**: 15
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Bash": 78, "Read": 28, "Glob": 2, "Edit": 39, "ToolSearch": 1, "Agent": 40, "Grep": 16, "Workflow": 2}
+- **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-29T00:07:38Z - v1781: oto 3-fix bundle — tutorial BGM 復旧 + rival 発話中 note 漏れ CSS+JS 完全封じ + clear modal landscape overflow
 - **タスク**: v1781: oto 3-fix bundle — tutorial BGM 復旧 + rival 発話中 note 漏れ CSS+JS 完全封じ + clear modal landscape overflow
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 5, "Edit": 3, "Workflow": 8}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-28T10:54:46Z - bottom-nav ごかんそうボタン background-size 130%→contain revert (sw1761見切れ事故修正、CACHE_VERSION 1761→1762)
-- **タスク**: bottom-nav ごかんそうボタン background-size 130%→contain revert (sw1761見切れ事故修正、CACHE_VERSION 1761→1762)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 73
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 12, "Read": 10, "ToolSearch": 2, "Bash": 17, "Agent": 28, "Grep": 3, "WebFetch": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
