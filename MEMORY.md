@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T00:33:20Z - ショップ BGM を Suno生成のhoney_bell_shop.mp3 に差し替え (sticker-bookとの兼用解消) + sw v1784バンプ。 Discovery 2並列 → Implementation Agent → Cross-review Agent の3フェーズで実施、 commit 未実行で user 判断待ち
+- **タスク**: ショップ BGM を Suno生成のhoney_bell_shop.mp3 に差し替え (sticker-bookとの兼用解消) + sw v1784バンプ。 Discovery 2並列 → Implementation Agent → Cross-review Agent の3フェーズで実施、 commit 未実行で user 判断待ち
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 16
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 1, "Bash": 3, "Agent": 11, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-29T00:26:05Z - v1783: oto tutorial BGM 再修正 (showTutorial state order) + ステージ random sound CSS+JS gate
 - **タスク**: v1783: oto tutorial BGM 再修正 (showTutorial state order) + ステージ random sound CSS+JS gate
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 6, "Edit": 3, "Workflow": 8}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-28T18:06:31Z - batch:890 maze-stage-select-ux を Codex 並走中に安全 commit + push + deploy 検証 (whitelist commit + CACHE_VERSION 衝突回避)
-- **タスク**: batch:890 maze-stage-select-ux を Codex 並走中に安全 commit + push + deploy 検証 (whitelist commit + CACHE_VERSION 衝突回避)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 25
-- **エラー数**: 4
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Write": 5, "Read": 4, "Agent": 5, "Edit": 3, "Workflow": 8}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
