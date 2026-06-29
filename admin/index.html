@@ -12351,6 +12351,14 @@ function bentoSlotPointFromEvent(e) {
   var rect = stage.getBoundingClientRect();
   return bentoSlotPoint({ x: (e.clientX - rect.left) / Math.max(1, rect.width) * BENTO_SLOT_W, y: (e.clientY - rect.top) / Math.max(1, rect.height) * BENTO_SLOT_H });
 }
+function bentoSlotPointFromDragEvent(e) {
+  var pointer = bentoSlotPointFromEvent(e);
+  var offset = _bentoSlotState.dragOffset || { x: 0, y: 0 };
+  return bentoSlotPoint({
+    x: pointer.x + (Number(offset.x) || 0),
+    y: pointer.y + (Number(offset.y) || 0)
+  });
+}
 function bentoSlotPositionMarker(marker, point) {
   marker.style.left = 'calc(' + (point.x / BENTO_SLOT_W * 100) + '% - 19px)';
   marker.style.top = 'calc(' + (point.y / BENTO_SLOT_H * 100) + '% - 19px)';
@@ -12586,20 +12594,36 @@ function bentoSlotRenderPreview() {
       e.preventDefault();
       _bentoSlotState.slotKey = key;
       _bentoSlotState.dragging = true;
+      var current = bentoSlotGetPoint(box.id, def);
+      var pointer = bentoSlotPointFromEvent(e);
+      _bentoSlotState.dragOffset = { x: current.x - pointer.x, y: current.y - pointer.y };
       marker.setPointerCapture(e.pointerId);
-      var point = bentoSlotSetPoint(box.id, def, bentoSlotPointFromEvent(e));
-      bentoSlotSyncSliders(point);
-      bentoSlotPositionMarker(marker, point);
+      bentoSlotSyncSliders(current);
+      bentoSlotPositionMarker(marker, current);
     });
     marker.addEventListener('pointermove', function(e) {
       if (!_bentoSlotState.dragging || _bentoSlotState.slotKey !== key) return;
       e.preventDefault();
-      var point = bentoSlotSetPoint(box.id, def, bentoSlotPointFromEvent(e));
+      var point = bentoSlotSetPoint(box.id, def, bentoSlotPointFromDragEvent(e));
       bentoSlotSyncSliders(point);
       bentoSlotPositionMarker(marker, point);
     });
-    marker.addEventListener('pointerup', function() {
+    function finishMarkerDrag(e) {
+      if (!_bentoSlotState.dragging || _bentoSlotState.slotKey !== key) return;
       _bentoSlotState.dragging = false;
+      _bentoSlotState.dragOffset = null;
+      try {
+        if (e && e.pointerId != null && marker.hasPointerCapture(e.pointerId)) marker.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+      bentoSlotRender();
+      bentoSlotSetStatus('下書き保存済み。サーバーへ反映するには保存を押してください。', false);
+    }
+    marker.addEventListener('pointerup', finishMarkerDrag);
+    marker.addEventListener('pointercancel', finishMarkerDrag);
+    marker.addEventListener('lostpointercapture', function() {
+      if (!_bentoSlotState.dragging || _bentoSlotState.slotKey !== key) return;
+      _bentoSlotState.dragging = false;
+      _bentoSlotState.dragOffset = null;
       bentoSlotRender();
       bentoSlotSetStatus('下書き保存済み。サーバーへ反映するには保存を押してください。', false);
     });

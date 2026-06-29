@@ -2021,24 +2021,19 @@ html, body {
   border: 2px solid #DCA45A;
   border-radius: 8px;
   background: #FFF4D5;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 2px;
-  padding: 3px;
+  display: block;
+  overflow: hidden;
   box-shadow: 0 1px 0 rgba(255,255,255,0.85) inset;
 }
-.free-place-map-cell {
-  position: relative;
-  border-radius: 5px;
-  background: #FFE7AE;
-  border: 1px solid rgba(190, 128, 46, 0.22);
+.free-place-map::before {
+  content: "";
+  position: absolute;
+  inset: 5px 6px;
+  border-radius: 6px;
+  background: #F4B34F;
+  opacity: 0.16;
 }
-.free-place-map-cell.is-disabled {
-  opacity: 0.22;
-}
-.free-place-map-cell.is-open::after {
-  content: '';
+.free-place-map-dot {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -2046,21 +2041,22 @@ html, body {
   height: 7px;
   border-radius: 999px;
   background: #F4B34F;
-  opacity: 0.72;
+  border: 1px solid rgba(255,255,255,0.85);
+  opacity: 0.74;
   transform: translate(-50%, -50%);
+  box-shadow: 0 1px 2px rgba(116, 36, 20, 0.18);
 }
-.free-place-map-cell.is-target::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
+.free-place-map-dot.is-disabled {
+  opacity: 0.18;
+}
+.free-place-map-dot.is-target {
   width: 14px;
   height: 14px;
-  border-radius: 999px;
   background: radial-gradient(circle at 34% 30%, #FFEEE8 0 12%, #E73F33 36%, #BD1D1A 100%);
   border: 1px solid #FFFFFF;
-  transform: translate(-50%, -50%);
   box-shadow: 0 1px 2px rgba(116, 36, 20, 0.28);
+  opacity: 1;
+  z-index: 2;
 }
 .free-cup-choice-visual {
   width: 46px;
@@ -10559,6 +10555,9 @@ function makeSimpleSlot(kind, tier, idx, point) {
   };
   if (Number.isFinite(Number(point && point.size))) slot.size = Number(point.size);
   if (point && point.sampleId) slot.sampleId = point.sampleId;
+  if (point && point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)) {
+    slot.sampleOverrides = point.sampleOverrides;
+  }
   return slot;
 }
 function getSimpleDividerDepthKeyForSlot(slot) {
@@ -10639,6 +10638,14 @@ function getSimpleSlotPointForDefWithSharedSize(point, def, kind) {
   const sharedSize = getSimpleSlotSharedSampleSize(kind, sampleId);
   if (sharedSize == null) return base;
   return normalizeSimpleSlotPoint(Object.assign({}, base, { size: sharedSize, sampleId }), kind);
+}
+function getSimpleSlotSizeOverrideForDef(def, slot) {
+  if (!def || !slot) return null;
+  const kind = slot.kind || getSimpleSlotKind(def);
+  const sampleId = getSimpleSlotSampleIdForDef(def);
+  const slotSize = getSimpleSlotPointSampleSize(slot, kind, sampleId);
+  if (slotSize != null) return slotSize;
+  return getSimpleSlotSharedSampleSize(kind, sampleId);
 }
 function getSimpleDecorSlots(box, tier) {
   const riceBounds = getRicePlacementBounds(box);
@@ -10721,7 +10728,12 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
     const points = configured.length
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
       : fallbackPoints;
-    return points.map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
+    return points.map((p, idx) => makeSimpleSlot(
+      kind,
+      tier,
+      idx,
+      kind === 'other' ? getSimpleSlotPointForDefWithSharedSize(p, def, kind) : p
+    ));
   }
   return [];
 }
@@ -10893,6 +10905,8 @@ function getSimpleDecorPlacement(def, tier = getTargetTierForType(def && def.typ
 function getSimpleSlotSize(def, slot) {
   if (!def) return 72;
   if (def.type === 'cup' || def.snapTarget) return FREE_FIXED_CUP_SIZE;
+  const savedSampleSize = getSimpleSlotSizeOverrideForDef(def, slot);
+  if (savedSampleSize != null) return clamp(savedSampleSize, 32, 340);
   if (slot && Number.isFinite(Number(slot.size))) return clamp(Number(slot.size), 32, 340);
   if (def.type === 'decor') return getSimpleDecorSize(def);
   if (def.type === 'leaf') return clamp(def.size || 170, 110, 240);
@@ -14064,27 +14078,69 @@ function makeFreeVisualChoiceButton(className, ariaLabel, active, onClick) {
   button.className = className + (active ? ' active' : '');
   button.setAttribute('aria-label', ariaLabel);
   button.title = ariaLabel;
-  button.addEventListener('pointerdown', e => {
-    e.preventDefault();
+  let lastPointerAt = 0;
+  const activate = e => {
+    if (e && e.cancelable) e.preventDefault();
     if (isFreeMainGuideBlocking()) {
       showToast('がめんを タップしてね！');
       return;
     }
     onClick();
+  };
+  button.addEventListener('pointerdown', e => {
+    lastPointerAt = Date.now();
+    activate(e);
+  });
+  button.addEventListener('click', e => {
+    if (Date.now() - lastPointerAt < 450) {
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+    activate(e);
   });
   return button;
 }
-function createFreePlaceMap(targetIndex, slotCount, opts = {}) {
+function getFreePlaceMapFallbackPoint(index) {
+  const points = [
+    { left: 28, top: 30 },
+    { left: 72, top: 30 },
+    { left: 28, top: 70 },
+    { left: 72, top: 70 },
+    { left: 50, top: 50 },
+    { left: 50, top: 78 },
+  ];
+  return points[index % points.length] || points[0];
+}
+function getFreePlaceMapSlotPoint(slot, bounds, index) {
+  const fallback = getFreePlaceMapFallbackPoint(index);
+  const x = Number(slot && slot.x);
+  const y = Number(slot && slot.y);
+  const b = bounds && Number(bounds.w) > 0 && Number(bounds.h) > 0 ? bounds : null;
+  if (!b || !Number.isFinite(x) || !Number.isFinite(y)) return fallback;
+  return {
+    left: clamp(((x - b.x) / b.w) * 78 + 11, 11, 89),
+    top: clamp(((y - b.y) / b.h) * 72 + 14, 14, 86),
+  };
+}
+function createFreePlaceMap(targetIndex, slots, opts = {}) {
   const map = document.createElement('span');
   map.className = 'free-place-map' + (opts.auto ? ' free-place-map--auto' : '');
   map.setAttribute('aria-hidden', 'true');
-  for (let idx = 0; idx < 4; idx += 1) {
-    const cell = document.createElement('span');
-    cell.className = 'free-place-map-cell';
-    if (idx >= slotCount) cell.classList.add('is-disabled');
-    if (idx === targetIndex) cell.classList.add('is-target');
-    if (opts.auto && idx < slotCount) cell.classList.add('is-open');
-    map.appendChild(cell);
+  const slotList = Array.isArray(slots) ? slots : [];
+  const slotCount = Number.isFinite(Number(opts.slotCount))
+    ? Math.max(0, Math.round(Number(opts.slotCount)))
+    : slotList.length;
+  const dotCount = Math.max(slotCount, slotList.length, opts.auto ? 0 : targetIndex + 1);
+  const bounds = getFoodPlacementBounds(getSelectedBentoBox());
+  for (let idx = 0; idx < dotCount; idx += 1) {
+    const dot = document.createElement('span');
+    dot.className = 'free-place-map-dot';
+    if (idx >= slotCount) dot.classList.add('is-disabled');
+    if (idx === targetIndex) dot.classList.add('is-target');
+    const point = getFreePlaceMapSlotPoint(slotList[idx], bounds, idx);
+    dot.style.left = point.left + '%';
+    dot.style.top = point.top + '%';
+    map.appendChild(dot);
   }
   return map;
 }
@@ -14096,7 +14152,10 @@ function makeFreePlaceChoiceButton(kind, options = {}) {
     ? 'あいている ところに そのまま おく'
     : getSimpleSideSlotPositionLabel(index) + 'に そのまま おく';
   const button = makeFreeVisualChoiceButton('free-place-choice free-place-choice--' + kind, ariaLabel, active, options.onClick);
-  button.appendChild(createFreePlaceMap(index, options.slotCount || 4, { auto: kind === 'auto' }));
+  button.appendChild(createFreePlaceMap(index, options.slots || [], {
+    auto: kind === 'auto',
+    slotCount: options.slotCount || 4,
+  }));
   const text = document.createElement('span');
   text.className = 'free-place-choice-label';
   text.textContent = label;
@@ -14142,9 +14201,11 @@ function renderFreeCupControls() {
   const noCupActive = !selectedCup;
   const box = getSelectedBentoBox();
   const sideCount = getSimpleSlotCountForBox(box, 'side-food');
+  const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, freeActiveTier).slice(0, sideCount);
   list.appendChild(makeFreePlaceChoiceButton('auto', {
     active: noCupActive && simpleNoCupSlotIndex == null,
     slotCount: sideCount,
+    slots: sideSlots,
     onClick: () => {
       freeActiveCupUid = null;
       freeSelectedItemUid = null;
@@ -14163,6 +14224,7 @@ function renderFreeCupControls() {
       active,
       index: idx,
       slotCount: sideCount,
+      slots: sideSlots,
       onClick: () => selectNoCupSlotForSimplePlacement(idx),
     }));
   }
