@@ -66,7 +66,6 @@
 - 2026-06-29 14:18 - by Codex - [batch:911-maze-water-bug-body-collision] - maze/index.html, AGENTS_CLAIMS.md, HANDOFF.md - みずすべりを場所判定ではなく動いているおじゃま虫本体のタイミング判定へ修正 [overlap: batch:909-gacha-mobile-mask-artifact, batch:910-bento-face-food-zones]
 - 2026-06-29 09:28 - by Claude - [batch:920-shop-bgm-swap] - assets/audio/honey_bell_shop.mp3, play.html, sw.js, AGENTS_CLAIMS.md - shop BGM を Honey Bell Shop.mp3 に差し替え + sticker-book との兼用解消 + sw v1784
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
-- 2026-06-29 19:39 - by Codex - [batch:954-bento-divider-g-vertical] - admin/index.html, bento/index.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - Bento 仕切りGを追加の縦仕切り枠として扱う [overlap: batch:885-difficulty-label-phase3-fix, batch:939-maze-audit-fix-2-of-3 (sw.js)]
 - 2026-06-29 20:00 - by Claude - [batch:940-oto-audit-fix-all-8] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 監査8件 fix + 軽量化 (#1 PonoSprite indexOf誤判定 / #2 リズムmodeモバイル perspective ズレ / #3 チュートリアル cleanup 漏れ / #4 ハイスコア「あとで」自動保存化 / #5 silent fallback に console.warn / #6 ★ repeat 静的キャッシュ / #7 _clearTriggered リセット / #8 Oscillator ended リスナー once 化)
 ---
 
