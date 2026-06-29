@@ -1,0 +1,196 @@
+[
+  {
+    "path": "flag/cmd_red_down_keep.mp3",
+    "ok": true,
+    "attempts_used": 2,
+    "final_transcript": "白羽そのまま赤下げて",
+    "final_size": 25580,
+    "final_sha1": "a8574f0fda148cd6df29f65e348ccc6bfb775094",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "白",
+      "そのまま",
+      "赤",
+      "下げ"
+    ]
+  },
+  {
+    "path": "truefalse/start.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "○か×かどっちかな",
+    "final_size": 28268,
+    "final_sha1": "6e2eb5dceff5459e5cc4ab8212c17811e4e1aa10",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "どっち"
+    ]
+  },
+  {
+    "path": "truefalse/correct.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "正解すごいね",
+    "final_size": 19820,
+    "final_sha1": "d1d5d469277694c821aa431c91e9445f5184320f",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "正解",
+      "すごい"
+    ]
+  },
+  {
+    "path": "truefalse/wrong.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "残念違ったよ",
+    "final_size": 23660,
+    "final_sha1": "efb0d3aa05289e832cf44e00d7698706574c71a2",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "残念",
+      "違っ"
+    ]
+  },
+  {
+    "path": "simon/start.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "よく見ててね。同じ順でタップするよ。",
+    "final_size": 32300,
+    "final_sha1": "ddd874106b78e20904921a7e89c57afad646fb6e",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "見てて",
+      "同じ",
+      "順"
+    ]
+  },
+  {
+    "path": "simon/your_turn.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "さあ君の番",
+    "final_size": 18668,
+    "final_sha1": "da563c2a43d7946286e496a7d4395a8411e09a10",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "君",
+      "番"
+    ]
+  },
+  {
+    "path": "simon/wrong.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "あれれ違う音だった",
+    "final_size": 32300,
+    "final_sha1": "74b6cfeb7f2e6fae23c3475100f411ca026c7d44",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "あれれ",
+      "違う"
+    ]
+  },
+  {
+    "path": "silhouette/start.mp3",
+    "ok": false,
+    "attempts_used": 5,
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "last_transcript": "チラッとだけ見えるよ。何の絵かな?",
+    "last_error": null
+  },
+  {
+    "path": "silhouette/hint_more.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "もう一つ穴を開けたよ。もう一度見て。",
+    "final_size": 38828,
+    "final_sha1": "c94a28113e99b22a503ea55419593f1e60640f89",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "もう一つ",
+      "穴",
+      "もう一度"
+    ]
+  },
+  {
+    "path": "silhouette/correct.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "正解!よくわかったね。",
+    "final_size": 22700,
+    "final_sha1": "4004215d9883f4e016951c7ab8efc571504a2874",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "正解",
+      "わかっ"
+    ]
+  },
+  {
+    "path": "silhouette/wrong.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "残念違ったみたい",
+    "final_size": 25388,
+    "final_sha1": "b9f302e3279a613acdda8020f70214809521f0d1",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "残念",
+      "違っ"
+    ]
+  },
+  {
+    "path": "oddone/start.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "仲間外れはどれかな?",
+    "final_size": 21164,
+    "final_sha1": "e3ed6febd7fdd0b5bf5658256245b294bf678400",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "仲間",
+      "外れ",
+      "どれ"
+    ]
+  },
+  {
+    "path": "oddone/correct.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "正解!よく見つけたね!",
+    "final_size": 23468,
+    "final_sha1": "933a63263d63f4e0b98b1df3dc24dc7cbefa226e",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "正解",
+      "見つけ"
+    ]
+  },
+  {
+    "path": "oddone/wrong.mp3",
+    "ok": true,
+    "attempts_used": 1,
+    "final_transcript": "んー、違うかも。",
+    "final_size": 26540,
+    "final_sha1": "bb1efb7a2949d6baa71e50ff70fed4a75b1808e6",
+    "tts_model": "gemini-3.1-flash-tts-preview",
+    "voice": "Aoede",
+    "kw_hits": [
+      "違う"
+    ]
+  }
+]
