@@ -1213,12 +1213,15 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
   filter:
     drop-shadow(0 8px 16px rgba(120, 83, 20, 0.3))
     drop-shadow(0 0 22px rgba(255, 198, 34, 0.96));
-  animation: nextq-attention-glow 0.95s ease-in-out infinite alternate;
+  /* audit batch:936 perf: 無限 alternate を 6 回 (3 サイクル) に制限し、 低スペック
+     Android の CPU 負荷と消費電力を削減。 視認時間は約 5.7s で十分。 */
+  animation: nextq-attention-glow 0.95s ease-in-out 6 alternate;
 }
 .next-q-btn.show::before {
   opacity: 1;
   transform: scale(1);
-  animation: nextq-bottom-glow-pulse 0.95s ease-in-out infinite alternate;
+  /* audit batch:936 perf: 同上 (下グロウも同じ 6 回で停止)。 */
+  animation: nextq-bottom-glow-pulse 0.95s ease-in-out 6 alternate;
 }
 .next-q-btn:active { transform: translateY(2px) scale(0.98); }
 .next-q-btn[disabled],
@@ -1696,6 +1699,9 @@ body.layout-editor-on .chip-illust-wrap {
 }
 
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
+/* audit batch:936 fix #4: ロック中 (reveal/演出中) は chip をタップ非反応に見せる。 */
+.answer-panel.question-locked .chip { cursor: not-allowed; opacity: 0.88; }
+.answer-panel.question-locked .chip:active { transform: none; }
 .chip:active,
 .chip.pressed {
   transform: translateY(3px) scale(0.97);
@@ -3961,6 +3967,12 @@ let questionIdx = 0;
 let correctCount = 0;
 let currentQ = null;
 let locked = false;
+// audit batch:936 fix #4: locked 状態を answer-panel の .question-locked クラスへ反映。
+// 値を書く callsite が複数あるので、 ヘルパーを噛ませて視覚同期する。
+function _qzApplyLockVisual() {
+  var panel = document.getElementById('answer-panel');
+  if (panel) panel.classList.toggle('question-locked', !!locked);
+}
 
 // ─── デバッグ全問プレイモード判定 ─────────────────────
 //   ?debug=all : 全問を固定順で 1 度ずつ通すモード。
@@ -5048,7 +5060,16 @@ function playHintSe()  { playSe('hint'); }
     } catch (e) {}
   }
   _warm('nextQuestion');                     // don.mp3
-  for (var i = 1; i <= 5; i++) _warm('kurumi_dai' + i);
+  // audit batch:936 perf: 早期離脱対策で kurumi_dai は 1〜2 のみ事前確保。
+  // 第 3 問以降は loadQuestion 直前に lazy warm-up する (帯域節約 ~300KB)。
+  for (var i = 1; i <= 2; i++) _warm('kurumi_dai' + i);
+  // 残り (kurumi_dai3〜5) は requestIdleCallback でゆっくり温める
+  function _warmRest() { for (var j = 3; j <= 5; j++) _warm('kurumi_dai' + j); }
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(_warmRest, { timeout: 5000 });
+  } else {
+    setTimeout(_warmRest, 4000);
+  }
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -5620,6 +5641,19 @@ function showNextButton(onClick) {
   area.appendChild(btn);
   // フェードイン
   requestAnimationFrame(() => btn.classList.add('show'));
+  // audit batch:936 fix #5: 4 択読み上げ中は「つぎへ」を一時無効化。
+  // 読み上げが終わったタイミング (= _playAllChoicesRunning が false に戻る) で復活。
+  if (typeof _playAllChoicesRunning !== 'undefined' && _playAllChoicesRunning) {
+    btn.disabled = true;
+    var _waitMs = 0;
+    var _timer = setInterval(function(){
+      _waitMs += 200;
+      if (!_playAllChoicesRunning || _waitMs >= 8000) {
+        clearInterval(_timer);
+        if (document.body.contains(btn)) btn.disabled = false;
+      }
+    }, 200);
+  }
 }
 
 function hideNextButton() {
@@ -6153,6 +6187,7 @@ window.renderChoices = renderChoices;
 function loadQuestion(q) {
   currentQ = q;
   locked = false;
+  _qzApplyLockVisual(); // audit batch:936 fix #4
   // 前問題から残っている staged-reveal クラスを掃除する (illust / 答えパネル)。
   // 直後に renderChoices / stage 描画が新規ノードを作るので revealed は付け直し。
   document.querySelectorAll('.q-stage-revealed, .q-stage-pending').forEach(function(el) {
@@ -6436,8 +6471,8 @@ function _speakChipText(chip) {
       utter.onend = finish;
       utter.onerror = finish;
       speechSynthesis.speak(utter);
-      // セーフティ: 4 秒で強制終了。
-      setTimeout(function(){ if (!done) { try { speechSynthesis.cancel(); } catch(_){} finish(); } }, 4000);
+      // 低スペック Android で 4 秒では読み切れない問題に対応 (audit batch:936)
+      setTimeout(function(){ if (!done) { try { speechSynthesis.cancel(); } catch(_){} finish(); } }, 7000);
     } catch (_) { finish(); }
   });
 }
@@ -6478,6 +6513,29 @@ async function _playCorrectChipAudio(q, correctBtn) {
   } catch (_) { /* silent fail */ }
 }
 
+// audit batch:936 fix #2: 順次読み上げ (playAllChoices) を即停止するヘルパー。
+// onChoice 冒頭から呼ぶことで、 ユーザーが回答を選んだ瞬間にナレーションを切る。
+function _stopChoiceNarration() {
+  try {
+    if (_playAllChoicesAudio) {
+      try { _playAllChoicesAudio.pause(); } catch(_) {}
+      _playAllChoicesAudio = null;
+    }
+    if (typeof speechSynthesis !== 'undefined') {
+      try { speechSynthesis.cancel(); } catch(_) {}
+    }
+    if (typeof Narration !== 'undefined' && Narration.stop) {
+      try { Narration.stop(); } catch(_) {}
+    }
+    var sp = document.getElementById('answer-speaker');
+    if (sp) sp.classList.remove('reading');
+    document.querySelectorAll('#answer-panel .chip.reading-active').forEach(function(c){
+      c.classList.remove('reading-active');
+    });
+    _playAllChoicesRunning = false;
+  } catch(_) { /* silent */ }
+}
+
 async function playAllChoices() {
   if (_playAllChoicesRunning) return;
   if (typeof Narration === 'undefined') return;
@@ -6492,8 +6550,15 @@ async function playAllChoices() {
     // data-idx 0=TL=a, 1=TR=b, 2=BL=c, 3=BR=d。 ユーザー希望「左上→右上→左下→右下」
     // = idx 0→1→2→3 と等価。
     const suffixes = ['a', 'b', 'c', 'd'];
+    // audit batch:936 perf: ループ内の querySelector 重複呼出を 1 回の querySelectorAll にまとめる。
+    const _chipList = panel.querySelectorAll('.chip');
+    const _chipByIdx = {};
+    for (let _ci = 0; _ci < _chipList.length; _ci++) {
+      var _di = _chipList[_ci].getAttribute('data-idx');
+      if (_di != null) _chipByIdx[_di] = _chipList[_ci];
+    }
     for (let i = 0; i < suffixes.length; i++) {
-      const chip = panel.querySelector('.chip[data-idx="' + i + '"]');
+      const chip = _chipByIdx[String(i)] || null;
       const key = narrationKey(currentQ, suffixes[i]);
       // 2026-05-12 修正(T3): 以前は manifest 未登録 (hasEntry=false) 時に
       // `continue` で skip し chip を点灯すらしなかった。 結果として
@@ -6638,11 +6703,15 @@ function ensureProgressMarkAspectGuard() {
 // Answer handling
 // ═══════════════════════════════════════════════════════════
 function onChoice(idx, btn) {
+  // audit batch:936 fix #2: 4 択読み上げ中にユーザーが回答した場合、
+  // ナレーションを即停止して回答 SE / フィードバックと被らないようにする。
+  _stopChoiceNarration();
   // 自動ヒント (showProblemDialogue で 5 秒後にセット) が回答後に発火して
   // セリフを上書きしないように、最初に必ずキャンセルする
   clearTimeout(_autoHintTimer);
   if (locked) return;
   locked = true;
+  _qzApplyLockVisual(); // audit batch:936 fix #4
   // モバイルでも :active が反応しづらい場合に備え、明示的に押下表示を出す
   if (btn) {
     btn.classList.add('pressed');
@@ -6701,6 +6770,9 @@ function onChoice(idx, btn) {
       setTimeout(() => { showNextButton(nextQuestion); }, 1200);
     }
   } else {
+    // audit batch:936 fix #1: 過去の不正解 chip に残った .wrong を先に剥がす。
+    // 連続不正解で複数の chip が赤いまま残る視覚バグを防ぐ。
+    document.querySelectorAll('#answer-panel .chip.wrong').forEach(function(c){ c.classList.remove('wrong'); });
     btn.classList.add('wrong');
     btn.disabled = true;
     playWrong();
@@ -6708,6 +6780,7 @@ function onChoice(idx, btn) {
     showWrongDialogue();
     // もういっかいチャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
     locked = false;
+    _qzApplyLockVisual(); // audit batch:936 fix #4
   }
 }
 
@@ -8611,15 +8684,51 @@ function refreshDiffActive() {
     }
   });
 }
+// audit batch:936 fix #6: tier-lock 時にひらがなのみの子ども向け案内オーバーレイを表示。
+// PonoTier の promo が呼べる場合はそれを優先するが、 fallback として軽量 overlay も提供。
+function _qzShowTierLockKidOverlay() {
+  // 既存があれば再利用 (連打で複数生成しない)
+  var ov = document.getElementById('qz-tierlock-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'qz-tierlock-overlay';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:linear-gradient(180deg,#FFFBEB,#FEF3C7);border:6px solid #92400E;border-radius:24px;padding:28px 36px;max-width:80%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.45);font-family:inherit;';
+    var icon = document.createElement('div');
+    icon.textContent = '🔒';
+    icon.style.cssText = 'font-size:48px;line-height:1;margin-bottom:8px;';
+    var msg = document.createElement('div');
+    msg.textContent = 'えほんを かうと あそべるよ！';
+    msg.style.cssText = 'font-size:28px;font-weight:800;color:#7C2D12;margin:10px 0 18px;letter-spacing:-0.02em;';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'わかった';
+    btn.style.cssText = 'font-family:inherit;font-size:24px;font-weight:800;padding:10px 28px;border-radius:999px;border:4px solid #92400E;background:linear-gradient(180deg,#FCD34D,#F59E0B);color:#7C2D12;cursor:pointer;box-shadow:0 4px 0 #92400E;';
+    function _close() { try { ov.remove(); } catch(_) {} }
+    btn.addEventListener('click', _close);
+    ov.addEventListener('click', function(e){ if (e.target === ov) _close(); });
+    card.appendChild(icon); card.appendChild(msg); card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    // 5 秒後の自動 close (子どもがボタンに気付かない時の保険)
+    setTimeout(_close, 5000);
+  }
+}
 function chooseQuizlandDifficulty(diff) {
   if (DIFF_LEVELS.indexOf(diff) === -1) return;
   if (!isQuizlandDifficultyUnlockedLocal(diff)) {
+    // audit batch:936 fix #6: PonoTier の promo が無い環境でもひらがな案内を必ず出す
     if (window.PonoTier && window.PonoTier.showSubscribePromo) {
       if (typeof window.PonoTier.showTierLockPromo === 'function') {
         window.PonoTier.showTierLockPromo();
       } else {
         window.PonoTier.showSubscribePromo();
       }
+    } else {
+      _qzShowTierLockKidOverlay();
     }
     return;
   }
@@ -8643,6 +8752,57 @@ document.getElementById('diff-confirm-change').addEventListener('click', functio
 refreshDiffActive();
 updateDiffConfirm();
 applyDiffTierLockUI();
+
+// audit batch:936 fix #3: キーボードショートカット。
+// 難易度選択画面: 1=やさしい / 2=ふつう / 3=むずかしい、 Enter で開始。
+// 出題画面: 1〜4 で chip 選択 (locked=true 中はスキップ)。
+// layout-editor 中や入力欄フォーカス中は無効。
+(function() {
+  function _qzIsTypingTarget(t) {
+    if (!t) return false;
+    var tag = (t.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (t.isContentEditable) return true;
+    return false;
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (_qzIsTypingTarget(e.target)) return;
+    if (document.body && document.body.classList.contains('layout-editor-on')) return;
+    var modeScr = document.getElementById('mode-screen');
+    var modeVisible = modeScr && !modeScr.classList.contains('hidden');
+    // 難易度選択画面
+    if (modeVisible) {
+      var diffMap = { '1': 'easy', '2': 'normal', '3': 'hard' };
+      if (diffMap[e.key]) {
+        e.preventDefault();
+        chooseQuizlandDifficulty(diffMap[e.key]);
+        return;
+      }
+      if ((e.key === 'Enter' || e.key === ' ') && pendingDifficulty) {
+        e.preventDefault();
+        startQuizlandWithDifficulty(pendingDifficulty);
+        return;
+      }
+    }
+    // 出題画面 (start/mode-screen 共に非表示で answer-panel に chip がある状態)
+    var startScr = document.getElementById('start-screen');
+    var startVisible = startScr && !startScr.classList.contains('hidden');
+    if (!modeVisible && !startVisible) {
+      var keyMap = { '1': 0, '2': 1, '3': 2, '4': 3 };
+      if (keyMap.hasOwnProperty(e.key)) {
+        if (locked) return; // ロック中 (reveal/演出中) はスキップ
+        var panel = document.getElementById('answer-panel');
+        if (!panel) return;
+        var chip = panel.querySelector('.chip[data-idx="' + keyMap[e.key] + '"]');
+        if (chip && !chip.disabled) {
+          e.preventDefault();
+          onChoice(keyMap[e.key], chip);
+        }
+      }
+    }
+  });
+})();
 
 // 共通: layout-editor 中は game progression handler を全部無効化
 //   (要素を掴んで動かしたいのに、ボタンが反応してモード/結果画面が開いてしまうのを防ぐ)
