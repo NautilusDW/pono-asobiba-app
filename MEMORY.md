@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-06-29T19:46:44Z - quizland editor の group corner scale で .q-text-card .audio (right-top speaker) を巻き込まない selector exclusion 修正 (batch:964 / sw v1824)
+- **タスク**: quizland editor の group corner scale で .q-text-card .audio (right-top speaker) を巻き込まない selector exclusion 修正 (batch:964 / sw v1824)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 93
+- **エラー数**: 12
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Bash": 42, "Read": 13, "Glob": 3, "Grep": 13, "Agent": 10, "Edit": 9, "ToolSearch": 1, "SendMessage": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-06-29T18:38:29Z - quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (emoji_name→trivia + framed:true, sw v1821 / batch:961)
 - **タスク**: quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (emoji_name→trivia + framed:true, sw v1821 / batch:961)
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Bash": 79, "Read": 28, "Glob": 2, "Edit": 40, "ToolSearch": 1, "Agent": 42, "Grep": 16, "Workflow": 2}
 - **サマリ**: 成功タスク: 5個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T01:37:59Z - LP hero CTA 横の推奨年齢ラベルを「3〜6歳」 → 「3歳〜」 (上限撤廃) に変更。 Discovery → premise 訂正 (LP hero は develop-app) → Implementation → Cross-review の4段階。 commit 2cd9356 作成、push 未実行 (user 判断待ち)
-- **タスク**: LP hero CTA 横の推奨年齢ラベルを「3〜6歳」 → 「3歳〜」 (上限撤廃) に変更。 Discovery → premise 訂正 (LP hero は develop-app) → Implementation → Cross-review の4段階。 commit 2cd9356 作成、push 未実行 (user 判断待ち)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 25
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 1, "Bash": 6, "Agent": 17, "ToolSearch": 1}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

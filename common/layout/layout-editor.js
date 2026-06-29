@@ -35,6 +35,18 @@
   var VERSION = '1.1.0'; // 2026-05-07: per-Q layout key support (Phase 2 / impl-A)
   var SAVED_LAYOUT_VERSION = 2; // __version field in saved-layout.json
   var HISTORY_LIMIT = 100;
+  // 2026-06-30 (batch:964): group corner scale (複数選択コーナードラッグでの均一 scale)
+  //   から除外する selector のリスト。 親 .q-text-card と一緒に選択された状態で
+  //   コーナーハンドルをドラッグしても、 ここに該当する要素は w/h/tx/ty を維持
+  //   (factor 不適用) し、 親側だけが拡縮される。 .q-text-card .audio (右上スピーカー) は
+  //   position:absolute; right:8px; top:50% で配置されているため、 親の伸縮に追従して
+  //   見かけ上は右上 anchor のまま固定サイズで残る (= 巻き込み解消)。
+  //   batch:962B の CSS 変数 --qz-tts-counter-scale (default 1, no-op) と組合せ可能。
+  //   注意: 個別 resize 経路 (performResize) は別ロジックなので、 単独選択して
+  //   ハンドルを掴むケースでは通常通り scale できる (= 編集自体は妨げない)。
+  var GROUP_SCALE_PROTECTED_SELECTORS = [
+    '.q-text-card .audio'
+  ];
   var TRANSIENT_CLASSES = {
     'resizable': 1, 'editable-text': 1, 'anno-mode': 1, 'preview-mode': 1,
     'show-bbox': 1, 'show-safe': 1, 'eraser-mode': 1, 'dirty': 1, 'active': 1,
@@ -2575,6 +2587,12 @@
     var groupScale = null;
     if (isGroupCornerScale) {
       var sel = Array.from(state.selectedElements).filter(function (s) { return !isLocked(s); });
+      // 2026-06-30 (batch:964): group corner scale から除外する要素を hard skip。
+      //   GROUP_SCALE_PROTECTED_SELECTORS に match した要素は targets に含めない
+      //   → w/h/tx/ty が factor 倍されずそのまま残る。 親要素 (例: .q-text-card) は
+      //   通常通り scale され、 子の speaker (position:absolute; right; top) は
+      //   親に追従しつつ固定サイズで残る (= 巻き込み解消)。
+      //   bounding box (gcx/gcy) 計算には含めて、 視覚的な group bbox 中心を保つ。
       var rects = sel.map(function (s) { return bcrInStage(s, info.stageRect, info.scale); });
       var minLeft = Math.min.apply(null, rects.map(function (r) { return r.left; }));
       var maxRight = Math.max.apply(null, rects.map(function (r) { return r.right; }));
@@ -2582,22 +2600,34 @@
       var maxBottom = Math.max.apply(null, rects.map(function (r) { return r.bottom; }));
       var gcx = (minLeft + maxRight) / 2;
       var gcy = (minTop + maxBottom) / 2;
+      var scaleTargets = [];
+      sel.forEach(function (s, i) {
+        var isProtected = false;
+        for (var pi = 0; pi < GROUP_SCALE_PROTECTED_SELECTORS.length; pi++) {
+          try {
+            if (s.matches && s.matches(GROUP_SCALE_PROTECTED_SELECTORS[pi])) {
+              isProtected = true;
+              break;
+            }
+          } catch (eMatches) { /* invalid selector — skip */ }
+        }
+        if (isProtected) return; // skip — keep w/h/tx/ty unchanged
+        scaleTargets.push({
+          el: s,
+          origW: parseFloat(s.style.width) || s.offsetWidth,
+          origH: parseFloat(s.style.height) || s.offsetHeight,
+          origTx: s._tx || 0,
+          origTy: s._ty || 0,
+          origCx: (rects[i].left + rects[i].right) / 2,
+          origCy: (rects[i].top + rects[i].bottom) / 2,
+          before: getResizeState(s),
+        });
+      });
       groupScale = {
         gcx: gcx, gcy: gcy,
         primaryOrigW: primaryTarget.startW,
         primaryOrigH: primaryTarget.startH,
-        targets: sel.map(function (s, i) {
-          return {
-            el: s,
-            origW: parseFloat(s.style.width) || s.offsetWidth,
-            origH: parseFloat(s.style.height) || s.offsetHeight,
-            origTx: s._tx || 0,
-            origTy: s._ty || 0,
-            origCx: (rects[i].left + rects[i].right) / 2,
-            origCy: (rects[i].top + rects[i].bottom) / 2,
-            before: getResizeState(s),
-          };
-        }),
+        targets: scaleTargets,
       };
     }
 
