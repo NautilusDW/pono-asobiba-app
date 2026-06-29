@@ -264,7 +264,7 @@ function normalizeBentoCompleteLayoutMap(map) {
 
 const BENTO_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
-  'side-food': 3,
+  'side-food': 4,
   cup: 3,
   divider: 3,
   other: 1
@@ -281,6 +281,16 @@ const BENTO_SLOT_BOX_ORDER = [
   'box_cat'
 ];
 const BENTO_CUP_SLOT_SIZES = [150, 190, 230];
+
+function normalizeBentoSlotCounts(raw) {
+  const normalized = {};
+  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const side = source['side-food'] ?? source.sideFood ?? source.sideFoodSlotCount;
+  if (Number.isFinite(Number(side))) {
+    normalized['side-food'] = clampBentoMaskNumber(side, 3, 4, 3, 0);
+  }
+  return normalized;
+}
 
 function normalizeBentoSlotSize(size, kind) {
   const n = clampBentoMaskNumber(size, 32, 340, 120, 1);
@@ -406,6 +416,8 @@ function normalizeBentoSlotLayoutMap(map) {
     const box = map[boxId];
     if (!box || typeof box !== 'object' || Array.isArray(box)) return;
     const entry = {};
+    const slotCounts = normalizeBentoSlotCounts(box.slotCounts || {});
+    if (Object.keys(slotCounts).length) entry.slotCounts = slotCounts;
     Object.keys(BENTO_SLOT_LAYOUT_LIMITS).forEach(kind => {
       const list = Array.isArray(box[kind]) ? box[kind] : [];
       const validPoints = list.filter(point => point && typeof point === 'object' && !Array.isArray(point));

@@ -3786,16 +3786,21 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
       'maze: _index.json で slot ' + stageNum + ' を ' + r.safeName + ' にオーバーライド',
       existingIndex ? existingIndex.sha : null);
 
-    showBanner('✅ 保存完了。GH Actions が staging に反映 (1分くらい)');
+    showBanner('④ staging への反映を確認中…');
+    const publishCheck = await waitForPublishedStageJson(r.safeName, r.def, 90000);
+    const publishedUrl = '../maze/?image=' + encodeURIComponent(r.safeName);
+    showBanner(publishCheck.ok
+      ? '✅ 保存完了。staging 反映も確認しました'
+      : '✅ 保存完了。staging 反映はまだ確認中です (' + (publishCheck.status || 'timeout') + ')');
     const goNow = confirm(
       '✅ 本番(staging) に保存しました!\n\n' +
       '・slot ' + stageNum + ' → ' + r.safeName + '\n' +
-      '・1分ほどで staging に反映\n\n' +
-      'OK を押すと新タブで slot ' + stageNum + ' を直接開く (?stage=' + stageNum + ')\n' +
+      (publishCheck.ok ? '・staging への反映を確認済み\n\n' : '・staging 反映にはもう少し時間がかかる場合があります\n\n') +
+      'OK を押すと新タブで保存したステージを直接開きます (?image=' + r.safeName + ')\n' +
       'キャンセルでこの画面に残る'
     );
     if (goNow) {
-      window.open('../maze/?stage=' + encodeURIComponent(stageNum), '_blank');
+      window.open(publishedUrl, '_blank');
     }
   } catch (e) {
     console.error(e);
@@ -3809,6 +3814,38 @@ document.getElementById('commitBtn').addEventListener('click', async function() 
     btn.textContent = '💾 本番に保存 (commit)';
   }
 });
+
+function sleep(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+
+function stableJsonString(value) {
+  return JSON.stringify(value);
+}
+
+async function waitForPublishedStageJson(safeName, expectedDef, timeoutMs) {
+  const expected = stableJsonString(expectedDef);
+  const deadline = Date.now() + (timeoutMs || 90000);
+  let lastStatus = '';
+  while (Date.now() < deadline) {
+    try {
+      const url = '../maze/imageStages/' + encodeURIComponent(safeName) + '.json?_=' + Date.now();
+      const resp = await fetch(url, { cache: 'no-store' });
+      lastStatus = 'HTTP ' + resp.status;
+      if (resp.ok) {
+        const current = await resp.json();
+        if (stableJsonString(current) === expected) {
+          return { ok: true, status: 'published' };
+        }
+        lastStatus = 'old json';
+      }
+    } catch (e) {
+      lastStatus = (e && e.message) ? e.message : String(e);
+    }
+    await sleep(4000);
+  }
+  return { ok: false, status: lastStatus || 'timeout' };
+}
 
 // ────────────────────────────────────────────────────────
 // Auto-save to localStorage (resume editing across reloads)

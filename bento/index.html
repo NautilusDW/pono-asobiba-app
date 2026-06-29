@@ -6419,6 +6419,7 @@ const bentoBoxes = [
     clipPoints: [[78,78], [682,78], [682,392], [78,392]],
     imageScale: 1,
     tierCount: 1,
+    sideFoodSlotCount: 4,
     autoRice: { baseRice: 'rice_base_round', thumbnailImage: FREE_ASSET + 'rice_thumb_rect_split.webp', x: 244, y: 235, size: 206 },
     riceSpots: [
       { x: 248, y: 230 },
@@ -9858,7 +9859,7 @@ function sortFreeEditorMap(map) {
 }
 const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
-  'side-food': 3,
+  'side-food': 4,
   cup: 3,
   divider: 3,
   other: 1,
@@ -9866,6 +9867,20 @@ const SIMPLE_SLOT_LAYOUT_LIMITS = {
 const SIMPLE_SHARED_SLOT_KINDS = new Set(['other']);
 const SIMPLE_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food']);
 const SIMPLE_CUP_SLOT_SIZES = [150, 190, 230];
+function getDefaultSimpleSlotCountForBox(box, kind) {
+  if (kind === 'side-food') return clamp(Math.round(Number(box && box.sideFoodSlotCount) || 3), 3, 4);
+  return SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
+}
+function normalizeSimpleSlotCounts(raw, box = null) {
+  const out = {};
+  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const side = Number(source['side-food'] ?? source.sideFood ?? source.sideFoodSlotCount);
+  if (Number.isFinite(side)) {
+    const normalized = clamp(Math.round(side), 3, 4);
+    if (normalized !== getDefaultSimpleSlotCountForBox(box, 'side-food')) out['side-food'] = normalized;
+  }
+  return out;
+}
 function normalizeSimpleSlotSize(size, kind) {
   const n = Math.round(clamp(Number(size), 32, 340) * 10) / 10;
   if (kind !== 'cup' || !Number.isFinite(n)) return n;
@@ -9910,7 +9925,10 @@ function normalizeSimpleSlotLayoutMap(map) {
     if (!boxId) return;
     const boxLayout = map[boxId];
     if (!boxLayout || typeof boxLayout !== 'object' || Array.isArray(boxLayout)) return;
+    const box = bentoBoxes.find(b => b && b.id === boxId) || null;
     const entry = {};
+    const slotCounts = normalizeSimpleSlotCounts(boxLayout.slotCounts || {}, box);
+    if (Object.keys(slotCounts).length) entry.slotCounts = slotCounts;
     Object.keys(SIMPLE_SLOT_LAYOUT_LIMITS).forEach(kind => {
       const rawList = Array.isArray(boxLayout[kind]) ? boxLayout[kind] : [];
       const validPoints = rawList.filter(point => point && typeof point === 'object' && !Array.isArray(point));
@@ -9930,6 +9948,12 @@ function getSimpleSlotLayoutPoints(box, kind) {
   const layout = freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
   const list = layout && Array.isArray(layout[kind]) ? layout[kind] : [];
   return list.map(point => normalizeSimpleSlotPoint(point, kind));
+}
+function getSimpleSlotCountForBox(box, kind) {
+  const boxLayout = box && freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
+  const slotCounts = normalizeSimpleSlotCounts(boxLayout && boxLayout.slotCounts, box);
+  if (slotCounts[kind]) return slotCounts[kind];
+  return getDefaultSimpleSlotCountForBox(box, kind);
 }
 function getSimpleSlotLayoutBoxIds() {
   const layout = freeSlotLayoutServerDefaults || {};
@@ -10425,17 +10449,22 @@ function getSimpleFoodSpreadPoints(box) {
     { x: xLeft, y: yBottom },
     { x: xRight, y: yBottom },
     { x: b.x + b.w * 0.50, y: b.y + b.h * 0.52 },
+    { x: b.x + b.w * 0.50, y: b.y + b.h * 0.78 },
   ];
 }
 function getSimpleFoodSlots(kind, box, tier, def) {
-  const configured = getSimpleSlotLayoutPoints(box, kind);
-  if (configured.length) return configured.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind)));
+  const limit = kind === 'side-food' ? getSimpleSlotCountForBox(box, kind) : (SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3);
   const points = getSimpleFoodSpreadPoints(box);
-  const order = kind === 'main-food' ? [0, 1] : [2, 3, 4];
-  return order
+  const order = kind === 'main-food' ? [0, 1] : [2, 3, 4, 5];
+  const fallback = order
     .map(idx => points[idx])
     .filter(Boolean)
-    .map((p, idx) => makeSimpleSlot(kind, tier, idx, p));
+    .slice(0, limit);
+  const configured = getSimpleSlotLayoutPoints(box, kind).slice(0, limit);
+  const merged = configured.length
+    ? configured.concat(fallback.slice(configured.length, limit)).slice(0, limit)
+    : fallback;
+  return merged.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind)));
 }
 function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) {
   const box = getSelectedBentoBox();
