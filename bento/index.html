@@ -7322,6 +7322,7 @@ function restoreFreeHistoryState(state) {
   freeDragState = null;
   freePaletteDragState = null;
   removeFreePaletteDragGhost();
+  syncSimplePlacedItemsToCurrentSlots();
   freeHistoryApplying = false;
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
@@ -10798,6 +10799,7 @@ function applyFreeMaskServerDefaults(data) {
   applyShopStaffCounterMaskStyle();
   applyShopCustomerCounterMaskStyle();
   scheduleFullMaskRefresh();
+  syncSimplePlacedItemsToCurrentSlots();
   if (document.getElementById('app')?.classList.contains('free-layout-active')) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
@@ -11144,6 +11146,16 @@ function getSimpleStageSlotPlacementPoint(slot) {
       };
     }
   }
+  const x = Number(slot.x);
+  const y = Number(slot.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return {
+    x: Math.round(clamp(x, 0, FREE_LAYOUT_W) * 10) / 10,
+    y: Math.round(clamp(y, 0, FREE_LAYOUT_H) * 10) / 10,
+  };
+}
+function getSimpleSlotActualPoint(slot) {
+  if (!slot) return null;
   const x = Number(slot.x);
   const y = Number(slot.y);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
@@ -11587,7 +11599,7 @@ function applySimpleSlotPlacementToItem(item, slot) {
   if (!item || !slot) return false;
   const baseDef = getSimpleSlotPlacementDefForItem(item);
   const placementDef = getSimpleSlotVariantDef(baseDef, slot);
-  const point = getSimpleStageSlotPlacementPoint(slot) || slot;
+  const point = getSimpleSlotActualPoint(slot) || slot;
   if (!point) return false;
   const oldX = item.x;
   const oldY = item.y;
@@ -11620,6 +11632,39 @@ function applySimpleSlotPlacementToItem(item, slot) {
     clampCupChildren(item);
   }
   return true;
+}
+function syncSimplePlacedItemsToCurrentSlots() {
+  if (!simpleBentoMode || !Array.isArray(placedItems) || !placedItems.length) return false;
+  let changed = false;
+  placedItems.forEach(item => {
+    if (!item || !item.simpleSlot || item.parentCupId) return;
+    const kind = getSimpleSlotKindForItem(item);
+    if (!kind || kind === 'rice' || kind === 'decor' || kind === 'leaf') return;
+    const slot = getSimpleCurrentSlotForItem(item);
+    if (!slot || slot.key !== item.simpleSlot) return;
+    const before = {
+      x: item.x,
+      y: item.y,
+      size: item.size,
+      scale: item.scale,
+      rotation: item.rotation,
+      img: item.img,
+      simpleSampleId: item.simpleSampleId,
+      slotVariantKey: item.slotVariantKey
+    };
+    if (!applySimpleSlotPlacementToItem(item, slot)) return;
+    if (before.x !== item.x
+        || before.y !== item.y
+        || before.size !== item.size
+        || before.scale !== item.scale
+        || before.rotation !== item.rotation
+        || before.img !== item.img
+        || before.simpleSampleId !== item.simpleSampleId
+        || before.slotVariantKey !== item.slotVariantKey) {
+      changed = true;
+    }
+  });
+  return changed;
 }
 function applySimpleSlotDrop(uid, dropPoint = null) {
   const item = placedItems.find(i => i.uid === uid);
@@ -12576,7 +12621,7 @@ function addSimpleFixedPaletteItem(def) {
   }
   if (slot.replaceUid) removeFreeItemData(slot.replaceUid);
   const placementDef = getSimpleSlotVariantDef(def, slot);
-  const placementPoint = getSimpleStageSlotPlacementPoint(slot) || slot;
+  const placementPoint = getSimpleSlotActualPoint(slot) || slot;
   const item = addFreeLayoutItem(placementDef, {
     x: placementPoint.x,
     y: placementPoint.y,
