@@ -40,14 +40,6 @@
       "y": 293,
       "id": "stage4-flag-tunnel-exit",
       "eventEnabled": true
-    },
-    {
-      "kind": "pond",
-      "x": 206,
-      "y": 866,
-      "id": "stage4-water-puddle",
-      "size": 190,
-      "eventEnabled": true
     }
   ],
   "creatures": [
@@ -7101,10 +7093,5 @@
     },
     "exitNodeId": "stop12",
     "encounterRadius": 94
-  },
-  "waterGimmick": {
-    "id": "stage4-water-bridge",
-    "obstacleId": "stage4-water-puddle",
-    "encounterRadius": 104
   }
 }
