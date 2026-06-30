@@ -1457,12 +1457,12 @@ html, body {
 }
 .free-action-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   flex-shrink: 0;
 }
 .free-action-row.has-guide-action {
-  grid-template-columns: 0.74fr 0.74fr 1.32fr;
+  grid-template-columns: 0.72fr 0.72fr 0.72fr 1.34fr;
 }
 .free-action-row button,
 .free-complete-btn {
@@ -1480,6 +1480,10 @@ html, body {
 .free-action-row button.primary {
   background-image: url('../assets/images/bento/ui/button_green.png');
   color: #174B2C;
+}
+.free-action-row button:disabled {
+  opacity: 0.42;
+  cursor: default;
 }
 .free-size-row {
   display: grid;
@@ -7211,6 +7215,10 @@ let bentoFoodNames = []; // 入れた食材の名前（豆知識用）
 let bentoSelected = []; // 入れた食材の完全記録 [{img, name, sk}] rice + okazu4
 let favSaved = false;   // この完成画面で既に保存したか
 let placedItems = [];
+const FREE_LAYOUT_HISTORY_LIMIT = 40;
+let freeUndoStack = [];
+let freeRedoStack = [];
+let freeHistoryApplying = false;
 let selectedBentoBoxId = 'box_rect_split';
 let freeLayoutTab = 'box';
 let freeActiveTier = 1;
@@ -7246,6 +7254,103 @@ let simpleNoCupSlotIndex = null;
 let simpleCupSlotIndex = null;
 const SIMPLE_CUP_FOOD_LIMIT = 1;
 const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
+
+function cloneFreeHistoryValue(value) {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (_) {
+    return value;
+  }
+}
+function getFreeHistoryMaxLayer(items = placedItems) {
+  return items.reduce((max, item) => Math.max(max, Number(item && item.layer) || 0), 1);
+}
+function captureFreeHistoryState() {
+  return {
+    placedItems: cloneFreeHistoryValue(placedItems),
+    selectedBentoBoxId,
+    freeLayoutTab,
+    freeActiveTier,
+    freeLayerSeq: Math.max(freeLayerSeq || 1, getFreeHistoryMaxLayer()),
+    freeSelectedItemUid,
+    freeGuideStep,
+    freeCupToolMode,
+    freeActiveCupUid,
+    freeCupEditorUid,
+    freePendingCupEditorUid,
+    simpleReplaceSlotUid,
+    simpleNoCupSlotIndex,
+    simpleCupSlotIndex,
+    freeBrushStampLevel,
+  };
+}
+function getFreeHistoryStateKey(state) {
+  return JSON.stringify(state || {});
+}
+function beginFreeHistoryChange() {
+  if (freeHistoryApplying) return null;
+  return captureFreeHistoryState();
+}
+function commitFreeHistoryChange(beforeState) {
+  if (!beforeState || freeHistoryApplying) return false;
+  const afterState = captureFreeHistoryState();
+  if (getFreeHistoryStateKey(beforeState) === getFreeHistoryStateKey(afterState)) return false;
+  freeUndoStack.push(beforeState);
+  if (freeUndoStack.length > FREE_LAYOUT_HISTORY_LIMIT) freeUndoStack.shift();
+  freeRedoStack = [];
+  return true;
+}
+function restoreFreeHistoryState(state) {
+  if (!state) return;
+  freeHistoryApplying = true;
+  placedItems = cloneFreeHistoryValue(state.placedItems || []);
+  selectedBentoBoxId = state.selectedBentoBoxId || selectedBentoBoxId;
+  freeLayoutTab = state.freeLayoutTab || freeLayoutTab;
+  freeActiveTier = Number(state.freeActiveTier) || 1;
+  freeLayerSeq = Math.max(Number(state.freeLayerSeq) || 1, getFreeHistoryMaxLayer(placedItems) + 1);
+  freeSelectedItemUid = placedItems.some(item => item.uid === state.freeSelectedItemUid) ? state.freeSelectedItemUid : null;
+  freeGuideStep = state.freeGuideStep || freeGuideStep;
+  freeCupToolMode = state.freeCupToolMode || 'move';
+  freeActiveCupUid = placedItems.some(item => item.uid === state.freeActiveCupUid && item.snapTarget) ? state.freeActiveCupUid : null;
+  freeCupEditorUid = placedItems.some(item => item.uid === state.freeCupEditorUid && item.snapTarget) ? state.freeCupEditorUid : null;
+  freePendingCupEditorUid = placedItems.some(item => item.uid === state.freePendingCupEditorUid && item.snapTarget) ? state.freePendingCupEditorUid : null;
+  simpleReplaceSlotUid = placedItems.some(item => item.uid === state.simpleReplaceSlotUid) ? state.simpleReplaceSlotUid : null;
+  simpleNoCupSlotIndex = state.simpleNoCupSlotIndex == null ? null : state.simpleNoCupSlotIndex;
+  simpleCupSlotIndex = state.simpleCupSlotIndex == null ? null : state.simpleCupSlotIndex;
+  freeBrushStampDef = null;
+  freeBrushStampLevel = Number.isFinite(Number(state.freeBrushStampLevel)) ? Number(state.freeBrushStampLevel) : 1;
+  freeDragState = null;
+  freePaletteDragState = null;
+  removeFreePaletteDragGhost();
+  freeHistoryApplying = false;
+  renderFreeLayoutStage({ immediate: true });
+  renderFreeLayoutControls();
+}
+function undoFreeHistory() {
+  if (!freeUndoStack.length) return false;
+  const current = captureFreeHistoryState();
+  const previous = freeUndoStack.pop();
+  freeRedoStack.push(current);
+  if (freeRedoStack.length > FREE_LAYOUT_HISTORY_LIMIT) freeRedoStack.shift();
+  restoreFreeHistoryState(previous);
+  showToast('とりけしたよ');
+  return true;
+}
+function redoFreeHistory() {
+  if (!freeRedoStack.length) return false;
+  const current = captureFreeHistoryState();
+  const next = freeRedoStack.pop();
+  freeUndoStack.push(current);
+  if (freeUndoStack.length > FREE_LAYOUT_HISTORY_LIMIT) freeUndoStack.shift();
+  restoreFreeHistoryState(next);
+  showToast('やりなおしたよ');
+  return true;
+}
+function resetFreeHistory() {
+  freeUndoStack = [];
+  freeRedoStack = [];
+  freeHistoryApplying = false;
+}
 
 // ===== NPC 依頼者モード state =====
 // セッション中の現在の依頼者。完成後は次の依頼者に切り替えて注文シーンから再開する。
@@ -12113,7 +12218,7 @@ function beginFreeItemDrag(e, uid) {
   const offset = p && item
     ? { x: item.x - p.x, y: item.y - p.y }
     : { x: 0, y: 0 };
-  freeDragState = { uid, offset, point: p };
+  freeDragState = { uid, offset, point: p, historyBefore: beginFreeHistoryChange() };
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
@@ -12163,6 +12268,7 @@ function onFreeItemDragEnd(e) {
   if (!freeDragState) return;
   if (e && e.cancelable) e.preventDefault();
   const uid = freeDragState.uid;
+  const historyBefore = freeDragState.historyBefore || null;
   const dropPoint = (e ? eventToFreePoint(e) : null) || freeDragState.point || null;
   freeDragState = null;
   window.removeEventListener('pointermove', onFreeItemDragMove);
@@ -12171,6 +12277,7 @@ function onFreeItemDragEnd(e) {
   window.removeEventListener('pointerup', onFreeItemDragEnd);
   const handledSimpleDrop = applySimpleSlotDrop(uid, dropPoint);
   if (!handledSimpleDrop) finalizeFreeItemPosition(uid);
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
@@ -12320,7 +12427,7 @@ function tutorialLockCupDropToTarget(def, uid) {
   const screenPoint = tutorialFreePointToScreenPoint(item);
   const targetPoint = tutorialCupDemoScreenPoint();
   if (screenPoint && targetPoint && dist(screenPoint, targetPoint) > 82) {
-    removeFreeItem(uid);
+    removeFreeItem(uid, { history: false, force: true });
     showToast('あおい まるの なかに おいてね');
     tutorialRetryRenderStep('small-accessory', 180);
     return false;
@@ -12585,7 +12692,7 @@ function addSimpleFreePaletteItem(def) {
 function beginFreePaletteDrag(e, def) {
   if (e && e.cancelable && e.pointerType !== 'touch') e.preventDefault();
   if (!canStartFreePaletteDrag(def)) return;
-  freePaletteDragState = { def, uid: null };
+  freePaletteDragState = { def, uid: null, historyBefore: beginFreeHistoryChange() };
   createFreePaletteDragGhost(def, e);
   window.addEventListener('pointermove', onFreePaletteDragMove, { passive: false });
   window.addEventListener('pointerup', onFreePaletteDragEnd, { once: true });
@@ -12644,7 +12751,7 @@ function onFreePaletteDragMove(e) {
 }
 function finishFreePaletteDrag(shouldFinalize) {
   if (!freePaletteDragState) return;
-  const { def, uid } = freePaletteDragState;
+  const { def, uid, historyBefore } = freePaletteDragState;
   removeFreePaletteDragGhost();
   freePaletteDragState = null;
   window.removeEventListener('pointermove', onFreePaletteDragMove);
@@ -12655,7 +12762,7 @@ function finishFreePaletteDrag(shouldFinalize) {
     return;
   }
   if (!shouldFinalize) {
-    removeFreeItem(uid);
+    removeFreeItem(uid, { history: false, force: true });
     return;
   }
   if (!tutorialLockCupDropToTarget(def, uid)) return;
@@ -12664,6 +12771,7 @@ function finishFreePaletteDrag(shouldFinalize) {
   if (def.type === 'food' && placed && !placed.parentCupId) {
     attachFoodToCupIfOverlaps(placed, null, { render: false, selectChild: true });
   }
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
@@ -12794,16 +12902,19 @@ function removeFreeItemData(uid, opts = {}) {
   if (item.parentCupId) layoutCupChildren(placedItems.find(i => i.uid === item.parentCupId && i.snapTarget));
   return item;
 }
-function removeFreeItem(uid) {
-  const removed = removeFreeItemData(uid);
+function removeFreeItem(uid, opts = {}) {
+  const historyBefore = opts.history === false ? null : beginFreeHistoryChange();
+  const removed = removeFreeItemData(uid, opts);
   if (!removed) return;
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
 function undoFreeItem() {
-  if (!placedItems.length) return;
-  const latest = [...placedItems].sort((a, b) => b.layer - a.layer)[0];
-  removeFreeItem(latest.uid);
+  undoFreeHistory();
+}
+function redoFreeItem() {
+  redoFreeHistory();
 }
 function getSelectedFreeItem() {
   return placedItems.find(i => i.uid === freeSelectedItemUid) || null;
@@ -12811,9 +12922,11 @@ function getSelectedFreeItem() {
 function rotateSelectedItem(deltaAngle) {
   const item = getSelectedFreeItem();
   if (!item) return;
+  const historyBefore = beginFreeHistoryChange();
   let next = ((item.rotation || 0) + deltaAngle) % 360;
   if (next < 0) next += 360;
   item.rotation = next;
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -12854,6 +12967,7 @@ function setSelectedAccessorySize(sizeKey) {
   const item = getSelectedFreeItem();
   const preset = getAccessorySizePresets(item).find(p => p.key === sizeKey);
   if (!item || !preset) return;
+  const historyBefore = beginFreeHistoryChange();
   item.size = preset.size;
   item.sizeKey = preset.key;
   if (item.type === 'cup' && preset.radius) item.radius = preset.radius;
@@ -12861,6 +12975,7 @@ function setSelectedAccessorySize(sizeKey) {
   const p = clampPointToFreeItemBounds(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
   if (item.snapTarget) clampCupChildren(item);
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -12898,18 +13013,21 @@ function getSelectedBrushItem() {
 function setSelectedBrushLevel(delta) {
   const item = getSelectedBrushItem();
   if (!item) return;
+  const historyBefore = beginFreeHistoryChange();
   const max = item.brushImages.length - 1;
   item.brushLevel = clamp((item.brushLevel == null ? 1 : item.brushLevel) + delta, 0, max);
   item.size = [128, 170, 220][item.brushLevel] || item.size;
   const parentCup = getParentCup(item);
   const p = parentCup ? clampPointToCup(item.x, item.y, item, parentCup) : clampPointToFreeItemBounds(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
 function duplicateSelectedBrushItem() {
   const item = getSelectedBrushItem();
   if (!item) return;
+  const historyBefore = beginFreeHistoryChange();
   const parentCup = getParentCup(item);
   const def = {
     id: item.id,
@@ -12945,6 +13063,7 @@ function duplicateSelectedBrushItem() {
   } else {
     freeSelectedItemUid = next.uid;
   }
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   spawnLandingSparkles(document.getElementById('free-layout-stage'));
@@ -13132,8 +13251,10 @@ function moveSelectedItemLayer(delta) {
     return;
   }
   const nextUnits = units.slice();
+  const historyBefore = beginFreeHistoryChange();
   [nextUnits[index], nextUnits[targetIndex]] = [nextUnits[targetIndex], nextUnits[index]];
   applyLayerUnitOrder(nextUnits);
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   try { if (typeof tutorialOnLayerMoved === 'function') tutorialOnLayerMoved(delta); } catch (_) {}
@@ -13154,8 +13275,10 @@ function moveSelectedItemLayerTo(edge) {
   let insertIndex = targetIndex;
   if (edge === 'front') insertIndex = targetIndex > index ? targetIndex : targetIndex + 1;
   if (edge !== 'front') insertIndex = targetIndex < index ? targetIndex : targetIndex - 1;
+  const historyBefore = beginFreeHistoryChange();
   const nextUnits = moveLayerUnitToIndex(units, index, clamp(insertIndex, 0, units.length - 1));
   applyLayerUnitOrder(nextUnits);
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   try { if (typeof tutorialOnLayerMoved === 'function') tutorialOnLayerMoved(edge); } catch (_) {}
@@ -13188,6 +13311,7 @@ function exitFreeBrushStampMode() {
 }
 function addBrushStampAtPoint(point) {
   if (!freeBrushStampDef || !point) return null;
+  const historyBefore = beginFreeHistoryChange();
   const sizeByLevel = [128, 170, 220];
   const level = clamp(Math.round(freeBrushStampLevel || 0), 0, (freeBrushStampDef.brushImages || []).length - 1);
   const tier = getGuideTierForStep();
@@ -13202,6 +13326,7 @@ function addBrushStampAtPoint(point) {
   });
   sendItemLayerTo(item, 'back');
   freeSelectedItemUid = item.uid;
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   spawnLandingSparkles(document.getElementById('free-layout-stage'));
@@ -13215,6 +13340,7 @@ function addFoodToSelectedCup(def) {
     showToast('カップには 小さいおかずを いれよう！');
     return null;
   }
+  const historyBefore = beginFreeHistoryChange();
   removeCupChildrenForReplacement(cup);
   const isBrushFood = !!def.brushItem;
   const childSize = getCupFoodChildSize(def, cup);
@@ -13237,6 +13363,7 @@ function addFoodToSelectedCup(def) {
   freeSelectedItemUid = selectedItem.uid;
   freeActiveCupUid = cup.uid;
   freeCupToolMode = 'contents';
+  commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   spawnLandingSparkles(document.getElementById('free-layout-stage'));
@@ -14158,7 +14285,9 @@ function makeFreePaletteButton(def) {
         return;
       }
       if (simpleBentoMode) {
+        const historyBefore = isCabbageBrushDef(def) && !getEditingCup() ? null : beginFreeHistoryChange();
         addSimpleFreePaletteItem(def);
+        if (commitFreeHistoryChange(historyBefore)) renderFreeLayoutControls();
         return;
       }
       if (isCabbageBrushDef(def) && !getEditingCup()) {
@@ -15594,9 +15723,16 @@ function renderFreeLayoutControls() {
   actions.className = 'free-action-row';
   const undo = document.createElement('button');
   undo.type = 'button';
-  undo.textContent = 'もどす';
+  undo.textContent = 'とりけす';
+  undo.disabled = !freeUndoStack.length;
   undo.addEventListener('pointerdown', e => { e.preventDefault(); undoFreeItem(); });
   actions.appendChild(undo);
+  const redo = document.createElement('button');
+  redo.type = 'button';
+  redo.textContent = 'やりなおし';
+  redo.disabled = !freeRedoStack.length;
+  redo.addEventListener('pointerdown', e => { e.preventDefault(); redoFreeItem(); });
+  actions.appendChild(redo);
   const del = document.createElement('button');
   del.type = 'button';
   del.textContent = 'けす';
@@ -15613,6 +15749,7 @@ function loadFreeLayoutStage() {
   stepIdx = 0; pickedInStep = 0; okazuFillCount = 0; okazuPicked = 0;
   usedIds.clear(); bentoSkColors = []; bentoFoodNames = []; bentoSelected = []; favSaved = false;
   placedItems = [];
+  resetFreeHistory();
   freeLayerSeq = 1;
   freeSelectedItemUid = null;
   freeLayoutTab = 'box';
