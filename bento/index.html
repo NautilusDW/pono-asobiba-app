@@ -10510,11 +10510,12 @@ function sortFreeEditorMap(map) {
   });
   return sorted;
 }
+const SIMPLE_LEAF_PLACEMENT_LIMIT = 5;
 const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 4,
   cup: 4,
-  leaf: 1,
+  leaf: SIMPLE_LEAF_PLACEMENT_LIMIT,
   divider: 7,
   other: 1,
 };
