@@ -10891,6 +10891,40 @@ function getSimpleCupFallbackPoints(box) {
   });
   return points.concat(fallback).slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
 }
+function shouldUseSideStageTargetsForCup(kind) {
+  return !!(
+    kind === 'cup'
+    && simpleBentoMode
+    && isOkazuGuideStep()
+    && String(freeGuideStep || '').endsWith('Side')
+  );
+}
+function getSimpleSlotTouchPoint(point) {
+  const markerX = Number(point && point.markerX);
+  const markerY = Number(point && point.markerY);
+  if (Number.isFinite(markerX) && Number.isFinite(markerY)) {
+    return {
+      x: Math.round(clamp(markerX, 0, FREE_LAYOUT_W) * 10) / 10,
+      y: Math.round(clamp(markerY, 0, FREE_LAYOUT_H) * 10) / 10,
+    };
+  }
+  const x = Number(point && point.x);
+  const y = Number(point && point.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return {
+    x: Math.round(clamp(x, 0, FREE_LAYOUT_W) * 10) / 10,
+    y: Math.round(clamp(y, 0, FREE_LAYOUT_H) * 10) / 10,
+  };
+}
+function getSimpleSideStageTargetPoints(box, tier, limit) {
+  const count = Math.max(
+    clamp(Math.round(Number(limit) || 0), 0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4),
+    getSimpleSlotCountForBox(box, 'side-food')
+  );
+  return getSimpleFoodSlots('side-food', box, tier, { type: 'food', okazuRole: 'side' })
+    .slice(0, count)
+    .map(getSimpleSlotTouchPoint);
+}
 function getSimpleFoodSlots(kind, box, tier, def) {
   const limit = kind === 'side-food' ? getSimpleSlotCountForBox(box, kind) : (SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3);
   const points = getSimpleFoodSpreadPoints(box);
@@ -10934,6 +10968,19 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
     const points = configured.length
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
       : fallbackPoints;
+    if (shouldUseSideStageTargetsForCup(kind)) {
+      const sideTargets = getSimpleSideStageTargetPoints(box, tier, points.length);
+      points.forEach((point, idx) => {
+        const target = sideTargets[idx];
+        if (!target) return;
+        points[idx] = Object.assign({}, point, {
+          x: target.x,
+          y: target.y,
+          markerX: target.x,
+          markerY: target.y,
+        });
+      });
+    }
     return points.map((p, idx) => makeSimpleSlot(
       kind,
       tier,
