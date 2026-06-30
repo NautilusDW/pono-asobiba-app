@@ -12380,29 +12380,84 @@ function bentoSlotAutoMarkerPoints(boxId, kind) {
   }
   return pointsBySlot;
 }
-function bentoSlotGetMarkerPoint(boxId, def) {
-  var entry = bentoSlotGetStoredEntry(boxId, def);
-  if (bentoSlotCanEditMarker(def) && isFinite(Number(entry && entry.markerX)) && isFinite(Number(entry && entry.markerY))) {
-    return bentoSlotPoint({ x: entry.markerX, y: entry.markerY });
+function bentoSlotExplicitMarkerPoint(entry) {
+  var markerX = Number(entry && entry.markerX);
+  var markerY = Number(entry && entry.markerY);
+  if (!isFinite(markerX) || !isFinite(markerY)) return null;
+  return bentoSlotPoint({ x: markerX, y: markerY });
+}
+function bentoSlotEntryTouchPoint(entry) {
+  var explicit = bentoSlotExplicitMarkerPoint(entry);
+  if (explicit) return explicit;
+  var x = Number(entry && entry.x);
+  var y = Number(entry && entry.y);
+  if (!isFinite(x) || !isFinite(y)) return null;
+  return bentoSlotPoint({ x: x, y: y });
+}
+function bentoSlotSameIndexDef(kind, index) {
+  return { kind: kind, index: bentoSlotClamp(Math.round(Number(index) || 0), 0, (BENTO_SLOT_LIMITS[kind] || 1) - 1, 0) };
+}
+function bentoSlotGetGameMarkerPoint(boxId, def) {
+  if (!bentoSlotCanEditMarker(def)) return bentoSlotGetEntry(boxId, def);
+  var index = bentoSlotClamp(Math.round(Number(def.index) || 0), 0, (BENTO_SLOT_LIMITS.cup || 4) - 1, 0);
+  var cupDef = bentoSlotSameIndexDef('cup', index);
+  var sideDef = bentoSlotSameIndexDef('side-food', index);
+  var cupStored = bentoSlotGetStoredEntry(boxId, cupDef);
+  var sideStored = bentoSlotGetStoredEntry(boxId, sideDef);
+  var cupResolved = bentoSlotGetEntry(boxId, cupDef);
+  var sideResolved = bentoSlotGetEntry(boxId, sideDef);
+  if (def.kind === 'side-food') {
+    return bentoSlotEntryTouchPoint(cupResolved)
+      || bentoSlotEntryTouchPoint(sideResolved)
+      || bentoSlotAutoMarkerPoints(boxId, 'cup')[index]
+      || bentoSlotAutoMarkerPoints(boxId, 'side-food')[index]
+      || bentoSlotGetEntry(boxId, def);
   }
-  var fallback = bentoSlotAutoMarkerPoints(boxId, def.kind)[def.index] || bentoSlotGetEntry(boxId, def);
-  return bentoSlotPoint(fallback);
+  return bentoSlotExplicitMarkerPoint(cupStored)
+    || bentoSlotExplicitMarkerPoint(sideStored)
+    || bentoSlotEntryTouchPoint(cupResolved)
+    || bentoSlotEntryTouchPoint(sideResolved)
+    || bentoSlotAutoMarkerPoints(boxId, 'cup')[index]
+    || bentoSlotAutoMarkerPoints(boxId, 'side-food')[index]
+    || bentoSlotGetEntry(boxId, def);
+}
+function bentoSlotGetMarkerPoint(boxId, def) {
+  if (!bentoSlotCanEditMarker(def)) return bentoSlotGetEntry(boxId, def);
+  return bentoSlotPoint(bentoSlotGetGameMarkerPoint(boxId, def));
 }
 function bentoSlotSetMarkerPoint(boxId, def, point) {
   if (!bentoSlotCanEditMarker(def)) return bentoSlotGetEntry(boxId, def);
-  var existing = bentoSlotGetStoredEntry(boxId, def);
+  var index = bentoSlotClamp(Math.round(Number(def.index) || 0), 0, (BENTO_SLOT_LIMITS.cup || 4) - 1, 0);
+  var markerDef = bentoSlotSameIndexDef('cup', index);
+  var existing = bentoSlotGetStoredEntry(boxId, markerDef);
   var markerPoint = bentoSlotClampPointForDef(bentoSlotGetBoxById(boxId), def, point);
-  return bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
+  bentoSlotSetEntry(boxId, markerDef, Object.assign({}, existing, {
     markerX: markerPoint.x,
     markerY: markerPoint.y
   }));
+  var sideDef = bentoSlotSameIndexDef('side-food', def.index);
+  if (index < bentoSlotGetBoxSlotCount(boxId, 'side-food')) {
+    var sideExisting = bentoSlotGetStoredEntry(boxId, sideDef);
+    bentoSlotSetEntry(boxId, sideDef, Object.assign({}, sideExisting, {
+      markerX: markerPoint.x,
+      markerY: markerPoint.y
+    }));
+  }
+  return bentoSlotGetMarkerPoint(boxId, def);
 }
 function bentoSlotClearMarkerPoint(boxId, def) {
   if (!bentoSlotCanEditMarker(def)) return bentoSlotGetEntry(boxId, def);
-  var existing = Object.assign({}, bentoSlotGetStoredEntry(boxId, def));
-  delete existing.markerX;
-  delete existing.markerY;
-  return bentoSlotSetEntry(boxId, def, existing);
+  var cupDef = bentoSlotSameIndexDef('cup', def.index);
+  var cupExisting = Object.assign({}, bentoSlotGetStoredEntry(boxId, cupDef));
+  delete cupExisting.markerX;
+  delete cupExisting.markerY;
+  bentoSlotSetEntry(boxId, cupDef, cupExisting);
+  var sideDef = bentoSlotSameIndexDef('side-food', def.index);
+  var sideExisting = Object.assign({}, bentoSlotGetStoredEntry(boxId, sideDef));
+  delete sideExisting.markerX;
+  delete sideExisting.markerY;
+  bentoSlotSetEntry(boxId, sideDef, sideExisting);
+  return bentoSlotGetMarkerPoint(boxId, def);
 }
 function bentoSlotEnsureKindList(boxId, def, boxOverride) {
   var box = boxOverride || bentoSlotGetBoxById(boxId);

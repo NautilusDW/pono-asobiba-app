@@ -84,6 +84,12 @@
   --acorn-modal-font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
   --acorn-modal-color-primary: #5a3515;
   --acorn-modal-gap: clamp(8px, 1.8vw, 14px);
+  --acorn-textbox-bg: linear-gradient(180deg, #fffaf0 0%, #fff1c9 100%);
+  --acorn-textbox-border: rgba(196, 124, 48, 0.58);
+  --acorn-textbox-shadow:
+    0 12px 24px rgba(70, 40, 10, 0.22),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.62);
+  --acorn-textbox-radius: clamp(22px, 4.2vw, 34px);
 
   /* ---------- ゲーム別アクセント (フォールバック; ゲーム側で上書き想定) ---------- */
   --acorn-accent: #c98b3a;
@@ -142,6 +148,7 @@
  *  - quizland .result-acorn-reward を BEM 化
  * ============================================================= */
 .pono-acorn-modal__panel {
+  box-sizing: border-box;
   display: grid;
   justify-items: center;
   gap: 4px;
@@ -149,6 +156,10 @@
   text-align: center;
   line-height: 1;
   padding: var(--acorn-modal-padding);
+  background: var(--acorn-textbox-bg);
+  border: 3px solid var(--acorn-textbox-border);
+  border-radius: var(--acorn-textbox-radius);
+  box-shadow: var(--acorn-textbox-shadow);
   /* __dismiss を右上 absolute で固定するための基点 (全ゲーム共通)。
      base-dismiss-css 統一フェーズ (v1731): grid centering の影響を受けず
      右上に出すため、 全ゲームで panel を positioning context にする。 */
@@ -425,6 +436,12 @@
 
 .pono-acorn-modal--perfect .pono-acorn-modal__panel {
   position: relative; /* ::after 用 */
+  background: linear-gradient(180deg, #7a4313 0%, #a3651f 100%);
+  border-color: rgba(255, 226, 125, 0.76);
+  box-shadow:
+    0 14px 28px rgba(40, 18, 0, 0.38),
+    inset 0 0 0 2px rgba(255, 241, 170, 0.26),
+    0 0 24px rgba(255, 223, 104, 0.3);
 }
 
 .pono-acorn-modal--perfect.pono-acorn-modal--animated .pono-acorn-modal__panel::after {
@@ -721,6 +738,6 @@
 [data-game-id="starparodier"] .pono-acorn-modal__progress,
 [data-game-id="bowling"] .pono-acorn-modal__progress,
 [data-game-id="bubble"] .pono-acorn-modal__progress {
-  color: #FFF7CA;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.62);
+  color: #6d3b07;
+  text-shadow: 0 2px 0 rgba(255, 244, 203, 0.96);
 }
