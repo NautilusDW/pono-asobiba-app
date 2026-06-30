@@ -11566,7 +11566,7 @@ function getSimpleSlotPlacementDefForItem(item) {
     catalog = getFreeFoodCatalog().find(def => def && def.id === item.id) || null;
   }
   if (!catalog) return item;
-  return {
+  const placementDef = {
     ...catalog,
     ...item,
     slotVariantImages: Array.isArray(catalog.slotVariantImages)
@@ -11575,6 +11575,17 @@ function getSimpleSlotPlacementDefForItem(item) {
     verticalDivider: !!(item.verticalDivider || catalog.verticalDivider),
     simpleSampleId: catalog.simpleSampleId || item.simpleSampleId || '',
   };
+  if (catalog.type === 'food'
+      || catalog.type === 'cup'
+      || catalog.type === 'leaf'
+      || catalog.type === 'divider'
+      || catalog.type === 'pick'
+      || catalog.snapTarget) {
+    const catalogScale = Number(catalog.scale);
+    if (Number.isFinite(catalogScale) && catalogScale > 0) placementDef.scale = catalogScale;
+    else delete placementDef.scale;
+  }
+  return placementDef;
 }
 function getSimpleNearestDropSlotForItem(item, dropPoint = null) {
   const slots = getSimpleDropSlotsForItem(item);
