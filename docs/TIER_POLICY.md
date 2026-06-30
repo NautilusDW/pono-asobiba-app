@@ -75,16 +75,25 @@ sub の UI 方針:
 - `quizland/index.html` は free / book の場合だけ難易度選択をスキップし、mixed playlist builder を使う。
 - `isQuizlandDifficultyUnlocked()` は sub 用 UI のために残すが、free / book の通常導線では露出させない。
 
-#### B. maze（ポノとランタンのめいろ） — 全 10 ステージへ拡張予定
+#### B. maze（ポノとランタンのめいろ） — 現行 7 ステージ / 将来 10 ステージへ拡張予定（2026-07-01 再配分方針）
+
+旧方針の「free は Stage 1-3 / book は Stage 1-7」の連番ロックは廃止。 free が序盤チュートリアルだけに見えるのを避けるため、QuizLand と同じく **簡単・普通・難しめを抜粋して混ぜる allowlist 方式**にする。
+
+現行 `maze/imageStages/_index.json` では slot 1-7 が本編ステージ。 実装上の判定は内部 slot ID を使い、子ども向け表示では free / book の解放済みステージだけを `ステージ 1 / 3` のように tier 内連番へ詰める。 free / book で `ステージ 1, 3, 6` のような穴あき表示はしない。
 
 | 層 | 解放ステージ | ステージ数 | 全体比 |
 |---|---|---|---|
-| **free** | Stage 1-3 | 3 / 10 | 30% |
-| **book** | Stage 1-7 | 7 / 10 | 70% |
-| **sub** | Stage 1-10 | 10 / 10 | 100% |
+| **free** | internal slot 1 / 3 / 6 | 3 / 7（将来 3 / 10） | 43%（将来 30%） |
+| **book** | internal slot 1 / 2 / 3 / 4 / 6 | 5 / 7（将来 5 / 10） | 71%（将来 50%） |
+| **sub** | 現行 slot 1-7 全部 + 将来 slot 8-10 | 7 / 7（将来 10 / 10） | 100% |
 
-差別化のキモ: book とアプリ (= sub) の差は 3 ステージ（Stage 8 / 9 / 10）。 凝った絵 + 難度高の「ご褒美ステージ」として位置付ける。
-前提作業（本ドキュメント外）: 現状 Stage 1-5 のみ。 Stage 6-10 の素材作成は Phase 2 別タスク。
+free は導入ステージ、通常ルート、ギミック強めステージを混ぜる。 book は free に 2 ステージだけ足し、絵本購入特典として少し広がる程度に留める。 sub は現行全ステージと将来追加 stage 8-10 を持つ。
+
+実装メモ:
+- `common/tier.js` の Maze 判定は、`FREE_MAZE_MAX_STAGE` / `BOOK_MAZE_MAX_STAGE` の max stage 方式から `FREE_MAZE_STAGE_IDS` / `BOOK_MAZE_STAGE_IDS` の allowlist 方式へ寄せる。
+- `maze/index.html` のステージ選択 modal は、free / book では解放済み stage だけを表示する。
+- `loadStage(n)` 側の `isMazeStageUnlocked()` guard は残し、URL 直打ちや古い保存状態から未解放 stage に入れないようにする。
+- 将来 stage 8-10 を追加した時は、初期状態では sub 専用にする。
 
 #### C. oto（ポノのおとタッチ） — 5 次元の組み合わせ
 
@@ -245,14 +254,14 @@ tier の仕様を変えるとき、以下を一括で更新する:
 `PONO_TIER_GAME_LOCKS_ENABLED = true` で運用中。 各ゲーム本体に判定が挿入済:
 
 - `quizland/index.html` の `buildPlaylist` に `PonoTier.isQuizlandQuestionUnlocked` フィルタ。 2026-06-30 再配分方針では、free / book は難易度選択をスキップして mixed playlist（おすすめ 5 もん）へ直行、sub のみ難易度選択を表示する。
-- `maze/index.html` のステージ選択 UI に `isMazeStageUnlocked` フック（Stage 6-10 の素材作成は別タスク）。
+- `maze/index.html` のステージ選択 UI に `isMazeStageUnlocked` フック。 2026-07-01 再配分方針では max stage 方式ではなく allowlist 方式にし、free/book は解放済みステージだけを tier 内連番で表示する。
 - `oto/index.html` の音色 / スケール / モード / リズム曲メニュー / コードモードに判定。 ロック曲は薄表示 + タップで `showSubscribePromo()`。
 - `puzzle/main.js` の `BASE_STAGES` フィルタ。
 - `bento/index.html` の `FREE_COOKED_OKAZU` を **30 食材**に拡張、`getFreeFoodCatalog` フィルタ、`NPC_REQUESTERS` ガード、お弁当箱選択 UI に `isBentoBoxUnlocked` 接続、NPC `shika` の wantedFoods をティア対応。
 - 下段 4 本も実コンテンツ準備完了したものから `comingSoon: false` に格上げ。
 
 並行別タスク:
-- maze Stage 6-10 の新規ステージ作成（5 枚分、各 background art + nodes / edges 定義）。
+- maze Stage 8-10 の新規ステージ作成（各 background art + nodes / edges 定義）。 追加時は初期状態で sub 専用。
 - bento `FREE_COOKED_OKAZU` 追加 12 エントリの size / rotation 調整。
 - `play.html` 内パスワード解除モーダル（`passwordUnlockModal`）実装完了、`play-all.html` 経由の解錠フローを非推奨化（将来削除候補）。
 
@@ -269,7 +278,7 @@ tier の仕様を変えるとき、以下を一括で更新する:
 | ゲーム | book にあり アプリ (= sub) にしかない要素 | 体験差 |
 |---|---|---|
 | **quizland** | free/book は混合 25/40 問に留め、アプリ (= sub) は全 **180 問** + 難易度選択 | free/book は年齢幅のある「おすすめ 5 もん」、全量と選択性はアプリ (= sub) に集中 |
-| **maze** | Stage 8 / 9 / 10（3 ステージ） | 凝った絵と難度のご褒美 |
+| **maze** | free/book は抜粋 3/5 ステージ、アプリ (= sub) は現行全 7 ステージ + 将来 Stage 8 / 9 / 10 | free/book は難易度を混ぜた抜粋、全ステージと追加ステージはアプリ (= sub) に集中 |
 | **oto** | リズム曲 きらきらぼし / よろこびのうた + 音色 blip / taiko + コードモード一部 | 「子供が知ってる定番曲」を演奏できるのはアプリ (= sub) だけ |
 | **puzzle** | Stage 10-20（11 ステージ、16-20 ピース大物含む）+ ポノ特別枠 #10 / #15 / #20（3 枚） | 完成達成感と「ポノ絵本コレクション」がアプリ (= sub) に集中 |
 | **bento** | 中華・サラダ・デザート系 **15 食材** + キャラ箱 2 段 × 4 + NPC 3 体 | キャラ弁・行楽弁当が作れるのはアプリ (= sub) だけ、SNS 映え画面 |
