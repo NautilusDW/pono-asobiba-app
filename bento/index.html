@@ -11188,6 +11188,50 @@ function getSimpleSlotActualPoint(slot) {
 function isSimpleVerticalDividerSampleId(sampleId) {
   return /^divider_(?:wave|wood)_vertical(?:_|$)/.test(String(sampleId || ''));
 }
+function isSimpleVerticalDividerSlot(slot) {
+  const sampleId = String(slot && (slot.sourceSampleId || slot.sampleId) || '');
+  if (sampleId) return isSimpleVerticalDividerSampleId(sampleId);
+  return Number(slot && slot.index) === 6;
+}
+function getSimpleDividerFamily(def) {
+  const raw = [
+    def && def.id,
+    def && def.simpleSampleId,
+    def && def.sampleId,
+    def && def.sourceSampleId,
+    def && def.name,
+    def && def.img,
+    def && def.image,
+  ].map(value => String(value || '')).join(' ');
+  return raw.indexOf('wood') >= 0 || raw.indexOf('きの') >= 0 ? 'wood' : 'wave';
+}
+function getSimpleDividerDefForSlot(def, slot) {
+  const family = getSimpleDividerFamily(def);
+  const id = isSimpleVerticalDividerSlot(slot)
+    ? `divider_${family}_vertical`
+    : `divider_${family}`;
+  return bentoAccessories.find(item => item && item.id === id) || def;
+}
+function syncSimpleDividerItemToSlot(item, slot) {
+  if (!item || item.type !== 'divider' || !slot) return false;
+  const def = getSimpleDividerDefForSlot(item, slot);
+  if (!def || !def.id || def.id === item.id) return false;
+  item.id = def.id;
+  item.name = def.name || item.name || '';
+  item.img = def.img || def.image || item.img || '';
+  item.css = def.css || item.css || '';
+  item.layerBase = def.layerBase || item.layerBase || 12;
+  item.sizeKey = def.sizeKey || item.sizeKey || '';
+  item.renderAspect = def.renderAspect || 1;
+  item.visualScale = def.visualScale || 1;
+  item.verticalDivider = !!def.verticalDivider;
+  item.simpleSampleId = def.simpleSampleId || '';
+  item.slotVariantKey = '';
+  item.slotVariantImages = Array.isArray(def.slotVariantImages)
+    ? def.slotVariantImages.map(entry => ({ ...entry }))
+    : null;
+  return true;
+}
 function getSimpleDividerDepthKeyForSlot(slot) {
   const sampleId = String(slot && (slot.sourceSampleId || slot.sampleId) || '');
   if (/_back(?:$|[_:-])/.test(sampleId)) return 'back';
@@ -11852,8 +11896,12 @@ function applySimpleSlotDrop(uid, dropPoint = null) {
     const targetKind = getSimpleSlotKindForItem(targetItem);
     const returnSlot = getSimpleSlotForKindIndex(targetKind, getItemTier(targetItem), Number.isFinite(sourceIndex) ? sourceIndex : 0, targetItem)
       || getSimpleCurrentSlotForItem(targetItem);
-    if (returnSlot) applySimpleSlotPlacementToItem(targetItem, returnSlot);
+    if (returnSlot) {
+      syncSimpleDividerItemToSlot(targetItem, returnSlot);
+      applySimpleSlotPlacementToItem(targetItem, returnSlot);
+    }
   }
+  syncSimpleDividerItemToSlot(item, targetSlot);
   const moved = applySimpleSlotPlacementToItem(item, targetSlot);
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
@@ -12808,13 +12856,14 @@ function addSimpleFixedPaletteItem(def) {
     return null;
   }
   if (slot.replaceUid) removeFreeItemData(slot.replaceUid);
-  const placementDef = getSimpleSlotVariantDef(def, slot);
+  const slotDef = def.type === 'divider' ? getSimpleDividerDefForSlot(def, slot) : def;
+  const placementDef = getSimpleSlotVariantDef(slotDef, slot);
   const placementPoint = getSimpleSlotActualPoint(slot) || slot;
   const item = addFreeLayoutItem(placementDef, {
     x: placementPoint.x,
     y: placementPoint.y,
     size: getSimpleSlotSize(placementDef, slot),
-    scale: getSimpleBoxScaleForDef(def),
+    scale: getSimpleBoxScaleForDef(slotDef),
     rotation: placementDef.type === 'food' || placementDef.type === 'decor'
       ? (placementDef.rotation != null ? placementDef.rotation : 0)
       : (placementDef.rotation || 0),
@@ -13340,6 +13389,11 @@ function getFreeItemRenderLayer(item) {
   const base = getFreeRenderLayerBase(item);
   const layer = Number(item && item.layer);
   const manualTie = Number.isFinite(layer) ? layer % 100 : 0;
+  if (item && item.type === 'pick') {
+    const x = clamp(Number(item.x) || 0, 0, FREE_LAYOUT_W);
+    const y = clamp(Number(item.y) || 0, 0, FREE_LAYOUT_H);
+    return Math.round(9000000 + getItemTier(item) * 10000 + y * 10 + x / 100 + manualTie / 100);
+  }
   if (item && item.parentCupId) {
     const parentCup = placedItems.find(parent => parent.uid === item.parentCupId && parent.snapTarget);
     if (parentCup) {
