@@ -282,6 +282,9 @@ const BENTO_SLOT_BOX_ORDER = [
   'box_cat'
 ];
 const BENTO_CUP_SLOT_SIZES = [150];
+const BENTO_SLOT_GLOBAL_SCALE_MIN = 0.6;
+const BENTO_SLOT_GLOBAL_SCALE_MAX = 1.4;
+const BENTO_SLOT_GLOBAL_SCALE_DEFAULT = 1;
 
 function normalizeBentoSlotCounts(raw) {
   const normalized = {};
@@ -291,6 +294,12 @@ function normalizeBentoSlotCounts(raw) {
     normalized['side-food'] = clampBentoMaskNumber(side, 3, 4, 3, 0);
   }
   return normalized;
+}
+
+function normalizeBentoSlotGlobalScale(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return BENTO_SLOT_GLOBAL_SCALE_DEFAULT;
+  return Math.round(clampBentoMaskNumber(n, BENTO_SLOT_GLOBAL_SCALE_MIN, BENTO_SLOT_GLOBAL_SCALE_MAX, BENTO_SLOT_GLOBAL_SCALE_DEFAULT, 3) * 100) / 100;
 }
 
 function normalizeBentoSlotSize(size, kind) {
@@ -434,6 +443,8 @@ function normalizeBentoSlotLayoutMap(map) {
     const box = map[boxId];
     if (!box || typeof box !== 'object' || Array.isArray(box)) return;
     const entry = {};
+    const globalScale = normalizeBentoSlotGlobalScale(box.globalScale);
+    if (Math.abs(globalScale - BENTO_SLOT_GLOBAL_SCALE_DEFAULT) >= 0.001) entry.globalScale = globalScale;
     const slotCounts = normalizeBentoSlotCounts(box.slotCounts || {});
     if (Object.keys(slotCounts).length) entry.slotCounts = slotCounts;
     Object.keys(BENTO_SLOT_LAYOUT_LIMITS).forEach(kind => {

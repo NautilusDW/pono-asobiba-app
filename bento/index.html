@@ -9455,7 +9455,7 @@ function findCupOverlappingFood(item, preferredCup = null) {
   cups.forEach(cup => {
     if (!cup || !cup.snapTarget) return;
     const itemRadius = Math.max(36, (item.size || 72) * (item.scale || 1) * 0.56);
-    const cupRadius = cup.radius || ((cup.size || 180) * 0.58);
+    const cupRadius = (cup.radius || ((cup.size || 180) * 0.58)) * (cup.scale || 1);
     const d = dist(item, cup);
     if (d <= cupRadius + itemRadius && d < bestDist) {
       best = cup;
@@ -10415,6 +10415,9 @@ const SIMPLE_SLOT_LAYOUT_LIMITS = {
 const SIMPLE_SHARED_SLOT_KINDS = new Set(['other']);
 const SIMPLE_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food', 'leaf', 'divider', 'other']);
 const SIMPLE_CUP_SLOT_SIZES = [150];
+const SIMPLE_BOX_GLOBAL_SCALE_MIN = 0.6;
+const SIMPLE_BOX_GLOBAL_SCALE_MAX = 1.4;
+const SIMPLE_BOX_GLOBAL_SCALE_DEFAULT = 1;
 function getDefaultSimpleSlotCountForBox(box, kind) {
   if (kind === 'side-food') return clamp(Math.round(Number(box && box.sideFoodSlotCount) || 3), 3, 4);
   return SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
@@ -10428,6 +10431,11 @@ function normalizeSimpleSlotCounts(raw, box = null) {
     if (normalized !== getDefaultSimpleSlotCountForBox(box, 'side-food')) out['side-food'] = normalized;
   }
   return out;
+}
+function normalizeSimpleBoxGlobalScale(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return SIMPLE_BOX_GLOBAL_SCALE_DEFAULT;
+  return Math.round(clamp(n, SIMPLE_BOX_GLOBAL_SCALE_MIN, SIMPLE_BOX_GLOBAL_SCALE_MAX) * 100) / 100;
 }
 function normalizeSimpleSlotSize(size, kind) {
   const n = Math.round(clamp(Number(size), 32, 340) * 10) / 10;
@@ -10491,6 +10499,8 @@ function normalizeSimpleSlotLayoutMap(map) {
     if (!boxLayout || typeof boxLayout !== 'object' || Array.isArray(boxLayout)) return;
     const box = bentoBoxes.find(b => b && b.id === boxId) || null;
     const entry = {};
+    const globalScale = normalizeSimpleBoxGlobalScale(boxLayout.globalScale);
+    if (Math.abs(globalScale - SIMPLE_BOX_GLOBAL_SCALE_DEFAULT) >= 0.001) entry.globalScale = globalScale;
     const slotCounts = normalizeSimpleSlotCounts(boxLayout.slotCounts || {}, box);
     if (Object.keys(slotCounts).length) entry.slotCounts = slotCounts;
     Object.keys(SIMPLE_SLOT_LAYOUT_LIMITS).forEach(kind => {
@@ -10512,6 +10522,24 @@ function getSimpleSlotLayoutPoints(box, kind) {
   const layout = freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
   const list = layout && Array.isArray(layout[kind]) ? layout[kind] : [];
   return list.map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
+}
+function getSimpleBoxGlobalScale(box = getSelectedBentoBox()) {
+  const layout = box && freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
+  return normalizeSimpleBoxGlobalScale(layout && layout.globalScale);
+}
+function shouldApplySimpleBoxGlobalScale(def) {
+  return !!(simpleBentoMode && def && (
+    def.type === 'food'
+    || def.type === 'cup'
+    || def.type === 'leaf'
+    || def.type === 'divider'
+    || def.type === 'pick'
+    || def.snapTarget
+  ));
+}
+function getSimpleBoxScaleForDef(def) {
+  const baseScale = def && Number.isFinite(Number(def.scale)) && Number(def.scale) > 0 ? Number(def.scale) : 1;
+  return shouldApplySimpleBoxGlobalScale(def) ? baseScale * getSimpleBoxGlobalScale() : baseScale;
 }
 function getSimpleSlotCountForBox(box, kind) {
   const boxLayout = box && freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
@@ -11356,6 +11384,7 @@ function applySimpleSlotPlacementToItem(item, slot) {
   item.x = point.x;
   item.y = point.y;
   item.size = getSimpleSlotSize(placementDef, slot);
+  item.scale = getSimpleBoxScaleForDef(placementDef);
   item.rotation = placementDef.rotation != null ? placementDef.rotation : (item.rotation || 0);
   item.renderAspect = placementDef.renderAspect || 1;
   item.visualScale = placementDef.visualScale || item.visualScale || 1;
@@ -11643,8 +11672,10 @@ function getParentCup(item) {
   return placedItems.find(i => i.uid === item.parentCupId && i.snapTarget) || null;
 }
 function getCupInnerRadius(cup, item) {
-  const cupRadius = cup && cup.radius ? cup.radius : ((cup && cup.size) || 150) * 0.58;
-  const itemSize = item && item.size ? item.size : 72;
+  const cupScale = cup && cup.scale ? Number(cup.scale) || 1 : 1;
+  const itemScale = item && item.scale ? Number(item.scale) || 1 : 1;
+  const cupRadius = (cup && cup.radius ? cup.radius : ((cup && cup.size) || 150) * 0.58) * cupScale;
+  const itemSize = (item && item.size ? item.size : 72) * itemScale;
   return Math.max(12, cupRadius - itemSize * 0.58);
 }
 function clampPointToCup(x, y, item, cup) {
@@ -11668,11 +11699,13 @@ function clampPointToCup(x, y, item, cup) {
   return point;
 }
 function getCupChildSlot(cup, index, childSize, total = 1) {
-  const inner = getCupInnerRadius(cup, { size: childSize });
+  const childScale = simpleBentoMode ? getSimpleBoxGlobalScale() : 1;
+  const visualChildSize = childSize * childScale;
+  const inner = getCupInnerRadius(cup, { size: childSize, scale: childScale });
   if (total <= 1) return { x: cup.x, y: cup.y };
   if (total === 2) {
-    const spreadX = Math.min(inner * 0.52, Math.max(18, childSize * 0.34));
-    const spreadY = Math.min(inner * 0.16, Math.max(2, childSize * 0.05));
+    const spreadX = Math.min(inner * 0.52, Math.max(18, visualChildSize * 0.34));
+    const spreadY = Math.min(inner * 0.16, Math.max(2, visualChildSize * 0.05));
     const side = index === 0 ? -1 : 1;
     return {
       x: cup.x + side * spreadX,
@@ -11684,14 +11717,14 @@ function getCupChildSlot(cup, index, childSize, total = 1) {
   };
   const layout = layouts[Math.min(total, 3)];
   if (layout && layout[index]) {
-    const spreadX = Math.min(inner * 0.82, Math.max(30, childSize * 0.70));
-    const spreadY = Math.min(inner * 0.68, Math.max(24, childSize * 0.54));
+    const spreadX = Math.min(inner * 0.82, Math.max(30, visualChildSize * 0.70));
+    const spreadY = Math.min(inner * 0.68, Math.max(24, visualChildSize * 0.54));
     return {
       x: cup.x + layout[index][0] * spreadX,
       y: cup.y + layout[index][1] * spreadY,
     };
   }
-  const radius = Math.min(inner * 0.84, Math.max(30, childSize * 0.64));
+  const radius = Math.min(inner * 0.84, Math.max(30, visualChildSize * 0.64));
   const angleOffset = -Math.PI / 2;
   const angle = angleOffset + (Math.PI * 2 * index / total);
   return {
@@ -12056,12 +12089,15 @@ function createFreePaletteDragItem(def, point) {
   if (editingCup) {
     if (!canAddFoodToCup(def)) return null;
     const childSize = getCupFoodChildSize(def, editingCup);
-    const cupDropRadius = getCupInnerRadius(editingCup, { size: childSize }) + Math.max(44, childSize * 0.62);
+    const childScale = getSimpleBoxScaleForDef(def);
+    const visualChildSize = childSize * childScale;
+    const cupDropRadius = getCupInnerRadius(editingCup, { size: childSize, scale: childScale }) + Math.max(44, visualChildSize * 0.62);
     if (dist(point, editingCup) > cupDropRadius) return null;
     const item = addFreeLayoutItem(def, {
       x: point.x,
       y: point.y,
       size: childSize,
+      scale: childScale,
       tier: getItemTier(editingCup),
       parentCupId: editingCup.uid,
       brushLevel: def.brushItem ? 0 : def.brushLevel,
@@ -12099,6 +12135,7 @@ function createFreePaletteDragItem(def, point) {
   return addFreeLayoutItem(def, {
     x: point.x,
     y: point.y,
+    scale: getSimpleBoxScaleForDef(def),
     skipRender: true,
     skipTutorialPlace: true,
   });
@@ -12180,11 +12217,13 @@ function addSimpleFoodToCup(def, cup) {
   if (!def || !cup || !canAddFoodToCup(def)) return null;
   const replacedCupFood = removeCupChildrenForReplacement(cup);
   const childSize = getCupFoodChildSize(def, cup);
+  const childScale = getSimpleBoxScaleForDef(def);
   const slot = getCupChildSlot(cup, 0, childSize, SIMPLE_CUP_FOOD_LIMIT);
   const selectedItem = addFreeLayoutItem(def, {
     x: slot.x,
     y: slot.y,
     size: childSize,
+    scale: childScale,
     tier: getItemTier(cup),
     parentCupId: cup.uid,
     brushLevel: def.brushItem ? 1 : def.brushLevel,
@@ -12329,6 +12368,7 @@ function addSimpleFixedPaletteItem(def) {
     x: placementPoint.x,
     y: placementPoint.y,
     size: getSimpleSlotSize(placementDef, slot),
+    scale: getSimpleBoxScaleForDef(def),
     rotation: placementDef.type === 'food' || placementDef.type === 'decor'
       ? (placementDef.rotation != null ? placementDef.rotation : 0)
       : (placementDef.rotation || 0),
@@ -13060,11 +13100,13 @@ function addFoodToSelectedCup(def) {
   removeCupChildrenForReplacement(cup);
   const isBrushFood = !!def.brushItem;
   const childSize = getCupFoodChildSize(def, cup);
+  const childScale = getSimpleBoxScaleForDef(def);
   const slot = getCupChildSlot(cup, 0, childSize, SIMPLE_CUP_FOOD_LIMIT);
   const selectedItem = addFreeLayoutItem(def, {
     x: slot.x,
     y: slot.y,
     size: childSize,
+    scale: childScale,
     tier: getItemTier(cup),
     parentCupId: cup.uid,
     brushLevel: isBrushFood ? 0 : def.brushLevel,

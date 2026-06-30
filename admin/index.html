@@ -1272,8 +1272,8 @@ tr:hover { background: #FFFAF0; }
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
       主菜A/B、小さいおかずA/B/C/D、カップA/B/C/D（柄は共通）、敷き野菜A-F、仕切りA-G、ピック共通を設定できます。<br>
-      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。敷き野菜はレタスやキャベツなど下に敷くもの、仕切りはバランや木の区切りです。サンプルを切り替えると、サンプルごとに位置を保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。<br>
-      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。「押す丸」では、ゲーム中に子どもがタップする丸の位置だけを実配置とは別に調整できます。カップは同じ柄・小サイズ固定で、A/B/C/D の置き場所を別々に設定します。ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置とサイズが反映されます。
+      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。敷き野菜はレタスやキャベツなど下に敷くもの、仕切りはバランや木の区切りです。サンプルを切り替えると、サンプルごとに位置を保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。全体スケールは、このお弁当箱だけにかかる倍率です。<br>
+      マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。「押す丸」では、ゲーム中に子どもがタップする丸の位置だけを実配置とは別に調整できます。カップは同じ柄・小サイズ固定で、A/B/C/D の置き場所を別々に設定します。ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置・個別サイズ・全体スケールが反映されます。
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;align-items:start;">
@@ -1288,6 +1288,14 @@ tr:hover { background: #FFFAF0; }
             <button type="button" data-count="3" style="padding:6px 12px;border:2px solid #22C55E;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">3こ</button>
             <button type="button" data-count="4" style="padding:6px 12px;border:2px solid #22C55E;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">4こ</button>
           </div>
+        </div>
+        <div style="margin-bottom:12px;padding:8px 10px;border:1px solid #E9D9BE;border-radius:10px;background:#FFF8E8;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+            <label for="bento-slot-global-scale" style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;">全体スケール</label>
+            <span id="bento-slot-global-scale-value" style="font-size:0.74rem;font-weight:800;color:#8B5A2B;">100% / ×1.00</span>
+          </div>
+          <input id="bento-slot-global-scale" type="range" min="0.6" max="1.4" step="0.01" value="1" style="width:100%;">
+          <div style="font-size:0.68rem;color:#8B7355;line-height:1.35;margin-top:4px;">このお弁当箱だけ、個別サイズに倍率をかけます。個々の size は変えません。</div>
         </div>
         <div style="margin-bottom:12px;">
           <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">スロット</label>
@@ -11346,6 +11354,9 @@ var BENTO_SLOT_SHARED_KINDS = { other: true };
 var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true, leaf: true, divider: true, other: true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, leaf: 34, divider: 36, other: 24 };
 var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, leaf: 8, divider: 8, other: 6 };
+var BENTO_SLOT_GLOBAL_SCALE_MIN = 0.6;
+var BENTO_SLOT_GLOBAL_SCALE_MAX = 1.4;
+var BENTO_SLOT_GLOBAL_SCALE_DEFAULT = 1;
 var BENTO_SLOT_BOXES = [
   { id: 'box_rect_split', name: 'ふつうの おべんとう', image: '../assets/images/bento/ui/rect_bento_box_coral.webp', bounds: { x: 50, y: 22, w: 660, h: 422 }, placeBounds: { x: 78, y: 78, w: 579, h: 314 }, sideFoodSlotCount: 4, foodSpots: [{ x: 494, y: 174 }, { x: 572, y: 174 }, { x: 494, y: 296 }, { x: 572, y: 296 }, { x: 553, y: 235 }], accessorySpots: [{ x: 500, y: 236 }, { x: 572, y: 236 }, { x: 556, y: 176 }, { x: 556, y: 300 }] },
   { id: 'box_square', name: 'しかくい おべんとう', image: '../assets/images/bento/free-layout/box_square.webp', bounds: { x: 76, y: 54, w: 608, h: 354 }, placeBounds: { x: 124, y: 92, w: 512, h: 276 }, foodSpots: [{ x: 274, y: 234 }, { x: 382, y: 188 }, { x: 490, y: 234 }, { x: 318, y: 306 }, { x: 446, y: 306 }], accessorySpots: [{ x: 292, y: 250 }, { x: 470, y: 250 }, { x: 382, y: 206 }] },
@@ -11419,6 +11430,30 @@ function bentoSlotNormalizeSlotCounts(raw, box) {
     if (normalized !== bentoSlotDefaultSlotCountForBox(box, 'side-food')) out['side-food'] = normalized;
   }
   return out;
+}
+function bentoSlotNormalizeGlobalScale(value) {
+  var n = Number(value);
+  if (!isFinite(n)) n = BENTO_SLOT_GLOBAL_SCALE_DEFAULT;
+  var clamped = bentoSlotClamp(n, BENTO_SLOT_GLOBAL_SCALE_MIN, BENTO_SLOT_GLOBAL_SCALE_MAX, BENTO_SLOT_GLOBAL_SCALE_DEFAULT);
+  return Math.round(clamped * 100) / 100;
+}
+function bentoSlotPruneBoxLayout(boxId) {
+  var entry = _bentoSlotState && _bentoSlotState.layout && _bentoSlotState.layout[boxId];
+  if (entry && !Object.keys(entry).length) delete _bentoSlotState.layout[boxId];
+}
+function bentoSlotGetGlobalScale(boxId) {
+  var layout = _bentoSlotState && _bentoSlotState.layout && _bentoSlotState.layout[boxId];
+  return bentoSlotNormalizeGlobalScale(layout && layout.globalScale);
+}
+function bentoSlotSetGlobalScale(boxId, scale) {
+  if (!_bentoSlotState.layout[boxId]) _bentoSlotState.layout[boxId] = {};
+  var entry = _bentoSlotState.layout[boxId];
+  var normalized = bentoSlotNormalizeGlobalScale(scale);
+  if (Math.abs(normalized - BENTO_SLOT_GLOBAL_SCALE_DEFAULT) < 0.001) delete entry.globalScale;
+  else entry.globalScale = normalized;
+  bentoSlotPruneBoxLayout(boxId);
+  bentoSlotSaveLocal();
+  return normalized;
 }
 function bentoSlotGetBoxSlotCount(boxId, kind) {
   var box = bentoSlotGetBoxById(boxId);
@@ -11794,6 +11829,8 @@ function bentoSlotNormalizeLayout(map) {
     if (!box || typeof box !== 'object' || Array.isArray(box)) return;
     var boxDef = bentoSlotGetBoxById(boxId);
     var entry = {};
+    var globalScale = bentoSlotNormalizeGlobalScale(box.globalScale);
+    if (Math.abs(globalScale - BENTO_SLOT_GLOBAL_SCALE_DEFAULT) >= 0.001) entry.globalScale = globalScale;
     var slotCounts = bentoSlotNormalizeSlotCounts(box.slotCounts || {}, boxDef);
     if (Object.keys(slotCounts).length) entry.slotCounts = slotCounts;
     Object.keys(BENTO_SLOT_LIMITS).forEach(function(kind) {
@@ -12502,6 +12539,13 @@ function bentoSlotSyncSizePresets(def, entry) {
     wrap.appendChild(btn);
   });
 }
+function bentoSlotSyncGlobalScaleControl(boxId) {
+  var input = document.getElementById('bento-slot-global-scale');
+  var val = document.getElementById('bento-slot-global-scale-value');
+  var scale = bentoSlotGetGlobalScale(boxId);
+  if (input) input.value = String(scale);
+  if (val) val.textContent = Math.round(scale * 100) + '% / ×' + scale.toFixed(2);
+}
 function bentoSlotSyncSliders(point) {
   var sliders = document.getElementById('bento-slot-sliders');
   if (!sliders) return;
@@ -12756,7 +12800,7 @@ function bentoSlotRenderSamples(stage, box) {
     return bentoSlotSampleRenderLayer(a) - bentoSlotSampleRenderLayer(b);
   });
   entries.forEach(function(entry) {
-    var sampleSize = entry.point.size || entry.sample.size;
+    var sampleSize = (entry.point.size || entry.sample.size) * bentoSlotGetGlobalScale(box.id);
     bentoSlotAppendSampleImage(stage, entry.sample, entry.point, { size: sampleSize, layer: bentoSlotSampleRenderLayer(entry) });
   });
 }
@@ -12878,6 +12922,7 @@ function bentoSlotRender() {
       : '';
   });
   var selectedEntry = bentoSlotGetEntry(box.id, selected);
+  bentoSlotSyncGlobalScaleControl(box.id);
   bentoSlotSyncSampleSelect(selected, selectedEntry);
   bentoSlotSyncSizePresets(selected, selectedEntry);
   bentoSlotSyncSliders(selectedEntry);
@@ -12933,6 +12978,13 @@ function bentoSlotBindControls() {
       bentoSlotRender();
       bentoSlotSetStatus('小さいおかずの数を ' + btn.dataset.count + 'こにしました。保存で反映されます。', false);
     });
+  });
+  var globalScale = document.getElementById('bento-slot-global-scale');
+  if (globalScale) globalScale.addEventListener('input', function() {
+    var scale = bentoSlotSetGlobalScale(_bentoSlotState.boxId, globalScale.value);
+    bentoSlotSyncGlobalScaleControl(_bentoSlotState.boxId);
+    bentoSlotRenderPreview();
+    bentoSlotSetStatus('全体スケールを ' + Math.round(scale * 100) + '% にしました。保存で反映されます。', false);
   });
   var sampleSelect = document.getElementById('bento-slot-sample-select');
   if (sampleSelect) sampleSelect.addEventListener('change', function() {
