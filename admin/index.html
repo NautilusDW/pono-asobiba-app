@@ -11359,14 +11359,14 @@ var BENTO_SLOT_GLOBAL_SCALE_MAX = 1.4;
 var BENTO_SLOT_GLOBAL_SCALE_DEFAULT = 1;
 var BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID = 'hamburger';
 var BENTO_SLOT_REFERENCE_BOX_ID = 'box_rect_split';
+var BENTO_SLOT_BOX_ALIASES = { box_bear_pink: 'box_bear', box_cat: 'box_cat_blue' };
+var BENTO_SLOT_DEFAULT_SOURCE_BOX_IDS = { box_bear_pink: 'box_bear', box_cat_blue: 'box_bear', box_cat: 'box_bear' };
 var BENTO_SLOT_BOXES = [
   { id: 'box_rect_split', name: 'ふつうの おべんとう', image: '../assets/images/bento/ui/rect_bento_box_coral.webp', bounds: { x: 50, y: 22, w: 660, h: 422 }, placeBounds: { x: 78, y: 78, w: 579, h: 314 }, sideFoodSlotCount: 4, foodSpots: [{ x: 494, y: 174 }, { x: 572, y: 174 }, { x: 494, y: 296 }, { x: 572, y: 296 }, { x: 553, y: 235 }], accessorySpots: [{ x: 500, y: 236 }, { x: 572, y: 236 }, { x: 556, y: 176 }, { x: 556, y: 300 }] },
   { id: 'box_square', name: 'しかくい おべんとう', image: '../assets/images/bento/free-layout/box_square.webp', bounds: { x: 76, y: 54, w: 608, h: 354 }, placeBounds: { x: 124, y: 92, w: 512, h: 276 }, foodSpots: [{ x: 274, y: 234 }, { x: 382, y: 188 }, { x: 490, y: 234 }, { x: 318, y: 306 }, { x: 446, y: 306 }], accessorySpots: [{ x: 292, y: 250 }, { x: 470, y: 250 }, { x: 382, y: 206 }] },
   { id: 'box_round', name: 'まるい おべんとう', image: '../assets/images/bento/free-layout/box_round.webp', bounds: { x: 92, y: 62, w: 576, h: 338 }, placeBounds: { x: 136, y: 92, w: 488, h: 276 }, foodSpots: [{ x: 274, y: 236 }, { x: 382, y: 190 }, { x: 490, y: 236 }, { x: 318, y: 302 }, { x: 446, y: 302 }], accessorySpots: [{ x: 294, y: 248 }, { x: 468, y: 248 }, { x: 382, y: 206 }] },
   { id: 'box_bear', name: 'みずいろ クマさん', image: '../assets/images/bento/free-layout/box_bear.webp', bounds: { x: 30, y: 0, w: 700, h: 456 }, placeBounds: { x: 164, y: 82, w: 432, h: 302 }, foodSpots: [{ x: 274, y: 254 }, { x: 382, y: 174 }, { x: 490, y: 270 }, { x: 318, y: 326 }, { x: 448, y: 326 }], accessorySpots: [{ x: 284, y: 270 }, { x: 480, y: 270 }, { x: 382, y: 220 }] },
-  { id: 'box_bear_pink', name: 'ピンク クマさん', image: '../assets/images/bento/free-layout/box_bear_pink.webp', bounds: { x: 30, y: 0, w: 700, h: 456 }, placeBounds: { x: 164, y: 82, w: 432, h: 302 }, foodSpots: [{ x: 274, y: 254 }, { x: 382, y: 174 }, { x: 490, y: 270 }, { x: 318, y: 326 }, { x: 448, y: 326 }], accessorySpots: [{ x: 284, y: 270 }, { x: 480, y: 270 }, { x: 382, y: 220 }] },
-  { id: 'box_cat_blue', name: 'みずいろ ねこちゃん', image: '../assets/images/bento/free-layout/box_cat_blue.webp', bounds: { x: 30, y: 0, w: 700, h: 456 }, placeBounds: { x: 166, y: 90, w: 428, h: 300 }, foodSpots: [{ x: 276, y: 254 }, { x: 382, y: 174 }, { x: 488, y: 270 }, { x: 320, y: 322 }, { x: 446, y: 322 }], accessorySpots: [{ x: 286, y: 268 }, { x: 478, y: 268 }, { x: 382, y: 218 }] },
-  { id: 'box_cat', name: 'ピンク ねこちゃん', image: '../assets/images/bento/free-layout/box_cat.webp', bounds: { x: 30, y: 0, w: 700, h: 456 }, placeBounds: { x: 166, y: 90, w: 428, h: 300 }, foodSpots: [{ x: 276, y: 254 }, { x: 382, y: 174 }, { x: 488, y: 270 }, { x: 320, y: 322 }, { x: 446, y: 322 }], accessorySpots: [{ x: 286, y: 268 }, { x: 478, y: 268 }, { x: 382, y: 218 }] }
+  { id: 'box_cat_blue', name: 'みずいろ ねこちゃん', image: '../assets/images/bento/free-layout/box_cat_blue.webp', bounds: { x: 30, y: 0, w: 700, h: 456 }, placeBounds: { x: 166, y: 90, w: 428, h: 300 }, foodSpots: [{ x: 276, y: 254 }, { x: 382, y: 174 }, { x: 488, y: 270 }, { x: 320, y: 322 }, { x: 446, y: 322 }], accessorySpots: [{ x: 286, y: 268 }, { x: 478, y: 268 }, { x: 382, y: 218 }] }
 ];
 var BENTO_SLOT_PRODUCTION_MASKS = {
   box_rect_split: { maskImage: '../assets/images/bento/free-layout/box_rect_split_inside_mask.png', maskBounds: { x: 407, y: 43, w: 270, h: 353 }, maskBaseAspect: 1000 / 656, maskCanvas: { w: 1000, h: 656 }, imageScale: 1 },
@@ -11514,7 +11514,12 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'ninjin_ingen', name: 'にんじんいんげん', image: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', size: 112, cupSizes: { small: 80, medium: 96, large: 112 }, defaultCupSizeKey: 'large', rotation: 1, layer: 46 },
     { id: 'napolitan', name: 'ナポリタン', image: '../assets/images/bento/free-layout/okazu_napolitan.png', size: 132, cupSizes: { small: 94, medium: 112, large: 132 }, defaultCupSizeKey: 'large', rotation: -1, layer: 47 },
     { id: 'ichigo', name: 'いちご', image: '../assets/images/bento/free-layout/fruit_ichigo.png', size: 115, cupSizes: { small: 78, medium: 96, large: 115 }, defaultCupSizeKey: 'large', rotation: -5, layer: 49 },
-    { id: 'mikan', name: 'みかん', image: '../assets/images/bento/free-layout/fruit_mikan.png', size: 108, cupSizes: { small: 74, medium: 90, large: 108 }, defaultCupSizeKey: 'large', rotation: -2, layer: 50 }
+    { id: 'mikan', name: 'みかん', image: '../assets/images/bento/free-layout/fruit_mikan.png', size: 108, cupSizes: { small: 74, medium: 90, large: 108 }, defaultCupSizeKey: 'large', rotation: -2, layer: 50 },
+    { id: 'melon', name: 'メロン', image: '../assets/images/bento/free-layout/fruit_melon.png', size: 118, cupSizes: { small: 80, medium: 98, large: 118 }, defaultCupSizeKey: 'large', rotation: 2, layer: 51 },
+    { id: 'ringo', name: 'りんご', image: '../assets/images/bento/free-layout/fruit_ringo.png', size: 116, cupSizes: { small: 78, medium: 96, large: 116 }, defaultCupSizeKey: 'large', rotation: 3, layer: 52 },
+    { id: 'pineapple', name: 'パイナップル', image: '../assets/images/bento/free-layout/fruit_pineapple.png', size: 112, cupSizes: { small: 76, medium: 94, large: 112 }, defaultCupSizeKey: 'large', rotation: -3, layer: 53 },
+    { id: 'momo', name: 'もも', image: '../assets/images/bento/free-layout/fruit_momo.png', size: 116, cupSizes: { small: 78, medium: 96, large: 116 }, defaultCupSizeKey: 'large', rotation: 4, layer: 54 },
+    { id: 'kiwi', name: 'キウイ', image: '../assets/images/bento/free-layout/fruit_kiwi.png', size: 104, cupSizes: { small: 72, medium: 88, large: 104 }, defaultCupSizeKey: 'large', rotation: -1, layer: 55 }
   ],
   cup: [
     {
@@ -11980,8 +11985,17 @@ function bentoSlotSaveLocal() {
   if (typeof bentoSlotSyncAllSharedSampleSizes === 'function') bentoSlotSyncAllSharedSampleSizes(true);
   try { localStorage.setItem(BENTO_SLOT_LAYOUT_KEY, JSON.stringify(_bentoSlotState.layout)); return true; } catch(e) { return false; }
 }
+function bentoSlotResolveBoxId(boxId) {
+  var id = String(boxId || '');
+  return BENTO_SLOT_BOX_ALIASES[id] || id;
+}
+function bentoSlotDefaultSourceBoxId(boxId) {
+  var id = String(boxId || '');
+  return BENTO_SLOT_DEFAULT_SOURCE_BOX_IDS[id] || BENTO_SLOT_REFERENCE_BOX_ID;
+}
 function bentoSlotGetBoxById(boxId) {
-  return bentoSlotWithProductionMask(BENTO_SLOT_BOXES.find(function(box) { return box.id === boxId; }) || BENTO_SLOT_BOXES[0]);
+  var resolvedBoxId = bentoSlotResolveBoxId(boxId);
+  return bentoSlotWithProductionMask(BENTO_SLOT_BOXES.find(function(box) { return box.id === resolvedBoxId; }) || BENTO_SLOT_BOXES[0]);
 }
 function bentoSlotGetBox() {
   return bentoSlotGetBoxById(_bentoSlotState.boxId);
@@ -12138,10 +12152,11 @@ function bentoSlotGetStoredEntry(boxId, def) {
   var list = boxLayout && Array.isArray(boxLayout[def.kind]) ? boxLayout[def.kind] : [];
   return list[def.index] ? bentoSlotClampEntryForDef(box, def, list[def.index]) : bentoSlotDefaultEntry(box, def);
 }
-function bentoSlotGetReferencePoint(def) {
-  var box = bentoSlotGetBoxById(BENTO_SLOT_REFERENCE_BOX_ID);
+function bentoSlotGetReferencePoint(def, sourceBoxId) {
+  var resolvedSourceBoxId = bentoSlotResolveBoxId(sourceBoxId || BENTO_SLOT_REFERENCE_BOX_ID);
+  var box = bentoSlotGetBoxById(resolvedSourceBoxId);
   var refDef = def.kind === 'side-food' ? { kind: 'cup', index: def.index } : def;
-  var entry = bentoSlotGetStoredEntry(BENTO_SLOT_REFERENCE_BOX_ID, refDef);
+  var entry = bentoSlotGetStoredEntry(resolvedSourceBoxId, refDef);
   if (def.kind === 'main-food') {
     var hamburger = entry.sampleOverrides && entry.sampleOverrides[BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID];
     if (hamburger) return hamburger;
@@ -12150,12 +12165,13 @@ function bentoSlotGetReferencePoint(def) {
   return bentoSlotDefaultEntry(box, refDef);
 }
 function bentoSlotMapReferencePoint(boxId, def) {
-  if (!boxId || boxId === BENTO_SLOT_REFERENCE_BOX_ID) return null;
-  var sourceBox = bentoSlotGetBoxById(BENTO_SLOT_REFERENCE_BOX_ID);
+  var sourceBoxId = bentoSlotDefaultSourceBoxId(boxId);
+  if (!boxId || boxId === sourceBoxId) return null;
+  var sourceBox = bentoSlotGetBoxById(sourceBoxId);
   var targetBox = bentoSlotGetBoxById(boxId);
   var sourceBounds = bentoSlotDefaultBounds(sourceBox);
   var targetBounds = bentoSlotDefaultBounds(targetBox);
-  var sourcePoint = bentoSlotGetReferencePoint(def);
+  var sourcePoint = bentoSlotGetReferencePoint(def, sourceBoxId);
   if (!sourcePoint || !sourceBounds || !targetBounds) return null;
   var rx = bentoSlotClamp((Number(sourcePoint.x) - sourceBounds.x) / Math.max(1, sourceBounds.w), 0, 1, 0.5);
   var ry = bentoSlotClamp((Number(sourcePoint.y) - sourceBounds.y) / Math.max(1, sourceBounds.h), 0, 1, 0.5);

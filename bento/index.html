@@ -10524,6 +10524,15 @@ const SIMPLE_BOX_GLOBAL_SCALE_MIN = 0.6;
 const SIMPLE_BOX_GLOBAL_SCALE_MAX = 1.4;
 const SIMPLE_BOX_GLOBAL_SCALE_DEFAULT = 1;
 const SIMPLE_REFERENCE_BOX_ID = 'box_rect_split';
+const SIMPLE_SLOT_DEFAULT_SOURCE_BOX_IDS = {
+  box_bear_pink: 'box_bear',
+  box_cat_blue: 'box_bear',
+  box_cat: 'box_bear',
+};
+function getSimpleSlotDefaultSourceBox(box) {
+  const sourceId = SIMPLE_SLOT_DEFAULT_SOURCE_BOX_IDS[box && box.id] || SIMPLE_REFERENCE_BOX_ID;
+  return bentoBoxes.find(b => b && b.id === sourceId) || null;
+}
 function getDefaultSimpleSlotCountForBox(box, kind) {
   if (kind === 'side-food') return clamp(Math.round(Number(box && box.sideFoodSlotCount) || 3), 3, 4);
   return SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
@@ -11345,10 +11354,10 @@ function getSimpleCupFallbackPoints(box) {
   });
   return points.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
 }
-function mapSimpleReferencePointToBox(box, point) {
-  if (!box || !point || box.id === SIMPLE_REFERENCE_BOX_ID) return null;
-  const sourceBox = bentoBoxes.find(b => b && b.id === SIMPLE_REFERENCE_BOX_ID) || null;
-  const sourceBounds = getDefaultOkazuPlacementBounds(sourceBox);
+function mapSimpleReferencePointToBox(box, point, sourceBox = null) {
+  const source = sourceBox || bentoBoxes.find(b => b && b.id === SIMPLE_REFERENCE_BOX_ID) || null;
+  if (!box || !point || !source || box.id === source.id) return null;
+  const sourceBounds = getDefaultOkazuPlacementBounds(source);
   const targetBounds = getDefaultOkazuPlacementBounds(box);
   if (!sourceBounds || !targetBounds) return null;
   const rx = clamp((Number(point.x) - sourceBounds.x) / Math.max(1, sourceBounds.w), 0, 1);
@@ -11358,8 +11367,8 @@ function mapSimpleReferencePointToBox(box, point) {
     y: Math.round((targetBounds.y + targetBounds.h * ry) * 10) / 10,
   };
 }
-function getSimpleReferenceSlotPoint(kind, index) {
-  const sourceBox = bentoBoxes.find(b => b && b.id === SIMPLE_REFERENCE_BOX_ID) || null;
+function getSimpleReferenceSlotPoint(kind, index, sourceBox = null) {
+  sourceBox = sourceBox || bentoBoxes.find(b => b && b.id === SIMPLE_REFERENCE_BOX_ID) || null;
   if (!sourceBox) return null;
   if (kind === 'main-food') {
     const point = getSimpleSlotLayoutPoints(sourceBox, 'main-food')[index] || getSimpleFoodSpreadPoints(sourceBox)[index];
@@ -11374,7 +11383,8 @@ function getSimpleReferenceSlotPoint(kind, index) {
   return getSimpleSlotLayoutPoints(sourceBox, kind)[index] || null;
 }
 function getSimpleMappedReferenceSlotPoint(box, kind, index) {
-  return mapSimpleReferencePointToBox(box, getSimpleReferenceSlotPoint(kind, index));
+  const sourceBox = getSimpleSlotDefaultSourceBox(box);
+  return mapSimpleReferencePointToBox(box, getSimpleReferenceSlotPoint(kind, index, sourceBox), sourceBox);
 }
 function getSimpleCupLayoutPoints(box, limit = SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) {
   const configured = getSimpleSlotLayoutPoints(box, 'cup').slice(0, limit);
