@@ -6881,8 +6881,8 @@ const bentoAccessories = [
   { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
   { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
   { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
-  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: 0 },
-  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0 },
+  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: 0, simpleSampleId: 'divider_wave' },
+  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0, simpleSampleId: 'divider_wood' },
   { id: 'divider_wave_vertical', type: 'divider', name: 'みどりたてしきり', image: FREE_ASSET + 'divider_wave_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wave_vertical_mid', slotVariantImages: [
     { key: 'back', sampleId: 'divider_wave_vertical_back', image: FREE_ASSET + 'divider_wave_vertical_back.png', size: 42, renderAspect: 2.55 },
     { key: 'mid', sampleId: 'divider_wave_vertical_mid', image: FREE_ASSET + 'divider_wave_vertical_mid.png', size: 46, renderAspect: 2.74 },
@@ -10752,7 +10752,14 @@ function getSimpleStageSlotPlacementPoint(slot) {
     y: Math.round(clamp(y, 0, FREE_LAYOUT_H) * 10) / 10,
   };
 }
+function isSimpleVerticalDividerSampleId(sampleId) {
+  return /^divider_(?:wave|wood)_vertical(?:_|$)/.test(String(sampleId || ''));
+}
 function getSimpleDividerDepthKeyForSlot(slot) {
+  const sampleId = String(slot && (slot.sourceSampleId || slot.sampleId) || '');
+  if (/_back(?:$|[_:-])/.test(sampleId)) return 'back';
+  if (/_mid(?:$|[_:-])/.test(sampleId)) return 'mid';
+  if (/_front(?:$|[_:-])/.test(sampleId)) return 'front';
   const index = Number(slot && slot.index);
   const row = Math.max(0, Math.min(2, Math.floor((Number.isFinite(index) ? index : 0) / 2)));
   return ['back', 'mid', 'front'][row] || 'mid';
@@ -10776,18 +10783,29 @@ function getSimpleSlotVariantDef(def, slot) {
   };
 }
 function orderSimpleSlotsForDef(def, slots) {
-  if (!def || !def.verticalDivider || !Array.isArray(slots) || slots.length <= 1) return slots;
-  const order = [0, 2, 4, 6, 1, 3, 5];
+  if (!def || getSimpleSlotKind(def) !== 'divider' || !Array.isArray(slots) || slots.length <= 1) return slots;
+  const wantsVertical = !!def.verticalDivider || isSimpleVerticalDividerSampleId(getSimpleSlotSampleIdForDef(def));
   const used = new Set();
-  const ordered = order
-    .map(index => slots.find(slot => slot && slot.index === index))
-    .filter(Boolean)
-    .filter(slot => {
-      if (used.has(slot.key)) return false;
-      used.add(slot.key);
-      return true;
-    });
-  return ordered.concat(slots.filter(slot => slot && !used.has(slot.key)));
+  const sorted = slots.slice().sort((a, b) => {
+    const ay = Number(a && a.y);
+    const by = Number(b && b.y);
+    if (Number.isFinite(ay) && Number.isFinite(by) && Math.abs(ay - by) > 4) return ay - by;
+    const ax = Number(a && a.x);
+    const bx = Number(b && b.x);
+    if (Number.isFinite(ax) && Number.isFinite(bx) && Math.abs(ax - bx) > 4) return ax - bx;
+    return (Number(a && a.index) || 0) - (Number(b && b.index) || 0);
+  });
+  const preferred = sorted.filter(slot => {
+    const sourceSampleId = String(slot && (slot.sourceSampleId || '') || '');
+    if (!sourceSampleId) return false;
+    return isSimpleVerticalDividerSampleId(sourceSampleId) === wantsVertical;
+  }).filter(slot => {
+    if (used.has(slot.key)) return false;
+    used.add(slot.key);
+    return true;
+  });
+  const fallback = sorted.filter(slot => slot && !used.has(slot.key));
+  return preferred.concat(fallback);
 }
 function getSimpleSlotPointForDef(point, def, kind) {
   if (!point) return point;
@@ -10964,8 +10982,11 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
       : fallbackPoints;
     const slots = points.map((p, idx) => {
-      const variantDef = getSimpleSlotVariantDef(def, { index: idx });
-      return makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, variantDef, kind));
+      const sourceSampleId = String(p && p.sampleId || '');
+      const variantDef = getSimpleSlotVariantDef(def, { index: idx, sampleId: sourceSampleId, y: p && p.y });
+      const slot = makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, variantDef, kind));
+      if (sourceSampleId) slot.sourceSampleId = sourceSampleId;
+      return slot;
     });
     return orderSimpleSlotsForDef(def, slots);
   }
@@ -13005,6 +13026,14 @@ function createFreePlacedElement(item, interactive) {
           selectCupForMovement(item, { render: false, message: true });
           beginFreeItemDrag(ev, item.uid);
           return;
+        }
+        if (item.parentCupId) {
+          const parentCup = placedItems.find(cup => cup.uid === item.parentCupId && cup.snapTarget);
+          if (parentCup) {
+            selectCupForMovement(parentCup, { render: false, message: true });
+            beginFreeItemDrag(ev, parentCup.uid);
+            return;
+          }
         }
         if (item.simpleSlot && item.type !== 'rice') {
           handleSimplePlacedItemTap(item);
