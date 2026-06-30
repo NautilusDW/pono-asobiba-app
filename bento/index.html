@@ -10691,6 +10691,13 @@ function getSimpleSlotCountForBox(box, kind) {
   if (slotCounts[kind]) return slotCounts[kind];
   return getDefaultSimpleSlotCountForBox(box, kind);
 }
+function getSimpleCupSlotLimitForBox(box) {
+  return clamp(
+    Math.round(Number(getSimpleSlotCountForBox(box, 'side-food')) || (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4)),
+    1,
+    SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4
+  );
+}
 function getSimpleSlotLayoutBoxIds() {
   const layout = freeSlotLayoutServerDefaults || {};
   const seen = new Set();
@@ -11199,16 +11206,8 @@ function orderSimpleSlotsForDef(def, slots) {
   if (!def || getSimpleSlotKind(def) !== 'divider' || !Array.isArray(slots) || slots.length <= 1) return slots;
   const wantsVertical = !!def.verticalDivider || isSimpleVerticalDividerSampleId(getSimpleSlotSampleIdForDef(def));
   const used = new Set();
-  const sorted = slots.slice().sort((a, b) => {
-    const ay = Number(a && a.y);
-    const by = Number(b && b.y);
-    if (Number.isFinite(ay) && Number.isFinite(by) && Math.abs(ay - by) > 4) return ay - by;
-    const ax = Number(a && a.x);
-    const bx = Number(b && b.x);
-    if (Number.isFinite(ax) && Number.isFinite(bx) && Math.abs(ax - bx) > 4) return ax - bx;
-    return (Number(a && a.index) || 0) - (Number(b && b.index) || 0);
-  });
-  const preferred = sorted.filter(slot => {
+  const ordered = slots.slice();
+  const preferred = ordered.filter(slot => {
     const sourceSampleId = String(slot && (slot.sourceSampleId || '') || '');
     if (!sourceSampleId) return false;
     return isSimpleVerticalDividerSampleId(sourceSampleId) === wantsVertical;
@@ -11217,7 +11216,7 @@ function orderSimpleSlotsForDef(def, slots) {
     used.add(slot.key);
     return true;
   });
-  const fallback = sorted.filter(slot => slot && !used.has(slot.key));
+  const fallback = ordered.filter(slot => slot && !used.has(slot.key));
   return preferred.concat(fallback);
 }
 function getSimpleMainSlotAnchorPoint(point, sampleId) {
@@ -11367,18 +11366,33 @@ function getSimpleCupFallbackPoints(box) {
   });
   return points.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
 }
-function mapSimpleReferencePointToBox(box, point, sourceBox = null) {
+function mapSimpleReferenceCoordinateToBox(box, sourceBox, x, y) {
   const source = sourceBox || bentoBoxes.find(b => b && b.id === SIMPLE_REFERENCE_BOX_ID) || null;
-  if (!box || !point || !source || box.id === source.id) return null;
+  if (!box || !source || box.id === source.id) return null;
   const sourceBounds = getDefaultOkazuPlacementBounds(source);
   const targetBounds = getDefaultOkazuPlacementBounds(box);
   if (!sourceBounds || !targetBounds) return null;
-  const rx = clamp((Number(point.x) - sourceBounds.x) / Math.max(1, sourceBounds.w), 0, 1);
-  const ry = clamp((Number(point.y) - sourceBounds.y) / Math.max(1, sourceBounds.h), 0, 1);
+  const rx = clamp((Number(x) - sourceBounds.x) / Math.max(1, sourceBounds.w), 0, 1);
+  const ry = clamp((Number(y) - sourceBounds.y) / Math.max(1, sourceBounds.h), 0, 1);
   return {
     x: Math.round((targetBounds.x + targetBounds.w * rx) * 10) / 10,
     y: Math.round((targetBounds.y + targetBounds.h * ry) * 10) / 10,
   };
+}
+function mapSimpleReferencePointToBox(box, point, sourceBox = null) {
+  if (!box || !point) return null;
+  const mapped = mapSimpleReferenceCoordinateToBox(box, sourceBox, point.x, point.y);
+  if (!mapped) return null;
+  const markerX = Number(point.markerX);
+  const markerY = Number(point.markerY);
+  if (Number.isFinite(markerX) && Number.isFinite(markerY)) {
+    const marker = mapSimpleReferenceCoordinateToBox(box, sourceBox, markerX, markerY);
+    if (marker) {
+      mapped.markerX = marker.x;
+      mapped.markerY = marker.y;
+    }
+  }
+  return mapped;
 }
 function getSimpleReferenceSlotPoint(kind, index, sourceBox = null) {
   sourceBox = sourceBox || bentoBoxes.find(b => b && b.id === SIMPLE_REFERENCE_BOX_ID) || null;
@@ -11389,7 +11403,14 @@ function getSimpleReferenceSlotPoint(kind, index, sourceBox = null) {
     const anchor = point.sampleOverrides && point.sampleOverrides.hamburger;
     return anchor || point;
   }
-  if (kind === 'cup' || kind === 'side-food') {
+  if (kind === 'side-food') {
+    const idx = clamp(Math.round(Number(index) || 0), 0, Math.max(0, (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) - 1));
+    return getSimpleSlotLayoutPoints(sourceBox, 'side-food')[idx]
+      || getSimpleSlotLayoutPoints(sourceBox, 'cup')[idx]
+      || getSimpleCupFallbackPoints(sourceBox)[idx]
+      || null;
+  }
+  if (kind === 'cup') {
     const idx = clamp(Math.round(Number(index) || 0), 0, Math.max(0, (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) - 1));
     return getSimpleSlotLayoutPoints(sourceBox, 'cup')[idx] || getSimpleCupFallbackPoints(sourceBox)[idx] || null;
   }
@@ -11399,7 +11420,7 @@ function getSimpleMappedReferenceSlotPoint(box, kind, index) {
   const sourceBox = getSimpleSlotDefaultSourceBox(box);
   return mapSimpleReferencePointToBox(box, getSimpleReferenceSlotPoint(kind, index, sourceBox), sourceBox);
 }
-function getSimpleCupLayoutPoints(box, limit = SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) {
+function getSimpleCupLayoutPoints(box, limit = getSimpleCupSlotLimitForBox(box)) {
   const configured = getSimpleSlotLayoutPoints(box, 'cup').slice(0, limit);
   const fallback = getSimpleCupFallbackPoints(box).slice(0, limit);
   const points = configured.length
@@ -11458,7 +11479,17 @@ function getSimpleFoodSlots(kind, box, tier, def) {
   return merged.map((p, idx) => {
     const mainAnchor = kind === 'main-food' ? getSimpleMappedReferenceSlotPoint(box, kind, idx) : null;
     const anchor = kind === 'side-food' ? (cupAnchors[idx] || null) : mainAnchor;
-    return makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind, anchor));
+    let point = p;
+    if (kind === 'side-food' && box && box.id !== SIMPLE_REFERENCE_BOX_ID) {
+      const mapped = getSimpleMappedReferenceSlotPoint(box, kind, idx);
+      if (mapped && Number.isFinite(Number(mapped.markerX)) && Number.isFinite(Number(mapped.markerY))) {
+        point = Object.assign({}, point, {
+          markerX: mapped.markerX,
+          markerY: mapped.markerY,
+        });
+      }
+    }
+    return makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(point, def, kind, anchor));
   });
 }
 function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) {
@@ -11475,16 +11506,25 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
       : fallbackPoints;
     const slots = points.map((p, idx) => {
-      const sourceSampleId = String(p && p.sampleId || '');
-      const variantDef = getSimpleSlotVariantDef(def, { index: idx, sampleId: sourceSampleId, y: p && p.y });
-      const slot = makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, variantDef, kind));
+      let point = p;
+      const sourceSampleId = String(point && point.sampleId || '');
+      const override = sourceSampleId && point && point.sampleOverrides && point.sampleOverrides[sourceSampleId];
+      if (kind === 'divider'
+          && box.id !== SIMPLE_REFERENCE_BOX_ID
+          && !(point && point.positionOverride === true)
+          && !(override && override.positionOverride === true)) {
+        const mapped = getSimpleMappedReferenceSlotPoint(box, kind, idx);
+        if (mapped) point = Object.assign({}, point, mapped);
+      }
+      const variantDef = getSimpleSlotVariantDef(def, { index: idx, sampleId: sourceSampleId, y: point && point.y });
+      const slot = makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(point, variantDef, kind));
       if (sourceSampleId) slot.sourceSampleId = sourceSampleId;
       return slot;
     });
     return orderSimpleSlotsForDef(def, slots);
   }
   if (kind === 'cup' || kind === 'other') {
-    const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
+    const fallbackLimit = kind === 'cup' ? getSimpleCupSlotLimitForBox(box) : (SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3);
     const configured = kind === 'cup' ? [] : getSimpleSlotLayoutPoints(box, kind);
     const fallbackPoints = kind === 'cup'
       ? getSimpleCupLayoutPoints(box, fallbackLimit)
@@ -11528,7 +11568,10 @@ function getSimpleSlotBlockingItem(slot) {
   return cupSlot ? getSimpleSlotItem(cupSlot) : null;
 }
 function getSimpleSlotForKindIndex(kind, tier, index, def = null) {
-  const limit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 4;
+  const box = getSelectedBentoBox();
+  const limit = kind === 'cup'
+    ? getSimpleCupSlotLimitForBox(box)
+    : (SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 4);
   const idx = clamp(Math.round(Number(index) || 0), 0, Math.max(0, limit - 1));
   let slots = [];
   if (kind === 'cup') {
@@ -11752,11 +11795,8 @@ function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) 
   }
   const empty = slots.find(slot => !getSimpleSlotBlockingItem(slot));
   if (empty) return empty;
-  const oldest = slots
-    .map(slot => ({ slot, item: getSimpleSlotItem(slot) }))
-    .filter(entry => entry.item)
-    .sort((a, b) => (a.item.layer || 0) - (b.item.layer || 0))[0];
-  return oldest ? { ...oldest.slot, replaceUid: oldest.item.uid } : null;
+  setSpeech('もう はいらないよ。いらないものを けしてね。');
+  return null;
 }
 function getSimpleDecorKind(def) {
   const id = String(def && def.id || '');
@@ -15446,8 +15486,9 @@ function getSimpleExplicitStageMarkerPoint(slot) {
   };
 }
 function getSimpleCupStageMarkerDisplayPoints(box, tier, cupSlots) {
-  const slots = Array.isArray(cupSlots) ? cupSlots : [];
-  const count = Math.max(1, slots.length, getSimpleSlotCountForBox(box, 'side-food'));
+  const maxCount = getSimpleCupSlotLimitForBox(box);
+  const slots = (Array.isArray(cupSlots) ? cupSlots : []).slice(0, maxCount);
+  const count = Math.max(1, Math.min(maxCount, slots.length || maxCount));
   const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, count);
   const sidePoints = getSimpleStageMarkerDisplayPoints(box, 'side-food', sideSlots, count);
   const cupPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, count);
@@ -15471,7 +15512,7 @@ function getSimplePlacedItemPoint(item) {
 function getSimpleCupMarkerSlotIndex(cup, fallbackIndex = 0) {
   const fromKey = getSimpleSlotIndexFromKey(cup && cup.simpleSlot);
   const raw = Number.isFinite(fromKey) ? fromKey : fallbackIndex;
-  return clamp(Math.round(Number(raw) || 0), 0, Math.max(0, (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) - 1));
+  return clamp(Math.round(Number(raw) || 0), 0, Math.max(0, getSimpleCupSlotLimitForBox(getSelectedBentoBox()) - 1));
 }
 function createFreeStageTargetMarker(opts = {}) {
   if (!Number.isFinite(Number(opts.x)) || !Number.isFinite(Number(opts.y))) return null;
@@ -15507,7 +15548,7 @@ function createSimpleStageTargetLayer() {
 
   if (freeLayoutTab === 'accessory') {
     const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
-    const slots = getSimpleFixedSlots(cupDef, tier);
+    const slots = getSimpleFixedSlots(cupDef, tier).slice(0, getSimpleCupSlotLimitForBox(box));
     const activeIndex = getActiveSimpleCupSlotIndex(slots);
     const markerPoints = getSimpleCupStageMarkerDisplayPoints(box, tier, slots);
     slots.forEach((slot, idx) => {
@@ -15546,7 +15587,7 @@ function createSimpleStageTargetLayer() {
   const sideCount = getSimpleSlotCountForBox(box, 'side-food');
   const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, sideCount);
   const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
-  const cupSlots = getSimpleFixedSlots(cupDef, tier);
+  const cupSlots = getSimpleFixedSlots(cupDef, tier).slice(0, getSimpleCupSlotLimitForBox(box));
   const activeSideIndex = selectedCup ? -1 : getActiveSimpleSideSlotIndex(sideSlots);
   const cupsBySlotIndex = new Map();
   getActiveTierCups().forEach((cup, fallbackIndex) => {
