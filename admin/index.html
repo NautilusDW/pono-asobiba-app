@@ -11360,7 +11360,7 @@ var BENTO_SLOT_GLOBAL_SCALE_DEFAULT = 1;
 var BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID = 'hamburger';
 var BENTO_SLOT_REFERENCE_BOX_ID = 'box_rect_split';
 var BENTO_SLOT_BOX_ALIASES = { box_bear_pink: 'box_bear', box_cat: 'box_cat_blue' };
-var BENTO_SLOT_DEFAULT_SOURCE_BOX_IDS = { box_bear_pink: 'box_bear', box_cat_blue: 'box_bear', box_cat: 'box_bear' };
+var BENTO_SLOT_DEFAULT_SOURCE_BOX_IDS = { box_bear_pink: 'box_bear', box_cat_blue: 'box_bear', box_cat: 'box_cat_blue' };
 var BENTO_SLOT_BOXES = [
   { id: 'box_rect_split', name: 'ふつうの おべんとう', image: '../assets/images/bento/ui/rect_bento_box_coral.webp', bounds: { x: 50, y: 22, w: 660, h: 422 }, placeBounds: { x: 78, y: 78, w: 579, h: 314 }, sideFoodSlotCount: 4, foodSpots: [{ x: 494, y: 174 }, { x: 572, y: 174 }, { x: 494, y: 296 }, { x: 572, y: 296 }, { x: 553, y: 235 }], accessorySpots: [{ x: 500, y: 236 }, { x: 572, y: 236 }, { x: 556, y: 176 }, { x: 556, y: 300 }] },
   { id: 'box_square', name: 'しかくい おべんとう', image: '../assets/images/bento/free-layout/box_square.webp', bounds: { x: 76, y: 54, w: 608, h: 354 }, placeBounds: { x: 124, y: 92, w: 512, h: 276 }, foodSpots: [{ x: 274, y: 234 }, { x: 382, y: 188 }, { x: 490, y: 234 }, { x: 318, y: 306 }, { x: 446, y: 306 }], accessorySpots: [{ x: 292, y: 250 }, { x: 470, y: 250 }, { x: 382, y: 206 }] },
@@ -11499,8 +11499,8 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'harumaki', name: 'はるまき', image: '../assets/images/bento/free-layout/okazu_harumaki.png', size: 256, rotation: -4, layer: 37 },
     { id: 'bacon_maki', name: 'ベーコンまき', image: '../assets/images/bento/free-layout/okazu_bacon_maki.png', size: 161, rotation: 2, layer: 38 },
     { id: 'tako_wiener', name: 'タコウインナー', image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', size: 160, rotation: -4, layer: 39, clusterImages: [
-      { image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: -0.16, y: 0.03, w: 0.68, rotation: -11 },
-      { image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: 0.18, y: -0.05, w: 0.61, rotation: 8 }
+      { image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: 0.18, y: -0.05, w: 0.61, rotation: 8 },
+      { image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: -0.16, y: 0.03, w: 0.68, rotation: -11 }
     ] }
   ],
   'side-food': [
@@ -11862,9 +11862,12 @@ function bentoSlotNormalizeLayout(map) {
   var out = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return out;
   Object.keys(map).sort().forEach(function(boxId) {
+    var canonicalBoxId = bentoSlotResolveBoxId(boxId);
+    if (canonicalBoxId !== boxId && map[canonicalBoxId]) return;
+    if (out[canonicalBoxId]) return;
     var box = map[boxId];
     if (!box || typeof box !== 'object' || Array.isArray(box)) return;
-    var boxDef = bentoSlotGetBoxById(boxId);
+    var boxDef = bentoSlotGetBoxById(canonicalBoxId);
     var entry = {};
     var globalScale = bentoSlotNormalizeGlobalScale(box.globalScale);
     if (Math.abs(globalScale - BENTO_SLOT_GLOBAL_SCALE_DEFAULT) >= 0.001) entry.globalScale = globalScale;
@@ -11879,7 +11882,7 @@ function bentoSlotNormalizeLayout(map) {
         });
       if (points.length) entry[kind] = points;
     });
-    if (Object.keys(entry).length) out[boxId] = entry;
+    if (Object.keys(entry).length) out[canonicalBoxId] = entry;
   });
   return out;
 }

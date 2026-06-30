@@ -281,6 +281,10 @@ const BENTO_SLOT_BOX_ORDER = [
   'box_cat_blue',
   'box_cat'
 ];
+const BENTO_SLOT_BOX_ALIASES = {
+  box_bear_pink: 'box_bear',
+  box_cat: 'box_cat_blue'
+};
 const BENTO_CUP_SLOT_SIZES = [150];
 const BENTO_SLOT_GLOBAL_SCALE_MIN = 0.6;
 const BENTO_SLOT_GLOBAL_SCALE_MAX = 1.4;
@@ -406,14 +410,21 @@ function getBentoSlotLayoutBoxIds(map) {
   const ids = [];
   if (!map || typeof map !== 'object' || Array.isArray(map)) return ids;
   BENTO_SLOT_BOX_ORDER.forEach(boxId => {
-    if (Object.prototype.hasOwnProperty.call(map, boxId) && !seen.has(boxId)) {
-      seen.add(boxId);
-      ids.push(boxId);
+    if (Object.prototype.hasOwnProperty.call(map, boxId)) {
+      const canonicalBoxId = BENTO_SLOT_BOX_ALIASES[boxId] || boxId;
+      if (canonicalBoxId !== boxId && Object.prototype.hasOwnProperty.call(map, canonicalBoxId)) return;
+      if (!seen.has(canonicalBoxId)) {
+        seen.add(canonicalBoxId);
+        ids.push(boxId);
+      }
     }
   });
   Object.keys(map).sort().forEach(boxId => {
-    if (/^[a-z0-9_:-]{1,80}$/i.test(boxId) && !seen.has(boxId)) {
-      seen.add(boxId);
+    if (/^[a-z0-9_:-]{1,80}$/i.test(boxId)) {
+      const canonicalBoxId = BENTO_SLOT_BOX_ALIASES[boxId] || boxId;
+      if (canonicalBoxId !== boxId && Object.prototype.hasOwnProperty.call(map, canonicalBoxId)) return;
+      if (seen.has(canonicalBoxId)) return;
+      seen.add(canonicalBoxId);
       ids.push(boxId);
     }
   });
@@ -470,6 +481,8 @@ function normalizeBentoSlotLayoutMap(map) {
   if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
   getBentoSlotLayoutBoxIds(map).forEach(boxId => {
     if (!/^[a-z0-9_:-]{1,80}$/i.test(boxId)) return;
+    const canonicalBoxId = BENTO_SLOT_BOX_ALIASES[boxId] || boxId;
+    if (normalized[canonicalBoxId]) return;
     const box = map[boxId];
     if (!box || typeof box !== 'object' || Array.isArray(box)) return;
     const entry = {};
@@ -485,7 +498,7 @@ function normalizeBentoSlotLayoutMap(map) {
         : validPoints.slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind]).map((point, index) => normalizeBentoSlotPoint(point, kind, index));
       if (points.length) entry[kind] = points;
     });
-    if (Object.keys(entry).length) normalized[boxId] = entry;
+    if (Object.keys(entry).length) normalized[canonicalBoxId] = entry;
   });
   BENTO_SHARED_SAMPLE_SIZE_KINDS.forEach(kind => {
     const sizes = {};

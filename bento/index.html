@@ -5099,7 +5099,7 @@ body.bento-complete-open #sk-intro {
   max-width: 100%;
 }
 .save-fav-btn {
-  margin-top: clamp(18px, 4vh, 40px);
+  margin-top: clamp(34px, 6.5vh, 64px);
   padding: 8px 20px;
   border: none;
   border-radius: 50px;
@@ -5264,7 +5264,9 @@ body.bento-complete-open #sk-intro {
     display: none;
   }
   .save-fav-btn {
-    margin-top: 2px;
+    margin-top: clamp(16px, 4.5vh, 28px);
+    position: relative;
+    top: clamp(14px, 3.8vh, 24px);
     padding: 6px 14px;
     font-size: 0.74rem;
   }
@@ -6005,8 +6007,8 @@ const KARAAGE_DONE_VARIANTS = [
 const TAKO_WIENER_DONE_IMAGE = COOKING_P+'wiener/wiener_003_done.png';
 const FREE_COOKED_OKAZU = [
   { img: TAKO_WIENER_DONE_IMAGE,                           name: 'タコウインナー',   cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'tako_wiener', size: 160, rotation: -4, clusterImages: [
-    { img: TAKO_WIENER_DONE_IMAGE, x: -0.16, y: 0.03, w: 0.68, rotation: -11 },
     { img: TAKO_WIENER_DONE_IMAGE, x: 0.18, y: -0.05, w: 0.61, rotation: 8 },
+    { img: TAKO_WIENER_DONE_IMAGE, x: -0.16, y: 0.03, w: 0.68, rotation: -11 },
   ] },
   { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'hamburger', size: 170, rotation: 2 },
   { img: KARAAGE_DONE_VARIANTS[0],                         name: 'からあげ',         cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'karaage', size: 156, rotation: -5, clusterImages: [
@@ -10537,11 +10539,19 @@ const SIMPLE_BOX_GLOBAL_SCALE_MIN = 0.6;
 const SIMPLE_BOX_GLOBAL_SCALE_MAX = 1.4;
 const SIMPLE_BOX_GLOBAL_SCALE_DEFAULT = 1;
 const SIMPLE_REFERENCE_BOX_ID = 'box_rect_split';
+const SIMPLE_SLOT_BOX_ALIASES = {
+  box_bear_pink: 'box_bear',
+  box_cat: 'box_cat_blue',
+};
 const SIMPLE_SLOT_DEFAULT_SOURCE_BOX_IDS = {
   box_bear_pink: 'box_bear',
   box_cat_blue: 'box_bear',
-  box_cat: 'box_bear',
+  box_cat: 'box_cat_blue',
 };
+function getSimpleCanonicalSlotBoxId(boxId) {
+  const id = String(boxId || '');
+  return SIMPLE_SLOT_BOX_ALIASES[id] || id;
+}
 function getSimpleSlotDefaultSourceBox(box) {
   const sourceId = SIMPLE_SLOT_DEFAULT_SOURCE_BOX_IDS[box && box.id] || SIMPLE_REFERENCE_BOX_ID;
   return bentoBoxes.find(b => b && b.id === sourceId) || null;
@@ -10651,9 +10661,12 @@ function normalizeSimpleSlotLayoutMap(map) {
   if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
   Object.keys(map).sort().forEach(boxId => {
     if (!boxId) return;
+    const canonicalBoxId = getSimpleCanonicalSlotBoxId(boxId);
+    if (canonicalBoxId !== boxId && map[canonicalBoxId]) return;
+    if (normalized[canonicalBoxId]) return;
     const boxLayout = map[boxId];
     if (!boxLayout || typeof boxLayout !== 'object' || Array.isArray(boxLayout)) return;
-    const box = bentoBoxes.find(b => b && b.id === boxId) || null;
+    const box = bentoBoxes.find(b => b && b.id === canonicalBoxId) || null;
     const entry = {};
     const globalScale = normalizeSimpleBoxGlobalScale(boxLayout.globalScale);
     if (Math.abs(globalScale - SIMPLE_BOX_GLOBAL_SCALE_DEFAULT) >= 0.001) entry.globalScale = globalScale;
@@ -10668,7 +10681,7 @@ function normalizeSimpleSlotLayoutMap(map) {
           .map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
       if (points.length) entry[kind] = points;
     });
-    if (Object.keys(entry).length) normalized[boxId] = entry;
+    if (Object.keys(entry).length) normalized[canonicalBoxId] = entry;
   });
   return normalized;
 }
