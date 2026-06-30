@@ -206,6 +206,7 @@
       stickerIndex = {};
       Object.keys(pages).forEach(function (gameId) {
         var page = pages[gameId] || {};
+        if (page.bookOnly) return;
         var list = page.stickers || [];
         var ownedDict = {};
         try { ownedDict = stickers.getOwned ? (stickers.getOwned(gameId) || {}) : {}; }

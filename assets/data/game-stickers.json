@@ -1,5 +1,5 @@
 {
-  "version": 17,
+  "version": 18,
   "pages": {
     "quizland": {
       "title": "なぞなぞランド",
@@ -1941,6 +1941,76 @@
             "perfect"
           ],
           "serial": "129"
+        }
+      ]
+    },
+    "book-bonus": {
+      "title": "えほんとくてん",
+      "subtitle": "えほんの とくべつシール",
+      "icon": "📘",
+      "accent": "#D9A441",
+      "appOnly": false,
+      "bookOnly": true,
+      "stickers": [
+        {
+          "id": "book_bonus_pono_book_rare",
+          "name": "ぽのとえほん",
+          "img": "assets/ui/gacha/stickers/book_bonus_pono_book_rare_20260701.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "130"
+        },
+        {
+          "id": "book_bonus_mama_pono_super",
+          "name": "ママとぽの",
+          "img": "assets/ui/gacha/stickers/book_bonus_mama_pono_super_20260701.png",
+          "rarity": "super",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "131"
+        },
+        {
+          "id": "book_bonus_duck_rare",
+          "name": "アヒル",
+          "img": "assets/ui/gacha/stickers/book_bonus_duck_rare_20260701.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "132"
+        },
+        {
+          "id": "book_bonus_hedgehog_rare",
+          "name": "ハリネズミ",
+          "img": "assets/ui/gacha/stickers/book_bonus_hedgehog_rare_20260701.png",
+          "rarity": "rare",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "133"
+        },
+        {
+          "id": "book_bonus_friends_super",
+          "name": "なかよし",
+          "img": "assets/ui/gacha/stickers/book_bonus_friends_super_20260701.png",
+          "rarity": "super",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "134"
+        },
+        {
+          "id": "book_bonus_ehon_medal_super",
+          "name": "えほんメダル",
+          "img": "assets/ui/gacha/stickers/book_bonus_ehon_medal_super_20260701.png",
+          "rarity": "super",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "135"
         }
       ]
     }

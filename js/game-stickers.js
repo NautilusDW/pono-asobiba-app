@@ -7,6 +7,7 @@
   var LS_STATE = 'pono_game_stickers_v1';
   var LS_PENDING = 'pono_game_sticker_pending_v1';
   var CATALOG_PATH = 'assets/data/game-stickers.json';
+  var BOOK_BONUS_GAME_ID = 'book-bonus';
   var catalogPromise = null;
   var toastQueue = [];
   var toastDrainTimer = 0;
@@ -119,6 +120,29 @@
     if (!eventName) return true;
     var list = sticker.unlockOn || [];
     return list.indexOf(eventName) !== -1;
+  }
+
+  function _isBookBenefitUnlocked() {
+    try {
+      var tier = window.PonoTier || null;
+      if (tier) {
+        if (typeof tier.isBook === 'function' && tier.isBook()) return true;
+        if (typeof tier.isSub === 'function' && tier.isSub()) return true;
+        if (typeof tier.getTier === 'function') {
+          var currentTier = tier.getTier();
+          if (currentTier === 'book' || currentTier === 'sub') return true;
+        }
+      }
+    } catch (e) {}
+    try {
+      return localStorage.getItem('pono_premium') === '1' || Boolean(window.__APP_BUILD__);
+    } catch (e2) {
+      return Boolean(window.__APP_BUILD__);
+    }
+  }
+
+  function _isPageLocked(page) {
+    return Boolean(page && page.bookOnly && !_isBookBenefitUnlocked());
   }
 
   function _findSticker(page, owned, options) {
@@ -491,7 +515,7 @@
       window.setTimeout(function () {
         // シール帳 正本統一: 全 grant 動線を 3D book (Prototypes/StickerBookThreeJS) に統一。
         // game / pasteId / firstEver query は 3D book main.js 側で吸収 (page auto-open / 強調 / welcome)。
-        var url = _rootPrefix() + 'Prototypes/StickerBookThreeJS/?book=forest&surface=cover';
+        var url = _rootPrefix() + 'Prototypes/StickerBookThreeJS/?surface=cover';
         if (result.gameId) url += '&game=' + encodeURIComponent(result.gameId);
         if (result.stickerId) url += '&pasteId=' + encodeURIComponent(result.stickerId);
         url += '&firstEver=' + (result.first ? '1' : '0');
@@ -532,6 +556,7 @@
     return loadCatalog().then(function (catalog) {
       var page = catalog && catalog.pages && catalog.pages[gameId];
       if (!page) return null;
+      if (_isPageLocked(page)) return null;
 
       var state = _state();
       var pageState = _pageState(state, gameId);
@@ -569,6 +594,63 @@
     });
   }
 
+  function grantAllOnPage(gameId, options) {
+    options = options || {};
+    if (!gameId) return Promise.resolve(null);
+    return loadCatalog().then(function (catalog) {
+      var page = catalog && catalog.pages && catalog.pages[gameId];
+      if (!page || _isPageLocked(page)) return null;
+      var stickers = Array.isArray(page.stickers) ? page.stickers : [];
+      var state = _state();
+      var pageState = _pageState(state, gameId);
+      var now = Date.now();
+      var added = [];
+      stickers.forEach(function (sticker) {
+        if (!sticker || !sticker.id) return;
+        if (options.event && !_eventMatches(sticker, options.event)) return;
+        var current = pageState.owned[sticker.id];
+        if (current && current.count > 0 && options.increment !== true) return;
+        current = current || { count: 0, firstAt: now };
+        current.count = (current.count || 0) + 1;
+        current.lastAt = now;
+        current.name = sticker.name || '';
+        pageState.owned[sticker.id] = current;
+        added.push({
+          gameId: gameId,
+          stickerId: sticker.id,
+          sticker: sticker,
+          page: page,
+          count: current.count,
+          first: current.count === 1,
+          event: options.event || 'book_bonus',
+          ts: now
+        });
+      });
+      if (added.length) {
+        _saveState(state);
+        window.dispatchEvent(new CustomEvent('pono-game-sticker-bonus-granted', {
+          detail: { gameId: gameId, results: added, count: added.length }
+        }));
+      }
+      return {
+        gameId: gameId,
+        page: page,
+        results: added,
+        count: added.length,
+        ts: now
+      };
+    }).catch(function (error) {
+      try { console.warn('[game-stickers] grant page failed:', error); } catch (e) {}
+      return null;
+    });
+  }
+
+  function grantBookBonus(options) {
+    options = options || {};
+    options.event = options.event || 'book_bonus';
+    return grantAllOnPage(BOOK_BONUS_GAME_ID, options);
+  }
+
   function getState() {
     return _state();
   }
@@ -602,6 +684,8 @@
     loadCatalog: loadCatalog,
     resolveAsset: resolveAsset,
     grant: grant,
+    grantBookBonus: grantBookBonus,
+    grantAllOnPage: grantAllOnPage,
     getState: getState,
     getOwned: getOwned,
     consumePending: consumePending,

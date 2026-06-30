@@ -6763,7 +6763,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1859;
+    const PAGE_CACHE_VERSION = 1860;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -7335,7 +7335,7 @@
 
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
-    const THREE_STICKER_BOOK_URL = 'Prototypes/StickerBookThreeJS/?book=forest&surface=cover';
+    const THREE_STICKER_BOOK_URL = 'Prototypes/StickerBookThreeJS/?surface=cover';
 
     function getBottomNavButton(target) {
       return target && target.closest ? target.closest('.bn-item') : null;
@@ -8438,6 +8438,7 @@
       Object.keys(pages).forEach((id) => {
         const page = pages[id] || {};
         if (page.appOnly && !__isAppBuild) return false;
+        if (page.bookOnly) return false;
         if (!Array.isArray(page.stickers) || !page.stickers.length) return false;
         const owned = typeof api.getOwned === 'function' ? (api.getOwned(id) || {}) : {};
         page.stickers.forEach((sticker) => {
@@ -9922,7 +9923,7 @@
       }
       // 'book' / 'serial' / default  (v17XX: 'admin' 撤去)
       if (tagEl) tagEl.textContent = '✨ えほんの とくてんが ひらいたよ ✨';
-      if (bodyEl) bodyEl.innerHTML = 'あたらしい ステージや<br>あそびが ひらいたよ！';
+      if (bodyEl) bodyEl.innerHTML = 'あたらしい あそびと<br>とくてんシールが ひらいたよ！';
     }
 
     function updateBookUnlockEntry() {
@@ -9935,6 +9936,16 @@
           unlocked ? 'えほんの あいことば もういちど いれる' : 'えほんの あいことば あいことばを いれる'
         );
       }
+    }
+
+    let bookBonusStickerGrantPromise = null;
+    function ensureBookBonusStickersGranted() {
+      if (!isBookBenefitUnlocked()) return null;
+      if (bookBonusStickerGrantPromise) return bookBonusStickerGrantPromise;
+      const api = window.PonoGameStickers;
+      if (!api || typeof api.grantBookBonus !== 'function') return null;
+      bookBonusStickerGrantPromise = api.grantBookBonus({ show: false }).catch(() => null);
+      return bookBonusStickerGrantPromise;
     }
 
     // ===== タブ切替 (WAI-ARIA Tabs Pattern / Manual Activation) =====
@@ -10097,6 +10108,7 @@
     if (bookUnlockEntry) bookUnlockEntry.addEventListener('click', openPasswordUnlockModal);
     if (settingsBookUnlockBtn) settingsBookUnlockBtn.addEventListener('click', openPasswordUnlockModal);
     updateBookUnlockEntry();
+    ensureBookBonusStickersGranted();
 
     // ===== unlock 成功時の共通 finalize =====
     /**
@@ -10128,6 +10140,9 @@
         } catch (e) {}
       }
       if (errEl) errEl.hidden = true;
+      if (method !== 'debug') {
+        ensureBookBonusStickersGranted();
+      }
       // すべての panel を hidden に + すべての submit を非表示
       ['serial', 'order', 'quiz'].forEach((id) => {
         const panel = pwPanelEls[id];

@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1003";
+const ASSET_VERSION = "20260701-1007";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -74,6 +74,9 @@ const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
 const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const STICKER_TRAY_DRAG_THRESHOLD = 8;
+const STICKER_PEEL_DURATION = 0.78;
+const STICKER_PEEL_SEGMENTS_X = 18;
+const STICKER_PEEL_SEGMENTS_Y = 10;
 const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "bugs",
@@ -2209,6 +2212,7 @@ let stickerPlan = null;
 let gameStickerCatalog = null;
 let stickerOptions = [];
 let collectionStickerOptions = [];
+const stickerPeelAnimations = [];
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
 let activeCollectionTocCategoryId = "";
@@ -2701,6 +2705,7 @@ window.__stickerBookDebugState = () => ({
   activeSurface,
   activeAlbumMode,
   stickerEditMode,
+  activeStickerPeels: stickerPeelAnimations.length,
   flipProgress,
   spreadPosition,
   thicknessPair: thicknessPairForSpread(spreadPosition),
@@ -6525,11 +6530,191 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
   // microtask 解決後の drawAsyncPlacedSticker は GPU 反映に更に 1 フレーム遅れていた。
   // ここで 1 回 await することで decode 済 (同期 drawImage 可能) 状態を保証 → blank frame ゼロ化。
   // 失敗時は無視して既存挙動 (after-the-fact 描画) にフォールバック。
-  await loadStickerImage(placement.assetUrl).catch(() => null);
-  refreshPageTemplateTextures();
-  updatePage(flipProgress);
-  updateInlineStickerControls();
-  notifyStickerTutorialAction("dropSticker");
+  const image = await loadStickerImage(placement.assetUrl).catch(() => null);
+  const finalizePlacement = () => {
+    refreshPageTemplateTextures();
+    updatePage(flipProgress);
+    updateInlineStickerControls();
+    notifyStickerTutorialAction("dropSticker");
+  };
+  if (image && startStickerPeelAnimation(placement, pageNumber, image, finalizePlacement)) {
+    return;
+  }
+  finalizePlacement();
+}
+
+// Sticker paste is a real temporary Three.js mesh: a subdivided PlaneGeometry is
+// bent by rewriting vertex positions every frame, then baked into the page canvas.
+function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
+  const pageMesh = pageMeshForStickerPage(pageNumber);
+  if (!pageMesh?.visible || activeSurface !== "inside" || activeAlbumMode === "collection") {
+    return false;
+  }
+  const paddedImage = getPaddedStickerImage(image);
+  const dimensions = stickerPeelWorldDimensions(placement, image, paddedImage);
+  if (!dimensions.width || !dimensions.height) {
+    return false;
+  }
+
+  const texture = createStickerPeelTexture(paddedImage);
+  const geometry = new THREE.PlaneGeometry(
+    dimensions.width,
+    dimensions.height,
+    STICKER_PEEL_SEGMENTS_X,
+    STICKER_PEEL_SEGMENTS_Y,
+  );
+  prepareStickerPeelGeometry(geometry, dimensions.width, dimensions.height);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    opacity: 1,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  const shadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(dimensions.width * 1.02, dimensions.height * 1.02, 1, 1),
+    new THREE.MeshBasicMaterial({
+      color: 0x2a1707,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+    }),
+  );
+  const local = stickerPeelLocalPoint(placement);
+  const rotation = THREE.MathUtils.degToRad(placement.rotation || 0);
+  mesh.position.set(pageMesh.position.x + local.x, local.y, 0.12);
+  mesh.rotation.z = rotation;
+  mesh.renderOrder = 96;
+  shadow.position.set(mesh.position.x, mesh.position.y - 0.012, 0.014);
+  shadow.rotation.z = rotation;
+  shadow.renderOrder = 95;
+  book.add(shadow);
+  book.add(mesh);
+
+  const animation = {
+    mesh,
+    shadow,
+    geometry,
+    material,
+    texture,
+    elapsed: 0,
+    duration: STICKER_PEEL_DURATION,
+    onComplete,
+    curlSign: (placement.x || 50) > 50 ? -1 : 1,
+  };
+  stickerPeelAnimations.push(animation);
+  bendStickerPeelGeometry(animation, 0);
+  return true;
+}
+
+function pageMeshForStickerPage(pageNumber) {
+  return Math.round(pageNumber) === rightBookPageNumber() ? rightPage : leftPageInner;
+}
+
+function stickerPeelLocalPoint(placement) {
+  const x = (THREE.MathUtils.clamp(Number(placement.x) || 50, 0, 100) / 100) * PAGE_W;
+  const y = PAGE_H / 2 - (THREE.MathUtils.clamp(Number(placement.y) || 50, 0, 100) / 100) * PAGE_H;
+  return { x, y };
+}
+
+function stickerPeelWorldDimensions(placement, image, paddedImage) {
+  const scale = sanitizedPlacementScale(placement?.scale);
+  const baseW = PAGE_W * 0.18 * scale;
+  const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
+  const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+  const aspect = sourceWidth / sourceHeight;
+  return {
+    width: baseW * (paddedImage.width / sourceWidth),
+    height: (baseW / Math.max(0.2, aspect)) * (paddedImage.height / sourceHeight),
+  };
+}
+
+function createStickerPeelTexture(paddedImage) {
+  const textureCanvas = document.createElement("canvas");
+  textureCanvas.width = paddedImage.width;
+  textureCanvas.height = paddedImage.height;
+  const textureCtx = textureCanvas.getContext("2d");
+  drawStickerWhiteOutline(textureCtx, paddedImage, 0, 0, textureCanvas.width, textureCanvas.height);
+  textureCtx.drawImage(paddedImage, 0, 0);
+  const texture = new THREE.CanvasTexture(textureCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function prepareStickerPeelGeometry(geometry, width, height) {
+  geometry.userData.basePositions = Float32Array.from(geometry.attributes.position.array);
+  geometry.userData.peelWidth = width;
+  geometry.userData.peelHeight = height;
+}
+
+function updateStickerPeelAnimations(delta) {
+  for (let i = stickerPeelAnimations.length - 1; i >= 0; i -= 1) {
+    const animation = stickerPeelAnimations[i];
+    animation.elapsed = Math.min(animation.duration, animation.elapsed + delta);
+    const progress = THREE.MathUtils.clamp(animation.elapsed / animation.duration, 0, 1);
+    bendStickerPeelGeometry(animation, progress);
+    if (progress >= 0.995) {
+      stickerPeelAnimations.splice(i, 1);
+      finishStickerPeelAnimation(animation);
+    }
+  }
+}
+
+function bendStickerPeelGeometry(animation, progress) {
+  const geometry = animation.geometry;
+  const positions = geometry.attributes.position;
+  const base = geometry.userData.basePositions;
+  const width = geometry.userData.peelWidth || 1;
+  const height = geometry.userData.peelHeight || 1;
+  if (!base) {
+    return;
+  }
+  const eased = smootherstep(progress);
+  const remaining = 1 - eased;
+  const press = Math.sin(progress * Math.PI);
+  for (let i = 0; i < positions.count; i += 1) {
+    const index = i * 3;
+    const baseX = base[index];
+    const baseY = base[index + 1];
+    const baseZ = base[index + 2];
+    const u = THREE.MathUtils.clamp(baseX / width + 0.5, 0, 1);
+    const v = THREE.MathUtils.clamp(baseY / height + 0.5, 0, 1);
+    const peelU = animation.curlSign > 0 ? u : 1 - u;
+    const freeEdge = Math.pow(peelU, 1.35);
+    const centerFold = Math.sin(peelU * Math.PI);
+    const wrinkle = Math.sin((peelU * 2.4 + v * 0.7 + progress * 1.65) * Math.PI);
+    const curlZ = freeEdge * remaining * height * 0.46;
+    const rippleZ = wrinkle * centerFold * remaining * height * 0.026;
+    positions.setXYZ(
+      i,
+      baseX - animation.curlSign * freeEdge * remaining * width * 0.055 + animation.curlSign * centerFold * press * width * 0.012,
+      baseY + (v - 0.5) * centerFold * remaining * height * 0.045,
+      baseZ + curlZ + rippleZ,
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  const lift = remaining * 0.11;
+  animation.mesh.position.z = 0.018 + lift;
+  animation.mesh.scale.setScalar(1 + remaining * 0.045 - press * 0.018);
+  animation.mesh.material.opacity = 0.96 + press * 0.04;
+  animation.shadow.material.opacity = 0.04 + remaining * 0.14;
+  animation.shadow.scale.setScalar(1 + remaining * 0.08);
+}
+
+function finishStickerPeelAnimation(animation) {
+  book.remove(animation.mesh);
+  book.remove(animation.shadow);
+  animation.geometry.dispose();
+  animation.mesh.material.dispose();
+  animation.texture.dispose();
+  animation.shadow.geometry.dispose();
+  animation.shadow.material.dispose();
+  if (typeof animation.onComplete === "function") {
+    animation.onComplete();
+  }
 }
 
 function buildCollectionTocCategories() {
@@ -6998,6 +7183,9 @@ function buildStickerOptionsFromGameCatalog(catalog) {
     ? Object.entries(catalog.pages)
     : [];
   return pages.flatMap(([gameId, page], pageIndex) => {
+    if (!canUseGameStickerCatalogPage(page)) {
+      return [];
+    }
     const stickers = Array.isArray(page?.stickers) ? page.stickers : [];
     return stickers
       .filter((sticker) => sticker?.id && sticker.img)
@@ -7010,7 +7198,8 @@ function buildStickerOptionsFromGameCatalog(catalog) {
         sort: pageIndex * 1000 + stickerIndex,
         stage: stickerIndex + 1,
         rarity: sticker.rarity || "normal",
-        tier: page?.appOnly ? "sub" : "free",
+        tier: page?.bookOnly ? "book" : (page?.appOnly ? "sub" : "free"),
+        bookOnly: Boolean(page?.bookOnly),
         unlock: "catalog",
         listNote: page?.subtitle || "",
         assetStatus: "existing",
@@ -7019,6 +7208,22 @@ function buildStickerOptionsFromGameCatalog(catalog) {
         gameLabel: page?.title || gameId,
       }));
   });
+}
+
+function canUseGameStickerCatalogPage(page) {
+  if (!page?.bookOnly) {
+    return true;
+  }
+  return isBookBonusStickerUnlocked();
+}
+
+function isBookBonusStickerUnlocked() {
+  try {
+    if (localStorage.getItem("pono_premium") === "1") {
+      return true;
+    }
+  } catch {}
+  return Boolean(window.__APP_BUILD__);
 }
 
 function syncEditorPlacementsWithStickerPlan() {
@@ -7090,12 +7295,16 @@ function buildEditorPageDefinitions() {
   // STICKER_ALBUM_PAGE_COUNT を固定長として既存ユーザの editorState.pages keying を維持
   // (順序が変わると保存位置がズレるため、 catalog 末尾追加でも先頭順序を保持)。
   const catalogIds = gameStickerCatalog?.pages && typeof gameStickerCatalog.pages === "object"
-    ? Object.keys(gameStickerCatalog.pages)
+    ? Object.keys(gameStickerCatalog.pages).filter((gameId) => canUseGameStickerCatalogPage(gameStickerCatalog.pages[gameId]))
     : [];
   if (!catalogIds.length) {
     return createFallbackEditorPageDefinitions();
   }
-  return Array.from({ length: STICKER_ALBUM_PAGE_COUNT }, (_, index) => {
+  let pageCount = Math.max(STICKER_ALBUM_PAGE_COUNT, catalogIds.length);
+  if (pageCount % 2 !== 0) {
+    pageCount += 1;
+  }
+  return Array.from({ length: pageCount }, (_, index) => {
     const gameId = catalogIds[index] || "";
     const pageEntry = gameId ? gameStickerCatalog.pages[gameId] : null;
     const label = pageEntry?.title || `ページ ${index + 1}`;
@@ -14573,6 +14782,7 @@ function smootherstep(x) {
 function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.08);
+  updateStickerPeelAnimations(delta);
   if (updateCoverOpen(delta)) {
     renderer.render(scene, camera);
     return;
