@@ -15424,6 +15424,29 @@ function getSimpleStageMarkerDisplayPoints(box, kind, slots, count = 4) {
   }
   return pointsBySlot;
 }
+function getSimpleExplicitStageMarkerPoint(slot) {
+  const markerX = Number(slot && slot.markerX);
+  const markerY = Number(slot && slot.markerY);
+  if (!Number.isFinite(markerX) || !Number.isFinite(markerY)) return null;
+  return {
+    x: Math.round(clamp(markerX, 0, FREE_LAYOUT_W) * 10) / 10,
+    y: Math.round(clamp(markerY, 0, FREE_LAYOUT_H) * 10) / 10,
+  };
+}
+function getSimpleCupStageMarkerDisplayPoints(box, tier, cupSlots) {
+  const slots = Array.isArray(cupSlots) ? cupSlots : [];
+  const count = Math.max(1, slots.length, getSimpleSlotCountForBox(box, 'side-food'));
+  const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, count);
+  const sidePoints = getSimpleStageMarkerDisplayPoints(box, 'side-food', sideSlots, count);
+  const cupPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, count);
+  return Array.from({ length: count }, (_, idx) => (
+    getSimpleExplicitStageMarkerPoint(sideSlots[idx])
+    || getSimpleExplicitStageMarkerPoint(slots[idx])
+    || sidePoints[idx]
+    || cupPoints[idx]
+    || slots[idx]
+  ));
+}
 function getSimplePlacedItemPoint(item) {
   const x = Number(item && item.x);
   const y = Number(item && item.y);
@@ -15474,7 +15497,7 @@ function createSimpleStageTargetLayer() {
     const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
     const slots = getSimpleFixedSlots(cupDef, tier);
     const activeIndex = getActiveSimpleCupSlotIndex(slots);
-    const markerPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, slots.length);
+    const markerPoints = getSimpleCupStageMarkerDisplayPoints(box, tier, slots);
     slots.forEach((slot, idx) => {
       const current = getSimpleSlotItem(slot);
       const blocking = getSimpleSlotBlockingItem(slot);
