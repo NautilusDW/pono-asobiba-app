@@ -6035,6 +6035,17 @@ const FREE_COOKED_OKAZU = [
 ];
 const FREE_MAIN_OKAZU_NAMES = ['タコウインナー', 'ハンバーグ', 'からあげ', 'エビフライ', 'コロッケ', 'やきざけ', 'ぎょうざ', 'はるまき', 'ベーコンまき'];
 const FREE_SIDE_OKAZU_NAMES = ['プチトマト', 'たまごやき', 'にんじんいんげん', 'きんぴらごぼう', 'ブロッコリー', 'ミートボール', 'ナポリタン', 'コーンほうれんそう', 'えだまめ', 'ポテトサラダ', 'いちご', 'メロン', 'みかん', 'りんご', 'パイナップル', 'もも', 'キウイ'];
+const FREE_FOOD_MENU_CAT_ORDER = { meat: 0, veg: 1, fruit: 2 };
+function orderFreeFoodMenuItems(items) {
+  return (items || [])
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const orderA = FREE_FOOD_MENU_CAT_ORDER[a.item && a.item.cat] ?? 99;
+      const orderB = FREE_FOOD_MENU_CAT_ORDER[b.item && b.item.cat] ?? 99;
+      return orderA - orderB || a.index - b.index;
+    })
+    .map(entry => entry.item);
+}
 
 // ===== NPC requesters (依頼者モード用) =====
 // タイトル後に 1 体ランダム選定。 入れた食材の name が wantedFoods / perfectCombos と
@@ -9799,9 +9810,9 @@ function getFreePaletteItems(tabId) {
     const foods = getFreeFoodCatalog();
     if (isOkazuGuideStep()) {
       const role = getCurrentOkazuRole();
-      return foods.filter(f => f.okazuRole === role);
+      return orderFreeFoodMenuItems(foods.filter(f => f.okazuRole === role));
     }
-    return foods;
+    return orderFreeFoodMenuItems(foods);
   }
   if (tabId === 'decor') {
     const decorCatalog = getDecorPaletteCatalog();
