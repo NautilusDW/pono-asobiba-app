@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1001";
+const ASSET_VERSION = "20260701-1003";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1714,7 +1714,7 @@ const tuningEnabled = params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 const requestedBook = params.get("book");
-let activeBook = BOOK_VARIANTS[requestedBook] ? requestedBook : "forest";
+let activeBook = BOOK_VARIANTS[requestedBook] ? requestedBook : "boy";
 let activeAlbumMode = params.get("album") === "collection" ? "collection" : "free";
 let stickerEditMode = activeAlbumMode !== "collection" && params.get("edit") === "1";
 const zukanFormatIndex = Math.round(
