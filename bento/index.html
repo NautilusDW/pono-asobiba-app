@@ -9871,7 +9871,7 @@ function setFreeGuideStep(step, opts = {}) {
     setSpeech(getBoxTierCount() > 1 ? '2だんめに メインおかずを いれよう！' : 'メインのおかずを いれよう！');
   } else if (step === 'tier2Side') {
     freeActiveTier = getGuideTierForStep('tier2Side');
-    freeLayoutTab = 'food';
+    freeLayoutTab = 'accessory';
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
@@ -9891,7 +9891,7 @@ function setFreeGuideStep(step, opts = {}) {
     setSpeech('3だんめの メインおかずを いれよう！');
   } else if (step === 'tier3Side') {
     freeActiveTier = getGuideTierForStep('tier3Side');
-    freeLayoutTab = 'food';
+    freeLayoutTab = 'accessory';
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
@@ -13559,6 +13559,27 @@ function addAutoRiceForSelectedBox(opts = {}) {
   if (!opts.skipGuideAdvance && freeGuideStep === 'rice') setFreeGuideStep('decor');
   return rice;
 }
+function resetSimpleBentoBuildForBoxChange() {
+  placedItems = [];
+  resetFreeHistory();
+  freeLayerSeq = 1;
+  usedIds.clear();
+  bentoSkColors = [];
+  bentoFoodNames = [];
+  bentoSelected = [];
+  favSaved = false;
+  freeSelectedItemUid = null;
+  freeActiveTier = 1;
+  freeActiveCupUid = null;
+  freeCupEditorUid = null;
+  freePendingCupEditorUid = null;
+  freeBrushStampDef = null;
+  freeBrushStampLevel = 1;
+  simpleReplaceSlotUid = null;
+  simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
+  resetFreeMainGuide();
+}
 function selectFreeBentoBox(id) {
   // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
   // isBentoBoxUnlocked() always returns true so this branch is unreachable.
@@ -13570,15 +13591,26 @@ function selectFreeBentoBox(id) {
     }
     return;
   }
+  const changingBox = selectedBentoBoxId !== id;
+  const shouldResetBuild = !!(simpleBentoMode && !freeMaskEditorMode && changingBox && freeGuideStep !== 'box');
   selectedBentoBoxId = id;
   freeActiveTier = 1;
   freeActiveCupUid = null;
   freeCupEditorUid = null;
   freePendingCupEditorUid = null;
   simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
   freeBrushStampDef = null;
   freeBrushStampLevel = 1;
   const box = getSelectedBentoBox();
+  if (shouldResetBuild) {
+    resetSimpleBentoBuildForBoxChange();
+    setFreeGuideStep('rice', { skipRender: true });
+    setSpeech(box.name + 'に かえたよ。ごはんから つくろう！');
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+    return;
+  }
   placedItems.forEach(item => {
     const old = { x: item.x, y: item.y };
     const p = isRiceDecorItem(item) ? clampPointToRice(item.x, item.y, item) : clampPointToFreeItemBounds(item.x, item.y, item);
@@ -15493,6 +15525,15 @@ function getSimpleStageMarkerDisplayPoints(box, kind, slots, count = 4) {
   }
   return pointsBySlot;
 }
+function getSimpleSideStageMarkerDisplayPoints(box, tier, sideSlots, count = 4, cupSlots = null) {
+  const n = clamp(Math.round(Number(count) || (sideSlots && sideSlots.length) || 4), 1, 4);
+  const slots = Array.isArray(cupSlots)
+    ? cupSlots
+    : getSimpleFixedSlots(bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true }, tier);
+  const cupPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, n);
+  const sidePoints = getSimpleStageMarkerDisplayPoints(box, 'side-food', sideSlots, n);
+  return Array.from({ length: n }, (_, idx) => cupPoints[idx] || sidePoints[idx] || (sideSlots && sideSlots[idx]) || null);
+}
 function getSimpleExplicitStageMarkerPoint(slot) {
   const markerX = Number(slot && slot.markerX);
   const markerY = Number(slot && slot.markerY);
@@ -15507,7 +15548,7 @@ function getSimpleCupStageMarkerDisplayPoints(box, tier, cupSlots) {
   const slots = (Array.isArray(cupSlots) ? cupSlots : []).slice(0, maxCount);
   const count = Math.max(1, Math.min(maxCount, slots.length || maxCount));
   const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, count);
-  const sidePoints = getSimpleStageMarkerDisplayPoints(box, 'side-food', sideSlots, count);
+  const sidePoints = getSimpleSideStageMarkerDisplayPoints(box, tier, sideSlots, count, slots);
   const cupPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, count);
   return Array.from({ length: count }, (_, idx) => (
     getSimpleExplicitStageMarkerPoint(slots[idx])
@@ -15616,7 +15657,7 @@ function createSimpleStageTargetLayer() {
     ...Array.from(cupsBySlotIndex.keys()).map(idx => idx + 1),
     1
   );
-  const sideMarkerPoints = getSimpleStageMarkerDisplayPoints(box, 'side-food', sideSlots, sideCount);
+  const sideMarkerPoints = getSimpleSideStageMarkerDisplayPoints(box, tier, sideSlots, sideCount, cupSlots);
   const cupMarkerPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', cupSlots, cupSlots.length);
   for (let idx = 0; idx < markerCount; idx += 1) {
     const cup = cupsBySlotIndex.get(idx);
