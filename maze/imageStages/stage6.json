@@ -30,6 +30,12 @@
       "x": 818,
       "y": 128,
       "id": "hole-1"
+    },
+    {
+      "kind": "rock",
+      "x": 978,
+      "y": 615,
+      "id": "rock-1"
     }
   ],
   "creatures": [
@@ -1315,6 +1321,16 @@
       "x": 2492,
       "y": 810,
       "radius": 92
+    }
+  },
+  "strengthGimmick": {
+    "id": "strength-rock",
+    "obstacleId": "",
+    "encounterRadius": 96,
+    "glove": {
+      "x": 471,
+      "y": 608,
+      "radius": 90
     }
   }
 }
