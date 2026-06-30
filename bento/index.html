@@ -9760,6 +9760,16 @@ function maybeBeginCupMoveFromSimpleSelectionTap(e, item) {
 }
 function handleSimplePlacedItemTap(item) {
   if (!item) return;
+  if (!canSelectFreeItemInCurrentMode(item)) {
+    if (item.type === 'divider') {
+      setSpeech('しきりは しきりモードで うごかせるよ。');
+      showToast('しきりモードで うごかそう');
+    } else if (isSimpleDividerEditMode()) {
+      setSpeech('いまは しきりだけ えらべるよ。');
+      showToast('しきりだけ えらべるよ');
+    }
+    return;
+  }
   if (item.snapTarget) {
     selectCupForMovement(item);
     return;
@@ -10511,12 +10521,14 @@ function sortFreeEditorMap(map) {
   return sorted;
 }
 const SIMPLE_LEAF_PLACEMENT_LIMIT = 5;
+const SIMPLE_PICK_PLACEMENT_LIMIT = 3;
 const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 4,
   cup: 4,
   leaf: SIMPLE_LEAF_PLACEMENT_LIMIT,
   divider: 7,
+  pick: SIMPLE_PICK_PLACEMENT_LIMIT,
   other: 1,
 };
 const SIMPLE_SHARED_SLOT_KINDS = new Set(['leaf', 'other']);
@@ -11023,15 +11035,15 @@ function getFreeDropBoundsForDef(def, box = getSelectedBentoBox()) {
   if (!def) return getPlacementBounds(box);
   if (def.type === 'rice' || def.type === 'rice_auto' || def.type === 'template') return getRicePlacementBounds(box);
   if (def.type === 'decor') return getRicePlacementBounds(box);
-  if (def.type === 'food' || def.type === 'leaf' || def.type === 'divider') return getFoodPlacementBounds(box);
-  if (def.type === 'cup' || def.type === 'pick') return getAccessoryPlacementBounds(box);
+  if (def.type === 'food' || def.type === 'leaf' || def.type === 'divider' || def.type === 'pick') return getFoodPlacementBounds(box);
+  if (def.type === 'cup') return getAccessoryPlacementBounds(box);
   return getPlacementBounds(box);
 }
 function getFreePlacementBoundsForItem(item, box = getSelectedBentoBox()) {
   if (!item) return getPlacementBounds(box);
   if (item.type === 'rice' || isRiceDecorItem(item) || item.type === 'decor') return getRicePlacementBounds(box);
-  if ((item.type === 'food' && !getParentCup(item)) || item.type === 'leaf' || item.type === 'divider') return getFoodPlacementBounds(box);
-  if (item.type === 'cup' || item.type === 'pick' || item.snapTarget) return getAccessoryPlacementBounds(box);
+  if ((item.type === 'food' && !getParentCup(item)) || item.type === 'leaf' || item.type === 'divider' || item.type === 'pick') return getFoodPlacementBounds(box);
+  if (item.type === 'cup' || item.snapTarget) return getAccessoryPlacementBounds(box);
   return getPlacementBounds(box);
 }
 function isPointInsideBounds(point, bounds, inset = 0) {
@@ -11060,7 +11072,7 @@ function getBoxSpotsForType(box, type) {
   if (type === 'rice' || type === 'template' || type === 'rice_auto') return box.riceSpots || box.safeSpots || [];
   if (type === 'food' || type === 'leaf' || type === 'divider') return box.foodSpots || box.safeSpots || [];
   if (type === 'cup') return box.accessorySpots || box.foodSpots || box.safeSpots || [];
-  if (type === 'pick') return box.pickSpots || [getBoxCenterSpot(box)];
+  if (type === 'pick') return box.pickSpots || box.foodSpots || box.safeSpots || [];
   if (type === 'decor') return box.decorSpots || box.riceSpots || box.safeSpots || [];
   return box.safeSpots || [];
 }
@@ -11100,7 +11112,7 @@ function getSimpleSlotKind(def) {
   if (def.type === 'cup' || def.snapTarget) return 'cup';
   if (def.type === 'leaf') return 'leaf';
   if (def.type === 'divider') return 'divider';
-  if (def.type === 'pick') return 'other';
+  if (def.type === 'pick') return 'pick';
   if (def.type === 'food') {
     return (def.okazuRole || getOkazuRole(def)) === 'main' ? 'main-food' : 'side-food';
   }
@@ -11113,7 +11125,7 @@ function getSimpleSlotKindForItem(item) {
   if (item.type === 'cup' || item.snapTarget) return 'cup';
   if (item.type === 'leaf') return 'leaf';
   if (item.type === 'divider') return 'divider';
-  if (item.type === 'pick') return 'other';
+  if (item.type === 'pick') return 'pick';
   if (item.type === 'food') {
     return (item.okazuRole || getOkazuRole(item)) === 'main' ? 'main-food' : 'side-food';
   }
@@ -11130,6 +11142,7 @@ function makeSimpleSlot(kind, tier, idx, point) {
   };
   if (Number.isFinite(Number(point && point.size))) slot.size = Number(point.size);
   if (point && point.sampleId) slot.sampleId = point.sampleId;
+  if (Number.isFinite(Number(point && point.rotation))) slot.rotation = Number(point.rotation);
   if (Number.isFinite(Number(point && point.markerX)) && Number.isFinite(Number(point && point.markerY))) {
     slot.markerX = Number(point.markerX);
     slot.markerY = Number(point.markerY);
@@ -11354,6 +11367,53 @@ function getSimpleLeafDividerSpreadPoints(box, kind) {
   if (kind === 'divider') points.push({ x: b.x + b.w * 0.50, y: b.y + b.h * 0.50 });
   return points;
 }
+function getSimplePickAnchorItems(tier) {
+  const normalizedTier = Math.max(1, Math.round(Number(tier) || 1));
+  return placedItems
+    .filter(item => item
+      && item.type === 'food'
+      && getItemTier(item) === normalizedTier)
+    .sort((a, b) => {
+      const roleA = (a.okazuRole || getOkazuRole(a)) === 'main' ? 0 : 1;
+      const roleB = (b.okazuRole || getOkazuRole(b)) === 'main' ? 0 : 1;
+      const sizeA = (Number(a.size) || 72) * (Number(a.scale) || 1);
+      const sizeB = (Number(b.size) || 72) * (Number(b.scale) || 1);
+      return (roleA - roleB) || (sizeB - sizeA) || ((Number(a.y) || 0) - (Number(b.y) || 0));
+    });
+}
+function getSimplePickSlotPoint(anchor, slotIndex, def) {
+  const anchorSize = Math.max(72, (Number(anchor && anchor.size) || 96) * (Number(anchor && anchor.scale) || 1));
+  const offsets = [
+    { x: -0.18, y: -0.34, rotation: -10 },
+    { x: 0.10, y: -0.40, rotation: 7 },
+    { x: 0.28, y: -0.26, rotation: 13 },
+  ];
+  const offset = offsets[slotIndex % offsets.length] || offsets[0];
+  const baseSize = Number(def && def.size) || 64;
+  const pickSize = Math.round(clamp(baseSize * (anchorSize >= 150 ? 1.04 : 0.94), 54, 78));
+  const point = clampPointToBounds(
+    (Number(anchor && anchor.x) || FREE_LAYOUT_W / 2) + anchorSize * offset.x,
+    (Number(anchor && anchor.y) || FREE_LAYOUT_H / 2) + anchorSize * offset.y,
+    { type: 'pick', size: pickSize, scale: getSimpleBoxGlobalScale() },
+    getFoodPlacementBounds()
+  );
+  return {
+    x: Math.round(point.x * 10) / 10,
+    y: Math.round(point.y * 10) / 10,
+    size: pickSize,
+    rotation: offset.rotation,
+    sampleId: def && def.id,
+  };
+}
+function getSimplePickSlots(box, tier, def) {
+  const anchors = getSimplePickAnchorItems(tier);
+  if (!anchors.length) return [];
+  const count = SIMPLE_PICK_PLACEMENT_LIMIT;
+  return Array.from({ length: count }, (_, idx) => {
+    const anchor = anchors[idx % anchors.length];
+    return makeSimpleSlot('pick', tier, idx, getSimplePickSlotPoint(anchor, idx, def));
+  });
+}
 function getSimpleCupFallbackPoints(box) {
   const b = getAccessoryPlacementBounds(box);
   const fallback = [
@@ -11513,6 +11573,7 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (!box || !kind) return [];
   if (kind === 'decor') return getSimpleDecorSlots(box, tier);
   if (kind === 'main-food' || kind === 'side-food') return getSimpleFoodSlots(kind, box, tier, def);
+  if (kind === 'pick') return getSimplePickSlots(box, tier, def);
   if (kind === 'leaf' || kind === 'divider') {
     const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 6;
     const configured = kind === 'leaf' ? [] : getSimpleSlotLayoutPoints(box, kind).slice(0, fallbackLimit);
@@ -11619,8 +11680,10 @@ function getSimpleDropSlotsForItem(item) {
 function getSimpleSlotPlacementDefForItem(item) {
   if (!item) return item;
   let catalog = null;
-  if (item.type === 'cup' || item.type === 'divider' || item.type === 'pick' || item.snapTarget) {
+  if (item.type === 'cup' || item.type === 'divider' || item.snapTarget) {
     catalog = bentoAccessories.find(def => def && def.id === item.id) || null;
+  } else if (item.type === 'pick') {
+    catalog = decorItems.find(def => def && def.id === item.id) || null;
   } else if (item.type === 'leaf') {
     catalog = bentoLeafItems.find(def => def && def.id === item.id) || null;
   } else if (item.type === 'food') {
@@ -11680,7 +11743,9 @@ function applySimpleSlotPlacementToItem(item, slot) {
   item.y = point.y;
   item.size = getSimpleSlotSize(placementDef, slot);
   item.scale = getSimpleBoxScaleForDef(placementDef);
-  item.rotation = placementDef.rotation != null ? placementDef.rotation : (item.rotation || 0);
+  item.rotation = Number.isFinite(Number(slot.rotation))
+    ? Number(slot.rotation)
+    : (placementDef.rotation != null ? placementDef.rotation : (item.rotation || 0));
   item.renderAspect = placementDef.renderAspect || 1;
   item.visualScale = placementDef.visualScale || item.visualScale || 1;
   item.verticalDivider = !!placementDef.verticalDivider;
@@ -11738,6 +11803,36 @@ function syncSimplePlacedItemsToCurrentSlots() {
   });
   return changed;
 }
+function syncSimplePickItemsToCurrentSlots() {
+  if (!simpleBentoMode || !Array.isArray(placedItems) || !placedItems.length) return false;
+  let changed = false;
+  placedItems
+    .filter(item => item && item.type === 'pick' && item.simpleSlot && !item.parentCupId)
+    .forEach(item => {
+      const slot = getSimpleCurrentSlotForItem(item);
+      if (!slot || slot.key !== item.simpleSlot) {
+        removeFreeItemData(item.uid, { force: true });
+        changed = true;
+        return;
+      }
+      const before = {
+        x: item.x,
+        y: item.y,
+        size: item.size,
+        scale: item.scale,
+        rotation: item.rotation,
+      };
+      if (!applySimpleSlotPlacementToItem(item, slot)) return;
+      if (before.x !== item.x
+          || before.y !== item.y
+          || before.size !== item.size
+          || before.scale !== item.scale
+          || before.rotation !== item.rotation) {
+        changed = true;
+      }
+    });
+  return changed;
+}
 function applySimpleSlotDrop(uid, dropPoint = null) {
   const item = placedItems.find(i => i.uid === uid);
   if (!simpleBentoMode || !item || !item.simpleSlot || item.parentCupId) return false;
@@ -11748,7 +11843,9 @@ function applySimpleSlotDrop(uid, dropPoint = null) {
   const sourceSlot = getSimpleCurrentSlotForItem(item);
   const targetSlot = getSimpleNearestDropSlotForItem(item, dropPoint);
   if (!targetSlot) {
-    return sourceSlot ? applySimpleSlotPlacementToItem(item, sourceSlot) : false;
+    const restored = sourceSlot ? applySimpleSlotPlacementToItem(item, sourceSlot) : false;
+    if (restored && item.type !== 'pick') syncSimplePickItemsToCurrentSlots();
+    return restored;
   }
   const targetItem = getSimpleSlotBlockingItem(targetSlot);
   if (targetItem && targetItem.uid !== item.uid) {
@@ -11769,6 +11866,7 @@ function applySimpleSlotDrop(uid, dropPoint = null) {
   } else if (moved && sourceSlot && sourceSlot.key !== targetSlot.key) {
     setSpeech('ばしょを うつしたよ。');
   }
+  if (moved && item.type !== 'pick') syncSimplePickItemsToCurrentSlots();
   return moved;
 }
 function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) {
@@ -11958,6 +12056,7 @@ function getSimpleSlotSize(def, slot) {
   if (def.type === 'leaf') return clamp(def.size || 170, 110, 240);
   if (def.type === 'divider' && def.verticalDivider) return clamp(def.size || 46, 36, 74);
   if (def.type === 'divider') return clamp(def.size || 180, 130, 190);
+  if (def.type === 'pick') return clamp((slot && Number.isFinite(Number(slot.size)) ? Number(slot.size) : def.size) || 64, 48, 82);
   if (def.type === 'food') {
     const role = def.okazuRole || getOkazuRole(def);
     if (role === 'side') return clamp(def.size || def.cupSize || 132, 112, 146);
@@ -12308,6 +12407,19 @@ function canMoveFreeItemInCurrentTutorial(item) {
 function beginFreeItemDrag(e, uid) {
   if (e && e.cancelable) e.preventDefault();
   const item = placedItems.find(i => i.uid === uid);
+  if (simpleBentoMode && !canSelectFreeItemInCurrentMode(item)) {
+    if (e) {
+      try { e.stopPropagation(); } catch (_) {}
+    }
+    if (item && item.type === 'divider') {
+      setSpeech('しきりは しきりモードで うごかせるよ。');
+      showToast('しきりモードで うごかそう');
+    } else if (isSimpleDividerEditMode()) {
+      setSpeech('いまは しきりだけ えらべるよ。');
+      showToast('しきりだけ えらべるよ');
+    }
+    return;
+  }
   if (!canMoveFreeItemInCurrentTutorial(item)) {
     if (e) {
       try { e.stopPropagation(); } catch (_) {}
@@ -12566,6 +12678,7 @@ function addSimpleFoodToCup(def, cup) {
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
   layoutCupChildren(cup);
+  syncSimplePickItemsToCurrentSlots();
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   spawnLandingSparkles(document.querySelector(`[data-free-uid="${selectedItem.uid}"]`) || document.getElementById('free-layout-stage'));
@@ -12609,6 +12722,7 @@ function attachExistingSimpleSideFoodsToCups(tier) {
     const cup = placedItems.find(item => item.uid === uid && item.snapTarget);
     if (cup) layoutCupChildren(cup);
   });
+  if (touched.size) syncSimplePickItemsToCurrentSlots();
   return touched.size > 0;
 }
 function createSimpleDecorPlacedItem(def, tier) {
@@ -12685,7 +12799,12 @@ function addSimpleFixedPaletteItem(def) {
   const tier = getTargetTierForType(def.type);
   const slot = pickSimpleFixedSlot(def, tier);
   if (!slot) {
-    showToast('ここには いれられないよ');
+    if (def.type === 'pick') {
+      setSpeech('おかずを いれてから ピックを さそう。');
+      showToast('おかずを いれてから');
+    } else {
+      showToast('ここには いれられないよ');
+    }
     return null;
   }
   if (slot.replaceUid) removeFreeItemData(slot.replaceUid);
@@ -12738,6 +12857,7 @@ function addSimpleFixedPaletteItem(def) {
     simpleCupSlotIndex = null;
     setSpeech('ピックを おいたよ。');
   }
+  if (def.type !== 'pick') syncSimplePickItemsToCurrentSlots();
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   spawnLandingSparkles(document.querySelector(`[data-free-uid="${item.uid}"]`) || document.getElementById('free-layout-stage'));
@@ -13008,6 +13128,7 @@ function removeFreeItem(uid, opts = {}) {
   const historyBefore = opts.history === false ? null : beginFreeHistoryChange();
   const removed = removeFreeItemData(uid, opts);
   if (!removed) return;
+  if (removed.type !== 'pick') syncSimplePickItemsToCurrentSlots();
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -13039,6 +13160,7 @@ function canShowLayerControlsForItem(item) {
   return true;
 }
 function isItemVisuallySelected(item) {
+  if (!canSelectFreeItemInCurrentMode(item)) return false;
   const selected = getSelectedFreeItem();
   if (!item || !selected) return false;
   if (item.uid === selected.uid) return true;
@@ -13703,6 +13825,16 @@ function createFreePlacedElement(item, interactive) {
       ev.stopPropagation();
       if (simpleBentoMode) {
         if (ev.cancelable) ev.preventDefault();
+        if (!canSelectFreeItemInCurrentMode(item)) {
+          if (item.type === 'divider') {
+            setSpeech('しきりは しきりモードで うごかせるよ。');
+            showToast('しきりモードで うごかそう');
+          } else if (isSimpleDividerEditMode()) {
+            setSpeech('いまは しきりだけ えらべるよ。');
+            showToast('しきりだけ えらべるよ');
+          }
+          return;
+        }
         if (item.snapTarget) {
           selectCupForMovement(item, { render: false, message: true });
           beginFreeItemDrag(ev, item.uid);
@@ -15424,6 +15556,34 @@ function isSimpleLeafEditMode() {
     && !freeMaskEditorMode
   );
 }
+function isSimpleDividerEditMode() {
+  return !!(
+    simpleBentoMode
+    && isOkazuGuideStep()
+    && String(freeGuideStep || '').endsWith('Side')
+    && freeLayoutTab === 'divider'
+    && !freeMaskEditorMode
+  );
+}
+function canSelectFreeItemInCurrentMode(item) {
+  if (!simpleBentoMode || !item) return true;
+  if (isSimpleDividerEditMode()) return item.type === 'divider';
+  if (item.type === 'divider') return false;
+  return true;
+}
+function clearSimpleSelectionIfBlockedByMode() {
+  if (!simpleBentoMode) return false;
+  const selected = getSelectedFreeItem();
+  if (!selected || canSelectFreeItemInCurrentMode(selected)) return false;
+  freeSelectedItemUid = null;
+  if (simpleReplaceSlotUid === selected.uid) simpleReplaceSlotUid = null;
+  if (freeActiveCupUid === selected.uid) freeActiveCupUid = null;
+  if (freeCupEditorUid === selected.uid) freeCupEditorUid = null;
+  if (freePendingCupEditorUid === selected.uid) freePendingCupEditorUid = null;
+  simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
+  return true;
+}
 function shouldHideItemForSimpleLeafEdit(item) {
   if (!isSimpleLeafEditMode() || !item) return false;
   if (item.type === 'leaf' || item.brushItem) return false;
@@ -15742,6 +15902,7 @@ function renderFreeLayoutControls() {
   const tray = document.getElementById('food-tray');
   if (!tray) return;
   normalizeFreeGuideTab();
+  clearSimpleSelectionIfBlockedByMode();
   tray.className = 'food-tray free-layout-controls';
   const guideBlocking = isFreeMainGuideBlocking();
   const simpleOkazuStep = !!(simpleBentoMode && isOkazuGuideStep() && !freeMaskEditorMode);
@@ -15797,6 +15958,7 @@ function renderFreeLayoutControls() {
       appendFreeTabContent(b, t);
       b.addEventListener('pointerdown', e => {
         e.preventDefault();
+        const previousTab = freeLayoutTab;
         freeLayoutTab = t.id;
         if (t.id !== 'food') freeBrushStampDef = null;
         if (t.id !== 'food') simpleNoCupSlotIndex = null;
@@ -15807,6 +15969,11 @@ function renderFreeLayoutControls() {
           const selected = getSelectedFreeItem();
           if (!selected || selected.type !== 'leaf') freeSelectedItemUid = null;
           setSpeech('したにしくモードだよ。うえの おかずを かくして うごかせるよ。');
+        } else if (t.id === 'divider' && simpleBentoMode) {
+          clearSimpleSelectionIfBlockedByMode();
+          setSpeech('しきりモードだよ。しきりだけ うごかせるよ。');
+        } else if (previousTab === 'divider' && simpleBentoMode) {
+          clearSimpleSelectionIfBlockedByMode();
         }
         renderFreeLayoutStage();
         renderFreeLayoutControls();
@@ -15903,6 +16070,8 @@ function renderFreeLayoutControls() {
   const del = document.createElement('button');
   del.type = 'button';
   del.textContent = 'けす';
+  const selectedForDelete = getSelectedFreeItem();
+  del.disabled = !selectedForDelete || !canSelectFreeItemInCurrentMode(selectedForDelete);
   del.addEventListener('pointerdown', e => { e.preventDefault(); removeFreeItem(freeSelectedItemUid); });
   actions.appendChild(del);
   if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
