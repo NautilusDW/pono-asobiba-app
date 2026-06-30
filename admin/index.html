@@ -11357,6 +11357,7 @@ var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8
 var BENTO_SLOT_GLOBAL_SCALE_MIN = 0.6;
 var BENTO_SLOT_GLOBAL_SCALE_MAX = 1.4;
 var BENTO_SLOT_GLOBAL_SCALE_DEFAULT = 1;
+var BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID = 'hamburger';
 var BENTO_SLOT_BOXES = [
   { id: 'box_rect_split', name: 'ふつうの おべんとう', image: '../assets/images/bento/ui/rect_bento_box_coral.webp', bounds: { x: 50, y: 22, w: 660, h: 422 }, placeBounds: { x: 78, y: 78, w: 579, h: 314 }, sideFoodSlotCount: 4, foodSpots: [{ x: 494, y: 174 }, { x: 572, y: 174 }, { x: 494, y: 296 }, { x: 572, y: 296 }, { x: 553, y: 235 }], accessorySpots: [{ x: 500, y: 236 }, { x: 572, y: 236 }, { x: 556, y: 176 }, { x: 556, y: 300 }] },
   { id: 'box_square', name: 'しかくい おべんとう', image: '../assets/images/bento/free-layout/box_square.webp', bounds: { x: 76, y: 54, w: 608, h: 354 }, placeBounds: { x: 124, y: 92, w: 512, h: 276 }, foodSpots: [{ x: 274, y: 234 }, { x: 382, y: 188 }, { x: 490, y: 234 }, { x: 318, y: 306 }, { x: 446, y: 306 }], accessorySpots: [{ x: 292, y: 250 }, { x: 470, y: 250 }, { x: 382, y: 206 }] },
@@ -11796,6 +11797,7 @@ function bentoSlotSampleOverridePoint(point, def, sample, fallbackPoint) {
     def,
     sample
   );
+  if (point && point.positionOverride === true) base.positionOverride = true;
   return base;
 }
 function bentoSlotNormalizeSampleOverrides(raw, def, fallbackPoint) {
@@ -11981,7 +11983,6 @@ function bentoSlotAccessoryBounds(box) {
   return bentoSlotBoundsFromSpots(box.accessorySpots || box.foodSpots, bentoSlotGetMaskBounds(box) || box.placeBounds || box.bounds, 112);
 }
 function bentoSlotCupFallbackPoints(box) {
-  var existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];
   var b = bentoSlotAccessoryBounds(box);
   var fallback = [
     { x: b.x + b.w * 0.32, y: b.y + b.h * 0.34 },
@@ -11989,8 +11990,9 @@ function bentoSlotCupFallbackPoints(box) {
     { x: b.x + b.w * 0.32, y: b.y + b.h * 0.68 },
     { x: b.x + b.w * 0.68, y: b.y + b.h * 0.68 }
   ];
-  var points = existing.slice(0, BENTO_SLOT_LIMITS.cup || 4);
-  fallback.forEach(function(point) {
+  var points = fallback.slice(0, BENTO_SLOT_LIMITS.cup || 4);
+  var existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];
+  existing.forEach(function(point) {
     if (points.length >= (BENTO_SLOT_LIMITS.cup || 4)) return;
     var near = points.some(function(existingPoint) {
       var dx = existingPoint.x - point.x;
@@ -11999,7 +12001,7 @@ function bentoSlotCupFallbackPoints(box) {
     });
     if (!near) points.push(point);
   });
-  return points.concat(fallback).slice(0, BENTO_SLOT_LIMITS.cup || 4);
+  return points.slice(0, BENTO_SLOT_LIMITS.cup || 4);
 }
 function bentoSlotKindBounds(box, kind) {
   if (kind === 'main-food' || kind === 'side-food' || kind === 'leaf' || kind === 'divider') return bentoSlotFoodBounds(box);
@@ -12035,18 +12037,17 @@ function bentoSlotDefaultPoint(box, def) {
       y: grid.y + grid.h * rows[row]
     });
   }
-  if (def.kind === 'main-food' || def.kind === 'side-food') {
+  if (def.kind === 'side-food') {
+    var cupPoint = bentoSlotCupFallbackPoints(box)[def.index % (BENTO_SLOT_LIMITS.cup || 4)];
+    return bentoSlotClampPointForDef(box, def, cupPoint);
+  }
+  if (def.kind === 'main-food') {
     var b = bentoSlotFoodBounds(box);
     var points = [
-      { x: b.x + b.w * 0.24, y: b.y + b.h * 0.28 },
-      { x: b.x + b.w * 0.76, y: b.y + b.h * 0.28 },
-      { x: b.x + b.w * 0.24, y: b.y + b.h * 0.72 },
-      { x: b.x + b.w * 0.76, y: b.y + b.h * 0.72 },
-      { x: b.x + b.w * 0.50, y: b.y + b.h * 0.52 },
-      { x: b.x + b.w * 0.50, y: b.y + b.h * 0.78 }
+      { x: b.x + b.w * 0.35, y: b.y + b.h * 0.88 },
+      { x: b.x + b.w * 0.78, y: b.y + b.h * 0.88 }
     ];
-    var order = def.kind === 'main-food' ? [0, 1] : [2, 3, 4, 5];
-    return bentoSlotClampPointForDef(box, def, points[order[def.index] || 0]);
+    return bentoSlotClampPointForDef(box, def, points[def.index] || points[0]);
   }
   var accessory = def.kind === 'cup'
     ? bentoSlotCupFallbackPoints(box)
@@ -12091,7 +12092,8 @@ function bentoSlotClampEntryForDef(box, def, entry) {
       normalized.sampleOverrides[sampleId] = bentoSlotSampleOverridePoint({
         x: op.x,
         y: op.y,
-        size: override.size
+        size: override.size,
+        positionOverride: override.positionOverride === true
       }, def, overrideSample, normalized);
     });
     if (!Object.keys(normalized.sampleOverrides).length) delete normalized.sampleOverrides;
@@ -12110,8 +12112,42 @@ function bentoSlotGetActiveEntry(entry, def) {
   if (!override) return entry;
   return Object.assign({}, entry, override, { sampleId: sample.id });
 }
+function bentoSlotGetCupAnchorEntry(boxId, index) {
+  var box = bentoSlotGetBoxById(boxId);
+  var cupDef = { kind: 'cup', index: index || 0 };
+  var boxLayout = _bentoSlotState.layout[boxId];
+  var list = boxLayout && Array.isArray(boxLayout.cup) ? boxLayout.cup : [];
+  return list[cupDef.index]
+    ? bentoSlotClampEntryForDef(box, cupDef, list[cupDef.index])
+    : bentoSlotDefaultEntry(box, cupDef);
+}
+function bentoSlotGetMainAnchorEntry(entry, def) {
+  if (!entry || !def || def.kind !== 'main-food') return null;
+  if (entry.sampleId === BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID) return entry;
+  var override = entry.sampleOverrides && entry.sampleOverrides[BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID];
+  if (override) return Object.assign({}, entry, override, { sampleId: BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID });
+  return null;
+}
+function bentoSlotResolveInheritedPoint(boxId, def, entry, sample, override) {
+  if (!entry || !def || !sample) return entry;
+  if (def.kind === 'main-food'
+      && sample.id !== BENTO_SLOT_MAIN_ANCHOR_SAMPLE_ID
+      && !(override && override.positionOverride === true)) {
+    var mainAnchor = bentoSlotGetMainAnchorEntry(entry, def);
+    if (mainAnchor) return Object.assign({}, entry, { x: mainAnchor.x, y: mainAnchor.y });
+  }
+  if (def.kind === 'side-food' && !(override && override.positionOverride === true)) {
+    var cupAnchor = bentoSlotGetCupAnchorEntry(boxId, def.index);
+    if (cupAnchor) return Object.assign({}, entry, { x: cupAnchor.x, y: cupAnchor.y });
+  }
+  return entry;
+}
 function bentoSlotGetEntry(boxId, def) {
-  return bentoSlotGetActiveEntry(bentoSlotGetStoredEntry(boxId, def), def);
+  var stored = bentoSlotGetStoredEntry(boxId, def);
+  var sample = bentoSlotSampleForDef(def, stored);
+  var override = sample && stored && stored.sampleOverrides && stored.sampleOverrides[sample.id];
+  var active = override ? Object.assign({}, stored, override, { sampleId: sample.id }) : stored;
+  return bentoSlotResolveInheritedPoint(boxId, def, active, sample, override);
 }
 function bentoSlotGetPoint(boxId, def) {
   return bentoSlotGetEntry(boxId, def);
@@ -12277,11 +12313,13 @@ function bentoSlotSyncSampleSizeForBox(boxId, def, sample, size) {
     var entry = bentoSlotClampEntryForDef(box, slotDef, list[i] || bentoSlotDefaultEntry(box, slotDef));
     var overrides = Object.assign({}, entry.sampleOverrides || {});
     var current = overrides[sample.id] || (entry.sampleId === sample.id ? entry : null) || entry;
-    overrides[sample.id] = {
+    var nextOverride = {
       x: isFinite(Number(current.x)) ? current.x : entry.x,
       y: isFinite(Number(current.y)) ? current.y : entry.y,
       size: normalizedSize
     };
+    if (current.positionOverride === true) nextOverride.positionOverride = true;
+    overrides[sample.id] = nextOverride;
     var next = Object.assign({}, entry, { sampleOverrides: overrides });
     if (entry.sampleId === sample.id) next.size = normalizedSize;
     var normalizedNext = bentoSlotClampEntryForDef(box, slotDef, next);
@@ -12356,11 +12394,13 @@ function bentoSlotSetActiveSampleEntry(boxId, def, sample, values) {
       def,
       activeSample
     );
-    overrides[activeSample.id] = {
+    var nextOverride = {
       x: nextActive.x,
       y: nextActive.y,
       size: nextActive.size
     };
+    if (nextActive.positionOverride === true) nextOverride.positionOverride = true;
+    overrides[activeSample.id] = nextOverride;
   }
   var updated = bentoSlotSetEntry(boxId, def, Object.assign({}, existing, {
     x: nextActive.x,
@@ -12377,7 +12417,10 @@ function bentoSlotSetActiveSampleEntry(boxId, def, sample, values) {
 }
 function bentoSlotSetPoint(boxId, def, point) {
   var existing = bentoSlotGetStoredEntry(boxId, def);
-  return bentoSlotSetActiveSampleEntry(boxId, def, bentoSlotSampleForDef(def, existing), bentoSlotPoint(point));
+  return bentoSlotSetActiveSampleEntry(boxId, def, bentoSlotSampleForDef(def, existing), Object.assign(
+    bentoSlotPoint(point),
+    { positionOverride: true }
+  ));
 }
 function bentoSlotSetSize(boxId, def, size) {
   var existing = bentoSlotGetStoredEntry(boxId, def);
@@ -13052,7 +13095,8 @@ function bentoSlotBindControls() {
     bentoSlotSetActiveSampleEntry(box.id, def, sample, {
       x: defaults.x,
       y: defaults.y,
-      size: bentoSlotDefaultSizeForSample(def, sample)
+      size: bentoSlotDefaultSizeForSample(def, sample),
+      positionOverride: false
     });
     bentoSlotSetHidden(box.id, def, false);
     bentoSlotRender();

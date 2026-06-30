@@ -10457,6 +10457,7 @@ function normalizeSimpleSlotSampleOverrides(point, kind = '') {
     delete override.sampleOverrides;
     delete override.markerX;
     delete override.markerY;
+    if (src.positionOverride === true) override.positionOverride = true;
     normalized[id] = override;
   });
   return normalized;
@@ -11064,19 +11065,50 @@ function orderSimpleSlotsForDef(def, slots) {
   const fallback = sorted.filter(slot => slot && !used.has(slot.key));
   return preferred.concat(fallback);
 }
-function getSimpleSlotPointForDef(point, def, kind) {
+function getSimpleMainSlotAnchorPoint(point, sampleId) {
+  if (!point || !sampleId || sampleId === 'hamburger') return null;
+  const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
+    ? point.sampleOverrides
+    : null;
+  const anchor = overrides && overrides.hamburger;
+  if (anchor && Number.isFinite(Number(anchor.x)) && Number.isFinite(Number(anchor.y))) return anchor;
+  if (point.sampleId === 'hamburger') return point;
+  return null;
+}
+function getSimpleSlotPointForDef(point, def, kind, anchorPoint = null) {
   if (!point) return point;
   const sampleId = getSimpleSlotSampleIdForDef(def);
   const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
     ? point.sampleOverrides
     : null;
   if (sampleId && overrides && overrides[sampleId]) {
-    return normalizeSimpleSlotPoint(Object.assign({}, point, overrides[sampleId], { sampleId }), kind || getSimpleSlotKind(def));
+    const override = overrides[sampleId];
+    const shouldUseAnchor = anchorPoint && (
+      (kind === 'side-food' && override.positionOverride !== true)
+      || (kind === 'main-food' && sampleId !== 'hamburger' && override.positionOverride !== true)
+    );
+    return normalizeSimpleSlotPoint(Object.assign(
+      {},
+      point,
+      override,
+      shouldUseAnchor ? { x: anchorPoint.x, y: anchorPoint.y } : {},
+      { sampleId }
+    ), kind || getSimpleSlotKind(def));
   }
   if (sampleId && point.sampleId && point.sampleId !== sampleId) {
     const clean = Object.assign({}, point, { sampleId });
     delete clean.size;
+    if (anchorPoint) {
+      clean.x = anchorPoint.x;
+      clean.y = anchorPoint.y;
+    }
     return normalizeSimpleSlotPoint(clean, kind || getSimpleSlotKind(def));
+  }
+  if (anchorPoint && kind === 'side-food') {
+    return normalizeSimpleSlotPoint(Object.assign({}, point, { x: anchorPoint.x, y: anchorPoint.y }), kind || getSimpleSlotKind(def));
+  }
+  if (anchorPoint && kind === 'main-food' && sampleId && sampleId !== 'hamburger') {
+    return normalizeSimpleSlotPoint(Object.assign({}, point, { x: anchorPoint.x, y: anchorPoint.y, sampleId }), kind || getSimpleSlotKind(def));
   }
   return point;
 }
@@ -11104,9 +11136,10 @@ function getSimpleSlotSharedSampleSize(kind, sampleId) {
   }
   return null;
 }
-function getSimpleSlotPointForDefWithSharedSize(point, def, kind) {
+function getSimpleSlotPointForDefWithSharedSize(point, def, kind, anchorPoint = null) {
   const sampleId = getSimpleSlotSampleIdForDef(def);
-  const base = getSimpleSlotPointForDef(point, def, kind);
+  const inheritedPoint = anchorPoint || (kind === 'main-food' ? getSimpleMainSlotAnchorPoint(point, sampleId) : null);
+  const base = getSimpleSlotPointForDef(point, def, kind, inheritedPoint);
   const sharedSize = getSimpleSlotSharedSampleSize(kind, sampleId);
   if (sharedSize == null) return base;
   return normalizeSimpleSlotPoint(Object.assign({}, base, { size: sharedSize, sampleId }), kind);
@@ -11134,13 +11167,13 @@ function getSimpleDecorSlots(box, tier) {
 }
 function getSimpleFoodSpreadPoints(box) {
   const b = getFoodPlacementBounds(box);
-  const xLeft = b.x + b.w * 0.24;
-  const xRight = b.x + b.w * 0.76;
-  const yTop = b.y + b.h * 0.28;
+  const xLeft = b.x + b.w * 0.35;
+  const xRight = b.x + b.w * 0.78;
+  const yMain = b.y + b.h * 0.88;
   const yBottom = b.y + b.h * 0.72;
   return [
-    { x: xLeft, y: yTop },
-    { x: xRight, y: yTop },
+    { x: xLeft, y: yMain },
+    { x: xRight, y: yMain },
     { x: xLeft, y: yBottom },
     { x: xRight, y: yBottom },
     { x: b.x + b.w * 0.50, y: b.y + b.h * 0.52 },
@@ -11161,7 +11194,6 @@ function getSimpleLeafDividerSpreadPoints(box, kind) {
   return points;
 }
 function getSimpleCupFallbackPoints(box) {
-  const existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];
   const b = getAccessoryPlacementBounds(box);
   const fallback = [
     { x: b.x + b.w * 0.32, y: b.y + b.h * 0.34 },
@@ -11169,13 +11201,22 @@ function getSimpleCupFallbackPoints(box) {
     { x: b.x + b.w * 0.32, y: b.y + b.h * 0.68 },
     { x: b.x + b.w * 0.68, y: b.y + b.h * 0.68 },
   ];
-  const points = existing.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
-  fallback.forEach(point => {
+  const points = fallback.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
+  const existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];
+  existing.forEach(point => {
     if (points.length >= (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4)) return;
     if (points.some(existingPoint => dist(existingPoint, point) < 28)) return;
     points.push(point);
   });
-  return points.concat(fallback).slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
+  return points.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
+}
+function getSimpleCupLayoutPoints(box, limit = SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) {
+  const configured = getSimpleSlotLayoutPoints(box, 'cup').slice(0, limit);
+  const fallback = getSimpleCupFallbackPoints(box).slice(0, limit);
+  const points = configured.length
+    ? configured.concat(fallback.slice(configured.length, limit)).slice(0, limit)
+    : fallback;
+  return points.map(point => Object.assign({}, point));
 }
 function shouldUseSideStageTargetsForCup(kind) {
   return !!(
@@ -11215,15 +11256,18 @@ function getSimpleFoodSlots(kind, box, tier, def) {
   const limit = kind === 'side-food' ? getSimpleSlotCountForBox(box, kind) : (SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3);
   const points = getSimpleFoodSpreadPoints(box);
   const order = kind === 'main-food' ? [0, 1] : [2, 3, 4, 5];
-  const fallback = order
-    .map(idx => points[idx])
-    .filter(Boolean)
-    .slice(0, limit);
+  const fallback = kind === 'side-food'
+    ? getSimpleCupLayoutPoints(box, limit)
+    : order
+      .map(idx => points[idx])
+      .filter(Boolean)
+      .slice(0, limit);
   const configured = getSimpleSlotLayoutPoints(box, kind).slice(0, limit);
   const merged = configured.length
     ? configured.concat(fallback.slice(configured.length, limit)).slice(0, limit)
     : fallback;
-  return merged.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind)));
+  const cupAnchors = kind === 'side-food' ? getSimpleCupLayoutPoints(box, limit) : [];
+  return merged.map((p, idx) => makeSimpleSlot(kind, tier, idx, getSimpleSlotPointForDefWithSharedSize(p, def, kind, cupAnchors[idx] || null)));
 }
 function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) {
   const box = getSelectedBentoBox();
@@ -11251,7 +11295,7 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
     const configured = getSimpleSlotLayoutPoints(box, kind);
     const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 3;
     const fallbackPoints = (kind === 'cup'
-      ? getSimpleCupFallbackPoints(box)
+      ? getSimpleCupLayoutPoints(box, fallbackLimit)
       : (box.accessorySpots || box.foodSpots || box.safeSpots || [getBoxCenterSpot(box)])
     ).slice(0, fallbackLimit);
     const points = configured.length

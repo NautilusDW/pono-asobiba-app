@@ -323,6 +323,7 @@ function normalizeBentoSlotSampleOverrides(point, kind) {
     delete override.sampleOverrides;
     delete override.markerX;
     delete override.markerY;
+    if (src.positionOverride === true) override.positionOverride = true;
     normalized[id] = override;
   });
   return normalized;
@@ -423,11 +424,13 @@ function syncBentoSlotSampleSizes(points, kind, sharedSizes) {
       : {};
     Object.keys(sizes).forEach(sampleId => {
       const override = overrides[sampleId] || {};
-      overrides[sampleId] = {
+      const nextOverride = {
         x: Number.isFinite(Number(override.x)) ? override.x : next.x,
         y: Number.isFinite(Number(override.y)) ? override.y : next.y,
         size: sizes[sampleId]
       };
+      if (override.positionOverride === true) nextOverride.positionOverride = true;
+      overrides[sampleId] = nextOverride;
       if (next.sampleId === sampleId) next.size = sizes[sampleId];
     });
     if (Object.keys(overrides).length) next.sampleOverrides = overrides;
