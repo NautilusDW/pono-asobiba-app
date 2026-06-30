@@ -6550,7 +6550,7 @@ const FREE_TABS = [
   { id: 'food', label: 'おかず' },
   { id: 'leaf', label: 'したにしく' },
   { id: 'divider', label: 'しきり' },
-  { id: 'pick', label: 'かざり' },
+  { id: 'pick', label: 'ピック' },
   { id: 'decor', label: 'かざり' },
 ];
 const FREE_GUIDE_COPY = {
@@ -9761,13 +9761,7 @@ function maybeBeginCupMoveFromSimpleSelectionTap(e, item) {
 function handleSimplePlacedItemTap(item) {
   if (!item) return;
   if (!canSelectFreeItemInCurrentMode(item)) {
-    if (item.type === 'divider') {
-      setSpeech('しきりは しきりモードで うごかせるよ。');
-      showToast('しきりモードで うごかそう');
-    } else if (isSimpleDividerEditMode()) {
-      setSpeech('いまは しきりだけ えらべるよ。');
-      showToast('しきりだけ えらべるよ');
-    }
+    showSimpleModeSelectionMessage(item);
     return;
   }
   if (item.snapTarget) {
@@ -9782,7 +9776,12 @@ function handleSimplePlacedItemTap(item) {
     }
   }
   freeSelectedItemUid = item.uid;
-  if (item.simpleSlot && item.type !== 'rice' && item.type !== 'decor') {
+  if (item.type === 'pick') {
+    simpleReplaceSlotUid = null;
+    simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
+    setSpeech('ピックを えらんだよ。ドラッグで うごかせるよ。');
+  } else if (item.simpleSlot && item.type !== 'rice' && item.type !== 'decor') {
     simpleReplaceSlotUid = item.uid;
     if (simpleBentoMode && getSimpleSlotKindForItem(item) === 'side-food') {
       simpleNoCupSlotIndex = getSimpleSlotIndexFromKey(item.simpleSlot);
@@ -11819,6 +11818,7 @@ function syncSimplePlacedItemsToCurrentSlots() {
   let changed = false;
   placedItems.forEach(item => {
     if (!item || !item.simpleSlot || item.parentCupId) return;
+    if (item.type === 'pick' && item.manualPickPosition) return;
     const kind = getSimpleSlotKindForItem(item);
     if (!kind || kind === 'rice' || kind === 'decor' || kind === 'leaf') return;
     const slot = getSimpleCurrentSlotForItem(item);
@@ -11853,6 +11853,7 @@ function syncSimplePickItemsToCurrentSlots() {
   placedItems
     .filter(item => item && item.type === 'pick' && item.simpleSlot && !item.parentCupId)
     .forEach(item => {
+      if (item.manualPickPosition) return;
       const slot = getSimpleCurrentSlotForItem(item);
       if (!slot || slot.key !== item.simpleSlot) {
         removeFreeItemData(item.uid, { force: true });
@@ -11882,6 +11883,7 @@ function applySimpleSlotDrop(uid, dropPoint = null) {
   if (!simpleBentoMode || !item || !item.simpleSlot || item.parentCupId) return false;
   const kind = getSimpleSlotKindForItem(item);
   if (isSimpleLeafEditMode() && kind === 'leaf') return false;
+  if (isSimplePickEditMode() && kind === 'pick') return false;
   if (!kind || kind === 'rice' || kind === 'decor') return false;
   const sourceIndex = getSimpleSlotIndexFromKey(item.simpleSlot);
   const sourceSlot = getSimpleCurrentSlotForItem(item);
@@ -12459,13 +12461,7 @@ function beginFreeItemDrag(e, uid) {
     if (e) {
       try { e.stopPropagation(); } catch (_) {}
     }
-    if (item && item.type === 'divider') {
-      setSpeech('しきりは しきりモードで うごかせるよ。');
-      showToast('しきりモードで うごかそう');
-    } else if (isSimpleDividerEditMode()) {
-      setSpeech('いまは しきりだけ えらべるよ。');
-      showToast('しきりだけ えらべるよ');
-    }
+    showSimpleModeSelectionMessage(item);
     return;
   }
   if (!canMoveFreeItemInCurrentTutorial(item)) {
@@ -12539,6 +12535,13 @@ function onFreeItemDragEnd(e) {
   window.removeEventListener('pointerup', onFreeItemDragEnd);
   const handledSimpleDrop = applySimpleSlotDrop(uid, dropPoint);
   if (!handledSimpleDrop) finalizeFreeItemPosition(uid);
+  const movedItem = placedItems.find(i => i.uid === uid);
+  if (!handledSimpleDrop && simpleBentoMode && isSimplePickEditMode() && movedItem && movedItem.type === 'pick') {
+    movedItem.manualPickPosition = true;
+    simpleReplaceSlotUid = null;
+    simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
+  }
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
@@ -13880,13 +13883,7 @@ function createFreePlacedElement(item, interactive) {
       if (simpleBentoMode) {
         if (ev.cancelable) ev.preventDefault();
         if (!canSelectFreeItemInCurrentMode(item)) {
-          if (item.type === 'divider') {
-            setSpeech('しきりは しきりモードで うごかせるよ。');
-            showToast('しきりモードで うごかそう');
-          } else if (isSimpleDividerEditMode()) {
-            setSpeech('いまは しきりだけ えらべるよ。');
-            showToast('しきりだけ えらべるよ');
-          }
+          showSimpleModeSelectionMessage(item);
           return;
         }
         if (item.snapTarget) {
@@ -13907,6 +13904,11 @@ function createFreePlacedElement(item, interactive) {
           simpleReplaceSlotUid = null;
           simpleNoCupSlotIndex = null;
           simpleCupSlotIndex = null;
+          beginFreeItemDrag(ev, item.uid);
+          return;
+        }
+        if (item.type === 'pick' && isSimplePickEditMode()) {
+          handleSimplePlacedItemTap(item);
           beginFreeItemDrag(ev, item.uid);
           return;
         }
@@ -14493,6 +14495,7 @@ function shouldHighlightFreeChoice(def) {
     if (freeLayoutTab === 'leaf') return def.type === 'leaf';
     if (freeLayoutTab === 'accessory') return def.type === 'cup';
     if (freeLayoutTab === 'divider') return def.type === 'divider';
+    if (freeLayoutTab === 'pick') return def.type === 'pick';
   }
   return false;
 }
@@ -15619,11 +15622,43 @@ function isSimpleDividerEditMode() {
     && !freeMaskEditorMode
   );
 }
+function isSimplePickEditMode() {
+  return !!(
+    simpleBentoMode
+    && isOkazuGuideStep()
+    && String(freeGuideStep || '').endsWith('Side')
+    && freeLayoutTab === 'pick'
+    && !freeMaskEditorMode
+  );
+}
 function canSelectFreeItemInCurrentMode(item) {
   if (!simpleBentoMode || !item) return true;
   if (isSimpleDividerEditMode()) return item.type === 'divider';
+  if (isSimplePickEditMode()) return item.type === 'pick';
   if (item.type === 'divider') return false;
+  if (item.type === 'pick') return false;
   return true;
+}
+function showSimpleModeSelectionMessage(item) {
+  if (item && item.type === 'divider') {
+    setSpeech('しきりは しきりモードで うごかせるよ。');
+    showToast('しきりモードで うごかそう');
+    return;
+  }
+  if (item && item.type === 'pick') {
+    setSpeech('ピックは ピックモードで うごかせるよ。');
+    showToast('ピックモードで うごかそう');
+    return;
+  }
+  if (isSimpleDividerEditMode()) {
+    setSpeech('いまは しきりだけ えらべるよ。');
+    showToast('しきりだけ えらべるよ');
+    return;
+  }
+  if (isSimplePickEditMode()) {
+    setSpeech('いまは ピックだけ えらべるよ。');
+    showToast('ピックだけ えらべるよ');
+  }
 }
 function clearSimpleSelectionIfBlockedByMode() {
   if (!simpleBentoMode) return false;
@@ -16026,7 +16061,10 @@ function renderFreeLayoutControls() {
         } else if (t.id === 'divider' && simpleBentoMode) {
           clearSimpleSelectionIfBlockedByMode();
           setSpeech('しきりモードだよ。しきりだけ うごかせるよ。');
-        } else if (previousTab === 'divider' && simpleBentoMode) {
+        } else if (t.id === 'pick' && simpleBentoMode) {
+          clearSimpleSelectionIfBlockedByMode();
+          setSpeech('ピックモードだよ。ピックだけ うごかせるよ。');
+        } else if ((previousTab === 'divider' || previousTab === 'pick') && simpleBentoMode) {
           clearSimpleSelectionIfBlockedByMode();
         }
         renderFreeLayoutStage();
