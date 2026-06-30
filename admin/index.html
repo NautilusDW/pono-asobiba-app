@@ -1271,8 +1271,8 @@ tr:hover { background: #FFFAF0; }
     <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
-      主菜A/B、小さいおかずA/B/C/D、カップA/B/C/D（柄は共通）、敷き野菜A-F、仕切りA-G、ピック共通を設定できます。<br>
-      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。敷き野菜はレタスやキャベツなど下に敷くもの、仕切りはバランや木の区切りです。サンプルを切り替えると、サンプルごとに位置を保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。全体スケールは、このお弁当箱だけにかかる倍率です。<br>
+      主菜A/B、小さいおかずA/B/C/D、カップA/B/C/D（柄は共通）、敷き野菜サイズ、仕切りA-G、ピック共通を設定できます。<br>
+      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。敷き野菜はレタスやキャベツなど下に敷くもので、位置は本体側で自由に調整するため、管理画面ではキャベツ/レタスごとのサイズだけを保存します。仕切りはバランや木の区切りです。主菜/副菜/仕切りなどはサンプルごとに位置やサイズを保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。全体スケールは、このお弁当箱だけにかかる倍率です。<br>
       マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。「押す丸」では、ゲーム中に子どもがタップする丸の位置だけを実配置とは別に調整できます。カップは同じ柄・小サイズ固定で、A/B/C/D の置き場所を別々に設定します。ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置・個別サイズ・全体スケールが反映されます。
     </div>
 
@@ -11349,8 +11349,8 @@ var BENTO_SLOT_HIDDEN_KEY = 'bento_simple_slot_hidden_v1';
 var BENTO_SLOT_ENDPOINT = '/api/bento/mask-defaults';
 var BENTO_SLOT_W = 760;
 var BENTO_SLOT_H = 460;
-var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 4, leaf: 6, divider: 7, other: 1 };
-var BENTO_SLOT_SHARED_KINDS = { other: true };
+var BENTO_SLOT_LIMITS = { 'main-food': 2, 'side-food': 4, cup: 4, leaf: 1, divider: 7, other: 1 };
+var BENTO_SLOT_SHARED_KINDS = { leaf: true, other: true };
 var BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS = { 'main-food': true, 'side-food': true, leaf: true, divider: true, other: true };
 var BENTO_SLOT_KIND_MARGINS = { 'main-food': 54, 'side-food': 42, cup: 50, leaf: 34, divider: 36, other: 24 };
 var BENTO_SLOT_KIND_VERTICAL_MARGINS = { 'main-food': 10, 'side-food': 8, cup: 8, leaf: 8, divider: 8, other: 6 };
@@ -11396,12 +11396,7 @@ var BENTO_SLOT_DEFS = [
   { kind: 'cup', index: 1, label: 'カップB（柄共通）', shortLabel: 'CB', color: '#0EA5E9' },
   { kind: 'cup', index: 2, label: 'カップC（柄共通）', shortLabel: 'CC', color: '#0EA5E9' },
   { kind: 'cup', index: 3, label: 'カップD（柄共通）', shortLabel: 'CD', color: '#0EA5E9' },
-  { kind: 'leaf', index: 0, label: '敷き野菜A', shortLabel: '敷A', color: '#65A30D' },
-  { kind: 'leaf', index: 1, label: '敷き野菜B', shortLabel: '敷B', color: '#65A30D' },
-  { kind: 'leaf', index: 2, label: '敷き野菜C', shortLabel: '敷C', color: '#65A30D' },
-  { kind: 'leaf', index: 3, label: '敷き野菜D', shortLabel: '敷D', color: '#65A30D' },
-  { kind: 'leaf', index: 4, label: '敷き野菜E', shortLabel: '敷E', color: '#65A30D' },
-  { kind: 'leaf', index: 5, label: '敷き野菜F', shortLabel: '敷F', color: '#65A30D' },
+  { kind: 'leaf', index: 0, label: '敷き野菜サイズ', shortLabel: '敷', color: '#65A30D' },
   { kind: 'divider', index: 0, label: '仕切りA', shortLabel: 'DA', color: '#A855F7' },
   { kind: 'divider', index: 1, label: '仕切りB', shortLabel: 'DB', color: '#A855F7' },
   { kind: 'divider', index: 2, label: '仕切りC', shortLabel: 'DC', color: '#A855F7' },
@@ -11827,6 +11822,37 @@ function bentoSlotEntry(point, def) {
   if (Object.keys(overrides).length) entry.sampleOverrides = overrides;
   return entry;
 }
+function bentoSlotMergeSharedSlotEntries(list, kind) {
+  var valid = Array.isArray(list)
+    ? list.filter(function(p) { return p && typeof p === 'object' && !Array.isArray(p); })
+    : [];
+  if (!valid.length) return [];
+  var baseDef = { kind: kind, index: 0 };
+  var merged = bentoSlotEntry(valid[0], baseDef);
+  var overrides = Object.assign({}, merged.sampleOverrides || {});
+  valid.forEach(function(point, index) {
+    var entry = bentoSlotEntry(point, { kind: kind, index: index });
+    if (entry.sampleOverrides) {
+      Object.keys(entry.sampleOverrides).forEach(function(sampleId) {
+        var override = entry.sampleOverrides[sampleId];
+        if (!override) return;
+        overrides[sampleId] = Object.assign({}, override, {
+          x: merged.x,
+          y: merged.y
+        });
+      });
+    }
+    if (entry.sampleId && isFinite(Number(entry.size))) {
+      overrides[entry.sampleId] = Object.assign({}, overrides[entry.sampleId] || {}, {
+        x: merged.x,
+        y: merged.y,
+        size: entry.size
+      });
+    }
+  });
+  if (Object.keys(overrides).length) merged.sampleOverrides = overrides;
+  return [merged];
+}
 function bentoSlotNormalizeLayout(map) {
   var out = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return out;
@@ -11841,12 +11867,11 @@ function bentoSlotNormalizeLayout(map) {
     if (Object.keys(slotCounts).length) entry.slotCounts = slotCounts;
     Object.keys(BENTO_SLOT_LIMITS).forEach(function(kind) {
       var list = Array.isArray(box[kind]) ? box[kind] : [];
-      var source = BENTO_SLOT_SHARED_KINDS[kind]
-        ? list.filter(function(p) { return p && typeof p === 'object'; }).slice(0, 1)
-        : list.slice(0, BENTO_SLOT_LIMITS[kind]).filter(function(p) { return p && typeof p === 'object'; });
-      var points = source.map(function(p, index) {
-        return bentoSlotEntry(p, { kind: kind, index: index });
-      });
+      var points = BENTO_SLOT_SHARED_KINDS[kind]
+        ? bentoSlotMergeSharedSlotEntries(list, kind)
+        : list.slice(0, BENTO_SLOT_LIMITS[kind]).filter(function(p) { return p && typeof p === 'object'; }).map(function(p, index) {
+          return bentoSlotEntry(p, { kind: kind, index: index });
+        });
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) out[boxId] = entry;
@@ -11901,6 +11926,9 @@ function bentoSlotSaveHidden() {
 }
 function bentoSlotKey(def) {
   return def.kind + ':' + def.index;
+}
+function bentoSlotHasPositionControl(def) {
+  return !!(def && def.kind !== 'leaf');
 }
 function bentoSlotCanEditMarker(def) {
   return !!(def && (def.kind === 'side-food' || def.kind === 'cup'));
@@ -12202,11 +12230,30 @@ function bentoSlotGetEntry(boxId, def) {
   var sample = bentoSlotSampleForDef(def, stored);
   var override = sample && stored && stored.sampleOverrides && stored.sampleOverrides[sample.id];
   var active = override ? Object.assign({}, stored, override, { sampleId: sample.id }) : stored;
+  if (def && def.kind === 'leaf') {
+    var box = bentoSlotGetBoxById(boxId);
+    var leafPoint = bentoSlotDefaultPoint(box, def);
+    return Object.assign({}, active, { x: leafPoint.x, y: leafPoint.y });
+  }
   return bentoSlotResolveInheritedPoint(boxId, def, active, sample, override);
 }
 function bentoSlotMaterializeEntryForSave(boxId, def, entry) {
   var box = bentoSlotGetBoxById(boxId);
   var normalized = bentoSlotClampEntryForDef(box, def, entry || bentoSlotDefaultEntry(box, def));
+  if (def && def.kind === 'leaf') {
+    var leafPoint = bentoSlotDefaultPoint(box, def);
+    var leafNext = Object.assign({}, normalized, { x: leafPoint.x, y: leafPoint.y });
+    if (leafNext.sampleOverrides && typeof leafNext.sampleOverrides === 'object') {
+      var leafOverrides = Object.assign({}, leafNext.sampleOverrides);
+      Object.keys(leafOverrides).forEach(function(sampleId) {
+        var override = leafOverrides[sampleId];
+        if (!override) return;
+        leafOverrides[sampleId] = Object.assign({}, override, { x: leafPoint.x, y: leafPoint.y });
+      });
+      leafNext.sampleOverrides = leafOverrides;
+    }
+    return bentoSlotClampEntryForDef(box, def, leafNext);
+  }
   if (boxId === BENTO_SLOT_REFERENCE_BOX_ID || !(def.kind === 'main-food' || def.kind === 'cup' || def.kind === 'side-food')) {
     return normalized;
   }
@@ -12460,7 +12507,7 @@ function bentoSlotCollectSharedSampleSizes(kind) {
 }
 function bentoSlotSyncAllSharedSampleSizes(skipSave) {
   var changed = false;
-  ['main-food', 'side-food'].forEach(function(kind) {
+  Object.keys(BENTO_SLOT_SHARED_SAMPLE_SIZE_KINDS).forEach(function(kind) {
     var sizes = bentoSlotCollectSharedSampleSizes(kind);
     Object.keys(sizes).sort().forEach(function(sampleId) {
       var sample = bentoSlotFindSampleById(kind, sampleId);
@@ -12600,6 +12647,7 @@ function bentoSlotBuildControls() {
       input.addEventListener('input', function() {
         var def = bentoSlotGetDef();
         var markerMode = bentoSlotIsMarkerEditMode();
+        if (!bentoSlotHasPositionControl(def) && axis.key !== 'size') return;
         var p;
         if (markerMode) {
           if (axis.key === 'size') return;
@@ -12635,7 +12683,11 @@ function bentoSlotSyncSampleSelect(def, entry) {
     select.appendChild(opt);
   });
   select.value = (entry && entry.sampleId) || (samples[0] && samples[0].id) || '';
-  if (label) label.textContent = def.kind === 'main-food' || def.kind === 'side-food' ? 'サンプル食材' : 'サンプル';
+  if (label) {
+    label.textContent = def.kind === 'leaf'
+      ? '敷き野菜'
+      : (def.kind === 'main-food' || def.kind === 'side-food' ? 'サンプル食材' : 'サンプル');
+  }
 }
 function bentoSlotSizePresetsForDef(def, entry) {
   if (!def) return [];
@@ -12702,7 +12754,8 @@ function bentoSlotSyncSliders(point) {
     var input = sliders.querySelector('input[data-axis="' + axis + '"]');
     var val = sliders.querySelector('span[data-axis="' + axis + '"]');
     var row = input && input.closest ? input.closest('.npc-pos-slider-row') : null;
-    if (row) row.style.display = markerMode && axis === 'size' ? 'none' : '';
+    var hideAxis = (!bentoSlotHasPositionControl(def) && axis !== 'size') || (markerMode && axis === 'size');
+    if (row) row.style.display = hideAxis ? 'none' : '';
     var sizeLocked = axis === 'size' && (markerMode || (def && def.kind === 'cup'));
     var value = markerMode && axis !== 'size'
       ? bentoSlotRound(markerPoint && markerPoint[axis])
@@ -12969,6 +13022,7 @@ function bentoSlotRenderPreview() {
     var key = def.kind + ':' + def.index;
     var editMarker = markerMode && def.kind === selectedDef.kind && bentoSlotCanEditMarker(def);
     if (markerOnly && !editMarker) return;
+    if (!bentoSlotHasPositionControl(def)) return;
     var p = editMarker ? bentoSlotGetMarkerPoint(box.id, def) : bentoSlotGetPoint(box.id, def);
     var marker = document.createElement('button');
     marker.type = 'button';

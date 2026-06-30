@@ -266,11 +266,11 @@ const BENTO_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 4,
   cup: 4,
-  leaf: 6,
+  leaf: 1,
   divider: 7,
   other: 1
 };
-const BENTO_SHARED_SLOT_KINDS = new Set(['other']);
+const BENTO_SHARED_SLOT_KINDS = new Set(['leaf', 'other']);
 const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food', 'leaf', 'divider', 'other']);
 const BENTO_SLOT_BOX_ORDER = [
   'box_rect_split',
@@ -361,6 +361,33 @@ function normalizeBentoSlotPoint(point, kind, index = null) {
     normalized.sampleOverrides = sampleOverrides;
   }
   return normalized;
+}
+function mergeBentoSharedSlotPoints(list, kind) {
+  const valid = Array.isArray(list)
+    ? list.filter(point => point && typeof point === 'object' && !Array.isArray(point))
+    : [];
+  if (!valid.length) return [];
+  const merged = normalizeBentoSlotPoint(valid[0], kind, 0);
+  const overrides = merged.sampleOverrides && typeof merged.sampleOverrides === 'object' && !Array.isArray(merged.sampleOverrides)
+    ? { ...merged.sampleOverrides }
+    : {};
+  valid.forEach((point, index) => {
+    const normalized = normalizeBentoSlotPoint(point, kind, index);
+    Object.entries(normalized.sampleOverrides || {}).forEach(([sampleId, override]) => {
+      if (!override) return;
+      overrides[sampleId] = { ...override, x: merged.x, y: merged.y };
+    });
+    if (normalized.sampleId && Number.isFinite(Number(normalized.size))) {
+      overrides[normalized.sampleId] = {
+        ...(overrides[normalized.sampleId] || {}),
+        x: merged.x,
+        y: merged.y,
+        size: normalized.size
+      };
+    }
+  });
+  if (Object.keys(overrides).length) merged.sampleOverrides = overrides;
+  return [merged];
 }
 
 function getBentoSlotPointSampleSize(point, sampleId, kind) {
@@ -453,10 +480,9 @@ function normalizeBentoSlotLayoutMap(map) {
     Object.keys(BENTO_SLOT_LAYOUT_LIMITS).forEach(kind => {
       const list = Array.isArray(box[kind]) ? box[kind] : [];
       const validPoints = list.filter(point => point && typeof point === 'object' && !Array.isArray(point));
-      const source = BENTO_SHARED_SLOT_KINDS.has(kind)
-        ? validPoints.slice(0, 1)
-        : validPoints.slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind]);
-      const points = source.map((point, index) => normalizeBentoSlotPoint(point, kind, index));
+      const points = BENTO_SHARED_SLOT_KINDS.has(kind)
+        ? mergeBentoSharedSlotPoints(validPoints, kind)
+        : validPoints.slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind]).map((point, index) => normalizeBentoSlotPoint(point, kind, index));
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;

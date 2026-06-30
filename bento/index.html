@@ -10408,11 +10408,11 @@ const SIMPLE_SLOT_LAYOUT_LIMITS = {
   'main-food': 2,
   'side-food': 4,
   cup: 4,
-  leaf: 6,
+  leaf: 1,
   divider: 7,
   other: 1,
 };
-const SIMPLE_SHARED_SLOT_KINDS = new Set(['other']);
+const SIMPLE_SHARED_SLOT_KINDS = new Set(['leaf', 'other']);
 const SIMPLE_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food', 'leaf', 'divider', 'other']);
 const SIMPLE_CUP_SLOT_SIZES = [150];
 const SIMPLE_BOX_GLOBAL_SCALE_MIN = 0.6;
@@ -10492,6 +10492,33 @@ function normalizeSimpleSlotPoint(point, kind = '', index = null) {
   if (Object.keys(sampleOverrides).length) normalized.sampleOverrides = sampleOverrides;
   return normalized;
 }
+function mergeSimpleSharedSlotPoints(list, kind) {
+  const valid = Array.isArray(list)
+    ? list.filter(point => point && typeof point === 'object' && !Array.isArray(point))
+    : [];
+  if (!valid.length) return [];
+  const merged = normalizeSimpleSlotPoint(valid[0], kind, 0);
+  const overrides = merged.sampleOverrides && typeof merged.sampleOverrides === 'object'
+    ? { ...merged.sampleOverrides }
+    : {};
+  valid.forEach((point, index) => {
+    const normalized = normalizeSimpleSlotPoint(point, kind, index);
+    Object.entries(normalized.sampleOverrides || {}).forEach(([sampleId, override]) => {
+      if (!override) return;
+      overrides[sampleId] = { ...override, x: merged.x, y: merged.y };
+    });
+    if (normalized.sampleId && Number.isFinite(Number(normalized.size))) {
+      overrides[normalized.sampleId] = {
+        ...(overrides[normalized.sampleId] || {}),
+        x: merged.x,
+        y: merged.y,
+        size: normalized.size,
+      };
+    }
+  });
+  if (Object.keys(overrides).length) merged.sampleOverrides = overrides;
+  return [merged];
+}
 function normalizeSimpleSlotLayoutMap(map) {
   const normalized = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
@@ -10508,11 +10535,10 @@ function normalizeSimpleSlotLayoutMap(map) {
     Object.keys(SIMPLE_SLOT_LAYOUT_LIMITS).forEach(kind => {
       const rawList = Array.isArray(boxLayout[kind]) ? boxLayout[kind] : [];
       const validPoints = rawList.filter(point => point && typeof point === 'object' && !Array.isArray(point));
-      const source = SIMPLE_SHARED_SLOT_KINDS.has(kind)
-        ? validPoints.slice(0, 1)
-        : validPoints.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind]);
-      const points = source
-        .map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
+      const points = SIMPLE_SHARED_SLOT_KINDS.has(kind)
+        ? mergeSimpleSharedSlotPoints(validPoints, kind)
+        : validPoints.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind])
+          .map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[boxId] = entry;
@@ -11324,7 +11350,7 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
   if (kind === 'main-food' || kind === 'side-food') return getSimpleFoodSlots(kind, box, tier, def);
   if (kind === 'leaf' || kind === 'divider') {
     const fallbackLimit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 6;
-    const configured = getSimpleSlotLayoutPoints(box, kind).slice(0, fallbackLimit);
+    const configured = kind === 'leaf' ? [] : getSimpleSlotLayoutPoints(box, kind).slice(0, fallbackLimit);
     const fallbackPoints = getSimpleLeafDividerSpreadPoints(box, kind).slice(0, fallbackLimit);
     const points = configured.length
       ? configured.concat(fallbackPoints.slice(configured.length, fallbackLimit)).slice(0, fallbackLimit)
