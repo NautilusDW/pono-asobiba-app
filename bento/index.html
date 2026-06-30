@@ -11429,7 +11429,12 @@ function getSimpleCupLayoutPoints(box, limit = getSimpleCupSlotLimitForBox(box))
   return points.map((point, idx) => {
     const sampleId = String(point && point.sampleId || '');
     const override = sampleId && point.sampleOverrides && point.sampleOverrides[sampleId];
-    if (box && box.id !== SIMPLE_REFERENCE_BOX_ID && !(point && point.positionOverride === true) && !(override && override.positionOverride === true)) {
+    const hasConfiguredPoint = idx < configured.length;
+    if (box
+        && box.id !== SIMPLE_REFERENCE_BOX_ID
+        && !hasConfiguredPoint
+        && !(point && point.positionOverride === true)
+        && !(override && override.positionOverride === true)) {
       const mapped = getSimpleMappedReferenceSlotPoint(box, 'cup', idx);
       if (mapped) return Object.assign({}, point, mapped);
     }
@@ -11477,12 +11482,17 @@ function getSimpleFoodSlots(kind, box, tier, def) {
     : fallback;
   const cupAnchors = kind === 'side-food' ? getSimpleCupLayoutPoints(box, limit) : [];
   return merged.map((p, idx) => {
-    const mainAnchor = kind === 'main-food' ? getSimpleMappedReferenceSlotPoint(box, kind, idx) : null;
+    const hasConfiguredPoint = idx < configured.length;
+    const mainAnchor = kind === 'main-food' && !hasConfiguredPoint ? getSimpleMappedReferenceSlotPoint(box, kind, idx) : null;
     const anchor = kind === 'side-food' ? (cupAnchors[idx] || null) : mainAnchor;
     let point = p;
     if (kind === 'side-food' && box && box.id !== SIMPLE_REFERENCE_BOX_ID) {
       const mapped = getSimpleMappedReferenceSlotPoint(box, kind, idx);
-      if (mapped && Number.isFinite(Number(mapped.markerX)) && Number.isFinite(Number(mapped.markerY))) {
+      const markerMissing = !Number.isFinite(Number(point && point.markerX)) || !Number.isFinite(Number(point && point.markerY));
+      if (mapped
+          && Number.isFinite(Number(mapped.markerX))
+          && Number.isFinite(Number(mapped.markerY))
+          && (!hasConfiguredPoint || markerMissing)) {
         point = Object.assign({}, point, {
           markerX: mapped.markerX,
           markerY: mapped.markerY,
@@ -11509,8 +11519,10 @@ function getSimpleFixedSlots(def, tier = getTargetTierForType(def && def.type)) 
       let point = p;
       const sourceSampleId = String(point && point.sampleId || '');
       const override = sourceSampleId && point && point.sampleOverrides && point.sampleOverrides[sourceSampleId];
+      const hasConfiguredPoint = idx < configured.length;
       if (kind === 'divider'
           && box.id !== SIMPLE_REFERENCE_BOX_ID
+          && !hasConfiguredPoint
           && !(point && point.positionOverride === true)
           && !(override && override.positionOverride === true)) {
         const mapped = getSimpleMappedReferenceSlotPoint(box, kind, idx);
