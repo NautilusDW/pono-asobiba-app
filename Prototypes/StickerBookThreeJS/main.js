@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-999";
+const ASSET_VERSION = "20260701-1000";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -570,12 +570,12 @@ const BOOK_VARIANTS = {
     thicknessKey: "boy",
   },
   book_bonus: {
-    insideLeft: "sb3d_book_bonus_free_blank_page_pono_20260701.webp",
-    insideRight: "sb3d_book_bonus_free_blank_page_pono_20260701.webp",
-    freePage: "sb3d_book_bonus_free_blank_page_pono_20260701.webp",
-    coverPrint: "sb3d_book_bonus_cover_front_pono_mama_20260701.webp",
+    insideLeft: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
+    insideRight: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
+    freePage: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
+    coverPrint: "sb3d_book_bonus_cover_front_friends_20260701.webp",
     coverHardwareMode: "separate",
-    coverFront: "sb3d_book_bonus_cover_front_pono_mama_20260701.webp",
+    coverFront: "sb3d_book_bonus_cover_front_friends_20260701.webp",
     coverBack: "sb3d_forest_cover_back_canvas_20260623.webp",
     coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
     spine: "sb3d_forest_spine_canvas_20260623.webp",
