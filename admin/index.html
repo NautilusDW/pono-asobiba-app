@@ -11501,7 +11501,10 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'gyoza', name: 'ぎょうざ', image: '../assets/images/bento/free-layout/okazu_gyoza.png', size: 198, rotation: 3, layer: 36 },
     { id: 'harumaki', name: 'はるまき', image: '../assets/images/bento/free-layout/okazu_harumaki.png', size: 256, rotation: -4, layer: 37 },
     { id: 'bacon_maki', name: 'ベーコンまき', image: '../assets/images/bento/free-layout/okazu_bacon_maki.png', size: 161, rotation: 2, layer: 38 },
-    { id: 'tako_wiener', name: 'タコウインナー', image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', size: 110, rotation: -6, layer: 39 }
+    { id: 'tako_wiener', name: 'タコウインナー', image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', size: 160, rotation: -4, layer: 39, clusterImages: [
+      { image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: -0.16, y: 0.03, w: 0.68, rotation: -11 },
+      { image: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: 0.18, y: -0.05, w: 0.61, rotation: 8 }
+    ] }
   ],
   'side-food': [
     { id: 'egg', name: 'たまごやき', image: '../assets/images/bento/cooking/egg/egg_003_done.png', size: 130, cupSizes: { small: 92, medium: 112, large: 130 }, defaultCupSizeKey: 'large', rotation: 3, layer: 34 },
