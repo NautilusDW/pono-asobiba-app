@@ -10798,6 +10798,11 @@ function getSimpleSlotPointForDef(point, def, kind) {
   if (sampleId && overrides && overrides[sampleId]) {
     return normalizeSimpleSlotPoint(Object.assign({}, point, overrides[sampleId], { sampleId }), kind || getSimpleSlotKind(def));
   }
+  if (sampleId && point.sampleId && point.sampleId !== sampleId) {
+    const clean = Object.assign({}, point, { sampleId });
+    delete clean.size;
+    return normalizeSimpleSlotPoint(clean, kind || getSimpleSlotKind(def));
+  }
   return point;
 }
 function getSimpleSlotPointSampleSize(point, kind, sampleId) {
@@ -11006,11 +11011,155 @@ function getSimpleSameNumberSideSlotForCupSlot(slot) {
   const idx = clamp(Math.round(Number(slot.index) || 0), 0, Math.max(0, getSimpleSlotCountForBox(box, 'side-food') - 1));
   return getSimpleFoodSlots('side-food', box, slot.tier, { type: 'food', okazuRole: 'side' })[idx] || null;
 }
+function getSimpleSameNumberCupSlotForSideSlot(slot) {
+  if (!slot || slot.kind !== 'side-food' || !simpleBentoMode || !isOkazuGuideStep() || !String(freeGuideStep || '').endsWith('Side')) return null;
+  const idx = clamp(Math.round(Number(slot.index) || 0), 0, Math.max(0, (SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4) - 1));
+  const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
+  return getSimpleFixedSlots(cupDef, slot.tier)[idx] || null;
+}
 function getSimpleSlotBlockingItem(slot) {
   const direct = getSimpleSlotItem(slot);
   if (direct) return direct;
   const sideSlot = getSimpleSameNumberSideSlotForCupSlot(slot);
-  return sideSlot ? getSimpleSlotItem(sideSlot) : null;
+  if (sideSlot) return getSimpleSlotItem(sideSlot);
+  const cupSlot = getSimpleSameNumberCupSlotForSideSlot(slot);
+  return cupSlot ? getSimpleSlotItem(cupSlot) : null;
+}
+function getSimpleSlotForKindIndex(kind, tier, index, def = null) {
+  const limit = SIMPLE_SLOT_LAYOUT_LIMITS[kind] || 4;
+  const idx = clamp(Math.round(Number(index) || 0), 0, Math.max(0, limit - 1));
+  let slots = [];
+  if (kind === 'cup') {
+    const cupDef = (def && (def.snapTarget || def.type === 'cup')) ? def : (bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true });
+    slots = getSimpleFixedSlots(cupDef, tier);
+  } else if (kind === 'side-food') {
+    const box = getSelectedBentoBox();
+    slots = getSimpleFoodSlots('side-food', box, tier, def || { type: 'food', okazuRole: 'side' });
+  } else {
+    slots = getSimpleFixedSlots(def || { type: kind }, tier);
+  }
+  return slots.find(slot => slot && slot.index === idx) || slots[idx] || null;
+}
+function getSimpleCurrentSlotForItem(item) {
+  if (!item || !item.simpleSlot) return null;
+  const kind = getSimpleSlotKindForItem(item);
+  const idx = getSimpleSlotIndexFromKey(item.simpleSlot);
+  const slot = getSimpleSlotForKindIndex(kind, getItemTier(item), Number.isFinite(idx) ? idx : 0, item);
+  if (slot && slot.key === item.simpleSlot) return slot;
+  return getSimpleFixedSlots(item, getItemTier(item)).find(candidate => candidate && candidate.key === item.simpleSlot) || slot || null;
+}
+function getSimpleDropSlotsForItem(item) {
+  if (!item || !item.simpleSlot || item.parentCupId) return [];
+  const kind = getSimpleSlotKindForItem(item);
+  if (!kind || kind === 'rice' || kind === 'decor') return [];
+  return getSimpleFixedSlots(item, getItemTier(item));
+}
+function getSimpleSlotPlacementDefForItem(item) {
+  if (!item) return item;
+  let catalog = null;
+  if (item.type === 'cup' || item.type === 'divider' || item.type === 'pick' || item.snapTarget) {
+    catalog = bentoAccessories.find(def => def && def.id === item.id) || null;
+  } else if (item.type === 'leaf') {
+    catalog = bentoLeafItems.find(def => def && def.id === item.id) || null;
+  } else if (item.type === 'food') {
+    catalog = getFreeFoodCatalog().find(def => def && def.id === item.id) || null;
+  }
+  if (!catalog) return item;
+  return {
+    ...catalog,
+    ...item,
+    slotVariantImages: Array.isArray(catalog.slotVariantImages)
+      ? catalog.slotVariantImages.map(entry => ({ ...entry }))
+      : item.slotVariantImages,
+    verticalDivider: !!(item.verticalDivider || catalog.verticalDivider),
+    simpleSampleId: catalog.simpleSampleId || item.simpleSampleId || '',
+  };
+}
+function getSimpleNearestDropSlotForItem(item) {
+  const slots = getSimpleDropSlotsForItem(item);
+  if (!slots.length) return null;
+  const threshold = Math.max(82, Math.min(150, (Number(item.size) || 72) * 0.78));
+  let best = null;
+  let bestDist = Infinity;
+  slots.forEach(slot => {
+    const point = getSimpleStageSlotPlacementPoint(slot) || slot;
+    if (!point) return;
+    const d = dist(item, point);
+    if (d < bestDist) {
+      best = slot;
+      bestDist = d;
+    }
+  });
+  return best && bestDist <= threshold ? best : null;
+}
+function applySimpleSlotPlacementToItem(item, slot) {
+  if (!item || !slot) return false;
+  const baseDef = getSimpleSlotPlacementDefForItem(item);
+  const placementDef = getSimpleSlotVariantDef(baseDef, slot);
+  const point = getSimpleStageSlotPlacementPoint(slot) || slot;
+  if (!point) return false;
+  const oldX = item.x;
+  const oldY = item.y;
+  item.simpleSlot = slot.key;
+  item.x = point.x;
+  item.y = point.y;
+  item.size = getSimpleSlotSize(placementDef, slot);
+  item.rotation = placementDef.rotation != null ? placementDef.rotation : (item.rotation || 0);
+  item.renderAspect = placementDef.renderAspect || 1;
+  item.visualScale = placementDef.visualScale || item.visualScale || 1;
+  item.verticalDivider = !!placementDef.verticalDivider;
+  item.simpleSampleId = placementDef.simpleSampleId || item.simpleSampleId || '';
+  item.slotVariantKey = placementDef.slotVariantKey || item.slotVariantKey || '';
+  item.slotVariantImages = Array.isArray(baseDef.slotVariantImages)
+    ? baseDef.slotVariantImages.map(entry => ({ ...entry }))
+    : item.slotVariantImages;
+  if (placementDef.img || placementDef.image) item.img = placementDef.img || placementDef.image;
+  if (placementDef.css) item.css = placementDef.css;
+  if (placementDef.sizeKey) item.sizeKey = placementDef.sizeKey;
+  if (placementDef.snapTarget) {
+    item.snapTarget = true;
+    item.radius = placementDef.radius || item.radius || 0;
+    normalizeFreeCupItemSize(item);
+  }
+  const dx = item.x - oldX;
+  const dy = item.y - oldY;
+  if (item.snapTarget) {
+    moveCupChildren(item, dx, dy);
+    clampCupChildren(item);
+  }
+  return true;
+}
+function applySimpleSlotDrop(uid) {
+  const item = placedItems.find(i => i.uid === uid);
+  if (!simpleBentoMode || !item || !item.simpleSlot || item.parentCupId) return false;
+  const kind = getSimpleSlotKindForItem(item);
+  if (!kind || kind === 'rice' || kind === 'decor') return false;
+  const sourceIndex = getSimpleSlotIndexFromKey(item.simpleSlot);
+  const sourceSlot = getSimpleCurrentSlotForItem(item);
+  const targetSlot = getSimpleNearestDropSlotForItem(item);
+  if (!targetSlot) {
+    return sourceSlot ? applySimpleSlotPlacementToItem(item, sourceSlot) : false;
+  }
+  const targetItem = getSimpleSlotBlockingItem(targetSlot);
+  if (targetItem && targetItem.uid !== item.uid) {
+    const targetKind = getSimpleSlotKindForItem(targetItem);
+    const returnSlot = getSimpleSlotForKindIndex(targetKind, getItemTier(targetItem), Number.isFinite(sourceIndex) ? sourceIndex : 0, targetItem)
+      || getSimpleCurrentSlotForItem(targetItem);
+    if (returnSlot) applySimpleSlotPlacementToItem(targetItem, returnSlot);
+  }
+  const moved = applySimpleSlotPlacementToItem(item, targetSlot);
+  simpleNoCupSlotIndex = null;
+  simpleCupSlotIndex = null;
+  if (item.snapTarget) {
+    freeActiveCupUid = item.uid;
+    freeCupToolMode = 'move';
+  }
+  if (moved && targetItem && targetItem.uid !== item.uid) {
+    setSpeech('ばしょを いれかえたよ。');
+  } else if (moved && sourceSlot && sourceSlot.key !== targetSlot.key) {
+    setSpeech('ばしょを うつしたよ。');
+  }
+  return moved;
 }
 function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) {
   const slots = getSimpleFixedSlots(def, tier);
@@ -11029,6 +11178,12 @@ function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) 
     const target = slots[clamp(Math.round(Number(simpleNoCupSlotIndex)), 0, slots.length - 1)];
     if (target) {
       const current = getSimpleSlotItem(target);
+      const blocking = getSimpleSlotBlockingItem(target);
+      if (blocking && blocking !== current) {
+        setSpeech('ここには カップが あるよ。べつの まるを えらんでね。');
+        showToast('ここには カップが あるよ');
+        return null;
+      }
       return current ? { ...target, replaceUid: current.uid } : target;
     }
   }
@@ -11608,7 +11763,8 @@ function onFreeItemDragEnd(e) {
   // batch:937 fix#1 — drop pointercancel sibling so once-fired pointerup path doesn't leak the other listener
   window.removeEventListener('pointercancel', onFreeItemDragEnd);
   window.removeEventListener('pointerup', onFreeItemDragEnd);
-  finalizeFreeItemPosition(uid);
+  const handledSimpleDrop = applySimpleSlotDrop(uid);
+  if (!handledSimpleDrop) finalizeFreeItemPosition(uid);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
@@ -11927,7 +12083,7 @@ function addSimpleFixedPaletteItem(def) {
     skipRender: true,
   });
   if (!item) return null;
-  item.simpleSlot = slot.key;
+  applySimpleSlotPlacementToItem(item, slot);
   freeSelectedItemUid = item.uid;
   simpleReplaceSlotUid = null;
   if (item.snapTarget) {
@@ -12153,6 +12309,10 @@ function addFreeLayoutItem(def, opts = {}) {
     variantGroup: getFreeVariantGroup(def),
     visualScale: opts.visualScale || def.visualScale || 1,
     variantImages,
+    slotVariantImages: Array.isArray(def.slotVariantImages) ? def.slotVariantImages.map(entry => ({ ...entry })) : null,
+    verticalDivider: !!def.verticalDivider,
+    simpleSampleId: def.simpleSampleId || '',
+    slotVariantKey: def.slotVariantKey || '',
     variantIndex: variantIndex >= 0 ? variantIndex : 0,
     clusterImages: Array.isArray(def.clusterImages) ? def.clusterImages.map(piece => ({ ...piece })) : null,
     renderAspect: opts.renderAspect || def.renderAspect || 1,
@@ -12843,6 +13003,11 @@ function createFreePlacedElement(item, interactive) {
         if (ev.cancelable) ev.preventDefault();
         if (item.snapTarget) {
           selectCupForMovement(item, { render: false, message: true });
+          beginFreeItemDrag(ev, item.uid);
+          return;
+        }
+        if (item.simpleSlot && item.type !== 'rice') {
+          handleSimplePlacedItemTap(item);
           beginFreeItemDrag(ev, item.uid);
           return;
         }
@@ -14624,6 +14789,7 @@ function createSimpleStageTargetLayer() {
     slots.forEach((slot, idx) => {
       const current = getSimpleSlotItem(slot);
       const blocking = getSimpleSlotBlockingItem(slot);
+      if (blocking) return;
       const blockedBySideFood = !!(blocking && blocking !== current);
       const point = current && current.snapTarget
         ? (getSimplePlacedItemPoint(current) || markerPoints[idx] || slot)
@@ -14672,26 +14838,11 @@ function createSimpleStageTargetLayer() {
   const cupMarkerPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', cupSlots, cupSlots.length);
   for (let idx = 0; idx < markerCount; idx += 1) {
     const cup = cupsBySlotIndex.get(idx);
-    if (cup) {
-      const point = getSimplePlacedItemPoint(cup) || cupMarkerPoints[idx] || sideMarkerPoints[idx] || cup;
-      if (!point) continue;
-      const marker = createFreeStageTargetMarker({
-        kind: 'cup',
-        slotIndex: idx,
-        filled: getCupChildren(cup).length > 0,
-        active: !!selectedCup && selectedCup.uid === cup.uid,
-        x: point.x,
-        y: point.y,
-        label: 'カ',
-        ariaLabel: 'カップ ' + (idx + 1) + 'に いれる',
-        onSelect: () => selectCupForMovement(cup),
-      });
-      if (marker) layer.appendChild(marker);
-      continue;
-    }
+    if (cup) continue;
     const slot = sideSlots[idx];
     if (!slot) continue;
     const current = getSimpleSlotItem(slot);
+    if (current) continue;
     const point = current
       ? (getSimplePlacedItemPoint(current) || sideMarkerPoints[idx] || slot)
       : (sideMarkerPoints[idx] || slot);
