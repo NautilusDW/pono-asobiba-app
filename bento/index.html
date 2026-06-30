@@ -9314,6 +9314,12 @@ function selectCupSlotForSimplePlacement(index) {
   const normalized = clamp(Math.round(Number(index)), 0, Math.max(0, slots.length - 1));
   const slot = slots[normalized];
   const current = slot ? getSimpleSlotItem(slot) : null;
+  const blocking = slot ? getSimpleSlotBlockingItem(slot) : null;
+  if (blocking && blocking !== current) {
+    setSpeech('ここには おかずが あるよ。べつの まるを えらんでね。');
+    showToast('ここには おかずが あるよ');
+    return false;
+  }
   simpleCupSlotIndex = normalized;
   simpleNoCupSlotIndex = null;
   freeCupEditorUid = null;
@@ -10994,6 +11000,18 @@ function getSimpleSlotItem(slot) {
   if (!slot) return null;
   return placedItems.find(item => item.simpleSlot === slot.key && getItemTier(item) === slot.tier) || null;
 }
+function getSimpleSameNumberSideSlotForCupSlot(slot) {
+  if (!slot || !shouldUseSideStageTargetsForCup(slot.kind)) return null;
+  const box = getSelectedBentoBox();
+  const idx = clamp(Math.round(Number(slot.index) || 0), 0, Math.max(0, getSimpleSlotCountForBox(box, 'side-food') - 1));
+  return getSimpleFoodSlots('side-food', box, slot.tier, { type: 'food', okazuRole: 'side' })[idx] || null;
+}
+function getSimpleSlotBlockingItem(slot) {
+  const direct = getSimpleSlotItem(slot);
+  if (direct) return direct;
+  const sideSlot = getSimpleSameNumberSideSlotForCupSlot(slot);
+  return sideSlot ? getSimpleSlotItem(sideSlot) : null;
+}
 function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) {
   const slots = getSimpleFixedSlots(def, tier);
   if (!slots.length) return null;
@@ -11018,16 +11036,22 @@ function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) 
     const target = slots[clamp(Math.round(Number(simpleCupSlotIndex)), 0, slots.length - 1)];
     if (target) {
       const current = getSimpleSlotItem(target);
+      const blocking = getSimpleSlotBlockingItem(target);
+      if (blocking && blocking !== current) {
+        setSpeech('ここには おかずが あるよ。べつの まるを えらんでね。');
+        showToast('ここには おかずが あるよ');
+        return null;
+      }
       return current ? { ...target, replaceUid: current.uid } : target;
     }
   }
-  const empty = slots.find(slot => !getSimpleSlotItem(slot));
+  const empty = slots.find(slot => !getSimpleSlotBlockingItem(slot));
   if (empty) return empty;
   const oldest = slots
     .map(slot => ({ slot, item: getSimpleSlotItem(slot) }))
     .filter(entry => entry.item)
     .sort((a, b) => (a.item.layer || 0) - (b.item.layer || 0))[0];
-  return oldest ? { ...oldest.slot, replaceUid: oldest.item.uid } : slots[0];
+  return oldest ? { ...oldest.slot, replaceUid: oldest.item.uid } : null;
 }
 function getSimpleDecorKind(def) {
   const id = String(def && def.id || '');
@@ -14452,7 +14476,7 @@ function shouldUseSimpleStageTargetMarkers() {
   );
 }
 function getNextEmptySimpleSlotIndex(slots) {
-  const empty = (slots || []).findIndex(slot => !getSimpleSlotItem(slot));
+  const empty = (slots || []).findIndex(slot => !getSimpleSlotBlockingItem(slot));
   return empty >= 0 ? empty : 0;
 }
 function getActiveSimpleSideSlotIndex(slots) {
@@ -14599,20 +14623,29 @@ function createSimpleStageTargetLayer() {
     const markerPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, slots.length);
     slots.forEach((slot, idx) => {
       const current = getSimpleSlotItem(slot);
+      const blocking = getSimpleSlotBlockingItem(slot);
+      const blockedBySideFood = !!(blocking && blocking !== current);
       const point = current && current.snapTarget
         ? (getSimplePlacedItemPoint(current) || markerPoints[idx] || slot)
         : (markerPoints[idx] || slot);
       const marker = createFreeStageTargetMarker({
         kind: 'cup',
         slotIndex: idx,
-        emptyCup: !current,
-        filled: !!current,
-        active: idx === activeIndex,
+        emptyCup: !blocking,
+        filled: !!blocking,
+        active: idx === activeIndex && !blockedBySideFood,
         x: point.x,
         y: point.y,
         label: String(idx + 1),
-        ariaLabel: 'カップを おく ばしょ ' + (idx + 1),
-        onSelect: () => selectCupSlotForSimplePlacement(idx),
+        ariaLabel: blockedBySideFood
+          ? 'ここには おかずが あるよ'
+          : 'カップを おく ばしょ ' + (idx + 1),
+        onSelect: blockedBySideFood
+          ? () => {
+              setSpeech('ここには おかずが あるよ。べつの まるを えらんでね。');
+              showToast('ここには おかずが あるよ');
+            }
+          : () => selectCupSlotForSimplePlacement(idx),
       });
       if (marker) layer.appendChild(marker);
     });
