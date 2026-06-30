@@ -1382,6 +1382,10 @@ html, body {
   min-height: 31px;
   padding: 3px 2px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
 }
 .free-tabs.is-side-tabs .free-tab {
   width: 100%;
@@ -1389,6 +1393,24 @@ html, body {
   padding: 5px 8px;
   border-radius: 12px;
   font-size: 0.68rem;
+}
+.free-tab-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  pointer-events: none;
+}
+.free-tab-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.free-tab-label {
+  display: inline-block;
+  line-height: 1.04;
+  pointer-events: none;
 }
 .free-tab.active {
   background: #FFE1A8;
@@ -3248,6 +3270,110 @@ html, body {
     font-size: 0.68rem;
     font-weight: 900;
   }
+}
+
+.food-tray.free-layout-controls.is-simple-okazu-step {
+  overflow: hidden;
+}
+.food-tray.free-layout-controls.is-simple-okazu-step .free-item-list {
+  min-height: 0;
+  max-height: none;
+}
+.food-tray.free-layout-controls.is-simple-okazu-step .free-action-row {
+  margin-top: auto;
+  padding-top: 3px;
+  background: rgba(255, 248, 230, 0.68);
+}
+.food-tray.free-layout-controls.is-simple-side-step {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 5px 6px;
+  align-items: stretch;
+  align-content: stretch;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-guide-card {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  padding: 5px 7px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-tabs.is-side-tabs {
+  grid-column: 1;
+  grid-row: 2 / 4;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-tabs.is-side-tabs .free-tab {
+  min-width: 0;
+  min-height: 40px;
+  padding: 3px 2px;
+  flex-direction: column;
+  font-size: 0.48rem;
+  line-height: 1.02;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-tabs.is-side-tabs .free-tab-icon {
+  width: 21px;
+  height: 21px;
+  flex-basis: 21px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-context-toolbar--panel,
+.food-tray.free-layout-controls.is-simple-side-step .free-brush-panel,
+.food-tray.free-layout-controls.is-simple-side-step .free-mask-panel,
+.food-tray.free-layout-controls.is-simple-side-step .free-cup-panel {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  max-height: 96px;
+  overflow: hidden;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-context-toolbar--panel {
+  padding: 5px 6px;
+  gap: 4px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-context-toolbar-title {
+  font-size: 0.5rem;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-context-toolbar--panel .free-size-slider,
+.food-tray.free-layout-controls.is-simple-side-step .free-context-toolbar--panel .free-size-stepper {
+  flex-basis: 104px;
+  min-width: 100px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-brush-stamp-panel .free-size-slider {
+  grid-template-columns: auto minmax(64px, 1fr);
+  padding: 3px 6px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-item-list {
+  grid-column: 2;
+  grid-row: 3;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-palette-item {
+  min-height: 82px;
+  padding: 5px 4px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-palette-visual {
+  width: min(62px, 74%);
+  height: 58px;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-palette-name {
+  font-size: 0.54rem;
+}
+.food-tray.free-layout-controls.is-simple-side-step .free-action-row {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  margin-top: 0;
 }
 
 @keyframes correctPop {
@@ -5849,16 +5975,13 @@ const OKAZU_VEG = [
   { img: P+'kinoko_itame.webp',   name: 'きのこいため',       cat: 'veg', sk: 'g' },
   { img: P+'onsalad.webp',        name: 'おんやさい',         cat: 'veg', sk: 'g' },
   { img: P+'corn_butter.webp',    name: 'コーンバター',       cat: 'veg', sk: 'g' },
-  { img: P+'ham_salad.webp',      name: 'ハムサラダ',         cat: 'veg', sk: 'g' },
   { img: P+'kamaboko_pink.webp',  name: 'かまぼこ',           cat: 'veg', sk: 'r' },
 ];
 
 const FRUITS = [
   { img: FREE_LAYOUT_ASSET_P+'fruit_ichigo.png',    name: 'いちご',       cat: 'fruit', sk: 'g' },
   { img: FREE_LAYOUT_ASSET_P+'fruit_mikan.png',     name: 'みかん',       cat: 'fruit', sk: 'g' },
-  { img: P+'budou2.webp',    name: 'ぶどう',       cat: 'fruit', sk: 'g' },
   { img: FREE_LAYOUT_ASSET_P+'fruit_ringo.png',     name: 'りんご',       cat: 'fruit', sk: 'g' },
-  { img: P+'banana2.webp',   name: 'バナナ',       cat: 'fruit', sk: 'y' },
   { img: P+'jelly.webp',     name: 'ゼリー',       cat: 'fruit', sk: 'y' },
   { img: P+'pudding2.webp',  name: 'プリン',       cat: 'fruit', sk: 'y' },
   { img: FREE_LAYOUT_ASSET_P+'fruit_melon.png',     name: 'メロン',       cat: 'fruit', sk: 'g' },
@@ -5875,8 +5998,12 @@ const KARAAGE_DONE_VARIANTS = [
   COOKING_P+'chicken/fry/chicken_fry_piece_04_done.png',
   COOKING_P+'chicken/fry/chicken_fry_piece_05_done.png',
 ];
+const TAKO_WIENER_DONE_IMAGE = COOKING_P+'wiener/wiener_003_done.png';
 const FREE_COOKED_OKAZU = [
-  { img: COOKING_P+'wiener/wiener_003_done.png',           name: 'タコウインナー',   cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'tako_wiener', size: 110, rotation: -6 }, // v1373: 132→110 (タコらしさを保つ範囲で縮小)
+  { img: TAKO_WIENER_DONE_IMAGE,                           name: 'タコウインナー',   cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'tako_wiener', size: 160, rotation: -4, clusterImages: [
+    { img: TAKO_WIENER_DONE_IMAGE, x: -0.16, y: 0.03, w: 0.68, rotation: -11 },
+    { img: TAKO_WIENER_DONE_IMAGE, x: 0.18, y: -0.05, w: 0.61, rotation: 8 },
+  ] },
   { img: COOKING_P+'mince_patty/patty_003_done.png',       name: 'ハンバーグ',       cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'hamburger', size: 170, rotation: 2 },
   { img: KARAAGE_DONE_VARIANTS[0],                         name: 'からあげ',         cat: 'meat', sk: 'r', okazuRole: 'main', simpleSampleId: 'karaage', size: 156, rotation: -5, clusterImages: [
     { img: KARAAGE_DONE_VARIANTS[0], x: -0.16, y: -0.03, w: 0.72, rotation: -9 },
@@ -5890,12 +6017,12 @@ const FREE_COOKED_OKAZU = [
   { img: FREE_LAYOUT_ASSET_P+'okazu_ninjin_ingen.png',     name: 'にんじんいんげん', cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'ninjin_ingen', size: 112, cupSize: 92, rotation: 1 },
   { img: COOKING_P+'kinpira/kinpira_mid.png',              name: 'きんぴらごぼう',   cat: 'veg',  sk: 'g', okazuRole: 'side', size: 136, rotation: -1 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_ichigo.png',           name: 'いちご',           cat: 'fruit', sk: 'g', okazuRole: 'side', simpleSampleId: 'ichigo', size: 115, rotation: -5 },
-  { img: FREE_LAYOUT_ASSET_P+'fruit_melon.png',            name: 'メロン',           cat: 'fruit', sk: 'g', okazuRole: 'side', size: 118, rotation: 2 },
+  { img: FREE_LAYOUT_ASSET_P+'fruit_melon.png',            name: 'メロン',           cat: 'fruit', sk: 'g', okazuRole: 'side', simpleSampleId: 'melon', size: 118, rotation: 2 },
   { img: FREE_LAYOUT_ASSET_P+'fruit_mikan.png',            name: 'みかん',           cat: 'fruit', sk: 'g', okazuRole: 'side', simpleSampleId: 'mikan', size: 108, rotation: -2 },
-  { img: FREE_LAYOUT_ASSET_P+'fruit_ringo.png',            name: 'りんご',           cat: 'fruit', sk: 'g', okazuRole: 'side', size: 116, rotation: 3 },
-  { img: FREE_LAYOUT_ASSET_P+'fruit_pineapple.png',        name: 'パイナップル',     cat: 'fruit', sk: 'g', okazuRole: 'side', size: 112, rotation: -3 },
-  { img: FREE_LAYOUT_ASSET_P+'fruit_momo.png',             name: 'もも',             cat: 'fruit', sk: 'g', okazuRole: 'side', size: 116, rotation: 4 },
-  { img: FREE_LAYOUT_ASSET_P+'fruit_kiwi.png',             name: 'キウイ',           cat: 'fruit', sk: 'g', okazuRole: 'side', size: 104, rotation: -1 },
+  { img: FREE_LAYOUT_ASSET_P+'fruit_ringo.png',            name: 'りんご',           cat: 'fruit', sk: 'g', okazuRole: 'side', simpleSampleId: 'ringo', size: 116, rotation: 3 },
+  { img: FREE_LAYOUT_ASSET_P+'fruit_pineapple.png',        name: 'パイナップル',     cat: 'fruit', sk: 'g', okazuRole: 'side', simpleSampleId: 'pineapple', size: 112, rotation: -3 },
+  { img: FREE_LAYOUT_ASSET_P+'fruit_momo.png',             name: 'もも',             cat: 'fruit', sk: 'g', okazuRole: 'side', simpleSampleId: 'momo', size: 116, rotation: 4 },
+  { img: FREE_LAYOUT_ASSET_P+'fruit_kiwi.png',             name: 'キウイ',           cat: 'fruit', sk: 'g', okazuRole: 'side', simpleSampleId: 'kiwi', size: 104, rotation: -1 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_broccoli.png',          name: 'ブロッコリー',       cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'broccoli', size: 108, cupSize: 88, rotation: -2 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_meatball.png',          name: 'ミートボール',       cat: 'meat', sk: 'r', okazuRole: 'side', simpleSampleId: 'meatball', size: 118, cupSize: 94, rotation: 1 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_napolitan.png',         name: 'ナポリタン',         cat: 'meat', sk: 'y', okazuRole: 'side', simpleSampleId: 'napolitan', size: 132, cupSize: 104, cupAllowed: true, rotation: -1 },
@@ -5905,12 +6032,9 @@ const FREE_COOKED_OKAZU = [
   { img: FREE_LAYOUT_ASSET_P+'okazu_corn_spinach.png',      name: 'コーンほうれんそう', cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'corn_spinach', size: 118, cupSize: 96, rotation: -2 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_edamame.png',           name: 'えだまめ',           cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'edamame', size: 108, cupSize: 90, rotation: 0 },
   { img: FREE_LAYOUT_ASSET_P+'okazu_potato_salad.png',      name: 'ポテトサラダ',       cat: 'veg',  sk: 'g', okazuRole: 'side', simpleSampleId: 'potato_salad', size: 126, cupSize: 98, rotation: 1 },
-  { img: P+'ham_salad.webp',     name: 'ハムサラダ',         cat: 'veg',  sk: 'g', okazuRole: 'side', size: 145, rotation: -3 },
-  { img: P+'banana2.webp',       name: 'バナナ',             cat: 'fruit',sk: 'y', okazuRole: 'side', size: 110, rotation: -2 },
-  { img: P+'budou2.webp',        name: 'ぶどう',             cat: 'fruit',sk: 'g', okazuRole: 'side', size: 105, rotation: 2 },
 ];
 const FREE_MAIN_OKAZU_NAMES = ['タコウインナー', 'ハンバーグ', 'からあげ', 'エビフライ', 'コロッケ', 'やきざけ', 'ぎょうざ', 'はるまき', 'ベーコンまき'];
-const FREE_SIDE_OKAZU_NAMES = ['プチトマト', 'たまごやき', 'にんじんいんげん', 'きんぴらごぼう', 'ブロッコリー', 'ミートボール', 'ナポリタン', 'コーンほうれんそう', 'えだまめ', 'ポテトサラダ', 'いちご', 'メロン', 'みかん', 'りんご', 'パイナップル', 'もも', 'キウイ', 'ハムサラダ', 'バナナ', 'ぶどう'];
+const FREE_SIDE_OKAZU_NAMES = ['プチトマト', 'たまごやき', 'にんじんいんげん', 'きんぴらごぼう', 'ブロッコリー', 'ミートボール', 'ナポリタン', 'コーンほうれんそう', 'えだまめ', 'ポテトサラダ', 'いちご', 'メロン', 'みかん', 'りんご', 'パイナップル', 'もも', 'キウイ'];
 
 // ===== NPC requesters (依頼者モード用) =====
 // タイトル後に 1 体ランダム選定。 入れた食材の name が wantedFoods / perfectCombos と
@@ -6411,6 +6535,7 @@ const FREE_TABS = [
   { id: 'food', label: 'おかず' },
   { id: 'leaf', label: 'したにしく' },
   { id: 'divider', label: 'しきり' },
+  { id: 'pick', label: 'かざり' },
   { id: 'decor', label: 'かざり' },
 ];
 const FREE_GUIDE_COPY = {
@@ -6894,8 +7019,15 @@ const bentoAccessories = [
     { key: 'front', sampleId: 'divider_wood_vertical_front', image: FREE_ASSET + 'divider_wood_vertical_front.png', size: 50, renderAspect: 2.48 },
   ] },
 ];
+const CABBAGE_SHREDS_BRUSH_IMAGES = [
+  FREE_ASSET + 'cabbage_shreds_patch_small.png',
+  FREE_ASSET + 'cabbage_shreds_patch_medium.png',
+  FREE_ASSET + 'cabbage_shreds_patch_large.png',
+];
 const bentoLeafItems = [
+  { id: 'leaf_cabbage_shreds', type: 'leaf', name: 'キャベツをしく', img: CABBAGE_SHREDS_BRUSH_IMAGES[0], image: CABBAGE_SHREDS_BRUSH_IMAGES[0], css: 'free-css-divider', sk: 'g', size: 150, sizeKey: 'medium', layerBase: 8, rotation: 0, stackTarget: true, brushItem: true, brushImages: CABBAGE_SHREDS_BRUSH_IMAGES, brushLevel: 0, simpleSampleId: 'leaf_cabbage_shreds' },
   { id: 'leaf_cabbage', type: 'leaf', name: 'キャベツ', image: COOKING_P + 'cabbage/cabbage_002.png', css: 'free-css-divider', sk: 'g', size: 150, sizeKey: 'medium', layerBase: 12, rotation: -2, stackTarget: true, simpleSampleId: 'leaf_cabbage' },
+  { id: 'leaf_cabbage_light', type: 'leaf', name: 'キャベツすくなめ', image: COOKING_P + 'cabbage/cabbage_004.png', css: 'free-css-divider', sk: 'g', size: 150, sizeKey: 'medium', layerBase: 12, rotation: -2, stackTarget: true, simpleSampleId: 'leaf_cabbage_light' },
   { id: 'leaf_lettuce', type: 'leaf', name: 'レタス', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', sk: 'g', size: 190, sizeKey: 'medium', layerBase: 12, rotation: -8, stackTarget: true, simpleSampleId: 'leaf_lettuce' },
 ];
 const FREE_FIXED_CUP_SIZE = 150;
@@ -9010,7 +9142,7 @@ function getFreeGuideTabs() {
   if (freeGuideStep === 'decor') return FREE_TABS.filter(t => t.id === 'decor');
   if (isOkazuGuideStep()) {
     if (String(freeGuideStep).endsWith('Side')) {
-      return ['food', 'leaf', 'accessory', 'divider']
+      return ['food', 'leaf', 'accessory', 'divider', 'pick']
         .map(id => FREE_TABS.find(t => t.id === id))
         .filter(Boolean);
     }
@@ -9659,6 +9791,7 @@ function getFreePaletteItems(tabId) {
   if (tabId === 'accessory') return bentoAccessories.filter(item => item.type === 'cup');
   if (tabId === 'divider') return bentoAccessories.filter(item => item.type === 'divider');
   if (tabId === 'leaf') return bentoLeafItems;
+  if (tabId === 'pick') return decorItems.filter(item => item.type === 'pick' && isBentoDecorUnlocked(item));
   // v1373: のり弁を rice palette から削除。 のりは decor step で別 layer から乗せる。
   // getNoribenPaletteItem は将来復活/admin 等のため定義のみ残す。
   if (tabId === 'rice') return [getAutoRicePaletteItem()];
@@ -11819,7 +11952,7 @@ function beginFreeItemDrag(e, uid) {
     ? { x: item.x - p.x, y: item.y - p.y }
     : { x: 0, y: 0 };
   freeDragState = { uid, offset, point: p };
-  renderFreeLayoutStage();
+  renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
   window.addEventListener('pointerup', onFreeItemDragEnd, { once: true });
@@ -11876,7 +12009,7 @@ function onFreeItemDragEnd(e) {
   window.removeEventListener('pointerup', onFreeItemDragEnd);
   const handledSimpleDrop = applySimpleSlotDrop(uid, dropPoint);
   if (!handledSimpleDrop) finalizeFreeItemPosition(uid);
-  renderFreeLayoutStage();
+  renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
   spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
@@ -12239,6 +12372,10 @@ function addSimpleFreePaletteItem(def) {
   if (def.type === 'decor') {
     return addSimpleDecorPaletteItem(def);
   }
+  if (isCabbageBrushDef(def) && !getEditingCup()) {
+    enterFreeBrushStampMode(def);
+    return null;
+  }
   const editingCup = def.type === 'food' ? getEditingCup() : null;
   if (editingCup) {
     return addSimpleFoodToCup(def, editingCup);
@@ -12358,7 +12495,7 @@ function finishFreePaletteDrag(shouldFinalize) {
   if (def.type === 'food' && placed && !placed.parentCupId) {
     attachFoodToCupIfOverlaps(placed, null, { render: false, selectChild: true });
   }
-  renderFreeLayoutStage();
+  renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   const el = document.querySelector(`[data-free-uid="${uid}"]`);
   spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
@@ -12866,7 +13003,7 @@ function enterFreeBrushStampMode(def) {
   if (!isCabbageBrushDef(def)) return;
   freeBrushStampDef = def;
   freeBrushStampLevel = clamp(def.brushLevel == null ? 1 : def.brushLevel, 0, (def.brushImages || []).length - 1);
-  freeLayoutTab = 'food';
+  freeLayoutTab = def.type === 'leaf' ? 'leaf' : 'food';
   freeCupEditorUid = null;
   freeCupToolMode = 'move';
   freeSelectedItemUid = null;
@@ -12896,7 +13033,7 @@ function addBrushStampAtPoint(point) {
   });
   sendItemLayerTo(item, 'back');
   freeSelectedItemUid = item.uid;
-  renderFreeLayoutStage();
+  renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   spawnLandingSparkles(document.getElementById('free-layout-stage'));
   playPop();
@@ -13414,7 +13551,7 @@ function createFreeMainGuide() {
   });
   return guide;
 }
-function commitFreeLayoutRender(host, renderRoot) {
+function commitFreeLayoutRender(host, renderRoot, opts = {}) {
   const token = (host.__freeLayoutRenderToken || 0) + 1;
   host.__freeLayoutRenderToken = token;
   const pendingImages = Array.from(renderRoot.querySelectorAll('img')).filter(img => !img.complete || !img.naturalWidth);
@@ -13425,6 +13562,10 @@ function commitFreeLayoutRender(host, renderRoot) {
     committed = true;
     host.replaceChildren(renderRoot);
   };
+  if (opts.immediate) {
+    commit();
+    return;
+  }
   if (!pendingImages.length) {
     commit();
     return;
@@ -13602,9 +13743,9 @@ function renderFreeLayoutInto(host, opts = {}) {
       renderRoot.appendChild(guide);
     }
   }
-  commitFreeLayoutRender(host, renderRoot);
+  commitFreeLayoutRender(host, renderRoot, { immediate: !!opts.immediateRender });
 }
-function renderFreeLayoutStage() {
+function renderFreeLayoutStage(opts = {}) {
   const stage = document.getElementById('free-layout-stage');
   if (!stage) {
     renderBentoReminder();
@@ -13642,7 +13783,7 @@ function renderFreeLayoutStage() {
   }
   stage.className = 'free-layout-stage';
   fitMainFreeLayoutStage(stage);
-  renderFreeLayoutInto(stage, { interactive: true });
+  renderFreeLayoutInto(stage, { interactive: true, immediateRender: !!opts.immediate });
   renderBentoReminder();
 }
 function createPaletteVisual(def) {
@@ -13678,6 +13819,41 @@ function createPaletteVisual(def) {
     wrap.appendChild(cssItem);
   }
   return wrap;
+}
+function getFreeTabIconDef(tabId) {
+  if (tabId === 'food') {
+    const foods = getFreePaletteItems('food');
+    return foods.find(def => def && !def.brushItem) || foods[0] || null;
+  }
+  if (tabId === 'leaf') {
+    return bentoLeafItems.find(def => def && !isCabbageBrushDef(def)) || bentoLeafItems[0] || null;
+  }
+  if (tabId === 'accessory') return bentoAccessories.find(def => def && def.snapTarget) || null;
+  if (tabId === 'divider') return bentoAccessories.find(def => def && def.type === 'divider') || null;
+  if (tabId === 'pick') return decorItems.find(def => def && def.type === 'pick') || null;
+  if (tabId === 'rice') return getAutoRicePaletteItem();
+  if (tabId === 'decor') return decorItems.find(def => def && isRiceDecorItem(def)) || decorItems[0] || null;
+  return null;
+}
+function appendFreeTabContent(button, tab) {
+  button.textContent = '';
+  const icon = document.createElement('span');
+  icon.className = 'free-tab-icon';
+  const def = getFreeTabIconDef(tab && tab.id);
+  const src = def && (def.thumbnailImage || def.img || def.image);
+  if (src) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    icon.appendChild(img);
+  } else {
+    icon.textContent = '•';
+  }
+  const label = document.createElement('span');
+  label.className = 'free-tab-label';
+  label.textContent = tab && tab.label ? tab.label : '';
+  button.appendChild(icon);
+  button.appendChild(label);
 }
 function shouldHighlightFreeChoice(def) {
   if (!def) return false;
@@ -14816,7 +14992,7 @@ function isSimpleLeafEditMode() {
 }
 function shouldHideItemForSimpleLeafEdit(item) {
   if (!isSimpleLeafEditMode() || !item) return false;
-  if (item.type === 'leaf') return false;
+  if (item.type === 'leaf' || item.brushItem) return false;
   if (item.type === 'rice' || isRiceDecorItem(item) || item.type === 'decor') return false;
   return item.type === 'food' || item.type === 'divider' || item.type === 'pick' || item.snapTarget || !!item.parentCupId;
 }
@@ -15101,6 +15277,11 @@ function renderFreeLayoutControls() {
   normalizeFreeGuideTab();
   tray.className = 'food-tray free-layout-controls';
   const guideBlocking = isFreeMainGuideBlocking();
+  const simpleOkazuStep = !!(simpleBentoMode && isOkazuGuideStep() && !freeMaskEditorMode);
+  const simpleSideStep = !!(simpleOkazuStep && String(freeGuideStep || '').endsWith('Side'));
+  tray.classList.toggle('is-simple-okazu-step', simpleOkazuStep);
+  tray.classList.toggle('is-simple-side-step', simpleSideStep);
+  tray.classList.toggle('is-brush-mode', !!freeBrushStampDef);
   tray.classList.toggle('guide-blocking', guideBlocking);
   tray.onpointerdown = guideBlocking ? function (e) {
     e.preventDefault();
@@ -15146,7 +15327,7 @@ function renderFreeLayoutControls() {
       b.type = 'button';
       b.className = 'free-tab' + (t.id === freeLayoutTab ? ' active' : '');
       b.dataset.tab = t.id;
-      b.textContent = t.label;
+      appendFreeTabContent(b, t);
       b.addEventListener('pointerdown', e => {
         e.preventDefault();
         freeLayoutTab = t.id;
@@ -15308,14 +15489,15 @@ function loadFreeLayoutStage() {
   setSpeech(maskEdit ? 'マスクを ちょうせいしよう！' : 'まずは おべんとうばこを えらぼう！');
 }
 function getFreeLayoutCompletionData() {
-  const foodItems = placedItems.filter(i => i.type === 'food' || i.type === 'leaf' || i.type === 'rice');
-  const skColors = foodItems.map(i => i.sk).filter(Boolean);
-  const foods = foodItems.map(i => ({ img: getFreeItemImage(i) || '', name: i.name || '', sk: i.sk || '', type: i.type, id: i.id }));
+  const nutritionItems = placedItems.filter(i => i.type === 'food' || i.type === 'rice');
+  const okazuItems = placedItems.filter(i => i.type === 'food');
+  const skColors = nutritionItems.map(i => i.sk).filter(Boolean);
+  const foods = nutritionItems.map(i => ({ img: getFreeItemImage(i) || '', name: i.name || '', sk: i.sk, type: i.type, id: i.id }));
   return {
     foods,
     skColors,
-    foodNames: foodItems.map(i => i.name).filter(Boolean),
-    okazuNames: foodItems.filter(i => i.type === 'food' || i.type === 'leaf').map(i => i.name).filter(Boolean),
+    foodNames: nutritionItems.map(i => i.name).filter(Boolean),
+    okazuNames: okazuItems.map(i => i.name).filter(Boolean),
     balance: {
       r: skColors.filter(c => c === 'r').length,
       y: skColors.filter(c => c === 'y').length,
