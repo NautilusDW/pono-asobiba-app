@@ -1318,8 +1318,8 @@ tr:hover { background: #FFFAF0; }
           <button id="bento-slot-save" type="button" style="padding:7px 14px;background:#10B981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">💾 保存</button>
           <button id="bento-slot-hide-toggle" type="button" style="padding:7px 14px;background:#6B7280;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">このスロットを隠す</button>
           <button id="bento-slot-show-all" type="button" style="padding:7px 14px;background:#64748B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">全部表示</button>
-          <button id="bento-slot-reset-one" type="button" style="padding:7px 14px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↺ この位置を初期値へ</button>
-          <button id="bento-slot-reset-box" type="button" style="padding:7px 14px;background:#EF4444;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">🗑 この箱を初期値へ</button>
+          <button id="bento-slot-reset-one" type="button" style="padding:7px 14px;background:#F59E0B;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↺ この位置を初期配置へ</button>
+          <button id="bento-slot-reset-box" type="button" style="padding:7px 14px;background:#EF4444;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">🗑 この箱を初期配置へ</button>
           <button id="bento-slot-fetch" type="button" style="padding:7px 14px;background:#3B82F6;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;">↻ サーバー読込</button>
         </div>
         <div id="bento-slot-status" style="margin-top:10px;font-size:0.72rem;color:#8B7355;min-height:1.1em;" aria-live="polite"></div>
@@ -12136,6 +12136,29 @@ function bentoSlotMapReferencePoint(boxId, def) {
     y: targetBounds.y + targetBounds.h * ry
   });
 }
+function bentoSlotResolvedInitialPoint(boxId, def) {
+  var box = bentoSlotGetBoxById(boxId);
+  var base = bentoSlotDefaultPoint(box, def);
+  if (boxId !== BENTO_SLOT_REFERENCE_BOX_ID) {
+    if (def.kind === 'main-food' || def.kind === 'cup') {
+      var mapped = bentoSlotMapReferencePoint(boxId, def);
+      if (mapped) return mapped;
+    }
+    if (def.kind === 'side-food') {
+      var mappedCup = bentoSlotMapReferencePoint(boxId, { kind: 'cup', index: def.index });
+      if (mappedCup) return bentoSlotClampPointForDef(box, def, mappedCup);
+    }
+  }
+  return base;
+}
+function bentoSlotResolvedInitialEntry(boxId, def) {
+  var box = bentoSlotGetBoxById(boxId);
+  var entry = bentoSlotDefaultEntry(box, def);
+  var point = bentoSlotResolvedInitialPoint(boxId, def);
+  entry.x = point.x;
+  entry.y = point.y;
+  return bentoSlotClampEntryForDef(box, def, entry);
+}
 function bentoSlotGetActiveEntry(entry, def) {
   var sample = bentoSlotSampleForDef(def, entry);
   var override = sample && entry && entry.sampleOverrides && entry.sampleOverrides[sample.id];
@@ -12180,6 +12203,50 @@ function bentoSlotGetEntry(boxId, def) {
   var override = sample && stored && stored.sampleOverrides && stored.sampleOverrides[sample.id];
   var active = override ? Object.assign({}, stored, override, { sampleId: sample.id }) : stored;
   return bentoSlotResolveInheritedPoint(boxId, def, active, sample, override);
+}
+function bentoSlotMaterializeEntryForSave(boxId, def, entry) {
+  var box = bentoSlotGetBoxById(boxId);
+  var normalized = bentoSlotClampEntryForDef(box, def, entry || bentoSlotDefaultEntry(box, def));
+  if (boxId === BENTO_SLOT_REFERENCE_BOX_ID || !(def.kind === 'main-food' || def.kind === 'cup' || def.kind === 'side-food')) {
+    return normalized;
+  }
+  var resolved = bentoSlotGetEntry(boxId, def);
+  if (!resolved) return normalized;
+  var next = Object.assign({}, normalized);
+  if (next.positionOverride !== true) {
+    next.x = resolved.x;
+    next.y = resolved.y;
+  }
+  if (next.sampleOverrides && typeof next.sampleOverrides === 'object') {
+    var overrides = Object.assign({}, next.sampleOverrides);
+    Object.keys(overrides).forEach(function(sampleId) {
+      var override = overrides[sampleId];
+      if (!override || override.positionOverride === true) return;
+      overrides[sampleId] = Object.assign({}, override, {
+        x: next.x,
+        y: next.y
+      });
+    });
+    next.sampleOverrides = overrides;
+  }
+  return bentoSlotClampEntryForDef(box, def, next);
+}
+function bentoSlotPrepareLayoutForSave() {
+  var previousLayout = _bentoSlotState.layout;
+  var layout = bentoSlotNormalizeLayout(previousLayout);
+  _bentoSlotState.layout = layout;
+  Object.keys(layout).forEach(function(boxId) {
+    var boxLayout = layout[boxId];
+    if (!boxLayout) return;
+    BENTO_SLOT_DEFS.forEach(function(def) {
+      var list = Array.isArray(boxLayout[def.kind]) ? boxLayout[def.kind] : null;
+      if (!list || !list[def.index]) return;
+      list[def.index] = bentoSlotMaterializeEntryForSave(boxId, def, list[def.index]);
+    });
+  });
+  _bentoSlotState.layout = layout;
+  bentoSlotSaveLocal();
+  return layout;
 }
 function bentoSlotGetPoint(boxId, def) {
   return bentoSlotGetEntry(boxId, def);
@@ -13021,7 +13088,7 @@ function bentoSlotSaveServer() {
   bentoSlotSetStatus('サーバーへ保存中...', false);
   bentoSlotEnsureAllDefaults();
   bentoSlotSyncAllSharedSampleSizes(true);
-  var layout = bentoSlotNormalizeLayout(_bentoSlotState.layout);
+  var layout = bentoSlotPrepareLayoutForSave();
   return bentoSlotFetchServer().catch(function() { return _bentoSlotState.serverPayload || {}; }).then(function(payload) {
     return fetch(BENTO_SLOT_ENDPOINT, {
       method: 'POST',
@@ -13123,7 +13190,7 @@ function bentoSlotBindControls() {
     }
     var existing = bentoSlotGetStoredEntry(box.id, def);
     var sample = bentoSlotSampleForDef(def, existing);
-    var defaults = bentoSlotDefaultEntry(box, def);
+    var defaults = bentoSlotResolvedInitialEntry(box.id, def);
     bentoSlotSetActiveSampleEntry(box.id, def, sample, {
       x: defaults.x,
       y: defaults.y,
@@ -13137,13 +13204,19 @@ function bentoSlotBindControls() {
   var resetBox = document.getElementById('bento-slot-reset-box');
   if (resetBox) resetBox.addEventListener('click', function() {
     var box = bentoSlotGetBox();
-    if (!confirm(box.name + ' のスロット上書きを削除します。よろしいですか？')) return;
-    delete _bentoSlotState.layout[box.id];
+    if (!confirm(box.name + ' を通常箱基準の初期配置へ戻します。よろしいですか？')) return;
+    var nextBoxLayout = {};
+    var activeDefs = bentoSlotActiveDefsForBox(box.id);
+    activeDefs.forEach(function(def) {
+      if (!nextBoxLayout[def.kind]) nextBoxLayout[def.kind] = [];
+      nextBoxLayout[def.kind][def.index] = bentoSlotResolvedInitialEntry(box.id, def);
+    });
+    _bentoSlotState.layout[box.id] = nextBoxLayout;
     if (_bentoSlotState.hidden) delete _bentoSlotState.hidden[box.id];
     bentoSlotSaveLocal();
     bentoSlotSaveHidden();
     bentoSlotRender();
-    bentoSlotSetStatus('この箱を初期値に戻しました。保存で反映されます。', false);
+    bentoSlotSetStatus('この箱を通常箱基準の初期配置へ戻しました。保存で反映されます。', false);
   });
   var fetchBtn = document.getElementById('bento-slot-fetch');
   if (fetchBtn) fetchBtn.addEventListener('click', function() {
