@@ -7326,15 +7326,20 @@ function evaluateBalanceGroups(balance, okazuNames) {
 function buildBentoFinalEvaluation(requester, completionData) {
   const requestEval = evaluateRequest(requester, completionData.foodNames || []);
   const balanceEval = evaluateBalanceGroups(completionData.balance, completionData.okazuNames || []);
+  const requiredOkazu = completionData.requiredOkazu || { enabled: false, complete: true, mainCount: 0, sideCount: 0 };
+  const structuralOk = !requiredOkazu.enabled || requiredOkazu.complete;
+  const hasMainOkazu = !requiredOkazu.enabled || (Number(requiredOkazu.mainCount) || 0) > 0;
   const totalScore = (requestEval.enabled ? requestEval.score : 0) + balanceEval.score;
   let npcMood = 'none';
   if (requestEval.enabled) {
-    if (requestEval.score >= 2 && balanceEval.complete && balanceEval.varietyOk) npcMood = 'super_happy';
+    if (!hasMainOkazu) npcMood = 'sad';
+    else if (!structuralOk) npcMood = 'almost';
+    else if (requestEval.score >= 2 && balanceEval.complete && balanceEval.varietyOk) npcMood = 'super_happy';
     else if (totalScore >= 3 && balanceEval.varietyOk) npcMood = 'happy';
     else if (totalScore >= 1) npcMood = 'almost';
     else npcMood = 'sad';
   }
-  return { requestEval, balanceEval, totalScore, npcMood };
+  return { requestEval, balanceEval, requiredOkazu, totalScore, npcMood };
 }
 
 function getMissingGroupFoodText(balanceEval) {
@@ -9070,6 +9075,86 @@ function hasFoodOnTier(tier) {
 }
 function countOkazuRoleOnTier(tier, role) {
   return placedItems.filter(i => i.type === 'food' && getItemTier(i) === tier && (i.okazuRole || getOkazuRole(i)) === role).length;
+}
+function getOkazuGuideStepForRole(tier, role) {
+  const tierCount = getBoxTierCount();
+  const normalizedTier = Math.max(1, Math.round(Number(tier) || 1));
+  if (tierCount >= 3 && normalizedTier >= getGuideTierForStep('tier3Main')) {
+    return role === 'side' ? 'tier3Side' : 'tier3Main';
+  }
+  return role === 'side' ? 'tier2Side' : 'tier2Main';
+}
+function getSimpleRequiredOkazuStatusForTier(tier) {
+  const mainCount = countOkazuRoleOnTier(tier, 'main');
+  const sideCount = countOkazuRoleOnTier(tier, 'side');
+  return {
+    tier,
+    mainCount,
+    sideCount,
+    mainOk: mainCount > 0,
+    sideOk: sideCount > 0,
+    complete: mainCount > 0 && sideCount > 0,
+  };
+}
+function getSimpleValidationTiers(opts = {}) {
+  const tiers = [getGuideTierForStep('tier2Main')];
+  if (getBoxTierCount() >= 3) {
+    const tier3 = getGuideTierForStep('tier3Main');
+    const hasTier3Items = placedItems.some(item => getItemTier(item) === tier3 && (
+      item.type === 'food'
+      || item.type === 'leaf'
+      || item.type === 'divider'
+      || item.snapTarget
+    ));
+    const isTier3Step = freeGuideStep === 'tier3Main' || freeGuideStep === 'tier3Side';
+    if (hasTier3Items || isTier3Step || opts.includeTier3) tiers.push(tier3);
+  }
+  return Array.from(new Set(tiers)).filter(tier => Number.isFinite(Number(tier)));
+}
+function getSimpleRequiredOkazuSummary(opts = {}) {
+  if (!simpleBentoMode) {
+    return { enabled: false, complete: true, mainCount: 0, sideCount: 0, tiers: [] };
+  }
+  const tiers = getSimpleValidationTiers(opts).map(getSimpleRequiredOkazuStatusForTier);
+  const mainCount = tiers.reduce((sum, status) => sum + status.mainCount, 0);
+  const sideCount = tiers.reduce((sum, status) => sum + status.sideCount, 0);
+  return {
+    enabled: true,
+    complete: tiers.every(status => status.complete),
+    mainCount,
+    sideCount,
+    tiers,
+  };
+}
+function getSimpleFirstMissingRequiredOkazu(opts = {}) {
+  if (!simpleBentoMode) return null;
+  const statuses = getSimpleRequiredOkazuSummary(opts).tiers;
+  for (const status of statuses) {
+    if (!status.mainOk) {
+      return {
+        tier: status.tier,
+        role: 'main',
+        step: getOkazuGuideStepForRole(status.tier, 'main'),
+        message: 'メインのおかずが たりないよ',
+      };
+    }
+    if (!status.sideOk) {
+      return {
+        tier: status.tier,
+        role: 'side',
+        step: getOkazuGuideStepForRole(status.tier, 'side'),
+        message: 'ちいさい おかずが たりないよ',
+      };
+    }
+  }
+  return null;
+}
+function showSimpleMissingRequiredOkazu(missing) {
+  if (!missing) return false;
+  if (missing.step) setFreeGuideStep(missing.step);
+  showToast(missing.message);
+  setSpeech(missing.message);
+  return true;
 }
 function canAddFoodForCurrentStep(def) {
   if (!isOkazuGuideStep()) return true;
@@ -11096,7 +11181,7 @@ function getSimpleSlotPlacementDefForItem(item) {
     simpleSampleId: catalog.simpleSampleId || item.simpleSampleId || '',
   };
 }
-function getSimpleNearestDropSlotForItem(item) {
+function getSimpleNearestDropSlotForItem(item, dropPoint = null) {
   const slots = getSimpleDropSlotsForItem(item);
   if (!slots.length) return null;
   const threshold = Math.max(82, Math.min(150, (Number(item.size) || 72) * 0.78));
@@ -11105,7 +11190,9 @@ function getSimpleNearestDropSlotForItem(item) {
   slots.forEach(slot => {
     const point = getSimpleStageSlotPlacementPoint(slot) || slot;
     if (!point) return;
-    const d = dist(item, point);
+    const itemDist = dist(item, point);
+    const pointerDist = dropPoint ? dist(dropPoint, point) : Infinity;
+    const d = Math.min(itemDist, pointerDist);
     if (d < bestDist) {
       best = slot;
       bestDist = d;
@@ -11150,14 +11237,15 @@ function applySimpleSlotPlacementToItem(item, slot) {
   }
   return true;
 }
-function applySimpleSlotDrop(uid) {
+function applySimpleSlotDrop(uid, dropPoint = null) {
   const item = placedItems.find(i => i.uid === uid);
   if (!simpleBentoMode || !item || !item.simpleSlot || item.parentCupId) return false;
   const kind = getSimpleSlotKindForItem(item);
+  if (isSimpleLeafEditMode() && kind === 'leaf') return false;
   if (!kind || kind === 'rice' || kind === 'decor') return false;
   const sourceIndex = getSimpleSlotIndexFromKey(item.simpleSlot);
   const sourceSlot = getSimpleCurrentSlotForItem(item);
-  const targetSlot = getSimpleNearestDropSlotForItem(item);
+  const targetSlot = getSimpleNearestDropSlotForItem(item, dropPoint);
   if (!targetSlot) {
     return sourceSlot ? applySimpleSlotPlacementToItem(item, sourceSlot) : false;
   }
@@ -11185,16 +11273,6 @@ function applySimpleSlotDrop(uid) {
 function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) {
   const slots = getSimpleFixedSlots(def, tier);
   if (!slots.length) return null;
-  const replaceItem = simpleReplaceSlotUid
-    ? placedItems.find(item => item.uid === simpleReplaceSlotUid)
-    : null;
-  if (replaceItem
-      && replaceItem.simpleSlot
-      && getItemTier(replaceItem) === tier
-      && getSimpleSlotKindForItem(replaceItem) === slots[0].kind) {
-    const currentSlot = slots.find(slot => slot.key === replaceItem.simpleSlot);
-    if (currentSlot) return { ...currentSlot, replaceUid: replaceItem.uid };
-  }
   if (simpleBentoMode && slots[0].kind === 'side-food' && simpleNoCupSlotIndex != null) {
     const target = slots[clamp(Math.round(Number(simpleNoCupSlotIndex)), 0, slots.length - 1)];
     if (target) {
@@ -11220,6 +11298,16 @@ function pickSimpleFixedSlot(def, tier = getTargetTierForType(def && def.type)) 
       }
       return current ? { ...target, replaceUid: current.uid } : target;
     }
+  }
+  const replaceItem = simpleReplaceSlotUid
+    ? placedItems.find(item => item.uid === simpleReplaceSlotUid)
+    : null;
+  if (replaceItem
+      && replaceItem.simpleSlot
+      && getItemTier(replaceItem) === tier
+      && getSimpleSlotKindForItem(replaceItem) === slots[0].kind) {
+    const currentSlot = slots.find(slot => slot.key === replaceItem.simpleSlot);
+    if (currentSlot) return { ...currentSlot, replaceUid: replaceItem.uid };
   }
   const empty = slots.find(slot => !getSimpleSlotBlockingItem(slot));
   if (empty) return empty;
@@ -11730,7 +11818,7 @@ function beginFreeItemDrag(e, uid) {
   const offset = p && item
     ? { x: item.x - p.x, y: item.y - p.y }
     : { x: 0, y: 0 };
-  freeDragState = { uid, offset };
+  freeDragState = { uid, offset, point: p };
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
@@ -11743,6 +11831,7 @@ function onFreeItemDragMove(e) {
   if (e.cancelable) e.preventDefault();
   const p = eventToFreePoint(e);
   if (!p) return;
+  freeDragState.point = p;
   const offset = freeDragState.offset || { x: 0, y: 0 };
   setFreeItemPosition(freeDragState.uid, p.x + (Number(offset.x) || 0), p.y + (Number(offset.y) || 0));
   const item = placedItems.find(i => i.uid === freeDragState.uid);
@@ -11779,12 +11868,13 @@ function onFreeItemDragEnd(e) {
   if (!freeDragState) return;
   if (e && e.cancelable) e.preventDefault();
   const uid = freeDragState.uid;
+  const dropPoint = (e ? eventToFreePoint(e) : null) || freeDragState.point || null;
   freeDragState = null;
   window.removeEventListener('pointermove', onFreeItemDragMove);
   // batch:937 fix#1 — drop pointercancel sibling so once-fired pointerup path doesn't leak the other listener
   window.removeEventListener('pointercancel', onFreeItemDragEnd);
   window.removeEventListener('pointerup', onFreeItemDragEnd);
-  const handledSimpleDrop = applySimpleSlotDrop(uid);
+  const handledSimpleDrop = applySimpleSlotDrop(uid, dropPoint);
   if (!handledSimpleDrop) finalizeFreeItemPosition(uid);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -12356,10 +12446,32 @@ function addFreeLayoutItem(def, opts = {}) {
   }
   return item;
 }
-function removeFreeItemData(uid) {
+function getSimpleRequiredRemovalRole(item) {
+  if (!simpleBentoMode || !item) return '';
+  if (item.type === 'food') return item.parentCupId ? 'side' : (item.okazuRole || getOkazuRole(item));
+  if (item.snapTarget && getCupChildren(item).some(child => child && child.type === 'food')) return 'side';
+  return '';
+}
+function canRemoveFreeItemNow(item, opts = {}) {
+  if (!simpleBentoMode || !item) return true;
+  const role = getSimpleRequiredRemovalRole(item);
+  if (role !== 'main' && role !== 'side') return true;
+  const requiredStep = getOkazuGuideStepForRole(getItemTier(item), role);
+  if (freeGuideStep === requiredStep) return true;
+  if (opts.silent) return false;
+  const message = role === 'main'
+    ? 'メインにもどると けせるよ'
+    : 'ちいさい おかずにもどると けせるよ';
+  showToast(message);
+  setSpeech(message);
+  return false;
+}
+function removeFreeItemData(uid, opts = {}) {
+  opts = opts && typeof opts === 'object' ? opts : {};
   if (!uid) return;
   const item = placedItems.find(i => i.uid === uid);
   if (!item) return;
+  if (!opts.force && !canRemoveFreeItemNow(item, opts)) return null;
   const removeIds = new Set([uid]);
   if (item.type === 'rice') {
     placedItems.forEach(i => { if (i.parentId === uid) removeIds.add(i.uid); });
@@ -13035,6 +13147,14 @@ function createFreePlacedElement(item, interactive) {
             return;
           }
         }
+        if (item.type === 'leaf' && isSimpleLeafEditMode()) {
+          freeSelectedItemUid = item.uid;
+          simpleReplaceSlotUid = null;
+          simpleNoCupSlotIndex = null;
+          simpleCupSlotIndex = null;
+          beginFreeItemDrag(ev, item.uid);
+          return;
+        }
         if (item.simpleSlot && item.type !== 'rice') {
           handleSimplePlacedItemTap(item);
           beginFreeItemDrag(ev, item.uid);
@@ -13154,8 +13274,9 @@ function createFreeContextButton(label, className, onClick, disabled = false) {
   return b;
 }
 function createFreeContextToolbar(opts = {}) {
-  if (simpleBentoMode) return null;
   const item = getSelectedFreeItem();
+  const simpleLeafToolbar = !!(simpleBentoMode && isSimpleLeafEditMode() && item && item.type === 'leaf');
+  if (simpleBentoMode && !simpleLeafToolbar) return null;
   if (!item || isFreeMainGuideBlocking() || freeBrushStampDef) return null;
   const panelMode = !!opts.panel;
   const toolbar = document.createElement('div');
@@ -13346,11 +13467,16 @@ function renderFreeLayoutInto(host, opts = {}) {
     : opts.interactive && tierCount > 1
     ? items.filter(item => getItemTier(item) === activeTier)
     : items;
-  const displayItems = useIntegratedRice && integratedRice
+  const baseDisplayItems = useIntegratedRice && integratedRice
     ? visibleItems.filter(item => item.uid !== integratedRice.uid && (item.parentId !== integratedRice.uid || isRiceDecorItem(item)))
     : visibleItems;
+  const leafEditMode = !!(opts.interactive && isSimpleLeafEditMode());
+  const displayItems = leafEditMode
+    ? baseDisplayItems.filter(item => !shouldHideItemForSimpleLeafEdit(item))
+    : baseDisplayItems;
   host.classList.add('free-layout-stage');
   host.onpointerdown = null;
+  host.classList.toggle('free-layout-leaf-editing', leafEditMode);
   host.classList.toggle('free-brush-stamp-on', !!(opts.interactive && freeBrushStampDef));
   const renderRoot = document.createDocumentFragment();
   if (opts.interactive && freeBrushStampDef) {
@@ -14341,6 +14467,15 @@ function tryFinishOkazuTier(tier) {
     } catch (_) {}
     return;
   }
+  if (countOkazuRoleOnTier(tier, 'main') < 1) {
+    showSimpleMissingRequiredOkazu({
+      tier,
+      role: 'main',
+      step: getOkazuGuideStepForRole(tier, 'main'),
+      message: 'メインのおかずが たりないよ',
+    });
+    return;
+  }
   if (countOkazuRoleOnTier(tier, 'side') < 1) {
     showToast('小さいおかずを ひとつ えらぼう！');
     freeLayoutTab = 'food';
@@ -14412,12 +14547,13 @@ function renderFreeGuidePanel() {
   } else if (freeGuideStep === 'tier2Side') {
     const tier = getGuideTierForStep('tier2Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
-    const sideOkBtn = makeSmallControlButton(getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'side') < 1);
+    const sideOkBtn = makeSmallControlButton(getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1 || countOkazuRoleOnTier(tier, 'side') < 1);
     if (getBoxTierCount() === 1) sideOkBtn.dataset.action = 'stage-complete';
     actions.appendChild(sideOkBtn);
   } else if (freeGuideStep === 'tier3Prompt') {
     actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
-    const doneBtn = makeSmallControlButton('できあがり', 'primary', () => stageComplete());
+    const tier = getGuideTierForStep('tier2Side');
+    const doneBtn = makeSmallControlButton('できあがり', 'primary', () => stageComplete(), countOkazuRoleOnTier(tier, 'main') < 1 || countOkazuRoleOnTier(tier, 'side') < 1);
     doneBtn.dataset.action = 'stage-complete';
     actions.appendChild(doneBtn);
     actions.appendChild(makeSmallControlButton('3だんめへ', '', () => setFreeGuideStep('tier3Main')));
@@ -14426,8 +14562,8 @@ function renderFreeGuidePanel() {
   } else if (freeGuideStep === 'tier3Side') {
     const tier = getGuideTierForStep('tier3Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
-    actions.appendChild(makeSmallControlButton('3だんめOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'side') < 1));
-    const doneBtn3 = makeSmallControlButton('できあがり', '', () => stageComplete());
+    actions.appendChild(makeSmallControlButton('3だんめOK', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < 1 || countOkazuRoleOnTier(tier, 'side') < 1));
+    const doneBtn3 = makeSmallControlButton('できあがり', '', () => stageComplete(), !!getSimpleFirstMissingRequiredOkazu());
     doneBtn3.dataset.action = 'stage-complete';
     actions.appendChild(doneBtn3);
   }
@@ -14668,6 +14804,21 @@ function shouldUseSimpleStageTargetMarkers() {
     && String(freeGuideStep || '').endsWith('Side')
     && !freeMaskEditorMode
   );
+}
+function isSimpleLeafEditMode() {
+  return !!(
+    simpleBentoMode
+    && isOkazuGuideStep()
+    && String(freeGuideStep || '').endsWith('Side')
+    && freeLayoutTab === 'leaf'
+    && !freeMaskEditorMode
+  );
+}
+function shouldHideItemForSimpleLeafEdit(item) {
+  if (!isSimpleLeafEditMode() || !item) return false;
+  if (item.type === 'leaf') return false;
+  if (item.type === 'rice' || isRiceDecorItem(item) || item.type === 'decor') return false;
+  return item.type === 'food' || item.type === 'divider' || item.type === 'pick' || item.snapTarget || !!item.parentCupId;
 }
 function getNextEmptySimpleSlotIndex(slots) {
   const empty = (slots || []).findIndex(slot => !getSimpleSlotBlockingItem(slot));
@@ -15002,6 +15153,14 @@ function renderFreeLayoutControls() {
         if (t.id !== 'food') freeBrushStampDef = null;
         if (t.id !== 'food') simpleNoCupSlotIndex = null;
         if (t.id !== 'accessory') simpleCupSlotIndex = null;
+        if (t.id === 'leaf' && simpleBentoMode) {
+          freeActiveCupUid = null;
+          freeCupEditorUid = null;
+          const selected = getSelectedFreeItem();
+          if (!selected || selected.type !== 'leaf') freeSelectedItemUid = null;
+          setSpeech('したにしくモードだよ。うえの おかずを かくして うごかせるよ。');
+        }
+        renderFreeLayoutStage();
         renderFreeLayoutControls();
       });
       tabs.appendChild(b);
@@ -15162,6 +15321,7 @@ function getFreeLayoutCompletionData() {
       y: skColors.filter(c => c === 'y').length,
       g: skColors.filter(c => c === 'g').length,
     },
+    requiredOkazu: getSimpleRequiredOkazuSummary(),
   };
 }
 function syncFreeLayoutSelectionState() {
@@ -15694,6 +15854,13 @@ function setCompletePage(page) {
 }
 
 function stageComplete() {
+  if (simpleBentoMode) {
+    const missingRequiredOkazu = getSimpleFirstMissingRequiredOkazu();
+    if (missingRequiredOkazu) {
+      showSimpleMissingRequiredOkazu(missingRequiredOkazu);
+      return;
+    }
+  }
   try { if (typeof tutorialOnStageComplete === 'function') tutorialOnStageComplete(); } catch (_) {}
   try { if (typeof suppressBentoIntroTutorialOverlays === 'function') suppressBentoIntroTutorialOverlays(); } catch (_) {}
   const completionData = freeLayoutMode
