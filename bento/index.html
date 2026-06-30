@@ -11237,6 +11237,11 @@ function getSimpleSlotPointForDef(point, def, kind, anchorPoint = null) {
     : null;
   if (sampleId && overrides && overrides[sampleId]) {
     const override = overrides[sampleId];
+    const pointOverride = { ...override };
+    if (kind === 'divider' && override.positionOverride !== true) {
+      delete pointOverride.x;
+      delete pointOverride.y;
+    }
     const shouldUseAnchor = anchorPoint && (
       (kind === 'side-food' && override.positionOverride !== true)
       || (kind === 'main-food' && override.positionOverride !== true)
@@ -11244,7 +11249,7 @@ function getSimpleSlotPointForDef(point, def, kind, anchorPoint = null) {
     return normalizeSimpleSlotPoint(Object.assign(
       {},
       point,
-      override,
+      pointOverride,
       shouldUseAnchor ? { x: anchorPoint.x, y: anchorPoint.y } : {},
       { sampleId }
     ), kind || getSimpleSlotKind(def));
@@ -11484,7 +11489,7 @@ function getSimpleFoodSlots(kind, box, tier, def) {
   return merged.map((p, idx) => {
     const hasConfiguredPoint = idx < configured.length;
     const mainAnchor = kind === 'main-food' && !hasConfiguredPoint ? getSimpleMappedReferenceSlotPoint(box, kind, idx) : null;
-    const anchor = kind === 'side-food' ? (cupAnchors[idx] || null) : mainAnchor;
+    const anchor = kind === 'side-food' && !hasConfiguredPoint ? (cupAnchors[idx] || null) : mainAnchor;
     let point = p;
     if (kind === 'side-food' && box && box.id !== SIMPLE_REFERENCE_BOX_ID) {
       const mapped = getSimpleMappedReferenceSlotPoint(box, kind, idx);
@@ -15505,10 +15510,10 @@ function getSimpleCupStageMarkerDisplayPoints(box, tier, cupSlots) {
   const sidePoints = getSimpleStageMarkerDisplayPoints(box, 'side-food', sideSlots, count);
   const cupPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, count);
   return Array.from({ length: count }, (_, idx) => (
-    getSimpleExplicitStageMarkerPoint(sideSlots[idx])
-    || getSimpleExplicitStageMarkerPoint(slots[idx])
-    || sidePoints[idx]
+    getSimpleExplicitStageMarkerPoint(slots[idx])
+    || getSimpleExplicitStageMarkerPoint(sideSlots[idx])
     || cupPoints[idx]
+    || sidePoints[idx]
     || slots[idx]
   ));
 }
