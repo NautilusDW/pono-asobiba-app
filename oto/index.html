@@ -9784,8 +9784,8 @@ function _ghLaneIdxToBtnIdx(laneIdx) {
 function _ghBtnIdxToLaneIdx(btnIdx) {
   return btnIdx;
 }
-// レーンコンテナの高さを「画面上端〜ヒットライン (=ボタン上端 -マージン)」に設定。
-// ノートは Y=0 (画面上端) から Y=hitY (ボタン上端の少し上) まで落下する。
+// レーンコンテナの高さを「画面上端〜ヒットライン (=ボタン上端ぎりぎり)」に設定。
+// ノートは Y=0 (画面上端) から Y=hitY (ボタン上端にほぼ接する位置) まで落下する。
 function _ghUpdateLanesGeometry() {
   var lanes = _ghLanesEl();
   if (!lanes) return;
@@ -9795,8 +9795,9 @@ function _ghUpdateLanesGeometry() {
   var stage = document.getElementById('stage');
   var stageRect = stage ? stage.getBoundingClientRect() : { top: 0, height: window.innerHeight };
   var btnTopInStage = rect.top - stageRect.top;
-  // ボタン上端の少し上 (ノートが鍵盤に重なる位置) をヒットラインに
-  var hitY = Math.max(40, btnTopInStage - 6);
+  // 4px 高のライン下端がボタン上端にほぼ接するようにする。
+  // 余白を空けるとライン自体が押す場所に見えやすいため、ボタンへ寄せる。
+  var hitY = Math.max(40, btnTopInStage - 2);
   var vanishY = Math.max(34, Math.min(82, hitY * 0.105));
   var roadTop = Math.max(18, vanishY - 20);
   [lanes, _ghRoadEl()].forEach(function(el) {
