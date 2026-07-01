@@ -7046,8 +7046,10 @@ const CABBAGE_SHREDS_BRUSH_IMAGES = [
   FREE_ASSET + 'cabbage_shreds_patch_medium.png',
   FREE_ASSET + 'cabbage_shreds_patch_large.png',
 ];
+const SIMPLE_LEAF_FIXED_BRUSH_LEVEL = 1;
+const SIMPLE_LEAF_FIXED_BRUSH_SIZE = 170;
 const bentoLeafItems = [
-  { id: 'leaf_cabbage_shreds', type: 'leaf', name: 'キャベツをしく', img: CABBAGE_SHREDS_BRUSH_IMAGES[0], image: CABBAGE_SHREDS_BRUSH_IMAGES[0], css: 'free-css-divider', sk: 'g', size: 150, sizeKey: 'medium', layerBase: 8, rotation: 0, stackTarget: true, brushItem: true, brushImages: CABBAGE_SHREDS_BRUSH_IMAGES, brushLevel: 0, simpleSampleId: 'leaf_cabbage_shreds' },
+  { id: 'leaf_cabbage_shreds', type: 'leaf', name: 'キャベツをしく', img: CABBAGE_SHREDS_BRUSH_IMAGES[SIMPLE_LEAF_FIXED_BRUSH_LEVEL], image: CABBAGE_SHREDS_BRUSH_IMAGES[SIMPLE_LEAF_FIXED_BRUSH_LEVEL], css: 'free-css-divider', sk: 'g', size: SIMPLE_LEAF_FIXED_BRUSH_SIZE, sizeKey: 'medium', layerBase: 8, rotation: 0, stackTarget: true, brushItem: true, brushImages: CABBAGE_SHREDS_BRUSH_IMAGES, brushLevel: SIMPLE_LEAF_FIXED_BRUSH_LEVEL, simpleSampleId: 'leaf_cabbage_shreds' },
   { id: 'leaf_cabbage', type: 'leaf', name: 'キャベツ', image: COOKING_P + 'cabbage/cabbage_002.png', css: 'free-css-divider', sk: 'g', size: 150, sizeKey: 'medium', layerBase: 12, rotation: -2, stackTarget: true, simpleSampleId: 'leaf_cabbage' },
   { id: 'leaf_cabbage_light', type: 'leaf', name: 'キャベツすくなめ', image: COOKING_P + 'cabbage/cabbage_004.png', css: 'free-css-divider', sk: 'g', size: 150, sizeKey: 'medium', layerBase: 12, rotation: -2, stackTarget: true, simpleSampleId: 'leaf_cabbage_light' },
   { id: 'leaf_lettuce', type: 'leaf', name: 'レタス', image: FREE_ASSET + 'divider_lettuce.png', css: 'free-css-divider', sk: 'g', size: 190, sizeKey: 'medium', layerBase: 12, rotation: -8, stackTarget: true, simpleSampleId: 'leaf_lettuce' },
@@ -8717,9 +8719,9 @@ function revealReactionWithDrama(reaction) {
               dailyCap: _bentoDailyCap,
               state: _bentoIsCapped ? 'capped' : 'idle',
               copy: {
-                kicker: 'どんぐりを ゲット',
+                kicker: 'がんばったね！',
                 label: 'きょうの どんぐりだよ',
-                ariaLabel: 'どんぐりを ゲット'
+                ariaLabel: 'がんばったね'
               },
               autoHide: 0,
               onDismiss: function () { bentoAcornModalInstance = null; }
@@ -12288,6 +12290,14 @@ function getFreeItemImage(item) {
 function isCabbageBrushDef(def) {
   return !!def && !!def.brushItem && String(def.img || '').includes('cabbage_shreds_patch_');
 }
+function getSimpleLeafFixedBrushLevel(def) {
+  const max = Math.max(0, ((def && def.brushImages) || []).length - 1);
+  return clamp(SIMPLE_LEAF_FIXED_BRUSH_LEVEL, 0, max);
+}
+function getSimpleLeafFixedBrushSize(def) {
+  const level = getSimpleLeafFixedBrushLevel(def);
+  return [128, SIMPLE_LEAF_FIXED_BRUSH_SIZE, 220][level] || SIMPLE_LEAF_FIXED_BRUSH_SIZE;
+}
 function getCabbageLayerGroup(tier, parentCupId = null) {
   return parentCupId ? `cabbage:cup:${parentCupId}` : `cabbage:tier:${tier || 1}`;
 }
@@ -13253,6 +13263,7 @@ function isItemVisuallySelected(item) {
 }
 function getAccessorySizePresets(item) {
   if (!item || !FREE_ACCESSORY_SIZE_PRESETS[item.type]) return [];
+  if (simpleBentoMode && item.type === 'leaf') return [];
   return FREE_ACCESSORY_SIZE_PRESETS[item.type];
 }
 function getAccessorySizeKey(item) {
@@ -13603,7 +13614,9 @@ function sendItemLayerTo(item, edge) {
 function enterFreeBrushStampMode(def) {
   if (!isCabbageBrushDef(def)) return;
   freeBrushStampDef = def;
-  freeBrushStampLevel = clamp(def.brushLevel == null ? 1 : def.brushLevel, 0, (def.brushImages || []).length - 1);
+  freeBrushStampLevel = simpleBentoMode
+    ? getSimpleLeafFixedBrushLevel(def)
+    : clamp(def.brushLevel == null ? 1 : def.brushLevel, 0, (def.brushImages || []).length - 1);
   freeLayoutTab = def.type === 'leaf' ? 'leaf' : 'food';
   freeCupEditorUid = null;
   freeCupToolMode = 'move';
@@ -13622,12 +13635,15 @@ function addBrushStampAtPoint(point) {
   if (!freeBrushStampDef || !point) return null;
   const historyBefore = beginFreeHistoryChange();
   const sizeByLevel = [128, 170, 220];
-  const level = clamp(Math.round(freeBrushStampLevel || 0), 0, (freeBrushStampDef.brushImages || []).length - 1);
+  const level = simpleBentoMode
+    ? getSimpleLeafFixedBrushLevel(freeBrushStampDef)
+    : clamp(Math.round(freeBrushStampLevel || 0), 0, (freeBrushStampDef.brushImages || []).length - 1);
+  if (simpleBentoMode) freeBrushStampLevel = level;
   const tier = getGuideTierForStep();
   const item = addFreeLayoutItem(freeBrushStampDef, {
     x: point.x,
     y: point.y,
-    size: sizeByLevel[level] || freeBrushStampDef.size || 170,
+    size: simpleBentoMode ? getSimpleLeafFixedBrushSize(freeBrushStampDef) : (sizeByLevel[level] || freeBrushStampDef.size || 170),
     tier,
     brushLevel: level,
     layerGroup: getCabbageLayerGroup(tier),
@@ -14703,29 +14719,32 @@ function renderBrushStampControls() {
   panel.appendChild(preview);
   const actions = document.createElement('div');
   actions.className = 'free-brush-actions';
-  const sizeWrap = document.createElement('div');
-  sizeWrap.className = 'free-size-slider';
-  const sizeLabel = document.createElement('span');
-  sizeLabel.textContent = 'サイズ';
-  const sizeSlider = document.createElement('input');
-  sizeSlider.type = 'range';
-  sizeSlider.min = '0';
-  sizeSlider.max = '2';
-  sizeSlider.step = '1';
-  sizeSlider.value = String(clamp(freeBrushStampLevel, 0, 2));
-  sizeSlider.setAttribute('aria-label', 'サイズ');
-  const applyBrushSize = () => {
-    freeBrushStampLevel = clamp(Math.round(Number(sizeSlider.value) || 0), 0, 2);
-    renderFreeLayoutStage();
-    renderFreeLayoutControls();
-  };
-  sizeSlider.addEventListener('pointerdown', e => { e.stopPropagation(); });
-  sizeSlider.addEventListener('click', e => { e.stopPropagation(); });
-  sizeSlider.addEventListener('input', e => { e.stopPropagation(); applyBrushSize(); });
-  sizeSlider.addEventListener('change', e => { e.stopPropagation(); applyBrushSize(); });
-  sizeWrap.appendChild(sizeLabel);
-  sizeWrap.appendChild(sizeSlider);
-  actions.appendChild(sizeWrap);
+  if (simpleBentoMode) actions.style.gridTemplateColumns = '1fr';
+  if (!simpleBentoMode) {
+    const sizeWrap = document.createElement('div');
+    sizeWrap.className = 'free-size-slider';
+    const sizeLabel = document.createElement('span');
+    sizeLabel.textContent = 'サイズ';
+    const sizeSlider = document.createElement('input');
+    sizeSlider.type = 'range';
+    sizeSlider.min = '0';
+    sizeSlider.max = '2';
+    sizeSlider.step = '1';
+    sizeSlider.value = String(clamp(freeBrushStampLevel, 0, 2));
+    sizeSlider.setAttribute('aria-label', 'サイズ');
+    const applyBrushSize = () => {
+      freeBrushStampLevel = clamp(Math.round(Number(sizeSlider.value) || 0), 0, 2);
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    };
+    sizeSlider.addEventListener('pointerdown', e => { e.stopPropagation(); });
+    sizeSlider.addEventListener('click', e => { e.stopPropagation(); });
+    sizeSlider.addEventListener('input', e => { e.stopPropagation(); applyBrushSize(); });
+    sizeSlider.addEventListener('change', e => { e.stopPropagation(); applyBrushSize(); });
+    sizeWrap.appendChild(sizeLabel);
+    sizeWrap.appendChild(sizeSlider);
+    actions.appendChild(sizeWrap);
+  }
   actions.appendChild(makeSmallControlButton('OK', '', exitFreeBrushStampMode));
   panel.appendChild(actions);
   return panel;
