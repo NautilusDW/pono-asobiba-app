@@ -10552,6 +10552,11 @@ function getSimpleCanonicalSlotBoxId(boxId) {
   const id = String(boxId || '');
   return SIMPLE_SLOT_BOX_ALIASES[id] || id;
 }
+function getSimpleSlotLayoutEntryForBox(box) {
+  if (!box || !box.id || !freeSlotLayoutServerDefaults) return null;
+  const canonicalId = getSimpleCanonicalSlotBoxId(box.id);
+  return freeSlotLayoutServerDefaults[canonicalId] || freeSlotLayoutServerDefaults[box.id] || null;
+}
 function getSimpleSlotDefaultSourceBox(box) {
   const sourceId = SIMPLE_SLOT_DEFAULT_SOURCE_BOX_IDS[box && box.id] || SIMPLE_REFERENCE_BOX_ID;
   return bentoBoxes.find(b => b && b.id === sourceId) || null;
@@ -10687,12 +10692,12 @@ function normalizeSimpleSlotLayoutMap(map) {
 }
 function getSimpleSlotLayoutPoints(box, kind) {
   if (!box || !kind) return [];
-  const layout = freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
+  const layout = getSimpleSlotLayoutEntryForBox(box);
   const list = layout && Array.isArray(layout[kind]) ? layout[kind] : [];
   return list.map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
 }
 function getSimpleBoxGlobalScale(box = getSelectedBentoBox()) {
-  const layout = box && freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
+  const layout = getSimpleSlotLayoutEntryForBox(box);
   return normalizeSimpleBoxGlobalScale(layout && layout.globalScale);
 }
 function shouldApplySimpleBoxGlobalScale(def) {
@@ -10710,7 +10715,7 @@ function getSimpleBoxScaleForDef(def) {
   return shouldApplySimpleBoxGlobalScale(def) ? baseScale * getSimpleBoxGlobalScale() : baseScale;
 }
 function getSimpleSlotCountForBox(box, kind) {
-  const boxLayout = box && freeSlotLayoutServerDefaults && freeSlotLayoutServerDefaults[box.id];
+  const boxLayout = getSimpleSlotLayoutEntryForBox(box);
   const slotCounts = normalizeSimpleSlotCounts(boxLayout && boxLayout.slotCounts, box);
   if (slotCounts[kind]) return slotCounts[kind];
   return getDefaultSimpleSlotCountForBox(box, kind);
