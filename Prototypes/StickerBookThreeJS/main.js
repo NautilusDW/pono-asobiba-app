@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1019";
+const ASSET_VERSION = "20260701-1020";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -6458,6 +6458,21 @@ function renderStickerThumbnailTray() {
   fragment.append(title);
 
   disconnectStickerTrayImageObserver();
+  if (!stickerOptions.length) {
+    const empty = document.createElement("span");
+    empty.className = "sticker-tray-empty";
+    empty.textContent = "シールは まだありません";
+    empty.setAttribute("role", "status");
+    empty.setAttribute("aria-live", "polite");
+    fragment.append(empty);
+    collectionStickerTrayItems.replaceChildren(fragment);
+    updateStickerTutorialTraySilhouettes(false);
+    updateRaritySuperSilhouettes(false);
+    updateCollectionStickerTrayVisibility();
+    updateStickerTrayCounter();
+    return;
+  }
+
   for (const [index, sticker] of stickerOptions.entries()) {
     const button = document.createElement("button");
     button.type = "button";
@@ -7475,12 +7490,15 @@ function updateCollectionStickerTrayVisibility() {
     return;
   }
   const itemCount = activeAlbumMode === "collection" ? collectionStickerOptions.length : stickerOptions.length;
-  const modeAllowsTray = activeAlbumMode === "collection" || stickerEditMode;
+  const hasCatalogForStickerSource = activeAlbumMode !== "collection" && allStickerOptions.length > 0;
+  const hasVisibleItems = itemCount > 0;
+  const modeAllowsTray = activeAlbumMode === "collection"
+    ? hasVisibleItems
+    : stickerEditMode && (hasVisibleItems || hasCatalogForStickerSource);
   const visible = activeSurface === "inside"
     && !coverOpenAnimation
     && (!stickerEditor || stickerEditor.hidden)
-    && modeAllowsTray
-    && itemCount > 0;
+    && modeAllowsTray;
   collectionStickerTray.hidden = !visible;
   document.body.classList.toggle("is-collection-tray-visible", visible);
   if (!visible || activeAlbumMode === "collection") {

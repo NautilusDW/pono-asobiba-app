@@ -1282,6 +1282,24 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   filter: var(--sticker-thumbnail-outline-filter);
 }
 
+.sticker-tray-empty {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: min(230px, calc(100vw - 118px));
+  height: 58px;
+  box-sizing: border-box;
+  padding: 0 18px;
+  border: 1px dashed rgba(73, 116, 119, 0.34);
+  border-radius: 10px;
+  background: rgba(255, 251, 238, 0.9);
+  color: #365358;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 /* v1650 (task 3): 旧 body.is-sticker-tutorial-tray-silhouette blanket selector を撤去。
    旧仕様は チュート中ずっと「target 以外全 silhouette」 になっていたため、 daa5543 の
    「target ±2 内 SR のみ silhouette」 per-card class が二重塗りで効かず、 また place 以外の
@@ -3394,6 +3412,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     height: 46px;
   }
 
+  .sticker-tray-empty {
+    width: min(184px, calc(100vw - 90px));
+    height: 46px;
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
   .sticker-tray-drag-ghost {
     width: var(--sticker-tray-drag-ghost-size);
     height: var(--sticker-tray-drag-ghost-size);
@@ -3821,6 +3846,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     --sticker-tray-icon-pad: 4px;
     width: 54px;
     height: 42px;
+  }
+
+  .sticker-tray-empty {
+    width: min(168px, calc(100vw - 86px));
+    height: 42px;
+    padding: 0 10px;
+    font-size: 10px;
   }
 
   .sticker-tray-drag-ghost {
