@@ -40,6 +40,8 @@ body {
     drop-shadow(-1px 1px 0 rgba(255, 255, 255, 0.96))
     drop-shadow(1px -1px 0 rgba(255, 255, 255, 0.96))
     drop-shadow(-1px -1px 0 rgba(255, 255, 255, 0.96));
+  --sticker-tray-drag-ghost-size: clamp(190px, 30vmin, 280px);
+  --sticker-tray-drag-ghost-image-size: calc(var(--sticker-tray-drag-ghost-size) * 0.9);
 }
 
 #app {
@@ -1282,8 +1284,8 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   left: 0;
   top: 0;
   z-index: 30;
-  width: 126px;
-  height: 126px;
+  width: var(--sticker-tray-drag-ghost-size);
+  height: var(--sticker-tray-drag-ghost-size);
   display: grid;
   place-items: center;
   padding: 0;
@@ -1291,15 +1293,15 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  transform: translate(-50%, -50%) scale(1.04);
+  transform: translate(-50%, -50%);
   pointer-events: none;
   user-select: none;
 }
 
 .sticker-tray-drag-ghost img {
   display: block;
-  max-width: 112px;
-  max-height: 112px;
+  max-width: var(--sticker-tray-drag-ghost-image-size);
+  max-height: var(--sticker-tray-drag-ghost-image-size);
   object-fit: contain;
   filter: var(--sticker-thumbnail-outline-filter);
 }
@@ -3356,13 +3358,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .sticker-tray-drag-ghost {
-    width: 104px;
-    height: 104px;
+    width: var(--sticker-tray-drag-ghost-size);
+    height: var(--sticker-tray-drag-ghost-size);
   }
 
   .sticker-tray-drag-ghost img {
-    max-width: 94px;
-    max-height: 94px;
+    max-width: var(--sticker-tray-drag-ghost-image-size);
+    max-height: var(--sticker-tray-drag-ghost-image-size);
   }
 
   .inline-sticker-controls {
@@ -3784,13 +3786,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .sticker-tray-drag-ghost {
-    width: 96px;
-    height: 96px;
+    width: var(--sticker-tray-drag-ghost-size);
+    height: var(--sticker-tray-drag-ghost-size);
   }
 
   .sticker-tray-drag-ghost img {
-    max-width: 86px;
-    max-height: 86px;
+    max-width: var(--sticker-tray-drag-ghost-image-size);
+    max-height: var(--sticker-tray-drag-ghost-image-size);
   }
 
   body.is-collection-tray-visible .book-page-jump {

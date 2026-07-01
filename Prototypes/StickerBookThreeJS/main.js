@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1007";
+const ASSET_VERSION = "20260701-1009";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -74,9 +74,10 @@ const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
 const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const STICKER_TRAY_DRAG_THRESHOLD = 8;
-const STICKER_PEEL_DURATION = 0.78;
-const STICKER_PEEL_SEGMENTS_X = 18;
-const STICKER_PEEL_SEGMENTS_Y = 10;
+const STICKER_PLACEMENT_BASE_RATIO = 0.42;
+const STICKER_PEEL_DURATION = 1.12;
+const STICKER_PEEL_SEGMENTS_X = 14;
+const STICKER_PEEL_SEGMENTS_Y = 24;
 const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "bugs",
@@ -3022,14 +3023,14 @@ function stickerPlacementInset(placement) {
 function placementTextureBounds(placement) {
   const scale = sanitizedPlacementScale(placement?.scale);
   const aspect = stickerAspectForPlacement(placement);
-  const width = PAGE_TEXTURE_W * 0.18 * scale * 1.24;
+  const width = PAGE_TEXTURE_W * STICKER_PLACEMENT_BASE_RATIO * scale;
   const height = width / Math.max(0.2, aspect);
   const shrink = 1 - 2 * stickerPlacementInset(placement);
   return {
     x: (placement.x / 100) * PAGE_TEXTURE_W,
     y: (placement.y / 100) * PAGE_TEXTURE_H,
     width: width * shrink,
-    height: height * 1.24 * shrink,
+    height: height * shrink,
   };
 }
 
@@ -6556,7 +6557,10 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     return false;
   }
 
-  const texture = createStickerPeelTexture(paddedImage);
+  const frontTexture = createStickerPeelTexture(paddedImage);
+  const backTexture = createStickerPeelBackTexture(paddedImage);
+  const lipTexture = createStickerPeelLipTexture(paddedImage);
+  const shadowTexture = createStickerPeelShadowTexture(paddedImage);
   const geometry = new THREE.PlaneGeometry(
     dimensions.width,
     dimensions.height,
@@ -6564,44 +6568,82 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     STICKER_PEEL_SEGMENTS_Y,
   );
   prepareStickerPeelGeometry(geometry, dimensions.width, dimensions.height);
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
+  const lipHeight = dimensions.height * 0.34;
+  const lipGeometry = new THREE.PlaneGeometry(dimensions.width, lipHeight, STICKER_PEEL_SEGMENTS_X, 7);
+  prepareStickerPeelGeometry(lipGeometry, dimensions.width, lipHeight);
+  const frontMaterial = new THREE.MeshBasicMaterial({
+    map: frontTexture,
+    transparent: true,
+    side: THREE.FrontSide,
+    depthWrite: false,
+    alphaTest: 0.012,
+    opacity: 1,
+  });
+  const backMaterial = new THREE.MeshBasicMaterial({
+    map: backTexture,
+    transparent: true,
+    side: THREE.BackSide,
+    depthWrite: false,
+    alphaTest: 0.012,
+    opacity: 0.98,
+  });
+  const lipMaterial = new THREE.MeshBasicMaterial({
+    map: lipTexture,
     transparent: true,
     side: THREE.DoubleSide,
     depthWrite: false,
-    opacity: 1,
+    alphaTest: 0.01,
+    opacity: 0.92,
   });
-  const mesh = new THREE.Mesh(geometry, material);
+  const front = new THREE.Mesh(geometry, frontMaterial);
+  const back = new THREE.Mesh(geometry, backMaterial);
+  const lip = new THREE.Mesh(lipGeometry, lipMaterial);
+  const group = new THREE.Group();
+  lip.position.y = dimensions.height / 2 - lipHeight / 2;
+  lip.position.z = 0.012;
+  group.add(back, front, lip);
   const shadow = new THREE.Mesh(
     new THREE.PlaneGeometry(dimensions.width * 1.02, dimensions.height * 1.02, 1, 1),
     new THREE.MeshBasicMaterial({
+      map: shadowTexture,
       color: 0x2a1707,
       transparent: true,
-      opacity: 0.16,
+      opacity: 0.18,
       depthWrite: false,
+      alphaTest: 0.01,
     }),
   );
   const local = stickerPeelLocalPoint(placement);
   const rotation = THREE.MathUtils.degToRad(placement.rotation || 0);
-  mesh.position.set(pageMesh.position.x + local.x, local.y, 0.12);
-  mesh.rotation.z = rotation;
-  mesh.renderOrder = 96;
-  shadow.position.set(mesh.position.x, mesh.position.y - 0.012, 0.014);
+  group.position.set(pageMesh.position.x + local.x, local.y, 0.16);
+  group.rotation.z = rotation;
+  front.renderOrder = 98;
+  back.renderOrder = 97;
+  lip.renderOrder = 99;
+  shadow.position.set(group.position.x, group.position.y - 0.012, 0.014);
   shadow.rotation.z = rotation;
   shadow.renderOrder = 95;
   book.add(shadow);
-  book.add(mesh);
+  book.add(group);
 
   const animation = {
-    mesh,
+    group,
+    front,
+    back,
+    lip,
     shadow,
     geometry,
-    material,
-    texture,
+    lipGeometry,
+    frontMaterial,
+    backMaterial,
+    lipMaterial,
+    frontTexture,
+    backTexture,
+    lipTexture,
+    shadowTexture,
     elapsed: 0,
     duration: STICKER_PEEL_DURATION,
     onComplete,
-    curlSign: (placement.x || 50) > 50 ? -1 : 1,
   };
   stickerPeelAnimations.push(animation);
   bendStickerPeelGeometry(animation, 0);
@@ -6620,7 +6662,7 @@ function stickerPeelLocalPoint(placement) {
 
 function stickerPeelWorldDimensions(placement, image, paddedImage) {
   const scale = sanitizedPlacementScale(placement?.scale);
-  const baseW = PAGE_W * 0.18 * scale;
+  const baseW = PAGE_W * STICKER_PLACEMENT_BASE_RATIO * scale;
   const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
   const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
   const aspect = sourceWidth / sourceHeight;
@@ -6637,8 +6679,72 @@ function createStickerPeelTexture(paddedImage) {
   const textureCtx = textureCanvas.getContext("2d");
   drawStickerWhiteOutline(textureCtx, paddedImage, 0, 0, textureCanvas.width, textureCanvas.height);
   textureCtx.drawImage(paddedImage, 0, 0);
-  const texture = new THREE.CanvasTexture(textureCanvas);
+  return configureStickerCanvasTexture(new THREE.CanvasTexture(textureCanvas));
+}
+
+function createStickerPeelBackTexture(paddedImage) {
+  const textureCanvas = document.createElement("canvas");
+  textureCanvas.width = paddedImage.width;
+  textureCanvas.height = paddedImage.height;
+  const textureCtx = textureCanvas.getContext("2d");
+  textureCtx.drawImage(paddedImage, 0, 0);
+  textureCtx.globalCompositeOperation = "source-in";
+  const paper = textureCtx.createLinearGradient(0, 0, 0, textureCanvas.height);
+  paper.addColorStop(0, "#fffaf0");
+  paper.addColorStop(0.52, "#f7efd9");
+  paper.addColorStop(1, "#eadfc4");
+  textureCtx.fillStyle = paper;
+  textureCtx.fillRect(0, 0, textureCanvas.width, textureCanvas.height);
+  textureCtx.globalCompositeOperation = "source-over";
+  return configureStickerCanvasTexture(new THREE.CanvasTexture(textureCanvas));
+}
+
+function createStickerPeelLipTexture(paddedImage) {
+  const textureCanvas = document.createElement("canvas");
+  textureCanvas.width = paddedImage.width;
+  textureCanvas.height = Math.max(1, Math.round(paddedImage.height * 0.38));
+  const textureCtx = textureCanvas.getContext("2d");
+  textureCtx.drawImage(
+    paddedImage,
+    0,
+    0,
+    paddedImage.width,
+    textureCanvas.height,
+    0,
+    0,
+    textureCanvas.width,
+    textureCanvas.height,
+  );
+  textureCtx.globalCompositeOperation = "source-in";
+  const paper = textureCtx.createLinearGradient(0, 0, 0, textureCanvas.height);
+  paper.addColorStop(0, "#fffdf4");
+  paper.addColorStop(0.62, "#f3ead2");
+  paper.addColorStop(1, "#e3d5b7");
+  textureCtx.fillStyle = paper;
+  textureCtx.fillRect(0, 0, textureCanvas.width, textureCanvas.height);
+  textureCtx.globalCompositeOperation = "source-over";
+  return configureStickerCanvasTexture(new THREE.CanvasTexture(textureCanvas));
+}
+
+function createStickerPeelShadowTexture(paddedImage) {
+  const textureCanvas = document.createElement("canvas");
+  textureCanvas.width = paddedImage.width;
+  textureCanvas.height = paddedImage.height;
+  const textureCtx = textureCanvas.getContext("2d");
+  textureCtx.save();
+  textureCtx.globalAlpha = 0.7;
+  textureCtx.filter = "blur(8px) brightness(0)";
+  textureCtx.drawImage(paddedImage, 0, 0);
+  textureCtx.restore();
+  return configureStickerCanvasTexture(new THREE.CanvasTexture(textureCanvas));
+}
+
+function configureStickerCanvasTexture(texture) {
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.premultiplyAlpha = true;
   texture.needsUpdate = true;
   return texture;
 }
@@ -6674,6 +6780,9 @@ function bendStickerPeelGeometry(animation, progress) {
   const eased = smootherstep(progress);
   const remaining = 1 - eased;
   const press = Math.sin(progress * Math.PI);
+  const maxAngle = remaining * Math.PI * 1.05;
+  const radius = maxAngle > 0.001 ? height / maxAngle : height;
+  const anchorY = -height / 2;
   for (let i = 0; i < positions.count; i += 1) {
     const index = i * 3;
     const baseX = base[index];
@@ -6681,35 +6790,83 @@ function bendStickerPeelGeometry(animation, progress) {
     const baseZ = base[index + 2];
     const u = THREE.MathUtils.clamp(baseX / width + 0.5, 0, 1);
     const v = THREE.MathUtils.clamp(baseY / height + 0.5, 0, 1);
-    const peelU = animation.curlSign > 0 ? u : 1 - u;
-    const freeEdge = Math.pow(peelU, 1.35);
-    const centerFold = Math.sin(peelU * Math.PI);
-    const wrinkle = Math.sin((peelU * 2.4 + v * 0.7 + progress * 1.65) * Math.PI);
-    const curlZ = freeEdge * remaining * height * 0.46;
-    const rippleZ = wrinkle * centerFold * remaining * height * 0.026;
+    const bendT = Math.pow(v, 0.92);
+    const angle = maxAngle * bendT;
+    const curledY = maxAngle > 0.001 ? anchorY + Math.sin(angle) * radius : baseY;
+    const curledZ = maxAngle > 0.001 ? (1 - Math.cos(angle)) * radius : 0;
+    const center = Math.sin(v * Math.PI);
+    const verticalRipple = Math.sin((v * 3.15 - progress * 1.6) * Math.PI) * center * remaining * height * 0.026;
+    const sideFlutter = Math.sin((u - 0.5) * Math.PI * 2 + progress * Math.PI * 1.2) * center * remaining * width * 0.012;
+    const topSettle = Math.pow(v, 1.8) * Math.sin(progress * Math.PI * 2.2) * remaining * height * 0.018;
     positions.setXYZ(
       i,
-      baseX - animation.curlSign * freeEdge * remaining * width * 0.055 + animation.curlSign * centerFold * press * width * 0.012,
-      baseY + (v - 0.5) * centerFold * remaining * height * 0.045,
-      baseZ + curlZ + rippleZ,
+      baseX + sideFlutter,
+      curledY + topSettle,
+      baseZ + curledZ + verticalRipple,
     );
   }
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
-  const lift = remaining * 0.11;
-  animation.mesh.position.z = 0.018 + lift;
-  animation.mesh.scale.setScalar(1 + remaining * 0.045 - press * 0.018);
-  animation.mesh.material.opacity = 0.96 + press * 0.04;
-  animation.shadow.material.opacity = 0.04 + remaining * 0.14;
-  animation.shadow.scale.setScalar(1 + remaining * 0.08);
+  bendStickerPeelLipGeometry(animation, progress, remaining, press);
+  const lift = remaining * 0.2;
+  animation.group.position.z = 0.018 + lift;
+  animation.group.rotation.x = THREE.MathUtils.degToRad(-12 * remaining + 2 * press);
+  animation.group.scale.setScalar(1 + remaining * 0.03 - press * 0.012);
+  animation.frontMaterial.opacity = 0.96 + press * 0.04;
+  animation.backMaterial.opacity = 0.92;
+  animation.shadow.material.opacity = 0.03 + remaining * 0.16;
+  animation.shadow.scale.setScalar(1 + remaining * 0.1);
+}
+
+function bendStickerPeelLipGeometry(animation, progress, remaining, press) {
+  const geometry = animation.lipGeometry;
+  const positions = geometry?.attributes?.position;
+  const base = geometry?.userData?.basePositions;
+  const width = geometry?.userData?.peelWidth || 1;
+  const height = geometry?.userData?.peelHeight || 1;
+  if (!positions || !base) {
+    return;
+  }
+  const maxAngle = remaining * Math.PI * 0.92;
+  const radius = maxAngle > 0.001 ? height / maxAngle : height;
+  const anchorY = -height / 2;
+  for (let i = 0; i < positions.count; i += 1) {
+    const index = i * 3;
+    const baseX = base[index];
+    const baseY = base[index + 1];
+    const baseZ = base[index + 2];
+    const u = THREE.MathUtils.clamp(baseX / width + 0.5, 0, 1);
+    const v = THREE.MathUtils.clamp(baseY / height + 0.5, 0, 1);
+    const angle = maxAngle * Math.pow(v, 0.9);
+    const curlY = maxAngle > 0.001 ? anchorY + Math.sin(angle) * radius : baseY;
+    const curlZ = maxAngle > 0.001 ? (1 - Math.cos(angle)) * radius : 0;
+    const center = Math.sin(v * Math.PI);
+    positions.setXYZ(
+      i,
+      baseX + Math.sin((u - 0.5) * Math.PI * 2 + progress * Math.PI) * center * remaining * width * 0.008,
+      curlY + Math.pow(v, 1.4) * press * height * 0.02,
+      baseZ + curlZ + remaining * height * 0.035,
+    );
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+  animation.lip.position.y = (animation.geometry.userData.peelHeight || 1) / 2 - height / 2;
+  animation.lip.position.z = 0.016 + remaining * height * 0.06;
+  animation.lipMaterial.opacity = Math.max(0, remaining * 0.96);
 }
 
 function finishStickerPeelAnimation(animation) {
-  book.remove(animation.mesh);
+  book.remove(animation.group);
   book.remove(animation.shadow);
   animation.geometry.dispose();
-  animation.mesh.material.dispose();
-  animation.texture.dispose();
+  animation.lipGeometry.dispose();
+  animation.frontMaterial.dispose();
+  animation.backMaterial.dispose();
+  animation.lipMaterial.dispose();
+  animation.frontTexture.dispose();
+  animation.backTexture.dispose();
+  animation.lipTexture.dispose();
+  animation.shadowTexture.dispose();
   animation.shadow.geometry.dispose();
   animation.shadow.material.dispose();
   if (typeof animation.onComplete === "function") {
@@ -8987,12 +9144,6 @@ function nextPlacementZ(placements) {
 }
 
 function defaultStickerScale(sticker) {
-  if (/nori|ketchup/.test(sticker.id)) {
-    return 0.72;
-  }
-  if (/box_|rice_/.test(sticker.id)) {
-    return 1.18;
-  }
   return 1;
 }
 
@@ -11875,7 +12026,7 @@ function drawCollectionPlacementLayer(ctx, texture, pageNumber) {
 function drawAsyncCollectionPlacedSticker(ctx, texture, placement, pageNumber) {
   loadStickerImage(placement.assetUrl)
     .then((image) => {
-      const baseW = PAGE_TEXTURE_W * 0.18 * placement.scale;
+      const baseW = PAGE_TEXTURE_W * STICKER_PLACEMENT_BASE_RATIO * placement.scale;
       const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
       const drawW = baseW;
       const drawH = drawW / Math.max(0.2, aspect);
