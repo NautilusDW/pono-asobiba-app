@@ -2883,7 +2883,8 @@
     display: none;
     place-items: center;
     padding: clamp(12px, 3vw, 24px);
-    background: rgba(8, 24, 38, 0.46);
+    background: rgba(2, 6, 23, 0.68);
+    backdrop-filter: blur(2px);
     pointer-events: auto;
   }
   .rhythm-highscore-modal.show {
@@ -2896,11 +2897,14 @@
     display: grid;
     gap: 12px;
     padding: clamp(14px, 3vw, 22px);
-    border: 3px solid rgba(255,255,255,0.78);
+    border: 3px solid rgba(255,255,255,0.18);
     border-radius: 18px;
     background:
-      linear-gradient(180deg, rgba(255,255,255,0.96), rgba(240,249,255,0.94));
-    box-shadow: 0 18px 42px rgba(0,0,0,0.34);
+      radial-gradient(circle at 50% -18%, rgba(96,165,250,0.28), rgba(96,165,250,0) 44%),
+      linear-gradient(180deg, rgba(18,35,86,0.94), rgba(12,24,58,0.94));
+    color: #F8FAFC;
+    box-shadow: 0 18px 46px rgba(0,0,0,0.52), 0 0 0 1px rgba(255,255,255,0.06) inset;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.42);
   }
   .rhythm-highscore-head {
     display: flex;
@@ -2909,7 +2913,7 @@
     gap: 10px;
   }
   .rhythm-highscore-title {
-    color: #163B5A;
+    color: #FDE68A;
     font-size: clamp(1.1rem, 3vw, 1.38rem);
     font-weight: 900;
   }
@@ -2918,15 +2922,15 @@
     min-height: 40px;
     border: none;
     border-radius: 14px;
-    background: #E0F2FE;
-    color: #075985;
+    background: rgba(186,230,253,0.94);
+    color: #0B3B5A;
     font-family: inherit;
     font-size: .95rem;
     font-weight: 900;
     cursor: pointer;
   }
   .rhythm-highscore-context {
-    color: #31506F;
+    color: #CFFAFE;
     font-size: .92rem;
     font-weight: 900;
     text-align: center;
@@ -2938,10 +2942,11 @@
     gap: 8px;
     padding: 10px;
     border-radius: 14px;
-    background: rgba(224,242,254,0.72);
+    border: 1px solid rgba(125,211,252,0.28);
+    background: rgba(15,23,42,0.52);
   }
   .rhythm-highscore-name-form label {
-    color: #31506F;
+    color: #F8FAFC;
     font-size: .9rem;
     font-weight: 900;
     white-space: nowrap;
@@ -2949,10 +2954,11 @@
   .rhythm-highscore-name-input {
     min-width: 0;
     min-height: 40px;
-    border: 2px solid rgba(56,189,248,0.48);
+    border: 2px solid rgba(125,211,252,0.72);
     border-radius: 12px;
     padding: 8px 10px;
-    color: #163B5A;
+    background: rgba(248,250,252,0.96);
+    color: #0F172A;
     font-family: inherit;
     font-size: 1rem;
     font-weight: 900;
@@ -2966,6 +2972,7 @@
     color: #5D3A00;
     font-family: inherit;
     font-weight: 900;
+    box-shadow: 0 4px 0 rgba(146,64,14,0.45);
     cursor: pointer;
   }
   @media (max-width: 520px) {
@@ -9793,8 +9800,8 @@ function _ghLaneIdxToBtnIdx(laneIdx) {
 function _ghBtnIdxToLaneIdx(btnIdx) {
   return btnIdx;
 }
-// レーンコンテナの高さを「画面上端〜ヒットライン (=ボタン上端ぎりぎり)」に設定。
-// ノートは Y=0 (画面上端) から Y=hitY (ボタン上端にほぼ接する位置) まで落下する。
+// レーンコンテナの高さを「画面上端〜ヒットライン」に設定。
+// 3D鍵盤では実際のボタン絵が透明DOMの hitbox より下に描かれるため、見た目の上端へ寄せる。
 function _ghUpdateLanesGeometry() {
   var lanes = _ghLanesEl();
   if (!lanes) return;
@@ -9804,9 +9811,18 @@ function _ghUpdateLanesGeometry() {
   var stage = document.getElementById('stage');
   var stageRect = stage ? stage.getBoundingClientRect() : { top: 0, height: window.innerHeight };
   var btnTopInStage = rect.top - stageRect.top;
-  // 4px 高のライン下端がボタン上端にほぼ接するようにする。
-  // 余白を空けるとライン自体が押す場所に見えやすいため、ボタンへ寄せる。
-  var hitY = Math.max(40, btnTopInStage - 2);
+  if (document.body.classList.contains('rhythm-layout')) {
+    var btnBottom = parseFloat(getComputedStyle(anyBtn).bottom);
+    if (Number.isFinite(btnBottom)) {
+      btnTopInStage = stageRect.height - btnBottom - rect.height;
+    }
+  }
+  var visualBtnTopInStage = btnTopInStage;
+  if (document.body.classList.contains('webgl-rhythm')) {
+    visualBtnTopInStage += Math.max(24, Math.min(44, rect.height * 0.42));
+  }
+  // 4px 高のライン下端が、子どもに見えている鍵盤上端にほぼ接するようにする。
+  var hitY = Math.max(40, visualBtnTopInStage - 2);
   var vanishY = Math.max(34, Math.min(82, hitY * 0.105));
   var roadTop = Math.max(18, vanishY - 20);
   [lanes, _ghRoadEl()].forEach(function(el) {
