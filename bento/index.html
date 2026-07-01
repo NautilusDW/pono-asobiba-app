@@ -8264,6 +8264,17 @@ function renderDeliveryBento(host) {
       hideLid: true,
       sideBySideTiers: true,
     });
+    // ふた: お重の右端に立てかける演出 (createFreeCompleteLidStage は
+    // 積み上げモード + タップで閉める専用なのでここでは使わない)。
+    // z-index:-1 で常にお重の後ろ → 中身のおかずを隠すことはない。
+    const box = bentoBoxes.find(b => b.id === selectedBentoBoxId) || getSelectedBentoBox();
+    if (box && box.lidImage) {
+      const lid = document.createElement('img');
+      lid.className = 'bento-delivery__lid';
+      lid.src = box.lidImage;
+      lid.alt = 'ふた';
+      host.appendChild(lid);
+    }
     return;
   }
   const source = document.getElementById('complete-bento');
@@ -8301,6 +8312,13 @@ function showBentoDelivery(req, finalEval, onDone) {
     mood === 'happy' ? 'is-happy' :
     mood === 'almost' ? 'is-almost' : 'is-sad'
   );
+  // display:none 中の初回 render は host clientWidth=0 でマスク枠
+  // (getBoxMaskCanvasRectCss) が fallback してしまうため、 完成画面
+  // (_showCompleteOverlay) と同じく表示後に requestAnimationFrame で
+  // 再 render して正しい寸法で確定させる。
+  requestAnimationFrame(() => {
+    if (!ov.classList.contains('hidden')) renderDeliveryBento(bento);
+  });
 
   let advanced = false;
   const advance = (e) => {
