@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1024";
+const ASSET_VERSION = "20260701-1026";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -77,6 +77,7 @@ const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
 const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const STICKER_TRAY_DRAG_THRESHOLD = 8;
+const STICKER_TRAY_HOLD_PICKUP_MS = 180;
 const STICKER_TRAY_EAGER_IMAGE_COUNT = 18;
 const STICKER_TRAY_LAZY_ROOT_MARGIN = "120px 520px";
 const STICKER_PLACEMENT_BASE_RATIO = 0.42;
@@ -6288,6 +6289,10 @@ function setupCollectionStickerTray() {
     navigateCollectionTocCategory(categoryId);
   });
   collectionStickerTray.addEventListener("pointerdown", handleStickerTrayPointerDown);
+  collectionStickerTray.addEventListener("contextmenu", suppressStickerNativeMenu);
+  collectionStickerTray.addEventListener("selectstart", suppressStickerNativeMenu);
+  canvas?.addEventListener("contextmenu", suppressStickerNativeMenu);
+  canvas?.addEventListener("selectstart", suppressStickerNativeMenu);
   collectionStickerTray.addEventListener("dragstart", (event) => {
     if (event.target.closest?.("[data-sticker-tray-id]")) {
       event.preventDefault();
@@ -6662,7 +6667,13 @@ function handleStickerTrayPointerDown(event) {
     source: button,
     dragging: false,
     ghost: null,
+    holdTimer: 0,
+    lastX: event.clientX,
+    lastY: event.clientY,
   };
+  if (event.pointerType === "touch" || event.pointerType === "pen") {
+    scheduleStickerTrayHoldPickup(stickerTrayDragState);
+  }
   // v1646 (task 5): pointerdown 即時 preventDefault は廃止。
   // .sticker-tray-icon の touch-action: pan-x と組み合わせ、 横スライドは native scroll に委譲。
   // threshold (8px) を超えた pointermove 側 (handleStickerTrayPointerMove L~5976) で preventDefault する。
@@ -6679,6 +6690,8 @@ function handleStickerTrayPointerMove(event) {
   if (!state || event.pointerId !== state.pointerId) {
     return;
   }
+  state.lastX = event.clientX;
+  state.lastY = event.clientY;
   if (!state.dragging) {
     const dx = event.clientX - state.startX;
     const dy = event.clientY - state.startY;
@@ -6695,8 +6708,12 @@ function handleStickerTrayPointerMove(event) {
     );
     const verticalDrag = Math.abs(dy) > Math.abs(dx) * 0.62;
     if (!outsideTray && !verticalDrag) {
+      if (Math.abs(dx) > STICKER_TRAY_DRAG_THRESHOLD) {
+        cancelStickerTrayHoldPickup(state);
+      }
       return;
     }
+    cancelStickerTrayHoldPickup(state);
     startStickerTrayDrag(state, event);
   }
   event.preventDefault();
@@ -6705,6 +6722,7 @@ function handleStickerTrayPointerMove(event) {
 }
 
 function startStickerTrayDrag(state, event) {
+  cancelStickerTrayHoldPickup(state);
   state.dragging = true;
   suppressStickerTrayClick = true;
   playStickerSfx("pick");
@@ -6724,6 +6742,35 @@ function startStickerTrayDrag(state, event) {
   document.body.append(ghost);
   state.ghost = ghost;
   positionStickerTrayGhost(state, event.clientX, event.clientY);
+}
+
+function scheduleStickerTrayHoldPickup(state) {
+  if (!state || state.holdTimer) {
+    return;
+  }
+  state.holdTimer = window.setTimeout(() => {
+    state.holdTimer = 0;
+    if (stickerTrayDragState !== state || state.dragging) {
+      return;
+    }
+    startStickerTrayDrag(state, {
+      pointerId: state.pointerId,
+      clientX: state.lastX,
+      clientY: state.lastY,
+    });
+  }, STICKER_TRAY_HOLD_PICKUP_MS);
+}
+
+function cancelStickerTrayHoldPickup(state = stickerTrayDragState) {
+  if (!state?.holdTimer) {
+    return;
+  }
+  window.clearTimeout(state.holdTimer);
+  state.holdTimer = 0;
+}
+
+function suppressStickerNativeMenu(event) {
+  event.preventDefault();
 }
 
 function positionStickerTrayGhost(state, x, y) {
@@ -6833,6 +6880,7 @@ function endStickerTrayDrag(event) {
     }
   }
   cancelStickerTutorialDragPageTurn();
+  cancelStickerTrayHoldPickup(state);
   cleanupStickerTrayDrag(state.dragging);
 }
 
@@ -6844,6 +6892,7 @@ function cancelStickerTrayDrag(event) {
     return;
   }
   cancelStickerTutorialDragPageTurn();
+  cancelStickerTrayHoldPickup(stickerTrayDragState);
   cleanupStickerTrayDrag(stickerTrayDragState.dragging);
 }
 
@@ -6853,6 +6902,7 @@ function cleanupStickerTrayDrag(suppressClick = false) {
     return;
   }
   cancelStickerTutorialDragPageTurn();
+  cancelStickerTrayHoldPickup(state);
   state.source?.classList.remove("is-dragging");
   try {
     if (state.source?.hasPointerCapture?.(state.pointerId)) {
@@ -14985,6 +15035,7 @@ function setStickerEditMode(enabled, options = {}) {
   }
   if (!stickerEditMode) {
     selectedPlacementId = null;
+    cancelStickerTrayHoldPickup(stickerTrayDragState);
     stickerTrayDragState = null;
     setStickerTrayPeek(false);
     if (inlineStickerDragState) {
