@@ -1396,6 +1396,99 @@
       line-height: 1.5;
       text-align: center;
     }
+    .profile-card {
+      max-width: 390px;
+    }
+    .profile-note {
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border: 2px solid rgba(242, 145, 90, .28);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .62);
+      font-size: .86rem;
+      font-weight: 800;
+      color: var(--text-light);
+      line-height: 1.55;
+    }
+    .profile-form {
+      display: grid;
+      gap: 12px;
+    }
+    .profile-field {
+      display: grid;
+      gap: 6px;
+      color: var(--text);
+      font-size: .9rem;
+      font-weight: 900;
+    }
+    .profile-name-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+    .profile-input,
+    .profile-select {
+      width: 100%;
+      min-height: 44px;
+      border: 2px solid rgba(242, 145, 90, .42);
+      border-radius: 14px;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 900;
+      padding: 9px 12px;
+    }
+    .profile-random,
+    .profile-save {
+      min-height: 44px;
+      border: none;
+      border-radius: 14px;
+      font-family: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-random {
+      padding: 0 14px;
+      background: #E0F2FE;
+      color: #075985;
+      border: 2px solid #7DD3FC;
+    }
+    .profile-gender-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .profile-gender-btn {
+      min-height: 42px;
+      border: 2px solid rgba(242, 145, 90, .34);
+      border-radius: 14px;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
+      font-size: .86rem;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-gender-btn.is-active {
+      border-color: #F5A800;
+      background: #FFF3C4;
+      color: #6B4300;
+    }
+    .profile-save {
+      margin-top: 2px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      box-shadow: 0 3px 0 #B87200;
+      font-size: 1rem;
+    }
+    .profile-save:active,
+    .profile-random:active,
+    .profile-gender-btn:active {
+      transform: translateY(1px);
+    }
     .setting-row {
       display: flex;
       align-items: center;
@@ -6003,6 +6096,13 @@
             <span class="settings-action__sub" id="settingsBookUnlockSub">あいことばを いれる</span>
           </span>
         </button>
+        <button class="settings-action" id="settingsProfileBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">👤</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">プロフィール</span>
+            <span class="settings-action__sub" id="settingsProfileSub">なまえを かえる</span>
+          </span>
+        </button>
         <button class="settings-action" id="settingsRefreshBtn" type="button">
           <span class="settings-action__icon" aria-hidden="true">↻</span>
           <span class="settings-action__text">
@@ -6049,6 +6149,48 @@
       </div>
 
       <button class="modal-close" type="button" data-close="settingsModal">とじる</button>
+    </div>
+  </div>
+
+  <div class="modal profile-modal" id="profileModal" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+    <div class="modal-card profile-card">
+      <h3 id="profileTitle">プロフィール</h3>
+      <p class="profile-note">ゲームの なかで よぶためだけに つかうよ。そとには おくらないよ。</p>
+      <form class="profile-form" id="profileForm">
+        <label class="profile-field" for="profileNameInput">
+          <span>なまえ</span>
+          <span class="profile-name-row">
+            <input class="profile-input" id="profileNameInput" type="text" maxlength="8" autocomplete="off" inputmode="text" value="ポノ">
+            <button class="profile-random" id="profileRandomBtn" type="button">ランダム</button>
+          </span>
+        </label>
+        <div class="profile-field">
+          <span>せいべつ</span>
+          <div class="profile-gender-group" id="profileGenderGroup" role="radiogroup" aria-label="せいべつ">
+            <button class="profile-gender-btn is-active" type="button" data-gender="none" role="radio" aria-checked="true">えらばない</button>
+            <button class="profile-gender-btn" type="button" data-gender="girl" role="radio" aria-checked="false">おんなのこ</button>
+            <button class="profile-gender-btn" type="button" data-gender="boy" role="radio" aria-checked="false">おとこのこ</button>
+          </div>
+        </div>
+        <label class="profile-field" for="profileAgeSelect">
+          <span>ねんれい</span>
+          <select class="profile-select" id="profileAgeSelect">
+            <option value="">えらばない</option>
+            <option value="2">2さい</option>
+            <option value="3">3さい</option>
+            <option value="4">4さい</option>
+            <option value="5">5さい</option>
+            <option value="6">6さい</option>
+            <option value="7">7さい</option>
+            <option value="8">8さい</option>
+            <option value="9">9さい</option>
+            <option value="10">10さい</option>
+            <option value="11">11さい</option>
+            <option value="12">12さい</option>
+          </select>
+        </label>
+        <button class="profile-save" type="submit">OK</button>
+      </form>
     </div>
   </div>
 
@@ -6800,7 +6942,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1875;
+    const PAGE_CACHE_VERSION = 1876;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -7323,6 +7465,7 @@
       startGame(idx);
     }
 
+    let pendingProfileStartIdx = null;
     function startGame(idx) {
       if (isTapIntroBlockingInput()) return;
       const game = MENU_GAMES[idx];
@@ -7332,6 +7475,11 @@
       // without flipping comingSoon off (which would also hide the badge).
       const blocked = game.comingSoon && !game.debugPlayable;
       if (blocked || !game.href || game.href === '#') return;
+      if (window.PonoPlayerProfile && !window.PonoPlayerProfile.hasProfile()) {
+        pendingProfileStartIdx = idx;
+        window.PonoPlayerProfile.open();
+        return;
+      }
       try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
       location.href = game.href;
     }
@@ -10390,6 +10538,155 @@
         e.target.hidden = true;
       }
     });
+
+    // ===== Player profile (local-only, used by games for names/scores) =====
+    (function () {
+      const PROFILE_KEY = 'pono_player_profile_v1';
+      const RANDOM_NAMES = ['ポノ', 'そら', 'はな', 'ゆう', 'まる', 'ココ', 'ミミ', 'ルル', 'ナナ', 'トト', 'モモ', 'ララ'];
+      const profileModal = document.getElementById('profileModal');
+      const profileForm = document.getElementById('profileForm');
+      const profileNameInput = document.getElementById('profileNameInput');
+      const profileRandomBtn = document.getElementById('profileRandomBtn');
+      const profileAgeSelect = document.getElementById('profileAgeSelect');
+      const profileGenderGroup = document.getElementById('profileGenderGroup');
+      const settingsProfileBtn = document.getElementById('settingsProfileBtn');
+      const settingsProfileSub = document.getElementById('settingsProfileSub');
+      let profileGender = 'none';
+
+      function sanitizeProfileName(name) {
+        const text = String(name || '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
+        return Array.from(text || 'ポノ').slice(0, 8).join('');
+      }
+      function normalizeGender(value) {
+        return value === 'girl' || value === 'boy' ? value : 'none';
+      }
+      function normalizeAge(value) {
+        const age = parseInt(value, 10);
+        return age >= 2 && age <= 12 ? String(age) : '';
+      }
+      function defaultProfile() {
+        return { name: 'ポノ', gender: 'none', age: '' };
+      }
+      function loadProfile() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+          if (parsed && typeof parsed === 'object') {
+            return {
+              name: sanitizeProfileName(parsed.name),
+              gender: normalizeGender(parsed.gender),
+              age: normalizeAge(parsed.age)
+            };
+          }
+        } catch (_) {}
+        return defaultProfile();
+      }
+      function hasProfile() {
+        try { return !!localStorage.getItem(PROFILE_KEY); } catch (_) { return false; }
+      }
+      function saveProfile(profile) {
+        const next = {
+          name: sanitizeProfileName(profile && profile.name),
+          gender: normalizeGender(profile && profile.gender),
+          age: normalizeAge(profile && profile.age),
+          updatedAt: new Date().toISOString()
+        };
+        try { localStorage.setItem(PROFILE_KEY, JSON.stringify(next)); } catch (_) {}
+        updateProfileSettingsLabel(next);
+        return next;
+      }
+      function updateProfileSettingsLabel(profile) {
+        if (!settingsProfileSub) return;
+        profile = profile || loadProfile();
+        settingsProfileSub.textContent = (profile.name || 'ポノ') + 'で あそぶ';
+      }
+      function setGender(value) {
+        profileGender = normalizeGender(value);
+        if (!profileGenderGroup) return;
+        profileGenderGroup.querySelectorAll('[data-gender]').forEach((btn) => {
+          const active = btn.dataset.gender === profileGender;
+          btn.classList.toggle('is-active', active);
+          btn.setAttribute('aria-checked', active ? 'true' : 'false');
+        });
+      }
+      function fillProfileForm(profile) {
+        profile = profile || loadProfile();
+        if (profileNameInput) profileNameInput.value = profile.name || 'ポノ';
+        if (profileAgeSelect) profileAgeSelect.value = profile.age || '';
+        setGender(profile.gender);
+      }
+      function openProfileModal() {
+        fillProfileForm(loadProfile());
+        openModal('profileModal');
+        setTimeout(() => {
+          try { profileNameInput && profileNameInput.focus(); profileNameInput && profileNameInput.select(); } catch (_) {}
+        }, 80);
+      }
+      function maybeOpenFirstProfile() {
+        if (hasProfile() || !profileModal) return;
+        const intro = document.getElementById('tapIntro');
+        const portraitWarn = document.getElementById('portraitWarn');
+        if (document.body.classList.contains('tap-intro-open') || (intro && !intro.hidden) || (portraitWarn && !portraitWarn.hidden)) {
+          setTimeout(maybeOpenFirstProfile, 700);
+          return;
+        }
+        openProfileModal();
+      }
+
+      if (profileGenderGroup) {
+        profileGenderGroup.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-gender]');
+          if (!btn) return;
+          e.preventDefault();
+          setGender(btn.dataset.gender);
+        });
+      }
+      if (profileRandomBtn) {
+        profileRandomBtn.addEventListener('click', () => {
+          if (!profileNameInput) return;
+          const idx = Math.floor(Math.random() * RANDOM_NAMES.length);
+          profileNameInput.value = RANDOM_NAMES[idx] || 'ポノ';
+          try { profileNameInput.focus(); profileNameInput.select(); } catch (_) {}
+        });
+      }
+      if (profileForm) {
+        profileForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          saveProfile({
+            name: profileNameInput ? profileNameInput.value : 'ポノ',
+            gender: profileGender,
+            age: profileAgeSelect ? profileAgeSelect.value : ''
+          });
+          closeModal('profileModal');
+          if (pendingProfileStartIdx != null) {
+            const idx = pendingProfileStartIdx;
+            pendingProfileStartIdx = null;
+            setTimeout(() => startGame(idx), 0);
+          }
+        });
+      }
+      if (profileModal) {
+        profileModal.addEventListener('click', (e) => {
+          if (e.target === profileModal) pendingProfileStartIdx = null;
+        });
+      }
+      if (settingsProfileBtn) {
+        settingsProfileBtn.addEventListener('click', () => {
+          closeModal('settingsModal');
+          pendingProfileStartIdx = null;
+          openProfileModal();
+        });
+      }
+
+      window.PonoPlayerProfile = {
+        key: PROFILE_KEY,
+        get: loadProfile,
+        save: saveProfile,
+        hasProfile: hasProfile,
+        open: openProfileModal
+      };
+      updateProfileSettingsLabel(loadProfile());
+      setTimeout(maybeOpenFirstProfile, 900);
+    })();
 
     // ===== Settings: app refresh entry =====
     const settingsRefreshBtn = document.getElementById('settingsRefreshBtn');

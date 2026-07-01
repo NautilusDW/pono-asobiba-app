@@ -2876,6 +2876,108 @@
     font-size: 0.82rem;
     font-weight: 900;
   }
+  .rhythm-highscore-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 34;
+    display: none;
+    place-items: center;
+    padding: clamp(12px, 3vw, 24px);
+    background: rgba(8, 24, 38, 0.46);
+    pointer-events: auto;
+  }
+  .rhythm-highscore-modal.show {
+    display: grid;
+  }
+  .rhythm-highscore-panel {
+    width: min(540px, 100%);
+    max-height: min(86vh, 620px);
+    overflow-y: auto;
+    display: grid;
+    gap: 12px;
+    padding: clamp(14px, 3vw, 22px);
+    border: 3px solid rgba(255,255,255,0.78);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.96), rgba(240,249,255,0.94));
+    box-shadow: 0 18px 42px rgba(0,0,0,0.34);
+  }
+  .rhythm-highscore-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .rhythm-highscore-title {
+    color: #163B5A;
+    font-size: clamp(1.1rem, 3vw, 1.38rem);
+    font-weight: 900;
+  }
+  .rhythm-highscore-close {
+    min-width: 76px;
+    min-height: 40px;
+    border: none;
+    border-radius: 14px;
+    background: #E0F2FE;
+    color: #075985;
+    font-family: inherit;
+    font-size: .95rem;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  .rhythm-highscore-context {
+    color: #31506F;
+    font-size: .92rem;
+    font-weight: 900;
+    text-align: center;
+  }
+  .rhythm-highscore-name-form {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(224,242,254,0.72);
+  }
+  .rhythm-highscore-name-form label {
+    color: #31506F;
+    font-size: .9rem;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .rhythm-highscore-name-input {
+    min-width: 0;
+    min-height: 40px;
+    border: 2px solid rgba(56,189,248,0.48);
+    border-radius: 12px;
+    padding: 8px 10px;
+    color: #163B5A;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 900;
+  }
+  .rhythm-highscore-name-save {
+    min-width: 64px;
+    min-height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: #FACC15;
+    color: #5D3A00;
+    font-family: inherit;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  @media (max-width: 520px) {
+    .rhythm-ranking-row {
+      grid-template-columns: 24px 34px minmax(0, 1fr) 76px;
+      gap: 5px;
+      padding-inline: 7px;
+    }
+    .rhythm-highscore-name-form {
+      grid-template-columns: 1fr;
+    }
+  }
   @keyframes rhythmRankPulse {
     0%, 100% { box-shadow: 0 0 0 2px rgba(250,204,21,0.7), 0 4px 10px rgba(250,204,21,0.28); }
     50% { box-shadow: 0 0 0 3px rgba(250,204,21,0.95), 0 6px 16px rgba(250,204,21,0.45); }
@@ -3178,6 +3280,58 @@
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+  .oto-top-action {
+    min-width: 78px;
+    height: 44px;
+    border: 2px solid rgba(255,255,255,0.78);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.88);
+    color: #3f2a18;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .oto-top-action:active {
+    transform: translateY(1px) scale(0.98);
+  }
+  .oto-top-action[disabled] {
+    opacity: .62;
+    cursor: not-allowed;
+  }
+  .oto-top-action-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+  .oto-top-action-label {
+    white-space: nowrap;
+  }
+  @media (max-width: 640px) {
+    .sets-collapsed {
+      gap: 4px;
+      right: max(8px, env(safe-area-inset-right));
+    }
+    .oto-top-action {
+      min-width: 44px;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+    }
+    .oto-top-action-label {
+      display: none;
+    }
+    .sets-collapsed .set-trigger {
+      width: 50px;
+      height: 50px;
+    }
   }
 
   /* 共通メニューの左上ボタンは Oto では使わず、右上の単一せっていボタンにまとめる。 */
@@ -5363,6 +5517,12 @@
 
     <!-- せっていメニュー (右上、戻る/表記/スケールを集約) -->
     <div class="sets-collapsed" id="sets">
+      <button class="oto-top-action" id="oto-top-highscores" type="button" aria-label="ハイスコア">
+        <span class="oto-top-action-icon" aria-hidden="true">🏆</span><span class="oto-top-action-label">ハイスコア</span>
+      </button>
+      <button class="oto-top-action" id="oto-top-stage-select" type="button" aria-label="ステージを えらぶ">
+        <span class="oto-top-action-icon" aria-hidden="true">🎼</span><span class="oto-top-action-label">ステージ</span>
+      </button>
       <button class="set-trigger" id="set-trigger" type="button" aria-label="せってい"></button>
       <div class="set-popover" id="set-popover">
         <button class="oto-menu-item" id="oto-menu-home" type="button">
@@ -5552,13 +5712,30 @@
         </div>
         <div class="rhythm-result-main-actions" id="rhythm-result-main-actions">
           <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
-            <button class="rhythm-complete-btn ranking" id="rhythm-show-ranking">ハイスコア</button>
             <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
-            <button class="rhythm-complete-btn again" id="rhythm-complete-again">もういっかい</button>
             <button class="rhythm-complete-btn demo" id="rhythm-complete-demo">おてほん</button>
-            <button class="rhythm-complete-btn select" id="rhythm-complete-select">きょくをえらぶ</button>
             <button class="rhythm-complete-btn next hidden" id="rhythm-complete-next">つぎのパート</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rhythm-highscore-modal" id="rhythm-highscore-modal" role="dialog" aria-modal="true" aria-label="ハイスコア">
+      <div class="rhythm-highscore-panel">
+        <div class="rhythm-highscore-head">
+          <div class="rhythm-highscore-title">ハイスコア</div>
+          <button class="rhythm-highscore-close" id="rhythm-highscore-close" type="button">とじる</button>
+        </div>
+        <div class="rhythm-highscore-context" id="rhythm-highscore-context">いまの ステージ</div>
+        <form class="rhythm-highscore-name-form" id="rhythm-highscore-name-form">
+          <label for="rhythm-highscore-name-input">なまえ</label>
+          <input class="rhythm-highscore-name-input" id="rhythm-highscore-name-input" type="text" maxlength="8" autocomplete="off" inputmode="text" value="ポノ">
+          <button class="rhythm-highscore-name-save" type="submit">かえる</button>
+        </form>
+        <div class="rhythm-ranking" id="rhythm-highscore-ranking">
+          <div class="rhythm-ranking-title" id="rhythm-highscore-ranking-title">ハイスコア</div>
+          <div class="rhythm-ranking-outside" id="rhythm-highscore-ranking-outside"></div>
+          <div class="rhythm-ranking-list" id="rhythm-highscore-ranking-list"></div>
         </div>
       </div>
     </div>
@@ -6895,25 +7072,25 @@ var RHYTHM_SONGS = [
         name: '1',
         note: 'いくよ',
         notes: [RPN.C, RPN.E, RPN.F, RPN.G, RPN.C, RPN.E, RPN.F, RPN.G],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1]
+        beats: [1, 1, 1, 3, 1, 1, 1, 3]
       },
       {
         name: '2',
         note: 'こうしん',
         notes: [RPN.C, RPN.E, RPN.F, RPN.G, RPN.E, RPN.C, RPN.E, RPN.D],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1]
+        beats: [1, 1, 1, 1, 1, 1, 1, 3]
       },
       {
         name: '3',
         note: 'おなじ おと',
         notes: [RPN.E, RPN.E, RPN.D, RPN.C, RPN.C, RPN.E, RPN.G, RPN.G, RPN.F],
-        beats: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        beats: [1, 1, 1, 1, 1, 1, 1, 1, 3]
       },
       {
         name: '4',
         note: 'おしまい',
         notes: [RPN.E, RPN.F, RPN.G, RPN.E, RPN.C, RPN.D, RPN.C],
-        beats: [1, 1, 1, 1, 1, 1, 1]
+        beats: [1, 1, 1, 1, 1, 1, 4]
       }
     ]
   }
@@ -7260,6 +7437,7 @@ var _rhythm = {
   maxStreak: 0,
   score: 0,
   pendingScoreEntry: null,
+  lastSavedScoreEntry: null,
   pendingStickerResult: null,
   pendingStickerPromise: null,
   feverLevel: 0,
@@ -7620,6 +7798,37 @@ function _sanitizeRhythmName(name) {
   if (!text) text = 'ポノ';
   return Array.from(text).slice(0, 8).join('');
 }
+function _loadOtoPlayerProfile() {
+  try {
+    var parsed = JSON.parse(localStorage.getItem('pono_player_profile_v1') || 'null');
+    if (parsed && typeof parsed === 'object') {
+      return {
+        name: _sanitizeRhythmName(parsed.name),
+        gender: parsed.gender || 'none',
+        age: parsed.age || ''
+      };
+    }
+  } catch(e) {}
+  return { name: 'ポノ', gender: 'none', age: '' };
+}
+function _saveOtoPlayerProfileName(name) {
+  var clean = _sanitizeRhythmName(name);
+  var profile = _loadOtoPlayerProfile();
+  profile.name = clean;
+  profile.updatedAt = new Date().toISOString();
+  try { localStorage.setItem('pono_player_profile_v1', JSON.stringify(profile)); } catch(e) {}
+  try { localStorage.setItem(RHYTHM_SCORE_NAME_KEY, clean); } catch(e) {}
+  return clean;
+}
+function _rhythmCurrentPlayerName() {
+  var profile = _loadOtoPlayerProfile();
+  if (profile && profile.name) return _sanitizeRhythmName(profile.name);
+  try {
+    var legacy = localStorage.getItem(RHYTHM_SCORE_NAME_KEY);
+    if (legacy) return _sanitizeRhythmName(legacy);
+  } catch(e) {}
+  return 'ポノ';
+}
 function _compareRhythmScoreEntries(a, b) {
   var scoreDiff = (b.score || 0) - (a.score || 0);
   if (scoreDiff) return scoreDiff;
@@ -7669,8 +7878,9 @@ function _saveRhythmScoreEntry(entry, name) {
   var key = entry.key;
   var list = Array.isArray(scores[key]) ? scores[key].slice() : [];
   if (!entry.id) entry.id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  var playerName = _sanitizeRhythmName(name || _rhythmCurrentPlayerName());
   var saved = Object.assign({}, entry, {
-    name: _sanitizeRhythmName(name),
+    name: playerName,
     date: entry.date || new Date().toISOString()
   });
   list.push(saved);
@@ -7680,6 +7890,24 @@ function _saveRhythmScoreEntry(entry, name) {
   try { localStorage.setItem(RHYTHM_SCORE_NAME_KEY, saved.name); } catch(e) {}
   var rank = scores[key].findIndex(function(item) { return item.id === saved.id; });
   return rank >= 0 ? rank + 1 : 0;
+}
+function _updateRhythmScoreEntryName(key, id, name) {
+  if (!key || !id) return false;
+  var scores = _loadRhythmScores();
+  var list = Array.isArray(scores[key]) ? scores[key].slice() : [];
+  var clean = _sanitizeRhythmName(name);
+  var changed = false;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && list[i].id === id) {
+      list[i] = Object.assign({}, list[i], { name: clean });
+      changed = true;
+      break;
+    }
+  }
+  if (!changed) return false;
+  scores[key] = list;
+  _saveRhythmScores(scores);
+  return true;
 }
 function _rhythmSongCleared(song, progress) {
   progress = progress || _loadRhythmProgress();
@@ -10053,16 +10281,17 @@ function _rhythmPreviewRank(key, candidate) {
   var idx = list.findIndex(function(item) { return item === candidate; });
   return idx >= 0 ? idx + 1 : 0;
 }
-function _renderRhythmLeaderboard(key, currentId, options) {
-  var box = document.getElementById('rhythm-ranking');
-  var title = document.getElementById('rhythm-ranking-title');
-  var listEl = document.getElementById('rhythm-ranking-list');
-  var outside = document.getElementById('rhythm-ranking-outside');
-  if (!box || !listEl) return;
+function _renderRhythmLeaderboardInto(target, key, currentId, options) {
+  target = target || {};
+  var box = target.box;
+  var title = target.title;
+  var listEl = target.listEl;
+  var outside = target.outside;
+  if (!listEl) return;
   options = options || {};
   var lookupKey = key || _rhythmScoreKey();
   var list = _rhythmLeaderboard(lookupKey);
-  box.classList.remove('hidden');
+  if (box) box.classList.remove('hidden');
   if (title) title.textContent = 'ハイスコア ' + _rhythmScoreTitle();
   // Outside-top-10 callout: current run did not qualify.
   // The actual rank number is meaningless here (preview only has top-10 + 1
@@ -10120,6 +10349,47 @@ function _renderRhythmLeaderboard(key, currentId, options) {
       try { currentEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e) {}
     }
   }
+}
+function _renderRhythmLeaderboard(key, currentId, options) {
+  _renderRhythmLeaderboardInto({
+    box: document.getElementById('rhythm-ranking'),
+    title: document.getElementById('rhythm-ranking-title'),
+    listEl: document.getElementById('rhythm-ranking-list'),
+    outside: document.getElementById('rhythm-ranking-outside')
+  }, key, currentId, options);
+}
+function _recentRhythmScoreRefForNameEdit() {
+  var ref = _rhythm && _rhythm.lastSavedScoreEntry;
+  if (!ref || !ref.key || !ref.id) return null;
+  if (ref.key !== _rhythmScoreKey()) return null;
+  if (Date.now() - (ref.at || 0) > 10 * 60 * 1000) return null;
+  return ref;
+}
+function _renderRhythmHighscoreBoard(currentId) {
+  var context = document.getElementById('rhythm-highscore-context');
+  if (context) context.textContent = _rhythmScoreTitle();
+  _renderRhythmLeaderboardInto({
+    box: document.getElementById('rhythm-highscore-ranking'),
+    title: document.getElementById('rhythm-highscore-ranking-title'),
+    listEl: document.getElementById('rhythm-highscore-ranking-list'),
+    outside: document.getElementById('rhythm-highscore-ranking-outside')
+  }, _rhythmScoreKey(), currentId || null, {});
+}
+function _showRhythmHighscoreModal() {
+  var modal = document.getElementById('rhythm-highscore-modal');
+  if (!modal) return;
+  var input = document.getElementById('rhythm-highscore-name-input');
+  if (input) input.value = _rhythmCurrentPlayerName();
+  var ref = _recentRhythmScoreRefForNameEdit();
+  _renderRhythmHighscoreBoard(ref ? ref.id : null);
+  modal.classList.add('show');
+  setTimeout(function() {
+    try { input && input.focus(); input && input.select(); } catch(e) {}
+  }, 80);
+}
+function _hideRhythmHighscoreModal() {
+  var modal = document.getElementById('rhythm-highscore-modal');
+  if (modal) modal.classList.remove('show');
 }
 function _escapeHtml(text) {
   return String(text == null ? '' : text).replace(/[&<>"']/g, function(ch) {
@@ -10292,10 +10562,8 @@ function _showRhythmComplete(result) {
   if (clearedFullSong && window.addAcornsDaily) {
     var _otoGranted = window.addAcornsDaily('oto', 5, 5, { reason: 'oto_clear', suppressRewardModal: true }) || 0;
     if (_otoGranted > 0 && window.PonoAcornModal) {
-      // batch913 Fix-B: どんぐりモーダルは ハイスコア ネームフォームの提出 / スキップ
-      // 後に出す (qualifies=true の場合)。 圏外 (qualifies=false) なら _showRhythmComplete
-      // 末尾で 1 秒後に発火する。 どちらの経路でも _maybeFireOtoAcornModal() が 1 回だけ
-      // 発火する設計 (stash + flag で二重発火防止)。
+      // ハイスコアは自動保存するため、結果表示後に少し待ってから
+      // どんぐりモーダルを 1 回だけ発火する (stash + flag で二重発火防止)。
       var _otoAcornDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
       var _otoAcornDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
       var _otoAcornIsCapped = (_otoAcornDailyTotal != null) && (_otoAcornDailyTotal >= _otoAcornDailyCap);
@@ -10316,7 +10584,6 @@ function _showRhythmComplete(result) {
   var text = document.getElementById('rhythm-complete-text');
   var actions = document.getElementById('rhythm-complete-actions');
   var next = document.getElementById('rhythm-complete-next');
-  var select = document.getElementById('rhythm-complete-select');
   var demo = document.getElementById('rhythm-complete-demo');
   if (!complete) return;
   complete.classList.toggle('stage-clear', clearedFullSong);
@@ -10327,26 +10594,11 @@ function _showRhythmComplete(result) {
   }
   _renderRhythmResultStars(stars);
   _renderRhythmScoreSummary(scoreEntry);
-  // If the current run does not qualify for top-10, preview its rank so kids see
-  // where they would have landed (e.g. "今回 12い").
-  var qualifies = _rhythmScoreQualifies(scoreEntry.key, scoreEntry.score);
-  var outsideRank = 0;
-  if (!qualifies) {
-    outsideRank = _rhythmPreviewRank(scoreEntry.key, {
-      score: scoreEntry.score,
-      misses: scoreEntry.misses,
-      just: scoreEntry.just,
-      date: scoreEntry.date
-    });
-  }
-  _renderRhythmLeaderboard(scoreEntry.key, null, { outsideRank: outsideRank });
-  _prepareRhythmNameForm(scoreEntry);
-  // v1116: ハイスコア入賞時はネームフォームを最優先表示 (body class でゲート)
-  if (qualifies) {
-    document.body.classList.add('rhythm-namegate');
-  } else {
-    document.body.classList.remove('rhythm-namegate');
-  }
+  var savedRank = _saveRhythmScoreEntry(scoreEntry, _rhythmCurrentPlayerName());
+  _rhythm.lastSavedScoreEntry = savedRank ? { key: scoreEntry.key, id: scoreEntry.id, at: Date.now() } : null;
+  _renderRhythmLeaderboard(scoreEntry.key, savedRank ? scoreEntry.id : null, {});
+  _prepareRhythmNameForm(null);
+  document.body.classList.remove('rhythm-namegate');
   if (text) {
     text.textContent = clearedFullSong ? 'ステージ クリア！' : 'ブロック クリア！';
     text.classList.remove('show'); // v1108: 初期 (900ms 経過まで) は非表示。下の setTimeout で .show
@@ -10356,7 +10608,6 @@ function _showRhythmComplete(result) {
     next.textContent = hasNextPart ? 'つぎのパート' : 'つぎのステージ';
     next.classList.toggle('hidden', !(hasNextPart || nextStageSong));
   }
-  if (select) select.classList.remove('hidden');
   if (demo) demo.classList.remove('hidden');
   complete.classList.add('show');
   _updateRhythmVictoryRival(clearedFullSong);
@@ -10375,10 +10626,7 @@ function _showRhythmComplete(result) {
     }
     if (actions) actions.classList.remove('hidden');
   }, 900));
-  // batch913 Fix-B: 圏外 (qualifies=false) のときは ネームフォームが出ないので
-  // 1 秒後に直接 どんぐりモーダルを発火。 qualifies=true の場合は name-form の
-  // submit/skip handler で _maybeFireOtoAcornModal() が呼ばれる。
-  if (clearedFullSong && !qualifies) {
+  if (clearedFullSong) {
     _rhythm.completeTimers.push(setTimeout(function() {
       _maybeFireOtoAcornModal();
     }, 1000));
@@ -11512,6 +11760,29 @@ if (rhythmMenuBack) rhythmMenuBack.addEventListener('click', function(e) {
     });
     observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
   }
+})();
+(function() {
+  var modal = document.getElementById('rhythm-highscore-modal');
+  var closeBtn = document.getElementById('rhythm-highscore-close');
+  var form = document.getElementById('rhythm-highscore-name-form');
+  var input = document.getElementById('rhythm-highscore-name-input');
+  if (closeBtn) closeBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    _hideRhythmHighscoreModal();
+  });
+  if (modal) modal.addEventListener('click', function(e) {
+    if (e.target === modal) _hideRhythmHighscoreModal();
+  });
+  if (form) form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var name = _saveOtoPlayerProfileName(input ? input.value : 'ポノ');
+    if (input) input.value = name;
+    var ref = _recentRhythmScoreRefForNameEdit();
+    if (ref) _updateRhythmScoreEntryName(ref.key, ref.id, name);
+    _renderRhythmHighscoreBoard(ref ? ref.id : null);
+  });
 })();
 var rhythmCompleteAgain = document.getElementById('rhythm-complete-again');
 if (rhythmCompleteAgain) rhythmCompleteAgain.addEventListener('click', function(e) {
@@ -14849,6 +15120,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   var tutorialBtn = document.getElementById('oto-menu-tutorial');
   var tutorialToggleBtn = document.getElementById('oto-menu-tutorial-toggle');
   var stageSelectBtn = document.getElementById('oto-menu-stage-select');
+  var topHighscoresBtn = document.getElementById('oto-top-highscores');
+  var topStageSelectBtn = document.getElementById('oto-top-stage-select');
   var bgmBtn = document.getElementById('oto-menu-bgm');
   var notationBtn = document.getElementById('oto-menu-notation');
   var tutorialToggleLabel = document.getElementById('oto-menu-tutorial-toggle-label');
@@ -14876,6 +15149,11 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
       stageSelectBtn.setAttribute('aria-disabled', stageUnlocked ? 'false' : 'true');
       if (stageSelectLabel) {
         stageSelectLabel.textContent = stageUnlocked ? 'ステージを えらぶ' : '1をクリアで ひらく';
+      }
+      if (topStageSelectBtn) {
+        topStageSelectBtn.disabled = !stageUnlocked;
+        topStageSelectBtn.setAttribute('aria-disabled', stageUnlocked ? 'false' : 'true');
+        topStageSelectBtn.setAttribute('title', stageUnlocked ? 'ステージを えらぶ' : 'ステージ1クリアで ひらく');
       }
     }
     trigger.setAttribute('aria-expanded', popover.classList.contains('open') ? 'true' : 'false');
@@ -14939,6 +15217,26 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     }
     close();
     unlockAudio();
+    setPlayMode('free');
+    _openRhythmStageSelect();
+  });
+  if (topHighscoresBtn) topHighscoresBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+    _showRhythmHighscoreModal();
+  });
+  if (topStageSelectBtn) topStageSelectBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!_rhythmStageSelectUnlocked()) {
+      refreshMenuLabels();
+      return;
+    }
+    close();
+    unlockAudio();
+    _hideRhythmHighscoreModal();
+    _hideRhythmComplete();
     setPlayMode('free');
     _openRhythmStageSelect();
   });
