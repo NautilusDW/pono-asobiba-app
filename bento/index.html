@@ -3944,6 +3944,29 @@ body.bento-complete-open #sk-intro {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.sk-intro-skip {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #6b3f16;
+  font-weight: 800;
+  font-size: 0.86rem;
+  background: rgba(255,255,255,0.74);
+  border: 1px solid rgba(190,124,34,0.36);
+  user-select: none;
+}
+#sk-intro.is-rule-guide .sk-intro-skip { display: inline-flex; }
+.sk-intro-skip input {
+  width: 20px;
+  height: 20px;
+  accent-color: #d88928;
+  flex: 0 0 auto;
+}
 .sk-intro-btn {
   margin-top: 12px; padding: 10px 32px; border: none; border-radius: 50px;
   background: linear-gradient(180deg, #FFD84D, #F5A800);
@@ -3959,6 +3982,8 @@ body.bento-complete-open #sk-intro {
   .sk-intro-col { padding: 6px 5px; gap: 4px; }
   #sk-intro.is-guiding .sk-intro-col.is-focus { transform: scale(1.025); }
   .sk-intro-note { margin-top: 7px; padding: 6px 8px; font-size: 0.7rem; }
+  .sk-intro-skip { margin-top: 7px; min-height: 28px; font-size: 0.76rem; }
+  .sk-intro-skip input { width: 18px; height: 18px; }
   .sk-intro-btn { margin-top: 9px; padding: 8px 28px; font-size: 1rem; }
 }
 /* v1403: 16:9 landscape (タブレット横向き) でも上部キャプションを縮小させない */
@@ -5532,7 +5557,7 @@ body.bento-complete-open #sk-intro {
   <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
 </div>
 
-<!-- 三色食品群 説明オーバーレイ（初回のみ） -->
+<!-- 三色食品群 説明オーバーレイ（お願いモードのルール確認。チュートリアルとは別設定） -->
 <div id="sk-intro" class="hidden">
   <div class="sk-intro-card">
     <div class="sk-intro-title">🍱 げんきな おべんとう 3つの なかま</div>
@@ -5599,6 +5624,10 @@ body.bento-complete-open #sk-intro {
         </div>
       </div>
     </div>
+    <label class="sk-intro-skip" for="sk-intro-skip-next">
+      <input type="checkbox" id="sk-intro-skip-next">
+      <span>つぎから みない</span>
+    </label>
     <button class="sk-intro-btn" id="sk-intro-btn">わかった！</button>
   </div>
 </div>
@@ -5615,6 +5644,7 @@ body.bento-complete-open #sk-intro {
     <p class="tut-settings-desc">みぎうえの はぐるまは、やりかたを もういちど みる せっていです。</p>
     <button type="button" id="tut-settings-reenable-now">いま やりかたをみる</button>
     <button type="button" id="tut-settings-reenable">つぎから やりかたをみる</button>
+    <button type="button" class="secondary" id="tut-settings-color-guide">3つの なかまを またみる</button>
     <button type="button" class="secondary" id="tut-settings-close">とじる</button>
   </div>
 </div>
@@ -5790,6 +5820,7 @@ const SK_INTRO_VOICE_IDS = ['sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_int
 const SK_INTRO_VOICE_GAP_MS = 600;
 const SK_INTRO_VOICE_FALLBACK_MS = 10000;
 const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
+const BENTO_COLOR_GUIDE_SKIP_KEY = 'bento_color_guide_skip_v1';
 let skIntroGuideTimer = null;
 let skIntroGuideIndex = 0;
 function stopSkIntroGuide() {
@@ -5806,7 +5837,10 @@ function stopSkIntroGuide() {
 function suppressBentoIntroTutorialOverlays() {
   try { if (typeof stopSkIntroGuide === 'function') stopSkIntroGuide(); } catch (_) {}
   const intro = document.getElementById('sk-intro');
-  if (intro) intro.classList.add('hidden');
+  if (intro) {
+    intro.classList.add('hidden');
+    intro.classList.remove('is-rule-guide');
+  }
   const dim = document.getElementById('tut-dim');
   const bubble = document.getElementById('tut-bubble');
   if (dim) dim.classList.add('hidden');
@@ -5815,20 +5849,64 @@ function suppressBentoIntroTutorialOverlays() {
 }
 function markBentoSkIntroSeen() {
   try {
-    localStorage.setItem('bento_sk_intro_done', '1');
-    localStorage.setItem('bento_tut_seen', '1');
-    localStorage.setItem('bento_tut_seen_v2', '1');
+    sessionStorage.setItem('bento_sk_intro_seen_this_session', '1');
   } catch (_) {}
 }
 function markBentoTutorialsDone() {
   try {
-    markBentoSkIntroSeen();
     localStorage.setItem(BENTO_TUTORIAL_STORAGE_KEY, '1');
   } catch (_) {}
 }
 function dismissBentoTutorialsForGood() {
   markBentoTutorialsDone();
   suppressBentoIntroTutorialOverlays();
+}
+function shouldShowBentoColorGuide() {
+  try { return localStorage.getItem(BENTO_COLOR_GUIDE_SKIP_KEY) !== '1'; } catch (_) { return true; }
+}
+function setBentoColorGuideSkip(skip) {
+  try {
+    if (skip) localStorage.setItem(BENTO_COLOR_GUIDE_SKIP_KEY, '1');
+    else localStorage.removeItem(BENTO_COLOR_GUIDE_SKIP_KEY);
+  } catch (_) {}
+}
+function closeBentoColorGuide(opts = {}) {
+  stopSkIntroGuide();
+  const intro = document.getElementById('sk-intro');
+  if (intro) {
+    intro.classList.add('hidden');
+    intro.classList.remove('is-rule-guide');
+  }
+  const checkbox = document.getElementById('sk-intro-skip-next');
+  if (opts.rememberSkip && checkbox && checkbox.checked) setBentoColorGuideSkip(true);
+  window.__bentoSkIntroShownThisRun = true;
+  markBentoSkIntroSeen();
+}
+function showBentoColorGuide(onDone) {
+  if (!shouldShowBentoColorGuide()) {
+    if (onDone) onDone();
+    return;
+  }
+  const intro = document.getElementById('sk-intro');
+  const btn = document.getElementById('sk-intro-btn');
+  const checkbox = document.getElementById('sk-intro-skip-next');
+  if (!intro || !btn) {
+    if (onDone) onDone();
+    return;
+  }
+  if (checkbox) checkbox.checked = false;
+  intro.classList.add('is-rule-guide');
+  intro.classList.remove('hidden');
+  startSkIntroGuide();
+  const finish = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    closeBentoColorGuide({ rememberSkip: true });
+    if (onDone) onDone();
+  };
+  btn.addEventListener('click', finish, { once: true });
 }
 function applySkIntroGuideStep(index) {
   const intro = document.getElementById('sk-intro');
@@ -5900,7 +5978,7 @@ function startSkIntroGuide() {
   if (applySkIntroGuideStep(skIntroGuideIndex)) scheduleNextSkIntroGuideStep();
 }
 
-// 三色食品群 初回説明
+// 三色食品群 ルール確認（お願いモード用。チュートリアルとは別設定）
 (function() {
   // (旧: localStorage.removeItem('bento_sk_intro_done') / 'bento_tut_seen' は
   //  テスト用に毎回チュートリアルを再表示する目的だったが、 タイトル画面の
@@ -5908,10 +5986,7 @@ function startSkIntroGuide() {
   const intro = document.getElementById('sk-intro');
   // sk-introボタンのハンドラを常に登録（showTutorialから表示される）
   document.getElementById('sk-intro-btn').addEventListener('click', function() {
-    stopSkIntroGuide();
-    if (intro) intro.classList.add('hidden');
-    window.__bentoSkIntroShownThisRun = true;
-    markBentoSkIntroSeen();
+    closeBentoColorGuide({ rememberSkip: false });
   });
   // v1769: 3 色説明だけを初回自動表示しない。必ず全工程チュートリアルの
   // 「はじめる」押下後に tutorialShowGroupIntroThen() から開く。
@@ -8063,7 +8138,7 @@ function startNextBentoOrderRound() {
     try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
     loadStage();
     renderBentoReminder();
-    showShopOpening(req, renderBentoReminder, { skipIntro: true });
+    showShopOpening(req, () => showBentoColorGuide(renderBentoReminder), { skipIntro: true });
     return;
   }
   showShopOpening(req, loadStage, { skipIntro: true });
@@ -8096,7 +8171,7 @@ function restartSimpleBentoRequestRound(opts = {}) {
   loadStage();
   renderBentoReminder();
   setSpeech('おねがいの おべんとうを つくろう！');
-  showShopOpening(currentRequester, renderBentoReminder, { skipIntro: !!opts.skipIntro });
+  showShopOpening(currentRequester, () => showBentoColorGuide(renderBentoReminder), { skipIntro: !!opts.skipIntro });
 }
 
 function getRequesterReactionMessage(req, finalEval) {
@@ -17041,7 +17116,8 @@ function stageComplete() {
   }
   const continueAfterCompleteClose = () => {
     if (freeLayoutMode) {
-      if (simpleBentoMode && currentRequester) restartSimpleBentoRequestRound({ next: true, skipIntro: true });
+      if (simpleBentoMode && typeof window.returnToBentoTitleScreen === 'function') window.returnToBentoTitleScreen();
+      else if (simpleBentoMode && currentRequester) restartSimpleBentoRequestRound({ next: true, skipIntro: true });
       else if (simpleBentoMode) restartSimpleBentoRound();
       else startNextBentoOrderRound();
       return;
@@ -17664,7 +17740,6 @@ function tutorialReadDone() {
 }
 function tutorialMarkDone() {
   try {
-    markBentoSkIntroSeen();
     localStorage.setItem(TUTORIAL_STORAGE_KEY, '1');
   } catch (_) {}
   tutorialState.active = false;
@@ -20223,6 +20298,7 @@ function tutorialOnStageComplete() {
     const modal = document.getElementById('tut-settings-modal');
     const reBtn = document.getElementById('tut-settings-reenable');
     const reNowBtn = document.getElementById('tut-settings-reenable-now');
+    const colorGuideBtn = document.getElementById('tut-settings-color-guide');
     const closeBtn = document.getElementById('tut-settings-close');
     if (!gear || !modal) return;
     gear.addEventListener('pointerdown', function(e) {
@@ -20243,6 +20319,12 @@ function tutorialOnStageComplete() {
       modal.classList.add('hidden');
       // フレッシュな状態で確実にチュートリアルを発火させるため reload を採用
       try { location.reload(); } catch (_) {}
+    });
+    if (colorGuideBtn) colorGuideBtn.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      setBentoColorGuideSkip(false);
+      modal.classList.add('hidden');
+      try { if (typeof showToast === 'function') showToast('つぎから でるよ'); } catch (_) {}
     });
     if (closeBtn) closeBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
@@ -20304,6 +20386,21 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     try { tutorialDone = localStorage.getItem(BENTO_TUTORIAL_STORAGE_KEY) === '1'; } catch (_) { tutorialDone = true; }
     badge.hidden = !tutorialDone;
   })();
+  function returnToTitleScreen() {
+    started = false;
+    window.__bentoShopOpeningActive = false;
+    suppressBentoIntroTutorialOverlays();
+    try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
+    try {
+      sessionStorage.removeItem(NPC_DECIDED_KEY);
+      sessionStorage.removeItem(NPC_SESSION_KEY);
+      sessionStorage.removeItem(BENTO_MODE_SESSION_KEY);
+    } catch (_) {}
+    currentRequester = null;
+    renderBentoReminder();
+    titleScreen.classList.remove('hidden');
+  }
+  window.returnToBentoTitleScreen = returnToTitleScreen;
   async function startFromTitle(mode) {
     if (started) return;
     started = true;
