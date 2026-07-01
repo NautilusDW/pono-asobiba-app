@@ -31,6 +31,18 @@
       default: false
     },
     {
+      id: 'daily-gacha-unlimited',
+      label: 'ポノガチャ：なんかいでも ひける',
+      description: 'ON にすると、 デバッグちゅうだけ 1にちの かいすうせいげんを むししてポノガチャをまわせる',
+      default: false
+    },
+    {
+      id: 'shop-force-guide',
+      label: 'おみせ：あんないを まいかいみる',
+      description: 'ON にすると、 デバッグちゅうだけシールのおみせの あんないを まいかい かくにんできる',
+      default: false
+    },
+    {
       id: 'quizland-debug-all',
       label: 'クイズ：全 169 問まとめてプレイ',
       description: 'URL に ?debug=all を付けると、 通常 5 問のところ全問を順番にプレイできる',

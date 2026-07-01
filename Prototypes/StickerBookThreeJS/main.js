@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1020";
+const ASSET_VERSION = "20260701-1023";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -45,6 +45,8 @@ const STICKER_ASSET_PREFIX = "../../";
 const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
 const COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY = "sb3d_collection_album_placements_v1";
 const DEBUG_ALL_STICKERS_STORAGE_KEY = "sb3d_debug_all_stickers_v1";
+const DEBUG_ALL_STICKERS_FEATURE_KEY = "stickerbook-use-all";
+const DEBUG_ALL_STICKERS_FEATURE_STORAGE_KEY = `pono_debug_feature_${DEBUG_ALL_STICKERS_FEATURE_KEY}`;
 const EDITOR_STATE_VERSION = 3;
 const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 2;
@@ -1687,8 +1689,6 @@ const bookThemePanel = document.getElementById("bookThemePanel");
 const bookThemeClose = document.getElementById("bookThemeClose");
 const settingsBackButton = document.getElementById("settingsBackButton");
 const settingsTutorialButton = document.getElementById("settingsTutorialButton");
-const debugAllStickersRow = document.getElementById("debugAllStickersRow");
-const debugAllStickersToggle = document.getElementById("debugAllStickersToggle");
 const zukanSettingsButtons = [...document.querySelectorAll("[data-zukan-side][data-zukan-type]")];
 const stickerModeButtons = [...document.querySelectorAll("[data-sticker-edit-mode]")];
 const zukanTuneButton = document.getElementById("zukanTuneButton");
@@ -5824,31 +5824,19 @@ function readDebugAllStickersEnabled() {
     return false;
   }
   try {
-    return localStorage.getItem(DEBUG_ALL_STICKERS_STORAGE_KEY) === "1";
+    const featureEnabled = Boolean(
+      window.PonoDebugMode
+        && typeof window.PonoDebugMode.isFeatureEnabled === "function"
+        && window.PonoDebugMode.isFeatureEnabled(DEBUG_ALL_STICKERS_FEATURE_KEY),
+    );
+    return featureEnabled || localStorage.getItem(DEBUG_ALL_STICKERS_STORAGE_KEY) === "1";
   } catch {
     return false;
   }
 }
 
-function writeDebugAllStickersEnabled(enabled) {
-  if (!isStickerDebugModeAllowed()) {
-    return;
-  }
-  try {
-    localStorage.setItem(DEBUG_ALL_STICKERS_STORAGE_KEY, enabled ? "1" : "0");
-  } catch {}
-}
-
 function syncDebugAllStickersUi() {
-  const allowed = isStickerDebugModeAllowed();
-  const enabled = allowed && readDebugAllStickersEnabled();
-  if (debugAllStickersRow) {
-    debugAllStickersRow.hidden = !allowed;
-  }
-  if (debugAllStickersToggle) {
-    debugAllStickersToggle.checked = enabled;
-    debugAllStickersToggle.disabled = !allowed;
-  }
+  const enabled = isStickerDebugModeAllowed() && readDebugAllStickersEnabled();
   document.body.classList.toggle("is-debug-all-stickers", enabled);
 }
 
@@ -5917,13 +5905,13 @@ function applyStickerAvailability(options = {}) {
 
 function setupDebugAllStickersControl() {
   syncDebugAllStickersUi();
-  debugAllStickersToggle?.addEventListener("change", () => {
-    writeDebugAllStickersEnabled(Boolean(debugAllStickersToggle.checked));
-    applyStickerAvailability({ forceRender: true });
-  });
   window.addEventListener("PonoGameStickerGranted", () => applyStickerAvailability({ forceRender: true }));
   window.addEventListener("storage", (event) => {
-    if (event.key === "pono_game_stickers_v1" || event.key === DEBUG_ALL_STICKERS_STORAGE_KEY) {
+    if (
+      event.key === "pono_game_stickers_v1"
+      || event.key === DEBUG_ALL_STICKERS_STORAGE_KEY
+      || event.key === DEBUG_ALL_STICKERS_FEATURE_STORAGE_KEY
+    ) {
       applyStickerAvailability({ forceRender: true });
     }
   });

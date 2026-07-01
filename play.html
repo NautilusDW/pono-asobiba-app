@@ -1546,10 +1546,10 @@
       font-weight: 900;
       text-align: center;
     }
-    /* v1731: tabbed debug board (acorn / features) */
+    /* v1731: tabbed debug board (acorn / stickers / features) */
     .debug-board-tabs {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px;
       margin: 0 0 12px;
       padding: 4px;
@@ -1624,6 +1624,23 @@
       font-size: 12px;
       font-weight: 500;
       line-height: 1.5;
+    }
+    .debug-sticker-tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .debug-sticker-toggle {
+      margin: 0;
+    }
+    @media (max-width: 420px) {
+      .debug-sticker-tools {
+        grid-template-columns: 1fr;
+      }
+      .debug-board-tab {
+        padding-inline: 6px;
+        font-size: .76rem;
+      }
     }
     @media (min-width: 480px) {
       .debug-feature-label { font-size: 16px; }
@@ -6043,10 +6060,13 @@
       <div class="debug-board-tabs" role="tablist" aria-label="デバッグボード タブ">
         <button class="debug-board-tab" id="debugBoardTabAcorn" type="button"
                 role="tab" aria-selected="true" aria-controls="debugBoardPanelAcorn"
-                data-debug-board-tab="acorn">どんぐり調整</button>
+                data-debug-board-tab="acorn">どんぐり</button>
+        <button class="debug-board-tab" id="debugBoardTabStickers" type="button"
+                role="tab" aria-selected="false" aria-controls="debugBoardPanelStickers"
+                data-debug-board-tab="stickers" tabindex="-1">シール</button>
         <button class="debug-board-tab" id="debugBoardTabFeatures" type="button"
                 role="tab" aria-selected="false" aria-controls="debugBoardPanelFeatures"
-                data-debug-board-tab="features" tabindex="-1">機能トグル</button>
+                data-debug-board-tab="features" tabindex="-1">機能</button>
       </div>
       <div class="debug-board-panel" id="debugBoardPanelAcorn" role="tabpanel" aria-labelledby="debugBoardTabAcorn" aria-label="どんぐりを ちょうせい">
         <p class="debug-board-help">すうじを いれて<br>どんぐりの かずを かえられるよ</p>
@@ -6075,6 +6095,23 @@
           <button class="debug-board-btn" id="debugAcornSetBtn" type="button">このかずにする</button>
         </div>
         <div class="debug-board-status" id="debugAcornStatus" role="status" aria-live="polite"></div>
+      </div>
+      <div class="debug-board-panel" id="debugBoardPanelStickers" role="tabpanel" aria-labelledby="debugBoardTabStickers" aria-label="シールを ちょうせい" hidden>
+        <p class="debug-board-help">テスト用にシールを<br>まとめて ふやせるよ</p>
+        <div class="debug-board-panel__head">
+          <span>いまの シール</span>
+          <strong class="debug-board-current" id="debugStickerCurrent">0 / 0</strong>
+        </div>
+        <div class="debug-sticker-tools">
+          <button class="debug-board-btn" id="debugStickerGrantAllBtn" type="button">ぜんぶふやす</button>
+          <button class="debug-board-btn" id="debugStickerOpenBookBtn" type="button">シールちょうへ</button>
+        </div>
+        <label class="debug-feature-item debug-sticker-toggle" for="debugStickerUseAllToggle">
+          <input class="debug-feature-check" id="debugStickerUseAllToggle" type="checkbox">
+          <span class="debug-feature-label">はるとき ぜんぶ つかう</span>
+          <span class="debug-feature-desc">ふやしていないシールも、シールちょうで はれるようにする</span>
+        </label>
+        <div class="debug-board-status" id="debugStickerStatus" role="status" aria-live="polite"></div>
       </div>
       <div class="debug-board-panel" id="debugBoardPanelFeatures" role="tabpanel" aria-labelledby="debugBoardTabFeatures" aria-label="機能トグル" hidden>
         <p class="debug-board-help">スタッフ用の機能トグル<br>(staging + manage 解錠時のみ反映)</p>
@@ -6763,7 +6800,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1871;
+    const PAGE_CACHE_VERSION = 1872;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -8614,8 +8651,10 @@
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
       startDailyGachaImagePreload();
-      // v1578: debug mode (staging-only, sessionStorage-unlocked) bypasses both gates → unlimited pulls
-      var __debugBypass = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
+      // Debug board 集約: ポノガチャの回数制限 bypass は機能トグル ON の時だけ有効。
+      var __debugBypass = !!(window.PonoDebugMode
+        && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+        && window.PonoDebugMode.isFeatureEnabled('daily-gacha-unlimited'));
       // v1719: 1 日 2 回仕様。 状態は count (0/1/2) で判定。
       //   count===0: フリー pull (チャレンジ不要、 毎日 1 回保証)
       //   count===1 && !cleared: ロック (チャレンジクリアで解放)
@@ -8956,7 +8995,9 @@
     }
     function _isShopDebugNarrationForced() {
       try {
-        return !!(window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function' && window.PonoDebugMode.isAllowed());
+        return !!(window.PonoDebugMode
+          && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+          && window.PonoDebugMode.isFeatureEnabled('shop-force-guide'));
       } catch (_) { return false; }
     }
     function _clearShopSubtitleTimers() {
@@ -10417,6 +10458,14 @@
     const debugAcornAddBtn = document.getElementById('debugAcornAddBtn');
     const debugAcornSetBtn = document.getElementById('debugAcornSetBtn');
     const debugAcornStatus = document.getElementById('debugAcornStatus');
+    const debugStickerCurrent = document.getElementById('debugStickerCurrent');
+    const debugStickerGrantAllBtn = document.getElementById('debugStickerGrantAllBtn');
+    const debugStickerOpenBookBtn = document.getElementById('debugStickerOpenBookBtn');
+    const debugStickerUseAllToggle = document.getElementById('debugStickerUseAllToggle');
+    const debugStickerStatus = document.getElementById('debugStickerStatus');
+    const DEBUG_STICKER_STATE_KEY = 'pono_game_stickers_v1';
+    const DEBUG_STICKER_USE_ALL_FEATURE = 'stickerbook-use-all';
+    const DEBUG_STICKER_LEGACY_USE_ALL_KEY = 'sb3d_debug_all_stickers_v1';
 
     function getDebugAcornBalance() {
       try { return (typeof window.getAcorns === 'function') ? (window.getAcorns() | 0) : 0; }
@@ -10444,6 +10493,152 @@
       if (shop && !shop.hidden && typeof renderShopCatalog === 'function') {
         renderShopCatalog();
       }
+    }
+    function setDebugStickerStatus(text) {
+      if (debugStickerStatus) debugStickerStatus.textContent = text || '';
+    }
+    function loadDebugStickerCatalog() {
+      try {
+        if (window.PonoGameStickers && typeof window.PonoGameStickers.loadCatalog === 'function') {
+          return window.PonoGameStickers.loadCatalog();
+        }
+      } catch (_) {}
+      return fetch('assets/data/game-stickers.json?_=v' + encodeURIComponent(String(PAGE_CACHE_VERSION)), { cache: 'no-store' })
+        .then(function (res) {
+          if (!res.ok) throw new Error('catalog fetch failed: ' + res.status);
+          return res.json();
+        });
+    }
+    function readDebugStickerState() {
+      try {
+        var raw = localStorage.getItem(DEBUG_STICKER_STATE_KEY);
+        var state = raw ? JSON.parse(raw) : {};
+        if (!state || typeof state !== 'object') state = {};
+        if (!state.pages || typeof state.pages !== 'object') state.pages = {};
+        if (!state.version) state.version = 1;
+        return state;
+      } catch (_) {
+        return { version: 1, pages: {} };
+      }
+    }
+    function writeDebugStickerState(state) {
+      try {
+        state.updatedAt = Date.now();
+        localStorage.setItem(DEBUG_STICKER_STATE_KEY, JSON.stringify(state));
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+    function debugStickerPageState(state, gameId) {
+      if (!state.pages[gameId] || typeof state.pages[gameId] !== 'object') {
+        state.pages[gameId] = { owned: {} };
+      }
+      if (!state.pages[gameId].owned || typeof state.pages[gameId].owned !== 'object') {
+        state.pages[gameId].owned = {};
+      }
+      return state.pages[gameId];
+    }
+    function countDebugCatalogStickers(catalog) {
+      var pages = catalog && catalog.pages ? catalog.pages : {};
+      return Object.keys(pages).reduce(function (sum, gameId) {
+        var list = pages[gameId] && Array.isArray(pages[gameId].stickers) ? pages[gameId].stickers : [];
+        return sum + list.filter(function (sticker) { return sticker && sticker.id; }).length;
+      }, 0);
+    }
+    function countDebugOwnedStickers() {
+      var state = readDebugStickerState();
+      var owned = new Set();
+      Object.keys(state.pages || {}).forEach(function (gameId) {
+        var map = state.pages[gameId] && state.pages[gameId].owned ? state.pages[gameId].owned : {};
+        Object.keys(map).forEach(function (id) {
+          if (map[id] && map[id].count > 0) owned.add(id);
+        });
+      });
+      return owned.size;
+    }
+    function readDebugStickerUseAll() {
+      if (!isManageDebugAllowed()) return false;
+      try {
+        if (window.PonoDebugMode && typeof window.PonoDebugMode.isFeatureEnabled === 'function') {
+          if (window.PonoDebugMode.isFeatureEnabled(DEBUG_STICKER_USE_ALL_FEATURE)) return true;
+        }
+      } catch (_) {}
+      try {
+        return localStorage.getItem(DEBUG_STICKER_LEGACY_USE_ALL_KEY) === '1';
+      } catch (_) {
+        return false;
+      }
+    }
+    function writeDebugStickerUseAll(on) {
+      if (!isManageDebugAllowed()) return false;
+      var ok = false;
+      try {
+        if (window.PonoDebugMode && typeof window.PonoDebugMode.setFeatureEnabled === 'function') {
+          ok = !!window.PonoDebugMode.setFeatureEnabled(DEBUG_STICKER_USE_ALL_FEATURE, !!on);
+        }
+      } catch (_) {}
+      try {
+        localStorage.setItem(DEBUG_STICKER_LEGACY_USE_ALL_KEY, on ? '1' : '0');
+      } catch (_) {}
+      return ok || true;
+    }
+    function renderDebugStickerBoard() {
+      if (debugStickerUseAllToggle) {
+        debugStickerUseAllToggle.checked = readDebugStickerUseAll();
+        debugStickerUseAllToggle.disabled = !isManageDebugAllowed();
+      }
+      if (!debugStickerCurrent) return Promise.resolve();
+      debugStickerCurrent.textContent = countDebugOwnedStickers() + ' / ...';
+      return loadDebugStickerCatalog().then(function (catalog) {
+        debugStickerCurrent.textContent = countDebugOwnedStickers() + ' / ' + countDebugCatalogStickers(catalog);
+      }).catch(function () {
+        debugStickerCurrent.textContent = countDebugOwnedStickers() + ' / ?';
+      });
+    }
+    function grantAllDebugStickers() {
+      if (!isManageDebugAllowed()) return;
+      setDebugStickerStatus('シールを ふやしているよ');
+      loadDebugStickerCatalog().then(function (catalog) {
+        var pages = catalog && catalog.pages ? catalog.pages : {};
+        var state = readDebugStickerState();
+        var now = Date.now();
+        var added = 0;
+        Object.keys(pages).forEach(function (gameId) {
+          var page = pages[gameId] || {};
+          var stickers = Array.isArray(page.stickers) ? page.stickers : [];
+          var pageState = debugStickerPageState(state, gameId);
+          stickers.forEach(function (sticker) {
+            if (!sticker || !sticker.id) return;
+            var current = pageState.owned[sticker.id];
+            if (current && current.count > 0) return;
+            pageState.owned[sticker.id] = {
+              count: 1,
+              firstAt: now,
+              lastAt: now,
+              name: sticker.name || ''
+            };
+            added++;
+          });
+        });
+        if (!writeDebugStickerState(state)) {
+          setDebugStickerStatus('シールを ほぞんできません');
+          return;
+        }
+        if (added > 0) {
+          try {
+            window.dispatchEvent(new CustomEvent('PonoGameStickerGranted', {
+              detail: { event: 'debug_all', count: added, ts: now }
+            }));
+          } catch (_) {}
+        }
+        renderDebugStickerBoard();
+        setDebugStickerStatus(added > 0
+          ? String(added) + 'まい ふやしたよ'
+          : 'もう ぜんぶ あるよ');
+      }).catch(function () {
+        setDebugStickerStatus('シールを よみこめません');
+      });
     }
     function addDebugAcorns(amount) {
       if (!isManageDebugAllowed()) return;
@@ -10485,7 +10680,9 @@
       settingsDebugBoardBtn.addEventListener('click', function () {
         if (!refreshDeveloperAccessUI()) return;
         renderDebugAcornBoard();
+        renderDebugStickerBoard();
         setDebugAcornStatus('');
+        setDebugStickerStatus('');
         // v1731: 開くたびに acorn タブへ戻し、 機能トグル一覧を最新化
         try { selectDebugBoardTab('acorn'); } catch (_) {}
         try { renderDebugFeatureToggles(); } catch (_) {}
@@ -10502,6 +10699,25 @@
         setDebugAcorns(readDebugAcornInput(debugAcornSetAmount));
       });
     }
+    if (debugStickerGrantAllBtn) {
+      debugStickerGrantAllBtn.addEventListener('click', grantAllDebugStickers);
+    }
+    if (debugStickerOpenBookBtn) {
+      debugStickerOpenBookBtn.addEventListener('click', function () {
+        if (!isManageDebugAllowed()) return;
+        location.href = 'Prototypes/StickerBookThreeJS/?surface=inside';
+      });
+    }
+    if (debugStickerUseAllToggle) {
+      debugStickerUseAllToggle.addEventListener('change', function () {
+        var on = !!debugStickerUseAllToggle.checked;
+        writeDebugStickerUseAll(on);
+        debugStickerUseAllToggle.checked = readDebugStickerUseAll();
+        setDebugStickerStatus(on
+          ? 'シールちょうで ぜんぶ つかえるよ'
+          : 'もっている シールだけに もどしたよ');
+      });
+    }
     document.addEventListener('click', function (e) {
       if (!e.target || !e.target.closest) return;
       var preset = e.target.closest('[data-debug-acorn-add]');
@@ -10509,7 +10725,15 @@
       addDebugAcorns(parseInt(preset.getAttribute('data-debug-acorn-add') || '0', 10) || 0);
     });
     window.addEventListener('pono-acorns-changed', renderDebugAcornBoard);
+    window.addEventListener('PonoGameStickerGranted', renderDebugStickerBoard);
+    window.addEventListener('pono-game-sticker-bonus-granted', renderDebugStickerBoard);
+    window.addEventListener('storage', function (event) {
+      if (!event || event.key === DEBUG_STICKER_STATE_KEY || event.key === DEBUG_STICKER_LEGACY_USE_ALL_KEY || event.key === 'pono_debug_feature_' + DEBUG_STICKER_USE_ALL_FEATURE) {
+        renderDebugStickerBoard();
+      }
+    });
     renderDebugAcornBoard();
+    renderDebugStickerBoard();
 
     // ===== v1731: Manage debug board — tab switch + feature toggles =====
     // 「どんぐり調整」 と 「機能トグル」 をタブ切替。 機能トグルは
@@ -10517,26 +10741,35 @@
     // setFeatureEnabled} を介して localStorage に保存。 staging + manage 解錠時のみ
     // 効果が出る (PonoDebugMode 側で isAllowed gate)。
     const debugBoardTabAcorn = document.getElementById('debugBoardTabAcorn');
+    const debugBoardTabStickers = document.getElementById('debugBoardTabStickers');
     const debugBoardTabFeatures = document.getElementById('debugBoardTabFeatures');
     const debugBoardPanelAcorn = document.getElementById('debugBoardPanelAcorn');
+    const debugBoardPanelStickers = document.getElementById('debugBoardPanelStickers');
     const debugBoardPanelFeatures = document.getElementById('debugBoardPanelFeatures');
     const debugFeaturesList = document.getElementById('debugFeaturesList');
     const debugFeaturesEmpty = document.getElementById('debugFeaturesEmpty');
     const debugFeaturesStatus = document.getElementById('debugFeaturesStatus');
 
     function selectDebugBoardTab(tabKey) {
-      var isFeatures = (tabKey === 'features');
+      var activeKey = (tabKey === 'stickers' || tabKey === 'features') ? tabKey : 'acorn';
       if (debugBoardTabAcorn) {
-        debugBoardTabAcorn.setAttribute('aria-selected', isFeatures ? 'false' : 'true');
-        debugBoardTabAcorn.tabIndex = isFeatures ? -1 : 0;
+        debugBoardTabAcorn.setAttribute('aria-selected', activeKey === 'acorn' ? 'true' : 'false');
+        debugBoardTabAcorn.tabIndex = activeKey === 'acorn' ? 0 : -1;
+      }
+      if (debugBoardTabStickers) {
+        debugBoardTabStickers.setAttribute('aria-selected', activeKey === 'stickers' ? 'true' : 'false');
+        debugBoardTabStickers.tabIndex = activeKey === 'stickers' ? 0 : -1;
       }
       if (debugBoardTabFeatures) {
-        debugBoardTabFeatures.setAttribute('aria-selected', isFeatures ? 'true' : 'false');
-        debugBoardTabFeatures.tabIndex = isFeatures ? 0 : -1;
+        debugBoardTabFeatures.setAttribute('aria-selected', activeKey === 'features' ? 'true' : 'false');
+        debugBoardTabFeatures.tabIndex = activeKey === 'features' ? 0 : -1;
       }
-      if (debugBoardPanelAcorn) debugBoardPanelAcorn.hidden = isFeatures;
-      if (debugBoardPanelFeatures) debugBoardPanelFeatures.hidden = !isFeatures;
-      if (isFeatures) {
+      if (debugBoardPanelAcorn) debugBoardPanelAcorn.hidden = activeKey !== 'acorn';
+      if (debugBoardPanelStickers) debugBoardPanelStickers.hidden = activeKey !== 'stickers';
+      if (debugBoardPanelFeatures) debugBoardPanelFeatures.hidden = activeKey !== 'features';
+      if (activeKey === 'stickers') {
+        try { renderDebugStickerBoard(); } catch (_) {}
+      } else if (activeKey === 'features') {
         // タブ切替のたびに最新の localStorage 状態に追従
         try { renderDebugFeatureToggles(); } catch (_) {}
       }
@@ -10624,6 +10857,9 @@
 
     if (debugBoardTabAcorn) {
       debugBoardTabAcorn.addEventListener('click', function () { selectDebugBoardTab('acorn'); });
+    }
+    if (debugBoardTabStickers) {
+      debugBoardTabStickers.addEventListener('click', function () { selectDebugBoardTab('stickers'); });
     }
     if (debugBoardTabFeatures) {
       debugBoardTabFeatures.addEventListener('click', function () { selectDebugBoardTab('features'); });
