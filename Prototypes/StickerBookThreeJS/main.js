@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1009";
+const ASSET_VERSION = "20260701-1012";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -75,6 +75,9 @@ const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const STICKER_TRAY_DRAG_THRESHOLD = 8;
 const STICKER_PLACEMENT_BASE_RATIO = 0.42;
+const STICKER_ALPHA_TRIM_THRESHOLD = 12;
+const STICKER_ALPHA_TRIM_PAD_RATIO = 0.035;
+const STICKER_ALPHA_TRIM_MIN_PAD = 3;
 const STICKER_PEEL_DURATION = 1.12;
 const STICKER_PEEL_SEGMENTS_X = 14;
 const STICKER_PEEL_SEGMENTS_Y = 24;
@@ -3042,8 +3045,7 @@ function stickerAspectForPlacement(placement) {
   if (placement?.assetUrl) {
     loadStickerImage(placement.assetUrl)
       .then((image) => {
-        const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
-        stickerAspectCache.set(placement.assetUrl, Math.max(0.2, aspect));
+        stickerAspectCache.set(placement.assetUrl, stickerVisualAspectForImage(image));
       })
       .catch(() => {});
   }
@@ -5712,7 +5714,7 @@ function stickerTutorialSelectedStickerRect() {
     return null;
   }
   const scale = sanitizedPlacementScale(placement.scale);
-  const width = Math.max(46, Math.min(pageRect.width, pageRect.height) * 0.17 * scale);
+  const width = Math.max(46, Math.min(pageRect.width, pageRect.height) * STICKER_PLACEMENT_BASE_RATIO * scale);
   const aspect = stickerAspectForPlacement(placement);
   const height = width / Math.max(0.35, aspect);
   const center = {
@@ -6551,8 +6553,9 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
   if (!pageMesh?.visible || activeSurface !== "inside" || activeAlbumMode === "collection") {
     return false;
   }
-  const paddedImage = getPaddedStickerImage(image);
-  const dimensions = stickerPeelWorldDimensions(placement, image, paddedImage);
+  const visualImage = getStickerVisualImage(image);
+  const paddedImage = getPaddedStickerImage(visualImage);
+  const dimensions = stickerPeelWorldDimensions(placement, visualImage, paddedImage);
   if (!dimensions.width || !dimensions.height) {
     return false;
   }
@@ -6560,7 +6563,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
   const frontTexture = createStickerPeelTexture(paddedImage);
   const backTexture = createStickerPeelBackTexture(paddedImage);
   const lipTexture = createStickerPeelLipTexture(paddedImage);
-  const shadowTexture = createStickerPeelShadowTexture(paddedImage);
   const geometry = new THREE.PlaneGeometry(
     dimensions.width,
     dimensions.height,
@@ -6602,17 +6604,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
   lip.position.y = dimensions.height / 2 - lipHeight / 2;
   lip.position.z = 0.012;
   group.add(back, front, lip);
-  const shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(dimensions.width * 1.02, dimensions.height * 1.02, 1, 1),
-    new THREE.MeshBasicMaterial({
-      map: shadowTexture,
-      color: 0x2a1707,
-      transparent: true,
-      opacity: 0.18,
-      depthWrite: false,
-      alphaTest: 0.01,
-    }),
-  );
   const local = stickerPeelLocalPoint(placement);
   const rotation = THREE.MathUtils.degToRad(placement.rotation || 0);
   group.position.set(pageMesh.position.x + local.x, local.y, 0.16);
@@ -6620,10 +6611,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
   front.renderOrder = 98;
   back.renderOrder = 97;
   lip.renderOrder = 99;
-  shadow.position.set(group.position.x, group.position.y - 0.012, 0.014);
-  shadow.rotation.z = rotation;
-  shadow.renderOrder = 95;
-  book.add(shadow);
   book.add(group);
 
   const animation = {
@@ -6631,7 +6618,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     front,
     back,
     lip,
-    shadow,
     geometry,
     lipGeometry,
     frontMaterial,
@@ -6640,7 +6626,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     frontTexture,
     backTexture,
     lipTexture,
-    shadowTexture,
     elapsed: 0,
     duration: STICKER_PEEL_DURATION,
     onComplete,
@@ -6726,19 +6711,6 @@ function createStickerPeelLipTexture(paddedImage) {
   return configureStickerCanvasTexture(new THREE.CanvasTexture(textureCanvas));
 }
 
-function createStickerPeelShadowTexture(paddedImage) {
-  const textureCanvas = document.createElement("canvas");
-  textureCanvas.width = paddedImage.width;
-  textureCanvas.height = paddedImage.height;
-  const textureCtx = textureCanvas.getContext("2d");
-  textureCtx.save();
-  textureCtx.globalAlpha = 0.7;
-  textureCtx.filter = "blur(8px) brightness(0)";
-  textureCtx.drawImage(paddedImage, 0, 0);
-  textureCtx.restore();
-  return configureStickerCanvasTexture(new THREE.CanvasTexture(textureCanvas));
-}
-
 function configureStickerCanvasTexture(texture) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.generateMipmaps = false;
@@ -6814,8 +6786,6 @@ function bendStickerPeelGeometry(animation, progress) {
   animation.group.scale.setScalar(1 + remaining * 0.03 - press * 0.012);
   animation.frontMaterial.opacity = 0.96 + press * 0.04;
   animation.backMaterial.opacity = 0.92;
-  animation.shadow.material.opacity = 0.03 + remaining * 0.16;
-  animation.shadow.scale.setScalar(1 + remaining * 0.1);
 }
 
 function bendStickerPeelLipGeometry(animation, progress, remaining, press) {
@@ -6857,7 +6827,6 @@ function bendStickerPeelLipGeometry(animation, progress, remaining, press) {
 
 function finishStickerPeelAnimation(animation) {
   book.remove(animation.group);
-  book.remove(animation.shadow);
   animation.geometry.dispose();
   animation.lipGeometry.dispose();
   animation.frontMaterial.dispose();
@@ -6866,9 +6835,6 @@ function finishStickerPeelAnimation(animation) {
   animation.frontTexture.dispose();
   animation.backTexture.dispose();
   animation.lipTexture.dispose();
-  animation.shadowTexture.dispose();
-  animation.shadow.geometry.dispose();
-  animation.shadow.material.dispose();
   if (typeof animation.onComplete === "function") {
     animation.onComplete();
   }
@@ -12026,15 +11992,16 @@ function drawCollectionPlacementLayer(ctx, texture, pageNumber) {
 function drawAsyncCollectionPlacedSticker(ctx, texture, placement, pageNumber) {
   loadStickerImage(placement.assetUrl)
     .then((image) => {
-      const baseW = PAGE_TEXTURE_W * STICKER_PLACEMENT_BASE_RATIO * placement.scale;
-      const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+      const visualImage = getStickerVisualImage(image);
+      const baseW = PAGE_TEXTURE_W * STICKER_PLACEMENT_BASE_RATIO * sanitizedPlacementScale(placement?.scale);
+      const aspect = stickerVisualAspectForImage(visualImage);
       const drawW = baseW;
       const drawH = drawW / Math.max(0.2, aspect);
       const x = (placement.x / 100) * PAGE_TEXTURE_W;
       const y = (placement.y / 100) * PAGE_TEXTURE_H;
-      const paddedImage = getPaddedStickerImage(image);
-      const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
-      const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+      const paddedImage = getPaddedStickerImage(visualImage);
+      const sourceWidth = Math.max(1, visualImage.naturalWidth || visualImage.width || 1);
+      const sourceHeight = Math.max(1, visualImage.naturalHeight || visualImage.height || 1);
       const paddedDrawW = drawW * (paddedImage.width / sourceWidth);
       const paddedDrawH = drawH * (paddedImage.height / sourceHeight);
       ctx.save();
@@ -12180,15 +12147,16 @@ function drawAsyncStickerImage(ctx, texture, src, x, y, width, height) {
 function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
   loadStickerImage(placement.assetUrl)
     .then((image) => {
-      const baseW = PAGE_TEXTURE_W * 0.18 * placement.scale;
-      const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+      const visualImage = getStickerVisualImage(image);
+      const baseW = PAGE_TEXTURE_W * STICKER_PLACEMENT_BASE_RATIO * sanitizedPlacementScale(placement?.scale);
+      const aspect = stickerVisualAspectForImage(visualImage);
       const drawW = baseW;
       const drawH = drawW / Math.max(0.2, aspect);
       const x = (placement.x / 100) * PAGE_TEXTURE_W;
       const y = (placement.y / 100) * PAGE_TEXTURE_H;
-      const paddedImage = getPaddedStickerImage(image);
-      const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
-      const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+      const paddedImage = getPaddedStickerImage(visualImage);
+      const sourceWidth = Math.max(1, visualImage.naturalWidth || visualImage.width || 1);
+      const sourceHeight = Math.max(1, visualImage.naturalHeight || visualImage.height || 1);
       const paddedDrawW = drawW * (paddedImage.width / sourceWidth);
       const paddedDrawH = drawH * (paddedImage.height / sourceHeight);
       ctx.save();
@@ -12256,12 +12224,104 @@ function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
   ctx.restore();
 }
 
+function stickerImageDimensions(image) {
+  return {
+    width: Math.max(1, Math.round(image?.naturalWidth || image?.width || 1)),
+    height: Math.max(1, Math.round(image?.naturalHeight || image?.height || 1)),
+  };
+}
+
+function getStickerVisualImage(image) {
+  if (!image) {
+    return image;
+  }
+  if (image.__sb3dVisualImage) {
+    return image.__sb3dVisualImage;
+  }
+  const { width: sourceWidth, height: sourceHeight } = stickerImageDimensions(image);
+  const probe = document.createElement("canvas");
+  probe.width = sourceWidth;
+  probe.height = sourceHeight;
+  const probeCtx = probe.getContext("2d", { willReadFrequently: true }) || probe.getContext("2d");
+  if (!probeCtx) {
+    image.__sb3dVisualImage = image;
+    return image;
+  }
+
+  let pixels = null;
+  try {
+    probeCtx.clearRect(0, 0, sourceWidth, sourceHeight);
+    probeCtx.drawImage(image, 0, 0, sourceWidth, sourceHeight);
+    pixels = probeCtx.getImageData(0, 0, sourceWidth, sourceHeight).data;
+  } catch (error) {
+    image.__sb3dVisualImage = image;
+    return image;
+  }
+
+  let minX = sourceWidth;
+  let minY = sourceHeight;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < sourceHeight; y += 1) {
+    for (let x = 0; x < sourceWidth; x += 1) {
+      const alpha = pixels[(y * sourceWidth + x) * 4 + 3];
+      if (alpha <= STICKER_ALPHA_TRIM_THRESHOLD) {
+        continue;
+      }
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    image.__sb3dVisualImage = image;
+    return image;
+  }
+
+  const contentW = maxX - minX + 1;
+  const contentH = maxY - minY + 1;
+  const pad = Math.max(
+    STICKER_ALPHA_TRIM_MIN_PAD,
+    Math.ceil(Math.max(contentW, contentH) * STICKER_ALPHA_TRIM_PAD_RATIO),
+  );
+  const cropMinX = Math.max(0, minX - pad);
+  const cropMinY = Math.max(0, minY - pad);
+  const cropMaxX = Math.min(sourceWidth - 1, maxX + pad);
+  const cropMaxY = Math.min(sourceHeight - 1, maxY + pad);
+  const cropW = Math.max(1, cropMaxX - cropMinX + 1);
+  const cropH = Math.max(1, cropMaxY - cropMinY + 1);
+
+  if (cropMinX === 0 && cropMinY === 0 && cropW === sourceWidth && cropH === sourceHeight) {
+    image.__sb3dVisualImage = image;
+    return image;
+  }
+
+  const visualCanvas = document.createElement("canvas");
+  visualCanvas.width = cropW;
+  visualCanvas.height = cropH;
+  const visualCtx = visualCanvas.getContext("2d");
+  if (!visualCtx) {
+    image.__sb3dVisualImage = image;
+    return image;
+  }
+  visualCtx.drawImage(image, cropMinX, cropMinY, cropW, cropH, 0, 0, cropW, cropH);
+  image.__sb3dVisualImage = visualCanvas;
+  return visualCanvas;
+}
+
+function stickerVisualAspectForImage(image) {
+  const visualImage = getStickerVisualImage(image);
+  const { width, height } = stickerImageDimensions(visualImage);
+  return Math.max(0.2, width / height);
+}
+
 function getPaddedStickerImage(image) {
   if (image.__sb3dPaddedImage) {
     return image.__sb3dPaddedImage;
   }
-  const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
-  const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
+  const { width: sourceWidth, height: sourceHeight } = stickerImageDimensions(image);
   const pad = Math.max(18, Math.ceil(Math.max(sourceWidth, sourceHeight) * 0.1));
   const canvas = document.createElement("canvas");
   canvas.width = sourceWidth + pad * 2;
@@ -12304,8 +12364,7 @@ function loadStickerImage(src) {
     stickerImageCache.set(src, new Promise((resolve, reject) => {
       const image = new Image();
       image.onload = () => {
-        const aspect = image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
-        stickerAspectCache.set(src, Math.max(0.2, aspect));
+        stickerAspectCache.set(src, stickerVisualAspectForImage(image));
         resolve(image);
       };
       image.onerror = reject;
