@@ -5707,9 +5707,9 @@
         </div>
         <div class="rhythm-result-main-actions" id="rhythm-result-main-actions">
           <div class="rhythm-complete-actions hidden" id="rhythm-complete-actions">
-            <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
-            <button class="rhythm-complete-btn demo" id="rhythm-complete-demo">おてほん</button>
             <button class="rhythm-complete-btn next hidden" id="rhythm-complete-next">つぎのパート</button>
+            <button class="rhythm-complete-btn demo" id="rhythm-complete-demo">おてほん</button>
+            <button class="rhythm-complete-btn done" id="rhythm-complete-done">おしまい</button>
           </div>
         </div>
       </div>
@@ -7913,12 +7913,23 @@ function _rhythmSongStars(song, progress) {
   var value = song && progress.stars ? parseInt(progress.stars[song.id], 10) : 0;
   return Math.max(0, Math.min(3, value || 0));
 }
+function _otoDebugAllStagesEnabled() {
+  try {
+    return !!(window.PonoDebugMode
+      && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+      && window.PonoDebugMode.isFeatureEnabled('oto-stage-select-all'));
+  } catch (_e) {
+    return false;
+  }
+}
 function _rhythmSongUnlocked(song, progress) {
   if (!song) return false;
+  if (_otoDebugAllStagesEnabled()) return true;
   progress = progress || _loadRhythmProgress();
   return _rhythmSongStage(song) <= Math.max(1, progress.unlockedStage || 1);
 }
 function _rhythmStageSelectUnlocked(progress) {
+  if (_otoDebugAllStagesEnabled()) return true;
   progress = progress || _loadRhythmProgress();
   if (Math.max(1, progress.unlockedStage || 1) > 1) return true;
   return _rhythmSongsByStage().some(function(song) {
@@ -10185,7 +10196,7 @@ function _hideRhythmComplete() {
   // 「次のステージへ」「もどる」 タップで結果画面を離脱したのに、 数秒後に唐突に
   // モーダルが出てくる事故を防ぐ。
   if (_rhythm) _rhythm.pendingAcornModal = null;
-  if (_otoBgmState.currentKey === 'clear') _stopOtoBgm(360);
+  // クリアBGMは結果パネルを閉じても余韻として残し、次の曲/画面遷移側で必要に応じて差し替える。
   document.body.classList.remove('rhythm-complete-active');
   _updateRhythmVictoryRival(false);
   var actions = document.getElementById('rhythm-complete-actions');

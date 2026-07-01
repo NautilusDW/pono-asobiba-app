@@ -25,6 +25,12 @@
       default: false
     },
     {
+      id: 'oto-stage-select-all',
+      label: '音タッチ：全ステージを選択',
+      description: 'ON にすると、 音タッチのステージセレクトで全ステージを選べる',
+      default: false
+    },
+    {
       id: 'capture-mode',
       label: 'スクショモード：撮影UIを使う',
       description: 'ON にすると、 ?capture=1 や Shift+Alt+C でスクショ撮影UIを出せる',
