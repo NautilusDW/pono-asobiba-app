@@ -59,6 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-01 12:08 - by Codex - [batch:1016-stickerbook-sfx] - Prototypes/StickerBookThreeJS/**, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - シールを貼る瞬間中心にシール帳 SFX を追加 [overlap: batch:1015-book-bonus-stickers-more, batch:860-data-export-import, batch:877-gacha-tray-mask-lower, batch:920-shop-bgm-swap]
 - 2026-07-01 11:32 - by Codex - [batch:1015-book-bonus-stickers-more] - tmp/alpha_pending/1015-book-bonus-stickers-more/**, AGENTS_CLAIMS.md, HANDOFF.md - えほん特典シール追加 raw 候補を参照画像付きで生成
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
