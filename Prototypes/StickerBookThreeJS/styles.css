@@ -1088,12 +1088,6 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   box-sizing: border-box;
 }
 
-/* v1627: tray icon が全部 fetch 完了するまで一時的に隠す (切替時の「グレー空欄→画像ポン」 を回避)。
-   CLS を起こさないよう opacity ではなく visibility:hidden で layout は維持。 */
-.collection-sticker-tray-items.is-loading {
-  visibility: hidden;
-}
-
 .collection-toc-title {
   flex: 0 0 auto;
   align-self: stretch;
@@ -1164,6 +1158,10 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.collection-toc-image[data-src] {
+  opacity: 0;
 }
 
 .collection-toc-mystery {

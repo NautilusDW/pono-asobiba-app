@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1012";
+const ASSET_VERSION = "20260701-1014";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -74,6 +74,8 @@ const COLLECTION_ALBUM_STICKERS_PER_PAGE = 12;
 const COLLECTION_INDEX_ITEMS_PER_PAGE = 6;
 const COLLECTION_PLACEMENT_SCALE = 0.52;
 const STICKER_TRAY_DRAG_THRESHOLD = 8;
+const STICKER_TRAY_EAGER_IMAGE_COUNT = 18;
+const STICKER_TRAY_LAZY_ROOT_MARGIN = "120px 520px";
 const STICKER_PLACEMENT_BASE_RATIO = 0.42;
 const STICKER_ALPHA_TRIM_THRESHOLD = 12;
 const STICKER_ALPHA_TRIM_PAD_RATIO = 0.035;
@@ -2203,6 +2205,8 @@ let spreadJumpAnimation = null;
 let coverOpenAnimation = null;
 let bookSwipeState = null;
 let stickerTrayDragState = null;
+let stickerTrayImageObserver = null;
+let stickerTrayImageHydrationFrame = 0;
 let suppressStickerTrayClick = false;
 let suppressSceneClickAfterSwipe = false;
 // v1650 (task 2): tray drop 直後の合成 click (canvas 側) を 250ms 抑止。
@@ -5914,6 +5918,7 @@ function setupCollectionStickerTray() {
   });
   collectionStickerTrayItems.addEventListener("scroll", () => {
     window.requestAnimationFrame(updateStickerTrayCounter);
+    scheduleStickerTrayImageHydration();
     if (!stickerTutorialProgrammaticTrayScroll && performance.now() > stickerTutorialProgrammaticTrayScrollUntil) {
       notifyStickerTutorialAction("trayScroll");
     }
@@ -6064,8 +6069,8 @@ function renderStickerThumbnailTray() {
   title.setAttribute("aria-hidden", "true");
   fragment.append(title);
 
-  const pendingImages = [];
-  for (const sticker of stickerOptions) {
+  disconnectStickerTrayImageObserver();
+  for (const [index, sticker] of stickerOptions.entries()) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "collection-toc-card sticker-tray-card";
@@ -6079,38 +6084,26 @@ function renderStickerThumbnailTray() {
     icon.setAttribute("aria-hidden", "true");
     const image = document.createElement("img");
     image.className = "collection-toc-image";
-    image.src = sticker.assetUrl;
     image.alt = "";
-    // v1627: lazy → eager に変更し tray 表示時点で全 sticker を並列 fetch 開始 (切替時の「グレー空欄」 対策)。
-    image.loading = "eager";
+    const eager = index < STICKER_TRAY_EAGER_IMAGE_COUNT;
+    if (eager) {
+      image.src = sticker.assetUrl;
+      image.loading = "eager";
+      image.fetchPriority = index < 8 ? "high" : "auto";
+    } else {
+      image.dataset.src = sticker.assetUrl;
+      image.loading = "lazy";
+      image.fetchPriority = "low";
+    }
     image.decoding = "async";
     image.draggable = false;
-    pendingImages.push(image);
     icon.append(image);
 
     button.append(icon);
     fragment.append(button);
   }
   collectionStickerTrayItems.replaceChildren(fragment);
-  // v1627: 全 icon ロード完了まで tray を visibility:hidden で隠して切替時の点滅を防止 (CLS 回避のため opacity ではなく visibility)。
-  // error も resolve でブロックせず (1 個 404 で全体停止防止)、 最終的に必ず class を外す。
-  collectionStickerTrayItems.classList.add("is-loading");
-  const waitFor = (img) => new Promise((resolve) => {
-    if (img.complete && img.naturalWidth > 0) {
-      resolve();
-      return;
-    }
-    const done = () => {
-      img.removeEventListener("load", done);
-      img.removeEventListener("error", done);
-      resolve();
-    };
-    img.addEventListener("load", done, { once: true });
-    img.addEventListener("error", done, { once: true });
-  });
-  Promise.all(pendingImages.map(waitFor)).then(() => {
-    collectionStickerTrayItems?.classList.remove("is-loading");
-  });
+  setupStickerTrayImageLazyLoading();
   if (stickerTutorialState) {
     const tutorialStepId = currentStickerTutorialStep()?.id;
     updateStickerTutorialTraySilhouettes(true, tutorialStepId === "place");
@@ -6121,6 +6114,90 @@ function renderStickerThumbnailTray() {
   }
   updateCollectionStickerTrayVisibility();
   updateStickerTrayCounter();
+}
+
+function setupStickerTrayImageLazyLoading() {
+  if (!collectionStickerTrayItems) {
+    return;
+  }
+  const lazyImages = [...collectionStickerTrayItems.querySelectorAll("img[data-src]")];
+  if (!lazyImages.length) {
+    return;
+  }
+  if ("IntersectionObserver" in window) {
+    stickerTrayImageObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) {
+          continue;
+        }
+        loadStickerTrayImage(entry.target);
+        stickerTrayImageObserver?.unobserve(entry.target);
+      }
+    }, {
+      root: collectionStickerTrayItems,
+      rootMargin: STICKER_TRAY_LAZY_ROOT_MARGIN,
+      threshold: 0.01,
+    });
+    lazyImages.forEach((image) => stickerTrayImageObserver.observe(image));
+  }
+  scheduleStickerTrayImageHydration();
+}
+
+function disconnectStickerTrayImageObserver() {
+  stickerTrayImageObserver?.disconnect();
+  stickerTrayImageObserver = null;
+  if (stickerTrayImageHydrationFrame) {
+    window.cancelAnimationFrame(stickerTrayImageHydrationFrame);
+    stickerTrayImageHydrationFrame = 0;
+  }
+}
+
+function scheduleStickerTrayImageHydration() {
+  if (stickerTrayImageHydrationFrame || !collectionStickerTrayItems) {
+    return;
+  }
+  stickerTrayImageHydrationFrame = window.requestAnimationFrame(() => {
+    stickerTrayImageHydrationFrame = 0;
+    hydrateVisibleStickerTrayImages();
+  });
+}
+
+function hydrateVisibleStickerTrayImages() {
+  if (!collectionStickerTrayItems) {
+    return;
+  }
+  const rootRect = collectionStickerTrayItems.getBoundingClientRect();
+  if (!rootRect.width || !rootRect.height) {
+    return;
+  }
+  const padX = Math.max(420, rootRect.width * 0.55);
+  const padY = Math.max(72, rootRect.height * 0.6);
+  const loadLeft = rootRect.left - padX;
+  const loadRight = rootRect.right + padX;
+  const loadTop = rootRect.top - padY;
+  const loadBottom = rootRect.bottom + padY;
+  const lazyImages = collectionStickerTrayItems.querySelectorAll("img[data-src]");
+  lazyImages.forEach((image) => {
+    const rect = image.getBoundingClientRect();
+    const nearViewport = rect.right >= loadLeft
+      && rect.left <= loadRight
+      && rect.bottom >= loadTop
+      && rect.top <= loadBottom;
+    if (!nearViewport) {
+      return;
+    }
+    loadStickerTrayImage(image);
+    stickerTrayImageObserver?.unobserve(image);
+  });
+}
+
+function loadStickerTrayImage(image) {
+  if (!image?.dataset?.src) {
+    return;
+  }
+  const src = image.dataset.src;
+  delete image.dataset.src;
+  image.src = src;
 }
 
 function updateStickerTrayCounter() {
@@ -6562,7 +6639,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
 
   const frontTexture = createStickerPeelTexture(paddedImage);
   const backTexture = createStickerPeelBackTexture(paddedImage);
-  const lipTexture = createStickerPeelLipTexture(paddedImage);
   const geometry = new THREE.PlaneGeometry(
     dimensions.width,
     dimensions.height,
@@ -6570,9 +6646,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     STICKER_PEEL_SEGMENTS_Y,
   );
   prepareStickerPeelGeometry(geometry, dimensions.width, dimensions.height);
-  const lipHeight = dimensions.height * 0.34;
-  const lipGeometry = new THREE.PlaneGeometry(dimensions.width, lipHeight, STICKER_PEEL_SEGMENTS_X, 7);
-  prepareStickerPeelGeometry(lipGeometry, dimensions.width, lipHeight);
   const frontMaterial = new THREE.MeshBasicMaterial({
     map: frontTexture,
     transparent: true,
@@ -6589,43 +6662,27 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     alphaTest: 0.012,
     opacity: 0.98,
   });
-  const lipMaterial = new THREE.MeshBasicMaterial({
-    map: lipTexture,
-    transparent: true,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-    alphaTest: 0.01,
-    opacity: 0.92,
-  });
   const front = new THREE.Mesh(geometry, frontMaterial);
   const back = new THREE.Mesh(geometry, backMaterial);
-  const lip = new THREE.Mesh(lipGeometry, lipMaterial);
   const group = new THREE.Group();
-  lip.position.y = dimensions.height / 2 - lipHeight / 2;
-  lip.position.z = 0.012;
-  group.add(back, front, lip);
+  group.add(back, front);
   const local = stickerPeelLocalPoint(placement);
   const rotation = THREE.MathUtils.degToRad(placement.rotation || 0);
   group.position.set(pageMesh.position.x + local.x, local.y, 0.16);
   group.rotation.z = rotation;
   front.renderOrder = 98;
   back.renderOrder = 97;
-  lip.renderOrder = 99;
   book.add(group);
 
   const animation = {
     group,
     front,
     back,
-    lip,
     geometry,
-    lipGeometry,
     frontMaterial,
     backMaterial,
-    lipMaterial,
     frontTexture,
     backTexture,
-    lipTexture,
     elapsed: 0,
     duration: STICKER_PEEL_DURATION,
     onComplete,
@@ -6678,33 +6735,6 @@ function createStickerPeelBackTexture(paddedImage) {
   paper.addColorStop(0, "#fffaf0");
   paper.addColorStop(0.52, "#f7efd9");
   paper.addColorStop(1, "#eadfc4");
-  textureCtx.fillStyle = paper;
-  textureCtx.fillRect(0, 0, textureCanvas.width, textureCanvas.height);
-  textureCtx.globalCompositeOperation = "source-over";
-  return configureStickerCanvasTexture(new THREE.CanvasTexture(textureCanvas));
-}
-
-function createStickerPeelLipTexture(paddedImage) {
-  const textureCanvas = document.createElement("canvas");
-  textureCanvas.width = paddedImage.width;
-  textureCanvas.height = Math.max(1, Math.round(paddedImage.height * 0.38));
-  const textureCtx = textureCanvas.getContext("2d");
-  textureCtx.drawImage(
-    paddedImage,
-    0,
-    0,
-    paddedImage.width,
-    textureCanvas.height,
-    0,
-    0,
-    textureCanvas.width,
-    textureCanvas.height,
-  );
-  textureCtx.globalCompositeOperation = "source-in";
-  const paper = textureCtx.createLinearGradient(0, 0, 0, textureCanvas.height);
-  paper.addColorStop(0, "#fffdf4");
-  paper.addColorStop(0.62, "#f3ead2");
-  paper.addColorStop(1, "#e3d5b7");
   textureCtx.fillStyle = paper;
   textureCtx.fillRect(0, 0, textureCanvas.width, textureCanvas.height);
   textureCtx.globalCompositeOperation = "source-over";
@@ -6779,7 +6809,6 @@ function bendStickerPeelGeometry(animation, progress) {
   }
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
-  bendStickerPeelLipGeometry(animation, progress, remaining, press);
   const lift = remaining * 0.2;
   animation.group.position.z = 0.018 + lift;
   animation.group.rotation.x = THREE.MathUtils.degToRad(-12 * remaining + 2 * press);
@@ -6788,53 +6817,13 @@ function bendStickerPeelGeometry(animation, progress) {
   animation.backMaterial.opacity = 0.92;
 }
 
-function bendStickerPeelLipGeometry(animation, progress, remaining, press) {
-  const geometry = animation.lipGeometry;
-  const positions = geometry?.attributes?.position;
-  const base = geometry?.userData?.basePositions;
-  const width = geometry?.userData?.peelWidth || 1;
-  const height = geometry?.userData?.peelHeight || 1;
-  if (!positions || !base) {
-    return;
-  }
-  const maxAngle = remaining * Math.PI * 0.92;
-  const radius = maxAngle > 0.001 ? height / maxAngle : height;
-  const anchorY = -height / 2;
-  for (let i = 0; i < positions.count; i += 1) {
-    const index = i * 3;
-    const baseX = base[index];
-    const baseY = base[index + 1];
-    const baseZ = base[index + 2];
-    const u = THREE.MathUtils.clamp(baseX / width + 0.5, 0, 1);
-    const v = THREE.MathUtils.clamp(baseY / height + 0.5, 0, 1);
-    const angle = maxAngle * Math.pow(v, 0.9);
-    const curlY = maxAngle > 0.001 ? anchorY + Math.sin(angle) * radius : baseY;
-    const curlZ = maxAngle > 0.001 ? (1 - Math.cos(angle)) * radius : 0;
-    const center = Math.sin(v * Math.PI);
-    positions.setXYZ(
-      i,
-      baseX + Math.sin((u - 0.5) * Math.PI * 2 + progress * Math.PI) * center * remaining * width * 0.008,
-      curlY + Math.pow(v, 1.4) * press * height * 0.02,
-      baseZ + curlZ + remaining * height * 0.035,
-    );
-  }
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
-  animation.lip.position.y = (animation.geometry.userData.peelHeight || 1) / 2 - height / 2;
-  animation.lip.position.z = 0.016 + remaining * height * 0.06;
-  animation.lipMaterial.opacity = Math.max(0, remaining * 0.96);
-}
-
 function finishStickerPeelAnimation(animation) {
   book.remove(animation.group);
   animation.geometry.dispose();
-  animation.lipGeometry.dispose();
   animation.frontMaterial.dispose();
   animation.backMaterial.dispose();
-  animation.lipMaterial.dispose();
   animation.frontTexture.dispose();
   animation.backTexture.dispose();
-  animation.lipTexture.dispose();
   if (typeof animation.onComplete === "function") {
     animation.onComplete();
   }
