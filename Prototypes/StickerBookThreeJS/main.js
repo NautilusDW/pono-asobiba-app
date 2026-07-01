@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1016";
+const ASSET_VERSION = "20260701-1019";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -44,6 +44,7 @@ const GAME_STICKER_CATALOG_URL = "../../assets/data/game-stickers.json";
 const STICKER_ASSET_PREFIX = "../../";
 const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
 const COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY = "sb3d_collection_album_placements_v1";
+const DEBUG_ALL_STICKERS_STORAGE_KEY = "sb3d_debug_all_stickers_v1";
 const EDITOR_STATE_VERSION = 3;
 const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 2;
@@ -1686,6 +1687,8 @@ const bookThemePanel = document.getElementById("bookThemePanel");
 const bookThemeClose = document.getElementById("bookThemeClose");
 const settingsBackButton = document.getElementById("settingsBackButton");
 const settingsTutorialButton = document.getElementById("settingsTutorialButton");
+const debugAllStickersRow = document.getElementById("debugAllStickersRow");
+const debugAllStickersToggle = document.getElementById("debugAllStickersToggle");
 const zukanSettingsButtons = [...document.querySelectorAll("[data-zukan-side][data-zukan-type]")];
 const stickerModeButtons = [...document.querySelectorAll("[data-sticker-edit-mode]")];
 const zukanTuneButton = document.getElementById("zukanTuneButton");
@@ -2220,6 +2223,7 @@ let suppressSceneClickAfterStickerDrop = false;
 let lastBookSwipeDebug = null;
 let stickerPlan = null;
 let gameStickerCatalog = null;
+let allStickerOptions = [];
 let stickerOptions = [];
 let collectionStickerOptions = [];
 const stickerPeelAnimations = [];
@@ -2689,6 +2693,7 @@ topEditButton?.addEventListener("click", () => {
 
 syncTopSettingsButton();
 setupZukanSettingsPanel();
+setupDebugAllStickersControl();
 updateStickerEditModeUi();
 
 albumModeToggle?.addEventListener("click", () => {
@@ -2732,14 +2737,18 @@ window.__stickerBookDebugState = () => ({
   coverPrint: coverPrintFile(activeBook),
   coverHardwareVisible: coverHardware.group.visible,
   lastBookSwipeDebug,
+  stickerOptionCount: stickerOptions.length,
+  allStickerOptionCount: allStickerOptions.length,
+  ownedStickerCount: readOwnedStickerIds().size,
+  debugAllStickers: readDebugAllStickersEnabled(),
   ringGroupVisible: ringGroup.visible,
   innerLeftVisible: innerLeft.visible,
   innerRightVisible: innerRight.visible,
   pageTurnVisible: pageTurn.visible,
   frontPageVisible: frontPage.visible,
   backPageVisible: backPage.visible,
-  leftPlacementCount: getPagePlacements(activeBookPage).length,
-  rightPlacementCount: getPagePlacements(rightBookPageNumber()).length,
+  leftPlacementCount: availablePagePlacements(activeBookPage).length,
+  rightPlacementCount: availablePagePlacements(rightBookPageNumber()).length,
   leftCollectionPlacementCount: getCollectionPagePlacements(activeBookPage).length,
   rightCollectionPlacementCount: getCollectionPagePlacements(rightBookPageNumber()).length,
   collectionTocCardCount: Math.max(1, Math.ceil(collectionTocPageCount() / 2)),
@@ -2991,7 +3000,7 @@ function pickInlineStickerTarget(event) {
   }
   const page = pageNumberForPickedPage(hit.object);
   const point = texturePointFromPageHit(hit);
-  const placements = [...getPagePlacements(page)]
+  const placements = [...availablePagePlacements(page)]
     .filter((placement) => placement.assetUrl)
     .sort((a, b) => (Number(b.z) || 0) - (Number(a.z) || 0));
   for (const placement of placements) {
@@ -4086,7 +4095,7 @@ function ensureStickerTutorialEditableSticker() {
   }
   const pages = [activeBookPage, rightBookPageNumber()].filter((page) => page >= 1 && page <= editorPageCount());
   for (const page of pages) {
-    const placement = getPagePlacements(page).find((item) => item?.assetUrl);
+    const placement = availablePagePlacements(page).find((item) => item?.assetUrl);
     if (placement) {
       activeEditorPage = page;
       selectedPlacementId = placement.id;
@@ -5802,6 +5811,124 @@ function readOwnedStickerIds() {
   return owned;
 }
 
+function isStickerDebugModeAllowed() {
+  return Boolean(
+    window.PonoDebugMode
+      && typeof window.PonoDebugMode.isAllowed === "function"
+      && window.PonoDebugMode.isAllowed(),
+  );
+}
+
+function readDebugAllStickersEnabled() {
+  if (!isStickerDebugModeAllowed()) {
+    return false;
+  }
+  try {
+    return localStorage.getItem(DEBUG_ALL_STICKERS_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeDebugAllStickersEnabled(enabled) {
+  if (!isStickerDebugModeAllowed()) {
+    return;
+  }
+  try {
+    localStorage.setItem(DEBUG_ALL_STICKERS_STORAGE_KEY, enabled ? "1" : "0");
+  } catch {}
+}
+
+function syncDebugAllStickersUi() {
+  const allowed = isStickerDebugModeAllowed();
+  const enabled = allowed && readDebugAllStickersEnabled();
+  if (debugAllStickersRow) {
+    debugAllStickersRow.hidden = !allowed;
+  }
+  if (debugAllStickersToggle) {
+    debugAllStickersToggle.checked = enabled;
+    debugAllStickersToggle.disabled = !allowed;
+  }
+  document.body.classList.toggle("is-debug-all-stickers", enabled);
+}
+
+function filterStickerOptionsForAvailability(sourceOptions) {
+  const options = (Array.isArray(sourceOptions) ? sourceOptions : [])
+    .filter((sticker) => sticker?.id && sticker.assetUrl);
+  if (readDebugAllStickersEnabled()) {
+    return options;
+  }
+  const ownedIds = readOwnedStickerIds();
+  if (!ownedIds.size) {
+    return [];
+  }
+  return options.filter((sticker) => ownedIds.has(sticker.id));
+}
+
+function isStickerIdAvailable(stickerId) {
+  if (!stickerId) {
+    return false;
+  }
+  return stickerOptions.some((sticker) => sticker.id === stickerId);
+}
+
+function isStickerPlacementAvailable(placement) {
+  return Boolean(placement?.assetUrl && isStickerIdAvailable(String(placement.stickerId || "")));
+}
+
+function availablePagePlacements(page) {
+  return getPagePlacements(page).filter(isStickerPlacementAvailable);
+}
+
+function applyStickerAvailability(options = {}) {
+  syncDebugAllStickersUi();
+  if (!allStickerOptions.length) {
+    return;
+  }
+  const previousIds = new Set(stickerOptions.map((sticker) => sticker.id));
+  stickerOptions = filterStickerOptionsForAvailability(allStickerOptions);
+  const changed = stickerOptions.length !== previousIds.size
+    || stickerOptions.some((sticker) => !previousIds.has(sticker.id));
+  if (!changed && !options.forceRender) {
+    return;
+  }
+  if (
+    selectedPlacementId
+    && !getPagePlacements(activeEditorPage).some((placement) => (
+      placement.id === selectedPlacementId && isStickerPlacementAvailable(placement)
+    ))
+  ) {
+    selectedPlacementId = null;
+  }
+  syncEditorPlacementsWithStickerPlan();
+  editorPageDefinitions = buildEditorPageDefinitions();
+  activeBookPage = spreadStartForPage(Math.min(activeBookPage, editorPageCount()));
+  activeEditorPage = THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
+  if (editorEnabled) {
+    setupEditorGameFilter();
+    renderEditorShell();
+  }
+  renderCollectionStickerTray();
+  refreshPageTemplateTextures();
+  updateControlState();
+  updatePage(flipProgress);
+  scheduleStickerTutorialLayout();
+}
+
+function setupDebugAllStickersControl() {
+  syncDebugAllStickersUi();
+  debugAllStickersToggle?.addEventListener("change", () => {
+    writeDebugAllStickersEnabled(Boolean(debugAllStickersToggle.checked));
+    applyStickerAvailability({ forceRender: true });
+  });
+  window.addEventListener("PonoGameStickerGranted", () => applyStickerAvailability({ forceRender: true }));
+  window.addEventListener("storage", (event) => {
+    if (event.key === "pono_game_stickers_v1" || event.key === DEBUG_ALL_STICKERS_STORAGE_KEY) {
+      applyStickerAvailability({ forceRender: true });
+    }
+  });
+}
+
 function pickNearbySuperSilhouetteIds(mainStickerId, ownedSet) {
   if (!collectionStickerTrayItems || !mainStickerId) return [];
   const trayButtons = [...collectionStickerTrayItems.querySelectorAll("[data-sticker-tray-id]")];
@@ -6075,6 +6202,7 @@ function openZukanSettingsPanel(options = {}) {
     return;
   }
   closeBookThemePanel();
+  syncDebugAllStickersUi();
   zukanSettingsPanel.hidden = false;
   syncTopSettingsButton();
 }
@@ -7492,9 +7620,11 @@ async function loadStickerPlanForEditor() {
     const fallbackStickerOptions = loadedStickerOptions
       .filter((sticker) => sticker.assetStatus === "existing" && sticker.assetPath)
       .map((sticker) => ({ ...sticker }));
-    stickerOptions = catalogStickerOptions.length
+    allStickerOptions = catalogStickerOptions.length
       ? catalogStickerOptions
       : fallbackStickerOptions;
+    stickerOptions = filterStickerOptionsForAvailability(allStickerOptions);
+    syncDebugAllStickersUi();
     syncEditorPlacementsWithStickerPlan();
     syncCollectionPlacementsWithStickerPlan();
     editorPageDefinitions = buildEditorPageDefinitions();
@@ -8288,7 +8418,7 @@ function renderStickerLibrary() {
     return;
   }
   if (!stickerOptions.length) {
-    stickerLibrary.textContent = "シールを よみこみちゅう";
+    stickerLibrary.textContent = allStickerOptions.length ? "シールは まだありません" : "シールを よみこみちゅう";
     return;
   }
   const query = editorSearchQuery.toLowerCase();
@@ -8323,7 +8453,7 @@ function renderEditorCanvas() {
   if (!editorPageCanvas) {
     return;
   }
-  const placements = [...getActivePagePlacements()].sort((a, b) => a.z - b.z);
+  const placements = [...availablePagePlacements(activeEditorPage)].sort((a, b) => a.z - b.z);
   editorPageCanvas.innerHTML = `
     <canvas class="editor-template-canvas" aria-hidden="true"></canvas>
     <canvas class="editor-draw-canvas" aria-hidden="true"></canvas>
@@ -9349,11 +9479,11 @@ function getPageDrawingStrokes(page) {
 }
 
 function getPlacementById(id) {
-  return getActivePagePlacements().find((placement) => placement.id === id) || null;
+  return availablePagePlacements(activeEditorPage).find((placement) => placement.id === id) || null;
 }
 
 function getPlacementByIdOnPage(id, page) {
-  return getPagePlacements(page).find((placement) => placement.id === id) || null;
+  return availablePagePlacements(page).find((placement) => placement.id === id) || null;
 }
 
 function getSelectedPlacement() {
@@ -12355,7 +12485,7 @@ function drawStickerListPage(ctx, texture, palette, pageDef, stickers) {
 }
 
 function drawStickerCanvasPage(ctx, texture, palette, pageDef, placements, pageNumber) {
-  const ordered = [...placements].sort((a, b) => a.z - b.z);
+  const ordered = [...placements].filter(isStickerPlacementAvailable).sort((a, b) => a.z - b.z);
   for (const placement of ordered) {
     drawAsyncPlacedSticker(ctx, texture, placement, pageNumber);
   }

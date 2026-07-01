@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260701-1016">
+  <link rel="stylesheet" href="./styles.css?v=20260701-1019">
 </head>
 <body>
   <main id="app">
@@ -25,6 +25,10 @@
       </div>
       <button id="settingsBackButton" class="zukan-settings-back" type="button">もどる</button>
       <button id="settingsTutorialButton" class="zukan-settings-help" type="button">あそびかた</button>
+      <label id="debugAllStickersRow" class="zukan-debug-toggle" hidden>
+        <input id="debugAllStickersToggle" type="checkbox">
+        <span>デバッグ: シールを ぜんぶ つかう</span>
+      </label>
       <div class="zukan-settings-row">
         <span>ひだり</span>
         <div class="zukan-settings-segment" role="group" aria-label="ひだりページ">
@@ -270,6 +274,7 @@
       </div>
     </div>
   </main>
-  <script type="module" src="./main.js?v=20260701-1016"></script>
+  <script src="../../common/debug-mode.js"></script>
+  <script type="module" src="./main.js?v=20260701-1019"></script>
 </body>
 </html>

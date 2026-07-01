@@ -174,6 +174,33 @@ body:not(.is-collection-album) #scene {
   box-shadow: inset 0 -4px 0 rgba(61, 153, 149, 0.22);
 }
 
+.zukan-debug-toggle {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border: 2px dashed rgba(84, 161, 151, 0.38);
+  border-radius: 10px;
+  background: rgba(255, 253, 241, 0.82);
+  color: #263c3e;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.zukan-debug-toggle[hidden] {
+  display: none !important;
+}
+
+.zukan-debug-toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: #49aba2;
+}
+
 .zukan-settings-row {
   grid-template-columns: 64px minmax(0, 1fr);
   margin-top: 10px;
@@ -1223,8 +1250,12 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
 }
 
 .sticker-tray-icon {
+  --sticker-tray-icon-pad: 6px;
+  position: relative;
   width: 70px;
   height: 58px;
+  box-sizing: border-box;
+  overflow: visible;
   border-radius: 10px;
   cursor: grab;
   /* v1646 (task 5): touch-action: none → pan-x。 アイコン上で指を置いて横スライドしたときに
@@ -1239,8 +1270,15 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
 }
 
 .sticker-tray-icon img {
-  max-width: 92%;
-  max-height: 92%;
+  position: absolute;
+  left: var(--sticker-tray-icon-pad);
+  top: var(--sticker-tray-icon-pad);
+  width: calc(100% - var(--sticker-tray-icon-pad) * 2);
+  height: calc(100% - var(--sticker-tray-icon-pad) * 2);
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
   filter: var(--sticker-thumbnail-outline-filter);
 }
 
@@ -3351,6 +3389,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .sticker-tray-icon {
+    --sticker-tray-icon-pad: 5px;
     width: 58px;
     height: 46px;
   }
@@ -3779,6 +3818,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .sticker-tray-icon {
+    --sticker-tray-icon-pad: 4px;
     width: 54px;
     height: 42px;
   }
