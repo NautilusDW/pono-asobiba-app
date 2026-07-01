@@ -25,6 +25,12 @@
       default: false
     },
     {
+      id: 'capture-mode',
+      label: 'スクショモード：撮影UIを使う',
+      description: 'ON にすると、 ?capture=1 や Shift+Alt+C でスクショ撮影UIを出せる',
+      default: false
+    },
+    {
       id: 'gacha-rarity-override',
       label: 'デイリーガチャ：レア度を指定',
       description: 'URL に ?gachaRarity=normal / rare / super を付けると、 そのレア度確定でガチャが回せる',

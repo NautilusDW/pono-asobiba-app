@@ -15,10 +15,11 @@
 //   2. キーボード Shift+Alt+C (3 キー同時押し、 修飾必須、 タッチ不可)
 //   3. window.PonoCapture.show() (admin パネル経由、 Phase 3 で使う)
 //
-// 単一ゲート (v1579〜): PonoDebugMode に完全委譲。
+// 単一ゲート (v1873〜): PonoDebugMode の個別機能トグルへ委譲。
 //   - 旧: 独自の STAGING_HOSTS リスト + sessionStorage.admin_capture_unlocked
-//   - 新: window.PonoDebugMode.isAllowed()
-//     (= staging host 判定 + sessionStorage.pono_debug_mode_session === '1')
+//   - 中間: window.PonoDebugMode.isAllowed()
+//   - 新: window.PonoDebugMode.isFeatureEnabled('capture-mode')
+//     (= staging host 判定 + manage unlock + デバッグボードのスクショモード ON)
 //   ※ common/debug-mode.js を必ず capture.js より前にロードすること。
 //     PonoDebugMode が未定義の場合は安全側に倒して常に false (= 機能 OFF)。
 //
@@ -31,13 +32,17 @@
   if (window._ponoCaptureInited) return;
   window._ponoCaptureInited = true;
 
-  // ── 単一ゲート: PonoDebugMode への委譲 ──
+  var CAPTURE_FEATURE_KEY = 'capture-mode';
+
+  // ── 単一ゲート: PonoDebugMode 個別トグルへの委譲 ──
   // capture.js は固有の host/session 判定を持たない。
   // PonoDebugMode が未ロード時は false (= UI も shortcut も URL trigger も無効)。
   function isCaptureAllowed() {
     try {
       var dm = window.PonoDebugMode;
-      return !!(dm && typeof dm.isAllowed === 'function' && dm.isAllowed());
+      return !!(dm
+        && typeof dm.isFeatureEnabled === 'function'
+        && dm.isFeatureEnabled(CAPTURE_FEATURE_KEY));
     } catch (e) {
       return false;
     }
@@ -389,10 +394,9 @@
   function armUI() {
     if (inited) return;
     inited = true;
-    // キーボードはホスト的に許可されている時のみ bind (本番では完全無音)
-    if (isCaptureAllowed()) {
-      window.addEventListener('keydown', onKeyDown, true);
-    }
+    // キーボード監視は常に bind し、実行時に capture-mode で gate する。
+    // これによりデバッグボードで ON にした直後も Shift+Alt+C が効く。
+    window.addEventListener('keydown', onKeyDown, true);
     if (isCaptureAllowed() && urlTriggered()) {
       // DOMContentLoaded を待ってから表示
       if (document.readyState === 'loading') {

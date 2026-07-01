@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1023";
+const ASSET_VERSION = "20260701-1024";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -83,6 +83,7 @@ const STICKER_PLACEMENT_BASE_RATIO = 0.42;
 const STICKER_ALPHA_TRIM_THRESHOLD = 12;
 const STICKER_ALPHA_TRIM_PAD_RATIO = 0.035;
 const STICKER_ALPHA_TRIM_MIN_PAD = 3;
+const PLACED_STICKER_ARTWORK_FILTER = "brightness(1.14) saturate(1.08) contrast(1.03)";
 const STICKER_PEEL_DURATION = 1.12;
 const STICKER_PEEL_SEGMENTS_X = 14;
 const STICKER_PEEL_SEGMENTS_Y = 24;
@@ -12399,7 +12400,7 @@ function drawAsyncCollectionPlacedSticker(ctx, texture, placement, pageNumber) {
       ctx.translate(x, y);
       ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
       drawStickerWhiteOutline(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
-      ctx.drawImage(paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
+      drawPlacedStickerArtwork(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
       drawZukanTuningSelectionOverlayForPage(ctx, pageNumber);
       texture.needsUpdate = true;
@@ -12554,7 +12555,7 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
       ctx.translate(x, y);
       ctx.rotate(THREE.MathUtils.degToRad(placement.rotation || 0));
       drawStickerWhiteOutline(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
-      ctx.drawImage(paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
+      drawPlacedStickerArtwork(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
       drawPageDrawingLayer(ctx, pageNumber);
       drawInlineStickerSelectionOverlay(ctx, pageNumber);
@@ -12612,6 +12613,13 @@ function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
     ctx.drawImage(image, x + dx, y + dy, width, height);
   }
   ctx.filter = "none";
+  ctx.restore();
+}
+
+function drawPlacedStickerArtwork(ctx, image, x, y, width, height) {
+  ctx.save();
+  ctx.filter = PLACED_STICKER_ARTWORK_FILTER;
+  ctx.drawImage(image, x, y, width, height);
   ctx.restore();
 }
 
