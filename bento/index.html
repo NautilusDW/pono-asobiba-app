@@ -540,13 +540,33 @@ html, body {
   z-index: 3;
   left: 43%;
   bottom: 4%;
-  width: min(26vw, 280px);
-  height: min(17vw, 184px);
+  width: min(29.5vw, 308px);
+  height: min(19vw, 196px);
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
+}
+/* ふた: お重列の右端に立てかけ (お重より後ろ、 natural AR 維持) */
+#bento-delivery-bento .bento-delivery__lid {
+  position: absolute;
+  z-index: -1;
+  right: -12%;
+  bottom: 1%;
+  height: 56%;
+  width: auto;
+  object-fit: contain;
+  transform: rotate(-6deg);
+  transform-origin: 55% 88%;
+  filter: drop-shadow(0 5px 9px rgba(70, 40, 16, 0.28));
+  pointer-events: none;
+}
+/* 1段のお重 (host が丸ごと 760/460) はふたが相対的に大きくなるので控えめに */
+#bento-delivery-bento.free-complete-bento:not(.free-complete-stack) .bento-delivery__lid {
+  right: 0;
+  bottom: -1%;
+  height: 53%;
 }
 #bento-delivery-bento.complete-bento {
   width: 100%;
@@ -662,8 +682,12 @@ html, body {
   }
   .bento-delivery__handoff {
     left: 43%;
-    width: min(26vw, 220px);
+    width: min(24vw, 210px);
     height: min(17vw, 145px);
+  }
+  #bento-delivery-bento .bento-delivery__lid {
+    right: 1%;
+    height: 52%;
   }
   .bento-delivery__dialog {
     width: min(76vw, 690px);
@@ -10582,6 +10606,15 @@ function refreshFreeCompletionMaskViews() {
       hideLid: completeBento.dataset.hideLid === '1',
       sideBySideTiers: completeBento.dataset.sideBySideTiers === '1',
     });
+  }
+  // お渡し演出 (bento-delivery) 表示中もマスク完成時に再 render する。
+  // これがないと初出のマスク variant (tier2 complete 等) が async build から
+  // 返ってきてもお渡しシーンには反映されず、 おかずがマスク無しのままになる。
+  const deliveryOverlay = document.getElementById('bento-delivery');
+  const deliveryBento = document.getElementById('bento-delivery-bento');
+  if (deliveryOverlay && deliveryBento && !deliveryOverlay.classList.contains('hidden')
+      && deliveryBento.classList.contains('free-complete-bento')) {
+    renderDeliveryBento(deliveryBento);
   }
   document.querySelectorAll('.free-complete-editor-preview-slot.free-complete-bento').forEach(slot => {
     const box = getSelectedBentoBox();

@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-01T21:19:31Z - bento お渡しシーン: display:none中render起因のマスク欠落/一段のみ表示を修正 + ふた演出追加 + handoff拡大
+- **タスク**: bento お渡しシーン: display:none中render起因のマスク欠落/一段のみ表示を修正 + ふた演出追加 + handoff拡大
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 66
+- **エラー数**: 3
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 22, "Bash": 14, "Glob": 1, "Edit": 1, "Grep": 13, "ToolSearch": 2, "Workflow": 4, "TaskOutput": 9}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-01T20:36:13Z - bento okazu tier gating: require all okazu slots filled, hide OK button until filled (worktree wf_394eac10-c46-1)
 - **タスク**: bento okazu tier gating: require all okazu slots filled, hide OK button until filled (worktree wf_394eac10-c46-1)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 - **理由**: N/A
 - **総アクション数**: 104
 - **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 64, "Read": 12, "Edit": 16, "Workflow": 9, "Grep": 1, "Write": 1, "Agent": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-06-29T11:46:00Z - batch:922 maze オープニング fade-in + 画像preload + ナレ遅延発火 — ユーザー希望の load→fade→narration sequence (Image.decode 並列 + 500ms fade + 200ms 余白 + 2500ms safety + tap skip)、 Codex batch:911 と merge conflict を 7 箇所 resolve済 (status キャッシュラグで一時誤検知)
-- **タスク**: batch:922 maze オープニング fade-in + 画像preload + ナレ遅延発火 — ユーザー希望の load→fade→narration sequence (Image.decode 並列 + 500ms fade + 200ms 余白 + 2500ms safety + tap skip)、 Codex batch:911 と merge conflict を 7 箇所 resolve済 (status キャッシュラグで一時誤検知)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 104
-- **エラー数**: 10
 - **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
