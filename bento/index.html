@@ -1217,6 +1217,9 @@ html, body {
 .free-placed-item.is-divider-edit-dim {
   opacity: 0.35;
   transition: opacity 0.2s ease;
+  /* batch:divider-ux — dim 中の おかず等が しきりの上に被さって pointerdown を奪い、
+     しきりを指で動かせなくなるため、しきりモード中は click-through にする */
+  pointer-events: none;
 }
 .free-placed-item.type-pick img {
   clip-path: inset(0 0 18% 0);
@@ -2245,6 +2248,18 @@ html, body {
   opacity: 0.55;
   font-size: 0.62rem;
   box-shadow: none;
+}
+/* batch:dividerfix F1 — 見た目は 24-32px のまま、透明 ::after で当たり判定を 44px 以上に拡張 */
+.free-stage-target-marker.is-divider-target::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 999px;
+}
+@media (pointer: coarse) {
+  .free-stage-target-marker.is-divider-target::after {
+    inset: -16px;
+  }
 }
 .free-stage-target-marker.is-divider-target.is-active {
   opacity: 1;
@@ -11568,9 +11583,12 @@ function getSimpleSlotVariantDef(def, slot) {
 // batch:divider-ux — ボタン配置の統一順: 手前 (y 大) → 奥、同じ列内は 左 → 右。
 // 全 box 共通 (サーバ登録順に依存しない)。 slot.index は並べ替えても元の識別子のまま維持する。
 function compareSimpleSlotFrontLeftOrder(a, b) {
+  // batch:dividerfix F4 — admin 配置で同じ「見た目の列」の y が数 px ずれることがあるため、
+  // 0.5px ではなく列バンド (stage 高の 6%、最低 16px) 以内は同列扱いで 左→右 に並べる。
+  const rowBand = Math.max(16, FREE_LAYOUT_H * 0.06);
   const ay = Number(a && a.y) || 0;
   const by = Number(b && b.y) || 0;
-  if (Math.abs(ay - by) > 0.5) return by - ay;
+  if (Math.abs(ay - by) > rowBand) return by - ay;
   return (Number(a && a.x) || 0) - (Number(b && b.x) || 0);
 }
 function orderSimpleSlotsForDef(def, slots) {
@@ -12199,45 +12217,95 @@ function syncSimplePickItemsToCurrentSlots() {
 function getSimpleDividerSnapRadius() {
   return FREE_LAYOUT_W * 0.115;
 }
+// batch:dividerfix F6 — スロット点が「自由配置のまま置かれた別のしきり」の磁石半径内に隠れているか。
+// 隠れたスロットへ ghost を出したり drop をスナップさせると重ね置き (複製) を誘発するため除外する。
+function isSimpleDividerSlotPointUnderLooseDivider(point, tier, exemptUid = null) {
+  if (!point) return false;
+  const radius = getSimpleDividerSnapRadius();
+  return placedItems.some(loose => loose
+    && loose.type === 'divider'
+    && !loose.simpleSlot
+    && !loose.parentCupId
+    && loose.uid !== exemptUid
+    && getItemTier(loose) === tier
+    && dist(loose, point) <= radius);
+}
 // batch:divider-ux — 一番近い「空いている」しきりスロットを磁石半径内で探す。
 // 自分自身が占有しているスロットは空き扱い (すこし動かして戻したとき再セットできるように)。
-function findNearestEmptySimpleDividerSlot(item, dropPoint = null) {
-  if (!item || item.type !== 'divider') return null;
-  const slots = getSimpleFixedSlots(item, getItemTier(item));
-  if (!slots.length) return null;
+// batch:dividerfix F5 — 磁石半径内の「最寄り」スロットが占有済みなら、遠い空きスロットへ
+// テレポートさせず自由配置扱い (blockedByOccupied で通知)。
+function getSimpleDividerSlotDropCandidate(item, dropPoint = null) {
+  const none = { slot: null, blockedByOccupied: false };
+  if (!item || item.type !== 'divider') return none;
+  const tier = getItemTier(item);
+  const slots = getSimpleFixedSlots(item, tier);
+  if (!slots.length) return none;
   const radius = getSimpleDividerSnapRadius();
-  let best = null;
-  let bestDist = Infinity;
+  let bestEmpty = null;
+  let bestEmptyDist = Infinity;
+  let nearestDist = Infinity;
+  let nearestOccupied = false;
   slots.forEach(slot => {
-    const blocking = getSimpleSlotBlockingItem(slot);
-    if (blocking && blocking.uid !== item.uid) return;
     const point = getSimpleSlotActualPoint(slot) || slot;
     if (!point) return;
     const itemDist = dist(item, point);
     const pointerDist = dropPoint ? dist(dropPoint, point) : Infinity;
     const d = Math.min(itemDist, pointerDist);
-    if (d < bestDist) {
-      best = slot;
-      bestDist = d;
+    const blocking = getSimpleSlotBlockingItem(slot);
+    const occupied = !!(blocking && blocking.uid !== item.uid);
+    if (d < nearestDist) {
+      nearestDist = d;
+      nearestOccupied = occupied;
+    }
+    if (occupied) return;
+    // F6: 自由配置しきりの下に隠れたスロットへはスナップしない
+    if (isSimpleDividerSlotPointUnderLooseDivider(point, tier, item.uid)) return;
+    if (d < bestEmptyDist) {
+      bestEmpty = slot;
+      bestEmptyDist = d;
     }
   });
-  return best && bestDist <= radius ? best : null;
+  const blockedByOccupied = nearestDist <= radius && nearestOccupied;
+  if (blockedByOccupied) return { slot: null, blockedByOccupied: true };
+  return {
+    slot: bestEmpty && bestEmptyDist <= radius ? bestEmpty : null,
+    blockedByOccupied: false,
+  };
+}
+function findNearestEmptySimpleDividerSlot(item, dropPoint = null) {
+  return getSimpleDividerSlotDropCandidate(item, dropPoint).slot;
 }
 // batch:divider-ux — しきりの drop 処理: 磁石半径内の空きスロットへスナップ、
 // 圏外なら自由配置のまま (simpleSlot を外して free 位置を維持)。
+// batch:dividerfix F5/F7 — 最寄りが占有済みのときは自由配置 + 「ここは もう しきりが あるよ。」、
+// 意味のある release では必ずひとこと返す (無移動タップは黙る)。
 function applySimpleDividerSlotDrop(item, dropPoint = null, opts = {}) {
   if (!item || item.type !== 'divider') return false;
   const sourceKey = item.simpleSlot || null;
-  const slot = findNearestEmptySimpleDividerSlot(item, dropPoint);
+  const dragStart = opts.dragStart || null;
+  const stayedPut = !!(dragStart && dist(item, dragStart) <= 8);
+  const candidate = getSimpleDividerSlotDropCandidate(item, dropPoint);
+  const slot = candidate.slot;
   if (!slot) {
     item.simpleSlot = null;
+    if (opts.speech !== false && !stayedPut) {
+      setSpeech(candidate.blockedByOccupied
+        ? 'ここは もう しきりが あるよ。'
+        : 'すきな ばしょに おいたよ。');
+    }
     return false;
   }
   syncSimpleDividerItemToSlot(item, slot);
   const moved = applySimpleSlotPlacementToItem(item, slot);
-  if (moved && opts.speech !== false && sourceKey && sourceKey !== slot.key) {
-    setSpeech('ばしょを うつしたよ。');
+  if (moved && opts.speech !== false) {
+    if (sourceKey && sourceKey !== slot.key) {
+      setSpeech('おひっこし したよ。');
+    } else if (!sourceKey) {
+      setSpeech('しきりを おいたよ。');
+    }
   }
+  // batch:dividerfix F7a — legacy applySimpleSlotDrop と同じく snap 成功後に pick を追従させる
+  if (moved) syncSimplePickItemsToCurrentSlots();
   return moved;
 }
 // batch:divider-ux — ドラッグ中、磁石半径内の一番近い ghost を is-active でハイライト (スナップは release 時のみ)
@@ -12249,12 +12317,12 @@ function updateSimpleDividerGhostHighlight(item, dropPoint = null) {
     marker.classList.toggle('is-active', !!slot && marker.dataset.slotKey === slot.key);
   });
 }
-function applySimpleSlotDrop(uid, dropPoint = null) {
+function applySimpleSlotDrop(uid, dropPoint = null, opts = {}) {
   const item = placedItems.find(i => i.uid === uid);
   if (!simpleBentoMode || !item || item.parentCupId) return false;
   // batch:divider-ux — しきりモードのしきりは「空きスロット磁石スナップ or 自由配置」に分岐
   if (item.type === 'divider' && isSimpleDividerEditMode()) {
-    return applySimpleDividerSlotDrop(item, dropPoint);
+    return applySimpleDividerSlotDrop(item, dropPoint, { dragStart: opts.dragStart || null });
   }
   if (!item.simpleSlot) return false;
   const kind = getSimpleSlotKindForItem(item);
@@ -12860,7 +12928,9 @@ function beginFreeItemDrag(e, uid) {
   const offset = p && item
     ? { x: item.x - p.x, y: item.y - p.y }
     : { x: 0, y: 0 };
-  freeDragState = { uid, offset, point: p, historyBefore: beginFreeHistoryChange() };
+  // batch:dividerfix F7c — release 時に「無移動タップ」を黙らせるためドラッグ開始位置を控える
+  const startPoint = item ? { x: item.x, y: item.y } : null;
+  freeDragState = { uid, offset, point: p, startPoint, historyBefore: beginFreeHistoryChange() };
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   window.addEventListener('pointermove', onFreeItemDragMove, { passive: false });
@@ -12915,13 +12985,14 @@ function onFreeItemDragEnd(e) {
   if (e && e.cancelable) e.preventDefault();
   const uid = freeDragState.uid;
   const historyBefore = freeDragState.historyBefore || null;
+  const dragStart = freeDragState.startPoint || null;
   const dropPoint = (e ? eventToFreePoint(e) : null) || freeDragState.point || null;
   freeDragState = null;
   window.removeEventListener('pointermove', onFreeItemDragMove);
   // batch:937 fix#1 — drop pointercancel sibling so once-fired pointerup path doesn't leak the other listener
   window.removeEventListener('pointercancel', onFreeItemDragEnd);
   window.removeEventListener('pointerup', onFreeItemDragEnd);
-  const handledSimpleDrop = applySimpleSlotDrop(uid, dropPoint);
+  const handledSimpleDrop = applySimpleSlotDrop(uid, dropPoint, { dragStart });
   if (!handledSimpleDrop) finalizeFreeItemPosition(uid);
   const movedItem = placedItems.find(i => i.uid === uid);
   if (!handledSimpleDrop && simpleBentoMode && isSimplePickEditMode() && movedItem && movedItem.type === 'pick') {
@@ -13484,7 +13555,8 @@ function finishFreePaletteDrag(shouldFinalize) {
   // (圏外なら自由配置のまま)。使った family も覚えて ghost タップ配置に引き継ぐ。
   if (simpleBentoMode && def.type === 'divider' && placed && !placed.parentCupId) {
     noteSimpleDividerPaletteUse(def);
-    applySimpleDividerSlotDrop(placed, null, { speech: false });
+    // batch:dividerfix F7c — palette ドラッグ配置でも release のひとことを返す (speech 有効)
+    applySimpleDividerSlotDrop(placed, null);
   }
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
@@ -14361,6 +14433,12 @@ function createFreePlacedElement(item, interactive) {
           beginFreeItemDrag(ev, item.uid);
           return;
         }
+        // batch:divider-ux — 自由配置中 (simpleSlot なし) の しきりも しきりモードなら指で動かせる
+        if (item.type === 'divider' && isSimpleDividerEditMode()) {
+          handleSimplePlacedItemTap(item);
+          beginFreeItemDrag(ev, item.uid);
+          return;
+        }
         if (item.simpleSlot && item.type !== 'rice') {
           handleSimplePlacedItemTap(item);
           beginFreeItemDrag(ev, item.uid);
@@ -14978,6 +15056,16 @@ function bindFreePalettePress(btn, onPress) {
 function bindSimpleDividerPalettePress(btn, def) {
   let press = null;
   const reset = () => { press = null; };
+  // batch:dividerfix F7b — 汎用 palette handler と同じ tier lock 誘導 (tap/drag 両分岐で使う)
+  const showTierLockPromoIfLocked = () => {
+    if (!def.tierLocked || !window.PonoTier) return false;
+    if (typeof window.PonoTier.showTierLockPromo === 'function') {
+      window.PonoTier.showTierLockPromo();
+    } else {
+      window.PonoTier.showSubscribePromo();
+    }
+    return true;
+  };
   btn.style.touchAction = 'none';
   btn.addEventListener('pointerdown', e => {
     if (e.cancelable) e.preventDefault();
@@ -14991,6 +15079,17 @@ function bindSimpleDividerPalettePress(btn, def) {
     reset();
     try { btn.releasePointerCapture(pointerId); } catch (_) {}
     if (!showTutorialPaletteLockToast(def)) return;
+    if (showTierLockPromoIfLocked()) return;
+    // batch:dividerfix F2 — ドラッグ配置もスロット上限 (tap 配置と同じ cap) を守る
+    const tier = getTargetTierForType('divider');
+    const placedCount = placedItems.filter(item => item
+      && item.type === 'divider'
+      && !item.parentCupId
+      && getItemTier(item) === tier).length;
+    if (placedCount >= getSimpleFixedSlots(def, tier).length) {
+      setSpeech('もう はいらないよ。いらないものを けしてね。');
+      return;
+    }
     beginFreePaletteDrag(e, def);
   });
   btn.addEventListener('pointerup', e => {
@@ -14998,6 +15097,7 @@ function bindSimpleDividerPalettePress(btn, def) {
     reset();
     if (e.cancelable) e.preventDefault();
     if (!showTutorialPaletteLockToast(def)) return;
+    if (showTierLockPromoIfLocked()) return;
     const historyBefore = beginFreeHistoryChange();
     addSimpleFreePaletteItem(def);
     if (commitFreeHistoryChange(historyBefore)) renderFreeLayoutControls();
@@ -16362,36 +16462,72 @@ function createFreeStageTargetMarker(opts = {}) {
   button.addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
-    if (typeof opts.onSelect === 'function') opts.onSelect();
+    // batch:dividerfix F3 — divider 分岐で pointer 位置の hit-test をするため event を渡す
+    // (cup/side の onSelect は引数を無視するので影響なし)
+    if (typeof opts.onSelect === 'function') opts.onSelect(e);
   });
   return button;
 }
 // batch:divider-ux — ghost タップで しきりを そのスロットへ配置 (直前に使った family + スロット向き variant)
-function placeSimpleDividerAtGhostSlot(slot) {
+function placeSimpleDividerAtGhostSlot(slot, e = null) {
   if (!slot || !isSimpleDividerEditMode()) return;
+  // batch:dividerfix F3 — ghost (z-28) の下に既存のしきりが重なっている場合は
+  // 新規配置ではなく、そのしきりの「つかんで動かす」経路へ転送する (複製防止)
+  if (e && Number.isFinite(e.clientX) && Number.isFinite(e.clientY)) {
+    const underEl = document.elementsFromPoint(e.clientX, e.clientY)
+      .map(el => (el && el.closest ? el.closest('.free-placed-item') : null))
+      .find(el => {
+        if (!el || !el.dataset || !el.dataset.freeUid) return false;
+        const hit = placedItems.find(i => i.uid === el.dataset.freeUid);
+        return !!(hit && hit.type === 'divider' && !hit.parentCupId);
+      });
+    if (underEl) {
+      const hitItem = placedItems.find(i => i.uid === underEl.dataset.freeUid);
+      if (hitItem) {
+        handleSimplePlacedItemTap(hitItem);
+        beginFreeItemDrag(e, hitItem.uid);
+        return;
+      }
+    }
+  }
+  const def = getSimpleActiveDividerPaletteDef();
+  if (!def) return;
+  // batch:dividerfix F7b — palette ボタン経由と同じ tutorial / tier lock ガードを通す
+  if (!showTutorialPaletteLockToast(def)) return;
+  if (def.tierLocked && window.PonoTier) {
+    if (typeof window.PonoTier.showTierLockPromo === 'function') {
+      window.PonoTier.showTierLockPromo();
+    } else {
+      window.PonoTier.showSubscribePromo();
+    }
+    return;
+  }
   if (getSimpleSlotBlockingItem(slot)) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
     return;
   }
-  const def = getSimpleActiveDividerPaletteDef();
-  if (!def) return;
   const historyBefore = beginFreeHistoryChange();
   addSimpleFixedPaletteItem(def, { slot });
   if (commitFreeHistoryChange(historyBefore)) renderFreeLayoutControls();
 }
 // batch:divider-ux — しきりモード中、空きスロット候補をうっすら ghost 表示 (占有スロットは非表示)
+// batch:dividerfix F6/F7d — 自由配置しきりの下に隠れたスロットは ghost を出さない (重ね置き防止)。
+// ドラッグ中は掴んでいるしきり自身の占有/被覆を免除して、戻り先スロットの is-active ハイライトを出せるようにする。
 function createSimpleDividerStageTargetLayer() {
   const def = getSimpleActiveDividerPaletteDef();
   if (!def) return null;
   const tier = getTargetTierForType('divider');
   const slots = getSimpleFixedSlots(def, tier);
   if (!slots.length) return null;
+  const draggingUid = freeDragState && freeDragState.uid ? freeDragState.uid : null;
   const layer = document.createElement('div');
   layer.className = 'free-stage-target-layer';
   slots.forEach(slot => {
-    if (getSimpleSlotBlockingItem(slot)) return;
+    const blocking = getSimpleSlotBlockingItem(slot);
+    if (blocking && blocking.uid !== draggingUid) return;
     const point = getSimpleSlotActualPoint(slot) || slot;
+    if (isSimpleDividerSlotPointUnderLooseDivider(point, tier, draggingUid)) return;
     const marker = createFreeStageTargetMarker({
       kind: 'divider',
       slotIndex: slot.index,
@@ -16399,7 +16535,7 @@ function createSimpleDividerStageTargetLayer() {
       y: point.y,
       label: '・',
       ariaLabel: 'しきりを おく ばしょ',
-      onSelect: () => placeSimpleDividerAtGhostSlot(slot),
+      onSelect: e => placeSimpleDividerAtGhostSlot(slot, e),
     });
     if (marker) {
       marker.classList.add('is-divider-target');
