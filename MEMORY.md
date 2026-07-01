@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-01T22:12:32Z - bento おかず全選択ゲート+OKボタン出現条件、NPCお届けシーン一段目切れ根治+蓋演出、仕切りモード半透明化、プロフィールモーダルはみ出し修正 (batch:1040, sw v1882)
+- **タスク**: bento おかず全選択ゲート+OKボタン出現条件、NPCお届けシーン一段目切れ根治+蓋演出、仕切りモード半透明化、プロフィールモーダルはみ出し修正 (batch:1040, sw v1882)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 103
+- **エラー数**: 10
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 36, "Bash": 18, "Glob": 1, "Edit": 7, "Grep": 14, "ToolSearch": 2, "Workflow": 9, "TaskOutput": 15, "Agent": 1}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-01T22:08:12Z - cross-review fix round: bento okazu-gate 6 fixes (iPad hint chip CSS, main-full speech copy, tier-filled announce, tier3 done gating, main hint chip, role=status) + play.html profile media-block cascade fix
 - **タスク**: cross-review fix round: bento okazu-gate 6 fixes (iPad hint chip CSS, main-full speech copy, tier-filled announce, tier3 done gating, main hint chip, role=status) + play.html profile media-block cascade fix
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 56, "Read": 14, "Glob": 3, "Grep": 13, "Agent": 15, "Edit": 10, "ToolSearch": 1, "SendMessage": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T19:54:16Z - quizland レイアウト保存→デフォルト戻りの根本修正 (★1 toggle 永続化 / ★2 save guard / ★3 group corner scale で speaker 除外 + CSS hook / ★4 deep-merge save / ★5 欠損ヒント、 batch:962+964、 sw v1822+v1824)
-- **タスク**: quizland レイアウト保存→デフォルト戻りの根本修正 (★1 toggle 永続化 / ★2 save guard / ★3 group corner scale で speaker 除外 + CSS hook / ★4 deep-merge save / ★5 欠損ヒント、 batch:962+964、 sw v1822+v1824)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 103
-- **エラー数**: 12
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 51, "Read": 13, "Glob": 3, "Grep": 13, "Agent": 11, "Edit": 9, "ToolSearch": 1, "SendMessage": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
