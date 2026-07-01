@@ -7433,13 +7433,13 @@ function setCurrentNpcRequester(req) {
   return currentRequester;
 }
 
-function setSimpleBentoMode(enabled) {
+function setSimpleBentoMode(enabled, storedMode = '') {
   simpleBentoMode = !!enabled;
   simpleReplaceSlotUid = null;
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
   try {
-    sessionStorage.setItem(BENTO_MODE_SESSION_KEY, simpleBentoMode ? 'simple' : 'request');
+    sessionStorage.setItem(BENTO_MODE_SESSION_KEY, storedMode || (simpleBentoMode ? 'simple' : 'request'));
   } catch (_) {}
   try {
     document.body.classList.toggle('bento-simple-mode', simpleBentoMode);
@@ -8056,10 +8056,20 @@ function startNextBentoOrderRound() {
     loadStage();
     return;
   }
+  if (simpleBentoMode) {
+    setSimpleBentoMode(true, 'request');
+    window.__bentoShopOpeningActive = false;
+    suppressBentoIntroTutorialOverlays();
+    try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
+    loadStage();
+    renderBentoReminder();
+    showShopOpening(req, renderBentoReminder, { skipIntro: true });
+    return;
+  }
   showShopOpening(req, loadStage, { skipIntro: true });
 }
 function restartSimpleBentoRound() {
-  setSimpleBentoMode(true);
+  setSimpleBentoMode(true, 'simple');
   window.__bentoShopOpeningActive = false;
   suppressBentoIntroTutorialOverlays();
   try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
@@ -8067,6 +8077,26 @@ function restartSimpleBentoRound() {
   loadStage();
   renderBentoReminder();
   setSpeech('すきな おべんとうを つくろう！ ボタンを タップして えらんでね。');
+}
+function restartSimpleBentoRequestRound(opts = {}) {
+  setSimpleBentoMode(true, 'request');
+  window.__bentoShopOpeningActive = false;
+  suppressBentoIntroTutorialOverlays();
+  try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
+  if (opts.next) {
+    selectNextNpcRequester();
+  } else {
+    decideNpcMode();
+    if (!currentRequester) setCurrentNpcRequester(pickRandomNpcRequester());
+  }
+  if (!currentRequester) {
+    restartSimpleBentoRound();
+    return;
+  }
+  loadStage();
+  renderBentoReminder();
+  setSpeech('おねがいの おべんとうを つくろう！');
+  showShopOpening(currentRequester, renderBentoReminder, { skipIntro: !!opts.skipIntro });
 }
 
 function getRequesterReactionMessage(req, finalEval) {
@@ -8281,6 +8311,26 @@ function choosePonoReaction(rCount, yCount, gCount, okazuNames) {
     'これで いちにち げんきに あそべるね！',
   ];
   return { img: PONO_BASE + 'dance/dance_hooray.webp', msg: msgs[Math.floor(Math.random() * msgs.length)], quality: 'good', stars: 3, acorns: 5 };
+}
+
+function chooseFreePlayCompleteReaction() {
+  const msgs = [
+    'よくできたね！\nとっても おいしそう！',
+    'すてきな おべんとうが できたね！',
+    'おいしそう！\nたのしく つくれたね！',
+  ];
+  return {
+    img: PONO_BASE + 'dance/dance_hooray.webp',
+    pendingImg: PONO_BASE + 'pono_001.png',
+    actorAlt: 'ポノ',
+    actorType: 'pono',
+    msg: msgs[Math.floor(Math.random() * msgs.length)],
+    quality: 'good',
+    stars: 0,
+    acorns: 2,
+    showScore: false,
+    showDetail: false,
+  };
 }
 
 function chooseCombinedPonoReaction(finalEval, fallbackReaction) {
@@ -8606,7 +8656,10 @@ function revealReactionWithDrama(reaction) {
   if (!slot || !ponoBig || !bubble) return;
 
   const quality = reaction.quality || 'good';
-  const stars = reaction.stars || (quality === 'good' ? 3 : quality === 'ok' ? 2 : 1);
+  const showScore = reaction.showScore !== false;
+  const showDetail = reaction.showDetail !== false;
+  const rawStars = Number(reaction.stars);
+  const stars = Number.isFinite(rawStars) ? Math.max(0, Math.floor(rawStars)) : (quality === 'good' ? 3 : quality === 'ok' ? 2 : 1);
   const acorns = reaction.acorns || 0;
 
   // Pre-reveal: ふつうの顔でそわそわ
@@ -8681,8 +8734,8 @@ function revealReactionWithDrama(reaction) {
       bubble.classList.remove('hidden-pre');
     }, 80));
 
-    // T=+350ms: 星を順番に灯す
-    if (starsEl) {
+    // T=+350ms: 星を順番に灯す。じぶんでつくるは採点しない。
+    if (starsEl && showScore) {
       _revealTimers.push(setTimeout(() => {
         starsEl.classList.remove('hidden-pre');
       }, 300));
@@ -8696,6 +8749,7 @@ function revealReactionWithDrama(reaction) {
     }
 
     // T=+1100ms: どんぐり付与 (日次キャップ 5 + 差分加算) + 表示ポップイン
+    const acornDelay = showScore ? (420 + stars * 240 + 180) : 560;
     _revealTimers.push(setTimeout(() => {
       var granted = 0;
       if (!reaction._awarded) {
@@ -8747,13 +8801,13 @@ function revealReactionWithDrama(reaction) {
         statusEl.classList.toggle('full', today >= 5);
         statusEl.classList.remove('hidden-pre');
       }
-    }, 420 + stars * 240 + 180));
+    }, acornDelay));
   }, 2400));
 
   // T=2850ms → どんぐり演出後に保存ボタン
   _revealTimers.push(setTimeout(() => {
     if (saveBtn) saveBtn.classList.remove('hidden-pre');
-    if (detailBtn) detailBtn.classList.remove('hidden-pre');
+    if (detailBtn && showDetail) detailBtn.classList.remove('hidden-pre');
   }, 2400 + 420 + stars * 240 + 500));
 
   // T=3100ms: reveal クラス外して 通常状態に戻す / poor なら droopy
@@ -16927,11 +16981,13 @@ function stageComplete() {
   // ポノ表情＋セリフ（バランスに応じた演出） ※ 演出は revealReactionWithDrama で実行
   const okazuNames = completionData.okazuNames;
   const balanceReaction = choosePonoReaction(rCount, yCount, gCount, okazuNames);
-  const reaction = withRequesterCompleteReaction(
-    currentRequester,
-    finalEval,
-    chooseCombinedPonoReaction(finalEval, balanceReaction)
-  );
+  const reaction = currentRequester
+    ? withRequesterCompleteReaction(
+        currentRequester,
+        finalEval,
+        chooseCombinedPonoReaction(finalEval, balanceReaction)
+      )
+    : chooseFreePlayCompleteReaction();
 
   // 豆知識（テキストだけ先にセット、表示は reveal 時）
   const triviaEl = document.getElementById('complete-trivia');
@@ -16985,7 +17041,8 @@ function stageComplete() {
   }
   const continueAfterCompleteClose = () => {
     if (freeLayoutMode) {
-      if (simpleBentoMode) restartSimpleBentoRound();
+      if (simpleBentoMode && currentRequester) restartSimpleBentoRequestRound({ next: true, skipIntro: true });
+      else if (simpleBentoMode) restartSimpleBentoRound();
       else startNextBentoOrderRound();
       return;
     }
@@ -20250,24 +20307,17 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
   async function startFromTitle(mode) {
     if (started) return;
     started = true;
-    const simple = mode === 'simple' || !requestAvailable;
+    const requestMode = mode === 'request' && requestAvailable;
     try { await fetchFreeMaskServerDefaults({ force: false }); } catch (_) {}
-    setSimpleBentoMode(simple);
     titleScreen.classList.add('hidden');
     try { getAC(); } catch (_) {}
     if (bgmEnabled) tryPlayBgm();
-    if (simple) {
-      restartSimpleBentoRound();
-      return;
-    }
-    // NPC モード判定 + お店の導入から注文までのオープニング演出
-    decideNpcMode();
-    if (currentRequester) showShopOpening(currentRequester, renderBentoReminder);
-    else renderBentoReminder();
+    if (requestMode) restartSimpleBentoRequestRound({ skipIntro: false });
+    else restartSimpleBentoRound();
   }
   titleScreen.addEventListener('click', function(e) {
     const modeButton = e.target && e.target.closest ? e.target.closest('[data-bento-start-mode]') : null;
-    const mode = modeButton ? modeButton.getAttribute('data-bento-start-mode') : (requestAvailable ? 'request' : 'simple');
+    const mode = modeButton ? modeButton.getAttribute('data-bento-start-mode') : 'simple';
     startFromTitle(mode);
   });
 })();
