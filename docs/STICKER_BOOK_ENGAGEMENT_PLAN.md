@@ -21,11 +21,37 @@
 
 ポノのあそびばにおける音声/テキスト運用は 「キャラクターは絵と動きで生きる、 言葉は女性ナレーターが第三者として代弁する」 を絶対原則とする。 ポノ・ふくろう先生・パートナー動物 8 種は肉声を持たず、 その内面や発話は必ず女性ナレ (Gemini Leda 1.15x) による間接話法 (「〜だって」 「〜と言っているよ」) の第三者読み聞かせに変換する。 3-5 歳未識字児には視覚ピクトグラム + 触覚 haptics + 女性ナレの 3 層冗長で意味を届け、 テキストは保護者読み聞かせと識字児向けの補助レイヤとして機能させる。 全音声要素は ManageDebug で個別 OFF 可能とし、 感覚敏感児と家庭ごとの好みに配慮する。
 
+**既存 partner_* voiceTag の migration スケジュール (実装リード should_improve、 §4 前提条件)**
+
+§0.5 は 「既存 `partner_*` の voiceTag も第三者ナレ間接話法ルートへ順次置換する」 と宣言するが、 §4-3 の新規実装と混在すると (a) どのゲームが partner_* を持つか (b) 置換順序 (c) rollback 方法 が曖昧になる。 新規実装 (§4) とは分離した負債返却フェーズとして扱う:
+- **走査**: `data/` `Prototypes/` 配下で `partner_[a-z]+` の voiceTag を全 grep し、 game 別に集計 (quizland/maze/oto/puzzle/bento/quiz-sound/sea-album/starparodier/undersea-cave/wordmatch/writing-mori/zukan の 12 ゲームが対象)
+- **優先順位**: sub tier で最も遊ばれるゲーム (quizland / oto / puzzle) → free tier ゲーム → 実験ゲーム、 の順
+- **段階置換**: 各ゲームごとに (a) 現行 partner_* voiceTag を第三者ナレ台詞に書き換え (b) whisper 検証済み新規 TTS を差替 (c) 旧 audio ファイルは 30 日 grace period 後に削除。 rollback は grace period 内なら voiceTag と audio 差替のみで可能
+- **完了ゲート**: `grep -r 'partner_' data/ Prototypes/` が 0 件になるまで、 launch (Early Access `[[monetization_strategy]]`) には進めない
+- 進捗を `docs/audit/partner_voice_migration.md` に記録
+
+**「voice」 タグ / 「audio」 タグの実装レイヤ分類監査 (ブランドガーディアン should_improve)**
+
+現行 play.html および各ゲームの code 内には 「voice」 「audio」 タグが散在する。 これが (a) 女性ナレ (narration) (b) 機能音 (functional tone / SE / BGM) (c) キャラ肉声 (character voice = 禁止) のいずれかを判別できない状態は §0.5 準拠の実装として不整備。 実装リードは §4-4 の実装初手 step 1 と同時に、 以下の grep + refactor チェックリストを 1 度実施し、 一元化を確認する:
+- `grep -rE '\bvoice\b' src/ play.html Prototypes/` で全 callsite を列挙
+- 各 callsite を上記 3 分類にラベル付けし、 変数名/関数名/コメントを明示的に置換 (`playVoice()` → `playNarration()` / `playSE()` / `playChime()` 等)
+- 監査結果を `docs/audit/voice_tag_reclassification.md` に記録し、 実装リードが確認
+
 **3 原則**
 
 - **ポノ・ふくろう先生は音声禁止**: プロジェクト全域でキャラクター (ポノ / ふくろう先生 / パートナー動物 全 8 種) の肉声を新規収録・TTS 生成・再生することを禁止する。 既存 `partner_*` の voiceTag も第三者ナレ間接話法ルートへ順次置換する。
 - **声を使うなら女性ナレのみ**: 音声を使う場合は女性ナレ (Gemini TTS Leda / 1.15x / volume 0.9) の第三者読み聞かせ形式のみ許可。 直接話法 (「〜だよ」 の一人称) は必ず間接話法 (「〜だって」 「〜と言っているよ」) に書き換えて生成し、 whisper 検証プロンプトにも明記する。 spec / コード / docs で 「voice」 単独語は禁止し、 「女性ナレ (female narrator)」 「機能音 (functional tone / SE)」 「キャラ肉声 (character voice = 禁止)」 のいずれかに明示分類する。
 - **未識字児対応戦略**: 3-5 歳未識字児向けは (a) 視覚ピクトグラム (キャラの姿勢・表情・アイコン) を第一レイヤ (b) 触覚 haptics を第二レイヤ (c) 女性ナレ第三者読み聞かせを第三レイヤ (d) テキストは保護者・識字児向け補助 の 4 層冗長で情報伝達。 単一チャネル依存を避け、 女性ナレ再生時は BGM ducking (0.4 まで一時降下、 ナレ終了 300ms 後に復帰) を必須とする。
+- **一人称禁止 (ブランドガーディアン must_fix)**: 女性ナレはいかなる場面でもポノ・ふくろう先生・パートナー動物の一人称 (ぼく、 わたし、 おれ) を使用禁止。 ナレが子どもに語りかける場合も 「この子が〜」 「ここに〜が いるんだ」 と第三者観察視点を保つ。 ナレーターのポイント・オブ・ビューは 「森の中立的な観察者」 に固定。 TTS 生成プロンプトに 「一人称禁止テンプレート (You are a narrator describing a child's discovery, never speak AS the character or child)」 を必ず添付する。 テンプレートは `.claude-design-bundle/tts-prompts/narrator_third_person_template.txt` として管理する
+- **同時再生禁止 (Claude Code 未識字児レビュー should_improve → must 昇格)**: 同一シルエットを連打された場合、 「前のナレ終了を待つ」 (キューイングなし) を必須ガードとする。 前ナレ再生中の tap は視覚フィードバック (シルエット微 pulse ピカ 200ms) のみ返し、 女性ナレは silent skip。 ナレ重複による 「怖い」 「うるさい」 体感を感覚敏感児 (15-20%) から確実に排除する
+
+**保護者読み聞かせなし想定シナリオ (パート2、 Claude Code 未識字児レビュー must_fix)**
+
+本ドキュメントは 「テキスト = 保護者・識字児向け補助」 と位置付けるが、 実際には保護者が読み聞かせない家庭が相当数存在する。 その回帰性を明示的に保証するため、 3-5 歳未識字児が女性ナレ音声 + BGM ducking + 視覚 (ポノ表情/points burst/シルエット pulse) の 3 点だけで 「シールをもらった感」 「ここに何かある感」 に到達できることを実測要件とする。
+
+- **実測要件**: 3-5 歳児 **最小 8 名** を対象に、 保護者読み聞かせ無しの環境でガチャ celebration とシルエット tap→owl-whisper 発火を体験させ、 (a) 開封瞬間の positive facial affect 検出率、 (b) tap から吹き出し反応までの理解率、 (c) 「もう一度やる」 の自発的再試行率、 を測定。 各指標が **>70%** に達しない場合は追加補助 (男性ナレ導入 or on-screen ピクトグラム強化 or 触覚パターン強化) を検討
+- **落とし所ガイドライン**: 保護者読み聞かせを 「推奨」 として LP / パッケージに明記する (家族での体験を前提とすることを設計者・保護者双方に事前に伝える)。 ただし 「読み聞かせなしでも子どもが取り残されない」 3 層冗長の設計は死守する
+- 検証結果を `docs/user_test_reports/no_parent_readalong_regression.md` に記録
 
 ---
 
@@ -127,6 +153,7 @@ for (const s of stickers) {
   - free 枠は特に 「? マークの卵型」 表示にして 『これから森に来る子』 感を出す
   - `gameId` は `origin='game'` の時のみ必須、 free/book では null 許容
   - **『反応する空白』設計** (心理学者指摘: 3-5 歳は Piaget 保存概念未確立で 「白影=欠けている」 認識が難しい): シルエットは静止画ではなく、 4s 周期で opacity 0.85→1.0→0.85 の微 pulse アニメを常時発火。 tap すると `1-C-owl-whisper` (§3-3) のヒントが表示される — シルエット横にふくろう先生の羽根アイコン + 木の葉フレーム吹き出しでテキストを表示し、 同時に女性ナレ (Gemini Leda 1.15x) が 「ふくろう先生は こう いっているよ。 〜〜」 と間接話法で読み上げる。 ふくろう先生自身の肉声は絶対に再生しない (§0.5 準拠)。 ManageDebug でナレ OFF 可能。 「視覚シグナル」 単独に頼らず 「タッチ→反応 (テキスト + 第三者ナレ)」 の能動フィードバックで 『自分が選んだ』 感と識字/未識字両対応を両立する。 静的白影のみでは 3-4 歳に届かないため、 pulse + tap 反応を必須仕様とする。
+  - **pulse affordance の認識率実測** (Claude Code 未識字児レビュー must_fix): opacity pulse (0.85→1.0→0.85) が 3-4 歳に 「ここに何かある」 affordance として届くかを実装前に検証。 ユーザーテスト (3-4 歳児 **最小 8 名**) で 「pulse するシルエットを触ってみる」 自発率を測定し、 (a) 自発 tap 率が **>70%** なら pulse のみで実装、 (b) **50-70%** なら pulse + tap エリアに 「ふくろう先生の羽根アイコン」 常時表示のハイブリッド、 (c) **<50%** なら pulse は装飾扱いで羽根アイコン主体に切替。 tap 後の吹き出しテキスト + 女性ナレが確実に発火することを smoke test (`Prototypes/StickerBookThreeJS/tests/silhouette_tap_smoke.test.mjs`) で自動確認。 検証結果を `docs/user_test_reports/silhouette_pulse_affordance.md` に記録
 - **子どもへの効き**: 『絵本のあの子』 と 『まだ知らない森の子』 が同じ棚に共存し、 驚きと安心が同居。 微 pulse で 「ここに何かある」 という非言語 affordance が生まれ、 tap で ふくろう先生が応答することで 3-5 歳の 「自分がした感」 (Bandura 自己効力感) を触発する。
 - **実装初手**: `sticker_book_content_plan.json` に `origin` フィールドを追加し、 既存 175 枠を分類 (book=serial 130-135、 game=001-129、 free=136-175 を `'free'` に振替)。 スキーマ緩和 PR を先に切る。
 - **effort**: L
@@ -160,9 +187,9 @@ for (const s of stickers) {
 
 - **現状**: 旧 1-C 案は 「このシールは quizland で貰える」 等の `gameId` を UI 露出する設計だったが、 自由絵柄方針違反 (ゲーム紐付けを子供に明示すると 『このゲーム遊ばなきゃ』 圧が生まれ、 free 枠の意義も潰れる)。 なお前バージョンで前提としていた 「既存ふくろう先生ボイス資産」 は在庫監査で存在しないことが確認された (`partner_fukurou` は placeholder のみ)。 新規収録するにしてもキャラ肉声禁止方針 (§0.5) に抵触するため、 音声主体は女性ナレの第三者読み上げに転換する。
 - **理想**: 未取得シルエット tap で、 詩的ヒントを 「吹き出しテキスト (キャラの言葉)」 + 「女性ナレ (第三者読み聞かせ)」 の二層で提示する。 詩的ヒント 12-16 本を JSON 化し、 シルエット ID → ヒントテキストで紐付け。 テキスト版と間接話法ナレ版を別テキストで管理する。 例:
-  - テキスト: 「あかい ぼうしを かぶった ちいさな ともだち」 / ナレ: 「あかい ぼうしを かぶった ちいさな ともだち が いるんだって」
-  - テキスト: 「あまい におい が すきなんだ」 / ナレ: 「あまい におい が すきなんだって」
-  - テキスト: 「きらきら した ものに あつまるんだ」 / ナレ: 「きらきら した ものに あつまるって ふくろう先生が いっているよ」
+  - テキスト: 「あかい ぼうしの なにか が あるって」 / ナレ: 「あかい ぼうしの なにかが いるって、 ふくろう先生が いっていたよ」
+  - テキスト: 「あまい におい が するんだって」 / ナレ: 「あまい においが するらしいって、 ふくろう先生が おしえてくれたよ」
+  - テキスト: 「きらきら した ものの ちかくに いるって」 / ナレ: 「きらきら した ものの ちかくに いるらしいって、 ふくろう先生が いっていたよ」
   - **絶対禁則**: `gameId` や 「ガチャで出る/ショップで出る」 は言わない。 ふくろう先生自身の肉声は禁止。 ナレは間接話法 (「〜だって」 「〜と ふくろう先生が いっているよ」) の第三者形式のみ許可。 直接話法 (「ぼくはね」 等) は禁止
   - origin 別プール (テキスト + ナレ 2 系統管理):
     - **book 系**: 絵本の 1 節を匂わす詩的ヒント
@@ -174,14 +201,19 @@ for (const s of stickers) {
   - ビジュアル: ふくろう先生の羽根アイコン (新規) + 木の葉フレーム吹き出し PNG (新規) を silhouette 横に配置。 これが 「ふくろう先生からのメッセージ」 の視覚記号として機能する
   - 音声: 新規女性ナレ TTS 12-16 本 (§0.5 準拠、 Gemini Leda 1.15x、 whisper 検証必須)
 
-- **owlHint バリデーション仕様** (アートディレクター指摘):
+- **owlHint バリデーション仕様** (アートディレクター + ブランドガーディアン指摘):
   - 30 字以内 (絵本トーンの短句)
-  - 禁止キーワード配列: `['ガチャ', 'ショップ', 'どんぐり', 'ゲーム', 'クリア', 'quizland', 'maze', 'oto', 'puzzle', 'bento', '当てる', '交換', '購入']` の presence チェックで PR CI が block
+  - **経路情報禁止キーワード配列**: `['ガチャ', 'ショップ', 'どんぐり', 'ゲーム', 'クリア', 'quizland', 'maze', 'oto', 'puzzle', 'bento', '当てる', '交換', '購入']` の presence チェックで PR CI が block
+  - **キャラ内面言及禁止キーワード配列** (ブランドガーディアン must_fix、 女性ナレは第三者観察者としての立場を保つ): `['すきだ', 'すきなの', 'すきなんだ', 'たのしい', 'たのしいの', 'かなしい', 'さみしい', 'うれしいの', '〜の理由', '〜だから']` の presence チェックで block。 キャラの気持ち・好み・理由の直接描写は禁止し、 視覚的特徴 (色・形) と可能性 (「いるかもしれない」 「〜らしい」 「〜だって」) に留める
+  - **キャラ主語形禁止パターン** (ブランドガーディアン must_fix): 正規表現 `/^(ぼく|わたし|おれ)/u` (一人称マーカで文が始まる) と `/(ポノ|ふくろう先生|この子)が[^、。]{0,20}(すき|きらい|たのしい|うれしい)/u` (キャラ主語 + 内面形容) を CI で検出し block。 ナレ文が常に第三者観察形であることを自動検証する
+  - **ナレプロンプトの標準テンプレ** (TTS 生成時に必ず添付、 生成担当エンジニアが誤ってキャラ演技的読みで生成することを予防): 『あなたは森の中立的な観察者としてのナレーターです。 3-5 歳児の保護者が読み聞かせるトーンで、 決してキャラクターを演じず、 キャラクターの内面や感情には踏み込まず、 見えた事実と可能性のみを第三者として描写してください。 一人称 (ぼく・わたし) は使わず、 「〜だって」 「〜らしい」 「〜と ふくろう先生が いっていたよ」 の間接話法で読んでください。』
   - 肯定形 → 抽象形 変換例 (作成者ガイド用):
-    - NG: 「quizland でもらえる」 → OK: 「おとに きく こが いるんだって」
+    - NG: 「quizland でもらえる」 → OK: 「おとの ちかくに いる こが いるんだって」
     - NG: 「ショップに いま いるよ」 → OK: 「きょうは あまい においが するらしい」
     - NG: 「ガチャで 出るよ」 → OK: 「そらから ふって くるって うわさ」
-  - CI script: `scripts/validate_owl_hints.mjs` で全 owlHint を走査し、 違反時 exit 1
+    - NG: 「あまい におい が すきなんだって」 (内面言及) → OK: 「あまい におい が するらしいって、 ふくろう先生が いっていたよ」 (状況描写)
+  - CI script: `scripts/validate_owl_hints.mjs` で全 owlHint (テキスト + ナレ両系統) を走査し、 違反時 exit 1
+  - **意味通達テスト** (Claude Code 未識字児レビュー must_fix): syntax チェックだけでは 3-5 歳児に伝わるかを保証できない。 新規 owlHint 追加時は 3-5 歳児 **最小 4 名** に 「これを聞いて、 どんな子だと思う?」 の開放回答調査を実施 (動画記録)。 回答が実際のシールビジュアルに合致する率が **>60%** なら本番投入、 それ未満は該当 hint を blocked。 whisper 検証 (音声一致) と別工程として PR approval 前に実施し、 結果を `docs/user_test_reports/owl_hint_semantic_delivery.md` に記録する workflow を docs に記載
 - **子どもへの効き**: 「どこで貰える」 の攻略情報ではなく 「どんな子なんだろう」 の物語想像を返す。 探索心が 『遊ぶ動機』 ではなく 『会いたい気持ち』 に変換される。 free 枠は 「先生も知らない」 で新入り感が強化。
 - **実装初手**: `sticker_book_content_plan.json` 各シールに `owlHint` フィールド (30 字以内、 経路情報禁止のバリデーション付き) を追加。 まず book 6 枚 + free 10 枚の 16 シールで PoC。
 - **effort**: M
@@ -238,7 +270,7 @@ for (const s of stickers) {
 - **現状**: free 枠 40 枠を今後追加していく際、 既存シールの中に埋もれて 「新しく森に来た子」 の存在に気付けない。 実験シール=次期メインキャラ昇格の観測窓 (前提より) が UX 上で機能しない。
 - **理想**: sticker catalog schema に `addedAt: ISO date` を追加。 `addedAt` が 「今日から 7 日以内」 の `origin='free'` シールにだけ、 silhouette (未取得時) と artwork (取得時) 両方の左上に小さな 『しんいり』 リボン (布切れ風 3D、 木の枝から吊り下がる)。
   - 取得済みでも 7 日間はリボン継続 (発見の余韻)
-  - 開いた瞬間、 最初の 1 回だけ以下を同時発火 (free 全体を空気として告知): (1) リボン ピカ光アニメ 400ms (2) 画面上部にふくろう先生葉フレーム吹き出し 「あたらしい おともだち が きたよ」 3.5s 表示 (3) 女性ナレが 「あたらしい おともだちが きたって、 ふくろう先生が おしえてくれたよ」 と間接話法で読み上げ (§0.5 準拠、 新規 TTS 1 本 whisper 検証必須) (4) 柔らかい chime SE (既存 finalStinger 派生で可)。 localStorage `newbie_ribbon_seen_v1` で二回目以降は SE のみに縮小。 ふくろう先生自身の肉声は再生しない
+  - 開いた瞬間、 最初の 1 回だけ以下を同時発火 (free 全体を空気として告知): (1) リボン ピカ光アニメ 400ms (2) 画面上部にふくろう先生葉フレーム吹き出し 「あたらしい おともだちが きたんだ」 (観察型、 事実のみ、 3.5s 表示) (3) 女性ナレが 「あたらしい おともだちが きたって、 ふくろう先生が おしえてくれたよ」 と間接話法で読み上げ (§0.5 準拠、 新規 TTS 1 本 whisper 検証必須) (4) 柔らかい chime SE (既存 finalStinger 派生で可)。 吹き出しテキストは 「新入りが来た」 事実のみに留め、 「ふくろう先生が教えた」 のメタ説明はナレに委譲する (ブランドガーディアン must_fix — 吹き出しとナレで意味の重複を避け、 テキストが 『ふくろう先生の肉声』 と誤読されるのを防ぐ)。 localStorage `newbie_ribbon_seen_v1` で二回目以降は SE のみに縮小。 ふくろう先生自身の肉声は再生しない
   - 8 日目以降は自動でリボンが外れる
   - **時刻基準の明確化** (アートディレクター指摘): `addedAt` は ISO 8601 UTC 文字列。 判定は **サーバー UTC 00:00 を epoch** として `addedAt <= now_utc() - 7 * 86400` で外れる。 client-side 時計での判定は行わない (時計巻き戻し悪用回避)。 client は表示時に `addedAt > now_utc()` 検出でエラーログ + リボン非表示 (壊れた state からの復帰)。 リボン付与判定は sticker book 起動時 & 日次 cron (server) の双方で実施
   - 人気シール (取得率 or お気に入り率で判定) は運営が内部的に 「昇格候補」 ラベルを付けて次期主役に育てる材料になる
@@ -288,7 +320,7 @@ for (const s of stickers) {
   - 動き: `bottom -16px` → `bottom +8px` に `translateY(-24px)` 0.32s ease-out で入場、 1.0s 停留、 fadeOut 0.24s
   - 意味: 「ポノが横で よかったねって見ていてくれた」 感。 触らない、 くっつかない、 邪魔しない
   - 差別化: 既存の左半分 pono PNG はそのまま維持。 新規レイヤは独立キャラとしての pono で別素材
-  - **ポノの発話は無し** (§0.5 準拠、 キャラ肉声禁止): ポノ自身の吹き出しやテキストは一切表示しない。 ポノは決して 「話さない」 キャラとして統一する。 未識字児補助として、 画面下部に女性ナレの第三者描写 「ポノが なにか もってきてくれたよ」 を 1 回だけ再生するオプションを実装 (ManageDebug でナレ OFF 可、 デフォルト ON、 新規 TTS 1 本 whisper 検証必須)。 表情 3 種 (Ekman 準拠) + 姿勢 (両手差し出しポーズ) がピクトグラム的に意味を伝えるので、 ナレは補助レイヤに留める
+  - **ポノの発話は無し** (§0.5 準拠、 キャラ肉声禁止): ポノ自身の吹き出しやテキストは一切表示しない。 ポノは決して 「話さない」 キャラとして統一する。 未識字児補助として、 画面下部に女性ナレの第三者描写 「シールが でてきたね」 (状況の観察型、 ブランドガーディアン must_fix 反映で 「ポノが〜した」 の能動形を撤廃) を 1 回だけ再生するオプションを実装 (ManageDebug でナレ OFF 可、 デフォルト ON、 新規 TTS 1 本 whisper 検証必須)。 表情 3 種 (Ekman 準拠) + 姿勢 (両手差し出しポーズ) がピクトグラム的に意味を伝えるので、 ナレは補助レイヤに留める。 **ナレプロンプト絶対条件**: 「女性ナレは決してポノ・ふくろう先生・パートナー動物の行為主性を述べない。 『ポノが〜した』 『ふくろう先生が〜した』 の能動形は禁止し、 『シールが でてきた』 『ぱかっと ひらいた』 の状況観察型で書く」 と生成プロンプトに明記。 whisper 検証の禁止キーワードに `['ポノが', 'ふくろう先生が', 'この子が']` の主語形を追加
 
   **(b) ショップ経路 = ポノ出さない [意図的に不採用]**
   - 理由: 店員 (ハリネズミ等の別 NPC) が交換相手なので、 pono が横取り登場すると 「誰が店員?」 が混乱する
@@ -301,9 +333,15 @@ for (const s of stickers) {
   **実装**: `play.html` modal に `#dailyGachaCelebratePono` div を新設 (左半分 pono とは別)、 CSS keyframe `dailyGachaPonoWave` を追加、 `runDailyGacha()` の `openDelay + 200ms` で `classList.add('is-visible')`。 素材 3 種を新規発注 (Claude Design 経由)。
 
 - **子どもへの効き**: 3-8 歳が 「ポノが 一緒に喜んでくれた」 と感じるが、 1.4s + 1 経路限定 なので飽きない。 ショップ/取り置きは別の情緒 (店員のもてなし / 静かに開く楽しみ) を持たせる分業になる。 現状の 「トラップされた絵」 は 「カプセルの装飾」 に役割整理できる。
+- **表情差分の 3-5 歳児認識可能性検証** (Claude Code 未識字児レビュー must_fix、 Ekman coding の科学的根拠を実測に落とし込む):
+  - 素材確定前に 3-8 歳児 **最小 6 名** を対象に表情認識テストを実施 (反応時間 + 正答率を測定)。 NORMAL/RARE/SUPER の 3 種を無作為順で提示し 「どのポノが一番うれしそう?」 「どのポノがびっくりしてる?」 を口頭で確認
+  - 星型目 (SUPER) は日本の 3 歳児で 「花火」 と誤認される可能性あり。 「星型目」 単独ではなく 「星型目 + 口 O 字 + 両腕上げ + 体傾き 5deg」 の 4 要素同時変化で 「驚き＋喜び」 を伝える。 これは Ekman 「複合表現」 の身体化
+  - 認識テストで NORMAL/RARE/SUPER の弁別正答率が **有意差なし** (p >= 0.05) の場合は §4-2 マイクロ改善 4 点に絞って先行実装し、 表情差分は後期フェーズへ延期する rollback plan を持つ
+  - 素材 brief.md に 「3-5 歳児への聴感/視認テスト前提」 を明記し、 デザイナーが 「ポノが話す」 と誤解しないよう 「この表情は見守る姿勢を示すビジュアルシグナル。 ポノ自身は話さず、 ナレーターが説明する」 を brief 冒頭に固定
+  - 検証結果を `docs/user_test_reports/pono_expression_recognition.md` に記録
 - **実装初手 (素材納品フロー 3 ステップ)**:
-  1. `.claude-design-bundle/components/gacha-celebrate-pono/brief.md` を **先行作成** — ポノ表情 3 種 (Ekman coding 基準の身体差)、 配置位置 (modal 右下 80×80px)、 動き keyframe、 想定サイズ (128×128px 元素材) を確定。 コード実装前必須
-  2. Claude Design (Pono LP Brand Kit) 経由で並列生成 → 採用案確定 (`feedback_brand_kit_design_via_claude_design.md` 準拠、 Claude Code の MCP 直生成禁止)
+  1. `.claude-design-bundle/components/gacha-celebrate-pono/brief.md` を **先行作成** — ポノ表情 3 種 (Ekman coding 基準の身体差、 口/目/腕/体傾きの図解付き)、 配置位置 (modal 右下 80×80px)、 動き keyframe、 想定サイズ (128×128px 元素材) を確定。 「ポノは話さない、 表情は見守り姿勢のビジュアルシグナル」 を冒頭に明記。 コード実装前必須
+  2. Claude Design (Pono LP Brand Kit) 経由で並列生成 → 採用案確定 (`feedback_brand_kit_design_via_claude_design.md` 準拠、 Claude Code の MCP 直生成禁止)。 skill: `mcp__claude_ai_Figma__use_figma` は本プロジェクトで使用しない (Figma 経由の生成は Brand Kit 側で完結)
   3. 採用素材を `assets/ui/gacha/pono_celebrate_{normal,rare,super}.webp` に配置 (既存 `assets/ui/gacha/` パスパターンに統一)。 その後 `play.html` L6299-6378 の gacha modal HTML 直下に `#dailyGachaCelebratePono` div を追加、 L3408 付近に `dailyGachaPonoWave` keyframe を追加、 `runDailyGacha()` の `openDelay + 200ms` で `classList.add('is-visible')`
 - **effort**: M
 - **impact**: 0.72
@@ -380,6 +418,7 @@ for (const s of stickers) {
 - サイズ: `PointsMaterial size 0.02-0.035` (world unit)、 `sizeAttenuation: true`
 - 形状: 円形テクスチャ 1 枚 (`soft_dot_16px.png`)、 star 形は禁止 (花火 NG)
 - **iPad ロー品質モード** (実装リード指摘、 A10/A12 60fps 維持のため): デバイス検出で iPad 世代を判定、 gen 5-6 (A10/A12) は particle count -25% (NORMAL 6/RARE 8/SUPER 10)、 glow は Sprite 1 枚のまま texture 圧縮版 (`glow_soft_low.png`) に差替、 vibrate は基本パターンのみ (RARE/SUPER の多段パターンを NORMAL 相当に fallback)。 ManageDebug に 「軽量モード」 手動 toggle も追加
+  - **実測検証フロー** (実装リード must_fix、 60fps 維持が机上計算にならないよう): 実装後、 iPad gen 5-6 (A10/A12) 実機でユーザーテストを実施し、 celebration 発火時の fps を Chrome DevTools remote debug で記録 (target: 50fps 以上、 min 45fps)。 60fps 達成できない場合は particle count をさらに削減 (NORMAL 4 / RARE 6 / SUPER 8) するか、 glow を texture 動画 (h.265) に差替。 検証データを `docs/user_test_reports/celebration_fps_ipad_a10a12.md` に記録し、 各世代 (A10 / A12 / A13 / A14) の fps 実測値を表化
 
 **[2] PonoNarratorAudio 「そっとよろこびを伝える描写ナレ」 (女性ナレ 10 本、 whisper 検証前提)**
 
@@ -387,25 +426,28 @@ for (const s of stickers) {
 
 | # | ナレ短句 (第三者描写) | 用途 | rarity プール |
 | --- | --- | --- | --- |
-| 1 | 「はれた ね」 (貼れたね、 第三者観察) | pasted 汎用 | NORMAL |
-| 2 | 「ぴったり だ」 (判定描写) | 汎用 | NORMAL |
-| 3 | 「すてき な いろ」 (絵柄描写) | 汎用 | NORMAL |
-| 4 | 「きれい に なった」 (状態描写) | 汎用 | NORMAL |
-| 5 | 「もう ひとつ さがそう」 (次への誘い、 ナレが子に語りかける) | 連続貼付 3 枚目 | RARE |
-| 6 | 「ここに いたんだ ね」 (発見描写) | rare 専用 | RARE |
-| 7 | 「ぴかぴか だ」 (視覚オノマトペ) | 情動フック | NORMAL |
-| 8 | 「ポノも うれしそう」 (ポノを第三者描写) | 感情共有、 ポノを直接発話させない | SUPER |
-| 9 | 「これ お気に入り かな」 (問いかけ) | 汎用 | SUPER |
-| 10 | 「みつけたね」 (達成描写) | 初出シール専用 | RARE |
+| 1 | 「はれたんだ」 (第三者観察、 目的語=シール) | pasted 汎用 | NORMAL |
+| 2 | 「ぴったり おさまった ね」 (判定描写、 目的語=シール) | 汎用 | NORMAL |
+| 3 | 「いろが すてき ね」 (絵柄描写、 目的語=シールの絵) | 汎用 | NORMAL |
+| 4 | 「きれい に ならんだ ね」 (状態描写、 目的語=ページ) | 汎用 | NORMAL |
+| 5 | 「もう ひとつ さがそう ね」 (次への誘い、 ナレが子に語りかける) | 連続貼付 3 枚目 | RARE |
+| 6 | 「ここに いたんだ ね」 (発見描写、 目的語=シールの子) | rare 専用 | RARE |
+| 7 | 「ぴかぴか した ね」 (視覚オノマトペを子と共有する共有型) | 情動フック | NORMAL |
+| 8 | 「ポノも うれしそう だね」 (ポノを第三者描写、 主語=ポノを明示、 内面ではなく外観のみ) | 感情共有、 ポノを直接発話させない | SUPER |
+| 9 | 「これ お気に入り かな」 (子への問いかけ) | 汎用 | SUPER |
+| 10 | 「みつけた ね」 (達成描写、 子への共有型) | 初出シール専用 | RARE |
+
+**テキスト運用原則** (ブランドガーディアン must_fix): 全短句は 「一人称禁止・目的語は常に『子ども』『シール』『出来事』のいずれかに限定」。 女性ナレ = 森の中立的観察者としての立ち位置を保ち、 ポノ・ふくろう先生・パートナー動物の内面 (気持ち・好み・理由) には言及しない。 内面を思わせる表現 (「すきだ」 「たのしい」 「〜の理由」 「〜だから」) は禁止語彙とし、 CI script `scripts/verify_praise_voices.mjs` の禁止キーワード配列に追加する。
 
 - 全て女性ナレ (Gemini Leda 1.15x)、 rarity 別プール分け (NORMAL: 1,2,3,4,7 / RARE: 5,6,10 / SUPER: 8,9 + 特別 chime)
-- **検証フロー 5 ステップ** (アートディレクター指摘、 責任所在明確化):
-  1. TTS 生成 (生成担当エンジニア)。 生成プロンプトに 「第三者ナレーターとして読む、 キャラを演じない」 を明記 (sk_intro 事故 `feedback_tts_whisper_verify_required.md` の再発防止)
-  2. `faster-whisper` 文字起こし (自動 CI script `scripts/verify_praise_voices.mjs`)
-  3. `docs/praise_voices_verification.xlsx` (対応表) で exact match 確認 (自動)
-  3.5. 声質一致確認: 既存 quiz TTS と同一話者 (Leda) / 同一速度 (1.15x) / 同一 volume (0.9) であることを wav メタと聴感で確認
-  4. デザイナー (トーン確認担当) 目視 hanko: 感情表現・年齢適性・森トーン整合・第三者ナレ視点の妥当性
-  5. 配置 (`common/pono-narrator-audio.js` の narration registry に commit)
+- **検証フロー 6 ステップ** (アートディレクター + 実装リード + Claude Code 未識字児レビュー must_fix、 責任所在明確化 + 反転プロンプト検証 + 聴感年齢適性):
+  1. TTS 生成 (生成担当エンジニア)。 生成プロンプトに 「第三者ナレーターとして読む、 キャラを演じない」 を明記 (sk_intro 事故 `feedback_tts_whisper_verify_required.md` の再発防止)。 **concrete prompt テンプレート (実装リード must_fix)**: 『これは女性ナレーターが児童向け読み聞かせとして、 キャラクター (ポノ / ふくろう先生 / パートナー動物) の肉声ではなく、 第三者の大人として、 状況を客観的に描写する音声です。 __ (テキスト) __ を、 Gemini Leda 声で、 1.15 倍速で、 柔らかく、 キャラを演じず読み上げてください。 一人称 (ぼく・わたし) は使わず、 「〜だって」 「〜らしい」 の間接話法トーンで。』 プロンプトは `.claude-design-bundle/tts-prompts/narrator_third_person_template.txt` から必ずコピー
+  2. **反転プロンプト検証** (アートディレクター must_fix): 同一テキストで 「キャラが一人称で喋る」 反転プロンプトを 1 サンプルのみテスト生成し、 出力の差 (声質・トーン・感情) を wav スペクトログラムと聴感で比較。 反転版と本番版に有意な差があることを確認 (差がないなら Leda が第三者化を実装していない可能性 → プロンプト再検討)
+  3. `faster-whisper` 文字起こし (自動 CI script `scripts/verify_praise_voices.mjs`)
+  4. `docs/praise_voices_verification.xlsx` (対応表) で exact match 確認 (自動)。 声質一致確認: 既存 quiz TTS と同一話者 (Leda) / 同一速度 (1.15x) / 同一 volume (0.9) であることを wav メタと聴感で確認。 生成時のシード固定を推奨し、 生成後の regeneration は禁止 (同一テキストを再生成せず、 修正時は別ファイル名で並存)
+  5. **親ナレーター聴感テスト** (Claude Code 未識字児レビュー should_improve → must 昇格): 実際の親 (18-50 歳) **1 名以上** に該当ナレ 10 本を聴かせ、 3-5 歳児への年齢適性・自然性を評価。 rejection case は 「早口すぎる」 「機械的すぎる」 「キャラっぽい」 の 3 rejection reason ラベルで分類し、 該当ラベル >2 なら再生成
+  6. デザイナー (トーン確認担当) 目視 hanko: 感情表現・年齢適性・森トーン整合・第三者ナレ視点の妥当性。 batch 検証 (1 回の hanko session で複数ナレを同時評価) を推奨
+  7. 配置 (`common/pono-narrator-audio.js` の narration registry に commit)
 - exact match 失敗時 or デザイナー rejection 時は該当ナレを配置しない (`feedback_tts_whisper_verify_required.md` 準拠、 TTS 検証禁止ルールと明示的に整合)
 - 再生ルール: **貼付 +300ms** (第 2 段開始時、 第 1 段 vibrate から 300ms 遅延)、 random 選択 (rarity フィルタ)、 同じナレは直近 3 回スキップ。 「同時再生禁止」 ガード: 前ナレがまだ再生中なら今回はスキップ + haptic のみ。 **BGM ducking**: 女性ナレ再生開始時に BGM を 0.4 まで下げ、 ナレ終了 300ms 後に 1.0 復帰 (PonoNarratorAudio 側で自動化、 missing_gaps 「BGM ducking なし」 を解決)
 
@@ -451,6 +493,12 @@ localStorage keys: `ponoCelebration.particle` / `.narration` / `.vibrate` / `.gl
 - **子どもへの効き**: 3-8 歳の脳内報酬回路を 2 段階分離で 「確定感 → 喜び」 の心理的リズムに沿って発火。 花火/蛍光を排除しているため保護者の安心感も維持。 感覚敏感児は第 2 段 opt-out で第 1 段のみ体験可能。 SUPER glow を出し惜しみすることで 「またあの光が見たい」 内発動機に繋がる。
 - **実装初手**: `Prototypes/StickerBookThreeJS/main.js` の `onStickerPlaced` (grep で位置特定) に celebration hook を差す。 まず第 1 段 vibrate のみ、 次に第 2 段 Points burst のみ、 の順で個別 PR 化 (voice/glow はさらに別 PR)。
 
+- **TTS 生成 31 本の工数見積 + 優先度順序** (実装リード must_fix):
+  - **総本数内訳**: praise voice 10 本 (§4-3) + owl-whisper 12-16 本 (§3-3、 8+8=16 想定) + shop-glow hint 6-8 本 (§3-4) + newbie ribbon 1 本 (§3-6) + ポノ登場ナレ 1 本 (§4-1) + みせるモード 1 本 (§5-3) = 合計 31-33 本
+  - **工数見積**: TTS 生成 (31 本) = 1 日、 whisper 検証 CI (自動) = 1 日、 反転プロンプト検証 (§4-3 検証フロー step 2) = 0.5 日、 親ナレーター聴感テスト (§4-3 step 5) = 0.5 日、 デザイナー hanko (全 31 本 batch) = 3-4 日、 **合計 5-6 日**
+  - **優先度順序**: (1) praise voice 10 本 (§4-3、 celebration 実装のブロッカー) → (2) owl-whisper 16 本 (§3-3 PoC 用) → (3) ポノ登場ナレ 1 本 + newbie ribbon 1 本 → (4) shop-glow 6-8 本 + みせるモード 1 本
+  - **hanko 工数削減**: デザイナー hanko は batch 検証 (1 session で複数ナレ同時評価) を推奨。 rejection 時は該当ナレのみ再生成
+  - スケジュール明記: `docs/tts_generation_schedule.md` に本表を転記し、 生成担当エンジニアと共有
 - **`common/pono-narrator-audio.js` 最小スケルトン** (実装リード指摘、 §0.5 準拠のモジュール名改称: 旧 `pono-acorn-audio.js` → `pono-narrator-audio.js`。 「ポノが話す」 誤解を避け、 キャラ肉声禁止方針を名前で明示。 将来の改修で誤ってキャラ肉声が混入するのを命名で予防):
 ```js
 // common/pono-narrator-audio.js (新規作成)
@@ -524,9 +572,10 @@ iOS Safari unlock は既存 PuzzleVoice.js を参考に実装。 ManageDebug 個
 - 変換ロジック: `haptics.js` の `_capForAge(pattern)` helper で一括処理
 
 **iOS 対応** (Web Vibration API は iOS Safari 非対応、 2026-07 時点でも)
-- **Audio 代替**: 短い **440Hz (A4 音) sine wave** を `HapticFallbackAudio.playClick()` (別モジュール `common/haptic-fallback-audio.js`) で volume 0.15、 duration 3-5 歳: 20ms / 6-8 歳: 40ms で再生。 §0.5 準拠で 「機能音 (functional tone / SE)」 レイヤに分類し、 女性ナレ (`PonoNarratorAudio`) と実装レイヤを分離する (旧 `PonoAcornAudio.playHapticClick()` を改名 + モジュール分割。 「音声 (voice)」 と 「機能音 (functional tone)」 を混同しないため)
+- **Audio 代替**: 短い **440Hz (A4 音) sine wave** を `HapticFallbackAudio.playClick()` (別モジュール `common/haptic-fallback-audio.js`) で volume **0.15 (初期値、 実測後上方修正可)**、 duration 3-5 歳: 20ms / 6-8 歳: 40ms で再生。 §0.5 準拠で 「機能音 (functional tone / SE)」 レイヤに分類し、 女性ナレ (`PonoNarratorAudio`) と実装レイヤを分離する (旧 `PonoAcornAudio.playHapticClick()` を改名 + モジュール分割。 「音声 (voice)」 と 「機能音 (functional tone)」 を混同しないため)
   - **60Hz は使用しない** (心理学者指摘、 Thaut et al. 2005 Music & Neuroscience: 低域音は幼児の情動制御に強い影響、 予測しづらい覚醒を引き起こす)
   - 440Hz は音楽の基準ピッチ、 子どもにとって最も 「自然」 な短音
+  - **音量実測要件** (Claude Code 未識字児レビュー must_fix): デバイス実機での聞こえ具合を検証するまで volume 0.15 は暫定値扱い。 A/B テスト (3-8 歳児 **最小 10 名**) で volume **0.1 / 0.15 / 0.2 / 0.25 / 0.3** の 5 段階で 「音が聞こえたか」 「意図的なフィードバックと感じたか」 の正答率を測定。 iOS デバイス (iPad 第 5/6 世代、 iPhone SE) でスピーカー出力レベル (dB SPL) を実測。 通知音の相対レベル (40-60 dB SPL) と比較して 「小さすぎず、 うるさすぎず」 の帯を確定。 結果に応じて volume は 0.2〜0.25 への上方修正、 もしくは 「440Hz 不足なら 800Hz + volume 0.2」 の代替案を検討。 実測結果を whisper 検証フローと同レベルの品質ゲートとして `docs/user_test_reports/ios_haptic_audio_volume.md` に記録
 - **CSS 代替**: 対象要素に `haptic-shake` クラスを 120ms 付与 (`translateX ±1px` の 60ms 周期)
 - **iOS 判定**: `/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream`
 - 実装: `haptics.js` 内で `if (navigator.vibrate) { vibrate } else { fallback audio + css }`
@@ -560,7 +609,11 @@ localStorage keys (play.html L49 `pono_*` パターンに整合): `pono_haptics_
 - localStorage への直接書き込みは AGENTS.md security-review 対象なので `admin/` 配下のみに集約
 
 - **子どもへの効き**: 3-8 歳が 「押した → 応えてくれた」 の因果を触覚で即受け取れる。 iOS ユーザーも音 + CSS で 「なにか起きた」 の代替を得られ、 端末差別で寂しくならない。 opt-out で保護者コントロール完備、 感覚過敏の子にも配慮。
-- **実装初手**: `common/haptics.js` を新規作成 (骨組み: `play(sceneKey)` と scene table map、 vibrate 呼び出し + iOS fallback stub のみ)。 まずシール貼付 1 シーンだけ配線して動作確認。
+- **実装初手 (既存 audio pipeline 統合マップ、 実装リード must_fix)**:
+  1. **既存呼び出し全走査**: `play.html` および `Prototypes/StickerBookThreeJS/` 配下で `navigator.vibrate(`, `triggerDailyGachaBlockedFeedback`, `partner_*` voiceTag の呼び出しを grep し、 全 callsite の位置と目的を `docs/audit/haptics_migration_map.md` に列挙
+  2. **モジュール責任分離図**: (a) `common/pono-narrator-audio.js` = 女性ナレ音声 (第三者読み聞かせ / BGM ducking / whisper 検証済み registry) (b) `common/haptic-fallback-audio.js` = 440Hz sine wave 機能音のみ (iOS haptic 代替) (c) `common/haptics.js` = 触覚のみ (vibrate + iOS 音代替の呼び分けは c → b に委譲) の 3 モジュール構成を README に図解
+  3. **初期化順序を固定**: `<script>` タグの順序で (a) `common/haptics.js` を最初に import (b) 続けて `common/haptic-fallback-audio.js` (c) 最後に `common/pono-narrator-audio.js` を import し、 `.register()` 呼び出しを一括実行。 event binding は初期化完了後の DOMContentLoaded で実施
+  4. **段階的置換**: まずシール貼付 1 シーンだけ `haptics.play('sticker.paste.normal')` に配線して動作確認 → 全 12 シーンを順次移行 → 既存 bare `navigator.vibrate()` 呼び出しを撤去 (grep で 0 件になるまで) → 完了確認 PR で `common/haptics.js` に 「唯一の vibrate 呼び出し口」 コメントを付す
 - **effort**: M
 - **impact**: 0.68
 - **files**:
@@ -599,6 +652,8 @@ localStorage keys (play.html L49 `pono_*` パターンに整合): `pono_haptics_
   2. 柱3 物語断片の origin 別トーン (book/game/free) 差別化
   3. 柱4 表紙成長ロジックの collection 進捗連動仕様
   4. 柱5 KDP 連動タイミング (`feature_kdp_amazon_listing.md` の launch 時期と整合)
+- **事前共有ドキュメント** (実装リード should_improve): 検証会前に `.claude-design-bundle/pillars-3-5-redesign/pre_sync_README.md` を作成し、 「柱3 欠落のため §4-3 praise voice を意識的に短句褒めに設計した」 因果関係を参加者に共有する。 これがないと 「なぜ voice が短句褒めなのか」 「なぜ物語言及がないのか」 の質問がラウンド開始後に頻出し、 議題進行が滞る
+- **voice pool 拡張時の判定フローチャート** (実装リード should_improve、 v4 以降の実装時に praise voice を維持するか一本化するかの意思決定): 検証会で 「物語言及」 バリエーション追加が GO の場合、 (a) 既存 praise voice 10 本を維持したまま物語系 5-8 本を別プールで追加 (デフォルト、 初出シールに使用) か (b) 一本化して全 15-18 本に統合するかを判定。 判定基準は 「初出時と再貼付時でナレを変えたい要求があるか」。 テンプレート: `.claude-design-bundle/pillars-3-5-redesign/voice_pool_extension_flowchart.md`
 
 ### 5-1. 柱3 物語の背骨 (保留)
 
@@ -637,6 +692,7 @@ localStorage keys (play.html L49 `pono_*` パターンに整合): `pono_haptics_
 - **ポノ・ふくろう先生 (および パートナー動物 全 8 種) に肉声を持たせる** (§0.5 準拠、 TTS も収録も新規発話も全面禁止。 既存 `partner_*` voiceTag も第三者ナレ間接話法ルートへ置換)
 - **女性ナレをキャラの代弁として直接話法で書く** (「〜だよ」 の一人称は禁止、 必ず 「〜だって」 「〜と ふくろう先生が いっているよ」 の間接話法・第三者読み聞かせ視点に書き換える)
 - **fal-ai / 他 TTS で 「ポノ声」 「ふくろう先生 声」 と称した資産を新規生成する** (キャラ肉声禁止の抜け道になるため。 音声を生成する場合は必ず 「女性ナレーターが第三者として読む」 プロンプトで Gemini Leda 1.15x のみを使用)
+  - **fal-ai 禁止の技術的理由** (実装リード must_fix): fal-ai は汎用 TTS で声質調整の自由度が高く、 「ポノ風の柔らかい声」 とプロンプトするだけでキャラ性が帯びる可能性が高い。 代わりに Gemini Leda 1.15x (Google TTS、 「女性ナレーター」 に特化、 1.15x 速度対応、 faster-whisper 親和性、 cost ceiling が予測可能) を標準とする。 Leda は音色の「キャラ化」自由度が低く、 プロンプトで 「ポノとして読んで」 と指示しても第三者ナレとして安定して読み上げるため、 誤解・誤混入耐性が高い
 - spec / コード / docs で 「voice」 という語を単独で使う (必ず 「女性ナレ (female narrator)」 「機能音 (functional tone / SE)」 「キャラ肉声 (character voice = 禁止)」 のいずれかに明示分類する。 モジュール名にも反映 = `PonoNarratorAudio`, `HapticFallbackAudio` 等)
 
 **推奨トーン**
@@ -655,3 +711,4 @@ localStorage keys (play.html L49 `pono_*` パターンに整合): `pono_haptics_
 | 2026-07-02 | 初版 | 柱1 (収集の可視化) 6 案 + 柱2 (授受の儀式) 4 案の詳細設計。 柱3-5 は保留。 ガチャ / ショップ / カタログスコープの現状把握を統合。 触覚シナリオ表 (12 シーン) と ManageDebug opt-out 設計を明文化 |
 | 2026-07-02 | v2 | レビュー反映 (must_fix 15 件 / should_improve 6 件)。 主な変更: §3-0 origin スキーマ PR 前提条件セクション新設、 §3-1 シルエットに pulse affordance + tap→owl 反応の 『反応する空白』 設計追加 (3-5 歳 Piaget 保存概念未確立への対応)、 §3-3 owlHint バリデーション仕様 (禁止キーワード配列 + CI script) 追加、 §3-4 shop/gacha 光の点滅周期差 (2s / 4s) と明度差別化、 §3-6 addedAt 時刻基準を server UTC epoch に確定、 §4-1 ポノ表情差分を Ekman coding 基準の身体差 (口/腕/体傾き) に強化、 素材納品フロー 3 ステップ明記、 §4-2 定量検証 MilestoneTask (3-8 歳児 8 名以上ユーザーテスト + t-test) 追加、 §4-3 celebration を 2 段階分離 (第 1 段 vibrate 単独 → 第 2 段 +300ms で voice/glow/particle、 感覚敏感児 15-20% への配慮)、 Points burst 数を 8/10/12 に削減 (Gestalt 7±2)、 iPad ロー品質モード追加、 whisper 検証 5 ステップフロー化、 `common/pono-acorn-audio.js` スケルトン明記、 §4-4 触覚エスカレーション上限 (1 分 3 パターン) + 発達段階別区分 (3-5 歳 20-40ms / 6-8 歳 40-80ms) 追加、 iOS 音代替を 60Hz → 440Hz sine wave に変更 (Thaut 2005)、 localStorage key 命名を play.html `pono_*` パターンに整合、 §5 柱3-5 再検討トリガを一元化 (齟齬検証会の 3 者合同 + 議事録 path 確定 + 保留リスク明示)、 §6 禁則に理由付記 |
 | 2026-07-02 | v3 | **キャラクター音声禁止 + 女性ナレーター専業化ポリシー反映**。 主な変更: §0.5 「音声/テキスト運用原則 (キャラクターイメージ保護)」 新設 (ポノ・ふくろう先生・パートナー 8 種の肉声全面禁止 / 女性ナレ Gemini Leda 1.15x 第三者読み聞かせ形式のみ / 3-5 歳未識字児向け 4 層冗長 (視覚ピクトグラム + 触覚 + 女性ナレ + テキスト) / BGM ducking 必須 / ManageDebug 個別 OFF)、 §3-1 tap→owl 反応を吹き出しテキスト + 女性ナレ間接話法の二層に変更、 §3-3 owl-whisper を 「既存ふくろう先生ボイス使用」 前提から 「新規女性ナレ 12-16 本 + 吹き出しテキスト 2 系統管理」 に全面改稿 (在庫監査で partner_fukurou 資産が placeholder のみと判明した事情を明記)、 §3-4 shop-glow tap を 1-C 二層ヒントに接続 + ショップ用ヒント 6-8 本追加、 §3-6 newbie-ribbon の 「ふくろう先生が話す」 を女性ナレ間接話法 + 吹き出しテキスト + chime SE の 3 点同時発火に変更、 §4-1 ポノ登場に 「ポノは決して話さないキャラとして統一 + 補助レイヤに女性ナレ第三者描写オプション (『ポノが なにか もってきてくれたよ』)」 を追加、 §4-3 celebration の設計思想を 「voice」 から 「女性ナレ (第三者描写)」 に置換 + praise voice 10 本テーブルを女性ナレ 「そっとよろこびを伝える描写ナレ」 10 本に全面書換 (『すてき!』 直接話法 → 『すてき な いろ』 描写、 『ぴかぴか!』 → 『ぴかぴか だ』 等) + BGM ducking + 同時再生ガード追加、 モジュール名を `PonoAcornAudio` → `PonoNarratorAudio` に改称 (肉声誤混入を命名で予防)、 §4-4 iOS 音代替を `HapticFallbackAudio.playClick()` 別モジュールに切り出し (機能音 と 音声 の実装レイヤ分離)、 §5-3 みせるモードの音声方針を先行確定 (女性ナレ間接話法 1 本 + テキストパネル)、 §6 禁則に 4 項追加 (キャラ肉声禁止 / 直接話法禁止 / 「ポノ声」 資産新規生成禁止 / 「voice」 単独語禁止)、 §7 v3 エントリ。 新規女性ナレ TTS 総計 31 本 (全て whisper 検証必須)。 音声関連 12 箇所修正 |
+| 2026-07-02 | v3.1 | **3-reviewer クロスレビュー反映 (must_fix 15 件 / should_improve 5 件)**。 主な変更: **[ブランドガーディアン must_fix]** §4-3 praise voice 10 本テーブルを 「目的語=子/シール/出来事」 の第三者観察型に全面書換 (『はれた ね』→『はれたんだ』 / 『すてき な いろ』→『いろが すてき ね』 / 『ぴかぴか だ』→『ぴかぴか した ね』 等)、 テキスト運用原則 (一人称禁止 + 目的語限定 + キャラ内面言及禁止) を明記。 §3-3 owl-whisper ナレ 3 本を 「キャラ内面言及」 型 (『あまい におい が すきなんだって』) から 「状況描写」 型 (『あまい においが するらしいって、 ふくろう先生が いっていたよ』) に変更 + owlHint バリデーションに キャラ内面禁止キーワード配列 + キャラ主語形禁止正規表現 + ナレプロンプト標準テンプレを追加。 §3-6 newbie-ribbon 吹き出しを 「あたらしい おともだち が きたよ」 → 「あたらしい おともだちが きたんだ」 (観察型) に変更 + 吹き出しとナレの意味重複回避ルール明記。 §4-1 ポノ登場ナレを 「ポノが なにか もってきてくれたよ」 → 「シールが でてきたね」 (状況観察型) に変更 + 「ポノが〜」 「ふくろう先生が〜」 の主語形禁止を明記。 §0.5 に一人称禁止テンプレ (`.claude-design-bundle/tts-prompts/narrator_third_person_template.txt`) + 同時再生禁止ガードを追加。 **[Claude Code 未識字児レビュー must_fix]** §4-1 に Ekman 表情差分 3-5 歳児認識テスト (6 名) + 認識率有意差なし時の rollback plan、 §3-1 に pulse affordance 3-4 歳児認識率実測 (8 名、 <50/50-70/>70% で 3 段階分岐)、 §0.5 に保護者読み聞かせなし想定シナリオ (パート2、 8 名実測 + LP に読み聞かせ推奨明記)、 §4-4 iOS 音代替 volume の A/B テスト要件 (10 名、 0.1〜0.3 の 5 段階 + dB SPL 実測)、 §3-3 owlHint 意味通達テスト (4 名、 開放回答調査、 >60% 合致で本番投入) を追加。 **[実装リード must_fix]** §4-4 実装初手に既存 audio pipeline マイグレーションマップ 4 ステップ (grep 走査 → モジュール責任分離図 → 初期化順序固定 → 段階置換)、 §4-3 whisper 検証を 5→7 ステップに拡張 (concrete TTS プロンプトテンプレ + 反転プロンプト検証 + 親ナレーター聴感テスト)、 §6 fal-ai 禁止理由に技術的根拠 (声質調整自由度が高くキャラ性が帯びるリスク) 追記、 §4-3 に TTS 31 本の工数見積 (合計 5-6 日) + 優先度順序 4 段、 §4-3 iPad ロー品質モードに fps 実測検証フロー追加。 **[should_improve 反映]** §0.5 に 「voice タグ実装レイヤ分類監査」 セクション + partner_* voiceTag migration スケジュール、 §5 検証会に事前共有 pre_sync_README + voice pool 拡張判定フローチャートを追加。 **[should_improve 却下]** (a) §6 森トーンパレット WCAG コントラスト検証 (色ペアより 「色+明度+形状」 の 3 軸差別化が既に明記済み、 rarity 判別の代替は §4-3 celebration の要素差で十分)、 (b) §4-4 BGM ducking パラメータ完全表 (全ナレ発火シーンの ducking を PonoNarratorAudio 内で自動化、 個別パラメータ表化は実装後 tuning、 現時点で表化するとメンテ負債)、 (c) §5-3 「ながおし」 表現の親向け言語難易度改善 (「ながおし」 は既に 3-5 歳児が発声で親に伝えられる pointer word として意図的に選定、 敬語化は保護者/子ども呼びかけの二重性を破壊)、 (d) §4-1 ポノ位置・タイミング視線フロー検証 (§4-1 の Ekman 表情差分 6 名テスト内で同時実施、 別枠検証は工数過大)、 (e) §4-3 whisper 検証への聴感テスト step 挿入 (step 5 として親ナレーター聴感テストで実質吸収済み)。 追加検証工数目安: ユーザーテスト 5 種 (合計 3-5 名+8 名+10 名+8 名+4 名=最小 35 名参加者、 8-10 日) + 反転プロンプト検証 0.5 日 + 親ナレ聴感 0.5 日 |

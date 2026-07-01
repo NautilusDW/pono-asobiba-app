@@ -2235,6 +2235,27 @@ html, body {
 .free-stage-target-marker.is-empty-cup-target {
   opacity: 0.82;
 }
+/* batch:divider-ux — しきりモードの空きスロット ghost (うっすらヒント表示) */
+.free-stage-target-marker.is-divider-target {
+  width: clamp(24px, 3.6vw, 32px);
+  height: clamp(24px, 3.6vw, 32px);
+  border: 2px dashed rgba(196, 148, 90, 0.6);
+  background: rgba(255, 249, 235, 0.38);
+  color: rgba(139, 90, 43, 0.55);
+  opacity: 0.55;
+  font-size: 0.62rem;
+  box-shadow: none;
+}
+.free-stage-target-marker.is-divider-target.is-active {
+  opacity: 1;
+  border-style: solid;
+  border-color: #17A766;
+  background: rgba(214, 250, 230, 0.88);
+  color: #064E3B;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.66),
+    0 0 0 5px rgba(34, 197, 94, 0.24);
+}
 .free-stage-target-marker:active {
   transform: translate(-50%, -50%) scale(0.94);
 }
@@ -7390,6 +7411,8 @@ let simpleBentoMode = false;
 let simpleReplaceSlotUid = null;
 let simpleNoCupSlotIndex = null;
 let simpleCupSlotIndex = null;
+// batch:divider-ux — この回で最後に使った しきり palette def の id (ghost タップ配置の family 引き継ぎ用)
+let lastSimpleDividerPaletteId = '';
 const SIMPLE_CUP_FOOD_LIMIT = 1;
 const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
 
@@ -11486,6 +11509,15 @@ function getSimpleDividerDefForSlot(def, slot) {
     : `divider_${family}`;
   return bentoAccessories.find(item => item && item.id === id) || def;
 }
+// batch:divider-ux — 子どもが最後に使った しきり family を覚える (ghost タップで同じ family を置く)
+function noteSimpleDividerPaletteUse(def) {
+  if (def && def.type === 'divider' && def.id) lastSimpleDividerPaletteId = String(def.id);
+}
+function getSimpleActiveDividerPaletteDef() {
+  const dividers = bentoAccessories.filter(item => item && item.type === 'divider');
+  if (!dividers.length) return null;
+  return dividers.find(item => item.id === lastSimpleDividerPaletteId) || dividers[0];
+}
 function syncSimpleDividerItemToSlot(item, slot) {
   if (!item || item.type !== 'divider' || !slot) return false;
   const def = getSimpleDividerDefForSlot(item, slot);
@@ -11533,6 +11565,14 @@ function getSimpleSlotVariantDef(def, slot) {
     slotVariantKey: variant.key || '',
   };
 }
+// batch:divider-ux — ボタン配置の統一順: 手前 (y 大) → 奥、同じ列内は 左 → 右。
+// 全 box 共通 (サーバ登録順に依存しない)。 slot.index は並べ替えても元の識別子のまま維持する。
+function compareSimpleSlotFrontLeftOrder(a, b) {
+  const ay = Number(a && a.y) || 0;
+  const by = Number(b && b.y) || 0;
+  if (Math.abs(ay - by) > 0.5) return by - ay;
+  return (Number(a && a.x) || 0) - (Number(b && b.x) || 0);
+}
 function orderSimpleSlotsForDef(def, slots) {
   if (!def || getSimpleSlotKind(def) !== 'divider' || !Array.isArray(slots) || slots.length <= 1) return slots;
   const wantsVertical = !!def.verticalDivider || isSimpleVerticalDividerSampleId(getSimpleSlotSampleIdForDef(def));
@@ -11548,6 +11588,8 @@ function orderSimpleSlotsForDef(def, slots) {
     return true;
   });
   const fallback = ordered.filter(slot => slot && !used.has(slot.key));
+  preferred.sort(compareSimpleSlotFrontLeftOrder);
+  fallback.sort(compareSimpleSlotFrontLeftOrder);
   return preferred.concat(fallback);
 }
 function getSimpleMainSlotAnchorPoint(point, sampleId) {
@@ -12153,9 +12195,68 @@ function syncSimplePickItemsToCurrentSlots() {
     });
   return changed;
 }
+// batch:divider-ux — しきりの磁石スナップ半径 (stage 幅の約 11.5% ≒ 87)
+function getSimpleDividerSnapRadius() {
+  return FREE_LAYOUT_W * 0.115;
+}
+// batch:divider-ux — 一番近い「空いている」しきりスロットを磁石半径内で探す。
+// 自分自身が占有しているスロットは空き扱い (すこし動かして戻したとき再セットできるように)。
+function findNearestEmptySimpleDividerSlot(item, dropPoint = null) {
+  if (!item || item.type !== 'divider') return null;
+  const slots = getSimpleFixedSlots(item, getItemTier(item));
+  if (!slots.length) return null;
+  const radius = getSimpleDividerSnapRadius();
+  let best = null;
+  let bestDist = Infinity;
+  slots.forEach(slot => {
+    const blocking = getSimpleSlotBlockingItem(slot);
+    if (blocking && blocking.uid !== item.uid) return;
+    const point = getSimpleSlotActualPoint(slot) || slot;
+    if (!point) return;
+    const itemDist = dist(item, point);
+    const pointerDist = dropPoint ? dist(dropPoint, point) : Infinity;
+    const d = Math.min(itemDist, pointerDist);
+    if (d < bestDist) {
+      best = slot;
+      bestDist = d;
+    }
+  });
+  return best && bestDist <= radius ? best : null;
+}
+// batch:divider-ux — しきりの drop 処理: 磁石半径内の空きスロットへスナップ、
+// 圏外なら自由配置のまま (simpleSlot を外して free 位置を維持)。
+function applySimpleDividerSlotDrop(item, dropPoint = null, opts = {}) {
+  if (!item || item.type !== 'divider') return false;
+  const sourceKey = item.simpleSlot || null;
+  const slot = findNearestEmptySimpleDividerSlot(item, dropPoint);
+  if (!slot) {
+    item.simpleSlot = null;
+    return false;
+  }
+  syncSimpleDividerItemToSlot(item, slot);
+  const moved = applySimpleSlotPlacementToItem(item, slot);
+  if (moved && opts.speech !== false && sourceKey && sourceKey !== slot.key) {
+    setSpeech('ばしょを うつしたよ。');
+  }
+  return moved;
+}
+// batch:divider-ux — ドラッグ中、磁石半径内の一番近い ghost を is-active でハイライト (スナップは release 時のみ)
+function updateSimpleDividerGhostHighlight(item, dropPoint = null) {
+  const markers = document.querySelectorAll('.free-stage-target-marker.is-divider-target');
+  if (!markers.length) return;
+  const slot = item && item.type === 'divider' ? findNearestEmptySimpleDividerSlot(item, dropPoint) : null;
+  markers.forEach(marker => {
+    marker.classList.toggle('is-active', !!slot && marker.dataset.slotKey === slot.key);
+  });
+}
 function applySimpleSlotDrop(uid, dropPoint = null) {
   const item = placedItems.find(i => i.uid === uid);
-  if (!simpleBentoMode || !item || !item.simpleSlot || item.parentCupId) return false;
+  if (!simpleBentoMode || !item || item.parentCupId) return false;
+  // batch:divider-ux — しきりモードのしきりは「空きスロット磁石スナップ or 自由配置」に分岐
+  if (item.type === 'divider' && isSimpleDividerEditMode()) {
+    return applySimpleDividerSlotDrop(item, dropPoint);
+  }
+  if (!item.simpleSlot) return false;
   const kind = getSimpleSlotKindForItem(item);
   if (isSimpleLeafEditMode() && kind === 'leaf') return false;
   if (isSimplePickEditMode() && kind === 'pick') return false;
@@ -12804,6 +12905,10 @@ function onFreeItemDragMove(e) {
       }
     });
   }
+  // batch:divider-ux — しきり移動中は近くの空きスロット ghost をハイライト
+  if (item.type === 'divider' && isSimpleDividerEditMode()) {
+    updateSimpleDividerGhostHighlight(item, p);
+  }
 }
 function onFreeItemDragEnd(e) {
   if (!freeDragState) return;
@@ -13125,13 +13230,30 @@ function addSimpleDecorPaletteItem(def) {
   setSpeech('のりは すきな ところに うごかせるよ。できたら のりOK を おしてね。');
   return item;
 }
-function addSimpleFixedPaletteItem(def) {
+// batch:divider-ux — ボタン配置後の一言。セッション初回だけ「指で動かせる」ヒントを足す (tutorial 中は出さない)
+function getSimpleDividerPlacedSpeech() {
+  let tutorialActive = false;
+  try {
+    tutorialActive = !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
+  } catch (_) {}
+  let hintShown = true;
+  try {
+    hintShown = sessionStorage.getItem('bento_divider_move_hint_v1') === '1';
+  } catch (_) {}
+  if (tutorialActive || hintShown) return 'しきりを おいたよ。';
+  try {
+    sessionStorage.setItem('bento_divider_move_hint_v1', '1');
+  } catch (_) {}
+  return 'しきりを おいたよ。おいたあとも ゆびで うごかせるよ。';
+}
+function addSimpleFixedPaletteItem(def, opts = {}) {
   if (!def) return null;
   if (getBoxTierCount() > 1 && def.type !== 'decor' && freeActiveTier === 1) {
     freeActiveTier = 2;
   }
   const tier = getTargetTierForType(def.type);
-  const slot = pickSimpleFixedSlot(def, tier);
+  // batch:divider-ux — ghost タップ配置はスロットを明示指定して同じ配置経路を再利用する
+  const slot = (opts && opts.slot) || pickSimpleFixedSlot(def, tier);
   if (!slot) {
     if (def.type === 'pick') {
       setSpeech('おかずを いれてから ピックを さそう。');
@@ -13186,7 +13308,8 @@ function addSimpleFixedPaletteItem(def) {
   } else if (def.type === 'divider') {
     simpleNoCupSlotIndex = null;
     simpleCupSlotIndex = null;
-    setSpeech('しきりを おいたよ。');
+    noteSimpleDividerPaletteUse(def);
+    setSpeech(getSimpleDividerPlacedSpeech());
   } else if (def.type === 'pick') {
     simpleNoCupSlotIndex = null;
     simpleCupSlotIndex = null;
@@ -13330,6 +13453,10 @@ function onFreePaletteDragMove(e) {
       }
     });
   }
+  // batch:divider-ux — palette からの しきりドラッグ中も近くの空きスロット ghost をハイライト
+  if (item.type === 'divider' && isSimpleDividerEditMode()) {
+    updateSimpleDividerGhostHighlight(item, point);
+  }
 }
 function finishFreePaletteDrag(shouldFinalize) {
   if (!freePaletteDragState) return;
@@ -13352,6 +13479,12 @@ function finishFreePaletteDrag(shouldFinalize) {
   const placed = placedItems.find(i => i.uid === uid) || null;
   if (def.type === 'food' && placed && !placed.parentCupId) {
     attachFoodToCupIfOverlaps(placed, null, { render: false, selectChild: true });
+  }
+  // batch:divider-ux — palette からドロップした しきりは近くの空きスロットへ磁石スナップ
+  // (圏外なら自由配置のまま)。使った family も覚えて ghost タップ配置に引き継ぐ。
+  if (simpleBentoMode && def.type === 'divider' && placed && !placed.parentCupId) {
+    noteSimpleDividerPaletteUse(def);
+    applySimpleDividerSlotDrop(placed, null, { speech: false });
   }
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
@@ -14840,6 +14973,37 @@ function bindFreePalettePress(btn, onPress) {
   });
   btn.addEventListener('pointercancel', resetTouchPress, { passive: true });
 }
+// batch:divider-ux — しきり palette (simple mode): タップ=ボタン配置、10px 以上動かしたらドラッグ配置に切替。
+// しきりタブは 4 枚固定でスクロール不要なので touch-action:none で上向きドラッグを許可する。
+function bindSimpleDividerPalettePress(btn, def) {
+  let press = null;
+  const reset = () => { press = null; };
+  btn.style.touchAction = 'none';
+  btn.addEventListener('pointerdown', e => {
+    if (e.cancelable) e.preventDefault();
+    press = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  btn.addEventListener('pointermove', e => {
+    if (!press || e.pointerId !== press.id) return;
+    if (Math.abs(e.clientX - press.x) <= 10 && Math.abs(e.clientY - press.y) <= 10) return;
+    const pointerId = press.id;
+    reset();
+    try { btn.releasePointerCapture(pointerId); } catch (_) {}
+    if (!showTutorialPaletteLockToast(def)) return;
+    beginFreePaletteDrag(e, def);
+  });
+  btn.addEventListener('pointerup', e => {
+    if (!press || e.pointerId !== press.id) return;
+    reset();
+    if (e.cancelable) e.preventDefault();
+    if (!showTutorialPaletteLockToast(def)) return;
+    const historyBefore = beginFreeHistoryChange();
+    addSimpleFreePaletteItem(def);
+    if (commitFreeHistoryChange(historyBefore)) renderFreeLayoutControls();
+  });
+  btn.addEventListener('pointercancel', reset, { passive: true });
+}
 function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -14908,6 +15072,9 @@ function makeFreePaletteButton(def) {
       }
       selectFreeBentoBox(def.id);
     });
+  } else if (simpleBentoMode && def.type === 'divider') {
+    // batch:divider-ux — しきりはタップ配置に加えてドラッグ配置 (磁石スナップ付き) も許可
+    bindSimpleDividerPalettePress(btn, def);
   } else {
     bindFreePalettePress(btn, e => {
       if (!showTutorialPaletteLockToast(def)) return;
@@ -16199,8 +16366,53 @@ function createFreeStageTargetMarker(opts = {}) {
   });
   return button;
 }
+// batch:divider-ux — ghost タップで しきりを そのスロットへ配置 (直前に使った family + スロット向き variant)
+function placeSimpleDividerAtGhostSlot(slot) {
+  if (!slot || !isSimpleDividerEditMode()) return;
+  if (getSimpleSlotBlockingItem(slot)) {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+    return;
+  }
+  const def = getSimpleActiveDividerPaletteDef();
+  if (!def) return;
+  const historyBefore = beginFreeHistoryChange();
+  addSimpleFixedPaletteItem(def, { slot });
+  if (commitFreeHistoryChange(historyBefore)) renderFreeLayoutControls();
+}
+// batch:divider-ux — しきりモード中、空きスロット候補をうっすら ghost 表示 (占有スロットは非表示)
+function createSimpleDividerStageTargetLayer() {
+  const def = getSimpleActiveDividerPaletteDef();
+  if (!def) return null;
+  const tier = getTargetTierForType('divider');
+  const slots = getSimpleFixedSlots(def, tier);
+  if (!slots.length) return null;
+  const layer = document.createElement('div');
+  layer.className = 'free-stage-target-layer';
+  slots.forEach(slot => {
+    if (getSimpleSlotBlockingItem(slot)) return;
+    const point = getSimpleSlotActualPoint(slot) || slot;
+    const marker = createFreeStageTargetMarker({
+      kind: 'divider',
+      slotIndex: slot.index,
+      x: point.x,
+      y: point.y,
+      label: '・',
+      ariaLabel: 'しきりを おく ばしょ',
+      onSelect: () => placeSimpleDividerAtGhostSlot(slot),
+    });
+    if (marker) {
+      marker.classList.add('is-divider-target');
+      marker.dataset.slotKey = slot.key;
+      layer.appendChild(marker);
+    }
+  });
+  return layer.childNodes.length ? layer : null;
+}
 function createSimpleStageTargetLayer() {
   if (!shouldUseSimpleStageTargetMarkers()) return null;
+  // batch:divider-ux — しきりタブでは空きスロット ghost レイヤーを出す
+  if (isSimpleDividerEditMode()) return createSimpleDividerStageTargetLayer();
   if (freeLayoutTab !== 'food' && freeLayoutTab !== 'accessory') return null;
   const box = getSelectedBentoBox();
   const tier = getTargetTierForType(freeLayoutTab === 'accessory' ? 'cup' : 'food');
