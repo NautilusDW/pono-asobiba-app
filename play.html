@@ -1407,14 +1407,6 @@
       overflow-y: auto;
       overscroll-behavior: contain;
     }
-    /* Phones: tighten spacing a bit so the whole form usually fits without
-       scrolling on common portrait sizes (360x800 / 390x844 / 429x926). */
-    @media (max-width: 480px), (max-height: 540px) {
-      .profile-modal { padding: 12px; }
-      .profile-card { padding: 12px 14px 12px; }
-      .profile-form { gap: 6px; }
-      .profile-card h3 { margin-bottom: 8px; }
-    }
     .profile-card h3 {
       margin-bottom: 10px;
       font-size: 1.08rem;
@@ -1458,6 +1450,16 @@
       font-size: 1rem; /* >=16px: prevents iOS Safari focus auto-zoom that blew the modal past the viewport */
       font-weight: 900;
       padding: 7px 11px;
+    }
+    /* Phones: tighten spacing a bit so the whole form usually fits without
+       scrolling on common portrait sizes (360x800 / 390x844 / 429x926).
+       NOTE: must come AFTER the base .modal-card.profile-card / .profile-card h3 /
+       .profile-form rules above, and match their specificity, or it loses the cascade. */
+    @media (max-width: 480px), (max-height: 540px) {
+      .profile-modal { padding: 12px; }
+      .modal-card.profile-card { padding: 12px 14px 12px; }
+      .profile-form { gap: 6px; }
+      .profile-card h3 { margin-bottom: 8px; }
     }
     .profile-random,
     .profile-save {

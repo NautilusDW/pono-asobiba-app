@@ -3291,6 +3291,11 @@ html, body {
     min-height: 40px;
     font-size: 0.7rem;
   }
+  .free-okazu-remaining-hint {
+    min-height: 40px;
+    border-radius: 13px;
+    font-size: 0.7rem;
+  }
   .free-cup-list button.free-place-choice {
     min-height: 58px;
   }
@@ -13194,6 +13199,18 @@ function addSimpleFixedPaletteItem(def) {
   playPop();
   return item;
 }
+// v1491: side ステップで最後のおかずが入った瞬間 (ヒントチップ→OK ボタンに切替わる瞬間) に
+// OK ボタンへの導線を speech で案内する。 tutorial 中は台本ナレを壊さないよう発火しない。
+function maybeAnnounceOkazuTierFilled(step, tier, filledBefore) {
+  if (tier == null || filledBefore) return;
+  if (step !== 'tier2Side' && step !== 'tier3Side') return;
+  try {
+    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) return;
+  } catch (_) {}
+  if (!getOkazuTierFillStatus(tier).filled) return;
+  const okLabel = step === 'tier3Side' ? '3だんめOK' : (getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK');
+  setSpeech('おかずが ぜんぶ そろったね！「' + okLabel + '」を おしてね。');
+}
 function addSimpleFreePaletteItem(def) {
   if (!def) return;
   if (!canStartFreePaletteDrag(def)) return;
@@ -13204,15 +13221,25 @@ function addSimpleFreePaletteItem(def) {
     enterFreeBrushStampMode(def);
     return null;
   }
+  // v1491: side ステップの充足状態を配置前に控えておく (配置後の transition 検知用)
+  const sideGuideStep = (simpleBentoMode && def.type === 'food' && (freeGuideStep === 'tier2Side' || freeGuideStep === 'tier3Side'))
+    ? freeGuideStep
+    : null;
+  const sideGuideTier = sideGuideStep ? getGuideTierForStep(sideGuideStep) : null;
+  const sideFilledBefore = sideGuideTier != null ? getOkazuTierFillStatus(sideGuideTier).filled : true;
   const editingCup = def.type === 'food' ? getEditingCup() : null;
   if (editingCup) {
-    return addSimpleFoodToCup(def, editingCup);
+    const cupItem = addSimpleFoodToCup(def, editingCup);
+    if (cupItem) maybeAnnounceOkazuTierFilled(sideGuideStep, sideGuideTier, sideFilledBefore);
+    return cupItem;
   }
   const activeCup = def.type === 'food' && canAddFoodToCup(def) && simpleNoCupSlotIndex == null
     ? getSimpleCupForFoodPlacement(def, getTargetTierForType(def.type), { allowFull: true })
     : null;
   if (activeCup) {
-    return addSimpleFoodToCup(def, activeCup);
+    const cupItem = addSimpleFoodToCup(def, activeCup);
+    if (cupItem) maybeAnnounceOkazuTierFilled(sideGuideStep, sideGuideTier, sideFilledBefore);
+    return cupItem;
   }
   let item = null;
   if (def.type === 'rice_auto') {
@@ -13236,10 +13263,12 @@ function addSimpleFreePaletteItem(def) {
   if (simpleBentoMode && (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') && def.type === 'food') {
     const tier = getGuideTierForStep(freeGuideStep);
     // v1490: メインが必要数そろってから「すすんでいいよ」を案内する (必要数は helper が正)
+    // v1491: main スロットは満杯なので「もっといれてもいいよ」ではなく次ステップへ誘導する
     if (countOkazuRoleOnTier(tier, 'main') >= getRequiredOkazuCountsForTier(tier).main) {
-      setSpeech('もっと おかずを いれてもいいよ。すすむときは 小さいおかずへ を おしてね。');
+      setSpeech('メインのおかずが そろったね！つぎは 「ちいさい おかずへ」を おしてね。');
     }
   }
+  maybeAnnounceOkazuTierFilled(sideGuideStep, sideGuideTier, sideFilledBefore);
   return item;
 }
 function beginFreePaletteDrag(e, def) {
@@ -15620,10 +15649,15 @@ function goBackFreeGuideStep() {
   }
 }
 // v1490: おかずが必要数そろうまで OK ボタンの代わりに出す非インタラクティブなヒントチップ
-function makeOkazuRemainingHint(remaining) {
+// v1491: template ('{n}' を残数に置換) で文言を差し替え可能に + role=status で AT に残数変化を通知
+function makeOkazuRemainingHint(remaining, template) {
   const hint = document.createElement('div');
   hint.className = 'free-okazu-remaining-hint';
-  hint.textContent = `おかずを あと ${Math.max(1, Math.round(Number(remaining) || 1))}こ いれてね`;
+  hint.setAttribute('role', 'status');
+  const count = Math.max(1, Math.round(Number(remaining) || 1));
+  hint.textContent = template
+    ? template.replace('{n}', String(count))
+    : `おかずを あと ${count}こ いれてね`;
   return hint;
 }
 function renderFreeGuidePanel() {
@@ -15657,7 +15691,7 @@ function renderFreeGuidePanel() {
     actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
     const tier = getGuideTierForStep('tier2Side');
     // v1490: 分岐点 UI なので描画は維持しつつ、 全おかずがそろうまで disabled
-    const doneBtn = makeSmallControlButton('できあがり', 'primary', () => stageComplete(), !getOkazuTierFillStatus(tier).filled);
+    const doneBtn = makeSmallControlButton('できあがり', 'primary', () => stageComplete(), !getOkazuTierFillStatus(tier).filled || !!getSimpleFirstMissingRequiredOkazu());
     doneBtn.dataset.action = 'stage-complete';
     actions.appendChild(doneBtn);
     actions.appendChild(makeSmallControlButton('3だんめへ', '', () => setFreeGuideStep('tier3Main')));
@@ -16490,7 +16524,12 @@ function renderFreeLayoutControls() {
     const tier = getGuideTierForStep(freeGuideStep);
     actions.classList.add('has-guide-action');
     // v1490: メインおかずが必要数そろうまで disabled (ボタン自体は見せて動線を保つ)
-    actions.appendChild(makeSmallControlButton('ちいさい おかずへ', 'primary', () => tryFinishOkazuTier(tier), countOkazuRoleOnTier(tier, 'main') < getRequiredOkazuCountsForTier(tier).main));
+    // v1491: disabled の理由が分かるよう、 未達の間はヒントチップも並べる
+    const mainRemaining = getRequiredOkazuCountsForTier(tier).main - countOkazuRoleOnTier(tier, 'main');
+    actions.appendChild(makeSmallControlButton('ちいさい おかずへ', 'primary', () => tryFinishOkazuTier(tier), mainRemaining > 0));
+    if (mainRemaining > 0) {
+      actions.appendChild(makeOkazuRemainingHint(mainRemaining, 'メインのおかずを あと {n}こ いれてね'));
+    }
   }
   tray.appendChild(actions);
 }

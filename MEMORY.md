@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-01T21:42:26Z - プロフィールモーダルのスマホ縦画面はみ出し修正 (overflow-y:auto + safe-area max-height + phone media query)
+- **タスク**: プロフィールモーダルのスマホ縦画面はみ出し修正 (overflow-y:auto + safe-area max-height + phone media query)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 5
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 5}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-07-01T21:42:09Z - bento しきりモードで非しきりアイテムを半透明化 (leaf-mode precedent 準拠)
+- **タスク**: bento しきりモードで非しきりアイテムを半透明化 (leaf-mode precedent 準拠)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 5
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 5}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-01T21:35:56Z - bento delivery scene: lid redesigned as prominent leaning element (right-anchored handoff, 92%/82% tier-height lid, -11deg lean, verified 6 scenarios via Playwright)
 - **タスク**: bento delivery scene: lid redesigned as prominent leaning element (right-anchored handoff, 92%/82% tier-height lid, -11deg lean, verified 6 scenarios via Playwright)
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Bash": 42, "Read": 13, "Glob": 3, "Grep": 13, "Agent": 10, "Edit": 9, "ToolSearch": 1, "SendMessage": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T18:38:29Z - quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (emoji_name→trivia + framed:true, sw v1821 / batch:961)
-- **タスク**: quizland Q113 (weather_lv1_004 虹) を Q119 と同じ stage_weather_rainbow_arc.png に差し替え (emoji_name→trivia + framed:true, sw v1821 / batch:961)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 45
-- **エラー数**: 6
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 18, "Read": 8, "Glob": 3, "Grep": 12, "Agent": 2, "Edit": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T17:56:32Z - quizland Q113 (実 qid: weather_lv2_010) を Q119 (weather_lv3_016) と同じレイアウトに合わせる + 誤った weather_lv2_002 エントリ削除
-- **タスク**: quizland Q113 (実 qid: weather_lv2_010) を Q119 (weather_lv3_016) と同じレイアウトに合わせる + 誤った weather_lv2_002 エントリ削除
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 141
-- **エラー数**: 11
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 44, "Bash": 34, "Grep": 12, "Glob": 5, "Workflow": 31, "Agent": 2, "ToolSearch": 1, "Edit": 12}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
