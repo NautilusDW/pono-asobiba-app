@@ -1396,11 +1396,24 @@
       line-height: 1.5;
       text-align: center;
     }
-    .profile-card {
-      max-width: 360px;
+    .modal-card.profile-card {
+      max-width: min(360px, calc(100vw - 24px));
       padding: 16px 18px 14px;
-      max-height: calc(100dvh - 24px);
-      overflow: visible;
+      /* v1786: keep the card inside the visible viewport even with notches /
+         browser bars, and let it scroll when content is taller than the
+         screen (overflow: visible clipped the OK button on phones). Nothing
+         inside relies on overflow: visible — the age <select> is native. */
+      max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    /* Phones: tighten spacing a bit so the whole form usually fits without
+       scrolling on common portrait sizes (360x800 / 390x844 / 429x926). */
+    @media (max-width: 480px), (max-height: 540px) {
+      .profile-modal { padding: 12px; }
+      .profile-card { padding: 12px 14px 12px; }
+      .profile-form { gap: 6px; }
+      .profile-card h3 { margin-bottom: 8px; }
     }
     .profile-card h3 {
       margin-bottom: 10px;
@@ -1442,7 +1455,7 @@
       background: #fff;
       color: var(--text);
       font-family: inherit;
-      font-size: .94rem;
+      font-size: 1rem; /* >=16px: prevents iOS Safari focus auto-zoom that blew the modal past the viewport */
       font-weight: 900;
       padding: 7px 11px;
     }

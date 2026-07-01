@@ -538,35 +538,35 @@ html, body {
 .bento-delivery__handoff {
   position: absolute;
   z-index: 3;
-  left: 43%;
+  right: 42.5%; /* 右端を 57.5% に固定 → NPC (left:58%) と重ならない */
   bottom: 4%;
-  width: min(29.5vw, 308px);
+  width: min(38vw, 400px);
   height: min(19vw, 196px);
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   pointer-events: none;
 }
-/* ふた: お重列の右端に立てかけ (お重より後ろ、 natural AR 維持) */
+/* ふた: お重列の右端に立てかけ (お重とほぼ同じ高さ、 natural AR 維持)。
+   left 基準 (host 右端から) なので lid の縦横比が違っても隙間が出ない。 */
 #bento-delivery-bento .bento-delivery__lid {
   position: absolute;
   z-index: -1;
-  right: -12%;
-  bottom: 1%;
-  height: 56%;
+  left: 93%;
+  bottom: 0;
+  height: 92%;
   width: auto;
   object-fit: contain;
-  transform: rotate(-6deg);
-  transform-origin: 55% 88%;
-  filter: drop-shadow(0 5px 9px rgba(70, 40, 16, 0.28));
+  transform: rotate(-11deg);
+  transform-origin: 50% 90%;
+  filter: drop-shadow(0 6px 10px rgba(70, 40, 16, 0.3));
   pointer-events: none;
 }
-/* 1段のお重 (host が丸ごと 760/460) はふたが相対的に大きくなるので控えめに */
+/* 1段のお重 (host が丸ごと白カード) はカード右端に立てかけ */
 #bento-delivery-bento.free-complete-bento:not(.free-complete-stack) .bento-delivery__lid {
-  right: 0;
-  bottom: -1%;
-  height: 53%;
+  left: 97%;
+  bottom: 2%;
+  height: 82%;
 }
 #bento-delivery-bento.complete-bento {
   width: 100%;
@@ -575,9 +575,12 @@ html, body {
   box-shadow: 0 13px 20px rgba(70, 38, 12, 0.28);
 }
 #bento-delivery-bento.free-complete-bento {
-  width: 100%;
+  width: 76%; /* 右側にふたの居場所を空ける */
   height: auto;
   min-height: 0;
+}
+#bento-delivery-bento.free-complete-bento:not(.free-complete-stack) {
+  width: 55%; /* 1段カードは横長なので更に詰めてふた分を確保 */
 }
 #bento-delivery-bento.free-complete-stack {
   transform: scale(0.72) rotate(-2deg);
@@ -681,13 +684,15 @@ html, body {
     max-width: 42%;
   }
   .bento-delivery__handoff {
-    left: 43%;
-    width: min(24vw, 210px);
+    width: min(34vw, 300px);
     height: min(17vw, 145px);
   }
   #bento-delivery-bento .bento-delivery__lid {
-    right: 1%;
-    height: 52%;
+    height: 86%;
+    transform: rotate(-7deg);
+  }
+  #bento-delivery-bento.free-complete-bento:not(.free-complete-stack) .bento-delivery__lid {
+    height: 76%;
   }
   .bento-delivery__dialog {
     width: min(76vw, 690px);
@@ -1208,6 +1213,10 @@ html, body {
   opacity: 0.34;
   filter: grayscale(0.18) drop-shadow(0 4px 5px rgba(68, 42, 16, 0.08));
   pointer-events: none;
+}
+.free-placed-item.is-divider-edit-dim {
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
 }
 .free-placed-item.type-pick img {
   clip-path: inset(0 0 18% 0);
@@ -14136,12 +14145,13 @@ function createFreePlacedElement(item, interactive) {
   const typeClass = item.type ? ' type-' + item.type : '';
   const groupClass = getSkGroupClass(item.sk);
   const leafReference = interactive && shouldDimItemForSimpleLeafEdit(item);
+  const dividerEditDim = interactive && shouldDimItemForSimpleDividerEdit(item);
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && !!editingCup && item.parentCupId !== editingCup.uid;
   const brushLocked = interactive && !!freeBrushStampDef;
   const tutorialLocked = interactive && !canMoveFreeItemInCurrentTutorial(item);
   const isSelected = interactive && isItemVisuallySelected(item);
-  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', leafReference ? 'is-leaf-edit-reference' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : '', tutorialLocked ? 'tutorial-locked' : ''].filter(Boolean).join(' ');
+  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', leafReference ? 'is-leaf-edit-reference' : '', dividerEditDim ? 'is-divider-edit-dim' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : '', tutorialLocked ? 'tutorial-locked' : ''].filter(Boolean).join(' ');
   el.dataset.freeUid = item.uid;
   el.dataset.itemId = item.id || '';
   el.dataset.type = item.type || '';
@@ -15982,6 +15992,12 @@ function shouldHideItemForSimpleLeafEdit(item) {
 }
 function shouldDimItemForSimpleLeafEdit(item) {
   return shouldHideItemForSimpleLeafEdit(item);
+}
+function shouldDimItemForSimpleDividerEdit(item) {
+  if (!isSimpleDividerEditMode() || !item) return false;
+  if (item.type === 'divider') return false;
+  if (item.type === 'rice' || isRiceDecorItem(item) || item.type === 'decor') return false;
+  return true;
 }
 function getNextEmptySimpleSlotIndex(slots) {
   const empty = (slots || []).findIndex(slot => !getSimpleSlotBlockingItem(slot));

@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-01T21:35:56Z - bento delivery scene: lid redesigned as prominent leaning element (right-anchored handoff, 92%/82% tier-height lid, -11deg lean, verified 6 scenarios via Playwright)
+- **タスク**: bento delivery scene: lid redesigned as prominent leaning element (right-anchored handoff, 92%/82% tier-height lid, -11deg lean, verified 6 scenarios via Playwright)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 19
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 7, "Bash": 10, "Read": 1, "Workflow": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-01T21:19:31Z - bento お渡しシーン: display:none中render起因のマスク欠落/一段のみ表示を修正 + ふた演出追加 + handoff拡大
 - **タスク**: bento お渡しシーン: display:none中render起因のマスク欠落/一段のみ表示を修正 + ふた演出追加 + handoff拡大
 - **結果**: 成功
@@ -247,18 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 44, "Bash": 34, "Grep": 12, "Glob": 5, "Workflow": 31, "Agent": 2, "ToolSearch": 1, "Edit": 12}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-06-29T11:51:33Z - batch:925 janken voice 1ショット連続発話で再生成 (call_jan/ken/pon + start)
-- **タスク**: batch:925 janken voice 1ショット連続発話で再生成 (call_jan/ken/pon + start)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 104
-- **エラー数**: 11
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Bash": 64, "Read": 12, "Edit": 16, "Workflow": 9, "Grep": 1, "Write": 1, "Agent": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
