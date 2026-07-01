@@ -1397,28 +1397,35 @@
       text-align: center;
     }
     .profile-card {
-      max-width: 390px;
+      max-width: 360px;
+      padding: 16px 18px 14px;
+      max-height: calc(100dvh - 24px);
+      overflow: visible;
+    }
+    .profile-card h3 {
+      margin-bottom: 10px;
+      font-size: 1.08rem;
     }
     .profile-note {
-      margin: 0 0 14px;
-      padding: 10px 12px;
-      border: 2px solid rgba(242, 145, 90, .28);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, .62);
-      font-size: .86rem;
-      font-weight: 800;
+      margin: -2px 0 0;
+      padding: 0 2px;
+      border: 0;
+      background: transparent;
+      font-size: .66rem;
+      font-weight: 600;
       color: var(--text-light);
-      line-height: 1.55;
+      line-height: 1.35;
+      text-align: left;
     }
     .profile-form {
       display: grid;
-      gap: 12px;
+      gap: 8px;
     }
     .profile-field {
       display: grid;
-      gap: 6px;
+      gap: 4px;
       color: var(--text);
-      font-size: .9rem;
+      font-size: .78rem;
       font-weight: 900;
     }
     .profile-name-row {
@@ -1429,19 +1436,19 @@
     .profile-input,
     .profile-select {
       width: 100%;
-      min-height: 44px;
+      min-height: 38px;
       border: 2px solid rgba(242, 145, 90, .42);
       border-radius: 14px;
       background: #fff;
       color: var(--text);
       font-family: inherit;
-      font-size: 1rem;
+      font-size: .94rem;
       font-weight: 900;
-      padding: 9px 12px;
+      padding: 7px 11px;
     }
     .profile-random,
     .profile-save {
-      min-height: 44px;
+      min-height: 38px;
       border: none;
       border-radius: 14px;
       font-family: inherit;
@@ -1461,13 +1468,13 @@
       gap: 8px;
     }
     .profile-gender-btn {
-      min-height: 42px;
+      min-height: 38px;
       border: 2px solid rgba(242, 145, 90, .34);
       border-radius: 14px;
       background: #fff;
       color: var(--text);
       font-family: inherit;
-      font-size: .86rem;
+      font-size: .78rem;
       font-weight: 900;
       cursor: pointer;
       touch-action: manipulation;
@@ -6100,7 +6107,7 @@
           <span class="settings-action__icon" aria-hidden="true">👤</span>
           <span class="settings-action__text">
             <span class="settings-action__main">プロフィール</span>
-            <span class="settings-action__sub" id="settingsProfileSub">なまえを かえる</span>
+            <span class="settings-action__sub" id="settingsProfileSub">名前を変更</span>
           </span>
         </button>
         <button class="settings-action" id="settingsRefreshBtn" type="button">
@@ -6155,40 +6162,40 @@
   <div class="modal profile-modal" id="profileModal" hidden role="dialog" aria-modal="true" aria-labelledby="profileTitle">
     <div class="modal-card profile-card">
       <h3 id="profileTitle">プロフィール</h3>
-      <p class="profile-note">ゲームの なかで よぶためだけに つかうよ。そとには おくらないよ。</p>
       <form class="profile-form" id="profileForm">
         <label class="profile-field" for="profileNameInput">
-          <span>なまえ</span>
+          <span>名前</span>
           <span class="profile-name-row">
             <input class="profile-input" id="profileNameInput" type="text" maxlength="8" autocomplete="off" inputmode="text" value="ポノ">
             <button class="profile-random" id="profileRandomBtn" type="button">ランダム</button>
           </span>
         </label>
         <div class="profile-field">
-          <span>せいべつ</span>
-          <div class="profile-gender-group" id="profileGenderGroup" role="radiogroup" aria-label="せいべつ">
-            <button class="profile-gender-btn is-active" type="button" data-gender="none" role="radio" aria-checked="true">えらばない</button>
-            <button class="profile-gender-btn" type="button" data-gender="girl" role="radio" aria-checked="false">おんなのこ</button>
-            <button class="profile-gender-btn" type="button" data-gender="boy" role="radio" aria-checked="false">おとこのこ</button>
+          <span>性別</span>
+          <div class="profile-gender-group" id="profileGenderGroup" role="radiogroup" aria-label="性別">
+            <button class="profile-gender-btn is-active" type="button" data-gender="none" role="radio" aria-checked="true">未選択</button>
+            <button class="profile-gender-btn" type="button" data-gender="girl" role="radio" aria-checked="false">女の子</button>
+            <button class="profile-gender-btn" type="button" data-gender="boy" role="radio" aria-checked="false">男の子</button>
           </div>
         </div>
         <label class="profile-field" for="profileAgeSelect">
-          <span>ねんれい</span>
+          <span>年齢</span>
           <select class="profile-select" id="profileAgeSelect">
-            <option value="">えらばない</option>
-            <option value="2">2さい</option>
-            <option value="3">3さい</option>
-            <option value="4">4さい</option>
-            <option value="5">5さい</option>
-            <option value="6">6さい</option>
-            <option value="7">7さい</option>
-            <option value="8">8さい</option>
-            <option value="9">9さい</option>
-            <option value="10">10さい</option>
-            <option value="11">11さい</option>
-            <option value="12">12さい</option>
+            <option value="">未選択</option>
+            <option value="2">2歳</option>
+            <option value="3">3歳</option>
+            <option value="4">4歳</option>
+            <option value="5">5歳</option>
+            <option value="6">6歳</option>
+            <option value="7">7歳</option>
+            <option value="8">8歳</option>
+            <option value="9">9歳</option>
+            <option value="10">10歳</option>
+            <option value="11">11歳</option>
+            <option value="12">12歳</option>
           </select>
         </label>
+        <p class="profile-note">※入力内容はゲーム進行とハイスコア表示のためだけにこのブラウザ内で使用します。外部へ送信しません。</p>
         <button class="profile-save" type="submit">OK</button>
       </form>
     </div>
@@ -6942,7 +6949,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1876;
+    const PAGE_CACHE_VERSION = 1877;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -10597,7 +10604,7 @@
       function updateProfileSettingsLabel(profile) {
         if (!settingsProfileSub) return;
         profile = profile || loadProfile();
-        settingsProfileSub.textContent = (profile.name || 'ポノ') + 'で あそぶ';
+        settingsProfileSub.textContent = (profile.name || 'ポノ') + 'で遊ぶ';
       }
       function setGender(value) {
         profileGender = normalizeGender(value);

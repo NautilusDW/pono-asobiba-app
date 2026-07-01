@@ -3282,19 +3282,18 @@
     gap: 6px;
   }
   .oto-top-action {
-    min-width: 78px;
-    height: 44px;
+    width: 56px;
+    min-width: 56px;
+    height: 56px;
     border: 2px solid rgba(255,255,255,0.78);
     border-radius: 14px;
     background: rgba(255,255,255,0.88);
     color: #3f2a18;
-    padding: 0 10px;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
     font-family: inherit;
-    font-size: 12px;
     font-weight: 900;
     box-shadow: 0 4px 12px rgba(0,0,0,0.18);
     cursor: pointer;
@@ -3308,11 +3307,11 @@
     cursor: not-allowed;
   }
   .oto-top-action-icon {
-    font-size: 18px;
+    font-size: 22px;
     line-height: 1;
   }
   .oto-top-action-label {
-    white-space: nowrap;
+    display: none;
   }
   @media (max-width: 640px) {
     .sets-collapsed {
@@ -3320,13 +3319,9 @@
       right: max(8px, env(safe-area-inset-right));
     }
     .oto-top-action {
-      min-width: 44px;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-    }
-    .oto-top-action-label {
-      display: none;
+      min-width: 50px;
+      width: 50px;
+      height: 50px;
     }
     .sets-collapsed .set-trigger {
       width: 50px;
