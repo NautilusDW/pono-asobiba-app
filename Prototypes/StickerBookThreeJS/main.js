@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1014";
+const ASSET_VERSION = "20260701-1016";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -83,6 +83,8 @@ const STICKER_ALPHA_TRIM_MIN_PAD = 3;
 const STICKER_PEEL_DURATION = 1.12;
 const STICKER_PEEL_SEGMENTS_X = 14;
 const STICKER_PEEL_SEGMENTS_Y = 24;
+const STICKER_SFX_MASTER_VOLUME = 0.82;
+const STICKER_SFX_MIN_GAIN = 0.0001;
 const COLLECTION_TOC_CATEGORY_DEFS = [
   {
     id: "bugs",
@@ -2253,6 +2255,9 @@ let stickerBgmEnabled = localStorage.getItem("pono_bgm_enabled") !== "off";
 let stickerBgmUnlocked = false;
 let stickerBgmFadeTimer = null;
 let stickerBgmDucked = false;
+let stickerSfxAudioCtx = null;
+let stickerSfxNoiseBuffer = null;
+let stickerSfxUnlocked = false;
 let stickerTutorialAutoStartChecked = false;
 let stickerTutorialLayoutFrame = 0;
 let stickerTutorialDemoFrame = 0;
@@ -2954,6 +2959,7 @@ function setupInlineStickerControls() {
   });
   inlineStickerOk?.addEventListener("click", (event) => {
     event.stopPropagation();
+    playStickerSfx("confirm", { volumeScale: 0.84 });
     flushEditorStateSave();
     clearInlineStickerSelection();
     notifyStickerTutorialAction("confirmSticker");
@@ -3202,6 +3208,7 @@ function cleanupInlineStickerDrag() {
 function selectInlineSticker(target) {
   activeEditorPage = target.page;
   selectedPlacementId = target.placement.id;
+  playStickerSfx("select", { volumeScale: 0.88 });
   updateInlineStickerControls();
   refreshInlineStickerPage();
   notifyStickerTutorialAction("selectSticker");
@@ -3362,19 +3369,23 @@ function setupBookPageControls() {
   bookPrevPage?.addEventListener("click", () => {
     if (activeSurface === "inside" && activeBookPage <= 1) {
       setBookSurface("cover", activeBookPage);
+      playStickerSfx("page", { volumeScale: 0.74 });
       notifyStickerTutorialAction("pageTurn");
       return;
     }
     setBookPage(activeBookPage - 2, { turnMode: "single" });
+    playStickerSfx("page", { volumeScale: 0.74 });
     notifyStickerTutorialAction("pageTurn");
   });
   bookNextPage?.addEventListener("click", () => {
     if (activeSurface === "cover") {
       setBookSurface("inside", 1);
+      playStickerSfx("page", { volumeScale: 0.74 });
       notifyStickerTutorialAction("pageTurn");
       return;
     }
     setBookPage(activeBookPage + 2, { turnMode: "single" });
+    playStickerSfx("page", { volumeScale: 0.74 });
     notifyStickerTutorialAction("pageTurn");
   });
   bookPageLabel?.addEventListener("click", () => toggleBookPageJump());
@@ -3530,11 +3541,13 @@ function navigateBookBySwipe(direction) {
   if (direction > 0) {
     if (activeSurface === "cover") {
       setBookSurface("inside", 1);
+      playStickerSfx("page", { volumeScale: 0.68 });
       return;
     }
     const lastSpreadStart = spreadStartForPage(editorPageCount());
     if (activeBookPage < lastSpreadStart) {
       setBookPage(activeBookPage + 2, { turnMode: "single" });
+      playStickerSfx("page", { volumeScale: 0.68 });
     }
     return;
   }
@@ -3544,9 +3557,11 @@ function navigateBookBySwipe(direction) {
   }
   if (activeBookPage <= 1) {
     setBookSurface("cover", activeBookPage);
+    playStickerSfx("page", { volumeScale: 0.68 });
     return;
   }
   setBookPage(activeBookPage - 2, { turnMode: "single" });
+  playStickerSfx("page", { volumeScale: 0.68 });
 }
 
 function syncTopSettingsButton() {
@@ -4864,6 +4879,248 @@ function retryBlockedStickerTutorialAudio() {
   }
 }
 
+function isStickerSfxMuted() {
+  if (document.hidden) {
+    return true;
+  }
+  try {
+    return localStorage.getItem("pono_sound_off") === "1";
+  } catch {
+    return false;
+  }
+}
+
+function ensureStickerSfxAudioContext() {
+  if (isStickerSfxMuted()) {
+    return null;
+  }
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return null;
+  }
+  if (!stickerSfxAudioCtx) {
+    try {
+      stickerSfxAudioCtx = new AudioContextClass();
+    } catch {
+      return null;
+    }
+  }
+  if (stickerSfxAudioCtx.state === "suspended") {
+    try {
+      const resume = stickerSfxAudioCtx.resume();
+      if (resume?.catch) resume.catch(() => {});
+    } catch {}
+  }
+  return stickerSfxAudioCtx;
+}
+
+function primeStickerSfxAudio() {
+  if (stickerSfxUnlocked) {
+    return;
+  }
+  const ctx = ensureStickerSfxAudioContext();
+  if (!ctx) {
+    return;
+  }
+  stickerSfxUnlocked = true;
+  document.removeEventListener("pointerdown", primeStickerSfxAudio, true);
+  document.removeEventListener("keydown", primeStickerSfxAudio, true);
+}
+
+function getStickerSfxNoiseBuffer(ctx) {
+  if (stickerSfxNoiseBuffer && stickerSfxNoiseBuffer.sampleRate === ctx.sampleRate) {
+    return stickerSfxNoiseBuffer;
+  }
+  const length = Math.max(1, Math.floor(ctx.sampleRate * 0.64));
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i += 1) {
+    data[i] = (Math.random() * 2 - 1) * (0.86 + Math.random() * 0.14);
+  }
+  stickerSfxNoiseBuffer = buffer;
+  return buffer;
+}
+
+function scheduleStickerSfxCleanup(nodes, endTime) {
+  const delayMs = Math.max(120, (endTime - (stickerSfxAudioCtx?.currentTime || 0)) * 1000 + 80);
+  window.setTimeout(() => {
+    for (const node of nodes) {
+      try {
+        node.disconnect();
+      } catch {}
+    }
+  }, delayMs);
+}
+
+function scheduleStickerSfxTone(ctx, at, options = {}) {
+  const duration = Math.max(0.025, Number(options.duration) || 0.08);
+  const volume = Math.max(STICKER_SFX_MIN_GAIN, (Number(options.volume) || 0.01) * STICKER_SFX_MASTER_VOLUME);
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  oscillator.type = options.type || "triangle";
+  const startFrequency = Math.max(20, Number(options.frequency) || 440);
+  const endFrequency = Math.max(20, Number(options.endFrequency) || startFrequency);
+  oscillator.frequency.setValueAtTime(startFrequency, at);
+  if (Math.abs(endFrequency - startFrequency) > 0.01) {
+    oscillator.frequency.exponentialRampToValueAtTime(endFrequency, at + duration);
+  }
+  gain.gain.setValueAtTime(STICKER_SFX_MIN_GAIN, at);
+  gain.gain.exponentialRampToValueAtTime(volume, at + Math.min(0.018, duration * 0.35));
+  gain.gain.exponentialRampToValueAtTime(STICKER_SFX_MIN_GAIN, at + duration);
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  oscillator.start(at);
+  oscillator.stop(at + duration + 0.025);
+  scheduleStickerSfxCleanup([oscillator, gain], at + duration + 0.05);
+}
+
+function scheduleStickerSfxNoise(ctx, at, options = {}) {
+  const duration = Math.max(0.025, Number(options.duration) || 0.1);
+  const volume = Math.max(STICKER_SFX_MIN_GAIN, (Number(options.volume) || 0.01) * STICKER_SFX_MASTER_VOLUME);
+  const source = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  source.buffer = getStickerSfxNoiseBuffer(ctx);
+  filter.type = options.filterType || "bandpass";
+  filter.Q.setValueAtTime(Math.max(0.01, Number(options.q) || 0.7), at);
+  const startFrequency = Math.max(20, Number(options.frequency) || 1200);
+  const endFrequency = Math.max(20, Number(options.endFrequency) || startFrequency);
+  filter.frequency.setValueAtTime(startFrequency, at);
+  if (Math.abs(endFrequency - startFrequency) > 0.01) {
+    filter.frequency.exponentialRampToValueAtTime(endFrequency, at + duration);
+  }
+  gain.gain.setValueAtTime(STICKER_SFX_MIN_GAIN, at);
+  gain.gain.exponentialRampToValueAtTime(volume, at + Math.min(0.012, duration * 0.28));
+  gain.gain.exponentialRampToValueAtTime(STICKER_SFX_MIN_GAIN, at + duration);
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  source.start(at, 0, duration);
+  scheduleStickerSfxCleanup([source, filter, gain], at + duration + 0.04);
+}
+
+function playStickerSfx(kind, options = {}) {
+  const ctx = ensureStickerSfxAudioContext();
+  if (!ctx) {
+    return false;
+  }
+  const volumeScale = THREE.MathUtils.clamp(Number(options.volumeScale) || 1, 0, 1.4);
+  const at = ctx.currentTime + Math.max(0, Number(options.delayMs) || 0) / 1000;
+  const volume = (value) => value * volumeScale;
+  switch (kind) {
+    case "pick":
+      scheduleStickerSfxNoise(ctx, at, {
+        duration: 0.075,
+        volume: volume(0.024),
+        filterType: "highpass",
+        frequency: 920,
+        endFrequency: 1450,
+        q: 0.55,
+      });
+      scheduleStickerSfxTone(ctx, at + 0.018, {
+        duration: 0.085,
+        volume: volume(0.014),
+        frequency: 430,
+        endFrequency: 690,
+        type: "triangle",
+      });
+      break;
+    case "paste-start":
+      scheduleStickerSfxNoise(ctx, at, {
+        duration: 0.24,
+        volume: volume(0.025),
+        filterType: "bandpass",
+        frequency: 1800,
+        endFrequency: 620,
+        q: 0.62,
+      });
+      scheduleStickerSfxTone(ctx, at + 0.13, {
+        duration: 0.095,
+        volume: volume(0.014),
+        frequency: 230,
+        endFrequency: 170,
+        type: "sine",
+      });
+      break;
+    case "paste-settle":
+      scheduleStickerSfxTone(ctx, at, {
+        duration: 0.075,
+        volume: volume(0.032),
+        frequency: 155,
+        endFrequency: 112,
+        type: "sine",
+      });
+      scheduleStickerSfxNoise(ctx, at + 0.006, {
+        duration: 0.065,
+        volume: volume(0.024),
+        filterType: "lowpass",
+        frequency: 860,
+        endFrequency: 520,
+        q: 0.5,
+      });
+      scheduleStickerSfxTone(ctx, at + 0.05, {
+        duration: 0.12,
+        volume: volume(0.013),
+        frequency: 780,
+        endFrequency: 1220,
+        type: "triangle",
+      });
+      scheduleStickerSfxTone(ctx, at + 0.095, {
+        duration: 0.18,
+        volume: volume(0.009),
+        frequency: 1460,
+        endFrequency: 2050,
+        type: "sine",
+      });
+      break;
+    case "page":
+      scheduleStickerSfxNoise(ctx, at, {
+        duration: 0.17,
+        volume: volume(0.018),
+        filterType: "highpass",
+        frequency: 720,
+        endFrequency: 1360,
+        q: 0.45,
+      });
+      scheduleStickerSfxTone(ctx, at + 0.045, {
+        duration: 0.11,
+        volume: volume(0.01),
+        frequency: 260,
+        endFrequency: 360,
+        type: "triangle",
+      });
+      break;
+    case "select":
+      scheduleStickerSfxTone(ctx, at, {
+        duration: 0.055,
+        volume: volume(0.014),
+        frequency: 620,
+        endFrequency: 880,
+        type: "triangle",
+      });
+      scheduleStickerSfxTone(ctx, at + 0.026, {
+        duration: 0.075,
+        volume: volume(0.009),
+        frequency: 990,
+        endFrequency: 1320,
+        type: "sine",
+      });
+      break;
+    case "confirm":
+      scheduleStickerSfxTone(ctx, at, {
+        duration: 0.06,
+        volume: volume(0.017),
+        frequency: 520,
+        endFrequency: 740,
+        type: "triangle",
+      });
+      break;
+    default:
+      return false;
+  }
+  return true;
+}
+
 // === BGM control ===
 // SW pre-cache に登録していないので、 cache-bust クエリは付けない
 // (URL 不一致を避け、 SW runtime cache (network-first) に素直に乗せる)。
@@ -4953,6 +5210,9 @@ window.addEventListener("blur", _sbBgmPause);
 window.addEventListener("focus", _sbBgmResume);
 window.addEventListener("pagehide", _sbBgmPause);
 window.addEventListener("pageshow", _sbBgmResume);
+
+document.addEventListener("pointerdown", primeStickerSfxAudio, { capture: true, passive: true });
+document.addEventListener("keydown", primeStickerSfxAudio, { capture: true });
 
 // autoplay unlock (初回 pointerdown で BGM を起動)
 document.addEventListener("pointerdown", function _bgmUnlock() {
@@ -6315,6 +6575,7 @@ function handleStickerTrayPointerMove(event) {
 function startStickerTrayDrag(state, event) {
   state.dragging = true;
   suppressStickerTrayClick = true;
+  playStickerSfx("pick");
   state.source?.classList.add("is-dragging");
   document.body.classList.add("is-sticker-tray-dragging");
   try {
@@ -6392,6 +6653,7 @@ function turnPageDuringStickerDrag(direction) {
     const nextPage = activeBookPage + 2;
     if (nextPage <= spreadStartForPage(editorPageCount())) {
       setBookPage(nextPage, { turnMode: "single", skipEditorSync: true });
+      playStickerSfx("page", { volumeScale: 0.58 });
       setStickerTrayPeek(true);
       scheduleStickerTutorialLayout();
     }
@@ -6399,6 +6661,7 @@ function turnPageDuringStickerDrag(direction) {
   }
   if (activeBookPage > 1) {
     setBookPage(activeBookPage - 2, { turnMode: "single", skipEditorSync: true });
+    playStickerSfx("page", { volumeScale: 0.58 });
     setStickerTrayPeek(true);
     scheduleStickerTutorialLayout();
   }
@@ -6620,6 +6883,7 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
   if (image && startStickerPeelAnimation(placement, pageNumber, image, finalizePlacement)) {
     return;
   }
+  playStickerSfx("paste-settle");
   finalizePlacement();
 }
 
@@ -6689,6 +6953,7 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
   };
   stickerPeelAnimations.push(animation);
   bendStickerPeelGeometry(animation, 0);
+  playStickerSfx("paste-start");
   return true;
 }
 
@@ -6824,6 +7089,7 @@ function finishStickerPeelAnimation(animation) {
   animation.backMaterial.dispose();
   animation.frontTexture.dispose();
   animation.backTexture.dispose();
+  playStickerSfx("paste-settle");
   if (typeof animation.onComplete === "function") {
     animation.onComplete();
   }
