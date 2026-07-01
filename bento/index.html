@@ -1180,6 +1180,11 @@ html, body {
 .free-placed-item.selected img {
   filter: none;
 }
+.free-placed-item.is-leaf-edit-reference {
+  opacity: 0.34;
+  filter: grayscale(0.18) drop-shadow(0 4px 5px rgba(68, 42, 16, 0.08));
+  pointer-events: none;
+}
 .free-placed-item.type-pick img {
   clip-path: inset(0 0 18% 0);
   transform: translateY(7%) scale(var(--visual-scale, 1));
@@ -8711,7 +8716,7 @@ function revealReactionWithDrama(reaction) {
               dailyTotal: _bentoDailyTotal,
               dailyCap: _bentoDailyCap,
               state: _bentoIsCapped ? 'capped' : 'idle',
-              autoHide: 2600,
+              autoHide: 0,
               onDismiss: function () { bentoAcornModalInstance = null; }
             });
             bentoAcornModalInstance.show();
@@ -13877,12 +13882,13 @@ function createFreePlacedElement(item, interactive) {
   const el = document.createElement('div');
   const typeClass = item.type ? ' type-' + item.type : '';
   const groupClass = getSkGroupClass(item.sk);
+  const leafReference = interactive && shouldDimItemForSimpleLeafEdit(item);
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && !!editingCup && item.parentCupId !== editingCup.uid;
   const brushLocked = interactive && !!freeBrushStampDef;
   const tutorialLocked = interactive && !canMoveFreeItemInCurrentTutorial(item);
   const isSelected = interactive && isItemVisuallySelected(item);
-  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : '', tutorialLocked ? 'tutorial-locked' : ''].filter(Boolean).join(' ');
+  el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', leafReference ? 'is-leaf-edit-reference' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : '', tutorialLocked ? 'tutorial-locked' : ''].filter(Boolean).join(' ');
   el.dataset.freeUid = item.uid;
   el.dataset.itemId = item.id || '';
   el.dataset.type = item.type || '';
@@ -13895,7 +13901,7 @@ function createFreePlacedElement(item, interactive) {
   el.style.setProperty('--scale', item.scale || 1);
   el.style.setProperty('--visual-scale', item.visualScale || 1);
   el.appendChild(createFreeVisual(item));
-  if (interactive && !freeBrushStampDef) {
+  if (interactive && !freeBrushStampDef && !leafReference) {
     el.addEventListener('pointerdown', ev => {
       ev.stopPropagation();
       if (simpleBentoMode) {
@@ -14250,9 +14256,7 @@ function renderFreeLayoutInto(host, opts = {}) {
     ? visibleItems.filter(item => item.uid !== integratedRice.uid && (item.parentId !== integratedRice.uid || isRiceDecorItem(item)))
     : visibleItems;
   const leafEditMode = !!(opts.interactive && isSimpleLeafEditMode());
-  const displayItems = leafEditMode
-    ? baseDisplayItems.filter(item => !shouldHideItemForSimpleLeafEdit(item))
-    : baseDisplayItems;
+  const displayItems = baseDisplayItems;
   host.classList.add('free-layout-stage');
   host.onpointerdown = null;
   host.classList.toggle('free-layout-leaf-editing', leafEditMode);
@@ -15696,6 +15700,9 @@ function shouldHideItemForSimpleLeafEdit(item) {
   if (item.type === 'leaf' || item.brushItem) return false;
   if (item.type === 'rice' || isRiceDecorItem(item) || item.type === 'decor') return false;
   return item.type === 'food' || item.type === 'divider' || item.type === 'pick' || item.snapTarget || !!item.parentCupId;
+}
+function shouldDimItemForSimpleLeafEdit(item) {
+  return shouldHideItemForSimpleLeafEdit(item);
 }
 function getNextEmptySimpleSlotIndex(slots) {
   const empty = (slots || []).findIndex(slot => !getSimpleSlotBlockingItem(slot));

@@ -15,7 +15,7 @@
 //     state: 'idle' | 'capped' | 'perfect',
 //     copy: undefined,
 //     iconSrc: undefined,
-//     autoHide: 4200,
+//     autoHide: 0,
 //     onDismiss: () => {},
 //     parent: document.body,
 //   });
@@ -26,8 +26,8 @@
 (function (window, document) {
   'use strict';
 
-  var DEFAULT_AUTOHIDE_MS = 4200;
-  var REDUCED_AUTOHIDE_MS = 2500;
+  var DEFAULT_AUTOHIDE_MS = 0;
+  var REDUCED_AUTOHIDE_MS = 0;
   // v1718: 各 game サブディレクトリから読まれるため、 document base 相対だと
   // /maze/assets/... の 404 を引く。 本スクリプト src を基点に site root prefix を
   // 算出して絶対 URL で解決する。
@@ -169,7 +169,7 @@
     this.copyOverride = opts.copy || null;
     this.iconSrc = opts.iconSrc || DEFAULT_ICON_SRC;
     // autoHide:
-    //   - undefined        → DEFAULT_AUTOHIDE_MS (後方互換)
+    //   - undefined        → DEFAULT_AUTOHIDE_MS (既定は自動 dismiss 無効)
     //   - 0 / null / false → 自動 dismiss 無効 (tap/ESC/× ボタンのみ)
     //                        prefers-reduced-motion 時の REDUCED_AUTOHIDE_MS
     //                        短縮も同様に適用しない (一貫性のため)
