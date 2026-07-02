@@ -217,7 +217,8 @@ const STAGES=[
   decor(P,r){return svgURI(140,240,gBumps(140,240,P.fgB,3,90,171+r)+gStars(140,240,6,173+r));}}
 ];
 const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"]];
-const QN=5, SPAN=1080, INTRO=120, GAP=150, COVER_OFF=810, COVER_LEN=240;
+const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よつば"],["🎈","ふうせん"],["🐦","ことり"]]};
+const QN=5, SPAN=1320, INTRO=170, GAP=190, COVER_OFF=1050, COVER_LEN=250;
 const stops=(o,i)=>o+INTRO+i*GAP-58;
 const tunX=(o,i)=>o+INTRO+i*GAP;
 
@@ -467,6 +468,17 @@ function buildWorld(keepCover){
    d.style.backgroundSize="100% 100%";
    world.appendChild(d);
   }
+  const evs=RUN_EVENTS[st.id];
+  if(evs){
+   const ev=evs[i%evs.length];
+   const b=document.createElement("button");
+   b.type="button";b.className="runEvent";b.textContent=ev[0];
+   b.setAttribute("aria-label",ev[1]+"を みつけた");
+   b.style.left=(tunX(o,i)-112+(i%2)*16)+"vw";
+   b.style.bottom=(44+(i%3)*5)+"vh";
+   bindTap(b,()=>onRunEvent(b,ev));
+   world.appendChild(b);
+  }
  }
  if(stg<STAGES.length-1){
   coverEl=document.createElement("div");
@@ -572,6 +584,20 @@ function sparkOnVeh(){
  for(let i=0;i<5;i++){const s=document.createElement("div");s.className="spark";s.textContent="✨";
   s.style.left="calc(28vw + "+(i*4)+"vw)";s.style.bottom=(16+((i*7)%12))+"vh";
   $("app").appendChild(s);setTimeout(()=>s.remove(),900);}
+}
+function onRunEvent(el,ev){
+ if(!driving||!el||el.classList.contains("found"))return;
+ el.classList.add("found");el.disabled=true;
+ const r=el.getBoundingClientRect();
+ for(let i=0;i<4;i++){
+  const s=document.createElement("div");s.className="spark";s.textContent=i%2?"⭐":"✨";
+  s.style.left=(r.left+r.width*.35+i*r.width*.1)+"px";
+  s.style.top=(r.top+r.height*.1)+"px";
+  $("app").appendChild(s);setTimeout(()=>s.remove(),900);
+ }
+ tone(1047,0,.12,"triangle",.11);tone(1319,.1,.16,"triangle",.09);
+ showStamp("みつけた！","new");
+ speak(ev[1]+"を みつけた！");
 }
 
 /* ================= render ================= */
