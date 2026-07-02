@@ -218,7 +218,7 @@ const STAGES=[
 ];
 const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"]];
 const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よつば"],["🎈","ふうせん"],["🐦","ことり"]]};
-const QN=5, SPAN=1320, INTRO=170, GAP=190, COVER_OFF=1050, COVER_LEN=250;
+const QN=5, SPAN=2860, INTRO=320, GAP=430, COVER_OFF=2180, COVER_LEN=340;
 const stops=(o,i)=>o+INTRO+i*GAP-58;
 const tunX=(o,i)=>o+INTRO+i*GAP;
 
@@ -470,14 +470,18 @@ function buildWorld(keepCover){
   }
   const evs=RUN_EVENTS[st.id];
   if(evs){
-   const ev=evs[i%evs.length];
-   const b=document.createElement("button");
-   b.type="button";b.className="runEvent";b.textContent=ev[0];
-   b.setAttribute("aria-label",ev[1]+"を みつけた");
-   b.style.left=(tunX(o,i)-112+(i%2)*16)+"vw";
-   b.style.bottom=(44+(i%3)*5)+"vh";
-   bindTap(b,()=>onRunEvent(b,ev));
-   world.appendChild(b);
+   for(let j=0;j<2;j++){
+    const ev=evs[(i*2+j)%evs.length];
+    const b=document.createElement("button");
+    b.type="button";b.className="runEvent";b.textContent=ev[0];
+    b.setAttribute("aria-label",ev[1]+"を みつけた");
+    const lead=i===0?230:408;
+    const step=i===0?116:176;
+    b.style.left=(tunX(o,i)-lead+j*step+(i%2)*14)+"vw";
+    b.style.bottom=(42+((i+j)%3)*6)+"vh";
+    bindTap(b,()=>onRunEvent(b,ev));
+    world.appendChild(b);
+   }
   }
  }
  if(stg<STAGES.length-1){
@@ -628,8 +632,8 @@ function gloop(t){
  lastT=t;
  if(playing&&driving){
   const dist=target-worldX;
-  const maxV=(swapReady?68:46);
-  vel=clamp(dist*1.3,9,maxV);
+  const maxV=(swapReady?52:38);
+  vel=clamp(dist*.98,6,maxV);
   worldX=Math.min(target,worldX+vel*dt);
   veh.classList.add("go");veh.classList.remove("idle");
   if(swapReady&&!swapped&&transitCover){
