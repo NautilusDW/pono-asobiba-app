@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260702-1924";
+const ASSET_VERSION = "20260702-1926";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1939,6 +1939,11 @@ const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v9";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
 const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v4";
+const LEGACY_ZUKAN_TEXT_TUNING_STORAGE_KEYS = [
+  "sb3d_zukan_text_tuning_v3",
+  "sb3d_zukan_text_tuning_v2",
+  "sb3d_zukan_text_tuning_v1",
+];
 const ZUKAN_SIDE_TEMPLATE_STORAGE_KEY = "sb3d_zukan_side_template_settings_v1";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v2`;
@@ -2098,6 +2103,10 @@ const DEFAULT_ZUKAN_TEXT_TUNING = {
   detailTemplateW: 0,
   detailTemplateH: 0,
 };
+const ZUKAN_DETAIL_FIELD_TUNING_PARTS = [
+  { id: "Title", label: "みだし", baseKey: "detailFieldTitle", min: -180, max: 180 },
+  { id: "Text", label: "ぶん", baseKey: "detailFieldText", min: -180, max: 180 },
+];
 const ZUKAN_INDEX_CARD_TUNING_PARTS = [
   { id: "Badge", label: "ばんごう", baseKey: "indexBadge", min: -120, max: 120 },
   { id: "Image", label: "え", baseKey: "indexImage", min: -180, max: 180 },
@@ -2119,6 +2128,12 @@ for (let slotIndex = 0; slotIndex < COLLECTION_INDEX_ITEMS_PER_PAGE; slotIndex +
     );
   }
 }
+for (let fieldIndex = 0; fieldIndex < 3; fieldIndex += 1) {
+  for (const part of ZUKAN_DETAIL_FIELD_TUNING_PARTS) {
+    DEFAULT_ZUKAN_TEXT_TUNING[zukanDetailFieldTuningKey(fieldIndex, part.id, "X")] = 0;
+    DEFAULT_ZUKAN_TEXT_TUNING[zukanDetailFieldTuningKey(fieldIndex, part.id, "Y")] = 0;
+  }
+}
 const ZUKAN_INDEX_CARD_TUNING_GROUPS = [];
 for (let slotIndex = 0; slotIndex < COLLECTION_INDEX_ITEMS_PER_PAGE; slotIndex += 1) {
   for (const part of ZUKAN_INDEX_CARD_TUNING_PARTS) {
@@ -2130,6 +2145,31 @@ for (let slotIndex = 0; slotIndex < COLLECTION_INDEX_ITEMS_PER_PAGE; slotIndex +
       keys: [
         zukanIndexSlotTuningKey(slotIndex, part.id, "X"),
         zukanIndexSlotTuningKey(slotIndex, part.id, "Y"),
+      ],
+    });
+  }
+}
+const ZUKAN_DETAIL_FIELD_TUNING_FIELDS = [];
+for (let fieldIndex = 0; fieldIndex < 3; fieldIndex += 1) {
+  for (const part of ZUKAN_DETAIL_FIELD_TUNING_PARTS) {
+    const fieldLabel = String(fieldIndex + 1).padStart(2, "0");
+    ZUKAN_DETAIL_FIELD_TUNING_FIELDS.push(
+      [zukanDetailFieldTuningKey(fieldIndex, part.id, "X"), `こうもく ${fieldLabel} ${part.label} X`, part.min, part.max, 1],
+      [zukanDetailFieldTuningKey(fieldIndex, part.id, "Y"), `こうもく ${fieldLabel} ${part.label} Y`, part.min, part.max, 1],
+    );
+  }
+}
+const ZUKAN_DETAIL_FIELD_TUNING_GROUPS = [];
+for (let fieldIndex = 0; fieldIndex < 3; fieldIndex += 1) {
+  for (const part of ZUKAN_DETAIL_FIELD_TUNING_PARTS) {
+    const fieldLabel = String(fieldIndex + 1).padStart(2, "0");
+    const id = zukanDetailFieldGroupId(fieldIndex, part.id);
+    ZUKAN_DETAIL_FIELD_TUNING_GROUPS.push({
+      id,
+      label: `${fieldLabel} ${part.label}`,
+      keys: [
+        zukanDetailFieldTuningKey(fieldIndex, part.id, "X"),
+        zukanDetailFieldTuningKey(fieldIndex, part.id, "Y"),
       ],
     });
   }
@@ -2164,6 +2204,7 @@ const ZUKAN_TEXT_TUNING_FIELDS = [
   ["detailFieldTitleY", "こうもく みだし Y", -180, 180, 1],
   ["detailFieldTextX", "こうもく ぶん X", -180, 180, 1],
   ["detailFieldTextY", "こうもく ぶん Y", -180, 180, 1],
+  ...ZUKAN_DETAIL_FIELD_TUNING_FIELDS,
   ["detailMemoTitleX", "メモ みだし X", -180, 180, 1],
   ["detailMemoTitleY", "メモ みだし Y", -180, 180, 1],
   ["detailMemoTextX", "メモ ぶん X", -180, 180, 1],
@@ -2186,8 +2227,9 @@ const ZUKAN_TEXT_TUNING_GROUPS = [
   { id: "detailSubtitle", label: "しょうさい よみ", keys: ["detailSubtitleX", "detailSubtitleY"] },
   { id: "detailCategory", label: "しょうさい ぶんるい", keys: ["detailCategoryX", "detailCategoryY"] },
   { id: "detailImage", label: "しょうさい え", keys: ["detailImageX", "detailImageY"] },
-  { id: "detailFieldTitle", label: "こうもく みだし", keys: ["detailFieldTitleX", "detailFieldTitleY"] },
-  { id: "detailFieldText", label: "こうもく ぶん", keys: ["detailFieldTextX", "detailFieldTextY"] },
+  { id: "detailFieldTitle", label: "こうもく みだし 全部", keys: ["detailFieldTitleX", "detailFieldTitleY"], button: false },
+  { id: "detailFieldText", label: "こうもく ぶん 全部", keys: ["detailFieldTextX", "detailFieldTextY"], button: false },
+  ...ZUKAN_DETAIL_FIELD_TUNING_GROUPS,
   { id: "detailMemoTitle", label: "メモ みだし", keys: ["detailMemoTitleX", "detailMemoTitleY"] },
   { id: "detailMemoText", label: "メモ ぶん", keys: ["detailMemoTextX", "detailMemoTextY"] },
   { id: "detailTemplate", label: "しょうさい ぜんたい", keys: ["detailTemplateX", "detailTemplateY", "detailTemplateW", "detailTemplateH"] },
@@ -10366,15 +10408,23 @@ function persistCoverTuning() {
 }
 
 function loadZukanTextTuning() {
+  const storageKeys = [ZUKAN_TEXT_TUNING_STORAGE_KEY, ...LEGACY_ZUKAN_TEXT_TUNING_STORAGE_KEYS];
   try {
-    const raw = localStorage.getItem(ZUKAN_TEXT_TUNING_STORAGE_KEY);
-    if (!raw) {
-      return { ...DEFAULT_ZUKAN_TEXT_TUNING };
+    for (const key of storageKeys) {
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        continue;
+      }
+      const migrated = normalizeZukanTextTuning(JSON.parse(raw));
+      if (key !== ZUKAN_TEXT_TUNING_STORAGE_KEY) {
+        localStorage.setItem(ZUKAN_TEXT_TUNING_STORAGE_KEY, JSON.stringify(migrated));
+      }
+      return migrated;
     }
-    return normalizeZukanTextTuning(JSON.parse(raw));
   } catch {
     return { ...DEFAULT_ZUKAN_TEXT_TUNING };
   }
+  return { ...DEFAULT_ZUKAN_TEXT_TUNING };
 }
 
 function normalizeZukanTextTuning(value) {
@@ -10398,6 +10448,7 @@ function persistZukanTextTuning() {
   try {
     localStorage.setItem(ZUKAN_TEXT_TUNING_STORAGE_KEY, JSON.stringify(zukanTextTuning));
   } catch {}
+  updateZukanAutosaveStatus();
 }
 
 function normalizeZukanTemplateType(value) {
@@ -10465,10 +10516,24 @@ function zukanIndexSlotGroupId(slotIndex, partId) {
   return `indexCard${slotIndex + 1}${partId}`;
 }
 
+function zukanDetailFieldTuningKey(fieldIndex, partId, axis) {
+  return `detailField${fieldIndex + 1}${partId}${axis}`;
+}
+
+function zukanDetailFieldGroupId(fieldIndex, partId) {
+  return `detailField${fieldIndex + 1}${partId}`;
+}
+
 function zukanIndexSlotTextOffset(slotIndex, partId, axis) {
   const part = ZUKAN_INDEX_CARD_TUNING_PARTS.find((item) => item.id === partId);
   const baseOffset = part ? zukanTextOffset(`${part.baseKey}${axis}`) : 0;
   return baseOffset + zukanTextOffset(zukanIndexSlotTuningKey(slotIndex, partId, axis));
+}
+
+function zukanDetailFieldTextOffset(fieldIndex, partId, axis) {
+  const part = ZUKAN_DETAIL_FIELD_TUNING_PARTS.find((item) => item.id === partId);
+  const baseOffset = part ? zukanTextOffset(`${part.baseKey}${axis}`) : 0;
+  return baseOffset + zukanTextOffset(zukanDetailFieldTuningKey(fieldIndex, partId, axis));
 }
 
 function zukanTextTuningGroupForField(key) {
@@ -11061,9 +11126,18 @@ function appendZukanTextTuningSection(parent) {
   selected.textContent = `えらんでいる: ${zukanTextTuningGroupLabel(selectedZukanTuningTargetId)}`;
   parent.append(selected);
 
+  const autosave = document.createElement("div");
+  autosave.id = "zukanTuningAutosaveLabel";
+  autosave.className = "tuning-autosave-label";
+  autosave.textContent = `ローカル自動保存: ${ZUKAN_TEXT_TUNING_STORAGE_KEY}`;
+  parent.append(autosave);
+
   const targets = document.createElement("div");
   targets.className = "tuning-target-list";
   for (const group of ZUKAN_TEXT_TUNING_GROUPS) {
+    if (group.button === false) {
+      continue;
+    }
     const button = document.createElement("button");
     button.type = "button";
     button.className = "tuning-target-button";
@@ -11155,6 +11229,25 @@ function appendZukanTextTuningSection(parent) {
   actions.append(reset);
   parent.append(actions);
   refreshZukanTextTuningControls();
+  updateZukanAutosaveStatus({ initial: true });
+}
+
+function updateZukanAutosaveStatus({ initial = false } = {}) {
+  const label = document.getElementById("zukanTuningAutosaveLabel");
+  if (!label) {
+    return;
+  }
+  if (initial) {
+    label.textContent = `ローカル自動保存中: ${ZUKAN_TEXT_TUNING_STORAGE_KEY}`;
+    return;
+  }
+  const now = new Date();
+  const time = [
+    String(now.getHours()).padStart(2, "0"),
+    String(now.getMinutes()).padStart(2, "0"),
+    String(now.getSeconds()).padStart(2, "0"),
+  ].join(":");
+  label.textContent = `ローカル自動保存済み ${time}`;
 }
 
 function ensureZukanFlatPreviewPanel() {
@@ -12518,20 +12611,25 @@ function zukanDetailTuningTargets(pageDef, subject, pageNumber, side = zukanSide
   for (const field of fields) {
     const fieldScaleX = zukanRectScaleX(field);
     const fieldScaleY = zukanRectScaleY(field);
+    const fieldIndex = Number.isFinite(Number(field.fieldIndex)) ? Number(field.fieldIndex) : 0;
+    const titleCenterX = field.x + 118 * fieldScaleX + zukanDetailFieldTextOffset(fieldIndex, "Title", "X");
+    const titleBaselineY = field.y + 72 * fieldScaleY + zukanDetailFieldTextOffset(fieldIndex, "Title", "Y");
+    const textX = field.x + 56 * fieldScaleX + zukanDetailFieldTextOffset(fieldIndex, "Text", "X");
+    const textBaselineY = field.y + 134 * fieldScaleY + zukanDetailFieldTextOffset(fieldIndex, "Text", "Y");
     targets.push(
       zukanTuningRect(
-        "detailFieldTitle",
-        field.x + 10 * fieldScaleX + zukanTextOffset("detailFieldTitleX"),
-        field.y + 34 * fieldScaleY + zukanTextOffset("detailFieldTitleY"),
-        260 * fieldScaleX,
-        48 * fieldScaleY,
+        zukanDetailFieldGroupId(fieldIndex, "Title"),
+        titleCenterX - 110 * fieldScaleX,
+        titleBaselineY - 26 * fieldScaleY,
+        220 * fieldScaleX,
+        36 * fieldScaleY,
       ),
       zukanTuningRect(
-        "detailFieldText",
-        field.x + 36 * fieldScaleX + zukanTextOffset("detailFieldTextX"),
-        field.y + 94 * fieldScaleY + zukanTextOffset("detailFieldTextY"),
-        field.width - 60 * fieldScaleX,
-        92 * fieldScaleY,
+        zukanDetailFieldGroupId(fieldIndex, "Text"),
+        textX - 8 * fieldScaleX,
+        textBaselineY - 34 * fieldScaleY,
+        field.width - 92 * fieldScaleX,
+        78 * fieldScaleY,
       ),
     );
   }
@@ -12761,7 +12859,19 @@ function drawCollectionZukanDetailPage(ctx, texture, palette, pageDef, subject, 
   }
 
   for (const field of detail.fields) {
-    drawCollectionZukanField(ctx, field.title, field.value, field.x, field.y, field.width, field.height, field.accentColor, field.scaleX, field.scaleY);
+    drawCollectionZukanField(
+      ctx,
+      field.title,
+      field.value,
+      field.x,
+      field.y,
+      field.width,
+      field.height,
+      field.accentColor,
+      field.scaleX,
+      field.scaleY,
+      field.fieldIndex,
+    );
   }
   drawCollectionZukanMemoCard(ctx, palette, theme, detail.memo);
   drawCollectionPlacementLayer(ctx, texture, pageNumber);
@@ -12825,18 +12935,21 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette, si
     },
     fields: [
       {
+        fieldIndex: 0,
         title: "みつけた ばしょ",
         value: collectionZukanFoundText(subject),
         ...transformGeneratedRect({ x: fieldX, y: fieldY, width: fieldW, height: fieldH }),
         accentColor: theme.infoAccent || palette.sub,
       },
       {
+        fieldIndex: 1,
         title: "すきな もの",
         value: collectionZukanFoodText(subject),
         ...transformGeneratedRect({ x: fieldX, y: fieldY + fieldH + fieldGap, width: fieldW, height: fieldH }),
         accentColor: theme.pages.right.accent,
       },
       {
+        fieldIndex: 2,
         title: "とくちょう",
         value: collectionZukanBodyText(subject),
         ...transformGeneratedRect({ x: fieldX, y: fieldY + (fieldH + fieldGap) * 2, width: fieldW, height: fieldH }),
@@ -13197,7 +13310,7 @@ function drawAsyncCollectionZukanImage(ctx, texture, src, x, y, width, height, f
     .catch(() => {});
 }
 
-function drawCollectionZukanField(ctx, title, value, x, y, width, height, accentColor, rectScaleX = 1, rectScaleY = 1) {
+function drawCollectionZukanField(ctx, title, value, x, y, width, height, accentColor, rectScaleX = 1, rectScaleY = 1, fieldIndex = -1) {
   const generatedTemplate = collectionZukanUsesGeneratedTemplate("detail");
   const scaleX = Number.isFinite(Number(rectScaleX)) && Number(rectScaleX) > 0 ? Number(rectScaleX) : 1;
   const scaleY = Number.isFinite(Number(rectScaleY)) && Number(rectScaleY) > 0 ? Number(rectScaleY) : 1;
@@ -13215,8 +13328,8 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
     ctx.fill();
   }
   ctx.textAlign = "center";
-  const titleCenterX = x + (generatedTemplate ? 118 : 139) * scaleX + zukanTextOffset("detailFieldTitleX");
-  const titleBaselineY = y + (generatedTemplate ? 72 : 48) * scaleY + zukanTextOffset("detailFieldTitleY");
+  const titleCenterX = x + (generatedTemplate ? 118 : 139) * scaleX + zukanDetailFieldTextOffset(fieldIndex, "Title", "X");
+  const titleBaselineY = y + (generatedTemplate ? 72 : 48) * scaleY + zukanDetailFieldTextOffset(fieldIndex, "Title", "Y");
   const titleMaxWidth = (generatedTemplate ? 220 : 206) * scaleX;
   ctx.fillStyle = "#ffffff";
   drawFittedZukanText(
@@ -13235,8 +13348,8 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
   drawWrappedCanvasText(
     ctx,
     value,
-    x + (generatedTemplate ? 56 : 30) * scaleX + zukanTextOffset("detailFieldTextX"),
-    y + (generatedTemplate ? 134 : 96) * scaleY + zukanTextOffset("detailFieldTextY"),
+    x + (generatedTemplate ? 56 : 30) * scaleX + zukanDetailFieldTextOffset(fieldIndex, "Text", "X"),
+    y + (generatedTemplate ? 134 : 96) * scaleY + zukanDetailFieldTextOffset(fieldIndex, "Text", "Y"),
     width - (generatedTemplate ? 84 : 60) * scaleX,
     (valueFontSize + 6) * scaleY,
     2,
