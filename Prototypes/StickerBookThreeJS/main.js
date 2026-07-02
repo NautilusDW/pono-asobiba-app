@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260702-1927";
+const ASSET_VERSION = "20260703-0001";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -12531,11 +12531,19 @@ function zukanIndexTuningTargets(pageDef, subjects = [], side = "left") {
       48,
     ),
   ];
-  const layout = collectionZukanIndexLayout(subjects.length, side);
-  for (let index = 0; index < subjects.length; index += 1) {
+  const slotCount = collectionZukanIndexTuningSlotCount(subjects);
+  const layout = collectionZukanIndexLayout(Math.max(subjects.length, slotCount), side);
+  for (let index = 0; index < slotCount; index += 1) {
     targets.push(...zukanIndexCardTuningTargets(collectionZukanIndexCellRect(index, layout), index));
   }
   return targets;
+}
+
+function collectionZukanIndexTuningSlotCount(subjects = []) {
+  if (collectionZukanUsesGeneratedTemplate("index")) {
+    return COLLECTION_INDEX_ITEMS_PER_PAGE;
+  }
+  return subjects.length;
 }
 
 function zukanIndexCardTuningTargets(rect, slotIndex) {
