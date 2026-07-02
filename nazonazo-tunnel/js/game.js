@@ -218,6 +218,18 @@ const STAGES=[
 ];
 const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"]];
 const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よつば"],["🎈","ふうせん"],["🐦","ことり"]]};
+const NPC_BASE="../assets/images/bento/npc/";
+const NPC_VER="20260617-risu-bright-set";
+const npcSrc=(id,mood)=>NPC_BASE+id+"_"+mood+".png?v="+encodeURIComponent(NPC_VER);
+const STATION_HELPERS=[
+ {id:"risu",e:"🐿️",name:"りすちゃん",request:npcSrc("risu","request"),normal:npcSrc("risu","normal"),happy:npcSrc("risu","super_happy")},
+ {id:"inu",e:"🐶",name:"わんちゃん",request:npcSrc("inu","request"),normal:npcSrc("inu","normal"),happy:npcSrc("inu","super_happy")},
+ {id:"ahiru",e:"🦆",name:"あひるさん",request:npcSrc("ahiru","request"),normal:npcSrc("ahiru","normal"),happy:npcSrc("ahiru","super_happy")},
+ {id:"shika",e:"🦌",name:"しかさん",request:npcSrc("shika","request"),normal:npcSrc("shika","normal"),happy:npcSrc("shika","super_happy")},
+ {id:"araiguma",e:"🦝",name:"あらいぐまくん",request:npcSrc("araiguma","request"),normal:npcSrc("araiguma","normal"),happy:npcSrc("araiguma","super_happy")},
+ {id:"neko",e:"🐱",name:"ねこさん",request:npcSrc("neko","request"),normal:npcSrc("neko","normal"),happy:npcSrc("neko","super_happy")}
+];
+const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, COVER_OFF=2180, COVER_LEN=340;
 const stops=(o,i)=>o+INTRO+i*GAP-58;
 const tunX=(o,i)=>o+INTRO+i*GAP;
@@ -235,6 +247,7 @@ function buildRegistry(){
   zkGroups.push({key:st.id,label:st.icon+" "+st.names[0],items});
  });
  zkGroups.push({key:"wp",label:"🎓 なぞなぞマスター",items:WORDPLAY.map(q=>({e:q.a[0],t:q.a[1]}))});
+ zkGroups.push({key:"station",label:"🚉 えきの ともだち",items:STATION_HELPERS.map(h=>({e:h.e,t:h.name}))});
  zkGroups.push({key:"rare",label:"🌟 めずらしい ともだち",items:RARES.map(x=>({e:x[0],t:x[1]})),rare:true});
 }
 function zkKey(e,t){return e+"|"+t;}
@@ -263,7 +276,7 @@ function openZukan(){
 /* ================= state ================= */
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,transitCover=null;
-let tunnels=[],playing=false,cars=[],rareCount=0,rareEl=null,rareSpawned=false;
+let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false;
 let bestStarsByStage={},answerLocked=false;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
@@ -280,7 +293,7 @@ function setDriverMood(mood){
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT");
-const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge");
+const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp");
 
@@ -315,6 +328,13 @@ const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(M
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const pick=a=>a[rnd(0,a.length-1)];
+function stationHelperFor(i){
+ return STATION_HELPERS[(loop*QN+stg*2+i)%STATION_HELPERS.length];
+}
+function addStationHelpersToQuestions(){
+ if(!STAGES[stg]||STAGES[stg].id!=="town")return;
+ qList=qList.map((q,i)=>Object.assign({},q,{helper:stationHelperFor(i)}));
+}
 function bindTap(el,fn){
  let down=false,sx=0,sy=0;
  el.addEventListener("pointerdown",ev=>{
@@ -426,6 +446,7 @@ function buildQList(){
  for(let i=0;i<nGen;i++)qList.push(GENS[pick(gens)]());
  if(nWp)qList.push(pick(WORDPLAY));
  qList=shuffle(qList);
+ addStationHelpersToQuestions();
 }
 
 /* ================= stage build ================= */
@@ -456,8 +477,17 @@ function buildWorld(keepCover){
   if(st.id==="town")t.classList.add("station");
   t.style.left=tunX(o,i)+"vw";
   t.innerHTML=st.id==="town"
-   ? '<div class="station-roof"></div><div class="station-wall"></div><div class="station-post p1"></div><div class="station-post p2"></div><div class="station-name">えき</div><div class="sign">❓</div><div class="hole station-gate"><div class="door l"></div><div class="door r"></div></div><div class="station-platform"></div>'
+   ? '<div class="station-art"></div><div class="station-name">えき</div><div class="sign">❓</div>'
    : '<div class="mount" style="background:'+P.mount+'"></div><div class="sign">❓</div><div class="hole"><div class="door l"></div><div class="door r"></div></div>';
+  if(st.id==="town"&&qList[i]&&qList[i].helper){
+   const h=qList[i].helper;
+   const hp=document.createElement("div");
+   hp.className="station-helper";
+   const im=document.createElement("img");
+   im.src=h.request;im.alt="";
+   hp.appendChild(im);
+   t.appendChild(hp);
+  }
   world.appendChild(t);tunnels.push(t);
   for(let k=0;k<2;k++){
    const d=document.createElement("div");d.className="decor";
@@ -515,24 +545,47 @@ function renderCars(){
   const idx=show.length-1-i; // 0=newest(先頭車のすぐ後ろ)
   const el=document.createElement("div");el.className="car";
   el.style.left=(28-8.8*(idx+1))+"vw";
-  el.innerHTML='<span class="pas">'+c.e+'</span>';
+  if(c.img){
+   const im=document.createElement("img");
+   im.className="pas-img";im.src=c.img;im.alt="";
+   el.appendChild(im);
+  }else{
+   const sp=document.createElement("span");
+   sp.className="pas";sp.textContent=c.e;
+   el.appendChild(sp);
+  }
   if(cars.length>4&&i===0)el.classList.add("fade");
   carsEl.appendChild(el);
  });
  carBadge.style.display=cars.length?"block":"none";
  carBadge.textContent="🚃 ×"+cars.length;
 }
-function boardPassenger(e,t){
- const isNew=registerZk(e,t);
- const fl=document.createElement("div");fl.className="flyer";fl.textContent=e;
- fl.style.left="50vw";fl.style.bottom="30vh";
+function passengerLabel(p){return p.name||p.t||"";}
+function boardPassenger(p,learned,stationEl){
+ const passenger=typeof p==="object"?p:{e:p,t:learned&&learned[1]};
+ const isNew=registerZk(passenger.e,passengerLabel(passenger));
+ if(learned)registerZk(learned[0],learned[1]);
+ const fl=document.createElement("div");fl.className="flyer";
+ if(passenger.happy||passenger.img||passenger.normal){
+  const im=document.createElement("img");
+  im.src=passenger.happy||passenger.img||passenger.normal;im.alt="";
+  fl.appendChild(im);
+ }else fl.textContent=passenger.e;
+ const src=stationEl&&stationEl.querySelector(".station-helper img");
+ if(src){
+  const r=src.getBoundingClientRect();
+  fl.style.left=(r.left+r.width*.5)+"px";
+  fl.style.bottom=(window.innerHeight-r.bottom)+"px";
+ }else{
+  fl.style.left="50vw";fl.style.bottom="30vh";
+ }
  $("app").appendChild(fl);
  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
   fl.style.left=(28-8.8)+"vw";fl.style.bottom="14vh";
  });});
  setTimeout(()=>{
   fl.remove();
-  cars.push({e,t});renderCars();
+  cars.push({e:passenger.e,t:passengerLabel(passenger),img:passenger.normal||passenger.img||passenger.happy});renderCars();
   if(isNew){sndNew();showStamp("あたらしい ともだち！","new");}
  },780);
  return isNew;
@@ -579,6 +632,11 @@ function drawDots(){
   d.textContent=i<qSeg?"⭐":"";dotsEl.appendChild(d);}
 }
 function showStamp(txt,cls){stamp.textContent=txt;announce(txt);stamp.className="";void stamp.offsetWidth;stamp.className=cls;}
+function updateHelpHud(){
+ const n=helpItems.length;
+ if(helpBadge){helpBadge.style.display=n?"block":"none";helpBadge.textContent=(n?helpItems[n-1].e:"🍀")+" ×"+n;}
+ if(helpBtn){helpBtn.textContent="🍀 ×"+n;helpBtn.classList.toggle("empty",!n);helpBtn.disabled=false;}
+}
 function confetti(n){const em=["🎉","⭐","🎈","✨","💛"];
  for(let i=0;i<(n||24);i++){const c=document.createElement("div");c.className="conf";
   c.textContent=em[i%em.length];c.style.left=(Math.random()*96)+"vw";
@@ -592,6 +650,8 @@ function sparkOnVeh(){
 function onRunEvent(el,ev){
  if(!driving||!el||el.classList.contains("found"))return;
  el.classList.add("found");el.disabled=true;
+ if(helpItems.length<HELP_MAX)helpItems.push({e:ev[0],t:ev[1]});
+ updateHelpHud();
  const r=el.getBoundingClientRect();
  for(let i=0;i<4;i++){
   const s=document.createElement("div");s.className="spark";s.textContent=i%2?"⭐":"✨";
@@ -600,8 +660,26 @@ function onRunEvent(el,ev){
   $("app").appendChild(s);setTimeout(()=>s.remove(),900);
  }
  tone(1047,0,.12,"triangle",.11);tone(1319,.1,.16,"triangle",.09);
- showStamp("みつけた！","new");
+ showStamp(helpItems.length>=HELP_MAX?"おたすけ いっぱい！":"おたすけ ゲット！","new");
  speak(ev[1]+"を みつけた！");
+}
+function useHelp(){
+ if(answerLocked||driving||!quiz.classList.contains("show"))return;
+ if(!helpItems.length){
+  showStamp("みつけてね！","ng");
+  announce("はしっているときに、おたすけを みつけよう");
+  return;
+ }
+ const item=helpItems.pop();
+ updateHelpHud();
+ const choices=[...choicesEl.querySelectorAll(".choice")];
+ const wrong=choices.find(c=>c.dataset.ok!=="1"&&!c.classList.contains("dim"));
+ if(wrong){wrong.classList.add("dim");wrong.disabled=true;}
+ const ok=choices.find(c=>c.dataset.ok==="1");
+ if(ok)ok.classList.add("glow");
+ tone(880,0,.12,"triangle",.12);tone(1175,.1,.16,"triangle",.1);
+ showStamp("おたすけ！","new");
+ announce(item.t+"が おしえてくれたよ");
 }
 
 /* ================= render ================= */
@@ -674,7 +752,7 @@ function startJourneyAt(s){
  setDriverMood("cheer");
  worldX=origin(s);target=stops(origin(s),0);
  pending="quiz";driving=true;playing=true;swapReady=false;swapped=false;
- cars=[];renderCars();
+ cars=[];helpItems=[];renderCars();updateHelpHud();
  $("map").classList.add("hidden");
  quiz.classList.remove("show");
  sndGo();
@@ -682,13 +760,15 @@ function startJourneyAt(s){
 function showQuiz(){
  setDriverMood("thinking");
  cur=qList[qSeg];missInQ=0;answerLocked=false;
- qText.textContent=cur.q;hintText.textContent="";
+ qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
+ hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.innerHTML="";
  let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
  if(level===0&&opts.length>2)opts=opts.slice(0,2);
  opts=shuffle(opts);
  opts.forEach(o=>{const b=document.createElement("button");b.type="button";b.className="choice";
   b.setAttribute("aria-label",o.t);
+  b.dataset.ok=o.ok?"1":"0";
   b.innerHTML='<span class="em">'+o.e+'</span><span class="lb">'+o.t+'</span>';
   bindTap(b,()=>onPick(b,o));
   choicesEl.appendChild(b);});
@@ -703,9 +783,10 @@ function onPick(el,o){
   sndOK();showStamp("せいかい！","ok");
   quiz.classList.remove("show");
   const pe=cur.pe||[cur.a[0],cur.a[1]];
-  const isNew=boardPassenger(pe[0],pe[1]);
-  speak(isNew?"せいかい！あたらしい ともだちだ！":"せいかい！");
   const t=tunnels[qSeg];
+  const passenger=cur.helper||{e:pe[0],t:pe[1],name:pe[1]};
+  const isNew=boardPassenger(passenger,pe,t);
+  speak(isNew?"せいかい！あたらしい ともだちだ！":"せいかい！"+passengerLabel(passenger)+"が のったよ！");
   setTimeout(()=>{sndOpen();if(t)t.classList.add("open");const sg=t&&t.querySelector(".sign");if(sg)sg.textContent="⭕";},420);
   setTimeout(()=>{proceed();},1050);
  }else{
@@ -811,9 +892,10 @@ bindTap($("homeBtn"),()=>{
  openMap();
 });
 bindTap($("spkBtn"),()=>{showHint();});
+bindTap($("helpBtn"),()=>{useHelp();});
 
 buildRegistry();
 loadGame();applyLevelSelection();
-applySkin();buildWorld(false);drawDots();renderCars();render();
+applySkin();buildWorld(false);drawDots();renderCars();updateHelpHud();render();
 requestAnimationFrame(gloop);
 })();
