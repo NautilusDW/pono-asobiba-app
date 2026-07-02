@@ -112,9 +112,20 @@ function gNeonGround(w,h,base,line,tick){
 
 /* ================= stages: パレット2種(1周目/2周目)対応 ================= */
 const H=300, HW=1700;
+const ASSETS={
+ town:{
+  sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
+  horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
+  mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
+  ground:"../assets/images/nazonazo-tunnel/town_ground_strip_20260703.webp",
+  fg:"../assets/images/nazonazo-tunnel/town_foreground_layer_20260703.webp"
+ }
+};
+const bgUrl=src=>'url("'+src+'")';
 const STAGES=[
  {id:"town",icon:"🏘️",veh:"train",bank:TOWN,gens:[],
   names:["まちはずれ","ゆうやけの まちはずれ"],
+  assets:ASSETS.town,
   pals:[
    {sky:["#8ed6f5","#eaf6d8"],haze:"#c3dbc8",skyl:"#b7cfe0",hill:"#a8cf9a",house:"#9fb98a",roof:"#7fa06a",leaf:"#7fae6f",trunk:"#5c8a4e",grass:"#6db850",tie:"#6b4a2f",rail:"#4a4a4a",fgA:"#3e7a34",fgB:"#2c5a24",mount:"#a9765a"},
    {sky:["#ff9d5c","#ffe0b0"],haze:"#e8b088",skyl:"#c9856a",hill:"#b0764f",house:"#8a5a48",roof:"#6a4034",leaf:"#5a4630",trunk:"#3e2f20",grass:"#c08a4a",tie:"#4a3020",rail:"#333333",fgA:"#4a3220",fgB:"#332114",mount:"#8a5540"}],
@@ -256,6 +267,14 @@ let bestStarsByStage={},answerLocked=false;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
+const STAGE_DRIVERS=["bear","fox","owl","rabbit","fox","owl"];
+
+function setDriverForStage(s){
+ document.body.dataset.driver=STAGE_DRIVERS[s%STAGE_DRIVERS.length]||"bear";
+}
+function setDriverMood(mood){
+ document.body.dataset.driverMood=mood||"happy";
+}
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
@@ -416,13 +435,14 @@ function applySkin(){
  const nIdx=Math.min(stg+1,STAGES.length-1);
  const NP=STAGES[nIdx].pals[loop%2];
  document.body.className="st-"+st.id+" v-"+st.veh;
- skyA.style.background="linear-gradient("+P.sky[0]+","+P.sky[1]+")";
+ setDriverForStage(stg);
+ skyA.style.background=st.assets?bgUrl(st.assets.sky)+" center bottom / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
  skyB.style.opacity="0";
- horizon.style.backgroundImage=st.horizon(P,NP);
- midT.style.backgroundImage=st.mid(P);
- groundT.style.backgroundImage=st.ground(P);
- fgT.style.backgroundImage=st.fg(P);
+ horizon.style.backgroundImage=st.assets?bgUrl(st.assets.horizon):st.horizon(P,NP);
+ midT.style.backgroundImage=st.assets?bgUrl(st.assets.mid):st.mid(P);
+ groundT.style.backgroundImage=st.assets?bgUrl(st.assets.ground):st.ground(P);
+ fgT.style.backgroundImage=st.assets?bgUrl(st.assets.fg):st.fg(P);
  buildAmbient(P);
 }
 function buildWorld(keepCover){
@@ -618,6 +638,7 @@ function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
+ setDriverMood("cheer");
  worldX=origin(s);target=stops(origin(s),0);
  pending="quiz";driving=true;playing=true;swapReady=false;swapped=false;
  cars=[];renderCars();
@@ -626,6 +647,7 @@ function startJourneyAt(s){
  sndGo();
 }
 function showQuiz(){
+ setDriverMood("thinking");
  cur=qList[qSeg];missInQ=0;answerLocked=false;
  qText.textContent=cur.q;hintText.textContent="";
  choicesEl.innerHTML="";
@@ -644,6 +666,7 @@ function onPick(el,o){
  if(answerLocked||driving||!quiz.classList.contains("show"))return;
  answerLocked=true;
  if(o.ok){
+  setDriverMood("cheer");
   sndOK();showStamp("せいかい！","ok");
   quiz.classList.remove("show");
   const pe=cur.pe||[cur.a[0],cur.a[1]];
@@ -653,6 +676,7 @@ function onPick(el,o){
   setTimeout(()=>{sndOpen();if(t)t.classList.add("open");const sg=t&&t.querySelector(".sign");if(sg)sg.textContent="⭕";},420);
   setTimeout(()=>{proceed();},1050);
  }else{
+  setDriverMood("surprised");
   missInQ++;stageMiss++;
   sndNG();el.classList.add("ng","dim");
   const t=tunnels[qSeg];
@@ -661,10 +685,11 @@ function onPick(el,o){
   if(missInQ===1)showHint();
   if(missInQ>=2){choicesEl.querySelectorAll(".choice").forEach(c=>{
    if(!c.classList.contains("dim"))c.classList.add("glow");});}
-  setTimeout(()=>{answerLocked=false;},520);
+  setTimeout(()=>{answerLocked=false;setDriverMood("thinking");},520);
  }
 }
 function proceed(){
+ setDriverMood("cheer");
  qSeg++;drawDots();
  const o=origin(stg);
  sndGo();
@@ -690,6 +715,7 @@ function proceed(){
  }
 }
 function ending(){
+ setDriverMood("cheer");
  playing=false;
  confetti(40);sndFan();
  const grand=loop>=1;
