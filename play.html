@@ -4285,18 +4285,34 @@
     @keyframes pono-bonus-glow { 0%,100%{filter:brightness(1);} 50%{filter:brightness(1.08);} }
     @keyframes pono-bonus-ribbon { 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(-3px);} }
     /* 3) ショップ購入演出: zoom-in サムネ + 紙吹雪 */
-    .donguri-shop-celebration { position:fixed; inset:0; z-index:99995; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+    .donguri-shop-celebration { position:fixed; inset:0; z-index:99995; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; pointer-events:none; }
     .donguri-shop-celebration[hidden] { display:none; }
     .donguri-shop-celebration__thumb {
       width:160px; height:160px; display:flex; align-items:center; justify-content:center;
       background:#fff7e0; border:5px solid #ffd34d; border-radius:24px;
       box-shadow:0 0 32px 8px #ffd34d, 0 12px 32px rgba(0,0,0,.4); font-size:96px;
-      animation:pono-shop-pop 1.2s ease-out forwards;
+      animation:pono-shop-pop 2.35s ease-out forwards;
     }
     .donguri-shop-celebration__thumb img { max-width:80%; max-height:80%; }
-    @keyframes pono-shop-pop { 0%{transform:scale(.2);opacity:0;} 25%{transform:scale(1.15);opacity:1;} 55%{transform:scale(1);} 85%{transform:scale(1);opacity:1;} 100%{transform:scale(1.05);opacity:0;} }
+    .donguri-shop-celebration__name {
+      max-width:min(76vw, 360px);
+      padding:7px 20px 8px;
+      border-radius:999px;
+      background:linear-gradient(180deg,rgba(255,251,232,.98),rgba(255,226,126,.96));
+      border:3px solid rgba(255,255,255,.94);
+      color:#654014;
+      font-weight:900;
+      font-size:clamp(20px, 4.8vw, 30px);
+      line-height:1.15;
+      text-align:center;
+      text-shadow:0 1px 0 #fff;
+      box-shadow:0 5px 0 rgba(181,111,22,.22),0 12px 24px rgba(52,27,5,.26),0 0 28px rgba(255,218,86,.48);
+      animation:pono-shop-name-pop 2.35s ease-out forwards;
+    }
+    @keyframes pono-shop-pop { 0%{transform:scale(.2);opacity:0;} 18%{transform:scale(1.15);opacity:1;} 38%{transform:scale(1);} 78%{transform:scale(1);opacity:1;} 100%{transform:scale(1.05);opacity:0;} }
+    @keyframes pono-shop-name-pop { 0%,12%{transform:translateY(8px) scale(.9);opacity:0;} 28%{transform:translateY(0) scale(1.04);opacity:1;} 42%,80%{transform:translateY(0) scale(1);opacity:1;} 100%{transform:translateY(4px) scale(1);opacity:0;} }
     .donguri-shop-celebration__confetti { position:absolute; left:50%; top:50%; width:10px; height:14px; border-radius:2px; pointer-events:none;
-      animation:pono-shop-confetti 1.1s cubic-bezier(.2,.7,.3,1) forwards; opacity:0; }
+      animation:pono-shop-confetti 1.7s cubic-bezier(.2,.7,.3,1) forwards; opacity:0; }
     @keyframes pono-shop-confetti {
       0%   { transform:translate(-50%,-50%) rotate(0deg) scale(.4); opacity:1; }
       100% { transform:translate(calc(-50% + var(--cx,0px)), calc(-50% + var(--cy,0px))) rotate(var(--cr,360deg)) scale(1); opacity:0; }
@@ -4306,7 +4322,8 @@
       .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-modal__card,
       .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-panel { animation:none; }
       .daily-gacha-modal[data-quest-bonus="1"]::before { animation:none; }
-      .donguri-shop-celebration__thumb { animation:pono-shop-pop-rm 1.2s linear forwards; }
+      .donguri-shop-celebration__thumb,
+      .donguri-shop-celebration__name { animation:pono-shop-pop-rm 2.35s linear forwards; }
       .donguri-shop-celebration__confetti { display:none; }
       @keyframes pono-shop-pop-rm { 0%,80%{transform:scale(1);opacity:1;} 100%{transform:scale(1);opacity:0;} }
     }
@@ -4395,8 +4412,8 @@
       56% { transform: translateX(3px) rotate(.8deg); }
     }
     .donguri-shop-v2-bubble {
-      /* v1692: bottom 54%→48% で吹き出し全体を下げ、 看板/rotation-note との重なりを 720p で解消 */
-      position: absolute; left: 5.8%; bottom: 48%;
+      /* v1911: bottom 48%→40% で看板下の rotation-note から離す。 */
+      position: absolute; left: 5.8%; bottom: 40%;
       width: min(27%, 350px);
       aspect-ratio: 1774 / 887;
       box-sizing: border-box;
@@ -4412,10 +4429,10 @@
       filter: drop-shadow(0 8px 12px rgba(38, 19, 4, .24));
     }
     .donguri-shop-v2-subtitle {
-      /* v1692: bottom 47%→41% で bubble 追従、 字幕と看板の縦間隔を確保 */
+      /* v1911: bubble 追従で下げ、 字幕と看板の縦間隔を確保 */
       position: absolute;
       left: 5.8%;
-      bottom: 41%;
+      bottom: 33%;
       width: min(30%, 390px);
       min-height: clamp(20px, 2.5vw, 32px);
       box-sizing: border-box;
@@ -4878,8 +4895,8 @@
       .donguri-shop-v2-title { width: min(39vw, 280px); font-size: 0; }
       .donguri-shop-v2-rotation-note { --rot-note-top: 16.4%; width: min(62vw, 380px); font-size: clamp(8.5px, 1.55vw, 11.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
-      .donguri-shop-v2-bubble { left: 3.8%; bottom: 62%; width: min(27%, 238px); font-size: clamp(10px, 1.55vw, 13.5px); }
-      .donguri-shop-v2-subtitle { left: 4.2%; bottom: 54.8%; width: min(32%, 250px); min-height: clamp(16px, 4vw, 24px); padding: 2px 6px; font-size: clamp(7px, 1.28vw, 10px); border-width: 1.5px; }
+      .donguri-shop-v2-bubble { left: 3.8%; bottom: 53%; width: min(27%, 238px); font-size: clamp(10px, 1.55vw, 13.5px); }
+      .donguri-shop-v2-subtitle { left: 4.2%; bottom: 45.8%; width: min(32%, 250px); min-height: clamp(16px, 4vw, 24px); padding: 2px 6px; font-size: clamp(7px, 1.28vw, 10px); border-width: 1.5px; }
       .donguri-shop-v2-reserve { left: 6.5%; bottom: 4.2%; width: min(25%, 210px); min-width: 126px; height: clamp(72px, 18vw, 90px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
       .donguri-shop-v2-reserve-title { font-size: 9px; }
       .donguri-shop-v2-reserve-name { font-size: 9px; line-height: 1.12; }
@@ -4910,14 +4927,14 @@
       .donguri-shop-v2-shopkeeper { left: 3.8%; bottom: 8.4%; width: 25.8%; max-width: 270px; }
       .donguri-shop-v2-bubble {
         left: 5.4%;
-        bottom: 58%;
+        bottom: 50%;
         width: min(27.5%, 310px);
         padding: 12px 20px 30px;
         font-size: clamp(15px, 1.65vw, 19px);
       }
       .donguri-shop-v2-subtitle {
         left: 5.7%;
-        bottom: 49%;
+        bottom: 41%;
         width: min(31.5%, 340px);
         min-height: 30px;
         padding: 4px 10px;
@@ -7004,7 +7021,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1910;
+    const PAGE_CACHE_VERSION = 1911;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -9750,8 +9767,8 @@
             try { _clearAudioInactiveGuard(); } catch (_) {}
             try { playDonguriShopPurchaseSfx(sid); } catch (_) {}
             try { ensureShopBgmPlaying(); } catch (_) {}
-            if (typeof window.showStickerToast === 'function' && r.stickerResult) {
-              try { window.showStickerToast(r.stickerResult, { immediate: true, suppressImpactSfx: true }); } catch (_) {}
+            if (window.PonoGameStickers && typeof window.PonoGameStickers.showStickerToast === 'function' && r.stickerResult) {
+              try { window.PonoGameStickers.showStickerToast(r.stickerResult, { immediate: true, suppressImpactSfx: true, source: 'shop' }); } catch (_) {}
             }
           }
           renderShopCatalog(r && r.success ? 'こうかんしたよ' : undefined);
@@ -9913,8 +9930,8 @@
                     try { _clearAudioInactiveGuard(); } catch (_) {}
                     try { playDonguriShopPurchaseSfx(sid); } catch (_) {}
                     try { ensureShopBgmPlaying(); } catch (_) {}
-                    if (typeof window.showStickerToast === 'function' && r.stickerResult) {
-                      try { window.showStickerToast(r.stickerResult, { immediate: true, suppressImpactSfx: true }); } catch (_) {}
+                    if (window.PonoGameStickers && typeof window.PonoGameStickers.showStickerToast === 'function' && r.stickerResult) {
+                      try { window.PonoGameStickers.showStickerToast(r.stickerResult, { immediate: true, suppressImpactSfx: true, source: 'shop' }); } catch (_) {}
                     }
                   }
                   // either way: re-render so owned state / disabled flips correctly
@@ -10047,7 +10064,7 @@
       });
     }
 
-    function _renderPurchaseCelebration(url) {
+    function _renderPurchaseCelebration(url, stickerName) {
       var host = document.getElementById('donguriShopCelebration');
       if (!host) return;
       host.innerHTML = '';
@@ -10055,12 +10072,16 @@
       thumb.className = 'donguri-shop-celebration__thumb';
       thumb.innerHTML = url ? ('<img src="' + url + '" alt="" draggable="false" />') : '⭐';
       host.appendChild(thumb);
+      var label = document.createElement('div');
+      label.className = 'donguri-shop-celebration__name';
+      label.textContent = String(stickerName || 'シール').trim() || 'シール';
+      host.appendChild(label);
       var palette = ['#ffd34d','#ff9a3c','#7ed957','#5ec8ff','#ff6fb5','#fff7c0'];
-      for (var i = 0; i < 12; i++) {
+      for (var i = 0; i < 16; i++) {
         var p = document.createElement('div');
         p.className = 'donguri-shop-celebration__confetti';
-        var ang = (Math.PI * 2 * i) / 12 + (Math.random() * .35);
-        var dist = 140 + Math.random() * 80;
+        var ang = (Math.PI * 2 * i) / 16 + (Math.random() * .35);
+        var dist = 150 + Math.random() * 90;
         p.style.setProperty('--cx', Math.cos(ang) * dist + 'px');
         p.style.setProperty('--cy', Math.sin(ang) * dist + 'px');
         p.style.setProperty('--cr', (Math.random() * 720 - 360) + 'deg');
@@ -10069,20 +10090,23 @@
         host.appendChild(p);
       }
       host.hidden = false;
-      window.setTimeout(function () { host.hidden = true; host.innerHTML = ''; }, 1200);
+      window.setTimeout(function () { host.hidden = true; host.innerHTML = ''; }, 2450);
     }
 
     window.addEventListener('PonoDonguriShopPurchased', function (e) {
       var detail = (e && e.detail) || {};
       var gameId = detail.gameId;
       var stickerId = detail.stickerId || detail.id;
+      var stickerName = '';
+      try { stickerName = detail.stickerResult && detail.stickerResult.sticker && detail.stickerResult.sticker.name; } catch (_) { stickerName = ''; }
+      if (!stickerName && detail.stickerName) stickerName = detail.stickerName;
       // v1891→v1895: 2 段目 safety guard — click handler が SE/BGM 保守を撃ち漏らした場合の retention。
       //         同一 toast へ二重発火しないよう ensureShopBgmPlaying のみ実行 (SE は click 側で発火済み)。
       //         inactive guard も念のため解除しておく。
       try { _clearAudioInactiveGuard(); } catch (_) {}
       try { ensureShopBgmPlaying(); } catch (_) {}
       _resolveStickerImgUrl(gameId, stickerId).then(function (url) {
-        _renderPurchaseCelebration(url);
+        _renderPurchaseCelebration(url, stickerName);
       });
     });
 

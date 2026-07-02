@@ -11381,10 +11381,11 @@ var BENTO_SLOT_PRODUCTION_MASKS = {
   box_cat: { maskImage: '../assets/images/bento/free-layout/box_cat_inside_mask.png', maskKey: 'box_cat_blue', maskBounds: { x: 197, y: 10, w: 365, h: 402 }, maskBaseAspect: 575 / 515, maskCanvas: { w: 575, h: 515 }, imageAspect: 561 / 516, imageScale: 1.02 }
 };
 var BENTO_SLOT_PRODUCTION_MASK_DEFAULTS = {
-  box_bear: { rel: { x: 0.036, y: 0.0373, w: 0.921, h: 0.8487 } },
-  box_cat_blue: { rel: { x: 0.043, y: 0.0313, w: 0.91, h: 0.8643 } },
-  box_round: { rel: { x: 0.043, y: 0.0336, w: 0.91, h: 0.7798 } },
-  box_square: { rel: { x: 0.039, y: 0.0404, w: 0.914, h: 0.7876 } }
+  // batch:1046: maskRel.x を bento 本体と揃えて左右対称化。
+  box_bear: { rel: { x: 0.0395, y: 0.0373, w: 0.921, h: 0.8487 } },
+  box_cat_blue: { rel: { x: 0.045, y: 0.0313, w: 0.91, h: 0.8643 } },
+  box_round: { rel: { x: 0.045, y: 0.0336, w: 0.91, h: 0.7798 } },
+  box_square: { rel: { x: 0.043, y: 0.0404, w: 0.914, h: 0.7876 } }
 };
 var _bentoSlotMaskCache = {};
 var _bentoSlotMaskPending = {};
@@ -12036,11 +12037,12 @@ function bentoSlotAccessoryBounds(box) {
 }
 function bentoSlotCupFallbackPoints(box) {
   var b = bentoSlotAccessoryBounds(box);
+  // batch:1046: bento 本体 (getSimpleCupFallbackPoints) と揃えて 0.30/0.70 対称 2x2 に。
   var fallback = [
-    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.34 },
-    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.34 },
-    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.68 },
-    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.68 }
+    { x: b.x + b.w * 0.30, y: b.y + b.h * 0.30 },
+    { x: b.x + b.w * 0.70, y: b.y + b.h * 0.30 },
+    { x: b.x + b.w * 0.30, y: b.y + b.h * 0.70 },
+    { x: b.x + b.w * 0.70, y: b.y + b.h * 0.70 }
   ];
   var points = fallback.slice(0, BENTO_SLOT_LIMITS.cup || 4);
   var existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];

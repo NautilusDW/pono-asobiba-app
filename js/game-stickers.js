@@ -413,6 +413,12 @@
 
     var sticker = result.sticker;
     var page = result.page || {};
+    var displayName = String(sticker.name || 'シール').trim() || 'シール';
+    var isShopPurchase = options.source === 'shop' || options.context === 'shop' || options.shopPurchase === true;
+    var eyebrowText = isShopPurchase ? 'こうかんしたよ' : 'ごほうび シール!';
+    var subText = isShopPurchase
+      ? 'シールちょうに はれるよ'
+      : (String(page.title || result.gameId || '') + 'のページに はれるよ');
     var accent = page.accent || '#F2915A';
     var burstImage = resolveAsset('assets/images/oto/rhythm/stage_clear_burst.png');
     var sparkleLarge = resolveAsset('assets/images/mojikko/writing/fx_sparkle_large.png');
@@ -420,7 +426,8 @@
     var overlay = document.createElement('div');
     overlay.id = 'game-sticker-toast';
     overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-label', 'シールをゲット');
+    overlay.setAttribute('aria-label', displayName + 'を ゲット');
+    if (isShopPurchase) overlay.setAttribute('data-sticker-source', 'shop');
     overlay.style.setProperty('--sticker-accent', accent);
     overlay.style.setProperty('--sticker-burst-image', 'url("' + burstImage.replace(/"/g, '%22') + '")');
 
@@ -430,19 +437,21 @@
 
     var box = document.createElement('div');
     box.className = 'game-sticker-popup';
+    if (isShopPurchase) box.classList.add('is-shop-purchase');
     var spark = result.count >= 3 ? '<div class="game-sticker-popup__spark">キラキラ ×' + result.count + '</div>' : '';
+    var nameAttr = displayName.length >= 8 ? ' data-long-name="1"' : '';
     var sparkleDecor =
       '<img class="game-sticker-popup__decor decor-a" src="' + _esc(sparkleLarge) + '" alt="" aria-hidden="true">' +
       '<img class="game-sticker-popup__decor decor-b" src="' + _esc(sparkleSmall) + '" alt="" aria-hidden="true">' +
       '<img class="game-sticker-popup__decor decor-c" src="' + _esc(sparkleSmall) + '" alt="" aria-hidden="true">';
     box.innerHTML =
       '<div class="game-sticker-popup__aura" aria-hidden="true">' + sparkleDecor + '</div>' +
-      '<div class="game-sticker-popup__eyebrow">ごほうび シール!</div>' +
+      '<div class="game-sticker-popup__eyebrow">' + _esc(eyebrowText) + '</div>' +
       '<div class="game-sticker-popup__sheet">' +
         '<div class="game-sticker-piece" aria-hidden="true">' + media + '</div>' +
       '</div>' +
-      '<div class="game-sticker-popup__name">' + _esc(sticker.name || 'シール') + '</div>' +
-      '<div class="game-sticker-popup__sub">' + _esc(page.title || result.gameId || '') + 'のページに はれるよ</div>' +
+      '<div class="game-sticker-popup__name"' + nameAttr + '>' + _esc(displayName) + '</div>' +
+      '<div class="game-sticker-popup__sub">' + _esc(subText) + '</div>' +
       spark +
       '<div class="game-sticker-popup__actions">' +
         '<button type="button" data-sticker-close class="game-sticker-popup__btn game-sticker-popup__btn--sub">つづける</button>' +
@@ -486,15 +495,28 @@
         '#game-sticker-toast .game-sticker-popup__btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(81,50,19,.18);}',
         '#game-sticker-toast .game-sticker-popup__btn--sub{background:#EEE6DD;color:#5D4E37;}',
         '#game-sticker-toast .game-sticker-popup__btn--main{background:var(--sticker-accent,#F2915A);color:#fff;}',
+        '#game-sticker-toast[data-sticker-source="shop"]:before{animation-duration:3.4s;}',
+        '#game-sticker-toast[data-sticker-source="shop"]:after{animation:gameStickerFlashShop 2.6s ease-out both;}',
+        '#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup{animation-duration:.62s;}',
+        '#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup__sheet{min-height:184px;}',
+        '#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup__sheet:before{animation-duration:7.2s;}',
+        '#game-sticker-toast[data-sticker-source="shop"] .game-sticker-piece{animation:gameStickerPopShop .86s cubic-bezier(.19,.9,.2,1.04);}',
+        '#game-sticker-toast[data-sticker-source="shop"] .game-sticker-piece:after{animation:gameStickerPieceGlow 2.8s ease-in-out 2;}',
+        '#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup__name{display:inline-block;max-width:100%;margin:8px auto 0;padding:6px 18px 7px;border-radius:999px;background:linear-gradient(180deg,#FFF9E6,#FFE58D);border:2px solid rgba(255,255,255,.95);box-shadow:0 4px 0 rgba(197,124,31,.18),0 10px 18px rgba(123,72,13,.14);font-size:1.28rem;color:#654014;}',
+        '#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup__name[data-long-name="1"]{font-size:1.08rem;padding-left:14px;padding-right:14px;}',
+        '@media (max-height:480px){#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup{width:min(340px,90vw);padding:16px 16px 13px;}#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup__sheet{min-height:152px;}#game-sticker-toast[data-sticker-source="shop"] .game-sticker-piece{width:132px;height:132px;border-radius:30px;}#game-sticker-toast[data-sticker-source="shop"] .game-sticker-piece__img{width:112px;height:112px;}#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup__name{font-size:1.06rem;margin-top:5px;padding:5px 14px 6px;}#game-sticker-toast[data-sticker-source="shop"] .game-sticker-popup__actions{margin-top:10px;}}',
         '#game-sticker-toast .game-sticker-popup.is-pasting .game-sticker-piece{animation:gameStickerPeta .62s cubic-bezier(.18,.86,.24,1) forwards;}',
         '#game-sticker-toast .game-sticker-popup.is-pasting .game-sticker-popup__btn{pointer-events:none;opacity:.65;}',
         '@keyframes gameStickerFade{from{opacity:0}to{opacity:1}}',
         '@keyframes gameStickerBackdrop{from{opacity:0;transform:scale(1.06)}to{opacity:1;transform:scale(1)}}',
         '@keyframes gameStickerFlash{0%{opacity:0}24%{opacity:1}100%{opacity:.55}}',
+        '@keyframes gameStickerFlashShop{0%{opacity:0}18%{opacity:1}64%{opacity:.84}100%{opacity:.42}}',
         '@keyframes gameStickerPanelIn{0%{opacity:0;transform:translateY(-8px) scale(1.32)}48%{opacity:1;transform:translateY(4px) scale(.94)}74%{opacity:1;transform:translateY(-2px) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}',
         '@keyframes gameStickerRays{to{transform:rotate(360deg)}}',
         '@keyframes gameStickerSparkle{0%,100%{transform:scale(.9) rotate(-8deg);opacity:.86}50%{transform:scale(1.13) rotate(8deg);opacity:1}}',
         '@keyframes gameStickerPop{0%{opacity:0;transform:translateY(-10px) rotate(-10deg) scale(1.72)}34%{opacity:1;transform:translateY(8px) rotate(3deg) scale(.9)}62%{opacity:1;transform:translateY(-5px) rotate(-7deg) scale(1.09)}100%{opacity:1;transform:translateY(0) rotate(-5deg) scale(1)}}',
+        '@keyframes gameStickerPopShop{0%{opacity:0;transform:translateY(-12px) rotate(-10deg) scale(1.78)}28%{opacity:1;transform:translateY(8px) rotate(4deg) scale(.92)}58%{opacity:1;transform:translateY(-6px) rotate(-7deg) scale(1.12)}82%{opacity:1;transform:translateY(2px) rotate(-4deg) scale(1.02)}100%{opacity:1;transform:translateY(0) rotate(-5deg) scale(1)}}',
+        '@keyframes gameStickerPieceGlow{0%,100%{box-shadow:0 0 0 1px rgba(150,102,45,.14),0 0 24px rgba(255,255,255,.74)}50%{box-shadow:0 0 0 3px rgba(255,235,150,.55),0 0 42px rgba(255,239,175,.95)}}',
         '@keyframes gameStickerPeta{0%{transform:translateY(0) rotate(-4deg) scale(1)}45%{transform:translateY(14px) rotate(3deg) scale(1.08)}70%{transform:translateY(10px) rotate(-1deg) scale(.9)}100%{transform:translateY(12px) rotate(0deg) scale(.94);box-shadow:0 1px 0 rgba(180,129,66,.2),0 7px 13px rgba(85,54,20,.16),inset 0 0 0 2px rgba(255,230,170,.72)}}'
       ].join('');
       document.head.appendChild(style);

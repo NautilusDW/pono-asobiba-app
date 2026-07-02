@@ -6933,7 +6933,7 @@ const FREE_TABS = [
   { id: 'accessory', label: 'カップ' },
   { id: 'rice', label: 'ごはん' },
   { id: 'food', label: 'おかず' },
-  { id: 'leaf', label: 'したにしく' },
+  { id: 'leaf', label: 'はっぱ' },
   { id: 'divider', label: 'しきり' },
   { id: 'pick', label: 'ピック' },
   { id: 'decor', label: 'かざり' },
@@ -6981,9 +6981,11 @@ const FREE_MASK_SYNC_API = '/api/bento/mask-defaults';
 const FREE_MASK_ADMIN_PASSWORD_SESSION_KEY = 'bento_mask_admin_password';
 // マスクエディターで確定した値はここに貼る。localStorage は端末ごとの一時上書き。
 const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {
+  // batch:1046: maskRel.x を L/R 対称化 (x + w/2 が 0.5 に一致するよう補正)。
+  //   box_rect_split は敢えて非対称 (deliberate offset) のためスキップ。
   box_bear: {
     rel: {
-      x: 0.036,
+      x: 0.0395,
       y: 0.0373,
       w: 0.921,
       h: 0.8487,
@@ -6991,7 +6993,7 @@ const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {
   },
   box_cat_blue: {
     rel: {
-      x: 0.043,
+      x: 0.045,
       y: 0.0313,
       w: 0.91,
       h: 0.8643,
@@ -6999,7 +7001,7 @@ const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {
   },
   box_round: {
     rel: {
-      x: 0.043,
+      x: 0.045,
       y: 0.0336,
       w: 0.91,
       h: 0.7798,
@@ -7007,7 +7009,7 @@ const FREE_MASK_BOUNDS_DEFAULT_OVERRIDES = {
   },
   box_square: {
     rel: {
-      x: 0.039,
+      x: 0.043,
       y: 0.0404,
       w: 0.914,
       h: 0.7876,
@@ -9750,7 +9752,9 @@ function getFreeGuideTabs() {
       // v1494 cup-first: 小さいおかずはカップ経由のみ。side ステップから おかず/したにしく タブを撤去し、
       // カップを先頭 (デフォルト) タブにする。
       // v1497: チュートリアルも新タブ構成 (小さいおかずはカップピッカー内で選ぶ) — compat shim 撤去済。
-      return ['accessory', 'divider', 'pick']
+      // batch:1046: 「はっぱ」 タブを side にも復活 (accessory の直後)。 タップで simpleLeafApplyArmed
+      //  をセットし、 メインおかずタップで leaf picker を開く armed 経路を明示化。
+      return ['accessory', 'leaf', 'divider', 'pick']
         .map(id => FREE_TABS.find(t => t.id === id))
         .filter(Boolean);
     }
@@ -12105,11 +12109,13 @@ function getSimplePickSlots(box, tier, def) {
 }
 function getSimpleCupFallbackPoints(box) {
   const b = getAccessoryPlacementBounds(box);
+  // batch:1046: cup 4-slot fallback を perfectly T-B symmetric に (0.30/0.70 × 0.30/0.70)。
+  //  divider fallback grid (0.30/0.70 cols) と縦横対称に揃える。
   const fallback = [
-    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.34 },
-    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.34 },
-    { x: b.x + b.w * 0.32, y: b.y + b.h * 0.68 },
-    { x: b.x + b.w * 0.68, y: b.y + b.h * 0.68 },
+    { x: b.x + b.w * 0.30, y: b.y + b.h * 0.30 },
+    { x: b.x + b.w * 0.70, y: b.y + b.h * 0.30 },
+    { x: b.x + b.w * 0.30, y: b.y + b.h * 0.70 },
+    { x: b.x + b.w * 0.70, y: b.y + b.h * 0.70 },
   ];
   const points = fallback.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS.cup || 4);
   const existing = Array.isArray(box && box.accessorySpots) ? box.accessorySpots.slice() : [];
@@ -15315,14 +15321,11 @@ function createFreeContextToolbar(opts = {}) {
       simpleOkazuEditPickerUid = item.uid;
       simpleOkazuEditPickerMode = null;
     }
+    // batch:1046: メインおかず編集パネルを 「はっぱ」 専用に一本化。
+    //   「おかずを かえる」 / 「けす」 (general delete) はパレットから直接置き換え可能なので撤去。
     const leaf = getSimpleLeafForOkazu(item);
     const row = document.createElement('div');
     row.className = 'free-okazu-edit-actions';
-    row.appendChild(createFreeContextButton(
-      'おかずを かえる',
-      'free-okazu-edit-btn' + (simpleOkazuEditPickerMode === 'food' ? ' active' : ''),
-      () => toggleSimpleOkazuEditPicker('food')
-    ));
     row.appendChild(createFreeContextButton(
       leaf ? 'はっぱを かえる' : 'したに しく🥬',
       'free-okazu-edit-btn' + (simpleOkazuEditPickerMode === 'leaf' ? ' active' : ''),
@@ -15335,11 +15338,6 @@ function createFreeContextToolbar(opts = {}) {
         () => removeSimpleLeafUnderOkazu()
       ));
     }
-    row.appendChild(createFreeContextButton(
-      'けす',
-      'free-okazu-edit-btn free-okazu-edit-btn--danger',
-      () => removeSimpleMainOkazuFromPanel()
-    ));
     appendControl(row);
     // batch:1043 T2: picker はパネル内 inline ではなく renderSimpleOkazuEditPickerTray が
     // トレイ全体を置き換えて表示する (picker mode 中このパネル自体が描画されない)。
@@ -17390,7 +17388,9 @@ function renderFreeLayoutControls() {
           freeCupEditorUid = null;
           const selected = getSelectedFreeItem();
           if (!selected || selected.type !== 'leaf') freeSelectedItemUid = null;
-          setSpeech('したにしくモードだよ。うえの おかずを かくして うごかせるよ。');
+          // batch:1046: 「はっぱ」 タブを armed 起動口として復活。 メインおかずタップで leaf picker を直接開く。
+          simpleLeafApplyArmed = true;
+          setSpeech('おかずを えらんで はっぱを しこう！');
         } else if (t.id === 'divider' && simpleBentoMode) {
           clearSimpleSelectionIfBlockedByMode();
           setSpeech('しきりモードだよ。しきりだけ うごかせるよ。');
@@ -17482,55 +17482,15 @@ function renderFreeLayoutControls() {
   del.disabled = !selectedForDelete || !canSelectFreeItemInCurrentMode(selectedForDelete);
   del.addEventListener('pointerdown', e => { e.preventDefault(); removeFreeItem(freeSelectedItemUid); });
   actions.appendChild(del);
-  // batch:1045: 恒久 「はっぱ」 ボタン — おかず step のみ表示。
-  // タップで simpleLeafApplyArmed を toggle。 armed 状態で メインおかずタップ → leaf picker が直接開く。
-  const isOkazuStepForLeaf = simpleBentoMode
-    && isOkazuGuideStep()
-    && !getEditingCup()
-    && !freeMaskEditorMode;
-  if (isOkazuStepForLeaf) {
-    const leafBtn = document.createElement('button');
-    leafBtn.type = 'button';
-    leafBtn.textContent = 'はっぱ';
-    leafBtn.dataset.action = 'leaf-arm';
-    if (simpleLeafApplyArmed) leafBtn.classList.add('primary');
-    leafBtn.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      const target = getSimpleOkazuEditTarget();
-      if (simpleLeafApplyArmed) {
-        // 再タップで解除
-        simpleLeafApplyArmed = false;
-        renderFreeLayoutControls();
-        return;
-      }
-      if (target) {
-        // すでに メインおかずが選ばれていれば 直接 leaf picker を開く
-        simpleLeafApplyArmed = false;
-        toggleSimpleOkazuEditPicker('leaf');
-        return;
-      }
-      simpleLeafApplyArmed = true;
-      setSpeech('はっぱを しく おかずを えらんでね！');
-      renderFreeLayoutControls();
-    });
-    actions.appendChild(leafBtn);
-  }
+  // batch:1046: 恒久 「はっぱ」 ボタンを action-row から撤去。 armed 起動口は 側ステップ の「はっぱ」タブ
+  //   (getFreeGuideTabs 側で追加) に一本化した。 grid-column override も廃止し has-guide-action の
+  //   4 列既定に戻る。
   if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
     const tier = getGuideTierForStep(freeGuideStep);
     actions.classList.add('has-guide-action');
     // batch:1044 R1: 残数ヒントチップ廃止 — 残数案内はポノの speech へ移行 (A7/A13)。
     const mainRemaining = getRequiredOkazuCountsForTier(tier).main - countOkazuRoleOnTier(tier, 'main');
     actions.appendChild(makeSmallControlButton('カップへ', 'primary', () => tryFinishOkazuTier(tier), mainRemaining > 0));
-  }
-  // batch:1045: 列数を実子要素数に合わせて上書きする (has-guide-action の 4 列は はっぱ追加で 5 列)。
-  if (isOkazuStepForLeaf) {
-    if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
-      // main-step: とりけす/やりなおし/けす/はっぱ + カップへ (primary)
-      actions.style.gridTemplateColumns = '0.72fr 0.72fr 0.72fr 0.72fr 1.34fr';
-    } else {
-      // side-step: とりけす/やりなおし/けす/はっぱ の 4 列均等
-      actions.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
-    }
   }
   tray.appendChild(actions);
 }
