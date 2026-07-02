@@ -7310,6 +7310,10 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     opacity: 1,
     roughness: 0.9,
     metalness: 0.0,
+    // v1913: 貼付瞬間の暖色 glow pulse 用 (森トーン warm cream)。 通常時 0、
+    // finishStickerPeelAnimation の pulse raf で一時的に 0→0.45→0 させる。 NormalBlending 据置 (加算合成なし)。
+    emissive: new THREE.Color(0xfff4d8),
+    emissiveIntensity: 0,
   });
   const backMaterial = new THREE.MeshStandardMaterial({
     map: backTexture,
@@ -7320,6 +7324,9 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     opacity: 0.98,
     roughness: 0.9,
     metalness: 0.0,
+    // v1913: front と同じ warm cream emissive (pulse 用)。 通常時 0。
+    emissive: new THREE.Color(0xfff4d8),
+    emissiveIntensity: 0,
   });
   const front = new THREE.Mesh(geometry, frontMaterial);
   const back = new THREE.Mesh(geometry, backMaterial);
@@ -7484,6 +7491,63 @@ function bendStickerPeelGeometry(animation, progress) {
   animation.backMaterial.opacity = 0.92;
 }
 
+// v1913: 貼付瞬間の柔らかい glow flash の opt-out 判定。
+// localStorage['pono_glow_off']==='1' または prefers-reduced-motion で pulse をスキップし、
+// 既存挙動 (即 fade) へ即復帰する。
+function stickerGlowDisabled() {
+  try {
+    if (typeof localStorage !== "undefined" && localStorage.getItem("pono_glow_off") === "1") return true;
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if (mq && mq.matches) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+// v1913: peel emissive pulse (方式 A)。 既存 front/back MeshStandardMaterial の emissiveIntensity を
+// 独立 raf で 0 → peak 0.45 → 0 に ease-out (パッ→ふわっ) で動かし、 貼付シールを一度だけ暖色に発光させる。
+// 持続 0.32s、 peak は白飛び防止のため上限 0.5 厳守 (0.45 固定)。 NormalBlending 据置 (加算合成なし)、
+// renderOrder / Z / opacity は非改変。 pulse 完了後に onDone (= fadeAndDispose) を呼び、 material dispose を
+// pulse 終了まで待たせる (fade/dispose ロジック本体は非改変)。
+function startStickerGlowPulse(animation, onDone) {
+  const done = (typeof onDone === "function") ? onDone : function () {};
+  const front = animation && animation.frontMaterial;
+  const back = animation && animation.backMaterial;
+  if (!front && !back) { done(); return; }
+  const PEAK = 0.45;     // 上限 0.5 厳守
+  const DURATION = 320;  // ms
+  const PEAK_AT = 0.34;  // 正規化時間 (~110ms) で peak → sparkle SE(120ms) と自然に重なる
+  const now = () => (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
+  const start = now();
+  const raf = (typeof requestAnimationFrame === "function")
+    ? requestAnimationFrame
+    : (cb) => setTimeout(() => cb(now()), 16);
+  const setIntensity = (v) => {
+    try { if (front) front.emissiveIntensity = v; } catch (_) {}
+    try { if (back) back.emissiveIntensity = v; } catch (_) {}
+  };
+  const tick = () => {
+    const t = Math.min(1, (now() - start) / DURATION);
+    let env;
+    if (t <= PEAK_AT) {
+      const x = t / PEAK_AT;
+      env = 1 - Math.pow(1 - x, 3); // ease-out cubic の速い立ち上がり (パッ)
+    } else {
+      const u = (t - PEAK_AT) / (1 - PEAK_AT);
+      env = Math.pow(1 - u, 2);     // 柔らかい減衰 (ふわっ)
+    }
+    setIntensity(PEAK * env);
+    if (t < 1) {
+      raf(tick);
+    } else {
+      setIntensity(0); // fade 前に消灯 (残光なし)
+      done();
+    }
+  };
+  raf(tick);
+}
+
 function finishStickerPeelAnimation(animation) {
   // v1905: peel remove → baked texture swap の順序を反転。
   // 旧実装は (1) book.remove(group) を即座に実行 → (2) dispose → (3) onComplete で
@@ -7561,6 +7625,15 @@ function finishStickerPeelAnimation(animation) {
     raf(tick);
   };
 
+  // v1913: baked swap 完了後、 opt-out でなければ glow pulse (~320ms) → その後 fadeAndDispose。
+  // peel mesh は pulse 中も表示のまま保持され (整合済 baked と同一平面のため二重に見えない)、
+  // pulse 完了 (= emissive 0 に消灯) してから既存の 2 frame opacity fade + dispose へ連結する。
+  // opt-out 時は従来どおり即 fade (peel を 32ms で消して dispose)。
+  const glowThenFade = () => {
+    if (stickerGlowDisabled()) { fadeAndDispose(); return; }
+    startStickerGlowPulse(animation, fadeAndDispose);
+  };
+
   let onCompleteResult;
   if (typeof animation.onComplete === "function") {
     try {
@@ -7570,10 +7643,10 @@ function finishStickerPeelAnimation(animation) {
     }
   }
   if (onCompleteResult && typeof onCompleteResult.then === "function") {
-    onCompleteResult.then(fadeAndDispose, fadeAndDispose);
+    onCompleteResult.then(glowThenFade, glowThenFade);
   } else {
-    // Promise でない (旧 code path / 失敗) 時は即 fade。
-    fadeAndDispose();
+    // Promise でない (旧 code path / 失敗) 時は即 glow→fade。
+    glowThenFade();
   }
 }
 

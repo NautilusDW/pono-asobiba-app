@@ -17383,6 +17383,9 @@ function renderFreeLayoutControls() {
         if (t.id !== 'food') freeBrushStampDef = null;
         if (t.id !== 'food') simpleNoCupSlotIndex = null;
         if (t.id !== 'accessory') simpleCupSlotIndex = null;
+        // batch:1046 code-review fix (a): はっぱ 以外のタブに切替時は armed を必ず解除
+        // (accessory/divider/pick タブでは armed が残ってはいけない)
+        if (t.id !== 'leaf' && simpleLeafApplyArmed) simpleLeafApplyArmed = false;
         if (t.id === 'leaf' && simpleBentoMode) {
           freeActiveCupUid = null;
           freeCupEditorUid = null;

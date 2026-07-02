@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-02 17:20 - by Claude - [batch:1046-bento-leaf-tab-panel-slim] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - はっぱを action-row から タブへ移動 (カップ/しきり/ピック/はっぱ) + 編集パネル簡素化 (おかずを かえる/けす 削除)
 
 
 
