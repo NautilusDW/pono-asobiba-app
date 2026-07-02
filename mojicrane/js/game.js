@@ -10,6 +10,11 @@
   const MOVE_L = 195;
   const MOVE_R = 760;
   const CARRY_X = 104;
+  const DESCEND_SPEED = 560;
+  const ASCEND_SPEED = 520;
+  const CARRY_SPEED = 315;
+  const DROP_NUDGE = 18;
+  const PERFECT_GRAB = 10;
   const CHUTE = { x: 104, y: 432 };
   const COLS = 9;
   const SLOT = { x0: 178, y: 28, s: 54, step: 62 };
@@ -464,7 +469,12 @@
           game.next += 1;
           game.mistakes = 0;
           game.slowT = 0;
-          pop(slotX(i) + SLOT.s / 2, SLOT.y + SLOT.s + 12, 'ぴったり', '#ff8a36', 22);
+          if (block.grabQuality === 'perfect') {
+            pop(slotX(i) + SLOT.s / 2, SLOT.y + SLOT.s + 12, 'まんなか', '#33bf7a', 22);
+            if (!reduceMotion) burstConfetti(8);
+          } else {
+            pop(slotX(i) + SLOT.s / 2, SLOT.y + SLOT.s + 12, 'ぴったり', '#ff8a36', 22);
+          }
           playSfx('ok');
           vibrate(20);
           if (game.next >= game.wordChars.length) {
@@ -518,6 +528,8 @@
     });
     claw.col = best;
     claw.tgtY = best === null ? FLOOR - 8 : FLOOR - game.cols[best].blocks.length * BLOCK + 8;
+    claw.tipY = Math.min(claw.tgtY, claw.tipY + DROP_NUDGE);
+    claw.t = 0;
     claw.phase = 'descend';
     updateButtons();
   }
@@ -564,7 +576,7 @@
         claw.open = 1;
         break;
       case 'descend':
-        claw.tipY += 330 * dt;
+        claw.tipY += DESCEND_SPEED * dt;
         if (claw.tipY >= claw.tgtY) {
           claw.tipY = claw.tgtY;
           claw.phase = 'close';
@@ -579,8 +591,14 @@
             const col = game.cols[claw.col];
             claw.block = col.blocks.pop();
             const off = Math.abs(claw.tipX - col.x);
+            claw.block.grabQuality = off <= PERFECT_GRAB ? 'perfect' : 'normal';
             claw.slip = off > game.cfg.slip && game.slowT <= 0;
             claw.slipAt = 0.35 + Math.random() * 0.35;
+            if (off <= PERFECT_GRAB) {
+              pop(claw.tipX, claw.tipY - 34, 'まんなか', '#33bf7a', 18);
+            } else if (off > game.cfg.slip && game.cfg.slip < 900) {
+              pop(claw.tipX, claw.tipY - 34, 'はしっこ', '#ff8a36', 18);
+            }
             playSfx('grab');
             vibrate(15);
           } else {
@@ -598,7 +616,7 @@
         }
         break;
       case 'ascend':
-        claw.tipY -= 330 * dt;
+        claw.tipY -= ASCEND_SPEED * dt;
         if (claw.tipY <= TIP_HOME) {
           claw.tipY = TIP_HOME;
           if (claw.block) {
@@ -611,7 +629,7 @@
         }
         break;
       case 'carry': {
-        claw.tx -= 270 * dt;
+        claw.tx -= CARRY_SPEED * dt;
         claw.off *= Math.pow(0.02, dt);
         claw.tipX = claw.tx + claw.off;
         const p = (claw.carryFrom - claw.tx) / Math.max(1, claw.carryFrom - CARRY_X);
@@ -620,7 +638,7 @@
           claw.block = null;
           claw.slip = false;
           tossToPile(block, claw.tipX, claw.tipY + 20);
-          setBubble('おっとっと。すべっちゃった', 'oops');
+          setBubble('はしっこだと すべるよ', 'oops');
           playSfx('slip');
           claw.phase = 'move';
           claw.dir = 1;

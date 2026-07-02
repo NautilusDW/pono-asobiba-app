@@ -69,7 +69,7 @@ a {
 #topControls {
   position: absolute;
   left: max(10px, env(safe-area-inset-left));
-  bottom: max(10px, env(safe-area-inset-bottom));
+  bottom: max(112px, calc(env(safe-area-inset-bottom) + 96px));
   z-index: 4;
   display: flex;
   gap: 8px;
@@ -392,7 +392,7 @@ button:disabled {
 
   #topControls {
     left: 8px;
-    bottom: 8px;
+    bottom: 98px;
     gap: 6px;
   }
 
