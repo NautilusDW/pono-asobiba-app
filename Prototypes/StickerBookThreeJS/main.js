@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260702-1922";
+const ASSET_VERSION = "20260702-1924";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -541,7 +541,7 @@ const ZUKAN_TEMPLATE_PRINT_INSET = {
   index: {
     top: 58,
     bottom: 46,
-    outer: 88,
+    outer: 56,
     inner: 60,
   },
   detail: {
@@ -1938,7 +1938,7 @@ const STICKER_TUTORIAL_STEP_WRONG_ACTIONS = {
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v9";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
-const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v3";
+const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v4";
 const ZUKAN_SIDE_TEMPLATE_STORAGE_KEY = "sb3d_zukan_side_template_settings_v1";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v2`;
@@ -2215,6 +2215,8 @@ let tuningRedoStack = [];
 let activeTuningEditLabel = "";
 let selectedZukanTuningTargetId = "";
 let zukanTuningDragState = null;
+let zukanFlatPreviewPanel = null;
+let zukanFlatPreviewDragState = null;
 let suppressZukanTuningClick = false;
 let spreadJumpAnimation = null;
 let coverOpenAnimation = null;
@@ -10709,6 +10711,7 @@ function updateTuningUndoRedoButtons() {
 
 function setupTuningPanel() {
   if (!tuningPanel || !tuningEnabled) {
+    hideZukanFlatPreview();
     return;
   }
   tuningPanel.hidden = false;
@@ -10723,12 +10726,16 @@ function setupTuningPanel() {
   tuningPanel.append(title);
 
   if (activeSurface === "cover") {
+    hideZukanFlatPreview();
     setupCoverTuningPanel();
     return;
   }
 
   if (activeAlbumMode === "collection") {
     appendZukanTextTuningSection(tuningPanel);
+    setupZukanFlatPreview();
+  } else {
+    hideZukanFlatPreview();
   }
 
   const pair = thicknessPairForSpread(spreadPosition);
@@ -11150,6 +11157,178 @@ function appendZukanTextTuningSection(parent) {
   refreshZukanTextTuningControls();
 }
 
+function ensureZukanFlatPreviewPanel() {
+  if (zukanFlatPreviewPanel) {
+    return zukanFlatPreviewPanel;
+  }
+  const panel = document.createElement("section");
+  panel.id = "zukanFlatPreview";
+  panel.className = "zukan-flat-preview";
+  panel.hidden = true;
+  panel.setAttribute("aria-label", "2D zukan texture preview");
+  panel.innerHTML = `
+    <div class="zukan-flat-preview__head">
+      <strong>2Dずかんテクスチャ</strong>
+      <span>3Dにはる前の焼き込み結果</span>
+    </div>
+    <div class="zukan-flat-preview__body">
+      <figure>
+        <figcaption data-zukan-flat-label="left">ひだり</figcaption>
+        <canvas data-zukan-flat-side="left" width="${PAGE_TEXTURE_W}" height="${PAGE_TEXTURE_H}"></canvas>
+      </figure>
+      <figure>
+        <figcaption data-zukan-flat-label="right">みぎ</figcaption>
+        <canvas data-zukan-flat-side="right" width="${PAGE_TEXTURE_W}" height="${PAGE_TEXTURE_H}"></canvas>
+      </figure>
+    </div>
+    <div class="zukan-flat-preview__hint">クリックで選択、ドラッグで移動。幅と高さは右の数値で調整。</div>
+  `;
+  panel.querySelectorAll("[data-zukan-flat-side]").forEach((previewCanvas) => {
+    previewCanvas.addEventListener("pointerdown", handleZukanFlatPreviewPointerDown);
+    previewCanvas.addEventListener("pointermove", handleZukanFlatPreviewPointerMove);
+    previewCanvas.addEventListener("pointerup", endZukanFlatPreviewDrag);
+    previewCanvas.addEventListener("pointercancel", endZukanFlatPreviewDrag);
+    previewCanvas.addEventListener("pointerleave", endZukanFlatPreviewDrag);
+  });
+  document.body.append(panel);
+  zukanFlatPreviewPanel = panel;
+  return panel;
+}
+
+function setupZukanFlatPreview() {
+  if (!tuningEnabled || activeAlbumMode !== "collection" || activeSurface !== "inside") {
+    hideZukanFlatPreview();
+    return;
+  }
+  const panel = ensureZukanFlatPreviewPanel();
+  panel.hidden = false;
+  updateZukanFlatPreview();
+}
+
+function hideZukanFlatPreview() {
+  if (zukanFlatPreviewPanel) {
+    zukanFlatPreviewPanel.hidden = true;
+  }
+  zukanFlatPreviewDragState = null;
+}
+
+function updateZukanFlatPreview() {
+  if (!zukanFlatPreviewPanel || zukanFlatPreviewPanel.hidden || activeAlbumMode !== "collection") {
+    return;
+  }
+  zukanFlatPreviewPanel.querySelectorAll("[data-zukan-flat-side]").forEach((previewCanvas) => {
+    drawZukanFlatPreviewSide(previewCanvas, previewCanvas.dataset.zukanFlatSide);
+  });
+}
+
+async function drawZukanFlatPreviewSide(previewCanvas, side = "left") {
+  if (!(previewCanvas instanceof HTMLCanvasElement)) {
+    return;
+  }
+  const safeSide = side === "right" ? "right" : "left";
+  const pageNumber = pageNumberForTemplateSide(safeSide);
+  const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
+  const label = zukanFlatPreviewPanel?.querySelector(`[data-zukan-flat-label="${safeSide}"]`);
+  if (label) {
+    label.textContent = `${safeSide === "left" ? "ひだり" : "みぎ"} ${pageNumber}P ${zukanTemplateTypeForSide(pageDef, safeSide)}`;
+  }
+  previewCanvas.dataset.zukanPageNumber = String(pageNumber);
+  const texture = getPageTemplateTexture(safeSide, pageNumber);
+  await Promise.resolve(texture?._readyPromise);
+  const source = texture?.image;
+  if (!(source instanceof HTMLCanvasElement)) {
+    return;
+  }
+  if (previewCanvas.width !== PAGE_TEXTURE_W) {
+    previewCanvas.width = PAGE_TEXTURE_W;
+  }
+  if (previewCanvas.height !== PAGE_TEXTURE_H) {
+    previewCanvas.height = PAGE_TEXTURE_H;
+  }
+  const previewCtx = previewCanvas.getContext("2d");
+  previewCtx.clearRect(0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  previewCtx.drawImage(source, 0, 0);
+}
+
+function zukanFlatPreviewPointForEvent(event, previewCanvas) {
+  const rect = previewCanvas.getBoundingClientRect();
+  return {
+    x: ((event.clientX - rect.left) / Math.max(1, rect.width)) * PAGE_TEXTURE_W,
+    y: ((event.clientY - rect.top) / Math.max(1, rect.height)) * PAGE_TEXTURE_H,
+  };
+}
+
+function pickZukanTuningTargetAtTexturePoint(x, y, pageNumber, side) {
+  const pageDef = collectionPageDefinitions[pageNumber - 1] || null;
+  const subjects = collectionStickersForPageDefinition(pageDef);
+  const targets = zukanTextTuningTargetsForPage(pageDef, subjects, pageNumber, side);
+  for (let index = targets.length - 1; index >= 0; index -= 1) {
+    const target = targets[index];
+    if (
+      x >= target.x &&
+      x <= target.x + target.width &&
+      y >= target.y &&
+      y <= target.y + target.height
+    ) {
+      return target;
+    }
+  }
+  return null;
+}
+
+function handleZukanFlatPreviewPointerDown(event) {
+  if (!tuningEnabled || activeAlbumMode !== "collection") {
+    return;
+  }
+  const previewCanvas = event.currentTarget;
+  const side = previewCanvas.dataset.zukanFlatSide === "right" ? "right" : "left";
+  const pageNumber = Number(previewCanvas.dataset.zukanPageNumber) || pageNumberForTemplateSide(side);
+  const point = zukanFlatPreviewPointForEvent(event, previewCanvas);
+  const target = pickZukanTuningTargetAtTexturePoint(point.x, point.y, pageNumber, side);
+  if (!target) {
+    return;
+  }
+  event.preventDefault();
+  selectZukanTuningTarget(target.id, { redraw: true });
+  zukanFlatPreviewDragState = {
+    previewCanvas,
+    pointerId: event.pointerId,
+    targetId: target.id,
+    startX: point.x,
+    startY: point.y,
+    baseTuning: { ...zukanTextTuning },
+  };
+  previewCanvas.setPointerCapture?.(event.pointerId);
+}
+
+function handleZukanFlatPreviewPointerMove(event) {
+  if (!zukanFlatPreviewDragState || zukanFlatPreviewDragState.previewCanvas !== event.currentTarget) {
+    return;
+  }
+  event.preventDefault();
+  const point = zukanFlatPreviewPointForEvent(event, event.currentTarget);
+  moveZukanTextTuningTarget(
+    zukanFlatPreviewDragState.targetId,
+    point.x - zukanFlatPreviewDragState.startX,
+    point.y - zukanFlatPreviewDragState.startY,
+    zukanFlatPreviewDragState.baseTuning,
+  );
+  updateTuningOutput();
+  refreshPageTemplateTextures();
+  updatePage(flipProgress);
+}
+
+function endZukanFlatPreviewDrag(event) {
+  if (!zukanFlatPreviewDragState) {
+    return;
+  }
+  zukanFlatPreviewDragState.previewCanvas?.releasePointerCapture?.(zukanFlatPreviewDragState.pointerId);
+  zukanFlatPreviewDragState = null;
+  if (event) {
+    event.preventDefault();
+  }
+}
+
 function tuningExportText() {
   if (activeSurface === "cover") {
     return JSON.stringify(
@@ -11313,6 +11492,7 @@ function refreshPageTemplateTextures() {
       }
       updateFlutterPageTextures();
       updateBookPageControls();
+      updateZukanFlatPreview();
       return true;
     });
 }
