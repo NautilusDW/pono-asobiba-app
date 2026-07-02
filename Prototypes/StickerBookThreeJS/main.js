@@ -2237,10 +2237,10 @@ const stickerPasteParticleState = {
   COLORS: [0xffd97a, 0xffbfa8, 0xffcdd8, 0xfff2cc, 0xcfe4ff, 0xe2d6ff],
   GRAVITY: 0.6,
   BURST_ARC_RAD: Math.PI * (2 / 3), // 120° 扇状
-  BURST_SPEED_MIN: 1.4,
-  BURST_SPEED_MAX: 2.4,
-  BURST_LIFE_MIN: 1.0,
-  BURST_LIFE_MAX: 1.4,
+  BURST_SPEED_MIN: 0.55,
+  BURST_SPEED_MAX: 1.05,
+  BURST_LIFE_MIN: 0.7,
+  BURST_LIFE_MAX: 1.0,
   BURST_COUNT_MIN: 16,
   BURST_COUNT_MAX: 22,
   BURST_JITTER_MIN: 0.03,
@@ -7633,8 +7633,8 @@ function updateStickerPasteParticles(delta) {
     }
     posAttr.needsUpdate = true;
     burst.material.opacity = Math.max(0, Math.min(1, maxAlpha));
-    // v1896: dispose gate を 1.4 → 1.6 に緩めて最長 lifespan+fade tail を許容。
-    if (alive === 0 || burst.totalElapsed > 1.6) {
+    // v1899: dispose gate を 1.6 → 1.2 に短縮 (lifespan 上限 1.0 + fade tail に合わせる)。
+    if (alive === 0 || burst.totalElapsed > 1.2) {
       // dispose
       try { book.remove(burst.points); } catch (_) {}
       try { burst.geometry.dispose(); } catch (_) {}
