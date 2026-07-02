@@ -1926,6 +1926,74 @@ html, body {
   min-width: 132px;
   padding: 3px 8px;
 }
+/* v1496 leaf-bed: メインおかず編集パネル ([おかずを かえる][したに しく🥬][けす] + picker + ヒント) */
+.free-context-toolbar--panel .free-okazu-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1 0 100%;
+}
+.free-context-toolbar button.free-okazu-edit-btn {
+  min-width: 0;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+.free-context-toolbar button.free-okazu-edit-btn--danger {
+  border-color: #FCA5A5;
+  background: #FEF2F2;
+  color: #991B1B;
+}
+.free-context-toolbar--panel .free-okazu-edit-picker {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  flex: 1 0 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  padding: 2px 1px 4px;
+}
+.free-context-toolbar button.free-okazu-edit-choice {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 60px;
+  height: auto;
+  min-height: 58px;
+  padding: 4px 2px 3px;
+  border-radius: 12px;
+  font-size: 0.44rem;
+  line-height: 1.05;
+}
+.free-context-toolbar button.free-okazu-edit-choice img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain; /* AR 保持 (stretch 禁止ルール) */
+  pointer-events: none;
+}
+.free-context-toolbar button.free-okazu-edit-choice span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.free-context-toolbar--panel .free-okazu-edit-hint {
+  flex: 1 0 100%;
+  font-size: 0.52rem;
+  font-weight: 900;
+  color: #047857;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  padding: 3px 7px;
+}
+/* side ステップの tray grid は panel を 96px に制限しているので、編集パネル時だけ広げる */
+.food-tray.free-layout-controls.is-simple-side-step .free-context-toolbar--panel.has-okazu-edit {
+  max-height: 178px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .free-context-toolbar.above {
   transform: translate(-50%, -100%);
 }
@@ -7428,6 +7496,14 @@ let simpleNoCupSlotIndex = null;
 let simpleCupSlotIndex = null;
 // batch:divider-ux — この回で最後に使った しきり palette def の id (ghost タップ配置の family 引き継ぎ用)
 let lastSimpleDividerPaletteId = '';
+// v1496 leaf-bed: 置いたメインおかずタップで開く編集パネルの状態。
+// picker mode は null | 'food' (おかずを かえる) | 'leaf' (したに しく)。
+let simpleOkazuEditPickerMode = null;
+let simpleOkazuEditPickerUid = null;
+// v1496 leaf-bed: 「はっぱを したに しけるよ」一回きりヒント (session 単位)。
+// 初回表示した okazu uid を控え、同じパネルの再 render では出し続ける。
+let simpleLeafHintUid = null;
+const BENTO_LEAF_HINT_SESSION_KEY = 'bento_leaf_hint_v1';
 const SIMPLE_CUP_FOOD_LIMIT = 1;
 const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
 
@@ -10090,7 +10166,12 @@ function handleSimplePlacedItemTap(item) {
       simpleNoCupSlotIndex = null;
       simpleCupSlotIndex = null;
     }
-    setSpeech((item.name || 'おかず') + 'を えらんだよ。つぎに えらぶと ここを いれかえるよ。');
+    if (isSimpleMainOkazuEditTarget(item)) {
+      // v1496 leaf-bed: メインおかずはタップで編集パネルが開く (かえる / したにしく / けす)
+      setSpeech((item.name || 'おかず') + 'を えらんだよ。したの ボタンで かえたり はっぱを しいたり できるよ。');
+    } else {
+      setSpeech((item.name || 'おかず') + 'を えらんだよ。つぎに えらぶと ここを いれかえるよ。');
+    }
   } else {
     simpleReplaceSlotUid = null;
     simpleNoCupSlotIndex = null;
@@ -12347,6 +12428,10 @@ function applySimpleSlotDrop(uid, dropPoint = null, opts = {}) {
   if (isSimpleLeafEditMode() && kind === 'leaf') return false;
   if (isSimplePickEditMode() && kind === 'pick') return false;
   if (!kind || kind === 'rice' || kind === 'decor') return false;
+  // v1496 leaf-bed: メインおかずの移動確定後に「そのおかずのはっぱ」を追従させるため、移動前位置を控える
+  const dragFromPoint = kind === 'main-food' && opts.dragStart
+    ? { x: opts.dragStart.x, y: opts.dragStart.y }
+    : null;
   const sourceIndex = getSimpleSlotIndexFromKey(item.simpleSlot);
   const sourceSlot = getSimpleCurrentSlotForItem(item);
   const targetSlot = getSimpleNearestDropSlotForItem(item, dropPoint);
@@ -12358,15 +12443,19 @@ function applySimpleSlotDrop(uid, dropPoint = null, opts = {}) {
   const targetItem = getSimpleSlotBlockingItem(targetSlot);
   if (targetItem && targetItem.uid !== item.uid) {
     const targetKind = getSimpleSlotKindForItem(targetItem);
+    const targetFromPoint = { x: targetItem.x, y: targetItem.y };
     const returnSlot = getSimpleSlotForKindIndex(targetKind, getItemTier(targetItem), Number.isFinite(sourceIndex) ? sourceIndex : 0, targetItem)
       || getSimpleCurrentSlotForItem(targetItem);
     if (returnSlot) {
       syncSimpleDividerItemToSlot(targetItem, returnSlot);
       applySimpleSlotPlacementToItem(targetItem, returnSlot);
+      // v1496 leaf-bed: 場所いれかえで戻された側のおかずのはっぱも一緒に追従させる
+      if (targetKind === 'main-food') syncSimpleLeafFollowForOkazu(targetItem, targetFromPoint);
     }
   }
   syncSimpleDividerItemToSlot(item, targetSlot);
   const moved = applySimpleSlotPlacementToItem(item, targetSlot);
+  if (dragFromPoint) syncSimpleLeafFollowForOkazu(item, dragFromPoint);
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
   if (item.snapTarget) {
@@ -14481,6 +14570,13 @@ function createFreePlacedElement(item, interactive) {
           beginFreeItemDrag(ev, item.uid);
           return;
         }
+        if (item.type === 'leaf') {
+          // v1496 leaf-bed: はっぱは「おかずの もりつけ」扱いで直接タップ/ドラッグ不可。
+          // 持ち主のおかずが見つかれば そちらの編集パネルへ委譲する ([はっぱを かえる/けす] で管理)。
+          const leafOwner = findSimpleOkazuForLeaf(item);
+          if (leafOwner) handleSimplePlacedItemTap(leafOwner);
+          return;
+        }
         if (item.type === 'pick' && isSimplePickEditMode()) {
           handleSimplePlacedItemTap(item);
           beginFreeItemDrag(ev, item.uid);
@@ -14610,10 +14706,242 @@ function createFreeContextButton(label, className, onClick, disabled = false) {
   });
   return b;
 }
+// ===== v1496 leaf-bed: メインおかず タップ編集パネル + はっぱ (したにしく) =====
+// はっぱは独立した free item のまま (座標連動の親子関係は持たない)。
+// 「このおかずのはっぱ」= 中心が おかずの 0.6x footprint 半径内にある最寄りの leaf、という近傍規則で対応付ける。
+const SIMPLE_LEAF_BED_FOOTPRINT_RATIO = 1.2; // 葉の見た目 footprint = おかずの約1.2倍 (仕様レンジ 1.15-1.3)
+function getSimpleItemFootprint(item) {
+  return (item && item.size ? item.size : 72) * (item && item.scale ? Number(item.scale) || 1 : 1);
+}
+function isSimpleMainOkazuEditTarget(item) {
+  return !!(
+    simpleBentoMode
+    && item
+    && item.type === 'food'
+    && !item.parentCupId
+    && (item.okazuRole || getOkazuRole(item)) === 'main'
+    && isOkazuGuideStep()
+    && !freeMaskEditorMode
+    && !getEditingCup()
+  );
+}
+function getSimpleOkazuEditTarget() {
+  const item = getSelectedFreeItem();
+  return isSimpleMainOkazuEditTarget(item) ? item : null;
+}
+function getSimpleLeafForOkazu(okazu, fromPoint = null) {
+  if (!okazu || okazu.type !== 'food') return null;
+  const cx = Number(fromPoint ? fromPoint.x : okazu.x);
+  const cy = Number(fromPoint ? fromPoint.y : okazu.y);
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+  const radius = Math.max(46, getSimpleItemFootprint(okazu) * 0.6);
+  let best = null;
+  let bestDist = Infinity;
+  placedItems.forEach(it => {
+    if (!it || it.type !== 'leaf' || it.parentCupId || it.brushItem) return;
+    if (getItemTier(it) !== getItemTier(okazu)) return;
+    const d = Math.hypot((Number(it.x) || 0) - cx, (Number(it.y) || 0) - cy);
+    if (d <= radius && d < bestDist) { best = it; bestDist = d; }
+  });
+  return best;
+}
+function findSimpleOkazuForLeaf(leaf) {
+  if (!leaf || leaf.type !== 'leaf') return null;
+  let best = null;
+  let bestDist = Infinity;
+  placedItems.forEach(it => {
+    if (!it || it.type !== 'food' || it.parentCupId) return;
+    if ((it.okazuRole || getOkazuRole(it)) !== 'main') return;
+    if (getSimpleLeafForOkazu(it) !== leaf) return;
+    const d = Math.hypot((Number(it.x) || 0) - (Number(leaf.x) || 0), (Number(it.y) || 0) - (Number(leaf.y) || 0));
+    if (d < bestDist) { best = it; bestDist = d; }
+  });
+  return best;
+}
+function countSimpleLeafItemsOnTier(tier) {
+  return placedItems.filter(it => it && it.type === 'leaf' && !it.parentCupId && getItemTier(it) === tier).length;
+}
+// おかずのドラッグ確定後、移動量ぶんだけ「そのおかずのはっぱ」を追従させる (関連付けは移動前位置で判定)。
+function syncSimpleLeafFollowForOkazu(okazu, fromPoint) {
+  if (!simpleBentoMode || !okazu || !fromPoint) return;
+  if (okazu.type !== 'food' || okazu.parentCupId) return;
+  if ((okazu.okazuRole || getOkazuRole(okazu)) !== 'main') return;
+  const dx = (Number(okazu.x) || 0) - (Number(fromPoint.x) || 0);
+  const dy = (Number(okazu.y) || 0) - (Number(fromPoint.y) || 0);
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+  const leaf = getSimpleLeafForOkazu(okazu, fromPoint);
+  if (!leaf) return;
+  const p = clampPointToBounds((Number(leaf.x) || 0) + dx, (Number(leaf.y) || 0) + dy, leaf, getFoodPlacementBounds(getSelectedBentoBox()));
+  leaf.x = p.x;
+  leaf.y = p.y;
+}
+function getSimpleMainOkazuPickerDefs() {
+  return orderFreeFoodMenuItems(
+    getFreeFoodCatalog().filter(f => !f.tierLocked && (f.okazuRole || getOkazuRole(f)) === 'main')
+  );
+}
+function toggleSimpleOkazuEditPicker(mode) {
+  const target = getSimpleOkazuEditTarget();
+  if (!target) return;
+  simpleOkazuEditPickerUid = target.uid;
+  simpleOkazuEditPickerMode = simpleOkazuEditPickerMode === mode ? null : mode;
+  if (simpleOkazuEditPickerMode === 'food') {
+    setSpeech('どの おかずに かえる？');
+  } else if (simpleOkazuEditPickerMode === 'leaf') {
+    setSpeech('したに しく はっぱを えらんでね。');
+  }
+  renderFreeLayoutControls();
+}
+// [おかずを かえる]: 同じスロットに別のメインおかずを入れ替え配置する。
+// side ステップからも呼べるよう removeFreeItemData は force (canRemoveFreeItemNow の main-step 縛りを意図的に越える)。
+// 直後に同スロットへ新メインを置くのでゲート数 (main count) は不変。全体を 1 undo 単位に包む。
+function replaceSimpleMainOkazuFromPicker(def) {
+  const target = getSimpleOkazuEditTarget();
+  if (!target || !def) return;
+  simpleOkazuEditPickerMode = null;
+  if (def.id === target.id) {
+    setSpeech('おなじ おかずだよ。');
+    renderFreeLayoutControls();
+    return;
+  }
+  const slot = getSimpleCurrentSlotForItem(target);
+  if (!slot) {
+    showToast('ここでは かえられないよ');
+    renderFreeLayoutControls();
+    return;
+  }
+  const historyBefore = beginFreeHistoryChange();
+  simpleReplaceSlotUid = null;
+  removeFreeItemData(target.uid, { force: true });
+  const item = addSimpleFixedPaletteItem(def, { slot });
+  commitFreeHistoryChange(historyBefore);
+  if (item) setSpeech((def.name || 'おかず') + 'に かえたよ！');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+// [したに しく]: はっぱを おかずの真下 (中心一致 + わずかに下) に敷く。
+// z-under は leaf の renderLayer base 8 で自動。既存のはっぱがあれば入れ替え、無ければ 5枚上限を確認。
+function placeSimpleLeafUnderOkazu(def) {
+  const target = getSimpleOkazuEditTarget();
+  if (!target || !def) return;
+  simpleOkazuEditPickerMode = null;
+  const tier = getItemTier(target);
+  const existing = getSimpleLeafForOkazu(target);
+  if (existing && existing.id === def.id) {
+    setSpeech('おなじ はっぱだよ。');
+    renderFreeLayoutControls();
+    return;
+  }
+  if (!existing && countSimpleLeafItemsOnTier(tier) >= SIMPLE_LEAF_PLACEMENT_LIMIT) {
+    setSpeech('はっぱは もう いっぱいだよ。');
+    showToast('はっぱは もう いっぱいだよ');
+    renderFreeLayoutControls();
+    return;
+  }
+  const historyBefore = beginFreeHistoryChange();
+  if (existing) removeFreeItemData(existing.uid, { force: true });
+  const footprint = getSimpleItemFootprint(target);
+  const leafSize = Math.round(footprint * SIMPLE_LEAF_BED_FOOTPRINT_RATIO);
+  // brush def (キャベツをしく) はパネル経由では静的パッチ 1 枚として敷く (stamp mode に入らない)。
+  const leafDef = def.brushItem ? { ...def, brushItem: false, brushImages: null, brushLevel: 1 } : def;
+  const point = clampPointToBounds(
+    Number(target.x) || 0,
+    (Number(target.y) || 0) + footprint * 0.04,
+    { type: 'leaf', size: leafSize, scale: 1 },
+    getFoodPlacementBounds(getSelectedBentoBox())
+  );
+  const leaf = addFreeLayoutItem(leafDef, {
+    x: point.x,
+    y: point.y,
+    size: leafSize,
+    scale: 1,
+    rotation: leafDef.rotation != null ? leafDef.rotation : 0,
+    tier,
+    skipRender: true,
+    skipTutorialPlace: true,
+  });
+  // パネルの主役は おかず側なので選択を戻す (addFreeLayoutItem は leaf を選択してしまう)
+  freeSelectedItemUid = target.uid;
+  commitFreeHistoryChange(historyBefore);
+  if (leaf) {
+    setSpeech(existing ? 'はっぱを かえたよ！' : 'したに はっぱを しいたよ！');
+    playPop();
+  }
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function removeSimpleLeafUnderOkazu() {
+  const target = getSimpleOkazuEditTarget();
+  if (!target) return;
+  simpleOkazuEditPickerMode = null;
+  const existing = getSimpleLeafForOkazu(target);
+  if (!existing) {
+    renderFreeLayoutControls();
+    return;
+  }
+  removeFreeItem(existing.uid, { force: true });
+  freeSelectedItemUid = target.uid;
+  setSpeech('はっぱを けしたよ。');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+// [けす]: おかず本体の削除。canRemoveFreeItemNow の既存ルール (main はメインステップ中のみ削除可、
+// side ステップでは案内トースト) はそのまま尊重する。おかずが消えるときは敷いてあるはっぱも一緒に消す。
+function removeSimpleMainOkazuFromPanel() {
+  const target = getSimpleOkazuEditTarget();
+  if (!target) return;
+  simpleOkazuEditPickerMode = null;
+  if (!canRemoveFreeItemNow(target)) {
+    renderFreeLayoutControls();
+    return;
+  }
+  const leaf = getSimpleLeafForOkazu(target);
+  const historyBefore = beginFreeHistoryChange();
+  const removed = removeFreeItemData(target.uid);
+  if (!removed) {
+    renderFreeLayoutControls();
+    return;
+  }
+  if (leaf) removeFreeItemData(leaf.uid, { force: true });
+  syncSimplePickItemsToCurrentSlots();
+  commitFreeHistoryChange(historyBefore);
+  setSpeech('おかずを けしたよ。');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+function createSimpleOkazuEditPicker(item, leaf) {
+  const mode = simpleOkazuEditPickerMode;
+  if (!mode) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'free-okazu-edit-picker';
+  const defs = mode === 'leaf' ? bentoLeafItems : getSimpleMainOkazuPickerDefs();
+  const currentId = mode === 'leaf' ? (leaf && leaf.id) : item.id;
+  defs.forEach(def => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'free-okazu-edit-choice' + (def.id === currentId ? ' active' : '');
+    const img = document.createElement('img');
+    img.src = def.thumbnailImage || def.image || def.img || '';
+    img.alt = '';
+    b.appendChild(img);
+    const name = document.createElement('span');
+    name.textContent = def.name || '';
+    b.appendChild(name);
+    b.addEventListener('pointerdown', ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (mode === 'leaf') placeSimpleLeafUnderOkazu(def);
+      else replaceSimpleMainOkazuFromPicker(def);
+    });
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
 function createFreeContextToolbar(opts = {}) {
   const item = getSelectedFreeItem();
   const simpleLeafToolbar = !!(simpleBentoMode && isSimpleLeafEditMode() && item && item.type === 'leaf');
-  if (simpleBentoMode && !simpleLeafToolbar) return null;
+  const simpleOkazuPanel = !!(simpleBentoMode && !!opts.panel && isSimpleMainOkazuEditTarget(item));
+  if (simpleBentoMode && !simpleLeafToolbar && !simpleOkazuPanel) return null;
   if (!item || isFreeMainGuideBlocking() || freeBrushStampDef) return null;
   const panelMode = !!opts.panel;
   const toolbar = document.createElement('div');
@@ -14671,6 +14999,66 @@ function createFreeContextToolbar(opts = {}) {
       layerGroup.appendChild(createFreeContextButton('↓', '', () => moveSelectedItemLayer(-1), !canDown));
       layerGroup.appendChild(createFreeContextButton('↑', '', () => moveSelectedItemLayer(1), !canUp));
       appendControl(layerGroup);
+    }
+  }
+
+  if (simpleOkazuPanel) {
+    // v1496 leaf-bed: メインおかず編集パネル。別のおかずに切り替わったら picker 状態をリセット。
+    toolbar.classList.add('has-okazu-edit');
+    if (simpleOkazuEditPickerUid !== item.uid) {
+      simpleOkazuEditPickerUid = item.uid;
+      simpleOkazuEditPickerMode = null;
+    }
+    const leaf = getSimpleLeafForOkazu(item);
+    const row = document.createElement('div');
+    row.className = 'free-okazu-edit-actions';
+    row.appendChild(createFreeContextButton(
+      'おかずを かえる',
+      'free-okazu-edit-btn' + (simpleOkazuEditPickerMode === 'food' ? ' active' : ''),
+      () => toggleSimpleOkazuEditPicker('food')
+    ));
+    row.appendChild(createFreeContextButton(
+      leaf ? 'はっぱを かえる' : 'したに しく🥬',
+      'free-okazu-edit-btn' + (simpleOkazuEditPickerMode === 'leaf' ? ' active' : ''),
+      () => toggleSimpleOkazuEditPicker('leaf')
+    ));
+    if (leaf) {
+      row.appendChild(createFreeContextButton(
+        'はっぱを けす',
+        'free-okazu-edit-btn',
+        () => removeSimpleLeafUnderOkazu()
+      ));
+    }
+    row.appendChild(createFreeContextButton(
+      'けす',
+      'free-okazu-edit-btn free-okazu-edit-btn--danger',
+      () => removeSimpleMainOkazuFromPanel()
+    ));
+    appendControl(row);
+    if (simpleOkazuEditPickerMode) {
+      appendControl(createSimpleOkazuEditPicker(item, leaf));
+    }
+    // 一回きり (session) の はっぱヒント。同じおかずのパネル再 render 中は出し続ける。tutorial 中は出さない。
+    if (!leaf && simpleOkazuEditPickerMode !== 'leaf') {
+      let showLeafHint = false;
+      try {
+        const tutActive = typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active;
+        if (!tutActive) {
+          if (simpleLeafHintUid === item.uid) {
+            showLeafHint = true;
+          } else if (!sessionStorage.getItem(BENTO_LEAF_HINT_SESSION_KEY)) {
+            sessionStorage.setItem(BENTO_LEAF_HINT_SESSION_KEY, '1');
+            simpleLeafHintUid = item.uid;
+            showLeafHint = true;
+          }
+        }
+      } catch (_) {}
+      if (showLeafHint) {
+        const hint = document.createElement('div');
+        hint.className = 'free-okazu-edit-hint';
+        hint.textContent = 'はっぱを したに しけるよ🥬';
+        appendControl(hint);
+      }
     }
   }
 
