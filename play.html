@@ -4448,18 +4448,8 @@
       overflow: hidden;
     }
     .donguri-shop-v2-rotation-note {
-      /* v1897 regression-hardening + v1904 wide-viewport fix:
-         rotation-note の縦位置回帰 (2026-06-27 以降 何度も再発) の根本対策として、
-         `top: X%` を CSS custom property `--rot-note-top` (safe frame 16:9 高さの %) に一本化。
-         個別 viewport で微調整するときは 必ず var を上書きすること。 素の `top: X%` を書き加えないこと。
-         defaults (v1904 で 4 系統に拡張):
-           - mobile (max-width: 900px) = 25.4%
-           - 4:3 letterbox (min-width: 901px & 5/4 ≤ aspect ≤ 3/2 exclusive) = 14%
-           - wide desktop (min-width: 901px & aspect > 3/2 exclusive、 16:9 / 21:9 等) = 6%
-           - base fallback (それ以外、 実際にはほぼ hit しない) = 10%
-         対応する視覚参照点: 看板 (donguri-shop-v2-title, aspect 1763/519) の直下端。
-         v1904 media query 境界は exclusive にしてあり aspect=1.5 の 1 点でも double-match しない。 */
-      --rot-note-top: 10%;
+      /* v1906: 看板下の案内は --rot-note-top に集約。個別 viewport も素の top ではなく var だけを上書きする。 */
+      --rot-note-top: clamp(56px, 9vw, 112px);
       position: absolute;
       left: 50%;
       top: var(--rot-note-top);
@@ -4723,25 +4713,6 @@
     /* v1591: thumb の最大高を制限してカード縦サイズを抑制
        v1594: 140→100 に縮小 (カード全体を一回り小さく) */
     .donguri-shop-v2-thumb { max-height: none; }
-    .donguri-shop-v2-thumb.is-hearting img { animation: pono-shop-v2-heartjump 600ms ease-out; }
-    @keyframes pono-shop-v2-heartjump {
-      0% { transform: translateY(0) scale(1); }
-      30% { transform: translateY(-18px) scale(1.12); }
-      60% { transform: translateY(0) scale(.96); }
-      100% { transform: translateY(0) scale(1); }
-    }
-    .donguri-shop-v2-heart-burst {
-      position: absolute; left: 50%; top: 30%;
-      transform: translate(-50%, -50%);
-      font-size: 32px; pointer-events: none;
-      animation: pono-shop-v2-heartburst 600ms ease-out forwards;
-      z-index: 6;
-    }
-    @keyframes pono-shop-v2-heartburst {
-      0% { opacity: 0; transform: translate(-50%, -10%) scale(.4); }
-      30% { opacity: 1; transform: translate(-50%, -60%) scale(1.2); }
-      100% { opacity: 0; transform: translate(-50%, -110%) scale(1); }
-    }
     .donguri-shop-v2-price {
       position: absolute;
       left: 43.5%;
@@ -4773,29 +4744,22 @@
       box-shadow: none; opacity: .85;
     }
     .donguri-shop-v2-owned-label {
-      /* v1897: 文言 「もう なかよし♪」 → 「こうかんしたよ♪」 (意味明確化)。
-         中央揃え強化: line-height:1 + padding:0 で emoji baseline drift を解消 (font-weight:900 の
-         Zen Maru Gothic は baseline がシフトし、 gap:4px の 💗 が縦位置を引き下げていた)。
-         目立ち色: pastel pink gradient + 暖色 border で 「もりのおみせ」 の暖色基調と調和させつつ
-         transparent 背景から視認性を確保。 hold ボタン (蜜色系) と色被りしない配色を選定。 */
       position: absolute;
-      left: 7%;
-      bottom: 6%;
-      width: 86%; min-height: 13%;
+      left: 9%;
+      bottom: 5.8%;
+      width: 82%; min-height: 15.6%;
       margin: 0;
       padding: 0;
       display: flex; align-items: center; justify-content: center;
-      gap: 4px;
       line-height: 1;
-      background: linear-gradient(180deg, #ffe0ee 0%, #ff9ec1 100%);
-      color: #8b2f5a; font-size: clamp(11px, 1.5vw, 15px); font-weight: 900;
-      border: 2px solid #c57799; border-radius: 12px;
-      box-shadow: 0 2px 0 rgba(140, 60, 96, .28), inset 0 1px 0 rgba(255, 255, 255, .55);
-      cursor: pointer; -webkit-tap-highlight-color: transparent;
-    }
-    .donguri-shop-v2-owned-label:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 rgba(140, 60, 96, .28), inset 0 1px 0 rgba(255, 255, 255, .45);
+      background: transparent;
+      color: #6b4724; font-size: clamp(10px, 1.2vw, 15px); font-weight: 900;
+      border: 0; border-radius: 0;
+      box-shadow: none;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 240, .86),
+        0 2px 2px rgba(72, 38, 12, .16);
+      pointer-events: none;
     }
     .donguri-shop-v2-hold {
       position: absolute;
@@ -4857,8 +4821,6 @@
       .donguri-shop-v2-slot:nth-child(2),
       .donguri-shop-v2-slot:nth-child(3) { animation: none; }
       .donguri-shop-v2-badge { animation: none; }
-      .donguri-shop-v2-thumb.is-hearting img { animation: none; }
-      .donguri-shop-v2-heart-burst { animation: none; opacity: 1; }
       .donguri-shop-v2-shopkeeper.is-reacting { animation: none; }
     }
     @media (max-width: 900px) {
@@ -4872,8 +4834,7 @@
       .donguri-shop-v2-balance { width: clamp(86px, 17vw, 104px); min-width: 86px; font-size: clamp(13px, 3vw, 17px); padding-left: clamp(7px, 1.9vw, 10px); padding-right: clamp(9px, 2.1vw, 12px); }
       .donguri-shop-v2-balance-icon { width: clamp(18px, 4.2vw, 24px); }
       .donguri-shop-v2-title { width: min(39vw, 280px); font-size: 0; }
-      /* v1897: --rot-note-top で 3 系統一元化 (base rule 参照) */
-      .donguri-shop-v2-rotation-note { --rot-note-top: 25.4%; width: min(62vw, 380px); font-size: clamp(8.5px, 1.55vw, 11.5px); }
+      .donguri-shop-v2-rotation-note { --rot-note-top: 16.4%; width: min(62vw, 380px); font-size: clamp(8.5px, 1.55vw, 11.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
       .donguri-shop-v2-bubble { left: 3.8%; bottom: 62%; width: min(27%, 238px); font-size: clamp(10px, 1.55vw, 13.5px); }
       .donguri-shop-v2-subtitle { left: 4.2%; bottom: 54.8%; width: min(32%, 250px); min-height: clamp(16px, 4vw, 24px); padding: 2px 6px; font-size: clamp(7px, 1.28vw, 10px); border-width: 1.5px; }
@@ -4888,7 +4849,7 @@
       .donguri-shop-v2-slot { min-width: 66px; max-width: 31%; padding: 10.5% 8.4% 5%; }
       .donguri-shop-v2-price { font-size: 12px; }
       .donguri-shop-v2-buy { font-size: 13px; }
-      .donguri-shop-v2-owned-label { font-size: 11px; }
+      .donguri-shop-v2-owned-label { font-size: clamp(8.5px, 2.4vw, 11px); }
     }
     @media (min-width: 901px) and (min-aspect-ratio: 5/4) and (max-aspect-ratio: 3/2) {
       /* v1685: 4:3 上部 letterbox 領域 (viewport top から safe frame まで 96px) を head bar 全体で活用。
@@ -4902,7 +4863,7 @@
       .donguri-shop-v2-head > .donguri-shop-v2-close { top: 8%; }
       .donguri-shop-v2-head > .donguri-shop-v2-balance { top: 8%; }
       .donguri-shop-v2-title { width: min(52vw, 540px); }
-      /* v1897: --rot-note-top で 3 系統一元化 (base rule 参照) */
+      /* 4:3 は上部 letterbox へ看板を逃がすため、既存の安全枠比率を維持する。 */
       .donguri-shop-v2-rotation-note { --rot-note-top: 14%; font-size: clamp(13px, 1.5vw, 17.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.8%; bottom: 8.4%; width: 25.8%; max-width: 270px; }
       .donguri-shop-v2-bubble {
@@ -4939,13 +4900,9 @@
       .donguri-shop-v2-slots { left: 34.7%; right: 3.4%; bottom: 4.1%; gap: 1.8%; }
       .donguri-shop-v2-slot { min-width: 86px; max-width: 33.2%; }
     }
-    /* v1904: 超広角 viewport (aspect > 3/2、 16:9 / 21:9 desktop 等) では safe frame の縦が短くなり
-       base 10% だと 看板 baked PNG (aspect 1763/519) の下端より下に落ちて 商品カード領域と重なる。
-       境界は 1501/1000 (=1.501) で exclusive にして、 直上の 4:3 letterbox block (max-aspect-ratio: 3/2 = 1.5)
-       と aspect = 1.5 の 1 点でも double-match しないようにしてある (cascade 順序変化への耐性)。
-       --rot-note-top: 6% は開始値、 実機で 4-8% の範囲で微調整して確定すること (実測要)。 */
+    /* v1906: wide は safe frame 高さではなく看板実寸に近い長さで固定し、案内が看板内へ戻らないようにする。 */
     @media (min-width: 901px) and (min-aspect-ratio: 1501/1000) {
-      .donguri-shop-v2-rotation-note { --rot-note-top: 6%; }
+      .donguri-shop-v2-rotation-note { --rot-note-top: clamp(82px, 9vw, 112px); }
     }
 
     /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
@@ -7002,7 +6959,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1905;
+    const PAGE_CACHE_VERSION = 1906;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -9781,7 +9738,7 @@
             // getOwnershipState は heart 演出判定のみに使う。
             var actionHtml;
             if (ownState.owned) {
-              actionHtml = '<button class="donguri-shop-v2-owned-label" type="button" data-action="heart">💗 こうかんしたよ♪</button>';
+              actionHtml = '<div class="donguri-shop-v2-owned-label" aria-label="こうかんしたよ">こうかんしたよ</div>';
             } else if (canBuy) {
               actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" aria-label="こうかんする"></button>';
             } else {
@@ -9856,25 +9813,6 @@
               holdClearBtn.addEventListener('click', function () {
                 try { window.PonoDonguriShop.clearReservation(sid); } catch (_) {}
                 renderShopCatalog('また ならべるよ');
-              });
-            }
-            var heartBtn = slot.querySelector('[data-action="heart"]');
-            if (heartBtn) {
-              heartBtn.addEventListener('click', function () {
-                var thumb = slot.querySelector('.donguri-shop-v2-thumb');
-                if (thumb) {
-                  thumb.classList.remove('is-hearting');
-                  // reflow for animation restart
-                  void thumb.offsetWidth;
-                  thumb.classList.add('is-hearting');
-                  setTimeout(function () { thumb.classList.remove('is-hearting'); }, 620);
-                }
-                // floating heart burst
-                var burst = document.createElement('div');
-                burst.className = 'donguri-shop-v2-heart-burst';
-                burst.textContent = '💗';
-                slot.appendChild(burst);
-                setTimeout(function () { if (burst.parentNode) burst.parentNode.removeChild(burst); }, 640);
               });
             }
             slotsEl.appendChild(slot);
