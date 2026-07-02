@@ -7016,6 +7016,7 @@ function endStickerTrayDrag(event) {
     }
     if (target) {
       addStickerFromTrayToPage(state.sticker.id, target.page, target.point);
+      try { window.Haptics && window.Haptics.fire('stickerPaste'); } catch (_) {}
     }
   }
   cancelStickerTutorialDragPageTurn();
@@ -15375,8 +15376,22 @@ function updateFlutterPages(
   }
 }
 
+let _prevFlipProgressForHaptic = 0;
+let _flipHapticArmed = true;
 function updatePage(progress) {
   const p = THREE.MathUtils.clamp(progress, 0, 1);
+  try {
+    // Hysteresis + armed 方式: p が 0.9 未満まで戻ったときのみ再 arm。
+    // slider drag 中の jitter (0.98→1.0→0.97→1.0) では arm されず、 haptics.js 側の
+    // 180ms throttle と組み合わせて完了 edge 1 回だけ発火する。
+    if (_flipHapticArmed && _prevFlipProgressForHaptic < 1 && p >= 1) {
+      window.Haptics && window.Haptics.fire('pageTurn');
+      _flipHapticArmed = false;
+    } else if (p < 0.9) {
+      _flipHapticArmed = true;
+    }
+    _prevFlipProgressForHaptic = p;
+  } catch (_) {}
   if (activeSurface === "cover") {
     flipProgress = 0;
     slider.value = "0";

@@ -69,6 +69,7 @@
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
 - 2026-07-02 12:00 - by Claude - [batch:931-sticker-book-engagement-research-v2] - docs/**, AGENTS_CLAIMS.md - sticker-book engagement research v2 + docs
 - 2026-07-02 - by Claude - [batch:932-tray-gray-silhouette-phase1] - tmp/tray_baseline/**, AGENTS_CLAIMS.md - tray gray silhouette 実装 (第一弾)
+- 2026-07-02 - by Claude - [batch:933-haptics-quick-win-phase1] - common/haptics.js, Prototypes/StickerBookThreeJS/**, play.html, sw.js, AGENTS_CLAIMS.md - haptics quick win 実装 (触覚 Phase 1)
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
