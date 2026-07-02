@@ -43,7 +43,7 @@ button {
 .stage {
   position: relative;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: 100%;
   height: 100dvh;
   min-height: 0;
@@ -214,8 +214,8 @@ h1 {
   position: absolute;
   left: 50%;
   top: 52%;
-  width: clamp(150px, 19vw, 236px);
-  height: clamp(228px, 39vh, 372px);
+  width: clamp(230px, 31vw, 430px);
+  aspect-ratio: 4 / 3;
   padding: 0;
   border: 0;
   background: transparent;
@@ -234,10 +234,10 @@ h1 {
 
 .display-stand {
   position: absolute;
-  left: 5%;
-  right: 5%;
+  left: 4%;
+  right: 4%;
   bottom: 0;
-  height: 19%;
+  height: 23%;
   border-radius: 4px 4px 8px 8px;
   background:
     linear-gradient(180deg, rgba(252, 197, 94, 0.22), rgba(0, 0, 0, 0) 20%),
@@ -276,13 +276,13 @@ h1 {
 
 .display-frame {
   position: absolute;
-  left: 10%;
-  right: 10%;
+  left: 3%;
+  right: 3%;
   top: 0;
-  bottom: 17%;
+  bottom: 19%;
   display: grid;
   place-items: center;
-  padding: 9.5%;
+  padding: 5%;
   border-radius: 5px;
   background:
     linear-gradient(90deg, rgba(255, 237, 166, 0.24), rgba(255, 237, 166, 0) 13%, rgba(0, 0, 0, 0.2) 87%, rgba(255, 237, 166, 0.18)),
@@ -360,7 +360,7 @@ h1 {
   position: relative;
   display: grid;
   place-items: center;
-  width: 39%;
+  width: 32%;
   aspect-ratio: 1;
   border-radius: 0;
   background: transparent;
@@ -399,9 +399,9 @@ h1 {
 
 .frame-label {
   position: absolute;
-  left: 17%;
-  right: 17%;
-  bottom: 3.7%;
+  left: 22%;
+  right: 22%;
+  bottom: 5.2%;
   display: grid;
   place-items: center;
   min-height: 25px;
@@ -608,7 +608,7 @@ h1 {
 
 @media (max-width: 720px) {
   .stage {
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     overflow: hidden;
   }
 
@@ -651,7 +651,7 @@ h1 {
 
 @media (max-height: 480px) and (orientation: landscape) {
   .stage {
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     padding: 7px 9px;
   }
 
@@ -683,8 +683,8 @@ h1 {
   }
 
   .carousel-item {
-    width: clamp(116px, 17vw, 164px);
-    height: clamp(170px, 55vh, 238px);
+    width: clamp(190px, 32vw, 280px);
+    aspect-ratio: 4 / 3;
     top: 51%;
   }
 

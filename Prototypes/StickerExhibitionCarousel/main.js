@@ -60,7 +60,7 @@ async function init() {
     state.stickers = flattenCatalog(catalog);
     applyOwnership(state.stickers);
     renderRoomTabs();
-    selectRoom("all");
+    selectRoom(readInitialRoomId());
     wireEvents();
     els.loading.hidden = true;
   } catch (error) {
@@ -140,6 +140,7 @@ function demoOwned(sticker) {
 }
 
 function renderRoomTabs() {
+  if (!els.roomTabs) return;
   els.roomTabs.replaceChildren();
   ROOMS.forEach((room) => {
     const button = document.createElement("button");
@@ -330,11 +331,13 @@ function roomLabel(roomId) {
 }
 
 function wireEvents() {
-  els.roomTabs.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-room-id]");
-    if (!button) return;
-    selectRoom(button.dataset.roomId);
-  });
+  if (els.roomTabs) {
+    els.roomTabs.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-room-id]");
+      if (!button) return;
+      selectRoom(button.dataset.roomId);
+    });
+  }
 
   els.carouselLayer.addEventListener("click", (event) => {
     const button = event.target.closest(".carousel-item");
@@ -416,6 +419,13 @@ function assignRoom(sticker) {
   if (hasAny(text, ["ムシ", "むし", "バッタ", "ちょうちょ", "カニ", "うさぎ", "くじら", "アメンボ", "カブト", "ハチ", "しか", "アライグマ", "わん", "ねこ", "りす", "あひる", "ことり", "カエル", "ヤドカリ", "イソギンチャク", "エビ", "ヒトデ", "マンタ", "ウミガメ", "カブトガニ", "クマノミ", "イカ", "ジンベエ", "タコ", "いぬ", "キリン", "ライオン", "ペンギン", "キツネ", "リス", "こじか", "アヒル", "ハリネズミ", "batta", "chocho", "kani", "rabbit", "kujira", "amenbo", "kabuto", "hachi", "shika", "raccoon", "dog", "cat", "squirrel", "duck", "bird", "frog", "crab", "anemone", "shrimp", "starfish", "manta", "turtle", "fish", "squid", "whale", "octopus", "giraffe", "lion", "penguin", "fox", "hedgehog"])) return "creatures";
   if (sticker.pageId === "puzzle" || sticker.pageId === "writing-mori") return "characters";
   return "tools";
+}
+
+function readInitialRoomId() {
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get("room") || params.get("category") || window.location.hash.replace("#", "");
+  if (ROOMS.some((room) => room.id === requested)) return requested;
+  return "all";
 }
 
 function hasAny(text, needles) {
