@@ -2229,6 +2229,13 @@ let allStickerOptions = [];
 let stickerOptions = [];
 let collectionStickerOptions = [];
 const stickerPeelAnimations = [];
+const stickerPasteParticleState = {
+  bursts: [],
+  MAX_CONCURRENT: 3,
+  PARTICLE_SIZE: 0.35,
+  COLORS: [0x6b8f5c, 0xf2c4c4, 0xd9c799, 0xa8c4d6, 0xede0b8],
+  GRAVITY: 0.9,
+};
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
 let activeCollectionTocCategoryId = "";
@@ -7017,6 +7024,7 @@ function endStickerTrayDrag(event) {
     if (target) {
       addStickerFromTrayToPage(state.sticker.id, target.page, target.point);
       try { window.Haptics && window.Haptics.fire('stickerPaste'); } catch (_) {}
+      try { emitStickerPasteParticles(target.page, target.point); } catch (_) {}
     }
   }
   cancelStickerTutorialDragPageTurn();
@@ -7415,6 +7423,164 @@ function finishStickerPeelAnimation(animation) {
   if (typeof animation.onComplete === "function") {
     animation.onComplete();
   }
+}
+
+// v1894: sticker paste particles — 森トーンの丸ドット 4-6 個を貼付点から上方に散らす静かな演出。
+// 花火系加算合成禁止、 opt-out 3 系統 (window.PONO_DISABLE_PARTICLES / localStorage / prefers-reduced-motion)。
+function stickerPasteParticlesDisabled() {
+  try {
+    if (typeof window !== "undefined" && window.PONO_DISABLE_PARTICLES === true) return true;
+    if (typeof localStorage !== "undefined" && localStorage.getItem("pono_particles_off") === "1") return true;
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      if (mq && mq.matches) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function emitStickerPasteParticles(pageNumber, texPoint) {
+  if (stickerPasteParticlesDisabled()) return;
+  if (!book || !texPoint) return;
+  const state = stickerPasteParticleState;
+  if (state.bursts.length >= state.MAX_CONCURRENT) {
+    try {
+      if (typeof window !== "undefined") {
+        window.__pasteParticleSkipCount = (window.__pasteParticleSkipCount || 0) + 1;
+      }
+    } catch (_) {}
+    return;
+  }
+  const pageMesh = pageMeshForStickerPage(pageNumber);
+  if (!pageMesh) return;
+  const local = stickerPeelLocalPoint(texPoint);
+  const centerX = pageMesh.position.x + local.x;
+  const centerY = local.y;
+  const centerZ = 0.20;
+
+  const count = 4 + Math.floor(Math.random() * 3); // 4-6
+  const positions = new Float32Array(count * 3);
+  const velocities = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const lifespans = new Float32Array(count);
+  const elapsed = new Float32Array(count);
+
+  const paletteSample = state.COLORS.slice();
+  for (let i = 0; i < count; i += 1) {
+    const jitterR = 0.05 + Math.random() * 0.10;
+    const jitterA = Math.random() * Math.PI * 2;
+    positions[i * 3 + 0] = centerX + Math.cos(jitterA) * jitterR;
+    positions[i * 3 + 1] = centerY + Math.sin(jitterA) * jitterR;
+    positions[i * 3 + 2] = centerZ;
+
+    // upper hemisphere fan: -PI*0.7 .. -PI*0.3 (three.js Y up)
+    const angle = -Math.PI * 0.7 + Math.random() * (Math.PI * 0.4);
+    const speed = 0.8 + Math.random() * 0.6;
+    velocities[i * 3 + 0] = Math.cos(angle) * speed;
+    velocities[i * 3 + 1] = -Math.sin(angle) * speed; // -sin because angle is negative → upward
+    velocities[i * 3 + 2] = 0;
+
+    const colorHex = paletteSample[Math.floor(Math.random() * paletteSample.length)];
+    const c = new THREE.Color(colorHex);
+    colors[i * 3 + 0] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
+
+    lifespans[i] = 0.9 + Math.random() * 0.3; // 900-1200ms
+    elapsed[i] = 0;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+  const material = new THREE.PointsMaterial({
+    size: state.PARTICLE_SIZE,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 1.0,
+    depthWrite: false,
+    vertexColors: true,
+    blending: THREE.NormalBlending,
+  });
+
+  const points = new THREE.Points(geometry, material);
+  points.renderOrder = 99;
+  book.add(points);
+
+  state.bursts.push({
+    points,
+    geometry,
+    material,
+    positions,
+    velocities,
+    lifespans,
+    elapsed,
+    count,
+    done: 0,
+    totalElapsed: 0,
+  });
+
+  try {
+    if (typeof window !== "undefined") {
+      window.__pasteParticleBurstCount = state.bursts.length;
+    }
+  } catch (_) {}
+}
+
+function updateStickerPasteParticles(delta) {
+  const state = stickerPasteParticleState;
+  if (state.bursts.length === 0) return;
+  const drag = Math.pow(0.98, Math.max(1, delta * 60));
+  for (let b = state.bursts.length - 1; b >= 0; b -= 1) {
+    const burst = state.bursts[b];
+    burst.totalElapsed += delta;
+    const posAttr = burst.geometry.attributes.position;
+    let alive = 0;
+    let maxAlpha = 0;
+    for (let i = 0; i < burst.count; i += 1) {
+      const life = burst.lifespans[i];
+      if (burst.elapsed[i] >= life) continue;
+      burst.elapsed[i] += delta;
+      const t = burst.elapsed[i] / life;
+      // velocity integrate
+      burst.velocities[i * 3 + 0] *= drag;
+      burst.velocities[i * 3 + 1] -= state.GRAVITY * delta;
+      burst.positions[i * 3 + 0] += burst.velocities[i * 3 + 0] * delta;
+      burst.positions[i * 3 + 1] += burst.velocities[i * 3 + 1] * delta;
+      posAttr.array[i * 3 + 0] = burst.positions[i * 3 + 0];
+      posAttr.array[i * 3 + 1] = burst.positions[i * 3 + 1];
+      posAttr.array[i * 3 + 2] = burst.positions[i * 3 + 2];
+      if (t < 1) {
+        alive += 1;
+        let alpha;
+        if (t < 0.3) {
+          alpha = 1.0;
+        } else {
+          const k = (t - 0.3) / 0.7;
+          alpha = 1 - Math.pow(k, 1.5);
+        }
+        if (alpha > maxAlpha) maxAlpha = alpha;
+      } else {
+        // move dead particles far away (or leave; opacity will fade via material)
+        posAttr.array[i * 3 + 2] = -9999;
+      }
+    }
+    posAttr.needsUpdate = true;
+    burst.material.opacity = Math.max(0, Math.min(1, maxAlpha));
+    if (alive === 0 || burst.totalElapsed > 1.4) {
+      // dispose
+      try { book.remove(burst.points); } catch (_) {}
+      try { burst.geometry.dispose(); } catch (_) {}
+      try { burst.material.dispose(); } catch (_) {}
+      state.bursts.splice(b, 1);
+    }
+  }
+  try {
+    if (typeof window !== "undefined") {
+      window.__pasteParticleBurstCount = state.bursts.length;
+    }
+  } catch (_) {}
 }
 
 function buildCollectionTocCategories() {
@@ -15597,6 +15763,7 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = Math.min(clock.getDelta(), 0.08);
   updateStickerPeelAnimations(delta);
+  updateStickerPasteParticles(delta);
   if (updateCoverOpen(delta)) {
     renderer.render(scene, camera);
     return;

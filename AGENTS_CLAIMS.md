@@ -72,6 +72,7 @@
 - 2026-07-02 12:00 - by Claude - [batch:931-sticker-book-engagement-research-v2] - docs/**, AGENTS_CLAIMS.md - sticker-book engagement research v2 + docs
 - 2026-07-02 - by Claude - [batch:932-tray-gray-silhouette-phase1] - tmp/tray_baseline/**, AGENTS_CLAIMS.md - tray gray silhouette 実装 (第一弾)
 - 2026-07-02 - by Claude - [batch:933-haptics-quick-win-phase1] - common/haptics.js, Prototypes/StickerBookThreeJS/**, play.html, sw.js, AGENTS_CLAIMS.md - haptics quick win 実装 (触覚 Phase 1)
+- 2026-07-02 - by Claude - [batch:934-sticker-paste-particles] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - sticker paste particles (骨格 4 の予告実装)
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
