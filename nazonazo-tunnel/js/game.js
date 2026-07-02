@@ -113,12 +113,12 @@ function gNeonGround(w,h,base,line,tick){
 /* ================= stages: パレット2種(1周目/2周目)対応 ================= */
 const H=300, HW=1700;
 const ASSETS={
- town:{
-  sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
-  horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
-  mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
-  ground:"../assets/images/nazonazo-tunnel/town_ground_strip_20260703.webp",
-  fg:"../assets/images/nazonazo-tunnel/town_foreground_low_saplings_20260703.webp"
+  town:{
+   sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
+   horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
+   mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
+   ground:"../assets/images/nazonazo-tunnel/town_ground_strip_20260703.webp",
+   fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp"
  },
  jungle:{
   sky:"../assets/images/nazonazo-tunnel/jungle_sky_back_20260703.webp",
@@ -554,22 +554,35 @@ function buildAmbient(P){
 
 /* ================= passengers ================= */
 function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?11.3:8.8;}
+function visibleCarGroups(){
+ const start=Math.max(0,cars.length-8);
+ const aligned=start%2?start-1:start;
+ const groups=[];
+ for(let i=aligned;i<cars.length;i+=2)groups.push(cars.slice(i,i+2));
+ return groups.slice(-4);
+}
+function renderPassengerSeat(c,seatName){
+ const seat=document.createElement("div");
+ seat.className="car-seat "+seatName;
+ if(c.img){
+  const im=document.createElement("img");
+  im.className="pas-img";im.src=c.img;im.alt="";
+  seat.appendChild(im);
+ }else{
+  const sp=document.createElement("span");
+  sp.className="pas";sp.textContent=c.e;
+  seat.appendChild(sp);
+ }
+ return seat;
+}
 function renderCars(){
  carsEl.innerHTML="";
- const show=cars.slice(-4);
- show.forEach((c,i)=>{
-  const idx=show.length-1-i; // 0=newest(先頭車のすぐ後ろ)
+ const groups=visibleCarGroups();
+ groups.forEach((group,i)=>{
+  const idx=groups.length-1-i; // 0=newest group (先頭車のすぐ後ろ)
   const el=document.createElement("div");el.className="car";
   el.style.left=(28-carGap()*(idx+1))+"vw";
-  if(c.img){
-   const im=document.createElement("img");
-   im.className="pas-img";im.src=c.img;im.alt="";
-   el.appendChild(im);
-  }else{
-   const sp=document.createElement("span");
-   sp.className="pas";sp.textContent=c.e;
-   el.appendChild(sp);
-  }
+  group.forEach((c,seat)=>el.appendChild(renderPassengerSeat(c,seat===0?"seat-a":"seat-b")));
   const body=document.createElement("div");
   body.className="car-body-img";
   el.appendChild(body);
@@ -578,11 +591,11 @@ function renderCars(){
    w.className="car-wheel car-wheel-"+k;
    el.appendChild(w);
   });
-  if(cars.length>4&&i===0)el.classList.add("fade");
+  if(cars.length>8&&i===0)el.classList.add("fade");
   carsEl.appendChild(el);
  });
  carBadge.style.display=cars.length?"block":"none";
- carBadge.textContent="🚃 ×"+cars.length;
+ carBadge.textContent="👥 ×"+cars.length;
 }
 function beginStageTransit(){
  if(!coverEl)return;
@@ -600,7 +613,7 @@ function showDropoff(){
   carsEl.classList.add("unloading");
   cars=[];
   carBadge.style.display="none";
-  carBadge.textContent="🚃 ×0";
+  carBadge.textContent="👥 ×0";
   showStamp("みんな またね！","new");
   speak("みんなが えきで おりたよ！");
   setTimeout(()=>{

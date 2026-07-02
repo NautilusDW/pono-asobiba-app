@@ -16,11 +16,11 @@ button{font:inherit;color:inherit}
 #skyA,#skyB{position:absolute;inset:0;z-index:0}
 #skyB{opacity:0}
 #horizon{position:absolute;top:0;bottom:0;left:0;width:170vw;z-index:1;
-  background-repeat:no-repeat;background-size:170vw 100%;will-change:transform}
+  background-repeat:no-repeat;background-size:auto 100%;will-change:transform}
 #midT{position:absolute;top:0;bottom:0;left:0;right:0;z-index:2;
-  background-repeat:repeat-x;background-size:140vw 100%;will-change:background-position}
+  background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #groundT{position:absolute;left:0;right:0;bottom:0;height:12vh;z-index:2;
-  background-repeat:repeat-x;background-size:60vw 100%;will-change:background-position}
+  background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
 .decor{position:absolute;bottom:11.5vh}
 #cars{position:absolute;bottom:12.8vh;left:0;right:0;z-index:7;pointer-events:none}
@@ -28,8 +28,9 @@ body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
   background:#f5d78a;border:3px solid #c9a24e;border-radius:10px 10px 6px 6px;
   display:flex;align-items:center;justify-content:center;transition:opacity .6s}
-.car .pas{font-size:clamp(22px,4.6vw,46px);font-weight:800;line-height:1}
-.car .pas-img{width:112%;height:130%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
+.car-seat{position:relative;z-index:2;width:50%;height:100%;display:flex;align-items:center;justify-content:center}
+.car .pas{font-size:clamp(18px,3.7vw,38px);font-weight:800;line-height:1}
+.car .pas-img{width:100%;height:112%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
 .car-body-img,.car-wheel{display:none}
 .car::after{content:"";position:absolute;bottom:-8%;left:12%;width:22%;aspect-ratio:1;background:#3d3d3d;border-radius:50%}
 .car::before{content:"";position:absolute;bottom:-8%;right:12%;width:22%;aspect-ratio:1;background:#3d3d3d;border-radius:50%}
@@ -39,10 +40,11 @@ body.v-train .car::before,body.v-train .car::after{display:none}
 body.v-train .car-body-img{display:block;position:absolute;inset:0;z-index:3;
   background:url("../assets/images/nazonazo-tunnel/vehicle_passenger_car_body_20260703.webp") center bottom/contain no-repeat;
   filter:drop-shadow(0 2px 0 rgba(50,35,25,.16))}
-body.v-train .car .pas{position:absolute;left:30%;top:16%;width:19%;height:46%;z-index:2;
-  display:flex;align-items:center;justify-content:center;font-size:clamp(18px,3vw,34px)}
-body.v-train .car .pas-img{position:absolute;left:25%;top:8%;width:30%;height:58%;z-index:2;
-  object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
+body.v-train .car-seat{position:absolute;top:8%;width:24%;height:58%;z-index:2;align-items:flex-end}
+body.v-train .car .seat-a{left:23%}
+body.v-train .car .seat-b{left:46%}
+body.v-train .car .pas{font-size:clamp(14px,2.3vw,27px)}
+body.v-train .car .pas-img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
 body.v-train .car-wheel{display:block;position:absolute;bottom:3.5%;width:17.5%;aspect-ratio:1;z-index:4;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_spoke_single_20260703.webp") center/contain no-repeat;
   filter:drop-shadow(0 1px 0 rgba(50,35,25,.28));transform-origin:50% 50%}
@@ -63,7 +65,7 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 body.v-train #veh{bottom:11.9vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
-  background-repeat:repeat-x;background-size:90vw 100%;will-change:background-position}
+  background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 .flyer{position:absolute;z-index:12;font-size:clamp(30px,6.4vw,60px);pointer-events:none;
   transform:translateX(-50%);transition:left .75s cubic-bezier(.3,.8,.5,1),bottom .75s cubic-bezier(.4,-.3,.6,1)}
 .flyer img{width:clamp(54px,9vw,92px);height:clamp(54px,9vw,92px);object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 0 rgba(70,45,25,.16))}
@@ -118,8 +120,8 @@ body.st-space .tun{bottom:20vh}
 .dropStation.done .drop-station-friends{animation:waveBye .75s ease-in-out infinite alternate}
 .cover{position:absolute;top:0;bottom:0;background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:7}
 .cover-portal{position:absolute;bottom:7.2vh;width:42vw;max-width:470px;height:55vh;background:center bottom/contain no-repeat;z-index:2;filter:drop-shadow(0 5px 0 rgba(0,0,0,.2));pointer-events:none}
-.cover-portal-in{left:-13vw;background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_portal_20260703.webp")}
-.cover-portal-out{right:-14vw;background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_portal_20260703.webp")}
+.cover-portal-in{left:-15vw;background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_portal_20260703_v2.webp")}
+.cover-portal-out{right:-15vw;background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_portal_20260703_v2.webp")}
 .cover .rim{position:absolute;top:0;bottom:0;width:7vw;background:linear-gradient(90deg,rgba(0,0,0,0),#17110b);z-index:3}
 .cover .rimR{right:auto;left:100%;transform:scaleX(-1)}
 .lamp{display:none}
@@ -172,14 +174,14 @@ body[data-driver-mood="cheer"]{--driver-y:100%}
 body.st-future .tr-boiler{background:#b8f3ff;border-color:#4bb8d6;border-radius:26px 6px 6px 26px}
 body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
 body.st-future .tr-chim{display:none}
-body.st-town #horizon{background-size:170vw 100%}
-body.st-town #midT{background-size:145vw 100%}
-body.st-town #groundT{height:13.5vh;background-size:70vw 100%}
-body.st-town #fgT{height:20vh;background-size:92vw 100%}
-body.st-jungle #horizon{background-size:170vw 100%}
-body.st-jungle #midT{background-size:150vw 100%}
-body.st-jungle #groundT{height:14.5vh;background-size:86vw 100%}
-body.st-jungle #fgT{height:22vh;background-size:96vw 100%}
+body.st-town #horizon{background-size:auto 100%}
+body.st-town #midT{background-size:auto 100%}
+body.st-town #groundT{height:13.5vh;background-size:auto 100%}
+body.st-town #fgT{height:14vh;background-size:auto 100%}
+body.st-jungle #horizon{background-size:auto 100%}
+body.st-jungle #midT{background-size:auto 100%}
+body.st-jungle #groundT{height:14.5vh;background-size:auto 100%}
+body.st-jungle #fgT{height:22vh;background-size:auto 100%}
 .sb-hull,.sb-peri,.sb-fin,.sb-win{display:none}
 body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win{display:none}
 body.v-sub .sb-hull{display:block;position:absolute;left:0;right:0;top:22%;bottom:8%;background:#ffcf4d;border:4px solid #d9a326;border-radius:50px}
