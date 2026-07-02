@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260702-1200";
+const ASSET_VERSION = "20260702-1921";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -538,10 +538,18 @@ const ZUKAN_PAGE_TEMPLATES = {
   detail: "sb3d_image2_zukan_template_detail_green_wide_labels_alpha_user_20260621.png",
 };
 const ZUKAN_TEMPLATE_PRINT_INSET = {
-  top: 58,
-  bottom: 46,
-  outer: 56,
-  inner: 92,
+  index: {
+    top: 58,
+    bottom: 46,
+    outer: 56,
+    inner: 92,
+  },
+  detail: {
+    top: 42,
+    bottom: 34,
+    outer: 42,
+    inner: 46,
+  },
 };
 const DEFAULT_ZUKAN_FORMAT_INDEX = 1;
 const ZUKAN_THICKNESS_DISPLAY_SCALE_Y = 1.32;
@@ -1930,7 +1938,7 @@ const STICKER_TUTORIAL_STEP_WRONG_ACTIONS = {
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v9";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
-const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v1";
+const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v2";
 const ZUKAN_SIDE_TEMPLATE_STORAGE_KEY = "sb3d_zukan_side_template_settings_v1";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v2`;
@@ -11372,11 +11380,16 @@ function zukanTemplatePlacementTuning(type = "index") {
   };
 }
 
+function zukanTemplatePrintInset(type = "index") {
+  return ZUKAN_TEMPLATE_PRINT_INSET[zukanTemplateTypeKey(type)] || ZUKAN_TEMPLATE_PRINT_INSET.index;
+}
+
 function zukanTemplatePrintRect(side = "left", type = "index") {
-  const left = side === "right" ? ZUKAN_TEMPLATE_PRINT_INSET.inner : ZUKAN_TEMPLATE_PRINT_INSET.outer;
-  const right = side === "left" ? ZUKAN_TEMPLATE_PRINT_INSET.inner : ZUKAN_TEMPLATE_PRINT_INSET.outer;
-  const top = ZUKAN_TEMPLATE_PRINT_INSET.top;
-  const bottom = ZUKAN_TEMPLATE_PRINT_INSET.bottom;
+  const inset = zukanTemplatePrintInset(type);
+  const left = side === "right" ? inset.inner : inset.outer;
+  const right = side === "left" ? inset.inner : inset.outer;
+  const top = inset.top;
+  const bottom = inset.bottom;
   const tuning = zukanTemplatePlacementTuning(type);
   const width = PAGE_TEXTURE_W - left - right + tuning.width;
   const height = PAGE_TEXTURE_H - top - bottom + tuning.height;
@@ -12155,6 +12168,33 @@ function zukanRectScaleY(rect) {
   return Number.isFinite(value) && value > 0 ? value : 1;
 }
 
+const ZUKAN_CANVAS_FONT_FAMILY = '"Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+
+function setZukanCanvasFont(ctx, weight, sizePx) {
+  const safeSize = Math.max(1, Number(sizePx) || 1);
+  ctx.font = `${weight} ${safeSize}px ${ZUKAN_CANVAS_FONT_FAMILY}`;
+}
+
+function fitZukanCanvasFont(ctx, text, weight, preferredSize, minSize, maxWidth) {
+  let size = Math.max(minSize, preferredSize);
+  setZukanCanvasFont(ctx, weight, size);
+  const safeMaxWidth = Math.max(1, Number(maxWidth) || 1);
+  while (size > minSize && ctx.measureText(String(text || "")).width > safeMaxWidth) {
+    size -= 1;
+    setZukanCanvasFont(ctx, weight, size);
+  }
+  return size;
+}
+
+function drawFittedZukanText(ctx, text, x, y, maxWidth, {
+  weight = 900,
+  preferredSize = 24,
+  minSize = 16,
+} = {}) {
+  fitZukanCanvasFont(ctx, text, weight, preferredSize, minSize, maxWidth);
+  ctx.fillText(text, x, y, Math.max(1, maxWidth));
+}
+
 function zukanTextTuningTargetsForPage(pageDef, subjects = [], pageNumber = activeBookPage, side = zukanSideForPageNumber(pageNumber)) {
   if (!pageDef) {
     return [];
@@ -12793,7 +12833,7 @@ function collectionZukanBodyText(subject) {
 function collectionZukanMemoTitle(subject) {
   const speaker = subject?.guideSpeaker;
   if (speaker === "ふくろう博士") {
-    return "ふくろう博士のメモ";
+    return "はかせメモ";
   }
   if (speaker === "ポノ") {
     return "ポノメモ";
@@ -12834,12 +12874,14 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
     ctx.fill();
   }
   ctx.fillStyle = "#ffffff";
-  ctx.font = '900 27px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText(
+  drawFittedZukanText(
+    ctx,
     `No.${header.number}`,
     x + 107 * scaleX + zukanTextOffset("detailNumberX"),
     y + 68 * scaleY + zukanTextOffset("detailNumberY"),
+    118 * scaleX,
+    { weight: 900, preferredSize: 27, minSize: 19 },
   );
 
   if (!generatedTemplate) {
@@ -12848,30 +12890,33 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
     ctx.fill();
   }
   ctx.fillStyle = "#ffffff";
-  ctx.font = '900 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(
+  drawFittedZukanText(
+    ctx,
     header.category,
     x + width - 147 * scaleX + zukanTextOffset("detailCategoryX"),
     y + 67 * scaleY + zukanTextOffset("detailCategoryY"),
     186 * scaleX,
+    { weight: 900, preferredSize: 25, minSize: 16 },
   );
 
   ctx.textAlign = "left";
   ctx.fillStyle = theme.text;
-  ctx.font = '900 54px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(
+  drawFittedZukanText(
+    ctx,
     header.name,
     x + 212 * scaleX + zukanTextOffset("detailNameX"),
     y + 67 * scaleY + zukanTextOffset("detailNameY"),
     width - 506 * scaleX,
+    { weight: 900, preferredSize: 54, minSize: 38 },
   );
   ctx.fillStyle = "rgba(51, 68, 71, 0.62)";
-  ctx.font = '800 25px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-  ctx.fillText(
+  drawFittedZukanText(
+    ctx,
     header.subtitle,
     x + 216 * scaleX + zukanTextOffset("detailSubtitleX"),
     y + 106 * scaleY + zukanTextOffset("detailSubtitleY"),
     width - 520 * scaleX,
+    { weight: 800, preferredSize: 25, minSize: 18 },
   );
   drawCollectionZukanRarityStars(ctx, header, scaleX, scaleY);
   ctx.restore();
@@ -12989,21 +13034,23 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
     drawCanvasRoundedRect(ctx, x + 24, y + 20, 230, 42, 18);
     ctx.fill();
   }
-  ctx.font = `${generatedTemplate ? "900 20px" : "900 21px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "center";
   const titleCenterX = x + (generatedTemplate ? 112 : 139) * scaleX + zukanTextOffset("detailFieldTitleX");
   const titleBaselineY = y + (generatedTemplate ? 64 : 48) * scaleY + zukanTextOffset("detailFieldTitleY");
   const titleMaxWidth = (generatedTemplate ? 220 : 206) * scaleX;
   ctx.fillStyle = "#ffffff";
-  ctx.fillText(
+  drawFittedZukanText(
+    ctx,
     title,
     titleCenterX,
     titleBaselineY,
     titleMaxWidth,
+    { weight: 900, preferredSize: generatedTemplate ? 20 : 21, minSize: 13 },
   );
 
   ctx.fillStyle = "rgba(51, 68, 71, 0.82)";
-  ctx.font = `${generatedTemplate ? "900 30px" : "900 29px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
+  const valueFontSize = generatedTemplate && String(value || "").length >= 13 ? 28 : generatedTemplate ? 30 : 29;
+  setZukanCanvasFont(ctx, 900, valueFontSize);
   ctx.textAlign = "left";
   drawWrappedCanvasText(
     ctx,
@@ -13011,7 +13058,7 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
     x + (generatedTemplate ? 48 : 30) * scaleX + zukanTextOffset("detailFieldTextX"),
     y + (generatedTemplate ? 122 : 96) * scaleY + zukanTextOffset("detailFieldTextY"),
     width - (generatedTemplate ? 84 : 60) * scaleX,
-    36 * scaleY,
+    (valueFontSize + 6) * scaleY,
     2,
   );
   ctx.restore();
@@ -13039,16 +13086,15 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
     drawCanvasRoundedRect(ctx, x + 34, y + 28, 178, 50, 20);
     ctx.fill();
   }
-  // ふくろう博士のメモ 等の長いタイトルはラベル pill 幅に収まるよう font/最大幅を縮小 (squish 回避)。
-  const memoTitleLong = String(memo.title || "").length > 5;
   ctx.fillStyle = "#ffffff";
-  ctx.font = `900 ${memoTitleLong ? 20 : 24}px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "center";
-  ctx.fillText(
+  drawFittedZukanText(
+    ctx,
     memo.title,
     x + 123 * scaleX + zukanTextOffset("detailMemoTitleX"),
     y + 61 * scaleY + zukanTextOffset("detailMemoTitleY"),
-    (memoTitleLong ? 190 : 146) * scaleX,
+    174 * scaleX,
+    { weight: 900, preferredSize: 24, minSize: 15 },
   );
 
   if (!generatedTemplate) {
@@ -13063,7 +13109,7 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   }
 
   ctx.fillStyle = "rgba(51, 68, 71, 0.78)";
-  ctx.font = '800 30px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  setZukanCanvasFont(ctx, 800, 29);
   ctx.textAlign = "left";
   drawWrappedCanvasText(
     ctx,
@@ -13071,7 +13117,7 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
     x + 38 * scaleX + zukanTextOffset("detailMemoTextX"),
     y + 122 * scaleY + zukanTextOffset("detailMemoTextY"),
     width - 76 * scaleX,
-    40 * scaleY,
+    38 * scaleY,
     3,
   );
   ctx.restore();
@@ -13082,7 +13128,9 @@ function drawWrappedCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines =
   const words = source.includes(" ") ? source.split(/(\s+)/).filter(Boolean) : [...source];
   const lines = [];
   let line = "";
-  for (const word of words) {
+  let truncated = false;
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index];
     const candidate = line ? `${line}${word}` : word;
     if (ctx.measureText(candidate).width <= maxWidth || !line) {
       line = candidate;
@@ -13091,16 +13139,32 @@ function drawWrappedCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines =
     lines.push(line.trim());
     line = word.trimStart();
     if (lines.length >= maxLines) {
+      truncated = true;
       break;
     }
   }
   if (line && lines.length < maxLines) {
     lines.push(line.trim());
+  } else if (line) {
+    truncated = true;
   }
   lines.slice(0, maxLines).forEach((lineText, index) => {
-    const display = index === maxLines - 1 && lines.length > maxLines ? `${lineText}...` : lineText;
+    const display = index === maxLines - 1 && truncated ? ellipsizeCanvasText(ctx, lineText, maxWidth) : lineText;
     ctx.fillText(display, x, y + lineHeight * index, maxWidth);
   });
+}
+
+function ellipsizeCanvasText(ctx, text, maxWidth) {
+  const ellipsis = "...";
+  const source = String(text || "");
+  if (ctx.measureText(source).width <= maxWidth) {
+    return source;
+  }
+  let next = source;
+  while (next.length > 1 && ctx.measureText(`${next}${ellipsis}`).width > maxWidth) {
+    next = next.slice(0, -1);
+  }
+  return `${next}${ellipsis}`;
 }
 
 function drawAsyncCollectionStickerImage(ctx, texture, src, x, y, width, height, found, pageNumber) {
