@@ -8133,6 +8133,7 @@
         if (!bgm.paused) return;
         if (bgm.preload !== 'auto') bgm.preload = 'auto';
         try { bgm.currentTime = 0; } catch (_) {} // v1891 review-fix: loop 途中復帰を回避
+        try { bgm.volume = 0.32; } catch (_) {}   // v1891 code-review HIGH fix: startDonguriShopBgm と同 volume を再宣言 (外部 mutation 対策)
         var p = bgm.play();
         if (p && p.catch) p.catch(function () {
           // v1891 review-fix: iOS Safari autoplay reject → 1 回だけ retry (startDonguriShopBgm と同ポリシー)
