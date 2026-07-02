@@ -87,6 +87,7 @@
   let last = 0;
   let audioCtx = null;
   let soundOn = true;
+  const assetCache = new Map();
 
   function pick(arr) {
     return arr[(Math.random() * arr.length) | 0];
@@ -104,6 +105,34 @@
 
   function chars(word) {
     return Array.from(String(word || '').normalize('NFC'));
+  }
+
+  function escapeAttr(value) {
+    return String(value || '').replace(/[&<>"']/g, (ch) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[ch]));
+  }
+
+  function getAsset(src) {
+    if (!src) return null;
+    if (assetCache.has(src)) return assetCache.get(src);
+    const entry = { img: new Image(), ready: false, failed: false };
+    entry.img.onload = () => { entry.ready = true; };
+    entry.img.onerror = () => { entry.failed = true; };
+    entry.img.decoding = 'async';
+    entry.img.src = src;
+    assetCache.set(src, entry);
+    return entry;
+  }
+
+  function preloadWordAssets(list) {
+    list.forEach((item) => {
+      if (item && item.asset) getAsset(item.asset);
+    });
   }
 
   function hueOf(ch) {
@@ -219,7 +248,9 @@
   function chooseWords(levelKey) {
     const list = (window.PonoMojicraneWords && window.PonoMojicraneWords[levelKey]) || [];
     const cfg = LEVELS[levelKey];
-    return shuffle(list.slice()).slice(0, cfg.rounds);
+    const queue = shuffle(list.slice()).slice(0, cfg.rounds);
+    preloadWordAssets(queue);
+    return queue;
   }
 
   function pickCol(cols, maxHeight) {
@@ -334,9 +365,12 @@
     resultTitle.textContent = 'できたね';
     const stars = selectedLevel === 'easy' ? '★★★' : (game.done.length >= game.cfg.rounds ? '★★★' : '★★');
     resultStars.textContent = stars;
-    wordCards.innerHTML = game.done.map((item) => (
-      '<div class="word-card"><span class="emoji">' + item.emoji + '</span><span class="word">' + item.word + '</span></div>'
-    )).join('');
+    wordCards.innerHTML = game.done.map((item) => {
+      const media = item.asset
+        ? '<img class="emoji word-img" src="' + escapeAttr(item.asset) + '" alt="">'
+        : '<span class="emoji">' + item.emoji + '</span>';
+      return '<div class="word-card">' + media + '<span class="word">' + item.word + '</span></div>';
+    }).join('');
     writeProgress(game.done);
     setHidden(resultOverlay, false);
     playSfx('clear');
@@ -917,8 +951,22 @@
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#f0c57d';
     ctx.stroke();
-    text(game.item.emoji, 84, 65, 60, '#000');
+    const asset = getAsset(game.item.asset);
+    if (asset && asset.ready) {
+      drawContain(asset.img, 34, 26, 100, 76);
+    } else {
+      text(game.item.emoji, 84, 65, 60, '#000');
+    }
     text((game.roundIndex + 1) + ' / ' + game.queue.length, 84, 117, 13, '#a88958', '800');
+  }
+
+  function drawContain(img, x, y, w, h) {
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const scale = Math.min(w / iw, h / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
   }
 
   function slotShouldShow(i) {

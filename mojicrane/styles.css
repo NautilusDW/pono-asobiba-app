@@ -292,6 +292,13 @@ button:disabled {
   line-height: 1.1;
 }
 
+.word-card .word-img {
+  width: 54px;
+  height: 42px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
 .word-card .word {
   display: block;
   margin-top: 2px;
