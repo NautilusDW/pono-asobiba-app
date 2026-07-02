@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1889: シール棚 tray locked シルエットを Mori-tone review 反映で opacity 0.65 + grayscale(0.5) 復活 + card 背景を rgba(190,200,185,0.70) に深めて、 3-8才児向けの輪郭視認性と SR silhouette との視覚差別化を両立。 CSS 表示のみ変更 (localStorage/schema 無影響)。play.html PAGE_CACHE_VERSION と同期。
+// v1888: シール棚 tray の locked シルエットを brightness(0) 塗りつぶしに変更し、 中身が透けず輪郭だけ見える「本当のシルエット」へ (grayscale では絵柄が読めていた問題を解消、 想像を刺激する子供向け演出)。play.html PAGE_CACHE_VERSION と同期。
 // v1887: シール棚 (StickerBookThreeJS) の tray に未所有シールを薄い森トーンのシルエットで表示 + タップ時「まだ もっていないよ」吹き出し (locked カード追加、ドラッグ無効、tutorial 干渉なし)。stickerOptions の schema/localStorage は不変、緊急切り戻し用 window.PONO_DISABLE_LOCKED_TRAY guard 内蔵。play.html PAGE_CACHE_VERSION と同期。
 // v1886: LP hero labels を portrait mobile で 1 行に維持 + narrative main を <br> で 2 行化 + bookhint 「もっと楽しめるよ！」 の 「よ！」 orphan を nowrap span で解消。play.html PAGE_CACHE_VERSION と同期。
 // v1881: 音タッチの3Dヒットラインを見た目の鍵盤上端へ寄せ、ハイスコアモーダルを結果画面と同じ暗色系へ統一。play.html PAGE_CACHE_VERSION と同期。
@@ -511,7 +513,7 @@
 // v1885: LP「ひみつのことば」→「ひみつのあいことば」全統一 (index.html hero aria-label / banner label / #book-secret 見出し / book-prelude-parent 本文 / CSS コメント)。play.html PAGE_CACHE_VERSION と同期 (batch:1050-lp-aikotoba-unify)。
 // v1884: LP hero に絵本ストーリー説明を追加 (「人気絵本『ありがとうって、うれしいね』から生まれた〜」+ 登録不要ブラウザ無料サブコピー)、COMING SOON アプリ版予告バナーを削除して密度削減、すぐあそぶボタン下の「誰でもそのまま遊べるよ！」を削除、bookhint 本文を「絵本の最後の『ひみつのあいことば』でもっと楽しめるよ！」に短縮 (batch:lp-hero-narrative-impl)。play.html PAGE_CACHE_VERSION と同期。
 // v1883: Bento 仕切り配置UX刷新 — ボタン自動配置順を全箱で統一 (手前→奥・同列内左→右、行判定は27.6px帯)、仕切りタブ中は空きスロットをうっすらゴースト表示、ゴーストタップ配置 (直近使用ファミリー)、パレットからのD&D + 磁石スナップ (占有スロット近くは自由置き+ナレ)、配置後の自由移動 + スナップバックハイライト、7枚上限、タップ領域44px+確保。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1887;
+const CACHE_VERSION = 1889;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)

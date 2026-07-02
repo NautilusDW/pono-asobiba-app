@@ -1323,9 +1323,11 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
 
 /* v1887: 未所有シールを tray 末尾に「薄い森トーンのシルエット」で並べる。
    完全な白抜き (SR silhouette) との差別化のため grayscale + brightness で「輪郭は残るが色は伏せる」。
-   locked は SR silhouette より後に定義 → 同時付与時は locked が視覚的に勝つ (specificity 同点、後勝ち)。 */
+   locked は SR silhouette より後に定義 → 同時付与時は locked が視覚的に勝つ (specificity 同点、後勝ち)。
+   v1888 (Mori-tone review): card background を rgba(190,200,185,0.70) に深めて silhouette との
+   コントラストを確保 (3-8 才児の輪郭視認性優先)。 */
 .sticker-tray-card.is-locked-silhouette {
-  background: rgba(214, 220, 208, 0.55);
+  background: rgba(190, 200, 185, 0.70);
   box-shadow: none;
   cursor: default;
 }
@@ -1335,15 +1337,18 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
 .sticker-tray-card.is-locked-silhouette:active {
   box-shadow: none;
   transform: none;
-  background: rgba(214, 220, 208, 0.55);
+  background: rgba(190, 200, 185, 0.70);
 }
 .sticker-tray-card.is-locked-silhouette .sticker-tray-icon {
-  background: rgba(214, 220, 208, 0.55);
+  background: rgba(190, 200, 185, 0.70);
   box-shadow: none;
 }
 .sticker-tray-card.is-locked-silhouette .sticker-tray-icon img {
-  opacity: 0.42;
-  filter: grayscale(1) brightness(0.72) contrast(0.85);
+  /* v1888 (Mori-tone review): brightness(0) + grayscale(0.5) で「真っ黒すぎない森トーン馴染みの
+     ソフト silhouette」。 opacity 0.65 で pale forest card background とのコントラスト確保、
+     SR silhouette (完全白抜き) との視覚差別化を維持。 */
+  opacity: 0.65;
+  filter: brightness(0) saturate(0) grayscale(0.5);
   transition: opacity 200ms ease, filter 200ms ease;
 }
 
