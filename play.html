@@ -832,6 +832,7 @@
     /* Per-game title color (id is on the card root) */
     .game-card[data-id="quizland"]   .game-card__title { color: #6b4a18; }   /* deep amber/owl */
     .game-card[data-id="nazonazo-tunnel"] .game-card__title { color: #6b4a18; }
+    .game-card[data-id="mojicrane"] .game-card__title { color: #6b4a18; }
     .game-card[data-id="quiz-sound"] .game-card__title { color: #2f6aa3; }   /* forest blue */
     .game-card[data-id="maze"]       .game-card__title { color: #f5d76a; }   /* lantern yellow */
     .game-card[data-id="oto"]        .game-card__title { color: #d38a2c; }   /* playful music amber */
@@ -6742,6 +6743,19 @@
         tier: 'sub'
       },
       {
+        id: 'mojicrane',
+        title: 'ポノのもじもじクレーン',
+        subtitle: 'もじを あつめて ことばを つくろう',
+        icon: '🏗️',
+        bg: 'assets/ui/play_wordmatch_title_back.webp',
+        href: 'mojicrane/index.html',
+        panel: 'assets/ui/menu_card_base_01.webp',
+        thumb: 'assets/ui/thumb_wordmatch.webp',
+        thumbPos: '50% 52%',
+        peekPos: '50% 50%',
+        tier: 'sub'
+      },
+      {
         id: 'maze',
         title: 'ポノとランタンのめいろ',
         subtitle: 'ランタンをもって まいごさがし',
@@ -6909,7 +6923,7 @@
       } catch (_) {}
       return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
     })();
-    const TITLE_MENU_IDS = ['quizland', 'nazonazo-tunnel', 'maze', 'oto', 'bento', 'puzzle', 'writing-mori', 'cooking'];
+    const TITLE_MENU_IDS = ['quizland', 'nazonazo-tunnel', 'mojicrane', 'maze', 'oto', 'bento', 'puzzle', 'writing-mori', 'cooking'];
     const MENU_GAMES = TITLE_MENU_IDS
       .map((id) => GAMES.find((game) => game.id === id))
       .filter(Boolean)
@@ -6996,6 +7010,13 @@
             gameTitleAccent('quizland', 'なぞなぞ'),
             gameTitleAccent('maze', 'トンネル')
           ].join('');
+        case 'mojicrane':
+          return [
+            gameTitleAccent('pono', 'ポノ'),
+            gameTitleParticle('の'),
+            gameTitleAccent('quizland', 'もじもじ'),
+            gameTitleAccent('maze', 'クレーン')
+          ].join('');
         case 'oto':
           return [
             gameTitleAccent('pono', 'ポノ'),
@@ -7042,7 +7063,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1923;
+    const PAGE_CACHE_VERSION = 1924;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
