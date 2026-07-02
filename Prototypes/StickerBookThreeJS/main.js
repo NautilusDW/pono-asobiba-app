@@ -84,7 +84,7 @@ const STICKER_PLACEMENT_BASE_RATIO = 0.42;
 const STICKER_ALPHA_TRIM_THRESHOLD = 12;
 const STICKER_ALPHA_TRIM_PAD_RATIO = 0.035;
 const STICKER_ALPHA_TRIM_MIN_PAD = 3;
-const PLACED_STICKER_ARTWORK_FILTER = "brightness(1.14) saturate(1.08) contrast(1.03)";
+const PLACED_STICKER_ARTWORK_FILTER = "none";
 const STICKER_PEEL_DURATION = 1.12;
 const STICKER_PEEL_SEGMENTS_X = 14;
 const STICKER_PEEL_SEGMENTS_Y = 24;
@@ -7253,21 +7253,28 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     STICKER_PEEL_SEGMENTS_Y,
   );
   prepareStickerPeelGeometry(geometry, dimensions.width, dimensions.height);
-  const frontMaterial = new THREE.MeshBasicMaterial({
+  // v1902: peel material を MeshStandardMaterial に統一 (焼付先 page mesh と同じ lit material)。
+  // MeshBasicMaterial (unlit) と MeshStandardMaterial (lit, roughness 0.9) の照明反応差が
+  // peel 完了フリッカー & 焼付後シール褪せ の根本原因だったため、 render pipeline を揃える。
+  const frontMaterial = new THREE.MeshStandardMaterial({
     map: frontTexture,
     transparent: true,
     side: THREE.FrontSide,
     depthWrite: false,
     alphaTest: 0.012,
     opacity: 1,
+    roughness: 0.9,
+    metalness: 0.0,
   });
-  const backMaterial = new THREE.MeshBasicMaterial({
+  const backMaterial = new THREE.MeshStandardMaterial({
     map: backTexture,
     transparent: true,
     side: THREE.BackSide,
     depthWrite: false,
     alphaTest: 0.012,
     opacity: 0.98,
+    roughness: 0.9,
+    metalness: 0.0,
   });
   const front = new THREE.Mesh(geometry, frontMaterial);
   const back = new THREE.Mesh(geometry, backMaterial);
@@ -13043,8 +13050,10 @@ function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
 }
 
 function drawPlacedStickerArtwork(ctx, image, x, y, width, height) {
+  // v1902: 焼付側の brightness/saturate/contrast 事前補正を廃止。
+  // peel mesh 側を lit material (MeshStandardMaterial) に揃えたことで照明反応が一致し、
+  // 補正が不要になった (peel と焼付で色調ジャンプなし、 元画像の彩度も維持)。
   ctx.save();
-  ctx.filter = PLACED_STICKER_ARTWORK_FILTER;
   ctx.drawImage(image, x, y, width, height);
   ctx.restore();
 }
