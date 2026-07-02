@@ -285,6 +285,33 @@
   let rotationCache = []; // [{ id, name, gameId, price, rarity, img, owned }]
   let renderBusy = false;
 
+  // v1891: 購入時 SE (rarity 別、 既存 asset 再利用、 単調増加 volume)。 play.html shop v2 と同じマッピング。
+  //   normal (< 25) → acorn_get_festive_20260628.mp3 @ 0.55
+  //   rare   (25-)  → daily_gacha_sticker_sparkle.mp3 @ 0.65
+  //   super  (35-)  → daily_gacha_magic_sparkle_long.mp3 @ 0.75
+  function _shopMuted() {
+    try { return localStorage.getItem('pono_sound_off') === '1'; } catch (_) { return false; }
+  }
+  function playPurchaseSfx(price) {
+    try {
+      if (_shopMuted()) return;
+      if (typeof Audio !== 'function') return;
+      var src, vol;
+      var p = price | 0;
+      if (p >= 35) {
+        src = '../assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3'; vol = 0.75;
+      } else if (p >= 25) {
+        src = '../assets/audio/gacha/daily_gacha_sticker_sparkle.mp3'; vol = 0.65;
+      } else {
+        src = '../assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3'; vol = 0.55;
+      }
+      var a = new Audio(src);
+      a.volume = vol;
+      var pr = a.play();
+      if (pr && pr.catch) pr.catch(function () {});
+    } catch (_) {}
+  }
+
   function _stickerImageFromCatalog(catalog, gameId, stickerId) {
     try {
       const page = catalog && catalog.pages && catalog.pages[gameId];
@@ -449,6 +476,8 @@
         return;
       }
       // 正常購入完了
+      // v1891: 購入 SE (rarity 別、 既存 asset 再利用)。 このページに BGM 要素は無いため BGM 継続懸念なし。
+      try { playPurchaseSfx(item.price); } catch (_) {}
       showToast('🎉 ' + (item.name || 'シール') + ' を ゲット！');
       // game-stickers.js の grant({show:false}) なので toast popup は出ない。
       // 「ペタッとはる」 動線は別途 sticker book で。 ここでは shop 内で完結。

@@ -1369,7 +1369,13 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   user-select: none;
   -webkit-user-select: none;
   box-shadow: 0 6px 16px rgba(42, 70, 61, 0.24);
+  opacity: 0;
+  will-change: opacity;
   transition: opacity 200ms ease;
+}
+
+.sticker-tray-lock-hint.is-visible {
+  opacity: 1;
 }
 
 .sticker-tray-label {

@@ -9168,14 +9168,17 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'layer-edit': 'basic_tut_07',
   'move-requested-food': 'basic_tut_08',
   'small-accessory': 'basic_tut_09',
-  'cup-edit': 'basic_tut_10',
-  'cup-edit-try': 'basic_tut_11',
+  // v1497 cup-first: cup-edit / cup-edit-try (サイズ①→OK 教習, basic_tut_10/11) は廃止。
+  // カップ配置で おかずピッカーが自動で開く新 UX に合わせ、 small-cup-food へ直行する。
+  // basic_tut_10.mp3 / basic_tut_11.mp3 はディスク上に残置 (再利用可能)。
   'small-cup-food': 'basic_tut_12',
   'small-next': 'basic_tut_13',
   // v1375: okazu-more はバブル + Pono callout で案内。 専用ナレ ID は割り当てない
   // (basic_tut_14 は complete-result 「これで おべんとうが かんせいしたよ」 で既使用済み)。
   // v1380: 別ファイル名 okazu_more_01 で専用ナレを追加 (basic_tut_14 衝突回避)。
-  'okazu-more': 'okazu_more_01',
+  // v1497 cup-first: ボタン名が「ちいさい おかずへ」→「カップへ」に変わったため
+  // 新録 okazu_more_02 (『カップへ』を おしてね) に差替。 okazu_more_01.mp3 は残置。
+  'okazu-more': 'okazu_more_02',
   // v1416: complete-result の保存ボタン案内ナレを basic_tut_15 から
   // favorite_save_01 「おきにいりに とっておけるよ。 ほしマークを おしてね」 に差替。
   // step ID は 'favorite-save' (現状 dispatch は voice ID 直渡しの chain 内なので
@@ -9589,16 +9592,9 @@ function getFreeGuideTabs() {
   if (isOkazuGuideStep()) {
     if (String(freeGuideStep).endsWith('Side')) {
       // v1494 cup-first: 小さいおかずはカップ経由のみ。side ステップから おかず/したにしく タブを撤去し、
-      // カップを先頭 (デフォルト) タブにする。初回チュートリアルは収録台本が food タブ前提のため、
-      // Phase 3 で作り直すまで旧タブ構成を維持する (compat shim — leaf 編集コードは休眠、削除しない)。
-      let tutorialActive = false;
-      try {
-        tutorialActive = !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
-      } catch (_) {}
-      const sideTabIds = tutorialActive
-        ? ['food', 'leaf', 'accessory', 'divider', 'pick']
-        : ['accessory', 'divider', 'pick'];
-      return sideTabIds
+      // カップを先頭 (デフォルト) タブにする。
+      // v1497: チュートリアルも新タブ構成 (小さいおかずはカップピッカー内で選ぶ) — compat shim 撤去済。
+      return ['accessory', 'divider', 'pick']
         .map(id => FREE_TABS.find(t => t.id === id))
         .filter(Boolean);
     }
@@ -9830,12 +9826,13 @@ function getTutorialPaletteAllowance(def) {
       ? ok
       : deny('プチトマトを いれようね');
   }
+  // v1497 cup-first: cup-edit / cup-edit-try / layer-done / tab-small / tab-small-food /
+  // small-place / cup-ok / small-edit / small-edit-try / complete は廃止済み step。
   if ([
     'greet', 'tab-rice', 'nori-ok', 'tab-okazu', 'layer-edit', 'layer-edit-try',
-    'move-requested-food', 'okazu-more', 'layer-done', 'tab-small', 'cup-edit',
-    'cup-edit-try', 'tab-small-food', 'small-next', 'complete-result', 'done'
+    'move-requested-food', 'okazu-more', 'small-next', 'complete-result', 'done'
   ].includes(step)) {
-    return deny(step === 'okazu-more' ? 'ちいさい おかずの ボタンを おしてね' : 'いまは おてほんの とおりに すすもうね');
+    return deny(step === 'okazu-more' ? '「カップへ」の ボタンを おしてね' : 'いまは おてほんの とおりに すすもうね');
   }
   return ok;
 }
@@ -13116,14 +13113,11 @@ function onFreeItemDragEnd(e) {
   playPop();
   try { if (typeof tutorialOnItemMoved === 'function') tutorialOnItemMoved(uid); } catch (_) {}
   // v1494 cup-first: カップ (またはカップ内おかず) は 無移動タップで おかずピッカーを開く。
-  // ドラッグ = 移動 / タップ = 編集 (しきりと同じ操作文法)。tutorial 中は台本の遷移に任せる。
+  // ドラッグ = 移動 / タップ = 編集 (しきりと同じ操作文法)。
+  // v1497: tutorial ガード撤去 — チュートリアルも実 UX と同じ挙動に乗る。
   if (simpleBentoMode && movedItem && movedItem.snapTarget && !getEditingCup()) {
-    let cupTapTutorialActive = false;
-    try {
-      cupTapTutorialActive = !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
-    } catch (_) {}
     const stayedPut = !!(dragStart && dist(movedItem, dragStart) <= 8);
-    if (stayedPut && !cupTapTutorialActive) {
+    if (stayedPut) {
       openCupEditor(uid);
       return;
     }
@@ -13482,13 +13476,9 @@ function addSimpleFixedPaletteItem(def, opts = {}) {
     freeActiveCupUid = item.uid;
     freeCupToolMode = 'move';
     // v1494 cup-first: カップを置いたら すぐ おかずピッカーを開く (小さいおかずの唯一の入口)。
-    // tutorial 中は tutorialOnItemPlaced が cup-edit 台本へ進めるので自動オープンしない。
-    let cupTutorialActive = false;
-    try {
-      cupTutorialActive = !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
-    } catch (_) {}
-    if (simpleBentoMode && isOkazuGuideStep()) freeLayoutTab = cupTutorialActive ? 'food' : 'accessory';
-    if (!cupTutorialActive) autoOpenCupEditorUid = item.uid;
+    // v1497: tutorial ガード撤去 — チュートリアルも自動オープンに乗り、 small-cup-food 台本へ直行する。
+    if (simpleBentoMode && isOkazuGuideStep()) freeLayoutTab = 'accessory';
+    autoOpenCupEditorUid = item.uid;
     setSpeech('カップを おいたよ。');
   } else if (def.type === 'leaf') {
     simpleNoCupSlotIndex = null;
@@ -18591,23 +18581,24 @@ function showTutorial() {
 }
 
 // ===== Full-flow Tutorial (v3) =====
-// 10-step button/tab/place-driven flow (no time-based progression).
+// button/tab/place-driven flow (no time-based progression).
 // state machine: tutorialState.step is the single source of truth.
-// Steps: greet → box → tab-rice → rice-place → decor → nori-ok →
+// Steps (v1497 cup-first): greet → box → tab-rice → rice-place → decor → nori-ok →
 //        tab-okazu → okazu-red → okazu-overlap → layer-edit →
-//        layer-edit-try → move-requested-food → okazu-more → small-accessory → cup-edit →
-//        cup-edit-try → small-cup-food → small-next → complete-result
+//        layer-edit-try → move-requested-food → okazu-more (「カップへ」押下) →
+//        small-accessory (カップ配置 → ピッカー自動オープン) → small-cup-food →
+//        small-next → complete-result
 // v1373: okazu-more step を追加 (メインおかずを追加で置けることを案内)
+// v1497: cup-edit / cup-edit-try / layer-done / tab-small / tab-small-food /
+//        small-place / cup-ok / small-edit / small-edit-try / complete を廃止。
 // 公開関数 (tutorialStart / tutorialOnGuideChange / tutorialOnItemPlaced /
 // tutorialOnStageComplete) は維持。 storage key は互換のため v1 を再利用。
 const TUTORIAL_STORAGE_KEY = BENTO_TUTORIAL_STORAGE_KEY;
 // v3 step ids (button/tab/place driven only):
 //   'greet' | 'box' | 'tab-rice' | 'rice-place' | 'decor' | 'nori-ok' |
 //   'tab-okazu' | 'okazu-red' | 'okazu-overlap' | 'layer-edit' |
-//   'layer-edit-try' | 'move-requested-food' | 'okazu-more' | 'layer-done' | 'tab-small' | 'small-accessory' | 'cup-edit' |
-//   'cup-edit-try' | 'tab-small-food' | 'small-place' | 'small-cup-food' |
-//   'cup-ok' | 'small-edit' | 'small-edit-try' | 'small-next' |
-//   'complete' | 'complete-result' | 'done'
+//   'layer-edit-try' | 'move-requested-food' | 'okazu-more' | 'small-accessory' |
+//   'small-cup-food' | 'small-next' | 'complete-result' | 'done'
 const tutorialState = {
   active: false,
   step: null,
@@ -18901,96 +18892,19 @@ function tutorialPlayStepVoice(step, firstRender) {
     try { _bentoDebugLog('[bento-debug] skip: no voice id for step', { step: step }); } catch (_) {}
     return;
   }
-  // v1409: cup-edit-try は 4 秒の短い 1 文ナレで、 advance 直後に確実に再生したいため
-  // lastVoiceStep guard を bypass する (同 step 内で何度 render されても確実に再生)。
-  // 他の step は重複再生防止のため従来通りの idempotency を維持。
-  if (step !== 'cup-edit-try' && tutorialState.lastVoiceStep === step) {
+  // v1497 cup-first: cup-edit / cup-edit-try step 廃止に伴い、 lastVoiceStep bypass と
+  // basic_tut_10 の cuePoints / auto-advance ディスパッチも撤去 (全 step 共通 idempotency)。
+  if (tutorialState.lastVoiceStep === step) {
     try { _bentoDebugLog('[bento-debug] skip: lastVoiceStep guard', { step: step }); } catch (_) {}
     return;
   }
   tutorialState.lastVoiceStep = step;
   const opts = {};
-  if (step === 'cup-edit-try') {
-    opts.onEnded = () => tutorialMarkCupOkAfterVoice(step);
-    opts.fallbackMs = 7600;
-  }
-  // v1457: cup-edit demo はサイズ1とOKだけを案内する。
-  if (step === 'cup-edit' && typeof tutorialOnCupEditCue === 'function') {
-    opts.cuePoints = [
-      { time: 0.0, key: 'size' },
-    ];
-    opts.onCue = (cue) => tutorialOnCupEditCue(cue.key);
-    // v1412: basic_tut_10 終了で 1 秒後に cup-edit-try に auto-advance。
-    //   ユーザーが「やってみよう」 を認識/押下せず demo に留まる問題を解消
-    //   (console ログで「cup-edit のまま size/arrow button 押下で再 render 連発、
-    //   cup-edit-try に進む log なし」が確認されたため)。
-    opts.fallbackMs = 6200;
-    opts.onEnded = () => {
-      try {
-        if (tutorialState && tutorialState.active && tutorialState.step === 'cup-edit') {
-          try { _bentoDebugLog('[bento-debug] cup-edit basic_tut_10 ended → auto-advance to cup-edit-try in 1s'); } catch (_) {}
-          setTimeout(() => {
-            if (tutorialState && tutorialState.active && tutorialState.step === 'cup-edit') {
-              if (typeof tutorialAdvance === 'function') tutorialAdvance('cup-edit-try');
-            }
-          }, 1000);
-        }
-      } catch (_) {}
-    };
-  }
   try { _bentoDebugLog('[bento-debug] dispatching playBentoTutorialVoice', { id: id, step: step, optsKeys: Object.keys(opts) }); } catch (_) {}
   playBentoTutorialVoice(id, opts);
 }
-function tutorialMarkCupOkAfterVoice(step) {
-  if (!tutorialState.active || tutorialState.step !== step) return;
-  const okBtn = tutorialCupOkButton();
-  if (!okBtn) {
-    tutorialRetryRenderStep(step, 160);
-    return;
-  }
-  const alreadyMarked = (tutorialState.trims || []).some(t => t.target === okBtn);
-  tutorialMarkTarget(okBtn, { radius: 16, outline: false });
-  if (!alreadyMarked) tutorialAnimateTap(okBtn);
-}
-// v1399: cup-edit demo の cue handler — basic_tut_10.mp3 の進行に合わせて
-//   key='size'   (~0.0s): サイズ ① ボタンだけを青枠 mark
-//   key='arrows' (~2.5s): サイズ mark を消して ↓↑ 矢印だけを青枠 mark
-// 既存 mark は tutorialClearTrims() で一旦消去してから新 mark を貼る (outline は cup-edit
-// では使わない設計なので trims のみで完結)。
-function tutorialOnCupEditCue(key) {
-  if (!tutorialState.active || tutorialState.step !== 'cup-edit') return;
-  // v1412: 最新 cue key を保存し、 button 押下後の toolbar 再生成 (renderFreeLayoutControls / renderFreeCupEditorControls)
-  //   末尾 hook から tutorialReapplyCupEditDemoMarks() で同じフェーズの mark を再 apply できるようにする。
-  tutorialState._cupEditCue = key;
-  // 既存 mark 全消去 (SVG trim path overlay を撤去)
-  try { tutorialClearTrims(); } catch (_) {}
-  if (key === 'size') {
-    const sizeOneBtn = tutorialEditSizeButtonEl(1);
-    const sizeControl = tutorialEditSizeControlEl();
-    const toolbar = tutorialContextToolbarEl();
-    if (sizeOneBtn) tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
-    else if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
-    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-  } else if (key === 'arrows') {
-    const layerDownBtn = tutorialLayerDownButtonEl();
-    const layerUpBtn = tutorialLayerUpButtonEl();
-    const toolbar = tutorialContextToolbarEl();
-    let marked = false;
-    if (layerDownBtn) { tutorialMarkTarget(layerDownBtn, { radius: 14, outline: false }); marked = true; }
-    if (layerUpBtn) { tutorialMarkTarget(layerUpBtn, { radius: 14, outline: false }); marked = true; }
-    if (!marked && toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-  }
-}
-function tutorialQueueCupOkHighlight(step, delay = 2600) {
-  if (tutorialState._cupOkTrimTimer) {
-    clearTimeout(tutorialState._cupOkTrimTimer);
-    tutorialState._cupOkTrimTimer = null;
-  }
-  tutorialState._cupOkTrimTimer = setTimeout(() => {
-    tutorialState._cupOkTrimTimer = null;
-    tutorialMarkCupOkAfterVoice(step);
-  }, delay);
-}
+// v1497 cup-first: tutorialMarkCupOkAfterVoice / tutorialOnCupEditCue / tutorialQueueCupOkHighlight
+// (cup-edit / cup-edit-try 専用ヘルパー) は step 廃止に伴い削除。
 function tutorialClearCompleteGuideTimers() {
   if (!tutorialState.completeGuideTimers || !tutorialState.completeGuideTimers.length) return;
   tutorialState.completeGuideTimers.forEach(id => clearTimeout(id));
@@ -20131,8 +20045,7 @@ function tutorialOnTabSwitch(tabId) {
   };
   if (s === 'tab-rice' && tabId === 'rice') advance('rice-place');
   else if (s === 'tab-okazu' && tabId === 'food') advance('okazu-red');
-  else if (s === 'tab-small' && tabId === 'accessory') advance('small-accessory');
-  else if (s === 'tab-small-food' && tabId === 'food') advance('small-place');
+  // v1497 cup-first: tab-small / tab-small-food step は廃止 (side は カップ先頭タブ + ピッカー直行)。
 }
 
 // state 遷移ヘルパ。 タイマー進行は禁止。 これと item-placed/button のみが進行口。
@@ -20187,12 +20100,7 @@ function tutorialAdvance(nextStep) {
   if (typeof tutorialHideFinger === 'function') {
     try { tutorialHideFinger(); } catch (_) {}
   }
-  // v1412: cup-edit-try に進む時は lastVoiceStep を強制リセットして確実に voice 再生 (basic_tut_11)。
-  //   cup-edit demo の cue state (_cupEditCue) もリセットして persist helper の混線を防ぐ。
-  if (nextStep === 'cup-edit-try' && tutorialState) {
-    tutorialState.lastVoiceStep = null;
-    tutorialState._cupEditCue = null;
-  }
+  // v1497 cup-first: cup-edit-try 専用の lastVoiceStep 強制リセットは step 廃止に伴い撤去。
   tutorialState.step = nextStep;
   // step 変更時は前ステップの装飾を一旦掃除
   tutorialClearTrims();
@@ -20594,15 +20502,15 @@ function tutorialRenderStep() {
         if (typeof renderFreeLayoutControls === 'function') renderFreeLayoutControls();
       } catch (_) {}
     }
-    // v1383: 実 UI ボタンの label に合わせて案内テキストを「ちいさい おかずへ」 に統一。
-    // 旧 (v1380 まで) は「おかずOK」 と案内していたが、 実際のボタン文言と異なるため
-    // 子供が該当ボタンを見つけられず詰む致命バグだった。
-    setSpeech('おかずは ここまでで だいじょうぶ。つぎは ちいさい おかずの ボタンを おしてね');
+    // v1383: 実 UI ボタンの label に合わせて案内テキストを統一する (旧「おかずOK」誤案内は
+    // 子供が該当ボタンを見つけられず詰む致命バグだった)。
+    // v1497 cup-first: ボタンは「カップへ」。 ナレ okazu_more_02 と同文で案内する。
+    setSpeech('すきな おかずを もっと いれても いいよ。おわったら「カップへ」を おしてね');
     try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('おかずは ここまでで<br>だいじょうぶ！<br>ちいさい おかずの ボタンを おしてね');
+    tutorialShowPonoCallout('すきな おかずを もっと<br>いれても いいよ！<br>おわったら「カップへ」を おしてね');
     tutorialSetModeLabel('つぎへ すすもう', {
       mode: 'try',
-      note: 'ちいさい おかずへ で つぎへ',
+      note: '「カップへ」で つぎへ',
     });
     tutorialHideBubble();
     tutorialHideFinger();
@@ -20625,52 +20533,7 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 7e. layer-done — レイヤー操作後、次のカップへつなぐ
-  if (step === 'layer-done') {
-    setSpeech('できたね！おかずは したへ よせたよ。つぎは カップを えらぼう');
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('できたね！<br>おかずは したへ よせたよ<br>つぎは カップを えらぼう');
-    tutorialSetModeLabel('できたね！', {
-      mode: 'try',
-      note: 'つぎは カップ',
-    });
-    tutorialHideBubble();
-    tutorialHideFinger();
-    if (firstRender) {
-      if (tutorialState._layerDoneTimer) clearTimeout(tutorialState._layerDoneTimer);
-      tutorialState._layerDoneTimer = setTimeout(() => {
-        tutorialState._layerDoneTimer = null;
-        if (tutorialState.active && tutorialState.step === 'layer-done') {
-          freeLayoutTab = 'accessory';
-          renderFreeLayoutControls();
-          tutorialAdvance('small-accessory');
-        }
-      }, 2100);
-    }
-    return;
-  }
-
-  // 8. tab-small — accessory (カップ) タブを押させる
-  if (step === 'tab-small') {
-    tutorialShowBubble('『カップ』を おしてね', { topVh: '18', side: 'left' });
-    if (firstRender) {
-      if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'accessory') {
-        setTimeout(() => tutorialAdvance('small-accessory'), 0);
-        return;
-      }
-    }
-    const smallTab = tutorialFindTabBtn('accessory');
-    if (smallTab) {
-      tutorialPositionBubbleBeside(smallTab, { gap: 8 });
-      if (firstRender) {
-        tutorialTrimPath(smallTab, { radius: 10 });
-      }
-      tutorialAnimateTap(smallTab);
-    } else {
-      tutorialHideFinger();
-    }
-    return;
-  }
+  // v1497 cup-first: layer-done / tab-small step は廃止 (orphan renderer 撤去)。
 
   // 9. small-accessory — カップ/仕切りを先に選ぶ
   if (step === 'small-accessory') {
@@ -20709,138 +20572,22 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 9b. cup-edit — カップを置いた直後にサイズ/上下を見せる
-  if (step === 'cup-edit') {
-    if (firstRender) tutorialSetActiveCupSizeKey('small');
-    const toolbar = tutorialContextToolbarEl();
-    const sizeControl = tutorialEditSizeControlEl();
-    const sizeOneBtn = tutorialEditSizeButtonEl(1);
-    setSpeech('カップを おいたよ。OKボタンを おしてね');
-    tutorialSetBottomSpeechHidden(true);
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('カップを おいたよ！<br>OKボタンを おしてね');
-    tutorialSetModeLabel('おてほんを みてみよう', {
-      mode: 'demo',
-      note: 'カップ OK',
-      buttonText: 'やってみよう',
-      onClick: () => tutorialAdvance('cup-edit-try'),
-    });
-    tutorialHideBubble();
-    // v1399: 初期 mark は size のみ — 矢印 mark は basic_tut_10.mp3 の cue (~2.5s) で tutorialOnCupEditCue が動的に切替
-    if (sizeOneBtn) tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
-    else if (sizeControl) tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
-    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-    else tutorialRetryRenderStep('cup-edit');
-    if (firstRender && (sizeControl || toolbar)) {
-      tutorialAnimateEditDemo(fast);
-      tutorialHideFingerAfter(2200, 'cup-edit');
-    } else if (!sizeControl && !toolbar) {
-      tutorialHideFinger();
-    }
-    return;
-  }
+  // v1497 cup-first: cup-edit / cup-edit-try (サイズ①→OK 教習) と tab-small-food は廃止。
+  // カップ配置で おかずピッカーが自動で開き、 そのまま small-cup-food (プチトマト選択) に入る。
 
-  // v1399: cup-edit demo の cue handler tutorialOnCupEditCue() は tutorialMarkCupOkAfterVoice
-  //   の直後 (top-level) に定義。 playBentoTutorialVoice の cuePoints (0.0s=size, 2.5s=arrows)
-  //   経由で呼ばれてサイズ mark → 矢印 mark を順次切替える。
-
-  // 9c. cup-edit-try — カップ編集を試したあと、小さいおかずを入れる
-  if (step === 'cup-edit-try') {
-    try { _bentoDebugLog('[bento-debug] cup-edit-try renderer entered', { firstRender: firstRender, hasVoiceAudio: !!bentoTutorialVoiceAudio, voiceSrc: bentoTutorialVoiceAudio ? bentoTutorialVoiceAudio.src : null, voicePaused: bentoTutorialVoiceAudio ? bentoTutorialVoiceAudio.paused : null }); } catch (_) {}
-    // v1410: tutorialPlayStepVoice 経路で何らかの理由で再生されない場合の belt-and-suspenders フォールバック。
-    // firstRender 時に 200ms 後に「まだ basic_tut_11 が再生されていない」 ことを確認して直接 play。
-    if (firstRender) {
-      setTimeout(function () {
-        try {
-          var audio = bentoTutorialVoiceAudio;
-          var stillNothing = !audio
-            || audio.paused
-            || (audio.src && audio.src.indexOf('basic_tut_11.mp3') < 0);
-          if (stillNothing) {
-            try { _bentoDebugWarn('[bento-debug] cup-edit-try voice fallback: directly playing basic_tut_11', { hadAudio: !!audio, paused: audio ? audio.paused : null, src: audio ? audio.src : null }); } catch (_) {}
-            try { tutorialState.lastVoiceStep = null; } catch (_) {}
-            playBentoTutorialVoice('basic_tut_11', { fallbackMs: 5500, onEnded: function () { try { tutorialMarkCupOkAfterVoice('cup-edit-try'); } catch (_) {} } });
-          } else {
-            try { _bentoDebugLog('[bento-debug] cup-edit-try voice already playing', { paused: audio.paused, src: audio.src, currentTime: audio.currentTime }); } catch (_) {}
-          }
-        } catch (e) {
-          try { _bentoDebugWarn('[bento-debug] cup-edit-try fallback check threw:', e && (e.message || e)); } catch (_) {}
-        }
-      }, 200);
-    }
-    if (firstRender) tutorialSetActiveCupSizeKey('small');
-    const toolbar = tutorialContextToolbarEl();
-    const sizeControl = tutorialEditSizeControlEl();
-    const sizeOneBtn = tutorialEditSizeButtonEl(1);
-    const okBtn = tutorialCupOkButton();
-    setSpeech('カップを おいたよ。OKボタンを おしてね');
-    tutorialSetBottomSpeechHidden(true);
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('カップを おいたよ！<br>OKボタンを おしてね');
-    tutorialSetModeLabel('やってみよう！', {
-      mode: 'try',
-      note: 'カップ OK',
-    });
-    tutorialHideBubble();
-    // v1370: ①ボタン と OK ボタン の両方を同時に青枠でマーク (box step の 2要素同時マークと同じ方式)
-    let markedCupTryTarget = false;
-    if (sizeOneBtn) {
-      tutorialMarkTarget(sizeOneBtn, { radius: 18, outline: false });
-      markedCupTryTarget = true;
-    } else if (sizeControl) {
-      tutorialMarkTarget(sizeControl, { radius: 18, outline: false });
-      markedCupTryTarget = true;
-    }
-    if (okBtn) {
-      tutorialMarkTarget(okBtn, { radius: 16, outline: false });
-      markedCupTryTarget = true;
-    }
-    // v1370: sizeOneBtn / sizeControl / okBtn いずれも無いときの toolbar fallback。
-    // else if を分離して挙動を明示化 (直前コミットは else if が markedCupTryTarget=true で toolbar をスキップする副作用を残していた)。
-    if (!markedCupTryTarget && toolbar) {
-      tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-      markedCupTryTarget = true;
-    }
-    if (!markedCupTryTarget) tutorialRetryRenderStep('cup-edit-try');
-    if (firstRender && sizeControl) {
-      tutorialAnimateEditDemo(fast);
-      // v1373: ナレ再生直後 (= ① と同時刻に近いタイミング) に OK mark を刺すよう前倒し
-      tutorialQueueCupOkHighlight('cup-edit-try', fast ? 200 : 500);
-    }
-    else tutorialHideFinger();
-    return;
-  }
-
-  // 10. tab-small-food — カップ/仕切り後に小さいおかず本体へ戻る
-  if (step === 'tab-small-food') {
-    tutorialShowBubble('つぎは『おかず』を おしてね', { topVh: '18', side: 'left' });
-    const okazuTab = tutorialFindTabBtn('food');
-    if (okazuTab) {
-      if (firstRender) tutorialTrimPath(okazuTab, { radius: 10 });
-      tutorialAnimateTap(okazuTab);
-    } else {
-      tutorialHideFinger();
-    }
-    return;
-  }
-
-  // 11. small-cup-food — カップ内に小さいおかずを入れる
+  // 11. small-cup-food — 自動で開いた おかずピッカー内で プチトマトを カップに いれる
   if (step === 'small-cup-food') {
-    if (getEditingCup()) {
-      freeCupEditorUid = null;
-      freeCupToolMode = 'move';
-      freeSelectedItemUid = null;
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
-    }
-    if (getSelectedCup()) {
-      freeSelectedItemUid = null;
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
-    }
-    if (freeLayoutTab !== 'food') {
-      freeLayoutTab = 'food';
-      renderFreeLayoutControls();
+    // ピッカー (カップエディタ) が開いていなければ開き直す (OK 誤タップ等からの復帰)。
+    // openCupEditor は freeLayoutTab='food' を設定し、 renderFreeLayoutControls が
+    // エディタ内パレット (.free-item-list) を再構築する。
+    if (!getEditingCup()) {
+      const activeCup = tutorialActiveCupItem();
+      if (activeCup) openCupEditor(activeCup.uid);
+      else {
+        // カップ自体が消えている異常系 — カップ配置 step へ戻す
+        tutorialAdvance('small-accessory');
+        return;
+      }
     }
     tutorialHidePonoCallout();
     setSpeech('みどりの プチトマトを カップに いれよう');
@@ -20872,71 +20619,7 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 12. small-place — 小さいおかずを 1個以上 配置
-  if (step === 'small-place') {
-    tutorialShowBubble('小さい おかずも<br>いくつか 入れられるよ', { topVh: '18', side: 'left' });
-    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindSmallFoodPaletteEl(),
-      () => tutorialStageRightHalfPoint(),
-      { fast }
-    );
-    return;
-  }
-
-  // 13. cup-ok — カップ編集を閉じる
-  if (step === 'cup-ok') {
-    const btn = tutorialCupOkButton();
-    if (btn) {
-      tutorialShowBubble('みぎの「OK」で とじよう', { topVh: '18', side: 'left' });
-      tutorialPositionBubbleBeside(btn);
-      if (firstRender) {
-        tutorialTrimPath(btn, { radius: 18 });
-      }
-      tutorialAnimateTap(btn);
-    } else {
-      tutorialAdvance(tutorialState.editDemoShown ? 'small-next' : 'small-edit');
-    }
-    return;
-  }
-
-  // 14. small-edit — 直し方を手の見本で案内
-  if (step === 'small-edit') {
-    const toolbar = tutorialContextToolbarEl();
-    if (firstRender) tutorialState.editDemoShown = true;
-    tutorialSetModeLabel('おてほんを みてみよう', {
-      mode: 'demo',
-      note: 'サイズ・むき・かさなり',
-      buttonText: 'やってみよう',
-      onClick: () => tutorialAdvance('small-edit-try'),
-    });
-    tutorialHideBubble();
-    if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-    else tutorialRetryRenderStep('small-edit');
-    if (firstRender && toolbar) {
-      tutorialAnimateEditDemo(fast);
-      tutorialHideFingerAfter(2200, 'small-edit');
-    } else if (!toolbar) {
-      tutorialHideFinger();
-    }
-    return;
-  }
-
-  // 14b. small-edit-try — 上部表示だけにして、弁当と操作パネルを隠さない
-  if (step === 'small-edit-try') {
-    const toolbar = tutorialContextToolbarEl();
-    tutorialSetModeLabel('やってみよう！', {
-      mode: 'try',
-      note: 'できたら つぎへ',
-      buttonText: 'つぎへ',
-      onClick: () => tutorialAdvance('small-next'),
-    });
-    tutorialHideBubble();
-    if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-    else tutorialRetryRenderStep('small-edit-try');
-    tutorialHideFinger();
-    return;
-  }
+  // v1497 cup-first: small-place / cup-ok / small-edit / small-edit-try step は廃止 (orphan renderer 撤去)。
 
   // 15. small-next — 進むボタンを対象の近くで案内
   if (step === 'small-next') {
@@ -20958,19 +20641,7 @@ function tutorialRenderStep() {
     return;
   }
 
-  // 16. complete — primary ボタンに trim + tap
-  if (step === 'complete') {
-    const btn = tutorialCompleteButton();
-    tutorialShowBubble(`あか・きいろ・みどりも みてみよう<br>できたら「${tutorialButtonLabel(btn)}」`, { topVh: '18', side: 'left' });
-    if (btn) {
-      tutorialPositionBubble(btn);
-      if (firstRender) tutorialTrimPath(btn, { radius: 24 });
-      tutorialAnimateTap(btn);
-    } else {
-      tutorialHideFinger();
-    }
-    return;
-  }
+  // v1497 cup-first: complete step は廃止 (orphan renderer 撤去。 完了案内は complete-result chain が担う)。
 }
 
 // .free-tab ボタンを ラベル / data-tab から特定
@@ -21100,22 +20771,15 @@ function tutorialOnGuideChange(/* step */) {
 }
 function tutorialOnCupEditorClosed() {
   if (!tutorialState.active) return;
-  if (tutorialState.step === 'cup-edit' || tutorialState.step === 'cup-edit-try') {
-    const cupUid = freeActiveCupUid || (getSelectedCup() && getSelectedCup().uid);
-    freeCupEditorUid = null;
-    freeCupToolMode = 'move';
-    if (cupUid) {
-      freeActiveCupUid = cupUid;
+  // v1497 cup-first: ピッカー (カップエディタ) が閉じた時 — small-cup-food 中に
+  // おかずが入っていれば small-next へ (実 UX の自動クローズ / OK 押下の両方をカバー)。
+  // おかず未投入のまま閉じた場合は renderer 側が開き直して復帰する。
+  if (tutorialState.step === 'small-cup-food') {
+    const cup = tutorialActiveCupItem();
+    if (cup && getCupChildren(cup).length > 0) {
+      tutorialClearSmallCupFoodLock();
+      tutorialAdvance('small-next');
     }
-    freeSelectedItemUid = null;
-    freeLayoutTab = 'food';
-    renderFreeLayoutStage();
-    renderFreeLayoutControls();
-    tutorialAdvance('small-cup-food');
-    return;
-  }
-  if (tutorialState.step === 'cup-ok') {
-    tutorialAdvance(tutorialState.editDemoShown ? 'small-next' : 'small-edit');
   }
 }
 function tutorialOnLayerMoved() {
@@ -21167,12 +20831,9 @@ function tutorialOnItemPlaced(item) {
   }
   if (step === 'small-accessory') {
     if (item.type === 'cup' || item.snapTarget) {
-      tutorialState.editDemoShown = true;
-      tutorialAdvance('cup-edit');
-      return;
-    }
-    if (item.type === 'divider') {
-      tutorialAdvance('tab-small-food');
+      // v1497 cup-first: カップ配置 → ピッカーは配置経路側で自動オープン済み。
+      // サイズ教習 (cup-edit) は廃止し、 そのまま プチトマト選択へ。
+      tutorialAdvance('small-cup-food');
       return;
     }
   }
@@ -21195,14 +20856,7 @@ function tutorialOnItemPlaced(item) {
     tutorialAdvance('small-next');
     return;
   }
-  if (step === 'small-place') {
-    // 小おかず (food side) の配置で進める。 accessory は small-accessory で扱う。
-    const role = item.okazuRole || '';
-    if (item.type === 'food' && !item.parentCupId && role === 'side') {
-      tutorialAdvance('small-edit');
-      return;
-    }
-  }
+  // v1497 cup-first: small-place step 廃止 (直置きの小さいおかずは存在しない)。
   if (step === 'decor' && item.type === 'decor' && countDecorOnTier(1) > 0) {
     tutorialAdvance('nori-ok');
     return;

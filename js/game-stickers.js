@@ -451,7 +451,10 @@
 
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-    _playRewardImpactSfx(result && result.gameId);
+    // v1891: 呼出元が purchase 用 rarity SE を先に鳴らしている場合は二重発火を抑制 (donguri-shop 動線)。
+    if (!options.suppressImpactSfx) {
+      _playRewardImpactSfx(result && result.gameId);
+    }
 
     var style = document.getElementById('game-sticker-style');
     if (!style) {

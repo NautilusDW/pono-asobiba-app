@@ -6594,46 +6594,57 @@ function renderLockedStickerTrayCard(sticker) {
 }
 
 // v1887: 未所有シールを触った時の静かな吹き出し。
-// 「まだ もっていないよ」 を 1500ms fade で表示、 同 sticker への再表示は 800ms debounce。
+// v1890: singleton 化。 DOM 要素を 1 個だけ再利用し、 新タップで即差替 (前を消さずスライド更新)。
+// 表示 900ms + fade 200ms。 同 id への連打は 150ms 未満 no-op。
 // チュートリアル中は owlHint と衝突するので no-op。
-let stickerTrayLockHintLastAt = 0;
-let stickerTrayLockHintLastId = "";
-let stickerTrayLockHintTimer = 0;
+const stickerTrayLockHintState = { el: null, hideTimer: 0, currentId: "", lastAt: 0 };
 function showStickerTrayLockHint(button) {
   if (!button || stickerTutorialState) return;
   const now = performance.now();
   const id = button.dataset.stickerTrayId || "";
-  if (id && id === stickerTrayLockHintLastId && now - stickerTrayLockHintLastAt < 800) {
+  const state = stickerTrayLockHintState;
+  if (id && id === state.currentId && now - state.lastAt < 150) {
     return;
   }
-  stickerTrayLockHintLastAt = now;
-  stickerTrayLockHintLastId = id;
-  const host = collectionStickerTray || document.body;
-  if (!host) return;
-  // 既存のヒントがあれば片付ける
-  host.querySelectorAll(".sticker-tray-lock-hint").forEach((el) => el.remove());
-  window.clearTimeout(stickerTrayLockHintTimer);
-  const hint = document.createElement("span");
-  hint.className = "sticker-tray-lock-hint";
-  hint.textContent = "まだ もっていないよ";
-  hint.setAttribute("role", "status");
-  hint.setAttribute("aria-live", "polite");
-  // 位置: button の上端付近を狙う (host が position:relative 前提でなくても fixed で計算)。
+  state.lastAt = now;
+  state.currentId = id;
+  // 既存の残骸 (旧実装の重複や別 host の欠片) を掃除
+  document.querySelectorAll(".sticker-tray-lock-hint").forEach((el) => {
+    if (el !== state.el) el.remove();
+  });
+  window.clearTimeout(state.hideTimer);
+  let hint = state.el;
+  if (!hint || !hint.isConnected) {
+    hint = document.createElement("span");
+    hint.className = "sticker-tray-lock-hint";
+    hint.textContent = "まだ もっていないよ";
+    hint.setAttribute("role", "status");
+    hint.setAttribute("aria-live", "polite");
+    hint.style.position = "fixed";
+    hint.style.transform = "translate(-50%, -100%)";
+    document.body.append(hint);
+    state.el = hint;
+  }
+  // 位置更新 (button の上端付近を狙う)。
   const rect = button.getBoundingClientRect();
-  hint.style.position = "fixed";
   hint.style.left = `${Math.round(rect.left + rect.width / 2)}px`;
   hint.style.top = `${Math.round(rect.top - 8)}px`;
-  hint.style.transform = "translate(-50%, -100%)";
-  hint.style.opacity = "0";
-  document.body.append(hint);
-  // fade in on next frame
+  hint.dataset.stickerId = id;
+  // 即可視化 (class トグル)。 fade は CSS transition。
   window.requestAnimationFrame(() => {
-    hint.style.opacity = "1";
+    if (state.el) state.el.classList.add("is-visible");
   });
-  stickerTrayLockHintTimer = window.setTimeout(() => {
-    hint.style.opacity = "0";
-    window.setTimeout(() => hint.remove(), 220);
-  }, 1500);
+  state.hideTimer = window.setTimeout(() => {
+    if (!state.el) return;
+    state.el.classList.remove("is-visible");
+    window.setTimeout(() => {
+      if (state.el && !state.el.classList.contains("is-visible")) {
+        state.el.remove();
+        state.el = null;
+        state.currentId = "";
+      }
+    }, 220);
+  }, 900);
 }
 
 function setupStickerTrayImageLazyLoading() {
