@@ -1956,7 +1956,7 @@ html, body {
 }
 button.free-okazu-picker-back {
   flex-shrink: 0;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 13px;
   border: 2px solid #8AD6B6;
   border-radius: 999px;
@@ -14895,7 +14895,8 @@ function toggleSimpleOkazuEditPicker(mode) {
   if (simpleOkazuEditPickerMode === 'food') {
     setSpeech('どの おかずに かえる？');
   } else if (simpleOkazuEditPickerMode === 'leaf') {
-    setSpeech('したに しく はっぱを えらんでね。');
+    // batch:1043 fix: header (free-okazu-picker-prompt) と同一文言を読み上げる
+    setSpeech(getSimpleLeafForOkazu(target) ? 'どの はっぱに かえる？' : 'したに しく はっぱを えらんでね。');
   }
   renderFreeLayoutControls();
   // (v1500 FIX8 の scrollIntoView は撤去 — batch:1043 T2 で picker はトレイ全体を
@@ -15086,6 +15087,9 @@ function renderSimpleOkazuEditPickerTray() {
     e.preventDefault();
     e.stopPropagation();
     simpleOkazuEditPickerMode = null;
+    // batch:1043 fix: picker を閉じたら編集パネルのガイド speech に戻す
+    // (picker のプロンプト speech が残ったままパネルに復帰するのを防ぐ)
+    setSpeech((target.name || 'おかず') + 'を えらんだよ。したの ボタンで かえたり はっぱを しいたり できるよ。');
     renderFreeLayoutControls();
   });
   head.appendChild(back);
