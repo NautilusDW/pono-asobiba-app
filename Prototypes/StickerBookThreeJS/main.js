@@ -7295,7 +7295,6 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     placement: { x: placement.x, y: placement.y, rotation: placement.rotation || 0, scale: placement.scale },
     pageNumber,
     peelDims: { width: dimensions.width, height: dimensions.height },
-    peelReversed: getPeelReversed(),
   };
   stickerPeelAnimations.push(animation);
   bendStickerPeelGeometry(animation, 0);
@@ -7395,9 +7394,7 @@ function bendStickerPeelGeometry(animation, progress) {
   const press = Math.sin(progress * Math.PI);
   const maxAngle = remaining * Math.PI * 1.05;
   const radius = maxAngle > 0.001 ? height / maxAngle : height;
-  // v1896: peel 反転 (上端 anchor で下方向へ倒れ込む) を localStorage で切替可能に
-  const reversed = animation.peelReversed === true;
-  const anchorY = reversed ? +height / 2 : -height / 2;
+  const anchorY = -height / 2;
   for (let i = 0; i < positions.count; i += 1) {
     const index = i * 3;
     const baseX = base[index];
@@ -7405,8 +7402,7 @@ function bendStickerPeelGeometry(animation, progress) {
     const baseZ = base[index + 2];
     const u = THREE.MathUtils.clamp(baseX / width + 0.5, 0, 1);
     const v = THREE.MathUtils.clamp(baseY / height + 0.5, 0, 1);
-    const vBent = reversed ? (1 - v) : v;
-    const bendT = Math.pow(vBent, 0.92);
+    const bendT = Math.pow(v, 0.92);
     const angle = maxAngle * bendT;
     const curledY = maxAngle > 0.001 ? anchorY + Math.sin(angle) * radius : baseY;
     const curledZ = maxAngle > 0.001 ? (1 - Math.cos(angle)) * radius : 0;
@@ -7425,22 +7421,10 @@ function bendStickerPeelGeometry(animation, progress) {
   geometry.computeVertexNormals();
   const lift = remaining * 0.2;
   animation.group.position.z = 0.018 + lift;
-  const tiltSign = reversed ? +1 : -1;
-  animation.group.rotation.x = THREE.MathUtils.degToRad(tiltSign * 12 * remaining + 2 * press);
+  animation.group.rotation.x = THREE.MathUtils.degToRad(-12 * remaining + 2 * press);
   animation.group.scale.setScalar(1 + remaining * 0.03 - press * 0.012);
   animation.frontMaterial.opacity = 0.96 + press * 0.04;
   animation.backMaterial.opacity = 0.92;
-}
-
-// v1896: peel 反転を localStorage で切替 (default true = 上端 anchor から下方向へ倒れる)。
-// 'pono_peel_reversed' が '0' の時のみ従来 (下端 anchor / 下→上) に戻す。
-function getPeelReversed() {
-  try {
-    if (typeof localStorage !== "undefined") {
-      return localStorage.getItem("pono_peel_reversed") !== "0";
-    }
-  } catch (_) {}
-  return true;
 }
 
 function finishStickerPeelAnimation(animation) {
