@@ -2094,6 +2094,37 @@ button.free-okazu-picker-back {
   opacity: 0.38;
   cursor: default;
 }
+/* batch:1057: decor (のり/かざり) 編集パネル — title 行 + [↺↻ちいさくおおきく] の 1 行。
+   子ども向けに tap target を拡大 (coarse pointer では 48px 以上)。
+   縦長トレイ (844x390 で幅 ~256px) でもボタン 4 つが 1 行に収まるよう
+   title は自分の行に出す (36% 幅内で潰れて読めなくなるのを防ぐ)。 */
+.free-context-toolbar--panel.has-decor-edit .free-context-toolbar-title {
+  flex: 1 1 100%;
+  max-width: none;
+}
+.free-context-toolbar--panel .free-decor-size-buttons {
+  display: flex;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.free-context-toolbar--panel.has-decor-edit button {
+  height: auto;
+  min-height: 38px;
+  min-width: 38px;
+}
+.free-context-toolbar--panel.has-decor-edit button.free-okazu-edit-btn {
+  padding: 0 8px;
+}
+@media (pointer: coarse) {
+  .free-context-toolbar--panel.has-decor-edit button {
+    min-height: 48px;
+    min-width: 48px;
+    font-size: 0.62rem;
+  }
+  .free-context-toolbar--panel.has-decor-edit button.free-okazu-edit-btn {
+    padding: 0 6px;
+  }
+}
 .free-placed-item.brush-locked {
   pointer-events: none;
 }
@@ -7716,6 +7747,12 @@ let simpleOkazuEditPickerUid = null;
 // batch:1045: はっぱ (したにしく) の アーム状態。 action-row の「はっぱ」ボタンで toggle。
 // アーム中にメインおかずをタップすると即 leaf picker を開く (未選択なら speech で誘導)。
 let simpleLeafApplyArmed = false;
+// batch:1057: 置いた のり/かざり (decor) の 無移動タップで開く 回転+サイズ編集パネル。
+// tap-to-open の uid を保持 (>8px ドラッグ移動では開かない)。 選択が他 item へ移ったら
+// createFreeContextToolbar 内の sync で破棄する (simpleOkazuEditPickerUid と同じ render 内 sync 方式)。
+let simpleDecorPanelUid = null;
+// batch:1057: decor パネル初回表示の一回きりヒント speech (ページロード毎)
+let simpleDecorPanelHintShown = false;
 // batch:1044 R2: 一回きり はっぱヒント (simpleLeafHintUid / bento_leaf_hint_v1) は撤去。
 const SIMPLE_CUP_FOOD_LIMIT = 1;
 const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
@@ -10537,6 +10574,7 @@ function setFreeGuideStep(step, opts = {}) {
   freeGuideStep = step;
   simpleNoCupSlotIndex = null;
   simpleLeafApplyArmed = false; // batch:1045: step 変更で必ずアーム解除
+  simpleDecorPanelUid = null; // batch:1057: step 変更で decor 編集パネルも閉じる
   resetFreeMainGuide();
   if (step === 'box') {
     freeActiveTier = 1;
@@ -13460,6 +13498,15 @@ function onFreeItemDragEnd(e) {
       return;
     }
   }
+  // batch:1057: 置いた のり/かざり (decor) も 無移動タップで 回転+サイズ編集パネルを開く
+  // (cup と同じ tap=編集 / drag=移動 の操作文法。 >8px 動かしたら開かない)。
+  if (simpleBentoMode && movedItem && movedItem.type === 'decor' && !getEditingCup()) {
+    const stayedPut = !!(dragStart && dist(movedItem, dragStart) <= 8);
+    if (stayedPut) {
+      openSimpleDecorEditPanel(uid);
+      return;
+    }
+  }
   if (uid === freePendingCupEditorUid) {
     freePendingCupEditorUid = null;
     openCupEditor(uid);
@@ -13705,6 +13752,8 @@ function createSimpleDecorPlacedItem(def, tier) {
     skipRender: true,
   });
   if (!item) return null;
+  // batch:1057: サイズ編集 (ちいさく/おおきく) の clamp 基準。 placement.size (=getSimpleDecorSize) を正とする。
+  item.sizeBase = placement.size;
   item.simpleSlot = '';
   item.simpleFaceSlot = placement.faceSlot || '';
   return item;
@@ -14164,6 +14213,7 @@ function removeFreeItemData(uid, opts = {}) {
   if (freeCupEditorUid && removeIds.has(freeCupEditorUid)) freeCupEditorUid = null;
   if (freePendingCupEditorUid && removeIds.has(freePendingCupEditorUid)) freePendingCupEditorUid = null;
   if (simpleReplaceSlotUid && removeIds.has(simpleReplaceSlotUid)) simpleReplaceSlotUid = null;
+  if (simpleDecorPanelUid && removeIds.has(simpleDecorPanelUid)) simpleDecorPanelUid = null; // batch:1057
   if (item.parentCupId) layoutCupChildren(placedItems.find(i => i.uid === item.parentCupId && i.snapTarget));
   return item;
 }
@@ -14244,6 +14294,67 @@ function setSelectedAccessorySize(sizeKey) {
   item.x = p.x; item.y = p.y;
   if (item.snapTarget) clampCupChildren(item);
   commitFreeHistoryChange(historyBefore);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+// batch:1057: のり/かざり (decor) の サイズ編集。 item.size (item.scale ではない) を
+// 基準サイズ sizeBase の 0.5x-2.0x に clamp しながら 1.15 倍ステップで増減する。
+const SIMPLE_DECOR_SCALE_MIN = 0.5;
+const SIMPLE_DECOR_SCALE_MAX = 2.0;
+const SIMPLE_DECOR_SCALE_STEP = 1.15;
+function getSimpleDecorSizeBase(item) {
+  if (!item) return 72;
+  const stamped = Number(item.sizeBase);
+  if (Number.isFinite(stamped) && stamped > 0) return stamped;
+  // 旧 in-memory item (sizeBase 未 stamp) は def から配置時サイズを再計算して lazy stamp
+  const def = decorItems.find(d => d && d.id === item.id) || null;
+  const base = def ? getSimpleDecorSize(def) : (Number(item.size) || 72);
+  item.sizeBase = base;
+  return base;
+}
+function getScaledSimpleDecorSize(item, factor) {
+  const base = getSimpleDecorSizeBase(item);
+  const cur = Number(item.size) || base;
+  return clamp(
+    Math.round(cur * factor),
+    Math.round(base * SIMPLE_DECOR_SCALE_MIN),
+    Math.round(base * SIMPLE_DECOR_SCALE_MAX)
+  );
+}
+function canScaleSelectedDecorItem(item, factor) {
+  if (!item || item.type !== 'decor') return false;
+  return getScaledSimpleDecorSize(item, factor) !== (Number(item.size) || getSimpleDecorSizeBase(item));
+}
+function scaleSelectedDecorItem(factor) {
+  const item = getSelectedFreeItem();
+  if (!item || item.type !== 'decor') return;
+  const next = getScaledSimpleDecorSize(item, factor);
+  if (next === item.size) return;
+  const historyBefore = beginFreeHistoryChange();
+  item.size = next;
+  // setSelectedAccessorySize と同じ resize 後 reposition。 のり/ふりかけ は rice 上に留める既存規約
+  // (snapPointForItem / setFreeItemPosition と同じ分岐) を踏襲。
+  const p = isRiceDecorItem(item)
+    ? clampPointToRice(item.x, item.y, item)
+    : clampPointToFreeItemBounds(item.x, item.y, item);
+  item.x = p.x; item.y = p.y;
+  commitFreeHistoryChange(historyBefore);
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+// batch:1057: decor 編集パネルの tap-to-open。 cup の openCupEditor に相当する状態遷移。
+function openSimpleDecorEditPanel(uid) {
+  const item = placedItems.find(i => i.uid === uid && i.type === 'decor');
+  if (!simpleBentoMode || freeMaskEditorMode || !item || !canSelectFreeItemInCurrentMode(item)) return;
+  // batch:1045 慣例: メインおかず以外に触れたら はっぱ armed は解除
+  // (decor tap は handleSimplePlacedItemTap L10418 を通らないので ここで replicate)。
+  if (simpleLeafApplyArmed) simpleLeafApplyArmed = false;
+  freeSelectedItemUid = uid;
+  simpleDecorPanelUid = uid;
+  if (!simpleDecorPanelHintShown) {
+    simpleDecorPanelHintShown = true;
+    setSpeech('まわしたり おおきさも かえられるよ！');
+  }
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -14755,6 +14866,7 @@ function resetSimpleBentoBuildForBoxChange() {
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
   simpleLeafApplyArmed = false; // batch:1045
+  simpleDecorPanelUid = null; // batch:1057
   resetFreeMainGuide();
 }
 function selectFreeBentoBox(id) {
@@ -15366,7 +15478,13 @@ function createFreeContextToolbar(opts = {}) {
   const item = getSelectedFreeItem();
   const simpleLeafToolbar = !!(simpleBentoMode && isSimpleLeafEditMode() && item && item.type === 'leaf');
   const simpleOkazuPanel = !!(simpleBentoMode && !!opts.panel && isSimpleMainOkazuEditTarget(item));
-  if (simpleBentoMode && !simpleLeafToolbar && !simpleOkazuPanel) return null;
+  // batch:1057: decor パネル state と選択の sync — 選択が decor 以外/別 uid へ移ったら state を破棄
+  // (delete 済み uid も item null でここに落ちる。 simpleOkazuEditPickerUid の render 内 sync と同方式)。
+  if (simpleBentoMode && simpleDecorPanelUid && (!item || item.uid !== simpleDecorPanelUid)) {
+    simpleDecorPanelUid = null;
+  }
+  const simpleDecorPanel = !!(simpleBentoMode && !!opts.panel && item && item.type === 'decor' && simpleDecorPanelUid === item.uid && !freeMaskEditorMode);
+  if (simpleBentoMode && !simpleLeafToolbar && !simpleOkazuPanel && !simpleDecorPanel) return null;
   if (!item || isFreeMainGuideBlocking() || freeBrushStampDef) return null;
   const panelMode = !!opts.panel;
   const toolbar = document.createElement('div');
@@ -15400,6 +15518,27 @@ function createFreeContextToolbar(opts = {}) {
     appendControl(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
   }
 
+  // batch:1057: decor パネル — 回転 (上の既存ボタン) + ちいさく/おおきく (1.15 倍ステップ、
+  // sizeBase の 0.5x-2.0x で clamp。 端に達したら disabled)。 けす は既存の action-row 側に任せる。
+  if (simpleDecorPanel) {
+    toolbar.classList.add('has-decor-edit');
+    const sizeGroup = document.createElement('div');
+    sizeGroup.className = 'free-decor-size-buttons';
+    sizeGroup.appendChild(createFreeContextButton(
+      'ちいさく',
+      'free-okazu-edit-btn',
+      () => scaleSelectedDecorItem(1 / SIMPLE_DECOR_SCALE_STEP),
+      !canScaleSelectedDecorItem(item, 1 / SIMPLE_DECOR_SCALE_STEP)
+    ));
+    sizeGroup.appendChild(createFreeContextButton(
+      'おおきく',
+      'free-okazu-edit-btn',
+      () => scaleSelectedDecorItem(SIMPLE_DECOR_SCALE_STEP),
+      !canScaleSelectedDecorItem(item, SIMPLE_DECOR_SCALE_STEP)
+    ));
+    appendControl(sizeGroup);
+  }
+
   if (item.snapTarget) {
     const editingCup = getEditingCup();
     const isEditingThisCup = editingCup && editingCup.uid === item.uid;
@@ -15412,7 +15551,8 @@ function createFreeContextToolbar(opts = {}) {
 
   // batch:1043 T1: ↓↑ レイヤーボタンも simple のメインおかず編集パネルからは撤去
   // (メインおかず同士でしか並べ替えられず実用性がほぼ無いため)。 他コンテキストは維持。
-  if (canShowLayerControlsForItem(item) && !simpleOkazuPanel) {
+  // batch:1057: decor パネルも 1 行維持のため ↓↑ は出さない (従来 simple では panel 自体が出なかった経路)。
+  if (canShowLayerControlsForItem(item) && !simpleOkazuPanel && !simpleDecorPanel) {
     const { units, selectedUnit, overlapUnits } = getLayerOverlapContext(item);
     if (selectedUnit && units.length >= 2 && overlapUnits.length) {
       const index = units.findIndex(unit => unit.key === selectedUnit.key);
@@ -17638,6 +17778,7 @@ function loadFreeLayoutStage() {
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
   simpleLeafApplyArmed = false; // batch:1045
+  simpleDecorPanelUid = null; // batch:1057
   const maskEdit = getFreeMaskEditRequest();
   freeMaskEditorMode = !!maskEdit;
   freeMaskEditorOpen = false;

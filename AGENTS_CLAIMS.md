@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-03 01:40 - by Claude - [batch:1057-nori-rotate-scale] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - のり(かざり)配置アイテムの回転・スケール編集UI追加
 
 
 
