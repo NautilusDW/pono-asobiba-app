@@ -1,5 +1,6 @@
 const BASE_URL = new URL("./", window.location.href);
 const CATALOG_URL = new URL("../../assets/data/game-stickers.json", BASE_URL);
+const FRAME_BASE_URL = new URL("./assets/sticker-carousel-frame-base.png", BASE_URL);
 const STATE_KEY = "pono_game_stickers_v1";
 
 const ROOMS = [
@@ -198,8 +199,12 @@ function createCarouselItem(sticker, index) {
   const frame = document.createElement("span");
   frame.className = "display-frame";
 
-  const mat = document.createElement("span");
-  mat.className = "mat-board";
+  const frameImage = document.createElement("img");
+  frameImage.className = "frame-base-image";
+  frameImage.src = FRAME_BASE_URL.href;
+  frameImage.alt = "";
+  frameImage.draggable = false;
+  frameImage.loading = "eager";
 
   const stickerWrap = document.createElement("span");
   stickerWrap.className = "sticker-wrap";
@@ -218,17 +223,13 @@ function createCarouselItem(sticker, index) {
     stickerWrap.appendChild(lock);
   }
 
-  mat.appendChild(stickerWrap);
-  frame.appendChild(mat);
-
-  const stand = document.createElement("span");
-  stand.className = "display-stand";
+  frame.append(frameImage, stickerWrap);
 
   const label = document.createElement("span");
   label.className = "frame-label";
   label.textContent = sticker.owned ? sticker.name : "まだ";
 
-  button.append(frame, stand, label);
+  button.append(frame, label);
   return button;
 }
 
