@@ -8166,6 +8166,9 @@
         var tryPlay = function () {
           try {
             if (_shopBgmIsMuted()) return;
+            // v1895 code-review HIGH fix: __nativePlay bypass が page-hidden 時に background-audio
+            //   policy を defeat しないよう、 document.hidden を明示チェック。 遅延 retry でも尊重。
+            if (document.hidden) return;
             if (!bgm.paused) return;
             if (bgm.preload !== 'auto') bgm.preload = 'auto';
             try { bgm.volume = 0.32; } catch (_) {}
@@ -8204,7 +8207,11 @@
         try { el.pause(); el.currentTime = 0; el.volume = vol; } catch (_) {}
         var np = _nativeMediaPlay();
         var doPlay = function () {
-          try { return np ? np.call(el) : el.play(); } catch (_) { return null; }
+          try {
+            // v1895 code-review HIGH fix: bypass でも page-hidden 時は再生しない (policy 尊重)
+            if (document.hidden) return null;
+            return np ? np.call(el) : el.play();
+          } catch (_) { return null; }
         };
         var pr = doPlay();
         if (pr && pr.catch) pr.catch(function () {

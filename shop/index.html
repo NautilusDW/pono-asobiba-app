@@ -336,7 +336,11 @@
       try { el.pause(); el.currentTime = 0; el.volume = vol; } catch (_) {}
       var np = _shopNativePlay();
       var doPlay = function () {
-        try { return np ? np.call(el) : el.play(); } catch (_) { return null; }
+        try {
+          // v1895 code-review HIGH fix: bypass でも page-hidden 時は再生しない (policy 尊重)
+          if (document.hidden) return null;
+          return np ? np.call(el) : el.play();
+        } catch (_) { return null; }
       };
       var pr = doPlay();
       if (pr && pr.catch) pr.catch(function () {
