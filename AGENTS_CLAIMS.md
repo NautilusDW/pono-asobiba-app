@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-03 00:45 - by Claude - [batch:1056-nori-tier-umeboshi-rename] - bento/index.html, assets/images/bento/free-layout/**, docs/BENTO_CONTENT_PLAN.md, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - のりティア再編 (無料=目鼻口眉のみ/book=セット3+ほっぺ+うめぼし+のりべん) + のりべん改名 + 新うめぼし画像実装 + クロップ欠けのり (三角等) 差し替え
 
 
 
