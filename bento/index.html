@@ -13026,6 +13026,19 @@ function onFreeItemDragEnd(e) {
   spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
   playPop();
   try { if (typeof tutorialOnItemMoved === 'function') tutorialOnItemMoved(uid); } catch (_) {}
+  // v1494 cup-first: カップ (またはカップ内おかず) は 無移動タップで おかずピッカーを開く。
+  // ドラッグ = 移動 / タップ = 編集 (しきりと同じ操作文法)。tutorial 中は台本の遷移に任せる。
+  if (simpleBentoMode && movedItem && movedItem.snapTarget && !getEditingCup()) {
+    let cupTapTutorialActive = false;
+    try {
+      cupTapTutorialActive = !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
+    } catch (_) {}
+    const stayedPut = !!(dragStart && dist(movedItem, dragStart) <= 8);
+    if (stayedPut && !cupTapTutorialActive) {
+      openCupEditor(uid);
+      return;
+    }
+  }
   if (uid === freePendingCupEditorUid) {
     freePendingCupEditorUid = null;
     openCupEditor(uid);
@@ -13373,13 +13386,21 @@ function addSimpleFixedPaletteItem(def, opts = {}) {
   applySimpleSlotPlacementToItem(item, slot);
   freeSelectedItemUid = item.uid;
   simpleReplaceSlotUid = null;
+  let autoOpenCupEditorUid = null;
   if (item.snapTarget) {
     simpleNoCupSlotIndex = null;
     simpleCupSlotIndex = null;
     freeActiveCupUid = item.uid;
     freeCupToolMode = 'move';
-    if (simpleBentoMode && isOkazuGuideStep()) freeLayoutTab = 'food';
-    setSpeech('カップを おいたよ。いれたいときは カップを えらんでね。');
+    // v1494 cup-first: カップを置いたら すぐ おかずピッカーを開く (小さいおかずの唯一の入口)。
+    // tutorial 中は tutorialOnItemPlaced が cup-edit 台本へ進めるので自動オープンしない。
+    let cupTutorialActive = false;
+    try {
+      cupTutorialActive = !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
+    } catch (_) {}
+    if (simpleBentoMode && isOkazuGuideStep()) freeLayoutTab = cupTutorialActive ? 'food' : 'accessory';
+    if (!cupTutorialActive) autoOpenCupEditorUid = item.uid;
+    setSpeech('カップを おいたよ。');
   } else if (def.type === 'leaf') {
     simpleNoCupSlotIndex = null;
     simpleCupSlotIndex = null;
@@ -13409,6 +13430,8 @@ function addSimpleFixedPaletteItem(def, opts = {}) {
   renderFreeLayoutControls();
   spawnLandingSparkles(document.querySelector(`[data-free-uid="${item.uid}"]`) || document.getElementById('free-layout-stage'));
   playPop();
+  // v1494 cup-first: カップ配置直後に おかずピッカーを開く (上でセット済みの時のみ)
+  if (autoOpenCupEditorUid) openCupEditor(autoOpenCupEditorUid);
   return item;
 }
 // v1491: side ステップで最後のおかずが入った瞬間 (ヒントチップ→OK ボタンに切替わる瞬間) に
@@ -13446,12 +13469,24 @@ function addSimpleFreePaletteItem(def) {
     return cupItem;
   }
   const activeCup = def.type === 'food' && canAddFoodToCup(def) && simpleNoCupSlotIndex == null
-    ? getSimpleCupForFoodPlacement(def, getTargetTierForType(def.type), { allowFull: true })
+    ? getSimpleCupForFoodPlacement(def, getTargetTierForType(def.type), { allowFull: true, allowUnselectedCup: true })
     : null;
   if (activeCup) {
     const cupItem = addSimpleFoodToCup(def, activeCup);
     if (cupItem) maybeAnnounceOkazuTierFilled(sideGuideStep, sideGuideTier, sideFilledBefore);
     return cupItem;
+  }
+  if (def.type === 'food' && canAddFoodToCup(def)) {
+    // v1494 cup-first: 小さいおかずはカップの中にだけ入る。直置き経路 (addSimpleFixedPaletteItem) は廃止。
+    // カップが 1 つも無ければ カップタブへ誘導する。
+    setSpeech('さきに カップを おいてね。');
+    showToast('さきに カップを おいてね');
+    if (isOkazuGuideStep() && String(freeGuideStep || '').endsWith('Side') && freeLayoutTab !== 'accessory') {
+      freeLayoutTab = 'accessory';
+    }
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+    return null;
   }
   let item = null;
   if (def.type === 'rice_auto') {
@@ -13477,7 +13512,7 @@ function addSimpleFreePaletteItem(def) {
     // v1490: メインが必要数そろってから「すすんでいいよ」を案内する (必要数は helper が正)
     // v1491: main スロットは満杯なので「もっといれてもいいよ」ではなく次ステップへ誘導する
     if (countOkazuRoleOnTier(tier, 'main') >= getRequiredOkazuCountsForTier(tier).main) {
-      setSpeech('メインのおかずが そろったね！つぎは 「ちいさい おかずへ」を おしてね。');
+      setSpeech('メインのおかずが そろったね！つぎは 「カップへ」を おしてね。');
     }
   }
   maybeAnnounceOkazuTierFilled(sideGuideStep, sideGuideTier, sideFilledBefore);
@@ -15881,7 +15916,8 @@ function tryFinishOkazuTier(tier) {
   }
   if (countOkazuRoleOnTier(tier, 'side') < requiredOkazu.side) {
     showToast(requiredOkazu.side > 1 ? '小さいおかずを ぜんぶ えらぼう！' : '小さいおかずを ひとつ えらぼう！');
-    freeLayoutTab = 'food';
+    // v1494 cup-first: side ステップに food タブは無い。カップタブへ誘導する。
+    freeLayoutTab = 'accessory';
     renderFreeLayoutControls();
     return;
   }
@@ -16567,91 +16603,47 @@ function createSimpleStageTargetLayer() {
   if (!shouldUseSimpleStageTargetMarkers()) return null;
   // batch:divider-ux — しきりタブでは空きスロット ghost レイヤーを出す
   if (isSimpleDividerEditMode()) return createSimpleDividerStageTargetLayer();
-  if (freeLayoutTab !== 'food' && freeLayoutTab !== 'accessory') return null;
+  // v1494 cup-first: 「そのまま おく」side マーカー (food タブ分岐) は廃止。
+  // 小さいおかずはカップ経由のみなので、カップマーカーだけ残す。
+  if (freeLayoutTab !== 'accessory') return null;
   const box = getSelectedBentoBox();
-  const tier = getTargetTierForType(freeLayoutTab === 'accessory' ? 'cup' : 'food');
+  const tier = getTargetTierForType('cup');
   const layer = document.createElement('div');
   layer.className = 'free-stage-target-layer';
 
-  if (freeLayoutTab === 'accessory') {
-    const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
-    const slots = getSimpleFixedSlots(cupDef, tier).slice(0, getSimpleCupSlotLimitForBox(box));
-    const activeIndex = getActiveSimpleCupSlotIndex(slots);
-    const markerPoints = getSimpleCupStageMarkerDisplayPoints(box, tier, slots);
-    slots.forEach((slot, idx) => {
-      const current = getSimpleSlotItem(slot);
-      const blocking = getSimpleSlotBlockingItem(slot);
-      if (blocking) return;
-      const blockedBySideFood = !!(blocking && blocking !== current);
-      const point = current && current.snapTarget
-        ? (getSimplePlacedItemPoint(current) || markerPoints[idx] || slot)
-        : (markerPoints[idx] || slot);
-      const marker = createFreeStageTargetMarker({
-        kind: 'cup',
-        slotIndex: idx,
-        emptyCup: !blocking,
-        filled: !!blocking,
-        active: idx === activeIndex && !blockedBySideFood,
-        x: point.x,
-        y: point.y,
-        label: String(idx + 1),
-        ariaLabel: blockedBySideFood
-          ? 'ここには おかずが あるよ'
-          : 'カップを おく ばしょ ' + (idx + 1),
-        onSelect: blockedBySideFood
-          ? () => {
-              setSpeech('ここには おかずが あるよ。べつの まるを えらんでね。');
-              showToast('ここには おかずが あるよ');
-            }
-          : () => selectCupSlotForSimplePlacement(idx),
-      });
-      if (marker) layer.appendChild(marker);
-    });
-    return layer.childNodes.length ? layer : null;
-  }
-
-  const selectedCup = getSimpleSelectedCupForPlacement(tier);
-  const sideCount = getSimpleSlotCountForBox(box, 'side-food');
-  const sideSlots = getSimpleFixedSlots({ type: 'food', okazuRole: 'side' }, tier).slice(0, sideCount);
   const cupDef = bentoAccessories.find(a => a && a.snapTarget) || { type: 'cup', snapTarget: true };
-  const cupSlots = getSimpleFixedSlots(cupDef, tier).slice(0, getSimpleCupSlotLimitForBox(box));
-  const activeSideIndex = selectedCup ? -1 : getActiveSimpleSideSlotIndex(sideSlots);
-  const cupsBySlotIndex = new Map();
-  getActiveTierCups().forEach((cup, fallbackIndex) => {
-    const idx = getSimpleCupMarkerSlotIndex(cup, fallbackIndex);
-    if (!cupsBySlotIndex.has(idx)) cupsBySlotIndex.set(idx, cup);
-  });
-  const markerCount = Math.max(
-    sideCount,
-    ...Array.from(cupsBySlotIndex.keys()).map(idx => idx + 1),
-    1
-  );
-  const sideMarkerPoints = getSimpleSideStageMarkerDisplayPoints(box, tier, sideSlots, sideCount, cupSlots);
-  const cupMarkerPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', cupSlots, cupSlots.length);
-  for (let idx = 0; idx < markerCount; idx += 1) {
-    const cup = cupsBySlotIndex.get(idx);
-    if (cup) continue;
-    const slot = sideSlots[idx];
-    if (!slot) continue;
+  const slots = getSimpleFixedSlots(cupDef, tier).slice(0, getSimpleCupSlotLimitForBox(box));
+  const activeIndex = getActiveSimpleCupSlotIndex(slots);
+  const markerPoints = getSimpleCupStageMarkerDisplayPoints(box, tier, slots);
+  slots.forEach((slot, idx) => {
     const current = getSimpleSlotItem(slot);
-    if (current) continue;
-    const point = current
-      ? (getSimplePlacedItemPoint(current) || sideMarkerPoints[idx] || slot)
-      : (sideMarkerPoints[idx] || slot);
-    if (!point) continue;
+    const blocking = getSimpleSlotBlockingItem(slot);
+    if (blocking) return;
+    const blockedBySideFood = !!(blocking && blocking !== current);
+    const point = current && current.snapTarget
+      ? (getSimplePlacedItemPoint(current) || markerPoints[idx] || slot)
+      : (markerPoints[idx] || slot);
     const marker = createFreeStageTargetMarker({
-      kind: 'side',
+      kind: 'cup',
       slotIndex: idx,
-      filled: !!current,
-      active: idx === activeSideIndex,
+      emptyCup: !blocking,
+      filled: !!blocking,
+      active: idx === activeIndex && !blockedBySideFood,
       x: point.x,
       y: point.y,
       label: String(idx + 1),
-      ariaLabel: getSimpleSideSlotPositionLabel(idx) + 'に そのまま おく',
-      onSelect: () => selectNoCupSlotForSimplePlacement(idx),
+      ariaLabel: blockedBySideFood
+        ? 'ここには おかずが あるよ'
+        : 'カップを おく ばしょ ' + (idx + 1),
+      onSelect: blockedBySideFood
+        ? () => {
+            setSpeech('ここには おかずが あるよ。べつの まるを えらんでね。');
+            showToast('ここには おかずが あるよ');
+          }
+        : () => selectCupSlotForSimplePlacement(idx),
     });
     if (marker) layer.appendChild(marker);
-  }
+  });
   return layer.childNodes.length ? layer : null;
 }
 function renderFreeCupControls() {
@@ -16892,7 +16884,7 @@ function renderFreeLayoutControls() {
     // v1490: メインおかずが必要数そろうまで disabled (ボタン自体は見せて動線を保つ)
     // v1491: disabled の理由が分かるよう、 未達の間はヒントチップも並べる
     const mainRemaining = getRequiredOkazuCountsForTier(tier).main - countOkazuRoleOnTier(tier, 'main');
-    actions.appendChild(makeSmallControlButton('ちいさい おかずへ', 'primary', () => tryFinishOkazuTier(tier), mainRemaining > 0));
+    actions.appendChild(makeSmallControlButton('カップへ', 'primary', () => tryFinishOkazuTier(tier), mainRemaining > 0));
     if (mainRemaining > 0) {
       actions.appendChild(makeOkazuRemainingHint(mainRemaining, 'メインのおかずを あと {n}こ いれてね'));
     }
@@ -19184,6 +19176,8 @@ function tutorialOkazuMoreAdvanceButton() {
   for (const b of buttons) {
     const t = (b.textContent || '').replace(/\s+/g, '');
     if ((t.indexOf('小さい') >= 0 || t.indexOf('ちいさい') >= 0) && t.indexOf('おかず') >= 0) return b;
+    // v1494 cup-first: main ステップの advance ボタンは「カップへ」にリネーム済み
+    if (t.indexOf('カップへ') >= 0) return b;
   }
   if (typeof tutorialCompleteButton === 'function') return tutorialCompleteButton();
   return null;
