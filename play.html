@@ -4448,12 +4448,17 @@
       overflow: hidden;
     }
     .donguri-shop-v2-rotation-note {
-      /* v1897 regression-hardening: rotation-note の縦位置回帰 (2026-06-27 以降 何度も再発) の
-         根本対策として、 3 系統に分散していた `top: X%` を CSS custom property
-         `--rot-note-top` (safe frame 16:9 高さの %) に一本化。 個別 viewport で微調整するときは
-         必ず var を上書きすること。 素の `top: X%` を書き加えないこと。
-         defaults: 16:9 desktop=10%, mobile(<=900px)=25.4%, 4:3 letterbox(901+ & 5/4-3/2)=14%。
-         対応する視覚参照点: 看板 (donguri-shop-v2-title, aspect 1763/519) の直下端。 */
+      /* v1897 regression-hardening + v1904 wide-viewport fix:
+         rotation-note の縦位置回帰 (2026-06-27 以降 何度も再発) の根本対策として、
+         `top: X%` を CSS custom property `--rot-note-top` (safe frame 16:9 高さの %) に一本化。
+         個別 viewport で微調整するときは 必ず var を上書きすること。 素の `top: X%` を書き加えないこと。
+         defaults (v1904 で 4 系統に拡張):
+           - mobile (max-width: 900px) = 25.4%
+           - 4:3 letterbox (min-width: 901px & 5/4 ≤ aspect ≤ 3/2 exclusive) = 14%
+           - wide desktop (min-width: 901px & aspect > 3/2 exclusive、 16:9 / 21:9 等) = 6%
+           - base fallback (それ以外、 実際にはほぼ hit しない) = 10%
+         対応する視覚参照点: 看板 (donguri-shop-v2-title, aspect 1763/519) の直下端。
+         v1904 media query 境界は exclusive にしてあり aspect=1.5 の 1 点でも double-match しない。 */
       --rot-note-top: 10%;
       position: absolute;
       left: 50%;
@@ -4936,10 +4941,10 @@
     }
     /* v1904: 超広角 viewport (aspect > 3/2、 16:9 / 21:9 desktop 等) では safe frame の縦が短くなり
        base 10% だと 看板 baked PNG (aspect 1763/519) の下端より下に落ちて 商品カード領域と重なる。
-       min-aspect-ratio: 3/2 の境界にしているのは 直上の 4:3 letterbox block (max-aspect-ratio: 3/2)
-       との連続性を持たせ、 aspect 3/2 (=1.5) 付近の double coverage / 隙間を回避するため。
+       境界は 1501/1000 (=1.501) で exclusive にして、 直上の 4:3 letterbox block (max-aspect-ratio: 3/2 = 1.5)
+       と aspect = 1.5 の 1 点でも double-match しないようにしてある (cascade 順序変化への耐性)。
        --rot-note-top: 6% は開始値、 実機で 4-8% の範囲で微調整して確定すること (実測要)。 */
-    @media (min-width: 901px) and (min-aspect-ratio: 3/2) {
+    @media (min-width: 901px) and (min-aspect-ratio: 1501/1000) {
       .donguri-shop-v2-rotation-note { --rot-note-top: 6%; }
     }
 
