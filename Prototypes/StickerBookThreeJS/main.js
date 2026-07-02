@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260703-0001";
+const ASSET_VERSION = "20260703-0002";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -33,7 +33,7 @@ const THICKNESS_TEXTURE_H = PAGE_H * (256 / 1536);
 const THICKNESS_OVERLAP = PAGE_H * (16 / 1536);
 const THICKNESS_LEVEL_NAMES = ["empty", "small", "half", "mostly", "full"];
 const THICKNESS_DEFAULT_SCALE_Y = {
-  empty: 0,
+  empty: 0.12,
   small: 0.8,
   half: 0.9,
   mostly: 0.97,
@@ -2066,10 +2066,10 @@ const COVER_TUNING_FIELDS = [
   ["coverBgOpacity", "背景 なじみ", 0, 0.8, 0.01],
 ];
 const DEFAULT_ZUKAN_TEXT_TUNING = {
-  indexTitleX: 0,
-  indexTitleY: 0,
-  indexSubtitleX: 0,
-  indexSubtitleY: 0,
+  indexTitleX: -12,
+  indexTitleY: -8,
+  indexSubtitleX: -2,
+  indexSubtitleY: -10,
   indexTemplateX: 0,
   indexTemplateY: 0,
   indexTemplateW: 0,
@@ -2082,24 +2082,24 @@ const DEFAULT_ZUKAN_TEXT_TUNING = {
   indexTextY: 0,
   indexNoteX: 0,
   indexNoteY: 0,
-  detailNumberX: 0,
+  detailNumberX: 28,
   detailNumberY: 0,
-  detailNameX: 0,
-  detailNameY: 0,
-  detailSubtitleX: 0,
+  detailNameX: 47,
+  detailNameY: 6,
+  detailSubtitleX: 47,
   detailSubtitleY: 0,
-  detailCategoryX: 0,
-  detailCategoryY: 0,
+  detailCategoryX: 19,
+  detailCategoryY: 9,
   detailImageX: 0,
   detailImageY: 0,
-  detailFieldTitleX: 0,
-  detailFieldTitleY: 0,
+  detailFieldTitleX: 31,
+  detailFieldTitleY: 10,
   detailFieldTextX: 0,
   detailFieldTextY: 0,
-  detailMemoTitleX: 0,
-  detailMemoTitleY: 0,
-  detailMemoTextX: 0,
-  detailMemoTextY: 0,
+  detailMemoTitleX: 37,
+  detailMemoTitleY: 14,
+  detailMemoTextX: -8,
+  detailMemoTextY: 21,
   detailTemplateX: 0,
   detailTemplateY: 0,
   detailTemplateW: 0,
@@ -2144,6 +2144,56 @@ for (let fieldIndex = 0; fieldIndex < 3; fieldIndex += 1) {
     DEFAULT_ZUKAN_TEXT_TUNING[zukanDetailFieldTuningKey(fieldIndex, part.id, "Y")] = 0;
   }
 }
+Object.assign(DEFAULT_ZUKAN_TEXT_TUNING, {
+  indexCard1NameX: 0,
+  indexCard1NameY: 0,
+  indexCard1NoteX: 0,
+  indexCard1NoteY: 22,
+  indexCard1TextX: 15,
+  indexCard1TextY: -23,
+  indexCard2NameX: 0,
+  indexCard2NameY: 0,
+  indexCard2NoteX: 2,
+  indexCard2NoteY: 20,
+  indexCard2TextX: 0,
+  indexCard2TextY: -23,
+  indexCard3NameX: 0,
+  indexCard3NameY: 0,
+  indexCard3NoteX: 1,
+  indexCard3NoteY: 17,
+  indexCard3TextX: 10,
+  indexCard3TextY: -19,
+  indexCard4NameX: 0,
+  indexCard4NameY: 0,
+  indexCard4NoteX: 2,
+  indexCard4NoteY: 19,
+  indexCard4TextX: 4,
+  indexCard4TextY: -21,
+  indexCard5NameX: 6,
+  indexCard5NameY: -20,
+  indexCard5NoteX: 0,
+  indexCard5NoteY: 0,
+  indexCard5TextX: 0,
+  indexCard5TextY: 0,
+  indexCard6NameX: 0,
+  indexCard6NameY: -19,
+  indexCard6NoteX: 0,
+  indexCard6NoteY: 0,
+  indexCard6TextX: 0,
+  indexCard6TextY: 0,
+  detailField1TitleX: 6,
+  detailField1TitleY: -20,
+  detailField1TextX: -12,
+  detailField1TextY: -2,
+  detailField2TitleX: 4,
+  detailField2TitleY: -13,
+  detailField2TextX: -15,
+  detailField2TextY: 0,
+  detailField3TitleX: 15,
+  detailField3TitleY: -7,
+  detailField3TextX: -19,
+  detailField3TextY: 7,
+});
 const ZUKAN_INDEX_CARD_TUNING_GROUPS = [];
 for (let slotIndex = 0; slotIndex < COLLECTION_INDEX_ITEMS_PER_PAGE; slotIndex += 1) {
   for (const part of ZUKAN_INDEX_CARD_TUNING_PARTS) {
