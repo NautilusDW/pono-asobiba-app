@@ -4448,10 +4448,16 @@
       overflow: hidden;
     }
     .donguri-shop-v2-rotation-note {
-      /* v1696: 16:9 で看板下端に密着させる (rotation-note と看板の縦間隔を圧縮)。 top 16%→10% */
+      /* v1897 regression-hardening: rotation-note の縦位置回帰 (2026-06-27 以降 何度も再発) の
+         根本対策として、 3 系統に分散していた `top: X%` を CSS custom property
+         `--rot-note-top` (safe frame 16:9 高さの %) に一本化。 個別 viewport で微調整するときは
+         必ず var を上書きすること。 素の `top: X%` を書き加えないこと。
+         defaults: 16:9 desktop=10%, mobile(<=900px)=25.4%, 4:3 letterbox(901+ & 5/4-3/2)=14%。
+         対応する視覚参照点: 看板 (donguri-shop-v2-title, aspect 1763/519) の直下端。 */
+      --rot-note-top: 10%;
       position: absolute;
       left: 50%;
-      top: 10%;
+      top: var(--rot-note-top);
       transform: translateX(-50%);
       width: min(48vw, 540px);
       z-index: 5;
@@ -4762,20 +4768,30 @@
       box-shadow: none; opacity: .85;
     }
     .donguri-shop-v2-owned-label {
+      /* v1897: 文言 「もう なかよし♪」 → 「こうかんしたよ♪」 (意味明確化)。
+         中央揃え強化: line-height:1 + padding:0 で emoji baseline drift を解消 (font-weight:900 の
+         Zen Maru Gothic は baseline がシフトし、 gap:4px の 💗 が縦位置を引き下げていた)。
+         目立ち色: pastel pink gradient + 暖色 border で 「もりのおみせ」 の暖色基調と調和させつつ
+         transparent 背景から視認性を確保。 hold ボタン (蜜色系) と色被りしない配色を選定。 */
       position: absolute;
       left: 7%;
       bottom: 6%;
       width: 86%; min-height: 13%;
       margin: 0;
+      padding: 0;
       display: flex; align-items: center; justify-content: center;
       gap: 4px;
-      background: transparent;
-      color: #6e4a00; font-size: clamp(11px, 1.5vw, 15px); font-weight: 900;
-      border: 0; border-radius: 12px;
-      box-shadow: none;
+      line-height: 1;
+      background: linear-gradient(180deg, #ffe0ee 0%, #ff9ec1 100%);
+      color: #8b2f5a; font-size: clamp(11px, 1.5vw, 15px); font-weight: 900;
+      border: 2px solid #c57799; border-radius: 12px;
+      box-shadow: 0 2px 0 rgba(140, 60, 96, .28), inset 0 1px 0 rgba(255, 255, 255, .55);
       cursor: pointer; -webkit-tap-highlight-color: transparent;
     }
-    .donguri-shop-v2-owned-label:active { transform: translateY(2px); box-shadow: none; }
+    .donguri-shop-v2-owned-label:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(140, 60, 96, .28), inset 0 1px 0 rgba(255, 255, 255, .45);
+    }
     .donguri-shop-v2-hold {
       position: absolute;
       left: 50%;
@@ -4851,7 +4867,8 @@
       .donguri-shop-v2-balance { width: clamp(86px, 17vw, 104px); min-width: 86px; font-size: clamp(13px, 3vw, 17px); padding-left: clamp(7px, 1.9vw, 10px); padding-right: clamp(9px, 2.1vw, 12px); }
       .donguri-shop-v2-balance-icon { width: clamp(18px, 4.2vw, 24px); }
       .donguri-shop-v2-title { width: min(39vw, 280px); font-size: 0; }
-      .donguri-shop-v2-rotation-note { top: 25.4%; width: min(62vw, 380px); font-size: clamp(8.5px, 1.55vw, 11.5px); }
+      /* v1897: --rot-note-top で 3 系統一元化 (base rule 参照) */
+      .donguri-shop-v2-rotation-note { --rot-note-top: 25.4%; width: min(62vw, 380px); font-size: clamp(8.5px, 1.55vw, 11.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
       .donguri-shop-v2-bubble { left: 3.8%; bottom: 62%; width: min(27%, 238px); font-size: clamp(10px, 1.55vw, 13.5px); }
       .donguri-shop-v2-subtitle { left: 4.2%; bottom: 54.8%; width: min(32%, 250px); min-height: clamp(16px, 4vw, 24px); padding: 2px 6px; font-size: clamp(7px, 1.28vw, 10px); border-width: 1.5px; }
@@ -4880,7 +4897,8 @@
       .donguri-shop-v2-head > .donguri-shop-v2-close { top: 8%; }
       .donguri-shop-v2-head > .donguri-shop-v2-balance { top: 8%; }
       .donguri-shop-v2-title { width: min(52vw, 540px); }
-      .donguri-shop-v2-rotation-note { top: 14%; font-size: clamp(13px, 1.5vw, 17.5px); }
+      /* v1897: --rot-note-top で 3 系統一元化 (base rule 参照) */
+      .donguri-shop-v2-rotation-note { --rot-note-top: 14%; font-size: clamp(13px, 1.5vw, 17.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.8%; bottom: 8.4%; width: 25.8%; max-width: 270px; }
       .donguri-shop-v2-bubble {
         left: 5.4%;
@@ -6274,6 +6292,8 @@
         <div class="debug-sticker-tools">
           <button class="debug-board-btn" id="debugStickerGrantAllBtn" type="button">ぜんぶふやす</button>
           <button class="debug-board-btn" id="debugStickerOpenBookBtn" type="button">シールちょうへ</button>
+          <!-- v1897: お店のシール/購入履歴/取り置きを全消し (rotation cache + purchases + reservation)。 PonoDebugMode.isAllowed() gate + confirm() 誤爆防止 -->
+          <button class="debug-board-btn" id="debugShopResetBtn" type="button">お店をリセット</button>
         </div>
         <label class="debug-feature-item debug-sticker-toggle" for="debugStickerUseAllToggle">
           <input class="debug-feature-check" id="debugStickerUseAllToggle" type="checkbox">
@@ -6969,7 +6989,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1896;
+    const PAGE_CACHE_VERSION = 1898;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -9748,7 +9768,7 @@
             // getOwnershipState は heart 演出判定のみに使う。
             var actionHtml;
             if (ownState.owned) {
-              actionHtml = '<button class="donguri-shop-v2-owned-label" type="button" data-action="heart">💗 もう なかよし♪</button>';
+              actionHtml = '<button class="donguri-shop-v2-owned-label" type="button" data-action="heart">💗 こうかんしたよ♪</button>';
             } else if (canBuy) {
               actionHtml = '<button class="donguri-shop-v2-buy" type="button" data-action="buy" aria-label="こうかんする"></button>';
             } else {
@@ -10894,6 +10914,7 @@
     const debugStickerCurrent = document.getElementById('debugStickerCurrent');
     const debugStickerGrantAllBtn = document.getElementById('debugStickerGrantAllBtn');
     const debugStickerOpenBookBtn = document.getElementById('debugStickerOpenBookBtn');
+    const debugShopResetBtn = document.getElementById('debugShopResetBtn');
     const debugStickerUseAllToggle = document.getElementById('debugStickerUseAllToggle');
     const debugStickerStatus = document.getElementById('debugStickerStatus');
     const DEBUG_STICKER_STATE_KEY = 'pono_game_stickers_v1';
@@ -11139,6 +11160,51 @@
       debugStickerOpenBookBtn.addEventListener('click', function () {
         if (!isManageDebugAllowed()) return;
         location.href = 'Prototypes/StickerBookThreeJS/?surface=inside';
+      });
+    }
+    // v1897: お店をリセット — rotation cache + purchase history + reservation を全消しして再抽選。
+    // PonoDebugMode.isAllowed() gate + confirm() 誤爆防止。 実行後、 shop 開いていれば hideShop→showShop で redraw。
+    if (debugShopResetBtn) {
+      debugShopResetBtn.addEventListener('click', function () {
+        if (!isManageDebugAllowed()) return;
+        if (!window.PonoDonguriShop) {
+          setDebugStickerStatus('PonoDonguriShop が よみこまれていません');
+          return;
+        }
+        var ok = false;
+        try { ok = window.confirm('お店のシールと 購入記録を ぜんぶ消してもいい? (取り置き / いま の 抽選もリセットされるよ)'); }
+        catch (_) { ok = false; } // v1897 code-review CRITICAL fix: confirm 不能環境は 安全側 (実行しない) に倒す
+        if (!ok) return;
+        try {
+          if (typeof window.PonoDonguriShop.__resetRotationLock === 'function') {
+            window.PonoDonguriShop.__resetRotationLock();
+          }
+          if (typeof window.PonoDonguriShop.__clearRotationStore === 'function') {
+            window.PonoDonguriShop.__clearRotationStore();
+          }
+          if (typeof window.PonoDonguriShop.__clearReservationStore === 'function') {
+            window.PonoDonguriShop.__clearReservationStore();
+          }
+          if (typeof window.PonoDonguriShop.__clearPurchaseStore === 'function') {
+            window.PonoDonguriShop.__clearPurchaseStore();
+          }
+        } catch (err) {
+          setDebugStickerStatus('リセットに しっぱいしたよ');
+          console.warn('[debug] shop reset failed', err);
+          return;
+        }
+        // 開いていたら再描画
+        try {
+          var shop = document.getElementById('donguriShop');
+          if (shop && !shop.hidden) {
+            if (typeof hideShop === 'function') hideShop();
+            if (typeof showShop === 'function') showShop();
+          } else if (typeof renderShopCatalog === 'function') {
+            renderShopCatalog();
+          }
+        } catch (_) {}
+        setDebugStickerStatus('お店をリセットしたよ');
+        try { window.alert('お店をリセットしたよ'); } catch (_) {}
       });
     }
     if (debugStickerUseAllToggle) {

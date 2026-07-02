@@ -427,7 +427,7 @@
       slot.className = 'item-slot';
       slot.dataset.slot = i;
       slot.dataset.stickerId = it.id;
-      var ownedTag = it.owned ? '<div class="item-name" style="color:#888;font-size:0.72rem;">もう なかよし♪</div>' : '';
+      var ownedTag = it.owned ? '<div class="item-name" style="color:#888;font-size:0.72rem;">こうかんしたよ♪</div>' : '';
       var imgHtml = it.img
         ? '<img class="item-img" src="' + it.img + '" alt="' + (it.name || '') + '" onerror="this.style.display=\'none\';this.nextElementSibling && (this.nextElementSibling.style.display=\'block\')">'
         : '';
@@ -469,7 +469,7 @@
     if (typeof window.spendAcorns !== 'function' || typeof window.getAcorns !== 'function') return;
 
     if (item.owned) {
-      showToast('🎀 もう なかよし♪');
+      showToast('🎀 こうかんしたよ♪');
       return;
     }
     var have = window.getAcorns();

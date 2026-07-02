@@ -513,6 +513,15 @@
     var ls = _ls();
     if (ls) { try { ls.removeItem(LS_RESERVE); } catch (e) {} }
   }
+  // v1897: 購入履歴 (LS_KEY = pono_donguri_shop_v1) を完全に消去。
+  // debug board 「シール」 tab の 「お店をリセット」 ボタン用。
+  // getCatalog cache は sticker owned flag 再計算のため次呼出時にリセットさせる。
+  function __clearPurchaseStore() {
+    memoryStore = null;
+    catalogCache = null;
+    var ls = _ls();
+    if (ls) { try { ls.removeItem(LS_KEY); } catch (e) {} }
+  }
 
   window.PonoDonguriShop = {
     getCatalog: getCatalog,
@@ -538,6 +547,7 @@
     },
     __resetRotationLock: __resetRotationLock,
     __clearRotationStore: __clearRotationStore,
-    __clearReservationStore: __clearReservationStore
+    __clearReservationStore: __clearReservationStore,
+    __clearPurchaseStore: __clearPurchaseStore
   };
 })(typeof window !== 'undefined' ? window : this);
