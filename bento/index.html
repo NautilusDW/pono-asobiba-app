@@ -4242,10 +4242,14 @@ body.bento-complete-open #sk-intro {
 .nori-skip-actions button:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
 
 /* ===== batch:1045: floating 「最初からやる」 ボタン ===== */
+/* batch:1047: 左上の せってい 木製看板 (.pono-menu-toggle / common/menu.js:
+   top:max(12px,safe-area) left:max(16px,safe-area) 56x56, media query なし) と
+   重なっていたため、同じ式で「看板のすぐ右 + 12px gap」へ移動。
+   縦は 56px 看板に対しセンター合わせ (fine=32px高 → +12px / coarse=40px高 → +8px)。 */
 .bento-restart-btn {
   position: fixed;
-  top: 6px;
-  left: 6px;
+  top: calc(max(12px, env(safe-area-inset-top)) + 12px);
+  left: calc(max(16px, env(safe-area-inset-left)) + 68px);
   z-index: 9500;
   min-height: 32px;
   padding: 4px 12px;
@@ -4269,7 +4273,7 @@ body.bento-complete-open #sk-intro {
 .bento-restart-btn::before { content: '⟲'; font-size: 0.85rem; line-height: 1; }
 .bento-restart-btn.hidden { display: none !important; }
 @media (pointer: coarse) {
-  .bento-restart-btn { min-height: 40px; font-size: 0.72rem; padding: 6px 14px; }
+  .bento-restart-btn { min-height: 40px; font-size: 0.72rem; padding: 6px 14px; top: calc(max(12px, env(safe-area-inset-top)) + 8px); }
 }
 body.bento-complete-open .bento-restart-btn { display: none !important; }
 

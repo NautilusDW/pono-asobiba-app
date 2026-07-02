@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-02T09:41:45Z - StickerBook peel 貼付 fade overlap 中の Z-fighting (下半分縞) を overlap 窓のみ peel を +0.006 lift して解消、 sw/play cache version 1915 bump
+- **タスク**: StickerBook peel 貼付 fade overlap 中の Z-fighting (下半分縞) を overlap 窓のみ peel を +0.006 lift して解消、 sw/play cache version 1915 bump
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 117
+- **エラー数**: 5
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 7, "Bash": 72, "Read": 2, "Workflow": 26, "Agent": 3, "Write": 2, "Edit": 1, "Grep": 1, "ToolSearch": 1, "TaskStop": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-07-02T09:34:44Z - bento staging KV rewrite: maskBounds symmetric x for 4 boxes + slotLayout cup/divider削除 (bento-mask-defaults-v1)
+- **タスク**: bento staging KV rewrite: maskBounds symmetric x for 4 boxes + slotLayout cup/divider削除 (bento-mask-defaults-v1)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 254
+- **エラー数**: 28
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 50, "Bash": 55, "Glob": 1, "Edit": 22, "Grep": 14, "ToolSearch": 2, "Workflow": 24, "TaskOutput": 69, "Agent": 17}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-02T06:59:58Z - bento ヒントチップ廃止(ポノ台詞化)+パネル1行化+空カップOKガード+仕切りパレット2種/長方形ゴースト/グリッド整列 batch:1044 sw v1901
 - **タスク**: bento ヒントチップ廃止(ポノ台詞化)+パネル1行化+空カップOKガード+仕切りパレット2種/長方形ゴースト/グリッド整列 batch:1044 sw v1901
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 45, "Bash": 29, "Glob": 1, "Edit": 20, "Grep": 14, "ToolSearch": 2, "Workflow": 18, "TaskOutput": 42, "Agent": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-02T04:16:38Z - bento cup-first fix-round: 9 cross-review fixes (picker tab guard/greet rotate rebind/tap-slop/coarse sizes/okazu-more allowance/voice-stop advance/leaf ownership+orphan/picker scroll/copy+NPC pin)
-- **タスク**: bento cup-first fix-round: 9 cross-review fixes (picker tab guard/greet rotate rebind/tap-slop/coarse sizes/okazu-more allowance/voice-stop advance/leaf ownership+orphan/picker scroll/copy+NPC pin)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 159
-- **エラー数**: 15
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 42, "Bash": 25, "Glob": 1, "Edit": 13, "Grep": 14, "ToolSearch": 2, "Workflow": 18, "TaskOutput": 42, "Agent": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-02T03:23:08Z - bento cup-first Phase3: tutorial rewire to new cup-picker flow + okazu_more_02 TTS regen + autostart fix + full E2E verify
-- **タスク**: bento cup-first Phase3: tutorial rewire to new cup-picker flow + okazu_more_02 TTS regen + autostart fix + full E2E verify
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 146
-- **エラー数**: 15
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 38, "Bash": 24, "Glob": 1, "Edit": 13, "Grep": 14, "ToolSearch": 2, "Workflow": 16, "TaskOutput": 36, "Agent": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
