@@ -144,13 +144,15 @@ BOOK_BENTO_NPCS       = ['risu', 'inu', 'shika']
 
 ### 2.2 ご飯 + 飾り
 
-| tier | のり (飾り) | ふりかけご飯 | ふりかけお絵かき | チャーハン/おにぎり/サンド |
-|---|---|---|---|---|
-| **無料** | **なし** (剥奪) | なし | なし | なし |
-| **本購入** | あり (現状の海苔セット) | **新規追加** | なし | なし |
-| **アプリ購入** | あり | あり | **新規実装** | **将来追加** (Phase 3) |
+**オーナー確定 (2026-07-03、 batch:1056 で実装):** 無料の のり/かざり は **目鼻口眉 5 点のみ** (`nori_eye_round` / `nori_nose_bear` / `nori_mouth_smile` / `nori_brow_left` / `nori_brow_right`)。
 
-「飾り」タブの中身は現行 11 種だが、無料からは「のり」系統 5 種を非表示にしてキャラ作りができないようにする。 ピック (4 種) を無料に残すかは要判断 (open question Q3 として残す案)。
+| tier | のり/かざり | ふりかけご飯 | ふりかけお絵かき | チャーハン/おにぎり/サンド |
+|---|---|---|---|---|
+| **無料** | **目鼻口眉 5 点のみ** (+ ピック 4 種) | なし | なし | なし |
+| **本購入** | ＋ 顔セット 3 種 (にこ/くま/ねこ)・ほっぺ・うめぼし・のりながしかく１ (旧「のりべん」)・既存 book のり全部 | **新規追加** | なし | なし |
+| **アプリ購入** | あり (book と同一) | あり | **新規実装** | **将来追加** (Phase 3) |
+
+無料でも目鼻口眉 5 点で最低限の顔作りは可能 (完全剥奪はしない)。 ワンタップ配置の顔セット / ほっぺ / うめぼし / のりシート (のりながしかく１) は book 以上。 ピック (4 種) は**無料継続で確定** (Q3 解決、 2026-07-03)。
 
 ---
 
@@ -189,8 +191,9 @@ BOOK_BENTO_NPCS       = ['risu', 'inu', 'shika']
 | **小さいおかず** | 4〜5 | 10 | 15〜20 |
 | **フルーツ** | (Q2 で確定) | (Q2 で確定) | (Q2 で確定) |
 | **ご飯ベース** | rice_base_round のみ | + bear / cat 形 + **ふりかけご飯** | + **ふりかけお絵かき** (Phase 2) |
-| **飾り (のり系 5)** | **なし** | あり | あり |
-| **飾り (ピック 4)** | あり (要判断) | あり | あり |
+| **飾り (のり 目鼻口眉 5)** | あり | あり | あり |
+| **飾り (顔セット 3・ほっぺ・うめぼし・のりながしかく１)** | **なし** | あり | あり |
+| **飾り (ピック 4)** | あり (**無料継続 確定 2026-07-03**) | あり | あり |
 | **お弁当箱** | box_rect_split (1 段) | + square / round (計 3、 square/round は 2 段) | + キャラ箱 4 種 (計 7、 キャラ箱も 2 段) |
 | **NPC** | なし | risu / inu / shika (3) | + ahiru / panda / neko (6) |
 
@@ -203,7 +206,7 @@ BOOK_BENTO_NPCS       = ['risu', 'inu', 'shika']
 ### Phase 1 — 今すぐ (本ドキュメント作成 PR)
 
 - [x] 本ドキュメント `docs/BENTO_CONTENT_PLAN.md` を作成し、 [TIER_POLICY.md §12](./TIER_POLICY.md) との関係を「BENTO_CONTENT_PLAN.md が bento の正本、 TIER_POLICY.md §12 は旧版」と明示
-- [ ] **無料からのり剥奪**: [common/tier.js](../common/tier.js) に `FREE_BENTO_DECOR_IDS = []` / `BOOK_BENTO_DECOR_IDS = ['nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile', 'nori_brow_left', 'nori_brow_right', 'ketchup_cheek', 'decor_umeboshi', 'pick_star', 'pick_flower', 'pick_flag', 'pick_heart']` のような配列を追加 + `isBentoDecorUnlocked(id)` を新設。 [bento/index.html](../bento/index.html) の `decorItems` レンダリング側でガード。
+- [x] **無料の飾り絞り込み (2026-07-03 実装、 batch:1056)**: 実装は common/tier.js の配列方式では**なく**、 [bento/index.html](../bento/index.html) の `decorItems` 各定義を `bookDecorItem(def)` (L7470、 `minTier:'book'` 付与) でラップし、 palette 側で `isBentoDecorUnlocked(def)` (`PonoTier` 経由の `isBentoMinTierUnlocked`) がガードする **per-def minTier 方式**。 無料 = 目鼻口眉 5 点 + ピック 4 種。 book 追加 = 顔セット 3 種・ほっぺ・うめぼし・のりながしかく１ (旧「のりべん」 `nori_bento_sheet`)・既存 book のり (乗り物/あそび系 shape 5 種の palette hide も解除済)。
 - [ ] **本にふりかけご飯追加**: `riceBases` に `rice_base_furikake_round` 等を追加し `BOOK_BENTO_RICE_IDS` で book 以上に開放。 既存アセット流用 (`rice_furikake.webp` ほか、 `RICE` 配列のものを再利用) で新規画像不要。
 - [ ] sw.js `CACHE_VERSION` bump (現値を確認の上 +1)
 
@@ -260,14 +263,14 @@ sub 上限を **20** に着地させる場合の追加不足: 上記 +10 種 (= 
 | 食材ロック判定 | `isBentoFoodUnlocked(name)` → [common/tier.js L283-291](../common/tier.js) |
 | 箱ロック判定 | `isBentoBoxUnlocked(boxId)` → [common/tier.js L293-300](../common/tier.js) |
 | NPC ロック判定 | `isBentoNpcUnlocked(npcId)` → [common/tier.js L302-308](../common/tier.js) |
-| **新規追加要**: 飾りロック判定 | 未実装、 `isBentoDecorUnlocked(decorId)` を新設すること |
+| 飾りロック判定 | **実装済** (batch:1056): [bento/index.html](../bento/index.html) 内 `isBentoDecorUnlocked(def)` — per-def `minTier` 方式 (`bookDecorItem` ラッパー) |
 | **新規追加要**: ご飯ロック判定 | 未実装、 `isBentoRiceUnlocked(riceId)` を新設すること |
 | フリーレイアウトパレットの取得 | `getFreePaletteItems(tabId)` → [bento/index.html L6260 前後](../bento/index.html) |
 | 役割 (main/side) 判定 | [bento/index.html L6045-6047](../bento/index.html) |
 | 既存定数 | `FREE_MAIN_OKAZU_NAMES` / `FREE_SIDE_OKAZU_NAMES` → [bento/index.html L4115-4116](../bento/index.html) |
 | NPC `shika` wantedFoods | [bento/index.html L4183](../bento/index.html) (book 以下に sub 食材が漏れる) |
 | `riceBases` 定義 | [bento/index.html L4914-4918](../bento/index.html) |
-| `decorItems` 定義 | [bento/index.html L4919-4931](../bento/index.html) |
+| `decorItems` 定義 | [bento/index.html L7473-7582 付近](../bento/index.html) (`bookDecorItem` ラッパーは L7470) |
 | `bentoBoxes` 定義 | [bento/index.html L4584-4880](../bento/index.html) |
 
 ---
@@ -278,7 +281,7 @@ sub 上限を **20** に着地させる場合の追加不足: 上記 +10 種 (= 
 
 - **Q1**: アプリ (sub) tier 上限は **15** に着地するか **20** に増やすか。 15 なら既存素材で完結、 20 なら新規画像生成が必要になる可能性大。
 - **Q2**: 「小さいおかず」タブに **フルーツを含めるか** の線引き。 現状フルーツ 9-10 種が `FREE_MAIN/SIDE_OKAZU_NAMES` の両方から漏れていて UI 上の役割が曖昧。 案 A: フルーツ専用タブを新設 / 案 B: 小さいに統合 (sub の小さい上限が 20 になりやすい) / 案 C: メインに統合 (味噌汁/おかずの代替的扱い、自然さに欠ける)。
-- **Q3**: 「飾り」剥奪の **粒度**。 のり 5 種 + うめぼし + ほっぺ までを book 以上に絞るのは確定として、 ピック 4 種 (ほし / はな / はた / ハート) を無料に残すかどうか。 残すと「のりはダメだけどピックは OK」 = キャラ作りはできないがちょっとした飾りはできる、 という中間体験になる。
+- **Q3 (解決 2026-07-03)**: 「飾り」剥奪の **粒度** → 無料 = 目鼻口眉 5 点のみ残し、 顔セット 3 種 + ほっぺ + うめぼし + のりシート (のりながしかく１) を book 以上に。 **ピック 4 種 (ほし / はな / はた / ハート) は無料継続で確定**。 「セットはダメだけどパーツとピックは OK」の中間体験を採用 (batch:1056 実装済)。
 - **Q4**: ふりかけお絵かき機能の **保存形式**。 案 A: Canvas Path (ベクター、 再描画可能、 容量小) / 案 B: 画像化 (Web Storage に dataURL、 シンプル、 容量大)。 LocalStorage 上限 (5MB) との兼ね合いで A が無難だが、 描画完了後にラスタライズして保存し、 編集再開時のみ画像を読むという折衷案もある。
 
 ---

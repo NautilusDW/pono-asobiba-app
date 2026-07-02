@@ -7473,36 +7473,38 @@ function bookDecorItem(def) {
 const decorItems = [
   // batch:1049 — faceSet の palette icon は 1 パーツではなくミニ顔コンポジット (clusterImages) で表示する。
   // image は tab thumbnail / 単画像 fallback 用に残す。 座標は box 中心 -0.5..0.5、 w は box 幅比。
-  { id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50, clusterImages: [
+  // batch:1056 — OWNER DECISION (2026-07-03): 無料の のり/かざり は目鼻口眉 5 点のみ。
+  // セット 3 種 / ほっぺ / うめぼし / のりシート は book 以上 (bookDecorItem)。 ピック 4 種は無料継続。
+  bookDecorItem({ id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50, clusterImages: [
     { img: FREE_ASSET + 'nori_eye_round.png', x: -0.19, y: -0.24, w: 0.16 },
     { img: FREE_ASSET + 'nori_eye_round.png', x: 0.19, y: -0.24, w: 0.16 },
     { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: 0.01, w: 0.22 },
     { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.225, w: 0.5 },
     { img: FREE_ASSET + 'ketchup_cheek.png', x: -0.365, y: 0.06, w: 0.21 },
     { img: FREE_ASSET + 'ketchup_cheek.png', x: 0.365, y: 0.06, w: 0.21 },
-  ] },
-  { id: 'nori_face_set_bear', type: 'decor', name: 'くまセット', image: FREE_ASSET + 'nori_nose_bear.png', faceSet: 'bear', size: 78, layerBase: 50, clusterImages: [
+  ] }),
+  bookDecorItem({ id: 'nori_face_set_bear', type: 'decor', name: 'くまセット', image: FREE_ASSET + 'nori_nose_bear.png', faceSet: 'bear', size: 78, layerBase: 50, clusterImages: [
     { img: FREE_ASSET + 'nori_eye_round.png', x: -0.26, y: -0.2, w: 0.15 },
     { img: FREE_ASSET + 'nori_eye_round.png', x: 0.26, y: -0.2, w: 0.15 },
     { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.22, w: 0.38 },
     { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: 0.02, w: 0.3 },
     { img: FREE_ASSET + 'ketchup_cheek.png', x: -0.37, y: 0.08, w: 0.2 },
     { img: FREE_ASSET + 'ketchup_cheek.png', x: 0.37, y: 0.08, w: 0.2 },
-  ] },
-  { id: 'nori_face_set_cat_book', type: 'decor', name: 'ねこセット', image: FREE_ASSET + 'book_nori_whisker_left_20260629_fix.png', faceSet: 'cat', size: 92, layerBase: 50, clusterImages: [
+  ] }),
+  bookDecorItem({ id: 'nori_face_set_cat_book', type: 'decor', name: 'ねこセット', image: FREE_ASSET + 'book_nori_whisker_left_20260629_fix.png', faceSet: 'cat', size: 92, layerBase: 50, clusterImages: [
     { img: FREE_ASSET + 'book_nori_whisker_left_20260629_fix.png', x: -0.345, y: 0.05, w: 0.28 },
     { img: FREE_ASSET + 'book_nori_whisker_right_20260629_fix.png', x: 0.345, y: 0.05, w: 0.28 },
     { img: FREE_ASSET + 'nori_eye_round.png', x: -0.19, y: -0.22, w: 0.15 },
     { img: FREE_ASSET + 'nori_eye_round.png', x: 0.19, y: -0.22, w: 0.15 },
     { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: -0.02, w: 0.2 },
     { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.2, w: 0.4 },
-  ] },
+  ] }),
   { id: 'nori_eye_round', type: 'decor', name: 'おめめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
   { id: 'nori_nose_bear', type: 'decor', name: 'はな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 54, layerBase: 50 },
   { id: 'nori_mouth_smile', type: 'decor', name: 'くち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 78, layerBase: 50 },
   { id: 'nori_brow_left', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_left.png', size: 42, layerBase: 50 },
   { id: 'nori_brow_right', type: 'decor', name: 'まゆ', image: FREE_ASSET + 'nori_brow_right.png', size: 42, layerBase: 50 },
-  { id: 'nori_bento_sheet', type: 'decor', name: 'のりべん', image: FREE_ASSET + 'nori_bento_sheet.png', size: 230, layerBase: 49 },
+  bookDecorItem({ id: 'nori_bento_sheet', type: 'decor', name: 'のりながしかく１', image: FREE_ASSET + 'nori_bento_sheet.png', size: 230, layerBase: 49 }), // batch:1056 旧名「のりべん」
   bookDecorItem({ id: 'nori_eye_smile_book', type: 'decor', name: 'にこめ', image: FREE_ASSET + 'book_nori_eye_smile_20260624.png', size: 38, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_sleepy_book', type: 'decor', name: 'ねむりめ', image: FREE_ASSET + 'book_nori_eye_sleepy_20260624.png', size: 38, layerBase: 50 }),
   bookDecorItem({ id: 'nori_eye_lash_book', type: 'decor', name: 'まつげめ', image: FREE_ASSET + 'book_nori_eye_lash_20260624.png', size: 42, layerBase: 50 }),
@@ -7518,7 +7520,7 @@ const decorItems = [
   bookDecorItem({ id: 'nori_shape_circle_book', type: 'decor', name: 'のりまる', image: FREE_ASSET + 'book_nori_shape_circle_20260624.png', size: 66, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_triangle_book', type: 'decor', name: 'のりさんかく', image: FREE_ASSET + 'book_nori_shape_triangle_20260629_fix.png', size: 82, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_square_book', type: 'decor', name: 'のりしかく', image: FREE_ASSET + 'book_nori_shape_square_20260624.png', size: 72, layerBase: 49 }),
-  bookDecorItem({ id: 'nori_shape_rect_book', type: 'decor', name: 'のりながしかく', image: FREE_ASSET + 'book_nori_shape_rect_20260624.png', size: 108, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_rect_book', type: 'decor', name: 'のりながしかく２', image: FREE_ASSET + 'book_nori_shape_rect_20260624.png', size: 108, layerBase: 49 }), // batch:1056 旧名「のりながしかく」
   bookDecorItem({ id: 'nori_shape_long_bar_book', type: 'decor', name: 'のりほそなが', image: FREE_ASSET + 'book_nori_shape_long_bar_20260624.png', size: 112, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_curve_book', type: 'decor', name: 'のりまがり', image: FREE_ASSET + 'book_nori_shape_curve_20260624.png', size: 70, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_wavy_book', type: 'decor', name: 'のりなみ', image: FREE_ASSET + 'book_nori_shape_wavy_20260624.png', size: 96, layerBase: 49 }),
@@ -7571,8 +7573,8 @@ const decorItems = [
   bookDecorItem({ id: 'furikake_guide_star_book', type: 'decor', name: 'ほしがた', image: FREE_ASSET + 'book_furikake_guide_star_20260624.png', size: 118, layerBase: 48 }),
   bookDecorItem({ id: 'furikake_guide_circle_book', type: 'decor', name: 'まるがた', image: FREE_ASSET + 'book_furikake_guide_circle_20260624.png', size: 118, layerBase: 48 }),
   bookDecorItem({ id: 'furikake_guide_flower_book', type: 'decor', name: 'おはながた', image: FREE_ASSET + 'book_furikake_guide_flower_20260624.png', size: 118, layerBase: 48 }),
-  { id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 },
-  { id: 'decor_umeboshi', type: 'decor', name: 'うめぼし', image: FREE_ASSET + 'decor_umeboshi.png', size: 54, layerBase: 52 },
+  bookDecorItem({ id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 }), // batch:1056 book 化
+  bookDecorItem({ id: 'decor_umeboshi', type: 'decor', name: 'うめぼし', image: FREE_ASSET + 'decor_umeboshi.png', size: 54, layerBase: 52 }), // batch:1056 book 化
   { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
   { id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 64, layerBase: 60 },
   { id: 'pick_flag', type: 'pick', name: 'はたピック', image: FREE_ASSET + 'pick_flag.png', css: 'free-css-pick', size: 64, layerBase: 60 },
@@ -9739,19 +9741,21 @@ const SIMPLE_DECOR_PALETTE_ORDER = [
   'nori_shape_curve_book',
   'nori_shape_wavy_book',
   'nori_shape_zigzag_book',
+  // batch:1056 — 乗り物/あそび系 nori shape を book palette に開放 (「電車とかも作れたりするので」)。
+  'nori_shape_train_book',
+  'nori_shape_tire_book',
+  'nori_shape_window_book',
+  'nori_shape_robot_panel_book',
+  'nori_shape_ghost_book',
   'ketchup_cheek',
   'decor_umeboshi',
 ];
 const SIMPLE_DECOR_PALETTE_HIDDEN = new Set([
+  // batch:1056 — nori_shape_tire/window/train/robot_panel/ghost の hide を解除 (book palette に表示)。 furikake は引き続き hide。
   'furikake_guide_heart_book',
   'furikake_guide_star_book',
   'furikake_guide_circle_book',
   'furikake_guide_flower_book',
-  'nori_shape_tire_book',
-  'nori_shape_window_book',
-  'nori_shape_train_book',
-  'nori_shape_robot_panel_book',
-  'nori_shape_ghost_book',
   'furikake_goma_book',
   'furikake_tamago_book',
   'furikake_aonori_book',
@@ -15736,7 +15740,11 @@ function getFreeTabIconDef(tabId) {
   if (tabId === 'divider') return bentoAccessories.find(def => def && def.type === 'divider') || null;
   if (tabId === 'pick') return decorItems.find(def => def && def.type === 'pick') || null;
   if (tabId === 'rice') return getAutoRicePaletteItem();
-  if (tabId === 'decor') return decorItems.find(def => def && isRiceDecorItem(def)) || decorItems[0] || null;
+  if (tabId === 'decor') {
+    // batch:1056 — free tier では先頭 (セット等) が book 化されたため、 unlocked catalog から icon を選ぶ。
+    const decorCatalog = getDecorPaletteCatalog();
+    return decorCatalog.find(def => def && isRiceDecorItem(def)) || decorCatalog[0] || decorItems.find(def => def && isRiceDecorItem(def)) || decorItems[0] || null;
+  }
   return null;
 }
 function appendFreeTabContent(button, tab) {
