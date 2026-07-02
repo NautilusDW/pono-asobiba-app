@@ -4,7 +4,6 @@ const FRAME_BASE_URL = new URL("./assets/sticker-carousel-frame-base.png", BASE_
 const STATE_KEY = "pono_game_stickers_v1";
 
 const ROOMS = [
-  { id: "all", label: "ぜんぶ" },
   { id: "creatures", label: "いきもの" },
   { id: "food", label: "たべもの" },
   { id: "sounds", label: "おと" },
@@ -22,14 +21,20 @@ const RARITY_LABEL = {
 
 const els = {
   loading: document.getElementById("loading"),
+  app: document.getElementById("app"),
+  backToMap: document.getElementById("backToMap"),
+  mapScreen: document.getElementById("mapScreen"),
+  screenKicker: document.getElementById("screenKicker"),
   roomTitle: document.getElementById("roomTitle"),
   roomTabs: document.getElementById("roomTabs"),
   countChip: document.getElementById("countChip"),
+  carouselShell: document.getElementById("carouselShell"),
   carouselViewport: document.getElementById("carouselViewport"),
   carouselLayer: document.getElementById("carouselLayer"),
   prevButton: document.getElementById("prevButton"),
   nextButton: document.getElementById("nextButton"),
   randomButton: document.getElementById("randomButton"),
+  bottomBar: document.getElementById("bottomBar"),
   positionChip: document.getElementById("positionChip"),
   progressFill: document.getElementById("progressFill"),
   detailOverlay: document.getElementById("detailOverlay"),
@@ -45,7 +50,7 @@ const els = {
 const state = {
   stickers: [],
   filtered: [],
-  roomId: "all",
+  roomId: "",
   index: 0,
   touchStartX: 0,
   touchStartY: 0,
@@ -60,9 +65,11 @@ async function init() {
     const catalog = await loadCatalog();
     state.stickers = flattenCatalog(catalog);
     applyOwnership(state.stickers);
-    renderRoomTabs();
-    selectRoom(readInitialRoomId());
+    renderMapRooms();
     wireEvents();
+    const initialRoomId = readInitialRoomId();
+    if (initialRoomId) showRoom(initialRoomId, { updateUrl: false });
+    else showMap({ updateUrl: false });
     els.loading.hidden = true;
   } catch (error) {
     console.error(error);
@@ -140,6 +147,28 @@ function demoOwned(sticker) {
   return sticker.serial % 4 !== 0;
 }
 
+function renderMapRooms() {
+  if (!els.mapScreen) return;
+  els.mapScreen.querySelectorAll("[data-room-id]").forEach((button) => {
+    const room = ROOMS.find((item) => item.id === button.dataset.roomId);
+    if (!room) return;
+    const list = state.stickers.filter((sticker) => sticker.roomId === room.id);
+    const owned = list.filter((sticker) => sticker.owned).length;
+    button.setAttribute("aria-label", `${room.label}のへや`);
+    button.replaceChildren(
+      createSpan("map-room__name", room.label),
+      createSpan("map-room__count", `${owned} / ${list.length}`)
+    );
+  });
+}
+
+function createSpan(className, text) {
+  const span = document.createElement("span");
+  span.className = className;
+  span.textContent = text;
+  return span;
+}
+
 function renderRoomTabs() {
   if (!els.roomTabs) return;
   els.roomTabs.replaceChildren();
@@ -157,9 +186,7 @@ function renderRoomTabs() {
 function selectRoom(roomId) {
   const room = ROOMS.find((item) => item.id === roomId) || ROOMS[0];
   state.roomId = room.id;
-  state.filtered = room.id === "all"
-    ? state.stickers.slice()
-    : state.stickers.filter((sticker) => sticker.roomId === room.id);
+  state.filtered = state.stickers.filter((sticker) => sticker.roomId === room.id);
   state.index = firstOwnedIndex(state.filtered);
 
   els.roomTitle.textContent = room.label;
@@ -170,6 +197,45 @@ function selectRoom(roomId) {
 
   renderCarousel();
   updateStatus();
+}
+
+function showMap({ updateUrl = true } = {}) {
+  state.roomId = "";
+  state.filtered = [];
+  els.app.classList.add("is-map");
+  els.app.classList.remove("is-room");
+  els.mapScreen.hidden = false;
+  els.carouselShell.hidden = true;
+  els.bottomBar.hidden = true;
+  els.backToMap.hidden = true;
+  els.countChip.hidden = true;
+  els.screenKicker.textContent = "マップ";
+  els.roomTitle.textContent = "シールてんじしつ";
+  closeDetail();
+  renderMapRooms();
+  if (updateUrl) setRoomUrl("");
+}
+
+function showRoom(roomId, { updateUrl = true } = {}) {
+  const room = ROOMS.find((item) => item.id === roomId) || ROOMS[0];
+  selectRoom(room.id);
+  els.app.classList.remove("is-map");
+  els.app.classList.add("is-room");
+  els.mapScreen.hidden = true;
+  els.carouselShell.hidden = false;
+  els.bottomBar.hidden = false;
+  els.backToMap.hidden = false;
+  els.countChip.hidden = false;
+  els.screenKicker.textContent = "シールてんじしつ";
+  if (updateUrl) setRoomUrl(room.id);
+  requestAnimationFrame(updateCarouselLayout);
+}
+
+function setRoomUrl(roomId) {
+  const url = new URL(window.location.href);
+  if (roomId) url.searchParams.set("room", roomId);
+  else url.searchParams.delete("room");
+  window.history.pushState({ roomId }, "", url);
 }
 
 function firstOwnedIndex(list) {
@@ -313,8 +379,9 @@ function openDetail(sticker) {
 }
 
 function closeDetail() {
+  const wasHidden = els.detailOverlay.hidden;
   els.detailOverlay.hidden = true;
-  if (state.lastFocus && typeof state.lastFocus.focus === "function") {
+  if (!wasHidden && state.lastFocus && typeof state.lastFocus.focus === "function") {
     state.lastFocus.focus();
   }
 }
@@ -328,15 +395,25 @@ function createTag(text, hot = false) {
 
 function roomLabel(roomId) {
   const room = ROOMS.find((item) => item.id === roomId);
-  return room ? room.label : "ぜんぶ";
+  return room ? room.label : "シール";
 }
 
 function wireEvents() {
+  els.mapScreen.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-room-id]");
+    if (!button) return;
+    showRoom(button.dataset.roomId);
+  });
+
+  els.backToMap.addEventListener("click", () => {
+    showMap();
+  });
+
   if (els.roomTabs) {
     els.roomTabs.addEventListener("click", (event) => {
       const button = event.target.closest("[data-room-id]");
       if (!button) return;
-      selectRoom(button.dataset.roomId);
+      showRoom(button.dataset.roomId);
     });
   }
 
@@ -404,6 +481,12 @@ function wireEvents() {
     if (event.key === "Escape" && !els.detailOverlay.hidden) closeDetail();
   });
 
+  window.addEventListener("popstate", () => {
+    const roomId = readInitialRoomId();
+    if (roomId) showRoom(roomId, { updateUrl: false });
+    else showMap({ updateUrl: false });
+  });
+
   window.addEventListener("resize", updateCarouselLayout);
 }
 
@@ -426,7 +509,7 @@ function readInitialRoomId() {
   const params = new URLSearchParams(window.location.search);
   const requested = params.get("room") || params.get("category") || window.location.hash.replace("#", "");
   if (ROOMS.some((room) => room.id === requested)) return requested;
-  return "all";
+  return "";
 }
 
 function hasAny(text, needles) {
