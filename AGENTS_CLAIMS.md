@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-02 15:10 - by Claude - [batch:1044-bento-panel-hints-divider-visibility] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - ヒントチップ廃止(ポノ台詞化) + パネル更に圧縮 + カップOKのおかず必須化 + 仕切りパレット2種化/長方形マーカー/位置整列
 
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
