@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260702-1921";
+const ASSET_VERSION = "20260702-1922";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -541,8 +541,8 @@ const ZUKAN_TEMPLATE_PRINT_INSET = {
   index: {
     top: 58,
     bottom: 46,
-    outer: 56,
-    inner: 92,
+    outer: 88,
+    inner: 60,
   },
   detail: {
     top: 42,
@@ -1938,7 +1938,7 @@ const STICKER_TUTORIAL_STEP_WRONG_ACTIONS = {
 const TUNING_STORAGE_KEY = "sb3d_layer_tuning_by_pair_v9";
 const LEGACY_TUNING_STORAGE_KEY = "sb3d_layer_tuning_v1";
 const COVER_TUNING_STORAGE_KEY = "sb3d_cover_tuning_v6";
-const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v2";
+const ZUKAN_TEXT_TUNING_STORAGE_KEY = "sb3d_zukan_text_tuning_v3";
 const ZUKAN_SIDE_TEMPLATE_STORAGE_KEY = "sb3d_zukan_side_template_settings_v1";
 const RIGHT_ONLY_PAIR_KEY = "empty-full";
 const RIGHT_ONLY_SYNC_MARKER_KEY = `${TUNING_STORAGE_KEY}_right_only_seed_v2`;
@@ -12294,43 +12294,43 @@ function zukanDetailTuningTargets(pageDef, subject, pageNumber, side = zukanSide
     zukanTuningRect(
       "detailNumber",
       header.x + 47 * headerScaleX + zukanTextOffset("detailNumberX"),
-      header.y + 29 * headerScaleY + zukanTextOffset("detailNumberY"),
+      header.y + 34 * headerScaleY + zukanTextOffset("detailNumberY"),
       120 * headerScaleX,
       54 * headerScaleY,
     ),
     zukanTuningRect(
       "detailCategory",
       header.x + header.width - 250 * headerScaleX + zukanTextOffset("detailCategoryX"),
-      header.y + 29 * headerScaleY + zukanTextOffset("detailCategoryY"),
+      header.y + 34 * headerScaleY + zukanTextOffset("detailCategoryY"),
       206 * headerScaleX,
       54 * headerScaleY,
     ),
     zukanTuningRect(
       "detailName",
       header.x + 196 * headerScaleX + zukanTextOffset("detailNameX"),
-      header.y + 14 * headerScaleY + zukanTextOffset("detailNameY"),
+      header.y + 24 * headerScaleY + zukanTextOffset("detailNameY"),
       header.width - 500 * headerScaleX,
       70 * headerScaleY,
     ),
     zukanTuningRect(
       "detailSubtitle",
       header.x + 200 * headerScaleX + zukanTextOffset("detailSubtitleX"),
-      header.y + 82 * headerScaleY + zukanTextOffset("detailSubtitleY"),
+      header.y + 94 * headerScaleY + zukanTextOffset("detailSubtitleY"),
       header.width - 520 * headerScaleX,
       42 * headerScaleY,
     ),
     zukanTuningRect("detailImage", image.x, image.y, image.width, image.height),
     zukanTuningRect(
       "detailMemoTitle",
-      memo.x + 48 * memoScaleX + zukanTextOffset("detailMemoTitleX"),
-      memo.y + 28 * memoScaleY + zukanTextOffset("detailMemoTitleY"),
+      memo.x + 54 * memoScaleX + zukanTextOffset("detailMemoTitleX"),
+      memo.y + 34 * memoScaleY + zukanTextOffset("detailMemoTitleY"),
       150 * memoScaleX,
       48 * memoScaleY,
     ),
     zukanTuningRect(
       "detailMemoText",
-      memo.x + 24 * memoScaleX + zukanTextOffset("detailMemoTextX"),
-      memo.y + 86 * memoScaleY + zukanTextOffset("detailMemoTextY"),
+      memo.x + 30 * memoScaleX + zukanTextOffset("detailMemoTextX"),
+      memo.y + 96 * memoScaleY + zukanTextOffset("detailMemoTextY"),
       memo.width - 48 * memoScaleX,
       132 * memoScaleY,
     ),
@@ -12341,15 +12341,15 @@ function zukanDetailTuningTargets(pageDef, subject, pageNumber, side = zukanSide
     targets.push(
       zukanTuningRect(
         "detailFieldTitle",
-        field.x + 4 * fieldScaleX + zukanTextOffset("detailFieldTitleX"),
-        field.y + 28 * fieldScaleY + zukanTextOffset("detailFieldTitleY"),
+        field.x + 10 * fieldScaleX + zukanTextOffset("detailFieldTitleX"),
+        field.y + 34 * fieldScaleY + zukanTextOffset("detailFieldTitleY"),
         260 * fieldScaleX,
         48 * fieldScaleY,
       ),
       zukanTuningRect(
         "detailFieldText",
-        field.x + 30 * fieldScaleX + zukanTextOffset("detailFieldTextX"),
-        field.y + 84 * fieldScaleY + zukanTextOffset("detailFieldTextY"),
+        field.x + 36 * fieldScaleX + zukanTextOffset("detailFieldTextX"),
+        field.y + 94 * fieldScaleY + zukanTextOffset("detailFieldTextY"),
         field.width - 60 * fieldScaleX,
         92 * fieldScaleY,
       ),
@@ -12879,7 +12879,7 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
     ctx,
     `No.${header.number}`,
     x + 107 * scaleX + zukanTextOffset("detailNumberX"),
-    y + 68 * scaleY + zukanTextOffset("detailNumberY"),
+    y + 73 * scaleY + zukanTextOffset("detailNumberY"),
     118 * scaleX,
     { weight: 900, preferredSize: 27, minSize: 19 },
   );
@@ -12894,7 +12894,7 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
     ctx,
     header.category,
     x + width - 147 * scaleX + zukanTextOffset("detailCategoryX"),
-    y + 67 * scaleY + zukanTextOffset("detailCategoryY"),
+    y + 73 * scaleY + zukanTextOffset("detailCategoryY"),
     186 * scaleX,
     { weight: 900, preferredSize: 25, minSize: 16 },
   );
@@ -12905,7 +12905,7 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
     ctx,
     header.name,
     x + 212 * scaleX + zukanTextOffset("detailNameX"),
-    y + 67 * scaleY + zukanTextOffset("detailNameY"),
+    y + 78 * scaleY + zukanTextOffset("detailNameY"),
     width - 506 * scaleX,
     { weight: 900, preferredSize: 54, minSize: 38 },
   );
@@ -12914,7 +12914,7 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
     ctx,
     header.subtitle,
     x + 216 * scaleX + zukanTextOffset("detailSubtitleX"),
-    y + 106 * scaleY + zukanTextOffset("detailSubtitleY"),
+    y + 118 * scaleY + zukanTextOffset("detailSubtitleY"),
     width - 520 * scaleX,
     { weight: 800, preferredSize: 25, minSize: 18 },
   );
@@ -13035,8 +13035,8 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
     ctx.fill();
   }
   ctx.textAlign = "center";
-  const titleCenterX = x + (generatedTemplate ? 112 : 139) * scaleX + zukanTextOffset("detailFieldTitleX");
-  const titleBaselineY = y + (generatedTemplate ? 64 : 48) * scaleY + zukanTextOffset("detailFieldTitleY");
+  const titleCenterX = x + (generatedTemplate ? 118 : 139) * scaleX + zukanTextOffset("detailFieldTitleX");
+  const titleBaselineY = y + (generatedTemplate ? 72 : 48) * scaleY + zukanTextOffset("detailFieldTitleY");
   const titleMaxWidth = (generatedTemplate ? 220 : 206) * scaleX;
   ctx.fillStyle = "#ffffff";
   drawFittedZukanText(
@@ -13055,8 +13055,8 @@ function drawCollectionZukanField(ctx, title, value, x, y, width, height, accent
   drawWrappedCanvasText(
     ctx,
     value,
-    x + (generatedTemplate ? 48 : 30) * scaleX + zukanTextOffset("detailFieldTextX"),
-    y + (generatedTemplate ? 122 : 96) * scaleY + zukanTextOffset("detailFieldTextY"),
+    x + (generatedTemplate ? 56 : 30) * scaleX + zukanTextOffset("detailFieldTextX"),
+    y + (generatedTemplate ? 134 : 96) * scaleY + zukanTextOffset("detailFieldTextY"),
     width - (generatedTemplate ? 84 : 60) * scaleX,
     (valueFontSize + 6) * scaleY,
     2,
@@ -13091,8 +13091,8 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   drawFittedZukanText(
     ctx,
     memo.title,
-    x + 123 * scaleX + zukanTextOffset("detailMemoTitleX"),
-    y + 61 * scaleY + zukanTextOffset("detailMemoTitleY"),
+    x + 130 * scaleX + zukanTextOffset("detailMemoTitleX"),
+    y + 72 * scaleY + zukanTextOffset("detailMemoTitleY"),
     174 * scaleX,
     { weight: 900, preferredSize: 24, minSize: 15 },
   );
@@ -13114,8 +13114,8 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
   drawWrappedCanvasText(
     ctx,
     memo.value,
-    x + 38 * scaleX + zukanTextOffset("detailMemoTextX"),
-    y + 122 * scaleY + zukanTextOffset("detailMemoTextY"),
+    x + 46 * scaleX + zukanTextOffset("detailMemoTextX"),
+    y + 140 * scaleY + zukanTextOffset("detailMemoTextY"),
     width - 76 * scaleX,
     38 * scaleY,
     3,

@@ -17,6 +17,10 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-02 - [batch:1052-zukan-page-alignment-followup] Codex: ユーザー追加指摘「左ページがまだずれている」「右ページはページ位置OKだがテキストがずれている」に対応開始。前回 batch:1050 の続きとして、StickerBookThreeJS ずかん index 左ページのテンプレート余白と detail 右ページの文字ベースラインのみを再調整する。App prototype 差分のため develop 同期は不要予定。 (by Codex)
+
+- 2026-07-02 - [batch:1052-zukan-page-alignment-followup] DONE - Codex: StickerBookThreeJS ずかん index 左ページのテンプレート余白を外側 88 / 内側 60 に変更し、左もくじテンプレートを紙面中央側へ戻した。detail 右ページはテンプレート位置を維持し、ヘッダー/項目/メモの文字ベースラインと本文開始位置を下げて各枠内へ合わせた。`ASSET_VERSION` / StickerBookThreeJS module query / `PAGE_CACHE_VERSION` / `sw.js CACHE_VERSION` は 1922、zukan text tuning 保存キーは v3。検証: esbuild parse main.js/sw.js、`git diff --check`、Playwright local `album=collection&page=1&tutorial=0` at 1366x768/1024x768/844x390/390x844 で pageerror 0 / requestfailed 0 / overflowX 0、スクショ目視で左もくじの紙面内寄せと右ページ文字の枠内収まりを確認。App prototype 差分のため develop 同期不要。 (by Codex)
+
 - 2026-07-02 - [batch:1050-zukan-page-fit-text] DONE - Codex: StickerBookThreeJS ずかん detail の緑ページ配置と文字収まりを修正。`ZUKAN_TEMPLATE_PRINT_INSET` を index/detail 別にし、detail は内側 inset を 92→46 相当に縮めて右ページ中央側の下地露出を解消。古い `sb3d_zukan_text_tuning_v1` は v2 へ切替し、過去の `?tune=1` 調整が新デフォルトを上書きしないようにした。詳細ヘッダー/項目/メモは枠幅に合わせてフォントを縮小、折返し末尾省略も修正。「ふくろう博士のメモ」は子ども向け表示として `はかせメモ` に短縮。`ASSET_VERSION` / StickerBookThreeJS module query / `PAGE_CACHE_VERSION` / `sw.js CACHE_VERSION` は 1921。検証: esbuild parse main.js/sw.js、`git diff --check`、Playwright local `album=collection&page=1&tutorial=0` at 1366x768/1024x768/844x390/390x844 で pageerror 0 / requestfailed 0 / overflowX 0、スクショ目視で右ページ内側の大きな下地露出なし・文字枠内収まり確認。App prototype 差分のため develop 同期不要。 (by Codex)
 
 - 2026-07-02 - [batch:1050-zukan-page-fit-text] Codex: ずかん詳細ページで下地が左内側に見える/緑ページが本来位置からずれて見える件と、各フレーム内の文字はみ出し修正に着手。HANDOFF では過去のテンプレート位置調整履歴あり、今回の同一未完了 Active は無しと確認。対象は StickerBookThreeJS collection/ずかんの `Prototypes/StickerBookThreeJS/main.js` 中心に調査予定。 (by Codex)
