@@ -2246,6 +2246,8 @@ const stickerPasteParticleState = {
   BURST_JITTER_MIN: 0.03,
   BURST_JITTER_MAX: 0.08,
   BURST_DELAY_MS: 50,
+  // v1900: emitter 位置を 角 (0.0) から 中心 (1.0) の間で lerp。 実機評価で段階的に上げる想定 (0.35 → 0.5 → 0.7)。
+  BURST_CENTER_LERP: 0.35,
 };
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
@@ -7495,8 +7497,10 @@ function emitStickerPasteParticles(pageNumber, placement, peelDims) {
   const sinR = Math.sin(rotationRad);
   const cornerLocalX = cx * cosR - cy * sinR;
   const cornerLocalY = cx * sinR + cy * cosR;
-  const centerX = pageMesh.position.x + local.x + cornerLocalX;
-  const centerY = local.y + cornerLocalY;
+  // v1900: BURST_CENTER_LERP=0.0 で完全に角、 1.0 で完全に中心 (local)。 現行 0.35 は 65% 角 + 35% 中心。
+  const cornerWeight = 1 - (state.BURST_CENTER_LERP || 0);
+  const centerX = pageMesh.position.x + local.x + cornerLocalX * cornerWeight;
+  const centerY = local.y + cornerLocalY * cornerWeight;
   const centerZ = 0.20;
 
   // 扇状 120° arc をコーナーの外側方向 (シール座標系) に開く。
