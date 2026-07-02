@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>シールてんじしつ カルーセル</title>
+  <link rel="stylesheet" href="./styles.css?v=20260703">
+</head>
+<body>
+  <div class="stage" id="app">
+    <div class="museum-bg" aria-hidden="true"></div>
+    <div class="museum-vignette" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="title-group">
+        <p>シールてんじしつ</p>
+        <h1 id="roomTitle">ぜんぶ</h1>
+      </div>
+      <div class="count-chip" id="countChip">-- / --</div>
+    </header>
+
+    <nav class="room-tabs" id="roomTabs" aria-label="へやをえらぶ"></nav>
+
+    <main class="carousel-shell" aria-label="シールをみる">
+      <button class="nav-arrow nav-arrow--left" id="prevButton" type="button" aria-label="ひだりへ">‹</button>
+      <div class="carousel-viewport" id="carouselViewport" tabindex="0">
+        <div class="carousel-layer" id="carouselLayer"></div>
+      </div>
+      <button class="nav-arrow nav-arrow--right" id="nextButton" type="button" aria-label="みぎへ">›</button>
+    </main>
+
+    <footer class="bottom-bar">
+      <button class="mini-action" id="randomButton" type="button">おまかせ</button>
+      <div class="progress" aria-hidden="true">
+        <div class="progress__fill" id="progressFill"></div>
+      </div>
+      <div class="position-chip" id="positionChip">-- / --</div>
+    </footer>
+
+    <div class="detail-overlay" id="detailOverlay" hidden>
+      <section class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailName">
+        <button class="detail-close" id="closeDetail" type="button" aria-label="とじる">×</button>
+        <div class="detail-frame" id="detailFrame">
+          <img id="detailImage" src="" alt="" draggable="false">
+        </div>
+        <div class="detail-copy">
+          <p id="detailSerial">000</p>
+          <h2 id="detailName">シール</h2>
+          <div class="detail-tags" id="detailTags"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="loading" id="loading">よみこみちゅう</div>
+  </div>
+
+  <script type="module" src="./main.js?v=20260703"></script>
+</body>
+</html>
