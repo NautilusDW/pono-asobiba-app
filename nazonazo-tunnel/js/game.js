@@ -118,7 +118,7 @@ const ASSETS={
   horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
   mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
   ground:"../assets/images/nazonazo-tunnel/town_ground_strip_20260703.webp",
-  fg:"../assets/images/nazonazo-tunnel/town_foreground_layer_20260703.webp"
+  fg:"../assets/images/nazonazo-tunnel/town_foreground_low_saplings_20260703.webp"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -451,9 +451,12 @@ function buildWorld(keepCover){
  tunnels=[];
  const o=origin(stg),st=STAGES[stg],P=palOf(stg);
  for(let i=0;i<QN;i++){
-  const t=document.createElement("div");t.className="tun";
+ const t=document.createElement("div");t.className="tun";
+  if(st.id==="town")t.classList.add("station");
   t.style.left=tunX(o,i)+"vw";
-  t.innerHTML='<div class="mount" style="background:'+P.mount+'"></div><div class="sign">❓</div><div class="hole"><div class="door l"></div><div class="door r"></div></div>';
+  t.innerHTML=st.id==="town"
+   ? '<div class="station-roof"></div><div class="station-wall"></div><div class="station-post p1"></div><div class="station-post p2"></div><div class="station-name">えき</div><div class="sign">❓</div><div class="hole station-gate"><div class="door l"></div><div class="door r"></div></div><div class="station-platform"></div>'
+   : '<div class="mount" style="background:'+P.mount+'"></div><div class="sign">❓</div><div class="hole"><div class="door l"></div><div class="door r"></div></div>';
   world.appendChild(t);tunnels.push(t);
   for(let k=0;k<2;k++){
    const d=document.createElement("div");d.className="decor";

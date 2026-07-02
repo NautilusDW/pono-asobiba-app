@@ -23,7 +23,7 @@ button{font:inherit;color:inherit}
   background-repeat:repeat-x;background-size:60vw 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
 .decor{position:absolute;bottom:11.5vh}
-#cars{position:absolute;bottom:12.8vh;left:0;right:0;z-index:4;pointer-events:none}
+#cars{position:absolute;bottom:12.8vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
   background:#f5d78a;border:3px solid #c9a24e;border-radius:10px 10px 6px 6px;
@@ -38,7 +38,7 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 .car.fade{opacity:0}
 #carBadge{position:absolute;bottom:21vh;left:2vw;z-index:9;background:rgba(255,255,255,.85);
   border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
-#veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:4}
+#veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
 body.v-train #veh{bottom:11.9vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:6;pointer-events:none;
@@ -48,7 +48,7 @@ body.st-space #veh{bottom:26vh}
 .rare{position:absolute;z-index:9;font-size:clamp(34px,7.5vw,72px);cursor:pointer;
   filter:drop-shadow(0 0 10px rgba(255,255,180,.8))}
 
-/* ===== tunnel ===== */
+/* ===== checkpoint / tunnel ===== */
 .tun{position:absolute;bottom:11.5vh;width:26vw;max-width:320px;height:46vh;z-index:5}
 body.st-space .tun{bottom:20vh}
 .tun .mount{position:absolute;inset:0;border-radius:50% 50% 0 0/70% 70% 0 0;box-shadow:inset 0 -8px 0 rgba(0,0,0,.12)}
@@ -61,6 +61,24 @@ body.st-space .tun{bottom:20vh}
 .tun.shake .hole{animation:sh .5s}
 @keyframes sh{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .tun .sign{position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:clamp(18px,4vw,34px);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.tun.station{bottom:12.4vh;width:24vw;max-width:270px;height:27vh;z-index:3}
+.tun.station .mount{display:none}
+.station-wall{position:absolute;left:10%;right:10%;bottom:12%;height:54%;border:3px solid #b9854d;border-bottom:0;border-radius:10px 10px 4px 4px;
+  background:linear-gradient(#fff4d6,#f6d08a);box-shadow:inset 0 -8px 0 rgba(166,102,42,.16)}
+.station-roof{position:absolute;left:2%;right:2%;top:8%;height:26%;background:linear-gradient(#f07c4d,#c94f36);
+  border:3px solid #9c3a2b;border-radius:14px 14px 7px 7px;box-shadow:0 7px 0 rgba(0,0,0,.13)}
+.station-roof::after{content:"";position:absolute;left:5%;right:5%;bottom:-38%;height:36%;background:#ffbf5a;border:3px solid #9c6b2c;border-radius:0 0 9px 9px}
+.station-post{position:absolute;bottom:4%;width:8%;height:62%;background:linear-gradient(90deg,#8b5a34,#c58a4a,#8b5a34);border-radius:4px}
+.station-post.p1{left:16%}.station-post.p2{right:16%}
+.station-platform{position:absolute;left:0;right:0;bottom:0;height:15%;border-radius:8px;background:linear-gradient(#d8b27a,#a97945);box-shadow:0 -4px 0 rgba(255,255,255,.22) inset}
+.station-name{position:absolute;left:29%;right:29%;top:34%;height:23%;display:flex;align-items:center;justify-content:center;
+  border:2px solid #8d6a3d;border-radius:999px;background:#fff9df;color:#79512c;font-weight:900;font-size:clamp(12px,2.1vw,18px);letter-spacing:0}
+.tun.station .sign{top:-3%;left:50%;width:clamp(34px,5vw,56px);height:clamp(34px,5vw,56px);display:flex;align-items:center;justify-content:center;
+  border-radius:50%;background:#fff8d7;border:3px solid #d9a23a;font-size:clamp(18px,3.2vw,30px)}
+.tun.station .hole{left:33%;bottom:14%;width:34%;height:38%;border-radius:8px;background:rgba(122,79,43,.18);border:2px dashed rgba(122,79,43,.45)}
+.tun.station .door{top:42%;bottom:auto;height:20%;border-width:2px;border-radius:999px;background:#f4b34e;border-color:#ba7930}
+.tun.station.open .door.l{transform:translateX(-128%)}
+.tun.station.open .door.r{transform:translateX(128%)}
 .cover{position:absolute;top:0;bottom:0;background:#17110b;z-index:7}
 .cover .rim{position:absolute;top:0;bottom:0;width:7vw;background:linear-gradient(90deg,rgba(0,0,0,0),#17110b)}
 .cover .rimR{right:auto;left:100%;transform:scaleX(-1)}
@@ -77,17 +95,18 @@ body.st-space .tun{bottom:20vh}
 .train-art{display:none}
 body.v-train .train-art{display:block;position:absolute;inset:-8% -4% -2% -7%}
 body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train .tr-win,body.v-train .wheel{display:none}
-.train-body-img{position:absolute;inset:0;z-index:3;background:url("../assets/images/nazonazo-tunnel/vehicle_train_body_20260703.webp") center/contain no-repeat}
-.train-driver{position:absolute;left:61.5%;top:13.5%;width:30%;height:57%;z-index:1;
+.train-body-img{position:absolute;inset:0;z-index:3;background:url("../assets/images/nazonazo-tunnel/vehicle_train_body_20260703.webp") center/contain no-repeat;transform:scaleX(-1)}
+.train-driver{position:absolute;left:11.5%;top:13.5%;width:30%;height:57%;z-index:1;
   background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_sheet_4x4_20260703.webp");
   background-repeat:no-repeat;background-size:400% 400%;background-position:var(--driver-x,0%) var(--driver-y,0%);
   transform:translateY(2%);filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
-.train-wheel{position:absolute;bottom:4.5%;width:18%;aspect-ratio:1;z-index:2;
-  background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_spoke_20260703.webp") center/contain no-repeat;
+.train-wheel{position:absolute;bottom:7.7%;width:16.2%;aspect-ratio:1;z-index:4;
+  background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_spoke_single_20260703.webp") center/contain no-repeat;
   transform-origin:50% 50%;filter:drop-shadow(0 2px 0 rgba(50,35,25,.28))}
-.train-wheel-a{left:30.5%}
-.train-wheel-b{left:69.4%}
-#veh.go .train-wheel{animation:spin .62s linear infinite;background-image:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_blur_20260703.webp")}
+.train-wheel-a{left:20.4%}
+.train-wheel-b{left:67.0%}
+#veh.go .train-wheel{animation:spin .62s linear infinite;background-image:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_blur_single_20260703.webp")}
+body.v-train .puff{left:76%;top:-15%}
 body[data-driver="bear"]{--driver-x:0%}
 body[data-driver="fox"]{--driver-x:33.333%}
 body[data-driver="rabbit"]{--driver-x:66.667%}
@@ -114,7 +133,7 @@ body.st-future .tr-chim{display:none}
 body.st-town #horizon{background-size:170vw 100%}
 body.st-town #midT{background-size:145vw 100%}
 body.st-town #groundT{height:13.5vh;background-size:70vw 100%}
-body.st-town #fgT{height:24vh;background-size:95vw 100%}
+body.st-town #fgT{height:20vh;background-size:92vw 100%}
 .sb-hull,.sb-peri,.sb-fin,.sb-win{display:none}
 body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win{display:none}
 body.v-sub .sb-hull{display:block;position:absolute;left:0;right:0;top:22%;bottom:8%;background:#ffcf4d;border:4px solid #d9a326;border-radius:50px}
