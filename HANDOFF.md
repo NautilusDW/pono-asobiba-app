@@ -17,7 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
-- 2026-07-02 - [batch:1048-shop-purchase-reward-bubble] DONE - Codex: ショップ購入時のシール演出を調整。`js/game-stickers.js` はショップ購入時だけ `PonoGameStickers.showStickerToast(..., { source: 'shop' })` の表示を長めの光り方 + `こうかんしたよ` + シール名ピルに変更。`play.html` は古い中央ポップ `.donguri-shop-celebration` も 1.2s→約2.45s に延長し、シール名を表示。ビスの吹き出しは通常 48%→40%、スマホ幅 62%→51%、4:3 58%→50% 相当に下げ、844x390 gap 16.6px / 390x844 gap 6.4px / 1024x768 gap 43.9px / 1366x768 gap 148.7px、overflowX 0、pageerror 0 を確認。`PAGE_CACHE_VERSION` / `sw.js CACHE_VERSION` は 1911。途中の自動コミット `bab3791` に主要差分と別作業 admin/bento 差分が含まれ、残りのスマホ幅微調整だけ追加コミット対象。`develop` は shop v2 が存在しないため同期対象なし。 (by Codex)
+- 2026-07-02 - [batch:1048-shop-purchase-reward-bubble] DONE - Codex: ショップ購入時のシール演出を調整。`js/game-stickers.js` はショップ購入時だけ `PonoGameStickers.showStickerToast(..., { source: 'shop' })` の表示を長めの光り方 + `こうかんしたよ` + シール名ピルに変更。`play.html` は古い中央ポップ `.donguri-shop-celebration` も 1.2s→約2.45s に延長し、シール名を表示。ビスの吹き出しは通常 48%→40%、スマホ幅 62%→51%、4:3 58%→50% 相当に下げ、844x390 gap 16.6px / 390x844 gap 6.4px / 1024x768 gap 43.9px / 1366x768 gap 148.7px、overflowX 0、pageerror 0 を確認。`PAGE_CACHE_VERSION` / `sw.js CACHE_VERSION` は 1912。途中の自動コミット `bab3791` に主要差分と別作業 admin/bento 差分が含まれ、`624c255` と後続 commit でスマホ幅微調整と cache version を確定。`develop` は shop v2 が存在しないため同期対象なし。 (by Codex)
 
 - 2026-07-02 - [batch:1047-shop-owned-label-baseline] DONE - Codex: ショップカードの交換済み `こうかんしたよ` 文字が `こうかんする` より下がって見える件を追加調整。既存 `こうかんする` 焼き込み文字の dark bbox center はカード高の約84.8%、現行 overlay center は約86.4% だったため、`.donguri-shop-v2-owned-label` の `bottom` を 5.8%→7.5% に変更して中心を約84.7%へ合わせる。既存 dirty は `Prototypes/StickerBookThreeJS/main.js` / `play.html` / `sw.js` に別作業 v1909 があり、今回の commit 対象はこの CSS hunk と HANDOFF のみ。 (by Codex)
 
