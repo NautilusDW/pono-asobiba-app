@@ -10304,6 +10304,9 @@ function maybeBeginCupMoveFromSimpleSelectionTap(e, item) {
 }
 function handleSimplePlacedItemTap(item) {
   if (!item) return;
+  // batch:1045 code-review fix: メインおかず以外に一度でも触れたら はっぱ armed は
+  // 集中クリアする (cup/pick/rice/decor タップの early return を通っても leak しない)。
+  if (simpleLeafApplyArmed && !isSimpleMainOkazuEditTarget(item)) simpleLeafApplyArmed = false;
   if (!canSelectFreeItemInCurrentMode(item)) {
     showSimpleModeSelectionMessage(item);
     return;

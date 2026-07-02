@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-02 16:45 - by Claude - [batch:1045-bento-admin-divider-drag-leaf-flow] - bento/index.html, admin/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 管理画面で仕切り位置ドラッグ編集 + グリッド整列 + かざりにもどる廃止/最初からやるボタン + したにしく常設ボタン
 
 
 
