@@ -1321,6 +1321,52 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
   filter: none;
 }
 
+/* v1887: 未所有シールを tray 末尾に「薄い森トーンのシルエット」で並べる。
+   完全な白抜き (SR silhouette) との差別化のため grayscale + brightness で「輪郭は残るが色は伏せる」。
+   locked は SR silhouette より後に定義 → 同時付与時は locked が視覚的に勝つ (specificity 同点、後勝ち)。 */
+.sticker-tray-card.is-locked-silhouette {
+  background: rgba(214, 220, 208, 0.55);
+  box-shadow: none;
+  cursor: default;
+}
+.sticker-tray-card.is-locked-silhouette:hover,
+.sticker-tray-card.is-locked-silhouette:focus,
+.sticker-tray-card.is-locked-silhouette:focus-visible,
+.sticker-tray-card.is-locked-silhouette:active {
+  box-shadow: none;
+  transform: none;
+  background: rgba(214, 220, 208, 0.55);
+}
+.sticker-tray-card.is-locked-silhouette .sticker-tray-icon {
+  background: rgba(214, 220, 208, 0.55);
+  box-shadow: none;
+}
+.sticker-tray-card.is-locked-silhouette .sticker-tray-icon img {
+  opacity: 0.42;
+  filter: grayscale(1) brightness(0.72) contrast(0.85);
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+
+/* v1887: 未所有シールをタップした時の静かな吹き出し。
+   森トーン (#2A463D 系) 半透明、白文字、pointer 無視。 200ms fade。 */
+.sticker-tray-lock-hint {
+  position: fixed;
+  z-index: 20;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(42, 70, 61, 0.92);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 0 6px 16px rgba(42, 70, 61, 0.24);
+  transition: opacity 200ms ease;
+}
+
 .sticker-tray-label {
   display: none;
   font-size: 10px;
