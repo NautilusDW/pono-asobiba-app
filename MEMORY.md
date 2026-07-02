@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-02T04:20:31Z - bento カップファースト大改修 Phase1-3 (カップ必須化+編集パネル+チュートリアル改修/ナレ新録+自動開始バグ修正) batch:1042 sw v1892
+- **タスク**: bento カップファースト大改修 Phase1-3 (カップ必須化+編集パネル+チュートリアル改修/ナレ新録+自動開始バグ修正) batch:1042 sw v1892
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 173
+- **エラー数**: 21
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 45, "Bash": 29, "Glob": 1, "Edit": 20, "Grep": 14, "ToolSearch": 2, "Workflow": 18, "TaskOutput": 42, "Agent": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-02T04:16:38Z - bento cup-first fix-round: 9 cross-review fixes (picker tab guard/greet rotate rebind/tap-slop/coarse sizes/okazu-more allowance/voice-stop advance/leaf ownership+orphan/picker scroll/copy+NPC pin)
 - **タスク**: bento cup-first fix-round: 9 cross-review fixes (picker tab guard/greet rotate rebind/tap-slop/coarse sizes/okazu-more allowance/voice-stop advance/leaf ownership+orphan/picker scroll/copy+NPC pin)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 7, "Bash": 17, "Read": 2, "Workflow": 5, "Agent": 1, "Write": 2, "Edit": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-01T23:34:37Z - bento 仕切り配置UX刷新 (配置順統一・ゴースト・タップ/D&D・磁石スナップ) batch:1041 sw v1883
-- **タスク**: bento 仕切り配置UX刷新 (配置順統一・ゴースト・タップ/D&D・磁石スナップ) batch:1041 sw v1883
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 126
-- **エラー数**: 13
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 38, "Bash": 22, "Glob": 1, "Edit": 12, "Grep": 14, "ToolSearch": 2, "Workflow": 12, "TaskOutput": 23, "Agent": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
