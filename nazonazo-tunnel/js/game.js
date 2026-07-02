@@ -119,6 +119,13 @@ const ASSETS={
   mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
   ground:"../assets/images/nazonazo-tunnel/town_ground_strip_20260703.webp",
   fg:"../assets/images/nazonazo-tunnel/town_foreground_low_saplings_20260703.webp"
+ },
+ jungle:{
+  sky:"../assets/images/nazonazo-tunnel/jungle_sky_back_20260703.webp",
+  horizon:"../assets/images/nazonazo-tunnel/jungle_horizon_layer_20260703.webp",
+  mid:"../assets/images/nazonazo-tunnel/jungle_mid_layer_20260703.webp",
+  ground:"../assets/images/nazonazo-tunnel/jungle_ground_strip_20260703.webp",
+  fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -142,9 +149,10 @@ const STAGES=[
   decor(P,r){return svgURI(200,300,gTreeRow(200,300,P.leaf,P.trunk,1,130+(r%3)*22,31+r));}},
  {id:"jungle",icon:"🌴",veh:"train",bank:JUNGLE,gens:["legsJ","sizeJ"],
   names:["ジャングル","よるの ジャングル"],
-  pals:[
+ pals:[
    {sky:["#cfe8b0","#7cc06e"],far1:"#aed69c",far2:"#8cc47c",mid1:"#4f8f42",mid2:"#5c9a4c",trunk:"#35652c",grass:"#6a9e54",tie:"#5a4630",rail:"#3c3c3c",fgA:"#2e6b28",fgB:"#245a1e",mount:"#5f9e4e",fx:"none"},
    {sky:["#16302a","#0d1f1a"],far1:"#24443a",far2:"#1c3a30",mid1:"#173026",mid2:"#1d3a2c",trunk:"#0f241c",grass:"#1e3a2c",tie:"#142418",rail:"#222222",fgA:"#0b1f16",fgB:"#071710",mount:"#2c5044",fx:"fireflies"}],
+  assets:ASSETS.jungle,
   horizon(P,NP){return svgURI(HW,H,
     gMountains(HW,H,P.far1,50,90,14,41,0.85)+
     gMountains(1200,H,P.far2,25,80,16,43,0.95)+
@@ -538,13 +546,14 @@ function buildAmbient(P){
 }
 
 /* ================= passengers ================= */
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?11.3:8.8;}
 function renderCars(){
  carsEl.innerHTML="";
  const show=cars.slice(-4);
  show.forEach((c,i)=>{
   const idx=show.length-1-i; // 0=newest(先頭車のすぐ後ろ)
   const el=document.createElement("div");el.className="car";
-  el.style.left=(28-8.8*(idx+1))+"vw";
+  el.style.left=(28-carGap()*(idx+1))+"vw";
   if(c.img){
    const im=document.createElement("img");
    im.className="pas-img";im.src=c.img;im.alt="";
@@ -554,6 +563,14 @@ function renderCars(){
    sp.className="pas";sp.textContent=c.e;
    el.appendChild(sp);
   }
+  const body=document.createElement("div");
+  body.className="car-body-img";
+  el.appendChild(body);
+  ["a","b"].forEach(k=>{
+   const w=document.createElement("div");
+   w.className="car-wheel car-wheel-"+k;
+   el.appendChild(w);
+  });
   if(cars.length>4&&i===0)el.classList.add("fade");
   carsEl.appendChild(el);
  });
@@ -581,7 +598,7 @@ function boardPassenger(p,learned,stationEl){
  }
  $("app").appendChild(fl);
  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
-  fl.style.left=(28-8.8)+"vw";fl.style.bottom="14vh";
+  fl.style.left=(28-carGap())+"vw";fl.style.bottom="14vh";
  });});
  setTimeout(()=>{
   fl.remove();
@@ -714,6 +731,7 @@ function gloop(t){
   vel=clamp(dist*.98,6,maxV);
   worldX=Math.min(target,worldX+vel*dt);
   veh.classList.add("go");veh.classList.remove("idle");
+  carsEl.classList.add("go");
   if(swapReady&&!swapped&&transitCover){
    const cl=parseFloat(transitCover.style.left);
    if(worldX>cl+30){
@@ -735,6 +753,7 @@ function gloop(t){
   if(worldX>=target-0.01){
    worldX=target;vel=0;driving=false;
    veh.classList.remove("go");veh.classList.add("idle");
+   carsEl.classList.remove("go");
    const p=pending;pending=null;
    if(p==="quiz")showQuiz();
    else if(p==="ending")ending();

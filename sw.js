@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1935: なぞなぞトンネルに GPT Image 2 生成の追加客車本体、トンネル内背景、ジャングル多重スクロール背景を追加。二両目以降は生成客車 + 既存単輪タイヤで表示し、ジャングルステージも sky/horizon/mid/ground/fg の生成レイヤーへ切替。play.html PAGE_CACHE_VERSION と同期。
 // v1934: なぞなぞトンネルの町外れ駅を GPT Image 2 生成の駅舎画像へ差し替え、弁当NPCの動物が駅で待ち、正解すると客車へ乗る流れに変更。走行中に見つけたものは最大3個の「おたすけ」としてクイズ中に使える。前景植物を電車より手前のレイヤーへ修正。play.html PAGE_CACHE_VERSION と同期。
 // v1932: なぞなぞトンネルの町外れ駅間をさらに長く調整。駅間距離を約2倍以上に広げ、走行速度をゆるめ、町ステージの発見イベントを各区間2個に増やして長い走行中も退屈しにくくした。play.html PAGE_CACHE_VERSION と同期。
 // v1931: なぞなぞトンネルの町外れ走行を長めに調整。駅間距離を伸ばし、町ステージの走行中にタップできる小さな「みつけた！」発見イベントを追加。クイズ中は反応せず、進行や正誤判定には影響しない軽い演出。play.html PAGE_CACHE_VERSION と同期。
@@ -556,7 +557,7 @@
 // v1910: ガチャに Haptics 5 シーン (gachaTurn1_2 / gachaTurn3 / capsuleCrack / rareBadgePop / superBadgePop) + DOM particle burst (rare=12粒90°扇 / super=20粒360°、 reveal 瞬間に .daily-gacha-shell 直下へ spawn) を拡張。 common/haptics.js の PATTERNS に 5 key 追加 + fire() を number[] 対応、 play.html は capture.js の後に haptics.js を defer 読込、 pulseDailyGachaHaptic を Haptics 経由に統一 (bare vibrate fallback 残す)、 reveal timer で capsuleCrack + spawnGachaParticles、 openDelay+420ms で rare/super badge pop haptic。 CSS/JS のみ変更、 localStorage/schema 無影響 (opt-out: pono_haptics_off / pono_particles_off / prefers-reduced-motion)。play.html PAGE_CACHE_VERSION と同期。
 // v1914: Bento batch:1046 — 「はっぱ」を action-row から タブに移動 (side step で [カップ/はっぱ/しきり/ピック])、 タブ切替時に armed を必ず解除 (code-review fix a)。 編集パネルから 'おかずを かえる'/一般 'けす' を削除 (leaf 専用)。 cup fallback を 0.30/0.70 対称 2x2 に、 4 box の maskRel.x を対称化。 KV rewrite payload を scratchpad に用意 (POST /api/bento/mask-defaults 用)。 play.html PAGE_CACHE_VERSION と同期。
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1934;
+const CACHE_VERSION = 1935;
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
