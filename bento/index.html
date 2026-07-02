@@ -7471,9 +7471,32 @@ function bookDecorItem(def) {
   return { ...def, minTier: 'book' };
 }
 const decorItems = [
-  { id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50 },
-  { id: 'nori_face_set_bear', type: 'decor', name: 'くまセット', image: FREE_ASSET + 'nori_nose_bear.png', faceSet: 'bear', size: 78, layerBase: 50 },
-  { id: 'nori_face_set_cat_book', type: 'decor', name: 'ねこセット', image: FREE_ASSET + 'book_nori_whisker_left_20260629_fix.png', faceSet: 'cat', size: 92, layerBase: 50 },
+  // batch:1049 — faceSet の palette icon は 1 パーツではなくミニ顔コンポジット (clusterImages) で表示する。
+  // image は tab thumbnail / 単画像 fallback 用に残す。 座標は box 中心 -0.5..0.5、 w は box 幅比。
+  { id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50, clusterImages: [
+    { img: FREE_ASSET + 'nori_eye_round.png', x: -0.19, y: -0.24, w: 0.16 },
+    { img: FREE_ASSET + 'nori_eye_round.png', x: 0.19, y: -0.24, w: 0.16 },
+    { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: 0.01, w: 0.22 },
+    { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.225, w: 0.5 },
+    { img: FREE_ASSET + 'ketchup_cheek.png', x: -0.365, y: 0.06, w: 0.21 },
+    { img: FREE_ASSET + 'ketchup_cheek.png', x: 0.365, y: 0.06, w: 0.21 },
+  ] },
+  { id: 'nori_face_set_bear', type: 'decor', name: 'くまセット', image: FREE_ASSET + 'nori_nose_bear.png', faceSet: 'bear', size: 78, layerBase: 50, clusterImages: [
+    { img: FREE_ASSET + 'nori_eye_round.png', x: -0.26, y: -0.2, w: 0.15 },
+    { img: FREE_ASSET + 'nori_eye_round.png', x: 0.26, y: -0.2, w: 0.15 },
+    { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.22, w: 0.38 },
+    { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: 0.02, w: 0.3 },
+    { img: FREE_ASSET + 'ketchup_cheek.png', x: -0.37, y: 0.08, w: 0.2 },
+    { img: FREE_ASSET + 'ketchup_cheek.png', x: 0.37, y: 0.08, w: 0.2 },
+  ] },
+  { id: 'nori_face_set_cat_book', type: 'decor', name: 'ねこセット', image: FREE_ASSET + 'book_nori_whisker_left_20260629_fix.png', faceSet: 'cat', size: 92, layerBase: 50, clusterImages: [
+    { img: FREE_ASSET + 'book_nori_whisker_left_20260629_fix.png', x: -0.345, y: 0.05, w: 0.28 },
+    { img: FREE_ASSET + 'book_nori_whisker_right_20260629_fix.png', x: 0.345, y: 0.05, w: 0.28 },
+    { img: FREE_ASSET + 'nori_eye_round.png', x: -0.19, y: -0.22, w: 0.15 },
+    { img: FREE_ASSET + 'nori_eye_round.png', x: 0.19, y: -0.22, w: 0.15 },
+    { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: -0.02, w: 0.2 },
+    { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.2, w: 0.4 },
+  ] },
   { id: 'nori_eye_round', type: 'decor', name: 'おめめ', image: FREE_ASSET + 'nori_eye_round.png', css: 'free-css-nori-eye', size: 30, layerBase: 50 },
   { id: 'nori_nose_bear', type: 'decor', name: 'はな', image: FREE_ASSET + 'nori_nose_bear.png', css: 'free-css-nori-nose', size: 54, layerBase: 50 },
   { id: 'nori_mouth_smile', type: 'decor', name: 'くち', image: FREE_ASSET + 'nori_mouth_smile.png', css: 'free-css-nori-mouth', size: 78, layerBase: 50 },
@@ -12782,7 +12805,9 @@ function getSimpleDecorSize(def, kind = getSimpleDecorKind(def)) {
 }
 function getDecorInsetVisualScale(def, kind = getSimpleDecorKind(def)) {
   const id = String(def && def.id || '');
-  if (def && def.faceSet) return 0.86;
+  // batch:1049: faceSet はミニ顔コンポジット表示になったので縮小せず box いっぱいに使う
+  // (clusterImages 側の座標に既にマージンを織り込み済)。 単画像 fallback 時のみ従来の 0.86。
+  if (def && def.faceSet) return Array.isArray(def.clusterImages) && def.clusterImages.length ? 1 : 0.86;
   if (kind === 'shape') return 0.78;
   if (kind === 'sheet') return 0.84;
   if (id.indexOf('furikake_') === 0) return 0.82;
