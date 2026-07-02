@@ -2350,6 +2350,10 @@ const textureEntries = await Promise.all(textureFiles.map(async (file) => [file,
 const textureMap = new Map(textureEntries);
 const textureLoadPromises = new Map();
 const pageTemplateTextureMap = new Map();
+// v1903: refreshPageTemplateTextures を async double-buffer 化した副作用で
+// 「call 1 が await 中に call 2 が入って更に await → 完了順序が逆転」 したときに
+// 古い texture を最終 swap してしまう race を防ぐための単調増加 token。
+let refreshPageTemplateTokenSeq = 0;
 const stickerSpineTextureMap = new Map();
 const freeSideTabsTextureMap = new Map();
 const collectionSpineTextureMap = new Map();
@@ -2582,11 +2586,16 @@ const topLight = new THREE.DirectionalLight(0xffffff, 1.7);
 topLight.position.set(-2.5, 3.5, 6);
 scene.add(topLight);
 
-const sideLight = new THREE.DirectionalLight(0x8fd9e5, 0.75);
+// v1903: sideLight を 水色 (0x8fd9e5) → 中性白 (0xffffff)、 intensity 0.75 → 0.55 に緩和。
+// c062781 で peel front/back を MeshStandardMaterial (lit) 化した副作用で、 curl 面の法線が
+// sideLight 方向 (4,-3,5) を向いた瞬間だけ 水色 tint が強く乗り、 「ドラッグ中は薄水色 → 貼付後は無色」
+// という色褪せ体感が出ていた。 色相を中性化して法線依存の tint を除去、 intensity 減衰分は
+// AmbientLight を 0.86 → 0.92 で補償し、 page mesh の全体明度は不変に保つ。
+const sideLight = new THREE.DirectionalLight(0xffffff, 0.55);
 sideLight.position.set(4, -3, 5);
 scene.add(sideLight);
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.86));
+scene.add(new THREE.AmbientLight(0xffffff, 0.92));
 
 slider.addEventListener("input", () => {
   cancelSpreadJump();
@@ -11065,21 +11074,42 @@ function pageNumberForTemplateSide(side) {
 }
 
 function refreshPageTemplateTextures() {
+  // v1903: double-buffer 化。 旧 texture は material.map に載ったまま保持し、 新 texture を
+  // オフスクリーンで完全描画完了 (base + 全 sticker + drawing layer + overlay) してから
+  // 一括で material.map に swap する。 これにより 「base だけ塗られた CanvasTexture を
+  // 同期 swap → 次 render で全 sticker 消失 (1 frame blank) → microtask 完了で復活」 の
+  // フリッカーを根絶する。 sync 側 (flip preload 等) の getPageTemplateTexture 呼出は従来通り。
   pageTemplateTextureMap.clear();
+  const swaps = [];
   if (leftPageInner?.material) {
-    assignTextureObject(leftPageInner, getPageTemplateTexture("left"));
+    swaps.push({ mesh: leftPageInner, texture: getPageTemplateTexture("left") });
   }
   if (rightPage?.material) {
-    assignTextureObject(rightPage, getPageTemplateTexture("right"));
+    swaps.push({ mesh: rightPage, texture: getPageTemplateTexture("right") });
   }
   if (frontPage?.material && activeSurface === "inside") {
-    assignTextureObject(frontPage, getPageTemplateTexture("right"));
+    swaps.push({ mesh: frontPage, texture: getPageTemplateTexture("right") });
   }
   if (backPage?.material && activeSurface === "inside") {
-    assignTextureObject(backPage, getPageTemplateTexture("left"));
+    swaps.push({ mesh: backPage, texture: getPageTemplateTexture("left") });
   }
-  updateFlutterPageTextures();
-  updateBookPageControls();
+  // 全 texture の描画完了 (_readyPromise) を await してから material.map を swap。
+  // 完了まで旧 texture が表示され続けるので blank frame は起こらない。
+  // 追随の updateFlutterPageTextures / updateBookPageControls は swap 後に呼ぶ。
+  const token = ++refreshPageTemplateTokenSeq;
+  Promise.all(swaps.map((s) => s.texture && s.texture._readyPromise).filter(Boolean))
+    .catch(() => {})
+    .then(() => {
+      // 後続の refresh が入っていた場合はそちらに任せ、 stale な texture 群で上書きしない。
+      if (token !== refreshPageTemplateTokenSeq) return;
+      for (const s of swaps) {
+        if (s.mesh && s.texture) {
+          assignTextureObject(s.mesh, s.texture);
+        }
+      }
+      updateFlutterPageTextures();
+      updateBookPageControls();
+    });
 }
 
 function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTemplateSide(side)) {
@@ -11108,7 +11138,11 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.needsUpdate = true;
-  drawDynamicPageContent(ctx, texture, side, palette, pageNumber);
+  // v1903: drawDynamicPageContent が返す Promise を texture._readyPromise に保持しておき、
+  // refreshPageTemplateTextures はこの Promise を await してから material.map を swap する。
+  // これにより 「base だけ描かれた CanvasTexture が 1 frame 表示される」 blank frame race を解消。
+  // sync caller (flip 経路) は従来通り base だけの状態でも即使えるため、 signature 互換。
+  texture._readyPromise = Promise.resolve(drawDynamicPageContent(ctx, texture, side, palette, pageNumber));
   return texture;
 }
 
@@ -11795,13 +11829,16 @@ function drawRightPageTemplate(ctx, palette) {
 }
 
 function drawDynamicPageContent(ctx, texture, side, palette, pageNumber = pageNumberForTemplateSide(side)) {
+  // v1903: Promise chain を上へ伝播 (drawStickerCanvasPage 内で全 sticker await するため)。
+  // collection モードは既存 (drawAsyncStickerImage fire-and-forget) 挙動を維持し、
+  // Promise.resolve() を返すだけで caller (createPageTemplateTexture) は問題なく await できる。
   const pageDef = editorPageDefinitions[pageNumber - 1] || editorPageDefinitions[0] || null;
   if (activeAlbumMode === "collection") {
     const collectionPageDef = collectionPageDefinitions[pageNumber - 1] || collectionPageDefinitions[0] || null;
     drawCollectionAlbumPage(ctx, texture, palette, collectionPageDef, stickersForPage(pageNumber), pageNumber, side);
-    return;
+    return Promise.resolve();
   }
-  drawStickerCanvasPage(ctx, texture, palette, pageDef, getPagePlacements(pageNumber), pageNumber);
+  return drawStickerCanvasPage(ctx, texture, palette, pageDef, getPagePlacements(pageNumber), pageNumber);
 }
 
 function drawCollectionAlbumPage(ctx, texture, palette, pageDef, stickers, pageNumber, side = "left") {
@@ -12925,13 +12962,18 @@ function drawStickerListPage(ctx, texture, palette, pageDef, stickers) {
 }
 
 function drawStickerCanvasPage(ctx, texture, palette, pageDef, placements, pageNumber) {
+  // v1903: 全 placement の描画完了を Promise.all で待ってから drawing layer / overlay を
+  // 描画するように変更。 従来は fire-and-forget で drawAsyncPlacedSticker を fanout し、
+  // その内側で毎回 drawPageDrawingLayer / drawInlineStickerSelectionOverlay / needsUpdate を
+  // 呼んでいたため、 sticker → drawing → sticker の重ね順が壊れる & needsUpdate が
+  // base 描画時 (sticker 未着) で立って blank frame が上がることがあった。
   const ordered = [...placements].filter(isStickerPlacementAvailable).sort((a, b) => a.z - b.z);
-  for (const placement of ordered) {
-    drawAsyncPlacedSticker(ctx, texture, placement, pageNumber);
-  }
-  drawPageDrawingLayer(ctx, pageNumber);
-  drawInlineStickerSelectionOverlay(ctx, pageNumber);
-  texture.needsUpdate = true;
+  return Promise.all(ordered.map((placement) => drawAsyncPlacedSticker(ctx, texture, placement, pageNumber)))
+    .then(() => {
+      drawPageDrawingLayer(ctx, pageNumber);
+      drawInlineStickerSelectionOverlay(ctx, pageNumber);
+      texture.needsUpdate = true;
+    });
 }
 
 function drawPageDrawingLayer(ctx, pageNumber) {
@@ -12970,7 +13012,10 @@ function drawAsyncStickerImage(ctx, texture, src, x, y, width, height) {
 }
 
 function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
-  loadStickerImage(placement.assetUrl)
+  // v1903: Promise を返すよう変更 (double-buffer 化)。 caller (drawStickerCanvasPage) は
+  // Promise.all で全 sticker の描画完了を待ってから overlay 描画 + texture.needsUpdate を実行し、
+  // refreshPageTemplateTextures はさらに全 texture の描画完了を待ってから material.map を swap する。
+  return loadStickerImage(placement.assetUrl)
     .then((image) => {
       const visualImage = getStickerVisualImage(image);
       const baseW = PAGE_TEXTURE_W * STICKER_PLACEMENT_BASE_RATIO * sanitizedPlacementScale(placement?.scale);
@@ -12990,9 +13035,6 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
       drawStickerWhiteOutline(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       drawPlacedStickerArtwork(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
-      drawPageDrawingLayer(ctx, pageNumber);
-      drawInlineStickerSelectionOverlay(ctx, pageNumber);
-      texture.needsUpdate = true;
     })
     .catch(() => {
       // v1650 (task 2): 失敗 Promise が stickerImageCache に永久キャッシュされると
