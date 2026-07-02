@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260701-1026";
+const ASSET_VERSION = "20260702-1200";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -7432,6 +7432,17 @@ function bendStickerPeelGeometry(animation, progress) {
   animation.backMaterial.opacity = 0.92;
 }
 
+// v1896: peel 反転を localStorage で切替 (default true = 上端 anchor から下方向へ倒れる)。
+// 'pono_peel_reversed' が '0' の時のみ従来 (下端 anchor / 下→上) に戻す。
+function getPeelReversed() {
+  try {
+    if (typeof localStorage !== "undefined") {
+      return localStorage.getItem("pono_peel_reversed") !== "0";
+    }
+  } catch (_) {}
+  return true;
+}
+
 function finishStickerPeelAnimation(animation) {
   book.remove(animation.group);
   animation.geometry.dispose();
@@ -7440,13 +7451,27 @@ function finishStickerPeelAnimation(animation) {
   animation.frontTexture.dispose();
   animation.backTexture.dispose();
   playStickerSfx("paste-settle");
+  // v1896: 着地の 50ms 後にコーナー起点の扇状 particle burst を発火。
+  // onComplete (finalizePlacement) の texture 再構築とレンダー優先度衝突を避けるため setTimeout に載せる。
+  try {
+    if (typeof setTimeout === "function" && animation.placement && animation.peelDims) {
+      const pageNumber = animation.pageNumber;
+      const placement = animation.placement;
+      const peelDims = animation.peelDims;
+      const delayMs = stickerPasteParticleState.BURST_DELAY_MS || 50;
+      setTimeout(() => {
+        try { emitStickerPasteParticles(pageNumber, placement, peelDims); } catch (_) {}
+      }, delayMs);
+    }
+  } catch (_) {}
   if (typeof animation.onComplete === "function") {
     animation.onComplete();
   }
 }
 
-// v1894: sticker paste particles — 森トーンの丸ドット 4-6 個を貼付点から上方に散らす静かな演出。
-// 花火系加算合成禁止、 opt-out 3 系統 (window.PONO_DISABLE_PARTICLES / localStorage / prefers-reduced-motion)。
+// v1896: sticker paste particles v2 — 貼付シールの右上/左上コーナー起点で 16-22 粒の淡色ファイアワークスを
+// 斜め外向き 120° 扇状に開く。 着地 SE 直後 50ms delay で発火 (触覚は貼付開始時のまま維持)。
+// 花火系加算合成禁止 (NormalBlending)、 opt-out 3 系統 (window.PONO_DISABLE_PARTICLES / localStorage / prefers-reduced-motion) 据置。
 function stickerPasteParticlesDisabled() {
   try {
     if (typeof window !== "undefined" && window.PONO_DISABLE_PARTICLES === true) return true;
@@ -7459,9 +7484,9 @@ function stickerPasteParticlesDisabled() {
   return false;
 }
 
-function emitStickerPasteParticles(pageNumber, texPoint) {
+function emitStickerPasteParticles(pageNumber, placement, peelDims) {
   if (stickerPasteParticlesDisabled()) return;
-  if (!book || !texPoint) return;
+  if (!book || !placement) return;
   const state = stickerPasteParticleState;
   if (state.bursts.length >= state.MAX_CONCURRENT) {
     try {
@@ -7473,40 +7498,75 @@ function emitStickerPasteParticles(pageNumber, texPoint) {
   }
   const pageMesh = pageMeshForStickerPage(pageNumber);
   if (!pageMesh) return;
-  const local = stickerPeelLocalPoint(texPoint);
-  const centerX = pageMesh.position.x + local.x;
-  const centerY = local.y;
+  const local = stickerPeelLocalPoint(placement);
+  const rotationRad = THREE.MathUtils.degToRad(placement.rotation || 0);
+  // v1896: 貼付シールの右上 (TR) or 左上 (TL) コーナーを 50/50 でスポーン起点にする。
+  // three.js Y up: +Y = シール上端。 未回転で TR=(+w/2, +h/2), TL=(-w/2, +h/2)。
+  const side = Math.random() < 0.5 ? "TR" : "TL";
+  const dimsW = (peelDims && peelDims.width) || 0;
+  const dimsH = (peelDims && peelDims.height) || 0;
+  const cx = (side === "TR" ? +1 : -1) * dimsW / 2;
+  const cy = +dimsH / 2;
+  const cosR = Math.cos(rotationRad);
+  const sinR = Math.sin(rotationRad);
+  const cornerLocalX = cx * cosR - cy * sinR;
+  const cornerLocalY = cx * sinR + cy * cosR;
+  const centerX = pageMesh.position.x + local.x + cornerLocalX;
+  const centerY = local.y + cornerLocalY;
   const centerZ = 0.20;
 
-  const count = 4 + Math.floor(Math.random() * 3); // 4-6
+  // 扇状 120° arc をコーナーの外側方向 (シール座標系) に開く。
+  // TR: theta ∈ [0, 2π/3] (右向きから真上を通って左斜め上手前まで)
+  // TL: theta ∈ [π/3, π]   (右斜め上から真上を通って左向きまで)
+  const arc = state.BURST_ARC_RAD;
+  const arcBase = side === "TR" ? 0 : (Math.PI / 3);
+
+  const count = state.BURST_COUNT_MIN + Math.floor(Math.random() * (state.BURST_COUNT_MAX - state.BURST_COUNT_MIN + 1));
   const positions = new Float32Array(count * 3);
   const velocities = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const lifespans = new Float32Array(count);
   const elapsed = new Float32Array(count);
 
+  // Fisher-Yates shuffle して 4-5 色 subset を切り出し、 各粒はその中からランダム pick。
   const paletteSample = state.COLORS.slice();
+  for (let i = paletteSample.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = paletteSample[i];
+    paletteSample[i] = paletteSample[j];
+    paletteSample[j] = tmp;
+  }
+  const subsetSize = 4 + Math.floor(Math.random() * 2); // 4 or 5
+  const palette = paletteSample.slice(0, Math.min(subsetSize, paletteSample.length));
+
+  const jitterMin = state.BURST_JITTER_MIN;
+  const jitterSpan = state.BURST_JITTER_MAX - state.BURST_JITTER_MIN;
+  const speedSpan = state.BURST_SPEED_MAX - state.BURST_SPEED_MIN;
+  const lifeSpan = state.BURST_LIFE_MAX - state.BURST_LIFE_MIN;
+
   for (let i = 0; i < count; i += 1) {
-    const jitterR = 0.05 + Math.random() * 0.10;
+    // コーナー点中心の tight circle jitter (打上げ元感)。
+    const jitterR = jitterMin + Math.random() * jitterSpan;
     const jitterA = Math.random() * Math.PI * 2;
     positions[i * 3 + 0] = centerX + Math.cos(jitterA) * jitterR;
     positions[i * 3 + 1] = centerY + Math.sin(jitterA) * jitterR;
     positions[i * 3 + 2] = centerZ;
 
-    // upper hemisphere fan: -PI*0.7 .. -PI*0.3 (three.js Y up)
-    const angle = -Math.PI * 0.7 + Math.random() * (Math.PI * 0.4);
-    const speed = 0.8 + Math.random() * 0.6;
-    velocities[i * 3 + 0] = Math.cos(angle) * speed;
-    velocities[i * 3 + 1] = -Math.sin(angle) * speed; // -sin because angle is negative → upward
+    // シール座標系での扇状 velocity 角度に placement.rotation を加算して world 角度へ。
+    const localTheta = arcBase + Math.random() * arc;
+    const finalAngle = localTheta + rotationRad;
+    const speed = state.BURST_SPEED_MIN + Math.random() * speedSpan;
+    velocities[i * 3 + 0] = Math.cos(finalAngle) * speed;
+    velocities[i * 3 + 1] = Math.sin(finalAngle) * speed;
     velocities[i * 3 + 2] = 0;
 
-    const colorHex = paletteSample[Math.floor(Math.random() * paletteSample.length)];
+    const colorHex = palette[Math.floor(Math.random() * palette.length)];
     const c = new THREE.Color(colorHex);
     colors[i * 3 + 0] = c.r;
     colors[i * 3 + 1] = c.g;
     colors[i * 3 + 2] = c.b;
 
-    lifespans[i] = 0.9 + Math.random() * 0.3; // 900-1200ms
+    lifespans[i] = state.BURST_LIFE_MIN + Math.random() * lifeSpan;
     elapsed[i] = 0;
   }
 
@@ -7574,11 +7634,12 @@ function updateStickerPasteParticles(delta) {
       if (t < 1) {
         alive += 1;
         let alpha;
-        if (t < 0.3) {
+        // v1896: softer fade カーブ (t<0.25 は full opacity、 以降 power(1.4))
+        if (t < 0.25) {
           alpha = 1.0;
         } else {
-          const k = (t - 0.3) / 0.7;
-          alpha = 1 - Math.pow(k, 1.5);
+          const k = (t - 0.25) / 0.75;
+          alpha = 1 - Math.pow(k, 1.4);
         }
         if (alpha > maxAlpha) maxAlpha = alpha;
       } else {
@@ -7588,7 +7649,8 @@ function updateStickerPasteParticles(delta) {
     }
     posAttr.needsUpdate = true;
     burst.material.opacity = Math.max(0, Math.min(1, maxAlpha));
-    if (alive === 0 || burst.totalElapsed > 1.4) {
+    // v1896: dispose gate を 1.4 → 1.6 に緩めて最長 lifespan+fade tail を許容。
+    if (alive === 0 || burst.totalElapsed > 1.6) {
       // dispose
       try { book.remove(burst.points); } catch (_) {}
       try { burst.geometry.dispose(); } catch (_) {}
