@@ -4241,6 +4241,76 @@ body.bento-complete-open #sk-intro {
 }
 .nori-skip-actions button:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
 
+/* ===== batch:1045: floating 「最初からやる」 ボタン ===== */
+.bento-restart-btn {
+  position: fixed;
+  top: 6px;
+  left: 6px;
+  z-index: 9500;
+  min-height: 32px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 2px solid #E8933A;
+  background: linear-gradient(180deg, #FFE1A8 0%, #F8C36B 100%);
+  box-shadow: 0 2px 6px rgba(93,78,55,0.20);
+  color: #5C3A00;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.bento-restart-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(93,78,55,0.24); }
+.bento-restart-btn::before { content: '⟲'; font-size: 0.85rem; line-height: 1; }
+.bento-restart-btn.hidden { display: none !important; }
+@media (pointer: coarse) {
+  .bento-restart-btn { min-height: 40px; font-size: 0.72rem; padding: 6px 14px; }
+}
+body.bento-complete-open .bento-restart-btn { display: none !important; }
+
+.restart-round-confirm {
+  position: fixed; inset: 0; z-index: 9985;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px;
+}
+.restart-round-confirm.hidden { display: none; }
+.restart-round-card {
+  background: #fff; border-radius: 24px;
+  padding: 22px 24px; max-width: 360px; width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  text-align: center;
+}
+.restart-round-title {
+  font-size: 1.05rem; font-weight: 900;
+  color: var(--primary); margin-bottom: 8px; line-height: 1.4;
+}
+.restart-round-desc {
+  font-size: 0.85rem; font-weight: 700;
+  color: #6B4A1F; margin-bottom: 16px; line-height: 1.5;
+}
+.restart-round-actions {
+  display: flex; gap: 10px; justify-content: center;
+}
+.restart-round-actions button {
+  flex: 1; padding: 12px 14px; border: none; border-radius: 50px;
+  font-family: inherit; font-size: 0.95rem; font-weight: 900;
+  cursor: pointer;
+}
+.restart-round-actions .restart-round-cancel {
+  background: #F1E6D2; color: #6B4A1F; box-shadow: 0 3px 0 #C9B392;
+}
+.restart-round-actions .restart-round-ok {
+  background: linear-gradient(180deg, #FFB347, #F58231);
+  color: #FFFFFF; box-shadow: 0 3px 0 #B85A15;
+}
+.restart-round-actions button:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+
 /* ===== Tutorial ===== */
 .tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
 .tut-dim.hidden { display:none; }
@@ -5851,6 +5921,18 @@ body.bento-complete-open #sk-intro {
 <div class="game-title" id="tutorial-mode-label" aria-live="polite"></div>
 <button class="fav-header-btn" id="fav-header-btn" aria-label="おきにいりを みる" title="おきにいりを みる">⭐</button>
 <button class="tut-settings-btn" id="tut-settings-btn" aria-label="チュートリアル設定" title="チュートリアル設定">⚙</button>
+<!-- batch:1045: 常時 floating 「最初からやる」 ボタン。 title-screen 表示中と complete overlay 中は JS で hidden 化 -->
+<button class="bento-restart-btn hidden" id="bento-restart-btn" type="button" aria-label="最初からやる" title="最初からやる">最初からやる</button>
+<div class="restart-round-confirm hidden" id="restart-round-confirm">
+  <div class="restart-round-card">
+    <div class="restart-round-title">さいしょから やる？</div>
+    <div class="restart-round-desc">いま つくった おべんとうを ぜんぶ けして さいしょから はじめるよ。</div>
+    <div class="restart-round-actions">
+      <button type="button" class="restart-round-cancel" id="restart-round-cancel">やめる</button>
+      <button type="button" class="restart-round-ok" id="restart-round-ok">さいしょから やる</button>
+    </div>
+  </div>
+</div>
 <div class="tut-settings-modal hidden" id="tut-settings-modal">
   <div class="tut-settings-card">
     <h2>やりかたの せってい</h2>
@@ -7563,6 +7645,9 @@ let lastSimpleDividerPaletteId = '';
 // picker mode は null | 'food' (おかずを かえる) | 'leaf' (したに しく)。
 let simpleOkazuEditPickerMode = null;
 let simpleOkazuEditPickerUid = null;
+// batch:1045: はっぱ (したにしく) の アーム状態。 action-row の「はっぱ」ボタンで toggle。
+// アーム中にメインおかずをタップすると即 leaf picker を開く (未選択なら speech で誘導)。
+let simpleLeafApplyArmed = false;
 // batch:1044 R2: 一回きり はっぱヒント (simpleLeafHintUid / bento_leaf_hint_v1) は撤去。
 const SIMPLE_CUP_FOOD_LIMIT = 1;
 const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
@@ -10252,9 +10337,19 @@ function handleSimplePlacedItemTap(item) {
       simpleCupSlotIndex = null;
     }
     if (isSimpleMainOkazuEditTarget(item)) {
+      // batch:1045: はっぱ armed 状態なら 直接 leaf picker を開く
+      if (simpleLeafApplyArmed) {
+        simpleLeafApplyArmed = false;
+        // toggleSimpleOkazuEditPicker は選択対象を getSimpleOkazuEditTarget() から取るので
+        // ここで freeSelectedItemUid を確定させておく (すでに 10239 で代入済み)。
+        toggleSimpleOkazuEditPicker('leaf');
+        return;
+      }
       // v1496 leaf-bed: メインおかずはタップで編集パネルが開く (かえる / したにしく / けす)
       setSpeech((item.name || 'おかず') + 'を えらんだよ。したの ボタンで かえたり はっぱを しいたり できるよ。');
     } else {
+      // batch:1045: メイン以外を選んだら はっぱ armed は解除
+      if (simpleLeafApplyArmed) simpleLeafApplyArmed = false;
       setSpeech((item.name || 'おかず') + 'を えらんだよ。つぎに えらぶと ここを いれかえるよ。');
     }
   } else {
@@ -10329,6 +10424,7 @@ function setFreeGuideStep(step, opts = {}) {
   if (step === 'tier3') step = 'tier3Main';
   freeGuideStep = step;
   simpleNoCupSlotIndex = null;
+  simpleLeafApplyArmed = false; // batch:1045: step 変更で必ずアーム解除
   resetFreeMainGuide();
   if (step === 'box') {
     freeActiveTier = 1;
@@ -14532,6 +14628,7 @@ function resetSimpleBentoBuildForBoxChange() {
   simpleReplaceSlotUid = null;
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
+  simpleLeafApplyArmed = false; // batch:1045
   resetFreeMainGuide();
 }
 function selectFreeBentoBox(id) {
@@ -15004,6 +15101,7 @@ function placeSimpleLeafUnderOkazu(def) {
   // パネルの主役は おかず側なので選択を戻す (addFreeLayoutItem は leaf を選択してしまう)
   freeSelectedItemUid = target.uid;
   commitFreeHistoryChange(historyBefore);
+  simpleLeafApplyArmed = false; // batch:1045: 配置完了で アーム解除
   if (leaf) {
     setSpeech(existing ? 'はっぱを かえたよ！' : 'したに はっぱを しいたよ！');
     playPop();
@@ -16514,16 +16612,12 @@ function renderFreeGuidePanel() {
     const okBtn = makeSmallControlButton('これでOK', 'primary', confirmFreeBentoBoxSelection);
     okBtn.id = 'free-box-confirm'; // v3.1: tutorial の box step がトリムパスで強調するため
     actions.appendChild(okBtn);
-  } else if (freeGuideStep === 'rice') {
-    actions.appendChild(makeSmallControlButton('おべんとうばこにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'decor') {
-    actions.appendChild(makeSmallControlButton('ごはんにもどる', '', goBackFreeGuideStep));
+    // batch:1045: 「ごはんにもどる」戻るボタンは撤去。 最初からやり直しは floating restart ボタンに一本化。
     actions.appendChild(makeSmallControlButton(countDecorOnTier(1) > 0 ? 'のりOK' : 'つぎへ', 'primary', handleNoriOkPressed));
-  } else if (freeGuideStep === 'tier2Main') {
-    actions.appendChild(makeSmallControlButton('かざりにもどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'tier2Side') {
     const tier = getGuideTierForStep('tier2Side');
-    actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
+    // batch:1045: 「メインにもどる」戻るボタンは撤去。
     // v1490: 全おかずがそろうまで OK ボタン自体を出さない (配置ごとに toolbar が再構築
     // されるので、 そろった瞬間に自然にボタンが現れる)。
     // batch:1044 R1: 残数ヒントチップ廃止 — 残数はポノの speech が案内する (A12/A13)。
@@ -16534,18 +16628,16 @@ function renderFreeGuidePanel() {
       actions.appendChild(sideOkBtn);
     }
   } else if (freeGuideStep === 'tier3Prompt') {
-    actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
+    // batch:1045: 「もどる」戻るボタンは撤去。
     const tier = getGuideTierForStep('tier2Side');
     // v1490: 分岐点 UI なので描画は維持しつつ、 全おかずがそろうまで disabled
     const doneBtn = makeSmallControlButton('できあがり', 'primary', () => stageComplete(), !getOkazuTierFillStatus(tier).filled || !!getSimpleFirstMissingRequiredOkazu());
     doneBtn.dataset.action = 'stage-complete';
     actions.appendChild(doneBtn);
     actions.appendChild(makeSmallControlButton('3だんめへ', '', () => setFreeGuideStep('tier3Main')));
-  } else if (freeGuideStep === 'tier3Main') {
-    actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
   } else if (freeGuideStep === 'tier3Side') {
     const tier = getGuideTierForStep('tier3Side');
-    actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
+    // batch:1045: 「メインにもどる」戻るボタンは撤去。
     // batch:1044 R1: 3だんめも そろうまで OK ボタン非表示。残数はポノの speech が案内する (A12/A13)。
     const tier3Fill = getOkazuTierFillStatus(tier);
     if (tier3Fill.filled) {
@@ -16555,6 +16647,7 @@ function renderFreeGuidePanel() {
     doneBtn3.dataset.action = 'stage-complete';
     actions.appendChild(doneBtn3);
   }
+  // steps rice / tier2Main / tier3Main は戻るボタンだけだったので空 actions → null (fallback で card 描画スキップ)。
   if (!actions.children.length) return null;
   const card = document.createElement('div');
   card.className = 'free-guide-card';
@@ -17386,12 +17479,55 @@ function renderFreeLayoutControls() {
   del.disabled = !selectedForDelete || !canSelectFreeItemInCurrentMode(selectedForDelete);
   del.addEventListener('pointerdown', e => { e.preventDefault(); removeFreeItem(freeSelectedItemUid); });
   actions.appendChild(del);
+  // batch:1045: 恒久 「はっぱ」 ボタン — おかず step のみ表示。
+  // タップで simpleLeafApplyArmed を toggle。 armed 状態で メインおかずタップ → leaf picker が直接開く。
+  const isOkazuStepForLeaf = simpleBentoMode
+    && isOkazuGuideStep()
+    && !getEditingCup()
+    && !freeMaskEditorMode;
+  if (isOkazuStepForLeaf) {
+    const leafBtn = document.createElement('button');
+    leafBtn.type = 'button';
+    leafBtn.textContent = 'はっぱ';
+    leafBtn.dataset.action = 'leaf-arm';
+    if (simpleLeafApplyArmed) leafBtn.classList.add('primary');
+    leafBtn.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const target = getSimpleOkazuEditTarget();
+      if (simpleLeafApplyArmed) {
+        // 再タップで解除
+        simpleLeafApplyArmed = false;
+        renderFreeLayoutControls();
+        return;
+      }
+      if (target) {
+        // すでに メインおかずが選ばれていれば 直接 leaf picker を開く
+        simpleLeafApplyArmed = false;
+        toggleSimpleOkazuEditPicker('leaf');
+        return;
+      }
+      simpleLeafApplyArmed = true;
+      setSpeech('はっぱを しく おかずを えらんでね！');
+      renderFreeLayoutControls();
+    });
+    actions.appendChild(leafBtn);
+  }
   if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
     const tier = getGuideTierForStep(freeGuideStep);
     actions.classList.add('has-guide-action');
     // batch:1044 R1: 残数ヒントチップ廃止 — 残数案内はポノの speech へ移行 (A7/A13)。
     const mainRemaining = getRequiredOkazuCountsForTier(tier).main - countOkazuRoleOnTier(tier, 'main');
     actions.appendChild(makeSmallControlButton('カップへ', 'primary', () => tryFinishOkazuTier(tier), mainRemaining > 0));
+  }
+  // batch:1045: 列数を実子要素数に合わせて上書きする (has-guide-action の 4 列は はっぱ追加で 5 列)。
+  if (isOkazuStepForLeaf) {
+    if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
+      // main-step: とりけす/やりなおし/けす/はっぱ + カップへ (primary)
+      actions.style.gridTemplateColumns = '0.72fr 0.72fr 0.72fr 0.72fr 1.34fr';
+    } else {
+      // side-step: とりけす/やりなおし/けす/はっぱ の 4 列均等
+      actions.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
+    }
   }
   tray.appendChild(actions);
 }
@@ -17414,6 +17550,7 @@ function loadFreeLayoutStage() {
   simpleReplaceSlotUid = null;
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
+  simpleLeafApplyArmed = false; // batch:1045
   const maskEdit = getFreeMaskEditRequest();
   freeMaskEditorMode = !!maskEdit;
   freeMaskEditorOpen = false;
@@ -21061,6 +21198,93 @@ function tutorialOnStageComplete() {
     modal.addEventListener('pointerdown', function(e) {
       if (e.target === modal) modal.classList.add('hidden');
     });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind, { once: true });
+  } else {
+    bind();
+  }
+})();
+
+// ===== batch:1045: 「最初からやる」 floating ボタン + confirm モーダル =====
+(function() {
+  function isTitleScreenVisible() {
+    var ts = document.getElementById('title-screen');
+    return !!(ts && !ts.classList.contains('hidden'));
+  }
+  function isCompleteOverlayOpen() {
+    return document.body && document.body.classList.contains('bento-complete-open');
+  }
+  function isShopOpeningActive() {
+    return !!window.__bentoShopOpeningActive;
+  }
+  function updateRestartButtonVisibility() {
+    var btn = document.getElementById('bento-restart-btn');
+    if (!btn) return;
+    var hide = isTitleScreenVisible() || isCompleteOverlayOpen() || isShopOpeningActive();
+    btn.classList.toggle('hidden', hide);
+  }
+  window.updateBentoRestartButtonVisibility = updateRestartButtonVisibility;
+  function showRestartConfirmModal() {
+    var modal = document.getElementById('restart-round-confirm');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+  }
+  function hideRestartConfirmModal() {
+    var modal = document.getElementById('restart-round-confirm');
+    if (!modal) return;
+    modal.classList.add('hidden');
+  }
+  function performRestart() {
+    hideRestartConfirmModal();
+    try {
+      if (typeof currentRequester !== 'undefined' && currentRequester) {
+        if (typeof restartSimpleBentoRequestRound === 'function') {
+          restartSimpleBentoRequestRound({ skipIntro: true });
+          return;
+        }
+      }
+      if (typeof restartSimpleBentoRound === 'function') restartSimpleBentoRound();
+    } catch (_) {}
+  }
+  function bind() {
+    var btn = document.getElementById('bento-restart-btn');
+    var modal = document.getElementById('restart-round-confirm');
+    var cancelBtn = document.getElementById('restart-round-cancel');
+    var okBtn = document.getElementById('restart-round-ok');
+    if (btn) {
+      btn.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        showRestartConfirmModal();
+      });
+    }
+    if (cancelBtn) {
+      cancelBtn.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        hideRestartConfirmModal();
+      });
+    }
+    if (okBtn) {
+      okBtn.addEventListener('pointerdown', function(e) {
+        e.preventDefault();
+        performRestart();
+      });
+    }
+    if (modal) {
+      modal.addEventListener('pointerdown', function(e) {
+        if (e.target === modal) hideRestartConfirmModal();
+      });
+    }
+    updateRestartButtonVisibility();
+    // body class 変化 (bento-complete-open) と title-screen の hidden 変化を監視。
+    try {
+      var mo = new MutationObserver(updateRestartButtonVisibility);
+      if (document.body) mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      var ts = document.getElementById('title-screen');
+      if (ts) mo.observe(ts, { attributes: true, attributeFilter: ['class'] });
+    } catch (_) {}
+    // shop-opening は setInterval で拾う (window.__bentoShopOpeningActive は class ではない)。
+    setInterval(updateRestartButtonVisibility, 500);
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bind, { once: true });

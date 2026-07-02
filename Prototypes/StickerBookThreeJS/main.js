@@ -7227,10 +7227,14 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
   // 失敗時は無視して既存挙動 (after-the-fact 描画) にフォールバック。
   const image = await loadStickerImage(placement.assetUrl).catch(() => null);
   const finalizePlacement = () => {
-    refreshPageTemplateTextures();
+    // v1905: refreshPageTemplateTextures は Promise を返すようになった。 peel の
+    // finishStickerPeelAnimation が baked texture swap 完了を await → fade → remove する
+    // ため、 呼出側 (finishStickerPeelAnimation) が chain できるように promise を返却する。
+    const swapPromise = refreshPageTemplateTextures();
     updatePage(flipProgress);
     updateInlineStickerControls();
     notifyStickerTutorialAction("dropSticker");
+    return swapPromise;
   };
   if (image && startStickerPeelAnimation(placement, pageNumber, image, finalizePlacement)) {
     return;
@@ -7438,7 +7442,10 @@ function bendStickerPeelGeometry(animation, progress) {
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
   const lift = remaining * 0.2;
-  animation.group.position.z = 0.018 + lift;
+  // v1905: 恒常 Z lift base 0.018 を除去。 progress≈0.995 の最終フレームで peel の Z が baked
+  // page mesh (Z=0) と一致し、 perspective camera 下での微スケール pop / 位置ズレを解消。
+  // fade out フェーズでは finishStickerPeelAnimation 側が position.z を弄らないので Z は 0 のまま。
+  animation.group.position.z = lift;
   animation.group.rotation.x = THREE.MathUtils.degToRad(-12 * remaining + 2 * press);
   animation.group.scale.setScalar(1 + remaining * 0.03 - press * 0.012);
   animation.frontMaterial.opacity = 0.96 + press * 0.04;
@@ -7446,15 +7453,21 @@ function bendStickerPeelGeometry(animation, progress) {
 }
 
 function finishStickerPeelAnimation(animation) {
-  book.remove(animation.group);
-  animation.geometry.dispose();
-  animation.frontMaterial.dispose();
-  animation.backMaterial.dispose();
-  animation.frontTexture.dispose();
-  animation.backTexture.dispose();
+  // v1905: peel remove → baked texture swap の順序を反転。
+  // 旧実装は (1) book.remove(group) を即座に実行 → (2) dispose → (3) onComplete で
+  // refreshPageTemplateTextures を fire-and-forget していた。 refresh は内部で async
+  // decode/描画を待つため、 material.map swap までの数フレーム〜数十 ms、 該当 sticker
+  // が完全消失してから新 texture で再出現し、 「1 枚だけ pop する」 挙動が発生していた。
+  // v1905 では:
+  //  (a) peel mesh を残したまま onComplete() (= finalizePlacement) を呼び、 返却 Promise
+  //      で baked side の texture swap 完了を待つ。
+  //  (b) swap 完了後、 peel mesh の front/back opacity を線形に 0 へ 2 frame (~32ms) fade。
+  //      baked は既に visible なので overlap 中は 2 枚重なるが Z=0 同一平面 (v1905 で lift 除去)
+  //      + peel は depthWrite=false のため zFighting なし、 outline も同幅 (v1905) で
+  //      pop なしに引き継がれる。
+  //  (c) fade 完了後に mesh を book から remove + geometry/material/texture を dispose。
   playStickerSfx("paste-settle");
-  // v1896: 着地の 50ms 後にコーナー起点の扇状 particle burst を発火。
-  // onComplete (finalizePlacement) の texture 再構築とレンダー優先度衝突を避けるため setTimeout に載せる。
+  // v1896: 着地の 50ms 後にコーナー起点の扇状 particle burst を発火 (据置)。
   try {
     if (typeof setTimeout === "function" && animation.placement && animation.peelDims) {
       const pageNumber = animation.pageNumber;
@@ -7466,8 +7479,57 @@ function finishStickerPeelAnimation(animation) {
       }, delayMs);
     }
   } catch (_) {}
+
+  const disposePeel = () => {
+    try { book.remove(animation.group); } catch (_) {}
+    try { animation.geometry.dispose(); } catch (_) {}
+    try { animation.frontMaterial.dispose(); } catch (_) {}
+    try { animation.backMaterial.dispose(); } catch (_) {}
+    try { animation.frontTexture.dispose(); } catch (_) {}
+    try { animation.backTexture.dispose(); } catch (_) {}
+  };
+
+  const fadeAndDispose = () => {
+    // v1905: 2 frame (~32ms @60fps) の線形 fade で 0.9606 → 0 に減衰。
+    // baked (α=1) は既に下敷き済のため、 見た目は 4% ジャンプなく滑らかに引き継がれる。
+    const startFront = animation.frontMaterial && typeof animation.frontMaterial.opacity === "number"
+      ? animation.frontMaterial.opacity : 0.96;
+    const startBack = animation.backMaterial && typeof animation.backMaterial.opacity === "number"
+      ? animation.backMaterial.opacity : 0.92;
+    const steps = 2;
+    let step = 0;
+    const raf = (typeof requestAnimationFrame === "function")
+      ? requestAnimationFrame
+      : (cb) => setTimeout(() => cb(performance.now ? performance.now() : Date.now()), 16);
+    const tick = () => {
+      step += 1;
+      const k = Math.max(0, 1 - step / steps);
+      try {
+        if (animation.frontMaterial) animation.frontMaterial.opacity = startFront * k;
+        if (animation.backMaterial) animation.backMaterial.opacity = startBack * k;
+      } catch (_) {}
+      if (step < steps) {
+        raf(tick);
+      } else {
+        disposePeel();
+      }
+    };
+    raf(tick);
+  };
+
+  let onCompleteResult;
   if (typeof animation.onComplete === "function") {
-    animation.onComplete();
+    try {
+      onCompleteResult = animation.onComplete();
+    } catch (_) {
+      onCompleteResult = null;
+    }
+  }
+  if (onCompleteResult && typeof onCompleteResult.then === "function") {
+    onCompleteResult.then(fadeAndDispose, fadeAndDispose);
+  } else {
+    // Promise でない (旧 code path / 失敗) 時は即 fade。
+    fadeAndDispose();
   }
 }
 
@@ -11097,11 +11159,14 @@ function refreshPageTemplateTextures() {
   // 完了まで旧 texture が表示され続けるので blank frame は起こらない。
   // 追随の updateFlutterPageTextures / updateBookPageControls は swap 後に呼ぶ。
   const token = ++refreshPageTemplateTokenSeq;
-  Promise.all(swaps.map((s) => s.texture && s.texture._readyPromise).filter(Boolean))
+  // v1905: swap 完了 Promise を返却化。 finishStickerPeelAnimation が
+  // texture swap 完了を await してから peel mesh を fade out できるように、 呼出側が
+  // 到達可能な形で resolve を待てるようにする (旧 stale-swap guard は据置)。
+  return Promise.all(swaps.map((s) => s.texture && s.texture._readyPromise).filter(Boolean))
     .catch(() => {})
     .then(() => {
       // 後続の refresh が入っていた場合はそちらに任せ、 stale な texture 群で上書きしない。
-      if (token !== refreshPageTemplateTokenSeq) return;
+      if (token !== refreshPageTemplateTokenSeq) return false;
       for (const s of swaps) {
         if (s.mesh && s.texture) {
           assignTextureObject(s.mesh, s.texture);
@@ -11109,6 +11174,7 @@ function refreshPageTemplateTextures() {
       }
       updateFlutterPageTextures();
       updateBookPageControls();
+      return true;
     });
 }
 
@@ -13072,8 +13138,15 @@ function drawInlineStickerSelectionOverlay(ctx, pageNumber) {
 }
 
 function drawStickerWhiteOutline(ctx, image, x, y, width, height) {
-  const whiteOutline = Math.max(1.25, Math.min(3.4, width * 0.007));
-  const blackOutline = whiteOutline + Math.max(0.35, Math.min(0.7, width * 0.0016));
+  // v1905: outline 幅計算を width (destination px) → image.width (paddedImage 固定サイズ) 基準に統一。
+  // peel は canvas サイズ = paddedImage.width で描く (width==image.width) ため挙動不変。
+  // baked は width=paddedDrawW (通常 paddedImage.width より大) だったため 3.4 cap に到達、
+  // peel と world 幅で ~15-25% 差が出ていた。 image.width 基準にすることで peel/baked とも
+  // 同 sticker で同じ dx 値になり、 destination スケール差 (peel:paddedImage.w → peelDims.w、
+  // baked:PAGE_TEXTURE_W → PAGE_W) 経由でも cap 前後の world 幅が同一に揃う。
+  const outlineRef = Math.max(1, image?.width || width);
+  const whiteOutline = Math.max(1.25, Math.min(3.4, outlineRef * 0.007));
+  const blackOutline = whiteOutline + Math.max(0.35, Math.min(0.7, outlineRef * 0.0016));
   const blackOffsets = stickerOutlineOffsets(blackOutline);
   const whiteOffsets = stickerOutlineOffsets(whiteOutline);
   ctx.save();

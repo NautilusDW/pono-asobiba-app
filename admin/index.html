@@ -12075,7 +12075,8 @@ function bentoSlotDefaultPoint(box, def) {
   if (def.kind === 'leaf' || def.kind === 'divider') {
     var grid = bentoSlotFoodBounds(box);
     var cols = [0.30, 0.70];
-    var rows = [0.24, 0.50, 0.76];
+    // batch:1045: bento 本体 (getSimpleLeafDividerSpreadPoints) の rows と一致させる。
+    var rows = [0.25, 0.50, 0.75];
     if (def.kind === 'divider' && def.index === 6) {
       return bentoSlotClampPointForDef(box, def, {
         x: grid.x + grid.w * 0.50,
