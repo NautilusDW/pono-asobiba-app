@@ -3169,6 +3169,48 @@
     .daily-gacha-modal.is-opened .daily-gacha-rarity-badge:not([hidden]) {
       animation: dailyGachaRarityBadgePop .48s cubic-bezier(.16,.94,.22,1.18) .42s forwards;
     }
+    /* v1910: DOM particle burst @ reveal 瞬間。 rare=12粒90°扇 / super=20粒360°。
+       親 = .daily-gacha-shell (closeup の overflow:hidden 回避)。 spawnGachaParticles(rarity) が生成。
+       reduced-motion / pono_particles_off で spawn 側 skip、 CSS 側は describe のみ。 */
+    .daily-gacha-shell .gacha-particle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: var(--size, 10px);
+      height: var(--size, 10px);
+      margin-left: calc(var(--size, 10px) * -0.5);
+      margin-top: calc(var(--size, 10px) * -0.5);
+      border-radius: 50%;
+      background: var(--color, #a8c8a0);
+      box-shadow: 0 0 8px var(--color, #a8c8a0), 0 0 16px rgba(255, 255, 255, .35);
+      pointer-events: none;
+      z-index: 60;
+      opacity: 0;
+      transform: rotate(var(--angle, 0deg)) translateX(0) scale(.4);
+      animation-name: gachaParticleBurst;
+      animation-timing-function: cubic-bezier(.18,.9,.22,1);
+      animation-fill-mode: forwards;
+      animation-delay: var(--delay, 0ms);
+      will-change: transform, opacity;
+    }
+    @keyframes gachaParticleBurst {
+      0% {
+        opacity: 0;
+        transform: rotate(var(--angle, 0deg)) translateX(0) scale(.4);
+      }
+      12% {
+        opacity: 1;
+        transform: rotate(var(--angle, 0deg)) translateX(calc(var(--dist, 100px) * .12)) scale(1);
+      }
+      70% {
+        opacity: .95;
+        transform: rotate(var(--angle, 0deg)) translateX(calc(var(--dist, 100px) * .82)) scale(.85);
+      }
+      100% {
+        opacity: 0;
+        transform: rotate(var(--angle, 0deg)) translateX(var(--dist, 100px)) scale(.3);
+      }
+    }
     .daily-gacha-modal.is-opened .daily-gacha-sparkles {
       opacity: 1;
     }
@@ -6494,6 +6536,9 @@
   <!-- v1731: 個別機能トグル catalog (PonoDebugFeatures)。 debug-mode.js の後に読む。 -->
   <script src="common/debug-features.js"></script>
   <script src="common/capture.js" defer></script>
+  <!-- v1910: 共通 Haptics helper (window.Haptics)。 daily gacha の turn/reveal/badge シーンで fire。
+       IIFE 即時登録、 localStorage 'pono_haptics_off'='1' で完全 opt-out。 defer で他 script と並列読込。 -->
+  <script src="common/haptics.js" defer></script>
   <!-- ===== Screenshot mode (PonoCapture) registration =====
        play.html は LP メニュー + 各種モーダル(ガチャ等)を持つ。
        ガチャモーダル #dailyGachaModal を target に html2canvas でラスタライズ。
@@ -6959,7 +7004,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1909;
+    const PAGE_CACHE_VERSION = 1910;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -8431,9 +8476,78 @@
     }
 
     function pulseDailyGachaHaptic(finalTurn = false) {
+      // v1910: common/haptics.js 経由に統一 (throttle + opt-out + iOS fallback を共通化)。
+      // Haptics 未読込時は bare vibrate に fallback (defer race safety)。
       try {
+        if (window.Haptics && typeof window.Haptics.fire === 'function') {
+          window.Haptics.fire(finalTurn ? 'gachaTurn3' : 'gachaTurn1_2');
+          return;
+        }
         if (navigator && typeof navigator.vibrate === 'function') {
           navigator.vibrate(finalTurn ? [18, 22, 34] : 16);
+        }
+      } catch (_) {}
+    }
+
+    // v1910: reveal moment (is-opened 付与時) の カプセル割れ振動。
+    function fireDailyGachaCapsuleHaptic() {
+      try {
+        if (window.Haptics && typeof window.Haptics.fire === 'function') {
+          window.Haptics.fire('capsuleCrack');
+        }
+      } catch (_) {}
+    }
+
+    // v1910: rare/super badge pop アニメーション (openDelay + 420ms) と同期する振動。
+    function fireDailyGachaBadgeHaptic(rarity) {
+      try {
+        if (rarity !== 'rare' && rarity !== 'super') return;
+        if (window.Haptics && typeof window.Haptics.fire === 'function') {
+          window.Haptics.fire(rarity === 'super' ? 'superBadgePop' : 'rareBadgePop');
+        }
+      } catch (_) {}
+    }
+
+    // v1910: reveal 瞬間の DOM particle burst (rare=12粒90°扇 / super=20粒360°)。
+    // 親は .daily-gacha-shell (closeup の overflow:hidden 回避、 modal ルート内で完結)。
+    // opt-out: localStorage.pono_particles_off === '1' or prefers-reduced-motion。
+    function spawnGachaParticles(rarity) {
+      try {
+        if (rarity !== 'rare' && rarity !== 'super') return;
+        if (!dailyGachaModal) return;
+        try {
+          if (localStorage.getItem('pono_particles_off') === '1') return;
+        } catch (_) {}
+        try {
+          if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        } catch (_) {}
+        const host = dailyGachaModal.querySelector('.daily-gacha-shell') || dailyGachaModal;
+        const isSuper = rarity === 'super';
+        const count = isSuper ? 20 : 12;
+        const duration = isSuper ? 1100 : 900;
+        // rare: 上向き 90° 扇 (−180°〜0° の上半円中央)。 super: 360° 全方位。
+        const angleStart = isSuper ? -90 : -180;
+        const angleSpan = isSuper ? 360 : 180;
+        const primary = isSuper ? '#e8f0d8' : '#a8c8a0';
+        const accent = '#ffffff';
+        for (let i = 0; i < count; i++) {
+          const p = document.createElement('div');
+          p.className = 'gacha-particle';
+          const angle = angleStart + (angleSpan * (i + 0.5)) / count + (Math.random() * 10 - 5);
+          const dist = (isSuper ? 130 : 110) + Math.floor(Math.random() * 40);
+          const size = 8 + Math.floor(Math.random() * 6);
+          const delay = Math.floor(Math.random() * 90);
+          const color = i % 2 === 1 ? accent : primary;
+          p.style.setProperty('--angle', angle + 'deg');
+          p.style.setProperty('--dist', dist + 'px');
+          p.style.setProperty('--delay', delay + 'ms');
+          p.style.setProperty('--size', size + 'px');
+          p.style.setProperty('--color', color);
+          p.style.animationDuration = duration + 'ms';
+          host.appendChild(p);
+          p.addEventListener('animationend', () => { try { p.remove(); } catch (_) {} }, { once: true });
+          // 保険 removal (animationend 未発火時)。
+          setTimeout(() => { try { p.remove(); } catch (_) {} }, duration + 400);
         }
       } catch (_) {}
     }
@@ -8864,7 +8978,15 @@
         dailyGachaModal.classList.add('is-opened');
         playDailyGachaSfx('capsuleOpen');
         playDailyGachaSfx('sparkle');
+        // v1910: reveal 瞬間の触覚 + 粒子。 rare/super のみ particle 発火。
+        fireDailyGachaCapsuleHaptic();
+        spawnGachaParticles(resultRarity);
       }, revealProfile.openDelay);
+      // v1910: badge pop アニメ (CSS delay 420ms) と同期する rare/super 用触覚。
+      setDailyGachaTimer(
+        () => fireDailyGachaBadgeHaptic(resultRarity),
+        (revealProfile.openDelay || 0) + 420
+      );
       setDailyGachaTimer(() => {
         if (dailyGachaBook) dailyGachaBook.hidden = false;
         updateDailyGachaEntry();

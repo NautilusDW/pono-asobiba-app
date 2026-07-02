@@ -11,6 +11,16 @@
   var PATTERNS = Object.freeze({
     stickerPaste: 30,
     pageTurn: 8,
+    // ── Daily Gacha (v1910) ─────────────────────────────────
+    // turn 1/2: 軽い click / turn 3: 明確な final punch。
+    // capsuleCrack: reveal (is-opened) 瞬間の割れ。
+    // rare/super BadgePop: badge pop animation (openDelay + 420ms) と同期。
+    // MIN_INTERVAL_MS=180 gate: turn 間隔 & (capsuleCrack→BadgePop 420ms) は自然通過。
+    gachaTurn1_2: 12,
+    gachaTurn3: [20, 50, 20],
+    capsuleCrack: 100,
+    rareBadgePop: [15, 40, 15, 80],
+    superBadgePop: [10, 30, 10, 30, 10, 120],
   });
 
   var disabled = false;
@@ -101,7 +111,9 @@
       if (isOptedOut()) return;
       if (disabled) return;
       var ms = PATTERNS[patternName];
-      if (typeof ms !== 'number') return;
+      // v1910: pattern は number (単発) or number[] (Android vibrate パターン)
+      var isArr = Array.isArray(ms);
+      if (typeof ms !== 'number' && !isArr) return;
       // 全 platform 共通の throttle: 同一 pattern の連発を抑制
       // (slider drag 中に progress が jitter で edge を再横断しても 1 回で止める)。
       var now = Date.now();
@@ -113,7 +125,9 @@
         return;
       }
       if (isIOS()) {
-        iosAudioFallback(ms);
+        // 配列パターンは代表 duration (最大要素) で fallback tone 発火。
+        var fallbackMs = isArr ? Math.max.apply(null, ms.filter(function (n, i) { return i % 2 === 0; })) : ms;
+        iosAudioFallback(fallbackMs);
       }
     } catch (_) {}
   }
