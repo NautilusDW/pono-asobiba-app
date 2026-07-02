@@ -7630,6 +7630,14 @@ function finishStickerPeelAnimation(animation) {
   // pulse 完了 (= emissive 0 に消灯) してから既存の 2 frame opacity fade + dispose へ連結する。
   // opt-out 時は従来どおり即 fade (peel を 32ms で消して dispose)。
   const glowThenFade = () => {
+    // v1915: overlap/glow/fade 窓のみ peel group を baked page (Z=0, depthWrite:true) より
+    // +0.006 手前へ微小 lift。 v1905 で lift 除去した結果 peel(細分割, Z=0) と baked(flat quad, Z=0)
+    // が完全 coplanar 化し、 depthWrite:false でも depthTest は生きているため per-pixel 深度差で
+    // depthTest が縞状に割れ (下半分インターレース縞)、 v1913 glow が overlap 窓 (~352ms) を延長して
+    // 顕在化していた。 flat geometry の均一 lift なので v1905 が嫌ったアニメ中の微スケール pop/位置ズレは
+    // 起きない (これは finish 後の静止窓のみ、 baked swap 完了後に一度だけ設定)。 fade phase では
+    // position.z を触らないため dispose まで 0.006 が保持され、 baked の上へ clean composite される。
+    try { if (animation.group) animation.group.position.z = 0.006; } catch (_) {}
     if (stickerGlowDisabled()) { fadeAndDispose(); return; }
     startStickerGlowPulse(animation, fadeAndDispose);
   };
