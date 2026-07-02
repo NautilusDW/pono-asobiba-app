@@ -312,6 +312,16 @@
       }
     } catch (_) {}
   }
+  // v1895 security-review Medium fix: __nativePlay bypass 時に guardedPlay の trackMedia が
+  //   走らないので、 明示的に mediaEls に登録して background-audio-stop guard を維持する。
+  function _shopTrackMediaEl(el) {
+    try {
+      if (el && window.PonoVisibilityAudioGuard
+          && typeof window.PonoVisibilityAudioGuard.trackMedia === 'function') {
+        window.PonoVisibilityAudioGuard.trackMedia(el);
+      }
+    } catch (_) {}
+  }
   function playPurchaseSfx(price) {
     try {
       if (_shopMuted()) return;
@@ -322,6 +332,7 @@
       else              { id = 'shop-sfx-normal'; vol = 0.55; }
       var el = document.getElementById(id);
       if (!el) return;
+      _shopTrackMediaEl(el); // v1895 security fix: bypass 前に guard 追跡登録
       try { el.pause(); el.currentTime = 0; el.volume = vol; } catch (_) {}
       var np = _shopNativePlay();
       var doPlay = function () {

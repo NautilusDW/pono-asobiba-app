@@ -8144,6 +8144,16 @@
         }
       } catch (_) {}
     }
+    // v1895 security-review Medium fix: __nativePlay bypass 時に guardedPlay の trackMedia が
+    //   走らないので、 明示的に mediaEls に登録して background-audio-stop guard を維持する。
+    function _trackShopMediaEl(el) {
+      try {
+        if (el && window.PonoVisibilityAudioGuard
+            && typeof window.PonoVisibilityAudioGuard.trackMedia === 'function') {
+          window.PonoVisibilityAudioGuard.trackMedia(el);
+        }
+      } catch (_) {}
+    }
     // v1891→v1895: どんぐりショップ購入直後に shop-bgm が途切れないよう再開を保証する safety guard。
     //         v1895: PonoVisibilityAudioGuard が blur 後の play() を silent reject する問題に対し、
     //         __nativePlay bypass + 0/120/450/1100ms の multi-stage retry で対抗。
@@ -8151,6 +8161,7 @@
       try {
         var bgm = shopBgmElement();
         if (!bgm) return;
+        _trackShopMediaEl(bgm); // v1895 security fix: bypass 前に guard 追跡登録
         var np = _nativeMediaPlay();
         var tryPlay = function () {
           try {
@@ -8189,6 +8200,7 @@
         else                  { id = 'shop-sfx-normal'; vol = 0.55; }
         var el = document.getElementById(id);
         if (!el) return;
+        _trackShopMediaEl(el); // v1895 security fix: bypass 前に guard 追跡登録
         try { el.pause(); el.currentTime = 0; el.volume = vol; } catch (_) {}
         var np = _nativeMediaPlay();
         var doPlay = function () {
