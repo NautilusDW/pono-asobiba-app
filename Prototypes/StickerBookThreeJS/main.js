@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260702-1926";
+const ASSET_VERSION = "20260702-1927";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -2080,6 +2080,8 @@ const DEFAULT_ZUKAN_TEXT_TUNING = {
   indexImageY: 0,
   indexTextX: 0,
   indexTextY: 0,
+  indexNoteX: 0,
+  indexNoteY: 0,
   detailNumberX: 0,
   detailNumberY: 0,
   detailNameX: 0,
@@ -2110,21 +2112,29 @@ const ZUKAN_DETAIL_FIELD_TUNING_PARTS = [
 const ZUKAN_INDEX_CARD_TUNING_PARTS = [
   { id: "Badge", label: "ばんごう", baseKey: "indexBadge", min: -120, max: 120 },
   { id: "Image", label: "え", baseKey: "indexImage", min: -180, max: 180 },
-  { id: "Text", label: "なまえ", baseKey: "indexText", min: -180, max: 180 },
+  { id: "Name", label: "なまえ", baseKey: "indexText", legacyId: "Text", min: -180, max: 180 },
+  { id: "Note", label: "よみ", baseKey: ["indexText", "indexNote"], legacyId: "Text", min: -180, max: 180 },
+];
+const ZUKAN_INDEX_CARD_LEGACY_TUNING_PARTS = [
+  { id: "Text", label: "なまえ+よみ", baseKey: "indexText", min: -180, max: 180, hidden: true },
+];
+const ZUKAN_INDEX_CARD_STORAGE_PARTS = [
+  ...ZUKAN_INDEX_CARD_TUNING_PARTS,
+  ...ZUKAN_INDEX_CARD_LEGACY_TUNING_PARTS,
 ];
 for (let slotIndex = 0; slotIndex < COLLECTION_INDEX_ITEMS_PER_PAGE; slotIndex += 1) {
-  for (const part of ZUKAN_INDEX_CARD_TUNING_PARTS) {
+  for (const part of ZUKAN_INDEX_CARD_STORAGE_PARTS) {
     DEFAULT_ZUKAN_TEXT_TUNING[zukanIndexSlotTuningKey(slotIndex, part.id, "X")] = 0;
     DEFAULT_ZUKAN_TEXT_TUNING[zukanIndexSlotTuningKey(slotIndex, part.id, "Y")] = 0;
   }
 }
 const ZUKAN_INDEX_CARD_TUNING_FIELDS = [];
 for (let slotIndex = 0; slotIndex < COLLECTION_INDEX_ITEMS_PER_PAGE; slotIndex += 1) {
-  for (const part of ZUKAN_INDEX_CARD_TUNING_PARTS) {
+  for (const part of ZUKAN_INDEX_CARD_STORAGE_PARTS) {
     const slotLabel = String(slotIndex + 1).padStart(2, "0");
     ZUKAN_INDEX_CARD_TUNING_FIELDS.push(
-      [zukanIndexSlotTuningKey(slotIndex, part.id, "X"), `${slotLabel} ${part.label} X`, part.min, part.max, 1],
-      [zukanIndexSlotTuningKey(slotIndex, part.id, "Y"), `${slotLabel} ${part.label} Y`, part.min, part.max, 1],
+      [zukanIndexSlotTuningKey(slotIndex, part.id, "X"), `${slotLabel} ${part.label} X`, part.min, part.max, 1, { hidden: part.hidden === true }],
+      [zukanIndexSlotTuningKey(slotIndex, part.id, "Y"), `${slotLabel} ${part.label} Y`, part.min, part.max, 1, { hidden: part.hidden === true }],
     );
   }
 }
@@ -2189,6 +2199,8 @@ const ZUKAN_TEXT_TUNING_FIELDS = [
   ["indexImageY", "もくじ え Y", -180, 180, 1],
   ["indexTextX", "もくじ なまえ X", -180, 180, 1],
   ["indexTextY", "もくじ なまえ Y", -180, 180, 1],
+  ["indexNoteX", "もくじ よみ X", -180, 180, 1],
+  ["indexNoteY", "もくじ よみ Y", -180, 180, 1],
   ...ZUKAN_INDEX_CARD_TUNING_FIELDS,
   ["detailNumberX", "しょうさい No X", -160, 160, 1],
   ["detailNumberY", "しょうさい No Y", -160, 160, 1],
@@ -2221,6 +2233,7 @@ const ZUKAN_TEXT_TUNING_GROUPS = [
   { id: "indexBadge", label: "もくじ ばんごう", keys: ["indexBadgeX", "indexBadgeY"] },
   { id: "indexImage", label: "もくじ え", keys: ["indexImageX", "indexImageY"] },
   { id: "indexText", label: "もくじ なまえ", keys: ["indexTextX", "indexTextY"] },
+  { id: "indexNote", label: "もくじ よみ", keys: ["indexNoteX", "indexNoteY"] },
   ...ZUKAN_INDEX_CARD_TUNING_GROUPS,
   { id: "detailNumber", label: "しょうさい No", keys: ["detailNumberX", "detailNumberY"] },
   { id: "detailName", label: "しょうさい なまえ", keys: ["detailNameX", "detailNameY"] },
@@ -10525,9 +10538,11 @@ function zukanDetailFieldGroupId(fieldIndex, partId) {
 }
 
 function zukanIndexSlotTextOffset(slotIndex, partId, axis) {
-  const part = ZUKAN_INDEX_CARD_TUNING_PARTS.find((item) => item.id === partId);
-  const baseOffset = part ? zukanTextOffset(`${part.baseKey}${axis}`) : 0;
-  return baseOffset + zukanTextOffset(zukanIndexSlotTuningKey(slotIndex, partId, axis));
+  const part = ZUKAN_INDEX_CARD_STORAGE_PARTS.find((item) => item.id === partId);
+  const baseKeys = Array.isArray(part?.baseKey) ? part.baseKey : part?.baseKey ? [part.baseKey] : [];
+  const baseOffset = baseKeys.reduce((sum, key) => sum + zukanTextOffset(`${key}${axis}`), 0);
+  const legacyOffset = part?.legacyId ? zukanTextOffset(zukanIndexSlotTuningKey(slotIndex, part.legacyId, axis)) : 0;
+  return baseOffset + legacyOffset + zukanTextOffset(zukanIndexSlotTuningKey(slotIndex, partId, axis));
 }
 
 function zukanDetailFieldTextOffset(fieldIndex, partId, axis) {
@@ -11152,7 +11167,10 @@ function appendZukanTextTuningSection(parent) {
   grid.className = "tuning-grid";
   parent.append(grid);
 
-  for (const [key, label, min, max, step] of ZUKAN_TEXT_TUNING_FIELDS) {
+  for (const [key, label, min, max, step, options] of ZUKAN_TEXT_TUNING_FIELDS) {
+    if (options?.hidden) {
+      continue;
+    }
     const row = document.createElement("label");
     row.className = "tuning-row";
     row.dataset.zukanTuningKey = key;
@@ -12544,13 +12562,22 @@ function zukanIndexCardTuningTargets(rect, slotIndex) {
     : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
   const imageX = imageBaseX + zukanIndexSlotTextOffset(slotIndex, "Image", "X");
   const imageY = imageBaseY + zukanIndexSlotTextOffset(slotIndex, "Image", "Y");
-  const textX = (isRoomy ? imageBaseX + imageSize + 34 * scaleX : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
-  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) * scaleY : isRoomy ? y + Math.max(106, height * 0.43) : y + 48)
-    + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
+  const textBaseX = isRoomy ? imageBaseX + imageSize + 34 * scaleX : x + 232;
+  const titleBaseY = generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) * scaleY : isRoomy ? y + Math.max(106, height * 0.43) : y + 48;
+  const noteBaseGap = (isRoomy ? 42 : 31) * scaleY;
+  const titleX = textBaseX + zukanIndexSlotTextOffset(slotIndex, "Name", "X");
+  const titleY = titleBaseY + zukanIndexSlotTextOffset(slotIndex, "Name", "Y");
+  const noteX = textBaseX + zukanIndexSlotTextOffset(slotIndex, "Note", "X");
+  const noteY = titleBaseY + noteBaseGap + zukanIndexSlotTextOffset(slotIndex, "Note", "Y");
+  const titleBoxH = (isRoomy ? 50 : 42) * scaleY;
+  const noteBoxH = (isRoomy ? 36 : 32) * scaleY;
+  const titleMaxW = Math.max(220, x + width - titleX - 28);
+  const noteMaxW = Math.max(200, x + width - noteX - 28);
   return [
     zukanTuningRect(zukanIndexSlotGroupId(slotIndex, "Badge"), badgeX - 12, badgeY - 12, badgeW + 24, badgeH + 24),
     zukanTuningRect(zukanIndexSlotGroupId(slotIndex, "Image"), imageX - 16, imageY - 16, imageSize + 32, imageSize + 32),
-    zukanTuningRect(zukanIndexSlotGroupId(slotIndex, "Text"), textX - 14, titleY - 48, Math.max(220, x + width - textX - 14), 108),
+    zukanTuningRect(zukanIndexSlotGroupId(slotIndex, "Name"), titleX - 12, titleY - (isRoomy ? 40 : 34) * scaleY, titleMaxW + 24, titleBoxH),
+    zukanTuningRect(zukanIndexSlotGroupId(slotIndex, "Note"), noteX - 10, noteY - (isRoomy ? 28 : 25) * scaleY, noteMaxW + 20, noteBoxH),
   ];
 }
 
@@ -12782,10 +12809,14 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
     : y + (height - imageSize) / 2 + (isRoomy ? 18 : 0);
   const imageX = imageBaseX + zukanIndexSlotTextOffset(slotIndex, "Image", "X");
   const imageY = imageBaseY + zukanIndexSlotTextOffset(slotIndex, "Image", "Y");
-  const textX = (isRoomy ? imageBaseX + imageSize + 34 * scaleX : x + 232) + zukanIndexSlotTextOffset(slotIndex, "Text", "X");
-  const textMaxW = Math.max(220, x + width - textX - 28);
-  const titleY = (generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) * scaleY : isRoomy ? y + Math.max(106, height * 0.43) : y + 48) + zukanIndexSlotTextOffset(slotIndex, "Text", "Y");
-  const noteY = titleY + (isRoomy ? 42 : 31) * scaleY;
+  const textBaseX = isRoomy ? imageBaseX + imageSize + 34 * scaleX : x + 232;
+  const titleBaseY = generatedTemplate ? y + (sixSlotGeneratedTemplate ? 90 : 98) * scaleY : isRoomy ? y + Math.max(106, height * 0.43) : y + 48;
+  const titleX = textBaseX + zukanIndexSlotTextOffset(slotIndex, "Name", "X");
+  const titleY = titleBaseY + zukanIndexSlotTextOffset(slotIndex, "Name", "Y");
+  const noteX = textBaseX + zukanIndexSlotTextOffset(slotIndex, "Note", "X");
+  const noteY = titleBaseY + (isRoomy ? 42 : 31) * scaleY + zukanIndexSlotTextOffset(slotIndex, "Note", "Y");
+  const titleMaxW = Math.max(220, x + width - titleX - 28);
+  const noteMaxW = Math.max(200, x + width - noteX - 28);
   ctx.save();
   if (!generatedTemplate) {
     ctx.fillStyle = found ? cardTheme.foundFill : cardTheme.lockedFill;
@@ -12818,10 +12849,10 @@ function drawCollectionZukanIndexCard(ctx, texture, palette, sticker, index, rec
   ctx.fillStyle = found ? palette.collection.text : "rgba(51, 68, 71, 0.54)";
   ctx.font = `${isRoomy ? "800 34px" : "800 28px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "left";
-  ctx.fillText(displayLabel, textX, titleY, textMaxW);
+  ctx.fillText(displayLabel, titleX, titleY, titleMaxW);
   ctx.fillStyle = found ? "rgba(51, 68, 71, 0.72)" : "rgba(51, 68, 71, 0.46)";
   ctx.font = `${isRoomy ? "700 22px" : "700 19px"} "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
-  ctx.fillText(displayNote, textX, noteY, textMaxW);
+  ctx.fillText(displayNote, noteX, noteY, noteMaxW);
   ctx.restore();
 }
 
