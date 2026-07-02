@@ -470,17 +470,26 @@
     /* ── Hero labels: flex row beneath title (HANDOFF 02 完全準拠) ── */
     .herob-labels{
       position:relative;z-index:1;
-      display:flex;flex-wrap:wrap;justify-content:center;align-items:center;
+      display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;
       gap:10px 14px;margin:18px auto 0;max-width:680px;
       animation:herob-rise .6s .12s ease both;
     }
-    .herob-label{position:static;width:clamp(64px,15vw,104px);height:auto;pointer-events:none;opacity:.96;}
+    .herob-label{position:static;width:clamp(64px,15vw,104px);height:auto;pointer-events:none;opacity:.96;flex-shrink:1;min-width:0;}
     .herob-label--nazonazo{transform:rotate(-6deg);}
     .herob-label--bouken  {transform:rotate(4deg);}
     .herob-label--iroasobi{transform:rotate(6deg);transform-origin:left center;margin-left:8px;}
     .herob-label--puzzle  {transform:rotate(-5deg);}
     .herob-label--ongaku  {transform:rotate(3deg);}
-    @media (max-width:480px){ .herob-label{width:clamp(56px,17vw,92px);} }
+    @media (max-width:480px){
+      .herob-labels{gap:4px 6px;max-width:100%;padding:0 4px;}
+      .herob-label{width:clamp(44px,15.5vw,80px);}
+      .herob-label--iroasobi{margin-left:2px;}
+    }
+    @media (max-width:380px){
+      .herob-labels{gap:2px 4px;}
+      .herob-label{width:clamp(40px,14.5vw,72px);}
+      .herob-label--iroasobi{margin-left:0;}
+    }
     /* ===== herob-cta 派手化 (C1-C8): breath + gradient流し + glow + shimmer + sparkle + arrow弾み ===== */
     .herob-cta{
       position:relative;
@@ -1534,6 +1543,10 @@
       background:linear-gradient(transparent 62%, #FDDCBF 62%);
       padding:0 .12em;
     }
+    .hero-bookhint-nobr{
+      white-space:nowrap;
+      display:inline-block;
+    }
     .hero-bookhint-banner{
       display:inline-flex;
       align-items:center;
@@ -1805,7 +1818,7 @@
       </div>
 
       <p class="herob-narrative">
-        <span class="herob-narrative-main">人気絵本「ありがとうって、うれしいね」から生まれた子どもたちのための遊び場です。</span>
+        <span class="herob-narrative-main">人気絵本「ありがとうって、うれしいね」から<br>生まれた子どもたちのための遊び場です。</span>
         <span class="herob-narrative-sub">登録不要！ブラウザで、誰でもすぐに無料で遊べます！</span>
       </p>
 
@@ -1817,7 +1830,7 @@
       <!-- ===== Hero 内: 絵本アドバンテージ匂わせ帯 (v1523: hero section 内に移動して playmat 黄色背景上に一体化) ===== -->
       <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
         <p class="hero-bookhint-text">
-          <span class="hero-bookhint-line">絵本の最後の「<span class="hero-bookhint-keyword">ひみつのあいことば</span>」で<em class="hero-bookhint-more">もっと楽しめる</em>よ！</span>
+          <span class="hero-bookhint-line">絵本の最後の「<span class="hero-bookhint-keyword">ひみつのあいことば</span>」で<span class="hero-bookhint-nobr"><em class="hero-bookhint-more">もっと楽しめるよ！</em></span></span>
         </p>
         <a class="hero-bookhint-banner" href="#book-secret" aria-label="ひみつのあいことばの せつめいへ いどう">
           <span class="hero-bookhint-thumb" aria-hidden="true"></span>
