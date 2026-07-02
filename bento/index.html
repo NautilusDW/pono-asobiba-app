@@ -1524,6 +1524,7 @@ html, body {
 }
 .free-action-row button:disabled {
   opacity: 0.42;
+  filter: grayscale(0.9) saturate(0.4); /* batch:1044 polish: PNG 背景ボタンも灰色に読ませる */
   cursor: default;
 }
 .free-size-row {
@@ -1897,14 +1898,15 @@ html, body {
   flex-wrap: wrap;
   gap: 5px;
   min-height: 0;
-  padding: 7px 8px;
+  padding: 5px 8px; /* batch:1044 R2: 1 行パネルに合わせて上下 padding を圧縮 */
   border: 3px solid var(--toolbar-panel-border);
   border-radius: 12px;
   background: var(--toolbar-panel-bg);
   flex-shrink: 0;
 }
 .free-context-toolbar-title {
-  flex: 1 0 100%;
+  flex: 0 1 auto; /* batch:1044 R2: 1 行パネル — title は inline で 36% まで */
+  max-width: 36%;
   min-width: 0;
   color: inherit;
   font-size: 0.58rem;
@@ -1933,7 +1935,8 @@ html, body {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  flex: 1 0 100%;
+  flex: 1 1 auto; /* batch:1044 R2: title と同段に並べて 1 行化 */
+  min-width: 0;
 }
 .free-context-toolbar button.free-okazu-edit-btn {
   min-width: 0;
@@ -2023,15 +2026,6 @@ button.free-okazu-picker-back {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.free-context-toolbar--panel .free-okazu-edit-hint {
-  flex: 1 0 100%;
-  font-size: 0.52rem;
-  font-weight: 900;
-  color: #047857;
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 8px;
-  padding: 3px 7px;
 }
 /* batch:1043 T1: パネル slim 化に伴い旧 178px スクロール構造は撤去。
    side ステップの 96px クランプ (overflow:hidden) だけ外して 1 行 wrap ぶんの自然高を許す */
@@ -2176,22 +2170,6 @@ button.free-okazu-picker-back {
   background: #FFE1A8;
   border-color: var(--primary);
   color: #8B4513;
-}
-/* v1490: おかずが必要数そろうまで OK ボタンの代わりに出す非インタラクティブなヒントチップ */
-.free-okazu-remaining-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px dashed #F0D9A8;
-  border-radius: 10px;
-  background: #FFFDF4;
-  color: var(--text-light);
-  font-size: 0.5rem;
-  font-weight: 800;
-  line-height: 1.2;
-  min-height: 30px;
-  padding: 3px 4px;
-  text-align: center;
 }
 .free-cup-list--visual {
   display: flex;
@@ -2351,34 +2329,39 @@ button.free-okazu-picker-back {
 .free-stage-target-marker.is-empty-cup-target {
   opacity: 0.82;
 }
-/* batch:divider-ux — しきりモードの空きスロット ghost (うっすらヒント表示) */
+/* batch:1044 R5: しきり ghost はスロットの向きに合わせた長方形 + はっきり見える強度に */
 .free-stage-target-marker.is-divider-target {
-  width: clamp(24px, 3.6vw, 32px);
-  height: clamp(24px, 3.6vw, 32px);
-  border: 2px dashed rgba(196, 148, 90, 0.6);
-  background: rgba(255, 249, 235, 0.38);
-  color: rgba(139, 90, 43, 0.55);
-  opacity: 0.55;
+  width: clamp(46px, 7vw, 64px);
+  height: clamp(17px, 2.6vw, 22px);
+  border: 2.5px dashed rgba(196, 148, 90, 0.95);
+  border-radius: 9px;
+  background: rgba(255, 249, 235, 0.72);
+  color: transparent;
+  opacity: 1;
   font-size: 0.62rem;
-  box-shadow: none;
+  box-shadow: 0 1px 4px rgba(92, 53, 18, 0.16);
 }
-/* batch:dividerfix F1 — 見た目は 24-32px のまま、透明 ::after で当たり判定を 44px 以上に拡張 */
+.free-stage-target-marker.is-divider-target.is-vertical {
+  width: clamp(17px, 2.6vw, 22px);
+  height: clamp(46px, 7vw, 64px);
+}
+/* batch:dividerfix F1 継承 — 透明 ::after で当たり判定 44px 以上を維持 */
 .free-stage-target-marker.is-divider-target::after {
   content: '';
   position: absolute;
-  inset: -12px;
-  border-radius: 999px;
+  inset: -16px;
+  border-radius: 12px;
 }
 @media (pointer: coarse) {
   .free-stage-target-marker.is-divider-target::after {
-    inset: -16px;
+    inset: -18px;
   }
 }
 .free-stage-target-marker.is-divider-target.is-active {
   opacity: 1;
   border-style: solid;
   border-color: #17A766;
-  background: rgba(214, 250, 230, 0.88);
+  background: rgba(214, 250, 230, 0.92);
   color: #064E3B;
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.66),
@@ -2389,6 +2372,7 @@ button.free-okazu-picker-back {
 }
 .free-guide-actions button:disabled {
   opacity: 0.45;
+  filter: grayscale(0.85); /* batch:1044 polish: disabled は彩度も落とす */
   cursor: default;
 }
 .free-cup-panel {
@@ -2424,6 +2408,14 @@ button.free-okazu-picker-back {
   font-weight: 900;
   min-height: 34px;
   cursor: pointer;
+}
+/* batch:1044 R3: 空カップは OK ではなく非強調の「もどる」 */
+.free-cup-done-btn.free-cup-done-btn--empty {
+  border-color: #C9C2B4;
+  border-bottom-color: #AFA892;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F3EEE2 100%);
+  color: #6B6155;
+  box-shadow: 0 3px 0 #C9C2B4, inset 0 2px 0 rgba(255,255,255,0.85);
 }
 .free-cup-contents {
   border: 2px solid #F8C36B;
@@ -3438,11 +3430,6 @@ button.free-okazu-picker-back {
   .free-guide-actions button,
   .free-cup-list button {
     min-height: 40px;
-    font-size: 0.7rem;
-  }
-  .free-okazu-remaining-hint {
-    min-height: 40px;
-    border-radius: 13px;
     font-size: 0.7rem;
   }
   .free-cup-list button.free-place-choice {
@@ -7576,10 +7563,7 @@ let lastSimpleDividerPaletteId = '';
 // picker mode は null | 'food' (おかずを かえる) | 'leaf' (したに しく)。
 let simpleOkazuEditPickerMode = null;
 let simpleOkazuEditPickerUid = null;
-// v1496 leaf-bed: 「はっぱを したに しけるよ」一回きりヒント (session 単位)。
-// 初回表示した okazu uid を控え、同じパネルの再 render では出し続ける。
-let simpleLeafHintUid = null;
-const BENTO_LEAF_HINT_SESSION_KEY = 'bento_leaf_hint_v1';
+// batch:1044 R2: 一回きり はっぱヒント (simpleLeafHintUid / bento_leaf_hint_v1) は撤去。
 const SIMPLE_CUP_FOOD_LIMIT = 1;
 const SIMPLE_CUP_FOOD_CLUSTER_LIMIT = 3;
 
@@ -10311,7 +10295,20 @@ function closeCupEditor() {
   // v1494 cup-first: side ステップに food タブは無いので accessory (カップ) に戻す
   freeLayoutTab = (isOkazuGuideStep() && String(freeGuideStep || '').endsWith('Side')) ? 'accessory' : 'food';
   resetFreeMainGuide();
-  setSpeech(getBoxTierCount() > 1 ? `${freeActiveTier}だんめに おかずを いれよう！` : 'おかずを いれよう！');
+  // batch:1044 R1: side ステップでは閉じた瞬間に残数/完了をポノが案内する (チップ廃止の代替)。
+  // tutorial 中は台本を壊さないよう従来文言のまま (maybeAnnounceOkazuTierFilled と同じガード方針)。
+  let tutActive = false;
+  try { tutActive = typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active; } catch (_) {}
+  const sideStep = simpleBentoMode && !tutActive && isOkazuGuideStep() && String(freeGuideStep || '').endsWith('Side')
+    ? freeGuideStep : null;
+  if (sideStep) {
+    const fill = getOkazuTierFillStatus(getGuideTierForStep(sideStep));
+    setSpeech(fill.remaining > 0
+      ? `カップに おかずを あと ${fill.remaining}こ いれてね！`
+      : 'おかずが ぜんぶ そろったね！「' + getOkazuSideOkLabel(sideStep) + '」を おしてね。');
+  } else {
+    setSpeech(getBoxTierCount() > 1 ? `${freeActiveTier}だんめに おかずを いれよう！` : 'おかずを いれよう！');
+  }
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   try { if (typeof tutorialOnCupEditorClosed === 'function') tutorialOnCupEditorClosed(); } catch (_) {}
@@ -10360,7 +10357,11 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech(getBoxTierCount() > 1 ? '2だんめに メインおかずを いれよう！' : 'メインのおかずを いれよう！');
+    // batch:1044 R1: 必要数を最初から明示する (チップ廃止の代替)
+    const req = getRequiredOkazuCountsForTier(freeActiveTier);
+    setSpeech(getBoxTierCount() > 1
+      ? `2だんめに メインのおかずを ${req.main}こ いれてね！`
+      : `メインのおかずを ${req.main}こ いれてね！`);
   } else if (step === 'tier2Side') {
     freeActiveTier = getGuideTierForStep('tier2Side');
     freeLayoutTab = 'accessory';
@@ -10370,7 +10371,7 @@ function setFreeGuideStep(step, opts = {}) {
     // v1494 cup-first: 途中状態 (戻る/とりけす等) で直置きの小さいおかずが残っていたら
     // 空きカップへ自動回収する。カップに空きが無い分は消さずに残す (ゲート計算には入る)。
     try { attachExistingSimpleSideFoodsToCups(freeActiveTier); } catch (_) {}
-    setSpeech('つぎは カップを おいて 小さい おかずを いれよう！');
+    setSpeech(`つぎは カップを おいて 小さい おかずを ${getRequiredOkazuCountsForTier(freeActiveTier).side}こ いれてね！`); // batch:1044 R1
   } else if (step === 'tier3Prompt') {
     freeActiveTier = Math.min(2, getBoxTierCount());
     freeSelectedItemUid = null;
@@ -10383,7 +10384,7 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('3だんめの メインおかずを いれよう！');
+    setSpeech(`3だんめの メインのおかずを ${getRequiredOkazuCountsForTier(freeActiveTier).main}こ いれてね！`); // batch:1044 R1
   } else if (step === 'tier3Side') {
     freeActiveTier = getGuideTierForStep('tier3Side');
     freeLayoutTab = 'accessory';
@@ -10392,7 +10393,7 @@ function setFreeGuideStep(step, opts = {}) {
     freeCupEditorUid = null;
     // v1494 cup-first: tier2Side と同じく、直置きの小さいおかずを空きカップへ自動回収
     try { attachExistingSimpleSideFoodsToCups(freeActiveTier); } catch (_) {}
-    setSpeech('3だんめの カップを おいて 小さい おかずを いれよう！');
+    setSpeech(`3だんめも カップを おいて 小さい おかずを ${getRequiredOkazuCountsForTier(freeActiveTier).side}こ いれてね！`); // batch:1044 R1
   }
   normalizeFreeGuideTab();
   if (!opts.skipRender) {
@@ -10403,7 +10404,9 @@ function setFreeGuideStep(step, opts = {}) {
 }
 function getFreePaletteItems(tabId) {
   if (tabId === 'accessory') return bentoAccessories.filter(item => item.type === 'cup');
-  if (tabId === 'divider') return bentoAccessories.filter(item => item.type === 'divider');
+  // batch:1044 R4: palette は横しきり 2 種のみ (縦はスロット向きで自動)。catalog の _vertical def は
+  // getSimpleDividerDefForSlot / syncSimpleDividerItemToSlot が参照するため絶対に消さない。
+  if (tabId === 'divider') return bentoAccessories.filter(item => item.type === 'divider' && !item.verticalDivider);
   if (tabId === 'leaf') return bentoLeafItems;
   if (tabId === 'pick') return decorItems.filter(item => item.type === 'pick' && isBentoDecorUnlocked(item));
   // v1373: のり弁を rice palette から削除。 のりは decor step で別 layer から乗せる。
@@ -11726,12 +11729,21 @@ function getSimpleDividerDefForSlot(def, slot) {
 }
 // batch:divider-ux — 子どもが最後に使った しきり family を覚える (ghost タップで同じ family を置く)
 function noteSimpleDividerPaletteUse(def) {
-  if (def && def.type === 'divider' && def.id) lastSimpleDividerPaletteId = String(def.id);
+  if (!def || def.type !== 'divider' || !def.id) return;
+  // batch:1044 R4: palette は横 2 種のみ — vertical id は family の横 id に正規化して記憶
+  lastSimpleDividerPaletteId = def.verticalDivider ? `divider_${getSimpleDividerFamily(def)}` : String(def.id);
 }
 function getSimpleActiveDividerPaletteDef() {
   const dividers = bentoAccessories.filter(item => item && item.type === 'divider');
   if (!dividers.length) return null;
-  return dividers.find(item => item.id === lastSimpleDividerPaletteId) || dividers[0];
+  // batch:1044 R4: 縦しきりは palette に出さないので、active def も必ず横に正規化する
+  const horizontals = dividers.filter(item => !item.verticalDivider);
+  const active = dividers.find(item => item.id === lastSimpleDividerPaletteId) || horizontals[0] || dividers[0];
+  if (active && active.verticalDivider) {
+    const family = getSimpleDividerFamily(active);
+    return horizontals.find(item => getSimpleDividerFamily(item) === family) || horizontals[0] || active;
+  }
+  return active;
 }
 function syncSimpleDividerItemToSlot(item, slot) {
   if (!item || item.type !== 'divider' || !slot) return false;
@@ -11935,7 +11947,7 @@ function getSimpleFoodSpreadPoints(box) {
 function getSimpleLeafDividerSpreadPoints(box, kind) {
   const b = getFoodPlacementBounds(box);
   const cols = [0.30, 0.70];
-  const rows = [0.24, 0.50, 0.76];
+  const rows = [0.25, 0.50, 0.75]; // batch:1044 R6: fallback グリッドを 0.25 刻みに整列
   const points = [];
   rows.forEach(row => {
     cols.forEach(col => {
@@ -13617,6 +13629,10 @@ function addSimpleFixedPaletteItem(def, opts = {}) {
   if (autoOpenCupEditorUid) openCupEditor(autoOpenCupEditorUid);
   return item;
 }
+// batch:1044 R1 (A8): side ステップの OK ボタンラベルを一元化 (closeCupEditor の speech でも使う)
+function getOkazuSideOkLabel(step) {
+  return step === 'tier3Side' ? '3だんめOK' : (getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK');
+}
 // v1491: side ステップで最後のおかずが入った瞬間 (ヒントチップ→OK ボタンに切替わる瞬間) に
 // OK ボタンへの導線を speech で案内する。 tutorial 中は台本ナレを壊さないよう発火しない。
 function maybeAnnounceOkazuTierFilled(step, tier, filledBefore) {
@@ -13626,8 +13642,7 @@ function maybeAnnounceOkazuTierFilled(step, tier, filledBefore) {
     if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) return;
   } catch (_) {}
   if (!getOkazuTierFillStatus(tier).filled) return;
-  const okLabel = step === 'tier3Side' ? '3だんめOK' : (getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK');
-  setSpeech('おかずが ぜんぶ そろったね！「' + okLabel + '」を おしてね。');
+  setSpeech('おかずが ぜんぶ そろったね！「' + getOkazuSideOkLabel(step) + '」を おしてね。');
 }
 function addSimpleFreePaletteItem(def) {
   if (!def) return;
@@ -13694,8 +13709,13 @@ function addSimpleFreePaletteItem(def) {
     const tier = getGuideTierForStep(freeGuideStep);
     // v1490: メインが必要数そろってから「すすんでいいよ」を案内する (必要数は helper が正)
     // v1491: main スロットは満杯なので「もっといれてもいいよ」ではなく次ステップへ誘導する
-    if (countOkazuRoleOnTier(tier, 'main') >= getRequiredOkazuCountsForTier(tier).main) {
+    const requiredMain = getRequiredOkazuCountsForTier(tier).main;
+    const mainCount = countOkazuRoleOnTier(tier, 'main');
+    if (mainCount >= requiredMain) {
       setSpeech('メインのおかずが そろったね！つぎは 「カップへ」を おしてね。');
+    } else {
+      // batch:1044 R1: ヒントチップ廃止に伴い残数はポノが話す
+      setSpeech(`メインのおかずが はいったよ！あと ${requiredMain - mainCount}こ いれてね。`);
     }
   }
   maybeAnnounceOkazuTierFilled(sideGuideStep, sideGuideTier, sideFilledBefore);
@@ -15222,28 +15242,7 @@ function createFreeContextToolbar(opts = {}) {
     appendControl(row);
     // batch:1043 T2: picker はパネル内 inline ではなく renderSimpleOkazuEditPickerTray が
     // トレイ全体を置き換えて表示する (picker mode 中このパネル自体が描画されない)。
-    // 一回きり (session) の はっぱヒント。同じおかずのパネル再 render 中は出し続ける。tutorial 中は出さない。
-    if (!leaf && simpleOkazuEditPickerMode !== 'leaf') {
-      let showLeafHint = false;
-      try {
-        const tutActive = typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active;
-        if (!tutActive) {
-          if (simpleLeafHintUid === item.uid) {
-            showLeafHint = true;
-          } else if (!sessionStorage.getItem(BENTO_LEAF_HINT_SESSION_KEY)) {
-            sessionStorage.setItem(BENTO_LEAF_HINT_SESSION_KEY, '1');
-            simpleLeafHintUid = item.uid;
-            showLeafHint = true;
-          }
-        }
-      } catch (_) {}
-      if (showLeafHint) {
-        const hint = document.createElement('div');
-        hint.className = 'free-okazu-edit-hint';
-        hint.textContent = 'はっぱを したに しけるよ🥬';
-        appendControl(hint);
-      }
-    }
+    // batch:1044 R2: 一回きりの はっぱヒント行は廃止 (タップ時 speech が同内容を案内済み)。
   }
 
   if (!controlCount) return null;
@@ -16507,18 +16506,7 @@ function goBackFreeGuideStep() {
     setFreeGuideStep('tier3Main');
   }
 }
-// v1490: おかずが必要数そろうまで OK ボタンの代わりに出す非インタラクティブなヒントチップ
-// v1491: template ('{n}' を残数に置換) で文言を差し替え可能に + role=status で AT に残数変化を通知
-function makeOkazuRemainingHint(remaining, template) {
-  const hint = document.createElement('div');
-  hint.className = 'free-okazu-remaining-hint';
-  hint.setAttribute('role', 'status');
-  const count = Math.max(1, Math.round(Number(remaining) || 1));
-  hint.textContent = template
-    ? template.replace('{n}', String(count))
-    : `おかずを あと ${count}こ いれてね`;
-  return hint;
-}
+// batch:1044 R1: makeOkazuRemainingHint (残数ヒントチップ) は廃止 — 残数はポノの speech が案内する。
 function renderFreeGuidePanel() {
   const actions = document.createElement('div');
   actions.className = 'free-guide-actions';
@@ -16537,15 +16525,13 @@ function renderFreeGuidePanel() {
     const tier = getGuideTierForStep('tier2Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
     // v1490: 全おかずがそろうまで OK ボタン自体を出さない (配置ごとに toolbar が再構築
-    // されるので、 そろった瞬間に自然にボタンが現れる)。 未達の間はヒントチップ表示。
+    // されるので、 そろった瞬間に自然にボタンが現れる)。
+    // batch:1044 R1: 残数ヒントチップ廃止 — 残数はポノの speech が案内する (A12/A13)。
     const tier2Fill = getOkazuTierFillStatus(tier);
     if (tier2Fill.filled) {
       const sideOkBtn = makeSmallControlButton(getBoxTierCount() > 1 ? '2だんめOK' : 'おかずOK', 'primary', () => tryFinishOkazuTier(tier));
       if (getBoxTierCount() === 1) sideOkBtn.dataset.action = 'stage-complete';
       actions.appendChild(sideOkBtn);
-    } else {
-      // v1500 FIX9b: side ステップは「カップに いれる」導線なので文言を明示
-      actions.appendChild(makeOkazuRemainingHint(tier2Fill.remaining, 'カップに おかずを あと {n}こ いれてね'));
     }
   } else if (freeGuideStep === 'tier3Prompt') {
     actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
@@ -16560,13 +16546,10 @@ function renderFreeGuidePanel() {
   } else if (freeGuideStep === 'tier3Side') {
     const tier = getGuideTierForStep('tier3Side');
     actions.appendChild(makeSmallControlButton('メインにもどる', '', goBackFreeGuideStep));
-    // v1490: 3だんめも同様に、 そろうまでボタン非表示 + ヒントチップ
+    // batch:1044 R1: 3だんめも そろうまで OK ボタン非表示。残数はポノの speech が案内する (A12/A13)。
     const tier3Fill = getOkazuTierFillStatus(tier);
     if (tier3Fill.filled) {
       actions.appendChild(makeSmallControlButton('3だんめOK', 'primary', () => tryFinishOkazuTier(tier)));
-    } else {
-      // v1500 FIX9b: side ステップは「カップに いれる」導線なので文言を明示
-      actions.appendChild(makeOkazuRemainingHint(tier3Fill.remaining, 'カップに おかずを あと {n}こ いれてね'));
     }
     const doneBtn3 = makeSmallControlButton('できあがり', '', () => stageComplete(), !!getSimpleFirstMissingRequiredOkazu());
     doneBtn3.dataset.action = 'stage-complete';
@@ -16640,13 +16623,16 @@ function renderFreeCupEditorControls() {
     && Array.from(selectedToolbar.querySelectorAll('button')).some(btn => (btn.textContent || '').trim() === 'OK')
   );
 
+  // batch:1044 R3: 空カップでは「OK」を出さない (owner: おかずを入れた後にOKならわかる)。
+  // 逃げ道は常に残す — 空のときは非強調の「もどる」で閉じる (機能は同じ closeCupEditor)。
+  const cupHasFood = getCupChildren(cup).length > 0;
   if (!hasToolbarDoneButton) {
     const actions = document.createElement('div');
     actions.className = 'free-cup-editor-actions';
     const done = document.createElement('button');
     done.type = 'button';
-    done.className = 'free-cup-done-btn';
-    done.textContent = 'OK';
+    done.className = 'free-cup-done-btn' + (cupHasFood ? '' : ' free-cup-done-btn--empty');
+    done.textContent = cupHasFood ? 'OK' : 'もどる';
     done.addEventListener('pointerdown', e => {
       e.preventDefault();
       closeCupEditor();
@@ -17114,12 +17100,14 @@ function createSimpleDividerStageTargetLayer() {
       slotIndex: slot.index,
       x: point.x,
       y: point.y,
-      label: '・',
+      label: '',
       ariaLabel: 'しきりを おく ばしょ',
       onSelect: e => placeSimpleDividerAtGhostSlot(slot, e),
     });
     if (marker) {
       marker.classList.add('is-divider-target');
+      // batch:1044 R5: スロットの向きに合わせた長方形 ghost (縦/横 class で CSS が形を決める)
+      marker.classList.add(isSimpleVerticalDividerSlot(slot) ? 'is-vertical' : 'is-horizontal');
       marker.dataset.slotKey = slot.key;
       layer.appendChild(marker);
     }
@@ -17401,13 +17389,9 @@ function renderFreeLayoutControls() {
   if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
     const tier = getGuideTierForStep(freeGuideStep);
     actions.classList.add('has-guide-action');
-    // v1490: メインおかずが必要数そろうまで disabled (ボタン自体は見せて動線を保つ)
-    // v1491: disabled の理由が分かるよう、 未達の間はヒントチップも並べる
+    // batch:1044 R1: 残数ヒントチップ廃止 — 残数案内はポノの speech へ移行 (A7/A13)。
     const mainRemaining = getRequiredOkazuCountsForTier(tier).main - countOkazuRoleOnTier(tier, 'main');
     actions.appendChild(makeSmallControlButton('カップへ', 'primary', () => tryFinishOkazuTier(tier), mainRemaining > 0));
-    if (mainRemaining > 0) {
-      actions.appendChild(makeOkazuRemainingHint(mainRemaining, 'メインのおかずを あと {n}こ いれてね'));
-    }
   }
   tray.appendChild(actions);
 }
