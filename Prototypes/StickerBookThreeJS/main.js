@@ -5083,16 +5083,18 @@ function playStickerSfx(kind, options = {}) {
       });
       break;
     case "paste-settle":
+      // v1907: raw peak 0.026 → 約 0.047 (約 1.8x) に微増して着地感を復活。
+      // paste-sparkle と 50ms 差で重ねるため clip しない範囲で控えめに上げる。
       scheduleStickerSfxTone(ctx, at, {
         duration: 0.075,
-        volume: volume(0.032),
+        volume: volume(0.058),
         frequency: 155,
         endFrequency: 112,
         type: "sine",
       });
       scheduleStickerSfxNoise(ctx, at + 0.006, {
         duration: 0.065,
-        volume: volume(0.024),
+        volume: volume(0.042),
         filterType: "lowpass",
         frequency: 860,
         endFrequency: 520,
@@ -5100,16 +5102,43 @@ function playStickerSfx(kind, options = {}) {
       });
       scheduleStickerSfxTone(ctx, at + 0.05, {
         duration: 0.12,
-        volume: volume(0.013),
+        volume: volume(0.024),
         frequency: 780,
         endFrequency: 1220,
         type: "triangle",
       });
       scheduleStickerSfxTone(ctx, at + 0.095, {
         duration: 0.18,
-        volume: volume(0.009),
+        volume: volume(0.016),
         frequency: 1460,
         endFrequency: 2050,
+        type: "sine",
+      });
+      break;
+    case "paste-sparkle":
+      // v1907: 貼付完了と同時に発火する短いキラキラ arpeggio。
+      // sine 2100→3200Hz (main tone) + triangle 2800→4200Hz (upper harmonic, +40ms) +
+      // sine 1650→2450Hz (mid tone, +80ms) で total ≈ 220ms。 particle burst (50ms 遅延) と
+      // 自然に同期する。 STICKER_SFX_MASTER_VOLUME 0.82 乗算後 peak ≈ 0.045。
+      scheduleStickerSfxTone(ctx, at, {
+        duration: 0.148,
+        volume: volume(0.055),
+        frequency: 2100,
+        endFrequency: 3200,
+        type: "sine",
+      });
+      scheduleStickerSfxTone(ctx, at + 0.04, {
+        duration: 0.15,
+        volume: volume(0.038),
+        frequency: 2800,
+        endFrequency: 4200,
+        type: "triangle",
+      });
+      scheduleStickerSfxTone(ctx, at + 0.08, {
+        duration: 0.16,
+        volume: volume(0.030),
+        frequency: 1650,
+        endFrequency: 2450,
         type: "sine",
       });
       break;
@@ -7467,6 +7496,9 @@ function finishStickerPeelAnimation(animation) {
   //      pop なしに引き継がれる。
   //  (c) fade 完了後に mesh を book から remove + geometry/material/texture を dispose。
   playStickerSfx("paste-settle");
+  // v1907: paste-settle と同時にキラキラ arpeggio を重ね発火。
+  // particle burst (下記 50ms 後) とほぼ同じ時間帯に鳴らして視覚と同期させる。
+  playStickerSfx("paste-sparkle");
   // v1896: 着地の 50ms 後にコーナー起点の扇状 particle burst を発火 (据置)。
   try {
     if (typeof setTimeout === "function" && animation.placement && animation.peelDims) {

@@ -12972,6 +12972,8 @@ function bentoSlotAppendSampleImage(stage, sample, point, extra) {
   item.title = sample.name || '';
   var size = Number(opts.size != null ? opts.size : sample.size) || 100;
   var rotation = Number(opts.rotation != null ? opts.rotation : sample.rotation) || 0;
+  // batch:1045: しきり (divider) の サンプルは矩形自体をドラッグして位置調整できるようにする。
+  var draggable = !!(opts.enableDrag && opts.def && opts.boxId);
   item.style.cssText = [
     'position:absolute',
     'left:' + (point.x / BENTO_SLOT_W * 100) + '%',
@@ -12981,10 +12983,14 @@ function bentoSlotAppendSampleImage(stage, sample, point, extra) {
     'transform:translate(-50%,-50%) rotate(' + rotation + 'deg)',
     'transform-origin:center center',
     'object-fit:contain',
-    'pointer-events:none',
+    'pointer-events:' + (draggable ? 'auto' : 'none'),
     'filter:drop-shadow(0 2px 3px rgba(92,54,20,0.20))',
     'z-index:' + (opts.layer != null ? opts.layer : (sample.layer || 30))
   ].join(';');
+  if (draggable) {
+    item.style.cursor = 'grab';
+    bentoSlotAttachSampleDragHandlers(item, opts.def, opts.boxId);
+  }
   if (hasCluster) {
     sample.clusterImages.forEach(function(piece) {
       var src = piece && (piece.image || piece.img);
@@ -13077,8 +13083,71 @@ function bentoSlotRenderSamples(stage, box) {
   });
   entries.forEach(function(entry) {
     var sampleSize = (entry.point.size || entry.sample.size) * bentoSlotGetGlobalScale(box.id);
-    bentoSlotAppendSampleImage(stage, entry.sample, entry.point, { size: sampleSize, layer: bentoSlotSampleRenderLayer(entry) });
+    // batch:1045: しきり (divider) の サンプル矩形は矩形自体でもドラッグ可能に。
+    var enableDrag = entry.def && entry.def.kind === 'divider' && bentoSlotHasPositionControl(entry.def);
+    bentoSlotAppendSampleImage(stage, entry.sample, entry.point, {
+      size: sampleSize,
+      layer: bentoSlotSampleRenderLayer(entry),
+      def: entry.def,
+      boxId: box.id,
+      enableDrag: enableDrag
+    });
   });
+}
+// batch:1045: しきりサンプル矩形の pointer ドラッグ (marker と同じ pipeline に流す)。
+function bentoSlotAttachSampleDragHandlers(el, def, boxId) {
+  if (!el || !def) return;
+  var key = def.kind + ':' + def.index;
+  function updateElementPosition(point) {
+    if (!point) return;
+    el.style.left = (point.x / BENTO_SLOT_W * 100) + '%';
+    el.style.top = (point.y / BENTO_SLOT_H * 100) + '%';
+  }
+  el.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    _bentoSlotState.slotKey = key;
+    _bentoSlotState.dragging = true;
+    var current = bentoSlotGetPoint(boxId, def);
+    var pointer = bentoSlotPointFromEvent(e);
+    _bentoSlotState.dragOffset = { x: current.x - pointer.x, y: current.y - pointer.y };
+    try { el.setPointerCapture(e.pointerId); } catch (_) {}
+    bentoSlotSyncSliders(current);
+    updateElementPosition(current);
+    el.style.filter = 'drop-shadow(0 2px 6px rgba(34,197,94,0.55)) drop-shadow(0 2px 3px rgba(92,54,20,0.20))';
+    el.style.cursor = 'grabbing';
+  });
+  el.addEventListener('pointermove', function(e) {
+    if (!_bentoSlotState.dragging || _bentoSlotState.slotKey !== key) return;
+    e.preventDefault();
+    var point = bentoSlotSetPoint(boxId, def, bentoSlotPointFromDragEvent(e));
+    bentoSlotSyncSliders(point);
+    updateElementPosition(point);
+  });
+  function finishSampleDrag(e) {
+    if (!_bentoSlotState.dragging || _bentoSlotState.slotKey !== key) return;
+    _bentoSlotState.dragging = false;
+    _bentoSlotState.dragOffset = null;
+    try {
+      if (e && e.pointerId != null && el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    el.style.filter = 'drop-shadow(0 2px 3px rgba(92,54,20,0.20))';
+    el.style.cursor = 'grab';
+    bentoSlotRender();
+    bentoSlotSetStatus('下書き保存済み。サーバーへ反映するには保存を押してください。', false);
+  }
+  el.addEventListener('pointerup', finishSampleDrag);
+  el.addEventListener('pointercancel', finishSampleDrag);
+  el.addEventListener('lostpointercapture', function() {
+    if (!_bentoSlotState.dragging || _bentoSlotState.slotKey !== key) return;
+    _bentoSlotState.dragging = false;
+    _bentoSlotState.dragOffset = null;
+    el.style.filter = 'drop-shadow(0 2px 3px rgba(92,54,20,0.20))';
+    el.style.cursor = 'grab';
+    bentoSlotRender();
+    bentoSlotSetStatus('下書き保存済み。サーバーへ反映するには保存を押してください。', false);
+  });
+  el.addEventListener('click', function() { _bentoSlotState.slotKey = key; bentoSlotRender(); });
 }
 function bentoSlotRenderPreview() {
   var stage = document.getElementById('bento-slot-preview');
@@ -13117,8 +13186,11 @@ function bentoSlotRenderPreview() {
       marker.dataset.coordinateSize = String(diameter);
       marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - ' + (diameter / 2 / BENTO_SLOT_W * 100) + '%);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - ' + (diameter / 2 / BENTO_SLOT_H * 100) + '%);width:' + (diameter / BENTO_SLOT_W * 100) + '%;height:' + (diameter / BENTO_SLOT_H * 100) + '%;border-radius:999px;border:' + (selected ? '5px' : '3px') + ' solid ' + (hidden ? '#9CA3AF' : '#0EA5E9') + ';background:' + (hidden ? 'rgba(156,163,175,0.18)' : 'rgba(14,165,233,0.18)') + ';color:' + (hidden ? '#4B5563' : '#075985') + ';box-shadow:0 2px 10px rgba(3,105,161,0.22), inset 0 0 0 3px rgba(255,255,255,0.72);font-family:inherit;font-size:1.05rem;font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden ? '0.55' : '1') + ';z-index:' + (selected ? 195 : 194) + ';';
     } else {
-      marker.dataset.pixelSize = '38';
-      marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - 19px);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - 19px);width:38px;height:38px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : markerColor) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:' + (editMarker ? '0.76rem' : '0.62rem') + ';font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden && !editMarker ? '0.45' : '1') + ';z-index:' + (editMarker ? (selected ? 191 : 190) : (selected ? 181 : 180)) + ';';
+      // batch:1045: マーカー位置を marker-only モードと同じ % ベース式 (coordinateSize) で統一。
+      // bentoSlotPositionMarker() の coordinateSize 分岐が走るように pixelSize は使わず coordinateSize を保存する。
+      var markerPx = 38;
+      marker.dataset.coordinateSize = String(markerPx);
+      marker.style.cssText = 'position:absolute;left:calc(' + (p.x / BENTO_SLOT_W * 100) + '% - ' + (markerPx / 2 / BENTO_SLOT_W * 100) + '%);top:calc(' + (p.y / BENTO_SLOT_H * 100) + '% - ' + (markerPx / 2 / BENTO_SLOT_H * 100) + '%);width:' + (markerPx / BENTO_SLOT_W * 100) + '%;height:' + (markerPx / BENTO_SLOT_H * 100) + '%;min-width:' + markerPx + 'px;min-height:' + markerPx + 'px;border-radius:999px;border:' + (selected ? '4px' : '2px') + ' solid #fff;background:' + (hidden ? '#9CA3AF' : markerColor) + ';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:inherit;font-size:' + (editMarker ? '0.76rem' : '0.62rem') + ';font-weight:900;line-height:1;cursor:grab;opacity:' + (hidden && !editMarker ? '0.45' : '1') + ';z-index:' + (editMarker ? (selected ? 191 : 190) : (selected ? 181 : 180)) + ';';
     }
     marker.addEventListener('pointerdown', function(e) {
       e.preventDefault();
