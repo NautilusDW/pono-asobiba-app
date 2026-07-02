@@ -1271,8 +1271,8 @@ tr:hover { background: #FFFAF0; }
     <div style="font-size:0.78rem;color:#8B7355;margin:-4px 0 14px;line-height:1.55;">
       <code>じぶんでつくる</code> のかんたんモードで、パレットをタップした時に置かれる位置を
       <strong>お弁当箱ごと</strong>に調整します。<br>
-      主菜A/B、小さいおかずA/B/C/D、カップA/B/C/D（柄は共通）、敷き野菜サイズ、仕切りA-G、ピック共通を設定できます。<br>
-      主菜は弁当箱の中心を埋める大きめ・セット食材、副菜はカップやすき間向けの小さめ食材として扱います。敷き野菜はレタスやキャベツなど下に敷くもので、位置は本体側で自由に調整するため、管理画面ではキャベツ/レタスごとのサイズだけを保存します。仕切りはバランや木の区切りです。主菜/副菜/仕切りなどはサンプルごとに位置やサイズを保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。全体スケールは、このお弁当箱だけにかかる倍率です。<br>
+      主菜A/B、カップA/B/C/D（柄は共通）、敷き野菜サイズ、仕切りA-G、ピック共通を設定できます。<br>
+      主菜は弁当箱の中心を埋める大きめ・セット食材として扱います。小さいおかずはカップの中にだけ置かれるため、位置調整はカップA-Dで行います。「カップのかず」（3こ/4こ）は、ゲームに表示されるカップの数＝完成に必要なおかずの数になります。敷き野菜はレタスやキャベツなど下に敷くもので、位置は本体側で自由に調整するため、管理画面ではキャベツ/レタスごとのサイズだけを保存します。仕切りはバランや木の区切りです。主菜/仕切りなどはサンプルごとに位置やサイズを保存できます。同じサンプルのサイズはスロット間とお弁当箱間で共有されます。全体スケールは、このお弁当箱だけにかかる倍率です。<br>
       マーカーをドラッグするか、左の x/y/サイズ スライダーで調整してください。「押す丸」では、ゲーム中に子どもがタップする丸の位置だけを実配置とは別に調整できます。カップは同じ柄・小サイズ固定で、A/B/C/D の置き場所を別々に設定します。ピックは1か所を共通利用します。保存するとサーバーへ同期され、Bento 本体の再読み込み後に位置・個別サイズ・全体スケールが反映されます。
     </div>
 
@@ -1283,8 +1283,8 @@ tr:hover { background: #FFFAF0; }
           <select id="bento-slot-box" style="width:100%;padding:8px 10px;border:2px solid #C7894A;border-radius:8px;background:#fff;font-family:inherit;font-size:0.9rem;font-weight:700;color:#5D4E37;"></select>
         </div>
         <div style="margin-bottom:12px;">
-          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">小さいおかずの数</label>
-          <div id="bento-slot-side-count" role="group" aria-label="小さいおかずの数" style="display:flex;gap:6px;flex-wrap:wrap;">
+          <label style="display:block;font-size:0.78rem;font-weight:700;color:#5D4E37;margin-bottom:6px;">カップのかず</label>
+          <div id="bento-slot-side-count" role="group" aria-label="カップのかず" style="display:flex;gap:6px;flex-wrap:wrap;">
             <button type="button" data-count="3" style="padding:6px 12px;border:2px solid #22C55E;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">3こ</button>
             <button type="button" data-count="4" style="padding:6px 12px;border:2px solid #22C55E;border-radius:999px;background:#fff;color:#5D4E37;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">4こ</button>
           </div>
@@ -11392,10 +11392,8 @@ var _bentoSlotMaskPending = {};
 var BENTO_SLOT_DEFS = [
   { kind: 'main-food', index: 0, label: '大きいおかずA', shortLabel: '大A', color: '#EF4444' },
   { kind: 'main-food', index: 1, label: '大きいおかずB', shortLabel: '大B', color: '#EF4444' },
-  { kind: 'side-food', index: 0, label: '小さいおかずA', shortLabel: '小A', color: '#22C55E' },
-  { kind: 'side-food', index: 1, label: '小さいおかずB', shortLabel: '小B', color: '#22C55E' },
-  { kind: 'side-food', index: 2, label: '小さいおかずC', shortLabel: '小C', color: '#22C55E' },
-  { kind: 'side-food', index: 3, label: '小さいおかずD', shortLabel: '小D', color: '#22C55E' },
+  // batch:1048: side-food 位置スロット (小A-小D) を削除。cup-first 化により小さいおかずはカップ内配置のみ。
+  // slotCounts['side-food'] (カップのかず) と legacy side-food 配列の round-trip は維持。
   { kind: 'cup', index: 0, label: 'カップA（柄共通）', shortLabel: 'CA', color: '#0EA5E9' },
   { kind: 'cup', index: 1, label: 'カップB（柄共通）', shortLabel: 'CB', color: '#0EA5E9' },
   { kind: 'cup', index: 2, label: 'カップC（柄共通）', shortLabel: 'CC', color: '#0EA5E9' },
@@ -12444,14 +12442,7 @@ function bentoSlotSetMarkerPoint(boxId, def, point) {
     markerX: markerPoint.x,
     markerY: markerPoint.y
   }));
-  var sideDef = bentoSlotSameIndexDef('side-food', def.index);
-  if (index < bentoSlotGetBoxSlotCount(boxId, 'side-food')) {
-    var sideExisting = bentoSlotGetStoredEntry(boxId, sideDef);
-    bentoSlotSetEntry(boxId, sideDef, Object.assign({}, sideExisting, {
-      markerX: markerPoint.x,
-      markerY: markerPoint.y
-    }));
-  }
+  // batch:1048: cup→side-food の markerX/Y 同期を削除。cup マーカーは cup 配列にのみ書き込む (ゲームは cup 優先で読み、legacy side-food マーカーは fallback として残置)。
   return bentoSlotGetMarkerPoint(boxId, def);
 }
 function bentoSlotClearMarkerPoint(boxId, def) {
@@ -12461,6 +12452,9 @@ function bentoSlotClearMarkerPoint(boxId, def) {
   delete cupExisting.markerX;
   delete cupExisting.markerY;
   bentoSlotSetEntry(boxId, cupDef, cupExisting);
+  // batch:1048 code-review HIGH fix: 読み取りは cup → legacy side-food の優先順のため、
+  // side-food 側の旧ミラー markerX/Y を消さないと「位置をリセット」が旧値に負けて no-op になる。
+  // 書込み側の同期は廃止済みだが、クリアだけは legacy 掃除として side-food も削除する。
   var sideDef = bentoSlotSameIndexDef('side-food', def.index);
   var sideExisting = Object.assign({}, bentoSlotGetStoredEntry(boxId, sideDef));
   delete sideExisting.markerX;
@@ -13269,7 +13263,7 @@ function bentoSlotRender() {
     btn.style.borderColor = active ? (mode === 'marker' ? '#0284C7' : '#5D4E37') : (mode === 'marker' ? '#0EA5E9' : '#C7894A');
     btn.style.opacity = btn.disabled ? '0.45' : '1';
     btn.title = mode === 'marker' && !bentoSlotCanEditMarker(selected) && canMarker
-      ? '小さいおかずAに切り替えて、押す丸を編集します'
+      ? 'カップAに切り替えて、押す丸を編集します'
       : '';
   });
   var selectedEntry = bentoSlotGetEntry(box.id, selected);
@@ -13327,7 +13321,7 @@ function bentoSlotBindControls() {
     btn.addEventListener('click', function() {
       bentoSlotSetBoxSlotCount(_bentoSlotState.boxId, 'side-food', Number(btn.dataset.count));
       bentoSlotRender();
-      bentoSlotSetStatus('小さいおかずの数を ' + btn.dataset.count + 'こにしました。保存で反映されます。', false);
+      bentoSlotSetStatus('カップのかずを ' + btn.dataset.count + 'こにしました。保存で反映されます。', false);
     });
   });
   var globalScale = document.getElementById('bento-slot-global-scale');

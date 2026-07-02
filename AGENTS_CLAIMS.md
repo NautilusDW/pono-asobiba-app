@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-02 19:05 - by Claude - [batch:1048-admin-sidefood-slot-removal] - admin/index.html, bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 管理画面から小おかずA-D位置スロット廃止 (cup数設定は「カップのかず」として維持)
 
 
 
