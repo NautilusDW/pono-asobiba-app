@@ -4934,6 +4934,14 @@
       .donguri-shop-v2-slots { left: 34.7%; right: 3.4%; bottom: 4.1%; gap: 1.8%; }
       .donguri-shop-v2-slot { min-width: 86px; max-width: 33.2%; }
     }
+    /* v1904: 超広角 viewport (aspect > 3/2、 16:9 / 21:9 desktop 等) では safe frame の縦が短くなり
+       base 10% だと 看板 baked PNG (aspect 1763/519) の下端より下に落ちて 商品カード領域と重なる。
+       min-aspect-ratio: 3/2 の境界にしているのは 直上の 4:3 letterbox block (max-aspect-ratio: 3/2)
+       との連続性を持たせ、 aspect 3/2 (=1.5) 付近の double coverage / 隙間を回避するため。
+       --rot-note-top: 6% は開始値、 実機で 4-8% の範囲で微調整して確定すること (実測要)。 */
+    @media (min-width: 901px) and (min-aspect-ratio: 3/2) {
+      .donguri-shop-v2-rotation-note { --rot-note-top: 6%; }
+    }
 
     /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
     /* A1: チャレンジ情報バナー — ガチャエントリの真上、 生成プレート画像 */
@@ -6989,7 +6997,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1903;
+    const PAGE_CACHE_VERSION = 1904;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
