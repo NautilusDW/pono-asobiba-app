@@ -7021,7 +7021,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1916;
+    const PAGE_CACHE_VERSION = 1918;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -8281,6 +8281,23 @@
       return audio;
     }
 
+    function trackDailyGachaMedia(audio) {
+      try {
+        if (audio && window.PonoVisibilityAudioGuard
+            && typeof window.PonoVisibilityAudioGuard.trackMedia === 'function') {
+          window.PonoVisibilityAudioGuard.trackMedia(audio);
+        }
+      } catch (_) {}
+    }
+
+    function playDailyGachaMedia(audio) {
+      if (!audio || dailyGachaSoundMuted() || document.hidden) return null;
+      try { _clearAudioInactiveGuard(); } catch (_) {}
+      trackDailyGachaMedia(audio);
+      const nativePlay = _nativeMediaPlay();
+      return nativePlay ? nativePlay.call(audio) : audio.play();
+    }
+
     function ensureDailyGachaAudio() {
       if (dailyGachaAudio.ready) return;
       dailyGachaAudio.turnPool = [
@@ -8321,8 +8338,21 @@
         audio.currentTime = 0;
         audio.volume = options.volume ?? audio.volume ?? 1;
         audio.playbackRate = options.rate ?? 1;
-        const p = audio.play();
-        if (p && p.catch) p.catch(() => {});
+        const p = playDailyGachaMedia(audio);
+        if (!p) return false;
+        if (p && p.catch) p.catch(() => {
+          const retryMs = options.retryMs ?? 120;
+          setTimeout(() => {
+            try {
+              const retry = playDailyGachaMedia(audio);
+              if (retry && retry.catch) retry.catch(() => {
+                if (typeof options.onReject === 'function') options.onReject();
+              });
+            } catch (_) {
+              if (typeof options.onReject === 'function') options.onReject();
+            }
+          }, retryMs);
+        });
         return true;
       } catch (_) {
         return false;
@@ -8349,7 +8379,7 @@
         bed.volume = profile.bedVolume ?? .2;
         bed.playbackRate = 1;
         if (bed.paused) bed.currentTime = 0;
-        const p = bed.play();
+        const p = playDailyGachaMedia(bed);
         if (p && p.catch) p.catch(() => {
           if (!allowRetry || !shouldDailyGachaBedRun()) return;
           clearDailyGachaBedRetry();
@@ -8448,10 +8478,16 @@
       if (dailyGachaSoundMuted()) return;
       const rarityProfile = dailyGachaRarityProfile();
       if (kind === 'sparkle') {
-        const played = playDailyGachaAudio(dailyGachaAudio.sparkle, { volume: rarityProfile.sparkleVolume ?? .82, rate: 1 });
+        let fallbackPlayed = false;
+        const fallback = () => {
+          if (fallbackPlayed) return;
+          fallbackPlayed = true;
+          playDailyGachaFallbackSfx(kind);
+        };
+        const played = playDailyGachaAudio(dailyGachaAudio.sparkle, { volume: rarityProfile.sparkleVolume ?? .82, rate: 1, onReject: fallback });
         const longVolume = rarityProfile.sparkleLongVolume ?? .56;
         const playedLong = longVolume > 0
-          ? playDailyGachaAudio(dailyGachaAudio.sparkleLong, { volume: longVolume, rate: 1 })
+          ? playDailyGachaAudio(dailyGachaAudio.sparkleLong, { volume: longVolume, rate: 1, onReject: fallback })
           : false;
         if (!played && !playedLong) playDailyGachaFallbackSfx(kind);
         return;
@@ -8460,24 +8496,31 @@
         if (dailyGachaAudio.bed) {
           try { dailyGachaAudio.bed.volume = .12; } catch (_) {}
         }
-        const played = playDailyGachaAudio(dailyGachaAudio.capsuleExit, { volume: rarityProfile.exitVolume ?? .92, rate: 1 });
+        const played = playDailyGachaAudio(dailyGachaAudio.capsuleExit, { volume: rarityProfile.exitVolume ?? .92, rate: 1, onReject: () => playDailyGachaFallbackSfx('boom') });
         if (!played) playDailyGachaFallbackSfx('boom');
         return;
       }
       if (kind === 'finalStinger') {
         const played = playDailyGachaAudio(dailyGachaAudio.finalStinger, {
           volume: rarityProfile.finalStingerVolume ?? .74,
-          rate: rarityProfile.finalStingerRate ?? 1
+          rate: rarityProfile.finalStingerRate ?? 1,
+          onReject: () => playDailyGachaFallbackSfx('boom')
         });
         if (!played) playDailyGachaFallbackSfx('boom');
         return;
       }
       if (kind === 'capsuleOpen') {
+        let fallbackPlayed = false;
+        const fallback = () => {
+          if (fallbackPlayed) return;
+          fallbackPlayed = true;
+          playDailyGachaFallbackSfx('click');
+        };
         const superRevealVolume = rarityProfile.superRevealVolume ?? 0;
         const playedSuper = superRevealVolume > 0
-          ? playDailyGachaAudio(dailyGachaAudio.superReveal, { volume: superRevealVolume, rate: 1 })
+          ? playDailyGachaAudio(dailyGachaAudio.superReveal, { volume: superRevealVolume, rate: 1, onReject: fallback })
           : false;
-        const played = playDailyGachaAudio(dailyGachaAudio.capsuleOpen, { volume: rarityProfile.capsuleOpenVolume ?? .74, rate: 1 });
+        const played = playDailyGachaAudio(dailyGachaAudio.capsuleOpen, { volume: rarityProfile.capsuleOpenVolume ?? .74, rate: 1, onReject: fallback });
         if (!played && !playedSuper) playDailyGachaFallbackSfx('click');
         return;
       }
@@ -8487,7 +8530,8 @@
       dailyGachaAudio.turnIndex += 1;
       const played = playDailyGachaAudio(audio, {
         volume: Math.min(1, (profile.volume ?? .7) + (rarityProfile.turnVolumeBonus || 0)),
-        rate: (profile.rate ?? 1) + (rarityProfile.turnRateBonus || 0)
+        rate: (profile.rate ?? 1) + (rarityProfile.turnRateBonus || 0),
+        onReject: () => playDailyGachaFallbackSfx(kind)
       });
       if (!played) playDailyGachaFallbackSfx(kind);
     }

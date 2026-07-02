@@ -7306,6 +7306,11 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     transparent: true,
     side: THREE.FrontSide,
     depthWrite: false,
+    // v1917: peel を depthTest:false で常に前面描画し、baked page (Z=0) との per-pixel depth tie
+    // (16bit depth × near0.1/far100 で 1-2ULP=z-fight 境界) を原理的に排除 → 下半分インターレース縞を根絶。
+    // renderOrder 98 > baked 10 かつ sortObjects=true で描画順は担保され、同領域で renderOrder>98 は
+    // points(99) のみのため UI/他オブジェクトを貫通しない。dispose で消えるので状態残留なし。
+    depthTest: false,
     alphaTest: 0.012,
     opacity: 1,
     roughness: 0.9,
@@ -7320,6 +7325,7 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     transparent: true,
     side: THREE.BackSide,
     depthWrite: false,
+    depthTest: false, // v1917: front と同じく depthTest 無効化 (Z-fight 境界排除、renderOrder 97 で背面描画順担保)
     alphaTest: 0.012,
     opacity: 0.98,
     roughness: 0.9,
