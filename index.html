@@ -441,6 +441,32 @@
         font-size:11px;
       }
     }
+    /* ── Hero narrative: 絵本ストーリー導線 (batch:lp-hero-narrative-impl) ── */
+    .herob-narrative{
+      position:relative;z-index:1;
+      max-width:min(680px, 92vw);
+      margin:12px auto 8px;
+      text-align:center;
+      color:var(--herob-text, #5D4E37);
+      font-family:inherit;
+      line-height:1.55;
+      animation:herob-rise .6s .14s ease both;
+    }
+    .herob-narrative-main{
+      display:block;
+      font-size:clamp(15px, 3.6vw, 18px);
+      font-weight:700;
+    }
+    .herob-narrative-sub{
+      display:block;
+      font-size:clamp(13px, 3.2vw, 15.5px);
+      margin-top:4px;
+      color:var(--herob-text-light, #7A6A4F);
+      font-weight:600;
+    }
+    @media (max-width:480px){
+      .herob-narrative{margin:10px auto 6px;}
+    }
     /* ── Hero labels: flex row beneath title (HANDOFF 02 完全準拠) ── */
     .herob-labels{
       position:relative;z-index:1;
@@ -1770,15 +1796,6 @@
              width="1715" height="500">
       </h1>
 
-      <div class="herob-app-teaser" aria-label="アプリ版の開発予告">
-        <img class="herob-app-teaser-icon" src="assets/images/characters/pono/pono_face_circle.png" alt="" aria-hidden="true" loading="lazy">
-        <span class="herob-app-teaser-copy">
-          <span class="herob-app-teaser-kicker">COMING SOON</span>
-          <span class="herob-app-teaser-main">アプリ版も開発中！</span>
-          <span class="herob-app-teaser-sub">ただいま準備中です</span>
-        </span>
-      </div>
-
       <div class="herob-labels">
         <img class="herob-label herob-label--nazonazo" src="assets/lp/hero/labels/nazonazo.png" alt="" aria-hidden="true" loading="lazy">
         <img class="herob-label herob-label--bouken"   src="assets/lp/hero/labels/bouken.png"   alt="" aria-hidden="true" loading="lazy">
@@ -1787,6 +1804,11 @@
         <img class="herob-label herob-label--ongaku"   src="assets/lp/hero/labels/ongaku.png"   alt="" aria-hidden="true" loading="lazy">
       </div>
 
+      <p class="herob-narrative">
+        <span class="herob-narrative-main">人気絵本「ありがとうって、うれしいね」から生まれた子どもたちのための遊び場です。</span>
+        <span class="herob-narrative-sub">登録不要！ブラウザで、誰でもすぐに無料で遊べます！</span>
+      </p>
+
       <div class="herob-cta-wrap">
         <a href="play.html" class="herob-cta" id="enter-btn">すぐ あそぶ <span class="arrow" aria-hidden="true">→</span></a>
         <span class="herob-lead">推奨年齢 3歳〜</span>
@@ -1794,10 +1816,8 @@
 
       <!-- ===== Hero 内: 絵本アドバンテージ匂わせ帯 (v1523: hero section 内に移動して playmat 黄色背景上に一体化) ===== -->
       <section class="hero-bookhint" aria-label="絵本との つながりの おしらせ">
-        <p class="hero-bookhint-free">誰でもそのまま遊べるよ！</p>
         <p class="hero-bookhint-text">
-          <span class="hero-bookhint-line">絵本の最後の「<span class="hero-bookhint-keyword">ひみつのことば</span>」で、</span>
-          <span class="hero-bookhint-line">5つのあそびを<em class="hero-bookhint-more">もっと楽しめる</em>よ！</span>
+          <span class="hero-bookhint-line">絵本の最後の「<span class="hero-bookhint-keyword">ひみつのあいことば</span>」で<em class="hero-bookhint-more">もっと楽しめる</em>よ！</span>
         </p>
         <a class="hero-bookhint-banner" href="#book-secret" aria-label="ひみつのことばの せつめいへ いどう">
           <span class="hero-bookhint-thumb" aria-hidden="true"></span>
