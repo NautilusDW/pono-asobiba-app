@@ -18007,11 +18007,19 @@ function stageComplete() {
       // v1497 tutorial-autostart: 初回チュートリアル (非 simple) 完走後は legacy 非 simple
       // ループ (startNextBentoOrderRound) に入れず、 タイトルへ戻す。 次のタイトル押下からは
       // tutorial done 済みなので通常の simple モードに入る。
+      // (くわしく を見ずに閉じてステッカー未付与のまま tutorial が active 残留するケースも
+      //  ここで done 扱いにして回収する — 弁当は完成済みなので完走と同等。)
       let tutorialRunEnded = false;
       try {
-        tutorialRunEnded = !simpleBentoMode && !!window.__bentoTutorialPendingMode
-          && typeof tutorialState !== 'undefined' && tutorialState && !tutorialState.active;
-        if (tutorialRunEnded) window.__bentoTutorialPendingMode = null;
+        if (!simpleBentoMode && window.__bentoTutorialPendingMode
+            && typeof tutorialState !== 'undefined' && tutorialState) {
+          if (tutorialState.active && tutorialState.step === 'complete-result'
+              && typeof tutorialMarkDone === 'function') {
+            tutorialMarkDone();
+          }
+          tutorialRunEnded = !tutorialState.active;
+          if (tutorialRunEnded) window.__bentoTutorialPendingMode = null;
+        }
       } catch (_) {}
       if (tutorialRunEnded && typeof window.returnToBentoTitleScreen === 'function') {
         window.returnToBentoTitleScreen();
@@ -20485,6 +20493,13 @@ function tutorialRenderStep() {
 
   // 9. small-accessory — カップ/仕切りを先に選ぶ
   if (step === 'small-accessory') {
+    // v1497 cup-first: カップ配置直後はピッカーが自動で開く。 queued advance (ナレ再生中) で
+    // step がまだ small-accessory のまま再 render された場合に、 開いたピッカーの
+    // freeLayoutTab='food' を 'accessory' に巻き戻さないこと (小トマト getter が壊れる)。
+    if (getEditingCup()) {
+      tutorialHideFinger();
+      return;
+    }
     try {
       if (typeof freeGuideStep !== 'undefined'
           && (!isOkazuGuideStep(freeGuideStep) || !String(freeGuideStep).endsWith('Side'))) {
