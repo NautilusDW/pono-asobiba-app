@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-02T04:16:38Z - bento cup-first fix-round: 9 cross-review fixes (picker tab guard/greet rotate rebind/tap-slop/coarse sizes/okazu-more allowance/voice-stop advance/leaf ownership+orphan/picker scroll/copy+NPC pin)
+- **タスク**: bento cup-first fix-round: 9 cross-review fixes (picker tab guard/greet rotate rebind/tap-slop/coarse sizes/okazu-more allowance/voice-stop advance/leaf ownership+orphan/picker scroll/copy+NPC pin)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 159
+- **エラー数**: 15
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 42, "Bash": 25, "Glob": 1, "Edit": 13, "Grep": 14, "ToolSearch": 2, "Workflow": 18, "TaskOutput": 42, "Agent": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-07-02T03:23:08Z - bento cup-first Phase3: tutorial rewire to new cup-picker flow + okazu_more_02 TTS regen + autostart fix + full E2E verify
+- **タスク**: bento cup-first Phase3: tutorial rewire to new cup-picker flow + okazu_more_02 TTS regen + autostart fix + full E2E verify
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 146
+- **エラー数**: 15
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 38, "Bash": 24, "Glob": 1, "Edit": 13, "Grep": 14, "ToolSearch": 2, "Workflow": 16, "TaskOutput": 36, "Agent": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-02T02:59:42Z - shop 購入時 BGM 継続保証 + rarity 別購入 SE 追加 (v1891、 game-stickers suppressImpactSfx option + iOS Safari retry + volume 再宣言、 クロスレビュー2 + code-reviewer + security-reviewer 4 名承認)
 - **タスク**: shop 購入時 BGM 継続保証 + rarity 別購入 SE 追加 (v1891、 game-stickers suppressImpactSfx option + iOS Safari retry + volume 再宣言、 クロスレビュー2 + code-reviewer + security-reviewer 4 名承認)
 - **結果**: 成功
@@ -233,32 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 38, "Bash": 22, "Glob": 1, "Edit": 12, "Grep": 14, "ToolSearch": 2, "Workflow": 12, "TaskOutput": 23, "Agent": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-01T23:32:12Z - bento divider UX cross-review fixes F1-F7 (hit area 44px, drag cap, overlap grab forward, row band order, occupied-slot no-teleport, loose-divider ghost suppression, speech consistency)
-- **タスク**: bento divider UX cross-review fixes F1-F7 (hit area 44px, drag cap, overlap grab forward, row band order, occupied-slot no-teleport, loose-divider ghost suppression, speech consistency)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 120
-- **エラー数**: 12
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 38, "Bash": 20, "Glob": 1, "Edit": 8, "Grep": 14, "ToolSearch": 2, "Workflow": 12, "TaskOutput": 23, "Agent": 2}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-01T22:54:14Z - bento しきり配置UX刷新: ボタン順統一(手前→奥/左→右) + ghost スロット表示 + タップ配置 + 磁石スナップ + 移動ヒント
-- **タスク**: bento しきり配置UX刷新: ボタン順統一(手前→奥/左→右) + ghost スロット表示 + タップ配置 + 磁石スナップ + 移動ヒント
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 112
-- **エラー数**: 10
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 36, "Bash": 20, "Glob": 1, "Edit": 8, "Grep": 14, "ToolSearch": 2, "Workflow": 10, "TaskOutput": 19, "Agent": 2}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -1951,6 +1951,7 @@ html, body {
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior: contain;
+  touch-action: pan-x; /* v1500 FIX3: 横スクロールは native、選択は tap-slop 判定 */
   padding: 2px 1px 4px;
 }
 .free-context-toolbar button.free-okazu-edit-choice {
@@ -1959,12 +1960,12 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  width: 60px;
+  width: 68px; /* v1500 FIX4: label 0.44→0.6rem に伴い 60px→68px */
   height: auto;
   min-height: 58px;
   padding: 4px 2px 3px;
   border-radius: 12px;
-  font-size: 0.44rem;
+  font-size: 0.6rem;
   line-height: 1.05;
 }
 .free-context-toolbar button.free-okazu-edit-choice img {
@@ -3436,6 +3437,21 @@ html, body {
   .food-item .food-name {
     font-size: 0.68rem;
     font-weight: 900;
+  }
+  /* v1500 FIX4: edit パネルのアクション/ピッカーが .free-context-toolbar button の
+     30px/8.8px を継承して coarse pointer で押せないサイズになる問題 (3 度目) */
+  .free-context-toolbar button.free-okazu-edit-btn {
+    min-height: 40px;
+    font-size: 0.7rem;
+  }
+  .free-context-toolbar button.free-okazu-edit-choice {
+    width: 74px;
+    min-height: 68px;
+    font-size: 0.62rem;
+  }
+  .free-context-toolbar button.free-okazu-edit-choice img {
+    width: 44px;
+    height: 44px;
   }
 }
 
@@ -9604,6 +9620,11 @@ function getFreeGuideTabs() {
   return FREE_TABS;
 }
 function normalizeFreeGuideTab() {
+  // v1500: カップピッカー (cup editor) 表示中は food タブを維持する。
+  // ここで 'food'→'accessory' に戻すと、チュートリアル small-cup-food の
+  // lock/highlight/hand-demo ガード (freeLayoutTab==='food') が全滅し、
+  // 本番でもピッカーの背後にステージのカップマーカーが出てしまう。
+  try { if (typeof getEditingCup === 'function' && getEditingCup()) return; } catch (_) {}
   const tabs = getFreeGuideTabs();
   if (!tabs.length) return;
   if (!tabs.some(t => t.id === freeLayoutTab)) freeLayoutTab = tabs[0].id;
@@ -9826,13 +9847,21 @@ function getTutorialPaletteAllowance(def) {
       ? ok
       : deny('プチトマトを いれようね');
   }
+  if (step === 'okazu-more') {
+    // v1500 FIX5: ナレ okazu_more_02 「すきな おかずを もっと いれても いいよ」と整合させ、
+    // メインおかずだけ追加配置を許可 (gate は main>=1 なので余剰 main は無害。
+    // tutorialOnItemPlaced も okazu-more では進行フックを持たずカウントのみ)。
+    return (def.type === 'food' && (def.okazuRole || getOkazuRole(def)) === 'main')
+      ? ok
+      : deny('「カップへ」の ボタンを おしてね');
+  }
   // v1497 cup-first: cup-edit / cup-edit-try / layer-done / tab-small / tab-small-food /
   // small-place / cup-ok / small-edit / small-edit-try / complete は廃止済み step。
   if ([
     'greet', 'tab-rice', 'nori-ok', 'tab-okazu', 'layer-edit', 'layer-edit-try',
-    'move-requested-food', 'okazu-more', 'small-next', 'complete-result', 'done'
+    'move-requested-food', 'small-next', 'complete-result', 'done'
   ].includes(step)) {
-    return deny(step === 'okazu-more' ? '「カップへ」の ボタンを おしてね' : 'いまは おてほんの とおりに すすもうね');
+    return deny('いまは おてほんの とおりに すすもうね');
   }
   return ok;
 }
@@ -10014,6 +10043,10 @@ function selectNoCupSlotForSimplePlacement(index) {
 }
 function selectCupSlotForSimplePlacement(index) {
   if (!simpleBentoMode) return false;
+  // v1500: カップピッカー表示中にステージのマーカーを踏んでも、ピッカーを
+  // 黙って破棄 (freeCupEditorUid=null) しない。正規の closeCupEditor を通してから
+  // スロット選択に進む (tutorial hook / タブ復帰 / speech が正しく走る)。
+  if (getEditingCup()) closeCupEditor();
   const cupDef = bentoAccessories.find(a => a && a.snapTarget);
   const slots = getSimpleFixedSlots(cupDef || { type: 'cup', snapTarget: true }, getTargetTierForType('cup'));
   const normalized = clamp(Math.round(Number(index)), 0, Math.max(0, slots.length - 1));
@@ -13794,7 +13827,7 @@ function canRemoveFreeItemNow(item, opts = {}) {
   if (opts.silent) return false;
   const message = role === 'main'
     ? 'メインにもどると けせるよ'
-    : 'ちいさい おかずにもどると けせるよ';
+    : '「カップへ」で すすむと けせるよ'; // v1500 FIX9a: cup-first 導線に合わせた文言
   showToast(message);
   setSpeech(message);
   return false;
@@ -14564,7 +14597,11 @@ function createFreePlacedElement(item, interactive) {
           // v1496 leaf-bed: はっぱは「おかずの もりつけ」扱いで直接タップ/ドラッグ不可。
           // 持ち主のおかずが見つかれば そちらの編集パネルへ委譲する ([はっぱを かえる/けす] で管理)。
           const leafOwner = findSimpleOkazuForLeaf(item);
-          if (leafOwner) handleSimplePlacedItemTap(leafOwner);
+          if (leafOwner) { handleSimplePlacedItemTap(leafOwner); return; }
+          // v1500 FIX7b: 持ち主のいない孤児はっぱは触れないまま 5 枚上限を食い潰すので、
+          // タップで消せるようにする (undo は removeFreeItem の通常 history 単位)。
+          removeFreeItem(item.uid, { force: true });
+          setSpeech('はっぱを けしたよ。');
           return;
         }
         if (item.type === 'pick' && isSimplePickEditMode()) {
@@ -14719,7 +14756,9 @@ function getSimpleOkazuEditTarget() {
   const item = getSelectedFreeItem();
   return isSimpleMainOkazuEditTarget(item) ? item : null;
 }
-function getSimpleLeafForOkazu(okazu, fromPoint = null) {
+// v1500 FIX7a: 半径内最近傍の「候補」だけを返す内部関数 (相互チェックなし)。
+// findSimpleOkazuForLeaf との相互再帰を避けるため分離している。
+function getSimpleLeafCandidateForOkazu(okazu, fromPoint = null) {
   if (!okazu || okazu.type !== 'food') return null;
   const cx = Number(fromPoint ? fromPoint.x : okazu.x);
   const cy = Number(fromPoint ? fromPoint.y : okazu.y);
@@ -14735,6 +14774,15 @@ function getSimpleLeafForOkazu(okazu, fromPoint = null) {
   });
   return best;
 }
+function getSimpleLeafForOkazu(okazu, fromPoint = null) {
+  const best = getSimpleLeafCandidateForOkazu(okazu, fromPoint);
+  if (!best) return null;
+  // drag-follow (fromPoint override) は移動前位置での関連付けをそのまま使う
+  if (fromPoint) return best;
+  // v1500 FIX7a: 相互最近傍チェック — 隣のメインおかずの はっぱを横取りしない。
+  // その leaf にとって最寄りのメインが自分である時だけ「自分のはっぱ」と認める。
+  return findSimpleOkazuForLeaf(best) === okazu ? best : null;
+}
 function findSimpleOkazuForLeaf(leaf) {
   if (!leaf || leaf.type !== 'leaf') return null;
   let best = null;
@@ -14742,7 +14790,7 @@ function findSimpleOkazuForLeaf(leaf) {
   placedItems.forEach(it => {
     if (!it || it.type !== 'food' || it.parentCupId) return;
     if ((it.okazuRole || getOkazuRole(it)) !== 'main') return;
-    if (getSimpleLeafForOkazu(it) !== leaf) return;
+    if (getSimpleLeafCandidateForOkazu(it) !== leaf) return;
     const d = Math.hypot((Number(it.x) || 0) - (Number(leaf.x) || 0), (Number(it.y) || 0) - (Number(leaf.y) || 0));
     if (d < bestDist) { best = it; bestDist = d; }
   });
@@ -14761,7 +14809,16 @@ function syncSimpleLeafFollowForOkazu(okazu, fromPoint) {
   if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
   const leaf = getSimpleLeafForOkazu(okazu, fromPoint);
   if (!leaf) return;
-  const p = clampPointToBounds((Number(leaf.x) || 0) + dx, (Number(leaf.y) || 0) + dy, leaf, getFoodPlacementBounds(getSelectedBentoBox()));
+  // v1500 FIX7b: delta 平行移動だと clamp のたびにズレが蓄積して関連半径の外へ
+  // 流れ孤児 leaf が生まれる。placeSimpleLeafUnderOkazu と同じ幾何 (中心一致 +
+  // footprint*0.04 下げ) で おかずの新位置へスナップする。
+  const footprint = getSimpleItemFootprint(okazu);
+  const p = clampPointToBounds(
+    Number(okazu.x) || 0,
+    (Number(okazu.y) || 0) + footprint * 0.04,
+    leaf,
+    getFoodPlacementBounds(getSelectedBentoBox())
+  );
   leaf.x = p.x;
   leaf.y = p.y;
 }
@@ -14781,6 +14838,16 @@ function toggleSimpleOkazuEditPicker(mode) {
     setSpeech('したに しく はっぱを えらんでね。');
   }
   renderFreeLayoutControls();
+  // v1500 FIX8: side ステップの低いパネル (~178px) ではピッカーが折り返しの下に
+  // 隠れて見えないことがあるので、開いた直後に見える位置までスクロールする。
+  if (simpleOkazuEditPickerMode) {
+    requestAnimationFrame(() => {
+      try {
+        const picker = document.querySelector('.free-context-toolbar--panel .free-okazu-edit-picker');
+        if (picker && typeof picker.scrollIntoView === 'function') picker.scrollIntoView({ block: 'nearest' });
+      } catch (_) {}
+    });
+  }
 }
 // [おかずを かえる]: 同じスロットに別のメインおかずを入れ替え配置する。
 // side ステップからも呼べるよう removeFreeItemData は force (canRemoveFreeItemNow の main-step 縛りを意図的に越える)。
@@ -14917,12 +14984,27 @@ function createSimpleOkazuEditPicker(item, leaf) {
     const name = document.createElement('span');
     name.textContent = def.name || '';
     b.appendChild(name);
+    // v1500 (FIX3): overflow-x:auto の横スクロール行なので raw pointerdown で確定しない。
+    // house tap-slop パターン: down で記録 → 同一 pointerId かつ 8px 以内の up で確定。
+    // スロップ超え move / pointercancel は不発 (スクロールは touch-action: pan-x で native)。
+    let press = null;
     b.addEventListener('pointerdown', ev => {
+      ev.stopPropagation();
+      press = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
+    });
+    b.addEventListener('pointermove', ev => {
+      if (!press || ev.pointerId !== press.id) return;
+      if (Math.abs(ev.clientX - press.x) > 8 || Math.abs(ev.clientY - press.y) > 8) press = null;
+    }, { passive: true });
+    b.addEventListener('pointerup', ev => {
+      if (!press || ev.pointerId !== press.id) return;
+      press = null;
       ev.preventDefault();
       ev.stopPropagation();
       if (mode === 'leaf') placeSimpleLeafUnderOkazu(def);
       else replaceSimpleMainOkazuFromPicker(def);
     });
+    b.addEventListener('pointercancel', () => { press = null; }, { passive: true });
     wrap.appendChild(b);
   });
   return wrap;
@@ -16278,6 +16360,10 @@ function tryFinishOkazuTier(tier) {
           && typeof tutorialAdvance === 'function') {
         freeLayoutTab = 'accessory';
         renderFreeLayoutControls();
+        // v1500 FIX6: okazu_more_02 (約8s) 再生中に「カップへ」を押すと advance が
+        // queue され、ロックされたカップパレット + 古い deny 案内が残る。
+        // ボタン起点の進行は声を止めて即時に進める。
+        try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
         tutorialAdvance('small-accessory');
       }
     } catch (_) {}
@@ -16384,7 +16470,8 @@ function renderFreeGuidePanel() {
       if (getBoxTierCount() === 1) sideOkBtn.dataset.action = 'stage-complete';
       actions.appendChild(sideOkBtn);
     } else {
-      actions.appendChild(makeOkazuRemainingHint(tier2Fill.remaining));
+      // v1500 FIX9b: side ステップは「カップに いれる」導線なので文言を明示
+      actions.appendChild(makeOkazuRemainingHint(tier2Fill.remaining, 'カップに おかずを あと {n}こ いれてね'));
     }
   } else if (freeGuideStep === 'tier3Prompt') {
     actions.appendChild(makeSmallControlButton('もどる', '', goBackFreeGuideStep));
@@ -16404,7 +16491,8 @@ function renderFreeGuidePanel() {
     if (tier3Fill.filled) {
       actions.appendChild(makeSmallControlButton('3だんめOK', 'primary', () => tryFinishOkazuTier(tier)));
     } else {
-      actions.appendChild(makeOkazuRemainingHint(tier3Fill.remaining));
+      // v1500 FIX9b: side ステップは「カップに いれる」導線なので文言を明示
+      actions.appendChild(makeOkazuRemainingHint(tier3Fill.remaining, 'カップに おかずを あと {n}こ いれてね'));
     }
     const doneBtn3 = makeSmallControlButton('できあがり', '', () => stageComplete(), !!getSimpleFirstMissingRequiredOkazu());
     doneBtn3.dataset.action = 'stage-complete';
@@ -18666,6 +18754,13 @@ function tutorialResumePendingModeAfterExit() {
     window.__bentoTutorialPendingMode = null;
   } catch (_) {}
   if (!mode) return;
+  // v1500 FIX9d: チュートリアルが session に固定した NPC pin を外してから合流させる。
+  // pin が残ると request モードが decliner NPC を引き直せず同じ動物が来続ける。
+  try { if (typeof setCurrentNpcRequester === 'function') setCurrentNpcRequester(null); } catch (_) {}
+  try {
+    sessionStorage.removeItem(NPC_DECIDED_KEY);
+    sessionStorage.removeItem(NPC_SESSION_KEY);
+  } catch (_) {}
   try {
     if (mode === 'request' && typeof restartSimpleBentoRequestRound === 'function') {
       restartSimpleBentoRequestRound({ skipIntro: false });
@@ -19501,25 +19596,8 @@ function tutorialNoriOkButton() {
   }
   return null;
 }
-function tutorialCupOkButton() {
-  // v1373: panel mode (.free-context-toolbar--panel) の OK ボタンを最優先で拾う。
-  // 旧実装は .free-context-toolbar button.primary を fallback として返していたため、
-  // 隠れた別 toolbar の OK を返してしまい SVG マークが panel 内の OK に当たらない事例があった。
-  // 1) cup editor 内蔵 OK (display 確認込み)
-  const editorBtn = document.querySelector('.free-cup-done-btn');
-  if (editorBtn && editorBtn.offsetParent !== null) return editorBtn;
-  // 2) panel mode toolbar の OK
-  const panelBtns = document.querySelectorAll('.free-context-toolbar--panel button.primary');
-  for (const b of panelBtns) {
-    if (b.offsetParent !== null && (b.textContent || '').trim() === 'OK') return b;
-  }
-  // 3) 通常 toolbar の OK (fallback)
-  const toolbarButtons = document.querySelectorAll('.free-context-toolbar button.primary');
-  for (const b of toolbarButtons) {
-    if (b.offsetParent !== null && (b.textContent || '').trim() === 'OK') return b;
-  }
-  return null;
-}
+// v1500 FIX9c: tutorialCupOkButton は cup-edit step 廃止 (v1497) 以降どこからも
+// 呼ばれない dead helper だったため削除。
 function tutorialResetInactivity() {
   tutorialState.inactivityFired = false;
   if (tutorialState.inactivityTimer) clearTimeout(tutorialState.inactivityTimer);
@@ -20188,28 +20266,38 @@ function tutorialRenderStep() {
       + '<label class="tut-skip-mini"><input type="checkbox" id="tut-skip-checkbox"><span>つぎから スキップする</span></label>';
     tutorialShowBubble(html, { center: true });
     tutorialHideFinger();
-    if (firstRender) {
+    // v1500: firstRender ガードだと縦向き→横向き復帰で bubble HTML が書き直された時
+    // (renderedStep は 'greet' のまま) にボタンが handler なしで再生成され詰む。
+    // 毎レンダーで bind し、innerHTML 未書換 (同一要素が残存) の二重 bind は
+    // 要素フラグ (_tutBound) で防ぐ。
+    {
       const btn = document.getElementById('tut-greet-next');
-      if (btn) btn.addEventListener('pointerdown', e => {
-        e.preventDefault(); e.stopPropagation();
-        const skip = document.getElementById('tut-skip-checkbox');
-        if (skip && skip.checked) {
+      if (btn && !btn._tutBound) {
+        btn._tutBound = true;
+        btn.addEventListener('pointerdown', e => {
+          e.preventDefault(); e.stopPropagation();
+          const skip = document.getElementById('tut-skip-checkbox');
+          if (skip && skip.checked) {
+            markBentoTutorialsDone();
+            tutorialMarkDone();
+            // v1497: タイトルで選んだモードへ合流 (非 simple のまま放置しない)
+            tutorialResumePendingModeAfterExit();
+            return;
+          }
+          tutorialShowGroupIntroThen('box');
+        }, { once: true });
+      }
+      const stopBtn = document.getElementById('tut-greet-stop');
+      if (stopBtn && !stopBtn._tutBound) {
+        stopBtn._tutBound = true;
+        stopBtn.addEventListener('pointerdown', e => {
+          e.preventDefault(); e.stopPropagation();
           markBentoTutorialsDone();
           tutorialMarkDone();
           // v1497: タイトルで選んだモードへ合流 (非 simple のまま放置しない)
           tutorialResumePendingModeAfterExit();
-          return;
-        }
-        tutorialShowGroupIntroThen('box');
-      }, { once: true });
-      const stopBtn = document.getElementById('tut-greet-stop');
-      if (stopBtn) stopBtn.addEventListener('pointerdown', e => {
-        e.preventDefault(); e.stopPropagation();
-        markBentoTutorialsDone();
-        tutorialMarkDone();
-        // v1497: タイトルで選んだモードへ合流 (非 simple のまま放置しない)
-        tutorialResumePendingModeAfterExit();
-      }, { once: true });
+        }, { once: true });
+      }
     }
     return;
   }
@@ -20552,6 +20640,12 @@ function tutorialRenderStep() {
         return;
       }
     }
+    // ピッカー内パレット getter / lock は freeLayoutTab==='food' 前提 (openCupEditor が設定)。
+    // 途中で 'accessory' 等に巻き戻されていたら正規化する。
+    if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') {
+      freeLayoutTab = 'food';
+      renderFreeLayoutControls();
+    }
     tutorialHidePonoCallout();
     setSpeech('みどりの プチトマトを カップに いれよう');
     tutorialSetModeLabel('やってみよう！', {
@@ -20588,10 +20682,12 @@ function tutorialRenderStep() {
   if (step === 'small-next') {
     const btn = tutorialCompleteButton();
     const label = tutorialButtonLabel(btn);
-    setSpeech('じぶんで すきな おかずも いれてみよう。できたら おかずOKを おしてね');
+    // v1500 FIX5: この step はパレット deny のまま。「すきな おかずも いれてみよう」は
+    // 矛盾案内なので、ナレ basic_tut_13 の「いれたら、おかずOKを おそう」に合わせる。
+    setSpeech('いれたら、おかずOKを おそう');
     const nextText = label.indexOf('小さい') >= 0
       ? 'つぎは カップと 小さい おかずへ<br>「' + label + '」'
-      : 'じぶんで すきな おかずも<br>いれてみよう！<br>できたら「' + label + '」';
+      : 'いれたら<br>「' + label + '」を おそう';
     tutorialShowBubble(nextText, { topVh: '18', side: 'left' });
     if (btn) {
       tutorialPositionBubble(btn);
@@ -20754,6 +20850,18 @@ function tutorialOnLayerMoved() {
     freeGuideStep = freeGuideStep.startsWith('tier3') ? 'tier3Main' : 'tier2Main';
     freeLayoutTab = 'food';
   }
+  // v1497: depth-sort okazu (f01162e) 以降、 同一座標スタックでは layer 入替が paint order に
+  // 反映されない (zIndex は y 支配で manualTie は丸め落ち)。 ↓ 押下時に「うしろへ 下げたら
+  // 見える」を成立させるため、 依頼おかずを少し手前 (y+) に露出させてから次 step へ進む。
+  // これで move-requested-food で子供が実際に掴めるようになる (engine 側の tie-break は別課題)。
+  try {
+    const requested = tutorialFindPlacedRequestedFoodItem();
+    if (requested && typeof setFreeItemPosition === 'function') {
+      setFreeItemPosition(requested.uid, (requested.x || 0) - 22, (requested.y || 0) + 28);
+      renderFreeLayoutStage();
+      renderFreeLayoutControls();
+    }
+  } catch (_) {}
   tutorialAdvance('move-requested-food');
 }
 function tutorialOnItemMoved(uid) {
@@ -20796,6 +20904,9 @@ function tutorialOnItemPlaced(item) {
     if (item.type === 'cup' || item.snapTarget) {
       // v1497 cup-first: カップ配置 → ピッカーは配置経路側で自動オープン済み。
       // サイズ教習 (cup-edit) は廃止し、 そのまま プチトマト選択へ。
+      // v1500 FIX6: basic_tut_09 (約4.7s) 再生中のカップ配置でも queue-lag なしで
+      // 即 small-cup-food へ (ピッカーは開いているのにロック/案内が古いままを防ぐ)。
+      try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
       tutorialAdvance('small-cup-food');
       return;
     }

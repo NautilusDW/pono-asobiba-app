@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-02 09:10 - by Claude - [batch:1042-bento-cup-first-flow] - bento/index.html, assets/audio/**, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 小おかずのカップ必須化 (おかず/したにしくタブ廃止、カップ最上位、大おかず編集パネルに したにしく 統合、チュートリアル改修+ナレ再生成)
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
