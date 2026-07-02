@@ -1496,6 +1496,13 @@ html, body {
   box-shadow: 0 2px 8px rgba(93, 78, 55, 0.16);
   pointer-events: none;
 }
+/* batch:1047: 高さの低い横持ち (iPhone 横など) では stage 上端が画面上端近くまで来るため、
+   だんめチップ (host 相対 top:10px ≒ 画面 y42..68) が せってい木製看板
+   (.pono-menu-toggle, y12..68) と floating 「最初からやる」 (y..60) の帯に潜り込む。
+   短い viewport のみチップを下げて重なりを回避 (通常高さでは stage が中央寄せで無関係)。 */
+@media (max-height: 480px) {
+  .free-tier-badge { top: 48px; }
+}
 .free-action-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
