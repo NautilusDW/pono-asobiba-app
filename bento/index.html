@@ -18004,6 +18004,19 @@ function stageComplete() {
   }
   const continueAfterCompleteClose = () => {
     if (freeLayoutMode) {
+      // v1497 tutorial-autostart: 初回チュートリアル (非 simple) 完走後は legacy 非 simple
+      // ループ (startNextBentoOrderRound) に入れず、 タイトルへ戻す。 次のタイトル押下からは
+      // tutorial done 済みなので通常の simple モードに入る。
+      let tutorialRunEnded = false;
+      try {
+        tutorialRunEnded = !simpleBentoMode && !!window.__bentoTutorialPendingMode
+          && typeof tutorialState !== 'undefined' && tutorialState && !tutorialState.active;
+        if (tutorialRunEnded) window.__bentoTutorialPendingMode = null;
+      } catch (_) {}
+      if (tutorialRunEnded && typeof window.returnToBentoTitleScreen === 'function') {
+        window.returnToBentoTitleScreen();
+        return;
+      }
       if (simpleBentoMode && typeof window.returnToBentoTitleScreen === 'function') window.returnToBentoTitleScreen();
       else if (simpleBentoMode && currentRequester) restartSimpleBentoRequestRound({ next: true, skipIntro: true });
       else if (simpleBentoMode) restartSimpleBentoRound();
