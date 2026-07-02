@@ -6739,7 +6739,7 @@ const FREE_GUIDE_COPY = {
     title: '大きい おかずを えらぼう！',
   },
   tier2Side: {
-    title: '小さい おかずと カップ、したにしくものを いれよう！',
+    title: 'カップに 小さい おかずを いれよう！',
   },
   tier3Prompt: {
     title: 'もう 1だん いく？',
@@ -6748,7 +6748,7 @@ const FREE_GUIDE_COPY = {
     title: '3だんめに 大きい おかずを いれよう！',
   },
   tier3Side: {
-    title: '3だんめに 小さい おかずと したにしくものを いれよう！',
+    title: '3だんめの カップに 小さい おかずを いれよう！',
   },
   cupEditor: {
     title: 'カップに 小さい おかずを いれよう！',
@@ -9512,7 +9512,17 @@ function getFreeGuideTabs() {
   if (freeGuideStep === 'decor') return FREE_TABS.filter(t => t.id === 'decor');
   if (isOkazuGuideStep()) {
     if (String(freeGuideStep).endsWith('Side')) {
-      return ['food', 'leaf', 'accessory', 'divider', 'pick']
+      // v1494 cup-first: 小さいおかずはカップ経由のみ。side ステップから おかず/したにしく タブを撤去し、
+      // カップを先頭 (デフォルト) タブにする。初回チュートリアルは収録台本が food タブ前提のため、
+      // Phase 3 で作り直すまで旧タブ構成を維持する (compat shim — leaf 編集コードは休眠、削除しない)。
+      let tutorialActive = false;
+      try {
+        tutorialActive = !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
+      } catch (_) {}
+      const sideTabIds = tutorialActive
+        ? ['food', 'leaf', 'accessory', 'divider', 'pick']
+        : ['accessory', 'divider', 'pick'];
+      return sideTabIds
         .map(id => FREE_TABS.find(t => t.id === id))
         .filter(Boolean);
     }
@@ -10026,7 +10036,7 @@ function selectCupForMovement(cup, opts = {}) {
   resetFreeMainGuide();
   if (opts.message !== false) {
     setSpeech(simpleBentoMode
-      ? 'カップを えらんだよ。小さいおかずを えらぶと はいるよ。'
+      ? 'カップを えらんだよ。タップすると おかずを えらべるよ。'
       : 'カップを えらんだよ。ドラッグで うごかせるよ。');
   }
   if (opts.render !== false) {
@@ -10053,13 +10063,15 @@ function handleSimplePlacedItemTap(item) {
     return;
   }
   if (item.snapTarget) {
-    selectCupForMovement(item);
+    // v1494 cup-first: カップのタップは「おかずピッカー」を開く (移動はドラッグ)
+    openCupEditor(item.uid);
     return;
   }
   if (item.parentCupId) {
     const cup = placedItems.find(i => i.uid === item.parentCupId && i.snapTarget);
     if (cup) {
-      selectCupForMovement(cup);
+      // v1494 cup-first: カップ内のおかずをタップしてもピッカーを開く
+      openCupEditor(cup.uid);
       return;
     }
   }
@@ -10114,7 +10126,8 @@ function closeCupEditor() {
     freeActiveCupUid = cup.uid;
     freeSelectedItemUid = cup.uid;
   }
-  freeLayoutTab = 'food';
+  // v1494 cup-first: side ステップに food タブは無いので accessory (カップ) に戻す
+  freeLayoutTab = (isOkazuGuideStep() && String(freeGuideStep || '').endsWith('Side')) ? 'accessory' : 'food';
   resetFreeMainGuide();
   setSpeech(getBoxTierCount() > 1 ? `${freeActiveTier}だんめに おかずを いれよう！` : 'おかずを いれよう！');
   renderFreeLayoutStage();
@@ -10172,7 +10185,10 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('つぎは カップと 小さい おかずを いれよう！');
+    // v1494 cup-first: 途中状態 (戻る/とりけす等) で直置きの小さいおかずが残っていたら
+    // 空きカップへ自動回収する。カップに空きが無い分は消さずに残す (ゲート計算には入る)。
+    try { attachExistingSimpleSideFoodsToCups(freeActiveTier); } catch (_) {}
+    setSpeech('つぎは カップを おいて 小さい おかずを いれよう！');
   } else if (step === 'tier3Prompt') {
     freeActiveTier = Math.min(2, getBoxTierCount());
     freeSelectedItemUid = null;
@@ -10192,7 +10208,9 @@ function setFreeGuideStep(step, opts = {}) {
     freeSelectedItemUid = null;
     freeActiveCupUid = null;
     freeCupEditorUid = null;
-    setSpeech('3だんめの カップと 小さい おかずを いれよう！');
+    // v1494 cup-first: tier2Side と同じく、直置きの小さいおかずを空きカップへ自動回収
+    try { attachExistingSimpleSideFoodsToCups(freeActiveTier); } catch (_) {}
+    setSpeech('3だんめの カップを おいて 小さい おかずを いれよう！');
   }
   normalizeFreeGuideTab();
   if (!opts.skipRender) {
