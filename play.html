@@ -6065,6 +6065,11 @@
   <!-- ===== Shop BGM (v1784: 専用 BGM honey_bell_shop.mp3 に差し替え、 sticker-book との兼用解消) ===== -->
   <audio id="shop-bgm" src="assets/audio/honey_bell_shop.mp3" loop preload="auto"></audio>
 
+  <!-- v1895: shop 購入 SE (rarity 別 preloaded、 new Audio() の GuardedAudio silent-reject 経路を回避) -->
+  <audio id="shop-sfx-normal" src="assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3" preload="auto"></audio>
+  <audio id="shop-sfx-rare"   src="assets/audio/gacha/daily_gacha_sticker_sparkle.mp3"     preload="auto"></audio>
+  <audio id="shop-sfx-super"  src="assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3"  preload="auto"></audio>
+
   <!-- ===== Tap-to-start intro overlay (first session only; landscape only) =====
        Single tap dismisses, unlocks BGM autoplay, and reveals the title screen
        behind. Suppressed automatically if Settings has muted audio or if the
@@ -6964,7 +6969,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1894;
+    const PAGE_CACHE_VERSION = 1895;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -8122,57 +8127,77 @@
         bgm.currentTime = 0;
       } catch (_) {}
     }
-    // v1891: どんぐりショップ購入直後に shop-bgm が途切れないよう再開を保証する safety guard。
-    //        showStickerToast overlay 表示や iOS Safari の autoplay policy 差で looped audio が
-    //        pause される事象への 2 段構え対策。 mute フラグは尊重。 iOS reject は 1 回だけ retry。
+    // v1895: PonoVisibilityAudioGuard (common/preload-helper.js) が HTMLMediaElement.play を wrap し、
+    //         blur/visibilitychange 後は play() を silent reject するため、 __nativePlay を利用して bypass。
+    //         また購入直後に click 由来 gesture を失う race で pause される事象へ multi-stage retry で対抗。
+    function _nativeMediaPlay() {
+      try {
+        var proto = window.HTMLMediaElement && window.HTMLMediaElement.prototype;
+        return (proto && proto.play && proto.play.__nativePlay) || null;
+      } catch (_) { return null; }
+    }
+    function _clearAudioInactiveGuard() {
+      try {
+        if (window.PonoVisibilityAudioGuard
+            && typeof window.PonoVisibilityAudioGuard.clearFocusInactiveIfVisible === 'function') {
+          window.PonoVisibilityAudioGuard.clearFocusInactiveIfVisible();
+        }
+      } catch (_) {}
+    }
+    // v1891→v1895: どんぐりショップ購入直後に shop-bgm が途切れないよう再開を保証する safety guard。
+    //         v1895: PonoVisibilityAudioGuard が blur 後の play() を silent reject する問題に対し、
+    //         __nativePlay bypass + 0/120/450/1100ms の multi-stage retry で対抗。
     function ensureShopBgmPlaying() {
       try {
         var bgm = shopBgmElement();
         if (!bgm) return;
-        if (_shopBgmIsMuted()) return;
-        if (!bgm.paused) return;
-        if (bgm.preload !== 'auto') bgm.preload = 'auto';
-        try { bgm.currentTime = 0; } catch (_) {} // v1891 review-fix: loop 途中復帰を回避
-        try { bgm.volume = 0.32; } catch (_) {}   // v1891 code-review HIGH fix: startDonguriShopBgm と同 volume を再宣言 (外部 mutation 対策)
-        var p = bgm.play();
-        if (p && p.catch) p.catch(function () {
-          // v1891 review-fix: iOS Safari autoplay reject → 1 回だけ retry (startDonguriShopBgm と同ポリシー)
-          setTimeout(function () { try { bgm.play(); } catch (_) {} }, 250);
-        });
+        var np = _nativeMediaPlay();
+        var tryPlay = function () {
+          try {
+            if (_shopBgmIsMuted()) return;
+            if (!bgm.paused) return;
+            if (bgm.preload !== 'auto') bgm.preload = 'auto';
+            try { bgm.volume = 0.32; } catch (_) {}
+            var p = np ? np.call(bgm) : bgm.play();
+            if (p && p.catch) p.catch(function () {});
+          } catch (_) {}
+        };
+        tryPlay();
+        setTimeout(tryPlay, 120);
+        setTimeout(tryPlay, 450);
+        setTimeout(tryPlay, 1100);
       } catch (_) {}
     }
-    // v1891: 購入時 SE (rarity 別、 既存 asset 再利用、 monotonic volume)。
-    //   normal (15) → acorn_get_festive_20260628.mp3 @ 0.55
-    //   rare   (25) → daily_gacha_sticker_sparkle.mp3   @ 0.65
-    //   super  (35) → daily_gacha_magic_sparkle_long.mp3 @ 0.75
-    // 音量は 「レアほど嬉しい」 UX (v1891 review-fix: 単調増加に修正)。
-    // showStickerToast 内の _playRewardImpactSfx (acorn_get_festive) と 二重発火しないよう、
-    // 呼出元は showStickerToast に { suppressImpactSfx:true } を渡すこと。
+    // v1891→v1895: 購入時 SE (rarity 別、 既存 asset 再利用、 monotonic volume)。
+    //   normal (15) → shop-sfx-normal (acorn_get_festive_20260628.mp3)      @ 0.55
+    //   rare   (25) → shop-sfx-rare   (daily_gacha_sticker_sparkle.mp3)     @ 0.65
+    //   super  (35) → shop-sfx-super  (daily_gacha_magic_sparkle_long.mp3)  @ 0.75
+    //   v1895: new Audio() を廃止し preloaded <audio> 要素経由 + __nativePlay bypass + 250ms retry。
+    //   showStickerToast 内の _playRewardImpactSfx との二重発火は suppressImpactSfx で回避 (呼出元 wire 済)。
     function playDonguriShopPurchaseSfx(stickerId) {
       try {
-        if (_shopBgmIsMuted()) return; // 全体 mute 尊重
+        if (_shopBgmIsMuted()) return;
         var price = 0;
         try {
           if (window.PonoDonguriShop && typeof window.PonoDonguriShop.getPrice === 'function') {
             price = window.PonoDonguriShop.getPrice(stickerId) | 0;
           }
         } catch (_) {}
-        var src, vol;
-        if (price >= 35) {
-          src = 'assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3';
-          vol = 0.75;
-        } else if (price >= 25) {
-          src = 'assets/audio/gacha/daily_gacha_sticker_sparkle.mp3';
-          vol = 0.65;
-        } else {
-          src = 'assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3';
-          vol = 0.55;
-        }
-        if (typeof Audio !== 'function') return;
-        var a = new Audio(src);
-        a.volume = vol;
-        var pr = a.play();
-        if (pr && pr.catch) pr.catch(function () {});
+        var id, vol;
+        if (price >= 35)      { id = 'shop-sfx-super';  vol = 0.75; }
+        else if (price >= 25) { id = 'shop-sfx-rare';   vol = 0.65; }
+        else                  { id = 'shop-sfx-normal'; vol = 0.55; }
+        var el = document.getElementById(id);
+        if (!el) return;
+        try { el.pause(); el.currentTime = 0; el.volume = vol; } catch (_) {}
+        var np = _nativeMediaPlay();
+        var doPlay = function () {
+          try { return np ? np.call(el) : el.play(); } catch (_) { return null; }
+        };
+        var pr = doPlay();
+        if (pr && pr.catch) pr.catch(function () {
+          setTimeout(function () { try { doPlay(); } catch (_) {} }, 250);
+        });
       } catch (_) {}
     }
 
@@ -9589,8 +9614,9 @@
         buy.disabled = true;
         Promise.resolve(window.PonoDonguriShop.purchase(sid)).then(function (r) {
           if (r && r.success) {
-            // v1891: 購入 SE (rarity 別) + shop-bgm 継続保証。 showStickerToast の acorn_get_festive
-            //         と二重発火しないよう suppressImpactSfx を渡す。
+            // v1891→v1895: 購入 SE (rarity 別) + shop-bgm 継続保証。 GuardedAudio の inactive
+            //  状態を先に解除してから発火。 showStickerToast の SFX は suppressImpactSfx で抑制。
+            try { _clearAudioInactiveGuard(); } catch (_) {}
             try { playDonguriShopPurchaseSfx(sid); } catch (_) {}
             try { ensureShopBgmPlaying(); } catch (_) {}
             if (typeof window.showStickerToast === 'function' && r.stickerResult) {
@@ -9751,7 +9777,9 @@
                 btn.disabled = true;
                 Promise.resolve(window.PonoDonguriShop.purchase(sid)).then(function (r) {
                   if (r && r.success) {
-                    // v1891: 購入 SE (rarity 別) + shop-bgm 継続保証。 二重 SE 抑制のため suppressImpactSfx を渡す。
+                    // v1891→v1895: 購入 SE (rarity 別) + shop-bgm 継続保証。 GuardedAudio inactive
+                    //  を先に解除。 二重 SE は suppressImpactSfx で抑制。
+                    try { _clearAudioInactiveGuard(); } catch (_) {}
                     try { playDonguriShopPurchaseSfx(sid); } catch (_) {}
                     try { ensureShopBgmPlaying(); } catch (_) {}
                     if (typeof window.showStickerToast === 'function' && r.stickerResult) {
@@ -9936,8 +9964,10 @@
       var detail = (e && e.detail) || {};
       var gameId = detail.gameId;
       var stickerId = detail.stickerId || detail.id;
-      // v1891: 2 段目 safety guard — click handler が SE/BGM 保守を撃ち漏らした場合の retention。
+      // v1891→v1895: 2 段目 safety guard — click handler が SE/BGM 保守を撃ち漏らした場合の retention。
       //         同一 toast へ二重発火しないよう ensureShopBgmPlaying のみ実行 (SE は click 側で発火済み)。
+      //         inactive guard も念のため解除しておく。
+      try { _clearAudioInactiveGuard(); } catch (_) {}
       try { ensureShopBgmPlaying(); } catch (_) {}
       _resolveStickerImgUrl(gameId, stickerId).then(function (url) {
         _renderPurchaseCelebration(url);

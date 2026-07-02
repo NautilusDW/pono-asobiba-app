@@ -265,6 +265,11 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- v1895: 購入 SE (rarity 別 preloaded、 new Audio() の GuardedAudio silent-reject 経路を回避) -->
+<audio id="shop-sfx-normal" src="../assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3" preload="auto"></audio>
+<audio id="shop-sfx-rare"   src="../assets/audio/gacha/daily_gacha_sticker_sparkle.mp3"     preload="auto"></audio>
+<audio id="shop-sfx-super"  src="../assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3"  preload="auto"></audio>
+
 <script src="../common/acorns.js"></script>
 <script src="../js/game-stickers.js"></script>
 <script src="../js/donguri-shop.js"></script>
@@ -285,30 +290,47 @@
   let rotationCache = []; // [{ id, name, gameId, price, rarity, img, owned }]
   let renderBusy = false;
 
-  // v1891: 購入時 SE (rarity 別、 既存 asset 再利用、 単調増加 volume)。 play.html shop v2 と同じマッピング。
-  //   normal (< 25) → acorn_get_festive_20260628.mp3 @ 0.55
-  //   rare   (25-)  → daily_gacha_sticker_sparkle.mp3 @ 0.65
-  //   super  (35-)  → daily_gacha_magic_sparkle_long.mp3 @ 0.75
+  // v1891→v1895: 購入時 SE (rarity 別、 既存 asset 再利用、 単調増加 volume)。 play.html shop v2 と同じマッピング。
+  //   normal (< 25) → shop-sfx-normal (acorn_get_festive_20260628.mp3)     @ 0.55
+  //   rare   (25-)  → shop-sfx-rare   (daily_gacha_sticker_sparkle.mp3)    @ 0.65
+  //   super  (35-)  → shop-sfx-super  (daily_gacha_magic_sparkle_long.mp3) @ 0.75
+  //   v1895: new Audio() 廃止 + preloaded 要素 + __nativePlay bypass + inactive guard 解除。
   function _shopMuted() {
     try { return localStorage.getItem('pono_sound_off') === '1'; } catch (_) { return false; }
+  }
+  function _shopNativePlay() {
+    try {
+      var proto = window.HTMLMediaElement && window.HTMLMediaElement.prototype;
+      return (proto && proto.play && proto.play.__nativePlay) || null;
+    } catch (_) { return null; }
+  }
+  function _shopClearInactiveGuard() {
+    try {
+      if (window.PonoVisibilityAudioGuard
+          && typeof window.PonoVisibilityAudioGuard.clearFocusInactiveIfVisible === 'function') {
+        window.PonoVisibilityAudioGuard.clearFocusInactiveIfVisible();
+      }
+    } catch (_) {}
   }
   function playPurchaseSfx(price) {
     try {
       if (_shopMuted()) return;
-      if (typeof Audio !== 'function') return;
-      var src, vol;
+      var id, vol;
       var p = price | 0;
-      if (p >= 35) {
-        src = '../assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3'; vol = 0.75;
-      } else if (p >= 25) {
-        src = '../assets/audio/gacha/daily_gacha_sticker_sparkle.mp3'; vol = 0.65;
-      } else {
-        src = '../assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3'; vol = 0.55;
-      }
-      var a = new Audio(src);
-      a.volume = vol;
-      var pr = a.play();
-      if (pr && pr.catch) pr.catch(function () {});
+      if (p >= 35)      { id = 'shop-sfx-super';  vol = 0.75; }
+      else if (p >= 25) { id = 'shop-sfx-rare';   vol = 0.65; }
+      else              { id = 'shop-sfx-normal'; vol = 0.55; }
+      var el = document.getElementById(id);
+      if (!el) return;
+      try { el.pause(); el.currentTime = 0; el.volume = vol; } catch (_) {}
+      var np = _shopNativePlay();
+      var doPlay = function () {
+        try { return np ? np.call(el) : el.play(); } catch (_) { return null; }
+      };
+      var pr = doPlay();
+      if (pr && pr.catch) pr.catch(function () {
+        setTimeout(function () { try { doPlay(); } catch (_) {} }, 250);
+      });
     } catch (_) {}
   }
 
@@ -476,7 +498,8 @@
         return;
       }
       // 正常購入完了
-      // v1891: 購入 SE (rarity 別、 既存 asset 再利用)。 このページに BGM 要素は無いため BGM 継続懸念なし。
+      // v1891→v1895: 購入 SE (rarity 別、 preloaded)。 GuardedAudio inactive を先に解除。
+      try { _shopClearInactiveGuard(); } catch (_) {}
       try { playPurchaseSfx(item.price); } catch (_) {}
       showToast('🎉 ' + (item.name || 'シール') + ' を ゲット！');
       // game-stickers.js の grant({show:false}) なので toast popup は出ない。
