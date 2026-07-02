@@ -238,9 +238,11 @@ const STATION_HELPERS=[
  {id:"neko",e:"🐱",name:"ねこさん",request:npcSrc("neko","request"),normal:npcSrc("neko","normal"),happy:npcSrc("neko","super_happy")}
 ];
 const HELP_MAX=3;
-const QN=5, SPAN=2860, INTRO=320, GAP=430, COVER_OFF=2180, COVER_LEN=340;
+const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2120, COVER_OFF=2380, COVER_LEN=370;
 const stops=(o,i)=>o+INTRO+i*GAP-58;
 const tunX=(o,i)=>o+INTRO+i*GAP;
+const dropStop=o=>o+DROP_OFF;
+const dropX=o=>o+DROP_OFF+58;
 
 /* ================= collection registry ================= */
 const zkGroups=[]; const zkReg=new Set(); // key: e|t (メモリ内のみ・本番はセーブ実装)
@@ -283,7 +285,7 @@ function openZukan(){
 
 /* ================= state ================= */
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
-let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,transitCover=null;
+let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false;
 let bestStarsByStage={},answerLocked=false;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
@@ -523,15 +525,20 @@ function buildWorld(keepCover){
   }
  }
  if(stg<STAGES.length-1){
+  dropEl=document.createElement("div");
+  dropEl.className="dropStation";
+  dropEl.style.left=dropX(o)+"vw";
+  dropEl.innerHTML='<div class="drop-station-art"></div><div class="drop-station-name">おりるえき</div><div class="drop-station-friends">👋</div>';
+  world.appendChild(dropEl);
   coverEl=document.createElement("div");
   coverEl.className="cover";
   coverEl.style.left=(o+COVER_OFF)+"vw";
   coverEl.style.width=COVER_LEN+"vw";
-  let lamps='<div class="rim" style="left:-7vw"></div><div class="rim rimR"></div>';
+  let lamps='<div class="cover-portal cover-portal-in" aria-hidden="true"></div><div class="cover-portal cover-portal-out" aria-hidden="true"></div><div class="rim" style="left:-7vw"></div><div class="rim rimR"></div>';
   for(let x=16;x<COVER_LEN-8;x+=24)lamps+='<div class="lamp" style="left:'+x+'vw"></div>';
   coverEl.innerHTML=lamps;
   world.appendChild(coverEl);
- } else coverEl=null;
+ } else {coverEl=null;dropEl=null;}
 }
 function buildAmbient(P){
  document.querySelectorAll(".bub,.twk,.fly").forEach(n=>n.remove());
@@ -576,6 +583,36 @@ function renderCars(){
  });
  carBadge.style.display=cars.length?"block":"none";
  carBadge.textContent="🚃 ×"+cars.length;
+}
+function beginStageTransit(){
+ if(!coverEl)return;
+ transitCover=coverEl;
+ swapReady=true;swapped=false;
+ target=stops(origin(stg+1),0);
+ pending="quiz";driving=true;
+ sndGo();
+}
+function showDropoff(){
+ setDriverMood("happy");
+ const hadCars=cars.length>0;
+ if(dropEl)dropEl.classList.add("open");
+ if(hadCars){
+  carsEl.classList.add("unloading");
+  cars=[];
+  carBadge.style.display="none";
+  carBadge.textContent="🚃 ×0";
+  showStamp("みんな またね！","new");
+  speak("みんなが えきで おりたよ！");
+  setTimeout(()=>{
+   renderCars();
+   carsEl.classList.remove("unloading");
+   if(dropEl)dropEl.classList.add("done");
+   sndNew();
+  },620);
+ }else{
+  showStamp("しゅっぱつ！","ok");
+ }
+ setTimeout(()=>{beginStageTransit();},hadCars?1250:520);
 }
 function passengerLabel(p){return p.name||p.t||"";}
 function boardPassenger(p,learned,stationEl){
@@ -756,6 +793,7 @@ function gloop(t){
    carsEl.classList.remove("go");
    const p=pending;pending=null;
    if(p==="quiz")showQuiz();
+   else if(p==="dropoff")showDropoff();
    else if(p==="ending")ending();
   }
  }
@@ -825,9 +863,9 @@ function proceed(){
  setDriverMood("cheer");
  qSeg++;drawDots();
  const o=origin(stg);
- sndGo();
  if(!rareSpawned)setTimeout(maybeSpawnRare,600);
  if(qSeg<QN){
+  sndGo();
   target=stops(o,qSeg);pending="quiz";driving=true;
  }else{
   cleared[stg]=true;
@@ -839,10 +877,14 @@ function proceed(){
   showStamp(STAGES[stg].names[loop%2]+" できた！ "+"⭐".repeat(stars),"clear");
   sndFan();confetti(14);
   if(stg<STAGES.length-1){
-   transitCover=coverEl;
-   swapReady=true;swapped=false;
-   target=stops(origin(stg+1),0);pending="quiz";driving=true;
+   if(cars.length&&dropEl){
+    sndGo();
+    target=dropStop(o);pending="dropoff";driving=true;
+   }else{
+    beginStageTransit();
+   }
   }else{
+   sndGo();
    target=tunX(o,QN-1)+150;pending="ending";driving=true;
   }
  }
