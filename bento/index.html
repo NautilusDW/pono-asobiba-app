@@ -1926,7 +1926,9 @@ html, body {
   min-width: 132px;
   padding: 3px 8px;
 }
-/* v1496 leaf-bed: メインおかず編集パネル ([おかずを かえる][したに しく🥬][けす] + picker + ヒント) */
+/* v1496 leaf-bed → batch:1043 T1: メインおかず編集パネルは slim 化。
+   title + 1 行 ([おかずを かえる][したに しく🥬/はっぱを かえる][はっぱを けす][けす]) + 初回ヒントのみ。
+   picker はパネル内には出さず、 トレイ全体を置き換える full picker (T2) に移行。 */
 .free-context-toolbar--panel .free-okazu-edit-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1943,38 +1945,80 @@ html, body {
   background: #FEF2F2;
   color: #991B1B;
 }
-.free-context-toolbar--panel .free-okazu-edit-picker {
+/* batch:1043 T2: [おかずを かえる]/[したに しく🥬] はトレイ全体を full picker に置き換える
+   (cup editor = renderFreeCupEditorControls と同じパターン)。 head = もどる + プロンプト。 */
+.free-okazu-picker-head {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 6px;
-  flex: 1 0 100%;
-  min-width: 0;
-  overflow-x: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-x; /* v1500 FIX3: 横スクロールは native、選択は tap-slop 判定 */
-  padding: 2px 1px 4px;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 3px 2px;
 }
-.free-context-toolbar button.free-okazu-edit-choice {
+button.free-okazu-picker-back {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 2px solid #8AD6B6;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #064E3B;
+  font-family: inherit;
+  font-size: 0.66rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
+}
+.free-okazu-picker-prompt {
+  min-width: 0;
+  font-size: 0.64rem;
+  font-weight: 900;
+  color: #064E3B;
+  line-height: 1.15;
+}
+.free-okazu-edit-picker--tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 7px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y; /* 縦スクロールは native、選択は tap-slop 判定 (v1500 FIX3 の継承) */
+  padding: 2px 1px 6px;
+}
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  width: 68px; /* v1500 FIX4: label 0.44→0.6rem に伴い 60px→68px */
+  gap: 3px;
+  width: 88px;
   height: auto;
-  min-height: 58px;
-  padding: 4px 2px 3px;
+  min-height: 84px;
+  padding: 6px 3px 5px;
+  border: 2px solid #8AD6B6;
   border-radius: 12px;
-  font-size: 0.6rem;
+  background: #FFFFFF;
+  color: #064E3B;
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 900;
   line-height: 1.05;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(255,255,255,0.75) inset;
 }
-.free-context-toolbar button.free-okazu-edit-choice img {
-  width: 36px;
-  height: 36px;
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice.active {
+  border-color: #F59E0B;
+  background: #FFFBEB;
+}
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice img {
+  width: 52px;
+  height: 52px;
   object-fit: contain; /* AR 保持 (stretch 禁止ルール) */
   pointer-events: none;
 }
-.free-context-toolbar button.free-okazu-edit-choice span {
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice span {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1989,11 +2033,11 @@ html, body {
   border-radius: 8px;
   padding: 3px 7px;
 }
-/* side ステップの tray grid は panel を 96px に制限しているので、編集パネル時だけ広げる */
+/* batch:1043 T1: パネル slim 化に伴い旧 178px スクロール構造は撤去。
+   side ステップの 96px クランプ (overflow:hidden) だけ外して 1 行 wrap ぶんの自然高を許す */
 .food-tray.free-layout-controls.is-simple-side-step .free-context-toolbar--panel.has-okazu-edit {
-  max-height: 178px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  max-height: none;
+  overflow: visible;
 }
 .free-context-toolbar.above {
   transform: translate(-50%, -100%);
@@ -3438,20 +3482,28 @@ html, body {
     font-size: 0.68rem;
     font-weight: 900;
   }
-  /* v1500 FIX4: edit パネルのアクション/ピッカーが .free-context-toolbar button の
+  /* v1500 FIX4: edit パネルのアクションが .free-context-toolbar button の
      30px/8.8px を継承して coarse pointer で押せないサイズになる問題 (3 度目) */
   .free-context-toolbar button.free-okazu-edit-btn {
     min-height: 40px;
     font-size: 0.7rem;
   }
-  .free-context-toolbar button.free-okazu-edit-choice {
-    width: 74px;
-    min-height: 68px;
-    font-size: 0.62rem;
+  /* batch:1043 T2: full picker (tray) の coarse pointer サイズ */
+  button.free-okazu-picker-back {
+    min-height: 44px;
+    font-size: 0.72rem;
   }
-  .free-context-toolbar button.free-okazu-edit-choice img {
-    width: 44px;
-    height: 44px;
+  .free-okazu-picker-prompt {
+    font-size: 0.7rem;
+  }
+  .free-okazu-edit-picker--tray button.free-okazu-edit-choice {
+    width: 96px;
+    min-height: 92px;
+    font-size: 0.66rem;
+  }
+  .free-okazu-edit-picker--tray button.free-okazu-edit-choice img {
+    width: 56px;
+    height: 56px;
   }
 }
 
@@ -5995,6 +6047,13 @@ const SK_INTRO_VOICE_GAP_MS = 600;
 const SK_INTRO_VOICE_FALLBACK_MS = 10000;
 const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
 const BENTO_COLOR_GUIDE_SKIP_KEY = 'bento_color_guide_skip_v1';
+// batch:1043 T4: タップ式完成 + おねがいモード展開後に両モードのチュートリアルを
+// 作り直すまで一時停止 (現行チュートリアルは D&D 前提の旧台本 + 旧おねがいモード要素混在のため)。
+// true の間: タイトルからの自動起動 / poller / ギアメニューの「あそびかた」入口を全て塞ぐ。
+// チュートリアルの実装コード自体は削除しない (作り直し時に state machine を再利用する)。
+// ※ おねがいモードの回ごとの 3 色ガイド (sk-intro / bento_color_guide_skip_v1) は
+//    チュートリアルとは別物なので、この pause の影響を受けず従来どおり表示する。
+const BENTO_TUTORIAL_PAUSED = true;
 let skIntroGuideTimer = null;
 let skIntroGuideIndex = 0;
 function stopSkIntroGuide() {
@@ -6167,6 +6226,7 @@ function startSkIntroGuide() {
   // 全工程チュートリアル (v1): 初回プレイヤーのみ・NPC/タイトル/横画面が片付いたら開始
   let _fullTutorialPollCount = 0;
   function waitForReadyThenFullTutorial() {
+    if (BENTO_TUTORIAL_PAUSED) return; // batch:1043 T4: チュートリアル作り直しまで自動起動を停止
     if (simpleBentoMode) return;
     if (typeof tutorialReadDone === 'function' && tutorialReadDone()) return;
     if (_fullTutorialPollCount++ > 200) return; // 600ms * 200 ≈ 2分で諦め
@@ -14838,16 +14898,8 @@ function toggleSimpleOkazuEditPicker(mode) {
     setSpeech('したに しく はっぱを えらんでね。');
   }
   renderFreeLayoutControls();
-  // v1500 FIX8: side ステップの低いパネル (~178px) ではピッカーが折り返しの下に
-  // 隠れて見えないことがあるので、開いた直後に見える位置までスクロールする。
-  if (simpleOkazuEditPickerMode) {
-    requestAnimationFrame(() => {
-      try {
-        const picker = document.querySelector('.free-context-toolbar--panel .free-okazu-edit-picker');
-        if (picker && typeof picker.scrollIntoView === 'function') picker.scrollIntoView({ block: 'nearest' });
-      } catch (_) {}
-    });
-  }
+  // (v1500 FIX8 の scrollIntoView は撤去 — batch:1043 T2 で picker はトレイ全体を
+  //  置き換える full picker になり、 折り返しの下に隠れる問題自体が消えたため)
 }
 // [おかずを かえる]: 同じスロットに別のメインおかずを入れ替え配置する。
 // side ステップからも呼べるよう removeFreeItemData は force (canRemoveFreeItemNow の main-step 縛りを意図的に越える)。
@@ -15009,6 +15061,48 @@ function createSimpleOkazuEditPicker(item, leaf) {
   });
   return wrap;
 }
+// batch:1043 T2: おかず編集 picker はパネル内 inline をやめ、 cup editor
+// (renderFreeCupEditorControls) と同じく「トレイ全体を置き換える full picker」にする。
+// [← もどる] + プロンプト + 全高 picker グリッド。 選択で置換/敷き→通常トレイへ復帰、
+// もどる/対象変更/ステップ変更で自動キャンセル。
+function renderSimpleOkazuEditPickerTray() {
+  if (!simpleOkazuEditPickerMode) return null;
+  const target = getSimpleOkazuEditTarget();
+  if (!target || simpleOkazuEditPickerUid !== target.uid) {
+    // 対象が消えた / 選択が変わった / ステップが変わった → picker mode を解除して通常トレイへ
+    simpleOkazuEditPickerMode = null;
+    return null;
+  }
+  const mode = simpleOkazuEditPickerMode;
+  const leaf = getSimpleLeafForOkazu(target);
+  const frag = document.createDocumentFragment();
+  const head = document.createElement('div');
+  head.className = 'free-okazu-picker-head';
+  const back = document.createElement('button');
+  back.type = 'button';
+  back.className = 'free-okazu-picker-back';
+  back.textContent = '← もどる';
+  back.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    simpleOkazuEditPickerMode = null;
+    renderFreeLayoutControls();
+  });
+  head.appendChild(back);
+  const prompt = document.createElement('span');
+  prompt.className = 'free-okazu-picker-prompt';
+  prompt.textContent = mode === 'leaf'
+    ? (leaf ? 'どの はっぱに かえる？' : 'したに しく はっぱを えらんでね')
+    : 'どの おかずに かえる？';
+  head.appendChild(prompt);
+  frag.appendChild(head);
+  const picker = createSimpleOkazuEditPicker(target, leaf);
+  if (picker) {
+    picker.classList.add('free-okazu-edit-picker--tray');
+    frag.appendChild(picker);
+  }
+  return frag;
+}
 function createFreeContextToolbar(opts = {}) {
   const item = getSelectedFreeItem();
   const simpleLeafToolbar = !!(simpleBentoMode && isSimpleLeafEditMode() && item && item.type === 'leaf');
@@ -15040,7 +15134,9 @@ function createFreeContextToolbar(opts = {}) {
     appendControl(sizeSlider);
   }
 
-  if (item.type !== 'rice' && !item.snapTarget) {
+  // batch:1043 T1: simple のメインおかず編集パネルには回転ボタンを出さない (未依頼機能 + パネル slim 化)。
+  // 非 simple (mask editor 等) と leaf 編集ツールバーは従来どおり。
+  if (item.type !== 'rice' && !item.snapTarget && !simpleOkazuPanel) {
     appendControl(createFreeContextButton('↺', '', () => rotateSelectedItem(-15)));
     appendControl(createFreeContextButton('↻', '', () => rotateSelectedItem(15)));
   }
@@ -15055,7 +15151,9 @@ function createFreeContextToolbar(opts = {}) {
     ));
   }
 
-  if (canShowLayerControlsForItem(item)) {
+  // batch:1043 T1: ↓↑ レイヤーボタンも simple のメインおかず編集パネルからは撤去
+  // (メインおかず同士でしか並べ替えられず実用性がほぼ無いため)。 他コンテキストは維持。
+  if (canShowLayerControlsForItem(item) && !simpleOkazuPanel) {
     const { units, selectedUnit, overlapUnits } = getLayerOverlapContext(item);
     if (selectedUnit && units.length >= 2 && overlapUnits.length) {
       const index = units.findIndex(unit => unit.key === selectedUnit.key);
@@ -15107,9 +15205,8 @@ function createFreeContextToolbar(opts = {}) {
       () => removeSimpleMainOkazuFromPanel()
     ));
     appendControl(row);
-    if (simpleOkazuEditPickerMode) {
-      appendControl(createSimpleOkazuEditPicker(item, leaf));
-    }
+    // batch:1043 T2: picker はパネル内 inline ではなく renderSimpleOkazuEditPickerTray が
+    // トレイ全体を置き換えて表示する (picker mode 中このパネル自体が描画されない)。
     // 一回きり (session) の はっぱヒント。同じおかずのパネル再 render 中は出し続ける。tutorial 中は出さない。
     if (!leaf && simpleOkazuEditPickerMode !== 'leaf') {
       let showLeafHint = false;
@@ -15537,85 +15634,43 @@ function shouldHighlightFreeChoice(def) {
   }
   return false;
 }
+// batch:1043 T3: simple モードは全アイテム「タップ配置のみ」 (palette→stage の D&D 配置全廃)。
+// mouse/pen も touch と同じ tap-slop 判定にして、 press+move (>10px) では何も置かない
+// (palette は tray の touch-action:pan-y で自然にスクロールする)。
+// 非 simple (mask editor / admin) は従来どおり pointerdown 即 onPress → beginFreePaletteDrag の
+// ドラッグ配置を維持する。 置き済みアイテムの stage 上ドラッグ移動 (おかず入替 / カップ移動 /
+// しきり移動+スナップ) は別経路なので影響しない。
 function bindFreePalettePress(btn, onPress) {
-  let touchPress = null;
-  const resetTouchPress = () => { touchPress = null; };
+  let press = null;
+  const resetPress = () => { press = null; };
   btn.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'touch') {
-      touchPress = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
-      return;
+    if (e.pointerType !== 'touch') {
+      if (!simpleBentoMode) {
+        // 非 simple: pointerdown 即発火 (onPress がドラッグ配置の seed になる)
+        e.preventDefault();
+        onPress(e);
+        return;
+      }
+      // simple: mouse/pen も slop 判定へ (native image drag / text selection だけ抑止)
+      e.preventDefault();
     }
-    e.preventDefault();
-    onPress(e);
+    press = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
   });
   btn.addEventListener('pointermove', e => {
-    if (!touchPress || e.pointerId !== touchPress.id) return;
-    if (Math.abs(e.clientX - touchPress.x) > 10 || Math.abs(e.clientY - touchPress.y) > 10) {
-      touchPress.moved = true;
+    if (!press || e.pointerId !== press.id) return;
+    if (Math.abs(e.clientX - press.x) > 10 || Math.abs(e.clientY - press.y) > 10) {
+      press.moved = true;
     }
   }, { passive: true });
   btn.addEventListener('pointerup', e => {
-    if (!touchPress || e.pointerId !== touchPress.id) return;
-    const press = touchPress;
-    resetTouchPress();
-    if (press.moved) return;
+    if (!press || e.pointerId !== press.id) return;
+    const p = press;
+    resetPress();
+    if (p.moved) return;
     e.preventDefault();
     onPress(e);
   });
-  btn.addEventListener('pointercancel', resetTouchPress, { passive: true });
-}
-// batch:divider-ux — しきり palette (simple mode): タップ=ボタン配置、10px 以上動かしたらドラッグ配置に切替。
-// しきりタブは 4 枚固定でスクロール不要なので touch-action:none で上向きドラッグを許可する。
-function bindSimpleDividerPalettePress(btn, def) {
-  let press = null;
-  const reset = () => { press = null; };
-  // batch:dividerfix F7b — 汎用 palette handler と同じ tier lock 誘導 (tap/drag 両分岐で使う)
-  const showTierLockPromoIfLocked = () => {
-    if (!def.tierLocked || !window.PonoTier) return false;
-    if (typeof window.PonoTier.showTierLockPromo === 'function') {
-      window.PonoTier.showTierLockPromo();
-    } else {
-      window.PonoTier.showSubscribePromo();
-    }
-    return true;
-  };
-  btn.style.touchAction = 'none';
-  btn.addEventListener('pointerdown', e => {
-    if (e.cancelable) e.preventDefault();
-    press = { id: e.pointerId, x: e.clientX, y: e.clientY };
-    try { btn.setPointerCapture(e.pointerId); } catch (_) {}
-  });
-  btn.addEventListener('pointermove', e => {
-    if (!press || e.pointerId !== press.id) return;
-    if (Math.abs(e.clientX - press.x) <= 10 && Math.abs(e.clientY - press.y) <= 10) return;
-    const pointerId = press.id;
-    reset();
-    try { btn.releasePointerCapture(pointerId); } catch (_) {}
-    if (!showTutorialPaletteLockToast(def)) return;
-    if (showTierLockPromoIfLocked()) return;
-    // batch:dividerfix F2 — ドラッグ配置もスロット上限 (tap 配置と同じ cap) を守る
-    const tier = getTargetTierForType('divider');
-    const placedCount = placedItems.filter(item => item
-      && item.type === 'divider'
-      && !item.parentCupId
-      && getItemTier(item) === tier).length;
-    if (placedCount >= getSimpleFixedSlots(def, tier).length) {
-      setSpeech('もう はいらないよ。いらないものを けしてね。');
-      return;
-    }
-    beginFreePaletteDrag(e, def);
-  });
-  btn.addEventListener('pointerup', e => {
-    if (!press || e.pointerId !== press.id) return;
-    reset();
-    if (e.cancelable) e.preventDefault();
-    if (!showTutorialPaletteLockToast(def)) return;
-    if (showTierLockPromoIfLocked()) return;
-    const historyBefore = beginFreeHistoryChange();
-    addSimpleFreePaletteItem(def);
-    if (commitFreeHistoryChange(historyBefore)) renderFreeLayoutControls();
-  });
-  btn.addEventListener('pointercancel', reset, { passive: true });
+  btn.addEventListener('pointercancel', resetPress, { passive: true });
 }
 function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
@@ -15685,10 +15740,10 @@ function makeFreePaletteButton(def) {
       }
       selectFreeBentoBox(def.id);
     });
-  } else if (simpleBentoMode && def.type === 'divider') {
-    // batch:divider-ux — しきりはタップ配置に加えてドラッグ配置 (磁石スナップ付き) も許可
-    bindSimpleDividerPalettePress(btn, def);
   } else {
+    // batch:1043 T3: しきり専用のドラッグ配置 binding (bindSimpleDividerPalettePress) は廃止。
+    // simple モードのしきりも他アイテムと同じ「タップ=ボタン配置」経路
+    // (addSimpleFreePaletteItem → addSimpleFixedPaletteItem) に一本化 (ghost タップ配置は stage 側で維持)。
     bindFreePalettePress(btn, e => {
       if (!showTutorialPaletteLockToast(def)) return;
       // Phase 2 future-use: decoration/food tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
@@ -17187,6 +17242,17 @@ function renderFreeLayoutControls() {
     tray.appendChild(cupEditorControls);
     return;
   }
+
+  // batch:1043 T2: おかず編集 picker armed 中はトレイ全体を full picker に置き換える
+  // (side ステップの grid レイアウトは外して縦 flex のまま全高を使う)
+  const okazuPickerControls = renderSimpleOkazuEditPickerTray();
+  if (okazuPickerControls) {
+    tray.classList.remove('is-simple-side-step');
+    tray.classList.add('is-okazu-picker');
+    tray.appendChild(okazuPickerControls);
+    return;
+  }
+  tray.classList.remove('is-okazu-picker');
 
   const guidePanel = renderFreeGuidePanel();
   if (guidePanel && freeGuideStep !== 'box') tray.appendChild(guidePanel);
@@ -20759,6 +20825,8 @@ function tutorialTeardown() {
   tutorialState.renderedStep = null;
 }
 function tutorialStart() {
+  // batch:1043 T4: 旧 D&D 台本のため作り直しまで全入口を no-op (最終チョークポイント)
+  if (BENTO_TUTORIAL_PAUSED) return;
   if (simpleBentoMode) return;
   if (tutorialReadDone()) return;
   if (tutorialState.active) return;
@@ -21039,9 +21107,10 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     if (labelEl) labelEl.textContent = diff.label;
     badge.setAttribute('data-difficulty', diff.key);
     badge.setAttribute('aria-label', '難易度 ' + diff.label);
-    // チュートリアル未完了中は非表示 (初回プレイ時 UI 混乱を避ける)
+    // チュートリアル未完了中は非表示 (初回プレイ時 UI 混乱を避ける)。
+    // batch:1043 T4: 一時停止中はチュートリアルが走らないので done 扱いでバッジを出す。
     let tutorialDone = true;
-    try { tutorialDone = localStorage.getItem(BENTO_TUTORIAL_STORAGE_KEY) === '1'; } catch (_) { tutorialDone = true; }
+    try { tutorialDone = BENTO_TUTORIAL_PAUSED || localStorage.getItem(BENTO_TUTORIAL_STORAGE_KEY) === '1'; } catch (_) { tutorialDone = true; }
     badge.hidden = !tutorialDone;
   })();
   function returnToTitleScreen() {
@@ -21074,7 +21143,9 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     //  チュートリアルが一切自動起動しない事故になっていた。)
     let tutorialPending = false;
     try {
-      tutorialPending = typeof tutorialReadDone === 'function' && !tutorialReadDone();
+      // batch:1043 T4: チュートリアル一時停止中は初回ユーザーも選んだモードへ直行させる
+      tutorialPending = !BENTO_TUTORIAL_PAUSED
+        && typeof tutorialReadDone === 'function' && !tutorialReadDone();
     } catch (_) {}
     if (tutorialPending && typeof tutorialStart === 'function') {
       try { window.__bentoTutorialPendingMode = requestMode ? 'request' : 'simple'; } catch (_) {}
@@ -21106,7 +21177,9 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
 })();
 
 initMenu({
-  tutorial: showTutorial,
+  // batch:1043 T4: チュートリアル一時停止中はギアメニューの「あそびかた」入口ごと非表示
+  // (null を渡すと common/menu.js が項目を作らない)。作り直し後に showTutorial へ戻す。
+  tutorial: BENTO_TUTORIAL_PAUSED ? null : showTutorial,
   bgmToggle: function() {
     bgmEnabled = !bgmEnabled;
     localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
