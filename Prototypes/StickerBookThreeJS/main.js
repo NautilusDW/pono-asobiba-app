@@ -2232,9 +2232,20 @@ const stickerPeelAnimations = [];
 const stickerPasteParticleState = {
   bursts: [],
   MAX_CONCURRENT: 3,
-  PARTICLE_SIZE: 0.35,
-  COLORS: [0x6b8f5c, 0xf2c4c4, 0xd9c799, 0xa8c4d6, 0xede0b8],
-  GRAVITY: 0.9,
+  PARTICLE_SIZE: 0.14,
+  // v1896: 6色淡色 palette (warm gold / peach / rose / cream / sky / lavender)
+  COLORS: [0xffd97a, 0xffbfa8, 0xffcdd8, 0xfff2cc, 0xcfe4ff, 0xe2d6ff],
+  GRAVITY: 0.6,
+  BURST_ARC_RAD: Math.PI * (2 / 3), // 120° 扇状
+  BURST_SPEED_MIN: 1.4,
+  BURST_SPEED_MAX: 2.4,
+  BURST_LIFE_MIN: 1.0,
+  BURST_LIFE_MAX: 1.4,
+  BURST_COUNT_MIN: 16,
+  BURST_COUNT_MAX: 22,
+  BURST_JITTER_MIN: 0.03,
+  BURST_JITTER_MAX: 0.08,
+  BURST_DELAY_MS: 50,
 };
 let editorPageDefinitions = createFallbackEditorPageDefinitions();
 let collectionPageDefinitions = createFallbackCollectionPageDefinitions();
@@ -7024,7 +7035,7 @@ function endStickerTrayDrag(event) {
     if (target) {
       addStickerFromTrayToPage(state.sticker.id, target.page, target.point);
       try { window.Haptics && window.Haptics.fire('stickerPaste'); } catch (_) {}
-      try { emitStickerPasteParticles(target.page, target.point); } catch (_) {}
+      // v1896: particle burst は貼付完了後 (finishStickerPeelAnimation) に deferred で発火
     }
   }
   cancelStickerTutorialDragPageTurn();
@@ -7280,6 +7291,11 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
     elapsed: 0,
     duration: STICKER_PEEL_DURATION,
     onComplete,
+    // v1896: particle burst 用のスナップショット (finishStickerPeelAnimation で使用)
+    placement: { x: placement.x, y: placement.y, rotation: placement.rotation || 0, scale: placement.scale },
+    pageNumber,
+    peelDims: { width: dimensions.width, height: dimensions.height },
+    peelReversed: getPeelReversed(),
   };
   stickerPeelAnimations.push(animation);
   bendStickerPeelGeometry(animation, 0);
@@ -7379,7 +7395,9 @@ function bendStickerPeelGeometry(animation, progress) {
   const press = Math.sin(progress * Math.PI);
   const maxAngle = remaining * Math.PI * 1.05;
   const radius = maxAngle > 0.001 ? height / maxAngle : height;
-  const anchorY = -height / 2;
+  // v1896: peel 反転 (上端 anchor で下方向へ倒れ込む) を localStorage で切替可能に
+  const reversed = animation.peelReversed === true;
+  const anchorY = reversed ? +height / 2 : -height / 2;
   for (let i = 0; i < positions.count; i += 1) {
     const index = i * 3;
     const baseX = base[index];
@@ -7387,7 +7405,8 @@ function bendStickerPeelGeometry(animation, progress) {
     const baseZ = base[index + 2];
     const u = THREE.MathUtils.clamp(baseX / width + 0.5, 0, 1);
     const v = THREE.MathUtils.clamp(baseY / height + 0.5, 0, 1);
-    const bendT = Math.pow(v, 0.92);
+    const vBent = reversed ? (1 - v) : v;
+    const bendT = Math.pow(vBent, 0.92);
     const angle = maxAngle * bendT;
     const curledY = maxAngle > 0.001 ? anchorY + Math.sin(angle) * radius : baseY;
     const curledZ = maxAngle > 0.001 ? (1 - Math.cos(angle)) * radius : 0;
@@ -7406,7 +7425,8 @@ function bendStickerPeelGeometry(animation, progress) {
   geometry.computeVertexNormals();
   const lift = remaining * 0.2;
   animation.group.position.z = 0.018 + lift;
-  animation.group.rotation.x = THREE.MathUtils.degToRad(-12 * remaining + 2 * press);
+  const tiltSign = reversed ? +1 : -1;
+  animation.group.rotation.x = THREE.MathUtils.degToRad(tiltSign * 12 * remaining + 2 * press);
   animation.group.scale.setScalar(1 + remaining * 0.03 - press * 0.012);
   animation.frontMaterial.opacity = 0.96 + press * 0.04;
   animation.backMaterial.opacity = 0.92;

@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-02 13:20 - by Claude - [batch:1043-bento-tap-only-panel-slim] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 編集パネル簡素化 (回転/レイヤー削除、かえる=全画面ピッカー) + パレットD&D配置の全廃 (タップ統一) + チュートリアル一時停止
-
 
 - 2026-06-27 01:30 - by Claude - [batch:860-data-export-import] - help.html, play.html, common/**, js/**, sw.js - セーブデータ JSON エクスポート/インポート UI 追加 + ヘルプ文言書き直し
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]

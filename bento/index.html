@@ -8396,6 +8396,17 @@ function restartSimpleBentoRound() {
   loadStage();
   renderBentoReminder();
   setSpeech('すきな おべんとうを つくろう！ ボタンを タップして えらんでね。');
+  // batch:1043 interim: チュートリアル停止中 (BENTO_TUTORIAL_PAUSED) は 3色グループの
+  // 説明機会が request モードの回頭ガイドしか無いので、じぶんでつくる の最初のラウンドでも
+  // 1 回だけ表示する。ゲートは既存フラグのみ: session 内で既出なら出さない
+  // (bento_sk_intro_seen_this_session、閉時に markBentoSkIntroSeen が設定) +
+  // 「つぎから みない」(BENTO_COLOR_GUIDE_SKIP_KEY) は showBentoColorGuide 内で尊重。
+  // チュートリアル作り直し時にこの分岐は撤去/再設計する。
+  if (BENTO_TUTORIAL_PAUSED) {
+    let skIntroSeenThisSession = false;
+    try { skIntroSeenThisSession = sessionStorage.getItem('bento_sk_intro_seen_this_session') === '1'; } catch (_) {}
+    if (!skIntroSeenThisSession) showBentoColorGuide(renderBentoReminder);
+  }
 }
 function restartSimpleBentoRequestRound(opts = {}) {
   setSimpleBentoMode(true, 'request');
@@ -15096,7 +15107,7 @@ function renderSimpleOkazuEditPickerTray() {
   const prompt = document.createElement('span');
   prompt.className = 'free-okazu-picker-prompt';
   prompt.textContent = mode === 'leaf'
-    ? (leaf ? 'どの はっぱに かえる？' : 'したに しく はっぱを えらんでね')
+    ? (leaf ? 'どの はっぱに かえる？' : 'したに しく はっぱを えらんでね。')
     : 'どの おかずに かえる？';
   head.appendChild(prompt);
   frag.appendChild(head);
@@ -15675,6 +15686,10 @@ function bindFreePalettePress(btn, onPress) {
     onPress(e);
   });
   btn.addEventListener('pointercancel', resetPress, { passive: true });
+  // batch:1043 fix: カードの外へ滑り出した press は無効化する。
+  // これが無いと、滑り出した後の無関係な pointerup (同じ pointerId 再利用) で
+  // 意図しない配置が成立し得る。
+  btn.addEventListener('pointerleave', resetPress, { passive: true });
 }
 function makeFreePaletteButton(def) {
   const btn = document.createElement('button');
@@ -17247,16 +17262,15 @@ function renderFreeLayoutControls() {
     return;
   }
 
-  // batch:1043 T2: おかず編集 picker armed 中はトレイ全体を full picker に置き換える
-  // (side ステップの grid レイアウトは外して縦 flex のまま全高を使う)
+  // batch:1043 T2: おかず編集 picker armed 中はトレイ全体を full picker に置き換える。
+  // レイアウトは .free-okazu-edit-picker--tray + is-simple-okazu-step が担う
+  // (side ステップの grid レイアウトだけ外して縦 flex のまま全高を使う)。
   const okazuPickerControls = renderSimpleOkazuEditPickerTray();
   if (okazuPickerControls) {
     tray.classList.remove('is-simple-side-step');
-    tray.classList.add('is-okazu-picker');
     tray.appendChild(okazuPickerControls);
     return;
   }
-  tray.classList.remove('is-okazu-picker');
 
   const guidePanel = renderFreeGuidePanel();
   if (guidePanel && freeGuideStep !== 'box') tray.appendChild(guidePanel);
