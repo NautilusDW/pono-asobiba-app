@@ -134,7 +134,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "はなや きの まわり",
     group: "こんちゅう",
     fact: "はなの みつを あつめながら、はなから はなへ かふんを はこぶことが あります。",
-    guideSpeaker: "ポノ",
+    guideSpeaker: "ふくろう博士",
     guideText: "しまもようと はねを そっと かんさつしよう。",
   },
   {
@@ -146,7 +146,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "もりの きや くちき",
     group: "こんちゅう",
     fact: "おすには おおきな つのが あり、じゅえきの でる きに あつまります。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "つの、あし、からだの かたちを くらべてみよう。",
   },
   {
@@ -170,7 +170,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "はなばたけや くさはら",
     group: "こんちゅう",
     fact: "はねには もようがあり、ながい くちで はなの みつを すいます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "はねの いろと もようを ゆっくり みてみよう。",
   },
   {
@@ -194,7 +194,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "まちや いえの まわり",
     group: "ほにゅうるい",
     fact: "やわらかい からだで しずかに あるき、ひげで せまい ところを たしかめます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "ひげ、つめ、めの かたちに ちゅうもく。",
   },
   {
@@ -218,7 +218,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "みなみの さむい うみべ",
     group: "とり",
     fact: "とぶことは にがてですが、うみの なかを すばやく およぎます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "つばさが およぐための ひれみたいに うごくよ。",
   },
   {
@@ -242,7 +242,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "アフリカの くさはら",
     group: "ほにゅうるい",
     fact: "ながい くびで たかい きの はっぱを たべることが できます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "くびだけでなく、あしも とても ながいよ。",
   },
   {
@@ -266,7 +266,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "もりや みずべ",
     group: "ほにゅうるい",
     fact: "てを じょうずに つかい、みずべで たべものを さがすことが あります。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "ての かたちと かおの もようを くらべよう。",
   },
   {
@@ -290,7 +290,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "もりの きの うえ",
     group: "ほにゅうるい",
     fact: "きのみを たべたり、ほおぶくろに いれて はこんだりする なかまも います。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "しっぽの ふくらみと きのみを もつ てを みてみよう。",
   },
   {
@@ -314,7 +314,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "もりや くさはら",
     group: "ほにゅうるい",
     fact: "おおきな みみと ふさふさの しっぽを もち、よるに うごくことも あります。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "みみの かたちと しっぽの ながさを くらべよう。",
   },
   {
@@ -338,7 +338,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "くさむらや もりの した",
     group: "ほにゅうるい",
     fact: "からだの はりで みを まもり、ちいさな むしなどを さがして たべます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "せなかの はりと ちいさな あしを みつけよう。",
   },
   {
@@ -362,7 +362,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "いけや みずべ",
     group: "とり",
     fact: "みずかきの ある あしで みずの うえを およぎます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "くちばしと みずかきの あしを さがしてみよう。",
   },
   {
@@ -386,7 +386,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "うみべや いわば",
     group: "こうかくるい",
     fact: "かたい からと はさみを もち、よこに あるく すがたが よく みられます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "はさみと あしの かずを かぞえてみよう。",
   },
   {
@@ -410,7 +410,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "あたたかい うみ",
     group: "さかな",
     fact: "おおきな からだですが、ちいさな プランクトンなどを たべます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "からだの しろい もようを さがしてみよう。",
   },
   {
@@ -434,7 +434,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "おべんとうや あさごはん",
     group: "たまごりょうり",
     fact: "たまごを まぜて やき、ふんわり まいた きいろい おかずです。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "きいろい いろと まいた かたちを みてみよう。",
   },
   {
@@ -458,7 +458,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "はたけから しょくたくへ",
     group: "やさい",
     fact: "つぼみの あつまりを たべる やさいで、みどりの こまかい つぶが みえます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "ちいさな つぼみが たくさん あつまっているよ。",
   },
   {
@@ -482,7 +482,7 @@ const COLLECTION_ZUKAN_SUBJECT_DEFS = [
     habitat: "はたけや ハウス",
     group: "くだもの",
     fact: "あかく あまい くだもの。そとの つぶつぶは たねのように みえます。",
-    guideSpeaker: "Codex",
+    guideSpeaker: "ふくろう博士",
     guideText: "あかい みと つぶつぶを かんさつしよう。",
   },
 ];
@@ -12406,7 +12406,7 @@ function drawCollectionZukanIndexPage(ctx, texture, palette, pageDef, subjects, 
     ctx.fillText(pageDef?.subtitle || "いきものや たべものを しらべよう", PAGE_TEXTURE_W / 2, 150 + headerOffsetY);
     ctx.fillStyle = "rgba(51, 68, 71, 0.58)";
     ctx.font = '700 20px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
-    ctx.fillText("Codexと いっしょに、きになる なかまを くわしく みよう", PAGE_TEXTURE_W / 2, 184 + headerOffsetY);
+    ctx.fillText("ずかんで あつめた なかまを みてみよう", PAGE_TEXTURE_W / 2, 184 + headerOffsetY);
   }
 
   for (let i = 0; i < subjects.length; i += 1) {
@@ -12596,6 +12596,7 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette, si
       name: subjectName,
       subtitle,
       category: collectionZukanDetailCategoryLabel(subject, pageDef),
+      rarity: collectionZukanRarityStars(subject),
     },
     image: {
       ...imageRect,
@@ -12604,19 +12605,19 @@ function collectionZukanDetailTemplate(pageDef, subject, pageNumber, palette, si
     },
     fields: [
       {
-        title: "すんでいるところ",
-        value: collectionZukanCompactText(subject?.habitat, "しらべています", 30),
+        title: "みつけた ばしょ",
+        value: collectionZukanFoundText(subject),
         ...transformGeneratedRect({ x: fieldX, y: fieldY, width: fieldW, height: fieldH }),
         accentColor: theme.infoAccent || palette.sub,
       },
       {
-        title: "たべもの",
+        title: "すきな もの",
         value: collectionZukanFoodText(subject),
         ...transformGeneratedRect({ x: fieldX, y: fieldY + fieldH + fieldGap, width: fieldW, height: fieldH }),
         accentColor: theme.pages.right.accent,
       },
       {
-        title: "からだ",
+        title: "とくちょう",
         value: collectionZukanBodyText(subject),
         ...transformGeneratedRect({ x: fieldX, y: fieldY + (fieldH + fieldGap) * 2, width: fieldW, height: fieldH }),
         accentColor: palette.accent,
@@ -12666,7 +12667,37 @@ function collectionZukanCompactText(value, fallback = "しらべています", m
   return `${text.slice(0, Math.max(1, maxChars - 3))}...`;
 }
 
+// 図鑑 detail の手書き override テーブル (entry id → clean flavor text)。
+// map 的ハードコードを排し data 駆動に寄せる土台。今回は bug_hachi のみ埋め、
+// 他エントリは従来の habitat/food/body/fact fallback を継続する (段階展開)。
+const COLLECTION_ZUKAN_DETAIL_TEXT_BY_ID = {
+  bug_hachi: {
+    found: "おはなや きの まわり",
+    like: "あまい はなの みつ",
+    body: "きいろと くろの しましま",
+    memo: "はなから はなへ とびながら、かふんを はこんでいるんだって。",
+  },
+};
+
+function collectionZukanFoundText(subject) {
+  const override = COLLECTION_ZUKAN_DETAIL_TEXT_BY_ID[subject?.id || ""];
+  if (override?.found) {
+    return collectionZukanCompactText(override.found, "しらべています", 30);
+  }
+  return collectionZukanCompactText(subject?.habitat, "しらべています", 30);
+}
+
+function collectionZukanRarityStars(subject) {
+  const raw = Number(subject?.rarity);
+  const numeric = Number.isFinite(raw) ? raw : 1;
+  return Math.max(1, Math.min(2, Math.round(numeric)));
+}
+
 function collectionZukanFoodText(subject) {
+  const override = COLLECTION_ZUKAN_DETAIL_TEXT_BY_ID[subject?.id || ""];
+  if (override?.like) {
+    return collectionZukanCompactText(override.like, "しらべています", 28);
+  }
   const specific = COLLECTION_ZUKAN_FOOD_TEXT_BY_ID[subject?.id || ""];
   if (specific) {
     return specific;
@@ -12738,6 +12769,10 @@ function collectionZukanExtractFoodText(fact) {
 }
 
 function collectionZukanBodyText(subject) {
+  const override = COLLECTION_ZUKAN_DETAIL_TEXT_BY_ID[subject?.id || ""];
+  if (override?.body) {
+    return collectionZukanCompactText(override.body, "しらべています", 30);
+  }
   const direct = collectionZukanFirstText(subject?.body, subject?.bodyText, subject?.shape, subject?.feature, subject?.features);
   if (direct) {
     return collectionZukanCompactText(direct, "しらべています", 30);
@@ -12746,12 +12781,20 @@ function collectionZukanBodyText(subject) {
 }
 
 function collectionZukanMemoTitle(subject) {
-  return subject?.guideSpeaker === "ポノ" ? "ポノメモ" : "メモ";
+  const speaker = subject?.guideSpeaker;
+  if (speaker === "ふくろう博士") {
+    return "ふくろう博士のメモ";
+  }
+  if (speaker === "ポノ") {
+    return "ポノメモ";
+  }
+  return "メモ";
 }
 
 function collectionZukanMemoText(subject) {
+  const override = COLLECTION_ZUKAN_DETAIL_TEXT_BY_ID[subject?.id || ""];
   return collectionZukanCompactText(
-    collectionZukanFirstText(subject?.memo, subject?.fact, subject?.guideText),
+    collectionZukanFirstText(override?.memo, subject?.memo, subject?.fact, subject?.guideText),
     "きになる ところを じっくり みてみよう。",
     64,
   );
@@ -12820,7 +12863,48 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
     y + 106 * scaleY + zukanTextOffset("detailSubtitleY"),
     width - 520 * scaleX,
   );
+  drawCollectionZukanRarityStars(ctx, header, scaleX, scaleY);
   ctx.restore();
+}
+
+// rarity を森トーンの星でヘッダー右下に可視化 (★1=どんぐり色 / ★2=金)。
+// tier=free/found 由来の rarity 数値を子供にも伝わる形にする。star.png は使わず canvas 描画。
+function drawCollectionZukanRarityStars(ctx, header, scaleX = 1, scaleY = 1) {
+  const { x, y, width } = header;
+  const count = Math.max(1, Math.min(2, Math.round(Number(header.rarity) || 1)));
+  const fill = count >= 2 ? "#f2c14e" : "#c89b5a";
+  const stroke = count >= 2 ? "rgba(176, 132, 46, 0.65)" : "rgba(140, 104, 60, 0.6)";
+  const radius = 13 * scaleX;
+  const gap = radius * 2.5;
+  const cy = y + 118 * scaleY;
+  const rightEdge = x + width - 44 * scaleX;
+  ctx.save();
+  for (let i = 0; i < count; i += 1) {
+    const cx = rightEdge - (count - 1 - i) * gap;
+    drawCanvasStarPath(ctx, cx, cy, radius, radius * 0.46, 5);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawCanvasStarPath(ctx, cx, cy, outerRadius, innerRadius, points = 5) {
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i += 1) {
+    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+    const angle = -Math.PI / 2 + (i * Math.PI) / points;
+    const px = cx + Math.cos(angle) * radius;
+    const py = cy + Math.sin(angle) * radius;
+    if (i === 0) {
+      ctx.moveTo(px, py);
+    } else {
+      ctx.lineTo(px, py);
+    }
+  }
+  ctx.closePath();
 }
 
 function drawCollectionZukanIllustrationSlot(ctx, rect, found, theme) {
@@ -12945,14 +13029,16 @@ function drawCollectionZukanMemoCard(ctx, palette, theme, memo) {
     drawCanvasRoundedRect(ctx, x + 34, y + 28, 178, 50, 20);
     ctx.fill();
   }
+  // ふくろう博士のメモ 等の長いタイトルはラベル pill 幅に収まるよう font/最大幅を縮小 (squish 回避)。
+  const memoTitleLong = String(memo.title || "").length > 5;
   ctx.fillStyle = "#ffffff";
-  ctx.font = '900 24px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+  ctx.font = `900 ${memoTitleLong ? 20 : 24}px "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif`;
   ctx.textAlign = "center";
   ctx.fillText(
     memo.title,
     x + 123 * scaleX + zukanTextOffset("detailMemoTitleX"),
     y + 61 * scaleY + zukanTextOffset("detailMemoTitleY"),
-    146 * scaleX,
+    (memoTitleLong ? 190 : 146) * scaleX,
   );
 
   if (!generatedTemplate) {
