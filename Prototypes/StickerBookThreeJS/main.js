@@ -12687,10 +12687,20 @@ function collectionZukanFoundText(subject) {
   return collectionZukanCompactText(subject?.habitat, "しらべています", 30);
 }
 
+// rarity を星数 (1 or 2) に変換。数値 (content_plan.json の 1/2/3) と
+// 文字列 enum ("normal"/"super"/"rare") の両対応。文字列を Number() すると NaN で
+// 常に ★1 に落ちる HIGH バグ (subject.rarity="super") を根治する。
+function zukanStarCount(r) {
+  if (typeof r === "number" && Number.isFinite(r)) return Math.max(1, Math.min(2, Math.round(r)));
+  if (typeof r === "string") {
+    const s = r.toLowerCase();
+    if (s === "super" || s === "rare" || s === "2" || s === "3") return 2;
+  }
+  return 1;
+}
+
 function collectionZukanRarityStars(subject) {
-  const raw = Number(subject?.rarity);
-  const numeric = Number.isFinite(raw) ? raw : 1;
-  return Math.max(1, Math.min(2, Math.round(numeric)));
+  return zukanStarCount(subject?.rarity);
 }
 
 function collectionZukanFoodText(subject) {
@@ -12871,7 +12881,7 @@ function drawCollectionZukanDetailHeader(ctx, palette, theme, header) {
 // tier=free/found 由来の rarity 数値を子供にも伝わる形にする。star.png は使わず canvas 描画。
 function drawCollectionZukanRarityStars(ctx, header, scaleX = 1, scaleY = 1) {
   const { x, y, width } = header;
-  const count = Math.max(1, Math.min(2, Math.round(Number(header.rarity) || 1)));
+  const count = zukanStarCount(header.rarity);
   const fill = count >= 2 ? "#f2c14e" : "#c89b5a";
   const stroke = count >= 2 ? "rgba(176, 132, 46, 0.65)" : "rgba(140, 104, 60, 0.6)";
   const radius = 13 * scaleX;
