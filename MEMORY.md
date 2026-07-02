@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-02T01:59:51Z - LP hero microfix: labels 1行維持 + narrative <br> + 「よ！」 orphan 解消 + CACHE_VERSION 1885→1886
+- **タスク**: LP hero microfix: labels 1行維持 + narrative <br> + 「よ！」 orphan 解消 + CACHE_VERSION 1885→1886
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 11
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Agent": 10, "Bash": 1}
+- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-02T01:37:12Z - LP hero に絵本由来ストーリー説明を追加、COMING SOON バナー削除、あいことば表記統一、CACHE_VERSION 1885 バンプ
 - **タスク**: LP hero に絵本由来ストーリー説明を追加、COMING SOON バナー削除、あいことば表記統一、CACHE_VERSION 1885 バンプ
 - **結果**: 成功
@@ -238,19 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-01T21:42:26Z - プロフィールモーダルのスマホ縦画面はみ出し修正 (overflow-y:auto + safe-area max-height + phone media query)
 - **タスク**: プロフィールモーダルのスマホ縦画面はみ出し修正 (overflow-y:auto + safe-area max-height + phone media query)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 5
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Agent": 5}
-- **サマリ**: 成功タスク: 0個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-01T21:42:09Z - bento しきりモードで非しきりアイテムを半透明化 (leaf-mode precedent 準拠)
-- **タスク**: bento しきりモードで非しきりアイテムを半透明化 (leaf-mode precedent 準拠)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 5

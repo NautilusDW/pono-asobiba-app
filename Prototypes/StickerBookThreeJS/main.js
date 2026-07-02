@@ -5782,7 +5782,8 @@ function updateStickerTutorialTraySilhouettes(enabled = false, withTarget = enab
   document.body.classList.toggle("is-sticker-tutorial-tray-silhouette", Boolean(enabled));
   const activeStickers = enabled && withTarget ? stickerTutorialPickActiveStickers() : [];
   const activeIds = new Set(activeStickers.map((s) => s.id));
-  collectionStickerTrayItems?.querySelectorAll("[data-sticker-tray-id]").forEach((button) => {
+  // v1887: locked (未所有 tray カード) は tutorial target 対象外。
+  collectionStickerTrayItems?.querySelectorAll('[data-sticker-tray-id]:not([data-sticker-locked="1"])').forEach((button) => {
     button.classList.toggle("is-tutorial-target-sticker", activeIds.has(button.dataset.stickerTrayId));
   });
 }
@@ -5853,6 +5854,37 @@ function filterStickerOptionsForAvailability(sourceOptions) {
     return [];
   }
   return options.filter((sticker) => ownedIds.has(sticker.id));
+}
+
+// v1887: シール棚 tray への「未所有シール」表示用パーティション。
+// stickerOptions (owned のみ) はそのまま据置し、tray 描画時にのみ locked を末尾に付加する。
+// debug=all-stickers ON、緊急切り戻し flag ON、カタログ空、のいずれかで locked=[] を返す。
+function partitionStickerOptionsForTray(sourceOptions) {
+  const options = (Array.isArray(sourceOptions) ? sourceOptions : [])
+    .filter((sticker) => sticker?.id && sticker.assetUrl);
+  if (!options.length) {
+    return { owned: [], locked: [] };
+  }
+  if (window.PONO_DISABLE_LOCKED_TRAY === true) {
+    // 緊急切り戻し用フラグ: locked カード描画を全 skip し従来挙動に戻す。
+    const ownedIds = readDebugAllStickersEnabled() ? null : readOwnedStickerIds();
+    if (!ownedIds) return { owned: options, locked: [] };
+    return { owned: options.filter((s) => ownedIds.has(s.id)), locked: [] };
+  }
+  if (readDebugAllStickersEnabled()) {
+    return { owned: options, locked: [] };
+  }
+  const ownedIds = readOwnedStickerIds();
+  const owned = [];
+  const locked = [];
+  for (const sticker of options) {
+    if (ownedIds.has(sticker.id)) {
+      owned.push(sticker);
+    } else {
+      locked.push(sticker);
+    }
+  }
+  return { owned, locked };
 }
 
 function isStickerIdAvailable(stickerId) {
@@ -5941,7 +5973,10 @@ function pickNearbySuperSilhouetteIds(mainStickerId, ownedSet) {
 
 function updateRaritySuperSilhouettes(enabled, mainStickerId) {
   if (!collectionStickerTrayItems) return;
-  const cards = collectionStickerTrayItems.querySelectorAll(".sticker-tray-card");
+  // v1887: locked (未所有 tray カード) は SR silhouette 対象外 (常に is-locked-silhouette 優先)。
+  const cards = collectionStickerTrayItems.querySelectorAll(
+    '.sticker-tray-card:not([data-sticker-locked="1"])',
+  );
   if (!enabled || !mainStickerId) {
     cards.forEach((c) => c.classList.remove("is-rarity-super-silhouette"));
     return;
@@ -6272,6 +6307,12 @@ function setupCollectionStickerTray() {
     }
     const stickerButton = event.target.closest("[data-sticker-tray-id]");
     if (stickerButton && collectionStickerTray.contains(stickerButton)) {
+      // v1887: 未所有 (locked) カードはドラッグ不可 + 静かな吹き出しのみ。
+      if (stickerButton.dataset.stickerLocked === "1") {
+        event.preventDefault();
+        showStickerTrayLockHint(stickerButton);
+        return;
+      }
       if (activeAlbumMode !== "collection" && activeSurface === "inside") {
         event.preventDefault();
       }
@@ -6452,7 +6493,10 @@ function renderStickerThumbnailTray() {
   fragment.append(title);
 
   disconnectStickerTrayImageObserver();
-  if (!stickerOptions.length) {
+  // v1887: 所有シールと未所有シールを分けて描画。
+  // owned は従来どおり (先頭、eager 対象)、locked は末尾に薄い森トーンの silhouette で並べる。
+  const { locked: lockedForTray } = partitionStickerOptionsForTray(allStickerOptions);
+  if (!stickerOptions.length && !lockedForTray.length) {
     const empty = document.createElement("span");
     empty.className = "sticker-tray-empty";
     empty.textContent = "シールは まだありません";
@@ -6499,6 +6543,10 @@ function renderStickerThumbnailTray() {
     button.append(icon);
     fragment.append(button);
   }
+  // v1887: locked カード (未所有) をカタログ順で末尾に append。全 lazy load。
+  for (const sticker of lockedForTray) {
+    fragment.append(renderLockedStickerTrayCard(sticker));
+  }
   collectionStickerTrayItems.replaceChildren(fragment);
   setupStickerTrayImageLazyLoading();
   if (stickerTutorialState) {
@@ -6511,6 +6559,81 @@ function renderStickerThumbnailTray() {
   }
   updateCollectionStickerTrayVisibility();
   updateStickerTrayCounter();
+}
+
+// v1887: 未所有シール用の tray カード。owned カードと同じ DOM 骨格に
+// data-sticker-locked="1" / aria-disabled / tabindex=-1 / is-locked-silhouette を付与。
+// 画像は全 lazy load (IntersectionObserver に載せる)。
+function renderLockedStickerTrayCard(sticker) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "collection-toc-card sticker-tray-card is-locked-silhouette";
+  button.dataset.stickerTrayId = sticker.id;
+  button.dataset.stickerLocked = "1";
+  button.draggable = false;
+  button.tabIndex = -1;
+  button.setAttribute("aria-disabled", "true");
+  const label = sticker.label || "シール";
+  button.setAttribute("aria-label", `${label} まだ もっていない`);
+  button.title = label;
+
+  const icon = document.createElement("span");
+  icon.className = "collection-toc-icon sticker-tray-icon";
+  icon.setAttribute("aria-hidden", "true");
+  const image = document.createElement("img");
+  image.className = "collection-toc-image";
+  image.alt = "";
+  image.dataset.src = sticker.assetUrl;
+  image.loading = "lazy";
+  image.fetchPriority = "low";
+  image.decoding = "async";
+  image.draggable = false;
+  icon.append(image);
+  button.append(icon);
+  return button;
+}
+
+// v1887: 未所有シールを触った時の静かな吹き出し。
+// 「まだ もっていないよ」 を 1500ms fade で表示、 同 sticker への再表示は 800ms debounce。
+// チュートリアル中は owlHint と衝突するので no-op。
+let stickerTrayLockHintLastAt = 0;
+let stickerTrayLockHintLastId = "";
+let stickerTrayLockHintTimer = 0;
+function showStickerTrayLockHint(button) {
+  if (!button || stickerTutorialState) return;
+  const now = performance.now();
+  const id = button.dataset.stickerTrayId || "";
+  if (id && id === stickerTrayLockHintLastId && now - stickerTrayLockHintLastAt < 800) {
+    return;
+  }
+  stickerTrayLockHintLastAt = now;
+  stickerTrayLockHintLastId = id;
+  const host = collectionStickerTray || document.body;
+  if (!host) return;
+  // 既存のヒントがあれば片付ける
+  host.querySelectorAll(".sticker-tray-lock-hint").forEach((el) => el.remove());
+  window.clearTimeout(stickerTrayLockHintTimer);
+  const hint = document.createElement("span");
+  hint.className = "sticker-tray-lock-hint";
+  hint.textContent = "まだ もっていないよ";
+  hint.setAttribute("role", "status");
+  hint.setAttribute("aria-live", "polite");
+  // 位置: button の上端付近を狙う (host が position:relative 前提でなくても fixed で計算)。
+  const rect = button.getBoundingClientRect();
+  hint.style.position = "fixed";
+  hint.style.left = `${Math.round(rect.left + rect.width / 2)}px`;
+  hint.style.top = `${Math.round(rect.top - 8)}px`;
+  hint.style.transform = "translate(-50%, -100%)";
+  hint.style.opacity = "0";
+  document.body.append(hint);
+  // fade in on next frame
+  window.requestAnimationFrame(() => {
+    hint.style.opacity = "1";
+  });
+  stickerTrayLockHintTimer = window.setTimeout(() => {
+    hint.style.opacity = "0";
+    window.setTimeout(() => hint.remove(), 220);
+  }, 1500);
 }
 
 function setupStickerTrayImageLazyLoading() {
@@ -6610,7 +6733,8 @@ function updateStickerTrayCounter() {
   if (!visible) {
     return;
   }
-  const cards = [...collectionStickerTrayItems.querySelectorAll("[data-sticker-tray-id]")];
+  // v1887: locked (未所有) カードはカウンタの分母/分子どちらにも入れない。
+  const cards = [...collectionStickerTrayItems.querySelectorAll('[data-sticker-tray-id]:not([data-sticker-locked="1"])')];
   if (!cards.length) {
     stickerTrayCounter.textContent = "0 / 0";
     stickerTrayCounter.setAttribute("aria-label", "シールは ありません");
@@ -6648,6 +6772,10 @@ function handleStickerTrayPointerDown(event) {
   }
   const button = event.target.closest("[data-sticker-tray-id]");
   if (!button || !collectionStickerTray?.contains(button)) {
+    return;
+  }
+  // v1887: locked (未所有) カードはドラッグ完全無効化。pointer capture / hold timer もセットしない。
+  if (button.dataset.stickerLocked === "1") {
     return;
   }
   const icon = event.target.closest(".sticker-tray-icon");
