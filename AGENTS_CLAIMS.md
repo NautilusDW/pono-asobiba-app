@@ -70,7 +70,6 @@
 - 2026-06-29 10:34 - by Claude - [batch:921-lp-age-label-upper-limit-removal] - index.html, AGENTS_CLAIMS.md - LP hero CTA 横の推奨年齢 3〜6歳 → 3歳〜 (上限撤廃)
 - 2026-07-02 12:00 - by Claude - [batch:931-sticker-book-engagement-research-v2] - docs/**, AGENTS_CLAIMS.md - sticker-book engagement research v2 + docs
 - 2026-07-02 - by Claude - [batch:932-tray-gray-silhouette-phase1] - tmp/tray_baseline/**, AGENTS_CLAIMS.md - tray gray silhouette 実装 (第一弾)
-- 2026-07-02 13:20 - by Claude - [batch:1043-shop-purchase-bgm-and-se] - play.html, shop/index.html, js/donguri-shop.js, assets/audio/**, sw.js, AGENTS_CLAIMS.md - 商品購入時 BGM 途切れ修正 (継続再生保証) + 購入 SE 追加 (rarity 別 SE、既存 SFX 再利用)
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
