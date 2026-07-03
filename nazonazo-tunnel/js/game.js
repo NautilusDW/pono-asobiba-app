@@ -294,6 +294,7 @@ const FORCERARE=(location.hash==="#fast");
 const TRAIN_DRIVER_ID="bear";
 const PORTAL_EDIT_ENABLED=new URLSearchParams(location.search).has("portalEdit");
 const PORTAL_TUNING_KEY="pono_nazonazo_portal_tuning_v1";
+const PORTAL_POINT_MIN=-120,PORTAL_POINT_MAX=220;
 const PORTAL_DEFAULTS={
  schemaVersion:1,
  gateScale:1,
@@ -491,7 +492,7 @@ function cleanPortalPoints(points,fallback){
  const out=[];
  points.slice(0,12).forEach(p=>{
   if(!Array.isArray(p)||p.length<2)return;
-  const x=clamp(Number(p[0]),0,100),y=clamp(Number(p[1]),0,100);
+  const x=clamp(Number(p[0]),PORTAL_POINT_MIN,PORTAL_POINT_MAX),y=clamp(Number(p[1]),PORTAL_POINT_MIN,PORTAL_POINT_MAX);
   if(Number.isFinite(x)&&Number.isFinite(y))out.push([x,y]);
  });
  return out.length>=3?out:fb;
@@ -556,7 +557,7 @@ function parsePortalPointText(text,fallback){
   const m=pair.split(",");
   if(m.length<2)return;
   const x=Number(m[0]),y=Number(m[1]);
-  if(Number.isFinite(x)&&Number.isFinite(y))pts.push([clamp(x,0,100),clamp(y,0,100)]);
+  if(Number.isFinite(x)&&Number.isFinite(y))pts.push([clamp(x,PORTAL_POINT_MIN,PORTAL_POINT_MAX),clamp(y,PORTAL_POINT_MIN,PORTAL_POINT_MAX)]);
  });
  return cleanPortalPoints(pts,fallback);
 }
@@ -624,11 +625,11 @@ function initPortalEditor(){
   portalRange("背景を切り替える位置 (vw)","swapOffsetVw","0","100","1")+
   portalRange("入口停止時間 (ms)","pauseMs","120","1800","20")+
   '<label>選択中マスクの点 (x,y %)</label><textarea id="portalMaskText" spellcheck="false"></textarea>'+
-  '<div class="row"><button type="button" id="portalAddPoint">点を追加</button><button type="button" id="portalRemovePoint">点を削除</button><button type="button" id="portalResetMask">マスクを戻す</button></div>'+
+  '<div class="row"><button type="button" id="portalNudgeLeft">←</button><button type="button" id="portalNudgeUp">↑</button><button type="button" id="portalNudgeDown">↓</button><button type="button" id="portalNudgeRight">→</button><button type="button" id="portalAddPoint">点を追加</button><button type="button" id="portalRemovePoint">点を削除</button><button type="button" id="portalResetMask">マスクを戻す</button></div>'+
   '<div class="row"><button type="button" id="portalResume">トンネルへ進む</button><button type="button" id="portalCopyJson">JSONコピー</button><button type="button" id="portalResetAll">全部リセット</button></div>'+
-  '<div class="note">ピンクの点をドラッグして、列車より前に被せる範囲を調整できます。値はこの端末の localStorage に保存されます。</div>';
+  '<div class="note">ピンクの面をドラッグするとマスク全体、点をドラッグすると形を調整できます。点は画像の外側にも動かせます。値はこの端末の localStorage に保存されます。</div>';
  $("app").appendChild(panel);
- portalEditor={mode:"in",selectedIdx:0,dragIdx:null,panel};
+ portalEditor={mode:"in",selectedIdx:0,dragIdx:null,dragMode:null,dragStartX:0,dragStartY:0,dragStartPoints:null,panel};
  panel.querySelectorAll("[data-portal-mode]").forEach(b=>b.addEventListener("click",()=>{
   portalEditor.mode=b.dataset.portalMode;
   portalEditor.selectedIdx=0;
@@ -651,6 +652,10 @@ function initPortalEditor(){
   savePortalTuning(true);
   drawPortalEditorOverlay();
  });
+ panel.querySelector("#portalNudgeLeft").addEventListener("click",()=>translatePortalMask(-6,0));
+ panel.querySelector("#portalNudgeRight").addEventListener("click",()=>translatePortalMask(6,0));
+ panel.querySelector("#portalNudgeUp").addEventListener("click",()=>translatePortalMask(0,-6));
+ panel.querySelector("#portalNudgeDown").addEventListener("click",()=>translatePortalMask(0,6));
  panel.querySelector("#portalAddPoint").addEventListener("click",()=>{
   const key=portalMaskKey(),pts=portalTuning[key];
   const idx=clamp(portalEditor.selectedIdx||0,0,pts.length-1);
@@ -712,24 +717,58 @@ function drawPortalEditorOverlay(){
   html+='<circle class="portal-edit-point" data-idx="'+i+'" cx="'+(r.left+r.width*p[0]/100)+'" cy="'+(r.top+r.height*p[1]/100)+'" r="'+(i===portalEditor.selectedIdx?8:6)+'"></circle>';
  });
  portalEditOverlay.innerHTML=html;
+ const poly=portalEditOverlay.querySelector(".portal-edit-poly");
+ if(poly)poly.addEventListener("pointerdown",startPortalShapeDrag);
  portalEditOverlay.querySelectorAll(".portal-edit-point").forEach(c=>c.addEventListener("pointerdown",startPortalPointDrag));
 }
 function startPortalPointDrag(ev){
  if(!portalEditor)return;
  portalEditor.dragIdx=Number(ev.currentTarget.dataset.idx);
+ portalEditor.dragMode="point";
  portalEditor.selectedIdx=portalEditor.dragIdx;
  ev.preventDefault();
  drawPortalEditorOverlay();
 }
+function startPortalShapeDrag(ev){
+ if(!portalEditor)return;
+ portalEditor.dragIdx=null;
+ portalEditor.dragMode="shape";
+ portalEditor.dragStartX=ev.clientX;
+ portalEditor.dragStartY=ev.clientY;
+ portalEditor.dragStartPoints=clonePortalTuning(portalTuning[portalMaskKey()]);
+ ev.preventDefault();
+}
+function translatePortalMask(dx,dy){
+ if(!portalEditor)return;
+ const key=portalMaskKey();
+ portalTuning[key]=portalTuning[key].map(p=>[
+  clamp(p[0]+dx,PORTAL_POINT_MIN,PORTAL_POINT_MAX),
+  clamp(p[1]+dy,PORTAL_POINT_MIN,PORTAL_POINT_MAX)
+ ]);
+ applyPortalTuning();savePortalTuning();syncPortalEditorPanel();drawPortalEditorOverlay();
+}
 function movePortalPoint(ev){
- if(!portalEditor||portalEditor.dragIdx===null)return;
+ if(!portalEditor||!portalEditor.dragMode)return;
  const occ=activePortalOcc();
  if(!occ)return;
  const r=occ.getBoundingClientRect();
- const x=clamp((ev.clientX-r.left)/r.width*100,0,100);
- const y=clamp((ev.clientY-r.top)/r.height*100,0,100);
  const pts=portalTuning[portalMaskKey()];
- if(pts[portalEditor.dragIdx]){
+ if(portalEditor.dragMode==="shape"&&portalEditor.dragStartPoints){
+  const dx=(ev.clientX-portalEditor.dragStartX)/r.width*100;
+  const dy=(ev.clientY-portalEditor.dragStartY)/r.height*100;
+  portalTuning[portalMaskKey()]=portalEditor.dragStartPoints.map(p=>[
+   clamp(p[0]+dx,PORTAL_POINT_MIN,PORTAL_POINT_MAX),
+   clamp(p[1]+dy,PORTAL_POINT_MIN,PORTAL_POINT_MAX)
+  ]);
+  applyPortalTuning();
+  savePortalTuning(true);
+  syncPortalEditorPanel();
+  drawPortalEditorOverlay();
+  return;
+ }
+ const x=clamp((ev.clientX-r.left)/r.width*100,PORTAL_POINT_MIN,PORTAL_POINT_MAX);
+ const y=clamp((ev.clientY-r.top)/r.height*100,PORTAL_POINT_MIN,PORTAL_POINT_MAX);
+ if(portalEditor.dragIdx!==null&&pts[portalEditor.dragIdx]){
   pts[portalEditor.dragIdx]=[x,y];
   applyPortalTuning();
   savePortalTuning(true);
@@ -738,8 +777,10 @@ function movePortalPoint(ev){
  }
 }
 function stopPortalPoint(){
- if(!portalEditor||portalEditor.dragIdx===null)return;
+ if(!portalEditor||!portalEditor.dragMode)return;
  portalEditor.dragIdx=null;
+ portalEditor.dragMode=null;
+ portalEditor.dragStartPoints=null;
  savePortalTuning();
 }
 function saveGame(){
