@@ -1070,7 +1070,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
   else if (bgmEnabled) { bgm.play().catch(() => {}); }
 });
-window.addEventListener('blur',  () => bgm.pause());
+window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
 window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 
 initMenu({

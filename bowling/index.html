@@ -250,7 +250,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgmEl.pause(); }
   else if (bgmEnabled) { bgmEl.play().catch(() => {}); }
 });
-window.addEventListener('blur',  () => bgmEl.pause());
+window.addEventListener('blur',  () => { if (!document.hidden) return; bgmEl.pause(); });
 window.addEventListener('focus', () => { if (bgmEnabled) bgmEl.play().catch(() => {}); });
 
 function showTutorial() {

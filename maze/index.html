@@ -3816,7 +3816,7 @@ document.addEventListener('visibilitychange', function() {
   if (document.hidden) _mzPauseAllAudio();
   else _mzResumeAudioIfActive();
 });
-window.addEventListener('blur',    _mzPauseAllAudio);
+window.addEventListener('blur', () => { if (!document.hidden) return; _mzPauseAllAudio(); });
 window.addEventListener('focus',   _mzResumeAudioIfActive);
 window.addEventListener('pagehide', _mzPauseAllAudio);  // iOS Safari 対策 (アプリスイッチ)
 window.addEventListener('pageshow', _mzResumeAudioIfActive);

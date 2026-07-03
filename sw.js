@@ -565,7 +565,24 @@
 // v1910: ガチャに Haptics 5 シーン (gachaTurn1_2 / gachaTurn3 / capsuleCrack / rareBadgePop / superBadgePop) + DOM particle burst (rare=12粒90°扇 / super=20粒360°、 reveal 瞬間に .daily-gacha-shell 直下へ spawn) を拡張。 common/haptics.js の PATTERNS に 5 key 追加 + fire() を number[] 対応、 play.html は capture.js の後に haptics.js を defer 読込、 pulseDailyGachaHaptic を Haptics 経由に統一 (bare vibrate fallback 残す)、 reveal timer で capsuleCrack + spawnGachaParticles、 openDelay+420ms で rare/super badge pop haptic。 CSS/JS のみ変更、 localStorage/schema 無影響 (opt-out: pono_haptics_off / pono_particles_off / prefers-reduced-motion)。play.html PAGE_CACHE_VERSION と同期。
 // v1914: Bento batch:1046 — 「はっぱ」を action-row から タブに移動 (side step で [カップ/はっぱ/しきり/ピック])、 タブ切替時に armed を必ず解除 (code-review fix a)。 編集パネルから 'おかずを かえる'/一般 'けす' を削除 (leaf 専用)。 cup fallback を 0.30/0.70 対称 2x2 に、 4 box の maskRel.x を対称化。 KV rewrite payload を scratchpad に用意 (POST /api/bento/mask-defaults 用)。 play.html PAGE_CACHE_VERSION と同期。
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1944;
+const CACHE_VERSION = 1946;
+// v1946: v1945 CrossReview HIGH 潰し込み。 maze/index.html (L3819 window.blur→_mzPauseAllAudio) と
+// bento/kitchen.html (L7598 window.blur→stopAllKitchenAmbient(120)) にも同型の iOS 疑似 blur バグ
+// (URL バー / キーボード / 通知 / モーダル focus 遷移で BGM/環境音が停止する) が残存していたため、
+// 両ハンドラー本体先頭に `if (!document.hidden) return;` を挿入し v1944 oto / v1945 の 9 games と
+// 同一ポリシーに横展開。 focus 側は既存 (_mzResumeAudioIfActive / refreshKitchenAmbientForVisibility)
+// を触らず、 visibilitychange:hidden + pagehide 経路の pause 契約は維持。 CACHE_VERSION 1945→1946 +
+// play.html PAGE_CACHE_VERSION 同期。
+// v1945: iOS 疑似 blur (URL バー / キーボード / 通知 / モーダル focus 遷移) で BGM が意図せず停止する
+// 残存経路を潰す。 aquarium/breakout/bowling/drawing/room/slide/writing/puzzle の window.blur
+// ハンドラー本体の先頭に `if (!document.hidden) return;` を挿入し、 本物の app switch
+// (visibilitychange:hidden が先に発火 → document.hidden===true) の時だけ BGM を pause する契約に統一
+// (v1944 の oto/index.html と同ポリシー)。 writing/index.html は storyboard blur (_sbOnBlur named
+// wrapper 経由で removeEventListener 対称性維持) + main bgm blur の 2 箇所、 writing/simple.html は
+// _pauseBgmForInactive を inline wrapper でガード (visibilitychange/pagehide 経路は不変)、 puzzle は
+// main.js 側の blur。 bubble/index.html は blur ハンドラーが存在しないため対象外。 focus 側は
+// 触らず、 共通 clearFocusInactiveIfVisible / visibilitychange:visible の replay 経路に委譲。
+// play.html PAGE_CACHE_VERSION と同期。
 // v1944: BGM 復帰不能修正 v1943 のクロスレビュー HIGH 潰し込み。 (1) common/preload-helper.js を
 // CRITICAL_ASSETS_SCRIPTS に追加して CACHE_VERSION bump で確実に precache 更新 (network-first
 // 頼みからの脱却)、 (2) pauseAll で「再生中→hidden」 の要素に data-pono-was-playing タグを付与

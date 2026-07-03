@@ -11292,8 +11292,11 @@ function _showStoryboard(scenes, onDone) {
     } catch (e) {}
   }
   function _sbVisHandler() { if (document.hidden) _sbOnHide(); else _sbOnShow(); }
+  // v1945: iOS 疑似 blur (URL バー / キーボード / 通知 / モーダル focus 遷移) は document.hidden===false のまま blur だけ発火するので無視。
+  // 本物の app switch は visibilitychange:hidden が必ず先に発火するのでそちらで拾える。
+  function _sbOnBlur() { if (!document.hidden) return; _sbOnHide(); }
   document.addEventListener('visibilitychange', _sbVisHandler);
-  window.addEventListener('blur',  _sbOnHide);
+  window.addEventListener('blur',  _sbOnBlur);
   window.addEventListener('focus', _sbOnShow);
   function _sbCleanup() {
     try { sbAudio.pause(); sbAudio.src = ''; } catch (e) {}
@@ -11303,7 +11306,7 @@ function _showStoryboard(scenes, onDone) {
     try { if (_sbSrcNode) _sbSrcNode.disconnect(); } catch (e) {}
     try { if (sbAudio.parentNode) sbAudio.parentNode.removeChild(sbAudio); } catch (e) {}
     document.removeEventListener('visibilitychange', _sbVisHandler);
-    window.removeEventListener('blur',  _sbOnHide);
+    window.removeEventListener('blur',  _sbOnBlur);
     window.removeEventListener('focus', _sbOnShow);
     try { window._storyboardActive = false; } catch (e) {}
   }
@@ -15452,7 +15455,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
   else if (bgmEnabled && !window._storyboardActive) { bgm.play().catch(() => {}); }
 });
-window.addEventListener('blur',  () => bgm.pause());
+window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
 window.addEventListener('focus', () => {
   if (bgmEnabled && !window._storyboardActive) bgm.play().catch(() => {});
 });

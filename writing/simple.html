@@ -1055,7 +1055,7 @@ document.addEventListener('visibilitychange', function() {
   if (document.hidden) _pauseBgmForInactive();
   else _resumeBgmIfEnabled();
 });
-window.addEventListener('blur',  _pauseBgmForInactive);
+window.addEventListener('blur',  function(){ if (!document.hidden) return; _pauseBgmForInactive(); });
 window.addEventListener('focus', _resumeBgmIfEnabled);
 window.addEventListener('pagehide', _pauseBgmForInactive);
 window.addEventListener('pageshow', _resumeBgmIfEnabled);
