@@ -6015,16 +6015,26 @@ function _silenceOtoAudioForInactive(reason) {
 }
 function _resumeOtoAudioAfterInactive() {
   if (document.hidden) return;
-  if (document.hasFocus && !document.hasFocus()) return;
+  // v1943: hasFocus() 早期 return を撤去。 iOS Safari の hasFocus() false race で
+  // 前景復帰後も永久 inactive になる事故 (bug F) を防ぐ。判定は document.hidden のみ。
+  // v1944: tutorial / acorn modal 中の resume 抑止は各 handler 側で行うため、 本関数は
+  // 呼ばれたら常に BGM 復帰させる純関数として扱う (責務分離)。
   _otoWindowInactive = false;
   if (_ac && _ac.state === 'suspended') _ac.resume().catch(function(){});
   if (_otoBgmEnabled() && _otoBgmState.desiredKey) {
     _playOtoBgm(_otoBgmState.desiredKey, { fadeMs: 260 });
   }
 }
+// v1944 (correctness H3): tutorial / acorn modal 中は resume 抑止。 3 handler で
+// 同一ガードを繰り返さないよう helper で集約。
+function _otoShouldResumeAfterInactive() {
+  if (document.hidden) return false;
+  if (_otoTutorialState || _otoAcornModalActive) return false;
+  return true;
+}
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) _silenceOtoAudioForInactive('visibility');
-  else _resumeOtoAudioAfterInactive();
+  else if (_otoShouldResumeAfterInactive()) _resumeOtoAudioAfterInactive();
 });
 window.addEventListener('blur', function() {
   // batch913 Fix-A: PonoAcornModal の focus 操作で一瞬発火する偽 'blur' で
@@ -6032,10 +6042,25 @@ window.addEventListener('blur', function() {
   // で確実に拾われるので、 こちらを skip しても安全。
   // tutorial 中も同様に、 DOM 操作起因の偽 'blur' で tutorial BGM が始まらない
   // 事故を防ぐ。 本物の app switch は visibilitychange 側で拾う。
+  // v1944 (cross-file H1): 共通ヘルパーの fix (A) 「iOS 疑似 blur を完全無視」 と整合。
+  // 本物の app switch は必ず document.hidden===true になるので、 hidden 時のみ拾う。
+  if (!document.hidden) return;
   if (_otoAcornModalActive || _otoTutorialState) return;
   _silenceOtoAudioForInactive('blur');
 });
 window.addEventListener('focus', function() {
+  if (!_otoShouldResumeAfterInactive()) return;
+  _otoWindowInactive = false;
+  _resumeOtoAudioAfterInactive();
+});
+// v1943: bfcache cold restore と共通 resume event を購読して BGM 復帰。
+window.addEventListener('pageshow', function() {
+  if (!_otoShouldResumeAfterInactive()) return;
+  _otoWindowInactive = false;
+  _resumeOtoAudioAfterInactive();
+});
+window.addEventListener('PonoAudioVisibilityResume', function() {
+  if (!_otoShouldResumeAfterInactive()) return;
   _otoWindowInactive = false;
   _resumeOtoAudioAfterInactive();
 });

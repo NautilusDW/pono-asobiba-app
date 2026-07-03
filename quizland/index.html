@@ -5084,13 +5084,44 @@ function toggleBGM() {
   else stopBGM();
 }
 
+// v1944 (iH4): audioCtx.resume() の Promise を await してから bgmAudio.play() する。
+// AC が 'suspended' の間に play() すると HTMLMediaElement は playing になるが実出力は
+// silent (createMediaElementSource で AC を経由するため)。 iOS low power mode で resume
+// 完了に 200-500ms かかるケースで「復帰直後に無音」 症状が出るのを防ぐ。
+function _qzResumeBgmAfterVisible() {
+  if (document.hidden || !bgmEnabled || !bgmAudio) return;
+  try { ensureAudio(); } catch (_) {}
+  var launch = function () {
+    if (!bgmAudio) return;
+    var p = bgmAudio.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(function () {
+        try { window.PonoPreload && window.PonoPreload.scheduleBgmRetry(bgmAudio); } catch (_) {}
+      });
+    }
+  };
+  if (audioCtx && audioCtx.state === 'suspended') {
+    try {
+      var rp = audioCtx.resume();
+      if (rp && typeof rp.then === 'function') {
+        rp.then(launch, launch);
+        return;
+      }
+    } catch (_) {}
+  }
+  launch();
+}
+
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) {
     if (bgmAudio) bgmAudio.pause();
-  } else if (bgmEnabled && bgmAudio) {
-    bgmAudio.play().catch(function () {});
+  } else {
+    _qzResumeBgmAfterVisible();
   }
 });
+// v1943: bfcache cold restore / 共通 resume event で BGM 復帰。
+window.addEventListener('pageshow', function () { _qzResumeBgmAfterVisible(); });
+window.addEventListener('PonoAudioVisibilityResume', function () { _qzResumeBgmAfterVisible(); });
 window.addEventListener('pagehide', function () {
   if (bgmAudio) bgmAudio.pause();
 });

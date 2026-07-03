@@ -56,10 +56,55 @@
 
     var mediaEls = new Set();
     var audioContexts = new Set();
-    var inactiveByFocus = !!document.hidden;
+    // (E) 初期値 false 固定: bfcache cold restore で document.hidden=true でも
+    // 永久 inactive にしない。 visibilitychange で必要時に true になる。
+    var inactiveByFocus = false;
+    var replayAttempts = new WeakMap();
+    // v1944: 初回リトライは同期実行させる契約 (sync flag)。 gesture 経由の tryReplayMedia は
+    // sticky activation 済みの macrotask 内で play() を叩けば iOS Safari 14 系 / low power
+    // mode でも user-gesture 判定を通す。 2 回目以降は従来通り backoff (300/1000/3000ms)。
+    var REPLAY_DELAYS = [0, 300, 1000, 3000];
+    // v1944: blocked/was-playing 要素の件数を軽量トラッキング。
+    // pointerdown/touchstart など gesture 経路で「何も replay 対象が無い」 タップ時に
+    // audioContexts.forEach + mediaEls.forEach を丸ごとスキップして CPU/battery を守る。
+    var blockedMediaCount = 0;
 
     function isInactive() {
       return !!document.hidden || inactiveByFocus;
+    }
+
+    function isReplayTagged(el) {
+      try {
+        return !!(el && el.getAttribute && (
+          el.getAttribute('data-pono-blocked') === '1' ||
+          el.getAttribute('data-pono-was-playing') === '1'
+        ));
+      } catch (_) { return false; }
+    }
+    function tagBlocked(el) {
+      try {
+        if (!el || !el.setAttribute) return;
+        var was = isReplayTagged(el);
+        el.setAttribute('data-pono-blocked', '1');
+        if (!was) blockedMediaCount++;
+      } catch (_) {}
+    }
+    function tagWasPlaying(el) {
+      try {
+        if (!el || !el.setAttribute) return;
+        var was = isReplayTagged(el);
+        el.setAttribute('data-pono-was-playing', '1');
+        if (!was) blockedMediaCount++;
+      } catch (_) {}
+    }
+    function clearReplayTags(el) {
+      try {
+        if (!el || !el.removeAttribute) return;
+        var was = isReplayTagged(el);
+        el.removeAttribute('data-pono-blocked');
+        el.removeAttribute('data-pono-was-playing');
+        if (was && blockedMediaCount > 0) blockedMediaCount--;
+      } catch (_) {}
     }
 
     function blockedPlayResult() {
@@ -76,17 +121,125 @@
       return p;
     }
 
-    function clearFocusInactiveIfVisible() {
+    // v1944: options.sync=true で初回 attempt を同期実行 (setTimeout(0) を挟まない)。
+    // pointerdown/touchstart 経由の gesture 復帰時、 iOS Safari は macrotask に
+    // 移った時点で gesture context を失い NotAllowedError を返すため、
+    // 最初の 1 回だけは gesture callback 内で同期 play() を叩く。
+    //
+    // data-pono-force-paused contract (v1944 現在の運用):
+    //   - 「意図的抑止」 は bento (isMaskEditorAudioMuted) / oto (_otoTutorialState /
+    //     _otoAcornModalActive) が PonoAudioVisibilityResume ハンドラ内で gate する方式が正。
+    //   - data-pono-force-paused="1" を実際に SET する consumer は今のところ無い
+    //     (forward-compat スカフォールド、 将来 「音量トグル OFF で AC/media を
+    //     アクティブに suspend しておく」 実装が入る時のために予約)。 現状で読むだけ
+    //     の dead branch だが safety-net 側の respect を維持することで契約の一貫性を保つ。
+    function tryReplayMedia(el, options) {
+      if (!el) return;
+      try {
+        if (el.getAttribute && el.getAttribute('data-pono-force-paused') === '1') return;
+        if (!isReplayTagged(el)) return;
+      } catch (_) { return; }
+      var attempts = replayAttempts.get(el) || 0;
+      if (attempts >= REPLAY_DELAYS.length) {
+        clearReplayTags(el);
+        replayAttempts.delete(el);
+        return;
+      }
+      var delay = REPLAY_DELAYS[attempts];
+      replayAttempts.set(el, attempts + 1);
+      var sync = !!(options && options.sync) && attempts === 0;
+      var run = function () {
+        if (document.hidden || inactiveByFocus) return;
+        try {
+          if (!isReplayTagged(el)) return;
+          if (el.getAttribute('data-pono-force-paused') === '1') return;
+        } catch (_) { return; }
+        var nativeFn = (mediaProto && mediaProto.play && mediaProto.play.__nativePlay);
+        var res;
+        try {
+          res = nativeFn ? nativeFn.call(el) : el.play();
+        } catch (_) {
+          tryReplayMedia(el);
+          return;
+        }
+        if (res && typeof res.then === 'function') {
+          res.then(function () {
+            clearReplayTags(el);
+            replayAttempts.delete(el);
+          }).catch(function () {
+            tryReplayMedia(el);
+          });
+        } else {
+          clearReplayTags(el);
+          replayAttempts.delete(el);
+        }
+      };
+      if (sync) run();
+      else setTimeout(run, delay);
+    }
+
+    // v1944: emitStopEvent / emitResumeEvent の CustomEvent boilerplate を単一関数に集約。
+    // 将来 3 番目の event を追加する時にコピペ分岐しない。
+    function emitEvent(name, reason) {
+      try {
+        global.dispatchEvent(new CustomEvent(name, {
+          detail: { reason: reason || '' }
+        }));
+      } catch (_) {
+        try {
+          var ev = document.createEvent('CustomEvent');
+          ev.initCustomEvent(name, false, false, { reason: reason || '' });
+          global.dispatchEvent(ev);
+        } catch (__) {}
+      }
+    }
+    function emitResumeEvent(reason) { emitEvent('PonoAudioVisibilityResume', reason); }
+
+    function clearFocusInactiveIfVisible(reason) {
       if (document.hidden) return;
+      var wasInactive = inactiveByFocus;
+      // v1944 (H4): gesture 経路の連打 (pointerdown/touchstart) で「何もすることが無い」
+      // タップ毎に forEach + setTimeout を走らせない。 wasInactive===false かつ blocked/
+      // was-playing 要素が 0 の場合は fast path で return。
+      if (!wasInactive && blockedMediaCount === 0) return;
       inactiveByFocus = false;
+      // v1944 (H2 / cross-file H2): AC は 'interrupted' のみ resume。
+      // 'suspended' はゲーム側の意図的 ctx.suspend() を尊重するため触らない
+      // (wrapAudioContext statechange と同ポリシー)。
       audioContexts.forEach(function (ctx) {
         try {
-          if (ctx && ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+          if (ctx && ctx.state === 'interrupted' && typeof ctx.resume === 'function') {
             var p = ctx.resume();
             if (p && typeof p.catch === 'function') p.catch(function () {});
           }
         } catch (_) {}
       });
+      // v1944 (H1 / iH2): data-pono-blocked OR data-pono-was-playing の両方を対象に
+      // safety-net replay。 data-pono-force-paused="1" は意図的 pause として尊重して触らない。
+      // gesture 経路 (reason==='gesture') は初回 attempt を同期実行して iOS sticky
+      // activation を維持。
+      var syncFirst = (reason === 'gesture');
+      mediaEls.forEach(function (el) {
+        try {
+          if (el && isReplayTagged(el)) {
+            replayAttempts.delete(el);
+            tryReplayMedia(el, syncFirst ? { sync: true } : null);
+          }
+        } catch (_) {}
+      });
+      if (wasInactive) emitResumeEvent(reason || 'clear');
+    }
+
+    /**
+     * 明示的に BGM 再生失敗を後続 pointerdown / visible で自動再試行させたい時、
+     * ゲーム側から el を渡して backoff (0/300/1000/3000ms 最大4回) キューに乗せる。
+     */
+    function scheduleBgmRetry(el) {
+      if (!el) return;
+      tagBlocked(el);
+      trackMedia(el);
+      replayAttempts.delete(el);
+      if (!document.hidden && !inactiveByFocus) tryReplayMedia(el);
     }
 
     function trackMedia(el) {
@@ -94,9 +247,17 @@
       return el;
     }
 
+    // v1944 (H1 / iH2 / cross-file H2): pauseAll 経路で「再生中→hidden で pause した」
+    // 要素にも data-pono-was-playing タグを付ける。 これで独自 visibilitychange を持たない
+    // 新規ゲームでも clearFocusInactiveIfVisible が safety-net replay で拾える。
+    // guardedPlay 経路で既に data-pono-blocked が立っているケースは尊重 (両立可)。
     function pauseMedia(el) {
       try {
-        if (el && typeof el.pause === 'function' && !el.paused) el.pause();
+        if (!el || typeof el.pause !== 'function') return;
+        if (!el.paused && !el.ended) {
+          tagWasPlaying(el);
+          el.pause();
+        }
       } catch (_) {}
     }
 
@@ -109,19 +270,7 @@
       } catch (_) {}
     }
 
-    function emitStopEvent(reason) {
-      try {
-        global.dispatchEvent(new CustomEvent('PonoAudioVisibilityStop', {
-          detail: { reason: reason || '' }
-        }));
-      } catch (_) {
-        try {
-          var ev = document.createEvent('CustomEvent');
-          ev.initCustomEvent('PonoAudioVisibilityStop', false, false, { reason: reason || '' });
-          global.dispatchEvent(ev);
-        } catch (__) {}
-      }
-    }
+    function emitStopEvent(reason) { emitEvent('PonoAudioVisibilityStop', reason); }
 
     function pauseAll(reason) {
       try {
@@ -139,6 +288,9 @@
         trackMedia(this);
         if (isInactive()) {
           pauseMedia(this);
+          // (C) 呼び出し側 .catch 握り潰しでも失われないよう data-pono-blocked を付与、
+          // 次の pointerdown / visible / focus / pageshow の safety-net で自動 replay。
+          tagBlocked(this);
           return blockedPlayResult();
         }
         return nativePlay.apply(this, arguments);
@@ -169,7 +321,32 @@
       var GuardedContext = function (options) {
         var ctx = arguments.length ? new NativeContext(options) : new NativeContext();
         audioContexts.add(ctx);
-        if (isInactive()) setTimeout(function () { suspendContext(ctx); }, 0);
+        // (D) setTimeout(suspend) を削除。user gesture 直後の unlock を殺さない。
+        // iOS Safari 特有の 'interrupted' (電話 / Siri / 別 tab 音楽再生) だけ auto-resume。
+        // 'suspended' はゲーム側の意図的 ctx.suspend() を上書きしないため触らない。
+        // v1944 (iH1): iOS Safari は interruption 明けに AC が 'interrupted' → 'suspended'
+        // に遷移するケース (Apple AVAudioSession 仕様) があり、'interrupted' 中の
+        // resume() は無視される。 prev state を保持して interrupted→suspended 遷移も
+        // 「interruption 明けの自動 suspend」 と解釈して 1 回 resume を試す。
+        try {
+          var prevState = null;
+          try { prevState = ctx.state; } catch (_) {}
+          ctx.addEventListener && ctx.addEventListener('statechange', function () {
+            var cur;
+            try { cur = ctx.state; } catch (_) { cur = null; }
+            var prev = prevState;
+            prevState = cur;
+            if (document.hidden || inactiveByFocus) return;
+            var shouldResume = (cur === 'interrupted') ||
+              (cur === 'suspended' && prev === 'interrupted');
+            if (shouldResume) {
+              try {
+                var p = ctx.resume();
+                if (p && typeof p.catch === 'function') p.catch(function () {});
+              } catch (_) {}
+            }
+          });
+        } catch (_) {}
         return ctx;
       };
       GuardedContext.prototype = NativeContext.prototype;
@@ -187,7 +364,7 @@
         inactiveByFocus = true;
         pauseAll('visibilitychange');
       } else {
-        inactiveByFocus = false;
+        clearFocusInactiveIfVisible('visibilitychange');
       }
     }, true);
 
@@ -196,28 +373,37 @@
       pauseAll('pagehide');
     }, true);
     global.addEventListener('pageshow', function () {
-      if (!document.hidden) inactiveByFocus = false;
+      if (!document.hidden) clearFocusInactiveIfVisible('pageshow');
     }, true);
-    global.addEventListener('blur', function () {
-      inactiveByFocus = true;
-      pauseAll('blur');
-    }, true);
+    // (A) window.blur は iOS 疑似 blur (URL バー / コントロールセンター / キーボード)
+    // で誤発火する。 本物の app switch は visibilitychange で拾えるので、 ここでは
+    // suspend も pause も inactiveByFocus=true 化もしない (完全 no-op)。
+    global.addEventListener('blur', function () { /* intentionally no-op */ }, true);
     global.addEventListener('focus', function () {
-      if (!document.hidden) inactiveByFocus = false;
+      if (!document.hidden) clearFocusInactiveIfVisible('focus');
     }, true);
     global.addEventListener('freeze', function () {
       inactiveByFocus = true;
       pauseAll('freeze');
     }, true);
+    // v1944 (H4): gesture 経路は「replay 対象が実際にある時だけ」 clearFocusInactiveIfVisible
+    // を発火。 タップ連打時の forEach + setTimeout jank を回避。 fast-path 判定は
+    // clearFocusInactiveIfVisible 側にも二重で入っているが、 event dispatch cost も
+    // ここで抑えるため handler 側でも先にゲート。
     ['pointerdown', 'touchstart', 'mousedown', 'keydown'].forEach(function (type) {
-      document.addEventListener(type, clearFocusInactiveIfVisible, true);
+      document.addEventListener(type, function () {
+        if (document.hidden) return;
+        if (!inactiveByFocus && blockedMediaCount === 0) return;
+        clearFocusInactiveIfVisible('gesture');
+      }, true);
     });
 
     global.PonoVisibilityAudioGuard = {
       installed: true,
       pauseAll: pauseAll,
       trackMedia: trackMedia,
-      clearFocusInactiveIfVisible: clearFocusInactiveIfVisible
+      clearFocusInactiveIfVisible: clearFocusInactiveIfVisible,
+      scheduleBgmRetry: scheduleBgmRetry
     };
   }
 
@@ -623,6 +809,13 @@
     inject: injectPreload,
     defer: deferPreload,
     warmGameAssets: warmGameAssets,
+    scheduleBgmRetry: function (el) {
+      try {
+        if (global.PonoVisibilityAudioGuard && typeof global.PonoVisibilityAudioGuard.scheduleBgmRetry === 'function') {
+          global.PonoVisibilityAudioGuard.scheduleBgmRetry(el);
+        }
+      } catch (_) {}
+    },
     BOTTOM_NAV_PRESSED_URLS: BOTTOM_NAV_PRESSED_URLS,
     GAME_WARM_ASSETS: GAME_WARM_ASSETS
   };

@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1943: 全ゲーム共通の BGM/SE 復帰不能問題を修正。common/preload-helper.js の visibility guard を「iOS 疑似 blur は完全無視」「bfcache cold restore で永久 inactive 化しない」「AudioContext state=interrupted/closed 対応 + user gesture unlock を殺さない」に刷新。guardedPlay は data-pono-blocked を付けて pointerdown/visible/focus/pageshow の safety-net で backoff (0/300/1000/3000ms) 自動 replay。PonoAudioVisibilityResume イベントで oto/quizland/bento が明示 pause (mask editor / tutorial) を尊重しつつ復帰。oto の hasFocus() 早期 return を撤去 (bug F)、quizland/bento に pageshow ハンドラ追加。play.html PAGE_CACHE_VERSION と同期。
 // v1942: なぞなぞトンネルの音声修正ラウンド2。visibilitychange/pagehide の ac.suspend() の unhandled rejection を safeSuspend() で捕捉、bindTap の click detail===0 (AT/キーボード) 経路にも ensureAC を追加、#startBtn は bootPending 抑止と即 title 非表示で二重発火を防止。tone() は state!=='running' 時にキューへ積み、statechange で 'running' 遷移時に primeAC + 一括再生 (TTL 800ms でカリング)、非 gesture 経路 (setTimeout continueIntoTunnel / visibility 復帰) の silent-drop を吸収。play.html PAGE_CACHE_VERSION と同期。
 // v1941: なぞなぞトンネルの音声消失問題を修正。ensureAC() を state="closed"/"interrupted" 対応 + Promise 化し、bindTap の pointerdown で必ず AC unlock、閾値を 18→36px に緩和。sndGo/tone() に AC 復帰ガードを追加、#startBtn は resume Promise を待って primeAC してから発車。visibilitychange/pageshow/focus/pagehide/document-level pointerdown ハンドラを追加し BG 復帰時に自動 resume させる。play.html PAGE_CACHE_VERSION と同期。
 // v1940: なぞなぞトンネルの客車を拡大し、車輪/ロッドと運転士サイズを再調整。運転士はステージ切替後も固定し、トンネル入口で一度停止してから入る遷移に変更。入口/出口には列車より前面に被せる編集可能なマスク層と `?portalEdit=1` 調整UIを追加。play.html PAGE_CACHE_VERSION と同期。
@@ -564,7 +565,23 @@
 // v1910: ガチャに Haptics 5 シーン (gachaTurn1_2 / gachaTurn3 / capsuleCrack / rareBadgePop / superBadgePop) + DOM particle burst (rare=12粒90°扇 / super=20粒360°、 reveal 瞬間に .daily-gacha-shell 直下へ spawn) を拡張。 common/haptics.js の PATTERNS に 5 key 追加 + fire() を number[] 対応、 play.html は capture.js の後に haptics.js を defer 読込、 pulseDailyGachaHaptic を Haptics 経由に統一 (bare vibrate fallback 残す)、 reveal timer で capsuleCrack + spawnGachaParticles、 openDelay+420ms で rare/super badge pop haptic。 CSS/JS のみ変更、 localStorage/schema 無影響 (opt-out: pono_haptics_off / pono_particles_off / prefers-reduced-motion)。play.html PAGE_CACHE_VERSION と同期。
 // v1914: Bento batch:1046 — 「はっぱ」を action-row から タブに移動 (side step で [カップ/はっぱ/しきり/ピック])、 タブ切替時に armed を必ず解除 (code-review fix a)。 編集パネルから 'おかずを かえる'/一般 'けす' を削除 (leaf 専用)。 cup fallback を 0.30/0.70 対称 2x2 に、 4 box の maskRel.x を対称化。 KV rewrite payload を scratchpad に用意 (POST /api/bento/mask-defaults 用)。 play.html PAGE_CACHE_VERSION と同期。
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1942;
+const CACHE_VERSION = 1944;
+// v1944: BGM 復帰不能修正 v1943 のクロスレビュー HIGH 潰し込み。 (1) common/preload-helper.js を
+// CRITICAL_ASSETS_SCRIPTS に追加して CACHE_VERSION bump で確実に precache 更新 (network-first
+// 頼みからの脱却)、 (2) pauseAll で「再生中→hidden」 の要素に data-pono-was-playing タグを付与
+// して safety-net replay 対象を拡張 (bento/aquarium/bowling/drawing/room/slide/breakout/writing/
+// puzzle/bubble/quizland の主要 BGM 復帰経路をカバー)、 (3) wrapAudioContext statechange で
+// prev='interrupted' → cur='suspended' 遷移も resume 対象 (iOS interruption 明けの一時
+// suspend fallthrough を吸収)、 (4) clearFocusInactiveIfVisible の AC resume を
+// 'interrupted' 限定に絞り wrapAudioContext と同ポリシー化 (ゲーム意図的 suspend 破壊を防止)、
+// (5) gesture 経由の tryReplayMedia 初回は setTimeout(0) 抜きの同期実行で iOS sticky
+// activation を維持、 (6) pointerdown/touchstart 経由の clearFocusInactiveIfVisible は
+// blockedMediaCount + inactiveByFocus === 0 で fast-path skip して tap 連打 jank 回避、
+// (7) emitStopEvent/emitResumeEvent の CustomEvent boilerplate を emitEvent に集約、
+// (8) oto の window.blur は !document.hidden で早期 return + visibilitychange:visible /
+// focus / pageshow に tutorial/acorn modal guard を統一 helper で集約、 (9) quizland は
+// audioCtx.resume() の Promise を await してから bgm.play() する (iOS low power mode の
+// silent playback 対策)。 play.html PAGE_CACHE_VERSION と同期。
 // v1560: シール 3D hit test (placementTextureBounds) を CSS .placed-sticker { clip-path: inset(5%) } と同期で 5% inset、 共通定数 STICKER_PLACEMENT_INSET=0.05 で管理。 これにより 3D 本のページ上での「カニ脇のもずく」 等の選択しづらさを解消 (前 v1558 では DOM 側のみ縮小、 3D 側が full bounds のままだった) + drawInlineStickerSelectionOverlay の点線セレクション枠も同期で縮小
 // v1559: シール帳 チュートリアル ナレーション 3本 再生成 + 台本微調整 — tut_02 (find) は台本維持で再ロール、 tut_04 (place) 「はろう」 が HELLO 化する Chirp3-HD 誤読を回避するため 「ぺたっと はろう」 に変更 (オノマトペで pronunciation lock) + main.js text も追随、 tut_10 (final) 「シールちょう」 (帳/調 同音異義トラップ) を 「シールアルバム」 に言い換え (カタカナで明確化) + main.js text も追随。 faster-whisper small/medium で 3本とも transcript 一致確認済 (好きなシールを選ぼう / 好きなところにペタっと貼ろう / 好きなシールアルバムを作ろう)
 // v1557: シール帳チュートリアル spotlight 反転 (背景 dim 撤廃 → 内側 radial-gradient 黄グロー + mix-blend-mode:screen)、 ハンドカーソル指先位置補正 (hand_point_left.png 計測値 fingertip=(1.3%, 32.4%) に合わせ transform Y -50% → -35%、 transform-origin 54%/58% → 50%/32%、 8 keyframes + slider-js steady-state 同期)
@@ -610,6 +627,11 @@ const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const CRITICAL_ASSETS_HTML = ['/play.html', '/quizland/index.html'];
 const CRITICAL_ASSETS_SCRIPTS = [
   '/common/sw-update.js',
+  // v1944 (cross-file H5): preload-helper.js は BGM/SE 復帰の中核 (PonoVisibilityAudioGuard /
+  // guardedPlay / statechange auto-resume) を担うため precache 対象に載せる。
+  // CACHE_VERSION bump 時に確実に新版を配信 (network-first 頼みだと旧 SW キャッシュ + Cache-Control
+  // で数分〜数時間の遅延あり → 実機検証で false negative になる)。
+  '/common/preload-helper.js',
   '/common/debug-mode.js',
   '/common/debug-features.js',
   '/common/capture.js',
