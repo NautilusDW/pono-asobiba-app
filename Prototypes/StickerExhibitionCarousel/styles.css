@@ -712,6 +712,7 @@ h1 {
   }
 
   .map-screen {
+    align-items: start;
     padding: 10px 0 6px;
   }
 
@@ -724,15 +725,23 @@ h1 {
   .map-room,
   .map-floor {
     border-radius: 12px;
+    --label-x: 50%;
+    --label-y: 50%;
+  }
+
+  .map-floor--upstairs {
+    left: 38.5%;
+    width: 23%;
   }
 
   .map-room__label {
-    min-width: 68px;
-    padding: 4px 7px;
+    min-width: 0;
+    width: min(72px, calc(100% - 8px));
+    padding: 4px 5px;
   }
 
   .map-room__name {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 
   .map-room__count {
@@ -811,10 +820,18 @@ h1 {
   .map-room,
   .map-floor {
     border-radius: 12px;
+    --label-x: 50%;
+    --label-y: 50%;
+  }
+
+  .map-floor--upstairs {
+    left: 38.5%;
+    width: 23%;
   }
 
   .map-room__label {
     min-width: 62px;
+    max-width: calc(100% - 8px);
     padding: 3px 7px;
   }
 
