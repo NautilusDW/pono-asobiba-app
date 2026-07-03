@@ -3,6 +3,12 @@
   --good:#57c15e; --accent:#ff8c5a;
   --card:#ffffff; --cardEdge:#ffd9a0;
   --door:#f2b64d; --doorEdge:#d99326;
+  --portal-gate-scale:1;
+  --portal-in-left-vh:.3;
+  --portal-out-right-vh:.88;
+  --portal-core-side-vw:64;
+  --portal-mask-in:polygon(0% 0%,100% 0%,100% 100%,0% 100%);
+  --portal-mask-out:polygon(0% 0%,100% 0%,100% 100%,0% 100%);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 html,body{width:100%;height:100%;overflow:hidden}
@@ -23,7 +29,7 @@ button{font:inherit;color:inherit}
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
 .decor{position:absolute;bottom:11.5vh}
-#cars{position:absolute;bottom:6.9vh;left:0;right:0;z-index:7;pointer-events:none}
+#cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
   background:#f5d78a;border:3px solid #c9a24e;border-radius:10px 10px 6px 6px;
@@ -34,18 +40,18 @@ body.st-space #cars{bottom:26.3vh}
 .car-body-img,.car-wheel{display:none}
 .car::after{content:"";position:absolute;bottom:-8%;left:12%;width:22%;aspect-ratio:1;background:#3d3d3d;border-radius:50%}
 .car::before{content:"";position:absolute;bottom:-8%;right:12%;width:22%;aspect-ratio:1;background:#3d3d3d;border-radius:50%}
-body.v-train .car{width:clamp(82px,13vw,142px);height:clamp(38px,6.1vw,74px);max-width:none;max-height:none;
+body.v-train .car{width:clamp(98px,15.8vw,170px);height:clamp(46px,7.4vw,88px);max-width:none;max-height:none;
   background:none;border:0;border-radius:0;display:block;overflow:visible}
 body.v-train .car::before,body.v-train .car::after{display:none}
 body.v-train .car-body-img{display:block;position:absolute;inset:0;z-index:3;
   background:url("../assets/images/nazonazo-tunnel/vehicle_passenger_car_body_20260703.webp") center bottom/contain no-repeat;
   filter:drop-shadow(0 2px 0 rgba(50,35,25,.16))}
-body.v-train .car-seat{position:absolute;top:8%;width:24%;height:58%;z-index:2;align-items:flex-end}
-body.v-train .car .seat-a{left:23%}
-body.v-train .car .seat-b{left:46%}
-body.v-train .car .pas{font-size:clamp(14px,2.3vw,27px)}
+body.v-train .car-seat{position:absolute;top:10%;width:22%;height:53%;z-index:2;align-items:flex-end}
+body.v-train .car .seat-a{left:24%}
+body.v-train .car .seat-b{left:47%}
+body.v-train .car .pas{font-size:clamp(14px,2.15vw,26px)}
 body.v-train .car .pas-img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
-body.v-train .car-wheel{display:block;position:absolute;bottom:3.5%;width:17.5%;aspect-ratio:1;z-index:4;
+body.v-train .car-wheel{display:block;position:absolute;bottom:.2%;width:16.6%;aspect-ratio:1;z-index:4;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_user_spoke_20260703.webp") center/contain no-repeat;
   filter:drop-shadow(0 1px 0 rgba(50,35,25,.28));transform-origin:50% 50%}
 body.v-train .car-wheel-a{left:16.2%}
@@ -62,7 +68,7 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #helpBadge{position:absolute;bottom:27vh;left:2vw;z-index:9;background:rgba(255,255,255,.88);
   border:2px solid rgba(87,193,94,.5);border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
-body.v-train #veh{bottom:6.7vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
+body.v-train #veh{bottom:6.1vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -119,14 +125,37 @@ body.st-space .tun{bottom:20vh}
 .dropStation.open .drop-station-friends{opacity:1;transform:translateY(0) scale(1)}
 .dropStation.done .drop-station-friends{animation:waveBye .75s ease-in-out infinite alternate}
 .cover{position:absolute;top:0;bottom:0;overflow:visible;background:transparent;z-index:7}
-.cover-core{position:absolute;top:0;bottom:0;left:64vw;right:64vw;background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
-.cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777);background:center bottom/100% 100% no-repeat;z-index:4;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none}
-.cover-gate-in{left:calc(100vh * .3);background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
-.cover-gate-out{right:calc(100vh * .88);background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
+.cover-core{position:absolute;top:0;bottom:0;left:calc(var(--portal-core-side-vw) * 1vw);right:calc(var(--portal-core-side-vw) * 1vw);background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
+.cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777 * var(--portal-gate-scale));background:center bottom/100% 100% no-repeat;z-index:4;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none}
+.cover-gate-in{left:calc(100vh * var(--portal-in-left-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
+.cover-gate-out{right:calc(100vh * var(--portal-out-right-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
 .cover .rim{display:none}
 .cover .rimL{left:-26vw}
 .cover .rimR{left:100%;transform:scaleX(-1)}
 .lamp{display:none}
+#portalMaskLayer{position:absolute;inset:0;z-index:9;display:none;overflow:hidden;pointer-events:none}
+.portal-occluder{position:absolute;display:none;background:center bottom/100% 100% no-repeat;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none;will-change:left,top,width,height}
+.portal-occluder-in{background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp");clip-path:var(--portal-mask-in)}
+.portal-occluder-out{background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp");clip-path:var(--portal-mask-out)}
+#portalEditOverlay{position:absolute;inset:0;z-index:31;display:none;pointer-events:none}
+body.portal-edit #portalEditOverlay{display:block}
+.portal-edit-poly{fill:rgba(255,75,120,.14);stroke:#ff4b78;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}
+.portal-edit-point{fill:#ff4b78;stroke:#fff;stroke-width:3;pointer-events:auto;cursor:grab;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.portal-edit-point:active{cursor:grabbing}
+#portalEditPanel{position:fixed;right:8px;top:calc(8px + env(safe-area-inset-top));width:min(360px,calc(100vw - 16px));max-height:calc(100vh - 16px - env(safe-area-inset-top));overflow:auto;z-index:32;display:none;
+  background:rgba(255,253,245,.96);color:#302417;border:2px solid rgba(129,87,46,.35);border-radius:10px;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.22);font:12px/1.35 system-ui,sans-serif;text-align:left;user-select:text;-webkit-user-select:text}
+body.portal-edit #portalEditPanel{display:block}
+#portalEditPanel *{user-select:text;-webkit-user-select:text}
+#portalEditPanel h2{font-size:14px;margin:0 0 6px;color:#6b4426}
+#portalEditPanel label{display:block;margin:7px 0 2px;font-weight:700}
+#portalEditPanel input[type="range"]{width:100%}
+#portalEditPanel input[type="number"]{width:78px}
+#portalEditPanel textarea{width:100%;min-height:70px;resize:vertical;font:11px/1.3 ui-monospace,SFMono-Regular,Consolas,monospace}
+#portalEditPanel button{appearance:none;border:1px solid rgba(129,87,46,.35);border-radius:7px;background:#fff;padding:5px 8px;margin:2px;color:#302417;font:12px system-ui,sans-serif;cursor:pointer}
+#portalEditPanel button.active{background:#ffe0a8;border-color:#db8f2f;font-weight:800}
+#portalEditPanel .row{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+#portalEditPanel .note{font-size:11px;color:#74553d;margin-top:6px}
+#portalEditPanel .status{font-size:11px;color:#2d7140;margin-left:4px}
 
 /* ===== vehicle ===== */
 #veh.inTun,#cars.inTun{z-index:8}
@@ -142,21 +171,21 @@ body.st-space .tun{bottom:20vh}
 body.v-train .train-art{display:block;position:absolute;inset:-8% -4% -2% -7%}
 body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train .tr-win,body.v-train .wheel{display:none}
 .train-body-img{position:absolute;inset:0;z-index:3;background:url("../assets/images/nazonazo-tunnel/vehicle_train_body_20260703.webp") center/contain no-repeat;transform:scaleX(-1)}
-.train-driver{position:absolute;left:11.5%;top:13.5%;width:30%;height:57%;z-index:1;
+.train-driver{position:absolute;left:14%;top:20%;width:23.5%;height:44%;z-index:1;
   background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_sheet_4x4_20260703.webp");
   background-repeat:no-repeat;background-size:400% 400%;background-position:var(--driver-x,0%) var(--driver-y,0%);
-  transform:translateY(2%);filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
-.train-wheel{position:absolute;bottom:7.7%;width:16.2%;aspect-ratio:1;z-index:4;
+  filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
+.train-wheel{position:absolute;bottom:5.0%;width:16.2%;aspect-ratio:1;z-index:4;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_user_spoke_20260703.webp") center/contain no-repeat;
   transform-origin:50% 50%;filter:drop-shadow(0 2px 0 rgba(50,35,25,.28))}
 .train-wheel-a{left:20.4%}
 .train-wheel-b{left:67.0%}
 #veh.go .train-wheel{animation:spin .62s linear infinite;background-image:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_user_blur_20260703.webp")}
-.train-wheel-rod{position:absolute;left:28.3%;bottom:23.1%;width:46.9%;height:4.4%;z-index:5;border-radius:999px;
+.train-wheel-rod{position:absolute;left:28.3%;bottom:20.4%;width:46.9%;height:4.4%;z-index:5;border-radius:999px;
   background:linear-gradient(180deg,#fff2d4 0%,#c98e38 42%,#8e5523 58%,#f6d077 100%);
   border:1px solid rgba(92,55,21,.62);box-shadow:0 1px 0 rgba(255,255,255,.45) inset,0 2px 0 rgba(38,24,16,.23);
   transform-origin:50% 50%;filter:drop-shadow(0 1px 0 rgba(45,30,20,.28))}
-.train-wheel-pin{position:absolute;bottom:21.3%;width:5.2%;aspect-ratio:1;border-radius:50%;z-index:6;
+.train-wheel-pin{position:absolute;bottom:18.6%;width:5.2%;aspect-ratio:1;border-radius:50%;z-index:6;
   background:radial-gradient(circle at 35% 28%,#fff8d8 0 18%,#f4bd48 32%,#9a5c24 70%,#4b2f1c 100%);
   border:1px solid rgba(73,45,22,.72);box-shadow:0 1px 0 rgba(255,255,255,.42) inset;filter:drop-shadow(0 1px 0 rgba(45,30,20,.28))}
 .train-wheel-pin-a{left:26.0%}

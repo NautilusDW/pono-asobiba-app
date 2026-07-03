@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-03T04:36:10Z - bento tut2 台本: はっぱ・しきり紹介ステップ追加 (コア14/音声16本再編) + commit/push
+- **タスク**: bento tut2 台本: はっぱ・しきり紹介ステップ追加 (コア14/音声16本再編) + commit/push
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 340
+- **エラー数**: 33
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 74, "Bash": 74, "Glob": 2, "Edit": 26, "Grep": 17, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 41, "Skill": 1, "SendMessage": 2}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-03T04:26:18Z - BENTO_TUTORIAL_SCRIPT.md Step2 箱固定 (box_rect_split) 改訂 + commit/push
 - **タスク**: BENTO_TUTORIAL_SCRIPT.md Step2 箱固定 (box_rect_split) 改訂 + commit/push
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 70, "Bash": 72, "Glob": 2, "Edit": 24, "Grep": 14, "ToolSearch": 3, "Workflow": 24, "TaskOutput": 75, "Agent": 31, "Skill": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-02T15:54:55Z - batch:1056 bento nori asset prep: 19 replacements + 25 new items processed, manifest + review sheets generated, 44 PNGs copied to free-layout
-- **タスク**: batch:1056 bento nori asset prep: 19 replacements + 25 new items processed, manifest + review sheets generated, 44 PNGs copied to free-layout
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 306
-- **エラー数**: 32
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 63, "Bash": 72, "Glob": 2, "Edit": 24, "Grep": 14, "ToolSearch": 3, "Workflow": 24, "TaskOutput": 75, "Agent": 28, "Skill": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

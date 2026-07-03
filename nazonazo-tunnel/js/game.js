@@ -291,10 +291,25 @@ let bestStarsByStage={},answerLocked=false;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
-const STAGE_DRIVERS=["bear","fox","owl","rabbit","fox","owl"];
+const TRAIN_DRIVER_ID="bear";
+const PORTAL_EDIT_ENABLED=new URLSearchParams(location.search).has("portalEdit");
+const PORTAL_TUNING_KEY="pono_nazonazo_portal_tuning_v1";
+const PORTAL_DEFAULTS={
+ schemaVersion:1,
+ gateScale:1,
+ inLeftVh:.3,
+ outRightVh:.88,
+ coreSideVw:64,
+ entryStopOffsetVw:28,
+ swapOffsetVw:30,
+ pauseMs:560,
+ inMask:[[0,0],[100,0],[100,100],[0,100]],
+ outMask:[[0,0],[100,0],[100,100],[0,100]]
+};
+let portalTuning=clonePortalTuning(PORTAL_DEFAULTS),portalEditor=null;
 
-function setDriverForStage(s){
- document.body.dataset.driver=STAGE_DRIVERS[s%STAGE_DRIVERS.length]||"bear";
+function setDriverForStage(){
+ document.body.dataset.driver=TRAIN_DRIVER_ID;
 }
 function setDriverMood(mood){
  document.body.dataset.driverMood=mood||"happy";
@@ -306,6 +321,9 @@ const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp");
+const portalMaskLayer=$("portalMaskLayer"),portalEditOverlay=$("portalEditOverlay");
+const portalOccIn=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-in");
+const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-out");
 
 /* ================= audio & speech ================= */
 let ac=null;

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ポノの なぞなぞトンネル | ポノのあそびば</title>
-<link rel="stylesheet" href="styles.css?v=20260703-1939">
+<link rel="stylesheet" href="styles.css?v=20260703-1940">
 </head>
 <body class="st-town v-train" data-driver="bear" data-driver-mood="happy">
 <div id="app">
@@ -48,6 +48,11 @@
         <div class="rk-flame">🔥</div>
       </div>
     </div>
+    <div id="portalMaskLayer" aria-hidden="true">
+      <div class="portal-occluder portal-occluder-in" data-portal="in"></div>
+      <div class="portal-occluder portal-occluder-out" data-portal="out"></div>
+    </div>
+    <svg id="portalEditOverlay" aria-hidden="true"></svg>
     <div id="fgT"></div>
   </div>
 
@@ -121,6 +126,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260703-1939"></script>
+<script src="js/game.js?v=20260703-1940"></script>
 </body>
 </html>
