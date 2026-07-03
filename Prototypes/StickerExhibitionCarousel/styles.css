@@ -108,7 +108,16 @@ button {
   backdrop-filter: blur(12px);
 }
 
-.top-back {
+.topbar-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.top-back,
+.top-home {
   flex: 0 0 auto;
   min-width: 72px;
   min-height: 40px;
@@ -121,10 +130,18 @@ button {
   cursor: pointer;
 }
 
+.top-home {
+  border-color: rgba(255, 225, 142, 0.46);
+  background: rgba(58, 36, 20, 0.78);
+}
+
 .title-group {
+  flex: 1 1 auto;
   display: grid;
   gap: 1px;
+  justify-items: center;
   min-width: 0;
+  text-align: center;
 }
 
 .title-group p {
@@ -276,7 +293,8 @@ h1 {
 
 .map-room:active,
 .map-floor:active,
-.top-back:active {
+.top-back:active,
+.top-home:active {
   transform: translateY(2px);
 }
 
@@ -789,6 +807,19 @@ h1 {
     min-height: 46px;
     padding: 6px 10px;
     border-radius: 14px;
+    gap: 8px;
+  }
+
+  .topbar-actions {
+    gap: 5px;
+  }
+
+  .top-back,
+  .top-home {
+    min-width: 58px;
+    min-height: 34px;
+    padding: 5px 9px;
+    font-size: 0.82rem;
   }
 
   .title-group p {

@@ -27,6 +27,7 @@ const els = {
   loading: document.getElementById("loading"),
   app: document.getElementById("app"),
   backToMap: document.getElementById("backToMap"),
+  homeButton: document.getElementById("homeButton"),
   mapScreen: document.getElementById("mapScreen"),
   mapNotice: document.getElementById("mapNotice"),
   screenKicker: document.getElementById("screenKicker"),
@@ -437,6 +438,10 @@ function wireEvents() {
 
   els.backToMap.addEventListener("click", () => {
     showMap();
+  });
+
+  els.homeButton.addEventListener("click", () => {
+    window.location.assign(new URL("../../play.html", BASE_URL).href);
   });
 
   if (els.roomTabs) {
