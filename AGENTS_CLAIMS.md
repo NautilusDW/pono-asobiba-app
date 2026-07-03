@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-03 02:50 - by Claude - [batch:1058-bento-tutorial-script] - docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - bento チュートリアル台本の全面書き直し (cup-first/タップ専用フロー対応、実装は別バッチ)
-
 
 
 
