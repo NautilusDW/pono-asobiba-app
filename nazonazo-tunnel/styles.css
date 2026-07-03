@@ -46,11 +46,11 @@ body.v-train .car .seat-b{left:46%}
 body.v-train .car .pas{font-size:clamp(14px,2.3vw,27px)}
 body.v-train .car .pas-img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
 body.v-train .car-wheel{display:block;position:absolute;bottom:3.5%;width:17.5%;aspect-ratio:1;z-index:4;
-  background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_spoke_single_20260703.webp") center/contain no-repeat;
+  background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_user_spoke_20260703.webp") center/contain no-repeat;
   filter:drop-shadow(0 1px 0 rgba(50,35,25,.28));transform-origin:50% 50%}
 body.v-train .car-wheel-a{left:16.2%}
 body.v-train .car-wheel-b{right:16.2%}
-body.v-train #cars.go .car-wheel{animation:spin .62s linear infinite;background-image:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_blur_single_20260703.webp")}
+body.v-train #cars.go .car-wheel{animation:spin .62s linear infinite;background-image:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_user_blur_20260703.webp")}
 #cars.unloading .car{animation:carDropOff .62s ease forwards}
 body.v-sub .car{border-radius:50px;background:#ffd97d;border-color:#d9a326}
 body.v-sub .car::before,body.v-sub .car::after{display:none}
@@ -121,8 +121,8 @@ body.st-space .tun{bottom:20vh}
 .cover{position:absolute;top:0;bottom:0;overflow:visible;background:transparent;z-index:7}
 .cover-core{position:absolute;top:0;bottom:0;left:34vw;right:34vw;background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
 .cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777);background:center bottom/100% 100% no-repeat;z-index:4;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none}
-.cover-gate-in{left:calc(-100vh * .92);background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_wide_gate_20260703.webp")}
-.cover-gate-out{right:calc(-100vh * .86);background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_wide_gate_20260703.webp")}
+.cover-gate-in{left:calc(100vh * .1);background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
+.cover-gate-out{right:calc(100vh * .1);background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
 .cover .rim{display:none}
 .cover .rimL{left:-26vw}
 .cover .rimR{left:100%;transform:scaleX(-1)}
@@ -147,11 +147,22 @@ body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train 
   background-repeat:no-repeat;background-size:400% 400%;background-position:var(--driver-x,0%) var(--driver-y,0%);
   transform:translateY(2%);filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
 .train-wheel{position:absolute;bottom:7.7%;width:16.2%;aspect-ratio:1;z-index:4;
-  background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_spoke_single_20260703.webp") center/contain no-repeat;
+  background:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_user_spoke_20260703.webp") center/contain no-repeat;
   transform-origin:50% 50%;filter:drop-shadow(0 2px 0 rgba(50,35,25,.28))}
 .train-wheel-a{left:20.4%}
 .train-wheel-b{left:67.0%}
-#veh.go .train-wheel{animation:spin .62s linear infinite;background-image:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_blur_single_20260703.webp")}
+#veh.go .train-wheel{animation:spin .62s linear infinite;background-image:url("../assets/images/nazonazo-tunnel/vehicle_train_wheel_user_blur_20260703.webp")}
+.train-wheel-rod{position:absolute;left:28.3%;bottom:23.1%;width:46.9%;height:4.4%;z-index:5;border-radius:999px;
+  background:linear-gradient(180deg,#fff2d4 0%,#c98e38 42%,#8e5523 58%,#f6d077 100%);
+  border:1px solid rgba(92,55,21,.62);box-shadow:0 1px 0 rgba(255,255,255,.45) inset,0 2px 0 rgba(38,24,16,.23);
+  transform-origin:50% 50%;filter:drop-shadow(0 1px 0 rgba(45,30,20,.28))}
+.train-wheel-pin{position:absolute;bottom:21.3%;width:5.2%;aspect-ratio:1;border-radius:50%;z-index:6;
+  background:radial-gradient(circle at 35% 28%,#fff8d8 0 18%,#f4bd48 32%,#9a5c24 70%,#4b2f1c 100%);
+  border:1px solid rgba(73,45,22,.72);box-shadow:0 1px 0 rgba(255,255,255,.42) inset;filter:drop-shadow(0 1px 0 rgba(45,30,20,.28))}
+.train-wheel-pin-a{left:26.0%}
+.train-wheel-pin-b{left:72.5%}
+#veh.go .train-wheel-rod,#veh.go .train-wheel-pin{animation:rodPump .62s linear infinite}
+@keyframes rodPump{0%,100%{transform:translate(1.2%,0)}25%{transform:translate(0,-12%)}50%{transform:translate(-1.2%,0)}75%{transform:translate(0,12%)}}
 body.v-train .puff{left:76%;top:-15%}
 body[data-driver="bear"]{--driver-x:0%}
 body[data-driver="fox"]{--driver-x:33.333%}
