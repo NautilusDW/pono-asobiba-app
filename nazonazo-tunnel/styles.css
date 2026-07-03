@@ -119,10 +119,10 @@ body.st-space .tun{bottom:20vh}
 .dropStation.open .drop-station-friends{opacity:1;transform:translateY(0) scale(1)}
 .dropStation.done .drop-station-friends{animation:waveBye .75s ease-in-out infinite alternate}
 .cover{position:absolute;top:0;bottom:0;overflow:visible;background:transparent;z-index:7}
-.cover-core{position:absolute;top:0;bottom:0;left:34vw;right:34vw;background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
+.cover-core{position:absolute;top:0;bottom:0;left:64vw;right:64vw;background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
 .cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777);background:center bottom/100% 100% no-repeat;z-index:4;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none}
-.cover-gate-in{left:calc(100vh * .1);background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
-.cover-gate-out{right:calc(100vh * .1);background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
+.cover-gate-in{left:calc(100vh * .3);background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
+.cover-gate-out{right:calc(100vh * .88);background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
 .cover .rim{display:none}
 .cover .rimL{left:-26vw}
 .cover .rimR{left:100%;transform:scaleX(-1)}
