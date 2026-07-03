@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260703-0002";
+const ASSET_VERSION = "20260703-0003";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1707,6 +1707,7 @@ const bookThemePreviewCover = document.getElementById("bookThemePreviewCover");
 const bookThemePreviewName = document.getElementById("bookThemePreviewName");
 const bookThemePreviewSwatches = document.getElementById("bookThemePreviewSwatches");
 const albumModeToggle = document.getElementById("albumModeToggle");
+const stickerExhibitionButton = document.getElementById("stickerExhibitionButton");
 const collectionStickerTray = document.getElementById("collectionStickerTray");
 const collectionStickerTrayItems = document.getElementById("collectionStickerTrayItems");
 const stickerTrayCounter = document.getElementById("stickerTrayCounter");
@@ -2844,6 +2845,10 @@ updateStickerEditModeUi();
 
 albumModeToggle?.addEventListener("click", () => {
   setAlbumMode(activeAlbumMode === "collection" ? "free" : "collection");
+});
+
+stickerExhibitionButton?.addEventListener("click", () => {
+  window.location.assign(new URL("../StickerExhibitionCarousel/", window.location.href).href);
 });
 
 window.addEventListener("resize", resize);

@@ -639,7 +639,8 @@ input[type="range"] {
 .top-action-button,
 .top-edit-button,
 .top-theme-button,
-.album-mode-toggle {
+.album-mode-toggle,
+.sticker-exhibition-button {
   box-sizing: border-box;
   min-width: 0;
   height: 58px;
@@ -773,6 +774,33 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
   filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
 }
 
+.sticker-exhibition-button {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 50px;
+  width: 174px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: var(--sb3d-ui-button-wide);
+  color: #243b40;
+  font-size: 13px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+}
+
+.sticker-exhibition-button .top-button-label {
+  transform: translateY(-2px) scaleX(0.96);
+}
+
+body.is-collection-album .sticker-exhibition-button,
+body.is-sticker-tutorial-active .sticker-exhibition-button {
+  display: none;
+}
+
 .album-mode-toggle .top-button-label {
   transform: translateY(-2px) scaleX(0.96);
 }
@@ -780,7 +808,8 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
 .top-action-button:hover,
 .top-edit-button:hover,
 .top-theme-button:hover,
-.album-mode-toggle:hover {
+.album-mode-toggle:hover,
+.sticker-exhibition-button:hover {
   filter: brightness(1.04) drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
 }
 
@@ -3123,6 +3152,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     font-size: 12px;
   }
 
+  .sticker-exhibition-button {
+    right: 46px;
+    width: 160px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
   body.is-collection-album .album-mode-toggle {
     padding: 0 10px 0 54px;
   }
@@ -3144,6 +3180,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   .album-mode-toggle {
     width: 160px;
     padding: 0;
+    font-size: 11px;
+  }
+
+  .sticker-exhibition-button {
+    right: 42px;
+    width: 136px;
+    padding: 0 10px;
     font-size: 11px;
   }
 
@@ -3456,6 +3499,14 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     width: 160px;
     height: 50px;
     padding: 0;
+    font-size: 11px;
+  }
+
+  .sticker-exhibition-button {
+    right: 42px;
+    width: 136px;
+    height: 50px;
+    padding: 0 10px;
     font-size: 11px;
   }
 
@@ -3910,6 +3961,14 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     height: 42px;
     padding: 0;
     font-size: 11px;
+  }
+
+  .sticker-exhibition-button {
+    right: 36px;
+    width: 132px;
+    height: 42px;
+    padding: 0 8px;
+    font-size: 10px;
   }
 
   body.is-collection-album .album-mode-toggle {
