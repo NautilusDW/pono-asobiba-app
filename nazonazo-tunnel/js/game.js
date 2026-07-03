@@ -287,7 +287,7 @@ function openZukan(){
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false;
-let bestStarsByStage={},answerLocked=false;
+let bestStarsByStage={},answerLocked=false,portalEditHolding=false;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
@@ -299,7 +299,7 @@ const PORTAL_DEFAULTS={
  gateScale:1,
  inLeftVh:.3,
  outRightVh:.88,
- coreSideVw:64,
+ coreSideVw:100,
  entryStopOffsetVw:28,
  swapOffsetVw:30,
  pauseMs:560,
@@ -380,6 +380,265 @@ function bindTap(el,fn){
   if(ev.detail===0)fn(ev);
   else ev.preventDefault();
  });
+}
+function clonePortalTuning(src){
+ return JSON.parse(JSON.stringify(src));
+}
+function cleanPortalPoints(points,fallback){
+ const fb=clonePortalTuning(fallback);
+ if(!Array.isArray(points)||points.length<3)return fb;
+ const out=[];
+ points.slice(0,12).forEach(p=>{
+  if(!Array.isArray(p)||p.length<2)return;
+  const x=clamp(Number(p[0]),0,100),y=clamp(Number(p[1]),0,100);
+  if(Number.isFinite(x)&&Number.isFinite(y))out.push([x,y]);
+ });
+ return out.length>=3?out:fb;
+}
+function cleanPortalNumber(value,fallback,min,max){
+ const n=Number(value);
+ return Number.isFinite(n)?clamp(n,min,max):fallback;
+}
+function normalizePortalTuning(raw){
+ const t=clonePortalTuning(PORTAL_DEFAULTS);
+ if(raw&&typeof raw==="object"){
+  t.gateScale=cleanPortalNumber(raw.gateScale,t.gateScale,.55,1.6);
+  t.inLeftVh=cleanPortalNumber(raw.inLeftVh,t.inLeftVh,-1.2,2.2);
+  t.outRightVh=cleanPortalNumber(raw.outRightVh,t.outRightVh,-1.2,2.2);
+  t.coreSideVw=cleanPortalNumber(raw.coreSideVw,t.coreSideVw,16,150);
+  t.entryStopOffsetVw=cleanPortalNumber(raw.entryStopOffsetVw,t.entryStopOffsetVw,0,90);
+  t.swapOffsetVw=cleanPortalNumber(raw.swapOffsetVw,t.swapOffsetVw,0,100);
+  t.pauseMs=cleanPortalNumber(raw.pauseMs,t.pauseMs,120,1800);
+  t.inMask=cleanPortalPoints(raw.inMask,PORTAL_DEFAULTS.inMask);
+  t.outMask=cleanPortalPoints(raw.outMask,PORTAL_DEFAULTS.outMask);
+ }
+ return t;
+}
+function portalClip(points){
+ return "polygon("+points.map(p=>Number(p[0]).toFixed(2)+"% "+Number(p[1]).toFixed(2)+"%").join(",")+")";
+}
+function applyPortalTuning(){
+ const st=document.documentElement.style;
+ st.setProperty("--portal-gate-scale",String(portalTuning.gateScale));
+ st.setProperty("--portal-in-left-vh",String(portalTuning.inLeftVh));
+ st.setProperty("--portal-out-right-vh",String(portalTuning.outRightVh));
+ st.setProperty("--portal-core-side-vw",String(portalTuning.coreSideVw));
+ st.setProperty("--portal-mask-in",portalClip(portalTuning.inMask));
+ st.setProperty("--portal-mask-out",portalClip(portalTuning.outMask));
+}
+function loadPortalTuning(){
+ try{
+  const raw=localStorage.getItem(PORTAL_TUNING_KEY);
+  portalTuning=normalizePortalTuning(raw?JSON.parse(raw):null);
+ }catch(_){
+  portalTuning=clonePortalTuning(PORTAL_DEFAULTS);
+ }
+ applyPortalTuning();
+}
+function savePortalTuning(quiet){
+ try{localStorage.setItem(PORTAL_TUNING_KEY,JSON.stringify(portalTuning));}catch(_){}
+ if(!quiet)setPortalEditStatus("保存しました");
+}
+function portalMaskKey(){
+ return portalEditor&&portalEditor.mode==="out"?"outMask":"inMask";
+}
+function activePortalOcc(){
+ return portalEditor&&portalEditor.mode==="out"?portalOccOut:portalOccIn;
+}
+function portalPointText(points){
+ return points.map(p=>Math.round(p[0]*10)/10+","+Math.round(p[1]*10)/10).join(" ");
+}
+function parsePortalPointText(text,fallback){
+ const pts=[];
+ String(text||"").split(/\s+/).forEach(pair=>{
+  if(!pair)return;
+  const m=pair.split(",");
+  if(m.length<2)return;
+  const x=Number(m[0]),y=Number(m[1]);
+  if(Number.isFinite(x)&&Number.isFinite(y))pts.push([clamp(x,0,100),clamp(y,0,100)]);
+ });
+ return cleanPortalPoints(pts,fallback);
+}
+function placePortalOccluder(gate,occ){
+ if(!gate||!occ)return false;
+ const scene=$("scene");
+ const sr=scene.getBoundingClientRect();
+ const r=gate.getBoundingClientRect();
+ const visible=r.right>sr.left-24&&r.left<sr.right+24&&r.bottom>sr.top&&r.top<sr.bottom;
+ if(!visible){
+  occ.style.display="none";
+  return false;
+ }
+ occ.style.display="block";
+ occ.style.left=(r.left-sr.left)+"px";
+ occ.style.top=(r.top-sr.top)+"px";
+ occ.style.width=r.width+"px";
+ occ.style.height=r.height+"px";
+ return true;
+}
+function renderPortalMasks(cv){
+ if(!portalMaskLayer)return;
+ if(!cv){
+  portalMaskLayer.style.display="none";
+  if(portalEditOverlay)portalEditOverlay.innerHTML="";
+  return;
+ }
+ const anyIn=placePortalOccluder(cv.querySelector(".cover-gate-in"),portalOccIn);
+ const anyOut=placePortalOccluder(cv.querySelector(".cover-gate-out"),portalOccOut);
+ portalMaskLayer.style.display=(anyIn||anyOut)?"block":"none";
+ if(PORTAL_EDIT_ENABLED)drawPortalEditorOverlay();
+}
+function setPortalEditStatus(txt){
+ if(!portalEditor||!portalEditor.panel)return;
+ const s=portalEditor.panel.querySelector(".status");
+ if(s)s.textContent=txt||"";
+}
+function syncPortalEditorPanel(){
+ if(!portalEditor||!portalEditor.panel)return;
+ const panel=portalEditor.panel;
+ panel.querySelectorAll("[data-portal-mode]").forEach(b=>b.classList.toggle("active",b.dataset.portalMode===portalEditor.mode));
+ panel.querySelectorAll("[data-portal-key]").forEach(input=>{
+  const key=input.dataset.portalKey;
+  input.value=String(portalTuning[key]);
+ });
+ const text=panel.querySelector("#portalMaskText");
+ if(text)text.value=portalPointText(portalTuning[portalMaskKey()]);
+}
+function portalRange(label,key,min,max,step){
+ return '<label>'+label+'</label><div class="row"><input type="range" data-portal-key="'+key+'" min="'+min+'" max="'+max+'" step="'+step+'"><input type="number" data-portal-key="'+key+'" min="'+min+'" max="'+max+'" step="'+step+'"></div>';
+}
+function initPortalEditor(){
+ if(!PORTAL_EDIT_ENABLED)return;
+ document.body.classList.add("portal-edit");
+ const panel=document.createElement("div");
+ panel.id="portalEditPanel";
+ panel.innerHTML=
+  '<h2>トンネル入口/出口 調整</h2>'+
+  '<div class="row"><button type="button" data-portal-mode="in">入口</button><button type="button" data-portal-mode="out">出口</button><span class="status"></span></div>'+
+  portalRange("ゲートの大きさ","gateScale",".55","1.6",".01")+
+  portalRange("入口の横位置 (vh)","inLeftVh","-1.2","2.2",".01")+
+  portalRange("出口の横位置 (vh)","outRightVh","-1.2","2.2",".01")+
+  portalRange("中トンネルの余白 (vw)","coreSideVw","16","150","1")+
+  portalRange("入口で止まる位置 (vw)","entryStopOffsetVw","0","90","1")+
+  portalRange("背景を切り替える位置 (vw)","swapOffsetVw","0","100","1")+
+  portalRange("入口停止時間 (ms)","pauseMs","120","1800","20")+
+  '<label>選択中マスクの点 (x,y %)</label><textarea id="portalMaskText" spellcheck="false"></textarea>'+
+  '<div class="row"><button type="button" id="portalAddPoint">点を追加</button><button type="button" id="portalRemovePoint">点を削除</button><button type="button" id="portalResetMask">マスクを戻す</button></div>'+
+  '<div class="row"><button type="button" id="portalResume">トンネルへ進む</button><button type="button" id="portalCopyJson">JSONコピー</button><button type="button" id="portalResetAll">全部リセット</button></div>'+
+  '<div class="note">ピンクの点をドラッグして、列車より前に被せる範囲を調整できます。値はこの端末の localStorage に保存されます。</div>';
+ $("app").appendChild(panel);
+ portalEditor={mode:"in",selectedIdx:0,dragIdx:null,panel};
+ panel.querySelectorAll("[data-portal-mode]").forEach(b=>b.addEventListener("click",()=>{
+  portalEditor.mode=b.dataset.portalMode;
+  portalEditor.selectedIdx=0;
+  syncPortalEditorPanel();
+  drawPortalEditorOverlay();
+ }));
+ panel.querySelectorAll("[data-portal-key]").forEach(input=>input.addEventListener("input",()=>{
+  const key=input.dataset.portalKey;
+  portalTuning[key]=Number(input.value);
+  portalTuning=normalizePortalTuning(portalTuning);
+  applyPortalTuning();
+  savePortalTuning(true);
+  syncPortalEditorPanel();
+ }));
+ const txt=panel.querySelector("#portalMaskText");
+ txt.addEventListener("input",()=>{
+  const key=portalMaskKey();
+  portalTuning[key]=parsePortalPointText(txt.value,PORTAL_DEFAULTS[key]);
+  applyPortalTuning();
+  savePortalTuning(true);
+  drawPortalEditorOverlay();
+ });
+ panel.querySelector("#portalAddPoint").addEventListener("click",()=>{
+  const key=portalMaskKey(),pts=portalTuning[key];
+  const idx=clamp(portalEditor.selectedIdx||0,0,pts.length-1);
+  pts.splice(idx+1,0,[50,50]);
+  portalEditor.selectedIdx=idx+1;
+  applyPortalTuning();savePortalTuning();syncPortalEditorPanel();drawPortalEditorOverlay();
+ });
+ panel.querySelector("#portalRemovePoint").addEventListener("click",()=>{
+  const key=portalMaskKey(),pts=portalTuning[key];
+  if(pts.length<=3){setPortalEditStatus("3点は残します");return;}
+  pts.splice(clamp(portalEditor.selectedIdx||0,0,pts.length-1),1);
+  portalEditor.selectedIdx=clamp(portalEditor.selectedIdx||0,0,pts.length-1);
+  applyPortalTuning();savePortalTuning();syncPortalEditorPanel();drawPortalEditorOverlay();
+ });
+ panel.querySelector("#portalResetMask").addEventListener("click",()=>{
+  const key=portalMaskKey();
+  portalTuning[key]=clonePortalTuning(PORTAL_DEFAULTS[key]);
+  portalEditor.selectedIdx=0;
+  applyPortalTuning();savePortalTuning();syncPortalEditorPanel();drawPortalEditorOverlay();
+ });
+ panel.querySelector("#portalResetAll").addEventListener("click",()=>{
+  portalTuning=clonePortalTuning(PORTAL_DEFAULTS);
+  portalEditor.selectedIdx=0;
+  applyPortalTuning();savePortalTuning();syncPortalEditorPanel();drawPortalEditorOverlay();
+ });
+ panel.querySelector("#portalResume").addEventListener("click",()=>{
+  if(!transitCover||driving||pending)return;
+  portalEditHolding=false;
+  continueIntoTunnel();
+ });
+ panel.querySelector("#portalCopyJson").addEventListener("click",()=>{
+  const text=JSON.stringify(portalTuning,null,2);
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(()=>setPortalEditStatus("コピーしました"),()=>setPortalEditStatus(text));
+  else setPortalEditStatus(text);
+ });
+ window.addEventListener("pointermove",movePortalPoint);
+ window.addEventListener("pointerup",stopPortalPoint);
+ window.addEventListener("pointercancel",stopPortalPoint);
+ syncPortalEditorPanel();
+}
+function drawPortalEditorOverlay(){
+ if(!PORTAL_EDIT_ENABLED||!portalEditor||!portalEditOverlay)return;
+ const occ=activePortalOcc();
+ if(!occ||occ.style.display==="none"){
+  portalEditOverlay.innerHTML="";
+  return;
+ }
+ const r=occ.getBoundingClientRect();
+ if(r.width<4||r.height<4){
+  portalEditOverlay.innerHTML="";
+  return;
+ }
+ portalEditOverlay.setAttribute("viewBox","0 0 "+window.innerWidth+" "+window.innerHeight);
+ const pts=portalTuning[portalMaskKey()];
+ const pointString=pts.map(p=>(r.left+r.width*p[0]/100)+","+(r.top+r.height*p[1]/100)).join(" ");
+ let html='<polygon class="portal-edit-poly" points="'+pointString+'"></polygon>';
+ pts.forEach((p,i)=>{
+  html+='<circle class="portal-edit-point" data-idx="'+i+'" cx="'+(r.left+r.width*p[0]/100)+'" cy="'+(r.top+r.height*p[1]/100)+'" r="'+(i===portalEditor.selectedIdx?8:6)+'"></circle>';
+ });
+ portalEditOverlay.innerHTML=html;
+ portalEditOverlay.querySelectorAll(".portal-edit-point").forEach(c=>c.addEventListener("pointerdown",startPortalPointDrag));
+}
+function startPortalPointDrag(ev){
+ if(!portalEditor)return;
+ portalEditor.dragIdx=Number(ev.currentTarget.dataset.idx);
+ portalEditor.selectedIdx=portalEditor.dragIdx;
+ ev.preventDefault();
+ drawPortalEditorOverlay();
+}
+function movePortalPoint(ev){
+ if(!portalEditor||portalEditor.dragIdx===null)return;
+ const occ=activePortalOcc();
+ if(!occ)return;
+ const r=occ.getBoundingClientRect();
+ const x=clamp((ev.clientX-r.left)/r.width*100,0,100);
+ const y=clamp((ev.clientY-r.top)/r.height*100,0,100);
+ const pts=portalTuning[portalMaskKey()];
+ if(pts[portalEditor.dragIdx]){
+  pts[portalEditor.dragIdx]=[x,y];
+  applyPortalTuning();
+  savePortalTuning(true);
+  syncPortalEditorPanel();
+  drawPortalEditorOverlay();
+ }
+}
+function stopPortalPoint(){
+ if(!portalEditor||portalEditor.dragIdx===null)return;
+ portalEditor.dragIdx=null;
+ savePortalTuning();
 }
 function saveGame(){
  try{
@@ -484,7 +743,7 @@ function applySkin(){
  const st=STAGES[stg],P=palOf(stg);
  const nIdx=Math.min(stg+1,STAGES.length-1);
  const NP=STAGES[nIdx].pals[loop%2];
- document.body.className="st-"+st.id+" v-"+st.veh;
+ document.body.className="st-"+st.id+" v-"+st.veh+(PORTAL_EDIT_ENABLED?" portal-edit":"");
  setDriverForStage(stg);
  skyA.style.background=st.assets?bgUrl(st.assets.sky)+" center bottom / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
@@ -571,7 +830,7 @@ function buildAmbient(P){
 }
 
 /* ================= passengers ================= */
-function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?11.3:8.8;}
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?14.2:8.8;}
 function visibleCarGroups(){
  const start=Math.max(0,cars.length-8);
  const aligned=start%2?start-1:start;
@@ -615,12 +874,36 @@ function renderCars(){
  carBadge.style.display=cars.length?"block":"none";
  carBadge.textContent="👥 ×"+cars.length;
 }
-function beginStageTransit(){
- if(!coverEl)return;
- transitCover=coverEl;
+function coverEntryStop(){
+ if(!coverEl)return worldX;
+ return parseFloat(coverEl.style.left)-portalTuning.entryStopOffsetVw;
+}
+function continueIntoTunnel(){
+ if(!transitCover)return;
+ setDriverMood("cheer");
  swapReady=true;swapped=false;
  target=stops(origin(stg+1),0);
  pending="quiz";driving=true;
+ sndGo();
+}
+function showTunnelEntryPause(){
+ setDriverMood("happy");
+ if(PORTAL_EDIT_ENABLED){
+  portalEditHolding=true;
+  setPortalEditStatus("入口で停止中");
+  return;
+ }
+ setTimeout(()=>{
+  if(!playing||driving||pending||!transitCover)return;
+  continueIntoTunnel();
+ },portalTuning.pauseMs);
+}
+function beginStageTransit(){
+ if(!coverEl)return;
+ transitCover=coverEl;
+ swapReady=false;swapped=false;
+ target=coverEntryStop();
+ pending="tunnelEntry";driving=true;
  sndGo();
 }
 function showDropoff(){
@@ -781,10 +1064,15 @@ function render(){
  const cv=transitCover||coverEl;
  if(cv){
   const cl=parseFloat(cv.style.left);
-  const inside=worldX>cl-30&&worldX<cl+COVER_LEN+10;
+  const insideStart=cl-Math.max(8,portalTuning.entryStopOffsetVw*.35);
+  const inside=worldX>insideStart&&worldX<cl+COVER_LEN+10;
   veh.classList.toggle("inTun",inside);
   carsEl.classList.toggle("inTun",inside);
- }else{veh.classList.remove("inTun");carsEl.classList.remove("inTun");}
+  renderPortalMasks(cv);
+ }else{
+  veh.classList.remove("inTun");carsEl.classList.remove("inTun");
+  renderPortalMasks(null);
+ }
 }
 
 /* ================= game loop ================= */
@@ -802,7 +1090,7 @@ function gloop(t){
   carsEl.classList.add("go");
   if(swapReady&&!swapped&&transitCover){
    const cl=parseFloat(transitCover.style.left);
-   if(worldX>cl+30){
+   if(worldX>cl+portalTuning.swapOffsetVw){
     swapped=true;
     stg++;buildQList();qSeg=0;stageMiss=0;rareSpawned=false;
     applySkin();buildWorld(true);drawDots();
@@ -825,6 +1113,7 @@ function gloop(t){
    const p=pending;pending=null;
    if(p==="quiz")showQuiz();
    else if(p==="dropoff")showDropoff();
+   else if(p==="tunnelEntry")showTunnelEntryPause();
    else if(p==="ending")ending();
   }
  }
@@ -835,6 +1124,7 @@ function gloop(t){
 /* ================= flow ================= */
 function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
+ portalEditHolding=false;
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
  setDriverMood("cheer");
@@ -987,7 +1277,9 @@ bindTap($("spkBtn"),()=>{showHint();});
 bindTap($("helpBtn"),()=>{useHelp();});
 
 buildRegistry();
+loadPortalTuning();
 loadGame();applyLevelSelection();
 applySkin();buildWorld(false);drawDots();renderCars();updateHelpHud();render();
+initPortalEditor();
 requestAnimationFrame(gloop);
 })();

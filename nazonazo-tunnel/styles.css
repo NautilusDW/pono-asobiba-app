@@ -6,7 +6,7 @@
   --portal-gate-scale:1;
   --portal-in-left-vh:.3;
   --portal-out-right-vh:.88;
-  --portal-core-side-vw:64;
+  --portal-core-side-vw:100;
   --portal-mask-in:polygon(0% 0%,100% 0%,100% 100%,0% 100%);
   --portal-mask-out:polygon(0% 0%,100% 0%,100% 100%,0% 100%);
 }
@@ -126,7 +126,7 @@ body.st-space .tun{bottom:20vh}
 .dropStation.done .drop-station-friends{animation:waveBye .75s ease-in-out infinite alternate}
 .cover{position:absolute;top:0;bottom:0;overflow:visible;background:transparent;z-index:7}
 .cover-core{position:absolute;top:0;bottom:0;left:calc(var(--portal-core-side-vw) * 1vw);right:calc(var(--portal-core-side-vw) * 1vw);background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
-.cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777 * var(--portal-gate-scale));background:center bottom/100% 100% no-repeat;z-index:4;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none}
+.cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777 * var(--portal-gate-scale));background:center bottom/100% 100% no-repeat;z-index:4;pointer-events:none}
 .cover-gate-in{left:calc(100vh * var(--portal-in-left-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
 .cover-gate-out{right:calc(100vh * var(--portal-out-right-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
 .cover .rim{display:none}
@@ -134,7 +134,7 @@ body.st-space .tun{bottom:20vh}
 .cover .rimR{left:100%;transform:scaleX(-1)}
 .lamp{display:none}
 #portalMaskLayer{position:absolute;inset:0;z-index:9;display:none;overflow:hidden;pointer-events:none}
-.portal-occluder{position:absolute;display:none;background:center bottom/100% 100% no-repeat;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none;will-change:left,top,width,height}
+.portal-occluder{position:absolute;display:none;background:center bottom/100% 100% no-repeat;pointer-events:none;will-change:left,top,width,height}
 .portal-occluder-in{background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp");clip-path:var(--portal-mask-in)}
 .portal-occluder-out{background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp");clip-path:var(--portal-mask-out)}
 #portalEditOverlay{position:absolute;inset:0;z-index:31;display:none;pointer-events:none}
@@ -142,7 +142,7 @@ body.portal-edit #portalEditOverlay{display:block}
 .portal-edit-poly{fill:rgba(255,75,120,.14);stroke:#ff4b78;stroke-width:2;stroke-dasharray:8 6;pointer-events:none}
 .portal-edit-point{fill:#ff4b78;stroke:#fff;stroke-width:3;pointer-events:auto;cursor:grab;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
 .portal-edit-point:active{cursor:grabbing}
-#portalEditPanel{position:fixed;right:8px;top:calc(8px + env(safe-area-inset-top));width:min(360px,calc(100vw - 16px));max-height:calc(100vh - 16px - env(safe-area-inset-top));overflow:auto;z-index:32;display:none;
+#portalEditPanel{position:fixed;right:8px;top:calc(8px + env(safe-area-inset-top));width:min(340px,calc(100vw - 16px));max-height:min(70vh,calc(100vh - 16px - env(safe-area-inset-top)));overflow:auto;z-index:32;display:none;
   background:rgba(255,253,245,.96);color:#302417;border:2px solid rgba(129,87,46,.35);border-radius:10px;padding:10px;box-shadow:0 8px 28px rgba(0,0,0,.22);font:12px/1.35 system-ui,sans-serif;text-align:left;user-select:text;-webkit-user-select:text}
 body.portal-edit #portalEditPanel{display:block}
 #portalEditPanel *{user-select:text;-webkit-user-select:text}
@@ -385,5 +385,8 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .choice .em{font-size:clamp(34px,7vw,54px)}
   .choice .lb{font-size:clamp(13px,2.6vw,18px)}
   #stamp{top:28%;font-size:clamp(24px,5.4vw,42px)}
+}
+@media (orientation:landscape) and (max-height:480px){
+  #portalEditPanel{width:min(320px,calc(100vw - 16px));max-height:46vh}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
