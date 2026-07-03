@@ -327,19 +327,113 @@ const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occlu
 
 /* ================= audio & speech ================= */
 let ac=null;
-function ensureAC(){try{if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(A)ac=new A();}if(ac&&ac.state==="suspended")ac.resume();}catch(e){}}
-function tone(f,t0,dur,type,vol){try{if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();
- o.type=type||"sine";o.frequency.setValueAtTime(f,ac.currentTime+t0);
- g.gain.setValueAtTime(.0001,ac.currentTime+t0);
- g.gain.linearRampToValueAtTime(vol||.18,ac.currentTime+t0+.02);
- g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+t0+dur);
- o.connect(g).connect(ac.destination);o.start(ac.currentTime+t0);o.stop(ac.currentTime+t0+dur+.05);}catch(e){}}
+let acStatechangeAttached=false;
+// running 遷移を待つ tone キュー。suspended/interrupted の間にスケジュールした音が silent-drop するのを防ぐ。
+// 古い予約が interrupted 復帰後に遅延爆発するのを避けるため TTL でカリング。
+let pendingTones=[];
+const PENDING_TONE_MAX=32;
+const PENDING_TONE_TTL_MS=800;
+function _nowMs(){
+ return (typeof performance!=="undefined"&&performance.now)?performance.now():Date.now();
+}
+function attachAcStatechange(){
+ if(!ac||acStatechangeAttached)return;
+ try{
+  ac.addEventListener("statechange",()=>{
+   if(ac&&ac.state==="running"){
+    try{primeAC();}catch(_){}
+    flushPendingTones();
+   }
+  });
+  acStatechangeAttached=true;
+ }catch(_){}
+}
+function safeSuspend(){
+ // ac.suspend() は Promise を返し closed/interrupted 遷移レースで reject し得るので unhandled rejection を必ず捕捉
+ try{
+  if(!ac||ac.state!=="running")return;
+  const p=ac.suspend();
+  if(p&&p.catch)p.catch(()=>{});
+ }catch(_){}
+}
+// iOS Safari は state に 'interrupted'/'closed' も出るので両方対応。closed なら作り直し。
+// resume の Promise が settle した時点で primeAC + pendingTones の flush を行い、非 gesture 経路の silent-drop を極小化する。
+function ensureAC(){
+ try{
+  if(!ac||ac.state==="closed"){
+   const A=window.AudioContext||window.webkitAudioContext;
+   if(!A)return null;
+   try{ac=new A();acStatechangeAttached=false;}catch(e){ac=null;return null;}
+  }
+  attachAcStatechange();
+  if(ac&&(ac.state==="suspended"||ac.state==="interrupted")){
+   let p=null;
+   try{p=ac.resume();}catch(_){p=null;}
+   if(p&&p.then){
+    p.then(()=>{
+     if(ac&&ac.state==="running"){
+      try{primeAC();}catch(_){}
+      flushPendingTones();
+     }
+    },()=>{/* interrupted は reject し得る。statechange listener 側で running 遷移を拾う */});
+   }
+   return p||null;
+  }
+ }catch(e){}
+ return null;
+}
+function primeAC(){
+ // iOS で resume 直後の最初の oscillator が silent drop する対策の 1ms 0-gain unlock
+ try{if(!ac||ac.state!=="running")return;
+  const o=ac.createOscillator(),g=ac.createGain();
+  g.gain.value=0.0001;o.connect(g).connect(ac.destination);
+  o.start();o.stop(ac.currentTime+0.01);
+ }catch(e){}
+}
+function scheduleTone(f,t0,dur,type,vol){
+ try{
+  if(!ac||ac.state!=="running")return;
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||"sine";o.frequency.setValueAtTime(f,ac.currentTime+t0);
+  g.gain.setValueAtTime(.0001,ac.currentTime+t0);
+  g.gain.linearRampToValueAtTime(vol||.18,ac.currentTime+t0+.02);
+  g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+t0+dur);
+  o.connect(g).connect(ac.destination);o.start(ac.currentTime+t0);o.stop(ac.currentTime+t0+dur+.05);
+ }catch(e){}
+}
+function flushPendingTones(){
+ if(!pendingTones.length)return;
+ const now=_nowMs();
+ const q=pendingTones;pendingTones=[];
+ for(let i=0;i<q.length;i++){
+  const t=q[i];
+  // TTL 越えの古い予約は破棄 (interrupted 復帰後に遅延して一斉爆発するのを防ぐ)
+  if(now-t.at>PENDING_TONE_TTL_MS)continue;
+  scheduleTone(t.f,t.t0,t.dur,t.type,t.vol);
+ }
+}
+function tone(f,t0,dur,type,vol){
+ try{
+  if(!ac||ac.state==="closed")return;
+  if(ac.state!=="running"){
+   // resume を投げつつ pending queue に積む。running 遷移で statechange listener が flush する。
+   let p=null;try{p=ac.resume();}catch(_){p=null;}
+   if(p&&p.catch)p.catch(()=>{});
+   attachAcStatechange();
+   if(pendingTones.length<PENDING_TONE_MAX){
+    pendingTones.push({f:f,t0:t0,dur:dur,type:type,vol:vol,at:_nowMs()});
+   }
+   return;
+  }
+  scheduleTone(f,t0,dur,type,vol);
+ }catch(e){}
+}
 const sndOK=()=>{tone(660,0,.15,"triangle");tone(880,.13,.2,"triangle");tone(1320,.28,.3,"triangle")};
 const sndNG=()=>{tone(220,0,.25,"square",.08);tone(180,.18,.3,"square",.08)};
 const sndOpen=()=>{tone(400,0,.3,"sine",.1);tone(600,.15,.3,"sine",.1)};
 const sndFan=()=>{[523,659,784,1047].forEach((f,i)=>tone(f,i*.16,.4,"triangle"))};
 const sndNew=()=>{[784,988,1175,1568].forEach((f,i)=>tone(f,i*.1,.25,"sine",.14))};
-function sndGo(){const v=STAGES[stg].veh;
+function sndGo(){ensureAC();const v=STAGES[stg].veh;
  if(v==="train"){tone(520,0,.2,"square",.1);tone(520,.25,.35,"square",.1);}
  else if(v==="sub"){tone(300,0,.5,"sine",.12);tone(360,.4,.5,"sine",.12);}
  else{tone(120,0,.7,"sawtooth",.1);tone(90,.1,.8,"sawtooth",.08);}}
@@ -367,17 +461,24 @@ function bindTap(el,fn){
  let down=false,sx=0,sy=0;
  el.addEventListener("pointerdown",ev=>{
   down=true;sx=ev.clientX;sy=ev.clientY;
+  // AC unlock は fn 実行の可否に関わらず必ず走らせる (ドリフトタップでも音を戻す)
+  ensureAC();
   try{el.setPointerCapture(ev.pointerId);}catch(_){}
  });
  el.addEventListener("pointerup",ev=>{
   if(!down)return;
   down=false;
   const dx=ev.clientX-sx,dy=ev.clientY-sy;
-  if(Math.hypot(dx,dy)<=18)fn(ev);
+  // 幼児タップは指ずれが大きいので閾値 36px
+  if(Math.hypot(dx,dy)<=36)fn(ev);
  });
  el.addEventListener("pointercancel",()=>{down=false;});
  el.addEventListener("click",ev=>{
-  if(ev.detail===0)fn(ev);
+  if(ev.detail===0){
+   // AT/キーボード合成 click では pointerdown が出ないので ensureAC を明示的に走らせる
+   ensureAC();
+   fn(ev);
+  }
   else ev.preventDefault();
  });
 }
@@ -576,6 +677,7 @@ function initPortalEditor(){
   applyPortalTuning();savePortalTuning();syncPortalEditorPanel();drawPortalEditorOverlay();
  });
  panel.querySelector("#portalResume").addEventListener("click",()=>{
+  ensureAC();
   if(!transitCover||driving||pending)return;
   portalEditHolding=false;
   continueIntoTunnel();
@@ -1254,9 +1356,23 @@ document.querySelectorAll("#lvSel .selBtn").forEach(b=>{
   document.querySelectorAll("#lvSel .selBtn").forEach(x=>x.classList.remove("sel"));
   b.classList.add("sel");level=+b.dataset.l;saveGame();tone(600,0,.1,"triangle");});
 });
-bindTap($("startBtn"),()=>{ensureAC();
- stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;
- $("title").classList.add("hidden");startJourneyAt(0);});
+let bootPending=false;
+bindTap($("startBtn"),()=>{
+ // 二重タップ抑止: resume Promise 解決前に startBtn が再ヒットしても boot() を 1 回に絞る
+ if(bootPending)return;
+ bootPending=true;
+ // Promise 解決を待たず即タイトルを隠す (可視のままだと startBtn が再入力を受け続けるため)
+ const titleEl=$("title");if(titleEl)titleEl.classList.add("hidden");
+ // ensureAC() の resume Promise を待ってから最初の sndGo をスケジュールしないと iOS で silent drop する
+ const p=ensureAC();
+ const boot=()=>{
+  primeAC();
+  stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;
+  startJourneyAt(0);
+  bootPending=false;
+ };
+ if(p&&p.then)p.then(boot,boot);else boot();
+});
 bindTap($("goBtn"),()=>{ensureAC();startJourneyAt(stg);});
 bindTap($("againBtn"),()=>{ensureAC();
  $("result").classList.add("hidden");stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;startJourneyAt(0);});
@@ -1281,5 +1397,19 @@ loadPortalTuning();
 loadGame();applyLevelSelection();
 applySkin();buildWorld(false);drawDots();renderCars();updateHelpHud();render();
 initPortalEditor();
+
+// AC unlock 安全網: bindTap 未配線領域 (背景/scene/portal editor) のタップでも resume を担保
+document.addEventListener("pointerdown",()=>{ensureAC();},{capture:true,passive:true});
+
+// visibility/lifecycle 復帰: iOS/Android で BG 復帰後に AC が suspended/interrupted のままだと SE が全滅する
+// blur は意図的に購読しない (iOS の疑似 blur で AC を止めない方針)
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden){safeSuspend();}
+ else{ensureAC();}
+});
+window.addEventListener("pageshow",()=>{ensureAC();});
+window.addEventListener("focus",()=>{ensureAC();});
+window.addEventListener("pagehide",()=>{safeSuspend();});
+
 requestAnimationFrame(gloop);
 })();
