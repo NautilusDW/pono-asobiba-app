@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>シールてんじしつ カルーセル</title>
-  <link rel="stylesheet" href="./styles.css?v=20260703-4">
+  <link rel="stylesheet" href="./styles.css?v=20260703-5">
 </head>
 <body>
   <div class="stage" id="app">
@@ -22,14 +22,18 @@
 
     <section class="map-screen" id="mapScreen" aria-label="へやをえらぶ">
       <div class="map-board">
-        <div class="map-hall" aria-hidden="true"></div>
-        <button class="map-room map-room--creatures" data-room-id="creatures" type="button"></button>
-        <button class="map-room map-room--food" data-room-id="food" type="button"></button>
-        <button class="map-room map-room--sounds" data-room-id="sounds" type="button"></button>
-        <button class="map-room map-room--tools" data-room-id="tools" type="button"></button>
-        <button class="map-room map-room--characters" data-room-id="characters" type="button"></button>
-        <button class="map-room map-room--space" data-room-id="space" type="button"></button>
-        <button class="map-room map-room--special" data-room-id="special" type="button"></button>
+        <img class="map-art" src="./assets/sticker-exhibition-map-floor1.png" alt="" draggable="false">
+        <div class="map-hit-layer" aria-hidden="false">
+          <button class="map-room map-room--creatures" data-room-id="creatures" type="button"></button>
+          <button class="map-room map-room--food" data-room-id="food" type="button"></button>
+          <button class="map-room map-room--sounds" data-room-id="sounds" type="button"></button>
+          <button class="map-room map-room--tools" data-room-id="tools" type="button"></button>
+          <button class="map-room map-room--characters" data-room-id="characters" type="button"></button>
+          <button class="map-room map-room--space" data-room-id="space" type="button"></button>
+          <button class="map-room map-room--special" data-room-id="special" type="button"></button>
+          <button class="map-floor map-floor--upstairs" data-floor-id="floor2" type="button"></button>
+        </div>
+        <div class="map-notice" id="mapNotice" role="status" aria-live="polite"></div>
       </div>
     </section>
 
@@ -66,6 +70,6 @@
     <div class="loading" id="loading">よみこみちゅう</div>
   </div>
 
-  <script type="module" src="./main.js?v=20260703-4"></script>
+  <script type="module" src="./main.js?v=20260703-5"></script>
 </body>
 </html>

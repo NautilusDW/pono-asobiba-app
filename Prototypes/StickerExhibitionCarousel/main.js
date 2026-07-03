@@ -13,6 +13,10 @@ const ROOMS = [
   { id: "special", label: "とくべつ" },
 ];
 
+const FLOOR_EXITS = [
+  { id: "floor2", label: "うえのかい", status: "じゅんびちゅう" },
+];
+
 const RARITY_LABEL = {
   normal: "ふつう",
   rare: "レア",
@@ -24,6 +28,7 @@ const els = {
   app: document.getElementById("app"),
   backToMap: document.getElementById("backToMap"),
   mapScreen: document.getElementById("mapScreen"),
+  mapNotice: document.getElementById("mapNotice"),
   screenKicker: document.getElementById("screenKicker"),
   roomTitle: document.getElementById("roomTitle"),
   roomTabs: document.getElementById("roomTabs"),
@@ -56,6 +61,7 @@ const state = {
   touchStartY: 0,
   touchActive: false,
   lastFocus: null,
+  mapNoticeTimer: 0,
 };
 
 init();
@@ -155,10 +161,17 @@ function renderMapRooms() {
     const list = state.stickers.filter((sticker) => sticker.roomId === room.id);
     const owned = list.filter((sticker) => sticker.owned).length;
     button.setAttribute("aria-label", `${room.label}のへや`);
-    button.replaceChildren(
-      createSpan("map-room__name", room.label),
-      createSpan("map-room__count", `${owned} / ${list.length}`)
-    );
+    button.replaceChildren(createMapLabel(room.label, `${owned} / ${list.length}`));
+  });
+  renderMapExits();
+}
+
+function renderMapExits() {
+  els.mapScreen.querySelectorAll("[data-floor-id]").forEach((button) => {
+    const exit = FLOOR_EXITS.find((item) => item.id === button.dataset.floorId);
+    if (!exit) return;
+    button.setAttribute("aria-label", `${exit.label} ${exit.status}`);
+    button.replaceChildren(createMapLabel(exit.label, exit.status));
   });
 }
 
@@ -167,6 +180,16 @@ function createSpan(className, text) {
   span.className = className;
   span.textContent = text;
   return span;
+}
+
+function createMapLabel(name, count) {
+  const label = document.createElement("span");
+  label.className = "map-room__label";
+  label.append(
+    createSpan("map-room__name", name),
+    createSpan("map-room__count", count)
+  );
+  return label;
 }
 
 function renderRoomTabs() {
@@ -212,6 +235,7 @@ function showMap({ updateUrl = true } = {}) {
   els.screenKicker.textContent = "マップ";
   els.roomTitle.textContent = "シールてんじしつ";
   closeDetail();
+  hideMapNotice();
   renderMapRooms();
   if (updateUrl) setRoomUrl("");
 }
@@ -401,8 +425,14 @@ function roomLabel(roomId) {
 function wireEvents() {
   els.mapScreen.addEventListener("click", (event) => {
     const button = event.target.closest("[data-room-id]");
-    if (!button) return;
-    showRoom(button.dataset.roomId);
+    if (button) {
+      showRoom(button.dataset.roomId);
+      return;
+    }
+    const floorButton = event.target.closest("[data-floor-id]");
+    if (!floorButton) return;
+    const exit = FLOOR_EXITS.find((item) => item.id === floorButton.dataset.floorId);
+    showMapNotice(exit ? `${exit.label}は ${exit.status}` : "じゅんびちゅう");
   });
 
   els.backToMap.addEventListener("click", () => {
@@ -488,6 +518,21 @@ function wireEvents() {
   });
 
   window.addEventListener("resize", updateCarouselLayout);
+}
+
+function showMapNotice(message) {
+  if (!els.mapNotice) return;
+  window.clearTimeout(state.mapNoticeTimer);
+  els.mapNotice.textContent = message;
+  els.mapNotice.classList.add("is-visible");
+  state.mapNoticeTimer = window.setTimeout(hideMapNotice, 1800);
+}
+
+function hideMapNotice() {
+  if (!els.mapNotice) return;
+  window.clearTimeout(state.mapNoticeTimer);
+  state.mapNoticeTimer = 0;
+  els.mapNotice.classList.remove("is-visible");
 }
 
 function assignRoom(sticker) {

@@ -23,7 +23,7 @@ button{font:inherit;color:inherit}
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
 .decor{position:absolute;bottom:11.5vh}
-#cars{position:absolute;bottom:12.8vh;left:0;right:0;z-index:7;pointer-events:none}
+#cars{position:absolute;bottom:6.9vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
   background:#f5d78a;border:3px solid #c9a24e;border-radius:10px 10px 6px 6px;
@@ -62,7 +62,7 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #helpBadge{position:absolute;bottom:27vh;left:2vw;z-index:9;background:rgba(255,255,255,.88);
   border:2px solid rgba(87,193,94,.5);border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
-body.v-train #veh{bottom:11.9vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
+body.v-train #veh{bottom:6.7vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -118,12 +118,14 @@ body.st-space .tun{bottom:20vh}
 .drop-station-friends{position:absolute;right:8%;bottom:22%;z-index:3;font-size:clamp(24px,4.8vw,46px);opacity:0;transform:translateY(12px) scale(.7);transition:opacity .35s,transform .35s;filter:drop-shadow(0 3px 0 rgba(70,45,25,.14))}
 .dropStation.open .drop-station-friends{opacity:1;transform:translateY(0) scale(1)}
 .dropStation.done .drop-station-friends{animation:waveBye .75s ease-in-out infinite alternate}
-.cover{position:absolute;top:0;bottom:0;background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:7}
-.cover-portal{position:absolute;bottom:7.2vh;width:42vw;max-width:470px;height:55vh;background:center bottom/contain no-repeat;z-index:2;filter:drop-shadow(0 5px 0 rgba(0,0,0,.2));pointer-events:none}
-.cover-portal-in{left:-15vw;background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_portal_20260703_v2.webp")}
-.cover-portal-out{right:-15vw;background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_portal_20260703_v2.webp")}
-.cover .rim{position:absolute;top:0;bottom:0;width:7vw;background:linear-gradient(90deg,rgba(0,0,0,0),#17110b);z-index:3}
-.cover .rimR{right:auto;left:100%;transform:scaleX(-1)}
+.cover{position:absolute;top:0;bottom:0;overflow:visible;background:transparent;z-index:7}
+.cover-core{position:absolute;top:0;bottom:0;left:34vw;right:34vw;background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
+.cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777);background:center bottom/100% 100% no-repeat;z-index:4;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18));pointer-events:none}
+.cover-gate-in{left:calc(-100vh * .92);background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_wide_gate_20260703.webp")}
+.cover-gate-out{right:calc(-100vh * .86);background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_wide_gate_20260703.webp")}
+.cover .rim{display:none}
+.cover .rimL{left:-26vw}
+.cover .rimR{left:100%;transform:scaleX(-1)}
 .lamp{display:none}
 
 /* ===== vehicle ===== */
@@ -176,8 +178,8 @@ body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
 body.st-future .tr-chim{display:none}
 body.st-town #horizon{background-size:auto 100%}
 body.st-town #midT{background-size:auto 100%}
-body.st-town #groundT{height:13.5vh;background-size:auto 100%}
-body.st-town #fgT{height:14vh;background-size:auto 100%}
+body.st-town #groundT{height:15vh;background-size:auto 100%}
+body.st-town #fgT{height:6.5vh;background-size:auto 100%}
 body.st-jungle #horizon{background-size:auto 100%}
 body.st-jungle #midT{background-size:auto 100%}
 body.st-jungle #groundT{height:14.5vh;background-size:auto 100%}

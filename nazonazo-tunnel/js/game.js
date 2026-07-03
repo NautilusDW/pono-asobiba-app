@@ -117,7 +117,7 @@ const ASSETS={
    sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
    horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
    mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
-   ground:"../assets/images/nazonazo-tunnel/town_ground_strip_20260703.webp",
+   ground:"../assets/images/nazonazo-tunnel/town_ground_track_strip_20260703_v2.webp",
    fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp"
  },
  jungle:{
@@ -534,7 +534,7 @@ function buildWorld(keepCover){
   coverEl.className="cover";
   coverEl.style.left=(o+COVER_OFF)+"vw";
   coverEl.style.width=COVER_LEN+"vw";
-  let lamps='<div class="cover-portal cover-portal-in" aria-hidden="true"></div><div class="cover-portal cover-portal-out" aria-hidden="true"></div><div class="rim" style="left:-7vw"></div><div class="rim rimR"></div>';
+  let lamps='<div class="cover-core" aria-hidden="true"></div><div class="cover-gate cover-gate-in" aria-hidden="true"></div><div class="cover-gate cover-gate-out" aria-hidden="true"></div><div class="rim rimL"></div><div class="rim rimR"></div>';
   for(let x=16;x<COVER_LEN-8;x+=24)lamps+='<div class="lamp" style="left:'+x+'vw"></div>';
   coverEl.innerHTML=lamps;
   world.appendChild(coverEl);
