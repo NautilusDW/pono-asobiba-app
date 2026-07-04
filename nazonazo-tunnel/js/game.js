@@ -239,7 +239,8 @@ const STATION_HELPERS=[
 ];
 const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2120, COVER_OFF=2380, COVER_LEN=370;
-const TRAIN_WIDTH_MIN_PX=150, TRAIN_WIDTH_VW=26, TRAIN_WIDTH_MAX_PX=270, DEFAULT_VEHICLE_LEFT_VW=28, CHECKPOINT_STOP_LEFT_VW=44;
+const TRAIN_WIDTH_MIN_PX=150, TRAIN_WIDTH_VW=26, TRAIN_WIDTH_MAX_PX=270, DEFAULT_VEHICLE_LEFT_VW=28;
+const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=180;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -299,7 +300,7 @@ const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
 const TRAIN_DRIVER_ID="bear";
-const PORTAL_EDIT_ENABLED=new URLSearchParams(location.search).has("portalEdit");
+const PORTAL_EDIT_ENABLED=false;
 const PORTAL_TUNING_KEY="pono_nazonazo_portal_tuning_v1";
 const PORTAL_POINT_MIN=-120,PORTAL_POINT_MAX=220;
 const PORTAL_DEFAULTS={
@@ -314,7 +315,7 @@ const PORTAL_DEFAULTS={
  inMask:[[0,0],[100,0],[100,100],[0,100]],
  outMask:[[0,0],[100,0],[100,100],[0,100]]
 };
-let portalTuning=clonePortalTuning(PORTAL_DEFAULTS),portalEditor=null;
+let portalTuning=clonePortalTuning(PORTAL_DEFAULTS),portalEditor=null,tunnelInteriorMode=false;
 
 function setDriverForStage(){
  document.body.dataset.driver=TRAIN_DRIVER_ID;
@@ -587,7 +588,7 @@ function placePortalOccluder(gate,occ){
 }
 function renderPortalMasks(cv){
  if(!portalMaskLayer)return;
- if(!cv){
+ if(!PORTAL_EDIT_ENABLED||!cv){
   portalMaskLayer.style.display="none";
   if(portalEditOverlay)portalEditOverlay.innerHTML="";
   return;
@@ -689,10 +690,10 @@ function initPortalEditor(){
   applyPortalTuning();savePortalTuning();syncPortalEditorPanel();drawPortalEditorOverlay();
  });
  panel.querySelector("#portalResume").addEventListener("click",()=>{
-  ensureAC();
-  if(!transitCover||driving||pending)return;
-  portalEditHolding=false;
-  continueIntoTunnel();
+ ensureAC();
+ if(!transitCover||driving||pending)return;
+ portalEditHolding=false;
+  showTunnelRunIn();
  });
  panel.querySelector("#portalCopyJson").addEventListener("click",()=>{
   const text=JSON.stringify(portalTuning,null,2);
@@ -1026,27 +1027,50 @@ function renderCars(){
 }
 function coverEntryStop(){
  if(!coverEl)return worldX;
- return parseFloat(coverEl.style.left)-portalTuning.entryStopOffsetVw;
+ return parseFloat(coverEl.style.left)-TUNNEL_ENTRY_CAMERA_LEFT_VW;
 }
-function continueIntoTunnel(){
- if(!transitCover)return;
- setDriverMood("cheer");
- swapReady=true;swapped=false;
- target=stops(origin(stg+1),0);
- pending="quiz";driving=true;
- sndGo();
-}
-function showTunnelEntryPause(){
+function showTunnelRunIn(){
  setDriverMood("happy");
- if(PORTAL_EDIT_ENABLED){
-  portalEditHolding=true;
-  setPortalEditStatus("入口で停止中");
-  return;
- }
+ document.body.classList.add("tunnel-enter-run");
+ veh.classList.add("go");carsEl.classList.add("go");
+ setTimeout(()=>document.body.classList.add("tunnel-fade-dark"),520);
  setTimeout(()=>{
-  if(!playing||driving||pending||!transitCover)return;
-  continueIntoTunnel();
- },portalTuning.pauseMs);
+  if(!playing||driving||pending!=="tunnelSwitch")return;
+  enterTunnelInterior();
+ },940);
+ pending="tunnelSwitch";
+}
+function enterTunnelInterior(){
+ if(transitCover){transitCover.remove();transitCover=null;}
+ document.body.classList.remove("tunnel-enter-run");
+ tunnelInteriorMode=true;
+ document.body.classList.add("tunnel-interior");
+ world.innerHTML="";tunnels=[];coverEl=null;dropEl=null;
+ worldX=origin(stg)+COVER_OFF;
+ target=worldX+TUNNEL_INTERIOR_RUN_VW;
+ pending="tunnelExit";driving=true;swapReady=false;swapped=false;
+ veh.classList.add("go","inTun");veh.classList.remove("idle");
+ carsEl.classList.add("go","inTun");
+ sndGo();
+ requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+}
+function finishTunnelInterior(){
+ veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
+ document.body.classList.add("tunnel-fade-dark");
+ setTimeout(()=>{
+  if(!playing)return;
+  tunnelInteriorMode=false;
+  document.body.classList.remove("tunnel-interior");
+  stg++;buildQList();qSeg=0;stageMiss=0;rareSpawned=false;
+  applySkin();buildWorld(false);drawDots();
+  worldX=origin(stg);target=stops(origin(stg),0);
+  pending="quiz";driving=true;swapReady=false;swapped=false;
+  veh.classList.add("go");veh.classList.remove("idle");
+  carsEl.classList.add("go");
+  sparkOnVeh();sndGo();
+  speak("トンネルを ぬけたら、"+STAGES[stg].names[loop%2]+"だ！");
+  requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+ },360);
 }
 function beginStageTransit(){
  if(!coverEl)return;
@@ -1204,6 +1228,14 @@ function useHelp(){
 function render(){
  const o=origin(stg);
  world.style.transform="translateX("+(-worldX)+"vw)";
+ if(tunnelInteriorMode){
+  skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
+  skyB.style.opacity="0";
+  veh.classList.add("inTun");
+  carsEl.classList.add("inTun");
+  renderPortalMasks(null);
+  return;
+ }
  const hd=clamp((worldX-o)*0.095,0,70);
  horizon.style.transform="translateX("+(-hd)+"vw)";
  midT.style.backgroundPositionX=(-worldX*0.25)+"vw";
@@ -1263,7 +1295,8 @@ function gloop(t){
    const p=pending;pending=null;
    if(p==="quiz")showQuiz();
    else if(p==="dropoff")showDropoff();
-   else if(p==="tunnelEntry")showTunnelEntryPause();
+   else if(p==="tunnelEntry")showTunnelRunIn();
+   else if(p==="tunnelExit")finishTunnelInterior();
    else if(p==="ending")ending();
   }
  }
@@ -1274,7 +1307,8 @@ function gloop(t){
 /* ================= flow ================= */
 function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
- portalEditHolding=false;
+ portalEditHolding=false;tunnelInteriorMode=false;
+ document.body.classList.remove("tunnel-enter-run","tunnel-fade-dark","tunnel-interior");
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
  setDriverMood("cheer");
