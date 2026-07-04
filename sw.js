@@ -565,7 +565,33 @@
 // v1910: ガチャに Haptics 5 シーン (gachaTurn1_2 / gachaTurn3 / capsuleCrack / rareBadgePop / superBadgePop) + DOM particle burst (rare=12粒90°扇 / super=20粒360°、 reveal 瞬間に .daily-gacha-shell 直下へ spawn) を拡張。 common/haptics.js の PATTERNS に 5 key 追加 + fire() を number[] 対応、 play.html は capture.js の後に haptics.js を defer 読込、 pulseDailyGachaHaptic を Haptics 経由に統一 (bare vibrate fallback 残す)、 reveal timer で capsuleCrack + spawnGachaParticles、 openDelay+420ms で rare/super badge pop haptic。 CSS/JS のみ変更、 localStorage/schema 無影響 (opt-out: pono_haptics_off / pono_particles_off / prefers-reduced-motion)。play.html PAGE_CACHE_VERSION と同期。
 // v1914: Bento batch:1046 — 「はっぱ」を action-row から タブに移動 (side step で [カップ/はっぱ/しきり/ピック])、 タブ切替時に armed を必ず解除 (code-review fix a)。 編集パネルから 'おかずを かえる'/一般 'けす' を削除 (leaf 専用)。 cup fallback を 0.30/0.70 対称 2x2 に、 4 box の maskRel.x を対称化。 KV rewrite payload を scratchpad に用意 (POST /api/bento/mask-defaults 用)。 play.html PAGE_CACHE_VERSION と同期。
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1947;
+const CACHE_VERSION = 1948;
+// v1948: v1947 CrossReview の critical/high 潰し込み。
+// (a) [CRITICAL] `clearCardPointerDown` から `cardScrollState.isDragging = false` を撤去。
+//     CARD_TAP_STATE_TTL_MS (800ms) タイマが 「指がまだ触れている間に」 isDragging を
+//     false へ落として、 保留していた LOOP teleport が指ドラッグの途中で再開し
+//     drop-shadow が 1 frame drop する v1947 の主症状を根本除去。
+// (b) [HIGH] `handlePointerUp` の `!isDragging` early-return を撤去し、 pointerId 一致 gate に
+//     置換 (window に張った listener が bottom-nav や modal の pointerup を拾って進行中の
+//     ドラッグの isDragging を落とす二本指 iPad race を封じる)。
+// (c) [HIGH] `onCardPointerDown` を「target が .game-card でなくても cardList 内なら
+//     isDragging=true」 に修正。 .card-list の 24/32px padding や 4px gap を掴んだドラッグでも
+//     LOOP teleport / overlay toggle を保留させる。 tap 追跡 (cardPointerDown 記録) は
+//     従来通り .game-card ヒット時のみ。
+// (d) [HIGH] `.game-card:hover .game-card__title` / `.game-card__desc` の色/text-shadow 反転を
+//     `@media (hover:hover) and (pointer:fine)` の gate 内へ移動。 iOS portrait 実機の
+//     sticky :hover で発火してタイトル濃茶↔クリーム反転していた 「たまに一瞬消える」 の残存源を除去。
+//     `:focus-visible` はキーボード nav 用に gate 外に維持。
+// (e) [HIGH] `.card-list` の `overscroll-behavior: contain` → `none` に格上げ。 `contain` は祖先へ
+//     の scroll 連鎖しか止めず、 element-level rubber-band 中に mask fade 帯が露出する v1947
+//     コメントの意図を仕様として満たさなかったため、 意味を実装に合わせる。
+// (f) [HIGH] `.game-card__peek` base rule の `will-change: opacity` を撤去し
+//     `.game-card.is-overlay-active .game-card__peek` にだけ付与。 27 peek 全部を常時 compositor
+//     layer 化していたのを overlay 遷移中の数枚だけに絞り、 低スペック Android の layer eviction
+//     による逆方向 flash を回避。
+// (g) 軽量 safety net: window pointerup/pointercancel で pointerId 一致時のみ isDragging を
+//     クリアする冪等ハンドラを追加 (LOOP_COPIES<=1 経路 / setupLoopScroll 未実行 race の保険)。
+// play.html PAGE_CACHE_VERSION 同期。
 // v1947: play.html タイトル画面カードのタップ/ドラッグ時ちらつき (root causes: peek 0.35s fade の
 // scroll 連動連続再発火 / LOOP teleport と drop-shadow の GPU 合成競合 / iOS sticky :hover /
 // rubber-band 中の mask fade 露出 / 初回 pointerdown で 15 件 preload 同期挿入) をまとめて緩和。

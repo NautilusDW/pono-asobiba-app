@@ -443,10 +443,13 @@
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
-      /* v1947: iOS Safari rubber-band 中に mask fade 帯が露出して端カードが薄く
-         見える症状と、 親スクロールへの pull-to-refresh 誤伝播を封じる。 */
+      /* v1948: `overscroll-behavior: contain` は「祖先へのスクロール連鎖」しか止めず、
+         iOS Safari の element-level rubber-band bounce は止まらない (element 自身の
+         bounce 中に上下 mask fade 帯が露出して端カードが薄く見える再現あり)。
+         `none` に格上げして pull-to-refresh 誤伝播 + rubber-band 露出を同時抑制。
+         touch-action:pan-y は横スワイプ抑止と gesture 判定短縮のため据置。 */
       touch-action: pan-y;
-      overscroll-behavior: contain;
+      overscroll-behavior: none;
       /* Custom snap (JS-driven) — see setupLoopScroll. CSS scroll-snap
          fights with the loop teleport, so we don't use it here. */
       scroll-behavior: auto;
@@ -716,10 +719,12 @@
               mask-repeat: no-repeat;
               mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
       opacity: 0;
-      /* v1947: 0.35s → 0.18s + will-change で fade 中に反転命令が入っても
-         残尾が短く済むようにし、 ドラッグ中の連続点滅を目立たなくする。 */
+      /* v1947: 0.35s → 0.18s で fade 中に反転命令が入っても残尾が短く済む。
+         v1948: base rule の `will-change: opacity` は 27 peek 全部を常時 compositor
+         layer に昇格させ、 低スペック Android で layer budget 超過→ eviction/repromotion
+         が起きると逆に 1 frame blank を招くため撤去。 promotion が必要なのは overlay 遷移
+         中の peek だけなので、 `.is-overlay-active` variant にだけ will-change を付ける。 */
       transition: opacity 0.18s ease;
-      will-change: opacity;
       pointer-events: none;
       z-index: 1;
     }
@@ -747,6 +752,9 @@
        既存 hover/focus-visible/peek-always と同じ opacity 値で衝突回避。 */
     .game-card.is-overlay-active .game-card__peek {
       opacity: 0.92;
+      /* v1948: overlay 遷移中の peek だけ compositor layer に昇格 (base rule から
+         will-change を撤去した代わり)。 class 解除で will-change も同時解除される。 */
+      will-change: opacity;
     }
     /* is-coming-soon カードは peekStyle='none' なので背景は出ないが、
        念のため明示的に 0 にして将来 bg が入っても tease しないよう二重ガード。 */
@@ -765,8 +773,12 @@
     .game-card__soon { z-index: 4; }
 
     /* Hover text style: bright cream with a strong dark outline +
-       drop-shadow so titles stay legible on top of any photo bg. */
-    .game-card:hover .game-card__title,
+       drop-shadow so titles stay legible on top of any photo bg.
+       v1948: `.game-card:hover` を @media (hover:hover) and (pointer:fine) の gate 内へ
+       移動 (それまで L557 の filter / L679 の thumb scale と非対称で portrait iOS Safari
+       の sticky :hover を受けたときにタイトル文字色 濃茶 ↔ クリーム 反転が発火して
+       「たまに一瞬消える」 のちらつき源になっていた)。 focus-visible はキーボード nav の
+       ため gate 外に残す。 */
     .game-card:focus-visible .game-card__title {
       color: #fff5d6;
       /* Same 8-direction vector pattern as the default title outline,
@@ -782,7 +794,6 @@
         -1px -1px 0 rgba(20, 10, 0, 0.95),
         0 4px 8px rgba(0, 0, 0, 0.6);
     }
-    .game-card:hover .game-card__desc,
     .game-card:focus-visible .game-card__desc {
       color: #fff5d6;
       text-shadow:
@@ -795,6 +806,34 @@
         0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
         -0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
         0 2px 4px rgba(0, 0, 0, 0.6);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .game-card:hover .game-card__title {
+        color: #fff5d6;
+        text-shadow:
+          1.4px 0 0 rgba(20, 10, 0, 0.95),
+          -1.4px 0 0 rgba(20, 10, 0, 0.95),
+          0 1.4px 0 rgba(20, 10, 0, 0.95),
+          0 -1.4px 0 rgba(20, 10, 0, 0.95),
+          1px 1px 0 rgba(20, 10, 0, 0.95),
+          -1px 1px 0 rgba(20, 10, 0, 0.95),
+          1px -1px 0 rgba(20, 10, 0, 0.95),
+          -1px -1px 0 rgba(20, 10, 0, 0.95),
+          0 4px 8px rgba(0, 0, 0, 0.6);
+      }
+      .game-card:hover .game-card__desc {
+        color: #fff5d6;
+        text-shadow:
+          1px 0 0 rgba(20, 10, 0, 0.95),
+          -1px 0 0 rgba(20, 10, 0, 0.95),
+          0 1px 0 rgba(20, 10, 0, 0.95),
+          0 -1px 0 rgba(20, 10, 0, 0.95),
+          0.7px 0.7px 0 rgba(20, 10, 0, 0.95),
+          -0.7px 0.7px 0 rgba(20, 10, 0, 0.95),
+          0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
+          -0.7px -0.7px 0 rgba(20, 10, 0, 0.95),
+          0 2px 4px rgba(0, 0, 0, 0.6);
+      }
     }
     /* 3-5. 中央のテキスト (タイトル + 説明) */
     .game-card__text {
@@ -7080,7 +7119,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1947;
+    const PAGE_CACHE_VERSION = 1948;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -7195,6 +7234,24 @@
       cardList.addEventListener('pointerdown', onCardPointerDown, { passive: true });
       cardList.addEventListener('pointercancel', clearCardPointerDown, { passive: true });
       cardList.addEventListener('click', onCardClick);
+      // v1948: pointerId 一致時のみ isDragging をリセットする軽量 safety net。
+      // 通常経路では setupLoopScroll 内の handlePointerUp が本命だが、
+      // (a) LOOP_COPIES<=1 の防御経路 (setupLoopScroll 早期 return) や
+      // (b) 何らかの理由で setupLoopScroll がまだ走っていない超初期の pointerup
+      // でも isDragging を必ずクリアするため、 冪等な軽量ハンドラを張る。
+      // teleport や overlay 更新は行わない (handlePointerUp が担当)。
+      const releaseCardDragFlag = (e) => {
+        if (
+          e && e.pointerId !== undefined && cardScrollState.pointerId !== null &&
+          e.pointerId !== cardScrollState.pointerId
+        ) {
+          return;
+        }
+        cardScrollState.isDragging = false;
+        cardScrollState.pointerId = null;
+      };
+      window.addEventListener('pointerup', releaseCardDragFlag, { passive: true });
+      window.addEventListener('pointercancel', releaseCardDragFlag, { passive: true });
 
       // Mark broken images so CSS fallbacks kick in (local preview without assets).
       // iOS Safari ではメモリ圧迫で <img> が一時的にロード失敗することがあるので、
@@ -7459,9 +7516,26 @@
 
       // v1947: 指ドラッグ終了時に (1) middle overlay を再計算、
       // (2) 保留していた LOOP teleport 境界を再判定してまとめて teleport。
-      const handlePointerUp = () => {
-        if (!cardScrollState.isDragging) return;
+      // v1948:
+      //   - `!isDragging` の早期 return を撤去。 clearCardPointerDown が isDragging を
+      //     操作しなくなったので、 実 pointerup は必ず isDragging=true で入る想定だが、
+      //     万一 false でも teleport/overlay 更新は冪等なので safe to run。
+      //   - pointerId gate を追加。 window に登録した listener が bottom-nav / modal /
+      //     capture.js overlay 等 cardList 外の pointerup を拾って、 進行中のドラッグの
+      //     isDragging を早期に落とすのを防ぐ (二本指 iPad で頻発する race)。
+      const handlePointerUp = (e) => {
+        // v1948: 既に release 済み (isDragging=false かつ pointerId=null) なら何もしない。
+        // window listener が bottom-nav 等の関係ない pointerup で毎回 teleport チェック +
+        // rAF updateMiddleOverlay を回さないように早期 return。
+        if (!cardScrollState.isDragging && cardScrollState.pointerId === null) return;
+        if (
+          e && e.pointerId !== undefined && cardScrollState.pointerId !== null &&
+          e.pointerId !== cardScrollState.pointerId
+        ) {
+          return;
+        }
         cardScrollState.isDragging = false;
+        cardScrollState.pointerId = null;
         const t = cardList.scrollTop;
         const setNow = oneSetH();
         if (setNow) {
@@ -7565,7 +7639,11 @@
     // v1947: isDragging を追加。 pointerdown〜pointerup 間は真になり、
     // scroll handler 内の rAF middle-overlay 更新 / LOOP teleport を保留する
     // ことでカードの連続点滅と 1 frame blank 消失を防ぐ。
-    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0, isDragging: false };
+    // v1948: pointerId を追加。 handlePointerUp を window にも登録している都合で、
+    // bottom-nav や modal 等 cardList 外の pointerup も届くため、 pointerdown 時の
+    // pointerId と一致した pointerup だけ isDragging を落とす (multi-touch でも
+    // 「別の指が cardList 外で離れた」を無視できる)。
+    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0, isDragging: false, pointerId: null };
 
     function isTapIntroBlockingInput() {
       const intro = document.getElementById('tapIntro');
@@ -7581,11 +7659,17 @@
         clearCardPointerDown();
         return;
       }
+      if (typeof e.button === 'number' && e.button > 0) return;
+      // v1948: cardList (padding 24/32px と card 間 4px gap を含む) に触れた瞬間から
+      // LOOP teleport / overlay toggle を保留する。 target が `.game-card` でなくても
+      // padding/gap をタッチしたドラッグは十分あり得るため、 isDragging を先に立てる。
+      // pointerId は handlePointerUp が bottom-nav 等の pointerup と混線しないための marker。
+      cardScrollState.isDragging = true;
+      if (e.pointerId !== undefined) cardScrollState.pointerId = e.pointerId;
       const card = e.target.closest('.game-card');
-      if (!card || (typeof e.button === 'number' && e.button > 0)) return;
+      if (!card) return;
       clearTimeout(cardPointerDownTimer);
       cardScrollState.userScrollDelta = 0;
-      cardScrollState.isDragging = true;
       cardPointerDown = {
         x: e.clientX,
         y: e.clientY,
@@ -7601,10 +7685,12 @@
       clearTimeout(cardPointerDownTimer);
       cardPointerDownTimer = 0;
       cardPointerDown = null;
-      // v1947: LOOP_COPIES<=1 で setupLoopScroll 側 pointerup listener が
-      // 登録されない経路の safety net。 通常 (LOOP_COPIES=3) 経路でも
-      // 二重解除は無害。
-      cardScrollState.isDragging = false;
+      // v1948: `isDragging=false` の同時解除を撤去。 CARD_TAP_STATE_TTL_MS (800ms) 経由の
+      // stale-tap invalidate だけを担わせ、 ドラッグ抑止フラグは pointerup/pointercancel
+      // ライフサイクル (handlePointerUp / handleGlobalPointerRelease) だけが操作する。
+      // 800ms を超える 「ゆっくり指ドラッグ (1〜2 秒)」 が途中で isDragging=false になり
+      // 保留していた LOOP teleport が指の途中で再開して drop-shadow が 1 frame 落ちる
+      // v1947 の critical bug を封じるため。
     }
 
     function isCardTap(e, card) {
