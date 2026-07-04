@@ -174,6 +174,21 @@ function setup_Helpers(ss, source) {
   const sheet = getOrCreateSheet_(ss, TAB_HELPERS, { reuseLegacy: true });
   clearSheet_(sheet);
 
+  // 列数を確保 (P:AE = 31 列 + buffer)
+  // 「シート1」流用時は default 26 列しかなく、 後段の setColumnWidths(1, 32, 110)
+  // や P1:AE1 setValues が out-of-bounds で落ちるため、 先に拡張する。
+  const NEEDED_COLS = 32;
+  const currentCols = sheet.getMaxColumns();
+  if (currentCols < NEEDED_COLS) {
+    sheet.insertColumnsAfter(currentCols, NEEDED_COLS - currentCols);
+  }
+  // 行数も確保 (formula が row 5000 まで参照するため)
+  const NEEDED_ROWS = 5000;
+  const currentRows = sheet.getMaxRows();
+  if (currentRows < NEEDED_ROWS) {
+    sheet.insertRowsAfter(currentRows, NEEDED_ROWS - currentRows);
+  }
+
   // --- ヘッダ ---
   sheet.getRange('A1:D1').setValues([[
     'timestamp', 'environment', 'gameId', 'positiveNote'
