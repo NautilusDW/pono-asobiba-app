@@ -239,12 +239,12 @@ const STATION_HELPERS=[
 ];
 const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_LEN=370;
-const TRAIN_WIDTH_MIN_PX=190, TRAIN_WIDTH_VW=31, TRAIN_WIDTH_MAX_PX=330, DEFAULT_VEHICLE_LEFT_VW=28;
+const TRAIN_WIDTH_MIN_PX=204, TRAIN_WIDTH_VW=33.2, TRAIN_WIDTH_MAX_PX=356, TRAIN_RIGHT_SHIFT_VW=5, DEFAULT_VEHICLE_LEFT_VW=28;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=180;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
- return 50-(w/vw*50);
+ return 50-(w/vw*50)+TRAIN_RIGHT_SHIFT_VW;
 }
 const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
 const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;
@@ -981,7 +981,7 @@ function buildAmbient(P){
 }
 
 /* ================= passengers ================= */
-function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?17.1:8.8;}
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?18.8:8.8;}
 function visibleCarGroups(){
  const start=Math.max(0,cars.length-8);
  const aligned=start%2?start-1:start;
