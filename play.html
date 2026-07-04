@@ -443,6 +443,10 @@
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      /* v1947: iOS Safari rubber-band 中に mask fade 帯が露出して端カードが薄く
+         見える症状と、 親スクロールへの pull-to-refresh 誤伝播を封じる。 */
+      touch-action: pan-y;
+      overscroll-behavior: contain;
       /* Custom snap (JS-driven) — see setupLoopScroll. CSS scroll-snap
          fights with the loop teleport, so we don't use it here. */
       scroll-behavior: auto;
@@ -547,10 +551,15 @@
         drop-shadow(0 2px 2px rgba(20, 10, 0, 0.55))
         drop-shadow(0 5px 8px rgba(20, 10, 0, 0.7));
     }
-    .game-card:hover {
-      filter:
-        drop-shadow(0 3px 3px rgba(20, 10, 0, 0.6))
-        drop-shadow(0 6px 10px rgba(20, 10, 0, 0.8));
+    /* v1947: iOS/iPadOS の sticky :hover でタッチ後もアニメが尾を引き
+       隣カードに指が伝わると連鎖点滅する症状を封じるため、 hover 系ルールは
+       hover: hover + pointer: fine の実機だけに限定する。 */
+    @media (hover: hover) and (pointer: fine) {
+      .game-card:hover {
+        filter:
+          drop-shadow(0 3px 3px rgba(20, 10, 0, 0.6))
+          drop-shadow(0 6px 10px rgba(20, 10, 0, 0.8));
+      }
     }
     .game-card:active { transform: none; }
     /* "Selected" used to add a yellow halo + swap the play button to a
@@ -663,13 +672,18 @@
       background:
         radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.88), rgba(255, 247, 222, 0.68) 34%, rgba(221, 190, 133, 0.78) 100%);
     }
-    .game-card:hover .game-card__thumb,
+    /* keyboard nav (focus-visible) はタッチ機でも動くように gate 外に維持 */
     .game-card:focus-visible .game-card__thumb {
       transform: scale(calc(var(--gc-thumb-zoom, 1.15) * 1.12));
     }
-    /* Coming-soon: don't zoom either */
-    .game-card.is-coming-soon:hover .game-card__thumb {
-      transform: scale(var(--gc-thumb-zoom, 1.15));
+    @media (hover: hover) and (pointer: fine) {
+      .game-card:hover .game-card__thumb {
+        transform: scale(calc(var(--gc-thumb-zoom, 1.15) * 1.12));
+      }
+      /* Coming-soon: don't zoom either */
+      .game-card.is-coming-soon:hover .game-card__thumb {
+        transform: scale(var(--gc-thumb-zoom, 1.15));
+      }
     }
 
     /* Hover-peek layer: a snapshot of the game's title background that
@@ -702,7 +716,10 @@
               mask-repeat: no-repeat;
               mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
       opacity: 0;
-      transition: opacity 0.35s ease;
+      /* v1947: 0.35s → 0.18s + will-change で fade 中に反転命令が入っても
+         残尾が短く済むようにし、 ドラッグ中の連続点滅を目立たなくする。 */
+      transition: opacity 0.18s ease;
+      will-change: opacity;
       pointer-events: none;
       z-index: 1;
     }
@@ -7063,7 +7080,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1946;
+    const PAGE_CACHE_VERSION = 1947;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -7114,8 +7131,13 @@
       // v1694: 旧 (rep<=1) eager 規則を撤廃。 FV (rep=PRIORITY_REP, i<5) のみ
       // 高優先 (eager+sync+high)、 それ以外は lazy+async+low に揃える。
       // thumb は唯一の <img> なので fetchpriority を仕分けて並列発射を抑制。
+      // v1947: 初期着地 set (rep=1) から teleport 直後に露出する隣接 set (rep=0)
+      // でも lazy img の hydrate 待ちで blank タイルがちらつく症状があるため、
+      // rep<=PRIORITY_REP を eager 対象に拡張 (FV 内は fetchpriority=high、
+      // 隣接 set は eager+async+low で並列を抑えつつ事前 decode)。
       const isPriority = (rep === PRIORITY_REP) && (i < PRIORITY_EAGER_COUNT);
-      const loadingAttr   = isPriority ? 'eager' : 'lazy';
+      const isEager    = rep <= PRIORITY_REP;
+      const loadingAttr   = isEager    ? 'eager' : 'lazy';
       const decodingAttr  = isPriority ? 'sync'  : 'async';
       const priorityAttr  = isPriority ? 'high'  : 'low';
       const peekStyle = g.comingSoon ? 'none' : `url('${esc(__bust(g.bg))}')`;
@@ -7394,18 +7416,24 @@
 
         if (cardScrollState.teleporting) return;
         const set = oneSetH();
-        if (t < set * 0.5) {
-          cardScrollState.teleporting = true;
-          cardList.scrollTop = t + set;
-          lastScrollTop = cardList.scrollTop;
-          requestAnimationFrame(() => { cardScrollState.teleporting = false; });
-          return;
-        } else if (t > set * 1.5) {
-          cardScrollState.teleporting = true;
-          cardList.scrollTop = t - set;
-          lastScrollTop = cardList.scrollTop;
-          requestAnimationFrame(() => { cardScrollState.teleporting = false; });
-          return;
+        // v1947: 指ドラッグ中は LOOP teleport を pointerup まで遅延。
+        // finger drag 中の同期 scrollTop ジャンプが GPU 合成と競合して
+        // drop-shadow が 1 frame drop する 「一瞬消える」 症状を消す。
+        // pointerup 後の handlePointerUp() で境界チェックしてまとめて teleport。
+        if (!cardScrollState.isDragging) {
+          if (t < set * 0.5) {
+            cardScrollState.teleporting = true;
+            cardList.scrollTop = t + set;
+            lastScrollTop = cardList.scrollTop;
+            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
+            return;
+          } else if (t > set * 1.5) {
+            cardScrollState.teleporting = true;
+            cardList.scrollTop = t - set;
+            lastScrollTop = cardList.scrollTop;
+            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
+            return;
+          }
         }
         // Debounced snap: wait for the user to stop scrolling.
         if (cardScrollState.snapping) return;
@@ -7420,13 +7448,48 @@
           });
         }
         // v1673: middle-3 overlay 更新 (rAF throttle、 scrollHintRaf と同パターン)
-        if (!middleOverlayRaf) {
+        // v1947: ドラッグ中は overlay の class toggle を保留 (peek の連続点滅対策)
+        if (!middleOverlayRaf && !cardScrollState.isDragging) {
           middleOverlayRaf = requestAnimationFrame(() => {
             middleOverlayRaf = 0;
             updateMiddleOverlay();
           });
         }
       }, { passive: true });
+
+      // v1947: 指ドラッグ終了時に (1) middle overlay を再計算、
+      // (2) 保留していた LOOP teleport 境界を再判定してまとめて teleport。
+      const handlePointerUp = () => {
+        if (!cardScrollState.isDragging) return;
+        cardScrollState.isDragging = false;
+        const t = cardList.scrollTop;
+        const setNow = oneSetH();
+        if (setNow) {
+          if (t < setNow * 0.5) {
+            cardScrollState.teleporting = true;
+            cardList.scrollTop = t + setNow;
+            lastScrollTop = cardList.scrollTop;
+            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
+          } else if (t > setNow * 1.5) {
+            cardScrollState.teleporting = true;
+            cardList.scrollTop = t - setNow;
+            lastScrollTop = cardList.scrollTop;
+            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
+          }
+        }
+        if (!middleOverlayRaf) {
+          middleOverlayRaf = requestAnimationFrame(() => {
+            middleOverlayRaf = 0;
+            updateMiddleOverlay();
+          });
+        }
+      };
+      cardList.addEventListener('pointerup', handlePointerUp, { passive: true });
+      cardList.addEventListener('pointercancel', handlePointerUp, { passive: true });
+      // Safari では touch を離す前に window の外へ抜けると pointerup が飛ばない
+      // ケースがあるため window 側にも保険を張る (二重発火は isDragging guard で無害)。
+      window.addEventListener('pointerup', handlePointerUp, { passive: true });
+      window.addEventListener('pointercancel', handlePointerUp, { passive: true });
 
       // 初回 scroll-hint 状態反映
       updateScrollHints();
@@ -7499,7 +7562,10 @@
     let cardPointerDownTimer = 0;
     // Shared scroll state exposed by setupLoopScroll so isCardTap can tell
     // user-driven scroll apart from programmatic snap/teleport.
-    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0 };
+    // v1947: isDragging を追加。 pointerdown〜pointerup 間は真になり、
+    // scroll handler 内の rAF middle-overlay 更新 / LOOP teleport を保留する
+    // ことでカードの連続点滅と 1 frame blank 消失を防ぐ。
+    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0, isDragging: false };
 
     function isTapIntroBlockingInput() {
       const intro = document.getElementById('tapIntro');
@@ -7519,6 +7585,7 @@
       if (!card || (typeof e.button === 'number' && e.button > 0)) return;
       clearTimeout(cardPointerDownTimer);
       cardScrollState.userScrollDelta = 0;
+      cardScrollState.isDragging = true;
       cardPointerDown = {
         x: e.clientX,
         y: e.clientY,
@@ -7534,6 +7601,10 @@
       clearTimeout(cardPointerDownTimer);
       cardPointerDownTimer = 0;
       cardPointerDown = null;
+      // v1947: LOOP_COPIES<=1 で setupLoopScroll 側 pointerup listener が
+      // 登録されない経路の safety net。 通常 (LOOP_COPIES=3) 経路でも
+      // 二重解除は無害。
+      cardScrollState.isDragging = false;
     }
 
     function isCardTap(e, card) {

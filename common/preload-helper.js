@@ -460,7 +460,18 @@
     }
 
     // 早期発火: 最初の pointerdown / touchstart / keydown
-    function onEarly() { flush(); }
+    // v1947: pointerdown 同期スタックで 15 件の <link rel=preload> を挿入すると
+    // iOS Safari の Resource Loader kick-off が main thread を 30-100ms 占有し、
+    // 直後の rAF paint (updateMiddleOverlay 等) を遅延させて初回タップの flicker
+    // 体感を悪化させる。 flush は idle callback (fallback: setTimeout 0) に逃がす。
+    function onEarly() {
+      removeEarlyListeners();
+      if (typeof global.requestIdleCallback === 'function') {
+        global.requestIdleCallback(flush, { timeout: 500 });
+      } else {
+        setTimeout(flush, 0);
+      }
+    }
     function removeEarlyListeners() {
       window.removeEventListener('pointerdown', onEarly, true);
       window.removeEventListener('touchstart', onEarly, true);

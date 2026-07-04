@@ -565,7 +565,19 @@
 // v1910: ガチャに Haptics 5 シーン (gachaTurn1_2 / gachaTurn3 / capsuleCrack / rareBadgePop / superBadgePop) + DOM particle burst (rare=12粒90°扇 / super=20粒360°、 reveal 瞬間に .daily-gacha-shell 直下へ spawn) を拡張。 common/haptics.js の PATTERNS に 5 key 追加 + fire() を number[] 対応、 play.html は capture.js の後に haptics.js を defer 読込、 pulseDailyGachaHaptic を Haptics 経由に統一 (bare vibrate fallback 残す)、 reveal timer で capsuleCrack + spawnGachaParticles、 openDelay+420ms で rare/super badge pop haptic。 CSS/JS のみ変更、 localStorage/schema 無影響 (opt-out: pono_haptics_off / pono_particles_off / prefers-reduced-motion)。play.html PAGE_CACHE_VERSION と同期。
 // v1914: Bento batch:1046 — 「はっぱ」を action-row から タブに移動 (side step で [カップ/はっぱ/しきり/ピック])、 タブ切替時に armed を必ず解除 (code-review fix a)。 編集パネルから 'おかずを かえる'/一般 'けす' を削除 (leaf 専用)。 cup fallback を 0.30/0.70 対称 2x2 に、 4 box の maskRel.x を対称化。 KV rewrite payload を scratchpad に用意 (POST /api/bento/mask-defaults 用)。 play.html PAGE_CACHE_VERSION と同期。
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1946;
+const CACHE_VERSION = 1947;
+// v1947: play.html タイトル画面カードのタップ/ドラッグ時ちらつき (root causes: peek 0.35s fade の
+// scroll 連動連続再発火 / LOOP teleport と drop-shadow の GPU 合成競合 / iOS sticky :hover /
+// rubber-band 中の mask fade 露出 / 初回 pointerdown で 15 件 preload 同期挿入) をまとめて緩和。
+// (1) .card-list に touch-action:pan-y / overscroll-behavior:contain、
+// (2) .game-card:hover 系 filter / thumb scale を @media (hover:hover) and (pointer:fine) で gate、
+// (3) .game-card__peek transition 0.35s→0.18s + will-change:opacity、
+// (4) cardScrollState.isDragging を pointerdown で立て、 pointerup までは updateMiddleOverlay と
+//     LOOP teleport を保留、 pointerup 後に境界再判定 + overlay 更新、
+// (5) cardMarkup img loading を rep<=PRIORITY_REP で eager、
+// (6) common/preload-helper.js の onEarly flush を requestIdleCallback (fallback setTimeout 0) に逃がして
+//     pointerdown 同期スタックから 15 件の <link rel=preload> 挿入を切り離し。
+// play.html PAGE_CACHE_VERSION 同期。
 // v1946: v1945 CrossReview HIGH 潰し込み。 maze/index.html (L3819 window.blur→_mzPauseAllAudio) と
 // bento/kitchen.html (L7598 window.blur→stopAllKitchenAmbient(120)) にも同型の iOS 疑似 blur バグ
 // (URL バー / キーボード / 通知 / モーダル focus 遷移で BGM/環境音が停止する) が残存していたため、
