@@ -328,7 +328,7 @@ function updateCarouselLayout() {
   const list = state.filtered;
   const total = list.length;
   const viewportWidth = els.carouselViewport.clientWidth || window.innerWidth;
-  const step = clamp(viewportWidth * 0.24, 126, 268);
+  const step = clamp(viewportWidth * 0.36, 220, 420);
 
   Array.from(els.carouselLayer.children).forEach((item) => {
     const index = Number(item.dataset.index || 0);
@@ -336,8 +336,8 @@ function updateCarouselLayout() {
     const distance = Math.abs(offset);
     const active = offset === 0;
     const visible = distance <= 3;
-    const scale = active ? 1 : distance === 1 ? 0.82 : distance === 2 ? 0.68 : 0.54;
-    const opacity = visible ? (active ? 1 : distance === 1 ? 0.86 : distance === 2 ? 0.52 : 0.18) : 0;
+    const scale = active ? 1 : distance === 1 ? 0.76 : distance === 2 ? 0.58 : 0.42;
+    const opacity = visible ? (active ? 1 : distance === 1 ? 0.82 : distance === 2 ? 0.46 : 0.12) : 0;
     const blur = visible ? (distance >= 3 ? 1.8 : 0) : 3;
 
     item.classList.toggle("is-active", active);

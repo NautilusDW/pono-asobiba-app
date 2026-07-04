@@ -392,7 +392,7 @@ h1 {
   position: absolute;
   left: 50%;
   top: 52%;
-  width: clamp(230px, 31vw, 430px);
+  width: clamp(310px, 44vw, 600px);
   aspect-ratio: 4 / 3;
   padding: 0;
   border: 0;
@@ -445,10 +445,10 @@ h1 {
 .sticker-wrap {
   position: absolute;
   left: 50%;
-  top: 44%;
+  top: 43.5%;
   display: grid;
   place-items: center;
-  width: 24%;
+  width: 29%;
   aspect-ratio: 1;
   border-radius: 0;
   background: transparent;
@@ -489,25 +489,26 @@ h1 {
 
 .frame-label {
   position: absolute;
-  left: 34%;
-  right: 34%;
-  bottom: 12%;
+  left: 33.5%;
+  right: 33.5%;
+  top: 86%;
   display: grid;
   place-items: center;
-  min-height: 18px;
-  padding: 0 7px 1px;
+  height: 20px;
+  min-height: 0;
+  padding: 2px 7px 0;
   border-radius: 4px;
   background: transparent;
   border: 0;
   color: #39200c;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 900;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 0 rgba(255, 232, 156, 0.34);
-  transform: translateY(1px) scaleX(0.96);
+  transform: translateY(-50%) scaleX(0.96);
 }
 
 .nav-arrow {
@@ -869,14 +870,14 @@ h1 {
   }
 
   .carousel-item {
-    width: clamp(190px, 32vw, 280px);
+    width: clamp(310px, 45vw, 370px);
     aspect-ratio: 4 / 3;
     top: 51%;
   }
 
   .frame-label {
-    min-height: 18px;
-    font-size: 0.7rem;
+    height: 18px;
+    font-size: 0.72rem;
   }
 
   .nav-arrow {
@@ -913,6 +914,12 @@ h1 {
   .tag {
     min-height: 26px;
     font-size: 0.76rem;
+  }
+}
+
+@media (max-height: 360px) and (orientation: landscape) {
+  .carousel-item {
+    width: clamp(260px, 38vw, 300px);
   }
 }
 
