@@ -8188,6 +8188,17 @@ function _finishRhythmOpening() {
 }
 function _startRhythmOpeningFromMenu() {
   if (_rhythm.openingMenuTimer) return;
+  // v1963: ステージ選択で「はじめる」を押したとき、チュートリアル ON (=「次回から出さない」に
+  // チェックされていない = _otoTutorialSeen('rhythmStart') が false) なら、選択ステージ開始の前に
+  // 必ずチュートリアルを再生する。 チュートリアル完了後は _finishOtoTutorial の
+  // shouldStartRhythmAfterTutorial 経由で選択中の RHYTHM_BASE_SONG (=選んだステージ) が開始される。
+  // (_startRhythmStoryFromTitle の初回パスと同じ仕組み)
+  if (!_otoTutorialSeen('rhythmStart')) {
+    _hideRhythmMenu();
+    _prepareOtoRhythmTutorialStage({ hideHud: true });
+    showTutorial('rhythmStart', { force: true });
+    return;
+  }
   var menu = document.getElementById('rhythm-menu');
   if (menu) menu.classList.add('is-starting');
   _rhythm.openingMenuTimer = setTimeout(function() {
