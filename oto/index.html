@@ -11719,7 +11719,13 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
         return;
       }
       setPlayMode('free');
-      _startRhythmStoryFromTitle();
+      // ステージ選択が解放済み (=何度目かの人) はステージ選択画面へ、未解放 (=初回) は
+      // 従来通りチュートリアル → ステージ1。 (title のモード選択ボタンと挙動を統一)
+      if (_rhythmStageSelectUnlocked()) {
+        _openRhythmStageSelect();
+      } else {
+        _startRhythmStoryFromTitle();
+      }
     }
     else {
       _hideRhythmMenu();
@@ -14466,6 +14472,24 @@ document.addEventListener('click', _captureOtoTutorialRhythmMenuInput, true);
     showStartChoice();
   }
   intro.addEventListener('click', startIntro);
+  // 「タップしてスタート」を廃止: 起動時にそのままモード選択 (リズム/じゆう) を表示する。
+  // AudioContext は autoplay 制限で load 時にアンロックできないため、タイトル BGM と
+  // animal デコードは最初のユーザー操作 (モードボタン以外のタップも含む) で開始する。
+  showStartChoice();
+  var _titleBgmKicked = false;
+  function _kickTitleBgmOnce(e) {
+    if (_titleBgmKicked) return;
+    // モードボタン自体のタップは、その後の遷移が自前で BGM を鳴らすのでスキップ (二重鳴り防止)
+    if (e && e.target && e.target.closest && e.target.closest('.start-mode-btn, .start-free-view-btn')) return;
+    _titleBgmKicked = true;
+    document.removeEventListener('pointerdown', _kickTitleBgmOnce, true);
+    if (!document.body.classList.contains('app-started')) {
+      unlockAudio();
+      _playOtoBgm('title', { fadeMs: 220 });
+      _ensureAnimalDecoded();
+    }
+  }
+  document.addEventListener('pointerdown', _kickTitleBgmOnce, true);
   if (startChoice) {
     startChoice.querySelectorAll('.start-mode-btn').forEach(function(btn) {
       btn.addEventListener('click', function(e) {
@@ -14475,7 +14499,14 @@ document.addEventListener('click', _captureOtoTutorialRhythmMenuInput, true);
         if (btn.dataset.startMode === 'rhythm') {
           enterApp();
           setPlayMode('free');
-          _startRhythmStoryFromTitle();
+          // ステージ選択が解放済み (=1面クリア済み=何度目かの人) はステージ選択画面へ直行し、
+          // 好きなステージを選べるようにする (チュートリアルは出さない)。
+          // 未解放 (=初回の人) は従来通りチュートリアル → ステージ1。
+          if (_rhythmStageSelectUnlocked()) {
+            _openRhythmStageSelect();
+          } else {
+            _startRhythmStoryFromTitle();
+          }
         } else {
           showFreeStyleChoice();
         }
