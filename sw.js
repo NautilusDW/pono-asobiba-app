@@ -1,5 +1,14 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1961: デイリーガチャレバー (play.html #dailyGachaLever) のタップ判定を子供向けに拡張。
+// 主因: レバー本体は 1365/507 ≒ 2.69:1 の細い横長で、 幼児が上下に外して pointerdown が
+// 発火しない苦情。 .daily-gacha-lever に ::before 疑似要素を追加し、 inset -60% -20%
+// (mobile は -90% -25%) で不可視のヒット領域を上下左右に膨らませた。 button の
+// getBoundingClientRect() は疑似要素を含まないため angleForDailyGachaPointer() の
+// レバー中心座標は不変で、 ドラッグ角度計算は完全に保存される。 img は pointer-events:none の
+// ままなので描画/回転にも影響なし。 is-armed / is-grabbing / is-notch / data-blocked /
+// focus-visible の全ステート class は無変更。 親 .daily-gacha-machine-wrap は overflow:visible
+// のため拡張ヒット領域は親でクリップされない。 play.html PAGE_CACHE_VERSION と同期。
 // v1959: v1958 のクロスレビュー Critical/High 解消。 (a) .game-card::before/is-coming-soon::after の
 // inset を padding 追随 (16px/10px) から 0 に修正 — 実測で menu_card_base_01.webp は card box に
 // edge-to-edge で fill されており、 padding 分内側に寄せると影/tint が plank 面の内側に乗る不具合だった。
@@ -585,7 +594,7 @@
 // v1955: Bento batch:937 — お願いモードのオープニング体験を大幅改善。 (a) ゲーム画面フラッシュ排除: overlay の display:block 前倒しでお願いモードボタン押下→ゲーム画面透け見えを解消。 (b) マスク未着装フラッシュ排除: staff/customer mask 要素の visibility を bg/キャラと同期、has-customer/is-entering を同一 rAF で付与。 (c) race hazard 対策: initialReveal 中は next ボタン disable、画像 decode 完了で復帰。 (d) にこセット差別化: nori_eye_round → book_nori_eye_smile (^^ 三日月目) + 口幅 0.5→0.58 で笑い顔強調。 (e) 下敷きモード改善: leaf picker を選択→armed→stage tap の 2 段階に統一、cabbage brush の連続 stamp は温存。 (f) undo remove leak fix: armed leaf target が undo で削除された場合の stale hint 対策。 play.html PAGE_CACHE_VERSION と同期。
 // v1956: Bento batch:938 — お願いモード完成後の弁当配置と細部を大量修正。 (a) にこセット palette↔stage 一致 (両方 ^^ 三日月目)。 (b) 前髪 clamp [126,158]→[150,190] で頭頂カバー。 (c) 電車先頭車両 size 118→80 で中間車両と height 揃え。 (d) 名前「しんかんせん」→「でんしゃのあたま」(和語 7 音節、幼児適合)。 (e) 小さなおかず picker のフルーツを最後尾に (orderFreeFoodMenuItems ラップ)。 (f) 完成品カウンター配置を NPC 右の空白ゾーン (66-82%) に移動、キラキラを弁当中心に追従。 play.html PAGE_CACHE_VERSION と同期。
 // v1960: Bento batch:949 — のり palette の UX 改善 2 件。 (a) 個別 name を削除してカテゴリ見出し (「目」「口」「鼻」「まゆ」「ひげ」「まえがみ」「のりシート」「かたち」「ほっぺ」「かざり」) に集約、 「セット」のみ 3 種の個別 name を残す。 hideName gate は simple/guided モードのみ発火 (非 simple では従来通り name 表示 + 見出しなし fallback)。 (b) palette 選択後のスクロール top 戻り問題を修正。 renderFreeLayoutControls 冒頭で scrollTop を保存、 rAF で clamp 復元、 tab 切替時は 0 スタート維持。 play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1960;
+const CACHE_VERSION = 1961;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

@@ -2385,6 +2385,23 @@
       transform-style: flat;
       will-change: transform;
     }
+    /* v1961: 幼児指向のタップ領域拡張。 レバーは細い横長 (1365/507 ≒ 2.69:1) で
+       特に上下方向に外すことが多いため、 ::before で不可視のヒット領域を
+       上下 -60% / 左右 -20% だけ膨らませて指の狙いをやさしくする。
+       - 疑似要素は button の boundingClientRect に含まれないので、
+         angleForDailyGachaPointer() の rect 中心 (=レバー中心) は不変で
+         ドラッグ角度計算が壊れない。
+       - img は pointer-events:none のままなので、 img 範囲外→::before ヒット→
+         button の pointerdown 経路が保たれる。 event.target === button チェックは
+         コード上存在しないため疑似要素経路でも正常に発火。
+       - モバイル用のさらに大きな inset は下部メディアクエリで上書き。 */
+    .daily-gacha-lever::before {
+      content: "";
+      position: absolute;
+      inset: -60% -20%;
+      z-index: 0;
+      /* 背景は透明。 デバッグ時のみ background: rgba(255,0,0,.18); */
+    }
     .daily-gacha-modal.is-armed .daily-gacha-lever {
       animation: dailyGachaLeverReadyPulse 1.8s ease-in-out infinite;
     }
@@ -3614,6 +3631,12 @@
         min-width: 132px;
         min-height: 58px;
         --gacha-lever-visual-scale: .643;
+      }
+      /* v1960: モバイルでは img が visual-scale .643 で box より小さく描画されるため、
+         見た目のレバーに対する体感ヒット比は desktop より狭くなる。 上下方向をさらに
+         広げてタップしやすくする (幅は button rect が既に img の 1.55x 以上あるので控えめ)。 */
+      .daily-gacha-lever::before {
+        inset: -90% -25%;
       }
       .daily-gacha-turn-cue__word {
         min-width: 76px;
