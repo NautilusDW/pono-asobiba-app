@@ -565,7 +565,17 @@
 // v1910: ガチャに Haptics 5 シーン (gachaTurn1_2 / gachaTurn3 / capsuleCrack / rareBadgePop / superBadgePop) + DOM particle burst (rare=12粒90°扇 / super=20粒360°、 reveal 瞬間に .daily-gacha-shell 直下へ spawn) を拡張。 common/haptics.js の PATTERNS に 5 key 追加 + fire() を number[] 対応、 play.html は capture.js の後に haptics.js を defer 読込、 pulseDailyGachaHaptic を Haptics 経由に統一 (bare vibrate fallback 残す)、 reveal timer で capsuleCrack + spawnGachaParticles、 openDelay+420ms で rare/super badge pop haptic。 CSS/JS のみ変更、 localStorage/schema 無影響 (opt-out: pono_haptics_off / pono_particles_off / prefers-reduced-motion)。play.html PAGE_CACHE_VERSION と同期。
 // v1914: Bento batch:1046 — 「はっぱ」を action-row から タブに移動 (side step で [カップ/はっぱ/しきり/ピック])、 タブ切替時に armed を必ず解除 (code-review fix a)。 編集パネルから 'おかずを かえる'/一般 'けす' を削除 (leaf 専用)。 cup fallback を 0.30/0.70 対称 2x2 に、 4 box の maskRel.x を対称化。 KV rewrite payload を scratchpad に用意 (POST /api/bento/mask-defaults 用)。 play.html PAGE_CACHE_VERSION と同期。
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1950;
+const CACHE_VERSION = 1951;
+// v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
+// (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
+// window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
+// (b) survey.html (Q1-Q9 アンケートページ) 新設、 sessionStorage 経由の prefill 受渡し
+// (URL 改ざん耐性のため)。 (c) 同日重複送信 flag を localStorage に格上げ (タブ複製
+// bypass 塞ぎ)。 (d) freeText 500 char clamp / email 形式検証 / starScore 1-5 clamp を
+// client 側で defense-in-depth (server-side rate limit / CSP は別 batch)。 (e) precache
+// に /survey.html を warm cache として追加 (fetch handler は isHTML 素通しなので
+// navigation cache としては機能しないが、 CACHE_VERSION bump 時の一括更新には有効)。
+// play.html PAGE_CACHE_VERSION 同期。
 // v1950: v1949 CrossReview の Critical/High 全解消。play.html + sw.js のみ変更。
 // (a) [CRITICAL] `.game-card` の `contain: layout paint` → `contain: layout` に降格。
 //     paint containment は WebKit で下方 drop-shadow (5-8px) を padding-edge で clip
@@ -725,7 +735,11 @@ const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 //   ブラウザ HTTP cache に乗るため、 ここでは意図的に外す (precache 2MB 制約)。
 //
 // 合計見積: ~1.2MB (4G モバイルで許容範囲、 2MB 目標内)
-const CRITICAL_ASSETS_HTML = ['/play.html', '/quizland/index.html'];
+// 注: fetch handler は isHTML なリクエストを SW 素通し (return;) しているため、
+// ここに登録した HTML は navigation 時の cache-first として使われない。
+// あくまで CACHE_VERSION bump 時の warm cache (install 段階で最新版を先取り
+// ダウンロード) としての位置付け。 /survey.html も同じ意図で v1951 から登録。
+const CRITICAL_ASSETS_HTML = ['/play.html', '/quizland/index.html', '/survey.html'];
 const CRITICAL_ASSETS_SCRIPTS = [
   '/common/sw-update.js',
   // v1944 (cross-file H5): preload-helper.js は BGM/SE 復帰の中核 (PonoVisibilityAudioGuard /

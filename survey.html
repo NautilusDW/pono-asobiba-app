@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ポノのあそびば | アンケート</title>
+<meta name="theme-color" content="#FFF8F0">
+<style>
+:root {
+  --pono-cream: #FFF8F0;
+  --primary: #F2915A;
+  --secondary: #FFD84D;
+  --text: #4A2E1E;
+  --border: #E4C9A6;
+  --sub: #8A6B4E;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--pono-cream);
+  color: var(--text);
+  font-family: 'Zen Maru Gothic', 'ヒラギノ丸ゴ ProN', 'Hiragino Maru Gothic ProN', system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  line-height: 1.6;
+}
+.wrap { max-width: 640px; margin: 0 auto; padding: 32px 20px 80px; }
+h1 { font-size: 22px; margin: 0 0 8px; text-align: center; letter-spacing: 0.02em; }
+.subtitle { text-align: center; color: var(--sub); margin: 0 0 20px; font-size: 13px; }
+.star-echo { text-align: center; font-size: 28px; letter-spacing: 6px; margin: 0 0 24px; color: #FFD93D; }
+.q {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 18px;
+  margin: 0 0 14px;
+  box-shadow: 0 2px 8px rgba(90, 53, 21, 0.06);
+}
+.q-title { font-weight: 700; font-size: 15px; margin: 0 0 10px; }
+.q-title .num { color: var(--primary); margin-right: 6px; font-weight: 800; }
+.q-note { font-size: 12px; color: var(--sub); margin: 0 0 8px; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+label.opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 10px;
+  cursor: pointer; min-height: 44px;
+  background: #FFFDF7;
+}
+label.opt input { transform: scale(1.2); accent-color: var(--primary); }
+input[type="text"], input[type="email"], textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 10px;
+  font-family: inherit; font-size: 15px;
+  background: #FFFDF7; color: var(--text);
+}
+textarea { min-height: 100px; resize: vertical; }
+.submit {
+  display: block; width: 100%;
+  margin: 24px 0 0; padding: 16px 24px;
+  border: none; border-radius: 999px;
+  background: #FFD84D; color: #5a3515;
+  font-size: 18px; font-weight: 700; font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(170,110,0,0.32), 0 6px 16px rgba(0,0,0,0.18);
+  min-height: 56px;
+}
+.submit:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(170,110,0,0.32), 0 3px 8px rgba(0,0,0,0.18); }
+.thanks { text-align: center; padding: 60px 20px; }
+.thanks h2 { color: var(--primary); font-size: 24px; margin: 0 0 12px; }
+.thanks p { color: var(--sub); font-size: 15px; }
+.thanks a {
+  display: inline-block; margin-top: 28px;
+  padding: 12px 24px;
+  background: #FFD84D; color: #5a3515;
+  border-radius: 999px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 4px 0 rgba(170,110,0,0.32);
+}
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="formPane">
+    <h1>アンケートに ごきょうりょく ありがとう</h1>
+    <p class="subtitle">おうちの ひとに こたえてもらってね</p>
+    <div class="star-echo" id="starEcho"></div>
+
+    <form id="surveyForm" novalidate>
+      <div class="q">
+        <div class="q-title"><span class="num">Q1</span>おこさまの ねんれい</div>
+        <div class="opts" id="q1"></div>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q2</span>あそんでいる ようす</div>
+        <div class="opts" id="q2"></div>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q3</span>よかった ところ (ふくすう OK)</div>
+        <div class="opts" id="q3"></div>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q4</span>むずかしかった / つまずいた ところ (ふくすう OK)</div>
+        <div class="opts" id="q4"></div>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q5</span>おきにいりの ゲーム (ふくすう OK)</div>
+        <div class="opts" id="q5"></div>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q6</span>えほんとの つながり</div>
+        <div class="opts" id="q6"></div>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q7</span>ねだんの かんじかた</div>
+        <div class="opts" id="q7"></div>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q8</span>じゆうに ひとこと</div>
+        <textarea name="freeText" id="q8" maxlength="500" placeholder="なんでも かいてください (500 もじまで)"></textarea>
+      </div>
+      <div class="q">
+        <div class="q-title"><span class="num">Q9</span>メール (にんい)</div>
+        <p class="q-note">アップデートの おしらせなど。 なくてもだいじょうぶです。</p>
+        <input type="email" name="email" id="q9" placeholder="you@example.com" autocomplete="email">
+      </div>
+
+      <button type="submit" class="submit">おくる</button>
+    </form>
+  </div>
+
+  <div id="thanksPane" class="thanks hidden">
+    <h2>ありがとう！</h2>
+    <p>おこえを おくりました。<br>これからも たのしんでね。</p>
+    <a href="/play.html">あそびばに もどる</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAHRy0UyHRCktZdxpQEgUHj7jEuHA49lb6t5HgckVmYogQTDdB4AlRhT99rp94U4hLhA/exec';
+
+  function detectEnvironment(){
+    var h = '';
+    try { h = (window.location && window.location.hostname) || ''; } catch(e){}
+    if (h === 'localhost' || h === '127.0.0.1') return 'localhost';
+    if (h.indexOf('staging') !== -1) return 'staging';
+    if (h === 'pono.kodama-no-mori.com' || h === 'pono-asobiba-app.ndw.workers.dev') return 'production';
+    return 'unknown';
+  }
+  function getAnonSid(){
+    try { return window.sessionStorage.getItem('pono_anon_sid') || ''; } catch(e){ return ''; }
+  }
+  function readPrefill(){
+    try {
+      var raw = window.sessionStorage.getItem('pono_star_survey_prefill');
+      if (!raw) return { stars: 0, gameId: '' };
+      var o = JSON.parse(raw) || {};
+      var n = (o.stars | 0);
+      if (n < 1 || n > 5) n = 0;
+      return { stars: n, gameId: String(o.gameId || '') };
+    } catch(e){ return { stars: 0, gameId: '' }; }
+  }
+
+  var prefill = readPrefill();
+  var stars = prefill.stars;
+  if (stars > 0){
+    document.getElementById('starEcho').textContent =
+      '★★★★★'.slice(0, stars) + '☆☆☆☆☆'.slice(0, 5 - stars);
+  }
+
+  var Q1 = ['3さい未満','3さい','4さい','5さい','6さい','7さい以上','複数'];
+  var Q2 = ['夢中で遊んでいる','ときどき飽きる','あまり興味を示さない','親子で一緒に楽しめている'];
+  var Q3 = ['絵がかわいい','音や声が心地よい','ちょうどよい難しさ','ポノや動物がかわいい','ゲームの種類がちょうどよい'];
+  var Q4 = ['操作が難しい','説明がわからない','絵が小さい/見づらい','音が大きすぎる/小さすぎる','広告や案内が邪魔'];
+  var Q5 = [
+    {v:'quizland', l:'クイズランド'},
+    {v:'maze', l:'めいろ'},
+    {v:'oto', l:'おとつなぎ'},
+    {v:'bento', l:'おべんとう'},
+    {v:'puzzle', l:'パズル'}
+  ];
+  var Q6 = ['絵本を持っている','絵本は知らない/持っていない','これから買いたい'];
+  var Q7 = ['この内容なら500円くらい','1000円くらいなら妥当','1500円くらいでも払う','無料でないと厳しい'];
+
+  function renderRadios(id, opts, name){
+    var box = document.getElementById(id);
+    opts.forEach(function(opt){
+      var v = typeof opt === 'string' ? opt : opt.v;
+      var l = typeof opt === 'string' ? opt : opt.l;
+      var wrap = document.createElement('label');
+      wrap.className = 'opt';
+      var input = document.createElement('input');
+      input.type = 'radio'; input.name = name; input.value = v;
+      var span = document.createElement('span');
+      span.textContent = l;
+      wrap.appendChild(input); wrap.appendChild(span);
+      box.appendChild(wrap);
+    });
+  }
+  function renderChecks(id, opts, name){
+    var box = document.getElementById(id);
+    opts.forEach(function(opt){
+      var v = typeof opt === 'string' ? opt : opt.v;
+      var l = typeof opt === 'string' ? opt : opt.l;
+      var wrap = document.createElement('label');
+      wrap.className = 'opt';
+      var input = document.createElement('input');
+      input.type = 'checkbox'; input.name = name; input.value = v;
+      var span = document.createElement('span');
+      span.textContent = l;
+      wrap.appendChild(input); wrap.appendChild(span);
+      box.appendChild(wrap);
+    });
+  }
+
+  renderRadios('q1', Q1, 'age');
+  renderRadios('q2', Q2, 'engagement');
+  renderChecks('q3', Q3, 'positiveNotes');
+  renderChecks('q4', Q4, 'stumbles');
+  renderChecks('q5', Q5, 'favoriteGames');
+  renderRadios('q6', Q6, 'bookConnection');
+  renderRadios('q7', Q7, 'pricePerception');
+
+  function collect(name, multi){
+    var nodes = document.querySelectorAll('input[name="'+name+'"]:checked');
+    var arr = [];
+    for (var i = 0; i < nodes.length; i++) arr.push(nodes[i].value);
+    return multi ? arr.join(',') : (arr[0] || '');
+  }
+
+  // v1951 SecReview: submit 二重発射防止フラグ
+  var __submitted = false;
+
+  document.getElementById('surveyForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    if (__submitted) return;
+
+    // v1951 SecReview C-2: freeText を 500 char で clamp (HTML maxlength に加えて
+    // JS 側でも保険。 貼り付け時に一部ブラウザで maxlength が効かないケース対策)。
+    var freeText = (document.getElementById('q8').value || '');
+    if (freeText.length > 500) freeText = freeText.slice(0, 500);
+
+    // v1951 SecReview H-3: email 形式検証 (novalidate による HTML5 バリデーション
+    // 無効化を JS で補う)。 任意項目なので空は OK、 入力ありなら軽い形式チェック。
+    var email = (document.getElementById('q9').value || '').trim();
+    if (email && !/^[^\s@]{1,64}@[^\s@]{1,255}$/.test(email)) {
+      // silent drop: 形式不正なら email フィールドを送らない (submit 自体は継続)
+      email = '';
+    }
+
+    // v1951 SecReview H-1: starScore を 1-5 に clamp。 prefill 側で既に readPrefill
+    // が clamp 済みだが、 devtools 改変への多層防御。
+    var s = stars | 0;
+    if (s < 1 || s > 5) s = 0;
+
+    var fd = new FormData();
+    fd.append('environment', detectEnvironment());
+    fd.append('anonSid', getAnonSid());
+    fd.append('starScore', s ? String(s) : '');
+    fd.append('gameId', prefill.gameId || '');
+    fd.append('swVersion', String(window.PONO_SW_VERSION || ''));
+    fd.append('playDurationSec', '');
+    fd.append('age', collect('age', false));
+    fd.append('engagement', collect('engagement', false));
+    fd.append('positiveNotes', collect('positiveNotes', true));
+    fd.append('stumbles', collect('stumbles', true));
+    fd.append('favoriteGames', collect('favoriteGames', true));
+    fd.append('bookConnection', collect('bookConnection', false));
+    fd.append('pricePerception', collect('pricePerception', false));
+    fd.append('freeText', freeText);
+    fd.append('email', email);
+
+    // 楽観送信: 送信失敗検知は放棄 (no-cors opaque response)。 SecReview NIT:
+    // unhandledrejection console 出力抑止のため .catch を必ず付ける。
+    try {
+      fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: fd })
+        .catch(function(){ /* silent */ });
+    } catch(e){}
+
+    __submitted = true;
+    // 二重送信防止: submit ボタンを無効化 (Enter 連打対策)
+    try {
+      var btn = document.querySelector('#surveyForm button[type="submit"]');
+      if (btn) btn.disabled = true;
+    } catch(e){}
+
+    // prefill は使い切ったのでクリア
+    try { window.sessionStorage.removeItem('pono_star_survey_prefill'); } catch(e){}
+
+    document.getElementById('formPane').classList.add('hidden');
+    document.getElementById('thanksPane').classList.remove('hidden');
+    try { window.scrollTo(0, 0); } catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

@@ -179,7 +179,9 @@
  * CTA (Forms ボタン)
  * ============================================================= */
 .pono-rating-cta {
-  margin: 4px 0 16px;
+  margin: 12px 0 16px;
+  padding-top: 16px;
+  border-top: 2px dashed rgba(90, 53, 21, 0.24);
 }
 
 .pono-rating-forms-btn {
@@ -188,7 +190,7 @@
   padding: 12px 28px;
   border: none;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffe46a, #f5b800);
+  background: #FFD84D;
   color: #5a3515;
   font-size: 16px;
   font-weight: 700;

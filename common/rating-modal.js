@@ -17,8 +17,8 @@
 //   PonoRating.openFromLP();                 // gate 無視 / gameId=null
 //
 // 依存:
-//   - window.PONO_FEEDBACK_FORMS_URL  (Forms URL; play.html で inject)
-//   - window.PONO_FEEDBACK_FORMS_FIELDS = {anon_sid, dfp, last_star, play_sum, ref}
+//   - window.PONO_FEEDBACK_APPS_SCRIPT_URL  (Apps Script Web App URL; play.html で inject)
+//   - (任意) window.PONO_SW_VERSION         (sw.js CACHE_VERSION; 未設定なら空文字送信)
 //
 (function (window, document) {
   'use strict';
@@ -172,29 +172,62 @@
   // ---- Forms URL builder --------------------------------------------
   // ref: 'post_rating_5star' | 'title_button' | 'lp_button' 等
   // opts: { gameId, stars }
-  function buildFormsUrl(ref, opts) {
-    var base = window.PONO_FEEDBACK_FORMS_URL || '';
-    if (!base || base === '[PLACEHOLDER]') return '';
-    opts = opts || {};
-    var fields = window.PONO_FEEDBACK_FORMS_FIELDS || {};
+  // v1951: Apps Script Web App へ hidden POST (no-cors / opaque response)。
+  // window.PONO_FEEDBACK_APPS_SCRIPT_URL を play.html が inject。
+  function detectEnvironment() {
+    var h = '';
+    try { h = (window.location && window.location.hostname) || ''; } catch (e) { h = ''; }
+    if (h === 'localhost' || h === '127.0.0.1') return 'localhost';
+    if (h.indexOf('staging') !== -1) return 'staging';
+    if (h === 'pono.kodama-no-mori.com' || h === 'pono-asobiba-app.ndw.workers.dev') return 'production';
+    return 'unknown';
+  }
 
-    var params = [];
-    function addField(entryId, value) {
-      if (!entryId || value == null || value === '') return;
-      params.push(encodeURIComponent(entryId) + '=' + encodeURIComponent(String(value)));
-    }
+  function ymdTodayLocal() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = d.getMonth() + 1;
+    var day = d.getDate();
+    return String(y) + (m < 10 ? '0' + m : String(m)) + (day < 10 ? '0' + day : String(day));
+  }
 
-    addField(fields.anon_sid, getAnonSid());
-    addField(fields.dfp, getDfpSync());
-    if (typeof opts.stars === 'number') {
-      addField(fields.last_star, opts.stars);
-    }
-    addField(fields.play_sum, getPlayCount());
-    addField(fields.ref, ref || '');
-
-    if (!params.length) return base;
-    var sep = base.indexOf('?') === -1 ? '?' : '&';
-    return base + sep + params.join('&');
+  function postStarToAppsScript(gameId, stars, openedAtMs) {
+    var url = window.PONO_FEEDBACK_APPS_SCRIPT_URL || '';
+    if (!url) return;
+    // v1951 SecReview H-1: client 側でも defensive に 1-5 clamp。 devtools から
+    // postStarToAppsScript('quizland', 999, ...) を直接叩かれても Sheets に
+    // 不正値が届かないよう防御 (server-side clamp と多層で担保)。
+    var s = stars | 0;
+    if (s < 1 || s > 5) return;
+    var gid = gameId || '_no_id';
+    // v1951 SecReview H-2: 同日重複送信抑止を sessionStorage → localStorage に格上げ。
+    // sessionStorage はタブ複製 / 新規タブ / incognito で bypass 可能なため。
+    // localStorage が例外時は fall-through で送信 (privacy mode 等での取りこぼしは許容)。
+    var flagKey = 'pono_star_survey_submitted_' + gid + '_' + ymdTodayLocal();
+    try {
+      if (window.localStorage.getItem(flagKey)) return;
+    } catch (e) { /* noop */ }
+    var fd;
+    try {
+      fd = new FormData();
+      fd.append('environment', detectEnvironment());
+      fd.append('anonSid', getAnonSid());
+      fd.append('starScore', String(s));
+      fd.append('gameId', gid);
+      fd.append('swVersion', String(window.PONO_SW_VERSION || ''));
+      var dur = '';
+      if (openedAtMs) {
+        dur = String(Math.max(0, Math.round((Date.now() - openedAtMs) / 1000)));
+      }
+      fd.append('playDurationSec', dur);
+    } catch (e) { return; }
+    try {
+      // 楽観送信: no-cors opaque、 失敗検知は放棄。 SecReview NIT: unhandledrejection
+      // console 出力を止めるため .catch で完全 silent 化。
+      fetch(url, { method: 'POST', mode: 'no-cors', body: fd })
+        .catch(function () { /* silent */ });
+      try { window.localStorage.setItem(flagKey, '1'); } catch (e2) { /* noop */ }
+    } catch (e) { /* noop */ }
   }
 
   // ---- utility -------------------------------------------------------
@@ -223,6 +256,9 @@
     this._thanksEl = null;
     this._ctaEl = null;
     this._ctaBtn = null;
+    // v1951: モーダル生成時刻 (playDurationSec 算出用)。 openFromTitle/openFromLP は new 直後に show() を呼ぶため
+    // 実効的に「モーダル表示開始時刻」と同義とみなす。
+    this._openedAt = nowMs();
     this._laterBtn = null;
 
     this._isShown = false;
@@ -293,7 +329,7 @@
     var ctaBtn = document.createElement('button');
     ctaBtn.type = 'button';
     ctaBtn.className = 'pono-rating-forms-btn';
-    ctaBtn.textContent = 'もっとお声を聞かせる →';
+    ctaBtn.textContent = 'アンケートに こたえる →';
     cta.appendChild(ctaBtn);
     panel.appendChild(cta);
 
@@ -363,14 +399,16 @@
 
     this._ctaBtn.addEventListener('click', function (ev) {
       ev.stopPropagation();
-      var url = buildFormsUrl('post_rating_5star', {
-        gameId: self.gameId,
-        stars: self._selectedStars
-      });
-      if (url) {
-        try { window.open(url, '_blank', 'noopener'); } catch (e) { /* noop */ }
-      }
+      // sessionStorage 経由で星スコアと gameId を survey に渡す (URL パラメータは改ざん耐性なし)
+      try {
+        window.sessionStorage.setItem('pono_star_survey_prefill', JSON.stringify({
+          stars: self._selectedStars,
+          gameId: self.gameId || '',
+          ts: Date.now()
+        }));
+      } catch (e) { /* noop */ }
       self.hide();
+      try { window.location.href = '/survey.html'; } catch (e) { /* noop */ }
     });
 
     this._keydownHandler = function (ev) {
@@ -476,24 +514,18 @@
     var gid = this.gameId || '_no_id';
     saveRating(gid, stars);
 
+    // v1951: Apps Script Web App へ hidden POST (fire-and-forget、 no-cors)
+    postStarToAppsScript(gid, stars, this._openedAt);
+
     // 「ありがとう！」 表示
     this._thanksEl.hidden = false;
 
-    if (stars >= 4) {
-      // ★4以上: CTA を表示。 「あとで」 ボタンは残す。 auto-hide はしない。
-      this._ctaEl.hidden = false;
-      // CTA ボタンにフォーカス移動 (キーボード操作の自然な流れ)
-      var self = this;
-      setTimeout(function () {
-        try { self._ctaBtn.focus(); } catch (e) { /* noop */ }
-      }, 60);
-    } else {
-      // ★1-3: 1.5秒後に自動で閉じる (skip cooldown は付けない: もう評価したので)
-      var that = this;
-      this._thanksTimer = window.setTimeout(function () {
-        that.hide();
-      }, THANKS_AUTO_HIDE_MS);
-    }
+    // v1951: ★1-5 いずれの場合も アンケート CTA を常時表示。 auto-close は撤廃。
+    this._ctaEl.hidden = false;
+    var self = this;
+    setTimeout(function () {
+      try { self._ctaBtn.focus(); } catch (e) { /* noop */ }
+    }, 60);
   };
 
   // 評価せずに閉じた場合は cooldown を立てる
@@ -655,8 +687,7 @@
     openFromTitle: openFromTitle,
     openFromLP: openFromLP,
     saveRating: saveRating,
-    hasRated: hasRated,
-    buildFormsUrl: buildFormsUrl
+    hasRated: hasRated
   };
   window.PonoRatingModal = PonoRatingModal;
 })(window, document);
