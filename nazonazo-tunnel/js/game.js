@@ -239,7 +239,7 @@ const STATION_HELPERS=[
 ];
 const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2120, COVER_OFF=2380, COVER_LEN=370;
-const TRAIN_WIDTH_MIN_PX=150, TRAIN_WIDTH_VW=26, TRAIN_WIDTH_MAX_PX=270, DEFAULT_VEHICLE_LEFT_VW=28;
+const TRAIN_WIDTH_MIN_PX=190, TRAIN_WIDTH_VW=31, TRAIN_WIDTH_MAX_PX=330, DEFAULT_VEHICLE_LEFT_VW=28;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=180;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
@@ -1265,8 +1265,9 @@ function gloop(t){
  lastT=t;
  if(playing&&driving){
   const dist=target-worldX;
-  const maxV=(swapReady?52:38);
-  vel=clamp(dist*.98,6,maxV);
+  const tunnelRun=pending==="tunnelEntry"||pending==="tunnelExit";
+  const maxV=tunnelRun?58:(swapReady?52:38);
+  vel=tunnelRun?maxV:clamp(dist*.98,6,maxV);
   worldX=Math.min(target,worldX+vel*dt);
   veh.classList.add("go");veh.classList.remove("idle");
   carsEl.classList.add("go");
