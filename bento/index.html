@@ -7508,8 +7508,8 @@ const decorItems = [
   // セット 3 種 / ほっぺ / うめぼし / のりシート は book 以上 (bookDecorItem)。 ピック 4 種は無料継続。
   // batch:1058 (bug3): くまセットとの palette icon 差別化。 「にこ」らしく閉じた ^^ 目 + 大口。
   bookDecorItem({ id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50, clusterImages: [
-    { img: FREE_ASSET + 'book_nori_eye_smile_20260703.png', x: -0.19, y: -0.24, w: 0.18 },
-    { img: FREE_ASSET + 'book_nori_eye_smile_20260703.png', x: 0.19, y: -0.24, w: 0.18 },
+    { img: FREE_ASSET + 'book_nori_eye_smile_20260703.png', x: -0.19, y: -0.24, w: 0.28 },
+    { img: FREE_ASSET + 'book_nori_eye_smile_20260703.png', x: 0.19, y: -0.24, w: 0.28 },
     { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: 0.01, w: 0.22 },
     { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.225, w: 0.58 },
     { img: FREE_ASSET + 'ketchup_cheek.png', x: -0.365, y: 0.06, w: 0.21 },
@@ -7580,7 +7580,7 @@ const decorItems = [
   // batch:1056 — 新規 book のり shape 14 種
   bookDecorItem({ id: 'nori_shape_round_rect_book', type: 'decor', name: 'のりパン', image: FREE_ASSET + 'book_nori_shape_round_rect_20260703.png', size: 100, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_window_two_book', type: 'decor', name: 'まどふたつ', image: FREE_ASSET + 'book_nori_shape_window_two_20260703.png', size: 90, layerBase: 49 }),
-  bookDecorItem({ id: 'nori_shape_train_head_book', type: 'decor', name: 'しんかんせん', image: FREE_ASSET + 'book_nori_shape_train_head_20260703.png', size: 100, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_train_head_book', type: 'decor', name: 'せんとうしゃりょう', image: FREE_ASSET + 'book_nori_shape_train_head_20260703.png', size: 118, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_tall_rect_book', type: 'decor', name: 'のりたてなが', image: FREE_ASSET + 'book_nori_shape_tall_rect_20260703.png', size: 96, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_arch_book', type: 'decor', name: 'のりにじ', image: FREE_ASSET + 'book_nori_shape_arch_20260703.png', size: 100, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_bars_three_book', type: 'decor', name: 'のりさんぼん', image: FREE_ASSET + 'book_nori_shape_bars_three_20260703.png', size: 76, layerBase: 49 }),
@@ -7689,7 +7689,7 @@ const riceFaceTemplates = {
   },
 };
 const SIMPLE_FACE_SET_PARTS = {
-  smile: ['nori_eye_round', 'nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile', 'ketchup_cheek', 'ketchup_cheek'],
+  smile: ['nori_eye_smile_book', 'nori_eye_smile_book', 'nori_nose_bear', 'nori_mouth_smile', 'ketchup_cheek', 'ketchup_cheek'],
   bear: ['nori_eye_round', 'nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile', 'ketchup_cheek', 'ketchup_cheek'],
   cat: ['nori_eye_round', 'nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile', 'nori_whisker_left_book', 'nori_whisker_right_book'],
 };
@@ -12981,7 +12981,7 @@ function getSimpleDecorSize(def, kind = getSimpleDecorKind(def)) {
   if (kind === 'nose') return Math.round(clamp(base * 1.16, 58, 72));
   if (kind === 'mouth') return Math.round(clamp(base * 1.14, 78, 96));
   if (kind === 'whisker-left' || kind === 'whisker-right') return Math.round(clamp(base * 1.08, 96, 112));
-  if (kind === 'bangs') return Math.round(clamp(base * 1.28, 126, 158));
+  if (kind === 'bangs') return Math.round(clamp(base * 1.28, 150, 190));
   if (kind === 'cheek') return Math.round(clamp(base * 1.12, 48, 64));
   if (kind === 'sheet') return Math.round(clamp(base, 150, 230));
   if (kind === 'shape') return Math.round(clamp(base, 68, 132));
