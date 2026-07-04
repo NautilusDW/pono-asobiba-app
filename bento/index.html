@@ -538,9 +538,9 @@ html, body {
 .bento-delivery__handoff {
   position: absolute;
   z-index: 3;
-  right: 42.5%; /* 右端を 57.5% に固定 → NPC (left:58%) と重ならない */
+  right: 18%; /* batch:938 右端 82% / 左端 66% → NPC (中央 58%, span 49.6-66.4%) の右、 青い鳥・花瓶 (82-100%) の左、 実測空白ゾーン (66-82%) に収める */
   bottom: 4%;
-  width: min(38vw, 400px);
+  width: min(16vw, 256px);
   height: min(19vw, 196px);
   display: flex;
   align-items: center;
@@ -552,7 +552,7 @@ html, body {
 #bento-delivery-bento .bento-delivery__lid {
   position: absolute;
   z-index: -1;
-  left: 93%;
+  left: 90%;
   bottom: 0;
   height: 92%;
   width: auto;
@@ -660,8 +660,8 @@ html, body {
 .bento-delivery__sparkles::after {
   content: '✦  ✨  ✦';
   position: absolute;
-  left: 50%;
-  top: 28%;
+  left: 74%; /* batch:938 handoff 中心 (66%+16%/2=74%) にキラキラを追従 */
+  top: 82%;
   transform: translateX(-50%);
   color: #ffd85a;
   font-size: clamp(1.2rem, 4vw, 2.8rem);
@@ -669,7 +669,7 @@ html, body {
   animation: deliverySparkle 1.05s ease-in-out infinite;
 }
 .bento-delivery__sparkles::after {
-  top: 45%;
+  top: 88%;
   font-size: clamp(0.9rem, 3vw, 2.1rem);
   animation-delay: 0.28s;
 }
@@ -684,7 +684,7 @@ html, body {
     max-width: 42%;
   }
   .bento-delivery__handoff {
-    width: min(34vw, 300px);
+    width: min(20vw, 240px); /* batch:938 狭画面でも 16-20% 幅 → NPC (49.6-66.4%) と重ならないよう handoff 幅を絞る */
     height: min(17vw, 145px);
   }
   #bento-delivery-bento .bento-delivery__lid {
@@ -7580,7 +7580,7 @@ const decorItems = [
   // batch:1056 — 新規 book のり shape 14 種
   bookDecorItem({ id: 'nori_shape_round_rect_book', type: 'decor', name: 'のりパン', image: FREE_ASSET + 'book_nori_shape_round_rect_20260703.png', size: 100, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_window_two_book', type: 'decor', name: 'まどふたつ', image: FREE_ASSET + 'book_nori_shape_window_two_20260703.png', size: 90, layerBase: 49 }),
-  bookDecorItem({ id: 'nori_shape_train_head_book', type: 'decor', name: 'せんとうしゃりょう', image: FREE_ASSET + 'book_nori_shape_train_head_20260703.png', size: 118, layerBase: 49 }),
+  bookDecorItem({ id: 'nori_shape_train_head_book', type: 'decor', name: 'でんしゃのあたま', image: FREE_ASSET + 'book_nori_shape_train_head_20260703.png', size: 80, layerBase: 49 }), // batch:938 中間車両 (AR 2.45) と height を揃える: size 118→80 (natural AR 1.65)、 name 和語化
   bookDecorItem({ id: 'nori_shape_tall_rect_book', type: 'decor', name: 'のりたてなが', image: FREE_ASSET + 'book_nori_shape_tall_rect_20260703.png', size: 96, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_arch_book', type: 'decor', name: 'のりにじ', image: FREE_ASSET + 'book_nori_shape_arch_20260703.png', size: 100, layerBase: 49 }),
   bookDecorItem({ id: 'nori_shape_bars_three_book', type: 'decor', name: 'のりさんぼん', image: FREE_ASSET + 'book_nori_shape_bars_three_20260703.png', size: 76, layerBase: 49 }),
@@ -10343,7 +10343,7 @@ function attachFoodToCupIfOverlaps(item, preferredCup = null, opts = {}) {
   return true;
 }
 function getCupEditorFoodItems() {
-  return getFreeFoodCatalog().filter(canAddFoodToCup);
+  return orderFreeFoodMenuItems(getFreeFoodCatalog().filter(canAddFoodToCup));
 }
 function getActiveTierCups() {
   return placedItems.filter(i => i.snapTarget && (getBoxTierCount() <= 1 || getItemTier(i) === freeActiveTier));

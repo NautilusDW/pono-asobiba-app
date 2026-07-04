@@ -569,7 +569,8 @@
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
 // v1954: Bento batch:936 — cup チュートリアル番号バッジ (1/2/3/4) の位置ズレを修正。 getSimpleCupStageMarkerDisplayPoints (:17356) の legacy side-food markerX/Y フォールスルーを無効化し、cup 実配置の grid fallback に落として cup-first リアウト後の実配置と一致させた。 accessory タブ限定の影響、他 step / admin / seed への副作用なし。play.html PAGE_CACHE_VERSION と同期。
 // v1955: Bento batch:937 — お願いモードのオープニング体験を大幅改善。 (a) ゲーム画面フラッシュ排除: overlay の display:block 前倒しでお願いモードボタン押下→ゲーム画面透け見えを解消。 (b) マスク未着装フラッシュ排除: staff/customer mask 要素の visibility を bg/キャラと同期、has-customer/is-entering を同一 rAF で付与。 (c) race hazard 対策: initialReveal 中は next ボタン disable、画像 decode 完了で復帰。 (d) にこセット差別化: nori_eye_round → book_nori_eye_smile (^^ 三日月目) + 口幅 0.5→0.58 で笑い顔強調。 (e) 下敷きモード改善: leaf picker を選択→armed→stage tap の 2 段階に統一、cabbage brush の連続 stamp は温存。 (f) undo remove leak fix: armed leaf target が undo で削除された場合の stale hint 対策。 play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1955;
+// v1956: Bento batch:938 — お願いモード完成後の弁当配置と細部を大量修正。 (a) にこセット palette↔stage 一致 (両方 ^^ 三日月目)。 (b) 前髪 clamp [126,158]→[150,190] で頭頂カバー。 (c) 電車先頭車両 size 118→80 で中間車両と height 揃え。 (d) 名前「しんかんせん」→「でんしゃのあたま」(和語 7 音節、幼児適合)。 (e) 小さなおかず picker のフルーツを最後尾に (orderFreeFoodMenuItems ラップ)。 (f) 完成品カウンター配置を NPC 右の空白ゾーン (66-82%) に移動、キラキラを弁当中心に追従。 play.html PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 1956;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
