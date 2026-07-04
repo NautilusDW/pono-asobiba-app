@@ -981,13 +981,14 @@ function buildAmbient(P){
 }
 
 /* ================= passengers ================= */
-function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?36.8:8.8;}
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?42.0:8.8;}
 function visibleCarGroups(){
- const start=Math.max(0,cars.length-8);
- const aligned=start%2?start-1:start;
+ const groupSize=STAGES[stg]&&STAGES[stg].veh==="train"?4:2;
+ const start=Math.max(0,cars.length-groupSize*3);
+ const aligned=start%groupSize?start-(start%groupSize):start;
  const groups=[];
- for(let i=aligned;i<cars.length;i+=2)groups.push(cars.slice(i,i+2));
- return groups.slice(-4);
+ for(let i=aligned;i<cars.length;i+=groupSize)groups.push(cars.slice(i,i+groupSize));
+ return groups.slice(-3);
 }
 function renderPassengerSeat(c,seatName){
  const seat=document.createElement("div");
@@ -1010,7 +1011,8 @@ function renderCars(){
   const idx=groups.length-1-i; // 0=newest group (先頭車のすぐ後ろ)
   const el=document.createElement("div");el.className="car";
   el.style.left=(vehicleLeftVw()-carGap()*(idx+1))+"vw";
-  group.forEach((c,seat)=>el.appendChild(renderPassengerSeat(c,seat===0?"seat-a":"seat-b")));
+  const seatNames=STAGES[stg]&&STAGES[stg].veh==="train"?["seat-d","seat-c","seat-b","seat-a"]:["seat-a","seat-b"];
+  group.forEach((c,seat)=>el.appendChild(renderPassengerSeat(c,seatNames[seat]||"seat-a")));
   const body=document.createElement("div");
   body.className="car-body-img";
   el.appendChild(body);
