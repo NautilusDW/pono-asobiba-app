@@ -44,7 +44,7 @@ body.v-train .car{width:clamp(300px,47vw,480px);height:clamp(83px,13.1vw,133px);
   background:none;border:0;border-radius:0;display:block;overflow:visible}
 body.v-train .car::before,body.v-train .car::after{display:none}
 body.v-train .car-body-img{display:block;position:absolute;inset:0;z-index:3;
-  background:url("../assets/images/nazonazo-tunnel/vehicle_passenger_car_4seat_20260705.png") center bottom/contain no-repeat;
+  background:url("../assets/images/nazonazo-tunnel/vehicle_passenger_car_4seat_straight_20260705.png") center bottom/contain no-repeat;
   filter:drop-shadow(0 2px 0 rgba(50,35,25,.16))}
 body.v-train .car-seat{position:absolute;top:25%;width:13.8%;height:38%;z-index:2;align-items:flex-end}
 body.v-train .car .seat-a{left:17.6%}
@@ -53,11 +53,12 @@ body.v-train .car .seat-c{left:51.6%}
 body.v-train .car .seat-d{left:68.6%}
 body.v-train .car .pas{font-size:clamp(18px,3.3vw,34px)}
 body.v-train .car .pas-img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
-body.v-train .car-wheel{display:block;position:absolute;bottom:1.8%;width:13.8%;aspect-ratio:1;z-index:2;
+body.v-train .car-wheel{display:block;position:absolute;bottom:-1.5%;width:10.6%;aspect-ratio:1;z-index:4;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_driver_wheel_weighted_20260704.png") center/contain no-repeat;
   filter:drop-shadow(0 1px 0 rgba(50,35,25,.28));transform-origin:50% 50%}
-body.v-train .car-wheel-a{left:24.1%}
-body.v-train .car-wheel-b{right:24.1%}
+body.v-train .car-wheel-a{left:20.7%}
+body.v-train .car-wheel-b{left:44.2%}
+body.v-train .car-wheel-c{left:67.7%}
 body.v-train #cars.go .car-wheel{animation:spin .62s linear infinite}
 #cars.unloading .car{animation:carDropOff .62s ease forwards}
 body.v-sub .car{border-radius:50px;background:#ffd97d;border-color:#d9a326}
@@ -70,7 +71,7 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #helpBadge{position:absolute;bottom:27vh;left:2vw;z-index:9;background:rgba(255,255,255,.88);
   border:2px solid rgba(87,193,94,.5);border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
-body.v-train #cars{bottom:10.3vh}
+body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(102px,16.6vw,178px));bottom:9.1vh;width:clamp(204px,33.2vw,356px);height:clamp(102px,16.6vw,178px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
@@ -216,7 +217,7 @@ body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train 
 @keyframes mainRodTravel{0%,100%{transform:translate(0,0) rotate(-11deg)}25%{transform:translate(1.2%,-5%) rotate(-15deg)}50%{transform:translate(0,0) rotate(-11deg)}75%{transform:translate(-1.2%,5%) rotate(-7deg)}}
 @keyframes crossheadSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(-10%)}}
 body.tunnel-interior.v-train #veh{left:calc(55vw - clamp(112px,18.5vw,198px));bottom:13.3vh;width:clamp(224px,37vw,396px);height:clamp(112px,18.5vw,198px)}
-body.tunnel-interior.v-train #cars{bottom:14.7vh}
+body.tunnel-interior.v-train #cars{bottom:13.3vh}
 body.v-train .puff{left:76%;top:-15%}
 body[data-driver="bear"]{--driver-x:0%}
 body[data-driver="fox"]{--driver-x:33.333%}

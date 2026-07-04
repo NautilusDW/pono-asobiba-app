@@ -981,7 +981,7 @@ function buildAmbient(P){
 }
 
 /* ================= passengers ================= */
-function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?42.0:8.8;}
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?39.0:8.8;}
 function visibleCarGroups(){
  const groupSize=STAGES[stg]&&STAGES[stg].veh==="train"?4:2;
  const start=Math.max(0,cars.length-groupSize*3);
@@ -1016,7 +1016,7 @@ function renderCars(){
   const body=document.createElement("div");
   body.className="car-body-img";
   el.appendChild(body);
-  ["a","b"].forEach(k=>{
+  (STAGES[stg]&&STAGES[stg].veh==="train"?["a","b","c"]:["a","b"]).forEach(k=>{
    const w=document.createElement("div");
    w.className="car-wheel car-wheel-"+k;
    el.appendChild(w);

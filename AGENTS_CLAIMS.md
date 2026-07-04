@@ -80,6 +80,7 @@
 - 2026-07-02 - by Claude - [batch:935-paste-particles-v2-rework] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - paste particles v2 rework (方向/位置/色/数/サイズ全面調整)
 - 2026-07-05 - by Claude - [batch:948-oto-title-flow] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md - オットタッチ: 「タップしてスタート」廃止 (起動即モード選択) + リズム→ステージ選択直行 (ステージ選択解放済み=何度目かの人のみ) + sw bump
 - 2026-07-05 - by Claude - [batch:950-gacha-lever-hitarea-expand] - play.html, sw.js, AGENTS_CLAIMS.md - デイリーガチャレバーのタップ判定を子供向けに拡張 (::before 疑似要素で不可視ヒット領域を上下左右に inflate、 見た目とレバー中心座標は不変) + sw bump v1960→v1961
+- 2026-07-05 - by Claude - [batch:951-gacha-lever-cache-sync-and-shell-clip] - play.html, AGENTS_CLAIMS.md - Finding A: PAGE_CACHE_VERSION 1960→1961 で sw.js と同期 (critical drift 解消)。 Finding B: mobile ::before の下方 inflation を -90%→-60% に絞って .daily-gacha-shell の overflow:hidden による下端クリップ (320×568 で 15.4px, 375×667 で 6.5px) を回避 [overlap: batch:950-gacha-lever-hitarea-expand]
 
 ## なぜ HANDOFF.md と別ファイルなのか
 

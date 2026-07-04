@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-04T19:43:53Z - ガチャレバーの hit 領域を子供向けに拡張 (::before pseudo で drag 物理保持、モバイルは shell overflow 回避で下方向抑制、sw.js/play.html cache version 同期)
+- **タスク**: ガチャレバーの hit 領域を子供向けに拡張 (::before pseudo で drag 物理保持、モバイルは shell overflow 回避で下方向抑制、sw.js/play.html cache version 同期)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 23
+- **エラー数**: 0
+- **検出された良いパターン**: 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 3, "Grep": 7, "Bash": 5, "Read": 3, "Agent": 4, "ToolSearch": 1}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-04T19:26:35Z - bento batch:949 のり palette カテゴリ見出し化 + scroll 位置保持 (hideName gate + 見出し挿入 + savedPaletteScrollByTab Map + rAF restore + 非 simple モード guard, sw v1959→v1960)
 - **タスク**: bento batch:949 のり palette カテゴリ見出し化 + scroll 位置保持 (hideName gate + 見出し挿入 + savedPaletteScrollByTab Map + rAF restore + 非 simple モード guard, sw v1959→v1960)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 74, "Bash": 74, "Glob": 2, "Edit": 26, "Grep": 17, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 41, "Skill": 1, "SendMessage": 1}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-03T01:12:45Z - batch:1058 bento新チュートリアル台本作成
-- **タスク**: batch:1058 bento新チュートリアル台本作成
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 335
-- **エラー数**: 33
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 74, "Bash": 74, "Glob": 2, "Edit": 26, "Grep": 14, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 40, "Skill": 1, "SendMessage": 1}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

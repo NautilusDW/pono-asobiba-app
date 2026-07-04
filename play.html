@@ -3634,9 +3634,17 @@
       }
       /* v1961: モバイルでは img が visual-scale .643 で box より小さく描画されるため、
          見た目のレバーに対する体感ヒット比は desktop より狭くなる。 上下方向をさらに
-         広げてタップしやすくする (幅は button rect が既に img の 1.55x 以上あるので控えめ)。 */
+         広げてタップしやすくする (幅は button rect が既に img の 1.55x 以上あるので控えめ)。
+         v1961 (Finding B fix): 下方 inflation のみ -90%→-60% に絞る。 .daily-gacha-shell が
+         overflow:hidden のため、 対称 -90% だと短い portrait 端末で下端が shell の外に出て
+         silent clip される (320×568 iPhone SE 1st gen で 15.4px、 375×667 iPhone SE 2/3 で
+         6.5px)。 -60% にすれば 320×568 でもクリアランス ≈ 0、 375×667 で +8.3px 余裕。
+         上方は shell 天井から十分離れているので -90% を維持。 */
       .daily-gacha-lever::before {
-        inset: -90% -25%;
+        top: -90%;
+        right: -25%;
+        bottom: -60%;
+        left: -25%;
       }
       .daily-gacha-turn-cue__word {
         min-width: 76px;
@@ -7200,7 +7208,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1960;
+    const PAGE_CACHE_VERSION = 1961;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
