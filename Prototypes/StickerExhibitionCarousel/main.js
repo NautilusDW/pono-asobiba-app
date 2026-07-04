@@ -62,7 +62,10 @@ const state = {
   touchStartY: 0,
   touchStartTime: 0,
   touchActive: false,
+  touchPointerId: 0,
   suppressClickUntil: 0,
+  glideTimer: 0,
+  isGliding: false,
   lastFocus: null,
   mapNoticeTimer: 0,
 };
@@ -389,9 +392,10 @@ function updateStatus() {
   els.progressFill.style.width = total ? `${((state.index + 1) / total) * 100}%` : "0%";
 }
 
-function goTo(index) {
+function goTo(index, { cancelMotion = true } = {}) {
   const total = state.filtered.length;
   if (!total) return;
+  if (cancelMotion) cancelGlide();
   state.index = (index + total) % total;
   updateCarouselLayout();
   updateStatus();
@@ -403,6 +407,54 @@ function next() {
 
 function prev() {
   goTo(state.index - 1);
+}
+
+function glideBy(delta) {
+  const total = state.filtered.length;
+  if (!total) return;
+  const direction = delta > 0 ? 1 : -1;
+  let remaining = Math.min(Math.abs(delta), Math.max(1, total - 1));
+  if (!remaining) return;
+
+  cancelGlide();
+  state.isGliding = true;
+  els.app.classList.add("is-gliding");
+  const stepMs = remaining >= 5 ? 104 : remaining >= 3 ? 118 : 136;
+  state.suppressClickUntil = performance.now() + remaining * stepMs + 420;
+
+  const step = () => {
+    goTo(state.index + direction, { cancelMotion: false });
+    remaining -= 1;
+    if (remaining <= 0) {
+      state.glideTimer = window.setTimeout(() => {
+        state.glideTimer = 0;
+        state.isGliding = false;
+        els.app.classList.remove("is-gliding");
+      }, 170);
+      return;
+    }
+    state.glideTimer = window.setTimeout(step, stepMs);
+  };
+
+  step();
+}
+
+function cancelGlide() {
+  if (state.glideTimer) {
+    window.clearTimeout(state.glideTimer);
+    state.glideTimer = 0;
+  }
+  state.isGliding = false;
+  els.app.classList.remove("is-gliding");
+}
+
+function setDragOffset(value) {
+  els.carouselLayer.style.setProperty("--drag-x", `${value}px`);
+}
+
+function resetDragOffset() {
+  els.carouselLayer.style.removeProperty("--drag-x");
+  els.app.classList.remove("is-dragging");
 }
 
 function openDetail(sticker) {
@@ -511,29 +563,48 @@ function wireEvents() {
   });
 
   els.carouselViewport.addEventListener("pointerdown", (event) => {
+    cancelGlide();
     state.touchStartX = event.clientX;
     state.touchStartY = event.clientY;
     state.touchStartTime = performance.now();
     state.touchActive = true;
+    state.touchPointerId = event.pointerId;
+    els.app.classList.add("is-dragging");
+    setDragOffset(0);
+    if (typeof els.carouselViewport.setPointerCapture === "function") {
+      els.carouselViewport.setPointerCapture(event.pointerId);
+    }
+  });
+
+  els.carouselViewport.addEventListener("pointermove", (event) => {
+    if (!state.touchActive || event.pointerId !== state.touchPointerId) return;
+    const dx = event.clientX - state.touchStartX;
+    const dy = event.clientY - state.touchStartY;
+    if (Math.abs(dx) < 3 || Math.abs(dx) < Math.abs(dy) * 0.8) return;
+    const dragLimit = carouselStep() * 0.86;
+    setDragOffset(clamp(dx, -dragLimit, dragLimit));
   });
 
   els.carouselViewport.addEventListener("pointerup", (event) => {
     if (!state.touchActive) return;
     state.touchActive = false;
+    state.touchPointerId = 0;
     const dx = event.clientX - state.touchStartX;
     const dy = event.clientY - state.touchStartY;
+    resetDragOffset();
     if (Math.abs(dx) < 36 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
     const elapsed = Math.max(performance.now() - state.touchStartTime, 16);
     const velocity = Math.abs(dx) / elapsed;
     const projectedDistance = Math.abs(dx) + velocity * 170;
     const maxJump = Math.max(1, Math.min(6, state.filtered.length - 1));
     const jump = clamp(Math.round(projectedDistance / carouselStep()), 1, maxJump);
-    state.suppressClickUntil = performance.now() + 360;
-    goTo(state.index + (dx < 0 ? jump : -jump));
+    glideBy(dx < 0 ? jump : -jump);
   });
 
   els.carouselViewport.addEventListener("pointercancel", () => {
     state.touchActive = false;
+    state.touchPointerId = 0;
+    resetDragOffset();
   });
 
   els.closeDetail.addEventListener("click", closeDetail);
