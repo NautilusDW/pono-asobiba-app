@@ -1107,8 +1107,6 @@ h1 {
   }
 
   .rarity-sparkle {
-    opacity: 0.9 !important;
-    transform: translate(-50%, -50%) scale(0.9) rotate(28deg) !important;
     animation: rarity-sparkle-twinkle var(--sparkle-duration, 3.6s) ease-in-out infinite !important;
   }
 }
