@@ -1,6 +1,6 @@
 const BASE_URL = new URL("./", window.location.href);
 const CATALOG_URL = new URL("../../assets/data/game-stickers.json", BASE_URL);
-const FRAME_BASE_URL = new URL("./assets/sticker-carousel-frame-base.png", BASE_URL);
+const FRAME_BASE_URL = new URL("./assets/sticker-carousel-frame-base-v4.png", BASE_URL);
 const STATE_KEY = "pono_game_stickers_v1";
 
 const ROOMS = [
