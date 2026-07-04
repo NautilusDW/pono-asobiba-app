@@ -8475,6 +8475,12 @@ function showShopOpening(req, onDone, options = {}) {
       // 中身 (bg/staff/customer/mask) は visibility:hidden のままなので、
       // 見えるのは overlay の下地色のみ = 従来 display:none 解除後と同じ「1枚絵」に着地する。
       ov.classList.remove('hidden');
+      // batch:938 race-fix: overlay 表示中は画像 decode + SHOP_CUSTOMER_ENTER_DELAY_MS 完了までに
+      // next ボタンが操作可能な状態になる (dialog は先出し) ため、子供の早タップで
+      // 画像未準備ステップに突入 → フラッシュ再発する。ここで next を封じ、outer .then() 内で復帰。
+      // initialReveal=false (mood 遷移など) では disable すると視覚チラつきになるので触らない。
+      next.style.pointerEvents = 'none';
+      next.style.opacity = '0';
     } else {
       bg.style.visibility = '';
       staff.style.visibility = '';
@@ -8551,6 +8557,13 @@ function showShopOpening(req, onDone, options = {}) {
       // initialReveal 中は上の分岐で既に hidden を外している (bug1 fix) ため、
       // 通常はここは no-op だが、万一の safety net として残す。
       if (initialReveal) ov.classList.remove('hidden');
+      // batch:938 race-fix: 画像 decode + SHOP_CUSTOMER_ENTER_DELAY_MS を待ち切ったこの時点で
+      // ようやく next ボタンを操作可にする。initialReveal 分岐で inline 指定した
+      // pointer-events / opacity を空文字で戻し、CSS 側の既定に戻す。
+      if (initialReveal) {
+        next.style.pointerEvents = '';
+        next.style.opacity = '';
+      }
       playStepVoice(token, step);
     });
   };
@@ -14267,6 +14280,10 @@ function removeFreeItemData(uid, opts = {}) {
   if (freePendingCupEditorUid && removeIds.has(freePendingCupEditorUid)) freePendingCupEditorUid = null;
   if (simpleReplaceSlotUid && removeIds.has(simpleReplaceSlotUid)) simpleReplaceSlotUid = null;
   if (simpleDecorPanelUid && removeIds.has(simpleDecorPanelUid)) simpleDecorPanelUid = null; // batch:1057
+  // batch:938 (bug3+4 副作用 fix): undo で armed target が削除リストに含まれる場合、
+  // simpleLeafArmedTargetUid が stale に残って hint が居座る。 armSimpleLeafForStageTap 済み
+  // uid が消えた時点で共通ヘルパーで armed 状態を撤収する。
+  if (simpleLeafArmedTargetUid && removeIds.has(simpleLeafArmedTargetUid)) clearSimpleLeafArmedState();
   if (item.parentCupId) layoutCupChildren(placedItems.find(i => i.uid === item.parentCupId && i.snapTarget));
   return item;
 }
