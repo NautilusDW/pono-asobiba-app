@@ -54,16 +54,15 @@ button {
 
 .museum-bg {
   position: absolute;
-  inset: 0;
+  inset: -18px;
   z-index: -3;
   background:
-    linear-gradient(90deg, rgba(255, 227, 149, 0.07) 0 2px, transparent 2px 13%, rgba(255, 227, 149, 0.07) 13% 13.28%, transparent 13.28% 31%, rgba(255, 227, 149, 0.07) 31% 31.28%, transparent 31.28% 69%, rgba(255, 227, 149, 0.07) 69% 69.28%, transparent 69.28% 87%, rgba(255, 227, 149, 0.07) 87% 87.28%, transparent 87.28%),
+    linear-gradient(90deg, rgba(255, 227, 149, 0.05) 0 2px, transparent 2px 13%, rgba(255, 227, 149, 0.05) 13% 13.28%, transparent 13.28% 31%, rgba(255, 227, 149, 0.05) 31% 31.28%, transparent 31.28% 69%, rgba(255, 227, 149, 0.05) 69% 69.28%, transparent 69.28% 87%, rgba(255, 227, 149, 0.05) 87% 87.28%, transparent 87.28%),
+    linear-gradient(180deg, rgba(24, 16, 18, 0.22), rgba(6, 5, 7, 0.76)),
+    url("./assets/sticker-exhibition-room-bg-v1.png") center / cover no-repeat,
     linear-gradient(180deg, #2a1f1f 0%, #171315 72%, #090809 100%);
-}
-
-.museum-bg::before,
-.museum-bg::after {
-  display: none;
+  filter: blur(5px) saturate(0.88) brightness(0.82);
+  transform: scale(1.03);
 }
 
 .museum-vignette {
@@ -442,18 +441,34 @@ h1 {
   user-select: none;
 }
 
-.sticker-wrap {
+.sticker-stage {
   position: absolute;
-  left: 50%;
-  top: 43.5%;
+  left: 18%;
+  right: 18%;
+  top: 17.5%;
+  bottom: 31%;
   display: grid;
   place-items: center;
-  width: 29%;
-  aspect-ratio: 1;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.sticker-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52%;
+  aspect-ratio: var(--sticker-aspect, 1);
   border-radius: 0;
   background: transparent;
-  transform: translate(-50%, -50%);
-  z-index: 2;
+}
+
+.sticker-wrap.is-tall {
+  width: 25%;
+}
+
+.sticker-wrap.is-wide {
+  width: 64%;
 }
 
 .sticker-wrap img {
@@ -474,8 +489,8 @@ h1 {
 
 .lock-dot {
   position: absolute;
-  right: -6px;
-  bottom: -6px;
+  right: 21%;
+  bottom: 18%;
   display: grid;
   place-items: center;
   width: 34px;

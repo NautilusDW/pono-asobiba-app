@@ -60,7 +60,9 @@ const state = {
   index: 0,
   touchStartX: 0,
   touchStartY: 0,
+  touchStartTime: 0,
   touchActive: false,
+  suppressClickUntil: 0,
   lastFocus: null,
   mapNoticeTimer: 0,
 };
@@ -297,6 +299,9 @@ function createCarouselItem(sticker, index) {
   frameImage.draggable = false;
   frameImage.loading = "eager";
 
+  const stickerStage = document.createElement("span");
+  stickerStage.className = "sticker-stage";
+
   const stickerWrap = document.createElement("span");
   stickerWrap.className = "sticker-wrap";
 
@@ -305,16 +310,19 @@ function createCarouselItem(sticker, index) {
   img.alt = sticker.owned ? sticker.name : "";
   img.draggable = false;
   img.loading = "lazy";
+  img.addEventListener("load", () => fitStickerImage(stickerWrap, img), { once: true });
+  if (img.complete) fitStickerImage(stickerWrap, img);
   stickerWrap.appendChild(img);
+  stickerStage.appendChild(stickerWrap);
 
   if (!sticker.owned) {
     const lock = document.createElement("span");
     lock.className = "lock-dot";
     lock.textContent = "?";
-    stickerWrap.appendChild(lock);
+    stickerStage.appendChild(lock);
   }
 
-  frame.append(frameImage, stickerWrap);
+  frame.append(frameImage, stickerStage);
 
   const label = document.createElement("span");
   label.className = "frame-label";
@@ -324,11 +332,22 @@ function createCarouselItem(sticker, index) {
   return button;
 }
 
+function fitStickerImage(wrap, img) {
+  const ratio = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1;
+  wrap.style.setProperty("--sticker-aspect", String(clamp(ratio, 0.36, 2.1)));
+  wrap.classList.toggle("is-tall", ratio < 0.78);
+  wrap.classList.toggle("is-wide", ratio > 1.28);
+}
+
+function carouselStep() {
+  const viewportWidth = els.carouselViewport.clientWidth || window.innerWidth;
+  return clamp(viewportWidth * 0.36, 220, 420);
+}
+
 function updateCarouselLayout() {
   const list = state.filtered;
   const total = list.length;
-  const viewportWidth = els.carouselViewport.clientWidth || window.innerWidth;
-  const step = clamp(viewportWidth * 0.36, 220, 420);
+  const step = carouselStep();
 
   Array.from(els.carouselLayer.children).forEach((item) => {
     const index = Number(item.dataset.index || 0);
@@ -453,6 +472,10 @@ function wireEvents() {
   }
 
   els.carouselLayer.addEventListener("click", (event) => {
+    if (performance.now() < state.suppressClickUntil) {
+      event.preventDefault();
+      return;
+    }
     const button = event.target.closest(".carousel-item");
     if (!button) return;
     const index = Number(button.dataset.index || 0);
@@ -490,6 +513,7 @@ function wireEvents() {
   els.carouselViewport.addEventListener("pointerdown", (event) => {
     state.touchStartX = event.clientX;
     state.touchStartY = event.clientY;
+    state.touchStartTime = performance.now();
     state.touchActive = true;
   });
 
@@ -499,8 +523,13 @@ function wireEvents() {
     const dx = event.clientX - state.touchStartX;
     const dy = event.clientY - state.touchStartY;
     if (Math.abs(dx) < 36 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
-    if (dx < 0) next();
-    else prev();
+    const elapsed = Math.max(performance.now() - state.touchStartTime, 16);
+    const velocity = Math.abs(dx) / elapsed;
+    const projectedDistance = Math.abs(dx) + velocity * 170;
+    const maxJump = Math.max(1, Math.min(6, state.filtered.length - 1));
+    const jump = clamp(Math.round(projectedDistance / carouselStep()), 1, maxJump);
+    state.suppressClickUntil = performance.now() + 360;
+    goTo(state.index + (dx < 0 ? jump : -jump));
   });
 
   els.carouselViewport.addEventListener("pointercancel", () => {
