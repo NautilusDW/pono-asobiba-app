@@ -317,6 +317,7 @@ function createCarouselItem(sticker, index) {
     for (let i = 0; i < (rarity === "super" ? 8 : 5); i += 1) {
       const star = document.createElement("span");
       star.className = "rarity-sparkle";
+      star.textContent = "✦";
       sparkles.appendChild(star);
     }
     frame.appendChild(sparkles);
@@ -333,6 +334,13 @@ function createCarouselItem(sticker, index) {
   img.addEventListener("load", () => fitStickerImage(stickerWrap, img), { once: true });
   if (img.complete) fitStickerImage(stickerWrap, img);
   stickerWrap.appendChild(img);
+  if (!sticker.owned) {
+    const silhouette = document.createElement("span");
+    silhouette.className = "locked-silhouette";
+    silhouette.setAttribute("aria-hidden", "true");
+    silhouette.style.setProperty("--silhouette-image", cssImageUrl(sticker.imageUrl));
+    stickerWrap.appendChild(silhouette);
+  }
   stickerStage.appendChild(stickerWrap);
 
   if (!sticker.owned) {
@@ -357,6 +365,11 @@ function fitStickerImage(wrap, img) {
   wrap.style.setProperty("--sticker-aspect", String(clamp(ratio, 0.36, 2.1)));
   wrap.classList.toggle("is-tall", ratio < 0.78);
   wrap.classList.toggle("is-wide", ratio > 1.28);
+}
+
+function cssImageUrl(url) {
+  const safeUrl = String(url || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `url("${safeUrl}")`;
 }
 
 function carouselStep() {
@@ -480,6 +493,11 @@ function openDetail(sticker) {
   els.detailPanel.classList.toggle("is-locked", !sticker.owned);
   els.detailImage.src = sticker.imageUrl;
   els.detailImage.alt = sticker.owned ? sticker.name : "";
+  if (sticker.owned) {
+    els.detailFrame.style.removeProperty("--detail-silhouette-image");
+  } else {
+    els.detailFrame.style.setProperty("--detail-silhouette-image", cssImageUrl(sticker.imageUrl));
+  }
   els.detailSerial.textContent = String(sticker.serial || 0).padStart(3, "0");
   els.detailName.textContent = sticker.owned ? sticker.name : "まだ";
   els.detailTags.replaceChildren(

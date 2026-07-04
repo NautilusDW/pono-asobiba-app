@@ -484,32 +484,28 @@ h1 {
 
 .rarity-sparkle {
   position: absolute;
+  display: grid;
+  place-items: center;
   width: var(--sparkle-size, 10px);
   height: var(--sparkle-size, 10px);
-  opacity: 0;
+  opacity: 0.78;
+  color: #fff1a8;
+  font-size: calc(var(--sparkle-size, 10px) * 1.55);
+  line-height: 1;
+  text-shadow:
+    0 0 5px rgba(255, 238, 150, 0.92),
+    0 0 10px rgba(255, 184, 66, 0.5);
   transform: translate(-50%, -50%) scale(0.45) rotate(0deg);
   animation: rarity-sparkle-twinkle var(--sparkle-duration, 2.7s) ease-in-out infinite;
 }
 
-.rarity-sparkle::before,
-.rarity-sparkle::after {
+.rarity-sparkle::before {
   content: "";
   position: absolute;
-  inset: 0;
-  margin: auto;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #fff9cf, #ffd05d 58%, rgba(255, 178, 62, 0.1));
-  box-shadow: 0 0 8px rgba(255, 225, 118, 0.72);
-}
-
-.rarity-sparkle::before {
-  width: 100%;
-  height: 28%;
-}
-
-.rarity-sparkle::after {
-  width: 28%;
-  height: 100%;
+  inset: -52%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 247, 182, 0.58), rgba(255, 204, 88, 0.22) 42%, transparent 68%);
 }
 
 .rarity-sparkle:nth-child(1) { left: 8%; top: 18%; --sparkle-size: 8px; --sparkle-duration: 2.4s; animation-delay: -0.1s; }
@@ -531,10 +527,9 @@ h1 {
     drop-shadow(0 0 12px rgba(134, 220, 255, 0.28));
 }
 
-.carousel-item.is-rarity-super .rarity-sparkle::before,
-.carousel-item.is-rarity-super .rarity-sparkle::after {
-  background: linear-gradient(180deg, #fffdf0, #ffe46f 54%, #9fe8ff);
-  box-shadow: 0 0 10px rgba(255, 236, 132, 0.82), 0 0 16px rgba(135, 226, 255, 0.36);
+.carousel-item.is-rarity-super .rarity-sparkle::before {
+  background: radial-gradient(circle, rgba(255, 252, 218, 0.72), rgba(255, 226, 105, 0.3) 42%, rgba(145, 225, 255, 0.14) 58%, transparent 72%);
+  box-shadow: 0 0 10px rgba(255, 236, 132, 0.6), 0 0 16px rgba(135, 226, 255, 0.28);
 }
 
 .carousel-item.is-far .rarity-sparkle {
@@ -569,10 +564,36 @@ h1 {
   pointer-events: none;
 }
 
+.locked-silhouette {
+  display: none;
+}
+
 .carousel-item.is-locked .sticker-wrap img,
 .detail-panel.is-locked .detail-frame img {
-  opacity: 0.42;
-  filter: grayscale(1) brightness(0.12) drop-shadow(0 6px 6px rgba(0, 0, 0, 0.16));
+  opacity: 1;
+  filter: grayscale(1) sepia(0.18) hue-rotate(205deg) brightness(0.34) contrast(1.5) drop-shadow(0 6px 6px rgba(0, 0, 0, 0.22));
+}
+
+@supports ((mask-image: url("")) or (-webkit-mask-image: url(""))) {
+  .locked-silhouette {
+    position: absolute;
+    inset: 0;
+    display: block;
+    background: linear-gradient(180deg, #655a78 0%, #493f5c 46%, #302940 100%);
+    opacity: 0.98;
+    pointer-events: none;
+    -webkit-mask: var(--silhouette-image) center / contain no-repeat;
+    mask: var(--silhouette-image) center / contain no-repeat;
+    filter:
+      drop-shadow(0 0 1px rgba(255, 230, 150, 0.78))
+      drop-shadow(0 7px 5px rgba(0, 0, 0, 0.32));
+  }
+
+  .carousel-item.is-locked .sticker-wrap img,
+  .detail-panel.is-locked .detail-frame img {
+    opacity: 0;
+    filter: none;
+  }
 }
 
 .lock-dot {
@@ -740,6 +761,7 @@ h1 {
 }
 
 .detail-frame {
+  position: relative;
   display: grid;
   place-items: center;
   min-height: 220px;
@@ -749,6 +771,12 @@ h1 {
     linear-gradient(135deg, #6a4a22, #e0b35a 22%, #3b2a18 52%, #d5a451),
     #b9873f;
   box-shadow: inset 0 0 0 10px rgba(255, 248, 225, 0.2);
+  overflow: hidden;
+}
+
+.detail-frame::before {
+  content: "";
+  display: none;
 }
 
 .detail-frame img {
@@ -757,6 +785,20 @@ h1 {
   max-height: 190px;
   object-fit: contain;
   filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.22));
+}
+
+@supports ((mask-image: url("")) or (-webkit-mask-image: url(""))) {
+  .detail-panel.is-locked .detail-frame::before {
+    display: block;
+    width: min(58%, 190px);
+    height: 190px;
+    background: linear-gradient(180deg, #655a78 0%, #493f5c 46%, #302940 100%);
+    -webkit-mask: var(--detail-silhouette-image) center / contain no-repeat;
+    mask: var(--detail-silhouette-image) center / contain no-repeat;
+    filter:
+      drop-shadow(0 0 1px rgba(255, 230, 150, 0.78))
+      drop-shadow(0 12px 9px rgba(0, 0, 0, 0.32));
+  }
 }
 
 .detail-copy {
@@ -1062,5 +1104,10 @@ h1 {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
+  }
+
+  .rarity-sparkle {
+    opacity: 0.9 !important;
+    transform: translate(-50%, -50%) scale(0.9) rotate(28deg) !important;
   }
 }
