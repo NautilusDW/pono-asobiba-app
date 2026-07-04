@@ -856,7 +856,7 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
   background-image: var(--sb3d-ui-button-exhibition);
   color: #2d2415;
   font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "BIZ UDPGothic", "Meiryo", sans-serif;
-  font-size: 17px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0;
   white-space: nowrap;
@@ -865,6 +865,9 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
 }
 
 .sticker-exhibition-button .top-button-label {
+  display: grid;
+  gap: 1px;
+  line-height: 0.95;
   transform: translateY(-1px) scaleX(0.98);
   -webkit-text-stroke: 0.2px rgba(45, 36, 21, 0.82);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
@@ -3251,7 +3254,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   .sticker-exhibition-button {
     width: 164px;
     padding: 0 12px 0 58px;
-    font-size: 16px;
+    font-size: 12px;
   }
 
   body.is-collection-album .album-mode-toggle {
@@ -3281,7 +3284,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   .sticker-exhibition-button {
     width: 148px;
     padding: 0 10px 0 52px;
-    font-size: 14px;
+    font-size: 11px;
   }
 
   body.is-collection-album .album-mode-toggle {
@@ -3606,7 +3609,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     width: 148px;
     height: 50px;
     padding: 0 10px 0 52px;
-    font-size: 14px;
+    font-size: 11px;
   }
 
   body.is-collection-album .album-mode-toggle {
@@ -4073,7 +4076,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
     width: 144px;
     height: 44px;
     padding: 0 8px 0 50px;
-    font-size: 13px;
+    font-size: 10px;
   }
 
   body.is-collection-album .album-mode-toggle {

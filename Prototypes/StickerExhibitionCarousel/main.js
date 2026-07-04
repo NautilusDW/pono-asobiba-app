@@ -20,7 +20,7 @@ const FLOOR_EXITS = [
 const RARITY_LABEL = {
   normal: "ふつう",
   rare: "レア",
-  super: "すごい",
+  super: "スーパーレア",
 };
 
 const els = {
@@ -239,7 +239,7 @@ function showMap({ updateUrl = true } = {}) {
   els.backToMap.hidden = true;
   els.countChip.hidden = true;
   els.screenKicker.textContent = "マップ";
-  els.roomTitle.textContent = "シールてんじしつ";
+  els.roomTitle.textContent = "シールミュージアム";
   closeDetail();
   hideMapNotice();
   renderMapRooms();
@@ -256,7 +256,7 @@ function showRoom(roomId, { updateUrl = true } = {}) {
   els.bottomBar.hidden = false;
   els.backToMap.hidden = false;
   els.countChip.hidden = false;
-  els.screenKicker.textContent = "シールてんじしつ";
+  els.screenKicker.textContent = "シールミュージアム";
   if (updateUrl) setRoomUrl(room.id);
   requestAnimationFrame(updateCarouselLayout);
 }
@@ -289,6 +289,11 @@ function createCarouselItem(sticker, index) {
   button.className = "carousel-item";
   button.dataset.index = String(index);
   button.dataset.stickerId = sticker.id;
+  const rarity = sticker.rarity || "normal";
+  button.dataset.rarity = rarity;
+  if (rarity === "rare" || rarity === "super") {
+    button.classList.add("is-rarity-special", `is-rarity-${rarity}`);
+  }
   if (!sticker.owned) button.classList.add("is-locked");
   button.setAttribute("aria-label", sticker.owned ? sticker.name : "まだ");
 
@@ -304,6 +309,18 @@ function createCarouselItem(sticker, index) {
 
   const stickerStage = document.createElement("span");
   stickerStage.className = "sticker-stage";
+
+  if (rarity === "rare" || rarity === "super") {
+    const sparkles = document.createElement("span");
+    sparkles.className = "rarity-sparkles";
+    sparkles.setAttribute("aria-hidden", "true");
+    for (let i = 0; i < (rarity === "super" ? 8 : 5); i += 1) {
+      const star = document.createElement("span");
+      star.className = "rarity-sparkle";
+      sparkles.appendChild(star);
+    }
+    frame.appendChild(sparkles);
+  }
 
   const stickerWrap = document.createElement("span");
   stickerWrap.className = "sticker-wrap";

@@ -122,6 +122,7 @@ button {
   gap: 1px;
   justify-items: center;
   min-width: 0;
+  max-width: min(520px, 48vw);
   text-align: center;
 }
 
@@ -141,7 +142,11 @@ p {
 
 h1 {
   margin: 0;
-  font-size: 1.68rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1.3rem, 3vw, 1.68rem);
   font-weight: 900;
   line-height: 1.05;
 }
@@ -446,6 +451,7 @@ h1 {
 .frame-base-image {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -464,6 +470,75 @@ h1 {
   place-items: center;
   overflow: hidden;
   z-index: 2;
+}
+
+.rarity-sparkles {
+  position: absolute;
+  left: 10.5%;
+  right: 10.5%;
+  top: 10.5%;
+  bottom: 22.5%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.rarity-sparkle {
+  position: absolute;
+  width: var(--sparkle-size, 10px);
+  height: var(--sparkle-size, 10px);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.45) rotate(0deg);
+  animation: rarity-sparkle-twinkle var(--sparkle-duration, 2.7s) ease-in-out infinite;
+}
+
+.rarity-sparkle::before,
+.rarity-sparkle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff9cf, #ffd05d 58%, rgba(255, 178, 62, 0.1));
+  box-shadow: 0 0 8px rgba(255, 225, 118, 0.72);
+}
+
+.rarity-sparkle::before {
+  width: 100%;
+  height: 28%;
+}
+
+.rarity-sparkle::after {
+  width: 28%;
+  height: 100%;
+}
+
+.rarity-sparkle:nth-child(1) { left: 8%; top: 18%; --sparkle-size: 8px; --sparkle-duration: 2.4s; animation-delay: -0.1s; }
+.rarity-sparkle:nth-child(2) { left: 20%; top: 82%; --sparkle-size: 7px; --sparkle-duration: 2.9s; animation-delay: -1.2s; }
+.rarity-sparkle:nth-child(3) { left: 48%; top: 9%; --sparkle-size: 9px; --sparkle-duration: 3.1s; animation-delay: -0.7s; }
+.rarity-sparkle:nth-child(4) { left: 82%; top: 20%; --sparkle-size: 8px; --sparkle-duration: 2.6s; animation-delay: -1.8s; }
+.rarity-sparkle:nth-child(5) { left: 91%; top: 76%; --sparkle-size: 7px; --sparkle-duration: 3s; animation-delay: -0.5s; }
+.rarity-sparkle:nth-child(6) { left: 12%; top: 54%; --sparkle-size: 6px; --sparkle-duration: 2.3s; animation-delay: -1.6s; }
+.rarity-sparkle:nth-child(7) { left: 66%; top: 86%; --sparkle-size: 7px; --sparkle-duration: 2.8s; animation-delay: -2.1s; }
+.rarity-sparkle:nth-child(8) { left: 88%; top: 49%; --sparkle-size: 6px; --sparkle-duration: 2.5s; animation-delay: -0.9s; }
+
+.carousel-item.is-rarity-rare .rarity-sparkles {
+  filter: drop-shadow(0 0 5px rgba(255, 228, 126, 0.45));
+}
+
+.carousel-item.is-rarity-super .rarity-sparkles {
+  filter:
+    drop-shadow(0 0 7px rgba(255, 232, 120, 0.72))
+    drop-shadow(0 0 12px rgba(134, 220, 255, 0.28));
+}
+
+.carousel-item.is-rarity-super .rarity-sparkle::before,
+.carousel-item.is-rarity-super .rarity-sparkle::after {
+  background: linear-gradient(180deg, #fffdf0, #ffe46f 54%, #9fe8ff);
+  box-shadow: 0 0 10px rgba(255, 236, 132, 0.82), 0 0 16px rgba(135, 226, 255, 0.36);
+}
+
+.carousel-item.is-far .rarity-sparkle {
+  animation-play-state: paused;
 }
 
 .sticker-wrap {
@@ -517,6 +592,7 @@ h1 {
 
 .frame-label {
   position: absolute;
+  z-index: 5;
   left: 33.5%;
   right: 33.5%;
   top: 86%;
@@ -555,6 +631,24 @@ h1 {
   line-height: 1;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+@keyframes rarity-sparkle-twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35) rotate(0deg);
+  }
+
+  32% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1) rotate(42deg);
+  }
+
+  58% {
+    opacity: 0.48;
+    transform: translate(-50%, -50%) scale(0.72) rotate(84deg);
+  }
 }
 
 .mini-action:active,
@@ -948,6 +1042,16 @@ h1 {
 @media (max-height: 360px) and (orientation: landscape) {
   .carousel-item {
     width: clamp(260px, 38vw, 300px);
+  }
+}
+
+@media (max-width: 720px) {
+  .stage.is-room .title-group p {
+    display: none;
+  }
+
+  .stage.is-room h1 {
+    font-size: clamp(0.98rem, 4.1vw, 1.2rem);
   }
 }
 
