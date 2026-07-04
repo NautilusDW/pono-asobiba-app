@@ -68,7 +68,8 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #helpBadge{position:absolute;bottom:27vh;left:2vw;z-index:9;background:rgba(255,255,255,.88);
   border:2px solid rgba(87,193,94,.5);border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
-body.v-train #veh{left:calc(50vw - clamp(95px,15.5vw,165px));bottom:6.2vh;width:clamp(190px,31vw,330px);height:clamp(74px,12vw,128px)}
+body.v-train #cars{bottom:9.7vh}
+body.v-train #veh{left:calc(50vw - clamp(95px,15.5vw,165px));bottom:9.4vh;width:clamp(190px,31vw,330px);height:clamp(74px,12vw,128px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -186,16 +187,16 @@ body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train 
 .train-wheel-a{left:19.6%}
 .train-wheel-b{left:55.0%}
 #veh.go .train-wheel{animation:spin .62s linear infinite}
-.train-cylinder{position:absolute;right:4.6%;bottom:12.9%;width:15.5%;aspect-ratio:411/236;z-index:5;
+.train-cylinder{position:absolute;right:4.6%;bottom:12.9%;width:15.5%;aspect-ratio:411/236;z-index:2;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_cylinder_20260704.png") center/contain no-repeat;
   filter:drop-shadow(0 1px 0 rgba(45,30,20,.24))}
-.train-crosshead{position:absolute;right:24.5%;bottom:15.6%;width:13.2%;aspect-ratio:282/163;z-index:6;
+.train-crosshead{position:absolute;right:24.5%;bottom:15.6%;width:13.2%;aspect-ratio:282/163;z-index:2;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_crosshead_20260704.png") center/contain no-repeat;
   filter:drop-shadow(0 1px 0 rgba(45,30,20,.24))}
-.train-wheel-rod{position:absolute;left:24.8%;bottom:8.6%;width:41.4%;aspect-ratio:646/106;z-index:6;
+.train-wheel-rod{position:absolute;left:24.8%;bottom:8.6%;width:41.4%;aspect-ratio:646/106;z-index:2;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_side_rod_2pin_20260704.png") center/contain no-repeat;
   transform-origin:50% 50%;filter:drop-shadow(0 1px 0 rgba(45,30,20,.26))}
-.train-main-rod{position:absolute;left:49.2%;bottom:16.8%;width:19.8%;aspect-ratio:646/106;z-index:7;
+.train-main-rod{position:absolute;left:49.2%;bottom:16.8%;width:19.8%;aspect-ratio:646/106;z-index:2;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_side_rod_2pin_20260704.png") center/contain no-repeat;
   transform:rotate(-8deg);transform-origin:86% 50%;filter:drop-shadow(0 1px 0 rgba(45,30,20,.28))}
 .train-wheel-pin{display:none}
@@ -205,8 +206,8 @@ body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train 
 @keyframes sideRodTravel{0%,100%{transform:translate(0,0)}25%{transform:translate(-6%,-14%)}50%{transform:translate(-12%,0)}75%{transform:translate(-6%,14%)}}
 @keyframes mainRodTravel{0%,100%{transform:translate(0,0) rotate(-8deg)}25%{transform:translate(-4%,-8%) rotate(-14deg)}50%{transform:translate(-8%,0) rotate(-8deg)}75%{transform:translate(-4%,8%) rotate(1deg)}}
 @keyframes crossheadSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(-10%)}}
-body.tunnel-interior.v-train #veh{bottom:13.8vh}
-body.tunnel-interior.v-train #cars{bottom:13.9vh}
+body.tunnel-interior.v-train #veh{left:calc(50vw - clamp(110px,17.5vw,190px));bottom:13.8vh;width:clamp(220px,35vw,380px);height:clamp(86px,13.55vw,148px)}
+body.tunnel-interior.v-train #cars{bottom:14.1vh}
 body.v-train .puff{left:76%;top:-15%}
 body[data-driver="bear"]{--driver-x:0%}
 body[data-driver="fox"]{--driver-x:33.333%}

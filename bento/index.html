@@ -17353,7 +17353,7 @@ function getSimpleCupStageMarkerDisplayPoints(box, tier, cupSlots) {
   const cupPoints = getSimpleStageMarkerDisplayPoints(box, 'cup', slots, count);
   return Array.from({ length: count }, (_, idx) => (
     getSimpleExplicitStageMarkerPoint(slots[idx])
-    || getSimpleExplicitStageMarkerPoint(sideSlots[idx])
+    // batch:936 — legacy side-food markerX/Y fallthrough を無効化。cup-first リアウト後の実配置と乖離するため、grid fallback に落とす。
     || cupPoints[idx]
     || sidePoints[idx]
     || slots[idx]

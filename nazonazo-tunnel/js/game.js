@@ -238,7 +238,7 @@ const STATION_HELPERS=[
  {id:"neko",e:"🐱",name:"ねこさん",request:npcSrc("neko","request"),normal:npcSrc("neko","normal"),happy:npcSrc("neko","super_happy")}
 ];
 const HELP_MAX=3;
-const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2120, COVER_OFF=2380, COVER_LEN=370;
+const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_LEN=370;
 const TRAIN_WIDTH_MIN_PX=190, TRAIN_WIDTH_VW=31, TRAIN_WIDTH_MAX_PX=330, DEFAULT_VEHICLE_LEFT_VW=28;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=180;
 function trainLeftVw(){
