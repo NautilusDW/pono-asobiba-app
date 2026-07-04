@@ -517,11 +517,14 @@
     // v1951: Apps Script Web App へ hidden POST (fire-and-forget、 no-cors)
     postStarToAppsScript(gid, stars, this._openedAt);
 
-    // 「ありがとう！」 表示
+    // 「ありがとう！」 表示 (v1952: hidden property + removeAttribute 二重で iOS Safari の
+    // property setter が反映されない極端ケースにも防御)
     this._thanksEl.hidden = false;
+    try { this._thanksEl.removeAttribute('hidden'); } catch (e) { /* noop */ }
 
     // v1951: ★1-5 いずれの場合も アンケート CTA を常時表示。 auto-close は撤廃。
     this._ctaEl.hidden = false;
+    try { this._ctaEl.removeAttribute('hidden'); } catch (e) { /* noop */ }
     var self = this;
     setTimeout(function () {
       try { self._ctaBtn.focus(); } catch (e) { /* noop */ }
