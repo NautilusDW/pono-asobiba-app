@@ -40,16 +40,16 @@ body.st-space #cars{bottom:26.3vh}
 .car-body-img,.car-wheel{display:none}
 .car::after{content:"";position:absolute;bottom:-8%;left:12%;width:22%;aspect-ratio:1;background:#3d3d3d;border-radius:50%}
 .car::before{content:"";position:absolute;bottom:-8%;right:12%;width:22%;aspect-ratio:1;background:#3d3d3d;border-radius:50%}
-body.v-train .car{width:clamp(128px,19.2vw,210px);height:clamp(44px,6.4vw,74px);max-width:none;max-height:none;
+body.v-train .car{width:clamp(220px,38vw,390px);height:clamp(76px,12.7vw,130px);max-width:none;max-height:none;
   background:none;border:0;border-radius:0;display:block;overflow:visible}
 body.v-train .car::before,body.v-train .car::after{display:none}
 body.v-train .car-body-img{display:block;position:absolute;inset:0;z-index:3;
   background:url("../assets/images/nazonazo-tunnel/vehicle_passenger_car_body_user_v2_20260704.png") center bottom/contain no-repeat;
   filter:drop-shadow(0 2px 0 rgba(50,35,25,.16))}
-body.v-train .car-seat{position:absolute;top:16%;width:20%;height:52%;z-index:2;align-items:flex-end}
-body.v-train .car .seat-a{left:28%}
+body.v-train .car-seat{position:absolute;top:14%;width:22%;height:58%;z-index:2;align-items:flex-end}
+body.v-train .car .seat-a{left:27%}
 body.v-train .car .seat-b{left:50%}
-body.v-train .car .pas{font-size:clamp(14px,2.15vw,26px)}
+body.v-train .car .pas{font-size:clamp(22px,4.2vw,42px)}
 body.v-train .car .pas-img{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
 body.v-train .car-wheel{display:block;position:absolute;bottom:-5%;width:12.8%;aspect-ratio:1;z-index:4;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_car_wheel_20260704.png") center/contain no-repeat;

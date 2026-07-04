@@ -238,9 +238,9 @@ const STATION_HELPERS=[
  {id:"neko",e:"🐱",name:"ねこさん",request:npcSrc("neko","request"),normal:npcSrc("neko","normal"),happy:npcSrc("neko","super_happy")}
 ];
 const HELP_MAX=3;
-const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_LEN=370;
+const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_LEN=560;
 const TRAIN_WIDTH_MIN_PX=204, TRAIN_WIDTH_VW=33.2, TRAIN_WIDTH_MAX_PX=356, TRAIN_RIGHT_SHIFT_VW=5, DEFAULT_VEHICLE_LEFT_VW=28;
-const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=180;
+const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=360;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -981,7 +981,7 @@ function buildAmbient(P){
 }
 
 /* ================= passengers ================= */
-function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?18.8:8.8;}
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?36.8:8.8;}
 function visibleCarGroups(){
  const start=Math.max(0,cars.length-8);
  const aligned=start%2?start-1:start;

@@ -1412,6 +1412,17 @@ html, body {
 .free-section-heading::before {
   content: '🎀 ';
 }
+/* batch:939 のり palette: kind 境界のカテゴリ見出し。 grid 全幅で挟むために column span 指定。 */
+.free-item-list .free-section-heading {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+.free-item-list .free-section-heading:first-child {
+  margin-top: 0;
+}
+.free-item-list .free-section-heading::before {
+  content: '';
+}
 .free-tab {
   border: 2px solid #F8C36B;
   border-radius: 10px;
@@ -7708,6 +7719,11 @@ let freeRedoStack = [];
 let freeHistoryApplying = false;
 let selectedBentoBoxId = 'box_rect_split';
 let freeLayoutTab = 'box';
+// batch:939 palette scroll persistence: 同一タブ再描画時に scroll 位置を保存/復元。
+// item タップ配置 → renderFreeLayoutControls (tray.innerHTML='') で自然リセットされる問題対策。
+// タブ切替時 (lastRenderedPaletteTab !== freeLayoutTab) は保存/復元共にスキップ。
+const savedPaletteScrollByTab = new Map();
+let lastRenderedPaletteTab = null;
 let freeActiveTier = 1;
 let freeLayerSeq = 1;
 let freeSelectedItemUid = null;
@@ -16232,10 +16248,15 @@ function makeFreePaletteButton(def) {
     btn.appendChild(lock);
   }
   if (freeLayoutTab !== 'box') {
-    const name = document.createElement('span');
-    name.className = 'free-palette-name';
-    name.textContent = def.name || '';
-    btn.appendChild(name);
+    // batch:939: decor タブは name をカテゴリ見出しに集約 (renderFreeLayoutControls 側で挿入)。
+    // ただし face-set (「にこセット/くまセット/ねこセット」) だけは個別 name を残す。
+    const hideName = (freeLayoutTab === 'decor' && def && def.type === 'decor' && !def.faceSet);
+    if (!hideName) {
+      const name = document.createElement('span');
+      name.className = 'free-palette-name';
+      name.textContent = def.name || '';
+      btn.appendChild(name);
+    }
   }
   if (freeLayoutTab === 'box') {
     bindFreePalettePress(btn, e => {
@@ -17710,6 +17731,35 @@ function renderFreeCupControls() {
 function renderFreeLayoutControls() {
   const tray = document.getElementById('food-tray');
   if (!tray) return;
+  // batch:939: 同一タブ再描画時に scroll 位置を保存/復元 (tray.innerHTML='' 前に必ず取得)。
+  //   タブが切り替わった直後 (lastRenderedPaletteTab !== freeLayoutTab) は DOM 内容が旧タブ由来なので
+  //   保存も復元もしない (別コンテンツなので scrollTop=0 スタートが自然)。
+  const shouldPersistPaletteScroll = (lastRenderedPaletteTab != null && lastRenderedPaletteTab === freeLayoutTab);
+  if (shouldPersistPaletteScroll) {
+    const prevList = tray.querySelector('.free-item-list');
+    savedPaletteScrollByTab.set(freeLayoutTab, {
+      tray: tray.scrollTop || 0,
+      list: prevList ? (prevList.scrollTop || 0) : 0,
+    });
+  }
+  const tabForThisRender = freeLayoutTab;
+  lastRenderedPaletteTab = tabForThisRender;
+  if (shouldPersistPaletteScroll && savedPaletteScrollByTab.has(tabForThisRender)) {
+    const saved = savedPaletteScrollByTab.get(tabForThisRender);
+    requestAnimationFrame(() => {
+      // タブが変わっていたら復元しない (別コンテンツになっているため)。
+      if (freeLayoutTab !== tabForThisRender) return;
+      const currentTray = document.getElementById('food-tray');
+      if (!currentTray) return;
+      const trayMax = Math.max(0, currentTray.scrollHeight - currentTray.clientHeight);
+      currentTray.scrollTop = Math.min(saved.tray || 0, trayMax);
+      const currentList = currentTray.querySelector('.free-item-list');
+      if (currentList) {
+        const listMax = Math.max(0, currentList.scrollHeight - currentList.clientHeight);
+        currentList.scrollTop = Math.min(saved.list || 0, listMax);
+      }
+    });
+  }
   normalizeFreeGuideTab();
   clearSimpleSelectionIfBlockedByMode();
   tray.className = 'food-tray free-layout-controls';
@@ -17841,7 +17891,37 @@ function renderFreeLayoutControls() {
   if (items.length) {
     const list = document.createElement('div');
     list.className = 'free-item-list';
-    items.forEach(def => list.appendChild(makeFreePaletteButton(def)));
+    if (freeLayoutTab === 'decor') {
+      // batch:939: kind 境界にカテゴリ見出しを挿入 (whisker-left/right は「ひげ」に合体)。
+      const KIND_HEADING_LABEL = {
+        'face-set': 'セット',
+        'eye': '目',
+        'nose': '鼻',
+        'mouth': '口',
+        'brow': 'まゆ',
+        'whisker': 'ひげ',
+        'bangs': 'まえがみ',
+        'sheet': 'のりシート',
+        'shape': 'かたち',
+        'cheek': 'ほっぺ',
+        'scatter': 'かざり',
+      };
+      const normalizeKind = k => (k === 'whisker-left' || k === 'whisker-right') ? 'whisker' : k;
+      let lastKind = null;
+      items.forEach(def => {
+        const kind = normalizeKind(getSimpleDecorKind(def));
+        if (kind !== lastKind) {
+          const heading = document.createElement('div');
+          heading.className = 'free-section-heading free-item-list-category-heading';
+          heading.textContent = KIND_HEADING_LABEL[kind] || '';
+          list.appendChild(heading);
+          lastKind = kind;
+        }
+        list.appendChild(makeFreePaletteButton(def));
+      });
+    } else {
+      items.forEach(def => list.appendChild(makeFreePaletteButton(def)));
+    }
     tray.appendChild(list);
   }
   if (cupControls) tray.appendChild(cupControls);
