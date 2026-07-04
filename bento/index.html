@@ -15856,7 +15856,9 @@ function renderFreeLayoutInto(host, opts = {}) {
   }
   if (opts.interactive) {
     const targetLayer = createSimpleStageTargetLayer();
-    if (targetLayer) renderRoot.appendChild(targetLayer);
+    // batch:target-coord — visualMask box (くまさん等) では food が mask-space (`layer`) に住むので、
+    // 番号バッジも同じ layer にマウントして座標系を一致させる。rect box は従来どおり stage 直下。
+    if (targetLayer) (hasVisualMask ? layer : renderRoot).appendChild(targetLayer);
   }
   if (opts.interactive) {
     if (freeBrushStampDef) {
