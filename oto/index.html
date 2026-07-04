@@ -9641,6 +9641,20 @@ function _gh3DDrawOneNote(note, mvp) {
   var topVerts = [];
   var baseY = _gh3DRoadYForNote(z) + yLift;
   var topY = baseY + h;
+  // v1962: p→1 でノートが「床の上」= 可視キーの下 に着地して見える問題を修正。
+  // 可視キー (WebGL, _gh3DDrawOneKey) の上面ワールド Y (=0.7) へノート中心を収束させる。
+  // ノートとキーは同一 MVP で投影されるため、これで全アスペクト比 (端末) でノートがボタンの上に
+  // ちょうど乗る (定数ピクセル補正だと端末で 0.76〜1.28 とズレるが、ワールド座標一致なら不変)。
+  var GH3D_KEY_TOP_Y = 0.7;         // _gh3DDrawOneKey の unpressed topY と一致させること
+  var GH3D_NOTE_ARRIVE_POW = 4;     // 収束カーブ: 大きいほど着地直前まで床を這い、最後に乗る
+  // ノートが p=1 で床に着く「自然な中心」を固定基準にする (yLift + h/2 ≒ 0.1275)。
+  // ※ ライブの (baseY+topY)/2 はランプ上 (world Y ≈ 38*(1-p)) で巨大なため、それを基準にすると
+  //   落下中に大きな負の lift が働き、ノートが道路の下へ沈む (クロスレビュー指摘のバグ)。
+  var _noteLandCenter = yLift + h / 2;
+  var _arrive = Math.pow(Math.max(0, Math.min(1, p)), GH3D_NOTE_ARRIVE_POW);
+  var _hitLift = (GH3D_KEY_TOP_Y - _noteLandCenter) * _arrive;
+  baseY += _hitLift;
+  topY += _hitLift;
   var noteTilt = 0.72 - Math.min(1, p) * 0.26;
   function noteTopYAt(pointZ) {
     return topY + (z - pointZ) * noteTilt;
@@ -9650,7 +9664,7 @@ function _gh3DDrawOneNote(note, mvp) {
   }
   var topCenter = [centerX, topY, z];
   var segments = 36;
-  _gh3DPushHoldTail(sideVerts, centerX, z - radiusZ * 0.92, radiusX * 2.1, note.beatLen || 1, yLift, rgb, a);
+  _gh3DPushHoldTail(sideVerts, centerX, z - radiusZ * 0.92, radiusX * 2.1, note.beatLen || 1, yLift + _hitLift, rgb, a);
   for (var seg = 0; seg < segments; seg++) {
     var a0 = (Math.PI * 2 * seg) / segments;
     var a1 = (Math.PI * 2 * (seg + 1)) / segments;
@@ -9864,6 +9878,12 @@ function _ghUpdateLanesGeometry() {
   }
   // 毎フレーム getComputedStyle を回避するため hitY をキャッシュ
   _rhythm._ghHitY = hitY;
+  // v1962: DOM ノートの着地を「ヒットライン(=ボタン上端付近)」ではなく「ボタンの見た目中心」に合わせる。
+  // gh-note は top:0 基準で translateY されるため、中心をボタン中心へ置くには半径 (--gh-sz / 2) を引く。
+  // これで note 中心がボタン中心にちょうど乗り、--gh-sz が端末で変わっても自動追従する (行きすぎ解消)。
+  var _ghNoteSz = parseFloat(getComputedStyle(lanes).getPropertyValue('--gh-sz')) || 96;
+  var _btnCenterInStage = (rect.top - stageRect.top) + rect.height / 2;
+  _rhythm._ghNoteHitY = _btnCenterInStage - _ghNoteSz / 2;
   _rhythm._ghTopY = vanishY;
   if (document.body.classList.contains('rhythm-layout')) _gh3DRender();
 }
@@ -10113,6 +10133,8 @@ function _ghUpdateFallingNotes(now) {
     _ghUpdateLanesGeometry();
   }
   var hitY = _rhythm._ghHitY || 0;
+  // v1962: ノートは「ボタン中心」着地 (_ghNoteHitY)。 未算出時は従来の hitY にフォールバック。
+  var noteHitY = (_rhythm._ghNoteHitY != null) ? _rhythm._ghNoteHitY : hitY;
   var vanishY = _rhythm._ghTopY || 44;
   var fall = _rhythmVisualFallMs();
   var lanesWidth = lanes.clientWidth || 1;
@@ -10149,7 +10171,7 @@ function _ghUpdateFallingNotes(now) {
     var spread = Math.pow(hitProgress, 1.52);
     var laneCenter = (note.lane + 0.5) * 12.5;
     var xShift = ((vanishX - laneCenter) / 100) * lanesWidth * (1 - spread) * 0.98;
-    var y = vanishY + (hitY - vanishY) * depth;
+    var y = vanishY + (noteHitY - vanishY) * depth;
     var z = -520 * (1 - hitProgress) + passAmount * 280;
     var scale = 0.52 + 0.58 * Math.pow(hitProgress, 1.12) + passAmount * 0.5;
     var passFade = visualProgress <= 1 ? 1 : Math.max(0, 1 - passAmount / (RHYTHM_NOTE_PASS_PROGRESS - 1));
