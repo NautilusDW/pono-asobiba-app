@@ -981,7 +981,7 @@ function buildAmbient(P){
 }
 
 /* ================= passengers ================= */
-function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?14.2:8.8;}
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?17.1:8.8;}
 function visibleCarGroups(){
  const start=Math.max(0,cars.length-8);
  const aligned=start%2?start-1:start;
