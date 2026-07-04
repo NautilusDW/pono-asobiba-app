@@ -2,6 +2,8 @@ const BASE_URL = new URL("./", window.location.href);
 const CATALOG_URL = new URL("../../assets/data/game-stickers.json", BASE_URL);
 const FRAME_BASE_URL = new URL("./assets/sticker-carousel-frame-base-v4.png", BASE_URL);
 const STATE_KEY = "pono_game_stickers_v1";
+const SILHOUETTE_ALPHA_THRESHOLD = 36;
+const SILHOUETTE_MASK_MAX_SIZE = 300;
 
 const ROOMS = [
   { id: "creatures", label: "いきもの" },
@@ -69,6 +71,8 @@ const state = {
   lastFocus: null,
   mapNoticeTimer: 0,
 };
+
+const silhouetteMaskCache = new Map();
 
 init();
 
@@ -331,8 +335,12 @@ function createCarouselItem(sticker, index) {
   img.alt = sticker.owned ? sticker.name : "";
   img.draggable = false;
   img.loading = "lazy";
-  img.addEventListener("load", () => fitStickerImage(stickerWrap, img), { once: true });
-  if (img.complete) fitStickerImage(stickerWrap, img);
+  const applyImageFit = () => {
+    fitStickerImage(stickerWrap, img);
+    const silhouette = stickerWrap.querySelector(".locked-silhouette");
+    if (!sticker.owned && silhouette) applySolidSilhouetteMask(silhouette, img, "--silhouette-image");
+  };
+  img.addEventListener("load", applyImageFit, { once: true });
   stickerWrap.appendChild(img);
   if (!sticker.owned) {
     const silhouette = document.createElement("span");
@@ -341,6 +349,7 @@ function createCarouselItem(sticker, index) {
     silhouette.style.setProperty("--silhouette-image", cssImageUrl(sticker.imageUrl));
     stickerWrap.appendChild(silhouette);
   }
+  if (img.complete) applyImageFit();
   stickerStage.appendChild(stickerWrap);
 
   if (!sticker.owned) {
@@ -370,6 +379,46 @@ function fitStickerImage(wrap, img) {
 function cssImageUrl(url) {
   const safeUrl = String(url || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   return `url("${safeUrl}")`;
+}
+
+async function applySolidSilhouetteMask(target, img, propertyName) {
+  if (!target || !img || !img.naturalWidth || !img.naturalHeight) return;
+  const sourceUrl = img.currentSrc || img.src;
+  const maskUrl = await createSolidSilhouetteMask(sourceUrl, img);
+  if (!maskUrl || !target.isConnected || (img.currentSrc || img.src) !== sourceUrl) return;
+  target.style.setProperty(propertyName, cssImageUrl(maskUrl));
+}
+
+async function createSolidSilhouetteMask(sourceUrl, img) {
+  if (silhouetteMaskCache.has(sourceUrl)) return silhouetteMaskCache.get(sourceUrl);
+  try {
+    const scale = Math.min(1, SILHOUETTE_MASK_MAX_SIZE / Math.max(img.naturalWidth, img.naturalHeight));
+    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+    const height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return "";
+    context.clearRect(0, 0, width, height);
+    context.drawImage(img, 0, 0, width, height);
+    const imageData = context.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const filled = data[i + 3] > SILHOUETTE_ALPHA_THRESHOLD ? 255 : 0;
+      data[i] = 0;
+      data[i + 1] = 0;
+      data[i + 2] = 0;
+      data[i + 3] = filled;
+    }
+    context.putImageData(imageData, 0, 0);
+    const maskUrl = canvas.toDataURL("image/png");
+    silhouetteMaskCache.set(sourceUrl, maskUrl);
+    return maskUrl;
+  } catch (_) {
+    silhouetteMaskCache.set(sourceUrl, "");
+    return "";
+  }
 }
 
 function carouselStep() {
@@ -497,6 +546,9 @@ function openDetail(sticker) {
     els.detailFrame.style.removeProperty("--detail-silhouette-image");
   } else {
     els.detailFrame.style.setProperty("--detail-silhouette-image", cssImageUrl(sticker.imageUrl));
+    const applyDetailMask = () => applySolidSilhouetteMask(els.detailFrame, els.detailImage, "--detail-silhouette-image");
+    els.detailImage.addEventListener("load", applyDetailMask, { once: true });
+    if (els.detailImage.complete) applyDetailMask();
   }
   els.detailSerial.textContent = String(sticker.serial || 0).padStart(3, "0");
   els.detailName.textContent = sticker.owned ? sticker.name : "まだ";
