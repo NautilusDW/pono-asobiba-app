@@ -136,7 +136,7 @@ body.st-space .tun{bottom:20vh}
 #tunnelFade{position:fixed;inset:0;z-index:80;background:#000;opacity:0;pointer-events:none;transition:opacity .42s ease}
 body.tunnel-fade-dark #tunnelFade{opacity:1;transition-duration:.28s}
 body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(58vw) scale(.96);transition:transform .95s ease-in}
-body.tunnel-interior #skyA{background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") left center/auto 100% repeat-x!important}
+body.tunnel-interior #skyA{background-color:#17110b}
 body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0}
 #portalMaskLayer{position:absolute;inset:0;z-index:9;display:none;overflow:hidden;pointer-events:none}
 .portal-occluder{position:absolute;display:none;background:center bottom/100% 100% no-repeat;pointer-events:none;will-change:left,top,width,height}
