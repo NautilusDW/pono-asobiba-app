@@ -78,8 +78,8 @@
 - 2026-07-02 - by Claude - [batch:933-haptics-quick-win-phase1] - common/haptics.js, Prototypes/StickerBookThreeJS/**, play.html, sw.js, AGENTS_CLAIMS.md - haptics quick win 実装 (触覚 Phase 1)
 - 2026-07-02 - by Claude - [batch:934-sticker-paste-particles] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - sticker paste particles (骨格 4 の予告実装)
 - 2026-07-02 - by Claude - [batch:935-paste-particles-v2-rework] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - paste particles v2 rework (方向/位置/色/数/サイズ全面調整)
-- 2026-07-05 - by Claude - [batch:947-title-flicker-top-edge-mask] - play.html, sw.js, AGENTS_CLAIMS.md - iPad 上端付近ドラッグで持続ちらつき (mask fade 帯 × drop-shadow / 中央3枚判定の境界振動疑い) の第 3 段修正 (fable 設計 + sonnet5 実装) [overlap: batch:938-bento-thumb-size-order-counter]
 - 2026-07-05 - by Claude - [batch:948-oto-title-flow] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md - オットタッチ: 「タップしてスタート」廃止 (起動即モード選択) + リズム→ステージ選択直行 (ステージ選択解放済み=何度目かの人のみ) + sw bump
+- 2026-07-05 - by Claude - [batch:949-nori-palette-category-scroll] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md - のり palette を「目/口/鼻/セット」等カテゴリ見出しのみ表示 (個別 name 非表示) + 選択後 picker scroll 位置保持
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
