@@ -4483,6 +4483,25 @@ body.is-sticker-tutorial-active #stickerTutorialStartSkip {
   pointer-events: auto !important;
 }
 
+@media (max-width: 720px) and (orientation: portrait) {
+  .top-entry-cluster,
+  .top-action-cluster {
+    top: max(54px, calc(env(safe-area-inset-top) + 54px));
+  }
+
+  .zukan-settings-panel {
+    top: max(112px, calc(env(safe-area-inset-top) + 106px));
+    max-height: calc(100vh - 124px);
+    max-height: calc(100dvh - 124px);
+  }
+
+  .book-theme-panel {
+    top: max(10px, calc(env(safe-area-inset-top) + 8px));
+    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+}
+
 /* === v1643 (task 1): intro (1/10) のみ画面中央モーダル化 ===
    step 2 以降は左ページ直書き (page-block 配置)、 intro のみ便箋風モーダルに退行。
    card-corner / card-top の compound override も intro 時は中央寄せを優先。 */
