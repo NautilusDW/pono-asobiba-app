@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260703-0003";
+const ASSET_VERSION = "20260704-1084";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -1695,6 +1695,7 @@ const topThemeButton = document.getElementById("topThemeButton");
 const topEditButton = document.getElementById("topEditButton");
 const zukanSettingsPanel = document.getElementById("zukanSettingsPanel");
 const zukanSettingsClose = document.getElementById("zukanSettingsClose");
+const zukanDebugSettings = document.getElementById("zukanDebugSettings");
 const bookThemePanel = document.getElementById("bookThemePanel");
 const bookThemeClose = document.getElementById("bookThemeClose");
 const settingsBackButton = document.getElementById("settingsBackButton");
@@ -6003,6 +6004,18 @@ function isStickerDebugModeAllowed() {
   );
 }
 
+function isZukanDebugSettingsVisible() {
+  return Boolean(tuningEnabled || isStickerDebugModeAllowed());
+}
+
+function syncZukanDebugSettingsVisibility() {
+  const visible = isZukanDebugSettingsVisible();
+  if (zukanDebugSettings) {
+    zukanDebugSettings.hidden = !visible;
+  }
+  document.body.classList.toggle("is-zukan-debug-settings-visible", visible);
+}
+
 function readDebugAllStickersEnabled() {
   if (!isStickerDebugModeAllowed()) {
     return false;
@@ -6409,6 +6422,7 @@ function openZukanSettingsPanel(options = {}) {
   }
   closeBookThemePanel();
   syncDebugAllStickersUi();
+  syncZukanDebugSettingsVisibility();
   zukanSettingsPanel.hidden = false;
   syncTopSettingsButton();
 }
@@ -10561,6 +10575,7 @@ function zukanTemplateTypeForSide(pageDef, side) {
 }
 
 function refreshZukanSettingsControls() {
+  syncZukanDebugSettingsVisibility();
   for (const button of zukanSettingsButtons) {
     const side = button.dataset.zukanSide;
     const type = normalizeZukanTemplateType(button.dataset.zukanType);

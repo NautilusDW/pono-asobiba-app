@@ -21,6 +21,7 @@ body {
   --sb3d-ui-button-theme-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_text_gpt_image2_20260623.png");
   --sb3d-ui-button-wide: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-album-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_text_gpt_image2_20260623.png");
+  --sb3d-ui-button-exhibition: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_exhibition_gallery_20260704.png");
   --sb3d-ui-button-prev: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_prev_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-next: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_next_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-capsule: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_capsule_gpt_image2_20260622.png");
@@ -106,21 +107,31 @@ body:not(.is-collection-album) #scene {
 
 .zukan-settings-panel {
   position: fixed;
-  top: max(16px, calc(env(safe-area-inset-top) + 12px));
-  left: 50%;
-  transform: translateX(-50%);
+  top: max(74px, calc(env(safe-area-inset-top) + 68px));
+  right: max(14px, calc(env(safe-area-inset-right) + 14px));
   z-index: 8;
-  width: min(860px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
-  max-height: calc(100dvh - 32px);
+  width: min(340px, calc(100vw - 28px));
+  max-height: calc(100vh - 88px);
+  max-height: calc(100dvh - 88px);
   box-sizing: border-box;
   overflow: auto;
-  padding: 16px 18px;
-  border: 3px solid rgba(40, 60, 52, 0.76);
+  padding: 14px;
+  border: 3px solid rgba(54, 76, 66, 0.72);
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(255, 251, 232, 0.98), rgba(242, 253, 248, 0.96));
   box-shadow: 0 12px 30px rgba(15, 32, 28, 0.24);
   color: #263c3e;
+}
+
+.book-theme-panel {
+  top: max(16px, calc(env(safe-area-inset-top) + 12px));
+  right: auto;
+  left: 50%;
+  width: min(860px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: 16px 18px;
+  transform: translateX(-50%);
 }
 
 .zukan-settings-panel[hidden] {
@@ -136,7 +147,7 @@ body:not(.is-collection-album) #scene {
 
 .zukan-settings-head {
   grid-template-columns: 1fr 44px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .zukan-settings-head h2 {
@@ -157,16 +168,21 @@ body:not(.is-collection-album) #scene {
   font-weight: 900;
 }
 
+.zukan-settings-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .zukan-settings-back,
 .zukan-settings-help {
   width: 100%;
-  min-height: 40px;
-  margin: 0 0 10px;
+  min-height: 48px;
+  margin: 0;
   border: 2px solid rgba(225, 185, 68, 0.68);
   border-radius: 12px;
   background: linear-gradient(180deg, #fff7cc, #ffe89f);
   color: #263c3e;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
   box-shadow: inset 0 -4px 0 rgba(210, 165, 48, 0.36);
 }
@@ -175,6 +191,26 @@ body:not(.is-collection-album) #scene {
   background: linear-gradient(180deg, #e8fffa, #bfeee7);
   border-color: rgba(70, 171, 164, 0.56);
   box-shadow: inset 0 -4px 0 rgba(61, 153, 149, 0.22);
+}
+
+.zukan-debug-settings {
+  margin-top: 14px;
+  padding: 12px;
+  border: 2px dashed rgba(84, 161, 151, 0.42);
+  border-radius: 14px;
+  background: rgba(235, 255, 250, 0.58);
+}
+
+.zukan-debug-settings[hidden] {
+  display: none !important;
+}
+
+.zukan-debug-settings h3 {
+  margin: 0 0 8px;
+  color: #38605e;
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: 0;
 }
 
 .zukan-settings-row {
@@ -342,11 +378,22 @@ body:not(.is-collection-album) #scene {
 
 @media (orientation: landscape) and (max-height: 520px) {
   .zukan-settings-panel {
+    top: max(58px, calc(env(safe-area-inset-top) + 54px));
+    right: max(10px, calc(env(safe-area-inset-right) + 10px));
+    width: min(320px, calc(100vw - 20px));
+    max-height: calc(100vh - 70px);
+    max-height: calc(100dvh - 70px);
+    padding: 10px;
+  }
+
+  .book-theme-panel {
     top: max(8px, calc(env(safe-area-inset-top) + 8px));
+    right: auto;
+    left: 50%;
     width: min(760px, calc(100vw - 132px));
     max-height: calc(100vh - 16px);
     max-height: calc(100dvh - 16px);
-    padding: 10px;
+    transform: translateX(-50%);
   }
 
   .zukan-settings-head {
@@ -415,11 +462,22 @@ body:not(.is-collection-album) #scene {
 }
 @media (max-width: 720px) {
   .zukan-settings-panel {
+    top: max(64px, calc(env(safe-area-inset-top) + 58px));
+    right: max(10px, calc(env(safe-area-inset-right) + 10px));
+    width: min(320px, calc(100vw - 20px));
+    max-height: calc(100vh - 76px);
+    max-height: calc(100dvh - 76px);
+    padding: 12px;
+  }
+
+  .book-theme-panel {
     top: max(10px, calc(env(safe-area-inset-top) + 8px));
+    right: auto;
+    left: 50%;
     width: min(560px, calc(100vw - 20px));
     max-height: calc(100vh - 20px);
     max-height: calc(100dvh - 20px);
-    padding: 12px;
+    transform: translateX(-50%);
   }
 
   .zukan-settings-row-theme {
@@ -614,7 +672,7 @@ input[type="range"] {
   z-index: 4;
   display: flex;
   align-items: flex-start;
-  gap: 0;
+  gap: 10px;
   max-width: calc(100vw - 16px);
   padding: 0;
   border: 0;
@@ -622,6 +680,20 @@ input[type="range"] {
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+.top-entry-cluster {
+  position: fixed;
+  top: max(0px, env(safe-area-inset-top));
+  left: max(8px, env(safe-area-inset-left));
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.top-entry-cluster > * {
+  pointer-events: auto;
 }
 
 .top-mode-cluster {
@@ -669,7 +741,7 @@ input[type="range"] {
 
 .top-action-button {
   position: relative;
-  width: 58px;
+  width: 62px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -733,9 +805,8 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
 }
 
 #topSettingsButton {
-  margin-left: -8px;
   background-image: var(--sb3d-ui-button-settings);
-  background-size: 88% 88%;
+  background-size: 100% 100%;
 }
 
 #topSettingsButton::before {
@@ -775,17 +846,14 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
 }
 
 .sticker-exhibition-button {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 50px;
-  width: 174px;
-  padding: 0 18px;
+  width: 178px;
+  padding: 0 16px 0 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: var(--sb3d-ui-button-wide);
+  background-image: var(--sb3d-ui-button-exhibition);
   color: #243b40;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -793,7 +861,8 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
 }
 
 .sticker-exhibition-button .top-button-label {
-  transform: translateY(-2px) scaleX(0.96);
+  transform: translateY(-2px);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 body.is-collection-album .sticker-exhibition-button,
@@ -915,10 +984,22 @@ body.is-collection-album .album-mode-toggle {
 }
 
 body.is-cover-surface .book-page-label {
-  background-image: var(--sb3d-ui-label-cover-text);
-  color: transparent;
-  font-size: 0;
-  text-shadow: none;
+  min-width: 132px;
+  min-height: 36px;
+  padding: 0 18px 3px;
+  border: 2px solid rgba(229, 190, 75, 0.68);
+  border-radius: 16px;
+  background-image: none;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 224, 0.96), rgba(255, 239, 177, 0.94));
+  color: #6b4a1e;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.48),
+    0 5px 12px rgba(46, 31, 8, 0.13);
+  cursor: default;
+  pointer-events: none;
+  font-size: 14px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
 body:not(.is-collection-album).is-sticker-edit-mode .book-page-label {
@@ -3130,8 +3211,17 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
 }
 
 @media (max-width: 1100px) {
+  .top-action-cluster {
+    gap: 8px;
+  }
+
   .top-mode-cluster {
     gap: 4px;
+  }
+
+  .top-action-button {
+    width: 56px;
+    height: 56px;
   }
 
   .top-edit-button {
@@ -3147,15 +3237,14 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .album-mode-toggle {
-    width: 190px;
+    width: 184px;
     padding: 0;
     font-size: 12px;
   }
 
   .sticker-exhibition-button {
-    right: 46px;
-    width: 160px;
-    padding: 0 12px;
+    width: 164px;
+    padding: 0 12px 0 58px;
     font-size: 12px;
   }
 
@@ -3178,15 +3267,14 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .album-mode-toggle {
-    width: 160px;
+    width: 152px;
     padding: 0;
     font-size: 11px;
   }
 
   .sticker-exhibition-button {
-    right: 42px;
-    width: 136px;
-    padding: 0 10px;
+    width: 148px;
+    padding: 0 10px 0 52px;
     font-size: 11px;
   }
 
@@ -3468,8 +3556,13 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   .top-action-cluster {
     top: max(0px, env(safe-area-inset-top));
     right: max(6px, env(safe-area-inset-right));
-    gap: 2px;
+    gap: 6px;
     padding: 0;
+  }
+
+  .top-entry-cluster {
+    top: max(0px, env(safe-area-inset-top));
+    left: max(6px, env(safe-area-inset-left));
   }
 
   .top-mode-cluster {
@@ -3477,8 +3570,8 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .top-action-button {
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
   }
 
   .top-edit-button {
@@ -3496,17 +3589,16 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .album-mode-toggle {
-    width: 160px;
+    width: 152px;
     height: 50px;
     padding: 0;
     font-size: 11px;
   }
 
   .sticker-exhibition-button {
-    right: 42px;
-    width: 136px;
+    width: 148px;
     height: 50px;
-    padding: 0 10px;
+    padding: 0 10px 0 52px;
     font-size: 11px;
   }
 
@@ -3930,6 +4022,12 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   .top-action-cluster {
     top: max(6px, env(safe-area-inset-top));
     right: max(8px, env(safe-area-inset-right));
+    gap: 6px;
+  }
+
+  .top-entry-cluster {
+    top: max(6px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
   }
 
   .top-mode-cluster {
@@ -3938,8 +4036,8 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .top-action-button {
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
   }
 
   .top-edit-button {
@@ -3957,17 +4055,16 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .album-mode-toggle {
-    width: 160px;
+    width: 152px;
     height: 42px;
     padding: 0;
     font-size: 11px;
   }
 
   .sticker-exhibition-button {
-    right: 36px;
-    width: 132px;
-    height: 42px;
-    padding: 0 8px;
+    width: 144px;
+    height: 44px;
+    padding: 0 8px 0 50px;
     font-size: 10px;
   }
 
