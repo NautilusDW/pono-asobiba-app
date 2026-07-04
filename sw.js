@@ -565,7 +565,53 @@
 // v1910: ガチャに Haptics 5 シーン (gachaTurn1_2 / gachaTurn3 / capsuleCrack / rareBadgePop / superBadgePop) + DOM particle burst (rare=12粒90°扇 / super=20粒360°、 reveal 瞬間に .daily-gacha-shell 直下へ spawn) を拡張。 common/haptics.js の PATTERNS に 5 key 追加 + fire() を number[] 対応、 play.html は capture.js の後に haptics.js を defer 読込、 pulseDailyGachaHaptic を Haptics 経由に統一 (bare vibrate fallback 残す)、 reveal timer で capsuleCrack + spawnGachaParticles、 openDelay+420ms で rare/super badge pop haptic。 CSS/JS のみ変更、 localStorage/schema 無影響 (opt-out: pono_haptics_off / pono_particles_off / prefers-reduced-motion)。play.html PAGE_CACHE_VERSION と同期。
 // v1914: Bento batch:1046 — 「はっぱ」を action-row から タブに移動 (side step で [カップ/はっぱ/しきり/ピック])、 タブ切替時に armed を必ず解除 (code-review fix a)。 編集パネルから 'おかずを かえる'/一般 'けす' を削除 (leaf 専用)。 cup fallback を 0.30/0.70 対称 2x2 に、 4 box の maskRel.x を対称化。 KV rewrite payload を scratchpad に用意 (POST /api/bento/mask-defaults 用)。 play.html PAGE_CACHE_VERSION と同期。
 // v1916: Bento batch:1047 — 「最初からやる」ボタンが common/menu.js の木製せってい看板 (.pono-menu-toggle, fixed top-left 56px) と重なっていたのを、看板の右隣 (left: 看板+68px, safe-area対応) に再配置。短い横画面では「◯だんめ」チップも看板下に潜っていたため max-height:480px で top:48px に退避。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1948;
+const CACHE_VERSION = 1950;
+// v1950: v1949 CrossReview の Critical/High 全解消。play.html + sw.js のみ変更。
+// (a) [CRITICAL] `.game-card` の `contain: layout paint` → `contain: layout` に降格。
+//     paint containment は WebKit で下方 drop-shadow (5-8px) を padding-edge で clip
+//     する事例があり、 27 枚のカード下影 (thumbWrap box-shadow / play button
+//     drop-shadow) がスパッと切れる visual regression を招くため。 GPU 昇格の
+//     実効効果は translateZ(0) 単独で十分。
+// (b) [CRITICAL] handlePointerUp の teleport scrollTop 代入を rAF ラップから同期に
+//     revert。 rAF 内で古い `t` を書くと iOS Safari の native momentum scroll (16ms 中に
+//     10-30px 前進) と衝突して 「momentum 逆流→急停止」 の新種 flicker を招くため。
+//     pointerup 集中負荷分散は updateMiddleOverlay 側の rAF (既存) だけで担う。
+// (c) [HIGH] cold start 直後 1 frame race の safety net として `loopScrollReady` gate を
+//     onCardPointerDown に導入。 setupLoopScroll 完了 (handlePointerUp 登録済み) まで
+//     isDragging を立てず、 fast tap による permanent latch を封じる。
+// (d) [HIGH] recomputeHeightImpl の isDragging gate を 「毎 frame rAF 再スケジュール」
+//     から 「pending flag (recomputeRaf = -1) + pointerup で 1 回消化」 に変更。
+//     drag 中の rAF 空回り (60fps 空スケジュール) が updateMiddleOverlay / snap easing と
+//     競合して低 GPU 端末で描画取りこぼしを誘発するリスクを排除。
+// (e) [HIGH] `.game-card.is-overlay-active .game-card__peek` の重複 `will-change: opacity`
+//     を撤去 (base rule に v1949 で復帰済み)。 stale コメントも修正。
+// (f) [HIGH] v1949 で追加した peek bg 8 種 + mask PNG 4 種の <head> preload を撤回。
+//     4G 実機で 5-8MB の追加転送が SW precache と競合し FV 到達を 300-800ms 遅延させる
+//     副作用があるため。 これらは CRITICAL_ASSETS_IMAGES/CRITICAL_ASSETS_CARDS で
+//     precache 済みなので preload 不要。 thumb_wordmatch/maze の high preload のみ継続。
+// (g) [HIGH] clearCardPointerDown の stale コメント (存在しない `handleGlobalPointerRelease`
+//     参照) を修正、 handlePointerUp が唯一の release 経路である事実を明記。
+// play.html PAGE_CACHE_VERSION 同期。
+// v1949: iPhone 実機の play.html カード列 ゆっくりドラッグ / 触りっぱなしで発生する
+// flicker (「しばらくすると安定する」) の根本対策。
+// (a) [CRITICAL] `.game-card__peek` base rule に `will-change: opacity` を復帰。 v1948 で
+//     撤去したのが原因で、 is-overlay-active 付与瞬間の layerize race (mask alpha 再サンプル
+//     + peek bg texture upload) が 1 frame blank として顕在化していた。
+// (b) [CRITICAL] `.game-card` base rule に `transform: translateZ(0)` + `contain: layout paint`
+//     を追加し、 :active { transform: none } → :active { transform: translateZ(0) } に更新。
+//     27 枚を強制 GPU layer 昇格させ、 drop-shadow の CPU raster fallback と card-list
+//     mask との offscreen composite path を GPU 内で完結させる。
+// (c) [HIGH] peek 層の bg 8 種 (play_*_title_back.webp) を CRITICAL_ASSETS_IMAGES に追加、
+//     play.html <head> preload にも同 8 種 + mask PNG 4 種 + thumb_wordmatch/maze を追加。
+//     cold start decode バーストで peek が透明/低解像で表示される 100-500ms の flicker を解消。
+// (d) [HIGH] `recomputeHeightImpl` に isDragging gate を追加 (scroll handler と対称化)。
+//     drag 中に lazy img.load が発火して layout 書換 + overlay 再ランキングが走る race を封じる。
+// (e) [MEDIUM] `handlePointerUp` の teleport scrollTop 変更を requestAnimationFrame で 1 frame
+//     ずらして続く scroll handler の updateMiddleOverlay と別 tick に分散。
+// (f) [MEDIUM] v1948 で追加した window pointerup/pointercancel 上の releaseCardDragFlag safety net
+//     を撤去。 setupLoopScroll 内 handlePointerUp が同 window に張られていて冗長、 かつ発火順序
+//     依存で teleport を早期 return させる race を招いていた。
+// play.html PAGE_CACHE_VERSION 同期。
 // v1948: v1947 CrossReview の critical/high 潰し込み。
 // (a) [CRITICAL] `clearCardPointerDown` から `cardScrollState.isDragging = false` を撤去。
 //     CARD_TAP_STATE_TTL_MS (800ms) タイマが 「指がまだ触れている間に」 isDragging を
@@ -718,6 +764,17 @@ const CRITICAL_ASSETS_IMAGES = [
   // v1763: 実表示用の高解像度版。64px 版は小サイズ参照/互換のため残す。
   '/assets/ui/icon_feedback_20260628_512.png',
   '/assets/ui/icon_feedback_20260628_pressed_512.png',
+  // v1949: peek 層の bg 8 種 (menu カード裏の絵本タイトル背景)。 cold start で
+  // is-overlay-active が付いた瞬間に on-demand decode されると 100-500ms 透明/低解像
+  // になり iPhone のゆっくりドラッグ中に flicker 源となるため precache 化。
+  '/assets/ui/play_quizland_title_back.webp',
+  '/assets/ui/play_quiz_sound_title_back.webp',
+  '/assets/ui/play_wordmatch_title_back.webp',
+  '/assets/ui/play_maze_title_back.webp',
+  '/assets/ui/play_oto_title_back.webp',
+  '/assets/ui/play_bento_title_back.webp',
+  '/assets/ui/play_puzzle_title_back.webp',
+  '/assets/ui/play_starparodier_title_back.webp',
 ];
 const CRITICAL_ASSETS_THUMBS = [
   '/assets/ui/thumb_quizland_owl.webp',

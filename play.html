@@ -181,6 +181,14 @@
   <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_bento.webp">
   <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_puzzle.webp">
   <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_starparodier.webp">
+  <!-- v1949: FV に混ざる残り 2 thumb (wordmatch/maze) も high で先頭に載せる。 -->
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_wordmatch.webp">
+  <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_maze.webp">
+  <!-- v1950: v1949 で追加した peek bg 8 種 + mask PNG 4 種の preload を撤回。
+       4G 実機で合計 5-8MB の追加転送が sw.js precache と競合し、 FV 到達が
+       300-800ms 遅延する副作用が観測されうる。 これらは sw.js CRITICAL_ASSETS_IMAGES
+       (peek bg) と CRITICAL_ASSETS_CARDS (mask PNG) で precache されるので、
+       preload なしでも 2 回目訪問以降は即座に配信される。 -->
   <!-- ===== ファーストビュー直後 (low): bottom-nav PNG 5 枚 (≈9MB) =====
        これらが auto/high で先頭に走るとカードサムネ webp の decode が
        数 100ms 遅れて「上から順番にバラバラに出る」見え方になる。
@@ -543,6 +551,14 @@
       cursor: pointer;
       font-family: inherit;
       transform-origin: center;
+      /* v1949→v1950: translateZ(0) で 27 枚を GPU layer 昇格。 v1949 の
+         `contain: paint` は WebKit 実装で下方 drop-shadow (5-8px) を padding-edge で
+         clip してしまう事例があり、 サムネ box-shadow / play button drop-shadow が
+         切れる visual regression を招くので `contain: layout` に降格 (paint は外す)。
+         layer 昇格の実効効果 (compositor 上での flicker 対策) は translateZ(0) 単独で
+         十分達成できる。 */
+      transform: translateZ(0);
+      contain: layout;
       transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
       -webkit-tap-highlight-color: transparent;
       /* Layered drop-shadow so it follows the PNG's rounded silhouette
@@ -564,7 +580,9 @@
           drop-shadow(0 6px 10px rgba(20, 10, 0, 0.8));
       }
     }
-    .game-card:active { transform: none; }
+    /* v1949: base の translateZ(0) を保持したまま scale だけ落とす (:active で layer が
+       落ちて 1 frame flicker するのを防ぐ)。 */
+    .game-card:active { transform: translateZ(0); }
     /* "Selected" used to add a yellow halo + swap the play button to a
        different PNG, which made the top card look different from the rest.
        The user wants all 4 cards to read identically — keep the class for
@@ -719,11 +737,10 @@
               mask-repeat: no-repeat;
               mask-position: var(--mask-x, 0%) var(--mask-y, 0%);
       opacity: 0;
-      /* v1947: 0.35s → 0.18s で fade 中に反転命令が入っても残尾が短く済む。
-         v1948: base rule の `will-change: opacity` は 27 peek 全部を常時 compositor
-         layer に昇格させ、 低スペック Android で layer budget 超過→ eviction/repromotion
-         が起きると逆に 1 frame blank を招くため撤去。 promotion が必要なのは overlay 遷移
-         中の peek だけなので、 `.is-overlay-active` variant にだけ will-change を付ける。 */
+      /* v1949: base rule に `will-change: opacity` を復帰。 27 peek 全部を常時 compositor
+         layer 化することで、 is-overlay-active class toggle 直前の layerize race
+         (iPhone で 100-200μs の 1 frame blank として顕在化) を消す。 */
+      will-change: opacity;
       transition: opacity 0.18s ease;
       pointer-events: none;
       z-index: 1;
@@ -752,9 +769,11 @@
        既存 hover/focus-visible/peek-always と同じ opacity 値で衝突回避。 */
     .game-card.is-overlay-active .game-card__peek {
       opacity: 0.92;
-      /* v1948: overlay 遷移中の peek だけ compositor layer に昇格 (base rule から
-         will-change を撤去した代わり)。 class 解除で will-change も同時解除される。 */
-      will-change: opacity;
+      /* v1950: v1949 で base rule に `will-change: opacity` を復帰済みなので
+         variant 側の will-change は撤去 (base と重複、 stale コメントの原因)。
+         もし将来 Android 低 GPU 帯域機で layer budget 超過が観測されたら
+         base rule の will-change だけを削除し、 その時点で variant 側に
+         @supports (-webkit-touch-callout: none) gate 付きで再導入する。 */
     }
     /* is-coming-soon カードは peekStyle='none' なので背景は出ないが、
        念のため明示的に 0 にして将来 bg が入っても tease しないよう二重ガード。 */
@@ -7119,7 +7138,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1948;
+    const PAGE_CACHE_VERSION = 1950;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Google Forms 連携 — ユーザーが Forms 作成後に PLACEHOLDER 置換 =====
     // TODO: User must replace [FORMS_URL_PLACEHOLDER] with actual Google Forms URL after creating the form.
@@ -7234,24 +7253,10 @@
       cardList.addEventListener('pointerdown', onCardPointerDown, { passive: true });
       cardList.addEventListener('pointercancel', clearCardPointerDown, { passive: true });
       cardList.addEventListener('click', onCardClick);
-      // v1948: pointerId 一致時のみ isDragging をリセットする軽量 safety net。
-      // 通常経路では setupLoopScroll 内の handlePointerUp が本命だが、
-      // (a) LOOP_COPIES<=1 の防御経路 (setupLoopScroll 早期 return) や
-      // (b) 何らかの理由で setupLoopScroll がまだ走っていない超初期の pointerup
-      // でも isDragging を必ずクリアするため、 冪等な軽量ハンドラを張る。
-      // teleport や overlay 更新は行わない (handlePointerUp が担当)。
-      const releaseCardDragFlag = (e) => {
-        if (
-          e && e.pointerId !== undefined && cardScrollState.pointerId !== null &&
-          e.pointerId !== cardScrollState.pointerId
-        ) {
-          return;
-        }
-        cardScrollState.isDragging = false;
-        cardScrollState.pointerId = null;
-      };
-      window.addEventListener('pointerup', releaseCardDragFlag, { passive: true });
-      window.addEventListener('pointercancel', releaseCardDragFlag, { passive: true });
+      // v1949: v1948 で追加した window pointerup/pointercancel 上の releaseCardDragFlag は
+      // 撤去。 setupLoopScroll 内の handlePointerUp が window にも張られていて pointerId 一致
+      // 経路で確実に isDragging/pointerId をクリアするので冗長かつ、 releaseCardDragFlag が
+      // handlePointerUp より先に発火して teleport 判定を早期 return させる順序依存を招いていた。
 
       // Mark broken images so CSS fallbacks kick in (local preview without assets).
       // iOS Safari ではメモリ圧迫で <img> が一時的にロード失敗することがあるので、
@@ -7301,6 +7306,9 @@
     function setupLoopScroll() {
       const cards = cardList.querySelectorAll('.game-card');
       if (cards.length < MENU_GAMES.length * LOOP_COPIES) return;
+      // v1950: handlePointerUp が window/cardList に登録されるのはこの関数末尾。
+      // onCardPointerDown の isDragging gate を開放するのはここが最速で安全。
+      cardScrollState.loopScrollReady = true;
 
       // Lock the list's visible height to exactly 4 cards + 3 gaps so
       // no 5th card peeks through the top/bottom edges. Recompute when
@@ -7318,9 +7326,17 @@
       // v1694: 連続 onload (thumb 21 枚) で同期実行されると layout thrash
       // を誘発するため rAF debounce。 同 frame 内の複数リクエストは 1 回に
       // 畳み込まれる。 実計算は recomputeHeightImpl()。
+      // recomputeRaf: 0 = idle, >0 = rAF token, -1 = pending (drag 中に受付だけした)
       let recomputeRaf = 0;
       const recomputeHeightImpl = () => {
         recomputeRaf = 0;
+        // v1949→v1950: isDragging 中は rAF 自己再スケジュール (spin loop = 60fps 空回り)
+        // を止め、 pending flag (-1) だけ立てて次の pointerup で 1 回だけ消化する。
+        // rAF スケジューリング競合 (updateMiddleOverlay / snap easing) の圧迫要因を排除。
+        if (cardScrollState && cardScrollState.isDragging) {
+          recomputeRaf = -1;
+          return;
+        }
         // Use offsetHeight (unscaled layout height), not getBoundingClientRect
         // which returns the post-transform value when an ancestor is scaled.
         const cardH = cards[0].offsetHeight;
@@ -7335,6 +7351,8 @@
         if (typeof updateMiddleOverlay === 'function') updateMiddleOverlay();
       };
       const recomputeHeight = () => {
+        // v1950: recomputeRaf > 0 (rAF pending) は当然抑止。 recomputeRaf === -1
+        // (drag 中 pending) も再スケジュール禁止 — handlePointerUp 側で消化する。
         if (recomputeRaf) return;
         recomputeRaf = requestAnimationFrame(recomputeHeightImpl);
       };
@@ -7536,6 +7554,11 @@
         }
         cardScrollState.isDragging = false;
         cardScrollState.pointerId = null;
+        // v1950: v1949 の 「teleport 全体を rAF で 1 frame 遅延」 は iOS Safari の
+        // momentum scroll (pointerup 後も 16ms で 10-30px 前進) と衝突し、 rAF 内で
+        // 古い t 基準に代入することで 「momentum 逆流→急停止」 の新種 flicker を招く
+        // ため撤回。 scrollTop 代入は同期に戻し (v1948 相当)、 pointerup 集中負荷は
+        // updateMiddleOverlay 側の rAF (下記) 分散だけで担う。
         const t = cardList.scrollTop;
         const setNow = oneSetH();
         if (setNow) {
@@ -7550,6 +7573,11 @@
             lastScrollTop = cardList.scrollTop;
             requestAnimationFrame(() => { cardScrollState.teleporting = false; });
           }
+        }
+        // v1950: drag 中に保留された recomputeHeight を消化 (spin loop 回避)。
+        if (recomputeRaf === -1) {
+          recomputeRaf = 0;
+          recomputeHeight();
         }
         if (!middleOverlayRaf) {
           middleOverlayRaf = requestAnimationFrame(() => {
@@ -7643,7 +7671,12 @@
     // bottom-nav や modal 等 cardList 外の pointerup も届くため、 pointerdown 時の
     // pointerId と一致した pointerup だけ isDragging を落とす (multi-touch でも
     // 「別の指が cardList 外で離れた」を無視できる)。
-    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0, isDragging: false, pointerId: null };
+    // v1950: loopScrollReady を追加。 renderCards は onCardPointerDown を同期登録するが
+    // handlePointerUp は 1 frame 後の setupLoopScroll でしか登録されないため、 cold start
+    // 直後の 16ms 以内に fast tap すると pointerdown で isDragging=true が立ったまま
+    // pointerup を拾う handler が居ない → 恒常的に isDragging=true でラッチ。 gate flag で
+    // setupLoopScroll 完了までは isDragging を立てないようにして初期 1 frame race を封じる。
+    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0, isDragging: false, pointerId: null, loopScrollReady: false };
 
     function isTapIntroBlockingInput() {
       const intro = document.getElementById('tapIntro');
@@ -7664,8 +7697,12 @@
       // LOOP teleport / overlay toggle を保留する。 target が `.game-card` でなくても
       // padding/gap をタッチしたドラッグは十分あり得るため、 isDragging を先に立てる。
       // pointerId は handlePointerUp が bottom-nav 等の pointerup と混線しないための marker。
-      cardScrollState.isDragging = true;
-      if (e.pointerId !== undefined) cardScrollState.pointerId = e.pointerId;
+      // v1950: setupLoopScroll 未完了 (handlePointerUp 未登録) の間は isDragging を
+      // 立てないことで、 cold start 直後 fast tap の permanent latch を防ぐ。
+      if (cardScrollState.loopScrollReady) {
+        cardScrollState.isDragging = true;
+        if (e.pointerId !== undefined) cardScrollState.pointerId = e.pointerId;
+      }
       const card = e.target.closest('.game-card');
       if (!card) return;
       clearTimeout(cardPointerDownTimer);
@@ -7685,12 +7722,14 @@
       clearTimeout(cardPointerDownTimer);
       cardPointerDownTimer = 0;
       cardPointerDown = null;
-      // v1948: `isDragging=false` の同時解除を撤去。 CARD_TAP_STATE_TTL_MS (800ms) 経由の
-      // stale-tap invalidate だけを担わせ、 ドラッグ抑止フラグは pointerup/pointercancel
-      // ライフサイクル (handlePointerUp / handleGlobalPointerRelease) だけが操作する。
-      // 800ms を超える 「ゆっくり指ドラッグ (1〜2 秒)」 が途中で isDragging=false になり
-      // 保留していた LOOP teleport が指の途中で再開して drop-shadow が 1 frame 落ちる
-      // v1947 の critical bug を封じるため。
+      // v1948→v1950: `isDragging=false` の同時解除を撤去。 CARD_TAP_STATE_TTL_MS (800ms)
+      // 経由の stale-tap invalidate だけを担わせ、 ドラッグ抑止フラグは pointerup/pointercancel
+      // ライフサイクル (setupLoopScroll 内 handlePointerUp が cardList + window の 2 経路に
+      // 張った同一 handler) だけが操作する。 v1949 で releaseCardDragFlag 相当の外部 safety net
+      // は撤去済み (順序依存 race を招くため)、 初期 1 frame の未登録期間は onCardPointerDown
+      // 側の loopScrollReady gate で吸収する。 800ms を超える 「ゆっくり指ドラッグ」 が途中で
+      // isDragging=false になり保留 LOOP teleport が指の途中で再開して drop-shadow が
+      // 1 frame 落ちる v1947 の critical bug 対策としてこの撤去は維持。
     }
 
     function isCardTap(e, card) {
