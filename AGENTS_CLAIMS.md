@@ -78,7 +78,7 @@
 - 2026-07-02 - by Claude - [batch:933-haptics-quick-win-phase1] - common/haptics.js, Prototypes/StickerBookThreeJS/**, play.html, sw.js, AGENTS_CLAIMS.md - haptics quick win 実装 (触覚 Phase 1)
 - 2026-07-02 - by Claude - [batch:934-sticker-paste-particles] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - sticker paste particles (骨格 4 の予告実装)
 - 2026-07-02 - by Claude - [batch:935-paste-particles-v2-rework] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - paste particles v2 rework (方向/位置/色/数/サイズ全面調整)
-- 2026-07-05 - by Claude - [batch:938-bento-thumb-size-order-counter] - bento/**, sw.js, play.html, AGENTS_CLAIMS.md - にこセットのり厚み一致 + 前髪/新幹線サイズ整合 + 新幹線名称削除 + 小おかず選択肢並び (フルーツ最後) + 完成品カウンター配置 & キラキラ位置
+- 2026-07-05 - by Claude - [batch:947-title-flicker-top-edge-mask] - play.html, sw.js, AGENTS_CLAIMS.md - iPad 上端付近ドラッグで持続ちらつき (mask fade 帯 × drop-shadow / 中央3枚判定の境界振動疑い) の第 3 段修正 (fable 設計 + sonnet5 実装) [overlap: batch:938-bento-thumb-size-order-counter]
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
