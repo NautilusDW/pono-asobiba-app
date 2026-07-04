@@ -7506,11 +7506,12 @@ const decorItems = [
   // image は tab thumbnail / 単画像 fallback 用に残す。 座標は box 中心 -0.5..0.5、 w は box 幅比。
   // batch:1056 — OWNER DECISION (2026-07-03): 無料の のり/かざり は目鼻口眉 5 点のみ。
   // セット 3 種 / ほっぺ / うめぼし / のりシート は book 以上 (bookDecorItem)。 ピック 4 種は無料継続。
+  // batch:1058 (bug3): くまセットとの palette icon 差別化。 「にこ」らしく閉じた ^^ 目 + 大口。
   bookDecorItem({ id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50, clusterImages: [
-    { img: FREE_ASSET + 'nori_eye_round.png', x: -0.19, y: -0.24, w: 0.16 },
-    { img: FREE_ASSET + 'nori_eye_round.png', x: 0.19, y: -0.24, w: 0.16 },
+    { img: FREE_ASSET + 'book_nori_eye_smile_20260703.png', x: -0.19, y: -0.24, w: 0.18 },
+    { img: FREE_ASSET + 'book_nori_eye_smile_20260703.png', x: 0.19, y: -0.24, w: 0.18 },
     { img: FREE_ASSET + 'nori_nose_bear.png', x: 0, y: 0.01, w: 0.22 },
-    { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.225, w: 0.5 },
+    { img: FREE_ASSET + 'nori_mouth_smile.png', x: 0, y: 0.225, w: 0.58 },
     { img: FREE_ASSET + 'ketchup_cheek.png', x: -0.365, y: 0.06, w: 0.21 },
     { img: FREE_ASSET + 'ketchup_cheek.png', x: 0.365, y: 0.06, w: 0.21 },
   ] }),
@@ -7747,6 +7748,11 @@ let simpleOkazuEditPickerUid = null;
 // batch:1045: はっぱ (したにしく) の アーム状態。 action-row の「はっぱ」ボタンで toggle。
 // アーム中にメインおかずをタップすると即 leaf picker を開く (未選択なら speech で誘導)。
 let simpleLeafApplyArmed = false;
+// batch:1058 (bug4): leaf picker で選んだ後の 2 段階配置 armed 状態。
+// picker タップで即敷きせず ここに保持し、 stage タップで target おかず下に敷く。
+// cabbage brush (brushItem) の enterFreeBrushStampMode と並列 (混在させないよう別変数)。
+let simpleLeafArmedDef = null;
+let simpleLeafArmedTargetUid = null;
 // batch:1057: 置いた のり/かざり (decor) の 無移動タップで開く 回転+サイズ編集パネル。
 // tap-to-open の uid を保持 (>8px ドラッグ移動では開かない)。 選択が他 item へ移ったら
 // createFreeContextToolbar 内の sync で破棄する (simpleOkazuEditPickerUid と同じ render 内 sync 方式)。
@@ -8454,10 +8460,21 @@ function showShopOpening(req, onDone, options = {}) {
       voiceTimer = 0;
     }
     const bgReady = waitForImageReady(bg, step.bg);
+    // batch:938 flash-fix: mask 要素 (staff/customer) も visibility 制御対象に含める。
+    // CSS 背景画像は img.decode() 保証がないので、bg 画像と別タイミングで見え始めるのを防ぐ。
+    const staffMask = document.getElementById('shop-opening-staff-mask');
+    const customerMask = document.getElementById('shop-opening-customer-mask');
     if (initialReveal) {
       bg.style.visibility = 'hidden';
       staff.style.visibility = 'hidden';
       customer.style.visibility = 'hidden';
+      if (staffMask) staffMask.style.visibility = 'hidden';
+      if (customerMask) customerMask.style.visibility = 'hidden';
+      // batch:938 flash-fix (bug1): overlay の opaque bg (#f4cf91, z-index:20000) を
+      // 即座に表示させ、画像 decode 待ち中にゲーム画面が透けて見えるのを塞ぐ。
+      // 中身 (bg/staff/customer/mask) は visibility:hidden のままなので、
+      // 見えるのは overlay の下地色のみ = 従来 display:none 解除後と同じ「1枚絵」に着地する。
+      ov.classList.remove('hidden');
     } else {
       bg.style.visibility = '';
       staff.style.visibility = '';
@@ -8475,34 +8492,31 @@ function showShopOpening(req, onDone, options = {}) {
     let sceneReady = bgReady;
     if (step.staff) {
       setupShopOpeningStaff();
+      // batch:938: staff mask も明示 hide してから後段の outer .then() で bg/staff/mask 同時 reveal。
+      if (staffMask) staffMask.style.visibility = 'hidden';
       sceneReady = Promise.all([
         bgReady,
         waitForShopOpeningStaffReady(),
         waitForImageSrcReady(SHOP_OPENING_STAFF_BG + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION)),
-      ]).then(() => {
-        staff.style.visibility = '';
-      });
+      ]);
     }
     if (step.customer) {
       applyShopCustomerCounterMaskStyle();
       const customerReady = waitForImageReady(customer, getRequesterPortrait(req, step.mood || 'normal'));
       customer.alt = req.name;
       customer.style.visibility = 'hidden';
+      // batch:938 flash-fix (bug2): step 1→2 遷移 (staff→customer) では customer mask bg URL は
+      // ここで初めてセットされる = 未 decode の状態で .is-customer-step クラスが即座に付いて
+      // 見え始めるので、keepVisibleCustomer でない (=新規表示) 回だけ hide→wait→reveal。
+      // step 2→3 (mood 変化) では bg URL は同一なので mask visibility はそのまま維持。
+      if (!keepVisibleCustomer && customerMask) customerMask.style.visibility = 'hidden';
       applyNpcPositionStyle(customer, req.id, step.mood || 'normal', { defaults: { x: 50, y: 23 }, useAbsolute: true });
       sceneReady = Promise.all([
         bgReady,
         customerReady,
         waitForImageSrcReady(SHOP_OPENING_ORDER_BG + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION)),
       ])
-        .then(() => waitMs(step.enter ? SHOP_CUSTOMER_ENTER_DELAY_MS : 80))
-        .then(() => {
-          if (token !== renderToken || !step.customer || (!initialReveal && ov.classList.contains('hidden'))) return;
-          customer.style.visibility = '';
-          ov.classList.add('has-customer');
-          if (step.enter) requestAnimationFrame(() => {
-            if (token === renderToken && !ov.classList.contains('hidden')) ov.classList.add('is-entering');
-          });
-        });
+        .then(() => waitMs(step.enter ? SHOP_CUSTOMER_ENTER_DELAY_MS : 80));
     } else {
       customer.removeAttribute('src');
       customer.alt = '';
@@ -8510,8 +8524,32 @@ function showShopOpening(req, onDone, options = {}) {
     }
     Promise.resolve(sceneReady).then(() => {
       if (token !== renderToken || ov.classList.contains('is-closing')) return;
+      if (!initialReveal && ov.classList.contains('hidden')) return;
+      // batch:938 flash-fix (bug2): bg / character / mask を同一 .then() 内で reveal し、
+      // 「背景先 → キャラ → マスク未装 → マスク装」の多段階描画を単一 paint frame に畳む。
       bg.style.visibility = '';
-      if (step.staff) staff.style.visibility = '';
+      if (step.staff) {
+        staff.style.visibility = '';
+        if (staffMask) staffMask.style.visibility = '';
+      }
+      if (step.customer) {
+        if (customerMask) customerMask.style.visibility = '';
+        customer.style.visibility = '';
+        if (step.enter) {
+          // batch:938 flash-fix (bug2): has-customer (静的 opacity:1) と is-entering (opacity 0→1)
+          // が別 frame で付くと「一瞬 opacity:1 → 0 に落ちて上昇」の視覚バグになるので、
+          // 同じ rAF 内で 2 クラス同時付与し、CSS animation が opacity:0 から素直に走るようにする。
+          requestAnimationFrame(() => {
+            if (token !== renderToken || ov.classList.contains('hidden')) return;
+            ov.classList.add('has-customer');
+            ov.classList.add('is-entering');
+          });
+        } else {
+          ov.classList.add('has-customer');
+        }
+      }
+      // initialReveal 中は上の分岐で既に hidden を外している (bug1 fix) ため、
+      // 通常はここは no-op だが、万一の safety net として残す。
       if (initialReveal) ov.classList.remove('hidden');
       playStepVoice(token, step);
     });
@@ -10462,6 +10500,10 @@ function handleSimplePlacedItemTap(item) {
   // batch:1045 code-review fix: メインおかず以外に一度でも触れたら はっぱ armed は
   // 集中クリアする (cup/pick/rice/decor タップの early return を通っても leak しない)。
   if (simpleLeafApplyArmed && !isSimpleMainOkazuEditTarget(item)) simpleLeafApplyArmed = false;
+  // batch:1058 (bug4): stage-tap armed は 「target と別のおかず」 を触った時点で解除
+  if (simpleLeafArmedDef && (!isSimpleMainOkazuEditTarget(item) || item.uid !== simpleLeafArmedTargetUid)) {
+    clearSimpleLeafArmedState();
+  }
   if (!canSelectFreeItemInCurrentMode(item)) {
     showSimpleModeSelectionMessage(item);
     return;
@@ -10532,6 +10574,7 @@ function openCupEditor(cupUid) {
   freeCupToolMode = 'contents';
   freeLayoutTab = 'food';
   simpleNoCupSlotIndex = null;
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   resetFreeMainGuide();
   setSpeech('カップに いれる おかずを えらぼう！');
   renderFreeLayoutStage();
@@ -10583,6 +10626,7 @@ function setFreeGuideStep(step, opts = {}) {
   freeGuideStep = step;
   simpleNoCupSlotIndex = null;
   simpleLeafApplyArmed = false; // batch:1045: step 変更で必ずアーム解除
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   simpleDecorPanelUid = null; // batch:1057: step 変更で decor 編集パネルも閉じる
   resetFreeMainGuide();
   if (step === 'box') {
@@ -14358,6 +14402,7 @@ function openSimpleDecorEditPanel(uid) {
   // batch:1045 慣例: メインおかず以外に触れたら はっぱ armed は解除
   // (decor tap は handleSimplePlacedItemTap L10418 を通らないので ここで replicate)。
   if (simpleLeafApplyArmed) simpleLeafApplyArmed = false;
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   freeSelectedItemUid = uid;
   simpleDecorPanelUid = uid;
   if (!simpleDecorPanelHintShown) {
@@ -14875,6 +14920,7 @@ function resetSimpleBentoBuildForBoxChange() {
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
   simpleLeafApplyArmed = false; // batch:1045
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   simpleDecorPanelUid = null; // batch:1057
   resetFreeMainGuide();
 }
@@ -14982,7 +15028,9 @@ function createFreePlacedElement(item, interactive) {
   const dividerEditDim = interactive && shouldDimItemForSimpleDividerEdit(item);
   const editingCup = getEditingCup();
   const lockCupChild = interactive && !!item.parentCupId && !!editingCup && item.parentCupId !== editingCup.uid;
-  const brushLocked = interactive && !!freeBrushStampDef;
+  // batch:1058 (bug4): armed leaf 中も brush-stamp と同じく item pointerdown を無効化。
+  // stage 上のどこをタップしても host handler が敷けるよう item を素通しさせる。
+  const brushLocked = interactive && (!!freeBrushStampDef || !!simpleLeafArmedDef);
   const tutorialLocked = interactive && !canMoveFreeItemInCurrentTutorial(item);
   const isSelected = interactive && isItemVisuallySelected(item);
   el.className = ['free-placed-item', typeClass, groupClass, isSelected ? 'selected' : '', item.pop ? 'pop' : '', leafReference ? 'is-leaf-edit-reference' : '', dividerEditDim ? 'is-divider-edit-dim' : '', lockCupChild ? 'cup-child-locked' : '', brushLocked ? 'brush-locked' : '', tutorialLocked ? 'tutorial-locked' : ''].filter(Boolean).join(' ');
@@ -14998,7 +15046,7 @@ function createFreePlacedElement(item, interactive) {
   el.style.setProperty('--scale', item.scale || 1);
   el.style.setProperty('--visual-scale', item.visualScale || 1);
   el.appendChild(createFreeVisual(item));
-  if (interactive && !freeBrushStampDef && !leafReference) {
+  if (interactive && !freeBrushStampDef && !simpleLeafArmedDef && !leafReference) {
     el.addEventListener('pointerdown', ev => {
       ev.stopPropagation();
       if (simpleBentoMode) {
@@ -15267,6 +15315,7 @@ function toggleSimpleOkazuEditPicker(mode) {
   if (!target) return;
   simpleOkazuEditPickerUid = target.uid;
   simpleOkazuEditPickerMode = simpleOkazuEditPickerMode === mode ? null : mode;
+  clearSimpleLeafArmedState(); // batch:1058 (bug4): picker mode 切替で armed をリセット
   if (simpleOkazuEditPickerMode === 'food') {
     setSpeech('どの おかずに かえる？');
   } else if (simpleOkazuEditPickerMode === 'leaf') {
@@ -15284,6 +15333,7 @@ function replaceSimpleMainOkazuFromPicker(def) {
   const target = getSimpleOkazuEditTarget();
   if (!target || !def) return;
   simpleOkazuEditPickerMode = null;
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   if (def.id === target.id) {
     setSpeech('おなじ おかずだよ。');
     renderFreeLayoutControls();
@@ -15301,6 +15351,30 @@ function replaceSimpleMainOkazuFromPicker(def) {
   const item = addSimpleFixedPaletteItem(def, { slot });
   commitFreeHistoryChange(historyBefore);
   if (item) setSpeech((def.name || 'おかず') + 'に かえたよ！');
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
+// batch:1058 (bug4): armed 状態のクリア共通ヘルパー。 stage tap 完遂 / picker back /
+// target 変更 / タブ切替 / reset 等 の choke point から呼ぶ。
+function clearSimpleLeafArmedState() {
+  simpleLeafArmedDef = null;
+  simpleLeafArmedTargetUid = null;
+}
+// batch:1058 (bug4): leaf picker タップ → armed → stage タップで敷く の第一段階。
+// 「タップで しく」 hint (:free-brush-stamp-hint) を出しつつ target おかずを uid でロック。
+function armSimpleLeafForStageTap(def) {
+  const target = getSimpleOkazuEditTarget();
+  if (!target || !def) return;
+  const existing = getSimpleLeafForOkazu(target);
+  if (existing && existing.id === def.id) {
+    setSpeech('おなじ はっぱだよ。');
+    clearSimpleLeafArmedState();
+    renderFreeLayoutControls();
+    return;
+  }
+  simpleLeafArmedDef = def;
+  simpleLeafArmedTargetUid = target.uid;
+  setSpeech('べんとうばこを タップして はっぱを しこう！');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
 }
@@ -15349,6 +15423,7 @@ function placeSimpleLeafUnderOkazu(def) {
   freeSelectedItemUid = target.uid;
   commitFreeHistoryChange(historyBefore);
   simpleLeafApplyArmed = false; // batch:1045: 配置完了で アーム解除
+  clearSimpleLeafArmedState(); // batch:1058 (bug4): 防御的にここでも解除
   if (leaf) {
     setSpeech(existing ? 'はっぱを かえたよ！' : 'したに はっぱを しいたよ！');
     playPop();
@@ -15360,6 +15435,7 @@ function removeSimpleLeafUnderOkazu() {
   const target = getSimpleOkazuEditTarget();
   if (!target) return;
   simpleOkazuEditPickerMode = null;
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   const existing = getSimpleLeafForOkazu(target);
   if (!existing) {
     renderFreeLayoutControls();
@@ -15377,6 +15453,7 @@ function removeSimpleMainOkazuFromPanel() {
   const target = getSimpleOkazuEditTarget();
   if (!target) return;
   simpleOkazuEditPickerMode = null;
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   if (!canRemoveFreeItemNow(target)) {
     renderFreeLayoutControls();
     return;
@@ -15430,7 +15507,9 @@ function createSimpleOkazuEditPicker(item, leaf) {
       press = null;
       ev.preventDefault();
       ev.stopPropagation();
-      if (mode === 'leaf') placeSimpleLeafUnderOkazu(def);
+      // batch:1058 (bug4): leaf は 2 段階配置 (armed → stage tap) に統一。
+      // 即敷きは brushItem 経路 (enterFreeBrushStampMode) と紛らわしいので廃止。
+      if (mode === 'leaf') armSimpleLeafForStageTap(def);
       else replaceSimpleMainOkazuFromPicker(def);
     });
     b.addEventListener('pointercancel', () => { press = null; }, { passive: true });
@@ -15448,6 +15527,7 @@ function renderSimpleOkazuEditPickerTray() {
   if (!target || simpleOkazuEditPickerUid !== target.uid) {
     // 対象が消えた / 選択が変わった / ステップが変わった → picker mode を解除して通常トレイへ
     simpleOkazuEditPickerMode = null;
+    clearSimpleLeafArmedState(); // batch:1058 (bug4)
     return null;
   }
   const mode = simpleOkazuEditPickerMode;
@@ -15463,16 +15543,19 @@ function renderSimpleOkazuEditPickerTray() {
     e.preventDefault();
     e.stopPropagation();
     simpleOkazuEditPickerMode = null;
+    clearSimpleLeafArmedState(); // batch:1058 (bug4)
     // batch:1043 fix: picker を閉じたら編集パネルのガイド speech に戻す
     // (picker のプロンプト speech が残ったままパネルに復帰するのを防ぐ)
     setSpeech((target.name || 'おかず') + 'を えらんだよ。したの ボタンで かえたり はっぱを しいたり できるよ。');
+    renderFreeLayoutStage(); // batch:1058 (bug4): armed hint を stage から消す
     renderFreeLayoutControls();
   });
   head.appendChild(back);
   const prompt = document.createElement('span');
   prompt.className = 'free-okazu-picker-prompt';
+  // batch:1058 (bug4): 「選ぶ→べんとうばこタップ→敷く」 2 段階を prompt にも明示。
   prompt.textContent = mode === 'leaf'
-    ? (leaf ? 'どの はっぱに かえる？' : 'したに しく はっぱを えらんでね。')
+    ? (leaf ? 'どの はっぱに かえる？えらんで べんとうばこを タップ！' : 'はっぱを えらんで べんとうばこを タップ！')
     : 'どの おかずに かえる？';
   head.appendChild(prompt);
   frag.appendChild(head);
@@ -15752,15 +15835,32 @@ function renderFreeLayoutInto(host, opts = {}) {
   host.classList.add('free-layout-stage');
   host.onpointerdown = null;
   host.classList.toggle('free-layout-leaf-editing', leafEditMode);
-  host.classList.toggle('free-brush-stamp-on', !!(opts.interactive && freeBrushStampDef));
+  // batch:1058 (bug4): armed leaf 中も host onpointerdown を有効化して stage tap で敷く。
+  const leafArmActive = !!(opts.interactive && simpleLeafArmedDef);
+  host.classList.toggle('free-brush-stamp-on', !!(opts.interactive && freeBrushStampDef) || leafArmActive);
   const renderRoot = document.createDocumentFragment();
-  if (opts.interactive && freeBrushStampDef) {
+  if (opts.interactive && (freeBrushStampDef || leafArmActive)) {
     host.onpointerdown = e => {
       if (isFreeMainGuideBlocking()) return;
       const point = eventToFreePoint(e);
       if (!point) return;
       e.preventDefault();
-      addBrushStampAtPoint(point);
+      if (freeBrushStampDef) {
+        addBrushStampAtPoint(point);
+        return;
+      }
+      // batch:1058 (bug4): armed leaf を stage tap で target おかず下に敷く。
+      // target uid が armed 時点から変わっていたら安全側でキャンセルのみ。
+      const target = getSimpleOkazuEditTarget();
+      const armedDef = simpleLeafArmedDef;
+      if (armedDef && target && target.uid === simpleLeafArmedTargetUid) {
+        clearSimpleLeafArmedState();
+        placeSimpleLeafUnderOkazu(armedDef);
+      } else {
+        clearSimpleLeafArmedState();
+        renderFreeLayoutStage();
+        renderFreeLayoutControls();
+      }
     };
   }
   const shape = document.createElement(box.image ? 'img' : 'div');
@@ -15864,6 +15964,18 @@ function renderFreeLayoutInto(host, opts = {}) {
       hint.className = 'free-brush-stamp-hint';
       const img = document.createElement('img');
       img.src = getBrushStampImage();
+      img.alt = '';
+      hint.appendChild(img);
+      const text = document.createElement('span');
+      text.textContent = 'タップで しく';
+      hint.appendChild(text);
+      renderRoot.appendChild(hint);
+    } else if (simpleLeafArmedDef) {
+      // batch:1058 (bug4): armed leaf 中は brush-stamp と同じ hint を出す
+      const hint = document.createElement('div');
+      hint.className = 'free-brush-stamp-hint';
+      const img = document.createElement('img');
+      img.src = simpleLeafArmedDef.image || simpleLeafArmedDef.img || '';
       img.alt = '';
       hint.appendChild(img);
       const text = document.createElement('span');
@@ -17656,6 +17768,8 @@ function renderFreeLayoutControls() {
         // batch:1046 code-review fix (a): はっぱ 以外のタブに切替時は armed を必ず解除
         // (accessory/divider/pick タブでは armed が残ってはいけない)
         if (t.id !== 'leaf' && simpleLeafApplyArmed) simpleLeafApplyArmed = false;
+        // batch:1058 (bug4): stage-tap armed もタブ切替で解除 (picker 外のタブへ抜けた瞬間)
+        clearSimpleLeafArmedState();
         if (t.id === 'leaf' && simpleBentoMode) {
           freeActiveCupUid = null;
           freeCupEditorUid = null;
@@ -17787,6 +17901,7 @@ function loadFreeLayoutStage() {
   simpleNoCupSlotIndex = null;
   simpleCupSlotIndex = null;
   simpleLeafApplyArmed = false; // batch:1045
+  clearSimpleLeafArmedState(); // batch:1058 (bug4)
   simpleDecorPanelUid = null; // batch:1057
   const maskEdit = getFreeMaskEditRequest();
   freeMaskEditorMode = !!maskEdit;
