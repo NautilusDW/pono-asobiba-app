@@ -312,8 +312,8 @@ const PORTAL_DEFAULTS={
  entryStopOffsetVw:28,
  swapOffsetVw:30,
  pauseMs:560,
- inMask:[[0,0],[100,0],[100,100],[0,100]],
- outMask:[[0,0],[100,0],[100,100],[0,100]]
+ inMask:[[14,37],[35,37],[35,49],[26,49],[26,83],[42,83],[42,98],[13,98],[13,49],[14,49]],
+ outMask:[[54,42],[65,42],[65,97],[54,97]]
 };
 let portalTuning=clonePortalTuning(PORTAL_DEFAULTS),portalEditor=null,tunnelInteriorMode=false;
 
@@ -537,6 +537,11 @@ function applyPortalTuning(){
  st.setProperty("--portal-mask-out",portalClip(portalTuning.outMask));
 }
 function loadPortalTuning(){
+ if(!PORTAL_EDIT_ENABLED){
+  portalTuning=clonePortalTuning(PORTAL_DEFAULTS);
+  applyPortalTuning();
+  return;
+ }
  try{
   const raw=localStorage.getItem(PORTAL_TUNING_KEY);
   portalTuning=normalizePortalTuning(raw?JSON.parse(raw):null);
@@ -588,7 +593,7 @@ function placePortalOccluder(gate,occ){
 }
 function renderPortalMasks(cv){
  if(!portalMaskLayer)return;
- if(!PORTAL_EDIT_ENABLED||!cv){
+ if(!cv){
   portalMaskLayer.style.display="none";
   if(portalEditOverlay)portalEditOverlay.innerHTML="";
   return;
@@ -597,6 +602,7 @@ function renderPortalMasks(cv){
  const anyOut=placePortalOccluder(cv.querySelector(".cover-gate-out"),portalOccOut);
  portalMaskLayer.style.display=(anyIn||anyOut)?"block":"none";
  if(PORTAL_EDIT_ENABLED)drawPortalEditorOverlay();
+ else if(portalEditOverlay)portalEditOverlay.innerHTML="";
 }
 function setPortalEditStatus(txt){
  if(!portalEditor||!portalEditor.panel)return;
@@ -1063,6 +1069,7 @@ function finishTunnelInterior(){
   if(!playing)return;
   tunnelInteriorMode=false;
   document.body.classList.remove("tunnel-interior");
+  document.body.classList.add("tunnel-exit-setup");
   stg++;buildQList();qSeg=0;stageMiss=0;rareSpawned=false;
   applySkin();buildWorld(false);drawDots();
   worldX=origin(stg);target=stops(origin(stg),0);
@@ -1071,7 +1078,16 @@ function finishTunnelInterior(){
   carsEl.classList.add("go");
   sparkOnVeh();sndGo();
   speak("トンネルを ぬけたら、"+STAGES[stg].names[loop%2]+"だ！");
-  requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+  render();
+  void veh.offsetWidth;
+  requestAnimationFrame(()=>{
+   document.body.classList.remove("tunnel-fade-dark");
+   setTimeout(()=>{
+    document.body.classList.remove("tunnel-exit-setup");
+    document.body.classList.add("tunnel-exit-run");
+    setTimeout(()=>document.body.classList.remove("tunnel-exit-run"),900);
+   },70);
+  });
  },360);
 }
 function beginStageTransit(){
@@ -1311,7 +1327,7 @@ function gloop(t){
 function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
- document.body.classList.remove("tunnel-enter-run","tunnel-fade-dark","tunnel-interior");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-fade-dark","tunnel-interior");
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
  setDriverMood("cheer");
