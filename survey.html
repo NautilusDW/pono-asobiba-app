@@ -137,6 +137,10 @@ textarea { min-height: 100px; resize: vertical; }
 </div>
 
 <script>
+// batch:938 (v1953): survey.html は独立ページで play.html の PONO_SW_VERSION を継承しない。
+// sw.js CACHE_VERSION と同期した値をここで注入し、 L262 fd.append('swVersion', ...) が空文字に
+// ならないようにする。 sw.js を bump するたびにここも同期させる。
+window.PONO_SW_VERSION = 'v1953';
 (function(){
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAHRy0UyHRCktZdxpQEgUHj7jEuHA49lb6t5HgckVmYogQTDdB4AlRhT99rp94U4hLhA/exec';
 
