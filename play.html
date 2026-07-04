@@ -523,12 +523,25 @@
       pointer-events: none;
       z-index: 4;
     }
-    .game-card.is-coming-soon { filter: saturate(0.85) brightness(0.97); }
+    /* v1958: saturate/brightness も filter なので mask×filter 再合成経路に乗る。
+       薄い tint overlay (::after) に置換して同じ「じゅんびちゅう感」を近似する。 */
+    .game-card.is-coming-soon::after {
+      content: '';
+      position: absolute;
+      /* v1959: plank PNG fills the card box edge-to-edge (measured ~0.2%
+         transparent margin) — inset must be 0, not the old padding-based
+         16px, or the tint stops short of the plank's visible edges. */
+      inset: 0;
+      border-radius: var(--gc-radius);
+      background: rgba(60, 45, 30, 0.05);
+      pointer-events: none;
+      z-index: 3;
+    }
     .game-card.is-coming-soon .game-card__play { opacity: 0.55; }
     /* Debug-playable coming-soon cards: cancel the desaturation/dim play
        button so devs can verify the destination game without losing the
        じゅんびちゅう badge. Visual hover behavior still stays locked. */
-    .game-card.is-coming-soon.is-debug-playable { filter: none; }
+    .game-card.is-coming-soon.is-debug-playable::after { content: none; }
     .game-card.is-coming-soon.is-debug-playable .game-card__play { opacity: 1; }
 
     .game-card {
@@ -561,23 +574,34 @@
       contain: layout;
       transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
       -webkit-tap-highlight-color: transparent;
-      /* Layered drop-shadow so it follows the PNG's rounded silhouette
-         instead of a square box. Two stacked shadows give a soft ambient
-         shadow + a tighter contact shadow for real lift off the scene.
-         Blur kept under the card's horizontal transparent buffer (~16px)
-         so the shadow renders fully before the list's overflow clip. */
-      filter:
-        drop-shadow(0 2px 2px rgba(20, 10, 0, 0.55))
-        drop-shadow(0 5px 8px rgba(20, 10, 0, 0.7));
+    }
+    /* v1958: 影を filter から ::before の box-shadow へ分離。 .card-list の
+       -webkit-mask-image (上下 fade 帯) と filter を同一 subtree で重ねると
+       WebKit が fast path を外れて毎フレーム CPU 再合成に落ち、 上端 fade 帯に
+       カードを保持し続けるとちらつきが持続する不具合があったため。 box-shadow は
+       この経路に乗らない。 v1959: inset は 0 (plank PNG は padding 込みの
+       card box に edge-to-edge で fill されるため、 padding 分だけ内側に
+       寄せると影が plank 面の内側に乗ってしまう実測ミスを修正)。 */
+    .game-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--gc-radius);
+      box-shadow:
+        0 2px 2px rgba(20, 10, 0, 0.55),
+        0 5px 8px rgba(20, 10, 0, 0.7);
+      z-index: -1;
+      pointer-events: none;
+      transition: box-shadow 0.18s ease;
     }
     /* v1947: iOS/iPadOS の sticky :hover でタッチ後もアニメが尾を引き
        隣カードに指が伝わると連鎖点滅する症状を封じるため、 hover 系ルールは
        hover: hover + pointer: fine の実機だけに限定する。 */
     @media (hover: hover) and (pointer: fine) {
-      .game-card:hover {
-        filter:
-          drop-shadow(0 3px 3px rgba(20, 10, 0, 0.6))
-          drop-shadow(0 6px 10px rgba(20, 10, 0, 0.8));
+      .game-card:hover::before {
+        box-shadow:
+          0 3px 3px rgba(20, 10, 0, 0.6),
+          0 6px 10px rgba(20, 10, 0, 0.8);
       }
     }
     /* v1949: base の translateZ(0) を保持したまま scale だけ落とす (:active で layer が
@@ -745,8 +769,11 @@
       pointer-events: none;
       z-index: 1;
     }
-    /* Desktop only: avoid iPad sticky :hover keeping peek layer visible. */
-    @media (hover: hover) {
+    /* Desktop only: avoid iPad sticky :hover keeping peek layer visible.
+       v1958: was missing `pointer: fine` (unlike the other hardened hover
+       rules), so a trackpad/Pencil-capable iPad reporting hover:hover
+       could still stick this peek opacity via touch — add the gate. */
+    @media (hover: hover) and (pointer: fine) {
       .game-card:hover .game-card__peek,
       .game-card:focus-visible .game-card__peek {
         opacity: 0.92;
@@ -1000,19 +1027,20 @@
       background: transparent;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      /* drop-shadow on the button so the PNG's circular silhouette gets
-         the shadow (not a square box-shadow around its bounding box). */
-      filter:
-        drop-shadow(0 5px 8px rgba(60, 35, 10, 0.38))
-        drop-shadow(0 1px 2px rgba(60, 35, 10, 0.28));
-      transition: filter 0.15s ease, transform 0.1s ease;
+      /* v1958: play_button_normal.webp is a full-bleed circle, so a real
+         box-shadow + border-radius:50% reproduces the old drop-shadow
+         silhouette without the mask×filter re-composite cost. */
+      border-radius: 50%;
+      box-shadow:
+        0 5px 8px rgba(60, 35, 10, 0.38),
+        0 1px 2px rgba(60, 35, 10, 0.28);
+      transition: box-shadow 0.15s ease, transform 0.1s ease;
     }
     .game-card.is-selected .game-card__play {
       /* visual no-op — keep all cards identical */
     }
     .game-card__play:active {
-      filter:
-        drop-shadow(0 2px 3px rgba(60, 35, 10, 0.4));
+      box-shadow: 0 2px 3px rgba(60, 35, 10, 0.4);
       transform: translateY(calc(-50% + 2px)) scale(0.97);
     }
     .game-card__playImg {
@@ -5653,14 +5681,25 @@
     .game-card {
       max-height: 122px;
       padding: 0 10px;
-      filter:
-        drop-shadow(0 2px 2px rgba(20, 10, 0, .34))
-        drop-shadow(0 5px 9px rgba(20, 10, 0, .38));
     }
-    .game-card:hover {
-      filter:
-        drop-shadow(0 3px 3px rgba(20, 10, 0, .38))
-        drop-shadow(0 7px 12px rgba(20, 10, 0, .42));
+    /* v1959: inset stays 0 (plank fills the card box edge-to-edge regardless
+       of this section's narrower 0 10px padding); box-shadow replaces the
+       old filter here too. */
+    .game-card::before {
+      box-shadow:
+        0 2px 2px rgba(20, 10, 0, .34),
+        0 5px 9px rgba(20, 10, 0, .38);
+    }
+    /* v1959: gated (was ungated, winning the cascade over the hardened rule
+       at the top of the stylesheet) — ungated hover box-shadow bumps still
+       repaint every frame under sticky :hover on pure-touch iPad, forcing
+       .card-list's -webkit-mask-image to re-rasterize each frame. */
+    @media (hover: hover) and (pointer: fine) {
+      .game-card:hover::before {
+        box-shadow:
+          0 3px 3px rgba(20, 10, 0, .38),
+          0 7px 12px rgba(20, 10, 0, .42);
+      }
     }
     .game-card__text { gap: 6px; }
     .game-card__title,
@@ -5741,9 +5780,9 @@
     .game-card__play {
       pointer-events: none;
       opacity: .86;
-      filter:
-        drop-shadow(0 3px 5px rgba(60, 35, 10, .24))
-        drop-shadow(0 1px 1px rgba(60, 35, 10, .18));
+      box-shadow:
+        0 3px 5px rgba(60, 35, 10, .24),
+        0 1px 1px rgba(60, 35, 10, .18);
     }
     .game-card:focus-visible .game-card__play,
     .game-card:hover .game-card__play {
@@ -7138,7 +7177,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1957;
+    const PAGE_CACHE_VERSION = 1959;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -7359,6 +7398,7 @@
       // 下方/上方に偏る不具合があった (16:9 実機で 「最下端しか overlay されない」 症状)。
       // 今は visible 帯の物理中央 = listRect の物理中央 と素直に定義し、
       // cardList の clip box 外のカードは候補から除外する。
+      const OVERLAY_HYST = 8; // v1958: 既存 winner を 8px 優遇し境界 sub-pixel フリップ抑制
       const updateMiddleOverlay = () => {
         if (!cards.length) return;
         const listRect = cardList.getBoundingClientRect();
@@ -7374,7 +7414,8 @@
           const cy = r.top + r.height / 2;
           // カード中心が clip box 内に居るものだけランキング対象
           if (cy < top || cy > bottom) continue;
-          ranked.push({ el: cards[i], dist: Math.abs(cy - visibleCenterY) });
+          const bias = cards[i].classList.contains('is-overlay-active') ? OVERLAY_HYST : 0;
+          ranked.push({ el: cards[i], dist: Math.abs(cy - visibleCenterY) - bias });
         }
         // 対象 < 3 枚なら全カード fallback (初期 layout 中など)
         if (ranked.length < 3) {
@@ -7382,7 +7423,8 @@
           for (let i = 0; i < cards.length; i++) {
             const r = cards[i].getBoundingClientRect();
             const cy = r.top + r.height / 2;
-            ranked.push({ el: cards[i], dist: Math.abs(cy - visibleCenterY) });
+            const bias = cards[i].classList.contains('is-overlay-active') ? OVERLAY_HYST : 0;
+            ranked.push({ el: cards[i], dist: Math.abs(cy - visibleCenterY) - bias });
           }
         }
         ranked.sort((a, b) => a.dist - b.dist);

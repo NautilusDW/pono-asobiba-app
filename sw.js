@@ -1,5 +1,18 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1959: v1958 のクロスレビュー Critical/High 解消。 (a) .game-card::before/is-coming-soon::after の
+// inset を padding 追随 (16px/10px) から 0 に修正 — 実測で menu_card_base_01.webp は card box に
+// edge-to-edge で fill されており、 padding 分内側に寄せると影/tint が plank 面の内側に乗る不具合だった。
+// (b) 「v1617 redesign」ブロック側の .game-card:hover::before (ungated, cascade勝ち) に
+// @media(hover:hover) and (pointer:fine) を追加、 base rule と同じ gate に統一。 純タッチ iPad で
+// sticky :hover による毎フレーム box-shadow repaint (mask 再ラスタライズ) が発生する経路を閉じた。
+// play.html PAGE_CACHE_VERSION と同期。
+// v1958: play.html タイトル画面カードグリッドの上端持続ちらつき修正 (iPad実機報告)。
+// 主因: .card-list の -webkit-mask-image (上下fade帯) と .game-card/.game-card__play の
+// filter:drop-shadow/saturate/brightness が同一subtreeで重なるとWebKitが毎フレームCPU再合成に
+// 落ちる経路。影/色調はfilterからbox-shadow・tint overlay(::before/::after)へ分離して経路を断つ。
+// 併せて peek hover gate に pointer:fine 欠落 (L749付近) を追加、updateMiddleOverlay の中央3枚
+// 判定に8px hysteresisを追加し境界sub-pixelフリップを抑制。play.html PAGE_CACHE_VERSION と同期。
 // v1957: オットタッチ (oto/index.html) の導線修正。 起動時の「タップしてスタート」を廃止しモード選択 (リズム/じゆう) を即表示。 リズム選択時、 ステージ選択が解放済み (=1面クリア済み=何度目かの人) はステージ選択画面へ直行 (チュートリアル非表示)、 未解放 (=初回) は従来通りチュートリアル→ステージ1。 play.html PAGE_CACHE_VERSION と同期。
 // v1953: 星評価 → ごかんそう (survey.html) の swVersion 常時空文字問題を修正 (batch:938)。原因は play.html / survey.html いずれも `window.PONO_SW_VERSION` を注入しておらず rating-modal.js:217 と survey.html:262 の `String(window.PONO_SW_VERSION || '')` が常に空文字化していた。(a) play.html の `window.PONO_FEEDBACK_APPS_SCRIPT_URL` 注入行 (L7146) の直後に `window.PONO_SW_VERSION = 'v1953'` を追加。(b) survey.html は独立ページで play.html の script を継承しないため、 <script> IIFE 冒頭 (L140 の `(function(){` 直前) に同じ注入を追加。(c) gameId は既に prefill/readback/append 全経路が動いているため無変更。/common/* が immutable キャッシュのため CACHE_VERSION 1952→1953 で強制フェッチ。play.html PAGE_CACHE_VERSION と同期。
 // v1952: ごかんそう (rating-modal) の ★タップ後に thanks / CTA が視覚可視化されない不具合を修正。common/rating-modal.css の .pono-rating-thanks に opacity:1 明示 + animation を both→forwards に変更 (WebKit の backwards-fill が hidden→visible 遷移で opacity:0 に張り付く既知バグ回避)、.pono-rating-thanks[hidden] と .pono-rating-cta[hidden] に display:none !important を追加 (グローバル [hidden] 上書き環境への防御)。common/rating-modal.js の _handleStarSelect に removeAttribute('hidden') を hidden=false と並行実行 (property setter が反映されない極端ケースへの保険)。/common/* が immutable キャッシュのため CACHE_VERSION 1951→1952 で強制フェッチ。play.html PAGE_CACHE_VERSION と同期。
@@ -571,7 +584,7 @@
 // v1954: Bento batch:936 — cup チュートリアル番号バッジ (1/2/3/4) の位置ズレを修正。 getSimpleCupStageMarkerDisplayPoints (:17356) の legacy side-food markerX/Y フォールスルーを無効化し、cup 実配置の grid fallback に落として cup-first リアウト後の実配置と一致させた。 accessory タブ限定の影響、他 step / admin / seed への副作用なし。play.html PAGE_CACHE_VERSION と同期。
 // v1955: Bento batch:937 — お願いモードのオープニング体験を大幅改善。 (a) ゲーム画面フラッシュ排除: overlay の display:block 前倒しでお願いモードボタン押下→ゲーム画面透け見えを解消。 (b) マスク未着装フラッシュ排除: staff/customer mask 要素の visibility を bg/キャラと同期、has-customer/is-entering を同一 rAF で付与。 (c) race hazard 対策: initialReveal 中は next ボタン disable、画像 decode 完了で復帰。 (d) にこセット差別化: nori_eye_round → book_nori_eye_smile (^^ 三日月目) + 口幅 0.5→0.58 で笑い顔強調。 (e) 下敷きモード改善: leaf picker を選択→armed→stage tap の 2 段階に統一、cabbage brush の連続 stamp は温存。 (f) undo remove leak fix: armed leaf target が undo で削除された場合の stale hint 対策。 play.html PAGE_CACHE_VERSION と同期。
 // v1956: Bento batch:938 — お願いモード完成後の弁当配置と細部を大量修正。 (a) にこセット palette↔stage 一致 (両方 ^^ 三日月目)。 (b) 前髪 clamp [126,158]→[150,190] で頭頂カバー。 (c) 電車先頭車両 size 118→80 で中間車両と height 揃え。 (d) 名前「しんかんせん」→「でんしゃのあたま」(和語 7 音節、幼児適合)。 (e) 小さなおかず picker のフルーツを最後尾に (orderFreeFoodMenuItems ラップ)。 (f) 完成品カウンター配置を NPC 右の空白ゾーン (66-82%) に移動、キラキラを弁当中心に追従。 play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1957;
+const CACHE_VERSION = 1959;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
