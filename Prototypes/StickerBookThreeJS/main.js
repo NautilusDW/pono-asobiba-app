@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
-const ASSET_VERSION = "20260704-1084";
+const ASSET_VERSION = "20260704-1085";
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -43,6 +43,8 @@ const STICKER_PLAN_URL = "./sticker_book_content_plan.json";
 const GAME_STICKER_CATALOG_URL = "../../assets/data/game-stickers.json";
 const STICKER_ASSET_PREFIX = "../../";
 const EDITOR_STORAGE_KEY = "sb3d_sticker_editor_free_pages_v1";
+const COVER_PLACEMENT_PAGE = 0;
+const COVER_PLACEMENT_KEY = "cover";
 const COLLECTION_ALBUM_PLACEMENTS_STORAGE_KEY = "sb3d_collection_album_placements_v1";
 const DEBUG_ALL_STICKERS_STORAGE_KEY = "sb3d_debug_all_stickers_v1";
 const DEBUG_ALL_STICKERS_FEATURE_KEY = "stickerbook-use-all";
@@ -2372,7 +2374,7 @@ let activeCollectionTocCategoryId = "";
 let pendingCollectionTocCategoryId = "";
 let editorState = loadEditorState();
 let collectionAlbumState = loadCollectionAlbumState();
-let activeEditorPage = 1;
+let activeEditorPage = activeSurface === "cover" ? COVER_PLACEMENT_PAGE : 1;
 const requestedInitialPage = Math.max(1, Math.round(readClampedNumber(params.get("page"), 1, 1, 999)));
 let activeBookPage = requestedInitialPage % 2 === 0 ? requestedInitialPage - 1 : requestedInitialPage;
 if (!isLocalPreview || !params.has("spread")) {
@@ -2467,6 +2469,7 @@ const textureEntries = await Promise.all(textureFiles.map(async (file) => [file,
 const textureMap = new Map(textureEntries);
 const textureLoadPromises = new Map();
 const pageTemplateTextureMap = new Map();
+const coverTemplateTextureMap = new Map();
 // v1903: refreshPageTemplateTextures を async double-buffer 化した副作用で
 // 「call 1 が await 中に call 2 が入って更に await → 完了順序が逆転」 したときに
 // 古い texture を最終 swap してしまう race を防ぐための単調増加 token。
@@ -2825,7 +2828,7 @@ topThemeButton?.addEventListener("click", () => {
 
 topEditButton?.addEventListener("click", () => {
   const previousMode = stickerEditMode;
-  setStickerEditMode(!stickerEditMode, { openInside: true });
+  setStickerEditMode(!stickerEditMode);
   closeZukanSettingsPanel();
   closeBookThemePanel();
   if (stickerTutorialSuppressModeNotify) {
@@ -2899,6 +2902,8 @@ window.__stickerBookDebugState = () => ({
   pageTurnVisible: pageTurn.visible,
   frontPageVisible: frontPage.visible,
   backPageVisible: backPage.visible,
+  coverPlacementCount: availablePagePlacements(COVER_PLACEMENT_PAGE).length,
+  closedCoverTextureIsCanvas: closedCover.material.map?.image instanceof HTMLCanvasElement,
   leftPlacementCount: availablePagePlacements(activeBookPage).length,
   rightPlacementCount: availablePagePlacements(rightBookPageNumber()).length,
   leftCollectionPlacementCount: getCollectionPagePlacements(activeBookPage).length,
@@ -3136,7 +3141,7 @@ function canUseInlineStickerEditing() {
   return activeAlbumMode !== "collection"
     && stickerEditMode
     && editorEnabled
-    && activeSurface === "inside"
+    && (activeSurface === "inside" || activeSurface === "cover")
     && !coverOpenAnimation
     && !spreadJumpAnimation
     && (!stickerEditor || stickerEditor.hidden);
@@ -3286,7 +3291,7 @@ function handleInlineStickerPointerMove(event) {
 
 function inlineStickerDragTargetFromPointer(event) {
   const hit = pickScenePageHit(event);
-  if (!hit?.uv || (hit.object !== leftPageInner && hit.object !== rightPage)) {
+  if (!hit?.uv || !pageMeshCanReceiveStickers(hit.object)) {
     return null;
   }
   return {
@@ -3429,7 +3434,7 @@ function pickEditablePage(event) {
     activeAlbumMode === "collection"
     || !stickerEditMode
     || !editorEnabled
-    || activeSurface !== "inside"
+    || (activeSurface !== "inside" && activeSurface !== "cover")
     || !stickerEditor
     || !stickerEditor.hidden
   ) {
@@ -3443,7 +3448,18 @@ function pickScenePageHit(event) {
   pointerNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointerNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   pageRaycaster.setFromCamera(pointerNdc, camera);
-  return pageRaycaster.intersectObjects([rightPage, leftPageInner], false)[0] || null;
+  return pageRaycaster.intersectObjects(pagePickMeshes(), false)[0] || null;
+}
+
+function pagePickMeshes() {
+  if (activeSurface === "cover") {
+    return closedCover?.visible ? [closedCover] : [];
+  }
+  return [rightPage, leftPageInner].filter((mesh) => mesh?.visible);
+}
+
+function pageMeshCanReceiveStickers(mesh) {
+  return mesh === closedCover || mesh === leftPageInner || mesh === rightPage;
 }
 
 function texturePointFromPageHit(hit) {
@@ -3989,7 +4005,9 @@ function restoreStickerTutorialCleanAlbum() {
   editorState.pages = cloneStickerTutorialEditorData(snapshot.pages);
   editorState.drawings = cloneStickerTutorialEditorData(snapshot.drawings);
   selectedPlacementId = snapshot.selectedPlacementId || null;
-  activeEditorPage = Number(snapshot.activeEditorPage) || activeBookPage || 1;
+  activeEditorPage = isCoverPlacementPage(snapshot.activeEditorPage)
+    ? COVER_PLACEMENT_PAGE
+    : Number(snapshot.activeEditorPage) || activeBookPage || 1;
   if (editorStateSaveTimer) {
     window.clearTimeout(editorStateSaveTimer);
     editorStateSaveTimer = 0;
@@ -6119,7 +6137,9 @@ function applyStickerAvailability(options = {}) {
   syncEditorPlacementsWithStickerPlan();
   editorPageDefinitions = buildEditorPageDefinitions();
   activeBookPage = spreadStartForPage(Math.min(activeBookPage, editorPageCount()));
-  activeEditorPage = THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
+  activeEditorPage = activeSurface === "cover"
+    ? COVER_PLACEMENT_PAGE
+    : THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
   if (editorEnabled) {
     setupEditorGameFilter();
     renderEditorShell();
@@ -6481,6 +6501,9 @@ function openZukanTuningMode() {
 }
 
 function pageNumberForPickedPage(mesh) {
+  if (mesh === closedCover) {
+    return COVER_PLACEMENT_PAGE;
+  }
   if (mesh === leftPageInner) {
     return activeBookPage;
   }
@@ -6508,7 +6531,7 @@ function setupCollectionStickerTray() {
         showStickerTrayLockHint(stickerButton);
         return;
       }
-      if (activeAlbumMode !== "collection" && activeSurface === "inside") {
+      if (activeAlbumMode !== "collection" && (activeSurface === "inside" || activeSurface === "cover")) {
         event.preventDefault();
       }
       return;
@@ -6588,7 +6611,7 @@ function updateStickerTrayPeekFromPointer(event) {
 function canUseStickerTrayPeek() {
   return activeAlbumMode !== "collection"
     && stickerEditMode
-    && activeSurface === "inside"
+    && (activeSurface === "inside" || activeSurface === "cover")
     && Boolean(collectionStickerTray)
     && !collectionStickerTray.hidden
     && !isInlineStickerPanelOpen();
@@ -6932,7 +6955,7 @@ function updateStickerTrayCounter() {
   }
   const visible = activeAlbumMode !== "collection"
     && stickerEditMode
-    && activeSurface === "inside"
+    && (activeSurface === "inside" || activeSurface === "cover")
     && !collectionStickerTray.hidden
     && stickerOptions.length > 0;
   stickerTrayCounter.hidden = !visible;
@@ -6968,7 +6991,7 @@ function handleStickerTrayPointerDown(event) {
   if (
     activeAlbumMode === "collection"
     || !stickerEditMode
-    || activeSurface !== "inside"
+    || (activeSurface !== "inside" && activeSurface !== "cover")
     || coverOpenAnimation
     || spreadJumpAnimation
     || isInlineStickerPanelOpen()
@@ -7265,7 +7288,7 @@ function cleanupStickerTrayDrag(suppressClick = false) {
 function stickerTrayDropTarget(event) {
   if (
     activeAlbumMode === "collection"
-    || activeSurface !== "inside"
+    || (activeSurface !== "inside" && activeSurface !== "cover")
     || coverOpenAnimation
     || spreadJumpAnimation
     || isInlineStickerPanelOpen()
@@ -7289,7 +7312,8 @@ function stickerTrayDropTarget(event) {
 }
 
 function projectedStickerTrayDropTarget(event) {
-  const candidates = [rightPage, leftPageInner].filter((mesh) => mesh?.visible);
+  const candidates = (activeSurface === "cover" ? [closedCover] : [rightPage, leftPageInner])
+    .filter((mesh) => mesh?.visible);
   for (const mesh of candidates) {
     const rect = projectedMeshClientRect(mesh);
     if (!rect) {
@@ -7368,7 +7392,9 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
   if (!sticker || activeAlbumMode === "collection") {
     return;
   }
-  const pageNumber = THREE.MathUtils.clamp(Math.round(page) || activeBookPage, 1, editorPageCount());
+  const pageNumber = isCoverPlacementPage(page)
+    ? COVER_PLACEMENT_PAGE
+    : THREE.MathUtils.clamp(Math.round(page) || activeBookPage, 1, editorPageCount());
   const placements = getPagePlacements(pageNumber);
   const placement = {
     id: createPlacementId(),
@@ -7413,7 +7439,10 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
 // bent by rewriting vertex positions every frame, then baked into the page canvas.
 function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
   const pageMesh = pageMeshForStickerPage(pageNumber);
-  if (!pageMesh?.visible || activeSurface !== "inside" || activeAlbumMode === "collection") {
+  if (!pageMesh?.visible || activeAlbumMode === "collection") {
+    return false;
+  }
+  if (isCoverPlacementPage(pageNumber) ? activeSurface !== "cover" : activeSurface !== "inside") {
     return false;
   }
   const visualImage = getStickerVisualImage(image);
@@ -7504,6 +7533,9 @@ function startStickerPeelAnimation(placement, pageNumber, image, onComplete) {
 }
 
 function pageMeshForStickerPage(pageNumber) {
+  if (isCoverPlacementPage(pageNumber)) {
+    return closedCover;
+  }
   return Math.round(pageNumber) === rightBookPageNumber() ? rightPage : leftPageInner;
 }
 
@@ -8253,7 +8285,10 @@ function updateCollectionStickerTrayVisibility() {
   const modeAllowsTray = activeAlbumMode === "collection"
     ? hasVisibleItems
     : stickerEditMode && (hasVisibleItems || hasCatalogForStickerSource);
-  const visible = activeSurface === "inside"
+  const surfaceAllowsTray = activeAlbumMode === "collection"
+    ? activeSurface === "inside"
+    : activeSurface === "inside" || activeSurface === "cover";
+  const visible = surfaceAllowsTray
     && !coverOpenAnimation
     && (!stickerEditor || stickerEditor.hidden)
     && modeAllowsTray;
@@ -8406,7 +8441,9 @@ async function loadStickerPlanForEditor() {
     editorPageDefinitions = buildEditorPageDefinitions();
     collectionPageDefinitions = buildCollectionPageDefinitions();
     activeBookPage = spreadStartForPage(Math.min(activeBookPage, editorPageCount()));
-    activeEditorPage = THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
+    activeEditorPage = activeSurface === "cover"
+      ? COVER_PLACEMENT_PAGE
+      : THREE.MathUtils.clamp(Math.round(activeEditorPage), 1, editorPageDefinitions.length);
     if (!isLocalPreview || !params.has("spread")) {
       spreadPosition = spreadPositionForBookPage(activeBookPage);
     }
@@ -9915,6 +9952,11 @@ function setBookSurface(surface, page = activeBookPage, options = {}) {
     selectedPlacementId = null;
     stickerDragState = null;
     updateInlineStickerControls();
+  } else {
+    activeEditorPage = COVER_PLACEMENT_PAGE;
+    selectedPlacementId = null;
+    stickerDragState = null;
+    updateInlineStickerControls();
   }
   applyVariantState();
 }
@@ -10221,11 +10263,19 @@ function getActivePagePlacements() {
 }
 
 function getPagePlacements(page) {
-  const key = String(page);
+  const key = pagePlacementKey(page);
   if (!Array.isArray(editorState.pages[key])) {
     editorState.pages[key] = [];
   }
   return editorState.pages[key];
+}
+
+function isCoverPlacementPage(page) {
+  return page === COVER_PLACEMENT_KEY || Math.round(Number(page)) === COVER_PLACEMENT_PAGE;
+}
+
+function pagePlacementKey(page) {
+  return isCoverPlacementPage(page) ? COVER_PLACEMENT_KEY : String(page);
 }
 
 function getCollectionPagePlacements(page) {
@@ -10244,7 +10294,7 @@ function getActivePageDrawingStrokes() {
 }
 
 function getPageDrawingStrokes(page) {
-  const key = String(page);
+  const key = pagePlacementKey(page);
   if (!editorState.drawings || typeof editorState.drawings !== "object") {
     editorState.drawings = {};
   }
@@ -11630,6 +11680,20 @@ function getPageTemplateTexture(side, pageNumber = pageNumberForTemplateSide(sid
   return pageTemplateTextureMap.get(key);
 }
 
+function getCoverTemplateTexture(bookName = activeBook) {
+  const key = `${bookName}:${activeAlbumMode}:cover`;
+  if (!coverTemplateTextureMap.has(key)) {
+    coverTemplateTextureMap.set(key, createCoverTemplateTexture(bookName));
+  }
+  return coverTemplateTextureMap.get(key);
+}
+
+function coverTextureForBook(bookName = activeBook) {
+  return activeAlbumMode === "collection"
+    ? getTexture(coverPrintFile(bookName))
+    : getCoverTemplateTexture(bookName);
+}
+
 function pageNumberForTemplateSide(side) {
   return side === "left" ? activeBookPage : rightBookPageNumber();
 }
@@ -11658,6 +11722,13 @@ function refreshPageTemplateTextures() {
   // 完了まで旧 texture が表示され続けるので blank frame は起こらない。
   // 追随の updateFlutterPageTextures / updateBookPageControls は swap 後に呼ぶ。
   const token = ++refreshPageTemplateTokenSeq;
+  coverTemplateTextureMap.clear();
+  if (closedCover?.material) {
+    swaps.push({ mesh: closedCover, texture: coverTextureForBook(activeBook) });
+  }
+  if (coverTurnFront?.material) {
+    swaps.push({ mesh: coverTurnFront, texture: coverTextureForBook(activeBook) });
+  }
   // v1905: swap 完了 Promise を返却化。 finishStickerPeelAnimation が
   // texture swap 完了を await してから peel mesh を fade out できるように、 呼出側が
   // 到達可能な形で resolve を待てるようにする (旧 stale-swap guard は据置)。
@@ -11709,6 +11780,30 @@ function createPageTemplateTexture(side, bookName, pageNumber = pageNumberForTem
   // これにより 「base だけ描かれた CanvasTexture が 1 frame 表示される」 blank frame race を解消。
   // sync caller (flip 経路) は従来通り base だけの状態でも即使えるため、 signature 互換。
   texture._readyPromise = Promise.resolve(drawDynamicPageContent(ctx, texture, side, palette, pageNumber));
+  return texture;
+}
+
+function createCoverTemplateTexture(bookName = activeBook) {
+  const templateCanvas = document.createElement("canvas");
+  templateCanvas.width = PAGE_TEXTURE_W;
+  templateCanvas.height = PAGE_TEXTURE_H;
+  const ctx = templateCanvas.getContext("2d");
+  const coverImage = getTexture(coverPrintFile(bookName))?.image || null;
+  if (coverImage) {
+    drawImageCover(ctx, coverImage, 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  } else {
+    drawPageTemplateBase(ctx, stickerBookTheme(bookName), "right", "free");
+  }
+
+  const texture = new THREE.CanvasTexture(templateCanvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  texture._readyPromise = Promise.resolve(
+    drawStickerCanvasPage(ctx, texture, stickerBookTheme(bookName), null, getPagePlacements(COVER_PLACEMENT_PAGE), COVER_PLACEMENT_PAGE),
+  );
   return texture;
 }
 
@@ -15781,14 +15876,14 @@ function applyVariantState() {
   if (activeSurface === "inside") {
     assignTextureObject(frontPage, getPageTemplateTexture("right"));
   } else {
-    assignTexture(frontPage, coverPrintFile(activeBook));
+    assignTextureObject(frontPage, coverTextureForBook(activeBook));
   }
   if (activeSurface === "inside") {
     assignTextureObject(backPage, getPageTemplateTexture("left"));
   } else {
     assignTexture(backPage, bundle.coverInside);
   }
-  assignTexture(closedCover, coverPrintFile(activeBook));
+  assignTextureObject(closedCover, coverTextureForBook(activeBook));
   assignCoverTurnTextures();
   assignSpineTexture();
   assignSideTabTextures();
@@ -16159,7 +16254,7 @@ function getCollectionFoldTexture(bookName) {
 
 function assignCoverTurnTextures() {
   const bundle = BOOK_VARIANTS[activeBook];
-  assignTexture(coverTurnFront, coverPrintFile(activeBook));
+  assignTextureObject(coverTurnFront, coverTextureForBook(activeBook));
   if (activeAlbumMode !== "collection") {
     assignTextureObject(coverTurnBack, getPageTemplateTexture("left", activeBookPage));
   } else {
@@ -16548,6 +16643,7 @@ function updateCoverOpen(delta) {
     coverTurn.visible = false;
     if (isClosing) {
       activeSurface = "cover";
+      activeEditorPage = COVER_PLACEMENT_PAGE;
       flipShadow.visible = false;
       slider.disabled = true;
       updateControlState();
