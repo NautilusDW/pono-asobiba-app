@@ -239,10 +239,17 @@ const STATION_HELPERS=[
 ];
 const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2120, COVER_OFF=2380, COVER_LEN=370;
-const stops=(o,i)=>o+INTRO+i*GAP-58;
+const TRAIN_WIDTH_MIN_PX=150, TRAIN_WIDTH_VW=26, TRAIN_WIDTH_MAX_PX=270, DEFAULT_VEHICLE_LEFT_VW=28, CHECKPOINT_STOP_LEFT_VW=44;
+function trainLeftVw(){
+ const vw=window.innerWidth||844;
+ const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
+ return 50-(w/vw*50);
+}
+const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
+const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;
 const tunX=(o,i)=>o+INTRO+i*GAP;
 const dropStop=o=>o+DROP_OFF;
-const dropX=o=>o+DROP_OFF+58;
+const dropX=o=>o+DROP_OFF+CHECKPOINT_STOP_LEFT_VW;
 
 /* ================= collection registry ================= */
 const zkGroups=[]; const zkReg=new Set(); // key: e|t (メモリ内のみ・本番はセーブ実装)
@@ -1001,7 +1008,7 @@ function renderCars(){
  groups.forEach((group,i)=>{
   const idx=groups.length-1-i; // 0=newest group (先頭車のすぐ後ろ)
   const el=document.createElement("div");el.className="car";
-  el.style.left=(28-carGap()*(idx+1))+"vw";
+  el.style.left=(vehicleLeftVw()-carGap()*(idx+1))+"vw";
   group.forEach((c,seat)=>el.appendChild(renderPassengerSeat(c,seat===0?"seat-a":"seat-b")));
   const body=document.createElement("div");
   body.className="car-body-img";
@@ -1092,7 +1099,7 @@ function boardPassenger(p,learned,stationEl){
  }
  $("app").appendChild(fl);
  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
-  fl.style.left=(28-carGap())+"vw";fl.style.bottom="14vh";
+  fl.style.left=(vehicleLeftVw()-carGap())+"vw";fl.style.bottom="14vh";
  });});
  setTimeout(()=>{
   fl.remove();
@@ -1155,7 +1162,7 @@ function confetti(n){const em=["🎉","⭐","🎈","✨","💛"];
   setTimeout(()=>c.remove(),3400);}}
 function sparkOnVeh(){
  for(let i=0;i<5;i++){const s=document.createElement("div");s.className="spark";s.textContent="✨";
-  s.style.left="calc(28vw + "+(i*4)+"vw)";s.style.bottom=(16+((i*7)%12))+"vh";
+  s.style.left="calc("+vehicleLeftVw()+"vw + "+(i*4)+"vw)";s.style.bottom=(16+((i*7)%12))+"vh";
   $("app").appendChild(s);setTimeout(()=>s.remove(),900);}
 }
 function onRunEvent(el,ev){

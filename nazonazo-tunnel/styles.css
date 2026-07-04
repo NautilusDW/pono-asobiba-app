@@ -68,7 +68,7 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #helpBadge{position:absolute;bottom:27vh;left:2vw;z-index:9;background:rgba(255,255,255,.88);
   border:2px solid rgba(87,193,94,.5);border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
-body.v-train #veh{bottom:6.1vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
+body.v-train #veh{left:calc(50vw - clamp(75px,13vw,135px));bottom:6.1vh;width:clamp(150px,26vw,270px);height:clamp(86px,15vw,156px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
