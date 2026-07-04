@@ -16250,7 +16250,12 @@ function makeFreePaletteButton(def) {
   if (freeLayoutTab !== 'box') {
     // batch:939: decor タブは name をカテゴリ見出しに集約 (renderFreeLayoutControls 側で挿入)。
     // ただし face-set (「にこセット/くまセット/ねこセット」) だけは個別 name を残す。
-    const hideName = (freeLayoutTab === 'decor' && def && def.type === 'decor' && !def.faceSet);
+    // batch:949 fix: getDecorPaletteCatalog() は simple/guided モードでしか kind ソートを
+    //   しないため、非 simple モードで name を隠すと同じ kind が複数箇所に散って見出し
+    //   だけでは区別が付かなくなる。 name 隠しは見出し挿入と同じゲート
+    //   (simpleBentoMode || freeGuideStep === 'decor') に揃える。
+    const decorHeadingActive = (simpleBentoMode || freeGuideStep === 'decor');
+    const hideName = (decorHeadingActive && freeLayoutTab === 'decor' && def && def.type === 'decor' && !def.faceSet);
     if (!hideName) {
       const name = document.createElement('span');
       name.className = 'free-palette-name';
@@ -17891,8 +17896,13 @@ function renderFreeLayoutControls() {
   if (items.length) {
     const list = document.createElement('div');
     list.className = 'free-item-list';
-    if (freeLayoutTab === 'decor') {
+    if (freeLayoutTab === 'decor' && (simpleBentoMode || freeGuideStep === 'decor')) {
       // batch:939: kind 境界にカテゴリ見出しを挿入 (whisker-left/right は「ひげ」に合体)。
+      // batch:949 fix: getDecorPaletteCatalog() が kind ソートするのは
+      //   simple/guided モードのみ。 非 simple モードで見出しを挿入すると
+      //   ソートされていない生順の items に対して同じ kind の見出しが複数回
+      //   出るため、 見出し挿入自体を simple/guided モードに限定する。
+      //   非 simple モードは name 表示 + 見出しなしの従来挙動へフォールバック。
       const KIND_HEADING_LABEL = {
         'face-set': 'セット',
         'eye': '目',
