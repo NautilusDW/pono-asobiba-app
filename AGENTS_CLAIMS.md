@@ -78,7 +78,6 @@
 - 2026-07-02 - by Claude - [batch:933-haptics-quick-win-phase1] - common/haptics.js, Prototypes/StickerBookThreeJS/**, play.html, sw.js, AGENTS_CLAIMS.md - haptics quick win 実装 (触覚 Phase 1)
 - 2026-07-02 - by Claude - [batch:934-sticker-paste-particles] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - sticker paste particles (骨格 4 の予告実装)
 - 2026-07-02 - by Claude - [batch:935-paste-particles-v2-rework] - Prototypes/StickerBookThreeJS/**, AGENTS_CLAIMS.md - paste particles v2 rework (方向/位置/色/数/サイズ全面調整)
-- 2026-07-04 - by Claude - [batch:946-title-flicker-iphone-residual] - play.html, sw.js, AGENTS_CLAIMS.md - iPhone 実機でのタイトル画面ちらつき残存 (ゆっくりドラッグ/長押しで発生、しばらくで安定) の第 2 段調査 + 修正 (オーケストレータ運用)
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
