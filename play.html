@@ -1617,11 +1617,34 @@
       transform: translateY(1px);
     }
     .modal-card.profile-hub-card {
+      position: relative;
       max-width: min(560px, calc(100vw - 28px));
       padding: 18px 20px 16px;
       max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       overflow-y: auto;
       overscroll-behavior: contain;
+    }
+    .profile-hub-xclose {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border: 2px solid rgba(242, 145, 90, .42);
+      border-radius: 50%;
+      background: rgba(255, 253, 250, .92);
+      color: #6a4300;
+      font: inherit;
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 2px 0 rgba(171, 104, 54, .16);
+    }
+    .profile-hub-xclose:active {
+      transform: translateY(1px);
     }
     .profile-hub-head {
       display: grid;
@@ -1629,6 +1652,9 @@
       gap: 14px;
       align-items: center;
       margin-bottom: 12px;
+    }
+    .profile-hub-id {
+      min-width: 0;
     }
     .profile-hub-avatar.pono-mini-avatar {
       width: 86px;
@@ -1841,6 +1867,7 @@
     }
     @media (max-width: 480px), (max-height: 540px) {
       .modal-card.profile-hub-card { padding: 12px 14px; }
+      .profile-hub-xclose { top: 8px; right: 8px; width: 34px; height: 34px; font-size: 20px; }
       .profile-hub-head { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; margin-bottom: 9px; }
       .profile-hub-avatar.pono-mini-avatar { width: 68px; height: 68px; border-radius: 20px; }
       .profile-hub-avatar .pono-mini-avatar__body { left: 18px; bottom: 7px; width: 32px; height: 25px; }
@@ -6453,6 +6480,24 @@
       .title-side-stack { width: min(360px, 100%); gap: 10px; margin-top: 8px; }
       .book-unlock-entry__main { font-size: 23px; }
       .book-unlock-entry__sub { font-size: 15px; }
+      .profile-home-entry {
+        min-height: 70px;
+        grid-template-columns: 58px minmax(0, 1fr) auto;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 22px;
+      }
+      .profile-home-entry .pono-mini-avatar {
+        width: 52px;
+        height: 52px;
+      }
+      .profile-home-entry__main { font-size: 20px; }
+      .profile-home-entry__sub { font-size: 13px; }
+      .profile-home-entry__count {
+        min-width: 48px;
+        height: 34px;
+        font-size: 16px;
+      }
       .daily-quest-info-banner { margin-bottom: 5px; }
       .daily-quest-info-banner__title { font-size: 14px; }
       .daily-quest-info-banner__body { font-size: 22px; }
@@ -6491,6 +6536,27 @@
       }
       .book-unlock-entry__main { font-size: 22px; }                  /* v1680: 19→22 */
       .book-unlock-entry__sub  { font-size: 15px; }                  /* v1680: 13→15 */
+      .profile-home-entry {
+        min-height: 64px;
+        grid-template-columns: 52px minmax(0, 1fr) auto;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 20px;
+      }
+      .profile-home-entry .pono-mini-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        border-width: 3px;
+      }
+      .profile-home-entry__main { font-size: 18px; }
+      .profile-home-entry__sub { font-size: 12px; }
+      .profile-home-entry__count {
+        min-width: 44px;
+        height: 31px;
+        padding-inline: 8px;
+        font-size: 15px;
+      }
       .daily-quest-info-banner { margin-bottom: 4px; }
       .daily-quest-info-banner__title { font-size: 11px; }
       .daily-quest-info-banner__body { font-size: 22px; }            /* v1680: 18→22 */
@@ -6648,6 +6714,19 @@
           <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" src="assets/ui/brand_sign_02.webp" data-src="assets/ui/brand_sign_02.webp">
         </div>
         <div class="title-side-stack" aria-label="おすすめ">
+          <button class="profile-home-entry" id="profileHomeBtn" type="button" aria-label="プロフィールと できたこと">
+            <span class="pono-mini-avatar" id="profileHomeAvatar" data-variant="0" aria-hidden="true">
+              <span class="pono-mini-avatar__body"></span>
+              <span class="pono-mini-avatar__face"></span>
+              <span class="pono-mini-avatar__hair"></span>
+              <span class="pono-mini-avatar__mark"></span>
+            </span>
+            <span class="profile-home-entry__text">
+              <span class="profile-home-entry__main" id="profileHomeName">プロフィール</span>
+              <span class="profile-home-entry__sub" id="profileHomeSub">できたことを みる</span>
+            </span>
+            <span class="profile-home-entry__count" id="profileHomeCount">0こ</span>
+          </button>
           <button class="book-unlock-entry" id="bookUnlockEntry" type="button" hidden aria-label="えほんの あいことば とくてんを ひらく">
             <span class="book-unlock-entry__icon" aria-hidden="true"></span>
             <span class="book-unlock-entry__text">
@@ -6796,7 +6875,7 @@
           <span class="settings-action__icon" aria-hidden="true">👤</span>
           <span class="settings-action__text">
             <span class="settings-action__main">プロフィール</span>
-            <span class="settings-action__sub" id="settingsProfileSub">名前を変更</span>
+            <span class="settings-action__sub" id="settingsProfileSub">なまえを かえる</span>
           </span>
         </button>
         <button class="settings-action" id="settingsRefreshBtn" type="button">
@@ -6853,40 +6932,80 @@
       <h3 id="profileTitle">プロフィール</h3>
       <form class="profile-form" id="profileForm">
         <label class="profile-field" for="profileNameInput">
-          <span>名前</span>
+          <span>なまえ</span>
           <span class="profile-name-row">
             <input class="profile-input" id="profileNameInput" type="text" maxlength="8" autocomplete="off" inputmode="text" value="ポノ">
             <button class="profile-random" id="profileRandomBtn" type="button">ランダム</button>
           </span>
         </label>
         <div class="profile-field">
-          <span>性別</span>
-          <div class="profile-gender-group" id="profileGenderGroup" role="radiogroup" aria-label="性別">
-            <button class="profile-gender-btn is-active" type="button" data-gender="none" role="radio" aria-checked="true">未選択</button>
-            <button class="profile-gender-btn" type="button" data-gender="girl" role="radio" aria-checked="false">女の子</button>
-            <button class="profile-gender-btn" type="button" data-gender="boy" role="radio" aria-checked="false">男の子</button>
+          <span>せいべつ</span>
+          <div class="profile-gender-group" id="profileGenderGroup" role="radiogroup" aria-label="せいべつ">
+            <button class="profile-gender-btn is-active" type="button" data-gender="none" role="radio" aria-checked="true">えらばない</button>
+            <button class="profile-gender-btn" type="button" data-gender="girl" role="radio" aria-checked="false">おんなのこ</button>
+            <button class="profile-gender-btn" type="button" data-gender="boy" role="radio" aria-checked="false">おとこのこ</button>
           </div>
         </div>
         <label class="profile-field" for="profileAgeSelect">
-          <span>年齢</span>
+          <span>ねんれい</span>
           <select class="profile-select" id="profileAgeSelect">
-            <option value="">未選択</option>
-            <option value="2">2歳</option>
-            <option value="3">3歳</option>
-            <option value="4">4歳</option>
-            <option value="5">5歳</option>
-            <option value="6">6歳</option>
-            <option value="7">7歳</option>
-            <option value="8">8歳</option>
-            <option value="9">9歳</option>
-            <option value="10">10歳</option>
-            <option value="11">11歳</option>
-            <option value="12">12歳</option>
+            <option value="">えらばない</option>
+            <option value="2">2さい</option>
+            <option value="3">3さい</option>
+            <option value="4">4さい</option>
+            <option value="5">5さい</option>
+            <option value="6">6さい</option>
+            <option value="7">7さい</option>
+            <option value="8">8さい</option>
+            <option value="9">9さい</option>
+            <option value="10">10さい</option>
+            <option value="11">11さい</option>
+            <option value="12">12さい</option>
           </select>
         </label>
-        <p class="profile-note">※入力内容はゲーム進行とハイスコア表示のためだけにこのブラウザ内で使用します。外部へ送信しません。</p>
-        <button class="profile-save" type="submit">OK</button>
+        <p class="profile-note">※この ブラウザの なかだけで つかいます。そとには おくりません。</p>
+        <button class="profile-save" type="submit">きめた</button>
       </form>
+    </div>
+  </div>
+
+  <div class="modal profile-hub-modal" id="profileHubModal" hidden role="dialog" aria-modal="true" aria-labelledby="profileHubTitle">
+    <div class="modal-card profile-hub-card">
+      <button class="profile-hub-xclose" type="button" data-close="profileHubModal" aria-label="とじる">×</button>
+      <div class="profile-hub-head">
+        <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true">
+          <span class="pono-mini-avatar__body"></span>
+          <span class="pono-mini-avatar__face"></span>
+          <span class="pono-mini-avatar__hair"></span>
+          <span class="pono-mini-avatar__mark"></span>
+        </span>
+        <div class="profile-hub-id">
+          <h3 class="profile-hub-title" id="profileHubTitle">プロフィール</h3>
+          <div class="profile-hub-name" id="profileHubName">ポノ</div>
+          <div class="profile-hub-meta" id="profileHubMeta">ねんれい えらばない</div>
+        </div>
+      </div>
+      <div class="profile-hub-actions">
+        <button class="profile-hub-btn" id="profileHubEditBtn" type="button">なまえを かえる</button>
+        <button class="profile-hub-btn" type="button" disabled>すがたは これから</button>
+      </div>
+      <div class="profile-hub-summary" aria-label="できたこと">
+        <div class="profile-hub-meter">
+          <span class="profile-hub-meter__num" id="profileHubDoneCount">0</span>
+          <span class="profile-hub-meter__label">できた</span>
+        </div>
+        <div class="profile-hub-meter">
+          <span class="profile-hub-meter__num" id="profileHubBestPct">0%</span>
+          <span class="profile-hub-meter__label">いちばん</span>
+        </div>
+        <div class="profile-hub-meter">
+          <span class="profile-hub-meter__num" id="profileHubNextCount">0</span>
+          <span class="profile-hub-meter__label">もうすぐ</span>
+        </div>
+      </div>
+      <div class="profile-goal-list" id="profileGoalList"></div>
+      <p class="profile-hub-empty" id="profileHubEmpty" hidden>ゲームで あそぶと ここに ふえていくよ</p>
+      <button class="modal-close" type="button" data-close="profileHubModal">とじる</button>
     </div>
   </div>
 
@@ -7288,9 +7407,9 @@
   <script src="js/daily-quest.js"></script>
   <script src="js/donguri-shop.js"></script>
   <!-- v1672: セーブデータ JSON エクスポート/インポート (PonoDataExport) -->
-  <script src="common/data-export.js?v=1970"></script>
+  <script src="common/data-export.js?v=1971"></script>
   <!-- v1969: Step C クラウド同期 合言葉型 (PonoCloudSync) — data-export.js の後に読む -->
-  <script src="common/cloud-sync.js?v=1970"></script>
+  <script src="common/cloud-sync.js?v=1971"></script>
 
   <script>
     'use strict';
@@ -7685,7 +7804,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1970;
+    const PAGE_CACHE_VERSION = 1971;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -7694,7 +7813,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1953';
+    window.PONO_SW_VERSION = 'v1971';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -11633,7 +11752,34 @@
       const profileGenderGroup = document.getElementById('profileGenderGroup');
       const settingsProfileBtn = document.getElementById('settingsProfileBtn');
       const settingsProfileSub = document.getElementById('settingsProfileSub');
+      const profileHomeBtn = document.getElementById('profileHomeBtn');
+      const profileHomeAvatar = document.getElementById('profileHomeAvatar');
+      const profileHomeName = document.getElementById('profileHomeName');
+      const profileHomeSub = document.getElementById('profileHomeSub');
+      const profileHomeCount = document.getElementById('profileHomeCount');
+      const profileHubModal = document.getElementById('profileHubModal');
+      const profileHubAvatar = document.getElementById('profileHubAvatar');
+      const profileHubName = document.getElementById('profileHubName');
+      const profileHubMeta = document.getElementById('profileHubMeta');
+      const profileHubEditBtn = document.getElementById('profileHubEditBtn');
+      const profileHubDoneCount = document.getElementById('profileHubDoneCount');
+      const profileHubBestPct = document.getElementById('profileHubBestPct');
+      const profileHubNextCount = document.getElementById('profileHubNextCount');
+      const profileGoalList = document.getElementById('profileGoalList');
+      const profileHubEmpty = document.getElementById('profileHubEmpty');
+      const STATS_KEY = 'pono_stats';
+      const ACHIEVEMENTS_KEY = 'pono_achievements';
+      const PROFILE_GOALS = [
+        { id: 'first_profile', title: 'なまえを きめた', stat: 'profile_set', target: 1, profile: true },
+        { id: 'first_quizland', title: 'クイズ 1もん', stat: 'quizland_correct', target: 1 },
+        { id: 'quizland_5', title: 'クイズ 5もん', stat: 'quizland_correct', target: 5 },
+        { id: 'first_maze', title: 'めいろ 1こ', stat: 'maze_clears', target: 1 },
+        { id: 'oto_50', title: 'おと 50かい', stat: 'oto_taps', target: 50 },
+        { id: 'bento_3', title: 'おべんとう 3かい', stat: 'bento_complete', target: 3 },
+        { id: 'puzzle_3', title: 'パズル 3こ', stat: 'puzzle_clears', target: 3 }
+      ];
       let profileGender = 'none';
+      let openHubAfterProfileSave = false;
 
       function sanitizeProfileName(name) {
         const text = String(name || '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
@@ -11665,6 +11811,148 @@
       function hasProfile() {
         try { return !!localStorage.getItem(PROFILE_KEY); } catch (_) { return false; }
       }
+      function readLocalJSON(key, fallback) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+          return parsed && typeof parsed === 'object' ? parsed : fallback;
+        } catch (_) {
+          return fallback;
+        }
+      }
+      function writeLocalJSON(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+      }
+      function markProfileStat() {
+        const stats = readLocalJSON(STATS_KEY, {});
+        if (Number(stats.profile_set || 0) < 1) {
+          stats.profile_set = 1;
+          writeLocalJSON(STATS_KEY, stats);
+          try {
+            if (typeof window.checkAchievements === 'function') window.checkAchievements();
+          } catch (_) {}
+        }
+      }
+      function avatarVariantForProfile(profile) {
+        profile = profile || loadProfile();
+        const source = String((profile.name || 'ポノ') + (profile.age || '') + (profile.gender || ''));
+        let seed = 0;
+        for (const ch of source) seed += ch.charCodeAt(0);
+        return String(seed % 6);
+      }
+      function setAvatarVariant(el, profile) {
+        if (el) el.dataset.variant = avatarVariantForProfile(profile);
+      }
+      function genderLabel(value) {
+        if (value === 'girl') return 'おんなのこ';
+        if (value === 'boy') return 'おとこのこ';
+        return 'えらばない';
+      }
+      function ageLabel(value) {
+        return value ? value + 'さい' : 'えらばない';
+      }
+      function profileMetaText(profile) {
+        return 'ねんれい ' + ageLabel(profile && profile.age) + ' ・ せいべつ ' + genderLabel(profile && profile.gender);
+      }
+      function profileGoalRows() {
+        const stats = readLocalJSON(STATS_KEY, {});
+        const unlocked = readLocalJSON(ACHIEVEMENTS_KEY, {});
+        return PROFILE_GOALS.map((goal) => {
+          const target = Math.max(1, Number(goal.target) || 1);
+          let current = goal.profile ? (hasProfile() ? 1 : 0) : Math.max(0, Number(stats[goal.stat] || 0));
+          const doneByAchievement = !!(unlocked && unlocked[goal.id]);
+          if (doneByAchievement) current = Math.max(current, target);
+          const capped = Math.min(current, target);
+          const pct = Math.max(0, Math.min(100, Math.round((capped / target) * 100)));
+          return {
+            goal: goal,
+            current: current,
+            target: target,
+            pct: pct,
+            done: doneByAchievement || current >= target
+          };
+        });
+      }
+      function profileProgressSummary() {
+        const rows = profileGoalRows();
+        const done = rows.filter((row) => row.done).length;
+        const best = rows.length ? Math.max.apply(null, rows.map((row) => row.pct)) : 0;
+        const next = rows.filter((row) => !row.done && row.pct >= 60).length;
+        const hasGameProgress = rows.some((row) => !row.goal.profile && row.current > 0);
+        return { rows: rows, done: done, best: best, next: next, hasGameProgress: hasGameProgress };
+      }
+      function updateProfileHome(profile) {
+        profile = profile || loadProfile();
+        const summary = profileProgressSummary();
+        if (profileHomeName) profileHomeName.textContent = hasProfile() ? (profile.name || 'ポノ') : 'プロフィール';
+        if (profileHomeSub) profileHomeSub.textContent = hasProfile() ? 'できたことを みる' : 'なまえを いれる';
+        if (profileHomeCount) profileHomeCount.textContent = summary.done + 'こ';
+        if (profileHomeBtn) {
+          profileHomeBtn.setAttribute(
+            'aria-label',
+            hasProfile()
+              ? 'プロフィールと できたこと ' + summary.done + 'こ'
+              : 'プロフィールを つくる'
+          );
+        }
+        setAvatarVariant(profileHomeAvatar, profile);
+      }
+      function renderProfileHub() {
+        const profile = loadProfile();
+        const summary = profileProgressSummary();
+        if (profileHubName) profileHubName.textContent = profile.name || 'ポノ';
+        if (profileHubMeta) profileHubMeta.textContent = profileMetaText(profile);
+        if (profileHubDoneCount) profileHubDoneCount.textContent = String(summary.done);
+        if (profileHubBestPct) profileHubBestPct.textContent = summary.best + '%';
+        if (profileHubNextCount) profileHubNextCount.textContent = String(summary.next);
+        if (profileHubEmpty) profileHubEmpty.hidden = summary.hasGameProgress;
+        setAvatarVariant(profileHubAvatar, profile);
+        if (profileGoalList) {
+          profileGoalList.textContent = '';
+          summary.rows.forEach((row) => {
+            const item = document.createElement('div');
+            item.className = 'profile-goal-row' + (row.done ? ' is-done' : '');
+
+            const icon = document.createElement('span');
+            icon.className = 'profile-goal-icon';
+            icon.setAttribute('aria-hidden', 'true');
+            icon.textContent = row.done ? '✓' : '○';
+
+            const main = document.createElement('span');
+            main.className = 'profile-goal-main';
+
+            const title = document.createElement('span');
+            title.className = 'profile-goal-title';
+            title.textContent = row.goal.title;
+
+            const bar = document.createElement('span');
+            bar.className = 'profile-goal-bar';
+            const fill = document.createElement('span');
+            fill.style.setProperty('--goal-pct', row.pct + '%');
+            bar.appendChild(fill);
+
+            const count = document.createElement('span');
+            count.className = 'profile-goal-count';
+            count.textContent = Math.min(Math.floor(row.current), row.target) + '/' + row.target;
+
+            main.appendChild(title);
+            main.appendChild(bar);
+            item.appendChild(icon);
+            item.appendChild(main);
+            item.appendChild(count);
+            profileGoalList.appendChild(item);
+          });
+        }
+        updateProfileHome(profile);
+      }
+      function openProfileHub() {
+        if (!hasProfile()) {
+          openHubAfterProfileSave = true;
+          openProfileModal();
+          return;
+        }
+        renderProfileHub();
+        openModal('profileHubModal');
+      }
       function saveProfile(profile) {
         const next = {
           name: sanitizeProfileName(profile && profile.name),
@@ -11673,13 +11961,15 @@
           updatedAt: new Date().toISOString()
         };
         try { localStorage.setItem(PROFILE_KEY, JSON.stringify(next)); } catch (_) {}
+        markProfileStat();
         updateProfileSettingsLabel(next);
+        updateProfileHome(next);
         return next;
       }
       function updateProfileSettingsLabel(profile) {
         if (!settingsProfileSub) return;
         profile = profile || loadProfile();
-        settingsProfileSub.textContent = (profile.name || 'ポノ') + 'で遊ぶ';
+        settingsProfileSub.textContent = (profile.name || 'ポノ') + 'で あそぶ';
       }
       function setGender(value) {
         profileGender = normalizeGender(value);
@@ -11739,22 +12029,41 @@
             age: profileAgeSelect ? profileAgeSelect.value : ''
           });
           closeModal('profileModal');
+          const shouldOpenHub = openHubAfterProfileSave;
+          openHubAfterProfileSave = false;
           if (pendingProfileStartIdx != null) {
             const idx = pendingProfileStartIdx;
             pendingProfileStartIdx = null;
             setTimeout(() => startGame(idx), 0);
+          } else if (shouldOpenHub) {
+            setTimeout(openProfileHub, 0);
           }
         });
       }
       if (profileModal) {
         profileModal.addEventListener('click', (e) => {
-          if (e.target === profileModal) pendingProfileStartIdx = null;
+          if (e.target === profileModal) {
+            pendingProfileStartIdx = null;
+            openHubAfterProfileSave = false;
+          }
+        });
+      }
+      if (profileHomeBtn) {
+        profileHomeBtn.addEventListener('click', openProfileHub);
+      }
+      if (profileHubEditBtn) {
+        profileHubEditBtn.addEventListener('click', () => {
+          closeModal('profileHubModal');
+          pendingProfileStartIdx = null;
+          openHubAfterProfileSave = true;
+          openProfileModal();
         });
       }
       if (settingsProfileBtn) {
         settingsProfileBtn.addEventListener('click', () => {
           closeModal('settingsModal');
           pendingProfileStartIdx = null;
+          openHubAfterProfileSave = false;
           openProfileModal();
         });
       }
@@ -11764,9 +12073,11 @@
         get: loadProfile,
         save: saveProfile,
         hasProfile: hasProfile,
-        open: openProfileModal
+        open: openProfileModal,
+        openHub: openProfileHub
       };
       updateProfileSettingsLabel(loadProfile());
+      updateProfileHome(loadProfile());
       setTimeout(maybeOpenFirstProfile, 900);
     })();
 
