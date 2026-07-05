@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1979: play.html の全身アバター作成を GPT Image 2 生成パーツ画像マスクへ接続。頭/髪/目/口/服/下/靴/しっぽ/しるしを切り出しPNGで表示し、色変更はCSS変数で反映。play.html PAGE_CACHE_VERSION と同期。
 // v1978: play.html のプロフィール内アバター作成を全身パーツ編集式へ拡張。なかま/かみ/目/口/服/下/靴/しっぽ/しるしと各色を個別変更し、ホーム/プロフィールの表示へ即反映。play.html PAGE_CACHE_VERSION と同期。
 // v1977: play.html 右下ナビを GPT Image 2 生成の木製ボタン画像へ差し替え。シール / プロフィール / ごかんそう / せってい の4機能に対応し、通常/押下WebPを precache。play.html PAGE_CACHE_VERSION と同期。
 // v1976: play.html 右下ナビを `シール / プロフィール / ごかんそう / せってい` へ整理。プロフィールボタンは保存名ではなく機能名を固定表示し、名前はサブラベルへ移動。play.html PAGE_CACHE_VERSION と同期。
@@ -609,7 +610,7 @@
 // v1968: batch:954 — シールミュージアム (StickerExhibitionCarousel) の表示サイズを不透明面積ベースで正規化。旧ロジック (AR バケット固定 3 段階) では余白の多い PNG が過小表示・タイトクロップの PNG が過大表示になる問題があり (spread 2.45x→1.34x に是正、リス過大表示を修正)、STICKER_METRICS (scripts/generate_sticker_metrics.py で135枚分事前計算) の opaque bbox 面積から width%/offset% を導出する方式に置換。クロスレビュー APPROVE_WITH_NITS、stickerDisplayMetrics() に前提コメント (--sticker-aspect clamp [0.36, 2.1] 範囲外は要補正) を追記。play.html PAGE_CACHE_VERSION と同期。
 // v1967: batch:953 — シールミュージアム (StickerExhibitionCarousel) の STICKER_DESC を全135件に拡張 (既存 batta 1件 + 新規134件、6ライター執筆 → クロスレビュー3本 APPROVE_WITH_FIXES → 修正反映済み)。えほんメダル (book_bonus_ehon_medal_super) は実画像が金色メダルではなくどんぐり風チャームだったため本文の「きんいろの」を「どんぐりの」に調整。play.html PAGE_CACHE_VERSION と同期。
 // v1966: batch:952 — シール帳 (StickerBookThreeJS) の図鑑モードを COLLECTION_MODE_ENABLED=false で凍結 (album=collection 遷移とトグルボタンを hidden 化、free モードのみ運用)。ミュージアム展示 (StickerExhibitionCarousel) に STICKER_DESC 説明文マップを追加し、詳細モーダルの #detailDesc にシールごとの一言紹介 (batta 見本含む) を表示。クロスレビュー 2 本 APPROVE 済。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1978;
+const CACHE_VERSION = 1979;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -831,6 +832,39 @@ const CRITICAL_ASSETS_IMAGES = [
   '/assets/ui/bottom-nav/nav_button_profile_pressed_20260705.webp',
   '/assets/ui/bottom-nav/nav_button_feedback_pressed_20260705.webp',
   '/assets/ui/bottom-nav/nav_button_settings_pressed_20260705.webp',
+  // v1979: GPT Image 2 生成の全身アバター用パーツマスク。プロフィールボタンが初期表示に入るため先読み対象。
+  '/assets/images/avatars/parts/avatar_part_head_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_hair_short_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_hair_long_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_hair_spike_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_ears_animal_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_antenna_robot_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_horns_monster_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_outfit_tee_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_outfit_dress_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_outfit_overall_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_bottom_pants_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_bottom_skirt_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_shoes_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_boots_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_tail_fluffy_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_tail_long_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_eyes_dot_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_eyes_smile_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_eyes_star_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_eyes_sleepy_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mouth_smile_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mouth_open_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mouth_flat_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_nose_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mark_leaf_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mark_dot_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mark_ribbon_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mark_star_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mark_square_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mark_heart_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_cheeks_20260705.png',
+  '/assets/images/avatars/parts/avatar_part_mark_sparkle_20260705.png',
   // v1949: peek 層の bg 8 種 (menu カード裏の絵本タイトル背景)。 cold start で
   // is-overlay-active が付いた瞬間に on-demand decode されると 100-500ms 透明/低解像
   // になり iPhone のゆっくりドラッグ中に flicker 源となるため precache 化。
