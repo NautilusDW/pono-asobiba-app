@@ -298,7 +298,7 @@ function openZukan(){
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false;
-let bestStarsByStage={},answerLocked=false,portalEditHolding=false;
+let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
@@ -1251,6 +1251,33 @@ function sparkOnVeh(){
   s.style.left="calc("+vehicleLeftVw()+"vw + "+(i*4)+"vw)";s.style.bottom=(16+((i*7)%12))+"vh";
   $("app").appendChild(s);setTimeout(()=>s.remove(),900);}
 }
+function tickMagicPuffs(now){
+ if(!playing||!veh.classList.contains("go")||!document.body.classList.contains("v-train"))return;
+ if(now<nextMagicPuffAt)return;
+ const box=veh.querySelector(".puff");
+ if(!box)return;
+ nextMagicPuffAt=now+150+Math.random()*170;
+ if(box.children.length>8)return;
+ const p=document.createElement("span");
+ p.className="magic-puff";
+ const idx=rnd(0,7),col=idx%4,row=Math.floor(idx/4);
+ const size=22+Math.random()*28;
+ const life=900+Math.random()*620;
+ p.style.width=size+"px";p.style.height=size+"px";
+ p.style.setProperty("--puff-size",size+"px");
+ p.style.setProperty("--puff-life",life+"ms");
+ p.style.setProperty("--puff-dx",(-26-Math.random()*42)+"px");
+ p.style.setProperty("--puff-dy",(-34-Math.random()*42)+"px");
+ p.style.setProperty("--puff-rot",(-18+Math.random()*36)+"deg");
+ p.style.setProperty("--puff-start-scale",(0.46+Math.random()*0.2).toFixed(2));
+ p.style.setProperty("--puff-end-scale",(1.05+Math.random()*0.65).toFixed(2));
+ const alpha=0.62+Math.random()*0.28;
+ p.style.setProperty("--puff-alpha",alpha.toFixed(2));
+ p.style.setProperty("--puff-mid-alpha",(alpha*.72).toFixed(2));
+ p.style.backgroundPosition=(col*33.3333)+"% "+(row*100)+"%";
+ box.appendChild(p);
+ setTimeout(()=>p.remove(),life+80);
+}
 function onRunEvent(el,ev){
  if(!driving||!el||el.classList.contains("found"))return;
  el.classList.add("found");el.disabled=true;
@@ -1363,6 +1390,7 @@ function gloop(t){
    else if(p==="ending")ending();
   }
  }
+ tickMagicPuffs(t);
  render();
  requestAnimationFrame(gloop);
 }

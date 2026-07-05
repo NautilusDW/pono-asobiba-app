@@ -256,23 +256,17 @@ body[data-driver-mood="cheer"]{--driver-y:100%}
 #veh.go .wheel{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .puff{position:absolute;left:16%;top:-18%;opacity:0;pointer-events:none;z-index:6}
-.puff span{position:absolute;left:0;top:0;font-size:clamp(20px,4.2vw,42px);line-height:1;opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));will-change:transform,opacity}
-.puff span::before{content:"💨"}
-.puff span:nth-child(2){left:20%;top:12%;font-size:clamp(17px,3.6vw,36px)}
-.puff span:nth-child(3){left:-12%;top:20%;font-size:clamp(16px,3.3vw,33px)}
-.puff span:nth-child(4){left:8%;top:28%;font-size:clamp(14px,3vw,30px)}
-.puff span:nth-child(5){left:30%;top:0;font-size:clamp(13px,2.8vw,28px)}
 #veh.go .puff{opacity:1}
-#veh.go .puff span:nth-child(1){animation:puffMain 1.35s ease-out -.12s infinite}
-#veh.go .puff span:nth-child(2){animation:puffSide 1.35s ease-out -.42s infinite}
-#veh.go .puff span:nth-child(3){animation:puffSide2 1.35s ease-out -.72s infinite}
-#veh.go .puff span:nth-child(4){animation:puffSmall 1.35s ease-out -.92s infinite}
-#veh.go .puff span:nth-child(5){animation:puffSmall2 1.35s ease-out -.24s infinite}
-@keyframes puffMain{0%{opacity:.96;transform:translate(0,0) scale(.5)}58%{opacity:.72}100%{opacity:0;transform:translate(-38px,-52px) scale(1.8)}}
-@keyframes puffSide{0%{opacity:.84;transform:translate(0,0) scale(.46)}60%{opacity:.6}100%{opacity:0;transform:translate(-62px,-39px) scale(1.58)}}
-@keyframes puffSide2{0%{opacity:.78;transform:translate(0,0) scale(.42)}62%{opacity:.52}100%{opacity:0;transform:translate(-28px,-66px) scale(1.5)}}
-@keyframes puffSmall{0%{opacity:.68;transform:translate(0,0) scale(.36)}64%{opacity:.44}100%{opacity:0;transform:translate(-48px,-58px) scale(1.25)}}
-@keyframes puffSmall2{0%{opacity:.62;transform:translate(0,0) scale(.34)}64%{opacity:.4}100%{opacity:0;transform:translate(-18px,-46px) scale(1.18)}}
+.magic-puff{position:absolute;left:0;top:0;width:var(--puff-size);height:var(--puff-size);
+  background:url("../assets/images/nazonazo-tunnel/magic_puffs_sheet_20260705.webp") no-repeat;background-size:400% 200%;
+  transform:translate(0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));
+  will-change:transform,opacity;animation:magicPuffFly var(--puff-life) ease-out forwards}
+@keyframes magicPuffFly{
+  0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(var(--puff-start-scale))}
+  12%{opacity:var(--puff-alpha)}
+  62%{opacity:var(--puff-mid-alpha)}
+  100%{opacity:0;transform:translate(var(--puff-dx),var(--puff-dy)) rotate(var(--puff-rot)) scale(var(--puff-end-scale))}
+}
 body.st-future .tr-boiler{background:#b8f3ff;border-color:#4bb8d6;border-radius:26px 6px 6px 26px}
 body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
 body.st-future .tr-chim{display:none}
