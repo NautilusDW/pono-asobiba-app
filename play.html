@@ -6871,28 +6871,42 @@
     }
     .bottom-nav::after { display: none; }
     .bn-item {
+      --bn-bg: none;
+      --bn-bg-pressed: var(--bn-bg);
       min-width: 0;
       height: 100%;
-      display: grid;
-      grid-template-rows: 44px auto;
-      place-items: center;
-      align-content: center;
-      gap: 2px;
+      display: block;
       position: relative;
-      padding: 7px 4px 6px;
-      border: 2px solid rgba(255, 230, 160, .72);
+      padding: 0;
+      border: 0;
       border-radius: 18px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 34%),
-        linear-gradient(180deg, #FFF5C9 0%, #F3C26E 58%, #D28A35 100%);
+      background-color: transparent;
+      background-image: var(--bn-bg);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
       color: #60370e;
-      box-shadow:
-        0 3px 0 rgba(91, 52, 19, .34),
-        inset 0 1px 0 rgba(255,255,255,.58);
+      box-shadow: none;
       font-family: inherit;
       font-weight: 900;
       text-align: center;
       transition: transform .08s ease-out, filter .1s ease;
+    }
+    .bn-item[data-action="stickers"] {
+      --bn-bg: url("assets/ui/bottom-nav/nav_button_stickers_normal_20260705.webp");
+      --bn-bg-pressed: url("assets/ui/bottom-nav/nav_button_stickers_pressed_20260705.webp");
+    }
+    .bn-item[data-action="profile"] {
+      --bn-bg: url("assets/ui/bottom-nav/nav_button_profile_normal_20260705.webp");
+      --bn-bg-pressed: url("assets/ui/bottom-nav/nav_button_profile_pressed_20260705.webp");
+    }
+    .bn-item[data-action="feedback"] {
+      --bn-bg: url("assets/ui/bottom-nav/nav_button_feedback_normal_20260705.webp");
+      --bn-bg-pressed: url("assets/ui/bottom-nav/nav_button_feedback_pressed_20260705.webp");
+    }
+    .bn-item[data-action="settings"] {
+      --bn-bg: url("assets/ui/bottom-nav/nav_button_settings_normal_20260705.webp");
+      --bn-bg-pressed: url("assets/ui/bottom-nav/nav_button_settings_pressed_20260705.webp");
     }
     .bn-item:hover { filter: brightness(1.04); }
     .bottom-nav[data-pressed="profile"] .bn-item[data-action="profile"],
@@ -6901,19 +6915,11 @@
     .bottom-nav[data-pressed="settings"] .bn-item[data-action="settings"],
     .bn-item:active {
       transform: translateY(2px);
+      background-image: var(--bn-bg-pressed);
       filter: brightness(.98);
     }
     .bn-item__icon {
-      width: 44px;
-      height: 38px;
-      display: grid;
-      place-items: center;
-      border-radius: 14px;
-      background: rgba(255,255,255,.62);
-      color: #7A4A10;
-      font-size: 25px;
-      line-height: 1;
-      box-shadow: inset 0 0 0 2px rgba(150, 96, 34, .14);
+      display: none;
       pointer-events: none;
     }
     .bn-item__icon--avatar {
@@ -6922,14 +6928,35 @@
       background: transparent;
       box-shadow: none;
     }
+    .bn-item--profile .bn-item__icon--avatar {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      top: 10px;
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      transform: translateX(-50%);
+      border-radius: 18px;
+      background: #fff2c5;
+      box-shadow:
+        0 2px 0 rgba(120, 74, 24, .18),
+        inset 0 0 0 2px rgba(130, 84, 36, .12);
+      pointer-events: none;
+    }
     .bn-item--profile .pono-mini-avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
+      width: 46px;
+      height: 46px;
+      border-radius: 15px;
       border-width: 3px;
     }
     .bn-item__label {
-      max-width: 100%;
+      position: absolute;
+      z-index: 1;
+      left: 10px;
+      right: 10px;
+      bottom: 13px;
       display: block;
       color: #4f2d0c;
       font-size: 14px;
@@ -6941,14 +6968,7 @@
       pointer-events: none;
     }
     .bn-item__sub {
-      max-width: 100%;
-      display: block;
-      color: #775126;
-      font-size: 10px;
-      line-height: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      display: none;
       pointer-events: none;
     }
     .bn-badge {
@@ -7261,8 +7281,9 @@
       .bn-item { border-radius: 14px; }
       .bn-item__icon { width: 38px; height: 32px; font-size: 21px; }
       .bn-item__icon--avatar { width: 40px; height: 34px; }
-      .bn-item--profile .pono-mini-avatar { width: 34px; height: 34px; border-radius: 11px; }
-      .bn-item__label { font-size: 12px; }
+      .bn-item--profile .bn-item__icon--avatar { top: 9px; width: 42px; height: 42px; border-radius: 14px; }
+      .bn-item--profile .pono-mini-avatar { width: 38px; height: 38px; border-radius: 12px; border-width: 2px; }
+      .bn-item__label { bottom: 10px; font-size: 12px; }
       .bn-item__sub { display: none; }
     }
     /* v1681: 4:3 専用 bob (translateX なし) — in-flow scroll-hint 用 */
@@ -8494,7 +8515,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1976;
+    const PAGE_CACHE_VERSION = 1977;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -8503,7 +8524,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1976';
+    window.PONO_SW_VERSION = 'v1977';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
