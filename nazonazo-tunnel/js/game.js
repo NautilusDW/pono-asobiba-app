@@ -359,7 +359,7 @@ let acStatechangeAttached=false;
 let pendingTones=[];
 const PENDING_TONE_MAX=32;
 const PENDING_TONE_TTL_MS=800;
-let trainNoiseBuffer=null,nextTrainSeAt=0,trainSeStep=0;
+let trainNoiseBuffer=null,nextTrainSeAt=0,trainSeStep=0,lastTrainWhistleAt=-9999;
 function _nowMs(){
  return (typeof performance!=="undefined"&&performance.now)?performance.now():Date.now();
 }
@@ -458,6 +458,27 @@ function scheduleTrainChuff(t0,vol,tunnel){
   if(trainSeStep%2===0)tone(520,t0+.028,.028,"square",vol*.22);
  }catch(_){}
 }
+function scheduleTrainWhistle(t0,tunnel){
+ try{
+  if(!ac||ac.state!=="running")return;
+  const start=ac.currentTime+t0,dur=tunnel?.58:.68,base=tunnel?292:330;
+  const o=ac.createOscillator(),o2=ac.createOscillator(),f=ac.createBiquadFilter(),g=ac.createGain();
+  o.type="sine";o2.type="triangle";f.type="lowpass";
+  f.frequency.setValueAtTime(tunnel?760:940,start);f.Q.setValueAtTime(.5,start);
+  o.frequency.setValueAtTime(base,start);
+  o.frequency.linearRampToValueAtTime(base*1.08,start+dur*.36);
+  o.frequency.linearRampToValueAtTime(base*.96,start+dur);
+  o2.frequency.setValueAtTime(base*2.01,start);
+  o2.frequency.linearRampToValueAtTime(base*2.12,start+dur*.36);
+  o2.frequency.linearRampToValueAtTime(base*1.94,start+dur);
+  g.gain.setValueAtTime(.0001,start);
+  g.gain.linearRampToValueAtTime(tunnel?.13:.18,start+.06);
+  g.gain.setValueAtTime(tunnel?.11:.15,start+dur*.64);
+  g.gain.exponentialRampToValueAtTime(.0001,start+dur);
+  o.connect(f);o2.connect(f);f.connect(g).connect(ac.destination);
+  o.start(start);o2.start(start);o.stop(start+dur+.04);o2.stop(start+dur+.04);
+ }catch(_){}
+}
 function flushPendingTones(){
  if(!pendingTones.length)return;
  const now=_nowMs();
@@ -491,9 +512,16 @@ const sndOpen=()=>{tone(400,0,.3,"sine",.1);tone(600,.15,.3,"sine",.1)};
 const sndFan=()=>{[523,659,784,1047].forEach((f,i)=>tone(f,i*.16,.4,"triangle"))};
 const sndNew=()=>{[784,988,1175,1568].forEach((f,i)=>tone(f,i*.1,.25,"sine",.14))};
 function sndGo(){ensureAC();const v=STAGES[stg].veh;
- if(v==="train"){tone(520,0,.2,"square",.1);tone(520,.25,.35,"square",.1);}
+ if(v==="train"){sndTrainWhistle();tone(520,0,.2,"square",.12);tone(520,.25,.35,"square",.12);}
  else if(v==="sub"){tone(300,0,.5,"sine",.12);tone(360,.4,.5,"sine",.12);}
  else{tone(120,0,.7,"sawtooth",.1);tone(90,.1,.8,"sawtooth",.08);}}
+function sndTrainWhistle(){
+ const now=_nowMs();
+ if(now-lastTrainWhistleAt<2400)return;
+ lastTrainWhistleAt=now;
+ const tunnel=document.body.classList.contains("tunnel-interior")||veh.classList.contains("inTun");
+ scheduleTrainWhistle(.02,tunnel);
+}
 function tickTrainSe(now){
  if(!playing||!driving||!document.body.classList.contains("v-train")||!veh.classList.contains("go")){
   nextTrainSeAt=now+120;
@@ -504,7 +532,7 @@ function tickTrainSe(now){
  const tunnel=document.body.classList.contains("tunnel-interior")||veh.classList.contains("inTun");
  const rawPeriod=parseFloat(veh.style.getPropertyValue("--wheel-period"))||WHEEL_FAST_PERIOD;
  const interval=clamp(rawPeriod*430,170,560)/FAST;
- scheduleTrainChuff(0,tunnel?.052:.064,tunnel);
+ scheduleTrainChuff(0,tunnel?.13:.16,tunnel);
  trainSeStep++;
  nextTrainSeAt=now+interval;
 }
