@@ -540,7 +540,7 @@ h1 {
   position: relative;
   display: grid;
   place-items: center;
-  width: 52%;
+  width: var(--sticker-width-pct, 52%);
   aspect-ratio: var(--sticker-aspect, 1);
   border-radius: 0;
   background: transparent;
@@ -560,6 +560,7 @@ h1 {
   height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 8px 7px rgba(55, 32, 10, 0.24));
+  transform: translate(var(--sticker-offset-x, 0%), var(--sticker-offset-y, 0%));
   user-select: none;
   pointer-events: none;
 }
@@ -584,6 +585,7 @@ h1 {
     pointer-events: none;
     -webkit-mask: var(--silhouette-image) center / contain no-repeat;
     mask: var(--silhouette-image) center / contain no-repeat;
+    transform: translate(var(--sticker-offset-x, 0%), var(--sticker-offset-y, 0%));
     filter:
       drop-shadow(0 0 1px rgba(255, 230, 150, 0.78))
       drop-shadow(0 7px 5px rgba(0, 0, 0, 0.32));
@@ -781,20 +783,22 @@ h1 {
 
 .detail-frame img {
   display: block;
-  width: min(58%, 190px);
+  width: min(var(--detail-width-pct, 58%), 190px);
   max-height: 190px;
   object-fit: contain;
+  transform: translate(var(--detail-offset-x, 0%), var(--detail-offset-y, 0%));
   filter: drop-shadow(0 12px 10px rgba(0, 0, 0, 0.22));
 }
 
 @supports ((mask-image: url("")) or (-webkit-mask-image: url(""))) {
   .detail-panel.is-locked .detail-frame::before {
     display: block;
-    width: min(58%, 190px);
+    width: min(var(--detail-width-pct, 58%), 190px);
     height: 190px;
     background: linear-gradient(180deg, #655a78 0%, #493f5c 46%, #302940 100%);
     -webkit-mask: var(--detail-silhouette-image) center / contain no-repeat;
     mask: var(--detail-silhouette-image) center / contain no-repeat;
+    transform: translate(var(--detail-offset-x, 0%), var(--detail-offset-y, 0%));
     filter:
       drop-shadow(0 0 1px rgba(255, 230, 150, 0.78))
       drop-shadow(0 12px 9px rgba(0, 0, 0, 0.32));
