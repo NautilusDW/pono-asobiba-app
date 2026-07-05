@@ -7163,11 +7163,15 @@
       }
       .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__face {
         z-index: 2;
-        left: 18%;
-        top: 6%;
-        width: 64%;
-        height: 90%;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
         background: var(--av-skin);
+        -webkit-mask-position: 0 0;
+        mask-position: 0 0;
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
         -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_balanced_20260706.png");
         mask-image: url("assets/images/avatars/parts/avatar_bodytype_balanced_20260706.png");
       }
@@ -7563,10 +7567,6 @@
       }
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__hair {
         z-index: 9;
-        left: 13%;
-        top: -2%;
-        width: 74%;
-        height: 40%;
         background: var(--av-hair);
         -webkit-mask-image: var(--av-mask-hair);
         mask-image: var(--av-mask-hair);
@@ -7577,10 +7577,6 @@
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__ears {
         display: none;
         z-index: 8;
-        left: 10%;
-        top: -6%;
-        width: 80%;
-        height: 48%;
         background: var(--av-hair);
         -webkit-mask-image: var(--av-mask-ears);
         mask-image: var(--av-mask-ears);
@@ -7592,30 +7588,18 @@
       }
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__body {
         z-index: 4;
-        left: 10%;
-        top: 39%;
-        width: 80%;
-        height: 50%;
         background: var(--av-shirt);
         -webkit-mask-image: var(--av-mask-outfit);
         mask-image: var(--av-mask-outfit);
       }
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__leg-left {
         z-index: 3;
-        left: 20%;
-        top: 59%;
-        width: 60%;
-        height: 38%;
         background: var(--av-bottom);
         -webkit-mask-image: var(--av-mask-bottom);
         mask-image: var(--av-mask-bottom);
       }
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__shoe-left {
         z-index: 5;
-        left: 21%;
-        top: 75%;
-        width: 58%;
-        height: 24%;
         background: var(--av-shoes);
         -webkit-mask-image: var(--av-mask-shoes);
         mask-image: var(--av-mask-shoes);
@@ -7626,10 +7610,6 @@
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__tail {
         z-index: 1;
         opacity: 0;
-        left: 53%;
-        top: 42%;
-        width: 41%;
-        height: 46%;
         background: var(--av-hair);
         -webkit-mask-image: var(--av-mask-tail);
         mask-image: var(--av-mask-tail);
@@ -7641,13 +7621,28 @@
       }
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__mark {
         z-index: 10;
-        right: 12%;
-        top: 10%;
-        width: 23%;
-        height: 23%;
         background: var(--av-accent);
         -webkit-mask-image: var(--av-mask-mark);
         mask-image: var(--av-mask-mark);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__hair,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__ears,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__body,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__leg-left,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__shoe-left,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__tail,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__mark {
+        left: 0;
+        right: auto;
+        top: 0;
+        bottom: auto;
+        width: 100%;
+        height: 100%;
+        transform: none;
+        -webkit-mask-position: 0 0;
+        mask-position: 0 0;
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
       }
       .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-mark-shape="none"] .pono-mini-avatar__mark {
         display: none;
@@ -9571,7 +9566,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1983;
+    const PAGE_CACHE_VERSION = 1984;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -9580,7 +9575,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1983';
+    window.PONO_SW_VERSION = 'v1984';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
