@@ -32,15 +32,27 @@ function makeKV() {
     async delete(k) { store.delete(k); }
   };
 }
-function makeReq({ method = 'GET', headers = {}, body = null, url = 'https://x/' } = {}) {
+function makeReq({ method = 'GET', headers = {}, body = null, stream = null, url = 'https://x/' } = {}) {
   const h = new Map(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+  // stream: Uint8Array -> expose request.body as a ReadableStream (exercises readBodyLimited)
+  let rbody = null;
+  if (stream) {
+    rbody = new ReadableStream({
+      start(controller) { controller.enqueue(stream); controller.close(); }
+    });
+  }
   return {
     method,
     url,
+    body: rbody,
     headers: { get: (k) => (h.has(k.toLowerCase()) ? h.get(k.toLowerCase()) : null) },
-    async text() { return body == null ? '' : body; }
+    async text() {
+      if (stream) return new TextDecoder().decode(stream);
+      return body == null ? '' : body;
+    }
   };
 }
+const JSON_CT = { Origin: 'https://pono-asobiba-app-staging.ndw.workers.dev', 'Content-Type': 'application/json' };
 const ctx = { waitUntil() {} };
 const APP_ENV = () => ({ SAVEDATA_KV: makeKV(), PASSCODE_HMAC_SECRET: 'test-secret-xyz', APP_BUILD: '1' });
 const ORIGIN = 'https://pono-asobiba-app-staging.ndw.workers.dev';
@@ -150,15 +162,40 @@ await section('unconfigured env -> 503', async () => {
   ok(res.status === 503, 'no SAVEDATA_KV -> 503');
 });
 
+await section('HIGH: Content-Type enforcement + streaming body (MED)', async () => {
+  const env = APP_ENV();
+  const body = JSON.stringify({ schema_version: 1, data: { pono_x: '1' } });
+  const noCt = await handleSaveData(makeReq({ method: 'POST', headers: { Origin: ORIGIN, 'CF-Connecting-IP': '7.0.0.1' }, body }), env, ctx, '/api/savedata');
+  ok(noCt.status === 415, 'POST without Content-Type -> 415');
+  const tp = await handleSaveData(makeReq({ method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'text/plain', 'CF-Connecting-IP': '7.0.0.2' }, body }), env, ctx, '/api/savedata');
+  ok(tp.status === 415, 'POST text/plain -> 415 (blocks CORS-simple cross-origin)');
+  const okCt = await handleSaveData(makeReq({ method: 'POST', headers: { Origin: ORIGIN, 'Content-Type': 'application/json; charset=utf-8', 'CF-Connecting-IP': '7.0.0.3' }, body }), env, ctx, '/api/savedata');
+  ok(okCt.status === 200, 'POST application/json; charset -> 200');
+  // streaming oversize body -> 413 via real ReadableStream (no Content-Length header)
+  const envB = APP_ENV();
+  const bigBytes = new TextEncoder().encode('{"schema_version":1,"data":{"pono_x":"' + 'a'.repeat(MAX_BODY_BYTES + 100) + '"}}');
+  const over = await handleSaveData(makeReq({ method: 'POST', headers: { ...JSON_CT, 'CF-Connecting-IP': '7.0.0.4' }, stream: bigBytes }), envB, ctx, '/api/savedata');
+  ok(over.status === 413, `streaming oversize body -> 413 (got ${over.status})`);
+});
+
 await section('rate limits (HIGH-3 / HIGH-3b)', async () => {
-  // global POST 10/min
+  // global POST 10/min — distinct IPs so per-IP POST cap doesn't mask the global cap
   const env = APP_ENV();
   let last = 200;
   for (let i = 0; i < 12; i++) {
-    const r = await handleSaveData(makeReq({ method: 'POST', headers: { Origin: ORIGIN }, body: JSON.stringify({ schema_version: 1, data: { pono_x: String(i) } }) }), env, ctx, '/api/savedata');
+    const r = await handleSaveData(makeReq({ method: 'POST', headers: { ...JSON_CT, 'CF-Connecting-IP': '10.0.0.' + i }, body: JSON.stringify({ schema_version: 1, data: { pono_x: String(i) } }) }), env, ctx, '/api/savedata');
     last = r.status;
   }
-  ok(last === 429, 'global POST limit -> 429 after 10/min');
+  ok(last === 429, 'global POST limit -> 429 after 10/min (distinct IPs)');
+
+  // per-IP POST 3/min -> 429 (same IP) [HIGH]
+  const envP = APP_ENV();
+  const postStatuses = [];
+  for (let i = 0; i < 5; i++) {
+    const r = await handleSaveData(makeReq({ method: 'POST', headers: { ...JSON_CT, 'CF-Connecting-IP': '3.3.3.3' }, body: JSON.stringify({ schema_version: 1, data: { pono_x: String(i) } }) }), envP, ctx, '/api/savedata');
+    postStatuses.push(r.status);
+  }
+  ok(postStatuses.slice(-1)[0] === 429, `per-IP POST limit -> 429 (statuses: ${postStatuses.join(',')})`);
 
   // IP GET 5/min -> 15min lock (use fresh env, well-formed-but-unknown passcode)
   const env2 = APP_ENV();

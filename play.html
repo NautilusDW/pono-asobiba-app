@@ -6813,7 +6813,9 @@
   <script src="js/daily-quest.js"></script>
   <script src="js/donguri-shop.js"></script>
   <!-- v1672: セーブデータ JSON エクスポート/インポート (PonoDataExport) -->
-  <script src="common/data-export.js?v=1672"></script>
+  <script src="common/data-export.js?v=1969"></script>
+  <!-- v1969: Step C クラウド同期 合言葉型 (PonoCloudSync) — data-export.js の後に読む -->
+  <script src="common/cloud-sync.js?v=1969"></script>
 
   <script>
     'use strict';
@@ -7208,7 +7210,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1968;
+    const PAGE_CACHE_VERSION = 1969;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11978,7 +11980,9 @@
             e.stopPropagation();
             if (e.cancelable) e.preventDefault();
             if (window.PonoDataExport && typeof window.PonoDataExport.openModal === 'function') {
-              window.PonoDataExport.openModal();
+              // Step C: 「以前あそんだことがある方」 導線なので、 クラウドの
+              // 「ロード」ボタンをモーダル最上段に置く (prefer:'load')。
+              window.PonoDataExport.openModal({ prefer: 'load' });
             } else {
               console.warn('[play] PonoDataExport not loaded (tapIntroRestore)');
             }

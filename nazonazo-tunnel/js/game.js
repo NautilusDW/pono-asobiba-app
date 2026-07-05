@@ -359,6 +359,7 @@ let acStatechangeAttached=false;
 let pendingTones=[];
 const PENDING_TONE_MAX=32;
 const PENDING_TONE_TTL_MS=800;
+let trainNoiseBuffer=null,nextTrainSeAt=0,trainSeStep=0;
 function _nowMs(){
  return (typeof performance!=="undefined"&&performance.now)?performance.now():Date.now();
 }
@@ -427,6 +428,36 @@ function scheduleTone(f,t0,dur,type,vol){
   o.connect(g).connect(ac.destination);o.start(ac.currentTime+t0);o.stop(ac.currentTime+t0+dur+.05);
  }catch(e){}
 }
+function getTrainNoiseBuffer(){
+ if(!ac)return null;
+ if(trainNoiseBuffer&&trainNoiseBuffer.sampleRate===ac.sampleRate)return trainNoiseBuffer;
+ try{
+  const len=Math.max(1,Math.floor(ac.sampleRate*.16));
+  const buf=ac.createBuffer(1,len,ac.sampleRate);
+  const data=buf.getChannelData(0);
+  for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*(1-i/len);
+  trainNoiseBuffer=buf;
+  return buf;
+ }catch(_){return null;}
+}
+function scheduleTrainChuff(t0,vol,tunnel){
+ try{
+  if(!ac||ac.state!=="running")return;
+  const buf=getTrainNoiseBuffer();
+  if(buf){
+   const src=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();
+   src.buffer=buf;
+   f.type="bandpass";f.frequency.setValueAtTime(tunnel?430:560,ac.currentTime+t0);f.Q.setValueAtTime(.72,ac.currentTime+t0);
+   g.gain.setValueAtTime(.0001,ac.currentTime+t0);
+   g.gain.linearRampToValueAtTime(vol,ac.currentTime+t0+.018);
+   g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+t0+.14);
+   src.connect(f).connect(g).connect(ac.destination);
+   src.start(ac.currentTime+t0);src.stop(ac.currentTime+t0+.17);
+  }
+  tone(tunnel?86:96,t0,.07,"triangle",vol*.42);
+  if(trainSeStep%2===0)tone(520,t0+.028,.028,"square",vol*.22);
+ }catch(_){}
+}
 function flushPendingTones(){
  if(!pendingTones.length)return;
  const now=_nowMs();
@@ -463,6 +494,20 @@ function sndGo(){ensureAC();const v=STAGES[stg].veh;
  if(v==="train"){tone(520,0,.2,"square",.1);tone(520,.25,.35,"square",.1);}
  else if(v==="sub"){tone(300,0,.5,"sine",.12);tone(360,.4,.5,"sine",.12);}
  else{tone(120,0,.7,"sawtooth",.1);tone(90,.1,.8,"sawtooth",.08);}}
+function tickTrainSe(now){
+ if(!playing||!driving||!document.body.classList.contains("v-train")||!veh.classList.contains("go")){
+  nextTrainSeAt=now+120;
+  return;
+ }
+ if(!ac||ac.state!=="running")return;
+ if(now<nextTrainSeAt)return;
+ const tunnel=document.body.classList.contains("tunnel-interior")||veh.classList.contains("inTun");
+ const rawPeriod=parseFloat(veh.style.getPropertyValue("--wheel-period"))||WHEEL_FAST_PERIOD;
+ const interval=clamp(rawPeriod*430,170,560)/FAST;
+ scheduleTrainChuff(0,tunnel?.052:.064,tunnel);
+ trainSeStep++;
+ nextTrainSeAt=now+interval;
+}
 function announce(t){const live=$("liveRegion");if(live)live.textContent=t||"";}
 function speak(t){announce(t);}
 function showHint(){
@@ -1456,6 +1501,7 @@ function gloop(t){
   }
  }
  tickMagicPuffs(t);
+ tickTrainSe(t);
  render();
  requestAnimationFrame(gloop);
 }

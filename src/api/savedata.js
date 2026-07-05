@@ -24,7 +24,7 @@ import {
   isValidPasscodeFormat, isKnownPasscode
 } from './passcode.js';
 import {
-  hashIp, getClientIp, checkAndCountGlobal, checkIpGet, recordFailure
+  hashIp, getClientIp, checkAndCountGlobal, checkIpGet, checkIpPost, recordFailure
 } from './ratelimit.js';
 
 const SOFT_TTL_MS = 90 * 24 * 60 * 60 * 1000;   // スライド延長単位 (90日)
@@ -73,6 +73,50 @@ function jsonr(status, obj, headers) {
   });
 }
 
+// body を stream で読み、 累積バイトが maxBytes を超えた時点で abort する (MED)。
+// Workers では request.body は ReadableStream。 テスト等 stream が無い場合は
+// text() で読んでから byte 長で判定する fallback。
+// 戻り値: { ok:true, text } | { ok:false, tooLarge } | { ok:false, error }
+async function readBodyLimited(request, maxBytes) {
+  const body = request.body;
+  if (body && typeof body.getReader === 'function') {
+    const reader = body.getReader();
+    const chunks = [];
+    let total = 0;
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value && value.byteLength) {
+          total += value.byteLength;
+          if (total > maxBytes) {
+            try { await reader.cancel(); } catch (_) {}
+            return { ok: false, tooLarge: true };
+          }
+          chunks.push(value);
+        }
+      }
+    } catch (_) {
+      return { ok: false, error: true };
+    }
+    const buf = new Uint8Array(total);
+    let off = 0;
+    for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+    return { ok: true, text: new TextDecoder().decode(buf) };
+  }
+  // fallback (stream 非対応): text() → byte 長チェック
+  let text;
+  try {
+    text = await request.text();
+  } catch (_) {
+    return { ok: false, error: true };
+  }
+  if (new TextEncoder().encode(text).length > maxBytes) {
+    return { ok: false, tooLarge: true };
+  }
+  return { ok: true, text };
+}
+
 // ---- entry ----
 export async function handleSaveData(request, env, ctx, path) {
   const cors = corsHeaders(request, env);
@@ -91,7 +135,7 @@ export async function handleSaveData(request, env, ctx, path) {
   const ipSalt = env.RL_IP_SALT || secret; // 専用 salt が無ければ HMAC secret を流用
 
   if (path === PATH_POST) {
-    return handlePost(request, env, ctx, kv, secret, cors);
+    return handlePost(request, env, ctx, kv, secret, ipSalt, cors);
   }
   if (path.indexOf(PATH_GET_PREFIX) === 0) {
     return handleGet(request, env, ctx, kv, secret, ipSalt, cors, path);
@@ -100,27 +144,41 @@ export async function handleSaveData(request, env, ctx, path) {
 }
 
 // ---- POST /api/savedata ----
-async function handlePost(request, env, ctx, kv, secret, cors) {
+async function handlePost(request, env, ctx, kv, secret, ipSalt, cors) {
   if (request.method !== 'POST') {
     return jsonr(405, { ok: false, error: 'method_not_allowed' }, cors);
+  }
+  // Content-Type 強制 (HIGH): application/json 以外は 415。
+  // これで cross-origin 攻撃は non-simple request となり preflight が飛び、
+  // CORS allowlist で弾かれる。 正規 client は application/json で送るので無影響。
+  const ctype = (request.headers.get('Content-Type') || '').toLowerCase();
+  if (ctype.indexOf('application/json') !== 0) {
+    return jsonr(415, { ok: false, error: 'unsupported_media_type' }, cors);
+  }
+  // per-IP POST 制限 (HIGH): 1 IP がグローバル POST 枠 (10/分) を枯渇させるのを防ぐ
+  const ip = getClientIp(request, env);
+  const ipHash = await hashIp(ip, ipSalt);
+  const ipCheck = await checkIpPost(kv, ipHash, ctx);
+  if (!ipCheck.ok) {
+    return jsonr(429, { ok: false, error: 'rate_limited' }, { ...cors, 'Retry-After': String(ipCheck.retryAfter) });
   }
   // グローバル POST rate-limit (10/分)
   const g = await checkAndCountGlobal(kv, 'post', ctx);
   if (!g.ok) {
     return jsonr(429, { ok: false, error: 'rate_limited' }, { ...cors, 'Retry-After': String(g.retryAfter) });
   }
-  // Content-Length による早期拒否 (本体読み込み前)
+  // Content-Length による早期拒否 (本体読み込み前の安価な一次フィルタ)
   const cl = parseInt(request.headers.get('Content-Length') || '0', 10);
   if (Number.isFinite(cl) && cl > MAX_BODY_BYTES) {
     return jsonr(413, { ok: false, error: 'payload_too_large' }, cors);
   }
-
-  let text;
-  try {
-    text = await request.text();
-  } catch (_) {
+  // body を stream で読み、 累積が上限超過で即 abort (MED: CL 偽装 / chunked 対策)
+  const read = await readBodyLimited(request, MAX_BODY_BYTES);
+  if (!read.ok) {
+    if (read.tooLarge) return jsonr(413, { ok: false, error: 'payload_too_large' }, cors);
     return jsonr(400, { ok: false, error: 'invalid_body' }, cors);
   }
+  const text = read.text;
 
   const v = validateAndSanitize(text);
   if (!v.ok) {
@@ -175,7 +233,7 @@ async function handleGet(request, env, ctx, kv, secret, ipSalt, cors, path) {
     return jsonr(405, { ok: false, error: 'method_not_allowed' }, cors);
   }
 
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, env);
   const ipHash = await hashIp(ip, ipSalt);
 
   // IP 別 (lock 確認込み) -> グローバル の順に rate-limit

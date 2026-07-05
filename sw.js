@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1969: Step C クラウド同期（合言葉型）— common/cloud-sync.js 新規 + savedata API 連携 + データ管理モーダル③解放。 play.html PAGE_CACHE_VERSION と同期。
 // v1963: オットタッチ リズム導線の仕上げ。 ステージ選択で「はじめる」を押した時、 チュートリアル ON (次回OFF未設定) なら選択ステージ開始前に必ずチュートリアルを再生し、 完了後に選んだステージが始まるようにした (リピーターがステージ選択経由でもチュートリアルを見られる)。 初回 (ステージ1のみ) は従来通りチュートリアル→ステージ1。 play.html PAGE_CACHE_VERSION と同期。
 // v1962: オットタッチ (oto/index.html) のリズム・ノート着地ズレを修正。 ノートが p=1 でボタンの下に抜ける (行きすぎ) 問題を DOM/WebGL 両経路で修正。 DOM は note 中心をボタン見た目中心へ (--gh-sz 追従)、 WebGL は可視キー上面ワールド Y へ収束 (同一 MVP でデバイス非依存)。 play.html PAGE_CACHE_VERSION と同期。
 // v1961: デイリーガチャレバー (play.html #dailyGachaLever) のタップ判定を子供向けに拡張。
@@ -599,7 +600,7 @@
 // v1968: batch:954 — シールミュージアム (StickerExhibitionCarousel) の表示サイズを不透明面積ベースで正規化。旧ロジック (AR バケット固定 3 段階) では余白の多い PNG が過小表示・タイトクロップの PNG が過大表示になる問題があり (spread 2.45x→1.34x に是正、リス過大表示を修正)、STICKER_METRICS (scripts/generate_sticker_metrics.py で135枚分事前計算) の opaque bbox 面積から width%/offset% を導出する方式に置換。クロスレビュー APPROVE_WITH_NITS、stickerDisplayMetrics() に前提コメント (--sticker-aspect clamp [0.36, 2.1] 範囲外は要補正) を追記。play.html PAGE_CACHE_VERSION と同期。
 // v1967: batch:953 — シールミュージアム (StickerExhibitionCarousel) の STICKER_DESC を全135件に拡張 (既存 batta 1件 + 新規134件、6ライター執筆 → クロスレビュー3本 APPROVE_WITH_FIXES → 修正反映済み)。えほんメダル (book_bonus_ehon_medal_super) は実画像が金色メダルではなくどんぐり風チャームだったため本文の「きんいろの」を「どんぐりの」に調整。play.html PAGE_CACHE_VERSION と同期。
 // v1966: batch:952 — シール帳 (StickerBookThreeJS) の図鑑モードを COLLECTION_MODE_ENABLED=false で凍結 (album=collection 遷移とトグルボタンを hidden 化、free モードのみ運用)。ミュージアム展示 (StickerExhibitionCarousel) に STICKER_DESC 説明文マップを追加し、詳細モーダルの #detailDesc にシールごとの一言紹介 (batta 見本含む) を表示。クロスレビュー 2 本 APPROVE 済。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1968;
+const CACHE_VERSION = 1969;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

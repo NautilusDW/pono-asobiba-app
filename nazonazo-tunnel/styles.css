@@ -8,7 +8,7 @@
   --portal-out-right-vh:.88;
   --portal-core-side-vw:100;
   --screen-exit-left-vh:-.14;
-  --screen-exit-mask-edge:.40;
+  --screen-exit-mask-edge:.56;
   --portal-mask-in:polygon(14% 37%,35% 37%,35% 49%,26% 49%,26% 83%,42% 83%,42% 98%,13% 98%,13% 49%,14% 49%);
   --portal-mask-out:polygon(54% 42%,65% 42%,65% 97%,54% 97%);
 }
@@ -173,6 +173,10 @@ body.tunnel-exit-clear #screenPortalBack,body.tunnel-exit-clear #screenPortalFro
 body.tunnel-exit-brighten #screenPortalBack,body.tunnel-exit-brighten #screenPortalFront{animation:exitSceneBrighten .9s ease forwards}
 @keyframes exitSceneBrighten{0%{filter:brightness(.58) saturate(.86)}100%{filter:brightness(1) saturate(1)}}
 .screen-exit-gate{position:absolute;top:0;bottom:0;left:calc(100vh * var(--screen-exit-left-vh));width:calc(100vh * 1.777);background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") center bottom/100% 100% no-repeat}
+#screenPortalBack .screen-exit-gate{z-index:0}
+#screenPortalBack::after{content:"";position:absolute;left:0;right:0;bottom:0;height:18vh;z-index:1;pointer-events:none;
+  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_bright_20260705.webp") 0 bottom/auto 100% repeat-x;
+  filter:drop-shadow(0 -1px 0 rgba(120,85,45,.18))}
 #screenPortalFront::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc((100vh * var(--screen-exit-left-vh)) + (100vh * 1.777 * var(--screen-exit-mask-edge)));background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") calc(100vh * var(--screen-exit-left-vh)) bottom/calc(100vh * 1.777) 100% no-repeat;pointer-events:none;
   clip-path:polygon(0 0,96% 0,100% 10%,95% 22%,99% 35%,94% 49%,98% 62%,95% 76%,100% 90%,96% 100%,0 100%)}
 #screenPortalFront .screen-exit-gate{display:none}

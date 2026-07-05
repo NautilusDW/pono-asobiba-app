@@ -52,9 +52,12 @@ wrangler secret put PASSCODE_HMAC_SECRET --env staging-app
 wrangler secret put PASSCODE_HMAC_SECRET            # production
 ```
 
-(任意) IP ハッシュ用 salt。 未設定なら HMAC secret を流用する:
+IP ハッシュ用 salt。 未設定なら HMAC secret を流用するが、
+**本番では `RL_IP_SALT` を HMAC secret とは別に生成して設定することを推奨**
+(rate-limit 用 IP ハッシュと合言葉導出の鍵を分離するため):
 
 ```bash
+# 別値を用意 (例): openssl rand -base64 32
 wrangler secret put RL_IP_SALT --env staging-app
 wrangler secret put RL_IP_SALT
 ```

@@ -186,8 +186,17 @@ li { margin-bottom: 6px; }
   <div class="faq-a">
     どんぐりや図鑑、おえかきなどの「あそびのきろく」は、お子さまの端末のブラウザのなかに大切にしまわれます。同じ端末・同じブラウザでひらけば、いつでも続きから遊べます。<br>
     ただし、ブラウザを変えたり、ブラウザのデータを消したり、別の端末でひらいたりすると、きろくは引き継がれません。<br>
-    機種変更や乗り換えの前に、ゲーム画面の「保護者の方へ → データ管理 → データを 保存」 で、ファイル（JSON）にして保管してください。新しい端末では「データを ロード」 から読み込めば、続きから遊べます。<br>
-    将来、合言葉で別の端末にデータを引き継げる仕組みと、アプリ版（ネイティブ）リリース時のデータ移行も準備を進めています。
+    機種変更や乗り換えの前に、ゲーム画面の「保護者の方へ → データ管理」 から引き継ぎ できます。「クラウドに 保存」 で「あいことば」を発行する方法（ファイル不要）か、「ファイルで 保存」（JSON）のどちらでも保管できます。<br>
+    アプリ版（ネイティブ）リリース時のデータ移行も準備を進めています。
+  </div>
+
+  <div class="faq-q">Q. べつの たんまつで つづきから あそべますか？</div>
+  <div class="faq-a">
+    あそべます。きしゅへんこうや あたらしい ブラウザで つづきから あそぶには、ゲームの「おうちの方へ → データ管理 → クラウドに 保存」を おしてください。<br>
+    「あいことば」（ひらがな3つ + すうじ）が でるので、メモや メールで のこしてください。<br>
+    あたらしい たんまつで「クラウドから ロード」に あいことばを いれると、つづきから あそべます（おなまえだけ もういちど いれてください）。<br>
+    ※ あいことばを わすれると ふっきゅうできません。<br>
+    ※ クラウドが つかえないときは「ファイルで 保存」（JSONファイル）も つかえます。
   </div>
 
   <div class="faq-q">Q. 通信量はかかりますか？</div>
@@ -199,6 +208,10 @@ li { margin-bottom: 6px; }
   <h2>💾 データ管理（保護者の方へ）</h2>
   <p>機種変更やブラウザ変更の前に、 セーブデータを ファイル（JSON）として 保存できます。<br>
   新しい端末では 「データを ロード」 から 読み込めば、 続きから遊べます。</p>
+  <p style="font-size:0.82rem;color:#8a7359;">
+    ファイルを つかわない 「あいことば」（クラウド）での引き継ぎは、
+    <strong>ゲーム画面の「おうちの方へ → データ管理」</strong> から おこなえます。
+  </p>
   <div class="step-box" style="display:flex;flex-direction:column;gap:10px;align-items:stretch;">
     <button id="helpDataExportBtn" type="button" style="padding:12px;border:none;border-radius:50px;background:linear-gradient(180deg,#FFD84D,#F5A800);color:#5C3A00;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 3px 0 #B87200;">
       データを 保存（ダウンロード）
@@ -215,7 +228,9 @@ li { margin-bottom: 6px; }
 </div>
 
 <!-- v1672: PonoDataExport を common/data-export.js から読み込み -->
-<script src="common/data-export.js?v=1672"></script>
+<script src="common/data-export.js?v=1969"></script>
+<!-- v1969: Step C クラウド同期 (PonoCloudSync) — data-export.js の後に読む -->
+<script src="common/cloud-sync.js?v=1969"></script>
 <script>
 (function () {
   'use strict';

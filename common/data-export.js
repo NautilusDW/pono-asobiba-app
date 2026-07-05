@@ -443,7 +443,16 @@
       '.pono-de-toast .ttl{font-weight:900;font-size:1rem;}',
       '.pono-de-toast .sub{font-size:.78rem;color:#8a7359;margin-top:4px;}',
       '.pono-de-spinner{display:inline-block;width:18px;height:18px;border:3px solid #F8C56D;border-top-color:transparent;border-radius:50%;animation:pono-de-spin 0.8s linear infinite;vertical-align:middle;}',
-      '@keyframes pono-de-spin{to{transform:rotate(360deg);}}'
+      '@keyframes pono-de-spin{to{transform:rotate(360deg);}}',
+      /* Step C: クラウド同期 UI */
+      '.pono-de-collapse{display:block;width:100%;margin:4px 0 12px;padding:9px;border:none;border-radius:12px;background:transparent;color:#8a7359;font-family:inherit;font-size:.82rem;font-weight:800;cursor:pointer;text-align:center;}',
+      '.pono-de-collapse:active{background:#f4ecd8;}',
+      '.pono-de-input{display:block;width:100%;box-sizing:border-box;padding:12px 10px;border:2px solid #F8C56D;border-radius:12px;background:#fff;color:#5D4E37;font-family:inherit;font-size:1.05rem;font-weight:800;text-align:center;margin:6px 0 10px;letter-spacing:.02em;}',
+      '.pono-de-input:focus{outline:none;border-color:#F2915A;}',
+      '.pono-de-passcode{display:block;background:#FFFBEE;border:3px dashed #F2915A;border-radius:14px;padding:16px 12px;margin:12px 0;font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;font-size:1.7rem;line-height:1.35;font-weight:900;color:#C4562A;text-align:center;word-break:break-all;letter-spacing:.03em;}',
+      '.pono-de-warn{font-size:.82rem;font-weight:900;color:#D9573A;text-align:center;margin:6px 0 4px;line-height:1.5;}',
+      '.pono-de-btn.mini{display:inline-block;width:auto;padding:10px 16px;margin:0;font-size:.86rem;}',
+      '.pono-de-btnrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0 4px;}'
     ].join('\n');
     var style = document.createElement('style');
     style.id = 'pono-data-export-style';
@@ -489,7 +498,14 @@
     return { modal: modal, card: card };
   }
 
-  function openModal() {
+  // Step C: モーダルを 2 セクション化。
+  //   かんたん（あいことば / クラウド）: ☁ 保存 / ☁ ロード
+  //   くわしい方向け（折り畳み）        : ファイルで 保存 / ロード (Step A の ①②)
+  // opts.prefer === 'load' の時 (「以前あそんだことがある方」 導線) は
+  //   クラウドの「ロード」ボタンを最上段に置く。
+  function openModal(opts) {
+    opts = opts || {};
+    var preferLoad = (opts.prefer === 'load');
     var ui = makeModal();
     var card = ui.card;
     card.innerHTML = '';
@@ -503,42 +519,101 @@
     note.textContent = 'きしゅへんこうや、 ブラウザを かえるときに つかえます。';
     card.appendChild(note);
 
-    // Block 1: Export
-    var block1 = document.createElement('div');
-    block1.className = 'pono-de-block';
-    block1.innerHTML =
-      '<h4>① データを 保存</h4>' +
-      '<div class="desc">いまのデータを ファイルとして パソコン/タブレットに ほぞんします。</div>';
+    var hasCloud = !!(window.PonoCloudSync && typeof window.PonoCloudSync.save === 'function');
+
+    // ── かんたん（あいことば / クラウド）──
+    if (hasCloud) {
+      var cloudBlock = document.createElement('div');
+      cloudBlock.className = 'pono-de-block';
+      var cloudH = document.createElement('h4');
+      cloudH.textContent = 'かんたん（あいことば）';
+      cloudBlock.appendChild(cloudH);
+      var cloudDesc = document.createElement('div');
+      cloudDesc.className = 'desc';
+      cloudDesc.textContent = 'ファイルを つかわずに、 「あいことば」だけで べつの たんまつに ひきつげます。';
+      cloudBlock.appendChild(cloudDesc);
+
+      var cloudSaveBtn = document.createElement('button');
+      cloudSaveBtn.type = 'button';
+      cloudSaveBtn.textContent = '☁ クラウドに 保存';
+      cloudSaveBtn.addEventListener('click', function () {
+        startCloudSaveFlow(ui.modal);
+      });
+
+      var cloudLoadBtn = document.createElement('button');
+      cloudLoadBtn.type = 'button';
+      cloudLoadBtn.textContent = '☁ クラウドから ロード';
+      cloudLoadBtn.addEventListener('click', function () {
+        startCloudLoadFlow(ui.modal);
+      });
+
+      if (preferLoad) {
+        cloudLoadBtn.className = 'pono-de-btn';
+        cloudSaveBtn.className = 'pono-de-btn secondary';
+        cloudSaveBtn.style.marginTop = '8px';
+        cloudBlock.appendChild(cloudLoadBtn);
+        cloudBlock.appendChild(cloudSaveBtn);
+      } else {
+        cloudSaveBtn.className = 'pono-de-btn';
+        cloudLoadBtn.className = 'pono-de-btn secondary';
+        cloudLoadBtn.style.marginTop = '8px';
+        cloudBlock.appendChild(cloudSaveBtn);
+        cloudBlock.appendChild(cloudLoadBtn);
+      }
+      card.appendChild(cloudBlock);
+    }
+
+    // ── くわしい方向け（ファイル）── クラウドがある時は折り畳み
+    var collapsible = hasCloud;
+    var fileBlock = document.createElement('div');
+    fileBlock.className = 'pono-de-block';
+    var fileH = document.createElement('h4');
+    fileH.textContent = 'ファイルで 保存 / ロード';
+    fileBlock.appendChild(fileH);
+    var fileDesc = document.createElement('div');
+    fileDesc.className = 'desc';
+    fileDesc.innerHTML =
+      'データを ファイル（JSON）として ほぞん / よみこみ します。' +
+      '<br><span style="color:#D9573A;font-weight:800;">ロードすると いまの データは うえがき されます。</span>';
+    fileBlock.appendChild(fileDesc);
+
     var exportBtn = document.createElement('button');
     exportBtn.type = 'button';
-    exportBtn.className = 'pono-de-btn';
-    exportBtn.textContent = 'データを 保存する';
+    exportBtn.className = 'pono-de-btn secondary';
+    exportBtn.textContent = 'ファイルで 保存';
     exportBtn.addEventListener('click', function () {
       exportData();
     });
-    block1.appendChild(exportBtn);
-    card.appendChild(block1);
+    fileBlock.appendChild(exportBtn);
 
-    // Block 2: Import
-    var block2 = document.createElement('div');
-    block2.className = 'pono-de-block';
-    block2.innerHTML =
-      '<h4>② データを ロード</h4>' +
-      '<div class="desc">ほぞんした ファイルを よみこんで、 つづきから あそべます。<br><span style="color:#D9573A;font-weight:800;">いまの データは うえがき されます。</span></div>';
     var importBtn = document.createElement('button');
     importBtn.type = 'button';
     importBtn.className = 'pono-de-btn secondary';
-    importBtn.textContent = 'ファイルを えらぶ';
+    importBtn.style.marginTop = '8px';
+    importBtn.textContent = 'ファイルで ロード';
     importBtn.addEventListener('click', function () {
       startImportFlow(ui.modal);
     });
-    block2.appendChild(importBtn);
-    card.appendChild(block2);
+    fileBlock.appendChild(importBtn);
 
-    // 余白 (Step C で ③ 「あいことばで ひきつぐ」 用)
-    var spacer = document.createElement('div');
-    spacer.style.height = '8px';
-    card.appendChild(spacer);
+    if (collapsible) {
+      var COLLAPSED = '▸ くわしい方向け（ファイルで 保存 / ロード）';
+      var EXPANDED = '▾ くわしい方向け（ファイルで 保存 / ロード）';
+      var toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'pono-de-collapse';
+      toggle.textContent = COLLAPSED;
+      toggle.setAttribute('aria-expanded', 'false');
+      fileBlock.hidden = true;
+      toggle.addEventListener('click', function () {
+        var show = fileBlock.hidden;
+        fileBlock.hidden = !show;
+        toggle.textContent = show ? EXPANDED : COLLAPSED;
+        toggle.setAttribute('aria-expanded', show ? 'true' : 'false');
+      });
+      card.appendChild(toggle);
+    }
+    card.appendChild(fileBlock);
 
     var closeBtn = document.createElement('button');
     closeBtn.type = 'button';
@@ -550,6 +625,341 @@
     card.appendChild(closeBtn);
 
     document.body.appendChild(ui.modal);
+  }
+
+  // ============================================================
+  // Step C: クラウド (あいことば) フロー
+  // ============================================================
+
+  function cloudErrorMessage(res, mode) {
+    switch (res && res.error) {
+      case 'rate_limited':
+        return 'しばらくたってから もういちど おためしください（5ふん）。';
+      case 'not_configured':
+        return mode === 'load'
+          ? 'クラウドは じゅんびちゅうです。「ファイルで ロード」を おつかいください。'
+          : 'クラウドは じゅんびちゅうです。「ファイルで 保存」を おつかいください。';
+      case 'network':
+        return mode === 'load'
+          ? 'クラウドに つながりません。「ファイルで ロード」を おためしください。'
+          : 'クラウドに つながりません。「ファイルで 保存」を おためしください。';
+      case 'too_large':
+        return 'データが おおきすぎて クラウドに ほぞんできません。「ファイルで 保存」を おつかいください。';
+      case 'not_found':
+        return 'その あいことばの データが みつかりません。 もじを かくにんしてね。';
+      case 'invalid':
+        return mode === 'load'
+          ? 'あいことばの けいしきが ちがうみたい。 ひらがな3つ - すうじ4つ を かくにんしてね。'
+          : 'クラウドに ほぞんできませんでした。「ファイルで 保存」を おつかいください。';
+      default:
+        return mode === 'load'
+          ? 'クラウドから よみこめませんでした。「ファイルで ロード」を おためしください。'
+          : 'クラウドに ほぞんできませんでした。「ファイルで 保存」を おためしください。';
+    }
+  }
+
+  function renderCloudSpinner(card, msg) {
+    card.innerHTML = '';
+    var h = document.createElement('h3');
+    h.textContent = 'クラウド';
+    card.appendChild(h);
+    var p = document.createElement('p');
+    var sp = document.createElement('span');
+    sp.className = 'pono-de-spinner';
+    p.appendChild(sp);
+    var t = document.createElement('span');
+    t.textContent = ' ' + msg;
+    p.appendChild(t);
+    card.appendChild(p);
+  }
+
+  function copyToClipboard(text, cb) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { cb(true); },
+          function () { cb(fallbackCopy(text)); }
+        );
+        return;
+      }
+    } catch (_) {}
+    cb(fallbackCopy(text));
+  }
+
+  function fallbackCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+      try { document.body.removeChild(ta); } catch (_) {}
+      return ok;
+    } catch (_) { return false; }
+  }
+
+  // ---- クラウド保存 ----
+  function startCloudSaveFlow(parentModal) {
+    try { if (parentModal) document.body.removeChild(parentModal); } catch (_) {}
+    var ui = makeModal();
+    renderCloudSpinner(ui.card, 'クラウドに ほぞん しています…');
+    document.body.appendChild(ui.modal);
+
+    var api = window.PonoCloudSync;
+    if (!api || typeof api.save !== 'function') {
+      renderCloudSaveError(ui, { error: 'not_configured' });
+      return;
+    }
+    api.save().then(function (res) {
+      if (res && res.ok) {
+        renderCloudSaveSuccess(ui, res.passcode);
+      } else {
+        renderCloudSaveError(ui, res || { error: 'unknown' });
+      }
+    }, function () {
+      renderCloudSaveError(ui, { error: 'network' });
+    });
+  }
+
+  function renderCloudSaveSuccess(ui, passcode) {
+    var card = ui.card;
+    card.innerHTML = '';
+    var h = document.createElement('h3');
+    h.textContent = 'あいことば';
+    card.appendChild(h);
+
+    var p = document.createElement('p');
+    p.textContent = 'この「あいことば」を メモや メールで のこしてください。';
+    card.appendChild(p);
+
+    var code = document.createElement('div');
+    code.className = 'pono-de-passcode';
+    code.textContent = passcode;
+    card.appendChild(code);
+
+    var warn = document.createElement('p');
+    warn.className = 'pono-de-warn';
+    warn.textContent = '⚠ あいことばを わすれると ふっきゅうできません。';
+    card.appendChild(warn);
+
+    var status = document.createElement('div');
+    status.className = 'pono-de-status';
+    status.style.color = '#3a8a3a';
+
+    var row = document.createElement('div');
+    row.className = 'pono-de-btnrow';
+
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'pono-de-btn mini';
+    copyBtn.textContent = 'コピー';
+    copyBtn.addEventListener('click', function () {
+      copyToClipboard(passcode, function (ok) {
+        status.textContent = ok ? 'コピーしました' : 'コピーできませんでした。 メモしてください。';
+      });
+    });
+    row.appendChild(copyBtn);
+
+    var mailBtn = document.createElement('button');
+    mailBtn.type = 'button';
+    mailBtn.className = 'pono-de-btn mini secondary';
+    mailBtn.textContent = 'メールで送る';
+    mailBtn.addEventListener('click', function () {
+      var subject = 'ポノのあそびば あいことば';
+      var body = 'ポノのあそびばの「あいことば」です。\n\n' + passcode +
+        '\n\nべつの たんまつで「クラウドから ロード」に いれると、 つづきから あそべます。\n' +
+        '※ わすれると ふっきゅうできません。';
+      var href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      try { window.location.href = href; } catch (_) {}
+    });
+    row.appendChild(mailBtn);
+
+    card.appendChild(row);
+    card.appendChild(status);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'pono-de-close';
+    closeBtn.textContent = 'とじる';
+    closeBtn.addEventListener('click', function () {
+      try { document.body.removeChild(ui.modal); } catch (_) {}
+    });
+    card.appendChild(closeBtn);
+  }
+
+  function renderCloudSaveError(ui, res) {
+    var card = ui.card;
+    card.innerHTML = '';
+    var h = document.createElement('h3');
+    h.textContent = 'クラウド';
+    card.appendChild(h);
+
+    var p = document.createElement('p');
+    p.textContent = cloudErrorMessage(res, 'save');
+    card.appendChild(p);
+
+    var showFallback = (res.error === 'not_configured' || res.error === 'network' ||
+      res.error === 'too_large' || res.error === 'invalid' || res.error === 'unknown');
+    if (showFallback) {
+      var fbBtn = document.createElement('button');
+      fbBtn.type = 'button';
+      fbBtn.className = 'pono-de-btn';
+      fbBtn.textContent = 'ファイルで 保存する';
+      fbBtn.addEventListener('click', function () { exportData(); });
+      card.appendChild(fbBtn);
+    }
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'pono-de-close';
+    closeBtn.textContent = 'とじる';
+    closeBtn.addEventListener('click', function () {
+      try { document.body.removeChild(ui.modal); } catch (_) {}
+    });
+    card.appendChild(closeBtn);
+  }
+
+  // ---- クラウド復元 ----
+  function startCloudLoadFlow(parentModal) {
+    try { if (parentModal) document.body.removeChild(parentModal); } catch (_) {}
+    var ui = makeModal();
+    document.body.appendChild(ui.modal);
+    renderCloudLoadInput(ui);
+  }
+
+  function renderCloudLoadInput(ui) {
+    var card = ui.card;
+    card.innerHTML = '';
+    var h = document.createElement('h3');
+    h.textContent = 'クラウドから ロード';
+    card.appendChild(h);
+
+    var p = document.createElement('p');
+    p.textContent = 'ほぞんした ときの「あいことば」を いれてください。';
+    card.appendChild(p);
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'pono-de-input';
+    input.placeholder = 'さくら-もり-ほし-1234';
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('spellcheck', 'false');
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('inputmode', 'text');
+    input.setAttribute('aria-label', 'あいことば');
+    card.appendChild(input);
+
+    var status = document.createElement('div');
+    status.className = 'pono-de-status';
+
+    var goBtn = document.createElement('button');
+    goBtn.type = 'button';
+    goBtn.className = 'pono-de-btn';
+    goBtn.textContent = 'ロードする';
+    function submit() {
+      var val = input.value;
+      if (!val || !val.trim()) {
+        status.textContent = 'あいことばを いれてください。';
+        return;
+      }
+      submitCloudLoad(ui, val, status, goBtn);
+    }
+    goBtn.addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); submit(); }
+    });
+    card.appendChild(goBtn);
+    card.appendChild(status);
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'pono-de-close';
+    cancelBtn.textContent = 'やめる';
+    cancelBtn.addEventListener('click', function () {
+      try { document.body.removeChild(ui.modal); } catch (_) {}
+    });
+    card.appendChild(cancelBtn);
+
+    setTimeout(function () { try { input.focus(); } catch (_) {} }, 60);
+  }
+
+  function submitCloudLoad(ui, passcode, status, goBtn) {
+    var api = window.PonoCloudSync;
+    if (!api || typeof api.load !== 'function') {
+      status.textContent = cloudErrorMessage({ error: 'not_configured' }, 'load');
+      return;
+    }
+    goBtn.disabled = true;
+    status.innerHTML = '<span class="pono-de-spinner"></span> よみこんでいます…';
+    api.load(passcode).then(function (res) {
+      goBtn.disabled = false;
+      if (res && res.ok) {
+        // 既存の preview → 保護者ゲート → 上書き確認 → applyImport フローに合流。
+        // (parsed._cloud=true が cloud-sync.js で付与済み)
+        try { document.body.removeChild(ui.modal); } catch (_) {}
+        showImportPreview(null, res.parsed, null);
+      } else {
+        var err = res || { error: 'unknown' };
+        // 固まらず フォールバック導線を出すもの
+        if (err.error === 'not_configured' || err.error === 'network') {
+          renderCloudLoadError(ui, err);
+        } else {
+          status.textContent = cloudErrorMessage(err, 'load');
+        }
+      }
+    }, function () {
+      goBtn.disabled = false;
+      renderCloudLoadError(ui, { error: 'network' });
+    });
+  }
+
+  function renderCloudLoadError(ui, res) {
+    var card = ui.card;
+    card.innerHTML = '';
+    var h = document.createElement('h3');
+    h.textContent = 'クラウドから ロード';
+    card.appendChild(h);
+
+    var p = document.createElement('p');
+    p.textContent = cloudErrorMessage(res, 'load');
+    card.appendChild(p);
+
+    var showFallback = (res.error === 'not_configured' || res.error === 'network' || res.error === 'unknown');
+    if (showFallback) {
+      var fbBtn = document.createElement('button');
+      fbBtn.type = 'button';
+      fbBtn.className = 'pono-de-btn';
+      fbBtn.textContent = 'ファイルで ロードする';
+      fbBtn.addEventListener('click', function () {
+        try { document.body.removeChild(ui.modal); } catch (_) {}
+        startImportFlow(null);
+      });
+      card.appendChild(fbBtn);
+    }
+
+    var retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'pono-de-btn secondary';
+    retryBtn.style.marginTop = '8px';
+    retryBtn.textContent = 'あいことばを いれなおす';
+    retryBtn.addEventListener('click', function () {
+      renderCloudLoadInput(ui);
+    });
+    card.appendChild(retryBtn);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'pono-de-close';
+    closeBtn.textContent = 'とじる';
+    closeBtn.addEventListener('click', function () {
+      try { document.body.removeChild(ui.modal); } catch (_) {}
+    });
+    card.appendChild(closeBtn);
   }
 
   function startImportFlow(parentModal) {
@@ -622,7 +1032,11 @@
       dl.appendChild(dt); dl.appendChild(dd);
     }
     addRow('けんすう', String(Object.keys(parsed.data).length) + ' こ');
-    addRow('ファイル', file.name + ' (' + Math.round(file.size / 1024) + ' KB)');
+    if (file) {
+      addRow('ファイル', file.name + ' (' + Math.round(file.size / 1024) + ' KB)');
+    } else if (parsed && parsed._cloud) {
+      addRow('もとデータ', 'クラウド（あいことば）');
+    }
     if (parsed.exported_at) addRow('ほぞん日時', parsed.exported_at);
     if (parsed.profile_name) addRow('なまえ', parsed.profile_name);
     if (parsed.app_version) addRow('app_version', String(parsed.app_version));
@@ -634,6 +1048,14 @@
     note.style.textAlign = 'left';
     note.textContent = '※ プレイ日時の きろくも ふくまれます。';
     card.appendChild(note);
+
+    if (parsed && parsed._cloud) {
+      var cnote = document.createElement('p');
+      cnote.className = 'sub';
+      cnote.style.textAlign = 'left';
+      cnote.textContent = '※ おなまえは クラウドに ふくまれません。 ロードのあとに もういちど いれてください。';
+      card.appendChild(cnote);
+    }
 
     if (parsed._futureSchema) {
       var warn = document.createElement('p');
@@ -737,8 +1159,15 @@
       try { document.body.removeChild(ui.modal); } catch (_) {}
       try {
         var result = applyImport(parsed);
-        showToast('ロードしました', 'success',
-          String(result.written) + ' このデータを よみこみました。');
+        if (parsed && parsed._cloud) {
+          // クラウドには 名前を送っていないので、 復元後に名前入力導線へ繋ぐ。
+          // reload 後、 play.html の maybeOpenFirstProfile() が
+          // pono_player_profile_v1 不在を検知して名前入力モーダルを開く。
+          showToast('ロードしました', 'success', 'おなまえを もういちど いれてね。');
+        } else {
+          showToast('ロードしました', 'success',
+            String(result.written) + ' このデータを よみこみました。');
+        }
         // page reload (snapshot 後、 ゲーム側の cached state を捨てる)
         setTimeout(function () {
           try { location.reload(); } catch (_) {}
@@ -772,10 +1201,12 @@
     exportData: exportData,
     importData: importDataPublic,
     openModal: openModal,
-    // 内部テスト・診断用
+    // 内部テスト・診断用 + cloud-sync.js (Step C) からの再利用用
     _isExportAllowed: isExportAllowed,
     _isImportAllowed: isImportAllowed,
     _parseImportJson: parseImportJson,
-    _generateAdditionGate: generateAdditionGate
+    _generateAdditionGate: generateAdditionGate,
+    _collectExportData: collectExportData,
+    _getAppVersion: getAppVersion
   };
 })();
