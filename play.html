@@ -1618,7 +1618,7 @@
     }
     .modal-card.profile-hub-card {
       position: relative;
-      max-width: min(560px, calc(100vw - 28px));
+      max-width: min(660px, calc(100vw - 28px));
       padding: 18px 20px 16px;
       max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       overflow-y: auto;
@@ -1901,16 +1901,31 @@
     .profile-hub-back:active {
       transform: translateY(1px);
     }
+    .profile-avatar-builder {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(208px, 235px);
+      gap: 14px;
+      align-items: stretch;
+      margin: 2px 0 12px;
+    }
     .profile-avatar-preview {
       display: grid;
+      grid-template-rows: 1fr auto;
       place-items: center;
-      margin: 4px 0 12px;
+      min-height: 248px;
+      margin: 0;
+      padding: 14px 12px 12px;
+      border: 2px solid rgba(242, 145, 90, .28);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,253,250,.95), rgba(255,244,216,.92));
     }
     .profile-avatar-preview .pono-mini-avatar {
-      width: 116px;
-      height: 116px;
-      border-radius: 30px;
-      border-width: 6px;
+      width: min(190px, 34dvh);
+      height: min(190px, 34dvh);
+      min-width: 148px;
+      min-height: 148px;
+      border-radius: 40px;
+      border-width: 7px;
     }
     .profile-avatar-preview .pono-mini-avatar__body {
       left: 31px;
@@ -1952,26 +1967,47 @@
       width: 22px;
       height: 22px;
     }
+    .profile-avatar-preview__name {
+      min-width: 9em;
+      max-width: 100%;
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      margin-top: 10px;
+      padding: 5px 14px;
+      border: 2px solid rgba(245, 168, 0, .36);
+      border-radius: 999px;
+      background: rgba(255,255,255,.88);
+      color: #6B4300;
+      font-size: .96rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .profile-avatar-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      max-height: min(310px, 48dvh);
-      margin-bottom: 12px;
-      padding: 2px 2px 4px;
+      grid-template-columns: 1fr;
+      align-content: start;
+      gap: 7px;
+      max-height: min(342px, calc(100dvh - 166px));
+      margin-bottom: 0;
+      padding: 2px 4px 4px 2px;
       overflow-y: auto;
       overscroll-behavior: contain;
     }
     .profile-avatar-preset {
       min-width: 0;
-      min-height: 84px;
+      min-height: 62px;
       display: grid;
-      grid-template-rows: 54px auto;
-      place-items: center;
-      gap: 4px;
-      padding: 7px 5px 6px;
+      grid-template-columns: 52px minmax(0, 1fr);
+      align-items: center;
+      justify-items: start;
+      gap: 8px;
+      padding: 5px 10px 5px 6px;
       border: 2px solid rgba(242, 145, 90, .34);
-      border-radius: 16px;
+      border-radius: 18px;
       background: #fffdfa;
       color: var(--text);
       font-family: inherit;
@@ -1993,8 +2029,8 @@
     }
     .profile-avatar-preset__name {
       max-width: 100%;
-      font-size: .72rem;
-      line-height: 1.04;
+      font-size: .78rem;
+      line-height: 1.08;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -2053,8 +2089,8 @@
       .profile-goal-count { min-width: 48px; font-size: .76rem; }
       .profile-panel-head { margin-bottom: 8px; }
       .profile-panel-title { font-size: 1rem; }
-      .profile-avatar-preview { margin-bottom: 8px; }
-      .profile-avatar-preview .pono-mini-avatar { width: 82px; height: 82px; border-radius: 22px; }
+      .profile-avatar-preview { min-height: 128px; padding: 9px 10px 8px; }
+      .profile-avatar-preview .pono-mini-avatar { width: 82px; height: 82px; min-width: 82px; min-height: 82px; border-radius: 22px; border-width: 5px; }
       .profile-avatar-preview .pono-mini-avatar__body { left: 22px; bottom: 8px; width: 38px; height: 30px; }
       .profile-avatar-preview .pono-mini-avatar__face { left: 21px; top: 19px; width: 40px; height: 38px; }
       .profile-avatar-preview .pono-mini-avatar__face::before,
@@ -2064,10 +2100,101 @@
       .profile-avatar-preview .pono-mini-avatar__hair { left: 18px; top: 13px; width: 46px; height: 23px; }
       .profile-avatar-preview .pono-mini-avatar__hair::after { left: 29px; top: 8px; width: 15px; height: 20px; }
       .profile-avatar-preview .pono-mini-avatar__mark { right: 12px; top: 10px; width: 16px; height: 16px; }
-      .profile-avatar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-height: min(238px, 42dvh); }
-      .profile-avatar-preset { min-height: 72px; grid-template-rows: 44px auto; padding: 5px 4px; border-radius: 14px; }
+      .profile-avatar-preview__name { min-height: 28px; margin-top: 6px; padding: 4px 10px; font-size: .78rem; }
+      .profile-avatar-grid { gap: 6px; max-height: min(238px, 42dvh); }
+      .profile-avatar-preset { min-height: 54px; grid-template-columns: 44px minmax(0, 1fr); gap: 7px; padding: 5px 8px 5px 5px; border-radius: 14px; }
       .profile-avatar-preset .pono-mini-avatar { width: 42px; height: 42px; border-radius: 14px; }
-      .profile-avatar-preset__name { font-size: .66rem; }
+      .profile-avatar-preset__name { font-size: .7rem; }
+    }
+    @media (max-width: 620px) {
+      .modal-card.profile-hub-card { max-width: min(560px, calc(100vw - 28px)); }
+      .profile-avatar-builder {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .profile-avatar-preview {
+        min-height: 142px;
+        padding: 10px 10px 8px;
+      }
+      .profile-avatar-preview .pono-mini-avatar {
+        width: 100px;
+        height: 100px;
+        min-width: 100px;
+        min-height: 100px;
+        border-radius: 26px;
+        border-width: 5px;
+      }
+      .profile-avatar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        max-height: min(250px, 40dvh);
+        padding: 2px 2px 4px;
+      }
+      .profile-avatar-preset {
+        min-height: 72px;
+        grid-template-columns: 1fr;
+        grid-template-rows: 44px auto;
+        place-items: center;
+        gap: 4px;
+        padding: 5px 4px;
+        border-radius: 14px;
+      }
+      .profile-avatar-preset .pono-mini-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+      }
+      .profile-avatar-preset__name {
+        font-size: .66rem;
+        line-height: 1.04;
+        text-align: center;
+      }
+    }
+    @media (max-height: 540px) and (min-width: 621px) {
+      .profile-avatar-builder {
+        grid-template-columns: minmax(0, 1fr) 224px;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .profile-avatar-preview {
+        min-height: 218px;
+        padding: 10px;
+      }
+      .profile-avatar-preview .pono-mini-avatar {
+        width: min(166px, 43dvh);
+        height: min(166px, 43dvh);
+        min-width: 130px;
+        min-height: 130px;
+        border-radius: 34px;
+        border-width: 6px;
+      }
+      .profile-avatar-preview__name {
+        min-height: 30px;
+        margin-top: 6px;
+        padding: 4px 12px;
+        font-size: .82rem;
+      }
+      .profile-avatar-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        max-height: min(238px, calc(100dvh - 146px));
+      }
+      .profile-avatar-preset {
+        min-height: 55px;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 7px;
+        padding: 5px 8px 5px 5px;
+      }
+      .profile-avatar-preset .pono-mini-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+      }
+      .profile-avatar-preset__name {
+        font-size: .7rem;
+        text-align: left;
+      }
     }
     .setting-row {
       display: flex;
@@ -7530,15 +7657,18 @@
           <button class="profile-hub-back" id="profileAvatarBackBtn" type="button">もどる</button>
           <h3 class="profile-panel-title">すがたを つくる</h3>
         </div>
-        <div class="profile-avatar-preview" aria-label="アバター">
-          <span class="pono-mini-avatar" id="profileAvatarPreview" data-variant="0" aria-hidden="true">
-            <span class="pono-mini-avatar__body"></span>
-            <span class="pono-mini-avatar__face"></span>
-            <span class="pono-mini-avatar__hair"></span>
-            <span class="pono-mini-avatar__mark"></span>
-          </span>
+        <div class="profile-avatar-builder">
+          <div class="profile-avatar-preview" aria-label="えらんだ すがた">
+            <span class="pono-mini-avatar" id="profileAvatarPreview" data-variant="0" aria-hidden="true">
+              <span class="pono-mini-avatar__body"></span>
+              <span class="pono-mini-avatar__face"></span>
+              <span class="pono-mini-avatar__hair"></span>
+              <span class="pono-mini-avatar__mark"></span>
+            </span>
+            <span class="profile-avatar-preview__name" id="profileAvatarPreviewName">ポノっこ</span>
+          </div>
+          <div class="profile-avatar-grid" id="profileAvatarControls" aria-label="すがたを えらぶ"></div>
         </div>
-        <div class="profile-avatar-grid" id="profileAvatarControls" aria-label="すがたを えらぶ"></div>
         <button class="profile-save profile-avatar-done" id="profileAvatarDoneBtn" type="button">きめた</button>
       </div>
 
@@ -8364,7 +8494,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1974;
+    const PAGE_CACHE_VERSION = 1975;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -8373,7 +8503,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1974';
+    window.PONO_SW_VERSION = 'v1975';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -12417,6 +12547,7 @@
       const profileAvatarPanel = document.getElementById('profileAvatarPanel');
       const profileAvatarBackBtn = document.getElementById('profileAvatarBackBtn');
       const profileAvatarPreview = document.getElementById('profileAvatarPreview');
+      const profileAvatarPreviewName = document.getElementById('profileAvatarPreviewName');
       const profileAvatarControls = document.getElementById('profileAvatarControls');
       const profileAvatarDoneBtn = document.getElementById('profileAvatarDoneBtn');
       const profileAchievementsPanel = document.getElementById('profileAchievementsPanel');
@@ -12764,16 +12895,20 @@
           profileAvatarControls.appendChild(btn);
         });
       }
+      function renderAvatarPreview() {
+        if (profileAvatarPreview) applyAvatarToElement(profileAvatarPreview, avatarDraft);
+        if (profileAvatarPreviewName) profileAvatarPreviewName.textContent = (avatarDraft && avatarDraft.name) || avatarPresetById(AVATAR_DEFAULT_ID).name;
+      }
       function renderAvatarBuilder() {
         const profile = loadProfile();
         avatarDraft = cloneAvatar(profile.avatar);
-        applyAvatarToElement(profileAvatarPreview, avatarDraft);
+        renderAvatarPreview();
         renderAvatarPresetButtons();
       }
       function setAvatarDraftPreset(id) {
         if (!avatarPresetById(id) || !AVATAR_PRESETS.some((preset) => preset.id === id)) return;
         avatarDraft = avatarFromPreset(id);
-        applyAvatarToElement(profileAvatarPreview, avatarDraft);
+        renderAvatarPreview();
         renderAvatarPresetButtons();
       }
       function saveAvatarDraft() {
