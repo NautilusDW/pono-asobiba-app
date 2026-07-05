@@ -157,13 +157,14 @@ body.tunnel-exit-setup #screenPortalBack,body.tunnel-exit-setup #screenPortalFro
 body.tunnel-exit-setup #screenPortalBack,body.tunnel-exit-setup #screenPortalFront,body.tunnel-exit-run #screenPortalBack,body.tunnel-exit-run #screenPortalFront{opacity:1}
 body.tunnel-exit-clear #screenPortalBack,body.tunnel-exit-clear #screenPortalFront{opacity:0}
 .screen-exit-gate{position:absolute;top:0;bottom:0;left:calc(100vh * var(--screen-exit-left-vh));width:calc(100vh * 1.777);background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") center bottom/100% 100% no-repeat}
-#screenPortalFront::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc((100vh * var(--screen-exit-left-vh)) + (100vh * 1.777 * var(--screen-exit-mask-edge)));background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") calc(100vh * var(--screen-exit-left-vh)) bottom/calc(100vh * 1.777) 100% no-repeat;pointer-events:none}
+#screenPortalFront::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc((100vh * var(--screen-exit-left-vh)) + (100vh * 1.777 * var(--screen-exit-mask-edge)));background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") calc(100vh * var(--screen-exit-left-vh)) bottom/calc(100vh * 1.777) 100% no-repeat;pointer-events:none;
+  clip-path:polygon(0 0,96% 0,100% 10%,95% 22%,99% 35%,94% 49%,98% 62%,95% 76%,100% 90%,96% 100%,0 100%)}
 #screenPortalFront .screen-exit-gate{display:none}
 #portalMaskLayer{position:absolute;inset:0;z-index:9;display:none;overflow:hidden;pointer-events:none}
 .portal-occluder{position:absolute;display:none;background:center bottom/100% 100% no-repeat;pointer-events:none;will-change:left,top,width,height}
 .portal-occluder-in{background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp");clip-path:var(--portal-mask-in)}
 .portal-occluder-out{background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp");clip-path:var(--portal-mask-out)}
-.portal-occluder.wide-portal-mask{clip-path:none!important;background-repeat:no-repeat;background-size:var(--portal-wide-bg-w) var(--portal-wide-bg-h);background-position:var(--portal-wide-bg-x) var(--portal-wide-bg-y)}
+.portal-occluder.wide-portal-mask{clip-path:polygon(4% 0,100% 0,100% 100%,3% 100%,0 90%,5% 79%,1% 67%,6% 55%,2% 43%,5% 30%,1% 18%,4% 7%)!important;background-repeat:no-repeat;background-size:var(--portal-wide-bg-w) var(--portal-wide-bg-h);background-position:var(--portal-wide-bg-x) var(--portal-wide-bg-y)}
 #portalEditOverlay{position:absolute;inset:0;z-index:31;display:none;pointer-events:none}
 body.portal-edit #portalEditOverlay{display:block}
 .portal-edit-poly{fill:rgba(255,75,120,.14);stroke:#ff4b78;stroke-width:2;stroke-dasharray:8 6;pointer-events:auto;cursor:move}
@@ -191,9 +192,10 @@ body.portal-edit #portalEditPanel{display:block}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 @keyframes carDropOff{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:.05;transform:translateY(-14px) scale(.86)}}
 @keyframes waveBye{0%{transform:rotate(-4deg) scale(1)}100%{transform:rotate(6deg) scale(1.08)}}
-.headlight{position:absolute;left:96%;top:30%;width:34vw;height:50%;opacity:0;
-  background:radial-gradient(ellipse at left,rgba(255,244,190,.5),rgba(255,244,190,0) 70%);pointer-events:none;z-index:5}
-#veh.inTun .headlight{opacity:1}
+.headlight{position:absolute;left:91%;top:45%;width:min(36vw,310px);height:19%;opacity:0;border-radius:999px;
+  background:radial-gradient(ellipse at 0% 50%,rgba(255,244,190,.48) 0%,rgba(255,236,172,.23) 34%,rgba(255,236,172,.08) 57%,rgba(255,236,172,0) 80%);
+  clip-path:polygon(0 30%,100% 3%,100% 97%,0 70%);filter:blur(7px);transform:translateY(-50%);pointer-events:none;z-index:5}
+#veh.inTun .headlight{opacity:.88}
 .train-art{display:none}
 body.v-train .train-art{display:block;position:absolute;inset:-3% -4% -1% -2%}
 body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train .tr-win,body.v-train .wheel{display:none}
@@ -202,6 +204,9 @@ body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train 
   background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_pono_sheet_cabfit_20260705.webp");
   background-repeat:no-repeat;background-size:100% 400%;background-position:center var(--driver-y,0%);
   filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
+#veh.go .train-driver{left:8.8%;top:33.2%;width:19.2%;height:32.0%;
+  background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_pono_forward_20260705.webp");
+  background-size:112% auto;background-position:center bottom}
 .train-wheel{position:absolute;bottom:-.8%;width:13.8%;aspect-ratio:1;z-index:3;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_driver_wheel_weighted_20260704.png") center/contain no-repeat;
   transform-origin:50% 50%;filter:drop-shadow(0 2px 0 rgba(50,35,25,.28))}
@@ -258,7 +263,7 @@ body[data-driver-mood="cheer"]{--driver-y:100%}
 .puff{position:absolute;left:16%;top:-18%;opacity:0;pointer-events:none;z-index:6}
 #veh.go .puff{opacity:1}
 .magic-puff{position:absolute;left:0;top:0;width:var(--puff-size);height:var(--puff-size);
-  background:url("../assets/images/nazonazo-tunnel/magic_puffs_sheet_20260705.webp") no-repeat;background-size:400% 200%;
+  background:url("../assets/images/nazonazo-tunnel/magic_puffs_square_sheet_20260705.webp") no-repeat;background-size:400% 200%;
   transform:translate(0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));
   will-change:transform,opacity;animation:magicPuffFly var(--puff-life) ease-out forwards}
 @keyframes magicPuffFly{
