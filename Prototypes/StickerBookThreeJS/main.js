@@ -1743,7 +1743,9 @@ const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 const requestedBook = params.get("book");
 let activeBook = BOOK_VARIANTS[requestedBook] ? requestedBook : "boy";
-let activeAlbumMode = params.get("album") === "collection" ? "collection" : "free";
+// 図鑑モード (collection) は MVP では非表示。データ/ロジックは削除せず凍結保管し、将来の「森の図鑑」ゲームで再利用する。復活時は true に戻すだけでよい。
+const COLLECTION_MODE_ENABLED = false;
+let activeAlbumMode = params.get("album") === "collection" && COLLECTION_MODE_ENABLED ? "collection" : "free";
 let stickerEditMode = activeAlbumMode !== "collection" && params.get("edit") === "1";
 const zukanFormatIndex = Math.round(
   readClampedNumber(params.get("zukanFormat"), DEFAULT_ZUKAN_FORMAT_INDEX + 1, 1, ZUKAN_THICKNESS_STRIPS.length),
