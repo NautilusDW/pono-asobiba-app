@@ -165,17 +165,18 @@ function computeQuantitativeStats_(rows) {
     stumbleByGame: {}, priceDist: {}, bookConnectionDist: {},
     playDurationAvg: 0
   };
+
+  // MVP 5 ゲームの集計器を初期化 (N===0 でも空 stats を返せるよう early return より前で実施)
+  WD_MVP_GAMES.forEach(g => {
+    stats.gameStats[g] = { count: 0, starSum: 0, engageSum: 0, engageCount: 0, starAvg: 0, engageAvg: 0 };
+    stats.favoriteNet[g] = 0;
+    stats.stumbleByGame[g] = [];
+  });
+
   if (N === 0) return stats;
 
   let starSum = 0, engageSum = 0, engageCount = 0;
   let durSum = 0, durCount = 0;
-
-  // MVP 5 ゲームの集計器を初期化
-  WD_MVP_GAMES.forEach(g => {
-    stats.gameStats[g] = { count: 0, starSum: 0, engageSum: 0, engageCount: 0 };
-    stats.favoriteNet[g] = 0;
-    stats.stumbleByGame[g] = [];
-  });
 
   rows.forEach(row => {
     // star
