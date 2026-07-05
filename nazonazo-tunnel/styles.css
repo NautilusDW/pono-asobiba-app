@@ -8,7 +8,7 @@
   --portal-out-right-vh:.88;
   --portal-core-side-vw:100;
   --screen-exit-left-vh:-.08;
-  --screen-exit-mask-edge:.56;
+  --screen-exit-mask-edge:.48;
   --portal-mask-in:polygon(14% 37%,35% 37%,35% 49%,26% 49%,26% 83%,42% 83%,42% 98%,13% 98%,13% 49%,14% 49%);
   --portal-mask-out:polygon(54% 42%,65% 42%,65% 97%,54% 97%);
 }
@@ -146,6 +146,8 @@ body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(74vw
 body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-44vw) scale(.96);transition:none}
 body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive .82s linear both}
 @keyframes tunnelExitDrive{from{transform:translateX(-44vw) scale(.96)}to{transform:translateX(0) scale(1)}}
+body.tunnel-exit-setup #world .tun,body.tunnel-exit-setup #world .decor,body.tunnel-exit-setup #world .dropStation,
+body.tunnel-exit-run #world .tun,body.tunnel-exit-run #world .decor,body.tunnel-exit-run #world .dropStation{opacity:0}
 body.tunnel-interior #skyA{background-color:#17110b}
 body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0}
 #screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease}

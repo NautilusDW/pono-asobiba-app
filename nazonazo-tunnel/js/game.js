@@ -243,7 +243,7 @@ const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_
 const TRAIN_WIDTH_MIN_PX=204, TRAIN_WIDTH_VW=33.2, TRAIN_WIDTH_MAX_PX=356, TRAIN_RIGHT_SHIFT_VW=5, DEFAULT_VEHICLE_LEFT_VW=28;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=360;
 const TUNNEL_ENTRY_FADE_DELAY_MS=900, TUNNEL_ENTRY_SWITCH_MS=1320, TUNNEL_ENTRY_BLACK_HOLD_MS=420;
-const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=900, TUNNEL_EXIT_CLEAR_MS=360;
+const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=900, TUNNEL_EXIT_CLEAR_MS=300;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -1119,8 +1119,12 @@ function finishTunnelInterior(){
    requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
    setTimeout(()=>{
     if(!playing)return;
-    document.body.classList.add("tunnel-exit-clear");
-    setTimeout(()=>document.body.classList.remove("tunnel-exit-run","tunnel-exit-clear"),TUNNEL_EXIT_CLEAR_MS);
+    document.body.classList.add("tunnel-fade-dark");
+    setTimeout(()=>{
+     if(!playing)return;
+     document.body.classList.remove("tunnel-exit-run","tunnel-exit-clear");
+     requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+    },TUNNEL_EXIT_CLEAR_MS);
    },TUNNEL_EXIT_RUN_MS);
   },TUNNEL_EXIT_BLACK_HOLD_MS);
  },TUNNEL_EXIT_FADE_SETUP_MS);
