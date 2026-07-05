@@ -574,6 +574,10 @@ function fitStickerImage(wrap, img, sticker) {
 // smaller than tightly-cropped PNGs of the same rarity, and vice versa.
 // Returns null when STICKER_METRICS has no entry for this sticker (caller
 // falls back to the legacy aspect-ratio-bucket sizing).
+// 前提: このガード/オフセット計算は、キャンバス比率が --sticker-aspect の clamp 範囲
+// [0.36, 2.1] 内にあり、img が wrap を dominant 軸で 100% 充填する前提。現行135枚は
+// 全て範囲内 (0.559〜1.213)。範囲外の極端な縦横比のシールを将来追加する場合は
+// letterbox 分の補正が必要。
 function stickerDisplayMetrics(sticker) {
   const m = sticker && STICKER_METRICS[sticker.id];
   if (!m) return null;
