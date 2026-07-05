@@ -241,6 +241,8 @@ const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_LEN=560;
 const TRAIN_WIDTH_MIN_PX=204, TRAIN_WIDTH_VW=33.2, TRAIN_WIDTH_MAX_PX=356, TRAIN_RIGHT_SHIFT_VW=5, DEFAULT_VEHICLE_LEFT_VW=28;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=360;
+const TUNNEL_ENTRY_FADE_DELAY_MS=520, TUNNEL_ENTRY_SWITCH_MS=940, TUNNEL_ENTRY_BLACK_HOLD_MS=280;
+const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=900;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -1039,13 +1041,14 @@ function coverEntryStop(){
 }
 function showTunnelRunIn(){
  setDriverMood("happy");
+ document.body.classList.remove("tunnel-exit-setup","tunnel-exit-run");
  document.body.classList.add("tunnel-enter-run");
  veh.classList.add("go");carsEl.classList.add("go");
- setTimeout(()=>document.body.classList.add("tunnel-fade-dark"),520);
+ setTimeout(()=>document.body.classList.add("tunnel-fade-dark"),TUNNEL_ENTRY_FADE_DELAY_MS);
  setTimeout(()=>{
   if(!playing||driving||pending!=="tunnelSwitch")return;
   enterTunnelInterior();
- },940);
+ },TUNNEL_ENTRY_SWITCH_MS);
  pending="tunnelSwitch";
 }
 function enterTunnelInterior(){
@@ -1060,18 +1063,22 @@ function enterTunnelInterior(){
  veh.classList.add("go","inTun");veh.classList.remove("idle");
  carsEl.classList.add("go","inTun");
  sndGo();
- requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+ setTimeout(()=>{
+  if(!playing)return;
+  requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+ },TUNNEL_ENTRY_BLACK_HOLD_MS);
 }
 function finishTunnelInterior(){
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run");
  document.body.classList.add("tunnel-fade-dark");
  setTimeout(()=>{
   if(!playing)return;
   tunnelInteriorMode=false;
   document.body.classList.remove("tunnel-interior");
-  document.body.classList.add("tunnel-exit-setup");
   stg++;buildQList();qSeg=0;stageMiss=0;rareSpawned=false;
   applySkin();buildWorld(false);drawDots();
+  document.body.classList.add("tunnel-fade-dark","tunnel-exit-setup");
   worldX=origin(stg);target=stops(origin(stg),0);
   pending="quiz";driving=true;swapReady=false;swapped=false;
   veh.classList.add("go");veh.classList.remove("idle");
@@ -1080,15 +1087,14 @@ function finishTunnelInterior(){
   speak("トンネルを ぬけたら、"+STAGES[stg].names[loop%2]+"だ！");
   render();
   void veh.offsetWidth;
-  requestAnimationFrame(()=>{
-   document.body.classList.remove("tunnel-fade-dark");
-   setTimeout(()=>{
-    document.body.classList.remove("tunnel-exit-setup");
-    document.body.classList.add("tunnel-exit-run");
-    setTimeout(()=>document.body.classList.remove("tunnel-exit-run"),900);
-   },70);
-  });
- },360);
+  setTimeout(()=>{
+   if(!playing)return;
+   document.body.classList.remove("tunnel-exit-setup");
+   document.body.classList.add("tunnel-exit-run");
+   requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+   setTimeout(()=>document.body.classList.remove("tunnel-exit-run"),TUNNEL_EXIT_RUN_MS);
+  },TUNNEL_EXIT_BLACK_HOLD_MS);
+ },TUNNEL_EXIT_FADE_SETUP_MS);
 }
 function beginStageTransit(){
  if(!coverEl)return;
