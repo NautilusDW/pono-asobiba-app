@@ -1865,6 +1865,169 @@
       line-height: 1.35;
       text-align: center;
     }
+    .profile-hub-panel[hidden] {
+      display: none !important;
+    }
+    .profile-hub-btn--wide {
+      grid-column: 1 / -1;
+    }
+    .profile-panel-head {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .profile-panel-title {
+      margin: 0;
+      color: var(--primary);
+      font-size: 1.16rem;
+      line-height: 1.08;
+      text-align: left;
+    }
+    .profile-hub-back {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 2px solid rgba(242, 145, 90, .42);
+      border-radius: 999px;
+      background: #fffdfa;
+      color: #6a4300;
+      font-family: inherit;
+      font-size: .86rem;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-hub-back:active {
+      transform: translateY(1px);
+    }
+    .profile-avatar-preview {
+      display: grid;
+      place-items: center;
+      margin: 4px 0 12px;
+    }
+    .profile-avatar-preview .pono-mini-avatar {
+      width: 116px;
+      height: 116px;
+      border-radius: 30px;
+      border-width: 6px;
+    }
+    .profile-avatar-preview .pono-mini-avatar__body {
+      left: 31px;
+      bottom: 12px;
+      width: 54px;
+      height: 42px;
+      border-radius: 24px 24px 16px 16px;
+    }
+    .profile-avatar-preview .pono-mini-avatar__face {
+      left: 30px;
+      top: 27px;
+      width: 56px;
+      height: 53px;
+    }
+    .profile-avatar-preview .pono-mini-avatar__face::before,
+    .profile-avatar-preview .pono-mini-avatar__face::after {
+      top: 22px;
+      width: 6px;
+      height: 8px;
+    }
+    .profile-avatar-preview .pono-mini-avatar__face::before { left: 15px; }
+    .profile-avatar-preview .pono-mini-avatar__face::after { right: 15px; }
+    .profile-avatar-preview .pono-mini-avatar__hair {
+      left: 26px;
+      top: 18px;
+      width: 64px;
+      height: 32px;
+      border-radius: 32px 32px 12px 12px;
+    }
+    .profile-avatar-preview .pono-mini-avatar__hair::after {
+      left: 39px;
+      top: 12px;
+      width: 21px;
+      height: 28px;
+    }
+    .profile-avatar-preview .pono-mini-avatar__mark {
+      right: 17px;
+      top: 14px;
+      width: 22px;
+      height: 22px;
+    }
+    .profile-avatar-controls {
+      display: grid;
+      gap: 9px;
+      margin-bottom: 12px;
+    }
+    .profile-avatar-control {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+    .profile-avatar-control__label {
+      color: var(--text);
+      font-size: .84rem;
+      font-weight: 900;
+      line-height: 1.1;
+      text-align: right;
+    }
+    .profile-avatar-options {
+      min-width: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .profile-avatar-choice {
+      min-width: 42px;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 5px 8px;
+      border: 2px solid rgba(242, 145, 90, .34);
+      border-radius: 14px;
+      background: #fffdfa;
+      color: var(--text);
+      font-family: inherit;
+      font-size: .78rem;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-avatar-choice.is-active {
+      border-color: #F5A800;
+      background: #FFF3C4;
+      color: #6B4300;
+    }
+    .profile-avatar-choice__swatch {
+      width: 22px;
+      height: 22px;
+      display: inline-block;
+      border-radius: 50%;
+      background: var(--choice-color, #ddd);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.65), 0 1px 0 rgba(0,0,0,.12);
+    }
+    .profile-avatar-done {
+      margin-top: 4px;
+    }
+    .profile-achievement-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .profile-goal-section {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .profile-goal-section__title {
+      margin: 2px 2px 0;
+      color: #6a4300;
+      font-size: .88rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
     @media (max-width: 480px), (max-height: 540px) {
       .modal-card.profile-hub-card { padding: 12px 14px; }
       .profile-hub-xclose { top: 8px; right: 8px; width: 34px; height: 34px; font-size: 20px; }
@@ -1891,6 +2054,24 @@
       .profile-goal-icon { width: 28px; height: 28px; font-size: 16px; }
       .profile-goal-title { font-size: .78rem; }
       .profile-goal-count { min-width: 48px; font-size: .76rem; }
+      .profile-panel-head { margin-bottom: 8px; }
+      .profile-panel-title { font-size: 1rem; }
+      .profile-avatar-preview { margin-bottom: 8px; }
+      .profile-avatar-preview .pono-mini-avatar { width: 82px; height: 82px; border-radius: 22px; }
+      .profile-avatar-preview .pono-mini-avatar__body { left: 22px; bottom: 8px; width: 38px; height: 30px; }
+      .profile-avatar-preview .pono-mini-avatar__face { left: 21px; top: 19px; width: 40px; height: 38px; }
+      .profile-avatar-preview .pono-mini-avatar__face::before,
+      .profile-avatar-preview .pono-mini-avatar__face::after { top: 16px; width: 5px; height: 6px; }
+      .profile-avatar-preview .pono-mini-avatar__face::before { left: 11px; }
+      .profile-avatar-preview .pono-mini-avatar__face::after { right: 11px; }
+      .profile-avatar-preview .pono-mini-avatar__hair { left: 18px; top: 13px; width: 46px; height: 23px; }
+      .profile-avatar-preview .pono-mini-avatar__hair::after { left: 29px; top: 8px; width: 15px; height: 20px; }
+      .profile-avatar-preview .pono-mini-avatar__mark { right: 12px; top: 10px; width: 16px; height: 16px; }
+      .profile-avatar-control { grid-template-columns: 58px minmax(0, 1fr); gap: 6px; }
+      .profile-avatar-control__label { font-size: .76rem; }
+      .profile-avatar-options { gap: 5px; }
+      .profile-avatar-choice { min-width: 36px; min-height: 34px; padding: 4px 6px; font-size: .72rem; }
+      .profile-avatar-choice__swatch { width: 18px; height: 18px; }
     }
     .setting-row {
       display: flex;
@@ -5794,6 +5975,7 @@
       transform: translateX(16px);
     }
     .title-side-stack {
+      position: relative;
       width: min(424px, 100%);
       margin: 10px auto 0;
       display: flex;
@@ -5873,14 +6055,17 @@
       color: #76512a;
     }
     .profile-home-entry {
-      position: relative;
-      width: 100%;
-      min-height: 78px;
+      position: absolute;
+      left: -106px;
+      top: 0;
+      width: 92px;
+      min-height: 82px;
       display: grid;
-      grid-template-columns: 64px minmax(0, 1fr) auto;
+      grid-template-columns: 1fr;
       align-items: center;
-      gap: 12px;
-      padding: 9px 14px;
+      justify-items: center;
+      gap: 0;
+      padding: 8px;
       border: 3px solid rgba(108, 78, 42, .48);
       border-radius: 24px;
       background:
@@ -5897,6 +6082,7 @@
       transition: transform .1s ease, filter .12s ease, box-shadow .1s ease;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
+      z-index: 96;
     }
     .profile-home-entry:hover {
       filter: brightness(1.035);
@@ -5913,11 +6099,13 @@
         inset 0 2px 0 rgba(255,255,255,.62);
     }
     .profile-home-entry__text {
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      text-align: left;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
       pointer-events: none;
     }
     .profile-home-entry__main {
@@ -5936,20 +6124,29 @@
       white-space: nowrap;
     }
     .profile-home-entry__count {
-      min-width: 52px;
-      height: 36px;
+      position: absolute;
+      right: -8px;
+      top: -8px;
+      min-width: 34px;
+      height: 30px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0 10px 2px;
+      padding: 0 8px 2px;
       border: 2px solid rgba(125, 87, 35, .36);
       border-radius: 999px;
       background: rgba(255, 253, 245, .84);
       color: #6a4300;
-      font-size: 17px;
+      font-size: 13px;
       line-height: 1;
       font-variant-numeric: tabular-nums;
       pointer-events: none;
+    }
+    @media (orientation: landscape) and (min-width: 1280px) and (min-aspect-ratio: 17/10) {
+      .profile-home-entry {
+        left: 0;
+        top: -88px;
+      }
     }
     .pono-mini-avatar {
       --av-bg: #fff1c4;
@@ -6040,6 +6237,49 @@
       background: var(--av-accent);
       transform: rotate(-18deg);
       box-shadow: inset 0 2px 0 rgba(255,255,255,.35);
+    }
+    .pono-mini-avatar[data-hair-style="short"] .pono-mini-avatar__hair {
+      top: 10px;
+      height: 14px;
+      border-radius: 16px 16px 7px 7px;
+    }
+    .pono-mini-avatar[data-hair-style="long"] .pono-mini-avatar__hair::after {
+      left: 20px;
+      top: 5px;
+      width: 14px;
+      height: 20px;
+      border-radius: 0 0 10px 10px;
+    }
+    .pono-mini-avatar[data-hair-style="side"] .pono-mini-avatar__hair::after {
+      left: 2px;
+      transform: rotate(8deg);
+    }
+    .pono-mini-avatar[data-hair-style="cap"] .pono-mini-avatar__hair {
+      top: 7px;
+      height: 20px;
+      border-radius: 20px 20px 6px 6px;
+    }
+    .pono-mini-avatar[data-hair-style="cap"] .pono-mini-avatar__hair::after {
+      left: 25px;
+      top: 1px;
+      width: 14px;
+      height: 9px;
+      border-radius: 999px;
+      transform: rotate(8deg);
+    }
+    .pono-mini-avatar[data-mark-shape="dot"] .pono-mini-avatar__mark {
+      border-radius: 50%;
+      transform: none;
+    }
+    .pono-mini-avatar[data-mark-shape="ribbon"] .pono-mini-avatar__mark {
+      width: 16px;
+      height: 10px;
+      border-radius: 999px 999px 4px 4px;
+      transform: rotate(8deg);
+    }
+    .pono-mini-avatar[data-mark-shape="square"] .pono-mini-avatar__mark {
+      border-radius: 4px 9px 9px 4px;
+      transform: rotate(0deg);
     }
     .pono-mini-avatar[data-variant="1"] {
       --av-bg: #dff7ec;
@@ -6481,22 +6721,24 @@
       .book-unlock-entry__main { font-size: 23px; }
       .book-unlock-entry__sub { font-size: 15px; }
       .profile-home-entry {
-        min-height: 70px;
-        grid-template-columns: 58px minmax(0, 1fr) auto;
-        gap: 10px;
-        padding: 8px 12px;
+        left: -96px;
+        width: 84px;
+        min-height: 76px;
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 7px;
         border-radius: 22px;
       }
       .profile-home-entry .pono-mini-avatar {
-        width: 52px;
-        height: 52px;
+        width: 56px;
+        height: 56px;
       }
       .profile-home-entry__main { font-size: 20px; }
       .profile-home-entry__sub { font-size: 13px; }
       .profile-home-entry__count {
-        min-width: 48px;
-        height: 34px;
-        font-size: 16px;
+        min-width: 32px;
+        height: 28px;
+        font-size: 12px;
       }
       .daily-quest-info-banner { margin-bottom: 5px; }
       .daily-quest-info-banner__title { font-size: 14px; }
@@ -6537,11 +6779,29 @@
       .book-unlock-entry__main { font-size: 22px; }                  /* v1680: 19→22 */
       .book-unlock-entry__sub  { font-size: 15px; }                  /* v1680: 13→15 */
       .profile-home-entry {
+        position: relative;
+        left: auto;
+        top: auto;
+        width: 100%;
         min-height: 64px;
         grid-template-columns: 52px minmax(0, 1fr) auto;
         gap: 8px;
         padding: 7px 10px;
         border-radius: 20px;
+      }
+      .profile-home-entry__text {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        clip-path: none;
+        white-space: normal;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        text-align: left;
       }
       .profile-home-entry .pono-mini-avatar {
         width: 48px;
@@ -6552,6 +6812,7 @@
       .profile-home-entry__main { font-size: 18px; }
       .profile-home-entry__sub { font-size: 12px; }
       .profile-home-entry__count {
+        position: static;
         min-width: 44px;
         height: 31px;
         padding-inline: 8px;
@@ -6972,39 +7233,144 @@
   <div class="modal profile-hub-modal" id="profileHubModal" hidden role="dialog" aria-modal="true" aria-labelledby="profileHubTitle">
     <div class="modal-card profile-hub-card">
       <button class="profile-hub-xclose" type="button" data-close="profileHubModal" aria-label="とじる">×</button>
-      <div class="profile-hub-head">
-        <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true">
-          <span class="pono-mini-avatar__body"></span>
-          <span class="pono-mini-avatar__face"></span>
-          <span class="pono-mini-avatar__hair"></span>
-          <span class="pono-mini-avatar__mark"></span>
-        </span>
-        <div class="profile-hub-id">
-          <h3 class="profile-hub-title" id="profileHubTitle">プロフィール</h3>
-          <div class="profile-hub-name" id="profileHubName">ポノ</div>
-          <div class="profile-hub-meta" id="profileHubMeta">ねんれい えらばない</div>
+      <div class="profile-hub-panel" id="profileHubMainPanel">
+        <div class="profile-hub-head">
+          <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true">
+            <span class="pono-mini-avatar__body"></span>
+            <span class="pono-mini-avatar__face"></span>
+            <span class="pono-mini-avatar__hair"></span>
+            <span class="pono-mini-avatar__mark"></span>
+          </span>
+          <div class="profile-hub-id">
+            <h3 class="profile-hub-title" id="profileHubTitle">プロフィール</h3>
+            <div class="profile-hub-name" id="profileHubName">ポノ</div>
+            <div class="profile-hub-meta" id="profileHubMeta">ねんれい えらばない</div>
+          </div>
         </div>
+        <div class="profile-hub-actions">
+          <button class="profile-hub-btn" id="profileHubEditBtn" type="button">なまえを かえる</button>
+          <button class="profile-hub-btn" id="profileAvatarEditBtn" type="button">すがたを つくる</button>
+          <button class="profile-hub-btn profile-hub-btn--wide" id="profileAchievementsBtn" type="button">できたことを くわしく</button>
+        </div>
+        <div class="profile-hub-summary" aria-label="できたこと">
+          <div class="profile-hub-meter">
+            <span class="profile-hub-meter__num" id="profileHubDoneCount">0</span>
+            <span class="profile-hub-meter__label">できた</span>
+          </div>
+          <div class="profile-hub-meter">
+            <span class="profile-hub-meter__num" id="profileHubBestPct">0%</span>
+            <span class="profile-hub-meter__label">いちばん</span>
+          </div>
+          <div class="profile-hub-meter">
+            <span class="profile-hub-meter__num" id="profileHubNextCount">0</span>
+            <span class="profile-hub-meter__label">もうすぐ</span>
+          </div>
+        </div>
+        <p class="profile-hub-empty" id="profileHubEmpty" hidden>ゲームで あそぶと できたことが ふえるよ</p>
       </div>
-      <div class="profile-hub-actions">
-        <button class="profile-hub-btn" id="profileHubEditBtn" type="button">なまえを かえる</button>
-        <button class="profile-hub-btn" type="button" disabled>すがたは これから</button>
+
+      <div class="profile-hub-panel" id="profileAvatarPanel" hidden>
+        <div class="profile-panel-head">
+          <button class="profile-hub-back" id="profileAvatarBackBtn" type="button">もどる</button>
+          <h3 class="profile-panel-title">すがたを つくる</h3>
+        </div>
+        <div class="profile-avatar-preview" aria-label="アバター">
+          <span class="pono-mini-avatar" id="profileAvatarPreview" data-variant="0" aria-hidden="true">
+            <span class="pono-mini-avatar__body"></span>
+            <span class="pono-mini-avatar__face"></span>
+            <span class="pono-mini-avatar__hair"></span>
+            <span class="pono-mini-avatar__mark"></span>
+          </span>
+        </div>
+        <div class="profile-avatar-controls" id="profileAvatarControls" aria-label="すがたの えらぶところ">
+          <div class="profile-avatar-control">
+            <div class="profile-avatar-control__label">はいけい</div>
+            <div class="profile-avatar-options">
+              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="warm"><span class="profile-avatar-choice__swatch" style="--choice-color:#fff1c4"></span><span>あさ</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="leaf"><span class="profile-avatar-choice__swatch" style="--choice-color:#dff7ec"></span><span>はっぱ</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="sky"><span class="profile-avatar-choice__swatch" style="--choice-color:#dff4ff"></span><span>そら</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="berry"><span class="profile-avatar-choice__swatch" style="--choice-color:#ffe4ed"></span><span>いちご</span></button>
+            </div>
+          </div>
+          <div class="profile-avatar-control">
+            <div class="profile-avatar-control__label">かお</div>
+            <div class="profile-avatar-options">
+              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="peach"><span class="profile-avatar-choice__swatch" style="--choice-color:#f2bf8a"></span><span>1</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="tan"><span class="profile-avatar-choice__swatch" style="--choice-color:#d99b6b"></span><span>2</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="rose"><span class="profile-avatar-choice__swatch" style="--choice-color:#f0c7a5"></span><span>3</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="deep"><span class="profile-avatar-choice__swatch" style="--choice-color:#b97955"></span><span>4</span></button>
+            </div>
+          </div>
+          <div class="profile-avatar-control">
+            <div class="profile-avatar-control__label">かみ</div>
+            <div class="profile-avatar-options">
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="brown"><span class="profile-avatar-choice__swatch" style="--choice-color:#6b4226"></span><span>ちゃ</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="green"><span class="profile-avatar-choice__swatch" style="--choice-color:#2f4a33"></span><span>みどり</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="blue"><span class="profile-avatar-choice__swatch" style="--choice-color:#365b83"></span><span>あお</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="black"><span class="profile-avatar-choice__swatch" style="--choice-color:#2d2b29"></span><span>くろ</span></button>
+            </div>
+          </div>
+          <div class="profile-avatar-control">
+            <div class="profile-avatar-control__label">かたち</div>
+            <div class="profile-avatar-options">
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="round">まる</button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="short">みじかめ</button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="long">ながめ</button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="cap">ぼうし</button>
+            </div>
+          </div>
+          <div class="profile-avatar-control">
+            <div class="profile-avatar-control__label">ふく</div>
+            <div class="profile-avatar-options">
+              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="aqua"><span class="profile-avatar-choice__swatch" style="--choice-color:#6fc2d4"></span><span>みず</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="sun"><span class="profile-avatar-choice__swatch" style="--choice-color:#f5c84c"></span><span>きいろ</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="coral"><span class="profile-avatar-choice__swatch" style="--choice-color:#ff8b8b"></span><span>あか</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="leaf"><span class="profile-avatar-choice__swatch" style="--choice-color:#8bd17c"></span><span>みどり</span></button>
+            </div>
+          </div>
+          <div class="profile-avatar-control">
+            <div class="profile-avatar-control__label">マーク</div>
+            <div class="profile-avatar-options">
+              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="orange"><span class="profile-avatar-choice__swatch" style="--choice-color:#f2a65a"></span><span>オレンジ</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="green"><span class="profile-avatar-choice__swatch" style="--choice-color:#75b86a"></span><span>みどり</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="pink"><span class="profile-avatar-choice__swatch" style="--choice-color:#ff7aa2"></span><span>ピンク</span></button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="violet"><span class="profile-avatar-choice__swatch" style="--choice-color:#9b72d0"></span><span>むらさき</span></button>
+            </div>
+          </div>
+          <div class="profile-avatar-control">
+            <div class="profile-avatar-control__label">しるし</div>
+            <div class="profile-avatar-options">
+              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="leaf">はっぱ</button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="dot">まる</button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="ribbon">リボン</button>
+              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="square">しかく</button>
+            </div>
+          </div>
+        </div>
+        <button class="profile-save profile-avatar-done" id="profileAvatarDoneBtn" type="button">きめた</button>
       </div>
-      <div class="profile-hub-summary" aria-label="できたこと">
-        <div class="profile-hub-meter">
-          <span class="profile-hub-meter__num" id="profileHubDoneCount">0</span>
-          <span class="profile-hub-meter__label">できた</span>
+
+      <div class="profile-hub-panel" id="profileAchievementsPanel" hidden>
+        <div class="profile-panel-head">
+          <button class="profile-hub-back" id="profileAchievementsBackBtn" type="button">もどる</button>
+          <h3 class="profile-panel-title">できたこと</h3>
         </div>
-        <div class="profile-hub-meter">
-          <span class="profile-hub-meter__num" id="profileHubBestPct">0%</span>
-          <span class="profile-hub-meter__label">いちばん</span>
+        <div class="profile-achievement-summary" aria-label="できたこと まとめ">
+          <div class="profile-hub-meter">
+            <span class="profile-hub-meter__num" id="profileDetailDoneCount">0</span>
+            <span class="profile-hub-meter__label">できた</span>
+          </div>
+          <div class="profile-hub-meter">
+            <span class="profile-hub-meter__num" id="profileDetailTotalCount">0</span>
+            <span class="profile-hub-meter__label">ぜんぶ</span>
+          </div>
+          <div class="profile-hub-meter">
+            <span class="profile-hub-meter__num" id="profileDetailNextCount">0</span>
+            <span class="profile-hub-meter__label">もうすぐ</span>
+          </div>
         </div>
-        <div class="profile-hub-meter">
-          <span class="profile-hub-meter__num" id="profileHubNextCount">0</span>
-          <span class="profile-hub-meter__label">もうすぐ</span>
-        </div>
+        <div class="profile-goal-list" id="profileGoalList"></div>
       </div>
-      <div class="profile-goal-list" id="profileGoalList"></div>
-      <p class="profile-hub-empty" id="profileHubEmpty" hidden>ゲームで あそぶと ここに ふえていくよ</p>
       <button class="modal-close" type="button" data-close="profileHubModal">とじる</button>
     </div>
   </div>
@@ -7407,9 +7773,9 @@
   <script src="js/daily-quest.js"></script>
   <script src="js/donguri-shop.js"></script>
   <!-- v1672: セーブデータ JSON エクスポート/インポート (PonoDataExport) -->
-  <script src="common/data-export.js?v=1971"></script>
+  <script src="common/data-export.js?v=1972"></script>
   <!-- v1969: Step C クラウド同期 合言葉型 (PonoCloudSync) — data-export.js の後に読む -->
-  <script src="common/cloud-sync.js?v=1971"></script>
+  <script src="common/cloud-sync.js?v=1972"></script>
 
   <script>
     'use strict';
@@ -7804,7 +8170,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1971;
+    const PAGE_CACHE_VERSION = 1972;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -7813,7 +8179,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1971';
+    window.PONO_SW_VERSION = 'v1972';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -11762,24 +12128,66 @@
       const profileHubName = document.getElementById('profileHubName');
       const profileHubMeta = document.getElementById('profileHubMeta');
       const profileHubEditBtn = document.getElementById('profileHubEditBtn');
+      const profileHubMainPanel = document.getElementById('profileHubMainPanel');
+      const profileAvatarEditBtn = document.getElementById('profileAvatarEditBtn');
+      const profileAchievementsBtn = document.getElementById('profileAchievementsBtn');
       const profileHubDoneCount = document.getElementById('profileHubDoneCount');
       const profileHubBestPct = document.getElementById('profileHubBestPct');
       const profileHubNextCount = document.getElementById('profileHubNextCount');
+      const profileAvatarPanel = document.getElementById('profileAvatarPanel');
+      const profileAvatarBackBtn = document.getElementById('profileAvatarBackBtn');
+      const profileAvatarPreview = document.getElementById('profileAvatarPreview');
+      const profileAvatarControls = document.getElementById('profileAvatarControls');
+      const profileAvatarDoneBtn = document.getElementById('profileAvatarDoneBtn');
+      const profileAchievementsPanel = document.getElementById('profileAchievementsPanel');
+      const profileAchievementsBackBtn = document.getElementById('profileAchievementsBackBtn');
+      const profileDetailDoneCount = document.getElementById('profileDetailDoneCount');
+      const profileDetailTotalCount = document.getElementById('profileDetailTotalCount');
+      const profileDetailNextCount = document.getElementById('profileDetailNextCount');
       const profileGoalList = document.getElementById('profileGoalList');
       const profileHubEmpty = document.getElementById('profileHubEmpty');
       const STATS_KEY = 'pono_stats';
       const ACHIEVEMENTS_KEY = 'pono_achievements';
       const PROFILE_GOALS = [
-        { id: 'first_profile', title: 'なまえを きめた', stat: 'profile_set', target: 1, profile: true },
-        { id: 'first_quizland', title: 'クイズ 1もん', stat: 'quizland_correct', target: 1 },
-        { id: 'quizland_5', title: 'クイズ 5もん', stat: 'quizland_correct', target: 5 },
-        { id: 'first_maze', title: 'めいろ 1こ', stat: 'maze_clears', target: 1 },
-        { id: 'oto_50', title: 'おと 50かい', stat: 'oto_taps', target: 50 },
-        { id: 'bento_3', title: 'おべんとう 3かい', stat: 'bento_complete', target: 3 },
-        { id: 'puzzle_3', title: 'パズル 3こ', stat: 'puzzle_clears', target: 3 }
+        { id: 'first_profile', group: 'profile', groupLabel: 'プロフィール', title: 'なまえを きめた', stat: 'profile_set', target: 1, profile: true },
+        { id: 'first_quizland', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 1もん', stat: 'quizland_correct', target: 1 },
+        { id: 'quizland_5', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 5もん', stat: 'quizland_correct', target: 5 },
+        { id: 'quizland_15', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 15もん', stat: 'quizland_correct', target: 15 },
+        { id: 'quizland_30', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 30もん', stat: 'quizland_correct', target: 30 },
+        { id: 'first_maze', group: 'maze', groupLabel: 'めいろ', title: 'めいろ 1こ', stat: 'maze_clears', target: 1 },
+        { id: 'maze_4', group: 'maze', groupLabel: 'めいろ', title: 'めいろ 4こ', stat: 'maze_clears', target: 4 },
+        { id: 'maze_6', group: 'maze', groupLabel: 'めいろ', title: 'めいろ 6こ', stat: 'maze_clears', target: 6 },
+        { id: 'first_oto', group: 'oto', groupLabel: 'おと', title: 'おと 1かい', stat: 'oto_taps', target: 1 },
+        { id: 'oto_50', group: 'oto', groupLabel: 'おと', title: 'おと 50かい', stat: 'oto_taps', target: 50 },
+        { id: 'oto_300', group: 'oto', groupLabel: 'おと', title: 'おと 300かい', stat: 'oto_taps', target: 300 },
+        { id: 'first_bento', group: 'bento', groupLabel: 'おべんとう', title: 'おべんとう 1かい', stat: 'bento_complete', target: 1 },
+        { id: 'bento_3', group: 'bento', groupLabel: 'おべんとう', title: 'おべんとう 3かい', stat: 'bento_complete', target: 3 },
+        { id: 'bento_10', group: 'bento', groupLabel: 'おべんとう', title: 'おべんとう 10かい', stat: 'bento_complete', target: 10 },
+        { id: 'first_puzzle', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 1こ', stat: 'puzzle_clears', target: 1 },
+        { id: 'puzzle_3', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 3こ', stat: 'puzzle_clears', target: 3 },
+        { id: 'puzzle_20', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 20こ', stat: 'puzzle_clears', target: 20 }
       ];
+      const AVATAR_PARTS = {
+        bg: { warm: '#fff1c4', leaf: '#dff7ec', sky: '#dff4ff', berry: '#ffe4ed' },
+        skin: { peach: '#f2bf8a', tan: '#d99b6b', rose: '#f0c7a5', deep: '#b97955' },
+        hair: { brown: '#6b4226', green: '#2f4a33', blue: '#365b83', black: '#2d2b29' },
+        hairStyle: { round: 'round', short: 'short', long: 'long', cap: 'cap' },
+        shirt: { aqua: '#6fc2d4', sun: '#f5c84c', coral: '#ff8b8b', leaf: '#8bd17c' },
+        accent: { orange: '#f2a65a', green: '#75b86a', pink: '#ff7aa2', violet: '#9b72d0' },
+        markShape: { leaf: 'leaf', dot: 'dot', ribbon: 'ribbon', square: 'square' }
+      };
+      const AVATAR_DEFAULT = {
+        bg: 'warm',
+        skin: 'peach',
+        hair: 'brown',
+        hairStyle: 'round',
+        shirt: 'aqua',
+        accent: 'orange',
+        markShape: 'leaf'
+      };
       let profileGender = 'none';
       let openHubAfterProfileSave = false;
+      let avatarDraft = null;
 
       function sanitizeProfileName(name) {
         const text = String(name || '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
@@ -11792,18 +12200,72 @@
         const age = parseInt(value, 10);
         return age >= 2 && age <= 12 ? String(age) : '';
       }
+      function avatarKeys(part) {
+        return Object.keys(AVATAR_PARTS[part] || {});
+      }
+      function avatarColor(part, value) {
+        const palette = AVATAR_PARTS[part] || {};
+        const fallback = AVATAR_DEFAULT[part];
+        return palette[value] || palette[fallback] || '';
+      }
+      function pickAvatarKey(part, value, fallback) {
+        const palette = AVATAR_PARTS[part] || {};
+        return Object.prototype.hasOwnProperty.call(palette, value) ? value : (fallback || AVATAR_DEFAULT[part]);
+      }
+      function profileSeed(profile) {
+        const source = String(((profile && profile.name) || 'ポノ') + ((profile && profile.age) || '') + ((profile && profile.gender) || 'none'));
+        let seed = 0;
+        for (const ch of source) seed = (seed + ch.charCodeAt(0) * 17) % 9973;
+        return seed;
+      }
+      function seededChoice(part, seed, offset) {
+        const keys = avatarKeys(part);
+        return keys.length ? keys[(seed + offset) % keys.length] : AVATAR_DEFAULT[part];
+      }
+      function defaultAvatarForProfile(profile) {
+        const seed = profileSeed(profile);
+        return {
+          bg: seededChoice('bg', seed, 1),
+          skin: seededChoice('skin', seed, 2),
+          hair: seededChoice('hair', seed, 3),
+          hairStyle: seededChoice('hairStyle', seed, 4),
+          shirt: seededChoice('shirt', seed, 5),
+          accent: seededChoice('accent', seed, 6),
+          markShape: seededChoice('markShape', seed, 7)
+        };
+      }
+      function normalizeAvatar(avatar, profile) {
+        const base = defaultAvatarForProfile(profile || {});
+        avatar = avatar && typeof avatar === 'object' ? avatar : {};
+        return {
+          bg: pickAvatarKey('bg', avatar.bg, base.bg),
+          skin: pickAvatarKey('skin', avatar.skin, base.skin),
+          hair: pickAvatarKey('hair', avatar.hair, base.hair),
+          hairStyle: pickAvatarKey('hairStyle', avatar.hairStyle, base.hairStyle),
+          shirt: pickAvatarKey('shirt', avatar.shirt, base.shirt),
+          accent: pickAvatarKey('accent', avatar.accent, base.accent),
+          markShape: pickAvatarKey('markShape', avatar.markShape, base.markShape)
+        };
+      }
+      function cloneAvatar(avatar) {
+        return normalizeAvatar(avatar, {});
+      }
       function defaultProfile() {
-        return { name: 'ポノ', gender: 'none', age: '' };
+        const profile = { name: 'ポノ', gender: 'none', age: '' };
+        profile.avatar = normalizeAvatar(null, profile);
+        return profile;
       }
       function loadProfile() {
         try {
           const parsed = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
           if (parsed && typeof parsed === 'object') {
-            return {
+            const profile = {
               name: sanitizeProfileName(parsed.name),
               gender: normalizeGender(parsed.gender),
               age: normalizeAge(parsed.age)
             };
+            profile.avatar = normalizeAvatar(parsed.avatar, profile);
+            return profile;
           }
         } catch (_) {}
         return defaultProfile();
@@ -11832,15 +12294,18 @@
           } catch (_) {}
         }
       }
-      function avatarVariantForProfile(profile) {
-        profile = profile || loadProfile();
-        const source = String((profile.name || 'ポノ') + (profile.age || '') + (profile.gender || ''));
-        let seed = 0;
-        for (const ch of source) seed += ch.charCodeAt(0);
-        return String(seed % 6);
-      }
-      function setAvatarVariant(el, profile) {
-        if (el) el.dataset.variant = avatarVariantForProfile(profile);
+      function applyAvatarToElement(el, avatarOrProfile) {
+        if (!el) return;
+        const isProfile = !!(avatarOrProfile && avatarOrProfile.avatar);
+        const avatar = normalizeAvatar(isProfile ? avatarOrProfile.avatar : avatarOrProfile, isProfile ? avatarOrProfile : {});
+        el.dataset.variant = 'custom';
+        el.dataset.hairStyle = avatar.hairStyle;
+        el.dataset.markShape = avatar.markShape;
+        el.style.setProperty('--av-bg', avatarColor('bg', avatar.bg));
+        el.style.setProperty('--av-skin', avatarColor('skin', avatar.skin));
+        el.style.setProperty('--av-hair', avatarColor('hair', avatar.hair));
+        el.style.setProperty('--av-shirt', avatarColor('shirt', avatar.shirt));
+        el.style.setProperty('--av-accent', avatarColor('accent', avatar.accent));
       }
       function genderLabel(value) {
         if (value === 'girl') return 'おんなのこ';
@@ -11878,7 +12343,7 @@
         const best = rows.length ? Math.max.apply(null, rows.map((row) => row.pct)) : 0;
         const next = rows.filter((row) => !row.done && row.pct >= 60).length;
         const hasGameProgress = rows.some((row) => !row.goal.profile && row.current > 0);
-        return { rows: rows, done: done, best: best, next: next, hasGameProgress: hasGameProgress };
+        return { rows: rows, done: done, total: rows.length, best: best, next: next, hasGameProgress: hasGameProgress };
       }
       function updateProfileHome(profile) {
         profile = profile || loadProfile();
@@ -11894,7 +12359,110 @@
               : 'プロフィールを つくる'
           );
         }
-        setAvatarVariant(profileHomeAvatar, profile);
+        applyAvatarToElement(profileHomeAvatar, profile);
+      }
+      function showProfilePanel(name) {
+        if (profileHubMainPanel) profileHubMainPanel.hidden = name !== 'main';
+        if (profileAvatarPanel) profileAvatarPanel.hidden = name !== 'avatar';
+        if (profileAchievementsPanel) profileAchievementsPanel.hidden = name !== 'achievements';
+      }
+      function createGoalRow(row) {
+        const item = document.createElement('div');
+        item.className = 'profile-goal-row' + (row.done ? ' is-done' : '');
+
+        const icon = document.createElement('span');
+        icon.className = 'profile-goal-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = row.done ? '✓' : '○';
+
+        const main = document.createElement('span');
+        main.className = 'profile-goal-main';
+
+        const title = document.createElement('span');
+        title.className = 'profile-goal-title';
+        title.textContent = row.goal.title;
+
+        const bar = document.createElement('span');
+        bar.className = 'profile-goal-bar';
+        const fill = document.createElement('span');
+        fill.style.setProperty('--goal-pct', row.pct + '%');
+        bar.appendChild(fill);
+
+        const count = document.createElement('span');
+        count.className = 'profile-goal-count';
+        count.textContent = Math.min(Math.floor(row.current), row.target) + '/' + row.target;
+
+        main.appendChild(title);
+        main.appendChild(bar);
+        item.appendChild(icon);
+        item.appendChild(main);
+        item.appendChild(count);
+        return item;
+      }
+      function renderAchievementDetails() {
+        const summary = profileProgressSummary();
+        if (profileDetailDoneCount) profileDetailDoneCount.textContent = String(summary.done);
+        if (profileDetailTotalCount) profileDetailTotalCount.textContent = String(summary.total);
+        if (profileDetailNextCount) profileDetailNextCount.textContent = String(summary.next);
+        if (!profileGoalList) return;
+
+        profileGoalList.textContent = '';
+        const groups = [];
+        const groupMap = {};
+        summary.rows.forEach((row) => {
+          const key = row.goal.group || 'other';
+          if (!groupMap[key]) {
+            groupMap[key] = {
+              label: row.goal.groupLabel || 'そのほか',
+              rows: []
+            };
+            groups.push(groupMap[key]);
+          }
+          groupMap[key].rows.push(row);
+        });
+
+        groups.forEach((group) => {
+          const section = document.createElement('section');
+          section.className = 'profile-goal-section';
+
+          const title = document.createElement('h4');
+          title.className = 'profile-goal-section__title';
+          title.textContent = group.label;
+          section.appendChild(title);
+
+          group.rows.forEach((row) => {
+            section.appendChild(createGoalRow(row));
+          });
+          profileGoalList.appendChild(section);
+        });
+      }
+      function renderAvatarChoiceState() {
+        if (!profileAvatarControls || !avatarDraft) return;
+        profileAvatarControls.querySelectorAll('[data-avatar-part]').forEach((btn) => {
+          const active = avatarDraft[btn.dataset.avatarPart] === btn.dataset.avatarValue;
+          btn.classList.toggle('is-active', active);
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+      }
+      function renderAvatarBuilder() {
+        const profile = loadProfile();
+        avatarDraft = cloneAvatar(profile.avatar);
+        applyAvatarToElement(profileAvatarPreview, avatarDraft);
+        renderAvatarChoiceState();
+      }
+      function setAvatarDraft(part, value) {
+        if (!AVATAR_PARTS[part] || !Object.prototype.hasOwnProperty.call(AVATAR_PARTS[part], value)) return;
+        if (!avatarDraft) avatarDraft = cloneAvatar(loadProfile().avatar);
+        avatarDraft[part] = value;
+        applyAvatarToElement(profileAvatarPreview, avatarDraft);
+        renderAvatarChoiceState();
+      }
+      function saveAvatarDraft() {
+        const profile = loadProfile();
+        profile.avatar = cloneAvatar(avatarDraft || profile.avatar);
+        saveProfile(profile);
+        renderProfileHub();
+        showProfilePanel('main');
       }
       function renderProfileHub() {
         const profile = loadProfile();
@@ -11905,43 +12473,7 @@
         if (profileHubBestPct) profileHubBestPct.textContent = summary.best + '%';
         if (profileHubNextCount) profileHubNextCount.textContent = String(summary.next);
         if (profileHubEmpty) profileHubEmpty.hidden = summary.hasGameProgress;
-        setAvatarVariant(profileHubAvatar, profile);
-        if (profileGoalList) {
-          profileGoalList.textContent = '';
-          summary.rows.forEach((row) => {
-            const item = document.createElement('div');
-            item.className = 'profile-goal-row' + (row.done ? ' is-done' : '');
-
-            const icon = document.createElement('span');
-            icon.className = 'profile-goal-icon';
-            icon.setAttribute('aria-hidden', 'true');
-            icon.textContent = row.done ? '✓' : '○';
-
-            const main = document.createElement('span');
-            main.className = 'profile-goal-main';
-
-            const title = document.createElement('span');
-            title.className = 'profile-goal-title';
-            title.textContent = row.goal.title;
-
-            const bar = document.createElement('span');
-            bar.className = 'profile-goal-bar';
-            const fill = document.createElement('span');
-            fill.style.setProperty('--goal-pct', row.pct + '%');
-            bar.appendChild(fill);
-
-            const count = document.createElement('span');
-            count.className = 'profile-goal-count';
-            count.textContent = Math.min(Math.floor(row.current), row.target) + '/' + row.target;
-
-            main.appendChild(title);
-            main.appendChild(bar);
-            item.appendChild(icon);
-            item.appendChild(main);
-            item.appendChild(count);
-            profileGoalList.appendChild(item);
-          });
-        }
+        applyAvatarToElement(profileHubAvatar, profile);
         updateProfileHome(profile);
       }
       function openProfileHub() {
@@ -11951,15 +12483,18 @@
           return;
         }
         renderProfileHub();
+        showProfilePanel('main');
         openModal('profileHubModal');
       }
       function saveProfile(profile) {
+        const previous = hasProfile() ? loadProfile() : null;
         const next = {
           name: sanitizeProfileName(profile && profile.name),
           gender: normalizeGender(profile && profile.gender),
           age: normalizeAge(profile && profile.age),
           updatedAt: new Date().toISOString()
         };
+        next.avatar = normalizeAvatar((profile && profile.avatar) || (previous && previous.avatar), next);
         try { localStorage.setItem(PROFILE_KEY, JSON.stringify(next)); } catch (_) {}
         markProfileStat();
         updateProfileSettingsLabel(next);
@@ -12058,6 +12593,42 @@
           openHubAfterProfileSave = true;
           openProfileModal();
         });
+      }
+      if (profileAvatarEditBtn) {
+        profileAvatarEditBtn.addEventListener('click', () => {
+          renderAvatarBuilder();
+          showProfilePanel('avatar');
+        });
+      }
+      if (profileAchievementsBtn) {
+        profileAchievementsBtn.addEventListener('click', () => {
+          renderAchievementDetails();
+          showProfilePanel('achievements');
+        });
+      }
+      if (profileAvatarBackBtn) {
+        profileAvatarBackBtn.addEventListener('click', () => {
+          avatarDraft = null;
+          renderProfileHub();
+          showProfilePanel('main');
+        });
+      }
+      if (profileAchievementsBackBtn) {
+        profileAchievementsBackBtn.addEventListener('click', () => {
+          renderProfileHub();
+          showProfilePanel('main');
+        });
+      }
+      if (profileAvatarControls) {
+        profileAvatarControls.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-avatar-part][data-avatar-value]');
+          if (!btn) return;
+          e.preventDefault();
+          setAvatarDraft(btn.dataset.avatarPart, btn.dataset.avatarValue);
+        });
+      }
+      if (profileAvatarDoneBtn) {
+        profileAvatarDoneBtn.addEventListener('click', saveAvatarDraft);
       }
       if (settingsProfileBtn) {
         settingsProfileBtn.addEventListener('click', () => {
