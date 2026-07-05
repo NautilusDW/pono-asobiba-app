@@ -847,6 +847,10 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
   filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
 }
 
+.album-mode-toggle[hidden] {
+  display: none;
+}
+
 .sticker-exhibition-button {
   width: 178px;
   padding: 0 16px 0 64px;
