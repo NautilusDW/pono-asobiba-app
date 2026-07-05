@@ -20,7 +20,7 @@ button{font:inherit;color:inherit}
 #app{position:fixed;inset:0;overflow:hidden}
 #scene{position:absolute;inset:0;overflow:hidden}
 #scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:23vh;z-index:4;display:none;pointer-events:none;
-  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_dark_20260705.webp") var(--tunnel-track-x,0) bottom/auto 100% repeat-x;
+  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_dark_20260705.webp") var(--tunnel-track-x,0) bottom/auto 100% repeat-x;
   box-shadow:inset 0 2px 0 rgba(255,220,140,.1),inset 0 4px 14px rgba(0,0,0,.45)}
 body.tunnel-interior #scene::after{display:block}
 
@@ -138,7 +138,7 @@ body.st-space .tun{bottom:20vh}
 .cover{position:absolute;top:0;bottom:0;overflow:visible;background:transparent;z-index:7}
 .cover-core{position:absolute;top:0;bottom:0;left:calc(var(--portal-core-side-vw) * 1vw);right:calc(var(--portal-core-side-vw) * 1vw);background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
 .cover-core::after{content:"";position:absolute;left:0;right:0;bottom:0;height:23vh;pointer-events:none;
-  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_dark_20260705.webp") left bottom/auto 100% repeat-x}
+  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_dark_20260705.webp") left bottom/auto 100% repeat-x}
 .cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777 * var(--portal-gate-scale));background:center bottom/100% 100% no-repeat;z-index:4;pointer-events:none}
 .cover-gate-in{left:calc(100vh * var(--portal-in-left-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
 .cover-gate-out{right:calc(100vh * var(--portal-out-right-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
@@ -175,7 +175,7 @@ body.tunnel-exit-brighten #screenPortalBack,body.tunnel-exit-brighten #screenPor
 .screen-exit-gate{position:absolute;top:0;bottom:0;left:calc(100vh * var(--screen-exit-left-vh));width:calc(100vh * 1.777);background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") center bottom/100% 100% no-repeat}
 #screenPortalBack .screen-exit-gate{z-index:0}
 #screenPortalBack::after{content:"";position:absolute;left:0;right:0;bottom:0;height:18vh;z-index:1;pointer-events:none;
-  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_bright_20260705.webp") 0 bottom/auto 100% repeat-x;
+  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp") 0 bottom/auto 100% repeat-x;
   filter:drop-shadow(0 -1px 0 rgba(120,85,45,.18))}
 #screenPortalFront::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc((100vh * var(--screen-exit-left-vh)) + (100vh * 1.777 * var(--screen-exit-mask-edge)));background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") calc(100vh * var(--screen-exit-left-vh)) bottom/calc(100vh * 1.777) 100% no-repeat;pointer-events:none;
   clip-path:polygon(0 0,98% 0,100% 14%,96% 30%,91% 42%,87% 58%,89% 73%,96% 88%,100% 100%,0 100%)}
@@ -259,8 +259,8 @@ body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train 
 @keyframes sideRodTravel{0%,100%{transform:translate(0,0)}25%{transform:translate(1.2%,-10%)}50%{transform:translate(0,0)}75%{transform:translate(-1.2%,10%)}}
 @keyframes mainRodTravel{0%,100%{transform:translate(0,0) rotate(-11deg)}25%{transform:translate(1.2%,-5%) rotate(-15deg)}50%{transform:translate(0,0) rotate(-11deg)}75%{transform:translate(-1.2%,5%) rotate(-7deg)}}
 @keyframes crossheadSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(-10%)}}
-body.tunnel-interior.v-train #veh{left:calc(55vw - clamp(112px,18.5vw,198px));bottom:12.1vh;width:clamp(224px,37vw,396px);height:clamp(112px,18.5vw,198px)}
-body.tunnel-interior.v-train #cars{bottom:12.1vh}
+body.tunnel-interior.v-train #veh{left:calc(55vw - clamp(112px,18.5vw,198px));bottom:11vh;width:clamp(224px,37vw,396px);height:clamp(112px,18.5vw,198px)}
+body.tunnel-interior.v-train #cars{bottom:11vh}
 body.tunnel-interior.v-train #veh .train-art,body.tunnel-interior.v-train #cars .car{filter:brightness(.62) saturate(.78) contrast(.96) drop-shadow(0 2px 0 rgba(0,0,0,.42))}
 body.tunnel-interior.v-train #veh .headlight{opacity:.95;filter:brightness(1.18) saturate(.9)}
 body.v-train .puff{left:76%;top:-17%;width:18%;height:18%}

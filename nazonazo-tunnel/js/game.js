@@ -117,7 +117,7 @@ const ASSETS={
    sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
    horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
    mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
-   ground:"../assets/images/nazonazo-tunnel/town_ground_track_strip_20260703_v2.webp",
+   ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
    fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp",
    decor:"../assets/images/nazonazo-tunnel/town_decor_tree_generated_20260705.webp"
  },
@@ -125,7 +125,7 @@ const ASSETS={
   sky:"../assets/images/nazonazo-tunnel/jungle_sky_back_20260703.webp",
   horizon:"../assets/images/nazonazo-tunnel/jungle_horizon_layer_20260703.webp",
   mid:"../assets/images/nazonazo-tunnel/jungle_mid_layer_20260703.webp",
-  ground:"../assets/images/nazonazo-tunnel/jungle_ground_strip_20260703.webp",
+  ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
   fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp"
  }
 };
@@ -359,7 +359,7 @@ let acStatechangeAttached=false;
 let pendingTones=[];
 const PENDING_TONE_MAX=32;
 const PENDING_TONE_TTL_MS=800;
-let trainNoiseBuffer=null,nextTrainSeAt=0,trainSeStep=0,lastTrainWhistleAt=-9999;
+let trainNoiseBuffer=null,nextTrainSeAt=0,trainSeStep=0;
 function _nowMs(){
  return (typeof performance!=="undefined"&&performance.now)?performance.now():Date.now();
 }
@@ -458,27 +458,6 @@ function scheduleTrainChuff(t0,vol,tunnel){
   if(trainSeStep%2===0)tone(520,t0+.028,.028,"square",vol*.22);
  }catch(_){}
 }
-function scheduleTrainWhistle(t0,tunnel){
- try{
-  if(!ac||ac.state!=="running")return;
-  const start=ac.currentTime+t0,dur=tunnel?.58:.68,base=tunnel?292:330;
-  const o=ac.createOscillator(),o2=ac.createOscillator(),f=ac.createBiquadFilter(),g=ac.createGain();
-  o.type="sine";o2.type="triangle";f.type="lowpass";
-  f.frequency.setValueAtTime(tunnel?760:940,start);f.Q.setValueAtTime(.5,start);
-  o.frequency.setValueAtTime(base,start);
-  o.frequency.linearRampToValueAtTime(base*1.08,start+dur*.36);
-  o.frequency.linearRampToValueAtTime(base*.96,start+dur);
-  o2.frequency.setValueAtTime(base*2.01,start);
-  o2.frequency.linearRampToValueAtTime(base*2.12,start+dur*.36);
-  o2.frequency.linearRampToValueAtTime(base*1.94,start+dur);
-  g.gain.setValueAtTime(.0001,start);
-  g.gain.linearRampToValueAtTime(tunnel?.13:.18,start+.06);
-  g.gain.setValueAtTime(tunnel?.11:.15,start+dur*.64);
-  g.gain.exponentialRampToValueAtTime(.0001,start+dur);
-  o.connect(f);o2.connect(f);f.connect(g).connect(ac.destination);
-  o.start(start);o2.start(start);o.stop(start+dur+.04);o2.stop(start+dur+.04);
- }catch(_){}
-}
 function flushPendingTones(){
  if(!pendingTones.length)return;
  const now=_nowMs();
@@ -512,16 +491,9 @@ const sndOpen=()=>{tone(400,0,.3,"sine",.1);tone(600,.15,.3,"sine",.1)};
 const sndFan=()=>{[523,659,784,1047].forEach((f,i)=>tone(f,i*.16,.4,"triangle"))};
 const sndNew=()=>{[784,988,1175,1568].forEach((f,i)=>tone(f,i*.1,.25,"sine",.14))};
 function sndGo(){ensureAC();const v=STAGES[stg].veh;
- if(v==="train"){sndTrainWhistle();tone(520,0,.2,"square",.12);tone(520,.25,.35,"square",.12);}
+ if(v==="train"){tone(520,0,.2,"square",.12);tone(520,.25,.35,"square",.12);}
  else if(v==="sub"){tone(300,0,.5,"sine",.12);tone(360,.4,.5,"sine",.12);}
  else{tone(120,0,.7,"sawtooth",.1);tone(90,.1,.8,"sawtooth",.08);}}
-function sndTrainWhistle(){
- const now=_nowMs();
- if(now-lastTrainWhistleAt<2400)return;
- lastTrainWhistleAt=now;
- const tunnel=document.body.classList.contains("tunnel-interior")||veh.classList.contains("inTun");
- scheduleTrainWhistle(.02,tunnel);
-}
 function tickTrainSe(now){
  if(!playing||!driving||!document.body.classList.contains("v-train")||!veh.classList.contains("go")){
   nextTrainSeAt=now+120;
@@ -1363,22 +1335,22 @@ function tickMagicPuffs(now){
  if(now<nextMagicPuffAt)return;
  const box=veh.querySelector(".puff");
  if(!box)return;
- nextMagicPuffAt=now+150+Math.random()*170;
- if(box.children.length>8)return;
+ nextMagicPuffAt=now+90+Math.random()*90;
+ if(box.children.length>22)return;
  const p=document.createElement("span");
  p.className="magic-puff";
  const idx=rnd(0,7),col=idx%4,row=Math.floor(idx/4);
- const size=22+Math.random()*28;
- const life=900+Math.random()*620;
+ const size=18+Math.random()*24;
+ const life=2400+Math.random()*1500;
  p.style.width=size+"px";p.style.height=size+"px";
  p.style.setProperty("--puff-size",size+"px");
  p.style.setProperty("--puff-life",life+"ms");
- p.style.setProperty("--puff-dx",(-26-Math.random()*42)+"px");
- p.style.setProperty("--puff-dy",(-34-Math.random()*42)+"px");
+ p.style.setProperty("--puff-dx",(-140-Math.random()*260)+"px");
+ p.style.setProperty("--puff-dy",(-18-Math.random()*64)+"px");
  p.style.setProperty("--puff-rot",(-18+Math.random()*36)+"deg");
  p.style.setProperty("--puff-start-scale",(0.46+Math.random()*0.2).toFixed(2));
- p.style.setProperty("--puff-end-scale",(1.05+Math.random()*0.65).toFixed(2));
- const alpha=0.62+Math.random()*0.28;
+ p.style.setProperty("--puff-end-scale",(1.35+Math.random()*1.05).toFixed(2));
+ const alpha=0.34+Math.random()*0.24;
  p.style.setProperty("--puff-alpha",alpha.toFixed(2));
  p.style.setProperty("--puff-mid-alpha",(alpha*.72).toFixed(2));
  p.style.backgroundPosition=(col*33.3333)+"% "+(row*100)+"%";
