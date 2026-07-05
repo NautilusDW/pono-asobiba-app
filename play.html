@@ -2001,7 +2001,11 @@
       pointer-events: none;
     }
     .profile-avatar-done {
+      display: block;
+      min-width: 136px;
+      min-height: 44px;
       margin-top: 4px;
+      margin-inline: auto;
     }
     .profile-achievement-summary {
       display: grid;
@@ -6146,6 +6150,7 @@
       --av-hair: #6b4226;
       --av-shirt: #6fc2d4;
       --av-accent: #f2a65a;
+      --av-img: none;
       position: relative;
       width: 58px;
       height: 58px;
@@ -6162,6 +6167,18 @@
       overflow: hidden;
       flex: 0 0 auto;
       pointer-events: none;
+    }
+    .pono-mini-avatar[data-avatar-image="1"] {
+      background:
+        var(--av-img) center / 94% 94% no-repeat,
+        radial-gradient(circle at 32% 20%, rgba(255,255,255,.75), rgba(255,255,255,0) 34%),
+        var(--av-bg);
+    }
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__body,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__face,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__mark {
+      display: none;
     }
     .pono-mini-avatar__body,
     .pono-mini-avatar__face,
@@ -8347,7 +8364,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1973;
+    const PAGE_CACHE_VERSION = 1974;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -8356,7 +8373,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1973';
+    window.PONO_SW_VERSION = 'v1974';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -12430,6 +12447,8 @@
         { id: 'puzzle_3', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 3こ', stat: 'puzzle_clears', target: 3 },
         { id: 'puzzle_20', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 20こ', stat: 'puzzle_clears', target: 20 }
       ];
+      const AVATAR_ASSET_VERSION = '20260705';
+      const AVATAR_ASSET_BASE = 'assets/images/avatars/';
       const AVATAR_PRESETS = [
         { id: 'pono_kko', name: 'ポノっこ', kind: 'human', bg: '#fff1c4', skin: '#f2bf8a', hair: '#6b4226', shirt: '#6fc2d4', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
         { id: 'leaf_kko', name: 'はっぱっこ', kind: 'human', bg: '#dff7ec', skin: '#d99b6b', hair: '#2f4a33', shirt: '#f5c84c', accent: '#75b86a', hairStyle: 'long', markShape: 'leaf' },
@@ -12475,6 +12494,9 @@
       function avatarPresetById(id) {
         return AVATAR_PRESETS.find((preset) => preset.id === id) || AVATAR_PRESETS[0];
       }
+      function avatarAssetUrl(id) {
+        return __bust(AVATAR_ASSET_BASE + 'avatar_' + String(id || AVATAR_DEFAULT_ID) + '_' + AVATAR_ASSET_VERSION + '.webp');
+      }
       function avatarColor(value, fallback) {
         return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
       }
@@ -12496,7 +12518,8 @@
           shirt: avatarColor(preset.shirt, '#6fc2d4'),
           accent: avatarColor(preset.accent, '#f2a65a'),
           hairStyle: preset.hairStyle || 'round',
-          markShape: preset.markShape || 'leaf'
+          markShape: preset.markShape || 'leaf',
+          asset: avatarAssetUrl(preset.id)
         };
       }
       function defaultAvatarForProfile(profile) {
@@ -12565,6 +12588,13 @@
         el.dataset.kind = avatar.kind || 'human';
         el.dataset.hairStyle = avatar.hairStyle;
         el.dataset.markShape = avatar.markShape;
+        if (avatar.asset) {
+          el.dataset.avatarImage = '1';
+          el.style.setProperty('--av-img', 'url("' + avatar.asset + '")');
+        } else {
+          delete el.dataset.avatarImage;
+          el.style.removeProperty('--av-img');
+        }
         el.style.setProperty('--av-bg', avatar.bg);
         el.style.setProperty('--av-skin', avatar.skin);
         el.style.setProperty('--av-hair', avatar.hair);
