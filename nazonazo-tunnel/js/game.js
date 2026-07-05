@@ -587,6 +587,10 @@ function placePortalOccluder(gate,occ,mode){
   occ.style.display="none";
   return false;
  }
+ if(mode==="in"&&!document.body.classList.contains("tunnel-enter-run")){
+  occ.style.display="none";
+  return false;
+ }
  occ.classList.remove("wide-portal-mask");
  occ.style.removeProperty("--portal-wide-bg-w");
  occ.style.removeProperty("--portal-wide-bg-h");
@@ -1068,6 +1072,7 @@ function showTunnelRunIn(){
  setDriverMood("happy");
  document.body.classList.remove("tunnel-exit-setup","tunnel-exit-run");
  document.body.classList.add("tunnel-enter-run");
+ renderPortalMasks(transitCover||coverEl);
  veh.classList.add("go");carsEl.classList.add("go");
  setTimeout(()=>document.body.classList.add("tunnel-fade-dark"),TUNNEL_ENTRY_FADE_DELAY_MS);
  setTimeout(()=>{
