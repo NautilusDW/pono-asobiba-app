@@ -104,6 +104,26 @@ body.st-space .tun{bottom:20vh}
 .tun.shake .hole{animation:sh .5s}
 @keyframes sh{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .tun .sign{position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:clamp(18px,4vw,34px);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.tun.number-gate{bottom:9.2vh;width:32vw;max-width:360px;height:38vh;filter:drop-shadow(0 8px 0 rgba(86,63,140,.16))}
+.tun.number-gate::before,.tun.number-gate::after{content:"";position:absolute;z-index:3;pointer-events:none;filter:drop-shadow(0 4px 0 rgba(80,55,130,.15))}
+.tun.number-gate::before{left:-5%;bottom:0;width:24%;height:24%;background:#8fd8ff;clip-path:polygon(0 100%,100% 100%,68% 0,16% 18%)}
+.tun.number-gate::after{right:-2%;bottom:2%;width:18%;height:22%;background:#ff8cc5;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.tun.number-gate .mount{background:
+  radial-gradient(ellipse at 50% 88%,rgba(255,255,255,.2) 0 20%,transparent 21%),
+  conic-gradient(from 220deg at 50% 62%,#8a6fe5,#c58df0,#8cd8ff,#fff0a8,#f27ab5,#8a6fe5)!important;
+  border:3px solid rgba(255,255,255,.55);box-shadow:inset 0 -12px 0 rgba(70,45,130,.18),inset 0 10px 0 rgba(255,255,255,.22)}
+.tun.number-gate .hole{left:24%;bottom:0;width:52%;height:68%;border:4px solid rgba(255,255,255,.55);
+  background:radial-gradient(ellipse at 50% 100%,#38276e 0,#24184e 42%,#120b2a 82%);box-shadow:inset 0 0 24px rgba(0,0,0,.42)}
+.tun.number-gate .hole::before{content:"";position:absolute;inset:-12% -18% 0;background:
+  repeating-radial-gradient(ellipse at 50% 100%,rgba(255,255,255,0) 0 13%,rgba(255,255,255,.2) 14% 15%,rgba(255,255,255,0) 16% 22%),
+  linear-gradient(90deg,rgba(143,216,255,.18),rgba(255,240,168,.12),rgba(255,140,197,.16));
+  animation:numberTunnelPulse 3.6s linear infinite}
+.tun.number-gate .door{background:linear-gradient(145deg,#ffd86a,#ff9f6d);border-color:#fff3b8;box-shadow:inset 0 3px 0 rgba(255,255,255,.42)}
+.tun.number-gate .door::after{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);font-size:clamp(22px,4vw,38px);font-weight:900;color:rgba(130,72,120,.42)}
+.tun.number-gate .door.l::after{content:"1"}
+.tun.number-gate .door.r::after{content:"2"}
+.tun.number-gate .sign{top:16%;background:#fff;border:3px solid #ffcf5f;border-radius:50%;width:clamp(38px,5.4vw,62px);height:clamp(38px,5.4vw,62px);display:flex;align-items:center;justify-content:center}
+@keyframes numberTunnelPulse{from{transform:translateY(0) scale(.92);opacity:.38}50%{opacity:.72}to{transform:translateY(14%) scale(1.18);opacity:.38}}
 .tun.station{bottom:9.5vh;width:36vw;max-width:440px;height:34vh;z-index:5;pointer-events:none}
 .tun.station.jungle-station{width:44vw;max-width:520px;height:35vh}
 .tun.station .mount{display:none}
@@ -338,6 +358,44 @@ body.v-rocket #veh.go .rk-flame{opacity:1;animation:flame .22s linear infinite a
 @keyframes twk{0%,100%{opacity:.2}50%{opacity:1}}
 .fly{position:absolute;font-size:clamp(9px,1.8vw,16px);color:#ffe97d;z-index:2;animation:flyf 4s ease-in-out infinite}
 @keyframes flyf{0%,100%{opacity:.1;transform:translateY(0)}50%{opacity:1;transform:translateY(-14px)}}
+.num-scene{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;perspective:820px;transform:translateX(var(--num-pan,0));transform-style:preserve-3d}
+.num-scene::before{content:"";position:absolute;left:8%;right:8%;top:9%;height:58%;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.18) 1px,transparent 1px) 0 0/8vw 8vw,
+    linear-gradient(rgba(255,255,255,.16) 1px,transparent 1px) 0 0/8vw 8vw;
+  border-radius:50%;opacity:.45;transform:rotateX(62deg) translateY(7vh) scale(1.08);
+  filter:drop-shadow(0 10px 18px rgba(112,82,180,.16));animation:numGridFloat 9s ease-in-out infinite}
+.num-card,.num-poly,.num-ring{position:absolute;left:var(--x);top:var(--y);will-change:transform,opacity}
+.num-card{width:clamp(34px,6.4vw,58px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  border-radius:14px;background:linear-gradient(145deg,hsl(var(--hue) 96% 78% / .9),hsl(calc(var(--hue) + 18) 84% 58% / .82));
+  border:2px solid rgba(255,255,255,.72);box-shadow:0 12px 20px rgba(84,55,140,.18),inset 0 2px 0 rgba(255,255,255,.7);
+  color:#fff;font-weight:900;font-size:clamp(21px,4.2vw,38px);text-shadow:0 2px 0 rgba(75,45,110,.25);
+  animation:numCardDrift var(--dur) ease-in-out infinite;animation-delay:calc(var(--delay) * -1)}
+.num-card::after{content:"";position:absolute;left:14%;right:14%;bottom:-26%;height:16%;border-radius:50%;background:rgba(80,55,130,.18);filter:blur(5px)}
+.num-poly{width:clamp(28px,5.2vw,48px);aspect-ratio:1;background:hsl(var(--hue) 82% 62% / .5);
+  border:2px solid hsl(var(--hue) 88% 80% / .7);box-shadow:0 10px 18px rgba(50,60,120,.14);
+  animation:numPolyOrbit var(--dur) ease-in-out infinite;animation-delay:calc(var(--delay) * -1)}
+.num-poly.triangle{clip-path:polygon(50% 0,100% 86%,0 86%)}
+.num-poly.diamond{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.num-poly.hex{clip-path:polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%)}
+.num-poly.circle{border-radius:50%}
+.num-ring{width:clamp(76px,15vw,140px);aspect-ratio:1.7;border-radius:50%;border:3px solid hsl(var(--hue) 92% 72% / .45);
+  box-shadow:0 0 0 1px rgba(255,255,255,.22) inset,0 10px 22px rgba(80,70,130,.14);
+  transform-style:preserve-3d;animation:numRingSpin var(--dur) linear infinite;animation-delay:calc(var(--delay) * -1)}
+@keyframes numGridFloat{0%,100%{transform:rotateX(62deg) translateY(7vh) scale(1.08)}50%{transform:rotateX(58deg) translateY(3vh) scale(1.16)}}
+@keyframes numCardDrift{
+  0%,100%{opacity:.74;transform:translate3d(-2vw,0,-70px) rotateX(58deg) rotateY(-18deg) rotateZ(var(--rot)) scale(var(--scale))}
+  50%{opacity:.95;transform:translate3d(4vw,-4vh,58px) rotateX(38deg) rotateY(16deg) rotateZ(calc(var(--rot) + 22deg)) scale(calc(var(--scale) * 1.08))}
+}
+@keyframes numPolyOrbit{
+  0%,100%{opacity:.28;transform:translate3d(0,0,-110px) rotateX(66deg) rotateZ(0deg) scale(var(--scale))}
+  50%{opacity:.62;transform:translate3d(3vw,-5vh,40px) rotateX(34deg) rotateZ(180deg) scale(calc(var(--scale) * 1.22))}
+}
+@keyframes numRingSpin{
+  0%{opacity:.2;transform:translate3d(-3vw,0,-150px) rotateX(72deg) rotateY(0deg) rotateZ(0deg) scale(var(--scale))}
+  50%{opacity:.48;transform:translate3d(3vw,-3vh,20px) rotateX(54deg) rotateY(28deg) rotateZ(180deg) scale(calc(var(--scale) * 1.1))}
+  100%{opacity:.2;transform:translate3d(-3vw,0,-150px) rotateX(72deg) rotateY(0deg) rotateZ(360deg) scale(var(--scale))}
+}
 .spark{position:absolute;font-size:clamp(22px,4.5vw,44px);z-index:9;animation:sparkA .8s ease-out forwards;pointer-events:none}
 @keyframes sparkA{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.6) translateY(-30px)}}
 .runEvent{appearance:none;-webkit-appearance:none;position:absolute;width:clamp(48px,7vw,70px);aspect-ratio:1;border:3px solid rgba(255,207,94,.95);

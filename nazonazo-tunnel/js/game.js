@@ -1008,6 +1008,7 @@ function buildWorld(keepCover){
  for(let i=0;i<QN;i++){
  const t=document.createElement("div");t.className="tun";
   const stationStage=hasStationArt(st);
+  t.classList.add(st.id+"-gate");
   if(stationStage)t.classList.add("station",st.id+"-station");
   t.style.left=tunX(o,i)+"vw";
   t.innerHTML=stationStage
@@ -1077,15 +1078,48 @@ function buildWorld(keepCover){
  } else {coverEl=null;dropEl=null;}
 }
 function buildAmbient(P){
- document.querySelectorAll(".bub,.twk,.fly").forEach(n=>n.remove());
+ document.querySelectorAll(".bub,.twk,.fly,.numfx").forEach(n=>n.remove());
  const sc=$("scene"),st=STAGES[stg];
  const fx=(P&&P.fx)||"";
+ if(st.id==="number")buildNumberFx(sc);
  if(st.id==="sea"){for(let i=0;i<8;i++){const b=document.createElement("div");b.className="bub";
   b.style.left=(5+i*12)+"%";b.style.animationDuration=(7+(i%4)*2.5)+"s";b.style.animationDelay=(-i*1.7)+"s";sc.appendChild(b);}}
  if(st.id==="space"||st.id==="future"){for(let i=0;i<10;i++){const t=document.createElement("div");t.className="twk";t.textContent="✦";
   t.style.left=(3+i*10)+"%";t.style.top=(5+((i*23)%40))+"%";t.style.animationDelay=(-i*.4)+"s";sc.appendChild(t);}}
  if(fx==="fireflies"){for(let i=0;i<12;i++){const f=document.createElement("div");f.className="fly";f.textContent="●";
   f.style.left=(3+i*8)+"%";f.style.top=(30+((i*17)%45))+"%";f.style.animationDelay=(-i*.6)+"s";sc.appendChild(f);}}
+}
+function buildNumberFx(sc){
+ const layer=document.createElement("div");
+ layer.className="numfx num-scene";
+ layer.setAttribute("aria-hidden","true");
+ const cards=[
+  [8,16,1,.92,0,0,7.2],[22,8,7,.74,-18,.45,8.4],[38,19,3,.86,14,.9,7.8],
+  [58,10,9,.78,-8,1.35,9.1],[75,20,5,.88,22,1.8,7.4],[90,8,2,.72,-24,2.25,8.2],
+  [14,52,6,.7,18,2.7,6.8],[48,48,0,.8,-14,3.15,7.6],[82,54,4,.68,10,3.6,6.9]
+ ];
+ cards.forEach((c,i)=>{
+  const el=document.createElement("div");
+  el.className="num-card";
+  el.textContent=String(c[2]);
+  el.style.cssText="--x:"+c[0]+"%;--y:"+c[1]+"%;--scale:"+c[3]+";--rot:"+c[4]+"deg;--delay:"+c[5]+"s;--dur:"+c[6]+"s;--hue:"+(34+i*31)+";";
+  layer.appendChild(el);
+ });
+ const shapes=["triangle","diamond","hex","circle","triangle","diamond","hex"];
+ const pos=[[18,32,.8,0],[33,58,.64,.7],[51,31,.74,1.4],[68,45,.7,2.1],[86,34,.82,2.8],[7,68,.58,3.5],[63,67,.62,4.2]];
+ pos.forEach((p,i)=>{
+  const el=document.createElement("div");
+  el.className="num-poly "+shapes[i];
+  el.style.cssText="--x:"+p[0]+"%;--y:"+p[1]+"%;--scale:"+p[2]+";--delay:"+p[3]+"s;--dur:"+(9.5+i*.7)+"s;--hue:"+(185+i*24)+";";
+  layer.appendChild(el);
+ });
+ for(let i=0;i<4;i++){
+  const el=document.createElement("div");
+  el.className="num-ring";
+  el.style.cssText="--x:"+(21+i*19)+"%;--y:"+(25+(i%2)*18)+"%;--scale:"+(0.72+i*.12)+";--delay:"+(i*.85)+"s;--dur:"+(12+i*1.8)+"s;--hue:"+(48+i*58)+";";
+  layer.appendChild(el);
+ }
+ sc.appendChild(layer);
 }
 
 /* ================= passengers ================= */
@@ -1432,6 +1466,9 @@ function useHelp(){
 function render(){
  const o=origin(stg);
  world.style.transform="translateX("+(-worldX)+"vw)";
+ if(document.body.classList.contains("st-number")){
+  document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
+ }
  updateScreenExitShift();
  if(tunnelInteriorMode){
   skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
