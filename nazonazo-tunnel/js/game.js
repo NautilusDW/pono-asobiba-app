@@ -312,7 +312,7 @@ function openZukan(){
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false;
-let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0;
+let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
@@ -1089,6 +1089,10 @@ function visibleCarGroups(){
 function renderPassengerSeat(c,seatName){
  const seat=document.createElement("div");
  seat.className="car-seat "+seatName;
+ if(c&&c.pending){
+  seat.classList.add("pending-seat");
+  return seat;
+ }
  if(c.img){
   const im=document.createElement("img");
   im.className="pas-img";im.src=c.img;im.alt="";
@@ -1120,18 +1124,26 @@ function renderCars(){
   if(cars.length>8&&i===0)el.classList.add("fade");
   carsEl.appendChild(el);
  });
- carBadge.style.display=cars.length?"block":"none";
- carBadge.textContent="👥 ×"+cars.length;
+ const realCount=cars.filter(c=>!c.pending).length;
+ carBadge.style.display=realCount?"block":"none";
+ carBadge.textContent="👥 ×"+realCount;
 }
-function nextPassengerSeatTarget(){
+function passengerSeatTargetAt(index){
  if(STAGES[stg]&&STAGES[stg].veh==="train"){
   const seatCenters=[.755,.585,.415,.245];
   const carLeft=vehicleLeftVw()-carGap();
-  const x=carLeft+trainCarWidthVw()*seatCenters[cars.length%4];
+  const x=carLeft+trainCarWidthVw()*seatCenters[index%4];
   const y=9.1+trainCarHeightVh()*.37;
   return {left:x+"vw",bottom:y+"vh"};
  }
  return {left:(vehicleLeftVw()-carGap())+"vw",bottom:"14vh"};
+}
+function updateScreenExitShift(){
+ const active=document.body.classList.contains("tunnel-exit-setup")||
+  document.body.classList.contains("tunnel-exit-run")||
+  document.body.classList.contains("tunnel-exit-clear");
+ const shift=active?(exitPortalBaseWorldX-worldX):0;
+ document.documentElement.style.setProperty("--screen-exit-shift-vw",shift.toFixed(2)+"vw");
 }
 function coverEntryStop(){
  if(!coverEl)return worldX;
@@ -1179,15 +1191,17 @@ function startTunnelExitApproach(){
 function finishTunnelInterior(){
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
  document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-brighten");
- document.body.classList.add("tunnel-fade-dark");
+ document.body.classList.add("tunnel-fade-dark","tunnel-exit-white");
  setTimeout(()=>{
   if(!playing)return;
   tunnelInteriorMode=false;
   document.body.classList.remove("tunnel-interior","tunnel-exit-approach");
   stg++;buildQList();qSeg=0;stageMiss=0;rareSpawned=false;
   applySkin();buildWorld(false);drawDots();
-  document.body.classList.add("tunnel-fade-dark","tunnel-exit-setup");
+  document.body.classList.add("tunnel-fade-dark","tunnel-exit-white","tunnel-exit-setup");
   worldX=origin(stg);target=stops(origin(stg),0);
+  exitPortalBaseWorldX=worldX;
+  updateScreenExitShift();
   pending="quiz";driving=true;swapReady=false;swapped=false;
   veh.classList.add("go");veh.classList.remove("idle");
   carsEl.classList.add("go");
@@ -1205,7 +1219,8 @@ function finishTunnelInterior(){
     document.body.classList.add("tunnel-exit-clear");
     setTimeout(()=>{
      if(!playing)return;
-     document.body.classList.remove("tunnel-exit-run","tunnel-exit-clear","tunnel-exit-brighten");
+     document.body.classList.remove("tunnel-exit-run","tunnel-exit-clear","tunnel-exit-brighten","tunnel-exit-white");
+     updateScreenExitShift();
     },TUNNEL_EXIT_CLEAR_MS);
    },TUNNEL_EXIT_RUN_MS);
   },TUNNEL_EXIT_BLACK_HOLD_MS);
@@ -1246,6 +1261,10 @@ function boardPassenger(p,learned,stationEl){
  const passenger=typeof p==="object"?p:{e:p,t:learned&&learned[1]};
  const isNew=registerZk(passenger.e,passengerLabel(passenger));
  if(learned)registerZk(learned[0],learned[1]);
+ const seatIndex=cars.length;
+ const pendingSeat={pending:true,e:"",t:""};
+ cars.push(pendingSeat);
+ renderCars();
  const fl=document.createElement("div");fl.className="flyer";
  if(passenger.happy||passenger.img||passenger.normal){
   const im=document.createElement("img");
@@ -1261,13 +1280,17 @@ function boardPassenger(p,learned,stationEl){
   fl.style.left="50vw";fl.style.bottom="30vh";
  }
  $("app").appendChild(fl);
- const targetSeat=nextPassengerSeatTarget();
+ const targetSeat=passengerSeatTargetAt(seatIndex);
  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
   fl.style.left=targetSeat.left;fl.style.bottom=targetSeat.bottom;
   });});
  setTimeout(()=>{
   fl.remove();
-  cars.push({e:passenger.e,t:passengerLabel(passenger),img:passenger.normal||passenger.img||passenger.happy});renderCars();
+  const seated={e:passenger.e,t:passengerLabel(passenger),img:passenger.normal||passenger.img||passenger.happy};
+  const idx=cars.indexOf(pendingSeat);
+  if(idx>=0)cars[idx]=seated;
+  else cars.push(seated);
+  renderCars();
   if(isNew){sndNew();showStamp("あたらしい ともだち！","new");}
  },780);
  return isNew;
@@ -1335,13 +1358,14 @@ function tickMagicPuffs(now){
  if(now<nextMagicPuffAt)return;
  const box=veh.querySelector(".puff");
  if(!box)return;
- nextMagicPuffAt=now+32+Math.random()*48;
- if(box.children.length>64)return;
+ nextMagicPuffAt=now+16+Math.random()*24;
+ if(box.children.length>128)return;
  const p=document.createElement("span");
  p.className="magic-puff";
  const idx=rnd(0,7),col=idx%4,row=Math.floor(idx/4);
  const size=12+Math.random()*52;
- const life=2600+Math.random()*1800;
+ const baseLife=2600+Math.random()*1800;
+ const life=baseLife*(1.5+Math.random()*0.5);
  p.style.width=size+"px";p.style.height=size+"px";
  p.style.setProperty("--puff-size",size+"px");
  p.style.setProperty("--puff-life",life+"ms");
@@ -1396,6 +1420,7 @@ function useHelp(){
 function render(){
  const o=origin(stg);
  world.style.transform="translateX("+(-worldX)+"vw)";
+ updateScreenExitShift();
  if(tunnelInteriorMode){
   skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
   document.documentElement.style.setProperty("--tunnel-track-x",(-worldX*.55)+"vw");
@@ -1510,7 +1535,8 @@ function gloop(t){
 function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
- document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-exit-brighten","tunnel-fade-dark","tunnel-interior");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-exit-brighten","tunnel-exit-white","tunnel-fade-dark","tunnel-interior");
+ updateScreenExitShift();
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
  setDriverMood("cheer");

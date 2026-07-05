@@ -147,6 +147,7 @@ body.st-space .tun{bottom:20vh}
 .cover .rimR{left:100%;transform:scaleX(-1)}
 .lamp{display:none}
 #tunnelFade{position:fixed;inset:0;z-index:80;background:#000;opacity:0;pointer-events:none;transition:opacity .42s ease}
+body.tunnel-exit-white #tunnelFade{background:#fff8df}
 body.tunnel-fade-dark #tunnelFade{opacity:1;transition-duration:.28s}
 #tunnelExitGlow{position:absolute;right:-16vw;top:0;bottom:0;width:56vw;z-index:5;opacity:0;pointer-events:none;
   background:
@@ -165,7 +166,7 @@ body.tunnel-exit-run #world .tun,body.tunnel-exit-run #world .decor,body.tunnel-
 body.tunnel-exit-clear #world .tun,body.tunnel-exit-clear #world .decor,body.tunnel-exit-clear #world .dropStation{opacity:0}
 body.tunnel-interior #skyA{background-color:#17110b}
 body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0}
-#screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease}
+#screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease;transform:translateX(var(--screen-exit-shift-vw,0vw))}
 #screenPortalBack{z-index:6}
 #screenPortalFront{z-index:9}
 body.tunnel-exit-setup #screenPortalBack,body.tunnel-exit-setup #screenPortalFront,body.tunnel-exit-run #screenPortalBack,body.tunnel-exit-run #screenPortalFront,body.tunnel-exit-clear #screenPortalBack,body.tunnel-exit-clear #screenPortalFront{display:block}
@@ -175,7 +176,7 @@ body.tunnel-exit-brighten #screenPortalBack,body.tunnel-exit-brighten #screenPor
 @keyframes exitSceneBrighten{0%{filter:brightness(.58) saturate(.86)}100%{filter:brightness(1) saturate(1)}}
 .screen-exit-gate{position:absolute;top:0;bottom:0;left:calc(100vh * var(--screen-exit-left-vh));width:calc(100vh * 1.777);background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") center bottom/100% 100% no-repeat}
 #screenPortalBack .screen-exit-gate{z-index:0}
-#screenPortalBack::after{content:"";position:absolute;left:0;right:0;bottom:0;height:18vh;z-index:1;pointer-events:none;
+#screenPortalBack::after{content:"";display:none;position:absolute;left:0;right:0;bottom:0;height:18vh;z-index:1;pointer-events:none;
   background:url("../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp") 0 bottom/auto 100% repeat-x;
   filter:drop-shadow(0 -1px 0 rgba(120,85,45,.18))}
 #screenPortalFront::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc((100vh * var(--screen-exit-left-vh)) + (100vh * 1.777 * var(--screen-exit-mask-edge)));background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") calc(100vh * var(--screen-exit-left-vh)) bottom/calc(100vh * 1.777) 100% no-repeat;pointer-events:none;
