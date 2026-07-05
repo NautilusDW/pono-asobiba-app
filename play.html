@@ -1952,60 +1952,53 @@
       width: 22px;
       height: 22px;
     }
-    .profile-avatar-controls {
+    .profile-avatar-grid {
       display: grid;
-      gap: 9px;
-      margin-bottom: 12px;
-    }
-    .profile-avatar-control {
-      display: grid;
-      grid-template-columns: 74px minmax(0, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 8px;
-      align-items: center;
+      max-height: min(310px, 48dvh);
+      margin-bottom: 12px;
+      padding: 2px 2px 4px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
-    .profile-avatar-control__label {
-      color: var(--text);
-      font-size: .84rem;
-      font-weight: 900;
-      line-height: 1.1;
-      text-align: right;
-    }
-    .profile-avatar-options {
+    .profile-avatar-preset {
       min-width: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-    }
-    .profile-avatar-choice {
-      min-width: 42px;
-      min-height: 38px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      padding: 5px 8px;
+      min-height: 84px;
+      display: grid;
+      grid-template-rows: 54px auto;
+      place-items: center;
+      gap: 4px;
+      padding: 7px 5px 6px;
       border: 2px solid rgba(242, 145, 90, .34);
-      border-radius: 14px;
+      border-radius: 16px;
       background: #fffdfa;
       color: var(--text);
       font-family: inherit;
-      font-size: .78rem;
       font-weight: 900;
       cursor: pointer;
       touch-action: manipulation;
     }
-    .profile-avatar-choice.is-active {
+    .profile-avatar-preset.is-active {
       border-color: #F5A800;
       background: #FFF3C4;
       color: #6B4300;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.68);
     }
-    .profile-avatar-choice__swatch {
-      width: 22px;
-      height: 22px;
-      display: inline-block;
-      border-radius: 50%;
-      background: var(--choice-color, #ddd);
-      box-shadow: inset 0 0 0 2px rgba(255,255,255,.65), 0 1px 0 rgba(0,0,0,.12);
+    .profile-avatar-preset .pono-mini-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      border-width: 3px;
+    }
+    .profile-avatar-preset__name {
+      max-width: 100%;
+      font-size: .72rem;
+      line-height: 1.04;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
     }
     .profile-avatar-done {
       margin-top: 4px;
@@ -2067,11 +2060,10 @@
       .profile-avatar-preview .pono-mini-avatar__hair { left: 18px; top: 13px; width: 46px; height: 23px; }
       .profile-avatar-preview .pono-mini-avatar__hair::after { left: 29px; top: 8px; width: 15px; height: 20px; }
       .profile-avatar-preview .pono-mini-avatar__mark { right: 12px; top: 10px; width: 16px; height: 16px; }
-      .profile-avatar-control { grid-template-columns: 58px minmax(0, 1fr); gap: 6px; }
-      .profile-avatar-control__label { font-size: .76rem; }
-      .profile-avatar-options { gap: 5px; }
-      .profile-avatar-choice { min-width: 36px; min-height: 34px; padding: 4px 6px; font-size: .72rem; }
-      .profile-avatar-choice__swatch { width: 18px; height: 18px; }
+      .profile-avatar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; max-height: min(238px, 42dvh); }
+      .profile-avatar-preset { min-height: 72px; grid-template-rows: 44px auto; padding: 5px 4px; border-radius: 14px; }
+      .profile-avatar-preset .pono-mini-avatar { width: 42px; height: 42px; border-radius: 14px; }
+      .profile-avatar-preset__name { font-size: .66rem; }
     }
     .setting-row {
       display: flex;
@@ -5769,7 +5761,7 @@
       position: absolute;
       /* bottom-nav の grid (4列固定) を崩さず、 左外側へ並置 */
       left: auto;
-      right: calc(100% + 186px);  /* sw1763: 残高桁数で幅が伸びても右端を ごかんそう左 14px 外へ固定 */
+      right: calc(100% + 14px);
       top: 50%;
       transform: translateY(-50%);
       z-index: 2;                 /* nav 内重なり順 */
@@ -6228,6 +6220,12 @@
       background: var(--av-hair);
       transform: rotate(-7deg);
     }
+    .pono-mini-avatar__hair::before {
+      content: '';
+      position: absolute;
+      display: none;
+      background: var(--av-hair);
+    }
     .pono-mini-avatar__mark {
       right: 8px;
       top: 7px;
@@ -6281,6 +6279,151 @@
       border-radius: 4px 9px 9px 4px;
       transform: rotate(0deg);
     }
+    .pono-mini-avatar[data-kind="fox"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-kind="cat"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-kind="bear"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-kind="squirrel"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-kind="tanuki"] .pono-mini-avatar__hair {
+      left: 24%;
+      top: 12%;
+      width: 52%;
+      height: 28%;
+      background: transparent;
+      overflow: visible;
+    }
+    .pono-mini-avatar[data-kind="fox"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="fox"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-kind="cat"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="cat"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-kind="squirrel"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="squirrel"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-kind="tanuki"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="tanuki"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: 0;
+      width: 43%;
+      height: 84%;
+      border-radius: 72% 24% 72% 24%;
+      background: var(--av-hair);
+    }
+    .pono-mini-avatar[data-kind="fox"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="cat"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="squirrel"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="tanuki"] .pono-mini-avatar__hair::before {
+      left: -10%;
+      transform: rotate(-28deg);
+    }
+    .pono-mini-avatar[data-kind="fox"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-kind="cat"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-kind="squirrel"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-kind="tanuki"] .pono-mini-avatar__hair::after {
+      left: auto;
+      right: -10%;
+      transform: rotate(28deg);
+    }
+    .pono-mini-avatar[data-kind="bear"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="bear"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: 2%;
+      width: 38%;
+      height: 64%;
+      border-radius: 50%;
+      background: var(--av-hair);
+      transform: none;
+    }
+    .pono-mini-avatar[data-kind="bear"] .pono-mini-avatar__hair::before { left: -8%; }
+    .pono-mini-avatar[data-kind="bear"] .pono-mini-avatar__hair::after { left: auto; right: -8%; }
+    .pono-mini-avatar[data-kind="rabbit"] .pono-mini-avatar__hair {
+      left: 30%;
+      top: 2%;
+      width: 40%;
+      height: 30%;
+      background: transparent;
+      overflow: visible;
+    }
+    .pono-mini-avatar[data-kind="rabbit"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="rabbit"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: -16%;
+      width: 34%;
+      height: 118%;
+      border-radius: 999px;
+      background: var(--av-hair);
+    }
+    .pono-mini-avatar[data-kind="rabbit"] .pono-mini-avatar__hair::before { left: 8%; transform: rotate(-10deg); }
+    .pono-mini-avatar[data-kind="rabbit"] .pono-mini-avatar__hair::after { left: auto; right: 8%; transform: rotate(10deg); }
+    .pono-mini-avatar[data-kind="owl"] .pono-mini-avatar__face {
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,.42), inset 0 -2px 0 rgba(130,80,40,.12);
+    }
+    .pono-mini-avatar[data-kind="owl"] .pono-mini-avatar__hair {
+      left: 19%;
+      top: 12%;
+      width: 62%;
+      height: 22%;
+      border-radius: 50% 50% 18% 18%;
+    }
+    .pono-mini-avatar[data-kind="owl"] .pono-mini-avatar__hair::after { display: none; }
+    .pono-mini-avatar[data-kind="robot"] .pono-mini-avatar__face {
+      border-radius: 8px;
+      background: linear-gradient(180deg, #eef8ff, var(--av-skin));
+      box-shadow: inset 0 0 0 2px rgba(75, 99, 124, .24);
+    }
+    .pono-mini-avatar[data-kind="robot"] .pono-mini-avatar__hair {
+      left: 40%;
+      top: 8%;
+      width: 20%;
+      height: 16%;
+      border-radius: 999px;
+      background: var(--av-accent);
+    }
+    .pono-mini-avatar[data-kind="robot"] .pono-mini-avatar__hair::after {
+      left: 42%;
+      top: -72%;
+      width: 18%;
+      height: 82%;
+      border-radius: 999px;
+      background: var(--av-hair);
+      transform: none;
+    }
+    .pono-mini-avatar[data-kind="monster"] .pono-mini-avatar__hair {
+      left: 20%;
+      top: 9%;
+      width: 60%;
+      height: 20%;
+      border-radius: 50% 50% 12% 12%;
+    }
+    .pono-mini-avatar[data-kind="monster"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-kind="monster"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: -28%;
+      width: 22%;
+      height: 80%;
+      border-radius: 50% 50% 8% 8%;
+      background: var(--av-accent);
+    }
+    .pono-mini-avatar[data-kind="monster"] .pono-mini-avatar__hair::before { left: 8%; transform: rotate(-12deg); }
+    .pono-mini-avatar[data-kind="monster"] .pono-mini-avatar__hair::after { left: auto; right: 8%; transform: rotate(12deg); }
+    .pono-mini-avatar[data-kind="mushroom"] .pono-mini-avatar__hair {
+      left: 13%;
+      top: 8%;
+      width: 74%;
+      height: 28%;
+      border-radius: 70% 70% 24% 24%;
+      background: var(--av-hair);
+    }
+    .pono-mini-avatar[data-kind="mushroom"] .pono-mini-avatar__hair::after { display: none; }
+    .pono-mini-avatar[data-kind="acorn"] .pono-mini-avatar__hair {
+      left: 20%;
+      top: 8%;
+      width: 60%;
+      height: 30%;
+      border-radius: 60% 60% 16% 16%;
+      background:
+        repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 3px, rgba(0,0,0,0) 3px 7px),
+        var(--av-hair);
+    }
+    .pono-mini-avatar[data-kind="acorn"] .pono-mini-avatar__hair::after { display: none; }
     .pono-mini-avatar[data-variant="1"] {
       --av-bg: #dff7ec;
       --av-skin: #d99b6b;
@@ -6563,96 +6706,139 @@
     }
     .bottom-nav {
       --nav-sprite-w: 500px;
-      --nav-sprite-h: 158px;
-      --bottom-nav-normal-bg: url("assets/ui/title/title_bottom_nav_4_generated_20260626.webp");
-      --bottom-nav-bg: var(--bottom-nav-normal-bg);
+      --nav-sprite-h: 118px;
       bottom: 20px;
       width: var(--nav-sprite-w);
       height: var(--nav-sprite-h);
       display: grid;
-      /* sw1723: 5 番目「ごかんそう」 ボタン用の 5 列 sprite が未配備のため、
-         grid は 4 列に戻し既存 sprite (4 アイコン) とボタン位置を再整合。
-         5 番目ボタンは grid 外へ絶対配置で並置 (.bn-item--feedback)。
-         5 列 sprite が用意でき次第、 grid を 5 列に戻し下記絶対配置を撤去。 */
       grid-template-columns: repeat(4, 1fr);
-      gap: 0;
-      padding: 0 18px;
-      background-color: transparent;
-      background-image: var(--bottom-nav-bg), var(--bottom-nav-normal-bg);
-      background-position: center, center;
-      background-size: 100% 100%, 100% 100%;
-      background-repeat: no-repeat, no-repeat;
-      border: 0;
-      border-radius: 0;
+      gap: 8px;
+      padding: 8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,0) 34%),
+        linear-gradient(180deg, #C98239 0%, #9A5C28 54%, #6E3F1F 100%);
+      border: 3px solid rgba(88, 50, 18, .56);
+      border-radius: 24px;
       overflow: visible;
-      filter: drop-shadow(0 8px 14px rgba(20, 10, 0, .36));
+      box-shadow:
+        0 6px 0 rgba(86, 45, 16, .42),
+        0 12px 18px rgba(20, 10, 0, .28),
+        inset 0 2px 0 rgba(255,255,255,.26);
     }
     .bottom-nav::after { display: none; }
-    .bottom-nav[data-pressed="help"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_help_masked_20260626.webp");
-    }
-    .bottom-nav[data-pressed="news"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_news_masked_20260626.webp");
-    }
-    .bottom-nav[data-pressed="stickers"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_stickers_masked_20260626.webp");
-    }
-    .bottom-nav[data-pressed="settings"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_4_pressed_settings_masked_20260626.webp");
-    }
-    .bottom-nav[data-pressed="feedback"] {
-      --bottom-nav-bg: url("assets/ui/title/title_bottom_nav_5_pressed_feedback_masked_20260628.webp");
-    }
     .bn-item {
       min-width: 0;
       height: 100%;
-      display: block;
+      display: grid;
+      grid-template-rows: 44px auto;
+      place-items: center;
+      align-content: center;
+      gap: 2px;
       position: relative;
-      border: 0;
-      border-radius: 22px;
+      padding: 7px 4px 6px;
+      border: 2px solid rgba(255, 230, 160, .72);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,0) 34%),
+        linear-gradient(180deg, #FFF5C9 0%, #F3C26E 58%, #D28A35 100%);
+      color: #60370e;
+      box-shadow:
+        0 3px 0 rgba(91, 52, 19, .34),
+        inset 0 1px 0 rgba(255,255,255,.58);
+      font-family: inherit;
+      font-weight: 900;
+      text-align: center;
+      transition: transform .08s ease-out, filter .1s ease;
+    }
+    .bn-item:hover { filter: brightness(1.04); }
+    .bottom-nav[data-pressed="profile"] .bn-item[data-action="profile"],
+    .bottom-nav[data-pressed="feedback"] .bn-item[data-action="feedback"],
+    .bottom-nav[data-pressed="stickers"] .bn-item[data-action="stickers"],
+    .bottom-nav[data-pressed="settings"] .bn-item[data-action="settings"],
+    .bn-item:active {
+      transform: translateY(2px);
+      filter: brightness(.98);
+    }
+    .bn-item__icon {
+      width: 44px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(255,255,255,.62);
+      color: #7A4A10;
+      font-size: 25px;
+      line-height: 1;
+      box-shadow: inset 0 0 0 2px rgba(150, 96, 34, .14);
+      pointer-events: none;
+    }
+    .bn-item__icon--avatar {
+      width: 48px;
+      height: 42px;
       background: transparent;
-      color: transparent;
       box-shadow: none;
     }
-    .bn-item:hover { filter: none; }
-    .bn-item__icon,
-    .bn-item__label { display: none; }
-    /* sw1723: ごかんそう ボタンは grid 外配置 (4 アイコン sprite との整合のため)。
-       5 列 sprite が用意でき次第このルールは撤去する。
-       sw1738: 画面右端切れ対策で sprite 右外 (left: calc(100% + 8px)) → 左外へ移動。
-       どんぐりバッジ (-260px) の右隣に 置く: -260 + 140 (badge width) + 24 (gap) ≈ -96。
-       bottom-nav は画面右寄せ配置 (right: calc(...)) なので、 左外には十分な空きあり。
-       sw1750: 焼き込み済み画像 icon (木枠 + クリーム座布団 + 紙鉛筆 + 「ごかんそう」ラベル)
-       に差し替え。 sw1763: 実表示が 114-158px まで拡大されるため、 64px 版ではなく
-       512px 版を背景に使って解像感を確保。 同時に default/wide の重なりを再調整。 */
-    .bn-item--feedback {
+    .bn-item--profile .pono-mini-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border-width: 3px;
+    }
+    .bn-item__label {
+      max-width: 100%;
+      display: block;
+      color: #4f2d0c;
+      font-size: 14px;
+      line-height: 1.02;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 0 rgba(255, 248, 220, .72);
+      pointer-events: none;
+    }
+    .bn-item__sub {
+      max-width: 100%;
+      display: block;
+      color: #775126;
+      font-size: 10px;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+    .bn-badge {
       position: absolute;
-      left: -172px;               /* sw1763: -180→-172 (ヘルプ側 gap 22→14px / どんぐり右端は -186 固定) */
-      top: 50%;
-      transform: translateY(-50%);
-      /* 画像は木枠+座布団+ラベル baked in の単タイルデザイン。
-         ボタン箱は既存 sprite 高さに合わせ、 背景画像だけ高解像度 512px 版へ差し替える。 */
-      width: 158px;
-      height: 158px;
-      padding: 0;
-      border: 0;
-      border-radius: 0;
-      background: url('/assets/ui/icon_feedback_20260628_512.png') center / contain no-repeat;
-      box-shadow: none;
-      color: transparent;
-      font-size: 0;
-      transition: transform .08s ease-out, background-image 0s;
+      top: -7px;
+      right: -7px;
+      min-width: 26px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 7px 1px;
+      border: 2px solid #fff6df;
+      border-radius: 999px;
+      background: #E94B4B;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: 0 2px 0 rgba(94, 30, 20, .24);
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
     }
-    .bn-item--feedback:active {
-      background-image: url('/assets/ui/icon_feedback_20260628_pressed_512.png');
-      transform: translate(0, calc(-50% + 1px));
+    .bn-badge[hidden] {
+      display: none !important;
+    }
+    .bn-badge--profile {
+      background: #fff7dc;
+      color: #6a4300;
+      border-color: rgba(125, 87, 35, .36);
     }
     @media (prefers-reduced-motion: reduce) {
-      .bn-item--feedback { transition: none; }
-      .bn-item--feedback:active { transform: translateY(-50%); }
+      .bn-item { transition: none; }
     }
-    .bn-item--feedback .bn-item__icon,
-    .bn-item--feedback .bn-item__label { display: none; }
     .modal-card { max-width: 390px; }
     .settings-action-list {
       display: grid;
@@ -6708,6 +6894,58 @@
       color: var(--text-light);
       font-weight: 800;
     }
+    .settings-action__badge {
+      flex: 0 0 auto;
+      min-width: 28px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 7px 1px;
+      border-radius: 999px;
+      background: #E94B4B;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .settings-action__badge[hidden] {
+      display: none !important;
+    }
+    .news-list {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+    .news-empty {
+      margin: 0;
+      color: var(--text-light);
+      font-weight: 900;
+      text-align: center;
+    }
+    .news-item {
+      padding: 10px 12px;
+      border: 2px solid rgba(242, 145, 90, .28);
+      border-radius: 16px;
+      background: #fffdfa;
+      text-align: left;
+    }
+    .news-item__title {
+      display: block;
+      color: var(--text);
+      font-size: .92rem;
+      font-weight: 900;
+      line-height: 1.12;
+    }
+    .news-item__body {
+      display: block;
+      margin-top: 4px;
+      color: var(--text-light);
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.25;
+    }
     @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
       .play-main {
         grid-template-columns: minmax(350px, 37%) minmax(0, 1fr);
@@ -6748,7 +6986,7 @@
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 29px; }
       .game-card__desc { font-size: 18px; }
-      .bottom-nav { --nav-sprite-w: 430px; --nav-sprite-h: 136px; padding-inline: 15px; }
+      .bottom-nav { --nav-sprite-w: 430px; --nav-sprite-h: 104px; padding: 7px; gap: 7px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* v1680: 4:3 (iPad landscape) は visible 1097 のうち safe-w 1080 まで使い切り、
@@ -6875,8 +7113,13 @@
       }
       .scroll-hint--up   { animation: hintBobUp43   2.4s ease-in-out infinite; }
       .scroll-hint--down { animation: hintBobDown43 2.4s ease-in-out infinite; }
-      .bottom-nav { --nav-sprite-w: 360px; --nav-sprite-h: 114px; bottom: 14px; padding-inline: 13px; }
+      .bottom-nav { --nav-sprite-w: 360px; --nav-sprite-h: 98px; bottom: 14px; padding: 6px; gap: 6px; }
       .bn-item { border-radius: 14px; }
+      .bn-item__icon { width: 38px; height: 32px; font-size: 21px; }
+      .bn-item__icon--avatar { width: 40px; height: 34px; }
+      .bn-item--profile .pono-mini-avatar { width: 34px; height: 34px; border-radius: 11px; }
+      .bn-item__label { font-size: 12px; }
+      .bn-item__sub { display: none; }
     }
     /* v1681: 4:3 専用 bob (translateX なし) — in-flow scroll-hint 用 */
     @keyframes hintBobUp43   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
@@ -6887,21 +7130,12 @@
     @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
       .acorn-balance-badge--nav {
         left: auto;
-        right: calc(100% + 180px); /* sw1763: ごかんそう左 -162 との gap 18px を右端固定で維持 */
+        right: calc(100% + 14px);
         padding: 14px 24px;       /* v1681: 7 12→14 24 */
         min-width: 124px;         /* v1681: 62→124 */
         font-size: 36px;          /* v1681: 18→36 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 40px; }  /* v1681: 20→40 */
-      /* sw1758: 16:9 sprite 1 タイル実表示 ≈ 107.5x136 (--nav-sprite-w 430 / 4)。
-         contain 余白を見越して button box を +10% 補正 → 150x150 で 1 タイル実描画と同寸に。
-         sprite 左端 0 から gap 16 確保 → -(150+16) = -166。
-         どんぐり右端 -304+124 = -180、 ボタン左端 -166 との gap = 14px 確保。 */
-      .bn-item--feedback {
-        left: -162px;             /* sw1763: -166→-162 (ヘルプ側 gap 16→12px、 どんぐりとは 18px gap) */
-        width: 150px;             /* sw1758: 136→150 (既存タイル 107.5 を contain 余白考慮で +40%) */
-        height: 150px;            /* sw1758: 136→150 */
-      }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* v1681: 4:3 (iPad横) は nav 高さ 114px に対する badge 高さ占有率が過半に
@@ -6910,20 +7144,12 @@
          sw1738: ごかんそう 96px 分を更に左へ → -118 - 96 = -214。 */
       .acorn-balance-badge--nav {
         left: auto;
-        right: calc(100% + 168px); /* sw1763: 既存見た目を維持しつつ、残高桁数での重なりを防ぐ */
+        right: calc(100% + 14px);
         padding: 10px 18px;       /* v1681: 6 10→10 18 */
         min-width: 96px;          /* v1681: 54→96 */
         font-size: 28px;          /* v1681: 16→28 */
       }
       .acorn-balance-badge--nav .acorn-balance-badge__icon { width: 32px; }  /* v1681: 18→32 */
-      /* sw1760: 4:3 sprite 1 タイル ≈ 90x114 に合わせ height 114、 width も 114 (画像は正方形)。
-         left は sprite 左端 0 から gap 16 確保 → -(114+16) = -130。
-         どんぐり右端 -264+96 = -168 と ボタン左端 -130 の gap = 38px 確保 (どんぐり-ボタン)。 */
-      .bn-item--feedback {
-        left: -130px;             /* sw1760: -120→-130 (sprite gap 16px 確保) */
-        width: 114px;
-        height: 114px;
-      }
     }
 
     /* v1690: bento/cooking タイトル 全 aspect 共通 font-size 縮小 (1 行強制保証)。
@@ -6975,19 +7201,6 @@
           <img class="brand-ribbon" alt="きょうは なにして あそぶ？" draggable="false" src="assets/ui/brand_sign_02.webp" data-src="assets/ui/brand_sign_02.webp">
         </div>
         <div class="title-side-stack" aria-label="おすすめ">
-          <button class="profile-home-entry" id="profileHomeBtn" type="button" aria-label="プロフィールと できたこと">
-            <span class="pono-mini-avatar" id="profileHomeAvatar" data-variant="0" aria-hidden="true">
-              <span class="pono-mini-avatar__body"></span>
-              <span class="pono-mini-avatar__face"></span>
-              <span class="pono-mini-avatar__hair"></span>
-              <span class="pono-mini-avatar__mark"></span>
-            </span>
-            <span class="profile-home-entry__text">
-              <span class="profile-home-entry__main" id="profileHomeName">プロフィール</span>
-              <span class="profile-home-entry__sub" id="profileHomeSub">できたことを みる</span>
-            </span>
-            <span class="profile-home-entry__count" id="profileHomeCount">0こ</span>
-          </button>
           <button class="book-unlock-entry" id="bookUnlockEntry" type="button" hidden aria-label="えほんの あいことば とくてんを ひらく">
             <span class="book-unlock-entry__icon" aria-hidden="true"></span>
             <span class="book-unlock-entry__text">
@@ -7035,11 +7248,22 @@
         <span class="acorn-balance-badge__icon" aria-hidden="true"></span>
         <span class="acorn-balance-badge__count" id="acornBalanceCount">0</span>
       </div>
-      <button class="bn-item" data-action="help" type="button" aria-label="ヘルプ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ヘルプ</span></button>
-      <button class="bn-item" data-action="news" type="button" aria-label="おしらせ"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">おしらせ</span></button>
-      <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">シール</span></button>
-      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">せってい</span></button>
-      <button class="bn-item bn-item--feedback" data-action="feedback" type="button" aria-label="ごかんそう"><span class="bn-item__icon" aria-hidden="true"></span><span class="bn-item__label">ごかんそう</span></button>
+      <button class="bn-item bn-item--profile" data-action="profile" id="profileHomeBtn" type="button" aria-label="プロフィールと できたこと">
+        <span class="bn-item__icon bn-item__icon--avatar" aria-hidden="true">
+          <span class="pono-mini-avatar" id="profileHomeAvatar" data-variant="0" aria-hidden="true">
+            <span class="pono-mini-avatar__body"></span>
+            <span class="pono-mini-avatar__face"></span>
+            <span class="pono-mini-avatar__hair"></span>
+            <span class="pono-mini-avatar__mark"></span>
+          </span>
+        </span>
+        <span class="bn-item__label" id="profileHomeName">プロフィール</span>
+        <span class="bn-item__sub" id="profileHomeSub">できたこと</span>
+        <span class="bn-badge bn-badge--profile" id="profileHomeCount">0こ</span>
+      </button>
+      <button class="bn-item" data-action="feedback" type="button" aria-label="ごかんそう"><span class="bn-item__icon" aria-hidden="true">✎</span><span class="bn-item__label">ごかんそう</span></button>
+      <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true">▣</span><span class="bn-item__label">シール</span></button>
+      <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true">⚙</span><span class="bn-item__label">せってい</span><span class="bn-badge" id="bottomNavNewsBadge" hidden>0</span></button>
     </nav>
     <button class="sticker-book-entry" id="stickerBookEntry" type="button" aria-label="シールちょう">
       <span class="sticker-book-entry__icon" aria-hidden="true">📒</span>
@@ -7137,6 +7361,21 @@
           <span class="settings-action__text">
             <span class="settings-action__main">プロフィール</span>
             <span class="settings-action__sub" id="settingsProfileSub">なまえを かえる</span>
+          </span>
+        </button>
+        <button class="settings-action" id="settingsNewsBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">🔔</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">おしらせ</span>
+            <span class="settings-action__sub" id="settingsNewsSub">あたらしい おしらせは ないよ</span>
+          </span>
+          <span class="settings-action__badge" id="settingsNewsBadge" hidden>0</span>
+        </button>
+        <button class="settings-action" id="settingsHelpBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">?</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">ヘルプ</span>
+            <span class="settings-action__sub">こまった ときに みる</span>
           </span>
         </button>
         <button class="settings-action" id="settingsRefreshBtn" type="button">
@@ -7282,71 +7521,7 @@
             <span class="pono-mini-avatar__mark"></span>
           </span>
         </div>
-        <div class="profile-avatar-controls" id="profileAvatarControls" aria-label="すがたの えらぶところ">
-          <div class="profile-avatar-control">
-            <div class="profile-avatar-control__label">はいけい</div>
-            <div class="profile-avatar-options">
-              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="warm"><span class="profile-avatar-choice__swatch" style="--choice-color:#fff1c4"></span><span>あさ</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="leaf"><span class="profile-avatar-choice__swatch" style="--choice-color:#dff7ec"></span><span>はっぱ</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="sky"><span class="profile-avatar-choice__swatch" style="--choice-color:#dff4ff"></span><span>そら</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="bg" data-avatar-value="berry"><span class="profile-avatar-choice__swatch" style="--choice-color:#ffe4ed"></span><span>いちご</span></button>
-            </div>
-          </div>
-          <div class="profile-avatar-control">
-            <div class="profile-avatar-control__label">かお</div>
-            <div class="profile-avatar-options">
-              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="peach"><span class="profile-avatar-choice__swatch" style="--choice-color:#f2bf8a"></span><span>1</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="tan"><span class="profile-avatar-choice__swatch" style="--choice-color:#d99b6b"></span><span>2</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="rose"><span class="profile-avatar-choice__swatch" style="--choice-color:#f0c7a5"></span><span>3</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="skin" data-avatar-value="deep"><span class="profile-avatar-choice__swatch" style="--choice-color:#b97955"></span><span>4</span></button>
-            </div>
-          </div>
-          <div class="profile-avatar-control">
-            <div class="profile-avatar-control__label">かみ</div>
-            <div class="profile-avatar-options">
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="brown"><span class="profile-avatar-choice__swatch" style="--choice-color:#6b4226"></span><span>ちゃ</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="green"><span class="profile-avatar-choice__swatch" style="--choice-color:#2f4a33"></span><span>みどり</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="blue"><span class="profile-avatar-choice__swatch" style="--choice-color:#365b83"></span><span>あお</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hair" data-avatar-value="black"><span class="profile-avatar-choice__swatch" style="--choice-color:#2d2b29"></span><span>くろ</span></button>
-            </div>
-          </div>
-          <div class="profile-avatar-control">
-            <div class="profile-avatar-control__label">かたち</div>
-            <div class="profile-avatar-options">
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="round">まる</button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="short">みじかめ</button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="long">ながめ</button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="hairStyle" data-avatar-value="cap">ぼうし</button>
-            </div>
-          </div>
-          <div class="profile-avatar-control">
-            <div class="profile-avatar-control__label">ふく</div>
-            <div class="profile-avatar-options">
-              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="aqua"><span class="profile-avatar-choice__swatch" style="--choice-color:#6fc2d4"></span><span>みず</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="sun"><span class="profile-avatar-choice__swatch" style="--choice-color:#f5c84c"></span><span>きいろ</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="coral"><span class="profile-avatar-choice__swatch" style="--choice-color:#ff8b8b"></span><span>あか</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="shirt" data-avatar-value="leaf"><span class="profile-avatar-choice__swatch" style="--choice-color:#8bd17c"></span><span>みどり</span></button>
-            </div>
-          </div>
-          <div class="profile-avatar-control">
-            <div class="profile-avatar-control__label">マーク</div>
-            <div class="profile-avatar-options">
-              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="orange"><span class="profile-avatar-choice__swatch" style="--choice-color:#f2a65a"></span><span>オレンジ</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="green"><span class="profile-avatar-choice__swatch" style="--choice-color:#75b86a"></span><span>みどり</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="pink"><span class="profile-avatar-choice__swatch" style="--choice-color:#ff7aa2"></span><span>ピンク</span></button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="accent" data-avatar-value="violet"><span class="profile-avatar-choice__swatch" style="--choice-color:#9b72d0"></span><span>むらさき</span></button>
-            </div>
-          </div>
-          <div class="profile-avatar-control">
-            <div class="profile-avatar-control__label">しるし</div>
-            <div class="profile-avatar-options">
-              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="leaf">はっぱ</button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="dot">まる</button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="ribbon">リボン</button>
-              <button class="profile-avatar-choice" type="button" data-avatar-part="markShape" data-avatar-value="square">しかく</button>
-            </div>
-          </div>
-        </div>
+        <div class="profile-avatar-grid" id="profileAvatarControls" aria-label="すがたを えらぶ"></div>
         <button class="profile-save profile-avatar-done" id="profileAvatarDoneBtn" type="button">きめた</button>
       </div>
 
@@ -7453,7 +7628,9 @@
   <div class="modal" id="newsModal" hidden role="dialog" aria-modal="true" aria-labelledby="newsTitle">
     <div class="modal-card">
       <h3 id="newsTitle">おしらせ</h3>
-      <p>あたらしい おしらせは ありません。</p>
+      <div class="news-list" id="newsList">
+        <p class="news-empty" id="newsEmpty">あたらしい おしらせは ありません。</p>
+      </div>
       <button class="modal-close" type="button" data-close="newsModal">とじる</button>
     </div>
   </div>
@@ -7773,9 +7950,9 @@
   <script src="js/daily-quest.js"></script>
   <script src="js/donguri-shop.js"></script>
   <!-- v1672: セーブデータ JSON エクスポート/インポート (PonoDataExport) -->
-  <script src="common/data-export.js?v=1972"></script>
+  <script src="common/data-export.js?v=1973"></script>
   <!-- v1969: Step C クラウド同期 合言葉型 (PonoCloudSync) — data-export.js の後に読む -->
-  <script src="common/cloud-sync.js?v=1972"></script>
+  <script src="common/cloud-sync.js?v=1973"></script>
 
   <script>
     'use strict';
@@ -8170,7 +8347,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1972;
+    const PAGE_CACHE_VERSION = 1973;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -8179,7 +8356,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1972';
+    window.PONO_SW_VERSION = 'v1973';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -8869,6 +9046,15 @@
 
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
+    const settingsHelpBtn = $('settingsHelpBtn');
+    const settingsNewsBtn = $('settingsNewsBtn');
+    const settingsNewsSub = $('settingsNewsSub');
+    const settingsNewsBadge = $('settingsNewsBadge');
+    const bottomNavNewsBadge = $('bottomNavNewsBadge');
+    const newsList = $('newsList');
+    const newsEmpty = $('newsEmpty');
+    const NEWS_READ_KEY = 'pono_news_read_ids_v1';
+    const TITLE_NEWS_ITEMS = Array.isArray(window.PONO_NEWS_ITEMS) ? window.PONO_NEWS_ITEMS : [];
     const THREE_STICKER_BOOK_URL = 'Prototypes/StickerBookThreeJS/?surface=cover';
 
     function getBottomNavButton(target) {
@@ -8902,14 +9088,79 @@
       if (e.key === ' ' || e.key === 'Enter') clearBottomNavPressed();
     });
 
+    function readNewsReadIds() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(NEWS_READ_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed.map(String) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+    function writeNewsReadIds(ids) {
+      try { localStorage.setItem(NEWS_READ_KEY, JSON.stringify(ids)); } catch (_) {}
+    }
+    function unreadNewsCount() {
+      const read = new Set(readNewsReadIds());
+      return TITLE_NEWS_ITEMS.filter((item) => item && item.id && !read.has(String(item.id))).length;
+    }
+    function setCountBadge(el, count) {
+      if (!el) return;
+      const safeCount = Math.max(0, Math.min(99, Number(count) || 0));
+      el.hidden = safeCount <= 0;
+      el.textContent = safeCount >= 99 ? '99+' : String(safeCount);
+    }
+    function renderNewsBadges() {
+      const count = unreadNewsCount();
+      setCountBadge(bottomNavNewsBadge, count);
+      setCountBadge(settingsNewsBadge, count);
+      if (settingsNewsSub) {
+        settingsNewsSub.textContent = count > 0 ? 'あたらしい おしらせ ' + count + 'けん' : 'あたらしい おしらせは ないよ';
+      }
+    }
+    function renderNewsList() {
+      if (!newsList) return;
+      Array.from(newsList.querySelectorAll('.news-item')).forEach((el) => el.remove());
+      if (!TITLE_NEWS_ITEMS.length) {
+        if (newsEmpty) {
+          newsEmpty.hidden = false;
+          newsEmpty.textContent = 'あたらしい おしらせは ありません。';
+        }
+        return;
+      }
+      if (newsEmpty) newsEmpty.hidden = true;
+      TITLE_NEWS_ITEMS.forEach((item) => {
+        if (!item) return;
+        const row = document.createElement('div');
+        row.className = 'news-item';
+        const title = document.createElement('span');
+        title.className = 'news-item__title';
+        title.textContent = String(item.title || 'おしらせ');
+        const body = document.createElement('span');
+        body.className = 'news-item__body';
+        body.textContent = String(item.body || '');
+        row.appendChild(title);
+        if (body.textContent) row.appendChild(body);
+        newsList.appendChild(row);
+      });
+    }
+    function markNewsRead() {
+      const ids = TITLE_NEWS_ITEMS.map((item) => item && item.id ? String(item.id) : '').filter(Boolean);
+      if (!ids.length) return;
+      writeNewsReadIds(Array.from(new Set(readNewsReadIds().concat(ids))));
+      renderNewsBadges();
+    }
+    function openNewsModal() {
+      renderNewsList();
+      openModal('newsModal');
+      markNewsRead();
+    }
+
     bottomNav.addEventListener('click', (e) => {
       const btn = e.target.closest('.bn-item');
       if (!btn) return;
       const action = btn.dataset.action;
-      if (action === 'help') {
-        location.href = 'help.html';
-      } else if (action === 'news') {
-        openModal('newsModal');
+      if (action === 'profile') {
+        return;
       } else if (action === 'stickers') {
         location.href = THREE_STICKER_BOOK_URL;
       } else if (action === 'settings') {
@@ -8919,6 +9170,18 @@
         try { window.PonoRating && window.PonoRating.openFromTitle && window.PonoRating.openFromTitle(); } catch (e) {}
       }
     });
+    if (settingsHelpBtn) {
+      settingsHelpBtn.addEventListener('click', () => {
+        location.href = 'help.html';
+      });
+    }
+    if (settingsNewsBtn) {
+      settingsNewsBtn.addEventListener('click', () => {
+        closeModal('settingsModal');
+        openNewsModal();
+      });
+    }
+    renderNewsBadges();
 
     // ===== Sticker book entry =====
     const stickerBookEntry = document.getElementById('stickerBookEntry');
@@ -12167,24 +12430,33 @@
         { id: 'puzzle_3', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 3こ', stat: 'puzzle_clears', target: 3 },
         { id: 'puzzle_20', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 20こ', stat: 'puzzle_clears', target: 20 }
       ];
-      const AVATAR_PARTS = {
-        bg: { warm: '#fff1c4', leaf: '#dff7ec', sky: '#dff4ff', berry: '#ffe4ed' },
-        skin: { peach: '#f2bf8a', tan: '#d99b6b', rose: '#f0c7a5', deep: '#b97955' },
-        hair: { brown: '#6b4226', green: '#2f4a33', blue: '#365b83', black: '#2d2b29' },
-        hairStyle: { round: 'round', short: 'short', long: 'long', cap: 'cap' },
-        shirt: { aqua: '#6fc2d4', sun: '#f5c84c', coral: '#ff8b8b', leaf: '#8bd17c' },
-        accent: { orange: '#f2a65a', green: '#75b86a', pink: '#ff7aa2', violet: '#9b72d0' },
-        markShape: { leaf: 'leaf', dot: 'dot', ribbon: 'ribbon', square: 'square' }
-      };
-      const AVATAR_DEFAULT = {
-        bg: 'warm',
-        skin: 'peach',
-        hair: 'brown',
-        hairStyle: 'round',
-        shirt: 'aqua',
-        accent: 'orange',
-        markShape: 'leaf'
-      };
+      const AVATAR_PRESETS = [
+        { id: 'pono_kko', name: 'ポノっこ', kind: 'human', bg: '#fff1c4', skin: '#f2bf8a', hair: '#6b4226', shirt: '#6fc2d4', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
+        { id: 'leaf_kko', name: 'はっぱっこ', kind: 'human', bg: '#dff7ec', skin: '#d99b6b', hair: '#2f4a33', shirt: '#f5c84c', accent: '#75b86a', hairStyle: 'long', markShape: 'leaf' },
+        { id: 'sky_kko', name: 'そらっこ', kind: 'human', bg: '#dff4ff', skin: '#f0c7a5', hair: '#365b83', shirt: '#8bd17c', accent: '#9b72d0', hairStyle: 'short', markShape: 'dot' },
+        { id: 'berry_kko', name: 'いちごっこ', kind: 'human', bg: '#ffe4ed', skin: '#f0c7a5', hair: '#8b5835', shirt: '#ff8b8b', accent: '#ff7aa2', hairStyle: 'cap', markShape: 'ribbon' },
+        { id: 'fox', name: 'きつね', kind: 'fox', bg: '#fff0d8', skin: '#f3b56d', hair: '#c8682a', shirt: '#6fc2d4', accent: '#fff1c4', hairStyle: 'round', markShape: 'leaf' },
+        { id: 'rabbit', name: 'うさぎ', kind: 'rabbit', bg: '#ffeaf1', skin: '#f7d5c9', hair: '#f3a6c3', shirt: '#f5c84c', accent: '#ff7aa2', hairStyle: 'round', markShape: 'dot' },
+        { id: 'bear', name: 'くま', kind: 'bear', bg: '#fff1c4', skin: '#c98245', hair: '#7a4a24', shirt: '#8bd17c', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
+        { id: 'cat', name: 'ねこ', kind: 'cat', bg: '#dff4ff', skin: '#ead0a0', hair: '#5f5a50', shirt: '#ff8b8b', accent: '#ffd84d', hairStyle: 'round', markShape: 'ribbon' },
+        { id: 'squirrel', name: 'りす', kind: 'squirrel', bg: '#fff4d8', skin: '#d99b6b', hair: '#9b5b29', shirt: '#6fc2d4', accent: '#75b86a', hairStyle: 'round', markShape: 'leaf' },
+        { id: 'owl', name: 'ふくろう', kind: 'owl', bg: '#ede6cf', skin: '#d7b47c', hair: '#8a6230', shirt: '#9b72d0', accent: '#ffd84d', hairStyle: 'round', markShape: 'dot' },
+        { id: 'tanuki', name: 'たぬき', kind: 'tanuki', bg: '#e8f4e2', skin: '#bd8a63', hair: '#59432e', shirt: '#f5c84c', accent: '#75b86a', hairStyle: 'round', markShape: 'square' },
+        { id: 'polar', name: 'しろくま', kind: 'bear', bg: '#e8f8ff', skin: '#f5efe3', hair: '#d7e5ec', shirt: '#6fc2d4', accent: '#365b83', hairStyle: 'round', markShape: 'dot' },
+        { id: 'robot_blue', name: 'ロボあお', kind: 'robot', bg: '#dff4ff', skin: '#b9d8e8', hair: '#365b83', shirt: '#6fc2d4', accent: '#58d8ff', hairStyle: 'round', markShape: 'square' },
+        { id: 'robot_yellow', name: 'ロボきいろ', kind: 'robot', bg: '#fff4c6', skin: '#e7d6a4', hair: '#8a6230', shirt: '#f5c84c', accent: '#ffcf4a', hairStyle: 'round', markShape: 'dot' },
+        { id: 'star_mon', name: 'ほしモン', kind: 'monster', bg: '#efe7ff', skin: '#9b72d0', hair: '#6d4db0', shirt: '#f5c84c', accent: '#ffd84d', hairStyle: 'round', markShape: 'dot' },
+        { id: 'leaf_mon', name: 'はっぱモン', kind: 'monster', bg: '#dff7ec', skin: '#75b86a', hair: '#2f4a33', shirt: '#8bd17c', accent: '#fff1c4', hairStyle: 'round', markShape: 'leaf' },
+        { id: 'moko_mon', name: 'もこモン', kind: 'monster', bg: '#ffe4ed', skin: '#ff9ec1', hair: '#d05f90', shirt: '#9b72d0', accent: '#fff1c4', hairStyle: 'round', markShape: 'ribbon' },
+        { id: 'puka_mon', name: 'ぷかモン', kind: 'monster', bg: '#dff4ff', skin: '#5fb7a9', hair: '#2f7d73', shirt: '#6fc2d4', accent: '#ffd84d', hairStyle: 'round', markShape: 'dot' },
+        { id: 'mushroom', name: 'きのこ', kind: 'mushroom', bg: '#fff0d8', skin: '#f1d0aa', hair: '#d94a4a', shirt: '#f5c84c', accent: '#fff1c4', hairStyle: 'round', markShape: 'dot' },
+        { id: 'acorn', name: 'どんぐり', kind: 'acorn', bg: '#fff1c4', skin: '#c98562', hair: '#6b4226', shirt: '#8bd17c', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
+        { id: 'water', name: 'みずのこ', kind: 'monster', bg: '#dff4ff', skin: '#6fc2d4', hair: '#365b83', shirt: '#9b72d0', accent: '#fff1c4', hairStyle: 'round', markShape: 'dot' },
+        { id: 'snow', name: 'ゆきのこ', kind: 'monster', bg: '#eef8ff', skin: '#f5efe3', hair: '#b9d8e8', shirt: '#6fc2d4', accent: '#58d8ff', hairStyle: 'round', markShape: 'dot' },
+        { id: 'lantern', name: 'ランタン', kind: 'robot', bg: '#fff4c6', skin: '#f3c26e', hair: '#7a4a24', shirt: '#f29f58', accent: '#ffd84d', hairStyle: 'round', markShape: 'leaf' },
+        { id: 'moon', name: 'つきのこ', kind: 'monster', bg: '#ede6ff', skin: '#c7b5ee', hair: '#3f2d68', shirt: '#9b72d0', accent: '#ffd84d', hairStyle: 'round', markShape: 'ribbon' }
+      ];
+      const AVATAR_DEFAULT_ID = 'pono_kko';
       let profileGender = 'none';
       let openHubAfterProfileSave = false;
       let avatarDraft = null;
@@ -12200,17 +12472,11 @@
         const age = parseInt(value, 10);
         return age >= 2 && age <= 12 ? String(age) : '';
       }
-      function avatarKeys(part) {
-        return Object.keys(AVATAR_PARTS[part] || {});
+      function avatarPresetById(id) {
+        return AVATAR_PRESETS.find((preset) => preset.id === id) || AVATAR_PRESETS[0];
       }
-      function avatarColor(part, value) {
-        const palette = AVATAR_PARTS[part] || {};
-        const fallback = AVATAR_DEFAULT[part];
-        return palette[value] || palette[fallback] || '';
-      }
-      function pickAvatarKey(part, value, fallback) {
-        const palette = AVATAR_PARTS[part] || {};
-        return Object.prototype.hasOwnProperty.call(palette, value) ? value : (fallback || AVATAR_DEFAULT[part]);
+      function avatarColor(value, fallback) {
+        return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
       }
       function profileSeed(profile) {
         const source = String(((profile && profile.name) || 'ポノ') + ((profile && profile.age) || '') + ((profile && profile.gender) || 'none'));
@@ -12218,34 +12484,31 @@
         for (const ch of source) seed = (seed + ch.charCodeAt(0) * 17) % 9973;
         return seed;
       }
-      function seededChoice(part, seed, offset) {
-        const keys = avatarKeys(part);
-        return keys.length ? keys[(seed + offset) % keys.length] : AVATAR_DEFAULT[part];
+      function avatarFromPreset(id) {
+        const preset = avatarPresetById(id || AVATAR_DEFAULT_ID);
+        return {
+          preset: preset.id,
+          name: preset.name,
+          kind: preset.kind || 'human',
+          bg: avatarColor(preset.bg, '#fff1c4'),
+          skin: avatarColor(preset.skin, '#f2bf8a'),
+          hair: avatarColor(preset.hair, '#6b4226'),
+          shirt: avatarColor(preset.shirt, '#6fc2d4'),
+          accent: avatarColor(preset.accent, '#f2a65a'),
+          hairStyle: preset.hairStyle || 'round',
+          markShape: preset.markShape || 'leaf'
+        };
       }
       function defaultAvatarForProfile(profile) {
         const seed = profileSeed(profile);
-        return {
-          bg: seededChoice('bg', seed, 1),
-          skin: seededChoice('skin', seed, 2),
-          hair: seededChoice('hair', seed, 3),
-          hairStyle: seededChoice('hairStyle', seed, 4),
-          shirt: seededChoice('shirt', seed, 5),
-          accent: seededChoice('accent', seed, 6),
-          markShape: seededChoice('markShape', seed, 7)
-        };
+        const index = AVATAR_PRESETS.length ? seed % AVATAR_PRESETS.length : 0;
+        return avatarFromPreset((AVATAR_PRESETS[index] || AVATAR_PRESETS[0]).id);
       }
       function normalizeAvatar(avatar, profile) {
-        const base = defaultAvatarForProfile(profile || {});
-        avatar = avatar && typeof avatar === 'object' ? avatar : {};
-        return {
-          bg: pickAvatarKey('bg', avatar.bg, base.bg),
-          skin: pickAvatarKey('skin', avatar.skin, base.skin),
-          hair: pickAvatarKey('hair', avatar.hair, base.hair),
-          hairStyle: pickAvatarKey('hairStyle', avatar.hairStyle, base.hairStyle),
-          shirt: pickAvatarKey('shirt', avatar.shirt, base.shirt),
-          accent: pickAvatarKey('accent', avatar.accent, base.accent),
-          markShape: pickAvatarKey('markShape', avatar.markShape, base.markShape)
-        };
+        if (avatar && typeof avatar === 'object' && avatarPresetById(avatar.preset).id === avatar.preset) {
+          return avatarFromPreset(avatar.preset);
+        }
+        return defaultAvatarForProfile(profile || {});
       }
       function cloneAvatar(avatar) {
         return normalizeAvatar(avatar, {});
@@ -12298,14 +12561,15 @@
         if (!el) return;
         const isProfile = !!(avatarOrProfile && avatarOrProfile.avatar);
         const avatar = normalizeAvatar(isProfile ? avatarOrProfile.avatar : avatarOrProfile, isProfile ? avatarOrProfile : {});
-        el.dataset.variant = 'custom';
+        el.dataset.variant = 'preset';
+        el.dataset.kind = avatar.kind || 'human';
         el.dataset.hairStyle = avatar.hairStyle;
         el.dataset.markShape = avatar.markShape;
-        el.style.setProperty('--av-bg', avatarColor('bg', avatar.bg));
-        el.style.setProperty('--av-skin', avatarColor('skin', avatar.skin));
-        el.style.setProperty('--av-hair', avatarColor('hair', avatar.hair));
-        el.style.setProperty('--av-shirt', avatarColor('shirt', avatar.shirt));
-        el.style.setProperty('--av-accent', avatarColor('accent', avatar.accent));
+        el.style.setProperty('--av-bg', avatar.bg);
+        el.style.setProperty('--av-skin', avatar.skin);
+        el.style.setProperty('--av-hair', avatar.hair);
+        el.style.setProperty('--av-shirt', avatar.shirt);
+        el.style.setProperty('--av-accent', avatar.accent);
       }
       function genderLabel(value) {
         if (value === 'girl') return 'おんなのこ';
@@ -12348,8 +12612,8 @@
       function updateProfileHome(profile) {
         profile = profile || loadProfile();
         const summary = profileProgressSummary();
-        if (profileHomeName) profileHomeName.textContent = hasProfile() ? (profile.name || 'ポノ') : 'プロフィール';
-        if (profileHomeSub) profileHomeSub.textContent = hasProfile() ? 'できたことを みる' : 'なまえを いれる';
+        if (profileHomeName) profileHomeName.textContent = hasProfile() ? (profile.name || 'ポノ') : 'プロフ';
+        if (profileHomeSub) profileHomeSub.textContent = hasProfile() ? 'できたこと' : 'つくる';
         if (profileHomeCount) profileHomeCount.textContent = summary.done + 'こ';
         if (profileHomeBtn) {
           profileHomeBtn.setAttribute(
@@ -12436,26 +12700,51 @@
           profileGoalList.appendChild(section);
         });
       }
-      function renderAvatarChoiceState() {
+      function createAvatarMarkup() {
+        const avatar = document.createElement('span');
+        avatar.className = 'pono-mini-avatar';
+        avatar.setAttribute('aria-hidden', 'true');
+        ['body', 'face', 'hair', 'mark'].forEach((part) => {
+          const piece = document.createElement('span');
+          piece.className = 'pono-mini-avatar__' + part;
+          avatar.appendChild(piece);
+        });
+        return avatar;
+      }
+      function renderAvatarPresetButtons() {
         if (!profileAvatarControls || !avatarDraft) return;
-        profileAvatarControls.querySelectorAll('[data-avatar-part]').forEach((btn) => {
-          const active = avatarDraft[btn.dataset.avatarPart] === btn.dataset.avatarValue;
-          btn.classList.toggle('is-active', active);
-          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        profileAvatarControls.textContent = '';
+        AVATAR_PRESETS.forEach((preset) => {
+          const btn = document.createElement('button');
+          btn.className = 'profile-avatar-preset';
+          btn.type = 'button';
+          btn.dataset.avatarPreset = preset.id;
+          btn.setAttribute('aria-pressed', avatarDraft.preset === preset.id ? 'true' : 'false');
+          btn.classList.toggle('is-active', avatarDraft.preset === preset.id);
+
+          const avatar = createAvatarMarkup();
+          applyAvatarToElement(avatar, avatarFromPreset(preset.id));
+
+          const label = document.createElement('span');
+          label.className = 'profile-avatar-preset__name';
+          label.textContent = preset.name;
+
+          btn.appendChild(avatar);
+          btn.appendChild(label);
+          profileAvatarControls.appendChild(btn);
         });
       }
       function renderAvatarBuilder() {
         const profile = loadProfile();
         avatarDraft = cloneAvatar(profile.avatar);
         applyAvatarToElement(profileAvatarPreview, avatarDraft);
-        renderAvatarChoiceState();
+        renderAvatarPresetButtons();
       }
-      function setAvatarDraft(part, value) {
-        if (!AVATAR_PARTS[part] || !Object.prototype.hasOwnProperty.call(AVATAR_PARTS[part], value)) return;
-        if (!avatarDraft) avatarDraft = cloneAvatar(loadProfile().avatar);
-        avatarDraft[part] = value;
+      function setAvatarDraftPreset(id) {
+        if (!avatarPresetById(id) || !AVATAR_PRESETS.some((preset) => preset.id === id)) return;
+        avatarDraft = avatarFromPreset(id);
         applyAvatarToElement(profileAvatarPreview, avatarDraft);
-        renderAvatarChoiceState();
+        renderAvatarPresetButtons();
       }
       function saveAvatarDraft() {
         const profile = loadProfile();
@@ -12621,10 +12910,10 @@
       }
       if (profileAvatarControls) {
         profileAvatarControls.addEventListener('click', (e) => {
-          const btn = e.target.closest('[data-avatar-part][data-avatar-value]');
+          const btn = e.target.closest('[data-avatar-preset]');
           if (!btn) return;
           e.preventDefault();
-          setAvatarDraft(btn.dataset.avatarPart, btn.dataset.avatarValue);
+          setAvatarDraftPreset(btn.dataset.avatarPreset);
         });
       }
       if (profileAvatarDoneBtn) {
