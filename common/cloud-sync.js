@@ -14,10 +14,14 @@
      - isAvailable()   → オンライン & fetch 使用可否 (503 未設定は呼んで初めて分かる)
 
    方針 / セキュリティ:
-     - 名前 (個人情報) はクラウドに送らない。 save() で必ず除去する:
-         pono_profile / pono_profile_name / pono_player_profile_v1
+     - 名前 (個人情報) はクラウドに送らない / 復元しない。 SAVE (save) と LOAD (load) の
+       両方向で profile 系 4 キーを strip する (対称化):
+         pono_profile / pono_profile_name / pono_player_profile_v1 / pono_hero_name
        (play.html の現行プロフィールは pono_player_profile_v1、 他ゲームは pono_profile。
-        いずれも .name を含みうるため 3 キーとも除外して「名前をサーバーに置かない」を担保)
+        いずれも .name を含みうる。 pono_hero_name は将来の勇者名連携用の予約。
+        Backend の validate.js 側にも同じ 4 キーが入る = 二重防御)
+       LOAD 側にも strip を入れる理由: 細工 payload を直接 POST → GET → applyImport で
+       名前が localStorage に書き戻る非対称の穴を塞ぐため。
      - GET で受けた data も _parseImportJson (4 段防御) に通し、 適用時に isImportAllowed
        (denylist) を再適用する二重防御。 細工 payload の POST→GET→localStorage 迂回を封じる。
      - エラーは network / rate_limited / not_found / not_configured / too_large /
@@ -30,15 +34,28 @@
   var API_BASE = '/api/savedata';
   var TIMEOUT_MS = 8000; // fetch timeout 8 秒
 
-  // 名前 (個人情報) を保持しうるキー。 クラウドへは送らない。
+  // 名前 (個人情報) を保持しうるキー。 SAVE では送らず、 LOAD では復元しない (対称)。
+  // Backend の validate.js 側にも同じ 4 キーが入る (二重防御)。
   var PROFILE_STRIP_EXACT = {
     'pono_profile': true,
     'pono_profile_name': true,
-    'pono_player_profile_v1': true
+    'pono_player_profile_v1': true,
+    'pono_hero_name': true
   };
 
   function isProfileKey(key) {
     return Object.prototype.hasOwnProperty.call(PROFILE_STRIP_EXACT, key);
+  }
+
+  // data (flat map) から profile 系キーを破壊的に除去。 SAVE / LOAD 両方向で対称に使う。
+  function stripProfileKeys(data) {
+    if (!data || typeof data !== 'object') return;
+    for (var k in PROFILE_STRIP_EXACT) {
+      if (!Object.prototype.hasOwnProperty.call(PROFILE_STRIP_EXACT, k)) continue;
+      if (Object.prototype.hasOwnProperty.call(data, k)) {
+        try { delete data[k]; } catch (_) {}
+      }
+    }
   }
 
   function isOnline() {
@@ -212,6 +229,8 @@
         } catch (_) {
           return { ok: false, error: 'invalid' };
         }
+        // LOAD 側 profile strip (SAVE と対称)。 細工 payload で名前が書き戻るのを防ぐ。
+        stripProfileKeys(parsed.data);
         parsed._cloud = true; // data-export.js 側の preview / toast 分岐用
         return { ok: true, parsed: parsed, expires_at: json.expires_at || '' };
       }, function () {

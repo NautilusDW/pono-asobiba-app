@@ -96,7 +96,8 @@ await section('validate: denylist + structure (CRITICAL-6 / HIGH-5)', async () =
   const r = validateAndSanitize(good);
   ok(r.ok, 'valid payload accepted');
   const keys = Object.keys(r.clean);
-  ok(keys.includes('pono_profile_name') && keys.includes('pono_acorns') && keys.includes('bowling_best'), 'allowed keys kept');
+  ok(keys.includes('pono_acorns') && keys.includes('bowling_best'), 'allowed keys kept');
+  ok(!keys.includes('pono_profile_name'), 'cloud-profile-strip removes pono_profile_name on POST');
   ok(!keys.includes('pono_premium') && !keys.includes('pono_sub_active') && !keys.includes('pono_unlocked_sea') && !keys.includes('pono_premium_bonus'), 'tier/unlocked denied');
   ok(!keys.includes('pono_admin_flag') && !keys.includes('pono_debug_x') && !keys.includes('pono_tts_cache') && !keys.includes('pono_capture_1'), 'admin/debug/tts/capture prefixes denied');
   ok(!keys.includes('NotAllowed') && !keys.includes('__proto__'), 'non-allowlisted + proto key denied');
@@ -130,8 +131,9 @@ await section('round-trip POST -> GET through handleSaveData', async () => {
   const getRes = await handleSaveData(makeReq({ method: 'GET', headers: { Origin: ORIGIN, 'CF-Connecting-IP': '1.2.3.4' } }), env, ctx, '/api/savedata/' + encodeURIComponent(pc));
   ok(getRes.status === 200, `GET 200 (got ${getRes.status})`);
   const getJson = await getRes.json();
-  ok(getJson.data.pono_profile_name === 'てすと' && getJson.data.pono_acorns === '42', 'GET returns stored allowed data');
+  ok(getJson.data.pono_acorns === '42', 'GET returns stored allowed data');
   ok(!('pono_premium' in getJson.data), 'GET output denylist applied (pono_premium absent)');
+  ok(!('pono_profile_name' in getJson.data), 'GET output cloud-profile-strip applied (pono_profile_name absent)');
   ok(getJson.schema_version === 1 && typeof getJson.expires_at === 'string', 'GET payload shape (schema_version + expires_at)');
 
   // unknown but well-formed passcode -> 404
@@ -155,6 +157,26 @@ await section('round-trip POST -> GET through handleSaveData', async () => {
   const prodEnv = { SAVEDATA_KV: makeKV(), PASSCODE_HMAC_SECRET: 's' }; // no APP_BUILD
   const lh = await handleSaveData(makeReq({ method: 'OPTIONS', headers: { Origin: 'http://localhost:8787' } }), prodEnv, ctx, '/api/savedata');
   ok(lh.headers.get('Access-Control-Allow-Origin') == null, 'production: localhost origin not allowed');
+});
+
+await section('cloud profile strip (name never stored/returned)', async () => {
+  const profileKeys = ['pono_profile', 'pono_profile_name', 'pono_player_profile_v1', 'pono_hero_name'];
+  // unit: validateAndSanitize (POST direction) drops all profile keys, keeps normal
+  const data = { pono_acorns: '7' };
+  for (const k of profileKeys) data[k] = 'なまえ';
+  const v = validateAndSanitize(JSON.stringify({ schema_version: 1, data }));
+  ok(v.ok && v.clean.pono_acorns === '7', 'POST keeps normal key (pono_acorns)');
+  ok(profileKeys.every(k => !(k in v.clean)), 'POST direction strips all profile keys');
+  // unit: sanitizeStoredData (GET direction) drops profile keys even if somehow stored
+  const s = sanitizeStoredData({ pono_acorns: '7', pono_profile_name: 'x', pono_hero_name: 'y', pono_profile: 'z', pono_player_profile_v1: 'w' });
+  ok(s.clean.pono_acorns === '7' && profileKeys.every(k => !(k in s.clean)), 'GET direction strips all profile keys');
+  // integration: full POST -> GET, no profile key survives
+  const env = APP_ENV();
+  const post = await handleSaveData(makeReq({ method: 'POST', headers: { ...JSON_CT, 'CF-Connecting-IP': '8.8.8.1' }, body: JSON.stringify({ schema_version: 1, data }) }), env, ctx, '/api/savedata');
+  const pj = await post.json();
+  const get = await handleSaveData(makeReq({ method: 'GET', headers: { 'CF-Connecting-IP': '8.8.8.2' } }), env, ctx, '/api/savedata/' + encodeURIComponent(pj.passcode));
+  const gj = await get.json();
+  ok(gj.data.pono_acorns === '7' && profileKeys.every(k => !(k in gj.data)), 'round-trip: no profile key stored or returned');
 });
 
 await section('unconfigured env -> 503', async () => {

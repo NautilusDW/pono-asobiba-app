@@ -61,6 +61,21 @@ export const MAX_BODY_BYTES = 500 * 1024; // 500KB (HIGH-5)
 export const MAX_DATA_KEYS = 300;         // flat map のキー数上限 (HIGH-5 / DoS)
 export const SCHEMA_VERSION = 1;
 
+// ---- クラウド限定 profile strip (共有 denylist とは別レイヤー) ----
+// 「子供の名前をサーバーに絶対置かない」設計のための cloud 専用ガード。
+// !!! 共有 denylist (IMPORT_DENY_EXACT / IMPORT_DENY_PREFIXES) には絶対に足さないこと !!!
+//   - 共有 denylist は data-export.js と byte 単位で一致させる契約 (parity)。
+//   - Step A のファイル復元 (保護者の私的ファイルからの名前復元) は正当な機能なので、
+//     名前キーを共有 denylist に入れると壊れる。 よってクラウド経路のみで strip する。
+// POST 受信時 (validateAndSanitize) と GET 返却時 (sanitizeStoredData) の双方向で除去し、
+// 「クラウドに保存される record は名前系キーを絶対含まない」をサーバー側で保証する。
+export const CLOUD_PROFILE_STRIP = new Set([
+  'pono_profile',
+  'pono_profile_name',
+  'pono_player_profile_v1',
+  'pono_hero_name'   // 将来の勇者名連携で名前が漏れるのを予防
+]);
+
 // ---- キー判定 (data-export.js isImportAllowed と同一ロジック) ----
 export function isImportAllowedKey(key) {
   if (!key || typeof key !== 'string') return false;
@@ -139,8 +154,10 @@ export function validateAndSanitize(text) {
     }
     // string 以外の scalar (number/boolean/null) は drop (client と同じ挙動)
     if (typeof v !== 'string') continue;
-    // denylist / allowlist
+    // denylist / allowlist (共有 denylist = data-export.js parity)
     if (!isImportAllowedKey(key)) continue;
+    // クラウド限定 profile strip (名前をサーバーに置かない / 共有 denylist とは別レイヤー)
+    if (CLOUD_PROFILE_STRIP.has(key)) continue;
     clean[key] = v;
     count++;
   }
@@ -171,6 +188,8 @@ export function sanitizeStoredData(data) {
       const v = data[key];
       if (typeof v !== 'string') continue;
       if (!isImportAllowedKey(key)) continue;
+      // クラウド限定 profile strip (GET 返却時にも名前系キーを返さない)
+      if (CLOUD_PROFILE_STRIP.has(key)) continue;
       clean[key] = v;
       count++;
     }

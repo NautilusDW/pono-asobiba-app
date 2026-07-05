@@ -631,10 +631,21 @@
   // Step C: クラウド (あいことば) フロー
   // ============================================================
 
+  // rate-limit の待ち時間を Retry-After(秒) から やさしい日本語に。
+  // サーバーは 60 / 300 / 900 / 86400 秒 (24h fail-lock) を返しうる。
+  function rateLimitMessage(res) {
+    var ra = (res && typeof res.retryAfter === 'number') ? res.retryAfter : 0;
+    if (ra >= 86400) return 'たくさん ためしたので、 きょうは おやすみです。 あした もういちど おためしください。';
+    if (ra >= 3600) return 'こんざつしています。 やく ' + Math.round(ra / 3600) + 'じかん たってから もういちど おためしください。';
+    if (ra >= 60) return 'しばらくたってから もういちど おためしください（やく ' + Math.round(ra / 60) + 'ふん）。';
+    if (ra > 0) return 'すこし まってから もういちど おためしください。';
+    return 'しばらくたってから もういちど おためしください（5ふん）。';
+  }
+
   function cloudErrorMessage(res, mode) {
     switch (res && res.error) {
       case 'rate_limited':
-        return 'しばらくたってから もういちど おためしください（5ふん）。';
+        return rateLimitMessage(res);
       case 'not_configured':
         return mode === 'load'
           ? 'クラウドは じゅんびちゅうです。「ファイルで ロード」を おつかいください。'
@@ -646,7 +657,7 @@
       case 'too_large':
         return 'データが おおきすぎて クラウドに ほぞんできません。「ファイルで 保存」を おつかいください。';
       case 'not_found':
-        return 'その あいことばの データが みつかりません。 もじを かくにんしてね。';
+        return 'あいことばが ちがうみたい。 その あいことばの データが みつかりません。 もじを かくにんしてね。';
       case 'invalid':
         return mode === 'load'
           ? 'あいことばの けいしきが ちがうみたい。 ひらがな3つ - すうじ4つ を かくにんしてね。'
@@ -904,13 +915,10 @@
         try { document.body.removeChild(ui.modal); } catch (_) {}
         showImportPreview(null, res.parsed, null);
       } else {
-        var err = res || { error: 'unknown' };
-        // 固まらず フォールバック導線を出すもの
-        if (err.error === 'not_configured' || err.error === 'network') {
-          renderCloudLoadError(ui, err);
-        } else {
-          status.textContent = cloudErrorMessage(err, 'load');
-        }
+        // すべての分類エラーを renderCloudLoadError に渡し、 コード別の正しい文言を出す。
+        // (not_found / rate_limited / too_large / invalid の分岐も到達可能になる。
+        //  誤 passcode → 「あいことばが ちがうみたい」、 rate_limited → 動的待ち時間文言)
+        renderCloudLoadError(ui, res || { error: 'unknown' });
       }
     }, function () {
       goBtn.disabled = false;
