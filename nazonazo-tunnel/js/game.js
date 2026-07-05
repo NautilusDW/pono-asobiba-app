@@ -119,14 +119,17 @@ const ASSETS={
    mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
    ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
    fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp",
-   decor:"../assets/images/nazonazo-tunnel/town_decor_tree_generated_20260705.webp"
+   station:"../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp",
+   decor:"../assets/images/nazonazo-tunnel/town_station_line_trees_20260706.webp"
  },
  jungle:{
   sky:"../assets/images/nazonazo-tunnel/jungle_sky_back_20260703.webp",
   horizon:"../assets/images/nazonazo-tunnel/jungle_horizon_layer_20260703.webp",
   mid:"../assets/images/nazonazo-tunnel/jungle_mid_layer_20260703.webp",
   ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
-  fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp"
+  fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp",
+  station:"../assets/images/nazonazo-tunnel/jungle_station_checkpoint_20260706.webp",
+  decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -163,7 +166,7 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gTreeRow(1400,H,P.mid1,P.trunk,10,170,51)+gBumps(1400,H,P.mid2,9,90,53));},
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,170,55)+gKelp(900,220,P.fgB,5,57));},
-  decor(P,r){return svgURI(220,340,gTreeRow(220,340,P.mid1,P.trunk,1,200+(r%3)*18,61+r));}},
+  decor(P,r){return bgUrl(ASSETS.jungle.decor);}},
  {id:"number",icon:"🎲",veh:"train",bank:null,gens:[],
   names:["すうじのへや","ゆめの すうじのへや"],
   pals:[
@@ -981,6 +984,7 @@ function buildQList(){
 /* ================= stage build ================= */
 function origin(s){return (loop*STAGES.length+s)*SPAN;}
 function palOf(s){return STAGES[s].pals[loop%2];}
+function hasStationArt(st){return !!(st&&st.assets&&st.assets.station);}
 function applySkin(){
  const st=STAGES[stg],P=palOf(stg);
  const nIdx=Math.min(stg+1,STAGES.length-1);
@@ -1003,11 +1007,16 @@ function buildWorld(keepCover){
  const o=origin(stg),st=STAGES[stg],P=palOf(stg);
  for(let i=0;i<QN;i++){
  const t=document.createElement("div");t.className="tun";
-  if(st.id==="town")t.classList.add("station");
+  const stationStage=hasStationArt(st);
+  if(stationStage)t.classList.add("station",st.id+"-station");
   t.style.left=tunX(o,i)+"vw";
-  t.innerHTML=st.id==="town"
+  t.innerHTML=stationStage
    ? '<div class="station-art"></div><div class="station-name">えき</div><div class="sign">❓</div>'
    : '<div class="mount" style="background:'+P.mount+'"></div><div class="sign">❓</div><div class="hole"><div class="door l"></div><div class="door r"></div></div>';
+  if(stationStage){
+   const art=t.querySelector(".station-art");
+   if(art)art.style.backgroundImage=bgUrl(st.assets.station);
+  }
   if(st.id==="town"&&qList[i]&&qList[i].helper){
    const h=qList[i].helper;
    const hp=document.createElement("div");
@@ -1020,12 +1029,15 @@ function buildWorld(keepCover){
   world.appendChild(t);tunnels.push(t);
   for(let k=0;k<2;k++){
    const d=document.createElement("div");d.className="decor";
-   const wv=8+((i*7+k*5)%8);
-   d.style.width=wv+"vw";d.style.height=(wv*(st.id==="town"?1.25:1.6))+"vw";
-   d.style.left=(tunX(o,i)-70+k*38+((i*13)%14))+"vw";
+   const imageDecor=!!(st.assets&&st.assets.decor);
+   const wv=imageDecor?(st.id==="jungle"?30+((i+k)%3)*3:26+((i+k)%3)*2):(8+((i*7+k*5)%8));
+   const aspect=st.id==="jungle"?3.4:3.78;
+   d.style.width=wv+"vw";
+   d.style.height=(imageDecor?wv/aspect:wv*(st.id==="town"?1.25:1.6))+"vw";
+   d.style.left=(tunX(o,i)-(imageDecor?78:70)+k*(imageDecor?42:38)+((i*13)%14))+"vw";
    d.style.backgroundImage=st.decor(P,i*2+k);
-   if(st.id==="town"){
-    d.classList.add("town-decor");
+   if(imageDecor){
+    d.classList.add("image-decor",st.id+"-decor");
     d.style.backgroundSize="contain";
     d.style.backgroundRepeat="no-repeat";
     d.style.backgroundPosition="center bottom";

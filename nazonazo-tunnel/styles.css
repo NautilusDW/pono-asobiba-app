@@ -35,7 +35,9 @@ body.tunnel-interior #scene::after{display:block}
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
 .decor{position:absolute;bottom:11.5vh}
-.decor.town-decor{background-size:contain;background-repeat:no-repeat;background-position:center bottom;filter:drop-shadow(0 3px 0 rgba(70,45,25,.12))}
+.decor.town-decor,.decor.image-decor{background-size:contain;background-repeat:no-repeat;background-position:center bottom;filter:drop-shadow(0 3px 0 rgba(70,45,25,.12))}
+.decor.image-decor{bottom:10.9vh}
+.decor.jungle-decor{bottom:10.2vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
 #cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
@@ -103,6 +105,7 @@ body.st-space .tun{bottom:20vh}
 @keyframes sh{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .tun .sign{position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:clamp(18px,4vw,34px);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
 .tun.station{bottom:9.5vh;width:36vw;max-width:440px;height:34vh;z-index:5;pointer-events:none}
+.tun.station.jungle-station{width:44vw;max-width:520px;height:35vh}
 .tun.station .mount{display:none}
 .station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp") center bottom/contain no-repeat;z-index:1}
 .station-wall{position:absolute;left:10%;right:10%;bottom:12%;height:54%;border:3px solid #b9854d;border-bottom:0;border-radius:10px 10px 4px 4px;
