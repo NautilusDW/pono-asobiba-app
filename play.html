@@ -1903,7 +1903,7 @@
     }
     .profile-avatar-builder {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(208px, 235px);
+      grid-template-columns: minmax(210px, .78fr) minmax(280px, 1.22fr);
       gap: 14px;
       align-items: stretch;
       margin: 2px 0 12px;
@@ -1990,7 +1990,7 @@
       display: grid;
       grid-template-columns: 1fr;
       align-content: start;
-      gap: 7px;
+      gap: 9px;
       max-height: min(342px, calc(100dvh - 166px));
       margin-bottom: 0;
       padding: 2px 4px 4px 2px;
@@ -2035,6 +2035,74 @@
       overflow: hidden;
       text-overflow: ellipsis;
       pointer-events: none;
+    }
+    .avatar-edit-group {
+      display: grid;
+      gap: 6px;
+      padding: 8px;
+      border: 2px solid rgba(242, 145, 90, .24);
+      border-radius: 16px;
+      background: rgba(255, 253, 250, .72);
+    }
+    .avatar-edit-group__title {
+      color: #6a4300;
+      font-size: .78rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+    .avatar-choice-row,
+    .avatar-swatch-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .avatar-choice {
+      min-width: 0;
+      min-height: 38px;
+      padding: 4px 6px;
+      border: 2px solid rgba(242, 145, 90, .32);
+      border-radius: 13px;
+      background: #fffdfa;
+      color: var(--text);
+      font-family: inherit;
+      font-size: .72rem;
+      font-weight: 900;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .avatar-choice.is-active,
+    .avatar-swatch.is-active {
+      border-color: #F5A800;
+      background: #FFF3C4;
+      color: #6B4300;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.72);
+    }
+    .avatar-choice:active,
+    .avatar-swatch:active {
+      transform: translateY(1px);
+    }
+    .avatar-swatch {
+      min-width: 0;
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      border: 2px solid rgba(242, 145, 90, .32);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0)),
+        var(--swatch-color, #fff);
+      color: #4f2d0c;
+      font-family: inherit;
+      font-size: .66rem;
+      font-weight: 900;
+      line-height: 1;
+      text-shadow: 0 1px 0 rgba(255,255,255,.72);
+      cursor: pointer;
+      touch-action: manipulation;
     }
     .profile-avatar-done {
       display: block;
@@ -2102,6 +2170,11 @@
       .profile-avatar-preview .pono-mini-avatar__mark { right: 12px; top: 10px; width: 16px; height: 16px; }
       .profile-avatar-preview__name { min-height: 28px; margin-top: 6px; padding: 4px 10px; font-size: .78rem; }
       .profile-avatar-grid { gap: 6px; max-height: min(238px, 42dvh); }
+      .avatar-edit-group { padding: 6px; border-radius: 14px; }
+      .avatar-choice-row,
+      .avatar-swatch-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+      .avatar-choice { min-height: 34px; font-size: .66rem; border-radius: 11px; }
+      .avatar-swatch { min-height: 36px; font-size: .6rem; border-radius: 12px; }
       .profile-avatar-preset { min-height: 54px; grid-template-columns: 44px minmax(0, 1fr); gap: 7px; padding: 5px 8px 5px 5px; border-radius: 14px; }
       .profile-avatar-preset .pono-mini-avatar { width: 42px; height: 42px; border-radius: 14px; }
       .profile-avatar-preset__name { font-size: .7rem; }
@@ -2126,10 +2199,14 @@
         border-width: 5px;
       }
       .profile-avatar-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 6px;
         max-height: min(250px, 40dvh);
         padding: 2px 2px 4px;
+      }
+      .avatar-choice-row,
+      .avatar-swatch-row {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
       .profile-avatar-preset {
         min-height: 72px;
@@ -2179,6 +2256,10 @@
         grid-template-columns: 1fr;
         gap: 6px;
         max-height: min(238px, calc(100dvh - 146px));
+      }
+      .avatar-choice-row,
+      .avatar-swatch-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       .profile-avatar-preset {
         min-height: 55px;
@@ -6276,6 +6357,8 @@
       --av-skin: #f2bf8a;
       --av-hair: #6b4226;
       --av-shirt: #6fc2d4;
+      --av-bottom: #6b8bd6;
+      --av-shoes: #7a4a24;
       --av-accent: #f2a65a;
       --av-img: none;
       position: relative;
@@ -6304,13 +6387,29 @@
     .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__body,
     .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__face,
     .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__hair,
-    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__mark {
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__mark,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__arm-left,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__arm-right,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__leg-left,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__leg-right,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__shoe-left,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__shoe-right,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__tail,
+    .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__mouth {
       display: none;
     }
     .pono-mini-avatar__body,
     .pono-mini-avatar__face,
     .pono-mini-avatar__hair,
-    .pono-mini-avatar__mark {
+    .pono-mini-avatar__mark,
+    .pono-mini-avatar__arm-left,
+    .pono-mini-avatar__arm-right,
+    .pono-mini-avatar__leg-left,
+    .pono-mini-avatar__leg-right,
+    .pono-mini-avatar__shoe-left,
+    .pono-mini-avatar__shoe-right,
+    .pono-mini-avatar__tail,
+    .pono-mini-avatar__mouth {
       position: absolute;
       display: block;
       pointer-events: none;
@@ -6623,6 +6722,392 @@
     .pono-mini-avatar[data-variant="5"] .pono-mini-avatar__mark {
       border-radius: 4px 9px 9px 4px;
       transform: rotate(0deg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] {
+      background:
+        radial-gradient(circle at 30% 18%, rgba(255,255,255,.78), rgba(255,255,255,0) 30%),
+        linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,0) 58%),
+        var(--av-bg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__tail {
+      z-index: 1;
+      left: 62%;
+      top: 50%;
+      width: 23%;
+      height: 25%;
+      border-radius: 55% 70% 70% 55%;
+      background: var(--av-hair);
+      opacity: 0;
+      transform: rotate(20deg);
+      box-shadow: inset 0 3px 0 rgba(255,255,255,.2);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-tail-style="fluffy"] .pono-mini-avatar__tail {
+      opacity: 1;
+      width: 26%;
+      height: 28%;
+      border-radius: 65% 80% 80% 65%;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-tail-style="round"] .pono-mini-avatar__tail {
+      opacity: 1;
+      left: 66%;
+      top: 57%;
+      width: 17%;
+      height: 17%;
+      border-radius: 50%;
+      transform: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-tail-style="long"] .pono-mini-avatar__tail {
+      opacity: 1;
+      left: 60%;
+      top: 47%;
+      width: 16%;
+      height: 38%;
+      border-radius: 999px;
+      transform: rotate(29deg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__leg-left,
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__leg-right {
+      z-index: 2;
+      top: 71%;
+      width: 14%;
+      height: 19%;
+      border-radius: 8px 8px 12px 12px;
+      background: var(--av-bottom);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.2);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__leg-left { left: 35%; transform: rotate(2deg); }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__leg-right { right: 35%; transform: rotate(-2deg); }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__shoe-left,
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__shoe-right {
+      z-index: 3;
+      top: 86%;
+      width: 19%;
+      height: 8%;
+      border-radius: 999px 999px 8px 8px;
+      background: var(--av-shoes);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__shoe-left { left: 30%; }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__shoe-right { right: 30%; }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__body {
+      z-index: 4;
+      left: 28%;
+      top: 50%;
+      width: 44%;
+      height: 28%;
+      border-radius: 18px 18px 13px 13px;
+      background: var(--av-shirt);
+      box-shadow:
+        inset 0 3px 0 rgba(255,255,255,.28),
+        inset 0 -2px 0 rgba(80,40,20,.12);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-outfit="dress"] .pono-mini-avatar__body {
+      left: 24%;
+      top: 49%;
+      width: 52%;
+      height: 34%;
+      clip-path: polygon(28% 0, 72% 0, 95% 100%, 5% 100%);
+      border-radius: 18px 18px 10px 10px;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-outfit="hoodie"] .pono-mini-avatar__body {
+      border-radius: 20px 20px 14px 14px;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.28), rgba(255,255,255,0) 30%),
+        var(--av-shirt);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-outfit="overall"] .pono-mini-avatar__body {
+      background:
+        linear-gradient(90deg, transparent 0 20%, rgba(255,255,255,.5) 20% 27%, transparent 27% 73%, rgba(255,255,255,.5) 73% 80%, transparent 80%),
+        var(--av-shirt);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__arm-left,
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__arm-right {
+      z-index: 3;
+      top: 53%;
+      width: 12%;
+      height: 25%;
+      border-radius: 999px;
+      background: var(--av-skin);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__arm-left { left: 19%; transform: rotate(16deg); }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__arm-right { right: 19%; transform: rotate(-16deg); }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__face {
+      z-index: 6;
+      left: 27%;
+      top: 16%;
+      width: 46%;
+      height: 37%;
+      border-radius: 48% 48% 44% 44%;
+      background: var(--av-skin);
+      box-shadow:
+        inset 0 -3px 0 rgba(130, 80, 40, .12),
+        0 1px 0 rgba(255,255,255,.35);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__face::before,
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__face::after {
+      top: 43%;
+      width: 9%;
+      height: 11%;
+      border-radius: 50%;
+      background: #3a2617;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__face::before { left: 29%; }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__face::after { right: 29%; }
+    .pono-mini-avatar[data-avatar-mode="full"][data-eyes="smile"] .pono-mini-avatar__face::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-eyes="smile"] .pono-mini-avatar__face::after {
+      height: 9%;
+      border-radius: 0 0 999px 999px;
+      background: transparent;
+      border-bottom: 2px solid #3a2617;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-eyes="star"] .pono-mini-avatar__face::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-eyes="star"] .pono-mini-avatar__face::after {
+      width: 11%;
+      height: 11%;
+      border-radius: 2px;
+      transform: rotate(45deg);
+      background: var(--av-accent);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__mouth {
+      z-index: 7;
+      left: 42%;
+      top: 40%;
+      width: 16%;
+      height: 8%;
+      border-bottom: 2px solid rgba(92,45,25,.78);
+      border-radius: 0 0 999px 999px;
+      background: transparent;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-mouth="open"] .pono-mini-avatar__mouth {
+      left: 44%;
+      top: 41%;
+      width: 12%;
+      height: 10%;
+      border: 0;
+      border-radius: 50%;
+      background: #7a3a30;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-mouth="flat"] .pono-mini-avatar__mouth {
+      top: 43%;
+      height: 0;
+      border-bottom: 2px solid rgba(92,45,25,.78);
+      border-radius: 999px;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__hair {
+      z-index: 8;
+      left: 23%;
+      top: 9%;
+      width: 54%;
+      height: 25%;
+      border-radius: 28px 28px 12px 12px;
+      background: var(--av-hair);
+      overflow: visible;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__hair::after {
+      content: '';
+      position: absolute;
+      background: var(--av-hair);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__hair::before { display: none; }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__hair::after {
+      display: block;
+      left: 64%;
+      top: 38%;
+      width: 30%;
+      height: 62%;
+      border-radius: 0 0 999px 999px;
+      transform: rotate(-6deg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-hair-style="none"] .pono-mini-avatar__hair {
+      display: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-hair-style="short"] .pono-mini-avatar__hair {
+      top: 12%;
+      height: 19%;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-hair-style="side"] .pono-mini-avatar__hair::after {
+      left: 0;
+      transform: rotate(8deg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-hair-style="cap"] .pono-mini-avatar__hair {
+      top: 8%;
+      height: 24%;
+      border-radius: 999px 999px 12px 12px;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-hair-style="spike"] .pono-mini-avatar__hair {
+      top: 8%;
+      height: 24%;
+      clip-path: polygon(0 100%, 12% 10%, 25% 82%, 43% 0, 58% 82%, 77% 10%, 100% 100%);
+      border-radius: 10px;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-hair-style="spike"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-avatar-mode="full"][data-hair-style="none"] .pono-mini-avatar__hair::after {
+      display: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="fox"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="cat"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="tanuki"] .pono-mini-avatar__hair,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="squirrel"] .pono-mini-avatar__hair {
+      left: 24%;
+      top: 8%;
+      width: 52%;
+      height: 24%;
+      background: transparent;
+      clip-path: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="fox"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="fox"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="cat"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="cat"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="tanuki"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="tanuki"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="squirrel"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="squirrel"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: -2%;
+      width: 42%;
+      height: 86%;
+      border-radius: 74% 24% 74% 24%;
+      background: var(--av-hair);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="fox"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="cat"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="tanuki"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="squirrel"] .pono-mini-avatar__hair::before {
+      left: -8%;
+      transform: rotate(-26deg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="fox"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="cat"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="tanuki"] .pono-mini-avatar__hair::after,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="squirrel"] .pono-mini-avatar__hair::after {
+      left: auto;
+      right: -8%;
+      transform: rotate(26deg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="rabbit"] .pono-mini-avatar__hair {
+      left: 30%;
+      top: 1%;
+      width: 40%;
+      height: 31%;
+      background: transparent;
+      clip-path: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="rabbit"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="rabbit"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: -12%;
+      width: 35%;
+      height: 118%;
+      border-radius: 999px;
+      background: var(--av-hair);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="rabbit"] .pono-mini-avatar__hair::before { left: 8%; transform: rotate(-10deg); }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="rabbit"] .pono-mini-avatar__hair::after { left: auto; right: 8%; transform: rotate(10deg); }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="bear"] .pono-mini-avatar__hair {
+      left: 23%;
+      top: 10%;
+      width: 54%;
+      height: 22%;
+      background: transparent;
+      clip-path: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="bear"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="bear"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: 0;
+      width: 34%;
+      height: 78%;
+      border-radius: 50%;
+      background: var(--av-hair);
+      transform: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="bear"] .pono-mini-avatar__hair::before { left: -3%; }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="bear"] .pono-mini-avatar__hair::after { left: auto; right: -3%; }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="robot"] .pono-mini-avatar__face {
+      border-radius: 12px;
+      background: linear-gradient(180deg, #eef8ff, var(--av-skin));
+      box-shadow: inset 0 0 0 2px rgba(75, 99, 124, .24);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="robot"] .pono-mini-avatar__hair {
+      left: 42%;
+      top: 6%;
+      width: 16%;
+      height: 15%;
+      border-radius: 999px;
+      background: var(--av-accent);
+      clip-path: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="robot"] .pono-mini-avatar__hair::after {
+      display: block;
+      left: 43%;
+      top: -72%;
+      width: 16%;
+      height: 78%;
+      border-radius: 999px;
+      background: var(--av-hair);
+      transform: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="monster"] .pono-mini-avatar__hair {
+      top: 8%;
+      clip-path: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="monster"] .pono-mini-avatar__hair::before,
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="monster"] .pono-mini-avatar__hair::after {
+      display: block;
+      top: -28%;
+      width: 22%;
+      height: 74%;
+      border-radius: 50% 50% 8% 8%;
+      background: var(--av-accent);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="monster"] .pono-mini-avatar__hair::before { left: 8%; transform: rotate(-12deg); }
+    .pono-mini-avatar[data-avatar-mode="full"][data-kind="monster"] .pono-mini-avatar__hair::after { left: auto; right: 8%; transform: rotate(12deg); }
+    .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__mark {
+      z-index: 9;
+      right: 18%;
+      top: 17%;
+      width: 14%;
+      height: 14%;
+      border-radius: 50% 50% 50% 8px;
+      background: var(--av-accent);
+      transform: rotate(-18deg);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.35);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-mark-shape="none"] .pono-mini-avatar__mark { display: none; }
+    .pono-mini-avatar[data-avatar-mode="full"][data-mark-shape="dot"] .pono-mini-avatar__mark { border-radius: 50%; transform: none; }
+    .pono-mini-avatar[data-avatar-mode="full"][data-mark-shape="ribbon"] .pono-mini-avatar__mark {
+      width: 18%;
+      height: 10%;
+      border-radius: 999px 999px 4px 4px;
+      transform: rotate(8deg);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-mark-shape="square"] .pono-mini-avatar__mark {
+      border-radius: 4px 9px 9px 4px;
+      transform: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-mark-shape="star"] .pono-mini-avatar__mark {
+      clip-path: polygon(50% 0, 61% 34%, 98% 35%, 68% 56%, 79% 92%, 50% 70%, 21% 92%, 32% 56%, 2% 35%, 39% 34%);
+      border-radius: 0;
+      transform: none;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-bottom-style="skirt"] .pono-mini-avatar__body {
+      clip-path: polygon(20% 0, 80% 0, 98% 100%, 2% 100%);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-bottom-style="shorts"] .pono-mini-avatar__leg-left,
+    .pono-mini-avatar[data-avatar-mode="full"][data-bottom-style="shorts"] .pono-mini-avatar__leg-right {
+      height: 14%;
+      background: var(--av-bottom);
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-shoes-style="boots"] .pono-mini-avatar__shoe-left,
+    .pono-mini-avatar[data-avatar-mode="full"][data-shoes-style="boots"] .pono-mini-avatar__shoe-right {
+      top: 82%;
+      height: 12%;
+      border-radius: 7px 7px 999px 999px;
+    }
+    .pono-mini-avatar[data-avatar-mode="full"][data-shoes-style="bare"] .pono-mini-avatar__shoe-left,
+    .pono-mini-avatar[data-avatar-mode="full"][data-shoes-style="bare"] .pono-mini-avatar__shoe-right {
+      background: var(--av-skin);
     }
     .daily-quest-info-banner {
       position: relative;
@@ -7417,8 +7902,16 @@
       <button class="bn-item bn-item--profile" data-action="profile" id="profileHomeBtn" type="button" aria-label="プロフィール">
         <span class="bn-item__icon bn-item__icon--avatar" aria-hidden="true">
           <span class="pono-mini-avatar" id="profileHomeAvatar" data-variant="0" aria-hidden="true">
+            <span class="pono-mini-avatar__tail"></span>
+            <span class="pono-mini-avatar__leg-left"></span>
+            <span class="pono-mini-avatar__leg-right"></span>
+            <span class="pono-mini-avatar__shoe-left"></span>
+            <span class="pono-mini-avatar__shoe-right"></span>
+            <span class="pono-mini-avatar__arm-left"></span>
+            <span class="pono-mini-avatar__arm-right"></span>
             <span class="pono-mini-avatar__body"></span>
             <span class="pono-mini-avatar__face"></span>
+            <span class="pono-mini-avatar__mouth"></span>
             <span class="pono-mini-avatar__hair"></span>
             <span class="pono-mini-avatar__mark"></span>
           </span>
@@ -7640,8 +8133,16 @@
       <div class="profile-hub-panel" id="profileHubMainPanel">
         <div class="profile-hub-head">
           <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true">
+            <span class="pono-mini-avatar__tail"></span>
+            <span class="pono-mini-avatar__leg-left"></span>
+            <span class="pono-mini-avatar__leg-right"></span>
+            <span class="pono-mini-avatar__shoe-left"></span>
+            <span class="pono-mini-avatar__shoe-right"></span>
+            <span class="pono-mini-avatar__arm-left"></span>
+            <span class="pono-mini-avatar__arm-right"></span>
             <span class="pono-mini-avatar__body"></span>
             <span class="pono-mini-avatar__face"></span>
+            <span class="pono-mini-avatar__mouth"></span>
             <span class="pono-mini-avatar__hair"></span>
             <span class="pono-mini-avatar__mark"></span>
           </span>
@@ -7681,8 +8182,16 @@
         <div class="profile-avatar-builder">
           <div class="profile-avatar-preview" aria-label="えらんだ すがた">
             <span class="pono-mini-avatar" id="profileAvatarPreview" data-variant="0" aria-hidden="true">
+              <span class="pono-mini-avatar__tail"></span>
+              <span class="pono-mini-avatar__leg-left"></span>
+              <span class="pono-mini-avatar__leg-right"></span>
+              <span class="pono-mini-avatar__shoe-left"></span>
+              <span class="pono-mini-avatar__shoe-right"></span>
+              <span class="pono-mini-avatar__arm-left"></span>
+              <span class="pono-mini-avatar__arm-right"></span>
               <span class="pono-mini-avatar__body"></span>
               <span class="pono-mini-avatar__face"></span>
+              <span class="pono-mini-avatar__mouth"></span>
               <span class="pono-mini-avatar__hair"></span>
               <span class="pono-mini-avatar__mark"></span>
             </span>
@@ -8515,7 +9024,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1977;
+    const PAGE_CACHE_VERSION = 1978;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -8524,7 +9033,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1977';
+    window.PONO_SW_VERSION = 'v1978';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -12599,8 +13108,6 @@
         { id: 'puzzle_3', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 3こ', stat: 'puzzle_clears', target: 3 },
         { id: 'puzzle_20', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 20こ', stat: 'puzzle_clears', target: 20 }
       ];
-      const AVATAR_ASSET_VERSION = '20260705';
-      const AVATAR_ASSET_BASE = 'assets/images/avatars/';
       const AVATAR_PRESETS = [
         { id: 'pono_kko', name: 'ポノっこ', kind: 'human', bg: '#fff1c4', skin: '#f2bf8a', hair: '#6b4226', shirt: '#6fc2d4', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
         { id: 'leaf_kko', name: 'はっぱっこ', kind: 'human', bg: '#dff7ec', skin: '#d99b6b', hair: '#2f4a33', shirt: '#f5c84c', accent: '#75b86a', hairStyle: 'long', markShape: 'leaf' },
@@ -12628,6 +13135,145 @@
         { id: 'moon', name: 'つきのこ', kind: 'monster', bg: '#ede6ff', skin: '#c7b5ee', hair: '#3f2d68', shirt: '#9b72d0', accent: '#ffd84d', hairStyle: 'round', markShape: 'ribbon' }
       ];
       const AVATAR_DEFAULT_ID = 'pono_kko';
+      const AVATAR_PART_DOM = ['tail', 'leg-left', 'leg-right', 'shoe-left', 'shoe-right', 'arm-left', 'arm-right', 'body', 'face', 'mouth', 'hair', 'mark'];
+      const AVATAR_PART_OPTIONS = {
+        kind: [
+          { id: 'human', label: 'ひと' },
+          { id: 'fox', label: 'きつね' },
+          { id: 'rabbit', label: 'うさぎ' },
+          { id: 'cat', label: 'ねこ' },
+          { id: 'bear', label: 'くま' },
+          { id: 'robot', label: 'ロボ' },
+          { id: 'monster', label: 'モン' }
+        ],
+        hairStyle: [
+          { id: 'round', label: 'ふんわり' },
+          { id: 'short', label: 'みじかめ' },
+          { id: 'long', label: 'ながめ' },
+          { id: 'side', label: 'よこながし' },
+          { id: 'cap', label: 'ぼうし' },
+          { id: 'spike', label: 'つんつん' },
+          { id: 'none', label: 'なし' }
+        ],
+        eyes: [
+          { id: 'dot', label: 'まるめ' },
+          { id: 'smile', label: 'にこめ' },
+          { id: 'star', label: 'きらり' }
+        ],
+        mouth: [
+          { id: 'smile', label: 'にこ' },
+          { id: 'open', label: 'わらい' },
+          { id: 'flat', label: 'むー' }
+        ],
+        outfit: [
+          { id: 'tee', label: 'シャツ' },
+          { id: 'hoodie', label: 'パーカー' },
+          { id: 'dress', label: 'ワンピ' },
+          { id: 'overall', label: 'つなぎ' }
+        ],
+        bottomStyle: [
+          { id: 'pants', label: 'ズボン' },
+          { id: 'shorts', label: 'みじかい' },
+          { id: 'skirt', label: 'スカート' }
+        ],
+        shoesStyle: [
+          { id: 'shoes', label: 'くつ' },
+          { id: 'boots', label: 'ブーツ' },
+          { id: 'bare', label: 'はだし' }
+        ],
+        tailStyle: [
+          { id: 'none', label: 'なし' },
+          { id: 'fluffy', label: 'ふさふさ' },
+          { id: 'round', label: 'まる' },
+          { id: 'long', label: 'ながい' }
+        ],
+        markShape: [
+          { id: 'none', label: 'なし' },
+          { id: 'leaf', label: 'はっぱ' },
+          { id: 'dot', label: 'まる' },
+          { id: 'ribbon', label: 'リボン' },
+          { id: 'star', label: 'ほし' },
+          { id: 'square', label: 'しかく' }
+        ]
+      };
+      const AVATAR_PART_GROUPS = [
+        { key: 'kind', title: 'なかま' },
+        { key: 'hairStyle', title: 'かみ・みみ' },
+        { key: 'eyes', title: 'め' },
+        { key: 'mouth', title: 'くち' },
+        { key: 'outfit', title: 'うわぎ' },
+        { key: 'bottomStyle', title: 'した' },
+        { key: 'shoesStyle', title: 'くつ' },
+        { key: 'tailStyle', title: 'しっぽ' },
+        { key: 'markShape', title: 'しるし' }
+      ];
+      const AVATAR_COLOR_OPTIONS = {
+        skin: [
+          { id: '#f2bf8a', label: 'もも' },
+          { id: '#d99b6b', label: 'こむぎ' },
+          { id: '#bd8a63', label: 'ちゃ' },
+          { id: '#f5efe3', label: 'しろ' },
+          { id: '#9bd7d0', label: 'みず' },
+          { id: '#c7b5ee', label: 'ゆめ' }
+        ],
+        hair: [
+          { id: '#6b4226', label: 'ちゃ' },
+          { id: '#2f4a33', label: 'みどり' },
+          { id: '#365b83', label: 'あお' },
+          { id: '#8b5835', label: 'こげ' },
+          { id: '#d05f90', label: 'ピンク' },
+          { id: '#f3c26e', label: 'きいろ' }
+        ],
+        shirt: [
+          { id: '#6fc2d4', label: 'そら' },
+          { id: '#8bd17c', label: 'はっぱ' },
+          { id: '#f5c84c', label: 'たんぽぽ' },
+          { id: '#ff8b8b', label: 'あか' },
+          { id: '#9b72d0', label: 'むらさき' },
+          { id: '#f29f58', label: 'オレンジ' }
+        ],
+        bottom: [
+          { id: '#6b8bd6', label: 'あお' },
+          { id: '#7fb46b', label: 'みどり' },
+          { id: '#8a6230', label: 'ちゃ' },
+          { id: '#d978a0', label: 'ピンク' },
+          { id: '#5f5a50', label: 'くろ' },
+          { id: '#f5c84c', label: 'きいろ' }
+        ],
+        shoes: [
+          { id: '#7a4a24', label: 'ちゃ' },
+          { id: '#5f5a50', label: 'くろ' },
+          { id: '#ff8b8b', label: 'あか' },
+          { id: '#365b83', label: 'あお' },
+          { id: '#f5efe3', label: 'しろ' },
+          { id: '#f29f58', label: 'オレンジ' }
+        ],
+        accent: [
+          { id: '#f2a65a', label: 'きのみ' },
+          { id: '#75b86a', label: 'はっぱ' },
+          { id: '#ffd84d', label: 'ほし' },
+          { id: '#ff7aa2', label: 'リボン' },
+          { id: '#58d8ff', label: 'ひかり' },
+          { id: '#9b72d0', label: 'ゆめ' }
+        ],
+        bg: [
+          { id: '#fff1c4', label: 'ひだまり' },
+          { id: '#dff7ec', label: 'もり' },
+          { id: '#dff4ff', label: 'そら' },
+          { id: '#ffe4ed', label: 'はな' },
+          { id: '#ede6ff', label: 'ゆめ' },
+          { id: '#fff0d8', label: 'きのこ' }
+        ]
+      };
+      const AVATAR_COLOR_GROUPS = [
+        { key: 'skin', title: 'かおのいろ' },
+        { key: 'hair', title: 'かみのいろ' },
+        { key: 'shirt', title: 'うわぎのいろ' },
+        { key: 'bottom', title: 'したのいろ' },
+        { key: 'shoes', title: 'くつのいろ' },
+        { key: 'accent', title: 'しるしのいろ' },
+        { key: 'bg', title: 'まわりのいろ' }
+      ];
       let profileGender = 'none';
       let openHubAfterProfileSave = false;
       let avatarDraft = null;
@@ -12646,11 +13292,17 @@
       function avatarPresetById(id) {
         return AVATAR_PRESETS.find((preset) => preset.id === id) || AVATAR_PRESETS[0];
       }
-      function avatarAssetUrl(id) {
-        return __bust(AVATAR_ASSET_BASE + 'avatar_' + String(id || AVATAR_DEFAULT_ID) + '_' + AVATAR_ASSET_VERSION + '.webp');
-      }
       function avatarColor(value, fallback) {
         return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
+      }
+      function avatarOptionValue(key, value, fallback) {
+        const list = AVATAR_PART_OPTIONS[key] || [];
+        return list.some((option) => option.id === value) ? value : fallback;
+      }
+      function avatarColorFromList(key, value, fallback) {
+        const color = avatarColor(value, fallback);
+        const list = AVATAR_COLOR_OPTIONS[key] || [];
+        return list.some((option) => option.id.toLowerCase() === color.toLowerCase()) ? color : fallback;
       }
       function profileSeed(profile) {
         const source = String(((profile && profile.name) || 'ポノ') + ((profile && profile.age) || '') + ((profile && profile.gender) || 'none'));
@@ -12658,20 +13310,45 @@
         for (const ch of source) seed = (seed + ch.charCodeAt(0) * 17) % 9973;
         return seed;
       }
+      function presetParts(preset) {
+        const id = preset && preset.id;
+        const kind = (preset && preset.kind) || 'human';
+        const animalTail = kind === 'fox' || kind === 'cat' || kind === 'squirrel' || kind === 'tanuki';
+        return {
+          kind: kind,
+          hairStyle: (preset && preset.hairStyle) || 'round',
+          eyes: kind === 'monster' ? 'star' : 'dot',
+          mouth: 'smile',
+          outfit: kind === 'robot' ? 'overall' : (id === 'berry_kko' || id === 'moko_mon' || id === 'moon' ? 'dress' : (kind === 'monster' ? 'hoodie' : 'tee')),
+          bottomStyle: id === 'berry_kko' || id === 'moko_mon' || id === 'moon' ? 'skirt' : 'pants',
+          shoesStyle: kind === 'monster' || kind === 'mushroom' || kind === 'acorn' ? 'bare' : (kind === 'robot' ? 'boots' : 'shoes'),
+          tailStyle: animalTail ? 'fluffy' : (kind === 'rabbit' || kind === 'bear' ? 'round' : 'none'),
+          markShape: (preset && preset.markShape) || 'leaf'
+        };
+      }
       function avatarFromPreset(id) {
         const preset = avatarPresetById(id || AVATAR_DEFAULT_ID);
+        const parts = presetParts(preset);
         return {
+          custom: true,
           preset: preset.id,
           name: preset.name,
-          kind: preset.kind || 'human',
+          kind: avatarOptionValue('kind', parts.kind, 'human'),
+          hairStyle: avatarOptionValue('hairStyle', parts.hairStyle, 'round'),
+          eyes: avatarOptionValue('eyes', parts.eyes, 'dot'),
+          mouth: avatarOptionValue('mouth', parts.mouth, 'smile'),
+          outfit: avatarOptionValue('outfit', parts.outfit, 'tee'),
+          bottomStyle: avatarOptionValue('bottomStyle', parts.bottomStyle, 'pants'),
+          shoesStyle: avatarOptionValue('shoesStyle', parts.shoesStyle, 'shoes'),
+          tailStyle: avatarOptionValue('tailStyle', parts.tailStyle, 'none'),
+          markShape: avatarOptionValue('markShape', parts.markShape, 'leaf'),
           bg: avatarColor(preset.bg, '#fff1c4'),
           skin: avatarColor(preset.skin, '#f2bf8a'),
           hair: avatarColor(preset.hair, '#6b4226'),
           shirt: avatarColor(preset.shirt, '#6fc2d4'),
-          accent: avatarColor(preset.accent, '#f2a65a'),
-          hairStyle: preset.hairStyle || 'round',
-          markShape: preset.markShape || 'leaf',
-          asset: avatarAssetUrl(preset.id)
+          bottom: avatarColor(preset.shirt, '#6b8bd6'),
+          shoes: parts.shoesStyle === 'bare' ? avatarColor(preset.skin, '#f2bf8a') : '#7a4a24',
+          accent: avatarColor(preset.accent, '#f2a65a')
         };
       }
       function defaultAvatarForProfile(profile) {
@@ -12680,13 +13357,35 @@
         return avatarFromPreset((AVATAR_PRESETS[index] || AVATAR_PRESETS[0]).id);
       }
       function normalizeAvatar(avatar, profile) {
-        if (avatar && typeof avatar === 'object' && avatarPresetById(avatar.preset).id === avatar.preset) {
-          return avatarFromPreset(avatar.preset);
+        if (!avatar || typeof avatar !== 'object') {
+          return defaultAvatarForProfile(profile || {});
         }
-        return defaultAvatarForProfile(profile || {});
+        const presetId = avatarPresetById(avatar.preset).id === avatar.preset ? avatar.preset : AVATAR_DEFAULT_ID;
+        const base = avatarFromPreset(presetId);
+        return {
+          custom: true,
+          preset: presetId,
+          name: String(avatar.name || base.name || 'じぶんの すがた'),
+          kind: avatarOptionValue('kind', avatar.kind, base.kind),
+          hairStyle: avatarOptionValue('hairStyle', avatar.hairStyle, base.hairStyle),
+          eyes: avatarOptionValue('eyes', avatar.eyes, base.eyes),
+          mouth: avatarOptionValue('mouth', avatar.mouth, base.mouth),
+          outfit: avatarOptionValue('outfit', avatar.outfit, base.outfit),
+          bottomStyle: avatarOptionValue('bottomStyle', avatar.bottomStyle, base.bottomStyle),
+          shoesStyle: avatarOptionValue('shoesStyle', avatar.shoesStyle, base.shoesStyle),
+          tailStyle: avatarOptionValue('tailStyle', avatar.tailStyle, base.tailStyle),
+          markShape: avatarOptionValue('markShape', avatar.markShape, base.markShape),
+          bg: avatarColorFromList('bg', avatar.bg, base.bg),
+          skin: avatarColorFromList('skin', avatar.skin, base.skin),
+          hair: avatarColorFromList('hair', avatar.hair, base.hair),
+          shirt: avatarColorFromList('shirt', avatar.shirt, base.shirt),
+          bottom: avatarColorFromList('bottom', avatar.bottom, base.bottom),
+          shoes: avatarColorFromList('shoes', avatar.shoes, base.shoes),
+          accent: avatarColorFromList('accent', avatar.accent, base.accent)
+        };
       }
       function cloneAvatar(avatar) {
-        return normalizeAvatar(avatar, {});
+        return Object.assign({}, normalizeAvatar(avatar, {}));
       }
       function defaultProfile() {
         const profile = { name: 'ポノ', gender: 'none', age: '' };
@@ -12732,25 +13431,44 @@
           } catch (_) {}
         }
       }
+      function ensureAvatarPieces(el) {
+        if (!el) return;
+        AVATAR_PART_DOM.forEach((part) => {
+          if (el.querySelector('.pono-mini-avatar__' + part)) return;
+          const piece = document.createElement('span');
+          piece.className = 'pono-mini-avatar__' + part;
+          const body = el.querySelector('.pono-mini-avatar__body');
+          if (body && ['tail', 'leg-left', 'leg-right', 'shoe-left', 'shoe-right', 'arm-left', 'arm-right'].includes(part)) {
+            el.insertBefore(piece, body);
+          } else {
+            el.appendChild(piece);
+          }
+        });
+      }
       function applyAvatarToElement(el, avatarOrProfile) {
         if (!el) return;
+        ensureAvatarPieces(el);
         const isProfile = !!(avatarOrProfile && avatarOrProfile.avatar);
         const avatar = normalizeAvatar(isProfile ? avatarOrProfile.avatar : avatarOrProfile, isProfile ? avatarOrProfile : {});
-        el.dataset.variant = 'preset';
+        el.dataset.avatarMode = 'full';
+        el.dataset.variant = 'custom';
         el.dataset.kind = avatar.kind || 'human';
         el.dataset.hairStyle = avatar.hairStyle;
+        el.dataset.eyes = avatar.eyes;
+        el.dataset.mouth = avatar.mouth;
+        el.dataset.outfit = avatar.outfit;
+        el.dataset.bottomStyle = avatar.bottomStyle;
+        el.dataset.shoesStyle = avatar.shoesStyle;
+        el.dataset.tailStyle = avatar.tailStyle;
         el.dataset.markShape = avatar.markShape;
-        if (avatar.asset) {
-          el.dataset.avatarImage = '1';
-          el.style.setProperty('--av-img', 'url("' + avatar.asset + '")');
-        } else {
-          delete el.dataset.avatarImage;
-          el.style.removeProperty('--av-img');
-        }
+        delete el.dataset.avatarImage;
+        el.style.removeProperty('--av-img');
         el.style.setProperty('--av-bg', avatar.bg);
         el.style.setProperty('--av-skin', avatar.skin);
         el.style.setProperty('--av-hair', avatar.hair);
         el.style.setProperty('--av-shirt', avatar.shirt);
+        el.style.setProperty('--av-bottom', avatar.bottom);
+        el.style.setProperty('--av-shoes', avatar.shoes);
         el.style.setProperty('--av-accent', avatar.accent);
       }
       function genderLabel(value) {
@@ -12882,55 +13600,91 @@
           profileGoalList.appendChild(section);
         });
       }
-      function createAvatarMarkup() {
-        const avatar = document.createElement('span');
-        avatar.className = 'pono-mini-avatar';
-        avatar.setAttribute('aria-hidden', 'true');
-        ['body', 'face', 'hair', 'mark'].forEach((part) => {
-          const piece = document.createElement('span');
-          piece.className = 'pono-mini-avatar__' + part;
-          avatar.appendChild(piece);
-        });
-        return avatar;
+      function avatarButtonLabel(key, value) {
+        const list = AVATAR_PART_OPTIONS[key] || [];
+        const item = list.find((option) => option.id === value);
+        return item ? item.label : String(value || '');
       }
-      function renderAvatarPresetButtons() {
+      function createAvatarChoiceButton(group, option) {
+        const btn = document.createElement('button');
+        btn.className = 'avatar-choice';
+        btn.type = 'button';
+        btn.dataset.avatarPart = group.key;
+        btn.dataset.avatarValue = option.id;
+        btn.setAttribute('aria-pressed', avatarDraft && avatarDraft[group.key] === option.id ? 'true' : 'false');
+        btn.classList.toggle('is-active', !!avatarDraft && avatarDraft[group.key] === option.id);
+        btn.textContent = option.label;
+        return btn;
+      }
+      function createAvatarSwatchButton(group, option) {
+        const btn = document.createElement('button');
+        btn.className = 'avatar-swatch';
+        btn.type = 'button';
+        btn.dataset.avatarColorKey = group.key;
+        btn.dataset.avatarColor = option.id;
+        btn.style.setProperty('--swatch-color', option.id);
+        btn.setAttribute('aria-label', group.title + ' ' + option.label);
+        btn.setAttribute('aria-pressed', avatarDraft && String(avatarDraft[group.key]).toLowerCase() === option.id.toLowerCase() ? 'true' : 'false');
+        btn.classList.toggle('is-active', !!avatarDraft && String(avatarDraft[group.key]).toLowerCase() === option.id.toLowerCase());
+        btn.textContent = option.label;
+        return btn;
+      }
+      function appendAvatarGroup(parent, titleText, rowClass) {
+        const section = document.createElement('section');
+        section.className = 'avatar-edit-group';
+        const title = document.createElement('div');
+        title.className = 'avatar-edit-group__title';
+        title.textContent = titleText;
+        const row = document.createElement('div');
+        row.className = rowClass;
+        section.appendChild(title);
+        section.appendChild(row);
+        parent.appendChild(section);
+        return row;
+      }
+      function renderAvatarEditorControls() {
         if (!profileAvatarControls || !avatarDraft) return;
         profileAvatarControls.textContent = '';
-        AVATAR_PRESETS.forEach((preset) => {
-          const btn = document.createElement('button');
-          btn.className = 'profile-avatar-preset';
-          btn.type = 'button';
-          btn.dataset.avatarPreset = preset.id;
-          btn.setAttribute('aria-pressed', avatarDraft.preset === preset.id ? 'true' : 'false');
-          btn.classList.toggle('is-active', avatarDraft.preset === preset.id);
-
-          const avatar = createAvatarMarkup();
-          applyAvatarToElement(avatar, avatarFromPreset(preset.id));
-
-          const label = document.createElement('span');
-          label.className = 'profile-avatar-preset__name';
-          label.textContent = preset.name;
-
-          btn.appendChild(avatar);
-          btn.appendChild(label);
-          profileAvatarControls.appendChild(btn);
+        AVATAR_PART_GROUPS.forEach((group) => {
+          const row = appendAvatarGroup(profileAvatarControls, group.title, 'avatar-choice-row');
+          (AVATAR_PART_OPTIONS[group.key] || []).forEach((option) => {
+            row.appendChild(createAvatarChoiceButton(group, option));
+          });
+        });
+        AVATAR_COLOR_GROUPS.forEach((group) => {
+          const row = appendAvatarGroup(profileAvatarControls, group.title, 'avatar-swatch-row');
+          (AVATAR_COLOR_OPTIONS[group.key] || []).forEach((option) => {
+            row.appendChild(createAvatarSwatchButton(group, option));
+          });
         });
       }
       function renderAvatarPreview() {
         if (profileAvatarPreview) applyAvatarToElement(profileAvatarPreview, avatarDraft);
-        if (profileAvatarPreviewName) profileAvatarPreviewName.textContent = (avatarDraft && avatarDraft.name) || avatarPresetById(AVATAR_DEFAULT_ID).name;
+        if (profileAvatarPreviewName) {
+          const kind = avatarDraft ? avatarButtonLabel('kind', avatarDraft.kind) : '';
+          const outfit = avatarDraft ? avatarButtonLabel('outfit', avatarDraft.outfit) : '';
+          profileAvatarPreviewName.textContent = kind && outfit ? kind + 'の ' + outfit : 'じぶんの すがた';
+        }
       }
       function renderAvatarBuilder() {
         const profile = loadProfile();
         avatarDraft = cloneAvatar(profile.avatar);
         renderAvatarPreview();
-        renderAvatarPresetButtons();
+        renderAvatarEditorControls();
       }
-      function setAvatarDraftPreset(id) {
-        if (!avatarPresetById(id) || !AVATAR_PRESETS.some((preset) => preset.id === id)) return;
-        avatarDraft = avatarFromPreset(id);
+      function setAvatarDraftPart(key, value) {
+        if (!avatarDraft || !AVATAR_PART_OPTIONS[key] || !AVATAR_PART_OPTIONS[key].some((option) => option.id === value)) return;
+        avatarDraft[key] = value;
+        avatarDraft.name = 'じぶんの すがた';
         renderAvatarPreview();
-        renderAvatarPresetButtons();
+        renderAvatarEditorControls();
+      }
+      function setAvatarDraftColor(key, value) {
+        if (!avatarDraft || !AVATAR_COLOR_OPTIONS[key] || !AVATAR_COLOR_OPTIONS[key].some((option) => option.id.toLowerCase() === String(value).toLowerCase())) return;
+        avatarDraft[key] = value;
+        avatarDraft.name = 'じぶんの すがた';
+        renderAvatarPreview();
+        renderAvatarEditorControls();
       }
       function saveAvatarDraft() {
         const profile = loadProfile();
@@ -13096,10 +13850,16 @@
       }
       if (profileAvatarControls) {
         profileAvatarControls.addEventListener('click', (e) => {
-          const btn = e.target.closest('[data-avatar-preset]');
+          const partBtn = e.target.closest('[data-avatar-part]');
+          const colorBtn = e.target.closest('[data-avatar-color-key]');
+          const btn = partBtn || colorBtn;
           if (!btn) return;
           e.preventDefault();
-          setAvatarDraftPreset(btn.dataset.avatarPreset);
+          if (partBtn) {
+            setAvatarDraftPart(partBtn.dataset.avatarPart, partBtn.dataset.avatarValue);
+          } else {
+            setAvatarDraftColor(colorBtn.dataset.avatarColorKey, colorBtn.dataset.avatarColor);
+          }
         });
       }
       if (profileAvatarDoneBtn) {

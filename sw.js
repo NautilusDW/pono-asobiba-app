@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1978: play.html のプロフィール内アバター作成を全身パーツ編集式へ拡張。なかま/かみ/目/口/服/下/靴/しっぽ/しるしと各色を個別変更し、ホーム/プロフィールの表示へ即反映。play.html PAGE_CACHE_VERSION と同期。
 // v1977: play.html 右下ナビを GPT Image 2 生成の木製ボタン画像へ差し替え。シール / プロフィール / ごかんそう / せってい の4機能に対応し、通常/押下WebPを precache。play.html PAGE_CACHE_VERSION と同期。
 // v1976: play.html 右下ナビを `シール / プロフィール / ごかんそう / せってい` へ整理。プロフィールボタンは保存名ではなく機能名を固定表示し、名前はサブラベルへ移動。play.html PAGE_CACHE_VERSION と同期。
 // v1975: play.html のアバター選択画面を左の大きいプレビュー + 右の縦候補リストへ変更。選択中の名前もプレビュー下に表示。play.html PAGE_CACHE_VERSION と同期。
@@ -608,7 +609,7 @@
 // v1968: batch:954 — シールミュージアム (StickerExhibitionCarousel) の表示サイズを不透明面積ベースで正規化。旧ロジック (AR バケット固定 3 段階) では余白の多い PNG が過小表示・タイトクロップの PNG が過大表示になる問題があり (spread 2.45x→1.34x に是正、リス過大表示を修正)、STICKER_METRICS (scripts/generate_sticker_metrics.py で135枚分事前計算) の opaque bbox 面積から width%/offset% を導出する方式に置換。クロスレビュー APPROVE_WITH_NITS、stickerDisplayMetrics() に前提コメント (--sticker-aspect clamp [0.36, 2.1] 範囲外は要補正) を追記。play.html PAGE_CACHE_VERSION と同期。
 // v1967: batch:953 — シールミュージアム (StickerExhibitionCarousel) の STICKER_DESC を全135件に拡張 (既存 batta 1件 + 新規134件、6ライター執筆 → クロスレビュー3本 APPROVE_WITH_FIXES → 修正反映済み)。えほんメダル (book_bonus_ehon_medal_super) は実画像が金色メダルではなくどんぐり風チャームだったため本文の「きんいろの」を「どんぐりの」に調整。play.html PAGE_CACHE_VERSION と同期。
 // v1966: batch:952 — シール帳 (StickerBookThreeJS) の図鑑モードを COLLECTION_MODE_ENABLED=false で凍結 (album=collection 遷移とトグルボタンを hidden 化、free モードのみ運用)。ミュージアム展示 (StickerExhibitionCarousel) に STICKER_DESC 説明文マップを追加し、詳細モーダルの #detailDesc にシールごとの一言紹介 (batta 見本含む) を表示。クロスレビュー 2 本 APPROVE 済。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1977;
+const CACHE_VERSION = 1978;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
