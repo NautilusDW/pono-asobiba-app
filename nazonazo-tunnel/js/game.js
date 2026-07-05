@@ -1353,6 +1353,7 @@ function render(){
  world.style.transform="translateX("+(-worldX)+"vw)";
  if(tunnelInteriorMode){
   skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
+  document.documentElement.style.setProperty("--tunnel-track-x",(-worldX*.55)+"vw");
   skyB.style.opacity="0";
   veh.classList.add("inTun");
   carsEl.classList.add("inTun");
