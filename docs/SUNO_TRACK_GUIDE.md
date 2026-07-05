@@ -5,6 +5,7 @@ SoundDraw と並走する SUNO 側の運用手順書。 SUNO は 「歌もの / 
 ## 事前準備
 
 - SUNO **Pro プラン $10/月 (年払 $8)** に登録 (商用可 / v5.5 アクセス / WAV 書き出し可 / Free の MP3 128kbps は launch 品質に足りない)
+  - 注: 素材評価目的で Free の v5 を試すのは可、 ただし launch 用素材は必ず Pro 契約後に生成し直す (Free は商用不可)
 - 出力先ローカルフォルダ: `docs/audio/suno_raw/` を用意
 - Custom Mode を使用 (Simple Mode は style prompt を無視するため NG)
 - モデル: **v5 または v5.5** (v4.5 でも生成可だが loop 精度は v5 系が上、 v5.5 は Pro 限定)
@@ -41,7 +42,7 @@ Forest Lullaby - Moonlit Cradle
 
 ### 設計意図
 
-`ostinato` と `arpeggio cycle` で 「循環している」 ことを明示し、 v5 が曲構造を組み立てに行くのを抑制。 `D dorian` は Key の強制指定 (SUNO は key 指定を 6-7 割の確率で尊重、 拒否時は転調してくる)。 `hushed` は音量ダイナミクスの上限を暗示。 vocal 抑制のため `[instrumental]` + `no vocals` の二重明示。
+`ostinato (同じ短いフレーズを反復し続ける音楽用語)` と `arpeggio (和音を 1 音ずつバラして連続演奏する形) cycle` で 「循環している」 ことを明示し、 v5 が曲構造を組み立てに行くのを抑制。 `D dorian (dorian / aeolian は西洋音階のモード種類、 minor に近いが響きが違う)` は Key の強制指定 (SUNO は key 指定を 6-7 割の確率で尊重、 拒否時は転調してくる)。 `hushed` は音量ダイナミクスの上限を暗示。 vocal 抑制のため `[instrumental]` + `no vocals` の二重明示。
 
 ### 生成のコツ
 
@@ -200,7 +201,7 @@ Owl's Goodnight - Dreamy Harp
 
 ### 設計意図
 
-`perpetual arpeggio` は SUNO に対して 「終わらないパターン」 を強く要求する語彙。 `A aeolian` は minor と等価だが響きの近代性を出すため aeolian 指定。 `wind chime` は空間の広がりと 「時間停止」 感を作る。
+`perpetual arpeggio (終わりのないアルペジオ = 曲構造を作らせないための強制語)` は SUNO に対して 「終わらないパターン」 を強く要求する語彙。 `A aeolian` は minor と等価だが響きの近代性を出すため aeolian 指定。 `wind chime` は空間の広がりと 「時間停止」 感を作る。
 
 ### 生成のコツ
 
@@ -272,5 +273,5 @@ Owl's Goodnight - Dreamy Harp
 
 1. **曲 1 は SoundDraw / SUNO どちらを本採用するか (最重要)**: 上記対比表を元に判断。 「教科書的な童謡 + 後工程 mix 余地」 なら SoundDraw、 「意外性のある童謡 + 単発 8 分の tonal 安定」 なら SUNO。 両方作って A/B 比較を launch までに 1 回実施推奨。
 2. **曲 3 の Key 選択 (SoundDraw と共通判断)**: (a) A aeolian 維持 + Web Audio drone を 523.25Hz に変更 / (b) B♭ aeolian に半音移調 (Alt-1 使用) / (c) A + 528Hz のまま run し実機テスト。 レビュアーは (a) or (b) を強く推奨。
-3. **モデル選択**: v5 (Free でも使用可) / v5.5 (Pro 限定、 loop 精度は最新)。 launch 前は v5.5 で全曲再生成推奨だが、 Pro 契約前に v5 で 3 曲揃えて評価してから Pro に上げる運用も可。
+3. **モデル選択**: **Pro 契約下で** v5 vs v5.5 を A/B 比較 (v5 は速い、 v5.5 は loop 精度高)、 launch 素材は v5.5 で統一推奨
 4. **Extend の使い方**: 8 分 × 1 発を crossfade loop に流すか、 8 分 + Extend 4 分 = 12 分単発を作るか。 tonal drift リスクと素材長のトレードオフ。
