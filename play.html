@@ -6733,6 +6733,12 @@
         linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,0) 58%),
         var(--av-bg);
     }
+    .pono-mini-avatar[data-avatar-mode="full"][data-avatar-image="1"] {
+      background:
+        var(--av-img) center / 94% 94% no-repeat,
+        radial-gradient(circle at 32% 20%, rgba(255,255,255,.75), rgba(255,255,255,0) 34%),
+        var(--av-bg);
+    }
     .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__tail {
       z-index: 1;
       left: 62%;
@@ -9461,7 +9467,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1981;
+    const PAGE_CACHE_VERSION = 1982;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -9470,7 +9476,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1981';
+    window.PONO_SW_VERSION = 'v1982';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13741,6 +13747,10 @@
       function avatarPresetById(id) {
         return AVATAR_PRESETS.find((preset) => preset.id === id) || AVATAR_PRESETS[0];
       }
+      function avatarPresetImage(id) {
+        const preset = avatarPresetById(id || AVATAR_DEFAULT_ID);
+        return 'assets/images/avatars/avatar_' + preset.id + '_20260705.webp';
+      }
       function avatarColor(value, fallback) {
         return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;
       }
@@ -13790,6 +13800,7 @@
           custom: true,
           preset: preset.id,
           name: preset.name,
+          image: avatarPresetImage(preset.id),
           bodyType: avatarOptionValue('bodyType', parts.bodyType, 'balanced'),
           kind: avatarOptionValue('kind', parts.kind, 'human'),
           hairStyle: avatarOptionValue('hairStyle', parts.hairStyle, 'round'),
@@ -13824,6 +13835,7 @@
           custom: true,
           preset: presetId,
           name: String(avatar.name || base.name || 'じぶんの すがた'),
+          image: avatarPresetImage(presetId),
           bodyType: avatarOptionValue('bodyType', avatar.bodyType, base.bodyType),
           kind: avatarOptionValue('kind', avatar.kind, base.kind),
           hairStyle: avatarOptionValue('hairStyle', avatar.hairStyle, base.hairStyle),
@@ -13921,8 +13933,13 @@
         el.dataset.shoesStyle = avatar.shoesStyle;
         el.dataset.tailStyle = avatar.tailStyle;
         el.dataset.markShape = avatar.markShape;
-        delete el.dataset.avatarImage;
-        el.style.removeProperty('--av-img');
+        if (avatar.image) {
+          el.dataset.avatarImage = '1';
+          el.style.setProperty('--av-img', 'url("' + avatar.image + '")');
+        } else {
+          delete el.dataset.avatarImage;
+          el.style.removeProperty('--av-img');
+        }
         el.style.setProperty('--av-bg', avatar.bg);
         el.style.setProperty('--av-skin', avatar.skin);
         el.style.setProperty('--av-hair', avatar.hair);
@@ -14065,6 +14082,28 @@
         const item = list.find((option) => option.id === value);
         return item ? item.label : String(value || '');
       }
+      function createAvatarPresetButton(preset) {
+        const avatar = avatarFromPreset(preset && preset.id);
+        const btn = document.createElement('button');
+        btn.className = 'profile-avatar-preset';
+        btn.type = 'button';
+        btn.dataset.avatarPreset = avatar.preset;
+        btn.setAttribute('aria-pressed', avatarDraft && avatarDraft.preset === avatar.preset ? 'true' : 'false');
+        btn.classList.toggle('is-active', !!avatarDraft && avatarDraft.preset === avatar.preset);
+
+        const thumb = document.createElement('span');
+        thumb.className = 'pono-mini-avatar';
+        thumb.setAttribute('aria-hidden', 'true');
+        applyAvatarToElement(thumb, avatar);
+
+        const name = document.createElement('span');
+        name.className = 'profile-avatar-preset__name';
+        name.textContent = avatar.name || 'すがた';
+
+        btn.appendChild(thumb);
+        btn.appendChild(name);
+        return btn;
+      }
       function createAvatarChoiceButton(group, option) {
         const btn = document.createElement('button');
         btn.className = 'avatar-choice';
@@ -14105,30 +14144,24 @@
       function renderAvatarEditorControls() {
         if (!profileAvatarControls || !avatarDraft) return;
         profileAvatarControls.textContent = '';
-        AVATAR_PART_GROUPS.forEach((group) => {
-          const row = appendAvatarGroup(profileAvatarControls, group.title, 'avatar-choice-row');
-          (AVATAR_PART_OPTIONS[group.key] || []).forEach((option) => {
-            row.appendChild(createAvatarChoiceButton(group, option));
-          });
-        });
-        AVATAR_COLOR_GROUPS.forEach((group) => {
-          const row = appendAvatarGroup(profileAvatarControls, group.title, 'avatar-swatch-row');
-          (AVATAR_COLOR_OPTIONS[group.key] || []).forEach((option) => {
-            row.appendChild(createAvatarSwatchButton(group, option));
-          });
+        AVATAR_PRESETS.forEach((preset) => {
+          profileAvatarControls.appendChild(createAvatarPresetButton(preset));
         });
       }
       function renderAvatarPreview() {
         if (profileAvatarPreview) applyAvatarToElement(profileAvatarPreview, avatarDraft);
         if (profileAvatarPreviewName) {
-          const body = avatarDraft ? avatarButtonLabel('bodyType', avatarDraft.bodyType) : '';
-          const kind = avatarDraft ? avatarButtonLabel('kind', avatarDraft.kind) : '';
-          profileAvatarPreviewName.textContent = body && kind ? body + 'の ' + kind : 'じぶんの すがた';
+          profileAvatarPreviewName.textContent = avatarDraft && avatarDraft.name ? avatarDraft.name : 'じぶんの すがた';
         }
       }
       function renderAvatarBuilder() {
         const profile = loadProfile();
         avatarDraft = cloneAvatar(profile.avatar);
+        renderAvatarPreview();
+        renderAvatarEditorControls();
+      }
+      function setAvatarDraftPreset(id) {
+        avatarDraft = avatarFromPreset(id || AVATAR_DEFAULT_ID);
         renderAvatarPreview();
         renderAvatarEditorControls();
       }
@@ -14310,12 +14343,15 @@
       }
       if (profileAvatarControls) {
         profileAvatarControls.addEventListener('click', (e) => {
+          const presetBtn = e.target.closest('[data-avatar-preset]');
           const partBtn = e.target.closest('[data-avatar-part]');
           const colorBtn = e.target.closest('[data-avatar-color-key]');
-          const btn = partBtn || colorBtn;
+          const btn = presetBtn || partBtn || colorBtn;
           if (!btn) return;
           e.preventDefault();
-          if (partBtn) {
+          if (presetBtn) {
+            setAvatarDraftPreset(presetBtn.dataset.avatarPreset);
+          } else if (partBtn) {
             setAvatarDraftPart(partBtn.dataset.avatarPart, partBtn.dataset.avatarValue);
           } else {
             setAvatarDraftColor(colorBtn.dataset.avatarColorKey, colorBtn.dataset.avatarColor);
