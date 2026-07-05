@@ -25,6 +25,10 @@ const RARITY_LABEL = {
   super: "スーパーレア",
 };
 
+const STICKER_DESC = {
+  bonus_quizland_batta_normal: "なぞなぞランドの くさむらで ぴょんと はねてた バッタ。 じつは なぞなぞが だいすき らしい。 むずかしい もんだいほど げんきに ジャンプするよ。",
+};
+
 const els = {
   loading: document.getElementById("loading"),
   app: document.getElementById("app"),
@@ -52,6 +56,7 @@ const els = {
   detailImage: document.getElementById("detailImage"),
   detailSerial: document.getElementById("detailSerial"),
   detailName: document.getElementById("detailName"),
+  detailDesc: document.getElementById("detailDesc"),
   detailTags: document.getElementById("detailTags"),
 };
 
@@ -115,6 +120,7 @@ function flattenCatalog(catalog) {
         pageId,
         pageTitle: page.title || "シール",
         imageUrl: resolveAsset(sticker.img),
+        desc: STICKER_DESC[sticker.id] || "",
       };
       item.roomId = assignRoom(item);
       stickers.push(item);
@@ -552,6 +558,11 @@ function openDetail(sticker) {
   }
   els.detailSerial.textContent = String(sticker.serial || 0).padStart(3, "0");
   els.detailName.textContent = sticker.owned ? sticker.name : "まだ";
+  const desc = sticker.owned ? sticker.desc || "" : "";
+  if (els.detailDesc) {
+    els.detailDesc.textContent = desc;
+    els.detailDesc.hidden = !desc;
+  }
   els.detailTags.replaceChildren(
     createTag(sticker.owned ? "あつめた" : "まだ", true),
     createTag(RARITY_LABEL[sticker.rarity] || "ふつう"),

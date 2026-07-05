@@ -9895,7 +9895,7 @@ function setBookPage(page, options = {}) {
 }
 
 function setAlbumMode(mode) {
-  const nextMode = mode === "collection" ? "collection" : "free";
+  const nextMode = COLLECTION_MODE_ENABLED && mode === "collection" ? "collection" : "free";
   if (nextMode === activeAlbumMode) {
     updateAlbumModeUi();
     return;
