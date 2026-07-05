@@ -242,8 +242,8 @@ const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_LEN=560;
 const TRAIN_WIDTH_MIN_PX=204, TRAIN_WIDTH_VW=33.2, TRAIN_WIDTH_MAX_PX=356, TRAIN_RIGHT_SHIFT_VW=5, DEFAULT_VEHICLE_LEFT_VW=28;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=360;
-const TUNNEL_ENTRY_FADE_DELAY_MS=520, TUNNEL_ENTRY_SWITCH_MS=940, TUNNEL_ENTRY_BLACK_HOLD_MS=280;
-const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=900;
+const TUNNEL_ENTRY_FADE_DELAY_MS=900, TUNNEL_ENTRY_SWITCH_MS=1320, TUNNEL_ENTRY_BLACK_HOLD_MS=420;
+const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=900, TUNNEL_EXIT_CLEAR_MS=360;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -594,16 +594,16 @@ function placePortalOccluder(gate,occ,mode){
  occ.style.removeProperty("--portal-wide-bg-y");
  occ.style.display="block";
  if(mode==="in"&&document.body.classList.contains("tunnel-enter-run")){
-  const maskLeft=clamp(r.left+r.width*.205,sr.left,sr.right);
+  const maskLeft=clamp(r.left+r.width*.32,sr.left,sr.right);
   const maskTop=clamp(r.top+r.height*.38,sr.top,sr.bottom);
   occ.classList.add("wide-portal-mask");
   occ.style.left=(maskLeft-sr.left)+"px";
   occ.style.top=(maskTop-sr.top)+"px";
   occ.style.width=Math.max(0,sr.right-maskLeft)+"px";
-  occ.style.height=Math.max(0,(r.top+r.height*.93)-maskTop)+"px";
+  occ.style.height=Math.max(0,sr.bottom-maskTop)+"px";
   occ.style.setProperty("--portal-wide-bg-w",r.width+"px");
   occ.style.setProperty("--portal-wide-bg-h",r.height+"px");
-  occ.style.setProperty("--portal-wide-bg-x",(-(r.width*.205))+"px");
+  occ.style.setProperty("--portal-wide-bg-x",(-(r.width*.32))+"px");
   occ.style.setProperty("--portal-wide-bg-y",(-(r.height*.38))+"px");
   return true;
  }
@@ -1095,7 +1095,7 @@ function enterTunnelInterior(){
 }
 function finishTunnelInterior(){
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
- document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear");
  document.body.classList.add("tunnel-fade-dark");
  setTimeout(()=>{
   if(!playing)return;
@@ -1117,7 +1117,11 @@ function finishTunnelInterior(){
    document.body.classList.remove("tunnel-exit-setup");
    document.body.classList.add("tunnel-exit-run");
    requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
-   setTimeout(()=>document.body.classList.remove("tunnel-exit-run"),TUNNEL_EXIT_RUN_MS);
+   setTimeout(()=>{
+    if(!playing)return;
+    document.body.classList.add("tunnel-exit-clear");
+    setTimeout(()=>document.body.classList.remove("tunnel-exit-run","tunnel-exit-clear"),TUNNEL_EXIT_CLEAR_MS);
+   },TUNNEL_EXIT_RUN_MS);
   },TUNNEL_EXIT_BLACK_HOLD_MS);
  },TUNNEL_EXIT_FADE_SETUP_MS);
 }
@@ -1358,7 +1362,7 @@ function gloop(t){
 function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
- document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-fade-dark","tunnel-interior");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-fade-dark","tunnel-interior");
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
  setDriverMood("cheer");

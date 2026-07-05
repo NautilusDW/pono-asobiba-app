@@ -142,16 +142,18 @@ body.st-space .tun{bottom:20vh}
 .lamp{display:none}
 #tunnelFade{position:fixed;inset:0;z-index:80;background:#000;opacity:0;pointer-events:none;transition:opacity .42s ease}
 body.tunnel-fade-dark #tunnelFade{opacity:1;transition-duration:.28s}
-body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(58vw) scale(.96);transition:transform .78s linear}
+body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(74vw) scale(.96);transition:transform 1.18s linear}
 body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-44vw) scale(.96);transition:none}
 body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive .82s linear both}
 @keyframes tunnelExitDrive{from{transform:translateX(-44vw) scale(.96)}to{transform:translateX(0) scale(1)}}
 body.tunnel-interior #skyA{background-color:#17110b}
 body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0}
-#screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;pointer-events:none}
+#screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease}
 #screenPortalBack{z-index:6}
 #screenPortalFront{z-index:9}
-body.tunnel-exit-setup #screenPortalBack,body.tunnel-exit-setup #screenPortalFront,body.tunnel-exit-run #screenPortalBack,body.tunnel-exit-run #screenPortalFront{display:block}
+body.tunnel-exit-setup #screenPortalBack,body.tunnel-exit-setup #screenPortalFront,body.tunnel-exit-run #screenPortalBack,body.tunnel-exit-run #screenPortalFront,body.tunnel-exit-clear #screenPortalBack,body.tunnel-exit-clear #screenPortalFront{display:block}
+body.tunnel-exit-setup #screenPortalBack,body.tunnel-exit-setup #screenPortalFront,body.tunnel-exit-run #screenPortalBack,body.tunnel-exit-run #screenPortalFront{opacity:1}
+body.tunnel-exit-clear #screenPortalBack,body.tunnel-exit-clear #screenPortalFront{opacity:0}
 .screen-exit-gate{position:absolute;top:0;bottom:0;left:calc(100vh * var(--screen-exit-left-vh));width:calc(100vh * 1.777);background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") center bottom/100% 100% no-repeat}
 #screenPortalFront::before{content:"";position:absolute;left:0;top:0;bottom:0;width:calc((100vh * var(--screen-exit-left-vh)) + (100vh * 1.777 * var(--screen-exit-mask-edge)));background:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp") calc(100vh * var(--screen-exit-left-vh)) bottom/calc(100vh * 1.777) 100% no-repeat;pointer-events:none}
 #screenPortalFront .screen-exit-gate{clip-path:var(--portal-mask-out)}
@@ -195,7 +197,7 @@ body.v-train .train-art{display:block;position:absolute;inset:-3% -4% -1% -2%}
 body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train .tr-win,body.v-train .wheel{display:none}
 .train-body-img{position:absolute;inset:0;z-index:7;background:url("../assets/images/nazonazo-tunnel/vehicle_train_body_straight_frame_v2_bumpy_20260704.png") center/contain no-repeat;transform:translateY(2.8%)}
 .train-driver{position:absolute;left:11.5%;top:32.8%;width:14.5%;height:27%;z-index:2;
-  background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_pono_sheet_1x4_20260705.webp");
+  background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_pono_sheet_cabfit_20260705.webp");
   background-repeat:no-repeat;background-size:100% 400%;background-position:center var(--driver-y,0%);
   filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
 .train-wheel{position:absolute;bottom:-.8%;width:13.8%;aspect-ratio:1;z-index:3;

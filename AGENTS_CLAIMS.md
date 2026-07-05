@@ -81,6 +81,7 @@
 - 2026-07-05 - by Claude - [batch:948-oto-title-flow] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md - オットタッチ: 「タップしてスタート」廃止 (起動即モード選択) + リズム→ステージ選択直行 (ステージ選択解放済み=何度目かの人のみ) + sw bump
 - 2026-07-05 - by Claude - [batch:950-gacha-lever-hitarea-expand] - play.html, sw.js, AGENTS_CLAIMS.md - デイリーガチャレバーのタップ判定を子供向けに拡張 (::before 疑似要素で不可視ヒット領域を上下左右に inflate、 見た目とレバー中心座標は不変) + sw bump v1960→v1961
 - 2026-07-05 - by Claude - [batch:951-gacha-lever-cache-sync-and-shell-clip] - play.html, AGENTS_CLAIMS.md - Finding A: PAGE_CACHE_VERSION 1960→1961 で sw.js と同期 (critical drift 解消)。 Finding B: mobile ::before の下方 inflation を -90%→-60% に絞って .daily-gacha-shell の overflow:hidden による下端クリップ (320×568 で 15.4px, 375×667 で 6.5px) を回避 [overlap: batch:950-gacha-lever-hitarea-expand]
+| 2026-07-04 | Claude | 939-rating-modal-ux-parent-and-forever-dedup | common/rating-modal.js, common/rating-modal.css, play.html, sw.js, AGENTS_CLAIMS.md | 星★4塗り抜け/上書き不能/★1黄色outline のバグ3件修正 + 「あとで こたえる」当日cooldown + CTA常時表示&送信は明示アクションのみ + 保護者向けバッジ&タイトル + 永久dedup ("きょうの きろく" mode) + sw bump v1963→v1964 |
 
 ## なぜ HANDOFF.md と別ファイルなのか
 

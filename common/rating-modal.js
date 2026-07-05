@@ -118,6 +118,10 @@
 
   function saveRating(gameId, stars) {
     if (!gameId) return;
+    // v1964 batch:939: 永久 dedup。 record mode でも上書き保存しない
+    try {
+      if (window.localStorage.getItem('pono_rating_completed_forever')) return;
+    } catch (e) { /* noop */ }
     var n = stars | 0;
     if (n < 1 || n > 5) return;
     var payload = {
@@ -194,6 +198,10 @@
   function postStarToAppsScript(gameId, stars, openedAtMs) {
     var url = window.PONO_FEEDBACK_APPS_SCRIPT_URL || '';
     if (!url) return;
+    // v1964 batch:939: 永久 dedup。 一度 CTA を押した端末では以降 Sheets に POST しない
+    try {
+      if (window.localStorage.getItem('pono_rating_completed_forever')) return;
+    } catch (e) { /* noop */ }
     // v1951 SecReview H-1: client 側でも defensive に 1-5 clamp。 devtools から
     // postStarToAppsScript('quizland', 999, ...) を直接叩かれても Sheets に
     // 不正値が届かないよう防御 (server-side clamp と多層で担保)。
@@ -245,6 +253,7 @@
     }
     opts = opts || {};
     this.gameId = opts.gameId || null;  // null OK (LP/title)
+    this.recordMode = !!(opts && opts.recordMode);
     this.onDismiss = typeof opts.onDismiss === 'function' ? opts.onDismiss : null;
     this.parent = opts.parent || document.body;
 
@@ -271,6 +280,8 @@
     this._thanksTimer = 0;
     this._selectedStars = 0;
     this._didSelect = false;
+    this._committed = false;
+    this._srAnnounceEl = null;
   }
 
   PonoRatingModal.prototype._buildDom = function () {
@@ -290,11 +301,27 @@
     closeBtn.textContent = '×';
     panel.appendChild(closeBtn);
 
+    var parentBadge = document.createElement('div');
+    parentBadge.className = 'pono-rating-parent-badge';
+    parentBadge.textContent = '🏠 おうちの方へ';
+    parentBadge.setAttribute('aria-hidden', 'true');
+    panel.appendChild(parentBadge);
+
     var title = document.createElement('h2');
     title.id = 'pono-rating-title';
     title.className = 'pono-rating-kicker';
-    title.textContent = 'きょうのあそび、どうだった？';
+    title.textContent = this.recordMode
+      ? 'きょうの きろく'
+      : 'お子さんの遊びの様子を お聞かせください';
     panel.appendChild(title);
+
+    // sr-only announce for star focus / preview state
+    var srAnnounce = document.createElement('span');
+    srAnnounce.className = 'pono-rating-sr-only';
+    srAnnounce.setAttribute('aria-live', 'polite');
+    srAnnounce.setAttribute('aria-atomic', 'true');
+    panel.appendChild(srAnnounce);
+    this._srAnnounceEl = srAnnounce;
 
     var starsWrap = document.createElement('div');
     starsWrap.className = 'pono-rating-stars';
@@ -316,6 +343,27 @@
     }
     panel.appendChild(starsWrap);
 
+    // v1964 batch:939: recordMode = 「きょうの きろく」 モード
+    // 保存済み ★ を復元 + click 無効化 (aria-disabled) + 初期から commit 済扱い
+    if (this.recordMode) {
+      var savedStars = 0;
+      try {
+        var raw = lsGet(LS_KEY_HISTORY);
+        var arr = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(arr) && arr.length) {
+          savedStars = (arr[arr.length - 1].stars | 0);
+        }
+      } catch (e) { /* noop */ }
+      for (var j = 0; j < starBtns.length; j++) {
+        var b = starBtns[j];
+        b.setAttribute('aria-disabled', 'true');
+        b.tabIndex = -1;
+        if ((j + 1) <= savedStars) b.classList.add('is-selected');
+      }
+      this._committed = true;
+      this._selectedStars = savedStars;
+    }
+
     var thanks = document.createElement('div');
     thanks.className = 'pono-rating-thanks';
     thanks.setAttribute('aria-live', 'polite');
@@ -325,19 +373,37 @@
 
     var cta = document.createElement('div');
     cta.className = 'pono-rating-cta';
-    cta.hidden = true;
+    // v1964: CTA は常時表示。 星未選択なら disabled、 選択後に fade+slide-up で enable
     var ctaBtn = document.createElement('button');
     ctaBtn.type = 'button';
     ctaBtn.className = 'pono-rating-forms-btn';
-    ctaBtn.textContent = 'アンケートに こたえる →';
+    ctaBtn.textContent = 'もっと おしえて →';
+    ctaBtn.disabled = true;
+    ctaBtn.setAttribute('aria-disabled', 'true');
     cta.appendChild(ctaBtn);
     panel.appendChild(cta);
+
+    // v1964: recordMode では CTA 文言を「かんそう」明示に差替 + 初期から enable
+    if (this.recordMode) {
+      ctaBtn.textContent = 'もっと おしえて (かんそう) →';
+      ctaBtn.disabled = false;
+      ctaBtn.removeAttribute('aria-disabled');
+    }
 
     var laterBtn = document.createElement('button');
     laterBtn.type = 'button';
     laterBtn.className = 'pono-rating-later';
-    laterBtn.textContent = 'あとで';
+    laterBtn.textContent = 'あとで こたえる';
     panel.appendChild(laterBtn);
+
+    // v1964: recordMode では 「あとで こたえる」 hide + 「あしたも きかせてね」 sub-copy 追加
+    if (this.recordMode) {
+      laterBtn.hidden = true;
+      var subCopy = document.createElement('div');
+      subCopy.className = 'pono-rating-record-note';
+      subCopy.textContent = 'あしたも きかせてね';
+      panel.insertBefore(subCopy, cta);
+    }
 
     overlay.appendChild(panel);
 
@@ -376,6 +442,7 @@
       (function (btn) {
         btn.addEventListener('click', function (ev) {
           ev.stopPropagation();
+          if (self.recordMode) return;
           var stars = parseInt(btn.getAttribute('data-stars'), 10);
           if (stars >= 1 && stars <= 5) {
             self._handleStarSelect(stars);
@@ -383,23 +450,44 @@
         });
         // hover/focus で連動ハイライト
         btn.addEventListener('mouseenter', function () {
-          if (self._didSelect) return;
+          if (self.recordMode || self._committed) return;
           self._previewStars(parseInt(btn.getAttribute('data-stars'), 10));
         });
         btn.addEventListener('focus', function () {
-          if (self._didSelect) return;
+          if (self.recordMode || self._committed) return;
           self._previewStars(parseInt(btn.getAttribute('data-stars'), 10));
         });
       })(this._starBtns[i]);
     }
     this._starsWrap.addEventListener('mouseleave', function () {
-      if (self._didSelect) return;
+      if (self.recordMode || self._committed) return;
       self._previewStars(0);
     });
 
     this._ctaBtn.addEventListener('click', function (ev) {
       ev.stopPropagation();
-      // sessionStorage 経由で星スコアと gameId を survey に渡す (URL パラメータは改ざん耐性なし)
+      if (self._ctaBtn.disabled) return;
+      if (!self._selectedStars || self._selectedStars < 1) return;
+      // v1964 batch:939 SecReview H-1: 二重 click race 防止。 saveRating/postStarToAppsScript
+      // より前に即時 lock する (同期 double click や programmatic click.click() で
+      // Sheets へ二重 POST される余地を潰す)。
+      self._ctaBtn.disabled = true;
+      self._ctaBtn.setAttribute('aria-disabled', 'true');
+
+      // v1964 batch:939: ここで初めて commit (save + post) する。 star click は preview 相当。
+      // recordMode の場合は既に commit 済みなので保存と POST は skip。
+      if (!self.recordMode) {
+        var gid = self.gameId || '_no_id';
+        saveRating(gid, self._selectedStars);
+        postStarToAppsScript(gid, self._selectedStars, self._openedAt);
+
+        // 永久 dedup flag を立てる (以降は "きょうの きろく" mode に固定)
+        try {
+          window.localStorage.setItem('pono_rating_completed_forever', '1');
+        } catch (e) { /* noop */ }
+        self._committed = true;
+      }
+
       try {
         window.sessionStorage.setItem('pono_star_survey_prefill', JSON.stringify({
           stars: self._selectedStars,
@@ -491,11 +579,12 @@
   };
 
   PonoRatingModal.prototype._handleStarSelect = function (stars) {
-    if (this._didSelect) return;
-    this._didSelect = true;
+    // v1964 batch:939: 送信は明示アクション (CTA click) のみ。 star click は
+    // preview/commit の視覚反映と CTA enable だけ行う。 何度でも上書き可。
+    if (this._committed) return; // "きょうの きろく" mode では受け付けない
     this._selectedStars = stars;
 
-    // 視覚反映
+    // 視覚反映 (is-preview は撤廃、 is-selected だけで塗り分け)
     for (var i = 0; i < this._starBtns.length; i++) {
       var idx = i + 1;
       var btn = this._starBtns[i];
@@ -505,36 +594,45 @@
       } else {
         btn.classList.remove('is-selected');
       }
-      // ARIA 1.2 radiogroup: 選択された 1 つだけ aria-checked='true'、 他は全て 'false'
+      // ARIA 1.2 radiogroup
       btn.setAttribute('aria-checked', idx === stars ? 'true' : 'false');
-      btn.disabled = true;
+      // v1964: disabled にしない (何度でも上書き可)
     }
 
-    // 保存 (gameId が無いときは履歴のみ; key prefix が無いので _no_id を使う)
-    var gid = this.gameId || '_no_id';
-    saveRating(gid, stars);
+    // アナウンス (sr-only aria-live=polite)
+    if (this._srAnnounceEl) {
+      this._srAnnounceEl.textContent = stars + 'つ星を えらびました';
+    }
 
-    // v1951: Apps Script Web App へ hidden POST (fire-and-forget、 no-cors)
-    postStarToAppsScript(gid, stars, this._openedAt);
-
-    // 「ありがとう！」 表示 (v1952: hidden property + removeAttribute 二重で iOS Safari の
-    // property setter が反映されない極端ケースにも防御)
-    this._thanksEl.hidden = false;
-    try { this._thanksEl.removeAttribute('hidden'); } catch (e) { /* noop */ }
-
-    // v1951: ★1-5 いずれの場合も アンケート CTA を常時表示。 auto-close は撤廃。
-    this._ctaEl.hidden = false;
-    try { this._ctaEl.removeAttribute('hidden'); } catch (e) { /* noop */ }
-    var self = this;
-    setTimeout(function () {
-      try { self._ctaBtn.focus(); } catch (e) { /* noop */ }
-    }, 60);
+    // CTA を enable + fade-in
+    if (this._ctaBtn && this._ctaBtn.disabled) {
+      this._ctaBtn.disabled = false;
+      this._ctaBtn.removeAttribute('aria-disabled');
+      this._ctaBtn.classList.remove('is-enabling');
+      // reflow → animation 再スタート
+      /* eslint-disable no-unused-expressions */
+      this._ctaBtn.offsetWidth;
+      /* eslint-enable no-unused-expressions */
+      this._ctaBtn.classList.add('is-enabling');
+    }
   };
 
   // 評価せずに閉じた場合は cooldown を立てる
   PonoRatingModal.prototype._handleDismiss = function () {
-    if (!this._didSelect && this.gameId) {
-      setSkip(this.gameId);
+    // v1964 batch:939:
+    // - gameId 有りルート (maybeShowAfterClear): 未 commit なら 7日 cooldown
+    // - gameId 無しルート (openFromTitle / openFromLP): 当日 cooldown flag を立てて
+    //   同日中は title/LP の 4-gate をすり抜けても再表示しない
+    if (!this._committed) {
+      if (this.gameId) {
+        setSkip(this.gameId);
+      } else {
+        try {
+          window.localStorage.setItem(
+            'pono_rating_skip_today_' + ymdTodayLocal(), '1'
+          );
+        } catch (e) { /* noop */ }
+      }
     }
     this.hide();
   };
@@ -548,7 +646,8 @@
     }
     this._overlay = null;
 
-    this._didSelect = false;
+    this._didSelect = false;      // 互換保持 (未使用に格下げ)
+    this._committed = !!this.recordMode; // recordMode なら初期から commit 済扱い
     this._selectedStars = 0;
 
     this._buildDom();
@@ -581,11 +680,27 @@
       });
     }
 
-    // 1番目の星にフォーカス (close ではなく ★ にすると即操作可)
+    // v1964 batch:939 H-3: recordMode では stars は aria-disabled + tabIndex=-1 で
+    // SR が「無効」を読み上げてしまうため CTA にフォーカスする。 通常モードは従来通り
+    // 1 番目の星にフォーカス (close ではなく ★ にすると即操作可)。
     try {
-      if (this._starBtns[0]) this._starBtns[0].focus();
-      else this._closeBtn.focus();
+      if (this.recordMode && this._ctaBtn) {
+        this._ctaBtn.focus();
+      } else if (this._starBtns[0]) {
+        this._starBtns[0].focus();
+      } else {
+        this._closeBtn.focus();
+      }
     } catch (e) { /* noop */ }
+
+    // 初期 aria-live announce
+    if (this._srAnnounceEl) {
+      try {
+        this._srAnnounceEl.textContent = this.recordMode
+          ? 'これまでの きろくです。 かんそうを おしえてね'
+          : '1つ星めに フォーカスしています';
+      } catch (e) { /* noop */ }
+    }
 
     return this._showPromise;
   };
@@ -640,6 +755,7 @@
     this._ctaEl = null;
     this._ctaBtn = null;
     this._laterBtn = null;
+    this._srAnnounceEl = null;
   };
 
   // ---- 公開 API -----------------------------------------------------
@@ -651,6 +767,15 @@
     var count = incrementPlayCount();
 
     if (!gameId) return Promise.resolve(false);
+
+    // v1964 batch:939 H-2: 永久 dedup。 一度でも CTA で commit したら他ゲームからの
+    // 4-gate 通過でも表示しない (通常モーダルを開いても saveRating/postStarToAppsScript は
+    // 永久 flag で silently drop されるため UI 不整合を招く)。
+    try {
+      if (window.localStorage.getItem('pono_rating_completed_forever')) {
+        return Promise.resolve(false);
+      }
+    } catch (e) { /* noop */ }
 
     // Gate 1: 既評価
     if (hasRated(gameId)) return Promise.resolve(false);
@@ -665,17 +790,41 @@
     return modal.show().then(function () { return true; });
   }
 
+  function _shouldSuppressTitleLPOpen() {
+    // 永久 dedup: 一度でも CTA で commit したら title/LP 経路の "評価受付" は再開しない
+    try {
+      if (window.localStorage.getItem('pono_rating_completed_forever')) return 'forever';
+    } catch (e) { /* noop */ }
+    // 「あとで こたえる」当日 cooldown
+    try {
+      if (window.localStorage.getItem('pono_rating_skip_today_' + ymdTodayLocal())) {
+        return 'today';
+      }
+    } catch (e) { /* noop */ }
+    return null;
+  }
+
   function openFromTitle() {
     ensureDfp();
     ensureFirstVisit();
-    var modal = new PonoRatingModal({ gameId: null });
+    var suppress = _shouldSuppressTitleLPOpen();
+    if (suppress === 'today') return Promise.resolve(false);
+    var modal = new PonoRatingModal({
+      gameId: null,
+      recordMode: suppress === 'forever'
+    });
     return modal.show();
   }
 
   function openFromLP() {
     ensureDfp();
     ensureFirstVisit();
-    var modal = new PonoRatingModal({ gameId: null });
+    var suppress = _shouldSuppressTitleLPOpen();
+    if (suppress === 'today') return Promise.resolve(false);
+    var modal = new PonoRatingModal({
+      gameId: null,
+      recordMode: suppress === 'forever'
+    });
     return modal.show();
   }
 
