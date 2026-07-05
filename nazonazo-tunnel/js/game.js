@@ -118,7 +118,8 @@ const ASSETS={
    horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
    mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
    ground:"../assets/images/nazonazo-tunnel/town_ground_track_strip_20260703_v2.webp",
-   fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp"
+   fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp",
+   decor:"../assets/images/nazonazo-tunnel/town_decor_tree_generated_20260705.webp"
  },
  jungle:{
   sky:"../assets/images/nazonazo-tunnel/jungle_sky_back_20260703.webp",
@@ -146,7 +147,7 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gHouses(1400,H,P.house,P.roof,7,21)+gTreeRow(1400,H,P.leaf,P.trunk,8,120,23));},
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,25)+gGrassSpikes(900,220,P.fgB,40,90,27));},
-  decor(P,r){return svgURI(200,300,gTreeRow(200,300,P.leaf,P.trunk,1,130+(r%3)*22,31+r));}},
+  decor(P,r){return bgUrl(ASSETS.town.decor);}},
  {id:"jungle",icon:"🌴",veh:"train",bank:JUNGLE,gens:["legsJ","sizeJ"],
   names:["ジャングル","よるの ジャングル"],
  pals:[
@@ -301,7 +302,7 @@ let bestStarsByStage={},answerLocked=false,portalEditHolding=false;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
-const TRAIN_DRIVER_ID="bear";
+const TRAIN_DRIVER_ID="pono";
 const PORTAL_EDIT_ENABLED=false;
 const PORTAL_TUNING_KEY="pono_nazonazo_portal_tuning_v1";
 const PORTAL_POINT_MIN=-120,PORTAL_POINT_MAX=220;
@@ -576,7 +577,7 @@ function parsePortalPointText(text,fallback){
  });
  return cleanPortalPoints(pts,fallback);
 }
-function placePortalOccluder(gate,occ){
+function placePortalOccluder(gate,occ,mode){
  if(!gate||!occ)return false;
  const scene=$("scene");
  const sr=scene.getBoundingClientRect();
@@ -586,7 +587,26 @@ function placePortalOccluder(gate,occ){
   occ.style.display="none";
   return false;
  }
+ occ.classList.remove("wide-portal-mask");
+ occ.style.removeProperty("--portal-wide-bg-w");
+ occ.style.removeProperty("--portal-wide-bg-h");
+ occ.style.removeProperty("--portal-wide-bg-x");
+ occ.style.removeProperty("--portal-wide-bg-y");
  occ.style.display="block";
+ if(mode==="in"&&document.body.classList.contains("tunnel-enter-run")){
+  const maskLeft=clamp(r.left+r.width*.205,sr.left,sr.right);
+  const maskTop=clamp(r.top+r.height*.38,sr.top,sr.bottom);
+  occ.classList.add("wide-portal-mask");
+  occ.style.left=(maskLeft-sr.left)+"px";
+  occ.style.top=(maskTop-sr.top)+"px";
+  occ.style.width=Math.max(0,sr.right-maskLeft)+"px";
+  occ.style.height=Math.max(0,(r.top+r.height*.93)-maskTop)+"px";
+  occ.style.setProperty("--portal-wide-bg-w",r.width+"px");
+  occ.style.setProperty("--portal-wide-bg-h",r.height+"px");
+  occ.style.setProperty("--portal-wide-bg-x",(-(r.width*.205))+"px");
+  occ.style.setProperty("--portal-wide-bg-y",(-(r.height*.38))+"px");
+  return true;
+ }
  occ.style.left=(r.left-sr.left)+"px";
  occ.style.top=(r.top-sr.top)+"px";
  occ.style.width=r.width+"px";
@@ -600,8 +620,8 @@ function renderPortalMasks(cv){
   if(portalEditOverlay)portalEditOverlay.innerHTML="";
   return;
  }
- const anyIn=placePortalOccluder(cv.querySelector(".cover-gate-in"),portalOccIn);
- const anyOut=placePortalOccluder(cv.querySelector(".cover-gate-out"),portalOccOut);
+ const anyIn=placePortalOccluder(cv.querySelector(".cover-gate-in"),portalOccIn,"in");
+ const anyOut=placePortalOccluder(cv.querySelector(".cover-gate-out"),portalOccOut,"out");
  portalMaskLayer.style.display=(anyIn||anyOut)?"block":"none";
  if(PORTAL_EDIT_ENABLED)drawPortalEditorOverlay();
  else if(portalEditOverlay)portalEditOverlay.innerHTML="";
@@ -938,10 +958,15 @@ function buildWorld(keepCover){
   for(let k=0;k<2;k++){
    const d=document.createElement("div");d.className="decor";
    const wv=8+((i*7+k*5)%8);
-   d.style.width=wv+"vw";d.style.height=(wv*1.6)+"vw";
+   d.style.width=wv+"vw";d.style.height=(wv*(st.id==="town"?1.25:1.6))+"vw";
    d.style.left=(tunX(o,i)-70+k*38+((i*13)%14))+"vw";
    d.style.backgroundImage=st.decor(P,i*2+k);
-   d.style.backgroundSize="100% 100%";
+   if(st.id==="town"){
+    d.classList.add("town-decor");
+    d.style.backgroundSize="contain";
+    d.style.backgroundRepeat="no-repeat";
+    d.style.backgroundPosition="center bottom";
+   }else d.style.backgroundSize="100% 100%";
    world.appendChild(d);
   }
   const evs=RUN_EVENTS[st.id];
