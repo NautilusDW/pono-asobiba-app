@@ -142,6 +142,14 @@ body.st-space .tun{bottom:20vh}
 .lamp{display:none}
 #tunnelFade{position:fixed;inset:0;z-index:80;background:#000;opacity:0;pointer-events:none;transition:opacity .42s ease}
 body.tunnel-fade-dark #tunnelFade{opacity:1;transition-duration:.28s}
+#tunnelExitGlow{position:absolute;right:-3vw;top:0;bottom:0;width:min(44vw,410px);z-index:4;opacity:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 100% 50%,rgba(255,251,224,.96) 0%,rgba(255,233,165,.64) 26%,rgba(255,216,130,.24) 53%,rgba(255,216,130,0) 76%),
+    linear-gradient(90deg,rgba(255,232,160,0),rgba(255,232,160,.35) 44%,rgba(255,248,210,.9));
+  clip-path:polygon(40% 0,100% 0,100% 100%,34% 100%,25% 86%,37% 72%,29% 58%,40% 45%,31% 31%,42% 15%);
+  filter:blur(5px);transform:translateX(4vw) scaleX(.72);transform-origin:100% 50%}
+body.tunnel-exit-approach #tunnelExitGlow{opacity:1;animation:tunnelExitGlowIn 2.1s linear forwards}
+@keyframes tunnelExitGlowIn{0%{opacity:.38;transform:translateX(4vw) scaleX(.72)}45%{opacity:.78}100%{opacity:1;transform:translateX(-13vw) scaleX(1.08)}}
 body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(74vw) scale(.96);transition:transform 1.18s linear}
 body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-44vw) scale(.96);transition:none}
 body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive .82s linear both}
@@ -204,9 +212,9 @@ body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train 
   background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_pono_sheet_cabfit_20260705.webp");
   background-repeat:no-repeat;background-size:100% 400%;background-position:center var(--driver-y,0%);
   filter:drop-shadow(0 2px 0 rgba(70,45,25,.14))}
-#veh.go .train-driver{left:8.8%;top:33.2%;width:19.2%;height:32.0%;
+#veh.go .train-driver{left:10.3%;top:36.0%;width:17.1%;height:31.8%;
   background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_pono_forward_20260705.webp");
-  background-size:112% auto;background-position:center bottom}
+  background-size:auto 96%;background-position:center bottom;background-repeat:no-repeat}
 .train-wheel{position:absolute;bottom:-.8%;width:13.8%;aspect-ratio:1;z-index:3;
   background:url("../assets/images/nazonazo-tunnel/vehicle_train_driver_wheel_weighted_20260704.png") center/contain no-repeat;
   transform-origin:50% 50%;filter:drop-shadow(0 2px 0 rgba(50,35,25,.28))}

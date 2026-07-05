@@ -241,13 +241,26 @@ const STATION_HELPERS=[
 const HELP_MAX=3;
 const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_LEN=560;
 const TRAIN_WIDTH_MIN_PX=204, TRAIN_WIDTH_VW=33.2, TRAIN_WIDTH_MAX_PX=356, TRAIN_RIGHT_SHIFT_VW=5, DEFAULT_VEHICLE_LEFT_VW=28;
+const TRAIN_CAR_WIDTH_MIN_PX=300, TRAIN_CAR_WIDTH_VW=47, TRAIN_CAR_WIDTH_MAX_PX=480;
+const TRAIN_CAR_HEIGHT_MIN_PX=83, TRAIN_CAR_HEIGHT_VW=13.1, TRAIN_CAR_HEIGHT_MAX_PX=133;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=360;
+const TUNNEL_EXIT_APPROACH_RUN_VW=135;
 const TUNNEL_ENTRY_FADE_DELAY_MS=900, TUNNEL_ENTRY_SWITCH_MS=1320, TUNNEL_ENTRY_BLACK_HOLD_MS=420;
 const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=900, TUNNEL_EXIT_CLEAR_MS=300;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
  return 50-(w/vw*50)+TRAIN_RIGHT_SHIFT_VW;
+}
+function trainCarWidthVw(){
+ const vw=window.innerWidth||844;
+ const w=Math.max(TRAIN_CAR_WIDTH_MIN_PX,Math.min(TRAIN_CAR_WIDTH_MAX_PX,vw*TRAIN_CAR_WIDTH_VW/100));
+ return w/vw*100;
+}
+function trainCarHeightVh(){
+ const vw=window.innerWidth||844,vh=window.innerHeight||390;
+ const h=Math.max(TRAIN_CAR_HEIGHT_MIN_PX,Math.min(TRAIN_CAR_HEIGHT_MAX_PX,vw*TRAIN_CAR_HEIGHT_VW/100));
+ return h/vh*100;
 }
 const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
 const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;
@@ -1064,13 +1077,23 @@ function renderCars(){
  carBadge.style.display=cars.length?"block":"none";
  carBadge.textContent="👥 ×"+cars.length;
 }
+function nextPassengerSeatTarget(){
+ if(STAGES[stg]&&STAGES[stg].veh==="train"){
+  const seatCenters=[.755,.585,.415,.245];
+  const carLeft=vehicleLeftVw()-carGap();
+  const x=carLeft+trainCarWidthVw()*seatCenters[cars.length%4];
+  const y=9.1+trainCarHeightVh()*.37;
+  return {left:x+"vw",bottom:y+"vh"};
+ }
+ return {left:(vehicleLeftVw()-carGap())+"vw",bottom:"14vh"};
+}
 function coverEntryStop(){
  if(!coverEl)return worldX;
  return parseFloat(coverEl.style.left)-TUNNEL_ENTRY_CAMERA_LEFT_VW;
 }
 function showTunnelRunIn(){
  setDriverMood("happy");
- document.body.classList.remove("tunnel-exit-setup","tunnel-exit-run");
+ document.body.classList.remove("tunnel-exit-setup","tunnel-exit-run","tunnel-exit-approach");
  document.body.classList.add("tunnel-enter-run");
  renderPortalMasks(transitCover||coverEl);
  veh.classList.add("go");carsEl.classList.add("go");
@@ -1096,7 +1119,16 @@ function enterTunnelInterior(){
  setTimeout(()=>{
   if(!playing)return;
   requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
- },TUNNEL_ENTRY_BLACK_HOLD_MS);
+  },TUNNEL_ENTRY_BLACK_HOLD_MS);
+}
+function startTunnelExitApproach(){
+ veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
+ veh.classList.remove("idle");
+ document.body.classList.add("tunnel-exit-approach");
+ target=worldX+TUNNEL_EXIT_APPROACH_RUN_VW;
+ pending="tunnelExitApproach";
+ driving=true;
+ sndGo();
 }
 function finishTunnelInterior(){
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
@@ -1105,7 +1137,7 @@ function finishTunnelInterior(){
  setTimeout(()=>{
   if(!playing)return;
   tunnelInteriorMode=false;
-  document.body.classList.remove("tunnel-interior");
+  document.body.classList.remove("tunnel-interior","tunnel-exit-approach");
   stg++;buildQList();qSeg=0;stageMiss=0;rareSpawned=false;
   applySkin();buildWorld(false);drawDots();
   document.body.classList.add("tunnel-fade-dark","tunnel-exit-setup");
@@ -1184,9 +1216,10 @@ function boardPassenger(p,learned,stationEl){
   fl.style.left="50vw";fl.style.bottom="30vh";
  }
  $("app").appendChild(fl);
+ const targetSeat=nextPassengerSeatTarget();
  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
-  fl.style.left=(vehicleLeftVw()-carGap())+"vw";fl.style.bottom="14vh";
- });});
+  fl.style.left=targetSeat.left;fl.style.bottom=targetSeat.bottom;
+  });});
  setTimeout(()=>{
   fl.remove();
   cars.push({e:passenger.e,t:passengerLabel(passenger),img:passenger.normal||passenger.img||passenger.happy});renderCars();
@@ -1354,7 +1387,7 @@ function gloop(t){
  lastT=t;
  if(playing&&driving){
   const dist=target-worldX;
-  const tunnelRun=pending==="tunnelEntry"||pending==="tunnelExit";
+  const tunnelRun=pending==="tunnelEntry"||pending==="tunnelExit"||pending==="tunnelExitApproach";
   const maxV=tunnelRun?58:(swapReady?52:38);
   vel=tunnelRun?maxV:clamp(dist*.98,6,maxV);
   worldX=Math.min(target,worldX+vel*dt);
@@ -1380,13 +1413,20 @@ function gloop(t){
   }
   if(worldX>=target-0.01){
    worldX=target;vel=0;driving=false;
-   veh.classList.remove("go");veh.classList.add("idle");
-   carsEl.classList.remove("go");
    const p=pending;pending=null;
+   const keepRunning=p==="tunnelEntry"||p==="tunnelExit"||p==="tunnelExitApproach";
+   if(keepRunning){
+    veh.classList.add("go");veh.classList.remove("idle");
+    carsEl.classList.add("go");
+   }else{
+    veh.classList.remove("go");veh.classList.add("idle");
+    carsEl.classList.remove("go");
+   }
    if(p==="quiz")showQuiz();
    else if(p==="dropoff")showDropoff();
    else if(p==="tunnelEntry")showTunnelRunIn();
-   else if(p==="tunnelExit")finishTunnelInterior();
+   else if(p==="tunnelExit")startTunnelExitApproach();
+   else if(p==="tunnelExitApproach")finishTunnelInterior();
    else if(p==="ending")ending();
   }
  }
@@ -1399,7 +1439,7 @@ function gloop(t){
 function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
- document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-fade-dark","tunnel-interior");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-fade-dark","tunnel-interior");
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
  setDriverMood("cheer");
