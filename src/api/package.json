@@ -1,0 +1,4 @@
+{
+  "//": "src/api/* are ES modules (import/export). Root package.json is type=commonjs, so this scopes only this directory to ESM. wrangler/esbuild bundle these into src/worker.js regardless of this file.",
+  "type": "module"
+}

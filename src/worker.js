@@ -6,6 +6,7 @@
 
 import { Buffer } from 'node:buffer';
 import { getGoogleAccessToken } from './google-auth.js';
+import { handleSaveData } from './api/savedata.js';
 
 const PROTECTED_PREFIXES = [
   '/admin/',
@@ -61,6 +62,10 @@ export default {
     }
     if (path === '/api/bento/mask-defaults') {
       return handleBentoMaskDefaults(request, env);
+    }
+    // Step C: 合言葉型クラウド同期 (POST /api/savedata, GET /api/savedata/:passcode)
+    if (path === '/api/savedata' || path.startsWith('/api/savedata/')) {
+      return handleSaveData(request, env, ctx, path);
     }
     if (path === '/api/admin/bento-npc-positions') {
       if (request.method === 'OPTIONS') {

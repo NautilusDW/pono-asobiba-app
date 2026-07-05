@@ -7,8 +7,8 @@
   --portal-in-left-vh:.3;
   --portal-out-right-vh:.88;
   --portal-core-side-vw:100;
-  --screen-exit-left-vh:-.08;
-  --screen-exit-mask-edge:.48;
+  --screen-exit-left-vh:-.14;
+  --screen-exit-mask-edge:.40;
   --portal-mask-in:polygon(14% 37%,35% 37%,35% 49%,26% 49%,26% 83%,42% 83%,42% 98%,13% 98%,13% 49%,14% 49%);
   --portal-mask-out:polygon(54% 42%,65% 42%,65% 97%,54% 97%);
 }
@@ -20,16 +20,7 @@ button{font:inherit;color:inherit}
 #app{position:fixed;inset:0;overflow:hidden}
 #scene{position:absolute;inset:0;overflow:hidden}
 #scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:23vh;z-index:4;display:none;pointer-events:none;
-  background:
-    linear-gradient(#dfbd74,#8d642d 46%,#2f1f14 49%,#17100b 58%,#e4c782 60%,#7b5525 100%),
-    linear-gradient(#cda25f,#6f4a21 48%,#24160d 52%,#130c08 60%,#c59651 61%,#5d3d1a 100%),
-    repeating-linear-gradient(74deg,rgba(0,0,0,0) 0 34px,rgba(143,82,36,.96) 34px 49px,rgba(75,43,21,.98) 49px 57px,rgba(0,0,0,0) 57px 94px),
-    linear-gradient(90deg,rgba(255,218,124,.18),rgba(255,218,124,.02) 18%,rgba(255,218,124,.12) 46%,rgba(255,218,124,.04) 74%,rgba(255,218,124,.16)),
-    linear-gradient(180deg,rgba(22,14,10,0) 0,rgba(32,20,13,.95) 18%,rgba(22,14,10,1) 68%,rgba(15,9,6,1) 100%),
-    linear-gradient(180deg,#2e1c12,#130c08);
-  background-size:100% .86vh,100% .86vh,118px 8.4vh,100% 100%,100% 100%,100% 100%;
-  background-position:0 4.2vh,0 9.1vh,var(--tunnel-track-x,0) 5.0vh,0 0,0 0,0 0;
-  background-repeat:no-repeat,no-repeat,repeat-x,no-repeat,no-repeat,no-repeat;
+  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_dark_20260705.webp") var(--tunnel-track-x,0) bottom/auto 100% repeat-x;
   box-shadow:inset 0 2px 0 rgba(255,220,140,.1),inset 0 4px 14px rgba(0,0,0,.45)}
 body.tunnel-interior #scene::after{display:block}
 
@@ -147,15 +138,7 @@ body.st-space .tun{bottom:20vh}
 .cover{position:absolute;top:0;bottom:0;overflow:visible;background:transparent;z-index:7}
 .cover-core{position:absolute;top:0;bottom:0;left:calc(var(--portal-core-side-vw) * 1vw);right:calc(var(--portal-core-side-vw) * 1vw);background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") left center/auto 100% repeat-x;z-index:0;pointer-events:none}
 .cover-core::after{content:"";position:absolute;left:0;right:0;bottom:0;height:23vh;pointer-events:none;
-  background:
-    linear-gradient(#dfbd74,#8d642d 46%,#2f1f14 49%,#17100b 58%,#e4c782 60%,#7b5525 100%),
-    linear-gradient(#cda25f,#6f4a21 48%,#24160d 52%,#130c08 60%,#c59651 61%,#5d3d1a 100%),
-    repeating-linear-gradient(74deg,rgba(0,0,0,0) 0 34px,rgba(143,82,36,.96) 34px 49px,rgba(75,43,21,.98) 49px 57px,rgba(0,0,0,0) 57px 94px),
-    linear-gradient(180deg,rgba(22,14,10,0) 0,rgba(32,20,13,.95) 18%,rgba(22,14,10,1) 68%,rgba(15,9,6,1) 100%),
-    linear-gradient(180deg,#2e1c12,#130c08);
-  background-size:100% .86vh,100% .86vh,118px 8.4vh,100% 100%,100% 100%;
-  background-position:0 4.2vh,0 9.1vh,0 5.0vh,0 0,0 0;
-  background-repeat:no-repeat,no-repeat,repeat-x,no-repeat,no-repeat}
+  background:url("../assets/images/nazonazo-tunnel/rail_track_loop_dark_20260705.webp") left bottom/auto 100% repeat-x}
 .cover-gate{position:absolute;top:0;bottom:0;width:calc(100vh * 1.777 * var(--portal-gate-scale));background:center bottom/100% 100% no-repeat;z-index:4;pointer-events:none}
 .cover-gate-in{left:calc(100vh * var(--portal-in-left-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_entrance_side_gate_20260703.webp")}
 .cover-gate-out{right:calc(100vh * var(--portal-out-right-vh));background-image:url("../assets/images/nazonazo-tunnel/tunnel_exit_side_gate_20260703.webp")}
@@ -174,9 +157,9 @@ body.tunnel-fade-dark #tunnelFade{opacity:1;transition-duration:.28s}
 body.tunnel-exit-approach #tunnelExitGlow{opacity:1;animation:tunnelExitGlowIn 2.15s linear forwards}
 @keyframes tunnelExitGlowIn{0%{opacity:.12;transform:translateX(20vw) scaleX(.62)}45%{opacity:.62;transform:translateX(5vw) scaleX(.9)}100%{opacity:.95;transform:translateX(-8vw) scaleX(1.08)}}
 body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(74vw) scale(.96);transition:transform 1.18s linear}
-body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-44vw) scale(.96);transition:none}
+body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-52vw) scale(.96);transition:none}
 body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive .82s linear both}
-@keyframes tunnelExitDrive{from{transform:translateX(-44vw) scale(.96)}to{transform:translateX(0) scale(1)}}
+@keyframes tunnelExitDrive{from{transform:translateX(-52vw) scale(.96)}to{transform:translateX(0) scale(1)}}
 body.tunnel-exit-setup #world .tun,body.tunnel-exit-setup #world .decor,body.tunnel-exit-setup #world .dropStation,
 body.tunnel-exit-run #world .tun,body.tunnel-exit-run #world .decor,body.tunnel-exit-run #world .dropStation{opacity:0}
 body.tunnel-interior #skyA{background-color:#17110b}
