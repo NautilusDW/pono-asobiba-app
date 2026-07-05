@@ -311,7 +311,7 @@
     title.id = 'pono-rating-title';
     title.className = 'pono-rating-kicker';
     title.textContent = this.recordMode
-      ? 'きょうの きろく'
+      ? 'おおくり いただいた こえ'
       : 'お子さんの遊びの様子を お聞かせください';
     panel.appendChild(title);
 
@@ -396,12 +396,20 @@
     laterBtn.textContent = 'あとで こたえる';
     panel.appendChild(laterBtn);
 
-    // v1964: recordMode では 「あとで こたえる」 hide + 「あしたも きかせてね」 sub-copy 追加
+    // v1965 batch:939b: recordMode では 「あとで こたえる」 hide + sub-copy 2 段
+    // (「ごかんそう ありがとうございました」 + 「詳しいアンケートは いつでも どうぞ」)
     if (this.recordMode) {
       laterBtn.hidden = true;
       var subCopy = document.createElement('div');
       subCopy.className = 'pono-rating-record-note';
-      subCopy.textContent = 'あしたも きかせてね';
+      var subLine1 = document.createElement('div');
+      subLine1.className = 'pono-rating-record-note-line1';
+      subLine1.textContent = 'ごかんそう ありがとうございました';
+      var subLine2 = document.createElement('div');
+      subLine2.className = 'pono-rating-record-note-line2';
+      subLine2.textContent = '詳しいアンケートは いつでも どうぞ';
+      subCopy.appendChild(subLine1);
+      subCopy.appendChild(subLine2);
       panel.insertBefore(subCopy, cta);
     }
 

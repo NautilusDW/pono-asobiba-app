@@ -134,6 +134,13 @@ textarea { min-height: 100px; resize: vertical; }
     <p>おこえを おくりました。<br>これからも たのしんでね。</p>
     <a href="/play.html">あそびばに もどる</a>
   </div>
+
+  <!-- v1965 batch:939b: 永久 dedup。 pono_rating_completed_forever が立っていたら form を hide してこちらを show -->
+  <div id="alreadyPane" class="thanks hidden">
+    <h2>もう おくって いただきました</h2>
+    <p>ごかんそう ありがとうございました。<br>これからも たのしんでね。</p>
+    <a href="/play.html">あそびばに もどる</a>
+  </div>
 </div>
 
 <script>
@@ -143,6 +150,24 @@ textarea { min-height: 100px; resize: vertical; }
 window.PONO_SW_VERSION = 'v1953';
 (function(){
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAHRy0UyHRCktZdxpQEgUHj7jEuHA49lb6t5HgckVmYogQTDdB4AlRhT99rp94U4hLhA/exec';
+
+  // v1965 batch:939b: 永久 dedup。 rating-modal.js と共有する localStorage フラグ。
+  // 立っていたら form を hide して 「もう おくって いただきました」 pane を出し、
+  // 以降の submit は全て no-op にする (直接 URL 訪問対策)。
+  var DEDUP_KEY = 'pono_rating_completed_forever';
+  function isAlreadySubmitted(){
+    try { return !!window.localStorage.getItem(DEDUP_KEY); } catch(e){ return false; }
+  }
+  function markSubmitted(){
+    try { window.localStorage.setItem(DEDUP_KEY, '1'); } catch(e){}
+  }
+  if (isAlreadySubmitted()){
+    try {
+      document.getElementById('formPane').classList.add('hidden');
+      document.getElementById('alreadyPane').classList.remove('hidden');
+    } catch(e){}
+    return;
+  }
 
   function detectEnvironment(){
     var h = '';
@@ -239,6 +264,14 @@ window.PONO_SW_VERSION = 'v1953';
   document.getElementById('surveyForm').addEventListener('submit', function(ev){
     ev.preventDefault();
     if (__submitted) return;
+    // v1965 batch:939b: 永久 dedup 再チェック (mount 後に別タブで star modal を送信したケース対策)
+    if (isAlreadySubmitted()){
+      try {
+        document.getElementById('formPane').classList.add('hidden');
+        document.getElementById('alreadyPane').classList.remove('hidden');
+      } catch(e){}
+      return;
+    }
 
     // v1951 SecReview C-2: freeText を 500 char で clamp (HTML maxlength に加えて
     // JS 側でも保険。 貼り付け時に一部ブラウザで maxlength が効かないケース対策)。
@@ -291,6 +324,10 @@ window.PONO_SW_VERSION = 'v1953';
 
     // prefill は使い切ったのでクリア
     try { window.sessionStorage.removeItem('pono_star_survey_prefill'); } catch(e){}
+
+    // v1965 batch:939b: 永久 dedup フラグを set (star modal と共有)。 これで以降の
+    // survey.html 直接訪問も 「もう おくって いただきました」 pane に落ちる。
+    markSubmitted();
 
     document.getElementById('formPane').classList.add('hidden');
     document.getElementById('thanksPane').classList.remove('hidden');
