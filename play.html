@@ -1616,6 +1616,255 @@
     .profile-gender-btn:active {
       transform: translateY(1px);
     }
+    .modal-card.profile-hub-card {
+      max-width: min(560px, calc(100vw - 28px));
+      padding: 18px 20px 16px;
+      max-height: calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .profile-hub-head {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .profile-hub-avatar.pono-mini-avatar {
+      width: 86px;
+      height: 86px;
+      border-radius: 24px;
+      border-width: 5px;
+    }
+    .profile-hub-avatar .pono-mini-avatar__body {
+      left: 23px;
+      bottom: 9px;
+      width: 40px;
+      height: 31px;
+      border-radius: 18px 18px 12px 12px;
+    }
+    .profile-hub-avatar .pono-mini-avatar__face {
+      left: 22px;
+      top: 20px;
+      width: 42px;
+      height: 40px;
+    }
+    .profile-hub-avatar .pono-mini-avatar__face::before,
+    .profile-hub-avatar .pono-mini-avatar__face::after {
+      top: 16px;
+      width: 5px;
+      height: 6px;
+    }
+    .profile-hub-avatar .pono-mini-avatar__face::before { left: 11px; }
+    .profile-hub-avatar .pono-mini-avatar__face::after { right: 11px; }
+    .profile-hub-avatar .pono-mini-avatar__hair {
+      left: 19px;
+      top: 14px;
+      width: 48px;
+      height: 24px;
+      border-radius: 24px 24px 10px 10px;
+    }
+    .profile-hub-avatar .pono-mini-avatar__hair::after {
+      left: 29px;
+      top: 9px;
+      width: 16px;
+      height: 21px;
+    }
+    .profile-hub-avatar .pono-mini-avatar__mark {
+      right: 13px;
+      top: 10px;
+      width: 18px;
+      height: 18px;
+    }
+    .profile-hub-title {
+      margin: 0 0 3px;
+      color: var(--primary);
+      font-size: 1.18rem;
+      line-height: 1.08;
+      text-align: left;
+    }
+    .profile-hub-name {
+      min-width: 0;
+      color: var(--text);
+      font-size: 1.45rem;
+      font-weight: 900;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-hub-meta {
+      margin-top: 5px;
+      color: var(--text-light);
+      font-size: .82rem;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .profile-hub-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 8px 0 12px;
+    }
+    .profile-hub-btn {
+      min-height: 42px;
+      border: 2px solid rgba(242, 145, 90, .46);
+      border-radius: 14px;
+      background: #fffdfa;
+      color: var(--text);
+      font-family: inherit;
+      font-size: .88rem;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-hub-btn:disabled {
+      cursor: default;
+      opacity: .72;
+      color: #7b6d5b;
+      background: #f6f1e8;
+    }
+    .profile-hub-btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .profile-hub-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .profile-hub-meter {
+      min-width: 0;
+      padding: 10px 8px;
+      border: 2px solid rgba(242, 145, 90, .26);
+      border-radius: 16px;
+      background: rgba(255, 253, 250, .72);
+      text-align: center;
+    }
+    .profile-hub-meter__num {
+      display: block;
+      color: #6a4300;
+      font-size: 1.42rem;
+      font-weight: 900;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .profile-hub-meter__label {
+      display: block;
+      margin-top: 4px;
+      color: var(--text-light);
+      font-size: .72rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+    .profile-goal-list {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .profile-goal-row {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      gap: 9px;
+      align-items: center;
+      padding: 9px 10px;
+      border: 2px solid rgba(242, 145, 90, .24);
+      border-radius: 16px;
+      background: rgba(255, 253, 250, .74);
+    }
+    .profile-goal-row.is-done {
+      border-color: rgba(117, 184, 106, .5);
+      background: rgba(237, 252, 234, .82);
+    }
+    .profile-goal-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #fff2bf;
+      color: #7a4a00;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .profile-goal-row.is-done .profile-goal-icon {
+      background: #dff5d9;
+      color: #2f6d29;
+    }
+    .profile-goal-main {
+      min-width: 0;
+    }
+    .profile-goal-title {
+      color: var(--text);
+      font-size: .9rem;
+      font-weight: 900;
+      line-height: 1.12;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-goal-bar {
+      height: 8px;
+      margin-top: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(149, 108, 63, .18);
+    }
+    .profile-goal-bar > span {
+      display: block;
+      width: var(--goal-pct, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #88d38a, #ffd84d);
+    }
+    .profile-goal-count {
+      min-width: 54px;
+      color: #6a4300;
+      font-size: .84rem;
+      font-weight: 900;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .profile-hub-empty {
+      margin: 4px 0 12px;
+      padding: 14px 12px;
+      border: 2px dashed rgba(242, 145, 90, .4);
+      border-radius: 16px;
+      background: rgba(255, 253, 250, .62);
+      color: var(--text-light);
+      font-size: .88rem;
+      font-weight: 900;
+      line-height: 1.35;
+      text-align: center;
+    }
+    @media (max-width: 480px), (max-height: 540px) {
+      .modal-card.profile-hub-card { padding: 12px 14px; }
+      .profile-hub-head { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; margin-bottom: 9px; }
+      .profile-hub-avatar.pono-mini-avatar { width: 68px; height: 68px; border-radius: 20px; }
+      .profile-hub-avatar .pono-mini-avatar__body { left: 18px; bottom: 7px; width: 32px; height: 25px; }
+      .profile-hub-avatar .pono-mini-avatar__face { left: 17px; top: 16px; width: 34px; height: 32px; }
+      .profile-hub-avatar .pono-mini-avatar__face::before,
+      .profile-hub-avatar .pono-mini-avatar__face::after { top: 13px; width: 4px; height: 5px; }
+      .profile-hub-avatar .pono-mini-avatar__face::before { left: 9px; }
+      .profile-hub-avatar .pono-mini-avatar__face::after { right: 9px; }
+      .profile-hub-avatar .pono-mini-avatar__hair { left: 15px; top: 11px; width: 38px; height: 20px; }
+      .profile-hub-avatar .pono-mini-avatar__hair::after { left: 24px; top: 7px; width: 13px; height: 17px; }
+      .profile-hub-avatar .pono-mini-avatar__mark { right: 10px; top: 8px; width: 14px; height: 14px; }
+      .profile-hub-title { font-size: 1rem; }
+      .profile-hub-name { font-size: 1.18rem; }
+      .profile-hub-meta { font-size: .74rem; }
+      .profile-hub-actions { margin: 6px 0 9px; }
+      .profile-hub-summary { gap: 6px; margin-bottom: 9px; }
+      .profile-hub-meter { padding: 8px 5px; }
+      .profile-hub-meter__num { font-size: 1.1rem; }
+      .profile-goal-list { gap: 6px; }
+      .profile-goal-row { grid-template-columns: 30px minmax(0, 1fr) auto; padding: 7px 8px; gap: 7px; }
+      .profile-goal-icon { width: 28px; height: 28px; font-size: 16px; }
+      .profile-goal-title { font-size: .78rem; }
+      .profile-goal-count { min-width: 48px; font-size: .76rem; }
+    }
     .setting-row {
       display: flex;
       align-items: center;
@@ -5549,6 +5798,7 @@
       filter: brightness(1.035) drop-shadow(0 11px 16px rgba(42, 24, 8, .22));
     }
     .book-unlock-entry:focus-visible,
+    .profile-home-entry:focus-visible,
     .daily-quest-info-banner:focus-visible,
     .daily-gacha-entry:focus-visible,
     .game-card:focus-visible,
@@ -5594,6 +5844,231 @@
       font-size: 17px;
       line-height: 1.1;
       color: #76512a;
+    }
+    .profile-home-entry {
+      position: relative;
+      width: 100%;
+      min-height: 78px;
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 14px;
+      border: 3px solid rgba(108, 78, 42, .48);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.58), rgba(255,255,255,0) 36%),
+        linear-gradient(135deg, #fff6cb 0%, #d9f1d6 48%, #c9e4ff 100%);
+      color: #443015;
+      font-family: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow:
+        0 5px 0 rgba(107, 80, 43, .28),
+        0 11px 18px rgba(48, 27, 10, .18),
+        inset 0 2px 0 rgba(255,255,255,.7);
+      transition: transform .1s ease, filter .12s ease, box-shadow .1s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .profile-home-entry:hover {
+      filter: brightness(1.035);
+      box-shadow:
+        0 6px 0 rgba(107, 80, 43, .28),
+        0 13px 20px rgba(48, 27, 10, .2),
+        inset 0 2px 0 rgba(255,255,255,.76);
+    }
+    .profile-home-entry:active {
+      transform: translateY(2px);
+      box-shadow:
+        0 3px 0 rgba(107, 80, 43, .28),
+        0 7px 13px rgba(48, 27, 10, .18),
+        inset 0 2px 0 rgba(255,255,255,.62);
+    }
+    .profile-home-entry__text {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      text-align: left;
+      pointer-events: none;
+    }
+    .profile-home-entry__main {
+      color: #473015;
+      font-size: 22px;
+      line-height: 1.06;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 0 rgba(255, 250, 225, .9);
+    }
+    .profile-home-entry__sub {
+      color: #71512e;
+      font-size: 14px;
+      line-height: 1.12;
+      white-space: nowrap;
+    }
+    .profile-home-entry__count {
+      min-width: 52px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px 2px;
+      border: 2px solid rgba(125, 87, 35, .36);
+      border-radius: 999px;
+      background: rgba(255, 253, 245, .84);
+      color: #6a4300;
+      font-size: 17px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+    }
+    .pono-mini-avatar {
+      --av-bg: #fff1c4;
+      --av-skin: #f2bf8a;
+      --av-hair: #6b4226;
+      --av-shirt: #6fc2d4;
+      --av-accent: #f2a65a;
+      position: relative;
+      width: 58px;
+      height: 58px;
+      display: block;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 32% 20%, rgba(255,255,255,.75), rgba(255,255,255,0) 34%),
+        var(--av-bg);
+      border: 4px solid rgba(255,255,255,.92);
+      box-shadow:
+        0 2px 0 rgba(130, 87, 40, .22),
+        0 7px 12px rgba(50, 30, 10, .16),
+        inset 0 0 0 2px rgba(120, 84, 42, .1);
+      overflow: hidden;
+      flex: 0 0 auto;
+      pointer-events: none;
+    }
+    .pono-mini-avatar__body,
+    .pono-mini-avatar__face,
+    .pono-mini-avatar__hair,
+    .pono-mini-avatar__mark {
+      position: absolute;
+      display: block;
+      pointer-events: none;
+    }
+    .pono-mini-avatar__body {
+      left: 15px;
+      bottom: 5px;
+      width: 28px;
+      height: 22px;
+      border-radius: 14px 14px 9px 9px;
+      background: var(--av-shirt);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.28);
+    }
+    .pono-mini-avatar__face {
+      left: 14px;
+      top: 13px;
+      width: 30px;
+      height: 29px;
+      border-radius: 48% 48% 44% 44%;
+      background: var(--av-skin);
+      box-shadow: inset 0 -2px 0 rgba(130, 80, 40, .12);
+    }
+    .pono-mini-avatar__face::before,
+    .pono-mini-avatar__face::after {
+      content: '';
+      position: absolute;
+      top: 12px;
+      width: 4px;
+      height: 5px;
+      border-radius: 50%;
+      background: #3a2617;
+    }
+    .pono-mini-avatar__face::before { left: 8px; }
+    .pono-mini-avatar__face::after { right: 8px; }
+    .pono-mini-avatar__hair {
+      left: 12px;
+      top: 8px;
+      width: 34px;
+      height: 18px;
+      border-radius: 18px 18px 8px 8px;
+      background: var(--av-hair);
+    }
+    .pono-mini-avatar__hair::after {
+      content: '';
+      position: absolute;
+      left: 21px;
+      top: 7px;
+      width: 12px;
+      height: 15px;
+      border-radius: 0 0 9px 9px;
+      background: var(--av-hair);
+      transform: rotate(-7deg);
+    }
+    .pono-mini-avatar__mark {
+      right: 8px;
+      top: 7px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50% 50% 50% 8px;
+      background: var(--av-accent);
+      transform: rotate(-18deg);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.35);
+    }
+    .pono-mini-avatar[data-variant="1"] {
+      --av-bg: #dff7ec;
+      --av-skin: #d99b6b;
+      --av-hair: #2f4a33;
+      --av-shirt: #f5c84c;
+      --av-accent: #75b86a;
+    }
+    .pono-mini-avatar[data-variant="1"] .pono-mini-avatar__mark {
+      border-radius: 50% 0 50% 50%;
+    }
+    .pono-mini-avatar[data-variant="2"] {
+      --av-bg: #e7e0ff;
+      --av-skin: #c98562;
+      --av-hair: #3f2d68;
+      --av-shirt: #ff8b8b;
+      --av-accent: #ffd84d;
+    }
+    .pono-mini-avatar[data-variant="2"] .pono-mini-avatar__hair {
+      border-radius: 16px 16px 6px 6px;
+      height: 14px;
+    }
+    .pono-mini-avatar[data-variant="3"] {
+      --av-bg: #ffe4ed;
+      --av-skin: #f0c7a5;
+      --av-hair: #8b5835;
+      --av-shirt: #7db7ff;
+      --av-accent: #ff7aa2;
+    }
+    .pono-mini-avatar[data-variant="3"] .pono-mini-avatar__mark {
+      width: 14px;
+      height: 10px;
+      border-radius: 999px;
+      transform: rotate(8deg);
+    }
+    .pono-mini-avatar[data-variant="4"] {
+      --av-bg: #dff4ff;
+      --av-skin: #e0a878;
+      --av-hair: #365b83;
+      --av-shirt: #8bd17c;
+      --av-accent: #9b72d0;
+    }
+    .pono-mini-avatar[data-variant="4"] .pono-mini-avatar__hair::after {
+      left: 2px;
+      transform: rotate(8deg);
+    }
+    .pono-mini-avatar[data-variant="5"] {
+      --av-bg: #fff0d8;
+      --av-skin: #b97955;
+      --av-hair: #2d2b29;
+      --av-shirt: #f29f58;
+      --av-accent: #5fb7a9;
+    }
+    .pono-mini-avatar[data-variant="5"] .pono-mini-avatar__mark {
+      border-radius: 4px 9px 9px 4px;
+      transform: rotate(0deg);
     }
     .daily-quest-info-banner {
       position: relative;
@@ -6813,9 +7288,9 @@
   <script src="js/daily-quest.js"></script>
   <script src="js/donguri-shop.js"></script>
   <!-- v1672: セーブデータ JSON エクスポート/インポート (PonoDataExport) -->
-  <script src="common/data-export.js?v=1969"></script>
+  <script src="common/data-export.js?v=1970"></script>
   <!-- v1969: Step C クラウド同期 合言葉型 (PonoCloudSync) — data-export.js の後に読む -->
-  <script src="common/cloud-sync.js?v=1969"></script>
+  <script src="common/cloud-sync.js?v=1970"></script>
 
   <script>
     'use strict';
