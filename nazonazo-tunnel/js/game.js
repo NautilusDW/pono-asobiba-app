@@ -247,6 +247,7 @@ const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIO
 const TUNNEL_EXIT_APPROACH_RUN_VW=135;
 const TUNNEL_ENTRY_FADE_DELAY_MS=900, TUNNEL_ENTRY_SWITCH_MS=1320, TUNNEL_ENTRY_BLACK_HOLD_MS=420;
 const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=900, TUNNEL_EXIT_CLEAR_MS=300;
+const STOP_SETTLE_MS=230, WHEEL_FAST_PERIOD=0.62, WHEEL_SLOW_PERIOD=1.55, WHEEL_STOP_EASE_VW=82;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -1093,7 +1094,7 @@ function coverEntryStop(){
 }
 function showTunnelRunIn(){
  setDriverMood("happy");
- document.body.classList.remove("tunnel-exit-setup","tunnel-exit-run","tunnel-exit-approach");
+ document.body.classList.remove("tunnel-exit-setup","tunnel-exit-run","tunnel-exit-approach","tunnel-exit-brighten");
  document.body.classList.add("tunnel-enter-run");
  renderPortalMasks(transitCover||coverEl);
  veh.classList.add("go");carsEl.classList.add("go");
@@ -1132,7 +1133,7 @@ function startTunnelExitApproach(){
 }
 function finishTunnelInterior(){
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
- document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-brighten");
  document.body.classList.add("tunnel-fade-dark");
  setTimeout(()=>{
   if(!playing)return;
@@ -1151,16 +1152,15 @@ function finishTunnelInterior(){
   void veh.offsetWidth;
   setTimeout(()=>{
    if(!playing)return;
-   document.body.classList.remove("tunnel-exit-setup");
-   document.body.classList.add("tunnel-exit-run");
+   document.body.classList.remove("tunnel-exit-setup","tunnel-exit-clear");
+   document.body.classList.add("tunnel-exit-run","tunnel-exit-brighten");
    requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
    setTimeout(()=>{
     if(!playing)return;
-    document.body.classList.add("tunnel-fade-dark");
+    document.body.classList.add("tunnel-exit-clear");
     setTimeout(()=>{
      if(!playing)return;
-     document.body.classList.remove("tunnel-exit-run","tunnel-exit-clear");
-     requestAnimationFrame(()=>document.body.classList.remove("tunnel-fade-dark"));
+     document.body.classList.remove("tunnel-exit-run","tunnel-exit-clear","tunnel-exit-brighten");
     },TUNNEL_EXIT_CLEAR_MS);
    },TUNNEL_EXIT_RUN_MS);
   },TUNNEL_EXIT_BLACK_HOLD_MS);
@@ -1286,6 +1286,7 @@ function sparkOnVeh(){
 }
 function tickMagicPuffs(now){
  if(!playing||!veh.classList.contains("go")||!document.body.classList.contains("v-train"))return;
+ if(document.body.classList.contains("tunnel-enter-run")||document.body.classList.contains("tunnel-exit-run"))return;
  if(now<nextMagicPuffAt)return;
  const box=veh.querySelector(".puff");
  if(!box)return;
@@ -1351,7 +1352,7 @@ function render(){
  const o=origin(stg);
  world.style.transform="translateX("+(-worldX)+"vw)";
  if(tunnelInteriorMode){
-  skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_cover_20260703.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
+  skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
   skyB.style.opacity="0";
   veh.classList.add("inTun");
   carsEl.classList.add("inTun");
@@ -1379,6 +1380,28 @@ function render(){
  }
 }
 
+function setWheelPeriod(period){
+ const value=period.toFixed(2)+"s";
+ veh.style.setProperty("--wheel-period",value);
+ carsEl.style.setProperty("--wheel-period",value);
+}
+function updateWheelMotion(dist,tunnelRun){
+ if(!document.body.classList.contains("v-train"))return;
+ if(tunnelRun){
+  setWheelPeriod(WHEEL_FAST_PERIOD);
+  return;
+ }
+ const p=clamp(dist/WHEEL_STOP_EASE_VW,0,1);
+ const period=WHEEL_FAST_PERIOD+(1-p)*(WHEEL_SLOW_PERIOD-WHEEL_FAST_PERIOD);
+ setWheelPeriod(period);
+}
+function showQuizAfterSettle(){
+ setTimeout(()=>{
+  if(!playing||driving||pending||quiz.classList.contains("show"))return;
+  showQuiz();
+ },STOP_SETTLE_MS);
+}
+
 /* ================= game loop ================= */
 let lastT=0;
 function gloop(t){
@@ -1390,6 +1413,7 @@ function gloop(t){
   const tunnelRun=pending==="tunnelEntry"||pending==="tunnelExit"||pending==="tunnelExitApproach";
   const maxV=tunnelRun?58:(swapReady?52:38);
   vel=tunnelRun?maxV:clamp(dist*.98,6,maxV);
+  updateWheelMotion(dist,tunnelRun);
   worldX=Math.min(target,worldX+vel*dt);
   veh.classList.add("go");veh.classList.remove("idle");
   carsEl.classList.add("go");
@@ -1422,7 +1446,7 @@ function gloop(t){
     veh.classList.remove("go");veh.classList.add("idle");
     carsEl.classList.remove("go");
    }
-   if(p==="quiz")showQuiz();
+   if(p==="quiz")showQuizAfterSettle();
    else if(p==="dropoff")showDropoff();
    else if(p==="tunnelEntry")showTunnelRunIn();
    else if(p==="tunnelExit")startTunnelExitApproach();
@@ -1439,7 +1463,7 @@ function gloop(t){
 function startJourneyAt(s){
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
- document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-fade-dark","tunnel-interior");
+ document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-exit-brighten","tunnel-fade-dark","tunnel-interior");
  if(transitCover){transitCover.remove();transitCover=null;}
  buildQList();applySkin();buildWorld(false);drawDots();
  setDriverMood("cheer");
