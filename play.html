@@ -6361,6 +6361,13 @@
       --av-shoes: #7a4a24;
       --av-accent: #f2a65a;
       --av-img: none;
+      --av-mask-hair: none;
+      --av-mask-ears: none;
+      --av-mask-outfit: none;
+      --av-mask-bottom: none;
+      --av-mask-shoes: none;
+      --av-mask-tail: none;
+      --av-mask-mark: none;
       position: relative;
       width: 58px;
       height: 58px;
@@ -7547,6 +7554,103 @@
         height: 16%;
         -webkit-mask-image: url("assets/images/avatars/parts/avatar_part_mark_sparkle_tiny_20260706.png");
         mask-image: url("assets/images/avatars/parts/avatar_part_mark_sparkle_tiny_20260706.png");
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__arm-left,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__arm-right,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__leg-right,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__shoe-right {
+        display: none;
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__hair {
+        z-index: 9;
+        left: 13%;
+        top: -2%;
+        width: 74%;
+        height: 40%;
+        background: var(--av-hair);
+        -webkit-mask-image: var(--av-mask-hair);
+        mask-image: var(--av-mask-hair);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-hair-style="none"] .pono-mini-avatar__hair {
+        display: none;
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__ears {
+        display: none;
+        z-index: 8;
+        left: 10%;
+        top: -6%;
+        width: 80%;
+        height: 48%;
+        background: var(--av-hair);
+        -webkit-mask-image: var(--av-mask-ears);
+        mask-image: var(--av-mask-ears);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-kind="fox"] .pono-mini-avatar__ears,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-kind="rabbit"] .pono-mini-avatar__ears,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-kind="cat"] .pono-mini-avatar__ears {
+        display: block;
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__body {
+        z-index: 4;
+        left: 10%;
+        top: 39%;
+        width: 80%;
+        height: 50%;
+        background: var(--av-shirt);
+        -webkit-mask-image: var(--av-mask-outfit);
+        mask-image: var(--av-mask-outfit);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__leg-left {
+        z-index: 3;
+        left: 20%;
+        top: 59%;
+        width: 60%;
+        height: 38%;
+        background: var(--av-bottom);
+        -webkit-mask-image: var(--av-mask-bottom);
+        mask-image: var(--av-mask-bottom);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__shoe-left {
+        z-index: 5;
+        left: 21%;
+        top: 75%;
+        width: 58%;
+        height: 24%;
+        background: var(--av-shoes);
+        -webkit-mask-image: var(--av-mask-shoes);
+        mask-image: var(--av-mask-shoes);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-shoes-style="bare"] .pono-mini-avatar__shoe-left {
+        display: none;
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__tail {
+        z-index: 1;
+        opacity: 0;
+        left: 53%;
+        top: 42%;
+        width: 41%;
+        height: 46%;
+        background: var(--av-hair);
+        -webkit-mask-image: var(--av-mask-tail);
+        mask-image: var(--av-mask-tail);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-tail-style="fluffy"] .pono-mini-avatar__tail,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-tail-style="round"] .pono-mini-avatar__tail,
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-tail-style="long"] .pono-mini-avatar__tail {
+        opacity: 1;
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"]) .pono-mini-avatar__mark {
+        z-index: 10;
+        right: 12%;
+        top: 10%;
+        width: 23%;
+        height: 23%;
+        background: var(--av-accent);
+        -webkit-mask-image: var(--av-mask-mark);
+        mask-image: var(--av-mask-mark);
+      }
+      .pono-mini-avatar[data-avatar-mode="full"]:not([data-avatar-image="1"])[data-mark-shape="none"] .pono-mini-avatar__mark {
+        display: none;
       }
     }
     .daily-quest-info-banner {
@@ -9467,7 +9571,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1982;
+    const PAGE_CACHE_VERSION = 1983;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -9476,7 +9580,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1982';
+    window.PONO_SW_VERSION = 'v1983';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13589,21 +13693,15 @@
           { id: 'monster', label: 'モンがた' }
         ],
         kind: [
-          { id: 'human', label: 'ひと' },
+          { id: 'human', label: 'なし' },
           { id: 'fox', label: 'きつね' },
           { id: 'rabbit', label: 'うさぎ' },
-          { id: 'cat', label: 'ねこ' },
-          { id: 'bear', label: 'くま' },
-          { id: 'robot', label: 'ロボ' },
-          { id: 'monster', label: 'モン' }
+          { id: 'cat', label: 'ねこ' }
         ],
         hairStyle: [
           { id: 'round', label: 'ふんわり' },
-          { id: 'short', label: 'みじかめ' },
-          { id: 'long', label: 'ながめ' },
           { id: 'side', label: 'よこながし' },
           { id: 'cap', label: 'ぼうし' },
-          { id: 'spike', label: 'つんつん' },
           { id: 'none', label: 'なし' }
         ],
         eyes: [
@@ -13629,7 +13727,7 @@
           { id: 'skirt', label: 'スカート' }
         ],
         shoesStyle: [
-          { id: 'shoes', label: 'くつ' },
+          { id: 'shoes', label: 'ふつう' },
           { id: 'boots', label: 'ブーツ' },
           { id: 'bare', label: 'はだし' }
         ],
@@ -13641,19 +13739,14 @@
         ],
         markShape: [
           { id: 'none', label: 'なし' },
-          { id: 'leaf', label: 'はっぱ' },
-          { id: 'dot', label: 'まる' },
           { id: 'ribbon', label: 'リボン' },
-          { id: 'star', label: 'ほし' },
-          { id: 'square', label: 'しかく' },
-          { id: 'heart', label: 'ハート' },
           { id: 'sparkle', label: 'きらり' }
         ]
       };
       const AVATAR_PART_GROUPS = [
         { key: 'bodyType', title: 'からだ' },
-        { key: 'kind', title: 'なかま' },
-        { key: 'hairStyle', title: 'かみ・みみ' },
+        { key: 'kind', title: 'みみ' },
+        { key: 'hairStyle', title: 'かみ' },
         { key: 'eyes', title: 'め' },
         { key: 'mouth', title: 'くち' },
         { key: 'outfit', title: 'うわぎ' },
@@ -13729,6 +13822,42 @@
         { key: 'accent', title: 'しるしのいろ' },
         { key: 'bg', title: 'まわりのいろ' }
       ];
+      const AVATAR_BODYTYPE_IDS = ['balanced', 'small', 'round', 'tall', 'robot', 'monster'];
+      const AVATAR_BODYTYPE_PART_BASE = 'assets/images/avatars/parts/bodytype/avatar_bt_';
+      const AVATAR_HAIR_PART_BY_STYLE = {
+        round: 'hair_round',
+        side: 'hair_side',
+        cap: 'hair_cap'
+      };
+      const AVATAR_EARS_PART_BY_KIND = {
+        fox: 'ears_fox',
+        rabbit: 'ears_rabbit',
+        cat: 'ears_cat'
+      };
+      const AVATAR_OUTFIT_PART_BY_STYLE = {
+        tee: 'outfit_tee',
+        hoodie: 'outfit_hoodie',
+        dress: 'outfit_dress',
+        overall: 'outfit_overall'
+      };
+      const AVATAR_BOTTOM_PART_BY_STYLE = {
+        pants: 'bottom_pants',
+        shorts: 'bottom_shorts',
+        skirt: 'bottom_skirt'
+      };
+      const AVATAR_SHOES_PART_BY_STYLE = {
+        shoes: 'shoes',
+        boots: 'boots'
+      };
+      const AVATAR_TAIL_PART_BY_STYLE = {
+        fluffy: 'tail_fluffy',
+        round: 'tail_round',
+        long: 'tail_long'
+      };
+      const AVATAR_MARK_PART_BY_STYLE = {
+        ribbon: 'mark_ribbon',
+        sparkle: 'mark_sparkle'
+      };
       let profileGender = 'none';
       let openHubAfterProfileSave = false;
       let avatarDraft = null;
@@ -13763,6 +13892,25 @@
         const list = AVATAR_COLOR_OPTIONS[key] || [];
         return list.some((option) => option.id.toLowerCase() === color.toLowerCase()) ? color : fallback;
       }
+      function avatarBodyType(value) {
+        return AVATAR_BODYTYPE_IDS.includes(value) ? value : 'balanced';
+      }
+      function avatarBodytypePartUrl(bodyType, part) {
+        return AVATAR_BODYTYPE_PART_BASE + avatarBodyType(bodyType) + '_' + part + '_20260706.png';
+      }
+      function avatarMaskUrl(bodyType, part) {
+        return part ? 'url("' + avatarBodytypePartUrl(bodyType, part) + '")' : 'none';
+      }
+      function applyAvatarMaskVars(el, avatar) {
+        const bodyType = avatarBodyType(avatar && avatar.bodyType);
+        el.style.setProperty('--av-mask-hair', avatarMaskUrl(bodyType, AVATAR_HAIR_PART_BY_STYLE[avatar && avatar.hairStyle]));
+        el.style.setProperty('--av-mask-ears', avatarMaskUrl(bodyType, AVATAR_EARS_PART_BY_KIND[avatar && avatar.kind]));
+        el.style.setProperty('--av-mask-outfit', avatarMaskUrl(bodyType, AVATAR_OUTFIT_PART_BY_STYLE[avatar && avatar.outfit]));
+        el.style.setProperty('--av-mask-bottom', avatarMaskUrl(bodyType, AVATAR_BOTTOM_PART_BY_STYLE[avatar && avatar.bottomStyle]));
+        el.style.setProperty('--av-mask-shoes', avatarMaskUrl(bodyType, AVATAR_SHOES_PART_BY_STYLE[avatar && avatar.shoesStyle]));
+        el.style.setProperty('--av-mask-tail', avatarMaskUrl(bodyType, AVATAR_TAIL_PART_BY_STYLE[avatar && avatar.tailStyle]));
+        el.style.setProperty('--av-mask-mark', avatarMaskUrl(bodyType, AVATAR_MARK_PART_BY_STYLE[avatar && avatar.markShape]));
+      }
       function profileSeed(profile) {
         const source = String(((profile && profile.name) || 'ポノ') + ((profile && profile.age) || '') + ((profile && profile.gender) || 'none'));
         let seed = 0;
@@ -13773,6 +13921,7 @@
         const id = preset && preset.id;
         const kind = (preset && preset.kind) || 'human';
         const animalTail = kind === 'fox' || kind === 'cat' || kind === 'squirrel' || kind === 'tanuki';
+        const earsKind = kind === 'fox' || kind === 'rabbit' || kind === 'cat' ? kind : 'human';
         const bodyType = kind === 'robot'
           ? 'robot'
           : (kind === 'monster'
@@ -13782,15 +13931,15 @@
               : (kind === 'bear' || id === 'moko_mon' ? 'round' : 'balanced')));
         return {
           bodyType: bodyType,
-          kind: kind,
-          hairStyle: (preset && preset.hairStyle) || 'round',
+          kind: earsKind,
+          hairStyle: AVATAR_HAIR_PART_BY_STYLE[(preset && preset.hairStyle) || 'round'] ? ((preset && preset.hairStyle) || 'round') : 'round',
           eyes: kind === 'monster' ? 'star' : 'dot',
           mouth: 'smile',
           outfit: kind === 'robot' ? 'overall' : (id === 'berry_kko' || id === 'moko_mon' || id === 'moon' ? 'dress' : 'tee'),
           bottomStyle: id === 'berry_kko' || id === 'moko_mon' || id === 'moon' ? 'skirt' : 'pants',
           shoesStyle: kind === 'monster' || kind === 'mushroom' || kind === 'acorn' ? 'bare' : (kind === 'robot' ? 'boots' : 'shoes'),
           tailStyle: animalTail ? 'fluffy' : (kind === 'rabbit' || kind === 'bear' ? 'round' : 'none'),
-          markShape: (preset && preset.markShape) || 'leaf'
+          markShape: (preset && preset.markShape) === 'ribbon' ? 'ribbon' : 'sparkle'
         };
       }
       function avatarFromPreset(id) {
@@ -13798,6 +13947,7 @@
         const parts = presetParts(preset);
         return {
           custom: true,
+          customParts: false,
           preset: preset.id,
           name: preset.name,
           image: avatarPresetImage(preset.id),
@@ -13815,7 +13965,7 @@
           skin: avatarColor(preset.skin, '#f2bf8a'),
           hair: avatarColor(preset.hair, '#6b4226'),
           shirt: avatarColor(preset.shirt, '#6fc2d4'),
-          bottom: avatarColor(preset.shirt, '#6b8bd6'),
+          bottom: avatarColor(preset.bottom, '#6b8bd6'),
           shoes: parts.shoesStyle === 'bare' ? avatarColor(preset.skin, '#f2bf8a') : '#7a4a24',
           accent: avatarColor(preset.accent, '#f2a65a')
         };
@@ -13831,11 +13981,13 @@
         }
         const presetId = avatarPresetById(avatar.preset).id === avatar.preset ? avatar.preset : AVATAR_DEFAULT_ID;
         const base = avatarFromPreset(presetId);
+        const customParts = avatar.customParts === true;
         return {
           custom: true,
+          customParts: customParts,
           preset: presetId,
           name: String(avatar.name || base.name || 'じぶんの すがた'),
-          image: avatarPresetImage(presetId),
+          image: customParts ? '' : avatarPresetImage(presetId),
           bodyType: avatarOptionValue('bodyType', avatar.bodyType, base.bodyType),
           kind: avatarOptionValue('kind', avatar.kind, base.kind),
           hairStyle: avatarOptionValue('hairStyle', avatar.hairStyle, base.hairStyle),
@@ -13933,7 +14085,8 @@
         el.dataset.shoesStyle = avatar.shoesStyle;
         el.dataset.tailStyle = avatar.tailStyle;
         el.dataset.markShape = avatar.markShape;
-        if (avatar.image) {
+        applyAvatarMaskVars(el, avatar);
+        if (avatar.image && !avatar.customParts) {
           el.dataset.avatarImage = '1';
           el.style.setProperty('--av-img', 'url("' + avatar.image + '")');
         } else {
@@ -14144,8 +14297,17 @@
       function renderAvatarEditorControls() {
         if (!profileAvatarControls || !avatarDraft) return;
         profileAvatarControls.textContent = '';
-        AVATAR_PRESETS.forEach((preset) => {
-          profileAvatarControls.appendChild(createAvatarPresetButton(preset));
+        AVATAR_PART_GROUPS.forEach((group) => {
+          const row = appendAvatarGroup(profileAvatarControls, group.title, 'avatar-choice-row');
+          (AVATAR_PART_OPTIONS[group.key] || []).forEach((option) => {
+            row.appendChild(createAvatarChoiceButton(group, option));
+          });
+        });
+        AVATAR_COLOR_GROUPS.forEach((group) => {
+          const row = appendAvatarGroup(profileAvatarControls, group.title, 'avatar-swatch-row');
+          (AVATAR_COLOR_OPTIONS[group.key] || []).forEach((option) => {
+            row.appendChild(createAvatarSwatchButton(group, option));
+          });
         });
       }
       function renderAvatarPreview() {
@@ -14157,6 +14319,9 @@
       function renderAvatarBuilder() {
         const profile = loadProfile();
         avatarDraft = cloneAvatar(profile.avatar);
+        avatarDraft.customParts = true;
+        avatarDraft.image = '';
+        avatarDraft.name = 'じぶんの すがた';
         renderAvatarPreview();
         renderAvatarEditorControls();
       }
@@ -14168,6 +14333,8 @@
       function setAvatarDraftPart(key, value) {
         if (!avatarDraft || !AVATAR_PART_OPTIONS[key] || !AVATAR_PART_OPTIONS[key].some((option) => option.id === value)) return;
         avatarDraft[key] = value;
+        avatarDraft.customParts = true;
+        avatarDraft.image = '';
         avatarDraft.name = 'じぶんの すがた';
         renderAvatarPreview();
         renderAvatarEditorControls();
@@ -14175,6 +14342,8 @@
       function setAvatarDraftColor(key, value) {
         if (!avatarDraft || !AVATAR_COLOR_OPTIONS[key] || !AVATAR_COLOR_OPTIONS[key].some((option) => option.id.toLowerCase() === String(value).toLowerCase())) return;
         avatarDraft[key] = value;
+        avatarDraft.customParts = true;
+        avatarDraft.image = '';
         avatarDraft.name = 'じぶんの すがた';
         renderAvatarPreview();
         renderAvatarEditorControls();
