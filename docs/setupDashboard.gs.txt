@@ -52,11 +52,11 @@ const MVP_GAMES = ['quizland', 'maze', 'oto', 'bento', 'puzzle'];
 
 // タブ名
 const TAB_HELPERS   = '_Helpers';
-const TAB_DASHBOARD = 'Dashboard';
-const TAB_DEEPDIVE  = 'Game_DeepDive';
-const TAB_TREND     = 'Trend_Weekly';
-const TAB_WEEKLY    = 'Weekly_Summary';
-const TAB_DECISION  = 'Decision_Log';
+const TAB_DASHBOARD = 'ダッシュボード';
+const TAB_DEEPDIVE  = 'ゲーム別詳細';
+const TAB_TREND     = '週次トレンド';
+const TAB_WEEKLY    = '週次サマリ';
+const TAB_DECISION  = '判断記録';
 
 // 既存空タブ (シート1 / Sheet1) を _Helpers にリネームして流用する
 const LEGACY_EMPTY_TAB_CANDIDATES = ['シート1', 'Sheet1'];
@@ -103,7 +103,7 @@ function setupDashboard(opts) {
   } catch (e) {
     Logger.log('setupDashboard ERROR: ' + e + '\n' + (e.stack || ''));
     Logger.log('※ 途中失敗した場合は setupDashboard() をもう一度実行すれば回復する。');
-    Logger.log('  Weekly_Summary / Decision_Log の既存データは保護される。');
+    Logger.log('  週次サマリ / 判断記録 の既存データは保護される。');
     throw e;
   }
 }
@@ -254,7 +254,7 @@ function setup_Dashboard(ss) {
   clearSheet_(sheet);
 
   // --- 見出し ---
-  sheet.getRange('A1').setValue('Dashboard (直近 30 日)');
+  sheet.getRange('A1').setValue('ダッシュボード（直近 30 日）');
   sheet.getRange('A1').setFontWeight('bold').setFontSize(16);
   sheet.getRange('A1:D1').merge();
 
@@ -263,17 +263,17 @@ function setup_Dashboard(ss) {
   //   AB=bookConn, AC=price, AD=freeText, AE=email, P=timestamp
   const kpi = [
     // [label,                                  formula]
-    ['K1 星平均',            '=IFERROR(AVERAGE(_Helpers!S2:S5000),0)'],
-    ['K2 ★4-5 比率',         '=IFERROR(COUNTIF(_Helpers!S2:S5000,">=4")/COUNTA(_Helpers!S2:S5000),0)'],
-    ['K3 ★1-2 比率',         '=IFERROR(COUNTIF(_Helpers!S2:S5000,"<=2")/COUNTA(_Helpers!S2:S5000),0)'],
-    ['K4 熱中度平均',        '=IFERROR(AVERAGE(_Helpers!X2:X5000),0)'],
-    ['N 回答数',             '=COUNTA(_Helpers!P2:P5000)'],
-    ['K7 絵本連動平均',      '=IFERROR(AVERAGE(_Helpers!AB2:AB5000),0)'],
-    ['K8 価格 高評価率',     '=IFERROR(COUNTIF(_Helpers!AC2:AC5000,">=4")/COUNTA(_Helpers!AC2:AC5000),0)'],
-    ['K9 freeText 記入率',   '=IFERROR(COUNTA(_Helpers!AD2:AD5000)/COUNTA(_Helpers!P2:P5000),0)'],  // AD=freeText
-    ['K10 email 提供率',     '=IFERROR(COUNTA(_Helpers!AE2:AE5000)/COUNTA(_Helpers!P2:P5000),0)'],  // AE=email
-    ['K11 positive/stumble比','=IFERROR(COUNTA(_Helpers!D2:D5000)/COUNTA(_Helpers!I2:I5000),0)'],
-    ['K12 平均プレイ秒',     '=IFERROR(AVERAGE(_Helpers!V2:V5000),0)']
+    ['①星スコア平均',            '=IFERROR(AVERAGE(_Helpers!S2:S5000),0)'],
+    ['②★4-5 比率',              '=IFERROR(COUNTIF(_Helpers!S2:S5000,">=4")/COUNTA(_Helpers!S2:S5000),0)'],
+    ['③★1-2 比率',              '=IFERROR(COUNTIF(_Helpers!S2:S5000,"<=2")/COUNTA(_Helpers!S2:S5000),0)'],
+    ['④熱中度平均',              '=IFERROR(AVERAGE(_Helpers!X2:X5000),0)'],
+    ['回答数 (N)',              '=COUNTA(_Helpers!P2:P5000)'],
+    ['⑦絵本連動スコア平均',      '=IFERROR(AVERAGE(_Helpers!AB2:AB5000),0)'],
+    ['⑧価格 高評価率',           '=IFERROR(COUNTIF(_Helpers!AC2:AC5000,">=4")/COUNTA(_Helpers!AC2:AC5000),0)'],
+    ['⑨自由記述 記入率',         '=IFERROR(COUNTA(_Helpers!AD2:AD5000)/COUNTA(_Helpers!P2:P5000),0)'],  // AD=freeText
+    ['⑩メール提供率',            '=IFERROR(COUNTA(_Helpers!AE2:AE5000)/COUNTA(_Helpers!P2:P5000),0)'],  // AE=email
+    ['⑪よかった/つまづき 比',    '=IFERROR(COUNTA(_Helpers!D2:D5000)/COUNTA(_Helpers!I2:I5000),0)'],
+    ['⑫平均プレイ秒数',          '=IFERROR(AVERAGE(_Helpers!V2:V5000),0)']
   ];
   for (let i = 0; i < kpi.length; i++) {
     sheet.getRange(3 + i, 1).setValue(kpi[i][0]).setFontWeight('bold');
@@ -297,9 +297,9 @@ function setup_Dashboard(ss) {
   sheet.getRange('A16').setValue('GO 連続週数');
   // P2 対応: I2 (最古週) ではなく最新週を拾う
   sheet.getRange('B16').setFormula(
-    '=IFERROR(INDEX(Weekly_Summary!I:I, COUNTA(Weekly_Summary!A:A)),0)'
+    '=IFERROR(INDEX(週次サマリ!I:I, COUNTA(週次サマリ!A:A)),0)'
   );
-  sheet.getRange('A17').setValue('GO Ready (4 週連続?)');
+  sheet.getRange('A17').setValue('GO Ready（4 週連続?）');
   sheet.getRange('B17').setFormula('=IF(B16>=4,"✅ GO Ready","🟡 継続監視")');
 
   // --- 条件付き書式 (GO=緑 / HOLD=黄) ---
@@ -337,19 +337,19 @@ function setup_Dashboard(ss) {
  */
 function buildDashboardChartData_(sheet) {
   // ★分布
-  sheet.getRange('P1:Q1').setValues([['star', 'count']]).setFontWeight('bold');
+  sheet.getRange('P1:Q1').setValues([['星', '件数']]).setFontWeight('bold');
   for (let s = 1; s <= 5; s++) {
     sheet.getRange(1 + s, 16).setValue(s);
     sheet.getRange(1 + s, 17).setFormula('=COUNTIF(_Helpers!S2:S5000,' + s + ')');
   }
   // favoriteGames カウント
-  sheet.getRange('P8:Q8').setValues([['game', 'favorite']]).setFontWeight('bold');
+  sheet.getRange('P8:Q8').setValues([['ゲーム', 'お気に入り']]).setFontWeight('bold');
   MVP_GAMES.forEach(function (g, i) {
     sheet.getRange(9 + i, 16).setValue(g);
     sheet.getRange(9 + i, 17).setFormula('=COUNTIF(_Helpers!N2:N5000,"' + g + '")');
   });
   // 散布図: bookConnection × starScore (R:S に隔離)
-  sheet.getRange('R1:S1').setValues([['bookConnection', 'star']]).setFontWeight('bold');
+  sheet.getRange('R1:S1').setValues([['絵本連動', '星']]).setFontWeight('bold');
   sheet.getRange('R2').setFormula(
     '=IFERROR(FILTER(_Helpers!AB2:AB5000, _Helpers!AB2:AB5000<>""),"")'
   );
@@ -357,7 +357,7 @@ function buildDashboardChartData_(sheet) {
     '=IFERROR(FILTER(_Helpers!S2:S5000, _Helpers!AB2:AB5000<>""),"")'
   );
   // pricePerception 円グラフ (T:U)
-  sheet.getRange('T1:U1').setValues([['price', 'count']]).setFontWeight('bold');
+  sheet.getRange('T1:U1').setValues([['価格', '件数']]).setFontWeight('bold');
   const priceLabels = ['1 高すぎる','2 やや高い','3 妥当','4 やや安い','5 安い'];
   for (let i = 0; i < 5; i++) {
     sheet.getRange(2 + i, 20).setValue(priceLabels[i]);
@@ -374,7 +374,7 @@ function insertDashboardCharts_(sheet) {
     .setChartType(Charts.ChartType.COLUMN)
     .addRange(sheet.getRange('P1:Q6'))
     .setPosition(3, 4, 0, 0)
-    .setOption('title', 'K1 星分布')
+    .setOption('title', '①星スコア分布')
     .setOption('legend', { position: 'none' })
     .build());
 
@@ -383,7 +383,7 @@ function insertDashboardCharts_(sheet) {
     .setChartType(Charts.ChartType.BAR)
     .addRange(sheet.getRange('P8:Q13'))
     .setPosition(3, 9, 0, 0)
-    .setOption('title', 'favoriteGames カウント')
+    .setOption('title', 'お気に入りゲーム 集計')
     .setOption('legend', { position: 'none' })
     .build());
 
@@ -392,9 +392,9 @@ function insertDashboardCharts_(sheet) {
     .setChartType(Charts.ChartType.SCATTER)
     .addRange(sheet.getRange('R1:S1000'))
     .setPosition(20, 4, 0, 0)
-    .setOption('title', '絵本連動 × 星')
-    .setOption('hAxis', { title: 'bookConnection' })
-    .setOption('vAxis', { title: 'starScore' })
+    .setOption('title', '絵本連動 × 星スコア')
+    .setOption('hAxis', { title: '絵本連動' })
+    .setOption('vAxis', { title: '星スコア' })
     .build());
 
   // C4: pricePerception 円グラフ (T:U)
@@ -413,12 +413,12 @@ function setup_GameDeepDive(ss) {
   const sheet = getOrCreateSheet_(ss, TAB_DEEPDIVE);
   clearSheet_(sheet);
 
-  sheet.getRange('A1').setValue('Game DeepDive (直近 30 日 production)')
+  sheet.getRange('A1').setValue('ゲーム別詳細（直近 30 日 本番データ）')
     .setFontWeight('bold').setFontSize(14);
   sheet.getRange('A1:F1').merge();
 
   sheet.getRange('A2:F2').setValues([[
-    'game', 'favorite数', 'stumble数', '平均★', '平均熱中度', 'Net Score'
+    'ゲーム', 'お気に入り数', 'つまづき数', '平均★', '平均熱中度', '純推奨スコア'
   ]]).setFontWeight('bold').setBackground('#E8EAED');
 
   // 5 ゲーム × 5 指標 (A3:F7)
@@ -459,7 +459,7 @@ function setup_Trend(ss, source) {
   const sheet = getOrCreateSheet_(ss, TAB_TREND);
   clearSheet_(sheet);
 
-  sheet.getRange('A1').setValue('Trend Weekly (週次時系列)')
+  sheet.getRange('A1').setValue('週次トレンド（時系列）')
     .setFontWeight('bold').setFontSize(14);
   sheet.getRange('A1:D1').merge();
 
@@ -471,7 +471,7 @@ function setup_Trend(ss, source) {
     "GROUP BY year(A)*100+weekNum(A) " +
     "ORDER BY year(A)*100+weekNum(A) ASC " +
     "LABEL year(A)*100+weekNum(A) '週(YYYYWW)', AVG(D) '★平均', " +
-    "AVG(I) '熱中度平均', COUNT(A) 'N'";
+    "AVG(I) '熱中度平均', COUNT(A) '回答数'";
   sheet.getRange('A3').setFormula(
     '=IFERROR(QUERY(' + source + '!A2:P5000, "' + queryStr + '"),' +
     '"データがまだありません (production A 列が Date 型でない可能性)")'
@@ -499,7 +499,7 @@ function setup_Trend(ss, source) {
     .addRange(sheet.getRange('A3:A200'))
     .addRange(sheet.getRange('D3:D200'))
     .setPosition(39, 6, 0, 0)
-    .setOption('title', 'N (回答数) 推移 (週次)')
+    .setOption('title', '回答数 推移（週次）')
     .build());
 
   sheet.setColumnWidths(1, 4, 130);
@@ -512,13 +512,13 @@ function setup_Trend(ss, source) {
 function setup_WeeklySummary(ss) {
   const sheet = getOrCreateSheet_(ss, TAB_WEEKLY);
   if (sheet.getLastRow() > 1) {
-    Logger.log('Weekly_Summary は既にデータあり、 ヘッダと条件付き書式のみ再セット');
+    Logger.log('週次サマリ は既にデータあり、 ヘッダと条件付き書式のみ再セット');
   } else {
     clearSheet_(sheet);
     sheet.getRange('A1:L1').setValues([[
-      'weekEndDate', 'runAt', 'N', 'starAvg', 'highRatio', 'lowRatio',
-      'engageAvg', 'goHoldStatus', 'streakCount', 'goReady',
-      'digestMarkdown', 'errorLog'
+      '週の終わり', '実行時刻', '回答数', '星スコア平均', '★4-5 比率', '★1-2 比率',
+      '熱中度平均', 'GO/HOLD 判定', 'GO 連続週数', 'GO 準備完了',
+      'AI 週次要約', 'エラーログ'
     ]]).setFontWeight('bold').setBackground('#E8EAED');
     sheet.setFrozenRows(1);
     sheet.setColumnWidths(1, 12, 120);
@@ -549,13 +549,13 @@ function setup_WeeklySummary(ss) {
 function setup_DecisionLog(ss) {
   const sheet = getOrCreateSheet_(ss, TAB_DECISION);
   if (sheet.getLastRow() > 1) {
-    Logger.log('Decision_Log は既にデータあり、 skip');
+    Logger.log('判断記録 は既にデータあり、 skip');
     return;
   }
   clearSheet_(sheet);
 
   sheet.getRange('A1:F1').setValues([[
-    'date', 'decision', 'rationale', 'KPI_snapshot', 'next_action', 'isSample'
+    '日付', '判断', '理由', 'KPI スナップショット', '次のアクション', 'サンプル判定'
   ]]).setFontWeight('bold').setBackground('#E8EAED');
 
   sheet.getRange('A2:F3').setValues([
