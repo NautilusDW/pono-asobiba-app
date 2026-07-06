@@ -1,7 +1,16 @@
 /* ============================================================
-   common/tier.js  (Phase 3: 3階層の深さ制限)
+   common/tier.js  (tier v3: free = book 集合方式)
 
-   ユーザー層判定と、絵本購入者向けの "幅8割解放＋深さ制限" の中央化。
+   ユーザー層判定の中央化。
+   v3 (2026-07-06, feature_tier_v3 参照) 以降、 maze/puzzle/quizland/oto/bento の
+   5 ゲームは free = book (機能差ゼロ)。 各ゲームの isXxxUnlocked() は
+   「sub なら true、 それ以外は FREE_* の集合 (indexOf) に含まれるか」 の
+   統一パターンに refactor 済。 book 向けの差別化は付録 (特別シール/特別表紙/
+   welcome演出/月1おかえり) のみで、 本ファイルのゲームロック関数側では扱わない。
+   aquarium (isAquariumCreatureUnlocked) / room (isRoomItemUnlocked) /
+   bento の box・NPC (isBentoBoxUnlocked/isBentoNpcUnlocked) / oto の
+   chord mode (isOtoChordModeUnlocked) は v3 スコープ外につき、
+   book > free の "伸びしろ" 見せ方を維持したまま変更していない。
 
    公開API (window.PonoTier):
      - getTier()                           → 'free' | 'book' | 'sub'
@@ -161,6 +170,10 @@
   ];
 
   // ---- quizland ----
+  // v3 (2026-07-06 tier v3): free = book (機能差ゼロ)。 8カテゴリ Lv1 (easy) から
+  // 3問ずつ + trivia 5問 = 計26問を固定リストで直接指定 (集合方式)。
+  // book 専用の広い level 判定 (旧 BOOK_QUIZLAND_MAX_LEVEL) は廃止し、
+  // free と同じ固定リストに統一する。
   var FREE_QUIZLAND_QUESTION_IDS = [
     'order_color|0','order_color|1','order_color|2',
     'count_total|0','count_total|1','count_total|2',
@@ -170,47 +183,52 @@
     'opposite|0','opposite|1','opposite|2',
     'body|0','body|1','body|2',
     'trivia|0','trivia|1','trivia|2','trivia|3','trivia|4'
-  ]; // Phase 2: 各カテゴリ Lv1 から3問 + trivia 5問 = 26問
-  var BOOK_QUIZLAND_MAX_LEVEL = 2; // book はカテゴリを混ぜて Lv2 まで、sub は Lv3 まで
+  ]; // 各カテゴリ Lv1 から3問 + trivia 5問 = 26問
 
   // ---- maze ----
-  var FREE_MAZE_MAX_STAGE = 3;
-  var BOOK_MAZE_MAX_STAGE = 7;
+  // v3: free = book (機能差ゼロ)。 Stage 1/4/5 のみ解放。
+  // Stage 7 は最終ボス露出で物語破綻するため除外 (feature_tier_v3 §2)。
+  var FREE_MAZE_STAGE_IDS = [1, 4, 5];
 
   // ---- puzzle ----
-  var FREE_PUZZLE_MAX_STAGE = 3;
-  var BOOK_PUZZLE_MAX_STAGE = 9;
-  var BOOK_PUZZLE_PONO_SPECIAL_IDS = ['stage_05']; // book に解放するポノ特別枠 (sub は #5/10/15/20 全部)
+  // v3: free = book (機能差ゼロ)。 Stage 1/6/13 (4/9/16ピースで難易度散らし)。
+  var FREE_PUZZLE_STAGE_IDS = [1, 6, 13];
 
   // ---- oto ----
-  var FREE_OTO_SETS = ['doremi','kira'];
-  var BOOK_OTO_SETS = ['doremi','kira','marimba','animal'];
-  var FREE_OTO_MODES = ['free'];
-  var BOOK_OTO_MODES = ['free','rhythm'];
+  // v3: free = book (機能差ゼロ)。
+  var FREE_OTO_SOUND_SETS = ['doremi', 'kira', 'animal'];
+  var FREE_OTO_MODES = ['free', 'rhythm'];
   var FREE_OTO_SCALES = ['major'];
-  var BOOK_OTO_SCALES = ['major','penta'];
-  var FREE_OTO_RHYTHM_SONGS = [];
-  var BOOK_OTO_RHYTHM_SONGS = ['kaeru'];
+  var FREE_OTO_RHYTHM_SONGS = ['kaeru'];
+  // chord mode は tier v3 スコープ外 (feature_tier_v3 §2 に記載なし) につき
+  // book > free の既存差分を維持する (book のみ 'on' 追加解放)。
   var FREE_OTO_CHORD_MODES = ['off'];
-  var BOOK_OTO_CHORD_MODES = ['off','on'];
+  var BOOK_OTO_CHORD_MODES = ['off', 'on'];
 
   // ---- bento: 30食材 / お弁当箱 / NPC ----
-  var FREE_BENTO_FOOD_NAMES = [
-    'タコウインナー','ハンバーグ','たまごやき',
-    'キャベツ','プチトマト','ブロッコリー',
-    'いちご','バナナ'
-  ];  // 8食材
+  // v3: free = book (機能差ゼロ)。 主菜5 + 副菜4 + フルーツ3 = 12食材。
+  // (旧 FREE_BENTO_FOOD_NAMES 8種 + 旧 BOOK 限定だった からあげ/エビフライ/にんじんいんげん/みかん を編入)
+  var FREE_BENTO_FOOD_IDS = [
+    'タコウインナー', 'ハンバーグ', 'たまごやき', 'からあげ', 'エビフライ',      // 主菜5
+    'キャベツ', 'プチトマト', 'ブロッコリー', 'にんじんいんげん',              // 副菜4
+    'いちご', 'バナナ', 'みかん'                                               // フルーツ3
+  ];
+  // v3: のり1種 free 復活 (親満足度優先。 旧方針との差分理由は feature_tier_v3 §2 参照)。
+  // NOTE: bento/index.html 側に isBentoDecorUnlocked('nori') 相当の callsite は現状存在しない
+  // (nori のロックは bookDecorItem() ラッパーで inline 判定されている)。 この定数は次フェーズで
+  // bento/index.html を v3 準拠に直す際の参照値として公開する。
+  var FREE_BENTO_NORI_ENABLED = true;
 
-  var BOOK_BENTO_FOOD_NAMES = FREE_BENTO_FOOD_NAMES.concat([
-    'からあげ','コロッケ','エビフライ','やきざけ','ミートボール',
-    'にんじんいんげん','コーンほうれんそう'
-  ]);  // +7 = 15累計
+  // sub 専用の残り18食材 (30 - 12)。 sub は ALL_BENTO_FOOD_NAMES で全解放。
+  var ALL_BENTO_FOOD_NAMES = FREE_BENTO_FOOD_IDS.concat([
+    'コロッケ', 'やきざけ', 'ミートボール', 'コーンほうれんそう',
+    'ナポリタン', 'ぎょうざ', 'はるまき', 'ベーコンまき',
+    'きんぴらごぼう', 'えだまめ', 'ポテトサラダ', 'ハムサラダ',
+    'メロン', 'りんご', 'パイナップル', 'もも', 'ぶどう', 'キウイ'
+  ]);  // 12 + 18 = 30累計
 
-  var ALL_BENTO_FOOD_NAMES = BOOK_BENTO_FOOD_NAMES.concat([
-    'ナポリタン','ぎょうざ','はるまき','ベーコンまき',
-    'きんぴらごぼう','えだまめ','ポテトサラダ','ハムサラダ',
-    'みかん','メロン','りんご','パイナップル','もも','ぶどう','キウイ'
-  ]);  // +15 = 30累計
+  // box / NPC は tier v3 スコープ外 (feature_tier_v3 §2 に記載なし) につき
+  // book > free の既存差分を維持する (未変更)。
   var FREE_BENTO_BOX_IDS = ['box_rect_split'];
   var BOOK_BENTO_BOX_IDS = FREE_BENTO_BOX_IDS.concat(['box_square','box_round']);
   // sub は判定 (isBentoBoxUnlocked) で常 true 返却 = 全箱解放
@@ -248,21 +266,18 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') {
-      return (level || 1) <= BOOK_QUIZLAND_MAX_LEVEL;
-    }
-    // free: 固定リスト (FREE_QUIZLAND_QUESTION_IDS) に含まれる qid のみ解放。
+    // v3: free = book (機能差ゼロ)。 固定リスト (FREE_QUIZLAND_QUESTION_IDS) に含まれる
+    // qid のみ解放 (free/book 共通)。
     // 空配列の場合はフェイルセーフで true (= 全開放) を返し、 万一 list が空になった瞬間に
-    // free ユーザーの全クイズが false 判定で完全ロックされる事故を防ぐ。
-    // 通常は L164-173 で 26 問が登録済 → 通常の indexOf 判定に切り替わる。
+    // free/book ユーザーの全クイズが false 判定で完全ロックされる事故を防ぐ。
+    // 通常は L164-176 付近で 26 問が登録済 → 通常の indexOf 判定に切り替わる。
     if (FREE_QUIZLAND_QUESTION_IDS.length === 0) return true;
     return FREE_QUIZLAND_QUESTION_IDS.indexOf(qid) >= 0;
   }
 
   // ---- quizland 難易度ロック ----
   // 難易度 (easy=Lv1 / normal=Lv2 / hard=Lv3) を tier だけで判定する。
-  //   free: easy のみ (Lv1)
-  //   book: easy / normal (Lv1/2)
+  //   free / book: easy のみ (Lv1) ※ v3 で free = book に統一
   //   sub: 全開放
   // DIFF_MIN_LEVEL は呼び出し側 (quizland) と整合: easy=1, normal=2, hard=3。
   function isQuizlandDifficultyUnlocked(diff, mode) {
@@ -271,31 +286,33 @@
     var lv = lvMap[diff] || 1;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'free') return lv === 1;
-    return lv <= BOOK_QUIZLAND_MAX_LEVEL;
+    // v3: free = book (機能差ゼロ)
+    return lv === 1;
   }
 
   function isMazeStageUnlocked(stageNum) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return stageNum <= BOOK_MAZE_MAX_STAGE;
-    return stageNum <= FREE_MAZE_MAX_STAGE;
+    // v3: free = book (機能差ゼロ)
+    return FREE_MAZE_STAGE_IDS.indexOf(stageNum) >= 0;
   }
 
   function isPuzzleStageUnlocked(stageNum) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return stageNum <= BOOK_PUZZLE_MAX_STAGE;
-    return stageNum <= FREE_PUZZLE_MAX_STAGE;
+    // v3: free = book (機能差ゼロ)
+    return FREE_PUZZLE_STAGE_IDS.indexOf(stageNum) >= 0;
   }
 
   function isPuzzlePonoSpecialUnlocked(stageId) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_PUZZLE_PONO_SPECIAL_IDS.indexOf(stageId) >= 0;
+    // v3: free = book (機能差ゼロ)。 特別枠は現状 free/book どちらにも未割当
+    // (sub 限定の #5/10/15/20 ポノ特別枠のまま)。 将来 free/book にも割り当てる場合は
+    // ここに専用の FREE_PUZZLE_PONO_SPECIAL_IDS を追加する。
     return false;
   }
 
@@ -303,15 +320,15 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_SETS.indexOf(setId) >= 0;
-    return FREE_OTO_SETS.indexOf(setId) >= 0;
+    // v3: free = book (機能差ゼロ)
+    return FREE_OTO_SOUND_SETS.indexOf(setId) >= 0;
   }
 
   function isOtoModeUnlocked(mode) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_MODES.indexOf(mode) >= 0;
+    // v3: free = book (機能差ゼロ)
     return FREE_OTO_MODES.indexOf(mode) >= 0;
   }
 
@@ -319,7 +336,7 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_SCALES.indexOf(scale) >= 0;
+    // v3: free = book (機能差ゼロ)
     return FREE_OTO_SCALES.indexOf(scale) >= 0;
   }
 
@@ -327,11 +344,12 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
+    // v3: free = book (機能差ゼロ)
     return FREE_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
   }
 
   function isOtoChordModeUnlocked(mode) {
+    // chord mode は tier v3 スコープ外 (書字なし) につき book > free の既存差分を維持。
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
@@ -345,8 +363,8 @@
     if (!name) return false;
     var t = getTier();
     if (t === 'sub') return ALL_BENTO_FOOD_NAMES.indexOf(name) >= 0;
-    if (t === 'book') return BOOK_BENTO_FOOD_NAMES.indexOf(name) >= 0;
-    return FREE_BENTO_FOOD_NAMES.indexOf(name) >= 0;
+    // v3: free = book (機能差ゼロ)
+    return FREE_BENTO_FOOD_IDS.indexOf(name) >= 0;
   }
 
   function isBentoBoxUnlocked(boxId) {
@@ -678,7 +696,17 @@
     isBentoNpcUnlocked: isBentoNpcUnlocked,
     FREE_QUIZLAND_QUESTION_IDS: FREE_QUIZLAND_QUESTION_IDS,
     ALL_BENTO_FOOD_NAMES: ALL_BENTO_FOOD_NAMES,
-    BOOK_BENTO_FOOD_NAMES: BOOK_BENTO_FOOD_NAMES,
-    FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_NAMES
+    // v3: book = free (機能差ゼロ) につき BOOK_BENTO_FOOD_NAMES / FREE_BENTO_FOOD_NAMES は
+    // 後方互換のため両方とも FREE_BENTO_FOOD_IDS のエイリアスとして残す。
+    BOOK_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_IDS,
+    FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_IDS,
+    FREE_BENTO_FOOD_IDS: FREE_BENTO_FOOD_IDS,
+    FREE_BENTO_NORI_ENABLED: FREE_BENTO_NORI_ENABLED,
+    FREE_MAZE_STAGE_IDS: FREE_MAZE_STAGE_IDS,
+    FREE_PUZZLE_STAGE_IDS: FREE_PUZZLE_STAGE_IDS,
+    FREE_OTO_SOUND_SETS: FREE_OTO_SOUND_SETS,
+    FREE_OTO_MODES: FREE_OTO_MODES,
+    FREE_OTO_SCALES: FREE_OTO_SCALES,
+    FREE_OTO_RHYTHM_SONGS: FREE_OTO_RHYTHM_SONGS
   };
 })();

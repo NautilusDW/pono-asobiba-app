@@ -9467,7 +9467,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1988;
+    const PAGE_CACHE_VERSION = 1989;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -9476,7 +9476,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1988';
+    window.PONO_SW_VERSION = 'v1989';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13556,6 +13556,22 @@
         { id: 'leaf_kko', name: 'はっぱっこ', kind: 'human', bg: '#dff7ec', skin: '#d99b6b', hair: '#2f4a33', shirt: '#f5c84c', accent: '#75b86a', hairStyle: 'long', markShape: 'leaf' },
         { id: 'sky_kko', name: 'そらっこ', kind: 'human', bg: '#dff4ff', skin: '#f0c7a5', hair: '#365b83', shirt: '#8bd17c', accent: '#9b72d0', hairStyle: 'short', markShape: 'dot' },
         { id: 'berry_kko', name: 'いちごっこ', kind: 'human', bg: '#ffe4ed', skin: '#f0c7a5', hair: '#8b5835', shirt: '#ff8b8b', accent: '#ff7aa2', hairStyle: 'cap', markShape: 'ribbon' },
+        { id: 'acorn_kko', name: 'どんぐりっこ', kind: 'human', bg: '#fff1c4', skin: '#f0c7a5', hair: '#8b5835', shirt: '#f2c27b', accent: '#75b86a', hairStyle: 'cap', markShape: 'leaf' },
+        { id: 'umi_kko', name: 'うみっこ', kind: 'human', bg: '#dff4ff', skin: '#f0c7a5', hair: '#3fa9bd', shirt: '#6fc2d4', accent: '#58d8ff', hairStyle: 'short', markShape: 'dot' },
+        { id: 'yuki_kko', name: 'ゆきっこ', kind: 'human', bg: '#eef8ff', skin: '#f5efe3', hair: '#d7e5ec', shirt: '#b9d8e8', accent: '#58d8ff', hairStyle: 'cap', markShape: 'dot' },
+        { id: 'hoshi_kko', name: 'ほしっこ', kind: 'human', bg: '#ede6ff', skin: '#f0c7a5', hair: '#8b5835', shirt: '#f5c84c', accent: '#ffd84d', hairStyle: 'short', markShape: 'star' },
+        { id: 'hana_kko', name: 'おはなっこ', kind: 'human', bg: '#fff0d8', skin: '#f0c7a5', hair: '#8b5835', shirt: '#f29f58', accent: '#ffd84d', hairStyle: 'long', markShape: 'leaf' },
+        { id: 'niji_kko', name: 'にじっこ', kind: 'human', bg: '#ffe4ed', skin: '#f0c7a5', hair: '#9b72d0', shirt: '#ff8b8b', accent: '#75b86a', hairStyle: 'long', markShape: 'ribbon' },
+        { id: 'kinoko_kko', name: 'きのこっこ', kind: 'human', bg: '#fff0d8', skin: '#f0c7a5', hair: '#f3c26e', shirt: '#f1d0aa', accent: '#d94a4a', hairStyle: 'cap', markShape: 'dot' },
+        { id: 'lantern_kko', name: 'ランタンっこ', kind: 'human', bg: '#fff4c6', skin: '#f0c7a5', hair: '#6b4226', shirt: '#f29f58', accent: '#ffd84d', hairStyle: 'cap', markShape: 'star' },
+        { id: 'tsuki_kko', name: 'つきっこ', kind: 'human', bg: '#ede6ff', skin: '#f0c7a5', hair: '#8b5835', shirt: '#365b83', accent: '#ffd84d', hairStyle: 'cap', markShape: 'star' },
+        { id: 'mori_kko', name: 'もりっこ', kind: 'human', bg: '#dff7ec', skin: '#d99b6b', hair: '#6b4226', shirt: '#75b86a', accent: '#8a6230', hairStyle: 'cap', markShape: 'leaf' },
+        { id: 'pudding_kko', name: 'プリンっこ', kind: 'human', bg: '#fff1c4', skin: '#f0c7a5', hair: '#6b4226', shirt: '#f5c84c', accent: '#8a6230', hairStyle: 'cap', markShape: 'dot' },
+        { id: 'oto_kko', name: 'おとっこ', kind: 'human', bg: '#dff4ff', skin: '#f0c7a5', hair: '#6b4226', shirt: '#6fc2d4', accent: '#ffd84d', hairStyle: 'short', markShape: 'star' },
+        { id: 'hon_kko', name: 'ほんっこ', kind: 'human', bg: '#dff7ec', skin: '#f0c7a5', hair: '#8b5835', shirt: '#75b86a', accent: '#f2a65a', hairStyle: 'long', markShape: 'leaf' },
+        { id: 'puzzle_kko', name: 'パズルっこ', kind: 'human', bg: '#fff0d8', skin: '#f0c7a5', hair: '#6b4226', shirt: '#f29f58', accent: '#58d8ff', hairStyle: 'short', markShape: 'square' },
+        { id: 'garden_kko', name: 'にわっこ', kind: 'human', bg: '#dff7ec', skin: '#f0c7a5', hair: '#8b5835', shirt: '#6fc2d4', accent: '#ffd84d', hairStyle: 'long', markShape: 'leaf' },
+        { id: 'cocoa_kko', name: 'ココアっこ', kind: 'human', bg: '#fff0d8', skin: '#d99b6b', hair: '#6b4226', shirt: '#8a6230', accent: '#f5efe3', hairStyle: 'cap', markShape: 'dot' },
         { id: 'fox', name: 'きつね', kind: 'fox', bg: '#fff0d8', skin: '#f3b56d', hair: '#c8682a', shirt: '#6fc2d4', accent: '#fff1c4', hairStyle: 'round', markShape: 'leaf' },
         { id: 'rabbit', name: 'うさぎ', kind: 'rabbit', bg: '#ffeaf1', skin: '#f7d5c9', hair: '#f3a6c3', shirt: '#f5c84c', accent: '#ff7aa2', hairStyle: 'round', markShape: 'dot' },
         { id: 'bear', name: 'くま', kind: 'bear', bg: '#fff1c4', skin: '#c98245', hair: '#7a4a24', shirt: '#8bd17c', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
@@ -13569,13 +13585,13 @@
         { id: 'star_mon', name: 'ほしモン', kind: 'monster', bg: '#efe7ff', skin: '#9b72d0', hair: '#6d4db0', shirt: '#f5c84c', accent: '#ffd84d', hairStyle: 'round', markShape: 'dot' },
         { id: 'leaf_mon', name: 'はっぱモン', kind: 'monster', bg: '#dff7ec', skin: '#75b86a', hair: '#2f4a33', shirt: '#8bd17c', accent: '#fff1c4', hairStyle: 'round', markShape: 'leaf' },
         { id: 'moko_mon', name: 'もこモン', kind: 'monster', bg: '#ffe4ed', skin: '#ff9ec1', hair: '#d05f90', shirt: '#9b72d0', accent: '#fff1c4', hairStyle: 'round', markShape: 'ribbon' },
-        { id: 'puka_mon', name: 'ぷかモン', kind: 'monster', bg: '#dff4ff', skin: '#5fb7a9', hair: '#2f7d73', shirt: '#6fc2d4', accent: '#ffd84d', hairStyle: 'round', markShape: 'dot' },
         { id: 'mushroom', name: 'きのこ', kind: 'mushroom', bg: '#fff0d8', skin: '#f1d0aa', hair: '#d94a4a', shirt: '#f5c84c', accent: '#fff1c4', hairStyle: 'round', markShape: 'dot' },
         { id: 'acorn', name: 'どんぐり', kind: 'acorn', bg: '#fff1c4', skin: '#c98562', hair: '#6b4226', shirt: '#8bd17c', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
         { id: 'water', name: 'みずのこ', kind: 'monster', bg: '#dff4ff', skin: '#6fc2d4', hair: '#365b83', shirt: '#9b72d0', accent: '#fff1c4', hairStyle: 'round', markShape: 'dot' },
         { id: 'snow', name: 'ゆきのこ', kind: 'monster', bg: '#eef8ff', skin: '#f5efe3', hair: '#b9d8e8', shirt: '#6fc2d4', accent: '#58d8ff', hairStyle: 'round', markShape: 'dot' },
         { id: 'lantern', name: 'ランタン', kind: 'robot', bg: '#fff4c6', skin: '#f3c26e', hair: '#7a4a24', shirt: '#f29f58', accent: '#ffd84d', hairStyle: 'round', markShape: 'leaf' },
-        { id: 'moon', name: 'つきのこ', kind: 'monster', bg: '#ede6ff', skin: '#c7b5ee', hair: '#3f2d68', shirt: '#9b72d0', accent: '#ffd84d', hairStyle: 'round', markShape: 'ribbon' }
+        { id: 'moon', name: 'つきのこ', kind: 'monster', bg: '#ede6ff', skin: '#c7b5ee', hair: '#3f2d68', shirt: '#9b72d0', accent: '#ffd84d', hairStyle: 'round', markShape: 'ribbon' },
+        { id: 'puka_mon', name: 'もりドラ', kind: 'monster', bg: '#dff7ec', skin: '#75b86a', hair: '#2f4a33', shirt: '#8bd17c', accent: '#ffd84d', hairStyle: 'round', markShape: 'leaf' }
       ];
       const AVATAR_DEFAULT_ID = 'pono_kko';
       const AVATAR_PART_DOM = ['tail', 'leg-left', 'leg-right', 'shoe-left', 'shoe-right', 'arm-left', 'arm-right', 'body', 'face', 'eyes', 'mouth', 'hair', 'ears', 'mark'];
@@ -13749,7 +13765,7 @@
       }
       function avatarPresetImage(id) {
         const preset = avatarPresetById(id || AVATAR_DEFAULT_ID);
-        return 'assets/images/avatars/avatar_' + preset.id + '_20260705.webp';
+        return 'assets/images/avatars/avatar_' + preset.id + '_20260706.webp';
       }
       function avatarColor(value, fallback) {
         return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? String(value) : fallback;

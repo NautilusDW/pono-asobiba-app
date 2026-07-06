@@ -31,6 +31,11 @@ body.tunnel-interior #scene::after{display:block}
   background-repeat:no-repeat;background-size:auto 100%;will-change:transform}
 #midT{position:absolute;top:0;bottom:0;left:0;right:0;z-index:2;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
+#seaFishLayer{position:absolute;inset:0;z-index:4;display:none;pointer-events:none;overflow:hidden}
+body.st-sea #seaFishLayer{display:block}
+.sea-fish{position:absolute;left:0;top:0;width:clamp(36px,var(--fish-w,5.5vw),96px);aspect-ratio:var(--fish-ratio,1.25);
+  background:center/contain no-repeat;filter:drop-shadow(0 2px 0 rgba(10,45,75,.14));opacity:var(--fish-opacity,.86);
+  transform:translate3d(-20vw,30vh,0);will-change:transform}
 #groundT{position:absolute;left:0;right:0;bottom:0;height:12vh;z-index:2;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
@@ -82,6 +87,8 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
 body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
+body.st-town.v-train #cars,body.st-jungle.v-train #cars{bottom:8.45vh}
+body.st-town.v-train #veh,body.st-jungle.v-train #veh{bottom:8.45vh}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -125,7 +132,7 @@ body.st-space .tun{bottom:20vh}
 .tun.number-gate .sign{top:16%;background:#fff;border:3px solid #ffcf5f;border-radius:50%;width:clamp(38px,5.4vw,62px);height:clamp(38px,5.4vw,62px);display:flex;align-items:center;justify-content:center}
 @keyframes numberTunnelPulse{from{transform:translateY(0) scale(.92);opacity:.38}50%{opacity:.72}to{transform:translateY(14%) scale(1.18);opacity:.38}}
 .tun.station{bottom:8.8vh;width:49vw;max-width:610px;height:45vh;z-index:5;pointer-events:none}
-.tun.station.jungle-station{bottom:8.6vh;width:59vw;max-width:710px;height:46.5vh}
+.tun.station.jungle-station{bottom:10.1vh;width:59vw;max-width:710px;height:46.5vh}
 .tun.station .mount{display:none}
 .station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp") center bottom/contain no-repeat;z-index:1}
 .station-wall{position:absolute;left:10%;right:10%;bottom:12%;height:54%;border:3px solid #b9854d;border-bottom:0;border-radius:10px 10px 4px 4px;
@@ -323,25 +330,29 @@ body.tunnel-enter-run #veh .puff,body.tunnel-exit-run #veh .puff{opacity:0}
 body.st-future .tr-boiler{background:#b8f3ff;border-color:#4bb8d6;border-radius:26px 6px 6px 26px}
 body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
 body.st-future .tr-chim{display:none}
-body.st-town #horizon{background-size:auto 116%;background-position-y:-13vh}
-body.st-town #midT{background-size:auto 108%;background-position-y:-6vh}
+body.st-town #horizon{background-size:auto 124%;background-position-y:-20vh}
+body.st-town #midT{background-size:auto 114%;background-position-y:-10vh}
 body.st-town #groundT{height:15vh;background-size:auto 100%}
 body.st-town #fgT{height:6.5vh;background-size:auto 100%}
-body.st-jungle #horizon{background-size:auto 116%;background-position-y:-13vh}
-body.st-jungle #midT{background-size:auto 108%;background-position-y:-6vh}
+body.st-jungle #horizon{background-size:auto 126%;background-position-y:-22vh}
+body.st-jungle #midT{background-size:auto 116%;background-position-y:-12vh}
 body.st-jungle #groundT{height:14.5vh;background-size:auto 100%}
 body.st-jungle #fgT{height:22vh;background-size:auto 100%}
-body.st-sea #horizon{background-size:100% 100%}
-body.st-sea #midT{background-size:100% 100%;background-repeat:no-repeat;background-position-x:0!important;opacity:.22}
-body.st-sea #groundT{height:16.5vh;background-size:auto 100%}
-body.st-sea #fgT{height:24vh;background-size:auto 100%;opacity:.96}
+body.st-sea #horizon{background-repeat:repeat-x;background-size:auto 112%;background-position-y:-8vh}
+body.st-sea #midT{background-size:auto 110%;background-repeat:repeat-x;background-position-y:2vh;opacity:.82}
+body.st-sea #groundT{height:18vh;background-size:auto 100%;z-index:3}
+body.st-sea #fgT{height:21vh;background-size:auto 100%;opacity:1}
 .sb-hull,.sb-peri,.sb-fin,.sb-win,.submarine-art{display:none}
 body.v-sub #veh{left:calc(53vw - clamp(78px,13vw,143px));bottom:12.4vh;width:clamp(156px,26vw,286px);height:clamp(111px,18.4vw,203px)}
 body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win,body.v-sub .headlight{display:none}
 body.v-sub .submarine-art{display:block;position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/vehicle_submarine_pono_20260706.png") center/contain no-repeat;
   filter:drop-shadow(0 3px 0 rgba(20,45,70,.18))}
-body.v-sub #veh.go .submarine-art{animation:subSwim 1.2s ease-in-out infinite alternate}
-@keyframes subSwim{from{transform:translateY(0) rotate(-.7deg)}to{transform:translateY(-5px) rotate(.7deg)}}
+body.v-sub #veh.go .vbody{animation:subDrift 5.2s ease-in-out infinite}
+body.v-sub #veh.idle .vbody{animation:subIdleDrift 3.4s ease-in-out infinite}
+body.v-sub #veh.go .submarine-art{animation:subSwim 2.2s ease-in-out infinite alternate}
+@keyframes subDrift{0%,100%{transform:translate3d(-.55vw,.1vh,0)}25%{transform:translate3d(.35vw,-.75vh,0)}52%{transform:translate3d(1.05vw,.2vh,0)}76%{transform:translate3d(-.1vw,.7vh,0)}}
+@keyframes subIdleDrift{0%,100%{transform:translate3d(0,.15vh,0)}50%{transform:translate3d(.25vw,-.6vh,0)}}
+@keyframes subSwim{from{transform:translateY(0) rotate(-.7deg)}to{transform:translateY(-4px) rotate(.7deg)}}
 body.st-sea.v-sub #veh.inTun .submarine-art{filter:brightness(.72) saturate(.82) contrast(.96) drop-shadow(0 3px 0 rgba(0,0,0,.28))}
 .rk-body,.rk-nose,.rk-finT,.rk-finB,.rk-win,.rk-flame{display:none}
 body.v-rocket .tr-cab,body.v-rocket .tr-boiler,body.v-rocket .tr-chim,body.v-rocket .wheel,body.v-rocket .puff,body.v-rocket .tr-win{display:none}

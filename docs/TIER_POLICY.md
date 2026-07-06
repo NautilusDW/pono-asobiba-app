@@ -1,8 +1,12 @@
-# TIER POLICY — 無料 / 絵本購入者 / アプリ (= sub) の境界
+# TIER POLICY — 無料 / 絵本購入者 / アプリ (= sub) の境界 (v3)
 
 ユーザー層（tier）の判定ルールと、各層に解放される範囲の正式仕様。
 実装の一次ソースは `common/tier.js`。本ドキュメントは人間向けの参照用。
 不整合が生じた場合は `common/tier.js` を正とし、本ドキュメントを更新する。
+
+> **v3 で構造が変わった。** 旧仕様（book が free より本編量で少し勝る「連番ロック解除」型）は廃止。
+> v3 は **free = book（機能差ゼロ）**、差は付録のみという構造に全面転換した。
+> 変更の経緯は末尾「## 履歴」を参照。
 
 ---
 
@@ -12,9 +16,9 @@
 |---|---|---|---|
 | **free** | `'free'` | デフォルト | 未購入。ポノの遊び場のみ体験 |
 | **book** | `'book'` | `localStorage.pono_premium === '1'` | 絵本『ありがとうって、うれしいね 〜くまのこ ポノ の ちいさな ものがたり〜』購入者（奥付パスワードで解錠） |
-| **sub** | `'sub'` | `localStorage.pono_sub_active === '1'` | アプリ (= sub) 契約者 |
+| **sub** | `'sub'` | `localStorage.pono_sub_active === '1'` | アプリ (= sub) 契約者。`APP_BUILD=1` 環境では自動的に sub 扱い |
 
-判定の優先順位: `sub` > `book` > `free`（`common/tier.js:31-37`）。
+判定の優先順位: `sub` > `book` > `free`（`common/tier.js`）。
 
 公開 API:
 - `window.PonoTier.getTier()` → `'free' | 'book' | 'sub'`
@@ -22,365 +26,290 @@
 
 ---
 
-## 2. 解放範囲マトリクス
+## 2. 原則:「free = book（機能差ゼロ）、差は付録のみ」
 
-| 機能 / コンテンツ | free | book | sub |
-|---|:---:|:---:|:---:|
-| **ポノの遊び場**（無料 8 件） | | | |
-| &nbsp;&nbsp; oto / quiz-sound / puzzle / bento / wordmatch / quizland / maze / message | OK | OK | OK |
-| **もじかきクエスト** | | | |
-| &nbsp;&nbsp; ひらがな篇 | NO | OK | OK |
-| &nbsp;&nbsp; カタカナ篇 | NO | **NO** | OK |
-| &nbsp;&nbsp; （以降の篇） | NO | NO | OK（予定） |
-| **有料ゲーム** | | | |
-| &nbsp;&nbsp; おえかき / ボウリング / ブロック崩し / みちつなぎ | NO | OK | OK |
-| **すいぞくかん**（海の生き物） | — | **代表 8 種のみ** | 全種 |
-| **わたしのお家**（家具・かざり） | — | **代表 10 種のみ** + 壁紙/床は全開放 | 全アイテム |
+v3 の核となる原則は以下の 4 つ。
 
-`—` は「そもそもこのエリアに辿り着けない（保険で false 返し）」の意。
+1. **free と book の本編コンテンツは完全に同一。** ゲーム別の解放範囲（ステージ・問題・食材・音色など）は free でも book でも全く同じ ID セットを解放する。「book のほうが少し多い」という差分は設けない。
+2. **年齢バランスを重視する。** free = book の解放範囲は、各ゲームで簡単・普通・難しいを散らして選ぶ。低年齢層専用にも高難度専用にも偏らせない。
+3. **book の対価は付録のみ。** 絵本を買って合言葉を入力したご褒美は、特別シール・特別表紙・welcome 演出・月 1 おかえり演出・手紙カードといった「持っていてうれしい」付録に全振りする。本編コンテンツの拡張では対価を作らない。
+4. **sub は全 content + 全付録 + 蓄積系。** sub のみが全ゲーム・全ステージ・全食材・sub 専用ゲーム 7 本・sub 専用シール・デイリーガチャ全ページを持つ。sub と free/book の差は「量」であり、量の差こそが継続契約の動機になる。
+
+### なぜ free = book にしたか
+
+旧仕様（book が free よりステージ数や食材数で少し勝る設計）は、合言葉が SNS 等で拡散した場合に本編コンテンツの価値がそのまま流出するリスクを抱えていた。v3 では book の解放範囲を free と同一にすることで、**合言葉が流出しても本編コンテンツの価値は増えない**（流出して得られるのは付録のシール・表紙・演出のみ）という構造にした。詳細は §6「合言葉流出耐性の構造的防御」を参照。
 
 ---
 
-### 2.1 共通 5 本の差別化マトリクス (v3)
+## 3. ゲーム別 free = book 解放範囲（機能差ゼロ）
 
-ポノの遊び場の本命 5 本（quizland / maze / oto / puzzle / bento）は、入口は全層に開放しつつ「中身（深さ）」で差別化する。 数値は本ドキュメント §11 / §12 のロードマップと連動する。
+以下は free / book 共通の解放範囲。**free と book で ID・数・難易度構成に差はない。**
 
-#### A. quizland（フクロウはかせのなぞなぞ） — 実問題数 **全 180 問**（2026-06-30 再配分方針）
+### 3.1 maze（ポノとランタンのめいろ）
 
-実態: `quizland/data/questions.js` の現行データは 8 カテゴリ / 全 180 問。 難易度内訳は Lv1=62 問、Lv2=61 問、Lv3=57 問。
-
-旧方針の「free は Lv1 だけ / book は Lv2 まで」は廃止。 free が低年齢層専用に見えたり、book が本編量として強くなりすぎたりするのを避けるため、**free / book ともに Lv1 / Lv2 / Lv3 を混ぜた少量プール**へ変更する。 book の差別化は問題数では控えめにし、絵本購入者向けの限定シール・シール帳表紙・見た目特典へ寄せる。
-
-| 層 | 解放範囲 | 問題数 | 全体比 |
-|---|---|---|---|
-| **free** | 25 問。 8 カテゴリから Lv1 / Lv2 / Lv3 を各 1 問ずつ選び、 追加 1 問は trivia Lv2。 | **25 問** | 14% |
-| **book** | free 25 問 + 追加 15 問。 追加分も Lv1 / Lv2 / Lv3 を各 5 問ずつ、カテゴリを散らして選ぶ。 | **40 問** | 22% |
-| **sub** | **全 180 問**。 難易度選択と全カテゴリ全問を解放。 | **180 問** | 100% |
-
-free は 5 問 × 5 回分の「おすすめ 5 もん」体験を作る。 25 問を使い切るまでは出題済み ID を `localStorage` で避け、使い切ったら履歴をリセットして再シャッフルする。 book は累計 40 問 = 5 問 × 8 回分程度に留める。
-
-free / book の UI 方針:
-- 難易度選択画面（やさしい / ふつう / むずかしい）は表示しない。
-- `はじめる` から直接「おすすめ 5 もん」を開始する。
-- 内部的には Lv1 / Lv2 / Lv3 を混ぜるが、子どもには「難しい問題がロックされている」印象を出さない。
-
-sub の UI 方針:
-- 難易度選択画面を残す。
-- `やさしい / ふつう / むずかしい` から選んで全 180 問を遊べる。
-- 将来 `おすすめ` を追加する余地はあるが、初回実装では既存の 3 難易度導線を維持する。
-
-実装メモ:
-- `common/tier.js` の QuizLand 判定は、max level 方式ではなく ID allowlist 方式へ寄せる。
-- `FREE_QUIZLAND_QUESTION_IDS` は 25 問、 `BOOK_QUIZLAND_QUESTION_IDS` は free 25 問 + 追加 15 問の累計 40 問を正本にする。
-- `quizland/index.html` は free / book の場合だけ難易度選択をスキップし、mixed playlist builder を使う。
-- `isQuizlandDifficultyUnlocked()` は sub 用 UI のために残すが、free / book の通常導線では露出させない。
-
-#### B. maze（ポノとランタンのめいろ） — 現行 7 ステージ / 将来 10 ステージへ拡張予定（2026-07-01 再配分方針）
-
-旧方針の「free は Stage 1-3 / book は Stage 1-7」の連番ロックは廃止。 free が序盤チュートリアルだけに見えるのを避けるため、QuizLand と同じく **簡単・普通・難しめを抜粋して混ぜる allowlist 方式**にする。
-
-現行 `maze/imageStages/_index.json` では slot 1-7 が本編ステージ。 実装上の判定は内部 slot ID を使い、子ども向け表示では free / book の解放済みステージだけを `ステージ 1 / 3` のように tier 内連番へ詰める。 free / book で `ステージ 1, 3, 6` のような穴あき表示はしない。
-
-| 層 | 解放ステージ | ステージ数 | 全体比 |
-|---|---|---|---|
-| **free** | internal slot 1 / 3 / 6 | 3 / 7（将来 3 / 10） | 43%（将来 30%） |
-| **book** | internal slot 1 / 2 / 3 / 4 / 6 | 5 / 7（将来 5 / 10） | 71%（将来 50%） |
-| **sub** | 現行 slot 1-7 全部 + 将来 slot 8-10 | 7 / 7（将来 10 / 10） | 100% |
-
-free は導入ステージ、通常ルート、ギミック強めステージを混ぜる。 book は free に 2 ステージだけ足し、絵本購入特典として少し広がる程度に留める。 sub は現行全ステージと将来追加 stage 8-10 を持つ。
-
-実装メモ:
-- `common/tier.js` の Maze 判定は、`FREE_MAZE_MAX_STAGE` / `BOOK_MAZE_MAX_STAGE` の max stage 方式から `FREE_MAZE_STAGE_IDS` / `BOOK_MAZE_STAGE_IDS` の allowlist 方式へ寄せる。
-- `maze/index.html` のステージ選択 modal は、free / book では解放済み stage だけを表示する。
-- `loadStage(n)` 側の `isMazeStageUnlocked()` guard は残し、URL 直打ちや古い保存状態から未解放 stage に入れないようにする。
-- 将来 stage 8-10 を追加した時は、初期状態では sub 専用にする。
-
-#### C. oto（ポノのおとタッチ） — 5 次元の組み合わせ
-
-実態: リズムモード 7 曲（`kaeru` / `mary` / `twinkle` / `choucho` / `london` / `ode` / `saints`）、音色 6（`doremi` / `kira` / `marimba` / `animal` / `blip` / `taiko`）、スケール 2（`major` / `penta`）、モード 2（`free` / `rhythm`）、コードモード 2（`off` / `on`）。 `choucho` はネジマエストロ登場ステージ。
-
-| 層 | 音色 | スケール | モード | リズム曲 | コードモード |
-|---|---|---|---|---|---|
-| **free** | doremi, kira (2/6) | メジャー | じゆう + リズム最小 | かえるのうた のみ (1/7) | 単音のみ |
-| **book** | +marimba, animal (4/6) | +ペンタ | +リズム | かえるのうた + ネジマエストロ枠（`choucho` / ちょうちょう）(2/7) | +コード |
-| **sub** | +blip, taiko (6/6) | 両方 | 両方 | 全 7 曲 + 将来追加曲 | 両方 |
-
-差別化のキモ: free でも「かえるのうた」だけは触れるようにして、音タッチが単なる自由演奏だけに見えない状態にする。 book はネジマエストロ枠を 1 つ足すだけに留め、リズム曲の本編量は増やしすぎない。 アプリ (= sub) は全 7 曲、`blip` / `taiko`、将来追加曲を持つ。
-
-実装メモ:
-- `common/tier.js` の `FREE_OTO_RHYTHM_SONGS` は `['kaeru']`、`BOOK_OTO_RHYTHM_SONGS` は `['kaeru','choucho']` へ変更する。
-- free / book のリズム曲選択は、解放済み曲だけを短く表示する。未解放 5 曲を一覧で目立たせすぎない。
-- 将来曲追加時は、book には原則足さず、アプリ (= sub) 専用枠から出す。
-
-#### D. puzzle（ポノのなかよしパズル） — 全 20 ステージ
-
-旧方針の「free は Stage 1-3 / book は Stage 1-9」の連番ロックは廃止。 Stage 1 は 4 ピースで実質チュートリアルなので、free でも 16 ピースまで 1 つ入れて、低年齢層向けだけに見えない配分にする。
-
-| 層 | 解放ステージ ID | ピース数 | ポノ特別枠 |
-|---|---|---|---|
-| **free** | 1 / 4 / 7 / 13 | 4 / 6 / 9 / 16 ピース | なし |
-| **book** | free + 5 / 11 / 17 | 4 / 6 / 6 / 9 / 12 / 16 / 20 ピース | #5 のみ 1 枚 |
-| **sub** | 1-20 全部 | 4-20 ピース | #5 / #10 / #15 / #20 全部 |
-
-free / book の具体的な絵柄:
-
-| 層 | 実ステージ ID | タイトル | 絵柄 | ピース数 |
-|---|---:|---|---|---:|
-| free | 1 | あかい りんご | りんごと葉っぱ | 4 |
-| free | 4 | みずの なかの きんぎょ | 金魚と水草 | 6 |
-| free | 7 | おもちゃの がっき | おもちゃの楽器 | 9 |
-| free | 13 | あまい おやつ | おやつ・スイーツ | 16 |
-| book | 5 | おやすみ ポノ | 眠っているポノ | 6 |
-| book | 11 | あめあがりの にじ | 雨上がりの虹 | 12 |
-| book | 17 | もりの ピクニック | 森のピクニック | 20 |
-
-差別化のキモ: book は累計 7 ステージに抑えつつ、6 / 12 / 20 ピースを足して「少し広がる」感を作る。 ポノ特別枠は book には #5 だけ、#10 / #15 / #20 はアプリ (= sub) 専用。 アプリ (= sub) は残り 13 ステージ、20 ピース大物（#18 / #19 / #20）、全ポノ特別枠を持つ。
-
-実装メモ:
-- `common/tier.js` の Puzzle 判定は、`FREE_PUZZLE_MAX_STAGE` / `BOOK_PUZZLE_MAX_STAGE` の max stage 方式から `FREE_PUZZLE_STAGE_IDS` / `BOOK_PUZZLE_STAGE_IDS` の allowlist 方式へ寄せる。
-- `puzzle/main.js` の既存 `BOOK_PUZZLE_STAGE_SEQUENCE` は、この allowlist を参照する形に整理する。free / book では解放済みステージだけを tier 内連番表示にし、実ステージ ID の穴あきは子ども向け UI に出さない。
-- 相棒解放は現在 `unlockAfterStage` が実ステージ番号依存なので、allowlist 化時に「tier 内で何ステージ目をクリアしたか」ベースへ見直す。穴あき配分で book 相棒が解放されない事故を避けるため。
-- `isPuzzlePonoSpecialUnlocked('stage_05')` は book OK、`stage_10` / `stage_15` / `stage_20` は sub 専用を維持する。
-
-#### E. bento（ポノとつくろう いろどりべんとう） — 食材 30 / 箱 / NPC の 3 軸
-
-| 層 | 食材数 | お弁当箱（= 段数自動決定） | NPC |
-|---|---|---|---|
-| **free** | 9 食材（主菜 3 + 副菜 3 + フルーツ 3） | 1 種（box_rect_split = 1 段）のみ | なし |
-| **book** | 13 食材（free + 主菜 2 + 副菜 1 + フルーツ 1） | free + box_bear（くま箱 2 段） | りすちゃん 1 体 |
-| **sub** | **30 食材**（book + 主菜 7 + 副菜 5 + フルーツ 5） | 全種（book + box_square / box_round / box_bear_pink / box_cat_blue / box_cat） | 全 6 体 |
-
-差別化のキモ: book は「ポノのくま箱 2 段」を絵本連動の目玉にし、食材追加は +4、NPC はりすちゃん 1 体に抑える。 アプリ (= sub) と book の差は **17 食材** + 追加箱 5 種（ねこ箱 / 色違い / まる / しかく）+ NPC 5 体。 キャラ弁・行楽弁当・遠足弁当として作り込める幅はアプリ (= sub) に集中させる。 ※ ゼリー / プリンは「お弁当のおかず」感が薄いため今回の 30 食材リストから除外し、将来「デザートタブ」枠として温存。
-
----
-
-## 3. 設計原則:「入口は広く、本編量は控えめ、付録で差別化」
-
-絵本購入者（book）の体験品質を保つため、以下の方針で設計する（`common/tier.js:22-25` 参照）。
-
-- **入口**: book ユーザーは、ほぼ全ゲーム・全エリアに入れる（入口ではロックしない）。
-- **本編量**: book は本編コンテンツを増やしすぎない。 free / book ともに簡単・普通・難しいを少量ずつ混ぜ、年齢層の幅を保つ。 全量・難易度選択・継続追加は sub に集中させる。
-- **付録差**: book の価値は、限定シール、シール帳表紙、見た目特典、絵本連動アイテムなどの「持っていてうれしい」付録へ寄せる。 パスワード流出時に本編量の大きな価値が流出しないようにする。
-- **ロック表示**: 各 UI 要素 (音色ボタン / 食材パレット / 箱選択 / リズム曲 等) のロック状態は **`.tier-locked` クラスでグレーアウト (saturate 低下 + opacity 0.6) + 中央に鍵マーク🔒 を疑似要素で表示** する。 拡大縮小アニメは抑止 (静止画化) して「触れない感」を強調。 タップ自体は通し、 `PonoTier.showSubscribePromo()` の柔らかいモーダル「○○ が ふえているよ！ アプリ で あそべるよ」で誘導する（`common/tier.js:116-199`）。
-- **×印は使わない**: 「ロックされている」より「もっとある」を伝える設計を維持。
-
-### book 特典の優先順位（2026-07-01 確定）
-
-book は本編量でアプリ (= sub) に近づけすぎず、絵本を買ったことがうれしくなる付録で差を作る。 現時点の優先順位は以下。
-
-| 優先度 | 特典 | 方針 |
+| 層 | 解放ステージ（internal slot） | ステージ数 |
 |---|---|---|
-| 確定 | 限定シール帳表紙 | 「ポノのくまさんカバー」など、絵本購入者だけが使える表紙を入れる。 絵本・くま・森・ありがとうモチーフ。 |
-| 確定 | 絵本限定シール | 6-8 枚程度。 例: ポノ / くま箱 / りすちゃん / ありがとうの花 / 絵本 / きらきら葉っぱ。 本編量ではなくコレクション差にする。 |
-| 余裕があれば | Bento 限定デコ | ありがとうピック / ポノ旗 / リボン仕切りなど。 食材ではなく飾り扱いにして、満足感は出すが本編量は増やしすぎない。 |
-| 余裕があれば | えほんバッジ | プロフィールやシール帳に小さく付く購入者バッジ。 子どもには特別感、親には購入特典感が伝わる程度にする。 |
-| 不採用 | 印刷用ミニ台紙 | 今回は作らない。 物理 PDF 系はスコープを広げやすいため対象外。 |
+| **free = book** | Stage 1 / 4 / 5 | 3 / 7 |
+| **sub** | Stage 1-7 全部 | 7 / 7 |
 
-book 層に開放する具体的コンテンツ ID は `common/tier.js` に配列でハードコード:
-- `BOOK_AQUARIUM_CREATURE_IDS`（8 種、`tier.js:45-54`）
-- `BOOK_ROOM_ITEM_IDS`（10 種、`tier.js:59-70`）
+- Stage 1（導入）/ Stage 4（通常ルート）/ Stage 5（ギミック強め）で難易度を散らす。
+- **Stage 7（最終ボス）は free/book に含めない。** 最終ボスを free/book で露出させると物語の結末が先に見えてしまい、絵本の物語体験を破綻させるため除外。
+- Stage 8-10 の新規制作は **優先度を下げる**（§7 参照）。追加時は初期状態で sub 専用とする方針は維持。
 
-壁紙・床（`cat === 'wall' | 'floor'`）は「背景」扱いで book も全開放（`tier.js:83-84`）。
+### 3.2 puzzle（ポノのなかよしパズル）
+
+| 層 | 解放ステージ ID | ピース数 |
+|---|---|---|
+| **free = book** | Stage 1 / 6 / 13 | 4 / 9 / 16 ピース |
+| **sub** | Stage 1-20 全部 | 4-20 ピース |
+
+- 4 / 9 / 16 ピースで簡単・普通・難しいを散らす。ポノ特別枠（隠しイラスト）は free/book には付与しない。sub 専用のまま維持。
+
+### 3.3 quizland（フクロウはかせのなぞなぞ）
+
+| 層 | 解放範囲 | 問題数 |
+|---|---|---|
+| **free = book** | 8 カテゴリ × Lv1/Lv2/Lv3 各 1 問（trivia のみ Lv1 3 問） | **26 問** |
+| **sub** | 全カテゴリ全問（180 問）+ 難易度選択 | **180 問** |
+
+- free/book は各カテゴリから 3 段階の難易度を 1 問ずつ抜き出し、年齢バランスを散らす。trivia カテゴリのみ Lv1 を 3 問に増やして計 26 問。
+- free/book では難易度選択画面（やさしい/ふつう/むずかしい）は表示しない。`はじめる` から直接この 26 問プールへ入る。
+- sub のみ難易度選択 UI を表示し、全 180 問・全カテゴリへアクセスできる。
+
+### 3.4 bento（ポノとつくろう いろどりべんとう）
+
+| 層 | 食材数 | のり |
+|---|---|---|
+| **free = book** | 12 食材（主菜 5 + 副菜 4 + フルーツ 3） | 1 種 復活 |
+| **sub** | 全 30 食材 + 全お弁当箱 + 全 NPC | — |
+
+- のりは以前「無料剥奪」方針だったが、v3 では **1 種を free/book に復活**させる（親満足度優先。詳細は `docs/BENTO_CONTENT_PLAN.md` および §7 参照）。
+- お弁当箱・NPC はゲーム別に free/book で機能差を作らず、sub 専用の追加箱・追加 NPC のみで差別化する（具体構成は `docs/BENTO_CONTENT_PLAN.md` が正本）。
+
+### 3.5 oto（ポノのおとタッチ）
+
+| 層 | 音色 | スケール | モード | リズム曲 |
+|---|---|---|---|---|
+| **free = book** | doremi / kira / animal（3 種） | メジャーのみ | じゆう + リズム | かえるのうた のみ（1 曲） |
+| **sub** | 全音色 + 将来追加 | 全スケール | 全モード | 全曲 + 将来追加曲 |
+
+- free/book は同一の 3 音色・メジャースケール・自由演奏 + リズムモードを持つ。リズム曲は「かえるのうた」のみで free/book 共通。
+- 音タッチが単なる自由演奏だけに見えないよう、リズムモードは free/book にも残す。
 
 ---
 
-## 4. 無料ユーザーの動線
+## 4. book 付録（book だけの対価）
 
-- `play.html` で locked カード（writing / drawing / bowling / breakout / slide）をタップすると、`common/promo.js` の `showLockedPreview()` がプロモモーダルを表示（スクショ + キャッチコピー + アプリ (= sub) 誘導）。
-- ロック対象カード ID は `promo.js:22-28` の `LOCKED_CARD_IDS` に定義。
-- プレビュー画像・文言は `promo.js:33-70` の `GAME_PREVIEWS` に集約。
-- 「本をもっている人へ」ボタンの動線は **play-all.html への遷移ではなく `play.html` 内の `passwordUnlockModal` 起動** に変わった（§5 参照）。
+book の対価は本編コンテンツの拡張ではなく、以下の付録に全振りする。free には付与しない。sub は全て含む。
+
+### 4.1 特別シール 8 枚
+
+パスワード入力後の welcome 演出で確定贈呈（book 購入確認済みの証としてまとめて付与）。
+
+1. 「ありがとう ポノ」メッセージシール
+2. **動くシール: ポノが手を振るアニメ**（CSS animation。静止フレームでの意匠は Brand Kit 依頼書側で規定）
+3. 絵本シーン再現 A（ポノとお月さま）
+4. 絵本シーン再現 B（ポノと森の仲間たち）
+5. キャラクター集合（家族写真風）
+6. 絵本表紙ミニチュア（蔵書票的）
+7. 未公開設定画
+8. 「あいことば ありがとう」記念
+
+### 4.2 シール帳特別表紙（book_buyer_edition）
+
+- `Prototypes/StickerBookThreeJS/main.js` の `BOOK_VARIANTS` に専用エントリを追加。
+- `coverFront`: 絵本表紙の再構成 + 右下に「絵本を読んでくれたあなたへ」。
+- `coverInside`: 名前差し込み欄（`localStorage.pono_user_name` を Canvas で動的描画）。
+
+### 4.3 welcome 演出（1 回限定）
+
+- 制御フラグ: `localStorage.pono_book_welcome_shown_v1`
+- 流れ: 暗転 → ポノが手紙を持って歩く 2 秒アニメ → 手紙カード表示（TTS「ありがとう」ボイス、既存 Gemini Leda ナレーションパイプラインを使用。キャラ自身の肉声化はしない — `[[policy_character_voice]]`）→「ポノからのプレゼント」でシール 8 枚 reveal →「シールちょうの ひょうしも とくべつになったよ」で特別表紙お披露目。
+- skip ボタンを常設。skip しても特典 grant は確定する。
+
+### 4.4 月 1 おかえり演出
+
+- book / sub 共通。頻度は `localStorage` で制御。
+- ポノが手を振る 1 秒アニメ + 「絵本をかってくれて ありがとうね」。
+
+### 4.5 ポノからの手紙カード
+
+- シール帳 8 ページ目「絵本特典」から後から見返し可能。
+- `window.print()` による紙印刷に対応。
 
 ---
 
-## 5. book ユーザーの解錠フロー
+## 5. sub 維持（新規 content 追加なし）
 
-- 絵本奥付にシリアル状のパスワードが印字されている（想定）。
-- `play.html` の「本をもっている人へ」ボタンをタップすると、同一画面内の `passwordUnlockModal` が起動する（旧: `play-all.html#unlock` への遷移 → lockBtn UI、廃止）。
-- モーダル内で入力 → `PonoTier.verifyBookPassword(val)` で検証（`tier.js:102-112`）。
-- 成功すると `localStorage.pono_premium = '1'` をセット + 成功メッセージ「✨ えほん モード が ひらいたよ ✨」を表示。
-- 「あそびに もどる」ボタンで自動リロード → メニュー再描画で book ティアコンテンツが解放される。
+sub は v3 移行後も以下を維持し、**新規本編コンテンツの追加は行わない**（free/book の付録拡張とは別軸）。
+
+| 項目 | 内容 |
+|---|---|
+| 全 content | maze 1-10 / puzzle 1-20 / quizland 180 問 / bento 30 食材 / oto 全音色・全曲 |
+| sub 専用ゲーム | starparodier / undersea-cave / sea-album / writing-mori / zukan / cooking / wordmatch（計 7 本） |
+| sub 専用シール | 10-12 枚（既存の余剰選別 7-9 枚 + Brand Kit 新規 2-3 枚） |
+| sub 専用表紙 | 1-2 種 |
+| デイリーガチャ | 全 10 ページ（free/book は quizland 1 ページのみ） |
+| 「はじめからのおともだち」表示 | Founder / 創設メンバーの絵本トーン rename 表示 |
+
+---
+
+## 6. 合言葉流出耐性の構造的防御
+
+v3 の設計は、絵本奥付の合言葉が SNS 等で拡散されるリスクを前提に、以下の二重の構造的防御を持つ。
+
+1. **book で漏れるのは付録のみ。** free = book（機能差ゼロ）のため、合言葉が流出しても本編コンテンツ（ステージ・問題・食材・音色）は一切増えない。流出して得られるのは特別シール 8 枚・特別表紙・welcome 演出・月 1 おかえり演出・手紙カードという「見た目・コレクション上の付録」のみで、ゲームの遊べる範囲そのものは free と同じである。
+2. **sub の物量差が圧倒的。** sub は全 content（maze 全 10 / puzzle 全 20 / quizland 全 180 問 / bento 全 30 食材 / oto 全曲）+ sub 専用ゲーム 7 本 + sub 専用シール 10-12 枚 + デイリーガチャ全 10 ページを持つ。book の付録がどれだけ拡散されても、sub との体験量の差は埋まらないため、「合言葉さえあれば sub は要らない」という状況は構造的に発生しない。
+3. **APP_BUILD ゲート。** アプリ (= sub) 版ビルド（`APP_BUILD=1`）は合言葉入力を経由せず自動的に sub 判定される。合言葉は book 判定専用の入口であり、sub 判定とは独立した経路のため、合言葉の流出が sub 側のセキュリティに影響しない。
+
+---
+
+## 7. play.html 3 ゾーン UI
+
+`play.html` のメニューは以下の 3 ゾーンで構成する。**造語ネーミングは使わない**（例:「おつきさまのおへや」等は禁止）。
+
+| ゾーン名 | 内容 |
+|---|---|
+| **いま あそべる** | free + book 共通 5 ゲーム（maze / puzzle / quizland / bento / oto） |
+| **アプリで あそべる** | sub 専用 7 ゲーム（starparodier / undersea-cave / sea-album / writing-mori / zukan / cooking / wordmatch） |
+| **じゅんびちゅう** | 未制作（cooking / wordmatch が実装完了するまでの暫定表示。実装完了後は「アプリで あそべる」ゾーンへ昇格） |
+
+---
+
+## 8. 誘導モーダル
+
+### 8.1 book ユーザーが「アプリで あそべる」ゾーンをタップした時
+
+> 「ありがとう、 絵本を よんでくれて。
+> book で あそべる ゲームは、 アプリでも おなじ。
+> でも、 アプリには アプリだけの ゲームが 7つ、 もらえる シールも たくさん あるよ。」
+>
+> `[いまは いいや]` `[アプリを みてみる]`
+
+- 表示頻度: 24 時間に 1 回。× で dismiss した場合は 7 日間非表示。
+- 制御キー: `localStorage.pono_sub_promo_*`（既存 `promo.js` の頻度制御を踏襲）。
+
+### 8.2 free ユーザーが「アプリで あそべる」ゾーンをタップした時
+
+> 「このゲームは、 絵本を かってくれた人と アプリで あそんでくれる人 だけの ゲームだよ。
+> 絵本には、 ポノからの あいことばが あるよ。」
+>
+> `[とじる]` `[絵本を みてみる]`
+
+---
+
+## 9. book ユーザーの解錠フロー
+
+- 絵本奥付にシリアル状のパスワードが印字されている。
+- `play.html` の「本をもっている人へ」ボタンをタップすると、同一画面内の `passwordUnlockModal` が起動する。
+- モーダル内で入力 → `PonoTier.verifyBookPassword(val)` で検証。
+- 成功すると `localStorage.pono_premium = '1'` をセット → welcome 演出（§4.3）が起動 → 完了後にメニュー再描画で book 付録が反映される。
 - パスワード検証は大文字/小文字どちらでも通る。前後の空白もトリム。
 - 関連実装ファイル: `play.html`（`passwordUnlockModal`）、`common/tier.js`（`verifyBookPassword`）。
-- 背景フレーム素材: `assets/images/bento/cooking/ui/recipe_card_frame.png`（406x545、クリーム塗り + 茶枠 + 下部にオレンジリボン + 緑葉っぱの絵本カード風、bento kitchen のレシピカードから流用）。
 
 ### BOOK_PASSWORDS の管理
+
 - `common/tier.js` の `BOOK_PASSWORDS` 配列で集中管理。
-- **現状は `['arigato_pono2026']`**（v17XX で `['1234']` テスト用パスワードと管理用 `ADMIN_PASSWORDS=['abcd']` を統合し 1 本化）。実絵本印刷時はこの 1 本を奥付に印字する想定。
+- **現状は `['arigato_pono2026']`**（旧 `1234` テスト用パスワードと管理用 `abcd` を統合し 1 本化済み）。
 - 絵本を増刷・新シリーズを出すときは、この配列に追記する運用。
-- Closure に閉じるので `window` からは見えない（DevTools 経由で覗き見されにくいが、完全秘匿ではない "casual friction"）。
-- `verifyAdminPassword` / `ADMIN_PASSWORDS` は v17XX で削除済。 管理用マスター解錠は admin tools 本体側の Basic Auth + KV ルートに一本化。
+- Closure に閉じるので `window` からは見えない（DevTools 経由で覗き見されにくいが、完全秘匿ではない "casual friction"）。管理用マスター解錠は admin tools 本体側の Basic Auth + KV ルートに一本化済み。
 
 ---
 
-## 6. sub ユーザーの解錠フロー
+## 10. sub ユーザーの解錠フロー
 
 - 現時点ではストアフロント未実装。`localStorage.pono_sub_active = '1'` を直接セットすれば sub 相当になる（開発・テスト用）。
+- `APP_BUILD=1` 環境（Web アプリ版ビルド）では自動的に sub 扱いになる。
 - 将来: 決済フロー導入後、ここを正規のアプリ (= sub) 管理に差し替える。
-- TODO: アプリ (= sub) 解錠 UI の正式実装は Phase 3 課題（play.html 内に解錠モーダル新設、play-all.html からの脱却）。
+- TODO: アプリ (= sub) 解錠 UI の正式実装は将来課題（play.html 内に解錠モーダル新設）。
 
 ---
 
-## 7. 解放判定ヘルパー（一次ソース）
+## 11. 解放判定ヘルパー（一次ソース）
 
 各ゲーム側で直接 localStorage を読まず、必ず `PonoTier` 経由で判定する。
 
 ```js
-PonoTier.isAquariumCreatureUnlocked(id)      // 海の生き物が解放されているか
-PonoTier.isRoomItemUnlocked(id, cat)         // 家具・かざりが解放されているか
-PonoTier.isKatakanaUnlocked()                // カタカナ篇が解放されているか（= sub のみ）
+PonoTier.isMazeStageUnlocked(id)      // maze ステージが解放されているか
+PonoTier.isPuzzleStageUnlocked(id)    // puzzle ステージが解放されているか
+PonoTier.isQuizlandQuestionUnlocked(id) // quizland 問題が解放されているか
+PonoTier.isBentoFoodUnlocked(name)    // bento 食材が解放されているか
+PonoTier.isOtoRhythmSongUnlocked(id)  // oto リズム曲が解放されているか
 ```
+
+v3 実装では `common/tier.js` の各ゲーム判定を **集合（Set/allowlist）方式**に統一する。free と book は同一の allowlist を参照するため、実装上は「free 用配列」と「book 用配列」を分けず、共通の `FREE_BOOK_XXX_IDS` 定数を両者から参照する形にする（`isXxxUnlocked()` は `indexOf` / `Set.has` ベースで統一）。
 
 新しい「部分解放コンテンツ」を追加するときは、`tier.js` 側に判定関数を追加してから各ゲームで呼ぶこと。個別ゲーム側に `if (tier === 'book') { ... }` を散らさない。
 
 ---
 
-## 8. エリア再編（こだまの森）後の扱い（予告）
+## 12. 実装対象ファイル（Phase 1、参考）
 
-本ドキュメント作成時点では `play.html` の `lockedCards` 配列（`play.html:1338` 付近）でカード単位にロックしているが、将来のエリア再編（`C:\Users\surfe\.claude\plans\merry-gathering-hummingbird.md` 参照）では **エリア単位の tier 判定** に置き換える予定。
+v3 移行の実装スコープは以下（詳細は各ファイルの実装コミット履歴を参照）。
 
-想定 API:
-- `PonoTier.areaRequiresTier(areaKey)` → `'free' | 'book' | 'sub'`
-- カードではなく **エリア** が tier を持ち、エリア内のコンテンツは暗黙的にそれに従う
-
-この改修は「こだまの森」ブランドへの格上げと同時に実施する（MVP 期間中はやらない）。
+- `common/tier.js` — allowlist 方式への refactor（§11）
+- `assets/data/game-stickers.json` — `tier: book_exclusive / sub_exclusive` の schema 拡張、8 ページ目「絵本特典」新設
+- `js/game-stickers.js` — `grant()` API の tier ゲート分岐
+- `Prototypes/StickerBookThreeJS/index.html` / `main.js` — `book_buyer_edition` 表紙、名前差し込み Canvas
+- `play.html` — 3 ゾーン UI（§7）、welcome 演出（§4.3）、book/free 誘導モーダル（§8）、デイリーガチャの tier フィルタ
+- `oto/index.html` — `isOtoRhythmSongUnlocked` の二重ロック解消
+- `docs/BENTO_CONTENT_PLAN.md` — free 12 食材 + のり 1 種復活への修正
+- `docs/AGE_BALANCE_POLICY.md` — 年齢バランス選定根拠の新規文書
+- `sw.js` — `CACHE_VERSION` バンプ
+- `.claude-design-bundle/components/book_exclusive_stickers/brief.md` — 特別シール 8 枚の Brand Kit 依頼書
 
 ---
 
-## 9. 変更時のチェックリスト
+## 13. 禁止事項（再発防止）
+
+- ❌ book で本編コンテンツを拡張する提案（free = book 原則への逆行。前回 workflow 暴走の反省）
+- ❌ 造語ネーミング（「おつきさまのおへや」等、ゾーン名・演出名を含む）
+- ❌ 過剰景表法配慮（表現を過度に萎縮させる文言調整）
+- ❌ 実装エージェントが同一ファイルを並列 edit（worktree isolation なしで衝突するため）
+
+---
+
+## 14. 変更時のチェックリスト
 
 tier の仕様を変えるとき、以下を一括で更新する:
 
 - [ ] `common/tier.js`（一次ソース）
 - [ ] 本ドキュメント `docs/TIER_POLICY.md`
-- [ ] 必要に応じて `common/promo.js` の `LOCKED_CARD_IDS` / `GAME_PREVIEWS`
-- [ ] `play.html` の `lockedCards` 配列（エリア再編後はエリア判定へ）
+- [ ] 必要に応じて `common/promo.js` の文言・頻度制御
+- [ ] `play.html` の 3 ゾーン UI 構成
 - [ ] 絵本パスワード追加時は `BOOK_PASSWORDS` に追記
 - [ ] `sw.js` の `CACHE_VERSION` を上げる（PWA キャッシュ反映）
 
 ---
 
-## 10. 参照
+## 15. 参照
 
 - 実装: `common/tier.js`、`common/promo.js`
-- 使用箇所: `play.html`、`writing/index.html`、`stacking/index.html`、`slide/index.html`、`room/index.html`、`breakout/index.html`、`common/acorns.js`、`common/achievements.js`
-- プロモ用スクショ置き場: `docs/SCREENSHOT_GUIDE.md`
-- 将来のエリア再編計画: `C:\Users\surfe\.claude\plans\merry-gathering-hummingbird.md`
+- 使用箇所: `play.html`、`maze/index.html`、`puzzle/main.js`、`quizland/index.html`、`bento/index.html`、`oto/index.html`、`Prototypes/StickerBookThreeJS/`
+- bento 詳細配分: `docs/BENTO_CONTENT_PLAN.md`
+- 年齢バランス選定根拠: `docs/AGE_BALANCE_POLICY.md`
+- 難易度ラベル表示方針: `[[design_age_rating_display]]`（数字非表示、「やさしい/ふつう/むずかしい」統一）
 
 ---
 
-## 11. Phase 1 / 2 / 3 ロードマップ + 絵本 ⇔ アプリ差別化方針
+## 履歴
 
-### 運用方針確定（2026-06-28）
+### v3（2026-07-06、本改訂）
 
-3-tier (free / book / sub) の運用が正式方針。 `PONO_TIER_GAME_LOCKS_ENABLED = true` で各ゲームに実ロック発動中（= 下記 Phase 2 が現行運用）。 過去にあった「Web MVP は全機能無料公開」プランは廃案。 free は限定体験、 book は Amazon 絵本購入者向け奥付パスワード解錠、 sub はアプリ購入者向け全機能解錠（book 範囲 + α）の 3 階層運用を継続する。
+- **free = book（機能差ゼロ）へ全面転換。** 旧 v2（2026-06-28〜07-01 の allowlist 再配分方針、book が free よりステージ/問題/食材数で少し勝る設計）を廃止。
+- book の対価を「本編量の上乗せ」から「付録（特別シール 8 枚 / 特別表紙 / welcome 演出 / 月1おかえり / 手紙カード）」へ全振り。
+- bento の free 食材数を 9 → **12**（のり 1 種復活）に変更。旧 `docs/BENTO_CONTENT_PLAN.md`・`[[feature_bento_tier_content]]` の「のり無料剥奪」方針と部分的に衝突するため、`docs/BENTO_CONTENT_PLAN.md` 側で「v3 が新しい正」として明記・整合済み。
+- quizland の free/book 問題数を 25/40 問の二段階配分から **26 問の単一プール**（free = book）へ統合。
+- maze Stage 8-10 の新規制作優先度を低下（`docs/AGE_BALANCE_POLICY.md` 参照）。
+- play.html のメニュー構成を「上段 5 本 + 下段 4 本」から **3 ゾーン UI**（いま あそべる / アプリで あそべる / じゅんびちゅう）へ再編。
+- 「合言葉流出耐性」を本編量の少なさではなく **付録限定 + sub 物量差**による構造的防御として明文化（§6 新設）。
 
-### 全体ゴール
+### v2（2026-06-28 〜 2026-07-01）
 
-絵本『ありがとうって、うれしいね 〜くまのこ ポノ の ちいさな ものがたり〜』は**買い切り**で売上が止まるが、アプリ (= sub) は**継続契約モデル（月額）なので継続契約してもらう動機**が必要。 → **book と アプリ (= sub) の差を強く設計し**、book ユーザーに「アプリ (= sub) を続けないと損する」感覚を持たせる構造にする。
+- 3-tier 運用の正式開始。`PONO_TIER_GAME_LOCKS_ENABLED = true` で各ゲームに実ロック導入。
+- quizland / maze / oto / puzzle / bento の各ゲームで「free は抜粋、book は free + α」の allowlist 再配分方針を導入（v3 で廃止）。
+- bento 30 食材ティア配分リスト（v4）を策定、free 9 / book 13 / sub 30 の配分を実施（v3 で free/book を 12 に統合）。
 
-### Phase 1（完了） — メニュー骨組と PonoTier API スケルトン
+### v1（初期）
 
-- `play.html` の GAMES 配列を上段 5 本（本命）+ 下段 4 本（じゅんびちゅう）に並び替え。 下段 4 本は `comingSoon: true, debugPlayable: true` で「彩度フィルタなしでタップ可能」。
-- `common/tier.js` に **セーフフラグ `window.PONO_TIER_GAME_LOCKS_ENABLED`** + 新規定数 16 種 + 判定関数 14 個 + export 拡張を追加。
-- `common/promo.js` の文言を「えほん」「アプリ」表記に統一。
-- 本ドキュメント `docs/TIER_POLICY.md` に §2 マトリクス（共通 5 本）+ §11 ロードマップ + §12 30 食材リストを追記。
-
-### Phase 2（現行運用） — 3-tier 実ロック稼働中
-
-`PONO_TIER_GAME_LOCKS_ENABLED = true` で運用中。 各ゲーム本体に判定が挿入済:
-
-- `quizland/index.html` の `buildPlaylist` に `PonoTier.isQuizlandQuestionUnlocked` フィルタ。 2026-06-30 再配分方針では、free / book は難易度選択をスキップして mixed playlist（おすすめ 5 もん）へ直行、sub のみ難易度選択を表示する。
-- `maze/index.html` のステージ選択 UI に `isMazeStageUnlocked` フック。 2026-07-01 再配分方針では max stage 方式ではなく allowlist 方式にし、free/book は解放済みステージだけを tier 内連番で表示する。
-- `oto/index.html` の音色 / スケール / モード / リズム曲メニュー / コードモードに判定。 2026-07-01 再配分方針では、free=かえるのうた、book=かえるのうた+ネジマエストロ枠、sub=全 7 曲 + 将来追加曲。
-- `puzzle/main.js` の `BASE_STAGES` フィルタ。 2026-07-01 再配分方針では、free=1/4/7/13、book=free+5/11/17、sub=全 20 の allowlist 方式にし、free/book は tier 内連番で表示する。
-- `bento/index.html` の `FREE_COOKED_OKAZU` を **30 食材**に拡張、`getFreeFoodCatalog` フィルタ、`NPC_REQUESTERS` ガード、お弁当箱選択 UI に `isBentoBoxUnlocked` 接続。 2026-07-01 再配分方針では、free=9 食材 / book=13 食材 + くま箱 2 段 + りすちゃん / sub=30 食材 + 全箱 + 全 NPC。
-- 下段 4 本も実コンテンツ準備完了したものから `comingSoon: false` に格上げ。
-
-並行別タスク:
-- maze Stage 8-10 の新規ステージ作成（各 background art + nodes / edges 定義）。 追加時は初期状態で sub 専用。
-- bento `FREE_COOKED_OKAZU` 追加 12 エントリの size / rotation 調整。
-- `play.html` 内パスワード解除モーダル（`passwordUnlockModal`）実装完了、`play-all.html` 経由の解錠フローを非推奨化（将来削除候補）。
-
-### Phase 3（将来）
-
-- `play.html` 内にアプリ (= sub) 解錠モーダル新設（play-all.html から脱却）。
-- アプリ (= sub) ストアフロント + 月額決済 → `pono_sub_active` の正規セット。
-- zukan 36 匹追加 / カタカナ篇追加 / 下段 4 本の本配信。
-- oto リズム曲追加（book は累計 2 曲まで。 3 曲目以降 / 新曲は原則アプリ (= sub) 専用）。
-- bento ステップモード再活性化時の 49 食材ティア対応。
-
-### 絵本 ⇔ アプリ差別化サマリ（= アプリ (= sub) 継続動機）
-
-| ゲーム | book にあり アプリ (= sub) にしかない要素 | 体験差 |
-|---|---|---|
-| **quizland** | free/book は混合 25/40 問に留め、アプリ (= sub) は全 **180 問** + 難易度選択 | free/book は年齢幅のある「おすすめ 5 もん」、全量と選択性はアプリ (= sub) に集中 |
-| **maze** | free/book は抜粋 3/5 ステージ、アプリ (= sub) は現行全 7 ステージ + 将来 Stage 8 / 9 / 10 | free/book は難易度を混ぜた抜粋、全ステージと追加ステージはアプリ (= sub) に集中 |
-| **oto** | free/book は 1/2 曲に留め、アプリ (= sub) は全 7 曲 + 将来追加曲 + 音色 blip / taiko | book はネジマエストロ枠で少し広がる程度、曲の全量と追加曲はアプリ (= sub) に集中 |
-| **puzzle** | free/book は抜粋 4/7 ステージ、アプリ (= sub) は残り 13 ステージ + ポノ特別枠 #10 / #15 / #20 | book は 20 ピースを 1 つだけ体験、全ステージ・大物・ポノ絵柄収集はアプリ (= sub) に集中 |
-| **bento** | book は 13 食材 + くま箱 2 段 + りすちゃんまで、アプリ (= sub) は残り 17 食材 + 追加箱 5 種 + NPC 5 体 | book は絵本連動のくま箱が特典、作り込み幅とキャラ弁感はアプリ (= sub) に集中 |
-
-**継続動機の構造**: アプリ (= sub) は「毎月ふえていくよ」「あたらしい○○」をプロモコピーに採用（既存 `promo.js` + `showSubscribePromo` の `まいつき ふえていくよ` タグを活用）。 = **book ユーザーは「アプリ (= sub) を続けないと損する」感覚でアプリ (= sub) へ転換する**設計になっている。
-
----
-
-## 12. bento 30 食材ティア配分リスト
-
-**実態の正しい把握:** bento には既に **49 食材**が用意されている（`RICE` 3 + `OKAZU_MEAT` 19 + `OKAZU_VEG` 15 + `FRUITS` 12）。 ただしフリーレイアウトモード（`FREE_COOKED_OKAZU`、`bento/index.html` L2697-L2716）で使えるのは 18 食材のみ。
-
-ユーザー要望「30 食材まで増やそう、サラダとか付け足したい」 = **フリーレイアウトを 18 → 30 に拡張**を意味する。 既存 49 食材から 12 個ピックアップして `FREE_COOKED_OKAZU` に追加すれば完結 = **新規画像生成は不要**。
-
-「しろごはん」は元々お弁当箱形状で自動敷きされるベース（`riceBases` `bento/index.html` L3246-L3250）。 選択食材ではないので今回のティア配分には含めない（= 全ティア共通）。
-
-### 30 食材リスト v4
-
-既存 49 食材からピックする方式。 ★ = 既存だがフリーレイアウト未対応（Phase 2 で `bento/index.html` L2697 に追加実装）。
-
-| カテゴリ | 食材 | 配分 |
-|---|---|---|
-| 主菜 | タコウインナー / ハンバーグ / たまごやき | free (3) |
-| 主菜 | からあげ / エビフライ | book (2) |
-| 主菜 | コロッケ / やきざけ / **ミートボール★** / **ナポリタン★** / **ぎょうざ★** / **はるまき★** / **ベーコンまき★** | sub (7) |
-| 副菜 | キャベツ / プチトマト / **ブロッコリー★** | free (3) |
-| 副菜 | にんじんいんげん | book (1) |
-| 副菜 | **コーンほうれんそう★** / きんぴらごぼう / **えだまめ★** / **ポテトサラダ★** / **ハムサラダ★** | sub (5) |
-| フルーツ | いちご / **バナナ★** / みかん | free (3) |
-| フルーツ | りんご | book (1) |
-| フルーツ | メロン / パイナップル / もも / **ぶどう★** / キウイ | sub (5) |
-
-合計: free 9 / book 累計 13（+4 = 主菜 2 + 副菜 1 + フルーツ 1）/ sub 累計 30（+17 = 主菜 7 + 副菜 5 + フルーツ 5）
-
-> 注: ゼリー / プリンは「お弁当のおかず」感が薄いため今回の 30 食材リストから除外。 将来「デザートタブ」枠として別途復活させる余地を残す（現時点では対象外）。
-
-### NPC 配分
-
-| 層 | NPC | 体数 |
-|---|---|---|
-| **free** | なし | 0 |
-| **book** | りすちゃん | 1 体 |
-| **sub** | りすちゃん / わんちゃん / しかさん / あひる / パンダ / ねこ | 全 6 体 |
-
-book の NPC はりすちゃん 1 体だけに絞る。 `shika` など要求食材が sub 寄りになりやすい NPC は sub 側へ残す。
-NPC `neko` の wantedFoods `'ごはん'` は `riceBases` 経由なのでティア無関係（常時 OK）。
-
-### お弁当箱配分
-
-| 層 | お弁当箱（= 段数自動決定） | 種類数 |
-|---|---|---|
-| **free** | box_rect_split（1 段）のみ | 1 種 |
-| **book** | box_rect_split + box_bear（くま箱 2 段、既存素材をそのまま使用） | 2 種 |
-| **sub** | book + box_square / box_round / box_bear_pink / box_cat_blue / box_cat | 全 7 種 |
-
-※ book のくま箱は 1 段版を新規作成せず、既存の 2 段キャラ箱をそのまま使う。 その分、book の食材数と NPC 数を控えめにする。 ねこ箱、ピンクくま箱、まる箱、しかく箱はアプリ (= sub) 側に残す。
-
-### 実装メモ（Phase 2）
-
-- `OKAZU_MEAT` / `OKAZU_VEG` / `FRUITS` 配列に既に 48 食材分の画像メタが揃っているので、`FREE_COOKED_OKAZU` に 12 エントリ追加するだけで実現（画像パス再利用、`size` / `rotation` は調理済み版に合わせて再調整）。
-- 段数は `getBoxTierCount(box)`（`bento/index.html` L3819）で取得、お弁当箱選択 UI で `PonoTier.isBentoBoxUnlocked(boxId)` ガード。
-- `common/tier.js` は `FREE_BENTO_FOOD_NAMES` 9 件、 `BOOK_BENTO_FOOD_NAMES` 13 件、 `BOOK_BENTO_BOX_IDS=['box_rect_split','box_bear']`、 `BOOK_BENTO_NPCS=['risu']` へ変更する。
-- キャラ箱は既存素材を使い、`box_bear` を book、`box_bear_pink` / `box_cat_blue` / `box_cat` を sub へ残す。
-- ステップモード（`RICE` / `OKAZU_MEAT` 等 49 食材）のティア対応は Phase 3 で別途検討（現状ステップモードは未使用）。
-
-### アレルギー配慮
-
-新規追加分にピーナッツ / カニ / そばなし。 卵（たまごやき / ナポリタン / プリン）/ 小麦（はるまき / ぎょうざ衣）/ 乳（チーズ / プリン / ハム）/ 大豆（きんぴら）は既存範囲内。
+- free / book / sub の 3 階層を定義。book は maze/puzzle/quizland/bento/oto の連番ロック（Stage 1-N まで）方式で free より広い範囲を解放する設計だった。

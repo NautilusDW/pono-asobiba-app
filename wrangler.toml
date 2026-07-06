@@ -110,9 +110,9 @@ id = "0c58144b7fe9479e9781ddb1d9b44dc9"
 #   2) wrangler secret put PASSCODE_HMAC_SECRET --env staging-app
 #   (任意) wrangler secret put RL_IP_SALT --env staging-app
 #
-# [[env.staging-app.kv_namespaces]]
-# binding = "SAVEDATA_KV"
-# id = "REPLACE_WITH_STAGING_APP_SAVEDATA_KV_ID"
+[[env.staging-app.kv_namespaces]]
+binding = "SAVEDATA_KV"
+id = "2140aaf48bde4db0a773d6418c9a43b6"
 #
 # [[env.staging-app.unsafe.bindings]]
 # name = "SAVEDATA_RL_IP"

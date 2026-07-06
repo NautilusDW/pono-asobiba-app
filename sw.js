@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1989: play.html のプロフィール内アバター完成品プリセットを GPT Image 2 生成の全身40体へ拡張。人間20体 + 人間以外20体の新WebPを接続し、完成品を選ぶ方式は維持。play.html PAGE_CACHE_VERSION と同期。
 // v1988: play.html のプロフィール内アバター作成を完成品24体選択へ戻し、体型/パーツ/色の自由編集を子ども側から閉じる。v1983-v1987 の体型別パーツセット追加分を未使用化し、play.html PAGE_CACHE_VERSION と同期。
 // v1982: play.html のプロフィール内アバター作成を、体型別パーツセットが揃うまで完成品24体選択へ戻す。破綻する自由合成を子どもに見せず、GPT Image 2 由来の完成品WebPをホーム/プロフィール/選択に使用。play.html PAGE_CACHE_VERSION と同期。
 // v1981: play.html の全身アバターで、動物種選択時に旧スタイルの `background: transparent` が髪レイヤーへ残る問題を修正。GPT Image 2 パーツマスクの髪色を `--av-hair` で必ず表示。play.html PAGE_CACHE_VERSION と同期。
@@ -614,7 +615,7 @@
 // v1968: batch:954 — シールミュージアム (StickerExhibitionCarousel) の表示サイズを不透明面積ベースで正規化。旧ロジック (AR バケット固定 3 段階) では余白の多い PNG が過小表示・タイトクロップの PNG が過大表示になる問題があり (spread 2.45x→1.34x に是正、リス過大表示を修正)、STICKER_METRICS (scripts/generate_sticker_metrics.py で135枚分事前計算) の opaque bbox 面積から width%/offset% を導出する方式に置換。クロスレビュー APPROVE_WITH_NITS、stickerDisplayMetrics() に前提コメント (--sticker-aspect clamp [0.36, 2.1] 範囲外は要補正) を追記。play.html PAGE_CACHE_VERSION と同期。
 // v1967: batch:953 — シールミュージアム (StickerExhibitionCarousel) の STICKER_DESC を全135件に拡張 (既存 batta 1件 + 新規134件、6ライター執筆 → クロスレビュー3本 APPROVE_WITH_FIXES → 修正反映済み)。えほんメダル (book_bonus_ehon_medal_super) は実画像が金色メダルではなくどんぐり風チャームだったため本文の「きんいろの」を「どんぐりの」に調整。play.html PAGE_CACHE_VERSION と同期。
 // v1966: batch:952 — シール帳 (StickerBookThreeJS) の図鑑モードを COLLECTION_MODE_ENABLED=false で凍結 (album=collection 遷移とトグルボタンを hidden 化、free モードのみ運用)。ミュージアム展示 (StickerExhibitionCarousel) に STICKER_DESC 説明文マップを追加し、詳細モーダルの #detailDesc にシールごとの一言紹介 (batta 見本含む) を表示。クロスレビュー 2 本 APPROVE 済。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 1988;
+const CACHE_VERSION = 1989;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -892,31 +893,47 @@ const CRITICAL_ASSETS_IMAGES = [
   '/assets/images/avatars/parts/avatar_part_cheeks_pair_20260706.png',
   '/assets/images/avatars/parts/avatar_part_mark_ribbon_side_20260706.png',
   '/assets/images/avatars/parts/avatar_part_mark_sparkle_tiny_20260706.png',
-  // v1982: 破綻する自由合成を閉じ、プロフィールはGPT Image 2 由来の完成品24体WebPを表示する。
-  '/assets/images/avatars/avatar_pono_kko_20260705.webp',
-  '/assets/images/avatars/avatar_leaf_kko_20260705.webp',
-  '/assets/images/avatars/avatar_sky_kko_20260705.webp',
-  '/assets/images/avatars/avatar_berry_kko_20260705.webp',
-  '/assets/images/avatars/avatar_fox_20260705.webp',
-  '/assets/images/avatars/avatar_rabbit_20260705.webp',
-  '/assets/images/avatars/avatar_bear_20260705.webp',
-  '/assets/images/avatars/avatar_cat_20260705.webp',
-  '/assets/images/avatars/avatar_squirrel_20260705.webp',
-  '/assets/images/avatars/avatar_owl_20260705.webp',
-  '/assets/images/avatars/avatar_tanuki_20260705.webp',
-  '/assets/images/avatars/avatar_polar_20260705.webp',
-  '/assets/images/avatars/avatar_robot_blue_20260705.webp',
-  '/assets/images/avatars/avatar_robot_yellow_20260705.webp',
-  '/assets/images/avatars/avatar_star_mon_20260705.webp',
-  '/assets/images/avatars/avatar_leaf_mon_20260705.webp',
-  '/assets/images/avatars/avatar_moko_mon_20260705.webp',
-  '/assets/images/avatars/avatar_puka_mon_20260705.webp',
-  '/assets/images/avatars/avatar_mushroom_20260705.webp',
-  '/assets/images/avatars/avatar_acorn_20260705.webp',
-  '/assets/images/avatars/avatar_water_20260705.webp',
-  '/assets/images/avatars/avatar_snow_20260705.webp',
-  '/assets/images/avatars/avatar_lantern_20260705.webp',
-  '/assets/images/avatars/avatar_moon_20260705.webp',
+  // v1989: GPT Image 2 生成の全身完成品40体WebP。プロフィールは完成品を選ぶ方式のまま運用する。
+  '/assets/images/avatars/avatar_pono_kko_20260706.webp',
+  '/assets/images/avatars/avatar_leaf_kko_20260706.webp',
+  '/assets/images/avatars/avatar_sky_kko_20260706.webp',
+  '/assets/images/avatars/avatar_berry_kko_20260706.webp',
+  '/assets/images/avatars/avatar_acorn_kko_20260706.webp',
+  '/assets/images/avatars/avatar_umi_kko_20260706.webp',
+  '/assets/images/avatars/avatar_yuki_kko_20260706.webp',
+  '/assets/images/avatars/avatar_hoshi_kko_20260706.webp',
+  '/assets/images/avatars/avatar_hana_kko_20260706.webp',
+  '/assets/images/avatars/avatar_niji_kko_20260706.webp',
+  '/assets/images/avatars/avatar_kinoko_kko_20260706.webp',
+  '/assets/images/avatars/avatar_lantern_kko_20260706.webp',
+  '/assets/images/avatars/avatar_tsuki_kko_20260706.webp',
+  '/assets/images/avatars/avatar_mori_kko_20260706.webp',
+  '/assets/images/avatars/avatar_pudding_kko_20260706.webp',
+  '/assets/images/avatars/avatar_oto_kko_20260706.webp',
+  '/assets/images/avatars/avatar_hon_kko_20260706.webp',
+  '/assets/images/avatars/avatar_puzzle_kko_20260706.webp',
+  '/assets/images/avatars/avatar_garden_kko_20260706.webp',
+  '/assets/images/avatars/avatar_cocoa_kko_20260706.webp',
+  '/assets/images/avatars/avatar_fox_20260706.webp',
+  '/assets/images/avatars/avatar_rabbit_20260706.webp',
+  '/assets/images/avatars/avatar_bear_20260706.webp',
+  '/assets/images/avatars/avatar_cat_20260706.webp',
+  '/assets/images/avatars/avatar_squirrel_20260706.webp',
+  '/assets/images/avatars/avatar_owl_20260706.webp',
+  '/assets/images/avatars/avatar_tanuki_20260706.webp',
+  '/assets/images/avatars/avatar_polar_20260706.webp',
+  '/assets/images/avatars/avatar_robot_blue_20260706.webp',
+  '/assets/images/avatars/avatar_robot_yellow_20260706.webp',
+  '/assets/images/avatars/avatar_star_mon_20260706.webp',
+  '/assets/images/avatars/avatar_leaf_mon_20260706.webp',
+  '/assets/images/avatars/avatar_moko_mon_20260706.webp',
+  '/assets/images/avatars/avatar_water_20260706.webp',
+  '/assets/images/avatars/avatar_snow_20260706.webp',
+  '/assets/images/avatars/avatar_mushroom_20260706.webp',
+  '/assets/images/avatars/avatar_acorn_20260706.webp',
+  '/assets/images/avatars/avatar_lantern_20260706.webp',
+  '/assets/images/avatars/avatar_moon_20260706.webp',
+  '/assets/images/avatars/avatar_puka_mon_20260706.webp',
   // v1949: peek 層の bg 8 種 (menu カード裏の絵本タイトル背景)。 cold start で
   // is-overlay-active が付いた瞬間に on-demand decode されると 100-500ms 透明/低解像
   // になり iPhone のゆっくりドラッグ中に flicker 源となるため precache 化。
