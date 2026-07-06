@@ -1037,11 +1037,11 @@ function buildWorld(keepCover){
   for(let k=0;k<2;k++){
    const d=document.createElement("div");d.className="decor";
    const imageDecor=!!(st.assets&&st.assets.decor);
-   const wv=imageDecor?(st.id==="jungle"?58+((i+k)%3)*6:68+((i+k)%3)*6):(8+((i*7+k*5)%8));
+   const wv=imageDecor?(st.id==="jungle"?68+((i+k)%3)*7:80+((i+k)%3)*7):(8+((i*7+k*5)%8));
    const aspect=st.id==="jungle"?3.4:3.78;
    d.style.width=wv+"vw";
    d.style.height=(imageDecor?wv/aspect:wv*(st.id==="town"?1.25:1.6))+"vw";
-   d.style.left=(tunX(o,i)-(imageDecor?122:70)+k*(imageDecor?76:38)+((i*13)%14))+"vw";
+   d.style.left=(tunX(o,i)-(imageDecor?142:70)+k*(imageDecor?89:38)+((i*13)%14))+"vw";
    d.style.backgroundImage=st.decor(P,i*2+k);
    if(imageDecor){
     d.classList.add("image-decor",st.id+"-decor");
