@@ -65,3 +65,12 @@ tmp_capture_*.json
 _visual_capture*.mjs
 _capture_*.mjs
 _capture_tmp/
+
+# Capacitor native shell (Phase 1 scaffold) — generated / local-only artifacts.
+# Source (native/package.json, native/capacitor.config.json, native/scripts/**)
+# stays tracked; the staged www build and Android project build state do not.
+native/www/
+native/node_modules/
+native/android/.gradle/
+native/android/**/build/
+native/android/local.properties

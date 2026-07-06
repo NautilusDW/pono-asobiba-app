@@ -243,6 +243,9 @@
   }
 
   function start() {
+    // Capacitor native shell (native/www) has no sw.js -- skip registration entirely.
+    // See native/scripts/stage-www.mjs (window.__NATIVE_BUILD__ injection).
+    if (window.__NATIVE_BUILD__) return;
     navigator.serviceWorker.register('/sw.js')
       .then(function (reg) {
         try { reg.update(); } catch (e) {}

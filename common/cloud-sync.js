@@ -31,7 +31,11 @@
 (function () {
   'use strict';
 
-  var API_BASE = '/api/savedata';
+  // Capacitor native shell has no same-origin Worker to hit '/api/savedata' against,
+  // so native/scripts/stage-www.mjs injects window.PONO_API_BASE with the absolute
+  // production Worker URL. Web build: PONO_API_BASE is undefined -> '' -> unchanged
+  // relative path (original behavior preserved).
+  var API_BASE = (window.PONO_API_BASE || '') + '/api/savedata';
   var TIMEOUT_MS = 8000; // fetch timeout 8 秒
 
   // 名前 (個人情報) を保持しうるキー。 SAVE では送らず、 LOAD では復元しない (対称)。
