@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1995: play.html のプロフィール/初回登録アバター表示を生成済み全身画像だけに固定。
+// 旧レイヤー合成のロボアンテナ/モンスター角参照とパーツDOM作成ルートを無効化し、
+// 選択画面やプロフィールにSVG風の角パーツが重ならないようにした。play.html PAGE_CACHE_VERSION と同期。
 // v1994: play.html の tier v3 HIGH 7 件を修正 (Track B)。 デバッグリセットボタンを
 // isManageDebugAllowed() でゲート (未許可なら完全 hidden)、 月1おかえりトーストが
 // splash 背後で消費されるバグを splash-dismissed イベント起点に修正、 book throttle 中でも
@@ -634,7 +637,7 @@
 // アプリで あそべる / じゅんびちゅう) + book/free 誘導モーダル + book welcome 演出
 // (6ステップ, 生涯1回) + 月1 おかえりトースト + daily gacha tier ゲート
 // (free/book は quizland 1ページのみ抽選) を追加。 play.html PAGE_CACHE_VERSION 同期。
-const CACHE_VERSION = 1994;
+const CACHE_VERSION = 1995;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -862,8 +865,6 @@ const CRITICAL_ASSETS_IMAGES = [
   '/assets/images/avatars/parts/avatar_part_hair_long_20260705.png',
   '/assets/images/avatars/parts/avatar_part_hair_spike_20260705.png',
   '/assets/images/avatars/parts/avatar_part_ears_animal_20260705.png',
-  '/assets/images/avatars/parts/avatar_part_antenna_robot_20260705.png',
-  '/assets/images/avatars/parts/avatar_part_horns_monster_20260705.png',
   '/assets/images/avatars/parts/avatar_part_outfit_tee_20260705.png',
   '/assets/images/avatars/parts/avatar_part_outfit_dress_20260705.png',
   '/assets/images/avatars/parts/avatar_part_outfit_overall_20260705.png',

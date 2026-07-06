@@ -7031,10 +7031,17 @@
     }
     .pono-mini-avatar[data-avatar-image="1"] > [class^="pono-mini-avatar__"],
     .pono-mini-avatar[data-avatar-image="1"] > [class*=" pono-mini-avatar__"],
+    .pono-mini-avatar[data-avatar-image="1"] > [class^="pono-mini-avatar__"]::before,
+    .pono-mini-avatar[data-avatar-image="1"] > [class^="pono-mini-avatar__"]::after,
+    .pono-mini-avatar[data-avatar-image="1"] > [class*=" pono-mini-avatar__"]::before,
+    .pono-mini-avatar[data-avatar-image="1"] > [class*=" pono-mini-avatar__"]::after,
     .pono-mini-avatar[data-avatar-image="1"]::before,
     .pono-mini-avatar[data-avatar-image="1"]::after {
       display: none !important;
       content: none !important;
+      -webkit-mask-image: none !important;
+      mask-image: none !important;
+      background-image: none !important;
     }
     .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__body,
     .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__face,
@@ -8002,23 +8009,14 @@
         -webkit-mask-image: url("assets/images/avatars/parts/avatar_part_ears_bear_20260706.png");
         mask-image: url("assets/images/avatars/parts/avatar_part_ears_bear_20260706.png");
       }
-      .pono-mini-avatar[data-avatar-mode="full"][data-kind="robot"] .pono-mini-avatar__ears {
-        left: 36%;
-        top: 0%;
-        width: 28%;
-        height: 25%;
-        background: var(--av-accent);
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_part_antenna_robot_20260705.png");
-        mask-image: url("assets/images/avatars/parts/avatar_part_antenna_robot_20260705.png");
-      }
+      .pono-mini-avatar[data-avatar-mode="full"][data-kind="robot"] .pono-mini-avatar__ears,
       .pono-mini-avatar[data-avatar-mode="full"][data-kind="monster"] .pono-mini-avatar__ears {
-        left: 22%;
-        top: 3%;
-        width: 56%;
-        height: 31%;
-        background: var(--av-accent);
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_part_horns_monster_20260705.png");
-        mask-image: url("assets/images/avatars/parts/avatar_part_horns_monster_20260705.png");
+        display: none !important;
+        width: 0;
+        height: 0;
+        background: transparent;
+        -webkit-mask-image: none;
+        mask-image: none;
       }
       .pono-mini-avatar[data-avatar-mode="full"] .pono-mini-avatar__arm-left {
         z-index: 3;
@@ -10216,7 +10214,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1994;
+    const PAGE_CACHE_VERSION = 1995;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10225,7 +10223,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1994';
+    window.PONO_SW_VERSION = 'v1995';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -14780,7 +14778,6 @@
         { id: 'puka_mon', name: 'もりドラ', kind: 'monster', bg: '#dff7ec', skin: '#75b86a', hair: '#2f4a33', shirt: '#8bd17c', accent: '#ffd84d', hairStyle: 'round', markShape: 'leaf' }
       ];
       const AVATAR_DEFAULT_ID = 'pono_kko';
-      const AVATAR_PART_DOM = ['tail', 'leg-left', 'leg-right', 'shoe-left', 'shoe-right', 'arm-left', 'arm-right', 'body', 'face', 'eyes', 'mouth', 'hair', 'ears', 'mark'];
       const AVATAR_PART_OPTIONS = {
         bodyType: [
           { id: 'balanced', label: 'ふつう' },
@@ -15089,29 +15086,12 @@
           node.remove();
         });
       }
-      function ensureAvatarPieces(el) {
-        if (!el) return;
-        AVATAR_PART_DOM.forEach((part) => {
-          if (el.querySelector('.pono-mini-avatar__' + part)) return;
-          const piece = document.createElement('span');
-          piece.className = 'pono-mini-avatar__' + part;
-          const body = el.querySelector('.pono-mini-avatar__body');
-          if (body && ['tail', 'leg-left', 'leg-right', 'shoe-left', 'shoe-right', 'arm-left', 'arm-right'].includes(part)) {
-            el.insertBefore(piece, body);
-          } else {
-            el.appendChild(piece);
-          }
-        });
-      }
       function applyAvatarToElement(el, avatarOrProfile) {
         if (!el) return;
         const isProfile = !!(avatarOrProfile && avatarOrProfile.avatar);
         const avatar = normalizeAvatar(isProfile ? avatarOrProfile.avatar : avatarOrProfile, isProfile ? avatarOrProfile : {});
-        if (avatar.image) {
-          clearAvatarPieces(el);
-        } else {
-          ensureAvatarPieces(el);
-        }
+        const image = avatar.image || avatarPresetImage(avatar.preset || AVATAR_DEFAULT_ID);
+        clearAvatarPieces(el);
         el.dataset.avatarMode = 'full';
         el.dataset.variant = 'custom';
         el.dataset.bodyType = avatar.bodyType || 'balanced';
@@ -15124,13 +15104,8 @@
         el.dataset.shoesStyle = avatar.shoesStyle;
         el.dataset.tailStyle = avatar.tailStyle;
         el.dataset.markShape = avatar.markShape;
-        if (avatar.image) {
-          el.dataset.avatarImage = '1';
-          el.style.setProperty('--av-img', 'url("' + avatar.image + '")');
-        } else {
-          delete el.dataset.avatarImage;
-          el.style.removeProperty('--av-img');
-        }
+        el.dataset.avatarImage = '1';
+        el.style.setProperty('--av-img', 'url("' + image + '")');
         el.style.setProperty('--av-bg', avatar.bg);
         el.style.setProperty('--av-skin', avatar.skin);
         el.style.setProperty('--av-hair', avatar.hair);
