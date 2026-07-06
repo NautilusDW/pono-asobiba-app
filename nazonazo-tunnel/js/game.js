@@ -132,11 +132,21 @@ const ASSETS={
   decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp"
  },
  sea:{
-  sky:"../assets/images/nazonazo-tunnel/sea_deep_sky_back_20260706.webp",
-  horizon:"../assets/images/nazonazo-tunnel/sea_deep_mid_layer_20260706.webp",
-  mid:"../assets/images/nazonazo-tunnel/sea_deep_mid_layer_20260706.webp",
-  ground:"../assets/images/nazonazo-tunnel/sea_deep_ground_strip_20260706.webp",
-  fg:"../assets/images/nazonazo-tunnel/sea_deep_foreground_layer_20260706.webp"
+  sky:"../assets/images/nazonazo-tunnel/sea_parallax_sky_back_20260706.webp",
+  horizon:"../assets/images/nazonazo-tunnel/sea_parallax_horizon_loop_20260706.webp",
+  mid:"../assets/images/nazonazo-tunnel/sea_parallax_mid_loop_20260706.webp",
+  ground:"../assets/images/nazonazo-tunnel/sea_parallax_ground_loop_20260706.webp",
+  fg:"../assets/images/nazonazo-tunnel/sea_parallax_foreground_alpha_loop_20260706.webp",
+  fish:[
+   "../assets/images/nazonazo-tunnel/sea_fish_01_20260706.webp",
+   "../assets/images/nazonazo-tunnel/sea_fish_02_20260706.webp",
+   "../assets/images/nazonazo-tunnel/sea_fish_03_20260706.webp",
+   "../assets/images/nazonazo-tunnel/sea_fish_04_20260706.webp",
+   "../assets/images/nazonazo-tunnel/sea_fish_05_20260706.webp",
+   "../assets/images/nazonazo-tunnel/sea_fish_06_20260706.webp",
+   "../assets/images/nazonazo-tunnel/sea_fish_07_20260706.webp",
+   "../assets/images/nazonazo-tunnel/sea_fish_08_20260706.webp"
+  ]
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -272,6 +282,10 @@ function trainCarHeightVh(){
  const h=Math.max(TRAIN_CAR_HEIGHT_MIN_PX,Math.min(TRAIN_CAR_HEIGHT_MAX_PX,vw*TRAIN_CAR_HEIGHT_VW/100));
  return h/vh*100;
 }
+function trainBottomVh(){
+ const st=STAGES[stg];
+ return st&&(st.id==="town"||st.id==="jungle")?8.45:9.1;
+}
 const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
 const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;
 const tunX=(o,i)=>o+INTRO+i*GAP;
@@ -352,13 +366,14 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer");
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp");
 const portalMaskLayer=$("portalMaskLayer"),portalEditOverlay=$("portalEditOverlay");
 const portalOccIn=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-in");
 const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-out");
+let seaFishSprites=[];
 
 /* ================= audio & speech ================= */
 let ac=null;
@@ -1005,6 +1020,7 @@ function applySkin(){
  groundT.style.backgroundImage=st.assets?bgUrl(st.assets.ground):st.ground(P);
  fgT.style.backgroundImage=st.assets?bgUrl(st.assets.fg):st.fg(P);
  buildAmbient(P);
+ buildSeaFish();
 }
 function buildWorld(keepCover){
  world.innerHTML="";
@@ -1127,6 +1143,52 @@ function buildNumberFx(sc){
  }
  sc.appendChild(layer);
 }
+function buildSeaFish(){
+ seaFishSprites=[];
+ if(!seaFishLayer)return;
+ seaFishLayer.innerHTML="";
+ const st=STAGES[stg];
+ const fish=(st&&st.id==="sea"&&st.assets&&st.assets.fish)||[];
+ if(!fish.length)return;
+ const count=14;
+ for(let i=0;i<count;i++){
+  const el=document.createElement("div");
+  const img=fish[i%fish.length];
+  const size=3.8+(i%5)*.55+(i%2)*.25;
+  const y=17+((i*13)%42);
+  const baseX=(i*23)%142;
+  const dir=i%3===0?1:-1;
+  el.className="sea-fish";
+  el.style.backgroundImage=bgUrl(img);
+  el.style.setProperty("--fish-w",size.toFixed(2)+"vw");
+  el.style.setProperty("--fish-ratio",(1.22+(i%4)*.05).toFixed(2));
+  el.style.setProperty("--fish-opacity",(0.58+(i%4)*.09).toFixed(2));
+  seaFishLayer.appendChild(el);
+  seaFishSprites.push({
+   el,
+   baseX,
+   y,
+   dir,
+   depth:.12+(i%5)*.045,
+   speed:1.8+(i%6)*.42,
+   bob:.45+(i%4)*.17,
+   bobRate:.65+(i%5)*.12,
+   phase:i*.83
+  });
+ }
+}
+function renderSeaFish(now){
+ if(!seaFishSprites.length)return;
+ const t=((now||_nowMs())/1000);
+ seaFishSprites.forEach(f=>{
+  const swim=t*f.speed*f.dir;
+  let x=f.baseX-worldX*f.depth+swim;
+  x=((x+20)%150+150)%150-20;
+  const y=f.y+Math.sin(t*f.bobRate+f.phase)*f.bob;
+  const flip=f.dir>0?-1:1;
+  f.el.style.transform="translate3d("+x.toFixed(2)+"vw,"+y.toFixed(2)+"vh,0) scaleX("+flip+")";
+ });
+}
 
 /* ================= passengers ================= */
 function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?39.0:8.8;}
@@ -1185,7 +1247,7 @@ function passengerSeatTargetAt(index){
   const seatCenters=[.755,.585,.415,.245];
   const carLeft=vehicleLeftVw()-carGap();
   const x=carLeft+trainCarWidthVw()*seatCenters[index%4];
-  const y=9.1+trainCarHeightVh()*.37;
+  const y=trainBottomVh()+trainCarHeightVh()*.37;
   return {left:x+"vw",bottom:y+"vh"};
  }
  return {left:(vehicleLeftVw()-carGap())+"vw",bottom:"14vh"};
@@ -1469,12 +1531,13 @@ function useHelp(){
 }
 
 /* ================= render ================= */
-function render(){
+function render(now){
  const o=origin(stg);
  world.style.transform="translateX("+(-worldX)+"vw)";
  if(document.body.classList.contains("st-number")){
   document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
  }
+ renderSeaFish(now);
  updateScreenExitShift();
  if(tunnelInteriorMode){
   skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
@@ -1582,7 +1645,7 @@ function gloop(t){
  }
  tickMagicPuffs(t);
  tickTrainSe(t);
- render();
+ render(t);
  requestAnimationFrame(gloop);
 }
 

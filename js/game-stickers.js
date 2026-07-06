@@ -145,8 +145,37 @@
     return Boolean(page && page.bookOnly && !_isBookBenefitUnlocked());
   }
 
+  // tier v3: 各シールエントリの "tier" フィールドによる個別ゲート。
+  // "book_exclusive" | "sub_exclusive" | 未設定/"free" (= 全 tier 開放)。
+  // ページ単位の bookOnly/appOnly ゲート (_isPageLocked) とは独立に、同一ページ内で
+  // tier が混在するケース (例: book-bonus ページに将来 sub 限定シールが混じる等) に備える。
+  function _currentTier() {
+    try {
+      if (window.PonoTier && typeof window.PonoTier.getTier === 'function') {
+        return window.PonoTier.getTier();
+      }
+    } catch (e) {}
+    try {
+      if (Boolean(window.__APP_BUILD__)) return 'sub';
+      if (localStorage.getItem('pono_premium') === '1') return 'book';
+    } catch (e2) {}
+    return 'free';
+  }
+
+  function _isStickerTierUnlocked(tier) {
+    if (!tier || tier === 'free') return true;
+    var current = _currentTier();
+    if (tier === 'book_exclusive') return current === 'book' || current === 'sub';
+    if (tier === 'sub_exclusive') return current === 'sub';
+    // 未知の tier 値 (schema typo 等) は fail-open。 誤って正規コンテンツを
+    // ブロックしてしまう事故の方が、 未知タグを開放してしまう事故より重い。
+    return true;
+  }
+
   function _findSticker(page, owned, options) {
-    var stickers = page.stickers || [];
+    var stickers = (page.stickers || []).filter(function (s) {
+      return _isStickerTierUnlocked(s && s.tier);
+    });
     if (options.stickerId) {
       for (var i = 0; i < stickers.length; i++) {
         if (stickers[i].id === options.stickerId) return stickers[i];
@@ -583,6 +612,21 @@
       if (!page) return null;
       if (_isPageLocked(page)) return null;
 
+      // tier v3: 明示的な stickerId 指定 (admin/debug 経由等) が tier ロック中の場合は、
+      // 別シールへの黙示フォールバックをせず、そのまま skip + warn する (誤って別シールを
+      // 渡してしまうと呼び出し元の意図と食い違う事故になるため)。
+      if (options.stickerId) {
+        var requestedSticker = null;
+        var allPageStickers = page.stickers || [];
+        for (var ri = 0; ri < allPageStickers.length; ri++) {
+          if (allPageStickers[ri].id === options.stickerId) { requestedSticker = allPageStickers[ri]; break; }
+        }
+        if (requestedSticker && !_isStickerTierUnlocked(requestedSticker.tier)) {
+          try { console.warn('[game-stickers] grant skipped (tier locked):', requestedSticker.id, requestedSticker.tier); } catch (e) {}
+          return null;
+        }
+      }
+
       var state = _state();
       var pageState = _pageState(state, gameId);
       var sticker = _findSticker(page, pageState.owned, options);
@@ -632,6 +676,10 @@
       var added = [];
       stickers.forEach(function (sticker) {
         if (!sticker || !sticker.id) return;
+        if (!_isStickerTierUnlocked(sticker.tier)) {
+          try { console.warn('[game-stickers] grantAllOnPage skipped (tier locked):', sticker.id, sticker.tier); } catch (e) {}
+          return;
+        }
         if (options.event && !_eventMatches(sticker, options.event)) return;
         var current = pageState.owned[sticker.id];
         if (current && current.count > 0 && options.increment !== true) return;
@@ -676,6 +724,39 @@
     return grantAllOnPage(BOOK_BONUS_GAME_ID, options);
   }
 
+  // tier v3: welcome 演出で「book 付録シールをまとめて grant」する専用エントリポイント。
+  // 実体は grantBookBonus と同じ (book-bonus ページの全シールに対する grantAllOnPage) だが、
+  // play.html 側の呼び出し意図を明確にするため別名で公開する。
+  function grantBookExclusiveStickers(options) {
+    return grantBookBonus(options);
+  }
+
+  // tier v3: 特定シール id の tier ("book_exclusive" | "sub_exclusive" | "free") を
+  // カタログ全ページから検索して返す。 見つからない場合は null。
+  // 使い方 (Track C / play.html 側):
+  //   PonoGameStickers.getStickerTier('book_bonus_wave_greeting').then(function (tier) { ... });
+  function getStickerTier(id) {
+    if (!id) return Promise.resolve(null);
+    return loadCatalog().then(function (catalog) {
+      var pages = (catalog && catalog.pages) || {};
+      for (var gameId in pages) {
+        if (!Object.prototype.hasOwnProperty.call(pages, gameId)) continue;
+        var stickers = pages[gameId].stickers || [];
+        for (var i = 0; i < stickers.length; i++) {
+          if (stickers[i] && stickers[i].id === id) return stickers[i].tier || 'free';
+        }
+      }
+      return null;
+    }).catch(function () { return null; });
+  }
+
+  // tier v3: 現在の tier で指定 tier タグが解放されているか同期判定する
+  // (デイリーガチャの抽選母数フィルタ等、 catalog を既に取得済みの呼び出し元向け)。
+  // 使い方: PonoGameStickers.isStickerTierUnlocked(sticker.tier)
+  function isStickerTierUnlocked(tier) {
+    return _isStickerTierUnlocked(tier);
+  }
+
   function getState() {
     return _state();
   }
@@ -710,7 +791,10 @@
     resolveAsset: resolveAsset,
     grant: grant,
     grantBookBonus: grantBookBonus,
+    grantBookExclusiveStickers: grantBookExclusiveStickers,
     grantAllOnPage: grantAllOnPage,
+    getStickerTier: getStickerTier,
+    isStickerTierUnlocked: isStickerTierUnlocked,
     getState: getState,
     getOwned: getOwned,
     consumePending: consumePending,

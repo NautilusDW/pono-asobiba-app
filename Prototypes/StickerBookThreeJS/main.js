@@ -607,6 +607,41 @@ const BOOK_VARIANTS = {
     spine: "sb3d_forest_spine_canvas_20260623.webp",
     thicknessKey: "boy",
   },
+  // tier v3 (feature_tier_v3): 絵本購入者だけが使える特別表紙。
+  // 画像は仮 path (book_bonus/forest の既存 asset を再利用)。 Brand Kit 完了後、
+  // 「絵本表紙の再構成 + 右下『絵本を読んでくれたあなたへ』」 版に差し替える。
+  // coverInside は sb3d_forest_cover_inside_canvas_20260623.webp をそのまま使うが、
+  // 実表示は coverInsideTextureForBook() が pono_user_name を焼き込んだ CanvasTexture に
+  // 差し替える (below `nameInscription` 座標指定、 画像の金枠ブランクスペースに合わせて調整)。
+  book_buyer_edition: {
+    insideLeft: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
+    insideRight: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
+    freePage: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
+    coverPrint: "sb3d_book_bonus_cover_front_friends_armfix_20260701.webp",
+    coverHardwareMode: "separate",
+    coverFront: "sb3d_book_bonus_cover_front_friends_armfix_20260701.webp",
+    coverBack: "sb3d_forest_cover_back_canvas_20260623.webp",
+    coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
+    spine: "sb3d_forest_spine_canvas_20260623.webp",
+    thicknessKey: "boy",
+    tier: "book_exclusive",
+    name: "絵本を読んでくれたあなたへ",
+    description: "絵本をよんでくれた あなただけの とくべつな シールちょう",
+    unlockedBy: "book_password",
+    unlockMessage: "あいことばを 入れると 使えるよ",
+    // coverInside 画像 (1472x1536) の金枠ブランクスペースに合わせた名前差し込み座標 (比率指定)。
+    nameInscription: {
+      xRatio: 0.5,
+      labelTopYRatio: 0.42,
+      nameYRatio: 0.5,
+      labelBottomYRatio: 0.58,
+      nameFontSizeRatio: 0.052,
+      labelFontSizeRatio: 0.028,
+      color: "#5b4327",
+      labelColor: "#8a7248",
+      placeholderName: "きみ",
+    },
+  },
   sakura: {
     insideLeft: "sb3d_sakura_free_blank_page_simple_jp_20260629.webp",
     insideRight: "sb3d_sakura_free_blank_page_simple_jp_20260629.webp",
@@ -1544,6 +1579,15 @@ STICKER_BOOK_THEMES.book_bonus = {
   },
 };
 
+// tier v3: book_buyer_edition は「特別感」を金トーンで表現 (book_bonus からの分岐)。
+STICKER_BOOK_THEMES.book_buyer_edition = {
+  ...STICKER_BOOK_THEMES.book_bonus,
+  accent: "#c9a45a",
+  sub: "#8a7248",
+  line: "#e4c87a",
+  tab: "#fff3d6",
+};
+
 for (const preset of ENTERTAINMENT_BOOK_TEMPLATE_PRESETS) {
   STICKER_BOOK_THEMES[preset.key] = createEntertainmentStickerTheme(preset);
 }
@@ -1742,7 +1786,10 @@ const tuningEnabled = params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 const requestedBook = params.get("book");
-let activeBook = BOOK_VARIANTS[requestedBook] ? requestedBook : "boy";
+// tier v3: URL 直叩き (?book=book_buyer_edition) での tier ゲート回避を防ぐ。
+// 未読込 (window.PonoTier 不在) 時は isBookVariantLocked が "free" フォールバックで
+// 安全側 (ロック扱い) に倒れるため、 common/tier.js の読み込み順が崩れても開放事故にならない。
+let activeBook = BOOK_VARIANTS[requestedBook] && !isBookVariantLocked(requestedBook) ? requestedBook : "boy";
 // 図鑑モード (collection) は MVP では非表示。データ/ロジックは削除せず凍結保管し、将来の「森の図鑑」ゲームで再利用する。復活時は true に戻すだけでよい。
 const COLLECTION_MODE_ENABLED = false;
 let activeAlbumMode = params.get("album") === "collection" && COLLECTION_MODE_ENABLED ? "collection" : "free";
@@ -2551,7 +2598,7 @@ const coverTurnDepth = createCoverDepthLayer();
 const coverTurnBack = new THREE.Mesh(
   coverTurnBackGeometry,
   new THREE.MeshStandardMaterial({
-    map: getTexture(BOOK_VARIANTS[activeBook].coverInside),
+    map: coverInsideTextureForBook(activeBook),
     transparent: false,
     side: THREE.BackSide,
     depthWrite: true,
@@ -2745,6 +2792,46 @@ resetButton.addEventListener("click", () => {
   syncUrl();
 });
 
+// ---- tier v3: BOOK_VARIANTS 表紙ゲート ----
+// 現状 BOOK_VARIANTS で tier フィールドを持つのは book_buyer_edition ("book_exclusive") のみ。
+// tier 未指定の 25 種は従来通り全 tier 開放 (= 明示的に tier: null を書くのと等価)。
+// window.PonoTier (common/tier.js) が未読込の場合は "free" 相当にフォールバックし、
+// 誤って book 限定表紙を無条件開放しない (tier.js 自身の getTier() フォールバック方針に準拠)。
+function currentPonoTier() {
+  try {
+    if (window.PonoTier && typeof window.PonoTier.getTier === "function") {
+      return window.PonoTier.getTier();
+    }
+  } catch (error) {
+    console.warn("PonoTier.getTier failed", error);
+  }
+  return "free";
+}
+
+function isBookVariantLocked(bookName) {
+  const bundle = BOOK_VARIANTS[bookName];
+  if (!bundle || !bundle.tier) {
+    return false;
+  }
+  if (bundle.tier === "book_exclusive") {
+    // book 購入者 + sub 契約者は開放 (sub は「全付録」を含む方針: feature_tier_v3 参照)。
+    const tier = currentPonoTier();
+    return tier !== "book" && tier !== "sub";
+  }
+  return false;
+}
+
+function showBookVariantLockPromo(bundle) {
+  if (!window.PonoTier || typeof window.PonoTier.showTierLockPromo !== "function") {
+    return;
+  }
+  window.PonoTier.showTierLockPromo({
+    freeTag: "えほん げんてい",
+    freeTitle: bundle?.unlockMessage || "あいことばで つかえるよ",
+    freeBody: bundle?.description || "えほんを よんでくれた ひとだけの とくべつな シールちょうだよ",
+  });
+}
+
 function hydrateBookThemeCards() {
   for (const button of [...themeButtons, ...bookButtons]) {
     const bookName = button.dataset.bookTheme || button.dataset.book;
@@ -2755,7 +2842,25 @@ function hydrateBookThemeCards() {
     const label = bookThemeLabels.get(bookName) || button.textContent.trim() || bookName;
     button.style.setProperty("--book-thumb", assetCssUrl(bookThemeThumbnailFile(bookName)));
     button.style.setProperty("--book-accent", theme.accent || "#49aba2");
-    button.setAttribute("aria-label", `${label}を えらぶ`);
+    const locked = isBookVariantLocked(bookName);
+    button.classList.toggle("is-tier-locked", locked);
+    button.setAttribute("aria-disabled", locked ? "true" : "false");
+    if (locked) {
+      const bundle = BOOK_VARIANTS[bookName];
+      button.title = bundle?.unlockMessage || "あいことばを 入れると つかえるよ";
+      button.setAttribute("aria-label", `${label} (${button.title})`);
+      if (!button.querySelector(".book-theme-lock-badge")) {
+        const badge = document.createElement("span");
+        badge.className = "book-theme-lock-badge";
+        badge.setAttribute("aria-hidden", "true");
+        badge.textContent = "🔒";
+        button.appendChild(badge);
+      }
+    } else {
+      button.removeAttribute("title");
+      button.setAttribute("aria-label", `${label}を えらぶ`);
+      button.querySelector(".book-theme-lock-badge")?.remove();
+    }
   }
 }
 
@@ -2779,6 +2884,11 @@ function updateBookThemePreview() {
 
 async function setActiveBook(nextBook) {
   const normalizedBook = BOOK_VARIANTS[nextBook] ? nextBook : "boy";
+  if (isBookVariantLocked(normalizedBook)) {
+    showBookVariantLockPromo(BOOK_VARIANTS[normalizedBook]);
+    updateControlState();
+    return;
+  }
   if (normalizedBook === activeBook) {
     updateControlState();
     return;
@@ -11673,6 +11783,91 @@ function assignTextureObject(mesh, texture) {
   mesh.material.needsUpdate = true;
 }
 
+// ---- tier v3: book_buyer_edition の名前差し込み表紙裏 (coverInside) ----
+// bundle.nameInscription を持つ variant だけ、 localStorage.pono_user_name を
+// ベース画像に焼き込んだ CanvasTexture を返す (それ以外は従来通り getTexture(file) をそのまま返す)。
+// (bookName, name) の組み合わせでキャッシュし、 名前が変わらない限り再描画しない。
+const coverInsideNameTextureCache = new Map();
+
+function readStoredUserName() {
+  try {
+    return (localStorage.getItem("pono_user_name") || "").trim();
+  } catch (error) {
+    return "";
+  }
+}
+
+function coverInsideTextureForBook(bookName = activeBook) {
+  const bundle = BOOK_VARIANTS[bookName] || BOOK_VARIANTS.boy;
+  if (!bundle.nameInscription) {
+    return getTexture(bundle.coverInside);
+  }
+  const name = readStoredUserName();
+  const cached = coverInsideNameTextureCache.get(bookName);
+  if (cached && cached.name === name) {
+    return cached.texture;
+  }
+  const texture = buildCoverInsideNameTexture(bundle, name);
+  if (!texture) {
+    return getTexture(bundle.coverInside);
+  }
+  coverInsideNameTextureCache.set(bookName, { name, texture });
+  return texture;
+}
+
+function buildCoverInsideNameTexture(bundle, name) {
+  const baseTexture = getTexture(bundle.coverInside);
+  const baseImage = baseTexture?.image;
+  if (!baseImage || !baseImage.width) {
+    // base 画像がまだ未ロード (通常は起こらない: ensureBookVariantTextures が先に await 済)。
+    // フェイルセーフとして未加工の base texture を返す。
+    return null;
+  }
+  const region = bundle.nameInscription;
+  const w = baseImage.width;
+  const h = baseImage.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(baseImage, 0, 0, w, h);
+
+  const displayName = name || region.placeholderName || "";
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = region.labelColor || "#8a7248";
+  ctx.font = `700 ${Math.round(h * (region.labelFontSizeRatio || 0.028))}px "Zen Maru Gothic", sans-serif`;
+  ctx.fillText("これは", w * region.xRatio, h * region.labelTopYRatio);
+
+  if (displayName) {
+    ctx.fillStyle = region.color || "#5b4327";
+    // 長い名前でも枠内に収まるよう、 幅超過時はフォントサイズを縮める。
+    let fontSize = h * (region.nameFontSizeRatio || 0.052);
+    const nameText = `${displayName} さんの`;
+    const maxWidth = w * 0.74;
+    ctx.font = `900 ${Math.round(fontSize)}px "Zen Maru Gothic", sans-serif`;
+    while (ctx.measureText(nameText).width > maxWidth && fontSize > h * 0.024) {
+      fontSize -= 1;
+      ctx.font = `900 ${Math.round(fontSize)}px "Zen Maru Gothic", sans-serif`;
+    }
+    ctx.fillText(nameText, w * region.xRatio, h * region.nameYRatio);
+  }
+
+  ctx.fillStyle = region.labelColor || "#8a7248";
+  ctx.font = `700 ${Math.round(h * (region.labelFontSizeRatio || 0.028))}px "Zen Maru Gothic", sans-serif`;
+  ctx.fillText("シールちょうです", w * region.xRatio, h * region.labelBottomYRatio);
+  ctx.restore();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 function getPageTemplateTexture(side, pageNumber = pageNumberForTemplateSide(side)) {
   const safePage = THREE.MathUtils.clamp(Math.round(pageNumber) || 1, 1, editorPageCount());
   const key = `${activeBook}:${activeAlbumMode}:${side}:${safePage}`;
@@ -15883,7 +16078,7 @@ function applyVariantState() {
   if (activeSurface === "inside") {
     assignTextureObject(backPage, getPageTemplateTexture("left"));
   } else {
-    assignTexture(backPage, bundle.coverInside);
+    assignTextureObject(backPage, coverInsideTextureForBook(activeBook));
   }
   assignTextureObject(closedCover, coverTextureForBook(activeBook));
   assignCoverTurnTextures();
@@ -16255,12 +16450,11 @@ function getCollectionFoldTexture(bookName) {
 }
 
 function assignCoverTurnTextures() {
-  const bundle = BOOK_VARIANTS[activeBook];
   assignTextureObject(coverTurnFront, coverTextureForBook(activeBook));
   if (activeAlbumMode !== "collection") {
     assignTextureObject(coverTurnBack, getPageTemplateTexture("left", activeBookPage));
   } else {
-    assignTexture(coverTurnBack, bundle.coverInside);
+    assignTextureObject(coverTurnBack, coverInsideTextureForBook(activeBook));
   }
 }
 

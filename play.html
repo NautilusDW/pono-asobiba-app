@@ -9315,10 +9315,8 @@
         thumb: 'assets/ui/thumb_quiz-sound.webp'
       }
     ];
-    // tier:'sub' のカードは アプリ版 (APP_BUILD=1) でのみ表示。
-    // 本版 (= window.__APP_BUILD__ undefined) では『じゅんびちゅう』風 UI ごと完全に
-    // hide することで、ユーザーに「本版にいずれ来るゲーム」と誤解させないようにする。
     // PonoTier.isAppBuild() を優先使用し、未ロード時は window.__APP_BUILD__ 直読みで fallback。
+    // v3 以降も daily gacha 等の他ロジックから参照されるため isAppBuild 判定自体は維持。
     const __isAppBuild = (() => {
       try {
         if (window.PonoTier && typeof window.PonoTier.isAppBuild === 'function') {
@@ -9327,16 +9325,70 @@
       } catch (_) {}
       return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
     })();
-    const TITLE_MENU_IDS = ['quizland', 'nazonazo-tunnel', 'mojicrane', 'maze', 'oto', 'bento', 'puzzle', 'writing-mori', 'cooking'];
-    const MENU_GAMES = TITLE_MENU_IDS
+
+    // ===== tier v3: 3ゾーン UI (feature_tier_v3 §7) =====
+    // zone は GAMES の既存フィールド (tier / comingSoon) から機械的に導出する。
+    // 手動の個別分類はしない — GAMES 側で tier/comingSoon を変えれば自動で
+    // ゾーンが追従する。
+    //   playable    : tier:'free' (free=book, 機能差ゼロ) かつ comingSoon なし
+    //   app_only    : tier:'sub' かつ comingSoon なし
+    //   coming_soon : comingSoon:true (tier に関わらず最後尾ゾーン)
+    function computeGameZone(game) {
+      if (game.comingSoon) return 'coming_soon';
+      if (game.tier === 'sub') return 'app_only';
+      return 'playable';
+    }
+    GAMES.forEach((game) => { game.zone = computeGameZone(game); });
+
+    const ZONE_ORDER = ['playable', 'app_only', 'coming_soon'];
+    const ZONE_LABELS = {
+      playable: 'いま あそべる',
+      app_only: 'アプリで あそべる',
+      coming_soon: 'じゅんびちゅう'
+    };
+    const ZONE_SUBLABELS = {
+      playable: 'えほんを かってくれた ひとも みんな あそべるよ',
+      app_only: 'アプリだけの とくべつな あそびだよ',
+      coming_soon: 'いま つくっているよ。 もうすこし まっててね'
+    };
+
+    // v3: 「アプリで あそべる」 ゾーンを LP 版 (非アプリビルド) でもマーケティング露出
+    // させるため、 旧 TITLE_MENU_IDS から漏れていた sub 専用ゲーム
+    // (starparodier / undersea-cave / sea-album) をカタログに追加する。
+    // zukan / writing-mori / cooking は GAMES 側で comingSoon:true 済のため
+    // computeGameZone() が自動的に 「じゅんびちゅう」 ゾーンへ振り分ける。
+    const TITLE_MENU_IDS = [
+      'quizland', 'maze', 'oto', 'bento', 'puzzle',                                  // playable
+      'nazonazo-tunnel', 'mojicrane', 'starparodier', 'undersea-cave', 'sea-album',   // app_only
+      'writing-mori', 'zukan', 'cooking'                                             // coming_soon
+    ];
+
+    const __rawMenuGames = TITLE_MENU_IDS
       .map((id) => GAMES.find((game) => game.id === id))
-      .filter(Boolean)
-      .filter((game) => {
-        // coming-soon entries は tier に関わらず常に表示 (マーケティング露出)
-        if (game.comingSoon) return true;
-        if (game.tier === 'sub' && !__isAppBuild) return false;
-        return true;
+      .filter(Boolean);
+
+    // v3: 旧 「tier:'sub' は !__isAppBuild で完全非表示」 フィルタは撤去。
+    // 「アプリで あそべる」 ゾーンは LP 版でもカードとして見せ、 タップ時に
+    // book/free 別コピーの誘導モーダルを出す (feature_tier_v3 §5, startGame() 内)。
+    // ゾーンの先頭には非インタラクティブな見出し疑似カード (isZoneHeader) を
+    // 挿入し、 既存の無限ループカルーセル (LOOP_COPIES 等) にそのまま乗せる。
+    function buildMenuGamesWithZoneHeaders(games) {
+      const out = [];
+      ZONE_ORDER.forEach((zone) => {
+        const members = games.filter((g) => g.zone === zone);
+        if (!members.length) return;
+        out.push({
+          id: '__zone_header_' + zone,
+          isZoneHeader: true,
+          zone,
+          title: ZONE_LABELS[zone] || '',
+          subtitle: ZONE_SUBLABELS[zone] || ''
+        });
+        members.forEach((g) => out.push(g));
       });
+      return out;
+    }
+    const MENU_GAMES = buildMenuGamesWithZoneHeaders(__rawMenuGames);
 
     let currentIdx = 0;
     let activeBgEl = 'A';
@@ -9486,12 +9538,33 @@
     // 5 枚だけ eager+sync+high。 残りは lazy+async+low で同フレーム同時 request
     // を激減させる (旧: 21 枚 × 3 img = 63 img、 panel/play は loadingAttr=
     // 'eager' (rep<=1) で 14 並列発射 → 上下バラバラ paint の直接原因)。
-    const PRIORITY_EAGER_COUNT = 5;
+    // v3: 先頭に「いま あそべる」ゾーン見出し疑似カードが 1 枚挿入されたため、
+    // 実カード 5 枚 (quizland/maze/oto/bento/puzzle) を eager 対象に収めるには
+    // +1 が必要 (見出し自体は img を持たないので実質コストは変わらない)。
+    const PRIORITY_EAGER_COUNT = 6;
     const PRIORITY_REP = 1;          // 初期 scrollTop = oneSetH() の copy
     const PLAY_BTN_NORMAL_URL  = __bust('assets/ui/play_button_normal.webp');
     const PLAY_BTN_PRESSED_URL = __bust('assets/ui/play_button_pressed.webp');
 
+    // v3: ゾーン見出し疑似カード。 通常カードと同じ .game-card シェル
+    // (width:100% + aspect-ratio 継承) に乗せることで、 既存の無限ループ
+    // カルーセル (uniform card height 前提の scroll 物理演算) を一切
+    // 変更せずにそのまま組み込める。 <div> (非 button) なのでキーボード
+    // Tab 順にも入らず、 onCardClick 側も data-id 無し + selectGame/startGame
+    // 側の isZoneHeader ガードで安全に無害化される。
+    function zoneHeaderMarkup(g, i, rep) {
+      return `
+        <div class="game-card game-card--zone-header" data-idx="${i}" data-rep="${rep}" data-zone="${esc(g.zone)}" role="presentation" aria-hidden="true">
+          <div class="zone-header__inner">
+            <span class="zone-header__label">${esc(g.title)}</span>
+            <span class="zone-header__sub">${esc(g.subtitle)}</span>
+          </div>
+        </div>
+      `;
+    }
+
     function cardMarkup(g, i, rep) {
+      if (g.isZoneHeader) return zoneHeaderMarkup(g, i, rep);
       // is-coming-soon: 通常の準備中カード (彩度↓ + play 半透明)
       // is-debug-playable: 上の彩度フィルタを打ち消して開発者だけが遷移できる扱い。
       //   バッジ自体は残す (一般ユーザーには「じゅんびちゅう」のまま見える)。
@@ -10115,12 +10188,18 @@
     function startGame(idx) {
       if (isTapIntroBlockingInput()) return;
       const game = MENU_GAMES[idx];
-      if (!game) return;
+      if (!game || game.isZoneHeader) return;
       // Coming-soon entries are normally blocked. debugPlayable:true lets
       // devs still tap through to the real href so QA can verify destinations
       // without flipping comingSoon off (which would also hide the badge).
       const blocked = game.comingSoon && !game.debugPlayable;
       if (blocked || !game.href || game.href === '#') return;
+      // v3 (feature_tier_v3 §5): 「アプリで あそべる」 ゾーンは LP 版でも
+      // カードとして見せているが、 sub tier (= アプリ版 or capture override) 以外の
+      // タップは実際のゲームへ遷移させず、 book/free 別コピーの誘導モーダルを出す。
+      if (game.zone === 'app_only' && typeof openAppZonePromo === 'function' && openAppZonePromo(game)) {
+        return;
+      }
       if (window.PonoPlayerProfile && !window.PonoPlayerProfile.hasProfile()) {
         pendingProfileStartIdx = idx;
         window.PonoPlayerProfile.open();
@@ -10133,7 +10212,7 @@
     // ===== Select / preview crossfade =====
     function selectGame(idx) {
       const game = MENU_GAMES[idx];
-      if (!game) return;
+      if (!game || game.isZoneHeader) return;
       currentIdx = idx;
 
       // Update card highlight + current state
