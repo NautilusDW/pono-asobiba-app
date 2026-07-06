@@ -11808,7 +11808,7 @@ var rhythmMenuCancel = document.getElementById('rhythm-menu-cancel');
 if (rhythmMenuCancel) rhythmMenuCancel.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
-  // batch:1201: 曲えらびの「もどる」はタイトル画面 (#start-mode-choice) へ戻す。
+  // batch:1202: 曲えらびの「もどる」は遊び場タイトル (../play.html) へ戻す。
   window._otoReturnToTitle();
 });
 // v1108: 2ステップ: 曲えらび → モードえらび
@@ -11915,7 +11915,7 @@ if (rhythmCompleteDone) rhythmCompleteDone.addEventListener('click', function(e)
   e.preventDefault();
   e.stopPropagation();
   _hideRhythmComplete();
-  // batch:1201: リザルトの「おしまい」はシール報酬アニメ後にタイトル画面 (#start-mode-choice) へ戻す。
+  // batch:1202: リザルトの「おしまい」はシール報酬アニメ後に遊び場タイトル (../play.html) へ戻す。
   _afterRhythmStickerReward(function() {
     window._otoReturnToTitle();
   });
@@ -14571,16 +14571,23 @@ document.addEventListener('click', _captureOtoTutorialRhythmMenuInput, true);
       });
     }
   }
-  // batch:1201: 音タッチの「もどる」「おしまい」をタイトル画面 (#start-mode-choice) へ戻す共通処理。
-  // showStartChoice / intro はこの IIFE のクロージャ変数なので、ここで定義して window に公開する。
+  // batch:1202: 音タッチの「もどる」「おしまい」は #oto-menu-home (せってい→もどる) と同様、
+  // 遊び場タイトル (../play.html) へ遷移させる。音タッチ内タイトル画面には戻さない。
   window._otoReturnToTitle = function() {
-    _hideRhythmMenu();
-    _hideRhythmComplete();
-    setPlayMode('free');
-    document.body.classList.remove('app-started');
-    if (intro) intro.style.display = '';
-    showStartChoice();
-    _playOtoBgm('title', { fadeMs: 220 });
+    try {
+      _stopRhythmMode();
+      _hideRhythmMenu();
+      _hideRhythmOpening();
+      _hideRhythmComplete();
+      _clearRhythmCountdown();
+      _clearRhythmDemo(false);
+      _stopOtoBgm(80);
+    } catch (err) {}
+    var homeUrl = new URL('../play.html', window.location.href).href;
+    window.location.assign(homeUrl);
+    setTimeout(function() {
+      if (window.location.href !== homeUrl) window.location.href = homeUrl;
+    }, 120);
   };
 })();
 

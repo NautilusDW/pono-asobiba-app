@@ -675,7 +675,11 @@
 // なかった)。window._otoReturnToTitle() を新設し、両ボタンから呼び出す (batch:1201)。
 // v2003: play.html のプロフィールボタン内配置と木プレート外側の矩形影を再調整。
 // 生成済みの木プレート画像のアルファを外形として使い、中の紙マスクには触れない。
-const CACHE_VERSION = 2003;
+// v2004: 音タッチ もどる/おしまい を 遊び場タイトル (play.html) に戻す 訂正
+// (batch:1201-oto-quit-to-title revised)。v2002 で誤って音タッチ内タイトル
+// (#start-mode-choice) に戻していたのを、#oto-menu-home と同型の ../play.html
+// 遷移に forward fix (batch:1202)。
+const CACHE_VERSION = 2004;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
