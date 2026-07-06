@@ -341,7 +341,8 @@ body.st-jungle #fgT{height:22vh;background-size:auto 100%}
 body.st-sea #horizon{background-repeat:repeat-x;background-size:auto 112%;background-position-y:-8vh}
 body.st-sea #midT{background-size:auto 110%;background-repeat:repeat-x;background-position-y:2vh;opacity:.82}
 body.st-sea #groundT{height:18vh;background-size:auto 100%;z-index:3}
-body.st-sea #fgT{height:21vh;background-size:auto 100%;opacity:1}
+body.st-sea #groundT{-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.48) 18%,#000 42%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.48) 18%,#000 42%)}
+body.st-sea #fgT{height:21vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.72) 12%,#000 28%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.72) 12%,#000 28%)}
 .sb-hull,.sb-peri,.sb-fin,.sb-win,.submarine-art{display:none}
 body.v-sub #veh{left:calc(53vw - clamp(78px,13vw,143px));bottom:12.4vh;width:clamp(156px,26vw,286px);height:clamp(111px,18.4vw,203px)}
 body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win,body.v-sub .headlight{display:none}
