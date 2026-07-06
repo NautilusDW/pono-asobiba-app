@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1998: play.html の右下プロフィールボタンを、顔アイコン焼き込みなしの GPT Image 2 生成済み空ボタン土台へ差し替え。
+// アバターは丸型でHTML合成し、右上のできた数バッジはプロフィールボタン上から外した。play.html PAGE_CACHE_VERSION と同期。
 // v1996: play.html の tier v3 regression fix 3 件。 (1) MENU_GAMES 先頭 zone header を
 // selectGame(0) が選んでしまい preview-bg が真っ黒のまま起動するバグを修正 (最初の実ゲームを選択)。
 // (2) パスワード解錠モーダルを 3 タブ (あいことば/Amazon 注文番号/絵本クイズ) → 2 タブ
@@ -654,7 +656,7 @@
 //     assets/data/game-stickers.json version 20、STICKER_DESC 側も追随)。
 // (d) 統合時に PAGE_CACHE_VERSION と PONO_SW_VERSION の同期漏れ (v1995 のまま) を検出し修正。
 // play.html PAGE_CACHE_VERSION / PONO_SW_VERSION 同期。
-const CACHE_VERSION = 1997;
+const CACHE_VERSION = 1998;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -870,10 +872,12 @@ const CRITICAL_ASSETS_IMAGES = [
   // v1977: 右下ナビの GPT Image 2 生成ボタン。初回表示と押下時のちらつきを避けるため通常/押下を同時に precache。
   '/assets/ui/bottom-nav/nav_button_stickers_normal_20260705.webp',
   '/assets/ui/bottom-nav/nav_button_profile_normal_20260705.webp',
+  '/assets/ui/bottom-nav/nav_button_profile_blank_normal_20260706.webp',
   '/assets/ui/bottom-nav/nav_button_feedback_normal_20260705.webp',
   '/assets/ui/bottom-nav/nav_button_settings_normal_20260705.webp',
   '/assets/ui/bottom-nav/nav_button_stickers_pressed_20260705.webp',
   '/assets/ui/bottom-nav/nav_button_profile_pressed_20260705.webp',
+  '/assets/ui/bottom-nav/nav_button_profile_blank_pressed_20260706.webp',
   '/assets/ui/bottom-nav/nav_button_feedback_pressed_20260705.webp',
   '/assets/ui/bottom-nav/nav_button_settings_pressed_20260705.webp',
   // v1979: GPT Image 2 生成の全身アバター用パーツマスク。プロフィールボタンが初期表示に入るため先読み対象。
