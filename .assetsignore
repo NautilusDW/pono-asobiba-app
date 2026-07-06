@@ -39,3 +39,12 @@ tmp/
 le-*.diff
 _scratch*
 _debug*
+
+# 機密・テスト成果物 (staging leak fix 2026-07-06)
+.dev.vars
+.dev.vars.*
+playwright-report/
+test-results/
+scratchpad/
+__pycache__/
+*.pyc
