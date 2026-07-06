@@ -66,7 +66,6 @@
 
 
 
-- 2026-07-05 17:00 - by Claude - [batch:952-cloud-sync-step-c] - common/data-export.js, common/cloud-sync.js (新規), workers/api-sync/** (新規), wrangler.toml, help.html, play.html, sw.js - Step C: Cloudflare KV 合言葉型クラウド同期 (data-export モーダル ③ ボタン解放 + Worker API 実装 + rate-limit)
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]
 - 2026-06-28 13:30 - by Claude - [batch:886-difficulty-label-sw-bump-1736] - sw.js, play.html - 難易度ラベル統一 Phase 2+4 fix を v1735→v1736 でバンプ (maze HUD / oto タブ / puzzle album / bento title / quizland UI / partner-select / common/difficulty.js は既登録) [overlap: batch:885-difficulty-label-phase3-fix]
@@ -86,6 +85,7 @@
 - 2026-07-06 - by Claude - [batch:1202-oto-quit-to-play-html] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md - batch:1201 の音タッチ もどる/おしまい 実装を forward fix。音タッチ内タイトル (#start-mode-choice) 遷移を廃止し、#oto-menu-home と同型の ../play.html 遷移に訂正 + sw v2003→v2004 [overlap: batch:tier-v3-phase1 (oto/index.html, play.html, sw.js)]
 - 2026-07-06 - by Claude - [batch:1203-ux-3fixes] - common/data-export.js, common/sw-update.js, sw.js, play.html, AGENTS_CLAIMS.md - UX 3件: Preview 強化 + SW toast 繰り返し抑制 + CORE_PRESERVE_IF_ABSENT 拡張 + sw v2006→v2007 [overlap: batch:tier-v3-phase1]
 - 2026-07-06 21:04 - by Claude - [batch:1204-capacitor-phase1-scaffold] - native/** (新規), .gitignore, .assetsignore, common/sw-update.js, common/cloud-sync.js, bento/kitchen.html, AGENTS_CLAIMS.md - Capacitor Phase 1 scaffold (Android 先行、www build pipeline + Web側 SW gating 3点)。play.html/sw.js/CLAUDE.md/HANDOFF.md/MEMORY.md 等の既存 dirty 10 ファイルには一切 touch しない [overlap: batch:1203-ux-3fixes (common/sw-update.js), batch:952-cloud-sync-step-c (common/cloud-sync.js)]
+- claude-code / develop-app / モンスターさんすう ブラッシュアップ設計 (Phase 1) / 2026-07-06
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
