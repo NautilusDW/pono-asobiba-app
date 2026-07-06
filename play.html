@@ -607,33 +607,22 @@
       transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    /* v1958: 影を filter から ::before の box-shadow へ分離。 .card-list の
-       -webkit-mask-image (上下 fade 帯) と filter を同一 subtree で重ねると
-       WebKit が fast path を外れて毎フレーム CPU 再合成に落ち、 上端 fade 帯に
-       カードを保持し続けるとちらつきが持続する不具合があったため。 box-shadow は
-       この経路に乗らない。 v1959: inset は 0 (plank PNG は padding 込みの
-       card box に edge-to-edge で fill されるため、 padding 分だけ内側に
-       寄せると影が plank 面の内側に乗ってしまう実測ミスを修正)。 */
+    /* v2003: 木プレート外側に矩形の影が見えないよう、外形は生成画像の
+       アルファだけに任せる。中の紙マスクとは別処理。 */
     .game-card::before {
-      content: '';
+      content: none;
       position: absolute;
       inset: 0;
-      border-radius: var(--gc-radius);
-      box-shadow:
-        0 2px 2px rgba(20, 10, 0, 0.55),
-        0 5px 8px rgba(20, 10, 0, 0.7);
+      box-shadow: none;
       z-index: -1;
       pointer-events: none;
-      transition: box-shadow 0.18s ease;
     }
     /* v1947: iOS/iPadOS の sticky :hover でタッチ後もアニメが尾を引き
        隣カードに指が伝わると連鎖点滅する症状を封じるため、 hover 系ルールは
        hover: hover + pointer: fine の実機だけに限定する。 */
     @media (hover: hover) and (pointer: fine) {
       .game-card:hover::before {
-        box-shadow:
-          0 3px 3px rgba(20, 10, 0, 0.6),
-          0 6px 10px rgba(20, 10, 0, 0.8);
+        box-shadow: none;
       }
     }
     /* v1949: base の translateZ(0) を保持したまま scale だけ落とす (:active で layer が
@@ -8312,13 +8301,9 @@
       max-height: 122px;
       padding: 0 10px;
     }
-    /* v1959: inset stays 0 (plank fills the card box edge-to-edge regardless
-       of this section's narrower 0 10px padding); box-shadow replaces the
-       old filter here too. */
+    /* v2003: 木プレート外側は画像アルファで抜くため、矩形影を足さない。 */
     .game-card::before {
-      box-shadow:
-        0 2px 2px rgba(20, 10, 0, .34),
-        0 5px 9px rgba(20, 10, 0, .38);
+      box-shadow: none;
     }
     /* v1959: gated (was ungated, winning the cascade over the hardened rule
        at the top of the stylesheet) — ungated hover box-shadow bumps still
@@ -8326,9 +8311,7 @@
        .card-list's -webkit-mask-image to re-rasterize each frame. */
     @media (hover: hover) and (pointer: fine) {
       .game-card:hover::before {
-        box-shadow:
-          0 3px 3px rgba(20, 10, 0, .38),
-          0 7px 12px rgba(20, 10, 0, .42);
+        box-shadow: none;
       }
     }
     .game-card__text { gap: 6px; }
@@ -8469,6 +8452,7 @@
     .bn-item[data-action="profile"] {
       --bn-bg: url("assets/ui/bottom-nav/nav_button_profile_blank_normal_20260706.webp");
       --bn-bg-pressed: url("assets/ui/bottom-nav/nav_button_profile_blank_pressed_20260706.webp");
+      background-size: 96% 100%;
     }
     .bn-item[data-action="feedback"] {
       --bn-bg: url("assets/ui/bottom-nav/nav_button_feedback_normal_20260705.webp");
@@ -8502,9 +8486,9 @@
       position: absolute;
       z-index: 1;
       left: 50%;
-      top: 7px;
-      width: 56px;
-      height: 56px;
+      top: 10px;
+      width: 50px;
+      height: 50px;
       display: grid;
       place-items: center;
       transform: translateX(-50%);
@@ -8518,8 +8502,8 @@
       overflow: hidden;
     }
     .bn-item--profile .pono-mini-avatar {
-      width: 52px;
-      height: 52px;
+      width: 46px;
+      height: 46px;
       border-radius: 999px !important;
       border-width: 0;
       box-shadow: none;
@@ -8551,7 +8535,7 @@
     .bn-item--profile .bn-item__label {
       left: 6px;
       right: 6px;
-      bottom: 10px;
+      bottom: 13px;
       font-size: 12px;
       letter-spacing: 0;
       text-overflow: clip;
@@ -8866,9 +8850,9 @@
       .bn-item { border-radius: 14px; }
       .bn-item__icon { width: 38px; height: 32px; font-size: 21px; }
       .bn-item__icon--avatar { width: 40px; height: 34px; }
-      .bn-item--profile .bn-item__icon--avatar { top: 7px; width: 48px; height: 48px; border-radius: 999px !important; }
-      .bn-item--profile .pono-mini-avatar { width: 44px; height: 44px; border-radius: 999px !important; border-width: 0; }
-      .bn-item--profile .bn-item__label { bottom: 9px; font-size: 11px; transform: scaleX(.86); }
+      .bn-item--profile .bn-item__icon--avatar { top: 10px; width: 42px; height: 42px; border-radius: 999px !important; }
+      .bn-item--profile .pono-mini-avatar { width: 38px; height: 38px; border-radius: 999px !important; border-width: 0; }
+      .bn-item--profile .bn-item__label { bottom: 12px; font-size: 11px; transform: scaleX(.86); }
       .bn-item__label { bottom: 10px; font-size: 12px; }
       .bn-item__sub { display: none; }
     }
@@ -10208,7 +10192,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2002;
+    const PAGE_CACHE_VERSION = 2003;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10217,7 +10201,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2002';
+    window.PONO_SW_VERSION = 'v2003';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
