@@ -746,7 +746,7 @@ async function handleAiName(request, env) {
   const model = body.model || 'gemini-flash-latest';
   const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
     + encodeURIComponent(model)
-    + ':generateContent?key=' + encodeURIComponent(apiKey);
+    + ':generateContent';
 
   let parts;
   const images = body.images;
@@ -762,7 +762,7 @@ async function handleAiName(request, env) {
   try {
     const resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
       body: JSON.stringify({
         contents: [{ parts }],
         generationConfig: {
@@ -884,10 +884,10 @@ async function handleAiTts(request, env) {
 
   async function callModel(modelId, customPayload) {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + modelId
-      + ':generateContent?key=' + encodeURIComponent(apiKey);
+      + ':generateContent';
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
       body: JSON.stringify(customPayload || payload)
     });
     const data = await resp.json();
@@ -1200,10 +1200,9 @@ async function handleGeminiProxy(request, env) {
 
   const searchParams = new URLSearchParams(url.search);
   searchParams.delete('key');
-  searchParams.set('key', apiKey);
   const geminiUrl = 'https://generativelanguage.googleapis.com' + geminiPath + '?' + searchParams.toString();
 
-  const headers = { 'Content-Type': request.headers.get('Content-Type') || 'application/json' };
+  const headers = { 'Content-Type': request.headers.get('Content-Type') || 'application/json', 'x-goog-api-key': apiKey.trim() };
   const body = (request.method === 'GET' || request.method === 'HEAD')
     ? null
     : await request.arrayBuffer();
