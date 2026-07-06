@@ -339,6 +339,8 @@ let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuff
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
+const IOS_DEVICE=/iPad|iPhone|iPod/.test(navigator.userAgent)||
+ (navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const TRAIN_DRIVER_ID="pono";
 const PORTAL_EDIT_ENABLED=false;
 const PORTAL_TUNING_KEY="pono_nazonazo_portal_tuning_v1";
@@ -356,6 +358,16 @@ const PORTAL_DEFAULTS={
  outMask:[[54,42],[65,42],[65,97],[54,97]]
 };
 let portalTuning=clonePortalTuning(PORTAL_DEFAULTS),portalEditor=null,tunnelInteriorMode=false;
+if(IOS_DEVICE)document.body.classList.add("ios-device");
+
+function cssXFromVw(vw){
+ const px=(window.innerWidth||844)*vw/100;
+ return (IOS_DEVICE?Math.round(px):Number(px.toFixed(2)))+"px";
+}
+function cssYFromVh(vh){
+ const px=(window.innerHeight||390)*vh/100;
+ return (IOS_DEVICE?Math.round(px):Number(px.toFixed(2)))+"px";
+}
 
 function setDriverForStage(){
  document.body.dataset.driver=TRAIN_DRIVER_ID;
@@ -1010,7 +1022,7 @@ function applySkin(){
  const st=STAGES[stg],P=palOf(stg);
  const nIdx=Math.min(stg+1,STAGES.length-1);
  const NP=STAGES[nIdx].pals[loop%2];
- document.body.className="st-"+st.id+" v-"+st.veh+(PORTAL_EDIT_ENABLED?" portal-edit":"");
+ document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+(PORTAL_EDIT_ENABLED?" portal-edit":"");
  setDriverForStage(stg);
  skyA.style.background=st.assets?bgUrl(st.assets.sky)+" center bottom / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
@@ -1186,7 +1198,7 @@ function renderSeaFish(now){
   x=((x+20)%150+150)%150-20;
   const y=f.y+Math.sin(t*f.bobRate+f.phase)*f.bob;
   const flip=f.dir>0?-1:1;
-  f.el.style.transform="translate3d("+x.toFixed(2)+"vw,"+y.toFixed(2)+"vh,0) scaleX("+flip+")";
+  f.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(y)+",0) scaleX("+flip+")";
  });
 }
 
@@ -1258,6 +1270,7 @@ function updateScreenExitShift(){
   document.body.classList.contains("tunnel-exit-clear");
  const shift=active?(exitPortalBaseWorldX-worldX):0;
  document.documentElement.style.setProperty("--screen-exit-shift-vw",shift.toFixed(2)+"vw");
+ document.documentElement.style.setProperty("--screen-exit-shift-x",cssXFromVw(shift));
 }
 function coverEntryStop(){
  if(!coverEl)return worldX;
@@ -1477,7 +1490,7 @@ function tickMagicPuffs(now){
  const p=document.createElement("span");
  p.className="magic-puff";
  const idx=rnd(0,7),col=idx%4,row=Math.floor(idx/4);
- const size=12+Math.random()*52;
+ const size=18+Math.random()*62;
  const baseLife=2600+Math.random()*1800;
  const life=baseLife*(1.5+Math.random()*0.5);
  p.style.width=size+"px";p.style.height=size+"px";
@@ -1486,9 +1499,9 @@ function tickMagicPuffs(now){
  p.style.setProperty("--puff-dx",(-140-Math.random()*260)+"px");
  p.style.setProperty("--puff-dy",(-18-Math.random()*64)+"px");
  p.style.setProperty("--puff-rot",(-18+Math.random()*36)+"deg");
- p.style.setProperty("--puff-start-scale",(0.34+Math.random()*0.36).toFixed(2));
+ p.style.setProperty("--puff-start-scale",(0.42+Math.random()*0.34).toFixed(2));
  p.style.setProperty("--puff-end-scale",(1.2+Math.random()*1.55).toFixed(2));
- const alpha=0.44+Math.random()*0.24;
+ const alpha=0.6+Math.random()*0.26;
  p.style.setProperty("--puff-alpha",alpha.toFixed(2));
  p.style.setProperty("--puff-mid-alpha",(alpha*.82).toFixed(2));
  p.style.backgroundPosition=(col*33.3333)+"% "+(row*100)+"%";
@@ -1533,15 +1546,16 @@ function useHelp(){
 /* ================= render ================= */
 function render(now){
  const o=origin(stg);
- world.style.transform="translateX("+(-worldX)+"vw)";
+ world.style.transform="translate3d("+cssXFromVw(-worldX)+",0,0)";
  if(document.body.classList.contains("st-number")){
   document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
  }
  renderSeaFish(now);
  updateScreenExitShift();
  if(tunnelInteriorMode){
-  skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+(-worldX*.55)+'vw center / auto 100% repeat-x';
-  document.documentElement.style.setProperty("--tunnel-track-x",(-worldX*.55)+"vw");
+  const tunnelPan=cssXFromVw(-worldX*.55);
+  skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+tunnelPan+' center / auto 100% repeat-x';
+  document.documentElement.style.setProperty("--tunnel-track-x",tunnelPan);
   skyB.style.opacity="0";
   veh.classList.add("inTun");
   carsEl.classList.add("inTun");
@@ -1549,10 +1563,10 @@ function render(now){
   return;
  }
  const hd=clamp((worldX-o)*0.095,0,70);
- horizon.style.transform="translateX("+(-hd)+"vw)";
- midT.style.backgroundPositionX=(-worldX*0.25)+"vw";
- groundT.style.backgroundPositionX=(-worldX*1)+"vw";
- fgT.style.backgroundPositionX=(-worldX*1.35)+"vw";
+ horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
+ midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
+ groundT.style.backgroundPositionX=cssXFromVw(-worldX);
+ fgT.style.backgroundPositionX=cssXFromVw(-worldX*1.35);
  const p=clamp((worldX-o)/COVER_OFF,0,1);
  skyB.style.opacity=(p>0.78?((p-0.78)/0.22)*0.9:0).toFixed(2);
  const cv=transitCover||coverEl;

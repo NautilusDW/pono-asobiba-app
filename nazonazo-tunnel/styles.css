@@ -9,6 +9,7 @@
   --portal-core-side-vw:100;
   --screen-exit-left-vh:-.14;
   --screen-exit-mask-edge:.54;
+  --screen-exit-shift-x:0px;
   --portal-mask-in:polygon(14% 37%,35% 37%,35% 49%,26% 49%,26% 83%,42% 83%,42% 98%,13% 98%,13% 49%,14% 49%);
   --portal-mask-out:polygon(54% 42%,65% 42%,65% 97%,54% 97%);
 }
@@ -196,7 +197,7 @@ body.tunnel-exit-run #world .tun,body.tunnel-exit-run #world .decor,body.tunnel-
 body.tunnel-exit-clear #world .tun,body.tunnel-exit-clear #world .decor,body.tunnel-exit-clear #world .dropStation{opacity:0}
 body.tunnel-interior #skyA{background-color:#17110b}
 body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0}
-#screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease;transform:translateX(var(--screen-exit-shift-vw,0vw))}
+#screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease;transform:translate3d(var(--screen-exit-shift-x,0px),0,0)}
 #screenPortalBack{z-index:6}
 #screenPortalFront{z-index:9}
 body.tunnel-exit-setup #screenPortalBack,body.tunnel-exit-setup #screenPortalFront,body.tunnel-exit-run #screenPortalBack,body.tunnel-exit-run #screenPortalFront,body.tunnel-exit-clear #screenPortalBack,body.tunnel-exit-clear #screenPortalFront{display:block}
@@ -239,7 +240,7 @@ body.portal-edit #portalEditPanel{display:block}
 
 /* ===== vehicle ===== */
 #veh.inTun,#cars.inTun{z-index:8}
-.vbody{position:absolute;inset:0}
+.vbody{position:absolute;inset:0;overflow:visible}
 #veh.idle .vbody{animation:bob 2.4s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 @keyframes carDropOff{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:.05;transform:translateY(-14px) scale(.86)}}
@@ -295,7 +296,7 @@ body.tunnel-interior.v-train #veh{left:calc(55vw - clamp(112px,18.5vw,198px));bo
 body.tunnel-interior.v-train #cars{bottom:11vh}
 body.tunnel-interior.v-train #veh .train-art,body.tunnel-interior.v-train #cars .car{filter:brightness(.62) saturate(.78) contrast(.96) drop-shadow(0 2px 0 rgba(0,0,0,.42))}
 body.tunnel-interior.v-train #veh .headlight{opacity:.95;filter:brightness(1.18) saturate(.9)}
-body.v-train .puff{left:76%;top:-17%;width:18%;height:18%}
+body.v-train .puff{left:76%;top:-17%;width:18%;height:18%;z-index:12;overflow:visible}
 body[data-driver="bear"]{--driver-x:0%}
 body[data-driver="pono"]{--driver-x:0%}
 body[data-driver="fox"]{--driver-x:33.333%}
@@ -314,18 +315,18 @@ body[data-driver-mood="cheer"]{--driver-y:100%}
 .w1{left:10%}.w2{left:40%}.w3{right:4%}
 #veh.go .wheel{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.puff{position:absolute;left:16%;top:-18%;opacity:0;pointer-events:none;z-index:6}
+.puff{position:absolute;left:16%;top:-18%;opacity:0;pointer-events:none;z-index:12;overflow:visible}
 #veh.go .puff{opacity:1}
 body.tunnel-enter-run #veh .puff,body.tunnel-exit-run #veh .puff{opacity:0}
 .magic-puff{position:absolute;left:0;top:0;width:var(--puff-size);height:var(--puff-size);
   background:url("../assets/images/nazonazo-tunnel/magic_puffs_square_sheet_20260705.webp") no-repeat;background-size:400% 200%;
-  transform:translate(0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));
+  transform:translate3d(0,0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));
   will-change:transform,opacity;animation:magicPuffFly var(--puff-life) ease-out forwards}
 @keyframes magicPuffFly{
-  0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(var(--puff-start-scale))}
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(0deg) scale(var(--puff-start-scale))}
   12%{opacity:var(--puff-alpha)}
   62%{opacity:var(--puff-mid-alpha)}
-  100%{opacity:0;transform:translate(var(--puff-dx),var(--puff-dy)) rotate(var(--puff-rot)) scale(var(--puff-end-scale))}
+  100%{opacity:0;transform:translate3d(var(--puff-dx),var(--puff-dy),0) rotate(var(--puff-rot)) scale(var(--puff-end-scale))}
 }
 body.st-future .tr-boiler{background:#b8f3ff;border-color:#4bb8d6;border-radius:26px 6px 6px 26px}
 body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
@@ -355,6 +356,24 @@ body.v-sub #veh.go .submarine-art{animation:subSwim 2.2s ease-in-out infinite al
 @keyframes subIdleDrift{0%,100%{transform:translate3d(0,.15vh,0)}50%{transform:translate3d(.25vw,-.6vh,0)}}
 @keyframes subSwim{from{transform:translateY(0) rotate(-.7deg)}to{transform:translateY(-4px) rotate(.7deg)}}
 body.st-sea.v-sub #veh.inTun .submarine-art{filter:brightness(.72) saturate(.82) contrast(.96) drop-shadow(0 3px 0 rgba(0,0,0,.28))}
+body.ios-device #world,body.ios-device #horizon,body.ios-device #veh,body.ios-device #cars,
+body.ios-device .train-art,body.ios-device .train-wheel,body.ios-device .car-wheel,
+body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
+body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device .magic-puff{
+  -webkit-backface-visibility:hidden;backface-visibility:hidden;transform-style:flat}
+body.ios-device #veh.idle .vbody{animation:none}
+body.ios-device .train-wheel,body.ios-device .car-wheel,
+body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
+body.ios-device .magic-puff{filter:none}
+body.ios-device .runEvent{animation:none}
+body.ios-device .runEvent::after{animation:none;opacity:.8}
+body.ios-device .runEvent.found{animation:runEventFound .55s ease forwards}
+body.ios-device.v-sub #veh.go .vbody{animation:subDriftStable 6.4s ease-in-out infinite}
+body.ios-device.v-sub #veh.idle .vbody{animation:subIdleStable 4.2s ease-in-out infinite}
+body.ios-device.v-sub #veh.go .submarine-art{animation:subSwimStable 3.2s ease-in-out infinite alternate}
+@keyframes subDriftStable{0%,100%{transform:translate3d(-2px,0,0)}35%{transform:translate3d(2px,-2px,0)}70%{transform:translate3d(4px,1px,0)}}
+@keyframes subIdleStable{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(1px,-2px,0)}}
+@keyframes subSwimStable{from{transform:translate3d(0,0,0) rotate(-.35deg)}to{transform:translate3d(0,-2px,0) rotate(.35deg)}}
 .rk-body,.rk-nose,.rk-finT,.rk-finB,.rk-win,.rk-flame{display:none}
 body.v-rocket .tr-cab,body.v-rocket .tr-boiler,body.v-rocket .tr-chim,body.v-rocket .wheel,body.v-rocket .puff,body.v-rocket .tr-win{display:none}
 body.v-rocket .rk-body{display:block;position:absolute;left:8%;right:20%;top:24%;bottom:12%;background:#f2f2f7;border:4px solid #b8b8c8;border-radius:18px}
