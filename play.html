@@ -8317,7 +8317,7 @@
     }
     .bottom-nav {
       --nav-sprite-w: 368px;
-      --nav-sprite-h: 118px;
+      --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
       bottom: 20px;
       width: var(--nav-sprite-w);
       height: var(--nav-sprite-h);
@@ -8359,7 +8359,7 @@
     }
     .profile-wallet {
       position: absolute;
-      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 382px);
+      right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 402px);
       bottom: 20px;
       width: 184px;
       height: 118px;
@@ -8797,7 +8797,15 @@
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 29px; }
       .game-card__desc { font-size: 18px; }
-      .bottom-nav { --nav-sprite-w: 430px; --nav-sprite-h: 104px; padding: 0; gap: 0; }
+      .bottom-nav {
+        --nav-sprite-w: 346px !important;
+        --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
+        padding: 0;
+        gap: 0;
+      }
+      .profile-wallet {
+        right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 380px);
+      }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* v1680: 4:3 (iPad landscape) は visible 1097 のうち safe-w 1080 まで使い切り、
@@ -8924,9 +8932,15 @@
       }
       .scroll-hint--up   { animation: hintBobUp43   2.4s ease-in-out infinite; }
       .scroll-hint--down { animation: hintBobDown43 2.4s ease-in-out infinite; }
-      .bottom-nav { --nav-sprite-w: 270px; --nav-sprite-h: 98px; bottom: 14px; padding: 0; gap: 0; }
+      .bottom-nav {
+        --nav-sprite-w: 300px !important;
+        --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
+        bottom: 14px;
+        padding: 0;
+        gap: 0;
+      }
       .profile-wallet {
-        right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 310px);
+        right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 334px);
         bottom: 14px;
         width: 154px;
         height: 98px;
@@ -8959,6 +8973,15 @@
       .bn-item--profile .bn-item__label { bottom: 12px; font-size: 11px; transform: scaleX(.86); }
       .bn-item__label { bottom: 10px; font-size: 12px; }
       .bn-item__sub { display: none; }
+    }
+    @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
+      .bottom-nav {
+        --nav-sprite-w: 282px !important;
+        --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
+      }
+      .profile-wallet {
+        right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 316px);
+      }
     }
     /* v1681: 4:3 専用 bob (translateX なし) — in-flow scroll-hint 用 */
     @keyframes hintBobUp43   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
@@ -10293,7 +10316,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2008;
+    const PAGE_CACHE_VERSION = 2009;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10302,7 +10325,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2008';
+    window.PONO_SW_VERSION = 'v2009';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
