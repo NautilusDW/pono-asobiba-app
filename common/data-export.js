@@ -69,7 +69,10 @@
     'pono_acorns',
     'pono_stats',
     'pono_stamp_log',
-    'pono_thankyou'
+    'pono_thankyou',
+    'pono_stickers',         // common/stickers.js:78 (デイリーログインシール)
+    'pono_login_days',       // common/stickers.js:79 (ログイン日数)
+    'pono_game_stickers_v1'  // js/game-stickers.js:7 (ミニゲームシール帳)
   ];
 
   // セキュリティ: キー自体の正規表現バリデート (allowlist より緩いが、
@@ -471,6 +474,12 @@
       '.pono-de-preview dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0;font-size:.82rem;}',
       '.pono-de-preview dt{color:#8a7359;font-weight:700;}',
       '.pono-de-preview dd{margin:0;color:#5D4E37;font-weight:800;word-break:break-all;}',
+      '.pono-de-compare{background:#fff;border:1.5px solid #F8C56D;border-radius:10px;padding:8px 10px;margin:8px 0;}',
+      '.pono-de-compare-row{display:grid;grid-template-columns:3.4em 1fr 1fr;gap:4px 8px;font-size:.78rem;line-height:1.4;padding:4px 0;align-items:start;}',
+      '.pono-de-compare-row + .pono-de-compare-row{border-top:1px dashed #f0e2c0;}',
+      '.pono-de-compare-head{font-weight:900;color:#8a7359;font-size:.72rem;padding-bottom:2px;}',
+      '.pono-de-compare-row span:first-child{font-weight:800;color:#5D4E37;}',
+      '.pono-de-compare-row span:nth-child(3){color:#C4562A;font-weight:700;}',
       '.pono-de-toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:6000;background:#fff;border:3px solid #F8C56D;border-radius:14px;padding:12px 18px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:inherit;color:#5D4E37;max-width:380px;text-align:center;}',
       '.pono-de-toast.error{border-color:#D9573A;}',
       '.pono-de-toast .ttl{font-weight:900;font-size:1rem;}',
@@ -1057,12 +1066,115 @@
     reader.readAsText(file);
   }
 
+  // ---- Preview: 「いま」→「ロード後」比較行の生成 ----
+
+  function fmtCountSuffix(suffix) {
+    return function (raw) {
+      if (raw == null || raw === '') return '0' + suffix;
+      var n = parseInt(raw, 10);
+      return (isNaN(n) ? String(raw) : String(n)) + suffix;
+    };
+  }
+
+  // pono_game_stickers_v1: { pages: { gameId: { owned: {id:true,...} } }, ... }
+  function fmtStickerCount(raw) {
+    if (raw == null || raw === '') return '0まい';
+    try {
+      var obj = JSON.parse(raw);
+      var count = 0;
+      if (obj && obj.pages && typeof obj.pages === 'object') {
+        for (var gid in obj.pages) {
+          if (!Object.prototype.hasOwnProperty.call(obj.pages, gid)) continue;
+          var owned = obj.pages[gid] && obj.pages[gid].owned;
+          if (owned && typeof owned === 'object') count += Object.keys(owned).length;
+        }
+      }
+      return count + 'まい';
+    } catch (_) { return '0まい'; }
+  }
+
+  // pono_stats: フラットな { statKey: number, ... } — 種類数のみ要約
+  function fmtStatsCount(raw) {
+    if (raw == null || raw === '') return '0しゅるい';
+    try {
+      var obj = JSON.parse(raw);
+      if (!obj || typeof obj !== 'object') return '0しゅるい';
+      return Object.keys(obj).length + 'しゅるい';
+    } catch (_) { return '0しゅるい'; }
+  }
+
+  // preserve-if-absent 対象キー (どんぐり/シール/すすみ) の「いま→ロード後」比較行。
+  // record にキーが無い場合は CORE_PRESERVE_IF_ABSENT により現値維持されるため、
+  // その旨を明示する。 なまえは別枠 (クラウド時は常時再入力になる特殊仕様)。
+  function buildCompareRows(parsed) {
+    var data = (parsed && parsed.data) || {};
+    function hasKey(k) { return Object.prototype.hasOwnProperty.call(data, k); }
+
+    var rows = [];
+    var metrics = [
+      { key: 'pono_acorns', label: 'どんぐり', fmt: fmtCountSuffix('こ') },
+      { key: 'pono_game_stickers_v1', label: 'シール', fmt: fmtStickerCount },
+      { key: 'pono_stats', label: 'すすみ', fmt: fmtStatsCount }
+    ];
+    for (var i = 0; i < metrics.length; i++) {
+      var m = metrics[i];
+      var curRaw = null;
+      try { curRaw = localStorage.getItem(m.key); } catch (_) {}
+      var curDisplay = m.fmt(curRaw);
+      var afterDisplay = hasKey(m.key)
+        ? m.fmt(data[m.key])
+        : (curDisplay + ' のまま (ほぞんじナシ)');
+      rows.push({ label: m.label, current: curDisplay, after: afterDisplay });
+    }
+
+    // なまえ: クラウドは profile 系キーを送受信しない設計 (cloud-sync.js) のため、
+    // record にキーが無くても CORE_PRESERVE_IF_ABSENT 非対象 = 消えて再入力が必要になる。
+    var curName = getProfileName() || '(みてい)';
+    var afterName;
+    if (parsed && parsed._cloud) {
+      afterName = 'もういちど 入力';
+    } else if (hasKey('pono_profile_name')) {
+      afterName = data.pono_profile_name || '(みてい)';
+    } else {
+      afterName = 'もういちど 入力';
+    }
+    rows.push({ label: 'なまえ', current: curName, after: afterName });
+
+    return rows;
+  }
+
   function showImportPreview(file, parsed, parentModal) {
     var ui = makeModal();
     var card = ui.card;
     var h = document.createElement('h3');
     h.textContent = 'よみこむ データの ないよう';
     card.appendChild(h);
+
+    // 「いま」→「ロード後」比較テーブル (どんぐり/シール/すすみ/なまえ)
+    var compareWrap = document.createElement('div');
+    compareWrap.className = 'pono-de-compare';
+    function compareSpan(text) {
+      var s = document.createElement('span');
+      s.textContent = text;
+      return s;
+    }
+    var headRow = document.createElement('div');
+    headRow.className = 'pono-de-compare-row pono-de-compare-head';
+    headRow.appendChild(compareSpan(''));
+    headRow.appendChild(compareSpan('いま'));
+    headRow.appendChild(compareSpan('ロード後'));
+    compareWrap.appendChild(headRow);
+    var compareRows = buildCompareRows(parsed);
+    for (var cri = 0; cri < compareRows.length; cri++) {
+      var cr = compareRows[cri];
+      var rowEl = document.createElement('div');
+      rowEl.className = 'pono-de-compare-row';
+      rowEl.appendChild(compareSpan(cr.label));
+      rowEl.appendChild(compareSpan(cr.current));
+      rowEl.appendChild(compareSpan(cr.after));
+      compareWrap.appendChild(rowEl);
+    }
+    card.appendChild(compareWrap);
 
     var preview = document.createElement('div');
     preview.className = 'pono-de-preview';
@@ -1079,7 +1191,6 @@
       addRow('もとデータ', 'クラウド（あいことば）');
     }
     if (parsed.exported_at) addRow('ほぞん日時', parsed.exported_at);
-    if (parsed.profile_name) addRow('なまえ', parsed.profile_name);
     if (parsed.app_version) addRow('app_version', String(parsed.app_version));
     preview.appendChild(dl);
     card.appendChild(preview);

@@ -104,7 +104,41 @@
   // the toast element only.
   // z-index 階層 (上から下): catch-up overlay (2147483647) > toast (2147483646) > tap-intro (99999) > splash (1000)
   // toastShown フラグで多重表示を防止 (showUpdateToast() が複数回呼ばれても 1 つだけ)
+  // ただし toastShown は「このページ読み込み」内でしか効かない in-memory フラグ。
+  // play.html ⇔ 各ゲーム index.html のようにページ遷移を伴うと script が再初期化され
+  // toastShown はリセットされるため、reg.waiting が残っている限り遷移のたびに
+  // toast が再表示されてしまう (「何回も出る」報告の主因)。
+  // → sessionStorage フラグで「このセッションで表示済み」をページ遷移をまたいで保持する。
+  var TOAST_SESSION_KEY = 'pono_sw_toast_shown_session';
+  function hasShownToastThisSession() {
+    try { return sessionStorage.getItem(TOAST_SESSION_KEY) === '1'; } catch (e) { return false; }
+  }
+  function markToastShownThisSession() {
+    try { sessionStorage.setItem(TOAST_SESSION_KEY, '1'); } catch (e) {}
+  }
+  function clearToastShownFlag() {
+    try { sessionStorage.removeItem(TOAST_SESSION_KEY); } catch (e) {}
+  }
   var toastShown = false;
+  var currentToastEl = null;
+  function removeToastEl() {
+    if (currentToastEl && currentToastEl.parentNode) {
+      currentToastEl.parentNode.removeChild(currentToastEl);
+    }
+    currentToastEl = null;
+  }
+  // SW が activated まで進んだら「更新は解消された」とみなし toast を自動で消す。
+  // 併せて session フラグもクリアし、将来また別の新バージョンが来た時に再度案内できるようにする。
+  function watchForActivation(worker) {
+    if (!worker) return;
+    worker.addEventListener('statechange', function () {
+      if (worker.state === 'activated') {
+        removeToastEl();
+        toastShown = false;
+        clearToastShownFlag();
+      }
+    });
+  }
   function ensureToastStyle() {
     if (document.getElementById('pono-sw-toast-style')) return;
     var style = document.createElement('style');
@@ -127,7 +161,9 @@
   function showUpdateToast(reg) {
     if (toastShown) return;
     if (!reg || !reg.waiting) return;
+    if (hasShownToastThisSession()) return;
     toastShown = true;
+    markToastShownThisSession();
     ensureToastStyle();
     var el = document.createElement('div');
     el.className = 'pono-sw-toast';
@@ -157,12 +193,19 @@
     closeBtn.setAttribute('aria-label', '閉じる');
     closeBtn.textContent = '×';
     closeBtn.addEventListener('click', function () {
-      if (el.parentNode) el.parentNode.removeChild(el);
+      removeToastEl();
     });
     el.appendChild(label);
     el.appendChild(goBtn);
     el.appendChild(closeBtn);
-    try { document.body.appendChild(el); } catch (e) { toastShown = false; }
+    try {
+      document.body.appendChild(el);
+      currentToastEl = el;
+    } catch (e) {
+      toastShown = false;
+      currentToastEl = null;
+      clearToastShownFlag();
+    }
   }
 
   // ── Register + update poll ──
@@ -172,12 +215,16 @@
     // If a waiting SW already exists at load time (e.g. user refreshed after
     // last visit installed a new SW), surface the toast immediately.
     if (reg.waiting && navigator.serviceWorker.controller) {
+      watchForActivation(reg.waiting);
       showUpdateToast(reg);
     }
 
     reg.addEventListener('updatefound', function () {
       var nw = reg.installing;
       if (!nw) return;
+      // このワーカーが installed → activated まで進む一生を通して監視し、
+      // activated に到達したら (toast を出したページかどうかに関わらず) 自動 dismiss する。
+      watchForActivation(nw);
       nw.addEventListener('statechange', function () {
         if (nw.state === 'installed' && navigator.serviceWorker.controller) {
           // New SW is waiting AND a controller already exists.

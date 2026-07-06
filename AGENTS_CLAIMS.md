@@ -84,6 +84,7 @@
 - 2026-07-05 - by Claude - [batch:939b-survey-dedup-and-record-copy] - survey.html, common/rating-modal.js, sw.js, play.html, AGENTS_CLAIMS.md - survey.html 永久 dedup 実装漏れ修正 + record mode title/subcopy 差し替え + sw v1964→v1965
 - 2026-07-06 - by Claude - [batch:tier-v3-phase1] - common/tier.js, assets/data/game-stickers.json, js/game-stickers.js, Prototypes/StickerBookThreeJS/**, play.html, oto/index.html, docs/**, sw.js - tier v3 Phase 1 実装 (fable/sonnet workflow) [overlap: batch:1131-avatar-40-fullbody-presets (play.html/sw.js)]
 - 2026-07-06 - by Claude - [batch:1202-oto-quit-to-play-html] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md - batch:1201 の音タッチ もどる/おしまい 実装を forward fix。音タッチ内タイトル (#start-mode-choice) 遷移を廃止し、#oto-menu-home と同型の ../play.html 遷移に訂正 + sw v2003→v2004 [overlap: batch:tier-v3-phase1 (oto/index.html, play.html, sw.js)]
+- 2026-07-06 - by Claude - [batch:1203-ux-3fixes] - common/data-export.js, common/sw-update.js, sw.js, play.html, AGENTS_CLAIMS.md - UX 3件: Preview 強化 + SW toast 繰り返し抑制 + CORE_PRESERVE_IF_ABSENT 拡張 + sw v2006→v2007 [overlap: batch:tier-v3-phase1]
 
 ## なぜ HANDOFF.md と別ファイルなのか
 

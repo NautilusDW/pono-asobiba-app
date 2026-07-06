@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2007: UX 3件 - data-export.js プレビュー強化 (今/ロード後の比較表示 + CORE_PRESERVE_IF_ABSENT 拡張) + sw-update.js の更新トースト多重表示抑制 (sessionStorage + activate 検知) (batch:1203)。play.html PAGE_CACHE_VERSION と同期。
 // v2006: play.html のおしらせボタンを空土台+CSSベルから既存単体ベル素材 button_bottom_005.png へ戻す。play.html PAGE_CACHE_VERSION と同期。
 // v2005: play.html のホーム下部をプロフィール+どんぐり別土台と、ごかんそう/おしらせ/せっていの3ボタンへ再編。トップのシール帳入口はプロフィール内へ移動。play.html PAGE_CACHE_VERSION と同期。
 // v2003: play.html のプロフィールボタン内配置と木プレート外側の矩形影を再調整。play.html PAGE_CACHE_VERSION と同期。
@@ -683,7 +684,7 @@
 // 遷移に forward fix (batch:1202)。
 // v2005: play.html のホーム下部をプロフィール+どんぐり別土台と、ごかんそう/おしらせ/せっていの3ボタンへ再編。トップのシール帳入口はプロフィール内へ移動。
 // v2006: play.html のおしらせボタンを既存単体ベル素材 button_bottom_005.png へ戻す。
-const CACHE_VERSION = 2006;
+const CACHE_VERSION = 2007;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
