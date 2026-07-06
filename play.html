@@ -7172,29 +7172,29 @@
         mask-position: 0 0;
         -webkit-mask-size: 100% 100%;
         mask-size: 100% 100%;
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_balanced_20260706.png");
-        mask-image: url("assets/images/avatars/parts/avatar_bodytype_balanced_20260706.png");
+        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_balanced_20260706c.png");
+        mask-image: url("assets/images/avatars/parts/avatar_bodytype_balanced_20260706c.png");
       }
       .pono-mini-avatar[data-avatar-mode="full"][data-body-type="small"] .pono-mini-avatar__face {
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_small_20260706.png");
-        mask-image: url("assets/images/avatars/parts/avatar_bodytype_small_20260706.png");
+        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_small_20260706c.png");
+        mask-image: url("assets/images/avatars/parts/avatar_bodytype_small_20260706c.png");
       }
       .pono-mini-avatar[data-avatar-mode="full"][data-body-type="round"] .pono-mini-avatar__face {
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_round_20260706.png");
-        mask-image: url("assets/images/avatars/parts/avatar_bodytype_round_20260706.png");
+        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_round_20260706c.png");
+        mask-image: url("assets/images/avatars/parts/avatar_bodytype_round_20260706c.png");
       }
       .pono-mini-avatar[data-avatar-mode="full"][data-body-type="tall"] .pono-mini-avatar__face {
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_tall_20260706.png");
-        mask-image: url("assets/images/avatars/parts/avatar_bodytype_tall_20260706.png");
+        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_tall_20260706c.png");
+        mask-image: url("assets/images/avatars/parts/avatar_bodytype_tall_20260706c.png");
       }
       .pono-mini-avatar[data-avatar-mode="full"][data-body-type="robot"] .pono-mini-avatar__face {
         background: var(--av-skin);
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_robot_20260706.png");
-        mask-image: url("assets/images/avatars/parts/avatar_bodytype_robot_20260706.png");
+        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_robot_20260706c.png");
+        mask-image: url("assets/images/avatars/parts/avatar_bodytype_robot_20260706c.png");
       }
       .pono-mini-avatar[data-avatar-mode="full"][data-body-type="monster"] .pono-mini-avatar__face {
-        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_monster_20260706.png");
-        mask-image: url("assets/images/avatars/parts/avatar_bodytype_monster_20260706.png");
+        -webkit-mask-image: url("assets/images/avatars/parts/avatar_bodytype_monster_20260706c.png");
+        mask-image: url("assets/images/avatars/parts/avatar_bodytype_monster_20260706c.png");
       }
       .pono-mini-avatar[data-avatar-mode="full"][data-kind="robot"] .pono-mini-avatar__face {
         border-radius: 0;
@@ -9574,7 +9574,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1986;
+    const PAGE_CACHE_VERSION = 1987;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -9583,7 +9583,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1986';
+    window.PONO_SW_VERSION = 'v1987';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13828,12 +13828,12 @@
       const AVATAR_BODYTYPE_IDS = ['balanced', 'small', 'round', 'tall', 'robot', 'monster'];
       const AVATAR_BODYTYPE_PART_BASE = 'assets/images/avatars/parts/bodytype/avatar_bt_';
       const AVATAR_BODYTYPE_FACE_BOXES = {
-        balanced: { eyes: [34, 27, 32, 8], mouth: [40, 40, 20, 7] },
-        small: { eyes: [28, 38, 44, 10], mouth: [39, 51, 22, 8] },
-        round: { eyes: [29, 29, 42, 9], mouth: [39, 42, 22, 7] },
-        tall: { eyes: [38, 21, 24, 7], mouth: [42, 31, 16, 6] },
-        robot: { eyes: [35, 25, 30, 8], mouth: [40, 36, 20, 7] },
-        monster: { eyes: [27, 33, 46, 10], mouth: [38, 46, 24, 8] }
+        balanced: { eyes: [35, 30, 30, 8], mouth: [41, 42, 18, 7] },
+        small: { eyes: [35, 38, 30, 8], mouth: [41, 50, 18, 7] },
+        round: { eyes: [31, 30, 38, 8], mouth: [40, 43, 20, 7] },
+        tall: { eyes: [39, 24, 22, 7], mouth: [43, 34, 14, 6] },
+        robot: { eyes: [36, 31, 28, 8], mouth: [41, 42, 18, 7] },
+        monster: { eyes: [30, 35, 40, 9], mouth: [40, 48, 20, 7] }
       };
       const AVATAR_HAIR_PART_BY_STYLE = {
         round: 'hair_round',
