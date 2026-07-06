@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1999: play.html の右下プロフィールボタンを調整。空ボタン土台の見え幅を他ボタンへ寄せ、ラベルを細く収め、丸アバターを大きめのバストショット寄りにした。
+// play.html PAGE_CACHE_VERSION と同期。
 // v1998: play.html の右下プロフィールボタンを、顔アイコン焼き込みなしの GPT Image 2 生成済み空ボタン土台へ差し替え。
 // アバターは丸型でHTML合成し、右上のできた数バッジはプロフィールボタン上から外した。play.html PAGE_CACHE_VERSION と同期。
 // v1996: play.html の tier v3 regression fix 3 件。 (1) MENU_GAMES 先頭 zone header を
@@ -656,7 +658,7 @@
 //     assets/data/game-stickers.json version 20、STICKER_DESC 側も追随)。
 // (d) 統合時に PAGE_CACHE_VERSION と PONO_SW_VERSION の同期漏れ (v1995 のまま) を検出し修正。
 // play.html PAGE_CACHE_VERSION / PONO_SW_VERSION 同期。
-const CACHE_VERSION = 1998;
+const CACHE_VERSION = 1999;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
