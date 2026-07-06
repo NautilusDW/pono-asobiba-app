@@ -2150,37 +2150,40 @@
         {
           "id": "book_bonus_wave_greeting",
           "name": "てをふるポノ",
-          "img": "assets/ui/gacha/stickers/book_bonus_wave_base_super_20260706.png",
-          "imgAlt": "assets/ui/gacha/stickers/book_bonus_wave_up_super_20260706.png",
+          "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_002.png",
+          "imgAlt": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_002.png",
           "animated": true,
           "rarity": "super",
           "tier": "book_exclusive",
           "unlockOn": [
             "book_bonus"
           ],
-          "serial": "136"
+          "serial": "136",
+          "note": "TEMP: Brand Kit 納品後に差し替え (book_bonus_wave_base/up_super_20260706 が未納品のため仮差し)"
         },
         {
           "id": "book_bonus_family_photo",
           "name": "みんなでしゃしん",
-          "img": "assets/ui/gacha/stickers/book_bonus_family_photo_super_20260706.png",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_001.png",
           "rarity": "super",
           "tier": "book_exclusive",
           "unlockOn": [
             "book_bonus"
           ],
-          "serial": "137"
+          "serial": "137",
+          "note": "TEMP: Brand Kit 納品後に差し替え (book_bonus_family_photo_super_20260706 が未納品のため仮差し)"
         },
         {
           "id": "book_bonus_password_thanks",
           "name": "あいことば ありがとう",
-          "img": "assets/ui/gacha/stickers/book_bonus_password_thanks_super_20260706.png",
+          "img": "assets/ui/gacha/stickers/bonus_bento_pono_present_super_20260623.png",
           "rarity": "super",
           "tier": "book_exclusive",
           "unlockOn": [
             "book_bonus"
           ],
-          "serial": "138"
+          "serial": "138",
+          "note": "TEMP: Brand Kit 納品後に差し替え (book_bonus_password_thanks_super_20260706 が未納品のため仮差し)"
         }
       ]
     },
@@ -2192,118 +2195,8 @@
       "appOnly": true,
       "subOnly": true,
       "phase": 2,
-      "stickers": [
-        {
-          "id": "sub_bonus_placeholder_01",
-          "name": "（サブとくてん・じゅんびちゅう 01）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "super",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "139"
-        },
-        {
-          "id": "sub_bonus_placeholder_02",
-          "name": "（サブとくてん・じゅんびちゅう 02）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "super",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "140"
-        },
-        {
-          "id": "sub_bonus_placeholder_03",
-          "name": "（サブとくてん・じゅんびちゅう 03）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "super",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "141"
-        },
-        {
-          "id": "sub_bonus_placeholder_04",
-          "name": "（サブとくてん・じゅんびちゅう 04）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "rare",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "142"
-        },
-        {
-          "id": "sub_bonus_placeholder_05",
-          "name": "（サブとくてん・じゅんびちゅう 05）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "rare",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "143"
-        },
-        {
-          "id": "sub_bonus_placeholder_06",
-          "name": "（サブとくてん・じゅんびちゅう 06）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "rare",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "144"
-        },
-        {
-          "id": "sub_bonus_placeholder_07",
-          "name": "（サブとくてん・じゅんびちゅう 07）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "rare",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "145"
-        },
-        {
-          "id": "sub_bonus_placeholder_08",
-          "name": "（サブとくてん・じゅんびちゅう 08）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "normal",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "146"
-        },
-        {
-          "id": "sub_bonus_placeholder_09",
-          "name": "（サブとくてん・じゅんびちゅう 09）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "normal",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "147"
-        },
-        {
-          "id": "sub_bonus_placeholder_10",
-          "name": "（サブとくてん・じゅんびちゅう 10）",
-          "img": "assets/ui/gacha/stickers/PLACEHOLDER_sub_bonus.png",
-          "rarity": "normal",
-          "tier": "sub_exclusive",
-          "unlockOn": [
-            "sub_bonus"
-          ],
-          "serial": "148"
-        }
-      ]
+      "note": "TEMP: Phase 2 で実コンテンツ選定するまで stickers は意図的に空。 PLACEHOLDER_sub_bonus.png が不存在のため壊れ表示を避ける (H2)",
+      "stickers": []
     }
   }
 }

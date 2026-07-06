@@ -1,5 +1,20 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1994: play.html の tier v3 HIGH 7 件を修正 (Track B)。 デバッグリセットボタンを
+// isManageDebugAllowed() でゲート (未許可なら完全 hidden)、 月1おかえりトーストが
+// splash 背後で消費されるバグを splash-dismissed イベント起点に修正、 book throttle 中でも
+// sub 専用ゲームへの遷移を必ずブロックするよう修正 (quiet toast に変更)、 free 誘導モーダルの
+// 事実相違コピーを修正、 welcome ステップ5 の白箱化する iframe を静的 webp (AR 1:1) に置換。
+// play.html PAGE_CACHE_VERSION と同期。
+// v1993: play.html の初回プロフィール登録を `キャラクター → なまえ → ねんれい・せいべつ` の段階式に変更し、GPT Image 2 生成アバター画像表示時は旧CSS/SVG風パーツDOMを消して重なりを防止 (コード描画の新規生成ではなく旧DOM除去、Image2 ルール例外対象外)。play.html PAGE_CACHE_VERSION と同期。
+// v1991: tier v3 統合 + callsite sweep。 puzzle/main.js の BOOK_PUZZLE_STAGE_SEQUENCE bypass (book tier が
+// common/tier.js のロック定義を経由せず 9 ステージ進行していた) を撤去し free/book 共通判定に統一。
+// breakout/index.html の raw localStorage.getItem('pono_premium') 直読みゲートを PonoTier.isFree() 経由に統一
+// (common/tier.js 未読込だったため tier.js/debug-mode.js の script タグを追加)。 oto の rhythm song 二重ロック
+// (kaeru) は調査の結果 stage 進行ゲートとティアゲートが共に既に free 通過済みで問題なしと確認。
+// PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 稼働中) を「MVP は false で到達しない」と誤記していた
+// stale コメントを maze/quizland/bento/oto/puzzle で是正 (実際は現役分岐、削除誘発防止)。
+// play.html PAGE_CACHE_VERSION と同期。
 // v1989: play.html のプロフィール内アバター完成品プリセットを GPT Image 2 生成の全身40体へ拡張。人間20体 + 人間以外20体の新WebPを接続し、完成品を選ぶ方式は維持。play.html PAGE_CACHE_VERSION と同期。
 // v1988: play.html のプロフィール内アバター作成を完成品24体選択へ戻し、体型/パーツ/色の自由編集を子ども側から閉じる。v1983-v1987 の体型別パーツセット追加分を未使用化し、play.html PAGE_CACHE_VERSION と同期。
 // v1982: play.html のプロフィール内アバター作成を、体型別パーツセットが揃うまで完成品24体選択へ戻す。破綻する自由合成を子どもに見せず、GPT Image 2 由来の完成品WebPをホーム/プロフィール/選択に使用。play.html PAGE_CACHE_VERSION と同期。
@@ -619,7 +634,7 @@
 // アプリで あそべる / じゅんびちゅう) + book/free 誘導モーダル + book welcome 演出
 // (6ステップ, 生涯1回) + 月1 おかえりトースト + daily gacha tier ゲート
 // (free/book は quizland 1ページのみ抽選) を追加。 play.html PAGE_CACHE_VERSION 同期。
-const CACHE_VERSION = 1990;
+const CACHE_VERSION = 1994;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

@@ -55,6 +55,29 @@
   </style>
   <script>
     (function(){
+      // H4 fix: 「スプラッシュが完全に閉じた瞬間」 を通知する共通イベント。
+      // #pono-game-splash と #tapIntro の 2 段構えのオーバーレイのうち、 実際に
+      // ユーザーへ本編 UI が見える状態になったタイミングで 1 度だけ発火する
+      // (どちらか一方しか表示されない設計なので、 両方の dismiss 経路から
+      // このヘルパーを呼んで dedup させる)。 maybeShowMonthlyOkaeri() 等、
+      // splash の裏で実行されると意味がない処理はこのイベントを起点にする。
+      window.__ponoSplashDismissed = false;
+      window.__ponoNotifySplashDismissed = function ponoNotifySplashDismissed() {
+        if (window.__ponoSplashDismissed) return;
+        window.__ponoSplashDismissed = true;
+        try { document.dispatchEvent(new CustomEvent('pono:splash-dismissed')); } catch (_) {}
+      };
+      // #tapIntro (音声解禁タップ画面) が代わりに表示されない場合のみ、
+      // #pono-game-splash 側の早期 hidden 化を「実質的な dismiss」 とみなして通知する。
+      // #tapIntro の表示判定は本 script より後方の inline script が同期実行で
+      // 既に確定させているため (DOMContentLoaded 発火前)、 ここで安全に判定できる。
+      function ponoNotifyIfNoTapIntro() {
+        var introEl;
+        try { introEl = document.getElementById('tapIntro'); } catch (_) { introEl = null; }
+        if (!introEl || introEl.hidden) {
+          window.__ponoNotifySplashDismissed();
+        }
+      }
       // 2 RAF 待ちで .page を可視化 (CSS 評価完了 + 1 フレーム描画後)
       function ready(){
         requestAnimationFrame(function(){
@@ -75,7 +98,7 @@
       document.addEventListener('DOMContentLoaded', function(){
         try {
           var splash = document.getElementById('pono-game-splash');
-          if (!splash) return;
+          if (!splash) { ponoNotifyIfNoTapIntro(); return; }
           // === ゲーム戻り / 既存ユーザー / セッション 2 回目以降の誤発火ガード ===
           // 1) ブラウザ back/forward ナビゲーションなら overlay 不要 (ゲームから戻ってきた局面)
           var navType = '';
@@ -85,6 +108,7 @@
           } catch (_) {}
           if (navType === 'back_forward') {
             splash.hidden = true;
+            ponoNotifyIfNoTapIntro();
             return;
           }
           // 2) このセッションで既に 1 度出していれば 2 回目以降は出さない
@@ -92,6 +116,7 @@
           try { splashShown = sessionStorage.getItem('pono_splash_shown_v1') === '1'; } catch (_) {}
           if (splashShown) {
             splash.hidden = true;
+            ponoNotifyIfNoTapIntro();
             return;
           }
           // 3) localStorage に何らかの pono_* 履歴があれば既存ユーザー → overlay skip
@@ -105,6 +130,7 @@
           if (hasHistory) {
             splash.hidden = true;
             try { sessionStorage.setItem('pono_splash_shown_v1', '1'); } catch (_) {}
+            ponoNotifyIfNoTapIntro();
             return;
           }
           var unlocked = sessionStorage.getItem('pono_audio_unlocked') === '1';
@@ -112,6 +138,7 @@
           // pono-tap-intro が出ない条件 = 既に解禁済み or BGM オフ → game-splash で覆う
           if (!(unlocked || bgmOff)) {
             splash.hidden = true; // pono-tap-intro に主役を譲る
+            ponoNotifyIfNoTapIntro();
             return;
           }
           // ここまで来たら真の初回訪問 → overlay 表示。 セッション flag を立てて重複防止
@@ -122,6 +149,11 @@
             splash.removeEventListener('pointerdown', dismiss);
             splash.removeEventListener('click', dismiss);
             splash.removeEventListener('keydown', onKey);
+            // H4 fix: この game-splash が閉じても #tapIntro が別途表示中の可能性が
+            // あるため (bgmOff 判定キーと isMuted 判定キーが別物のため排他が保証しきれない)、
+            // tapIntro が表示されていない場合のみ通知する。 表示中なら tapIntro 側の
+            // dismissIntro() が改めて通知する。
+            ponoNotifyIfNoTapIntro();
           };
           var onKey = function(e){
             if (e.key === 'Enter' || e.key === ' ') {
@@ -1502,7 +1534,7 @@
       text-align: center;
     }
     .modal-card.profile-card {
-      max-width: min(360px, calc(100vw - 24px));
+      max-width: min(640px, calc(100vw - 24px));
       padding: 16px 18px 14px;
       /* v1786: keep the card inside the visible viewport even with notches /
          browser bars, and let it scroll when content is taller than the
@@ -1530,6 +1562,145 @@
     .profile-form {
       display: grid;
       gap: 8px;
+    }
+    .profile-stepper {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .profile-step-pill {
+      min-width: 0;
+      min-height: 28px;
+      display: grid;
+      place-items: center;
+      padding: 3px 6px;
+      border: 2px solid rgba(242, 145, 90, .22);
+      border-radius: 999px;
+      background: rgba(255, 253, 250, .74);
+      color: #8a6a43;
+      font-size: .64rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-step-pill.is-active {
+      border-color: #F5A800;
+      background: #FFF3C4;
+      color: #6B4300;
+    }
+    .profile-step-panel {
+      display: grid;
+      gap: 8px;
+    }
+    .profile-step-panel[hidden] {
+      display: none !important;
+    }
+    .profile-start-avatar {
+      display: grid;
+      grid-template-columns: 128px minmax(0, 1fr);
+      gap: 10px;
+      align-items: stretch;
+      padding: 10px;
+      border: 2px solid rgba(242, 145, 90, .28);
+      border-radius: 18px;
+      background: rgba(255, 253, 250, .72);
+    }
+    .profile-start-avatar__preview {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      justify-items: center;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      padding: 8px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,244,216,.9));
+      box-shadow: inset 0 0 0 2px rgba(120, 84, 42, .08);
+    }
+    .profile-start-avatar__preview .pono-mini-avatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 24px;
+      border-width: 5px;
+    }
+    .profile-start-avatar__name {
+      max-width: 100%;
+      color: #6B4300;
+      font-size: .78rem;
+      font-weight: 900;
+      line-height: 1.08;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-start-avatar__choices {
+      min-width: 0;
+      display: grid;
+      gap: 6px;
+      align-content: start;
+    }
+    .profile-start-avatar__label {
+      color: var(--text);
+      font-size: .78rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .profile-start-avatar__grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      max-height: 142px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 1px 2px 4px 0;
+    }
+    .profile-start-avatar__grid .profile-avatar-preset {
+      min-height: 62px;
+      grid-template-columns: 1fr;
+      grid-template-rows: 38px auto;
+      place-items: center;
+      gap: 3px;
+      padding: 5px 4px;
+      border-radius: 14px;
+    }
+    .profile-start-avatar__grid .profile-avatar-preset .pono-mini-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 13px;
+      border-width: 3px;
+    }
+    .profile-start-avatar__grid .profile-avatar-preset__name {
+      width: 100%;
+      font-size: .62rem;
+      line-height: 1.04;
+      text-align: center;
+    }
+    .profile-step-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+    }
+    .profile-step-actions--single {
+      grid-template-columns: minmax(160px, 220px);
+      justify-content: end;
+    }
+    .profile-step-back {
+      min-height: 38px;
+      border: 2px solid rgba(242, 145, 90, .42);
+      border-radius: 14px;
+      background: #fffdfa;
+      color: #6a4300;
+      font-family: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-step-back:active {
+      transform: translateY(1px);
     }
     .profile-field {
       display: grid;
@@ -1565,6 +1736,70 @@
       .modal-card.profile-card { padding: 12px 14px 12px; }
       .profile-form { gap: 6px; }
       .profile-card h3 { margin-bottom: 8px; }
+      .profile-stepper { gap: 4px; }
+      .profile-step-pill { min-height: 24px; font-size: .56rem; padding-inline: 4px; }
+      .profile-start-avatar {
+        grid-template-columns: 104px minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px;
+      }
+      .profile-start-avatar__preview {
+        padding: 6px;
+        gap: 4px;
+      }
+      .profile-start-avatar__preview .pono-mini-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        border-width: 4px;
+      }
+      .profile-start-avatar__name {
+        font-size: .68rem;
+      }
+      .profile-start-avatar__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-height: 112px;
+        gap: 5px;
+      }
+      .profile-start-avatar__grid .profile-avatar-preset {
+        min-height: 52px;
+        grid-template-rows: 32px auto;
+      }
+      .profile-start-avatar__grid .profile-avatar-preset .pono-mini-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 11px;
+        border-width: 2px;
+      }
+      .profile-start-avatar__grid .profile-avatar-preset__name {
+        font-size: .56rem;
+      }
+      .profile-step-panel { gap: 6px; }
+      .profile-step-actions { gap: 6px; }
+    }
+    @media (max-width: 520px) {
+      .profile-start-avatar {
+        grid-template-columns: 1fr;
+      }
+      .profile-start-avatar__preview {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: 1fr;
+        justify-items: start;
+        min-height: 70px;
+      }
+      .profile-start-avatar__preview .pono-mini-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+      }
+      .profile-start-avatar__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        max-height: 122px;
+      }
+      .profile-step-actions,
+      .profile-step-actions--single {
+        grid-template-columns: 1fr;
+      }
     }
     .profile-random,
     .profile-save {
@@ -1615,6 +1850,85 @@
     .profile-random:active,
     .profile-gender-btn:active {
       transform: translateY(1px);
+    }
+    @media (max-height: 540px) and (min-width: 700px) and (orientation: landscape) {
+      .modal-card.profile-card {
+        max-width: min(640px, calc(100vw - 24px));
+      }
+      .profile-start-avatar {
+        grid-template-columns: 88px minmax(0, 1fr);
+        padding: 8px;
+      }
+      .profile-start-avatar__preview {
+        padding: 6px;
+        gap: 4px;
+      }
+      .profile-start-avatar__preview .pono-mini-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        border-width: 4px;
+      }
+      .profile-start-avatar__name {
+        font-size: .66rem;
+      }
+      .profile-start-avatar__grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-height: 184px;
+        gap: 5px;
+      }
+      .profile-start-avatar__grid .profile-avatar-preset {
+        min-height: 51px;
+        grid-template-rows: 31px auto;
+        gap: 2px;
+      }
+      .profile-start-avatar__grid .profile-avatar-preset .pono-mini-avatar {
+        width: 31px;
+        height: 31px;
+        border-radius: 10px;
+        border-width: 2px;
+      }
+      .profile-start-avatar__grid .profile-avatar-preset__name {
+        font-size: .54rem;
+      }
+      .profile-field {
+        gap: 3px;
+        font-size: .7rem;
+      }
+      .profile-name-row {
+        grid-template-columns: minmax(0, 1fr) 82px;
+        gap: 6px;
+      }
+      .profile-input,
+      .profile-select,
+      .profile-random,
+      .profile-gender-btn,
+      .profile-save {
+        min-height: 34px;
+      }
+      .profile-input,
+      .profile-select {
+        padding: 5px 9px;
+      }
+      .profile-random {
+        padding: 0 8px;
+        font-size: .78rem;
+      }
+      .profile-gender-group {
+        gap: 5px;
+      }
+      .profile-gender-btn {
+        font-size: .66rem;
+        border-radius: 12px;
+      }
+      .profile-note {
+        margin-top: -1px;
+        font-size: .56rem;
+        line-height: 1.18;
+      }
+      .profile-save {
+        margin-top: 0;
+      }
     }
     .modal-card.profile-hub-card {
       position: relative;
@@ -4868,16 +5182,20 @@
     .book-welcome-reveal-grid .bw-sticker .bw-sticker-emoji { font-size: 1.6rem; }
     .book-welcome-cover-frame {
       width: min(220px, 60vw);
-      aspect-ratio: 406 / 545;
+      /* H7 fix: 仮差し webp の実 AR は 1254x1254 (1:1)。
+         Brand Kit 納品後に画像差し替えする際は、 その画像の実測 AR に合わせて更新すること
+         (縦横比 stretch 絶対禁止 [[feedback_image_aspect_ratio]])。 */
+      aspect-ratio: 1 / 1;
       border-radius: 14px;
       overflow: hidden;
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
       background: #fff;
     }
-    .book-welcome-cover-frame-iframe {
+    .book-welcome-cover-frame-img {
       width: 100%;
       height: 100%;
-      border: none;
+      object-fit: contain;
+      display: block;
     }
 
     /* ===== v3: 月1 おかえり演出 (feature_tier_v3 §4.4) ===== */
@@ -4925,6 +5243,32 @@
     @media (prefers-reduced-motion: reduce) {
       .book-welcome-walker.is-walking { animation: none; transform: translateX(0); opacity: 1; }
       .okaeri-toast-img { animation: none; }
+    }
+
+    /* H5 fix: book throttle 中の quiet block toast (okaeri-toast と同系デザイン、 img なし) */
+    .azp-quiet-toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(18px, env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%) translateY(12px);
+      z-index: 260;
+      max-width: min(280px, 90vw);
+      padding: 10px 20px;
+      border-radius: 50px;
+      background: rgba(93, 78, 55, 0.92);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 800;
+      line-height: 1.4;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+    }
+    .azp-quiet-toast[hidden] { display: none; }
+    .azp-quiet-toast.is-visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
     /* ===== v3: 3ゾーン UI 見出し疑似カード (feature_tier_v3 §7) =====
@@ -6684,6 +7028,13 @@
         var(--av-img) center / 94% 94% no-repeat,
         radial-gradient(circle at 32% 20%, rgba(255,255,255,.75), rgba(255,255,255,0) 34%),
         var(--av-bg);
+    }
+    .pono-mini-avatar[data-avatar-image="1"] > [class^="pono-mini-avatar__"],
+    .pono-mini-avatar[data-avatar-image="1"] > [class*=" pono-mini-avatar__"],
+    .pono-mini-avatar[data-avatar-image="1"]::before,
+    .pono-mini-avatar[data-avatar-image="1"]::after {
+      display: none !important;
+      content: none !important;
     }
     .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__body,
     .pono-mini-avatar[data-avatar-image="1"] .pono-mini-avatar__face,
@@ -8642,21 +8993,7 @@
       <button class="bn-item" data-action="stickers" type="button" aria-label="シール"><span class="bn-item__icon" aria-hidden="true">▣</span><span class="bn-item__label">シール</span></button>
       <button class="bn-item bn-item--profile" data-action="profile" id="profileHomeBtn" type="button" aria-label="プロフィール">
         <span class="bn-item__icon bn-item__icon--avatar" aria-hidden="true">
-          <span class="pono-mini-avatar" id="profileHomeAvatar" data-variant="0" aria-hidden="true">
-            <span class="pono-mini-avatar__tail"></span>
-            <span class="pono-mini-avatar__leg-left"></span>
-            <span class="pono-mini-avatar__leg-right"></span>
-            <span class="pono-mini-avatar__shoe-left"></span>
-            <span class="pono-mini-avatar__shoe-right"></span>
-            <span class="pono-mini-avatar__arm-left"></span>
-            <span class="pono-mini-avatar__arm-right"></span>
-            <span class="pono-mini-avatar__body"></span>
-            <span class="pono-mini-avatar__face"></span>
-            <span class="pono-mini-avatar__eyes"></span>
-            <span class="pono-mini-avatar__mouth"></span>
-            <span class="pono-mini-avatar__hair"></span>
-            <span class="pono-mini-avatar__mark"></span>
-          </span>
+          <span class="pono-mini-avatar" id="profileHomeAvatar" data-variant="0" aria-hidden="true"></span>
         </span>
         <span class="bn-item__label" id="profileHomeName">プロフィール</span>
         <span class="bn-item__sub" id="profileHomeSub">できたこと</span>
@@ -8831,40 +9168,71 @@
     <div class="modal-card profile-card">
       <h3 id="profileTitle">プロフィール</h3>
       <form class="profile-form" id="profileForm">
-        <label class="profile-field" for="profileNameInput">
-          <span>なまえ</span>
-          <span class="profile-name-row">
-            <input class="profile-input" id="profileNameInput" type="text" maxlength="8" autocomplete="off" inputmode="text" value="ポノ">
-            <button class="profile-random" id="profileRandomBtn" type="button">ランダム</button>
-          </span>
-        </label>
-        <div class="profile-field">
-          <span>せいべつ</span>
-          <div class="profile-gender-group" id="profileGenderGroup" role="radiogroup" aria-label="せいべつ">
-            <button class="profile-gender-btn is-active" type="button" data-gender="none" role="radio" aria-checked="true">えらばない</button>
-            <button class="profile-gender-btn" type="button" data-gender="girl" role="radio" aria-checked="false">おんなのこ</button>
-            <button class="profile-gender-btn" type="button" data-gender="boy" role="radio" aria-checked="false">おとこのこ</button>
-          </div>
+        <div class="profile-stepper" aria-label="プロフィールの じゅんばん">
+          <span class="profile-step-pill is-active" data-profile-step-pill="avatar">キャラクター</span>
+          <span class="profile-step-pill" data-profile-step-pill="name">なまえ</span>
+          <span class="profile-step-pill" data-profile-step-pill="details">ねんれい</span>
         </div>
-        <label class="profile-field" for="profileAgeSelect">
-          <span>ねんれい</span>
-          <select class="profile-select" id="profileAgeSelect">
-            <option value="">えらばない</option>
-            <option value="2">2さい</option>
-            <option value="3">3さい</option>
-            <option value="4">4さい</option>
-            <option value="5">5さい</option>
-            <option value="6">6さい</option>
-            <option value="7">7さい</option>
-            <option value="8">8さい</option>
-            <option value="9">9さい</option>
-            <option value="10">10さい</option>
-            <option value="11">11さい</option>
-            <option value="12">12さい</option>
-          </select>
-        </label>
-        <p class="profile-note">※この ブラウザの なかだけで つかいます。そとには おくりません。</p>
-        <button class="profile-save" type="submit">きめた</button>
+        <section class="profile-step-panel" data-profile-step-panel="avatar">
+          <div class="profile-start-avatar">
+            <div class="profile-start-avatar__preview" aria-label="えらんだ キャラクター">
+              <span class="pono-mini-avatar" id="profileStartAvatarPreview" data-variant="0" aria-hidden="true"></span>
+              <span class="profile-start-avatar__name" id="profileStartAvatarName">ポノっこ</span>
+            </div>
+            <div class="profile-start-avatar__choices">
+              <span class="profile-start-avatar__label">キャラクター</span>
+              <div class="profile-start-avatar__grid" id="profileStartAvatarControls" aria-label="キャラクターを えらぶ"></div>
+            </div>
+          </div>
+          <div class="profile-step-actions profile-step-actions--single">
+            <button class="profile-save" id="profileStepAvatarNext" type="button">つぎへ</button>
+          </div>
+        </section>
+        <section class="profile-step-panel" data-profile-step-panel="name" hidden>
+          <label class="profile-field" for="profileNameInput">
+            <span>なまえ</span>
+            <span class="profile-name-row">
+              <input class="profile-input" id="profileNameInput" type="text" maxlength="8" autocomplete="off" inputmode="text" value="ポノ">
+              <button class="profile-random" id="profileRandomBtn" type="button">ランダム</button>
+            </span>
+          </label>
+          <div class="profile-step-actions">
+            <button class="profile-step-back" id="profileStepNameBack" type="button">もどる</button>
+            <button class="profile-save" id="profileStepNameNext" type="button">つぎへ</button>
+          </div>
+        </section>
+        <section class="profile-step-panel" data-profile-step-panel="details" hidden>
+          <label class="profile-field" for="profileAgeSelect">
+            <span>ねんれい</span>
+            <select class="profile-select" id="profileAgeSelect">
+              <option value="">えらばない</option>
+              <option value="2">2さい</option>
+              <option value="3">3さい</option>
+              <option value="4">4さい</option>
+              <option value="5">5さい</option>
+              <option value="6">6さい</option>
+              <option value="7">7さい</option>
+              <option value="8">8さい</option>
+              <option value="9">9さい</option>
+              <option value="10">10さい</option>
+              <option value="11">11さい</option>
+              <option value="12">12さい</option>
+            </select>
+          </label>
+          <div class="profile-field">
+            <span>せいべつ</span>
+            <div class="profile-gender-group" id="profileGenderGroup" role="radiogroup" aria-label="せいべつ">
+              <button class="profile-gender-btn is-active" type="button" data-gender="none" role="radio" aria-checked="true">えらばない</button>
+              <button class="profile-gender-btn" type="button" data-gender="girl" role="radio" aria-checked="false">おんなのこ</button>
+              <button class="profile-gender-btn" type="button" data-gender="boy" role="radio" aria-checked="false">おとこのこ</button>
+            </div>
+          </div>
+          <p class="profile-note">※この ブラウザの なかだけで つかいます。そとには おくりません。</p>
+          <div class="profile-step-actions">
+            <button class="profile-step-back" id="profileStepDetailsBack" type="button">もどる</button>
+            <button class="profile-save" type="submit">きめた</button>
+          </div>
+        </section>
       </form>
     </div>
   </div>
@@ -8874,21 +9242,7 @@
       <button class="profile-hub-xclose" type="button" data-close="profileHubModal" aria-label="とじる">×</button>
       <div class="profile-hub-panel" id="profileHubMainPanel">
         <div class="profile-hub-head">
-          <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true">
-            <span class="pono-mini-avatar__tail"></span>
-            <span class="pono-mini-avatar__leg-left"></span>
-            <span class="pono-mini-avatar__leg-right"></span>
-            <span class="pono-mini-avatar__shoe-left"></span>
-            <span class="pono-mini-avatar__shoe-right"></span>
-            <span class="pono-mini-avatar__arm-left"></span>
-            <span class="pono-mini-avatar__arm-right"></span>
-            <span class="pono-mini-avatar__body"></span>
-            <span class="pono-mini-avatar__face"></span>
-            <span class="pono-mini-avatar__eyes"></span>
-            <span class="pono-mini-avatar__mouth"></span>
-            <span class="pono-mini-avatar__hair"></span>
-            <span class="pono-mini-avatar__mark"></span>
-          </span>
+          <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true"></span>
           <div class="profile-hub-id">
             <h3 class="profile-hub-title" id="profileHubTitle">プロフィール</h3>
             <div class="profile-hub-name" id="profileHubName">ポノ</div>
@@ -8924,21 +9278,7 @@
         </div>
         <div class="profile-avatar-builder">
           <div class="profile-avatar-preview" aria-label="えらんだ すがた">
-            <span class="pono-mini-avatar" id="profileAvatarPreview" data-variant="0" aria-hidden="true">
-              <span class="pono-mini-avatar__tail"></span>
-              <span class="pono-mini-avatar__leg-left"></span>
-              <span class="pono-mini-avatar__leg-right"></span>
-              <span class="pono-mini-avatar__shoe-left"></span>
-              <span class="pono-mini-avatar__shoe-right"></span>
-              <span class="pono-mini-avatar__arm-left"></span>
-              <span class="pono-mini-avatar__arm-right"></span>
-              <span class="pono-mini-avatar__body"></span>
-              <span class="pono-mini-avatar__face"></span>
-              <span class="pono-mini-avatar__eyes"></span>
-              <span class="pono-mini-avatar__mouth"></span>
-              <span class="pono-mini-avatar__hair"></span>
-              <span class="pono-mini-avatar__mark"></span>
-            </span>
+            <span class="pono-mini-avatar" id="profileAvatarPreview" data-variant="0" aria-hidden="true"></span>
             <span class="profile-avatar-preview__name" id="profileAvatarPreviewName">ポノっこ</span>
           </div>
           <div class="profile-avatar-grid" id="profileAvatarControls" aria-label="すがたを えらぶ"></div>
@@ -9267,6 +9607,10 @@
     </div>
   </div>
 
+  <!-- v3: H5 fix — book throttle 中に sub 専用ゲームをタップした時の quiet block toast。
+       モーダルは出さないが遷移はブロックしているので一言だけ添える (何も起きなかった感を防ぐ)。 -->
+  <div class="azp-quiet-toast" id="azpQuietToast" hidden aria-live="polite">アプリで あそべるよ</div>
+
   <!-- ===== v3: book welcome 演出 (feature_tier_v3 §4.3, 生涯1回) =====
        あいことば解錠直後に発火する 6 ステップの演出。 skip は右上に常設し、
        skip でも grantBookBonus (book 特典 8 シール) は確定実行する。 -->
@@ -9286,7 +9630,10 @@
       <div class="book-welcome-cover" id="bookWelcomeCover" hidden>
         <div class="book-welcome-cover-title">シールちょうの ひょうしも<br>とくべつに なったよ</div>
         <div class="book-welcome-cover-frame">
-          <iframe class="book-welcome-cover-frame-iframe" id="bookWelcomeCoverFrame" src="" title="とくべつな シールちょう ひょうし" loading="lazy"></iframe>
+          <!-- H7 fix: SB3D iframe プレビューが実機で白箱化するため静的 webp に置換。
+               仮差し画像は実 AR 1254x1254 (1:1)。 Brand Kit 納品後の coverPrint.webp に差し替え予定。 -->
+          <img class="book-welcome-cover-frame-img" id="bookWelcomeCoverFrame"
+               src="" alt="とくべつな シールちょう ひょうし" draggable="false" loading="lazy">
         </div>
       </div>
       <div class="book-welcome-outro" id="bookWelcomeOutro" hidden>
@@ -9869,7 +10216,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1990;
+    const PAGE_CACHE_VERSION = 1994;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -9878,7 +10225,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1990';
+    window.PONO_SW_VERSION = 'v1994';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -10912,7 +11259,11 @@
     const dailyGachaRewardName = document.getElementById('dailyGachaRewardName');
     const dailyGachaRewardNote = document.getElementById('dailyGachaRewardNote');
     const dailyGachaTomorrowNote = document.getElementById('dailyGachaTomorrowNote');
-    const dailyGachaEnabled = __isAppBuild || document.body.classList.contains('dev-mode');
+    // v3 (feature_tier_v3 §7): free/book も対象に含める (旧: アプリ版/dev-mode 限定)。
+    // 抽選母数そのものは grantDailyGachaSticker() 内の tier gate で free/book なら
+    // quizland 1ページのみに絞られるため、 ここで visibility を解放しても
+    // 無料層が sub 専用ページのシールを引けるようになるわけではない。
+    const dailyGachaEnabled = true;
     const dailyGachaState = {
       dragging: false,
       lastAngle: 0,
@@ -13567,7 +13918,14 @@
       const isSubTier = tier && typeof tier.isSub === 'function' ? tier.isSub() : __isAppBuild;
       if (isSubTier) return false;
       const isBookTier = tier && typeof tier.isBook === 'function' ? tier.isBook() : isBookBenefitUnlocked();
-      if (isBookTier && !shouldShowBookSubPromo()) return false;
+      // H5 fix: throttle 中 (24h 以内に表示済み / 7日 dismiss 中) でも「遷移をブロックする」
+      // 効果は必ず維持する。 以前はここで false を返して呼び出し側 (startGame) が
+      // そのまま通常遷移させてしまい、 book 購入者が sub 専用ゲームに素通りできてしまっていた。
+      // モーダルの再表示だけを抑制し、 代わりに quiet toast で一言添えて遷移をブロックする。
+      if (isBookTier && !shouldShowBookSubPromo()) {
+        showAppZoneQuietToast();
+        return true;
+      }
       if (document.querySelector('.app-zone-promo-modal.is-visible')) return true;
 
       const modal = document.getElementById('appZonePromoModal');
@@ -13588,9 +13946,13 @@
         primaryBtn.dataset.action = 'goapp';
         secondaryBtn.dataset.action = 'dismiss-book';
       } else {
-        titleEl.innerHTML = 'このゲームは、 えほんを かってくれた人と<br>'
-          + 'アプリで あそんでくれる人 だけの ゲームだよ。<br><br>'
-          + 'えほんには、 ポノからの あいことばが あるよ。';
+        // H6 fix: 旧コピー「絵本を かってくれた人と アプリで あそんでくれる人 だけの
+        // ゲームだよ」 は事実相違 (実際は sub tier = アプリ版のみ、 book だけでは遊べない)。
+        // 案A (採用): 事実と一致 + 絵本→あいことば誘導を維持。 3 案検討ログは HANDOFF 参照。
+        titleEl.innerHTML = 'このゲームは、 アプリで あそんでくれる人<br>'
+          + 'だけの ゲームだよ。<br><br>'
+          + 'えほんには、 ポノからの あいことばが あるよ。<br>'
+          + 'それで もっと たくさん あそべるよ。';
         primaryBtn.textContent = 'えほんを みてみる';
         secondaryBtn.textContent = 'とじる';
         primaryBtn.dataset.action = 'openbook';
@@ -13606,6 +13968,22 @@
       if (!modal) return;
       modal.classList.remove('is-visible');
       setTimeout(() => { modal.hidden = true; }, 220);
+    }
+
+    // H5 fix: book throttle 中に sub 専用ゲームをタップした時の quiet block。
+    // モーダルは連打抑制で出さないが、 遷移は必ずブロックしているので
+    // 「何も起きなかったように見える」 事故を避けるため一言だけ小さく添える。
+    let azpQuietToastHideTimer = null;
+    function showAppZoneQuietToast() {
+      const toast = document.getElementById('azpQuietToast');
+      if (!toast) return;
+      toast.hidden = false;
+      requestAnimationFrame(() => toast.classList.add('is-visible'));
+      if (azpQuietToastHideTimer) clearTimeout(azpQuietToastHideTimer);
+      azpQuietToastHideTimer = setTimeout(() => {
+        toast.classList.remove('is-visible');
+        setTimeout(() => { toast.hidden = true; }, 320);
+      }, 1800);
     }
 
     (function setupAppZonePromoButtons() {
@@ -13946,8 +14324,11 @@
         if (!cover) return;
         cover.hidden = false;
         requestAnimationFrame(() => cover.classList.add('is-visible'));
+        // H7 fix: SB3D iframe (?surface=cover&book=book_buyer_edition) が実機で白箱化するため、
+        // 静的 webp (仮差し、 実 AR 1254x1254 = 1:1) に置換。 Brand Kit 納品後の coverPrint.webp に
+        // 差し替える際は CSS 側の aspect-ratio も新画像の実測 AR に合わせて更新すること。
         if (coverFrame) {
-          try { coverFrame.src = 'Prototypes/StickerBookThreeJS/?surface=cover&book=book_buyer_edition'; } catch (e) {}
+          try { coverFrame.src = 'assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_book_bonus_cover_front_friends_armfix_20260701.webp'; } catch (e) {}
         }
       }, revealDoneAt + 300);
 
@@ -13976,17 +14357,29 @@
       return jst.getUTCFullYear() + '-' + String(jst.getUTCMonth() + 1).padStart(2, '0');
     }
     function maybeShowMonthlyOkaeri() {
+      let tierName = 'free';
+      let key;
       try {
         const tier = window.PonoTier || null;
-        const t = tier && typeof tier.getTier === 'function' ? tier.getTier() : 'free';
-        if (t !== 'book' && t !== 'sub') return; // free には出さない
+        tierName = tier && typeof tier.getTier === 'function' ? tier.getTier() : 'free';
+        if (tierName !== 'book' && tierName !== 'sub') return; // free には出さない
         if (bookWelcomeRunning) return;          // welcome 演出と競合させない
-        const key = jstYearMonthKey();
+        key = jstYearMonthKey();
         if (localStorage.getItem(OKAERI_LAST_SHOWN_KEY) === key) return;
-        localStorage.setItem(OKAERI_LAST_SHOWN_KEY, key);
       } catch (e) { return; }
       const toast = document.getElementById('okaeriToast');
       if (!toast) return;
+      // H4 fix: tier ごとに挨拶コピーを分岐 (spec §4.3)。 book/sub で微妙にニュアンスを変える。
+      const textEl = toast.querySelector('.okaeri-toast-text');
+      if (textEl) {
+        textEl.innerHTML = (tierName === 'sub')
+          ? 'またあそんでくれて<br>ありがとうね'
+          : 'えほんを かってくれて<br>ありがとうね';
+      }
+      // H4 fix: 月キーの消費を toast 表示が確定した直後 (= 表示成功後) に移動。
+      // 以前はここより手前 (tier/pending チェック直後、 かつ splash 表示中) で消費して
+      // いたため、 splash に隠れて表示されないまま次月まで見られなくなるバグがあった。
+      try { localStorage.setItem(OKAERI_LAST_SHOWN_KEY, key); } catch (e) {}
       toast.hidden = false;
       requestAnimationFrame(() => toast.classList.add('is-visible'));
       const hide = () => {
@@ -13996,8 +14389,17 @@
       setTimeout(hide, 3800);
       toast.addEventListener('click', hide, { once: true });
     }
-    // welcome 演出 (該当時) が先に走り終えてから判定させるための遅延実行。
-    setTimeout(maybeShowMonthlyOkaeri, 1600);
+    // H4 fix: 固定 1600ms 遅延ではなく、 splash (#pono-game-splash / #tapIntro のいずれか)
+    // が実際に閉じてから判定させる。 以前は splash 背後で toast が表示され (かつ月キーが
+    // 表示前に消費され) 次月まで完全に見えなくなるバグがあった。
+    function scheduleMonthlyOkaeriCheck() {
+      setTimeout(maybeShowMonthlyOkaeri, 400);
+    }
+    if (window.__ponoSplashDismissed) {
+      scheduleMonthlyOkaeriCheck();
+    } else {
+      document.addEventListener('pono:splash-dismissed', scheduleMonthlyOkaeriCheck, { once: true });
+    }
 
     // ===== unlock 成功時の共通 finalize =====
     /**
@@ -14177,9 +14579,16 @@
 
     // デバッグ用リセットボタン: 解錠状態を解除して free に戻す
     // (success div 内に存在するため、success が hidden の間は表示されない)
+    // H3 fix: 本番 (PonoDebugMode 未 unlock) では子供が誤タップして book 特典を
+    // 消し飛ばせてしまうため、 DOM 上から完全に隠す (disabled だと見えて押せてしまうので不可)。
+    // 参照: [[feedback_admin_debug_leak_audit]]
     const pwReset = document.getElementById('passwordUnlockReset');
     if (pwReset) {
+      if (!isManageDebugAllowed()) {
+        pwReset.hidden = true;
+      }
       pwReset.addEventListener('click', () => {
+        if (!isManageDebugAllowed()) return; // 二重ガード (fail-safe)
         try {
           localStorage.removeItem('pono_premium');
           localStorage.removeItem('pono_sub_active');
@@ -14263,10 +14672,19 @@
       const RANDOM_NAMES = ['ポノ', 'そら', 'はな', 'ゆう', 'まる', 'ココ', 'ミミ', 'ルル', 'ナナ', 'トト', 'モモ', 'ララ'];
       const profileModal = document.getElementById('profileModal');
       const profileForm = document.getElementById('profileForm');
+      const profileStepPanels = Array.from(document.querySelectorAll('[data-profile-step-panel]'));
+      const profileStepPills = Array.from(document.querySelectorAll('[data-profile-step-pill]'));
+      const profileStepAvatarNext = document.getElementById('profileStepAvatarNext');
+      const profileStepNameBack = document.getElementById('profileStepNameBack');
+      const profileStepNameNext = document.getElementById('profileStepNameNext');
+      const profileStepDetailsBack = document.getElementById('profileStepDetailsBack');
       const profileNameInput = document.getElementById('profileNameInput');
       const profileRandomBtn = document.getElementById('profileRandomBtn');
       const profileAgeSelect = document.getElementById('profileAgeSelect');
       const profileGenderGroup = document.getElementById('profileGenderGroup');
+      const profileStartAvatarPreview = document.getElementById('profileStartAvatarPreview');
+      const profileStartAvatarName = document.getElementById('profileStartAvatarName');
+      const profileStartAvatarControls = document.getElementById('profileStartAvatarControls');
       const settingsProfileBtn = document.getElementById('settingsProfileBtn');
       const settingsProfileSub = document.getElementById('settingsProfileSub');
       const profileHomeBtn = document.getElementById('profileHomeBtn');
@@ -14516,6 +14934,8 @@
       let profileGender = 'none';
       let openHubAfterProfileSave = false;
       let avatarDraft = null;
+      let profileFormAvatarDraft = null;
+      let profileStep = 'avatar';
 
       function sanitizeProfileName(name) {
         const text = String(name || '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
@@ -14621,7 +15041,7 @@
       }
       function defaultProfile() {
         const profile = { name: 'ポノ', gender: 'none', age: '' };
-        profile.avatar = normalizeAvatar(null, profile);
+        profile.avatar = avatarFromPreset(AVATAR_DEFAULT_ID);
         return profile;
       }
       function loadProfile() {
@@ -14663,6 +15083,12 @@
           } catch (_) {}
         }
       }
+      function clearAvatarPieces(el) {
+        if (!el) return;
+        el.querySelectorAll('[class^="pono-mini-avatar__"], [class*=" pono-mini-avatar__"]').forEach((node) => {
+          node.remove();
+        });
+      }
       function ensureAvatarPieces(el) {
         if (!el) return;
         AVATAR_PART_DOM.forEach((part) => {
@@ -14679,9 +15105,13 @@
       }
       function applyAvatarToElement(el, avatarOrProfile) {
         if (!el) return;
-        ensureAvatarPieces(el);
         const isProfile = !!(avatarOrProfile && avatarOrProfile.avatar);
         const avatar = normalizeAvatar(isProfile ? avatarOrProfile.avatar : avatarOrProfile, isProfile ? avatarOrProfile : {});
+        if (avatar.image) {
+          clearAvatarPieces(el);
+        } else {
+          ensureAvatarPieces(el);
+        }
         el.dataset.avatarMode = 'full';
         el.dataset.variant = 'custom';
         el.dataset.bodyType = avatar.bodyType || 'balanced';
@@ -14843,14 +15273,15 @@
         const item = list.find((option) => option.id === value);
         return item ? item.label : String(value || '');
       }
-      function createAvatarPresetButton(preset) {
+      function createAvatarPresetButton(preset, selectedAvatar) {
         const avatar = avatarFromPreset(preset && preset.id);
+        const selected = selectedAvatar || avatarDraft;
         const btn = document.createElement('button');
         btn.className = 'profile-avatar-preset';
         btn.type = 'button';
         btn.dataset.avatarPreset = avatar.preset;
-        btn.setAttribute('aria-pressed', avatarDraft && avatarDraft.preset === avatar.preset ? 'true' : 'false');
-        btn.classList.toggle('is-active', !!avatarDraft && avatarDraft.preset === avatar.preset);
+        btn.setAttribute('aria-pressed', selected && selected.preset === avatar.preset ? 'true' : 'false');
+        btn.classList.toggle('is-active', !!selected && selected.preset === avatar.preset);
 
         const thumb = document.createElement('span');
         thumb.className = 'pono-mini-avatar';
@@ -14908,6 +15339,20 @@
         AVATAR_PRESETS.forEach((preset) => {
           profileAvatarControls.appendChild(createAvatarPresetButton(preset));
         });
+      }
+      function renderProfileFormAvatar() {
+        if (!profileFormAvatarDraft) profileFormAvatarDraft = avatarFromPreset(AVATAR_DEFAULT_ID);
+        if (profileStartAvatarPreview) applyAvatarToElement(profileStartAvatarPreview, profileFormAvatarDraft);
+        if (profileStartAvatarName) profileStartAvatarName.textContent = profileFormAvatarDraft.name || 'キャラクター';
+        if (!profileStartAvatarControls) return;
+        profileStartAvatarControls.textContent = '';
+        AVATAR_PRESETS.forEach((preset) => {
+          profileStartAvatarControls.appendChild(createAvatarPresetButton(preset, profileFormAvatarDraft));
+        });
+      }
+      function setProfileFormAvatarPreset(id) {
+        profileFormAvatarDraft = avatarFromPreset(id || AVATAR_DEFAULT_ID);
+        renderProfileFormAvatar();
       }
       function renderAvatarPreview() {
         if (profileAvatarPreview) applyAvatarToElement(profileAvatarPreview, avatarDraft);
@@ -14998,18 +15443,61 @@
           btn.setAttribute('aria-checked', active ? 'true' : 'false');
         });
       }
+      function setProfileFormStep(step, options) {
+        const next = step === 'name' || step === 'details' ? step : 'avatar';
+        const shouldFocus = !options || options.focus !== false;
+        profileStep = next;
+        profileStepPanels.forEach((panel) => {
+          panel.hidden = panel.dataset.profileStepPanel !== next;
+        });
+        profileStepPills.forEach((pill) => {
+          pill.classList.toggle('is-active', pill.dataset.profileStepPill === next);
+        });
+        try {
+          const card = profileModal && profileModal.querySelector('.profile-card');
+          if (card) card.scrollTop = 0;
+        } catch (_) {}
+        if (!shouldFocus || !profileModal || profileModal.hidden) return;
+        setTimeout(() => {
+          try {
+            if (next === 'name' && profileNameInput) {
+              profileNameInput.focus();
+              profileNameInput.select();
+            } else if (next === 'details' && profileAgeSelect) {
+              profileAgeSelect.focus();
+            }
+          } catch (_) {}
+        }, 60);
+      }
+      function advanceProfileFormStep() {
+        if (profileStep === 'avatar') {
+          setProfileFormStep('name');
+          return true;
+        }
+        if (profileStep === 'name') {
+          setProfileFormStep('details');
+          return true;
+        }
+        return false;
+      }
       function fillProfileForm(profile) {
         profile = profile || loadProfile();
         if (profileNameInput) profileNameInput.value = profile.name || 'ポノ';
         if (profileAgeSelect) profileAgeSelect.value = profile.age || '';
+        profileFormAvatarDraft = cloneAvatar(profile.avatar);
+        renderProfileFormAvatar();
         setGender(profile.gender);
       }
-      function openProfileModal() {
+      function openProfileModal(startStep) {
+        const requestedStep = startStep || (hasProfile() ? 'name' : 'avatar');
         fillProfileForm(loadProfile());
+        setProfileFormStep(requestedStep, { focus: false });
         openModal('profileModal');
-        setTimeout(() => {
-          try { profileNameInput && profileNameInput.focus(); profileNameInput && profileNameInput.select(); } catch (_) {}
-        }, 80);
+        if (requestedStep === 'name') {
+          setTimeout(() => {
+            try { profileNameInput && profileNameInput.focus(); profileNameInput && profileNameInput.select(); } catch (_) {}
+          }, 80);
+        }
       }
       function maybeOpenFirstProfile() {
         if (hasProfile() || !profileModal) return;
@@ -15019,7 +15507,7 @@
           setTimeout(maybeOpenFirstProfile, 700);
           return;
         }
-        openProfileModal();
+        openProfileModal('avatar');
       }
 
       if (profileGenderGroup) {
@@ -15041,10 +15529,12 @@
       if (profileForm) {
         profileForm.addEventListener('submit', (e) => {
           e.preventDefault();
+          if (advanceProfileFormStep()) return;
           saveProfile({
             name: profileNameInput ? profileNameInput.value : 'ポノ',
             gender: profileGender,
-            age: profileAgeSelect ? profileAgeSelect.value : ''
+            age: profileAgeSelect ? profileAgeSelect.value : '',
+            avatar: profileFormAvatarDraft
           });
           closeModal('profileModal');
           const shouldOpenHub = openHubAfterProfileSave;
@@ -15057,6 +15547,18 @@
             setTimeout(openProfileHub, 0);
           }
         });
+      }
+      if (profileStepAvatarNext) {
+        profileStepAvatarNext.addEventListener('click', () => setProfileFormStep('name'));
+      }
+      if (profileStepNameBack) {
+        profileStepNameBack.addEventListener('click', () => setProfileFormStep('avatar'));
+      }
+      if (profileStepNameNext) {
+        profileStepNameNext.addEventListener('click', () => setProfileFormStep('details'));
+      }
+      if (profileStepDetailsBack) {
+        profileStepDetailsBack.addEventListener('click', () => setProfileFormStep('name'));
       }
       if (profileModal) {
         profileModal.addEventListener('click', (e) => {
@@ -15074,7 +15576,7 @@
           closeModal('profileHubModal');
           pendingProfileStartIdx = null;
           openHubAfterProfileSave = true;
-          openProfileModal();
+          openProfileModal('name');
         });
       }
       if (profileAvatarEditBtn) {
@@ -15119,6 +15621,14 @@
           }
         });
       }
+      if (profileStartAvatarControls) {
+        profileStartAvatarControls.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-avatar-preset]');
+          if (!btn) return;
+          e.preventDefault();
+          setProfileFormAvatarPreset(btn.dataset.avatarPreset);
+        });
+      }
       if (profileAvatarDoneBtn) {
         profileAvatarDoneBtn.addEventListener('click', saveAvatarDraft);
       }
@@ -15127,7 +15637,7 @@
           closeModal('settingsModal');
           pendingProfileStartIdx = null;
           openHubAfterProfileSave = false;
-          openProfileModal();
+          openProfileModal(hasProfile() ? 'name' : 'avatar');
         });
       }
 
@@ -15766,6 +16276,11 @@
         stopIntroEvent(e);
         if (!intro || intro.hidden) return;
         if (intro.classList.contains('is-closing')) return;
+        // H4 fix: tapIntro が本編 UI を覆う「実質的な splash」 なので、 ここが
+        // 真の dismiss タイミング。 maybeShowMonthlyOkaeri 等はこのイベントを起点にする。
+        try {
+          if (typeof window.__ponoNotifySplashDismissed === 'function') window.__ponoNotifySplashDismissed();
+        } catch (_) {}
         // We're inside a user gesture → playing is allowed by iOS.
         if (!isMuted()) {
           // v1699 (Stream D): preload="none" のため play() 前に auto へ昇格
@@ -15845,6 +16360,12 @@
         // Returning from a child game (already unlocked) — try to resume
         // immediately. iOS keeps the audio session warm in many cases.
         tryPlay();
+        // H4 fix: tapIntro を表示しない = 覆うオーバーレイが無い (or 既に
+        // #pono-game-splash 側が処理済) ケース。 念のためここでも通知しておく
+        // (window.__ponoNotifySplashDismissed は 1 度しか発火しない dedup 済み)。
+        try {
+          if (typeof window.__ponoNotifySplashDismissed === 'function') window.__ponoNotifySplashDismissed();
+        } catch (_) {}
       }
 
       // Settings toggle: pause/resume on the spot.

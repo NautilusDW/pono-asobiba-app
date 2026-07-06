@@ -8644,16 +8644,44 @@ function buildStickerOptionsFromGameCatalog(catalog) {
 }
 
 function canUseGameStickerCatalogPage(page) {
-  if (!page?.bookOnly) {
-    return true;
+  // [[H2]] sub_exclusive (appOnly/subOnly) ページは book tier でも非表示にする防御的判定。
+  // bookOnly と appOnly/subOnly は排他 (現行 catalog では同時 true にならない想定) だが、
+  // 両方チェックして万一の組み合わせでも安全側 (両方満たさないと表示しない) に倒す。
+  if (page?.appOnly || page?.subOnly) {
+    if (!isSubBonusStickerUnlocked()) {
+      return false;
+    }
   }
-  return isBookBonusStickerUnlocked();
+  if (page?.bookOnly && !isBookBonusStickerUnlocked()) {
+    return false;
+  }
+  return true;
 }
 
 function isBookBonusStickerUnlocked() {
+  // [[feedback_ponotier_propagation]]: PonoTier 経由を優先する (raw localStorage 直読みだと
+  // capture.js の session 限定 sub override 等、tier.js 側の判定拡張から取り残される)。
+  // tier.js 未読込時のみ旧来の raw fallback を使う。
+  try {
+    if (window.PonoTier && typeof window.PonoTier.isFree === 'function') {
+      return !window.PonoTier.isFree();
+    }
+  } catch {}
   try {
     if (localStorage.getItem("pono_premium") === "1") {
       return true;
+    }
+  } catch {}
+  return Boolean(window.__APP_BUILD__);
+}
+
+function isSubBonusStickerUnlocked() {
+  // [[H2]] sub-bonus (sub_exclusive) ページ用ゲート。 PonoTier.isSub() を優先し、
+  // tier.js 未読込時のみ window.__APP_BUILD__ (アプリ版) fallback。
+  // [[feedback_ponotier_propagation]] 準拠で raw localStorage 直読みはしない。
+  try {
+    if (window.PonoTier && typeof window.PonoTier.isSub === 'function') {
+      return window.PonoTier.isSub();
     }
   } catch {}
   return Boolean(window.__APP_BUILD__);
