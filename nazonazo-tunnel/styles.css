@@ -36,8 +36,8 @@ body.tunnel-interior #scene::after{display:block}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
 .decor{position:absolute;bottom:11.5vh}
 .decor.town-decor,.decor.image-decor{background-size:contain;background-repeat:no-repeat;background-position:center bottom;filter:drop-shadow(0 3px 0 rgba(70,45,25,.12))}
-.decor.image-decor{bottom:10.9vh}
-.decor.jungle-decor{bottom:10.2vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
+.decor.image-decor{bottom:15.8vh;z-index:4}
+.decor.jungle-decor{bottom:15.2vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
 #cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
@@ -104,7 +104,7 @@ body.st-space .tun{bottom:20vh}
 .tun.shake .hole{animation:sh .5s}
 @keyframes sh{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .tun .sign{position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:clamp(18px,4vw,34px);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
-.tun.number-gate{bottom:9.2vh;width:32vw;max-width:360px;height:38vh;filter:drop-shadow(0 8px 0 rgba(86,63,140,.16))}
+.tun.number-gate{bottom:13.2vh;width:32vw;max-width:360px;height:38vh;filter:drop-shadow(0 8px 0 rgba(86,63,140,.16))}
 .tun.number-gate::before,.tun.number-gate::after{content:"";position:absolute;z-index:3;pointer-events:none;filter:drop-shadow(0 4px 0 rgba(80,55,130,.15))}
 .tun.number-gate::before{left:-5%;bottom:0;width:24%;height:24%;background:#8fd8ff;clip-path:polygon(0 100%,100% 100%,68% 0,16% 18%)}
 .tun.number-gate::after{right:-2%;bottom:2%;width:18%;height:22%;background:#ff8cc5;clip-path:polygon(50% 0,100% 100%,0 100%)}
@@ -124,8 +124,8 @@ body.st-space .tun{bottom:20vh}
 .tun.number-gate .door.r::after{content:"2"}
 .tun.number-gate .sign{top:16%;background:#fff;border:3px solid #ffcf5f;border-radius:50%;width:clamp(38px,5.4vw,62px);height:clamp(38px,5.4vw,62px);display:flex;align-items:center;justify-content:center}
 @keyframes numberTunnelPulse{from{transform:translateY(0) scale(.92);opacity:.38}50%{opacity:.72}to{transform:translateY(14%) scale(1.18);opacity:.38}}
-.tun.station{bottom:9.5vh;width:36vw;max-width:440px;height:34vh;z-index:5;pointer-events:none}
-.tun.station.jungle-station{width:44vw;max-width:520px;height:35vh}
+.tun.station{bottom:13.5vh;width:36vw;max-width:440px;height:34vh;z-index:5;pointer-events:none}
+.tun.station.jungle-station{bottom:13vh;width:44vw;max-width:520px;height:35vh}
 .tun.station .mount{display:none}
 .station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp") center bottom/contain no-repeat;z-index:1}
 .station-wall{position:absolute;left:10%;right:10%;bottom:12%;height:54%;border:3px solid #b9854d;border-bottom:0;border-radius:10px 10px 4px 4px;
@@ -331,15 +331,18 @@ body.st-jungle #horizon{background-size:auto 100%}
 body.st-jungle #midT{background-size:auto 100%}
 body.st-jungle #groundT{height:14.5vh;background-size:auto 100%}
 body.st-jungle #fgT{height:22vh;background-size:auto 100%}
-.sb-hull,.sb-peri,.sb-fin,.sb-win{display:none}
-body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win{display:none}
-body.v-sub .sb-hull{display:block;position:absolute;left:0;right:0;top:22%;bottom:8%;background:#ffcf4d;border:4px solid #d9a326;border-radius:50px}
-body.v-sub .sb-peri{display:block;position:absolute;left:44%;top:-6%;width:8%;height:34%;background:#d9a326;border-radius:4px}
-body.v-sub .sb-peri::after{content:"";position:absolute;top:0;left:0;width:220%;height:34%;background:#d9a326;border-radius:4px}
-body.v-sub .sb-fin{display:block;position:absolute;left:-6%;top:34%;width:16%;height:40%;background:#d9a326;border-radius:10px}
-body.v-sub #veh.go .sb-fin{animation:fin .5s ease-in-out infinite alternate}
-@keyframes fin{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
-body.v-sub .sb-win{display:flex;position:absolute;right:16%;top:32%;width:26%;aspect-ratio:1;background:#dff3ff;border:4px solid #d9a326;border-radius:50%;align-items:center;justify-content:center;font-size:clamp(20px,3.6vw,36px)}
+body.st-sea #horizon{background-size:100% 100%}
+body.st-sea #midT{background-size:100% 100%;background-repeat:no-repeat;background-position-x:0!important;opacity:.22}
+body.st-sea #groundT{height:16.5vh;background-size:auto 100%}
+body.st-sea #fgT{height:24vh;background-size:auto 100%;opacity:.96}
+.sb-hull,.sb-peri,.sb-fin,.sb-win,.submarine-art{display:none}
+body.v-sub #veh{left:calc(53vw - clamp(78px,13vw,143px));bottom:12.4vh;width:clamp(156px,26vw,286px);height:clamp(111px,18.4vw,203px)}
+body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win,body.v-sub .headlight{display:none}
+body.v-sub .submarine-art{display:block;position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/vehicle_submarine_pono_20260706.png") center/contain no-repeat;
+  filter:drop-shadow(0 3px 0 rgba(20,45,70,.18))}
+body.v-sub #veh.go .submarine-art{animation:subSwim 1.2s ease-in-out infinite alternate}
+@keyframes subSwim{from{transform:translateY(0) rotate(-.7deg)}to{transform:translateY(-5px) rotate(.7deg)}}
+body.st-sea.v-sub #veh.inTun .submarine-art{filter:brightness(.72) saturate(.82) contrast(.96) drop-shadow(0 3px 0 rgba(0,0,0,.28))}
 .rk-body,.rk-nose,.rk-finT,.rk-finB,.rk-win,.rk-flame{display:none}
 body.v-rocket .tr-cab,body.v-rocket .tr-boiler,body.v-rocket .tr-chim,body.v-rocket .wheel,body.v-rocket .puff,body.v-rocket .tr-win{display:none}
 body.v-rocket .rk-body{display:block;position:absolute;left:8%;right:20%;top:24%;bottom:12%;background:#f2f2f7;border:4px solid #b8b8c8;border-radius:18px}

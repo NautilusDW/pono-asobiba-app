@@ -130,6 +130,13 @@ const ASSETS={
   fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp",
   station:"../assets/images/nazonazo-tunnel/jungle_station_checkpoint_20260706.webp",
   decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp"
+ },
+ sea:{
+  sky:"../assets/images/nazonazo-tunnel/sea_deep_sky_back_20260706.webp",
+  horizon:"../assets/images/nazonazo-tunnel/sea_deep_mid_layer_20260706.webp",
+  mid:"../assets/images/nazonazo-tunnel/sea_deep_mid_layer_20260706.webp",
+  ground:"../assets/images/nazonazo-tunnel/sea_deep_ground_strip_20260706.webp",
+  fg:"../assets/images/nazonazo-tunnel/sea_deep_foreground_layer_20260706.webp"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -173,16 +180,15 @@ const STAGES=[
    {sky:["#f3e9ff","#dfe9ff"],dig1:"#b39ce8",dig2:"#9a7fd8",blocks:["#d9c6f5","#f5c6e0","#c6e0f5"],blocks2:["#c0a8ee","#eea8cc","#a8ccee"],fgBlocks:["#8f76d0","#c06aa8","#6a8fc0"],flo1:"#e8ddfa",flo2:"#cfc0f0",mount:"#b79ae8"},
    {sky:["#ffd9ec","#d9c6ff"],dig1:"#c98ad0",dig2:"#b070c0",blocks:["#f5a8c6","#c6a8f5","#a8d0f5"],blocks2:["#eb90b8","#b890eb","#90b8eb"],fgBlocks:["#d06aa0","#8a6ad0","#6aa0d0"],flo1:"#f5e0f0",flo2:"#e0c8ea",mount:"#d08ab8"}],
   horizon(P,NP){return svgURI(HW,H,
-    gDigitsFloat(1250,H,P.dig1,16,71,44)+
-    gBlocksRow(1250,H,P.blocks,7,73,false)+
-    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+NP.sky[0]+'" opacity="0.5"/>'+
-    '<g transform="translate(1300,0)">'+gBumps(400,H,NP.far1,5,120,75)+'</g>');},
+    gDigitsFloat(HW,H,P.dig1,20,71,44)+
+    gBlocksRow(HW,H,P.blocks,9,73,false));},
   mid(P){return svgURI(1400,H,gDigitsFloat(1400,H,P.dig2,12,81,64)+gBlocksRow(1400,H,P.blocks2,6,83,true));},
   ground(P){return svgURI(600,90,gChecker(600,90,P.flo1,P.flo2));},
   fg(P){return svgURI(900,220,gBlocksRow(900,220,P.fgBlocks,5,85,true));},
-  decor(P,r){return svgURI(160,260,gBlocksRow(160,260,[P.fgBlocks[r%3],P.fgBlocks[(r+1)%3]],1,87+r,true));}},
+ decor(P,r){return svgURI(160,260,gBlocksRow(160,260,[P.fgBlocks[r%3],P.fgBlocks[(r+1)%3]],1,87+r,true));}},
  {id:"sea",icon:"🌊",veh:"sub",bank:SEA,gens:["legsS","sizeS"],
   names:["ふかいうみ","よるの ふかいうみ"],
+  assets:ASSETS.sea,
   pals:[
    {sky:["#2a7fc9","#0b3d6e"],far1:"#144a80",far2:"#123f6e",mid1:"#1d5c96",mid2:"#17548c",sand1:"#e6cf9a",sand2:"#d4ba80",fgA:"#0a3158",fgB:"#0d3a64",mount:"#4a6a8a",fx:"bubbles"},
    {sky:["#07284d","#02101f"],far1:"#0a3158",far2:"#0a2a4a",mid1:"#0d3a64",mid2:"#0c3458",sand1:"#8a7a5a",sand2:"#6a5e46",fgA:"#052038",fgB:"#04182c",mount:"#26425e",fx:"bubbles_glow"}],
@@ -1031,11 +1037,11 @@ function buildWorld(keepCover){
   for(let k=0;k<2;k++){
    const d=document.createElement("div");d.className="decor";
    const imageDecor=!!(st.assets&&st.assets.decor);
-   const wv=imageDecor?(st.id==="jungle"?30+((i+k)%3)*3:26+((i+k)%3)*2):(8+((i*7+k*5)%8));
+   const wv=imageDecor?(st.id==="jungle"?58+((i+k)%3)*6:68+((i+k)%3)*6):(8+((i*7+k*5)%8));
    const aspect=st.id==="jungle"?3.4:3.78;
    d.style.width=wv+"vw";
    d.style.height=(imageDecor?wv/aspect:wv*(st.id==="town"?1.25:1.6))+"vw";
-   d.style.left=(tunX(o,i)-(imageDecor?78:70)+k*(imageDecor?42:38)+((i*13)%14))+"vw";
+   d.style.left=(tunX(o,i)-(imageDecor?122:70)+k*(imageDecor?76:38)+((i*13)%14))+"vw";
    d.style.backgroundImage=st.decor(P,i*2+k);
    if(imageDecor){
     d.classList.add("image-decor",st.id+"-decor");
