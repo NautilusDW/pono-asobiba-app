@@ -221,13 +221,13 @@
        300-800ms 遅延する副作用が観測されうる。 これらは sw.js CRITICAL_ASSETS_IMAGES
        (peek bg) と CRITICAL_ASSETS_CARDS (mask PNG) で precache されるので、
        preload なしでも 2 回目訪問以降は即座に配信される。 -->
-  <!-- ===== ファーストビュー直後 (low): bottom-nav PNG 5 枚 (≈9MB) =====
-       これらが auto/high で先頭に走るとカードサムネ webp の decode が
+  <!-- ===== ファーストビュー直後 (low): bottom-nav 一体型 WebP =====
+       これが auto/high で先頭に走るとカードサムネ webp の decode が
        数 100ms 遅れて「上から順番にバラバラに出る」見え方になる。
        fetchpriority=low に降格して、 サムネ後ろに並べる。
        .bottom-nav は background-color: transparent + drop-shadow なので
        PNG 未到着でも UI は壊れない (nav 領域が一瞬透明になるだけ)。 -->
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/title/title_bottom_nav_4_generated_20260626.webp">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp">
   <!-- pressed PNG 4 枚 (~7.1MB) は cold start 帯域を食うので <head> preload から外し、
        common/preload-helper.js が requestIdleCallback または最初の pointerdown で
        <link rel=preload> を動的注入する (v1697 / cross-review perf-regression + sw-pivot)。 -->
@@ -1204,11 +1204,11 @@
     }
 
     /* ===== Bottom Navigation =====
-       Shared wooden base sprite + five transparent hit areas so the actions
+       Shared wooden base sprite + three transparent hit areas so the actions
        stay independent while the visuals read as one grouped control. */
     .bottom-nav {
-      --nav-sprite-w: 520px;
-      --nav-sprite-h: calc(var(--nav-sprite-w) * 412 / 1659);
+      --nav-sprite-w: 368px;
+      --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
       position: absolute;
       bottom: 18px;
       /* Offset by the canvas→safe-area gutter so the cluster sits inside
@@ -1221,16 +1221,16 @@
       height: var(--nav-sprite-h);
       z-index: 90;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       align-items: stretch;
       justify-content: stretch;
-      background-image: url('assets/ui/bottom_nav_group_5_normal.png');
+      background-image: url('assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp');
       background-repeat: no-repeat;
       background-size: 100% 100%;
       background-position: center center;
       filter: drop-shadow(0 6px 14px rgba(20, 10, 0, 0.45));
-      border-radius: 20px;
-      overflow: hidden;
+      border-radius: 22px;
+      overflow: visible;
       padding: 0;
     }
     .bottom-nav::after {
@@ -1239,16 +1239,15 @@
       inset: 0;
       opacity: var(--press-opacity, 0);
       pointer-events: none;
-      background-image: url('assets/ui/bottom_nav_group_5_pressed.png');
+      background-image: none;
       background-repeat: no-repeat;
       background-size: 100% 100%;
       background-position: center center;
-      clip-path: inset(0 calc(100% - var(--press-right, 0%)) 0 var(--press-left, 0%));
       transition: opacity 0.08s ease;
     }
     .bn-item {
       position: relative;
-      flex: 1 1 20%;
+      flex: 1 1 calc(100% / 3);
       height: 100%;
       display: block;
       padding: 0;
@@ -8324,20 +8323,40 @@
       height: var(--nav-sprite-h);
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      padding: 8px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,0) 34%),
-        linear-gradient(180deg, #C98239 0%, #9A5C28 54%, #6E3F1F 100%);
-      border: 3px solid rgba(88, 50, 18, .56);
-      border-radius: 24px;
+      gap: 0;
+      padding: 0;
+      background: transparent url("assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp") center / 100% 100% no-repeat;
+      border: 0;
+      border-radius: 0;
       overflow: visible;
-      box-shadow:
-        0 6px 0 rgba(86, 45, 16, .42),
-        0 12px 18px rgba(20, 10, 0, .28),
-        inset 0 2px 0 rgba(255,255,255,.26);
+      box-shadow: none;
+      filter: drop-shadow(0 7px 10px rgba(58, 32, 10, .32));
     }
-    .bottom-nav::after { display: none; }
+    .bottom-nav::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      display: block;
+      opacity: 0;
+      pointer-events: none;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 100% 100%;
+      transition: opacity .08s ease-out;
+    }
+    .bottom-nav[data-pressed="feedback"]::after {
+      opacity: 1;
+      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_feedback_20260706.webp");
+    }
+    .bottom-nav[data-pressed="news"]::after {
+      opacity: 1;
+      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_news_20260706.webp");
+    }
+    .bottom-nav[data-pressed="settings"]::after {
+      opacity: 1;
+      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_settings_20260706.webp");
+    }
     .profile-wallet {
       position: absolute;
       right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 382px);
@@ -8482,11 +8501,12 @@
       height: 100%;
       display: block;
       position: relative;
+      z-index: 1;
       padding: 0;
       border: 0;
       border-radius: 18px;
       background-color: transparent;
-      background-image: var(--bn-bg);
+      background-image: none;
       background-position: center;
       background-repeat: no-repeat;
       background-size: 100% 100%;
@@ -8507,33 +8527,32 @@
       background-size: 96% 100%;
     }
     .bn-item[data-action="feedback"] {
-      --bn-bg: url("assets/ui/bottom-nav/nav_button_feedback_normal_20260705.webp");
-      --bn-bg-pressed: url("assets/ui/bottom-nav/nav_button_feedback_pressed_20260705.webp");
+      --bn-bg: none;
+      --bn-bg-pressed: none;
     }
     .bn-item[data-action="news"] {
-      --bn-bg: url("assets/ui/button_bottom_005.png");
-      --bn-bg-pressed: url("assets/ui/button_bottom_005.png");
-      background-size: 96% 96%;
+      --bn-bg: none;
+      --bn-bg-pressed: none;
     }
     .bn-item[data-action="settings"] {
-      --bn-bg: url("assets/ui/bottom-nav/nav_button_settings_normal_20260705.webp");
-      --bn-bg-pressed: url("assets/ui/bottom-nav/nav_button_settings_pressed_20260705.webp");
+      --bn-bg: none;
+      --bn-bg-pressed: none;
     }
-    .bn-item:hover { filter: brightness(1.04); }
+    .bn-item:hover { filter: none; }
     .bottom-nav[data-pressed="feedback"] .bn-item[data-action="feedback"],
     .bottom-nav[data-pressed="news"] .bn-item[data-action="news"],
     .bottom-nav[data-pressed="settings"] .bn-item[data-action="settings"],
     .bn-item:active {
-      transform: translateY(2px);
-      background-image: var(--bn-bg-pressed);
-      filter: brightness(.98);
+      transform: none;
+      background-image: none;
+      filter: none;
     }
     .bn-item__icon {
-      display: none;
+      display: none !important;
       pointer-events: none;
     }
     .bn-item[data-action="news"] .bn-item__icon {
-      display: none;
+      display: none !important;
     }
     .bn-item__icon--avatar {
       width: 48px;
@@ -8577,7 +8596,7 @@
       left: 10px;
       right: 10px;
       bottom: 13px;
-      display: block;
+      display: none !important;
       color: #4f2d0c;
       font-size: 14px;
       line-height: 1.02;
@@ -8778,7 +8797,7 @@
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 29px; }
       .game-card__desc { font-size: 18px; }
-      .bottom-nav { --nav-sprite-w: 430px; --nav-sprite-h: 104px; padding: 7px; gap: 7px; }
+      .bottom-nav { --nav-sprite-w: 430px; --nav-sprite-h: 104px; padding: 0; gap: 0; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
       /* v1680: 4:3 (iPad landscape) は visible 1097 のうち safe-w 1080 まで使い切り、
@@ -8905,7 +8924,7 @@
       }
       .scroll-hint--up   { animation: hintBobUp43   2.4s ease-in-out infinite; }
       .scroll-hint--down { animation: hintBobDown43 2.4s ease-in-out infinite; }
-      .bottom-nav { --nav-sprite-w: 270px; --nav-sprite-h: 98px; bottom: 14px; padding: 6px; gap: 6px; }
+      .bottom-nav { --nav-sprite-w: 270px; --nav-sprite-h: 98px; bottom: 14px; padding: 0; gap: 0; }
       .profile-wallet {
         right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 310px);
         bottom: 14px;
@@ -10274,7 +10293,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2007;
+    const PAGE_CACHE_VERSION = 2008;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10283,7 +10302,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2007';
+    window.PONO_SW_VERSION = 'v2008';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

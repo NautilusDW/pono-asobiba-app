@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2008: play.html の右下3ボタンを、ラベル焼き込み済みの一体型 GPT Image 2 WebP に差し替え。押下は同サイズの区画別 pressed 画像を重ねる。play.html PAGE_CACHE_VERSION と同期。
 // v2007: UX 3件 - data-export.js プレビュー強化 (今/ロード後の比較表示 + CORE_PRESERVE_IF_ABSENT 拡張) + sw-update.js の更新トースト多重表示抑制 (sessionStorage + activate 検知) (batch:1203)。play.html PAGE_CACHE_VERSION と同期。
 // v2006: play.html のおしらせボタンを空土台+CSSベルから既存単体ベル素材 button_bottom_005.png へ戻す。play.html PAGE_CACHE_VERSION と同期。
 // v2005: play.html のホーム下部をプロフィール+どんぐり別土台と、ごかんそう/おしらせ/せっていの3ボタンへ再編。トップのシール帳入口はプロフィール内へ移動。play.html PAGE_CACHE_VERSION と同期。
@@ -684,7 +685,9 @@
 // 遷移に forward fix (batch:1202)。
 // v2005: play.html のホーム下部をプロフィール+どんぐり別土台と、ごかんそう/おしらせ/せっていの3ボタンへ再編。トップのシール帳入口はプロフィール内へ移動。
 // v2006: play.html のおしらせボタンを既存単体ベル素材 button_bottom_005.png へ戻す。
-const CACHE_VERSION = 2007;
+// v2007: data-export.js プレビュー強化 + sw-update.js 更新トースト多重表示抑制。
+// v2008: play.html の右下3ボタンを一体型 GPT Image 2 WebP に差し替え。
+const CACHE_VERSION = 2008;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -897,19 +900,11 @@ const CRITICAL_ASSETS_IMAGES = [
   // v1763: 実表示用の高解像度版。64px 版は小サイズ参照/互換のため残す。
   '/assets/ui/icon_feedback_20260628_512.png',
   '/assets/ui/icon_feedback_20260628_pressed_512.png',
-  // v1977: 右下ナビの GPT Image 2 生成ボタン。初回表示と押下時のちらつきを避けるため通常/押下を同時に precache。
-  '/assets/ui/bottom-nav/nav_button_stickers_normal_20260705.webp',
-  '/assets/ui/bottom-nav/nav_button_profile_normal_20260705.webp',
-  '/assets/ui/bottom-nav/nav_button_profile_blank_normal_20260706.webp',
-  '/assets/ui/bottom-nav/nav_button_feedback_normal_20260705.webp',
-  '/assets/ui/bottom-nav/nav_button_settings_normal_20260705.webp',
-  '/assets/ui/bottom-nav/nav_button_stickers_pressed_20260705.webp',
-  '/assets/ui/bottom-nav/nav_button_profile_pressed_20260705.webp',
-  '/assets/ui/bottom-nav/nav_button_profile_blank_pressed_20260706.webp',
-  '/assets/ui/bottom-nav/nav_button_feedback_pressed_20260705.webp',
-  '/assets/ui/bottom-nav/nav_button_settings_pressed_20260705.webp',
-  // v2006: 復帰した単体おしらせベルボタン。
-  '/assets/ui/button_bottom_005.png',
+  // v2008: 右下ナビの一体型 GPT Image 2 生成ボタン。初回表示と押下時のちらつきを避けるため通常/押下を同時に precache。
+  '/assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp',
+  '/assets/ui/bottom-nav/nav_group_3_joined_pressed_feedback_20260706.webp',
+  '/assets/ui/bottom-nav/nav_group_3_joined_pressed_news_20260706.webp',
+  '/assets/ui/bottom-nav/nav_group_3_joined_pressed_settings_20260706.webp',
   // v1979: GPT Image 2 生成の全身アバター用パーツマスク。プロフィールボタンが初期表示に入るため先読み対象。
   '/assets/images/avatars/parts/avatar_part_head_20260705.png',
   '/assets/images/avatars/parts/avatar_part_hair_short_20260705.png',
