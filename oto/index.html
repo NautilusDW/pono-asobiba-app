@@ -8312,8 +8312,8 @@ function _rhythmTargetAcTimeFor(seqIndex) {
 function _selectRhythmSong(id) {
   var found = RHYTHM_SONGS.find(function(song) { return song.id === id; });
   if (!found) return;
-  // Phase 2 future-use: rhythm song tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-  // isOtoRhythmSongUnlocked() always returns true so this branch is unreachable.
+  // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+  // This comment is a stale holdover from when the flag was false (MVP all-unlocked); isOtoRhythmSongUnlocked() can now return false per tier, so this branch is live code, not dead code.
   if (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(id)) {
     if (typeof window.PonoTier.showTierLockPromo === 'function') {
       window.PonoTier.showTierLockPromo();
@@ -11741,8 +11741,8 @@ document.querySelectorAll('.mode-btn').forEach(function(btn) {
     e.stopPropagation();
     unlockAudio();
     if (btn.dataset.mode === 'rhythm') {
-      // Phase 2 future-use: rhythm mode tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-      // isOtoModeUnlocked() always returns true so this branch is unreachable.
+      // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+      // This comment is a stale holdover from when the flag was false (MVP all-unlocked); isOtoModeUnlocked() can now return false per tier, so this branch is live code, not dead code.
       if (window.PonoTier && !window.PonoTier.isOtoModeUnlocked('rhythm')) {
         if (typeof window.PonoTier.showTierLockPromo === 'function') {
           window.PonoTier.showTierLockPromo();
@@ -11808,8 +11808,8 @@ var rhythmMenuCancel = document.getElementById('rhythm-menu-cancel');
 if (rhythmMenuCancel) rhythmMenuCancel.addEventListener('click', function(e) {
   e.preventDefault();
   e.stopPropagation();
-  _hideRhythmMenu();
-  setPlayMode('free');
+  // batch:1201: 曲えらびの「もどる」はタイトル画面 (#start-mode-choice) へ戻す。
+  window._otoReturnToTitle();
 });
 // v1108: 2ステップ: 曲えらび → モードえらび
 var rhythmMenuNext = document.getElementById('rhythm-menu-next');
@@ -11915,8 +11915,9 @@ if (rhythmCompleteDone) rhythmCompleteDone.addEventListener('click', function(e)
   e.preventDefault();
   e.stopPropagation();
   _hideRhythmComplete();
+  // batch:1201: リザルトの「おしまい」はシール報酬アニメ後にタイトル画面 (#start-mode-choice) へ戻す。
   _afterRhythmStickerReward(function() {
-    setPlayMode('free');
+    window._otoReturnToTitle();
   });
 });
 var rhythmCompleteNext = document.getElementById('rhythm-complete-next');
@@ -14570,6 +14571,17 @@ document.addEventListener('click', _captureOtoTutorialRhythmMenuInput, true);
       });
     }
   }
+  // batch:1201: 音タッチの「もどる」「おしまい」をタイトル画面 (#start-mode-choice) へ戻す共通処理。
+  // showStartChoice / intro はこの IIFE のクロージャ変数なので、ここで定義して window に公開する。
+  window._otoReturnToTitle = function() {
+    _hideRhythmMenu();
+    _hideRhythmComplete();
+    setPlayMode('free');
+    document.body.classList.remove('app-started');
+    if (intro) intro.style.display = '';
+    showStartChoice();
+    _playOtoBgm('title', { fadeMs: 220 });
+  };
 })();
 
 // ════════════════════════════════════════════════════════════
@@ -15378,8 +15390,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   document.querySelectorAll('.sound-sets .set-btn').forEach(function(b) {
     b.addEventListener('click', function(e) {
       e.stopPropagation();
-      // Phase 2 future-use: sound set tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-      // isOtoSoundSetUnlocked() always returns true so this branch is unreachable.
+      // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+      // This comment is a stale holdover from when the flag was false (MVP all-unlocked); isOtoSoundSetUnlocked() can now return false per tier, so this branch is live code, not dead code.
       if (window.PonoTier && !window.PonoTier.isOtoSoundSetUnlocked(b.dataset.set)) {
         if (typeof window.PonoTier.showTierLockPromo === 'function') {
           window.PonoTier.showTierLockPromo();
@@ -15398,8 +15410,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   var sMajor = document.getElementById('scale-major');
   var sPenta = document.getElementById('scale-penta');
   function setScale(mode) {
-    // Phase 2 future-use: scale tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-    // isOtoScaleUnlocked() always returns true so this branch is unreachable.
+    // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+    // This comment is a stale holdover from when the flag was false (MVP all-unlocked); isOtoScaleUnlocked() can now return false per tier, so this branch is live code, not dead code.
     if (window.PonoTier && !window.PonoTier.isOtoScaleUnlocked(mode)) {
       if (typeof window.PonoTier.showTierLockPromo === 'function') {
         window.PonoTier.showTierLockPromo();
@@ -15427,8 +15439,8 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
   var cOff = document.getElementById('chord-off');
   var cOn  = document.getElementById('chord-on');
   function setChord(mode) {
-    // Phase 2 future-use: chord mode tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-    // isOtoChordModeUnlocked() always returns true so this branch is unreachable.
+    // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+    // This comment is a stale holdover from when the flag was false (MVP all-unlocked); isOtoChordModeUnlocked() can now return false per tier, so this branch is live code, not dead code.
     if (window.PonoTier && !window.PonoTier.isOtoChordModeUnlocked(mode)) {
       if (typeof window.PonoTier.showTierLockPromo === 'function') {
         window.PonoTier.showTierLockPromo();

@@ -83,6 +83,7 @@
 - 2026-07-05 - by Claude - [batch:951-gacha-lever-cache-sync-and-shell-clip] - play.html, AGENTS_CLAIMS.md - Finding A: PAGE_CACHE_VERSION 1960→1961 で sw.js と同期 (critical drift 解消)。 Finding B: mobile ::before の下方 inflation を -90%→-60% に絞って .daily-gacha-shell の overflow:hidden による下端クリップ (320×568 で 15.4px, 375×667 で 6.5px) を回避 [overlap: batch:950-gacha-lever-hitarea-expand]
 - 2026-07-05 - by Claude - [batch:939b-survey-dedup-and-record-copy] - survey.html, common/rating-modal.js, sw.js, play.html, AGENTS_CLAIMS.md - survey.html 永久 dedup 実装漏れ修正 + record mode title/subcopy 差し替え + sw v1964→v1965
 - 2026-07-06 - by Claude - [batch:tier-v3-phase1] - common/tier.js, assets/data/game-stickers.json, js/game-stickers.js, Prototypes/StickerBookThreeJS/**, play.html, oto/index.html, docs/**, sw.js - tier v3 Phase 1 実装 (fable/sonnet workflow) [overlap: batch:1131-avatar-40-fullbody-presets (play.html/sw.js)]
+- 2026-07-06 - by Claude - [batch:1201-oto-quit-to-title] - oto/index.html, sw.js, AGENTS_CLAIMS.md - 音タッチ もどる/おしまい ボタンをタイトル画面 (#start-mode-choice) に戻す修正 [overlap: batch:tier-v3-phase1]
 
 ## なぜ HANDOFF.md と別ファイルなのか
 

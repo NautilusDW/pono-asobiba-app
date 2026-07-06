@@ -669,7 +669,10 @@
 // (pono_acorns / pono_stats / pono_stamp_log / pono_thankyou) は localStorage.clear() 前に
 // 退避し、 import 書込後に書き戻す (record に存在するキーは従来通り上書き)。play.html
 // PAGE_CACHE_VERSION と同期 (batch:952)。
-const CACHE_VERSION = 2001;
+// v2002: 音タッチ (oto) の曲えらび「もどる」/ リザルト「おしまい」ボタンを、モード選択画面
+// (#start-mode-choice) へ戻すよう修正 (旧: 自由あそび画面止まりで、タイトルへ戻る導線が
+// なかった)。window._otoReturnToTitle() を新設し、両ボタンから呼び出す (batch:1201)。
+const CACHE_VERSION = 2002;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
