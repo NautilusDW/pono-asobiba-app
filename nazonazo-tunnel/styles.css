@@ -323,12 +323,12 @@ body.tunnel-enter-run #veh .puff,body.tunnel-exit-run #veh .puff{opacity:0}
 body.st-future .tr-boiler{background:#b8f3ff;border-color:#4bb8d6;border-radius:26px 6px 6px 26px}
 body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
 body.st-future .tr-chim{display:none}
-body.st-town #horizon{background-size:auto 100%}
-body.st-town #midT{background-size:auto 100%}
+body.st-town #horizon{background-size:auto 116%;background-position-y:-13vh}
+body.st-town #midT{background-size:auto 108%;background-position-y:-6vh}
 body.st-town #groundT{height:15vh;background-size:auto 100%}
 body.st-town #fgT{height:6.5vh;background-size:auto 100%}
-body.st-jungle #horizon{background-size:auto 100%}
-body.st-jungle #midT{background-size:auto 100%}
+body.st-jungle #horizon{background-size:auto 116%;background-position-y:-13vh}
+body.st-jungle #midT{background-size:auto 108%;background-position-y:-6vh}
 body.st-jungle #groundT{height:14.5vh;background-size:auto 100%}
 body.st-jungle #fgT{height:22vh;background-size:auto 100%}
 body.st-sea #horizon{background-size:100% 100%}
