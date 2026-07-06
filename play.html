@@ -9869,7 +9869,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1989;
+    const PAGE_CACHE_VERSION = 1990;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -9878,7 +9878,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1989';
+    window.PONO_SW_VERSION = 'v1990';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13796,6 +13796,209 @@
     updateBookUnlockEntry();
     ensureBookBonusStickersGranted();
 
+    // ===== v3: book welcome 演出シーケンサ (feature_tier_v3 §4.3) =====
+    // LS pono_book_welcome_pending_v1 == '1' && pono_book_welcome_shown_v1 != '1' で発火。
+    // pending は pwFinalizeSuccess() (成功時、 debug 経路以外) が立てる。
+    const BOOK_WELCOME_PENDING_KEY = 'pono_book_welcome_pending_v1';
+    const BOOK_WELCOME_SHOWN_KEY = 'pono_book_welcome_shown_v1';
+    let bookWelcomeRunning = false;
+
+    function maybeStartBookWelcome() {
+      if (bookWelcomeRunning) return;
+      try {
+        if (localStorage.getItem(BOOK_WELCOME_PENDING_KEY) !== '1') return;
+        if (localStorage.getItem(BOOK_WELCOME_SHOWN_KEY) === '1') {
+          localStorage.removeItem(BOOK_WELCOME_PENDING_KEY);
+          return;
+        }
+      } catch (e) { return; }
+      runBookWelcomeSequence();
+    }
+
+    function finishBookWelcome() {
+      if (!bookWelcomeRunning) return;
+      bookWelcomeRunning = false;
+      try {
+        localStorage.setItem(BOOK_WELCOME_SHOWN_KEY, '1');
+        localStorage.removeItem(BOOK_WELCOME_PENDING_KEY);
+      } catch (e) {}
+      // skip でも grant は確定実行する (spec §4.3 「skip でも特典 grant 確定」)。
+      ensureBookBonusStickersGranted();
+      const overlay = document.getElementById('bookWelcomeOverlay');
+      if (overlay) {
+        overlay.classList.remove('is-visible');
+        setTimeout(() => { overlay.hidden = true; }, 420);
+      }
+    }
+
+    function runBookWelcomeSequence() {
+      const overlay = document.getElementById('bookWelcomeOverlay');
+      if (!overlay) return;
+      bookWelcomeRunning = true;
+      const walker = document.getElementById('bookWelcomeWalker');
+      const letter = document.getElementById('bookWelcomeLetter');
+      const reveal = document.getElementById('bookWelcomeReveal');
+      const revealGrid = document.getElementById('bookWelcomeRevealGrid');
+      const cover = document.getElementById('bookWelcomeCover');
+      const coverFrame = document.getElementById('bookWelcomeCoverFrame');
+      const outro = document.getElementById('bookWelcomeOutro');
+      const skipBtn = document.getElementById('bookWelcomeSkip');
+      const doneBtn = document.getElementById('bookWelcomeDone');
+      const timers = [];
+      function later(fn, ms) { const id = setTimeout(fn, ms); timers.push(id); return id; }
+      function clearAllTimers() { timers.forEach((id) => clearTimeout(id)); timers.length = 0; }
+
+      function onSkip() {
+        clearAllTimers();
+        if (skipBtn) skipBtn.removeEventListener('click', onSkip);
+        if (doneBtn) doneBtn.removeEventListener('click', onDone);
+        finishBookWelcome();
+      }
+      function onDone() { onSkip(); }
+      if (skipBtn) skipBtn.addEventListener('click', onSkip);
+      if (doneBtn) doneBtn.addEventListener('click', onDone);
+
+      overlay.hidden = false;
+      requestAnimationFrame(() => overlay.classList.add('is-visible'));
+
+      // ステップ1: 「ピンポン」 SE。 専用アセット未生成のため既存の陽性チャイム
+      // (daily gacha sticker sparkle) を暫定流用。 音声生成タスクは別途 track で
+      // whisper 検証込みで正式アセットに差し替える想定 (feedback_tts_whisper_verify_required)。
+      try {
+        const chime = new Audio('assets/audio/gacha/daily_gacha_sticker_sparkle.mp3');
+        chime.volume = 0.8;
+        chime.play().catch(() => {});
+      } catch (e) {}
+
+      // ステップ2: 暗転 (背景は元々 #000) → ポノが手紙持って歩く 2秒アニメ
+      later(() => {
+        if (!walker) return;
+        walker.hidden = false;
+        void walker.offsetWidth;
+        walker.classList.add('is-walking');
+      }, 250);
+
+      // ステップ3: 手紙カード表示 + TTS「ありがとう」ボイス。
+      // manifest 未反映キーは Narration.play() 内部で無音フォールバックする設計
+      // (common/narration.js) なので、 音声未生成でも UI は壊れない。
+      later(() => {
+        if (walker) walker.hidden = true;
+        if (letter) {
+          letter.hidden = false;
+          requestAnimationFrame(() => letter.classList.add('is-visible'));
+        }
+        try {
+          if (window.Narration && typeof window.Narration.play === 'function') {
+            window.Narration.play('play:book_welcome:thanks');
+          }
+        } catch (e) {}
+      }, 2500);
+
+      // ステップ4: 「ポノからのプレゼント」 → book-bonus ページのシールを 0.4秒間隔で reveal
+      later(() => { if (letter) letter.classList.remove('is-visible'); }, 5000);
+      const STICKER_STEP_MS = 400;
+      let stickerCount = 8; // フォールバック既定値。 実カタログ取得後に実数へ補正
+      later(async () => {
+        if (letter) letter.hidden = true;
+        if (!reveal) return;
+        reveal.hidden = false;
+        requestAnimationFrame(() => reveal.classList.add('is-visible'));
+        if (!revealGrid) return;
+        revealGrid.textContent = '';
+        let stickers = [];
+        try {
+          const api = window.PonoGameStickers;
+          if (api && typeof api.loadCatalog === 'function') {
+            const catalog = await api.loadCatalog();
+            const page = catalog && catalog.pages && catalog.pages['book-bonus'];
+            stickers = (page && Array.isArray(page.stickers)) ? page.stickers : [];
+          }
+        } catch (e) {}
+        const resolver = window.PonoGameStickers && window.PonoGameStickers.resolveAsset;
+        stickers.forEach((sticker, i) => {
+          const cell = document.createElement('div');
+          cell.className = 'bw-sticker';
+          const src = sticker.img && typeof resolver === 'function' ? resolver(sticker.img) : sticker.img;
+          if (src) {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = '';
+            cell.appendChild(img);
+          } else {
+            const em = document.createElement('span');
+            em.className = 'bw-sticker-emoji';
+            em.textContent = sticker.emoji || '⭐';
+            cell.appendChild(em);
+          }
+          revealGrid.appendChild(cell);
+          later(() => cell.classList.add('is-in'), i * STICKER_STEP_MS);
+        });
+      }, 5350);
+
+      // ステップ5/6 のタイミングは実際の枚数が確定してから (async 後) 再計算したいところだが、
+      // reveal 表示中に await を挟むと後続 later() の起点がずれるため、 既定枚数 (8) 基準の
+      // 見込み待ち時間で先に予約する (実際のカタログが 8 枚未満でも reveal 演出は早く終わるだけで
+      // 後続ステップの発火自体は遅れない安全側の設計)。
+      const revealDoneAt = 5350 + stickerCount * STICKER_STEP_MS + 1400;
+      later(() => { if (reveal) reveal.classList.remove('is-visible'); }, revealDoneAt);
+      later(() => {
+        if (reveal) reveal.hidden = true;
+        if (!cover) return;
+        cover.hidden = false;
+        requestAnimationFrame(() => cover.classList.add('is-visible'));
+        if (coverFrame) {
+          try { coverFrame.src = 'Prototypes/StickerBookThreeJS/?surface=cover&book=book_buyer_edition'; } catch (e) {}
+        }
+      }, revealDoneAt + 300);
+
+      // ステップ6: 「いつでもシールちょうからみれるよ」→ 閉じる (自動)。 手動でも
+      // #bookWelcomeDone / スキップで即座に閉じられる。
+      const coverShownAt = revealDoneAt + 300;
+      later(() => { if (cover) cover.classList.remove('is-visible'); }, coverShownAt + 3400);
+      later(() => {
+        if (cover) cover.hidden = true;
+        if (!outro) return;
+        outro.hidden = false;
+        requestAnimationFrame(() => outro.classList.add('is-visible'));
+      }, coverShownAt + 3700);
+    }
+
+    // 初回起動時 (パスワード成功直後の modal close を待たずに reload された場合等) にも
+    // pending が残っていれば拾う safety net。
+    maybeStartBookWelcome();
+
+    // ===== v3: 月1 おかえり演出 (feature_tier_v3 §4.4, book/sub 共通) =====
+    const OKAERI_LAST_SHOWN_KEY = 'pono_last_okaeri_shown_at';
+    // JST (UTC+9) 基準の "YYYY-MM" キー。 端末ローカルタイムゾーンに依存させない簡易実装。
+    function jstYearMonthKey(d) {
+      d = d || new Date();
+      const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+      return jst.getUTCFullYear() + '-' + String(jst.getUTCMonth() + 1).padStart(2, '0');
+    }
+    function maybeShowMonthlyOkaeri() {
+      try {
+        const tier = window.PonoTier || null;
+        const t = tier && typeof tier.getTier === 'function' ? tier.getTier() : 'free';
+        if (t !== 'book' && t !== 'sub') return; // free には出さない
+        if (bookWelcomeRunning) return;          // welcome 演出と競合させない
+        const key = jstYearMonthKey();
+        if (localStorage.getItem(OKAERI_LAST_SHOWN_KEY) === key) return;
+        localStorage.setItem(OKAERI_LAST_SHOWN_KEY, key);
+      } catch (e) { return; }
+      const toast = document.getElementById('okaeriToast');
+      if (!toast) return;
+      toast.hidden = false;
+      requestAnimationFrame(() => toast.classList.add('is-visible'));
+      const hide = () => {
+        toast.classList.remove('is-visible');
+        setTimeout(() => { toast.hidden = true; }, 320);
+      };
+      setTimeout(hide, 3800);
+      toast.addEventListener('click', hide, { once: true });
+    }
+    // welcome 演出 (該当時) が先に走り終えてから判定させるための遅延実行。
+    setTimeout(maybeShowMonthlyOkaeri, 1600);
+
     // ===== unlock 成功時の共通 finalize =====
     /**
      * 解錠成功時の UI 共通処理。 method ごとに localStorage 記録とコピー切替。
@@ -13984,6 +14187,12 @@
           localStorage.removeItem('pono_book_unlock_method');
           localStorage.removeItem('pono_book_unlock_at');
           localStorage.removeItem('pono_unlocked_orders');
+          // v3: welcome / 誘導モーダル抑制系 LS もデバッグリセット対象に含める。
+          localStorage.removeItem('pono_book_welcome_pending_v1');
+          localStorage.removeItem('pono_book_welcome_shown_v1');
+          localStorage.removeItem('pono_sub_promo_book_last_shown_at');
+          localStorage.removeItem('pono_sub_promo_book_dismissed_at');
+          localStorage.removeItem('pono_last_okaeri_shown_at');
         } catch (e) {}
         setTimeout(() => location.reload(), 100);
       });
@@ -14004,6 +14213,12 @@
         }
       } catch (e) {}
       pwSnapshot = null;
+      // v3: あいことば解錠モーダルを閉じた直後に welcome pending が立っていれば
+      // すぐ発火させる (openPasswordUnlockModal → 成功 → 「あそびに もどる」で閉じる、
+      // という自然な導線の直後に演出が始まる)。
+      if (typeof maybeStartBookWelcome === 'function') {
+        setTimeout(maybeStartBookWelcome, 260);
+      }
     }
     document.addEventListener('click', (e) => {
       const closer = e.target.closest('[data-close="passwordUnlockModal"]');
