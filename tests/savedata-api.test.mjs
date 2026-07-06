@@ -159,6 +159,31 @@ await section('round-trip POST -> GET through handleSaveData', async () => {
   ok(lh.headers.get('Access-Control-Allow-Origin') == null, 'production: localhost origin not allowed');
 });
 
+await section('CORS: Capacitor native origins allowed in production', async () => {
+  // production env: no APP_BUILD, no staging origin
+  const prodEnv = () => ({ SAVEDATA_KV: makeKV(), PASSCODE_HMAC_SECRET: 'prod-secret' });
+
+  const androidOpt = await handleSaveData(makeReq({ method: 'OPTIONS', headers: { Origin: 'https://localhost' } }), prodEnv(), ctx, '/api/savedata');
+  ok(androidOpt.status === 204 && androidOpt.headers.get('Access-Control-Allow-Origin') === 'https://localhost', 'production: Android WebView origin (https://localhost) allowed');
+
+  const iosOpt = await handleSaveData(makeReq({ method: 'OPTIONS', headers: { Origin: 'capacitor://localhost' } }), prodEnv(), ctx, '/api/savedata');
+  ok(iosOpt.status === 204 && iosOpt.headers.get('Access-Control-Allow-Origin') === 'capacitor://localhost', 'production: iOS WebView origin (capacitor://localhost) allowed');
+
+  const nativeEnv = prodEnv();
+  const nativeBody = JSON.stringify({ schema_version: 1, data: { pono_acorns: '5' } });
+  const nativePost = await handleSaveData(makeReq({ method: 'POST', headers: { Origin: 'https://localhost', 'Content-Type': 'application/json', 'CF-Connecting-IP': '6.6.6.1' }, body: nativeBody }), nativeEnv, ctx, '/api/savedata');
+  ok(nativePost.status === 200, `production: POST from Android WebView origin -> 200 (got ${nativePost.status})`);
+  ok(nativePost.headers.get('Access-Control-Allow-Origin') === 'https://localhost', 'production: POST response reflects Android WebView origin');
+
+  const evilOpt = await handleSaveData(makeReq({ method: 'OPTIONS', headers: { Origin: 'https://evil.example.com' } }), prodEnv(), ctx, '/api/savedata');
+  ok(evilOpt.headers.get('Access-Control-Allow-Origin') == null, 'production: unrelated origin (evil.example.com) still denied');
+
+  // dev http://localhost:PORT origins remain denied in production (only the bare
+  // https:// / capacitor:// native schemes are allowed, not arbitrary dev ports)
+  const devPortOpt = await handleSaveData(makeReq({ method: 'OPTIONS', headers: { Origin: 'http://localhost:8787' } }), prodEnv(), ctx, '/api/savedata');
+  ok(devPortOpt.headers.get('Access-Control-Allow-Origin') == null, 'production: http://localhost:8787 (dev port) still denied');
+});
+
 await section('cloud profile strip (name never stored/returned)', async () => {
   const profileKeys = ['pono_profile', 'pono_profile_name', 'pono_player_profile_v1', 'pono_hero_name'];
   // unit: validateAndSanitize (POST direction) drops all profile keys, keeps normal

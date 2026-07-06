@@ -15,7 +15,10 @@
 //   - HIGH-3/3b: グローバル + IP + failed-counter の多層 rate-limit
 //   - 論点9: PUT/上書き無し。 POST は常に新しい合言葉を発行
 //   - MED-10: created_at から絶対 180 日上限。 GET でスライド延長 (90日) するが 180日天井
-//   - MED-4: CORS は env 別 allowlist。 production に localhost を含めない
+//   - MED-4: CORS は env 別 allowlist。 production は Web 本番 origin 2 件 + Capacitor
+//     native WebView origin 2 件 (`https://localhost` = Android androidScheme デフォルト,
+//     `capacitor://localhost` = iOS iosScheme デフォルト) のみ。 `http://localhost:PORT`
+//     等の開発用 origin は staging-app (APP_BUILD=1) 側のみで production には含めない
 // -----------------------------------------------------------------------------
 
 import { validateAndSanitize, sanitizeStoredData, MAX_BODY_BYTES } from './validate.js';
@@ -37,7 +40,11 @@ const PASSCODE_ALLOC_TRIES = 6;
 function allowedOrigins(env) {
   const prod = [
     'https://pono.kodama-no-mori.com',
-    'https://pono-asobiba-app.ndw.workers.dev'
+    'https://pono-asobiba-app.ndw.workers.dev',
+    // Capacitor native app WebView origins (credential 不要 + 合言葉 + rate-limit で
+    // 実害は低いが、任意の意味を持たせないよう native scheme のみに限定する)
+    'https://localhost',      // Android (server.androidScheme デフォルト = https)
+    'capacitor://localhost'   // iOS (server.iosScheme デフォルト = capacitor)
   ];
   // staging-app (APP_BUILD=1) と dev のみ localhost / staging origin を許可
   if (env && env.APP_BUILD === '1') {
