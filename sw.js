@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1996: play.html の tier v3 regression fix 3 件。 (1) MENU_GAMES 先頭 zone header を
+// selectGame(0) が選んでしまい preview-bg が真っ黒のまま起動するバグを修正 (最初の実ゲームを選択)。
+// (2) パスワード解錠モーダルを 3 タブ (あいことば/Amazon 注文番号/絵本クイズ) → 2 タブ
+// (あいことば/絵本クイズ) に整理し、 author 側で verify 不能な Amazon 注文番号経路と
+// common/tier.js の verifyOrderId/ORDER_ID_RE を撤去。 (3) assets/data/game-stickers.json の
+// book-bonus シールを 9→8 枚化 (docs/TIER_POLICY.md §4.1 と対応しない book_bonus_duck_rare を削除)。
+// play.html PAGE_CACHE_VERSION と同期。
 // v1995: play.html のプロフィール/初回登録アバター表示を生成済み全身画像だけに固定。
 // 旧レイヤー合成のロボアンテナ/モンスター角参照とパーツDOM作成ルートを無効化し、
 // 選択画面やプロフィールにSVG風の角パーツが重ならないようにした。play.html PAGE_CACHE_VERSION と同期。
@@ -637,7 +644,17 @@
 // アプリで あそべる / じゅんびちゅう) + book/free 誘導モーダル + book welcome 演出
 // (6ステップ, 生涯1回) + 月1 おかえりトースト + daily gacha tier ゲート
 // (free/book は quizland 1ページのみ抽選) を追加。 play.html PAGE_CACHE_VERSION 同期。
-const CACHE_VERSION = 1995;
+// v1997: tier v3 regression fixes 統合 (batch:tier-v3-regression-fixes)。
+// (a) Amazon 注文番号解錠経路を撤去 (author 側で verify 不能なため) — pwTabOrder/
+//     pwPanelOrder/pwOrderInput/pwSubmitOrder の DOM・JS を全削除、common/tier.js の
+//     verifyOrderId/ORDER_ID_RE も削除。解錠経路は「あいことば」「絵本クイズ」の2択に一本化。
+// (b) MENU_GAMES 初期選択が isZoneHeader な先頭要素を掴むバグを修正 (selectInitialGame で
+//     findIndex((g) => !g.isZoneHeader) 経由に変更)。
+// (c) 特別シール book-bonus を 9→8 枚化 (book_bonus_duck_rare を廃止、catalog は
+//     assets/data/game-stickers.json version 20、STICKER_DESC 側も追随)。
+// (d) 統合時に PAGE_CACHE_VERSION と PONO_SW_VERSION の同期漏れ (v1995 のまま) を検出し修正。
+// play.html PAGE_CACHE_VERSION / PONO_SW_VERSION 同期。
+const CACHE_VERSION = 1997;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

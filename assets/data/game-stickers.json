@@ -1,5 +1,5 @@
 {
-  "version": 19,
+  "version": 20,
   "pages": {
     "quizland": {
       "title": "なぞなぞランド",
@@ -2080,6 +2080,7 @@
       "accent": "#D9A441",
       "appOnly": false,
       "bookOnly": true,
+      "note": "v20 (2026-07-06): 9→8枚化。book_bonus_duck_rare (serial 132) を廃止。serial は欠番のまま維持し、以降のシリアルは詰め直さない。",
       "stickers": [
         {
           "id": "book_bonus_pono_book_rare",
@@ -2101,17 +2102,6 @@
             "book_bonus"
           ],
           "serial": "131",
-          "tier": "book_exclusive"
-        },
-        {
-          "id": "book_bonus_duck_rare",
-          "name": "アヒル",
-          "img": "assets/ui/gacha/stickers/book_bonus_duck_rare_20260701.png",
-          "rarity": "rare",
-          "unlockOn": [
-            "book_bonus"
-          ],
-          "serial": "132",
           "tier": "book_exclusive"
         },
         {

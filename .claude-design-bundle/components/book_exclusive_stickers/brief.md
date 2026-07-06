@@ -12,10 +12,11 @@
 - **既に選別済で再生成不要な既存シール** (`assets/ui/gacha/stickers/book_bonus_*_20260701.png`, 512×512 PNG):
   - `book_bonus_pono_book_rare` — 絵本表紙ミニチュア相当
   - `book_bonus_mama_pono_super` — ポノとお月さま系シーン
-  - `book_bonus_duck_rare` / `book_bonus_hedgehog_rare` — 絵本の仲間キャラ単体
+  - `book_bonus_hedgehog_rare` — 絵本の仲間キャラ単体
   - `book_bonus_friends_super` — 森の仲間たちシーン
   - `book_bonus_ehon_medal_super` — 記念メダル系装飾
   - これらの質感・色数・線の太さを **新規 3 枚のリファレンス** とすること (並べたときに浮かない統一感が最優先)
+  - **注 (2026-07-06)**: `book_bonus_duck_rare`「アヒル」は 9→8 枚化に伴い catalog (`assets/data/game-stickers.json`) から削除済み。本ブリーフの発注 scope に変更はない (新規 3 枚は元々アヒルの代替ではない) が、リファレンス一覧からは除外した。
 
 ---
 

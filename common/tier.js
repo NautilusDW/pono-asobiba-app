@@ -416,28 +416,24 @@
   // クライアント側で book 相当の追加解錠が必要な場合は verifyBookPassword (arigato_pono2026) を使用する。
 
   // ============================================================
-  // ---- Book Tier Unlock 拡張: シリアル / Amazon 注文番号 / 絵本クイズ ----
+  // ---- Book Tier Unlock 拡張: シリアル / 絵本クイズ ----
   //
   // 既存 verifyBookPassword (BOOK_PASSWORDS) は 「シリアル」 タブの一次経路として継続使用。
-  // 追加で以下 3 種のクライアント側 verifier を提供する:
+  // 追加で以下 2 種のクライアント側 verifier を提供する:
   //   1) verifySerialCode(val)             … BOOK_PASSWORDS 互換 + SERIAL_CODES 追加
-  //   2) verifyOrderId(val)                … Amazon 注文番号の形式 (3-7-7) のみ照合
-  //   3) verifyQuizAnswer(questionId, val) … 絵本内容クイズの正解判定 (答え揺らぎ吸収)
+  //   2) verifyQuizAnswer(questionId, val) … 絵本内容クイズの正解判定 (答え揺らぎ吸収)
   // ヘルパー pickRandomQuiz() / QUIZ_QUESTIONS / normalizeAnswer も合わせて公開。
+  //
+  // (v1996: Amazon 注文番号経路 (verifyOrderId / ORDER_ID_RE) は author 側で verify 不能のため撤去)
   //
   // 設計方針:
   //   - すべて client side のみで完結 (server 検証は将来 Stripe/IAP 経路で別途実装)
-  //   - 注文番号は形式 spoofing 可能 (サーバ無しでは原理的に防げない) ため
-  //     friction 低めの導線として割り切り、 重複 ID 検知だけ別途呼び出し側で行う想定
   //   - クイズ答え揺らぎは normalizeAnswer (全角→半角 / カナ→ひらがな / 空白除去 /
   //     語尾敬称除去 + lowercase) で吸収。 漢字バリアントは answers 配列に明示列挙
   // ============================================================
 
   // 印字シリアル候補 (将来 増刷時はここに追記)。 BOOK_PASSWORDS と論理的に同等扱い。
   var SERIAL_CODES = [];
-
-  // Amazon 注文番号 (3桁-7桁-7桁)
-  var ORDER_ID_RE = /^\d{3}-\d{7}-\d{7}$/;
 
   // 絵本内容クイズ (現状 1 問。 将来 admin から差替 or 配列追加)
   var QUIZ_QUESTIONS = [
@@ -490,22 +486,6 @@
       if (p === raw || p === upper || p.toUpperCase() === upper) return true;
     }
     return false;
-  }
-
-  /**
-   * Amazon 注文番号 (3桁-7桁-7桁) を検証する。
-   * 形式チェックのみ。 全角数字 / 各種ダッシュ / 空白を半角ハイフンに正規化してから regex 照合。
-   * @param {string} val ユーザー入力
-   * @returns {boolean}
-   */
-  function verifyOrderId(val) {
-    if (val == null) return false;
-    var raw = String(val).trim()
-      .replace(/[\s　]/g, '-')
-      .replace(/[０-９]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0); })
-      .replace(/[ー–—−]/g, '-')
-      .replace(/-+/g, '-');
-    return ORDER_ID_RE.test(raw);
   }
 
   /**
@@ -670,9 +650,8 @@
     isKatakanaUnlocked: isKatakanaUnlocked,
     verifyBookPassword: verifyBookPassword,
     // verifyAdminPassword: 削除済 (v17XX: abcd 廃止、 arigato_pono2026 1 本化)。
-    // Book Tier Unlock 拡張 (シリアル / Amazon 注文番号 / 絵本クイズ)
+    // Book Tier Unlock 拡張 (シリアル / 絵本クイズ の 2 経路。 Amazon 注文番号 verifyOrderId は v1997 で撤去済)
     verifySerialCode: verifySerialCode,
-    verifyOrderId: verifyOrderId,
     verifyQuizAnswer: verifyQuizAnswer,
     pickRandomQuiz: pickRandomQuiz,
     normalizeAnswer: normalizeAnswer,

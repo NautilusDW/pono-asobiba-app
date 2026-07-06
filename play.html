@@ -5308,8 +5308,9 @@
       opacity: 0.75;
     }
 
-    /* ===== Password Unlock Modal: 3 tabs (serial / order / quiz) =====
-       既存 #passwordUnlockModal を 3 経路に拡張するための追加スタイル。
+    /* ===== Password Unlock Modal: 2 tabs (serial / quiz) =====
+       既存 #passwordUnlockModal を 2 経路 (あいことば / 絵本クイズ) に拡張するための追加スタイル。
+       (v1996: Amazon 注文番号タブは撤去)
        タブヘッダ + パネル本体 + ヒント + クイズ問題ボックス + リロールボタン。
        WCAG: focus-visible 強調 / prefers-reduced-motion で transition 無効化。 */
     .password-modal-tabs {
@@ -5404,12 +5405,6 @@
       font-family: inherit;
     }
     .pw-quiz-reroll:hover { background: rgba(255, 248, 224, 0.5); color: var(--text); }
-    /* v1796: クイズタブ (あいことば + 注文番号 の 2 経路に整理、 クイズは緊急時用に dormant 保持)
-       DOM / JS / common/tier.js の verifyQuizAnswer は残置。 display:none を消すだけで復活可能。 */
-    #pwTabQuiz,
-    #pwPanelQuiz {
-      display: none !important;
-    }
     @media (prefers-reduced-motion: reduce) {
       .pw-tab, .pw-tab.is-active { transition: none; }
     }
@@ -9511,6 +9506,7 @@
 
   <!-- ===== Password Unlock Modal (絵本パスワード入力 → premium 解錠) =====
        v1722: book tier unlock 3 経路化 (シリアル / Amazon 注文番号 / 絵本クイズ)。
+       v1996: Amazon 注文番号経路は author 側で verify 不能のため撤去、 シリアル + 絵本クイズ の 2 経路に整理。
        - .password-modal-help は後方互換のため class を維持しつつ id を付与し、
          success 表示時に display:none で隠す既存ロジックと共存。
        - 旧 #passwordUnlockInput / #passwordUnlockSubmit は シリアルタブ内に同 id で残置 (DOM 参照後方互換)。 -->
@@ -9520,17 +9516,12 @@
         <h3 id="passwordUnlockTitle" class="password-modal-title">えほんを もっているひとへ</h3>
         <p class="password-modal-help" id="passwordUnlockHelp">したの どちらかで<br>book メンバーが ひらくよ</p>
 
-        <!-- 3 経路タブ (WAI-ARIA Tabs Pattern, Manual Activation) -->
+        <!-- 2 経路タブ (WAI-ARIA Tabs Pattern, Manual Activation) -->
         <div class="password-modal-tabs" role="tablist" aria-label="unlock ほうほう">
           <button type="button" class="pw-tab is-active" role="tab" id="pwTabSerial"
                   data-pw-tab="serial" aria-selected="true" aria-controls="pwPanelSerial" tabindex="0">
             <span class="pw-tab-icon" aria-hidden="true">🔑</span>
             <span class="pw-tab-label">あいことば</span>
-          </button>
-          <button type="button" class="pw-tab" role="tab" id="pwTabOrder"
-                  data-pw-tab="order" aria-selected="false" aria-controls="pwPanelOrder" tabindex="-1">
-            <span class="pw-tab-icon" aria-hidden="true">📦</span>
-            <span class="pw-tab-label">Amazon</span>
           </button>
           <button type="button" class="pw-tab" role="tab" id="pwTabQuiz"
                   data-pw-tab="quiz" aria-selected="false" aria-controls="pwPanelQuiz" tabindex="-1">
@@ -9548,19 +9539,6 @@
                  spellcheck="false" inputmode="text" aria-describedby="pwHintSerial">
           <p class="pw-hint" id="pwHintSerial">えほんの うらを みてね</p>
           <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">ひらく！</button>
-        </section>
-
-        <!-- Panel: Amazon 注文番号 -->
-        <section class="pw-panel" id="pwPanelOrder" role="tabpanel" hidden
-                 aria-labelledby="pwTabOrder" data-pw-panel="order">
-          <p class="pw-panel-lead">Amazonで かった ひとは<br>ちゅうもんばんごうを いれてね</p>
-          <input type="text" class="password-modal-input" id="pwOrderInput"
-                 placeholder="250-1234567-1234567"
-                 autocomplete="off" autocorrect="off" spellcheck="false"
-                 inputmode="numeric" maxlength="19"
-                 aria-describedby="pwHintOrder">
-          <p class="pw-hint" id="pwHintOrder">3けた-7けた-7けた の すうじ</p>
-          <button class="password-modal-submit" id="pwSubmitOrder" type="button">ひらく！</button>
         </section>
 
         <!-- Panel: 絵本クイズ -->
@@ -10214,7 +10192,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1995;
+    const PAGE_CACHE_VERSION = 1997;
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10223,7 +10201,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1995';
+    window.PONO_SW_VERSION = 'v1997';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13807,10 +13785,11 @@
     }
 
     // ===== えほんのあいことば → unlock flow =====
-    // 紙の本にあるシリアル / Amazon 注文番号 / 絵本クイズ で book tier を解除する 3 経路の導線。
+    // 紙の本にあるシリアル / 絵本クイズ で book tier を解除する 2 経路の導線。
     // play.html 内のモーダル (#passwordUnlockModal) で完結させる。
-    // 検証は common/tier.js の PonoTier.{verifySerialCode, verifyBookPassword, verifyOrderId, verifyQuizAnswer} に集約。
+    // 検証は common/tier.js の PonoTier.{verifySerialCode, verifyBookPassword, verifyQuizAnswer} に集約。
     // (v17XX: verifyAdminPassword 廃止、 BOOK_PASSWORDS = ['arigato_pono2026'] 1 本化)
+    // (v1996: Amazon 注文番号経路は author 側で verify 不能のため撤去。 verifyOrderId も common/tier.js から削除済み)
     // モーダル open 時の解錠 state スナップショット (close 時の表示更新に使う)
     let pwSnapshot = null;
     const bookUnlockEntry = document.getElementById('bookUnlockEntry');
@@ -13823,9 +13802,10 @@
 
     /**
      * 成功時の success-tag / success-body コピーを mode で切替える。
-     * 既存 'book' / 'debug' に加えて 'serial' / 'order_id' / 'quiz' を追加。
+     * 既存 'book' / 'debug' に加えて 'serial' / 'quiz' を追加。
      * (v17XX: 'admin' mode は verifyAdminPassword 廃止に伴い撤去。 'serial' に統合)
-     * @param {'book'|'debug'|'serial'|'order_id'|'quiz'} mode
+     * (v1996: 'order_id' mode は Amazon 注文番号経路撤去に伴い削除)
+     * @param {'book'|'debug'|'serial'|'quiz'} mode
      */
     function setPasswordUnlockSuccessCopy(mode) {
       const tagEl = document.getElementById('passwordUnlockSuccessTag');
@@ -13833,11 +13813,6 @@
       if (mode === 'debug') {
         if (tagEl) tagEl.textContent = 'デバッグを ひらいたよ';
         if (bodyEl) bodyEl.innerHTML = 'せっていから<br>デバッグボードを つかえるよ';
-        return;
-      }
-      if (mode === 'order_id') {
-        if (tagEl) tagEl.textContent = '📦 おかいあげ ありがとう！';
-        if (bodyEl) bodyEl.innerHTML = 'あなたの えほんで<br>ひらいたよ！';
         return;
       }
       if (mode === 'quiz') {
@@ -14011,20 +13986,17 @@
     })();
 
     // ===== タブ切替 (WAI-ARIA Tabs Pattern / Manual Activation) =====
-    const PW_TAB_IDS = ['serial', 'order', 'quiz'];
+    const PW_TAB_IDS = ['serial', 'quiz'];
     const pwTabEls = {
       serial: document.getElementById('pwTabSerial'),
-      order:  document.getElementById('pwTabOrder'),
       quiz:   document.getElementById('pwTabQuiz'),
     };
     const pwPanelEls = {
       serial: document.getElementById('pwPanelSerial'),
-      order:  document.getElementById('pwPanelOrder'),
       quiz:   document.getElementById('pwPanelQuiz'),
     };
     const pwPanelInputs = {
       serial: () => document.getElementById('passwordUnlockInput'),
-      order:  () => document.getElementById('pwOrderInput'),
       quiz:   () => document.getElementById('pwQuizInput'),
     };
     let pwActiveTab = 'serial';
@@ -14136,7 +14108,7 @@
       if (helpEl) helpEl.style.display = already ? 'none' : '';
       if (tabsEl) tabsEl.style.display = already ? 'none' : '';
       // 各 panel の input/submit を可視化 + value クリア (前回 success で display:none した分の復活)
-      ['serial', 'order', 'quiz'].forEach((id) => {
+      PW_TAB_IDS.forEach((id) => {
         const panel = pwPanelEls[id];
         if (panel && !already) panel.hidden = (id !== pwActiveTab);
         else if (panel) panel.hidden = true;
@@ -14147,7 +14119,7 @@
         }
       });
       // 全 submit ボタンを可視化
-      ['passwordUnlockSubmit', 'pwSubmitOrder', 'pwSubmitQuiz'].forEach((bid) => {
+      ['passwordUnlockSubmit', 'pwSubmitQuiz'].forEach((bid) => {
         const b = document.getElementById(bid);
         if (b) b.style.display = '';
       });
@@ -14403,11 +14375,10 @@
     /**
      * 解錠成功時の UI 共通処理。 method ごとに localStorage 記録とコピー切替。
      * (v17XX: 'admin' method は廃止 → 'serial' に統合)
-     * @param {'serial'|'order_id'|'quiz'|'debug'} method
-     * @param {{orderId?: string}=} extras
+     * (v1996: 'order_id' method は Amazon 注文番号経路撤去に伴い削除)
+     * @param {'serial'|'quiz'|'debug'} method
      */
-    function pwFinalizeSuccess(method, extras) {
-      extras = extras || {};
+    function pwFinalizeSuccess(method) {
       const errEl = document.getElementById('passwordUnlockError');
       const successEl = document.getElementById('passwordUnlockSuccess');
       const helpEl = document.getElementById('passwordUnlockHelp');
@@ -14424,14 +14395,6 @@
           if (localStorage.getItem('pono_book_welcome_shown_v1') !== '1') {
             localStorage.setItem('pono_book_welcome_pending_v1', '1');
           }
-          if (method === 'order_id' && extras.orderId) {
-            let arr = [];
-            try { arr = JSON.parse(localStorage.getItem('pono_unlocked_orders') || '[]'); } catch (e) { arr = []; }
-            if (!Array.isArray(arr)) arr = [];
-            if (arr.indexOf(extras.orderId) < 0) arr.push(extras.orderId);
-            while (arr.length > 30) arr.shift();
-            localStorage.setItem('pono_unlocked_orders', JSON.stringify(arr));
-          }
         } catch (e) {}
       }
       if (errEl) errEl.hidden = true;
@@ -14439,11 +14402,11 @@
         ensureBookBonusStickersGranted();
       }
       // すべての panel を hidden に + すべての submit を非表示
-      ['serial', 'order', 'quiz'].forEach((id) => {
+      PW_TAB_IDS.forEach((id) => {
         const panel = pwPanelEls[id];
         if (panel) panel.hidden = true;
       });
-      ['passwordUnlockSubmit', 'pwSubmitOrder', 'pwSubmitQuiz'].forEach((bid) => {
+      ['passwordUnlockSubmit', 'pwSubmitQuiz'].forEach((bid) => {
         const b = document.getElementById(bid);
         if (b) b.style.display = 'none';
       });
@@ -14501,43 +14464,6 @@
       });
     }
 
-    // ===== Amazon 注文番号 経路 =====
-    const pwSubmitOrder = document.getElementById('pwSubmitOrder');
-    if (pwSubmitOrder) {
-      pwSubmitOrder.addEventListener('click', () => {
-        const input = document.getElementById('pwOrderInput');
-        const val = (input && input.value) || '';
-        if (!String(val).trim()) {
-          pwShowError(input, 'ばんごうを いれてね');
-          return;
-        }
-        const tier = window.PonoTier || {};
-        const ok = typeof tier.verifyOrderId === 'function' && tier.verifyOrderId(val);
-        if (!ok) {
-          pwShowError(input, 'ばんごうの かたちが ちがうよ (れい: 250-1234567-1234567)', { keepValue: true });
-          return;
-        }
-        // 重複利用検知 (柔らかい通知のみ。 unlock は通す)
-        let isDuplicate = false;
-        try {
-          const norm = String(val).trim()
-            .replace(/[\s　]/g, '')
-            .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-            .replace(/[ー–—−]/g, '-');
-          const arr = JSON.parse(localStorage.getItem('pono_unlocked_orders') || '[]');
-          if (Array.isArray(arr) && arr.indexOf(norm) >= 0) isDuplicate = true;
-          pwFinalizeSuccess('order_id', { orderId: norm });
-        } catch (e) {
-          pwFinalizeSuccess('order_id', { orderId: String(val).trim() });
-        }
-        // duplicate は success body にだけ柔らかく追記 (block はしない)
-        if (isDuplicate) {
-          const bodyEl = document.getElementById('passwordUnlockSuccessBody');
-          if (bodyEl) bodyEl.innerHTML = 'この ばんごうは すでに つかってあるよ —<br>そのまま ひらいたよ';
-        }
-      });
-    }
-
     // ===== 絵本クイズ 経路 =====
     const pwSubmitQuiz = document.getElementById('pwSubmitQuiz');
     if (pwSubmitQuiz) {
@@ -14564,7 +14490,6 @@
     // Enter キーで panel 内 submit を発火 (a11y / キーボードユーザー対応)
     [
       ['passwordUnlockInput', 'passwordUnlockSubmit'],
-      ['pwOrderInput', 'pwSubmitOrder'],
       ['pwQuizInput', 'pwSubmitQuiz'],
     ].forEach(([inputId, btnId]) => {
       const inp = document.getElementById(inputId);
@@ -16358,7 +16283,13 @@
 
     // ===== Init =====
     renderCards();
-    selectGame(0);
+    // v1996 fix: MENU_GAMES[0] は zone header (isZoneHeader: true) のことがあり、
+    // selectGame はその場合 early-return して preview-bg が真っ黒のまま起動してしまう。
+    // zone header を飛ばして最初の実ゲームカードを選択する。
+    (function selectInitialGame() {
+      const firstGameIndex = MENU_GAMES.findIndex((g) => g && !g.isZoneHeader);
+      selectGame(firstGameIndex >= 0 ? firstGameIndex : 0);
+    })();
 
     // ===== v1590: 🌰 acorn balance badge wiring (MF3: 戻り時 bump 発火対応) =====
     (function wireAcornBalanceBadge() {

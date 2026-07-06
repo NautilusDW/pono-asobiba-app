@@ -104,16 +104,16 @@ book の対価は本編コンテンツの拡張ではなく、以下の付録に
 
 ### 4.1 特別シール 8 枚
 
-パスワード入力後の welcome 演出で確定贈呈（book 購入確認済みの証としてまとめて付与）。
+パスワード入力後の welcome 演出で確定贈呈（book 購入確認済みの証としてまとめて付与）。catalog 実体は `assets/data/game-stickers.json` の `pages.book-bonus.stickers`（2026-07-06 に 9→8 枚化。`book_bonus_duck_rare`「アヒル」を廃止）。
 
-1. 「ありがとう ポノ」メッセージシール
-2. **動くシール: ポノが手を振るアニメ**（CSS animation。静止フレームでの意匠は Brand Kit 依頼書側で規定）
-3. 絵本シーン再現 A（ポノとお月さま）
-4. 絵本シーン再現 B（ポノと森の仲間たち）
-5. キャラクター集合（家族写真風）
-6. 絵本表紙ミニチュア（蔵書票的）
-7. 未公開設定画
-8. 「あいことば ありがとう」記念
+1. 絵本表紙ミニチュア（`book_bonus_pono_book_rare`「ぽのとえほん」、rare、完成）
+2. 絵本シーン再現 A（`book_bonus_mama_pono_super`「ママとぽの」、super、完成）
+3. キャラクター設定画（`book_bonus_hedgehog_rare`「ハリネズミ」、rare、完成）
+4. 絵本シーン再現 B（`book_bonus_friends_super`「なかよし」、super、完成）
+5. 「ありがとう ポノ」メッセージシール（`book_bonus_ehon_medal_super`「えほんメダル」、super、完成）
+6. **動くシール: ポノが手を振るアニメ**（`book_bonus_wave_greeting`「てをふるポノ」、super、TEMP: Brand Kit 納品後に差し替え。CSS animation。静止フレームでの意匠は Brand Kit 依頼書側で規定）
+7. キャラクター集合（家族写真風）（`book_bonus_family_photo`「みんなでしゃしん」、super、TEMP: Brand Kit 納品後に差し替え）
+8. 「あいことば ありがとう」記念（`book_bonus_password_thanks`、super、TEMP: Brand Kit 納品後に差し替え）
 
 ### 4.2 シール帳特別表紙（book_buyer_edition）
 
@@ -200,8 +200,9 @@ v3 の設計は、絵本奥付の合言葉が SNS 等で拡散されるリスク
 
 ## 9. book ユーザーの解錠フロー
 
+- 解錠経路は **合言葉（`verifySerialCode` / `BOOK_PASSWORDS`）or 絵本クイズ（`verifyQuizAnswer`）** の 2 択。Amazon 注文番号経路は author 側で verify 不能なため 2026-07-06 に撤去（`verifyOrderId` も `common/tier.js` から削除済み）。
 - 絵本奥付にシリアル状のパスワードが印字されている。
-- `play.html` の「本をもっている人へ」ボタンをタップすると、同一画面内の `passwordUnlockModal` が起動する。
+- `play.html` の「本をもっている人へ」ボタンをタップすると、同一画面内の `passwordUnlockModal` が起動し、「あいことば」「絵本クイズ」の 2 タブが表示される。
 - モーダル内で入力 → `PonoTier.verifyBookPassword(val)` で検証。
 - 成功すると `localStorage.pono_premium = '1'` をセット → welcome 演出（§4.3）が起動 → 完了後にメニュー再描画で book 付録が反映される。
 - パスワード検証は大文字/小文字どちらでも通る。前後の空白もトリム。
