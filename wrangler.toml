@@ -16,6 +16,7 @@ routes = [
   # Cloudflare が zone に DNS レコードを自動作成し、全リクエストを Worker に流す。
   { pattern = "pono.kodama-no-mori.com", custom_domain = true }
 ]
+workers_dev = true
 
 [assets]
 directory = "./"
