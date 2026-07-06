@@ -9,13 +9,14 @@
   const TIP_HOME = 208;
   const MOVE_L = 195;
   const MOVE_R = 760;
-  const CARRY_X = 104;
   const DESCEND_SPEED = 560;
   const ASCEND_SPEED = 520;
   const CARRY_SPEED = 315;
   const DROP_NUDGE = 18;
   const PERFECT_GRAB = 10;
-  const CHUTE = { x: 104, y: 432 };
+  const TEXT_CHUTE = { x: 104, y: 432, boxY: 408, label: 'もじ', fill: '#ff9eb8', stroke: '#df7898' };
+  const CLEANUP_CHUTE = { x: 738, y: 356, boxY: 332, label: 'かたづけ', fill: '#8ed7ff', stroke: '#54a6d8' };
+  const CHUTE = TEXT_CHUTE;
   const COLS = 9;
   const SLOT = { x0: 178, y: 28, s: 54, step: 62 };
   const FONT = '"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif';
@@ -32,6 +33,10 @@
       slip: 999,
       decoys: 5,
       maxHeight: 2,
+      junkBase: 0,
+      junkMax: 1,
+      junkShapes: ['wide'],
+      junkSlip: 999,
       slotHint: 'all',
       blockGlow: true,
       helpUses: 99
@@ -45,6 +50,10 @@
       slip: 28,
       decoys: 7,
       maxHeight: 3,
+      junkBase: 1,
+      junkMax: 2,
+      junkShapes: ['wide', 'el'],
+      junkSlip: 36,
       slotHint: 'next',
       blockGlow: false,
       helpUses: 2
@@ -58,6 +67,10 @@
       slip: 24,
       decoys: 9,
       maxHeight: 3,
+      junkBase: 1,
+      junkMax: 3,
+      junkShapes: ['wide', 'el', 'tee'],
+      junkSlip: 32,
       slotHint: 'none',
       blockGlow: false,
       helpUses: 1
@@ -82,7 +95,7 @@
   const liveRegion = document.getElementById('liveRegion');
 
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const colX = (i) => 200 + i * 70;
+  const colX = (i) => 190 + i * 63;
   const slotX = (i) => SLOT.x0 + i * SLOT.step;
 
   let scene = 'title';
@@ -93,6 +106,29 @@
   let audioCtx = null;
   let soundOn = true;
   const assetCache = new Map();
+  const JUNK_SHAPES = {
+    wide: {
+      cells: [[-0.48, 0], [0.48, 0]],
+      hue: 206,
+      grab: 70,
+      perfect: 16,
+      centerDx: 0
+    },
+    el: {
+      cells: [[-0.34, -0.34], [-0.34, 0.44], [0.44, 0.44]],
+      hue: 36,
+      grab: 66,
+      perfect: 14,
+      centerDx: -8
+    },
+    tee: {
+      cells: [[-0.55, -0.28], [0, -0.28], [0.55, -0.28], [0, 0.52]],
+      hue: 154,
+      grab: 72,
+      perfect: 13,
+      centerDx: 0
+    }
+  };
 
   function pick(arr) {
     return arr[(Math.random() * arr.length) | 0];
@@ -142,6 +178,44 @@
 
   function hueOf(ch) {
     return (ch.codePointAt(0) * 47) % 360;
+  }
+
+  function isJunk(block) {
+    return block && block.kind === 'junk';
+  }
+
+  function makeJunk(shapeKey) {
+    const shape = JUNK_SHAPES[shapeKey] || JUNK_SHAPES.wide;
+    return {
+      kind: 'junk',
+      shapeKey,
+      shape,
+      hue: shape.hue,
+      wobble: 0,
+      tilt: 0
+    };
+  }
+
+  function junkCountForRound(cfg, roundIndex) {
+    return Math.min(cfg.junkMax || 0, Math.max(0, (cfg.junkBase || 0) + roundIndex));
+  }
+
+  function blockGrabRadius(block) {
+    if (isJunk(block)) return block.shape.grab;
+    return game.cfg.grab;
+  }
+
+  function blockBalanceCenterX(col, block) {
+    return col.x + (isJunk(block) ? block.shape.centerDx : 0);
+  }
+
+  function blockSlipLimit(block) {
+    if (isJunk(block)) return game.cfg.junkSlip || game.cfg.slip;
+    return game.cfg.slip;
+  }
+
+  function dropZoneFor(block) {
+    return isJunk(block) ? CLEANUP_CHUTE : TEXT_CHUTE;
   }
 
   function setHidden(el, hidden) {
@@ -275,7 +349,7 @@
     return 0;
   }
 
-  function buildPile(word, cfg) {
+  function buildPile(word, cfg, roundIndex) {
     const cols = Array.from({ length: COLS }, (_, i) => ({ x: colX(i), blocks: [] }));
     const needed = chars(word);
     const decoys = shuffle(chars(KANA).filter((ch) => needed.indexOf(ch) < 0)).slice(0, cfg.decoys);
@@ -287,6 +361,12 @@
       const i = pickCol(cols, cfg.maxHeight);
       cols[i].blocks.push({ ch, hue: hueOf(ch), wobble: 0 });
     });
+    const shapes = cfg.junkShapes || [];
+    const junkCount = junkCountForRound(cfg, roundIndex || 0);
+    for (let n = 0; n < junkCount; n += 1) {
+      const i = pickCol(cols, cfg.maxHeight + 1);
+      cols[i].blocks.push(makeJunk(shapes[n % shapes.length] || 'wide'));
+    }
     return cols;
   }
 
@@ -306,7 +386,9 @@
       t: 0,
       slip: false,
       slipAt: 0,
-      carryFrom: 0
+      carryFrom: 0,
+      targetZone: TEXT_CHUTE,
+      targetX: TEXT_CHUTE.x
     };
   }
 
@@ -317,7 +399,8 @@
     game.wordChars = chars(item.word);
     game.slots = game.wordChars.map((ch) => ({ ch, filled: false, t: 0 }));
     game.next = 0;
-    game.cols = buildPile(item.word, game.cfg);
+    game.cols = buildPile(item.word, game.cfg, game.roundIndex);
+    game.cleaned = 0;
     game.flyers = [];
     game.pops = [];
     game.confetti = [];
@@ -329,7 +412,11 @@
     hintBtn.classList.remove('is-used');
     updateHintButton();
     resetClaw();
-    setBubble(hintText());
+    if (junkCountForRound(game.cfg, game.roundIndex) > 0) {
+      setBubble('じゃまは みぎで おかたづけ。' + hintText());
+    } else {
+      setBubble(hintText());
+    }
   }
 
   function startGame(levelKey) {
@@ -451,6 +538,16 @@
   }
 
   function evaluate(block) {
+    if (isJunk(block)) {
+      game.cleaned = (game.cleaned || 0) + 1;
+      pop(CLEANUP_CHUTE.x, CLEANUP_CHUTE.y - 34, 'すっきり', '#3388c8', 22);
+      if (!reduceMotion) burstConfetti(5);
+      playSfx('ok');
+      vibrate(18);
+      setBubble(pick(['おかたづけ できたね。', 'じゃまが なくなったよ。']) + hintText(), 'happy');
+      return;
+    }
+
     const need = game.wordChars[game.next];
     if (block.ch === need) {
       const i = game.next;
@@ -517,12 +614,15 @@
     initAudio();
     playSfx('tap');
     let best = null;
-    let bestDist = game.cfg.grab;
+    let bestScore = 1;
     game.cols.forEach((col, i) => {
       if (!col.blocks.length) return;
+      const top = col.blocks[col.blocks.length - 1];
+      const radius = blockGrabRadius(top);
       const d = Math.abs(col.x - claw.tipX);
-      if (d < bestDist) {
-        bestDist = d;
+      const score = d / radius;
+      if (score < bestScore) {
+        bestScore = score;
         best = i;
       }
     });
@@ -590,14 +690,19 @@
           if (claw.col !== null && game.cols[claw.col].blocks.length) {
             const col = game.cols[claw.col];
             claw.block = col.blocks.pop();
-            const off = Math.abs(claw.tipX - col.x);
-            claw.block.grabQuality = off <= PERFECT_GRAB ? 'perfect' : 'normal';
-            claw.slip = off > game.cfg.slip && game.slowT <= 0;
+            const off = Math.abs(claw.tipX - blockBalanceCenterX(col, claw.block));
+            const perfect = isJunk(claw.block) ? claw.block.shape.perfect : PERFECT_GRAB;
+            const slipLimit = blockSlipLimit(claw.block);
+            claw.block.grabQuality = off <= perfect ? 'perfect' : 'normal';
+            claw.block.tilt = isJunk(claw.block)
+              ? Math.max(-0.42, Math.min(0.42, (claw.tipX - blockBalanceCenterX(col, claw.block)) / Math.max(1, slipLimit) * 0.28))
+              : 0;
+            claw.slip = off > slipLimit && game.slowT <= 0;
             claw.slipAt = 0.35 + Math.random() * 0.35;
-            if (off <= PERFECT_GRAB) {
+            if (off <= perfect) {
               pop(claw.tipX, claw.tipY - 34, 'まんなか', '#33bf7a', 18);
-            } else if (off > game.cfg.slip && game.cfg.slip < 900) {
-              pop(claw.tipX, claw.tipY - 34, 'はしっこ', '#ff8a36', 18);
+            } else if (off > slipLimit && slipLimit < 900) {
+              pop(claw.tipX, claw.tipY - 34, isJunk(claw.block) ? 'ぐらぐら' : 'はしっこ', '#ff8a36', 18);
             }
             playSfx('grab');
             vibrate(15);
@@ -621,6 +726,8 @@
           claw.tipY = TIP_HOME;
           if (claw.block) {
             claw.carryFrom = claw.tx;
+            claw.targetZone = dropZoneFor(claw.block);
+            claw.targetX = claw.targetZone.x;
             claw.phase = 'carry';
           } else {
             claw.phase = 'move';
@@ -629,23 +736,25 @@
         }
         break;
       case 'carry': {
-        claw.tx -= CARRY_SPEED * dt;
+        const targetX = typeof claw.targetX === 'number' ? claw.targetX : TEXT_CHUTE.x;
+        const dir = targetX < claw.tx ? -1 : 1;
+        claw.tx += dir * CARRY_SPEED * dt;
         claw.off *= Math.pow(0.02, dt);
         claw.tipX = claw.tx + claw.off;
-        const p = (claw.carryFrom - claw.tx) / Math.max(1, claw.carryFrom - CARRY_X);
+        const p = Math.abs(claw.carryFrom - claw.tx) / Math.max(1, Math.abs(claw.carryFrom - targetX));
         if (claw.slip && p >= claw.slipAt && claw.block) {
           const block = claw.block;
           claw.block = null;
           claw.slip = false;
           tossToPile(block, claw.tipX, claw.tipY + 20);
-          setBubble('はしっこだと すべるよ', 'oops');
+          setBubble(isJunk(block) ? 'ぐらぐら。まんなかを ねらおう' : 'はしっこだと すべるよ', 'oops');
           playSfx('slip');
           claw.phase = 'move';
           claw.dir = 1;
           updateButtons();
         }
-        if (claw.tx <= CARRY_X) {
-          claw.tx = CARRY_X;
+        if ((dir < 0 && claw.tx <= targetX) || (dir > 0 && claw.tx >= targetX)) {
+          claw.tx = targetX;
           claw.tipX = claw.tx + claw.off;
           claw.phase = 'release';
           claw.t = 0;
@@ -657,13 +766,14 @@
         claw.open = Math.min(1, claw.t / 0.2);
         if (claw.t >= 0.2 && claw.block) {
           const block = claw.block;
+          const zone = claw.targetZone || dropZoneFor(block);
           claw.block = null;
           game.flyers.push({
             block,
             fx: claw.tipX,
             fy: claw.tipY + 20,
-            tx: CHUTE.x,
-            ty: CHUTE.y,
+            tx: zone.x,
+            ty: zone.y,
             t: 0,
             dur: 0.28,
             arc: -6,
@@ -802,21 +912,54 @@
     ctx.stroke();
   }
 
-  function drawChute() {
-    rr(54, 408, 98, 100, 16);
-    ctx.fillStyle = '#ff9eb8';
+  function drawChuteBox(zone) {
+    const y = zone.boxY || 408;
+    rr(zone.x - 50, y, 100, 100, 16);
+    ctx.fillStyle = zone.fill;
     ctx.fill();
     ctx.lineWidth = 3;
-    ctx.strokeStyle = '#df7898';
+    ctx.strokeStyle = zone.stroke;
     ctx.stroke();
     ctx.beginPath();
-    ctx.ellipse(CHUTE.x, 428, 38, 13, 0, 0, Math.PI * 2);
+    ctx.ellipse(zone.x, y + 20, 38, 13, 0, 0, Math.PI * 2);
     ctx.fillStyle = '#4a3b5d';
     ctx.fill();
-    text('ぽとん', CHUTE.x, 484, 15, '#fff');
+    text(zone.label, zone.x, y + 76, zone.label.length > 3 ? 14 : 17, '#fff');
+  }
+
+  function drawChute() {
+    drawChuteBox(TEXT_CHUTE);
+    drawChuteBox(CLEANUP_CHUTE);
+  }
+
+  function drawJunk(cx, cy, block, scale, rot) {
+    const shape = block.shape || JUNK_SHAPES.wide;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (rot) ctx.rotate(rot);
+    if (block.tilt && !reduceMotion) ctx.rotate(block.tilt);
+    if (block.wobble > 0 && !reduceMotion) ctx.rotate(Math.sin(block.wobble * 22) * 0.08 * block.wobble);
+    if (scale !== 1) ctx.scale(scale, scale);
+    shape.cells.forEach((cell) => {
+      const x = cell[0] * 48;
+      const y = cell[1] * 48;
+      rr(x - 25, y - 25, 50, 50, 12);
+      ctx.fillStyle = 'hsl(' + shape.hue + ', 78%, 82%)';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'hsl(' + shape.hue + ', 55%, 54%)';
+      ctx.stroke();
+      circle(x - 10, y - 8, 4, 'rgba(255,255,255,0.55)');
+      circle(x + 10, y + 8, 3, 'rgba(80,70,65,0.16)');
+    });
+    ctx.restore();
   }
 
   function drawBlock(cx, cy, block, scale, glow, rot) {
+    if (isJunk(block)) {
+      drawJunk(cx, cy, block, scale, rot);
+      return;
+    }
     ctx.save();
     ctx.translate(cx, cy);
     if (rot) ctx.rotate(rot);

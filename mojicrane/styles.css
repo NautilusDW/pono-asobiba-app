@@ -69,9 +69,12 @@ a {
 #topControls {
   position: absolute;
   left: max(10px, env(safe-area-inset-left));
-  bottom: max(112px, calc(env(safe-area-inset-bottom) + 96px));
+  top: clamp(130px, 28%, 190px);
+  bottom: auto;
   z-index: 4;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
 }
 
@@ -392,7 +395,8 @@ button:disabled {
 
   #topControls {
     left: 8px;
-    bottom: 98px;
+    top: 118px;
+    bottom: auto;
     gap: 6px;
   }
 
@@ -427,6 +431,12 @@ button:disabled {
 
   .level-btn {
     min-height: 68px;
+  }
+}
+
+@media (max-height: 340px) and (orientation: landscape) {
+  #topControls {
+    top: 76px;
   }
 }
 
