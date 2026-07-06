@@ -4663,6 +4663,120 @@
       color: var(--text);
     }
 
+    /* ===== v3: 「アプリで あそべる」 ゾーン誘導モーダル (feature_tier_v3 §5) ===== */
+    .app-zone-promo-modal {
+      z-index: 220; /* passwordUnlockModal(既存 .modal 既定 100)より前面。 プロモがカードタップ起点で開くため他モーダルより優先させる */
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+    .app-zone-promo-modal[hidden] { display: none; }
+    .app-zone-promo-modal.is-visible { opacity: 1; }
+    .app-zone-promo-card {
+      position: relative;
+      max-width: 340px;
+      text-align: center;
+      transform: scale(0.92);
+      transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .app-zone-promo-modal.is-visible .app-zone-promo-card { transform: scale(1); }
+    .app-zone-promo-close {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(93, 78, 55, 0.12);
+      color: var(--text);
+      font-size: 1.15rem;
+      line-height: 1;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .app-zone-promo-tag {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: #fff;
+      background: linear-gradient(135deg, #60A5FA, #3B82F6);
+      padding: 4px 16px;
+      border-radius: 50px;
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+    }
+    .app-zone-promo-body {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.7;
+      margin: 0 0 18px;
+    }
+    .app-zone-promo-btnrow {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .azp-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .azp-btn--primary {
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      box-shadow: 0 3px 0 #B87200;
+    }
+    .azp-btn--primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .azp-btn--ghost {
+      background: transparent;
+      color: var(--text-light, var(--text));
+      border: 2px solid rgba(93, 78, 55, 0.28);
+    }
+    .azp-btn--ghost:active { transform: translateY(1px); }
+
+    /* ===== v3: 3ゾーン UI 見出し疑似カード (feature_tier_v3 §7) =====
+       .game-card の width:100%/aspect-ratio シェルを共有して無限ループカルーセル
+       の uniform card height 前提を崩さない。 パネル画像 (--card-panel) は
+       未設定のままにし (var(--card-panel, none) → none)、 代わりに単色の
+       やわらかいグラデーションで「見出し帯」に見せる。 */
+    .game-card.game-card--zone-header {
+      cursor: default;
+      pointer-events: none;
+      background-image: none;
+      background: linear-gradient(135deg, rgba(255, 216, 77, 0.22), rgba(96, 165, 250, 0.16));
+      border: 2px dashed rgba(93, 78, 55, 0.28);
+      border-radius: var(--gc-radius, 18px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .game-card.game-card--zone-header::before { content: none; box-shadow: none; }
+    .zone-header__inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 0 8px;
+    }
+    .zone-header__label {
+      font-size: 1.02rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.02em;
+    }
+    .zone-header__sub {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text);
+      opacity: 0.75;
+    }
+
     /* ===== Password Unlock Modal: 3 tabs (serial / order / quiz) =====
        既存 #passwordUnlockModal を 3 経路に拡張するための追加スタイル。
        タブヘッダ + パネル本体 + ヒント + クイズ問題ボックス + リロールボタン。
@@ -8952,6 +9066,20 @@
     </div>
   </div>
 
+  <!-- ===== v3: 「アプリで あそべる」 ゾーン誘導モーダル (feature_tier_v3 §5) =====
+       book/free 共用。 コピー/ボタンは openAppZonePromo() が実行時に差し替える。 -->
+  <div class="modal app-zone-promo-modal" id="appZonePromoModal" hidden role="dialog" aria-modal="true" aria-labelledby="appZonePromoBody">
+    <div class="modal-card app-zone-promo-card">
+      <button type="button" class="app-zone-promo-close" id="appZonePromoClose" aria-label="とじる">×</button>
+      <div class="app-zone-promo-tag">アプリで あそべる</div>
+      <p class="app-zone-promo-body" id="appZonePromoBody"></p>
+      <div class="app-zone-promo-btnrow">
+        <button type="button" class="azp-btn azp-btn--ghost" id="appZonePromoSecondary"></button>
+        <button type="button" class="azp-btn azp-btn--primary" id="appZonePromoPrimary"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- 絵本パスワード解錠ロジック (PonoTier.verifyBookPassword) を提供 -->
   <script src="common/debug-mode.js"></script>
   <!-- v1731: 個別機能トグル catalog (PonoDebugFeatures)。 debug-mode.js の後に読む。 -->
@@ -11636,10 +11764,17 @@
       const catalog = await api.loadCatalog();
       const pages = (catalog && catalog.pages) || {};
       const candidates = [];
+      // v3 (feature_tier_v3 §7): daily gacha の抽選母数を tier でゲートする。
+      //   sub  : 全ページ (bookOnly を除く)
+      //   free/book (free=book, 機能差ゼロ) : quizland 1ページのみ
+      // 旧 `page.appOnly && !__isAppBuild` ゲートは isSubTier 判定に包含される
+      // (isAppBuild → PonoTier.getTier()==='sub' なので冗長化のため撤去)。
+      const __gachaTier = window.PonoTier || null;
+      const __gachaIsSub = __gachaTier && typeof __gachaTier.isSub === 'function' ? __gachaTier.isSub() : __isAppBuild;
       Object.keys(pages).forEach((id) => {
         const page = pages[id] || {};
-        if (page.appOnly && !__isAppBuild) return false;
         if (page.bookOnly) return false;
+        if (!__gachaIsSub && id !== 'quizland') return false;
         if (!Array.isArray(page.stickers) || !page.stickers.length) return false;
         const owned = typeof api.getOwned === 'function' ? (api.getOwned(id) || {}) : {};
         page.stickers.forEach((sticker) => {
@@ -13166,6 +13301,117 @@
       return bookBonusStickerGrantPromise;
     }
 
+    // ===== v3: 「アプリで あそべる」 ゾーン誘導モーダル (feature_tier_v3 §5) =====
+    // book/free それぞれタップ時のコピー・ボタンが違う 1 枚のモーダルを共用する。
+    // book: 24h に 1 回だけ自動表示 (連打で毎回出さない)、 × dismiss で 7 日非表示。
+    // free: 毎回表示 (絵本へ誘導する唯一の導線なので抑制しない)。
+    const SUB_PROMO_BOOK_LAST_SHOWN_KEY = 'pono_sub_promo_book_last_shown_at';
+    const SUB_PROMO_BOOK_DISMISSED_KEY = 'pono_sub_promo_book_dismissed_at';
+    const SUB_PROMO_BOOK_THROTTLE_MS = 24 * 60 * 60 * 1000;      // 24h
+    const SUB_PROMO_BOOK_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;   // 7day
+
+    // 本版 (LP) から アプリ版 (App staging/production) への正規 URL。
+    // memory: project_url_architecture / CLAUDE.md URL マトリクス準拠。
+    function getAppBuildUrl() {
+      try {
+        const host = location.hostname;
+        if (host.indexOf('pono-asobiba-staging') === 0 || host === 'localhost' || host === '127.0.0.1') {
+          return 'https://pono-asobiba-app-staging.ndw.workers.dev/';
+        }
+      } catch (e) {}
+      return 'https://pono-asobiba-app.ndw.workers.dev/';
+    }
+
+    function shouldShowBookSubPromo() {
+      try {
+        const dismissedAt = Number(localStorage.getItem(SUB_PROMO_BOOK_DISMISSED_KEY) || 0);
+        if (dismissedAt && (Date.now() - dismissedAt) < SUB_PROMO_BOOK_DISMISS_MS) return false;
+        const lastShownAt = Number(localStorage.getItem(SUB_PROMO_BOOK_LAST_SHOWN_KEY) || 0);
+        if (lastShownAt && (Date.now() - lastShownAt) < SUB_PROMO_BOOK_THROTTLE_MS) return false;
+      } catch (e) {}
+      return true;
+    }
+
+    /**
+     * 「アプリで あそべる」 ゾーンのカードをタップした時の誘導モーダル。
+     * sub tier (アプリ版 / capture override) では何もせず false を返す
+     * (= 呼び出し側でそのまま通常遷移させる)。
+     * book/free では専用モーダルを表示して true を返す (= 遷移をブロックする)。
+     * @param {object} game タップされた GAMES entry
+     * @returns {boolean} true ならモーダルを出して遷移をブロックした
+     */
+    function openAppZonePromo(game) {
+      const tier = window.PonoTier || null;
+      const isSubTier = tier && typeof tier.isSub === 'function' ? tier.isSub() : __isAppBuild;
+      if (isSubTier) return false;
+      const isBookTier = tier && typeof tier.isBook === 'function' ? tier.isBook() : isBookBenefitUnlocked();
+      if (isBookTier && !shouldShowBookSubPromo()) return false;
+      if (document.querySelector('.app-zone-promo-modal.is-visible')) return true;
+
+      const modal = document.getElementById('appZonePromoModal');
+      if (!modal) return false;
+      const titleEl = document.getElementById('appZonePromoBody');
+      const primaryBtn = document.getElementById('appZonePromoPrimary');
+      const secondaryBtn = document.getElementById('appZonePromoSecondary');
+      if (!titleEl || !primaryBtn || !secondaryBtn) return false;
+
+      if (isBookTier) {
+        try { localStorage.setItem(SUB_PROMO_BOOK_LAST_SHOWN_KEY, String(Date.now())); } catch (e) {}
+        titleEl.innerHTML = 'ありがとう、 えほんを よんでくれて。<br><br>'
+          + 'book で あそべる ゲームは、 アプリでも おなじ。<br><br>'
+          + 'でも、 アプリには アプリだけの ゲームが 7つ、<br>'
+          + 'もらえる シールも たくさん あるよ。';
+        primaryBtn.textContent = 'アプリを みてみる';
+        secondaryBtn.textContent = 'いまは いいや';
+        primaryBtn.dataset.action = 'goapp';
+        secondaryBtn.dataset.action = 'dismiss-book';
+      } else {
+        titleEl.innerHTML = 'このゲームは、 えほんを かってくれた人と<br>'
+          + 'アプリで あそんでくれる人 だけの ゲームだよ。<br><br>'
+          + 'えほんには、 ポノからの あいことばが あるよ。';
+        primaryBtn.textContent = 'えほんを みてみる';
+        secondaryBtn.textContent = 'とじる';
+        primaryBtn.dataset.action = 'openbook';
+        secondaryBtn.dataset.action = 'close';
+      }
+      modal.hidden = false;
+      requestAnimationFrame(() => modal.classList.add('is-visible'));
+      return true;
+    }
+
+    function closeAppZonePromo() {
+      const modal = document.getElementById('appZonePromoModal');
+      if (!modal) return;
+      modal.classList.remove('is-visible');
+      setTimeout(() => { modal.hidden = true; }, 220);
+    }
+
+    (function setupAppZonePromoButtons() {
+      const primaryBtn = document.getElementById('appZonePromoPrimary');
+      const secondaryBtn = document.getElementById('appZonePromoSecondary');
+      const closeX = document.getElementById('appZonePromoClose');
+      if (primaryBtn) {
+        primaryBtn.addEventListener('click', () => {
+          const action = primaryBtn.dataset.action;
+          closeAppZonePromo();
+          if (action === 'goapp') {
+            try { window.location.href = getAppBuildUrl(); } catch (e) {}
+          } else if (action === 'openbook') {
+            openPasswordUnlockModal();
+          }
+        });
+      }
+      if (secondaryBtn) {
+        secondaryBtn.addEventListener('click', () => {
+          if (secondaryBtn.dataset.action === 'dismiss-book') {
+            try { localStorage.setItem(SUB_PROMO_BOOK_DISMISSED_KEY, String(Date.now())); } catch (e) {}
+          }
+          closeAppZonePromo();
+        });
+      }
+      if (closeX) closeX.addEventListener('click', closeAppZonePromo);
+    })();
+
     // ===== タブ切替 (WAI-ARIA Tabs Pattern / Manual Activation) =====
     const PW_TAB_IDS = ['serial', 'order', 'quiz'];
     const pwTabEls = {
@@ -13347,6 +13593,12 @@
           localStorage.setItem('pono_premium', '1');
           localStorage.setItem('pono_book_unlock_method', method);
           localStorage.setItem('pono_book_unlock_at', new Date().toISOString());
+          // v3 (feature_tier_v3 §4.3): welcome 演出は生涯 1 回限定。
+          // 既に見せ済み (pono_book_welcome_shown_v1) なら pending は立てない
+          // (再入力のたびに演出が再発火するのを防ぐ)。
+          if (localStorage.getItem('pono_book_welcome_shown_v1') !== '1') {
+            localStorage.setItem('pono_book_welcome_pending_v1', '1');
+          }
           if (method === 'order_id' && extras.orderId) {
             let arr = [];
             try { arr = JSON.parse(localStorage.getItem('pono_unlocked_orders') || '[]'); } catch (e) { arr = []; }
