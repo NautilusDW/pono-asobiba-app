@@ -63,6 +63,15 @@
     'pono_admin_'
   ];
 
+  // Import 時 preserve-if-absent — record にキーが無い場合のみ現値を維持
+  // (旧バージョン export 等で未対応キーが localStorage.clear() で静かに 0 化されるのを防ぐ)
+  var CORE_PRESERVE_IF_ABSENT = [
+    'pono_acorns',
+    'pono_stats',
+    'pono_stamp_log',
+    'pono_thankyou'
+  ];
+
   // セキュリティ: キー自体の正規表現バリデート (allowlist より緩いが、
   // __proto__ / constructor / prototype 等を弾く一次フィルタ)
   var KEY_SAFE_PATTERN = /^[a-z][a-z0-9_]*$/;
@@ -317,6 +326,20 @@
       }
     } catch (_) {}
 
+    // record に無いコア進捗キーは非破壊的に維持 (preserve-if-absent)
+    // 例: pono_acorns (どんぐり) 等、 import データ側に未対応でキー自体が無い場合に
+    // localStorage.clear() で静かに 0 化されるのを防ぐ
+    var coreBackup = Object.create(null);
+    try {
+      for (var ci = 0; ci < CORE_PRESERVE_IF_ABSENT.length; ci++) {
+        var ck = CORE_PRESERVE_IF_ABSENT[ci];
+        if (!(ck in parsed.data)) {
+          var cv = localStorage.getItem(ck);
+          if (cv != null) coreBackup[ck] = cv;
+        }
+      }
+    } catch (_) {}
+
     // クリア (deny 含む全消し → 後で deny は preserved から戻す)
     try {
       localStorage.clear();
@@ -358,6 +381,16 @@
         console.error('[PonoDataExport] setItem quota / error:', e);
         restoreLocalStorage(snap);
         throw new Error('データの 書きこみに しっぱい しました (ようりょう 不足の おそれ)');
+      }
+    }
+
+    // preserve-if-absent: record に無かったコア進捗キーを書き戻す
+    for (var pck in coreBackup) {
+      if (!Object.prototype.hasOwnProperty.call(coreBackup, pck)) continue;
+      try {
+        localStorage.setItem(pck, coreBackup[pck]);
+      } catch (_) {
+        // 書き戻し失敗は致命的ではない (コア進捗の非破壊維持が目的のため黙って諦める)
       }
     }
 
