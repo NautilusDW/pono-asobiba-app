@@ -81,7 +81,7 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
   border:2px solid rgba(87,193,94,.5);border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
 body.v-train #cars{bottom:9.1vh}
-body.v-train #veh{left:calc(55vw - clamp(102px,16.6vw,178px));bottom:9.1vh;width:clamp(204px,33.2vw,356px);height:clamp(102px,16.6vw,178px)}
+body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -124,8 +124,8 @@ body.st-space .tun{bottom:20vh}
 .tun.number-gate .door.r::after{content:"2"}
 .tun.number-gate .sign{top:16%;background:#fff;border:3px solid #ffcf5f;border-radius:50%;width:clamp(38px,5.4vw,62px);height:clamp(38px,5.4vw,62px);display:flex;align-items:center;justify-content:center}
 @keyframes numberTunnelPulse{from{transform:translateY(0) scale(.92);opacity:.38}50%{opacity:.72}to{transform:translateY(14%) scale(1.18);opacity:.38}}
-.tun.station{bottom:13.5vh;width:36vw;max-width:440px;height:34vh;z-index:5;pointer-events:none}
-.tun.station.jungle-station{bottom:13vh;width:44vw;max-width:520px;height:35vh}
+.tun.station{bottom:10.8vh;width:42vw;max-width:520px;height:39.5vh;z-index:5;pointer-events:none}
+.tun.station.jungle-station{bottom:10.6vh;width:51vw;max-width:610px;height:40.8vh}
 .tun.station .mount{display:none}
 .station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp") center bottom/contain no-repeat;z-index:1}
 .station-wall{position:absolute;left:10%;right:10%;bottom:12%;height:54%;border:3px solid #b9854d;border-bottom:0;border-radius:10px 10px 4px 4px;
