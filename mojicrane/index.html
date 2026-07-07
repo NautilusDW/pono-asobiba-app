@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ポノの もじもじクレーン | ポノのあそびば</title>
 <meta name="description" content="クレーンでかなブロックをあつめて、ことばをつくる横画面スマホ向け知育ゲーム。">
-<link rel="stylesheet" href="styles.css?v=20260706-1133">
-<script src="data/words.js?v=20260702-1055" defer></script>
-<script src="js/game.js?v=20260706-1133" defer></script>
+<link rel="stylesheet" href="styles.css?v=20260707-0900">
+<script src="../common/narration.js"></script>
+<script src="js/vendor/matter.min.js?v=20260707-0900" defer></script>
+<script src="data/words.js?v=20260707-0900" defer></script>
+<script src="js/game.js?v=20260707-0900" defer></script>
 </head>
 <body>
 <div id="app">
@@ -38,7 +40,7 @@
       <section class="panel title-panel" aria-labelledby="gameTitle">
         <div class="mark">🏗️</div>
         <h1 id="gameTitle">もじもじクレーン</h1>
-        <p>もじを あつめて じゃまを かたづけよう</p>
+        <p>もじブロックを つみあげて ことばを つくろう</p>
         <div id="levelButtons" class="level-grid">
           <button class="level-btn easy" type="button" data-level="easy">
             <span>やさしい</span>
@@ -50,7 +52,7 @@
           </button>
           <button class="level-btn challenge" type="button" data-level="challenge">
             <span>チャレンジ</span>
-            <small>4もじ</small>
+            <small>4〜5もじ</small>
           </button>
         </div>
       </section>
@@ -75,6 +77,17 @@
         <div class="panel-actions">
           <button id="againBtn" class="soft-btn" type="button">もういちど</button>
           <button id="levelsBtn" class="soft-btn muted" type="button">えらぶ</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="tutorialOverlay" class="overlay tutorial-overlay hidden">
+      <section class="panel tutorial-panel" aria-live="polite">
+        <div id="tutorialIcon" class="tutorial-icon" aria-hidden="true"></div>
+        <p id="tutorialText" class="tutorial-caption">あそびかたを おぼえよう</p>
+        <div class="panel-actions">
+          <button id="tutorialNextBtn" class="soft-btn" type="button">つぎへ</button>
+          <button id="tutorialSkipBtn" class="soft-btn muted hidden" type="button">とばす</button>
         </div>
       </section>
     </div>

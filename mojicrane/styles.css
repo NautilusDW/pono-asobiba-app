@@ -133,10 +133,22 @@ a {
   font-size: 0.82em;
 }
 
-body:not([data-scene="playing"]) #topControls,
-body:not([data-scene="playing"]) #dropBtn {
+body:not([data-scene="playing"]):not([data-scene="tutorial"]) #topControls,
+body:not([data-scene="playing"]):not([data-scene="tutorial"]) #dropBtn {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Tutorial scene hides #dropBtn outright (updateButtons() in game.js) since
+   it can never be enabled there — a visible-but-permanently-disabled button
+   reads as broken to a child. Also backs tutorialNextBtn/tutorialSkipBtn's
+   classList.toggle('hidden', ...) calls in game.js — until this rule, only
+   .overlay.hidden existed, so those two buttons' "hidden" class was a
+   pre-existing no-op and tutorialNextBtn stayed visible+clickable on every
+   step regardless of the gating logic. */
+#dropBtn.hidden,
+.tutorial-panel .hidden {
+  display: none;
 }
 
 button:active,
@@ -164,6 +176,65 @@ button:disabled {
 
 .overlay.hidden {
   display: none;
+}
+
+/* Tutorial overlay: unlike title/confirm/result (full-screen modal), this
+   panel sits at the bottom edge with a transparent, click-through backdrop
+   so the child can keep touching the physics canvas underneath while
+   reading the instruction line. */
+.tutorial-overlay {
+  background: transparent;
+  align-items: flex-end;
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+/* .panel + .tutorial-panel compound selector (rather than .tutorial-panel
+   alone) so this always wins over the later, equal-specificity `.panel`
+   rule for width/padding/background — previously `.panel` silently won on
+   source order, leaving the panel full-opacity/full-size and (worse)
+   pointer-events:auto over the canvas cues it's meant to sit above. It's
+   now translucent + click-through so the pulsing ring/carry-path/stability
+   cues in drawTutorialCues() (game.js) stay visible and tappable through it
+   on steps 2-6 (round-2 residual fix). */
+.panel.tutorial-panel {
+  width: min(560px, 92%);
+  padding: 14px 22px;
+  background: rgba(255, 253, 246, 0.6);
+  pointer-events: none;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+}
+
+.tutorial-panel p {
+  margin: 0 0 12px;
+  font-size: clamp(16px, 3vh, 21px);
+}
+
+.tutorial-panel .panel-actions {
+  gap: 10px;
+  pointer-events: auto;
+}
+
+/* Pictogram supplement (per step) — the primary "what to do" affordance is
+   the canvas-drawn pulsing ring / pointer / carry-path / progress-ring
+   (see drawTutorialCues in game.js) plus narration; this icon and the
+   caption text below it are both secondary support for a non-reading
+   child and an accompanying adult, never the primary instruction. */
+.tutorial-icon {
+  font-size: clamp(34px, 7vh, 56px);
+  line-height: 1;
+  margin-bottom: 2px;
+  animation: tutIconBounce 1.1s ease-in-out infinite;
+}
+
+@keyframes tutIconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.tutorial-caption {
+  opacity: 0.82;
+  font-weight: 700;
 }
 
 .panel {
