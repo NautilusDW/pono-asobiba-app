@@ -145,6 +145,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-07T17:35:54Z - mojicrane round-7 最終検証レポート (真Matter.Constraint carry + CLEANUP silent-drop fix 検証)
+- **タスク**: mojicrane round-7 最終検証レポート (真Matter.Constraint carry + CLEANUP silent-drop fix 検証)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 50
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 7, "Bash": 15, "Workflow": 10, "Read": 9, "Agent": 4, "ToolSearch": 2, "SendMessage": 1, "TaskStop": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-07-07T17:30:16Z - mojicrane round-7 residual fix: carry pointA.y double +4 offset fix + spawnCarried fallback warn
+- **タスク**: mojicrane round-7 residual fix: carry pointA.y double +4 offset fix + spawnCarried fallback warn
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 50
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 7, "Bash": 15, "Workflow": 10, "Read": 9, "Agent": 4, "ToolSearch": 2, "SendMessage": 1, "TaskStop": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-07-07T12:37:25Z - Capacitor M2 Phase A+C+B.1+D 完走 (-220.4MB build + -822MB disk + AAB 1.3GB 実測でハイブリッド戦略確定)。 出版社サイト新規リポ立ち上げ + staging 動線繋げ。 並行 3 sessions と衝突ゼロ協調
+- **タスク**: Capacitor M2 Phase A+C+B.1+D 完走 (-220.4MB build + -822MB disk + AAB 1.3GB 実測でハイブリッド戦略確定)。 出版社サイト新規リポ立ち上げ + staging 動線繋げ。 並行 3 sessions と衝突ゼロ協調
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 329
+- **エラー数**: 40
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 31, "ToolSearch": 3, "Read": 35, "Bash": 196, "Edit": 20, "Write": 5, "SendMessage": 4, "Grep": 6, "Workflow": 29}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-07T11:43:39Z - mojicrane round-6 hotfix 最終検証レポート (正解かなカゴ silent 消費バグ / 4ケースマトリクス + 7チェック)
 - **タスク**: mojicrane round-6 hotfix 最終検証レポート (正解かなカゴ silent 消費バグ / 4ケースマトリクス + 7チェック)
 - **結果**: 成功
@@ -221,44 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 93, "Bash": 83, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 51, "Skill": 1, "SendMessage": 8}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T10:03:37Z - bento tut2 hotfix3 (見本スクロールデモ/Step5吹き出し/Step6ぽんと平易化+Phase B位相リセット根本fix/メインおかず2個/はっぱしきり紹介リング) sw v2029
-- **タスク**: bento tut2 hotfix3 (見本スクロールデモ/Step5吹き出し/Step6ぽんと平易化+Phase B位相リセット根本fix/メインおかず2個/はっぱしきり紹介リング) sw v2029
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 64
-- **エラー数**: 2
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 17, "ToolSearch": 2, "TaskStop": 1, "Read": 25, "Write": 1, "Bash": 18}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T09:44:51Z - monster-math/mode-tenmegane.js 新規実装 (テンメガネ goal可変10づくり継承+絵×N併記+burp廃止3層回復)
-- **タスク**: monster-math/mode-tenmegane.js 新規実装 (テンメガネ goal可変10づくり継承+絵×N併記+burp廃止3層回復)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 37
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Grep": 5, "Bash": 13, "Workflow": 7, "Read": 7, "Agent": 2, "ToolSearch": 1, "SendMessage": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-07-07T09:35:47Z - monster_math R3: 旧60本TTSのうちmake10/kazoeru/tashizan 33本をmanifestから削除しtrash退避、テンメガネ14本+カクレン13本の新規TTSをGemini Ledaで生成しfaster-whisper(pykakasi正規化+Levenshtein距離12%閾値)で全27本PASS確認、manifest.json更新
-- **タスク**: monster_math R3: 旧60本TTSのうちmake10/kazoeru/tashizan 33本をmanifestから削除しtrash退避、テンメガネ14本+カクレン13本の新規TTSをGemini Ledaで生成しfaster-whisper(pykakasi正規化+Levenshtein距離12%閾値)で全27本PASS確認、manifest.json更新
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 37
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Grep": 5, "Bash": 13, "Workflow": 7, "Read": 7, "Agent": 2, "ToolSearch": 1, "SendMessage": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
