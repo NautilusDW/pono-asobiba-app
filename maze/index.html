@@ -11876,9 +11876,9 @@ function loadStage(idx) {
   // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
   // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
   // セーフフラグ OFF の間は true 返却 → 実ロックは発動しない（保険として window.PonoTier の存在もチェック）
-  // NOTE (MVP): common/tier.js の PONO_TIER_GAME_LOCKS_ENABLED=false 中は
-  // isMazeStageUnlocked() が常に true を返すため、以下の showSubscribePromo 分岐は
-  // 到達しない dead code。Phase 2 (有料ロック有効化時) のために保持。
+  // NOTE: common/tier.js は 2026-06-28 以降 PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 稼働中)。
+  // このコメントはかつて false (MVP 全開放) だった頃の名残で、現在は isMazeStageUnlocked() が
+  // tier に応じて false を返し得るため、以下の showSubscribePromo 分岐は実際に到達する現役コード。
   var requestedIdx = idx | 0;
   var stageNum = requestedIdx > 0 ? requestedIdx : 1;
   if (!window._DEV_BYPASS_TIER

@@ -77,6 +77,8 @@
     }
   };
 
+  if (window.MiniPhys) window.MiniPhys.configure({ floorY: FLOOR, blockSize: BLOCK });
+
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
   const titleOverlay = document.getElementById('titleOverlay');
@@ -132,6 +134,10 @@
 
   function pick(arr) {
     return arr[(Math.random() * arr.length) | 0];
+  }
+
+  function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 
   function shuffle(arr) {
@@ -402,6 +408,7 @@
     game.cols = buildPile(item.word, game.cfg, game.roundIndex);
     game.cleaned = 0;
     game.flyers = [];
+    if (window.MiniPhys) MiniPhys.reset();
     game.pops = [];
     game.confetti = [];
     game.mistakes = 0;
@@ -516,25 +523,53 @@
     return pickCol(game.cols, game.cfg.maxHeight);
   }
 
-  function tossToPile(block, fx, fy) {
+  function tossToPile(block, fx, fy, vel) {
     const i = safeCol();
     const col = game.cols[i];
     const ty = FLOOR - (col.blocks.length + 1) * BLOCK + BLOCK / 2;
-    game.flyers.push({
-      block,
-      fx,
-      fy,
-      tx: col.x,
-      ty,
-      t: 0,
-      dur: 0.55,
-      arc: 135,
-      spin: true,
-      done: () => {
-        col.blocks.push(block);
-        block.wobble = 1;
-      }
-    });
+    if (reduceMotion || !window.MiniPhys) {
+      game.flyers.push({
+        block,
+        fx,
+        fy,
+        tx: col.x,
+        ty,
+        t: 0,
+        dur: 0.55,
+        arc: 135,
+        spin: true,
+        done: () => {
+          col.blocks.push(block);
+          block.wobble = 1;
+        }
+      });
+      return;
+    }
+    const v = vel || {};
+    MiniPhys.spawnFalling(block, fx, fy, v.vx || 0, v.vy || 0, v.omega || 0, { target: { type: 'column', col } });
+  }
+
+  // physics settle hooks (mojicrane round-3): reconcile a settled/caught body back
+  // into the existing logical stores. cols[].blocks / evaluate() stay the sole authority.
+  function physOnSettle(body) {
+    if (body.target && body.target.type === 'column' && body.target.col) {
+      body.target.col.blocks.push(body.block);
+      body.block.wobble = 1;
+    }
+  }
+
+  function physOnChuteCatch(body) {
+    evaluate(body.block);
+  }
+
+  function markPhysCueSeen() {
+    try {
+      const state = readProgress();
+      if (state.physCueSeen) return;
+      state.physCueSeen = true;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      announce('まんなかを つかむと ゆれないよ');
+    } catch (err) {}
   }
 
   function evaluate(block) {
@@ -690,15 +725,23 @@
           if (claw.col !== null && game.cols[claw.col].blocks.length) {
             const col = game.cols[claw.col];
             claw.block = col.blocks.pop();
-            const off = Math.abs(claw.tipX - blockBalanceCenterX(col, claw.block));
+            const offSigned = claw.tipX - blockBalanceCenterX(col, claw.block);
+            const off = Math.abs(offSigned);
             const perfect = isJunk(claw.block) ? claw.block.shape.perfect : PERFECT_GRAB;
             const slipLimit = blockSlipLimit(claw.block);
             claw.block.grabQuality = off <= perfect ? 'perfect' : 'normal';
             claw.block.tilt = isJunk(claw.block)
               ? Math.max(-0.42, Math.min(0.42, (claw.tipX - blockBalanceCenterX(col, claw.block)) / Math.max(1, slipLimit) * 0.28))
               : 0;
-            claw.slip = off > slipLimit && game.slowT <= 0;
+            // legacy random-slip trigger neutered (kept inert for compat); physics
+            // (MiniPhys.slipTriggered, driven by carry-phase swing angle/tension) owns slip now.
+            claw.slip = false;
             claw.slipAt = 0.35 + Math.random() * 0.35;
+            if (window.MiniPhys) {
+              const grabRadius = blockGrabRadius(claw.block);
+              const uNorm = off <= perfect ? 0 : clamp(offSigned / grabRadius, -1, 1);
+              MiniPhys.spawnCarried(claw.block, uNorm, claw.tipX, claw.tipY);
+            }
             if (off <= perfect) {
               pop(claw.tipX, claw.tipY - 34, 'まんなか', '#33bf7a', 18);
             } else if (off > slipLimit && slipLimit < 900) {
@@ -741,14 +784,14 @@
         claw.tx += dir * CARRY_SPEED * dt;
         claw.off *= Math.pow(0.02, dt);
         claw.tipX = claw.tx + claw.off;
-        const p = Math.abs(claw.carryFrom - claw.tx) / Math.max(1, Math.abs(claw.carryFrom - targetX));
-        if (claw.slip && p >= claw.slipAt && claw.block) {
+        if (window.MiniPhys && MiniPhys.slipTriggered() && claw.block) {
           const block = claw.block;
+          const rel = MiniPhys.releaseCarried();
           claw.block = null;
-          claw.slip = false;
-          tossToPile(block, claw.tipX, claw.tipY + 20);
+          tossToPile(block, claw.tipX + rel.x, claw.tipY + rel.y, rel);
           setBubble(isJunk(block) ? 'ぐらぐら。まんなかを ねらおう' : 'はしっこだと すべるよ', 'oops');
           playSfx('slip');
+          markPhysCueSeen();
           claw.phase = 'move';
           claw.dir = 1;
           updateButtons();
@@ -768,17 +811,22 @@
           const block = claw.block;
           const zone = claw.targetZone || dropZoneFor(block);
           claw.block = null;
-          game.flyers.push({
-            block,
-            fx: claw.tipX,
-            fy: claw.tipY + 20,
-            tx: zone.x,
-            ty: zone.y,
-            t: 0,
-            dur: 0.28,
-            arc: -6,
-            done: () => evaluate(block)
-          });
+          const rel = window.MiniPhys ? MiniPhys.releaseCarried() : { x: 0, y: 20, vx: 0, vy: 0, omega: 0 };
+          if (reduceMotion || !window.MiniPhys) {
+            game.flyers.push({
+              block,
+              fx: claw.tipX,
+              fy: claw.tipY + 20,
+              tx: zone.x,
+              ty: zone.y,
+              t: 0,
+              dur: 0.28,
+              arc: -6,
+              done: () => evaluate(block)
+            });
+          } else {
+            MiniPhys.spawnFalling(block, claw.tipX + rel.x, claw.tipY + rel.y, rel.vx, rel.vy, rel.omega, { target: { type: 'chute', zone } });
+          }
           playSfx('drop');
           claw.phase = 'wait';
           claw.t = 0;
@@ -792,6 +840,15 @@
           updateButtons();
         }
         break;
+    }
+
+    if (window.MiniPhys) {
+      MiniPhys.step(dt, { x: claw.tipX, y: claw.tipY + 4 }, {
+        cfg: game.cfg,
+        slowT: game.slowT,
+        onSettle: physOnSettle,
+        onChuteCatch: physOnChuteCatch
+      });
     }
 
     game.flyers.forEach((flyer) => { flyer.t += dt; });
@@ -1023,7 +1080,14 @@
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#6b6178';
     ctx.stroke();
-    if (claw.block) drawBlock(claw.tipX, claw.tipY + 20, claw.block, 1, false, 0);
+    if (claw.block) {
+      if (!reduceMotion && window.MiniPhys && MiniPhys.isCarrying()) {
+        const pose = MiniPhys.getCarriedPose();
+        drawBlock(claw.tipX + pose.x, claw.tipY + pose.y, claw.block, 1, false, pose.angle);
+      } else {
+        drawBlock(claw.tipX, claw.tipY + 20, claw.block, 1, false, 0);
+      }
+    }
     circle(claw.tipX, claw.tipY - 26, 10, '#ffd166', '#df9d2f', 3);
     const spread = 6 + 16 * claw.open;
     ctx.lineWidth = 7;
@@ -1036,6 +1100,68 @@
       ctx.stroke();
     });
     ctx.lineCap = 'butt';
+  }
+
+  function drawPhysBodies() {
+    if (!window.MiniPhys) return;
+    MiniPhys.bodiesForDraw().forEach((body) => {
+      drawBlock(body.x, body.y, body.block, 1, false, body.angle);
+    });
+  }
+
+  // additive tutorial cue: pulsing ring over the best-aligned column top while
+  // the claw is patrolling, shown on easy or once assist has kicked in (mirrors
+  // requestDrop()'s own read-only grab scoring, no new game state).
+  function drawGrabCue() {
+    if (reduceMotion || !game || game.roundClear) return;
+    const claw = game.claw;
+    if (!claw || claw.phase !== 'move') return;
+    if (!(game.levelKey === 'easy' || game.assist > 0)) return;
+    let best = null;
+    let bestScore = 1;
+    game.cols.forEach((col) => {
+      if (!col.blocks.length) return;
+      const top = col.blocks[col.blocks.length - 1];
+      const radius = blockGrabRadius(top);
+      const score = Math.abs(col.x - claw.tipX) / radius;
+      if (score < bestScore) {
+        bestScore = score;
+        best = col;
+      }
+    });
+    if (!best) return;
+    const y = FLOOR - best.blocks.length * BLOCK + BLOCK / 2;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 5);
+    ctx.save();
+    ctx.globalAlpha = 0.3 + 0.25 * pulse;
+    ctx.beginPath();
+    ctx.arc(best.x, y, 30 + 4 * pulse, 0, Math.PI * 2);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#ffd166';
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // additive tutorial cue: a small leaf that tilts with the carried block's
+  // swing angle and blushes orange/red as it nears the physics slip threshold.
+  function drawBalanceMeter() {
+    if (reduceMotion || !window.MiniPhys || !MiniPhys.isCarrying()) return;
+    const c = MiniPhys.currentCarried();
+    if (!c || Math.abs(c.u) <= 0.4) return;
+    const params = MiniPhys.levelSlipParams(game.cfg, c.block);
+    const k = clamp(Math.abs(c.theta) / params.thetaSlip, 0, 1);
+    const color = k < 0.6 ? '#33bf7a' : (k < 0.85 ? '#ff9d42' : '#ff5a5a');
+    const pose = MiniPhys.getCarriedPose();
+    const mx = game.claw.tipX + pose.x;
+    const my = game.claw.tipY + pose.y - 46;
+    ctx.save();
+    ctx.translate(mx, my);
+    ctx.rotate(c.theta * 0.6);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 12, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
   }
 
   function drawPono(cx, cy, r) {
@@ -1235,8 +1361,11 @@
     drawCabinet();
     drawChute();
     drawPile();
+    drawPhysBodies();
     drawFlyers();
+    drawGrabCue();
     drawClaw();
+    drawBalanceMeter();
     drawHud();
     drawFx();
   }

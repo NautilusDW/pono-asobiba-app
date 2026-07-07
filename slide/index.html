@@ -195,6 +195,8 @@ html, body {
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -241,8 +243,12 @@ html, body {
 
 <script>
 // ===== Premium Gate =====
+// [[feedback_ponotier_propagation]]: raw localStorage.getItem('pono_premium') 直接参照は
+// tier v3 (free/book/sub 集合方式) から取り残される bypass になるため、PonoTier 経由に統一。
+// 旧仕様 (pono_premium==='1' で通過) と同義の「free tier のみブロック」を PonoTier.isFree() で再現。
 var __appBuild = window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
-if (!__appBuild && localStorage.getItem('pono_premium') !== '1') {
+var __tierBlocksSlide = !window.PonoTier || typeof window.PonoTier.isFree !== 'function' || window.PonoTier.isFree();
+if (!__appBuild && __tierBlocksSlide) {
   location.replace('../play.html');
 }
 

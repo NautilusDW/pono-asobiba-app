@@ -788,7 +788,15 @@
 //   monster-math/index.html・engine.js・mode-*.js は v2010 の方針通り maze/oto/bento/puzzle
 //   と同じ network-first (CRITICAL_ASSETS_HTML/SCRIPTS 対象外) のまま変更なし。
 //   play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 2023;
+// v2024: mojicrane round-3 増分物理追加 (7-phase state machine / #dropBtn は無改変、
+//   direct-touch drag は導入せず)。新規 mojicrane/js/miniphys.js (custom mini pendulum/
+//   impulse solver、Matter.js 等の外部ライブラリ不使用) を追加し、つかんだブロックの表示姿勢
+//   を振り子物理駆動に、離す/滑る挙動を弾道落下 (chute センサー + 0.9s ウォッチドッグ) に
+//   置換。旧スクリプト式ランダムスリップ (claw.slip/slipAt の px 判定) は無効化のみで残置し、
+//   'carry' フェーズの分岐条件を MiniPhys.slipTriggered() に差し替え。mojicrane は引き続き
+//   CRITICAL_ASSETS 対象外 (network-first) のため precache 一覧に追加なし、index.html の
+//   ?v= クエリバンプのみで更新反映。play.html PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 2024;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

@@ -283,9 +283,12 @@ BASE_STAGES.forEach((s, i) => {
 
 let STAGES = [...BASE_STAGES];
 
-// えほん版は序盤が平坦に感じにくいよう、built-in ステージを一つ飛びで進める。
-// common/tier.js のロック定義は触らず、パズル内の進行順だけを変える。
-const BOOK_PUZZLE_STAGE_SEQUENCE = [0, 2, 4, 6, 8, 10, 12, 14, 16];
+// v3 (feature_tier_v3): free = book (機能差ゼロ)。
+// 旧仕様はえほん版だけ built-in ステージを一つ飛びで進める BOOK_PUZZLE_STAGE_SEQUENCE
+// (common/tier.js のロック定義を経由しない独自バイパス) を持っていたが、
+// これは isPuzzleStageUnlocked(stageNum) が book/free 共通の FREE_PUZZLE_STAGE_IDS=[1,6,13]
+// に統一された後も残っていた bypass だったため削除し、book も free と同じ
+// PonoTier 経由の判定 (Stage 1/6/13 のみ解放) に統一する。
 
 function getPuzzleTier() {
   try {
@@ -303,38 +306,12 @@ function isBuiltInPuzzleStage(stage) {
   return isFinite(id) && id > 0 && id < 1000;
 }
 
-function getBookStageSequencePosition(index) {
-  for (var i = 0; i < BOOK_PUZZLE_STAGE_SEQUENCE.length; i++) {
-    if (BOOK_PUZZLE_STAGE_SEQUENCE[i] === index) return i;
-  }
-  return -1;
-}
-
 function getStageDisplayMeta(index) {
-  var tier = getPuzzleTier();
-  var stage = STAGES[index] || null;
-  if (tier === 'book' && isBuiltInPuzzleStage(stage)) {
-    var pos = getBookStageSequencePosition(index);
-    if (pos >= 0) {
-      return { num: pos + 1, total: BOOK_PUZZLE_STAGE_SEQUENCE.length };
-    }
-  }
   return { num: index + 1, total: STAGES.length };
 }
 
 function getNextStageIndexForFlow(index) {
   var current = (typeof index === 'number') ? index : currentStageIndex;
-  var tier = getPuzzleTier();
-  var stage = STAGES[current] || null;
-  if (tier === 'book' && isBuiltInPuzzleStage(stage)) {
-    var pos = getBookStageSequencePosition(current);
-    if (pos >= 0 && pos < BOOK_PUZZLE_STAGE_SEQUENCE.length - 1) {
-      return BOOK_PUZZLE_STAGE_SEQUENCE[pos + 1];
-    }
-    if (pos === BOOK_PUZZLE_STAGE_SEQUENCE.length - 1) {
-      return current + 2;
-    }
-  }
   return current + 1;
 }
 
@@ -344,9 +321,6 @@ function isStageUnlockedForCurrentFlow(index) {
   if (!isBuiltInPuzzleStage(stage)) return true; // user drawing stages
   var tier = getPuzzleTier();
   if (tier === 'sub') return true;
-  if (tier === 'book') {
-    return getBookStageSequencePosition(index) >= 0;
-  }
   if (!window.PonoTier) return true;
   var stageNum = stage.id != null ? Number(stage.id) : (index + 1);
   var isSpecial = [5, 10, 15, 20].indexOf(stageNum) >= 0;
@@ -7210,9 +7184,9 @@ btnNextStage.addEventListener('click', () => {
   if (nextIndex >= STAGES.length) return;
   if (!isStageUnlockedForCurrentFlow(nextIndex)) {
     nextNudge.stop();
-    // NOTE: MVP では common/tier.js が PONO_TIER_GAME_LOCKS_ENABLED=false を設定するため、
-    // isStageUnlockedForCurrentFlow() は常に true を返し、この分岐は到達しない。
-    // Phase 2 でロック機能を再有効化する際に、本ブランチが復活する想定。
+    // NOTE: common/tier.js は 2026-06-28 以降 PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 稼働中)。
+    // このコメントはかつて false (MVP 全開放) だった頃の名残で、現在はこの分岐が実際に到達する
+    // (free/book tier で Stage 1/6/13 超過時にプロモを表示する現役コード)。
     if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
       window.PonoTier.showTierLockPromo();
     } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {

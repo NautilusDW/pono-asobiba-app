@@ -145,120 +145,120 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
-### 2026-07-06T02:38:30Z - StickerBookThreeJS tier v3: book_buyer_edition表紙追加+tierゲート実装 (Track B)
-- **タスク**: StickerBookThreeJS tier v3: book_buyer_edition表紙追加+tierゲート実装 (Track B)
+### 2026-07-07T05:00:38Z - play.html monster_math card + game-stickers.json catalog restore + sticker-metrics regen
+- **タスク**: play.html monster_math card + game-stickers.json catalog restore + sticker-metrics regen
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 89
-- **エラー数**: 16
+- **総アクション数**: 22
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 3, "Bash": 8, "Workflow": 3, "Read": 4, "Agent": 1, "ToolSearch": 1, "SendMessage": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-07-07T04:57:19Z - monster-math sw.js precache追加 + CACHE_VERSION bump + 98アセットのgit add準備
+- **タスク**: monster-math sw.js precache追加 + CACHE_VERSION bump + 98アセットのgit add準備
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 41
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 10, "ToolSearch": 2, "TaskStop": 1, "Read": 18, "Write": 1, "Bash": 9}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-07-07T04:45:03Z - monster-math Phase 3-Impl2 cross-review blocker0確認 + commit&push (sw v2021)
+- **タスク**: monster-math Phase 3-Impl2 cross-review blocker0確認 + commit&push (sw v2021)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 22
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 3, "Bash": 8, "Workflow": 3, "Read": 4, "Agent": 1, "ToolSearch": 1, "SendMessage": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-07-07T04:22:51Z - monster-math a11yタップターゲット拡大 (mm-topbar-back blocker含む)
+- **タスク**: monster-math a11yタップターゲット拡大 (mm-topbar-back blocker含む)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 219
+- **エラー数**: 26
 - **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 21, "ToolSearch": 2, "Read": 7, "Bash": 43, "Edit": 2, "Write": 2, "SendMessage": 4, "Grep": 6, "Workflow": 2}
+- **ツール使用統計**: {"Agent": 30, "ToolSearch": 3, "Read": 27, "Bash": 109, "Edit": 8, "Write": 4, "SendMessage": 4, "Grep": 6, "Workflow": 28}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-06T02:37:57Z - App staging/production の副次パス404監査 (playwright-report/test-results/scratchpad/.git等18URL実測)
-- **タスク**: App staging/production の副次パス404監査 (playwright-report/test-results/scratchpad/.git等18URL実測)
+### 2026-07-07T04:19:03Z - monster_math TTS manifest反映 (60本のwav→manifest.json entries追加)
+- **タスク**: monster_math TTS manifest反映 (60本のwav→manifest.json entries追加)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 89
-- **エラー数**: 16
+- **総アクション数**: 219
+- **エラー数**: 26
 - **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 21, "ToolSearch": 2, "Read": 7, "Bash": 43, "Edit": 2, "Write": 2, "SendMessage": 4, "Grep": 6, "Workflow": 2}
+- **ツール使用統計**: {"Agent": 30, "ToolSearch": 3, "Read": 27, "Bash": 109, "Edit": 8, "Write": 4, "SendMessage": 4, "Grep": 6, "Workflow": 28}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-06T02:37:31Z - tier v3 Track A: game-stickers.json schema拡張 + grant() tier gate実装
-- **タスク**: tier v3 Track A: game-stickers.json schema拡張 + grant() tier gate実装
+### 2026-07-07T04:16:53Z - Capacitor M2 Phase A: assets/_archive/ 別送り + delete で 25.7MB 削減 (commit 5271752 + 070d935 push)。 workflow 4 段構成 (Classify/Review/Execute/Verify) + broken ref fix 2 file + pathspec-limited commit で他 session の monster_math wav を除外
+- **タスク**: Capacitor M2 Phase A: assets/_archive/ 別送り + delete で 25.7MB 削減 (commit 5271752 + 070d935 push)。 workflow 4 段構成 (Classify/Review/Execute/Verify) + broken ref fix 2 file + pathspec-limited commit で他 session の monster_math wav を除外
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 89
-- **エラー数**: 16
+- **総アクション数**: 219
+- **エラー数**: 26
 - **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 21, "ToolSearch": 2, "Read": 7, "Bash": 43, "Edit": 2, "Write": 2, "SendMessage": 4, "Grep": 6, "Workflow": 2}
+- **ツール使用統計**: {"Agent": 30, "ToolSearch": 3, "Read": 27, "Bash": 109, "Edit": 8, "Write": 4, "SendMessage": 4, "Grep": 6, "Workflow": 28}
 - **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-06T02:36:20Z - staging leak fix: .assetsignore に .dev.vars/playwright-report/test-results/scratchpad/__pycache__ 追加
-- **タスク**: staging leak fix: .assetsignore に .dev.vars/playwright-report/test-results/scratchpad/__pycache__ 追加
+### 2026-07-07T03:57:06Z - monster-math M2-M4 (make10/kazoeru/tashizan) Phase3-Impl 最終レポート作成+blocker判定
+- **タスク**: monster-math M2-M4 (make10/kazoeru/tashizan) Phase3-Impl 最終レポート作成+blocker判定
+- **結果**: 失敗
+- **理由**: クロスレビュー3件でblocker合計4件検出(feast別解未検証/ナレkey不一致/tutorial runner未実装/tap-target44px未満)、Phase4進行不可と判定
+- **総アクション数**: 19
+- **エラー数**: 3
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {"Glob": 1, "Grep": 3, "Bash": 8, "Workflow": 3, "Read": 4}
+- **サマリ**: 失敗タスク: エラー3件。 失敗要因候補: テストを一切実行しなかった
+
+
+### 2026-07-07T03:54:33Z - mojicrane round-2 final verification report (12 commit-readiness checks + per-fix verdicts A-F)
+- **タスク**: mojicrane round-2 final verification report (12 commit-readiness checks + per-fix verdicts A-F)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 89
-- **エラー数**: 16
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **総アクション数**: 365
+- **エラー数**: 34
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 21, "ToolSearch": 2, "Read": 7, "Bash": 43, "Edit": 2, "Write": 2, "SendMessage": 4, "Grep": 6, "Workflow": 2}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 83, "Bash": 76, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 46, "Skill": 1, "SendMessage": 7}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-06T02:26:17Z - common/tier.js を集合方式(FREE_*配列+indexOf)にrefactorしtier v3のfree=book方針を実装
-- **タスク**: common/tier.js を集合方式(FREE_*配列+indexOf)にrefactorしtier v3のfree=book方針を実装
+### 2026-07-07T03:47:00Z - monster-math Phase 3 Merge M2-M4 (make10/kazoeru/tashizan モード実装マージ + sw v2015-2018 + worktree cleanup)
+- **タスク**: monster-math Phase 3 Merge M2-M4 (make10/kazoeru/tashizan モード実装マージ + sw v2015-2018 + worktree cleanup)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 87
-- **エラー数**: 16
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **総アクション数**: 365
+- **エラー数**: 34
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 20, "ToolSearch": 2, "Read": 7, "Bash": 43, "Edit": 2, "Write": 2, "SendMessage": 4, "Grep": 6, "Workflow": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-06T02:20:17Z - App staging /api/savedata 異常系・防御機構のcurl検証
-- **タスク**: App staging /api/savedata 異常系・防御機構のcurl検証
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 86
-- **エラー数**: 15
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 20, "ToolSearch": 2, "Read": 6, "Bash": 43, "Edit": 2, "Write": 2, "SendMessage": 4, "Grep": 6, "Workflow": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-06T02:18:15Z - Step C staging-app 有効化 (KV作成+secret登録+deploy+疎通確認)
-- **タスク**: Step C staging-app 有効化 (KV作成+secret登録+deploy+疎通確認)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 86
-- **エラー数**: 15
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 20, "ToolSearch": 2, "Read": 6, "Bash": 43, "Edit": 2, "Write": 2, "SendMessage": 4, "Grep": 6, "Workflow": 1}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-06T02:17:13Z - docs/TIER_POLICY.md を tier v3 spec (free=book機能差ゼロ) に全面書き換え
-- **タスク**: docs/TIER_POLICY.md を tier v3 spec (free=book機能差ゼロ) に全面書き換え
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 25
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 6, "Bash": 2, "Workflow": 11, "Write": 1, "Edit": 4, "Agent": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-07-06T02:16:28Z - docs/AGE_BALANCE_POLICY.md 新規作成 (tier v3 Phase1 Agent C)
-- **タスク**: docs/AGE_BALANCE_POLICY.md 新規作成 (tier v3 Phase1 Agent C)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 25
-- **エラー数**: 5
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: 編集前にファイルを読んで理解した, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 6, "Bash": 2, "Workflow": 11, "Write": 1, "Edit": 4, "Agent": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 83, "Bash": 76, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 46, "Skill": 1, "SendMessage": 7}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
