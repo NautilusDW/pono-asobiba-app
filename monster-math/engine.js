@@ -9,13 +9,18 @@
 //   fx:  { flyClone, flyBack, confetti, sfx }
 //   narration: { say, sayIfAuto, counting }
 //   progress:  { getStars, commitRoundStar, commitStageClear }
-//   undo: { push, popLastGently, voluntary }
+//   undo: { push, popLastGently, voluntary, popUntil }
 //   mmTimeout(fn, ms, phaseGuard)
 //
 // Impl 2-4 (mode-make10.js / mode-kazoeru.js / mode-tashizan.js) はこのファイルと
 // index.html を一切編集しない self-registration 前提 (SPEC §3.0 / §4.2)。
 // 本ファイルは T0 段階の骨格実装 (500-800行目安) — ラウンド実ロジックは各 mode-*.js が
 // createRound/onFoodTap/onAnswerTap を実装することで完結する。
+//
+// [M5 復元時の検証手順]
+// 1. grep -n 'mm_' engine.js  # MODE_CLEAR_STICKER / SPECIAL_STICKER の全 6 id を抽出
+// 2. jq '.pages.monster_math.stickers[].id' game-stickers.json  # catalog 側の 6 id 抽出
+// 3. 2 リストの完全一致を diff で確認 (typo でズレると _findSticker フォールバックが暴発)
 //
 // [M5 復元予定] assets/data/game-stickers.json monster_math ページ (シール6枚)。
 // T0 fix-blockers workflow でカタログ予告露出防止のため一時削除 (ユーザー追加指示、
@@ -363,7 +368,9 @@
     if (!dom.monsterImg) return;
     // pose 表記ゆれ (ハイフン/アンダースコア混在) を吸収 (SPEC/実装間の warn 指摘対応)
     var normalizedPose = String(pose || 'idle').replace(/-/g, '_');
-    if (normalizedPose !== pose) {
+    // pose 省略時 (null/undefined) は既定値適用であり正規化ではないので warn 対象外
+    // (実際にハイフン表記ゆれ等で書き換わった場合のみ warn する)
+    if (pose != null && normalizedPose !== pose) {
       try { console.warn('[MM] pose normalized:', pose, '->', normalizedPose); } catch (e) {}
     }
     pose = normalizedPose;
@@ -629,7 +636,17 @@
   function popUntil(solvableFn, intervalMs) {
     intervalMs = intervalMs || 350;
     function step() {
-      if (typeof solvableFn === 'function' && solvableFn()) return;
+      // solvableFn() の例外は初回/以降を問わず同じ扱いにする (mmTimeout 経由の呼び出しは
+      // その try/catch に握られて非対称になるため、 ここで明示的に揃える)。
+      // throw 時は安全側 (詰み解消を諦めて反復停止) に倒す。
+      var solvable;
+      try {
+        solvable = typeof solvableFn === 'function' && solvableFn();
+      } catch (e) {
+        try { console.warn('[MM] popUntil solvableFn threw, aborting:', e); } catch (e2) {}
+        return;
+      }
+      if (solvable) return;
       if (!_undoStack.length) return;
       popLastGently();
       mmTimeout(step, intervalMs, null);
@@ -992,7 +1009,12 @@
       popUntil: popUntil
     },
     mmTimeout: mmTimeout,
-    // ---- T0 段階の非契約ヘルパー (Impl 2-4 は依存しないこと。 統合フェーズで整理予定) ----
+    // [Impl 2-4 使用可 (契約ヘルパー)]:
+    //   MM._SPECIAL_STICKER   — feast / all_modes / perfect_all 用 stickerId マップ
+    //   MM._currentScreenSignal() — flyClone opts.signal に渡す (画面遷移時 abort)
+    // [Impl 2-4 使用禁止 (内部専用ヘルパー、 統合フェーズで整理予定)]:
+    //   _renderTitleDoors, _renderStageSelect, _setActiveScreen, その他 _ で始まる関数
+    //   (これらに依存すると次回リファクタで壊れる)
     _MODE_ORDER: MODE_ORDER,
     _MODE_CLEAR_STICKER: MODE_CLEAR_STICKER,
     _SPECIAL_STICKER: SPECIAL_STICKER,

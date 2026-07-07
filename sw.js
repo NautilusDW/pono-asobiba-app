@@ -1,5 +1,18 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2012: コードレビュー指摘の反映 (batch: mojicrane physics review) — (1) mojicrane/js/game.js:
+// pointerToWorld() を W/H にクランプ + updateGrab() の grab.constraint.pointB 移動量を
+// MAX_GRAB_STEP(140px) で頭打ちにし、setPointerCapture 中の暴走ポインタ座標によるトンネリング/
+// 速度スパイクを防止。 tryGrab() の当たり判定を Query.point → Query.region(±12px 許容) に変更し
+// 子ども向けタップの取りこぼしを緩和、あわせて getGlyph() に「まんなかつかみ」ゾーンの淡いマーカー
+// (半径 halfW*0.15) を追加。 discardGrab() ヘルパーを新設し startRound/showTitle/showResult/
+// startGame の各遷移で保持中の grab constraint を明示的に world から除去 (指を離さないまま
+// クリア/リセットされた際に Matter.js world 上へ constraint が孤立し続ける漏れの修正)。
+// 未使用だった LEVELS.snapAssist フラグを削除 (どこからも参照されておらず、easy モードの
+// 緩さは既存の slip:999 のみで担保)。 (2) stacking/index.html: 外部 CDN
+// (cdn.jsdelivr.net/npm/matter-js@0.19.0) 依存を common/vendor/matter.min.js
+// (同一バージョンをローカルバンドル、mojicrane と同じ「CDN 非依存」方針) に置換。
+// 挙動変更なし (物理エンジンのバージョン・ロジックは無改変)、play.html PAGE_CACHE_VERSION と同期。
 // v2011: mojicrane を物理リデザイン (Matter.js ローカルバンドル、直接つかみ操作の「つみつみ もじタワー」)。
 // mojicrane は CRITICAL_ASSETS 対象外 (network-first パターン継続) のため一覧追加なし、
 // index.html/js/css の ?v= クエリバンプ + このバージョン番号のみで更新を反映。play.html PAGE_CACHE_VERSION と同期。
@@ -700,7 +713,11 @@
 // SW 素通し、 自前 register なし) のため CRITICAL_ASSETS_HTML/SCRIPTS への追加は不要
 // (下記 v1713 コメント参照)。 画像アセット (立ち絵/シール/BG/UI 計18枚) は M5 統合フェーズで
 // 実装完了後に precache 追加する (SPEC monster_math_spec.md §5)。
-const CACHE_VERSION = 2011;
+// v2011: mojicrane を物理リデザイン (Matter.js ローカルバンドル、直接つかみ操作の「つみつみ もじタワー」)。
+// v2012: mojicrane コードレビュー指摘反映 (pointer clamp / grab region 判定 / discardGrab 漏れ修正) +
+// stacking/index.html の matter-js CDN 依存を common/vendor/matter.min.js ローカルバンドルへ置換。
+// 詳細は CACHE_VERSION const 直前の v2012 コメントブロック参照。
+const CACHE_VERSION = 2012;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
