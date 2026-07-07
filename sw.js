@@ -1,5 +1,17 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2016: mojicrane round-2 残存指摘の追加修正 (round-2 residual-fix pass)。
+// (1) styles.css: .tutorial-panel を `.panel.tutorial-panel` 複合セレクタに変更し、
+// 後方の同specificity `.panel` に width/padding/background が上書きされていたバグを修正。
+// 併せて背景を半透明 (rgba paper 0.6) + pointer-events:none 化 (panel-actions のみ auto 復元)
+// し、tutorial-panel が drawTutorialCues() (game.js) のリング/破線パス/安定度ゲージを覆い隠す
+// うえ、ステップ2-6 (次へボタン非表示) ではタップも奪っていた問題を解消。
+// (2) game.js drawPono(): ponoFaceAsset.ready (ブランド静止画パス) では happy/oops ムードを
+// 反映していなかったため、静止画の上に小さな絵文字バッジ (✨/💦) を重ねてムードが伝わるようにした。
+// (3) narrate() の mojicrane:* キー未収録 (assets/tts/manifest.json 空) は既存 TODO コメント
+// (game.js 冒頭 NARR_KEYS 付近) の通り意図的な後回しであり、本パスでは対応しない (音声制作は
+// 別工程の Gemini Leda pipeline + faster-whisper 検証待ち)。
+// play.html PAGE_CACHE_VERSION と同期。
 // v2014: bento チュートリアル tut2 実装 phase1 (batch:1058-tutorial-impl-phase1)。 見本→まねっこ
 // 15 ステップ + ラッパー 2 (greet/box 固定/rice/nori 4A-4B/move/edit/okazu-main/カップへ/カップ/中身/
 // はっぱ・しきり紹介/おかず OK/完成/おきにいり) を新規実装。 BENTO_TUTORIAL_MOCK_VOICE=true (音声なし、
@@ -740,7 +752,8 @@
 // 詳細は CACHE_VERSION const 直前の v2012 コメントブロック参照。
 // v2013: mojicrane round-2 kids-ux + repeated-kana fixes (詳細は CACHE_VERSION const 直前の v2013 コメントブロック参照)。
 // v2014: bento チュートリアル tut2 実装 phase1 (batch:1058-tutorial-impl-phase1、 詳細は先頭 v2014 コメントブロック参照)。
-const CACHE_VERSION = 2014;
+// v2015: monster-math M2 10づくり (make10) モード実装マージ (Phase 3-Impl → Impl2)。
+const CACHE_VERSION = 2015;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
