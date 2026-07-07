@@ -9,7 +9,7 @@
 - 対象プロジェクト: `pono-asobiba-app` (3〜6 歳向け知育 Web アプリ)。絵本『ありがとうって、うれしいね』(こだまのもり出版) を買った人だけの特典を実装する tier v3 施策の一部
 - 主人公: **ポノ** (くまのこ)。絵本の水彩絵本トーンをそのまま踏襲し、アプリ内 UI と絵本世界の連続性を保つ
 - 用途: パスワード (あいことば) 入力の welcome 演出でまとめて贈呈される「book 付録シール 8 枚」のうちの一部 + シール帳限定表紙。無料 (free) / サブスク (sub) ユーザーには表示されない、book 購入者だけの特別感を作る素材
-- **既に選別済で再生成不要な既存シール** (`assets/ui/gacha/stickers/book_bonus_*_20260701.png`, 512×512 PNG):
+- **既に選別済で再生成不要な既存シール** (`assets/ui/gacha/stickers/book_bonus_*_20260701.webp`, 512×512 WebP):
   - `book_bonus_pono_book_rare` — 絵本表紙ミニチュア相当
   - `book_bonus_mama_pono_super` — ポノとお月さま系シーン
   - `book_bonus_hedgehog_rare` — 絵本の仲間キャラ単体
