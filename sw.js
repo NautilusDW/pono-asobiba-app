@@ -753,7 +753,9 @@
 // v2013: mojicrane round-2 kids-ux + repeated-kana fixes (詳細は CACHE_VERSION const 直前の v2013 コメントブロック参照)。
 // v2014: bento チュートリアル tut2 実装 phase1 (batch:1058-tutorial-impl-phase1、 詳細は先頭 v2014 コメントブロック参照)。
 // v2015: monster-math M2 10づくり (make10) モード実装マージ (Phase 3-Impl → Impl2)。
-const CACHE_VERSION = 2015;
+// v2016: mojicrane round-2 残存指摘の追加修正 (詳細は先頭 v2016 コメントブロック参照)。
+// v2017: monster-math M3 かぞえる (kazoeru) モード実装マージ (Phase 3-Impl → Impl3)。
+const CACHE_VERSION = 2017;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
