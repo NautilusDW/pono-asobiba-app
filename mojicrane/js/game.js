@@ -9,42 +9,64 @@
   const TIP_HOME = 208;
   const MOVE_L = 195;
   const MOVE_R = 760;
-  const DESCEND_SPEED = 560;
-  const ASCEND_SPEED = 520;
-  const CARRY_SPEED = 315;
+  // round-4 pile pivot (graft B-5): single tunable slowdown knob. Cutting these 3
+  // named speed consts + the LEVELS.*.speed fields below by the same factor keeps
+  // the relative easy/normal/challenge feel while slowing overall pace ~40% per
+  // user request. Staging can retune pace by changing this one number.
+  const PACE_MULT = 0.6;
+  const DESCEND_SPEED = Math.round(560 * PACE_MULT);
+  const ASCEND_SPEED = Math.round(520 * PACE_MULT);
+  const CARRY_SPEED = Math.round(315 * PACE_MULT);
   const DROP_NUDGE = 18;
   const PERFECT_GRAB = 10;
   const TEXT_CHUTE = { x: 104, y: 432, boxY: 408, label: 'もじ', fill: '#ff9eb8', stroke: '#df7898' };
   const CLEANUP_CHUTE = { x: 738, y: 356, boxY: 332, label: 'かたづけ', fill: '#8ed7ff', stroke: '#54a6d8' };
   const CHUTE = TEXT_CHUTE;
-  const COLS = 9;
+  const COLS = 9; // legacy 9-column grid width; only pickCol()/buildPile() (superseded, see spawnPile()) still read this
   const SLOT = { x0: 178, y: 28, s: 54, step: 62 };
   const FONT = '"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif';
   const STORAGE_KEY = 'pono_mojicrane_v1';
   const KANA = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽ';
 
+  // round-4 pile pivot (graft B-5): tunable pile-spawn constants. PILE_MIN/PILE_MAX
+  // bound cfg.pileSize (see LEVELS below); PILE_TILT_MAX caps the visual rest tilt
+  // at ±30° per user request; PRESETTLE_STEPS is the
+  // fixed-dt pre-round settle budget (forced-sleep safety valve lives in miniphys.js).
+  const PILE_MIN = 15;
+  const PILE_MAX = 20;
+  const PILE_TILT_MAX = Math.PI / 6; // ±30°
+  const PRESETTLE_STEPS = 180;
+  // round-4 Phase 2: from this round index onward (0-based; round 3+) needed kana
+  // are bundled 2-at-a-time into a single "duo" block (see pairNeeded()) instead of
+  // one block per character.
+  const DUO_FROM_ROUND = 2;
+  const DUO_GRAB = 60; // grab radius for the wider two-character block
+  const PILE_MIN_X = MOVE_L + 25;
+  const PILE_MAX_X = MOVE_R - 25;
+
   const LEVELS = {
     easy: {
       label: 'やさしい',
       rounds: 3,
-      speed: 112,
+      speed: Math.round(112 * PACE_MULT),
       sway: 0,
       grab: 44,
       slip: 999,
-      decoys: 5,
-      maxHeight: 2,
+      decoys: 5, // round-4: superseded by pileSize (decoy count derived from pileSize - needed - junk); kept for reference
+      maxHeight: 2, // round-4: superseded by pile support-link model (see spawnPile()); kept for reference
       junkBase: 0,
       junkMax: 1,
       junkShapes: ['wide'],
       junkSlip: 999,
       slotHint: 'all',
       blockGlow: true,
-      helpUses: 99
+      helpUses: 99,
+      pileSize: 15 // round-4: total bodies pre-spawned into the pile at round start
     },
     normal: {
       label: 'ふつう',
       rounds: 4,
-      speed: 152,
+      speed: Math.round(152 * PACE_MULT),
       sway: 8,
       grab: 38,
       slip: 28,
@@ -56,12 +78,13 @@
       junkSlip: 36,
       slotHint: 'next',
       blockGlow: false,
-      helpUses: 2
+      helpUses: 2,
+      pileSize: 17
     },
     challenge: {
       label: 'チャレンジ',
       rounds: 5,
-      speed: 184,
+      speed: Math.round(184 * PACE_MULT),
       sway: 14,
       grab: 34,
       slip: 24,
@@ -73,7 +96,8 @@
       junkSlip: 32,
       slotHint: 'none',
       blockGlow: false,
-      helpUses: 1
+      helpUses: 1,
+      pileSize: 20
     }
   };
 
@@ -190,6 +214,20 @@
     return block && block.kind === 'junk';
   }
 
+  // round-4 Phase 2: a "duo" block bundles two consecutive needed kana (block.chs)
+  // into one physical body instead of block.ch holding a single character.
+  function isDuo(block) {
+    return block && block.kind === 'duo';
+  }
+
+  // Kana characters a block represents, for needed-kana lookups shared by junk/duo/
+  // plain blocks (junk carries none).
+  function blockKanaChars(block) {
+    if (isJunk(block)) return [];
+    if (isDuo(block)) return block.chs;
+    return [block.ch];
+  }
+
   function makeJunk(shapeKey) {
     const shape = JUNK_SHAPES[shapeKey] || JUNK_SHAPES.wide;
     return {
@@ -208,11 +246,12 @@
 
   function blockGrabRadius(block) {
     if (isJunk(block)) return block.shape.grab;
+    if (isDuo(block)) return DUO_GRAB;
     return game.cfg.grab;
   }
 
-  function blockBalanceCenterX(col, block) {
-    return col.x + (isJunk(block) ? block.shape.centerDx : 0);
+  function blockBalanceCenterX(x, block) {
+    return x + (isJunk(block) ? block.shape.centerDx : 0);
   }
 
   function blockSlipLimit(block) {
@@ -338,6 +377,10 @@
     return queue;
   }
 
+  // SUPERSEDED (round-4 pile pivot): pickCol()/buildPile() built the old 9-column
+  // grid (game.cols). Kept only for reference/rollback — not called anywhere.
+  // The active round-start spawn is spawnPile() below, backed by MiniPhys
+  // resting[]/restingBodies() instead of game.cols.
   function pickCol(cols, maxHeight) {
     const weights = [1, 2, 3, 4, 5, 4, 3, 2, 1];
     for (let t = 0; t < 90; t += 1) {
@@ -376,6 +419,159 @@
     return cols;
   }
 
+  // --- round-4 pile pivot: pre-spawned tilted pile, backed by MiniPhys resting[] ---
+  // (replaces the 9-column buildPile()/game.cols model above)
+
+  // Runs a bounded fixed-dt loop (no rAF dependency) so the pile is already asleep
+  // before the first paint — "山は最初から静止して見える". PRESETTLE_STEPS is a hard
+  // cap so a pathological configuration can never hang the round-start call.
+  function presettlePile() {
+    if (!window.MiniPhys) return;
+    const dt = 1 / 60;
+    const farTip = { x: -9999, y: -9999 };
+    for (let step = 0; step < PRESETTLE_STEPS; step += 1) {
+      MiniPhys.step(dt, farTip, { cfg: game.cfg, slowT: 0, onSettle: physOnPileSettle, onChuteCatch: () => {} });
+      if (!MiniPhys.bodiesForDraw().length) break;
+    }
+  }
+
+  function physOnPileSettle(body) {
+    if (body.target && body.target.type === 'pile') body.block.wobble = 1;
+  }
+
+  // graft B-3a (simplified): a needed kana buried under 3+ other resting bodies is
+  // re-dropped from a modest height near the top of the pile so it resettles less
+  // deeply buried. Bounded to 3 passes — cannot loop forever, and even if a body
+  // stays buried afterward the toss-back x-bias (graft B-3b, see pileTossX()) keeps
+  // giving the player future chances, so no hard starvation lock is possible.
+  function antiStarvationRescue(needed) {
+    if (!window.MiniPhys || !needed.length) return;
+    for (let pass = 0; pass < 3; pass += 1) {
+      const resting = MiniPhys.restingBodies();
+      const coveredCount = new Map();
+      resting.forEach((b) => {
+        (b.supports || []).forEach((sid) => coveredCount.set(sid, (coveredCount.get(sid) || 0) + 1));
+      });
+      const buried = resting.filter((b) => !isJunk(b.block) && blockKanaChars(b.block).some((ch) => needed.indexOf(ch) >= 0) && (coveredCount.get(b.id) || 0) >= 3);
+      if (!buried.length) return;
+      buried.forEach((b) => {
+        MiniPhys.removeResting(b);
+        const x = PILE_MIN_X + Math.random() * (PILE_MAX_X - PILE_MIN_X);
+        const spawned = MiniPhys.spawnFalling(b.block, x, FLOOR - BLOCK * 3, 0, 0, 0, {
+          target: { type: 'pile' },
+          keepTilt: true,
+          wallMinX: PILE_MIN_X - 20,
+          wallMaxX: PILE_MAX_X + 20
+        });
+        spawned.angle = (Math.random() * 2 - 1) * PILE_TILT_MAX;
+      });
+      presettlePile();
+    }
+  }
+
+  // round-4 Phase 2: bundle needed kana 2-at-a-time (in word order) into single
+  // "duo" blocks so evaluate() can match them against game.wordChars[next..next+1].
+  // An odd trailing character stays a plain single-kana block.
+  function pairNeeded(neededChars) {
+    const blocks = [];
+    for (let i = 0; i < neededChars.length; i += 2) {
+      if (i + 1 < neededChars.length) {
+        blocks.push({ kind: 'duo', chs: [neededChars[i], neededChars[i + 1]], hue: hueOf(neededChars[i]), wobble: 0 });
+      } else {
+        blocks.push({ ch: neededChars[i], hue: hueOf(neededChars[i]), wobble: 0 });
+      }
+    }
+    return blocks;
+  }
+
+  function spawnPile(word, cfg, roundIndex) {
+    if (!window.MiniPhys) return; // reduceMotion/no-physics fallback: see tossToPile()/drawPile()
+    const needed = chars(word);
+    const junkCount = junkCountForRound(cfg, roundIndex || 0);
+    const targetTotal = clamp(cfg.pileSize || (needed.length + (cfg.decoys || 0) + junkCount), PILE_MIN, PILE_MAX);
+    const blocks = (roundIndex || 0) >= DUO_FROM_ROUND
+      ? pairNeeded(needed)
+      : needed.map((ch) => ({ ch, hue: hueOf(ch), wobble: 0 }));
+    const decoyPool = shuffle(chars(KANA).filter((ch) => needed.indexOf(ch) < 0));
+    let di = 0;
+    while (blocks.length < targetTotal - junkCount && di < decoyPool.length) {
+      blocks.push({ ch: decoyPool[di], hue: hueOf(decoyPool[di]), wobble: 0 });
+      di += 1;
+    }
+    const shapes = cfg.junkShapes || [];
+    for (let n = 0; n < junkCount; n += 1) {
+      blocks.push(makeJunk(shapes[n % shapes.length] || 'wide'));
+    }
+    shuffle(blocks);
+    blocks.forEach((block, i) => {
+      const x = PILE_MIN_X + Math.random() * (PILE_MAX_X - PILE_MIN_X);
+      const y = FLOOR - BLOCK * (0.6 + Math.random() * 2.4) - i * 2;
+      const spawned = MiniPhys.spawnFalling(block, x, y, (Math.random() - 0.5) * 20, 0, (Math.random() - 0.5) * 0.6, {
+        target: { type: 'pile' },
+        keepTilt: true,
+        wallMinX: PILE_MIN_X - 20,
+        wallMaxX: PILE_MAX_X + 20
+      });
+      spawned.angle = (Math.random() * 2 - 1) * PILE_TILT_MAX;
+    });
+    presettlePile();
+    antiStarvationRescue(needed);
+  }
+
+  // ids of resting bodies that some OTHER resting body rests on (i.e. buried/covered)
+  function coveredRestingIds() {
+    const set = new Set();
+    if (!window.MiniPhys) return set;
+    MiniPhys.restingBodies().forEach((b) => {
+      (b.supports || []).forEach((sid) => set.add(sid));
+    });
+    return set;
+  }
+
+  // graft B-3b (simplified): pick an x for a toss-back landing that avoids re-burying
+  // whichever remaining-needed kana is currently least covered (i.e. most reachable).
+  function shallowestNeededX() {
+    if (!window.MiniPhys) return null;
+    const need = game.wordChars.slice(game.next);
+    if (!need.length) return null;
+    const resting = MiniPhys.restingBodies();
+    const coveredCount = new Map();
+    resting.forEach((b) => {
+      (b.supports || []).forEach((sid) => coveredCount.set(sid, (coveredCount.get(sid) || 0) + 1));
+    });
+    let best = null;
+    let bestCover = Infinity;
+    resting.forEach((b) => {
+      if (isJunk(b.block) || !blockKanaChars(b.block).some((ch) => need.indexOf(ch) >= 0)) return;
+      const cover = coveredCount.get(b.id) || 0;
+      if (cover < bestCover) { bestCover = cover; best = b; }
+    });
+    return best ? best.x : null;
+  }
+
+  function pileTossX() {
+    const avoidX = shallowestNeededX();
+    for (let tries = 0; tries < 8; tries += 1) {
+      const x = PILE_MIN_X + Math.random() * (PILE_MAX_X - PILE_MIN_X);
+      if (avoidX == null || Math.abs(x - avoidX) > 80) return x;
+    }
+    return PILE_MIN_X + Math.random() * (PILE_MAX_X - PILE_MIN_X);
+  }
+
+  // "small nudge impulse to the neighboring bodies so the pile visibly shifts" —
+  // scoped to the existing wobble-jiggle visual (block.wobble, decayed each frame)
+  // rather than a full impulse solver, since neighbors are asleep/static resting
+  // bodies until their own topple check (computePileTopple) wakes them.
+  function nudgeNeighborsOnGrab(removedBody) {
+    if (!window.MiniPhys) return;
+    const range = (removedBody.w || BLOCK) * 1.5;
+    MiniPhys.restingBodies().forEach((b) => {
+      if (Math.abs(b.x - removedBody.x) <= range) {
+        b.block.wobble = Math.max(b.block.wobble || 0, 0.6);
+      }
+    });
+  }
+
   function resetClaw() {
     game.claw = {
       tx: 480,
@@ -388,6 +584,7 @@
       phase: 'move',
       block: null,
       col: null,
+      grabBody: null,
       tgtY: 0,
       t: 0,
       slip: false,
@@ -405,10 +602,10 @@
     game.wordChars = chars(item.word);
     game.slots = game.wordChars.map((ch) => ({ ch, filled: false, t: 0 }));
     game.next = 0;
-    game.cols = buildPile(item.word, game.cfg, game.roundIndex);
     game.cleaned = 0;
     game.flyers = [];
     if (window.MiniPhys) MiniPhys.reset();
+    spawnPile(item.word, game.cfg, game.roundIndex); // round-4: pile is now stored in MiniPhys resting[], not game.cols
     game.pops = [];
     game.confetti = [];
     game.mistakes = 0;
@@ -512,6 +709,8 @@
     }
   }
 
+  // SUPERSEDED (round-4 pile pivot): safeCol() picked a game.cols index; the pile
+  // is no longer a column grid. Kept for reference/rollback — not called anywhere.
   function safeCol() {
     const need = game.wordChars.slice(game.next);
     const candidates = [];
@@ -523,37 +722,58 @@
     return pickCol(game.cols, game.cfg.maxHeight);
   }
 
+  // Runs a bounded fixed-dt loop for a single body only (does not touch any other
+  // concurrently-falling body's timing) until it settles into resting[] or the step
+  // budget runs out. Used by tossToPile()'s reduceMotion path (B-6: instant-snap
+  // placement, no visible flight) so the block is never lost mid-air.
+  function settleOneBody(body, maxSteps) {
+    if (!window.MiniPhys || !body) return;
+    const farTip = { x: -9999, y: -9999 };
+    for (let s = 0; s < maxSteps; s += 1) {
+      if (MiniPhys.restingBodies().indexOf(body) !== -1) return;
+      MiniPhys.step(1 / 60, farTip, { cfg: game.cfg, slowT: 0, onSettle: physOnPileSettle, onChuteCatch: () => {} });
+    }
+  }
+
   function tossToPile(block, fx, fy, vel) {
-    const i = safeCol();
-    const col = game.cols[i];
-    const ty = FLOOR - (col.blocks.length + 1) * BLOCK + BLOCK / 2;
-    if (reduceMotion || !window.MiniPhys) {
-      game.flyers.push({
-        block,
-        fx,
-        fy,
-        tx: col.x,
-        ty,
-        t: 0,
-        dur: 0.55,
-        arc: 135,
-        spin: true,
-        done: () => {
-          col.blocks.push(block);
-          block.wobble = 1;
-        }
+    if (!window.MiniPhys) {
+      // true no-physics fallback (script failed to load): the whole grab/carry
+      // mechanic is already MiniPhys-dependent post round-3, so this is a no-op
+      // beyond the settle-jiggle visual (matches the pre-existing degradation level).
+      block.wobble = 1;
+      return;
+    }
+    const x = pileTossX();
+    if (reduceMotion) {
+      // B-6: instant-snap placement, no visible flight animation
+      const body = MiniPhys.spawnFalling(block, x, FLOOR - BLOCK * 1.5, 0, 0, 0, {
+        target: { type: 'pile' },
+        keepTilt: true,
+        wallMinX: PILE_MIN_X - 20,
+        wallMaxX: PILE_MAX_X + 20
       });
+      body.angle = (Math.random() * 2 - 1) * PILE_TILT_MAX;
+      settleOneBody(body, 60);
       return;
     }
     const v = vel || {};
-    MiniPhys.spawnFalling(block, fx, fy, v.vx || 0, v.vy || 0, v.omega || 0, { target: { type: 'column', col } });
+    MiniPhys.spawnFalling(block, fx, fy, v.vx || 0, v.vy || 0, v.omega || 0, {
+      target: { type: 'pile', homingX: x },
+      keepTilt: true,
+      wallMinX: PILE_MIN_X - 20,
+      wallMaxX: PILE_MAX_X + 20
+    });
   }
 
-  // physics settle hooks (mojicrane round-3): reconcile a settled/caught body back
-  // into the existing logical stores. cols[].blocks / evaluate() stay the sole authority.
+  // physics settle hooks (mojicrane round-3/4): reconcile a settled/caught body back
+  // into the existing logical stores. For 'pile' targets, MiniPhys resting[] is
+  // itself the store (see spawnFalling/stepFalling in miniphys.js) — this hook only
+  // needs to trigger the settle wobble visual. 'chute' is handled by physOnChuteCatch.
   function physOnSettle(body) {
     if (body.target && body.target.type === 'column' && body.target.col) {
       body.target.col.blocks.push(body.block);
+      body.block.wobble = 1;
+    } else if (body.target && body.target.type === 'pile') {
       body.block.wobble = 1;
     }
   }
@@ -580,6 +800,56 @@
       playSfx('ok');
       vibrate(18);
       setBubble(pick(['おかたづけ できたね。', 'じゃまが なくなったよ。']) + hintText(), 'happy');
+      return;
+    }
+
+    if (isDuo(block)) {
+      const needA = game.wordChars[game.next];
+      const needB = game.wordChars[game.next + 1];
+      if (needB != null && block.chs[0] === needA && block.chs[1] === needB) {
+        const i = game.next;
+        const j = game.next + 1;
+        const midX = (slotX(i) + slotX(j)) / 2 + SLOT.s / 2;
+        game.flyers.push({
+          block,
+          fx: CHUTE.x,
+          fy: CHUTE.y,
+          tx: midX,
+          ty: SLOT.y + SLOT.s / 2,
+          t: 0,
+          dur: 0.42,
+          arc: 110,
+          done: () => {
+            game.slots[i].filled = true;
+            game.slots[i].t = 0;
+            game.slots[j].filled = true;
+            game.slots[j].t = 0;
+            game.next += 2;
+            game.mistakes = 0;
+            game.slowT = 0;
+            pop(midX, SLOT.y + SLOT.s + 12, 'ぴったり', '#ff8a36', 22);
+            playSfx('ok');
+            vibrate(20);
+            if (game.next >= game.wordChars.length) {
+              completeWord();
+            } else {
+              setBubble(pick(['いいね。', 'その ちょうし。', 'ぴったり。']) + hintText(), 'happy');
+            }
+          }
+        });
+        return;
+      }
+      game.mistakes += 1;
+      playSfx('no');
+      pop(CHUTE.x, CHUTE.y - 34, 'あれれ', '#8d72b8', 22);
+      tossToPile(block, CHUTE.x, CHUTE.y - 6);
+      if (game.mistakes >= 3) {
+        game.assist = Math.max(game.assist, 1);
+        game.slowT = 4.2;
+        setBubble('ゆっくり いくよ。' + hintText(), 'oops');
+      } else {
+        setBubble(hintText(), 'oops');
+      }
       return;
     }
 
@@ -648,21 +918,25 @@
     if (!claw || claw.phase !== 'move') return;
     initAudio();
     playSfx('tap');
+    // round-4: grab targets an uncovered resting pile body (nearest to tip x, within
+    // its grab radius) instead of a column top. "Uncovered" = no other resting body
+    // rests on it (i.e. its id doesn't appear in any other body's supports list).
     let best = null;
     let bestScore = 1;
-    game.cols.forEach((col, i) => {
-      if (!col.blocks.length) return;
-      const top = col.blocks[col.blocks.length - 1];
-      const radius = blockGrabRadius(top);
-      const d = Math.abs(col.x - claw.tipX);
+    const resting = window.MiniPhys ? MiniPhys.restingBodies() : [];
+    const covered = coveredRestingIds();
+    resting.forEach((body) => {
+      if (covered.has(body.id)) return;
+      const radius = blockGrabRadius(body.block);
+      const d = Math.abs(body.x - claw.tipX);
       const score = d / radius;
       if (score < bestScore) {
         bestScore = score;
-        best = i;
+        best = body;
       }
     });
-    claw.col = best;
-    claw.tgtY = best === null ? FLOOR - 8 : FLOOR - game.cols[best].blocks.length * BLOCK + 8;
+    claw.grabBody = best;
+    claw.tgtY = best ? best.y - 8 : FLOOR - 8;
     claw.tipY = Math.min(claw.tgtY, claw.tipY + DROP_NUDGE);
     claw.t = 0;
     claw.phase = 'descend';
@@ -690,9 +964,12 @@
       if (game.moodT <= 0) game.mood = 'normal';
     }
     if (game.slowT > 0) game.slowT = Math.max(0, game.slowT - dt);
-    game.cols.forEach((col) => col.blocks.forEach((block) => {
-      if (block.wobble > 0) block.wobble = Math.max(0, block.wobble - dt * 1.15);
-    }));
+    if (window.MiniPhys) {
+      MiniPhys.restingBodies().forEach((body) => {
+        const block = body.block;
+        if (block.wobble > 0) block.wobble = Math.max(0, block.wobble - dt * 1.15);
+      });
+    }
     game.slots.forEach((slot) => {
       if (slot.filled) slot.t += dt;
     });
@@ -722,17 +999,25 @@
         claw.t += dt;
         claw.open = Math.max(0, 1 - claw.t / 0.2);
         if (claw.t >= 0.2) {
-          if (claw.col !== null && game.cols[claw.col].blocks.length) {
-            const col = game.cols[claw.col];
-            claw.block = col.blocks.pop();
-            const offSigned = claw.tipX - blockBalanceCenterX(col, claw.block);
+          if (claw.grabBody) {
+            const body = claw.grabBody;
+            claw.block = body.block;
+            const offSigned = claw.tipX - blockBalanceCenterX(body.x, claw.block);
             const off = Math.abs(offSigned);
             const perfect = isJunk(claw.block) ? claw.block.shape.perfect : PERFECT_GRAB;
             const slipLimit = blockSlipLimit(claw.block);
             claw.block.grabQuality = off <= perfect ? 'perfect' : 'normal';
             claw.block.tilt = isJunk(claw.block)
-              ? Math.max(-0.42, Math.min(0.42, (claw.tipX - blockBalanceCenterX(col, claw.block)) / Math.max(1, slipLimit) * 0.28))
+              ? Math.max(-0.42, Math.min(0.42, (claw.tipX - blockBalanceCenterX(body.x, claw.block)) / Math.max(1, slipLimit) * 0.28))
               : 0;
+            // round-4: pull the block out of the pile, cascade-check its neighbors
+            // (limited depth-1 topple, see computePileTopple), then a small wobble
+            // nudge on nearby resting bodies so the pile visibly shifts.
+            if (window.MiniPhys) {
+              MiniPhys.computePileTopple(body);
+              MiniPhys.removeResting(body);
+            }
+            nudgeNeighborsOnGrab(body);
             // legacy random-slip trigger neutered (kept inert for compat); physics
             // (MiniPhys.slipTriggered, driven by carry-phase swing angle/tension) owns slip now.
             claw.slip = false;
@@ -749,6 +1034,7 @@
             }
             playSfx('grab');
             vibrate(15);
+            claw.grabBody = null;
           } else {
             game.mistakes += 1;
             pop(claw.tipX, claw.tipY - 30, 'スカッ', '#8d72b8', 24);
@@ -1012,9 +1298,41 @@
     ctx.restore();
   }
 
+  // round-4 Phase 2: wider two-character block. Same rounded-tile look as a plain
+  // block (drawBlock below) but sized/glyph-laid-out for block.chs[0]/[1] side by side.
+  function drawDuoBlock(cx, cy, block, scale, glow, rot) {
+    const w = BLOCK * 1.55;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (rot) ctx.rotate(rot);
+    if (block.wobble > 0 && !reduceMotion) ctx.rotate(Math.sin(block.wobble * 22) * 0.08 * block.wobble);
+    if (scale !== 1) ctx.scale(scale, scale);
+    if (glow) {
+      ctx.shadowColor = 'rgba(255, 194, 55, 0.9)';
+      ctx.shadowBlur = 16;
+    }
+    rr(-w / 2 + 2, -BLOCK / 2 + 2, w - 4, BLOCK - 4, 13);
+    ctx.fillStyle = 'hsl(' + block.hue + ', 82%, 88%)';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'hsl(' + block.hue + ', 55%, 60%)';
+    ctx.stroke();
+    rr(-w / 2 + 7, BLOCK / 2 - 16, w - 14, 10, 5);
+    ctx.fillStyle = 'hsl(' + block.hue + ', 60%, 80%)';
+    ctx.fill();
+    text(block.chs[0], -w / 4, 0, 27, 'hsl(' + block.hue + ', 55%, 34%)');
+    text(block.chs[1], w / 4, 0, 27, 'hsl(' + block.hue + ', 55%, 34%)');
+    ctx.restore();
+  }
+
   function drawBlock(cx, cy, block, scale, glow, rot) {
     if (isJunk(block)) {
       drawJunk(cx, cy, block, scale, rot);
+      return;
+    }
+    if (isDuo(block)) {
+      drawDuoBlock(cx, cy, block, scale, glow, rot);
       return;
     }
     ctx.save();
@@ -1042,15 +1360,15 @@
 
   function shouldGlow(block) {
     if (!game || game.roundClear || !game.wordChars[game.next]) return false;
-    return (game.cfg.blockGlow || game.assist > 0) && block.ch === game.wordChars[game.next];
+    if (!(game.cfg.blockGlow || game.assist > 0)) return false;
+    if (isDuo(block)) return block.chs[0] === game.wordChars[game.next] && block.chs[1] === game.wordChars[game.next + 1];
+    return block.ch === game.wordChars[game.next];
   }
 
   function drawPile() {
-    game.cols.forEach((col) => {
-      col.blocks.forEach((block, i) => {
-        const y = FLOOR - (i + 1) * BLOCK + BLOCK / 2;
-        drawBlock(col.x, y, block, 1, shouldGlow(block), 0);
-      });
+    if (!window.MiniPhys) return;
+    MiniPhys.restingBodies().forEach((body) => {
+      drawBlock(body.x, body.y, body.block, 1, shouldGlow(body.block), body.angle);
     });
   }
 
@@ -1117,25 +1435,25 @@
     const claw = game.claw;
     if (!claw || claw.phase !== 'move') return;
     if (!(game.levelKey === 'easy' || game.assist > 0)) return;
+    if (!window.MiniPhys) return;
     let best = null;
     let bestScore = 1;
-    game.cols.forEach((col) => {
-      if (!col.blocks.length) return;
-      const top = col.blocks[col.blocks.length - 1];
-      const radius = blockGrabRadius(top);
-      const score = Math.abs(col.x - claw.tipX) / radius;
+    const covered = coveredRestingIds();
+    MiniPhys.restingBodies().forEach((body) => {
+      if (covered.has(body.id)) return;
+      const radius = blockGrabRadius(body.block);
+      const score = Math.abs(body.x - claw.tipX) / radius;
       if (score < bestScore) {
         bestScore = score;
-        best = col;
+        best = body;
       }
     });
     if (!best) return;
-    const y = FLOOR - best.blocks.length * BLOCK + BLOCK / 2;
     const pulse = 0.5 + 0.5 * Math.sin(time * 5);
     ctx.save();
     ctx.globalAlpha = 0.3 + 0.25 * pulse;
     ctx.beginPath();
-    ctx.arc(best.x, y, 30 + 4 * pulse, 0, Math.PI * 2);
+    ctx.arc(best.x, best.y, 30 + 4 * pulse, 0, Math.PI * 2);
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#ffd166';
     ctx.stroke();

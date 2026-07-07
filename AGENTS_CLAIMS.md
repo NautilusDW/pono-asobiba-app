@@ -59,6 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
+- 2026-07-07 15:10 - by Claude - [batch:1058-hotfix2] - bento/index.html, sw.js, play.html, HANDOFF.md - tut2 hotfix2 (吹き出し位置/ゴースト画像/パレットフォーカス/誤タップ抑止/配置位置整合/target ring)
 
 
 
@@ -89,7 +90,9 @@
 - claude-code / develop-app / モンスターさんすう ブラッシュアップ設計 (Phase 1) / 2026-07-06
 - claude-code / develop-app / monster-math Phase 3-Impl Pre-Fix (6 nits) / 2026-07-07
 - 2026-07-07 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, AGENTS_CLAIMS.md - tut2 チュートリアル実装 phase1 (foundation + 全15ステップ + 2ラッパー、mock voice、PAUSED解除、storage v2)
+- claude-code / develop-app / monster-math Redesign R1 (SPEC v2 + storyboard) / 2026-07-07
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
+- claude-code / develop-app / monster-math Redesign R2 (assets) / 2026-07-07
