@@ -147,6 +147,14 @@ const ASSETS={
    "../assets/images/nazonazo-tunnel/sea_fish_07_20260706.webp",
    "../assets/images/nazonazo-tunnel/sea_fish_08_20260706.webp"
   ]
+ },
+ future:{
+  sky:"../assets/images/nazonazo-tunnel/future_city_sky_back_20260707.webp",
+  horizon:"../assets/images/nazonazo-tunnel/future_city_horizon_loop_20260707.webp",
+  mid:"../assets/images/nazonazo-tunnel/future_city_mid_loop_20260707.webp",
+  ground:"../assets/images/nazonazo-tunnel/future_city_ground_track_loop_20260707.webp",
+  fg:"../assets/images/nazonazo-tunnel/future_city_foreground_loop_20260707.webp",
+  decor:"../assets/images/nazonazo-tunnel/future_city_station_line_decor_20260707.webp"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -210,9 +218,10 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gBumps(1400,H,P.mid1,9,110,101)+gKelp(1400,H,P.mid2,8,103));},
   ground(P){return svgURI(600,90,gSand(600,90,P.sand1,P.sand2,105));},
   fg(P){return svgURI(900,220,gKelp(900,220,P.fgA,6,107)+gBumps(900,220,P.fgB,5,120,109));},
-  decor(P,r){return svgURI(180,300,gKelp(180,300,P.mid2,2,111+r)+gBumps(180,300,P.far1,2,80,113+r));}},
+ decor(P,r){return svgURI(180,300,gKelp(180,300,P.mid2,2,111+r)+gBumps(180,300,P.far1,2,80,113+r));}},
  {id:"future",icon:"🌆",veh:"train",bank:FUTURE,gens:["speedF"],
   names:["みらいシティ","あさやけの みらいシティ"],
+  assets:ASSETS.future,
   pals:[
    {sky:["#3b2b63","#7b4fa0"],far1:"#241a45",far2:"#2e2258",win1:"#ffd97d",win2:"#67e8f9",mid1:"#332a5e",mid2:"#3a2f6a",gBase:"#1c1440",gLine:"#67e8f9",gTick:"#8e7cf0",fgA:"#120d2a",fgB:"#0e0a22",fgWin:"#8e7cf0",mount:"#5b4b8a",fx:"stars"},
    {sky:["#ffb0c8","#8a7ad0"],far1:"#4a3a78",far2:"#5a4a90",win1:"#ffd97d",win2:"#ffffff",mid1:"#6a5aa8",mid2:"#7a68b8",gBase:"#3a2f6a",gLine:"#ffd97d",gTick:"#ffb0c8",fgA:"#2a2050",fgB:"#241a48",fgWin:"#ffd97d",mount:"#7a68b0",fx:"none"}],
@@ -225,7 +234,7 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gSkyline(1400,H,P.mid1,131,P.win2)+gBumps(1400,H,P.mid2,8,70,133));},
   ground(P){return svgURI(600,90,gNeonGround(600,90,P.gBase,P.gLine,P.gTick));},
   fg(P){return svgURI(900,220,gSkyline(900,220,P.fgA,135,P.fgWin)+gBumps(900,220,P.fgB,6,90,137));},
-  decor(P,r){return svgURI(150,320,gSkyline(150,320,P.mid1,141+r,P.win2));}},
+  decor(P,r){return bgUrl(ASSETS.future.decor);}},
  {id:"space",icon:"🌌",veh:"rocket",bank:SPACE,gens:[],
   names:["うちゅう","ぎんがの おく"],
   pals:[
@@ -284,7 +293,7 @@ function trainCarHeightVh(){
 }
 function trainBottomVh(){
  const st=STAGES[stg];
- return st&&(st.id==="town"||st.id==="jungle")?8.45:9.1;
+ return st&&(st.id==="town"||st.id==="jungle"||st.id==="future")?8.45:9.1;
 }
 const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
 const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;
