@@ -10062,13 +10062,11 @@ function getOkazuGuideStepForRole(tier, role) {
 // main = SIMPLE_SLOT_LAYOUT_LIMITS['main-food'] (全 box 共通)、
 // side = getSimpleSlotCountForBox(box, 'side-food') (box ごと 3..4、 server KV で非同期上書きあり)
 // なので毎回再計算する (boot 時キャッシュ禁止)。
-// 初回チュートリアル中は台本 (main 1 + side 1 のみ配置、 収録ナレ) を壊さないよう 1/1 に緩和。
+// batch:1058-hotfix3: 初回チュートリアル中の main 上書きを廃止。 owner から「メインおかずを
+//   1個入れたらすぐカップ上に行ってしまう」 と指摘されたため、 実ゲームと同じ 2 個要求に揃える。
+//   side は 1 のまま緩和 (収録ナレは 1 個で完結)。 Step 7 のレンダラーで 2 ラウンド化 +
+//   1 個目配置時の「もう ひとつ」 callout をトリガする。
 function getRequiredOkazuCountsForTier(tier) {
-  try {
-    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
-      return { main: 1, side: 1 };
-    }
-  } catch (_) {}
   let main = 1;
   let side = 1;
   try {
@@ -10079,6 +10077,12 @@ function getRequiredOkazuCountsForTier(tier) {
     const box = typeof getSelectedBentoBox === 'function' ? getSelectedBentoBox() : null;
     const sideLimit = Number(getSimpleSlotCountForBox(box, 'side-food'));
     if (Number.isFinite(sideLimit) && sideLimit > 0) side = sideLimit;
+  } catch (_) {}
+  try {
+    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
+      // side だけ 1 に緩和 (main は実ゲームと同じ 2 を要求)。
+      side = 1;
+    }
   } catch (_) {}
   return { main, side };
 }
@@ -19393,6 +19397,11 @@ const tutorialState = {
   // batch:1058 tap-scroll-fix: パレット外アイテムを scrollIntoView してから
   // requestAnimationFrame 後に tap animation を再開始する RAF ハンドル。
   _scrollThenTapRaf: null,
+  // batch:1058-hotfix3: 見本 (Phase A) スクロールデモの chain timer 保持。
+  //   step 遷移や teardown で必ずクリアする。
+  _scrollDemoTimer: null,
+  // batch:1058-hotfix3: tabs-intro でリング (leaf → divider) を切替えるタイマー。
+  _tabsRingTimer: null,
   mode: 'simple',
   okazuPlacedCount: 0,
   cupPlacedCount: 0,
@@ -20133,22 +20142,57 @@ function tutorialAnimateTap(targetEl) {
 // 見せてから tap animation を出す。 rect stale を避けるため requestAnimationFrame で
 // scroll コミット後の位置で再取得する。 step id ガードで in-flight step 遷移で暴走しない。
 // 内部: scroll ancestor (`.free-item-list`) を scrollTop 直操作で「見える」位置まで動かす。
-function _tutorialScrollPaletteIntoView(el) {
+function _tutorialScrollPaletteIntoView(el, opts) {
   if (!el || !el.isConnected) return;
-  try { el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' }); } catch (_) {}
+  const smooth = !!(opts && opts.smooth);
   try {
     const scrollParent = el.closest('.free-item-list');
-    if (!scrollParent) return;
+    if (!scrollParent) {
+      try { el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: smooth ? 'smooth' : 'auto' }); } catch (_) {}
+      return;
+    }
     const lr = scrollParent.getBoundingClientRect();
     const br = el.getBoundingClientRect();
-    if (br.top < lr.top || br.bottom > lr.bottom) {
-      // scroll container 内での el 相対 top (現 scrollTop 込み)。
-      const elTopInParent = (br.top - lr.top) + scrollParent.scrollTop;
-      const desiredTop = elTopInParent - Math.max(0, (lr.height - br.height) / 2);
-      const maxScroll = Math.max(0, scrollParent.scrollHeight - scrollParent.clientHeight);
-      scrollParent.scrollTop = Math.max(0, Math.min(maxScroll, desiredTop));
+    if (br.top >= lr.top - 2 && br.bottom <= lr.bottom + 2) return; // already visible
+    const elTopInParent = (br.top - lr.top) + scrollParent.scrollTop;
+    const desiredTop = elTopInParent - Math.max(0, (lr.height - br.height) / 2);
+    const maxScroll = Math.max(0, scrollParent.scrollHeight - scrollParent.clientHeight);
+    const targetScroll = Math.max(0, Math.min(maxScroll, desiredTop));
+    if (!smooth) {
+      scrollParent.scrollTop = targetScroll;
+      return;
     }
+    // batch:1058-hotfix3: 見本で子供に「スクロールが必要」 と教えるための smooth アニメ。
+    //   requestAnimationFrame ベースの ease-out cubic (500ms)。 scrollTo({behavior:'smooth'})
+    //   は iOS で無視されるケースがあるので自前で lerp。
+    const startScroll = scrollParent.scrollTop;
+    const delta = targetScroll - startScroll;
+    if (Math.abs(delta) < 1) { scrollParent.scrollTop = targetScroll; return; }
+    const duration = 500;
+    const startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      if (!scrollParent.isConnected) return;
+      scrollParent.scrollTop = startScroll + delta * eased;
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   } catch (_) {}
+}
+// batch:1058-hotfix3: 見本 (Phase A) 中に「パレットをスクロールする」 操作を子供に見せるための
+//   スワイプ指アニメ。 パレット下部→上部への drag を tutorialAnimateDrag で描画する。
+//   スクロール自体は _tutorialScrollPaletteIntoView({smooth:true}) が担当。
+function _tutorialShowPaletteSwipeDemo(scrollParent) {
+  if (!scrollParent) return;
+  const lr = scrollParent.getBoundingClientRect();
+  if (!lr || lr.width <= 0 || lr.height <= 0) return;
+  const cx = lr.left + lr.width / 2;
+  const marginY = Math.max(28, Math.min(80, lr.height * 0.18));
+  const fromY = lr.bottom - marginY;
+  const toY = lr.top + marginY;
+  // fast mode (1.4s cycle) の 1 サイクル分。 見本 phase 中 ~900ms 見える。
+  tutorialAnimateDrag({ x: cx, y: fromY }, { x: cx, y: toY }, { fast: true });
 }
 // `paletteRef` は Element or 関数 () => Element。 palette DOM は Phase A 途中でも
 // `renderFreeLayoutPalette` / observer 経由で再構築されうる (scrollTop が 0 に戻り、
@@ -20172,35 +20216,86 @@ function tutorialScrollThenTap(paletteRef, stepIdAtCall) {
     try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
     tutorialState._scrollThenTapRaf = null;
   }
+  // batch:1058-hotfix3: 前 step が仕込んだスクロールデモタイマーは必ず破棄
+  //   (step 遷移で「まだ動いているデモ」 が新 step の finger を先取りするのを防ぐ)。
+  if (tutorialState._scrollDemoTimer) {
+    try { clearTimeout(tutorialState._scrollDemoTimer); } catch (_) {}
+    tutorialState._scrollDemoTimer = null;
+  }
   let tapStarted = false;
-  const tick = () => {
-    tutorialState._scrollThenTapRaf = null;
-    if (!tutorialState.active) return;
-    if (stepIdAtCall && tutorialState.step !== stepIdAtCall) return;
-    if (tutorialState.phase && tutorialState.phase !== 'demo') return;
-    const el = resolve();
-    if (!el) { tutorialHideFinger(); return; }
-    _tutorialScrollPaletteIntoView(el);
-    if (!tapStarted) {
-      // keyframe 開始 (open-hand の tap pulse)。
-      tutorialAnimateTap(el);
-      tapStarted = true;
-    } else {
-      // 座標だけ再アンカー。 animation は再起動しない (途切れさせない)。
-      const f = tutorialState.fingerEl;
-      if (f) {
-        try {
-          const r = el.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) {
-            f.style.setProperty('--tap-x', (r.left + r.width / 2) + 'px');
-            f.style.setProperty('--tap-y', (r.top + r.height / 2) + 'px');
-          }
-        } catch (_) {}
+  const startTapLoop = () => {
+    const tick = () => {
+      tutorialState._scrollThenTapRaf = null;
+      if (!tutorialState.active) return;
+      if (stepIdAtCall && tutorialState.step !== stepIdAtCall) return;
+      // batch:1058-hotfix3: Phase A の scroll demo が完了して Phase B に入っても、
+      //   同じパレット項目に対して tap loop を継続させたいので、 'demo' | 'try' の
+      //   両方で loop を許可する (元は 'demo' のみで Phase B で消えていた)。
+      if (tutorialState.phase && tutorialState.phase !== 'demo' && tutorialState.phase !== 'try') return;
+      const el = resolve();
+      if (!el) { tutorialHideFinger(); return; }
+      // Phase A で smooth-scroll 中に大きくズレる可能性は低いが、 palette 再描画で
+      // 位置が変わっていたら idempotent に補正 (auto なので追加アニメは走らない)。
+      _tutorialScrollPaletteIntoView(el);
+      if (!tapStarted) {
+        // keyframe 開始 (open-hand の tap pulse)。
+        tutorialAnimateTap(el);
+        tapStarted = true;
+      } else {
+        // 座標だけ再アンカー。 animation は再起動しない (途切れさせない)。
+        const f = tutorialState.fingerEl;
+        if (f) {
+          try {
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+              f.style.setProperty('--tap-x', (r.left + r.width / 2) + 'px');
+              f.style.setProperty('--tap-y', (r.top + r.height / 2) + 'px');
+            }
+          } catch (_) {}
+        }
       }
-    }
+      tutorialState._scrollThenTapRaf = requestAnimationFrame(tick);
+    };
     tutorialState._scrollThenTapRaf = requestAnimationFrame(tick);
   };
-  tutorialState._scrollThenTapRaf = requestAnimationFrame(tick);
+
+  const initialEl = resolve();
+  if (!initialEl) { tutorialHideFinger(); return; }
+
+  // batch:1058-hotfix3: パレット外に隠れている target のときのみ「見本スクロール動作」 を挿入。
+  //   (a) パレット下→上のスワイプ指アニメ ~900ms → (b) smooth-scroll ~500ms → (c) tap loop 開始。
+  //   これで子供が「本番では自分でスクロールする」 という gesture を学習できる。
+  //   Phase A の phaseAMs (2400-2500ms) を上限にしないと Phase B に遷移してしまうため、
+  //   swipe + scroll で ~1400ms 消費し、 残りで tap loop を回す。
+  const scrollParent = initialEl.closest && initialEl.closest('.free-item-list');
+  let needsScroll = false;
+  if (scrollParent) {
+    const lr = scrollParent.getBoundingClientRect();
+    const br = initialEl.getBoundingClientRect();
+    needsScroll = (br.top < lr.top - 4 || br.bottom > lr.bottom + 4);
+  }
+  if (!needsScroll) {
+    startTapLoop();
+    return;
+  }
+  // Phase 1: swipe finger demo (~900ms visible)。
+  _tutorialShowPaletteSwipeDemo(scrollParent);
+  tutorialState._scrollDemoTimer = setTimeout(() => {
+    tutorialState._scrollDemoTimer = null;
+    if (!tutorialState.active) return;
+    if (stepIdAtCall && tutorialState.step !== stepIdAtCall) return;
+    // Phase 2: smooth scroll (~500ms)。
+    const el = resolve();
+    if (!el) { tutorialHideFinger(); return; }
+    _tutorialScrollPaletteIntoView(el, { smooth: true });
+    // Phase 3: after scroll settles, start tap loop。
+    tutorialState._scrollDemoTimer = setTimeout(() => {
+      tutorialState._scrollDemoTimer = null;
+      if (!tutorialState.active) return;
+      if (stepIdAtCall && tutorialState.step !== stepIdAtCall) return;
+      startTapLoop();
+    }, 560);
+  }, 900);
 }
 function tutorialScheduleResync() {
   if (tutorialState.resizeRaf) cancelAnimationFrame(tutorialState.resizeRaf);
@@ -21142,6 +21237,16 @@ function tutorialAdvance(nextStep) {
     try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
     tutorialState._scrollThenTapRaf = null;
   }
+  // batch:1058-hotfix3: 見本 (swipe→scroll→tap) chain timer と tabs-intro リング切替
+  //   timer も step 遷移で破棄。
+  if (tutorialState._scrollDemoTimer) {
+    try { clearTimeout(tutorialState._scrollDemoTimer); } catch (_) {}
+    tutorialState._scrollDemoTimer = null;
+  }
+  if (tutorialState._tabsRingTimer) {
+    try { clearTimeout(tutorialState._tabsRingTimer); } catch (_) {}
+    tutorialState._tabsRingTimer = null;
+  }
   tutorialState.phase = 'demo';
   tutorialState.renderedStep = null;
   if (tutorialState._layerDoneTimer) {
@@ -21535,7 +21640,11 @@ function tut2RenderNoriPhaseB(step) {
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderNoriMovePhaseA(step) {
-  tutorialShowBubble('ゆびで うごかせるよ', { topVh: '20', side: 'left' });
+  // batch:1058-hotfix3: Step 5 のバブルは box の右コンパートメント (右上) に配置。
+  //   旧設定 (topVh:20 left) は 置いたのり + finger drag と Y 帯が重なって
+  //   owner から「吹き出しが指と重なる」 と指摘された。 box_rect_split は右半分が
+  //   空いているのでその上部に載せる。
+  tutorialShowBubble('ゆびで うごかせるよ', { topVh: '8', side: 'right' });
   const placed = tutorialFindFirstPlacedDecor();
   if (placed && placed.el) {
     const r = placed.el.getBoundingClientRect();
@@ -21545,7 +21654,8 @@ function tut2RenderNoriMovePhaseA(step) {
   }
 }
 function tut2RenderNoriMovePhaseB(step) {
-  tutorialShowBubble('すきな ばしょまで<br>すーっと うごかしてね', { topVh: '20', side: 'left' });
+  // batch:1058-hotfix3: Phase B も同じく右上に配置 (finger + placed decor と非重複)。
+  tutorialShowBubble('すきな ばしょまで<br>すーっと うごかしてね', { topVh: '8', side: 'right' });
   const placed = tutorialFindFirstPlacedDecor();
   if (placed && placed.el) {
     tutorialMarkTarget(placed.el, { radius: 16 });
@@ -21556,7 +21666,10 @@ function tut2RenderNoriMovePhaseB(step) {
   }
 }
 function tut2RenderNoriEditPhaseA(step) {
-  tutorialShowBubble('ぽんと タップすると まわせるよ', { topVh: '20', side: 'left' });
+  // batch:1058-hotfix3: 旧バブル文言 (擬音つき) は幼児に伝わらず、 かつ Phase A が終わっても
+  //   Phase B に進めない位相リセットバグと合わせて Step 6 で詰まっていた (owner 報告)。
+  //   バブル文言を平易化し、 位相バグは tutorialRenderStep 側で修正済。
+  tutorialShowBubble('のりを タップすると まわせるよ', { topVh: '8', side: 'right' });
   const placed = tutorialFindFirstPlacedDecor();
   if (placed && placed.item) {
     try {
@@ -21571,10 +21684,15 @@ function tut2RenderNoriEditPhaseA(step) {
   }
 }
 function tut2RenderNoriEditPhaseB(step) {
-  tutorialShowBubble('できたら「のりOK」<br>を おそう', { topVh: '20', side: 'left' });
-  // Ring on のりOK button. Since freeGuideStep is still decor, we look at that button.
+  // batch:1058-hotfix3: Phase B のバブルはボタン横に再配置する (tutorialPositionBubbleBeside)。
+  //   初期 topVh は 8 に置いて上端張り付きにしておき、 のりOK ボタンが見つかったら横付けに
+  //   上書きする。 位相リセットバグ修正 (tutorialRenderStep) と併せて Phase B が確実に発火する
+  //   ようになった。 編集パネルはユーザー操作なしでも Phase B で のりOK に指誘導 → 押下で
+  //   handleNoriOkPressed → tier2Main へ (tutorialOnGuideChange 経由で tut2-okazu-main へ進む)。
+  tutorialShowBubble('できたら「のりOK」<br>を おそう', { topVh: '8', side: 'right' });
   const noriOkBtn = tutorialNoriOkButton();
   if (noriOkBtn) {
+    tutorialPositionBubbleBeside(noriOkBtn, { gap: 12 });
     tutorialMarkTarget(noriOkBtn, { radius: 22, outline: false });
     tutorialAnimateTap(noriOkBtn);
   }
@@ -21706,15 +21824,49 @@ function tut2RenderCupFoodPhaseB(step) {
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderTabsIntro(step) {
-  tutorialShowBubble('はっぱと しきりも つかえるよ！', { topVh: '18', side: 'left' });
-  // Point at the leaf tab first, then divider tab after a short delay.
-  const leafTab = tutorialFindTabBtn('leaf') || document.querySelector('.free-tab[data-tab="leaf"]');
-  const divTab = tutorialFindTabBtn('divider') || document.querySelector('.free-tab[data-tab="divider"]');
-  if (leafTab) tutorialShowPointingHand(leafTab, { side: 'left' });
-  setTimeout(() => {
+  tutorialShowBubble('はっぱと しきりも つかえるよ！', { topVh: '18', side: 'right' });
+  // batch:1058-hotfix3: 旧実装は 指の pointing hand だけで target ring が無く、
+  //   owner から「タブに何もマーカーがない」 と指摘された。 tutorialTrimPath の青破線
+  //   ring を leaf / divider タブに順番に付け、 バブルは タブに横付け配置に変更。
+  //   cup editor close 直後の advance で `.free-tab` DOM が rebuild 中なことがあるため
+  //   最大 8 回 (~800ms) rAF リトライで leaf タブが現れたら ring を貼る。
+  const attachLeafRing = (retriesLeft) => {
+    if (!tutorialState.active || tutorialState.step !== 'tut2-tabs-intro') return;
+    const leafTab = tutorialFindTabBtn('leaf') || document.querySelector('.free-tab[data-tab="leaf"]');
+    if (!leafTab) {
+      if (retriesLeft > 0) setTimeout(() => attachLeafRing(retriesLeft - 1), 100);
+      return;
+    }
+    if (!(tutorialState.trims || []).some(t => t.target === leafTab)) {
+      tutorialMarkTarget(leafTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
+    }
+    tutorialShowPointingHand(leafTab, { side: 'right' });
+    try { tutorialPositionBubbleBeside(leafTab, { gap: 14 }); } catch (_) {}
+  };
+  attachLeafRing(8);
+  // batch:1058-hotfix3: 2.4s 後に ring / hand / バブルを divider タブへ移動 (leaf の trim は掃除)。
+  if (tutorialState._tabsRingTimer) {
+    try { clearTimeout(tutorialState._tabsRingTimer); } catch (_) {}
+    tutorialState._tabsRingTimer = null;
+  }
+  tutorialState._tabsRingTimer = setTimeout(() => {
+    tutorialState._tabsRingTimer = null;
+    if (!tutorialState.active) return;
     if (tutorialState.step !== 'tut2-tabs-intro') return;
-    if (divTab) tutorialShowPointingHand(divTab, { side: 'left' });
-  }, 2500);
+    tutorialClearTrims();
+    const attachDivRing = (retriesLeft) => {
+      if (!tutorialState.active || tutorialState.step !== 'tut2-tabs-intro') return;
+      const divTab = tutorialFindTabBtn('divider') || document.querySelector('.free-tab[data-tab="divider"]');
+      if (!divTab) {
+        if (retriesLeft > 0) setTimeout(() => attachDivRing(retriesLeft - 1), 100);
+        return;
+      }
+      tutorialMarkTarget(divTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
+      tutorialShowPointingHand(divTab, { side: 'right' });
+      try { tutorialPositionBubbleBeside(divTab, { gap: 14 }); } catch (_) {}
+    };
+    attachDivRing(6);
+  }, 2400);
   // Soft-chain to okazu-ok after voice ends + ~1.5s dwell. Use fallbackMs timer.
   if (!tutorialState._tabsChainTimer) {
     tutorialState._tabsChainTimer = setTimeout(() => {
@@ -21813,7 +21965,12 @@ function tutorialRenderStep() {
   }
 
   // Two-phase step (A → B). On firstRender start in Phase A, then queue transition.
-  if (firstRender) {
+  // batch:1058-hotfix3: 元々 `if (firstRender) phase='demo'` としていたが、 Phase A タイマー
+  //   コールバックが phase='try' + renderedStep=null を設定して tutorialRenderStep を呼び直す
+  //   ため、 ここで無条件に phase='demo' に上書きすると Phase B に永久に遷移できなくなる
+  //   (Step 6 nori-edit が「ここでストップ」 と owner 報告された根本原因)。 明示的に 'try'
+  //   がセットされている時はそれを尊重する。
+  if (firstRender && tutorialState.phase !== 'try') {
     tutorialState.phase = 'demo';
   }
   if (tutorialState.phase === 'demo') {
@@ -21895,6 +22052,15 @@ function tutorialTeardown() {
   if (tutorialState._scrollThenTapRaf) {
     try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
     tutorialState._scrollThenTapRaf = null;
+  }
+  // batch:1058-hotfix3: 見本スクロール chain / tabs-intro リング切替 timer も teardown で掃除。
+  if (tutorialState._scrollDemoTimer) {
+    try { clearTimeout(tutorialState._scrollDemoTimer); } catch (_) {}
+    tutorialState._scrollDemoTimer = null;
+  }
+  if (tutorialState._tabsRingTimer) {
+    try { clearTimeout(tutorialState._tabsRingTimer); } catch (_) {}
+    tutorialState._tabsRingTimer = null;
   }
   if (tutorialState.ghostLayerEl && tutorialState.ghostLayerEl.parentNode) {
     try { tutorialState.ghostLayerEl.parentNode.removeChild(tutorialState.ghostLayerEl); } catch (_) {}
@@ -22081,8 +22247,25 @@ function tutorialOnItemPlaced(item) {
     tutorialResetInactivity();
     return;
   }
-  // Step 7: main okazu (no parent cup) → cup-btn
+  // Step 7: main okazu (no parent cup) → cup-btn。 batch:1058-hotfix3: 実ゲームと同じく
+  //   main=2 個要求 (tutorial 中 override 廃止)。 1 個目配置時は「もう ひとつ おかず！」 の
+  //   Pono callout を出しつつ Phase B の状態を維持 (パレット指誘導は既に走っているので触らない)。
+  //   2 個目配置で cup-btn へ進む。
   if (step === 'tut2-okazu-main' && item.type === 'food' && !item.parentCupId) {
+    try {
+      const tier = (typeof getGuideTierForStep === 'function') ? getGuideTierForStep('tier2Main') : 1;
+      const req = getRequiredOkazuCountsForTier(tier);
+      const nowMain = (typeof countOkazuRoleOnTier === 'function') ? countOkazuRoleOnTier(tier, 'main') : 0;
+      if (nowMain < (req.main || 1)) {
+        // 1 個目 → 「もう ひとつ」 促し。 callout は onCalloutShown を仕込まず 3s で自動的に
+        //   hide される (次 render で新規表示上書き)。 Phase B の finger loop は継続。
+        if (typeof tutorialShowPonoCallout === 'function') {
+          try { tutorialShowPonoCallout('もう ひとつ<br>おかずを えらぼう！', { placement: 'high' }); } catch (_) {}
+        }
+        tutorialResetInactivity();
+        return;
+      }
+    } catch (_) {}
     tutorialAdvance('tut2-cup-btn');
     return;
   }

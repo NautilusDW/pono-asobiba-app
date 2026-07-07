@@ -10017,15 +10017,15 @@
       {
         id: 'monster_math',
         title: 'モンスターさんすう',
-        subtitle: 'モンスターに たべさせよう',
+        subtitle: 'たべて かくして かずあそび',
         icon: '🍽️',
         bg: 'monster-math/assets/bg_shokudo.webp',
         href: 'monster-math/index.html',
         panel: 'assets/ui/menu_card_base_02.webp',
-        thumb: 'monster-math/assets/title_trio.webp',
+        thumb: 'monster-math/assets/title_v2_composite.webp',
         thumbPos: '50% 50%',
         peekPos: '50% 50%',
-        tier: 'free'
+        tier: 'sub'
       },
       {
         id: 'starparodier',
@@ -10169,8 +10169,9 @@
     // zukan / writing-mori / cooking は GAMES 側で comingSoon:true 済のため
     // computeGameZone() が自動的に 「じゅんびちゅう」 ゾーンへ振り分ける。
     const TITLE_MENU_IDS = [
-      'quizland', 'maze', 'oto', 'bento', 'puzzle', 'monster_math',                   // playable
-      'nazonazo-tunnel', 'mojicrane', 'starparodier', 'undersea-cave', 'sea-album',   // app_only
+      'quizland', 'maze', 'oto', 'bento', 'puzzle',                                   // playable
+      'nazonazo-tunnel', 'mojicrane', 'monster_math', 'starparodier',
+      'undersea-cave', 'sea-album',                                                   // app_only
       'writing-mori', 'zukan', 'cooking'                                             // coming_soon
     ];
 
@@ -10330,7 +10331,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2028; // sw.js CACHE_VERSION と同期 (batch:1058-sw-toast-fix - 「新しいバージョンがあります」トースト連発ループ緊急修正)
+    const PAGE_CACHE_VERSION = 2031; // sw.js CACHE_VERSION と同期 (mojicrane round-5: 物理settle精度 + 仕分けレバー)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script

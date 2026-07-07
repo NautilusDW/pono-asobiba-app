@@ -59,7 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
-- 2026-07-07 15:10 - by Claude - [batch:1058-hotfix2] - bento/index.html, sw.js, play.html, HANDOFF.md - tut2 hotfix2 (吹き出し位置/ゴースト画像/パレットフォーカス/誤タップ抑止/配置位置整合/target ring)
+- 2026-07-07 - by Claude - [batch:1058-tut2-hotfix3] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 見本にスクロール動作/Step5吹き出し重なり/Step6「ぽんと」平易化+誘導/メインおかず要求数/はっぱ・しきり紹介マーカー
 
 
 
@@ -96,3 +96,5 @@
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
 - claude-code / develop-app / monster-math Redesign R2 (assets) / 2026-07-07
+- claude-code / develop-app / monster-math R2 Fix (title + debug + downscale) / 2026-07-07
+- claude-code / develop-app / monster-math R3 engine + title WebP / 2026-07-07

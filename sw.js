@@ -838,7 +838,24 @@
 //   noriIdx 遷移 (eye1→eye2 等) で ring が二重に残る現象を防止。 誤タップ抑止は既存の
 //   getTutorialPaletteAllowance が deny(...) を返すため追加コードなし。 play.html
 //   PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 2028;
+// v2030: monster-math Phase R3 (M6)。「10づくり(make10)/かぞえる(kazoeru)/たしざん(tashizan)」
+//   3モードを廃止し、「テンメガネ(ten)/かくれんぼモンスターかくれん(kak)」2モード構成へ全面
+//   差替 (mode-make10.js/mode-kazoeru.js/mode-tashizan.js 削除 → mode-tenmegane.js/
+//   mode-kakuren.js 新設、engine.js MODE_ORDER・MONSTERS registry・NARRATION_KEYS 更新)。
+//   旧 pucchi/pakun/gaburu 立ち絵9枚・旧シール6枚(pucchi/pakun/gaburu/feast_plate/
+//   shokudo_sign/konpeito_bin)・title_trio 計16枚を precache から除去、
+//   新 monster_tenmegane/kakuren 立ち絵6枚 + sticker_mm_tenmegane/kakuren/both_modes/
+//   perfect 4枚 + title_v2_composite + hat_star 計12枚を追加 (git rm 済み旧アセットは
+//   リポジトリからも削除)。 play.html PAGE_CACHE_VERSION と同期。
+// v2031: mojicrane round-5 (物理settle精度 + 仕分けレバー)。 miniphys.js の山ブロック
+//   接地判定を「スカラー最高面スナップ」から OBB(回転矩形) SAT接触 + sequential-impulse
+//   ソルバー(8反復) + Baumgarte位置補正 + Coulomb摩擦へ置換 (chute/legacy-column経路は
+//   無改変)。 単一ブロック握力保証 (pileAwakeCount()===0 かつ非multiPartなら山が静かな間
+//   絶対にスリップしない)。 index.html/styles.css に #chuteLeftBtn/#chuteRightBtn (仕分け
+//   レバー) 追加、 game.js ascend→carry 遷移で自動判定を廃止し子供が左右ボタン/矢印キー/
+//   A・Dキーでシュートを選択する方式に変更 (誤ルート投入は無罰でトス戻し)。 play.html
+//   PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 2032;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -1162,25 +1179,22 @@ const CRITICAL_ASSETS_IMAGES = [
   '/assets/ui/play_bento_title_back.webp',
   '/assets/ui/play_puzzle_title_back.webp',
   '/assets/ui/play_starparodier_title_back.webp',
-  // v2023: monster-math M5 統合フェーズ — 立ち絵/シール/BG/UI 計19枚 (v2010 で予告した precache 追加)。
-  // PNG 版 (fallback 用) は精査済みで容量節約のため precache 対象外、 onerror fallback 経路でのみ使用。
+  // v2030: monster-math Phase R3 (tenmegane/kakuren モードへ全面差替)。 pucchi/pakun/gaburu
+  // 系立ち絵・シール・title_trio を全撤去、 新モンスター立ち絵6枚+シール4枚+title_v2_composite+hat_star
+  // を precache 追加 (計12枚)。 PNG 版 (fallback 用) は精査済みで容量節約のため precache 対象外。
   '/monster-math/assets/bg_shokudo.webp',
-  '/monster-math/assets/monster_gaburu_happy.webp',
-  '/monster-math/assets/monster_gaburu_idle.webp',
-  '/monster-math/assets/monster_gaburu_mouth_open.webp',
-  '/monster-math/assets/monster_pakun_happy.webp',
-  '/monster-math/assets/monster_pakun_idle.webp',
-  '/monster-math/assets/monster_pakun_mouth_open.webp',
-  '/monster-math/assets/monster_pucchi_happy.webp',
-  '/monster-math/assets/monster_pucchi_idle.webp',
-  '/monster-math/assets/monster_pucchi_mouth_open.webp',
-  '/monster-math/assets/sticker_mm_feast_plate.webp',
-  '/monster-math/assets/sticker_mm_gaburu.webp',
-  '/monster-math/assets/sticker_mm_konpeito_bin.webp',
-  '/monster-math/assets/sticker_mm_pakun.webp',
-  '/monster-math/assets/sticker_mm_pucchi.webp',
-  '/monster-math/assets/sticker_mm_shokudo_sign.webp',
-  '/monster-math/assets/title_trio.webp',
+  '/monster-math/assets/monster_tenmegane_idle.webp',
+  '/monster-math/assets/monster_tenmegane_mouth_open.webp',
+  '/monster-math/assets/monster_tenmegane_happy.webp',
+  '/monster-math/assets/monster_kakuren_idle.webp',
+  '/monster-math/assets/monster_kakuren_peek.webp',
+  '/monster-math/assets/monster_kakuren_happy.webp',
+  '/monster-math/assets/sticker_mm_tenmegane.webp',
+  '/monster-math/assets/sticker_mm_kakuren.webp',
+  '/monster-math/assets/sticker_mm_both_modes.webp',
+  '/monster-math/assets/sticker_mm_perfect.webp',
+  '/monster-math/assets/title_v2_composite.webp',
+  '/monster-math/assets/hat_star.webp',
   '/monster-math/assets/ui_blackboard.webp',
   '/monster-math/assets/ui_counter_frame.webp',
 ];
