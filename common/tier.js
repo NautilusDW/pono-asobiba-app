@@ -18,6 +18,7 @@
      - isAquariumCreatureUnlocked(id)      海の生き物が解放されているか
      - isRoomItemUnlocked(id, cat)         家具/かざりが解放されているか
      - isKatakanaUnlocked()                カタカナ編が解放されているか
+     - isMonsterMathStageUnlocked(mode, stageNum)  モンスターさんすうの各モード×ステージが解放されているか
      - verifyBookPassword(val)             絵本印字パスワードを検証
      - showSubscribePromo(opts)            サブスク誘導モーダル（伸びしろ表現）
      - BOOK_AQUARIUM_CREATURE_IDS          絵本層に見せる生き物 8種
@@ -384,6 +385,25 @@
     return FREE_BENTO_NPCS.indexOf(npcId) >= 0;
   }
 
+  // ---- monster_math (モンスターさんすう) ----
+  // v3 (2026-07-06/07 ユーザー決定ログ §13.2 承認済): free = book (機能差ゼロ)。
+  // かぞえる Stage1-2 / 10づくり Stage1 / たしざん Stage1 のみ解放、 残りは sub。
+  var FREE_MONSTER_MATH_STAGE_IDS = {
+    kazoeru:  [1, 2],
+    make10:   [1],
+    tashizan: [1]
+  };
+
+  function isMonsterMathStageUnlocked(mode, stageNum) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    // v3: free = book (機能差ゼロ)
+    var list = FREE_MONSTER_MATH_STAGE_IDS[mode];
+    if (!list) return false; // 未知の mode 名は保険で全ロック (誤って全開放しない)
+    return list.indexOf(stageNum) >= 0;
+  }
+
   // ---- 絵本印字パスワード検証 ----
   // 絵本の奥付に印字する解錠コードをここで集中管理。
   // 絵本を増刷・新シリーズを出す時はこの配列に追記する想定。
@@ -673,6 +693,8 @@
     isBentoFoodUnlocked: isBentoFoodUnlocked,
     isBentoBoxUnlocked: isBentoBoxUnlocked,
     isBentoNpcUnlocked: isBentoNpcUnlocked,
+    isMonsterMathStageUnlocked: isMonsterMathStageUnlocked,
+    FREE_MONSTER_MATH_STAGE_IDS: FREE_MONSTER_MATH_STAGE_IDS,
     FREE_QUIZLAND_QUESTION_IDS: FREE_QUIZLAND_QUESTION_IDS,
     ALL_BENTO_FOOD_NAMES: ALL_BENTO_FOOD_NAMES,
     // v3: book = free (機能差ゼロ) につき BOOK_BENTO_FOOD_NAMES / FREE_BENTO_FOOD_NAMES は

@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2011: mojicrane を物理リデザイン (Matter.js ローカルバンドル、直接つかみ操作の「つみつみ もじタワー」)。
+// mojicrane は CRITICAL_ASSETS 対象外 (network-first パターン継続) のため一覧追加なし、
+// index.html/js/css の ?v= クエリバンプ + このバージョン番号のみで更新を反映。play.html PAGE_CACHE_VERSION と同期。
+// v2010: monster-math T0 契約凍結 (skeleton + engine + stickers precache枠)。 詳細は
+// CACHE_VERSION const 直前の v2010 コメントブロック参照。 game-stickers.json の
+// monster_math ページは M5 まで非公開 (catalog 予告露出防止、 fix-blockers workflow)。
 // v2009: play.html の一体型右下ナビの縦横比を全ブレークポイントで固定し、プロフィール＆どんぐり土台との余白を広げる。play.html PAGE_CACHE_VERSION と同期。
 // v2008: play.html の右下3ボタンを、ラベル焼き込み済みの一体型 GPT Image 2 WebP に差し替え。押下は同サイズの区画別 pressed 画像を重ねる。play.html PAGE_CACHE_VERSION と同期。
 // v2007: UX 3件 - data-export.js プレビュー強化 (今/ロード後の比較表示 + CORE_PRESERVE_IF_ABSENT 拡張) + sw-update.js の更新トースト多重表示抑制 (sessionStorage + activate 検知) (batch:1203)。play.html PAGE_CACHE_VERSION と同期。
@@ -689,7 +695,12 @@
 // v2007: data-export.js プレビュー強化 + sw-update.js 更新トースト多重表示抑制。
 // v2008: play.html の右下3ボタンを一体型 GPT Image 2 WebP に差し替え。
 // v2009: 右下ナビの横伸びとプロフィール＆どんぐり土台との詰まりを修正。
-const CACHE_VERSION = 2009;
+// v2010: モンスターさんすう (monster-math/) T0 契約凍結。 新規 index.html/engine.js/
+// mode-*.js 3本は maze/oto/bento/puzzle と同じ network-first 方針 (HTML は isHTML 判定で
+// SW 素通し、 自前 register なし) のため CRITICAL_ASSETS_HTML/SCRIPTS への追加は不要
+// (下記 v1713 コメント参照)。 画像アセット (立ち絵/シール/BG/UI 計18枚) は M5 統合フェーズで
+// 実装完了後に precache 追加する (SPEC monster_math_spec.md §5)。
+const CACHE_VERSION = 2011;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

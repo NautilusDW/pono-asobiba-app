@@ -1,0 +1,1011 @@
+// monster-math/engine.js
+// ============================================================
+// モンスターさんすう — 共通エンジン (T0 契約凍結版, Impl 1)
+//
+// 公開 API: window.MM  (SPEC §2.4 の凍結契約に厳密準拠)
+//   registerMode(id, def)
+//   S                   … 単一 state
+//   ui:  { renderShelf, renderFrame, setMonster, bubble, spotlight, lockInput, showResult }
+//   fx:  { flyClone, flyBack, confetti, sfx }
+//   narration: { say, sayIfAuto, counting }
+//   progress:  { getStars, commitRoundStar, commitStageClear }
+//   undo: { push, popLastGently, voluntary }
+//   mmTimeout(fn, ms, phaseGuard)
+//
+// Impl 2-4 (mode-make10.js / mode-kazoeru.js / mode-tashizan.js) はこのファイルと
+// index.html を一切編集しない self-registration 前提 (SPEC §3.0 / §4.2)。
+// 本ファイルは T0 段階の骨格実装 (500-800行目安) — ラウンド実ロジックは各 mode-*.js が
+// createRound/onFoodTap/onAnswerTap を実装することで完結する。
+//
+// [M5 復元予定] assets/data/game-stickers.json monster_math ページ (シール6枚)。
+// T0 fix-blockers workflow でカタログ予告露出防止のため一時削除 (ユーザー追加指示、
+// 2026-07-06/07)。 獲得経路 (grant 呼び出し) 自体はこのファイルに残したまま、
+// game-stickers.js の「ページ未登録なら null を返すだけの silent fallback」に乗せて
+// 無害化している (catalog に該当 gameId が無ければ何も起きない)。 M5 で catalog に
+// 以下を丸ごと戻すこと (serial 139-144 は既存 book-bonus 138 の続番として確保済み):
+//   "monster_math": {
+//     "title": "モンスターさんすう", "subtitle": "しょくどうの シール",
+//     "icon": "🍽️", "accent": "#F2742A", "appOnly": false,
+//     "stickers": [
+//       mm_pucchi        (serial 139, rarity normal, unlockOn: clear_kazoeru, tier free)
+//       mm_pakun         (serial 140, rarity normal, unlockOn: clear_make10,  tier free)
+//       mm_gaburu        (serial 141, rarity normal, unlockOn: clear_tashizan, tier free)
+//       mm_feast_plate   (serial 142, rarity super,  unlockOn: feast,         tier free)
+//       mm_shokudo_sign  (serial 143, rarity super,  unlockOn: all_modes,     tier free)
+//       mm_konpeito_bin  (serial 144, rarity super,  unlockOn: perfect_all,   tier free)
+//     ]
+//   }
+// (各 img パスは monster-math/assets/sticker_mm_<id>.png)。 復元と同時に
+// scripts/generate_sticker_metrics.py を再実行して sticker-metrics.js に mm_ 6枚を
+// 追加すること ([[feature_museum_sticker_size_normalize]] MUST)。
+// ============================================================
+(function () {
+  'use strict';
+
+  // ---- モード確定順序 (SPEC §1 #3 / §2.1 タイトル3ドア順) ----
+  var MODE_ORDER = ['kazoeru', 'make10', 'tashizan'];
+  // mode-*.js の 404 / 未登録時のフォールバック表示用メタ (SPEC §7.1 の
+  // 「mode 欠落時にタイトルが落ちず該当ドアのみ無効化される」要件を満たすための既定値)
+  var MODE_META_FALLBACK = {
+    kazoeru:  { label: 'かぞえる',  monsterId: 'pucchi', difficultyLabel: 'やさしい' },
+    make10:   { label: '10づくり',  monsterId: 'pakun',  difficultyLabel: 'ふつう' },
+    tashizan: { label: 'たしざん',  monsterId: 'gaburu', difficultyLabel: 'むずかしい' }
+  };
+
+  // ---- シール grant 用 stickerId マップ (SPEC §13.4)。 PonoGameStickers.grant() は
+  // stickerId 未指定 (event-only) で呼ぶと event-only フォールバック (完了トーストのみ、
+  // シール未確定) に落ちてしまい、 かつ event 名しか一致しない場合は「未所持の中から event
+  // 一致優先で選ぶ」フォールバックが暴発して意図しないシールが順次付与される事故になる
+  // (T0 blocker、 review A 指摘)。 grant() を呼ぶ箇所は必ずこのマップ経由で stickerId を
+  // 明示指定すること。 M2-M4 (mode-*.js 実装) 側で feast / perfect_all の grant を直接
+  // 呼ぶ際も SPECIAL_STICKER を参照すること (event-only 呼び出しは禁止)。
+  var MODE_CLEAR_STICKER = {
+    kazoeru:  'mm_pucchi',
+    make10:   'mm_pakun',
+    tashizan: 'mm_gaburu'
+  };
+  var SPECIAL_STICKER = {
+    feast:        'mm_feast_plate',
+    all_modes:    'mm_shokudo_sign',
+    perfect_all:  'mm_konpeito_bin'
+  };
+
+  // ---- localStorage キー (SPEC §2.5 確定値) ----
+  var LS_PROGRESS = 'pono_mmath_progress_v1';
+  var LS_ADAPTIVE = 'pono_mmath_adaptive_v1';
+  var LS_TUTORIAL = 'pono_mmath_tutorial_seen_v1';
+  var LS_BONUS    = 'pono_mmath_bonus_v1';
+  var SCHEMA_V = 1;
+
+  function clone(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return o; } }
+
+  function defaultProgress() {
+    var modes = {};
+    MODE_ORDER.forEach(function (m) { modes[m] = { stages: {} }; });
+    return { v: SCHEMA_V, modes: modes, lastPlayed: null };
+  }
+  function defaultAdaptive() {
+    var modes = {};
+    MODE_ORDER.forEach(function (m) { modes[m] = { scaffold: 0, missStreak: 0 }; });
+    return { v: SCHEMA_V, modes: modes };
+  }
+  // SPEC §2.5 が明示する形状 ({universal, kazoeru, make10, tashizan, ver:1}) をそのまま踏襲。
+  // 他3キーとフィールド名 (v/ver) が異なるのは SPEC 原文の引用に忠実であるため意図的。
+  function defaultTutorial() {
+    return { ver: SCHEMA_V, universal: false, kazoeru: false, make10: false, tashizan: false };
+  }
+  function defaultBonus() {
+    return { v: SCHEMA_V, feastCount: 0 };
+  }
+
+  function loadLS(key, defaults, versionField) {
+    versionField = versionField || 'v';
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return clone(defaults);
+      var obj = JSON.parse(raw);
+      if (!obj || typeof obj !== 'object' || obj[versionField] !== SCHEMA_V) return clone(defaults);
+      return obj;
+    } catch (e) {
+      return clone(defaults);
+    }
+  }
+  function saveLS(key, obj) {
+    try { localStorage.setItem(key, JSON.stringify(obj)); } catch (e) {}
+  }
+
+  var _progress = loadLS(LS_PROGRESS, defaultProgress());
+  var _adaptive = loadLS(LS_ADAPTIVE, defaultAdaptive());
+  var _tutorial = loadLS(LS_TUTORIAL, defaultTutorial(), 'ver');
+  var _bonus    = loadLS(LS_BONUS, defaultBonus());
+
+  function _modeProgress(mode) {
+    if (!_progress.modes[mode]) _progress.modes[mode] = { stages: {} };
+    return _progress.modes[mode];
+  }
+  function _stageProgress(mode, stage) {
+    var mp = _modeProgress(mode);
+    var key = String(stage);
+    if (!mp.stages[key]) mp.stages[key] = { stars: 0, clears: 0 };
+    return mp.stages[key];
+  }
+
+  // ---- mode registry ----
+  var MODES = {};
+  function registerMode(id, def) {
+    if (!id || !def || MODE_ORDER.indexOf(id) === -1) {
+      try { console.warn('[MM] registerMode: unknown mode id ignored:', id); } catch (e) {}
+      return;
+    }
+    MODES[id] = def;
+    // 遅延/再登録に備えて、 タイトル表示中なら該当ドアだけ再描画 (防御的、通常は不要)
+    if (S.screen === 'title') { try { _renderTitleDoors(); } catch (e) {} }
+  }
+
+  // ---- state (SPEC §2.4 契約) ----
+  var S = {
+    screen: 'title',   // title|stageSelect|play|result
+    mode: null,
+    stage: null,
+    round: 0,
+    belly: [],
+    phase: 'intro',    // intro|input|resolving|feedback|clear
+    missCount: 0,
+    stars: 0,
+    _roundStars: [],   // このステージ試行中の丸ごと星トラッキング (write-through 用)
+    _tutorialActive: false
+  };
+
+  // ---- bare setTimeout 禁止 ([[feedback_flag_encounter_settimeout_invariant]] 横展開) ----
+  var _timers = [];
+  function mmTimeout(fn, ms, phaseGuard) {
+    var expected = (phaseGuard != null) ? phaseGuard : null;
+    var id = window.setTimeout(function () {
+      var idx = _timers.indexOf(id);
+      if (idx !== -1) _timers.splice(idx, 1);
+      if (expected != null && S.phase !== expected) return; // stale timer: phase 変化後は無視
+      try { fn(); } catch (e) { try { console.error('[MM] mmTimeout callback error', e); } catch (_e) {} }
+    }, ms);
+    _timers.push(id);
+    return id;
+  }
+  function _clearAllTimers() {
+    _timers.forEach(function (id) { window.clearTimeout(id); });
+    _timers.length = 0;
+  }
+
+  // ============================================================
+  // WebAudio (proto 継承 + MONSTER_SFX_PARAMS 雛形。 §1 #18)
+  // ============================================================
+  var _actx = null;
+  function _ac() {
+    if (_actx) return _actx;
+    try { _actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { _actx = null; }
+    return _actx;
+  }
+  function _resumeAudio() {
+    var ctx = _ac();
+    if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+  }
+
+  // per-monster 音色パラメータ (容量ゼロ差別化、 SPEC 裁定 #18)。
+  // pitchMul: 基準周波数への倍率 (小さいモンスターほど高音)。 failure 系は個体差を付けない
+  // ([[feedback_miss_voice_progression]] の音版 = 「否定を増やさない」原則)。
+  var MONSTER_SFX_PARAMS = {
+    pucchi:  { pitchMul: 1.35, wave: 'sine' },
+    pakun:   { pitchMul: 1.00, wave: 'triangle' },
+    gaburu:  { pitchMul: 0.72, wave: 'sawtooth' }
+  };
+
+  function _tone(freq, dur, opts) {
+    var ctx = _ac();
+    if (!ctx) return;
+    opts = opts || {};
+    try {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = opts.wave || 'sine';
+      osc.frequency.value = freq;
+      var vol = (opts.vol != null) ? opts.vol : 0.18;
+      var now = ctx.currentTime;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(Math.max(vol, 0.0001), now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + dur + 0.02);
+    } catch (e) {}
+  }
+
+  // 共通 SFX 名 (proto 継承): pop / munch / boing / burp / fill(i) / fanfare / star
+  // monsterId を渡すと MONSTER_SFX_PARAMS の pitchMul/wave で個体差を付ける (失敗系=boing は
+  // 軟化のみで個体差を付けない、 C 案原則に合わせて据え置き)。
+  function sfx(name, monsterId) {
+    var p = MONSTER_SFX_PARAMS[monsterId] || MONSTER_SFX_PARAMS.pakun;
+    switch (name) {
+      case 'pop':     _tone(520 * p.pitchMul, 0.09, { wave: p.wave, vol: 0.14 }); break;
+      case 'munch':   _tone(300 * p.pitchMul, 0.12, { wave: p.wave, vol: 0.16 }); break;
+      case 'boing':   _tone(180, 0.22, { wave: 'sine', vol: 0.10 }); break; // 軟化 -6dB 相当 + 個体差なし
+      case 'burp':    _tone(140 * p.pitchMul, 0.30, { wave: 'sawtooth', vol: 0.12 }); break; // まんぷくげっぷ (成功文脈へ転用)
+      case 'fanfare': _tone(660, 0.5, { wave: 'triangle', vol: 0.16 }); break;
+      case 'star':    _tone(880, 0.18, { wave: 'sine', vol: 0.15 }); break;
+      case 'fill':    _tone(440, 0.12, { wave: 'sine', vol: 0.12 }); break;
+      default: break;
+    }
+  }
+  function sFill(i) { // かぞえ声 TTS 未着時の音階フォールバック (SPEC §10 縮退ライン #2)
+    var base = 392; // ソ
+    _tone(base + (i % 8) * 24, 0.1, { wave: 'sine', vol: 0.12 });
+  }
+
+  // ============================================================
+  // narration wrapper (common/narration.js 経由)
+  // ============================================================
+  var narration = {
+    say: function (key) {
+      if (window.Narration && typeof window.Narration.play === 'function') return window.Narration.play(key);
+      return Promise.resolve();
+    },
+    sayIfAuto: function (key) {
+      if (window.Narration && typeof window.Narration.playIfAuto === 'function') return window.Narration.playIfAuto(key);
+      return Promise.resolve();
+    },
+    // かぞえ声 (いち〜じゅう)。 未収録 (manifest 未反映) なら sFill 音階のみへ縮退。
+    counting: function (n) {
+      var key = 'monster_math:common:count_' + n;
+      if (window.Narration && typeof window.Narration.hasEntry === 'function' && window.Narration.hasEntry(key)) {
+        return narration.sayIfAuto(key);
+      }
+      sFill(n);
+      return Promise.resolve();
+    }
+  };
+
+  // ============================================================
+  // DOM refs (index.html が定義する ID と 1:1 対応)
+  // ============================================================
+  var dom = {};
+  function _cacheDom() {
+    dom.stage           = document.getElementById('mm-stage');
+    dom.screenTitle      = document.getElementById('screen-title');
+    dom.screenStageSel   = document.getElementById('screen-stageSelect');
+    dom.screenPlay       = document.getElementById('screen-play');
+    dom.screenResult     = document.getElementById('screen-result');
+    dom.titleDoors       = document.getElementById('mm-title-doors');
+    dom.continueChip     = document.getElementById('mm-continue-chip');
+    dom.continueBtn      = document.getElementById('mm-continue-btn');
+    dom.stageBack        = document.getElementById('mm-stage-back');
+    dom.stageModeLabel   = document.getElementById('mm-stage-mode-label');
+    dom.stageGrid        = document.getElementById('mm-stage-grid');
+    dom.playBack         = document.getElementById('mm-play-back');
+    dom.playStageLabel   = document.getElementById('mm-play-stage-label');
+    dom.playStars        = document.getElementById('mm-play-stars');
+    dom.shelf            = document.getElementById('mm-shelf');
+    dom.frame            = document.getElementById('mm-frame');
+    dom.monsterImg       = document.getElementById('mm-monster');
+    dom.bubble           = document.getElementById('mm-bubble');
+    dom.confirmModal     = document.getElementById('mm-confirm-modal');
+    dom.confirmCancel    = document.getElementById('mm-confirm-cancel');
+    dom.confirmOk        = document.getElementById('mm-confirm-ok');
+    dom.resultStars      = document.getElementById('mm-result-stars');
+    dom.resultEvents     = document.getElementById('mm-result-events');
+    dom.resultNext       = document.getElementById('mm-result-next');
+    dom.resultChoose     = document.getElementById('mm-result-choose');
+    dom.resultEnd        = document.getElementById('mm-result-end');
+    dom.splash           = document.getElementById('pono-game-splash');
+  }
+
+  // ============================================================
+  // ui namespace
+  // ============================================================
+  function _clearChildren(el) { if (el) el.innerHTML = ''; }
+
+  // shelf カードタップの単一配送経路 (SPEC 契約: onFoodTap/onAnswerTap は必ずこの経路
+  // 一本を通して呼ばれる。 mode-*.js 側でカード DOM に直接 addEventListener を追加するのは
+  // 禁止 — 二重発火 (給餌が2重にカウントされる等) の原因になるため warn 指摘済)。
+  // item.kind === 'answer' なら登録 mode の onAnswerTap、 それ以外 (既定 'food') は
+  // onFoodTap を呼ぶ。
+  function _dispatchShelfTap(item, card) {
+    var def = MODES[S.mode];
+    if (!def) return;
+    var ctx = { card: card, container: dom.shelf };
+    if (item && item.kind === 'answer') {
+      if (typeof def.onAnswerTap === 'function') def.onAnswerTap(item, ctx);
+    } else {
+      if (typeof def.onFoodTap === 'function') def.onFoodTap(item, ctx);
+    }
+  }
+
+  function renderShelf(items) {
+    if (!dom.shelf) return;
+    _clearChildren(dom.shelf);
+    (items || []).forEach(function (item) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'mm-food-card';
+      card.dataset.foodId = item.id != null ? String(item.id) : '';
+      card.innerHTML =
+        '<span class="mm-food-emoji">' + (item.emoji || '🍎') + '</span>' +
+        (item.label != null ? '<span class="mm-food-label">' + item.label + '</span>' : '');
+      card.addEventListener('click', function () {
+        sfx('pop', S.mode ? (MODES[S.mode] || {}).monsterId : null);
+        _dispatchShelfTap(item, card);
+      });
+      dom.shelf.appendChild(card);
+    });
+  }
+
+  // spec: rows,cols,prefill,twoColor
+  function renderFrame(spec) {
+    if (!dom.frame) return;
+    spec = spec || {};
+    var rows = spec.rows || 2;
+    var cols = spec.cols || 5;
+    _clearChildren(dom.frame);
+    dom.frame.style.setProperty('--mm-frame-cols', cols);
+    var prefill = spec.prefill || 0;
+    var total = rows * cols;
+    for (var i = 0; i < total; i++) {
+      var cell = document.createElement('div');
+      cell.className = 'mm-frame-cell';
+      if (i < prefill) cell.classList.add('is-filled');
+      if (spec.twoColor && i >= total / 2) cell.classList.add('mm-frame-cell--group2');
+      dom.frame.appendChild(cell);
+    }
+  }
+
+  // pose ∈ 'idle' | 'mouth_open' | 'happy' (SPEC §13.1: 立ち絵 3 pose の pose-swap engine)
+  // ファイル名規約: assets/monster_{id}_{pose}.webp (.png フォールバック)。
+  // 画像縦横比は object-fit:contain のみで扱い、 stretch は絶対に行わない
+  // ([[feedback_image_aspect_ratio]] 絶対遵守)。
+  var VALID_POSES = ['idle', 'mouth_open', 'happy'];
+  function setMonster(id, pose) {
+    if (!dom.monsterImg) return;
+    // pose 表記ゆれ (ハイフン/アンダースコア混在) を吸収 (SPEC/実装間の warn 指摘対応)
+    var normalizedPose = String(pose || 'idle').replace(/-/g, '_');
+    if (normalizedPose !== pose) {
+      try { console.warn('[MM] pose normalized:', pose, '->', normalizedPose); } catch (e) {}
+    }
+    pose = normalizedPose;
+    if (VALID_POSES.indexOf(pose) === -1) pose = 'idle';
+    var base = 'assets/monster_' + id + '_' + pose;
+    dom.monsterImg.hidden = false;
+    dom.monsterImg.dataset.monsterId = id;
+    dom.monsterImg.dataset.pose = pose;
+    dom.monsterImg.onerror = function () {
+      if (dom.monsterImg.src.indexOf('.webp') !== -1) {
+        dom.monsterImg.onerror = function () { dom.monsterImg.hidden = true; dom.monsterImg.onerror = null; };
+        dom.monsterImg.src = base + '.png';
+      }
+    };
+    dom.monsterImg.src = base + '.webp';
+    dom.monsterImg.alt = id;
+  }
+
+  function bubble(text) {
+    if (!dom.bubble) return;
+    if (text == null || text === '') { dom.bubble.hidden = true; return; }
+    dom.bubble.hidden = false;
+    dom.bubble.textContent = text;
+  }
+
+  // チュートリアル用スポットライト。 target は CSS selector。 呼び出し側は返り値 (clear 関数) を
+  // 保持し、 ステップ終了時に呼ぶこと (index.html を跨がない自己完結な実装)。
+  function spotlight(sel) {
+    var prev = document.querySelectorAll('.mm-spotlight-active');
+    prev.forEach(function (el) { el.classList.remove('mm-spotlight-active'); });
+    if (!sel) return function () {};
+    var el = null;
+    try { el = document.querySelector(sel); } catch (e) {}
+    if (!el) return function () {};
+    el.classList.add('mm-spotlight-active');
+    return function () { el.classList.remove('mm-spotlight-active'); };
+  }
+
+  // ms 間、 shelf/frame の入力を無効化 (二重給餌 race 対策の土台。 実アニメ完了待ちは
+  // mode 側が flyClone の Promise / mmTimeout と組み合わせて使う想定)
+  function lockInput(ms) {
+    var targets = [dom.shelf, dom.frame].filter(Boolean);
+    targets.forEach(function (t) { t.style.pointerEvents = 'none'; });
+    mmTimeout(function () {
+      targets.forEach(function (t) { t.style.pointerEvents = ''; });
+    }, ms || 400, null);
+  }
+
+  // stars: 0-5, events: [{type,label}] 任意の付帯結果 (シール獲得等の要約表示)
+  function showResult(stars, events) {
+    S.screen = 'result';
+    if (dom.resultStars) {
+      _clearChildren(dom.resultStars);
+      for (var i = 0; i < 5; i++) {
+        var starEl = document.createElement('span');
+        starEl.className = 'mm-star';
+        dom.resultStars.appendChild(starEl);
+      }
+    }
+    if (dom.resultEvents) {
+      _clearChildren(dom.resultEvents);
+      (events || []).forEach(function (ev) {
+        var row = document.createElement('div');
+        row.className = 'mm-result-event';
+        row.textContent = ev && ev.label ? ev.label : '';
+        dom.resultEvents.appendChild(row);
+      });
+    }
+    if (dom.screenResult) dom.screenResult.hidden = false;
+    // 星を逐次点灯 (SPEC §2.1 リザルト演出)
+    var starEls = dom.resultStars ? dom.resultStars.querySelectorAll('.mm-star') : [];
+    var lit = Math.max(0, Math.min(5, stars | 0));
+    for (var s = 0; s < lit; s++) {
+      (function (idx) {
+        mmTimeout(function () {
+          if (starEls[idx]) starEls[idx].classList.add('is-lit');
+          sfx('star', S.mode ? ((MODES[S.mode] || {}).monsterId) : null);
+        }, 260 * (idx + 1), null);
+      })(s);
+    }
+    mmTimeout(function () { sfx('burp', S.mode ? ((MODES[S.mode] || {}).monsterId) : null); }, 260 * (lit + 1) + 120, null); // まんぷくげっぷ (成功文脈のみ)
+  }
+
+  // ============================================================
+  // fx namespace
+  // ============================================================
+  function _reducedMotion() {
+    try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+  }
+
+  // 汎用カード飛翔演出。 fromEl→toEl へクローンを飛ばして resolve する Promise を返す。
+  // mode 側は resolve 後に belly 更新等の状態変更を行うことで race を避けられる。
+  // opts.signal: AbortSignal (省略可)。 画面遷移 (_setActiveScreen) は前画面に紐づく
+  // signal を abort するため、 途中で画面が切り替わった flyClone は clone を即座に片付けて
+  // resolve(null) する (キャンセル前は永久 pending のまま pointer-events ロックが残る warn
+  // 指摘への対応)。
+  function flyClone(fromEl, toEl, opts) {
+    return new Promise(function (resolve) {
+      if (!fromEl || !toEl || _reducedMotion()) { resolve(null); return; }
+      opts = opts || {};
+      var signal = opts.signal;
+      if (signal && signal.aborted) { resolve(null); return; }
+      try {
+        var r1 = fromEl.getBoundingClientRect();
+        var r2 = toEl.getBoundingClientRect();
+        var clone = fromEl.cloneNode(true);
+        clone.className += ' mm-fly-clone';
+        clone.style.position = 'fixed';
+        clone.style.left = r1.left + 'px';
+        clone.style.top = r1.top + 'px';
+        clone.style.width = r1.width + 'px';
+        clone.style.height = r1.height + 'px';
+        clone.style.margin = '0';
+        clone.style.zIndex = '500';
+        clone.style.transition = 'transform ' + (opts.duration || 380) + 'ms cubic-bezier(0.3,0.7,0.4,1), opacity ' + (opts.duration || 380) + 'ms ease';
+        document.body.appendChild(clone);
+        var dx = (r2.left + r2.width / 2) - (r1.left + r1.width / 2);
+        var dy = (r2.top + r2.height / 2) - (r1.top + r1.height / 2);
+        var settled = false;
+        function _cleanup() {
+          if (clone.parentNode) clone.parentNode.removeChild(clone);
+        }
+        function _onAbort() {
+          if (settled) return;
+          settled = true;
+          _cleanup();
+          resolve(null);
+        }
+        if (signal) { try { signal.addEventListener('abort', _onAbort, { once: true }); } catch (e) {} }
+        requestAnimationFrame(function () {
+          if (settled) return;
+          clone.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(0.4)';
+          clone.style.opacity = '0.15';
+        });
+        mmTimeout(function () {
+          if (settled) return;
+          settled = true;
+          if (signal) { try { signal.removeEventListener('abort', _onAbort); } catch (e) {} }
+          _cleanup();
+          resolve();
+        }, (opts.duration || 380) + 20, null);
+      } catch (e) { resolve(null); }
+    });
+  }
+
+  // 10超え拒否: 口の手前で止めて戻る (SPEC §2.3-1)。 belly は不変。
+  function flyBack(fromEl, monsterId) {
+    sfx('boing', monsterId); // 軟化済み、 個体差なし (原則通り)
+    if (!fromEl || _reducedMotion()) return;
+    try {
+      fromEl.classList.add('mm-shake-refuse');
+      mmTimeout(function () { fromEl.classList.remove('mm-shake-refuse'); }, 420, null);
+    } catch (e) {}
+  }
+
+  // confetti ≤80 粒 / reduced-motion で縮退 (A11y 基準 SPEC §2.5)
+  function confetti(n) {
+    if (_reducedMotion()) return;
+    n = Math.min(80, n || 40);
+    var host = document.body;
+    for (var i = 0; i < n; i++) {
+      var p = document.createElement('div');
+      p.className = 'mm-confetti-piece';
+      p.style.left = (Math.random() * 100) + 'vw';
+      p.style.background = ['#F2742A', '#34D399', '#60A5FA', '#FBBF24'][i % 4];
+      p.style.animationDelay = (Math.random() * 0.4) + 's';
+      host.appendChild(p);
+      (function (el) { mmTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1600, null); })(p);
+    }
+  }
+
+  // ============================================================
+  // progress namespace (write-through)
+  // ============================================================
+  function getStars(mode, stage) {
+    return _stageProgress(mode, stage).stars || 0;
+  }
+
+  // ラウンドクリア = 即時 write-through (アプリ強制終了で星を失わないため)。
+  // UI (play 画面の星表示) も同期的に更新する — 獲得の瞬間に光る想定で、
+  // 3秒後にまとめて反映されるような遅延バッファは持たない (warn 指摘対応)。
+  function commitRoundStar() {
+    if (!S.mode || !S.stage) return;
+    S._roundStars.push(true);
+    var earned = Math.min(5, S._roundStars.filter(Boolean).length);
+    var sp = _stageProgress(S.mode, S.stage);
+    sp.stars = Math.max(sp.stars || 0, earned);
+    _progress.lastPlayed = { mode: S.mode, stage: S.stage };
+    saveLS(LS_PROGRESS, _progress);
+    if (S.screen === 'play') _renderPlayStars(earned);
+  }
+
+  function _isModeFullyCleared(mode) {
+    var def = MODES[mode];
+    if (!def || !def.stages || !def.stages.length) return false;
+    var mp = _modeProgress(mode);
+    for (var i = 1; i <= def.stages.length; i++) {
+      var sp = mp.stages[String(i)];
+      if (!sp || !sp.clears) return false;
+    }
+    return true;
+  }
+
+  function commitStageClear() {
+    if (!S.mode || !S.stage) return;
+    var earned = Math.min(5, S._roundStars.filter(Boolean).length);
+    var sp = _stageProgress(S.mode, S.stage);
+    sp.stars = Math.max(sp.stars || 0, earned);
+    sp.clears = (sp.clears || 0) + 1;
+    _progress.lastPlayed = { mode: S.mode, stage: S.stage };
+    saveLS(LS_PROGRESS, _progress);
+
+    // シール grant: モード全ステージクリアで clear_<mode> (SPEC §13.4)。
+    // stickerId は必ず明示指定すること (MODE_CLEAR_STICKER / SPECIAL_STICKER 参照)。
+    // event のみを渡す呼び出しは game-stickers.js 側の「未所持シールを event 一致優先で
+    // 順次割り当てる」フォールバックが働いてしまい、 達成条件と無関係なシールが付与される
+    // (T0 blocker として発覚、 再発防止のためここに固定)。
+    // feast / perfect_all は各 mode-*.js 側 (こうぶつ検知/★5判定) が
+    // window.PonoGameStickers.grant({gameId:'monster_math', stickerId: MM._SPECIAL_STICKER.feast, event:'feast'}) の
+    // ように SPECIAL_STICKER 経由で stickerId を明示して直接呼ぶ想定 (engine はモード横断の
+    // clear_*/all_modes のみ担当)。
+    if (window.PonoGameStickers && typeof window.PonoGameStickers.grant === 'function') {
+      if (_isModeFullyCleared(S.mode)) {
+        var clearStickerId = MODE_CLEAR_STICKER[S.mode];
+        try { window.PonoGameStickers.grant({ gameId: 'monster_math', stickerId: clearStickerId, event: 'clear_' + S.mode }); } catch (e) {}
+        if (MODE_ORDER.every(_isModeFullyCleared)) {
+          try { window.PonoGameStickers.grant({ gameId: 'monster_math', stickerId: SPECIAL_STICKER.all_modes, event: 'all_modes' }); } catch (e) {}
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // undo namespace (3層失敗回復の②③、 SPEC §2.3)
+  // ============================================================
+  var _undoStack = [];
+  function undoPush(item) { _undoStack.push(item); }
+
+  function _popCommon(voluntaryFlag) {
+    if (!_undoStack.length) return null;
+    var item = _undoStack.pop();
+    item.voluntary = !!voluntaryFlag;
+    sfx('boing', S.mode ? ((MODES[S.mode] || {}).monsterId) : null);
+    if (typeof item.undo === 'function') { try { item.undo(item); } catch (e) {} }
+    return item;
+  }
+  // 詰み検知時、 モンスターが最後の1個を優しく吐き戻す (自動、①1回のみナレ)
+  function popLastGently() {
+    var item = _popCommon(false);
+    if (item && !S._stuckNarrSaid) {
+      S._stuckNarrSaid = true;
+      narration.say('monster_math:common:stuck_undo');
+    }
+    return item;
+  }
+  // 子供が自分で「もどす」ボタン等を押した場合 (星/perfect 判定に不算入)
+  function voluntaryUndo() { return _popCommon(true); }
+
+  // 詰み検知時、 solvableFn() が true を返すまで 350ms 間隔で popLastGently を反復する
+  // (SPEC warn#5: 単発の1個吐き戻しだけでは詰みが解消しないケースへの対応)。
+  // undo スタックが尽きたら安全側で停止 (無限ループ防止、 それ以上は打つ手なしとして
+  // mode 側の別フォールバック — リセット導線等 — に委ねる)。
+  function popUntil(solvableFn, intervalMs) {
+    intervalMs = intervalMs || 350;
+    function step() {
+      if (typeof solvableFn === 'function' && solvableFn()) return;
+      if (!_undoStack.length) return;
+      popLastGently();
+      mmTimeout(step, intervalMs, null);
+    }
+    step();
+  }
+
+  // ============================================================
+  // Nav / screen 制御
+  // ============================================================
+  var TIER_FN = 'isMonsterMathStageUnlocked';
+
+  // 画面ごとの flyClone abort 用 AbortController。 _setActiveScreen は切り替え直前に
+  // 必ず前画面分を abort する (pending Promise が画面をまたいで残るのを防ぐ)。
+  var _screenAbortCtrl = null;
+  function _currentScreenSignal() {
+    return _screenAbortCtrl ? _screenAbortCtrl.signal : null;
+  }
+
+  function _setActiveScreen(name) {
+    // 前画面に紐づく pending flyClone を明示的に cancel + resolve してから切り替える
+    // (_clearAllTimers だけだと flyClone の完了 Promise が resolve されずに永久 pending
+    // のまま残り、 lockInput 由来の pointer-events:none が解除されない warn 指摘への対応)。
+    if (_screenAbortCtrl) { try { _screenAbortCtrl.abort(); } catch (e) {} }
+    try { _screenAbortCtrl = (typeof AbortController !== 'undefined') ? new AbortController() : null; } catch (e) { _screenAbortCtrl = null; }
+
+    [dom.screenTitle, dom.screenStageSel, dom.screenPlay].forEach(function (el) {
+      if (el) el.classList.remove('is-active');
+    });
+    var map = { title: dom.screenTitle, stageSelect: dom.screenStageSel, play: dom.screenPlay };
+    if (map[name]) map[name].classList.add('is-active');
+    S.screen = name;
+    _clearAllTimers();
+    // 新しい画面の入力対象のみ pointer-events を明示的に有効化 (前画面の lockInput 由来の
+    // pointer-events:none 残留を確実にクリアし、 恒久ロックを防ぐ)
+    [dom.shelf, dom.frame].forEach(function (t) { if (t) t.style.pointerEvents = ''; });
+    _screenTransitionGuard();
+  }
+
+  // 遷移直後 350ms タップガード (誤タップ防止、 A11y 基準)
+  function _screenTransitionGuard() {
+    if (!dom.stage) return;
+    dom.stage.classList.add('mm-nav-guard');
+    mmTimeout(function () { dom.stage.classList.remove('mm-nav-guard'); }, 350, null);
+  }
+
+  function goTitle() {
+    _setActiveScreen('title');
+    _renderTitleDoors();
+    _renderContinueChip();
+    bubble('');
+  }
+
+  var _titleSelectedMode = null; // 2タップ選択の1タップ目状態
+
+  function _renderTitleDoors() {
+    if (!dom.titleDoors) return;
+    _clearChildren(dom.titleDoors);
+    MODE_ORDER.forEach(function (modeId) {
+      var def = MODES[modeId];
+      var meta = MODE_META_FALLBACK[modeId];
+      var label = (def && def.label) || meta.label;
+      var diff = (def && def.difficultyLabel) || meta.difficultyLabel;
+      var monsterId = (def && def.monsterId) || meta.monsterId;
+      var door = document.createElement('button');
+      door.type = 'button';
+      door.className = 'mm-door';
+      if (!def) door.classList.add('mm-door--stub'); // mode-*.js 未登録/404 = 無効表示のみ (タイトルは落ちない)
+      if (_titleSelectedMode === modeId) door.classList.add('is-selected');
+      door.innerHTML =
+        '<img class="mm-door-monster" src="assets/monster_' + monsterId + '_idle.webp" alt="' + label + '" ' +
+        'onerror="this.onerror=null;this.src=\'assets/monster_' + monsterId + '_idle.png\';">' +
+        '<span class="mm-door-label">' + label + '</span>' +
+        '<span class="mm-door-diff">' + diff + '</span>';
+      door.addEventListener('click', function () { _onDoorTap(modeId, !!def); });
+      dom.titleDoors.appendChild(door);
+    });
+  }
+
+  function _onDoorTap(modeId, hasDef) {
+    if (_titleSelectedMode !== modeId) {
+      // 1タップ目: 選択 + ナレプレビュー (SPEC §2.1 2タップ選択)
+      _titleSelectedMode = modeId;
+      _renderTitleDoors();
+      narration.sayIfAuto('monster_math:' + modeId + ':door_preview');
+      return;
+    }
+    // 2タップ目: 入場
+    if (!hasDef) {
+      bubble('じゅんびちゅうだよ。 もうすこし まってね。');
+      return;
+    }
+    goStageSelect(modeId);
+  }
+
+  function _renderContinueChip() {
+    if (!dom.continueChip) return;
+    var lp = _progress.lastPlayed;
+    if (lp && lp.mode && lp.stage && MODES[lp.mode]) {
+      dom.continueChip.hidden = false;
+      if (dom.continueBtn) {
+        var meta = MODE_META_FALLBACK[lp.mode];
+        dom.continueBtn.textContent = 'つづきから (' + (meta ? meta.label : lp.mode) + ' ' + lp.stage + ')';
+      }
+    } else {
+      dom.continueChip.hidden = true;
+    }
+  }
+
+  function goStageSelect(modeId) {
+    S.mode = modeId;
+    _setActiveScreen('stageSelect');
+    var def = MODES[modeId];
+    var meta = MODE_META_FALLBACK[modeId];
+    if (dom.stageModeLabel) dom.stageModeLabel.textContent = (def && def.label) || meta.label;
+    _renderStageGrid(modeId, def);
+  }
+
+  function _renderStageGrid(modeId, def) {
+    if (!dom.stageGrid) return;
+    _clearChildren(dom.stageGrid);
+    var stages = (def && def.stages) || [];
+    if (!stages.length) {
+      var ph = document.createElement('div');
+      ph.className = 'mm-stage-placeholder';
+      ph.textContent = 'じゅんびちゅう だよ。 もうすこし まってね。';
+      dom.stageGrid.appendChild(ph);
+      return;
+    }
+    stages.forEach(function (stageCfg, idx) {
+      var stageNum = idx + 1;
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'mm-stage-card';
+      var unlocked = true;
+      try {
+        if (window.PonoTier && typeof window.PonoTier[TIER_FN] === 'function') {
+          unlocked = window.PonoTier[TIER_FN](modeId, stageNum);
+        }
+      } catch (e) {}
+      if (!unlocked) card.classList.add('is-locked');
+      var stars = getStars(modeId, stageNum);
+      card.innerHTML =
+        '<span class="mm-stage-num">' + stageNum + '</span>' +
+        '<span class="mm-stage-name">' + (stageCfg && stageCfg.name ? stageCfg.name : ('ステージ ' + stageNum)) + '</span>' +
+        '<span class="mm-stage-stars">' + '★'.repeat(stars) + '☆'.repeat(5 - stars) + '</span>' +
+        (unlocked ? '' : '<span class="mm-stage-lock">🔒</span>');
+      card.addEventListener('click', function () {
+        if (!unlocked) {
+          if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') window.PonoTier.showTierLockPromo();
+          return;
+        }
+        goPlay(modeId, stageNum);
+      });
+      dom.stageGrid.appendChild(card);
+    });
+  }
+
+  function _confirmBack(onConfirm) {
+    if (!dom.confirmModal) { onConfirm(); return; }
+    dom.confirmModal.hidden = false;
+    function cleanup() {
+      dom.confirmModal.hidden = true;
+      dom.confirmOk.removeEventListener('click', okHandler);
+      dom.confirmCancel.removeEventListener('click', cancelHandler);
+    }
+    function okHandler(e) { e.stopPropagation(); cleanup(); onConfirm(); }
+    function cancelHandler(e) { e.stopPropagation(); cleanup(); }
+    dom.confirmOk.addEventListener('click', okHandler);
+    dom.confirmCancel.addEventListener('click', cancelHandler);
+  }
+
+  function goPlay(modeId, stageNum) {
+    var unlocked = true;
+    try {
+      if (window.PonoTier && typeof window.PonoTier[TIER_FN] === 'function') {
+        unlocked = window.PonoTier[TIER_FN](modeId, stageNum);
+      }
+    } catch (e) {}
+    if (!unlocked) {
+      if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') window.PonoTier.showTierLockPromo();
+      return;
+    }
+    S.mode = modeId;
+    S.stage = stageNum;
+    S.round = 0;
+    S.belly = [];
+    S.phase = 'intro';
+    S.missCount = 0;
+    S._roundStars = [];
+    S._stuckNarrSaid = false;
+    _undoStack.length = 0;
+
+    _setActiveScreen('play');
+    var def = MODES[modeId];
+    var meta = MODE_META_FALLBACK[modeId];
+    var monsterId = (def && def.monsterId) || meta.monsterId;
+    if (dom.playStageLabel) {
+      var stageCfg = def && def.stages && def.stages[stageNum - 1];
+      dom.playStageLabel.textContent = stageCfg && stageCfg.name ? stageCfg.name : ((def ? def.label : meta.label) + ' ' + stageNum);
+    }
+    _renderPlayStars(0);
+    setMonster(monsterId, 'idle');
+    bubble('');
+    _clearChildren(dom.shelf);
+    _clearChildren(dom.frame);
+
+    if (!def || !def.stages || !def.stages[stageNum - 1] || typeof def.createRound !== 'function') {
+      // T0 stub: mode 未実装。 落ちずに「じゅんびちゅう」を出す (SPEC §7.1 チェック項目)
+      bubble('このモードは じゅんびちゅうだよ。 また あそびにきてね。');
+      return;
+    }
+    var stageCfg = def.stages[stageNum - 1];
+    var scaffold = (_adaptive.modes[modeId] && _adaptive.modes[modeId].scaffold) || 0;
+    S.phase = 'input';
+    try {
+      def.createRound(stageCfg, scaffold);
+    } catch (e) {
+      try { console.error('[MM] createRound failed', e); } catch (_e) {}
+      bubble('うまく はじめられなかったよ。 もういちど タップしてね。');
+    }
+  }
+
+  function _renderPlayStars(n) {
+    if (!dom.playStars) return;
+    dom.playStars.textContent = '★'.repeat(Math.max(0, Math.min(5, n))) + '☆'.repeat(5 - Math.max(0, Math.min(5, n)));
+  }
+
+  function goResult(stars, events) {
+    S.phase = 'clear';
+    showResult(stars, events);
+  }
+
+  function _wireNav() {
+    if (dom.continueBtn) {
+      dom.continueBtn.addEventListener('click', function () {
+        var lp = _progress.lastPlayed;
+        if (lp && lp.mode && lp.stage) goPlay(lp.mode, lp.stage);
+      });
+    }
+    if (dom.stageBack) dom.stageBack.addEventListener('click', function () { goTitle(); });
+    if (dom.playBack) {
+      dom.playBack.addEventListener('click', function (e) {
+        e.stopPropagation();
+        _confirmBack(function () { goStageSelect(S.mode); });
+      });
+    }
+    if (dom.resultNext) {
+      dom.resultNext.addEventListener('click', function () {
+        if (dom.screenResult) dom.screenResult.hidden = true;
+        var def = MODES[S.mode];
+        var nextStage = (S.stage || 0) + 1;
+        if (def && def.stages && def.stages[nextStage - 1]) {
+          goPlay(S.mode, nextStage);
+        } else {
+          goStageSelect(S.mode);
+        }
+      });
+    }
+    if (dom.resultChoose) {
+      dom.resultChoose.addEventListener('click', function () {
+        if (dom.screenResult) dom.screenResult.hidden = true;
+        goTitle();
+      });
+    }
+    if (dom.resultEnd) {
+      dom.resultEnd.addEventListener('click', function () {
+        if (dom.screenResult) dom.screenResult.hidden = true;
+        window.location.href = '../play.html';
+      });
+    }
+  }
+
+  // ============================================================
+  // 1280x720 fit-to-screen (proto 継承) + 縦画面ローテートヒントは CSS のみで制御
+  // ============================================================
+  function _fit() {
+    if (!dom.stage) return;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var scale = Math.min(vw / 1280, vh / 720);
+    dom.stage.style.transform = 'translate(-50%,-50%) scale(' + scale + ')';
+  }
+
+  // ============================================================
+  // splash (oto 型 4層 FOUC ガードの内、 表示制御/タップ解禁部分)
+  // ============================================================
+  var SPLASH_KEY = 'pono_mmath_splash_shown_v1';
+  function _initSplash() {
+    var splash = dom.splash;
+    if (!splash) return;
+    var shown = false;
+    try { shown = sessionStorage.getItem(SPLASH_KEY) === '1'; } catch (e) {}
+    if (shown) { splash.hidden = true; return; }
+    function dismiss(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      try { sessionStorage.setItem(SPLASH_KEY, '1'); } catch (e2) {}
+      splash.hidden = true;
+      splash.removeEventListener('pointerdown', dismiss);
+      splash.removeEventListener('click', dismiss);
+      splash.removeEventListener('keydown', onKey);
+      _resumeAudio();
+      narration.sayIfAuto('monster_math:common:welcome');
+    }
+    function onKey(e) { if (e.key === 'Enter' || e.key === ' ') dismiss(e); }
+    splash.addEventListener('pointerdown', dismiss);
+    splash.addEventListener('click', dismiss);
+    splash.addEventListener('keydown', onKey);
+  }
+
+  // ============================================================
+  // init
+  // ============================================================
+  function _init() {
+    _cacheDom();
+    _wireNav();
+    _initSplash();
+    _fit();
+    window.addEventListener('resize', _fit);
+    window.addEventListener('orientationchange', _fit);
+    goTitle();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init, { once: true });
+  } else {
+    _init();
+  }
+
+  // ============================================================
+  // export (SPEC §2.4 凍結契約)
+  // ============================================================
+  window.MM = {
+    registerMode: registerMode,
+    S: S,
+    ui: {
+      renderShelf: renderShelf,
+      renderFrame: renderFrame,
+      setMonster: setMonster,
+      bubble: bubble,
+      spotlight: spotlight,
+      lockInput: lockInput,
+      showResult: showResult
+    },
+    fx: {
+      flyClone: flyClone,
+      flyBack: flyBack,
+      confetti: confetti,
+      sfx: sfx
+    },
+    narration: narration,
+    progress: {
+      getStars: getStars,
+      commitRoundStar: commitRoundStar,
+      commitStageClear: commitStageClear
+    },
+    undo: {
+      push: undoPush,
+      popLastGently: popLastGently,
+      voluntary: voluntaryUndo,
+      popUntil: popUntil
+    },
+    mmTimeout: mmTimeout,
+    // ---- T0 段階の非契約ヘルパー (Impl 2-4 は依存しないこと。 統合フェーズで整理予定) ----
+    _MODE_ORDER: MODE_ORDER,
+    _MODE_CLEAR_STICKER: MODE_CLEAR_STICKER,
+    _SPECIAL_STICKER: SPECIAL_STICKER,
+    _currentScreenSignal: _currentScreenSignal,
+    _tutorialState: _tutorial,
+    _adaptiveState: _adaptive,
+    _bonusState: _bonus,
+    _saveAdaptive: function () { saveLS(LS_ADAPTIVE, _adaptive); },
+    _saveTutorial: function () { saveLS(LS_TUTORIAL, _tutorial); },
+    _saveBonus: function () { saveLS(LS_BONUS, _bonus); },
+    _goTitle: goTitle,
+    _goStageSelect: goStageSelect,
+    _goPlay: goPlay,
+    _goResult: goResult
+  };
+})();
