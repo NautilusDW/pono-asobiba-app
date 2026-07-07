@@ -6167,7 +6167,10 @@ const SK_INTRO_GUIDE_STEPS = [
 const SK_INTRO_VOICE_IDS = ['sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05'];
 const SK_INTRO_VOICE_GAP_MS = 600;
 const SK_INTRO_VOICE_FALLBACK_MS = 10000;
-const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v1';
+// batch:1058 phase1: tut2 (見本→まねっこ) 台本に総入替。 旧 v1 で完走済みの
+// プレイヤーにも新チュートリアルを 1 回見せるため v2 にバンプ。
+const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v2';
+const BENTO_TUTORIAL_STORAGE_KEY_LEGACY = 'bento_tutorial_done_v1';
 const BENTO_COLOR_GUIDE_SKIP_KEY = 'bento_color_guide_skip_v1';
 // batch:1043 T4: タップ式完成 + おねがいモード展開後に両モードのチュートリアルを
 // 作り直すまで一時停止 (現行チュートリアルは D&D 前提の旧台本 + 旧おねがいモード要素混在のため)。
@@ -6175,7 +6178,8 @@ const BENTO_COLOR_GUIDE_SKIP_KEY = 'bento_color_guide_skip_v1';
 // チュートリアルの実装コード自体は削除しない (作り直し時に state machine を再利用する)。
 // ※ おねがいモードの回ごとの 3 色ガイド (sk-intro / bento_color_guide_skip_v1) は
 //    チュートリアルとは別物なので、この pause の影響を受けず従来どおり表示する。
-const BENTO_TUTORIAL_PAUSED = true;
+// batch:1058 phase1: tut2 台本の実装解除に伴い pause 解除 (2026-07-07)
+const BENTO_TUTORIAL_PAUSED = false;
 let skIntroGuideTimer = null;
 let skIntroGuideIndex = 0;
 function stopSkIntroGuide() {
@@ -9494,33 +9498,33 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1457-gemini31-free-nori-size1-tomato';
+// batch:1058 phase1: tut2 台本用の新 cache-buster (mock 段階のため mp3 は未配置、
+// silent-mode で fallbackMs タイマーによる自動遷移で全ステップ動く)。
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1600-tut2-mock';
+// batch:1058 phase1: phase1 は音声未収録の mock 段階。 true の間は playBentoTutorialVoice が
+// 実 Audio を作らず fallbackMs タイマーだけで onEnded を発火する (視覚のみ動作確認可能)。
+// 音声収録 + faster-whisper 照合完了後に false に戻し、 mp3 を配置してリリース。
+const BENTO_TUTORIAL_MOCK_VOICE = true;
 const BENTO_TUTORIAL_STEP_VOICE = {
-  box: 'basic_tut_01',
-  'rice-place': 'basic_tut_02',
-  decor: 'basic_tut_03',
-  'nori-ok': 'basic_tut_04',
-  'okazu-red': 'basic_tut_05',
-  'okazu-overlap': 'basic_tut_06',
-  'layer-edit': 'basic_tut_07',
-  'move-requested-food': 'basic_tut_08',
-  'small-accessory': 'basic_tut_09',
-  // v1497 cup-first: cup-edit / cup-edit-try (サイズ①→OK 教習, basic_tut_10/11) は廃止。
-  // カップ配置で おかずピッカーが自動で開く新 UX に合わせ、 small-cup-food へ直行する。
-  // basic_tut_10.mp3 / basic_tut_11.mp3 はディスク上に残置 (再利用可能)。
-  'small-cup-food': 'basic_tut_12',
-  'small-next': 'basic_tut_13',
-  // v1375: okazu-more はバブル + Pono callout で案内。 専用ナレ ID は割り当てない
-  // (basic_tut_14 は complete-result 「これで おべんとうが かんせいしたよ」 で既使用済み)。
-  // v1380: 別ファイル名 okazu_more_01 で専用ナレを追加 (basic_tut_14 衝突回避)。
-  // v1497 cup-first: ボタン名が「ちいさい おかずへ」→「カップへ」に変わったため
-  // 新録 okazu_more_02 (『カップへ』を おしてね) に差替。 okazu_more_01.mp3 は残置。
-  'okazu-more': 'okazu_more_02',
-  // v1416: complete-result の保存ボタン案内ナレを basic_tut_15 から
-  // favorite_save_01 「おきにいりに とっておけるよ。 ほしマークを おしてね」 に差替。
-  // step ID は 'favorite-save' (現状 dispatch は voice ID 直渡しの chain 内なので
-  // map 経由 lookup されないが、 ナレ ID と step の対応を明文化する目的で登録)。
-  'favorite-save': 'favorite_save_01',
+  // batch:1058 phase1: tut2 (見本→まねっこ) 17 本。
+  // docs/BENTO_TUTORIAL_SCRIPT.md §3 の generation list と 1:1 対応。
+  'tut2-greet': 'tut2_01_greet',
+  'tut2-box': 'tut2_02_box',
+  'tut2-rice': 'tut2_03_rice',
+  'tut2-nori-face-eyes': 'tut2_04a_eyes',
+  'tut2-nori-face-mouth-nose': 'tut2_04b_mouth_nose',
+  'tut2-nori-move': 'tut2_05_norimove',
+  'tut2-nori-edit': 'tut2_06_noriedit',
+  'tut2-okazu-main': 'tut2_07_okazu',
+  'tut2-cup-btn': 'tut2_08_cupbtn',
+  'tut2-cup-place': 'tut2_09_cup',
+  'tut2-cup-food': 'tut2_10_cupfood',
+  'tut2-tabs-intro': 'tut2_11_tabs',
+  'tut2-okazu-ok': 'tut2_12_okazuok',
+  'tut2-complete': 'tut2_13_complete',
+  'tut2-favorite': 'tut2_14_fav',
+  'tut2-w2-request': 'tut2_15_request',
+  'tut2-w3-deliver': 'tut2_16_deliver',
 };
 let bentoTutorialVoiceAudio = null;
 function stopBentoTutorialVoice() {
@@ -9544,8 +9548,10 @@ function playBentoTutorialVoice(id, opts = {}) {
   // v1410: 大量診断ログ — cup-edit-try ナレ不再生の切り分け用
   try { _bentoDebugLog('[bento-debug] playBentoTutorialVoice called', { id: id, hasOpts: !!opts, fallbackMs: opts && opts.fallbackMs, hasOnEnded: !!(opts && opts.onEnded), hasCuePoints: !!(opts && Array.isArray(opts.cuePoints)) }); } catch (_) {}
   if (!id) return null;
-  if (isMaskEditorAudioMuted()) {
-    try { _bentoDebugLog('[bento-debug] skip: muted (isMaskEditorAudioMuted=true)', { id: id }); } catch (_) {}
+  // batch:1058 phase1: MOCK_VOICE モード中は実 Audio を作らず fallbackMs タイマーだけで
+  // onEnded を発火する。 音声未収録でも視覚チュートリアルが最後まで走る。
+  if (BENTO_TUTORIAL_MOCK_VOICE || isMaskEditorAudioMuted()) {
+    try { _bentoDebugLog('[bento-debug] skip: mock/muted', { id: id, mock: BENTO_TUTORIAL_MOCK_VOICE }); } catch (_) {}
     if (typeof opts.onEnded === 'function') {
       setTimeout(opts.onEnded, opts.fallbackMs || 5000);
     }
@@ -10015,7 +10021,8 @@ function isFreeMainGuideDismissed() {
 }
 function isFreeMainGuideSuppressedByTutorial() {
   try {
-    return !!(tutorialState && tutorialState.active && tutorialState.step !== 'box');
+    // batch:1058 phase1: tut2 台本は "box" 相当の step が tut2-box。 それ以外は suppress。
+    return !!(tutorialState && tutorialState.active && tutorialState.step !== 'tut2-box');
   } catch (_) {
     return false;
   }
@@ -10175,53 +10182,60 @@ function getTutorialPaletteAllowance(def) {
   const id = String(def.id || '');
   const name = String(def.name || '').trim();
   const deny = (message) => ({ allowed: false, message });
-  if (step === 'box') {
+  // batch:1058 phase1: tut2 (見本→まねっこ) 台本用ガード。
+  if (step === 'tut2-box') {
     return id === 'box_rect_split' ? ok : deny('きょうは このはこを つかうよ');
   }
-  if (step === 'rice-place') {
+  if (step === 'tut2-rice') {
     return def.type === 'rice_auto' || def.type === 'rice'
       ? ok
       : deny('ごはんを いれようね');
   }
-  if (step === 'decor') {
-    return def.type === 'decor'
+  if (step === 'tut2-nori-face-eyes') {
+    // ラウンド1 (おめめ×2): nori_eye_round 以外は soft deny (期待品目を待つ)。
+    return def.type === 'decor' && id === 'nori_eye_round'
       ? ok
-      : deny('のりを ごはんに のせようね');
+      : deny('おめめを タップしてね');
   }
-  if (step === 'okazu-red') {
-    const requested = String(tutorialGetRequestedFoodLabel ? tutorialGetRequestedFoodLabel() : '').trim();
-    return def.type === 'food' && name === requested
+  if (step === 'tut2-nori-face-mouth-nose') {
+    // ラウンド2 (はな→くち): noriQueue の現在期待品目のみ許可。
+    const expected = (tutorialState.noriQueue && tutorialState.noriQueue[tutorialState.noriIdx || 0]) || 'nori_nose_bear';
+    return def.type === 'decor' && id === expected
       ? ok
-      : deny((requested || 'おねがいの おかず') + 'を いれようね');
+      : deny(expected === 'nori_nose_bear' ? 'おはなを タップしてね' : 'おくちを タップしてね');
   }
-  if (step === 'okazu-overlap') {
-    return def.type === 'food' && name === 'ハンバーグ'
+  if (step === 'tut2-nori-move' || step === 'tut2-nori-edit') {
+    // 追加配置 (のり) は任意で許可 (待つ)。 それ以外は otro.
+    return def.type === 'decor' ? ok : deny('のりを うごかそう');
+  }
+  if (step === 'tut2-okazu-main') {
+    // オーナー方針: おかず (メイン) は自由。 food 全体 (main role) を許可。
+    return (def.type === 'food' && !def.brushItem)
       ? ok
-      : deny('ハンバーグを いれようね');
+      : deny('メインの おかずを えらんでね');
   }
-  if (step === 'small-accessory') {
-    return def.type === 'cup' && id === 'cup_blue_dot'
+  if (step === 'tut2-cup-btn') {
+    // ボタン待ち — カップ以外の palette は soft deny (追加 main は許容してもよいが
+    // 遷移フックが cup-btn 押下限定なので混乱を避けるため deny)。
+    return (def.type === 'food' && !def.brushItem)
       ? ok
-      : deny('みずたまカップを つかうよ');
+      : deny('「カップへ」を おしてね');
   }
-  if (step === 'small-cup-food') {
-    return def.type === 'food' && name === 'プチトマト'
+  if (step === 'tut2-cup-place') {
+    return def.type === 'cup' ? ok : deny('カップを おこう');
+  }
+  if (step === 'tut2-cup-food') {
+    // ピッカー内おかず (side 相当) を自由選択で許可。
+    return def.type === 'food' ? ok : deny('すきな おかずを えらんでね');
+  }
+  if (step === 'tut2-tabs-intro' || step === 'tut2-okazu-ok') {
+    // 追加配置 (main/cup/food) は自由。 タブ操作待ち or ボタン待ち。
+    return (def.type === 'food' || def.type === 'cup' || def.type === 'leaf' || def.type === 'divider' || def.type === 'pick')
       ? ok
-      : deny('プチトマトを いれようね');
+      : deny('タブや「おかずOK」を みてみよう');
   }
-  if (step === 'okazu-more') {
-    // v1500 FIX5: ナレ okazu_more_02 「すきな おかずを もっと いれても いいよ」と整合させ、
-    // メインおかずだけ追加配置を許可 (gate は main>=1 なので余剰 main は無害。
-    // tutorialOnItemPlaced も okazu-more では進行フックを持たずカウントのみ)。
-    return (def.type === 'food' && (def.okazuRole || getOkazuRole(def)) === 'main')
-      ? ok
-      : deny('「カップへ」の ボタンを おしてね');
-  }
-  // v1497 cup-first: cup-edit / cup-edit-try / layer-done / tab-small / tab-small-food /
-  // small-place / cup-ok / small-edit / small-edit-try / complete は廃止済み step。
   if ([
-    'greet', 'tab-rice', 'nori-ok', 'tab-okazu', 'layer-edit', 'layer-edit-try',
-    'move-requested-food', 'small-next', 'complete-result', 'done'
+    'tut2-greet', 'tut2-complete', 'tut2-favorite', 'tut2-w2-request', 'tut2-w3-deliver', 'done'
   ].includes(step)) {
     return deny('いまは おてほんの とおりに すすもうね');
   }
@@ -13462,11 +13476,11 @@ function eventToFreePoint(e) {
 function canMoveFreeItemInCurrentTutorial(item) {
   if (!tutorialState || !tutorialState.active || simpleBentoMode) return true;
   if (!item) return false;
-  if (tutorialState.step === 'move-requested-food') {
-    const requested = tutorialFindPlacedRequestedFoodItem();
-    return !!requested && requested.uid === item.uid;
-  }
-  return false;
+  // batch:1058 phase1: tut2 では nori-move step で全 decor を移動許可、
+  // それ以外の tut2 step でも自由 (追加配置した decor/food/cup を子供が動かせるように)。
+  // 唯一動かしてほしくないのは rice (削除は canRemoveFreeItemNow で別途ブロック済み)。
+  if (item.type === 'rice') return false;
+  return true;
 }
 function beginFreeItemDrag(e, uid) {
   if (e && e.cancelable) e.preventDefault();
@@ -13718,12 +13732,9 @@ function createFreePaletteDragGhost(def, e) {
   updateFreePaletteDragGhost(e);
 }
 function tutorialShouldLockCupDrop(def) {
-  return !!(
-    tutorialState.active
-    && tutorialState.step === 'small-accessory'
-    && def
-    && def.snapTarget
-  );
+  // batch:1058 phase1: tut2-cup-place はオーナー方針で「自由 (どこに置いてもよい)」。
+  // 旧 small-accessory の cup drop lock は撤去 (step id 自体廃止済み)。
+  return false;
 }
 function tutorialLockCupDropToTarget(def, uid) {
   if (!tutorialShouldLockCupDrop(def)) return true;
@@ -14264,6 +14275,14 @@ function getSimpleRequiredRemovalRole(item) {
 }
 function canRemoveFreeItemNow(item, opts = {}) {
   if (!simpleBentoMode || !item) return true;
+  // batch:1058 phase1: tut2 中は ごはん削除をブロック (docs §5 P1 ガード)。
+  // rice を消すと のりOK 押下で rice step へ差し戻され tutorialState と desync する。
+  if (item.type === 'rice' && typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
+    if (!opts.silent) {
+      try { showToast('いまは ごはんは のこしておこう'); } catch (_) {}
+    }
+    return false;
+  }
   const role = getSimpleRequiredRemovalRole(item);
   if (role !== 'main' && role !== 'side') return true;
   const requiredStep = getOkazuGuideStepForRole(getItemTier(item), role);
@@ -14328,6 +14347,8 @@ function rotateSelectedItem(deltaAngle) {
   let next = ((item.rotation || 0) + deltaAngle) % 360;
   if (next < 0) next += 360;
   item.rotation = next;
+  // batch:1058 phase1: tut2-nori-move 中は編集パネル操作 (回転) も move 相当として進行させる。
+  try { if (typeof tutorialOnItemMoved === 'function') tutorialOnItemMoved(item.uid); } catch (_) {}
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -14424,6 +14445,8 @@ function scaleSelectedDecorItem(factor) {
     ? clampPointToRice(item.x, item.y, item)
     : clampPointToFreeItemBounds(item.x, item.y, item);
   item.x = p.x; item.y = p.y;
+  // batch:1058 phase1: tut2-nori-move 中は編集パネル操作 (サイズ) も move 相当として進行させる。
+  try { if (typeof tutorialOnItemMoved === 'function') tutorialOnItemMoved(item.uid); } catch (_) {}
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
@@ -14958,8 +14981,8 @@ function resetSimpleBentoBuildForBoxChange() {
   resetFreeMainGuide();
 }
 function selectFreeBentoBox(id) {
-  // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-  // isBentoBoxUnlocked() always returns true so this branch is unreachable.
+  // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+  // This comment is a stale holdover from when the flag was false (MVP all-unlocked); isBentoBoxUnlocked() can now return false per tier, so this branch is live code, not dead code.
   if (window.PonoTier && !window.PonoTier.isBentoBoxUnlocked(id)) {
     if (typeof window.PonoTier.showTierLockPromo === 'function') {
       window.PonoTier.showTierLockPromo();
@@ -15010,17 +15033,19 @@ function selectFreeBentoBox(id) {
 }
 function confirmFreeBentoBoxSelection() {
   if (freeGuideStep !== 'box') return;
-  if (typeof tutorialState !== 'undefined' && tutorialState.active && tutorialState.step === 'greet') {
+  // batch:1058 phase1: tut2 の greet 系 (tut2-greet / tut2-w2-request) 中は「はじめる」待ち。
+  if (typeof tutorialState !== 'undefined' && tutorialState.active
+      && (tutorialState.step === 'tut2-greet' || tutorialState.step === 'tut2-w2-request')) {
     try { if (typeof showToast === 'function') showToast('まず「はじめる」を おしてね'); } catch (_) {}
     return;
   }
   const box = getSelectedBentoBox();
   setSpeech(box.name + 'で つくろう！');
   setFreeGuideStep('rice');
-  // v3.1: tutorial の box step は「これでOK」と一本化。 ボタン押下でチュートリアルも前進。
-  if (typeof tutorialState !== 'undefined' && tutorialState.active && tutorialState.step === 'box') {
+  // batch:1058 phase1: tut2-box 押下 → tut2-rice へ (tab-rice step は tut2 では廃止)。
+  if (typeof tutorialState !== 'undefined' && tutorialState.active && tutorialState.step === 'tut2-box') {
     tutorialClearBoxLock();
-    tutorialAdvance('tab-rice');
+    tutorialAdvance('tut2-rice');
   }
 }
 function createFreeVisual(item) {
@@ -16266,8 +16291,9 @@ function makeFreePaletteButton(def) {
   if (freeLayoutTab === 'box') {
     bindFreePalettePress(btn, e => {
       if (!showTutorialPaletteLockToast(def)) return;
-      // Phase 2 future-use: bento box tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-      // def.tierLocked is always false so this branch is unreachable.
+      // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+      // def.tierLocked is computed from window.PonoTier.isBentoBoxUnlocked() (live tier gate),
+      // so it can be true for free/book tier and this branch is live code, not dead code.
       if (def.tierLocked && window.PonoTier) {
         if (typeof window.PonoTier.showTierLockPromo === 'function') {
           window.PonoTier.showTierLockPromo();
@@ -16288,8 +16314,9 @@ function makeFreePaletteButton(def) {
     // (addSimpleFreePaletteItem → addSimpleFixedPaletteItem) に一本化 (ghost タップ配置は stage 側で維持)。
     bindFreePalettePress(btn, e => {
       if (!showTutorialPaletteLockToast(def)) return;
-      // Phase 2 future-use: decoration/food tier lock. In MVP (PONO_TIER_GAME_LOCKS_ENABLED=false),
-      // def.tierLocked is always false so this branch is unreachable.
+      // NOTE: common/tier.js has run with PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 active) since 2026-06-28.
+      // def.tierLocked is computed from window.PonoTier.isBentoFoodUnlocked() (live tier gate),
+      // so it can be true for free/book tier and this branch is live code, not dead code.
       if (def.tierLocked && window.PonoTier) {
         if (typeof window.PonoTier.showTierLockPromo === 'function') {
           window.PonoTier.showTierLockPromo();
@@ -16953,15 +16980,13 @@ function tryFinishOkazuTier(tier) {
     try {
       if (typeof tutorialState !== 'undefined'
           && tutorialState && tutorialState.active
-          && tutorialState.step === 'okazu-more'
+          && (tutorialState.step === 'tut2-cup-btn' || tutorialState.step === 'tut2-okazu-main')
           && typeof tutorialAdvance === 'function') {
         freeLayoutTab = 'accessory';
         renderFreeLayoutControls();
-        // v1500 FIX6: okazu_more_02 (約8s) 再生中に「カップへ」を押すと advance が
-        // queue され、ロックされたカップパレット + 古い deny 案内が残る。
-        // ボタン起点の進行は声を止めて即時に進める。
+        // batch:1058 phase1: 長尺ナレ中でも即時進行 (v1500 FIX6 と同じ queue-lag 対策)。
         try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
-        tutorialAdvance('small-accessory');
+        tutorialAdvance('tut2-cup-place');
       }
     } catch (_) {}
     return;
@@ -17944,12 +17969,10 @@ function renderFreeLayoutControls() {
   //   appendChild される前に getter が null を返して silent fail する症状を回避)。
   try {
     if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
-      if (tutorialState.step === 'box') {
+      if (tutorialState.step === 'tut2-box') {
         if (typeof tutorialApplyBoxLock === 'function') tutorialApplyBoxLock();
-      } else if (tutorialState.step === 'small-cup-food') {
-        if (typeof tutorialApplySmallCupFoodLock === 'function') tutorialApplySmallCupFoodLock();
       }
-      // v1497 cup-first: cup-edit / cup-edit-try の mark 再 apply は step 廃止に伴い撤去。
+      // batch:1058 phase1: tut2 の cup-food は自由選択なのでロック不要 (旧 small-cup-food ロックは撤去)。
     }
   } catch (_) {}
 
@@ -18765,7 +18788,10 @@ function stageComplete() {
       try {
         if (!simpleBentoMode && window.__bentoTutorialPendingMode
             && typeof tutorialState !== 'undefined' && tutorialState) {
-          if (tutorialState.active && tutorialState.step === 'complete-result'
+          // batch:1058 phase1: tut2 の complete / favorite / deliver 段階で × 押下も完走扱い。
+          const s = tutorialState.step;
+          if (tutorialState.active
+              && (s === 'tut2-complete' || s === 'tut2-favorite' || s === 'tut2-w3-deliver')
               && typeof tutorialMarkDone === 'function') {
             tutorialMarkDone();
           }
@@ -19345,6 +19371,19 @@ const TUTORIAL_STORAGE_KEY = BENTO_TUTORIAL_STORAGE_KEY;
 const tutorialState = {
   active: false,
   step: null,
+  // batch:1058 phase1: tut2 (見本→まねっこ) 台本用の phase / queue state。
+  //   phase: 'demo' | 'try' — Phase A (見本) は 'demo'、 Phase B (まねっこ) は 'try'
+  //   noriQueue / noriIdx: Step 4A/4B の固定シーケンス (docs §5)。
+  //   ghostLayerEl / _ghostTimers: ゴースト item 描画用の tutorial 専用レイヤー。
+  //   _phaseATimer: Phase A → Phase B の自動遷移タイマー。
+  //   mode: 'simple' | 'request' — wrapper ステップの分岐用。
+  phase: 'demo',
+  noriQueue: null,
+  noriIdx: 0,
+  ghostLayerEl: null,
+  _ghostTimers: [],
+  _phaseATimer: null,
+  mode: 'simple',
   okazuPlacedCount: 0,
   cupPlacedCount: 0,
   cupChildCount: 0,
@@ -19390,6 +19429,8 @@ function tutorialReadDone() {
   try {
     if (isTutorialResetRequested()) {
       localStorage.removeItem(TUTORIAL_STORAGE_KEY);
+      // batch:1058 phase1: legacy v1 も同時掃除
+      localStorage.removeItem(BENTO_TUTORIAL_STORAGE_KEY_LEGACY);
       localStorage.removeItem('bento_sk_intro_done');
       localStorage.removeItem('bento_tut_seen');
       localStorage.removeItem('bento_tut_seen_v2');
@@ -19866,9 +19907,12 @@ function tutorialShowGroupIntroThen(nextStep) {
   const resume = () => {
     window.__bentoSkIntroShownThisRun = true;
     markBentoSkIntroSeen();
-    if (!tutorialState.active || tutorialState.step !== 'greet') return;
+    // batch:1058 phase1: tut2-greet / tut2-w2-request 両方から呼べる。
+    const s = tutorialState.step;
+    if (!tutorialState.active || (s !== 'tut2-greet' && s !== 'tut2-w2-request')) return;
     setTimeout(() => {
-      if (tutorialState.active && tutorialState.step === 'greet') tutorialAdvance(nextStep);
+      const s2 = tutorialState.step;
+      if (tutorialState.active && (s2 === 'tut2-greet' || s2 === 'tut2-w2-request')) tutorialAdvance(nextStep);
     }, 0);
   };
   btn.addEventListener('click', resume, { once: true });
@@ -20272,7 +20316,8 @@ function tutorialResetInactivity() {
 }
 // 強制選択 + 他のお弁当箱パレットを .tut-locked で disabled
 function tutorialApplyBoxLock() {
-  if (tutorialState.step !== 'box') return;
+  // batch:1058 phase1: tut2-box に step id 変更。
+  if (tutorialState.step !== 'tut2-box') return;
   // 1) box_rect_split を強制選択
   try {
     if (typeof selectedBentoBoxId !== 'undefined' && selectedBentoBoxId !== 'box_rect_split') {
@@ -20737,9 +20782,208 @@ function tutorialOnTabSwitch(tabId) {
       tutorialAdvance(nextStep);
     }));
   };
-  if (s === 'tab-rice' && tabId === 'rice') advance('rice-place');
-  else if (s === 'tab-okazu' && tabId === 'food') advance('okazu-red');
-  // v1497 cup-first: tab-small / tab-small-food step は廃止 (side は カップ先頭タブ + ピッカー直行)。
+  // batch:1058 phase1: tut2 台本では tab-rice/tab-okazu step は廃止。
+  // tut2-tabs-intro 中に leaf/divider タブへ触ったら okazu-ok へ進める。
+  if (s === 'tut2-tabs-intro' && (tabId === 'leaf' || tabId === 'divider')) {
+    advance('tut2-okazu-ok');
+  }
+}
+
+// batch:1058 phase1: tut2 見本→まねっこ 用ヘルパー ================================
+
+// ghost layer は #free-layout-stage の子として貼る (履歴/gate 非影響、 pointer-events:none)。
+function tutorialEnsureGhostLayer() {
+  const stage = document.getElementById('free-layout-stage');
+  if (!stage) return null;
+  let layer = tutorialState.ghostLayerEl;
+  if (layer && layer.parentNode === stage) return layer;
+  if (layer && layer.parentNode) {
+    try { layer.parentNode.removeChild(layer); } catch (_) {}
+  }
+  layer = document.createElement('div');
+  layer.id = 'tut-ghost-layer';
+  layer.style.position = 'absolute';
+  layer.style.inset = '0';
+  layer.style.pointerEvents = 'none';
+  layer.style.zIndex = '8000';
+  stage.appendChild(layer);
+  tutorialState.ghostLayerEl = layer;
+  return layer;
+}
+function tutorialClearGhostLayer() {
+  if (tutorialState._ghostTimers && tutorialState._ghostTimers.length) {
+    tutorialState._ghostTimers.forEach(id => clearTimeout(id));
+    tutorialState._ghostTimers = [];
+  }
+  const layer = tutorialState.ghostLayerEl;
+  if (layer) {
+    try { while (layer.firstChild) layer.removeChild(layer.firstChild); } catch (_) {}
+  }
+}
+// Free-layout normalized coords → percentage relative to #free-layout-stage.
+// FREE_LAYOUT_W=760, FREE_LAYOUT_H=460。
+function tutorialGhostPctX(freeX) { return (freeX / FREE_LAYOUT_W) * 100; }
+function tutorialGhostPctY(freeY) { return (freeY / FREE_LAYOUT_H) * 100; }
+function tutorialGhostPctSize(freeSize) { return (freeSize / FREE_LAYOUT_W) * 100; }
+// { imgSrc, freeX, freeY, freeSize, rotation, ttlMs } の ghost <img> を貼る。
+function tutorialShowGhostItem(opts) {
+  if (!opts || !opts.imgSrc) return null;
+  const layer = tutorialEnsureGhostLayer();
+  if (!layer) return null;
+  const img = document.createElement('img');
+  img.src = opts.imgSrc;
+  img.alt = '';
+  img.draggable = false;
+  img.style.position = 'absolute';
+  const size = opts.freeSize || 120;
+  img.style.width = tutorialGhostPctSize(size) + '%';
+  img.style.height = 'auto';
+  img.style.left = tutorialGhostPctX(opts.freeX || 0) + '%';
+  img.style.top = tutorialGhostPctY(opts.freeY || 0) + '%';
+  const rot = opts.rotation || 0;
+  img.style.transform = 'translate(-50%, -50%) rotate(' + rot + 'deg)';
+  img.style.opacity = '0.6';
+  img.style.pointerEvents = 'none';
+  img.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))';
+  layer.appendChild(img);
+  if (opts.ttlMs && opts.ttlMs > 0) {
+    const id = setTimeout(() => {
+      try { if (img.parentNode) img.parentNode.removeChild(img); } catch (_) {}
+    }, opts.ttlMs);
+    tutorialState._ghostTimers.push(id);
+  }
+  return img;
+}
+// Phase A → Phase B 自動遷移タイマー (state guard + step guard 付き)。
+function tutorialSetPhaseATimer(step, delay, fn) {
+  if (tutorialState._phaseATimer) {
+    clearTimeout(tutorialState._phaseATimer);
+    tutorialState._phaseATimer = null;
+  }
+  tutorialState._phaseATimer = setTimeout(() => {
+    tutorialState._phaseATimer = null;
+    if (!tutorialState.active || tutorialState.step !== step) return;
+    try { fn(); } catch (_) {}
+  }, delay);
+}
+function tutorialClearPhaseATimer() {
+  if (tutorialState._phaseATimer) {
+    clearTimeout(tutorialState._phaseATimer);
+    tutorialState._phaseATimer = null;
+  }
+}
+// パレット dim: 期待品目 (predicate) 以外の palette item に .tut-locked を付ける。
+function tutorialApplyPaletteFocus(predicate) {
+  const buttons = document.querySelectorAll('.free-item-list .free-palette-item');
+  buttons.forEach((btn) => {
+    let expected;
+    try { expected = predicate(btn); } catch (_) { expected = false; }
+    if (expected) {
+      btn.classList.remove('tut-locked');
+      btn.classList.add('tut-focus-target');
+    } else {
+      btn.classList.add('tut-locked');
+      btn.classList.remove('tut-focus-target');
+    }
+  });
+}
+function tutorialClearPaletteFocus() {
+  document.querySelectorAll('.free-palette-item.tut-locked, .free-palette-item.tut-focus-target').forEach(el => {
+    el.classList.remove('tut-locked');
+    el.classList.remove('tut-focus-target');
+  });
+}
+// おかず palette 先頭の main food (brushItem 除外)。
+function tutorialFindMainOkazuPaletteEl() {
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
+  const btns = document.querySelectorAll('.free-item-list .free-palette-item');
+  for (const b of btns) {
+    if (b.classList.contains('tier-locked')) continue;
+    if (b.dataset && b.dataset.itemId && b.dataset.itemId.indexOf('brush') >= 0) continue;
+    return b;
+  }
+  return btns[0] || null;
+}
+// カップ内 side food ピッカーの palette 先頭。
+function tutorialFindCupSideFoodPaletteEl() {
+  return document.querySelector('.free-cup-editor-actions + .free-item-list .free-palette-item')
+      || document.querySelector('.free-item-list .free-palette-item');
+}
+// カップパレットの先頭 (accessory タブの cup 品目)。
+function tutorialFindFirstCupPaletteEl() {
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'accessory') return null;
+  const btns = document.querySelectorAll('.free-item-list .free-palette-item');
+  for (const b of btns) {
+    if (b.classList.contains('tier-locked')) continue;
+    return b;
+  }
+  return btns[0] || null;
+}
+// のり palette から指定 id の item を探す (dim 対象決定に使う)。
+function tutorialFindNoriPaletteById(itemId) {
+  if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'decor') return null;
+  const btns = document.querySelectorAll('.free-item-list .free-palette-item');
+  for (const b of btns) {
+    if (b.dataset && b.dataset.itemId === itemId) return b;
+  }
+  return null;
+}
+// 「これでOK」ボタン / 「のりOK」 / 「カップへ」 / 「おかずOK」 検出ヘルパー。
+function tutorialFindBoxConfirmBtn() {
+  return document.getElementById('free-box-confirm');
+}
+function tutorialFindCupToBtn() {
+  const btns = document.querySelectorAll('.free-action-row button.primary, .free-guide-actions button.primary');
+  for (const b of btns) {
+    const t = (b.textContent || '').replace(/\s+/g, '');
+    if (t.indexOf('カップへ') >= 0) return b;
+  }
+  return null;
+}
+function tutorialFindOkazuOkBtn() {
+  const btns = document.querySelectorAll('.free-guide-actions button, .free-action-row button.primary');
+  for (const b of btns) {
+    const t = (b.textContent || '').replace(/\s+/g, '');
+    if (t.indexOf('おかずOK') >= 0 || t.indexOf('2だんめOK') >= 0 || t.indexOf('3だんめOK') >= 0) return b;
+  }
+  return null;
+}
+function tutorialFindSaveFavBtn() {
+  const b = document.getElementById('save-fav-btn');
+  if (b && !b.classList.contains('hidden-pre')) return b;
+  return null;
+}
+// 置いたのりを 1 つ選ぶ (Phase A で「くち」等をターゲットにするため)。
+function tutorialFindFirstPlacedDecor() {
+  const items = (typeof placedItems !== 'undefined' && placedItems) ? placedItems : [];
+  const decor = items.find(i => i && i.type === 'decor');
+  if (!decor) return null;
+  const el = document.querySelector('[data-free-uid="' + decor.uid + '"]');
+  return { item: decor, el: el };
+}
+// のり ターゲットの absolute screen point (Phase A の finger 先端 target 用)。
+function tutorialNoriTargetScreenPoint(clusterX, clusterY) {
+  // box 中心 -0.5..0.5 → free layout の rice spot 中心 + rice bounds 半径倍。
+  try {
+    const box = getSelectedBentoBox();
+    if (!box || !box.riceSpots || !box.riceSpots[0]) return null;
+    const spot = box.riceSpots[0];
+    // rice の実描画サイズ: autoRice.size または riceBounds の短辺。
+    const riceSize = (box.autoRice && box.autoRice.size) || Math.min(box.riceBounds.w, box.riceBounds.h) || 200;
+    const freeX = spot.x + clusterX * riceSize;
+    const freeY = spot.y + clusterY * riceSize;
+    return tutorialFreePointToScreenPoint({ x: freeX, y: freeY });
+  } catch (_) { return null; }
+}
+// のり ターゲットの free layout coords (ghost 描画用)。
+function tutorialNoriTargetFreePoint(clusterX, clusterY) {
+  try {
+    const box = getSelectedBentoBox();
+    if (!box || !box.riceSpots || !box.riceSpots[0]) return null;
+    const spot = box.riceSpots[0];
+    const riceSize = (box.autoRice && box.autoRice.size) || Math.min(box.riceBounds.w, box.riceBounds.h) || 200;
+    return { x: spot.x + clusterX * riceSize, y: spot.y + clusterY * riceSize };
+  } catch (_) { return null; }
 }
 
 // state 遷移ヘルパ。 タイマー進行は禁止。 これと item-placed/button のみが進行口。
@@ -20802,6 +21046,11 @@ function tutorialAdvance(nextStep) {
   tutorialClearTargetCircle();
   tutorialHideFinger();
   tutorialHidePointingHand();
+  // batch:1058 phase1: tut2 phase / ghost / palette focus も step 遷移で必ず掃除。
+  tutorialClearPhaseATimer();
+  tutorialClearGhostLayer();
+  tutorialClearPaletteFocus();
+  tutorialState.phase = 'demo';
   tutorialState.renderedStep = null;
   if (tutorialState._layerDoneTimer) {
     clearTimeout(tutorialState._layerDoneTimer);
@@ -20889,8 +21138,420 @@ function tutorialUninstallPaletteObserver() {
     tutorialState._retryTimer = null;
   }
 }
-// v3: button/tab/place-driven step renderer.
-// Each step is idempotent — re-rendering on resize must not double-bind handlers.
+// batch:1058 phase1: tut2 (見本→まねっこ) 台本用の宣言的ステップ定義 + dispatcher。
+// 各 step は {id, single, phaseAMs, renderPhaseA, renderPhaseB} を持つ。
+// single=true のステップは Phase A/B 分離なし (button-only or intro)。
+// renderPhaseA / renderPhaseB は (step, ts) => void で受ける。
+// 音声は BENTO_TUTORIAL_STEP_VOICE から自動 lookup。
+const TUT2_ASSET_BASE = '../assets/images/bento_freelayout/';
+const TUT2_STEPS = [
+  { id: 'tut2-greet', single: true, fallbackMs: 8000, renderPhaseB: tut2RenderGreet },
+  { id: 'tut2-box', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderBox },
+  { id: 'tut2-rice', phaseAMs: 2200, fallbackMs: 7000, renderPhaseA: tut2RenderRicePhaseA, renderPhaseB: tut2RenderRicePhaseB },
+  { id: 'tut2-nori-face-eyes', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
+  { id: 'tut2-nori-face-mouth-nose', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
+  { id: 'tut2-nori-move', phaseAMs: 2500, fallbackMs: 6000, renderPhaseA: tut2RenderNoriMovePhaseA, renderPhaseB: tut2RenderNoriMovePhaseB },
+  { id: 'tut2-nori-edit', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderNoriEditPhaseA, renderPhaseB: tut2RenderNoriEditPhaseB },
+  { id: 'tut2-okazu-main', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderOkazuMainPhaseA, renderPhaseB: tut2RenderOkazuMainPhaseB },
+  { id: 'tut2-cup-btn', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderCupBtn },
+  { id: 'tut2-cup-place', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderCupPlacePhaseA, renderPhaseB: tut2RenderCupPlacePhaseB },
+  { id: 'tut2-cup-food', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderCupFoodPhaseA, renderPhaseB: tut2RenderCupFoodPhaseB },
+  { id: 'tut2-tabs-intro', single: true, fallbackMs: 6500, renderPhaseB: tut2RenderTabsIntro },
+  { id: 'tut2-okazu-ok', single: true, fallbackMs: 5500, renderPhaseB: tut2RenderOkazuOk },
+  { id: 'tut2-complete', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderComplete },
+  { id: 'tut2-favorite', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderFavorite },
+  // wrapper steps for request mode
+  { id: 'tut2-w2-request', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderW2Request },
+  { id: 'tut2-w3-deliver', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderW3Deliver },
+];
+function tut2FindStep(id) {
+  for (const s of TUT2_STEPS) if (s.id === id) return s;
+  return null;
+}
+
+// ---- Individual renderers ---------------------------------------------------
+
+function tut2RenderGreet(step) {
+  const html =
+    'いっしょに おべんとう つくろう！'
+    + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>'
+    + '<button class="tut-next-btn tut-stop-btn" id="tut-greet-stop">やめる</button>'
+    + '<label class="tut-skip-mini"><input type="checkbox" id="tut-skip-checkbox"><span>つぎから スキップする</span></label>';
+  tutorialShowBubble(html, { center: true });
+  tutorialHideFinger();
+  const btn = document.getElementById('tut-greet-next');
+  if (btn && !btn._tutBound) {
+    btn._tutBound = true;
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      const skip = document.getElementById('tut-skip-checkbox');
+      if (skip && skip.checked) {
+        markBentoTutorialsDone();
+        tutorialMarkDone();
+        tutorialResumePendingModeAfterExit();
+        return;
+      }
+      tutorialShowGroupIntroThen('tut2-box');
+    }, { once: true });
+  }
+  const stopBtn = document.getElementById('tut-greet-stop');
+  if (stopBtn && !stopBtn._tutBound) {
+    stopBtn._tutBound = true;
+    stopBtn.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      markBentoTutorialsDone();
+      tutorialMarkDone();
+      tutorialResumePendingModeAfterExit();
+    }, { once: true });
+  }
+}
+function tut2RenderW2Request(step) {
+  // W2 = greet と同じカード骨格。 request モード初回のみ。
+  const html =
+    'アライグマくんの おねがいだよ！'
+    + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>'
+    + '<button class="tut-next-btn tut-stop-btn" id="tut-greet-stop">やめる</button>'
+    + '<label class="tut-skip-mini"><input type="checkbox" id="tut-skip-checkbox"><span>つぎから スキップする</span></label>';
+  tutorialShowBubble(html, { center: true });
+  tutorialHideFinger();
+  const btn = document.getElementById('tut-greet-next');
+  if (btn && !btn._tutBound) {
+    btn._tutBound = true;
+    btn.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      const skip = document.getElementById('tut-skip-checkbox');
+      if (skip && skip.checked) {
+        markBentoTutorialsDone();
+        tutorialMarkDone();
+        tutorialResumePendingModeAfterExit();
+        return;
+      }
+      tutorialAdvance('tut2-box');
+    }, { once: true });
+  }
+  const stopBtn = document.getElementById('tut-greet-stop');
+  if (stopBtn && !stopBtn._tutBound) {
+    stopBtn._tutBound = true;
+    stopBtn.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      markBentoTutorialsDone();
+      tutorialMarkDone();
+      tutorialResumePendingModeAfterExit();
+    }, { once: true });
+  }
+}
+function tut2RenderBox(step) {
+  tutorialApplyBoxLock();
+  tutorialShowBubble('きょうは これを つかうよ<br>「これでOK」を おそう', { topVh: '14' });
+  tutorialPositionBubbleBelowBentoBox();
+  tutorialHideFinger();
+  const shape = document.querySelector('.free-bento-shape') || document.getElementById('free-layout-stage');
+  if (shape && !(tutorialState.trims || []).some(t => t.target === shape)) tutorialTrimPath(shape, { radius: 18 });
+  setTimeout(() => {
+    if (tutorialState.step !== 'tut2-box') return;
+    const okBtn = tutorialFindBoxConfirmBtn();
+    if (okBtn && !(tutorialState.trims || []).some(t => t.target === okBtn)) tutorialTrimPath(okBtn, { radius: 22 });
+    if (okBtn) tutorialAnimateTap(okBtn);
+  }, 40);
+}
+function tut2RenderRicePhaseA(step) {
+  tutorialShowBubble('こんなふうに ごはんが はいるよ', { topVh: '20' });
+  // Phase A: finger from rice palette button → target rice spot + ghost rice.
+  const riceBtn = tutorialFindRicePaletteEl();
+  const targetPoint = (function() {
+    try {
+      const box = getSelectedBentoBox();
+      if (!box || !box.autoRice) return tutorialStageCenter() ? tutorialStageRatioPoint(0.32, 0.5) : null;
+      return tutorialFreePointToScreenPoint({ x: box.autoRice.x, y: box.autoRice.y });
+    } catch (_) { return null; }
+  })();
+  if (riceBtn && targetPoint) tutorialAnimateDragFromEl(riceBtn, targetPoint, {});
+  // Ghost rice at target free coord.
+  try {
+    const box = getSelectedBentoBox();
+    if (box && box.autoRice) {
+      const ghostSrc = TUT2_ASSET_BASE + 'rice_base_round.webp';
+      tutorialShowGhostItem({
+        imgSrc: ghostSrc,
+        freeX: box.autoRice.x,
+        freeY: box.autoRice.y,
+        freeSize: box.autoRice.size || 200,
+        ttlMs: (step.phaseAMs || 2200) + 200,
+      });
+    }
+  } catch (_) {}
+}
+function tut2RenderRicePhaseB(step) {
+  tutorialShowBubble('おなじように、タップしてね', { topVh: '20' });
+  const riceBtn = tutorialFindRicePaletteEl();
+  if (riceBtn) {
+    tutorialMarkTarget(riceBtn, { radius: 12 });
+    tutorialAnimateTap(riceBtn);
+  }
+}
+// のり (Step 4A / 4B 共通レンダラー)。 noriQueue / noriIdx を見て挙動を分岐。
+function tut2RenderNoriPhaseA(step) {
+  // seed queue on first entry to each round.
+  if (!tutorialState.noriQueue || tutorialState.noriQueue._forStep !== step.id) {
+    if (step.id === 'tut2-nori-face-eyes') {
+      tutorialState.noriQueue = ['nori_eye_round', 'nori_eye_round'];
+    } else {
+      tutorialState.noriQueue = ['nori_nose_bear', 'nori_mouth_smile'];
+    }
+    tutorialState.noriQueue._forStep = step.id;
+    tutorialState.noriIdx = 0;
+  }
+  const expected = tutorialState.noriQueue[tutorialState.noriIdx] || tutorialState.noriQueue[0];
+  const bubbleText = (function() {
+    if (step.id === 'tut2-nori-face-eyes') {
+      return tutorialState.noriIdx === 0 ? 'まず おめめだよ' : 'もう ひとつ おめめ';
+    }
+    return tutorialState.noriIdx === 0 ? 'つぎは おはな' : 'さいごは おくち';
+  })();
+  tutorialShowBubble(bubbleText + '<br><span style="font-size:0.85em;opacity:0.7;">おてほんを みてね</span>', { topVh: '20', side: 'left' });
+  // Cluster coords per docs §5: 4A entries 0,1 (eyes); 4B entries 2,3 (nose, mouth).
+  const clusterCoords = (step.id === 'tut2-nori-face-eyes')
+    ? [{ x: -0.19, y: -0.24, size: 40, imgSrc: TUT2_ASSET_BASE + 'book_nori_eye_smile_20260703.png' },
+       { x:  0.19, y: -0.24, size: 40, imgSrc: TUT2_ASSET_BASE + 'book_nori_eye_smile_20260703.png' }]
+    : [{ x: 0, y: 0.01, size: 45, imgSrc: TUT2_ASSET_BASE + 'nori_nose_bear.png' },
+       { x: 0, y: 0.225, size: 100, imgSrc: TUT2_ASSET_BASE + 'nori_mouth_smile.png' }];
+  const coord = clusterCoords[tutorialState.noriIdx] || clusterCoords[0];
+  // Finger: palette → target screen point.
+  const palette = tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl();
+  const targetScreen = tutorialNoriTargetScreenPoint(coord.x, coord.y);
+  if (palette && targetScreen) tutorialAnimateDragFromEl(palette, targetScreen, {});
+  // Ghost.
+  const targetFree = tutorialNoriTargetFreePoint(coord.x, coord.y);
+  if (targetFree) {
+    tutorialShowGhostItem({
+      imgSrc: coord.imgSrc,
+      freeX: targetFree.x,
+      freeY: targetFree.y,
+      freeSize: coord.size,
+      ttlMs: (step.phaseAMs || 2400) + 200,
+    });
+  }
+}
+function tut2RenderNoriPhaseB(step) {
+  const expected = (tutorialState.noriQueue && tutorialState.noriQueue[tutorialState.noriIdx || 0]) || 'nori_eye_round';
+  const bubbleText = (function() {
+    if (step.id === 'tut2-nori-face-eyes') {
+      return tutorialState.noriIdx === 0 ? 'おめめを タップしてね' : 'もう ひとつ おめめ';
+    }
+    return tutorialState.noriIdx === 0 ? 'おはなを タップしてね' : 'おくちを タップしてね';
+  })();
+  tutorialShowBubble(bubbleText, { topVh: '20', side: 'left' });
+  tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === expected);
+  const palette = tutorialFindNoriPaletteById(expected);
+  if (palette) {
+    tutorialMarkTarget(palette, { radius: 12 });
+    tutorialAnimateTap(palette);
+  }
+}
+function tut2RenderNoriMovePhaseA(step) {
+  tutorialShowBubble('ゆびで うごかせるよ', { topVh: '20', side: 'left' });
+  const placed = tutorialFindFirstPlacedDecor();
+  if (placed && placed.el) {
+    const r = placed.el.getBoundingClientRect();
+    const from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const to = { x: from.x + 34, y: from.y + 4 };
+    tutorialAnimateDrag(from, to, {});
+  }
+}
+function tut2RenderNoriMovePhaseB(step) {
+  tutorialShowBubble('すきな ばしょまで<br>すーっと うごかしてね', { topVh: '20', side: 'left' });
+  const placed = tutorialFindFirstPlacedDecor();
+  if (placed && placed.el) {
+    tutorialMarkTarget(placed.el, { radius: 16 });
+    const r = placed.el.getBoundingClientRect();
+    const from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const to = { x: from.x + 30, y: from.y };
+    tutorialAnimateDrag(from, to, {});
+  }
+}
+function tut2RenderNoriEditPhaseA(step) {
+  tutorialShowBubble('ぽんと タップすると まわせるよ', { topVh: '20', side: 'left' });
+  const placed = tutorialFindFirstPlacedDecor();
+  if (placed && placed.item) {
+    try {
+      if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid);
+    } catch (_) {}
+    // After a beat, animate a tap on the rotate ↻ button (index 1 in edit panel).
+    setTimeout(() => {
+      if (tutorialState.step !== 'tut2-nori-edit') return;
+      const rotBtn = document.querySelector('.free-context-toolbar button');
+      if (rotBtn) tutorialAnimateTap(rotBtn);
+    }, 400);
+  }
+}
+function tut2RenderNoriEditPhaseB(step) {
+  tutorialShowBubble('できたら「のりOK」<br>を おそう', { topVh: '20', side: 'left' });
+  // Ring on のりOK button. Since freeGuideStep is still decor, we look at that button.
+  const noriOkBtn = tutorialNoriOkButton();
+  if (noriOkBtn) {
+    tutorialMarkTarget(noriOkBtn, { radius: 22, outline: false });
+    tutorialAnimateTap(noriOkBtn);
+  }
+}
+function tut2RenderOkazuMainPhaseA(step) {
+  tutorialShowBubble('こんなふうに おかずが はいるよ', { topVh: '20', side: 'left' });
+  const palette = tutorialFindMainOkazuPaletteEl();
+  const targetPoint = tutorialStageRatioPoint(0.62, 0.35);
+  if (palette && targetPoint) tutorialAnimateDragFromEl(palette, targetPoint, {});
+  // Ghost: pick a generic okazu img from palette if available.
+  try {
+    if (palette) {
+      const img = palette.querySelector('img');
+      if (img && img.src) {
+        tutorialShowGhostItem({
+          imgSrc: img.src,
+          freeX: FREE_LAYOUT_W * 0.62,
+          freeY: FREE_LAYOUT_H * 0.35,
+          freeSize: 110,
+          ttlMs: (step.phaseAMs || 2500) + 200,
+        });
+      }
+    }
+  } catch (_) {}
+}
+function tut2RenderOkazuMainPhaseB(step) {
+  tutorialShowBubble('すきなのを ひとつ、タップして<br>いれてみよう', { topVh: '20', side: 'left' });
+  // No lock — free choice. Just point at palette in general.
+  const palette = tutorialFindMainOkazuPaletteEl();
+  if (palette) {
+    tutorialAnimateTap(palette);
+  }
+}
+function tut2RenderCupBtn(step) {
+  tutorialShowBubble('「カップへ」を おしてね', { topVh: '18', side: 'left' });
+  const btn = tutorialFindCupToBtn();
+  if (btn) {
+    tutorialPositionBubbleBeside(btn, { gap: 12 });
+    tutorialMarkTarget(btn, { radius: 22, outline: false });
+    tutorialAnimateTap(btn);
+  }
+}
+function tut2RenderCupPlacePhaseA(step) {
+  tutorialShowBubble('カップを おこう', { topVh: '20', side: 'left' });
+  const palette = tutorialFindFirstCupPaletteEl();
+  const targetPoint = tutorialCupDemoScreenPoint();
+  if (palette && targetPoint) tutorialAnimateDragFromEl(palette, targetPoint, {});
+  try {
+    if (palette) {
+      const img = palette.querySelector('img');
+      if (img && img.src) {
+        const freePt = tutorialCupDemoFreePoint();
+        tutorialShowGhostItem({
+          imgSrc: img.src,
+          freeX: freePt.x,
+          freeY: freePt.y,
+          freeSize: 100,
+          ttlMs: (step.phaseAMs || 2500) + 200,
+        });
+      }
+    }
+  } catch (_) {}
+}
+function tut2RenderCupPlacePhaseB(step) {
+  tutorialShowBubble('すきな カップを<br>ひとつ えらんで おこう', { topVh: '20', side: 'left' });
+  const palette = tutorialFindFirstCupPaletteEl();
+  if (palette) tutorialAnimateTap(palette);
+}
+function tut2RenderCupFoodPhaseA(step) {
+  tutorialShowBubble('カップの なかに いれるよ', { topVh: '54', side: 'left' });
+  const palette = tutorialFindCupSideFoodPaletteEl();
+  const targetPoint = tutorialActiveCupPoint();
+  if (palette && targetPoint) tutorialAnimateDragFromEl(palette, targetPoint, {});
+  try {
+    if (palette) {
+      const img = palette.querySelector('img');
+      if (img && img.src) {
+        const cup = tutorialActiveCupItem();
+        if (cup) {
+          tutorialShowGhostItem({
+            imgSrc: img.src,
+            freeX: cup.x,
+            freeY: cup.y,
+            freeSize: 70,
+            ttlMs: (step.phaseAMs || 2500) + 200,
+          });
+        }
+      }
+    }
+  } catch (_) {}
+}
+function tut2RenderCupFoodPhaseB(step) {
+  tutorialShowBubble('すきなの ひとつ<br>えらんでね', { topVh: '54', side: 'left' });
+  const palette = tutorialFindCupSideFoodPaletteEl();
+  if (palette) tutorialAnimateTap(palette);
+}
+function tut2RenderTabsIntro(step) {
+  tutorialShowBubble('はっぱと しきりも つかえるよ！', { topVh: '18', side: 'left' });
+  // Point at the leaf tab first, then divider tab after a short delay.
+  const leafTab = tutorialFindTabBtn('leaf') || document.querySelector('.free-tab[data-tab="leaf"]');
+  const divTab = tutorialFindTabBtn('divider') || document.querySelector('.free-tab[data-tab="divider"]');
+  if (leafTab) tutorialShowPointingHand(leafTab, { side: 'left' });
+  setTimeout(() => {
+    if (tutorialState.step !== 'tut2-tabs-intro') return;
+    if (divTab) tutorialShowPointingHand(divTab, { side: 'left' });
+  }, 2500);
+  // Soft-chain to okazu-ok after voice ends + ~1.5s dwell. Use fallbackMs timer.
+  if (!tutorialState._tabsChainTimer) {
+    tutorialState._tabsChainTimer = setTimeout(() => {
+      tutorialState._tabsChainTimer = null;
+      if (tutorialState.active && tutorialState.step === 'tut2-tabs-intro') {
+        tutorialAdvance('tut2-okazu-ok');
+      }
+    }, (step.fallbackMs || 6500) + 1500);
+  }
+}
+function tut2RenderOkazuOk(step) {
+  tutorialShowBubble('できあがったら<br>「おかずOK」を おしてね', { topVh: '18', side: 'left' });
+  const btn = tutorialFindOkazuOkBtn();
+  if (btn) {
+    tutorialPositionBubbleBeside(btn, { gap: 12 });
+    tutorialMarkTarget(btn, { radius: 22, outline: false });
+    tutorialAnimateTap(btn);
+  }
+}
+function tut2RenderComplete(step) {
+  // Complete overlay is already on screen. Just save done + chain.
+  tutorialHideFinger();
+  tutorialClearTrims();
+  tutorialClearTargetCircle();
+  tutorialShowBubble('わあ、すてきな おべんとうが<br>できたね！', { topVh: '16', side: 'left' });
+  try { localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); } catch (_) {}
+}
+function tut2RenderFavorite(step) {
+  const saveBtn = tutorialFindSaveFavBtn();
+  tutorialShowBubble('おきにいりに とっておけるよ<br>ほしマークを おしてね', { topVh: '18', side: 'left' });
+  if (saveBtn) {
+    tutorialPositionBubbleBeside(saveBtn, { gap: 12 });
+    tutorialMarkTarget(saveBtn, { radius: 22, outline: false });
+    tutorialAnimateTap(saveBtn);
+    if (!saveBtn._tut2FavBound) {
+      saveBtn._tut2FavBound = true;
+      saveBtn.addEventListener('pointerdown', () => {
+        setTimeout(() => tutorialMarkDone(), 400);
+      }, { once: true });
+    }
+  }
+  // Also allow × close to end tutorial.
+  const closeBtn = document.getElementById('complete-btn');
+  if (closeBtn && !closeBtn._tut2FavCloseBound) {
+    closeBtn._tut2FavCloseBound = true;
+    closeBtn.addEventListener('pointerdown', () => {
+      setTimeout(() => tutorialMarkDone(), 100);
+    }, { once: true });
+  }
+}
+function tut2RenderW3Deliver(step) {
+  tutorialShowBubble('アライグマくん、とっても<br>よろこんでいるよ！', { topVh: '18', side: 'left' });
+  tutorialHideFinger();
+}
+
+// ---- Dispatcher =============================================================
+
 function tutorialRenderStep() {
   if (!tutorialState.active) return;
   if (tutorialIsPortraitBlocking()) {
@@ -20901,16 +21562,15 @@ function tutorialRenderStep() {
     return;
   }
   tutorialDismissFreeGuideBlocker();
-  const step = tutorialState.step;
-  const fast = tutorialState.inactivityFired;
-  const firstRender = tutorialState.renderedStep !== step;
-  tutorialState.renderedStep = step;
+  const stepId = tutorialState.step;
+  const step = tut2FindStep(stepId);
+  const firstRender = tutorialState.renderedStep !== stepId;
+  tutorialState.renderedStep = stepId;
   tutorialSetModeLabel('');
   tutorialSetReminderFocus(false);
   tutorialSetBottomSpeechHidden(false);
-  tutorialPlayStepVoice(step, firstRender);
+  tutorialPlayStepVoice(stepId, firstRender);
 
-  // ステップが切り替わるたびに、 前ステップの装飾を一掃 (button-bound 含む)
   if (firstRender) {
     tutorialClearTrims();
     tutorialClearMask();
@@ -20921,450 +21581,36 @@ function tutorialRenderStep() {
     tutorialHidePointingHand();
   }
 
-  // 0. greet — 中央配置 + skip checkbox 縮小
-  if (step === 'greet') {
-    const html =
-      'いっしょに おべんとう つくろう！'
-      + '<br><button class="tut-next-btn" id="tut-greet-next">はじめる →</button>'
-      + '<button class="tut-next-btn tut-stop-btn" id="tut-greet-stop">やめる</button>'
-      + '<label class="tut-skip-mini"><input type="checkbox" id="tut-skip-checkbox"><span>つぎから スキップする</span></label>';
-    tutorialShowBubble(html, { center: true });
-    tutorialHideFinger();
-    // v1500: firstRender ガードだと縦向き→横向き復帰で bubble HTML が書き直された時
-    // (renderedStep は 'greet' のまま) にボタンが handler なしで再生成され詰む。
-    // 毎レンダーで bind し、innerHTML 未書換 (同一要素が残存) の二重 bind は
-    // 要素フラグ (_tutBound) で防ぐ。
-    {
-      const btn = document.getElementById('tut-greet-next');
-      if (btn && !btn._tutBound) {
-        btn._tutBound = true;
-        btn.addEventListener('pointerdown', e => {
-          e.preventDefault(); e.stopPropagation();
-          const skip = document.getElementById('tut-skip-checkbox');
-          if (skip && skip.checked) {
-            markBentoTutorialsDone();
-            tutorialMarkDone();
-            // v1497: タイトルで選んだモードへ合流 (非 simple のまま放置しない)
-            tutorialResumePendingModeAfterExit();
-            return;
-          }
-          tutorialShowGroupIntroThen('box');
-        }, { once: true });
-      }
-      const stopBtn = document.getElementById('tut-greet-stop');
-      if (stopBtn && !stopBtn._tutBound) {
-        stopBtn._tutBound = true;
-        stopBtn.addEventListener('pointerdown', e => {
-          e.preventDefault(); e.stopPropagation();
-          markBentoTutorialsDone();
-          tutorialMarkDone();
-          // v1497: タイトルで選んだモードへ合流 (非 simple のまま放置しない)
-          tutorialResumePendingModeAfterExit();
-        }, { once: true });
-      }
-    }
+  if (!step) {
+    // Unknown step (legacy or done). Nothing to render.
     return;
   }
 
-  // 1. box — 弁当箱外周にトリムパス + 「これでOK」 game button にもトリムパス
-  if (step === 'box') {
-    tutorialApplyBoxLock();
-    tutorialShowBubble(
-      'こんかいは これを つかうよ'
-      + '<br>「これでOK」を おしてね',
-      { topVh: '14' }
-    );
-    tutorialPositionBubbleBelowBentoBox();
-    tutorialHideFinger();
-    if (firstRender) {
-      // 弁当箱外周 trim
-      const shape = document.querySelector('.free-bento-shape') || document.getElementById('free-layout-stage');
-      if (shape) tutorialTrimPath(shape, { radius: 18 });
-      // 「これでOK」 game button trim (見つけ次第。 render 後の追加にも対応するため少し遅延)
-      setTimeout(() => {
-        const okBtn = document.getElementById('free-box-confirm');
-        if (okBtn && tutorialState.step === 'box') tutorialTrimPath(okBtn, { radius: 22 });
-      }, 30);
-    }
+  if (step.single) {
+    tutorialState.phase = 'try';
+    try { step.renderPhaseB(step, tutorialState); } catch (_) {}
     return;
   }
 
-  // 2. tab-rice — rice タブを押させる
-  if (step === 'tab-rice') {
-    tutorialShowBubble('『ごはん』タブを おしてね', { topVh: '20' });
-    if (firstRender) {
-      // 既に rice タブが選ばれているなら即進める (defensive)
-      if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'rice') {
-        setTimeout(() => tutorialAdvance('rice-place'), 0);
-        return;
-      }
-    }
-    // rice タブ ボタンを探して trim + tap demo
-    const riceTab = tutorialFindTabBtn('rice');
-    if (riceTab) {
-      if (firstRender) tutorialTrimPath(riceTab, { radius: 10 });
-      tutorialAnimateTap(riceTab);
-    } else {
-      tutorialHideFinger();
-    }
-    return;
+  // Two-phase step (A → B). On firstRender start in Phase A, then queue transition.
+  if (firstRender) {
+    tutorialState.phase = 'demo';
   }
-
-  // 3. rice-place — ✊✋ デモで左半分へドラッグ
-  if (step === 'rice-place') {
-    tutorialShowBubble('ごはんを つかんで ひだりがわに のせよう', { topVh: '20' });
-    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindRicePaletteEl(),
-      () => tutorialStageLeftHalfPoint(),
-      { fast }
-    );
-    return;
+  if (tutorialState.phase === 'demo') {
+    try { if (step.renderPhaseA) step.renderPhaseA(step, tutorialState); } catch (_) {}
+    // Schedule transition to Phase B.
+    if (firstRender && step.phaseAMs) {
+      tutorialSetPhaseATimer(stepId, step.phaseAMs, () => {
+        if (tutorialState.step !== stepId) return;
+        tutorialState.phase = 'try';
+        tutorialClearGhostLayer();
+        tutorialState.renderedStep = null; // force re-render into phase B
+        tutorialRenderStep();
+      });
+    }
+  } else {
+    try { if (step.renderPhaseB) step.renderPhaseB(step, tutorialState); } catch (_) {}
   }
-
-  // 4. decor — のりを ご飯の上に (配置済みのご飯にもトリムパスで場所を明示)
-  if (step === 'decor') {
-    tutorialShowBubble('すきな のりを<br>ごはんの うえに のせよう', { topVh: '20' });
-    if (firstRender) {
-      // 配置済みの rice 要素に highlight (ご飯の場所を明示)
-      const riceEls = document.querySelectorAll('.free-placed-item.type-rice');
-      riceEls.forEach(rEl => tutorialTrimPath(rEl, { radius: 12 }));
-    }
-    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ。
-    // v1457: ノリ候補は自由に選べる。ここでは最初の候補を手本として示すだけ。
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindNoriPaletteEl(),
-      () => tutorialStageLeftHalfPoint(),
-      { fast }
-    );
-    return;
-  }
-
-  // 5. nori-ok — のり工程を終えておかず工程へ進む
-  if (step === 'nori-ok') {
-    if (countDecorOnTier(1) <= 0) {
-      tutorialAdvance('decor');
-      return;
-    }
-    const btn = tutorialNoriOkButton();
-    if (btn) {
-      tutorialShowBubble('のりは いくつか かざれるよ<br>できたら「のりOK」', { topVh: '18', side: 'left' });
-      tutorialPositionBubbleBeside(btn);
-      if (firstRender) {
-        tutorialTrimPath(btn, { radius: 22 });
-        tutorialOutlineElement(btn);
-      }
-      tutorialAnimateTap(btn);
-    } else {
-      tutorialShowBubble('のりは いくつか かざれるよ<br>できたら「のりOK」', { topVh: '18', side: 'left' });
-      tutorialHideFinger();
-    }
-    return;
-  }
-
-  // 6. tab-okazu — okazu (food) タブを押させる
-  if (step === 'tab-okazu') {
-    tutorialShowBubble('『おかず』タブを おしてね', { topVh: '18', side: 'left' });
-    if (firstRender) {
-      if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab === 'food') {
-        setTimeout(() => tutorialAdvance('okazu-red'), 0);
-        return;
-      }
-    }
-    const okazuTab = tutorialFindTabBtn('food');
-    if (okazuTab) {
-      if (firstRender) tutorialTrimPath(okazuTab, { radius: 10 });
-      tutorialAnimateTap(okazuTab);
-    } else {
-      tutorialHideFinger();
-    }
-    return;
-  }
-
-  // 7. okazu-red — 右半分にあかい食材を入れる + 右半分マスク明滅
-  if (step === 'okazu-red') {
-    const requestedFood = tutorialGetRequestedFoodLabel();
-    tutorialSetReminderFocus(true);
-    tutorialHideBubble();
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('おともだちの おねがい<br>「' + requestedFood + '」を いれよう！<br><span class="tut-emph-red">あか</span>の グループだよ');
-    tutorialShowTargetCircle(tutorialLayerDemoScreenPoint(), { size: 108 });
-    if (firstRender) tutorialMaskOverlay({ half: 'right' });
-    // v3.2: palette/target が描画前 null になるケースに備え retry 経由で呼ぶ
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindFoodPaletteEl(),
-      () => tutorialLayerDemoScreenPoint(),
-      { fast }
-    );
-    return;
-  }
-
-  // 7b. okazu-overlap — 無料枠の別おかずを重ねて、上下の意味が見える状態にする
-  if (step === 'okazu-overlap') {
-    tutorialSetReminderFocus(false);
-    tutorialHidePonoCallout();
-    tutorialShowBubble('もうひとつ おかずを<br>まるの ところに 重ねよう', { topVh: '18', side: 'left' });
-    tutorialShowTargetCircle(tutorialLayerDemoScreenPoint(), { size: 108 });
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindLayerDemoFoodPaletteEl(),
-      () => tutorialLayerDemoScreenPoint(),
-      { fast }
-    );
-    return;
-  }
-
-  // 7c. layer-edit — 重なったおかずで上下を見せる
-  if (step === 'layer-edit') {
-    const toolbar = tutorialContextToolbarEl();
-    const layerBtn = tutorialLayerDownButtonEl();
-    setSpeech('あれ？' + tutorialGetRequestedFoodLabel() + 'が 見えなくなっちゃったよ');
-    try { if (typeof setPono === 'function') setPono(false); } catch (_) {}
-    tutorialShowPonoCallout('あれ？<br>' + tutorialGetRequestedFoodLabel() + 'が 見えなくなっちゃったよ');
-    tutorialSetModeLabel('おてほんを みてみよう', {
-      mode: 'demo',
-      note: 'この↓ボタンで うしろへ',
-      buttonText: 'やってみよう',
-      onClick: () => tutorialAdvance('layer-edit-try'),
-    });
-    tutorialHideBubble();
-    if (layerBtn) tutorialMarkTarget(layerBtn, { radius: 14, outline: false });
-    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-    else tutorialRetryRenderStep('layer-edit');
-    if (firstRender && toolbar) {
-      tutorialAnimateLayerDemo(fast);
-      tutorialHideFingerAfter(2200, 'layer-edit');
-    } else if (!toolbar) {
-      tutorialHideFinger();
-    }
-    return;
-  }
-
-  // 7d. layer-edit-try — 上下操作を試してからカップへ進む
-  if (step === 'layer-edit-try') {
-    const toolbar = tutorialContextToolbarEl();
-    const layerBtn = tutorialLayerDownButtonEl();
-    setSpeech('重なって 見えなくなったら、えらんで まえ・うしろを かえよう。この↓を おしてね');
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('重なって 見えなくなったら<br>この↓を おしてね');
-    tutorialSetModeLabel('この ↓ ボタンを おしてね', {
-      mode: 'try',
-      note: 'えらんだ おかずが うしろへ',
-    });
-    tutorialHideBubble();
-    if (layerBtn) tutorialMarkTarget(layerBtn, { radius: 14, outline: false });
-    else if (toolbar) tutorialMarkTarget(toolbar, { radius: 14, outline: false });
-    else tutorialRetryRenderStep('layer-edit-try');
-    tutorialHideFinger();
-    return;
-  }
-
-  // 7e. move-requested-food — 見えたタコウインナーを空き位置へ動かす
-  if (step === 'move-requested-food') {
-    const foodEl = tutorialFindPlacedRequestedFoodEl();
-    const requestedFood = tutorialGetRequestedFoodLabel();
-    setSpeech(requestedFood + 'を えらんで あいている ところに うごかそう');
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout(requestedFood + 'を えらんで<br>あいている ところに うごかそう');
-    tutorialSetModeLabel('やってみよう！', {
-      mode: 'try',
-      note: requestedFood + 'を したへ',
-    });
-    tutorialHideBubble();
-    tutorialShowTargetCircle(tutorialLayerFoodScreenPoint(), { size: 112 });
-    if (foodEl) {
-      if (firstRender) tutorialTrimPath(foodEl, { radius: 18 });
-      tutorialAnimateDragFromElWithRetry(
-        () => tutorialFindPlacedRequestedFoodEl(),
-        () => tutorialLayerFoodScreenPoint(),
-        { fast }
-      );
-    } else {
-      tutorialRetryRenderStep('move-requested-food');
-      tutorialHideFinger();
-    }
-    return;
-  }
-
-  // 7d2. okazu-more — メインおかず完了後、 ボタン押下のみで small-accessory へ進む。
-  // v1454: 指定外アイテム禁止に合わせ、 追加配置を促さず「つぎへ」を案内する。
-  // 自動タイマーは廃止: 子供が追加配置している最中に勝手に進むのを防ぐため、 進行トリガは
-  // tryFinishOkazuTier (= おかずOK / 2だんめOK / 3だんめOK 押下) からのフックに限定。
-  // v1380: 直前 step (move-requested-food) が freeGuideStep='tier2Side' のまま終わるため、
-  // okazu-more に入った瞬間に getCurrentOkazuRole() が 'side' を返してしまう。 必ず
-  // tier2Main に戻して freeLayoutTab='food' を保証する (setFreeGuideStep が setSpeech
-  // するので、 直後に上書きするため一旦 skipRender:true で更新)。
-  if (step === 'okazu-more') {
-    // v1383: 初回 render に限定して state 設定 + パレット再描画を行う。
-    // 以前は毎フレーム setFreeGuideStep + renderFreeLayoutControls() を呼んでいて、
-    // tray.innerHTML='' で DOM が再生成 → palette MutationObserver が検知 →
-    // requestAnimationFrame で tutorialRenderStep() 再呼出 → 同じ処理が無限ループ
-    // → メニュー激しいちらつきが発生していた。 firstRender ガードで断ち切る。
-    if (firstRender) {
-      try {
-        if (typeof setFreeGuideStep === 'function') {
-          setFreeGuideStep('tier2Main', { skipRender: true });
-        } else if (typeof freeGuideStep !== 'undefined') {
-          freeGuideStep = 'tier2Main';
-        }
-        if (typeof freeLayoutTab !== 'undefined') freeLayoutTab = 'food';
-        if (typeof renderFreeLayoutControls === 'function') renderFreeLayoutControls();
-      } catch (_) {}
-    }
-    // v1383: 実 UI ボタンの label に合わせて案内テキストを統一する (旧「おかずOK」誤案内は
-    // 子供が該当ボタンを見つけられず詰む致命バグだった)。
-    // v1497 cup-first: ボタンは「カップへ」。 ナレ okazu_more_02 と同文で案内する。
-    setSpeech('すきな おかずを もっと いれても いいよ。おわったら「カップへ」を おしてね');
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('すきな おかずを もっと<br>いれても いいよ！<br>おわったら「カップへ」を おしてね');
-    tutorialSetModeLabel('つぎへ すすもう', {
-      mode: 'try',
-      note: '「カップへ」で つぎへ',
-    });
-    tutorialHideBubble();
-    tutorialHideFinger();
-    // v1383: 「ちいさい おかずへ」 ボタンを最優先で取得。 tutorialCompleteButton は
-    // 「おかずOK」/「できあがり」 primary 等もマッチするので、 専用ヘルパーで
-    // ラベル一致 (小さい + おかず) を最優先しつつフォールバックで既存実装を使う。
-    const okazuOkBtn = tutorialOkazuMoreAdvanceButton();
-    if (okazuOkBtn) {
-      tutorialMarkTarget(okazuOkBtn, { radius: 18, outline: false });
-      tutorialAnimateTap(okazuOkBtn);
-    } else if (firstRender) {
-      // 初回 render でボタンが取れなかった場合のみ retry。 連続 render では retry しない
-      // (firstRender false の状況で retry すると上記 MutationObserver と相互再帰する恐れ)。
-      tutorialRetryRenderStep('okazu-more');
-    }
-    // v1380: okazu-more ナレーションは BENTO_TUTORIAL_STEP_VOICE map で
-    // 'okazu_more_01' に紐づけ済 (basic_tut_14 と衝突しない別 ID 名で配置)。
-    // tutorialPlayStepVoice(step, firstRender) が renderer 冒頭で呼ばれるので
-    // 個別の playBentoTutorialVoice 呼出は不要 (二重再生防止)。
-    return;
-  }
-
-  // v1497 cup-first: layer-done / tab-small step は廃止 (orphan renderer 撤去)。
-
-  // 9. small-accessory — カップ/仕切りを先に選ぶ
-  if (step === 'small-accessory') {
-    // v1497 cup-first: カップ配置直後はピッカーが自動で開く。 queued advance (ナレ再生中) で
-    // step がまだ small-accessory のまま再 render された場合に、 開いたピッカーの
-    // freeLayoutTab='food' を 'accessory' に巻き戻さないこと (小トマト getter が壊れる)。
-    if (getEditingCup()) {
-      tutorialHideFinger();
-      return;
-    }
-    try {
-      if (typeof freeGuideStep !== 'undefined'
-          && (!isOkazuGuideStep(freeGuideStep) || !String(freeGuideStep).endsWith('Side'))) {
-        setFreeGuideStep('tier2Side', { skipRender: true });
-      }
-      if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'accessory') {
-        freeLayoutTab = 'accessory';
-        renderFreeLayoutControls();
-      }
-    } catch (_) {}
-    setSpeech('みずたまカップを あいている ところに おこう');
-    try { if (typeof setPono === 'function') setPono(true); } catch (_) {}
-    tutorialShowPonoCallout('みずたまカップを<br>あいている ところに おこう');
-    tutorialSetModeLabel('みずたまカップを おこう', {
-      mode: 'try',
-      note: 'あいている ところへ',
-    });
-    tutorialHideBubble();
-    tutorialShowTargetCircle(tutorialCupDemoScreenPoint(), { size: 112 });
-    const cup = tutorialFindCupPaletteEl();
-    if (cup) {
-      tutorialOutlineElement(cup);
-      tutorialShowPointingHand(cup, { side: 'right' });
-      if (firstRender) tutorialTrimPath(cup, { radius: 12 });
-    } else {
-      tutorialRetryRenderStep('small-accessory');
-    }
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindCupPaletteEl(),
-      () => tutorialCupDemoScreenPoint(),
-      { fast }
-    );
-    return;
-  }
-
-  // v1497 cup-first: cup-edit / cup-edit-try (サイズ①→OK 教習) と tab-small-food は廃止。
-  // カップ配置で おかずピッカーが自動で開き、 そのまま small-cup-food (プチトマト選択) に入る。
-
-  // 11. small-cup-food — 自動で開いた おかずピッカー内で プチトマトを カップに いれる
-  if (step === 'small-cup-food') {
-    // ピッカー (カップエディタ) が開いていなければ開き直す (OK 誤タップ等からの復帰)。
-    // openCupEditor は freeLayoutTab='food' を設定し、 renderFreeLayoutControls が
-    // エディタ内パレット (.free-item-list) を再構築する。
-    if (!getEditingCup()) {
-      const activeCup = tutorialActiveCupItem();
-      if (activeCup) openCupEditor(activeCup.uid);
-      else {
-        // カップ自体が消えている異常系 — カップ配置 step へ戻す
-        tutorialAdvance('small-accessory');
-        return;
-      }
-    }
-    // ピッカー内パレット getter / lock は freeLayoutTab==='food' 前提 (openCupEditor が設定)。
-    // 途中で 'accessory' 等に巻き戻されていたら正規化する。
-    if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') {
-      freeLayoutTab = 'food';
-      renderFreeLayoutControls();
-    }
-    tutorialHidePonoCallout();
-    setSpeech('みどりの プチトマトを カップに いれよう');
-    tutorialSetModeLabel('やってみよう！', {
-      mode: 'try',
-      note: 'みどりを カップへ',
-    });
-    tutorialShowBubble('プチトマトを<br>カップに いれよう', { topVh: '54', side: 'left' });
-    // v1370: パレットから「プチトマト」以外をロック (誤タップ/誤ドラッグ抑止)
-    tutorialApplySmallCupFoodLock();
-    if (firstRender) {
-      const smallFood = tutorialFindCupFoodPaletteEl();
-      if (smallFood) tutorialTrimPath(smallFood, { radius: 12 });
-    }
-    // v1399: パレット側プチトマト要素の近傍にバブルを動的配置 (画面左端固定で
-    // パレットから遠すぎる症状を解消)。 cup-ok step と同じ tutorialPositionBubbleBeside
-    // 経路で実 DOM 座標に追従。
-    try {
-      const tomatoEl = tutorialFindCupFoodPaletteEl();
-      if (tomatoEl && typeof tutorialPositionBubbleBeside === 'function') {
-        tutorialPositionBubbleBeside(tomatoEl, { gap: 12 });
-      }
-    } catch (_) {}
-    tutorialAnimateDragFromElWithRetry(
-      () => tutorialFindCupFoodPaletteEl(),
-      () => tutorialActiveCupPoint(),
-      { fast }
-    );
-    return;
-  }
-
-  // v1497 cup-first: small-place / cup-ok / small-edit / small-edit-try step は廃止 (orphan renderer 撤去)。
-
-  // 15. small-next — 進むボタンを対象の近くで案内
-  if (step === 'small-next') {
-    const btn = tutorialCompleteButton();
-    const label = tutorialButtonLabel(btn);
-    // v1500 FIX5: この step はパレット deny のまま。「すきな おかずも いれてみよう」は
-    // 矛盾案内なので、ナレ basic_tut_13 の「いれたら、おかずOKを おそう」に合わせる。
-    setSpeech('いれたら、おかずOKを おそう');
-    const nextText = label.indexOf('小さい') >= 0
-      ? 'つぎは カップと 小さい おかずへ<br>「' + label + '」'
-      : 'いれたら<br>「' + label + '」を おそう';
-    tutorialShowBubble(nextText, { topVh: '18', side: 'left' });
-    if (btn) {
-      tutorialPositionBubble(btn);
-      tutorialMarkTarget(btn, { radius: 24 });
-      tutorialAnimateTap(btn);
-    } else {
-      tutorialRetryRenderStep('small-next');
-      tutorialHideFinger();
-    }
-    return;
-  }
-
-  // v1497 cup-first: complete step は廃止 (orphan renderer 撤去。 完了案内は complete-result chain が担う)。
 }
 
 // .free-tab ボタンを ラベル / data-tab から特定
@@ -21408,6 +21654,14 @@ function tutorialTeardown() {
     try { document.removeEventListener('pointerdown', tutorialState.tapHandler, true); } catch (_) {}
     tutorialState.tapHandler = null;
   }
+  // batch:1058 phase1: tut2 phase / ghost / palette focus / body class も teardown で掃除。
+  tutorialClearPhaseATimer();
+  tutorialClearGhostLayer();
+  tutorialClearPaletteFocus();
+  if (tutorialState.ghostLayerEl && tutorialState.ghostLayerEl.parentNode) {
+    try { tutorialState.ghostLayerEl.parentNode.removeChild(tutorialState.ghostLayerEl); } catch (_) {}
+  }
+  tutorialState.ghostLayerEl = null;
   tutorialClearBoxLock();
   tutorialHideFinger();
   tutorialHideBubble();
@@ -21421,11 +21675,15 @@ function tutorialTeardown() {
   tutorialClearOutlines();
   tutorialUninstallTabHook();
   tutorialState.renderedStep = null;
+  // batch:1058 phase1: restart ボタンを teardown 後に即再表示するため visibility 再計算。
+  try { if (typeof window.updateBentoRestartButtonVisibility === 'function') window.updateBentoRestartButtonVisibility(); } catch (_) {}
 }
 function tutorialStart() {
   // batch:1043 T4: 旧 D&D 台本のため作り直しまで全入口を no-op (最終チョークポイント)
   if (BENTO_TUTORIAL_PAUSED) return;
-  if (simpleBentoMode) return;
+  // batch:1058 phase1: tut2 台本は タップ式 (simpleBentoMode) UX を前提に設計されている。
+  // 旧 D&D 台本用の `if (simpleBentoMode) return;` ガードは撤去。 simpleBentoMode の
+  // ON/OFF を問わず起動できるようにする。
   if (tutorialReadDone()) return;
   if (tutorialState.active) return;
   if (tutorialIsPortraitBlocking()) {
@@ -21433,7 +21691,14 @@ function tutorialStart() {
     return;
   }
   tutorialState.active = true;
-  tutorialState.step = 'greet';
+  // batch:1058 phase1: tut2 台本 — request モードは W2 (greet の代わり) から起動、
+  // simple モードは通常の tut2-greet から起動。
+  const pendingMode = (typeof window !== 'undefined' && window.__bentoTutorialPendingMode) || 'simple';
+  tutorialState.mode = pendingMode === 'request' ? 'request' : 'simple';
+  tutorialState.step = tutorialState.mode === 'request' ? 'tut2-w2-request' : 'tut2-greet';
+  tutorialState.phase = 'demo';
+  tutorialState.noriQueue = null;
+  tutorialState.noriIdx = 0;
   tutorialState.renderedStep = null;
   tutorialState.okazuPlacedCount = 0;
   tutorialState.cupPlacedCount = 0;
@@ -21478,9 +21743,10 @@ function tutorialStart() {
   };
   document.addEventListener('pointerdown', tutorialState.tapHandler, true);
 }
-// v3: freeGuideStep 変化では原則 state machine を進めない (button/tab/place が進行口)。
-// 例外として、のりOKボタンで本体側が tier2Main へ進んだ時だけ tab-okazu へ橋渡しする。
-// 関数自体は既存呼出 (setFreeGuideStep → tutorialOnGuideChange) 互換のため残す。
+// batch:1058 phase1: tut2 台本用のフック配線 =====================================
+// freeGuideStep 変化で本体側が進んだときのブリッジ:
+//   - のり系 step 中に tier2Main へ進んだ → tut2-okazu-main
+//   - tut2-cup-btn 中に tier2Side へ進んだ → tut2-cup-place
 function tutorialOnGuideChange(/* step */) {
   if (!tutorialState.active) return;
   if (tutorialIsPortraitBlocking()) {
@@ -21490,54 +21756,44 @@ function tutorialOnGuideChange(/* step */) {
     tutorialShowBubble('よこむきに してね');
     return;
   }
-  if (tutorialState.step === 'nori-ok' && freeGuideStep === 'tier2Main') {
-    tutorialAdvance('tab-okazu');
+  const s = tutorialState.step;
+  const noriSteps = ['tut2-nori-face-eyes', 'tut2-nori-face-mouth-nose', 'tut2-nori-move', 'tut2-nori-edit'];
+  if (noriSteps.indexOf(s) >= 0 && String(freeGuideStep || '').indexOf('Main') > 0 && String(freeGuideStep || '') !== 'rice') {
+    tutorialAdvance('tut2-okazu-main');
+    return;
+  }
+  if (s === 'tut2-cup-btn' && String(freeGuideStep || '').indexOf('Side') > 0) {
+    tutorialAdvance('tut2-cup-place');
+    return;
   }
 }
 function tutorialOnCupEditorClosed() {
   if (!tutorialState.active) return;
-  // v1497 cup-first: ピッカー (カップエディタ) が閉じた時 — small-cup-food 中に
-  // おかずが入っていれば small-next へ (実 UX の自動クローズ / OK 押下の両方をカバー)。
-  // おかず未投入のまま閉じた場合は renderer 側が開き直して復帰する。
-  if (tutorialState.step === 'small-cup-food') {
+  // batch:1058 phase1: tut2-cup-food 中にピッカーが閉じた + 子が 1 個以上入っていれば tabs-intro へ。
+  if (tutorialState.step === 'tut2-cup-food') {
     const cup = tutorialActiveCupItem();
     if (cup && getCupChildren(cup).length > 0) {
-      tutorialClearSmallCupFoodLock();
-      tutorialAdvance('small-next');
+      tutorialAdvance('tut2-tabs-intro');
     }
   }
 }
+// legacy layer-edit callback — もはや呼ばれるが no-op (tut2 では layer 教習なし)。
 function tutorialOnLayerMoved() {
-  if (!tutorialState.active) return;
-  if (tutorialState.step !== 'layer-edit' && tutorialState.step !== 'layer-edit-try') return;
-  if (tutorialState.layerMoveDone) return;
-  tutorialState.layerMoveDone = true;
-  if (freeGuideStep === 'tier2Main' || freeGuideStep === 'tier3Main') {
-    freeGuideStep = freeGuideStep.startsWith('tier3') ? 'tier3Main' : 'tier2Main';
-    freeLayoutTab = 'food';
-  }
-  // v1497: depth-sort okazu (f01162e) 以降、 同一座標スタックでは layer 入替が paint order に
-  // 反映されない (zIndex は y 支配で manualTie は丸め落ち)。 ↓ 押下時に「うしろへ 下げたら
-  // 見える」を成立させるため、 依頼おかずを少し手前 (y+) に露出させてから次 step へ進む。
-  // これで move-requested-food で子供が実際に掴めるようになる (engine 側の tie-break は別課題)。
-  try {
-    const requested = tutorialFindPlacedRequestedFoodItem();
-    if (requested && typeof setFreeItemPosition === 'function') {
-      setFreeItemPosition(requested.uid, (requested.x || 0) - 22, (requested.y || 0) + 28);
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
-    }
-  } catch (_) {}
-  tutorialAdvance('move-requested-food');
+  // no-op in tut2
 }
+// batch:1058 phase1: item-moved は tut2-nori-move 中の decor 移動のみで進行。
+// 加えて、 batch:1057 の rotate/scale ボタン押下も move 相当として扱う (renderer 側で
+// rotate/scale 呼出時に tutorialOnItemMoved を明示的に発火するため、 ここは同じ条件で受ける)。
 function tutorialOnItemMoved(uid) {
   if (!tutorialState.active) return;
-  if (tutorialState.step !== 'move-requested-food') return;
-  const requested = tutorialFindPlacedRequestedFoodItem();
-  if (!requested || requested.uid !== uid) return;
-  tutorialMoveRequestedFoodToLowerPoint(requested);
-  // v1454: 追加配置は促さず、 次の「ちいさい おかずへ」ボタン案内 step を挟む。
-  tutorialAdvance('okazu-more');
+  if (tutorialState.step !== 'tut2-nori-move') return;
+  // uid が decor か検証 (誤発火防止)。
+  try {
+    const items = (typeof placedItems !== 'undefined' && placedItems) ? placedItems : [];
+    const moved = items.find(i => i && i.uid === uid);
+    if (!moved || moved.type !== 'decor') return;
+  } catch (_) {}
+  tutorialAdvance('tut2-nori-edit');
 }
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
@@ -21551,68 +21807,80 @@ function tutorialOnItemPlaced(item) {
     else tutorialState.okazuPlacedCount += 1;
   } else if (item.type === 'decor') tutorialState.decorPlacedCount += 1;
 
-  // v3: step ガード付き遷移 (該当 step でない placement は進行に使わない)
-  if (step === 'rice-place' && item.type === 'rice') {
-    tutorialAdvance('decor');
+  // Step 3: rice → nori-face-eyes
+  if (step === 'tut2-rice' && item.type === 'rice') {
+    tutorialAdvance('tut2-nori-face-eyes');
     return;
   }
-  if (step === 'okazu-red' && item.type === 'food' && !item.parentCupId) {
-    tutorialSnapItemToLayerDemoPoint(item);
-    tutorialAdvance('okazu-overlap');
-    return;
-  }
-  if (step === 'okazu-overlap' && item.type === 'food' && !item.parentCupId) {
-    tutorialSnapItemToLayerDemoPoint(item);
-    tutorialAdvance('layer-edit');
-    return;
-  }
-  if (step === 'small-accessory') {
-    if (item.type === 'cup' || item.snapTarget) {
-      // v1497 cup-first: カップ配置 → ピッカーは配置経路側で自動オープン済み。
-      // サイズ教習 (cup-edit) は廃止し、 そのまま プチトマト選択へ。
-      // v1500 FIX6: basic_tut_09 (約4.7s) 再生中のカップ配置でも queue-lag なしで
-      // 即 small-cup-food へ (ピッカーは開いているのにロック/案内が古いままを防ぐ)。
-      try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
-      tutorialAdvance('small-cup-food');
+  // Step 4A/4B: decor を noriQueue と照合しながら進行
+  if ((step === 'tut2-nori-face-eyes' || step === 'tut2-nori-face-mouth-nose') && item.type === 'decor') {
+    const queue = tutorialState.noriQueue || [];
+    const idx = tutorialState.noriIdx || 0;
+    const expected = queue[idx];
+    if (expected && String(item.id || '') === expected) {
+      tutorialState.noriIdx = idx + 1;
+      if (tutorialState.noriIdx >= queue.length) {
+        // ラウンド完了
+        if (step === 'tut2-nori-face-eyes') {
+          tutorialAdvance('tut2-nori-face-mouth-nose');
+        } else {
+          tutorialAdvance('tut2-nori-move');
+        }
+        return;
+      }
+      // ラウンド内で次サブステップへ → Phase A に戻して再演出。
+      tutorialState.phase = 'demo';
+      tutorialState.renderedStep = null;
+      tutorialClearGhostLayer();
+      tutorialClearPaletteFocus();
+      tutorialRenderStep();
       return;
     }
-  }
-  if (step === 'small-cup-food' && item.type === 'food') {
-    const inCup = !!item.parentCupId || tutorialAttachFoodToActiveCupIfOverlaps(item);
-    if (!inCup) {
-      tutorialResetInactivity();
-      return;
-    }
-    if (String(item.name || '') === 'プチトマト') {
-      tutorialArrangeTomatoesInCup(tutorialActiveCupItem());
-    }
-    if (getEditingCup()) closeCupEditor();
-    else {
-      renderFreeLayoutStage();
-      renderFreeLayoutControls();
-    }
-    // v1370: パレットロック解除 (step 退出時に必ず解除)
-    tutorialClearSmallCupFoodLock();
-    tutorialAdvance('small-next');
+    // 期待外 → 静かに無視 (docs §6 未決事項 5 recommendation (i))
+    tutorialResetInactivity();
     return;
   }
-  // v1497 cup-first: small-place step 廃止 (直置きの小さいおかずは存在しない)。
-  if (step === 'decor' && item.type === 'decor' && countDecorOnTier(1) > 0) {
-    tutorialAdvance('nori-ok');
+  // Step 7: main okazu (no parent cup) → cup-btn
+  if (step === 'tut2-okazu-main' && item.type === 'food' && !item.parentCupId) {
+    tutorialAdvance('tut2-cup-btn');
+    return;
+  }
+  // Step 9: cup placed → cup-food
+  if (step === 'tut2-cup-place' && (item.type === 'cup' || item.snapTarget)) {
+    // v1500 FIX6 と同じ queue-lag 対策。
+    try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
+    tutorialAdvance('tut2-cup-food');
+    return;
+  }
+  // Step 10: food inside cup → tabs-intro
+  if (step === 'tut2-cup-food' && item.type === 'food' && item.parentCupId) {
+    tutorialAdvance('tut2-tabs-intro');
     return;
   }
   tutorialResetInactivity();
 }
 function tutorialOnStageComplete() {
   if (!tutorialState.active) return;
-  tutorialState.step = 'complete-result';
-  tutorialState.renderedStep = null;
+  // batch:1058 phase1: request モードは W3 (deliver) を挟んでから favorite へ、
+  // simple モードは直接 tut2-complete → tut2-favorite。
+  const target = (tutorialState.mode === 'request') ? 'tut2-w3-deliver' : 'tut2-complete';
   tutorialClearTrims();
   tutorialClearTargetCircle();
   tutorialHideFinger();
   tutorialHideBubble();
   tutorialHidePonoCallout();
   tutorialSetModeLabel('');
+  tutorialAdvance(target);
+  // Auto-chain: complete → favorite (voice ended fallback timer)。 phase1 は mock voice なので
+  // fallbackMs 経過で onEnded 発火 → tutorialRenderStep で phaseA タイマー等は無効なので
+  // ここで明示的に次ステップへの chain timer を仕込む。
+  const chainDelay = tutorialState.mode === 'request' ? 6500 : 5500;
+  setTimeout(() => {
+    if (!tutorialState.active) return;
+    if (tutorialState.step === 'tut2-complete' || tutorialState.step === 'tut2-w3-deliver') {
+      tutorialAdvance('tut2-favorite');
+    }
+  }, chainDelay);
 }
 
 // ===== Tutorial settings (gear) re-enable wiring =====
@@ -21632,6 +21900,8 @@ function tutorialOnStageComplete() {
     if (reBtn) reBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      // batch:1058 phase1: legacy v1 も掃除。 旧完走マークが残っていると v2 判定と混じる。
+      try { localStorage.removeItem(BENTO_TUTORIAL_STORAGE_KEY_LEGACY); } catch (_) {}
       try { localStorage.removeItem('bento_sk_intro_done'); localStorage.removeItem('bento_tut_seen'); localStorage.removeItem('bento_tut_seen_v2'); } catch (_) {}
       modal.classList.add('hidden');
       try { if (typeof showToast === 'function') showToast('つぎの あそびで でるよ'); } catch (_) {}
@@ -21639,6 +21909,7 @@ function tutorialOnStageComplete() {
     if (reNowBtn) reNowBtn.addEventListener('pointerdown', function(e) {
       e.preventDefault();
       try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch (_) {}
+      try { localStorage.removeItem(BENTO_TUTORIAL_STORAGE_KEY_LEGACY); } catch (_) {}
       try { localStorage.removeItem('bento_sk_intro_done'); localStorage.removeItem('bento_tut_seen'); localStorage.removeItem('bento_tut_seen_v2'); } catch (_) {}
       modal.classList.add('hidden');
       // フレッシュな状態で確実にチュートリアルを発火させるため reload を採用
@@ -21677,10 +21948,17 @@ function tutorialOnStageComplete() {
   function isShopOpeningActive() {
     return !!window.__bentoShopOpeningActive;
   }
+  function isTutorialActive() {
+    try {
+      return !!(typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active);
+    } catch (_) { return false; }
+  }
   function updateRestartButtonVisibility() {
     var btn = document.getElementById('bento-restart-btn');
     if (!btn) return;
-    var hide = isTitleScreenVisible() || isCompleteOverlayOpen() || isShopOpeningActive();
+    // batch:1058 phase1: tut2 中は restart を非表示 (freeGuideStep が box に戻って
+    // tutorialState.step と desync するのを未然に防ぐ)。
+    var hide = isTitleScreenVisible() || isCompleteOverlayOpen() || isShopOpeningActive() || isTutorialActive();
     btn.classList.toggle('hidden', hide);
   }
   window.updateBentoRestartButtonVisibility = updateRestartButtonVisibility;
@@ -21834,9 +22112,12 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     } catch (_) {}
     if (tutorialPending && typeof tutorialStart === 'function') {
       try { window.__bentoTutorialPendingMode = requestMode ? 'request' : 'simple'; } catch (_) {}
-      // stage は Init の loadStage() で box ステップ (非 simple) 済み。
-      // poller (waitForReadyThenFullTutorial) も保険で拾うが、 ここで直接起動する。
-      setTimeout(() => { try { tutorialStart(); } catch (_) {} }, 60);
+      // batch:1058 phase1: tut2 台本は タップ式 (simpleBentoMode) UX 前提。
+      // 先に restartSimpleBentoRound / restartSimpleBentoRequestRound で simple モードに
+      // 入れてから (setSimpleBentoMode(true) が発火) 200ms 後に tutorialStart を呼ぶ。
+      if (requestMode) restartSimpleBentoRequestRound({ skipIntro: false });
+      else restartSimpleBentoRound();
+      setTimeout(() => { try { tutorialStart(); } catch (_) {} }, 250);
       return;
     }
     if (requestMode) restartSimpleBentoRequestRound({ skipIntro: false });

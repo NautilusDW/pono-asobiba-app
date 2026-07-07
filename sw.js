@@ -1,5 +1,26 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2014: bento チュートリアル tut2 実装 phase1 (batch:1058-tutorial-impl-phase1)。 見本→まねっこ
+// 15 ステップ + ラッパー 2 (greet/box 固定/rice/nori 4A-4B/move/edit/okazu-main/カップへ/カップ/中身/
+// はっぱ・しきり紹介/おかず OK/完成/おきにいり) を新規実装。 BENTO_TUTORIAL_MOCK_VOICE=true (音声なし、
+// fallbackMs 駆動)。 tutorial storage v1→v2 マイグレーション、 PAUSED 解除、 旧レイヤー教習コード全消去、
+// ごはん削除ガード、 最初からやるボタン非表示ガード。 実装は WIP staged deploy (owner ハンズオン検証待ち)。
+// 既知未完了: (a) Step2 で古いポノ吹き出し「すきな おべんとうを つくろう！」重複、 (b) Step4B 指ポインタ
+// 位置ズレ、 (c) 後半 (Cup/Tabs-intro/Complete/Favorite) 実ブラウザ検証未完了 (前エージェントセッション上限)。
+// play.html PAGE_CACHE_VERSION と同期。
+// v2013: mojicrane round-2 kids-ux + repeated-kana fixes (batch: mojicrane physics review r2)。
+// (1) computeTowerState() の kanaOnTower を char->Body から char->Body[] (Map) に変更し、
+// 「ばなな」「たんぽぽ」「ぺんぎん」等の重複かな語が実ブロック数より少ない個数で誤クリアする
+// バグを修正 (update() のスロット判定を occurrence-ランク付きルックアップに変更)。
+// (2) チュートリアルを「文章読解前提」から「視覚的アフォーダンス主導」に再設計 — 各ステップに
+// canvas 描画のパルスリング/指さしポインタ/運搬先への破線パス/バランス葉ハイライト/安定度
+// プログレスリングを追加し、tutorialNextBtn は非インタラクティブなカードイントロ (step1) のみ
+// 表示、step2-6 は実イベントゲートのみで進行 (旧仕様は全ステップで next ボタンが押せてしまい
+// 学習前にスキップ可能だった)。 (3) 初回1個目のブロック崩落にもフィードバック (旧 prevOnTower
+// >= 2 ガードを >= 1 に緩和)。 (4) drawPono() を procedural 描画から pono_face_circle.png
+// ブランド素材に置換 (AR 保持・比率固定、feedback_image_aspect_ratio 準拠、ロード失敗時は
+// procedural にフォールバック)。 (5) updateButtons() でチュートリアル中は #dropBtn を disabled
+// のまま表示せず非表示化。play.html PAGE_CACHE_VERSION と同期。
 // v2012: コードレビュー指摘の反映 (batch: mojicrane physics review) — (1) mojicrane/js/game.js:
 // pointerToWorld() を W/H にクランプ + updateGrab() の grab.constraint.pointB 移動量を
 // MAX_GRAB_STEP(140px) で頭打ちにし、setPointerCapture 中の暴走ポインタ座標によるトンネリング/
@@ -717,7 +738,9 @@
 // v2012: mojicrane コードレビュー指摘反映 (pointer clamp / grab region 判定 / discardGrab 漏れ修正) +
 // stacking/index.html の matter-js CDN 依存を common/vendor/matter.min.js ローカルバンドルへ置換。
 // 詳細は CACHE_VERSION const 直前の v2012 コメントブロック参照。
-const CACHE_VERSION = 2012;
+// v2013: mojicrane round-2 kids-ux + repeated-kana fixes (詳細は CACHE_VERSION const 直前の v2013 コメントブロック参照)。
+// v2014: bento チュートリアル tut2 実装 phase1 (batch:1058-tutorial-impl-phase1、 詳細は先頭 v2014 コメントブロック参照)。
+const CACHE_VERSION = 2014;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
