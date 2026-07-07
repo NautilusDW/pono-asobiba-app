@@ -58,12 +58,13 @@ const ROOT_DIR_DENYLIST = new Set([
   'native'
 ]);
 
-// assets/ 配下でさらに除外するパスセグメント (旧素材バックアップ・staging 残骸)
+// assets/ 配下でさらに除外するパスセグメント (旧素材バックアップ・staging 残骸・archive)
 const ASSET_PATH_EXCLUDE_PATTERNS = [
   /(^|[\\/])_orig[^\\/]*([\\/]|$)/i,
   /(^|[\\/])_PonoSubmarine([\\/]|$)/i,
   /(^|[\\/])_legacy_png([\\/]|$)/i,
-  /(^|[\\/])staging([\\/]|$)/i
+  /(^|[\\/])staging([\\/]|$)/i,
+  /(^|[\\/])_archive([\\/]|$)/i
 ];
 
 // native build 判定フラグ注入 (worker 側 window.__APP_BUILD__=1 注入

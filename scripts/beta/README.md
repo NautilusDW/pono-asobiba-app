@@ -211,10 +211,10 @@ node scripts/beta/md_to_html.js
 | --- | --- |
 | `docs/beta/google_forms_template.md` | `docs/beta/_html/google_forms_template.html` |
 | `docs/beta/google_forms_setup_guide.md` | `docs/beta/_html/google_forms_setup_guide.html` |
-| `assets/beta/parent_flyer.md` | `docs/beta/_html/parent_flyer.html` |
-| `assets/beta/daycare_request.md` | `docs/beta/_html/daycare_request.html` |
-| `assets/beta/daycare_qa.md` | `docs/beta/_html/daycare_qa.html` |
-| `assets/beta/consent_form.md` | `docs/beta/_html/consent_form.html` |
+| `assets/_archive/beta/parent_flyer.md` | `docs/beta/_html/parent_flyer.html` |
+| `assets/_archive/beta/daycare_request.md` | `docs/beta/_html/daycare_request.html` |
+| `assets/_archive/beta/daycare_qa.md` | `docs/beta/_html/daycare_qa.html` |
+| `assets/_archive/beta/consent_form.md` | `docs/beta/_html/consent_form.html` |
 
 上書きは無確認で実施されるので、 Markdown 側を直してから **再実行すれば最新化** されます。
 
