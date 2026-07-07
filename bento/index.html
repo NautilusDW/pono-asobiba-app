@@ -21134,6 +21134,8 @@ function tutorialAdvance(nextStep) {
   tutorialClearPhaseATimer();
   tutorialClearGhostLayer();
   tutorialClearPaletteFocus();
+  // batch:1058-hotfix2: bubble anchor fn は step 越境で持ち越さない (次 step で再設定される)。
+  tutorialState._bubbleAnchorFn = null;
   // batch:1058 tap-scroll-fix: 前ステップの scrollIntoView→tap RAF も必ず破棄
   //   (step 遷移直後に旧 palette 座標で tap animation が走るのを防ぐ)。
   if (tutorialState._scrollThenTapRaf) {
@@ -21262,6 +21264,84 @@ function tut2FindStep(id) {
   return null;
 }
 
+// batch:1058-hotfix2: パレットスクロール時に既存 trim ring とバブル位置を re-sync する。
+//   ResizeObserver はサイズ変化しか拾えないので、 palette 内スクロールで target 位置が
+//   ズレると ring/bubble が古い座標に取り残される。 idempotent — .free-item-list が
+//   後から生えても再度呼ばれれば再バインドする。
+function tut2InstallPaletteScrollSync() {
+  const list = document.querySelector('.free-item-list');
+  if (!list || list._tut2ScrollSyncBound) return;
+  list._tut2ScrollSyncBound = true;
+  list.addEventListener('scroll', () => {
+    if (tutorialState._paletteScrollRaf) return;
+    tutorialState._paletteScrollRaf = requestAnimationFrame(() => {
+      tutorialState._paletteScrollRaf = 0;
+      try { if (typeof tutorialResyncTrims === 'function') tutorialResyncTrims(); } catch (_) {}
+      try {
+        const fn = tutorialState._bubbleAnchorFn;
+        if (typeof fn === 'function') fn();
+      } catch (_) {}
+    });
+  }, { passive: true });
+}
+// パレット item に強い「target ring + バブル横付け」 を掛けるヘルパー。
+//   paletteRef: Element or () => Element (rebuild 耐性のため getter 推奨)。
+//   opts: { gap, ringRadius, ringWidth, ringColor }
+//   - target ring は tutorialTrimPath で青破線をアニメ描画 (button-only step と同じ視覚言語)
+//   - バブルは tutorialPositionBubbleBeside で palette 隣接に配置
+//   - getter を tutorialState._bubbleAnchorFn に保存し、 palette scroll で再アンカー
+function tut2AnchorToPalette(paletteRef, opts = {}) {
+  const resolve = () => {
+    try {
+      const el = (typeof paletteRef === 'function') ? paletteRef() : paletteRef;
+      return (el && el.isConnected) ? el : null;
+    } catch (_) { return null; }
+  };
+  const el = resolve();
+  if (!el) {
+    tutorialState._bubbleAnchorFn = null;
+    return null;
+  }
+  // batch:1058-hotfix2: パレット再描画で古い target 参照が stale 化し、 「異なる target を持つ
+  //   trim ring」 が残留する (noriIdx 遷移で eye1→eye2、 palette 再描画で新 DOM node)。
+  //   同一 el への重複追加は避け、 かつ「el と異なる target を持つ古い trim」 は消す。
+  const trims = tutorialState.trims || [];
+  let hasMatch = false;
+  const stale = [];
+  for (const t of trims) {
+    if (!t || !t.target) { stale.push(t); continue; }
+    if (t.target === el) { hasMatch = true; continue; }
+    // el 以外を指す trim は古い or 別要素 (palette rebuild で stale)。 palette-tap step 中は
+    //   target は「唯一の期待アイテム」 なので、 別要素の trim は消してよい。
+    stale.push(t);
+  }
+  if (stale.length) {
+    for (const t of stale) {
+      try { if (t && t.ro) t.ro.disconnect(); } catch (_) {}
+      try { if (t && t.wrap && t.wrap.parentNode) t.wrap.parentNode.removeChild(t.wrap); } catch (_) {}
+    }
+    tutorialState.trims = trims.filter(t => !stale.includes(t));
+  }
+  if (!hasMatch) {
+    try { tutorialTrimPath(el, { radius: opts.ringRadius || 14, width: opts.ringWidth || 5, color: opts.ringColor || '#1E7FD8' }); } catch (_) {}
+  }
+  // Bubble beside (rebuild 耐性 anchor fn)
+  const gap = (opts.gap != null) ? opts.gap : 12;
+  const anchorFn = () => {
+    try {
+      const cur = resolve();
+      if (cur && typeof tutorialPositionBubbleBeside === 'function') {
+        tutorialPositionBubbleBeside(cur, { gap });
+      }
+    } catch (_) {}
+  };
+  anchorFn();
+  tutorialState._bubbleAnchorFn = anchorFn;
+  // Palette scroll sync (idempotent)
+  tut2InstallPaletteScrollSync();
+  return el;
+}
+
 // ---- Individual renderers ---------------------------------------------------
 
 function tut2RenderGreet(step) {
@@ -21348,7 +21428,8 @@ function tut2RenderBox(step) {
   }, 40);
 }
 function tut2RenderRicePhaseA(step) {
-  tutorialShowBubble('こんなふうに ごはんが はいるよ', { topVh: '20' });
+  // batch:1058-hotfix2: バブルは palette 横付けに統一 (旧 topVh 指定は左右にランダム散った)。
+  tutorialShowBubble('こんなふうに<br>ごはんが はいるよ', { topVh: '20', side: 'left' });
   // Phase A (batch:1058 tap-scroll-fix): finger は paletteEl 上で tap animation。
   //   ゲームがタップ専用配置 (batches 1040-1046 cup-first) なので、 「パレット→目的地」
   //   ドラッグは実操作と食い違う。 見本もタップに統一し、 パレット外アイテムは
@@ -21356,12 +21437,18 @@ function tut2RenderRicePhaseA(step) {
   //   getter を渡すことで palette DOM 再構築 (renderFreeLayoutPalette / observer) 後に
   //   stale ref にならないよう毎 RAF で再クエリ。
   tutorialScrollThenTap(tutorialFindRicePaletteEl, step.id);
+  // batch:1058-hotfix2: パレットフォーカス + target ring + バブル横付け
+  try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.type === 'rice_auto'); } catch (_) {}
+  tut2AnchorToPalette(tutorialFindRicePaletteEl);
   // Ghost rice at target free coord.
   try {
     const box = getSelectedBentoBox();
     if (box && box.autoRice) {
-      // batch:1058-hotfix: rice_base_round は .webp 未生成、 .png のみ実在。
-      const ghostSrc = TUT2_ASSET_BASE + 'rice_base_round.png';
+      // batch:1058-hotfix2: パレットに出ているサムネイル (autoRice.thumbnailImage) を
+      //   ゴーストにも使用。 これで palette 見た目 → お手本 → 実配置 の視覚連続性が保たれる
+      //   (以前は rice_base_round.png = 小さい丸ごはん を出していて、 配置後の見た目
+      //   (コンパートメント充填) と乖離する報告を受けた)。
+      const ghostSrc = box.autoRice.thumbnailImage || (TUT2_ASSET_BASE + 'rice_base_round.png');
       tutorialShowGhostItem({
         imgSrc: ghostSrc,
         freeX: box.autoRice.x,
@@ -21373,12 +21460,11 @@ function tut2RenderRicePhaseA(step) {
   } catch (_) {}
 }
 function tut2RenderRicePhaseB(step) {
-  tutorialShowBubble('おなじように、タップしてね', { topVh: '20' });
-  const riceBtn = tutorialFindRicePaletteEl();
-  if (riceBtn) {
-    tutorialMarkTarget(riceBtn, { radius: 12 });
-    tutorialAnimateTap(riceBtn);
-  }
+  tutorialShowBubble('おなじように<br>タップしてね', { topVh: '20', side: 'left' });
+  // batch:1058-hotfix2: パレットフォーカス + target ring + バブル横付け。
+  try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.type === 'rice_auto'); } catch (_) {}
+  const riceBtn = tut2AnchorToPalette(tutorialFindRicePaletteEl);
+  if (riceBtn) tutorialAnimateTap(riceBtn);
 }
 // のり (Step 4A / 4B 共通レンダラー)。 noriQueue / noriIdx を見て挙動を分岐。
 function tut2RenderNoriPhaseA(step) {
@@ -21400,45 +21486,53 @@ function tut2RenderNoriPhaseA(step) {
     return tutorialState.noriIdx === 0 ? 'つぎは おはな' : 'さいごは おくち';
   })();
   tutorialShowBubble(bubbleText + '<br><span style="font-size:0.85em;opacity:0.7;">おてほんを みてね</span>', { topVh: '20', side: 'left' });
-  // Cluster coords per docs §5: 4A entries 0,1 (eyes); 4B entries 2,3 (nose, mouth).
-  const clusterCoords = (step.id === 'tut2-nori-face-eyes')
-    ? [{ x: -0.19, y: -0.24, size: 40, imgSrc: TUT2_ASSET_BASE + 'book_nori_eye_smile_20260703.png' },
-       { x:  0.19, y: -0.24, size: 40, imgSrc: TUT2_ASSET_BASE + 'book_nori_eye_smile_20260703.png' }]
-    : [{ x: 0, y: 0.01, size: 45, imgSrc: TUT2_ASSET_BASE + 'nori_nose_bear.png' },
-       { x: 0, y: 0.225, size: 100, imgSrc: TUT2_ASSET_BASE + 'nori_mouth_smile.png' }];
-  const coord = clusterCoords[tutorialState.noriIdx] || clusterCoords[0];
+  // batch:1058-hotfix2: パレットフォーカス を Phase A でも適用 (旧 Phase B のみ) — 見本 phase 中
+  //   にすでに にこ/くま/ねこセットが dim され、 期待品目 (nori_eye_round 等) だけが明るく
+  //   浮かび上がる。 これで見本 phase から視線誘導が始まる。
+  try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === expected); } catch (_) {}
   // Finger (batch:1058 tap-scroll-fix): palette 上で tap animation。 4B の nose/mouth
   //   (SIMPLE_DECOR_PALETTE_ORDER index 13 nori_nose_bear / index 14 nori_mouth_smile) は
   //   book tier だと section 見出しで押し出されて scroll 外なので scrollIntoView で見せる。
   //   getter を渡して DOM 再構築耐性を持たせる (palette observer 再描画で stale ref 化防止)。
   tutorialScrollThenTap(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl(), step.id);
-  // Ghost.
-  const targetFree = tutorialNoriTargetFreePoint(coord.x, coord.y);
-  if (targetFree) {
-    tutorialShowGhostItem({
-      imgSrc: coord.imgSrc,
-      freeX: targetFree.x,
-      freeY: targetFree.y,
-      freeSize: coord.size,
-      ttlMs: (step.phaseAMs || 2400) + 200,
-    });
-  }
+  // batch:1058-hotfix2: target ring + バブル横付け。
+  tut2AnchorToPalette(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl());
+  // batch:1058-hotfix2: ゴーストは (a) 実配置と同じ image (b) 実配置と同じ座標/サイズ で描画する。
+  //   旧実装は eyes に book_nori_eye_smile_20260703.png (アーチ型 book eye) を使い、 実配置される
+  //   nori_eye_round.png (丸 nori) と絵柄が食い違って混乱させていた。 座標も cluster metadata
+  //   (-0.19, -0.24) をそのまま使っていたが、 実配置は getSimpleDecorPlacement (-0.17, -0.13 相当)
+  //   なので子供のタップ後に少しズレて見えた。
+  try {
+    const def = (typeof decorItems !== 'undefined' && Array.isArray(decorItems)) ? decorItems.find(d => d && d.id === expected) : null;
+    if (def) {
+      const tier = (typeof getTargetTierForType === 'function') ? getTargetTierForType(def.type) : 1;
+      const placement = (typeof getSimpleDecorPlacement === 'function') ? getSimpleDecorPlacement(def, tier) : null;
+      if (placement) {
+        tutorialShowGhostItem({
+          imgSrc: def.image || (TUT2_ASSET_BASE + def.id + '.png'),
+          freeX: placement.x,
+          freeY: placement.y,
+          freeSize: placement.size,
+          rotation: placement.rotation || 0,
+          ttlMs: (step.phaseAMs || 2400) + 200,
+        });
+      }
+    }
+  } catch (_) {}
 }
 function tut2RenderNoriPhaseB(step) {
   const expected = (tutorialState.noriQueue && tutorialState.noriQueue[tutorialState.noriIdx || 0]) || 'nori_eye_round';
   const bubbleText = (function() {
     if (step.id === 'tut2-nori-face-eyes') {
-      return tutorialState.noriIdx === 0 ? 'おめめを タップしてね' : 'もう ひとつ おめめ';
+      return tutorialState.noriIdx === 0 ? 'この おめめを<br>タップしてね' : 'もう ひとつ<br>おめめを タップ';
     }
-    return tutorialState.noriIdx === 0 ? 'おはなを タップしてね' : 'おくちを タップしてね';
+    return tutorialState.noriIdx === 0 ? 'この おはなを<br>タップしてね' : 'この おくちを<br>タップしてね';
   })();
   tutorialShowBubble(bubbleText, { topVh: '20', side: 'left' });
   tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === expected);
-  const palette = tutorialFindNoriPaletteById(expected);
-  if (palette) {
-    tutorialMarkTarget(palette, { radius: 12 });
-    tutorialAnimateTap(palette);
-  }
+  // batch:1058-hotfix2: target ring + バブル横付け + finger tap を getter 経由で 1 箇所に集約。
+  const palette = tut2AnchorToPalette(() => tutorialFindNoriPaletteById(expected));
+  if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderNoriMovePhaseA(step) {
   tutorialShowBubble('ゆびで うごかせるよ', { topVh: '20', side: 'left' });
@@ -21486,7 +21580,7 @@ function tut2RenderNoriEditPhaseB(step) {
   }
 }
 function tut2RenderOkazuMainPhaseA(step) {
-  tutorialShowBubble('こんなふうに おかずが はいるよ', { topVh: '20', side: 'left' });
+  tutorialShowBubble('こんなふうに<br>おかずが はいるよ', { topVh: '20', side: 'left' });
   // batch:1058 tap-scroll-fix: palette 上で tap animation + パレット外 fallback は scrollIntoView。
   //   getter 版で palette 再構築耐性。
   tutorialScrollThenTap(tutorialFindMainOkazuPaletteEl, step.id);
@@ -21494,6 +21588,14 @@ function tut2RenderOkazuMainPhaseA(step) {
   //   下の ghost ブロック内の `palette` 参照を残してしまい ReferenceError で try/catch に
   //   silently 落ちて 見本 (ghost) が全く描画されない状態だった。 palette を再取得して復活。
   const palette = tutorialFindMainOkazuPaletteEl();
+  const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
+  // batch:1058-hotfix2: メイン おかず は「先頭アイテム」だけをフォーカス。 誤タップは
+  //   getTutorialPaletteAllowance が type='food' & !brushItem を allow するので厳格禁止せず、
+  //   視線誘導のみ (dim + ring)。
+  if (paletteId) {
+    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
+  }
+  tut2AnchorToPalette(tutorialFindMainOkazuPaletteEl);
   // Ghost: pick a generic okazu img from palette if available.
   try {
     if (palette) {
@@ -21511,12 +21613,14 @@ function tut2RenderOkazuMainPhaseA(step) {
   } catch (_) {}
 }
 function tut2RenderOkazuMainPhaseB(step) {
-  tutorialShowBubble('すきなのを ひとつ、タップして<br>いれてみよう', { topVh: '20', side: 'left' });
+  tutorialShowBubble('すきなのを ひとつ<br>タップして いれてみよう', { topVh: '20', side: 'left' });
   // No lock — free choice. Just point at palette in general.
-  const palette = tutorialFindMainOkazuPaletteEl();
-  if (palette) {
-    tutorialAnimateTap(palette);
+  const palette = tut2AnchorToPalette(tutorialFindMainOkazuPaletteEl);
+  const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
+  if (paletteId) {
+    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
   }
+  if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderCupBtn(step) {
   tutorialShowBubble('「カップへ」を おしてね', { topVh: '18', side: 'left' });
@@ -21533,6 +21637,12 @@ function tut2RenderCupPlacePhaseA(step) {
   tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, step.id);
   // batch:1058-hotfix: 下の ghost ブロックが参照する `palette` を復活 (同 refactor 副作用)。
   const palette = tutorialFindFirstCupPaletteEl();
+  // batch:1058-hotfix2: 先頭カップに視線誘導 (dim other cups + ring on target)。
+  const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
+  if (paletteId) {
+    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
+  }
+  tut2AnchorToPalette(tutorialFindFirstCupPaletteEl);
   try {
     if (palette) {
       const img = palette.querySelector('img');
@@ -21550,16 +21660,24 @@ function tut2RenderCupPlacePhaseA(step) {
   } catch (_) {}
 }
 function tut2RenderCupPlacePhaseB(step) {
-  tutorialShowBubble('すきな カップを<br>ひとつ えらんで おこう', { topVh: '20', side: 'left' });
-  const palette = tutorialFindFirstCupPaletteEl();
+  tutorialShowBubble('すきな カップを<br>ひとつ タップ', { topVh: '20', side: 'left' });
+  const palette = tut2AnchorToPalette(tutorialFindFirstCupPaletteEl);
+  const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
+  if (paletteId) {
+    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
+  }
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderCupFoodPhaseA(step) {
-  tutorialShowBubble('カップの なかに いれるよ', { topVh: '54', side: 'left' });
+  tutorialShowBubble('カップの なかに<br>いれるよ', { topVh: '54', side: 'left' });
   // batch:1058 tap-scroll-fix: cup editor が開いた状態の side food palette 上で tap animation。
   tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, step.id);
-  // batch:1058-hotfix: 下の ghost ブロックが参照する `palette` を復活 (同 refactor 副作用)。
   const palette = tutorialFindCupSideFoodPaletteEl();
+  const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
+  if (paletteId) {
+    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
+  }
+  tut2AnchorToPalette(tutorialFindCupSideFoodPaletteEl);
   try {
     if (palette) {
       const img = palette.querySelector('img');
@@ -21579,8 +21697,12 @@ function tut2RenderCupFoodPhaseA(step) {
   } catch (_) {}
 }
 function tut2RenderCupFoodPhaseB(step) {
-  tutorialShowBubble('すきなの ひとつ<br>えらんでね', { topVh: '54', side: 'left' });
-  const palette = tutorialFindCupSideFoodPaletteEl();
+  tutorialShowBubble('すきなのを<br>ひとつ タップ', { topVh: '54', side: 'left' });
+  const palette = tut2AnchorToPalette(tutorialFindCupSideFoodPaletteEl);
+  const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
+  if (paletteId) {
+    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
+  }
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderTabsIntro(step) {
@@ -21695,6 +21817,13 @@ function tutorialRenderStep() {
     tutorialState.phase = 'demo';
   }
   if (tutorialState.phase === 'demo') {
+    // batch:1058-hotfix2: Phase A は「見本ゴースト」 をパレット再描画/オブザーバー
+    //   再発火のたび何度でも呼ばれ得る (observer → tutorialRefresh → tutorialRenderStep)。
+    //   renderPhaseA 内で tutorialShowGhostItem を呼ぶと、その都度 ghost <img> が追加さ
+    //   れ「rice が二重に出る」等の視覚バグになる。 Phase A 呼出前にゴーストをクリア
+    //   して idempotent 化 (Phase A → Phase B 遷移時は既に個別に clear されるので、
+    //   ここで clear しても Phase B のゴースト差し戻し要件はない)。
+    tutorialClearGhostLayer();
     try { if (step.renderPhaseA) step.renderPhaseA(step, tutorialState); } catch (_) {}
     // Schedule transition to Phase B.
     if (firstRender && step.phaseAMs) {
@@ -21756,6 +21885,12 @@ function tutorialTeardown() {
   tutorialClearPhaseATimer();
   tutorialClearGhostLayer();
   tutorialClearPaletteFocus();
+  // batch:1058-hotfix2: bubble anchor fn / palette scroll rAF もクリア。
+  tutorialState._bubbleAnchorFn = null;
+  if (tutorialState._paletteScrollRaf) {
+    try { cancelAnimationFrame(tutorialState._paletteScrollRaf); } catch (_) {}
+    tutorialState._paletteScrollRaf = 0;
+  }
   // batch:1058 tap-scroll-fix: scrollIntoView→tap RAF も teardown で破棄。
   if (tutorialState._scrollThenTapRaf) {
     try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
@@ -21836,6 +21971,9 @@ function tutorialStart() {
   try { tutorialState.observer.observe(root, { subtree: false, childList: true }); } catch (_) {}
   // v3: タブクリック検知 hook
   tutorialInstallTabHook();
+  // batch:1058-hotfix2: palette 内スクロールで trim ring / bubble を re-sync するリスナ設置。
+  //   idempotent; 個別の tut2AnchorToPalette 呼び出しでも再確認する。
+  try { tut2InstallPaletteScrollSync(); } catch (_) {}
   // ユーザータップで デモループ をリセット (anywhere)
   tutorialState.tapHandler = function(e) {
     if (!tutorialState.active) return;

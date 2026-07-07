@@ -796,7 +796,35 @@
 //   'carry' フェーズの分岐条件を MiniPhys.slipTriggered() に差し替え。mojicrane は引き続き
 //   CRITICAL_ASSETS 対象外 (network-first) のため precache 一覧に追加なし、index.html の
 //   ?v= クエリバンプのみで更新反映。play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 2024;
+// v2025: mojicrane round-4「掘り出す」型ピボット。7-phase state machine / #dropBtn+
+//   Space/Enter 単一操作 / STORAGE_KEY は無改変。miniphys.js に resting[] (支持リンク
+//   付き静止山ブロック配列) を追加 (additive、既存 pendulum solver は無改変)し、山の唯一の
+//   正を game.cols (9列グリッド) から resting[] へ意図的に移行 (buildPile/pickCol/safeCol は
+//   参照用に残置、未使用)。ラウンド開始時に15-20体を傾き(最大約20°)付きで一括投入し
+//   fixed-dt pre-settle、掴む/戻す/引き抜き時の限定カスケード(topple, 深度1・WAKE_CAP=4)を
+//   実装。クレーン速度3定数+LEVELS.speedを PACE_MULT=0.6 で一律40%減速。duo-kana連結ブロック・
+//   新規junk形状(O/S/Z)はPhase 2へ据え置き。play.html PAGE_CACHE_VERSION と同期。
+// v2026: mojicrane round-4 残タスク修正。(1) PILE_TILT_MAX を ±20°(0.35rad) → ±30°
+//   (Math.PI/6) へ、ユーザー要望どおりに拡大。(2) 据え置きだった duo-kana 連結ブロック
+//   (kind:'duo', block.chs=[2文字]) を実装し、3ラウンド目以降 (DUO_FROM_ROUND=2、全レベル
+//   共通) は必要かなを2文字ずつ1ブロックへ束ねて山に投入 (pairNeeded())。isDuo()/
+//   blockKanaChars() を追加し、grab半径・埋没救出(antiStarvationRescue)・toss-back回避
+//   (shallowestNeededX)・描画(drawDuoBlock)・判定(evaluate、2スロット同時確定)まで一貫対応。
+//   miniphys.js の blockSize/blockMass にも kind:'duo' 分岐 (w:96,h:54) を追加。
+//   7-phase state machine / #dropBtn / STORAGE_KEY は無改変。play.html PAGE_CACHE_VERSION と同期。
+// v2027: bento tut2 hotfix2 (batch:1058)。パレット・タップ系 step (rice / 4A eye ×2 / 4B nose,mouth /
+//   okazu-main / cup-place / cup-food) に (1) パレット横バブル固定 (tut2AnchorToPalette →
+//   tutorialPositionBubbleBeside)、 (2) 対象パレット item への強い青枠 tutorialTrimPath ring、
+//   (3) 非対象 item の tut-lock dim (tutorialApplyPaletteFocus) を統一適用。 加えて
+//   (4) 4A 見本ゴーストの img を book_nori_eye_smile_20260703.png → nori_eye_round.png (実配置
+//   と一致)、 座標も getSimpleDecorPlacement と一致させて配置ズレを解消。 (5) tutorialRenderStep
+//   の phase A 呼出前に tutorialClearGhostLayer() を挿入し、 MutationObserver 再発火に伴う
+//   ghost <img> 二重挿入 (rice が二重に見える等) を idempotent 化。 (6) tut2AnchorToPalette 側
+//   でも palette 再構築で stale 化した古い trim ring (別 target を指すもの) を明示破棄し、
+//   noriIdx 遷移 (eye1→eye2 等) で ring が二重に残る現象を防止。 誤タップ抑止は既存の
+//   getTutorialPaletteAllowance が deny(...) を返すため追加コードなし。 play.html
+//   PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 2027;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
