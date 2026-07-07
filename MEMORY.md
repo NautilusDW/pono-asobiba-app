@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-07T10:43:10Z - bento tut2 hotfix4: UX方針転換 (ポノ吹き出し集約/palette-tap バブル廃止/サブラウンド 800ms 間/T=0 ring→T=+600ms ghost/Step 6 walk-through/二重リング解消)
+- **タスク**: bento tut2 hotfix4: UX方針転換 (ポノ吹き出し集約/palette-tap バブル廃止/サブラウンド 800ms 間/T=0 ring→T=+600ms ghost/Step 6 walk-through/二重リング解消)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 389
+- **エラー数**: 36
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 93, "Bash": 83, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 52, "Skill": 1, "SendMessage": 8}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-07-07T10:36:21Z - mojicrane round-5' final verification report (Matter.js swap + sort lever + single-block grip)
+- **タスク**: mojicrane round-5' final verification report (Matter.js swap + sort lever + single-block grip)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 65
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 17, "ToolSearch": 2, "TaskStop": 1, "Read": 26, "Write": 1, "Bash": 18}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-07T10:29:27Z - monster-math Phase R3 完全リセット v2 (テンメガネ+カクレン) commit+push+staging verify
 - **タスク**: monster-math Phase R3 完全リセット v2 (テンメガネ+カクレン) commit+push+staging verify
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Workflow": 15, "ToolSearch": 2, "TaskStop": 1, "Read": 25, "Write": 1, "Bash": 17}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T09:10:39Z - monster-math R2 Fix: title_v2_composite再生成 + debugファイル削除 + PNGダウンスケール
-- **タスク**: monster-math R2 Fix: title_v2_composite再生成 + debugファイル削除 + PNGダウンスケール
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 60
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 15, "ToolSearch": 2, "TaskStop": 1, "Read": 24, "Write": 1, "Bash": 17}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T08:48:19Z - monster-math sticker_mm_kakuren 生成 (nano_banana_pro i2i + remove_background alpha修正)
-- **タスク**: monster-math sticker_mm_kakuren 生成 (nano_banana_pro i2i + remove_background alpha修正)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 385
-- **エラー数**: 35
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 93, "Bash": 81, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 50, "Skill": 1, "SendMessage": 8}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -1089,6 +1089,12 @@
               const grabRadius = blockGrabRadius(claw.block);
               const uNorm = off <= perfect ? 0 : clamp(offSigned / grabRadius, -1, 1);
               MiniPhys.spawnCarried(claw.block, uNorm, claw.tipX, claw.tipY);
+              // spawnCarried() already consumed block.tilt as its restTilt0 seed and
+              // now owns the decaying visual overlay internally (see getCarriedPose()).
+              // Clear the field back to 0 so drawJunk's own `if (block.tilt) rotate(...)`
+              // doesn't re-apply the same pile-rest angle a second/third time on top of
+              // pose.angle while this block is being carried.
+              claw.block.tilt = 0;
             }
             if (off <= perfect) {
               pop(claw.tipX, claw.tipY - 34, 'まんなか', '#33bf7a', 18);
