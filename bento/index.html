@@ -4589,6 +4589,21 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   filter: grayscale(0.4);
   cursor: not-allowed;
 }
+/* batch:1058-hotfix4: パレット item のフォーカスマーカーは tutorialTrimPath (青破線矩形)
+   に一本化する。 owner から「rectangle blue outline + circle blue ring の二重表示」 と
+   指摘されたため、 focus-target 中は selected / guide-target の付加 outline / box-shadow
+   / guidePulse (緑リング) を全て抑制。 */
+.free-palette-item.tut-focus-target {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.free-palette-item.tut-focus-target.selected {
+  background-image: url('../assets/images/bento/ui/picker_card_normal.png') !important;
+}
+.free-palette-item.tut-focus-target.guide-target .free-palette-visual {
+  animation: none !important;
+  filter: none !important;
+}
 /* ===== v3: unified bubble style (no loud variant for v3 steps) ===== */
 .tut-bubble--v3 {
   background: #ffffff;
@@ -21365,7 +21380,8 @@ const TUT2_STEPS = [
   { id: 'tut2-nori-face-eyes', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-face-mouth-nose', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-move', phaseAMs: 2500, fallbackMs: 6000, renderPhaseA: tut2RenderNoriMovePhaseA, renderPhaseB: tut2RenderNoriMovePhaseB },
-  { id: 'tut2-nori-edit', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderNoriEditPhaseA, renderPhaseB: tut2RenderNoriEditPhaseB },
+  // batch:1058-hotfix4: phaseAMs 2500 → 6000 (walk-through 4 ボタン + narration に必要)。
+  { id: 'tut2-nori-edit', phaseAMs: 6000, fallbackMs: 10000, renderPhaseA: tut2RenderNoriEditPhaseA, renderPhaseB: tut2RenderNoriEditPhaseB },
   { id: 'tut2-okazu-main', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderOkazuMainPhaseA, renderPhaseB: tut2RenderOkazuMainPhaseB },
   { id: 'tut2-cup-btn', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderCupBtn },
   { id: 'tut2-cup-place', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderCupPlacePhaseA, renderPhaseB: tut2RenderCupPlacePhaseB },
@@ -21649,58 +21665,48 @@ function tut2RenderNoriPhaseA(step) {
     tutorialState.noriIdx = 0;
   }
   const expected = tutorialState.noriQueue[tutorialState.noriIdx] || tutorialState.noriQueue[0];
-  const bubbleText = (function() {
-    if (step.id === 'tut2-nori-face-eyes') {
-      return tutorialState.noriIdx === 0 ? 'まず おめめだよ' : 'もう ひとつ おめめ';
-    }
-    return tutorialState.noriIdx === 0 ? 'つぎは おはな' : 'さいごは おくち';
-  })();
-  tutorialShowBubble(bubbleText + '<br><span style="font-size:0.85em;opacity:0.7;">おてほんを みてね</span>', { topVh: '20', side: 'left' });
-  // batch:1058-hotfix2: パレットフォーカス を Phase A でも適用 (旧 Phase B のみ) — 見本 phase 中
-  //   にすでに にこ/くま/ねこセットが dim され、 期待品目 (nori_eye_round 等) だけが明るく
-  //   浮かび上がる。 これで見本 phase から視線誘導が始まる。
+  // batch:1058-hotfix4: バブル廃止。 サブラウンド毎のポノ吹き出しを setSpeech で更新。
+  tutorialHideBubble();
+  try { tut2ApplyNoriSubroundSpeech(step.id, tutorialState.noriIdx || 0); } catch (_) {}
+  // T=0: パレット ring のみ (期待品目にフォーカス、 dim 他)。
   try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === expected); } catch (_) {}
-  // Finger (batch:1058 tap-scroll-fix): palette 上で tap animation。 4B の nose/mouth
-  //   (SIMPLE_DECOR_PALETTE_ORDER index 13 nori_nose_bear / index 14 nori_mouth_smile) は
-  //   book tier だと section 見出しで押し出されて scroll 外なので scrollIntoView で見せる。
-  //   getter を渡して DOM 再構築耐性を持たせる (palette observer 再描画で stale ref 化防止)。
-  tutorialScrollThenTap(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl(), step.id);
-  // batch:1058-hotfix2: target ring + バブル横付け。
   tut2AnchorToPalette(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl());
-  // batch:1058-hotfix2: ゴーストは (a) 実配置と同じ image (b) 実配置と同じ座標/サイズ で描画する。
-  //   旧実装は eyes に book_nori_eye_smile_20260703.png (アーチ型 book eye) を使い、 実配置される
-  //   nori_eye_round.png (丸 nori) と絵柄が食い違って混乱させていた。 座標も cluster metadata
-  //   (-0.19, -0.24) をそのまま使っていたが、 実配置は getSimpleDecorPlacement (-0.17, -0.13 相当)
-  //   なので子供のタップ後に少しズレて見えた。
-  try {
-    const def = (typeof decorItems !== 'undefined' && Array.isArray(decorItems)) ? decorItems.find(d => d && d.id === expected) : null;
-    if (def) {
-      const tier = (typeof getTargetTierForType === 'function') ? getTargetTierForType(def.type) : 1;
-      const placement = (typeof getSimpleDecorPlacement === 'function') ? getSimpleDecorPlacement(def, tier) : null;
-      if (placement) {
-        tutorialShowGhostItem({
-          imgSrc: def.image || (TUT2_ASSET_BASE + def.id + '.png'),
-          freeX: placement.x,
-          freeY: placement.y,
-          freeSize: placement.size,
-          rotation: placement.rotation || 0,
-          ttlMs: (step.phaseAMs || 2400) + 200,
-        });
+  // T=+600ms: scrollIntoView → finger tap + ghost。
+  const stepId = step.id;
+  if (tutorialState._paletteTapDelayTimer) {
+    try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
+    tutorialState._paletteTapDelayTimer = null;
+  }
+  tutorialState._paletteTapDelayTimer = setTimeout(() => {
+    tutorialState._paletteTapDelayTimer = null;
+    if (!tutorialState.active) return;
+    if (tutorialState.step !== stepId) return;
+    tutorialScrollThenTap(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl(), stepId);
+    try {
+      const def = (typeof decorItems !== 'undefined' && Array.isArray(decorItems)) ? decorItems.find(d => d && d.id === expected) : null;
+      if (def) {
+        const tier = (typeof getTargetTierForType === 'function') ? getTargetTierForType(def.type) : 1;
+        const placement = (typeof getSimpleDecorPlacement === 'function') ? getSimpleDecorPlacement(def, tier) : null;
+        if (placement) {
+          tutorialShowGhostItem({
+            imgSrc: def.image || (TUT2_ASSET_BASE + def.id + '.png'),
+            freeX: placement.x,
+            freeY: placement.y,
+            freeSize: placement.size,
+            rotation: placement.rotation || 0,
+            ttlMs: Math.max(600, (step.phaseAMs || 2400) - 400),
+          });
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }, 600);
 }
 function tut2RenderNoriPhaseB(step) {
   const expected = (tutorialState.noriQueue && tutorialState.noriQueue[tutorialState.noriIdx || 0]) || 'nori_eye_round';
-  const bubbleText = (function() {
-    if (step.id === 'tut2-nori-face-eyes') {
-      return tutorialState.noriIdx === 0 ? 'この おめめを<br>タップしてね' : 'もう ひとつ<br>おめめを タップ';
-    }
-    return tutorialState.noriIdx === 0 ? 'この おはなを<br>タップしてね' : 'この おくちを<br>タップしてね';
-  })();
-  tutorialShowBubble(bubbleText, { topVh: '20', side: 'left' });
+  // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。
+  tutorialHideBubble();
+  try { tut2ApplyNoriSubroundSpeech(step.id, tutorialState.noriIdx || 0); } catch (_) {}
   tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === expected);
-  // batch:1058-hotfix2: target ring + バブル横付け + finger tap を getter 経由で 1 箇所に集約。
   const palette = tut2AnchorToPalette(() => tutorialFindNoriPaletteById(expected));
   if (palette) tutorialAnimateTap(palette);
 }
@@ -21731,30 +21737,104 @@ function tut2RenderNoriMovePhaseB(step) {
   }
 }
 function tut2RenderNoriEditPhaseA(step) {
-  // batch:1058-hotfix3: 旧バブル文言 (擬音つき) は幼児に伝わらず、 かつ Phase A が終わっても
-  //   Phase B に進めない位相リセットバグと合わせて Step 6 で詰まっていた (owner 報告)。
-  //   バブル文言を平易化し、 位相バグは tutorialRenderStep 側で修正済。
-  tutorialShowBubble('のりを タップすると まわせるよ', { topVh: '8', side: 'right' });
+  // batch:1058-hotfix4: Step 6 は高情報ステップ — 編集パネルの 4 ボタン (↺ / ↻ / ちいさく /
+  //   おおきく) を順にリング + ポノ setSpeech で解説してから のりOK 誘導。 各サブステップは
+  //   ~1.4s で連続再生 (総 ~5.8s)。 独立バブルは owner 方針で残す (高情報時のみ許可)。
+  tutorialShowBubble('のりを タップすると<br>こんな パネルが でるよ', { topVh: '8', side: 'right' });
   const placed = tutorialFindFirstPlacedDecor();
-  if (placed && placed.item) {
-    try {
-      if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid);
-    } catch (_) {}
-    // After a beat, animate a tap on the rotate ↻ button (index 1 in edit panel).
-    setTimeout(() => {
-      if (tutorialState.step !== 'tut2-nori-edit') return;
-      const rotBtn = document.querySelector('.free-context-toolbar button');
-      if (rotBtn) tutorialAnimateTap(rotBtn);
-    }, 400);
+  if (!placed || !placed.item) return;
+  try {
+    if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid);
+  } catch (_) {}
+  const stepId = step.id;
+  // 前回残置の timer を掃除。
+  if (tutorialState._noriEditSeqTimers) {
+    for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
   }
+  tutorialState._noriEditSeqTimers = [];
+  // ボタン取得の共通処理。 DOM は openSimpleDecorEditPanel 後の renderFreeLayoutControls
+  // (setTimeout 0ms) で入るので、 各サブステップの実行時に querySelector する。
+  const findRotateButtons = () => Array.from(document.querySelectorAll('.free-context-toolbar > button.free-icon-button'));
+  const findSizeButtons = () => Array.from(document.querySelectorAll('.free-context-toolbar .free-decor-size-buttons button'));
+  // ステップ 6a (T=+400ms): パネルが出た瞬間の紹介。 ポノ「のりを タップすると こんな パネルが でるよ」
+  // ステップ 6b (T=+1400ms): ↻ を紹介 + 自動タップ (視覚的に回転が見える)
+  // ステップ 6c (T=+2800ms): ちいさく を紹介 + 自動タップ
+  // ステップ 6d (T=+4200ms): おおきく を紹介 + 自動タップ (2 回タップで元サイズ 15% 増)
+  // ステップ 6e (T=+5600ms): Phase B に手動遷移 — のりOK 誘導
+  const scheduleAt = (delay, fn) => {
+    const t = setTimeout(() => {
+      if (!tutorialState.active) return;
+      if (tutorialState.step !== stepId) return;
+      try { fn(); } catch (_) {}
+    }, delay);
+    tutorialState._noriEditSeqTimers.push(t);
+  };
+  scheduleAt(400, () => {
+    // 6a: ポノに「パネルが出るよ」 説明。 tutorialShowBubble は上で発話済。
+    try { setSpeech('のりを タップすると こんな パネルが でるよ'); } catch (_) {}
+  });
+  scheduleAt(1400, () => {
+    // 6b: ↻ (rotate right, index 1) にリング + 自動タップ (visual rotate 15°)。
+    const rotBtns = findRotateButtons();
+    const rotRight = rotBtns[1] || rotBtns[0]; // ↺ ↻ の順、 右回転を優先
+    tutorialClearTrims();
+    if (rotRight) {
+      tutorialTrimPath(rotRight, { radius: 18, width: 5, color: '#1E7FD8' });
+      tutorialAnimateTap(rotRight);
+      try { setSpeech('「くるっ」で のりを まわせるよ'); } catch (_) {}
+      // 実際に回転を見せる: 400ms 後に dispatchEvent
+      const rotBtn = rotRight;
+      const t2 = setTimeout(() => {
+        if (!tutorialState.active || tutorialState.step !== stepId) return;
+        try { rotBtn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); } catch (_) {}
+      }, 500);
+      tutorialState._noriEditSeqTimers.push(t2);
+    }
+  });
+  scheduleAt(2800, () => {
+    // 6c: ちいさく (size buttons[0]) にリング + 自動タップ。
+    const sizeBtns = findSizeButtons();
+    const smaller = sizeBtns[0];
+    tutorialClearTrims();
+    if (smaller) {
+      tutorialTrimPath(smaller, { radius: 18, width: 5, color: '#1E7FD8' });
+      tutorialAnimateTap(smaller);
+      try { setSpeech('「ちいさく」で ちいさく できるよ'); } catch (_) {}
+      const btn = smaller;
+      const t2 = setTimeout(() => {
+        if (!tutorialState.active || tutorialState.step !== stepId) return;
+        try { btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); } catch (_) {}
+      }, 500);
+      tutorialState._noriEditSeqTimers.push(t2);
+    }
+  });
+  scheduleAt(4200, () => {
+    // 6d: おおきく (size buttons[1]) にリング + 自動タップ。 元サイズに戻る効果。
+    const sizeBtns = findSizeButtons();
+    const bigger = sizeBtns[1];
+    tutorialClearTrims();
+    if (bigger) {
+      tutorialTrimPath(bigger, { radius: 18, width: 5, color: '#1E7FD8' });
+      tutorialAnimateTap(bigger);
+      try { setSpeech('「おおきく」で おおきく できるよ'); } catch (_) {}
+      const btn = bigger;
+      const t2 = setTimeout(() => {
+        if (!tutorialState.active || tutorialState.step !== stepId) return;
+        try { btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); } catch (_) {}
+      }, 500);
+      tutorialState._noriEditSeqTimers.push(t2);
+    }
+  });
+  scheduleAt(5600, () => {
+    // 6e: Phase B へ遷移 (Phase A タイマー 6000ms のわずか前、 setSpeech を先に更新)。
+    try { setSpeech('できたら「のりOK」を おそう！'); } catch (_) {}
+  });
 }
 function tut2RenderNoriEditPhaseB(step) {
-  // batch:1058-hotfix3: Phase B のバブルはボタン横に再配置する (tutorialPositionBubbleBeside)。
-  //   初期 topVh は 8 に置いて上端張り付きにしておき、 のりOK ボタンが見つかったら横付けに
-  //   上書きする。 位相リセットバグ修正 (tutorialRenderStep) と併せて Phase B が確実に発火する
-  //   ようになった。 編集パネルはユーザー操作なしでも Phase B で のりOK に指誘導 → 押下で
-  //   handleNoriOkPressed → tier2Main へ (tutorialOnGuideChange 経由で tut2-okazu-main へ進む)。
+  // batch:1058-hotfix4: Phase B は のりOK 誘導のみ (Phase A で 4 ボタン walk-through 済)。
+  //   バブルは のりOK 横に anchor (owner 方針で高情報ステップは独立バブル可)。
   tutorialShowBubble('できたら「のりOK」<br>を おそう', { topVh: '8', side: 'right' });
+  try { setSpeech('できたら「のりOK」を おそう！'); } catch (_) {}
   const noriOkBtn = tutorialNoriOkButton();
   if (noriOkBtn) {
     tutorialPositionBubbleBeside(noriOkBtn, { gap: 12 });
@@ -21763,41 +21843,44 @@ function tut2RenderNoriEditPhaseB(step) {
   }
 }
 function tut2RenderOkazuMainPhaseA(step) {
-  tutorialShowBubble('こんなふうに<br>おかずが はいるよ', { topVh: '20', side: 'left' });
-  // batch:1058 tap-scroll-fix: palette 上で tap animation + パレット外 fallback は scrollIntoView。
-  //   getter 版で palette 再構築耐性。
-  tutorialScrollThenTap(tutorialFindMainOkazuPaletteEl, step.id);
-  // batch:1058-hotfix: 4ac9f2a で local `const palette = ...` を getter 引数に置換した際、
-  //   下の ghost ブロック内の `palette` 参照を残してしまい ReferenceError で try/catch に
-  //   silently 落ちて 見本 (ghost) が全く描画されない状態だった。 palette を再取得して復活。
+  // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。 T=0 ring only、 T=+600ms で ghost/finger。
+  tutorialHideBubble();
   const palette = tutorialFindMainOkazuPaletteEl();
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
-  // batch:1058-hotfix2: メイン おかず は「先頭アイテム」だけをフォーカス。 誤タップは
-  //   getTutorialPaletteAllowance が type='food' & !brushItem を allow するので厳格禁止せず、
-  //   視線誘導のみ (dim + ring)。
   if (paletteId) {
     try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
   }
   tut2AnchorToPalette(tutorialFindMainOkazuPaletteEl);
-  // Ghost: pick a generic okazu img from palette if available.
-  try {
-    if (palette) {
-      const img = palette.querySelector('img');
-      if (img && img.src) {
-        tutorialShowGhostItem({
-          imgSrc: img.src,
-          freeX: FREE_LAYOUT_W * 0.62,
-          freeY: FREE_LAYOUT_H * 0.35,
-          freeSize: 110,
-          ttlMs: (step.phaseAMs || 2500) + 200,
-        });
+  const stepId = step.id;
+  if (tutorialState._paletteTapDelayTimer) {
+    try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
+    tutorialState._paletteTapDelayTimer = null;
+  }
+  tutorialState._paletteTapDelayTimer = setTimeout(() => {
+    tutorialState._paletteTapDelayTimer = null;
+    if (!tutorialState.active) return;
+    if (tutorialState.step !== stepId) return;
+    tutorialScrollThenTap(tutorialFindMainOkazuPaletteEl, stepId);
+    try {
+      const p = tutorialFindMainOkazuPaletteEl();
+      if (p) {
+        const img = p.querySelector('img');
+        if (img && img.src) {
+          tutorialShowGhostItem({
+            imgSrc: img.src,
+            freeX: FREE_LAYOUT_W * 0.62,
+            freeY: FREE_LAYOUT_H * 0.35,
+            freeSize: 110,
+            ttlMs: Math.max(600, (step.phaseAMs || 2500) - 400),
+          });
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }, 600);
 }
 function tut2RenderOkazuMainPhaseB(step) {
-  tutorialShowBubble('すきなのを ひとつ<br>タップして いれてみよう', { topVh: '20', side: 'left' });
-  // No lock — free choice. Just point at palette in general.
+  // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。
+  tutorialHideBubble();
   const palette = tut2AnchorToPalette(tutorialFindMainOkazuPaletteEl);
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
   if (paletteId) {
@@ -21815,35 +21898,45 @@ function tut2RenderCupBtn(step) {
   }
 }
 function tut2RenderCupPlacePhaseA(step) {
-  tutorialShowBubble('カップを おこう', { topVh: '20', side: 'left' });
-  // batch:1058 tap-scroll-fix: palette 上で tap animation。 カップは cup タブの palette list。
-  tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, step.id);
-  // batch:1058-hotfix: 下の ghost ブロックが参照する `palette` を復活 (同 refactor 副作用)。
+  // batch:1058-hotfix4: バブル廃止。 T=0 ring only、 T=+600ms で ghost/finger。
+  tutorialHideBubble();
   const palette = tutorialFindFirstCupPaletteEl();
-  // batch:1058-hotfix2: 先頭カップに視線誘導 (dim other cups + ring on target)。
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
   if (paletteId) {
     try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
   }
   tut2AnchorToPalette(tutorialFindFirstCupPaletteEl);
-  try {
-    if (palette) {
-      const img = palette.querySelector('img');
-      if (img && img.src) {
-        const freePt = tutorialCupDemoFreePoint();
-        tutorialShowGhostItem({
-          imgSrc: img.src,
-          freeX: freePt.x,
-          freeY: freePt.y,
-          freeSize: 100,
-          ttlMs: (step.phaseAMs || 2500) + 200,
-        });
+  const stepId = step.id;
+  if (tutorialState._paletteTapDelayTimer) {
+    try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
+    tutorialState._paletteTapDelayTimer = null;
+  }
+  tutorialState._paletteTapDelayTimer = setTimeout(() => {
+    tutorialState._paletteTapDelayTimer = null;
+    if (!tutorialState.active) return;
+    if (tutorialState.step !== stepId) return;
+    tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, stepId);
+    try {
+      const p = tutorialFindFirstCupPaletteEl();
+      if (p) {
+        const img = p.querySelector('img');
+        if (img && img.src) {
+          const freePt = tutorialCupDemoFreePoint();
+          tutorialShowGhostItem({
+            imgSrc: img.src,
+            freeX: freePt.x,
+            freeY: freePt.y,
+            freeSize: 100,
+            ttlMs: Math.max(600, (step.phaseAMs || 2500) - 400),
+          });
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }, 600);
 }
 function tut2RenderCupPlacePhaseB(step) {
-  tutorialShowBubble('すきな カップを<br>ひとつ タップ', { topVh: '20', side: 'left' });
+  // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。
+  tutorialHideBubble();
   const palette = tut2AnchorToPalette(tutorialFindFirstCupPaletteEl);
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
   if (paletteId) {
@@ -21852,35 +21945,47 @@ function tut2RenderCupPlacePhaseB(step) {
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderCupFoodPhaseA(step) {
-  tutorialShowBubble('カップの なかに<br>いれるよ', { topVh: '54', side: 'left' });
-  // batch:1058 tap-scroll-fix: cup editor が開いた状態の side food palette 上で tap animation。
-  tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, step.id);
+  // batch:1058-hotfix4: バブル廃止。 T=0 ring only、 T=+600ms で ghost/finger。
+  tutorialHideBubble();
   const palette = tutorialFindCupSideFoodPaletteEl();
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
   if (paletteId) {
     try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
   }
   tut2AnchorToPalette(tutorialFindCupSideFoodPaletteEl);
-  try {
-    if (palette) {
-      const img = palette.querySelector('img');
-      if (img && img.src) {
-        const cup = tutorialActiveCupItem();
-        if (cup) {
-          tutorialShowGhostItem({
-            imgSrc: img.src,
-            freeX: cup.x,
-            freeY: cup.y,
-            freeSize: 70,
-            ttlMs: (step.phaseAMs || 2500) + 200,
-          });
+  const stepId = step.id;
+  if (tutorialState._paletteTapDelayTimer) {
+    try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
+    tutorialState._paletteTapDelayTimer = null;
+  }
+  tutorialState._paletteTapDelayTimer = setTimeout(() => {
+    tutorialState._paletteTapDelayTimer = null;
+    if (!tutorialState.active) return;
+    if (tutorialState.step !== stepId) return;
+    tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, stepId);
+    try {
+      const p = tutorialFindCupSideFoodPaletteEl();
+      if (p) {
+        const img = p.querySelector('img');
+        if (img && img.src) {
+          const cup = tutorialActiveCupItem();
+          if (cup) {
+            tutorialShowGhostItem({
+              imgSrc: img.src,
+              freeX: cup.x,
+              freeY: cup.y,
+              freeSize: 70,
+              ttlMs: Math.max(600, (step.phaseAMs || 2500) - 400),
+            });
+          }
         }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }, 600);
 }
 function tut2RenderCupFoodPhaseB(step) {
-  tutorialShowBubble('すきなのを<br>ひとつ タップ', { topVh: '54', side: 'left' });
+  // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。
+  tutorialHideBubble();
   const palette = tut2AnchorToPalette(tutorialFindCupSideFoodPaletteEl);
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
   if (paletteId) {
@@ -22362,8 +22467,10 @@ function tutorialOnItemPlaced(item) {
       const req = getRequiredOkazuCountsForTier(tier);
       const nowMain = (typeof countOkazuRoleOnTier === 'function') ? countOkazuRoleOnTier(tier, 'main') : 0;
       if (nowMain < (req.main || 1)) {
-        // 1 個目 → 「もう ひとつ」 促し。 callout は onCalloutShown を仕込まず 3s で自動的に
-        //   hide される (次 render で新規表示上書き)。 Phase B の finger loop は継続。
+        // 1 個目 → 「もう ひとつ」 促し。 batch:1058-hotfix4: owner の UX 方針転換に合わせ、
+        //   ポノ吹き出し (setSpeech) を主 channel として更新し、 独立 callout は補助扱いに
+        //   する (バブル濫立の抑制)。 Phase B の finger loop は継続。
+        try { setSpeech('もう ひとつ おかずを えらぼう！'); } catch (_) {}
         if (typeof tutorialShowPonoCallout === 'function') {
           try { tutorialShowPonoCallout('もう ひとつ<br>おかずを えらぼう！', { placement: 'high' }); } catch (_) {}
         }

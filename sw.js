@@ -1,5 +1,24 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2036: bento tut2 hotfix4 (batch:1058-tut2-hotfix4)。 owner UX 方針転換に対応 —
+// (1) ポノ吹き出し (setSpeech) を主 narration channel に集約。 TUT2_PONO_SPEECH map を
+//   新設し、 tutorialRenderStep の firstRender で必ず setSpeech(現ステップテキスト) を
+//   呼んで前ステップの stale bubble (例: Step 7 中の「べんとうばこを タップして…」)
+//   を強制上書き。 (2) palette-tap step (rice / 4A / 4B / 7 / 9 / 10) の独立
+//   tutorialShowBubble を廃止 (バブル濫立の抑制)。 独立バブルは高情報時のみ
+//   — greet / Step 6 編集パネル walk-through / Step 11 タブ紹介 / button-only steps。
+// (3) サブラウンド間に 800ms の「間」 を挿入。 のり Step 4A の eye1 配置直後に即座
+//   eye2 ghost が floating で現れる問題を、 ghost/ring/finger 掃除 → setSpeech
+//   ('できたね！') → 800ms 待機 → 次サブラウンド Phase A 再演出 の順に修正。
+// (4) palette-tap 各ステップの Phase A で ring と ghost の表示順を分離。 T=0 で
+//   ring のみ表示、 T=+600ms で ghost/finger 追加。 これで「タップ前に半透明品目が
+//   箱内に floating で現れる」 混乱を防ぐ。 (5) Step 6 nori-edit を 4 ボタン
+//   (↺/↻/ちいさく/おおきく) walk-through に拡張。 Phase A 内で 400/1400/2800/4200/5600ms
+//   のシーケンス timer で各ボタンを紹介 → 自動タップ → 効果視覚化 → 次。 phaseAMs を
+//   2500→6000 に、 fallbackMs 7000→10000 に延長。 (6) パレット項目の二重ブルーリング
+//   (rectangular outline + circular ring) を CSS で解消 — .tut-focus-target 中は
+//   selected background / guidePulse / outline / box-shadow を全て抑制。
+// play.html PAGE_CACHE_VERSION と同期。
 // v2028: 「あたらしい バージョンが あります」 トーストが繰り返し発火して bento (ゲーム) に
 // 入れない緊急バグを修正 (batch:1058-sw-toast-fix)。 原因は v2007 (batch:1203) の
 // sessionStorage-only ガードだけでは、 (a) 'activated' state で session フラグを毎回
@@ -867,7 +886,15 @@
 //   (blocker 0件、 warn は次ラウンド持ち越し)。 precache 対象パス自体は v2030 で
 //   反映済みのため asset パス変更なし、 content 更新分のキャッシュ破棄のためバンプ。
 //   play.html PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 2034;
+// v2035: mojicrane round-5' residual-fix (2件)。 (1) js/phys-matter.js:
+//   spawnCarried() の carry-constraint stiffness/length を uu===0 での二値切替
+//   ではなく |uu| に対する連続 lerp に変更 (握り位置がずれるほど滑らかに緩む)。
+//   (2) js/game.js: grab時に claw.block.tilt=body.angle をセットした直後に
+//   MiniPhys.spawnCarried() が restTilt0 として消費した後は 0 に戻し、 drawJunk()
+//   の `if (block.tilt) rotate(...)` が carry 中の pose.angle (body.angle+restTilt
+//   を内包済み) に重ねて三重回転するのを防止。 mojicrane は precache 対象外だが
+//   runtime 更新分のキャッシュ破棄のためバンプ。 play.html PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 2036;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

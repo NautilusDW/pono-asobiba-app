@@ -5,6 +5,16 @@
 > 現行のタップ式 + カップファースト UX (box → rice → decor → tier2Main → tier2Side → complete) に完全準拠。
 > 音声は全て新規 ID (`tut2_XX_<slug>.mp3`)。旧 `basic_tut_*` は **ID ごと廃止・再利用禁止** (ファイル名と中身の不一致事故の再発防止)。
 
+> ### 2026-07-07 batch:1058-tut2-hotfix4 UX 方針転換 (implemented, sw v2036)
+> owner の v2029 プレイテスト後、 「バブルが 3〜4 箇所に散在」 「タップ前に半透明品目が箱内に floating」 「サブラウンド間の間がない」 「Step 6 の説明が曖昧」 「パレット項目が二重ブルーリング」 の 5 問題を UX 方針転換で解決。
+>
+> - **ナレーション主 channel = ポノ吹き出し (setSpeech)**。 独立 `tutorialShowBubble` は greet (Step 1) / Step 6 編集パネル walk-through / Step 11 タブ紹介 / button-only steps (Step 2/8/12/13/14) のみに限定。 palette-tap step (Step 3 rice / Step 4A/4B nori / Step 7 okazu-main / Step 9 cup-place / Step 10 cup-food) は独立バブルを廃止し、 ポノ setSpeech (TUT2_PONO_SPEECH map) 一本化。
+> - **`tutorialRenderStep` firstRender で必ず `setSpeech(TUT2_PONO_SPEECH[stepId])`** を呼んで前ステップの stale setSpeech (leaf 系「べんとうばこを タップして はっぱを しこう！」 等) を強制上書き。 これにより Screenshot 3 の stale bubble 問題を根本解消。
+> - **palette-tap Phase A の 2 段化**: T=0 で ring のみ、 T=+600ms (`_paletteTapDelayTimer`) で finger tap + ghost。 「タップ前に半透明品目が floating」 混乱を解消。
+> - **サブラウンド間 800ms の「間」** (`_noriBeatTimer`): item-placed で ghost/ring/finger を先に掃除 → `setSpeech('できたね！')` → 800ms 待機 → 次サブラウンド Phase A。 サブラウンド毎の setSpeech は `tut2ApplyNoriSubroundSpeech` で更新 (4A: 「まずは おめめを タップ！」→「もう ひとつ おめめを タップ！」/ 4B: 「つぎは おはなを タップ！」→「さいごに おくちを タップ！」)。
+> - **Step 6 nori-edit walk-through 拡張**: phaseAMs 2500→6000ms、 `_noriEditSeqTimers` で 400/1400/2800/4200/5600ms のシーケンス — (a) 400ms「のりを タップすると こんな パネルが でるよ」 setSpeech、 (b) 1400ms ↻ ring + 自動 pointerdown + 「「くるっ」で のりを まわせるよ」、 (c) 2800ms ちいさく ring + 自動 tap + 「「ちいさく」で ちいさく できるよ」、 (d) 4200ms おおきく ring + 自動 tap + 「「おおきく」で おおきく できるよ」、 (e) 5600ms 「できたら『のりOK』を おそう！」 → Phase B で のりOK 誘導。
+> - **CSS: `.tut-focus-target` で二重ブルーリング解消**: selected background (picker_card_selected.png) / guidePulse 緑リング / outline / box-shadow を全て !important 抑制し、 tutorialTrimPath の青破線矩形 1 本に統一。
+
 ---
 
 ## 1. 概要 + 設計方針
