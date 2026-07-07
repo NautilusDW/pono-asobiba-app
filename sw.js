@@ -755,7 +755,8 @@
 // v2015: monster-math M2 10づくり (make10) モード実装マージ (Phase 3-Impl → Impl2)。
 // v2016: mojicrane round-2 残存指摘の追加修正 (詳細は先頭 v2016 コメントブロック参照)。
 // v2017: monster-math M3 かぞえる (kazoeru) モード実装マージ (Phase 3-Impl → Impl3)。
-const CACHE_VERSION = 2017;
+// v2018: monster-math M4 たしざん (tashizan) モード実装マージ (Phase 3-Impl → Impl4)。
+const CACHE_VERSION = 2018;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
