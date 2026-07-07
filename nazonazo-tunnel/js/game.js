@@ -158,8 +158,8 @@ const ASSETS={
  },
  future:{
   sky:"../assets/images/nazonazo-tunnel/future_city_sky_back_20260707.webp",
-  horizon:"../assets/images/nazonazo-tunnel/future_city_horizon_loop_20260707.webp",
-  mid:"../assets/images/nazonazo-tunnel/future_city_mid_loop_20260707.webp",
+  horizon:"../assets/images/nazonazo-tunnel/future_city_horizon_loop_long_20260707.webp",
+  mid:"../assets/images/nazonazo-tunnel/future_city_mid_loop_long_20260707.webp",
   ground:"../assets/images/nazonazo-tunnel/future_city_ground_track_loop_20260707.webp",
   fg:"../assets/images/nazonazo-tunnel/future_city_foreground_loop_20260707.webp",
   decor:"../assets/images/nazonazo-tunnel/future_city_station_line_decor_20260707.webp"
@@ -396,7 +396,7 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer");
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp");
@@ -404,6 +404,7 @@ const portalMaskLayer=$("portalMaskLayer"),portalEditOverlay=$("portalEditOverla
 const portalOccIn=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-in");
 const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-out");
 let seaFishSprites=[];
+let lastWheelPeriod=0;
 
 /* ================= audio & speech ================= */
 let ac=null;
@@ -1297,6 +1298,7 @@ function coverEntryStop(){
 function showTunnelRunIn(){
  setDriverMood("happy");
  document.body.classList.remove("tunnel-exit-setup","tunnel-exit-run","tunnel-exit-approach","tunnel-exit-brighten");
+ clearMagicPuffs();
  document.body.classList.add("tunnel-enter-run");
  renderPortalMasks(transitCover||coverEl);
  veh.classList.add("go");carsEl.classList.add("go");
@@ -1310,10 +1312,12 @@ function showTunnelRunIn(){
 function enterTunnelInterior(){
  if(transitCover){transitCover.remove();transitCover=null;}
  document.body.classList.remove("tunnel-enter-run");
+ clearMagicPuffs();
  tunnelInteriorMode=true;
  document.body.classList.add("tunnel-interior");
  world.innerHTML="";tunnels=[];coverEl=null;dropEl=null;
  worldX=origin(stg)+COVER_OFF;
+ setTunnelInteriorBackdrop();
  target=worldX+TUNNEL_INTERIOR_RUN_VW;
  pending="tunnelExit";driving=true;swapReady=false;swapped=false;
  veh.classList.add("go","inTun");veh.classList.remove("idle");
@@ -1335,6 +1339,7 @@ function startTunnelExitApproach(){
 }
 function finishTunnelInterior(){
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
+ clearMagicPuffs();
  document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-brighten");
  document.body.classList.add("tunnel-fade-dark","tunnel-exit-white");
  setTimeout(()=>{
@@ -1497,29 +1502,42 @@ function sparkOnVeh(){
   s.style.left="calc("+vehicleLeftVw()+"vw + "+(i*4)+"vw)";s.style.bottom=(16+((i*7)%12))+"vh";
   $("app").appendChild(s);setTimeout(()=>s.remove(),900);}
 }
+function clearMagicPuffs(){
+ const box=veh.querySelector(".puff");
+ if(box)box.replaceChildren();
+ if(smokeLayer)smokeLayer.replaceChildren();
+ nextMagicPuffAt=0;
+}
 function tickMagicPuffs(now){
  if(!playing||!veh.classList.contains("go")||!document.body.classList.contains("v-train"))return;
  if(document.body.classList.contains("tunnel-enter-run")||document.body.classList.contains("tunnel-exit-run"))return;
  if(now<nextMagicPuffAt)return;
- const box=veh.querySelector(".puff");
+ const useSceneSmoke=IOS_DEVICE&&smokeLayer;
+ const box=useSceneSmoke?smokeLayer:veh.querySelector(".puff");
  if(!box)return;
- nextMagicPuffAt=now+16+Math.random()*24;
+ nextMagicPuffAt=now+(useSceneSmoke?20:16)+Math.random()*(useSceneSmoke?30:24);
  if(box.children.length>128)return;
  const p=document.createElement("span");
  p.className="magic-puff";
  const idx=rnd(0,7),col=idx%4,row=Math.floor(idx/4);
- const size=18+Math.random()*62;
+ const size=(useSceneSmoke?34:18)+Math.random()*(useSceneSmoke?78:62);
  const baseLife=2600+Math.random()*1800;
  const life=baseLife*(1.5+Math.random()*0.5);
+ if(useSceneSmoke){
+  const sceneRect=$("scene").getBoundingClientRect();
+  const vehRect=veh.getBoundingClientRect();
+  p.style.left=Math.round(vehRect.left-sceneRect.left+vehRect.width*.76)+"px";
+  p.style.top=Math.round(vehRect.top-sceneRect.top-vehRect.height*.17)+"px";
+ }
  p.style.width=size+"px";p.style.height=size+"px";
  p.style.setProperty("--puff-size",size+"px");
  p.style.setProperty("--puff-life",life+"ms");
- p.style.setProperty("--puff-dx",(-140-Math.random()*260)+"px");
- p.style.setProperty("--puff-dy",(-18-Math.random()*64)+"px");
+ p.style.setProperty("--puff-dx",(-(useSceneSmoke?180:140)-Math.random()*(useSceneSmoke?300:260))+"px");
+ p.style.setProperty("--puff-dy",(-18-Math.random()*(useSceneSmoke?82:64))+"px");
  p.style.setProperty("--puff-rot",(-18+Math.random()*36)+"deg");
  p.style.setProperty("--puff-start-scale",(0.42+Math.random()*0.34).toFixed(2));
  p.style.setProperty("--puff-end-scale",(1.2+Math.random()*1.55).toFixed(2));
- const alpha=0.6+Math.random()*0.26;
+ const alpha=(useSceneSmoke?0.78:0.6)+Math.random()*(useSceneSmoke?0.18:0.26);
  p.style.setProperty("--puff-alpha",alpha.toFixed(2));
  p.style.setProperty("--puff-mid-alpha",(alpha*.82).toFixed(2));
  p.style.backgroundPosition=(col*33.3333)+"% "+(row*100)+"%";
@@ -1561,25 +1579,29 @@ function useHelp(){
  announce(item.t+"が おしえてくれたよ");
 }
 
+function setTunnelInteriorBackdrop(){
+ const tunnelPan=cssXFromVw(-worldX*.55);
+ skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+tunnelPan+' center / auto 100% repeat-x';
+ document.documentElement.style.setProperty("--tunnel-track-x",tunnelPan);
+}
+
 /* ================= render ================= */
 function render(now){
  const o=origin(stg);
  world.style.transform="translate3d("+cssXFromVw(-worldX)+",0,0)";
- if(document.body.classList.contains("st-number")){
-  document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
- }
- renderSeaFish(now);
- updateScreenExitShift();
  if(tunnelInteriorMode){
-  const tunnelPan=cssXFromVw(-worldX*.55);
-  skyA.style.background='#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") '+tunnelPan+' center / auto 100% repeat-x';
-  document.documentElement.style.setProperty("--tunnel-track-x",tunnelPan);
+  setTunnelInteriorBackdrop();
   skyB.style.opacity="0";
   veh.classList.add("inTun");
   carsEl.classList.add("inTun");
   renderPortalMasks(null);
   return;
  }
+ if(document.body.classList.contains("st-number")){
+  document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
+ }
+ renderSeaFish(now);
+ updateScreenExitShift();
  const hd=clamp((worldX-o)*0.095,0,70);
  horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
  midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
@@ -1602,6 +1624,9 @@ function render(now){
 }
 
 function setWheelPeriod(period){
+ period=IOS_DEVICE?Math.round(period*4)/4:Math.round(period*100)/100;
+ if(Math.abs(period-lastWheelPeriod)<0.01)return;
+ lastWheelPeriod=period;
  const value=period.toFixed(2)+"s";
  veh.style.setProperty("--wheel-period",value);
  carsEl.style.setProperty("--wheel-period",value);

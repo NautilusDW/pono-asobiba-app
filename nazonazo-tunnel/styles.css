@@ -34,6 +34,7 @@ body.tunnel-interior #scene::after{display:block}
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #seaFishLayer{position:absolute;inset:0;z-index:4;display:none;pointer-events:none;overflow:hidden}
 body.st-sea #seaFishLayer{display:block}
+body.tunnel-interior #seaFishLayer{display:none!important}
 .sea-fish{position:absolute;left:0;top:0;width:clamp(36px,var(--fish-w,5.5vw),96px);aspect-ratio:var(--fish-ratio,1.25);
   background:center/contain no-repeat;filter:drop-shadow(0 2px 0 rgba(10,45,75,.14));opacity:var(--fish-opacity,.86);
   transform:translate3d(-20vw,30vh,0);will-change:transform}
@@ -197,8 +198,8 @@ body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive 1
 body.tunnel-exit-setup #world .tun,body.tunnel-exit-setup #world .decor,body.tunnel-exit-setup #world .dropStation,
 body.tunnel-exit-run #world .tun,body.tunnel-exit-run #world .decor,body.tunnel-exit-run #world .dropStation,
 body.tunnel-exit-clear #world .tun,body.tunnel-exit-clear #world .decor,body.tunnel-exit-clear #world .dropStation{opacity:0}
-body.tunnel-interior #skyA{background-color:#17110b}
-body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0}
+body.tunnel-interior #skyA{background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") left center/auto 100% repeat-x}
+body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0!important}
 #screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease;transform:translate3d(var(--screen-exit-shift-x,0px),0,0)}
 #screenPortalBack{z-index:6}
 #screenPortalFront{z-index:9}
@@ -320,6 +321,8 @@ body[data-driver-mood="cheer"]{--driver-y:100%}
 .puff{position:absolute;left:16%;top:-18%;opacity:0;pointer-events:none;z-index:12;overflow:visible}
 #veh.go .puff{opacity:1}
 body.tunnel-enter-run #veh .puff,body.tunnel-exit-run #veh .puff{opacity:0}
+#smokeLayer{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:hidden}
+body.tunnel-enter-run #smokeLayer,body.tunnel-exit-run #smokeLayer{display:none}
 .magic-puff{position:absolute;left:0;top:0;width:var(--puff-size);height:var(--puff-size);
   background:url("../assets/images/nazonazo-tunnel/magic_puffs_square_sheet_20260705.webp") no-repeat;background-size:400% 200%;
   transform:translate3d(0,0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));
@@ -369,12 +372,13 @@ body.st-sea.v-sub #veh.inTun .submarine-art{filter:brightness(.72) saturate(.82)
 body.ios-device #world,body.ios-device #horizon,body.ios-device #veh,body.ios-device #cars,
 body.ios-device .train-art,body.ios-device .train-wheel,body.ios-device .car-wheel,
 body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
-body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device .magic-puff{
+body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device #smokeLayer,body.ios-device .magic-puff{
   -webkit-backface-visibility:hidden;backface-visibility:hidden;transform-style:flat}
 body.ios-device #veh.idle .vbody{animation:none}
 body.ios-device .train-wheel,body.ios-device .car-wheel,
 body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
 body.ios-device .magic-puff{filter:none}
+body.ios-device #smokeLayer .magic-puff{transform:translate3d(0,0,0) scale(var(--puff-start-scale))}
 body.ios-device .runEvent{animation:none}
 body.ios-device .runEvent::after{animation:none;opacity:.8}
 body.ios-device .runEvent.found{animation:runEventFound .55s ease forwards}
