@@ -387,11 +387,13 @@
 
   // ---- monster_math (モンスターさんすう) ----
   // v3 (2026-07-06/07 ユーザー決定ログ §13.2 承認済): free = book (機能差ゼロ)。
-  // かぞえる Stage1-2 / 10づくり Stage1 / たしざん Stage1 のみ解放、 残りは sub。
+  // [Phase R3 Fix (2026-07-07)] 旧3モード (かぞえる/10づくり/たしざん) は
+  // テンメガネ (ten) / カクレン (kak) の2モードに統合された (engine.js MODE_ORDER 準拠)。
+  // カクレン Stage1-2 (旧かぞえる相当) / テンメガネ Stage1 (旧10づくり相当) のみ解放、
+  // 残りは sub。
   var FREE_MONSTER_MATH_STAGE_IDS = {
-    kazoeru:  [1, 2],
-    make10:   [1],
-    tashizan: [1]
+    kak: [1, 2],
+    ten: [1]
   };
 
   function isMonsterMathStageUnlocked(mode, stageNum) {

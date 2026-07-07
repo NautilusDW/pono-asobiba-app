@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ポノの もじもじクレーン | ポノのあそびば</title>
 <meta name="description" content="クレーンでかなブロックをあつめて、ことばをつくる横画面スマホ向け知育ゲーム。">
-<link rel="stylesheet" href="styles.css?v=20260706-1133">
-<script src="data/words.js?v=20260702-1055" defer></script>
-<script src="js/miniphys.js?v=20260707-1400" defer></script>
-<script src="js/game.js?v=20260707-1400" defer></script>
+<link rel="stylesheet" href="styles.css?v=20260707-1600">
+<script src="js/vendor/matter.min.js?v=20260707-1600" defer></script>
+<script src="data/words.js?v=20260707-1600" defer></script>
+<script src="js/phys-matter.js?v=20260707-1600" defer></script>
+<script src="js/game.js?v=20260707-1600" defer></script>
 </head>
 <body>
 <div id="app">
@@ -34,6 +35,8 @@
       <span>おろす</span>
       <b>▼</b>
     </button>
+    <button id="chuteLeftBtn" class="chute-btn chute-left hidden" type="button" aria-label="もじへ おくる">⬅ もじ</button>
+    <button id="chuteRightBtn" class="chute-btn chute-right hidden" type="button" aria-label="かたづけへ おくる">かたづけ ➡</button>
 
     <div id="titleOverlay" class="overlay">
       <section class="panel title-panel" aria-labelledby="gameTitle">

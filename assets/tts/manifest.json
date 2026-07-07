@@ -2618,15 +2618,6 @@
     "monster_math:common:welcome": {
       "file": "monster_math_common_welcome.wav"
     },
-    "monster_math:common:door_kazoeru": {
-      "file": "monster_math_common_door_kazoeru.wav"
-    },
-    "monster_math:common:door_make10": {
-      "file": "monster_math_common_door_make10.wav"
-    },
-    "monster_math:common:door_tashizan": {
-      "file": "monster_math_common_door_tashizan.wav"
-    },
     "monster_math:common:continue": {
       "file": "monster_math_common_continue.wav"
     },
@@ -2638,9 +2629,6 @@
     },
     "monster_math:common:miss_repeat": {
       "file": "monster_math_common_miss_repeat.wav"
-    },
-    "monster_math:common:over10_first": {
-      "file": "monster_math_common_over10_first.wav"
     },
     "monster_math:common:stuck_undo": {
       "file": "monster_math_common_stuck_undo.wav"
@@ -2693,107 +2681,89 @@
     "monster_math:count:10": {
       "file": "monster_math_count_10.wav"
     },
-    "monster_math:make10:tut_intro": {
-      "file": "monster_math_make10_tut_intro.wav"
-    },
-    "monster_math:make10:tut_frame_explain": {
-      "file": "monster_math_make10_tut_frame_explain.wav"
-    },
-    "monster_math:make10:tut_feed_prompt": {
-      "file": "monster_math_make10_tut_feed_prompt.wav"
-    },
-    "monster_math:make10:tut_feed_success": {
-      "file": "monster_math_make10_tut_feed_success.wav"
-    },
-    "monster_math:make10:tut_undo_explain": {
-      "file": "monster_math_make10_tut_undo_explain.wav"
-    },
-    "monster_math:make10:tut_complete": {
-      "file": "monster_math_make10_tut_complete.wav"
-    },
-    "monster_math:kazoeru:tut_intro": {
-      "file": "monster_math_kazoeru_tut_intro.wav"
-    },
-    "monster_math:kazoeru:tut_dot_explain": {
-      "file": "monster_math_kazoeru_tut_dot_explain.wav"
-    },
-    "monster_math:kazoeru:tut_answer_prompt": {
-      "file": "monster_math_kazoeru_tut_answer_prompt.wav"
-    },
-    "monster_math:kazoeru:tut_success": {
-      "file": "monster_math_kazoeru_tut_success.wav"
-    },
-    "monster_math:kazoeru:tut_complete": {
-      "file": "monster_math_kazoeru_tut_complete.wav"
-    },
-    "monster_math:tashizan:tut_intro": {
-      "file": "monster_math_tashizan_tut_intro.wav"
-    },
-    "monster_math:tashizan:tut_feed_explain": {
-      "file": "monster_math_tashizan_tut_feed_explain.wav"
-    },
-    "monster_math:tashizan:tut_answer_prompt": {
-      "file": "monster_math_tashizan_tut_answer_prompt.wav"
-    },
-    "monster_math:tashizan:tut_success": {
-      "file": "monster_math_tashizan_tut_success.wav"
-    },
-    "monster_math:tashizan:tut_complete": {
-      "file": "monster_math_tashizan_tut_complete.wav"
-    },
-    "monster_math:make10:play_correct": {
-      "file": "monster_math_make10_play_correct.wav"
-    },
-    "monster_math:make10:play_hint": {
-      "file": "monster_math_make10_play_hint.wav"
-    },
-    "monster_math:make10:play_over": {
-      "file": "monster_math_make10_play_over.wav"
-    },
-    "monster_math:make10:play_monster_happy": {
-      "file": "monster_math_make10_play_monster_happy.wav"
-    },
-    "monster_math:make10:play_clear_stage": {
-      "file": "monster_math_make10_play_clear_stage.wav"
-    },
-    "monster_math:kazoeru:play_correct": {
-      "file": "monster_math_kazoeru_play_correct.wav"
-    },
-    "monster_math:kazoeru:play_hint": {
-      "file": "monster_math_kazoeru_play_hint.wav"
-    },
-    "monster_math:kazoeru:play_miss_count": {
-      "file": "monster_math_kazoeru_play_miss_count.wav"
-    },
-    "monster_math:kazoeru:play_clear_stage": {
-      "file": "monster_math_kazoeru_play_clear_stage.wav"
-    },
-    "monster_math:tashizan:play_correct": {
-      "file": "monster_math_tashizan_play_correct.wav"
-    },
-    "monster_math:tashizan:play_hint": {
-      "file": "monster_math_tashizan_play_hint.wav"
-    },
-    "monster_math:tashizan:play_bridge": {
-      "file": "monster_math_tashizan_play_bridge.wav"
-    },
-    "monster_math:tashizan:play_clear_stage": {
-      "file": "monster_math_tashizan_play_clear_stage.wav"
-    },
-    "monster_math:tashizan:play_festival": {
-      "file": "monster_math_tashizan_play_festival.wav"
-    },
-    "monster_math:make10:feast": {
-      "file": "monster_math_make10_feast.wav"
-    },
-    "monster_math:tashizan:gate_suggest": {
-      "file": "monster_math_tashizan_gate_suggest.wav"
-    },
-    "monster_math:tashizan:gate_confirm": {
-      "file": "monster_math_tashizan_gate_confirm.wav"
-    },
     "monster_math:common:acorn_get": {
       "file": "monster_math_common_acorn_get.wav"
+    },
+    "monster_math:ten:round_intro_lv1": {
+      "file": "monster_math_ten_round_intro_lv1.wav"
+    },
+    "monster_math:ten:round_intro_lv2": {
+      "file": "monster_math_ten_round_intro_lv2.wav"
+    },
+    "monster_math:ten:round_intro_lv3": {
+      "file": "monster_math_ten_round_intro_lv3.wav"
+    },
+    "monster_math:ten:eat_more": {
+      "file": "monster_math_ten_eat_more.wav"
+    },
+    "monster_math:ten:over_first": {
+      "file": "monster_math_ten_over_first.wav"
+    },
+    "monster_math:ten:over_repeat": {
+      "file": "monster_math_ten_over_repeat.wav"
+    },
+    "monster_math:ten:play_correct": {
+      "file": "monster_math_ten_play_correct.wav"
+    },
+    "monster_math:ten:clear_stage": {
+      "file": "monster_math_ten_clear_stage.wav"
+    },
+    "monster_math:ten:lv2_intro": {
+      "file": "monster_math_ten_lv2_intro.wav"
+    },
+    "monster_math:ten:lv3_intro": {
+      "file": "monster_math_ten_lv3_intro.wav"
+    },
+    "monster_math:ten:tut_intro": {
+      "file": "monster_math_ten_tut_intro.wav"
+    },
+    "monster_math:ten:tut_shelf_explain": {
+      "file": "monster_math_ten_tut_shelf_explain.wav"
+    },
+    "monster_math:ten:tut_frame_explain": {
+      "file": "monster_math_ten_tut_frame_explain.wav"
+    },
+    "monster_math:ten:tut_complete": {
+      "file": "monster_math_ten_tut_complete.wav"
+    },
+    "monster_math:kak:round_intro": {
+      "file": "monster_math_kak_round_intro.wav"
+    },
+    "monster_math:kak:count_up_done": {
+      "file": "monster_math_kak_count_up_done.wav"
+    },
+    "monster_math:kak:hide_reveal": {
+      "file": "monster_math_kak_hide_reveal.wav"
+    },
+    "monster_math:kak:ask": {
+      "file": "monster_math_kak_ask.wav"
+    },
+    "monster_math:kak:visible_hint": {
+      "file": "monster_math_kak_visible_hint.wav"
+    },
+    "monster_math:kak:miss1_full_number": {
+      "file": "monster_math_kak_miss1_full_number.wav"
+    },
+    "monster_math:kak:miss2_hint_from_v": {
+      "file": "monster_math_kak_miss2_hint_from_v.wav"
+    },
+    "monster_math:kak:play_correct": {
+      "file": "monster_math_kak_play_correct.wav"
+    },
+    "monster_math:kak:clear_stage": {
+      "file": "monster_math_kak_clear_stage.wav"
+    },
+    "monster_math:kak:lv2_intro": {
+      "file": "monster_math_kak_lv2_intro.wav"
+    },
+    "monster_math:kak:lv3_intro": {
+      "file": "monster_math_kak_lv3_intro.wav"
+    },
+    "monster_math:kak:tut_intro": {
+      "file": "monster_math_kak_tut_intro.wav"
+    },
+    "monster_math:kak:tut_complete": {
+      "file": "monster_math_kak_tut_complete.wav"
     }
   }
 }

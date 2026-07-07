@@ -12,10 +12,11 @@
 //   undo: { push, popLastGently, voluntary, popUntil }
 //   mmTimeout(fn, ms, phaseGuard)
 //
-// Impl 2-4 (mode-make10.js / mode-kazoeru.js / mode-tashizan.js) はこのファイルと
+// mode-*.js (Phase R3 以降は mode-tenmegane.js / mode-kakuren.js の2本) はこのファイルと
 // index.html を一切編集しない self-registration 前提 (SPEC §3.0 / §4.2)。
 // 本ファイルは T0 段階の骨格実装 (500-800行目安) — ラウンド実ロジックは各 mode-*.js が
 // createRound/onFoodTap/onAnswerTap を実装することで完結する。
+// (旧 mode-make10.js / mode-kazoeru.js / mode-tashizan.js は SPEC v2 で git rm 済み想定)
 //
 // [M5 復元済み] assets/data/game-stickers.json に monster_math ページ (シール6枚,
 // serial 139-144) を復元済み (2026-07-07)。 MODE_CLEAR_STICKER / SPECIAL_STICKER の
@@ -23,18 +24,26 @@
 // catalog 側 id は完全一致を確認済み。 scripts/generate_sticker_metrics.py も再実行し
 // Prototypes/StickerExhibitionCarousel/sticker-metrics.js に mm_ 6枚を追加済み。
 // play.html 「いま あそべる」 ゾーンにもカードを追加済み ([[feature_museum_sticker_size_normalize]] 準拠)。
+//
+// [Phase R3 (2026-07-07)] SPEC v2 (scratchpad/monster_math_spec_v2.md) 準拠でテンメガネ
+// (ten) / カクレン (kak) の2体構成へ全面差し替え。 プッチ/パクン/ガブルは廃止 (旧 id
+// mm_pucchi/mm_pakun/mm_gaburu 等の上記コメントは移行前の履歴として残置、 現行の正は
+// MODE_CLEAR_STICKER = mm_tenmegane/mm_kakuren、 SPECIAL_STICKER.all_modes = mm_both_modes、
+// SPECIAL_STICKER.perfect_all = mm_perfect)。 assets/data/game-stickers.json 側の実データ
+// 差し替えは別タスク (§9) — 本ファイルは engine.js のみ編集のスコープ。
 // ============================================================
 (function () {
   'use strict';
 
-  // ---- モード確定順序 (SPEC §1 #3 / §2.1 タイトル3ドア順) ----
-  var MODE_ORDER = ['kazoeru', 'make10', 'tashizan'];
+  // ---- モード確定順序 (SPEC v2 §7.2 #3: テンメガネ/カクレンの2体構成へ更新。
+  // all_modes / perfect_all 判定は MODE_ORDER.every(...) 経由で自動追従するため
+  // 判定ロジック側の改修は不要 — [[monster_math_spec_v2]] §7.2 #3 参照) ----
+  var MODE_ORDER = ['ten', 'kak'];
   // mode-*.js の 404 / 未登録時のフォールバック表示用メタ (SPEC §7.1 の
   // 「mode 欠落時にタイトルが落ちず該当ドアのみ無効化される」要件を満たすための既定値)
   var MODE_META_FALLBACK = {
-    kazoeru:  { label: 'かぞえる',  monsterId: 'pucchi', difficultyLabel: 'やさしい' },
-    make10:   { label: '10づくり',  monsterId: 'pakun',  difficultyLabel: 'ふつう' },
-    tashizan: { label: 'たしざん',  monsterId: 'gaburu', difficultyLabel: 'むずかしい' }
+    ten: { label: 'テンメガネ', monsterId: 'tenmegane', difficultyLabel: 'たべて ぴったり' },
+    kak: { label: 'カクレン',   monsterId: 'kakuren',   difficultyLabel: 'かくれんぼ かぞえ' }
   };
 
   // ---- シール grant 用 stickerId マップ (SPEC §13.4)。 PonoGameStickers.grant() は
@@ -45,14 +54,15 @@
   // 明示指定すること。 M2-M4 (mode-*.js 実装) 側で feast / perfect_all の grant を直接
   // 呼ぶ際も SPECIAL_STICKER を参照すること (event-only 呼び出しは禁止)。
   var MODE_CLEAR_STICKER = {
-    kazoeru:  'mm_pucchi',
-    make10:   'mm_pakun',
-    tashizan: 'mm_gaburu'
+    ten: 'mm_tenmegane',
+    kak: 'mm_kakuren'
   };
+  // feast (こうぶつ) は v2 スコープ外 (テンメガネ/カクレンとも feast 機構を持ち込まない、
+  // SPEC v2 §7.1 make10 の項) のため SPECIAL_STICKER から除去。 all_modes / perfect_all は
+  // MODE_ORDER.every(...) 判定にそのまま追従する (改修不要)。
   var SPECIAL_STICKER = {
-    feast:        'mm_feast_plate',
-    all_modes:    'mm_shokudo_sign',
-    perfect_all:  'mm_konpeito_bin'
+    all_modes:    'mm_both_modes',
+    perfect_all:  'mm_perfect'
   };
 
   // ---- localStorage キー (SPEC §2.5 確定値) ----
@@ -80,7 +90,7 @@
   // 他3キー (progress/adaptive/bonus) と同じく先頭 'ver' フィールドで全体スキーマの
   // 世代管理を行う (loadLS の versionField 'ver' 判定用、 SCHEMA_V と同義)。
   function defaultTutorial() {
-    return { ver: SCHEMA_V, modes: { universal: 0, kazoeru: 0, make10: 0, tashizan: 0 } };
+    return { ver: SCHEMA_V, modes: { universal: 0, ten: 0, kak: 0 } };
   }
   function defaultBonus() {
     return { v: SCHEMA_V, feastCount: 0 };
@@ -177,12 +187,12 @@
   }
 
   // per-monster 音色パラメータ (容量ゼロ差別化、 SPEC 裁定 #18)。
-  // pitchMul: 基準周波数への倍率 (小さいモンスターほど高音)。 failure 系は個体差を付けない
+  // pitchMul: 基準周波数への倍率。 failure 系は個体差を付けない
   // ([[feedback_miss_voice_progression]] の音版 = 「否定を増やさない」原則)。
+  // [Phase R3] SPEC v2 §6: テンメガネ = 低め pitch、 カクレン = 高め pitch の2体分に書き換え。
   var MONSTER_SFX_PARAMS = {
-    pucchi:  { pitchMul: 1.35, wave: 'sine' },
-    pakun:   { pitchMul: 1.00, wave: 'triangle' },
-    gaburu:  { pitchMul: 0.72, wave: 'sawtooth' }
+    tenmegane: { pitchMul: 0.85, wave: 'triangle' },
+    kakuren:   { pitchMul: 1.25, wave: 'sine' }
   };
 
   function _tone(freq, dur, opts) {
@@ -205,19 +215,52 @@
     } catch (e) {}
   }
 
-  // 共通 SFX 名 (proto 継承): pop / munch / boing / burp / fill(i) / fanfare / star
-  // monsterId を渡すと MONSTER_SFX_PARAMS の pitchMul/wave で個体差を付ける (失敗系=boing は
-  // 軟化のみで個体差を付けない、 C 案原則に合わせて据え置き)。
-  function sfx(name, monsterId) {
-    var p = MONSTER_SFX_PARAMS[monsterId] || MONSTER_SFX_PARAMS.pakun;
+  // クスクス笑い (sGiggle): 高速トレモロ (LFO で gain を変調) の生成音のみで表現し、
+  // 人声サンプルは使わない ([[policy_character_voice]] 準拠、SPEC v2 §6 新規)。
+  function _giggleTone(p) {
+    var ctx = _ac();
+    if (!ctx) return;
+    try {
+      var now = ctx.currentTime;
+      var dur = 0.5;
+      var osc = ctx.createOscillator();
+      var lfo = ctx.createOscillator();
+      var lfoGain = ctx.createGain();
+      var mainGain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 700 * (p.pitchMul || 1);
+      lfo.type = 'sine';
+      lfo.frequency.value = 14; // 高速トレモロ
+      lfoGain.gain.value = 0.09;
+      mainGain.gain.setValueAtTime(0.0001, now);
+      mainGain.gain.exponentialRampToValueAtTime(0.13, now + 0.05);
+      mainGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      lfo.connect(lfoGain);
+      lfoGain.connect(mainGain.gain);
+      osc.connect(mainGain).connect(ctx.destination);
+      osc.start(now); lfo.start(now);
+      osc.stop(now + dur + 0.02); lfo.stop(now + dur + 0.02);
+    } catch (e) {}
+  }
+
+  // 共通 SFX 名 (proto 継承 + SPEC v2 §6 新規3音): pop / munch / boing / fill(i) / fanfare /
+  // star / tick / pof / giggle。 monsterId を渡すと MONSTER_SFX_PARAMS の pitchMul/wave で
+  // 個体差を付ける (失敗系=boing は軟化のみで個体差を付けない、 C 案原則に合わせて据え置き)。
+  // opt: tick 専用の音階インデックス (省略可、 番号チップのカウントアップに応じて上昇させる)。
+  // [Phase R3] 'burp' (まんぷくげっぷ) は SPEC v2 §6 / §13.3 により完全廃止。 リザルトの
+  // 締め音は showResult() 側で sFanfare + sStar (星逐次点灯) の組み合わせに一本化した。
+  function sfx(name, monsterId, opt) {
+    var p = MONSTER_SFX_PARAMS[monsterId] || MONSTER_SFX_PARAMS.tenmegane;
     switch (name) {
       case 'pop':     _tone(520 * p.pitchMul, 0.09, { wave: p.wave, vol: 0.14 }); break;
       case 'munch':   _tone(300 * p.pitchMul, 0.12, { wave: p.wave, vol: 0.16 }); break;
       case 'boing':   _tone(180, 0.22, { wave: 'sine', vol: 0.10 }); break; // 軟化 -6dB 相当 + 個体差なし
-      case 'burp':    _tone(140 * p.pitchMul, 0.30, { wave: 'sawtooth', vol: 0.12 }); break; // まんぷくげっぷ (成功文脈へ転用)
       case 'fanfare': _tone(660, 0.5, { wave: 'triangle', vol: 0.16 }); break;
       case 'star':    _tone(880, 0.18, { wave: 'sine', vol: 0.15 }); break;
       case 'fill':    _tone(440, 0.12, { wave: 'sine', vol: 0.12 }); break;
+      case 'tick':    _tone(660 + Math.max(0, opt || 0) * 40, 0.08, { wave: 'sine', vol: 0.13 }); break; // 番号チップの音階上昇
+      case 'pof':     _tone(220 * p.pitchMul, 0.14, { wave: 'square', vol: 0.11 }); break; // 帽子パサッ着地音
+      case 'giggle':  _giggleTone(p); break; // クスクス笑い (高速トレモロ)
       default: break;
     }
   }
@@ -345,11 +388,20 @@
     }
   }
 
-  // pose ∈ 'idle' | 'mouth_open' | 'happy' (SPEC §13.1: 立ち絵 3 pose の pose-swap engine)
+  // [Phase R3] MONSTERS registry: モンスターごとの pose 宣言 (SPEC v2 §7.2 #2)。
+  // 旧来の単一 VALID_POSES (全モンスター共通の3pose) を廃止し、 モンスターごとに許可
+  // pose を宣言する形へ変更 — テンメガネは idle/mouth_open/happy、 カクレンは
+  // idle/peek/happy (帽子なしの peek は kakuren 専用、 tenmegane には存在しない)。
+  // setMonster(id, pose) のシグネチャ・ファイル名規約 (assets/monster_{id}_{pose}.webp)
+  // は不変 (mode 側からの呼び方は変わらない)。
+  var MONSTERS = {
+    tenmegane: { poses: ['idle', 'mouth_open', 'happy'], color: '#8e44c4' },
+    kakuren:   { poses: ['idle', 'peek', 'happy'],       color: '#4ec7bd' }
+  };
+  // pose ∈ MONSTERS[id].poses (SPEC §13.1: 立ち絵 3 pose の pose-swap engine)
   // ファイル名規約: assets/monster_{id}_{pose}.webp (.png フォールバック)。
   // 画像縦横比は object-fit:contain のみで扱い、 stretch は絶対に行わない
   // ([[feedback_image_aspect_ratio]] 絶対遵守)。
-  var VALID_POSES = ['idle', 'mouth_open', 'happy'];
   function setMonster(id, pose) {
     if (!dom.monsterImg) return;
     // pose 表記ゆれ (ハイフン/アンダースコア混在) を吸収 (SPEC/実装間の warn 指摘対応)
@@ -360,7 +412,11 @@
       try { console.warn('[MM] pose normalized:', pose, '->', normalizedPose); } catch (e) {}
     }
     pose = normalizedPose;
-    if (VALID_POSES.indexOf(pose) === -1) pose = 'idle';
+    var monsterDef = MONSTERS[id];
+    if (!monsterDef || monsterDef.poses.indexOf(pose) === -1) {
+      try { console.error('[MM] setMonster: invalid pose "' + pose + '" for monster "' + id + '" — falling back to idle', monsterDef ? monsterDef.poses : '(unknown monster)'); } catch (e) {}
+      pose = 'idle';
+    }
     var base = 'assets/monster_' + id + '_' + pose;
     dom.monsterImg.hidden = false;
     dom.monsterImg.dataset.monsterId = id;
@@ -437,7 +493,9 @@
         }, 260 * (idx + 1), null);
       })(s);
     }
-    mmTimeout(function () { sfx('burp', S.mode ? ((MODES[S.mode] || {}).monsterId) : null); }, 260 * (lit + 1) + 120, null); // まんぷくげっぷ (成功文脈のみ)
+    // [Phase R3] burp (まんぷくげっぷ) 演出は SPEC v2 §6/§13.3 で完全廃止。 リザルトの
+    // 締め音は sFanfare (+ 上記の星ごとの sStar) に一本化する。
+    mmTimeout(function () { sfx('fanfare', S.mode ? ((MODES[S.mode] || {}).monsterId) : null); }, 260 * (lit + 1) + 120, null);
   }
 
   // ============================================================
@@ -1260,25 +1318,24 @@
   }
 
   // ============================================================
-  // narration key registry (Blocker 2 の engine 側部分)。 確定TTS台本
-  // (scratchpad/tts_scripts_monster_math.md、 合計60本) の key 表記を「正」として
-  // ここに定義する。 台本は 'monster_math:<category>:<id>' のコロン区切りで統一されて
-  // おり、 mode-*.js が現在参照している独自 key (round_intro/feast_intro/over_first
-  // 等) とは大半不一致 — mode-*.js 側の置換は Phase B (別 Impl) で
-  // MM.NARRATION_KEYS.<mode>.<id> 参照へ統一する想定。 このファイルは registry の
-  // 定義のみを担当し、 mode-*.js は編集しない (worktree isolation / タスクスコープ外)。
+  // narration key registry (Blocker 2 の engine 側部分)。
+  // [Phase R3 (2026-07-07)] SPEC v2 (scratchpad/monster_math_spec_v2.md §7.4/§10) 準拠で
+  // 旧 make10/kazoeru/tashizan の枝を完全に削除し、 テンメガネ (ten) / カクレン (kak) の
+  // 2枝へ差し替え。 台本は引き続き 'monster_math:<category>:<id>' のコロン区切り規約
+  // (category = common / count / ten / kak)。 新規台本の実際のTTS収録・manifest反映は
+  // 統合フェーズ (別 Impl) で一括対応する — このファイルは registry の定義のみを担当し、
+  // mode-*.js は編集しない (worktree isolation / タスクスコープ外)。
+  // door_preview (ホーム2タップ選択の1タップ目プレビュー) は実際の呼び出し
+  // (_onDoorTap: 'monster_math:' + modeId + ':door_preview') に合わせ、 common ではなく
+  // 各モード枝 (ten.door_preview / kak.door_preview) に配置する。
   // ============================================================
   var NARRATION_KEYS = {
     common: {
       welcome: 'monster_math:common:welcome',
-      door_kazoeru: 'monster_math:common:door_kazoeru',
-      door_make10: 'monster_math:common:door_make10',
-      door_tashizan: 'monster_math:common:door_tashizan',
       'continue': 'monster_math:common:continue',
       stage_select: 'monster_math:common:stage_select',
       miss_first: 'monster_math:common:miss_first',
       miss_repeat: 'monster_math:common:miss_repeat',
-      over10_first: 'monster_math:common:over10_first',
       stuck_undo: 'monster_math:common:stuck_undo',
       voluntary_undo: 'monster_math:common:voluntary_undo',
       round_clear: 'monster_math:common:round_clear',
@@ -1290,49 +1347,62 @@
     },
     // count: かぞえ声 (いち〜じゅう)。 narration.counting(n) はこのテーブルと同じ
     // 'monster_math:count:' + n を組み立てる (Blocker 2 修正、 上記 narration.counting 参照)。
+    // カクレンの count-up / reveal カウントアップでもそのまま流用する (SPEC v2 §10.1)。
     count: (function () {
       var o = {};
       for (var n = 1; n <= 10; n++) o[n] = 'monster_math:count:' + n;
       return o;
     })(),
-    make10: {
-      tut_intro: 'monster_math:make10:tut_intro',
-      tut_frame_explain: 'monster_math:make10:tut_frame_explain',
-      tut_feed_prompt: 'monster_math:make10:tut_feed_prompt',
-      tut_feed_success: 'monster_math:make10:tut_feed_success',
-      tut_undo_explain: 'monster_math:make10:tut_undo_explain',
-      tut_complete: 'monster_math:make10:tut_complete',
-      play_correct: 'monster_math:make10:play_correct',
-      play_hint: 'monster_math:make10:play_hint',
-      play_over: 'monster_math:make10:play_over',
-      play_monster_happy: 'monster_math:make10:play_monster_happy',
-      play_clear_stage: 'monster_math:make10:play_clear_stage',
-      feast: 'monster_math:make10:feast'
+    // テンメガネ専用 (SPEC v2 §10.2、 ≈12本)。 intro_lv1-3 は goal 別の3本 (数値差し込みでは
+    // なく level 別に台本を分ける方針、 SPEC v2 §3.2/§10.2)。
+    // [Phase R3 Fix (2026-07-07)] Blocker 2 対応: プロパティ名 (mode-tenmegane.js /
+    // mode-kakuren.js が参照する契約キー) はそのまま維持し、 値だけを
+    // assets/tts/manifest.json の実キー (monster_math_ten_*.wav / monster_math_kak_*.wav
+    // の収録済み台本、 scratchpad/tts_scripts_r3_new.md 原本) に一致させる。
+    // manifest に直接対応する台本が無い tut_feed_prompt/tut_feed_success (ten) および
+    // tut_watch_explain/tut_hide_explain/tut_ask_prompt/tut_answer_success (kak) は、
+    // 新規収録を待たず、 内容が意味的に一致する既存収録台本を暫定で再利用する
+    // (無音になるより優先、 [[feedback_tts_whisper_verify_required]] 準拠で今後差し替え可)。
+    // door_preview は台本自体が未収録のため値は変更せず、 narration.sayIfAuto が
+    // 未知キーで安全に no-op する既存挙動 (common/narration.js) に委ねる。
+    ten: {
+      door_preview: 'monster_math:ten:door_preview',
+      intro_lv1: 'monster_math:ten:round_intro_lv1',
+      intro_lv2: 'monster_math:ten:round_intro_lv2',
+      intro_lv3: 'monster_math:ten:round_intro_lv3',
+      eat_more: 'monster_math:ten:eat_more',
+      over_first: 'monster_math:ten:over_first',
+      over_repeat: 'monster_math:ten:over_repeat',
+      clear: 'monster_math:ten:clear_stage',
+      tut_intro: 'monster_math:ten:tut_intro',
+      tut_frame_explain: 'monster_math:ten:tut_frame_explain',
+      // 「たなの たべものを タップすると…」(tut_shelf_explain) を feed_prompt に転用
+      tut_feed_prompt: 'monster_math:ten:tut_shelf_explain',
+      // 「ぴったり たべられたね！」(play_correct) を feed_success に転用
+      tut_feed_success: 'monster_math:ten:play_correct',
+      tut_complete: 'monster_math:ten:tut_complete'
     },
-    kazoeru: {
-      tut_intro: 'monster_math:kazoeru:tut_intro',
-      tut_dot_explain: 'monster_math:kazoeru:tut_dot_explain',
-      tut_answer_prompt: 'monster_math:kazoeru:tut_answer_prompt',
-      tut_success: 'monster_math:kazoeru:tut_success',
-      tut_complete: 'monster_math:kazoeru:tut_complete',
-      play_correct: 'monster_math:kazoeru:play_correct',
-      play_hint: 'monster_math:kazoeru:play_hint',
-      play_miss_count: 'monster_math:kazoeru:play_miss_count',
-      play_clear_stage: 'monster_math:kazoeru:play_clear_stage'
-    },
-    tashizan: {
-      tut_intro: 'monster_math:tashizan:tut_intro',
-      tut_feed_explain: 'monster_math:tashizan:tut_feed_explain',
-      tut_answer_prompt: 'monster_math:tashizan:tut_answer_prompt',
-      tut_success: 'monster_math:tashizan:tut_success',
-      tut_complete: 'monster_math:tashizan:tut_complete',
-      play_correct: 'monster_math:tashizan:play_correct',
-      play_hint: 'monster_math:tashizan:play_hint',
-      play_bridge: 'monster_math:tashizan:play_bridge',
-      play_clear_stage: 'monster_math:tashizan:play_clear_stage',
-      play_festival: 'monster_math:tashizan:play_festival',
-      gate_suggest: 'monster_math:tashizan:gate_suggest',
-      gate_confirm: 'monster_math:tashizan:gate_confirm'
+    // カクレン専用 (SPEC v2 §4.2/§10.2、 ≈15本)。 count-up/hide/ask/answer/reveal の
+    // 5フェーズ state machine に対応する台本。
+    kak: {
+      door_preview: 'monster_math:kak:door_preview',
+      watch: 'monster_math:kak:count_up_done',
+      hidden: 'monster_math:kak:hide_reveal',
+      ask: 'monster_math:kak:ask',
+      visible_hint: 'monster_math:kak:visible_hint',
+      miss_first: 'monster_math:kak:miss1_full_number',
+      hint_frame: 'monster_math:kak:miss2_hint_from_v',
+      reveal: 'monster_math:kak:play_correct',
+      tut_intro: 'monster_math:kak:tut_intro',
+      // 「ぜんぶで なんこか、よーく みておいてね」(count_up_done) を watch_explain に転用
+      tut_watch_explain: 'monster_math:kak:count_up_done',
+      // 「カクレンが ぼうしで かくしちゃった！」(hide_reveal) を hide_explain に転用
+      tut_hide_explain: 'monster_math:kak:hide_reveal',
+      // 「ぼうしの したは なんこかな？」(ask) を ask_prompt に転用
+      tut_ask_prompt: 'monster_math:kak:ask',
+      // 「せいかい！ よく わかったね」(play_correct) を answer_success に転用
+      tut_answer_success: 'monster_math:kak:play_correct',
+      tut_complete: 'monster_math:kak:tut_complete'
     }
   };
 
@@ -1395,6 +1465,7 @@
     _MODE_ORDER: MODE_ORDER,
     _MODE_CLEAR_STICKER: MODE_CLEAR_STICKER,
     _SPECIAL_STICKER: SPECIAL_STICKER,
+    _MONSTERS: MONSTERS,
     _currentScreenSignal: _currentScreenSignal,
     _tutorialState: _tutorial,
     _adaptiveState: _adaptive,

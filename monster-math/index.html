@@ -304,7 +304,7 @@ html, body {
 
 <!-- FOUC GUARD: splash overlay (hard cut on tap, engine.js が制御) -->
 <div id="pono-game-splash" role="button" tabindex="0" aria-label="はじめる">
-  <img src="assets/title_trio.webp" alt="プッチ・パクン・ガブル" onerror="this.style.display='none'">
+  <img src="assets/title_v2_composite.webp" alt="テンメガネ・カクレン" onerror="this.style.display='none'">
   <p class="pgs-title">もりの しょくどう</p>
   <button type="button" class="pgs-btn" tabindex="-1">タップして はじめる</button>
 </div>
@@ -318,7 +318,7 @@ html, body {
         <button type="button" id="mm-continue-btn">つづきから</button>
       </div>
       <div class="mm-title-hero">
-        <img class="mm-title-collage" src="assets/title_trio.webp" alt="" onerror="this.style.display='none'">
+        <img class="mm-title-collage" src="assets/title_v2_composite.webp" alt="" onerror="this.style.display='none'">
         <div class="mm-title-logo">モンスターさんすう</div>
         <div class="mm-title-sub">たべさせて、 かずと なかよくなろう！</div>
       </div>
@@ -330,7 +330,7 @@ html, body {
     <section id="screen-stageSelect" class="mm-screen">
       <div class="mm-topbar">
         <button type="button" id="mm-stage-back" class="mm-topbar-back" aria-label="もどる">←</button>
-        <div class="mm-topbar-title" id="mm-stage-mode-label">かぞえる</div>
+        <div class="mm-topbar-title" id="mm-stage-mode-label">テンメガネ</div>
         <div class="mm-topbar-spacer"></div>
       </div>
       <div class="mm-stage-grid" id="mm-stage-grid"></div>
@@ -398,8 +398,7 @@ html, body {
 <script src="../js/game-stickers.js"></script>
 <script src="../common/narration.js"></script>
 <script src="engine.js"></script>
-<script src="mode-make10.js"></script>
-<script src="mode-kazoeru.js"></script>
-<script src="mode-tashizan.js"></script>
+<script src="mode-tenmegane.js"></script>
+<script src="mode-kakuren.js"></script>
 </body>
 </html>

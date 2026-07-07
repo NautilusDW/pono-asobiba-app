@@ -31,11 +31,15 @@
   // round-4 pile pivot (graft B-5): tunable pile-spawn constants. PILE_MIN/PILE_MAX
   // bound cfg.pileSize (see LEVELS below); PILE_TILT_MAX caps the visual rest tilt
   // at ±30° per user request; PRESETTLE_STEPS is the
-  // fixed-dt pre-round settle budget (forced-sleep safety valve lives in miniphys.js).
+  // fixed-dt pre-round settle budget (forced-sleep safety valve lives in js/phys-matter.js).
   const PILE_MIN = 15;
   const PILE_MAX = 20;
   const PILE_TILT_MAX = Math.PI / 6; // ±30°
-  const PRESETTLE_STEPS = 180;
+  // round-5: presettle budget raised 180->360 (6 simulated seconds at fixed 1/60
+  // dt) to give the pile contact solver (round-5': Matter.js, via js/phys-matter.js)
+  // enough iterations to converge on pathological spawn overlaps before first paint; still bounded/
+  // non-hanging, and forceSettleAll() is the hard safety valve if it isn't enough.
+  const PRESETTLE_STEPS = 360;
   // round-4 Phase 2: from this round index onward (0-based; round 3+) needed kana
   // are bundled 2-at-a-time into a single "duo" block (see pairNeeded()) instead of
   // one block per character.
@@ -109,6 +113,8 @@
   const confirmOverlay = document.getElementById('confirmOverlay');
   const resultOverlay = document.getElementById('resultOverlay');
   const dropBtn = document.getElementById('dropBtn');
+  const chuteLeftBtn = document.getElementById('chuteLeftBtn');
+  const chuteRightBtn = document.getElementById('chuteRightBtn');
   const homeBtn = document.getElementById('homeBtn');
   const soundBtn = document.getElementById('soundBtn');
   const hintBtn = document.getElementById('hintBtn');
@@ -433,6 +439,24 @@
       MiniPhys.step(dt, farTip, { cfg: game.cfg, slowT: 0, onSettle: physOnPileSettle, onChuteCatch: () => {} });
       if (!MiniPhys.bodiesForDraw().length) break;
     }
+    // round-5: force-sleep safety valve — any body that never converged inside the
+    // step budget gets snapped onto its support so the pile is never visibly
+    // floating/broken at first paint.
+    if (window.MiniPhys.forceSettleAll) MiniPhys.forceSettleAll();
+    // round-5 sanity check: presettle must never leave a floater or a pathological
+    // tilt. Non-fatal console warning only, so a bad spawn config surfaces during
+    // QA instead of shipping a silently broken-looking pile.
+    if (window.MiniPhys.restingBodies) {
+      const stacksHeightGuard = BLOCK * (PILE_MAX + 2);
+      MiniPhys.restingBodies().forEach((b) => {
+        if (b.y < FLOOR - stacksHeightGuard) {
+          console.warn('[mojicrane] presettle: body above expected pile height', b.id, b.y);
+        }
+        if (Math.abs(b.angle) > Math.PI / 4) {
+          console.warn('[mojicrane] presettle: body angle exceeds 45deg', b.id, b.angle);
+        }
+      });
+    }
   }
 
   function physOnPileSettle(body) {
@@ -613,6 +637,7 @@
     game.roundClear = false;
     game.clearT = 0;
     game.hintsLeft = game.cfg.helpUses;
+    game.awaitingSortDirection = false;
     hintBtn.classList.remove('is-used');
     updateHintButton();
     resetClaw();
@@ -636,7 +661,8 @@
       mood: 'normal',
       moodT: 0,
       blinkT: 1.8,
-      slowT: 0
+      slowT: 0,
+      awaitingSortDirection: false
     };
     startRound();
     setScene('playing');
@@ -675,8 +701,26 @@
 
   function updateButtons() {
     const canDrop = scene === 'playing' && game && game.claw && game.claw.phase === 'move' && !game.roundClear;
+    const sortWait = scene === 'playing' && game && game.claw && game.claw.phase === 'carry' &&
+      game.claw.targetZone === null && !!game.claw.block;
     dropBtn.disabled = !canDrop;
+    setHidden(dropBtn, sortWait);
+    setHidden(chuteLeftBtn, !sortWait);
+    setHidden(chuteRightBtn, !sortWait);
     hintBtn.disabled = !(scene === 'playing' && game && game.hintsLeft > 0 && game.next < game.wordChars.length);
+  }
+
+  // round-5 sort lever: child (or LEFT/RIGHT / A/D keys) picks a chute once the
+  // crane has ascended with a grabbed block. Fully guarded so stray clicks/keys
+  // outside the sort-wait window are no-ops.
+  function chooseChute(side) {
+    if (scene !== 'playing' || !game || !game.claw || game.claw.phase !== 'carry') return;
+    if (game.claw.targetZone !== null || !game.claw.block) return;
+    game.claw.targetZone = side === 'left' ? TEXT_CHUTE : CLEANUP_CHUTE;
+    game.claw.targetX = game.claw.targetZone.x;
+    game.awaitingSortDirection = false;
+    updateButtons();
+    playSfx('tap');
   }
 
   function updateHintButton() {
@@ -767,7 +811,7 @@
 
   // physics settle hooks (mojicrane round-3/4): reconcile a settled/caught body back
   // into the existing logical stores. For 'pile' targets, MiniPhys resting[] is
-  // itself the store (see spawnFalling/stepFalling in miniphys.js) — this hook only
+  // itself the store (see spawnFalling/stepFalling in js/phys-matter.js) — this hook only
   // needs to trigger the settle wobble visual. 'chute' is handled by physOnChuteCatch.
   function physOnSettle(body) {
     if (body.target && body.target.type === 'column' && body.target.col) {
@@ -779,7 +823,7 @@
   }
 
   function physOnChuteCatch(body) {
-    evaluate(body.block);
+    evaluate(body.block, body.target && body.target.zone);
   }
 
   function markPhysCueSeen() {
@@ -792,7 +836,22 @@
     } catch (err) {}
   }
 
-  function evaluate(block) {
+  function evaluate(block, zone) {
+    // round-5 sort lever: routing (which chute the block physically landed in) is
+    // judged separately from character-matching. Wrong-chute is zero-penalty —
+    // no mistake counter, no slot fill — the block simply tosses back to the pile.
+    // Correct-chute falls through to the existing junk/duo/plain matching logic
+    // verbatim (a correctly-routed-but-wrong-CHARACTER kana still increments the
+    // mistake counter via that unchanged logic below).
+    const correctZone = dropZoneFor(block);
+    if (zone && zone !== correctZone) {
+      playSfx('no');
+      pop(zone.x, zone.y - 34, 'あれれ', '#8d72b8', 22);
+      tossToPile(block, zone.x, zone.y - 6);
+      setBubble(isJunk(block) ? 'ごみは かたづけへ' : 'あれ、もじだったよ', 'oops');
+      return;
+    }
+
     if (isJunk(block)) {
       game.cleaned = (game.cleaned || 0) + 1;
       pop(CLEANUP_CHUTE.x, CLEANUP_CHUTE.y - 34, 'すっきり', '#3388c8', 22);
@@ -1007,9 +1066,13 @@
             const perfect = isJunk(claw.block) ? claw.block.shape.perfect : PERFECT_GRAB;
             const slipLimit = blockSlipLimit(claw.block);
             claw.block.grabQuality = off <= perfect ? 'perfect' : 'normal';
-            claw.block.tilt = isJunk(claw.block)
-              ? Math.max(-0.42, Math.min(0.42, (claw.tipX - blockBalanceCenterX(body.x, claw.block)) / Math.max(1, slipLimit) * 0.28))
-              : 0;
+            // round-5: the carried visual starts at the block's true rest pose
+            // (its settled pile angle) instead of a junk-only grab-offset formula
+            // that could seed a tilt beyond thetaSlip's floor and "instant slip"
+            // after just holding still. The pendulum's own swing angle (theta) is
+            // reset to 0 separately in MiniPhys.spawnCarried — this tilt is purely
+            // the visual restTilt that smoothly rights itself over 0.3s.
+            claw.block.tilt = body.angle || 0;
             // round-4: pull the block out of the pile, cascade-check its neighbors
             // (limited depth-1 topple, see computePileTopple), then a small wobble
             // nudge on nearby resting bodies so the pile visibly shifts.
@@ -1055,9 +1118,16 @@
           claw.tipY = TIP_HOME;
           if (claw.block) {
             claw.carryFrom = claw.tx;
-            claw.targetZone = dropZoneFor(claw.block);
-            claw.targetX = claw.targetZone.x;
+            // round-5 sort lever: no auto-decide anymore — the child chooses the
+            // chute via #chuteLeftBtn/#chuteRightBtn or ArrowLeft/ArrowRight/A/D.
+            // targetZone stays null (claw horizontal motion pauses in 'carry')
+            // until chooseChute() sets it.
+            claw.targetZone = null;
+            claw.targetX = null;
+            game.awaitingSortDirection = true;
             claw.phase = 'carry';
+            updateButtons();
+            setBubble('どっちに おくる？', 'happy');
           } else {
             claw.phase = 'move';
             updateButtons();
@@ -1065,6 +1135,28 @@
         }
         break;
       case 'carry': {
+        // round-5 sort lever: while awaiting the child's chute choice, the claw
+        // holds its x position (no horizontal advance) but the pendulum keeps
+        // stepping (via MiniPhys.step below) so it visibly damps while waiting.
+        // Slip is still checked but is lone-body-gated by Fix B (pileAwakeCount).
+        if (claw.targetZone === null) {
+          claw.off *= Math.pow(0.02, dt);
+          claw.tipX = claw.tx + claw.off;
+          if (window.MiniPhys && MiniPhys.slipTriggered() && claw.block) {
+            const block = claw.block;
+            const rel = MiniPhys.releaseCarried();
+            claw.block = null;
+            tossToPile(block, claw.tipX + rel.x, claw.tipY + rel.y, rel);
+            setBubble(isJunk(block) ? 'ぐらぐら。まんなかを ねらおう' : 'はしっこだと すべるよ', 'oops');
+            playSfx('slip');
+            markPhysCueSeen();
+            claw.phase = 'move';
+            claw.dir = 1;
+            game.awaitingSortDirection = false;
+            updateButtons();
+          }
+          break;
+        }
         const targetX = typeof claw.targetX === 'number' ? claw.targetX : TEXT_CHUTE.x;
         const dir = targetX < claw.tx ? -1 : 1;
         claw.tx += dir * CARRY_SPEED * dt;
@@ -1108,7 +1200,7 @@
               t: 0,
               dur: 0.28,
               arc: -6,
-              done: () => evaluate(block)
+              done: () => evaluate(block, zone)
             });
           } else {
             MiniPhys.spawnFalling(block, claw.tipX + rel.x, claw.tipY + rel.y, rel.vx, rel.vy, rel.omega, { target: { type: 'chute', zone } });
@@ -1123,6 +1215,7 @@
         if (claw.t > 0.45) {
           claw.phase = 'move';
           claw.dir = 1;
+          claw.targetZone = null; // round-5: force a fresh sort-lever decision on the next grab
           updateButtons();
         }
         break;
@@ -1706,6 +1799,8 @@
 
   dropBtn.addEventListener('click', requestDrop);
   hintBtn.addEventListener('click', useHint);
+  chuteLeftBtn.addEventListener('click', () => chooseChute('left'));
+  chuteRightBtn.addEventListener('click', () => chooseChute('right'));
 
   soundBtn.addEventListener('click', () => {
     soundOn = !soundOn;
@@ -1751,6 +1846,14 @@
     if (ev.code === 'KeyH') {
       ev.preventDefault();
       useHint();
+    }
+    if (ev.code === 'ArrowLeft' || ev.code === 'KeyA') {
+      ev.preventDefault();
+      chooseChute('left');
+    }
+    if (ev.code === 'ArrowRight' || ev.code === 'KeyD') {
+      ev.preventDefault();
+      chooseChute('right');
     }
     if (ev.code === 'Escape' && scene === 'confirm') {
       setHidden(confirmOverlay, true);

@@ -145,120 +145,120 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
-### 2026-07-07T06:01:38Z - mojicrane round-3 residual fix (4 CONFIRMED findings triage)
-- **タスク**: mojicrane round-3 residual fix (4 CONFIRMED findings triage)
+### 2026-07-07T10:11:10Z - monster-math R3 Fix: 3 blocker (index.html script差替+title画像/manifestキー統一/over_repeat台本矛盾) + warn (旧TTS資産4件削除/tier.js旧mode名/star判定統一)
+- **タスク**: monster-math R3 Fix: 3 blocker (index.html script差替+title画像/manifestキー統一/over_repeat台本矛盾) + warn (旧TTS資産4件削除/tier.js旧mode名/star判定統一)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 310
-- **エラー数**: 37
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **総アクション数**: 388
+- **エラー数**: 36
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 31, "ToolSearch": 3, "Read": 35, "Bash": 177, "Edit": 20, "Write": 5, "SendMessage": 4, "Grep": 6, "Workflow": 29}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 93, "Bash": 83, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 51, "Skill": 1, "SendMessage": 8}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-07T05:00:38Z - play.html monster_math card + game-stickers.json catalog restore + sticker-metrics regen
-- **タスク**: play.html monster_math card + game-stickers.json catalog restore + sticker-metrics regen
+### 2026-07-07T10:03:37Z - bento tut2 hotfix3 (見本スクロールデモ/Step5吹き出し/Step6ぽんと平易化+Phase B位相リセット根本fix/メインおかず2個/はっぱしきり紹介リング) sw v2029
+- **タスク**: bento tut2 hotfix3 (見本スクロールデモ/Step5吹き出し/Step6ぽんと平易化+Phase B位相リセット根本fix/メインおかず2個/はっぱしきり紹介リング) sw v2029
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 22
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **総アクション数**: 64
+- **エラー数**: 2
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Grep": 3, "Bash": 8, "Workflow": 3, "Read": 4, "Agent": 1, "ToolSearch": 1, "SendMessage": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 17, "ToolSearch": 2, "TaskStop": 1, "Read": 25, "Write": 1, "Bash": 18}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-07T04:57:19Z - monster-math sw.js precache追加 + CACHE_VERSION bump + 98アセットのgit add準備
-- **タスク**: monster-math sw.js precache追加 + CACHE_VERSION bump + 98アセットのgit add準備
+### 2026-07-07T09:44:51Z - monster-math/mode-tenmegane.js 新規実装 (テンメガネ goal可変10づくり継承+絵×N併記+burp廃止3層回復)
+- **タスク**: monster-math/mode-tenmegane.js 新規実装 (テンメガネ goal可変10づくり継承+絵×N併記+burp廃止3層回復)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 41
+- **総アクション数**: 37
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 5, "Bash": 13, "Workflow": 7, "Read": 7, "Agent": 2, "ToolSearch": 1, "SendMessage": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-07-07T09:35:47Z - monster_math R3: 旧60本TTSのうちmake10/kazoeru/tashizan 33本をmanifestから削除しtrash退避、テンメガネ14本+カクレン13本の新規TTSをGemini Ledaで生成しfaster-whisper(pykakasi正規化+Levenshtein距離12%閾値)で全27本PASS確認、manifest.json更新
+- **タスク**: monster_math R3: 旧60本TTSのうちmake10/kazoeru/tashizan 33本をmanifestから削除しtrash退避、テンメガネ14本+カクレン13本の新規TTSをGemini Ledaで生成しfaster-whisper(pykakasi正規化+Levenshtein距離12%閾値)で全27本PASS確認、manifest.json更新
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 37
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 5, "Bash": 13, "Workflow": 7, "Read": 7, "Agent": 2, "ToolSearch": 1, "SendMessage": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-07-07T09:21:04Z - monster_math play.html tier変更+game-stickers.json/STICKER_DESC差替 (v2 SPEC 4シール)
+- **タスク**: monster_math play.html tier変更+game-stickers.json/STICKER_DESC差替 (v2 SPEC 4シール)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 62
 - **エラー数**: 1
 - **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 10, "ToolSearch": 2, "TaskStop": 1, "Read": 18, "Write": 1, "Bash": 9}
+- **ツール使用統計**: {"Workflow": 16, "ToolSearch": 2, "TaskStop": 1, "Read": 25, "Write": 1, "Bash": 17}
 - **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-07T04:45:03Z - monster-math Phase 3-Impl2 cross-review blocker0確認 + commit&push (sw v2021)
-- **タスク**: monster-math Phase 3-Impl2 cross-review blocker0確認 + commit&push (sw v2021)
+### 2026-07-07T09:15:54Z - SW update toast 連発ループ緊急修正 (sw v2028、 localStorage 2段防御 + 24h cooldown + dismissed_ack)
+- **タスク**: SW update toast 連発ループ緊急修正 (sw v2028、 localStorage 2段防御 + 24h cooldown + dismissed_ack)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 22
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **総アクション数**: 61
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Grep": 3, "Bash": 8, "Workflow": 3, "Read": 4, "Agent": 1, "ToolSearch": 1, "SendMessage": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 15, "ToolSearch": 2, "TaskStop": 1, "Read": 25, "Write": 1, "Bash": 17}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-07T04:22:51Z - monster-math a11yタップターゲット拡大 (mm-topbar-back blocker含む)
-- **タスク**: monster-math a11yタップターゲット拡大 (mm-topbar-back blocker含む)
+### 2026-07-07T09:10:39Z - monster-math R2 Fix: title_v2_composite再生成 + debugファイル削除 + PNGダウンスケール
+- **タスク**: monster-math R2 Fix: title_v2_composite再生成 + debugファイル削除 + PNGダウンスケール
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 219
-- **エラー数**: 26
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 30, "ToolSearch": 3, "Read": 27, "Bash": 109, "Edit": 8, "Write": 4, "SendMessage": 4, "Grep": 6, "Workflow": 28}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T04:19:03Z - monster_math TTS manifest反映 (60本のwav→manifest.json entries追加)
-- **タスク**: monster_math TTS manifest反映 (60本のwav→manifest.json entries追加)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 219
-- **エラー数**: 26
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 30, "ToolSearch": 3, "Read": 27, "Bash": 109, "Edit": 8, "Write": 4, "SendMessage": 4, "Grep": 6, "Workflow": 28}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T04:16:53Z - Capacitor M2 Phase A: assets/_archive/ 別送り + delete で 25.7MB 削減 (commit 5271752 + 070d935 push)。 workflow 4 段構成 (Classify/Review/Execute/Verify) + broken ref fix 2 file + pathspec-limited commit で他 session の monster_math wav を除外
-- **タスク**: Capacitor M2 Phase A: assets/_archive/ 別送り + delete で 25.7MB 削減 (commit 5271752 + 070d935 push)。 workflow 4 段構成 (Classify/Review/Execute/Verify) + broken ref fix 2 file + pathspec-limited commit で他 session の monster_math wav を除外
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 219
-- **エラー数**: 26
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 30, "ToolSearch": 3, "Read": 27, "Bash": 109, "Edit": 8, "Write": 4, "SendMessage": 4, "Grep": 6, "Workflow": 28}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T03:57:06Z - monster-math M2-M4 (make10/kazoeru/tashizan) Phase3-Impl 最終レポート作成+blocker判定
-- **タスク**: monster-math M2-M4 (make10/kazoeru/tashizan) Phase3-Impl 最終レポート作成+blocker判定
-- **結果**: 失敗
-- **理由**: クロスレビュー3件でblocker合計4件検出(feast別解未検証/ナレkey不一致/tutorial runner未実装/tap-target44px未満)、Phase4進行不可と判定
-- **総アクション数**: 19
-- **エラー数**: 3
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **総アクション数**: 60
+- **エラー数**: 1
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {"Glob": 1, "Grep": 3, "Bash": 8, "Workflow": 3, "Read": 4}
-- **サマリ**: 失敗タスク: エラー3件。 失敗要因候補: テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Workflow": 15, "ToolSearch": 2, "TaskStop": 1, "Read": 24, "Write": 1, "Bash": 17}
+- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 
-### 2026-07-07T03:54:33Z - mojicrane round-2 final verification report (12 commit-readiness checks + per-fix verdicts A-F)
-- **タスク**: mojicrane round-2 final verification report (12 commit-readiness checks + per-fix verdicts A-F)
+### 2026-07-07T08:48:19Z - monster-math sticker_mm_kakuren 生成 (nano_banana_pro i2i + remove_background alpha修正)
+- **タスク**: monster-math sticker_mm_kakuren 生成 (nano_banana_pro i2i + remove_background alpha修正)
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 365
-- **エラー数**: 34
+- **総アクション数**: 385
+- **エラー数**: 35
 - **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 83, "Bash": 76, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 46, "Skill": 1, "SendMessage": 7}
+- **ツール使用統計**: {"Read": 93, "Bash": 81, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 50, "Skill": 1, "SendMessage": 8}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
+### 2026-07-07T08:47:12Z - monster-math bg_table 背景アセット生成 (higgsfield nano_banana_pro, 食堂カウンター+棚+提灯)
+- **タスク**: monster-math bg_table 背景アセット生成 (higgsfield nano_banana_pro, 食堂カウンター+棚+提灯)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 384
+- **エラー数**: 35
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 93, "Bash": 81, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 49, "Skill": 1, "SendMessage": 8}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

@@ -133,8 +133,45 @@ a {
   font-size: 0.82em;
 }
 
+/* round-5 sort lever: flank #dropBtn, hidden unless the child is mid-decision */
+.chute-btn {
+  position: absolute;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 4;
+  min-width: 84px;
+  min-height: 72px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 5px solid rgba(255, 255, 255, 0.95);
+  color: #fff;
+  font-weight: 900;
+  font-size: clamp(14px, 1.9vw, 19px);
+  text-shadow: 0 2px 0 rgba(60, 40, 64, 0.25);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.18);
+}
+
+.chute-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.chute-left {
+  right: calc(max(16px, env(safe-area-inset-right)) + clamp(92px, 12.5vw, 132px) + 14px);
+  background: radial-gradient(circle at 42% 28%, #ffb6c9, #ff9eb8 72%);
+}
+
+.chute-right {
+  right: calc(max(16px, env(safe-area-inset-right)) + clamp(92px, 12.5vw, 132px) + 108px + 28px);
+  background: radial-gradient(circle at 42% 28%, #b3e6ff, #8ed7ff 72%);
+}
+
+.hidden {
+  display: none;
+}
+
 body:not([data-scene="playing"]) #topControls,
-body:not([data-scene="playing"]) #dropBtn {
+body:not([data-scene="playing"]) #dropBtn,
+body:not([data-scene="playing"]) .chute-btn {
   opacity: 0;
   pointer-events: none;
 }
@@ -418,6 +455,22 @@ button:disabled {
     width: 88px;
     height: 82px;
     border-width: 4px;
+  }
+
+  .chute-btn {
+    bottom: 8px;
+    min-width: 66px;
+    min-height: 62px;
+    border-width: 4px;
+    font-size: 13px;
+  }
+
+  .chute-left {
+    right: calc(10px + 88px + 10px);
+  }
+
+  .chute-right {
+    right: calc(10px + 88px + 76px + 20px);
   }
 
   .panel {

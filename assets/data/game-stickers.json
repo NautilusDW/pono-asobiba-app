@@ -2181,74 +2181,52 @@
       "title": "モンスターさんすう",
       "subtitle": "しょくどうの シール",
       "icon": "🍽️",
-      "accent": "#F2742A",
-      "appOnly": false,
+      "accent": "#8E5FD9",
+      "appOnly": true,
       "stickers": [
         {
-          "id": "mm_pucchi",
-          "name": "プッチ",
-          "img": "monster-math/assets/sticker_mm_pucchi.webp",
+          "id": "mm_tenmegane",
+          "name": "テンメガネ",
+          "img": "monster-math/assets/sticker_mm_tenmegane.webp",
           "rarity": "normal",
           "unlockOn": [
-            "clear_kazoeru"
+            "clear_ten"
           ],
           "serial": "139",
-          "tier": "free"
+          "tier": "sub_exclusive"
         },
         {
-          "id": "mm_pakun",
-          "name": "パクン",
-          "img": "monster-math/assets/sticker_mm_pakun.webp",
+          "id": "mm_kakuren",
+          "name": "カクレン",
+          "img": "monster-math/assets/sticker_mm_kakuren.webp",
           "rarity": "normal",
           "unlockOn": [
-            "clear_make10"
+            "clear_kak"
           ],
           "serial": "140",
-          "tier": "free"
+          "tier": "sub_exclusive"
         },
         {
-          "id": "mm_gaburu",
-          "name": "ガブル",
-          "img": "monster-math/assets/sticker_mm_gaburu.webp",
-          "rarity": "normal",
-          "unlockOn": [
-            "clear_tashizan"
-          ],
-          "serial": "141",
-          "tier": "free"
-        },
-        {
-          "id": "mm_feast_plate",
-          "name": "ごちそうプレート",
-          "img": "monster-math/assets/sticker_mm_feast_plate.webp",
-          "rarity": "super",
-          "unlockOn": [
-            "feast"
-          ],
-          "serial": "142",
-          "tier": "free"
-        },
-        {
-          "id": "mm_shokudo_sign",
-          "name": "しょくどうかんばん",
-          "img": "monster-math/assets/sticker_mm_shokudo_sign.webp",
+          "id": "mm_both_modes",
+          "name": "なかよし ツーショット",
+          "img": "monster-math/assets/sticker_mm_both_modes.webp",
           "rarity": "super",
           "unlockOn": [
             "all_modes"
           ],
-          "serial": "143",
-          "tier": "free"
+          "serial": "141",
+          "tier": "sub_exclusive"
         },
         {
-          "id": "mm_konpeito_bin",
-          "name": "こんぺいとうのビン",
-          "img": "monster-math/assets/sticker_mm_konpeito_bin.webp",
+          "id": "mm_perfect",
+          "name": "きんいろの ほしぼうし",
+          "img": "monster-math/assets/sticker_mm_perfect.webp",
           "rarity": "super",
           "unlockOn": [
             "perfect_all"
           ],
-          "serial": "144",
-          "tier": "free"
+          "serial": "142",
+          "tier": "sub_exclusive"
         }
       ]
     },

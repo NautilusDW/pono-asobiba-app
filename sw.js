@@ -855,7 +855,19 @@
 //   レバー) 追加、 game.js ascend→carry 遷移で自動判定を廃止し子供が左右ボタン/矢印キー/
 //   A・Dキーでシュートを選択する方式に変更 (誤ルート投入は無罰でトス戻し)。 play.html
 //   PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 2032;
+// v2033: mojicrane round-5' (miniphys.js 自作物理エンジンを Matter.js v0.20.0
+//   ローカルvendor版 (js/vendor/matter.min.js, オフライン) に置換)。 window.MiniPhys
+//   19メンバーAPIは名前・シグネチャ完全維持 (js/phys-matter.js が facade)、 7フェーズ
+//   state machine / #dropBtn+Space+Enter主操作 / STORAGE_KEY / round-4定数
+//   (PACE_MULT・PILE_MIN/MAX・PILE_TILT_MAX・DUO_FROM_ROUND) / round-5 仕分けレバー
+//   は無改変。 単一ブロック握力保証は pileAwakeCount()===0 ガードとして踏襲。
+//   js/miniphys.js は削除、 js/vendor/matter.min.js + js/phys-matter.js を新規配信。
+// v2034: monster-math Phase R3 完全リセット v2 の最終コミット (テンメガネ/かくれん
+//   2モード確定)。 engine.js/mode-tenmegane.js/mode-kakuren.js の再レビュー指摘反映
+//   (blocker 0件、 warn は次ラウンド持ち越し)。 precache 対象パス自体は v2030 で
+//   反映済みのため asset パス変更なし、 content 更新分のキャッシュ破棄のためバンプ。
+//   play.html PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 2034;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

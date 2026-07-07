@@ -1503,6 +1503,24 @@ body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar > :not(.qz-editor-
 body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar .qz-editor-toolbar-toggle {
   display: inline-flex !important;
 }
+body.layout-editor-on .qz-editor-toolbar-fab {
+  position: fixed;
+  left: max(10px, env(safe-area-inset-left));
+  top: max(10px, env(safe-area-inset-top));
+  z-index: 2147483000;
+  width: 46px;
+  height: 46px;
+  border: 2px solid rgba(217, 180, 107, 0.95);
+  border-radius: 50%;
+  background: rgba(246, 240, 223, 0.96);
+  color: #2f2418;
+  font: 900 22px/1 system-ui, sans-serif;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+  cursor: pointer;
+}
+body:not(.layout-editor-on) .qz-editor-toolbar-fab {
+  display: none !important;
+}
 
 /* ===== Answer column (right) ===== */
 .a-col {
@@ -4550,20 +4568,47 @@ fitStage();
       btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
       btn.title = collapsed ? 'レイアウトエディタのメニューを開く' : 'レイアウトエディタのメニューを閉じる';
     }
+    const fab = document.getElementById('qz-editor-toolbar-fab');
+    if (fab) {
+      fab.textContent = collapsed ? '☰' : '×';
+      fab.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      fab.title = collapsed ? 'レイアウトエディタのメニューを開く' : 'レイアウトエディタのメニューを閉じる';
+      fab.setAttribute('aria-label', fab.title);
+    }
     try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (_) {}
     syncToolbarHeight(toolbar);
   }
 
+  function ensureFloatingToggle(toolbar) {
+    let fab = document.getElementById('qz-editor-toolbar-fab');
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = 'qz-editor-toolbar-fab';
+      fab.type = 'button';
+      fab.className = 'qz-editor-toolbar-fab';
+      document.body.appendChild(fab);
+      fab.addEventListener('click', function() {
+        const activeToolbar = document.getElementById('le-toolbar') || toolbar;
+        applyCollapsed(activeToolbar, !document.body.classList.contains('qz-editor-toolbar-collapsed'));
+      });
+    }
+    return fab;
+  }
+
   function attach(toolbar) {
-    if (!toolbar || toolbar.querySelector('#qz-editor-toolbar-toggle')) return true;
-    const btn = document.createElement('button');
-    btn.id = 'qz-editor-toolbar-toggle';
-    btn.type = 'button';
-    btn.className = 'qz-editor-toolbar-toggle';
-    btn.addEventListener('click', function() {
-      applyCollapsed(toolbar, !document.body.classList.contains('qz-editor-toolbar-collapsed'));
-    });
-    toolbar.insertBefore(btn, toolbar.firstChild);
+    if (!toolbar) return false;
+    let btn = toolbar.querySelector('#qz-editor-toolbar-toggle');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'qz-editor-toolbar-toggle';
+      btn.type = 'button';
+      btn.className = 'qz-editor-toolbar-toggle';
+      btn.addEventListener('click', function() {
+        applyCollapsed(toolbar, !document.body.classList.contains('qz-editor-toolbar-collapsed'));
+      });
+      toolbar.insertBefore(btn, toolbar.firstChild);
+    }
+    ensureFloatingToggle(toolbar);
     let initial = false;
     try { initial = localStorage.getItem(STORAGE_KEY) === '1'; } catch (_) {}
     applyCollapsed(toolbar, initial);
@@ -7165,6 +7210,67 @@ let _opCancelled = false;
 let _opActiveAudio = null;
 let _opTypingToken = 0;
 let _opRunning = false;
+const _opImagePreloadCache = Object.create(null);
+
+function _opPreloadImage(url, timeoutMs) {
+  if (!url) return Promise.resolve();
+  if (_opImagePreloadCache[url]) return _opImagePreloadCache[url];
+  _opImagePreloadCache[url] = new Promise(function(resolve) {
+    let done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      resolve();
+    }
+    try {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = function() {
+        if (img.decode) {
+          img.decode().then(finish).catch(finish);
+        } else {
+          finish();
+        }
+      };
+      img.onerror = finish;
+      img.src = url;
+      if (img.complete && img.naturalWidth > 0) {
+        if (img.decode) {
+          img.decode().then(finish).catch(finish);
+        } else {
+          finish();
+        }
+      }
+      setTimeout(finish, timeoutMs || 900);
+    } catch (_) {
+      finish();
+    }
+  });
+  return _opImagePreloadCache[url];
+}
+
+function _opGetNarrationFrameImageUrl() {
+  try {
+    const nr = _opLoadNarrationOverride(_opGetCurrentVC());
+    if (nr && nr.bgMode === 'image' && typeof nr.bgImagePath === 'string' && nr.bgImagePath) {
+      return nr.bgImagePath;
+    }
+  } catch (_) {}
+  return '';
+}
+
+function _opSetNarrationLines(narration, seg) {
+  if (!narration) return;
+  narration.innerHTML = '';
+  const lines = (seg && Array.isArray(seg.lines)) ? seg.lines : [];
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const p = document.createElement('p');
+    if (line && line.emphasis) p.classList.add('emphasis');
+    p.textContent = line && typeof line.text === 'string' ? line.text : '';
+    narration.appendChild(p);
+  }
+}
 
 // Fix 5e (2026-05-07): CSS の transform: scale(min(calc(100vw/W), calc(100vh/H)))
 // は length を返すため scale() の number 期待と合わず無効化されていた。
@@ -8037,6 +8143,7 @@ async function playOpeningCinematic() {
     for (var __i = 0; __i < OP_PANELS.length; __i++) {
       var __p = OP_PANELS[__i];
       if (!__p) continue;
+      __warmImg(__p.bg);
       __warmImg(__p.ponoImg);
       __warmImg(__p.kurumiImg);
       if (__p.dialogues && __p.dialogues.length) {
@@ -8049,6 +8156,7 @@ async function playOpeningCinematic() {
         }
       }
     }
+    __warmImg(_opGetNarrationFrameImageUrl());
   } catch (e) {}
 
   try {
@@ -8177,19 +8285,15 @@ async function playOpeningCinematic() {
         // panel.ponoImg があれば prewarm 段階で対応する slot サイズを反映しておく
         // (= 次の dialogue panel に渡るときの一瞬のチラつきを防ぐ)。
         try { _opApplyLayoutOverride(panel, null); } catch (_) {}
-        narration.classList.remove('hidden');
+        narration.classList.add('hidden');
         narration.classList.remove('seg-hide');
+        narration.classList.remove('seg-show');
+        _opSetNarrationLines(narration, segs[0]);
+        await _opPreloadImage(_opGetNarrationFrameImageUrl(), 900);
+        if (_opCancelled) break;
+        narration.classList.remove('hidden');
+        void narration.offsetWidth;
         narration.classList.add('seg-show');
-        narration.innerHTML = '';
-        if (segs[0]) {
-          for (let li = 0; li < segs[0].lines.length; li++) {
-            const line = segs[0].lines[li];
-            const p = document.createElement('p');
-            if (line.emphasis) p.classList.add('emphasis');
-            p.textContent = line.text;
-            narration.appendChild(p);
-          }
-        }
 
         // 音声再生 (セグメント 1 表示中に並行で開始)
         let audio = __opStartSegAudio(0);
@@ -8217,15 +8321,11 @@ async function playOpeningCinematic() {
 
             if (!_opCancelled) {
               // セグメント 2 を構築してフェードイン
-              narration.innerHTML = '';
-              for (let li = 0; li < segs[1].lines.length; li++) {
-                const line = segs[1].lines[li];
-                const p = document.createElement('p');
-                if (line.emphasis) p.classList.add('emphasis');
-                p.textContent = line.text;
-                narration.appendChild(p);
-              }
+              _opSetNarrationLines(narration, segs[1]);
+              await _opPreloadImage(_opGetNarrationFrameImageUrl(), 900);
+              if (_opCancelled) break;
               narration.classList.remove('seg-hide');
+              void narration.offsetWidth;
               narration.classList.add('seg-show');
               // seg2 用の audio を新規生成して再生開始
               audio = __opStartSegAudio(1);
