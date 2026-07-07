@@ -186,7 +186,12 @@
     return bonus ? bonus.feastValue : (1 + Math.floor(Math.random() * 9));
   }
 
-  // こうぶつカードを抽選 + 「別解保証」検証 (このカードを除いても target が作れる場合のみ有効化)
+  // こうぶつカードを抽選 + 「別解保証」検証。
+  // [Blocker 1 修正] 従来は「feastカードを含まない別解が存在するか」しか検証しておらず、
+  // 「feastカードを含む有効解が存在するか」を一切検証していなかった。 このため
+  // feastカードを使っても target に到達できない (=解けない) 矛盾ラウンドが生成され得た。
+  // 修正後は両条件 (①feastカードなしでも解ける／②feastカードを使っても解ける) を
+  // 満たした場合のみ feast イベントを有効化する。
   function _applyFeastMarking(pool, format, prefillSum) {
     var favValue = _ensureFeastValue();
     var chance = Math.min(1, FEAST_BASE_CHANCE * (format.feastBoost || 1));
@@ -196,7 +201,11 @@
     var cand = candidates[0];
     var gap0 = TARGET - prefillSum;
     var withoutValues = pool.filter(function (e) { return e.id !== cand.id; }).map(function (e) { return e.value; });
-    if (!_subsetSumPossible(withoutValues, gap0)) return { eligible: false, cardId: null, value: favValue };
+    // ①: feastカードを使わない別解が存在する (feastカードが「必須」にならないようにする)
+    var solvableWithoutFeast = _subsetSumPossible(withoutValues, gap0);
+    // ②: feastカードを使った有効解が存在する (feastカードが「解けない飾り」にならないようにする)
+    var solvableWithFeast = _subsetSumPossible(withoutValues, gap0 - cand.value);
+    if (!solvableWithoutFeast || !solvableWithFeast) return { eligible: false, cardId: null, value: favValue };
     return { eligible: true, cardId: cand.id, value: favValue };
   }
 
@@ -251,7 +260,9 @@
         })(cells[i]);
       }
       MM.fx.sfx('fill', MONSTER_ID);
-      MM.narration.sayIfAuto('monster_math:make10:five_milestone');
+      // [Blocker 2 修正] 'five_milestone' は確定TTS台本 (MM.NARRATION_KEYS) に存在しない
+      // ad-hoc key だったため鳴らなかった。 対応する専用ナレは台本に無いので、 誤った
+      // 内容を鳴らすくらいなら鳴らさない方を選び、 sfx のみで演出する。
     }
     R._lastSum = R.sum;
   }
@@ -345,15 +356,24 @@
             window.PonoGameStickers.grant({ gameId: 'monster_math', stickerId: MM._SPECIAL_STICKER.feast, event: 'feast' });
           } catch (e) {}
         }
+        // [Blocker 2 修正] 台本の make10.feast は「5かい たべさせたね！どんぐりゲット」という
+        // 5回達成専用の文言。 旧実装は毎回の feast 達成でこの key ('feast_get'、存在しない
+        // ad-hoc key でもあった) を鳴らそうとしており、 5の倍数でない回でも「5かい」と
+        // 言ってしまう内容不整合があった。 5の倍数達成時のみ鳴らすよう修正。
+        MM.narration.sayIfAuto(MM.NARRATION_KEYS.make10.feast);
       }
     }
-    MM.narration.sayIfAuto('monster_math:make10:feast_get');
   }
 
   // ============================================================
   // ラウンド進行
   // ============================================================
   function _startRound(stageCfg, scaffold) {
+    // [重要Warn 修正] S.missCount はラウンド遷移のたびに明示リセットする。 従来は
+    // 初期化されず、 miss 段階化 (初回励まし→2回目以降明確訂正、 over_first/over_repeat 等)
+    // の粒度がステージ内の前ラウンドの miss 数を引きずってズレていた
+    // (kazoeru/tashizan の _startRound は既にリセットしており、 make10 のみ欠落していた)。
+    S.missCount = 0;
     var format = _applyScaffold(_resolveFormat(stageCfg), scaffold);
     var ab = _pickAB();
     var prefillSum = format.prefill ? ab.a : 0;
@@ -378,12 +398,15 @@
     _updateFrame();
     S.phase = 'input';
 
+    // [Blocker 2 修正] 'feast_intro'/'round_intro' は台本に存在しない ad-hoc key だった。
+    // ラウンド開始時の一般的な後押しとして MM.NARRATION_KEYS.make10.play_hint
+    // (「あと いくつで 10に なるか かぞえて みよう」) を feast/通常どちらの導入でも使う。
     if (R.feastEligible) {
       MM.ui.bubble('きょうの とくべつな ごちそう ' + (FOOD_CATALOG[R.feastValue] || '🍽️') + ' を みつけてね！');
-      MM.narration.sayIfAuto('monster_math:make10:feast_intro');
+      MM.narration.sayIfAuto(MM.NARRATION_KEYS.make10.play_hint);
     } else {
       MM.ui.bubble('10に なるように たべさせてあげてね。');
-      MM.narration.sayIfAuto('monster_math:make10:round_intro');
+      MM.narration.sayIfAuto(MM.NARRATION_KEYS.make10.play_hint);
     }
     _syncUndoBtnVisibility();
   }
@@ -398,7 +421,9 @@
       _grantFeast();
       _stageEvents.push({ type: 'feast', label: 'きょうの こうぶつ、 ぺろり！ どんぐり +1' });
     }
-    MM.narration.sayIfAuto('monster_math:make10:round_clear');
+    // [Blocker 2 修正] 'round_clear' は台本に存在しない ad-hoc key。
+    // 「ぴったり！10になったね」に対応する make10.play_correct が正しい key。
+    MM.narration.sayIfAuto(MM.NARRATION_KEYS.make10.play_correct);
     MM.mmTimeout(function () { _advanceRound(); }, 900, 'feedback');
   }
 
@@ -417,7 +442,9 @@
     _applyExprBigHappy();
     MM.fx.confetti(50);
     MM.progress.commitStageClear(); // engine 側で mm_pakun / all_modes 自動 grant
-    MM.narration.sayIfAuto('monster_math:make10:stage_clear');
+    // [Blocker 2 修正] 'stage_clear' は台本に存在しない ad-hoc key。
+    // 「10づくりのおさらをクリアしたよ」に対応する make10.play_clear_stage が正しい key。
+    MM.narration.sayIfAuto(MM.NARRATION_KEYS.make10.play_clear_stage);
     var stars = MM.progress.getStars(S.mode, S.stage);
     var events = _stageEvents.slice();
     MM.mmTimeout(function () {
@@ -434,6 +461,9 @@
     _ensureUndoButton();
     _wireScreenObserver();
     _startRound(stageCfg, scaffold);
+    // [Task 5] 初回プレイのみ、 いま描画されたラウンドの上にガイドを重ねる
+    // (MM.tutorial.runIfFirstTime は既読なら即 no-op で resolve するので毎回呼んで安全)。
+    MM.tutorial.runIfFirstTime('make10', TUTORIAL_STEPS);
     return null;
   }
 
@@ -449,7 +479,10 @@
       S.missCount = (S.missCount || 0) + 1;
       MM.fx.flyBack(ctx.card, MONSTER_ID);
       _applyExprPuff();
-      MM.narration.sayIfAuto('monster_math:make10:' + (S.missCount <= 1 ? 'over_first' : 'over_repeat'));
+      // [Blocker 2 修正] 'over_first'/'over_repeat' は台本に存在しない ad-hoc key だった。
+      // 段階化 (初回やわらかめ→2回目以降は10づくり専用のはっきりした案内) は
+      // MM.NARRATION_KEYS.common.over10_first / MM.NARRATION_KEYS.make10.play_over で代替する。
+      MM.narration.sayIfAuto(S.missCount <= 1 ? MM.NARRATION_KEYS.common.over10_first : MM.NARRATION_KEYS.make10.play_over);
       MM.mmTimeout(function () { S.phase = 'input'; }, 460, 'resolving');
       return;
     }
@@ -514,13 +547,17 @@
   // 実際の step runner は engine.js 側 (Impl 1) の tutorial step engine が消費する想定
   // (現行 T0 engine.js にはまだ runner 実装がないため、 ここでは契約通りデータのみ用意)。
   // ============================================================
+  // [Blocker 2 修正] narrKey は確定TTS台本 (MM.NARRATION_KEYS.make10) に実在する6件
+  // (tut_intro/tut_frame_explain/tut_feed_prompt/tut_feed_success/tut_undo_explain/
+  // tut_complete) と1:1対応させる (旧 tut_01_intro 等は台本に存在しない ad-hoc key だった)。
+  // MM.NARRATION_KEYS 経由で参照することで typo を防ぐ。
   var TUTORIAL_STEPS = [
-    { id: 'step_intro',       narrKey: 'monster_math:make10:tut_01_intro',       target: '#mm-monster', spotlight: '#mm-monster', minDwellMs: 1200 },
-    { id: 'step_food_tap',    narrKey: 'monster_math:make10:tut_02_food_tap',    target: '#mm-shelf',   spotlight: '#mm-shelf',   minDwellMs: 1400 },
-    { id: 'step_belly_watch', narrKey: 'monster_math:make10:tut_03_belly_watch', target: '#mm-frame',   spotlight: '#mm-frame',   minDwellMs: 1400 },
-    { id: 'step_first_choice',narrKey: 'monster_math:make10:tut_04_first_choice',target: '#mm-shelf',   spotlight: '#mm-shelf',   minDwellMs: 1200 },
-    { id: 'step_target_ten',  narrKey: 'monster_math:make10:tut_05_target_ten',  target: '#mm-frame',   spotlight: '#mm-frame',   minDwellMs: 1200 },
-    { id: 'step_success',     narrKey: 'monster_math:make10:tut_06_success',     target: '#mm-monster', spotlight: '#mm-monster', minDwellMs: 1500 }
+    { id: 'step_intro',       narrKey: MM.NARRATION_KEYS.make10.tut_intro,         target: '#mm-monster', spotlight: '#mm-monster', minDwellMs: 1200 },
+    { id: 'step_food_tap',    narrKey: MM.NARRATION_KEYS.make10.tut_feed_prompt,    target: '#mm-shelf',   spotlight: '#mm-shelf',   minDwellMs: 1400 },
+    { id: 'step_belly_watch', narrKey: MM.NARRATION_KEYS.make10.tut_frame_explain,  target: '#mm-frame',   spotlight: '#mm-frame',   minDwellMs: 1400 },
+    { id: 'step_first_choice',narrKey: MM.NARRATION_KEYS.make10.tut_undo_explain,   target: '#mm-shelf',   spotlight: '#mm-shelf',   minDwellMs: 1200 },
+    { id: 'step_target_ten',  narrKey: MM.NARRATION_KEYS.make10.tut_feed_success,   target: '#mm-frame',   spotlight: '#mm-frame',   minDwellMs: 1200 },
+    { id: 'step_success',     narrKey: MM.NARRATION_KEYS.make10.tut_complete,       target: '#mm-monster', spotlight: '#mm-monster', minDwellMs: 1500 }
   ];
 
   // ============================================================

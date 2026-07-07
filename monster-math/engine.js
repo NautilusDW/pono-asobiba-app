@@ -94,10 +94,13 @@
     MODE_ORDER.forEach(function (m) { modes[m] = { scaffold: 0, missStreak: 0 }; });
     return { v: SCHEMA_V, modes: modes };
   }
-  // SPEC §2.5 が明示する形状 ({universal, kazoeru, make10, tashizan, ver:1}) をそのまま踏襲。
-  // 他3キーとフィールド名 (v/ver) が異なるのは SPEC 原文の引用に忠実であるため意図的。
+  // tutorial 既読状態は modeId → 既読verNumber の map で管理する (Impl1 tutorial step
+  // runner 実装に伴い、 単純な真偽値から「バージョン管理された既読」形式に更新。
+  // ver を上げれば全ユーザーに再表示できる、 SPEC §2.5 の「ver更新で全員に再表示」要件)。
+  // 他3キー (progress/adaptive/bonus) と同じく先頭 'ver' フィールドで全体スキーマの
+  // 世代管理を行う (loadLS の versionField 'ver' 判定用、 SCHEMA_V と同義)。
   function defaultTutorial() {
-    return { ver: SCHEMA_V, universal: false, kazoeru: false, make10: false, tashizan: false };
+    return { ver: SCHEMA_V, modes: { universal: 0, kazoeru: 0, make10: 0, tashizan: 0 } };
   }
   function defaultBonus() {
     return { v: SCHEMA_V, feastCount: 0 };
@@ -256,8 +259,11 @@
       return Promise.resolve();
     },
     // かぞえ声 (いち〜じゅう)。 未収録 (manifest 未反映) なら sFill 音階のみへ縮退。
+    // key 規約は確定TTS台本 (scratchpad/tts_scripts_monster_math.md) に合わせて
+    // 'monster_math:count:N' (category 'count' 単独、 'common:count_N' ではない、
+    // Blocker 2 修正)。 NARRATION_KEYS.count 経由で同じ文字列を組み立てる。
     counting: function (n) {
-      var key = 'monster_math:common:count_' + n;
+      var key = 'monster_math:count:' + n;
       if (window.Narration && typeof window.Narration.hasEntry === 'function' && window.Narration.hasEntry(key)) {
         return narration.sayIfAuto(key);
       }
@@ -655,6 +661,206 @@
   }
 
   // ============================================================
+  // tutorial step runner (Blocker 3: 3モード共通で初回プレイがガイドなしだった
+  // 問題への対応)。 mode-*.js は registerMode() で tutorialSteps: [{id, narrKey,
+  // target, spotlight, minDwellMs, gate}, ...] を渡す (既に3モードとも実装済、
+  // データ定義のみで runner 待ちだった)。 本セクションがその runner 実装。
+  //
+  // gate の意味:
+  //   'auto'        … ユーザー操作を待たず、 音声+minDwellMs の長い方が経過したら進む
+  //   'tap'         … step.target (無ければ step.spotlight) 要素へのタップを待つ
+  //   'answer'      … 'tap' と同義 (かぞえるモードの回答カード待ちを意味的に明示するため別名)
+  //   'tap:<selector>' … 明示 selector へのタップを待つ (target/spotlight を上書き)
+  // すべての gate 待ちに安全側フォールバックタイムアウトを設けており、 対象要素が
+  // 見つからない/子供がタップしない場合でも永久に詰まない。
+  // ============================================================
+  var _tutorialAbortFlag = false;
+  var _tutorialAbortResolvers = [];
+
+  function _tutorialTriggerAbort() {
+    var list = _tutorialAbortResolvers;
+    _tutorialAbortResolvers = [];
+    list.forEach(function (r) { try { r(); } catch (e) {} });
+  }
+
+  // abort 可能な setTimeout 相当 (mmTimeout の _timers とは別管理。 _clearAllTimers に
+  // よる画面遷移クリアで resolve されずに Promise が永久 pending になる事故を避けるため、
+  // 独自の abort チャンネル (_tutorialAbortResolvers) を使う)。
+  function _tutorialWait(ms) {
+    return new Promise(function (resolve) {
+      var done = false;
+      var t = window.setTimeout(function () { if (!done) { done = true; resolve(); } }, ms);
+      _tutorialAbortResolvers.push(function () {
+        if (done) return;
+        done = true;
+        window.clearTimeout(t);
+        resolve();
+      });
+    });
+  }
+
+  // 同一 page からの相対パスで assets/tts/<file> を解決する (common/narration.js の
+  // resolveManifestUrl/assetUrl と同一ロジックの複製。 narration.js はこのタスクの
+  // 編集対象外 [engine.js のみ編集] のため、 URL 解決に必要な最小ロジックだけを
+  // ここに複製する。 挙動は完全に同一 — location.pathname の階層数だけ '../' を積む)。
+  function _ttsAssetUrl(file) {
+    var loc = location.pathname;
+    var depth = (loc.match(/\//g) || []).length - 1;
+    var prefix = '';
+    for (var i = 0; i < depth; i++) prefix += '../';
+    return prefix + 'assets/tts/' + file;
+  }
+
+  // narration key の実 Audio を再生し、 'ended' (実際の再生完了) まで待つ Promise を返す。
+  // Narration.play() は Audio.play() の開始 Promise しか返さず実尺を追えないため、
+  // 非モック実 Audio での完走検証 ([[feedback_puzzle_tutorial_real_browser_trap]]) を
+  // 満たすべく、 ここでは manifest を直接引いて専用の Audio インスタンスを張り ended を待つ。
+  // mode==='off' (ナレーションOFF設定) の時・manifest未反映・エラー・タイムアウト時は
+  // 安全側で即 resolve(0) する (呼び出し側は minDwellMs との max を取るだけで済む)。
+  function _tutorialPlayAndWait(key) {
+    return new Promise(function (resolve) {
+      if (!window.Narration || typeof window.Narration.getMode !== 'function' || window.Narration.getMode() === 'off') {
+        resolve(0);
+        return;
+      }
+      var settled = false;
+      var guardTimer = window.setTimeout(function () { if (!settled) { settled = true; resolve(0); } }, 6000);
+      _tutorialAbortResolvers.push(function () {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(guardTimer);
+        resolve(0);
+      });
+      var loadFn = (typeof window.Narration.load === 'function') ? window.Narration.load() : Promise.resolve(null);
+      loadFn.then(function (manifest) {
+        if (settled) return;
+        var entry = manifest && manifest.entries && manifest.entries[key];
+        if (!entry || !entry.file) { settled = true; window.clearTimeout(guardTimer); resolve(0); return; }
+        try {
+          var a = new Audio(_ttsAssetUrl(entry.file));
+          a.volume = (typeof window.Narration.getVolume === 'function') ? window.Narration.getVolume() : 0.9;
+          a.playbackRate = (typeof window.Narration.getRate === 'function') ? window.Narration.getRate() : 1.15;
+          function finish() {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(guardTimer);
+            resolve(a.duration || 0);
+          }
+          a.addEventListener('ended', finish, { once: true });
+          a.addEventListener('error', finish, { once: true });
+          a.play().catch(finish); // autoplay 拒否等は即フォールバック (無音扱い)
+        } catch (e) {
+          if (!settled) { settled = true; window.clearTimeout(guardTimer); resolve(0); }
+        }
+      }).catch(function () {
+        if (!settled) { settled = true; window.clearTimeout(guardTimer); resolve(0); }
+      });
+    });
+  }
+
+  function _tutorialGateSelector(step) {
+    if (step.gate && typeof step.gate === 'string' && step.gate.indexOf('tap:') === 0) return step.gate.slice(4);
+    return step.target || step.spotlight || null;
+  }
+  function _tutorialStepNeedsGate(step) {
+    var g = step && step.gate;
+    return g === 'tap' || g === 'answer' || (typeof g === 'string' && g.indexOf('tap:') === 0);
+  }
+
+  // ユーザーが対象要素 (または不明時は画面のどこでも) をタップするまで待つ。
+  // capture:true + stopPropagation なしで listen するため、 ゲーム自体の本来のタップ
+  // ハンドラ (onFoodTap/onAnswerTap 等) の発火を一切妨げない (観測のみ)。
+  function _tutorialWaitForGate(step) {
+    return new Promise(function (resolve) {
+      var sel = _tutorialGateSelector(step);
+      var el = null;
+      try { el = sel ? document.querySelector(sel) : null; } catch (e) {}
+      var done = false;
+      function finish() {
+        if (done) return;
+        done = true;
+        document.removeEventListener('pointerdown', onDocTap, true);
+        window.clearTimeout(fallbackT);
+        resolve();
+      }
+      function onDocTap(ev) {
+        if (!el || (ev.target && el.contains(ev.target))) finish();
+      }
+      document.addEventListener('pointerdown', onDocTap, true);
+      // 対象が見つからない/タップされない場合の迷子防止フォールバック (詰み回避)
+      var fallbackT = window.setTimeout(finish, 20000);
+      _tutorialAbortResolvers.push(finish);
+    });
+  }
+
+  function _runTutorialStep(step, opts) {
+    var clearSpot = step.spotlight ? spotlight(step.spotlight) : function () {};
+    var minDwell = step.minDwellMs || 1000;
+    var audioEnabled = opts.audio !== false;
+    var audioWait = Promise.resolve(0);
+    if (step.narrKey) {
+      if (audioEnabled) {
+        audioWait = _tutorialPlayAndWait(step.narrKey);
+      } else {
+        // mocked/no-audio テスト環境: 発火のみ行い、 待機は minDwellMs のみに委ねる
+        try { narration.say(step.narrKey); } catch (e) {}
+      }
+    }
+    var gateWait = _tutorialStepNeedsGate(step) ? _tutorialWaitForGate(step) : Promise.resolve();
+    return Promise.all([_tutorialWait(minDwell), audioWait, gateWait]).then(function () {
+      clearSpot();
+    });
+  }
+
+  function tutorialSkip() {
+    _tutorialAbortFlag = true;
+    _tutorialTriggerAbort();
+    var prevSpot = document.querySelectorAll('.mm-spotlight-active');
+    prevSpot.forEach(function (el) { el.classList.remove('mm-spotlight-active'); });
+    S._tutorialActive = false;
+  }
+
+  function tutorialMarkSeen(modeId, ver) {
+    ver = ver || 1;
+    if (!_tutorial.modes) _tutorial.modes = {};
+    _tutorial.modes[modeId] = ver;
+    saveLS(LS_TUTORIAL, _tutorial);
+  }
+  function tutorialIsSeen(modeId, ver) {
+    ver = ver || 1;
+    var seenVer = (_tutorial.modes && _tutorial.modes[modeId]) || 0;
+    return seenVer >= ver;
+  }
+
+  function tutorialRunIfFirstTime(modeId, steps, opts) {
+    opts = opts || {};
+    var ver = opts.ver || 1;
+    if (!steps || !steps.length) return Promise.resolve(false);
+    if (!opts.force && tutorialIsSeen(modeId, ver)) return Promise.resolve(false);
+
+    _tutorialAbortFlag = false;
+    S._tutorialActive = true;
+
+    var i = 0;
+    function next() {
+      if (_tutorialAbortFlag || i >= steps.length) return finish();
+      var step = steps[i++];
+      return _runTutorialStep(step, opts).then(function () {
+        if (_tutorialAbortFlag) return finish();
+        return next();
+      });
+    }
+    function finish() {
+      S._tutorialActive = false;
+      // abort (画面遷移等での中断) の場合は「見た」扱いにしない — 次回また最初から
+      // ガイドできるようにするため、 正常完走時のみ markSeen する。
+      if (!_tutorialAbortFlag) tutorialMarkSeen(modeId, ver);
+      return !_tutorialAbortFlag;
+    }
+    return next();
+  }
+
+  // ============================================================
   // Nav / screen 制御
   // ============================================================
   var TIER_FN = 'isMonsterMathStageUnlocked';
@@ -672,6 +878,25 @@
     // のまま残り、 lockInput 由来の pointer-events:none が解除されない warn 指摘への対応)。
     if (_screenAbortCtrl) { try { _screenAbortCtrl.abort(); } catch (e) {} }
     try { _screenAbortCtrl = (typeof AbortController !== 'undefined') ? new AbortController() : null; } catch (e) { _screenAbortCtrl = null; }
+
+    // [Warn 修正] result overlay (#screen-result) は title/stageSelect/play の
+    // is-active 排他制御に含まれない独立オーバーレイのため、 画面遷移のたびに
+    // 明示的に隠す。 これがないと戻る操作等で stale な result 表示が新画面の上に
+    // 残留し得る (cross review warn: "_setActiveScreen が result overlay 非表示化と
+    // S.phase リセットをしない" の根本原因対応)。
+    if (dom.screenResult) dom.screenResult.hidden = true;
+
+    // [Warn 修正] S.phase リセット。 前画面の resolving/feedback/clear が新画面に
+    // 持ち越されると、 新画面の onFoodTap/onAnswerTap ガード (`S.phase !== 'input'`) が
+    // 想定外の値のまま残り stale-screen 競合 (誤ってラウンドが進む/星が二重確定する等) を
+    // 招く。 play 画面に入る場合は goPlay 側が直後に 'intro'→'input' を設定するため
+    // ここでは無難な初期値 'intro' を、それ以外は 'idle' を設定する。
+    S.phase = (name === 'play') ? 'intro' : 'idle';
+
+    // [Blocker 3 関連] アクティブなチュートリアルがあれば安全に中断する。
+    // 画面遷移中に pending なチュートリアル step (audio待ち/gate待ち) が残ると
+    // 二度と resolve されず S._tutorialActive が true のまま固着してしまうため。
+    if (S._tutorialActive) { try { tutorialSkip(); } catch (e) {} }
 
     [dom.screenTitle, dom.screenStageSel, dom.screenPlay].forEach(function (el) {
       if (el) el.classList.remove('is-active');
@@ -976,6 +1201,83 @@
   }
 
   // ============================================================
+  // narration key registry (Blocker 2 の engine 側部分)。 確定TTS台本
+  // (scratchpad/tts_scripts_monster_math.md、 合計60本) の key 表記を「正」として
+  // ここに定義する。 台本は 'monster_math:<category>:<id>' のコロン区切りで統一されて
+  // おり、 mode-*.js が現在参照している独自 key (round_intro/feast_intro/over_first
+  // 等) とは大半不一致 — mode-*.js 側の置換は Phase B (別 Impl) で
+  // MM.NARRATION_KEYS.<mode>.<id> 参照へ統一する想定。 このファイルは registry の
+  // 定義のみを担当し、 mode-*.js は編集しない (worktree isolation / タスクスコープ外)。
+  // ============================================================
+  var NARRATION_KEYS = {
+    common: {
+      welcome: 'monster_math:common:welcome',
+      door_kazoeru: 'monster_math:common:door_kazoeru',
+      door_make10: 'monster_math:common:door_make10',
+      door_tashizan: 'monster_math:common:door_tashizan',
+      'continue': 'monster_math:common:continue',
+      stage_select: 'monster_math:common:stage_select',
+      miss_first: 'monster_math:common:miss_first',
+      miss_repeat: 'monster_math:common:miss_repeat',
+      over10_first: 'monster_math:common:over10_first',
+      stuck_undo: 'monster_math:common:stuck_undo',
+      voluntary_undo: 'monster_math:common:voluntary_undo',
+      round_clear: 'monster_math:common:round_clear',
+      stage_clear: 'monster_math:common:stage_clear',
+      perfect: 'monster_math:common:perfect',
+      result_open: 'monster_math:common:result_open',
+      back_confirm: 'monster_math:common:back_confirm',
+      acorn_get: 'monster_math:common:acorn_get'
+    },
+    // count: かぞえ声 (いち〜じゅう)。 narration.counting(n) はこのテーブルと同じ
+    // 'monster_math:count:' + n を組み立てる (Blocker 2 修正、 上記 narration.counting 参照)。
+    count: (function () {
+      var o = {};
+      for (var n = 1; n <= 10; n++) o[n] = 'monster_math:count:' + n;
+      return o;
+    })(),
+    make10: {
+      tut_intro: 'monster_math:make10:tut_intro',
+      tut_frame_explain: 'monster_math:make10:tut_frame_explain',
+      tut_feed_prompt: 'monster_math:make10:tut_feed_prompt',
+      tut_feed_success: 'monster_math:make10:tut_feed_success',
+      tut_undo_explain: 'monster_math:make10:tut_undo_explain',
+      tut_complete: 'monster_math:make10:tut_complete',
+      play_correct: 'monster_math:make10:play_correct',
+      play_hint: 'monster_math:make10:play_hint',
+      play_over: 'monster_math:make10:play_over',
+      play_monster_happy: 'monster_math:make10:play_monster_happy',
+      play_clear_stage: 'monster_math:make10:play_clear_stage',
+      feast: 'monster_math:make10:feast'
+    },
+    kazoeru: {
+      tut_intro: 'monster_math:kazoeru:tut_intro',
+      tut_dot_explain: 'monster_math:kazoeru:tut_dot_explain',
+      tut_answer_prompt: 'monster_math:kazoeru:tut_answer_prompt',
+      tut_success: 'monster_math:kazoeru:tut_success',
+      tut_complete: 'monster_math:kazoeru:tut_complete',
+      play_correct: 'monster_math:kazoeru:play_correct',
+      play_hint: 'monster_math:kazoeru:play_hint',
+      play_miss_count: 'monster_math:kazoeru:play_miss_count',
+      play_clear_stage: 'monster_math:kazoeru:play_clear_stage'
+    },
+    tashizan: {
+      tut_intro: 'monster_math:tashizan:tut_intro',
+      tut_feed_explain: 'monster_math:tashizan:tut_feed_explain',
+      tut_answer_prompt: 'monster_math:tashizan:tut_answer_prompt',
+      tut_success: 'monster_math:tashizan:tut_success',
+      tut_complete: 'monster_math:tashizan:tut_complete',
+      play_correct: 'monster_math:tashizan:play_correct',
+      play_hint: 'monster_math:tashizan:play_hint',
+      play_bridge: 'monster_math:tashizan:play_bridge',
+      play_clear_stage: 'monster_math:tashizan:play_clear_stage',
+      play_festival: 'monster_math:tashizan:play_festival',
+      gate_suggest: 'monster_math:tashizan:gate_suggest',
+      gate_confirm: 'monster_math:tashizan:gate_confirm'
+    }
+  };
+
+  // ============================================================
   // export (SPEC §2.4 凍結契約)
   // ============================================================
   window.MM = {
@@ -997,6 +1299,9 @@
       sfx: sfx
     },
     narration: narration,
+    // Blocker 2 の正: 確定TTS台本と1:1対応する narration key 一覧 (読み取り専用)。
+    // mode-*.js は Phase B で MM.NARRATION_KEYS.<mode>.<id> 参照へ統一する想定。
+    NARRATION_KEYS: NARRATION_KEYS,
     progress: {
       getStars: getStars,
       commitRoundStar: commitRoundStar,
@@ -1008,10 +1313,23 @@
       voluntary: voluntaryUndo,
       popUntil: popUntil
     },
+    // Blocker 3: チュートリアル step runner (SPEC §2.5 / §7.2)。
+    //   runIfFirstTime(modeId, steps, opts) … 既読 (isSeen) でなければ steps を順に
+    //     実行し、 完走したら markSeen する。 Promise<boolean> (実行したか) を返す。
+    //   markSeen(modeId, ver=1) / isSeen(modeId, ver=1) … pono_mmath_tutorial_seen_v1
+    //     に modeId→既読verNumber で永続化。 ver を上げれば全ユーザーに再表示される。
+    //   skip() … 現在実行中の runner を安全に中断 (markSeen しない = 次回also再挑戦)。
+    tutorial: {
+      runIfFirstTime: tutorialRunIfFirstTime,
+      markSeen: tutorialMarkSeen,
+      isSeen: tutorialIsSeen,
+      skip: tutorialSkip
+    },
     mmTimeout: mmTimeout,
     // [Impl 2-4 使用可 (契約ヘルパー)]:
     //   MM._SPECIAL_STICKER   — feast / all_modes / perfect_all 用 stickerId マップ
     //   MM._currentScreenSignal() — flyClone opts.signal に渡す (画面遷移時 abort)
+    //   MM.tutorial.* / MM.NARRATION_KEYS.* — 正式公開API (契約ヘルパーではなく本体API)
     // [Impl 2-4 使用禁止 (内部専用ヘルパー、 統合フェーズで整理予定)]:
     //   _renderTitleDoors, _renderStageSelect, _setActiveScreen, その他 _ で始まる関数
     //   (これらに依存すると次回リファクタで壊れる)

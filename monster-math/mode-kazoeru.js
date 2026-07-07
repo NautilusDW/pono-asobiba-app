@@ -138,14 +138,15 @@ if (window.MM) {
 
     // ============================================================
     // ナレーション key
+    // [Blocker 2 修正] 'ask_dots'/'ask_number'/'ask_plate'/'praise1-3' は確定TTS台本
+    // (MM.NARRATION_KEYS.kazoeru) に存在しない ad-hoc key だったため鳴らなかった。
+    // ラウンド開始の後押しは MM.NARRATION_KEYS.kazoeru.play_hint (フォーマット問わず共通、
+    // 台本にフォーマット別の ask_* バリエーションが無いため) に、 正解時の讃辞は
+    // MM.NARRATION_KEYS.kazoeru.play_correct (1種のみ、台本にpraiseの複数バリエーションは
+    // 無いため) に統一する。 bubble のテキスト表示バリエーション (PRAISE_TEXTS) は
+    // 音声とは独立した見た目の演出なのでそのまま残す。
     // ============================================================
-    function _askNarrKey(format) {
-      if (format === 'B') return 'monster_math:kazoeru:ask_number';
-      if (format === 'C') return 'monster_math:kazoeru:ask_plate';
-      return 'monster_math:kazoeru:ask_dots';
-    }
     var PRAISE_TEXTS = ['やったね！', 'せいかい！', 'じょうずだね！'];
-    var PRAISE_KEYS = ['monster_math:kazoeru:praise1', 'monster_math:kazoeru:praise2', 'monster_math:kazoeru:praise3'];
 
     // ============================================================
     // ラウンド内アイテム構築
@@ -195,6 +196,9 @@ if (window.MM) {
       };
       MM.ui.renderFrame({ rows: 1, cols: 5, prefill: 0 }); // プッチの5マスbelly (常に空スタート)
       _startRound();
+      // [Task 5] 初回プレイのみ、 いま描画されたラウンドの上にガイドを重ねる
+      // (MM.tutorial.runIfFirstTime は既読なら即 no-op で resolve するので毎回呼んで安全)。
+      MM.tutorial.runIfFirstTime('kazoeru', TUTORIAL_STEPS);
       return null;
     }
 
@@ -227,7 +231,7 @@ if (window.MM) {
       MM.ui.bubble('');
       MM.ui.setMonster(MONSTER_ID, 'idle');
       MM.ui.renderShelf(_rt.items);
-      MM.narration.sayIfAuto(_askNarrKey(cfg.format));
+      MM.narration.sayIfAuto(MM.NARRATION_KEYS.kazoeru.play_hint);
     }
 
     function _renderShelfWithStimulusHTML(html) {
@@ -271,13 +275,17 @@ if (window.MM) {
       var monsterEl = document.getElementById('mm-monster');
       var fromEl = ctx && ctx.card;
       MM.fx.flyClone(fromEl, monsterEl, { signal: MM._currentScreenSignal() }).then(function () {
+        // [重要Warn 修正] 画面遷移 (戻る確認モーダル等) で screen/mode が変わっていたら
+        // 何もしない (make10 と同じ stale-screen callback guard。 これが無いと戻る操作との
+        // 競合でゴースト進行/星の二重確定が起き得る)。
+        if (MM.S.mode !== 'kazoeru' || MM.S.screen !== 'play' || !_rt) return;
         MM.ui.setMonster(MONSTER_ID, 'mouth_open');
         MM.fx.sfx('munch', MONSTER_ID);
         _fillBellyCounting(target, function () {
           MM.ui.setMonster(MONSTER_ID, 'happy');
           var praiseIdx = _rt.roundIdx % PRAISE_TEXTS.length;
           MM.ui.bubble(PRAISE_TEXTS[praiseIdx]);
-          MM.narration.sayIfAuto(PRAISE_KEYS[praiseIdx]);
+          MM.narration.sayIfAuto(MM.NARRATION_KEYS.kazoeru.play_correct);
           MM.progress.commitRoundStar();
           MM.mmTimeout(function () {
             if (!_rt) return;
@@ -320,7 +328,8 @@ if (window.MM) {
       var stars = Math.min(5, _rt.roundIdx);
       var stageName = (_rt.stageCfg && _rt.stageCfg.name) || '';
       MM.progress.commitStageClear();
-      MM.narration.sayIfAuto('monster_math:kazoeru:stage_clear');
+      // [Blocker 2 修正] 'stage_clear' は台本に存在しない ad-hoc key。 正: play_clear_stage。
+      MM.narration.sayIfAuto(MM.NARRATION_KEYS.kazoeru.play_clear_stage);
       MM.ui.showResult(stars, [{ type: 'clear', label: stageName + ' クリア！' }]);
       _rt = null;
     }
@@ -343,7 +352,10 @@ if (window.MM) {
       var lockMs = target * 480 + 900;
       MM.ui.lockInput(lockMs);
       MM.ui.bubble('あれれ？ もういちど かぞえてみよう');
-      MM.narration.say('monster_math:kazoeru:miss1');
+      // [Blocker 2 修正] 'miss1' は台本に存在しない ad-hoc key。 このドットカウントアップ
+      // 演出は「いっしょに かぞえてみよう、いち、に、さん」の play_miss_count が内容的に
+      // 一致するのでこちらを使う。
+      MM.narration.say(MM.NARRATION_KEYS.kazoeru.play_miss_count);
       var i = 0;
       function step() {
         i++;
@@ -366,7 +378,10 @@ if (window.MM) {
     function _miss2() {
       MM.ui.lockInput(1900);
       MM.ui.bubble('こたえは これだよ！');
-      MM.narration.say('monster_math:kazoeru:miss2');
+      // [Blocker 2 修正] 'miss2' は台本に存在しない ad-hoc key。 2回目以降のはっきりした
+      // 訂正は台本共通の common.miss_repeat (「こたえは ちがうよ。ゆっくり かぞえてみよう」)
+      // を使う ([[feedback_miss_voice_progression]] の2段階目に相当)。
+      MM.narration.say(MM.NARRATION_KEYS.common.miss_repeat);
       var sel = '.mm-food-card[data-food-id="' + _rt.correctCardId + '"]';
       var clearSpotlight = MM.ui.spotlight(sel);
       MM.mmTimeout(function () {
@@ -379,10 +394,14 @@ if (window.MM) {
     // ============================================================
     // tutorialSteps (SPEC §2.4 定義形状 / engine 側 step engine 実装待ち)
     // ============================================================
+    // [Blocker 2 修正] narrKey は確定TTS台本 (MM.NARRATION_KEYS.kazoeru) に実在する5件
+    // (tut_intro/tut_dot_explain/tut_answer_prompt/tut_success/tut_complete) と1:1対応
+    // させる (旧 tut_dot_count/tut_plate_pick/tut_watch_belly は台本に存在しない ad-hoc
+    // key だった)。 MM.NARRATION_KEYS 経由で参照し typo を防ぐ。
     var TUTORIAL_STEPS = [
       {
         id: 'step_intro',
-        narrKey: 'monster_math:kazoeru:tut_intro',
+        narrKey: MM.NARRATION_KEYS.kazoeru.tut_intro,
         gate: 'tap',
         target: '#mm-monster',
         spotlight: '#mm-frame',
@@ -390,7 +409,7 @@ if (window.MM) {
       },
       {
         id: 'step_dot_count',
-        narrKey: 'monster_math:kazoeru:tut_dot_count',
+        narrKey: MM.NARRATION_KEYS.kazoeru.tut_dot_explain,
         gate: 'tap',
         target: '#mm-shelf .mm-food-card:first-child',
         spotlight: '#mm-shelf .mm-food-card:first-child',
@@ -398,7 +417,7 @@ if (window.MM) {
       },
       {
         id: 'step_plate_pick',
-        narrKey: 'monster_math:kazoeru:tut_plate_pick',
+        narrKey: MM.NARRATION_KEYS.kazoeru.tut_answer_prompt,
         gate: 'answer',
         target: '#mm-shelf',
         spotlight: '#mm-shelf',
@@ -406,7 +425,7 @@ if (window.MM) {
       },
       {
         id: 'step_watch_belly',
-        narrKey: 'monster_math:kazoeru:tut_watch_belly',
+        narrKey: MM.NARRATION_KEYS.kazoeru.tut_success,
         gate: 'auto',
         target: '#mm-frame',
         spotlight: '#mm-frame',
@@ -414,7 +433,7 @@ if (window.MM) {
       },
       {
         id: 'step_success',
-        narrKey: 'monster_math:kazoeru:tut_success',
+        narrKey: MM.NARRATION_KEYS.kazoeru.tut_complete,
         gate: 'auto',
         target: '#mm-monster',
         spotlight: null,

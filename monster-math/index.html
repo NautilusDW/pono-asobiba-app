@@ -118,11 +118,21 @@ html, body {
   font-family: inherit; font-weight: 800; font-size: 0.85rem;
   padding: 8px 18px; border-radius: 999px; border: 2px solid var(--mm-accent);
   background: #fff; color: var(--mm-accent); cursor: pointer;
+  position: relative;
+}
+.mm-continue-chip button::after {
+  content: ''; position: absolute;
+  top: -18px; bottom: -38px; left: -10px; right: -10px;
 }
 .mm-back-link {
   position: absolute; left: 20px; bottom: 18px;
   font-size: 0.85rem; font-weight: 800; color: var(--mm-text);
   text-decoration: none; padding: 8px 6px;
+}
+/* a11y: invisible hit-area expansion to ~88 stage px (見た目=文字/装飾は不変) */
+.mm-back-link::after {
+  content: ''; position: absolute;
+  top: -40px; bottom: -16px; left: -10px; right: -10px;
 }
 
 /* ── ステージ選択 ── */
@@ -135,6 +145,12 @@ html, body {
   width: 46px; height: 46px; border-radius: 50%; border: none;
   background: rgba(255,255,255,0.16); color: #fff; font-size: 1.3rem; font-weight: 900;
   cursor: pointer;
+  position: relative;
+}
+/* a11y (Cross-Review B blocker#4): 見た目の円は46pxのまま、当たり判定のみ88 stage px相当に拡張 */
+.mm-topbar-back::after {
+  content: ''; position: absolute;
+  top: -13px; bottom: -29px; left: -21px; right: -21px;
 }
 .mm-topbar-title { font-weight: 900; font-size: 1.15rem; flex: 1; }
 .mm-topbar-spacer { width: 46px; }
@@ -171,6 +187,12 @@ html, body {
   border: 3px solid var(--mm-wood); border-radius: 14px; background: #fff;
   padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
   cursor: pointer; font-family: inherit;
+  position: relative;
+}
+/* a11y: grid gap(12px)の半分(6px)にキャップして隣接カードとの重複を防止しつつ 44px 未満を解消 */
+.mm-food-card::after {
+  content: ''; position: absolute;
+  inset: -6px;
 }
 .mm-food-emoji { font-size: 2rem; }
 .mm-food-label { font-size: 0.8rem; font-weight: 800; }
@@ -222,6 +244,12 @@ html, body {
 .mm-confirm-actions { display: flex; gap: 10px; justify-content: center; }
 .mm-confirm-actions button {
   font-family: inherit; font-weight: 800; padding: 10px 20px; border-radius: 999px; border: none; cursor: pointer;
+  position: relative;
+}
+/* a11y: 横並びなので隣ボタンとの重複防止のため left/right は gap(10px)の半分にキャップ */
+.mm-confirm-actions button::after {
+  content: ''; position: absolute;
+  top: -25px; bottom: -25px; left: -5px; right: -5px;
 }
 #mm-confirm-ok { background: var(--mm-accent); color: #fff; }
 #mm-confirm-cancel { background: #eee; color: var(--mm-text); }
@@ -240,10 +268,20 @@ html, body {
 .mm-star { width: 34px; height: 34px; border-radius: 50%; background: #E8E0D2; position: relative; }
 .mm-star.is-lit { background: #FFD84D; box-shadow: 0 0 0 4px rgba(255,216,77,0.35); }
 .mm-result-events { font-size: 0.85rem; font-weight: 700; color: var(--mm-text); }
-.mm-result-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.mm-result-buttons { display: flex; flex-direction: column; gap: 14px; width: 100%; }
 .mm-result-buttons button {
-  font-family: inherit; font-weight: 900; font-size: 0.95rem; padding: 12px; border-radius: 999px; border: none; cursor: pointer;
+  font-family: inherit; font-weight: 900; font-size: 0.95rem; padding: 16px 12px; border-radius: 999px; border: none; cursor: pointer;
+  position: relative;
 }
+/* a11y: 縦積みボタンは隣接ボタンとの重複防止のため top/bottom は gap(14px)の半分(7px)にキャップ。
+   先頭/末尾ボタンは自由側 (カード余白のある側) をより大きく拡張。
+   3ボタン積み構造上、中央ボタンは物理的に88px相当までは届かないため既知の残課題として issues に記載 */
+.mm-result-buttons button::after {
+  content: ''; position: absolute;
+  top: -7px; bottom: -7px; left: -8px; right: -8px;
+}
+.mm-result-buttons button:first-child::after { top: -20px; }
+.mm-result-buttons button:last-child::after { bottom: -24px; }
 #mm-result-next { background: var(--mm-accent); color: #fff; }
 #mm-result-choose { background: #FFD84D; color: #7A4A00; }
 #mm-result-end { background: #eee; color: var(--mm-text); }

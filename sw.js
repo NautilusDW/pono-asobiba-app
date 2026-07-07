@@ -757,13 +757,14 @@
 // v2017: monster-math M3 かぞえる (kazoeru) モード実装マージ (Phase 3-Impl → Impl3)。
 // v2018: monster-math M4 たしざん (tashizan) モード実装マージ (Phase 3-Impl → Impl4)。
 // v2019: mojicrane round-2 残存指摘の追加修正 (詳細は先頭 v2016 コメントブロック参照)。
-// v2020: bento tut2 見本アニメを全てタップ動作に統一 + パレット外アイテムはスクロールで
-//   表示してから指ポインタが出る仕様に修正 (batch:1058-tutorial-tap-scroll-fix)。
-//   ゲームがタップ専用配置 (batches 1040-1046 cup-first) なので Phase A の
-//   「パレット→目的地」ドラッグを rice/nori 4A・4B/okazu-main/cup-place/cup-food の
-//   5 箇所で「スクロール→タップ」に置換。 rAF ループで scroll と finger 座標を
-//   Phase A 中は palette 再構築に耐えて再アンカー。 Step 5 の on-stage drag デモは維持。
-const CACHE_VERSION = 2020;
+// v2021: monster-math Phase 3-Impl2 (tutorial step runner + cross-review fix)。
+//   engine.js: チュートリアル step runner を実装 + _setActiveScreen での overlay 非表示化 +
+//   NARRATION_KEYS registry 経由に統一。 mode-make10.js: _applyFeastMarking が feast カード
+//   含む有効解も検証するよう修正 + missCount を round 毎にリセット。 mode-kazoeru.js /
+//   mode-tashizan.js: flyClone の stale-screen ガード追加。 index.html: タップターゲット拡大
+//   (.mm-topbar-back 等)。 assets/tts/manifest.json: monster_math namespace 60 entries 追加
+//   (音声本体は Phase 4 で生成、 manifest のみ先行)。
+const CACHE_VERSION = 2021;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

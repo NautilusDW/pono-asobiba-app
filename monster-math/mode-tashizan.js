@@ -195,12 +195,15 @@
     return new Promise(function (resolve) {
       for (var i = a; i < a + need; i++) { if (cells[i]) cells[i].classList.add('mm-bridge-cell'); }
       MM.ui.bubble(a + ' と ' + need + ' で 10！');
-      MM.narration.sayIfAuto('monster_math:tashizan:bridge_step1');
+      // [Blocker 2 修正] 'bridge_step1'/'bridge_step2' は台本に存在しない ad-hoc key。
+      // 台本には bridge 演出用の音声は play_bridge 1本のみ (2段階分の専用文言はない)。
+      // 同じ音声を2回連続で鳴らすと不自然なので、 最初の (a と need で10) 局面でのみ再生し、
+      // 2局面目 (のこりは remainder) は bubble のテキストのみで表現する。
+      MM.narration.sayIfAuto(MM.NARRATION_KEYS.tashizan.play_bridge);
       MM.mmTimeout(function () {
         for (var i2 = a; i2 < a + need; i2++) { if (cells[i2]) cells[i2].classList.remove('mm-bridge-cell'); }
         for (var j = a + need; j < a + need + remainder; j++) { if (cells[j]) cells[j].classList.add('mm-bridge-cell'); }
         MM.ui.bubble('のこりは ' + remainder + '！');
-        MM.narration.sayIfAuto('monster_math:tashizan:bridge_step2');
         MM.mmTimeout(function () {
           for (var j2 = a + need; j2 < a + need + remainder; j2++) { if (cells[j2]) cells[j2].classList.remove('mm-bridge-cell'); }
           resolve();
@@ -225,7 +228,7 @@
     MM.ui.setMonster(MONSTER_ID, 'idle');
     var frame = _frameEl(); if (frame) frame.innerHTML = '';
     MM.ui.bubble('10づくりで もっと れんしゅうしてから でも いいかも？');
-    MM.narration.sayIfAuto('monster_math:tashizan:gate_suggest');
+    MM.narration.sayIfAuto(MM.NARRATION_KEYS.tashizan.gate_suggest);
     MM.ui.renderShelf([
       { id: 'gate_try', kind: 'gate', emoji: '💪', label: 'やってみる！' }
     ]);
@@ -248,9 +251,14 @@
 
     if (!_gateAcked && stageCfg === STAGES[0] && _make10StarSum() < GATE_STAR_THRESHOLD) {
       _showGate();
+      // gate 表示中は plate1/plate2 がまだ描画されていないためチュートリアルは起動しない。
+      // gate_try が押されたタイミング (onFoodTap 側) で改めて起動する。
       return;
     }
     _startRound();
+    // [Task 5] 初回プレイのみ、 いま描画されたラウンドの上にガイドを重ねる
+    // (MM.tutorial.runIfFirstTime は既読なら即 no-op で resolve するので毎回呼んで安全)。
+    MM.tutorial.runIfFirstTime(MODE_ID, tutorialSteps);
   }
 
   function _startRound() {
@@ -287,9 +295,12 @@
   function onFoodTap(food, ctx) {
     if (food && food.id === 'gate_try') {
       _gateAcked = true;
-      MM.narration.say('monster_math:tashizan:gate_confirm');
+      MM.narration.say(MM.NARRATION_KEYS.tashizan.gate_confirm);
       _roundIdx = 0;
       _startRound(); // _stageCfg は createRound 時点で既に設定済み (STAGES[0])
+      // gate 経由で始めて起動した場合、 createRound() 側の tutorial 起動は素通り
+      // しているのでここでも呼ぶ (isSeen なら即 no-op、 二重発火の心配なし)。
+      MM.tutorial.runIfFirstTime(MODE_ID, tutorialSteps);
       return;
     }
     if (!_round || _round.locked) return;
@@ -314,6 +325,9 @@
 
     MM.ui.lockInput(700);
     MM.fx.flyClone(cardEl, monsterEl, { signal: signal }).then(function () {
+      // [重要Warn 修正] 画面遷移 (戻る確認モーダル等) で screen/mode が変わっていたら
+      // 何もしない (make10 と同じ stale-screen callback guard)。
+      if (MM.S.mode !== MODE_ID || MM.S.screen !== 'play' || !_round) return;
       MM.ui.setMonster(MONSTER_ID, 'mouth_open');
       MM.fx.sfx('munch', MONSTER_ID);
       _fillCells(startIdx, count, groupClass);
@@ -350,7 +364,9 @@
     MM.S.phase = 'input';
     _round.locked = false;
     MM.ui.bubble('あわせて なんこ かな？');
-    MM.narration.sayIfAuto('monster_math:tashizan:ask_sum');
+    // [Blocker 2 修正] 'ask_sum' は台本に存在しない ad-hoc key。
+    // 「ひだりと みぎを あわせて かぞえてみよう」の play_hint が内容的に一致する。
+    MM.narration.sayIfAuto(MM.NARRATION_KEYS.tashizan.play_hint);
     var items = _round.choices.map(function (v) {
       return { id: 'card_' + v, kind: 'answer', value: v, emoji: '🔢', label: String(v) };
     });
@@ -377,11 +393,15 @@
     var signal = MM._currentScreenSignal ? MM._currentScreenSignal() : null;
     MM.ui.lockInput(1200);
     MM.fx.flyClone(cardEl, monsterEl, { signal: signal }).then(function () {
+      // [重要Warn 修正] 画面遷移で screen/mode が変わっていたら何もしない (stale-screen guard)。
+      if (MM.S.mode !== MODE_ID || MM.S.screen !== 'play' || !_round) return;
       MM.ui.setMonster(MONSTER_ID, 'happy');
       MM.fx.sfx('fanfare', MONSTER_ID);
       MM.fx.confetti(_round.finale ? 70 : 30);
       MM.ui.bubble(_round.finale ? '10と10で 20！ おおごちそう！' : (_round.sum + '！ せいかい！'));
-      MM.narration.sayIfAuto(_round.finale ? 'monster_math:tashizan:finale_clear' : 'monster_math:tashizan:correct');
+      // [Blocker 2 修正] 'finale_clear'/'correct' は台本に存在しない ad-hoc key。
+      // 正: 最終祝祭は play_festival、通常正解は play_correct。
+      MM.narration.sayIfAuto(_round.finale ? MM.NARRATION_KEYS.tashizan.play_festival : MM.NARRATION_KEYS.tashizan.play_correct);
       MM.progress.commitRoundStar();
       MM.mmTimeout(function () {
         _roundIdx++;
@@ -402,7 +422,10 @@
     // miss ナレは決定的2段分岐 (初回励まし/2回目以降明確訂正、random禁止、
     // [[feedback_miss_voice_progression]])
     MM.ui.bubble(firstMiss ? 'おしい！ もういちど かぞえてみよう' : (_round.sum + ' に なるかな？ もういちど！'));
-    MM.narration.sayIfAuto(firstMiss ? 'monster_math:tashizan:miss_gentle' : 'monster_math:tashizan:miss_clear');
+    // [Blocker 2 修正] 'miss_gentle'/'miss_clear' は台本に存在しない ad-hoc key。
+    // 段階化 ([[feedback_miss_voice_progression]]) は台本共通の miss_first (初回やわらかめ) /
+    // miss_repeat (2回目以降はっきり) で表現する。
+    MM.narration.sayIfAuto(firstMiss ? MM.NARRATION_KEYS.common.miss_first : MM.NARRATION_KEYS.common.miss_repeat);
 
     var stageCfg = _round.stageCfg;
     var showHint = !!stageCfg.bridgeOnHintOnly && stageCfg.carry && firstMiss;
@@ -468,10 +491,16 @@
   // 指マーカー) は Impl1 の tutorial step engine 側の実装に委ねる (本ファイルは
   // データ定義のみ、SPEC §2.4 契約の tutorialSteps 形状に準拠)。
   // ============================================================
+  // [Blocker 2 修正] narrKey は確定TTS台本 (MM.NARRATION_KEYS.tashizan) に実在する5件
+  // (tut_intro/tut_feed_explain/tut_answer_prompt/tut_success/tut_complete) を使う
+  // (旧 tut_two_plates/tut_first_plate/tut_second_plate/tut_answer_card は台本に存在しない
+  // ad-hoc key だった)。 UI ステップ数(6)の方が台本の tut_*(5) より1つ多いため、
+  // 皿タップの個別ステップ (first_plate/second_plate) は直前の tut_feed_explain で
+  // 概念を説明済みとして音声を重複再生しない (spotlight/gate によるガイドのみ継続)。
   var tutorialSteps = [
     {
       id: 'step_intro',
-      narrKey: 'monster_math:tashizan:tut_intro',
+      narrKey: MM.NARRATION_KEYS.tashizan.tut_intro,
       gate: 'auto',
       target: '#mm-monster',
       spotlight: '#mm-monster',
@@ -479,7 +508,7 @@
     },
     {
       id: 'step_two_plates',
-      narrKey: 'monster_math:tashizan:tut_two_plates',
+      narrKey: MM.NARRATION_KEYS.tashizan.tut_feed_explain,
       gate: 'auto',
       target: '#mm-shelf',
       spotlight: '#mm-shelf',
@@ -487,7 +516,6 @@
     },
     {
       id: 'step_first_plate',
-      narrKey: 'monster_math:tashizan:tut_first_plate',
       gate: 'tap:[data-food-id="plate1"]',
       target: '[data-food-id="plate1"]',
       spotlight: '[data-food-id="plate1"]',
@@ -495,7 +523,6 @@
     },
     {
       id: 'step_second_plate',
-      narrKey: 'monster_math:tashizan:tut_second_plate',
       gate: 'tap:[data-food-id="plate2"]',
       target: '[data-food-id="plate2"]',
       spotlight: '[data-food-id="plate2"]',
@@ -503,7 +530,7 @@
     },
     {
       id: 'step_answer_card',
-      narrKey: 'monster_math:tashizan:tut_answer_card',
+      narrKey: MM.NARRATION_KEYS.tashizan.tut_answer_prompt,
       gate: 'tap:.mm-food-card',
       target: '#mm-shelf',
       spotlight: '#mm-shelf',
@@ -511,7 +538,7 @@
     },
     {
       id: 'step_success',
-      narrKey: 'monster_math:tashizan:tut_success',
+      narrKey: MM.NARRATION_KEYS.tashizan.tut_complete,
       gate: 'auto',
       target: '#mm-bubble',
       spotlight: null,
