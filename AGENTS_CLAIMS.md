@@ -91,6 +91,8 @@
 - claude-code / develop-app / monster-math Phase 3-Impl Pre-Fix (6 nits) / 2026-07-07
 - 2026-07-07 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, AGENTS_CLAIMS.md - tut2 チュートリアル実装 phase1 (foundation + 全15ステップ + 2ラッパー、mock voice、PAUSED解除、storage v2)
 - claude-code / develop-app / monster-math Phase 3 Merge M2-M4 / 2026-07-07
+- claude-code / develop-app / monster-math Phase 3-Impl2 Engine Fix / 2026-07-07
+- claude-code / develop-app / monster-math Phase 3-Impl2 3-Mode Fix (mode-make10/kazoeru/tashizan.js) / 2026-07-07
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
