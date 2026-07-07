@@ -15837,7 +15837,14 @@ function commitFreeLayoutRender(host, renderRoot, opts = {}) {
     if (committed) return;
     if (host.__freeLayoutRenderToken !== token) return;
     committed = true;
+    // batch:1058-hotfix: tut2 の Phase A 見本 (ghost) は stage の子として貼るが、
+    //   replaceChildren で丸ごと消えてしまい 見本が一切見えなくなる問題があった
+    //   (お手本が流れない と 2026-07-07 に owner 指摘)。 直前に切り離して commit 後に
+    //   再アタッチすることで tutorial ghost を stage re-render 越しに保護する。
+    //   pointer-events:none / z-index:8000 のオーバーレイなので通常操作は無影響。
+    const ghost = host.querySelector('#tut-ghost-layer');
     host.replaceChildren(renderRoot);
+    if (ghost) host.appendChild(ghost);
   };
   if (opts.immediate) {
     commit();
@@ -21226,7 +21233,10 @@ function tutorialUninstallPaletteObserver() {
 // single=true のステップは Phase A/B 分離なし (button-only or intro)。
 // renderPhaseA / renderPhaseB は (step, ts) => void で受ける。
 // 音声は BENTO_TUTORIAL_STEP_VOICE から自動 lookup。
-const TUT2_ASSET_BASE = '../assets/images/bento_freelayout/';
+// batch:1058-hotfix: 元 phase1 で誤って `bento_freelayout/` (実在しない) を指していた。
+// 実パスは `bento/free-layout/` (スラッシュ)。 これが原因で 見本 (ghost) 画像が全て 404
+// になり、 rice / nori 4A / 4B の Phase A で 「お手本が流れない」 と報告されていた。
+const TUT2_ASSET_BASE = '../assets/images/bento/free-layout/';
 const TUT2_STEPS = [
   { id: 'tut2-greet', single: true, fallbackMs: 8000, renderPhaseB: tut2RenderGreet },
   { id: 'tut2-box', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderBox },
@@ -21350,7 +21360,8 @@ function tut2RenderRicePhaseA(step) {
   try {
     const box = getSelectedBentoBox();
     if (box && box.autoRice) {
-      const ghostSrc = TUT2_ASSET_BASE + 'rice_base_round.webp';
+      // batch:1058-hotfix: rice_base_round は .webp 未生成、 .png のみ実在。
+      const ghostSrc = TUT2_ASSET_BASE + 'rice_base_round.png';
       tutorialShowGhostItem({
         imgSrc: ghostSrc,
         freeX: box.autoRice.x,
@@ -21479,6 +21490,10 @@ function tut2RenderOkazuMainPhaseA(step) {
   // batch:1058 tap-scroll-fix: palette 上で tap animation + パレット外 fallback は scrollIntoView。
   //   getter 版で palette 再構築耐性。
   tutorialScrollThenTap(tutorialFindMainOkazuPaletteEl, step.id);
+  // batch:1058-hotfix: 4ac9f2a で local `const palette = ...` を getter 引数に置換した際、
+  //   下の ghost ブロック内の `palette` 参照を残してしまい ReferenceError で try/catch に
+  //   silently 落ちて 見本 (ghost) が全く描画されない状態だった。 palette を再取得して復活。
+  const palette = tutorialFindMainOkazuPaletteEl();
   // Ghost: pick a generic okazu img from palette if available.
   try {
     if (palette) {
@@ -21516,6 +21531,8 @@ function tut2RenderCupPlacePhaseA(step) {
   tutorialShowBubble('カップを おこう', { topVh: '20', side: 'left' });
   // batch:1058 tap-scroll-fix: palette 上で tap animation。 カップは cup タブの palette list。
   tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, step.id);
+  // batch:1058-hotfix: 下の ghost ブロックが参照する `palette` を復活 (同 refactor 副作用)。
+  const palette = tutorialFindFirstCupPaletteEl();
   try {
     if (palette) {
       const img = palette.querySelector('img');
@@ -21541,6 +21558,8 @@ function tut2RenderCupFoodPhaseA(step) {
   tutorialShowBubble('カップの なかに いれるよ', { topVh: '54', side: 'left' });
   // batch:1058 tap-scroll-fix: cup editor が開いた状態の side food palette 上で tap animation。
   tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, step.id);
+  // batch:1058-hotfix: 下の ghost ブロックが参照する `palette` を復活 (同 refactor 副作用)。
+  const palette = tutorialFindCupSideFoodPaletteEl();
   try {
     if (palette) {
       const img = palette.querySelector('img');

@@ -1,5 +1,18 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2022: bento tut2 Phase A 見本 (お手本) が完全に流れないバグを根本修正 (batch:1058-hotfix)。
+// (a) 4ac9f2a の refactor 副作用で tut2RenderOkazuMainPhaseA / tut2RenderCupPlacePhaseA /
+// tut2RenderCupFoodPhaseA の ghost ブロックが `palette is not defined` の ReferenceError で
+// try/catch に silently 落ちて 見本が完全に表示されない状態を、 palette を再取得して修復。
+// (b) 元 phase1 (369e1a6) から TUT2_ASSET_BASE の綴りが誤って `bento_freelayout/` (実在せず)
+// を指していたため、 rice/nori の ghost 画像が全て 404。 実パス `bento/free-layout/` に訂正 +
+// rice_base_round.webp → .png (webp 版未生成)。 (c) commitFreeLayoutRender の
+// host.replaceChildren(renderRoot) が stage 再描画のたびに #tut-ghost-layer を丸ごと消して
+// おり、 rice 直後の nori 4A/4B などで Phase A 見本が即座に消失していた問題を、 replaceChildren
+// 直前に ghost を切り離して直後に再アタッチする 2 行で保護。 実ブラウザ Playwright で全 5 箇所の
+// Phase A で ghost 描画 + 目的地画像 (rice_base_round.png / book_nori_eye_smile / nori_nose_bear /
+// nori_mouth_smile / wiener_003_done.png) 表示を確認済 (assertions 16/16 pass, pageerrors 0)。
+// play.html PAGE_CACHE_VERSION と同期。
 // v2016: mojicrane round-2 残存指摘の追加修正 (round-2 residual-fix pass)。
 // (1) styles.css: .tutorial-panel を `.panel.tutorial-panel` 複合セレクタに変更し、
 // 後方の同specificity `.panel` に width/padding/background が上書きされていたバグを修正。
@@ -764,7 +777,7 @@
 //   mode-tashizan.js: flyClone の stale-screen ガード追加。 index.html: タップターゲット拡大
 //   (.mm-topbar-back 等)。 assets/tts/manifest.json: monster_math namespace 60 entries 追加
 //   (音声本体は Phase 4 で生成、 manifest のみ先行)。
-const CACHE_VERSION = 2021;
+const CACHE_VERSION = 2022;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
