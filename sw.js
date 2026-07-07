@@ -756,7 +756,14 @@
 // v2016: mojicrane round-2 残存指摘の追加修正 (詳細は先頭 v2016 コメントブロック参照)。
 // v2017: monster-math M3 かぞえる (kazoeru) モード実装マージ (Phase 3-Impl → Impl3)。
 // v2018: monster-math M4 たしざん (tashizan) モード実装マージ (Phase 3-Impl → Impl4)。
-const CACHE_VERSION = 2018;
+// v2019: mojicrane round-2 残存指摘の追加修正 (詳細は先頭 v2016 コメントブロック参照)。
+// v2020: bento tut2 見本アニメを全てタップ動作に統一 + パレット外アイテムはスクロールで
+//   表示してから指ポインタが出る仕様に修正 (batch:1058-tutorial-tap-scroll-fix)。
+//   ゲームがタップ専用配置 (batches 1040-1046 cup-first) なので Phase A の
+//   「パレット→目的地」ドラッグを rice/nori 4A・4B/okazu-main/cup-place/cup-food の
+//   5 箇所で「スクロール→タップ」に置換。 rAF ループで scroll と finger 座標を
+//   Phase A 中は palette 再構築に耐えて再アンカー。 Step 5 の on-stage drag デモは維持。
+const CACHE_VERSION = 2020;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

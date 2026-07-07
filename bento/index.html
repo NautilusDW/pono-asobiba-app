@@ -19383,6 +19383,9 @@ const tutorialState = {
   ghostLayerEl: null,
   _ghostTimers: [],
   _phaseATimer: null,
+  // batch:1058 tap-scroll-fix: パレット外アイテムを scrollIntoView してから
+  // requestAnimationFrame 後に tap animation を再開始する RAF ハンドル。
+  _scrollThenTapRaf: null,
   mode: 'simple',
   okazuPlacedCount: 0,
   cupPlacedCount: 0,
@@ -20117,6 +20120,80 @@ function tutorialAnimateTap(targetEl) {
   f.style.animation = 'none';
   void f.offsetWidth;
   f.style.animation = '';
+}
+// batch:1058 tap-scroll-fix: パレット外に隠れているアイテム (SIMPLE_DECOR_PALETTE_ORDER
+// の index 13 nori_nose_bear / index 14 nori_mouth_smile 等) を scrollIntoView で
+// 見せてから tap animation を出す。 rect stale を避けるため requestAnimationFrame で
+// scroll コミット後の位置で再取得する。 step id ガードで in-flight step 遷移で暴走しない。
+// 内部: scroll ancestor (`.free-item-list`) を scrollTop 直操作で「見える」位置まで動かす。
+function _tutorialScrollPaletteIntoView(el) {
+  if (!el || !el.isConnected) return;
+  try { el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' }); } catch (_) {}
+  try {
+    const scrollParent = el.closest('.free-item-list');
+    if (!scrollParent) return;
+    const lr = scrollParent.getBoundingClientRect();
+    const br = el.getBoundingClientRect();
+    if (br.top < lr.top || br.bottom > lr.bottom) {
+      // scroll container 内での el 相対 top (現 scrollTop 込み)。
+      const elTopInParent = (br.top - lr.top) + scrollParent.scrollTop;
+      const desiredTop = elTopInParent - Math.max(0, (lr.height - br.height) / 2);
+      const maxScroll = Math.max(0, scrollParent.scrollHeight - scrollParent.clientHeight);
+      scrollParent.scrollTop = Math.max(0, Math.min(maxScroll, desiredTop));
+    }
+  } catch (_) {}
+}
+// `paletteRef` は Element or 関数 () => Element。 palette DOM は Phase A 途中でも
+// `renderFreeLayoutPalette` / observer 経由で再構築されうる (scrollTop が 0 に戻り、
+// element ref が detached になる)。 一発 tap では finger と palette の座標が乖離
+// してしまうので、 Phase A が demo phase の間 rAF ループで
+//   (1) palette を毎フレーム再クエリ (stale ref 救済)
+//   (2) `.free-item-list` を scrollTop 直操作で「見える」位置まで動かす
+//   (3) finger の --tap-x/y CSS var を palette 中心へ再アンカー
+//     (最初の 1 フレームだけ tutorialAnimateTap で keyframe を start、
+//      以降は座標だけ更新して animation は途切れさせない)
+// step 遷移 / phase 切替 / active=false でループは自動停止。
+// tutorialAdvance / tutorialTeardown の `_scrollThenTapRaf` 破棄も既に配線済。
+function tutorialScrollThenTap(paletteRef, stepIdAtCall) {
+  const resolve = () => {
+    try {
+      const el = (typeof paletteRef === 'function') ? paletteRef() : paletteRef;
+      return (el && el.isConnected) ? el : null;
+    } catch (_) { return null; }
+  };
+  if (tutorialState._scrollThenTapRaf) {
+    try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
+    tutorialState._scrollThenTapRaf = null;
+  }
+  let tapStarted = false;
+  const tick = () => {
+    tutorialState._scrollThenTapRaf = null;
+    if (!tutorialState.active) return;
+    if (stepIdAtCall && tutorialState.step !== stepIdAtCall) return;
+    if (tutorialState.phase && tutorialState.phase !== 'demo') return;
+    const el = resolve();
+    if (!el) { tutorialHideFinger(); return; }
+    _tutorialScrollPaletteIntoView(el);
+    if (!tapStarted) {
+      // keyframe 開始 (open-hand の tap pulse)。
+      tutorialAnimateTap(el);
+      tapStarted = true;
+    } else {
+      // 座標だけ再アンカー。 animation は再起動しない (途切れさせない)。
+      const f = tutorialState.fingerEl;
+      if (f) {
+        try {
+          const r = el.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            f.style.setProperty('--tap-x', (r.left + r.width / 2) + 'px');
+            f.style.setProperty('--tap-y', (r.top + r.height / 2) + 'px');
+          }
+        } catch (_) {}
+      }
+    }
+    tutorialState._scrollThenTapRaf = requestAnimationFrame(tick);
+  };
+  tutorialState._scrollThenTapRaf = requestAnimationFrame(tick);
 }
 function tutorialScheduleResync() {
   if (tutorialState.resizeRaf) cancelAnimationFrame(tutorialState.resizeRaf);
@@ -21050,6 +21127,12 @@ function tutorialAdvance(nextStep) {
   tutorialClearPhaseATimer();
   tutorialClearGhostLayer();
   tutorialClearPaletteFocus();
+  // batch:1058 tap-scroll-fix: 前ステップの scrollIntoView→tap RAF も必ず破棄
+  //   (step 遷移直後に旧 palette 座標で tap animation が走るのを防ぐ)。
+  if (tutorialState._scrollThenTapRaf) {
+    try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
+    tutorialState._scrollThenTapRaf = null;
+  }
   tutorialState.phase = 'demo';
   tutorialState.renderedStep = null;
   if (tutorialState._layerDoneTimer) {
@@ -21256,16 +21339,13 @@ function tut2RenderBox(step) {
 }
 function tut2RenderRicePhaseA(step) {
   tutorialShowBubble('こんなふうに ごはんが はいるよ', { topVh: '20' });
-  // Phase A: finger from rice palette button → target rice spot + ghost rice.
-  const riceBtn = tutorialFindRicePaletteEl();
-  const targetPoint = (function() {
-    try {
-      const box = getSelectedBentoBox();
-      if (!box || !box.autoRice) return tutorialStageCenter() ? tutorialStageRatioPoint(0.32, 0.5) : null;
-      return tutorialFreePointToScreenPoint({ x: box.autoRice.x, y: box.autoRice.y });
-    } catch (_) { return null; }
-  })();
-  if (riceBtn && targetPoint) tutorialAnimateDragFromEl(riceBtn, targetPoint, {});
+  // Phase A (batch:1058 tap-scroll-fix): finger は paletteEl 上で tap animation。
+  //   ゲームがタップ専用配置 (batches 1040-1046 cup-first) なので、 「パレット→目的地」
+  //   ドラッグは実操作と食い違う。 見本もタップに統一し、 パレット外アイテムは
+  //   scrollIntoView で見せてから指を出す。 ゴースト側は目的地に freeX/Y で描画継続。
+  //   getter を渡すことで palette DOM 再構築 (renderFreeLayoutPalette / observer) 後に
+  //   stale ref にならないよう毎 RAF で再クエリ。
+  tutorialScrollThenTap(tutorialFindRicePaletteEl, step.id);
   // Ghost rice at target free coord.
   try {
     const box = getSelectedBentoBox();
@@ -21316,10 +21396,11 @@ function tut2RenderNoriPhaseA(step) {
     : [{ x: 0, y: 0.01, size: 45, imgSrc: TUT2_ASSET_BASE + 'nori_nose_bear.png' },
        { x: 0, y: 0.225, size: 100, imgSrc: TUT2_ASSET_BASE + 'nori_mouth_smile.png' }];
   const coord = clusterCoords[tutorialState.noriIdx] || clusterCoords[0];
-  // Finger: palette → target screen point.
-  const palette = tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl();
-  const targetScreen = tutorialNoriTargetScreenPoint(coord.x, coord.y);
-  if (palette && targetScreen) tutorialAnimateDragFromEl(palette, targetScreen, {});
+  // Finger (batch:1058 tap-scroll-fix): palette 上で tap animation。 4B の nose/mouth
+  //   (SIMPLE_DECOR_PALETTE_ORDER index 13 nori_nose_bear / index 14 nori_mouth_smile) は
+  //   book tier だと section 見出しで押し出されて scroll 外なので scrollIntoView で見せる。
+  //   getter を渡して DOM 再構築耐性を持たせる (palette observer 再描画で stale ref 化防止)。
+  tutorialScrollThenTap(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl(), step.id);
   // Ghost.
   const targetFree = tutorialNoriTargetFreePoint(coord.x, coord.y);
   if (targetFree) {
@@ -21395,9 +21476,9 @@ function tut2RenderNoriEditPhaseB(step) {
 }
 function tut2RenderOkazuMainPhaseA(step) {
   tutorialShowBubble('こんなふうに おかずが はいるよ', { topVh: '20', side: 'left' });
-  const palette = tutorialFindMainOkazuPaletteEl();
-  const targetPoint = tutorialStageRatioPoint(0.62, 0.35);
-  if (palette && targetPoint) tutorialAnimateDragFromEl(palette, targetPoint, {});
+  // batch:1058 tap-scroll-fix: palette 上で tap animation + パレット外 fallback は scrollIntoView。
+  //   getter 版で palette 再構築耐性。
+  tutorialScrollThenTap(tutorialFindMainOkazuPaletteEl, step.id);
   // Ghost: pick a generic okazu img from palette if available.
   try {
     if (palette) {
@@ -21433,9 +21514,8 @@ function tut2RenderCupBtn(step) {
 }
 function tut2RenderCupPlacePhaseA(step) {
   tutorialShowBubble('カップを おこう', { topVh: '20', side: 'left' });
-  const palette = tutorialFindFirstCupPaletteEl();
-  const targetPoint = tutorialCupDemoScreenPoint();
-  if (palette && targetPoint) tutorialAnimateDragFromEl(palette, targetPoint, {});
+  // batch:1058 tap-scroll-fix: palette 上で tap animation。 カップは cup タブの palette list。
+  tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, step.id);
   try {
     if (palette) {
       const img = palette.querySelector('img');
@@ -21459,9 +21539,8 @@ function tut2RenderCupPlacePhaseB(step) {
 }
 function tut2RenderCupFoodPhaseA(step) {
   tutorialShowBubble('カップの なかに いれるよ', { topVh: '54', side: 'left' });
-  const palette = tutorialFindCupSideFoodPaletteEl();
-  const targetPoint = tutorialActiveCupPoint();
-  if (palette && targetPoint) tutorialAnimateDragFromEl(palette, targetPoint, {});
+  // batch:1058 tap-scroll-fix: cup editor が開いた状態の side food palette 上で tap animation。
+  tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, step.id);
   try {
     if (palette) {
       const img = palette.querySelector('img');
@@ -21658,6 +21737,11 @@ function tutorialTeardown() {
   tutorialClearPhaseATimer();
   tutorialClearGhostLayer();
   tutorialClearPaletteFocus();
+  // batch:1058 tap-scroll-fix: scrollIntoView→tap RAF も teardown で破棄。
+  if (tutorialState._scrollThenTapRaf) {
+    try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
+    tutorialState._scrollThenTapRaf = null;
+  }
   if (tutorialState.ghostLayerEl && tutorialState.ghostLayerEl.parentNode) {
     try { tutorialState.ghostLayerEl.parentNode.removeChild(tutorialState.ghostLayerEl); } catch (_) {}
   }
