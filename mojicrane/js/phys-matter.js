@@ -196,12 +196,15 @@
     );
     const anchorDist = Vector.magnitude({ x: worldGrip.x - tipX, y: worldGrip.y - (tipY + 4) }) || 2;
 
+    // Grip firmness scales continuously with |uu| (dead-center = rigid,
+    // full offset = loose) instead of stepping at the uu===0 boundary.
+    const absU = Math.abs(uu);
     const constraint = Constraint.create({
       pointA: { x: tipX, y: tipY + 4 },
       bodyB: body,
       pointB: local,
-      length: uu === 0 ? 0 : anchorDist,
-      stiffness: uu === 0 ? 1 : 0.15,
+      length: lerp(0, anchorDist, absU),
+      stiffness: lerp(1, 0.15, absU),
       damping: 0.1
     });
     Composite.add(engine.world, constraint);

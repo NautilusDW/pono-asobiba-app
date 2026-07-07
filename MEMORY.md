@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-07T10:29:27Z - monster-math Phase R3 完全リセット v2 (テンメガネ+カクレン) commit+push+staging verify
+- **タスク**: monster-math Phase R3 完全リセット v2 (テンメガネ+カクレン) commit+push+staging verify
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 389
+- **エラー数**: 36
+- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Read": 93, "Bash": 83, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 52, "Skill": 1, "SendMessage": 8}
+- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-07T10:11:10Z - monster-math R3 Fix: 3 blocker (index.html script差替+title画像/manifestキー統一/over_repeat台本矛盾) + warn (旧TTS資産4件削除/tier.js旧mode名/star判定統一)
 - **タスク**: monster-math R3 Fix: 3 blocker (index.html script差替+title画像/manifestキー統一/over_repeat台本矛盾) + warn (旧TTS資産4件削除/tier.js旧mode名/star判定統一)
 - **結果**: 成功
@@ -246,19 +259,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した
 - **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
 - **ツール使用統計**: {"Read": 93, "Bash": 81, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 50, "Skill": 1, "SendMessage": 8}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T08:47:12Z - monster-math bg_table 背景アセット生成 (higgsfield nano_banana_pro, 食堂カウンター+棚+提灯)
-- **タスク**: monster-math bg_table 背景アセット生成 (higgsfield nano_banana_pro, 食堂カウンター+棚+提灯)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 384
-- **エラー数**: 35
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 93, "Bash": 81, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 49, "Skill": 1, "SendMessage": 8}
 - **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

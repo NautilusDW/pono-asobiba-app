@@ -21247,6 +21247,20 @@ function tutorialAdvance(nextStep) {
     try { clearTimeout(tutorialState._tabsRingTimer); } catch (_) {}
     tutorialState._tabsRingTimer = null;
   }
+  // batch:1058-hotfix4: サブラウンド間の 800ms beat / palette-tap の 600ms 遅延 ghost /
+  //   Step 6 walk-through シーケンス timer も step 遷移で必ず破棄。
+  if (tutorialState._noriBeatTimer) {
+    try { clearTimeout(tutorialState._noriBeatTimer); } catch (_) {}
+    tutorialState._noriBeatTimer = null;
+  }
+  if (tutorialState._paletteTapDelayTimer) {
+    try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
+    tutorialState._paletteTapDelayTimer = null;
+  }
+  if (tutorialState._noriEditSeqTimers) {
+    for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
+    tutorialState._noriEditSeqTimers = null;
+  }
   tutorialState.phase = 'demo';
   tutorialState.renderedStep = null;
   if (tutorialState._layerDoneTimer) {
@@ -21447,6 +21461,54 @@ function tut2AnchorToPalette(paletteRef, opts = {}) {
   return el;
 }
 
+// ---- Pono setSpeech per step (batch:1058-hotfix4) ---------------------------
+// UX 方針転換 (2026-07-07): ナレーションの主 channel を ポノ 吹き出し (setSpeech) に
+// 集約する。 独立 tutorialShowBubble は greet / Step 6 編集パネル解説 / Step 11 タブ紹介の
+// 高情報ステップだけに限定。 palette-tap steps (rice/4A/4B/7/9/10) はバブル非表示、
+// ポノ 吹き出しのみで案内。
+// また、 ステップ切替時に前ステップの stale なポノ吹き出し (例: 「べんとうばこを タップして
+// はっぱを しこう！」 が okazu-main 中に残る) を強制上書きするため、 tutorialRenderStep
+// の firstRender で必ず setSpeech(TUT2_PONO_SPEECH[step]) を呼ぶ。
+const TUT2_PONO_SPEECH = {
+  'tut2-greet': 'いっしょに おべんとう つくろう！',
+  'tut2-box': 'きょうは これを つかうよ！「これでOK」を おそう。',
+  'tut2-rice': '「ごはんを よそう」を タップして、ごはんを おこう！',
+  'tut2-nori-face-eyes': 'のりで おかおを つくろう！まずは おめめだよ。',
+  'tut2-nori-face-mouth-nose': 'つぎは、はなと くちを おこう！',
+  'tut2-nori-move': 'のりは ゆびで うごかせるよ。すきな ばしょに どうぞ。',
+  'tut2-nori-edit': 'のりを タップすると まわしたり おおきさを かえられるよ！',
+  'tut2-okazu-main': 'メインの おかず！すきなのを タップして いれてみよう。',
+  'tut2-cup-btn': 'つぎは 「カップへ」を おしてね。',
+  'tut2-cup-place': 'すきな カップを ひとつ タップして おこう！',
+  'tut2-cup-food': 'カップに いれる おかずを えらんでね。',
+  'tut2-tabs-intro': 'はっぱと しきりも つかえるよ！',
+  'tut2-okazu-ok': 'できあがったら「おかずOK」を おしてね。',
+  'tut2-complete': 'わあ、すてきな おべんとうが できたね！',
+  'tut2-favorite': 'ほしマークで おきにいりに とっておけるよ。',
+  'tut2-w2-request': 'アライグマくんの おねがいだよ！',
+  'tut2-w3-deliver': 'アライグマくん、とっても よろこんでいるよ！',
+};
+// batch:1058-hotfix4: 現ステップに対応するポノ吹き出しをセットする。 引数省略時は
+// tutorialState.step を参照。 stepId が map に無い場合は setSpeech を呼ばない (前ステップ
+// のテキストを残さない目的で空文字を渡すのはしない — 音声とテキストの同期を優先)。
+function tut2ApplyPonoSpeech(stepId) {
+  const id = stepId || (tutorialState && tutorialState.step);
+  if (!id) return;
+  const text = TUT2_PONO_SPEECH[id];
+  if (typeof text !== 'string') return;
+  try { setSpeech(text); } catch (_) {}
+}
+// batch:1058-hotfix4: nori 4A/4B のサブラウンド毎に ポノ吹き出しを更新する (「まず おめめ」
+// → 「もう ひとつ おめめ」 等)。 step 遷移直前の acknowledgment (「できたね！」) と
+// 組み合わせて子供が「1 個 → 間 → 次」 のリズムを掴めるようにする。
+function tut2ApplyNoriSubroundSpeech(stepId, idx) {
+  if (stepId === 'tut2-nori-face-eyes') {
+    try { setSpeech(idx === 0 ? 'まずは おめめを タップ！' : 'もう ひとつ おめめを タップ！'); } catch (_) {}
+  } else if (stepId === 'tut2-nori-face-mouth-nose') {
+    try { setSpeech(idx === 0 ? 'つぎは おはなを タップ！' : 'さいごに おくちを タップ！'); } catch (_) {}
+  }
+}
+
 // ---- Individual renderers ---------------------------------------------------
 
 function tut2RenderGreet(step) {
@@ -21533,40 +21595,43 @@ function tut2RenderBox(step) {
   }, 40);
 }
 function tut2RenderRicePhaseA(step) {
-  // batch:1058-hotfix2: バブルは palette 横付けに統一 (旧 topVh 指定は左右にランダム散った)。
-  tutorialShowBubble('こんなふうに<br>ごはんが はいるよ', { topVh: '20', side: 'left' });
-  // Phase A (batch:1058 tap-scroll-fix): finger は paletteEl 上で tap animation。
-  //   ゲームがタップ専用配置 (batches 1040-1046 cup-first) なので、 「パレット→目的地」
-  //   ドラッグは実操作と食い違う。 見本もタップに統一し、 パレット外アイテムは
-  //   scrollIntoView で見せてから指を出す。 ゴースト側は目的地に freeX/Y で描画継続。
-  //   getter を渡すことで palette DOM 再構築 (renderFreeLayoutPalette / observer) 後に
-  //   stale ref にならないよう毎 RAF で再クエリ。
-  tutorialScrollThenTap(tutorialFindRicePaletteEl, step.id);
-  // batch:1058-hotfix2: パレットフォーカス + target ring + バブル横付け
+  // batch:1058-hotfix4: UX 方針転換 — palette-tap step の独立バブルを廃止。 ナレーションは
+  //   ポノ吹き出し (setSpeech) 一本化 (TUT2_PONO_SPEECH['tut2-rice']、 tutorialRenderStep の
+  //   firstRender で自動反映)。 tutorialHideBubble を明示的に呼び、 前ステップの残留を掃除。
+  tutorialHideBubble();
+  // T=0: パレット ring のみ (ghost/finger はまだ出さない)。 owner 指摘: 「タップ前に
+  //   半透明ごはんが箱内に floating で現れて『もう入ってる』と混乱」 対策。
   try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.type === 'rice_auto'); } catch (_) {}
   tut2AnchorToPalette(tutorialFindRicePaletteEl);
-  // Ghost rice at target free coord.
-  try {
-    const box = getSelectedBentoBox();
-    if (box && box.autoRice) {
-      // batch:1058-hotfix2: パレットに出ているサムネイル (autoRice.thumbnailImage) を
-      //   ゴーストにも使用。 これで palette 見た目 → お手本 → 実配置 の視覚連続性が保たれる
-      //   (以前は rice_base_round.png = 小さい丸ごはん を出していて、 配置後の見た目
-      //   (コンパートメント充填) と乖離する報告を受けた)。
-      const ghostSrc = box.autoRice.thumbnailImage || (TUT2_ASSET_BASE + 'rice_base_round.png');
-      tutorialShowGhostItem({
-        imgSrc: ghostSrc,
-        freeX: box.autoRice.x,
-        freeY: box.autoRice.y,
-        freeSize: box.autoRice.size || 200,
-        ttlMs: (step.phaseAMs || 2200) + 200,
-      });
-    }
-  } catch (_) {}
+  // T=+600ms: finger tap + ghost を同時に出す。 step guard 付き。
+  const stepId = step.id;
+  if (tutorialState._paletteTapDelayTimer) {
+    try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
+    tutorialState._paletteTapDelayTimer = null;
+  }
+  tutorialState._paletteTapDelayTimer = setTimeout(() => {
+    tutorialState._paletteTapDelayTimer = null;
+    if (!tutorialState.active) return;
+    if (tutorialState.step !== stepId) return;
+    tutorialScrollThenTap(tutorialFindRicePaletteEl, stepId);
+    try {
+      const box = getSelectedBentoBox();
+      if (box && box.autoRice) {
+        const ghostSrc = box.autoRice.thumbnailImage || (TUT2_ASSET_BASE + 'rice_base_round.png');
+        tutorialShowGhostItem({
+          imgSrc: ghostSrc,
+          freeX: box.autoRice.x,
+          freeY: box.autoRice.y,
+          freeSize: box.autoRice.size || 200,
+          ttlMs: Math.max(600, (step.phaseAMs || 2200) - 400),
+        });
+      }
+    } catch (_) {}
+  }, 600);
 }
 function tut2RenderRicePhaseB(step) {
-  tutorialShowBubble('おなじように<br>タップしてね', { topVh: '20', side: 'left' });
-  // batch:1058-hotfix2: パレットフォーカス + target ring + バブル横付け。
+  // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。
+  tutorialHideBubble();
   try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.type === 'rice_auto'); } catch (_) {}
   const riceBtn = tut2AnchorToPalette(tutorialFindRicePaletteEl);
   if (riceBtn) tutorialAnimateTap(riceBtn);
@@ -21951,6 +22016,11 @@ function tutorialRenderStep() {
     tutorialClearOutlines();
     tutorialHidePonoCallout();
     tutorialHidePointingHand();
+    // batch:1058-hotfix4: ステップ切替時に stale なポノ吹き出し (前ステップの setSpeech
+    //   テキスト) を強制的に現ステップのテキストで上書きする。 これで owner から報告された
+    //   Step 7 中に 「べんとうばこを タップして はっぱを しこう！」 が残る問題 (Screenshot 3)
+    //   を根本解消。 stepId が TUT2_PONO_SPEECH に無い場合 (legacy step) はスキップ。
+    try { tut2ApplyPonoSpeech(stepId); } catch (_) {}
   }
 
   if (!step) {
@@ -22061,6 +22131,20 @@ function tutorialTeardown() {
   if (tutorialState._tabsRingTimer) {
     try { clearTimeout(tutorialState._tabsRingTimer); } catch (_) {}
     tutorialState._tabsRingTimer = null;
+  }
+  // batch:1058-hotfix4: サブラウンド間の beat / palette-tap 遅延 ghost / Step 6 walk-through
+  //   シーケンス timer を teardown でも回収。
+  if (tutorialState._noriBeatTimer) {
+    try { clearTimeout(tutorialState._noriBeatTimer); } catch (_) {}
+    tutorialState._noriBeatTimer = null;
+  }
+  if (tutorialState._paletteTapDelayTimer) {
+    try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
+    tutorialState._paletteTapDelayTimer = null;
+  }
+  if (tutorialState._noriEditSeqTimers) {
+    for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
+    tutorialState._noriEditSeqTimers = null;
   }
   if (tutorialState.ghostLayerEl && tutorialState.ghostLayerEl.parentNode) {
     try { tutorialState.ghostLayerEl.parentNode.removeChild(tutorialState.ghostLayerEl); } catch (_) {}
@@ -22226,21 +22310,42 @@ function tutorialOnItemPlaced(item) {
     const expected = queue[idx];
     if (expected && String(item.id || '') === expected) {
       tutorialState.noriIdx = idx + 1;
-      if (tutorialState.noriIdx >= queue.length) {
-        // ラウンド完了
-        if (step === 'tut2-nori-face-eyes') {
-          tutorialAdvance('tut2-nori-face-mouth-nose');
-        } else {
-          tutorialAdvance('tut2-nori-move');
-        }
-        return;
+      const wasLastInRound = tutorialState.noriIdx >= queue.length;
+      // batch:1058-hotfix4: サブラウンド間に「間」 を入れる。 従来は placement 直後に次
+      // サブラウンドの ghost が即座に出て「置いた瞬間に floating eye2 が突然現れる」
+      // と owner から指摘された。 acknowledgment (ポノ「できたね！」) を挟み、
+      // 800ms 後に次ラウンドをセットアップする。 step guard 付き、 setTimeout invariant
+      // 準拠 ([[feedback_flag_encounter_settimeout_invariant]])。
+      const currentStep = step;
+      // まずは 「置けた」 状態のクリーンアップ (ghost / palette focus / finger を落とす)。
+      try { tutorialClearGhostLayer(); } catch (_) {}
+      try { tutorialClearPaletteFocus(); } catch (_) {}
+      try { tutorialClearTrims(); } catch (_) {}
+      try { tutorialHideFinger(); } catch (_) {}
+      // 短い acknowledgment (次に置く品目にすぐ切り替えず、 一拍おく)。
+      try { setSpeech('できたね！'); } catch (_) {}
+      if (tutorialState._noriBeatTimer) {
+        try { clearTimeout(tutorialState._noriBeatTimer); } catch (_) {}
+        tutorialState._noriBeatTimer = null;
       }
-      // ラウンド内で次サブステップへ → Phase A に戻して再演出。
-      tutorialState.phase = 'demo';
-      tutorialState.renderedStep = null;
-      tutorialClearGhostLayer();
-      tutorialClearPaletteFocus();
-      tutorialRenderStep();
+      tutorialState._noriBeatTimer = setTimeout(() => {
+        tutorialState._noriBeatTimer = null;
+        if (!tutorialState.active) return;
+        if (tutorialState.step !== currentStep) return;
+        if (wasLastInRound) {
+          if (currentStep === 'tut2-nori-face-eyes') {
+            tutorialAdvance('tut2-nori-face-mouth-nose');
+          } else {
+            tutorialAdvance('tut2-nori-move');
+          }
+          return;
+        }
+        // 次サブラウンドの Pono speech を先に更新してから Phase A ゴースト演出を再開する。
+        try { tut2ApplyNoriSubroundSpeech(currentStep, tutorialState.noriIdx || 0); } catch (_) {}
+        tutorialState.phase = 'demo';
+        tutorialState.renderedStep = null;
+        tutorialRenderStep();
+      }, 800);
       return;
     }
     // 期待外 → 静かに無視 (docs §6 未決事項 5 recommendation (i))
