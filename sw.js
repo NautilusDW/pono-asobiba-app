@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2041: SW 更新トーストを撤去。 waiting SW は画面に出さず、自然なページ遷移 /
+// 設定の「よみなおし」だけで採用する。タイトルカードやゲーム入力を
+// 「あたらしい バージョンが あります」UI が奪う再発を防ぐ。
+// play.html PAGE_CACHE_VERSION と同期。
 // v2036: bento tut2 hotfix4 (batch:1058-tut2-hotfix4)。 owner UX 方針転換に対応 —
 // (1) ポノ吹き出し (setSpeech) を主 narration channel に集約。 TUT2_PONO_SPEECH map を
 //   新設し、 tutorialRenderStep の firstRender で必ず setSpeech(現ステップテキスト) を
@@ -901,7 +905,8 @@
 // v2040: round-7 残存 fix — spawnCarried/stepCarried の pointA.y 二重 +4 オフセット
 //   (carry 開始直後に 4px pivot が跳ねる) を解消 + spawnCarried フォールバック分岐に
 //   console.warn 追加 (mojicrane は precache 対象外だが runtime 更新分のキャッシュ破棄のためバンプ)。
-const CACHE_VERSION = 2040;
+// v2041: common/sw-update.js の更新トースト撤去。更新待ちは passive に戻す。
+const CACHE_VERSION = 2041;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
