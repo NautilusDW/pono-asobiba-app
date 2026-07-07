@@ -145,6 +145,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-07T06:01:38Z - mojicrane round-3 residual fix (4 CONFIRMED findings triage)
+- **タスク**: mojicrane round-3 residual fix (4 CONFIRMED findings triage)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 310
+- **エラー数**: 37
+- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **検出された悪いパターン**: 同じエラーを繰り返した
+- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
+- **ツール使用統計**: {"Agent": 31, "ToolSearch": 3, "Read": 35, "Bash": 177, "Edit": 20, "Write": 5, "SendMessage": 4, "Grep": 6, "Workflow": 29}
+- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
+
+
 ### 2026-07-07T05:00:38Z - play.html monster_math card + game-stickers.json catalog restore + sticker-metrics regen
 - **タスク**: play.html monster_math card + game-stickers.json catalog restore + sticker-metrics regen
 - **結果**: 成功
@@ -238,19 +251,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-07T03:54:33Z - mojicrane round-2 final verification report (12 commit-readiness checks + per-fix verdicts A-F)
 - **タスク**: mojicrane round-2 final verification report (12 commit-readiness checks + per-fix verdicts A-F)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 365
-- **エラー数**: 34
-- **検出された良いパターン**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: テストを先に書いてから実装した (TDD), 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Read": 83, "Bash": 76, "Glob": 2, "Edit": 27, "Grep": 20, "ToolSearch": 4, "Workflow": 24, "TaskOutput": 75, "Agent": 46, "Skill": 1, "SendMessage": 7}
-- **サマリ**: 成功タスク: 4個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T03:47:00Z - monster-math Phase 3 Merge M2-M4 (make10/kazoeru/tashizan モード実装マージ + sw v2015-2018 + worktree cleanup)
-- **タスク**: monster-math Phase 3 Merge M2-M4 (make10/kazoeru/tashizan モード実装マージ + sw v2015-2018 + worktree cleanup)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 365

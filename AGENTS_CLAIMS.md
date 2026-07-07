@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
-- 2026-07-07 - by Claude - [batch:mojicrane-round2-residual-fix] - mojicrane/**, sw.js, play.html, AGENTS_CLAIMS.md - mojicrane round-2 クロスレビュー残存指摘 4件のうち3件 (tutorial-panel overlap/pointer-events, Pono静止画mood無反映, commit scope 混入) を修正 + sw v2019 (monster-math M2-M4 の並行コミットが v2016→v2018 まで先行したため最終 v2019) [overlap: batch:1058-tutorial-impl-phase1 (bento/sw.js/play.html), monster-math M2-M4 concurrent commits (sw.js/play.html)]
 
 
 
