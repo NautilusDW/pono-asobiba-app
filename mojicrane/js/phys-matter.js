@@ -2,6 +2,8 @@
 // もじもじクレーン round-5': physics engine swap. Re-implements the EXACT 19-member
 // window.MiniPhys facade (see the removed js/miniphys.js header comment for the full
 // contract) on top of vendored Matter.js (js/vendor/matter.min.js, v0.20.0, offline).
+// round-7 adds one facade member (awakeDynamicCount, alongside the still-exported
+// legacy pileAwakeCount) for the single-block-grip slip gate — 20 members total.
 //
 // Design constraint: game.js must not change its call sites. Every function below
 // has the identical name/signature/return-shape as the old hand-rolled solver; the
@@ -10,6 +12,15 @@
 // Engine usage is restricted to Matter.Engine + Matter.Body/Bodies/Constraint/
 // Composite/Sleeping/Vector — NEVER Matter.Render or Matter.Runner (this file drives
 // its own fixed-step loop from game.js's existing step(dt, ...) call).
+//
+// round-7: the carry mechanism was ALREADY a real Matter.Constraint (see
+// spawnCarried/stepCarried/releaseCarried below) — there was never a hand-rolled
+// theta/omega pendulum ODE in this file. round-7's changes are: (1) constraint
+// param alignment (length pinned to 0, damping now scales with grab offset |u|
+// instead of a flat value), (2) a world-census single-block-grip slip gate
+// (awakeDynamicCount), (3) a PD (damped) homing controller for chute targets +
+// an overshoot snap-catch, fixing a silent-drop bug where a CLEANUP-bound block
+// could fall uncaught past its catch box under undamped oscillation.
 (function () {
   'use strict';
 
@@ -25,6 +36,7 @@
 
   // --- tunables (ported/mirrored from the old miniphys.js constants) ----------
   const HOMING_K = 6.0; // pile/chute homing pull-toward-target strength
+  const HOMING_DAMP = 4.0; // chute-target homing damping (round-7 CLEANUP silent-drop fix)
   const SLIP_DEBOUNCE = 0.12; // s sustained over-angle before slip latches
   const WAKE_CAP = 4; // bodies woken per grab/topple pass
   const PILE_TILT_CLAMP = Math.PI / 4; // forceSettleAll implausible-tilt clamp
@@ -58,7 +70,7 @@
   let nextBodyId = 1;
 
   // carried pendulum state
-  let carried = null; // { block, body, constraint, u, tipX, tipY, restTilt0, restTilt, restTiltT, slipAccum, broken, multiPart }
+  let carried = null; // { block, body, constraint, u, tipX, tipY, restTilt0, restTilt, restTiltT, broken, multiPart }
   let slipAngleTimer = 0;
 
   function clamp(v, lo, hi) {
@@ -172,6 +184,7 @@
     // defensive fallback (should not normally happen given game.js's call order).
     let body = block.__physBody || null;
     if (!body) {
+      console.warn('[MiniPhys] spawnCarried: block had no __physBody (unexpected call order), creating fallback body.');
       body = Bodies.rectangle(tipX, tipY + size.h, size.w, size.h, {
         angle: restTilt0,
         density: 0.001,
@@ -189,23 +202,27 @@
     body.collisionFilter.mask = 0x0000;
     block.__physBody = body;
 
-    const worldGrip = { x: body.position.x + uu * (size.w / 2) * 0.85, y: body.position.y - size.h * 0.45 };
+    const worldGrip = { x: body.position.x + uu * (size.w / 2) * 0.85, y: body.position.y - size.h / 2 };
     const local = Vector.rotate(
       { x: worldGrip.x - body.position.x, y: worldGrip.y - body.position.y },
       -body.angle
     );
-    const anchorDist = Vector.magnitude({ x: worldGrip.x - tipX, y: worldGrip.y - (tipY + 4) }) || 2;
 
     // Grip firmness scales continuously with |uu| (dead-center = rigid,
-    // full offset = loose) instead of stepping at the uu===0 boundary.
+    // full offset = loose) instead of stepping at the uu===0 boundary. Rest
+    // length is always 0 — the anchor IS the grip point, so the entire swing
+    // lever comes from pointB's offset from the body center (no second,
+    // redundant lever from a nonzero constraint length). Damping mirrors the
+    // same firmness curve: dead-center grabs are near-critically damped (no
+    // visible swing), edge grabs are underdamped (lively pendulum).
     const absU = Math.abs(uu);
     const constraint = Constraint.create({
       pointA: { x: tipX, y: tipY + 4 },
       bodyB: body,
       pointB: local,
-      length: lerp(0, anchorDist, absU),
+      length: 0,
       stiffness: lerp(1, 0.15, absU),
-      damping: 0.1
+      damping: lerp(0.3, 0.05, absU)
     });
     Composite.add(engine.world, constraint);
 
@@ -219,7 +236,6 @@
       restTilt0,
       restTilt: restTilt0,
       restTiltT: 0,
-      slipAccum: 0,
       broken: false,
       multiPart: block.multiPart === true
     };
@@ -235,13 +251,18 @@
     return carried;
   }
 
+  // round-7: world-space pass-through of the real Matter body's own state (the
+  // subtract-then-re-add round trip through the claw tip that used to happen here
+  // was pure noise, since stepCarried keeps pointA pinned to the tip every frame).
+  // Consumers: drawClaw() and drawBalanceMeter() in game.js, both rendering-only.
+  // releaseCarried() below does NOT use this — it needs tip-relative offsets for
+  // its spawnFalling() contract and computes that inline instead.
   function getCarriedPose() {
     if (!carried) return null;
     const c = carried;
-    const anchor = c.constraint.pointA;
     return {
-      x: c.body.position.x - anchor.x,
-      y: c.body.position.y - anchor.y,
+      x: c.body.position.x,
+      y: c.body.position.y,
       angle: c.body.angle + (c.restTilt || 0)
     };
   }
@@ -261,7 +282,8 @@
 
   // round-5: number of pile-target bodies currently awake — the single-block grip
   // guarantee. When this is 0 (and the carried block isn't a multi-part duo), the
-  // carried block can never slip, regardless of swing angle or tension.
+  // carried block can never slip, regardless of swing angle or tension. Kept
+  // exported for facade stability (drawGrabCue-adjacent tooling may still read it).
   function pileAwakeCount() {
     let n = 0;
     for (let i = 0; i < falling.length; i += 1) {
@@ -271,9 +293,19 @@
     return n;
   }
 
+  // round-7: direct Matter world census — counts every non-sleeping, non-static
+  // body (this INCLUDES the carried body itself, which is always awake by
+  // construction). "The carried block is the only live thing in the world" is
+  // therefore awakeDynamicCount() <= 1, matching the single-block-grip guarantee
+  // literally instead of approximating it via the falling[]-pile-only mirror.
+  function awakeDynamicCount() {
+    if (!engine) return 0;
+    return Composite.allBodies(engine.world).filter((b) => !b.isSleeping && !b.isStatic).length;
+  }
+
   function slipTriggered() {
     if (!carried || !carried.broken) return false;
-    if (pileAwakeCount() === 0 && carried.multiPart !== true) {
+    if (awakeDynamicCount() <= 1 && carried.multiPart !== true) {
       carried.broken = false;
       slipAngleTimer = 0;
       return false;
@@ -288,9 +320,11 @@
       c.restTiltT = Math.min(1, c.restTiltT + dt / 0.3);
       c.restTilt = c.restTilt0 * (1 - c.restTiltT);
     }
-    // moving anchor: the claw tip drags the constraint's world-space pointA
+    // moving anchor: the claw tip drags the constraint's world-space pointA.
+    // clawTip.y already includes the +4 grip offset (see game.js step() call site),
+    // matching spawnCarried's own tipY + 4 — do not add it again here.
     c.constraint.pointA.x = clawTip.x;
-    c.constraint.pointA.y = clawTip.y + 4;
+    c.constraint.pointA.y = clawTip.y;
 
     const anchor = c.constraint.pointA;
     const dx = c.body.position.x - anchor.x;
@@ -304,7 +338,7 @@
     }
 
     const params = levelSlipParams(cfg, c.block);
-    const loneQuiet = pileAwakeCount() === 0 && c.multiPart !== true;
+    const loneQuiet = awakeDynamicCount() <= 1 && c.multiPart !== true;
     if (loneQuiet) {
       slipAngleTimer = 0;
       return;
@@ -319,14 +353,19 @@
   function releaseCarried(extraVx, extraVy) {
     if (!carried) return { x: 0, y: 20, vx: extraVx || 0, vy: extraVy || 0, omega: 0 };
     const c = carried;
-    const pose = getCarriedPose();
+    // Tip-relative offset (NOT getCarriedPose()'s world-space return, round-7):
+    // game.js's three call sites (carry-phase slip x2, release-phase x1) all do
+    // spawnFalling(block, claw.tipX + rel.x, claw.tipY + rel.y, ...) — that
+    // contract is preserved by computing the offset from the live anchor here.
+    const anchor = c.constraint.pointA;
     const vel = getCarriedVelocity();
+    const rel = { x: c.body.position.x - anchor.x, y: c.body.position.y - anchor.y };
     Composite.remove(engine.world, c.constraint);
     carried = null;
     slipAngleTimer = 0;
     return {
-      x: pose.x,
-      y: pose.y,
+      x: rel.x,
+      y: rel.y,
       vx: (extraVx || 0) + vel.vx,
       vy: (extraVy || 0) + vel.vy,
       omega: vel.omega
@@ -505,7 +544,15 @@
     if (t.type === 'chute' && t.zone) targetX = t.zone.x;
     else if (t.type === 'pile' && typeof t.homingX === 'number') targetX = t.homingX;
     if (targetX == null) return;
-    const dvx = (targetX - rec.body.position.x) * HOMING_K * dt;
+    // round-7 CLEANUP silent-drop fix: chute-bound bodies are collision-free
+    // ghosts (never touch floor/wall to bleed off energy), so a pure P-controller
+    // here turns any release-time swing into a persistent, undamped horizontal
+    // oscillation that can miss the one-shot catch-box test entirely. Add a
+    // damping (D) term for chute targets so the perturbation decays instead of
+    // oscillating; pile homing keeps the original pure-P feel (unchanged toss).
+    const dvx = t.type === 'chute'
+      ? (targetX - rec.body.position.x) * HOMING_K * dt - rec.body.velocity.x * HOMING_DAMP * dt
+      : (targetX - rec.body.position.x) * HOMING_K * dt;
     Body.setVelocity(rec.body, { x: rec.body.velocity.x + dvx, y: rec.body.velocity.y });
   }
 
@@ -537,8 +584,28 @@
           if (hooks.onChuteCatch) hooks.onChuteCatch(rec);
           continue;
         }
+        // round-7 CLEANUP silent-drop fix (overshoot snap-catch): the catch box
+        // is otherwise a one-shot y-band test — a block whose homing oscillation
+        // phase puts it outside +/-34px x-tolerance the instant it crosses the
+        // band falls uncaught, invisibly, until the watchdog below fires far off
+        // -screen. Any block that has fallen PAST the box mouth without being
+        // caught is snapped into the box that same frame, so landing always
+        // happens visibly at the chute, never later off-stage.
+        if (rec.y > zone.y + 24) {
+          Body.setPosition(rec.body, { x: zone.x, y: boxTop + 12 });
+          syncMirror(rec);
+          falling.splice(i, 1);
+          Composite.remove(engine.world, rec.body);
+          if (hooks.onChuteCatch) hooks.onChuteCatch(rec);
+          continue;
+        }
         rec.watchdog -= dt;
         if (rec.watchdog <= 0) {
+          // belt-and-suspenders: even a watchdog-forced catch snaps to the box
+          // center first, so it stays visually coherent with evaluate()'s
+          // pop/confetti effect fired at the chute position (game.js).
+          Body.setPosition(rec.body, { x: zone.x, y: boxTop + 12 });
+          syncMirror(rec);
           falling.splice(i, 1);
           Composite.remove(engine.world, rec.body);
           if (hooks.onChuteCatch) hooks.onChuteCatch(rec);
@@ -660,6 +727,7 @@
     computePileTopple,
     levelSlipParams,
     pileAwakeCount,
+    awakeDynamicCount,
     forceSettleAll
   };
 })();

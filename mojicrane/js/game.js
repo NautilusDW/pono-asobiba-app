@@ -47,6 +47,12 @@
   const DUO_GRAB = 60; // grab radius for the wider two-character block
   const PILE_MIN_X = MOVE_L + 25;
   const PILE_MAX_X = MOVE_R - 25;
+  // round-7 CLEANUP silent-drop fix: minimum carry-settle time (seconds) required
+  // before the 'carry' phase may transition to 'release', regardless of arrival.
+  // Blocks grabbed adjacent to CLEANUP_CHUTE (only 3px inside PILE_MAX_X) would
+  // otherwise get near-zero pendulum-damping time vs TEXT_CHUTE's natural
+  // >=116px/~0.6s travel buffer. See chooseChute()/claw.settleT.
+  const MIN_SETTLE_T = 0.35;
 
   const LEVELS = {
     easy: {
@@ -615,7 +621,8 @@
       slipAt: 0,
       carryFrom: 0,
       targetZone: TEXT_CHUTE,
-      targetX: TEXT_CHUTE.x
+      targetX: TEXT_CHUTE.x,
+      settleT: 0
     };
   }
 
@@ -718,6 +725,13 @@
     if (game.claw.targetZone !== null || !game.claw.block) return;
     game.claw.targetZone = side === 'left' ? TEXT_CHUTE : CLEANUP_CHUTE;
     game.claw.targetX = game.claw.targetZone.x;
+    // round-7 CLEANUP silent-drop fix: min-settle gate. CLEANUP_CHUTE.x sits only
+    // 3px inside the pile's carry range, so a grab adjacent to it gets near-zero
+    // horizontal travel time to damp the pendulum before release (unlike
+    // TEXT_CHUTE's guaranteed >=116px buffer). Track elapsed carry time from the
+    // moment a chute is chosen; the 'carry' phase below withholds the transition
+    // to 'release' until this reaches MIN_SETTLE_T, regardless of arrival.
+    game.claw.settleT = 0;
     game.awaitingSortDirection = false;
     updateButtons();
     playSfx('tap');
@@ -1180,6 +1194,10 @@
         claw.tx += dir * CARRY_SPEED * dt;
         claw.off *= Math.pow(0.02, dt);
         claw.tipX = claw.tx + claw.off;
+        // round-7 CLEANUP silent-drop fix: accumulate settle time once a chute has
+        // been chosen (chooseChute() zeroed it); the arrival gate below withholds
+        // 'release' until MIN_SETTLE_T has elapsed even if tx already arrived.
+        claw.settleT += dt;
         if (window.MiniPhys && MiniPhys.slipTriggered() && claw.block) {
           const block = claw.block;
           const rel = MiniPhys.releaseCarried();
@@ -1195,8 +1213,10 @@
         if ((dir < 0 && claw.tx <= targetX) || (dir > 0 && claw.tx >= targetX)) {
           claw.tx = targetX;
           claw.tipX = claw.tx + claw.off;
-          claw.phase = 'release';
-          claw.t = 0;
+          if (claw.settleT >= MIN_SETTLE_T) {
+            claw.phase = 'release';
+            claw.t = 0;
+          }
         }
         break;
       }
@@ -1511,8 +1531,10 @@
     ctx.stroke();
     if (claw.block) {
       if (!reduceMotion && window.MiniPhys && MiniPhys.isCarrying()) {
+        // round-7: getCarriedPose() now returns world-space coords directly (the
+        // real Matter body's own position), no tip-relative re-add needed.
         const pose = MiniPhys.getCarriedPose();
-        drawBlock(claw.tipX + pose.x, claw.tipY + pose.y, claw.block, 1, false, pose.angle);
+        drawBlock(pose.x, pose.y, claw.block, 1, false, pose.angle);
       } else {
         drawBlock(claw.tipX, claw.tipY + 20, claw.block, 1, false, 0);
       }
@@ -1580,9 +1602,10 @@
     const params = MiniPhys.levelSlipParams(game.cfg, c.block);
     const k = clamp(Math.abs(c.theta) / params.thetaSlip, 0, 1);
     const color = k < 0.6 ? '#33bf7a' : (k < 0.85 ? '#ff9d42' : '#ff5a5a');
+    // round-7: getCarriedPose() now returns world-space coords directly.
     const pose = MiniPhys.getCarriedPose();
-    const mx = game.claw.tipX + pose.x;
-    const my = game.claw.tipY + pose.y - 46;
+    const mx = pose.x;
+    const my = pose.y - 46;
     ctx.save();
     ctx.translate(mx, my);
     ctx.rotate(c.theta * 0.6);

@@ -897,7 +897,11 @@
 // v2037: mojicrane round-5' 残存 fix (連続 lerp + tilt 三重修正) の cache invalidation。
 //        game.js 側の tilt=0 リセット (drawJunk 二重回転抑止) は commit 6b3ec86 で反映済。
 // v2038: mojicrane round-6 hotfix — 正解かな×正しいカゴ の silent 消費バグ修正。
-const CACHE_VERSION = 2038;
+// v2039: round-7: 本物 Matter.Constraint carry + CLEANUP silent-drop fix。
+// v2040: round-7 残存 fix — spawnCarried/stepCarried の pointA.y 二重 +4 オフセット
+//   (carry 開始直後に 4px pivot が跳ねる) を解消 + spawnCarried フォールバック分岐に
+//   console.warn 追加 (mojicrane は precache 対象外だが runtime 更新分のキャッシュ破棄のためバンプ)。
+const CACHE_VERSION = 2040;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
