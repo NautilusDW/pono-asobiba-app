@@ -87,6 +87,8 @@
 - 2026-07-06 21:04 - by Claude - [batch:1204-capacitor-phase1-scaffold] - native/** (新規), .gitignore, .assetsignore, common/sw-update.js, common/cloud-sync.js, bento/kitchen.html, AGENTS_CLAIMS.md - Capacitor Phase 1 scaffold (Android 先行、www build pipeline + Web側 SW gating 3点)。play.html/sw.js/CLAUDE.md/HANDOFF.md/MEMORY.md 等の既存 dirty 10 ファイルには一切 touch しない [overlap: batch:1203-ux-3fixes (common/sw-update.js), batch:952-cloud-sync-step-c (common/cloud-sync.js)]
 - claude-code / develop-app / モンスターさんすう ブラッシュアップ設計 (Phase 1) / 2026-07-06
 - claude-code / develop-app / monster-math Phase 3-Impl Pre-Fix (6 nits) / 2026-07-07
+- 2026-07-07 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, AGENTS_CLAIMS.md - tut2 チュートリアル実装 phase1 (foundation + 全15ステップ + 2ラッパー、mock voice、PAUSED解除、storage v2)
+- 2026-07-07 - by Claude - [batch:1206-capacitor-m2-asset-archive] - assets/**, native/scripts/stage-www.mjs, .assetsignore, AGENTS_CLAIMS.md - Capacitor M2 資産整理 (assets/_archive/ 別送り + stage-www.mjs denylist + orphan 削除)。 tts/monster_math_*.wav (batch:1058 追加分) と CLAUDE/HANDOFF/MEMORY.md には一切 touch しない
 
 ## なぜ HANDOFF.md と別ファイルなのか
 
