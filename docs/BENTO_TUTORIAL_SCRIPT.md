@@ -217,7 +217,7 @@
 
 ## 3. 音声生成リスト (TTS バッチ入力)
 
-パイプライン: **既存 Gemini "Leda" 1.15x (common/narration.js:39) 継続** ([[policy_no_fal_ai_tts]] — fal-ai TTS 不使用)。生成後は **faster-whisper 文字起こし → キーワード照合まで必須** ([[feedback_tts_whisper_verify_required]])。
+パイプライン: **既存 Gemini "Aoede" 1.15x (`bento_basic_tutorial` プリセットに一致、admin/index.html:1817-1820、style: `[cheerfully but calmly]`) 継続** ([[policy_no_fal_ai_tts]] — fal-ai TTS 不使用)。**AGENTS.md §2.5.3 は "Leda" と記述しているが、admin プリセットが実生成の正 (source of truth)**: bento は Aoede、stickerbook (admin:1872) は Leda で別系統。既存流用の sk-intro / 開店カットシーンも本 Aoede プリセットで生成された音声。生成後は **faster-whisper 文字起こし → キーワード照合まで必須** ([[feedback_tts_whisper_verify_required]])。
 保存先: `assets/audio/bento/tutorial/`。「OK」は TTS 入力では「オッケー」表記で読みを固定。
 
 ### 新規収録 (16 本)
