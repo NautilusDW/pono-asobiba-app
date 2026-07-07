@@ -99,17 +99,26 @@
   // Fix 4 (2026-06-28): waiting SW がある時のみ表示される小さなトースト。
   // Rendered only when a waiting SW exists. Tapping the button posts
   // SKIP_WAITING to reg.waiting → controllerchange → safeReload().
-  // The toast is small, fixed bottom-right, and dismissible. It never blocks
-  // the title screen or game controls because pointer-events are scoped to
-  // the toast element only.
+  //
+  // v2028 hardening (batch:1058-sw-toast-fix, 2026-07-07): 「何度も繰り返される」
+  // 緊急バグ修正。 これまでの batch:1203 (v2007) sessionStorage 実装だけでは、
+  // (a) 'activated' state で session フラグを毎回クリアするため、 controllerchange→
+  // reload→ 次の updatefound で 再表示、 (b) sessionStorage は tab close で消える、
+  // (c) 一度 close × した後の同一 waiting SW が reg.update() poll (5min/visibility)
+  // で updatefound を再発火した場合の抑制なし、 の 3 経路で ゲームに入れない
+  // 「トースト連発ループ」 が発生していた。
+  //
+  // 修正: localStorage 主体の 「一度出したら 24h 抑制 + user 明示的 dismiss は永久抑制
+  // (次の activate まで) 」 の 2 段防御に切替。 sessionStorage は互換のため残置。
+  //
   // z-index 階層 (上から下): catch-up overlay (2147483647) > toast (2147483646) > tap-intro (99999) > splash (1000)
-  // toastShown フラグで多重表示を防止 (showUpdateToast() が複数回呼ばれても 1 つだけ)
-  // ただし toastShown は「このページ読み込み」内でしか効かない in-memory フラグ。
-  // play.html ⇔ 各ゲーム index.html のようにページ遷移を伴うと script が再初期化され
-  // toastShown はリセットされるため、reg.waiting が残っている限り遷移のたびに
-  // toast が再表示されてしまう (「何回も出る」報告の主因)。
-  // → sessionStorage フラグで「このセッションで表示済み」をページ遷移をまたいで保持する。
   var TOAST_SESSION_KEY = 'pono_sw_toast_shown_session';
+  // localStorage: 「最後に toast を出した時刻 (ms)」。 24h 以内は再表示しない。
+  var TOAST_LAST_SHOWN_KEY = 'pono_sw_toast_last_shown_at';
+  // localStorage: 「user が × / 今すぐ更新 を明示的に押した」 dismissal flag。
+  // このフラグは 次回 activate 成功時にだけクリアされる (完全同意消化)。
+  var TOAST_DISMISSED_KEY = 'pono_sw_toast_dismissed_ack';
+  var TOAST_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
   function hasShownToastThisSession() {
     try { return sessionStorage.getItem(TOAST_SESSION_KEY) === '1'; } catch (e) { return false; }
   }
@@ -118,6 +127,33 @@
   }
   function clearToastShownFlag() {
     try { sessionStorage.removeItem(TOAST_SESSION_KEY); } catch (e) {}
+  }
+  function hasUserDismissedToast() {
+    try { return localStorage.getItem(TOAST_DISMISSED_KEY) === '1'; } catch (e) { return false; }
+  }
+  function markUserDismissedToast() {
+    try { localStorage.setItem(TOAST_DISMISSED_KEY, '1'); } catch (e) {}
+  }
+  function clearUserDismissedFlag() {
+    try { localStorage.removeItem(TOAST_DISMISSED_KEY); } catch (e) {}
+  }
+  function isToastInCooldown() {
+    try {
+      var raw = localStorage.getItem(TOAST_LAST_SHOWN_KEY);
+      if (!raw) return false;
+      var at = parseInt(raw, 10);
+      if (!at || isNaN(at)) return false;
+      var diff = Date.now() - at;
+      // 未来時刻 (時計ズレ) は 0 扱いで抑制なし
+      if (diff < 0) return false;
+      return diff < TOAST_COOLDOWN_MS;
+    } catch (e) { return false; }
+  }
+  function markToastLastShown() {
+    try { localStorage.setItem(TOAST_LAST_SHOWN_KEY, String(Date.now())); } catch (e) {}
+  }
+  function clearToastLastShown() {
+    try { localStorage.removeItem(TOAST_LAST_SHOWN_KEY); } catch (e) {}
   }
   var toastShown = false;
   var currentToastEl = null;
@@ -128,7 +164,10 @@
     currentToastEl = null;
   }
   // SW が activated まで進んだら「更新は解消された」とみなし toast を自動で消す。
-  // 併せて session フラグもクリアし、将来また別の新バージョンが来た時に再度案内できるようにする。
+  // v2028: 併せて localStorage 側の cooldown / dismissal flag もクリアし、
+  // 将来また別の新バージョンが来た時に (一度だけ) 再度案内できるようにする。
+  // sessionStorage フラグはクリアしても loop を再発させないため、 24h cooldown が
+  // 「その日は静かに」 を保証する。
   function watchForActivation(worker) {
     if (!worker) return;
     worker.addEventListener('statechange', function () {
@@ -136,6 +175,8 @@
         removeToastEl();
         toastShown = false;
         clearToastShownFlag();
+        clearUserDismissedFlag();
+        clearToastLastShown();
       }
     });
   }
@@ -162,8 +203,17 @@
     if (toastShown) return;
     if (!reg || !reg.waiting) return;
     if (hasShownToastThisSession()) return;
+    // v2028 hardening: user が明示的に閉じた/今すぐ更新押した後は、 activate が
+    // 完了するまで (= 消化されるまで) 一切再表示しない。 activate 完了時に
+    // watchForActivation() 側でこのフラグはクリアされる。
+    if (hasUserDismissedToast()) return;
+    // v2028 hardening: session storage が失われた場合 (tab close / private mode / 別 tab)
+    // でも 24h 以内に一度出したなら再表示しない。 これで controllerchange→ reload→
+    // updatefound→ 再表示のループを断ち切る。
+    if (isToastInCooldown()) return;
     toastShown = true;
     markToastShownThisSession();
+    markToastLastShown();
     ensureToastStyle();
     var el = document.createElement('div');
     el.className = 'pono-sw-toast';
@@ -176,6 +226,10 @@
     goBtn.className = 'pono-sw-toast-go';
     goBtn.textContent = '今すぐ更新';
     goBtn.addEventListener('click', function () {
+      // v2028 hardening: user がタップした瞬間に dismissal flag を立てる。
+      // 万一 SKIP_WAITING → activate → controllerchange が失敗しても、 その後の
+      // updatefound / reload では toast を再表示しない (activate 成功時のみクリア)。
+      markUserDismissedToast();
       try {
         if (reg.waiting) {
           reg.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -193,6 +247,8 @@
     closeBtn.setAttribute('aria-label', '閉じる');
     closeBtn.textContent = '×';
     closeBtn.addEventListener('click', function () {
+      // v2028 hardening: × で閉じたら activate まで再表示しない (user 明示的 dismiss)。
+      markUserDismissedToast();
       removeToastEl();
     });
     el.appendChild(label);
@@ -202,6 +258,9 @@
       document.body.appendChild(el);
       currentToastEl = el;
     } catch (e) {
+      // v2028 hardening: appendChild が失敗しても cooldown フラグは残す (再表示させない)。
+      // 唯一残念だが、 render 事故は user が誰も見てない状態なので次回訪問時に静かに
+      // 再検討させる方が spam より安全。 in-memory + session だけリセットで十分。
       toastShown = false;
       currentToastEl = null;
       clearToastShownFlag();

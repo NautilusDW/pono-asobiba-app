@@ -1,5 +1,19 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2028: 「あたらしい バージョンが あります」 トーストが繰り返し発火して bento (ゲーム) に
+// 入れない緊急バグを修正 (batch:1058-sw-toast-fix)。 原因は v2007 (batch:1203) の
+// sessionStorage-only ガードだけでは、 (a) 'activated' state で session フラグを毎回
+// クリアしていたため controllerchange → reload → 次の updatefound で toast 再表示、
+// (b) sessionStorage は tab close で消える、 (c) × 閉じ後の同一 waiting SW が
+// reg.update() poll (5 min / visibility) で updatefound を再発火した場合の抑制なし、
+// の 3 経路で発火ループになりうる。 common/sw-update.js に localStorage 2 段防御を追加:
+// (1) `pono_sw_toast_last_shown_at` (24h cooldown、 session/tab を跨いでも抑制)、
+// (2) `pono_sw_toast_dismissed_ack` (user が × / 今すぐ更新 を押した後、 activate 成功
+// まで永久抑制)。 activate 成功時のみ両フラグをクリアし、 次の legitimate 新版で 1 回だけ
+// 案内できる。 sw.js 側の lifecycle (install で precache のみ / activate で cache 掃除
+// のみ / SKIP_WAITING message hook 温存) は無改変、 skipWaiting/clients.claim を
+// install/activate で呼ばない設計も維持。 tut2 チュートリアルは無関係のため無触。
+// play.html PAGE_CACHE_VERSION と同期。
 // v2022: bento tut2 Phase A 見本 (お手本) が完全に流れないバグを根本修正 (batch:1058-hotfix)。
 // (a) 4ac9f2a の refactor 副作用で tut2RenderOkazuMainPhaseA / tut2RenderCupPlacePhaseA /
 // tut2RenderCupFoodPhaseA の ghost ブロックが `palette is not defined` の ReferenceError で
@@ -824,7 +838,7 @@
 //   noriIdx 遷移 (eye1→eye2 等) で ring が二重に残る現象を防止。 誤タップ抑止は既存の
 //   getTutorialPaletteAllowance が deny(...) を返すため追加コードなし。 play.html
 //   PAGE_CACHE_VERSION と同期。
-const CACHE_VERSION = 2027;
+const CACHE_VERSION = 2028;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
