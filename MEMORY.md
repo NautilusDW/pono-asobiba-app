@@ -145,6 +145,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-07T11:43:39Z - mojicrane round-6 hotfix 最終検証レポート (正解かなカゴ silent 消費バグ / 4ケースマトリクス + 7チェック)
+- **タスク**: mojicrane round-6 hotfix 最終検証レポート (正解かなカゴ silent 消費バグ / 4ケースマトリクス + 7チェック)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 45
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 6, "Bash": 14, "Workflow": 9, "Read": 8, "Agent": 3, "ToolSearch": 2, "SendMessage": 1, "TaskStop": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
+### 2026-07-07T11:35:53Z - mojicrane round-6 hotfix: TEXT chute silent kana consumption bug (stepFalling legacy-settle fallthrough)
+- **タスク**: mojicrane round-6 hotfix: TEXT chute silent kana consumption bug (stepFalling legacy-settle fallthrough)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 45
+- **エラー数**: 6
+- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
+- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
+- **ツール使用統計**: {"Glob": 1, "Grep": 6, "Bash": 14, "Workflow": 9, "Read": 8, "Agent": 3, "ToolSearch": 2, "SendMessage": 1, "TaskStop": 1}
+- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
+
+
 ### 2026-07-07T10:43:10Z - bento tut2 hotfix4: UX方針転換 (ポノ吹き出し集約/palette-tap バブル廃止/サブラウンド 800ms 間/T=0 ring→T=+600ms ghost/Step 6 walk-through/二重リング解消)
 - **タスク**: bento tut2 hotfix4: UX方針転換 (ポノ吹き出し集約/palette-tap バブル廃止/サブラウンド 800ms 間/T=0 ring→T=+600ms ghost/Step 6 walk-through/二重リング解消)
 - **結果**: 成功
@@ -234,31 +260,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 1, "Grep": 5, "Bash": 13, "Workflow": 7, "Read": 7, "Agent": 2, "ToolSearch": 1, "SendMessage": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-07-07T09:21:04Z - monster_math play.html tier変更+game-stickers.json/STICKER_DESC差替 (v2 SPEC 4シール)
-- **タスク**: monster_math play.html tier変更+game-stickers.json/STICKER_DESC差替 (v2 SPEC 4シール)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 62
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 16, "ToolSearch": 2, "TaskStop": 1, "Read": 25, "Write": 1, "Bash": 17}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T09:15:54Z - SW update toast 連発ループ緊急修正 (sw v2028、 localStorage 2段防御 + 24h cooldown + dismissed_ack)
-- **タスク**: SW update toast 連発ループ緊急修正 (sw v2028、 localStorage 2段防御 + 24h cooldown + dismissed_ack)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 61
-- **エラー数**: 1
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Workflow": 15, "ToolSearch": 2, "TaskStop": 1, "Read": 25, "Write": 1, "Bash": 17}
-- **サマリ**: 成功タスク: 1個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
 
 

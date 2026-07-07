@@ -549,6 +549,17 @@
       applyHoming(rec, dt);
       applyWallClamp(rec);
 
+      if (rec.target && rec.target.type === 'chute') {
+        // round-6 hotfix: chute-bound bodies settle ONLY via the catch-box test or
+        // the 0.9s watchdog above — never via the legacy velocity-threshold check
+        // further down. That legacy path has no 'chute' case in game.js's onSettle
+        // hook, so a low-velocity in-flight block (the common case right after a
+        // near-rest claw release) was getting silently evicted before ever
+        // reaching its chute box, dropping the kana with zero feedback (fatal if
+        // it was the player's last copy of a needed kana). Skip it every frame.
+        continue;
+      }
+
       if (rec.target && rec.target.type === 'pile') {
         const settled = rec.body.isSleeping;
         rec.sleepT = settled ? rec.sleepT + dt : 0;

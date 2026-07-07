@@ -812,13 +812,25 @@
   // physics settle hooks (mojicrane round-3/4): reconcile a settled/caught body back
   // into the existing logical stores. For 'pile' targets, MiniPhys resting[] is
   // itself the store (see spawnFalling/stepFalling in js/phys-matter.js) — this hook only
-  // needs to trigger the settle wobble visual. 'chute' is handled by physOnChuteCatch.
+  // needs to trigger the settle wobble visual. 'chute' is normally handled by
+  // physOnChuteCatch; the 'chute' branch below is a round-6 hotfix canary/self-heal
+  // only (see phys-matter.js stepFalling's chute continue-guard).
   function physOnSettle(body) {
     if (body.target && body.target.type === 'column' && body.target.col) {
       body.target.col.blocks.push(body.block);
       body.block.wobble = 1;
     } else if (body.target && body.target.type === 'pile') {
       body.block.wobble = 1;
+    } else if (body.target && body.target.type === 'chute') {
+      // DEV_ONLY_ASSERT (round-6 hotfix canary): a chute-target body must never
+      // reach onSettle — it should only ever be consumed via physOnChuteCatch
+      // (catch-box test or watchdog, see phys-matter.js stepFalling's guard just
+      // above the legacy settle block). Reaching here means that guard regressed
+      // and this block would otherwise silently vanish with zero feedback. Self-heal
+      // by routing it through evaluate() so a round can never softlock even if the
+      // guard is accidentally removed later.
+      console.warn('[mojicrane] DEV_ONLY_ASSERT: chute-target body reached onSettle instead of onChuteCatch', body.id);
+      evaluate(body.block, body.target.zone);
     }
   }
 
