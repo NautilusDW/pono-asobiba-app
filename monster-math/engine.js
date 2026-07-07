@@ -17,32 +17,12 @@
 // 本ファイルは T0 段階の骨格実装 (500-800行目安) — ラウンド実ロジックは各 mode-*.js が
 // createRound/onFoodTap/onAnswerTap を実装することで完結する。
 //
-// [M5 復元時の検証手順]
-// 1. grep -n 'mm_' engine.js  # MODE_CLEAR_STICKER / SPECIAL_STICKER の全 6 id を抽出
-// 2. jq '.pages.monster_math.stickers[].id' game-stickers.json  # catalog 側の 6 id 抽出
-// 3. 2 リストの完全一致を diff で確認 (typo でズレると _findSticker フォールバックが暴発)
-//
-// [M5 復元予定] assets/data/game-stickers.json monster_math ページ (シール6枚)。
-// T0 fix-blockers workflow でカタログ予告露出防止のため一時削除 (ユーザー追加指示、
-// 2026-07-06/07)。 獲得経路 (grant 呼び出し) 自体はこのファイルに残したまま、
-// game-stickers.js の「ページ未登録なら null を返すだけの silent fallback」に乗せて
-// 無害化している (catalog に該当 gameId が無ければ何も起きない)。 M5 で catalog に
-// 以下を丸ごと戻すこと (serial 139-144 は既存 book-bonus 138 の続番として確保済み):
-//   "monster_math": {
-//     "title": "モンスターさんすう", "subtitle": "しょくどうの シール",
-//     "icon": "🍽️", "accent": "#F2742A", "appOnly": false,
-//     "stickers": [
-//       mm_pucchi        (serial 139, rarity normal, unlockOn: clear_kazoeru, tier free)
-//       mm_pakun         (serial 140, rarity normal, unlockOn: clear_make10,  tier free)
-//       mm_gaburu        (serial 141, rarity normal, unlockOn: clear_tashizan, tier free)
-//       mm_feast_plate   (serial 142, rarity super,  unlockOn: feast,         tier free)
-//       mm_shokudo_sign  (serial 143, rarity super,  unlockOn: all_modes,     tier free)
-//       mm_konpeito_bin  (serial 144, rarity super,  unlockOn: perfect_all,   tier free)
-//     ]
-//   }
-// (各 img パスは monster-math/assets/sticker_mm_<id>.png)。 復元と同時に
-// scripts/generate_sticker_metrics.py を再実行して sticker-metrics.js に mm_ 6枚を
-// 追加すること ([[feature_museum_sticker_size_normalize]] MUST)。
+// [M5 復元済み] assets/data/game-stickers.json に monster_math ページ (シール6枚,
+// serial 139-144) を復元済み (2026-07-07)。 MODE_CLEAR_STICKER / SPECIAL_STICKER の
+// id (mm_pucchi/mm_pakun/mm_gaburu/mm_feast_plate/mm_shokudo_sign/mm_konpeito_bin) と
+// catalog 側 id は完全一致を確認済み。 scripts/generate_sticker_metrics.py も再実行し
+// Prototypes/StickerExhibitionCarousel/sticker-metrics.js に mm_ 6枚を追加済み。
+// play.html 「いま あそべる」 ゾーンにもカードを追加済み ([[feature_museum_sticker_size_normalize]] 準拠)。
 // ============================================================
 (function () {
   'use strict';
@@ -674,13 +654,33 @@
   // すべての gate 待ちに安全側フォールバックタイムアウトを設けており、 対象要素が
   // 見つからない/子供がタップしない場合でも永久に詰まない。
   // ============================================================
-  var _tutorialAbortFlag = false;
+  // [Warn 2 修正: per-run token] 旧実装はブール1個 (_tutorialAbortFlag) のみで
+  // 「今アクティブな run が中断されたか」しか表せず、 A run 実行中に B run が起動
+  // すると両者が同じフラグを共有してしまう再入バグがあった (Bのskip/完走がAの
+  // 状態を巻き込む)。 _tutorialRunToken は起動のたびに増分する識別子、
+  // _tutorialActiveToken は「現在有効な run はどれか」(0 = 有効な run なし/中断済)。
+  // 各 run は自分の発行時 token (myToken) を閉じ込め、 毎ステップ
+  // `_tutorialActiveToken !== myToken` で stale 判定する — 新しい run が起動する
+  // (= _tutorialActiveToken が書き換わる) だけで古い run は自動的に self-abort する。
+  var _tutorialRunToken = 0;
+  var _tutorialActiveToken = 0;
   var _tutorialAbortResolvers = [];
+  // [Warn 3 修正] abort 時に確実に停止させるため、 現在 tutorial runner が再生中の
+  // 専用 Audio インスタンスをここで追跡する (_tutorialPlayAndWait が生成/破棄する)。
+  var _tutorialCurrentAudio = null;
 
   function _tutorialTriggerAbort() {
     var list = _tutorialAbortResolvers;
     _tutorialAbortResolvers = [];
     list.forEach(function (r) { try { r(); } catch (e) {} });
+    // [Warn 3 修正: audio ghost 対策] 従来は resolvers が Promise を resolve するだけで
+    // audio.pause() を呼んでおらず、 画面遷移/tutorialSkip 後もナレーション音声が
+    // 最後まで再生され続ける「幽霊ナレーション」バグがあった。 abort 経路は必ず
+    // ここを通るため、 ここで確実に止める。
+    if (_tutorialCurrentAudio) {
+      try { _tutorialCurrentAudio.pause(); _tutorialCurrentAudio.currentTime = 0; } catch (e) {}
+      _tutorialCurrentAudio = null;
+    }
   }
 
   // abort 可能な setTimeout 相当 (mmTimeout の _timers とは別管理。 _clearAllTimers に
@@ -724,7 +724,29 @@
         return;
       }
       var settled = false;
-      var guardTimer = window.setTimeout(function () { if (!settled) { settled = true; resolve(0); } }, 6000);
+      function _armGuard() {
+        return window.setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          // 6秒ガードで諦める場合も、 既に張られた Audio が裏で再生され続ける
+          // "audio ghost" を防ぐため停止してから resolve する。
+          if (_tutorialCurrentAudio) {
+            try { _tutorialCurrentAudio.pause(); _tutorialCurrentAudio.currentTime = 0; } catch (e) {}
+            _tutorialCurrentAudio = null;
+          }
+          resolve(0);
+        }, 6000);
+      }
+      // [Warn 1 修正: 低速回線での単語途中カット対策] このガードは元々
+      // Narration.load() (wav の fetch/decode) 開始前から起動していたため、
+      // ロード自体に時間がかかる低速回線だと再生開始前に持ち時間を消費し、
+      // 実際の音声再生中に 6 秒ガードが先に発火して単語の途中でカットされ
+      // うる不具合があった。 ロード待ち中の "無限ハング" 防止用ガードは
+      // ここでそのまま起動しておきつつ、 Audio の 'playing' イベント (実再生
+      // 開始) が発火した時点で一度 clearTimeout し、 そこから改めてフルの
+      // 6 秒ガードを再アームすることで、 実再生時間が load 時間に食われない
+      // ようにする。
+      var guardTimer = _armGuard();
       _tutorialAbortResolvers.push(function () {
         if (settled) return;
         settled = true;
@@ -737,17 +759,33 @@
         var entry = manifest && manifest.entries && manifest.entries[key];
         if (!entry || !entry.file) { settled = true; window.clearTimeout(guardTimer); resolve(0); return; }
         try {
+          // [Warn 4 修正: narration.js との重複再生対策] tutorial runner はここで
+          // 独自の Audio インスタンスを張るため、 common/narration.js 側 (Narration.play
+          // が管理する currentPlaying) に別の音声が同時再生中だと 2 系統の音声が重なる。
+          // 新しい tutorial 音声を開始する直前に必ず Narration 側の再生を止めておく
+          // (engine.js のみ編集の制約上、 narration.js の stopCurrent 相当である公開
+          // API Narration.stop() を経由する)。
+          try { if (window.Narration && typeof window.Narration.stop === 'function') window.Narration.stop(); } catch (e2) {}
           var a = new Audio(_ttsAssetUrl(entry.file));
           a.volume = (typeof window.Narration.getVolume === 'function') ? window.Narration.getVolume() : 0.9;
           a.playbackRate = (typeof window.Narration.getRate === 'function') ? window.Narration.getRate() : 1.15;
+          _tutorialCurrentAudio = a;
           function finish() {
             if (settled) return;
             settled = true;
             window.clearTimeout(guardTimer);
+            if (_tutorialCurrentAudio === a) _tutorialCurrentAudio = null;
             resolve(a.duration || 0);
           }
           a.addEventListener('ended', finish, { once: true });
           a.addEventListener('error', finish, { once: true });
+          // 実再生開始 ('playing') を検知したら、 ロード待ち分を巻き戻す形で
+          // ガードタイマーをフルの6秒に再アームする ([Warn 1 修正] 参照)。
+          a.addEventListener('playing', function () {
+            if (settled) return;
+            window.clearTimeout(guardTimer);
+            guardTimer = _armGuard();
+          }, { once: true });
           a.play().catch(finish); // autoplay 拒否等は即フォールバック (無音扱い)
         } catch (e) {
           if (!settled) { settled = true; window.clearTimeout(guardTimer); resolve(0); }
@@ -773,8 +811,6 @@
   function _tutorialWaitForGate(step) {
     return new Promise(function (resolve) {
       var sel = _tutorialGateSelector(step);
-      var el = null;
-      try { el = sel ? document.querySelector(sel) : null; } catch (e) {}
       var done = false;
       function finish() {
         if (done) return;
@@ -784,7 +820,16 @@
         resolve();
       }
       function onDocTap(ev) {
-        if (!el || (ev.target && el.contains(ev.target))) finish();
+        if (!sel) { finish(); return; }
+        // [Warn 1 修正: stale-node capture 対策] step 開始時に対象要素を 1 回だけ
+        // querySelector して保持すると、 tashizan 等で shelf が食材消費/補充のたびに
+        // DOM を再描画 (ノード差し替え) する場合、 保持していた参照が古いノードを
+        // 指したままになり ev.target が新ノード配下でも el.contains() が常に false
+        // → 20秒フォールバックに毎回落ちる不具合があった。 判定の直前に毎回 fresh に
+        // querySelector し直すことで、 再描画後も常に「今の」対象要素と照合する。
+        var freshEl = null;
+        try { freshEl = document.querySelector(sel); } catch (e) {}
+        if (!freshEl || (ev.target && freshEl.contains(ev.target))) finish();
       }
       document.addEventListener('pointerdown', onDocTap, true);
       // 対象が見つからない/タップされない場合の迷子防止フォールバック (詰み回避)
@@ -813,7 +858,9 @@
   }
 
   function tutorialSkip() {
-    _tutorialAbortFlag = true;
+    // 0 は「有効な run なし」を意味する識別子のため、 これで現在の run を無条件に
+    // 無効化する (次に走る run 側の isAborted() チェックにも自然に一致する)。
+    _tutorialActiveToken = 0;
     _tutorialTriggerAbort();
     var prevSpot = document.querySelectorAll('.mm-spotlight-active');
     prevSpot.forEach(function (el) { el.classList.remove('mm-spotlight-active'); });
@@ -838,24 +885,36 @@
     if (!steps || !steps.length) return Promise.resolve(false);
     if (!opts.force && tutorialIsSeen(modeId, ver)) return Promise.resolve(false);
 
-    _tutorialAbortFlag = false;
+    // [Warn 2 修正: per-run token] 新規 run 起動時にまず既存の pending 待機 (前 run の
+    // audio/gate/dwell 待ち) を即座に解消しておく。 その上でトークンを発行して current に
+    // 昇格させる — 前 run はこの後 next()/finish() を呼んでも isAborted() が true になり
+    // 自動的に stale 判定・self-abort する (同じフラグを取り合う再入バグの根本対策)。
+    _tutorialTriggerAbort();
+    var myToken = ++_tutorialRunToken;
+    _tutorialActiveToken = myToken;
     S._tutorialActive = true;
+
+    function isAborted() { return _tutorialActiveToken !== myToken; }
 
     var i = 0;
     function next() {
-      if (_tutorialAbortFlag || i >= steps.length) return finish();
+      if (isAborted() || i >= steps.length) return finish();
       var step = steps[i++];
       return _runTutorialStep(step, opts).then(function () {
-        if (_tutorialAbortFlag) return finish();
+        if (isAborted()) return finish();
         return next();
       });
     }
     function finish() {
+      var aborted = isAborted();
+      // 既に別の run (新しい token) に取って代わられている場合、 S._tutorialActive /
+      // markSeen の権限もその新 run 側にあるため、 ここでは一切触らない。
+      if (aborted) return false;
       S._tutorialActive = false;
       // abort (画面遷移等での中断) の場合は「見た」扱いにしない — 次回また最初から
       // ガイドできるようにするため、 正常完走時のみ markSeen する。
-      if (!_tutorialAbortFlag) tutorialMarkSeen(modeId, ver);
-      return !_tutorialAbortFlag;
+      tutorialMarkSeen(modeId, ver);
+      return true;
     }
     return next();
   }

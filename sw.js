@@ -777,7 +777,18 @@
 //   mode-tashizan.js: flyClone の stale-screen ガード追加。 index.html: タップターゲット拡大
 //   (.mm-topbar-back 等)。 assets/tts/manifest.json: monster_math namespace 60 entries 追加
 //   (音声本体は Phase 4 で生成、 manifest のみ先行)。
-const CACHE_VERSION = 2022;
+// v2023: monster-math M5 統合フェーズ (Phase 4 完了分の precache 反映)。 v2010 で予告した
+//   「画像アセット (立ち絵/シール/BG/UI 計19枚) は実装完了後に precache 追加」を実施し、
+//   CRITICAL_ASSETS_IMAGES に monster-math/assets/*.webp 19 本を追加 (PNG は fallback 用途の
+//   みリポジトリに残し precache 対象外、 容量節約)。 assets/tts/monster_math_*.wav 60 本は
+//   Phase 4 で音声本体を生成しリポジトリに追加したが、 sw.js は既存の bento/quizland 含む
+//   全ゲームの TTS wav を一切 precache していない (grep 済、 fetch handler 末尾の
+//   network-first + cache fallback で初回再生時にオポチュニスティックにキャッシュされる設計)
+//   ため、 monster-math だけ特別扱いせず precache list には追加しない (既存慣習の踏襲)。
+//   monster-math/index.html・engine.js・mode-*.js は v2010 の方針通り maze/oto/bento/puzzle
+//   と同じ network-first (CRITICAL_ASSETS_HTML/SCRIPTS 対象外) のまま変更なし。
+//   play.html PAGE_CACHE_VERSION と同期。
+const CACHE_VERSION = 2023;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -1101,6 +1112,27 @@ const CRITICAL_ASSETS_IMAGES = [
   '/assets/ui/play_bento_title_back.webp',
   '/assets/ui/play_puzzle_title_back.webp',
   '/assets/ui/play_starparodier_title_back.webp',
+  // v2023: monster-math M5 統合フェーズ — 立ち絵/シール/BG/UI 計19枚 (v2010 で予告した precache 追加)。
+  // PNG 版 (fallback 用) は精査済みで容量節約のため precache 対象外、 onerror fallback 経路でのみ使用。
+  '/monster-math/assets/bg_shokudo.webp',
+  '/monster-math/assets/monster_gaburu_happy.webp',
+  '/monster-math/assets/monster_gaburu_idle.webp',
+  '/monster-math/assets/monster_gaburu_mouth_open.webp',
+  '/monster-math/assets/monster_pakun_happy.webp',
+  '/monster-math/assets/monster_pakun_idle.webp',
+  '/monster-math/assets/monster_pakun_mouth_open.webp',
+  '/monster-math/assets/monster_pucchi_happy.webp',
+  '/monster-math/assets/monster_pucchi_idle.webp',
+  '/monster-math/assets/monster_pucchi_mouth_open.webp',
+  '/monster-math/assets/sticker_mm_feast_plate.webp',
+  '/monster-math/assets/sticker_mm_gaburu.webp',
+  '/monster-math/assets/sticker_mm_konpeito_bin.webp',
+  '/monster-math/assets/sticker_mm_pakun.webp',
+  '/monster-math/assets/sticker_mm_pucchi.webp',
+  '/monster-math/assets/sticker_mm_shokudo_sign.webp',
+  '/monster-math/assets/title_trio.webp',
+  '/monster-math/assets/ui_blackboard.webp',
+  '/monster-math/assets/ui_counter_frame.webp',
 ];
 const CRITICAL_ASSETS_THUMBS = [
   '/assets/ui/thumb_quizland_owl.webp',
