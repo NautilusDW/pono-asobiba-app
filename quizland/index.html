@@ -6348,6 +6348,7 @@ function renderChoices(q) {
 window.renderChoices = renderChoices;
 
 function loadQuestion(q) {
+  _stopChoiceNarration();
   currentQ = q;
   locked = false;
   _qzApplyLockVisual(); // audit batch:936 fix #4
@@ -6553,12 +6554,13 @@ function setupNarration(q, opts) {
       if (window._quizlandPaused ||
           (document.body && document.body.classList.contains('layout-editor-paused'))) { e.preventDefault(); e.stopPropagation(); return; }
       e.preventDefault();
+      _stopChoiceNarration();
       Narration.play(key);
     };
     // F2 (2026-05-12): Q1-5 では kurumi_dai{N}mon mp3 と被るので、 自動再生を
     // スキップし、 呼び出し側 (loadQuestion) が kurumi mp3 ended 後に playIfAuto
-    // を発火する。 Q6+ や opts 省略時は従来通り即時自動再生。
-    if (has && !_skipAutoPlay) Narration.playIfAuto(key);
+    // 相当の質問読み上げを発火する。 Q6+ や opts 省略時はここで即時自動再生。
+    if (has && !_skipAutoPlay && currentQ === q) _playQuestionNarrationThenAutoChoices(q);
     const prefetchKeys = [];
     for (let i = 1; i <= 2; i++) {
       const nq = playlist[questionIdx + i];
@@ -6580,18 +6582,18 @@ function setupNarration(q, opts) {
   });
 }
 
-// 4 択中央のスピーカー: a→b→c→d (= data-idx 0..3) の順に音声を再生しつつ
-// 各 chip を .reading-active で水色表示する。
-// - Narration.play は再生開始時に resolve するので、 完了は別途独自に Audio を
-//   起こして ended イベントで待つ (narration.js は外部に Audio を露出しないため)。
-//   manifest 自体は再 fetch せず、 軽量な独自マップ (_choiceUrlCache) に保存。
-// - 該当 key が manifest に無い chip はスキップ (light up もしない)。
+// 質問自動ナレーションと 4 択中央スピーカー用の音声制御。
+// - 質問: q wav の ended を待ってから a→b→c→d を自動再生する。
+// - 4 択: data-idx 0→1→2→3 の順に再生しつつ、各 chip を .reading-active で水色表示する。
+// - Narration.play は再生開始時に resolve するので、完了待ちは独自 Audio で行う。
+// - manifest URL は軽量な独自マップ (_ttsUrlCache) に保存する。
+// - 選択肢 key が manifest に無い chip は数字 wav / Web Speech にフォールバックする。
 // - 連打防止: 実行中は #answer-speaker に .reading を付け pointer-events を止める。
 let _playAllChoicesRunning = false;
 let _playAllChoicesAudio = null;          // 現在再生中の Audio (キャンセル用)
-const _choiceUrlCache = {};               // key → wav URL (depth-aware で 1 回だけ計算)
-function _resolveChoiceWavUrl(key) {
-  if (_choiceUrlCache[key]) return _choiceUrlCache[key];
+const _ttsUrlCache = {};                  // key → wav URL (depth-aware で 1 回だけ計算)
+function _resolveTtsWavUrl(key) {
+  if (_ttsUrlCache[key]) return _ttsUrlCache[key];
   // narration.js の SAFE_FILE_RE と同じ命名規約。 manifest.json を再 fetch して
   // entries[key].file を直接拾う (軽量 / cache 制御も narration.js と同様)。
   // 既に load() 済みの manifest を覗ければ早いが、 公開 API には無いので
@@ -6601,10 +6603,96 @@ function _resolveChoiceWavUrl(key) {
     .then(function(m){
       if (!m || !m.entries || !m.entries[key] || !m.entries[key].file) return null;
       const url = '../assets/tts/' + m.entries[key].file;
-      _choiceUrlCache[key] = url;
+      _ttsUrlCache[key] = url;
       return url;
     })
     .catch(function(){ return null; });
+}
+let _autoChoiceNarrationToken = 0;
+let _questionNarrationAudio = null;
+let _questionNarrationFinish = null;
+function _cancelAutoChoiceNarration() {
+  _autoChoiceNarrationToken++;
+}
+function _stopQuestionNarrationAudio() {
+  try {
+    if (_questionNarrationAudio) {
+      try { _questionNarrationAudio.pause(); _questionNarrationAudio.currentTime = 0; } catch(_) {}
+      _questionNarrationAudio = null;
+    }
+    if (_questionNarrationFinish) {
+      const finish = _questionNarrationFinish;
+      _questionNarrationFinish = null;
+      finish();
+    }
+  } catch(_) { /* silent */ }
+}
+function _isAutoChoiceNarrationCurrent(token, q) {
+  return token === _autoChoiceNarrationToken && currentQ === q && !locked;
+}
+function _waitForAnswerPanelReadyForChoices(token, q) {
+  return new Promise(function(resolve) {
+    const started = Date.now();
+    function tick() {
+      if (!_isAutoChoiceNarrationCurrent(token, q)) { resolve(false); return; }
+      const panel = document.getElementById('answer-panel');
+      if (panel && !panel.classList.contains('q-stage-pending')) { resolve(true); return; }
+      if (Date.now() - started > 7000) { resolve(false); return; }
+      setTimeout(tick, 80);
+    }
+    tick();
+  });
+}
+function _playQuestionWavUntilEnded(key, token, q) {
+  return new Promise(function(resolve) {
+    if (!key || !_isAutoChoiceNarrationCurrent(token, q)) { resolve(false); return; }
+    _resolveTtsWavUrl(key).then(function(url) {
+      if (!url || !_isAutoChoiceNarrationCurrent(token, q)) { resolve(false); return; }
+      _stopQuestionNarrationAudio();
+      const a = new Audio(url);
+      _questionNarrationAudio = a;
+      let done = false;
+      function finish() {
+        if (done) return;
+        done = true;
+        a.removeEventListener('ended', finish);
+        a.removeEventListener('error', finish);
+        if (_questionNarrationAudio === a) _questionNarrationAudio = null;
+        if (_questionNarrationFinish === finish) _questionNarrationFinish = null;
+        resolve(true);
+      }
+      _questionNarrationFinish = finish;
+      a.addEventListener('ended', finish);
+      a.addEventListener('error', finish);
+      try {
+        a.volume = (typeof Narration !== 'undefined' && Narration.getVolume) ? Narration.getVolume() : 0.9;
+        a.playbackRate = (typeof Narration !== 'undefined' && Narration.getRate) ? Narration.getRate() : 1.15;
+        a.currentTime = 0;
+      } catch(_) {}
+      a.play().catch(function(){ finish(); });
+      setTimeout(function(){ if (!done) { try { a.pause(); } catch(_){} finish(); } }, 12000);
+    }).catch(function() {
+      resolve(false);
+    });
+  });
+}
+async function _playQuestionNarrationThenAutoChoices(q) {
+  if (typeof Narration === 'undefined' || !q) return;
+  const key = narrationKey(q, 'q');
+  if (!key) return;
+  const token = ++_autoChoiceNarrationToken;
+  try {
+    await Narration.load();
+    if (!_isAutoChoiceNarrationCurrent(token, q)) return;
+    if (Narration.getMode && Narration.getMode() !== 'auto') return;
+    if (!Narration.hasEntry(key)) return;
+    const played = await _playQuestionWavUntilEnded(key, token, q);
+    if (!played || !_isAutoChoiceNarrationCurrent(token, q)) return;
+    const ready = await _waitForAnswerPanelReadyForChoices(token, q);
+    if (!ready || !_isAutoChoiceNarrationCurrent(token, q)) return;
+    if (Narration.getMode && Narration.getMode() !== 'auto') return;
+    await playAllChoices();
+  } catch (_) { /* silent */ }
 }
 // 2026-05-12 修正(T3): manifest に wav が無い chip 用の Web Speech フォールバック。
 // chip 内の text (= 「6」 「7」 「8」 「9」 等) を ja-JP TTS で読み上げる。
@@ -6627,6 +6715,7 @@ function _speakChipText(chip) {
     try {
       // narration.js 側の問題文音声を停止 (衝突回避)。
       if (typeof Narration !== 'undefined' && Narration.stop) Narration.stop();
+      _stopQuestionNarrationAudio();
       speechSynthesis.cancel();
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = 'ja-JP';
@@ -6645,6 +6734,7 @@ function _playWavOnce(url) {
     try {
       // narration.js 側の currentPlaying と衝突しないよう、 まず問題文音声を停止。
       if (typeof Narration !== 'undefined' && Narration.stop) Narration.stop();
+      _stopQuestionNarrationAudio();
     } catch(_) {}
     const a = new Audio(url);
     _playAllChoicesAudio = a;
@@ -6677,9 +6767,12 @@ async function _playCorrectChipAudio(q, correctBtn) {
 }
 
 // audit batch:936 fix #2: 順次読み上げ (playAllChoices) を即停止するヘルパー。
-// onChoice 冒頭から呼ぶことで、 ユーザーが回答を選んだ瞬間にナレーションを切る。
+// onChoice / loadQuestion / 問題スピーカーから呼ぶことで、ユーザー操作と
+// 自動の「質問→4択」読み上げが重ならないようにする。
 function _stopChoiceNarration() {
   try {
+    _cancelAutoChoiceNarration();
+    _stopQuestionNarrationAudio();
     if (_playAllChoicesAudio) {
       try { _playAllChoicesAudio.pause(); } catch(_) {}
       _playAllChoicesAudio = null;
@@ -6707,6 +6800,7 @@ async function playAllChoices() {
   if (_playAllChoicesRunning) return;
   if (typeof Narration === 'undefined') return;
   if (!currentQ) return;
+  const q = currentQ;
   const speaker = document.getElementById('answer-speaker');
   const panel = document.getElementById('answer-panel');
   if (!panel) return;
@@ -6725,8 +6819,9 @@ async function playAllChoices() {
       if (_di != null) _chipByIdx[_di] = _chipList[_ci];
     }
     for (let i = 0; i < suffixes.length; i++) {
+      if (currentQ !== q || locked) break;
       const chip = _chipByIdx[String(i)] || null;
-      const key = narrationKey(currentQ, suffixes[i]);
+      const key = narrationKey(q, suffixes[i]);
       // 2026-05-12 修正(T3): 以前は manifest 未登録 (hasEntry=false) 時に
       // `continue` で skip し chip を点灯すらしなかった。 結果として
       // number_sequence のように 4 択中 1 つ (正解のみ) しか wav が無いカテゴリ
@@ -6739,7 +6834,7 @@ async function playAllChoices() {
       try {
         let played = false;
         if (key && Narration.hasEntry(key)) {
-          const url = await _resolveChoiceWavUrl(key);
+          const url = await _resolveTtsWavUrl(key);
           if (url) { await _playWavOnce(url); played = true; }
         }
         // 2026-05-12 修正(W3): manifest 未登録でも chip text が 0-10 の数字なら
@@ -6762,6 +6857,7 @@ async function playAllChoices() {
       if (chip) {
         chip.classList.remove('reading-active');
       }
+      if (currentQ !== q || locked) break;
     }
   } finally {
     if (speaker) speaker.classList.remove('reading');
@@ -6793,6 +6889,8 @@ function _setupAnswerSpeaker(q) {
       if (window._quizlandPaused ||
           (document.body && document.body.classList.contains('layout-editor-paused'))) { e.preventDefault(); e.stopPropagation(); return; }
       e.preventDefault();
+      _cancelAutoChoiceNarration();
+      _stopQuestionNarrationAudio();
       playAllChoices();
     };
   });
@@ -6807,7 +6905,7 @@ function _playQuestionNarrationNow(q) {
   const key = narrationKey(q, 'q');
   if (!key) return;
   Narration.load().then(() => {
-    if (Narration.hasEntry(key)) Narration.playIfAuto(key);
+    if (Narration.hasEntry(key) && currentQ === q) _playQuestionNarrationThenAutoChoices(q);
   });
 }
 

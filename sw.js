@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2042: はかせのなぞなぞで問題自動ナレーション後に4択を順番に読み上げ、
+// 選択肢を既存スピーカーと同じ青い reading 表示にする。play.html PAGE_CACHE_VERSION と同期。
 // v2041: SW 更新トーストを撤去。 waiting SW は画面に出さず、自然なページ遷移 /
 // 設定の「よみなおし」だけで採用する。タイトルカードやゲーム入力を
 // 「あたらしい バージョンが あります」UI が奪う再発を防ぐ。
@@ -905,8 +907,9 @@
 // v2040: round-7 残存 fix — spawnCarried/stepCarried の pointA.y 二重 +4 オフセット
 //   (carry 開始直後に 4px pivot が跳ねる) を解消 + spawnCarried フォールバック分岐に
 //   console.warn 追加 (mojicrane は precache 対象外だが runtime 更新分のキャッシュ破棄のためバンプ)。
+// v2042: quizland の質問→4択自動ナレーションを追加。
 // v2041: common/sw-update.js の更新トースト撤去。更新待ちは passive に戻す。
-const CACHE_VERSION = 2041;
+const CACHE_VERSION = 2042;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
