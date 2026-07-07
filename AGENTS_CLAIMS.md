@@ -90,7 +90,6 @@
 - claude-code / develop-app / モンスターさんすう ブラッシュアップ設計 (Phase 1) / 2026-07-06
 - claude-code / develop-app / monster-math Phase 3-Impl Pre-Fix (6 nits) / 2026-07-07
 - 2026-07-07 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, AGENTS_CLAIMS.md - tut2 チュートリアル実装 phase1 (foundation + 全15ステップ + 2ラッパー、mock voice、PAUSED解除、storage v2)
-- 2026-07-07 - by Claude - [batch:1206-capacitor-m2-asset-archive] - assets/**, native/scripts/stage-www.mjs, .assetsignore, AGENTS_CLAIMS.md - Capacitor M2 資産整理 (assets/_archive/ 別送り + stage-www.mjs denylist + orphan 削除)。 tts/monster_math_*.wav (batch:1058 追加分) と CLAUDE/HANDOFF/MEMORY.md には一切 touch しない
 - claude-code / develop-app / monster-math Phase 3 Merge M2-M4 / 2026-07-07
 
 ## なぜ HANDOFF.md と別ファイルなのか
