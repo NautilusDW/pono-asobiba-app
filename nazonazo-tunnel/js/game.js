@@ -148,6 +148,14 @@ const ASSETS={
    "../assets/images/nazonazo-tunnel/sea_fish_08_20260706.webp"
   ]
  },
+ number:{
+  sky:"../assets/images/nazonazo-tunnel/number_room_sky_back_20260707.webp",
+  horizon:"../assets/images/nazonazo-tunnel/number_room_horizon_loop_20260707.webp",
+  mid:"../assets/images/nazonazo-tunnel/number_room_mid_loop_20260707.webp",
+  ground:"../assets/images/nazonazo-tunnel/number_room_ground_track_loop_20260707.webp",
+  fg:"../assets/images/nazonazo-tunnel/number_room_foreground_loop_20260707.webp",
+  decor:"../assets/images/nazonazo-tunnel/number_room_decor_20260707.webp"
+ },
  future:{
   sky:"../assets/images/nazonazo-tunnel/future_city_sky_back_20260707.webp",
   horizon:"../assets/images/nazonazo-tunnel/future_city_horizon_loop_20260707.webp",
@@ -191,9 +199,10 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gTreeRow(1400,H,P.mid1,P.trunk,10,170,51)+gBumps(1400,H,P.mid2,9,90,53));},
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,170,55)+gKelp(900,220,P.fgB,5,57));},
-  decor(P,r){return bgUrl(ASSETS.jungle.decor);}},
+ decor(P,r){return bgUrl(ASSETS.jungle.decor);}},
  {id:"number",icon:"🎲",veh:"train",bank:null,gens:[],
   names:["すうじのへや","ゆめの すうじのへや"],
+  assets:ASSETS.number,
   pals:[
    {sky:["#f3e9ff","#dfe9ff"],dig1:"#b39ce8",dig2:"#9a7fd8",blocks:["#d9c6f5","#f5c6e0","#c6e0f5"],blocks2:["#c0a8ee","#eea8cc","#a8ccee"],fgBlocks:["#8f76d0","#c06aa8","#6a8fc0"],flo1:"#e8ddfa",flo2:"#cfc0f0",mount:"#b79ae8"},
    {sky:["#ffd9ec","#d9c6ff"],dig1:"#c98ad0",dig2:"#b070c0",blocks:["#f5a8c6","#c6a8f5","#a8d0f5"],blocks2:["#eb90b8","#b890eb","#90b8eb"],fgBlocks:["#d06aa0","#8a6ad0","#6aa0d0"],flo1:"#f5e0f0",flo2:"#e0c8ea",mount:"#d08ab8"}],
@@ -203,7 +212,7 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gDigitsFloat(1400,H,P.dig2,12,81,64)+gBlocksRow(1400,H,P.blocks2,6,83,true));},
   ground(P){return svgURI(600,90,gChecker(600,90,P.flo1,P.flo2));},
   fg(P){return svgURI(900,220,gBlocksRow(900,220,P.fgBlocks,5,85,true));},
- decor(P,r){return svgURI(160,260,gBlocksRow(160,260,[P.fgBlocks[r%3],P.fgBlocks[(r+1)%3]],1,87+r,true));}},
+ decor(P,r){return bgUrl(ASSETS.number.decor);}},
  {id:"sea",icon:"🌊",veh:"sub",bank:SEA,gens:["legsS","sizeS"],
   names:["ふかいうみ","よるの ふかいうみ"],
   assets:ASSETS.sea,
@@ -293,7 +302,7 @@ function trainCarHeightVh(){
 }
 function trainBottomVh(){
  const st=STAGES[stg];
- return st&&(st.id==="town"||st.id==="jungle"||st.id==="future")?8.45:9.1;
+ return st&&(st.id==="town"||st.id==="jungle"||st.id==="number"||st.id==="future")?8.45:9.1;
 }
 const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
 const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;

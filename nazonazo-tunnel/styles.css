@@ -44,6 +44,7 @@ body.st-sea #seaFishLayer{display:block}
 .decor.town-decor,.decor.image-decor{background-size:contain;background-repeat:no-repeat;background-position:center bottom;filter:drop-shadow(0 3px 0 rgba(70,45,25,.12))}
 .decor.image-decor{bottom:12.2vh;z-index:4}
 .decor.jungle-decor{bottom:11.8vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
+.decor.number-decor{bottom:12vh;filter:drop-shadow(0 4px 0 rgba(92,70,135,.13))}
 .decor.future-decor{bottom:12vh;filter:drop-shadow(0 4px 0 rgba(45,72,80,.13))}
 #cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
@@ -89,8 +90,8 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
 body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
-body.st-town.v-train #cars,body.st-jungle.v-train #cars,body.st-future.v-train #cars{bottom:8.45vh}
-body.st-town.v-train #veh,body.st-jungle.v-train #veh,body.st-future.v-train #veh{bottom:8.45vh}
+body.st-town.v-train #cars,body.st-jungle.v-train #cars,body.st-number.v-train #cars,body.st-future.v-train #cars{bottom:8.45vh}
+body.st-town.v-train #veh,body.st-jungle.v-train #veh,body.st-number.v-train #veh,body.st-future.v-train #veh{bottom:8.45vh}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -340,6 +341,10 @@ body.st-jungle #horizon{background-size:auto 126%;background-position-y:-22vh}
 body.st-jungle #midT{background-size:auto 116%;background-position-y:-12vh}
 body.st-jungle #groundT{height:14.5vh;background-size:auto 100%}
 body.st-jungle #fgT{height:22vh;background-size:auto 100%}
+body.st-number #horizon{background-repeat:repeat-x;background-size:auto 114%;background-position-y:-14vh;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%)}
+body.st-number #midT{background-repeat:repeat-x;background-size:auto 110%;background-position-y:-8vh;opacity:.95;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%)}
+body.st-number #groundT{height:15vh;background-size:auto 100%;z-index:3}
+body.st-number #fgT{height:9vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 22%,#000 48%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 22%,#000 48%)}
 body.st-sea #horizon{background-repeat:repeat-x;background-size:auto 112%;background-position-y:-8vh}
 body.st-sea #midT{background-size:auto 110%;background-repeat:repeat-x;background-position-y:2vh;opacity:.82}
 body.st-sea #groundT{height:18vh;background-size:auto 100%;z-index:3}
