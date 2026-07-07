@@ -9,12 +9,12 @@
 
 ## 1. 概要 + 設計方針
 
-- **1 本のコア組み立てチュートリアル (14 ステップ)** を両モード共通で使い、おねがいモードは既存の開店カットシーン (音声収録済み) を「薄いラッパー」として前後に足すだけ。新規パネルは作らない。
-- **見本 → まねっこ ペダゴジー (2026-07-07 オーナー決定)**: 各 ACTION ステップは 2 段構造 — **Phase A (見本)**: ゲームが自動で指ポインタ + アイテムのゴースト配置アニメを見せる (ユーザー入力不要、~1.5〜2.5s で自動遷移)。**Phase B (まねっこ)**: 指 + ナレで「おなじように」「〜してね」等の短いブリッジで促し、既存の item-placed / item-moved / tab フックでユーザー実操作を待つ。**button-only ステップ (box/のりOK/カップへ/おかずOK/おきにいり) は Phase A なし — スポットライト or ターゲットリングのみ**。理由: 3-6歳は「見て・まねする」学習が最短。**のりは品目固定 (無料 5 点内で完結する見本)**、**おかずは自由 (自分のお弁当なので)** で差を付ける。
+- **1 本のコア組み立てチュートリアル (15 ステップ、うち のり配置は 4A/4B の 2 ラウンド)** を両モード共通で使い、おねがいモードは既存の開店カットシーン (音声収録済み) を「薄いラッパー」として前後に足すだけ。新規パネルは作らない。
+- **見本 → まねっこ ペダゴジー (2026-07-07 オーナー決定)**: 各 ACTION ステップは 2 段構造 — **Phase A (見本)**: ゲームが自動で指ポインタ + アイテムのゴースト配置アニメを見せる (ユーザー入力不要、~1.5〜2.5s で自動遷移)。**Phase B (まねっこ)**: 指 + ナレで「おなじように」「〜してね」等の短いブリッジで促し、既存の item-placed / item-moved / tab フックでユーザー実操作を待つ。**button-only ステップ (box/のりOK/カップへ/おかずOK/おきにいり) は Phase A なし — スポットライト or ターゲットリングのみ**。理由: 3-6歳は「見て・まねする」学習が最短。**のりは品目固定 (無料 5 点内で完結する見本)**、**おかずは自由 (自分のお弁当なので)** で差を付ける。**アクション量が多いステップは 見本→まねっこ を複数ラウンドに分割 (のり = 2 ラウンド: 4A=おめめ×2 / 4B=はな+くち)** — 一度に 4 品目を覚えさせるより 2 品目ずつ 2 回に分けたほうが 3 歳児の集中が続く (2026-07-07 オーナー決定)。
 - **進行は v3 ルール厳守**: button / tab / place / cup-editor-closed / stage-complete のフックだけが進行口。素の step 変化では進めない。音声終了 or Phase A タイマーで継ぐソフトチェーンは 3 系統のみ — (a) 完成後の complete → favorite ナレチェーン、(b) tabs-intro → okazu-ok (紹介ステップで操作を強制しないため)、(c) 各 ACTION ステップの **Phase A → Phase B** タイマー (見本アニメ終了で自動遷移、B はフックで待つ)。
 - **ゲーム既存の setSpeech と喧嘩しない**: ゲームが既に喋るステップでは吹き出しはゲーム既存文をそのまま使い、ナレーションは同じ指示を温かく補強する文にする (同時に別内容を喋らせない)。ゲームが無言のステップだけチュートリアル専用吹き出しを出す。
 - **声は女性ナレーター (読み聞かせ・三人称) のみ**。ポノや動物の一人称セリフは禁止。指示形 (「〜してみよう」「〜を おしてね」) と観察形 (「〜が よろこんでいるよ」) だけを使う。
-- **教える範囲**: 箱は固定 (これでOKのみ・button-only) / ごはんタップ (見本→まねっこ) / のり配置 (見本で **おめめ×2 → はな → くち** の 4 品目を順にゴースト配置 → まねっこで同じ順を強制) + 移動 (見本→まねっこ) + 新編集パネル (見本で ↻ 1 回 → まねっこは任意) / のりOK (button-only) / メインおかず 1 個 (**見本→まねっこ・おかずは自由**) / カップへ (button-only) / カップ (見本→まねっこ・自由) / 自動ピッカー → おかず 1 個 (見本→まねっこ・自由) / おかずOK (button-only) / 完成 + おきにいり (button-only)。**レイヤー上下 (旧 layer-edit 系) は教えない** (自由発見に任せる)。**はっぱ / しきり は専用ステップ (`tut2-tabs-intro`) で紹介する** (操作は強制しない)、**ピックは おかずOK 前に一言**だけ触れる。オーナー方針: 「必要不可欠ではないので長々と説明しないが、ある程度は入れる」。
+- **教える範囲**: 箱は固定 (これでOKのみ・button-only) / ごはんタップ (見本→まねっこ) / のり配置 = **2 ラウンド**: (4A) 見本で **おめめ×2** をゴースト配置 → まねっこで 2 個 / (4B) 見本で **はな → くち** をゴースト配置 → まねっこで 2 個 (各ラウンド内は順序強制) + 移動 (見本→まねっこ) + 新編集パネル (見本で ↻ 1 回 → まねっこは任意) / のりOK (button-only) / メインおかず 1 個 (**見本→まねっこ・おかずは自由**) / カップへ (button-only) / カップ (見本→まねっこ・自由) / 自動ピッカー → おかず 1 個 (見本→まねっこ・自由) / おかずOK (button-only) / 完成 + おきにいり (button-only)。**レイヤー上下 (旧 layer-edit 系) は教えない** (自由発見に任せる)。**はっぱ / しきり は専用ステップ (`tut2-tabs-intro`) で紹介する** (操作は強制しない)、**ピックは おかずOK 前に一言**だけ触れる。オーナー方針: 「必要不可欠ではないので長々と説明しないが、ある程度は入れる」。
 - **必要数はチュートリアル用オーバーライド維持**: main = 1、side (カップ内) = 1。SIMPLE_CUP_FOOD_LIMIT = 1。
 - **子供が別の事をしても壊さない**: 全ステップで「フック対象以外の操作は自由・チュートリアルは待つ」。ソフトロックになり得る箇所には個別ガードを明記 (各ステップ表参照)。
 
@@ -29,7 +29,7 @@
 
 ---
 
-## 2. ステップ表 (コア 14 ステップ)
+## 2. ステップ表 (コア 15 ステップ、うち 4=4A/4B の 2 ラウンド)
 
 ### 早見表
 
@@ -40,7 +40,8 @@
 | 1 | `tut2-greet` | あいさつ | intro | button 「はじめる →」(`#tut-greet-next`) | tut2_01_greet |
 | 2 | `tut2-box` | 箱かくにん (固定) + 「これでOK」 | btn-only | button `#free-box-confirm` | tut2_02_box |
 | 3 | `tut2-rice` | 「ごはんを よそう」タップ | A/B | item-placed (rice) | tut2_03_rice |
-| 4 | `tut2-nori-place` | のり 4 品目固定 (おめめ×2→はな→くち) | A/B (4 サブステップ) | item-placed (decor, 期待 id 一致) x4 | tut2_04_nori |
+| 4A | `tut2-nori-face-eyes` | のり 見本→まねっこ ラウンド1 (おめめ×2) | A/B (2 サブステップ) | item-placed (decor, `nori_eye_round` 一致) x2 → Step 4B | tut2_04a_eyes |
+| 4B | `tut2-nori-face-mouth-nose` | のり 見本→まねっこ ラウンド2 (はな→くち) | A/B (2 サブステップ) | item-placed (decor, `nori_nose_bear`→`nori_mouth_smile` 順) x2 → Step 5 | tut2_04b_mouth_nose |
 | 5 | `tut2-nori-move` | 置いたのりを指で動かす | A/B | item-moved (decor) ※編集パネル操作でも可 | tut2_05_norimove |
 | 6 | `tut2-nori-edit` | 編集パネル紹介 + 「のりOK」 | A のみ (B 任意) | button のりOK (guide-change → tier2Main) | tut2_06_noriedit |
 | 7 | `tut2-okazu-main` | メインおかず 1 個 (自由) | A/B (自由選択) | item-placed (food, カップ外) | tut2_07_okazu |
@@ -88,18 +89,31 @@
 - **進行フック**: item-placed (rice) — `tutorialOnItemPlaced` の rice ガード → `tut2-nori-place`。ゲーム側はごはん配置で decor へ自動遷移するので同期して進む。Phase A のゴースト配置は本フックを発火しない (`tutorialDemo:true` フラグで side-effect スキップ、§5)。
 - **フォールバック/ガード**: 他に押せる UI がないためロックなし。音声失敗しても Phase A→B タイマー + place で進行可能。
 
-### Step 4 — `tut2-nori-place` (のりで おかお・4 品目固定)
+### Step 4A — `tut2-nori-face-eyes` (のり ラウンド 1: おめめ×2)
 
-- **画面状態/前提**: freeGuideStep = decor。見出し「かざり」。**チュートリアルは無料パレット 5 点内で完結するよう 4 品目を固定シーケンスで教える** — 順序: **おめめ (`nori_eye_round`) → おめめ (`nori_eye_round`, もう 1 個) → はな (`nori_nose_bear`) → くち (`nori_mouth_smile`)**。参照実装: bento/index.html:7545-7547 (全て FREE_ASSET・全 tier 表示・book/sub でも同じ配置)。まゆ (`nori_brow_left/right`) は自由発見に残す (4 品目に含めない)。
-- **サブステップ**: `4a-eye1` / `4b-eye2` / `4c-nose` / `4d-mouth`。各サブステップに Phase A / Phase B を持つ。
-- **Phase A (見本, 全サブステップ)**: 現在の期待品目 (例: おめめ) 以外のパレットを CSS で dim/gray (tutorial 中の一時 class)、期待品目にトリム + 指タップアニメ → **ゲームがゴースト配置** (顔として自然な位置 — 例 4a=左目 x:-0.19,y:-0.24 / 4b=右目 x:+0.19,y:-0.24 / 4c=鼻 x:0,y:0.01 / 4d=口 x:0,y:0.225。既存 `nori_face_set_smile` のクラスタ座標 7522-7525 を流用)。約 1.5s で Phase B へ。
-- **Phase B (まねっこ, 各サブステップ)**: 期待品目のパレットにトリムのみ (指はループ)、ユーザーの実タップ待ち。**期待外の のり をタップした場合 → 未決事項 J-1 参照 (推奨は「やんわり無視・ハイライト品目を待つ」)**。実配置後、次のサブステップへ内部進行 (state = キュー 進行、v3 の item-placed フックで駆動)。
-- **ハイライト対象** (サブステップごとに切替): 期待の 1 品目のみトリム + 指 → 他はパレット上で薄く (opacity 0.4 目安)。
-- **ポノ吹き出し**: (ゲーム既存: 「ごはんを かざろう！」を初期表示に維持) + サブステップ毎のチュートリアル専用小バブル: 4a「まず おめめだよ」/ 4b「もう ひとつ おめめ」/ 4c「つぎは おはな」/ 4d「さいごは おくち」。
-- **ナレーション音声**: 1 本の連続ナレで全 4 サブステップを覆う (Phase A の指示ループに合わせて再生 — 秒数は Phase A×4 + Phase B 分)。 **「のりで おかおを つくろう！おめめを ふたつ、それから はなと くちを おいてみよう。」** (2 文、約 6 秒)。
-- **voice**: `tut2_04_nori`
-- **進行フック**: item-placed (decor, `item.id === 期待品目`) で内部サブステップを進める。4d 完了で `tut2-nori-move` へ遷移。**期待外 id の place は無視 (アイテムは配置されるが tutorial は進めない — 未決事項 J で挙動確定)**。既存の `countDecorOnTier(1) > 0` 単純ガードは廃止。
-- **フォールバック/ガード**: **ゼロのり直行ガード** — 「つぎへ」→ 確認モーダル「のりは かざらないで すすむ？」→ すすむ を選んだら、guide-change (→ tier2Main) ブリッジで Step 5・6 をスキップして `tut2-okazu-main` へジャンプ (モーダルの選択を尊重、引き戻さない、4 品目シーケンスも中断)。**ごはん削除ガード**: rice の削除をブロック (§5 実装メモ P1)。**dim パレットの解除**: サブステップ退出 (Step 4 → Step 5) 時に必ず CSS class を外す (leak 防止)。
+- **画面状態/前提**: freeGuideStep = decor。見出し「かざり」。**のり配置は 2 ラウンド構成、Step 4A は前半 — おめめを 2 個** (`nori_eye_round` x2)。参照実装: bento/index.html:7545 (全 tier で FREE_ASSET から表示)。まゆ (`nori_brow_left/right`) は自由発見に残す。
+- **サブステップ**: `4A-a-eye1` / `4A-b-eye2`。各サブステップに Phase A / Phase B を持つ。
+- **Phase A (見本, 各サブステップ)**: `nori_eye_round` 以外のパレット項目を CSS で dim (opacity 0.4)、期待品目にトリム + 指タップアニメ → **ゲームがゴースト配置** (4A-a=左目 x:-0.19,y:-0.24 / 4A-b=右目 x:+0.19,y:-0.24。既存 `nori_face_set_smile` のクラスタ座標 index.html:7522-7523 を流用)。約 1.5s で Phase B へ。
+- **Phase B (まねっこ, 各サブステップ)**: `nori_eye_round` のパレットにトリムのみ (指はループ)、ユーザーの実タップ待ち。期待外タップの挙動は §6 未決事項 5 参照 (推奨: やんわり無視)。
+- **ハイライト対象**: `nori_eye_round` の 1 品目のみトリム + 指 → 他はパレット上で dim。
+- **ポノ吹き出し**: (ゲーム既存: 「ごはんを かざろう！」を初期表示に維持) + サブステップ小バブル: 4A-a「まず おめめだよ」/ 4A-b「もう ひとつ おめめ」。
+- **ナレーション音声**: 「のりで おかおを つくろう！まずは、おめめを ふたつ おいてみよう。」 (2 文、約 5 秒。Phase A×2 + Phase B ×2 を覆う)
+- **voice**: `tut2_04a_eyes`
+- **進行フック**: item-placed (decor, `item.id === 'nori_eye_round'`) を 2 回 → **Step 4B (`tut2-nori-face-mouth-nose`)** へ遷移。期待外 id の place は無視 (§6 未決事項 5 で最終確定)。
+- **フォールバック/ガード**: **ゼロのり直行ガード** — 「つぎへ」→ モーダル「のりは かざらないで すすむ？」→ すすむ で Step 4B/5/6 をスキップして `tut2-okazu-main` へジャンプ (guide-change ブリッジ、シーケンス中断)。ごはん削除ガード: rice の削除ブロック (§5 P1)。**dim パレット解除**: Step 4B 進入前にも一度 dim を刷新 (期待品目が変わるため)。
+
+### Step 4B — `tut2-nori-face-mouth-nose` (のり ラウンド 2: はな + くち)
+
+- **画面状態/前提**: Step 4A 完了直後 (おめめ 2 個が配置済み)。freeGuideStep は tier2Main へ進む前の decor のまま維持 (のりOK 押下待ち)。**Step 4B は後半 — はな (`nori_nose_bear`) と くち (`nori_mouth_smile`) を 1 個ずつ順に**。参照実装: bento/index.html:7546-7547。
+- **サブステップ**: `4B-a-nose` / `4B-b-mouth`。順序は はな → くち で固定 (見本のアニメも同順)。
+- **Phase A (見本, 各サブステップ)**: 期待品目以外のパレット項目を CSS で dim (opacity 0.4)、期待品目にトリム + 指タップアニメ → **ゲームがゴースト配置** (4B-a=鼻 x:0,y:0.01 / 4B-b=口 x:0,y:0.225。既存 `nori_face_set_smile` クラスタ座標 index.html:7524-7525 を流用)。約 1.5s で Phase B へ。
+- **Phase B (まねっこ, 各サブステップ)**: 期待品目のパレットにトリムのみ (指はループ)、ユーザーの実タップ待ち。期待外タップの挙動は §6 未決事項 5 参照。
+- **ハイライト対象**: 期待の 1 品目のみトリム + 指 → 他はパレット上で dim。
+- **ポノ吹き出し**: サブステップ小バブル: 4B-a「つぎは おはな」/ 4B-b「さいごは おくち」。ゲーム既存吹き出しは Step 4A から流用 (再発火不要)。
+- **ナレーション音声**: 「つぎは、はなと くちも おいてみて。」 (1 文、約 3 秒。Phase A×2 + Phase B ×2 を覆う。**「〜おいてみて」を採用し 4A の「〜おいてみよう」と連続エコーを回避**)
+- **voice**: `tut2_04b_mouth_nose`
+- **進行フック**: item-placed (decor, `item.id === 期待品目`) で内部サブステップを進める。4B-b 完了 (くち配置) で `tut2-nori-move` へ遷移。既存の `countDecorOnTier(1) > 0` 単純ガードは廃止。
+- **フォールバック/ガード**: ゼロのり直行ガードは Step 4A と同じ経路 (「つぎへ」→ モーダル)。ごはん削除ガード: rice の削除ブロック (§5 P1)。**dim パレット解除**: Step 5 進入時に必ず CSS class を外す (leak 防止)。
 
 ### Step 5 — `tut2-nori-move` (のりを うごかす)
 
@@ -220,14 +234,15 @@
 パイプライン: **既存 Gemini "Aoede" 1.15x (`bento_basic_tutorial` プリセットに一致、admin/index.html:1817-1820、style: `[cheerfully but calmly]`) 継続** ([[policy_no_fal_ai_tts]] — fal-ai TTS 不使用)。**AGENTS.md §2.5.3 は "Leda" と記述しているが、admin プリセットが実生成の正 (source of truth)**: bento は Aoede、stickerbook (admin:1872) は Leda で別系統。既存流用の sk-intro / 開店カットシーンも本 Aoede プリセットで生成された音声。生成後は **faster-whisper 文字起こし → キーワード照合まで必須** ([[feedback_tts_whisper_verify_required]])。
 保存先: `assets/audio/bento/tutorial/`。「OK」は TTS 入力では「オッケー」表記で読みを固定。
 
-### 新規収録 (16 本)
+### 新規収録 (17 本)
 
 | # | voice file id | 読み上げテキスト (TTS 入力そのまま) | 想定秒数 |
 | --- | --- | --- | --- |
 | 1 | `tut2_01_greet` | ようこそ、ポノの おべんとうやさんへ！きょうは いっしょに、すてきな おべんとうを つくってみよう。 | 約 6 秒 |
 | 2 | `tut2_02_box` | きょうは この おべんとうばこを つかうよ。「これで オッケー」を タップしよう。 | 約 5 秒 |
 | 3 | `tut2_03_rice` | つぎは ごはん！「ごはんを よそう」を おすと、こんなふうに はいるよ。おなじように、タップしてね。 | 約 7 秒 |
-| 4 | `tut2_04_nori` | のりで おかおを つくろう！おめめを ふたつ、それから はなと くちを おいてみよう。 | 約 6 秒 |
+| 4A | `tut2_04a_eyes` | のりで おかおを つくろう！まずは、おめめを ふたつ おいてみよう。 | 約 5 秒 |
+| 4B | `tut2_04b_mouth_nose` | つぎは、はなと くちも おいてみて。 | 約 3 秒 |
 | 5 | `tut2_05_norimove` | のりは ゆびで うごかせるよ。すきな ばしょまで、すーっと うごかしてね。 | 約 5 秒 |
 | 6 | `tut2_06_noriedit` | のりを タップすると、まわしたり おおきく できるよ。できたら「のり オッケー」を おそう。 | 約 5 秒 |
 | 7 | `tut2_07_okazu` | つぎは メインの おかず！すきなのを ひとつ、タップして いれてみよう。 | 約 5 秒 |
@@ -241,8 +256,8 @@
 | 15 | `tut2_15_request` | アライグマくんの おねがいに あわせて、おべんとうを つくって あげようね。 | 約 5 秒 |
 | 16 | `tut2_16_deliver` | アライグマくん、とっても よろこんでいるよ！また つくって あげようね。 | 約 5 秒 |
 
-whisper 照合キーワード (全 16 本必須):
-01=「おべんとうやさん」, 02=「おべんとうばこ」「タップしよう」, 03=「ごはんを よそう」「おなじように」, 04=「おかお」「おめめ」「はな」「くち」, 05=「うごかして」「すきな ばしょ」, 06=「まわしたり」「おそう」, 07=「メイン」「すきなの」, 08=「カップへ」, 09=「すきな カップ」「えらんで」, 10=「なかに」「すきなの」「えらんで」, 11=「はっぱ」「しきり」, 12=「ピック」「オッケー」, 13=「できたね」, 14=「ほしマーク」, 15=「アライグマ」「おねがい」, 16=「アライグマ」「よろこんで」。
+whisper 照合キーワード (全 17 本必須):
+01=「おべんとうやさん」, 02=「おべんとうばこ」「タップしよう」, 03=「ごはんを よそう」「おなじように」, 04a=「おかお」「おめめ」「ふたつ」, 04b=「はな」「くち」「つぎは」, 05=「うごかして」「すきな ばしょ」, 06=「まわしたり」「おそう」, 07=「メイン」「すきなの」, 08=「カップへ」, 09=「すきな カップ」「えらんで」, 10=「なかに」「すきなの」「えらんで」, 11=「はっぱ」「しきり」, 12=「ピック」「オッケー」, 13=「できたね」, 14=「ほしマーク」, 15=「アライグマ」「おねがい」, 16=「アライグマ」「よろこんで」。
 
 ### 既存流用 (再録なし・変更禁止)
 
@@ -259,7 +274,7 @@ whisper 照合キーワード (全 16 本必須):
 
 ## 4. おねがいモード差分 (薄いラッパー)
 
-コア 14 ステップは両モード共通。おねがいモード初回のみ以下を追加。固定 NPC = `araiguma` (アライグマくん、`TUTORIAL_FIXED_REQUESTER_ID` 既存)。
+コア 15 ステップは両モード共通。おねがいモード初回のみ以下を追加。固定 NPC = `araiguma` (アライグマくん、`TUTORIAL_FIXED_REQUESTER_ID` 既存)。
 
 | id | タイミング | 内容 | voice | 進行フック |
 | --- | --- | --- | --- | --- |
@@ -267,7 +282,7 @@ whisper 照合キーワード (全 16 本必須):
 | `tut2-w2-request` | カットシーン直後、`tut2-greet` の**代わり**に表示 | greet カード同型 (はじめる/やめる/スキップ導線維持)。カード内テキスト「アライグマくんの おねがいだよ！」+ カード表示中に橋渡しナレ 1 本再生 | `tut2_15_request` | button 「はじめる →」(`#tut-greet-next`) → `tut2-box` (Step 1 と同じ button フック) |
 | `tut2-w3-deliver` | `tut2-okazu-ok` → stage-complete 後、既存お届けパネル「アライグマくん に おべんとうを わたしたよ」+ 採点結果の表示後 | 観察形ナレ 1 本 (キャラは喋らない)。その後 `tut2-favorite` へ合流 | `tut2_16_deliver` | 音声終了 → `tut2-favorite` (fallbackMs 6000) |
 
-- おねがいモードでは `tut2-greet` (tut2_01) と `tut2-complete` (tut2_13_complete) を W2 / W3 が**置き換える** (じぶんでつくるでは tut2_01 / tut2_13 を使用)。box〜okazu-ok の 11 ステップは完全共通。
+- おねがいモードでは `tut2-greet` (tut2_01) と `tut2-complete` (tut2_13_complete) を W2 / W3 が**置き換える** (じぶんでつくるでは tut2_01 / tut2_13 を使用)。box〜okazu-ok の 12 ステップ (box/rice/4A/4B/nori-move/nori-edit/okazu-main/cup-btn/cup-place/cup-food/tabs-intro/okazu-ok) は完全共通。
 - 新規パネル・新規 UI は作らない。既存カットシーン / お届け演出 / 採点をそのまま流し、ナレ 2 本だけ足す。
 - sk-intro はおねがいの回頭ガイドとして既存条件のまま表示 (本台本の管轄外)。
 
@@ -275,9 +290,9 @@ whisper 照合キーワード (全 16 本必須):
 
 ## 5. 実装メモ (簡潔)
 
-- **voice registry**: `BENTO_TUTORIAL_STEP_VOICE` (bento/index.html:9422) を新 step id → tut2_* に総入れ替え。`BENTO_TUTORIAL_VOICE_VERSION` を新文字列にバンプ。例: `'tut2-box': 'tut2_02_box', … 'tut2-tabs-intro': 'tut2_11_tabs', 'tut2-okazu-ok': 'tut2_12_okazuok', 'tut2-favorite': 'tut2_14_fav', 'tut2-w2-request': 'tut2_15_request', 'tut2-w3-deliver': 'tut2_16_deliver'`。
+- **voice registry**: `BENTO_TUTORIAL_STEP_VOICE` (bento/index.html:9422) を新 step id → tut2_* に総入れ替え。`BENTO_TUTORIAL_VOICE_VERSION` を新文字列にバンプ。例: `'tut2-box': 'tut2_02_box', 'tut2-nori-face-eyes': 'tut2_04a_eyes', 'tut2-nori-face-mouth-nose': 'tut2_04b_mouth_nose', … 'tut2-tabs-intro': 'tut2_11_tabs', 'tut2-okazu-ok': 'tut2_12_okazuok', 'tut2-favorite': 'tut2_14_fav', 'tut2-w2-request': 'tut2_15_request', 'tut2-w3-deliver': 'tut2_16_deliver'`。
 - **死ぬ旧 step id**: `greet(旧) / box / rice-place / tab-rice / decor / nori-ok / tab-okazu / okazu-red / okazu-overlap / layer-edit / layer-edit-try / move-requested-food / okazu-more / small-accessory / small-cup-food / small-next / complete-result / favorite-save`。レイヤー教習系レンダラ (20896 前後の layer-edit-try / tutorialOnLayerMoved / tutorialSnapItemToLayerDemoPoint / tutorialMoveRequestedFoodToLowerPoint) は削除対象。
-- **チュートリアル中の box 固定 (Step 2)**: `box_rect_split` を preselect し、他の箱の選択 (タップ切替) を無効化。理由: 無料 tier は元々 `box_rect_split` 1 箱のみ (common/tier.js:214-216 `FREE_BENTO_BOX_IDS`)。book/sub で開放される他 6 箱は全て tierCount:2 のため、選ぶと OK ボタンが「2だんめOK」表記になり音声「これで オッケー」と食い違う + tier3/2段フロー分岐がコア 14 ステップの 1 段前提を壊すので排除。suppress: `setFreeGuideStep('box')` の既存 setSpeech (「まずは おべんとうばこを えらぼう！」) は tutorial 中のみ固定文「きょうは これを つかうよ！」に差し替え。
+- **チュートリアル中の box 固定 (Step 2)**: `box_rect_split` を preselect し、他の箱の選択 (タップ切替) を無効化。理由: 無料 tier は元々 `box_rect_split` 1 箱のみ (common/tier.js:214-216 `FREE_BENTO_BOX_IDS`)。book/sub で開放される他 6 箱は全て tierCount:2 のため、選ぶと OK ボタンが「2だんめOK」表記になり音声「これで オッケー」と食い違う + tier3/2段フロー分岐がコア 15 ステップの 1 段前提を壊すので排除。suppress: `setFreeGuideStep('box')` の既存 setSpeech (「まずは おべんとうばこを えらぼう！」) は tutorial 中のみ固定文「きょうは これを つかうよ！」に差し替え。
 - **フック配線 (既存流用 + 差分)**:
   - `tutorialOnItemPlaced` (21311): rice/decor/cup/food ガードを新 step id に付け替え。small-cup-food 相当の in-cup 判定・トマト整列・パレットロック解除はそのまま流用。
   - `tutorialOnItemMoved` (21302): 対象を「decor (tut2-nori-move 中)」にも拡張。decor 編集パネルの ↺↻/ちいさく/おおきく 押下 (15517-15534) からも同フックを呼ぶ (move 相当扱い)。
@@ -293,15 +308,17 @@ whisper 照合キーワード (全 16 本必須):
     - **(b) tutorialDemo フラグ案**: `addFreeLayoutItem({ tutorialDemo: true })` で実配置 → タイマーで即 `removeFreeItemData` (Undo / gate 計算スキップ)。既存 place パスと同一のためコード追加は少ないが、item-placed フックが誤発火しやすい (要フラグガード)。
   - Phase A → Phase B の遷移は 各ステップ 1.5〜2.5s のタイマー (state guard 付き, setTimeout invariant [[feedback_flag_encounter_settimeout_invariant]] 準拠、step 退出時に必ず clear)。
   - Phase B 中は 指 + トリムのみ (ゴーストなし)、実 item-placed / item-moved フックで進行。
-- **Step 4 (のり 4 品目固定シーケンス) の実装ヒント**:
-  - `tutorialState.noriQueue = ['nori_eye_round', 'nori_eye_round', 'nori_nose_bear', 'nori_mouth_smile']`, `noriIdx = 0` を Step 4 進入時に seed。
-  - `tutorialOnItemPlaced` の decor 分岐で `item.id === noriQueue[noriIdx]` を照合 — 一致で `noriIdx++`、4 到達で `tut2-nori-move` へ。**不一致は無視** (未決事項 J で最終挙動確定)。
-  - 期待外品目のパレット dim: tutorial 中のみ `.free-palette-item` に `data-tut-expected-id` 属性を付け、CSS で `opacity: 0.4` を非期待品目に適用。Step 4 退出時に必ず属性除去 (leak 防止)。
-  - サブステップ内のクラスタ座標は 既存 `nori_face_set_smile` の cluster (index.html:7521-7525 の x/y) を流用 (Phase A ゴースト配置座標)。
+- **Step 4A / 4B (のり 2 ラウンド固定シーケンス) の実装ヒント**:
+  - **各ラウンドで独立キュー**:
+    - Step 4A: `tutorialState.noriQueue = ['nori_eye_round', 'nori_eye_round']`, `noriIdx = 0` を Step 4A 進入時に seed。2 到達で Step 4B へ遷移し、キューを差し替え。
+    - Step 4B: `tutorialState.noriQueue = ['nori_nose_bear', 'nori_mouth_smile']`, `noriIdx = 0` を Step 4B 進入時に seed。2 到達で `tut2-nori-move` へ遷移。
+  - `tutorialOnItemPlaced` の decor 分岐で `item.id === noriQueue[noriIdx]` を照合 — 一致で `noriIdx++`。**不一致は無視** (§6 未決事項 5 で最終挙動確定)。既存の `countDecorOnTier(1) > 0` 単純ガードは廃止。
+  - 期待外品目のパレット dim: tutorial 中のみ `.free-palette-item` に `data-tut-expected-id` 属性を付け、CSS で `opacity: 0.4` を非期待品目に適用。**ラウンド遷移時 (Step 4A → 4B) に attr を刷新**、Step 5 進入時に必ず属性除去 (leak 防止)。
+  - サブステップ内のクラスタ座標は 既存 `nori_face_set_smile` の cluster (index.html:7521-7525 の x/y) を流用: 4A-a=7522 (左目)、4A-b=7523 (右目)、4B-a=7524 (鼻)、4B-b=7525 (口)。
 - **必須 desync ガード (実装しないと v3 ルール上ソフトロック)**:
   - **C3 リスタートボタン**: `#bento-restart-btn` (5967) はビルド全編で表示 (hide リスト 21452 に tutorial 条件なし)。押すと restartSimpleBentoRound → loadFreeLayoutStage (17770) が freeGuideStep を box に戻すが tutorialState.step は残る → 完全 desync。対策 (a) **推奨**: tutorialState.active 中は 21452 の hide 条件に追加して非表示 (配線 1 行 + 途中リセットで作品を失う事故も同時に防げる) / 代替 (b): restart 経路にフックを足し、チュートリアル中の restart で tutorialState を `tut2-box` に再同期。
   - **P1 ごはん削除**: canRemoveFreeItemNow (14183-14186) が rice の「けす」を許可しており、decor 中に消すと のりOK 押下で rice step へ差し戻される (16725-16727) → 同型 desync。対策: **チュートリアル中は rice 削除をブロック (推奨)** / 代替: rice 差し戻し検知で `tut2-rice` に再同期。Step 4〜6 のフォールバック欄参照。
-- **BENTO_TUTORIAL_PAUSED (6167) 解除条件**: (1) tut2_* 16 本生成 + faster-whisper キーワード照合 PASS、(2) step machine の新 id 配線 + 旧レンダラ削除 + 見本→まねっこ 2 段構造 + Step 4 のり 4 品目シーケンス配線、(3) 実ブラウザ (非モック Audio) で全 14 ステップ + Phase A/B の順 + 両モード回帰 ([[feedback_puzzle_tutorial_real_browser_trap]] — computed opacity 時系列 + 負コントロール)、(4) sk-intro 併存確認 (8579 の PAUSED 分岐は解除時に「おねがい回頭のみ」へ戻る — 挙動変化に注意)、(5) `sw.js` CACHE_VERSION バンプ。
+- **BENTO_TUTORIAL_PAUSED (6167) 解除条件**: (1) tut2_* 17 本生成 + faster-whisper キーワード照合 PASS、(2) step machine の新 id 配線 + 旧レンダラ削除 + 見本→まねっこ 2 段構造 + Step 4A/4B のり 2 ラウンド (各 2 品目) シーケンス配線、(3) 実ブラウザ (非モック Audio) で全 15 ステップ (4A/4B 含む) + Phase A/B の順 + 両モード回帰 ([[feedback_puzzle_tutorial_real_browser_trap]] — computed opacity 時系列 + 負コントロール)、(4) sk-intro 併存確認 (8579 の PAUSED 分岐は解除時に「おねがい回頭のみ」へ戻る — 挙動変化に注意)、(5) `sw.js` CACHE_VERSION バンプ。
 - **storage key**: 旧 `bento_tutorial_done_v1` のままだと既存プレイヤーに新チュートリアルが出ない。`bento_tutorial_done_v2` へ更新推奨 (全員に新台本を 1 回見せる)。歯車の再表示ボタン (21401) の removeItem 対象も同時更新。
 
 ---
@@ -312,7 +329,7 @@ whisper 照合キーワード (全 16 本必須):
 2. **storage key リセット**: `done_v1` → `done_v2` に変えて既存プレイヤーにも新チュートリアルを 1 回見せてよいですか？ (推奨: はい)
 3. **Step 5 (のり移動) の必須度**: 現案は「実際に 1 回動かす (または編集パネルを触る) まで待つ」。3 歳児が詰まる懸念があれば「のりOK 押下でいつでもスキップ可」のガードは既に入れてありますが、そもそも移動を任意にして音声案内だけにする案もあります。どちらにしますか？
 4. **W2 橋渡しナレ (tut2_15)**: 開店カットシーン (収録済み音声あり) の直後にもう 1 本ナレを足す案です。くどければ W2 を削って カットシーン → tut2-box 直行にできます (削れば 新録は 15 本)。
-5. **Step 4B の 強制品目シーケンスで、途中で子供が違うのりをタップした場合の挙動**: (i) **やんわり無視・ハイライトの品目を待つ** (推奨。順序も選択肢も厳格) / (ii) **それも受け入れて次の品目へ** (順序は守るが選択肢は緩め、期待外の place も進行にカウント) / (iii) **完全に自由** (期待外 place で `noriIdx` 進行、`countDecorOnTier(1) >= 4` になったら Step 5 へ)。推奨は (i) — 見本と一致させるほうが「まねっこ」が成立しやすい。
+5. **Step 4A / 4B の 強制品目シーケンスで、途中で子供が違うのりをタップした場合の挙動 (両ラウンド共通ポリシー)**: (i) **やんわり無視・ハイライトの品目を待つ** (推奨。順序も選択肢も厳格) / (ii) **それも受け入れて次の品目へ** (順序は守るが選択肢は緩め、期待外の place も進行にカウント) / (iii) **完全に自由** (期待外 place でも `noriIdx` を進める。ラウンド終了条件は「そのラウンドの目標数 (2) が置かれたら」ではなく「期待品目が全部置かれたら」とするか、`countDecorOnTier(1) >= 4` の総数ガードへ後退)。推奨は (i) — 見本と一致させるほうが「まねっこ」が成立しやすく、4A→4B のリズムも保たれる。
 
 ---
 *作成: 2026-07-03 / 対象コード: bento/index.html (BENTO_TUTORIAL_PAUSED=true 時点, branch develop-app)*
