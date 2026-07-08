@@ -38,7 +38,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1248; // v1248: Sync Web staging game contents from develop-app.
+const CACHE_VERSION = 1249; // v1249: Block locked Puzzle practice stages.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
