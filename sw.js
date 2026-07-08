@@ -915,7 +915,8 @@
 //   「プロフィール」と2桁どんぐり数の余白を拡大。
 // v2046: play.html のMVPタイトルメニューから「いま あそべる」ゾーン見出しを削除し、
 //   プロフィール＆どんぐり土台のHTML overlay位置を再調整。
-const CACHE_VERSION = 2046;
+// v2047: play.html のタイトル下部に、リンクなしの「いま つくってるよ」予告帯を追加。
+const CACHE_VERSION = 2047;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

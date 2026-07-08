@@ -453,6 +453,79 @@
         drop-shadow(0 0 7px rgba(255, 124, 46, 0.86))
         drop-shadow(0 0 16px rgba(255, 196, 76, 0.62));
     }
+    .title-coming-soon {
+      position: absolute;
+      left: 32px;
+      right: 32px;
+      bottom: 110px;
+      z-index: 11;
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 4px 12px;
+      border: 2px dashed rgba(133, 87, 34, .36);
+      border-radius: 999px;
+      background: rgba(255, 247, 219, .78);
+      box-shadow:
+        0 7px 14px rgba(75, 41, 14, .16),
+        inset 0 1px 0 rgba(255, 255, 255, .72);
+      color: #573211;
+      font-weight: 900;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .title-coming-soon__tag {
+      flex: 0 0 auto;
+      padding: 3px 8px 4px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ffcf69, #f28a34);
+      color: #fff8dd;
+      font-size: 12px;
+      text-shadow: 0 1px 1px rgba(94, 52, 12, .48);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .42);
+      white-space: nowrap;
+    }
+    .title-coming-soon__list {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-width: 0;
+      font-size: 16px;
+      letter-spacing: 0;
+      text-shadow: 0 1px 0 rgba(255, 252, 232, .9);
+      white-space: nowrap;
+    }
+    .title-coming-soon__item {
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .title-coming-soon__dot {
+      opacity: .58;
+      font-size: .8em;
+    }
+    @media (orientation: landscape) and (min-aspect-ratio: 2/1) {
+      .title-coming-soon {
+        min-height: 28px;
+        padding: 3px 12px;
+      }
+      .title-coming-soon__tag { display: none; }
+      .title-coming-soon__list {
+        font-size: 22px;
+        gap: 9px;
+      }
+      .title-coming-soon__list::before {
+        content: "つくってるよ";
+        display: inline-block;
+        margin-right: 2px;
+        color: #d06a26;
+        font-size: .78em;
+      }
+    }
 
     @keyframes hintBobUp {
       0%, 100% { transform: translate(-50%, 0); }
@@ -8159,7 +8232,7 @@
     }
     /* v1672: acorn 退去で上方 36px 回収 (86→50)。 bottom は nav 干渉回避で据置 */
     .cards-col {
-      padding-top: 50px;
+      padding-top: 28px;
       padding-bottom: 120px;
     }
     .card-list {
@@ -8755,7 +8828,17 @@
       .daily-quest-info-banner__title { font-size: 14px; }
       .daily-quest-info-banner__body { font-size: 22px; }
       .daily-gacha-entry { height: 106px; }
-      .cards-col { padding-top: 46px; }
+      .cards-col { padding-top: 24px; }
+      .title-coming-soon {
+        left: 24px;
+        right: 28px;
+        bottom: 92px;
+        min-height: 23px;
+        padding: 4px 10px;
+        gap: 10px;
+      }
+      .title-coming-soon__tag { font-size: 11px; padding: 3px 7px 4px; }
+      .title-coming-soon__list { font-size: 15px; gap: 8px; }
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 29px; }
       .game-card__desc { font-size: 18px; }
@@ -8850,6 +8933,17 @@
         justify-content: center;                                     /* NEW v1681 */
         gap: 6px;                                                    /* NEW v1681 (arrows と card-list 間) */
       }
+      .title-coming-soon {
+        left: 8px;
+        right: 12px;
+        bottom: 46px;
+        min-height: 34px;
+        padding: 4px 9px;
+        gap: 8px;
+        border-width: 1.5px;
+      }
+      .title-coming-soon__tag { font-size: 11px; padding: 4px 7px 5px; }
+      .title-coming-soon__list { font-size: 14px; gap: 7px; }
       .card-list {
         gap: 10px;                                                   /* v1680: 8→10 */
         padding-left: 10px;
@@ -8923,6 +9017,14 @@
       .bn-item__sub { display: none; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
+      .title-coming-soon__tag { display: none; }
+      .title-coming-soon__list::before {
+        content: "つくってるよ";
+        display: inline-block;
+        margin-right: 2px;
+        color: #d06a26;
+        font-size: .86em;
+      }
       .bottom-nav {
         --nav-sprite-w: 282px !important;
         --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
@@ -9048,6 +9150,14 @@
             <path d="M6 6 L32 22 L58 6"></path>
             <path d="M14 2 L32 14 L50 2"></path>
           </svg>
+        </div>
+        <div class="title-coming-soon" aria-label="いま つくっている あそび: もじっこファーム、クッキング">
+          <span class="title-coming-soon__tag">いま つくってるよ</span>
+          <span class="title-coming-soon__list">
+            <span class="title-coming-soon__item">もじっこファーム</span>
+            <span class="title-coming-soon__dot" aria-hidden="true">•</span>
+            <span class="title-coming-soon__item">クッキング</span>
+          </span>
         </div>
       </section>
     </main>
@@ -10241,7 +10351,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2046; // sw.js CACHE_VERSION と同期 (remove title zone header + wallet overlay fit)
+    const PAGE_CACHE_VERSION = 2047; // sw.js CACHE_VERSION と同期 (title coming-soon note)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10250,7 +10360,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2046';
+    window.PONO_SW_VERSION = 'v2047';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
