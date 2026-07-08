@@ -11,8 +11,14 @@
 (function () {
   'use strict';
 
-  // BASE_STAGES (main.js) と同期したステージ名テーブル。
-  // 変更時は main.js 側と二重メンテすること。
+  // ============================================================
+  // ⚠️ MANUAL SYNC REQUIRED — KEEP IN SYNC WITH main.js:BASE_STAGES
+  //   Source of truth: puzzle/main.js BASE_STAGES (around lines 171-275)
+  //   When adding / removing / renaming any stage in BASE_STAGES,
+  //   update this table at the same time. main.js cannot be imported
+  //   here (it triggers puzzle init on load), so titles are duplicated.
+  //   batch:938 fix #6 — explicit sync notice (no refactor)
+  // ============================================================
   var STAGE_TITLES = {
     1:  'あかい りんご',
     2:  'そらの ふうせん',
@@ -69,8 +75,26 @@
     head.innerHTML = '';
     var corner = createEl('th', { cls: 'album-grid__corner', text: 'パートナー / ステージ' });
     head.appendChild(corner);
+    var hasDifficulty = !!(window.PonoDifficulty && typeof window.PonoDifficulty.forStage === 'function');
     for (var s = 1; s <= STAGE_COUNT; s++) {
-      var th = createEl('th', { cls: 'album-grid__col-head', text: String(s) });
+      var th = createEl('th', { cls: 'album-grid__col-head' });
+      var numSpan = createEl('span', { cls: 'album-grid__col-head-num', text: String(s) });
+      th.appendChild(numSpan);
+      if (hasDifficulty) {
+        var diff = window.PonoDifficulty.forStage('puzzle', s);
+        if (diff) {
+          var badge = createEl('span', {
+            cls: 'album-diff album-diff--' + diff.key,
+            text: diff.stars,
+            attrs: {
+              'aria-label': 'むずかしさ: ' + diff.label,
+              'title': diff.label,
+              'role': 'img',
+            },
+          });
+          th.appendChild(badge);
+        }
+      }
       head.appendChild(th);
     }
 
@@ -153,7 +177,21 @@
       : '「' + opts.stageTitle + '」は まだ';
     $('album-popup-stage').textContent = status;
     $('album-popup-status').textContent = opts.cleared ? '✨ クリア済み' : '— 未クリア';
-    $('album-popup-status-sub').textContent = '';
+    // 難易度ラベル (popup の下部に小バッジで表示)
+    var sub = $('album-popup-status-sub');
+    sub.textContent = '';
+    if (opts.difficulty) {
+      var d = opts.difficulty;
+      var badge = createEl('span', {
+        cls: 'album-diff album-diff--' + d.key + ' album-diff--popup',
+        text: d.stars + ' ' + d.label,
+        attrs: {
+          'aria-label': 'むずかしさ: ' + d.label,
+          'role': 'img',
+        },
+      });
+      sub.appendChild(badge);
+    }
     var popup = $('album-popup');
     popup.classList.remove('hidden');
     // focus the close button for keyboard a11y
@@ -194,10 +232,14 @@
 
     var cleared = t.getAttribute('data-cleared') === '1';
     var stageTitle = STAGE_TITLES[stageId] || ('ステージ ' + stageId);
+    var difficulty = (window.PonoDifficulty && typeof window.PonoDifficulty.forStage === 'function')
+      ? window.PonoDifficulty.forStage('puzzle', stageId)
+      : null;
     showPopup({
       partnerName: partner.name,
       stageTitle: stageTitle,
       cleared: cleared,
+      difficulty: difficulty,
     });
   }
 

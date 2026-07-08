@@ -5,21 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>ポノのなかよしパズル | ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <!-- FOUC guard: .page-wrapper 全体を init 完了まで非表示にしてパズル画面のチラ見えを防ぐ -->
+  <style>html,body{background:#FFF8F0}.page-wrapper{visibility:hidden}body.pono-game-ready .page-wrapper{visibility:visible}</style>
+  <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="partner-select.css">
+  <!-- batch:938 perf — preload opening cutscene cuts so first frame appears without a network stall -->
+  <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut01.webp" type="image/webp">
+  <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut02.webp" type="image/webp">
+  <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut03.webp" type="image/webp">
+  <link rel="stylesheet" href="style.css?v=1326">
+  <link rel="stylesheet" href="partner-select.css?v=1326">
   <script src="../common/mvp-flags.js"></script>
   <script src="../common/achievements.js"></script>
   <script src="../common/acorns.js"></script>
   <script src="../common/menu.js"></script>
   <script src="../common/treasure.js"></script>
   <script src="../common/first-clear.js"></script>
+  <script src="../common/preload-helper.js"></script>
+  <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('puzzle');});</script>
   <script src="../js/game-stickers.js"></script>
+  <script src="../common/debug-mode.js"></script>
   <script src="../common/tier.js"></script>
+  <script src="../common/difficulty.js"></script>
+  <script src="../common/capture.js" defer></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+  <link rel="stylesheet" href="../common/acorn-modal-shared.css">
+  <script src="../common/acorn-audio.js" defer></script>
+  <script src="../common/acorn-copy-loader.js" defer></script>
+  <script src="../common/acorn-modal.js" defer></script>
 </head>
-<body>
+<body data-game-id="puzzle">
   <div id="landscape-notice">
     <div class="rotate-icon">📱</div>
     <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
@@ -107,7 +123,7 @@
   <!-- Confetti container -->
   <div id="confetti-container" class="confetti-container"></div>
 
-  <script src="voice.js"></script>
+  <script src="voice.js?v=1326"></script>
   <!-- なかよし MVP (Phase 1): partner / bond / assists / UI モジュール -->
   <!-- 順序: hooks-init(レジストリ) → データ(partners → bond) → assist 群 → UI(partner-select → bond-ui) → main.js -->
   <script src="assists/_hooks-init.js"></script>
@@ -120,7 +136,7 @@
   <script src="assists/fukurou.js"></script>
   <script src="partner-select.js"></script>
   <script src="bond-ui.js"></script>
-  <script src="main.js"></script>
+  <script src="main.js?v=1326"></script>
   <script>
     function updateLandscapeNotice() {
       const notice = document.getElementById('landscape-notice');
@@ -135,6 +151,59 @@
       setTimeout(updateLandscapeNotice, 500);
     });
     window.addEventListener('resize', updateLandscapeNotice);
+  </script>
+  <script>
+  (function() {
+    function regCapture() {
+      if (!window.PonoCapture) return;
+      window.PonoCapture.register({
+        gameId: "puzzle",
+        build: async function(opts) {
+          // v1353: .page-wrapper だけだと body 直下の overlay 群
+          // (#title-screen / #title-guide-choice / #puzzle-opening /
+          //  #tut-dim / #tut-bubble、 main.js が body.appendChild する
+          //  coach / overlay / prompt 各種) が含まれず、 タイトル / オープニング /
+          //  チュートリアル中のスクショが空白になる。 body 全体を撮影し、
+          //  不要要素は ignoreElements ([data-capture-hide]) で除外する。
+          var container = document.body;
+          if (!container) return null;
+          try {
+            var mod = await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm");
+            var html2canvas = (mod && (mod.default || mod)) || window.html2canvas;
+            if (typeof html2canvas !== "function") {
+              console.warn("[PonoCapture/puzzle] html2canvas not callable after import");
+              return null;
+            }
+            var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === "function")
+              ? window.PonoCapture.html2canvasOptions()
+              : {
+                  backgroundColor: null,
+                  scale: 2,
+                  useCORS: true,
+                  allowTaint: false,
+                  logging: false,
+                  imageTimeout: 30000,
+                  removeContainer: true,
+                  ignoreElements: function(el) {
+                    try {
+                      if (!el) return false;
+                      if (el.hasAttribute && el.hasAttribute("data-capture-hide")) return true;
+                      if (el.classList && el.classList.contains && el.classList.contains("pono-capture-overlay")) return true;
+                    } catch (e) {}
+                    return false;
+                  }
+                };
+            return await html2canvas(container, h2cOpts);
+          } catch (e) {
+            console.warn("[PonoCapture/puzzle] html2canvas import failed", e);
+            return null;
+          }
+        }
+      });
+    }
+    if (window.PonoCapture) regCapture();
+    else window.addEventListener("DOMContentLoaded", regCapture, { once: true });
+  })();
   </script>
 </body>
 </html>

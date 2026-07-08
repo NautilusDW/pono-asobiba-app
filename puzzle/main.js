@@ -430,7 +430,7 @@ const modalStageInfo  = document.getElementById('modal-stage-info');
 const modalChallengeInfo = document.getElementById('modal-challenge-info');
 const modalDailyAcorn = document.getElementById('modal-daily-acorn');
 const btnNextStage    = document.getElementById('btn-next-stage');
-const btnPlayAgain    = document.getElementById('btn-play-again');
+// batch:938 fix #5 — btn-play-again element does not exist in puzzle/index.html, removed dead reference
 const confettiContainer = document.getElementById('confetti-container');
 const titleScreen     = document.getElementById('title-screen');
 const titleGuideChoice = document.getElementById('title-guide-choice');
@@ -759,9 +759,23 @@ function withAudio(fn) {
   if (ctx.state === 'running') { fn(ctx); return; }
   ctx.resume().then(() => fn(ctx)).catch(() => {});
 }
-// iOSは最初のタッチでAudioContextをunlockする必要がある
-document.addEventListener('touchstart', () => getSfxCtx().resume(), { once: true, passive: true });
-document.addEventListener('pointerdown', () => getSfxCtx().resume(), { once: true });
+// PuzzleVoice.unlock() — prime the narration HTMLAudio pool + Web Audio inside a
+// real user gesture so later gesture-less play() calls (auto-chained 見る/ヒント
+// narration) are not blocked by mobile autoplay (NotAllowedError). Guarded so it
+// is a no-op if voice.js is absent or older.
+function unlockPuzzleVoice() {
+  try {
+    if (window.PuzzleVoice && typeof window.PuzzleVoice.unlock === 'function') {
+      window.PuzzleVoice.unlock();
+    }
+  } catch (_) { /* noop */ }
+}
+
+// iOSは最初のタッチでAudioContextをunlockする必要がある。
+// 同じ最初のジェスチャでナレーション用 HTMLAudio プールも prime しておく
+// (PuzzleVoice.unlock は heavy 部分が冪等なので何度呼んでも安全)。
+document.addEventListener('touchstart', () => { getSfxCtx().resume(); unlockPuzzleVoice(); }, { once: true, passive: true });
+document.addEventListener('pointerdown', () => { getSfxCtx().resume(); unlockPuzzleVoice(); }, { once: true });
 
 // ===== Audio: Snap Sound =====
 function playSnapSound() {
@@ -958,7 +972,26 @@ function showSuccessModal() {
   if (!window[__rewardKey]) {
     window[__rewardKey] = true;
     if (window.incrementStat) window.incrementStat('puzzle_clears', 1);
-    if (window.addAcornsDaily) window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear' });
+    var _puzzleGranted = 0;
+    if (window.addAcornsDaily) {
+      _puzzleGranted = window.addAcornsDaily('puzzle', 5, 5, { reason: 'puzzle_clear', suppressRewardModal: true }) || 0;
+    }
+    // Phase 2: PonoAcornModal を autoHide:0 (tap/ESC/× のみで dismiss) で表示
+    if (_puzzleGranted > 0 && window.PonoAcornModal) {
+      try {
+        var _puzzleDailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+        var _puzzleDailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+        var _puzzleIsCapped = (_puzzleDailyTotal != null) && (_puzzleDailyTotal >= _puzzleDailyCap);
+        new window.PonoAcornModal({
+          gameId: 'puzzle',
+          granted: _puzzleGranted,
+          dailyTotal: _puzzleDailyTotal,
+          dailyCap: _puzzleDailyCap,
+          state: _puzzleIsCapped ? 'capped' : 'idle',
+          autoHide: 0
+        }).show();
+      } catch (e) { try { console.warn('[puzzle] PonoAcornModal show failed', e); } catch (_) {} }
+    }
     processPuzzleStamps(successPartner, normalizedStageId);
 
     // スタンプラリー: プレイ記録 (1ステージ 1 回でよいので報酬付与時にまとめる)
@@ -1386,8 +1419,76 @@ function rebuildPath(piece) {
   piece.path = path;
 }
 
+function getBasicPracticeFocusPieceForDim() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return null;
+  var phase = partnerPracticeState.phase;
+  var isPieceMovePhase = phase === 'basic-intro'
+    || phase === 'basic-drag-demo'
+    || phase === 'basic-drag-try'
+    || phase === 'basic-drag-moving'
+    || phase === 'basic-hint-demo-select'
+    || phase === 'basic-hint-demo-button'
+    || phase === 'basic-hint-demo-place'
+    || phase === 'basic-hint-select-try'
+    || phase === 'basic-hint-press-try'
+    || phase === 'basic-hint-drag-try'
+    || phase === 'basic-hint-drag-moving';
+  return isPieceMovePhase ? partnerPracticeState.targetPiece : null;
+}
+
+function shouldDimBasicPracticePiece(piece) {
+  var focusPiece = getBasicPracticeFocusPieceForDim();
+  return !!(focusPiece && piece && piece !== focusPiece);
+}
+
+function drawBasicPracticeGhostPiece(ctx) {
+  if (!ctx || !partnerPracticeState || !partnerPracticeState.loopCueGhost) return;
+  var ghost = partnerPracticeState.loopCueGhost;
+  var piece = ghost.piece;
+  if (!piece || piece.snapped || !sourceImg) return;
+  var gx = ghost.x;
+  var gy = ghost.y;
+  var rotation = ghost.rotation || 0;
+  var alpha = ghost.alpha == null ? 0.36 : ghost.alpha;
+  var cx = gx + pieceW / 2;
+  var cy = gy + pieceH / 2;
+  var rad = rotation * Math.PI / 180;
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0.12, Math.min(0.58, alpha));
+  ctx.filter = 'saturate(0.72) brightness(1.08)';
+  if (rotation) {
+    ctx.translate(cx, cy);
+    ctx.rotate(rad);
+    ctx.translate(-cx, -cy);
+  }
+  ctx.beginPath();
+  buildPiecePath(ctx, gx, gy, pieceW, pieceH, piece.tabs);
+  ctx.clip();
+  ctx.drawImage(sourceImg, boardX + (gx - piece.homeX), boardY + (gy - piece.homeY), boardW, boardH);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.64;
+  if (rotation) {
+    ctx.translate(cx, cy);
+    ctx.rotate(rad);
+    ctx.translate(-cx, -cy);
+  }
+  ctx.beginPath();
+  buildPiecePath(ctx, gx, gy, pieceW, pieceH, piece.tabs);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.94)';
+  ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.035);
+  ctx.shadowColor = 'rgba(36, 145, 255, 0.76)';
+  ctx.shadowBlur = 14;
+  ctx.setLineDash([Math.max(8, pieceW * 0.08), Math.max(5, pieceW * 0.05)]);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ===== Draw a single piece =====
 function drawPiece(piece) {
+  const dimmedForBasicPractice = shouldDimBasicPracticePiece(piece);
   const rotated = !!piece.rotation;
   const cx = piece.x + pieceW / 2;
   const cy = piece.y + pieceH / 2;
@@ -1399,6 +1500,9 @@ function drawPiece(piece) {
     puzzleCtx.translate(cx, cy);
     puzzleCtx.rotate(rad);
     puzzleCtx.translate(-cx, -cy);
+  }
+  if (dimmedForBasicPractice) {
+    puzzleCtx.filter = 'grayscale(1) saturate(0.28) brightness(1.02) contrast(0.98)';
   }
   puzzleCtx.beginPath();
   buildPiecePath(puzzleCtx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
@@ -1417,8 +1521,10 @@ function drawPiece(piece) {
   }
   puzzleCtx.beginPath();
   buildPiecePath(puzzleCtx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
-  puzzleCtx.strokeStyle = piece === dragPiece ? '#F2915A' : '#5D4E37';
-  puzzleCtx.lineWidth = piece === dragPiece ? 2.5 : 1.8;
+  puzzleCtx.strokeStyle = dimmedForBasicPractice
+    ? 'rgba(86, 86, 86, 0.82)'
+    : (piece === dragPiece ? '#F2915A' : '#5D4E37');
+  puzzleCtx.lineWidth = dimmedForBasicPractice ? 1.7 : (piece === dragPiece ? 2.5 : 1.8);
   puzzleCtx.stroke();
   if (piece === dragPiece) {
     puzzleCtx.beginPath();
@@ -1470,54 +1576,151 @@ function redraw() {
       },
     }, false);
   }
+  drawBasicPracticeGhostPiece(puzzleCtx);
   drawPartnerPracticeCue(puzzleCtx);
 }
 
+// FIX A: alpha envelope helpers. Cues fade IN over ~260ms when first shown and
+// fade OUT over ~420ms after a release is requested. The middle steady state
+// still pulses via Math.sin in each cue branch.
+var BASIC_CUE_FADE_IN_MS = 260;
+var BASIC_CUE_FADE_OUT_MS = 420;
+
+function computeCueAlphaEnvelope(cue, now) {
+  if (!cue) return 0;
+  if (cue.startTime == null) cue.startTime = now;
+  if (cue.releaseTime != null) {
+    var since = now - cue.releaseTime;
+    if (since <= 0) return 1;
+    if (since >= BASIC_CUE_FADE_OUT_MS) return 0;
+    return Math.max(0, 1 - since / BASIC_CUE_FADE_OUT_MS);
+  }
+  var sinceStart = now - cue.startTime;
+  if (sinceStart >= BASIC_CUE_FADE_IN_MS) return 1;
+  if (sinceStart <= 0) return 0;
+  return Math.min(1, sinceStart / BASIC_CUE_FADE_IN_MS);
+}
+
+// Smoothly transition the current basic-practice cue. Passing null marks the
+// existing cue for fade-out (the draw loop will null it once envelope hits 0).
+// Passing a new cue stamps startTime so it fades in cleanly. To support true
+// cross-fades (e.g. orange tap-piece -> blue kojika-move-target), the previous
+// in-flight cue is moved into `cueOutgoing` and released; the draw loop renders
+// both until the outgoing one fully fades out.
+function setBasicCueWithRelease(newCue) {
+  if (!partnerPracticeState) return;
+  var now = performance.now();
+  if (newCue == null) {
+    var current = partnerPracticeState.cue;
+    if (!current) {
+      // also tail off any outgoing cue if present
+      var pendingOut = partnerPracticeState.cueOutgoing;
+      if (pendingOut && pendingOut.releaseTime == null) {
+        pendingOut.releaseTime = now;
+        ensurePartnerPracticeCueLoop();
+      }
+      return;
+    }
+    if (current.releaseTime == null) current.releaseTime = now;
+    ensurePartnerPracticeCueLoop();
+    return;
+  }
+  // Cross-fade: demote the existing cue (if any) into the outgoing slot and
+  // mark it for release. Replace any stale outgoing slot.
+  var previous = partnerPracticeState.cue;
+  if (previous) {
+    if (previous.releaseTime == null) previous.releaseTime = now;
+    partnerPracticeState.cueOutgoing = previous;
+  }
+  newCue.startTime = now;
+  newCue.releaseTime = null;
+  partnerPracticeState.cue = newCue;
+  ensurePartnerPracticeCueLoop();
+}
+
 function drawPartnerPracticeCue(ctx) {
-  if (!ctx || !partnerPracticeState || !partnerPracticeState.cue) return;
+  if (!ctx || !partnerPracticeState) return;
+  // FIX A2: draw the outgoing cue first (fading out) under the incoming one for
+  // a true cross-fade between basic-practice cue swaps. Temporarily swap
+  // state.cue so the same draw branches run, then restore. The outgoing cue
+  // always has releaseTime set, so the inner pass may null state.cue via the
+  // envelope<=0 path — we ignore that side-effect and restore explicitly.
+  var outgoing = partnerPracticeState.cueOutgoing;
+  if (outgoing) {
+    if (computeCueAlphaEnvelope(outgoing, performance.now()) <= 0) {
+      partnerPracticeState.cueOutgoing = null;
+    } else {
+      var saved = partnerPracticeState.cue;
+      partnerPracticeState.cue = outgoing;
+      partnerPracticeState.cueOutgoing = null; // prevent recursion
+      drawPartnerPracticeCue(ctx);
+      partnerPracticeState.cue = saved;
+      if (computeCueAlphaEnvelope(outgoing, performance.now()) > 0) {
+        partnerPracticeState.cueOutgoing = outgoing;
+        ensurePartnerPracticeCueLoop();
+      }
+    }
+  }
+  if (!partnerPracticeState.cue) return;
   var cue = partnerPracticeState.cue;
   var piece = cue.piece;
   if (!piece || piece.snapped) return;
   var now = performance.now();
+  // FIX A: lazy-stamp startTime for cues assigned via raw `= { ... }` paths
+  // that don't route through setBasicCueWithRelease. Without this, those cues
+  // would skip the fade-in.
+  if (cue.startTime == null) cue.startTime = now;
+  var envelope = computeCueAlphaEnvelope(cue, now);
+  if (envelope <= 0) {
+    if (cue.releaseTime != null) {
+      partnerPracticeState.cue = null;
+    }
+    return;
+  }
+  // While fading (in or out) keep the loop ticking so the next frame can
+  // continue the animation; the steady state's pulse handler at each branch
+  // tail also requests another frame.
+  if (envelope < 1 || cue.releaseTime != null) ensurePartnerPracticeCueLoop();
   var cx = piece.x + pieceW / 2;
   var cy = piece.y + pieceH / 2;
   var pulse = 0.5 + 0.5 * Math.sin(now / 180);
 
   if (cue.kind === 'tap-piece') {
     var minSide = Math.min(pieceW, pieceH);
-    var tapR = minSide * (0.66 + pulse * 0.12);
-    var glowR = tapR * (1.32 + pulse * 0.08);
+    var tapR = minSide * (0.70 + pulse * 0.14);
+    var glowR = tapR * (1.42 + pulse * 0.12);
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'lighter';
     var glow = ctx.createRadialGradient(cx, cy, tapR * 0.55, cx, cy, glowR);
-    glow.addColorStop(0, 'rgba(255, 186, 60, 0.08)');
-    glow.addColorStop(0.45, 'rgba(255, 176, 55,' + (0.20 + pulse * 0.10).toFixed(3) + ')');
-    glow.addColorStop(0.74, 'rgba(255, 170, 48,' + (0.44 + pulse * 0.22).toFixed(3) + ')');
+    glow.addColorStop(0, 'rgba(255, 202, 68, 0.14)');
+    glow.addColorStop(0.42, 'rgba(255, 176, 55,' + (0.32 + pulse * 0.14).toFixed(3) + ')');
+    glow.addColorStop(0.76, 'rgba(255, 132, 35,' + (0.58 + pulse * 0.26).toFixed(3) + ')');
     glow.addColorStop(1, 'rgba(255, 226, 135, 0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(cx, cy, glowR, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.shadowColor = 'rgba(255, 176, 58, 0.92)';
-    ctx.shadowBlur = 30 + pulse * 18;
+    ctx.shadowColor = 'rgba(255, 150, 38, 0.98)';
+    ctx.shadowBlur = 38 + pulse * 24;
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
-    ctx.strokeStyle = 'rgba(242, 145, 90,' + (0.86 + pulse * 0.14).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(5, minSide * 0.048);
+    ctx.strokeStyle = 'rgba(255, 120, 42,' + (0.90 + pulse * 0.10).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(6, minSide * 0.058);
     ctx.stroke();
-    ctx.shadowColor = 'rgba(255, 186, 60, 0.86)';
-    ctx.shadowBlur = 18 + pulse * 14;
+    ctx.shadowColor = 'rgba(255, 210, 70, 0.95)';
+    ctx.shadowBlur = 24 + pulse * 18;
     ctx.beginPath();
     ctx.arc(cx, cy, tapR, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 176, 58,' + (0.62 + pulse * 0.30).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(4, minSide * 0.032);
+    ctx.strokeStyle = 'rgba(255, 174, 35,' + (0.72 + pulse * 0.28).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(5, minSide * 0.040);
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.beginPath();
     ctx.arc(cx, cy, tapR * 1.16, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 222, 138,' + (0.48 + pulse * 0.30).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(3, minSide * 0.018);
+    ctx.strokeStyle = 'rgba(255, 235, 150,' + (0.60 + pulse * 0.30).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(4, minSide * 0.024);
     ctx.stroke();
     ctx.restore();
     recordBasicHintSelectCueVisible(now);
@@ -1528,6 +1731,7 @@ function drawPartnerPracticeCue(ctx) {
   if (cue.kind === 'selected-piece') {
     var selectedR = Math.min(pieceW, pieceH) * (0.58 + pulse * 0.05);
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'source-over';
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
@@ -1567,6 +1771,7 @@ function drawPartnerPracticeCue(ctx) {
 
   if (cue.kind === 'kojika-move-target') {
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'source-over';
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
@@ -1606,6 +1811,7 @@ function drawPartnerPracticeCue(ctx) {
     var hy = piece.homeY + pieceH / 2;
     var r = Math.min(pieceW, pieceH) * (0.78 + pulse * 0.08);
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.globalCompositeOperation = 'lighter';
     var grad = ctx.createRadialGradient(cx, cy, r * 0.08, cx, cy, r);
     grad.addColorStop(0, 'rgba(125, 190, 255, 0.72)');
@@ -1627,6 +1833,7 @@ function drawPartnerPracticeCue(ctx) {
     ctx.restore();
 
     ctx.save();
+    ctx.globalAlpha = envelope;
     ctx.beginPath();
     buildPiecePath(ctx, piece.x, piece.y, pieceW, pieceH, piece.tabs);
     ctx.strokeStyle = 'rgba(59, 130, 246, 0.92)';
@@ -1640,8 +1847,29 @@ function drawPartnerPracticeCue(ctx) {
 function ensurePartnerPracticeCueLoop() {
   if (!partnerPracticeState || partnerPracticeState.cueRaf) return;
   partnerPracticeState.cueRaf = requestAnimationFrame(function tick() {
-    if (!partnerPracticeState || !partnerPracticeState.active || !partnerPracticeState.cue) {
+    if (!partnerPracticeState || !partnerPracticeState.active) {
       if (partnerPracticeState) partnerPracticeState.cueRaf = null;
+      return;
+    }
+    var cue = partnerPracticeState.cue;
+    var outgoing = partnerPracticeState.cueOutgoing;
+    if (!cue && !outgoing) {
+      partnerPracticeState.cueRaf = null;
+      return;
+    }
+    // FIX A: if the active cue has fully faded out, null it here.
+    if (cue && cue.releaseTime != null) {
+      var env = computeCueAlphaEnvelope(cue, performance.now());
+      if (env <= 0) partnerPracticeState.cue = null;
+    }
+    // FIX A2: same for the outgoing slot used during cross-fades.
+    if (outgoing) {
+      var envOut = computeCueAlphaEnvelope(outgoing, performance.now());
+      if (envOut <= 0) partnerPracticeState.cueOutgoing = null;
+    }
+    if (!partnerPracticeState.cue && !partnerPracticeState.cueOutgoing) {
+      partnerPracticeState.cueRaf = null;
+      redraw();
       return;
     }
     partnerPracticeState.cueRaf = null;
@@ -2026,7 +2254,7 @@ let hintFlashVisibleAt = 0;             // 正解位置のヒント演出が実�
 let hintNoticeTimeout = null;           // 「ピースを えらんで〜」吹き出しの非表示タイマー
 let stageHintUsesActual = 0;            // 今ステージで実際に使ったヒント回数
 
-const HINT_FLASH_DURATION_MS = 1500;    // 金色星 + radial glow 表示時間 (Phase 3c: 2000→1500)
+const HINT_FLASH_DURATION_MS = 2600;    // ヒント位置の強調表示時間
 
 // ヒント初期回数 (仲良し度システム廃止後の確定テーブル):
 //   base = {Stage 1-5: 1, Stage 6-12: 2, Stage 13-20: 3}
@@ -2237,9 +2465,16 @@ function refreshHintButtonState() {
   var sid = getCurrentStageIdForHint();
   var remaining = sid != null ? getHintUsesRemaining(sid) : 0;
   var label = 'ヒント';
-  var basicHintPressWaiting = !!(partnerPracticeState
+  var isBasicPracticeHintPhase = !!(partnerPracticeState
     && partnerPracticeState.mode === 'basic'
-    && partnerPracticeState.phase === 'hint-press'
+    && (partnerPracticeState.phase === 'hint-press'
+      || partnerPracticeState.phase === 'basic-hint-select-try'
+      || partnerPracticeState.phase === 'basic-hint-press-try'));
+  var basicHintSelectWaiting = !!(isBasicPracticeHintPhase
+    && partnerPracticeState.phase === 'basic-hint-select-try');
+  var basicHintPressWaiting = !!(isBasicPracticeHintPhase
+    && (partnerPracticeState.phase === 'hint-press'
+      || partnerPracticeState.phase === 'basic-hint-press-try')
     && !partnerPracticeState.hintPressReady);
   if (dragPiece) {
     // ドラッグ中は無効化 + 😴 マーク
@@ -2250,7 +2485,7 @@ function refreshHintButtonState() {
     return;
   }
   btnHint.classList.remove('is-sleeping');
-  if (basicHintPressWaiting) {
+  if (basicHintSelectWaiting || basicHintPressWaiting) {
     btnHint.classList.add('is-disabled');
     btnHint.classList.remove('is-empty');
     btnHint.textContent = label + '×' + Math.max(0, remaining);
@@ -2278,7 +2513,7 @@ function shakeHintButton() {
   setTimeout(function () { if (btnHint) btnHint.classList.remove('is-shake'); }, 400);
 }
 
-// 「ピースを えらんで からおしてね」吹き出しを表示
+// 「ピースを 選んでから押してね」吹き出しを表示
 function showHintNotice() {
   if (!puzzleContainer) return;
   var existing = document.getElementById('hint-notice-bubble');
@@ -2287,7 +2522,7 @@ function showHintNotice() {
   var el = document.createElement('div');
   el.id = 'hint-notice-bubble';
   el.className = 'hint-notice-bubble';
-  el.textContent = 'ピースを えらんで からおしてね';
+  el.textContent = 'ピースを 選んでから押してね';
   puzzleContainer.appendChild(el);
   hintNoticeTimeout = setTimeout(function () {
     if (el && el.parentNode) el.parentNode.removeChild(el);
@@ -2296,11 +2531,19 @@ function showHintNotice() {
 }
 
 // 黄色 pulse ring + 金色星 演出の rAF ループ。 必要時のみ起動・停止。
+// batch:938 perf — 60fps 上限化 (120Hz/144Hz 端末で 2 倍焼かないように lastDraw で間引き)
+var hintAnimLastDraw = 0;
 function ensureHintAnimLoop() {
   if (hintAnimRafHandle != null) return;
   function loop() {
     hintAnimRafHandle = null;
     var now = Date.now();
+    // batch:938 perf — 60fps 上限 (16ms 未満で来た tick は redraw を skip)
+    if (now - hintAnimLastDraw < 16) {
+      hintAnimRafHandle = requestAnimationFrame(loop);
+      return;
+    }
+    hintAnimLastDraw = now;
     var needYellow = !!(selectedPieceForHint && !selectedPieceForHint.snapped);
     var needGold   = !!(hintFlashPiece && now < hintFlashUntil);
     // 共有フラグ: ヒント選択中は assist の発光を抑えてもらう
@@ -2320,6 +2563,20 @@ function ensureHintAnimLoop() {
     hintAnimRafHandle = requestAnimationFrame(loop);
   }
   hintAnimRafHandle = requestAnimationFrame(loop);
+}
+
+function showHintGlowForPiece(piece, durationMs) {
+  if (!piece || piece.snapped) return;
+  hintFlashVisibleAt = 0;
+  hintFlashPiece = piece;
+  hintFlashUntil = Date.now() + Math.max(1, durationMs || HINT_FLASH_DURATION_MS);
+  ensureHintAnimLoop();
+}
+
+function clearHintGlow() {
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  hintFlashVisibleAt = 0;
 }
 
 // ピース中心座標
@@ -2353,47 +2610,53 @@ function drawHintOverlay(ctx) {
     ctx.restore();
   }
 
-  // ── 金色星 + radial glow (ヒント発火後 1.5 秒) ──
-  // Phase 3c: 「正解そのもの」感を抑える: 星 -20% / glow 半径 -30% / 表示時間 1500ms / 枠点滅は維持
+  // ── ヒント位置の強調: 青白い輪郭 + 広めの glow + 星 ──
   if (hintFlashPiece && now < hintFlashUntil
       && pieces && pieces.indexOf(hintFlashPiece) >= 0) {
     if (!hintFlashVisibleAt) {
       hintFlashVisibleAt = now;
       scheduleBasicHintDoneAfterFlashVisible();
     }
-    var t = (hintFlashUntil - now) / HINT_FLASH_DURATION_MS; // 1 → 0
+    var t = Math.max(0, Math.min(1, (hintFlashUntil - now) / HINT_FLASH_DURATION_MS)); // 1 → 0
     var phase = 1 - t;                                       // 0 → 1
     var slot = pieceCenter(hintFlashPiece, true);
     var blink = 0.5 + 0.5 * Math.sin(now / 120);             // 0..1
-    // glow 半径 30% 縮小: 旧 0.4 + 0.5*phase → 0.28 + 0.35*phase
-    var glowR = Math.max(pieceW, pieceH) * (0.28 + 0.35 * phase);
+    var glowR = Math.max(pieceW, pieceH) * (0.62 + 0.22 * blink + 0.18 * Math.min(phase, 1));
 
     ctx.save();
-    // radial glow (alpha も少し控えめに)
     var grad = ctx.createRadialGradient(slot.cx, slot.cy, 4, slot.cx, slot.cy, glowR);
-    grad.addColorStop(0,   'rgba(255, 215, 64, ' + (0.42 * (1 - phase * 0.4)).toFixed(3) + ')');
-    grad.addColorStop(0.6, 'rgba(255, 200, 0, 0.12)');
-    grad.addColorStop(1,   'rgba(255, 200, 0, 0)');
+    grad.addColorStop(0,   'rgba(255, 255, 255, ' + (0.78 + 0.12 * blink).toFixed(3) + ')');
+    grad.addColorStop(0.34, 'rgba(89, 209, 255, ' + (0.44 + 0.16 * blink).toFixed(3) + ')');
+    grad.addColorStop(0.72, 'rgba(37, 99, 235, 0.20)');
+    grad.addColorStop(1,   'rgba(37, 99, 235, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(slot.cx, slot.cy, glowR, 0, Math.PI * 2);
     ctx.fill();
 
-    // 枠点滅 (どこか分かる程度 → 維持)
-    ctx.lineWidth = 3 + 2 * blink;
-    ctx.strokeStyle = 'rgba(255, 215, 64, ' + (0.6 + 0.35 * blink).toFixed(3) + ')';
-    ctx.shadowColor = 'rgba(255, 215, 64, 0.9)';
-    ctx.shadowBlur = 16 + 10 * blink;
+    ctx.lineWidth = Math.max(5, Math.min(pieceW, pieceH) * 0.07) + 2 * blink;
+    ctx.strokeStyle = 'rgba(255, 255, 255, ' + (0.86 + 0.12 * blink).toFixed(3) + ')';
+    ctx.shadowColor = 'rgba(48, 166, 255, 0.95)';
+    ctx.shadowBlur = 24 + 14 * blink;
     ctx.beginPath();
     buildPiecePath(ctx, hintFlashPiece.homeX, hintFlashPiece.homeY, pieceW, pieceH, hintFlashPiece.tabs);
     ctx.stroke();
 
-    // 金色星 (5 つ尖り) — サイズ 20% 縮小: 0.32 → 0.256
-    ctx.shadowBlur = 20;
-    ctx.fillStyle = 'rgba(255, 224, 102, ' + (0.85 + 0.15 * blink).toFixed(3) + ')';
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.95)';
+    ctx.setLineDash([Math.max(8, pieceW * 0.08), Math.max(5, pieceW * 0.05)]);
+    ctx.lineDashOffset = -now / 42;
+    ctx.lineWidth = Math.max(3, Math.min(pieceW, pieceH) * 0.038);
+    ctx.strokeStyle = 'rgba(21, 142, 235, ' + (0.78 + 0.18 * blink).toFixed(3) + ')';
+    ctx.shadowBlur = 10 + 8 * blink;
+    ctx.beginPath();
+    buildPiecePath(ctx, hintFlashPiece.homeX, hintFlashPiece.homeY, pieceW, pieceH, hintFlashPiece.tabs);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = 'rgba(255, 244, 136, ' + (0.90 + 0.10 * blink).toFixed(3) + ')';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
     ctx.lineWidth = 2.5;
-    drawStar(ctx, slot.cx, slot.cy, Math.min(pieceW, pieceH) * 0.256, 5, 0.45);
+    drawStar(ctx, slot.cx, slot.cy, Math.min(pieceW, pieceH) * 0.34, 5, 0.45);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
@@ -2457,17 +2720,99 @@ function setSelectedPieceForHint(piece) {
 const PARTNER_PRACTICE_SEEN_PREFIX = 'pono_partner_real_tutorial_seen_v1_';
 const BASIC_PRACTICE_SEEN_KEY = 'pono_puzzle_basic_controls_tutorial_seen_v1';
 const TITLE_GUIDE_CHOICE_KEY = 'pono_puzzle_title_guide_choice_v1';
+const BASIC_PRACTICE_HAND_ASSETS = {
+  open: '../assets/images/puzzle/ui/tutorial/hand_open_hover.png',
+  release: '../assets/images/puzzle/ui/tutorial/hand_open_release.png',
+  grab: '../assets/images/puzzle/ui/tutorial/hand_grab_ready.png',
+  grip: '../assets/images/puzzle/ui/tutorial/hand_grip.png',
+  pinch: '../assets/images/puzzle/ui/tutorial/hand_pinch.png',
+  point: '../assets/images/puzzle/ui/tutorial/hand_point_left.png',
+};
+const BASIC_HAND_DEMO_MOVE_MS = 680;
+const BASIC_HAND_DEMO_HOLD_MS = 420;
+const BASIC_HAND_DEMO_AFTER_MS = 260;
+const BASIC_DRAG_DEMO_DURATION_MS = 1250;
+const BASIC_LOOP_HAND_CUE_START_MS = 900;
+const BASIC_LOOP_HAND_CUE_MOVE_MS = 1050;
+const BASIC_LOOP_HAND_CUE_REPEAT_MS = 820;
+// Anchored to the REAL 'play' event of basic_tut_01.mp3 (idx0,
+// 「これからパズルの遊び方を練習するよ。まずはお手本を見てね」 ~8.9s). Offset = ms from
+// idx0 playback start to the 「お」 onset of 「お手本を見てね」 (~3.8s, ~43% into clip
+// after 「これから…まずは」 prefix). The 「おてほんをみてね」 demo banner is scheduled
+// here via scheduleBasicOpeningBannerOnVoice so it lands exactly on the spoken
+// cue regardless of autoplay/decode delay. Re-measure with audacity /
+// faster-whisper word timestamps if the recording is replaced.
+const BASIC_OTEHON_BANNER_AT_VOICE_MS = 3800;
+const BASIC_INTRO_DEMO_BANNER_MS = 3000;
+const BASIC_DRAG_NA_START_DELAY_MS = 650;
+const BASIC_DRAG_ORANGE_PRE_VOICE_MS = 180;
+const BASIC_DRAG_BLUE_CUE_DELAY_MS = 2300;
+const BASIC_TRY_BLUE_CUE_DELAY_MS = 3600;
+const BASIC_TRY_BANNER_MS = 6800;
+// Offsets measured from the moment the corresponding voice (basic_tut_02 for
+// the demo phase, basic_tut_03 for the try phase) STARTS playing. The orange
+// cue should appear when the narration says 「このピースをつかんで」 and the blue
+// cue when it says 「青い場所へ」. These values were tuned to the current
+// recordings; if narration timing changes, re-measure with audacity.
+const BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS = 800;
+const BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS = 2500;
+// Try-phase cues. basic_tut_03 is the FULL untrimmed line
+// 「やってみよう。ピースを持って、青い場所へ離してね」. The center 「やってみよう」 badge and
+// the spoken 「やってみよう」 start TOGETHER at t=0 as a pause beat; at the 「ピース」
+// boundary (~2.18s, measured via word timestamps) the badge fades + input
+// enables while the SAME audio flows on into 「ピースを持って…」. These cue offsets
+// are measured from the moment the FULL voice starts playing: orange at 「ピース」
+// (~2.18s), blue at 「青い場所」 (~3.72s).
+const BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS = 2180;
+const BASIC_DRAG_TRY_BLUE_AT_VOICE_MS = 3720;
+// Anchored split point inside the FULL basic_tut_03 clip: the ms offset from the
+// audio's real 'play' at which the spoken line reaches 「ピース」. At this moment
+// the 「やってみよう」 badge fades out (existing .is-leaving) AND drag input enables,
+// while the same continuous audio keeps playing into 「ピースを持って、青い場所へ…」.
+const BASIC_DRAG_TRY_SPLIT_AT_VOICE_MS = 2180;
+// v1338 FIX 2/3: offset into idx8 (basic_tut_09 「次はヒントだよ。場所を知りたいピースを…」)
+// where the 「場所を知りたいピース」 phrase begins (after 「次はヒントだよ。」). The orange
+// tap-piece cue AND the 「やってみよう！」 badge appear together at this moment, synced to
+// the narration's REAL playback start, instead of lighting up immediately at t=0.
+const BASIC_HINT_SELECT_CUE_AT_VOICE_MS = 2200;
+// Offset into idx4 (basic_tut_05 「まずは見るボタンを長く押してみよう」) where the phrase
+// 「長く押してみよう」 begins. The 見る button finger/highlight pointer appears at this
+// moment, synced to the narration's REAL playback start, so the child doesn't see
+// the finger before being told what to do. Wall-clock fallback uses the same value.
+const BASIC_PEEK_HAND_AT_VOICE_MS = 1800;
+// If the audio element never fires 'play'/'playing' within this window (autoplay
+// blocked, file 404, decode stall), we fall back to a wall-clock schedule so the
+// orange/blue cues still appear and the child is never stuck without guidance.
+const BASIC_CUE_PLAY_FALLBACK_MS = 1200;
+const BASIC_AFTER_DRAG_SUCCESS_MS = 1700;
 const BASIC_PEEK_HOLD_MS = 850;
 const BASIC_AFTER_PEEK_SUCCESS_DELAY_MS = 1100;
 const BASIC_SELECT_PIECE_AFTER_CUE_VISIBLE_MS = 1000;
+const BASIC_HINT_DEMO_GLOW_MS = 5200;
+const BASIC_HINT_TRY_GLOW_MS = 180000;
 const BASIC_HINT_DONE_AFTER_FLASH_VISIBLE_MS = 360;
 const BASIC_HINT_AUTO_SNAP_DELAY_MS = 2200;
 const BASIC_HINT_AUTO_SNAP_DURATION_MS = 1200;
 const BASIC_AFTER_AUTO_SNAP_FINISH_MS = 650;
+const BASIC_MODE_BADGE_POP_MS = 3000;
+// Mode badge opacity fade-out duration. Must match the CSS transition on
+// .partner-practice-mode-badge.is-leaving so the badge finishes fading before
+// JS removes .is-visible / the element from the DOM.
+const BASIC_MODE_BADGE_FADE_MS = 350;
+// Button highlight (見る / ヒント ring + glow) fade-out duration. Must match
+// the CSS transition on .partner-practice-highlight.is-leaving so the glow
+// fades out smoothly before JS strips the highlight class entirely.
+const PARTNER_HIGHLIGHT_FADE_MS = 320;
+// 'できたね！' success badge on a completed peek hold. Long enough to read but
+// shorter than the narrated intro/try banners; the phase then moves on to the
+// success narration + hint, so it doesn't need the full ~6.8s.
+const BASIC_PEEK_DONE_BANNER_MS = 3500;
 const PARTNER_PRACTICE_AFTER_TAP_DELAY_MS = 180;
 const PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS = 560;
 const RISU_PRACTICE_TIMER_DEMO_MS = 3200;
-const BASIC_TUT_FALLBACK_MS = [4300, 4400, 3400, 3000, 4900, 5000, 7000, 5500];
+// idx2 (basic_tut_03) is the FULL untrimmed line 「やってみよう。ピースを持って、青い場所へ
+// 離してね」 (~6.52s); fallback = ceil(6.52s) + ~850ms tail = 7370ms.
+const BASIC_TUT_FALLBACK_MS = [8900, 5100, 7370, 6300, 4070, 6480, 3070, 2640, 7170, 4930, 5930, 8090, 5990];
 let pendingStageReadyCallbacks = [];
 let partnerPracticeState = null;
 let titleGuideChoiceOpen = false;
@@ -2561,8 +2906,8 @@ function clearBasicPracticeSeen() {
 }
 
 function getBasicTutFallbackMs(stepIndex, fallbackMs) {
-  if (fallbackMs) return fallbackMs;
-  return BASIC_TUT_FALLBACK_MS[stepIndex | 0] || 4300;
+  var defaultMs = BASIC_TUT_FALLBACK_MS[stepIndex | 0] || 4300;
+  return Math.max(defaultMs, fallbackMs || 0);
 }
 
 function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
@@ -2576,16 +2921,46 @@ function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
   partnerPracticeState.basicVoiceBusy = true;
   partnerPracticeState.basicVoiceStepIndex = stepIndex | 0;
   var audio = null;
+  // onReject fires when a.play() rejects/throws (mobile autoplay block) or no
+  // audio element exists. Advance the state machine PROMPTLY so basicVoiceBusy
+  // clears and the next queued voice runs, instead of waiting on the multi-
+  // second fallback timer. The done/token guards inside finish() prevent any
+  // double-fire if the clip later does start and emits 'ended'.
+  var onVoiceReject = function () {
+    if (done) return;
+    if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+    // Hop to a macrotask so caller-attached listeners (ended/loadedmetadata)
+    // and the rest of this function are wired up before we advance.
+    setTimeout(function () {
+      if (done) return;
+      if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+      finish();
+    }, 0);
+  };
   try {
     if (window.PuzzleVoice && typeof window.PuzzleVoice.playBasicTut === 'function') {
-      audio = window.PuzzleVoice.playBasicTut(stepIndex);
+      audio = window.PuzzleVoice.playBasicTut(stepIndex, onVoiceReject);
     }
   } catch (_) {}
   var done = false;
+  var startedAt = performance.now();
+  var fallbackDelay = getBasicTutFallbackMs(stepIndex, fallbackMs);
+  function setVoiceFallbackTimer(delayMs) {
+    if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+    if (partnerPracticeState.basicVoiceTimer) {
+      try { clearTimeout(partnerPracticeState.basicVoiceTimer); } catch (_) {}
+    }
+    var elapsed = performance.now() - startedAt;
+    var remaining = Math.max(0, delayMs - elapsed);
+    partnerPracticeState.basicVoiceTimer = setTimeout(finish, remaining);
+  }
   var finish = function () {
     if (done) return;
     if (!partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
     done = true;
+    if (partnerPracticeState.basicVoiceTimer) {
+      try { clearTimeout(partnerPracticeState.basicVoiceTimer); } catch (_) {}
+    }
     partnerPracticeState.basicVoiceBusy = false;
     partnerPracticeState.basicVoiceStepIndex = null;
     partnerPracticeState.basicVoiceTimer = null;
@@ -2596,9 +2971,409 @@ function playBasicPracticeVoice(stepIndex, onDone, fallbackMs) {
   };
   if (audio && typeof audio.addEventListener === 'function') {
     try { audio.addEventListener('ended', finish, { once: true }); } catch (_) {}
+    try {
+      audio.addEventListener('loadedmetadata', function () {
+        if (done || !partnerPracticeState || partnerPracticeState.basicVoiceToken !== token) return;
+        if (Number.isFinite(audio.duration) && audio.duration > 0) {
+          var durationMs = Math.ceil(audio.duration * 1000) + 850;
+          if (durationMs > fallbackDelay) {
+            fallbackDelay = durationMs;
+            setVoiceFallbackTimer(fallbackDelay);
+          }
+        }
+      }, { once: true });
+    } catch (_) {}
+    try {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        fallbackDelay = Math.max(fallbackDelay, Math.ceil(audio.duration * 1000) + 850);
+      }
+    } catch (_) {}
   }
-  partnerPracticeState.basicVoiceTimer = setTimeout(finish, getBasicTutFallbackMs(stepIndex, fallbackMs));
+  setVoiceFallbackTimer(fallbackDelay);
   return audio;
+}
+
+// Anchor the orange (tap-piece) and blue (kojika-move-target) cues to the
+// ACTUAL audio playback of the narration, not to a setTimeout measured from
+// scheduling time. We attach a one-time 'play'/'playing' listener on the audio
+// element; when it fires, we schedule the cues at orangeMs/blueMs measured from
+// that real playback start. If playback never starts within
+// BASIC_CUE_PLAY_FALLBACK_MS (autoplay blocked / file missing / decode stall),
+// we fall back to the old wall-clock schedule so cues still appear.
+//
+// opts: { audio, phase, piece, orangeMs, blueMs }
+function scheduleBasicDragCuesOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts.audio;
+  var phase = opts.phase;
+  var piece = opts.piece;
+  var orangeMs = opts.orangeMs | 0;
+  var blueMs = opts.blueMs | 0;
+  // FIX B: when the try-phase split callback owns the orange cue (so it lights
+  // together with badge-hide + input-enable in the same tick), the caller passes
+  // skipOrange:true to dedupe; only the blue cue is scheduled here.
+  var skipOrange = !!opts.skipOrange;
+  var scheduledAt = performance.now();
+  var fired = false; // cues scheduled once (either via play event or fallback)
+
+  function stillValid() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.phase === phase
+      && (!piece || partnerPracticeState.targetPiece === piece));
+  }
+
+  function showOrange() {
+    if (!stillValid()) return;
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
+    redraw();
+  }
+  function showBlue() {
+    if (!stillValid()) return;
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
+    redraw();
+  }
+
+  // Schedule both cues relative to `anchorTime` (real or fallback playback
+  // start). Offsets already elapsed since the anchor are clamped to 0 so a late
+  // anchor still produces the cues immediately rather than skipping them.
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    if (!skipOrange) practiceSetTimeout(showOrange, Math.max(0, orangeMs - elapsed));
+    practiceSetTimeout(showBlue, Math.max(0, blueMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    // Anchor to the moment playback truly began.
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    // If the audio is already playing by the time we get here, anchor now.
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  // Fallback: if 'play' never fires (no audio element, autoplay blocked, 404,
+  // decode stall), schedule from the original wall-clock so cues still appear.
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
+}
+
+// Drag-try "split": the 「やってみよう」 badge and the FULL basic_tut_03 voice start
+// together; this anchors the badge-hide + input-enable to the audio's REAL
+// playback start so it lands exactly at the 「ピース」 boundary (~splitMs) of the
+// SAME continuous clip. Mirrors scheduleBasicDragCuesOnVoice's play-event +
+// wall-clock-fallback pattern. The audio is NOT stopped or restarted here — it
+// keeps playing into 「ピースを持って、青い場所へ…」.
+function scheduleBasicDragTrySplitOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts.audio;
+  var piece = opts.piece;
+  var splitMs = opts.splitMs | 0;
+  var scheduledAt = performance.now();
+  var fired = false; // split scheduled once (either via play event or fallback)
+  var doSplitRan = false; // FIX B: idempotency guard — doSplit must run exactly once.
+
+  function stillTry() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.phase === 'basic-drag-try'
+      && (!piece || partnerPracticeState.targetPiece === piece));
+  }
+
+  function doSplit() {
+    // Guarded so a stale timer can't fire after leaving basic-drag-try, and so
+    // it can never run twice (the state machine would break).
+    if (doSplitRan) return;
+    if (!stillTry()) return;
+    doSplitRan = true;
+    // FIX B: badge fade-out, input enable, AND orange tap-piece cue lighting
+    // all run in the SAME tick so they're perfectly aligned with the narration
+    // boundary at ~splitMs. The orange cue is fade-in via setBasicCueWithRelease
+    // (FIX A envelope) and is NOT scheduled separately in scheduleBasicDragCues
+    // OnVoice (skipOrange:true at the call site).
+    hideBasicPracticeTryBannerNow();
+    setPartnerPracticeInput(true);
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
+    redraw();
+  }
+
+  // Schedule the split relative to `anchorTime` (real or fallback playback
+  // start). An offset already elapsed since the anchor clamps to 0 so a late
+  // anchor still enables input immediately rather than skipping it.
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(doSplit, Math.max(0, splitMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    // If the audio is already playing by the time we get here, anchor now.
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  // Fallback: if 'play' never fires (autoplay blocked, 404, decode stall),
+  // schedule from the original wall-clock so the child is never stuck with a
+  // disabled board behind a frozen badge.
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
+}
+
+// v1338 FIX 2/3: hint SELECT step. The orange tap-piece cue AND the
+// 「やってみよう！」 badge are NOT set at t=0; they appear together when idx8 reaches
+// 「場所を知りたいピース」 (~selectMs into the clip), anchored to the audio's REAL
+// playback start. Mirrors scheduleBasicDragCuesOnVoice's play-event +
+// wall-clock-fallback pattern so the cue+badge always appear even if 'play'
+// never fires (autoplay blocked / 404 / decode stall).
+function scheduleBasicHintSelectCueOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts.audio;
+  var piece = opts.piece;
+  var selectMs = opts.selectMs | 0;
+  var scheduledAt = performance.now();
+  var fired = false; // cue+badge scheduled once (either via play event or fallback)
+
+  function stillSelect() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'basic-hint-select-try'
+      && (!piece || partnerPracticeState.targetPiece === piece));
+  }
+
+  function showSelectCue() {
+    if (!stillSelect()) return;
+    // FIX A/C: route through setBasicCueWithRelease so the orange cue fades IN
+    // smoothly (rather than appearing abruptly) the moment idx8 narration
+    // reaches 「場所を知りたいピース」 — and the banner pops in the same tick.
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
+    setBasicPracticeModeBanner('try', 'やってみよう！');
+    redraw();
+  }
+
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(showSelectCue, Math.max(0, selectMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
+}
+
+// Opening 「おてほんをみてね」 demo banner. Anchored to the REAL 'play' event of
+// basic_tut_01.mp3 (idx0) so the banner lands exactly on the spoken cue
+// 「お手本を見てね」 (~BASIC_OTEHON_BANNER_AT_VOICE_MS into the clip) instead of on a
+// wall-clock timer that drifts under autoplay/decode latency. Mirrors the
+// scheduleBasicHintSelectCueOnVoice pattern with a wall-clock fallback so the
+// banner still appears if the audio element never fires 'play' (autoplay
+// blocked / 404 / decode stall). Guarded against double-fire via `fired` and
+// `shown` so the banner can never pop twice.
+//
+// opts: { audio, offsetMs }
+function scheduleBasicOpeningBannerOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts && opts.audio;
+  var offsetMs = (opts && opts.offsetMs) | 0;
+  var scheduledAt = performance.now();
+  var fired = false; // banner scheduled once (either via play event or fallback)
+  var shown = false; // setBasicPracticeModeBanner called at most once
+
+  function stillIntro() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'basic-intro');
+  }
+
+  function showBanner() {
+    if (shown) return;
+    if (!stillIntro()) return;
+    shown = true;
+    setBasicPracticeModeBanner('demo', 'おてほんをみてね', BASIC_INTRO_DEMO_BANNER_MS);
+    redraw();
+  }
+
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(showBanner, Math.max(0, offsetMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
+}
+
+// Anchor the 見る button finger/highlight pointer to the ACTUAL audio playback of
+// idx4 (basic_tut_05) so the finger appears synced to 「長く押してみよう」 (~1800ms),
+// not at t=0 when the narration is still saying 「まずは見るボタンを…」. Mirrors
+// scheduleBasicHintSelectCueOnVoice: one-shot 'play'/'playing' listener with a
+// wall-clock fallback so the finger still appears if autoplay is blocked.
+//
+// opts: { audio, button, handMs }
+function scheduleBasicPeekHandOnVoice(opts) {
+  if (!partnerPracticeState) return;
+  var audio = opts.audio;
+  var button = opts.button;
+  var handMs = opts.handMs | 0;
+  var scheduledAt = performance.now();
+  var fired = false;
+
+  function stillPeekPress() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.mode === 'basic'
+      && partnerPracticeState.phase === 'peek-press');
+  }
+
+  function showPeekHand() {
+    if (!stillPeekPress()) return;
+    if (!button) return;
+    practiceAddHighlight(button);
+  }
+
+  function scheduleFromAnchor(anchorTime) {
+    if (fired) return;
+    fired = true;
+    var elapsed = Math.max(0, performance.now() - anchorTime);
+    practiceSetTimeout(showPeekHand, Math.max(0, handMs - elapsed));
+  }
+
+  function onPlay() {
+    cleanup();
+    if (fired) return;
+    scheduleFromAnchor(performance.now());
+  }
+
+  function cleanup() {
+    if (audio && typeof audio.removeEventListener === 'function') {
+      try { audio.removeEventListener('play', onPlay); } catch (_) {}
+      try { audio.removeEventListener('playing', onPlay); } catch (_) {}
+    }
+  }
+
+  var hasAudio = !!(audio && typeof audio.addEventListener === 'function');
+  if (hasAudio) {
+    try {
+      if (!audio.paused && audio.currentTime > 0) {
+        scheduleFromAnchor(performance.now() - (audio.currentTime * 1000));
+      }
+    } catch (_) {}
+    if (!fired) {
+      try { audio.addEventListener('play', onPlay, { once: true }); } catch (_) {}
+      try { audio.addEventListener('playing', onPlay, { once: true }); } catch (_) {}
+    }
+  }
+
+  practiceSetTimeout(function () {
+    if (fired) return;
+    cleanup();
+    scheduleFromAnchor(scheduledAt);
+  }, hasAudio ? BASIC_CUE_PLAY_FALLBACK_MS : 0);
 }
 
 function queueBasicPracticeAfterVoice(fn) {
@@ -2652,10 +3427,41 @@ function resetPuzzlePracticeSeenFlags() {
   } catch (_) {}
 }
 
+function clearActivePracticeSessionForReplay() {
+  if (!partnerPracticeState) return;
+  var originalTitle = partnerPracticeState.originalTitle;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  if (peekOn) setPeekOverlay(false);
+  clearBasicPracticeVoiceQueue();
+  stopPuzzleVoice();
+  stopChallengeTimer();
+  hideChallengeStatus();
+  if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
+    partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
+  }
+  removeBasicPracticeModeBanner();
+  document.body.classList.remove('partner-practice-active');
+  document.body.classList.remove('partner-practice-hint-on');
+  document.body.classList.remove('partner-practice-peek-on');
+  document.body.classList.remove('partner-practice-basic-layout');
+  if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
+  if (stageLabel && originalTitle) stageLabel.textContent = originalTitle;
+  partnerPracticeState.active = false;
+  partnerPracticeState = null;
+  redraw();
+}
+
 function resetPuzzlePracticeAndReplay() {
   resetPuzzlePracticeSeenFlags();
   clearCurrentPartnerSelection();
   partnerChoiceDismissedStageId = null;
+  clearActivePracticeSessionForReplay();
   showBasicPracticeIfNeeded(function () {}, true);
 }
 
@@ -2674,6 +3480,8 @@ function choosePartnerPracticeStageIndex() {
 function clearPartnerPracticeTimers() {
   if (!partnerPracticeState) return;
   clearPartnerPracticeTapToStart();
+  clearBasicPracticeHand();
+  partnerPracticeState.loopCueGhost = null;
   var timers = partnerPracticeState.timers || [];
   for (var i = 0; i < timers.length; i++) {
     try { clearTimeout(timers[i]); } catch (_) {}
@@ -2700,6 +3508,295 @@ function practiceSetTimeout(fn, ms) {
   return id;
 }
 
+function clampBasicPracticeHandSize(size) {
+  var viewportMin = Math.min(window.innerWidth || 800, window.innerHeight || 600);
+  var maxSize = Math.max(72, Math.min(128, viewportMin * 0.18));
+  return Math.max(54, Math.min(maxSize, size || 92));
+}
+
+function getBasicPracticeHandAnchor(pose) {
+  if (pose === 'point') return { x: 0.08, y: 0.52 };
+  if (pose === 'grab' || pose === 'grip' || pose === 'pinch') return { x: 0.48, y: 0.52 };
+  return { x: 0.50, y: 0.52 };
+}
+
+function getBasicPracticeHandEl() {
+  if (!partnerPracticeState) return null;
+  if (partnerPracticeState.handEl && partnerPracticeState.handEl.isConnected) {
+    return partnerPracticeState.handEl;
+  }
+  var el = document.createElement('div');
+  el.className = 'partner-practice-hand';
+  el.setAttribute('aria-hidden', 'true');
+  var img = document.createElement('img');
+  img.alt = '';
+  img.draggable = false;
+  el.appendChild(img);
+  document.body.appendChild(el);
+  partnerPracticeState.handEl = el;
+  partnerPracticeState.handImg = img;
+  return el;
+}
+
+function setBasicPracticeHand(point, pose, options) {
+  if (!partnerPracticeState || !point) return;
+  options = options || {};
+  pose = pose || 'open';
+  var el = getBasicPracticeHandEl();
+  if (!el) return;
+  var img = partnerPracticeState.handImg || el.querySelector('img');
+  if (img) img.src = BASIC_PRACTICE_HAND_ASSETS[pose] || BASIC_PRACTICE_HAND_ASSETS.open;
+  var size = clampBasicPracticeHandSize(options.size);
+  var anchor = options.anchor || getBasicPracticeHandAnchor(pose);
+  el.style.width = size.toFixed(1) + 'px';
+  el.style.left = (point.x - size * anchor.x).toFixed(1) + 'px';
+  el.style.top = (point.y - size * anchor.y).toFixed(1) + 'px';
+  el.style.setProperty('--practice-hand-rotate', options.rotate || '0deg');
+  el.style.setProperty('--practice-hand-scale', options.scale == null ? '1' : String(options.scale));
+  el.classList.add('is-visible');
+  el.classList.toggle('is-pressing', !!options.pressing);
+  document.body.classList.add('partner-practice-hand-visible');
+}
+
+function hideBasicPracticeHand() {
+  if (!partnerPracticeState || !partnerPracticeState.handEl) return;
+  partnerPracticeState.handEl.classList.remove('is-visible', 'is-pressing');
+  document.body.classList.remove('partner-practice-hand-visible');
+}
+
+function clearBasicPracticeHand() {
+  if (!partnerPracticeState) return;
+  if (partnerPracticeState.handEl && partnerPracticeState.handEl.parentNode) {
+    partnerPracticeState.handEl.parentNode.removeChild(partnerPracticeState.handEl);
+  }
+  partnerPracticeState.handEl = null;
+  partnerPracticeState.handImg = null;
+  document.body.classList.remove('partner-practice-hand-visible');
+}
+
+function setBasicPracticeModeBanner(kind, text, visibleMs) {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  // While the 見る(peek) picture is showing, suppress center mode-badge pops so
+  // 「やってみよう」/「できたね」 can't cover the completed-puzzle picture the
+  // child is peeking at. Any badge already up was faded out on peek-show;
+  // downstream badges resume normally once peek ends (flag cleared).
+  if (partnerPracticeState.peekPictureVisible) {
+    hideBasicPracticeTryBannerNow();
+    return;
+  }
+  // v1342 round-2 FIX 3: the big CENTER badge (「やってみよう！」/「おてほんをみてね」)
+  // covered the puzzle and got in the way. Suppress it for the try/demo kinds —
+  // the call-to-action now lives in the emphasized BOTTOM coach box instead.
+  // Any badge already up is faded out so it doesn't linger over the board. The
+  // 「できたね！」 (done) celebration badge is kept as-is.
+  var bannerMode = kind === 'try' ? 'try' : (kind === 'done' ? 'done' : 'demo');
+  if (bannerMode !== 'done') {
+    setBasicPracticeFrameMode(bannerMode);
+    hideBasicPracticeTryBannerNow();
+    return;
+  }
+  var el = partnerPracticeState.modeBadgeEl;
+  if (!el || !el.isConnected) {
+    el = document.createElement('div');
+    el.className = 'partner-practice-mode-badge';
+    el.setAttribute('aria-live', 'polite');
+    document.body.appendChild(el);
+    partnerPracticeState.modeBadgeEl = el;
+  }
+  var mode = kind === 'try' ? 'try' : (kind === 'done' ? 'done' : 'demo');
+  setBasicPracticeFrameMode(mode);
+  el.className = 'partner-practice-mode-badge is-visible is-' + mode;
+  el.textContent = text || (mode === 'try' ? 'やってみよう！' : (mode === 'done' ? 'できたね！' : 'おてほんをみてね'));
+  // A fresh banner cancels any in-flight fade-out from a previous one.
+  el.classList.remove('is-leaving');
+  var token = ((partnerPracticeState.modeBadgeToken || 0) + 1);
+  partnerPracticeState.modeBadgeToken = token;
+  var duration = Math.max(3000, visibleMs || BASIC_MODE_BADGE_POP_MS);
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.modeBadgeToken !== token) return;
+    // Fade out (~350ms opacity transition via .is-leaving) BEFORE hiding,
+    // instead of removing .is-visible instantly.
+    if (el && el.isConnected) el.classList.add('is-leaving');
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.modeBadgeToken !== token) return;
+      if (el && el.isConnected) el.classList.remove('is-visible', 'is-leaving');
+    }, BASIC_MODE_BADGE_FADE_MS);
+  }, duration);
+}
+
+// Immediately begin hiding the current mode badge (used by CHANGE #4 to align
+// the try-phase badge fade-out with the 見る/ヒント button grey-out instead of
+// waiting on the badge's own BASIC_TRY_BANNER_MS timer). Bumps the badge token
+// so the pending scheduled hide can't double-fire, then runs the same
+// fade -> remove path.
+function hideBasicPracticeTryBannerNow() {
+  if (!partnerPracticeState) return;
+  var el = partnerPracticeState.modeBadgeEl;
+  if (!el || !el.isConnected || !el.classList.contains('is-visible')) return;
+  var token = ((partnerPracticeState.modeBadgeToken || 0) + 1);
+  partnerPracticeState.modeBadgeToken = token;
+  el.classList.add('is-leaving');
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.modeBadgeToken !== token) return;
+    if (el && el.isConnected) el.classList.remove('is-visible', 'is-leaving');
+  }, BASIC_MODE_BADGE_FADE_MS);
+}
+
+function setBasicPracticeFrameMode(mode) {
+  var frame = puzzleContainer && puzzleContainer.closest ? puzzleContainer.closest('.puzzle-frame') : null;
+  if (!frame) frame = document.querySelector('.puzzle-frame');
+  if (!frame) return;
+  frame.classList.remove('is-practice-mode-pulsing', 'practice-mode-demo', 'practice-mode-try', 'practice-mode-done');
+  if (mode) {
+    frame.classList.add('is-practice-mode-pulsing', 'practice-mode-' + mode);
+  }
+}
+
+function removeBasicPracticeModeBanner() {
+  if (partnerPracticeState) {
+    partnerPracticeState.modeBadgeToken = ((partnerPracticeState.modeBadgeToken || 0) + 1);
+  }
+  setBasicPracticeFrameMode(null);
+  if (!partnerPracticeState || !partnerPracticeState.modeBadgeEl) return;
+  var el = partnerPracticeState.modeBadgeEl;
+  // Detach state immediately so callers treat the badge as gone, but let the
+  // element fade out (~350ms via .is-leaving) before pulling it from the DOM.
+  partnerPracticeState.modeBadgeEl = null;
+  if (!el.isConnected || !el.classList.contains('is-visible')) {
+    if (el.parentNode) el.parentNode.removeChild(el);
+    return;
+  }
+  el.classList.add('is-leaving');
+  practiceSetTimeout(function () {
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  }, BASIC_MODE_BADGE_FADE_MS);
+}
+
+function cancelBasicPracticeLoopCue() {
+  if (!partnerPracticeState) return;
+  partnerPracticeState.loopCueToken = ((partnerPracticeState.loopCueToken || 0) + 1);
+  partnerPracticeState.loopCueActive = false;
+  partnerPracticeState.loopCueGhost = null;
+  hideBasicPracticeHand();
+  redraw();
+}
+
+function practiceRectCenter(rect) {
+  if (!rect) return null;
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+function getPieceScreenCenter(piece, useHome) {
+  var rect = useHome ? getPieceHomeScreenRect(piece) : getPieceScreenRect(piece);
+  return practiceRectCenter(rect);
+}
+
+function getBasicHandSizeForRect(rect, scale) {
+  if (!rect) return clampBasicPracticeHandSize(92);
+  return clampBasicPracticeHandSize(Math.max(rect.width, rect.height) * (scale || 1.15));
+}
+
+function animateBasicPracticeHand(from, to, duration, pose, options, onFrame, onDone) {
+  if (!partnerPracticeState || !from || !to) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  options = options || {};
+  var start = performance.now();
+  function frame(now) {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    var t = Math.max(0, Math.min(1, (now - start) / Math.max(1, duration || BASIC_HAND_DEMO_MOVE_MS)));
+    var ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    var point = {
+      x: from.x + (to.x - from.x) * ease,
+      y: from.y + (to.y - from.y) * ease,
+    };
+    setBasicPracticeHand(point, pose, options);
+    if (typeof onFrame === 'function') onFrame(ease, point);
+    if (t < 1) {
+      var raf = requestAnimationFrame(frame);
+      if (partnerPracticeState) partnerPracticeState.rafs.push(raf);
+      return;
+    }
+    if (typeof onDone === 'function') onDone();
+  }
+  var raf = requestAnimationFrame(frame);
+  partnerPracticeState.rafs.push(raf);
+}
+
+function armBasicDragLoopCue(piece, phaseName) {
+  if (!partnerPracticeState || !piece || !phaseName) return;
+  cancelBasicPracticeLoopCue();
+  var token = ((partnerPracticeState.loopCueToken || 0) + 1);
+  partnerPracticeState.loopCueToken = token;
+  partnerPracticeState.loopCueActive = true;
+
+  function isCurrent() {
+    return !!(partnerPracticeState
+      && partnerPracticeState.active
+      && partnerPracticeState.loopCueActive
+      && partnerPracticeState.loopCueToken === token
+      && partnerPracticeState.phase === phaseName
+      && !dragPiece
+      && piece
+      && !piece.snapped);
+  }
+
+  function scheduleNext(delayMs) {
+    practiceSetTimeout(function () {
+      if (!isCurrent()) return;
+      runOnce();
+    }, delayMs);
+  }
+
+  function runOnce() {
+    if (!isCurrent()) return;
+    var pieceFrom = { x: piece.x, y: piece.y, rotation: piece.rotation || 0 };
+    var pieceTo = { x: piece.homeX, y: piece.homeY, rotation: 0 };
+    var from = getPieceScreenCenter(piece, false);
+    var to = getPieceScreenCenter(piece, true);
+    var rect = getPieceScreenRect(piece);
+    if (!from || !to || !rect) return;
+    var size = getBasicHandSizeForRect(rect, 1.14);
+    partnerPracticeState.loopCueGhost = null;
+    setBasicPracticeHand(from, 'open', { size: size });
+    practiceSetTimeout(function () {
+      if (!isCurrent()) return;
+      setBasicPracticeHand(from, 'grab', { size: size, pressing: true, scale: 0.96 });
+      practiceSetTimeout(function () {
+        if (!isCurrent()) return;
+        animateBasicPracticeHand(from, to, BASIC_LOOP_HAND_CUE_MOVE_MS, 'grip', {
+          size: size,
+          pressing: true,
+          scale: 0.94,
+        }, function (ease) {
+          if (!isCurrent()) return;
+          partnerPracticeState.loopCueGhost = {
+            piece: piece,
+            x: pieceFrom.x + (pieceTo.x - pieceFrom.x) * ease,
+            y: pieceFrom.y + (pieceTo.y - pieceFrom.y) * ease,
+            rotation: pieceFrom.rotation + (pieceTo.rotation - pieceFrom.rotation) * ease,
+            alpha: 0.34,
+          };
+          redraw();
+        }, function () {
+          if (!isCurrent()) return;
+          setBasicPracticeHand(to, 'release', { size: size, scale: 1 });
+          practiceSetTimeout(function () {
+            if (!isCurrent()) return;
+            partnerPracticeState.loopCueGhost = null;
+            redraw();
+            hideBasicPracticeHand();
+            scheduleNext(BASIC_LOOP_HAND_CUE_REPEAT_MS);
+          }, BASIC_HAND_DEMO_AFTER_MS);
+        });
+      }, 180);
+    }, 180);
+  }
+
+  scheduleNext(BASIC_LOOP_HAND_CUE_START_MS);
+}
+
 function practiceAddHighlight(el) {
   if (!el || !partnerPracticeState) return;
   el.classList.add('partner-practice-highlight');
@@ -2709,10 +3806,32 @@ function practiceAddHighlight(el) {
 function clearPracticeHighlights() {
   if (!partnerPracticeState) return;
   var list = partnerPracticeState.highlighted || [];
+  // Snapshot the leaving set first so we can stage a soft fade-out (~320ms)
+  // before fully stripping the highlight class. Idempotent: elements that are
+  // already mid-fade (.is-leaving present) are skipped so we never stack
+  // duplicate timers on the same node.
+  var leaving = [];
   for (var i = 0; i < list.length; i++) {
-    try { list[i].classList.remove('partner-practice-highlight'); } catch (_) {}
+    var el = list[i];
+    if (!el || !el.classList) continue;
+    if (el.classList.contains('is-leaving')) continue;
+    try { el.classList.add('is-leaving'); } catch (_) {}
+    leaving.push(el);
   }
+  // Reset the tracked list immediately so any re-entrant call (e.g. a new
+  // highlight added on the next tick) doesn't see stale entries.
   partnerPracticeState.highlighted = [];
+  if (!leaving.length) return;
+  setTimeout(function () {
+    for (var j = 0; j < leaving.length; j++) {
+      var node = leaving[j];
+      if (!node || !node.classList) continue;
+      try {
+        node.classList.remove('partner-practice-highlight');
+        node.classList.remove('is-leaving');
+      } catch (_) {}
+    }
+  }, PARTNER_HIGHLIGHT_FADE_MS + 20);
 }
 
 function createPartnerPracticeCoach(partnerId, partner) {
@@ -2779,14 +3898,35 @@ function createPartnerPracticeCoach(partnerId, partner) {
   actions.appendChild(start);
   coach.appendChild(actions);
 
-  document.body.appendChild(coach);
+  if (state.mode === 'basic') {
+    coach.classList.add('is-fixed-panel', 'is-actions-hidden');
+  }
+  var fixedPanelHost = state.mode === 'basic' ? document.querySelector('.main') : null;
+  if (fixedPanelHost) {
+    var frame = fixedPanelHost.querySelector('.puzzle-frame');
+    if (frame && frame.nextSibling) {
+      fixedPanelHost.insertBefore(coach, frame.nextSibling);
+    } else {
+      fixedPanelHost.appendChild(coach);
+    }
+  } else {
+    document.body.appendChild(coach);
+  }
   return coach;
+}
+
+function isBasicPracticeFixedPanelActive() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && partnerPracticeState.coach
+    && partnerPracticeState.coach.classList.contains('is-fixed-panel'));
 }
 
 function clearPartnerPracticeCoachBubble() {
   if (!partnerPracticeState || !partnerPracticeState.coach) return;
   var coach = partnerPracticeState.coach;
-  coach.classList.remove('is-bubble', 'is-actions-hidden', 'is-quiet');
+  coach.classList.remove('is-bubble', 'is-quiet', 'is-basic-stable');
+  coach.classList.toggle('is-actions-hidden', isBasicPracticeFixedPanelActive());
   coach.removeAttribute('data-side');
   coach.style.removeProperty('--partner-bubble-left');
   coach.style.removeProperty('--partner-bubble-top');
@@ -2806,10 +3946,164 @@ function clampPartnerBubble(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function shouldUseBasicStableBubble() {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return false;
+  var viewportW = window.innerWidth || document.documentElement.clientWidth || 0;
+  var viewportH = window.innerHeight || document.documentElement.clientHeight || 0;
+  return viewportW > viewportH;
+}
+
+function inflateScreenRect(rect, padX, padY) {
+  if (!rect) return null;
+  var x = padX || 0;
+  var y = padY == null ? x : padY;
+  return {
+    left: rect.left - x,
+    top: rect.top - y,
+    right: rect.right + x,
+    bottom: rect.bottom + y,
+    width: rect.width + x * 2,
+    height: rect.height + y * 2,
+  };
+}
+
+function combineScreenRects(a, b) {
+  if (!a) return b || null;
+  if (!b) return a || null;
+  var left = Math.min(a.left, b.left);
+  var top = Math.min(a.top, b.top);
+  var right = Math.max(a.right, b.right);
+  var bottom = Math.max(a.bottom, b.bottom);
+  return {
+    left: left,
+    top: top,
+    right: right,
+    bottom: bottom,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function screenRectOverlapArea(a, b) {
+  if (!a || !b) return 0;
+  var w = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+  var h = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  return w * h;
+}
+
+function positionBasicStablePracticeBubble(coach, targetRect) {
+  if (!coach) return;
+  coach.classList.add('is-basic-stable');
+  var margin = 12;
+  var gap = 12;
+  var viewportW = window.innerWidth || document.documentElement.clientWidth || 800;
+  var viewportH = window.innerHeight || document.documentElement.clientHeight || 600;
+  var rect = coach.getBoundingClientRect();
+  var bubbleW = rect.width || Math.min(520, viewportW - margin * 2);
+  var bubbleH = rect.height || 92;
+  var frameEl = puzzleContainer && puzzleContainer.closest ? puzzleContainer.closest('.puzzle-frame') : null;
+  var frameRect = frameEl && frameEl.getBoundingClientRect ? frameEl.getBoundingClientRect() : null;
+  var sidebarEl = document.querySelector('.sidebar');
+  var sidebarRect = sidebarEl && sidebarEl.getBoundingClientRect ? sidebarEl.getBoundingClientRect() : null;
+  var badgeEl = document.querySelector('.partner-practice-mode-badge.is-visible');
+  var badgeRect = badgeEl && badgeEl.getBoundingClientRect ? badgeEl.getBoundingClientRect() : null;
+
+  var left = clampPartnerBubble((viewportW - bubbleW) / 2, margin, Math.max(margin, viewportW - bubbleW - margin));
+  var minTop = margin;
+  if (badgeRect && badgeRect.height) {
+    minTop = Math.max(minTop, badgeRect.bottom + gap);
+  }
+  if (frameRect && frameRect.height) {
+    minTop = Math.max(minTop, frameRect.top + Math.min(18, frameRect.height * 0.06));
+  }
+
+  var bottomLimit = viewportH - margin;
+  if (sidebarRect && sidebarRect.height) {
+    bottomLimit = Math.min(bottomLimit, sidebarRect.top - gap);
+  }
+  var preferredTop = bottomLimit - bubbleH;
+  if (frameRect && frameRect.height) {
+    preferredTop = Math.min(preferredTop, frameRect.top + frameRect.height * 0.66);
+  }
+  var maxTop = Math.max(minTop, viewportH - bubbleH - margin);
+  if (bottomLimit > margin) {
+    maxTop = Math.max(minTop, Math.min(maxTop, bottomLimit - bubbleH));
+  }
+  var targetPiece = partnerPracticeState && partnerPracticeState.targetPiece;
+  var pieceRectOnScreen = targetPiece ? getPieceScreenRect(targetPiece) : null;
+  var homeRectOnScreen = targetPiece ? getPieceHomeScreenRect(targetPiece) : null;
+  var pathRect = combineScreenRects(pieceRectOnScreen, homeRectOnScreen);
+  var avoidRects = [];
+  if (targetRect) avoidRects.push({ rect: inflateScreenRect(targetRect, 18, 14), weight: 1000 });
+  if (pieceRectOnScreen) avoidRects.push({ rect: inflateScreenRect(pieceRectOnScreen, 20, 18), weight: 1200 });
+  if (homeRectOnScreen) avoidRects.push({ rect: inflateScreenRect(homeRectOnScreen, 24, 20), weight: 1400 });
+  if (pathRect) avoidRects.push({ rect: inflateScreenRect(pathRect, 10, 10), weight: 0.65 });
+
+  var frameLeft = frameRect ? frameRect.left + 18 : margin;
+  var frameRight = frameRect ? frameRect.right - bubbleW - 18 : viewportW - bubbleW - margin;
+  var frameTop = frameRect ? Math.max(minTop, frameRect.top + 18) : minTop;
+  var frameBottom = frameRect ? Math.min(maxTop, frameRect.bottom - bubbleH - 18) : maxTop;
+  var centerLeft = clampPartnerBubble((viewportW - bubbleW) / 2, margin, Math.max(margin, viewportW - bubbleW - margin));
+  var centerTop = clampPartnerBubble((frameTop + frameBottom) / 2, minTop, maxTop);
+  var candidates = [
+    { left: frameRight, top: frameTop, bias: 0 },
+    { left: frameLeft, top: frameTop, bias: 4 },
+    { left: frameLeft, top: frameBottom, bias: 8 },
+    { left: frameRight, top: frameBottom, bias: 8 },
+    { left: centerLeft, top: frameTop, bias: 14 },
+    { left: centerLeft, top: frameBottom, bias: 16 },
+    { left: frameRight, top: centerTop, bias: 18 },
+    { left: frameLeft, top: centerTop, bias: 20 },
+    { left: left, top: preferredTop, bias: 28 },
+  ];
+  var best = null;
+  var bestScore = Infinity;
+  candidates.forEach(function (candidate) {
+    var candLeft = clampPartnerBubble(candidate.left, margin, Math.max(margin, viewportW - bubbleW - margin));
+    var candTop = clampPartnerBubble(candidate.top, minTop, maxTop);
+    var rectForScore = {
+      left: candLeft,
+      top: candTop,
+      right: candLeft + bubbleW,
+      bottom: candTop + bubbleH,
+      width: bubbleW,
+      height: bubbleH,
+    };
+    var score = candidate.bias || 0;
+    for (var i = 0; i < avoidRects.length; i++) {
+      score += screenRectOverlapArea(rectForScore, avoidRects[i].rect) * avoidRects[i].weight;
+    }
+    if (pieces && pieces.length) {
+      for (var j = 0; j < pieces.length; j++) {
+        if (!pieces[j] || pieces[j] === targetPiece || pieces[j].snapped) continue;
+        score += screenRectOverlapArea(rectForScore, getPieceScreenRect(pieces[j])) * 0.25;
+      }
+    }
+    if (score < bestScore) {
+      bestScore = score;
+      best = { left: candLeft, top: candTop };
+    }
+  });
+  if (best) {
+    left = best.left;
+    preferredTop = best.top;
+  }
+  var top = clampPartnerBubble(preferredTop, minTop, maxTop);
+
+  coach.dataset.side = 'stable';
+  coach.style.setProperty('--partner-bubble-left', left.toFixed(1) + 'px');
+  coach.style.setProperty('--partner-bubble-top', top.toFixed(1) + 'px');
+}
+
 function positionPartnerPracticeBubble(targetRect, preferredSide) {
   if (!partnerPracticeState || !partnerPracticeState.coach || !targetRect) return;
   var coach = partnerPracticeState.coach;
   showPartnerPracticeCoach();
+  coach.classList.remove('is-basic-stable');
+  if (shouldUseBasicStableBubble()) {
+    positionBasicStablePracticeBubble(coach, targetRect);
+    return;
+  }
   var gap = 14;
   var margin = 10;
   var side = preferredSide || '';
@@ -2866,6 +4160,15 @@ function positionPartnerPracticeBubble(targetRect, preferredSide) {
 function setPartnerPracticeCoachBubbleForRect(targetRect, preferredSide, showActions) {
   if (!partnerPracticeState || !partnerPracticeState.coach || !targetRect) return;
   var coach = partnerPracticeState.coach;
+  if (isBasicPracticeFixedPanelActive()) {
+    coach.classList.remove('is-bubble', 'is-basic-stable');
+    coach.classList.toggle('is-actions-hidden', !showActions);
+    coach.removeAttribute('data-side');
+    coach.style.removeProperty('--partner-bubble-left');
+    coach.style.removeProperty('--partner-bubble-top');
+    showPartnerPracticeCoach();
+    return;
+  }
   coach.classList.add('is-bubble');
   coach.classList.toggle('is-actions-hidden', !showActions);
   requestAnimationFrame(function () {
@@ -3038,10 +4341,132 @@ function getPracticePieces() {
   return pieces.filter(function (p) { return p && !p.snapped; });
 }
 
+function getCurrentPieceRef(piece) {
+  if (!piece || !pieces || !pieces.length) return null;
+  if (pieces.indexOf(piece) >= 0) return piece;
+  return pieces.find(function (p) {
+    return p && p.row === piece.row && p.col === piece.col && !p.snapped;
+  }) || null;
+}
+
+function scoreBasicPracticePieceImage(piece) {
+  if (!piece || !sourceImg || !boardW || !boardH) return -1;
+  try {
+    var naturalW = sourceImg.naturalWidth || sourceImg.width || 0;
+    var naturalH = sourceImg.naturalHeight || sourceImg.height || 0;
+    if (!naturalW || !naturalH) return -1;
+    var sx = Math.max(0, Math.floor((piece.homeX - boardX) / boardW * naturalW));
+    var sy = Math.max(0, Math.floor((piece.homeY - boardY) / boardH * naturalH));
+    var sw = Math.max(1, Math.ceil(pieceW / boardW * naturalW));
+    var sh = Math.max(1, Math.ceil(pieceH / boardH * naturalH));
+    if (sx + sw > naturalW) sw = naturalW - sx;
+    if (sy + sh > naturalH) sh = naturalH - sy;
+    if (sw <= 0 || sh <= 0) return -1;
+    var sampleSize = 20;
+    var canvas = scoreBasicPracticePieceImage._canvas;
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      scoreBasicPracticePieceImage._canvas = canvas;
+    }
+    canvas.width = sampleSize;
+    canvas.height = sampleSize;
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return -1;
+    ctx.clearRect(0, 0, sampleSize, sampleSize);
+    ctx.drawImage(sourceImg, sx, sy, sw, sh, 0, 0, sampleSize, sampleSize);
+    var data = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+    var count = 0;
+    var sumR = 0;
+    var sumG = 0;
+    var sumB = 0;
+    var sumSat = 0;
+    var lumas = [];
+    for (var i = 0; i < data.length; i += 4) {
+      var a = data[i + 3];
+      if (a < 16) continue;
+      var r = data[i];
+      var g = data[i + 1];
+      var b = data[i + 2];
+      var max = Math.max(r, g, b);
+      var min = Math.min(r, g, b);
+      var sat = max ? (max - min) / max : 0;
+      var luma = r * 0.299 + g * 0.587 + b * 0.114;
+      sumR += r;
+      sumG += g;
+      sumB += b;
+      sumSat += sat;
+      lumas.push(luma);
+      count++;
+    }
+    if (!count) return -1;
+    var meanLuma = lumas.reduce(function (acc, n) { return acc + n; }, 0) / count;
+    var variance = lumas.reduce(function (acc, n) {
+      var d = n - meanLuma;
+      return acc + d * d;
+    }, 0) / count;
+    var avgSat = sumSat / count;
+    var avgR = sumR / count;
+    var avgG = sumG / count;
+    var avgB = sumB / count;
+    var colorDistance = Math.max(avgR, avgG, avgB) - Math.min(avgR, avgG, avgB);
+    var centerBias = 1 - Math.min(1, Math.hypot(
+      (piece.col + 0.5) / Math.max(1, stageCols) - 0.5,
+      (piece.row + 0.5) / Math.max(1, stageRows) - 0.5
+    ));
+    return variance * 0.7 + avgSat * 90 + colorDistance * 0.22 + centerBias * 18;
+  } catch (_) {
+    return -1;
+  }
+}
+
+function getBasicPracticeAnchorPiece() {
+  var list = getPracticePieces();
+  if (!list.length) return null;
+  var best = null;
+  var bestScore = -Infinity;
+  list.forEach(function (piece) {
+    var score = scoreBasicPracticePieceImage(piece);
+    if (score > bestScore) {
+      bestScore = score;
+      best = piece;
+    }
+  });
+  if (best && bestScore > 18) {
+    var oneUp = list.find(function (piece) {
+      return piece && !piece.snapped && piece.col === best.col && piece.row === best.row - 1;
+    });
+    if (oneUp) return oneUp;
+    return best;
+  }
+  return list.find(function (piece) {
+    return piece && piece.row === 1 && piece.col === 1 && !piece.snapped;
+  }) || list.find(function (piece) {
+    return piece && piece.row >= 1 && piece.col >= 1 && !piece.snapped;
+  }) || list[0] || null;
+}
+
+function getPracticeSafePadX() {
+  return Math.max(14, Math.min(pieceW * 0.34, canvasW * 0.12));
+}
+
+function getPracticeSafePadY() {
+  return Math.max(14, Math.min(pieceH * 0.34, canvasH * 0.12));
+}
+
+function clampValue(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function placePieceForPractice(piece, x, y, rotation) {
   if (!piece) return;
-  piece.x = Math.max(0, Math.min(canvasW - pieceW, x));
-  piece.y = Math.max(0, Math.min(canvasH - pieceH, y));
+  if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+    var safe = clampPracticePiecePos(x, y);
+    piece.x = safe.x;
+    piece.y = safe.y;
+  } else {
+    piece.x = Math.max(0, Math.min(canvasW - pieceW, x));
+    piece.y = Math.max(0, Math.min(canvasH - pieceH, y));
+  }
   piece.rotation = rotation || 0;
   piece.snapped = false;
   var maxZ = pieces && pieces.length
@@ -3051,6 +4476,61 @@ function placePieceForPractice(piece, x, y, rotation) {
   rebuildPath(piece);
 }
 
+function placeBasicPracticeBoardPattern() {
+  if (!pieces || !pieces.length) return;
+  var padX = getPracticeSafePadX();
+  var padY = getPracticeSafePadY();
+  var maxX = Math.max(padX, canvasW - pieceW - padX);
+  var maxY = Math.max(padY, canvasH - pieceH - padY);
+  var gapX = Math.max(10, pieceW * 0.16);
+  var gapY = Math.max(10, pieceH * 0.16);
+  var leftX = clampValue(boardX - pieceW - gapX, padX, maxX);
+  var rightX = clampValue(boardX + boardW + gapX, padX, maxX);
+  var topY = clampValue(boardY + gapY, padY, maxY);
+  var midY = clampValue(boardY + boardH * 0.50 - pieceH / 2, padY, maxY);
+  var lowY = clampValue(boardY + boardH - pieceH - gapY, padY, maxY);
+  var upperY = clampValue(boardY - pieceH - gapY, padY, maxY);
+  var lowerY = clampValue(boardY + boardH + gapY, padY, maxY);
+  var topX1 = clampValue(boardX + boardW * 0.12, padX, maxX);
+  var topX2 = clampValue(boardX + boardW * 0.42, padX, maxX);
+  var topX3 = clampValue(boardX + boardW * 0.72, padX, maxX);
+  var lowX1 = clampValue(boardX + boardW * 0.08, padX, maxX);
+  var lowX2 = clampValue(boardX + boardW * 0.38, padX, maxX);
+  var lowX3 = clampValue(boardX + boardW * 0.68, padX, maxX);
+  var candidates = [
+    { x: leftX, y: topY },
+    { x: rightX, y: topY },
+    { x: leftX, y: lowY },
+    { x: rightX, y: lowY },
+    { x: leftX, y: midY },
+    { x: rightX, y: midY },
+    { x: topX1, y: upperY },
+    { x: topX2, y: upperY },
+    { x: topX3, y: upperY },
+    { x: lowX1, y: lowerY },
+    { x: lowX2, y: lowerY },
+    { x: lowX3, y: lowerY },
+  ];
+  var anchor = getBasicPracticeAnchorPiece();
+  var ordered = [];
+  if (anchor) ordered.push(anchor);
+  pieces.forEach(function (piece) {
+    if (piece && piece !== anchor) ordered.push(piece);
+  });
+  ordered.forEach(function (piece, i) {
+    var pos = candidates[i % candidates.length];
+    piece.snapped = false;
+    piece.rotation = 0;
+    piece.x = pos.x;
+    piece.y = pos.y;
+    piece.zOrder = i;
+    rebuildPath(piece);
+  });
+  snappedCount = 0;
+  updateProgress();
+  redraw();
+}
+
 function resetPracticeBoard() {
   setSelectedPieceForHint(null);
   hintFlashPiece = null;
@@ -3058,10 +4538,11 @@ function resetPracticeBoard() {
   stageHintUsesActual = 0;
   dragPiece = null;
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  hideBasicPracticeHand();
   if (partnerPracticeState) {
     partnerPracticeState.phase = 'reset';
     partnerPracticeState.targetPiece = null;
-    partnerPracticeState.cue = null;
+    setBasicCueWithRelease(null);
     partnerPracticeState.allowCanvasInput = false;
     partnerPracticeState.hintIntroDone = false;
   }
@@ -3069,7 +4550,11 @@ function resetPracticeBoard() {
   document.body.classList.remove('partner-practice-peek-on');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-input-on');
   clearPracticeHighlights();
-  shufflePieces();
+  if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+    placeBasicPracticeBoardPattern();
+  } else {
+    shufflePieces();
+  }
   if (partnerPracticeState && partnerPracticeState.partnerId === 'risu') {
     activeChallenge.started = false;
     activeChallenge.expired = false;
@@ -3137,11 +4622,16 @@ function rectsOverlap(a, b) {
   return !!(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
 }
 
+function pointInPracticeRect(x, y, rect) {
+  return !!(rect && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom);
+}
+
 function clampPracticePiecePos(x, y) {
-  var pad = Math.max(8, pieceW * 0.10);
+  var padX = getPracticeSafePadX();
+  var padY = getPracticeSafePadY();
   return {
-    x: Math.max(pad, Math.min(canvasW - pieceW - pad, x)),
-    y: Math.max(pad, Math.min(canvasH - pieceH - pad, y)),
+    x: clampValue(x, padX, Math.max(padX, canvasW - pieceW - padX)),
+    y: clampValue(y, padY, Math.max(padY, canvasH - pieceH - padY)),
   };
 }
 
@@ -3178,6 +4668,10 @@ function findHintPracticeAwayPos(avoidRect, placed) {
   ];
   for (var i = 0; i < candidates.length; i++) {
     if (isHintPracticePosClear(candidates[i], avoidRect, placed, zones)) return candidates[i];
+  }
+
+  if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+    return clampPracticePiecePos(canvasW - pieceW - pad, canvasH - pieceH - pad);
   }
 
   var best = null;
@@ -3225,6 +4719,657 @@ function clearHintPracticeTargetArea(targetPiece) {
   rebuildPath(targetPiece);
 }
 
+function runBasicButtonHandDemo(targetEl, options, onDone) {
+  if (!partnerPracticeState || !targetEl || !targetEl.getBoundingClientRect) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  options = options || {};
+  var rect = targetEl.getBoundingClientRect();
+  var target = {
+    x: rect.left + rect.width * 0.58,
+    y: rect.top + rect.height * 0.52,
+  };
+  var start = {
+    x: Math.min((window.innerWidth || 800) - 28, rect.right + Math.max(72, rect.width * 0.82)),
+    y: target.y + Math.max(16, rect.height * 0.22),
+  };
+  var size = getBasicHandSizeForRect(rect, options.sizeScale || 1.28);
+  setBasicPracticeHand(start, 'point', { size: size, scale: 1 });
+  animateBasicPracticeHand(start, target, options.moveMs || BASIC_HAND_DEMO_MOVE_MS, 'point', { size: size }, null, function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    targetEl.classList.add('partner-practice-demo-pressed');
+    setBasicPracticeHand(target, 'point', { size: size, pressing: true, scale: 0.94 });
+    if (typeof options.onPress === 'function') options.onPress();
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      if (typeof options.onRelease === 'function') options.onRelease();
+      targetEl.classList.remove('partner-practice-demo-pressed');
+      setBasicPracticeHand(target, 'point', { size: size, scale: 1 });
+      practiceSetTimeout(function () {
+        hideBasicPracticeHand();
+        if (typeof onDone === 'function') onDone();
+      }, options.afterMs || BASIC_HAND_DEMO_AFTER_MS);
+    }, options.holdMs || BASIC_HAND_DEMO_HOLD_MS);
+  });
+}
+
+function runBasicPieceTapHandDemo(piece, onDone) {
+  if (!partnerPracticeState || !piece) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var rect = getPieceScreenRect(piece);
+  var target = practiceRectCenter(rect);
+  if (!rect || !target) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var start = {
+    x: Math.min((window.innerWidth || 800) - 36, rect.right + Math.max(54, rect.width * 0.8)),
+    y: target.y + Math.max(12, rect.height * 0.18),
+  };
+  var size = getBasicHandSizeForRect(rect, 1.28);
+  setBasicPracticeHand(start, 'point', { size: size });
+  animateBasicPracticeHand(start, target, BASIC_HAND_DEMO_MOVE_MS, 'point', { size: size }, null, function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    setBasicPracticeHand(target, 'point', { size: size, pressing: true, scale: 0.94 });
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      setBasicPracticeHand(target, 'point', { size: size, scale: 1 });
+      practiceSetTimeout(function () {
+        hideBasicPracticeHand();
+        if (typeof onDone === 'function') onDone();
+      }, BASIC_HAND_DEMO_AFTER_MS);
+    }, BASIC_HAND_DEMO_HOLD_MS);
+  });
+}
+
+function runBasicDragHandDemo(piece, from, to, onDone) {
+  if (!partnerPracticeState || !piece || !from || !to) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var rect = getPieceScreenRect(piece);
+  var start = getPieceScreenCenter(piece, false);
+  var target = getPieceScreenCenter(piece, true);
+  if (!rect || !start) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var size = getBasicHandSizeForRect(rect, 1.2);
+  setBasicPracticeHand(start, 'open', { size: size });
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || !partnerPracticeState.active) return;
+    var grabPoint = getPieceScreenCenter(piece, false) || start;
+    setBasicPracticeHand(grabPoint, 'grab', { size: size, pressing: true, scale: 0.98 });
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || !partnerPracticeState.active) return;
+      setBasicPracticeHand(grabPoint, 'grip', { size: size, pressing: true, scale: 0.94 });
+      animateBasicPracticeHand(start, target || start, BASIC_DRAG_DEMO_DURATION_MS, 'grip', {
+        size: size,
+        pressing: true,
+        scale: 0.94,
+      }, function (ease) {
+        if (!partnerPracticeState || !partnerPracticeState.active) return;
+        partnerPracticeState.loopCueGhost = {
+          piece: piece,
+          x: from.x + (to.x - from.x) * ease,
+          y: from.y + (to.y - from.y) * ease,
+          rotation: (from.rotation || 0) + ((to.rotation || 0) - (from.rotation || 0)) * ease,
+          alpha: 0.34,
+        };
+        redraw();
+      }, function () {
+        if (!partnerPracticeState || !partnerPracticeState.active) return;
+        var releasePoint = target || getPieceScreenCenter(piece, true) || grabPoint;
+        setBasicPracticeHand(releasePoint, 'release', { size: size, scale: 1 });
+        practiceSetTimeout(function () {
+          if (partnerPracticeState) partnerPracticeState.loopCueGhost = null;
+          redraw();
+          hideBasicPracticeHand();
+          if (typeof onDone === 'function') onDone();
+        }, BASIC_HAND_DEMO_AFTER_MS);
+      });
+    }, 220);
+  }, 260);
+}
+
+function runBasicHintPlaceHandDemo(piece, onDone) {
+  if (!partnerPracticeState || !piece || !btnHint) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var from = { x: piece.x, y: piece.y, rotation: piece.rotation || 0 };
+  var to = { x: piece.homeX, y: piece.homeY, rotation: 0 };
+  setSelectedPieceForHint(null);
+  clearPracticeHighlights();
+  clearHintGlow();
+  partnerPracticeState.phase = 'basic-hint-demo-select';
+  partnerPracticeState.targetPiece = piece;
+  setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(false);
+  setBasicPracticeModeBanner('demo', 'おてほんをみてね');
+  // index 8 = hint SELECT (basic_tut_09 "次はヒントだよ。場所を知りたいピースを、まず選んでね").
+  setPartnerPracticeCoachCopy(
+    'つぎは ヒントだよ',
+    'ばしょを しりたい ピースを えらんでね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  refreshHintButtonState();
+  redraw();
+
+  playBasicPracticeVoice(8, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-select') return;
+    runBasicPieceTapHandDemo(piece, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-select') return;
+      setSelectedPieceForHint(piece);
+      partnerPracticeState.phase = 'basic-hint-demo-button';
+      setBasicCueWithRelease({ kind: 'selected-piece', piece: piece });
+      practiceAddHighlight(btnHint);
+      // index 9 = hint PRESS (basic_tut_10 "ヒントを押すと、その場所が光るよ"). Plays in
+      // the demo BEFORE the hand presses the button — mirroring how idx8 plays
+      // before the tap demo — so the press narration is heard in full and is not
+      // cut by idx10/glow (idx10 only fires after the button demo completes).
+      setPartnerPracticeCoachCopy(
+        'つぎは 「ヒント」を おすよ',
+        'おすと ばしょが ひかるよ',
+        ''
+      );
+      setPartnerPracticeCoachBubble(btnHint, null, false);
+      refreshHintButtonState();
+      redraw();
+      playBasicPracticeVoice(9, function () {
+        if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-button') return;
+        runBasicButtonHandDemo(btnHint, {
+          moveMs: 920,
+          holdMs: 900,
+          afterMs: 520,
+          onPress: function () {
+            showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
+          },
+        }, function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-button') return;
+        clearPracticeHighlights();
+        partnerPracticeState.phase = 'basic-hint-demo-place';
+        setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
+        // index 10 = hint glow (basic_tut_11 "光った場所へピースを持っていくよ"). Plays
+        // when the glow appears in the demo.
+        setPartnerPracticeCoachCopy(
+          'ひかった ばしょへ もっていくよ',
+          '',
+          ''
+        );
+        setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+        showHintGlowForPiece(piece, BASIC_HINT_DEMO_GLOW_MS);
+        playBasicPracticeVoice(10);
+        runBasicDragHandDemo(piece, from, to, function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-demo-place') return;
+          placePieceForPractice(piece, from.x, from.y, from.rotation || 0);
+          setSelectedPieceForHint(null);
+          clearHintGlow();
+          setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
+          if (typeof onDone === 'function') onDone();
+        });
+        });
+      });
+    });
+  });
+}
+
+function pickBasicDragPracticePiece() {
+  return getBasicPracticeAnchorPiece();
+}
+
+function startBasicDragPractice() {
+  if (!partnerPracticeState) return;
+  clearPartnerPracticeTimers();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (peekOn) setPeekOverlay(false);
+  setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(false);
+  partnerPracticeState.phase = 'basic-drag-demo';
+  setBasicCueWithRelease(null);
+  partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  var currentTarget = getCurrentPieceRef(partnerPracticeState.targetPiece);
+  var piece = (currentTarget && !currentTarget.snapped)
+    ? currentTarget
+    : pickBasicDragPracticePiece();
+  if (!piece) {
+    startBasicPeekPractice();
+    return;
+  }
+  var canReuseStart = currentTarget && currentTarget === partnerPracticeState.targetPiece;
+  var start = (canReuseStart && partnerPracticeState.basicDragStart) || {
+    x: piece.x,
+    y: piece.y,
+    rotation: piece.rotation || 0,
+  };
+  var to = { x: piece.homeX, y: piece.homeY, rotation: 0 };
+  partnerPracticeState.targetPiece = piece;
+  partnerPracticeState.basicDragStart = { x: start.x, y: start.y, rotation: start.rotation || 0 };
+  placePieceForPractice(piece, start.x, start.y, start.rotation || 0);
+  setBasicCueWithRelease(null);
+  setBasicPracticeFrameMode('demo');
+  clearPartnerPracticeCoachBubble();
+  showPartnerPracticeCoach();
+  if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
+  setPartnerPracticeCoachCopy(
+    'おてほんを みてね',
+    'このピースを つかんで あおい ばしょへ',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  redraw();
+
+  // Start the voice FIRST after a short settle delay, then anchor the orange/blue
+  // cues to the audio element's REAL playback start (scheduleBasicDragCuesOnVoice)
+  // so they align with the spoken phrases (このピースをつかんで → orange,
+  // 青い場所へ → blue) even when play() is delayed. Cue is null at phase entry so
+  // the orange target doesn't appear at t=0 anymore.
+  practiceSetTimeout(function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+    if (partnerPracticeState.targetPiece !== piece) return;
+    // Start the voice first, then anchor the orange/blue cues to the audio
+    // element's real playback start (with a wall-clock fallback) so they line up
+    // with the spoken 「このピースをつかんで」 / 「青い場所へ」 even if play() is
+    // delayed by network / decode / autoplay gating.
+    var demoAudio = playBasicPracticeVoice(1, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+      runBasicDragHandDemo(piece, { x: start.x, y: start.y, rotation: 0 }, to, function () {
+        if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-demo') return;
+        placePieceForPractice(piece, start.x, start.y, 0);
+        clearHintPracticeTargetArea(piece);
+        partnerPracticeState.phase = 'basic-drag-try';
+        // Cue starts null for the try phase too; orange/blue come in with voice.
+        setBasicCueWithRelease(null);
+        // Badge + FULL voice together: show the 「やってみよう」 try badge AND start
+        // the full untrimmed basic_tut_03 (「やってみよう。ピースを持って、青い場所へ
+        // 離してね」) at the SAME instant — so the spoken 「やってみよう」 plays while the
+        // badge shows, as a single pause beat. Input stays disabled for now. At the
+        // 「ピース」 boundary (~2.18s, anchored to the audio's real playback below)
+        // the badge fades + input enables while the SAME audio flows on; we do NOT
+        // restart or cut it.
+        setPartnerPracticeInput(false);
+        // Keep the badge up at least past the split (~2.18s) + fade; the
+        // anchored split timer below performs the actual fade, this is only the
+        // upper bound so the badge never lingers if the audio anchor never fires.
+        setBasicPracticeModeBanner(
+          'try',
+          'やってみよう',
+          BASIC_DRAG_TRY_SPLIT_AT_VOICE_MS + BASIC_MODE_BADGE_FADE_MS + BASIC_CUE_PLAY_FALLBACK_MS
+        );
+        setPartnerPracticeCoachCopy(
+          'やってみよう',
+          'ピースを もって、あおい ばしょへ',
+          ''
+        );
+        setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+        redraw();
+        // Start the FULL try voice immediately, together with the badge above.
+        var tryAudio = playBasicPracticeVoice(2, function () {
+          if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-try') return;
+          // Badge is already hidden at the split. Just arm the drag loop cue so a
+          // child who hasn't grabbed the piece yet keeps getting the orange/blue
+          // nudge.
+          armBasicDragLoopCue(piece, 'basic-drag-try');
+        });
+        // Anchor the badge-hide + input-enable "split" to the audio's REAL
+        // playback start (mirrors scheduleBasicDragCuesOnVoice's play-event
+        // pattern, with a wall-clock fallback if 'play' never fires). At
+        // BASIC_DRAG_TRY_SPLIT_AT_VOICE_MS (~2.18s = 「ピース」) the badge fades out
+        // and drag input enables, while the SAME continuous audio keeps playing
+        // into 「ピースを持って、青い場所へ…」.
+        scheduleBasicDragTrySplitOnVoice({
+          audio: tryAudio,
+          piece: piece,
+          splitMs: BASIC_DRAG_TRY_SPLIT_AT_VOICE_MS,
+        });
+        // Blue (「青い場所へ」) cue anchored to the same full audio. Orange is
+        // owned by scheduleBasicDragTrySplitOnVoice's doSplit so badge/input/
+        // orange cue all fire in the SAME tick (FIX B); skipOrange:true dedupes.
+        scheduleBasicDragCuesOnVoice({
+          audio: tryAudio,
+          phase: 'basic-drag-try',
+          piece: piece,
+          orangeMs: BASIC_DRAG_TRY_ORANGE_AT_VOICE_MS,
+          blueMs: BASIC_DRAG_TRY_BLUE_AT_VOICE_MS,
+          skipOrange: true,
+        });
+      });
+    });
+    scheduleBasicDragCuesOnVoice({
+      audio: demoAudio,
+      phase: 'basic-drag-demo',
+      piece: piece,
+      orangeMs: BASIC_DRAG_DEMO_ORANGE_AT_VOICE_MS,
+      blueMs: BASIC_DRAG_DEMO_BLUE_AT_VOICE_MS,
+    });
+  }, BASIC_DRAG_NA_START_DELAY_MS);
+}
+
+function isBasicDragPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && (partnerPracticeState.phase === 'basic-drag-try'
+      || partnerPracticeState.phase === 'basic-drag-moving'));
+}
+
+function isBasicHintDragPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && (partnerPracticeState.phase === 'basic-hint-drag-try'
+      || partnerPracticeState.phase === 'basic-hint-drag-moving'));
+}
+
+function getBasicDragPracticeHitPiece(x, y) {
+  if (!isBasicDragPracticePhase() && !isBasicHintDragPracticePhase()) return null;
+  var piece = partnerPracticeState.targetPiece;
+  if (!piece || piece.snapped) return null;
+  var padX = Math.max(24, Math.min(52, pieceW * 0.42));
+  var padY = Math.max(24, Math.min(52, pieceH * 0.42));
+  return pointInPracticeRect(x, y, pieceRect(piece, padX, padY)) ? piece : null;
+}
+
+function isBasicDragPracticeNearHome(piece) {
+  if (!piece) return false;
+  return Math.hypot(piece.x - piece.homeX, piece.y - piece.homeY) <= Math.max(SNAP_DIST * 1.45, pieceW * 0.52);
+}
+
+function onBasicDragPracticeDragStart(piece) {
+  if (!isBasicDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  partnerPracticeState.phase = 'basic-drag-moving';
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
+  setPartnerPracticeCoachCopy(
+    'そのまま うごかそう',
+    'あおい ばしょへ もっていってね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+}
+
+function updateBasicDragPracticeDrag(piece) {
+  if (!isBasicDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
+  setBasicCueWithRelease({
+    kind: isBasicDragPracticeNearHome(piece) ? 'kojika-glow' : 'kojika-move-target',
+    piece: piece,
+  });
+}
+
+function onBasicDragPracticePieceDropped(piece, didSnap) {
+  if (!isBasicDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  if (!didSnap && !piece.snapped && isBasicDragPracticeNearHome(piece)
+      && typeof window.PonoPuzzleForceSnapPiece === 'function') {
+    didSnap = window.PonoPuzzleForceSnapPiece(piece);
+  }
+  if (didSnap || piece.snapped) {
+    partnerPracticeState.phase = 'basic-drag-done';
+    setBasicCueWithRelease(null);
+    setPartnerPracticeInput(false);
+    setBasicPracticeModeBanner('done', 'できたね！');
+    setPartnerPracticeCoachCopy(
+      'できたね',
+      'つぎは 「みる」 ボタンを ためすよ',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece) || getPieceScreenRect(piece), 'below', false);
+    redraw();
+    playBasicPracticeVoice(3, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-drag-done') return;
+      startBasicPeekPractice();
+    }, Math.max(BASIC_AFTER_DRAG_SUCCESS_MS, 3000));
+    return;
+  }
+  partnerPracticeState.phase = 'basic-drag-try';
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  setPartnerPracticeCoachCopy(
+    'もういちど',
+    'あおい ばしょに ちかづけて はなそう',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+  redraw();
+  armBasicDragLoopCue(piece, 'basic-drag-try');
+}
+
+// 13-step real-UI hint, DEMO-LESS single guided try (mirrors the 見る button):
+//   showBasicHintSelectNarration -> startBasicHintPlaceTry (phase 'basic-hint-select-try', plays idx8 SELECT)
+//     -> child taps piece -> onBasicHintSelectPracticePointerDown (phase 'basic-hint-press-try', plays idx9 PRESS)
+//     -> child presses ヒント -> onBasicHintPracticeHintButtonUsed (phase 'basic-hint-drag-try', plays idx10 GLOW)
+//     -> child drags home -> onBasicHintDragPracticePieceDropped
+//        -> showBasicHintDoneNarration (idx11 FINISH -> idx12 CLOSING) -> finishPartnerPractice.
+// There is NO お手本 hand demo: each of idx8/idx9/idx10 plays exactly ONCE at the
+// child's own corresponding step. 'basic-hint-press-try' is set ONLY inside
+// onBasicHintSelectPracticePointerDown, so idx9 cannot be skipped on the happy path.
+// runBasicHintPlaceHandDemo() remains defined but is no longer called for the basic hint.
+function startBasicHintPlaceTry(piece) {
+  if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+  if (!piece || piece.snapped) return;
+  // FIX C: ENFORCE clean canvas at entry — any leftover cue from the prior phase
+  // (e.g. the demo path) must fade out via the FIX A envelope before idx8 fires
+  // its cue. Banner is hidden via the existing is-leaving fade, and any pending
+  // banner timers were cleared upstream by clearPartnerPracticeTimers.
+  // setBasicCueWithRelease(null) gracefully fades any leftover cue rather than
+  // hard-cutting it. Upstream (startCommonHintPractice basic branch + FIX C)
+  // already zeroes the cue at hint-select entry; this is defensive belt-and-
+  // suspenders in case any future path leaves one behind.
+  setBasicCueWithRelease(null);
+  hideBasicPracticeTryBannerNow();
+  clearPracticeHighlights();
+  clearBasicPracticeHand();
+  clearHintGlow();
+  setSelectedPieceForHint(null);
+  partnerPracticeState.phase = 'basic-hint-select-try';
+  partnerPracticeState.targetPiece = piece;
+  // v1338 FIX 2/3: do NOT light the orange tap-piece cue (or pop the badge) at t=0.
+  // Both are anchored below to idx8's real playback at the 「場所を知りたいピース」 phrase.
+  partnerPracticeState.hintSelectReady = true;
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(true);
+  setPartnerPracticePeekInput(false);
+  showPartnerPracticeCoach();
+  setPartnerPracticeCoachCopy(
+    'やってみよう',
+    'ばしょを しりたい ピースを えらんでね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  refreshHintButtonState();
+  redraw();
+  // Demo-less single-try hint: this is the FIRST step of the guided try. idx8
+  // (SELECT 「次はヒントだよ。場所を知りたいピースを、まず選んでね」) plays here; the orange
+  // tap-piece cue + 「やってみよう！」 badge appear together when the narration reaches
+  // 「場所を知りたいピース」 (~BASIC_HINT_SELECT_CUE_AT_VOICE_MS), synced to the audio's
+  // REAL play event with a wall-clock fallback.
+  var selectAudio = playBasicPracticeVoice(8);
+  scheduleBasicHintSelectCueOnVoice({
+    audio: selectAudio,
+    piece: piece,
+    selectMs: BASIC_HINT_SELECT_CUE_AT_VOICE_MS,
+  });
+}
+
+function isBasicHintSelectPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && partnerPracticeState.phase === 'basic-hint-select-try');
+}
+
+function isBasicHintPressPracticePhase() {
+  return !!(partnerPracticeState
+    && partnerPracticeState.mode === 'basic'
+    && partnerPracticeState.phase === 'basic-hint-press-try');
+}
+
+function onBasicHintSelectPracticePointerDown(piece) {
+  if (!isBasicHintSelectPracticePhase()) return false;
+  var targetPiece = partnerPracticeState.targetPiece;
+  if (!targetPiece || targetPiece.snapped) return true;
+  if (!piece || piece !== targetPiece) {
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: targetPiece });
+    setPartnerPracticeCoachCopy(
+      piece ? 'このピースだよ' : 'ピースを えらんでね',
+      'ばしょを しりたい ピースを タッチ',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(targetPiece), 'above', false);
+    redraw();
+    return true;
+  }
+
+  setSelectedPieceForHint(piece);
+  partnerPracticeState.phase = 'basic-hint-press-try';
+  setBasicCueWithRelease({ kind: 'selected-piece', piece: piece });
+  partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = true;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(true);
+  clearPracticeHighlights();
+  practiceAddHighlight(btnHint);
+  // index 9 = hint PRESS (basic_tut_10 "ヒントを押すと、その場所が光るよ"). Plays after
+  // the child selects the piece, prompting them to press the ヒント button.
+  setPartnerPracticeCoachCopy(
+    'ヒントを おしてみよう',
+    'おすと ばしょが ひかるよ',
+    ''
+  );
+  setPartnerPracticeCoachBubble(btnHint, null, false);
+  refreshHintButtonState();
+  redraw();
+  playBasicPracticeVoice(9);
+  return true;
+}
+
+function onBasicHintPracticeHintButtonUsed() {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-press-try') return false;
+  var piece = selectedPieceForHint || partnerPracticeState.targetPiece;
+  if (!piece || piece.snapped) return false;
+  clearPracticeHighlights();
+  partnerPracticeState.phase = 'basic-hint-drag-try';
+  partnerPracticeState.targetPiece = piece;
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  setPartnerPracticeInput(true);
+  setPartnerPracticePeekInput(false);
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  showHintGlowForPiece(piece, BASIC_HINT_TRY_GLOW_MS);
+  // index 10 = hint GLOW (basic_tut_11 "光った場所へピースを持っていくよ"). Demo-less
+  // single-try: this clip used to play only inside the お手本 demo; now it plays when
+  // the child sees the glow they triggered, prompting them to carry the piece there.
+  playBasicPracticeVoice(10);
+  showPartnerPracticeCoach();
+  setPartnerPracticeCoachCopy(
+    'やってみよう',
+    'ピースを もって、ひかった ばしょへ',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'above', false);
+  refreshHintButtonState();
+  redraw();
+  armBasicDragLoopCue(piece, 'basic-hint-drag-try');
+  return true;
+}
+
+function onBasicHintDragPracticeDragStart(piece) {
+  if (!isBasicHintDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  partnerPracticeState.phase = 'basic-hint-drag-moving';
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
+  // v1338 FIX 3: fade the 「やってみよう！」 center badge out the moment the child
+  // STARTS dragging the hint piece, so it stops covering the puzzle during the
+  // move/retry (the screenshot showed it obstructing the board mid-drag).
+  hideBasicPracticeTryBannerNow();
+  setPartnerPracticeCoachCopy(
+    'そのまま うごかそう',
+    'ひかった ばしょへ もっていってね',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+}
+
+function updateBasicHintDragPracticeDrag(piece) {
+  if (!isBasicHintDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
+  setBasicCueWithRelease({
+    kind: isBasicDragPracticeNearHome(piece) ? 'kojika-glow' : 'kojika-move-target',
+    piece: piece,
+  });
+}
+
+function onBasicHintDragPracticePieceDropped(piece, didSnap) {
+  if (!isBasicHintDragPracticePhase()) return;
+  if (!piece || piece !== partnerPracticeState.targetPiece) return;
+  if (!didSnap && !piece.snapped && isBasicDragPracticeNearHome(piece)
+      && typeof window.PonoPuzzleForceSnapPiece === 'function') {
+    didSnap = window.PonoPuzzleForceSnapPiece(piece);
+  }
+  if (didSnap || piece.snapped) {
+    clearHintGlow();
+    setSelectedPieceForHint(null);
+    partnerPracticeState.phase = 'basic-hint-drag-done';
+    setBasicCueWithRelease(null);
+    setPartnerPracticeInput(false);
+    setBasicPracticeModeBanner('done', 'できたね！');
+    setPartnerPracticeCoachCopy(
+      'ひかったね',
+      'ばしょが わからないときは ヒントを つかってね',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece) || getPieceScreenRect(piece), 'below', false);
+    redraw();
+    // Do NOT finish immediately: play the closing narrations idx11
+    // ("できたね。…") -> idx12 ("これで練習はおしまい。…") first.
+    // showBasicHintDoneNarration() orchestrates the idx11->idx12 voice chain and
+    // gates finishPartnerPractice() behind maybeFinishBasicPracticeAfterSnap()
+    // (both basicDoneVoiceDone && basicDoneSnapDone). The piece is already
+    // snapped here, so its auto-snap step short-circuits to basicDoneSnapDone.
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-hint-drag-done') return;
+      showBasicHintDoneNarration();
+    }, BASIC_AFTER_DRAG_SUCCESS_MS);
+    return;
+  }
+  partnerPracticeState.phase = 'basic-hint-drag-try';
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
+  showHintGlowForPiece(piece, BASIC_HINT_TRY_GLOW_MS);
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  setPartnerPracticeCoachCopy(
+    'もういちど',
+    'ひかった ばしょに ちかづけて はなそう',
+    ''
+  );
+  setPartnerPracticeCoachBubbleForRect(getPieceHomeScreenRect(piece), 'left', false);
+  redraw();
+  armBasicDragLoopCue(piece, 'basic-hint-drag-try');
+}
+
+function rearmBasicLoopCueIfWaiting() {
+  if (!partnerPracticeState || !partnerPracticeState.targetPiece) return;
+  if (partnerPracticeState.phase === 'basic-drag-try') {
+    armBasicDragLoopCue(partnerPracticeState.targetPiece, 'basic-drag-try');
+    return;
+  }
+  if (partnerPracticeState.phase === 'basic-hint-drag-try') {
+    armBasicDragLoopCue(partnerPracticeState.targetPiece, 'basic-hint-drag-try');
+  }
+}
+
 function startCommonHintPractice(partnerId) {
   if (!partnerPracticeState) return;
   clearPartnerPracticeTimers();
@@ -3241,7 +5386,16 @@ function startCommonHintPractice(partnerId) {
   }
   partnerPracticeState.phase = 'hint-select';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'tap-piece', piece: piece };
+  // FIX C: in basic mode, the orange tap-piece cue must NOT light at hint-select
+  // entry — it would paint immediately on the next redraw and produce a brief
+  // orange flash before idx8 narration anchors the cue at ~2200ms. The basic
+  // branch (startBasicHintPlaceTry -> scheduleBasicHintSelectCueOnVoice) will
+  // set the cue itself, synced to the audio's real play event.
+  if (partnerPracticeState.mode === 'basic') {
+    setBasicCueWithRelease(null);
+  } else {
+    setBasicCueWithRelease({ kind: 'tap-piece', piece: piece });
+  }
   partnerPracticeState.hintSelectReady = false;
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
@@ -3253,10 +5407,23 @@ function startCommonHintPractice(partnerId) {
   clearHintPracticeTargetArea(piece);
   refreshHintButtonState();
   if (partnerPracticeState.mode === 'basic') {
+    // FIX C: also fade out any leftover try banner from prior phase before the
+    // 'demo' frame-mode flip so no stray 「やってみよう！」 lingers visually while
+    // idx8 narration ramps up.
+    hideBasicPracticeTryBannerNow();
+    setBasicPracticeModeBanner('demo', 'おてほんをみてね');
     clearPartnerPracticeCoachBubble();
     setPartnerPracticeCoachCopy('', '', '');
     hidePartnerPracticeCoach();
     partnerPracticeState.waitingForHintSelectCueNarration = true;
+    // FIX C followup (v1347 regression repair): in basic mode the cue is null
+    // (no pre-idx8 orange flash), so the cue-draw bootstrap at
+    // recordBasicHintSelectCueVisible can never fire. Schedule the narration
+    // directly off entry time. The orange cue is later owned by
+    // startBasicHintPlaceTry via scheduleBasicHintSelectCueOnVoice, anchored
+    // to idx8 playback — keeping FIX C's "no orange flash" intent intact.
+    partnerPracticeState.hintSelectCueVisibleAt = performance.now();
+    scheduleBasicHintSelectAfterCueVisible();
     redraw();
   } else {
     setPartnerPracticeCoachCopy(
@@ -3282,7 +5449,74 @@ function startBasicIntroPractice() {
   if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
   if (peekOn) setPeekOverlay(false);
   partnerPracticeState.phase = 'basic-intro';
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
+  partnerPracticeState.peekHoldStart = 0;
+  partnerPracticeState.peekHoldReady = false;
+  partnerPracticeState.peekReturnNarrationStarted = false;
+  partnerPracticeState.peekReturnNarrationDone = false;
+  partnerPracticeState.hintSelectReady = false;
+  partnerPracticeState.hintPressReady = false;
+  partnerPracticeState.hintActivatedByButton = false;
+  var firstPiece = pickBasicDragPracticePiece();
+  if (firstPiece) {
+    partnerPracticeState.targetPiece = firstPiece;
+    partnerPracticeState.basicDragStart = {
+      x: firstPiece.x,
+      y: firstPiece.y,
+      rotation: firstPiece.rotation || 0,
+    };
+    placePieceForPractice(firstPiece, firstPiece.x, firstPiece.y, firstPiece.rotation || 0);
+  }
+  setPartnerPracticeInput(false);
+  setPartnerPracticePeekInput(false);
+  if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
+  setPartnerPracticeCoachCopy(
+    'あそびかたを れんしゅうするよ',
+    '',
+    ''
+  );
+  clearPartnerPracticeCoachBubble();
+  // ISSUE A FIX: anchor the 「おてほんをみてね」 demo banner to the REAL playback start
+  // of basic_tut_01.mp3 (idx0) so it lands exactly on the spoken cue
+  // 「お手本を見てね」 (~BASIC_OTEHON_BANNER_AT_VOICE_MS into the clip) instead of
+  // firing on a wall-clock timer that drifted into the next narration under
+  // autoplay/decode latency. The helper has a wall-clock fallback inside, so the
+  // banner still appears if 'play' never fires.
+  var introAudio = playBasicPracticeVoice(0, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-intro') return;
+    startBasicDragPractice();
+  });
+  scheduleBasicOpeningBannerOnVoice({
+    audio: introAudio,
+    offsetMs: BASIC_OTEHON_BANNER_AT_VOICE_MS,
+  });
+  redraw();
+}
+
+function startBasicPeekPractice() {
+  if (!partnerPracticeState) return;
+  // Invalidate any in-flight basic voice token + queued callbacks BEFORE
+  // clearing timers, so the previous voice's synchronous onDone chain (which
+  // may have called us) cannot fire a stale callback after we start voice(4).
+  clearBasicPracticeVoiceQueue();
+  clearPartnerPracticeTimers();
+  // Explicitly stop any audio still playing so the new playBasicTut(4) has a
+  // clean lifecycle to attach 'ended' to. The deferred play() in voice.js
+  // ensures the stop -> play transition is not racy.
+  stopPuzzleVoice();
+  clearPracticeHighlights();
+  setSelectedPieceForHint(null);
+  hintFlashPiece = null;
+  hintFlashUntil = 0;
+  dragPiece = null;
+  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
+  if (peekOn) setPeekOverlay(false);
+  // No hand demo for the 見る button anymore: idx4 already tells the child to
+  // press it directly, so we frame this as a direct try and enable the button
+  // right after the instruction (no demo gate). Phase goes straight to
+  // 'peek-press'.
+  partnerPracticeState.phase = 'peek-press';
+  setBasicCueWithRelease(null);
   partnerPracticeState.peekHoldStart = 0;
   partnerPracticeState.peekHoldReady = false;
   partnerPracticeState.peekReturnNarrationStarted = false;
@@ -3292,104 +5526,110 @@ function startBasicIntroPractice() {
   partnerPracticeState.hintActivatedByButton = false;
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
+  // Direct-try framing: show the 「やってみよう！」 try badge (no お手本 demo badge).
+  setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
   clearPartnerPracticeCoachBubble();
+  showPartnerPracticeCoach();
   if (partnerPracticeState.coach) partnerPracticeState.coach.classList.add('is-actions-hidden');
   setPartnerPracticeCoachCopy(
-    'れんしゅうするよ',
-    '',
-    ''
-  );
-  playBasicPracticeVoice(0, function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'basic-intro') return;
-    startBasicPeekPractice();
-  }, 4300);
-  redraw();
-}
-
-function startBasicPeekPractice() {
-  if (!partnerPracticeState) return;
-  clearPartnerPracticeTimers();
-  clearPracticeHighlights();
-  setSelectedPieceForHint(null);
-  hintFlashPiece = null;
-  hintFlashUntil = 0;
-  dragPiece = null;
-  if (btnHint) btnHint.classList.remove('partner-practice-count-demo', 'is-count-pop');
-  if (peekOn) setPeekOverlay(false);
-  partnerPracticeState.phase = 'peek-press';
-  partnerPracticeState.cue = null;
-  partnerPracticeState.peekHoldStart = 0;
-  partnerPracticeState.peekHoldReady = false;
-  partnerPracticeState.peekReturnNarrationStarted = false;
-  partnerPracticeState.peekReturnNarrationDone = false;
-  partnerPracticeState.hintSelectReady = false;
-  partnerPracticeState.hintPressReady = false;
-  partnerPracticeState.hintActivatedByButton = false;
-  setPartnerPracticeInput(false);
-  setPartnerPracticePeekInput(true);
-  practiceAddHighlight(btnPeek);
-  setPartnerPracticeCoachCopy(
+    'みる ボタンを',
     'ながく おしてね',
-    '',
     ''
   );
-  playBasicPracticeVoice(1);
   setPartnerPracticeCoachBubble(btnPeek, null, false);
+  // index 4 = press-instruction (05 "まずは見るボタンを長く押してみよう"). On its
+  // onDone, enable the 見る button so the child can press it DIRECTLY (no demo),
+  // then CHAIN to index 5 = explanation (06 "見るボタンは長く押している間だけ絵が
+  // 見えるよ"). The child may press the button while idx5 is still playing.
+  // The 見る button highlight (finger/hand pointer) is NOT shown eagerly here —
+  // it is delayed via scheduleBasicPeekHandOnVoice until ~BASIC_PEEK_HAND_AT_VOICE_MS
+  // into the idx4 clip (synced to the spoken phrase 「長く押してみよう」), so the child
+  // doesn't see the finger before being told what to do. The 「やってみよう！」 try
+  // badge above is intentionally NOT delayed.
+  var peekVoiceAudio = playBasicPracticeVoice(4, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
+    // Enable the 見る button right after the instruction is heard.
+    setPartnerPracticePeekInput(true);
+    setPartnerPracticeCoachCopy(
+      'ながく おしている あいだ、',
+      'えが みえるよ',
+      ''
+    );
+    setPartnerPracticeCoachBubble(btnPeek, null, false);
+    // Keep idx5 (explanation) in the flow. It plays while the button is
+    // already pressable; the child may press during it. The early-return phase
+    // guard at the top of this onDone (phase !== 'peek-press') already protects
+    // this call: if the child pressed before idx4 finished, phase is 'peek-hold'
+    // and we never reach here, so idx6 (press narration) plays instead of idx5.
+    playBasicPracticeVoice(5);
+  });
+  // Anchor the 見る button finger/highlight to the real playback of idx4 so it
+  // appears synced to 「長く押してみよう」 (~BASIC_PEEK_HAND_AT_VOICE_MS), with a
+  // wall-clock fallback if the audio never fires 'play' (autoplay blocked etc.).
+  scheduleBasicPeekHandOnVoice({
+    audio: peekVoiceAudio,
+    button: btnPeek,
+    handMs: BASIC_PEEK_HAND_AT_VOICE_MS,
+  });
   redraw();
 }
 
 function playBasicPeekHoldNarration() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
+  // index 6 = peek release line (07 "離すと、元のパズルに戻るよ"). Plays DURING the
+  // press/hold, not after release, so the child hears what happens while still
+  // holding the 見る button down.
   setPartnerPracticeCoachCopy(
-    'そのまま みてね',
-    'おしている あいだ みえるよ',
+    'はなすと、もとの パズルに',
+    'もどるよ',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
-  playBasicPracticeVoice(2, function () {
+  playBasicPracticeVoice(6);
+  practiceSetTimeout(function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-hold' || !peekPressActive) return;
     partnerPracticeState.peekHoldReady = true;
-    setPartnerPracticeCoachCopy(
-      'はなすと もどるよ',
-      'わからなくなったら ながく おしてね',
-      ''
-    );
-    setPartnerPracticeCoachBubble(btnPeek, null, false);
     partnerPracticeState.peekReturnNarrationStarted = true;
-    playBasicPracticeVoice(3, function () {
+    practiceSetTimeout(function () {
       if (!partnerPracticeState) return;
       partnerPracticeState.peekReturnNarrationDone = true;
-    });
-  });
+    }, 700);
+  }, 700);
 }
 
 function playBasicPeekSuccessThenHint() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-  practiceSetTimeout(function () {
+  if (peekOn) setPeekOverlay(false);
+  // index 7 = peek stuck note (08 "困った時に使ってね"). Plays AFTER the child
+  // releases the 見る button; the release line (07) already played DURING the
+  // press. After this clip, transition into the hint section.
+  setPartnerPracticeCoachCopy(
+    'こまった ときに つかってね',
+    '',
+    ''
+  );
+  setPartnerPracticeCoachBubble(btnPeek, null, false);
+  playBasicPracticeVoice(7, function () {
     if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-    if (peekOn) setPeekOverlay(false);
-    startCommonHintPractice(null);
-  }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
+    practiceSetTimeout(function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
+      if (peekOn) setPeekOverlay(false);
+      startCommonHintPractice(null);
+    }, BASIC_AFTER_PEEK_SUCCESS_DELAY_MS);
+  });
 }
 
 function playBasicPeekReturnThenSuccess() {
   if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-done') return;
-  if (partnerPracticeState.peekReturnNarrationDone) {
-    playBasicPeekSuccessThenHint();
-    return;
-  }
   partnerPracticeState.peekReturnNarrationStarted = true;
   setPartnerPracticeCoachCopy(
-    'はなすと もどるよ',
-    'わからなくなったら ながく おしてね',
+    'みえたね',
+    'はなすと、もとに もどるよ',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
-  playBasicPracticeVoice(3, function () {
-    if (!partnerPracticeState) return;
-    partnerPracticeState.peekReturnNarrationDone = true;
-    if (partnerPracticeState.phase === 'peek-done') playBasicPeekSuccessThenHint();
-  });
+  partnerPracticeState.peekReturnNarrationDone = true;
+  playBasicPeekSuccessThenHint();
 }
 
 function onPartnerPracticePeekPressed() {
@@ -3413,28 +5653,29 @@ function onPartnerPracticePeekReleased(heldMs, cancelled) {
     partnerPracticeState.peekHoldReady = false;
     partnerPracticeState.basicVoiceQueued = null;
     setPartnerPracticePeekInput(true);
+    // Too-short press: keep the 'やってみよう！' re-prompt up as long as the
+    // sibling try banner (peek-press entry uses BASIC_TRY_BANNER_MS) instead of
+    // silently defaulting to 3s, so the retry instruction stays readable.
+    setBasicPracticeModeBanner('try', 'やってみよう！', BASIC_TRY_BANNER_MS);
     clearPracticeHighlights();
     practiceAddHighlight(btnPeek);
     setPartnerPracticeCoachCopy(
       'ながく おしてね',
-      'おしている あいだだけ みえるよ',
+      '「みる」 ボタンは おしている あいだだけ みえるよ',
       ''
     );
-    if (!(partnerPracticeState.basicVoiceBusy && partnerPracticeState.basicVoiceStepIndex === 1)) {
-      queueBasicPracticeAfterVoice(function () {
-        if (!partnerPracticeState || partnerPracticeState.phase !== 'peek-press') return;
-        playBasicPracticeVoice(1);
-      });
-    }
     setPartnerPracticeCoachBubble(btnPeek, null, false);
     return;
   }
   partnerPracticeState.phase = 'peek-done';
   clearPracticeHighlights();
   setPartnerPracticePeekInput(false);
+  // Explicit duration (~3.5s) so 'できたね！' stays visible long enough to read
+  // instead of the silent 3s default; the phase then moves to success narration.
+  setBasicPracticeModeBanner('done', 'できたね！', BASIC_PEEK_DONE_BANNER_MS);
   setPartnerPracticeCoachCopy(
     'みえたね',
-    'わからなくなったら ながく おしてね',
+    'はなすと、もとの パズルに もどるよ。わからなくなったら、もう いちど ながく おしてね',
     ''
   );
   setPartnerPracticeCoachBubble(btnPeek, null, false);
@@ -3458,24 +5699,54 @@ function onPartnerPracticePieceSelected(piece) {
     redraw();
     return;
   }
-  partnerPracticeState.phase = 'hint-press';
+  partnerPracticeState.phase = 'hint-demo';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'selected-piece', piece: piece };
+  setBasicCueWithRelease({ kind: 'selected-piece', piece: piece });
   partnerPracticeState.hintPressReady = false;
   partnerPracticeState.hintActivatedByButton = false;
   practiceAddHighlight(btnHint);
+  setPartnerPracticeInput(false);
   setPartnerPracticeCoachCopy(
-    'ヒントを おしてみよう',
+    'つぎは 「ヒント」を おすよ',
     '',
     ''
   );
-  playBasicPracticeVoice(5, function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
-    partnerPracticeState.hintPressReady = true;
+  setPartnerPracticeCoachBubble(btnHint, null, false);
+  runBasicButtonHandDemo(btnHint, { holdMs: 520 }, function () {
+    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-demo') return;
+    partnerPracticeState.phase = 'hint-press';
+    setPartnerPracticeInput(true);
+    // index 10 = hint glow (basic_tut_11 "光った場所へピースを持っていくよ").
+    setPartnerPracticeCoachCopy(
+      'ひかった ばしょへ もっていくよ',
+      '',
+      ''
+    );
+    playBasicPracticeVoice(10, function () {
+      if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-press') return;
+      partnerPracticeState.hintPressReady = true;
+      refreshHintButtonState();
+    });
+    setPartnerPracticeCoachBubble(btnHint, null, false);
     refreshHintButtonState();
   });
-  setPartnerPracticeCoachBubble(btnHint, null, false);
   refreshHintButtonState();
+}
+
+function startBasicHintSelectTry(piece) {
+  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
+  if (partnerPracticeState.mode !== 'basic') return;
+  if (!piece || piece.snapped) return;
+  showPartnerPracticeCoach();
+  setPartnerPracticeInput(true);
+  setBasicPracticeModeBanner('try', 'やってみよう！');
+  setPartnerPracticeCoachCopy(
+    'やってみよう',
+    'ばしょを しりたい ピースを えらんでね',
+    ''
+  );
+  partnerPracticeState.hintSelectReady = true;
+  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
 }
 
 function recordBasicHintSelectCueVisible(now) {
@@ -3494,17 +5765,14 @@ function showBasicHintSelectNarration() {
   if (!piece || piece.snapped) return;
   partnerPracticeState.waitingForHintSelectCueNarration = false;
   showPartnerPracticeCoach();
-  setPartnerPracticeCoachCopy(
-    'この ピースを タッチ',
-    '',
-    ''
-  );
-  setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'right', false);
-  playBasicPracticeVoice(4, function () {
-    if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-select') return;
-    partnerPracticeState.hintSelectReady = true;
-    setPartnerPracticeInput(true);
-  });
+  setPartnerPracticeInput(false);
+  // Demo-less single-try hint (mirrors the 見る button): skip the お手本 hand demo
+  // (runBasicHintPlaceHandDemo) and let the child do select→press→move directly,
+  // guided by narration. startBasicHintPlaceTry now plays idx8 (SELECT) itself and
+  // anchors the orange cue + 「やってみよう！」 badge to its real playback (v1338 FIX 2/3);
+  // idx9 (PRESS) plays when the child selects (onBasicHintSelectPracticePointerDown);
+  // idx10 (GLOW) plays when the child presses ヒント (onBasicHintPracticeHintButtonUsed).
+  startBasicHintPlaceTry(piece);
 }
 
 function scheduleBasicHintSelectAfterCueVisible() {
@@ -3520,21 +5788,54 @@ function scheduleBasicHintSelectAfterCueVisible() {
 }
 
 function showBasicHintDoneNarration() {
-  if (!partnerPracticeState || partnerPracticeState.phase !== 'hint-done') return;
+  // Reached from two paths:
+  //  - OLD demo-driven common hint flow -> phase 'hint-done'
+  //  - NEW 13-step real-UI hint flow    -> phase 'basic-hint-drag-done'
+  //    (child dragged the hint piece home themselves).
+  if (!partnerPracticeState) return;
+  if (partnerPracticeState.phase !== 'hint-done'
+      && partnerPracticeState.phase !== 'basic-hint-drag-done') return;
   if (partnerPracticeState.mode !== 'basic') return;
   partnerPracticeState.basicDoneVoiceDone = false;
   partnerPracticeState.basicDoneSnapDone = false;
   partnerPracticeState.basicDoneFinishScheduled = false;
+  partnerPracticeState.basicClosingVoicePlayed = false;
   showPartnerPracticeCoach();
+  // index 11 = finish (basic_tut_12 "できたね。わからない時は見るとヒントを使ってね").
   setPartnerPracticeCoachCopy(
     'ひかったね',
-    'ばしょが わからない ときは ヒントを つかってね',
+    'ばしょが わからないときは ヒントを つかってね',
     ''
   );
-  playBasicPracticeVoice(6, function () {
+  // v1338 FIX 4: idx11 names BOTH 見る and ヒント, so make both buttons stand out
+  // while it plays. clearPracticeHighlights() guards against duplicate stacking;
+  // finishPartnerPractice() already clears highlights at the Stage-1 transition.
+  clearPracticeHighlights();
+  practiceAddHighlight(btnPeek);
+  practiceAddHighlight(btnHint);
+  playBasicPracticeVoice(11, function () {
     if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
-    partnerPracticeState.basicDoneVoiceDone = true;
-    maybeFinishBasicPracticeAfterSnap();
+    // idx11 ("できたね。…") finished. Before transitioning to Stage 1, play the
+    // closing line idx12 ("これで練習はおしまい。さあ、パズルで遊ぼう。"). Only when
+    // that closing voice finishes do we mark basicDoneVoiceDone so the Stage-1
+    // transition (maybeFinishBasicPracticeAfterSnap → finishPartnerPractice)
+    // happens AFTER the child hears the closing line.
+    if (partnerPracticeState.basicClosingVoicePlayed) {
+      partnerPracticeState.basicDoneVoiceDone = true;
+      maybeFinishBasicPracticeAfterSnap();
+      return;
+    }
+    partnerPracticeState.basicClosingVoicePlayed = true;
+    setPartnerPracticeCoachCopy(
+      'これで れんしゅうは おしまい',
+      'さあ、パズルで あそぼう',
+      ''
+    );
+    playBasicPracticeVoice(12, function () {
+      if (!partnerPracticeState || partnerPracticeState.mode !== 'basic') return;
+      partnerPracticeState.basicDoneVoiceDone = true;
+      maybeFinishBasicPracticeAfterSnap();
+    });
   });
   partnerPracticeState.phase = 'basic-done';
   setPartnerPracticeCoachBubble(btnHint, null, false);
@@ -3572,7 +5873,7 @@ function animateBasicHintPieceIntoPlace() {
     return;
   }
   partnerPracticeState.phase = 'basic-auto-snap';
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   var from = { x: piece.x, y: piece.y, rotation: piece.rotation || 0 };
   var to = { x: piece.homeX, y: piece.homeY, rotation: 0 };
   animatePracticePiece(piece, from, to, BASIC_HINT_AUTO_SNAP_DURATION_MS, function () {
@@ -3580,7 +5881,7 @@ function animateBasicHintPieceIntoPlace() {
     markBasicPracticePieceSnapped(piece);
     partnerPracticeState.basicDoneSnapDone = true;
     maybeFinishBasicPracticeAfterSnap();
-  });
+  }, { hand: true, handPose: 'grip', handSize: getBasicHandSizeForRect(getPieceScreenRect(piece), 1.2) });
 }
 
 function maybeFinishBasicPracticeAfterSnap() {
@@ -3615,7 +5916,7 @@ function onPartnerPracticeHintUsed() {
   partnerPracticeState.hintActivatedByButton = false;
   clearPracticeHighlights();
   setPartnerPracticeInput(false);
-  partnerPracticeState.cue = null;
+  setBasicCueWithRelease(null);
   if (isBasicPracticeHint) {
     clearPartnerPracticeCoachBubble();
     setPartnerPracticeCoachCopy('', '', '');
@@ -3627,10 +5928,11 @@ function onPartnerPracticeHintUsed() {
   }
   setPartnerPracticeCoachCopy(
     'ひかったね',
-    'ばしょが わからない ときは ヒントを つかってね',
+    'ばしょが わからないときは ヒントを つかってね',
     ''
   );
-  playBasicPracticeVoice(6);
+  // index 11 = finish clip (basic_tut_12 "できたね。…").
+  playBasicPracticeVoice(11);
   setPartnerPracticeCoachBubble(btnHint, null, false);
   practiceSetTimeout(function () {
     startPartnerSpecificPractice(partnerPracticeState.partnerId);
@@ -3650,6 +5952,7 @@ function startPartnerSpecificPractice(partnerId) {
   if (!partnerPracticeState || !partnerPracticeState.active) return;
   clearPartnerPracticeTimers();
   clearPracticeHighlights();
+  removeBasicPracticeModeBanner();
   clearPartnerPracticeCoachBubble();
   setPartnerPracticeInput(false);
   setPartnerPracticePeekInput(false);
@@ -3768,8 +6071,9 @@ function runRisuTimerDemo() {
   }, PARTNER_PRACTICE_MODAL_AFTER_HIDE_MS);
 }
 
-function animatePracticePiece(piece, from, to, duration, onDone) {
+function animatePracticePiece(piece, from, to, duration, onDone, options) {
   if (!partnerPracticeState || !piece) return;
+  options = options || {};
   var start = performance.now();
   function frame(now) {
     if (!partnerPracticeState || !partnerPracticeState.active) return;
@@ -3781,6 +6085,16 @@ function animatePracticePiece(piece, from, to, duration, onDone) {
     rebuildPath(piece);
     dragPiece = piece;
     runAssistHooks('duringDrag', { piece: piece, dx: to.x - from.x, dy: to.y - from.y, partner: getCurrentPartner() }, false);
+    if (options.hand) {
+      var handPoint = getPieceScreenCenter(piece, false);
+      if (handPoint) {
+        setBasicPracticeHand(handPoint, options.handPose || 'grip', {
+          size: options.handSize,
+          pressing: true,
+          scale: 0.94,
+        });
+      }
+    }
     redraw();
     if (t < 1) {
       var raf = requestAnimationFrame(frame);
@@ -3811,13 +6125,21 @@ function pickKojikaPracticeStart(piece) {
   }, farCandidates[0]);
 }
 
+function pickBasicDragPracticeStart(piece) {
+  return {
+    x: Math.max(10, canvasW - pieceW - 10),
+    y: 10,
+    rotation: 0,
+  };
+}
+
 function startKojikaInteractivePractice(piece) {
   if (!partnerPracticeState || !piece) return;
   var from = pickKojikaPracticeStart(piece);
   placePieceForPractice(piece, from.x, from.y, 0);
   partnerPracticeState.phase = 'kojika-drag';
   partnerPracticeState.targetPiece = piece;
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   partnerPracticeState.kojikaGlowShown = false;
   setPartnerPracticeInput(true);
   setPartnerPracticeStartEnabled(false);
@@ -3835,7 +6157,7 @@ function onKojikaPracticeDragStart(piece) {
   if (partnerPracticeState.phase !== 'kojika-drag') return;
   if (piece !== partnerPracticeState.targetPiece) return;
   partnerPracticeState.phase = 'kojika-moving';
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   setPartnerPracticeCoachCopy(
     'あおい ばしょへ',
     'ちかづくと ひかるよ',
@@ -3856,7 +6178,7 @@ function updateKojikaPracticeDrag(piece) {
   if (partnerPracticeState.phase !== 'kojika-moving' && partnerPracticeState.phase !== 'kojika-drag') return;
   if (!piece || piece !== partnerPracticeState.targetPiece || piece.snapped) return;
   if (isKojikaPracticeNearHome(piece)) {
-    partnerPracticeState.cue = { kind: 'kojika-glow', piece: piece };
+    setBasicCueWithRelease({ kind: 'kojika-glow', piece: piece });
     if (!partnerPracticeState.kojikaGlowShown) {
       partnerPracticeState.kojikaGlowShown = true;
       setPartnerPracticeCoachCopy(
@@ -3867,7 +6189,7 @@ function updateKojikaPracticeDrag(piece) {
       setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(piece), 'below', true);
     }
   } else {
-    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   }
 }
 
@@ -3881,7 +6203,7 @@ function onKojikaPracticePieceDropped(piece, didSnap) {
   }
   if (didSnap || piece.snapped) {
     partnerPracticeState.phase = 'kojika-done';
-    partnerPracticeState.cue = null;
+    setBasicCueWithRelease(null);
     setPartnerPracticeInput(false);
     setPartnerPracticeStartEnabled(true);
     setPartnerPracticeCoachCopy(
@@ -3893,7 +6215,7 @@ function onKojikaPracticePieceDropped(piece, didSnap) {
     redraw();
     return;
   }
-  partnerPracticeState.cue = { kind: 'kojika-move-target', piece: piece };
+  setBasicCueWithRelease({ kind: 'kojika-move-target', piece: piece });
   setPartnerPracticeCoachCopy(
     partnerPracticeState.kojikaGlowShown ? 'もうすこし ちかくへ' : 'あおい ばしょへ',
     'ピースを うごかしてね',
@@ -3989,6 +6311,11 @@ function runPartnerPracticeDemo(partnerId) {
 
 function beginPartnerPractice(partnerId, returnIndex, done, options) {
   options = options || {};
+  // This runs synchronously inside the user gesture that starts the tutorial.
+  // Prime the narration audio pool now so the later auto-chained 見る/ヒント
+  // voices (idx4-10), reached seconds after this tap, can play without a fresh
+  // gesture on mobile Safari/Chrome.
+  unlockPuzzleVoice();
   var partner = (window.PonoPartners && typeof window.PonoPartners.get === 'function')
     ? window.PonoPartners.get(partnerId)
     : null;
@@ -4012,6 +6339,15 @@ function beginPartnerPractice(partnerId, returnIndex, done, options) {
     timers: [],
     rafs: [],
     cueRaf: null,
+    loopCueToken: 0,
+    loopCueActive: false,
+    loopCueGhost: null,
+    modeBadgeEl: null,
+    modeBadgeToken: 0,
+    // True only while the 見る(peek) completed-picture overlay is visible.
+    // Used to fade out + suppress the center mode badge so 「やってみよう」/
+    // 「できたね」 don't cover the picture the child is trying to look at.
+    peekPictureVisible: false,
     highlighted: [],
     targetPiece: null,
     cue: null,
@@ -4029,6 +6365,7 @@ function beginPartnerPractice(partnerId, returnIndex, done, options) {
   };
 
   document.body.classList.add('partner-practice-active');
+  document.body.classList.toggle('partner-practice-basic-layout', partnerPracticeState.mode === 'basic');
   if (puzzleContainer) puzzleContainer.classList.add('partner-practice-on');
   removePrestartOverlay();
   resetPracticeBoard();
@@ -4060,9 +6397,11 @@ function finishPartnerPractice() {
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
   }
+  removeBasicPracticeModeBanner();
   document.body.classList.remove('partner-practice-active');
   document.body.classList.remove('partner-practice-hint-on');
   document.body.classList.remove('partner-practice-peek-on');
+  document.body.classList.remove('partner-practice-basic-layout');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
   partnerPracticeState.active = false;
   partnerPracticeState = null;
@@ -4093,9 +6432,11 @@ function returnPartnerPracticeToSelect() {
   if (partnerPracticeState.coach && partnerPracticeState.coach.parentNode) {
     partnerPracticeState.coach.parentNode.removeChild(partnerPracticeState.coach);
   }
+  removeBasicPracticeModeBanner();
   document.body.classList.remove('partner-practice-active');
   document.body.classList.remove('partner-practice-hint-on');
   document.body.classList.remove('partner-practice-peek-on');
+  document.body.classList.remove('partner-practice-basic-layout');
   if (puzzleContainer) puzzleContainer.classList.remove('partner-practice-on', 'partner-practice-input-on');
   partnerPracticeState.active = false;
   partnerPracticeState = null;
@@ -4120,6 +6461,9 @@ function showBasicPracticeIfNeeded(done, force) {
   if (!force && hasSeenBasicPractice()) {
     if (typeof done === 'function') done();
     return;
+  }
+  if (force && partnerPracticeState && partnerPracticeState.active) {
+    clearActivePracticeSessionForReplay();
   }
   var returnIndex = currentStageIndex;
   var practiceIndex = choosePartnerPracticeStageIndex();
@@ -4171,23 +6515,50 @@ function onPointerDown(e) {
   // 散布アニメ中・prestart 表示中は一切のドラッグを拒否 (CSS pointer-events と二重防御)
   if (scatterAnimating || prestartOverlayEl) return;
   if (partnerPracticeState && partnerPracticeState.active && !partnerPracticeState.allowCanvasInput) return;
+  cancelBasicPracticeLoopCue();
   const { x, y } = getPos(e);
   let found = null;
   for (const p of pieces) {
     if (p.snapped) continue;
     if (hitTest(p, x, y) && (!found || p.zOrder > found.zOrder)) found = p;
   }
+  var basicDragHitPiece = getBasicDragPracticeHitPiece(x, y);
+  if (basicDragHitPiece) found = basicDragHitPiece;
   // タップ検出用の初期値はピース有無に関わらず常に記録 (空タップで選択解除のため)
   pointerDownTime = Date.now();
   pointerDownX = x;
   pointerDownY = y;
   pointerMoveDist = 0;
 
+  if (isBasicHintSelectPracticePhase()) {
+    emptyTapPending = false;
+    dragPiece = null;
+    onBasicHintSelectPracticePointerDown(found);
+    return;
+  }
+
+  if (isBasicHintPressPracticePhase()) {
+    emptyTapPending = false;
+    dragPiece = null;
+    if (partnerPracticeState && partnerPracticeState.targetPiece) {
+      setBasicCueWithRelease({ kind: 'selected-piece', piece: partnerPracticeState.targetPiece });
+      setPartnerPracticeCoachCopy(
+        'つぎは 「ヒント」',
+        '「ヒント」を おしてみよう',
+        ''
+      );
+      setPartnerPracticeCoachBubble(btnHint, null, false);
+      redraw();
+    }
+    return;
+  }
+
   if (!found) {
     // 空タップの可能性: pointerup で判定して selectedPieceForHint をクリアする。
     // dragPiece は立てないが、 pointerup ハンドラを通すため down ハンドラの中で
     // emptyTapPending フラグを立てておく。
     emptyTapPending = true;
+    rearmBasicLoopCueIfWaiting();
     return;
   }
 
@@ -4198,7 +6569,7 @@ function onPointerDown(e) {
       && found !== partnerPracticeState.targetPiece) {
     emptyTapPending = false;
     dragPiece = null;
-    partnerPracticeState.cue = { kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece };
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece });
     setPartnerPracticeCoachCopy(
       'こっちの ピースだよ',
       '',
@@ -4209,11 +6580,47 @@ function onPointerDown(e) {
     return;
   }
 
+  if (isBasicDragPracticePhase()
+      && partnerPracticeState.targetPiece
+      && found !== partnerPracticeState.targetPiece) {
+    emptyTapPending = false;
+    dragPiece = null;
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece });
+    setPartnerPracticeCoachCopy(
+      'この ピースだよ',
+      '',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(partnerPracticeState.targetPiece), 'above', false);
+    redraw();
+    rearmBasicLoopCueIfWaiting();
+    return;
+  }
+
+  if (isBasicHintDragPracticePhase()
+      && partnerPracticeState.targetPiece
+      && found !== partnerPracticeState.targetPiece) {
+    emptyTapPending = false;
+    dragPiece = null;
+    setBasicCueWithRelease({ kind: 'kojika-move-target', piece: partnerPracticeState.targetPiece });
+    setPartnerPracticeCoachCopy(
+      'この ピースだよ',
+      '',
+      ''
+    );
+    setPartnerPracticeCoachBubbleForRect(getPieceScreenRect(partnerPracticeState.targetPiece), 'above', false);
+    redraw();
+    rearmBasicLoopCueIfWaiting();
+    return;
+  }
+
   emptyTapPending = false;
   dragPiece = found;
   dragOffX = x - found.x; dragOffY = y - found.y;
   dragPiece.zOrder = Math.max(...pieces.map(p => p.zOrder)) + 1;
   onKojikaPracticeDragStart(found);
+  onBasicDragPracticeDragStart(found);
+  onBasicHintDragPracticeDragStart(found);
 
   // ドラッグ開始時はヒントボタンを 😴 に
   refreshHintButtonState();
@@ -4248,6 +6655,8 @@ function onPointerMove(e) {
     partner: getCurrentPartner(),
   }, false);
   updateKojikaPracticeDrag(dragPiece);
+  updateBasicDragPracticeDrag(dragPiece);
+  updateBasicHintDragPracticeDrag(dragPiece);
 
   redraw();
 }
@@ -4282,7 +6691,9 @@ function onPointerUp(e) {
   var isKojikaPracticeMove = !!(partnerPracticeState && partnerPracticeState.active
     && partnerPracticeState.partnerId === 'kojika'
     && (partnerPracticeState.phase === 'kojika-drag' || partnerPracticeState.phase === 'kojika-moving'));
-  if (isTap && !piece.snapped && !isKojikaPracticeMove) {
+  var isBasicDragPracticeMove = isBasicDragPracticePhase();
+  var isBasicHintDragPracticeMove = isBasicHintDragPracticePhase();
+  if (isTap && !piece.snapped && !isKojikaPracticeMove && !isBasicDragPracticeMove && !isBasicHintDragPracticeMove) {
     setSelectedPieceForHint(piece);
   }
 
@@ -4302,6 +6713,8 @@ function onPointerUp(e) {
 
   var didSnap = trySnap(piece);
   onKojikaPracticePieceDropped(piece, didSnap);
+  onBasicDragPracticePieceDropped(piece, didSnap);
+  onBasicHintDragPracticePieceDropped(piece, didSnap);
   // スナップで選択中ピースが固定された場合は選択解除
   if (selectedPieceForHint && selectedPieceForHint.snapped) {
     setSelectedPieceForHint(null);
@@ -4365,6 +6778,11 @@ function initPuzzle(img) {
   buildPieces();
 
   puzzleCanvas.addEventListener('pointerdown', function(e) {
+    // Re-prime/resume narration audio on every real canvas tap (cheap; the
+    // heavy HTMLAudio priming inside unlock() is idempotent). Keeps the
+    // AudioContext alive across re-suspends so peek/hint narration stays
+    // audible when reached later in the tutorial.
+    unlockPuzzleVoice();
     onPointerDown(e);
     if (dragPiece) puzzleCanvas.setPointerCapture(e.pointerId);
   }, { passive: false });
@@ -4372,6 +6790,9 @@ function initPuzzle(img) {
   puzzleCanvas.addEventListener('pointerup',     onPointerUp,    { passive: false });
   puzzleCanvas.addEventListener('pointercancel', onPointerUp,    { passive: false });
   puzzleCanvas.addEventListener('lostpointercapture', onPointerUp);
+  // v1338 FIX 1: prevent the native context menu (long-press / right-click
+  // callout) over the puzzle canvas so a held drag never gets hijacked.
+  puzzleCanvas.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
 
   loadingEl.classList.add('hidden');
 
@@ -4422,8 +6843,18 @@ function loadStage(index) {
   var oldNotice = document.getElementById('hint-notice-bubble');
   if (oldNotice && oldNotice.parentNode) oldNotice.parentNode.removeChild(oldNotice);
 
+  // batch:938 fix #2 — range guard (defends against next-stage overshoot)
+  if (index < 0 || index >= STAGES.length) {
+    console.warn('[puzzle] loadStage: index out of range', index, '/ STAGES.length=', STAGES.length, '— defaulting to 0');
+    index = 0;
+  }
   currentStageIndex = index;
   const stage = STAGES[index];
+  // batch:938 fix #1 — null-check backstop (catches sparse / undefined STAGES entries)
+  if (!stage) {
+    console.warn('[puzzle] loadStage: invalid index', index, '— skipping');
+    return;
+  }
   var currentPartnerForStage = getCurrentPartner();
 
   // ステージ毎のヒント回数を初期化 → ボタン表示を更新
@@ -4542,6 +6973,13 @@ function setPeekOverlay(on) {
     if (!cv) { peekOn = false; return; }
     drawPeekOverlay();
     if (puzzleContainer) puzzleContainer.classList.add('peek-on');
+    // Peek picture now visible: fade out any center mode badge so it doesn't
+    // cover the completed-puzzle picture, and suppress new badge pops until the
+    // child releases the 見る button (handled in setBasicPracticeModeBanner).
+    if (partnerPracticeState && partnerPracticeState.mode === 'basic') {
+      partnerPracticeState.peekPictureVisible = true;
+      hideBasicPracticeTryBannerNow();
+    }
     if (btnPeek) {
       btnPeek.classList.add('is-active');
       btnPeek.setAttribute('aria-pressed', 'true');
@@ -4553,6 +6991,9 @@ function setPeekOverlay(on) {
     }
     peekCanvas = null;
     if (puzzleContainer) puzzleContainer.classList.remove('peek-on');
+    // Peek picture hidden: resume normal center mode-badge behavior for
+    // downstream steps (e.g. the 'done'/hint phases triggered on release).
+    if (partnerPracticeState) partnerPracticeState.peekPictureVisible = false;
     if (btnPeek) {
       btnPeek.classList.remove('is-active');
       btnPeek.setAttribute('aria-pressed', 'false');
@@ -4630,6 +7071,16 @@ if (btnShuffle) {
 }
 
 if (btnPeek) {
+  // v1338 FIX 1: a peek long-press (or repeat press) used to pop the native
+  // context menu and block the button; suppress the callout so long-press peek
+  // and repeated taps stay reliable. Pointer/keyboard handlers below are intact.
+  btnPeek.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
+  // v1342 round-2 FIX 1: a long-press starting on 見る still briefly surfaced a
+  // selection/context callout on repeat press → also block selectstart/dragstart
+  // (these fire BEFORE the OS callout) so no menu/selection can begin on the
+  // button. preventDefault here doesn't affect the pointer/peek handlers below.
+  btnPeek.addEventListener('selectstart', function (e) { e.preventDefault(); }, { passive: false });
+  btnPeek.addEventListener('dragstart', function (e) { e.preventDefault(); }, { passive: false });
   btnPeek.addEventListener('pointerdown', startPeekPress, { passive: false });
   btnPeek.addEventListener('pointerup', function (e) {
     if (peekPressPointerId != null && e.pointerId !== peekPressPointerId) return;
@@ -4658,6 +7109,14 @@ if (btnPeek) {
 // 旧: 完成形を全体表示 → 散布
 // 新: 選択中ピースのスロットに金色星+radial glow+枠点滅を 2 秒表示
 if (btnHint) {
+  // v1338 FIX 1: pressing ヒント repeatedly (release → press again) used to pop
+  // the native context menu and block the button; suppress the callout so the
+  // hint tap stays reliable. The click handler below is unchanged.
+  btnHint.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
+  // v1342 round-2 FIX 1: mirror the 見る button — block selectstart/dragstart so a
+  // repeat press / long-press on ヒント can't begin a selection/context callout.
+  btnHint.addEventListener('selectstart', function (e) { e.preventDefault(); }, { passive: false });
+  btnHint.addEventListener('dragstart', function (e) { e.preventDefault(); }, { passive: false });
   btnHint.addEventListener('click', () => {
     if (!puzzleCanvas) return;
     // 散布アニメ中・prestart 表示中はヒント無効
@@ -4667,7 +7126,8 @@ if (btnHint) {
 
     var isBasicPracticeHint = !!(partnerPracticeState
       && partnerPracticeState.mode === 'basic'
-      && partnerPracticeState.phase === 'hint-press');
+      && (partnerPracticeState.phase === 'hint-press'
+        || partnerPracticeState.phase === 'basic-hint-press-try'));
     if (isBasicPracticeHint && !partnerPracticeState.hintPressReady) {
       return;
     }
@@ -4721,9 +7181,26 @@ if (btnHint) {
     stageHintUsesActual++;
     setHintUsesRemaining(sid, Math.max(0, remaining - 1));
     refreshHintButtonState();
-    onPartnerPracticeHintUsed();
+    if (partnerPracticeState && partnerPracticeState.phase === 'basic-hint-press-try') {
+      onBasicHintPracticeHintButtonUsed();
+    } else {
+      onPartnerPracticeHintUsed();
+    }
   });
 }
+
+// v1342 round-2 FIX 1: a long-press that begins on the 見る/ヒント INNER content
+// (icon / text) — not the button box itself — could still surface a selection /
+// context callout. Catch contextmenu + selectstart at the .controls container
+// (capturing, so it fires for any descendant) and suppress them. Pointer/click
+// handlers are untouched; only the OS callout / text selection is prevented.
+(function suppressControlsCallout() {
+  var controlsEl = (btnPeek && btnPeek.closest) ? btnPeek.closest('.controls') : null;
+  if (!controlsEl && btnHint && btnHint.closest) controlsEl = btnHint.closest('.controls');
+  if (!controlsEl) return;
+  controlsEl.addEventListener('contextmenu', function (e) { e.preventDefault(); }, { passive: false });
+  controlsEl.addEventListener('selectstart', function (e) { e.preventDefault(); }, { passive: false });
+})();
 
 btnNextStage.addEventListener('click', () => {
   const nextIndex = getNextStageIndexForFlow(currentStageIndex);
@@ -4743,11 +7220,7 @@ btnNextStage.addEventListener('click', () => {
   });
 });
 
-if (btnPlayAgain) btnPlayAgain.addEventListener('click', () => {
-  hideSuccessModal();
-  dragPiece = null;
-  shufflePieces();
-});
+// batch:938 fix #5 — btn-play-again listener removed (element does not exist in puzzle/index.html)
 
 // ===== BGM =====
 const bgm    = document.getElementById('bgm');
@@ -4786,7 +7259,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
   else if (bgmEnabled) { bgm.play().catch(() => {}); }
 });
-window.addEventListener('blur',  () => bgm.pause());
+window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
 window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 
 // ===== Responsive Resize =====
@@ -4796,6 +7269,9 @@ const resizeObserver = new ResizeObserver(() => {
   if (!sourceImg) return;
   // 散布アニメ実行中は canvas 作り直しで破綻するので resize 由来の再初期化を抑止
   if (scatterAnimating) return;
+  // チュートリアル中に canvas を作り直すと、案内中の targetPiece と
+  // 新しく作られた pieces 配列がズレて、ピース形状が合わなくなる。
+  if (partnerPracticeState && partnerPracticeState.active) return;
   const rect = puzzleContainer.getBoundingClientRect();
   // ピース 1 つ以上スナップ済 + サイズ差 ±20% 以内 なら 再初期化 skip
   // (子供向けで進捗を消したくないため、 微小 resize では CSS スケールに任せる)
@@ -5237,7 +7713,8 @@ function runOpeningCutscene(onDone) {
   if (!overlay || !audio || !narrEl || !imgA || !imgB) { if (onDone) onDone(); return; }
 
   // mobile autoplay ブロック時の保険タイマー (秒)。actual mp3 はもっと短いが余裕を持たせる。
-  const FALLBACK_CUT_MS = 10000;
+  // batch:938 fix #3 — 10s→3.5s for humane wait on asset 404 / autoplay block
+  const FALLBACK_CUT_MS = 3500;
   const FADE_MS = 500;     // overlay → 黒
   const HOLD_BLACK_MS = 300;
   const CROSSFADE_MS = 250;
@@ -5314,6 +7791,13 @@ function runOpeningCutscene(onDone) {
     };
     audio._endedHandler = endedHandler;
     audio.addEventListener('ended', endedHandler);
+    // batch:938 fix #3 — if audio asset 404/decode-error, advance quickly instead of waiting fallback timer
+    const errorHandler = () => {
+      audio.removeEventListener('error', errorHandler);
+      try { console.warn('[puzzle] opening narration audio error:', cut.audioMp3); } catch (_) {}
+      if (myGen === cutGeneration && !ended) advanceOrFinish();
+    };
+    audio.addEventListener('error', errorHandler, { once: true });
     const playP = audio.play();
     clearFallback();
     if (playP && typeof playP.then === 'function') {

@@ -5621,6 +5621,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 </script>
 <script src="../common/layout/editor-bootstrap.js" defer></script>
 <script src="../common/se.js"></script>
+<script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 
 </head>
@@ -7594,7 +7595,7 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   document.addEventListener('visibilitychange', refreshKitchenAmbientForVisibility);
-  window.addEventListener('blur', function () { stopAllKitchenAmbient(120); });
+  window.addEventListener('blur', function () { if (!document.hidden) return; stopAllKitchenAmbient(120); });
   window.addEventListener('focus', refreshKitchenAmbientForVisibility);
 
   // ========== localStorage ==========
@@ -17912,7 +17913,9 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   // ========== Service Worker ==========
-  if ('serviceWorker' in navigator) {
+  // Capacitor native shell (native/www) has no sw.js -- skip registration entirely.
+  // See native/scripts/stage-www.mjs (window.__NATIVE_BUILD__ injection).
+  if ('serviceWorker' in navigator && !window.__NATIVE_BUILD__) {
     navigator.serviceWorker.register('../sw.js').catch(() => {});
     navigator.serviceWorker.addEventListener('message', (e) => {
       if (e.data && e.data.type === 'sw-updated') {

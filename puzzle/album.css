@@ -182,6 +182,57 @@
   padding: 4px 0 !important;
 }
 
+.album-grid__col-head-num {
+  display: block;
+  line-height: 1;
+}
+
+/* ===== 難易度バッジ (やさしい / ふつう / むずかしい) =====
+   col-head の下に星マークだけの極小バッジを表示。
+   ラベル本文は aria-label + title で読み上げ可。
+   配色は puzzle/partner-select.css の .pono-pselect__difficulty--* と揃える。 */
+.album-diff {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 5px;
+  font-size: 0.55rem;
+  font-weight: 900;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  line-height: 1;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  vertical-align: middle;
+  box-shadow: 0 1px 2px rgba(93, 78, 55, 0.18);
+}
+
+.album-diff--easy {
+  background: linear-gradient(180deg, #8BE08F 0%, #4FB55A 100%);
+  color: #1E4622;
+  border: 1px solid #3A9047;
+}
+
+.album-diff--normal {
+  background: linear-gradient(180deg, #FFE27A 0%, #F2B900 100%);
+  color: #5A3D00;
+  border: 1px solid #C99500;
+}
+
+.album-diff--hard {
+  background: linear-gradient(180deg, #F5A0B5 0%, #D2476E 100%);
+  color: #4A0E22;
+  border: 1px solid #A12551;
+}
+
+/* popup 内では label を併記して大きめに表示 */
+.album-diff--popup {
+  font-size: 0.95rem;
+  padding: 4px 12px;
+  margin-top: 0;
+  letter-spacing: 0.06em;
+  box-shadow: 0 2px 6px rgba(93, 78, 55, 0.22);
+}
+
 .album-grid__row-head {
   width: 92px;
   padding: 4px 8px 4px 4px !important;

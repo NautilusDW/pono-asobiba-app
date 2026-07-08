@@ -35,6 +35,18 @@
   var VERSION = '1.1.0'; // 2026-05-07: per-Q layout key support (Phase 2 / impl-A)
   var SAVED_LAYOUT_VERSION = 2; // __version field in saved-layout.json
   var HISTORY_LIMIT = 100;
+  // 2026-06-30 (batch:964): group corner scale (複数選択コーナードラッグでの均一 scale)
+  //   から除外する selector のリスト。 親 .q-text-card と一緒に選択された状態で
+  //   コーナーハンドルをドラッグしても、 ここに該当する要素は w/h/tx/ty を維持
+  //   (factor 不適用) し、 親側だけが拡縮される。 .q-text-card .audio (右上スピーカー) は
+  //   position:absolute; right:8px; top:50% で配置されているため、 親の伸縮に追従して
+  //   見かけ上は右上 anchor のまま固定サイズで残る (= 巻き込み解消)。
+  //   batch:962B の CSS 変数 --qz-tts-counter-scale (default 1, no-op) と組合せ可能。
+  //   注意: 個別 resize 経路 (performResize) は別ロジックなので、 単独選択して
+  //   ハンドルを掴むケースでは通常通り scale できる (= 編集自体は妨げない)。
+  var GROUP_SCALE_PROTECTED_SELECTORS = [
+    '.q-text-card .audio'
+  ];
   var TRANSIENT_CLASSES = {
     'resizable': 1, 'editable-text': 1, 'anno-mode': 1, 'preview-mode': 1,
     'show-bbox': 1, 'show-safe': 1, 'eraser-mode': 1, 'dirty': 1, 'active': 1,
@@ -364,6 +376,21 @@
     } catch (e) { return null; }
   }
 
+  // 2026-06-30 (batch:962 ★1): 🎯/🌐 トグルの状態を localStorage に永続化する。
+  //   従来 enable() / disable() で false 固定だったため、 編集者が 🎯 に切替えても次回開く度に
+  //   🌐 に戻り、 個別レイアウトを上書きする事故が発生していた。 key は editor 全体で共通
+  //   (toggle はユーザーの「保存範囲の好み」 を表すフラグなので、 ページ別に分ける必要は無い)。
+  var PERQ_SCOPE_STORAGE_KEY = 'qz-layout-editor-per-q-scope-v1';
+  function loadPerQScopePref() {
+    try {
+      var raw = localStorage.getItem(PERQ_SCOPE_STORAGE_KEY);
+      return raw === '1';
+    } catch (e) { return false; }
+  }
+  function savePerQScopePref(on) {
+    try { localStorage.setItem(PERQ_SCOPE_STORAGE_KEY, on ? '1' : '0'); } catch (e) {}
+  }
+
   // 2026-05-07 (Phase 2 / impl-A): 既存 JSON の上に snapshot をマージする。
   //   per-Q キー (`${sel}|${i}@${qid}`) を含む snapshot で save する際、
   //   他問題で書かれた per-Q キーを温存するためのユーティリティ。
@@ -381,6 +408,37 @@
     return out;
   }
 
+  // 2026-06-30 (batch:962 ★4): save() の wholesale overwrite を防ぐ deep-merge。
+  //   既存実装も snap で existing を上書きしていたが、 別端末 / 別タブが直前に書き込んだ
+  //   キーと「同じキー名 / 値が違う」 conflict を可視化していなかった。 ここでは
+  //   - existing にしか無いキー: そのまま温存 (= 他端末の per-Q キーが消えない)
+  //   - snap にしか無いキー: 追加
+  //   - 両方にあるが値が違うキー: snap (= ユーザーの意図) を勝たせ console.warn で可視化
+  //   conflict は per-entry の浅い JSON 比較で十分 (saved-layout の各値は {w,h,tx,ty} 等の
+  //   シンプル object なので、 stringify で identity を判定する)。
+  function deepMergeForSave(existing, snap) {
+    if (!existing || typeof existing !== 'object') return snap ? Object.assign({}, snap) : {};
+    if (!snap || typeof snap !== 'object') return Object.assign({}, existing);
+    var out = Object.assign({}, existing);
+    var conflicts = [];
+    Object.keys(snap).forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(existing, k)) {
+        var ev, sv;
+        try { ev = JSON.stringify(existing[k]); } catch (e) { ev = String(existing[k]); }
+        try { sv = JSON.stringify(snap[k]); } catch (e) { sv = String(snap[k]); }
+        if (ev !== sv) conflicts.push(k);
+      }
+      out[k] = snap[k];
+    });
+    if (conflicts.length) {
+      try {
+        console.warn('[LayoutEditor] save merge conflict (snap wins) on ' + conflicts.length + ' key(s):',
+                     conflicts.slice(0, 12), conflicts.length > 12 ? '...(' + (conflicts.length - 12) + ' more)' : '');
+      } catch (e) { /* noop */ }
+    }
+    return out;
+  }
+
   // 2026-06-11 (critical fix): 🧹 「この質問の個別設定を削除」で削除予約されたキーを
   //   merge 結果から取り除く。 save() は GET→merge→PUT のため、 snapshot に無いキーは
   //   merge で復活してしまう — 削除リストを merge **後** に適用して打ち消しを防ぐ。
@@ -395,14 +453,16 @@
   }
 
   // 2026-05-08: server (assets バンドル) と local の新旧を判定。
-  //   - local が __savedAt を持ち、5 分以内なら local 優先（deploy ラグ想定）
+  //   - local が __savedAt を持ち、 一定時間以内なら local 優先（deploy ラグ想定）
   //   - それ以外は server 優先（別端末更新の伝播を尊重）
   //   - 一方しか無ければ存在する方
+  // 2026-06-30 (batch:968): 「保存しても消える」 問題対策で 5 分 → 2 分に短縮。
+  //   別端末の保存反映を素早く拾えるようにする。 CF deploy ラグ実測は 30-90 秒なので 2 分で十分。
   function pickFreshestData(server, local) {
     if (!local) return server || null;
     if (!server) return local;
     if (typeof local.__savedAt !== 'number') return server;
-    var DEPLOY_LAG_WINDOW_MS = 5 * 60 * 1000;
+    var DEPLOY_LAG_WINDOW_MS = 2 * 60 * 1000;
     var ageMs = Date.now() - local.__savedAt;
     if (ageMs > DEPLOY_LAG_WINDOW_MS) return server;
     return local;
@@ -491,13 +551,40 @@
     if (!btn) return;
     var keys = _collectPerQOverrideKeysForCurrentQ();
     var has = keys.length > 0;
+    // 2026-06-30 (batch:968): 現在質問が saved-layout-frozen.json でロック済みかを判定。
+    //   _qzFrozenLayoutData (quizland 側で fetch) に `*|*@qid` キーが 1 件以上あれば lock 済み。
+    var qid = getCurrentQid();
+    var frozenLocked = false;
+    try {
+      var frozen = (typeof window !== 'undefined') ? window._qzFrozenLayoutData : null;
+      if (frozen && typeof frozen === 'object' && qid) {
+        var suffix = '@' + qid;
+        var fks = Object.keys(frozen);
+        for (var fi = 0; fi < fks.length; fi++) {
+          if (fks[fi].length > suffix.length && fks[fi].slice(-suffix.length) === suffix) {
+            frozenLocked = true; break;
+          }
+        }
+      }
+    } catch (_) { /* noop */ }
     if (!btn.dataset.baseTitle) btn.dataset.baseTitle = btn.title || '';
     btn.textContent = (state.perQScopeThisQ ? '🎯 この質問だけ' : '🌐 すべての質問') +
-                      (has ? ' ⚠個別あり' : '');
+                      (has ? ' ⚠個別あり' : '') +
+                      (frozenLocked ? ' 🔒ロック済' : '');
     btn.classList.toggle('active', state.perQScopeThisQ);
+    // 2026-06-30 (batch:962 ★5): 現在質問に per-Q キーが 1 つも無い場合、 🌐 のままだと
+    //   global キーへ流れて (= ユーザーが「保存したつもり」 でも実際は個別保存ゼロ) 個別 stub が
+    //   未生成のままになる。 強制切替はせず title で案内する。
+    var perQMissingHint = (!has && !state.perQScopeThisQ)
+      ? '\n\nℹ この質問には個別レイアウトが未保存です。 質問固有の配置にしたい場合は 🎯 に切替えて保存してください'
+      : '';
+    // 2026-06-30 (batch:968): frozen lock 状態を tooltip にも明示
+    var frozenHint = frozenLocked
+      ? '\n\n🔒 この質問のレイアウトは saved-layout-frozen.json で永続ロック済みです。 通常 💾 保存で編集しても disk-applied されません。 解除は frozen.json を直接編集してください。'
+      : '';
     btn.title = btn.dataset.baseTitle + ((has && !state.perQScopeThisQ)
       ? '\n\n⚠ この質問は個別レイアウト適用中です。🌐 のままの質問カード・音声ボタン編集は保存されません (個別値が優先表示)。🎯 に切替えて編集するか、🧹 で個別設定を削除してください'
-      : '');
+      : perQMissingHint) + frozenHint;
     var clearBtn = tb.querySelector('#le-perq-clear');
     if (clearBtn) {
       clearBtn.style.display = '';
@@ -587,13 +674,24 @@
         var baseKey = sel + '|' + i;
         var isPerQChipChild = isChipScoped && !isChipSelfSel && _isPerQSelector(sel);
         if (isChipScoped && !isChipSelfSel && !isPerQChipChild && !state.individualOverrides.has(baseKey)) return;
-        // 2026-06-11 (critical fix): 🌐 モードで per-Q オーバーライド適用中の toggle 対象
-        //   要素は base キーへ書き出さない。 applier が `@qid` 値を DOM に当てているため
-        //   画面上のジオメトリは個別値であり共通値ではない — これを共通キーで snapshot
-        //   すると 💾 保存 (GET→merge→PUT) や動的再スキャン (mergeSnapshotOver) 経由で
-        //   全質問の共通値が個別値に汚染される。 skip しても merge により既存の
-        //   共通キーは保持される。
-        if (!state.perQScopeThisQ && _perQOverrideKeyIfAny(sel, i, frozenQid)) return;
+        // 2026-06-30 (batch:968 ★Fix #1): 旧コードは 🌐 モードで per-Q override が存在する
+        //   toggle 対象要素を snapshot から完全に skip していた。 ところがこれは
+        //   - 🌐 モードでユーザーが編集した変更 (drag/resize) を snapshot が捨てる
+        //   - その結果 save() の snap には新値を表す key が無いので、 deepMergeForSave で
+        //     base key も per-Q key も「既存値のまま」 → ユーザーの編集が永続化失敗
+        //     ＝ 「保存しても消える」 問題の主原因。
+        //   修正方針 (Option A): **snapshot は完全な状態を出す**。 base key を必ず出力し、
+        //   その値は現在の DOM (= per-Q 値を applier が当てた見た目) とする。 結果:
+        //     - 🌐 save 時、 base key には DOM の値 (= per-Q geometry) が書かれる
+        //     - per-Q key は disk 側で温存 (deepMergeForSave が existing を温存するため)
+        //     - 読み出し時、 applier の _lookupChain は per-Q を base より先に評価するので、
+        //       per-Q がある質問の表示は変わらない (per-Q 値が勝つ)
+        //     - per-Q が無い質問の表示は、 新しい base 値 (= 直前に編集した質問の per-Q 値)
+        //       に追従する。 これは「🌐 すべての質問の共通値として保存」 という UI 意図と
+        //       一致する (= ユーザーは今見ている位置を共通に焼くつもり)。
+        //   注意: 旧 skip が抑止していた「base 共通値汚染」 リスクは、 ユーザーが
+        //   🎯 / 🌐 トグルを意識的に切替える運用で吸収する想定。 save() 前段 (line 1726)
+        //   の confirm でも per-Q 存在質問の 🌐 保存はガード済。
         var key = makeElKey(sel, i, { qid: frozenQid });
         data[key] = {
           w: el.style.width || '',
@@ -1656,6 +1754,24 @@
   }
 
   function save() {
+    // 2026-06-30 (batch:962 ★2): toggle が 🌐 のまま、 現在質問に per-Q キーが既存する場合、
+    //   global キーで上書きすると個別レイアウトと矛盾する状態が永続化される。 確認 confirm で
+    //   止めて、 ユーザーに 🎯 への切替を促す (Cancel で abort)。
+    if (!state.perQScopeThisQ && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
+      try {
+        var existingPerQ = _collectPerQOverrideKeysForCurrentQ();
+        if (existingPerQ && existingPerQ.length) {
+          var msg = 'この質問には個別レイアウトが既に ' + existingPerQ.length + ' 件あります。\n' +
+                    '🌐 すべての質問 のまま保存すると、 個別レイアウトと矛盾する可能性があります。\n' +
+                    '(キャンセル推奨 → 🎯 この質問だけ に切替えてから保存してください)\n\n' +
+                    '本当にこのまま 🌐 で保存しますか？';
+          if (!confirm(msg)) {
+            emit('save:cancelled', { reason: 'per-q-mismatch' });
+            return Promise.resolve({ cancelled: true, reason: 'per-q-mismatch' });
+          }
+        }
+      } catch (e) { /* guard 失敗時は従来通り save 続行 */ }
+    }
     emit('save:start');
     var data = snapshot();
     // 2026-05-07 (Phase 3.5 Fix 2): snapshot 開始時の qid を保持。
@@ -1723,7 +1839,9 @@
       }
       // 2026-05-07: 既存 JSON と snapshot を merge してから PUT (他問題の per-Q キーを保持)。
       //   __savedAt は GitHub 用 payload には書き込まない (差分最小化のため)。
-      var mergedRemote = mergeSnapshotOver(existingRemote, data);
+      // 2026-06-30 (batch:962 ★4): wholesale overwrite を防ぐ deep-merge を採用。
+      //   同一キーで値が違う場合 console.warn で conflict を可視化 (snap が勝つ)。
+      var mergedRemote = deepMergeForSave(existingRemote, data);
       _applyPendingPerQDeletions(mergedRemote); // 2026-06-11: 🧹 削除予約を merge 後・PUT 前に適用
       if (mergedRemote && Object.prototype.hasOwnProperty.call(mergedRemote, '__savedAt')) {
         delete mergedRemote.__savedAt;
@@ -1771,6 +1889,90 @@
       emit('save:error', err);
       // dirty flag remains true so user can retry
       return { local: true, remote: false, error: err };
+    });
+  }
+
+  // 2026-06-30 (batch:968): saved-layout-frozen.json への「🔒 ロック」転記。
+  //   現在質問の per-Q キー (`${sel}|${i}@${qid}`) を saved-layout-frozen.json に
+  //   merge して GH PUT する。 frozen 層は LayoutApplier 側 (quizland では beforeApply
+  //   経由) で base layer の上に優先 merge されるので、 通常 save では絶対に書き換わらない
+  //   「凍結値」 として永続化される。
+  //   - 対象は state._perQScopeToggleSelectors の per-Q キーのみ (base key は対象外)
+  //   - 個別 chip override 等は対象外 (頻繁に編集される性質のため)
+  //   - 既存 frozen JSON は merge ベースに使い、 他質問の lock 済みキーを温存
+  function lockToFrozen() {
+    var qid = getCurrentQid();
+    if (!qid) {
+      showToast('現在の問題 ID が取れません (lock を中止)', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-qid' });
+    }
+    var perQKeys = _collectPerQOverrideKeysForCurrentQ();
+    if (!perQKeys || !perQKeys.length) {
+      showToast('この質問には per-Q レイアウト (🎯 個別保存) がありません。 まず 🎯 で個別保存してから 🔒 ロックしてください', 'warn');
+      return Promise.resolve({ ok: false, reason: 'no-perq' });
+    }
+    if (!confirm('この質問のレイアウト ' + perQKeys.length + ' 件を saved-layout-frozen.json に転記して永続ロックします。\n\n'
+                 + 'ロック後は通常の💾保存では変更できなくなります。\n'
+                 + '(後で解除したい場合は saved-layout-frozen.json をテキストエディタで直接編集してください)\n\n'
+                 + '続けますか？')) {
+      return Promise.resolve({ ok: false, reason: 'user-cancel' });
+    }
+    var srcData = window._currentLayoutData;
+    if (!srcData || typeof srcData !== 'object') {
+      showToast('現在のレイアウトデータが空です (lock を中止)', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-data' });
+    }
+    // 凍結する key/value を抽出
+    var freezeSnap = {};
+    perQKeys.forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(srcData, k)) {
+        freezeSnap[k] = srcData[k];
+      }
+    });
+    if (!Object.keys(freezeSnap).length) {
+      showToast('ロック対象のキーが見つかりません', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-keys' });
+    }
+    // saved-layout-frozen.json のパスは saved-layout.json と兄弟 (同ディレクトリ)。
+    //   ghPath() = 'quizland/saved-layout.json' から拡張子前を差し替えて派生させる。
+    var path = ghPath();
+    if (!path) {
+      showToast('GH path 未設定のためロックできません', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-gh-path' });
+    }
+    var frozenPath = path.replace(/saved-layout\.json$/i, 'saved-layout-frozen.json');
+    if (frozenPath === path) {
+      showToast('frozen path 派生失敗 (ghPath が saved-layout.json で終わっていません)', 'error');
+      return Promise.resolve({ ok: false, reason: 'bad-path-derive' });
+    }
+    showToast('🔒 ロック中…');
+    return ghGetContentsWithRetry(frozenPath).then(function (result) {
+      var existing = result.contents;
+      var sha = existing ? existing.sha : null;
+      var existingFrozen = _decodeGhJson(existing) || {};
+      // frozen の merge: 既存 frozen のキーを保持しつつ、 今回 lock したキーで上書き
+      var mergedFrozen = Object.assign({}, existingFrozen);
+      Object.keys(freezeSnap).forEach(function (k) { mergedFrozen[k] = freezeSnap[k]; });
+      // __savedAt 等の冗長メタは frozen には書かない (純粋なロックレジストリ)
+      if (Object.prototype.hasOwnProperty.call(mergedFrozen, '__savedAt')) delete mergedFrozen.__savedAt;
+      var pretty = JSON.stringify(mergedFrozen, null, 2) + '\n';
+      var msg = 'chore(layout-frozen): lock per-Q layout for ' + qid + ' (' + Object.keys(freezeSnap).length + ' keys)';
+      return ghPutContents(frozenPath, utf8Btoa(pretty), msg, sha).then(function () {
+        // ローカルキャッシュ (window._qzFrozenLayoutData) も同期して、 即時 lock 反映を演出
+        try {
+          if (typeof window !== 'undefined') {
+            window._qzFrozenLayoutData = mergedFrozen;
+          }
+        } catch (_) {}
+        showToast('🔒 ロックしました (' + Object.keys(freezeSnap).length + ' 件)', 'success');
+        emit('lock:success', { qid: qid, count: Object.keys(freezeSnap).length });
+        return { ok: true, count: Object.keys(freezeSnap).length };
+      });
+    }).catch(function (err) {
+      console.warn('[LayoutEditor] lockToFrozen failed', err);
+      showToast('🔒 ロック失敗: ' + (err && err.message ? err.message.slice(0, 80) : 'unknown'), 'error');
+      emit('lock:error', err);
+      return { ok: false, reason: 'gh-error', error: err };
     });
   }
 
@@ -1889,7 +2091,7 @@
 
   // 2026-05-13 (sw v983): saved-layout.json の __droppedImages 配列から .le-dropped-img
   //   を再生成する。 state-reset で既存をクリアしてから配列順に再構築する。
-  //   canvas が無いと再生成できないので state.canvasEl を必須にする (= 編集モード有効後)。
+  //   canvas が無いと再生成できないので state.canvasEl を必須にする (= 編集モード有効後)。 例外: DOM canvas 操作で画像素材生成ではない。
   function applyDroppedImages(arr) {
     if (!Array.isArray(arr)) return;
     var canvas = state.canvasEl;
@@ -2503,6 +2705,12 @@
     var groupScale = null;
     if (isGroupCornerScale) {
       var sel = Array.from(state.selectedElements).filter(function (s) { return !isLocked(s); });
+      // 2026-06-30 (batch:964): group corner scale から除外する要素を hard skip。
+      //   GROUP_SCALE_PROTECTED_SELECTORS に match した要素は targets に含めない
+      //   → w/h/tx/ty が factor 倍されずそのまま残る。 親要素 (例: .q-text-card) は
+      //   通常通り scale され、 子の speaker (position:absolute; right; top) は
+      //   親に追従しつつ固定サイズで残る (= 巻き込み解消)。
+      //   bounding box (gcx/gcy) 計算には含めて、 視覚的な group bbox 中心を保つ。
       var rects = sel.map(function (s) { return bcrInStage(s, info.stageRect, info.scale); });
       var minLeft = Math.min.apply(null, rects.map(function (r) { return r.left; }));
       var maxRight = Math.max.apply(null, rects.map(function (r) { return r.right; }));
@@ -2510,27 +2718,68 @@
       var maxBottom = Math.max.apply(null, rects.map(function (r) { return r.bottom; }));
       var gcx = (minLeft + maxRight) / 2;
       var gcy = (minTop + maxBottom) / 2;
+      var scaleTargets = [];
+      sel.forEach(function (s, i) {
+        var isProtected = false;
+        for (var pi = 0; pi < GROUP_SCALE_PROTECTED_SELECTORS.length; pi++) {
+          try {
+            if (s.matches && s.matches(GROUP_SCALE_PROTECTED_SELECTORS[pi])) {
+              isProtected = true;
+              break;
+            }
+          } catch (eMatches) { /* invalid selector — skip */ }
+        }
+        if (isProtected) return; // skip — keep w/h/tx/ty unchanged
+        scaleTargets.push({
+          el: s,
+          origW: parseFloat(s.style.width) || s.offsetWidth,
+          origH: parseFloat(s.style.height) || s.offsetHeight,
+          origTx: s._tx || 0,
+          origTy: s._ty || 0,
+          origCx: (rects[i].left + rects[i].right) / 2,
+          origCy: (rects[i].top + rects[i].bottom) / 2,
+          before: getResizeState(s),
+        });
+      });
       groupScale = {
         gcx: gcx, gcy: gcy,
         primaryOrigW: primaryTarget.startW,
         primaryOrigH: primaryTarget.startH,
-        targets: sel.map(function (s, i) {
-          return {
-            el: s,
-            origW: parseFloat(s.style.width) || s.offsetWidth,
-            origH: parseFloat(s.style.height) || s.offsetHeight,
-            origTx: s._tx || 0,
-            origTy: s._ty || 0,
-            origCx: (rects[i].left + rects[i].right) / 2,
-            origCy: (rects[i].top + rects[i].bottom) / 2,
-            before: getResizeState(s),
-          };
-        }),
+        targets: scaleTargets,
       };
     }
 
     var linkingDisabled = e.ctrlKey || e.metaKey;
     var linkedTargets = (isGroupCornerScale || linkingDisabled) ? [] : findLinkedTargets(el, primarySides);
+    // 2026-06-30 (batch:966): 個別 resize 経路でも GROUP_SCALE_PROTECTED_SELECTORS を
+    //   尊重する。 batch:964 は group corner scale (multi-select) のみを対象として
+    //   いたので、 単一要素のコーナードラッグだと findLinkedTargets が
+    //   .q-text-card .audio (右上スピーカー) を「右辺/上辺隣接」として拾い、
+    //   performResize ループで一緒に伸縮させていた (= 「相変わらず巻き込まれる」 の根本)。
+    //   ここで selector match した要素を hard skip。
+    linkedTargets = linkedTargets.filter(function (t) {
+      if (!t || !t.el) return false;
+      for (var pi = 0; pi < GROUP_SCALE_PROTECTED_SELECTORS.length; pi++) {
+        try {
+          if (t.el.matches && t.el.matches(GROUP_SCALE_PROTECTED_SELECTORS[pi])) {
+            return false;
+          }
+        } catch (eMatches) { /* invalid selector — skip */ }
+      }
+      return true;
+    });
+    // 2026-06-30 (batch:966): 親子 (祖先・子孫) 関係にある要素も linked から除外。
+    //   findLinkedTargets のエッジ隣接検出 (EPS=8px) は「隣接した別要素」 を想定して
+    //   いるが、 .q-text-card のように親 rect の辺と子 (.audio 等) rect の辺が偶然
+    //   一致するケースで親自体を拾ってしまう。 画像 (.emoji-display.phase-question)
+    //   のコーナードラッグで .q-text-card 親が一緒に scale するのはユーザー意図と
+    //   合わないので除外。 兄弟の隣接 link (例: 質問テキスト と background) は
+    //   contains 関係にないので影響を受けない。
+    linkedTargets = linkedTargets.filter(function (t) {
+      if (!t || !t.el) return false;
+      if (el && (el.contains(t.el) || t.el.contains(el))) return false;
+      return true;
+    });
     linkedTargets.forEach(captureTarget);
     linkedTargets.forEach(function (t) { t.el.classList.add('edge-linked'); });
 
@@ -3284,7 +3533,7 @@
   //    natural-size probe ロジックを部分的に復活。用途は aspect ratio 取得のみ。
   //    img / .le-dropped-img / 任意 bg-image 要素に対応。)
   // ====================================================================
-  var bgImageNaturalCache = new Map(); // url → { status, w, h, callbacks }
+  var bgImgNaturalCache = new Map(); // url → { status, w, h, callbacks }
 
   function getBgImageUrl(el) {
     if (!el || !el.nodeType || el.nodeType !== 1) return null;
@@ -3298,9 +3547,9 @@
     return m ? m[1] : null;
   }
 
-  function probeBgImageNaturalSize(url, onLoad) {
+  function probeBgImgNaturalSize(url, onLoad) {
     if (!url) return null;
-    var cached = bgImageNaturalCache.get(url);
+    var cached = bgImgNaturalCache.get(url);
     if (cached && cached.status === 'loaded') return { w: cached.w, h: cached.h };
     if (cached && cached.status === 'error') return null;
     if (cached && cached.status === 'loading') {
@@ -3308,15 +3557,15 @@
       return null;
     }
     var entry = { status: 'loading', callbacks: onLoad ? [onLoad] : [] };
-    bgImageNaturalCache.set(url, entry);
+    bgImgNaturalCache.set(url, entry);
     var probe = new Image();
     probe.onload = function () {
-      var cbs = (bgImageNaturalCache.get(url) || {}).callbacks || [];
-      bgImageNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
+      var cbs = (bgImgNaturalCache.get(url) || {}).callbacks || [];
+      bgImgNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
       cbs.forEach(function (cb) { try { cb && cb(); } catch (e) {} });
     };
     probe.onerror = function () {
-      bgImageNaturalCache.set(url, { status: 'error' });
+      bgImgNaturalCache.set(url, { status: 'error' });
     };
     probe.src = url;
     return null;
@@ -3354,7 +3603,7 @@
     // 任意要素の bg-image
     var url = getBgImageUrl(el);
     if (url) {
-      var bg = probeBgImageNaturalSize(url, onLoad);
+      var bg = probeBgImgNaturalSize(url, onLoad);
       if (bg && bg.w > 0 && bg.h > 0) return bg.w / bg.h;
       return null;
     }
@@ -3415,7 +3664,7 @@
         if (!bgUrl) {
           reasonParts.push('bg-image: 検出なし');
         } else {
-          var cached = bgImageNaturalCache.get(bgUrl);
+          var cached = bgImgNaturalCache.get(bgUrl);
           if (!cached) reasonParts.push('bg-image probe 開始 (load 完了で再試行します)');
           else if (cached.status === 'loading') reasonParts.push('bg-image probe 中');
           else if (cached.status === 'error') reasonParts.push('bg-image 読込エラー: ' + bgUrl);
@@ -3459,10 +3708,10 @@
   //   独立に維持される (elementHasBackgroundImage / swapBackgroundImageUndoable)。
   // Papa-2 修正1: target フィールドを追加。リサイズすべき要素は
   //   wrapper (.le-dropped-img) なら wrapper、それ以外は el 自身。
-  //   getImageNaturalSize に <img> を渡したとき、その親が .le-dropped-img wrapper
+  //   getImgNaturalSize に <img> を渡したとき、その親が .le-dropped-img wrapper
   //   なら target = wrapper を返す (内側 img だけリサイズして wrapper と不一致に
   //   なる問題を解消)。逆に wrapper を渡されたときは内側 img の natural を返す。
-  function getImageNaturalSize(el, onLoad) {
+  function getImgNaturalSize(el, onLoad) {
     if (!el) return null;
     if (el.tagName === 'IMG') {
       if (el.naturalWidth > 0 && el.naturalHeight > 0) {
@@ -3511,7 +3760,7 @@
   function resetImageTo100Pct() {
     if (!state.selectedElements || state.selectedElements.size !== 1) return;
     var sel = Array.from(state.selectedElements)[0];
-    var ns = getImageNaturalSize(sel);
+    var ns = getImgNaturalSize(sel);
     if (!sel || !ns) return;
     // Papa-2 修正1: wrapper があれば wrapper をリサイズ対象にする (差し替え後の
     //   内側 img の naturalSize に wrapper を追従させ、はみ出し/ずれを解消)
@@ -4037,11 +4286,11 @@
     var resetBtn = panel.querySelector('#np-reset-100');
     var ns = null;
     if (sel.length === 1) {
-      ns = getImageNaturalSize(sel[0], function () { updateNumericPanel(); });
+      ns = getImgNaturalSize(sel[0], function () { updateNumericPanel(); });
     }
     // 画像未ロードのケース: 1個選択 & 選択要素自身が img で naturalWidth=0 なら、
     // load 完了時に再描画する one-shot リスナを張る (再選択不要にする)。
-    // Golf-2: wrapper 内 img は対象外 (getImageNaturalSize と一貫させる)。
+    // Golf-2: wrapper 内 img は対象外 (getImgNaturalSize と一貫させる)。
     if (!ns && sel.length === 1) {
       var single0 = sel[0];
       var probe = (single0.tagName === 'IMG') ? single0 : null;
@@ -6631,6 +6880,11 @@
       //   @qid キーを保存データから削除し、 共通位置へ戻して即保存する。
       //   個別設定が無い質問では disabled (updatePerQScopeUI が管理)。
       '<button id="le-perq-clear" title="この質問の個別レイアウト設定 (@qid キー) を削除し、共通位置に戻して保存します" aria-label="この質問の個別設定を削除" style="display:none;" disabled>🧹 この質問の個別設定を削除</button>' +
+      // 🔒 このレイアウトをロック (2026-06-30 batch:968): 現在質問の per-Q キーを read-only
+      //   saved-layout-frozen.json に転記。 通常 save では絶対に上書きされない「凍結層」
+      //   として永続保護する。 frozen ファイルが空 ({}) または当該質問の per-Q が無いときは disabled。
+      //   ※ saved-layout-frozen.json の存在を前提とするため、 quizland 以外では未対応 (display:none 既定)。
+      '<button id="le-perq-lock" title="この質問の現在のレイアウト (per-Q キー) を saved-layout-frozen.json に転記して永続ロック&#10;ロック後は通常の💾保存では変更できなくなります" aria-label="この質問のレイアウトをロック" style="display:none;">🔒 このレイアウトをロック</button>' +
       // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
       //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
       //   他ページでは非表示。
@@ -6776,10 +7030,13 @@
     //   dirty baseline をトグル後のキー形式で取り直し、 誤 dirty 検知を防ぐ。
     var perqScopeBtn = tb.querySelector('#le-perq-scope');
     var perqClearBtn = tb.querySelector('#le-perq-clear');
+    var perqLockBtn  = tb.querySelector('#le-perq-lock');
     if (perqScopeBtn && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
       perqScopeBtn.style.display = '';
       perqScopeBtn.addEventListener('click', function () {
         state.perQScopeThisQ = !state.perQScopeThisQ;
+        // 2026-06-30 (batch:962 ★1): トグル状態を localStorage に永続化
+        savePerQScopePref(state.perQScopeThisQ);
         if (!state._dirty) {
           try {
             state.lastSavedJson = JSON.stringify(snapshot());
@@ -6824,11 +7081,29 @@
           } catch (e) { /* noop */ }
           // 🎯 のまま 💾 すると snapshot が @qid キーを即再生成してしまうため 🌐 に戻す
           state.perQScopeThisQ = false;
+          savePerQScopePref(false); // 2026-06-30 (batch:962 ★1): localStorage も同期
           updatePerQScopeUI();
           try { refreshSelectionUI(); } catch (e) { /* noop */ }
           try { refreshElementList(); } catch (e) { /* noop */ }
           save(); // GET→merge→削除キー適用→PUT で削除を永続化
         });
+      }
+      // 🔒 このレイアウトをロック (2026-06-30 batch:968): per-Q キーを saved-layout-frozen.json
+      //   に転記して永続保護する。 quizland 以外では非表示のまま (saved-layout-frozen.json 未対応)。
+      //   有効化条件: saved-layout-frozen.json をサポートする quizland 文脈 (ghPath が
+      //   `quizland/saved-layout.json` で終わる) のときだけ表示。
+      if (perqLockBtn) {
+        try {
+          var gp = (state.config && state.config.ghPath) || (function () {
+            var lu = (state.config && state.config.layoutUrl) || '';
+            return lu.replace(/^\.\//, '').replace(/^\//, '');
+          })();
+          var frozenSupported = /saved-layout\.json$/i.test(gp || '');
+          if (frozenSupported) {
+            perqLockBtn.style.display = '';
+            perqLockBtn.addEventListener('click', function () { lockToFrozen(); });
+          }
+        } catch (_) { /* 表示しないだけ — fatal にしない */ }
       }
       // 保存成功 (🎯 保存で @qid キーが増えた / 🧹 で減った) に ⚠個別あり バッジを追従
       var perqSaveListener = function () { updatePerQScopeUI(); };
@@ -8346,7 +8621,10 @@
           return typeof s === 'string' && state._perQuestionSelectors.indexOf(s) !== -1;
         })
       : [];
-    state.perQScopeThisQ = false; // 既定は 「🌐 すべての質問」 (従来挙動)
+    // 2026-06-30 (batch:962 ★1): トグル状態を localStorage から復元 (なければ 🌐 既定)。
+    //   従来は false 固定だったため 🎯 にして閉じても次回 🌐 に戻り、 ユーザーが気付かず
+    //   global キーを上書きして個別レイアウトを毀損する事故が出ていた。
+    state.perQScopeThisQ = loadPerQScopePref();
     state._perQDeletedKeys = new Set(); // 2026-06-11: 削除予約は enable 毎にリセット
     state._perQWarnedQid = null;        // 2026-06-11: 警告 toast ガードもリセット
     state.selectedElements = new Set();
@@ -8607,7 +8885,9 @@
     state.lastSavedQid = null;       // Phase 3.5 Fix 2: 次回 enable で取り直す
     state._perQuestionSelectors = []; // 2026-05-07: 次回 enable で受け取り直す
     state._perQScopeToggleSelectors = []; // 2026-06-11: 保存範囲トグルも次回 enable で受け取り直す
-    state.perQScopeThisQ = false;
+    // 2026-06-30 (batch:962 ★1): perQScopeThisQ は localStorage 永続値が正本。
+    //   ここで false 強制すると次回 enable() で false スタートとなり (= 復元前に再書きされ)、
+    //   🎯 にしたままセッションを閉じても次回 🌐 に戻る片道ドアになる。 reset を削除。
     state._perQDeletedKeys = new Set(); // 2026-06-11: 未保存の削除予約はセッション終了で破棄
     state._perQWarnedQid = null;
     state.toolbarEl = null;

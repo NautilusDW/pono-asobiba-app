@@ -7,6 +7,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ポノとランタンのめいろ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: タイトル overlay が無いゲームなので、 #gameCanvas を init 完了まで非表示にして暗転で耐える -->
+<style>html,body{background:#FFF8F0}#gameCanvas{visibility:hidden}body.pono-game-ready #gameCanvas{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<script src="../common/preload-helper.js"></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('maze');});</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
@@ -53,9 +58,49 @@ html, body {
   padding: 3px 8px; font-size: 0.85rem; font-weight: 700;
   flex-shrink: 0; gap: 8px;
 }
-#hud-stage { color: var(--primary); }
+#hud-stage { color: var(--primary); display: inline-flex; align-items: center; gap: 6px; }
 #hud-apples { color: var(--accent); }
 #hud-moves { color: var(--text); }
+
+/* ── 難易度バッジ (やさしい/ふつう/むずかしい)
+   common/difficulty.js の値をもとに HUD と image-stage ラベルの直後に挿入。
+   quizland の diff-label と視覚的に整合 (小さめ・★併記・半透明背景)。
+   年齢数字は絶対に出さない (CLAUDE.md ルール準拠)。 */
+.pono-diff-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  background: rgba(255, 248, 224, 0.85);
+  color: #5D3A00;
+  border: 1.2px solid rgba(164, 199, 109, 0.55);
+  text-shadow: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.pono-diff-badge .pono-diff-stars {
+  font-size: 0.78rem;
+  color: #E0A02C;
+  letter-spacing: 0;
+  line-height: 1;
+}
+.pono-diff-badge[data-diff="easy"]   { background: rgba(232, 245, 215, 0.92); border-color: rgba(164, 199, 109, 0.7); color: #3F5A1E; }
+.pono-diff-badge[data-diff="normal"] { background: rgba(255, 244, 208, 0.92); border-color: rgba(224, 160, 44, 0.7);  color: #6A4400; }
+.pono-diff-badge[data-diff="hard"]   { background: rgba(255, 220, 220, 0.92); border-color: rgba(200, 90, 90, 0.7);   color: #762020; }
+/* image-stage-mode 上部ラベル内の badge: 背景が暗いので白系で見やすく */
+#imgStageLabel .pono-diff-badge {
+  background: rgba(255, 248, 224, 0.18);
+  color: rgba(255, 248, 224, 0.95);
+  border-color: rgba(255, 248, 224, 0.4);
+  font-size: 0.78rem;
+  margin-left: 6px;
+}
+#imgStageLabel .pono-diff-badge .pono-diff-stars {
+  color: #FFD86A;
+}
 
 .game-wrap {
   flex: 1; min-height: 0;
@@ -981,6 +1026,17 @@ body.image-stage-mode .game-wrap {
   grid-template-columns: 1fr;
   padding: 18px 20px;
 }
+.encounter-modal .enc-card.is-water {
+  box-sizing: border-box;
+  width: min(98vw, 1280px);
+  height: min(94dvh, 820px);
+  max-height: calc(100dvh - 16px);
+  padding: clamp(8px, 1.4vw, 16px);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  justify-items: stretch;
+  row-gap: 0;
+}
 .encounter-modal .enc-card.is-strength {
   width: min(98vw, 1180px);
   height: min(96dvh, 720px);
@@ -1007,6 +1063,14 @@ body.image-stage-mode .game-wrap {
   min-height: 0;
   max-height: none;
   overflow: visible;
+}
+.encounter-modal .enc-card.is-water .enc-stage {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  align-items: stretch;
+  justify-content: stretch;
 }
 .encounter-modal .enc-card.is-janken .enc-left {
   display: none;
@@ -1443,6 +1507,39 @@ body.image-stage-mode .game-wrap {
   color: #6B5A3F;
   white-space: nowrap;
 }
+.flag-hp {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 0;
+}
+.flag-hp__heart {
+  position: relative;
+  width: clamp(22px, 5vw, 30px);
+  height: clamp(22px, 5vw, 30px);
+  display: inline-block;
+}
+.flag-hp__heart::before {
+  content: "\2665";
+  font-size: clamp(20px, 4.8vw, 28px);
+  line-height: 1;
+  color: #FF6B6B;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.12);
+  transition: color 0.2s ease;
+}
+.flag-hp__heart.is-off::before {
+  color: #C9C2B6;
+  text-shadow: none;
+}
+.flag-hp__heart.is-losing::before {
+  animation: flagHpPop 360ms ease-out forwards;
+}
+@keyframes flagHpPop {
+  0%   { transform: scale(1);   color: #FF6B6B; opacity: 1; }
+  40%  { transform: scale(1.5); color: #FFB4B4; opacity: 1; }
+  100% { transform: scale(0.85); color: #C9C2B6; opacity: 1; }
+}
 .flag-bug-stage {
   display: grid;
   place-items: center;
@@ -1549,161 +1646,363 @@ body.image-stage-mode .game-wrap {
 
 .water-game {
   display: grid;
-  grid-template-rows: auto minmax(210px, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  min-height: min(62dvh, 470px);
+  grid-template-rows: minmax(1.45em, auto) minmax(0, 1fr) minmax(1.4em, auto);
+  gap: clamp(6px, 1.2dvh, 10px);
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 .water-game__title {
-  min-height: 2em;
+  min-height: 1.35em;
   display: grid;
   place-items: center;
-  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-size: clamp(1.05rem, 2.6vw, 1.65rem);
   font-weight: 900;
   color: #5D4E37;
   line-height: 1.2;
 }
 .water-game__stage {
+  --water-camera-x: 0;
+  --water-segments: 3;
   position: relative;
-  min-height: clamp(210px, 34dvh, 310px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   border: 4px solid #BFD88A;
   border-radius: 20px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(16, 89, 101, 0.16)),
-    url('../assets/images/maze/gimmicks/water/water_bridge_bg.png?v=1077') center / cover no-repeat,
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(16, 89, 101, 0.10)),
     radial-gradient(ellipse at 50% 54%, rgba(88, 177, 215, 0.88) 0 58%, rgba(63, 139, 188, 0.82) 72%, rgba(231, 249, 255, 0.86) 100%);
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.7), 0 4px 14px rgba(0,0,0,0.12);
 }
-.water-game__puddle {
-  display: none !important;
-}
-.water-game__stage::before,
 .water-game__stage::after {
   content: "";
-  display: none;
-}
-.water-game__stage::before { left: -7%; }
-.water-game__stage::after {
-  right: -7%;
-  transform: translateY(-50%) scaleX(-1);
-}
-.water-bridge-route {
   position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 46%;
-  height: 34%;
-  transform: translateY(-50%);
-  border-radius: 999px;
+  inset: 0;
   background:
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.16) 0 12px, rgba(255,255,255,0.04) 12px 24px),
-    rgba(215, 255, 236, 0.14);
-  border: 2px dashed rgba(255,255,255,0.64);
-  box-shadow: 0 0 0 6px rgba(61, 154, 174, 0.10), inset 0 0 18px rgba(255,255,255,0.20);
+    radial-gradient(circle at 30% 62%, rgba(255,255,255,0.32), transparent 9%),
+    radial-gradient(circle at 63% 34%, rgba(255,255,255,0.24), transparent 8%),
+    linear-gradient(110deg, transparent 0 44%, rgba(255,255,255,0.16) 50%, transparent 56% 100%);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  pointer-events: none;
   z-index: 1;
+  animation: waterSurfaceSheen 5.6s ease-in-out infinite;
 }
-.water-bank-label {
+.water-game__stage.is-water-scrolling .water-skate-start,
+.water-game__stage.is-water-scrolling .water-skate-goal {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.82);
+}
+.water-game__stage.is-water-scrolling .water-rider {
+  opacity: 0;
+  transform: translate(-50%, -54%) translateY(-10px) scale(0.92);
+}
+.water-game__stage.is-water-hit {
+  animation: waterHitShake 0.38s ease-out;
+}
+.water-game__stage.is-water-hit .water-hazard__zone {
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.32), transparent 34%),
+    rgba(255, 89, 66, 0.18);
+  box-shadow: 0 0 20px rgba(255,86,68,0.24), inset 0 0 24px rgba(255,244,186,0.18);
+}
+.water-game__stage.is-water-hit .water-skate-guide {
+  background: rgba(255, 248, 220, 0.94);
+  color: #b65235;
+}
+.water-skate-scroll-bg,
+.water-skate-course {
   position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% * var(--water-segments, 3));
+  height: 100%;
+  transform: translate3d(calc(var(--water-camera-x, 0) * -100% / var(--water-segments, 3)), 0, 0);
+  transition: transform 0.72s cubic-bezier(.2, .82, .2, 1);
+  pointer-events: none;
+  will-change: transform;
+}
+.water-skate-scroll-bg {
+  z-index: 0;
+  display: flex;
+  background: #62d8df;
+  opacity: 1;
+  overflow: hidden;
+}
+.water-skate-bg-panel {
+  position: relative;
+  flex: 0 0 calc(100% / var(--water-segments, 3));
+  height: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.water-skate-bg-panel--1 {
+  background-image: url('../assets/images/maze/gimmicks/water/water_skate_panel_1_20260629.webp');
+}
+.water-skate-bg-panel--2 {
+  background-image: url('../assets/images/maze/gimmicks/water/water_skate_panel_2_20260629.webp');
+}
+.water-skate-bg-panel--3 {
+  background-image: url('../assets/images/maze/gimmicks/water/water_skate_panel_3_20260629.webp');
+}
+.water-skate-bg-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(18, 112, 138, 0.08)),
+    radial-gradient(circle at 72% 26%, rgba(255,255,255,0.16), transparent 18%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.water-skate-bg-panel + .water-skate-bg-panel::before {
+  content: "";
+  position: absolute;
+  left: -3%;
+  top: 0;
+  z-index: 1;
+  width: 6%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(118, 224, 228, 0), rgba(207, 255, 255, 0.18), rgba(118, 224, 228, 0));
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.water-skate-course {
   z-index: 3;
-  top: 8%;
-  padding: 4px 10px;
+}
+.water-skate-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important;
+  display: block !important;
+  margin: 0 !important;
+  z-index: 2;
+  touch-action: none;
+}
+.water-island,
+.water-bank,
+.water-hazard {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.water-island {
+  z-index: 3;
+  width: min(14vw, 120px);
+  aspect-ratio: 1.45;
+  border-radius: 52% 46% 56% 42% / 48% 58% 40% 52%;
+  background:
+    radial-gradient(circle at 26% 24%, rgba(255,255,255,0.58), transparent 22%),
+    radial-gradient(circle at 68% 70%, rgba(84, 136, 52, 0.34), transparent 30%),
+    linear-gradient(135deg, #E8D49A 0 36%, #8AB85A 37% 74%, #5F9449 100%);
+  box-shadow:
+    0 9px 18px rgba(28, 87, 64, 0.28),
+    inset 0 0 0 4px rgba(255,255,255,0.38),
+    inset 0 -10px 16px rgba(86, 118, 54, 0.25);
+}
+.water-island::before {
+  content: "";
+  position: absolute;
+  inset: 9% 11%;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 28% 42%, #fff5c5 0 4%, transparent 5%),
+    radial-gradient(circle at 72% 38%, #fff5c5 0 4%, transparent 5%),
+    radial-gradient(circle at 54% 70%, rgba(255,255,255,0.8) 0 3%, transparent 4%),
+    linear-gradient(180deg, rgba(138, 192, 84, 0.7), rgba(82, 140, 65, 0.16));
+}
+.water-bank {
+  z-index: 3;
+  width: min(30vw, 270px);
+  height: 86%;
+  border-radius: 42% 0 0 46% / 48% 0 0 52%;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255,255,255,0.48), transparent 12%),
+    radial-gradient(circle at 22% 72%, rgba(255,235,163,0.5), transparent 16%),
+    linear-gradient(90deg, #E7D2A1 0 14%, #9DCC66 15% 58%, #5F9C45 100%);
+  box-shadow:
+    -12px 0 22px rgba(36, 104, 82, 0.24),
+    inset 8px 0 0 rgba(255,255,255,0.36),
+    inset 0 -14px 18px rgba(76, 123, 60, 0.26);
+}
+.water-bank::before {
+  content: "";
+  position: absolute;
+  left: 3%;
+  top: 7%;
+  width: 28%;
+  height: 86%;
+  border-radius: 60% 38% 42% 58%;
+  background:
+    radial-gradient(circle at 40% 18%, rgba(255,255,255,0.64), transparent 15%),
+    linear-gradient(180deg, rgba(255,235,156,0.85), rgba(209,164,91,0.56));
+}
+.water-hazard {
+  z-index: 4;
+}
+.water-hazard__zone {
+  position: absolute;
+  inset: 0;
+  display: none;
+  border: 0;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.18), transparent 35%),
+    radial-gradient(ellipse, rgba(255, 240, 176, 0.16), rgba(255,255,255,0.02) 62%, transparent 74%);
+  box-shadow: inset 0 0 24px rgba(255,244,186,0.12);
+  opacity: 0.42;
+  animation: waterDangerPulse 1.45s ease-in-out infinite;
+}
+.water-hazard--sweep-y .water-hazard__zone,
+.water-hazard--sweep-x .water-hazard__zone {
+  border-radius: 999px;
+}
+.water-hazard--spin .water-hazard__zone {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0) 0 42%, rgba(255,255,255,0.28) 45% 50%, rgba(255, 128, 94, 0.23) 52% 100%);
+}
+.water-hazard--drift .water-hazard__zone {
+  border-radius: 55% 42% 50% 48% / 45% 56% 44% 55%;
+}
+.water-hazard__bug {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(58px, 8.5vw, 102px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 6px 8px rgba(56, 55, 40, 0.26));
+}
+.water-hazard__bug img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.water-hazard--sweep-y .water-hazard__bug {
+  animation: waterBugSweepY 2.25s ease-in-out infinite;
+}
+.water-hazard--sweep-x .water-hazard__bug {
+  animation: waterBugSweepX 2.1s ease-in-out infinite;
+}
+.water-hazard--spin .water-hazard__bug {
+  animation: waterBugSpin 3.1s linear infinite;
+}
+.water-hazard--drift .water-hazard__bug {
+  animation: waterBugDrift 2.8s ease-in-out infinite;
+}
+.water-skate-start,
+.water-skate-goal {
+  position: absolute;
+  z-index: 5;
+  width: clamp(46px, 8vw, 74px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+.water-skate-start {
+  left: 16%;
+  top: 72%;
+  background: radial-gradient(circle, rgba(255,252,207,0.74) 0 34%, rgba(124,224,255,0.32) 56%, rgba(255,255,255,0) 72%);
+  box-shadow: 0 0 18px rgba(255,246,155,0.58), inset 0 0 0 3px rgba(255,255,255,0.56);
+}
+.water-skate-goal {
+  left: 84%;
+  top: 28%;
+  background: radial-gradient(circle, rgba(255,255,255,0.85) 0 25%, rgba(127,244,255,0.42) 55%, rgba(255,255,255,0) 76%);
+  box-shadow: 0 0 22px rgba(255,255,255,0.82), 0 0 36px rgba(132,244,255,0.48), inset 0 0 0 3px rgba(255,255,255,0.62);
+  animation: waterGoalPulse 1.8s ease-in-out infinite;
+}
+.water-skate-start::after,
+.water-skate-goal::after {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 3px 9px;
   border-radius: 999px;
   background: rgba(255,255,255,0.82);
-  color: #5D4E37;
-  font-size: clamp(0.72rem, 1.8vw, 0.92rem);
+  color: #4b6b72;
+  font-size: clamp(0.68rem, 1.45vw, 0.88rem);
   font-weight: 900;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  line-height: 1.1;
+  box-shadow: 0 2px 7px rgba(26,73,88,0.16);
 }
-.water-bank-label--start { left: 5%; }
-.water-bank-label--goal { right: 5%; }
-.water-slots {
+.water-skate-start::after { content: attr(data-label); }
+.water-skate-goal::after { content: attr(data-label); }
+.water-rider {
+  --water-amenbo-face: -1;
+  --water-amenbo-tilt: 0deg;
   position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 50%;
-  height: 40%;
-  transform: translateY(-50%);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  align-items: center;
-  z-index: 2;
-}
-.water-slot {
-  position: relative;
-  min-height: 74px;
-  border: 3px dashed rgba(255,255,255,0.82);
-  border-radius: 14px;
-  background: rgba(255,255,255,0.18);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  font-family: inherit;
-  color: #5D4E37;
-  font-weight: 900;
-  font-size: clamp(0.86rem, 2vw, 1.05rem);
-  line-height: 1.2;
-  box-shadow: inset 0 0 14px rgba(80,160,210,0.20), 0 6px 12px rgba(38,91,116,0.14);
-  backdrop-filter: blur(1.5px);
-}
-.water-slot::before {
-  content: "";
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 50%;
-  height: 18px;
-  transform: translateY(-50%);
-  border-radius: 999px;
-  background: rgba(255,255,255,0.28);
+  z-index: 6;
+  left: 16%;
+  top: 72%;
+  width: clamp(132px, 20vw, 240px);
+  transform: translate(-50%, -54%);
+  transform-origin: 50% 56%;
+  transition: opacity 0.22s ease, transform 0.22s ease;
   pointer-events: none;
+  will-change: left, top, transform;
 }
-.water-slot.is-next {
-  border-style: solid;
-  border-color: #FFE27A;
-  background: rgba(255,255,255,0.68);
-  box-shadow: 0 0 0 4px rgba(255,226,122,0.25), inset 0 0 12px rgba(255,226,122,0.24);
+.water-rider.is-gliding {
+  animation: waterRiderBob 0.58s ease-in-out infinite;
 }
-.water-slot.is-placed {
-  border-style: solid;
-  border-color: rgba(125, 98, 55, 0.28);
-  background: rgba(255,255,255,0.30);
-}
-.water-slot.is-danger {
-  border-color: #F58C8C;
-  box-shadow: 0 0 0 4px rgba(245,140,140,0.28), inset 0 0 12px rgba(245,140,140,0.2);
-}
-.water-slot img {
-  width: min(96%, 170px);
-  max-height: 82px !important;
+.water-rider__amenbo {
+  display: block;
+  width: 100%;
+  max-height: min(25dvh, 150px) !important;
   object-fit: contain;
-  filter: drop-shadow(0 4px 7px rgba(0,0,0,0.18));
-  pointer-events: none;
-  z-index: 1;
+  transform: rotate(var(--water-amenbo-tilt)) scaleX(var(--water-amenbo-face));
+  transform-origin: 50% 52%;
+  filter: drop-shadow(0 7px 10px rgba(20,65,81,0.28));
 }
-.water-amenbo {
+.water-rider__pono {
   position: absolute;
-  z-index: 3;
-  top: 50%;
+  left: 43%;
+  top: -7%;
+  width: 22%;
+  max-height: none !important;
+  object-fit: contain;
+  transform: translateX(-50%) rotate(-8deg);
+  filter: drop-shadow(0 4px 6px rgba(33,75,83,0.22));
+}
+.water-skate-guide {
+  position: absolute;
+  z-index: 7;
   left: 50%;
-  width: min(28vw, 150px);
-  max-height: min(22dvh, 110px) !important;
-  object-fit: contain;
-  transform: translate(-50%, -50%);
-  transition: left 0.28s ease-in-out, top 0.18s ease;
-  filter: drop-shadow(0 5px 8px rgba(0,0,0,0.2));
+  bottom: 7%;
+  transform: translateX(-50%);
+  max-width: min(82%, 560px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.84);
+  color: #426a72;
+  font-size: clamp(0.82rem, 1.9vw, 1.08rem);
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 0 5px 16px rgba(25,80,99,0.16);
   pointer-events: none;
-}
-.water-amenbo.is-splashing {
-  animation: waterBugSplash 0.42s ease-in-out;
 }
 .water-game__status {
-  min-height: 2.2em;
+  min-height: 1.35em;
   display: grid;
   place-items: center;
-  font-size: clamp(0.98rem, 2.4vw, 1.25rem);
+  font-size: clamp(0.9rem, 2.1vw, 1.16rem);
   font-weight: 900;
   color: #4F8A9C;
   line-height: 1.2;
@@ -1734,65 +2033,54 @@ body.image-stage-mode .game-wrap {
   border: 4px solid #BFD88A;
   border-radius: 20px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(16, 89, 101, 0.16)),
-    url('../assets/images/maze/gimmicks/water/water_bridge_bg.png?v=1077') center / cover no-repeat,
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(16, 89, 101, 0.10)),
+    url('../assets/images/maze/gimmicks/water/water_skate_panel_3_20260629.webp') right center / cover no-repeat,
     radial-gradient(ellipse at 50% 54%, rgba(88, 177, 215, 0.88) 0 58%, rgba(63, 139, 188, 0.82) 72%, rgba(231, 249, 255, 0.86) 100%);
   overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.7), 0 4px 14px rgba(0,0,0,0.12);
 }
-.water-complete-route {
+.water-complete-canvas {
   position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 52%;
-  height: 30%;
-  transform: translateY(-50%);
-  border-radius: 999px;
-  background: rgba(223, 255, 241, 0.15);
-  box-shadow: 0 0 0 6px rgba(61, 154, 174, 0.10), inset 0 0 18px rgba(255,255,255,0.20);
-  z-index: 1;
-}
-.water-complete-planks {
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 52%;
-  height: 34%;
-  transform: translateY(-50%);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(3px, 0.7vw, 8px);
-  align-items: center;
-  z-index: 2;
-}
-.water-complete-planks img {
-  width: 100%;
-  max-height: min(18dvh, 150px) !important;
-  object-fit: fill;
-  display: block;
-  margin: 0 auto;
-  filter: drop-shadow(0 5px 8px rgba(63, 48, 26, 0.24));
-}
-.water-complete-pono-track {
-  position: absolute;
-  left: 12%;
-  top: 52%;
-  width: clamp(54px, 7.2vw, 92px);
-  aspect-ratio: 40 / 57;
-  z-index: 4;
-  transform: translate(-50%, -50%);
-  animation: waterPonoCross 4.2s linear 0.22s forwards;
-}
-.water-complete-pono-sprite {
-  display: block;
+  inset: 0;
   width: 100%;
   height: 100%;
-  background: url('../assets/images/characters/pono/pono_walk_side_sheet_12f.png') 0 0 / 1200% 100% no-repeat;
-  filter: drop-shadow(0 5px 7px rgba(0,0,0,0.22));
-  will-change: background-position, transform;
-  animation:
-    waterPonoWalkFrames 1.45s steps(11) infinite,
-    waterPonoStepBob 0.62s steps(2, end) infinite;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: fill !important;
+  display: block !important;
+  margin: 0 !important;
+  z-index: 1;
+  pointer-events: none;
+}
+.water-complete-bank {
+  position: absolute;
+  right: -2%;
+  top: 7%;
+  z-index: 2;
+  width: min(28vw, 260px);
+  height: 86%;
+  border-radius: 44% 0 0 48% / 50% 0 0 54%;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255,255,255,0.58), transparent 12%),
+    radial-gradient(circle at 24% 76%, rgba(255,236,164,0.48), transparent 18%),
+    linear-gradient(90deg, #E6D09A 0 15%, #9CCC63 16% 60%, #5E9946 100%);
+  box-shadow:
+    -12px 0 22px rgba(38, 106, 82, 0.22),
+    inset 8px 0 0 rgba(255,255,255,0.32);
+  pointer-events: none;
+}
+.water-complete-sparkles {
+  position: absolute;
+  inset: 8% 7%;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 22% 58%, rgba(255,255,255,0.92) 0 2px, transparent 5px),
+    radial-gradient(circle at 42% 48%, rgba(255,255,255,0.82) 0 2px, transparent 6px),
+    radial-gradient(circle at 67% 42%, rgba(255,255,255,0.9) 0 2px, transparent 6px),
+    radial-gradient(circle at 80% 33%, rgba(255,249,166,0.9) 0 2px, transparent 6px);
+  filter: drop-shadow(0 0 8px rgba(153,244,255,0.8));
+  animation: waterSparkleDrift 2.4s ease-in-out infinite;
 }
 .water-complete-status {
   min-height: 2.2em;
@@ -1803,22 +2091,49 @@ body.image-stage-mode .game-wrap {
   color: #4F8A9C;
   line-height: 1.2;
 }
-@keyframes waterPonoCross {
-  0%   { left: 12%; }
-  100% { left: 88%; }
+@keyframes waterGoalPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.84; }
+  50%      { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
 }
-@keyframes waterPonoWalkFrames {
-  0%   { background-position: 0 0; }
-  100% { background-position: 100% 0; }
+@keyframes waterRiderBob {
+  0%, 100% { transform: translate(-50%, -54%) translateY(0); }
+  50%      { transform: translate(-50%, -54%) translateY(-4px); }
 }
-@keyframes waterPonoStepBob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-4%); }
+@keyframes waterSparkleDrift {
+  0%, 100% { opacity: 0.74; transform: translateY(0); }
+  50%      { opacity: 1; transform: translateY(-4px); }
 }
-@keyframes waterBugSplash {
-  0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-  42%      { transform: translate(-50%, -50%) rotate(-8deg) scale(1.08); }
-  70%      { transform: translate(-50%, -50%) rotate(8deg) scale(1.04); }
+@keyframes waterSurfaceSheen {
+  0%, 100% { opacity: 0.56; transform: translate3d(-1.2%, 0, 0) scale(1.01); }
+  50%      { opacity: 0.86; transform: translate3d(1.2%, -1.4%, 0) scale(1.03); }
+}
+@keyframes waterHitShake {
+  0%   { transform: translateX(0); }
+  18%  { transform: translateX(-7px); }
+  38%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  82%  { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+@keyframes waterDangerPulse {
+  0%, 100% { opacity: 0.84; transform: scale(0.985); }
+  50%      { opacity: 1; transform: scale(1.03); }
+}
+@keyframes waterBugSweepY {
+  0%, 100% { transform: translate(-50%, -138%) rotate(-7deg); }
+  50%      { transform: translate(-50%, 38%) rotate(8deg); }
+}
+@keyframes waterBugSweepX {
+  0%, 100% { transform: translate(-148%, -50%) rotate(6deg); }
+  50%      { transform: translate(48%, -50%) rotate(-6deg); }
+}
+@keyframes waterBugSpin {
+  0%   { transform: translate(-50%, -50%) rotate(0deg) translateX(78%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg) translateX(78%) rotate(-360deg); }
+}
+@keyframes waterBugDrift {
+  0%, 100% { transform: translate(-66%, -78%) rotate(-8deg); }
+  50%      { transform: translate(-34%, -24%) rotate(9deg); }
 }
 
 .strength-game {
@@ -2038,6 +2353,44 @@ body.image-stage-mode .game-wrap {
   color: #8D6C36;
   line-height: 1.2;
 }
+/* sw1380: 力の手袋カウントダウン (3,2,1,GO!) */
+.strength-countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 9;
+}
+.strength-countdown__num {
+  font-family: 'Hiragino Maru Gothic Pro', 'Yu Gothic', sans-serif;
+  font-weight: 900;
+  font-size: clamp(5rem, 18vw, 9rem);
+  color: #FFF6C2;
+  text-shadow:
+    0 0 12px rgba(255, 196, 76, 0.85),
+    0 4px 0 #C66A1E,
+    0 6px 16px rgba(0,0,0,0.45);
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.4);
+  animation: strengthCountdownPop 1s ease-out forwards;
+}
+.strength-countdown__num.is-go {
+  color: #FFFCD8;
+  text-shadow:
+    0 0 18px rgba(255, 220, 90, 0.95),
+    0 4px 0 #2E8A3A,
+    0 8px 20px rgba(0,0,0,0.45);
+  font-size: clamp(4rem, 14vw, 7rem);
+}
+@keyframes strengthCountdownPop {
+  0%   { opacity: 0; transform: scale(0.4); }
+  18%  { opacity: 1; transform: scale(1.15); }
+  35%  { opacity: 1; transform: scale(1); }
+  85%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.25); }
+}
 .strength-clear {
   position: relative;
   display: grid;
@@ -2073,10 +2426,10 @@ body.image-stage-mode .game-wrap {
   48% {
     opacity: 1;
     filter: drop-shadow(0 12px 13px rgba(0,0,0,0.22)) brightness(1.05);
-    transform: translate3d(112%, -34%, -42px) rotate(-4deg) rotateX(2deg) rotateY(7deg) scale(0.88);
+    transform: translate3d(112%, -34%, 64px) rotate(-4deg) rotateX(2deg) rotateY(7deg) scale(0.88);
   }
   62% {
-    transform: translate3d(122%, -38%, -50px) rotate(-2deg) rotateX(0deg) rotateY(4deg) scale(0.84);
+    transform: translate3d(122%, -38%, 60px) rotate(-2deg) rotateX(0deg) rotateY(4deg) scale(0.84);
   }
   100% {
     opacity: 0.92;
@@ -2091,10 +2444,10 @@ body.image-stage-mode .game-wrap {
   48% {
     opacity: 1;
     filter: drop-shadow(0 12px 13px rgba(0,0,0,0.22)) brightness(1.05);
-    transform: translate3d(-112%, -34%, -42px) rotate(4deg) rotateX(2deg) rotateY(-7deg) scale(0.88);
+    transform: translate3d(-112%, -34%, 64px) rotate(4deg) rotateX(2deg) rotateY(-7deg) scale(0.88);
   }
   62% {
-    transform: translate3d(-122%, -38%, -50px) rotate(2deg) rotateX(0deg) rotateY(-4deg) scale(0.84);
+    transform: translate3d(-122%, -38%, 60px) rotate(2deg) rotateX(0deg) rotateY(-4deg) scale(0.84);
   }
   100% {
     opacity: 0.92;
@@ -2304,6 +2657,13 @@ body.image-stage-mode .game-wrap {
     width: min(96vw, 650px);
     max-height: calc(100dvh - 18px);
   }
+  .encounter-modal .enc-card.is-water {
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    padding: 6px 8px;
+    border-width: 4px;
+  }
   .encounter-modal .enc-card.is-water-complete {
     width: calc(100vw - 16px);
     height: calc(100dvh - 16px);
@@ -2377,6 +2737,17 @@ body.image-stage-mode .game-wrap {
     max-width: min(23vw, 96px);
     max-height: min(28dvh, 110px) !important;
   }
+  .flag-hp {
+    margin-top: 2px;
+    gap: 4px;
+  }
+  .flag-hp__heart {
+    width: 20px;
+    height: 20px;
+  }
+  .flag-hp__heart::before {
+    font-size: 18px;
+  }
   .flag-controls {
     gap: clamp(20px, 7vw, 34px);
     margin-top: 4px;
@@ -2395,45 +2766,57 @@ body.image-stage-mode .game-wrap {
     gap: 6px;
   }
   .water-game {
-    grid-template-rows: 1.7em minmax(86px, 1fr) 1.6em;
-    gap: 6px;
-    min-height: min(64dvh, 230px);
+    grid-template-rows: 1.35em minmax(0, 1fr) 1.25em;
+    gap: 5px;
+    min-height: 0;
+    height: 100%;
   }
   .water-game__title {
-    min-height: 1.5em;
-    font-size: clamp(1rem, 4vw, 1.3rem);
+    min-height: 1.25em;
+    font-size: clamp(0.98rem, 3.7vw, 1.22rem);
   }
   .water-game__stage {
-    min-height: 86px;
+    min-height: 0;
+    height: 100%;
     border-width: 3px;
     border-radius: 14px;
   }
-  .water-slots {
-    left: 6%;
-    right: 6%;
-    top: 50%;
-    bottom: auto;
-    height: 58px;
-    max-height: calc(100% - 16px);
-    transform: translateY(-50%);
-    gap: 6px;
+  .water-rider {
+    width: clamp(86px, 18vw, 138px);
   }
-  .water-slot {
-    min-height: 58px;
-    border-width: 2px;
-    border-radius: 12px;
-    font-size: 0.76rem;
+  .water-rider__amenbo {
+    max-height: min(28dvh, 88px) !important;
   }
-  .water-slot img {
-    max-height: 46px !important;
+  .water-island {
+    width: min(15vw, 82px);
+  }
+  .water-bank {
+    width: min(28vw, 180px);
+  }
+  .water-hazard__bug {
+    width: clamp(44px, 8vw, 66px);
+  }
+  .water-skate-start,
+  .water-skate-goal {
+    width: clamp(34px, 7vw, 48px);
+  }
+  .water-skate-start::after,
+  .water-skate-goal::after {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+  }
+  .water-skate-guide {
+    bottom: 4%;
+    padding: 5px 10px;
+    font-size: 0.78rem;
   }
   .water-amenbo {
     width: min(18vw, 82px);
     max-height: min(22dvh, 66px) !important;
   }
   .water-game__status {
-    min-height: 1.45em;
-    font-size: 0.86rem;
+    min-height: 1.2em;
+    font-size: 0.82rem;
   }
   .water-complete-scene {
     grid-template-rows: 1.7em minmax(0, 1fr) 1.6em;
@@ -2451,27 +2834,11 @@ body.image-stage-mode .game-wrap {
     border-width: 3px;
     border-radius: 14px;
   }
-  .water-complete-route {
-    left: 7%;
-    right: 7%;
-    top: 52%;
-    height: 40%;
-    max-height: none;
+  .water-complete-canvas {
+    max-height: none !important;
   }
-  .water-complete-planks {
-    left: 10%;
-    right: 10%;
-    top: 52%;
-    height: 42%;
-    max-height: none;
-    gap: 3px;
-  }
-  .water-complete-planks img {
-    max-height: min(23dvh, 96px) !important;
-  }
-  .water-complete-pono-track {
-    width: clamp(40px, 8.2vw, 58px);
-    top: 52%;
+  .water-complete-bank {
+    width: min(26vw, 150px);
   }
   .water-complete-status {
     min-height: 1.45em;
@@ -2671,6 +3038,96 @@ body.image-stage-mode .game-wrap {
   0%, 100% { opacity: 0.92; transform: translateX(-50%) scale(1); }
   50%      { opacity: 1;    transform: translateX(-50%) scale(1.05); }
 }
+/* ===== batch:890: ステージセレクト ボタン + modal (DEV toggle ON 時のみ表示) ===== */
+#title-stage-select-btn {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+  color: #fff;
+  background: rgba(58, 38, 24, 0.86);
+  border: 2px solid rgba(255, 220, 140, 0.55);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+#title-stage-select-btn:active { transform: translateY(1px); }
+.stage-select-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300; /* #title-screen (250) よりも上 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.62);
+  padding: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage-select-modal[hidden] { display: none; }
+.stage-select-modal__card {
+  background: #FFF6E0;
+  color: #3A2A1A;
+  border-radius: 18px;
+  padding: 20px 22px 18px;
+  width: min(92vw, 480px);
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  text-align: center;
+}
+.stage-select-modal__title {
+  font-size: clamp(1.05rem, 3vw, 1.3rem);
+  font-weight: 700;
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+.stage-select-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stage-select-modal__btn {
+  display: block;
+  width: 100%;
+  padding: 14px 10px;
+  font-family: inherit;
+  font-size: clamp(0.92rem, 2.4vw, 1.05rem);
+  color: #fff;
+  background: #6E4A2E;
+  border: 2px solid #4A3220;
+  border-radius: 12px;
+  cursor: pointer;
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage-select-modal__btn:active { transform: translateY(1px); }
+.stage-select-modal__btn-num {
+  display: block;
+  font-size: 0.78em;
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+.stage-select-modal__close {
+  display: inline-block;
+  font-family: inherit;
+  font-size: clamp(0.85rem, 2.2vw, 1rem);
+  color: #3A2A1A;
+  background: #E8D9B5;
+  border: 2px solid #B89B6A;
+  border-radius: 999px;
+  padding: 8px 22px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage-select-modal__close:active { transform: translateY(1px); }
 
 /* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
 /* ※ maze は既に landscape-notice (id) を別途持っているのでクラス名を変えて競合回避 */
@@ -2709,7 +3166,13 @@ body.image-stage-mode .game-wrap {
 /* ===== Maze OP Overlay (タイトル → OP → loadStage) =====
    タイトル画面タップ後に再生される導入アニメーション。
    op-layout.json を fetch して BG (op_scale.png) + frame + ビート毎テキスト + ナレーション再生。
-   ビート進行はフレーム右下の▼ (明滅) をタップ。右上のボタンでスキップ可能。 */
+   ビート進行はフレーム右下の▼ (明滅) をタップ。右上のボタンでスキップ可能。
+
+   batch:912 op-preload-fadein: 旧実装は画像 preload なしで showBeat(0) を即実行し、
+   音声 (373KB) が画像 decode 前に再生されて「音は流れているが背景がカクカク表示される」
+   状態を子供に見せていた。 現実装は BG (op_scale.png 1.4MB) + frame.src を Image.decode()
+   で並列 preload → fade-in (500ms) → showBeat(0) の順で発火し、 視覚と音声を同期させる。
+   ユーザーが fade-in 中にタップしたら fade を skip して即座に showBeat(0) へ進む。 */
 #maze-op-overlay {
   position: fixed; inset: 0;
   z-index: 300;
@@ -2719,8 +3182,11 @@ body.image-stage-mode .game-wrap {
   justify-content: center;
   padding: 16px;
   box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 500ms ease-out;
 }
 #maze-op-overlay.is-active { display: flex; }
+#maze-op-overlay.is-visible { opacity: 1; }
 #maze-op-stage {
   position: relative;
   width: 100%;
@@ -2821,8 +3287,9 @@ body.image-stage-mode .game-wrap {
   user-select: none;
 }
 </style>
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
 </head>
-<body>
+<body data-game-id="maze">
 
 <!-- BGM (loop) -->
 <audio id="bgm" loop preload="auto" src="../assets/audio/maze_bgm.mp3"></audio>
@@ -2831,6 +3298,17 @@ body.image-stage-mode .game-wrap {
 <div id="title-screen" role="button" aria-label="タップしてスタート">
   <img class="title-logo" src="../assets/images/maze/title_logo.png" alt="ポノとランタンのめいろ">
   <div class="title-tap-cta">▶ タップしてスタート</div>
+  <!-- batch:890: debug toggle ON 時のみ表示するステージセレクトボタン (右下) -->
+  <button type="button" id="title-stage-select-btn" hidden>ステージセレクト</button>
+</div>
+
+<!-- batch:890: ステージセレクト modal (debug toggle ON 時のみ開く) -->
+<div id="stage-select-modal" class="stage-select-modal" role="dialog" aria-modal="true" aria-labelledby="stage-select-modal-title" aria-hidden="true" hidden>
+  <div class="stage-select-modal__card">
+    <div class="stage-select-modal__title" id="stage-select-modal-title">ステージセレクト (DEV)</div>
+    <div class="stage-select-modal__grid" id="stage-select-modal-grid"></div>
+    <button type="button" class="stage-select-modal__close" id="stage-select-modal-close" aria-label="閉じる">× とじる</button>
+  </div>
 </div>
 
 <!-- 縦持ち時の警告オーバーレイ -->
@@ -2985,7 +3463,10 @@ body.image-stage-mode .game-wrap {
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
 <script src="../js/game-stickers.js"></script>
+<script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/difficulty.js"></script>
+<script src="../common/capture.js" defer></script>
 <script src="image-runtime.js"></script>
 
 <script>
@@ -3048,6 +3529,9 @@ const MAZE_WATER_ASSETS = {
   amenboPose: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_pose.png'),
   amenboSkate: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_skate.png'),
   amenboSplash: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_splash.png'),
+  amenboLineIdle: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_idle_20260628.png'),
+  amenboLineGlide: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_glide_20260628.png'),
+  amenboLineHappy: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_happy_20260628.png'),
 };
 const MAZE_STRENGTH_ASSETS = {
   glovePair: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png'),
@@ -3092,18 +3576,7 @@ function _pickObstacleImg(r, c) {
 // Walkable: '.', 'S', 'G', 'A'
 const T = { PATH:0, WALL:1, CAT:2, WATER:3, APPLE:4, THORN:5, STONE:6, GOAL:9 };
 
-function parseCell(ch) {
-  switch (ch) {
-    case '#': return T.WALL;
-    case 'C': return T.CAT;
-    case 'W': return T.WATER;
-    case 'A': return T.APPLE;
-    case 'T': return T.THORN;
-    case 'R': return T.STONE;
-    case 'G': return T.GOAL;
-    default:  return T.PATH;
-  }
-}
+// batch:939 fix #2 — parseCell/buildStage 削除済み (grid stage 完全廃止、 image stage のみで構成)。
 
 // ====== Stage data ======
 // All stages auto-generated by maze/_sim.js. Audits guarantee:
@@ -3164,28 +3637,12 @@ function applyMazeStageStoryFallback(stageDef, slot) {
   const fallback = MAZE_STAGE_STORY_FALLBACKS[slot | 0];
   if (!fallback) return stageDef;
   stageDef.story = Object.assign({}, fallback, stageDef.story || {});
+  // Fix: fallback が当たる slot は MAZE_STAGE_STORY_FALLBACKS に明示エントリがある
+  // = 公式 stage slot (1-7) なので、 _loadImageStageIndex の async 完了を待たずに公式扱いにする。
+  // これにより _loadImageStageIndex 未完了でも AcornModal / triggerFirstClearReward / addAcornsDaily が発火する。
+  // ?image=URL 経由の preview は slot 番号が MAZE_STAGE_STORY_FALLBACKS にエントリのない位置を使うため影響なし。
+  stageDef._official = true;
   return stageDef;
-}
-
-function buildStage(stageDef) {
-  const rows = stageDef.grid.length;
-  const cols = stageDef.grid[0].length;
-  const cells = [];
-  let start = null, goal = null;
-  let totalApples = 0;
-  for (let r = 0; r < rows; r++) {
-    const row = [];
-    for (let c = 0; c < cols; c++) {
-      const ch = stageDef.grid[r][c];
-      const t = parseCell(ch);
-      row.push(t);
-      if (ch === 'S') start = { r, c };
-      if (ch === 'G') goal  = { r, c };
-      if (t === T.APPLE) totalApples++;
-    }
-    cells.push(row);
-  }
-  return { type: 'grid', rows, cols, cells, start, goal, name: stageDef.name, totalApples };
 }
 
 // ====== Image stage index (_index.json overrides) ======
@@ -3308,22 +3765,45 @@ let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
 // ── Audio: BGM + 効果音（WebAudio合成）──
 const bgmEl = document.getElementById('bgm');
-if (bgmEl) bgmEl.volume = 0.25;
-function tryPlayBgm() {
-  if (!bgmEl || !bgmEnabled) return;
+if (bgmEl) bgmEl.volume = 0.28;
+let _mzBgmKickTimer = null;
+function tryPlayBgm(force) {
+  if (!bgmEl || !bgmEnabled || document.hidden) return;
+  if (!force && !bgmEl.paused && !bgmEl.ended) return;
+  try { if (bgmEl.preload !== 'auto') bgmEl.preload = 'auto'; } catch (_) {}
   var p = bgmEl.play();
   if (p && typeof p.catch === 'function') p.catch(function(){});
 }
+function _mzKickBgmForStage() {
+  if (!bgmEnabled || document.hidden) return;
+  if (_mzBgmKickTimer) {
+    window.clearInterval(_mzBgmKickTimer);
+    _mzBgmKickTimer = null;
+  }
+  tryPlayBgm(true);
+  var attempts = 0;
+  _mzBgmKickTimer = window.setInterval(function() {
+    attempts++;
+    tryPlayBgm(true);
+    if (attempts >= 10) {
+      window.clearInterval(_mzBgmKickTimer);
+      _mzBgmKickTimer = null;
+    }
+  }, 420);
+}
 function stopBgm() { if (bgmEl) bgmEl.pause(); }
-// ユーザー初回操作で BGM 起動（iOS Safari 対策）
+// ユーザー操作で BGM 起動（iOS Safari 対策）。OP 後や復帰後も再試行できるよう常駐させる。
 ['touchstart','click','pointerdown'].forEach(function(ev){
   document.addEventListener(ev, function _bgmUnlock(){
-    if (bgmEnabled) tryPlayBgm();
-    document.removeEventListener(ev, _bgmUnlock);
-  }, { passive: true });
+    if (bgmEnabled) _mzKickBgmForStage();
+  }, { passive: true, capture: true });
 });
 // アプリが非アクティブ (タブ切替 / iPhone スクリーン OFF / 別アプリへ) になったら音声を即停止
 function _mzPauseAllAudio() {
+  if (_mzBgmKickTimer) {
+    window.clearInterval(_mzBgmKickTimer);
+    _mzBgmKickTimer = null;
+  }
   stopBgm();
   // WebAudio 効果音用 AudioContext も suspend してバックグラウンドで鳴らない様に
   try { if (_mzAC && _mzAC.state === 'running') _mzAC.suspend(); } catch (_) {}
@@ -3336,7 +3816,7 @@ document.addEventListener('visibilitychange', function() {
   if (document.hidden) _mzPauseAllAudio();
   else _mzResumeAudioIfActive();
 });
-window.addEventListener('blur',    _mzPauseAllAudio);
+window.addEventListener('blur', () => { if (!document.hidden) return; _mzPauseAllAudio(); });
 window.addEventListener('focus',   _mzResumeAudioIfActive);
 window.addEventListener('pagehide', _mzPauseAllAudio);  // iOS Safari 対策 (アプリスイッチ)
 window.addEventListener('pageshow', _mzResumeAudioIfActive);
@@ -3405,11 +3885,14 @@ function playRockHit(finalHit) {
 }
 function playStageClearMz() { playMzSe('mazeClear'); }
 
-// SE (mp3) — おじゃま虫クイズ + ステージクリア用
+// SE (mp3) — おじゃま虫クイズ + ステージクリア用 + 力の手袋カウントダウン
 const _MZ_SE_PATHS = {
   correct:   '../assets/audio/sfx/quiz/' + encodeURIComponent('正解1') + '.mp3',
   wrong:     '../assets/audio/sfx/quiz/' + encodeURIComponent('不正解') + '.mp3',
   mazeClear: '../assets/audio/sfx/quiz/' + encodeURIComponent('迷路クリア') + '.mp3',
+  // sw1380: strength_push カウントダウン用 (既存 oto SE 流用 / 新規 brief 不要)
+  countdownTick: '../assets/audio/sfx/oto/close-hit.mp3',
+  countdownGo:   '../assets/audio/sfx/oto/game-start.mp3',
 };
 const _MZ_SE_VOLUME = 0.45;
 const _mzSeCache = {};
@@ -3421,6 +3904,118 @@ function playMzSe(name) {
     catch (e) { return; }
   }
   try { a.currentTime = 0; a.play().catch(function(){}); } catch (e) {}
+}
+
+// 旗あげミニゲーム TTS ナレーション (cmd_red_up / cmd_white_up / cmd_red_down / cmd_white_down /
+//   cmd_red_down_keep / cmd_white_down_keep / win / miss_01 / miss_02 を順次配置予定)
+const _FLAG_VOICE_BASE = '../assets/audio/narration/maze/flag/';
+const _flagVoiceCache = {};
+function _playFlagVoice(key) {
+  if (!key) return;
+  try {
+    let a = _flagVoiceCache[key];
+    if (!a) {
+      a = new Audio(_FLAG_VOICE_BASE + key + '.mp3');
+      a.volume = 0.75;
+      _flagVoiceCache[key] = a;
+    }
+    try { a.currentTime = 0; } catch (_) {}
+    a.play().catch(function(err) {
+      try { console.warn('[flag-voice] play failed:', key, err && err.name); } catch (_) {}
+    });
+  } catch (_) {}
+}
+
+// ── 共通: maze 系 8 ミニゲームのナレーション (janken / truefalse / simon /
+//   silhouette / oddone / water_bridge / strength_push / kumo) ──
+// 配置規約: assets/audio/narration/maze/{gameKey}/{voiceKey}.mp3
+// _playFlagVoice は flag 専用の preload/prefetch ロジックを持つため温存し、
+// 新規 8 ゲームはこの汎用 helper を使う。
+const _MAZE_VOICE_BASE = '../assets/audio/narration/maze/';
+const _mazeVoiceCache = Object.create(null);
+
+// 実配置済 voice の whitelist (preload/再生 対象を絞る → 404 防止)
+// batch:922/923 で 49 voice 全て Gemini 3.1 Aoede 統一達成。
+const _MAZE_VOICE_BUNDLED = {
+  janken: {
+    start: true, call_jan: true, call_ken: true, call_pon: true,
+    win_01: true, lose_01: true, lose_02: true, draw_01: true,
+  },
+  truefalse: { start: true, correct: true, wrong: true },
+  simon: { start: true, your_turn: true, correct: true, wrong: true },
+  silhouette: { start: true, hint_more: true, correct: true, wrong: true },
+  oddone: { start: true, correct: true, wrong: true },
+  water_bridge: {
+    start: true, wrong_slot: true, splash: true,
+    place_ok: true, win: true, crossing: true,
+  },
+  strength_push: {
+    start: true, crack_progress: true, almost: true, win: true, fail: true,
+  },
+  kumo: {
+    start: true, pin_clear: true, boss_appear: true, boss_phase_start: true,
+    milestone_10: true, boss_defeated: true, win: true,
+  },
+};
+
+function _playMazeVoice(gameKey, key) {
+  if (!gameKey || !key) return;
+  const bundle = _MAZE_VOICE_BUNDLED[gameKey] || {};
+  if (!bundle[key]) return;  // whitelist 外は silent skip (404 fetch なし)
+  const cacheKey = gameKey + '/' + key;
+  try {
+    var a = _mazeVoiceCache[cacheKey];
+    if (!a) {
+      a = new Audio(_MAZE_VOICE_BASE + cacheKey + '.mp3');
+      a.volume = 0.75;
+      _mazeVoiceCache[cacheKey] = a;
+    }
+    try { a.currentTime = 0; } catch (_) {}
+    a.play().catch(function(err) {
+      try { console.warn('[mz-voice]', cacheKey, err && err.name); } catch (_) {}
+    });
+  } catch (_) {}
+}
+
+function _preloadMazeVoices(gameKey, keys) {
+  if (!gameKey || !keys || !keys.length) return;
+  const bundle = _MAZE_VOICE_BUNDLED[gameKey] || {};
+  keys.forEach(function(k) {
+    if (!bundle[k]) return;  // whitelist 外は skip (preload 404 防止)
+    const cacheKey = gameKey + '/' + k;
+    if (_mazeVoiceCache[cacheKey]) return;
+    try {
+      var a = new Audio(_MAZE_VOICE_BASE + cacheKey + '.mp3');
+      a.volume = 0.75;
+      a.preload = 'auto';
+      _mazeVoiceCache[cacheKey] = a;
+    } catch (_) {}
+  });
+}
+
+// 共通: 全 maze 系 voice を停止 (_closeEncounter 等から呼ぶ、 in-flight voice の混線防止)
+function _stopAllMazeVoices() {
+  Object.keys(_mazeVoiceCache).forEach(function(k) {
+    try {
+      const a = _mazeVoiceCache[k];
+      if (a) {
+        a.pause();
+        try { a.currentTime = 0; } catch (_) {}
+      }
+    } catch (_) {}
+  });
+  // sw1744: encounter close 時に SE (countdownTick/countdownGo 等) も停止して残響を防ぐ
+  try {
+    Object.keys(_mzSeCache).forEach(function(k) {
+      try {
+        const a = _mzSeCache[k];
+        if (a) {
+          a.pause();
+          try { a.currentTime = 0; } catch (_) {}
+        }
+      } catch (_) {}
+    });
+  } catch (_) {}
 }
 function _playMzSePitch(name, semitones) {
   try {
@@ -3483,6 +4078,37 @@ const ovBtn = document.getElementById('ov-btn');
 const hudStage = document.getElementById('hud-stage');
 const hudMoves = document.getElementById('hud-moves');
 const hudApples = document.getElementById('hud-apples');
+
+// ── 難易度バッジ更新ヘルパー (common/difficulty.js 連携) ──
+// stageIdx (1-based) を渡すと #hud-stage と #imgStageLabel の末尾に
+// 「やさしい/ふつう/むずかしい」 + ★バッジを差し込む。 年齢数字は出さない。
+// common/difficulty.js が読まれていない / 範囲外 stage の時は no-op。
+function _mzUpdateDifficultyBadges(stageIdx) {
+  try {
+    if (!window.PonoDifficulty || typeof window.PonoDifficulty.forStage !== 'function') return;
+    var diff = window.PonoDifficulty.forStage('maze', stageIdx);
+    if (!diff) return;
+    var badgeHtml = '<span class="pono-diff-badge" data-diff="' + diff.key
+      + '" role="img" aria-label="難易度: ' + diff.label + '">'
+      + '<span class="pono-diff-stars" aria-hidden="true">' + diff.stars + '</span>'
+      + '<span>' + diff.label + '</span>'
+      + '</span>';
+    // #hud-stage: 既存バッジを除去してから追加 (再ロード対策)
+    var hudEl = document.getElementById('hud-stage');
+    if (hudEl) {
+      var oldHud = hudEl.querySelector('.pono-diff-badge');
+      if (oldHud) oldHud.remove();
+      hudEl.insertAdjacentHTML('beforeend', badgeHtml);
+    }
+    // #imgStageLabel: image-stage-mode 上部ラベルにも同様に追加
+    var labelEl = document.getElementById('imgStageLabel');
+    if (labelEl) {
+      var oldLabel = labelEl.querySelector('.pono-diff-badge');
+      if (oldLabel) oldLabel.remove();
+      labelEl.insertAdjacentHTML('beforeend', badgeHtml);
+    }
+  } catch (e) { /* silent: HUD だけのバッジなので失敗してもゲーム進行に影響させない */ }
+}
 const hint = document.getElementById('hint');
 const voice = document.getElementById('voice');
 const flagInventoryHud = document.getElementById('flagInventoryHud');
@@ -3824,6 +4450,8 @@ function imgLoadStage(def) {
   if (labelEl) {
     labelEl.textContent = 'ステージ ' + stageIdx;
   }
+  // 難易度バッジ (やさしい/ふつう/むずかしい) を HUD と上部ラベルに差し込む
+  _mzUpdateDifficultyBadges(stageIdx);
   voice.style.display = '';
   encounter.classList.remove('show');
   // Hide charm bar in image mode (Phase 1: charms not supported)
@@ -3834,6 +4462,7 @@ function imgLoadStage(def) {
   resizeCanvas();
   imgShowArrows();
   imgUpdateLandscapeOverlay();
+  _mzKickBgmForStage();
   showHint('やじるしを タップしてね', 2500);
   // ストーリー紹介モーダル (animal が定義されてる + 初回のみ)
   imgMaybeShowStoryIntro(stage, stageIdx);
@@ -4475,8 +5104,8 @@ const CREATURE_KIND_DATA = {
   },
   amenbo: {
     emoji: '💧', color: '#4F9AB0', name: 'アメンボムシ',
-    dialog: 'すいすい じゃまするよ！<br>いたを ならべられるかな？',
-    defeatDialog: 'じょうずに ならべたね！\nとおって いいよ。',
+    dialog: 'すいすい てつだうよ！<br>みずの みちを かいてね',
+    defeatDialog: 'すいすい わたれたね！\nとおって いいよ。',
     defaultGame: 'water_bridge', imageUrl: '../assets/images/maze/gimmicks/water/amenbo_pose.png'
   },
   strengthRock: {
@@ -4508,6 +5137,7 @@ function _setEncounterMode(mode) {
   if (!encCardEl) return;
   encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'water_bridge_complete' || mode === 'strength_push' || mode === 'web_sweep' || mode === 'donguri_bowl');
   encCardEl.classList.toggle('is-strength', mode === 'strength_push');
+  encCardEl.classList.toggle('is-water', mode === 'water_bridge' || mode === 'water_bridge_complete');
   encCardEl.classList.toggle('is-water-complete', mode === 'water_bridge_complete');
 }
 
@@ -4524,6 +5154,7 @@ let _flagGameState = null;
 let _flagTunnelTimers = [];
 let _waterGimmickState = null;
 let _waterGameState = null;
+let _waterSkateLastCompletePoints = null;
 let _waterGimmickTimers = [];
 let _strengthGimmickState = null;
 let _strengthGameState = null;
@@ -4583,6 +5214,10 @@ function _clearFlagTunnelTimers() {
 function _clearWaterGimmickTimers() {
   _waterGimmickTimers.forEach(function(t) { try { clearTimeout(t); } catch (_) {} });
   _waterGimmickTimers = [];
+  if (_waterGameState && _waterGameState.animationId) {
+    try { cancelAnimationFrame(_waterGameState.animationId); } catch (_) {}
+    _waterGameState.animationId = null;
+  }
   if (_waterGameState && _waterGameState.intervalId) {
     clearInterval(_waterGameState.intervalId);
     _waterGameState.intervalId = null;
@@ -4658,7 +5293,7 @@ function _updateFlagInventoryHud() {
   if (st && st.ladderCollected) {
     items.push({ src: MAZE_FLAG_ASSET_BASE + 'rope_ladder.png', alt: 'なわばしご' });
   }
-  if (_waterGimmickState && _waterGimmickState.plankCollected && !_waterGimmickState.bridgeBuilt) {
+  if (_waterGimmickState && !_waterGimmickState.lineSkateReady && _waterGimmickState.plankCollected && !_waterGimmickState.bridgeBuilt) {
     items.push({ src: MAZE_WATER_ASSET_BASE + 'plank_item.png', alt: 'まるたのいた' });
   }
   if (_strengthGimmickState && _strengthGimmickState.gloveCollected && !_strengthGimmickState.rockMoved) {
@@ -4776,6 +5411,7 @@ function _initWaterGimmickForStage(stageObj) {
   _waterGimmickState = {
     id: stageObj.waterGimmick.id || 'water-bridge',
     plankCollected: false,
+    lineSkateReady: true,
     bridgeBuilt: false,
   };
   _updateFlagInventoryHud();
@@ -5029,17 +5665,22 @@ function imgDrawWaterGimmick(stageObj, now) {
   if (water) {
     const size = (water.size && Number.isFinite(water.size)) ? water.size : stageObj.viewBox.h / 9;
     if (st.bridgeBuilt) {
-      _drawWorldImage(MAZE_WATER_ASSETS.bridgeComplete, water.x, water.y, size * 1.05, 1);
+      _drawWorldImage(MAZE_WATER_ASSETS.puddle, water.x, water.y, size * 0.85, 0.72);
+      const bob = Math.sin(now / 360) * (stageObj.viewBox.h / 190);
+      _drawWorldImage(MAZE_WATER_ASSETS.amenboLineHappy, water.x + size * 0.08, water.y - size * 0.2 + bob, size * 0.46, 0.95);
     } else {
       _drawWorldImage(MAZE_WATER_ASSETS.puddle, water.x, water.y, size * 0.85, 1);
-      if (st.plankCollected) {
+      if (st.lineSkateReady) {
+        const bob = Math.sin(now / 320) * (stageObj.viewBox.h / 180);
+        _drawWorldImage(MAZE_WATER_ASSETS.amenboLineIdle, water.x + Math.sin(now / 520) * (size * 0.18), water.y - size * 0.16 + bob, size * 0.42, 0.94);
+      } else if (st.plankCollected) {
         const bob = Math.sin(now / 320) * (stageObj.viewBox.h / 180);
         _drawWorldImage(MAZE_WATER_ASSETS.amenboSkate, water.x + Math.sin(now / 520) * (size * 0.28), water.y - size * 0.14 + bob, size * 0.38, 0.92);
       }
     }
   }
   const plank = cfg.plank;
-  if (plank && !st.plankCollected) {
+  if (plank && !st.lineSkateReady && !st.plankCollected) {
     const bob = Math.sin(now / 360) * (stageObj.viewBox.h / 140);
     const glow = 0.5 + Math.sin(now / 300) * 0.5;
     ctx.save();
@@ -5268,6 +5909,7 @@ function _checkFlagLadderPickup(px, py) {
 function _checkWaterPlankPickup(px, py) {
   const cfg = _waterGimmickCfg();
   const st = _waterGimmickState;
+  if (st && st.lineSkateReady) return false;
   if (!cfg || !st || st.plankCollected || !cfg.plank) return false;
   const r = cfg.plank.radius || 88;
   const dx = px - cfg.plank.x;
@@ -5607,7 +6249,7 @@ function _handleWaterGimmickObstacle(o, px, py) {
   const st = _waterGimmickState;
   if (!cfg || !st || !_isWaterGimmickObstacle(o)) return false;
   if (st.bridgeBuilt) return false;
-  if (!st.plankCollected) {
+  if (!st.lineSkateReady && !st.plankCollected) {
     _bounceFromFlagTunnelObstacle(
       o, px, py,
       'みずたまりで とおれないよ！',
@@ -5778,8 +6420,8 @@ function _triggerWaterGimmickEncounter(obstacle) {
     minigame: 'water_bridge',
     x: obstacle.x,
     y: obstacle.y,
-    dialog: 'すいすい じゃまするよ！<br>アメンボが いない ときに<br>いたを おいてみて！',
-    defeatDialog: 'いたの はし、できたね！<br>とおって いいよ。'
+    dialog: 'アメンボが てつだってくれるよ！<br>ゆびで みずの みちを<br>かいてみよう！',
+    defeatDialog: 'すいすい わたれたね！<br>とおって いいよ。'
   };
   _triggerEncounter(c);
 }
@@ -5909,7 +6551,7 @@ const _GAME_LABELS = {
   oddone:     'なかまはずれ',
   simon:      'リズムまね',
   flag:       '旗あげ',
-  water_bridge: 'いたならべ',
+  water_bridge: 'みずすべり',
   strength_push: 'いわくだき',
   web_sweep: 'びっくり ボーリング',
   donguri_bowl: 'びっくり ボーリング',
@@ -5922,7 +6564,7 @@ const _GAME_DIALOGS = {
   oddone:     'なかまはずれ さがし！<br>どれが ちがうかな？',
   simon:      'リズム まねっこ！<br>おなじ じゅんばんで タップしてね',
   flag:       'はたあげ しょうぶ！<br>いうとおりに はたを あげてね',
-  water_bridge: 'いたを ならべよう！<br>アメンボが いない ときに タップしてね',
+  water_bridge: 'みずの みちを かこう！<br>ゆびを はなすと すいすい わたるよ',
   strength_push: 'ちからを あわせて！<br>いわを れんだして くだこう',
   web_sweep: '奥へ ころがそう！<br>どんぐりで おじゃま虫を たおしてね',
   donguri_bowl: '奥へ ころがそう！<br>どんぐりで おじゃま虫を たおしてね',
@@ -5969,6 +6611,7 @@ function _showEncounterStart() {
 
 function _showJankenChoices() {
   _setEncounterMode('janken');
+  _preloadMazeVoices('janken', ['start','call_jan','call_ken','call_pon','win_01','lose_01','lose_02','draw_01']);
   const c = _currentCreature || {};
   const data = _creatureData(c);
   const creatureImg = data.imageUrl || data.emoji || '';
@@ -5997,6 +6640,7 @@ function _showJankenChoices() {
   encStageEl.querySelectorAll('.janken-controls .enc-btn.choice').forEach(function(b) {
     b.addEventListener('click', function() { _resolveJanken(b.dataset.hand); }, { once: true });
   });
+  _playMazeVoice('janken', 'start');
 }
 
 function _jankenSafeHand(hand) {
@@ -6074,13 +6718,16 @@ function _resolveJanken(playerHand) {
   setHands('rock', 'rock', true);
   resultEl.textContent = '';
   callEl.textContent = 'ジャン';
+  _playMazeVoice('janken', 'call_jan');
   setTimeout(function() {
     if (!_encounterActive) return;
     callEl.textContent = 'ケン';
+    _playMazeVoice('janken', 'call_ken');
   }, 520);
   setTimeout(function() {
     if (!_encounterActive) return;
     callEl.textContent = 'ポン！';
+    _playMazeVoice('janken', 'call_pon');
     setHands(playerHand, cpuHand, false);
     ponoSlot.classList.toggle('is-win', outcome === 'win');
     ponoSlot.classList.toggle('is-lose', outcome === 'lose');
@@ -6093,6 +6740,14 @@ function _resolveJanken(playerHand) {
       if (encounterKey) delete _jankenNextPlayerWinKeys[encounterKey];
     } else if (outcome === 'lose') {
       if (encounterKey) _jankenNextPlayerWinKeys[encounterKey] = true;
+    }
+    // ナレーション: 結果通知 (jan/ken/pon コール直後)
+    if (outcome === 'win') {
+      _playMazeVoice('janken', 'win_01');
+    } else if (outcome === 'lose') {
+      _playMazeVoice('janken', 'lose_01');
+    } else {
+      _playMazeVoice('janken', 'draw_01');
     }
     controlsEl.innerHTML = outcome === 'draw'
       ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
@@ -6190,6 +6845,11 @@ function _mzMazeAnimal(name, label) {
     kirin: MAZE_QUIZ_IMG + 'kirin.png',
     kuma: MAZE_QUIZ_IMG + 'kuma.png',
     kujira: _mzLocalQuizSrc('kujira') || (MAZE_QUIZ_IMG + 'kujira.png'),
+    // batch:883 で追加: word/lion.png, word/zou.png は古い縦伸びキャンバス (244x235→512x512
+    // 詰め込みで content AR が不自然) なので、 cdb3e31 で kirin/kuma 系を切り替えたのと
+    // 同じく choice/ 配下の新版 watercolor (lion 512x512 / zou 292x270) に差し替え。
+    lion: MAZE_QUIZ_IMG + 'lion.png',
+    zou: MAZE_QUIZ_IMG + 'zou.png',
   };
   return _mzAsset(assets[name] || (MAZE_WORD_IMG + name + '.png'), label);
 }
@@ -6207,10 +6867,10 @@ const PEEK_QUIZ_POOL = [
   _mzPeek('kuma',   'くま',    _mzMazeAnimal('kuma', 'くま')),
   _mzPeek('panda',  'ぱんだ',  _mzWord('panda', 'ぱんだ')),
   _mzPeek('kirin',  'きりん',  _mzMazeAnimal('kirin', 'きりん')),
-  _mzPeek('lion',   'らいおん', _mzWord('lion', 'らいおん')),
+  _mzPeek('lion',   'らいおん', _mzMazeAnimal('lion', 'らいおん')),
   _mzPeek('saru',   'さる',    _mzWord('saru', 'さる')),
   _mzPeek('shika',  'しか',    _mzWord('shika', 'しか')),
-  _mzPeek('zou',    'ぞう',    _mzWord('zou', 'ぞう')),
+  _mzPeek('zou',    'ぞう',    _mzMazeAnimal('zou', 'ぞう')),
   _mzPeek('fukuro', 'ふくろ',  _mzWord('fukuro', 'ふくろ')),
   _mzPeek('kujira', 'くじら',  _mzMazeAnimal('kujira', 'くじら')),
   _mzPeek('iruka',  'いるか',  _mzMazeAnimal('iruka', 'いるか')),
@@ -6227,7 +6887,7 @@ const QUIZ_TRUEFALSE = [
   { q: 'いぬは ニャーと なく？', a: false, icon: _mzWord('inu', 'いぬ') },
   { q: 'りんごは くだもの？', a: true, icon: _mzWord('ringo', 'りんご') },
   { q: 'あめの しずくは みず？', a: true, icon: _mzQuiz('rain_drop', 'あめのしずく') },
-  { q: 'ぞうは とても ちいさい？', a: false, icon: _mzWord('zou', 'ぞう') },
+  { q: 'ぞうは とても ちいさい？', a: false, icon: _mzMazeAnimal('zou', 'ぞう') },
   { q: 'さかなは みずの なかで くらす？', a: true, icon: _mzQuiz('sakana', 'さかな') },
   { q: 'くるまは そらを とぶ？', a: false, icon: _mzWord('kuruma', 'くるま') },
   { q: 'ほしは よるに みえる？', a: true, icon: _mzWord('hoshi', 'ほし') },
@@ -6254,7 +6914,7 @@ const QUIZ_ODDONE = [
   { items: [_mzWord('ki','き'), _mzWord('kusa','くさ'), _mzWord('kinoko','きのこ'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'もりに あるもの' },
   { items: [_mzWord('taiyou','たいよう'), _mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('banana','バナナ')], odd: 3, hint: 'そら' },
   { items: [_mzWord('ninjin','にんじん'), _mzWord('tomato','トマト'), _mzWord('kyuuri','きゅうり'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'やさい' },
-  { items: [_mzWord('lion','らいおん'), _mzMazeAnimal('kirin','きりん'), _mzWord('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzMazeAnimal('lion','らいおん'), _mzMazeAnimal('kirin','きりん'), _mzMazeAnimal('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
   { items: [_mzWord('ringo','りんご'), _mzWord('inu','いぬ'), _mzWord('mikan','みかん'), _mzWord('banana','バナナ')], odd: 1, hint: 'くだもの' },
   { items: [_mzWord('kuruma','くるま'), _mzWord('neko','ねこ'), _mzWord('taxi','タクシー'), _mzWord('bus','バス')], odd: 1, hint: 'のりもの' },
   { items: [_mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('hana','はな'), _mzWord('taiyou','たいよう')], odd: 2, hint: 'そらに あるもの' },
@@ -6290,6 +6950,7 @@ function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 let _peekState = null;
 function _showPeekChoices() {
   _setEncounterMode(null);
+  _preloadMazeVoices('silhouette', ['start','hint_more','correct','wrong']);
   const ans = _pick(PEEK_QUIZ_POOL);
   // 別カテゴリにならないよう、PEEK_QUIZ_POOL から ans 以外を 2 つランダム抽出
   const others = _shuffleArray(PEEK_QUIZ_POOL.filter(function(p) { return p.id !== ans.id; })).slice(0, 2);
@@ -6331,6 +6992,7 @@ function _showPeekChoices() {
     rowEl.appendChild(btn);
   });
   encStageEl.appendChild(rowEl);
+  _playMazeVoice('silhouette', 'start');
 
   // 画像をロードしてから canvas を描画
   const canv = document.getElementById('peekCanvas');
@@ -6363,6 +7025,7 @@ function _showPeekChoices() {
       // ヒント追加 (穴をもう 1 つ別の場所に)
       _peekState.holes = _peekState.holes.concat(_peekRandomHoles(1, _peekState.holes));
       _peekRender(canv, img, _peekState.holes);
+      _playMazeVoice('silhouette', 'hint_more');
       // 0.5s ちょっと止め
       const buttons = encStageEl.querySelectorAll('.peek-choice');
       buttons.forEach(function(bb) { bb.disabled = true; bb.style.opacity = '0.5'; });
@@ -6460,6 +7123,7 @@ function _createImageChoiceButton(item, index) {
 
 function _showTrueFalseChoices() {
   _setEncounterMode(null);
+  _preloadMazeVoices('truefalse', ['start','correct','wrong']);
   const q = _pick(QUIZ_TRUEFALSE);
   encStageEl.textContent = '';
   const result = document.createElement('div');
@@ -6490,11 +7154,13 @@ function _showTrueFalseChoices() {
       _resolveQuiz(playerSaid === q.a);
     });
   });
+  _playMazeVoice('truefalse', 'start');
 }
 
 // ── なかまはずれ ──
 function _showOddOneOutChoices() {
   _setEncounterMode(null);
+  _preloadMazeVoices('oddone', ['start','correct','wrong']);
   const q = _pick(QUIZ_ODDONE);
   encStageEl.textContent = '';
   const title = document.createElement('div');
@@ -6521,6 +7187,7 @@ function _showOddOneOutChoices() {
       _resolveQuiz(parseInt(b.dataset.i, 10) === q.odd);
     });
   });
+  _playMazeVoice('oddone', 'start');
 }
 
 // ── リズムまね (Simon) ──
@@ -6545,6 +7212,7 @@ function _simonPlayTone(freq, ms) {
 
 function _showSimonGame() {
   _setEncounterMode(null);
+  _preloadMazeVoices('simon', ['start','your_turn','correct','wrong']);
   // Generate a random sequence
   _simonSeq = [];
   for (let i = 0; i < SIMON_LENGTH; i++) _simonSeq.push(_pick(SIMON_COLORS));
@@ -6559,6 +7227,7 @@ function _showSimonGame() {
         '<span class="simon-dot" style="background:' + c.color + '"></span></button>';
     }).join('') +
     '</div>';
+  _playMazeVoice('simon', 'start');
   // Play sequence
   let step = 0;
   function flashNext() {
@@ -6572,6 +7241,7 @@ function _showSimonGame() {
       });
       const r = encStageEl.querySelector('.enc-result');
       if (r) r.textContent = 'おなじ じゅんに タップしてね！';
+      _playMazeVoice('simon', 'your_turn');
       return;
     }
     const c = _simonSeq[step];
@@ -6621,6 +7291,7 @@ const FLAG_POSE_SRC = {
 };
 const FLAG_GAME_STEP_COUNT = 5;
 const FLAG_ROUND_MS = 6500;
+const FLAG_HP_INITIAL = 4;  // ハート 4 つで開始 (3 ミス耐える)
 
 function _flagPoseHas(pose, flag) {
   return pose === 'both' || pose === flag;
@@ -6645,6 +7316,14 @@ function _flagCommandText(pose, flag, up) {
   return flag === 'red' ? 'あか さげて！' : 'しろ さげて！';
 }
 
+function _flagCommandVoiceKey(pose, flag, up) {
+  if (up) return flag === 'red' ? 'cmd_red_up' : 'cmd_white_up';
+  if (pose === 'both') {
+    return flag === 'red' ? 'cmd_red_down_keep' : 'cmd_white_down_keep';
+  }
+  return flag === 'red' ? 'cmd_red_down' : 'cmd_white_down';
+}
+
 function _buildFlagGameSteps() {
   const steps = [];
   let pose = 'down';
@@ -6664,6 +7343,7 @@ function _buildFlagGameSteps() {
     const next = _flagPoseAfter(pose, chosen.flag, chosen.up);
     steps.push({
       text: _flagCommandText(pose, chosen.flag, chosen.up),
+      voice: _flagCommandVoiceKey(pose, chosen.flag, chosen.up),
       flag: chosen.flag,
       next: next,
     });
@@ -6673,148 +7353,1145 @@ function _buildFlagGameSteps() {
   return steps;
 }
 
-const WATER_BRIDGE_STEPS = 3;
-const WATER_BUG_PATH = [0, 1, 2, 1];
-const WATER_BUG_LEFTS = ['17%', '50%', '83%'];
+const WATER_SKATE_START = { x: 0.16, y: 0.72 };
+const WATER_SKATE_GOAL = { x: 0.84, y: 0.28 };
+const WATER_SKATE_PONO_SRC = '../assets/images/characters/pono/pono_003.png';
+const WATER_SKATE_IDLE_SRC = MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_idle_20260628.png';
+const WATER_SKATE_GLIDE_SRC = MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_glide_20260628.png';
+const WATER_SKATE_HAPPY_SRC = MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_happy_20260628.png';
+const WATER_SKATE_OJAMA_SRC = '../assets/images/maze/creatures/ojama_boss.png';
+const WATER_SKATE_SEGMENTS = [
+  {
+    step: 'いっこめ',
+    start: { x: 0.16, y: 0.72, label: 'ここから' },
+    goal: { x: 0.84, y: 0.34, label: 'こじま' },
+    guideReady: 'ふたつの ムシを まって こじまへ',
+    guideDrawing: 'ムシが いない ときに すすもう',
+    statusReady: 'いっこめ こじまへ',
+    hazards: [
+      { kind: 'sweep-y', x: 0.48, y: 0.52, w: 0.26, h: 0.58, phase: 0, hit: { kind: 'capsule', x1: 0.48, y1: 0.29, x2: 0.48, y2: 0.75, r: 0.13 } },
+      { kind: 'sweep-x', x: 0.66, y: 0.43, w: 0.32, h: 0.24, phase: 850, hit: { kind: 'capsule', x1: 0.51, y1: 0.43, x2: 0.81, y2: 0.43, r: 0.13 } }
+    ]
+  },
+  {
+    step: 'ふたつめ',
+    start: { x: 0.18, y: 0.34, label: 'こじま' },
+    goal: { x: 0.82, y: 0.67, label: 'こじま' },
+    guideReady: 'ふたつの ムシを まって すすもう',
+    guideDrawing: 'ムシが いない ときに すすもう',
+    statusReady: 'ふたつめ こじまへ',
+    hazards: [
+      { kind: 'sweep-y', x: 0.48, y: 0.50, w: 0.26, h: 0.56, phase: 0, hit: { kind: 'capsule', x1: 0.48, y1: 0.28, x2: 0.48, y2: 0.72, r: 0.13 } },
+      { kind: 'sweep-x', x: 0.64, y: 0.52, w: 0.34, h: 0.26, phase: 900, hit: { kind: 'capsule', x1: 0.48, y1: 0.52, x2: 0.80, y2: 0.52, r: 0.13 } }
+    ]
+  },
+  {
+    step: 'さいご',
+    start: { x: 0.18, y: 0.67, label: 'こじま' },
+    goal: { x: 0.84, y: 0.46, label: 'むこうぎし' },
+    guideReady: 'ムシが いない すきまを すすもう',
+    guideDrawing: 'ムシが いない ときに すすもう',
+    statusReady: 'さいご むこうぎしへ',
+    hazards: [
+      { kind: 'sweep-x', x: 0.47, y: 0.48, w: 0.34, h: 0.24, phase: 300, hit: { kind: 'capsule', x1: 0.31, y1: 0.48, x2: 0.63, y2: 0.48, r: 0.13 } },
+      { kind: 'drift', x: 0.66, y: 0.57, w: 0.34, h: 0.46, rotate: -12, phase: 1250, hit: { kind: 'ellipse', x: 0.66, y: 0.57, rx: 0.18, ry: 0.23, rotate: -12 } }
+    ]
+  }
+];
+const WATER_SKATE_SEGMENT_COUNT = WATER_SKATE_SEGMENTS.length;
 
 function _showWaterBridgeGame() {
   _setEncounterMode('water_bridge');
   _clearWaterGimmickTimers();
+  _waterSkateLastCompletePoints = null;
   _waterGameState = {
-    step: 0,
-    placed: [false, false, false],
-    bugPathIndex: 0,
-    bugSlot: WATER_BUG_PATH[0],
-    locked: false,
-    status: 'アメンボが いない ときに タップ！',
-    splashing: false,
+    phase: 'ready',
+    segmentIndex: 0,
+    completedRoutes: [],
+    points: [],
+    particles: [],
+    ripples: [],
+    wakes: [],
+    glide: null,
+    hazardStartedAt: performance.now(),
+    success: false,
+    failReason: '',
+    status: 'ゆびで みずの みちを かこう',
+    animationId: null,
   };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'water-game';
   wrap.innerHTML =
-    '<div class="water-game__title">いたを ならべて わたろう！</div>' +
-    '<div class="water-game__stage">' +
-      '<img class="water-game__puddle" src="' + MAZE_WATER_ASSET_BASE + 'puddle_obstacle.png" alt="みずたまり">' +
-      '<div class="water-bridge-route" aria-hidden="true"></div>' +
-      '<div class="water-bank-label water-bank-label--start">こっち</div>' +
-      '<div class="water-bank-label water-bank-label--goal">むこう</div>' +
-      '<div class="water-slots" id="waterSlots"></div>' +
-      '<img class="water-amenbo" id="waterAmenbo" src="' + MAZE_WATER_ASSET_BASE + 'amenbo_skate.png" alt="アメンボムシ">' +
+    '<div class="water-game__title">みずの みちを かこう！</div>' +
+    '<div class="water-game__stage" id="waterSkateStage">' +
+      '<div class="water-skate-scroll-bg" id="waterSkateWorldBg" aria-hidden="true">' +
+        '<div class="water-skate-bg-panel water-skate-bg-panel--1"></div>' +
+        '<div class="water-skate-bg-panel water-skate-bg-panel--2"></div>' +
+        '<div class="water-skate-bg-panel water-skate-bg-panel--3"></div>' +
+      '</div>' +
+      '<div class="water-skate-course" id="waterSkateCourse" aria-hidden="true">' + _waterSkateCourseHtml() + '</div>' +
+      '<canvas class="water-skate-canvas" id="waterSkateCanvas" aria-label="みずの みちを かくところ"></canvas>' +
+      '<div class="water-skate-start" data-label="ここから" aria-hidden="true"></div>' +
+      '<div class="water-skate-goal" data-label="こじま" aria-hidden="true"></div>' +
+      '<div class="water-rider" id="waterRider" aria-hidden="true">' +
+        '<img class="water-rider__amenbo" id="waterAmenbo" src="' + WATER_SKATE_IDLE_SRC + '" alt="">' +
+        '<img class="water-rider__pono" src="' + WATER_SKATE_PONO_SRC + '" alt="">' +
+      '</div>' +
+      '<div class="water-skate-guide" id="waterSkateGuide">ここから むこうまで なぞってね</div>' +
     '</div>' +
     '<div class="water-game__status" id="waterStatus"></div>';
   encStageEl.appendChild(wrap);
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    stageEl.addEventListener('pointerdown', _onWaterSkatePointerDown);
+    stageEl.addEventListener('pointermove', _onWaterSkatePointerMove);
+    stageEl.addEventListener('pointerup', _onWaterSkatePointerUp);
+    stageEl.addEventListener('pointercancel', _onWaterSkatePointerUp);
+  }
   _renderWaterBridgeGame();
-  _waterGameState.intervalId = setInterval(_advanceWaterBug, 720);
+  _waterGameState.animationId = requestAnimationFrame(_waterSkateLoop);
 }
 
-function _advanceWaterBug() {
+function _waterSkateCurrentSegment() {
+  const idx = _waterGameState && Number.isFinite(_waterGameState.segmentIndex) ? _waterGameState.segmentIndex : 0;
+  return WATER_SKATE_SEGMENTS[Math.max(0, Math.min(WATER_SKATE_SEGMENT_COUNT - 1, idx))] || WATER_SKATE_SEGMENTS[0];
+}
+
+function _waterSkateWorldPct(segmentIndex, localValue) {
+  return (((segmentIndex + localValue) / WATER_SKATE_SEGMENT_COUNT) * 100).toFixed(4) + '%';
+}
+
+function _waterSkateWorldDim(localValue) {
+  return ((localValue / WATER_SKATE_SEGMENT_COUNT) * 100).toFixed(4) + '%';
+}
+
+function _waterSkateCourseHtml() {
+  let html = '';
+  WATER_SKATE_SEGMENTS.forEach(function(seg, idx) {
+    html += '<div class="water-island" style="left:' + _waterSkateWorldPct(idx, seg.start.x) + ';top:' + (seg.start.y * 100).toFixed(2) + '%;"></div>';
+    if (idx !== WATER_SKATE_SEGMENT_COUNT - 1) {
+      html += '<div class="water-island" style="left:' + _waterSkateWorldPct(idx, seg.goal.x) + ';top:' + (seg.goal.y * 100).toFixed(2) + '%;"></div>';
+    }
+    (seg.hazards || []).forEach(function(h, hazardIdx) {
+      const rotate = Number.isFinite(h.rotate) ? h.rotate : 0;
+      const phase = Number.isFinite(h.phase) ? h.phase : 0;
+      const period = _waterSkateHazardPeriod(h);
+      html += '<div class="water-hazard water-hazard--' + h.kind + '" data-segment="' + idx + '" data-hazard="' + hazardIdx + '" style="left:' + _waterSkateWorldPct(idx, h.x) + ';top:' + (h.y * 100).toFixed(2) + '%;width:' + _waterSkateWorldDim(h.w) + ';height:' + (h.h * 100).toFixed(2) + '%;transform:translate(-50%,-50%) rotate(' + rotate.toFixed(1) + 'deg);">' +
+        '<div class="water-hazard__zone"></div>' +
+        '<div class="water-hazard__bug" style="animation-duration:' + period.toFixed(0) + 'ms;animation-delay:' + (-phase).toFixed(0) + 'ms;"><img src="' + WATER_SKATE_OJAMA_SRC + '" alt=""></div>' +
+      '</div>';
+    });
+  });
+  return html;
+}
+
+function _waterSkateSetCamera(index) {
+  const stageEl = document.getElementById('waterSkateStage');
+  if (!stageEl) return;
+  stageEl.style.setProperty('--water-segments', String(WATER_SKATE_SEGMENT_COUNT));
+  stageEl.style.setProperty('--water-camera-x', String(Math.max(0, Math.min(WATER_SKATE_SEGMENT_COUNT - 1, index || 0))));
+}
+
+function _waterSkateUpdateAnchors() {
+  const seg = _waterSkateCurrentSegment();
+  const startEl = document.querySelector('.water-skate-start');
+  const goalEl = document.querySelector('.water-skate-goal');
+  if (startEl) {
+    startEl.style.left = (seg.start.x * 100).toFixed(2) + '%';
+    startEl.style.top = (seg.start.y * 100).toFixed(2) + '%';
+    startEl.dataset.label = seg.start.label || 'ここから';
+  }
+  if (goalEl) {
+    goalEl.style.left = (seg.goal.x * 100).toFixed(2) + '%';
+    goalEl.style.top = (seg.goal.y * 100).toFixed(2) + '%';
+    goalEl.dataset.label = seg.goal.label || 'こじま';
+  }
+  _waterSkateSetCamera(_waterGameState ? _waterGameState.segmentIndex : 0);
+}
+
+function _waterSkateStageRect() {
+  const canvas = document.getElementById('waterSkateCanvas');
+  if (canvas) return canvas.getBoundingClientRect();
+  const el = document.getElementById('waterSkateStage');
+  return el ? el.getBoundingClientRect() : null;
+}
+
+function _waterSkateAnchor(kind) {
+  const rect = _waterSkateStageRect();
+  const seg = _waterSkateCurrentSegment();
+  const src = kind === 'goal' ? seg.goal : seg.start;
+  if (!rect) return { x: 0, y: 0 };
+  return { x: rect.width * src.x, y: rect.height * src.y };
+}
+
+function _waterSkatePointFromEvent(ev) {
+  const rect = _waterSkateStageRect();
+  if (!rect) return null;
+  return {
+    x: Math.max(0, Math.min(rect.width, ev.clientX - rect.left)),
+    y: Math.max(0, Math.min(rect.height, ev.clientY - rect.top)),
+  };
+}
+
+function _waterSkatePathLength(points) {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+  }
+  return total;
+}
+
+function _waterSkatePointAt(points, distance) {
+  if (!points.length) return _waterSkateAnchor('start');
+  if (points.length === 1 || distance <= 0) return points[0];
+  let remaining = distance;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    const seg = Math.hypot(b.x - a.x, b.y - a.y);
+    if (seg <= 0.001) continue;
+    if (remaining <= seg) {
+      const t = remaining / seg;
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    }
+    remaining -= seg;
+  }
+  return points[points.length - 1];
+}
+
+function _waterSkateAngleBetween(a, b) {
+  if (!a || !b) return -32;
+  return Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+}
+
+function _waterSkateDirectionAt(points, distance) {
+  if (!points || points.length < 2) {
+    return _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal'));
+  }
+  const before = _waterSkatePointAt(points, Math.max(0, distance - 22));
+  const after = _waterSkatePointAt(points, Math.min(_waterSkatePathLength(points), distance + 22));
+  return _waterSkateAngleBetween(before, after);
+}
+
+function _waterSkateNormalizePoints(points) {
+  const rect = _waterSkateStageRect();
+  if (!rect || rect.width <= 1 || rect.height <= 1 || !points || points.length < 2) {
+    return [WATER_SKATE_START, WATER_SKATE_GOAL];
+  }
+  return points.map(function(p) {
+    return {
+      x: Math.max(0, Math.min(1, p.x / rect.width)),
+      y: Math.max(0, Math.min(1, p.y / rect.height)),
+    };
+  });
+}
+
+function _waterSkateHazardPeriod(hazard) {
+  if (hazard && Number.isFinite(hazard.period)) return Math.max(900, hazard.period);
+  if (hazard && hazard.kind === 'sweep-y') return 2250;
+  if (hazard && hazard.kind === 'sweep-x') return 2100;
+  if (hazard && hazard.kind === 'spin') return 3100;
+  if (hazard && hazard.kind === 'drift') return 2800;
+  return 2400;
+}
+
+function _waterSkateBugVisualSize(rect) {
+  const bug = document.querySelector('.water-hazard__bug');
+  if (bug) {
+    const br = bug.getBoundingClientRect();
+    if (br && br.width > 1 && br.height > 1) return Math.min(br.width, br.height);
+  }
+  return Math.max(34, Math.min(82, Math.min(rect.width, rect.height) * 0.22));
+}
+
+function _waterSkateEaseInOut(t) {
+  const x = Math.max(0, Math.min(1, t));
+  return 0.5 - Math.cos(x * Math.PI) * 0.5;
+}
+
+function _waterSkatePingPong(nowMs, periodMs) {
+  const phase = ((nowMs || 0) % periodMs) / periodMs;
+  const raw = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+  return _waterSkateEaseInOut(raw);
+}
+
+function _waterSkateRotateOffset(offset, degrees) {
+  const rad = (degrees || 0) * Math.PI / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return {
+    x: offset.x * cos - offset.y * sin,
+    y: offset.x * sin + offset.y * cos,
+  };
+}
+
+function _waterSkateBugCenterForHazard(hazard, rect, nowMs, bugSize) {
+  const t = (nowMs || 0) + (Number.isFinite(hazard.phase) ? hazard.phase : 0);
+  const period = _waterSkateHazardPeriod(hazard);
+  const base = {
+    x: rect.width * (hazard.x || 0.5),
+    y: rect.height * (hazard.y || 0.5),
+  };
+  let offset = { x: 0, y: 0 };
+  if (hazard.kind === 'sweep-y') {
+    const p = _waterSkatePingPong(t, period);
+    offset.y = (-0.88 + p * 1.76) * bugSize;
+  } else if (hazard.kind === 'sweep-x') {
+    const p = _waterSkatePingPong(t, period);
+    offset.x = (-0.98 + p * 1.96) * bugSize;
+  } else if (hazard.kind === 'spin') {
+    const theta = (t % period) / period * Math.PI * 2;
+    offset.x = Math.cos(theta) * bugSize * 0.78;
+    offset.y = Math.sin(theta) * bugSize * 0.78;
+  } else if (hazard.kind === 'drift') {
+    const p = _waterSkatePingPong(t, period);
+    offset.x = (-0.16 + p * 0.32) * bugSize;
+    offset.y = (-0.28 + p * 0.54) * bugSize;
+  }
+  offset = _waterSkateRotateOffset(offset, hazard.rotate || 0);
+  return { x: base.x + offset.x, y: base.y + offset.y };
+}
+
+function _waterSkateActiveBugHitCircles(rect, nowMs) {
   const gs = _waterGameState;
-  if (!gs || gs.locked) return;
-  gs.bugPathIndex = (gs.bugPathIndex + 1) % WATER_BUG_PATH.length;
-  gs.bugSlot = WATER_BUG_PATH[gs.bugPathIndex];
-  _renderWaterBridgeGame();
+  if (!gs || !rect) return [];
+  const segIndex = Math.max(0, Math.min(WATER_SKATE_SEGMENT_COUNT - 1, gs.segmentIndex || 0));
+  const seg = WATER_SKATE_SEGMENTS[segIndex] || WATER_SKATE_SEGMENTS[0];
+  const hazards = (seg && seg.hazards) || [];
+  const bugSize = _waterSkateBugVisualSize(rect);
+  const elapsed = Math.max(0, (Number.isFinite(nowMs) ? nowMs : performance.now()) - (gs.hazardStartedAt || 0));
+  return hazards.map(function(hazard) {
+    const center = _waterSkateBugCenterForHazard(hazard, rect, elapsed, bugSize);
+    return {
+      x: center.x,
+      y: center.y,
+      r: Math.max(13, bugSize * 0.31),
+    };
+  });
+}
+
+function _waterSkateRiderHitRadius(rect) {
+  if (!rect) return 12;
+  return Math.max(8, Math.min(16, Math.min(rect.width, rect.height) * 0.034));
+}
+
+function _waterSkatePointHitsBug(point, rect, nowMs) {
+  if (!point || !rect) return false;
+  const riderRadius = _waterSkateRiderHitRadius(rect);
+  const circles = _waterSkateActiveBugHitCircles(rect, nowMs);
+  for (let i = 0; i < circles.length; i++) {
+    const c = circles[i];
+    if (Math.hypot(point.x - c.x, point.y - c.y) <= c.r + riderRadius) return true;
+  }
+  return false;
+}
+
+function _waterSkateRiderMoveHitsBug(points, fromDistance, toDistance, rect, nowMs) {
+  if (!points || points.length < 2 || !rect) return null;
+  const start = Math.max(0, Math.min(fromDistance || 0, _waterSkatePathLength(points)));
+  const end = Math.max(0, Math.min(toDistance || 0, _waterSkatePathLength(points)));
+  const dist = Math.abs(end - start);
+  const steps = Math.max(1, Math.ceil(dist / 10));
+  for (let i = 0; i <= steps; i++) {
+    const t = steps <= 0 ? 1 : i / steps;
+    const d = start + (end - start) * t;
+    const p = _waterSkatePointAt(points, d);
+    if (_waterSkatePointHitsBug(p, rect, nowMs)) return p;
+  }
+  return null;
+}
+
+function _waterSkateTriggerHit(point) {
+  const gs = _waterGameState;
+  if (!gs || gs.phase === 'hit' || gs.phase === 'scrolling' || gs.phase === 'complete') return;
+  const hitPoint = point || (gs.points && gs.points[gs.points.length - 1]) || _waterSkateAnchor('start');
+  gs.phase = 'hit';
+  gs.success = false;
+  gs.failReason = 'hazard';
+  gs.glide = null;
+  gs.status = 'おじゃまムシに ぶつかった！';
+  _waterSkateSetGuide('よける みちを かこう');
+  _waterSkateSetStatus(gs.status);
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    stageEl.classList.remove('is-water-scrolling');
+    stageEl.classList.add('is-water-hit');
+  }
+  for (let i = 0; i < 4; i++) {
+    _waterSkateAddRipple(hitPoint.x + (Math.random() - 0.5) * 28, hitPoint.y + (Math.random() - 0.5) * 20);
+  }
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, -24, 1.35);
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, 156, 1.15);
+  _waterSkateAddSparkles(hitPoint.x, hitPoint.y, 18);
+  playMzSe('wrong');
+  _waterGimmickSetTimeout(function() {
+    if (!_waterGameState || _waterGameState.phase !== 'hit') return;
+    const currentStage = document.getElementById('waterSkateStage');
+    if (currentStage) currentStage.classList.remove('is-water-hit');
+    _waterGameState.phase = 'ready';
+    _waterGameState.points = [];
+    _waterGameState.glide = null;
+    _waterGameState.drawDistance = 0;
+    _waterGameState.drawTargetDistance = 0;
+    _waterGameState.failReason = '';
+    _waterGameState.status = (_waterSkateCurrentSegment() || {}).statusReady || 'もういちど';
+    _renderWaterBridgeGame();
+  }, 760);
+}
+
+function _waterSkateCurrentPathHitsHazard() {
+  const gs = _waterGameState;
+  const rect = _waterSkateStageRect();
+  if (!gs || !rect) return false;
+  return _waterSkatePathHitsHazard(gs.points, _waterSkateCurrentSegment(), rect);
+}
+
+function _waterSkateTriggerHit(point) {
+  const gs = _waterGameState;
+  if (!gs || gs.phase === 'hit' || gs.phase === 'scrolling' || gs.phase === 'complete') return;
+  const hitPoint = point || (gs.points && gs.points[gs.points.length - 1]) || _waterSkateAnchor('start');
+  gs.phase = 'hit';
+  gs.success = false;
+  gs.failReason = 'hazard';
+  gs.glide = null;
+  gs.status = 'おじゃまムシに ぶつかった！';
+  _waterSkateSetGuide('よける みちを かこう');
+  _waterSkateSetStatus(gs.status);
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    stageEl.classList.remove('is-water-scrolling');
+    stageEl.classList.add('is-water-hit');
+  }
+  for (let i = 0; i < 4; i++) {
+    _waterSkateAddRipple(hitPoint.x + (Math.random() - 0.5) * 28, hitPoint.y + (Math.random() - 0.5) * 20);
+  }
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, -24, 1.35);
+  _waterSkateAddWake(hitPoint.x, hitPoint.y, 156, 1.15);
+  _waterSkateAddSparkles(hitPoint.x, hitPoint.y, 18);
+  playMzSe('wrong');
+  _waterGimmickSetTimeout(function() {
+    if (!_waterGameState || _waterGameState.phase !== 'hit') return;
+    const currentStage = document.getElementById('waterSkateStage');
+    if (currentStage) currentStage.classList.remove('is-water-hit');
+    _waterGameState.phase = 'ready';
+    _waterGameState.points = [];
+    _waterGameState.glide = null;
+    _waterGameState.failReason = '';
+    _waterGameState.status = (_waterSkateCurrentSegment() || {}).statusReady || 'もういちど';
+    _renderWaterBridgeGame();
+  }, 760);
+}
+
+function _waterSkateCompletePoints() {
+  const st = _waterGimmickState;
+  const pts = st && st.lastSkatePoints;
+  const fallback = WATER_SKATE_SEGMENTS[WATER_SKATE_SEGMENT_COUNT - 1] || { start: WATER_SKATE_START, goal: WATER_SKATE_GOAL };
+  if (pts && pts.length >= 2) return pts;
+  if (_waterSkateLastCompletePoints && _waterSkateLastCompletePoints.length >= 2) return _waterSkateLastCompletePoints;
+  return [fallback.start, fallback.goal];
+}
+
+function _waterSkateTracePath(ctx, points) {
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  if (points.length === 2) {
+    ctx.lineTo(points[1].x, points[1].y);
+    return;
+  }
+  for (let i = 1; i < points.length - 1; i++) {
+    const midX = (points[i].x + points[i + 1].x) / 2;
+    const midY = (points[i].y + points[i + 1].y) / 2;
+    ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+  }
+  const prev = points[points.length - 2];
+  const last = points[points.length - 1];
+  ctx.quadraticCurveTo(prev.x, prev.y, last.x, last.y);
+}
+
+function _waterSkateIsSuccess(points) {
+  return _waterSkateCheckRoute(points).ok;
+}
+
+function _waterSkateCheckRoute(points) {
+  const rect = _waterSkateStageRect();
+  if (!rect || !points || points.length < 2) return { ok: false, reason: 'short' };
+  const seg = _waterSkateCurrentSegment();
+  const goal = _waterSkateAnchor('goal');
+  const end = points[points.length - 1];
+  const length = _waterSkatePathLength(points);
+  const goalDist = Math.hypot(end.x - goal.x, end.y - goal.y);
+  const nearGoal = goalDist < Math.min(rect.width, rect.height) * 0.24;
+  const crossedGoal = end.x > rect.width * Math.max(0.62, seg.goal.x - 0.10) && Math.abs(end.y - goal.y) < rect.height * 0.25;
+  if (length <= rect.width * 0.28 || (!nearGoal && !crossedGoal)) return { ok: false, reason: 'goal' };
+  return { ok: true, reason: 'ok' };
+}
+
+function _waterSkateSetRider(point, state, angleDeg) {
+  const rider = document.getElementById('waterRider');
+  const amenbo = document.getElementById('waterAmenbo');
+  if (!rider) return;
+  rider.style.left = point.x + 'px';
+  rider.style.top = point.y + 'px';
+  const fallbackAngle = _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal'));
+  const angle = Number.isFinite(angleDeg) ? angleDeg : fallbackAngle;
+  const rad = angle * Math.PI / 180;
+  const movingRight = Math.cos(rad) >= 0;
+  const tilt = Math.max(-8, Math.min(8, Math.sin(rad) * 8));
+  rider.style.setProperty('--water-amenbo-face', movingRight ? '-1' : '1');
+  rider.style.setProperty('--water-amenbo-tilt', tilt.toFixed(1) + 'deg');
+  rider.classList.toggle('is-gliding', state === 'glide');
+  if (amenbo) {
+    amenbo.src = state === 'happy' ? WATER_SKATE_HAPPY_SRC : (state === 'glide' ? WATER_SKATE_GLIDE_SRC : WATER_SKATE_IDLE_SRC);
+  }
+}
+
+function _waterSkateSetGuide(text) {
+  const guide = document.getElementById('waterSkateGuide');
+  if (guide) guide.textContent = text || '';
+}
+
+function _waterSkateSetStatus(text) {
+  const status = document.getElementById('waterStatus');
+  if (status) status.textContent = text || '';
+}
+
+function _waterSkateAddRipple(x, y) {
+  const gs = _waterGameState;
+  if (!gs) return;
+  gs.ripples.push({ x: x, y: y, age: 0, max: 520 + Math.random() * 220 });
+  if (gs.ripples.length > 18) gs.ripples.shift();
+}
+
+function _waterSkateAddWake(x, y, angleDeg, strength) {
+  const gs = _waterGameState;
+  if (!gs) return;
+  gs.wakes = gs.wakes || [];
+  gs.wakes.push({
+    x: x,
+    y: y,
+    angle: (Number.isFinite(angleDeg) ? angleDeg : -24) * Math.PI / 180,
+    age: 0,
+    max: 860 + Math.random() * 360,
+    strength: strength || 1,
+    drift: (Math.random() - 0.5) * 10,
+  });
+  if (gs.wakes.length > 42) gs.wakes.splice(0, gs.wakes.length - 42);
+}
+
+function _waterSkateAddSparkles(x, y, count) {
+  const gs = _waterGameState;
+  if (!gs) return;
+  for (let i = 0; i < count; i++) {
+    gs.particles.push({
+      x: x + (Math.random() - 0.5) * 20,
+      y: y + (Math.random() - 0.5) * 20,
+      vx: (Math.random() - 0.5) * 0.34,
+      vy: -0.12 - Math.random() * 0.26,
+      age: 0,
+      max: 440 + Math.random() * 360,
+      size: 2 + Math.random() * 3.6,
+      star: Math.random() > 0.45,
+    });
+  }
+  if (gs.particles.length > 80) gs.particles.splice(0, gs.particles.length - 80);
 }
 
 function _renderWaterBridgeGame() {
   const gs = _waterGameState;
   if (!gs) return;
-  const slots = document.getElementById('waterSlots');
-  const bug = document.getElementById('waterAmenbo');
+  const seg = _waterSkateCurrentSegment();
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    if (gs.phase !== 'scrolling') stageEl.classList.remove('is-water-scrolling');
+    if (gs.phase !== 'hit') stageEl.classList.remove('is-water-hit');
+  }
+  _waterSkateUpdateAnchors();
+  const title = document.querySelector('.water-game__title');
+  const guide = document.getElementById('waterSkateGuide');
   const status = document.getElementById('waterStatus');
-  if (slots) {
-    slots.textContent = '';
-    for (let i = 0; i < WATER_BRIDGE_STEPS; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'water-slot';
-      btn.type = 'button';
-      btn.dataset.index = String(i);
-      if (gs.placed[i]) {
-        btn.classList.add('is-placed');
-        btn.innerHTML = '<img src="' + MAZE_WATER_ASSET_BASE + 'plank_item.png" alt="いた">';
-      } else if (i === gs.step) {
-        btn.classList.add('is-next');
-        if (gs.bugSlot === i && !gs.locked) btn.classList.add('is-danger');
-        btn.textContent = 'ここに おく';
-      } else {
-        btn.textContent = '';
-      }
-      btn.addEventListener('click', function() { _onWaterSlotTap(i); });
-      slots.appendChild(btn);
-    }
+  if (title) title.textContent = 'みずの みちを かこう！';
+  if (guide) {
+    guide.textContent = gs.phase === 'drawing'
+      ? (seg.guideDrawing || 'そのまま なぞってね')
+      : (gs.phase === 'gliding'
+        ? 'すいすいー！'
+        : (gs.phase === 'scrolling' ? 'つぎへ すいー！' : (seg.guideReady || 'ここから むこうまで なぞってね')));
   }
-  if (bug) {
-    bug.style.left = WATER_BUG_LEFTS[gs.bugSlot] || '50%';
-    bug.src = gs.splashing ? (MAZE_WATER_ASSET_BASE + 'amenbo_splash.png') : (MAZE_WATER_ASSET_BASE + 'amenbo_skate.png');
-    bug.classList.toggle('is-splashing', !!gs.splashing);
-  }
-  if (status) status.textContent = gs.status || '';
+  if (status) status.textContent = gs.status || seg.statusReady || '';
+  _waterSkateSetRider(_waterSkateAnchor('start'), 'idle', _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal')));
 }
 
-function _onWaterSlotTap(index) {
+function _onWaterSkatePointerDown(ev) {
   const gs = _waterGameState;
-  if (!gs || gs.locked) return;
-  if (index !== gs.step) {
-    gs.status = 'ひかっている ところから ならべてね';
-    _renderWaterBridgeGame();
+  if (!gs || gs.phase === 'gliding' || gs.phase === 'scrolling' || gs.phase === 'complete') return;
+  const p = _waterSkatePointFromEvent(ev);
+  if (!p) return;
+  ev.preventDefault();
+  try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (_) {}
+  const start = _waterSkateAnchor('start');
+  gs.phase = 'drawing';
+  gs.success = false;
+  gs.failReason = '';
+  gs.glide = null;
+  gs.points = [start, p];
+  gs.drawDistance = 0;
+  gs.drawTargetDistance = 0;
+  gs.status = 'ゆびを とめると まてるよ';
+  _waterSkateSetGuide((_waterSkateCurrentSegment() || {}).guideDrawing || 'そのまま なぞってね');
+  _waterSkateSetStatus(gs.status);
+  _waterSkateAddRipple(p.x, p.y);
+  _waterSkateAddWake(p.x, p.y, _waterSkateAngleBetween(start, p), 0.8);
+  _waterSkateAddSparkles(p.x, p.y, 7);
+  if (_waterSkateCurrentPathHitsHazard()) {
+    _waterSkateTriggerHit(p);
+  }
+}
+
+function _onWaterSkatePointerMove(ev) {
+  const gs = _waterGameState;
+  if (!gs || gs.phase !== 'drawing') return;
+  const p = _waterSkatePointFromEvent(ev);
+  if (!p) return;
+  ev.preventDefault();
+  const last = gs.points[gs.points.length - 1];
+  if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 5) {
+    const angle = _waterSkateAngleBetween(last, p);
+    gs.points.push(p);
+    const rect = _waterSkateStageRect();
+    const lag = rect ? Math.max(22, Math.min(52, Math.min(rect.width, rect.height) * 0.12)) : 36;
+    gs.drawTargetDistance = Math.max(0, _waterSkatePathLength(gs.points) - lag);
+    gs.status = 'ムシが いない ときに すすもう';
+    _waterSkateSetStatus(gs.status);
+    _waterSkateAddWake((last.x + p.x) / 2, (last.y + p.y) / 2, angle, 0.72);
+    _waterSkateAddSparkles(p.x, p.y, 3);
+    if (gs.points.length % 5 === 0) _waterSkateAddRipple(p.x, p.y);
+    if (_waterSkateCurrentPathHitsHazard()) {
+      _waterSkateTriggerHit(p);
+    }
+  }
+}
+
+function _onWaterSkatePointerUp(ev) {
+  const gs = _waterGameState;
+  if (!gs || gs.phase !== 'drawing') return;
+  ev.preventDefault();
+  const p = _waterSkatePointFromEvent(ev);
+  if (p) gs.points.push(p);
+  gs.drawTargetDistance = _waterSkatePathLength(gs.points);
+  const check = _waterSkateCheckRoute(gs.points);
+  if (!check.ok && check.reason === 'hazard') {
+    _waterSkateTriggerHit(p);
     return;
   }
-  if (gs.bugSlot === index) {
-    gs.locked = true;
-    gs.splashing = true;
-    gs.status = 'アメンボが じゃました！ もういちど';
-    playMzSe('wrong');
-    _renderWaterBridgeGame();
-    _waterGimmickSetTimeout(function() {
-      if (!_waterGameState) return;
-      _waterGameState.locked = false;
-      _waterGameState.splashing = false;
-      _waterGameState.status = 'アメンボが はなれたら タップ！';
-      _renderWaterBridgeGame();
-    }, 620);
-    return;
+  gs.phase = 'gliding';
+  gs.success = check.ok;
+  gs.failReason = check.reason;
+  gs.status = check.ok ? 'すいすいー！' : 'もうすこし とおくまで かこう';
+  _waterSkateSetGuide('すいすいー！');
+  _waterSkateSetStatus(gs.status);
+  const len = Math.max(1, _waterSkatePathLength(gs.points));
+  const from = Math.max(0, Math.min(len, Number.isFinite(gs.drawDistance) ? gs.drawDistance : 0));
+  const remaining = Math.max(1, len - from);
+  gs.glide = {
+    startedAt: performance.now(),
+    duration: Math.max(650, Math.min(2400, remaining * 3.4)),
+    length: len,
+    from: from,
+    lastDistance: from,
+  };
+  playMzSe(check.ok ? 'correct' : 'wrong');
+}
+
+function _waterSkateAdvanceSegment() {
+  const gs = _waterGameState;
+  if (!gs) return;
+  const current = Math.max(0, Math.min(WATER_SKATE_SEGMENT_COUNT - 1, gs.segmentIndex || 0));
+  if (gs.points && gs.points.length >= 2) {
+    gs.completedRoutes.push(_waterSkateNormalizePoints(gs.points));
   }
-  gs.placed[index] = true;
-  gs.step++;
-  playMzSe('correct');
-  if (gs.step >= WATER_BRIDGE_STEPS) {
+  const next = current + 1;
+  if (next >= WATER_SKATE_SEGMENT_COUNT) {
     _resolveWaterBridgeGame();
     return;
   }
-  gs.status = 'いいね！ つぎの いたを おこう';
-  _renderWaterBridgeGame();
+  gs.phase = 'scrolling';
+  gs.segmentIndex = current;
+  gs.points = [];
+  gs.glide = null;
+  gs.success = false;
+  gs.failReason = '';
+  gs.particles = [];
+  gs.ripples = [];
+  gs.wakes = [];
+  gs.status = 'つぎへ すいー！';
+  const stageEl = document.getElementById('waterSkateStage');
+  if (stageEl) {
+    stageEl.classList.remove('is-water-hit');
+    stageEl.classList.add('is-water-scrolling');
+  }
+  _waterSkateSetGuide('つぎへ すいー！');
+  _waterSkateSetStatus(gs.status);
+  _waterSkateSetCamera(next);
+  playMzSe('correct');
+  _waterGimmickSetTimeout(function() {
+    if (!_waterGameState || _waterGameState.phase !== 'scrolling') return;
+    _waterGameState.segmentIndex = next;
+    _waterGameState.phase = 'ready';
+    _waterGameState.status = WATER_SKATE_SEGMENTS[next].statusReady || 'つぎへ';
+    _waterGameState.drawDistance = 0;
+    _waterGameState.drawTargetDistance = 0;
+    const currentStage = document.getElementById('waterSkateStage');
+    if (currentStage) currentStage.classList.remove('is-water-scrolling');
+    _renderWaterBridgeGame();
+  }, 780);
+  gs.animationId = requestAnimationFrame(_waterSkateLoop);
 }
 
 function _resolveWaterBridgeGame() {
   const st = _waterGimmickState;
-  if (st) st.bridgeBuilt = true;
+  if (_waterGameState) _waterGameState.phase = 'complete';
+  if (_waterGameState && _waterGameState.points) {
+    _waterSkateLastCompletePoints = _waterSkateNormalizePoints(_waterGameState.points);
+  }
+  if (st) {
+    st.bridgeBuilt = true;
+    if (_waterSkateLastCompletePoints) st.lastSkatePoints = _waterSkateLastCompletePoints;
+  }
   _updateFlagInventoryHud();
   _clearWaterGimmickTimers();
-  _waterGameState = null;
   _showWaterBridgeCompleteScene();
   _waterGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);
-  }, 3200);
+  }, 3000);
 }
 
 function _showWaterBridgeCompleteScene() {
   _setEncounterMode('water_bridge_complete');
+  const route = _waterSkateCompletePoints();
+  const last = route[route.length - 1] || WATER_SKATE_GOAL;
+  const riderLeft = Math.max(18, Math.min(82, last.x * 100));
+  const riderTop = Math.max(24, Math.min(74, last.y * 100));
   encStageEl.innerHTML =
     '<div class="water-complete-scene" aria-live="polite">' +
-      '<div class="water-complete-title">いたの はしが できた！</div>' +
+      '<div class="water-complete-title">すいすい わたれた！</div>' +
       '<div class="water-complete-stage">' +
-        '<div class="water-complete-route" aria-hidden="true"></div>' +
-        '<div class="water-complete-planks" aria-label="できあがった いたの はし">' +
-          '<img src="' + MAZE_WATER_ASSET_BASE + 'plank_item.png" alt="">' +
-          '<img src="' + MAZE_WATER_ASSET_BASE + 'plank_item.png" alt="">' +
-          '<img src="' + MAZE_WATER_ASSET_BASE + 'plank_item.png" alt="">' +
-        '</div>' +
-        '<div class="water-complete-pono-track" aria-hidden="true">' +
-          '<span class="water-complete-pono-sprite"></span>' +
+        '<canvas class="water-complete-canvas" id="waterCompleteCanvas" aria-hidden="true"></canvas>' +
+        '<div class="water-complete-sparkles" aria-hidden="true"></div>' +
+        '<div class="water-rider is-gliding" style="left:' + riderLeft.toFixed(1) + '%;top:' + riderTop.toFixed(1) + '%;" aria-hidden="true">' +
+          '<img class="water-rider__amenbo" src="' + WATER_SKATE_HAPPY_SRC + '" alt="">' +
+          '<img class="water-rider__pono" src="' + WATER_SKATE_PONO_SRC + '" alt="">' +
         '</div>' +
       '</div>' +
-      '<div class="water-complete-status">ポノが はしを わたるよ！</div>' +
+      '<div class="water-complete-status">むこうぎしに ついたよ！</div>' +
     '</div>';
+  requestAnimationFrame(_renderWaterCompletePath);
+  playMzSe('correct');
+}
+
+function _waterSkateDrawWaterSurface(ctx, w, h, now) {
+  const t = now * 0.001;
+  const surfaceBoost = Math.min(1.42, Math.max(1, Math.sqrt((w * h) / (660 * 290))));
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  _waterSkateDrawIdleDisplacement(ctx, w, h, now);
+
+  for (let row = 0; row < 9; row++) {
+    const baseY = h * (0.10 + row * 0.105) + Math.sin(t * 0.7 + row * 1.6) * 11 * surfaceBoost;
+    ctx.beginPath();
+    for (let x = -80; x <= w + 100; x += 68) {
+      const y = baseY + Math.sin((x * 0.012) + t * 1.7 + row) * 10 * surfaceBoost;
+      if (x <= -79) {
+        ctx.moveTo(x, y);
+      } else {
+        const cpX = x - 42;
+        const cpY = y + Math.cos(t * 1.1 + row + x * 0.01) * 13 * surfaceBoost;
+        ctx.quadraticCurveTo(cpX, cpY, x, y);
+      }
+    }
+    ctx.strokeStyle = row % 2
+      ? 'rgba(179, 255, 255, 0.16)'
+      : 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = (row % 2 ? 1.7 : 2.2) * surfaceBoost;
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 23; i++) {
+    const x = ((i * 0.173 + 0.08 + Math.sin(t * 0.18 + i) * 0.012) % 1) * w;
+    const y = ((i * 0.317 + 0.12 + Math.cos(t * 0.15 + i) * 0.018) % 1) * h;
+    const blink = Math.max(0, Math.sin(t * 2.2 + i * 1.91));
+    if (blink < 0.66) continue;
+    const s = 2.4 + blink * 4.2;
+    ctx.globalAlpha = (blink - 0.62) * 1.4;
+    ctx.strokeStyle = i % 3 === 0 ? 'rgba(255, 244, 160, 0.78)' : 'rgba(255, 255, 255, 0.88)';
+    ctx.lineWidth = 1.15;
+    ctx.beginPath();
+    ctx.moveTo(x - s * 1.9, y);
+    ctx.lineTo(x + s * 1.9, y);
+    ctx.moveTo(x, y - s * 1.35);
+    ctx.lineTo(x, y + s * 1.35);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _waterSkateDrawIdleDisplacement(ctx, w, h, now) {
+  const t = now * 0.001;
+  const surfaceBoost = Math.min(1.45, Math.max(1, Math.sqrt((w * h) / (660 * 290))));
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.globalCompositeOperation = 'source-over';
+  for (let band = 0; band < 10; band++) {
+    const baseY = h * (0.08 + band * 0.097) + Math.sin(t * 0.42 + band * 1.3) * 10 * surfaceBoost;
+    ctx.beginPath();
+    for (let x = -70; x <= w + 90; x += 32) {
+      const drift = Math.sin(x * 0.018 + t * 1.15 + band) * (6 + band % 3) * surfaceBoost;
+      const y = baseY + drift;
+      if (x <= -69) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.strokeStyle = 'rgba(11, 96, 140, 0.070)';
+    ctx.lineWidth = 6.8 * surfaceBoost;
+    ctx.stroke();
+  }
+
+  ctx.globalCompositeOperation = 'screen';
+  for (let band = 0; band < 12; band++) {
+    const y = h * (0.06 + band * 0.083) + Math.cos(t * 0.38 + band * 1.7) * 13 * surfaceBoost;
+    ctx.beginPath();
+    for (let x = -90; x <= w + 130; x += 38) {
+      const shimmer = Math.sin(x * 0.021 + t * 1.35 + band * 0.9) * 9 * surfaceBoost;
+      const yy = y + shimmer;
+      if (x <= -89) {
+        ctx.moveTo(x, yy);
+      } else {
+        const cpX = x - 21;
+        const cpY = yy + Math.cos(t * 0.9 + x * 0.014 + band) * 6.5 * surfaceBoost;
+        ctx.quadraticCurveTo(cpX, cpY, x, yy);
+      }
+    }
+    ctx.strokeStyle = band % 2
+      ? 'rgba(210, 255, 255, 0.14)'
+      : 'rgba(255, 255, 255, 0.10)';
+    ctx.lineWidth = (band % 2 ? 2.4 : 1.7) * surfaceBoost;
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < 14; i++) {
+    const x = ((i * 0.211 + 0.04 + Math.sin(t * 0.16 + i) * 0.028) % 1) * w;
+    const y = ((i * 0.137 + 0.20 + Math.cos(t * 0.13 + i * 1.6) * 0.032) % 1) * h;
+    const sx = (25 + (i % 4) * 13 + Math.sin(t * 0.7 + i) * 7) * surfaceBoost;
+    const sy = (8 + (i % 3) * 3.5) * surfaceBoost;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(t * 0.32 + i) * 0.34);
+    ctx.strokeStyle = 'rgba(217, 255, 255, 0.115)';
+    ctx.lineWidth = 1.8 * surfaceBoost;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sx, sy, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function _waterSkateDrawPathRefraction(ctx, points, now, intensity) {
+  if (!points || points.length < 2) return;
+  const t = now * 0.004;
+  const offsets = [-30, -18, 18, 30];
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  offsets.forEach(function(offset, idx) {
+    ctx.beginPath();
+    let started = false;
+    for (let i = 1; i < points.length; i += 2) {
+      const a = points[i - 1];
+      const b = points[i];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < 0.01) continue;
+      const nx = -(b.y - a.y) / len;
+      const ny = (b.x - a.x) / len;
+      const wobble = Math.sin(t + i * 0.7 + offset * 0.13) * (idx < 2 ? 5 : 3);
+      const x = b.x + nx * (offset + wobble);
+      const y = b.y + ny * (offset + wobble);
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        const p = points[Math.max(0, i - 2)];
+        ctx.quadraticCurveTo(p.x + nx * offset, p.y + ny * offset, x, y);
+      }
+    }
+    if (started) {
+      ctx.strokeStyle = offset < 0
+        ? 'rgba(207, 255, 255, ' + (0.09 * intensity).toFixed(3) + ')'
+        : 'rgba(102, 226, 255, ' + (0.085 * intensity).toFixed(3) + ')';
+      ctx.lineWidth = idx < 2 ? 2.1 : 1.45;
+      ctx.stroke();
+    }
+  });
+  ctx.restore();
+}
+
+function _waterSkateDrawPath(ctx, points) {
+  if (!points || points.length < 2) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  _waterSkateTracePath(ctx, points);
+  ctx.strokeStyle = 'rgba(82, 239, 255, 0.24)';
+  ctx.lineWidth = 28;
+  ctx.shadowColor = 'rgba(112, 245, 255, 0.7)';
+  ctx.shadowBlur = 18;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(210, 255, 255, 0.58)';
+  ctx.lineWidth = 15;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function _waterSkateDrawCompleteRoute(ctx, points) {
+  if (!points || points.length < 2) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  _waterSkateTracePath(ctx, points);
+  ctx.strokeStyle = 'rgba(87, 225, 245, 0.20)';
+  ctx.lineWidth = 34;
+  ctx.shadowColor = 'rgba(104, 240, 255, 0.64)';
+  ctx.shadowBlur = 22;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  _waterSkateTracePath(ctx, points);
+  ctx.strokeStyle = 'rgba(216, 255, 255, 0.48)';
+  ctx.lineWidth = 18;
+  ctx.stroke();
+  _waterSkateTracePath(ctx, points);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+  ctx.strokeStyle = 'rgba(255, 239, 156, 0.76)';
+  ctx.lineWidth = 1.2;
+  const step = Math.max(3, Math.floor(points.length / 18));
+  for (let i = 0; i < points.length; i += step) {
+    const p = points[i];
+    const s = 2.2 + ((i / step) % 3) * 0.8;
+    ctx.beginPath();
+    ctx.moveTo(p.x - s * 1.8, p.y);
+    ctx.lineTo(p.x + s * 1.8, p.y);
+    ctx.moveTo(p.x, p.y - s * 1.8);
+    ctx.lineTo(p.x, p.y + s * 1.8);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function _renderWaterCompletePath(now) {
+  const canvas = document.getElementById('waterCompleteCanvas');
+  if (!canvas) return;
+  const stageEl = canvas.closest('.water-complete-stage');
+  const rect = stageEl ? stageEl.getBoundingClientRect() : canvas.getBoundingClientRect();
+  if (!rect || rect.width <= 1 || rect.height <= 1) {
+    requestAnimationFrame(_renderWaterCompletePath);
+    return;
+  }
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const targetW = Math.max(1, Math.round(rect.width * dpr));
+  const targetH = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+  }
+  const ctx2 = canvas.getContext('2d');
+  ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx2.clearRect(0, 0, rect.width, rect.height);
+  const points = _waterSkateCompletePoints().map(function(p) {
+    return { x: p.x * rect.width, y: p.y * rect.height };
+  });
+  _waterSkateDrawWaterSurface(ctx2, rect.width, rect.height, now || performance.now());
+  _waterSkateDrawPathRefraction(ctx2, points, now || performance.now(), 0.72);
+  _waterSkateDrawCompleteRoute(ctx2, points);
+  if (stageEl) {
+    const rider = stageEl.querySelector('.water-rider');
+    if (rider && points.length >= 2) {
+      const endAngle = _waterSkateAngleBetween(points[points.length - 2], points[points.length - 1]);
+      const rad = endAngle * Math.PI / 180;
+      rider.style.setProperty('--water-amenbo-face', Math.cos(rad) >= 0 ? '-1' : '1');
+      rider.style.setProperty('--water-amenbo-tilt', Math.max(-8, Math.min(8, Math.sin(rad) * 8)).toFixed(1) + 'deg');
+    }
+  }
+  if (canvas.isConnected) requestAnimationFrame(_renderWaterCompletePath);
+}
+
+function _waterSkateDrawParticles(ctx, gs, dt) {
+  if (gs.wakes) {
+    for (let i = gs.wakes.length - 1; i >= 0; i--) {
+      const w = gs.wakes[i];
+      w.age += dt;
+      const t = Math.min(1, w.age / w.max);
+      if (t >= 1) { gs.wakes.splice(i, 1); continue; }
+      const alpha = (1 - t) * 0.34 * (w.strength || 1);
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.translate(w.x + Math.sin(t * Math.PI) * w.drift, w.y);
+      ctx.rotate(w.angle);
+      ctx.scale(1, 0.34 + t * 0.2);
+      ctx.strokeStyle = 'rgba(210, 255, 255, ' + alpha.toFixed(3) + ')';
+      ctx.lineWidth = 2.2 - t * 0.9;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 16 + t * 56, 9 + t * 22, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(91, 224, 255, ' + (alpha * 0.72).toFixed(3) + ')';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 28 + t * 74, 14 + t * 28, 0, -Math.PI * 0.72, Math.PI * 0.72);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  for (let i = gs.ripples.length - 1; i >= 0; i--) {
+    const r = gs.ripples[i];
+    r.age += dt;
+    const t = Math.min(1, r.age / r.max);
+    if (t >= 1) { gs.ripples.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = (1 - t) * 0.78;
+    ctx.strokeStyle = 'rgba(230, 255, 255, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, 8 + t * 34, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  for (let i = gs.particles.length - 1; i >= 0; i--) {
+    const p = gs.particles[i];
+    p.age += dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    const t = Math.min(1, p.age / p.max);
+    if (t >= 1) { gs.particles.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = 1 - t;
+    ctx.fillStyle = p.star ? '#ffffff' : '#b9fbff';
+    ctx.strokeStyle = p.star ? 'rgba(255,246,168,0.72)' : 'rgba(255,255,255,0.62)';
+    ctx.lineWidth = 1.4;
+    if (p.star) {
+      ctx.beginPath();
+      ctx.moveTo(p.x - p.size * 1.6, p.y);
+      ctx.lineTo(p.x + p.size * 1.6, p.y);
+      ctx.moveTo(p.x, p.y - p.size * 1.6);
+      ctx.lineTo(p.x, p.y + p.size * 1.6);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function _waterSkateLoop(now) {
+  const gs = _waterGameState;
+  if (!gs) return;
+  const canvas = document.getElementById('waterSkateCanvas');
+  if (!canvas) return;
+  const rect = _waterSkateStageRect();
+  if (!rect || rect.width <= 1 || rect.height <= 1) {
+    gs.animationId = requestAnimationFrame(_waterSkateLoop);
+    return;
+  }
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const targetW = Math.max(1, Math.round(rect.width * dpr));
+  const targetH = Math.max(1, Math.round(rect.height * dpr));
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+  }
+  const ctx2 = canvas.getContext('2d');
+  ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx2.clearRect(0, 0, rect.width, rect.height);
+  const dt = gs.lastNow ? Math.min(42, now - gs.lastNow) : 16;
+  gs.lastNow = now;
+  _waterSkateDrawWaterSurface(ctx2, rect.width, rect.height, now);
+  _waterSkateDrawPathRefraction(ctx2, gs.points, now, gs.phase === 'drawing' ? 1 : 0.72);
+  _waterSkateDrawPath(ctx2, gs.points);
+  if (gs.phase === 'drawing' && gs.points && gs.points.length >= 2) {
+    const len = Math.max(0, _waterSkatePathLength(gs.points));
+    const previous = Math.max(0, Math.min(len, Number.isFinite(gs.drawDistance) ? gs.drawDistance : 0));
+    const target = Math.max(0, Math.min(len, Number.isFinite(gs.drawTargetDistance) ? gs.drawTargetDistance : previous));
+    const p = _waterSkatePointAt(gs.points, target);
+    const angle = _waterSkateDirectionAt(gs.points, target);
+    _waterSkateSetRider(p, 'glide', angle);
+    if (Math.abs(target - previous) > 0.5) {
+      if (Math.random() < 0.48) _waterSkateAddWake(p.x, p.y + 7, angle, 0.38);
+      if (Math.random() < 0.3) _waterSkateAddSparkles(p.x - 10, p.y + 10, 1);
+    }
+    const hitPoint = _waterSkateRiderMoveHitsBug(gs.points, previous, target, rect, now);
+    gs.drawDistance = target;
+    if (hitPoint || _waterSkatePointHitsBug(p, rect, now)) {
+      _waterSkateTriggerHit(hitPoint || p);
+      _waterSkateDrawParticles(ctx2, gs, dt);
+      gs.animationId = requestAnimationFrame(_waterSkateLoop);
+      return;
+    }
+  } else if (gs.phase === 'gliding' && gs.glide) {
+    const t = Math.min(1, (now - gs.glide.startedAt) / gs.glide.duration);
+    const startDistance = Number.isFinite(gs.glide.from) ? gs.glide.from : 0;
+    const distance = startDistance + (gs.glide.length - startDistance) * t;
+    const previousDistance = Number.isFinite(gs.glide.lastDistance) ? gs.glide.lastDistance : startDistance;
+    const p = _waterSkatePointAt(gs.points, distance);
+    const angle = _waterSkateDirectionAt(gs.points, distance);
+    _waterSkateSetRider(p, 'glide', angle);
+    if (Math.random() < 0.7) {
+      _waterSkateAddSparkles(p.x - 12, p.y + 12, 2);
+      if (Math.random() < 0.34) _waterSkateAddWake(p.x, p.y + 7, angle, 0.5);
+      if (Math.random() < 0.14) _waterSkateAddRipple(p.x, p.y + 18);
+    }
+    const hitPoint = _waterSkateRiderMoveHitsBug(gs.points, previousDistance, distance, rect, now);
+    gs.glide.lastDistance = distance;
+    if (hitPoint || _waterSkatePointHitsBug(p, rect, now)) {
+      _waterSkateTriggerHit(hitPoint || p);
+      _waterSkateDrawParticles(ctx2, gs, dt);
+      gs.animationId = requestAnimationFrame(_waterSkateLoop);
+      return;
+    }
+    if (t >= 1) {
+      if (gs.success) {
+        _waterSkateAdvanceSegment();
+        return;
+      }
+      gs.phase = 'ready';
+      gs.points = [];
+      gs.glide = null;
+      const retryStatus = gs.failReason === 'hazard' ? 'おじゃまムシを よけてね' : 'もういちど みずの みちを かこう';
+      gs.failReason = '';
+      gs.status = retryStatus;
+      _waterSkateSetRider(_waterSkateAnchor('start'), 'idle', _waterSkateAngleBetween(_waterSkateAnchor('start'), _waterSkateAnchor('goal')));
+      _waterSkateSetGuide((_waterSkateCurrentSegment() || {}).guideReady || 'ここから むこうまで なぞってね');
+      _renderWaterBridgeGame();
+    }
+  }
+  _waterSkateDrawParticles(ctx2, gs, dt);
+  gs.animationId = requestAnimationFrame(_waterSkateLoop);
 }
 
 function _clearFlagRoundTimer() {
@@ -6827,6 +8504,10 @@ function _clearFlagRoundTimer() {
   if (gs.rafId) {
     cancelAnimationFrame(gs.rafId);
     gs.rafId = null;
+  }
+  if (gs.missVoiceId) {
+    clearTimeout(gs.missVoiceId);
+    gs.missVoiceId = null;
   }
 }
 
@@ -6846,7 +8527,7 @@ function _startFlagRoundTimer() {
   gs.deadline = performance.now() + FLAG_ROUND_MS;
   gs.timeoutId = setTimeout(function() {
     if (gs !== _flagGameState || gs.locked) return;
-    _resolveFlagGame(false, 'time');
+    _flagApplyMiss('time');
   }, FLAG_ROUND_MS);
   function tick() {
     if (gs !== _flagGameState || gs.locked) return;
@@ -6861,7 +8542,20 @@ function _startFlagRoundTimer() {
 
 function _showFlagGame() {
   _setEncounterMode('flag');
-  _flagGameState = { step: 0, pose: 'down', locked: false, steps: _buildFlagGameSteps() };
+  _flagGameState = { step: 0, pose: 'down', locked: false, hp: FLAG_HP_INITIAL, steps: _buildFlagGameSteps() };
+  // AF-04: iOS Safari user-gesture-chain アンロック: 全 voice を preload (まだ user gesture 内)
+  ['cmd_red_up','cmd_white_up','cmd_red_down','cmd_white_down',
+   'cmd_red_down_keep','cmd_white_down_keep',
+   'miss_01','miss_02','win'].forEach(function(k) {
+    if (!_flagVoiceCache[k]) {
+      try {
+        const a = new Audio(_FLAG_VOICE_BASE + k + '.mp3');
+        a.volume = 0.75;
+        a.preload = 'auto';
+        _flagVoiceCache[k] = a;
+      } catch (_) {}
+    }
+  });
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
   wrap.className = 'flag-game';
@@ -6875,6 +8569,17 @@ function _showFlagGame() {
     '<div class="flag-timer__track"><div class="flag-timer__bar" id="flagTimerBar"></div></div>' +
     '<div class="flag-timer__text" id="flagTimerText">あと 7</div>';
   wrap.appendChild(timer);
+  const hpEl = document.createElement('div');
+  hpEl.className = 'flag-hp';
+  hpEl.id = 'flagHp';
+  hpEl.setAttribute('aria-label', 'のこり HP ' + FLAG_HP_INITIAL);
+  for (let i = 0; i < FLAG_HP_INITIAL; i++) {
+    const h = document.createElement('span');
+    h.className = 'flag-hp__heart';
+    h.dataset.index = String(i);
+    hpEl.appendChild(h);
+  }
+  wrap.appendChild(hpEl);
   const stageEl = document.createElement('div');
   stageEl.className = 'flag-bug-stage';
   const img = document.createElement('img');
@@ -6925,6 +8630,70 @@ function _renderFlagStep(startTimer) {
   if (startTimer !== false && !_flagGameState.locked && step) {
     _startFlagRoundTimer();
   }
+  if (startTimer !== false && step && step.voice) {
+    _playFlagVoice(step.voice);
+  }
+}
+
+function _renderFlagHp(currentHp, prevHp) {
+  const hpEl = document.getElementById('flagHp');
+  if (!hpEl) return;
+  const hearts = hpEl.querySelectorAll('.flag-hp__heart');
+  const total = hearts.length;
+  const safeCurrent = Math.max(0, Math.min(total, currentHp | 0));
+  hpEl.setAttribute('aria-label', 'のこり HP ' + safeCurrent);
+  hearts.forEach(function(node, idx) {
+    if (idx < safeCurrent) {
+      node.classList.remove('is-off');
+      node.classList.remove('is-losing');
+    } else if (prevHp != null && idx < prevHp && idx >= safeCurrent) {
+      // losing this heart: animate then mark off
+      node.classList.remove('is-off');
+      node.classList.remove('is-losing');
+      void node.offsetWidth;
+      node.classList.add('is-losing');
+      setTimeout(function() {
+        node.classList.remove('is-losing');
+        node.classList.add('is-off');
+      }, 360);
+    } else {
+      node.classList.remove('is-losing');
+      node.classList.add('is-off');
+    }
+  });
+}
+
+function _flagApplyMiss(reason) {
+  const gs = _flagGameState;
+  if (!gs) return;
+  _clearFlagRoundTimer();
+  const prevHp = gs.hp;
+  gs.hp = Math.max(0, prevHp - 1);
+  _renderFlagHp(gs.hp, prevHp);
+  if (gs.hp <= 0) {
+    // F3: HP=0 では wrong SE / miss voice を再生せず、 ハート消灯アニメを 600ms 見せてから resolve
+    const defeatReason = (reason === 'time') ? 'time' : 'hp';
+    _flagTunnelSetTimeout(function() {
+      if (!_flagGameState) return;
+      _resolveFlagGame(false, defeatReason);
+    }, 600);
+    return;
+  }
+  playMzSe('wrong');
+  // AF-02: 初回ミス (prevHp === FLAG_HP_INITIAL) のみ miss_02 (「おしい」 励まし), 2 回目以降 miss_01 (「ちがうよー」 明確否定)
+  const missKey = (prevHp === FLAG_HP_INITIAL) ? 'miss_02' : 'miss_01';
+  // F1: tracked + state guarded
+  gs.missVoiceId = _flagTunnelSetTimeout(function() {
+    if (!_flagGameState) return;
+    _flagGameState.missVoiceId = null;
+    _playFlagVoice(missKey);
+  }, 160);
+  // F4: cmd voice / round timer を 900ms 遅延 (ミス→励まし→再コマンドの自然順)
+  gs.locked = false;
+  _flagTunnelSetTimeout(function() {
+    if (!_flagGameState) return;
+    _renderFlagStep(true);
+  }, 900);
 }
 
 function _onFlagTap(flag) {
@@ -6933,7 +8702,7 @@ function _onFlagTap(flag) {
   if (!step) return;
   _clearFlagRoundTimer();
   if (flag !== step.flag) {
-    _resolveFlagGame(false);
+    _flagApplyMiss('wrong');
     return;
   }
   _flagGameState.locked = true;
@@ -6956,7 +8725,9 @@ function _resolveFlagGame(won, reason) {
   _flagGameState = null;
   playMzSe(won ? 'correct' : 'wrong');
   if (!won) {
-    const text = reason === 'time' ? 'じかんぎれ…' : 'ちがった…';
+    const text = reason === 'time' ? 'じかんぎれ…'
+               : reason === 'hp'   ? 'ハートが ぜんぶ なくなった…'
+               : 'ちがった…';
     encStageEl.innerHTML =
       '<div class="enc-result lose">' + text + '</div>' +
       '<div class="row"><button class="enc-btn lose" id="flagBackBtn">もどる ▶</button></div>';
@@ -6968,6 +8739,10 @@ function _resolveFlagGame(won, reason) {
 }
 
 function _showFlagRewardSequence() {
+  // AF-03: 勝利 SE (correct) と win voice が同タイミングで被るので 180ms 遅延
+  _flagTunnelSetTimeout(function() {
+    _playFlagVoice('win');
+  }, 180);
   const st = _flagTunnelState;
   if (st) {
     st.unlocked = true;
@@ -6996,6 +8771,15 @@ function _showFlagRewardSequence() {
 function _resolveQuiz(correct) {
   _simonCancelled = true; // 進行中の simon タイマーがあれば停止
   playMzSe(correct ? 'correct' : 'wrong');
+  // ナレーション: 4 ゲーム (truefalse / simon / silhouette / oddone) の正誤分岐
+  switch (_currentGame) {
+    case 'truefalse':
+    case 'simon':
+    case 'silhouette':
+    case 'oddone':
+      _playMazeVoice(_currentGame, correct ? 'correct' : 'wrong');
+      break;
+  }
   encStageEl.innerHTML =
     '<div class="enc-result ' + (correct ? 'win' : 'lose') + '">' +
       (correct ? 'せいかい！' : 'ざんねん…') +
@@ -7059,16 +8843,20 @@ function _strengthRockStageIndex(count) {
 
 function _showStrengthPushGame() {
   _setEncounterMode('strength_push');
+  _preloadMazeVoices('strength_push', ['start','crack_progress','almost','win','fail']);
   _clearStrengthGimmickTimers();
   _strengthGameState = {
     tapCount: 0,
     required: STRENGTH_TAP_REQUIRED,
-    deadline: performance.now() + STRENGTH_TAP_MS,
-    locked: false,
+    // sw1380: deadline はカウントダウン完了時に確定 (_startStrengthPushPlay 内で設定)
+    deadline: 0,
+    locked: true,  // sw1380: カウントダウン中はタップ無効
     lastPunchHand: 'left',
     punchSeq: 0,
     punchTimer: null,
-    status: 'たたいて ひびを ひろげよう！',
+    crackPlayed: false,
+    almostPlayed: false,
+    status: 'よく きいて！',
   };
   encStageEl.textContent = '';
   const wrap = document.createElement('div');
@@ -7076,7 +8864,7 @@ function _showStrengthPushGame() {
   wrap.innerHTML =
     '<div class="strength-game__title">いわを れんだ！</div>' +
     '<div class="strength-game__stage">' +
-      '<button class="strength-rock-btn" id="strengthRockBtn" type="button" aria-label="いわを たたく">' +
+      '<button class="strength-rock-btn" id="strengthRockBtn" type="button" aria-label="いわを たたく" disabled>' +
         '<div class="strength-game__impact-zone">' +
           '<img class="strength-game__rock" id="strengthRockImg" src="' + MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png" alt="いわ">' +
           '<div class="strength-debris-layer" id="strengthDebrisLayer" aria-hidden="true"></div>' +
@@ -7088,6 +8876,7 @@ function _showStrengthPushGame() {
           '<span class="strength-game__glove strength-game__glove--right" aria-hidden="true">' +
             '<img class="strength-game__glove-crop" src="' + MAZE_STRENGTH_ASSET_BASE + 'glove_punch_right.png" alt="">' +
           '</span>' +
+          '<div class="strength-countdown" id="strengthCountdown" aria-hidden="true"></div>' +
         '</div>' +
       '</button>' +
     '</div>' +
@@ -7104,9 +8893,147 @@ function _showStrengthPushGame() {
   encStageEl.appendChild(wrap);
   const rockBtn = document.getElementById('strengthRockBtn');
   if (rockBtn) rockBtn.addEventListener('click', _onStrengthRockTap);
+
+  // sw1380: 静的な初期表示 (タイムバー満タン、 HP 100%)
+  const bar0 = document.getElementById('strengthTimeBar');
+  if (bar0) bar0.style.transform = 'scaleX(1)';
+  const durBar0 = document.getElementById('strengthDurabilityBar');
+  if (durBar0) durBar0.style.transform = 'scaleX(1)';
+
+  // sw1380: ナレーション再生 → onended → カウントダウン → ゲーム開始
+  _kickStrengthIntroSequence();
+}
+
+// sw1380: 力の手袋ミニゲームのイントロ (ナレーション → 3,2,1,GO カウントダウン → ゲーム開始)
+function _kickStrengthIntroSequence() {
+  const introAudio = _getStrengthIntroAudio();
+  let countdownStarted = false;
+  const startCountdown = function() {
+    if (countdownStarted) return;
+    countdownStarted = true;
+    _runStrengthCountdown();
+  };
+  if (!introAudio) {
+    // ナレ取得失敗時は即カウントダウン (UX 破壊回避)
+    startCountdown();
+    return;
+  }
+  // 念のため end 後にも remove (cache 再利用想定で onended ハンドラが残らないように)
+  // fallbackTimer は後で代入 (closure 経由で onEnd / reject から参照)
+  let fallbackTimer = null;
+  const onEnd = function() {
+    try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
+    try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
+    startCountdown();
+  };
+  try { introAudio.addEventListener('ended', onEnd); } catch (_) {}
+  // 安全網: 音声が再生失敗 / duration 取得失敗時に備え、 最大 6 秒で強制発火
+  fallbackTimer = _strengthGimmickSetTimeout(function() {
+    try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
+    startCountdown();
+  }, 6000);
+  // play() は user gesture 内なので OK。 失敗時は即 countdown 開始
+  try {
+    introAudio.currentTime = 0;
+  } catch (_) {}
+  try {
+    const p = introAudio.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(function(err) {
+        try { console.warn('[maze strength intro] play rejected', err); } catch (_) {}
+        try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
+        try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
+        startCountdown();
+      });
+    }
+  } catch (e) {
+    try { console.warn('[maze strength intro] play threw', e); } catch (_) {}
+    try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
+    try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
+    startCountdown();
+  }
+}
+
+// _playMazeVoice 内部と同じ cache をシェアして Audio 取得 (whitelist チェック含む)
+function _getStrengthIntroAudio() {
+  const bundle = _MAZE_VOICE_BUNDLED['strength_push'] || {};
+  if (!bundle['start']) return null;
+  const cacheKey = 'strength_push/start';
+  try {
+    var a = _mazeVoiceCache[cacheKey];
+    if (!a) {
+      a = new Audio(_MAZE_VOICE_BASE + cacheKey + '.mp3');
+      a.volume = 0.75;
+      _mazeVoiceCache[cacheKey] = a;
+    }
+    return a;
+  } catch (_) {
+    return null;
+  }
+}
+
+// 3 → 2 → 1 → GO のカウントダウン UI + SE
+function _runStrengthCountdown() {
+  const host = document.getElementById('strengthCountdown');
+  if (!host) {
+    _startStrengthPushPlay();
+    return;
+  }
+  if (_strengthGameState) {
+    _strengthGameState.status = 'はじまるよ！';
+  }
+  const showNum = function(label, isGo) {
+    host.textContent = '';
+    const el = document.createElement('div');
+    el.className = 'strength-countdown__num' + (isGo ? ' is-go' : '');
+    el.textContent = label;
+    host.appendChild(el);
+  };
+  const tickSe = function() {
+    try { playMzSe('countdownTick'); } catch (_) {}
+  };
+  const goSe = function() {
+    try { playMzSe('countdownGo'); } catch (_) {}
+  };
+  // 0ms: 3
+  showNum('3', false); tickSe();
+  // 1000ms: 2
+  _strengthGimmickSetTimeout(function() {
+    showNum('2', false); tickSe();
+  }, 1000);
+  // 2000ms: 1
+  _strengthGimmickSetTimeout(function() {
+    showNum('1', false); tickSe();
+  }, 2000);
+  // 3000ms: GO! + ゲーム開始
+  _strengthGimmickSetTimeout(function() {
+    showNum('GO!', true); goSe();
+    _startStrengthPushPlay();
+  }, 3000);
+  // 4000ms: カウントダウン UI 撤去 (animation の fade-out 完了後)
+  _strengthGimmickSetTimeout(function() {
+    if (host && host.parentNode) {
+      host.textContent = '';
+    }
+  }, 4000);
+}
+
+// カウントダウン 0 (GO!) のタイミングでゲーム本体を起動
+function _startStrengthPushPlay() {
+  const gs = _strengthGameState;
+  if (!gs) return;
+  // 既に起動済み (再入防止)
+  if (gs.intervalId) return;
+  gs.deadline = performance.now() + STRENGTH_TAP_MS;
+  gs.locked = false;
+  gs.status = 'たたいて ひびを ひろげよう！';
+  const rockBtn = document.getElementById('strengthRockBtn');
+  if (rockBtn) {
+    try { rockBtn.disabled = false; } catch (_) {}
+  }
   _renderStrengthPushGame();
   const intervalId = setInterval(_renderStrengthPushGame, 45);
-  _strengthGameState.intervalId = intervalId;
+  gs.intervalId = intervalId;
   _strengthGimmickTimers.push(intervalId);
 }
 
@@ -7220,6 +9147,15 @@ function _onStrengthRockTap() {
   gs.status = finalHit
     ? 'くだけた！'
     : (damageRatio >= 0.7 ? 'あと もうすこし！' : (damageRatio >= 0.4 ? 'ひびが はいってきた！' : 'れんだして くだこう！'));
+  if (!finalHit) {
+    if (damageRatio >= 0.7 && !gs.almostPlayed) {
+      gs.almostPlayed = true;
+      _playMazeVoice('strength_push', 'almost');
+    } else if (damageRatio >= 0.4 && !gs.crackPlayed) {
+      gs.crackPlayed = true;
+      _playMazeVoice('strength_push', 'crack_progress');
+    }
+  }
   playRockHit(finalHit);
   _spawnStrengthDebrisBurst(finalHit);
   _spawnStrengthImpactEffect(finalHit, punchHand, gs.tapCount);
@@ -7256,12 +9192,16 @@ function _failStrengthPushGame() {
   gs.locked = true;
   gs.status = 'もういちど やってみよう';
   playMzSe('wrong');
+  _playMazeVoice('strength_push', 'fail');
   _renderStrengthPushGame();
   _strengthGimmickSetTimeout(function() {
     if (!_strengthGameState) return;
     _strengthGameState.tapCount = 0;
     _strengthGameState.deadline = performance.now() + STRENGTH_TAP_MS;
     _strengthGameState.locked = false;
+    // retry 時は progress voice flag も reset (一度鳴った crack/almost を再度鳴らせるように)
+    _strengthGameState.crackPlayed = false;
+    _strengthGameState.almostPlayed = false;
     _strengthGameState.status = 'たたいて ひびを ひろげよう！';
     _renderStrengthPushGame();
   }, 900);
@@ -7274,6 +9214,7 @@ function _resolveStrengthPushGame() {
   _clearStrengthGimmickTimers();
   _strengthGameState = null;
   playMzSe('correct');
+  _playMazeVoice('strength_push', 'win');
   encStageEl.innerHTML =
     '<div class="enc-result win strength-clear">' +
       '<img class="strength-clear__burst" src="' + MAZE_STRENGTH_ASSET_BASE + 'power_spark.png" alt="">' +
@@ -7696,6 +9637,7 @@ function _layoutBowlPins(gs, layoutId) {
 
 function _showBowlGame(c) {
   _setEncounterMode('web_sweep'); // 互換トークン: card レイアウトは既存を流用
+  _preloadMazeVoices('kumo', ['start','pin_clear','boss_appear','boss_phase_start','milestone_10','boss_defeated','win']);
   const reducedMotion = _bowlReducedMotion();
   _clearWebGimmickTimers();
   _bowlEncounterCount = (_bowlEncounterCount + 1) | 0;
@@ -7717,6 +9659,7 @@ function _showBowlGame(c) {
     '</div>';
   encStageEl.innerHTML = '';
   encStageEl.appendChild(wrap);
+  _playMazeVoice('kumo', 'start');
 
   const stageEl  = wrap.querySelector('#bowlStage');
   const canvasEl = wrap.querySelector('#bowlCanvas');
@@ -7734,6 +9677,7 @@ function _showBowlGame(c) {
     bossHits: 0,
     lastBossHitAt: 0,
     bossHitCombo: 0,
+    lastVoicePhase: null,
     lastThrowAt: 0, locked: false,
     rafId: null, lastTs: 0,
     bgSeed: (_bowlEncounterCount * 1013904223) | 0,
@@ -8007,6 +9951,17 @@ function _showBowlBossIntro(gs, now) {
   for (let i = 0; i < gs.pins.length; i++) {
     if (gs.pins[i].fallen) gs.pins[i].fallProgress = 1;
   }
+  // ナレーション (1 phase 1 回): pin_clear 即時 → boss_appear ~500ms 遅延
+  if (gs.lastVoicePhase !== 'pin_clear') {
+    gs.lastVoicePhase = 'pin_clear';
+    _playMazeVoice('kumo', 'pin_clear');
+    _webGimmickSetTimeout(function() {
+      if (gs !== _bowlGameState) return;
+      if (gs.lastVoicePhase === 'boss_appear' || gs.lastVoicePhase === 'boss_phase_start') return;
+      gs.lastVoicePhase = 'boss_appear';
+      _playMazeVoice('kumo', 'boss_appear');
+    }, 500);
+  }
   if (gs.noteEl) gs.noteEl.textContent = 'ボスが あらわれた！';
   if (gs.bossIntroEl) gs.bossIntroEl.hidden = false;
   if (gs.bossIntroBtn) {
@@ -8041,6 +9996,10 @@ function _startBowlBossPhase(gs, now) {
     if (gs.pins[i].fallen) gs.pins[i].fallProgress = 1;
   }
   if (gs.noteEl) gs.noteEl.textContent = 'なんども おして ボスに あてよう！';
+  if (gs.lastVoicePhase !== 'boss_phase_start') {
+    gs.lastVoicePhase = 'boss_phase_start';
+    _playMazeVoice('kumo', 'boss_phase_start');
+  }
   _bowlFloatText(gs, 'ボスだ！', gs.w * 0.5, gs.h * 0.32);
   try { _playMzSePitch('correct', 3); } catch (_) { try { playTap(); } catch (__) {} }
   _updateBowlBossMotion(gs, now);
@@ -8087,6 +10046,7 @@ function _registerBowlBossHit(gs, now, x, y) {
   if (gs.bossHits % 10 === 0) {
     _bowlFloatText(gs, gs.bossHits + ' HIT!', x, y - boss.r * 0.35);
     try { _playMzSePitch('correct', 4); } catch (_) {}
+    _playMazeVoice('kumo', 'milestone_10');
   } else if (gs.bossHitCombo >= 4) {
     _bowlFloatText(gs, 'タップ！', x, y - boss.r * 0.28);
   } else {
@@ -9535,6 +11495,7 @@ function _finishBowlGame(gs) {
     gs.boss.flashUntil = now + BOWL_BOSS_DEFEAT_MS * 0.45;
   }
   if (gs.noteEl) gs.noteEl.textContent = 'ボスが とんでいった！';
+  _playMazeVoice('kumo', 'boss_defeated');
   _bowlFloatText(gs, 'やった！', gs.w * 0.5, gs.h * 0.28);
   try { _playMzSePitch('correct', 2); } catch (_) {}
   _drawBowlScene(gs, now);
@@ -9566,6 +11527,7 @@ function _resolveBowlGame() {
           : 'おじゃま虫が どいてくれたよ！') +
       '</div>' +
     '</div>';
+  _playMazeVoice('kumo', 'win');
   _webGimmickSetTimeout(function() {
     if (_encounterActive) _closeEncounter(true);
   }, 950);
@@ -9586,19 +11548,22 @@ const _GAME_STARTERS = {
 };
 
 function _closeEncounter(playerWon) {
+  _stopAllMazeVoices(); // モーダル閉じる時 in-flight voice (kumo 等) を必ず停止
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
   const wasStrengthPush = _currentGame === 'strength_push';
   if (_currentGame === 'flag') {
-    _flagGameState = null;
     _clearFlagTunnelTimers();
+    _flagGameState = null;
   }
   if (_currentGame === 'water_bridge') {
-    _waterGameState = null;
+    // 順序: timer を先に止めてから state を null (timer cb が null state を参照しないように)
     _clearWaterGimmickTimers();
+    _waterGameState = null;
   }
   if (_currentGame === 'strength_push') {
-    _strengthGameState = null;
+    // 順序: timer を先に止めてから state を null (punchTimer cb 等の race 防止)
     _clearStrengthGimmickTimers();
+    _strengthGameState = null;
   }
   if (_currentGame === 'web_sweep' || _currentGame === 'donguri_bowl') {
     _detachBowlListeners(_bowlGameState);
@@ -9924,7 +11889,7 @@ function _isMazeStageUnlockedForSlot(idx) {
 function _findNextUnlockedMazeStageIndex(fromIdx) {
   var start = (Number(fromIdx) || 0) + 1;
   for (var i = start; i < STAGES.length; i++) {
-    if (!STAGES[i]) continue;
+    if (!STAGES[i] || STAGES[i].type !== 'image') continue;
     if (_isMazeStageUnlockedForSlot(i)) return i;
   }
   return -1;
@@ -9933,7 +11898,7 @@ function _findNextUnlockedMazeStageIndex(fromIdx) {
 function _hasLockedMazeStageAfter(fromIdx) {
   var start = (Number(fromIdx) || 0) + 1;
   for (var i = start; i < STAGES.length; i++) {
-    if (!STAGES[i]) continue;
+    if (!STAGES[i] || STAGES[i].type !== 'image') continue;
     if (!_isMazeStageUnlockedForSlot(i)) return true;
   }
   return false;
@@ -9964,9 +11929,9 @@ function loadStage(idx) {
   // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
   // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
   // セーフフラグ OFF の間は true 返却 → 実ロックは発動しない（保険として window.PonoTier の存在もチェック）
-  // NOTE (MVP): common/tier.js の PONO_TIER_GAME_LOCKS_ENABLED=false 中は
-  // isMazeStageUnlocked() が常に true を返すため、以下の showSubscribePromo 分岐は
-  // 到達しない dead code。Phase 2 (有料ロック有効化時) のために保持。
+  // NOTE: common/tier.js は 2026-06-28 以降 PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 稼働中)。
+  // このコメントはかつて false (MVP 全開放) だった頃の名残で、現在は isMazeStageUnlocked() が
+  // tier に応じて false を返し得るため、以下の showSubscribePromo 分岐は実際に到達する現役コード。
   var requestedIdx = idx | 0;
   if (!window._DEV_BYPASS_TIER
       && window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'
@@ -10008,35 +11973,11 @@ function loadStage(idx) {
     imgLoadStage(def);
     return;
   }
-  // Grid stage: revert from image-stage mode if previously set
-  document.body.classList.add('maze-started');
-  _initFlagTunnelForStage(null);
-  _initWaterGimmickForStage(null);
-  _initStrengthGimmickForStage(null);
-  _initWebGimmickForStage(null);
-  document.body.classList.remove('image-stage-mode');
-  const charmsEl = document.getElementById('charms');
-  if (charmsEl) charmsEl.style.display = '';
-  if (landscapeReqEl) landscapeReqEl.classList.remove('show');
-  stage = buildStage(def);
-  pono = { r: stage.start.r, c: stage.start.c };
-  trail = [{ r: pono.r, c: pono.c }];
-  moves = 0;
-  applesCollected = 0;
-  cleared = false;
-  walkAnim = null;
-  breezeActive = false;
-  hintActiveUntil = 0;
-  hintCells.clear();
-  hudStage.textContent = stage.name;
-  hudMoves.textContent = 'てかず: 0';
-  hudApples.textContent = '🍎 0/' + stage.totalApples;
-  voice.style.display = '';
-  encounter.classList.remove('show');
-  resizeCanvas();
-  showArrows();
-  updateCharmsUI();
-  showHint('やじるしを タップしてね', 2500);
+  // batch:939 fix #2 / blocker fix — grid stage 経路は完全廃止 (STAGES は image stage のみ)。
+  // buildStage() を含む旧 grid stage 初期化コードは削除済み。 万一非 image stage が混入した場合は
+  // crash させずに console.error で可視化し、 早期 return する。
+  console.error('[maze] loadStage: non-image stage encountered (grid stages are obsolete). def=', def);
+  return;
 }
 
 // ====== Clear ======
@@ -10050,9 +11991,16 @@ function onClear() {
   // Without this guard, a crafted ?image=... JSON could farm rewards.
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
-  if (!isImageStage || isOfficial) {
+  // preview-mode 判定: ?image=<url> 経由で読み込んだ stage は reward farming 防止のため対象外
+  // _official フラグは _loadImageStageIndex の async 完了に依存して race condition の原因だったため URL ベースに切替 (v1717)
+  const _isPreviewMode = (typeof location !== 'undefined' && /[?&]image=/.test(location.search || ''));
+  // Phase 1: AcornModal で中間ステージの どんぐり獲得演出を出すため、 granted を後段に渡せるよう保持する。
+  let _mazeGrantedAcorns = 0;
+  if (!_isPreviewMode) {
     if (window.incrementStat) window.incrementStat('maze_clears', 1);
-    if (window.addAcornsDaily) window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear' });
+    if (window.addAcornsDaily) {
+      _mazeGrantedAcorns = window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear', suppressRewardModal: true }) || 0;
+    }
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({
         gameId: 'maze',
@@ -10061,6 +12009,7 @@ function onClear() {
     }
   }
   playStageClearMz();
+  // batch:939 fix #1 — confetti と modal を並列起動 (serial 2200ms → parallel 2000ms) で待ち短縮。
   setTimeout(function() {
     encounter.classList.add('show');
     spawnConfetti();
@@ -10076,7 +12025,7 @@ function onClear() {
         const isImageStage = stage && stage.type === 'image';
         const isOfficial   = stage && stage._official === true;
         if (isLast) {
-          if (window.triggerFirstClearReward && (!isImageStage || isOfficial)) {
+          if (window.triggerFirstClearReward && !_isPreviewMode) {
             window.triggerFirstClearReward('maze', {
               onClose: function() { _showMazeFinalOverlay(); }
             }).then(function(shown) {
@@ -10085,27 +12034,40 @@ function onClear() {
           } else {
             _showMazeFinalOverlay();
           }
-        } else if (_shouldShowStage3Teaser()) {
-          // stage3 クリア後の予告ビート (free tier のみ)。1 枚パネル内に 3 枚のコラージュ。
-          _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
         } else {
-          _loadNextUnlockedMazeStageOrPromo();
+          // 中間ステージ: どんぐり獲得演出 (AcornModal) → 次ステージ / stage3 teaser
+          const proceedAfterAcorn = function() {
+            if (_shouldShowStage3Teaser()) {
+              _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
+            } else {
+              _loadNextUnlockedMazeStageOrPromo();
+            }
+          };
+          _showMazeAcornModalOrProceed(_mazeGrantedAcorns, isImageStage, isOfficial, proceedAfterAcorn);
         }
       });
     } else {
-      showStageClearOverlay();
+      // 最終ステージは AcornModal を介さず直接 final overlay に流す
+      // (showStageClearOverlay 内で再度 modal を作る無駄を避ける)。
+      const _isLastNoStory = _isMazeFinalForCurrentFlow();
+      if (_isLastNoStory) {
+        showStageClearOverlay(0);
+      } else {
+        showStageClearOverlay(_mazeGrantedAcorns);
+      }
     }
-  }, 2200);
+  }, 2000);
 }
 
-function showStageClearOverlay() {
+function showStageClearOverlay(grantedAcorns) {
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
+  const _isPreviewMode = (typeof location !== 'undefined' && /[?&]image=/.test(location.search || ''));
   const isLast = _isMazeFinalForCurrentFlow();
   if (isLast) {
     // 最終ステージ: 初回クリア報酬を試みる (グリッドステージ + 公式 image ステージのみ)。
     // ?image=<name> でアクセスした非公式 image ステージは報酬対象外。
-    if (window.triggerFirstClearReward && (!isImageStage || isOfficial)) {
+    if (window.triggerFirstClearReward && !_isPreviewMode) {
       window.triggerFirstClearReward('maze', {
         onClose: function() { _showMazeFinalOverlay(); }
       }).then(function(shown) {
@@ -10115,19 +12077,60 @@ function showStageClearOverlay() {
       _showMazeFinalOverlay();
     }
   } else {
-    ovTitle.textContent = 'ステージ クリア！';
-    ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！' + _dailyAcornTail('maze');
-    ovBtn.textContent = 'つぎへ ▶';
-    ovBtn.onclick = function() {
-      hideOverlay();
-      if (_shouldShowStage3Teaser()) {
-        _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
-      } else {
-        _loadNextUnlockedMazeStageOrPromo();
-      }
+    // 中間ステージ: AcornModal → stage clear overlay
+    const renderOverlay = function() {
+      ovTitle.textContent = 'ステージ クリア！';
+      ovMsg.textContent = 'やったね！\nつぎの もりへ いこう！' + _dailyAcornTail('maze');
+      ovBtn.textContent = 'つぎへ ▶';
+      ovBtn.onclick = function() {
+        hideOverlay();
+        if (_shouldShowStage3Teaser()) {
+          _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
+        } else {
+          _loadNextUnlockedMazeStageOrPromo();
+        }
+      };
+      _setOverlayAnimalIcon(stage && stage.story);
+      showOverlay();
     };
-    _setOverlayAnimalIcon(stage && stage.story);
-    showOverlay();
+    _showMazeAcornModalOrProceed(grantedAcorns | 0, isImageStage, isOfficial, renderOverlay);
+  }
+}
+
+// AcornModal (中間ステージ共通) を出すヘルパ。
+// granted > 0 + 非最終 + 非 image-preview のときだけ表示し、 dismiss 後に proceed() を呼ぶ。
+// PonoAcornModal 未ロード / image 非公式 / granted 0 のときは即 proceed() (既存挙動維持)。
+function _showMazeAcornModalOrProceed(granted, isImageStage, isOfficial, proceed) {
+  // dismiss と autoHide が同一 tick で両方発火するレースを防ぐため、
+  // proceed() は最大 1 回しか呼ばないようガードを噛ませる。
+  var _proceeded = false;
+  function _proceedOnce() {
+    if (_proceeded) return;
+    _proceeded = true;
+    try { proceed(); } catch (_) {}
+  }
+  try {
+    if (!proceed) return;
+    var _isPreviewMode2 = (typeof location !== 'undefined' && /[?&]image=/.test(location.search || ''));
+    if (_isPreviewMode2) { _proceedOnce(); return; }
+    if (!window.PonoAcornModal) { _proceedOnce(); return; }
+    var dailyTotal = (typeof window.getDailyTotalAcorns === 'function') ? window.getDailyTotalAcorns() : null;
+    var dailyCap = (typeof window.getDailyTotalCap === 'function') ? window.getDailyTotalCap() : 25;
+    var _grantedSafe = Math.max(0, granted | 0);
+    var isCapped = (_grantedSafe <= 0) || ((dailyTotal != null) && (dailyTotal >= dailyCap));
+    var modal = new window.PonoAcornModal({
+      gameId: 'maze',
+      granted: _grantedSafe,
+      dailyTotal: dailyTotal,
+      dailyCap: dailyCap,
+      state: isCapped ? 'capped' : 'idle',
+      autoHide: 0, // tap/ESC/× のみで dismiss (Phase 1.1 maze feedback)
+      onDismiss: function() { _proceedOnce(); }
+    });
+    modal.show();
+  } catch (e) {
+    // フォールバック: 例外時は既存挙動を維持
+    _proceedOnce();
   }
 }
 
@@ -10543,11 +12546,17 @@ updateCharmsUI();
 // 1) Load _index.json (overrides STAGES with image stages at specified slots)
 // 2) Then handle ?image=<name> (one-off preview, takes precedence)
 // 3) Then loadStage(<initial>)  — defaults to 0 (tutorial), or ?stage=N to jump
+// batch:890 maze-stage-select-ux: ?stage=N は DEV toggle ON のときだけ尊重する
+// (本番ユーザーが URL いじっても順番に遊ぶ仕様を維持)。
 function _getInitialStageIdx() {
   try {
     const params = new URLSearchParams(window.location.search);
     const raw = params.get('stage');
     if (raw == null) return 1; // ステージ 0 は使わない方針 → デフォルトは slot 1 から
+    if (!window._DEV_BYPASS_TIER) {
+      console.warn('[maze] ?stage=' + raw + ' ignored: DEV bypass toggle is OFF');
+      return 1;
+    }
     const n = parseInt(raw, 10);
     // n >= 1 に揃えて方針一致 (?stage=0 はそもそも slot 0 が null なので fallback されるが、一貫性のため拒否)
     if (Number.isInteger(n) && n >= 1 && n < STAGES.length) return n;
@@ -10555,10 +12564,20 @@ function _getInitialStageIdx() {
   } catch (e) { /* ignore */ }
   return 1;
 }
-// ---- DEV bypass: ?dev=1 で tier check を session 内のみ無視 ----
-// localStorage には書き込まない。リロードや別タブには引き継がない。
+// ---- DEV bypass: manage トグル ON で tier check を session 内のみ無視 ----
+// localStorage には書き込まない。リロードや別タブに引き継がないのは PonoDebugMode 側の責務 (manage unlock 状態の永続性に従う)。
+// batch:887 admin-debug-leak-fix — 本番ユーザーで誤って bypass されないよう、
+// PonoDebugMode の manage unlock + "maze-dev-bypass" feature ON を必須化。
+// batch:890 maze-stage-select-ux — URL ?dev=1 の追加要件を廃止し、 トグル ON 単体で active。
+// PonoDebugMode が未 load または未 unlock なら常に false。
 try {
-  window._DEV_BYPASS_TIER = new URLSearchParams(window.location.search).get('dev') === '1';
+  var _mzDevAllowed = false;
+  try {
+    _mzDevAllowed = !!(window.PonoDebugMode
+      && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
+      && window.PonoDebugMode.isFeatureEnabled('maze-dev-bypass'));
+  } catch (_e) { _mzDevAllowed = false; }
+  window._DEV_BYPASS_TIER = _mzDevAllowed;
   if (window._DEV_BYPASS_TIER) {
     console.warn('[maze] DEV mode: tier check bypassed for this session');
     // 右下にひかえめな DEV indicator (CSS インラインのみ)
@@ -10702,12 +12721,28 @@ async function playMazeOpening(onDone) {
   textEl.style.textAlign     = tx.align || 'center';
   textEl.style.letterSpacing = (Number(tx.letterSpacing) || 0) + 'em';
 
+  // batch:912 op-preload-fadein: overlay は is-active で display:flex にして
+  // レイアウト計算を済ませるが、 opacity: 0 のまま画像 decode を待つ。
+  // 画像 preload (BG op_scale.png + frame.src) を Image.decode() で並列待機し、
+  // 完了したら is-visible class を付けて 500ms fade-in、 fade-in 完了 + 200ms 後に
+  // showBeat(0) でナレ再生。 ユーザーが fade 中にタップしたら fade を skip して即発火。
   overlay.classList.add('is-active');
 
   // ビート進行制御
   let idx = 0;
   let currentAudio = null;
   let _finished = false;
+  let _opReady = false;          // showBeat(0) が走った後 true (fade 完了 / skip 済)
+  let _readyResolve = null;
+  const _readyPromise = new Promise(function(resolve) { _readyResolve = resolve; });
+  function _markReady() {
+    if (_opReady) return;
+    _opReady = true;
+    if (typeof _readyResolve === 'function') {
+      const r = _readyResolve; _readyResolve = null;
+      try { r(); } catch (_) {}
+    }
+  }
 
   function stopAudio() {
     if (currentAudio) {
@@ -10760,10 +12795,19 @@ async function playMazeOpening(onDone) {
 
   // ▼ ボタンと overlay 全体タップの両方で進めるよう共通の advance 関数に集約。
   // 子供が画面のどこをタップしても次ビートへ進める (▼ は視覚ヒントとして残す)。
+  // batch:912: fade-in 中 (_opReady=false) のタップは「待たされ感」 を消すため
+  // fade を skip して即 showBeat(0) を実行 (ビート進行はそこから開始)。
   function advance(e) {
     if (_finished) return;
     // ▼ click が overlay へ bubble して二重発火するのを防止
     if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (!_opReady) {
+      // fade 中 → 即 opacity 1 にして showBeat(0) を発火
+      try { overlay.classList.add('is-visible'); } catch (_) {}
+      _markReady();
+      try { showBeat(0); } catch (err) { console.warn('[maze-op] showBeat(0) skip-fire failed:', err); }
+      return;
+    }
     if (idx < beats.length - 1) {
       idx++;
       showBeat(idx);
@@ -10792,16 +12836,183 @@ async function playMazeOpening(onDone) {
     advance(e);
   });
 
-  // 初回ビート表示
-  showBeat(0);
+  // batch:912 op-preload-fadein: 画像 preload → fade-in (500ms) → +200ms → showBeat(0)
+  // フォールバック: preload が 2500ms 経っても完了しない場合は強制的に fade-in に進む
+  // (HUD ハングを避ける)。 ユーザーが fade 中にタップした場合は advance() で skip。
+  (function _startOpeningSequence() {
+    function _preloadImage(src) {
+      return new Promise(function(resolve) {
+        if (!src) { resolve(null); return; }
+        try {
+          const img = new Image();
+          // decode() が使えるブラウザでは decode 完了まで待つ (paint 直前まで完全に decoded)。
+          // 使えない / 失敗時は onload で fallback。
+          img.onload = function() {
+            if (typeof img.decode === 'function') {
+              img.decode().then(function() { resolve(img); }).catch(function() { resolve(img); });
+            } else {
+              resolve(img);
+            }
+          };
+          img.onerror = function() { resolve(null); };
+          img.src = src;
+        } catch (_) { resolve(null); }
+      });
+    }
+
+    // BG (op_scale.png) は CSS background なので明示 preload。 frame.src は probe で既に
+    // 一度読まれている可能性が高いがブラウザキャッシュ前提で重複コストは低い。
+    const bgSrc    = '../assets/images/maze/OP/op_scale.png';
+    const frameSrc = (fr && fr.enabled && fr.src) ? String(fr.src).replace(/['"\\)]/g, '') : null;
+
+    // narration[0] も preload (Audio canplaythrough 待ち)。 失敗・タイムアウトしても続行。
+    function _preloadAudio(src) {
+      return new Promise(function(resolve) {
+        if (!src) { resolve(null); return; }
+        try {
+          const a = new Audio();
+          a.preload = 'auto';
+          const done = function() { cleanup(); resolve(a); };
+          const fail = function() { cleanup(); resolve(null); };
+          function cleanup() {
+            a.removeEventListener('canplaythrough', done);
+            a.removeEventListener('loadeddata', done);
+            a.removeEventListener('error', fail);
+          }
+          a.addEventListener('canplaythrough', done, { once: true });
+          a.addEventListener('loadeddata', done, { once: true });
+          a.addEventListener('error', fail, { once: true });
+          a.src = src;
+          // load() を明示呼び出ししないと preload 属性無視のブラウザがある
+          try { a.load(); } catch (_) {}
+        } catch (_) { resolve(null); }
+      });
+    }
+
+    const preloadAll = Promise.all([
+      _preloadImage(bgSrc),
+      _preloadImage(frameSrc),
+      _preloadAudio(audios[0])
+    ]);
+
+    // 2500ms safety timeout
+    const timeoutPromise = new Promise(function(resolve) {
+      setTimeout(function() { resolve('timeout'); }, 2500);
+    });
+
+    Promise.race([preloadAll, timeoutPromise]).then(function(r) {
+      if (_finished || _opReady) return; // 既に skip/finish されていたら何もしない
+      if (r === 'timeout') {
+        console.warn('[maze-op] preload timeout (2500ms), proceeding without full decode');
+      }
+      // fade-in 開始
+      // 念のため reflow を挟んで transition を確実に発火させる
+      try { void overlay.offsetWidth; } catch (_) {}
+      overlay.classList.add('is-visible');
+      // fade-in (500ms) + 視覚マージン 200ms 後に showBeat(0)
+      setTimeout(function() {
+        if (_finished || _opReady) return;
+        _markReady();
+        try { showBeat(0); } catch (e) { console.warn('[maze-op] showBeat(0) failed:', e); }
+      }, 700);
+    }).catch(function(e) {
+      // catch は念のため。 _preloadImage/_preloadAudio は reject しないが万一に備える
+      console.warn('[maze-op] preload chain failed:', e);
+      if (_finished || _opReady) return;
+      overlay.classList.add('is-visible');
+      _markReady();
+      try { showBeat(0); } catch (_) {}
+    });
+  })();
 }
 
 // タイトル画面タップ → (OP 再生 →) 初回 loadStage
 // ?stage=N / ?image=<name> 直リンク時は OP をスキップして即 loadStage (デバッグ/直リンク用途)
+// batch:890 maze-stage-select-ux: タイトル右下のステージセレクトボタン (DEV toggle ON 時のみ表示) と、
+// modal からの直接ジャンプ (loadStage(N)) を追加。 modal を開いたら title click を消費しない。
 (function() {
   var ts = document.getElementById('title-screen');
   if (!ts) return;
-  ts.addEventListener('click', function() {
+
+  // ---- Stage select button + modal (DEV only) ----
+  var devOn = !!window._DEV_BYPASS_TIER;
+  var stageBtn = document.getElementById('title-stage-select-btn');
+  var modal = document.getElementById('stage-select-modal');
+  var modalGrid = document.getElementById('stage-select-modal-grid');
+  var modalClose = document.getElementById('stage-select-modal-close');
+
+  if (devOn && stageBtn) { stageBtn.hidden = false; }
+
+  function hideModal() {
+    if (!modal) return;
+    modal.hidden = true;
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  function showModal() {
+    if (!modal) return;
+    // Build grid lazily (毎回 rebuild = STAGES が後から index.json で増えても追従)
+    if (modalGrid) {
+      modalGrid.innerHTML = '';
+      // 1-7 ボタンを並べる (slot 7 は枠だけだが grid 表示は許可、 押下時に loadStage fallback に委ねる)
+      for (var i = 1; i <= 7; i++) {
+        (function(n) {
+          var def = STAGES[n];
+          var label = (def && def.name) ? String(def.name) : ('ステージ ' + n);
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'stage-select-modal__btn';
+          b.setAttribute('aria-label', 'ステージ ' + n + ' へ');
+          b.innerHTML = '<span class="stage-select-modal__btn-num">ステージ ' + n + '</span>' +
+            label.replace(/[<>&]/g, function(ch) {
+              return ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[ch];
+            });
+          b.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            hideModal();
+            ts.classList.add('hidden');
+            // 直リンク同様 OP をスキップして即起動
+            _mazeStagePreloadPromise
+              .catch(function(e) { console.warn('[maze] stage select preload wait failed', e); })
+              .then(function() { loadStage(n); })
+              .catch(function(e) { console.warn('[maze] stage select loadStage failed', e); });
+          });
+          modalGrid.appendChild(b);
+        })(i);
+      }
+    }
+    modal.hidden = false;
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  if (stageBtn) {
+    stageBtn.addEventListener('click', function(ev) {
+      ev.stopPropagation(); // title-screen の click まで bubble させない
+      showModal();
+    });
+  }
+  if (modalClose) {
+    modalClose.addEventListener('click', function(ev) {
+      ev.stopPropagation();
+      hideModal();
+    });
+  }
+  if (modal) {
+    // 背景タップで閉じる (card 内のクリックは stopPropagation)
+    modal.addEventListener('click', function(ev) {
+      if (ev.target === modal) hideModal();
+    });
+    var card = modal.querySelector('.stage-select-modal__card');
+    if (card) card.addEventListener('click', function(ev) { ev.stopPropagation(); });
+  }
+
+  // ---- Title click → (OP →) 初回 loadStage ----
+  function onTitleClick(ev) {
+    // モーダルやステージセレクトボタン由来の click は無視 (stopPropagation で来ないはずだが念のため)
+    if (ev && ev.target) {
+      if (stageBtn && (ev.target === stageBtn || (stageBtn.contains && stageBtn.contains(ev.target)))) return;
+      if (modal && (ev.target === modal || (modal.contains && modal.contains(ev.target)))) return;
+    }
+    ts.removeEventListener('click', onTitleClick);
     ts.classList.add('hidden');
     var params;
     try { params = new URLSearchParams(window.location.search); } catch (_) { params = null; }
@@ -10813,8 +13024,34 @@ async function playMazeOpening(onDone) {
     } else {
       playMazeOpening(_mazeLoadInitialStageAfterPreload);
     }
-  }, { once: true });
+  }
+  ts.addEventListener('click', onTitleClick);
 })();
 </script>
+
+<!-- スクショモード Phase 1: maze hookup (main canvas のみ。 stage7 bowl は Phase 2 で追加) -->
+<script>
+(function() {
+  function regCapture() {
+    if (!window.PonoCapture) return;
+    window.PonoCapture.register({
+      gameId: 'maze',
+      defaultLabel: 'play',
+      build: function() {
+        // Phase 1 は主 canvas (#gameCanvas) のみを返す。 bowl canvas は stage7 専用で
+        // 別 canvas (#bowlCanvas) のため、 Phase 2 で z-order 合成して対応する。
+        return document.getElementById('gameCanvas');
+      }
+    });
+  }
+  if (window.PonoCapture) regCapture();
+  else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
+})();
+</script>
+
+<!-- Phase 1: AcornModal 共通基盤 (どんぐり獲得演出) -->
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </body>
 </html>

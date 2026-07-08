@@ -1,27 +1,43 @@
 /* ============================================================
    common/mvp-flags.js  (MVP Phase 1 用 中央フラグ)
 
-   目的:
-     2026-04-27 ユーザー指示。MVP は無料ゲームのみで先行リリース。
-     報酬制度を封印し、進捗系も完全に no-op にしてフレッシュスタートを
-     担保する (2026-04-28 追加方針)。
+   ★ v1590 で MVP gate を解除。 tier system は復活済 (sw1066)、 rewards
+     システムも有効化。 acorns/achievements/stickers の全 reward 経路が
+     活性化し、 どんぐり経済 (1 ゲーム = 1 日 N 個 / 無料 25・有料 35 の
+     1 日トータル cap / どんぐり 50 = シール 1 枚) が初めて完全動作する。
 
-   PONO_MVP_NO_REWARDS = true のとき:
+   ★ v1592: どんぐりのみ carve-out。 PONO_MVP_NO_REWARDS を元の true に戻し、
+     アクアリウム生き物解錠 (achievements) / 部屋アイテム (achievements/stickers
+     マイルストーン) / ログインボーナスシール (stickers.checkDailyLogin) は
+     再び block 状態に復元。 ただし新フラグ PONO_MVP_ENABLE_ACORNS = true で
+     どんぐり (common/acorns.js) だけは gate をすり抜けて働かせる。
+     → maze クリア等の addAcornsDaily は active、 ガチャ/ショップの
+       PonoGameStickers.grant も別系統で引き続き active。
+
+   PONO_MVP_NO_REWARDS = true のとき (現在の状態):
      - どんぐり (acorn) / ありがとう (thankyou) / 宝箱 / 祝賀モーダル を全部抑止
+       ※ ただし PONO_MVP_ENABLE_ACORNS = true なら acorns だけは通る (v1592)
      - スタンプ・実績・ログインシール・どんぐり加算を全部 no-op
+       ※ どんぐり加算は v1592 で carve-out (上記参照)
      - 進捗系 LS (pono_stats / pono_stamp_log / pono_acorns / pono_thankyou /
        pono_stickers / pono_login_days 等) には書き込まない
      - スタンプラリー / スタンプカード / ボトムナビの 📋 スタンプ・🏠 おうち
        ボタンを CSS で非表示
 
    ※ ゲームクリア時の confetti / モーダル / ポノの褒めは累積じゃないので維持。
-   ※ 再公開する時は PONO_MVP_NO_REWARDS = false に戻すだけで全機能が復活。
+   ※ 緊急封印したい時は PONO_MVP_NO_REWARDS = true に戻すだけで全機能が抑止。
        LS は空のままなので、全ユーザーが「最初の 1 個目」をフレッシュに体験できる。
    ============================================================ */
 (function() {
   'use strict';
 
+  // v1590: MVP gate 解除。 rewards 全経路 (acorns / achievements / stickers /
+  //         daily-quest / どんぐりショップ) を活性化。
+  // v1592: 元の true に戻す。 アクアリウム / 部屋アイテム / ログインボーナス
+  //         シールは再 block。 carve-out フラグ PONO_MVP_ENABLE_ACORNS で
+  //         どんぐりのみ通す (common/acorns.js 参照)。
   window.PONO_MVP_NO_REWARDS = true;
+  window.PONO_MVP_ENABLE_ACORNS = true;
 
   if (!window.PONO_MVP_NO_REWARDS) return;
 

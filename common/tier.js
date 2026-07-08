@@ -1,7 +1,17 @@
 /* ============================================================
-   common/tier.js  (Phase 3: 3階層の深さ制限)
+   common/tier.js  (tier policy centralization)
 
-   ユーザー層判定と、絵本購入者向けの "幅8割解放＋深さ制限" の中央化。
+   ユーザー層判定の中央化。
+   2026-07-08: maze / puzzle は free と book のステージ差を復帰。
+   quizland / oto / bento は v3 (2026-07-06, feature_tier_v3 参照) の
+   free = book (機能差ゼロ) を維持する。 各ゲームの isXxxUnlocked() は
+   「sub なら true、 それ以外は tier ごとの集合 (indexOf) に含まれるか」 の
+   パターンで扱う。 book 向けの付録 (特別シール/特別表紙/welcome演出/
+   月1おかえり) は本ファイルのゲームロック関数側では扱わない。
+   aquarium (isAquariumCreatureUnlocked) / room (isRoomItemUnlocked) /
+   bento の box・NPC (isBentoBoxUnlocked/isBentoNpcUnlocked) / oto の
+   chord mode (isOtoChordModeUnlocked) は v3 スコープ外につき、
+   book > free の "伸びしろ" 見せ方を維持したまま変更していない。
 
    公開API (window.PonoTier):
      - getTier()                           → 'free' | 'book' | 'sub'
@@ -9,6 +19,7 @@
      - isAquariumCreatureUnlocked(id)      海の生き物が解放されているか
      - isRoomItemUnlocked(id, cat)         家具/かざりが解放されているか
      - isKatakanaUnlocked()                カタカナ編が解放されているか
+     - isMonsterMathStageUnlocked(mode, stageNum)  モンスターさんすうの各モード×ステージが解放されているか
      - verifyBookPassword(val)             絵本印字パスワードを検証
      - showSubscribePromo(opts)            サブスク誘導モーダル（伸びしろ表現）
      - BOOK_AQUARIUM_CREATURE_IDS          絵本層に見せる生き物 8種
@@ -27,20 +38,42 @@
 (function() {
   'use strict';
 
-  // Phase 1: 共通5本のロックを全て無効化するセーフフラグ。 Phase 2 で true に切替。
+  // ---- PonoDebugMode gating helper ----
+  // common/debug-mode.js が定義する window.PonoDebugMode.isAllowed() を一元参照。
+  // staging-only (localhost/127.0.0.1/*staging*) + sessionStorage('pono_debug_mode_session'==='1') を
+  // 同時に満たした時のみ true を返す。 本番ホスト or unlock 前は常に false。
+  //
+  // 本ヘルパーは「クライアント側だけで完結する unlock 抜け穴」 (localStorage 'pono_premium' /
+  // sessionStorage 'pono_capture_tier_override' / window.__APP_BUILD__ / 印字パスワード /
+  // 管理用マスター) のゲートに使う。 正規の paid book/sub は将来 Stripe/IAP の
+  // サーバ検証経由になるため、 ここでは無関係。
+  function isTierUnlockAllowedClientSide() {
+    try {
+      var dm = window.PonoDebugMode;
+      if (!dm || typeof dm.isAllowed !== 'function') return false;
+      return !!dm.isAllowed();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Phase 2 (3-tier locks active) として運用中。 free / book / sub の解錠範囲は
+  // 本ファイル下部の各 isXxxUnlocked 関数 (isQuizlandQuestionUnlocked / isMazeStageUnlocked /
+  // isOtoSoundSetUnlocked / isPuzzleStageUnlocked / isBentoFoodUnlocked 等) を参照。
+  //
   // DevTools / 後から読み込まれる任意のスクリプト / 旧 sw キャッシュ等による誤上書きを避けるため
-  // Object.defineProperty で writable:false にする。 Phase 2 で恒久的に true 動作へ移行する時は
-  // configurable:true なので再定義で切替可能。
+  // Object.defineProperty で writable:false にする。 configurable:true なので、 将来運用方針が
+  // 変わった場合 (緊急の全面無料化キャンペーン等) は再定義で切替可能。
   if (typeof window.PONO_TIER_GAME_LOCKS_ENABLED === 'undefined') {
     try {
       Object.defineProperty(window, 'PONO_TIER_GAME_LOCKS_ENABLED', {
-        value: true,  // Web MVP: 全機能無料公開 (Amazon 絵本購入者向け)
+        value: true,  // 3-tier (free / book / sub) ロック有効。 ユーザー確定方針 (2026-06-28)
         writable: false,
         configurable: true,
         enumerable: true
       });
     } catch (e) {
-      // 古いブラウザ等で defineProperty が失敗したらフォールバック (Web MVP: ロック無効。Phase 2 復活時は true に戻すこと)
+      // 古いブラウザ等で defineProperty が失敗したらフォールバック (3-tier ロック有効を維持)
       window.PONO_TIER_GAME_LOCKS_ENABLED = true;
     }
   }
@@ -49,18 +82,58 @@
   // ---- APP_BUILD 判定 ----
   // アプリ版 (APP_BUILD=1) は URL 自体がアプリ版用ビルドであることを示すため、
   // localStorage 経由ではなく window.__APP_BUILD__ を見て tier を決定する。
+  //
+  // __APP_BUILD__ は wrangler.toml の [env.staging-app.vars] で staging-app 限定で
+  // 立つフラグであり、 production には立たない。 つまりこのフラグ自体が server-side
+  // で staging-app 環境を識別する正当ルートになっているため、 PonoDebugMode 経由の
+  // 追加 gate は不要 (gate を入れると staging-app の sub tier ゲームが消える事故になる)。
+  // v1581 で PonoDebugMode 縛りを撤去し、 staging-app 経由を正当経路として復活。
   function isAppBuild() {
-    try { return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1'; }
-    catch (e) { return false; }
+    try {
+      return (window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1');
+    } catch (e) { return false; }
+  }
+
+  // ---- capture mode 用 tier override ----
+  // common/capture.js (スクショモード) が sub 限定の隠しゲーム (starparodier 等) を
+  // 撮影するために、 session 限定で「sub tier 同等」 にアクセスできるようにするフラグ。
+  // sessionStorage に保存 → タブを閉じれば消える。 localStorage には書かない。
+  // 既存 tier_system_policy (free/book/sub 3 パターン) は非破壊 (override が立っていなければ
+  // 通常の判定にフォールバック)。 APP_BUILD は書き換えない (Worker prepend の正規ルートを汚染しない)。
+  var CAPTURE_OVERRIDE_KEY = 'pono_capture_tier_override';
+  function isCaptureOverride() {
+    try {
+      if (sessionStorage.getItem(CAPTURE_OVERRIDE_KEY) !== '1') return false;
+      // SECURITY: sessionStorage に手で '1' を入れるだけで sub 化できる抜け穴を塞ぐ。
+      // capture mode は staging host 上での dev 機能なので debug-mode unlock 必須にしても
+      // legitimate なスクショ撮影フロー (capture.js は staging host 限定で起動) を壊さない。
+      return isTierUnlockAllowedClientSide();
+    } catch (e) { return false; }
+  }
+  function setCaptureOverride(on) {
+    try {
+      if (on) sessionStorage.setItem(CAPTURE_OVERRIDE_KEY, '1');
+      else    sessionStorage.removeItem(CAPTURE_OVERRIDE_KEY);
+    } catch (e) {}
   }
 
   // ---- tier 判定 ----
   function getTier() {
+    // capture mode 中は session 限定で sub 同等
+    if (isCaptureOverride()) return 'sub';
     // アプリ版 (APP_BUILD=1) は無条件で sub tier (アプリ版 URL に来た時点で sub 想定)
     if (isAppBuild()) return 'sub';
     // 本版: localStorage 状態で book / free のみ。 sub には絶対到達しない
+    //
+    // pono_premium === '1' は verifyBookPassword 経由で立てた正当な永続フラグ
+    // (絵本奥付パスワードを親が入力 → book tier 解放)。 v1581 で PonoDebugMode 縛りを撤去し、
+    // 既存 book 購入者が本番で free に degrade する事故を解消。
+    // 将来 Stripe/IAP で book 配信する時は server-set HttpOnly cookie or signed receipt 経由に
+    // 置換する想定。
     try {
-      if (localStorage.getItem('pono_premium') === '1') return 'book';
+      if (localStorage.getItem('pono_premium') === '1') {
+        return 'book';
+      }
     } catch (e) {}
     return 'free';
   }
@@ -99,8 +172,11 @@
   ];
 
   // ---- quizland ----
-  // v3 (2026-07-08): free = book。1回5問を Lv1 2問 / Lv2 2問 / Lv3 1問で
-  // 組むため、固定26問プールも Lv1=10 / Lv2=10 / Lv3=6 に寄せる。
+  // v3 (2026-07-08 tier v3): free = book (機能差ゼロ)。 1回5問を
+  // Lv1 2問 / Lv2 2問 / Lv3 1問で組むため、固定26問プールも
+  // Lv1=10 / Lv2=10 / Lv3=6 に寄せて直接指定する (集合方式)。
+  // book 専用の広い level 判定 (旧 BOOK_QUIZLAND_MAX_LEVEL) は廃止し、
+  // free と同じ固定リストに統一する。
   var FREE_QUIZLAND_QUESTION_IDS = [
     // Lv1: 10問
     'order_color|0','count_total|0','shape_name|0','weather|0',
@@ -116,46 +192,52 @@
   ]; // Lv1=10 / Lv2=10 / Lv3=6、計26問
 
   // ---- maze ----
-  // free: 3 ステージ。book: free + 2 ステージ。
+  // free: 3 ステージ。 book: free + 2 ステージ。
   // Stage 7 は最終ボス露出で物語破綻するため book でも除外。
   var FREE_MAZE_STAGE_IDS = [1, 3, 6];
   var BOOK_MAZE_STAGE_IDS = [1, 2, 3, 4, 6];
 
   // ---- puzzle ----
-  // free: 4 ステージ。book: free + 3 ステージ + Stage 5 のポノ特別枠。
+  // free: 4 ステージ。 book: free + 3 ステージ + Stage 5 のポノ特別枠。
   var FREE_PUZZLE_STAGE_IDS = [1, 4, 7, 13];
   var BOOK_PUZZLE_STAGE_IDS = [1, 4, 5, 7, 11, 13, 17];
   var BOOK_PUZZLE_PONO_SPECIAL_IDS = ['stage_05'];
 
   // ---- oto ----
-  var FREE_OTO_SETS = ['doremi','kira'];
-  var BOOK_OTO_SETS = ['doremi','kira','marimba','animal'];
-  var FREE_OTO_MODES = ['free'];
-  var BOOK_OTO_MODES = ['free','rhythm'];
+  // v3: free = book (機能差ゼロ)。
+  var FREE_OTO_SOUND_SETS = ['doremi', 'kira', 'animal'];
+  var FREE_OTO_MODES = ['free', 'rhythm'];
   var FREE_OTO_SCALES = ['major'];
-  var BOOK_OTO_SCALES = ['major','penta'];
-  var FREE_OTO_RHYTHM_SONGS = [];
-  var BOOK_OTO_RHYTHM_SONGS = ['kaeru'];
+  var FREE_OTO_RHYTHM_SONGS = ['kaeru'];
+  // chord mode は tier v3 スコープ外 (feature_tier_v3 §2 に記載なし) につき
+  // book > free の既存差分を維持する (book のみ 'on' 追加解放)。
   var FREE_OTO_CHORD_MODES = ['off'];
-  var BOOK_OTO_CHORD_MODES = ['off','on'];
+  var BOOK_OTO_CHORD_MODES = ['off', 'on'];
 
   // ---- bento: 30食材 / お弁当箱 / NPC ----
-  var FREE_BENTO_FOOD_NAMES = [
-    'タコウインナー','ハンバーグ','たまごやき',
-    'キャベツ','プチトマト','ブロッコリー',
-    'いちご','バナナ'
-  ];  // 8食材
+  // v3: free = book (機能差ゼロ)。 主菜5 + 副菜4 + フルーツ3 = 12食材。
+  // (旧 FREE_BENTO_FOOD_NAMES 8種 + 旧 BOOK 限定だった からあげ/エビフライ/にんじんいんげん/みかん を編入)
+  var FREE_BENTO_FOOD_IDS = [
+    'タコウインナー', 'ハンバーグ', 'たまごやき', 'からあげ', 'エビフライ',      // 主菜5
+    'キャベツ', 'プチトマト', 'ブロッコリー', 'にんじんいんげん',              // 副菜4
+    'いちご', 'バナナ', 'みかん'                                               // フルーツ3
+  ];
+  // v3: のり1種 free 復活 (親満足度優先。 旧方針との差分理由は feature_tier_v3 §2 参照)。
+  // NOTE: bento/index.html 側に isBentoDecorUnlocked('nori') 相当の callsite は現状存在しない
+  // (nori のロックは bookDecorItem() ラッパーで inline 判定されている)。 この定数は次フェーズで
+  // bento/index.html を v3 準拠に直す際の参照値として公開する。
+  var FREE_BENTO_NORI_ENABLED = true;
 
-  var BOOK_BENTO_FOOD_NAMES = FREE_BENTO_FOOD_NAMES.concat([
-    'からあげ','コロッケ','エビフライ','やきざけ','ミートボール',
-    'にんじんいんげん','コーンほうれんそう'
-  ]);  // +7 = 15累計
+  // sub 専用の残り18食材 (30 - 12)。 sub は ALL_BENTO_FOOD_NAMES で全解放。
+  var ALL_BENTO_FOOD_NAMES = FREE_BENTO_FOOD_IDS.concat([
+    'コロッケ', 'やきざけ', 'ミートボール', 'コーンほうれんそう',
+    'ナポリタン', 'ぎょうざ', 'はるまき', 'ベーコンまき',
+    'きんぴらごぼう', 'えだまめ', 'ポテトサラダ', 'ハムサラダ',
+    'メロン', 'りんご', 'パイナップル', 'もも', 'ぶどう', 'キウイ'
+  ]);  // 12 + 18 = 30累計
 
-  var ALL_BENTO_FOOD_NAMES = BOOK_BENTO_FOOD_NAMES.concat([
-    'ナポリタン','ぎょうざ','はるまき','ベーコンまき',
-    'きんぴらごぼう','えだまめ','ポテトサラダ','ハムサラダ',
-    'みかん','メロン','りんご','パイナップル','もも','ぶどう','キウイ'
-  ]);  // +15 = 30累計
+  // box / NPC は tier v3 スコープ外 (feature_tier_v3 §2 に記載なし) につき
+  // book > free の既存差分を維持する (未変更)。
   var FREE_BENTO_BOX_IDS = ['box_rect_split'];
   var BOOK_BENTO_BOX_IDS = FREE_BENTO_BOX_IDS.concat(['box_square','box_round']);
   // sub は判定 (isBentoBoxUnlocked) で常 true 返却 = 全箱解放
@@ -183,25 +265,28 @@
     return getTier() === 'sub';
   }
 
-  // ---- Phase 1: 共通5本のロック判定 (セーフフラグ OFF の間は常に true) ----
+  // ---- 共通5本のロック判定 (Phase 2: 3-tier locks active) ----
+  // PONO_TIER_GAME_LOCKS_ENABLED=true で稼働中。 各関数は gameLocksEnabled() が false の場合のみ
+  // 全開放 (true) を返すフェイルセーフを維持 (緊急の全面無料化キャンペーン等で切替可能)。
   // NOTE: プラン本文見出しでは「判定関数14個」と書かれているが、 同セクションの仕様列挙は
-  // 12 関数 (下記) のみ。 ここでは列挙された 12 関数だけを実装し、 残り 2 関数 (もし必要なら)
-  // は Phase 2 wiring 時に planner と仕様合意の上で追加する方針。
-  // 既存の verifyBookPassword + showSubscribePromo を含めて 14 と数える解釈もありえる。
+  // 12 関数 (下記) のみ。 ここでは列挙された 12 関数を実装。 既存の verifyBookPassword +
+  // showSubscribePromo を含めて 14 と数える解釈もありえる。
   function isQuizlandQuestionUnlocked(qid, category, level) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book。固定26問リストに含まれる qid のみ解放する。
-    // 空配列の間はフェイルセーフで true (= 全開放) を返し、 セーフフラグを ON にした瞬間に
-    // free ユーザーの全クイズが false 判定で完全ロックされる事故を防ぐ。
+    // v3: free = book (機能差ゼロ)。 固定リスト (FREE_QUIZLAND_QUESTION_IDS) に含まれる
+    // qid のみ解放 (free/book 共通)。
+    // 空配列の場合はフェイルセーフで true (= 全開放) を返し、 万一 list が空になった瞬間に
+    // free/book ユーザーの全クイズが false 判定で完全ロックされる事故を防ぐ。
+    // 通常は L164-176 付近で 26 問が登録済 → 通常の indexOf 判定に切り替わる。
     if (FREE_QUIZLAND_QUESTION_IDS.length === 0) return true;
     return FREE_QUIZLAND_QUESTION_IDS.indexOf(qid) >= 0;
   }
 
   // ---- quizland 難易度ロック ----
   // 難易度 (easy=Lv1 / normal=Lv2 / hard=Lv3) を tier だけで判定する。
-  //   free / book: おすすめ5問へ直接入るため通常は表示しない。保険として easy のみ。
+  //   free / book: easy のみ (Lv1) ※ v3 で free = book に統一
   //   sub: 全開放
   // DIFF_MIN_LEVEL は呼び出し側 (quizland) と整合: easy=1, normal=2, hard=3。
   function isQuizlandDifficultyUnlocked(diff, mode) {
@@ -210,6 +295,7 @@
     var lv = lvMap[diff] || 1;
     var t = getTier();
     if (t === 'sub') return true;
+    // v3: free = book (機能差ゼロ)
     return lv === 1;
   }
 
@@ -255,15 +341,15 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_SETS.indexOf(setId) >= 0;
-    return FREE_OTO_SETS.indexOf(setId) >= 0;
+    // v3: free = book (機能差ゼロ)
+    return FREE_OTO_SOUND_SETS.indexOf(setId) >= 0;
   }
 
   function isOtoModeUnlocked(mode) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_MODES.indexOf(mode) >= 0;
+    // v3: free = book (機能差ゼロ)
     return FREE_OTO_MODES.indexOf(mode) >= 0;
   }
 
@@ -271,7 +357,7 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_SCALES.indexOf(scale) >= 0;
+    // v3: free = book (機能差ゼロ)
     return FREE_OTO_SCALES.indexOf(scale) >= 0;
   }
 
@@ -279,11 +365,12 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
+    // v3: free = book (機能差ゼロ)
     return FREE_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
   }
 
   function isOtoChordModeUnlocked(mode) {
+    // chord mode は tier v3 スコープ外 (書字なし) につき book > free の既存差分を維持。
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
@@ -297,8 +384,8 @@
     if (!name) return false;
     var t = getTier();
     if (t === 'sub') return ALL_BENTO_FOOD_NAMES.indexOf(name) >= 0;
-    if (t === 'book') return BOOK_BENTO_FOOD_NAMES.indexOf(name) >= 0;
-    return FREE_BENTO_FOOD_NAMES.indexOf(name) >= 0;
+    // v3: free = book (機能差ゼロ)
+    return FREE_BENTO_FOOD_IDS.indexOf(name) >= 0;
   }
 
   function isBentoBoxUnlocked(boxId) {
@@ -318,14 +405,44 @@
     return FREE_BENTO_NPCS.indexOf(npcId) >= 0;
   }
 
+  // ---- monster_math (モンスターさんすう) ----
+  // v3 (2026-07-06/07 ユーザー決定ログ §13.2 承認済): free = book (機能差ゼロ)。
+  // [Phase R3 Fix (2026-07-07)] 旧3モード (かぞえる/10づくり/たしざん) は
+  // テンメガネ (ten) / カクレン (kak) の2モードに統合された (engine.js MODE_ORDER 準拠)。
+  // カクレン Stage1-2 (旧かぞえる相当) / テンメガネ Stage1 (旧10づくり相当) のみ解放、
+  // 残りは sub。
+  var FREE_MONSTER_MATH_STAGE_IDS = {
+    kak: [1, 2],
+    ten: [1]
+  };
+
+  function isMonsterMathStageUnlocked(mode, stageNum) {
+    if (!gameLocksEnabled()) return true;
+    var t = getTier();
+    if (t === 'sub') return true;
+    // v3: free = book (機能差ゼロ)
+    var list = FREE_MONSTER_MATH_STAGE_IDS[mode];
+    if (!list) return false; // 未知の mode 名は保険で全ロック (誤って全開放しない)
+    return list.indexOf(stageNum) >= 0;
+  }
+
   // ---- 絵本印字パスワード検証 ----
   // 絵本の奥付に印字する解錠コードをここで集中管理。
   // 絵本を増刷・新シリーズを出す時はこの配列に追記する想定。
   // 大文字/小文字どちらでも通るよう両方試す (子供/保護者が手入力するため)。
   // Closure に閉じるので window.PonoTier からは見えず、DevTools 経由で
   // 覗き見されにくい (完全な秘匿ではないが casual friction を維持)。
-  var BOOK_PASSWORDS = ['1234'];  // Web MVP: 全機能無料公開のため book/sub 区分は休眠。将来 IAP 復活時にここを埋める
+  // v17XX: abcd/1234 廃止、arigato_pono2026 1 本化。
+  //   旧: BOOK_PASSWORDS = ['1234']  /  ADMIN_PASSWORDS = ['abcd']
+  //   新: BOOK_PASSWORDS = ['arigato_pono2026'] 一本化、 ADMIN_PASSWORDS は撤去 (verifyAdminPassword も削除)
+  //       理由: テスト用の弱パスワード (1234/abcd) が staging 経路から漏洩しても被害が出ない
+  //       ように、 絵本奥付の本パスワード相当に統合。 callsite は全て verifyBookPassword に寄せる。
+  var BOOK_PASSWORDS = ['arigato_pono2026'];
   function verifyBookPassword(val) {
+    // 親が紙絵本の奥付に印字されたパスワードを入力する正当ルート。
+    // PonoDebugMode 縛りは撤去済 (本番で book 解錠不能になる事故を解消)。
+    // 将来 IAP 配備時はサーバ検証 (signed receipt) に置換する想定。
+    // 比較は case-insensitive (raw / upper / 配列要素の upper を全て試す)。
     if (val == null) return false;
     var raw = String(val).trim();
     if (!raw) return false;
@@ -336,19 +453,113 @@
     }
     return false;
   }
+  // v17XX: ADMIN_PASSWORDS / verifyAdminPassword は削除済。
+  // 管理用マスター解錠は廃止し、 admin tools 本体側の Basic Auth + KV ルートに一本化。
+  // クライアント側で book 相当の追加解錠が必要な場合は verifyBookPassword (arigato_pono2026) を使用する。
 
-  // 管理用マスターパスワード。book + sub 両方を解放
-  var ADMIN_PASSWORDS = ['abcd'];
-  function verifyAdminPassword(val) {
+  // ============================================================
+  // ---- Book Tier Unlock 拡張: シリアル / 絵本クイズ ----
+  //
+  // 既存 verifyBookPassword (BOOK_PASSWORDS) は 「シリアル」 タブの一次経路として継続使用。
+  // 追加で以下 2 種のクライアント側 verifier を提供する:
+  //   1) verifySerialCode(val)             … BOOK_PASSWORDS 互換 + SERIAL_CODES 追加
+  //   2) verifyQuizAnswer(questionId, val) … 絵本内容クイズの正解判定 (答え揺らぎ吸収)
+  // ヘルパー pickRandomQuiz() / QUIZ_QUESTIONS / normalizeAnswer も合わせて公開。
+  //
+  // (v1996: Amazon 注文番号経路 (verifyOrderId / ORDER_ID_RE) は author 側で verify 不能のため撤去)
+  //
+  // 設計方針:
+  //   - すべて client side のみで完結 (server 検証は将来 Stripe/IAP 経路で別途実装)
+  //   - クイズ答え揺らぎは normalizeAnswer (全角→半角 / カナ→ひらがな / 空白除去 /
+  //     語尾敬称除去 + lowercase) で吸収。 漢字バリアントは answers 配列に明示列挙
+  // ============================================================
+
+  // 印字シリアル候補 (将来 増刷時はここに追記)。 BOOK_PASSWORDS と論理的に同等扱い。
+  var SERIAL_CODES = [];
+
+  // 絵本内容クイズ (現状 1 問。 将来 admin から差替 or 配列追加)
+  var QUIZ_QUESTIONS = [
+    {
+      id: 'pono_first_friend',
+      q: 'えほんで さいしょに でてくる ポノの おともだちの どうぶつは？',
+      answers: ['ハリネズミ', 'はりねずみ', '針鼠', 'ハリちゃん', 'ハリ']
+    }
+  ];
+
+  /**
+   * 答え揺らぎ吸収のための正規化関数。
+   *  - trim 前後空白
+   *  - 全角英数記号 (Ｕ＋ＦＦ０１..ＵＦＦ５Ｅ) → 半角 (0xFEE0 オフセット)
+   *  - カタカナ (U+30A1..U+30F6) → ひらがな (-0x60)
+   *  - 空白 / 全角空白 / 中黒 (・) を削除
+   *  - 語尾 「くん」 「さん」 「ちゃん」 「さま」 「様」 を 1 度だけ削除
+   *  - 最後に toLowerCase
+   * @param {string} s 入力文字列
+   * @returns {string} 正規化済み文字列 (照合用)
+   */
+  function normalizeAnswer(s) {
+    if (s == null) return '';
+    var t = String(s).trim();
+    t = t.replace(/[！-～]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0); });
+    t = t.replace(/[ァ-ヶ]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0) - 0x60); });
+    t = t.replace(/[\s　・]/g, '');
+    t = t.replace(/(くん|さん|ちゃん|さま|様)$/, '');
+    return t.toLowerCase();
+  }
+
+  /**
+   * 印字シリアル / 旧 BOOK_PASSWORD を検証する。
+   * 大文字小文字は無視。 BOOK_PASSWORDS と SERIAL_CODES の両方を試す。
+   * @param {string} val ユーザー入力
+   * @returns {boolean}
+   */
+  function verifySerialCode(val) {
     if (val == null) return false;
     var raw = String(val).trim();
     if (!raw) return false;
     var upper = raw.toUpperCase();
-    for (var i = 0; i < ADMIN_PASSWORDS.length; i++) {
-      var p = ADMIN_PASSWORDS[i];
+    var i, p;
+    for (i = 0; i < BOOK_PASSWORDS.length; i++) {
+      p = BOOK_PASSWORDS[i];
+      if (p === raw || p === upper || p.toUpperCase() === upper) return true;
+    }
+    for (i = 0; i < SERIAL_CODES.length; i++) {
+      p = SERIAL_CODES[i];
       if (p === raw || p === upper || p.toUpperCase() === upper) return true;
     }
     return false;
+  }
+
+  /**
+   * 絵本クイズの解答を検証する。
+   * 内部で normalizeAnswer を通してから answers と比較。
+   * @param {string} questionId QUIZ_QUESTIONS の id
+   * @param {string} val ユーザー入力
+   * @returns {boolean}
+   */
+  function verifyQuizAnswer(questionId, val) {
+    if (!questionId) return false;
+    var q = null;
+    for (var i = 0; i < QUIZ_QUESTIONS.length; i++) {
+      if (QUIZ_QUESTIONS[i].id === questionId) { q = QUIZ_QUESTIONS[i]; break; }
+    }
+    if (!q) return false;
+    var n = normalizeAnswer(val);
+    if (!n) return false;
+    for (var j = 0; j < q.answers.length; j++) {
+      if (normalizeAnswer(q.answers[j]) === n) return true;
+    }
+    return false;
+  }
+
+  /**
+   * QUIZ_QUESTIONS からランダムに 1 問を返す。 配列が空なら null。
+   * @returns {{id:string, q:string, answers:string[]} | null}
+   */
+  function pickRandomQuiz() {
+    if (!QUIZ_QUESTIONS.length) return null;
+    var idx = Math.floor(Math.random() * QUIZ_QUESTIONS.length);
+    return QUIZ_QUESTIONS[idx];
   }
 
   function getTierLockPromoCopy(opts) {
@@ -469,15 +680,24 @@
   // ---- export ----
   window.PonoTier = {
     getTier: getTier,
+    isTierUnlockAllowedClientSide: isTierUnlockAllowedClientSide,
     isAppBuild: isAppBuild,
     isFree: isFree,
     isBook: isBook,
     isSub:  isSub,
+    setCaptureOverride: setCaptureOverride,
+    isCaptureOverride: isCaptureOverride,
     isAquariumCreatureUnlocked: isAquariumCreatureUnlocked,
     isRoomItemUnlocked: isRoomItemUnlocked,
     isKatakanaUnlocked: isKatakanaUnlocked,
     verifyBookPassword: verifyBookPassword,
-    verifyAdminPassword: verifyAdminPassword,
+    // verifyAdminPassword: 削除済 (v17XX: abcd 廃止、 arigato_pono2026 1 本化)。
+    // Book Tier Unlock 拡張 (シリアル / 絵本クイズ の 2 経路。 Amazon 注文番号 verifyOrderId は v1997 で撤去済)
+    verifySerialCode: verifySerialCode,
+    verifyQuizAnswer: verifyQuizAnswer,
+    pickRandomQuiz: pickRandomQuiz,
+    normalizeAnswer: normalizeAnswer,
+    QUIZ_QUESTIONS: QUIZ_QUESTIONS,
     showTierLockPromo: showTierLockPromo,
     showSubscribePromo: showSubscribePromo,
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,
@@ -495,14 +715,24 @@
     isBentoFoodUnlocked: isBentoFoodUnlocked,
     isBentoBoxUnlocked: isBentoBoxUnlocked,
     isBentoNpcUnlocked: isBentoNpcUnlocked,
+    isMonsterMathStageUnlocked: isMonsterMathStageUnlocked,
+    FREE_MONSTER_MATH_STAGE_IDS: FREE_MONSTER_MATH_STAGE_IDS,
     FREE_QUIZLAND_QUESTION_IDS: FREE_QUIZLAND_QUESTION_IDS,
     ALL_BENTO_FOOD_NAMES: ALL_BENTO_FOOD_NAMES,
-    BOOK_BENTO_FOOD_NAMES: BOOK_BENTO_FOOD_NAMES,
-    FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_NAMES,
+    // v3: book = free (機能差ゼロ) につき BOOK_BENTO_FOOD_NAMES / FREE_BENTO_FOOD_NAMES は
+    // 後方互換のため両方とも FREE_BENTO_FOOD_IDS のエイリアスとして残す。
+    BOOK_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_IDS,
+    FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_IDS,
+    FREE_BENTO_FOOD_IDS: FREE_BENTO_FOOD_IDS,
+    FREE_BENTO_NORI_ENABLED: FREE_BENTO_NORI_ENABLED,
     FREE_MAZE_STAGE_IDS: FREE_MAZE_STAGE_IDS,
     BOOK_MAZE_STAGE_IDS: BOOK_MAZE_STAGE_IDS,
     FREE_PUZZLE_STAGE_IDS: FREE_PUZZLE_STAGE_IDS,
     BOOK_PUZZLE_STAGE_IDS: BOOK_PUZZLE_STAGE_IDS,
-    BOOK_PUZZLE_PONO_SPECIAL_IDS: BOOK_PUZZLE_PONO_SPECIAL_IDS
+    BOOK_PUZZLE_PONO_SPECIAL_IDS: BOOK_PUZZLE_PONO_SPECIAL_IDS,
+    FREE_OTO_SOUND_SETS: FREE_OTO_SOUND_SETS,
+    FREE_OTO_MODES: FREE_OTO_MODES,
+    FREE_OTO_SCALES: FREE_OTO_SCALES,
+    FREE_OTO_RHYTHM_SONGS: FREE_OTO_RHYTHM_SONGS
   };
 })();

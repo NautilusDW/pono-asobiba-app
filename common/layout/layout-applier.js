@@ -38,6 +38,16 @@
     // 2026-05-06: chip preset のリセット時に古い transform が残るバグを修正。
     if (('tx' in s) || ('ty' in s)) {
       var tx = s.tx || 0, ty = s.ty || 0;
+      // Bug-B fix (2026-06-30): skip transform write when tx===0 AND ty===0 AND no width/height specified.
+      //   This guards against spurious snapshot artifacts where layout-editor wrote tx:0,ty:0 entries
+      //   for elements that were never actually moved (el._tx/_ty default to 0). Applying
+      //   translate(0px, 0px) on those elements clobbers CSS-driven natural positioning
+      //   (flex/grid/margin auto) and causes layout shifts on every render.
+      //   Caller intent: an entry with w or h present is a deliberate position override (keep).
+      //   An entry that omits w/h AND is zero on both axes is almost certainly a false positive.
+      if (tx === 0 && ty === 0 && !s.w && !s.h) {
+        return;
+      }
       el._tx = tx;
       el._ty = ty;
       el.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
