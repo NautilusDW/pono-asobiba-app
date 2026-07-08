@@ -686,8 +686,16 @@
    削除済。 その他のゲーム (oto / quizland / undersea-cave 等) は base
    ルールのまま右上固定が効く。 */
 [data-game-id="maze"] .pono-acorn-modal__dismiss {
-  top: max(clamp(4px, 0.8vw, 10px), env(safe-area-inset-top, 0px));
-  right: max(clamp(4px, 0.8vw, 10px), env(safe-area-inset-right, 0px));
+  position: absolute;
+  z-index: 3;
+  top: max(clamp(14px, 1.8vw, 22px), env(safe-area-inset-top, 0px));
+  right: max(clamp(14px, 1.8vw, 22px), env(safe-area-inset-right, 0px));
+}
+[data-game-id="maze"] .pono-acorn-modal__amount {
+  margin-top: -16px;
+}
+[data-game-id="maze"] .pono-acorn-modal__progress {
+  margin-top: clamp(14px, 2.3vw, 22px);
 }
 
 [data-game-id="oto"].pono-acorn-modal {
