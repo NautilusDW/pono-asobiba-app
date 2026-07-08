@@ -6182,9 +6182,9 @@ const SK_INTRO_GUIDE_STEPS = [
 const SK_INTRO_VOICE_IDS = ['sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05'];
 const SK_INTRO_VOICE_GAP_MS = 600;
 const SK_INTRO_VOICE_FALLBACK_MS = 10000;
-// batch:1058 phase1: tut2 (見本→まねっこ) 台本に総入替。 旧 v1 で完走済みの
-// プレイヤーにも新チュートリアルを 1 回見せるため v2 にバンプ。
-const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v2';
+// batch:1058 phase1: tut2 (見本→まねっこ) 台本に総入替。
+// 2026-07-09: 葉っぱ実操作と自由追加ステップを入れたため v3 にバンプ。
+const BENTO_TUTORIAL_STORAGE_KEY = 'bento_tutorial_done_v3';
 const BENTO_TUTORIAL_STORAGE_KEY_LEGACY = 'bento_tutorial_done_v1';
 const BENTO_COLOR_GUIDE_SKIP_KEY = 'bento_color_guide_skip_v1';
 // batch:1043 T4: タップ式完成 + おねがいモード展開後に両モードのチュートリアルを
@@ -9520,6 +9520,10 @@ const BENTO_TUTORIAL_VOICE_VERSION = 'v1600-tut2-mock';
 // 実 Audio を作らず fallbackMs タイマーだけで onEnded を発火する (視覚のみ動作確認可能)。
 // 音声収録 + faster-whisper 照合完了後に false に戻し、 mp3 を配置してリリース。
 const BENTO_TUTORIAL_MOCK_VOICE = true;
+function shouldMockBentoTutorialVoice(id) {
+  // tut2_* はまだ収録前の仮ID。既存収録済みの OP / 3色説明 / 旧補助ナレは再生する。
+  return !!(BENTO_TUTORIAL_MOCK_VOICE && /^tut2_/.test(String(id || '')));
+}
 const BENTO_TUTORIAL_STEP_VOICE = {
   // batch:1058 phase1: tut2 (見本→まねっこ) 17 本。
   // docs/BENTO_TUTORIAL_SCRIPT.md §3 の generation list と 1:1 対応。
@@ -9565,8 +9569,9 @@ function playBentoTutorialVoice(id, opts = {}) {
   if (!id) return null;
   // batch:1058 phase1: MOCK_VOICE モード中は実 Audio を作らず fallbackMs タイマーだけで
   // onEnded を発火する。 音声未収録でも視覚チュートリアルが最後まで走る。
-  if (BENTO_TUTORIAL_MOCK_VOICE || isMaskEditorAudioMuted()) {
-    try { _bentoDebugLog('[bento-debug] skip: mock/muted', { id: id, mock: BENTO_TUTORIAL_MOCK_VOICE }); } catch (_) {}
+  const useMockVoice = shouldMockBentoTutorialVoice(id);
+  if (useMockVoice || isMaskEditorAudioMuted()) {
+    try { _bentoDebugLog('[bento-debug] skip: mock/muted', { id: id, mock: useMockVoice }); } catch (_) {}
     if (typeof opts.onEnded === 'function') {
       setTimeout(opts.onEnded, opts.fallbackMs || 5000);
     }
@@ -10246,6 +10251,22 @@ function getTutorialPaletteAllowance(def) {
   if (step === 'tut2-cup-food') {
     // ピッカー内おかず (side 相当) を自由選択で許可。
     return def.type === 'food' ? ok : deny('すきな おかずを えらんでね');
+  }
+  if (step === 'tut2-leaf-tab') {
+    return (def.type === 'leaf' || def.type === 'food' || def.type === 'cup')
+      ? ok
+      : deny('はっぱを みてみよう');
+  }
+  if (step === 'tut2-leaf-target') {
+    return def.type === 'leaf' ? ok : deny('おかずを タップしてね');
+  }
+  if (step === 'tut2-leaf-pick' || step === 'tut2-leaf-place') {
+    return def.type === 'leaf' ? ok : deny('はっぱを しいてみよう');
+  }
+  if (step === 'tut2-free-okazu') {
+    return (def.type === 'food' || def.type === 'cup' || def.type === 'leaf' || def.type === 'divider' || def.type === 'pick')
+      ? ok
+      : deny('すきな おかずを いれてね');
   }
   if (step === 'tut2-tabs-intro' || step === 'tut2-okazu-ok') {
     // 追加配置 (main/cup/food) は自由。 タブ操作待ち or ボタン待ち。
@@ -15400,6 +15421,9 @@ function toggleSimpleOkazuEditPicker(mode) {
     setSpeech(getSimpleLeafForOkazu(target) ? 'どの はっぱに かえる？' : 'したに しく はっぱを えらんでね。');
   }
   renderFreeLayoutControls();
+  if (mode === 'leaf' && simpleOkazuEditPickerMode === 'leaf') {
+    try { if (typeof tutorialOnLeafPickerOpened === 'function') tutorialOnLeafPickerOpened(target); } catch (_) {}
+  }
   // (v1500 FIX8 の scrollIntoView は撤去 — batch:1043 T2 で picker はトレイ全体を
   //  置き換える full picker になり、 折り返しの下に隠れる問題自体が消えたため)
 }
@@ -15454,6 +15478,7 @@ function armSimpleLeafForStageTap(def) {
   setSpeech('べんとうばこを タップして はっぱを しこう！');
   renderFreeLayoutStage();
   renderFreeLayoutControls();
+  try { if (typeof tutorialOnLeafChoiceArmed === 'function') tutorialOnLeafChoiceArmed(def, target); } catch (_) {}
 }
 // [したに しく]: はっぱを おかずの真下 (中心一致 + わずかに下) に敷く。
 // z-under は leaf の renderLayer base 8 で自動。既存のはっぱがあれば入れ替え、無ければ 5枚上限を確認。
@@ -15507,6 +15532,7 @@ function placeSimpleLeafUnderOkazu(def) {
   }
   renderFreeLayoutStage();
   renderFreeLayoutControls();
+  try { if (typeof tutorialOnLeafPlaced === 'function') tutorialOnLeafPlaced(leaf, target); } catch (_) {}
 }
 function removeSimpleLeafUnderOkazu() {
   const target = getSimpleOkazuEditTarget();
@@ -16261,6 +16287,7 @@ function makeFreePaletteButton(def) {
   btn.className = 'free-palette-item';
   btn.dataset.itemId = def.id || '';
   btn.dataset.type = def.type || '';
+  btn.dataset.sampleId = getSimpleSlotSampleIdForDef(def) || '';
   const groupClass = getSkGroupClass(def.sk);
   if (groupClass) {
     btn.classList.add(groupClass);
@@ -20978,6 +21005,9 @@ function tutorialOnTabSwitch(tabId) {
   };
   // batch:1058 phase1: tut2 台本では tab-rice/tab-okazu step は廃止。
   // tut2-tabs-intro 中に leaf/divider タブへ触ったら okazu-ok へ進める。
+  if (s === 'tut2-leaf-tab' && tabId === 'leaf') {
+    advance('tut2-leaf-target');
+  }
   if (s === 'tut2-tabs-intro' && (tabId === 'leaf' || tabId === 'divider')) {
     advance('tut2-okazu-ok');
   }
@@ -21088,15 +21118,93 @@ function tutorialClearPaletteFocus() {
   });
 }
 // おかず palette 先頭の main food (brushItem 除外)。
-function tutorialFindMainOkazuPaletteEl() {
+function tutorialGetPaletteSampleId(btn) {
+  if (!btn || !btn.dataset) return '';
+  return String(btn.dataset.sampleId || '').trim();
+}
+function tutorialFindFirstMainOkazuItem() {
+  try {
+    return placedItems.find(item => item
+      && item.type === 'food'
+      && !item.parentCupId
+      && ((item.okazuRole || getOkazuRole(item)) === 'main')) || null;
+  } catch (_) {
+    return null;
+  }
+}
+function tutorialCountFoodItems() {
+  try {
+    return placedItems.filter(item => item && item.type === 'food').length;
+  } catch (_) {
+    return 0;
+  }
+}
+function tutorialFindPlacedElementForItem(item) {
+  if (!item || !item.uid) return null;
+  const uid = String(item.uid);
+  const els = document.querySelectorAll('.free-placed-item');
+  for (const el of els) {
+    if (el.dataset && el.dataset.freeUid === uid) return el;
+  }
+  return null;
+}
+function tutorialGetNextMainOkazuSampleId() {
+  let placed = [];
+  try {
+    placed = placedItems
+      .filter(item => item && item.type === 'food' && !item.parentCupId && ((item.okazuRole || getOkazuRole(item)) === 'main'))
+      .map(item => String(item.simpleSampleId || '').trim())
+      .filter(Boolean);
+  } catch (_) {}
+  if (placed.length <= 0) return '';
+  if (!placed.includes('hamburger')) return 'hamburger';
+  if (!placed.includes('tako_wiener')) return 'tako_wiener';
+  return '';
+}
+function tutorialFindMainOkazuPaletteEl(preferredSampleId = '') {
   if (typeof freeLayoutTab !== 'undefined' && freeLayoutTab !== 'food') return null;
   const btns = document.querySelectorAll('.free-item-list .free-palette-item');
+  const sampleId = String(preferredSampleId || '').trim();
+  if (sampleId) {
+    for (const b of btns) {
+      if (b.classList.contains('tier-locked')) continue;
+      if (tutorialGetPaletteSampleId(b) === sampleId) return b;
+    }
+  }
   for (const b of btns) {
     if (b.classList.contains('tier-locked')) continue;
     if (b.dataset && b.dataset.itemId && b.dataset.itemId.indexOf('brush') >= 0) continue;
     return b;
   }
   return btns[0] || null;
+}
+function tutorialFocusMainOkazuPalette(sampleId) {
+  const palette = tutorialFindMainOkazuPaletteEl(sampleId);
+  if (!palette) return null;
+  tutorialClearTrims();
+  try { tutorialApplyPaletteFocus(btn => btn === palette); } catch (_) {}
+  try { tutorialTrimPath(palette, { radius: 14, width: 5, color: '#1E7FD8' }); } catch (_) {}
+  try { tutorialAnimateTap(palette); } catch (_) {}
+  return palette;
+}
+function tutorialShowBubbleBesideElement(html, targetEl, opts = {}) {
+  tutorialShowBubble(html, opts);
+  if (!targetEl) return;
+  const anchorFn = () => {
+    try {
+      const current = targetEl && targetEl.isConnected ? targetEl : null;
+      if (current) tutorialPositionBubbleBeside(current, { gap: opts.gap || 12 });
+    } catch (_) {}
+  };
+  anchorFn();
+  tutorialState._bubbleAnchorFn = anchorFn;
+}
+function tutorialFindFirstLeafChoice() {
+  const choices = document.querySelectorAll('.free-okazu-edit-picker--tray .free-okazu-edit-choice, .free-okazu-edit-choice');
+  for (const b of choices) {
+    if (b && !b.disabled) return b;
+  }
+  return null;
 }
 // カップ内 side food ピッカーの palette 先頭。
 function tutorialFindCupSideFoodPaletteEl() {
@@ -21262,6 +21370,18 @@ function tutorialAdvance(nextStep) {
     try { clearTimeout(tutorialState._tabsRingTimer); } catch (_) {}
     tutorialState._tabsRingTimer = null;
   }
+  if (tutorialState._tabsChainTimer) {
+    try { clearTimeout(tutorialState._tabsChainTimer); } catch (_) {}
+    tutorialState._tabsChainTimer = null;
+  }
+  if (tutorialState._freeOkazuTimer) {
+    try { clearTimeout(tutorialState._freeOkazuTimer); } catch (_) {}
+    tutorialState._freeOkazuTimer = null;
+  }
+  if (tutorialState._freeOkazuDoneTimer) {
+    try { clearTimeout(tutorialState._freeOkazuDoneTimer); } catch (_) {}
+    tutorialState._freeOkazuDoneTimer = null;
+  }
   // batch:1058-hotfix4: サブラウンド間の 800ms beat / palette-tap の 600ms 遅延 ghost /
   //   Step 6 walk-through シーケンス timer も step 遷移で必ず破棄。
   if (tutorialState._noriBeatTimer) {
@@ -21380,12 +21500,16 @@ const TUT2_STEPS = [
   { id: 'tut2-nori-face-eyes', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-face-mouth-nose', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-move', phaseAMs: 2500, fallbackMs: 6000, renderPhaseA: tut2RenderNoriMovePhaseA, renderPhaseB: tut2RenderNoriMovePhaseB },
-  // batch:1058-hotfix4: phaseAMs 2500 → 6000 (walk-through 4 ボタン + narration に必要)。
-  { id: 'tut2-nori-edit', phaseAMs: 6000, fallbackMs: 10000, renderPhaseA: tut2RenderNoriEditPhaseA, renderPhaseB: tut2RenderNoriEditPhaseB },
+  { id: 'tut2-nori-edit', phaseAMs: 4200, fallbackMs: 8000, renderPhaseA: tut2RenderNoriEditPhaseA, renderPhaseB: tut2RenderNoriEditPhaseB },
   { id: 'tut2-okazu-main', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderOkazuMainPhaseA, renderPhaseB: tut2RenderOkazuMainPhaseB },
   { id: 'tut2-cup-btn', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderCupBtn },
   { id: 'tut2-cup-place', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderCupPlacePhaseA, renderPhaseB: tut2RenderCupPlacePhaseB },
   { id: 'tut2-cup-food', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderCupFoodPhaseA, renderPhaseB: tut2RenderCupFoodPhaseB },
+  { id: 'tut2-leaf-tab', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderLeafTab },
+  { id: 'tut2-leaf-target', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderLeafTarget },
+  { id: 'tut2-leaf-pick', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderLeafPick },
+  { id: 'tut2-leaf-place', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderLeafPlace },
+  { id: 'tut2-free-okazu', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderFreeOkazu },
   { id: 'tut2-tabs-intro', single: true, fallbackMs: 6500, renderPhaseB: tut2RenderTabsIntro },
   { id: 'tut2-okazu-ok', single: true, fallbackMs: 5500, renderPhaseB: tut2RenderOkazuOk },
   { id: 'tut2-complete', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderComplete },
@@ -21497,6 +21621,11 @@ const TUT2_PONO_SPEECH = {
   'tut2-cup-btn': 'つぎは 「カップへ」を おしてね。',
   'tut2-cup-place': 'すきな カップを ひとつ タップして おこう！',
   'tut2-cup-food': 'カップに いれる おかずを えらんでね。',
+  'tut2-leaf-tab': 'はっぱを しくときは「はっぱ」を おしてね。',
+  'tut2-leaf-target': 'はっぱを しく おかずを タップしてね。',
+  'tut2-leaf-pick': 'すきな はっぱを えらんでね。',
+  'tut2-leaf-place': 'えらんだ はっぱは、おかずの したに しくよ。',
+  'tut2-free-okazu': 'すきな おかずを もう ひとつ いれてもいいよ。4つまで いれられるよ。',
   'tut2-tabs-intro': 'はっぱと しきりも つかえるよ！',
   'tut2-okazu-ok': 'できあがったら「おかずOK」を おしてね。',
   'tut2-complete': 'わあ、すてきな おべんとうが できたね！',
@@ -21711,12 +21840,8 @@ function tut2RenderNoriPhaseB(step) {
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderNoriMovePhaseA(step) {
-  // batch:1058-hotfix3: Step 5 のバブルは box の右コンパートメント (右上) に配置。
-  //   旧設定 (topVh:20 left) は 置いたのり + finger drag と Y 帯が重なって
-  //   owner から「吹き出しが指と重なる」 と指摘された。 box_rect_split は右半分が
-  //   空いているのでその上部に載せる。
-  tutorialShowBubble('ゆびで うごかせるよ', { topVh: '8', side: 'right' });
   const placed = tutorialFindFirstPlacedDecor();
+  tutorialShowBubbleBesideElement('ゆびで うごかせるよ', placed && placed.el, { side: 'right' });
   if (placed && placed.el) {
     const r = placed.el.getBoundingClientRect();
     const from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -21725,9 +21850,8 @@ function tut2RenderNoriMovePhaseA(step) {
   }
 }
 function tut2RenderNoriMovePhaseB(step) {
-  // batch:1058-hotfix3: Phase B も同じく右上に配置 (finger + placed decor と非重複)。
-  tutorialShowBubble('すきな ばしょまで<br>すーっと うごかしてね', { topVh: '8', side: 'right' });
   const placed = tutorialFindFirstPlacedDecor();
+  tutorialShowBubbleBesideElement('すきな ばしょまで<br>すーっと うごかしてね', placed && placed.el, { side: 'right' });
   if (placed && placed.el) {
     tutorialMarkTarget(placed.el, { radius: 16 });
     const r = placed.el.getBoundingClientRect();
@@ -21737,12 +21861,9 @@ function tut2RenderNoriMovePhaseB(step) {
   }
 }
 function tut2RenderNoriEditPhaseA(step) {
-  // batch:1058-hotfix4: Step 6 は高情報ステップ — 編集パネルの 4 ボタン (↺ / ↻ / ちいさく /
-  //   おおきく) を順にリング + ポノ setSpeech で解説してから のりOK 誘導。 各サブステップは
-  //   ~1.4s で連続再生 (総 ~5.8s)。 独立バブルは owner 方針で残す (高情報時のみ許可)。
-  tutorialShowBubble('のりを タップすると<br>こんな パネルが でるよ', { topVh: '8', side: 'right' });
   const placed = tutorialFindFirstPlacedDecor();
   if (!placed || !placed.item) return;
+  tutorialShowBubbleBesideElement('のりを タップすると<br>まわしたり おおきさを<br>かえられるよ', placed.el, { side: 'right' });
   try {
     if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid);
   } catch (_) {}
@@ -21752,15 +21873,6 @@ function tut2RenderNoriEditPhaseA(step) {
     for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
   }
   tutorialState._noriEditSeqTimers = [];
-  // ボタン取得の共通処理。 DOM は openSimpleDecorEditPanel 後の renderFreeLayoutControls
-  // (setTimeout 0ms) で入るので、 各サブステップの実行時に querySelector する。
-  const findRotateButtons = () => Array.from(document.querySelectorAll('.free-context-toolbar > button.free-icon-button'));
-  const findSizeButtons = () => Array.from(document.querySelectorAll('.free-context-toolbar .free-decor-size-buttons button'));
-  // ステップ 6a (T=+400ms): パネルが出た瞬間の紹介。 ポノ「のりを タップすると こんな パネルが でるよ」
-  // ステップ 6b (T=+1400ms): ↻ を紹介 + 自動タップ (視覚的に回転が見える)
-  // ステップ 6c (T=+2800ms): ちいさく を紹介 + 自動タップ
-  // ステップ 6d (T=+4200ms): おおきく を紹介 + 自動タップ (2 回タップで元サイズ 15% 増)
-  // ステップ 6e (T=+5600ms): Phase B に手動遷移 — のりOK 誘導
   const scheduleAt = (delay, fn) => {
     const t = setTimeout(() => {
       if (!tutorialState.active) return;
@@ -21770,63 +21882,9 @@ function tut2RenderNoriEditPhaseA(step) {
     tutorialState._noriEditSeqTimers.push(t);
   };
   scheduleAt(400, () => {
-    // 6a: ポノに「パネルが出るよ」 説明。 tutorialShowBubble は上で発話済。
-    try { setSpeech('のりを タップすると こんな パネルが でるよ'); } catch (_) {}
+    try { setSpeech('のりを タップすると まわしたり おおきさを かえられるよ'); } catch (_) {}
   });
-  scheduleAt(1400, () => {
-    // 6b: ↻ (rotate right, index 1) にリング + 自動タップ (visual rotate 15°)。
-    const rotBtns = findRotateButtons();
-    const rotRight = rotBtns[1] || rotBtns[0]; // ↺ ↻ の順、 右回転を優先
-    tutorialClearTrims();
-    if (rotRight) {
-      tutorialTrimPath(rotRight, { radius: 18, width: 5, color: '#1E7FD8' });
-      tutorialAnimateTap(rotRight);
-      try { setSpeech('「くるっ」で のりを まわせるよ'); } catch (_) {}
-      // 実際に回転を見せる: 400ms 後に dispatchEvent
-      const rotBtn = rotRight;
-      const t2 = setTimeout(() => {
-        if (!tutorialState.active || tutorialState.step !== stepId) return;
-        try { rotBtn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); } catch (_) {}
-      }, 500);
-      tutorialState._noriEditSeqTimers.push(t2);
-    }
-  });
-  scheduleAt(2800, () => {
-    // 6c: ちいさく (size buttons[0]) にリング + 自動タップ。
-    const sizeBtns = findSizeButtons();
-    const smaller = sizeBtns[0];
-    tutorialClearTrims();
-    if (smaller) {
-      tutorialTrimPath(smaller, { radius: 18, width: 5, color: '#1E7FD8' });
-      tutorialAnimateTap(smaller);
-      try { setSpeech('「ちいさく」で ちいさく できるよ'); } catch (_) {}
-      const btn = smaller;
-      const t2 = setTimeout(() => {
-        if (!tutorialState.active || tutorialState.step !== stepId) return;
-        try { btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); } catch (_) {}
-      }, 500);
-      tutorialState._noriEditSeqTimers.push(t2);
-    }
-  });
-  scheduleAt(4200, () => {
-    // 6d: おおきく (size buttons[1]) にリング + 自動タップ。 元サイズに戻る効果。
-    const sizeBtns = findSizeButtons();
-    const bigger = sizeBtns[1];
-    tutorialClearTrims();
-    if (bigger) {
-      tutorialTrimPath(bigger, { radius: 18, width: 5, color: '#1E7FD8' });
-      tutorialAnimateTap(bigger);
-      try { setSpeech('「おおきく」で おおきく できるよ'); } catch (_) {}
-      const btn = bigger;
-      const t2 = setTimeout(() => {
-        if (!tutorialState.active || tutorialState.step !== stepId) return;
-        try { btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); } catch (_) {}
-      }, 500);
-      tutorialState._noriEditSeqTimers.push(t2);
-    }
-  });
-  scheduleAt(5600, () => {
-    // 6e: Phase B へ遷移 (Phase A タイマー 6000ms のわずか前、 setSpeech を先に更新)。
+  scheduleAt(3600, () => {
     try { setSpeech('できたら「のりOK」を おそう！'); } catch (_) {}
   });
 }
@@ -21845,12 +21903,13 @@ function tut2RenderNoriEditPhaseB(step) {
 function tut2RenderOkazuMainPhaseA(step) {
   // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。 T=0 ring only、 T=+600ms で ghost/finger。
   tutorialHideBubble();
-  const palette = tutorialFindMainOkazuPaletteEl();
+  const preferredSampleId = tutorialGetNextMainOkazuSampleId();
+  const palette = tutorialFindMainOkazuPaletteEl(preferredSampleId);
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
   if (paletteId) {
-    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
+    try { tutorialApplyPaletteFocus(btn => btn === palette); } catch (_) {}
   }
-  tut2AnchorToPalette(tutorialFindMainOkazuPaletteEl);
+  tut2AnchorToPalette(() => tutorialFindMainOkazuPaletteEl(preferredSampleId));
   const stepId = step.id;
   if (tutorialState._paletteTapDelayTimer) {
     try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
@@ -21860,9 +21919,9 @@ function tut2RenderOkazuMainPhaseA(step) {
     tutorialState._paletteTapDelayTimer = null;
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
-    tutorialScrollThenTap(tutorialFindMainOkazuPaletteEl, stepId);
+    tutorialScrollThenTap(() => tutorialFindMainOkazuPaletteEl(preferredSampleId), stepId);
     try {
-      const p = tutorialFindMainOkazuPaletteEl();
+      const p = tutorialFindMainOkazuPaletteEl(preferredSampleId);
       if (p) {
         const img = p.querySelector('img');
         if (img && img.src) {
@@ -21881,10 +21940,11 @@ function tut2RenderOkazuMainPhaseA(step) {
 function tut2RenderOkazuMainPhaseB(step) {
   // batch:1058-hotfix4: バブル廃止 (ポノ吹き出しに集約)。
   tutorialHideBubble();
-  const palette = tut2AnchorToPalette(tutorialFindMainOkazuPaletteEl);
+  const preferredSampleId = tutorialGetNextMainOkazuSampleId();
+  const palette = tut2AnchorToPalette(() => tutorialFindMainOkazuPaletteEl(preferredSampleId));
   const paletteId = palette && palette.dataset ? palette.dataset.itemId : '';
   if (paletteId) {
-    try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
+    try { tutorialApplyPaletteFocus(btn => btn === palette); } catch (_) {}
   }
   if (palette) tutorialAnimateTap(palette);
 }
@@ -21992,6 +22052,102 @@ function tut2RenderCupFoodPhaseB(step) {
     try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
   }
   if (palette) tutorialAnimateTap(palette);
+}
+function tut2RenderLeafTab(step) {
+  tutorialShowBubble('はっぱを しくときは<br>「はっぱ」を おしてね', { topVh: '18', side: 'right' });
+  const leafTab = tutorialFindTabBtn('leaf') || document.querySelector('.free-tab[data-tab="leaf"]');
+  if (!leafTab) {
+    tutorialRetryRenderStep(step.id, 120);
+    return;
+  }
+  tutorialClearTrims();
+  tutorialMarkTarget(leafTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
+  tutorialShowPointingHand(leafTab, { side: 'right' });
+  tutorialPositionBubbleBeside(leafTab, { gap: 14 });
+}
+function tut2RenderLeafTarget(step) {
+  if (simpleOkazuEditPickerMode === 'leaf') {
+    setTimeout(() => tutorialAdvance('tut2-leaf-pick'), 0);
+    return;
+  }
+  const item = tutorialFindFirstMainOkazuItem();
+  const el = tutorialFindPlacedElementForItem(item);
+  tutorialShowBubbleBesideElement('はっぱを しく<br>おかずを タップしてね', el, { side: 'right' });
+  if (el) {
+    tutorialClearTrims();
+    tutorialMarkTarget(el, { radius: 18, outline: false, color: '#1E7FD8', width: 5 });
+    tutorialAnimateTap(el);
+  }
+}
+function tut2RenderLeafPick(step) {
+  if (simpleLeafArmedDef) {
+    setTimeout(() => tutorialAdvance('tut2-leaf-place'), 0);
+    return;
+  }
+  const choice = tutorialFindFirstLeafChoice();
+  tutorialShowBubble('すきな はっぱを<br>えらんでね', { topVh: '18', side: 'right' });
+  if (!choice) {
+    tutorialRetryRenderStep(step.id, 120);
+    return;
+  }
+  tutorialClearTrims();
+  tutorialMarkTarget(choice, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
+  tutorialAnimateTap(choice);
+  tutorialPositionBubbleBeside(choice, { gap: 12 });
+}
+function tut2RenderLeafPlace(step) {
+  const item = tutorialFindFirstMainOkazuItem();
+  const el = tutorialFindPlacedElementForItem(item);
+  tutorialShowBubbleBesideElement('べんとうばこを タップすると<br>おかずの したに しけるよ', el || document.getElementById('free-layout-stage'), { side: 'right' });
+  if (el) {
+    tutorialClearTrims();
+    tutorialMarkTarget(el, { radius: 18, outline: false, color: '#1E7FD8', width: 5 });
+    const r = el.getBoundingClientRect();
+    tutorialAnimateTap({
+      getBoundingClientRect: () => ({
+        left: r.left,
+        top: r.top + r.height * 0.58,
+        width: r.width,
+        height: Math.max(18, r.height * 0.35),
+      }),
+    });
+  }
+}
+function tut2RenderFreeOkazu(step) {
+  const foodCount = tutorialCountFoodItems();
+  if (!tutorialState._freeOkazuPrepared) {
+    tutorialState._freeOkazuPrepared = true;
+    simpleOkazuEditPickerMode = null;
+    simpleLeafApplyArmed = false;
+    clearSimpleLeafArmedState();
+    freeSelectedItemUid = null;
+    if (freeLayoutTab !== 'accessory') freeLayoutTab = 'accessory';
+    try { renderFreeLayoutStage(); renderFreeLayoutControls(); } catch (_) {}
+  }
+  tutorialClearTrims();
+  tutorialHideFinger();
+  tutorialShowBubble('すきな おかずを<br>もう ひとつ いれてもいいよ<br><span class="tut-emph-red">4つまで</span> いれられるよ', { topVh: '18', side: 'right' });
+  const cup = tutorialFindFirstCupPaletteEl();
+  if (cup) {
+    tutorialMarkTarget(cup, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
+    tutorialAnimateTap(cup);
+    tutorialPositionBubbleBeside(cup, { gap: 12 });
+  }
+  if (foodCount >= 4) {
+    if (!tutorialState._freeOkazuDoneTimer) {
+      tutorialState._freeOkazuDoneTimer = setTimeout(() => {
+        tutorialState._freeOkazuDoneTimer = null;
+        if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-okazu-ok');
+      }, 900);
+    }
+    return;
+  }
+  if (!tutorialState._freeOkazuTimer) {
+    tutorialState._freeOkazuTimer = setTimeout(() => {
+      tutorialState._freeOkazuTimer = null;
+      if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-okazu-ok');
+    }, step.fallbackMs || 9000);
+  }
 }
 function tut2RenderTabsIntro(step) {
   tutorialShowBubble('はっぱと しきりも つかえるよ！', { topVh: '18', side: 'right' });
@@ -22305,6 +22461,7 @@ function tutorialStart() {
   tutorialState.completeDetailShown = false;
   tutorialState.completeGuideToken = 0;
   tutorialState.pendingStickerGrant = false;
+  tutorialState._freeOkazuPrepared = false;
   tutorialClearCompleteGuideTimers();
   tutorialState.groupIntroShown = !!window.__bentoSkIntroShownThisRun;
   if (shouldUseTutorialFixedRequester()) {
@@ -22365,11 +22522,11 @@ function tutorialOnGuideChange(/* step */) {
 }
 function tutorialOnCupEditorClosed() {
   if (!tutorialState.active) return;
-  // batch:1058 phase1: tut2-cup-food 中にピッカーが閉じた + 子が 1 個以上入っていれば tabs-intro へ。
+  // batch:1058 phase1: tut2-cup-food 中にピッカーが閉じた + 子が 1 個以上入っていれば葉っぱ説明へ。
   if (tutorialState.step === 'tut2-cup-food') {
     const cup = tutorialActiveCupItem();
     if (cup && getCupChildren(cup).length > 0) {
-      tutorialAdvance('tut2-tabs-intro');
+      tutorialAdvance('tut2-leaf-tab');
     }
   }
 }
@@ -22470,10 +22627,18 @@ function tutorialOnItemPlaced(item) {
         // 1 個目 → 「もう ひとつ」 促し。 batch:1058-hotfix4: owner の UX 方針転換に合わせ、
         //   ポノ吹き出し (setSpeech) を主 channel として更新し、 独立 callout は補助扱いに
         //   する (バブル濫立の抑制)。 Phase B の finger loop は継続。
-        try { setSpeech('もう ひとつ おかずを えらぼう！'); } catch (_) {}
-        if (typeof tutorialShowPonoCallout === 'function') {
-          try { tutorialShowPonoCallout('もう ひとつ<br>おかずを えらぼう！', { placement: 'high' }); } catch (_) {}
-        }
+        const nextSample = tutorialGetNextMainOkazuSampleId();
+        const nextName = nextSample === 'hamburger' ? 'ハンバーグ' : 'おかず';
+        const msg = 'もう ひとつ<br>' + nextName + 'を えらぼう！';
+        const showSecondOkazuGuide = () => {
+          if (!tutorialState.active || tutorialState.step !== 'tut2-okazu-main') return;
+          try { setSpeech('もう ひとつ ' + nextName + 'を えらぼう！'); } catch (_) {}
+          try { tutorialHidePonoCallout(); } catch (_) {}
+          try { tutorialShowBubbleBesideElement(msg, tutorialFindPlacedElementForItem(item), { side: 'right' }); } catch (_) {}
+          try { tutorialFocusMainOkazuPalette(nextSample); } catch (_) {}
+        };
+        showSecondOkazuGuide();
+        requestAnimationFrame(() => requestAnimationFrame(showSecondOkazuGuide));
         tutorialResetInactivity();
         return;
       }
@@ -22490,10 +22655,41 @@ function tutorialOnItemPlaced(item) {
   }
   // Step 10: food inside cup → tabs-intro
   if (step === 'tut2-cup-food' && item.type === 'food' && item.parentCupId) {
-    tutorialAdvance('tut2-tabs-intro');
+    tutorialAdvance('tut2-leaf-tab');
+    return;
+  }
+  // Leaf/free step: 4つ目の おかず が入ったら OK 導線へ。
+  if (step === 'tut2-free-okazu' && item.type === 'food') {
+    if (tutorialCountFoodItems() >= 4) {
+      try { setSpeech('4つ そろったね！'); } catch (_) {}
+      if (tutorialState._freeOkazuTimer) { try { clearTimeout(tutorialState._freeOkazuTimer); } catch (_) {} tutorialState._freeOkazuTimer = null; }
+      if (!tutorialState._freeOkazuDoneTimer) {
+        tutorialState._freeOkazuDoneTimer = setTimeout(() => {
+          tutorialState._freeOkazuDoneTimer = null;
+          if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-okazu-ok');
+        }, 900);
+      }
+    }
+    tutorialResetInactivity();
     return;
   }
   tutorialResetInactivity();
+}
+function tutorialOnLeafPickerOpened(target) {
+  if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-target') return;
+  if (!target) return;
+  tutorialAdvance('tut2-leaf-pick');
+}
+function tutorialOnLeafChoiceArmed(def, target) {
+  if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-pick') return;
+  if (!def || !target) return;
+  tutorialAdvance('tut2-leaf-place');
+}
+function tutorialOnLeafPlaced(leaf, target) {
+  if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-place') return;
+  if (!leaf || !target) return;
+  try { setSpeech('はっぱを しいたね！'); } catch (_) {}
+  tutorialAdvance('tut2-free-okazu');
 }
 function tutorialOnStageComplete() {
   if (!tutorialState.active) return;
