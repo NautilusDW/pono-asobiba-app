@@ -17449,10 +17449,21 @@ function clearSimpleSelectionIfBlockedByMode() {
   simpleCupSlotIndex = null;
   return true;
 }
+function isTutorialLeafTargetMainOkazu(item) {
+  if (!item || !tutorialState || !tutorialState.active) return false;
+  if (tutorialState.step !== 'tut2-leaf-target') return false;
+  if (item.type !== 'food' || item.parentCupId) return false;
+  try {
+    return (item.okazuRole || getOkazuRole(item)) === 'main';
+  } catch (_) {
+    return item.okazuRole === 'main';
+  }
+}
 function shouldHideItemForSimpleLeafEdit(item) {
   if (!isSimpleLeafEditMode() || !item) return false;
   if (item.type === 'leaf' || item.brushItem) return false;
   if (item.type === 'rice' || isRiceDecorItem(item) || item.type === 'decor') return false;
+  if (isTutorialLeafTargetMainOkazu(item)) return false;
   return item.type === 'food' || item.type === 'divider' || item.type === 'pick' || item.snapTarget || !!item.parentCupId;
 }
 function shouldDimItemForSimpleLeafEdit(item) {
@@ -19616,6 +19627,7 @@ function tutorialShowBubble(html, opts = {}) {
   tutorialEnsureLayer();
   const b = tutorialState.bubbleEl;
   b.classList.remove('hidden');
+  b.style.pointerEvents = (opts.interactive === true || opts.center === true) ? 'auto' : 'none';
   // v3: never use loud / anchored variants — single style only
   b.classList.remove('tut-bubble--loud');
   b.classList.remove('tut-bubble--anchored');
@@ -21000,6 +21012,7 @@ function tutorialOnTabSwitch(tabId) {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!tutorialState.active) return;
       if (tutorialState.step !== s) return; // すでに別 step に進んでいたら何もしない
+      tutorialStopVoiceQueueForImmediateAdvance();
       tutorialAdvance(nextStep);
     }));
   };
@@ -21286,6 +21299,11 @@ function tutorialNoriTargetFreePoint(clusterX, clusterY) {
     const riceSize = (box.autoRice && box.autoRice.size) || Math.min(box.riceBounds.w, box.riceBounds.h) || 200;
     return { x: spot.x + clusterX * riceSize, y: spot.y + clusterY * riceSize };
   } catch (_) { return null; }
+}
+
+function tutorialStopVoiceQueueForImmediateAdvance() {
+  if (tutorialState) tutorialState._advanceQueued = null;
+  try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
 }
 
 // state 遷移ヘルパ。 タイマー進行は禁止。 これと item-placed/button のみが進行口。
@@ -21919,22 +21937,8 @@ function tut2RenderOkazuMainPhaseA(step) {
     tutorialState._paletteTapDelayTimer = null;
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
+    tutorialClearGhostLayer();
     tutorialScrollThenTap(() => tutorialFindMainOkazuPaletteEl(preferredSampleId), stepId);
-    try {
-      const p = tutorialFindMainOkazuPaletteEl(preferredSampleId);
-      if (p) {
-        const img = p.querySelector('img');
-        if (img && img.src) {
-          tutorialShowGhostItem({
-            imgSrc: img.src,
-            freeX: FREE_LAYOUT_W * 0.62,
-            freeY: FREE_LAYOUT_H * 0.35,
-            freeSize: 110,
-            ttlMs: Math.max(600, (step.phaseAMs || 2500) - 400),
-          });
-        }
-      }
-    } catch (_) {}
   }, 600);
 }
 function tut2RenderOkazuMainPhaseB(step) {
@@ -21975,23 +21979,8 @@ function tut2RenderCupPlacePhaseA(step) {
     tutorialState._paletteTapDelayTimer = null;
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
+    tutorialClearGhostLayer();
     tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, stepId);
-    try {
-      const p = tutorialFindFirstCupPaletteEl();
-      if (p) {
-        const img = p.querySelector('img');
-        if (img && img.src) {
-          const freePt = tutorialCupDemoFreePoint();
-          tutorialShowGhostItem({
-            imgSrc: img.src,
-            freeX: freePt.x,
-            freeY: freePt.y,
-            freeSize: 100,
-            ttlMs: Math.max(600, (step.phaseAMs || 2500) - 400),
-          });
-        }
-      }
-    } catch (_) {}
   }, 600);
 }
 function tut2RenderCupPlacePhaseB(step) {
@@ -22022,25 +22011,8 @@ function tut2RenderCupFoodPhaseA(step) {
     tutorialState._paletteTapDelayTimer = null;
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
+    tutorialClearGhostLayer();
     tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, stepId);
-    try {
-      const p = tutorialFindCupSideFoodPaletteEl();
-      if (p) {
-        const img = p.querySelector('img');
-        if (img && img.src) {
-          const cup = tutorialActiveCupItem();
-          if (cup) {
-            tutorialShowGhostItem({
-              imgSrc: img.src,
-              freeX: cup.x,
-              freeY: cup.y,
-              freeSize: 70,
-              ttlMs: Math.max(600, (step.phaseAMs || 2500) - 400),
-            });
-          }
-        }
-      }
-    } catch (_) {}
   }, 600);
 }
 function tut2RenderCupFoodPhaseB(step) {
@@ -22065,14 +22037,24 @@ function tut2RenderLeafTab(step) {
   tutorialShowPointingHand(leafTab, { side: 'right' });
   tutorialPositionBubbleBeside(leafTab, { gap: 14 });
 }
+function tut2EnsureLeafTabView() {
+  if (typeof freeLayoutTab === 'undefined' || freeLayoutTab === 'leaf') return;
+  freeLayoutTab = 'leaf';
+  try {
+    renderFreeLayoutStage();
+    renderFreeLayoutControls();
+  } catch (_) {}
+}
 function tut2RenderLeafTarget(step) {
+  tut2EnsureLeafTabView();
+  tutorialClearGhostLayer();
   if (simpleOkazuEditPickerMode === 'leaf') {
     setTimeout(() => tutorialAdvance('tut2-leaf-pick'), 0);
     return;
   }
   const item = tutorialFindFirstMainOkazuItem();
   const el = tutorialFindPlacedElementForItem(item);
-  tutorialShowBubbleBesideElement('はっぱを しく<br>おかずを タップしてね', el, { side: 'right' });
+  tutorialShowBubble('はっぱを しく<br>おかずを タップしてね', { topVh: '12', side: 'left' });
   if (el) {
     tutorialClearTrims();
     tutorialMarkTarget(el, { radius: 18, outline: false, color: '#1E7FD8', width: 5 });
@@ -22080,6 +22062,7 @@ function tut2RenderLeafTarget(step) {
   }
 }
 function tut2RenderLeafPick(step) {
+  tut2EnsureLeafTabView();
   if (simpleLeafArmedDef) {
     setTimeout(() => tutorialAdvance('tut2-leaf-place'), 0);
     return;
@@ -22096,9 +22079,11 @@ function tut2RenderLeafPick(step) {
   tutorialPositionBubbleBeside(choice, { gap: 12 });
 }
 function tut2RenderLeafPlace(step) {
+  tut2EnsureLeafTabView();
+  tutorialClearGhostLayer();
   const item = tutorialFindFirstMainOkazuItem();
   const el = tutorialFindPlacedElementForItem(item);
-  tutorialShowBubbleBesideElement('べんとうばこを タップすると<br>おかずの したに しけるよ', el || document.getElementById('free-layout-stage'), { side: 'right' });
+  tutorialShowBubble('べんとうばこを タップして<br>はっぱを しこう', { topVh: '12', side: 'left' });
   if (el) {
     tutorialClearTrims();
     tutorialMarkTarget(el, { radius: 18, outline: false, color: '#1E7FD8', width: 5 });
@@ -22655,6 +22640,7 @@ function tutorialOnItemPlaced(item) {
   }
   // Step 10: food inside cup → tabs-intro
   if (step === 'tut2-cup-food' && item.type === 'food' && item.parentCupId) {
+    try { tutorialStopVoiceQueueForImmediateAdvance(); } catch (_) {}
     tutorialAdvance('tut2-leaf-tab');
     return;
   }
@@ -22678,17 +22664,20 @@ function tutorialOnItemPlaced(item) {
 function tutorialOnLeafPickerOpened(target) {
   if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-target') return;
   if (!target) return;
+  tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-leaf-pick');
 }
 function tutorialOnLeafChoiceArmed(def, target) {
   if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-pick') return;
   if (!def || !target) return;
+  tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-leaf-place');
 }
 function tutorialOnLeafPlaced(leaf, target) {
   if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-place') return;
   if (!leaf || !target) return;
   try { setSpeech('はっぱを しいたね！'); } catch (_) {}
+  tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-free-okazu');
 }
 function tutorialOnStageComplete() {

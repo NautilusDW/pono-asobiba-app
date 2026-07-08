@@ -9642,11 +9642,11 @@
         <!-- Panel: シリアル (既存 #passwordUnlockInput / #passwordUnlockSubmit を内包) -->
         <section class="pw-panel" id="pwPanelSerial" role="tabpanel"
                  aria-labelledby="pwTabSerial" data-pw-panel="serial">
-          <p class="pw-panel-lead">えほんの うらに かいてある<br>あいことばを いれてね</p>
+          <p class="pw-panel-lead">えほんの さいごの ページに ある<br>あいことばを いれてね</p>
           <input type="text" class="password-modal-input" id="passwordUnlockInput"
                  placeholder="あいことば" autocomplete="off" autocorrect="off"
                  spellcheck="false" inputmode="text" aria-describedby="pwHintSerial">
-          <p class="pw-hint" id="pwHintSerial">えほんの うらを みてね</p>
+          <p class="pw-hint" id="pwHintSerial">えほんの さいごの ページを みてね</p>
           <button class="password-modal-submit" id="passwordUnlockSubmit" type="button">ひらく！</button>
         </section>
 
@@ -10291,7 +10291,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2056; // sw.js CACHE_VERSION と同期 (profile wallet nav-height fit)
+    const PAGE_CACHE_VERSION = 2057; // sw.js CACHE_VERSION と同期 (bento tutorial + tier copy)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script

@@ -626,7 +626,7 @@
     }
     return {
       tag: opts.tag || opts.freeTag || 'えほんがあると もっと ひろがるよ',
-      title: opts.title || opts.freeTitle || 'えほんの あいことばで つづきも あそべるよ',
+      title: Object.prototype.hasOwnProperty.call(opts, 'title') ? opts.title : (opts.freeTitle || ''),
       body: opts.body || opts.freeBody || body
     };
   }
@@ -732,10 +732,13 @@
     tag.textContent = opts.tag || defaultCopy.tag;
     box.appendChild(tag);
 
-    var title = document.createElement('div');
-    title.style.cssText = 'font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:10px;line-height:1.4';
-    title.textContent = opts.title || defaultCopy.title;
-    box.appendChild(title);
+    var resolvedTitle = Object.prototype.hasOwnProperty.call(opts, 'title') ? opts.title : defaultCopy.title;
+    if (resolvedTitle) {
+      var title = document.createElement('div');
+      title.style.cssText = 'font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:10px;line-height:1.4';
+      title.textContent = resolvedTitle;
+      box.appendChild(title);
+    }
 
     var body = document.createElement('div');
     body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#5D4E37;line-height:1.6;margin-bottom:16px';
