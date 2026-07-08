@@ -1,6 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
 
+// v1257: Bento チュートリアルのはっぱ手順で、食材/カップの半透明見本残り・吹き出しのタップ阻害・
+//   leaf タブ状態ずれを修正。book/free 案内モーダルの重複タイトルを省き、
+//   合言葉の場所を「えほんの さいごの ページ」表記へ統一。play.html PAGE_CACHE_VERSION と同期。
 // v1256: LP staging にシール帳/展示室 runtime とシール画像一式を同期し、
 //   play.html のプロフィール＆どんぐり土台を右下3ボタンと同じ高さへ再調整。
 // v1255: Maze modal sizing polish synced from app staging: acorn close/amount alignment, janken choice-hand orientation, and truefalse short-screen fit.
@@ -42,7 +45,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1256; // v1256: sticker book assets + profile wallet fit.
+const CACHE_VERSION = 1257; // v1257: bento tutorial + tier copy sync.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
