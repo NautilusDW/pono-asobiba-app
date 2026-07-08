@@ -356,6 +356,23 @@ function showPuzzleTierLockPromo() {
   }
 }
 
+function shouldShowPuzzleBookLimitAfterClear() {
+  if (getPuzzleTier() !== 'free') return false;
+  if (getNextUnlockedStageIndexForFlow(currentStageIndex) >= 0) return false;
+  return !!(window.PonoTier
+    && typeof window.PonoTier.hasBookUpgradeContent === 'function'
+    && window.PonoTier.hasBookUpgradeContent('puzzle'));
+}
+
+function showPuzzleBookLimitPromoOnce() {
+  if (window.PonoTier && typeof window.PonoTier.showBookLimitPromoOnce === 'function') {
+    return window.PonoTier.showBookLimitPromoOnce('puzzle', {
+      delayMs: 700
+    });
+  }
+  return false;
+}
+
 function loadDrawingStages() {
   try {
     const drawings = JSON.parse(localStorage.getItem('pono_drawings')) || [];
@@ -1006,6 +1023,7 @@ function showSuccessModal() {
   const canAdvance = canAdvanceToNextStage();
   const hasLockedLater = hasLockedBuiltInStageAfter(currentStageIndex);
   const isLast = !canAdvance && !hasLockedLater;
+  const reachedBookLimit = shouldShowPuzzleBookLimitAfterClear();
   var __stickerKey = '__pono_puzzle_sticker_granted_' + currentStageIndex;
   if (!window[__stickerKey] && window.PonoGameStickers) {
     window[__stickerKey] = true;
@@ -1018,7 +1036,10 @@ function showSuccessModal() {
     modalStageInfo.textContent = 'ぜんぶ クリア！！';
     btnNextStage.classList.add('hidden');
   } else {
-    modalStageInfo.textContent = `ステージ ${displayMeta.num} クリア！`;
+    modalStageInfo.textContent = reachedBookLimit
+      ? 'ここまで クリア！'
+      : `ステージ ${displayMeta.num} クリア！`;
+    btnNextStage.textContent = reachedBookLimit ? 'もっと あそぶには' : 'つぎへ →';
     btnNextStage.classList.remove('hidden');
   }
   if (modalChallengeInfo) {
@@ -1050,6 +1071,7 @@ function showSuccessModal() {
   function revealModal() {
     successModal.classList.remove('hidden');
     if (!isLast && canAdvanceToNextStage()) nextNudge.start();
+    if (reachedBookLimit) showPuzzleBookLimitPromoOnce();
   }
 
   // ★ 全ステージクリア時は宝箱演出を先に表示、閉じたら成功モーダル

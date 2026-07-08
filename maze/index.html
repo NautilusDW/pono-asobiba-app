@@ -4535,10 +4535,13 @@ function imgShowRescueScene(stage, onDone) {
     ponoSpeechEl.textContent = pc ? ('ポノ:「' + pc + '」') : '';
   }
   // 最終ステージ判定 + どんぐり / ボタン文言を切替
-  const isLast = stageIdx >= STAGES.length - 1;
+  const isLast = _isMazeFinalForCurrentFlow();
+  const reachedFreeLimit = isLast && _mazeReachedBookLimitForFree();
   if (acornEl) {
     acornEl.textContent = isLast
-      ? ('やったね！\nまいごの どうぶつたちを ぜんぶ たすけたよ！' + _dailyAcornTail('maze'))
+      ? (reachedFreeLimit
+        ? ('やったね！\nここまで クリアしたよ！' + _dailyAcornTail('maze'))
+        : ('やったね！\nまいごの どうぶつたちを ぜんぶ たすけたよ！' + _dailyAcornTail('maze')))
       : ('やったね！つぎの もりへ いこう！' + _dailyAcornTail('maze'));
   }
   btnEl.textContent = isLast ? 'もういちど あそぶ' : 'つぎへ ▶';
@@ -11916,6 +11919,27 @@ function _showMazeTierLockPromo() {
   }
 }
 
+function _mazeReachedBookLimitForFree() {
+  if (!window.PonoTier || typeof window.PonoTier.getTier !== 'function') return false;
+  try {
+    if (window.PonoTier.getTier() !== 'free') return false;
+    if (_findNextUnlockedMazeStageIndex(stageIdx) >= 0) return false;
+    return typeof window.PonoTier.hasBookUpgradeContent === 'function'
+      && window.PonoTier.hasBookUpgradeContent('maze');
+  } catch (e) {
+    return false;
+  }
+}
+
+function _showMazeBookLimitPromoOnce() {
+  if (window.PonoTier && typeof window.PonoTier.showBookLimitPromoOnce === 'function') {
+    return window.PonoTier.showBookLimitPromoOnce('maze', {
+      delayMs: 700
+    });
+  }
+  return false;
+}
+
 function _loadNextUnlockedMazeStageOrPromo() {
   var nextIdx = _findNextUnlockedMazeStageIndex(stageIdx);
   if (nextIdx >= 0) {
@@ -12247,12 +12271,16 @@ function _setOverlayAnimalIcon(story) {
 }
 
 function _showMazeFinalOverlay() {
+  const reachedFreeLimit = _mazeReachedBookLimitForFree();
   _setOverlayAnimalIcon(stage && stage.story);
-  ovTitle.textContent = 'ぜんぶ クリア！';
-  ovMsg.textContent = 'まいごの どうぶつたちを\nぜんぶ たすけたよ！\nすごいね ポノ！' + _dailyAcornTail('maze');
+  ovTitle.textContent = reachedFreeLimit ? 'ここまで クリア！' : 'ぜんぶ クリア！';
+  ovMsg.textContent = reachedFreeLimit
+    ? ('ここまで クリアしたよ！\nすごいね ポノ！' + _dailyAcornTail('maze'))
+    : ('まいごの どうぶつたちを\nぜんぶ たすけたよ！\nすごいね ポノ！' + _dailyAcornTail('maze'));
   ovBtn.textContent = 'もういちど あそぶ';
   ovBtn.onclick = function() { hideOverlay(); loadStage(0); };
   showOverlay();
+  if (reachedFreeLimit) _showMazeBookLimitPromoOnce();
 }
 
 // きょうの どんぐり: N/5 / 上限到達時は「おしまい」メッセージ
