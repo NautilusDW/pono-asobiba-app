@@ -1040,6 +1040,7 @@ body.image-stage-mode .game-wrap {
 }
 .encounter-modal.show { display: flex; }
 .encounter-modal .enc-card {
+  box-sizing: border-box;
   background: linear-gradient(180deg, #FFF8F0 0%, #FFEEDE 100%);
   border: 4px solid #6C8E3F;
   border-radius: 22px;
@@ -1065,6 +1066,12 @@ body.image-stage-mode .game-wrap {
   width: min(92vw, 720px);
   max-height: calc(100dvh - 24px);
   padding: 16px 20px 18px;
+  row-gap: 10px;
+}
+.encounter-modal .enc-card.is-oddone {
+  width: min(92vw, 720px);
+  max-height: calc(100dvh - 24px);
+  padding: 16px 18px 18px;
   row-gap: 10px;
 }
 .encounter-modal .enc-card.is-water {
@@ -1118,6 +1125,10 @@ body.image-stage-mode .game-wrap {
 }
 .encounter-modal .enc-card.is-truefalse .enc-left {
   display: none;
+}
+.encounter-modal .enc-card.is-oddone .enc-left {
+  max-height: none;
+  gap: 6px;
 }
 @keyframes encPop {
   0%   { transform: scale(0.6); opacity: 0; }
@@ -1237,6 +1248,22 @@ body.image-stage-mode .game-wrap {
 .encounter-modal .enc-card.is-truefalse .enc-btn.choice {
   min-height: 68px;
   padding: 6px 12px;
+}
+.encounter-modal .enc-card.is-oddone .enc-stage {
+  max-height: none;
+  overflow: visible;
+  gap: 8px;
+}
+.encounter-modal .enc-card.is-oddone .enc-result {
+  margin: 0;
+  line-height: 1.22;
+}
+.encounter-modal .enc-card.is-oddone .row {
+  width: min(100%, 540px) !important;
+  align-self: center;
+}
+.encounter-modal .enc-card.is-oddone .enc-btn.choice.has-img {
+  min-height: 76px;
 }
 /* Strict 2-col grid for choice rows — overrides inline flex/max-width set by JS */
 .enc-stage .row {
@@ -2751,6 +2778,64 @@ body.image-stage-mode .game-wrap {
     min-height: 52px;
     padding: 2px 10px;
     border-width: 3px;
+  }
+  .encounter-modal .enc-card.is-oddone {
+    width: min(92vw, 640px);
+    max-height: calc(100dvh - 18px);
+    padding: 8px 10px 10px;
+    border-width: 4px;
+    row-gap: 6px;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-left {
+    gap: 3px;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-creature {
+    font-size: clamp(3.5rem, 16dvh, 4.6rem);
+  }
+  .encounter-modal .enc-card.is-oddone .enc-creature img {
+    height: 1em !important;
+    max-width: 1.45em !important;
+    max-height: none !important;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-name {
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-dialog {
+    width: min(100%, 460px);
+    max-height: none;
+    padding: 6px 10px;
+    border-radius: 14px;
+    font-size: clamp(0.7rem, 2.3vw, 0.82rem);
+    line-height: 1.22;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-dialog::before,
+  .encounter-modal .enc-card.is-oddone .enc-dialog::after {
+    display: none;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-stage {
+    gap: 5px;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-result {
+    font-size: clamp(0.82rem, 2.8vw, 0.98rem);
+  }
+  .encounter-modal .enc-card.is-oddone .enc-result small {
+    font-size: 0.72em;
+  }
+  .encounter-modal .enc-card.is-oddone .row {
+    width: min(100%, 440px) !important;
+    gap: 6px !important;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-btn.choice.has-img {
+    min-height: 54px;
+    padding: 2px 7px;
+    border-width: 3px;
+    border-radius: 12px;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-choice-img {
+    width: min(11vw, 48px);
+    height: min(11vw, 48px);
+    max-height: 48px !important;
   }
   .encounter-modal .enc-card.is-water {
     width: calc(100vw - 16px);
@@ -5235,6 +5320,7 @@ function _setEncounterMode(mode) {
   if (!encCardEl) return;
   encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'water_bridge_complete' || mode === 'strength_push' || mode === 'web_sweep' || mode === 'donguri_bowl');
   encCardEl.classList.toggle('is-truefalse', mode === 'truefalse');
+  encCardEl.classList.toggle('is-oddone', mode === 'oddone');
   encCardEl.classList.toggle('is-strength', mode === 'strength_push');
   encCardEl.classList.toggle('is-water', mode === 'water_bridge' || mode === 'water_bridge_complete');
   encCardEl.classList.toggle('is-water-complete', mode === 'water_bridge_complete');
@@ -7258,7 +7344,7 @@ function _showTrueFalseChoices() {
 
 // ── なかまはずれ ──
 function _showOddOneOutChoices() {
-  _setEncounterMode(null);
+  _setEncounterMode('oddone');
   _preloadMazeVoices('oddone', ['start','correct','wrong']);
   const q = _pick(QUIZ_ODDONE);
   encStageEl.textContent = '';
