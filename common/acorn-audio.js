@@ -78,6 +78,13 @@
     return typeof gameId === 'string' && registry.has(gameId);
   }
 
+  function resolveSrc(src) {
+    if (!src || typeof src !== 'string') return src;
+    if (/^(?:https?:|data:|blob:|\/|\.\.?\/)/.test(src)) return src;
+    if (src.indexOf('assets/') === 0) return '/' + src;
+    return src;
+  }
+
   // play(gameId, opts?) -> Promise<HTMLAudioElement | null>
   // opts: { volume?: number, src?: string } — overrides for one-shot playback.
   // Always resolves; autoplay failures are caught silently (returns null).
@@ -100,7 +107,7 @@
     var audio;
     try {
       audio = new global.Audio();
-      audio.src = src;
+      audio.src = resolveSrc(src);
       audio.volume = volume;
       audio.preload = 'auto';
     } catch (e) {
