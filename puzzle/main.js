@@ -3467,12 +3467,17 @@ function resetPuzzlePracticeAndReplay() {
 
 function choosePartnerPracticeStageIndex() {
   for (var i = 0; i < STAGES.length; i++) {
+    if (!isStageUnlockedForCurrentFlow(i)) continue;
     var pc = STAGES[i] && (STAGES[i].pieceCount || (STAGES[i].rows * STAGES[i].cols));
     if (pc >= 10 && pc <= 12) return i;
   }
   for (var j = 0; j < STAGES.length; j++) {
+    if (!isStageUnlockedForCurrentFlow(j)) continue;
     var fallbackPc = STAGES[j] && (STAGES[j].pieceCount || (STAGES[j].rows * STAGES[j].cols));
     if (fallbackPc >= 9 && fallbackPc <= 12) return j;
+  }
+  for (var k = 0; k < STAGES.length; k++) {
+    if (isStageUnlockedForCurrentFlow(k)) return k;
   }
   return Math.max(0, Math.min(STAGES.length - 1, 7));
 }
@@ -6853,6 +6858,11 @@ function loadStage(index) {
   // batch:938 fix #1 — null-check backstop (catches sparse / undefined STAGES entries)
   if (!stage) {
     console.warn('[puzzle] loadStage: invalid index', index, '— skipping');
+    return;
+  }
+  if (!isStageUnlockedForCurrentFlow(index)) {
+    console.warn('[puzzle] loadStage: locked stage blocked', index);
+    showPuzzleTierLockPromo();
     return;
   }
   var currentPartnerForStage = getCurrentPartner();
