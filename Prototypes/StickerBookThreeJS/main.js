@@ -83,6 +83,7 @@ const STICKER_TRAY_HOLD_PICKUP_MS = 180;
 const STICKER_TRAY_EAGER_IMAGE_COUNT = 18;
 const STICKER_TRAY_LAZY_ROOT_MARGIN = "120px 520px";
 const STICKER_PLACEMENT_BASE_RATIO = 0.42;
+const STICKER_TUTORIAL_AUTO_ADVANCE_MS = 1650;
 const STICKER_ALPHA_TRIM_THRESHOLD = 12;
 const STICKER_ALPHA_TRIM_PAD_RATIO = 0.035;
 const STICKER_ALPHA_TRIM_MIN_PAD = 3;
@@ -1947,6 +1948,14 @@ const STICKER_TUTORIAL_STEPS = [
     advanceOn: ["exitEdit"],
   },
   {
+    id: "extras",
+    target: "topExtras",
+    card: "corner",
+    textDemo: "きせかえで ひょうしを かえたり\nミュージアムで シールを みられるよ",
+    hand: "point",
+    minAdvanceMs: 5000,
+  },
+  {
     id: "final",
     target: "book",
     card: "corner",
@@ -2433,6 +2442,8 @@ let selectedPlacementId = null;
 let stickerDragState = null;
 let inlineStickerDragState = null;
 let suppressInlineStickerClick = false;
+let inlineStickerRefreshPromise = null;
+let inlineStickerRefreshQueued = false;
 let stickerTrayTouchStartY = 0;
 let stickerTrayRevealHideTimer = 0;
 let stickerTutorialState = null;
@@ -3494,11 +3505,34 @@ function selectInlineSticker(target) {
 
 function refreshInlineStickerPage() {
   if (stickerEditor && !stickerEditor.hidden) {
-    return;
+    return Promise.resolve(false);
   }
-  refreshPageTemplateTextures();
-  updatePage(flipProgress);
-  updateInlineStickerControls(false);
+  if (inlineStickerRefreshPromise) {
+    inlineStickerRefreshQueued = true;
+    updateInlineStickerControls(false);
+    scheduleStickerTutorialLayout();
+    return inlineStickerRefreshPromise;
+  }
+  inlineStickerRefreshQueued = false;
+  inlineStickerRefreshPromise = Promise.resolve(refreshPageTemplateTextures())
+    .then((applied) => {
+      updatePage(flipProgress);
+      updateInlineStickerControls(false);
+      scheduleStickerTutorialLayout();
+      if (applied === false) {
+        inlineStickerRefreshQueued = true;
+      }
+      return applied;
+    })
+    .finally(() => {
+      inlineStickerRefreshPromise = null;
+      if (inlineStickerRefreshQueued) {
+        inlineStickerRefreshQueued = false;
+        return refreshInlineStickerPage();
+      }
+      return true;
+    });
+  return inlineStickerRefreshPromise;
 }
 
 function clearInlineStickerSelection() {
@@ -3931,6 +3965,7 @@ function setupStickerTutorial() {
     if (!step || !stickerTutorialState) {
       return;
     }
+    clearStickerTutorialAutoAdvanceTimer();
     stopStickerTutorialStepDemo();
     setStickerTutorialPhase("demo");
     stickerTutorialState.actionDone = false;
@@ -3964,16 +3999,8 @@ function setupStickerTutorial() {
     if (!stickerTutorialState) {
       return;
     }
-    const step = currentStickerTutorialStep();
-    if (stickerTutorialRemainingStepMs(step) > 80) {
-      updateStickerTutorialNextAvailability(step);
-      return;
-    }
-    if (step?.finish) {
-      finishStickerTutorial({ markSeen: true });
-      return;
-    }
-    showStickerTutorialStep(stickerTutorialState.index + 1);
+    clearStickerTutorialAutoAdvanceTimer();
+    advanceStickerTutorialStep();
   });
   document.addEventListener("keydown", (event) => {
     if (!stickerTutorialState) {
@@ -4029,6 +4056,7 @@ function startStickerTutorial(options = {}) {
     completeStartedAt: 0, // v1643: complete phase 開始時刻 (place min-hold gate 用)
     praiseShown: false,   // v1646: TRY 成功 → complete 時の褒め言葉差し替え多重発火防止
     coverFadeTimer: 0,    // v1675: is-await-cover-open 2000ms fail-safe timer id
+    autoAdvanceTimer: 0,  // v1916: TRY 成功後の「できたね」表示 → 自動で次へ
   };
   enterStickerTutorialCleanAlbum();
   stickerTutorial.hidden = false;
@@ -4042,6 +4070,7 @@ function finishStickerTutorial(options = {}) {
   }
   // v1637: try タイムアウト + skip ボタンを必ず片付ける (phase class も後段 classList.remove で除去)。
   clearStickerTutorialTryTimeout();
+  clearStickerTutorialAutoAdvanceTimer();
   // v1675 (task 1, fail-safe leak prevention): 2000ms cover-fade fail-safe timer もここで必ずクリア。
   if (stickerTutorialState?.coverFadeTimer) {
     clearTimeout(stickerTutorialState.coverFadeTimer);
@@ -4189,10 +4218,62 @@ function currentStickerTutorialStep() {
   return STICKER_TUTORIAL_STEPS[stickerTutorialState.index] || null;
 }
 
+function clearStickerTutorialAutoAdvanceTimer() {
+  if (stickerTutorialState?.autoAdvanceTimer) {
+    window.clearTimeout(stickerTutorialState.autoAdvanceTimer);
+    stickerTutorialState.autoAdvanceTimer = 0;
+  }
+}
+
+function advanceStickerTutorialStep() {
+  const step = currentStickerTutorialStep();
+  if (!stickerTutorialState || !step) {
+    return false;
+  }
+  if (stickerTutorialRemainingStepMs(step) > 80) {
+    updateStickerTutorialNextAvailability(step);
+    return false;
+  }
+  if (step?.finish) {
+    finishStickerTutorial({ markSeen: true });
+    return true;
+  }
+  showStickerTutorialStep(stickerTutorialState.index + 1);
+  return true;
+}
+
+function scheduleStickerTutorialAutoAdvance(step) {
+  if (!stickerTutorialState || !step || step.finish) {
+    return;
+  }
+  clearStickerTutorialAutoAdvanceTimer();
+  const completeStartedAt = stickerTutorialState.completeStartedAt || performance.now();
+  const placeHoldRemaining = step.id === "place"
+    ? Math.max(0, 1500 - (performance.now() - completeStartedAt))
+    : 0;
+  const delay = Math.max(
+    STICKER_TUTORIAL_AUTO_ADVANCE_MS,
+    stickerTutorialRemainingStepMs(step) + 80,
+    placeHoldRemaining + 80,
+  );
+  stickerTutorialState.autoAdvanceTimer = window.setTimeout(() => {
+    if (
+      stickerTutorialState
+      && currentStickerTutorialStep() === step
+      && stickerTutorialState.phase === "complete"
+      && stickerTutorialState.actionDone
+    ) {
+      stickerTutorialState.autoAdvanceTimer = 0;
+      advanceStickerTutorialStep();
+    }
+  }, delay);
+}
+
 function showStickerTutorialStep(index, options = {}) {
   if (!stickerTutorialState) {
     return;
   }
+  clearStickerTutorialAutoAdvanceTimer();
   stopStickerTutorialStepDemo();
   updateStickerTutorialTraySilhouettes(true, false);
   updateRaritySuperSilhouettes(true, stickerTutorialPickSticker()?.id);
@@ -4434,6 +4515,12 @@ function startStickerTutorialStepDemo(step) {
   if (step.id === "view") {
     startStickerTutorialViewDemo();
   }
+  if (!step.textTry) {
+    const passiveDelay = Math.max(900, Number(step.minAdvanceMs) || 1600);
+    addStickerTutorialDemoTimer(() => {
+      finishStickerTutorialDemoToTry(step);
+    }, passiveDelay);
+  }
 }
 
 function startStickerTutorialModeDemo() {
@@ -4487,6 +4574,10 @@ function finishStickerTutorialDemoToTry(expectedStep = null) {
   }
   if (step.finish || !step.textTry) {
     setStickerTutorialPhase("complete");
+    updateStickerTutorialNextAvailability(step, { forceReady: true });
+    if (stickerTutorialNext) {
+      stickerTutorialNext.classList.add("is-ready-pulse");
+    }
     return;
   }
   setStickerTutorialPhase("try");
@@ -4997,13 +5088,14 @@ function notifyStickerTutorialAction(action) {
   }
   const actions = Array.isArray(step.advanceOn) ? step.advanceOn : [];
   if (actions.includes(action)) {
-    // 正解 — try フェーズ完了 → complete + 「つぎ」 pulse。 自動 advance はしない (子供主導)。
+    // 正解 — try フェーズ完了 → 褒め一言を見せてから自動で次へ。ボタンは保険として残す。
     stickerTutorialState.actionDone = true;
     setStickerTutorialPhase("complete");
     updateStickerTutorialNextAvailability(step, { forceReady: true });
     if (stickerTutorialNext) {
       stickerTutorialNext.classList.add("is-ready-pulse");
     }
+    scheduleStickerTutorialAutoAdvance(step);
     return;
   }
   // v1637: 操作型化に伴う「明らかな誤操作」 カウンタ。 3 回到達で「とばす」 ボタン表示。
@@ -5817,16 +5909,21 @@ function stickerTutorialDemoPoints(step, rect) {
     return { ...base, hand: point, from: point, to: point };
   }
   if (step.id === "ok") {
-    // v1628: OK step は from=rest (ボタン右隣)、 to=center (ボタン中央 = 押下接触点) に分離。
+    // v1628: OK step は from=rest (ボタン右隣)、 to=press (指先が OK 中央へ乗る接触点) に分離。
     // stickerTutorialOkPressDemo keyframe が from↔to を動的に往復し「指で押している」 を表現。
-    // v1630: press.y を rect center → 上 1/3 に補正 (rect は padding=12 で上下に膨張しているため
-    // center.y は実 button の中心より低く出る。 keyframe 52% の translate(-50%, -28%) と合わさり
-    // 指が button 下にめり込んでいた → press.y を rect.top + h*0.30 に上げて着地点を実 button 中央へ)。
+    // v1916: hand_point_left は画像中心ではなく左端の指先が接地点。iPad で中心指定だと
+    // 指先がボタン左に外れるため、画像サイズから press 変数を右上へ補正して指先を OK 中央へ合わせる。
     const rest = {
       x: Math.min(window.innerWidth - 44, rectRight(rect) + Math.min(52, Math.max(38, rect.width * 0.22))),
       y: center.y,
     };
-    const press = { x: center.x, y: rect.top + rect.height * 0.30 };
+    const handRect = stickerTutorialHand?.getBoundingClientRect?.();
+    const handW = handRect?.width || Math.min(104, Math.max(68, window.innerWidth * 0.076));
+    const handH = handRect?.height || handW * (200 / 300);
+    const press = {
+      x: center.x + handW * 0.45,
+      y: center.y - handH * 0.12,
+    };
     return { ...base, hand: rest, from: rest, to: press };
   }
   if (step.id === "place") {
@@ -6348,6 +6445,15 @@ function stickerTutorialTargetRect(step) {
   };
   if (step.target === "editButton") {
     return expandedElementRect(topEditButton, 8, "16px") || fallback;
+  }
+  if (step.target === "topExtras") {
+    const rects = [topThemeButton, stickerExhibitionButton]
+      .map((element) => (!element || element.hidden ? null : element.getBoundingClientRect()))
+      .filter((rect) => rect && rect.width && rect.height);
+    if (rects.length) {
+      return combineClientRects(rects, 10, "20px");
+    }
+    return expandedElementRect(topThemeButton, 8, "16px") || fallback;
   }
   if (step.target === "trayItems") {
     // v1643 (task 5): place 完了直後は spotlight を 「貼ったシール」 に再アンカー。
@@ -7531,12 +7637,10 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
   // 失敗時は無視して既存挙動 (after-the-fact 描画) にフォールバック。
   const image = await loadStickerImage(placement.assetUrl).catch(() => null);
   const finalizePlacement = () => {
-    // v1905: refreshPageTemplateTextures は Promise を返すようになった。 peel の
-    // finishStickerPeelAnimation が baked texture swap 完了を await → fade → remove する
-    // ため、 呼出側 (finishStickerPeelAnimation) が chain できるように promise を返却する。
-    const swapPromise = refreshPageTemplateTextures();
-    updatePage(flipProgress);
     updateInlineStickerControls();
+    // v1905/v1916: refresh は Promise を返す。inline 側の連続 refresh キューを経由して、
+    // 貼付直後の焼き込みが move/scale demo の refresh で stale 化し、peel 消去後に消える事故を防ぐ。
+    const swapPromise = refreshInlineStickerPage();
     notifyStickerTutorialAction("dropSticker");
     return swapPromise;
   };
