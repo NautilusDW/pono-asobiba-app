@@ -909,7 +909,9 @@
 //   console.warn 追加 (mojicrane は precache 対象外だが runtime 更新分のキャッシュ破棄のためバンプ)。
 // v2042: quizland の質問→4択自動ナレーションを追加。
 // v2041: common/sw-update.js の更新トースト撤去。更新待ちは passive に戻す。
-const CACHE_VERSION = 2042;
+// v2043: play.html のプロフィール＆どんぐり土台を GPT Image 2 生成フレームへ差し替え、
+//   タイトルメニューをMVP 5本だけに戻す。
+const CACHE_VERSION = 2043;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -1127,6 +1129,7 @@ const CRITICAL_ASSETS_IMAGES = [
   '/assets/ui/bottom-nav/nav_group_3_joined_pressed_feedback_20260706.webp',
   '/assets/ui/bottom-nav/nav_group_3_joined_pressed_news_20260706.webp',
   '/assets/ui/bottom-nav/nav_group_3_joined_pressed_settings_20260706.webp',
+  '/assets/ui/bottom-nav/profile_wallet_frame_normal_20260708.webp',
   // v1979: GPT Image 2 生成の全身アバター用パーツマスク。プロフィールボタンが初期表示に入るため先読み対象。
   '/assets/images/avatars/parts/avatar_part_head_20260705.png',
   '/assets/images/avatars/parts/avatar_part_hair_short_20260705.png',
