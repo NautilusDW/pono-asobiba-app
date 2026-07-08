@@ -916,6 +916,15 @@ body.is-sticker-tutorial-active .sticker-exhibition-button {
   display: none;
 }
 
+body.is-sticker-tutorial-active.is-sticker-tutorial-step-extras .sticker-exhibition-button {
+  display: flex;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-step-extras #topThemeButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-step-extras #stickerExhibitionButton {
+  pointer-events: none !important;
+}
+
 .album-mode-toggle .top-button-label {
   transform: translateY(-2px) scaleX(0.96);
 }
@@ -4450,6 +4459,7 @@ body.is-sticker-tutorial-phase-complete .sticker-tutorial-spotlight {
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #scene,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topEditButton,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topThemeButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #stickerExhibitionButton,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #collectionStickerTrayItems,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerScale,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerRotation,
@@ -4466,6 +4476,7 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #albumModeToggle 
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #scene,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topEditButton,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topThemeButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #stickerExhibitionButton,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #collectionStickerTrayItems,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerScale,
 body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerRotation,
