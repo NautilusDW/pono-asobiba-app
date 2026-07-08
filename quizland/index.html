@@ -11,7 +11,7 @@
 <script src="../common/achievements.js"></script>
 <script src="../common/first-clear.js"></script>
 <script src="../common/menu.js"></script>
-<script src="../common/tier.js"></script>
+<script src="../common/tier.js?v=quiz-mixed-20260708"></script>
 <script src="../common/narration.js"></script>
 <script src="../js/quizland-babble.js"></script>
 <script src="../js/animation-player.js"></script>
@@ -3611,6 +3611,8 @@ const DIFF_LEVELS = ['easy', 'normal', 'hard'];
 const DIFF_MIN_LEVEL = { easy: 1, normal: 2, hard: 3 };
 const DIFF_MAX_LEVEL = { easy: 1, normal: 2, hard: 3 };
 const DIFF_STORAGE_KEY = 'pono_quizland_difficulty';
+const RECOMMENDED_PLAYLIST_LEVEL_ORDER = [1, 1, 2, 2, 3];
+const RECOMMENDED_PLAYLIST_HISTORY_KEY = 'pono_quizland_recommended_seen_v1';
 let selectedDifficulty = 'easy'; // 'easy'|'normal'|'hard'
 try {
   const _saved = localStorage.getItem(DIFF_STORAGE_KEY);
@@ -3618,6 +3620,24 @@ try {
 } catch (e) { /* localStorage 不可なら デフォルト 'easy' */ }
 function selectAllQuizlandCategories() {
   ALL_CATS.forEach(function(c) { selectedCategories[c] = true; });
+}
+
+function isQuizlandSubTierLocal() {
+  try {
+    if (window.PonoTier && typeof window.PonoTier.isSub === 'function') {
+      return !!window.PonoTier.isSub();
+    }
+  } catch (_) {}
+  return !!window.__APP_BUILD__;
+}
+
+function shouldUseQuizlandRecommendedFlow() {
+  return !isQuizlandSubTierLocal();
+}
+
+function updateRecommendedFlowUI() {
+  var changeBtn = document.getElementById('result-cat-btn');
+  if (changeBtn) changeBtn.hidden = shouldUseQuizlandRecommendedFlow();
 }
 
 // ─── 難易度ロック判定 (free/book/sub × Lv) ───
@@ -4590,7 +4610,96 @@ function shuffle(arr) {
   return a;
 }
 
+function getQuizlandQuestionId(cat, idx) {
+  return cat + '|' + idx;
+}
+
+function buildUnlockedQuizlandPool() {
+  selectAllQuizlandCategories();
+  const cats = ALL_CATS.filter(c => selectedCategories[c]);
+  if (cats.length === 0) return [];
+  const list = [];
+  cats.forEach(cat => {
+    const pool = (QUIZLAND_QUESTIONS[cat] || []).map((q, idx) => {
+      const qid = getQuizlandQuestionId(cat, idx);
+      return Object.assign({ _cat: cat, _idx: idx, _qid: qid }, q);
+    }).filter(q => !window.PonoTier || window.PonoTier.isQuizlandQuestionUnlocked(q._qid, cat, q.level));
+    list.push(...pool);
+  });
+  return list;
+}
+
+function loadRecommendedPlaylistHistory(pool) {
+  const validIds = new Set(pool.map(q => q._qid));
+  let raw = [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(RECOMMENDED_PLAYLIST_HISTORY_KEY) || '[]');
+    if (Array.isArray(parsed)) raw = parsed;
+  } catch (_) {}
+  const seen = new Set(raw.filter(id => validIds.has(id)));
+  if (seen.size >= validIds.size) seen.clear();
+  return seen;
+}
+
+function saveRecommendedPlaylistHistory(seen, pool) {
+  const validIds = new Set(pool.map(q => q._qid));
+  const ids = Array.from(seen).filter(id => validIds.has(id));
+  try { localStorage.setItem(RECOMMENDED_PLAYLIST_HISTORY_KEY, JSON.stringify(ids)); } catch (_) {}
+}
+
+function pickRecommendedCandidate(candidates, seenSet, usedCats) {
+  const groups = [
+    candidates.filter(q => !seenSet.has(q._qid) && !usedCats.has(q._cat)),
+    candidates.filter(q => !seenSet.has(q._qid)),
+    candidates.filter(q => !usedCats.has(q._cat)),
+    candidates
+  ];
+  for (let i = 0; i < groups.length; i++) {
+    if (groups[i].length > 0) return shuffle(groups[i])[0];
+  }
+  return null;
+}
+
+function pickRecommendedByLevel(pool, level, seenSet, selectedIds, usedCats) {
+  const levelPool = pool.filter(q => q.level === level && !selectedIds.has(q._qid));
+  let picked = pickRecommendedCandidate(levelPool, seenSet, usedCats);
+  if (!picked) {
+    const fallbackPool = pool.filter(q => !selectedIds.has(q._qid));
+    picked = pickRecommendedCandidate(fallbackPool, seenSet, usedCats);
+  }
+  return picked;
+}
+
+function buildRecommendedPlaylist() {
+  const pool = buildUnlockedQuizlandPool();
+  if (pool.length === 0) return [];
+  const seenSet = loadRecommendedPlaylistHistory(pool);
+  const selected = [];
+  const selectedIds = new Set();
+  const usedCats = new Set();
+  RECOMMENDED_PLAYLIST_LEVEL_ORDER.forEach(level => {
+    const picked = pickRecommendedByLevel(pool, level, seenSet, selectedIds, usedCats);
+    if (!picked) return;
+    selected.push(picked);
+    selectedIds.add(picked._qid);
+    usedCats.add(picked._cat);
+  });
+  while (selected.length < DEFAULT_TOTAL_Q) {
+    const picked = pickRecommendedByLevel(pool, 0, seenSet, selectedIds, usedCats);
+    if (!picked) break;
+    selected.push(picked);
+    selectedIds.add(picked._qid);
+    usedCats.add(picked._cat);
+  }
+  selected.forEach(q => seenSet.add(q._qid));
+  saveRecommendedPlaylistHistory(seenSet, pool);
+  return selected.slice(0, DEFAULT_TOTAL_Q);
+}
+
 function buildPlaylist() {
+  if (shouldUseQuizlandRecommendedFlow()) {
+    return buildRecommendedPlaylist();
+  }
   selectAllQuizlandCategories();
   const cats = ALL_CATS.filter(c => selectedCategories[c]);
   if (cats.length === 0) return [];
@@ -6357,6 +6466,7 @@ function showResult() {
 // Init
 // ═══════════════════════════════════════════════════════════
 function initGame() {
+  updateRecommendedFlowUI();
   if (QZ_DEBUG_ALL) {
     // デバッグ全問プレイ: シャッフル無し / 全問固定順 / 全問完走で result 画面へ
     playlist = buildDebugPlaylist();
@@ -6388,7 +6498,11 @@ function initGame() {
         window.PonoTier.showSubscribePromo();
       }
     }
-    document.getElementById('mode-screen').classList.remove('hidden');
+    if (shouldUseQuizlandRecommendedFlow()) {
+      document.getElementById('start-screen').classList.remove('hidden');
+    } else {
+      document.getElementById('mode-screen').classList.remove('hidden');
+    }
     return;
   }
   loadQuestion(playlist[0]);
@@ -8014,8 +8128,27 @@ document.getElementById('start-screen').addEventListener('click', function() {
   } catch (e) {}
   startBGM();
   document.getElementById('start-screen').classList.add('hidden');
+  updateRecommendedFlowUI();
+  if (shouldUseQuizlandRecommendedFlow()) {
+    startQuizlandRecommendedRound();
+    return;
+  }
   document.getElementById('mode-screen').classList.remove('hidden');
 });
+
+async function startQuizlandRecommendedRound() {
+  selectAllQuizlandCategories();
+  updateRecommendedFlowUI();
+  try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
+  try { await playQuizStartCard();   } catch (e) { console.warn('quiz start card error', e); }
+  initGame();
+  if (typeof initMenu === 'function') {
+    initMenu({
+      bgmToggle: function() { toggleBGM(); },
+      tutorial: function() { alert('フクロウ博士の なぞなぞに こたえよう！'); }
+    });
+  }
+}
 
 // 難易度ボタンタップ = 全カテゴリ混合でゲーム開始。
 // 6 パネルのオープニング・シネマティックを再生してから initGame() を呼ぶ。
@@ -8074,6 +8207,7 @@ if (!isQuizlandDifficultyUnlockedLocal(selectedDifficulty)) {
 }
 refreshDiffActive();
 applyDiffTierLockUI();
+updateRecommendedFlowUI();
 
 // 共通: layout-editor 中は game progression handler を全部無効化
 //   (要素を掴んで動かしたいのに、ボタンが反応してモード/結果画面が開いてしまうのを防ぐ)
@@ -8097,6 +8231,10 @@ document.getElementById('result-btn').addEventListener('click', function(e) {
 // Result "change difficulty" → 難易度選択画面へ
 document.getElementById('result-cat-btn').addEventListener('click', function(e) {
   if (_isEditMode()) { e.preventDefault(); e.stopPropagation(); return; }
+  if (shouldUseQuizlandRecommendedFlow()) {
+    initGame();
+    return;
+  }
   const _rov2 = document.getElementById('result-overlay');
   _rov2.classList.add('hidden');
   _rov2.classList.remove('is-perfect', 'is-animated');

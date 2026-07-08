@@ -99,17 +99,21 @@
   ];
 
   // ---- quizland ----
+  // v3 (2026-07-08): free = book。1回5問を Lv1 2問 / Lv2 2問 / Lv3 1問で
+  // 組むため、固定26問プールも Lv1=10 / Lv2=10 / Lv3=6 に寄せる。
   var FREE_QUIZLAND_QUESTION_IDS = [
-    'order_color|0','order_color|1','order_color|2',
-    'count_total|0','count_total|1','count_total|2',
-    'shape_name|0','shape_name|1','shape_name|2',
-    'number_sequence|0','number_sequence|1','number_sequence|2',
-    'weather|0','weather|1','weather|2',
-    'opposite|0','opposite|1','opposite|2',
-    'body|0','body|1','body|2',
-    'trivia|0','trivia|1','trivia|2','trivia|3','trivia|4'
-  ]; // Phase 2: 各カテゴリ Lv1 から3問 + trivia 5問 = 26問
-  var BOOK_QUIZLAND_MAX_LEVEL = 2; // book はカテゴリを混ぜて Lv2 まで、sub は Lv3 まで
+    // Lv1: 10問
+    'order_color|0','count_total|0','shape_name|0','weather|0',
+    'opposite|0','trivia|0','body|0','number_sequence|0',
+    'count_total|1','trivia|1',
+    // Lv2: 10問
+    'order_color|8','count_total|8','shape_name|7','weather|8',
+    'opposite|8','trivia|9','body|8','number_sequence|6',
+    'count_total|9','trivia|10',
+    // Lv3: 6問
+    'order_color|16','count_total|16','shape_name|15','weather|16',
+    'opposite|16','number_sequence|10'
+  ]; // Lv1=10 / Lv2=10 / Lv3=6、計26問
 
   // ---- maze ----
   var FREE_MAZE_MAX_STAGE = 3;
@@ -185,22 +189,16 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') {
-      return (level || 1) <= BOOK_QUIZLAND_MAX_LEVEL;
-    }
-    // free: 固定リスト (Phase 2 で qid 埋める)。
+    // v3: free = book。固定26問リストに含まれる qid のみ解放する。
     // 空配列の間はフェイルセーフで true (= 全開放) を返し、 セーフフラグを ON にした瞬間に
     // free ユーザーの全クイズが false 判定で完全ロックされる事故を防ぐ。
-    // Phase 2 で FREE_QUIZLAND_QUESTION_IDS に 26問の qid を埋めた時点で自動的に
-    // 通常の indexOf 判定に切り替わる。
     if (FREE_QUIZLAND_QUESTION_IDS.length === 0) return true;
     return FREE_QUIZLAND_QUESTION_IDS.indexOf(qid) >= 0;
   }
 
   // ---- quizland 難易度ロック ----
   // 難易度 (easy=Lv1 / normal=Lv2 / hard=Lv3) を tier だけで判定する。
-  //   free: easy のみ (Lv1)
-  //   book: easy / normal (Lv1/2)
+  //   free / book: おすすめ5問へ直接入るため通常は表示しない。保険として easy のみ。
   //   sub: 全開放
   // DIFF_MIN_LEVEL は呼び出し側 (quizland) と整合: easy=1, normal=2, hard=3。
   function isQuizlandDifficultyUnlocked(diff, mode) {
@@ -209,8 +207,7 @@
     var lv = lvMap[diff] || 1;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'free') return lv === 1;
-    return lv <= BOOK_QUIZLAND_MAX_LEVEL;
+    return lv === 1;
   }
 
   function isMazeStageUnlocked(stageNum) {
