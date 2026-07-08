@@ -5173,43 +5173,6 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* ===== v3: 3ゾーン UI 見出し疑似カード (feature_tier_v3 §7) =====
-       .game-card の width:100%/aspect-ratio シェルを共有して無限ループカルーセル
-       の uniform card height 前提を崩さない。 パネル画像 (--card-panel) は
-       未設定のままにし (var(--card-panel, none) → none)、 代わりに単色の
-       やわらかいグラデーションで「見出し帯」に見せる。 */
-    .game-card.game-card--zone-header {
-      cursor: default;
-      pointer-events: none;
-      background-image: none;
-      background: linear-gradient(135deg, rgba(255, 216, 77, 0.22), rgba(96, 165, 250, 0.16));
-      border: 2px dashed rgba(93, 78, 55, 0.28);
-      border-radius: var(--gc-radius, 18px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .game-card.game-card--zone-header::before { content: none; box-shadow: none; }
-    .zone-header__inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      padding: 0 8px;
-    }
-    .zone-header__label {
-      font-size: 1.02rem;
-      font-weight: 900;
-      color: var(--primary);
-      letter-spacing: 0.02em;
-    }
-    .zone-header__sub {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: var(--text);
-      opacity: 0.75;
-    }
-
     /* ===== Password Unlock Modal: 2 tabs (serial / quiz) =====
        既存 #passwordUnlockModal を 2 経路 (あいことば / 絵本クイズ) に拡張するための追加スタイル。
        (v1996: Amazon 注文番号タブは撤去)
@@ -8426,7 +8389,7 @@
       position: absolute;
       left: 12%;
       right: 10%;
-      bottom: 13%;
+      bottom: 19%;
       display: block;
       color: #4f2d0c;
       font-size: 11px;
@@ -8445,7 +8408,7 @@
     .profile-wallet__acorns {
       position: absolute;
       left: 51.5%;
-      top: 41%;
+      top: 43%;
       width: 43%;
       height: 28%;
       min-width: 0;
@@ -8469,12 +8432,12 @@
     }
     .profile-wallet__acorns .acorn-balance-badge__icon {
       display: inline-block;
-      width: 29px;
+      width: 25px;
       aspect-ratio: 85 / 103;
       flex: 0 0 auto;
       background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
       filter: drop-shadow(0 2px 2px rgba(40, 24, 8, .22));
-      transform: translateY(-1px);
+      transform: translateY(0);
     }
     .profile-wallet__acorns .acorn-balance-badge__count {
       min-width: 1.65em;
@@ -8949,7 +8912,7 @@
       .profile-wallet__acorns {
         font-size: 23px;
       }
-      .profile-wallet__acorns .acorn-balance-badge__icon { width: 25px; }
+      .profile-wallet__acorns .acorn-balance-badge__icon { width: 21px; }
       .bn-item { border-radius: 14px; }
       .bn-item__icon { width: 38px; height: 32px; font-size: 21px; }
       .bn-item__icon--avatar { width: 40px; height: 34px; }
@@ -10135,18 +10098,6 @@
     }
     GAMES.forEach((game) => { game.zone = computeGameZone(game); });
 
-    const ZONE_ORDER = ['playable', 'app_only', 'coming_soon'];
-    const ZONE_LABELS = {
-      playable: 'いま あそべる',
-      app_only: 'アプリで あそべる',
-      coming_soon: 'じゅんびちゅう'
-    };
-    const ZONE_SUBLABELS = {
-      playable: 'えほんを かってくれた ひとも みんな あそべるよ',
-      app_only: 'アプリだけの とくべつな あそびだよ',
-      coming_soon: 'いま つくっているよ。 もうすこし まっててね'
-    };
-
     // v2043: 本を購入した人向けMVPが完成するまでは、タイトルメニューは
     // MVP 5本だけに戻す。app_only / coming_soon の定義は将来戻しやすいよう残すが、
     // MENU_GAMES へは入れない。
@@ -10158,26 +10109,8 @@
       .map((id) => GAMES.find((game) => game.id === id))
       .filter(Boolean);
 
-    // ゾーンの先頭には非インタラクティブな見出し疑似カード (isZoneHeader) を
-    // 挿入し、 既存の無限ループカルーセル (LOOP_COPIES 等) にそのまま乗せる。
-    // v2043 では TITLE_MENU_IDS が MVP 5本だけなので、結果的に playable 見出しのみ表示される。
-    function buildMenuGamesWithZoneHeaders(games) {
-      const out = [];
-      ZONE_ORDER.forEach((zone) => {
-        const members = games.filter((g) => g.zone === zone);
-        if (!members.length) return;
-        out.push({
-          id: '__zone_header_' + zone,
-          isZoneHeader: true,
-          zone,
-          title: ZONE_LABELS[zone] || '',
-          subtitle: ZONE_SUBLABELS[zone] || ''
-        });
-        members.forEach((g) => out.push(g));
-      });
-      return out;
-    }
-    const MENU_GAMES = buildMenuGamesWithZoneHeaders(__rawMenuGames);
+    // v2046: MVP 5本だけの表示なので、ゾーン見出しカードは出さずゲームカードだけを並べる。
+    const MENU_GAMES = __rawMenuGames;
 
     let currentIdx = 0;
     let activeBgEl = 'A';
@@ -10308,7 +10241,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2044; // sw.js CACHE_VERSION と同期 (wider profile wallet frame)
+    const PAGE_CACHE_VERSION = 2046; // sw.js CACHE_VERSION と同期 (remove title zone header + wallet overlay fit)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10317,7 +10250,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2044';
+    window.PONO_SW_VERSION = 'v2046';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -10327,33 +10260,12 @@
     // 5 枚だけ eager+sync+high。 残りは lazy+async+low で同フレーム同時 request
     // を激減させる (旧: 21 枚 × 3 img = 63 img、 panel/play は loadingAttr=
     // 'eager' (rep<=1) で 14 並列発射 → 上下バラバラ paint の直接原因)。
-    // v3: 先頭に「いま あそべる」ゾーン見出し疑似カードが 1 枚挿入されたため、
-    // 実カード 5 枚 (quizland/maze/oto/bento/puzzle) を eager 対象に収めるには
-    // +1 が必要 (見出し自体は img を持たないので実質コストは変わらない)。
-    const PRIORITY_EAGER_COUNT = 6;
+    const PRIORITY_EAGER_COUNT = 5;
     const PRIORITY_REP = 1;          // 初期 scrollTop = oneSetH() の copy
     const PLAY_BTN_NORMAL_URL  = __bust('assets/ui/play_button_normal.webp');
     const PLAY_BTN_PRESSED_URL = __bust('assets/ui/play_button_pressed.webp');
 
-    // v3: ゾーン見出し疑似カード。 通常カードと同じ .game-card シェル
-    // (width:100% + aspect-ratio 継承) に乗せることで、 既存の無限ループ
-    // カルーセル (uniform card height 前提の scroll 物理演算) を一切
-    // 変更せずにそのまま組み込める。 <div> (非 button) なのでキーボード
-    // Tab 順にも入らず、 onCardClick 側も data-id 無し + selectGame/startGame
-    // 側の isZoneHeader ガードで安全に無害化される。
-    function zoneHeaderMarkup(g, i, rep) {
-      return `
-        <div class="game-card game-card--zone-header" data-idx="${i}" data-rep="${rep}" data-zone="${esc(g.zone)}" role="presentation" aria-hidden="true">
-          <div class="zone-header__inner">
-            <span class="zone-header__label">${esc(g.title)}</span>
-            <span class="zone-header__sub">${esc(g.subtitle)}</span>
-          </div>
-        </div>
-      `;
-    }
-
     function cardMarkup(g, i, rep) {
-      if (g.isZoneHeader) return zoneHeaderMarkup(g, i, rep);
       // is-coming-soon: 通常の準備中カード (彩度↓ + play 半透明)
       // is-debug-playable: 上の彩度フィルタを打ち消して開発者だけが遷移できる扱い。
       //   バッジ自体は残す (一般ユーザーには「じゅんびちゅう」のまま見える)。
@@ -10977,7 +10889,7 @@
     function startGame(idx) {
       if (isTapIntroBlockingInput()) return;
       const game = MENU_GAMES[idx];
-      if (!game || game.isZoneHeader) return;
+      if (!game) return;
       // Coming-soon entries are normally blocked. debugPlayable:true lets
       // devs still tap through to the real href so QA can verify destinations
       // without flipping comingSoon off (which would also hide the badge).
@@ -11001,7 +10913,7 @@
     // ===== Select / preview crossfade =====
     function selectGame(idx) {
       const game = MENU_GAMES[idx];
-      if (!game || game.isZoneHeader) return;
+      if (!game) return;
       currentIdx = idx;
 
       // Update card highlight + current state
@@ -16398,13 +16310,7 @@
 
     // ===== Init =====
     renderCards();
-    // v1996 fix: MENU_GAMES[0] は zone header (isZoneHeader: true) のことがあり、
-    // selectGame はその場合 early-return して preview-bg が真っ黒のまま起動してしまう。
-    // zone header を飛ばして最初の実ゲームカードを選択する。
-    (function selectInitialGame() {
-      const firstGameIndex = MENU_GAMES.findIndex((g) => g && !g.isZoneHeader);
-      selectGame(firstGameIndex >= 0 ? firstGameIndex : 0);
-    })();
+    selectGame(0);
 
     // ===== v1590: 🌰 acorn balance badge wiring (MF3: 戻り時 bump 発火対応) =====
     (function wireAcornBalanceBadge() {
