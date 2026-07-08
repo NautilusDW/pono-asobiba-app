@@ -8437,15 +8437,15 @@
     }
     .profile-wallet__acorns {
       position: absolute;
-      left: 54%;
+      left: 50.5%;
       top: 38%;
-      width: 38%;
+      width: 41%;
       height: 32%;
       min-width: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -8453,7 +8453,7 @@
       color: #6b3a00;
       box-shadow: none;
       font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
-      font-size: 26px;
+      font-size: 25px;
       font-weight: 900;
       line-height: 1;
       user-select: none;
@@ -8462,7 +8462,7 @@
     }
     .profile-wallet__acorns .acorn-balance-badge__icon {
       display: inline-block;
-      width: 23px;
+      width: 22px;
       aspect-ratio: 85 / 103;
       flex: 0 0 auto;
       background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
@@ -10284,7 +10284,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2050; // sw.js CACHE_VERSION と同期 (profile wallet aspect)
+    const PAGE_CACHE_VERSION = 2051; // sw.js CACHE_VERSION と同期 (avatar assets + tier locks)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10293,7 +10293,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2050';
+    window.PONO_SW_VERSION = 'v2051';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

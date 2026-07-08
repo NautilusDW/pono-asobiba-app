@@ -919,7 +919,9 @@
 // v2048: play.html のタイトル下部の常時予告帯を撤去し、同じ木札カードの末尾に
 //   もじっこファーム / クッキングの非リンク準備中カードを追加。生成バナー素材を
 //   カード右側へ重ね、プロフィール土台のどんぐり数を中央寄せ。
-const CACHE_VERSION = 2050;
+// v2051: play.html のプロフィール財布どんぐり位置を再調整し、common/tier.js の
+//   oto / bento free-book ロック差分と avatar assets 同期を反映。
+const CACHE_VERSION = 2051;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
