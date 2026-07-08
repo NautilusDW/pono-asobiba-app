@@ -225,7 +225,7 @@
        .bottom-nav は background-color: transparent + drop-shadow なので
        PNG 未到着でも UI は壊れない (nav 領域が一瞬透明になるだけ)。 -->
   <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp">
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/profile_wallet_frame_normal_20260708.webp">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/profile_wallet_frame_wide_20260708.webp">
   <!-- pressed PNG 4 枚 (~7.1MB) は cold start 帯域を食うので <head> preload から外し、
        common/preload-helper.js が requestIdleCallback または最初の pointerdown で
        <link rel=preload> を動的注入する (v1697 / cross-review perf-regression + sw-pivot)。 -->
@@ -8357,8 +8357,8 @@
       background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_settings_20260706.webp");
     }
     .profile-wallet {
-      --profile-wallet-w: 194px;
-      --profile-wallet-h: calc(var(--profile-wallet-w) * 472 / 777);
+      --profile-wallet-w: 246px;
+      --profile-wallet-h: 118px;
       position: absolute;
       right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 402px);
       bottom: 20px;
@@ -8369,7 +8369,7 @@
       padding: 0;
       border: 0;
       border-radius: 0;
-      background: transparent url("assets/ui/bottom-nav/profile_wallet_frame_normal_20260708.webp") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/bottom-nav/profile_wallet_frame_wide_20260708.webp") center / 100% 100% no-repeat;
       box-shadow: none;
       filter: drop-shadow(0 8px 11px rgba(58, 32, 10, .34));
       font-family: inherit;
@@ -8377,9 +8377,9 @@
     .profile-wallet__profile {
       position: absolute;
       left: 9%;
-      top: 10%;
-      width: 43%;
-      height: 80%;
+      top: 8%;
+      width: 41%;
+      height: 84%;
       min-width: 0;
       display: block;
       padding: 0;
@@ -8403,8 +8403,8 @@
     .profile-wallet__avatar.pono-mini-avatar {
       position: absolute;
       left: 50%;
-      top: 4%;
-      width: 64%;
+      top: 6%;
+      width: 54%;
       height: auto;
       min-width: 0;
       min-height: 0;
@@ -8424,15 +8424,16 @@
     }
     .profile-wallet__label {
       position: absolute;
-      left: 8%;
-      right: 8%;
-      bottom: 14%;
+      left: 12%;
+      right: 10%;
+      bottom: 13%;
       display: block;
       color: #4f2d0c;
       font-size: 11px;
       font-weight: 900;
       line-height: 1;
       white-space: nowrap;
+      text-align: center;
       transform: scaleX(.82);
       transform-origin: center bottom;
       text-shadow: 0 1px 0 rgba(255, 248, 220, .72);
@@ -8443,15 +8444,15 @@
     }
     .profile-wallet__acorns {
       position: absolute;
-      left: 56.5%;
-      top: 36%;
-      width: 39.5%;
-      height: 34%;
+      left: 51.5%;
+      top: 41%;
+      width: 43%;
+      height: 28%;
       min-width: 0;
       display: inline-flex;
       align-items: center;
       justify-content: flex-start;
-      gap: 5px;
+      gap: 6px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -8476,7 +8477,7 @@
       transform: translateY(-1px);
     }
     .profile-wallet__acorns .acorn-balance-badge__count {
-      min-width: 1.05em;
+      min-width: 1.65em;
       text-align: center;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0;
@@ -8938,7 +8939,8 @@
         gap: 0;
       }
       .profile-wallet {
-        --profile-wallet-w: 162px;
+        --profile-wallet-w: 202px;
+        --profile-wallet-h: 98px;
         right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 334px);
         bottom: 14px;
       }
@@ -10306,7 +10308,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2043; // sw.js CACHE_VERSION と同期 (profile wallet generated frame + MVP-only menu)
+    const PAGE_CACHE_VERSION = 2044; // sw.js CACHE_VERSION と同期 (wider profile wallet frame)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10315,7 +10317,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2043';
+    window.PONO_SW_VERSION = 'v2044';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
