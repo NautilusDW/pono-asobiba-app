@@ -7,15 +7,28 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>フクロウ博士のなぞなぞ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- Phase 1: 共通どんぐりモーダル shared CSS (BEM .pono-acorn-modal__*).
+     既存 .result-acorn-reward__* CSS とはセレクタが重ならないので併存可能。
+     Phase 2 で JS を window.PonoAcornModal に置換する想定。 -->
+<link rel="stylesheet" href="../common/acorn-modal-shared.css">
+<!-- FOUC guard: start-screen は visible のまま、 game UI (header/hud/stage) を init 完了まで非表示 -->
+<style>html,body{background:linear-gradient(170deg,#FFF8E7 0%,#FEF3C7 50%,#FDE68A 100%)}.header,.hud,.stage{visibility:hidden}body.pono-game-ready .header,body.pono-game-ready .hud,body.pono-game-ready .stage{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
 <script src="../common/mvp-flags.js"></script>
 <script src="../common/achievements.js"></script>
 <script src="../common/first-clear.js"></script>
 <script src="../common/menu.js"></script>
+<script src="../common/preload-helper.js"></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('quizland');});</script>
+<script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js?v=quiz-mixed-20260708"></script>
+<script src="../common/difficulty.js"></script>
+<script src="../common/capture.js" defer></script>
 <script src="../common/narration.js"></script>
 <script src="../js/quizland-babble.js"></script>
 <script src="../js/animation-player.js"></script>
 <script src="../js/game-stickers.js"></script>
+<script src="../common/acorns.js" defer></script>
 <script src="./data/questions.js"></script>
 <!-- Layout system (Phase A+B): saved-layout.json applier (always loaded).
      Editor (drag/resize/save) は ?edit=1 のときだけ自動で遅延ロード。 -->
@@ -23,7 +36,6 @@
 <script src="../common/layout/editor-bootstrap.js" defer></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
 /* ============================================================
    Quizland v2 (Strategy: Replace)
@@ -229,6 +241,14 @@ body.sheet-on .answer-tray {
   background: url('../assets/images/quizland/Fukuro_frame_002.png') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
+}
+
+body.sheet-on.layout-editor-on.qz-explicit-layout-editor .board::before {
+  background-image: url('../assets/images/quizland/Fukuro_frame_001_editor_marked.png');
+}
+
+body.sheet-on.layout-editor-on.qz-explicit-layout-editor .answer-tray {
+  background-image: url('../assets/images/quizland/Fukuro_frame_002_editor_marked.png');
 }
 
 /* 押下状態: チップごとに対応する四分割の pressed 画像を当てる。
@@ -442,7 +462,7 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
    editor-bootstrap が追加するため、ゲーム本編プレイ中は overlay が出ない。
    すべて装飾レイヤー (::before/::after/center-dot) で閉じ、.safe-area の grid
    レイアウトには触らない。 ===== */
-body.layout-editor-on.show-safe .safe-area::before {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -450,7 +470,7 @@ body.layout-editor-on.show-safe .safe-area::before {
   pointer-events: none;
   z-index: 9990;
 }
-body.layout-editor-on.show-safe .safe-area::after {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area::after {
   content: "16:9 safe area (1600×900)";
   position: absolute;
   top: 4px; left: 8px;
@@ -462,14 +482,14 @@ body.layout-editor-on.show-safe .safe-area::after {
   pointer-events: none;
   z-index: 9991;
 }
-body.layout-editor-on.show-safe .safe-area {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area {
   background-image:
     linear-gradient(transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
     linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px));
   background-size: 100% 100%, 100% 100%;
   background-repeat: no-repeat, no-repeat;
 }
-body.layout-editor-on.show-safe .safe-area > .center-dot {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area > .center-dot {
   position: absolute;
   top: 50%; left: 50%;
   width: 14px; height: 14px;
@@ -482,7 +502,8 @@ body.layout-editor-on.show-safe .safe-area > .center-dot {
   z-index: 9992;
 }
 body:not(.layout-editor-on) .center-dot,
-body.layout-editor-on:not(.show-safe) .center-dot { display: none; }
+body.layout-editor-on:not(.show-safe) .center-dot,
+body.layout-editor-on.show-safe:not(.qz-explicit-layout-editor) .center-dot { display: none; }
 
 /* ===== フレーム別 センターマーカー (?edit=1 + show-safe 時のみ)
    各フレーム (.chip / .emoji-display / #answer-panel / .q-text-card) の中心位置を
@@ -495,11 +516,11 @@ body.layout-editor-on:not(.show-safe) .center-dot { display: none; }
    - z-index は resize handle (60-100) より低めの 50 にして、 ハンドル操作を邪魔しない。
    - pointer-events: none で クリックを通す。
    ===== */
-body.layout-editor-on.show-safe #answer-panel {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor #answer-panel {
   position: relative;
 }
-body.layout-editor-on.show-safe .emoji-display::after,
-body.layout-editor-on.show-safe .q-text-card::after {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .emoji-display::after,
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .q-text-card::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -811,7 +832,16 @@ body.sheet-on .hdr-right .ctrl-btn {
      質問テキスト領域を確保 (q175 等の長文質問 1 行収まり対応)。 */
   right: 8px;
   top: 50%;
-  transform: translateY(-50%);
+  /* 2026-06-30 (batch:962B): 親 `.q-text-card` が CSS `transform: scale()` を
+     持った場合に、 子要素 (このスピーカー) も継承して巻き込まれるのを打ち消す
+     ための CSS 変数受け口。 default `--qz-tts-counter-scale: 1` のため通常時は
+     何も変わらない (= 既存挙動の改変なし)。 layout-editor (Part A) が
+     `.q-text-card` を scale する経路を持つ場合、 当該経路で逆数 `calc(1 / N)`
+     をこの要素に set すれば視覚サイズが据え置きになる (打ち消し受け口)。
+     scale() は translateY(-50%) の後に乗ることで、 transform-origin の
+     default (center) を維持 — hover/active 時の拡大支点を変えない。 */
+  --qz-tts-counter-scale: 1;
+  transform: translateY(-50%) scale(var(--qz-tts-counter-scale, 1));
   transition: transform 0.2s ease;
   box-shadow: none;
 }
@@ -823,10 +853,10 @@ body.sheet-on .hdr-right .ctrl-btn {
 }
 .q-text-card .audio:hover,
 .q-text-card .audio:focus-visible {
-  transform: translateY(-50%) scale(1.05);
+  transform: translateY(-50%) scale(calc(var(--qz-tts-counter-scale, 1) * 1.05));
 }
 .q-text-card .audio:active {
-  transform: translateY(-50%) scale(0.95);
+  transform: translateY(-50%) scale(calc(var(--qz-tts-counter-scale, 1) * 0.95));
 }
 
 /* ===== Board (問題コンテンツの紙ボード) ===== */
@@ -988,8 +1018,9 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
   align-items: center;
   justify-content: center;
   gap: 0.15em;
-  /* 矢印 + ◯ で最大 5 トークン (N → ◯ → M) になるため clamp 上限をやや控えめに */
-  font-size: clamp(80px, 20vmin, 220px);
+  /* 1600x900 stage 基準で固定し、viewport 比率による見た目の揺れを防ぐ。 */
+  font-size: 132px;
+  line-height: 1;
   font-weight: 800;
   font-family: 'Zen Maru Gothic', sans-serif;
   /* sw v976+: paper/wood テーマ整合のためブルー系 (#2a3a5a) を廃止し、 wood-dark (濃いブラウンオレンジ) に統一 */
@@ -1192,12 +1223,15 @@ body.layout-editor-on .stage-img-wrap > img.resizable {
   filter:
     drop-shadow(0 8px 16px rgba(120, 83, 20, 0.3))
     drop-shadow(0 0 22px rgba(255, 198, 34, 0.96));
-  animation: nextq-attention-glow 0.95s ease-in-out infinite alternate;
+  /* audit batch:936 perf: 無限 alternate を 6 回 (3 サイクル) に制限し、 低スペック
+     Android の CPU 負荷と消費電力を削減。 視認時間は約 5.7s で十分。 */
+  animation: nextq-attention-glow 0.95s ease-in-out 6 alternate;
 }
 .next-q-btn.show::before {
   opacity: 1;
   transform: scale(1);
-  animation: nextq-bottom-glow-pulse 0.95s ease-in-out infinite alternate;
+  /* audit batch:936 perf: 同上 (下グロウも同じ 6 回で停止)。 */
+  animation: nextq-bottom-glow-pulse 0.95s ease-in-out 6 alternate;
 }
 .next-q-btn:active { transform: translateY(2px) scale(0.98); }
 .next-q-btn[disabled],
@@ -1450,6 +1484,44 @@ body.layout-editor-on #char-hint-bubble {
   visibility: visible !important;
   opacity: 0.95 !important;
 }
+body.layout-editor-on .le-toolbar .qz-editor-toolbar-toggle {
+  background: #f6f0df;
+  color: #2f2418;
+  border-color: #d9b46b;
+  font-weight: 800;
+}
+body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar {
+  min-height: 34px;
+  max-height: 42px;
+  overflow: hidden;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  align-items: flex-start;
+}
+body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar > :not(.qz-editor-toolbar-toggle) {
+  display: none !important;
+}
+body.layout-editor-on.qz-editor-toolbar-collapsed .le-toolbar .qz-editor-toolbar-toggle {
+  display: inline-flex !important;
+}
+body.layout-editor-on .qz-editor-toolbar-fab {
+  position: fixed;
+  left: max(10px, env(safe-area-inset-left));
+  top: max(10px, env(safe-area-inset-top));
+  z-index: 2147483000;
+  width: 46px;
+  height: 46px;
+  border: 2px solid rgba(217, 180, 107, 0.95);
+  border-radius: 50%;
+  background: rgba(246, 240, 223, 0.96);
+  color: #2f2418;
+  font: 900 22px/1 system-ui, sans-serif;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+  cursor: pointer;
+}
+body:not(.layout-editor-on) .qz-editor-toolbar-fab {
+  display: none !important;
+}
 
 /* ===== Answer column (right) ===== */
 .a-col {
@@ -1655,6 +1727,9 @@ body.layout-editor-on .chip-illust-wrap {
 }
 
 .chip { transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.1s ease; }
+/* audit batch:936 fix #4: ロック中 (reveal/演出中) は chip をタップ非反応に見せる。 */
+.answer-panel.question-locked .chip { cursor: not-allowed; opacity: 0.88; }
+.answer-panel.question-locked .chip:active { transform: none; }
 .chip:active,
 .chip.pressed {
   transform: translateY(3px) scale(0.97);
@@ -1796,10 +1871,10 @@ body.sheet-on .chip.wrong.reading-active[data-idx="3"] {
   text-align: center;
   padding: 10px 18px;
   box-sizing: border-box;
-  /* 長文時は font-size を縮めて 5:2 の中に収める。 base 18px → clamp で 13〜18px */
-  font-size: clamp(13px, 3.2vmin, 18px);
+  /* stage 全体が transform で縮小されるため、viewport 依存ではなく論理 px で読める大きさを保つ。 */
+  font-size: 26px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.18;
   color: #4a3a1a;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   white-space: normal;
@@ -1811,7 +1886,19 @@ body.sheet-on .chip.wrong.reading-active[data-idx="3"] {
    そのまま改行として表示する。 textContent 経由でも pre-line なら \n が反映される。
    `word-break: keep-all` は親 .char-hint から継承される。 */
 #char-hint-text {
+  display: block;
+  max-width: 100%;
+  font-size: inherit;
+  line-height: inherit;
   white-space: pre-line;
+}
+#char-hint-text.qz-hakase-long {
+  font-size: clamp(20px, 0.92em, 30px) !important;
+  line-height: 1.18;
+}
+#char-hint-text.qz-hakase-xlong {
+  font-size: clamp(20px, 0.84em, 28px) !important;
+  line-height: 1.12;
 }
 .character {
   width: 200px; height: 220px;
@@ -1863,7 +1950,7 @@ body.layout-editor-on .character img {
     justify-content: center;
     text-align: center;
     color: #FFE8B0;
-    font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+    font-family: 'Zen Maru Gothic', sans-serif;
     gap: 18px;
   }
   .landscape-notice .rotate-icon {
@@ -1908,10 +1995,11 @@ body.layout-editor-on .character img {
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.25));
 }
 .start-tap-cta {
-  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-family: 'Zen Maru Gothic', sans-serif;
   font-size: clamp(1rem, 3.6vw, 1.6rem);
+  font-weight: 900;
   color: #5D3A00;
-  text-shadow: 2px 2px 0 #FFF8E0, 4px 4px 0 rgba(0,0,0,0.2);
+  text-shadow: 1px 2px 0 #FFF8E0, 3px 4px 0 rgba(0,0,0,0.16);
   letter-spacing: 0.06em;
   background: rgba(255, 248, 224, 0.78);
   padding: 8px 22px;
@@ -1935,17 +2023,19 @@ body.layout-editor-on .character img {
 }
 .mode-screen.hidden { display: none; }
 .mode-screen-title {
-  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
-  font-size: clamp(1rem, 3.4vw, 1.4rem);
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.05rem, 3.4vw, 1.55rem);
+  font-weight: 900;
   color: #5D3A00;
-  text-shadow: 2px 2px 0 #FFF8E0;
+  text-shadow: 1px 2px 0 #FFF8E0;
   letter-spacing: 0.05em;
   text-align: center;
 }
 /* ===== Difficulty picker ===== */
 .diff-screen-title {
-  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-family: 'Zen Maru Gothic', sans-serif;
   font-size: clamp(0.85rem, 2.8vw, 1.1rem);
+  font-weight: 700;
   color: #5D3A00;
   text-shadow: 1px 1px 0 #FFF8E0;
   letter-spacing: 0.08em;
@@ -1954,62 +2044,129 @@ body.layout-editor-on .character img {
 }
 .diff-row {
   display: flex; flex-direction: row;
-  gap: 8px;
-  width: 100%; max-width: 720px;
+  gap: clamp(8px, 1.3vw, 16px);
+  width: 100%; max-width: min(92vw, 1280px);
   justify-content: center;
   align-items: stretch;
 }
 .diff-btn {
   flex: 1 1 0;
-  min-height: 64px;
+  height: clamp(96px, 12.2vw, 152px);
+  min-height: 0;
   min-width: 0;
-  padding: 0.4em 0.5em;
-  border: 4px solid var(--wood-mid);
-  border-radius: 18px;
-  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  padding: clamp(12px, 1.3vw, 18px) clamp(14px, 1.8vw, 26px) clamp(18px, 2.4vw, 32px);
+  border: 0;
+  border-radius: 22px;
+  background-color: transparent;
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png');
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
   font-family: inherit;
   font-weight: 900;
   color: var(--text);
   cursor: pointer;
   text-align: center;
   line-height: 1.05;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 4px;
-  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 14px rgba(80,50,10,0.28);
-  transition: transform 0.1s, background 0.15s, border-color 0.15s, box-shadow 0.1s;
+  display: grid;
+  grid-template-rows: minmax(34px, 0.82fr) minmax(44px, 0.82fr);
+  align-items: center;
+  justify-items: center;
+  justify-content: stretch;
+  gap: 0;
+  filter: drop-shadow(0 6px 8px rgba(80, 50, 10, 0.18));
+  text-rendering: optimizeLegibility;
+  transition: transform 0.1s, filter 0.15s;
 }
 .diff-btn .diff-stars {
-  font-size: clamp(20px, 4vw, 32px);
-  line-height: 1;
-  color: #C49A2C; /* muted gold for inactive */
-  text-shadow: 1px 1px 0 rgba(80,50,10,0.25);
-  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  gap: clamp(2px, 0.45vw, 7px);
+  min-height: clamp(24px, 3.2vw, 40px);
+  font-size: 0;
+  line-height: 0;
+  transform: translateY(clamp(4px, 0.6vw, 8px));
+}
+.diff-star {
+  width: clamp(24px, 3.2vw, 40px);
+  aspect-ratio: 1;
+  display: block;
+  background: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png') center / contain no-repeat;
+  filter: drop-shadow(0 2px 1px rgba(95, 59, 12, 0.22));
 }
 .diff-btn .diff-label {
-  font-size: clamp(14px, 3vw, 22px);
+  max-width: 100%;
+  font-size: clamp(20px, 2.85vw, 36px);
   font-weight: 900;
   color: var(--text);
   letter-spacing: 0.04em;
+  line-height: 1.08;
+  white-space: nowrap;
 }
 .diff-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 var(--wood-dark), 0 3px 6px rgba(80,50,10,0.25);
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png');
+  transform: translateY(3px);
+  filter: drop-shadow(0 3px 4px rgba(80, 50, 10, 0.22));
 }
 .diff-btn.is-active {
-  background: linear-gradient(180deg, #FBBF24, var(--primary));
-  border-color: var(--wood-dark);
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png');
   color: #fff;
-  transform: scale(1.04);
-  box-shadow: 0 5px 0 var(--wood-dark), 0 0 0 3px var(--hint-bg) inset, 0 8px 18px rgba(80,50,10,0.32);
+  transform: none;
+  filter: drop-shadow(0 5px 7px rgba(80, 50, 10, 0.22));
 }
-.diff-btn.is-active .diff-stars {
-  color: #FFD700; /* bright gold for active */
-  text-shadow: 1px 1px 0 rgba(80,50,10,0.45), 0 0 6px rgba(255,215,0,0.5);
+.diff-btn.is-active .diff-star,
+.diff-btn:active .diff-star {
+  background-image: url('../assets/images/quizland/quizland_difficulty_star_white_gpt_image2_20260623.png');
+  filter: drop-shadow(0 2px 1px rgba(95, 59, 12, 0.25));
 }
 .diff-btn.is-active .diff-label {
   color: #fff;
   text-shadow: 1px 1px 0 rgba(80,50,10,0.5);
+}
+.diff-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(10px, 1.5vw, 18px);
+  min-height: 54px;
+  margin-top: clamp(4px, 1.2vw, 12px);
+  color: #5D3A00;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 900;
+  text-shadow: 1px 2px 0 #FFF8E0;
+}
+.diff-confirm.hidden {
+  visibility: hidden;
+}
+.diff-confirm-text {
+  font-size: clamp(1rem, 2.7vw, 1.45rem);
+  letter-spacing: 0.04em;
+}
+.diff-confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+.diff-confirm-btn {
+  border: 3px solid #8a5a2a;
+  border-radius: 999px;
+  padding: 8px 18px 10px;
+  color: #4a2d0a;
+  font: inherit;
+  cursor: pointer;
+  background: linear-gradient(180deg, #fff7dc, #f2cf7d);
+  box-shadow: 0 4px 0 #6e4520, 0 7px 12px rgba(80, 50, 10, 0.2);
+}
+.diff-confirm-btn.start {
+  color: #fff;
+  background: linear-gradient(180deg, #fbbf24, #f59e0b);
+  text-shadow: 1px 1px 0 rgba(80, 50, 10, 0.45);
+}
+.diff-confirm-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #6e4520, 0 3px 6px rgba(80, 50, 10, 0.18);
 }
 
 /* ===== Tier lock (free/book で遊べない難易度に🔒+グレーアウト) =====
@@ -2028,10 +2185,9 @@ body.layout-editor-on .character img {
   opacity: 0.6;
   position: relative;
   /* is-active 由来の強調を打ち消す */
-  background: linear-gradient(180deg, var(--paper), var(--paper-2)) !important;
-  border-color: var(--wood-mid) !important;
+  background-image: url('../assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png') !important;
+  background-color: transparent !important;
   color: var(--text) !important;
-  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 14px rgba(80,50,10,0.28) !important;
 }
 .diff-btn.tier-locked:hover,
 .diff-btn.tier-locked:active,
@@ -2089,12 +2245,97 @@ body.layout-editor-on .character img {
   color: var(--text);
 }
 .modal-icon { font-size: 3rem; line-height: 1; }
+.modal-icon,
+.result-stamp-img {
+  pointer-events: none;
+}
+.result-actions {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 320px);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
 /* 全問正解時の「ぜんぶ できたね！」スタンプ画像 (modal-icon の中身が img になる) */
 .result-stamp-img {
   width: 240px;
   height: 240px;
   object-fit: contain;
   filter: drop-shadow(0 6px 14px rgba(120, 83, 20, 0.25));
+}
+.result-acorn-reward {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  color: #6d3b07;
+  text-align: center;
+  line-height: 1;
+}
+.result-acorn-reward[hidden] {
+  display: none !important;
+}
+.result-acorn-reward__main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.5vw, 14px);
+}
+.result-acorn-reward__icon {
+  display: inline-block;
+  width: clamp(48px, 8vw, 78px);
+  aspect-ratio: 85 / 103;
+  background: transparent url('../assets/ui/shop/donguri_shop_acorn_icon_20260626.png') center/contain no-repeat;
+  filter:
+    drop-shadow(0 5px 8px rgba(71, 38, 6, 0.34))
+    drop-shadow(0 0 10px rgba(255, 221, 105, 0.58));
+}
+.result-acorn-reward__amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-weight: 900;
+  color: #ffef8a;
+  font-size: clamp(38px, 8.4vw, 78px);
+  letter-spacing: 0;
+  text-shadow:
+    0 4px 0 #8b4b00,
+    0 8px 16px rgba(40, 18, 0, 0.45),
+    0 0 18px rgba(255, 224, 92, 0.82);
+  -webkit-text-stroke: 2px rgba(89, 43, 0, 0.34);
+}
+.result-acorn-reward__times {
+  font-size: .52em;
+  transform: translateY(-.08em);
+}
+.result-acorn-reward__copy {
+  color: #fff7ca;
+  font-size: clamp(18px, 3vw, 28px);
+  font-weight: 900;
+  line-height: 1.05;
+  text-shadow:
+    0 3px 0 #7d4708,
+    0 6px 12px rgba(45, 20, 0, 0.45);
+  white-space: nowrap;
+}
+.overlay.has-acorn-result .modal-title,
+.overlay.has-acorn-result .modal-msg {
+  display: none;
+}
+.overlay:not(.is-perfect).has-acorn-result .modal {
+  max-width: min(440px, 92vw);
+  padding: 18px 22px 20px;
+  gap: 10px;
+}
+.overlay:not(.is-perfect).has-acorn-result .result-stamp-img {
+  width: clamp(108px, 26vw, 156px);
+  height: clamp(108px, 26vw, 156px);
+}
+.overlay:not(.is-perfect).has-acorn-result .result-acorn-reward__copy {
+  color: #6d3b07;
+  text-shadow: 0 2px 0 rgba(255, 244, 203, 0.96);
 }
 /* ===== Perfect (5/5 全問正解) 専用 演出 (2026-05-12 R3 リデザイン) =====
    背景: 図書室で踊るポノとフクロウ博士+リス。
@@ -2109,7 +2350,7 @@ body.layout-editor-on .character img {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 5vh 20px 6vh;
+  padding: clamp(14px, 3vh, 42px) 20px clamp(16px, 4vh, 52px);
 }
 /* modal カード (白い角丸長方形) を透明化して背景画像を活かす */
 .overlay.is-perfect .modal {
@@ -2118,17 +2359,19 @@ body.layout-editor-on .character img {
   padding: 0;
   max-width: none;
   width: 100%;
-  gap: 18px;
+  gap: clamp(8px, 1.5vh, 18px);
   /* modal 内部の縦並びは維持しつつ、 全体を flex で「スタンプ上・ボタン下」 に展開 */
   flex: 1;
   justify-content: space-between;
+  min-height: 0;
+  max-height: calc(100dvh - 24px);
   overflow: visible;
 }
 /* Perfect 時はスタンプを 2 倍 (320 → 640px)、 中央ドカン配置 + ドロップシャドウ + 黄色光彩 */
 .overlay.is-perfect .result-stamp-img {
-  width: min(80vh, 640px);
-  height: min(80vh, 640px);
-  max-width: 90vw;
+  width: min(50vh, 560px);
+  height: min(50vh, 560px);
+  max-width: 84vw;
   filter:
     drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45))
     drop-shadow(0 0 40px rgba(255, 220, 100, 0.85))
@@ -2147,13 +2390,41 @@ body.layout-editor-on .character img {
 }
 .overlay.is-perfect .modal-title { font-size: 2rem; }
 .overlay.is-perfect .modal-msg   { font-size: 1.15rem; }
+.overlay.is-perfect .result-acorn-reward {
+  flex: 0 0 auto;
+  margin-top: clamp(-10px, -1.2vh, -2px);
+  margin-bottom: clamp(4px, 1vh, 12px);
+  opacity: 0;
+  transform: translateY(8px) scale(.96);
+}
+.overlay.is-perfect.is-animated .result-acorn-reward {
+  animation: resultRewardSettle .32s .52s cubic-bezier(.18,.86,.22,1.08) both;
+}
+.overlay.is-perfect .result-acorn-reward__icon,
+.overlay.is-perfect .result-acorn-reward__amount,
+.overlay.is-perfect .result-acorn-reward__copy {
+  opacity: 0;
+}
+.overlay.is-perfect.is-animated .result-acorn-reward__icon {
+  animation: resultAcornPop .42s .62s cubic-bezier(.18,.86,.22,1.08) both;
+}
+.overlay.is-perfect.is-animated .result-acorn-reward__amount {
+  animation: resultNumberBoom .5s .86s cubic-bezier(.18,.86,.22,1.08) both;
+}
+.overlay.is-perfect.is-animated .result-acorn-reward__copy {
+  animation: resultCopyIn .24s 1.08s ease-out both;
+}
 /* ボタン群は modal の末尾にあるためフロー下端に集約される。 視認性のため影を強化 */
 .overlay.is-perfect .modal-btn {
+  position: relative;
+  z-index: 3;
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.45),
     0 2px 6px rgba(245, 158, 11, 0.55);
 }
 .overlay.is-perfect .modal-back {
+  position: relative;
+  z-index: 3;
   color: #fff;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
 }
@@ -2171,6 +2442,25 @@ body.layout-editor-on .character img {
   20%  { opacity: 0.55; }
   100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
 }
+@keyframes resultRewardSettle {
+  0%   { opacity: 0; transform: translateY(8px) scale(.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes resultAcornPop {
+  0%   { opacity: 0; transform: scale(.34) rotate(-16deg); }
+  68%  { opacity: 1; transform: scale(1.16) rotate(6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+}
+@keyframes resultNumberBoom {
+  0%   { opacity: 0; transform: scale(.28) rotate(8deg); }
+  62%  { opacity: 1; transform: scale(1.24) rotate(-3deg); }
+  82%  { opacity: 1; transform: scale(.94) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes resultCopyIn {
+  0%   { opacity: 0; transform: translateY(-4px) scale(.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 .overlay.is-perfect.is-animated .result-stamp-img {
   animation: stampImpact 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-origin: center center;
@@ -2182,16 +2472,17 @@ body.layout-editor-on .character img {
   align-items: center;
   justify-content: center;
   font-size: 0; /* 既存 emoji が混入しても影響しないよう */
-  flex: 1;
+  flex: 1 1 min(50vh, 560px);
+  min-height: 0;
   width: 100%;
 }
 .overlay.is-perfect .modal-icon::after {
   content: '';
   position: absolute;
   top: 50%; left: 50%;
-  width: min(80vh, 640px);
-  height: min(80vh, 640px);
-  max-width: 90vw;
+  width: min(50vh, 560px);
+  height: min(50vh, 560px);
+  max-width: 84vw;
   border: 8px solid rgba(220, 60, 50, 0.55);
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0.6);
@@ -2204,15 +2495,102 @@ body.layout-editor-on .character img {
 @media (max-width: 768px) {
   .overlay.is-perfect { padding: 3vh 16px 4vh; }
   .overlay.is-perfect .result-stamp-img {
-    width: min(80vw, 480px);
-    height: min(80vw, 480px);
+    width: min(44vh, 78vw, 400px);
+    height: min(44vh, 78vw, 400px);
   }
   .overlay.is-perfect .modal-icon::after {
-    width: min(80vw, 480px);
-    height: min(80vw, 480px);
+    width: min(44vh, 78vw, 400px);
+    height: min(44vh, 78vw, 400px);
   }
   .overlay.is-perfect .modal-title { font-size: 1.6rem; }
   .overlay.is-perfect .modal-msg   { font-size: 1rem; }
+}
+@media (max-height: 820px) {
+  .overlay.is-perfect {
+    padding: max(12px, 2vh) 16px max(42px, 5.2vh);
+  }
+  .overlay.is-perfect .modal {
+    gap: 8px;
+  }
+  .overlay.is-perfect .result-stamp-img,
+  .overlay.is-perfect .modal-icon::after {
+    width: min(44vh, 76vw, 380px);
+    height: min(44vh, 76vw, 380px);
+  }
+  .overlay.is-perfect .modal-title { font-size: 1.5rem; }
+  .overlay.is-perfect .modal-msg { font-size: 0.95rem; }
+  .overlay.is-perfect .result-acorn-reward__icon {
+    width: clamp(42px, 8vw, 58px);
+  }
+  .overlay.is-perfect .result-acorn-reward__amount {
+    font-size: clamp(34px, 8vw, 54px);
+  }
+  .overlay.is-perfect .result-acorn-reward__copy {
+    font-size: clamp(16px, 3.4vw, 21px);
+  }
+  .overlay.is-perfect .modal-btn {
+    padding: 10px 24px;
+    font-size: 0.95rem;
+  }
+  .overlay.is-perfect .result-actions {
+    gap: 8px;
+  }
+}
+@media (max-height: 430px) and (orientation: landscape) {
+  .overlay.is-perfect {
+    padding: 8px 16px 12px;
+  }
+  .overlay.is-perfect .modal {
+    justify-content: flex-start;
+    gap: 5px;
+    max-height: calc(100dvh - 20px);
+  }
+  .overlay.is-perfect .modal-icon {
+    flex: 0 0 clamp(126px, 34vh, 144px);
+  }
+  .overlay.is-perfect .result-stamp-img,
+  .overlay.is-perfect .modal-icon::after {
+    width: clamp(118px, 33vh, 138px);
+    height: clamp(118px, 33vh, 138px);
+  }
+  .overlay.is-perfect .result-acorn-reward {
+    margin-top: 0;
+    margin-bottom: 3px;
+    gap: 2px;
+  }
+  .overlay.is-perfect .result-acorn-reward__main {
+    gap: 8px;
+  }
+  .overlay.is-perfect .result-acorn-reward__icon {
+    width: clamp(34px, 8vh, 44px);
+  }
+  .overlay.is-perfect .result-acorn-reward__amount {
+    font-size: clamp(32px, 9vh, 42px);
+    text-shadow:
+      0 3px 0 #8b4b00,
+      0 6px 12px rgba(40, 18, 0, 0.42),
+      0 0 14px rgba(255, 224, 92, 0.78);
+  }
+  .overlay.is-perfect .result-acorn-reward__copy {
+    font-size: clamp(14px, 4vh, 17px);
+  }
+  .overlay.is-perfect .modal-btn {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+  }
+  .overlay.is-perfect .result-actions {
+    gap: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay.is-perfect.is-animated .result-acorn-reward,
+  .overlay.is-perfect.is-animated .result-acorn-reward__icon,
+  .overlay.is-perfect.is-animated .result-acorn-reward__amount,
+  .overlay.is-perfect.is-animated .result-acorn-reward__copy {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 /* 正解時の「せいかい！」スタンプ (一瞬だけ画面中央に、 320→960 に拡大 2026-05-06) */
 .seikai-stamp {
@@ -2269,6 +2647,9 @@ body.layout-editor-on .character img {
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(245,158,11,0.4);
   transition: transform 0.1s;
+  touch-action: manipulation;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 .modal-btn:active { transform: scale(0.95); }
 .modal-back {
@@ -2276,6 +2657,9 @@ body.layout-editor-on .character img {
   color: var(--primary);
   text-decoration: none;
   font-weight: 700;
+  touch-action: manipulation;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ===== Feedback bubble ===== */
@@ -3275,6 +3659,10 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   justify-content: center;
   gap: clamp(6px, 1.5vh, 18px);
 }
+.qno-plate-overlay.is-final-question .qno-plate-stack {
+  gap: clamp(0px, 0.8vh, 8px);
+  transform: translateY(clamp(-74px, -10vh, -42px));
+}
 .qno-plate-img {
   max-width: 70vw;
   max-height: 50vh;
@@ -3304,6 +3692,10 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
     max-height: 38vh;
   }
 }
+.qno-plate-overlay.is-final-question .qno-plate-img {
+  max-width: min(58vw, 560px);
+  max-height: 30vh;
+}
 /* 最終問題の中央表示。Dr.owl'quiz/No フォルダ提供の画像を使用。 */
 #qno-final-balloon {
   position: relative;
@@ -3312,6 +3704,9 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   transform: scale(0);
   opacity: 0;
   transition: opacity 0.22s ease-out;
+}
+.qno-plate-overlay.is-final-question #qno-final-balloon {
+  width: min(30vw, 300px);
 }
 #qno-final-balloon-img {
   position: relative;
@@ -3333,16 +3728,26 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   #qno-final-balloon {
     width: 64vw;
   }
+  .qno-plate-overlay.is-final-question .qno-plate-stack {
+    transform: translateY(clamp(-66px, -8vh, -34px));
+  }
+  .qno-plate-overlay.is-final-question .qno-plate-img {
+    max-width: 78vw;
+    max-height: 32vh;
+  }
+  .qno-plate-overlay.is-final-question #qno-final-balloon {
+    width: 56vw;
+  }
 }
 </style>
 </head>
 <body class="sheet-on show-safe">
 
 <!-- ===== Start Screen ===== -->
-<div class="start-screen" id="start-screen" role="button" aria-label="タップしてスタート">
+<div class="start-screen" id="start-screen" role="button" aria-label="タップして はじめる">
   <div class="start-content">
     <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウはかせのなぞなぞ">
-    <div class="start-tap-cta">▶ タップしてスタート</div>
+    <div class="start-tap-cta">▶ タップして はじめる</div>
   </div>
 </div>
 
@@ -3358,17 +3763,33 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   <div class="diff-screen-title">いろ・かず・かたち・ものしりを まぜて だすよ</div>
   <div class="diff-row" id="diff-row">
     <button class="diff-btn" data-diff="easy" aria-pressed="false">
-      <span class="diff-stars">★</span>
-      <span class="diff-label">かんたん</span>
+      <span class="diff-stars" aria-label="ほし ひとつ">
+        <span class="diff-star" aria-hidden="true"></span>
+      </span>
+      <span class="diff-label">やさしい</span>
     </button>
     <button class="diff-btn" data-diff="normal" aria-pressed="false">
-      <span class="diff-stars">★★</span>
+      <span class="diff-stars" aria-label="ほし ふたつ">
+        <span class="diff-star" aria-hidden="true"></span>
+        <span class="diff-star" aria-hidden="true"></span>
+      </span>
       <span class="diff-label">ふつう</span>
     </button>
     <button class="diff-btn" data-diff="hard" aria-pressed="false">
-      <span class="diff-stars">★★★</span>
+      <span class="diff-stars" aria-label="ほし みっつ">
+        <span class="diff-star" aria-hidden="true"></span>
+        <span class="diff-star" aria-hidden="true"></span>
+        <span class="diff-star" aria-hidden="true"></span>
+      </span>
       <span class="diff-label">むずかしい</span>
     </button>
+  </div>
+  <div class="diff-confirm hidden" id="diff-confirm" aria-live="polite">
+    <div class="diff-confirm-text" id="diff-confirm-text">これで いい？</div>
+    <div class="diff-confirm-actions">
+      <button class="diff-confirm-btn start" type="button" id="diff-confirm-start">はじめる</button>
+      <button class="diff-confirm-btn" type="button" id="diff-confirm-change">えらびなおす</button>
+    </div>
   </div>
 </div>
 
@@ -3478,11 +3899,22 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 <div class="overlay hidden" id="result-overlay">
   <div class="modal">
     <div class="modal-icon" id="result-icon">🎉</div>
-    <div class="modal-title" id="result-title">クリア！</div>
+    <div class="modal-title" id="result-title"></div>
     <div class="modal-msg" id="result-msg"></div>
-    <button class="modal-btn" id="result-btn">もういっかい ▶</button>
-    <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 なんいどをかえる</button>
-    <a href="../play.html" class="modal-back">← メニューにもどる</a>
+    <div class="result-acorn-reward" id="result-acorn-reward" hidden aria-live="polite">
+      <div class="result-acorn-reward__main">
+        <span class="result-acorn-reward__icon" aria-hidden="true"></span>
+        <span class="result-acorn-reward__amount" aria-hidden="true">
+          <span class="result-acorn-reward__times">×</span><span id="result-acorn-count">0</span>
+        </span>
+      </div>
+      <div class="result-acorn-reward__copy" id="result-acorn-copy">どんぐりを ゲット！</div>
+    </div>
+    <div class="result-actions">
+      <button class="modal-btn" id="result-btn">もういっかい ▶</button>
+      <button class="modal-btn" id="result-cat-btn" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);">🦉 なんいどをかえる</button>
+      <a href="../play.html" class="modal-back">← メニューにもどる</a>
+    </div>
   </div>
 </div>
 
@@ -3551,6 +3983,13 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 (function() {
 'use strict';
 
+try {
+  const __qzEditParams = new URLSearchParams(window.location.search || '');
+  if (__qzEditParams.get('edit') === '1') {
+    document.body.classList.add('qz-explicit-layout-editor');
+  }
+} catch (_) {}
+
 // ═══════════════════════════════════════════════════════════
 // State
 // ═══════════════════════════════════════════════════════════
@@ -3563,6 +4002,12 @@ let questionIdx = 0;
 let correctCount = 0;
 let currentQ = null;
 let locked = false;
+// audit batch:936 fix #4: locked 状態を answer-panel の .question-locked クラスへ反映。
+// 値を書く callsite が複数あるので、 ヘルパーを噛ませて視覚同期する。
+function _qzApplyLockVisual() {
+  var panel = document.getElementById('answer-panel');
+  if (panel) panel.classList.toggle('question-locked', !!locked);
+}
 
 // ─── デバッグ全問プレイモード判定 ─────────────────────
 //   ?debug=all : 全問を固定順で 1 度ずつ通すモード。
@@ -3571,6 +4016,15 @@ let locked = false;
 //   debug ナビは無効化する (DOM は付くが操作は通常通り、進行はそのまま全問を回す)。
 //   通常ユーザー (?debug=all なし) では一切挙動が変わらないこと。
 const QZ_DEBUG_ALL = (function () {
+  // batch:887 admin-debug-leak-fix — ?debug=all は manage unlock 後 +
+  // "quizland-debug-all" feature ON のみ。 本番ユーザーは常に false (= 通常出題)。
+  try {
+    if (!window.PonoDebugMode
+        || typeof window.PonoDebugMode.isFeatureEnabled !== 'function'
+        || !window.PonoDebugMode.isFeatureEnabled('quizland-debug-all')) {
+      return false;
+    }
+  } catch (_) { return false; }
   try {
     const sp = new URLSearchParams(window.location.search);
     return sp.get('debug') === 'all';
@@ -3605,19 +4059,26 @@ function isPlaytestInEditor() {
 const ALL_CATS = Object.keys(QUIZLAND_CATEGORIES);
 let selectedCategories = Object.fromEntries(ALL_CATS.map(k => [k, true]));
 // 難易度
-// Lv1 = かんたん, Lv2 = ふつう, Lv3 = むずかしい。カテゴリは分けずに全体から混ぜる。
+// Lv1 = やさしい, Lv2 = ふつう, Lv3 = むずかしい。カテゴリは分けずに全体から混ぜる。
 // 各レベルだけを抽出するために min == max のレンジで指定する
+// 表示ラベルは common/difficulty.js (PonoDifficulty) で一元化。 旧 'かんたん' は
+// PonoDifficulty.normalizeLabel() が EASY に吸収するため localStorage 互換維持。
 const DIFF_LEVELS = ['easy', 'normal', 'hard'];
 const DIFF_MIN_LEVEL = { easy: 1, normal: 2, hard: 3 };
 const DIFF_MAX_LEVEL = { easy: 1, normal: 2, hard: 3 };
+const DIFF_LABELS = (function () {
+  var PD = (typeof window !== 'undefined') ? window.PonoDifficulty : null;
+  if (PD && PD.DIFFICULTY) {
+    return { easy: PD.DIFFICULTY.EASY.label, normal: PD.DIFFICULTY.NORMAL.label, hard: PD.DIFFICULTY.HARD.label };
+  }
+  // PonoDifficulty 未読込時のフォールバック (新ラベルに統一)
+  return { easy: 'やさしい', normal: 'ふつう', hard: 'むずかしい' };
+})();
 const DIFF_STORAGE_KEY = 'pono_quizland_difficulty';
 const RECOMMENDED_PLAYLIST_LEVEL_ORDER = [1, 1, 2, 2, 3];
 const RECOMMENDED_PLAYLIST_HISTORY_KEY = 'pono_quizland_recommended_seen_v1';
-let selectedDifficulty = 'easy'; // 'easy'|'normal'|'hard'
-try {
-  const _saved = localStorage.getItem(DIFF_STORAGE_KEY);
-  if (_saved && DIFF_LEVELS.indexOf(_saved) !== -1) selectedDifficulty = _saved;
-} catch (e) { /* localStorage 不可なら デフォルト 'easy' */ }
+let selectedDifficulty = null; // 確認後にだけ 'easy'|'normal'|'hard' を入れる
+let pendingDifficulty = null;  // 難易度画面で一時選択中の値
 function selectAllQuizlandCategories() {
   ALL_CATS.forEach(function(c) { selectedCategories[c] = true; });
 }
@@ -3869,7 +4330,7 @@ window._applyHakaseTextSize = function(sizeMap) {
   const baseSize = sizeMap.base || '';
   let css = '';
   if (baseSize) {
-    css += '#char-hint-text { font-size: ' + baseSize + ' !important; }\n';
+    css += '#char-hint-text { font-size: max(24px, ' + baseSize + ') !important; }\n';
   }
   styleEl.textContent = css;
 };
@@ -3911,7 +4372,12 @@ function setHakaseDialogue(text) {
   const el = document.getElementById('char-hint-text');
   if (!el) return;
   try { if (window.PonoBabble && typeof window.PonoBabble.cancelAll === 'function') window.PonoBabble.cancelAll(); } catch (e) {}
-  el.textContent = (text == null) ? '' : String(text);
+  const value = (text == null) ? '' : String(text);
+  el.textContent = value;
+  const lineCount = value.split(/\n/).length;
+  const compactScore = value.replace(/\s/g, '').length + Math.max(0, lineCount - 2) * 8;
+  el.classList.toggle('qz-hakase-long', compactScore >= 30);
+  el.classList.toggle('qz-hakase-xlong', compactScore >= 48 || lineCount >= 5);
 }
 // E3: layout-editor のセリフ編集パネル (ライブプレビュー) から呼べるよう window に露出
 window.setHakaseDialogue = setHakaseDialogue;
@@ -4109,6 +4575,103 @@ let _qzUpdateDiagLabel = null;
 
 fitStage();
 
+(function setupQuizlandEditorToolbarCollapse() {
+  const STORAGE_KEY = 'quizland:layout-editor-toolbar-collapsed';
+  let retryTimer = null;
+  let retryCount = 0;
+
+  function syncToolbarHeight(toolbar) {
+    if (!toolbar) return;
+    requestAnimationFrame(function() {
+      document.documentElement.style.setProperty('--le-toolbar-h', toolbar.offsetHeight + 'px');
+      try { window.dispatchEvent(new Event('resize')); } catch (_) {}
+    });
+  }
+
+  function applyCollapsed(toolbar, collapsed) {
+    document.body.classList.toggle('qz-editor-toolbar-collapsed', !!collapsed);
+    const btn = document.getElementById('qz-editor-toolbar-toggle');
+    if (btn) {
+      btn.textContent = collapsed ? '☰ メニューを開く' : '☰ メニューを閉じる';
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      btn.title = collapsed ? 'レイアウトエディタのメニューを開く' : 'レイアウトエディタのメニューを閉じる';
+    }
+    const fab = document.getElementById('qz-editor-toolbar-fab');
+    if (fab) {
+      fab.textContent = collapsed ? '☰' : '×';
+      fab.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      fab.title = collapsed ? 'レイアウトエディタのメニューを開く' : 'レイアウトエディタのメニューを閉じる';
+      fab.setAttribute('aria-label', fab.title);
+    }
+    try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (_) {}
+    syncToolbarHeight(toolbar);
+  }
+
+  function ensureFloatingToggle(toolbar) {
+    let fab = document.getElementById('qz-editor-toolbar-fab');
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = 'qz-editor-toolbar-fab';
+      fab.type = 'button';
+      fab.className = 'qz-editor-toolbar-fab';
+      document.body.appendChild(fab);
+      fab.addEventListener('click', function() {
+        const activeToolbar = document.getElementById('le-toolbar') || toolbar;
+        applyCollapsed(activeToolbar, !document.body.classList.contains('qz-editor-toolbar-collapsed'));
+      });
+    }
+    return fab;
+  }
+
+  function attach(toolbar) {
+    if (!toolbar) return false;
+    let btn = toolbar.querySelector('#qz-editor-toolbar-toggle');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'qz-editor-toolbar-toggle';
+      btn.type = 'button';
+      btn.className = 'qz-editor-toolbar-toggle';
+      btn.addEventListener('click', function() {
+        applyCollapsed(toolbar, !document.body.classList.contains('qz-editor-toolbar-collapsed'));
+      });
+      toolbar.insertBefore(btn, toolbar.firstChild);
+    }
+    ensureFloatingToggle(toolbar);
+    let initial = false;
+    try { initial = localStorage.getItem(STORAGE_KEY) === '1'; } catch (_) {}
+    applyCollapsed(toolbar, initial);
+    return true;
+  }
+
+  function tryAttach() {
+    const toolbar = document.getElementById('le-toolbar');
+    if (!toolbar) return false;
+    return attach(toolbar);
+  }
+
+  function scheduleRetry() {
+    if (retryTimer || retryCount >= 40) return;
+    retryTimer = setTimeout(function tick() {
+      retryTimer = null;
+      retryCount += 1;
+      if (tryAttach()) return;
+      scheduleRetry();
+    }, 100);
+  }
+
+  if (tryAttach()) return;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryAttach, { once: true });
+  } else {
+    setTimeout(tryAttach, 0);
+  }
+  scheduleRetry();
+  const observer = new MutationObserver(function() {
+    if (tryAttach()) observer.disconnect();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();
+
 // ═══════════════════════════════════════════════════════════
 // Saved-layout loader (common/layout システム経由)
 // --------------------------------------------------------------
@@ -4135,10 +4698,9 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.emoji-display.phase-answer',   'wh', 'ステージ枠 [答え]'],
   ['.stage-img-wrap.phase-question', 'wh', 'ステージ画像枠 [問題]'],
   ['.stage-img-wrap.phase-answer',   'wh', 'ステージ画像枠 [答え]'],
-  ['.emoji-main-img.phase-question', 'wh', 'ステージ画像 (挿絵) [問題]'],
-  ['.emoji-main-img.phase-answer',   'wh', 'ステージ画像 (挿絵) [答え]'],
+  // batch:943: .emoji-main-img を resizable 対象から外す (画像本体は .stage-img-wrap で間接管理)
+  // → 二重バウンディングボックス問題と「左上に貼り付き」を根治
   ['.stage-img-wrap',          'wh', 'ステージ画像枠'],
-  ['.emoji-main-img',          'wh', 'ステージ画像 (挿絵)'],
   ['.shape-display',           'wh', 'ステージ枠 (かたち)'],
   ['.shape-img',               'wh', 'ステージ画像 (かたち)'],
   ['.count-stack',             'wh', 'ステージ枠 (かず)'],
@@ -4158,6 +4720,8 @@ const QZ_RESIZABLE_SELECTORS = [
   ['.char-hint',               'wh', 'キャラ吹き出し'],
   ['.stage-pono',              'wh', 'ステージポノ (左下)'],
 ];
+// batch:943: .emoji-main-img を resizable 対象から外す (画像本体は .stage-img-wrap で間接管理)
+// → 二重バウンディングボックス問題と「左上に貼り付き」を根治
 const QZ_PER_QUESTION_SELECTORS = [
   '.emoji-display.phase-question',
   '.emoji-display.phase-answer',
@@ -4165,9 +4729,6 @@ const QZ_PER_QUESTION_SELECTORS = [
   '.stage-img-wrap.phase-question',
   '.stage-img-wrap.phase-answer',
   '.stage-img-wrap',
-  '.emoji-main-img.phase-question',
-  '.emoji-main-img.phase-answer',
-  '.emoji-main-img',
   '.shape-display',
   '.shape-img',
   '.count-stack',
@@ -4320,8 +4881,81 @@ function _qzApplyChipText(el, originalText, qKey, slot) {
   _qzApplyChipTextStyle(el, qKey, slot);
 }
 
+// 2026-06-30 (batch:968): saved-layout-frozen.json — read-only な並列「ロック層」。
+//   通常の saved-layout.json とは別ファイルで、 editor の 🔒 ロックボタン経由でしか
+//   書き込まれない。 LayoutApplier が saved-layout.json を読む直前に frozen を fetch し、
+//   両者をマージ (frozen を勝たせる) してから applier に渡す。 結果:
+//     - frozen にあるキーは絶対に saved-layout.json で上書きされない
+//     - 編集者が誤って通常 save しても、 frozen のキーは disk-applied されない (= 永続保護)
+//   frozen が空 ({}) のときは従来動作と完全に同一。
+function _qzKickoffFrozenLayoutFetch() {
+  if (window._qzFrozenLayoutPromise) return window._qzFrozenLayoutPromise;
+  // cache-bust で必ず最新 frozen を取りに行く (saved-layout.json と同じパターン)。
+  var url = './saved-layout-frozen.json?t=' + Date.now();
+  window._qzFrozenLayoutPromise = fetch(url, { cache: 'no-store' })
+    .then(function (r) { return r && r.ok ? r.json() : null; })
+    .catch(function (_) { return null; })
+    .then(function (data) {
+      if (data && typeof data === 'object') {
+        window._qzFrozenLayoutData = data;
+      } else {
+        window._qzFrozenLayoutData = null;
+      }
+      return window._qzFrozenLayoutData;
+    });
+  return window._qzFrozenLayoutPromise;
+}
+// 即時 kick off (script load 時に並行 fetch 開始 → main layout fetch と同タイミングで完了)
+try {
+  _qzKickoffFrozenLayoutFetch().then(function (frozen) {
+    // frozen が遅れて到着した場合、 既に apply 済みの base に on-top でマージして再適用。
+    //   beforeApply が呼ばれた時点で _qzFrozenLayoutData が null なら frozen 値は反映され
+    //   ていない。 _qzScheduleStageLayoutRestore は authoritative cache を起点に再 apply
+    //   するが、 frozen はそこに含まれないので、 明示的に authoritative + frozen を merge
+    //   してから _currentLayoutData を差し替える。
+    if (!frozen || typeof frozen !== 'object' || !Object.keys(frozen).length) return;
+    try {
+      var cur = window._currentLayoutData;
+      if (cur && typeof cur === 'object') {
+        var merged = _qzMergeFrozenOverBase(cur, frozen);
+        window._currentLayoutData = merged;
+        // authoritative cache も frozen 反映済み版に更新 (後段の restore 経路で frozen が消えないように)
+        try { _qzRememberAuthoritativeLayoutData(merged); } catch (_) {}
+      }
+      // applier が存在すれば即時再 apply (visual 上の遅延 paint を避ける)
+      if (window.LayoutApplier && window._currentLayoutData) {
+        var stage = document.getElementById('stage-area') || document.getElementById('stage') || document.body;
+        var qid = (typeof window.QUIZLAND_GET_CURRENT_QID === 'function') ? window.QUIZLAND_GET_CURRENT_QID() : null;
+        window.LayoutApplier.apply(window._currentLayoutData, stage, {
+          selectors: (typeof QZ_RESIZABLE_SELECTORS !== 'undefined') ? QZ_RESIZABLE_SELECTORS : [],
+          perQuestionSelectors: (typeof QZ_PER_QUESTION_SELECTORS !== 'undefined') ? QZ_PER_QUESTION_SELECTORS : null,
+          qid: qid,
+        });
+      }
+    } catch (_) { /* late frozen merge is best-effort; do not crash */ }
+  });
+} catch (_) { /* noop */ }
+
+// frozen layer を base layer に on-top merge。 frozen のキーが base を上書きする。
+//   個別オブジェクト ({w,h,tx,ty} 等) は shallow replace で十分。 入力 base は mutate しない。
+function _qzMergeFrozenOverBase(base, frozen) {
+  if (!frozen || typeof frozen !== 'object') return base;
+  if (!base || typeof base !== 'object') {
+    // base が null → frozen のみ。 が、 frozen に __savedAt 等の冗長キーは含まないので
+    // そのまま deep clone して返す。
+    try { return JSON.parse(JSON.stringify(frozen)); } catch (_) { return Object.assign({}, frozen); }
+  }
+  var out = Object.assign({}, base);
+  Object.keys(frozen).forEach(function (k) { out[k] = frozen[k]; });
+  return out;
+}
+
 function _qzPickFreshLayoutData(serverData) {
-  var DEPLOY_LAG_WINDOW_MS = 10 * 60 * 1000;
+  // batch:968 (2026-06-30): 「保存しても消える」 問題対策の一環で 10 分 → 2 分に短縮。
+  //   旧値だと別端末・別ブラウザの保存が CF deploy 完了後も 10 分間ローカル cache に
+  //   隠されて、 同じ端末上でロールバック表示が長く続く副作用があった。 deploy ラグの
+  //   実測は 30-90 秒程度なので 2 分窓で十分実用域。
+  var DEPLOY_LAG_WINDOW_MS = 2 * 60 * 1000;
   var candidates = [
     'le_layout_' + (location.pathname || '/'),
     'le_layout_/quizland/',
@@ -4437,7 +5071,7 @@ window.EditorBootstrapConfig = {
   // 「🎯 この質問だけ / 🌐 すべての質問」 トグルで保存範囲を選ぶ (既定 🌐 = 共通保存)。
   perQuestionScopeToggleSelectors: QZ_PER_QUESTION_SCOPE_TOGGLE,
   ghPath: _qzEditorGhPath(),
-  // app staging (APP_BUILD=1) では保存先も develop-app に合わせる。
+  // 2026-06-16: app staging (APP_BUILD=1) では保存先も develop-app に合わせる。
   // local などで別ブランチへ送りたい場合は ?ghBranch=foo で明示上書きできる。
   ghBranch: _qzEditorGhBranch(),
   // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
@@ -4445,7 +5079,14 @@ window.EditorBootstrapConfig = {
   // エディター保存直後は GitHub commit → staging deploy の反映ラグがあるため、
   // 同じ端末では短時間だけ localStorage の保存済み layout を通常表示にも優先する。
   beforeApply: function(data) {
-    return _qzRememberAuthoritativeLayoutData(_qzPickFreshLayoutData(data));
+    // 2026-06-30 (batch:968): saved-layout-frozen.json (read-only ロック層) を base layer の
+    //   うえに merge (frozen 勝ち)。 通常 save では決して上書きされないキーをここで合成。
+    //   frozen fetch がまだ未完了の場合は _qzFrozenLayoutData が null → そのまま base 返す。
+    //   完了後 (rAF/setTimeout の _qzScheduleStageLayoutRestore 経路) で再 apply されて
+    //   遅れて frozen が反映される。
+    var picked = _qzPickFreshLayoutData(data);
+    var merged = _qzMergeFrozenOverBase(picked, window._qzFrozenLayoutData);
+    return _qzRememberAuthoritativeLayoutData(merged);
   },
 
   // E2 (2026-05-13): saved-layout.json 内の `__hakase_dialogue_text_size`
@@ -4516,13 +5157,44 @@ function toggleBGM() {
   else stopBGM();
 }
 
+// v1944 (iH4): audioCtx.resume() の Promise を await してから bgmAudio.play() する。
+// AC が 'suspended' の間に play() すると HTMLMediaElement は playing になるが実出力は
+// silent (createMediaElementSource で AC を経由するため)。 iOS low power mode で resume
+// 完了に 200-500ms かかるケースで「復帰直後に無音」 症状が出るのを防ぐ。
+function _qzResumeBgmAfterVisible() {
+  if (document.hidden || !bgmEnabled || !bgmAudio) return;
+  try { ensureAudio(); } catch (_) {}
+  var launch = function () {
+    if (!bgmAudio) return;
+    var p = bgmAudio.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(function () {
+        try { window.PonoPreload && window.PonoPreload.scheduleBgmRetry(bgmAudio); } catch (_) {}
+      });
+    }
+  };
+  if (audioCtx && audioCtx.state === 'suspended') {
+    try {
+      var rp = audioCtx.resume();
+      if (rp && typeof rp.then === 'function') {
+        rp.then(launch, launch);
+        return;
+      }
+    } catch (_) {}
+  }
+  launch();
+}
+
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) {
     if (bgmAudio) bgmAudio.pause();
-  } else if (bgmEnabled && bgmAudio) {
-    bgmAudio.play().catch(function () {});
+  } else {
+    _qzResumeBgmAfterVisible();
   }
 });
+// v1943: bfcache cold restore / 共通 resume event で BGM 復帰。
+window.addEventListener('pageshow', function () { _qzResumeBgmAfterVisible(); });
+window.addEventListener('PonoAudioVisibilityResume', function () { _qzResumeBgmAfterVisible(); });
 window.addEventListener('pagehide', function () {
   if (bgmAudio) bgmAudio.pause();
 });
@@ -4579,7 +5251,16 @@ function playHintSe()  { playSe('hint'); }
     } catch (e) {}
   }
   _warm('nextQuestion');                     // don.mp3
-  for (var i = 1; i <= 5; i++) _warm('kurumi_dai' + i);
+  // audit batch:936 perf: 早期離脱対策で kurumi_dai は 1〜2 のみ事前確保。
+  // 第 3 問以降は loadQuestion 直前に lazy warm-up する (帯域節約 ~300KB)。
+  for (var i = 1; i <= 2; i++) _warm('kurumi_dai' + i);
+  // 残り (kurumi_dai3〜5) は requestIdleCallback でゆっくり温める
+  function _warmRest() { for (var j = 3; j <= 5; j++) _warm('kurumi_dai' + j); }
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(_warmRest, { timeout: 5000 });
+  } else {
+    setTimeout(_warmRest, 4000);
+  }
 })();
 
 // ═══════════════════════════════════════════════════════════
@@ -4703,8 +5384,9 @@ function buildPlaylist() {
   selectAllQuizlandCategories();
   const cats = ALL_CATS.filter(c => selectedCategories[c]);
   if (cats.length === 0) return [];
-  const minLv = DIFF_MIN_LEVEL[selectedDifficulty];
-  const maxLv = DIFF_MAX_LEVEL[selectedDifficulty];
+  const activeDifficulty = selectedDifficulty || pendingDifficulty || 'easy';
+  const minLv = DIFF_MIN_LEVEL[activeDifficulty];
+  const maxLv = DIFF_MAX_LEVEL[activeDifficulty];
   const perCat = Math.max(1, Math.ceil(DEFAULT_TOTAL_Q / cats.length));
   const list = [];
   cats.forEach(cat => {
@@ -5152,7 +5834,9 @@ function _qzBuildPhaseScopedStageLayoutData(data, phase) {
   if (!data || typeof data !== 'object' || phase !== 'answer') return data;
   // 問題フェーズと答えフェーズは同じ DOM 要素を使い回すため、
   // answer 適用時に question / legacy base キーへ fallback すると
-  // 片方を触るともう片方も同じ大きさに見えてしまう。
+  // 「片方を触るともう片方も同じ大きさになる」見え方になる。
+  // ここでは apply 用の一時 clone から question/base の stage key だけ外し、
+  // answer 専用キーが無いときは CSS 既定値へ戻す。
   var filtered = Object.assign({}, data);
   [
     '.emoji-display',
@@ -5237,6 +5921,19 @@ function showNextButton(onClick) {
   area.appendChild(btn);
   // フェードイン
   requestAnimationFrame(() => btn.classList.add('show'));
+  // audit batch:936 fix #5: 4 択読み上げ中は「つぎへ」を一時無効化。
+  // 読み上げが終わったタイミング (= _playAllChoicesRunning が false に戻る) で復活。
+  if (typeof _playAllChoicesRunning !== 'undefined' && _playAllChoicesRunning) {
+    btn.disabled = true;
+    var _waitMs = 0;
+    var _timer = setInterval(function(){
+      _waitMs += 200;
+      if (!_playAllChoicesRunning || _waitMs >= 8000) {
+        clearInterval(_timer);
+        if (document.body.contains(btn)) btn.disabled = false;
+      }
+    }, 200);
+  }
 }
 
 function hideNextButton() {
@@ -5768,8 +6465,10 @@ function renderChoices(q) {
 window.renderChoices = renderChoices;
 
 function loadQuestion(q) {
+  _stopChoiceNarration();
   currentQ = q;
   locked = false;
+  _qzApplyLockVisual(); // audit batch:936 fix #4
   // 前問題から残っている staged-reveal クラスを掃除する (illust / 答えパネル)。
   // 直後に renderChoices / stage 描画が新規ノードを作るので revealed は付け直し。
   document.querySelectorAll('.q-stage-revealed, .q-stage-pending').forEach(function(el) {
@@ -5972,12 +6671,13 @@ function setupNarration(q, opts) {
       if (window._quizlandPaused ||
           (document.body && document.body.classList.contains('layout-editor-paused'))) { e.preventDefault(); e.stopPropagation(); return; }
       e.preventDefault();
+      _stopChoiceNarration();
       Narration.play(key);
     };
     // F2 (2026-05-12): Q1-5 では kurumi_dai{N}mon mp3 と被るので、 自動再生を
     // スキップし、 呼び出し側 (loadQuestion) が kurumi mp3 ended 後に playIfAuto
-    // を発火する。 Q6+ や opts 省略時は従来通り即時自動再生。
-    if (has && !_skipAutoPlay) Narration.playIfAuto(key);
+    // 相当の質問読み上げを発火する。 Q6+ や opts 省略時はここで即時自動再生。
+    if (has && !_skipAutoPlay && currentQ === q) _playQuestionNarrationThenAutoChoices(q);
     const prefetchKeys = [];
     for (let i = 1; i <= 2; i++) {
       const nq = playlist[questionIdx + i];
@@ -5999,18 +6699,18 @@ function setupNarration(q, opts) {
   });
 }
 
-// 4 択中央のスピーカー: a→b→c→d (= data-idx 0..3) の順に音声を再生しつつ
-// 各 chip を .reading-active で水色表示する。
-// - Narration.play は再生開始時に resolve するので、 完了は別途独自に Audio を
-//   起こして ended イベントで待つ (narration.js は外部に Audio を露出しないため)。
-//   manifest 自体は再 fetch せず、 軽量な独自マップ (_choiceUrlCache) に保存。
-// - 該当 key が manifest に無い chip はスキップ (light up もしない)。
+// 質問自動ナレーションと 4 択中央スピーカー用の音声制御。
+// - 質問: q wav の ended を待ってから a→b→c→d を自動再生する。
+// - 4 択: data-idx 0→1→2→3 の順に再生しつつ、各 chip を .reading-active で水色表示する。
+// - Narration.play は再生開始時に resolve するので、完了待ちは独自 Audio で行う。
+// - manifest URL は軽量な独自マップ (_ttsUrlCache) に保存する。
+// - 選択肢 key が manifest に無い chip は数字 wav / Web Speech にフォールバックする。
 // - 連打防止: 実行中は #answer-speaker に .reading を付け pointer-events を止める。
 let _playAllChoicesRunning = false;
 let _playAllChoicesAudio = null;          // 現在再生中の Audio (キャンセル用)
-const _choiceUrlCache = {};               // key → wav URL (depth-aware で 1 回だけ計算)
-function _resolveChoiceWavUrl(key) {
-  if (_choiceUrlCache[key]) return _choiceUrlCache[key];
+const _ttsUrlCache = {};                  // key → wav URL (depth-aware で 1 回だけ計算)
+function _resolveTtsWavUrl(key) {
+  if (_ttsUrlCache[key]) return _ttsUrlCache[key];
   // narration.js の SAFE_FILE_RE と同じ命名規約。 manifest.json を再 fetch して
   // entries[key].file を直接拾う (軽量 / cache 制御も narration.js と同様)。
   // 既に load() 済みの manifest を覗ければ早いが、 公開 API には無いので
@@ -6020,10 +6720,96 @@ function _resolveChoiceWavUrl(key) {
     .then(function(m){
       if (!m || !m.entries || !m.entries[key] || !m.entries[key].file) return null;
       const url = '../assets/tts/' + m.entries[key].file;
-      _choiceUrlCache[key] = url;
+      _ttsUrlCache[key] = url;
       return url;
     })
     .catch(function(){ return null; });
+}
+let _autoChoiceNarrationToken = 0;
+let _questionNarrationAudio = null;
+let _questionNarrationFinish = null;
+function _cancelAutoChoiceNarration() {
+  _autoChoiceNarrationToken++;
+}
+function _stopQuestionNarrationAudio() {
+  try {
+    if (_questionNarrationAudio) {
+      try { _questionNarrationAudio.pause(); _questionNarrationAudio.currentTime = 0; } catch(_) {}
+      _questionNarrationAudio = null;
+    }
+    if (_questionNarrationFinish) {
+      const finish = _questionNarrationFinish;
+      _questionNarrationFinish = null;
+      finish();
+    }
+  } catch(_) { /* silent */ }
+}
+function _isAutoChoiceNarrationCurrent(token, q) {
+  return token === _autoChoiceNarrationToken && currentQ === q && !locked;
+}
+function _waitForAnswerPanelReadyForChoices(token, q) {
+  return new Promise(function(resolve) {
+    const started = Date.now();
+    function tick() {
+      if (!_isAutoChoiceNarrationCurrent(token, q)) { resolve(false); return; }
+      const panel = document.getElementById('answer-panel');
+      if (panel && !panel.classList.contains('q-stage-pending')) { resolve(true); return; }
+      if (Date.now() - started > 7000) { resolve(false); return; }
+      setTimeout(tick, 80);
+    }
+    tick();
+  });
+}
+function _playQuestionWavUntilEnded(key, token, q) {
+  return new Promise(function(resolve) {
+    if (!key || !_isAutoChoiceNarrationCurrent(token, q)) { resolve(false); return; }
+    _resolveTtsWavUrl(key).then(function(url) {
+      if (!url || !_isAutoChoiceNarrationCurrent(token, q)) { resolve(false); return; }
+      _stopQuestionNarrationAudio();
+      const a = new Audio(url);
+      _questionNarrationAudio = a;
+      let done = false;
+      function finish() {
+        if (done) return;
+        done = true;
+        a.removeEventListener('ended', finish);
+        a.removeEventListener('error', finish);
+        if (_questionNarrationAudio === a) _questionNarrationAudio = null;
+        if (_questionNarrationFinish === finish) _questionNarrationFinish = null;
+        resolve(true);
+      }
+      _questionNarrationFinish = finish;
+      a.addEventListener('ended', finish);
+      a.addEventListener('error', finish);
+      try {
+        a.volume = (typeof Narration !== 'undefined' && Narration.getVolume) ? Narration.getVolume() : 0.9;
+        a.playbackRate = (typeof Narration !== 'undefined' && Narration.getRate) ? Narration.getRate() : 1.15;
+        a.currentTime = 0;
+      } catch(_) {}
+      a.play().catch(function(){ finish(); });
+      setTimeout(function(){ if (!done) { try { a.pause(); } catch(_){} finish(); } }, 12000);
+    }).catch(function() {
+      resolve(false);
+    });
+  });
+}
+async function _playQuestionNarrationThenAutoChoices(q) {
+  if (typeof Narration === 'undefined' || !q) return;
+  const key = narrationKey(q, 'q');
+  if (!key) return;
+  const token = ++_autoChoiceNarrationToken;
+  try {
+    await Narration.load();
+    if (!_isAutoChoiceNarrationCurrent(token, q)) return;
+    if (Narration.getMode && Narration.getMode() !== 'auto') return;
+    if (!Narration.hasEntry(key)) return;
+    const played = await _playQuestionWavUntilEnded(key, token, q);
+    if (!played || !_isAutoChoiceNarrationCurrent(token, q)) return;
+    const ready = await _waitForAnswerPanelReadyForChoices(token, q);
+    if (!ready || !_isAutoChoiceNarrationCurrent(token, q)) return;
+    if (Narration.getMode && Narration.getMode() !== 'auto') return;
+    await playAllChoices();
+  } catch (_) { /* silent */ }
 }
 // 2026-05-12 修正(T3): manifest に wav が無い chip 用の Web Speech フォールバック。
 // chip 内の text (= 「6」 「7」 「8」 「9」 等) を ja-JP TTS で読み上げる。
@@ -6046,6 +6832,7 @@ function _speakChipText(chip) {
     try {
       // narration.js 側の問題文音声を停止 (衝突回避)。
       if (typeof Narration !== 'undefined' && Narration.stop) Narration.stop();
+      _stopQuestionNarrationAudio();
       speechSynthesis.cancel();
       const utter = new SpeechSynthesisUtterance(text);
       utter.lang = 'ja-JP';
@@ -6053,8 +6840,8 @@ function _speakChipText(chip) {
       utter.onend = finish;
       utter.onerror = finish;
       speechSynthesis.speak(utter);
-      // セーフティ: 4 秒で強制終了。
-      setTimeout(function(){ if (!done) { try { speechSynthesis.cancel(); } catch(_){} finish(); } }, 4000);
+      // 低スペック Android で 4 秒では読み切れない問題に対応 (audit batch:936)
+      setTimeout(function(){ if (!done) { try { speechSynthesis.cancel(); } catch(_){} finish(); } }, 7000);
     } catch (_) { finish(); }
   });
 }
@@ -6064,6 +6851,7 @@ function _playWavOnce(url) {
     try {
       // narration.js 側の currentPlaying と衝突しないよう、 まず問題文音声を停止。
       if (typeof Narration !== 'undefined' && Narration.stop) Narration.stop();
+      _stopQuestionNarrationAudio();
     } catch(_) {}
     const a = new Audio(url);
     _playAllChoicesAudio = a;
@@ -6095,10 +6883,41 @@ async function _playCorrectChipAudio(q, correctBtn) {
   } catch (_) { /* silent fail */ }
 }
 
+// audit batch:936 fix #2: 順次読み上げ (playAllChoices) を即停止するヘルパー。
+// onChoice / loadQuestion / 問題スピーカーから呼ぶことで、ユーザー操作と
+// 自動の「質問→4択」読み上げが重ならないようにする。
+function _stopChoiceNarration() {
+  try {
+    _cancelAutoChoiceNarration();
+    _stopQuestionNarrationAudio();
+    if (_playAllChoicesAudio) {
+      try { _playAllChoicesAudio.pause(); } catch(_) {}
+      _playAllChoicesAudio = null;
+    }
+    // Bug-C fix (2026-06-30): speechSynthesis.cancel() を _playAllChoicesRunning が真のときだけ呼ぶ。
+    // 過去仕様: onChoice 冒頭で常に cancel() を打っていたため、
+    // loadQuestion 直後の質問ナレーション (kurumi mp3 ended コールバックで Web Speech フォールバック予約済)
+    // も巻き添えで停止していた → Q1 ナレーションが鳴らない事故。
+    if (_playAllChoicesRunning && typeof speechSynthesis !== 'undefined') {
+      try { speechSynthesis.cancel(); } catch(_) {}
+    }
+    if (typeof Narration !== 'undefined' && Narration.stop) {
+      try { Narration.stop(); } catch(_) {}
+    }
+    var sp = document.getElementById('answer-speaker');
+    if (sp) sp.classList.remove('reading');
+    document.querySelectorAll('#answer-panel .chip.reading-active').forEach(function(c){
+      c.classList.remove('reading-active');
+    });
+    _playAllChoicesRunning = false;
+  } catch(_) { /* silent */ }
+}
+
 async function playAllChoices() {
   if (_playAllChoicesRunning) return;
   if (typeof Narration === 'undefined') return;
   if (!currentQ) return;
+  const q = currentQ;
   const speaker = document.getElementById('answer-speaker');
   const panel = document.getElementById('answer-panel');
   if (!panel) return;
@@ -6109,9 +6928,17 @@ async function playAllChoices() {
     // data-idx 0=TL=a, 1=TR=b, 2=BL=c, 3=BR=d。 ユーザー希望「左上→右上→左下→右下」
     // = idx 0→1→2→3 と等価。
     const suffixes = ['a', 'b', 'c', 'd'];
+    // audit batch:936 perf: ループ内の querySelector 重複呼出を 1 回の querySelectorAll にまとめる。
+    const _chipList = panel.querySelectorAll('.chip');
+    const _chipByIdx = {};
+    for (let _ci = 0; _ci < _chipList.length; _ci++) {
+      var _di = _chipList[_ci].getAttribute('data-idx');
+      if (_di != null) _chipByIdx[_di] = _chipList[_ci];
+    }
     for (let i = 0; i < suffixes.length; i++) {
-      const chip = panel.querySelector('.chip[data-idx="' + i + '"]');
-      const key = narrationKey(currentQ, suffixes[i]);
+      if (currentQ !== q || locked) break;
+      const chip = _chipByIdx[String(i)] || null;
+      const key = narrationKey(q, suffixes[i]);
       // 2026-05-12 修正(T3): 以前は manifest 未登録 (hasEntry=false) 時に
       // `continue` で skip し chip を点灯すらしなかった。 結果として
       // number_sequence のように 4 択中 1 つ (正解のみ) しか wav が無いカテゴリ
@@ -6124,7 +6951,7 @@ async function playAllChoices() {
       try {
         let played = false;
         if (key && Narration.hasEntry(key)) {
-          const url = await _resolveChoiceWavUrl(key);
+          const url = await _resolveTtsWavUrl(key);
           if (url) { await _playWavOnce(url); played = true; }
         }
         // 2026-05-12 修正(W3): manifest 未登録でも chip text が 0-10 の数字なら
@@ -6147,6 +6974,7 @@ async function playAllChoices() {
       if (chip) {
         chip.classList.remove('reading-active');
       }
+      if (currentQ !== q || locked) break;
     }
   } finally {
     if (speaker) speaker.classList.remove('reading');
@@ -6178,6 +7006,8 @@ function _setupAnswerSpeaker(q) {
       if (window._quizlandPaused ||
           (document.body && document.body.classList.contains('layout-editor-paused'))) { e.preventDefault(); e.stopPropagation(); return; }
       e.preventDefault();
+      _cancelAutoChoiceNarration();
+      _stopQuestionNarrationAudio();
       playAllChoices();
     };
   });
@@ -6192,7 +7022,7 @@ function _playQuestionNarrationNow(q) {
   const key = narrationKey(q, 'q');
   if (!key) return;
   Narration.load().then(() => {
-    if (Narration.hasEntry(key)) Narration.playIfAuto(key);
+    if (Narration.hasEntry(key) && currentQ === q) _playQuestionNarrationThenAutoChoices(q);
   });
 }
 
@@ -6255,11 +7085,15 @@ function ensureProgressMarkAspectGuard() {
 // Answer handling
 // ═══════════════════════════════════════════════════════════
 function onChoice(idx, btn) {
+  // audit batch:936 fix #2: 4 択読み上げ中にユーザーが回答した場合、
+  // ナレーションを即停止して回答 SE / フィードバックと被らないようにする。
+  _stopChoiceNarration();
   // 自動ヒント (showProblemDialogue で 5 秒後にセット) が回答後に発火して
   // セリフを上書きしないように、最初に必ずキャンセルする
   clearTimeout(_autoHintTimer);
   if (locked) return;
   locked = true;
+  _qzApplyLockVisual(); // audit batch:936 fix #4
   // モバイルでも :active が反応しづらい場合に備え、明示的に押下表示を出す
   if (btn) {
     btn.classList.add('pressed');
@@ -6318,6 +7152,9 @@ function onChoice(idx, btn) {
       setTimeout(() => { showNextButton(nextQuestion); }, 1200);
     }
   } else {
+    // audit batch:936 fix #1: 過去の不正解 chip に残った .wrong を先に剥がす。
+    // 連続不正解で複数の chip が赤いまま残る視覚バグを防ぐ。
+    document.querySelectorAll('#answer-panel .chip.wrong').forEach(function(c){ c.classList.remove('wrong'); });
     btn.classList.add('wrong');
     btn.disabled = true;
     playWrong();
@@ -6325,6 +7162,7 @@ function onChoice(idx, btn) {
     showWrongDialogue();
     // もういっかいチャンス: 間違ったボタンだけ無効化、ロック解除して再選択可能
     locked = false;
+    _qzApplyLockVisual(); // audit batch:936 fix #4
   }
 }
 
@@ -6426,19 +7264,40 @@ function showResult() {
   stopStagePono();           // 左下ポノも結果画面では停止
   showClearDialogue(correctCount, totalQuestions);
   const cleared = correctCount >= Math.ceil(totalQuestions * 0.7); // 70% 以上で clear
+  const rewardAcorns = totalQuestions > 0 ? Math.max(3, Math.min(5, correctCount | 0)) : 0;
+  let grantedAcorns = 0;
+  if (rewardAcorns > 0 && window.addAcornsDaily) {
+    var alreadyAcorns = window.getDailyAcorns ? (window.getDailyAcorns('quizland') | 0) : 0;
+    var acornDiff = Math.max(0, rewardAcorns - alreadyAcorns);
+    if (acornDiff > 0) {
+      grantedAcorns = window.addAcornsDaily('quizland', acornDiff, 5, {
+        reason: cleared ? 'quizland_clear' : 'quizland_finish',
+        suppressRewardModal: true
+      }) | 0;
+    }
+  }
   // セッション完走 (5 問サイクル完了) を祝福する「ぜんぶ できたね！」スタンプ。
   // 正解率に関わらず常に表示 (= 完走の証)。 cleared/not の差は title テキストで表現。
   document.getElementById('result-icon').innerHTML =
     '<img src="../assets/images/quizland/stamps/zenbu_dekita.png" alt="" class="result-stamp-img">';
-  document.getElementById('result-title').textContent = cleared ? 'クリア！' : 'もうちょっと！';
-  document.getElementById('result-msg').textContent = cleared
-    ? toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい！'
-    : toFullWidth(String(totalQuestions)) + 'もんちゅう ' + toFullWidth(String(correctCount)) + 'もん せいかい。\nもういちど やってみよう！';
+  document.getElementById('result-title').textContent = '';
+  document.getElementById('result-msg').textContent = '';
+  const rewardEl = document.getElementById('result-acorn-reward');
+  const rewardCountEl = document.getElementById('result-acorn-count');
+  const rewardCopyEl = document.getElementById('result-acorn-copy');
+  if (rewardEl) {
+    const showAcornNum = Math.max(0, grantedAcorns | 0);
+    if (rewardCountEl) rewardCountEl.textContent = String(showAcornNum);
+    if (rewardCopyEl) rewardCopyEl.textContent = showAcornNum > 0 ? 'どんぐりを ゲット！' : 'きょうは もう もらったよ';
+    rewardEl.setAttribute('aria-label', showAcornNum > 0 ? ('どんぐり ' + showAcornNum + 'こを ゲット') : 'きょうは もう もらったよ');
+    rewardEl.hidden = false;
+  }
   // Perfect (5/5 全問正解) 時は背景画像 + 大きなスタンプ押印アニメーションを発動。
   // is-perfect で背景画像とスタイル、 is-animated でアニメーションを起動 (reflow で確実に再生)。
   const overlayEl = document.getElementById('result-overlay');
   const isPerfect = (correctCount === totalQuestions && totalQuestions > 0);
   overlayEl.classList.toggle('is-perfect', isPerfect);
+  overlayEl.classList.add('has-acorn-result');
   overlayEl.classList.remove('is-animated');
   overlayEl.classList.remove('hidden');
   if (isPerfect) {
@@ -6459,6 +7318,12 @@ function showResult() {
     if (typeof window.triggerFirstClearReward === 'function') {
       try { window.triggerFirstClearReward('quizland'); } catch (e) {}
     }
+    // ごかんそう (rating) 4 ゲート chain — quizland は first-clear.js 連鎖に乗らないため個別 wire
+    setTimeout(() => {
+      if (window.PonoRating?.maybeShowAfterClear) {
+        window.PonoRating.maybeShowAfterClear('quizland');
+      }
+    }, 800);
   }
 }
 
@@ -6479,6 +7344,9 @@ function initGame() {
   correctCount = 0;
   const _rov = document.getElementById('result-overlay');
   _rov.classList.add('hidden');
+  _rov.classList.remove('has-acorn-result');
+  const _reward = document.getElementById('result-acorn-reward');
+  if (_reward) _reward.hidden = true;
   // Perfect 演出用クラスをクリア (次の 5/5 で再発動できるように)
   _rov.classList.remove('is-perfect', 'is-animated');
   if (playlist.length === 0) {
@@ -6487,10 +7355,9 @@ function initGame() {
     // 全問ロックされる組み合わせの時にここに落ちる。 黙って難易度画面に
     // 戻すと「タイトルに戻された」と誤解されるため、 サブスク誘導モーダルで
     // 「アプリで遊べるよ」と明示する。
-    // [Phase 2 future-use] MVP (PONO_TIER_GAME_LOCKS_ENABLED=false) では
-    //   isQuizlandQuestionUnlocked が常に true を返すため、 ここの
-    //   showSubscribePromo 分岐は実質到達しない (買い切り全機能開放方針)。
-    //   Phase 2 でサブスク制を再開する場合に備えて残置している。
+    // NOTE: common/tier.js は 2026-06-28 以降 PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 稼働中)。
+    // このコメントはかつて false (MVP 全開放) だった頃の名残で、現在は isQuizlandQuestionUnlocked が
+    // tier に応じて false を返し得るため、showSubscribePromo 分岐は実際に到達する現役コード。
     if (window.PonoTier && window.PonoTier.showSubscribePromo) {
       if (typeof window.PonoTier.showTierLockPromo === 'function') {
         window.PonoTier.showTierLockPromo();
@@ -6498,6 +7365,7 @@ function initGame() {
         window.PonoTier.showSubscribePromo();
       }
     }
+    resetDiffChoice();
     if (shouldUseQuizlandRecommendedFlow()) {
       document.getElementById('start-screen').classList.remove('hidden');
     } else {
@@ -6562,6 +7430,67 @@ let _opCancelled = false;
 let _opActiveAudio = null;
 let _opTypingToken = 0;
 let _opRunning = false;
+const _opImagePreloadCache = Object.create(null);
+
+function _opPreloadImage(url, timeoutMs) {
+  if (!url) return Promise.resolve();
+  if (_opImagePreloadCache[url]) return _opImagePreloadCache[url];
+  _opImagePreloadCache[url] = new Promise(function(resolve) {
+    let done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      resolve();
+    }
+    try {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = function() {
+        if (img.decode) {
+          img.decode().then(finish).catch(finish);
+        } else {
+          finish();
+        }
+      };
+      img.onerror = finish;
+      img.src = url;
+      if (img.complete && img.naturalWidth > 0) {
+        if (img.decode) {
+          img.decode().then(finish).catch(finish);
+        } else {
+          finish();
+        }
+      }
+      setTimeout(finish, timeoutMs || 900);
+    } catch (_) {
+      finish();
+    }
+  });
+  return _opImagePreloadCache[url];
+}
+
+function _opGetNarrationFrameImageUrl() {
+  try {
+    const nr = _opLoadNarrationOverride(_opGetCurrentVC());
+    if (nr && nr.bgMode === 'image' && typeof nr.bgImagePath === 'string' && nr.bgImagePath) {
+      return nr.bgImagePath;
+    }
+  } catch (_) {}
+  return '';
+}
+
+function _opSetNarrationLines(narration, seg) {
+  if (!narration) return;
+  narration.innerHTML = '';
+  const lines = (seg && Array.isArray(seg.lines)) ? seg.lines : [];
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
+    const p = document.createElement('p');
+    if (line && line.emphasis) p.classList.add('emphasis');
+    p.textContent = line && typeof line.text === 'string' ? line.text : '';
+    narration.appendChild(p);
+  }
+}
 
 // Fix 5e (2026-05-07): CSS の transform: scale(min(calc(100vw/W), calc(100vh/H)))
 // は length を返すため scale() の number 期待と合わず無効化されていた。
@@ -7434,6 +8363,7 @@ async function playOpeningCinematic() {
     for (var __i = 0; __i < OP_PANELS.length; __i++) {
       var __p = OP_PANELS[__i];
       if (!__p) continue;
+      __warmImg(__p.bg);
       __warmImg(__p.ponoImg);
       __warmImg(__p.kurumiImg);
       if (__p.dialogues && __p.dialogues.length) {
@@ -7446,6 +8376,7 @@ async function playOpeningCinematic() {
         }
       }
     }
+    __warmImg(_opGetNarrationFrameImageUrl());
   } catch (e) {}
 
   try {
@@ -7574,19 +8505,15 @@ async function playOpeningCinematic() {
         // panel.ponoImg があれば prewarm 段階で対応する slot サイズを反映しておく
         // (= 次の dialogue panel に渡るときの一瞬のチラつきを防ぐ)。
         try { _opApplyLayoutOverride(panel, null); } catch (_) {}
-        narration.classList.remove('hidden');
+        narration.classList.add('hidden');
         narration.classList.remove('seg-hide');
+        narration.classList.remove('seg-show');
+        _opSetNarrationLines(narration, segs[0]);
+        await _opPreloadImage(_opGetNarrationFrameImageUrl(), 900);
+        if (_opCancelled) break;
+        narration.classList.remove('hidden');
+        void narration.offsetWidth;
         narration.classList.add('seg-show');
-        narration.innerHTML = '';
-        if (segs[0]) {
-          for (let li = 0; li < segs[0].lines.length; li++) {
-            const line = segs[0].lines[li];
-            const p = document.createElement('p');
-            if (line.emphasis) p.classList.add('emphasis');
-            p.textContent = line.text;
-            narration.appendChild(p);
-          }
-        }
 
         // 音声再生 (セグメント 1 表示中に並行で開始)
         let audio = __opStartSegAudio(0);
@@ -7614,15 +8541,11 @@ async function playOpeningCinematic() {
 
             if (!_opCancelled) {
               // セグメント 2 を構築してフェードイン
-              narration.innerHTML = '';
-              for (let li = 0; li < segs[1].lines.length; li++) {
-                const line = segs[1].lines[li];
-                const p = document.createElement('p');
-                if (line.emphasis) p.classList.add('emphasis');
-                p.textContent = line.text;
-                narration.appendChild(p);
-              }
+              _opSetNarrationLines(narration, segs[1]);
+              await _opPreloadImage(_opGetNarrationFrameImageUrl(), 900);
+              if (_opCancelled) break;
               narration.classList.remove('seg-hide');
+              void narration.offsetWidth;
               narration.classList.add('seg-show');
               // seg2 用の audio を新規生成して再生開始
               audio = __opStartSegAudio(1);
@@ -8003,14 +8926,18 @@ async function playQuestionNumberPlate(qIdx) {
   const finalBalloonImg = document.getElementById('qno-final-balloon-img');
   if (finalBalloon) {
     if (totalQuestions > 1 && qIdx === totalQuestions - 1) {
+      root.classList.add('is-final-question');
       if (finalBalloonImg) finalBalloonImg.src = '../assets/images/quizland/final_q_balloon_no.png';
       finalBalloon.classList.add('show');
       finalBalloon.setAttribute('aria-hidden', 'false');
     } else {
+      root.classList.remove('is-final-question');
       finalBalloon.classList.remove('show');
       if (finalBalloonImg) finalBalloonImg.src = '';
       finalBalloon.setAttribute('aria-hidden', 'true');
     }
+  } else {
+    root.classList.remove('is-final-question');
   }
 
   // タップで「即フェードアウト」させる (旧仕様: cancelled で即座に hide)
@@ -8069,6 +8996,7 @@ function hideQuestionNumberPlate() {
       if (finalBalloonImg) finalBalloonImg.src = '';
       finalBalloon.setAttribute('aria-hidden', 'true');
     }
+    root.classList.remove('is-final-question');
     _qnoRunning = false;
   }, 240); // CSS transition (0.22s) と一致 (R2: 早めの fade out + 多少 OL)
 }
@@ -8128,6 +9056,7 @@ document.getElementById('start-screen').addEventListener('click', function() {
   } catch (e) {}
   startBGM();
   document.getElementById('start-screen').classList.add('hidden');
+  resetDiffChoice();
   updateRecommendedFlowUI();
   if (shouldUseQuizlandRecommendedFlow()) {
     startQuizlandRecommendedRound();
@@ -8137,6 +9066,8 @@ document.getElementById('start-screen').addEventListener('click', function() {
 });
 
 async function startQuizlandRecommendedRound() {
+  selectedDifficulty = null;
+  pendingDifficulty = null;
   selectAllQuizlandCategories();
   updateRecommendedFlowUI();
   try { await playOpeningCinematic(); } catch (e) { console.warn('opening cinematic error', e); }
@@ -8150,7 +9081,7 @@ async function startQuizlandRecommendedRound() {
   }
 }
 
-// 難易度ボタンタップ = 全カテゴリ混合でゲーム開始。
+// 難易度ボタンタップ = 一度確認してから、全カテゴリ混合でゲーム開始。
 // 6 パネルのオープニング・シネマティックを再生してから initGame() を呼ぶ。
 async function startQuizlandWithDifficulty(diff) {
   if (DIFF_LEVELS.indexOf(diff) === -1) return;
@@ -8167,6 +9098,7 @@ async function startQuizlandWithDifficulty(diff) {
   selectedDifficulty = diff;
   try { localStorage.setItem(DIFF_STORAGE_KEY, diff); } catch (e) { /* ignore */ }
   selectAllQuizlandCategories();
+  pendingDifficulty = diff;
   refreshDiffActive();
   applyDiffTierLockUI();
   // mode-screen hide is deferred to playOpeningCinematic so the black
@@ -8182,10 +9114,30 @@ async function startQuizlandWithDifficulty(diff) {
   }
 }
 
-// 難易度ピル: タップで selectedDifficulty を更新して開始
+function updateDiffConfirm() {
+  const panel = document.getElementById('diff-confirm');
+  const text = document.getElementById('diff-confirm-text');
+  if (!panel || !text) return;
+  if (!pendingDifficulty) {
+    panel.classList.add('hidden');
+    text.textContent = 'これで いい？';
+    return;
+  }
+  text.textContent = (DIFF_LABELS[pendingDifficulty] || '') + 'で いい？';
+  panel.classList.remove('hidden');
+}
+
+function resetDiffChoice() {
+  pendingDifficulty = null;
+  selectedDifficulty = null;
+  refreshDiffActive();
+  updateDiffConfirm();
+}
+
+// 難易度ピル: タップで一時選択し、確認パネルを表示
 function refreshDiffActive() {
   document.querySelectorAll('.diff-btn').forEach(function(b) {
-    if (b.dataset.diff === selectedDifficulty) {
+    if (b.dataset.diff === pendingDifficulty) {
       b.classList.add('is-active');
       b.setAttribute('aria-pressed', 'true');
     } else {
@@ -8194,20 +9146,126 @@ function refreshDiffActive() {
     }
   });
 }
+// audit batch:936 fix #6: tier-lock 時にひらがなのみの子ども向け案内オーバーレイを表示。
+// PonoTier の promo が呼べる場合はそれを優先するが、 fallback として軽量 overlay も提供。
+function _qzShowTierLockKidOverlay() {
+  // 既存があれば再利用 (連打で複数生成しない)
+  var ov = document.getElementById('qz-tierlock-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'qz-tierlock-overlay';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:linear-gradient(180deg,#FFFBEB,#FEF3C7);border:6px solid #92400E;border-radius:24px;padding:28px 36px;max-width:80%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.45);font-family:inherit;';
+    var icon = document.createElement('div');
+    icon.textContent = '🔒';
+    icon.style.cssText = 'font-size:48px;line-height:1;margin-bottom:8px;';
+    var msg = document.createElement('div');
+    msg.textContent = 'えほんを かうと あそべるよ！';
+    msg.style.cssText = 'font-size:28px;font-weight:800;color:#7C2D12;margin:10px 0 18px;letter-spacing:-0.02em;';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'わかった';
+    btn.style.cssText = 'font-family:inherit;font-size:24px;font-weight:800;padding:10px 28px;border-radius:999px;border:4px solid #92400E;background:linear-gradient(180deg,#FCD34D,#F59E0B);color:#7C2D12;cursor:pointer;box-shadow:0 4px 0 #92400E;';
+    function _close() { try { ov.remove(); } catch(_) {} }
+    btn.addEventListener('click', _close);
+    ov.addEventListener('click', function(e){ if (e.target === ov) _close(); });
+    card.appendChild(icon); card.appendChild(msg); card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    // 5 秒後の自動 close (子どもがボタンに気付かない時の保険)
+    setTimeout(_close, 5000);
+  }
+}
+function chooseQuizlandDifficulty(diff) {
+  if (DIFF_LEVELS.indexOf(diff) === -1) return;
+  if (!isQuizlandDifficultyUnlockedLocal(diff)) {
+    // audit batch:936 fix #6: PonoTier の promo が無い環境でもひらがな案内を必ず出す
+    if (window.PonoTier && window.PonoTier.showSubscribePromo) {
+      if (typeof window.PonoTier.showTierLockPromo === 'function') {
+        window.PonoTier.showTierLockPromo();
+      } else {
+        window.PonoTier.showSubscribePromo();
+      }
+    } else {
+      _qzShowTierLockKidOverlay();
+    }
+    return;
+  }
+  pendingDifficulty = diff;
+  refreshDiffActive();
+  updateDiffConfirm();
+}
 document.querySelectorAll('.diff-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     const d = btn.dataset.diff;
-    startQuizlandWithDifficulty(d);
+    chooseQuizlandDifficulty(d);
   });
 });
-// 起動時に保存された selectedDifficulty が現tierでロック対象なら easy に戻す。
-if (!isQuizlandDifficultyUnlockedLocal(selectedDifficulty)) {
-  selectedDifficulty = 'easy';
-  try { localStorage.setItem(DIFF_STORAGE_KEY, 'easy'); } catch (e) {}
-}
+document.getElementById('diff-confirm-start').addEventListener('click', function() {
+  if (!pendingDifficulty) return;
+  startQuizlandWithDifficulty(pendingDifficulty);
+});
+document.getElementById('diff-confirm-change').addEventListener('click', function() {
+  resetDiffChoice();
+});
 refreshDiffActive();
+updateDiffConfirm();
 applyDiffTierLockUI();
 updateRecommendedFlowUI();
+
+// audit batch:936 fix #3: キーボードショートカット。
+// 難易度選択画面: 1=やさしい / 2=ふつう / 3=むずかしい、 Enter で開始。
+// 出題画面: 1〜4 で chip 選択 (locked=true 中はスキップ)。
+// layout-editor 中や入力欄フォーカス中は無効。
+(function() {
+  function _qzIsTypingTarget(t) {
+    if (!t) return false;
+    var tag = (t.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (t.isContentEditable) return true;
+    return false;
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (_qzIsTypingTarget(e.target)) return;
+    if (document.body && document.body.classList.contains('layout-editor-on')) return;
+    var modeScr = document.getElementById('mode-screen');
+    var modeVisible = modeScr && !modeScr.classList.contains('hidden');
+    // 難易度選択画面
+    if (modeVisible) {
+      var diffMap = { '1': 'easy', '2': 'normal', '3': 'hard' };
+      if (diffMap[e.key]) {
+        e.preventDefault();
+        chooseQuizlandDifficulty(diffMap[e.key]);
+        return;
+      }
+      if ((e.key === 'Enter' || e.key === ' ') && pendingDifficulty) {
+        e.preventDefault();
+        startQuizlandWithDifficulty(pendingDifficulty);
+        return;
+      }
+    }
+    // 出題画面 (start/mode-screen 共に非表示で answer-panel に chip がある状態)
+    var startScr = document.getElementById('start-screen');
+    var startVisible = startScr && !startScr.classList.contains('hidden');
+    if (!modeVisible && !startVisible) {
+      var keyMap = { '1': 0, '2': 1, '3': 2, '4': 3 };
+      if (keyMap.hasOwnProperty(e.key)) {
+        if (locked) return; // ロック中 (reveal/演出中) はスキップ
+        var panel = document.getElementById('answer-panel');
+        if (!panel) return;
+        var chip = panel.querySelector('.chip[data-idx="' + keyMap[e.key] + '"]');
+        if (chip && !chip.disabled) {
+          e.preventDefault();
+          onChoice(keyMap[e.key], chip);
+        }
+      }
+    }
+  });
+})();
 
 // 共通: layout-editor 中は game progression handler を全部無効化
 //   (要素を掴んで動かしたいのに、ボタンが反応してモード/結果画面が開いてしまうのを防ぐ)
@@ -8238,6 +9296,7 @@ document.getElementById('result-cat-btn').addEventListener('click', function(e) 
   const _rov2 = document.getElementById('result-overlay');
   _rov2.classList.add('hidden');
   _rov2.classList.remove('is-perfect', 'is-animated');
+  resetDiffChoice();
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 
@@ -9056,5 +10115,63 @@ updateHUD();
 
 })();
 </script>
+<!-- ===== Screenshot mode (PonoCapture) registration =====
+     Quizland は DOM ベース (canvas/svg なし) なので html2canvas で
+     #stage コンテナをラスタライズして PonoCapture に渡す。 -->
+<script>
+(function () {
+  function regCapture() {
+    if (!window.PonoCapture) return;
+    window.PonoCapture.register({
+      gameId: 'quizland',
+      build: async function (opts) {
+        var container = document.getElementById('stage');
+        if (!container) throw new Error('quizland capture: #stage not found');
+        try {
+          var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
+          var html2canvas = (mod && (mod.default || mod));
+          if (typeof html2canvas !== 'function') {
+            throw new Error('html2canvas module shape unexpected');
+          }
+          var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
+            ? window.PonoCapture.html2canvasOptions()
+            : {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                logging: false,
+                imageTimeout: 30000,
+                removeContainer: true,
+                ignoreElements: function(el) {
+                  try {
+                    if (!el) return false;
+                    if (el.hasAttribute && el.hasAttribute('data-capture-hide')) return true;
+                    if (el.classList && el.classList.contains && el.classList.contains('pono-capture-overlay')) return true;
+                  } catch (e) {}
+                  return false;
+                }
+              };
+          return await html2canvas(container, h2cOpts);
+        } catch (e) {
+          console.warn('[quizland capture] html2canvas import/exec failed:', e);
+          throw e;
+        }
+      }
+    });
+  }
+  if (window.PonoCapture) regCapture();
+  else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
+})();
+</script>
+<!-- Phase 1: 共通どんぐりモーダル API を先読みしておく (このフェーズでは未呼び出し)。
+     Phase 2 で showResult() の DOM 直書きから window.PonoAcornModal.show() に
+     差し替える際にここでロード済みであれば再リソース取得不要。
+     IMPORTANT: acorn-copy-loader.js は acorn-modal.js より前に load すること
+     (modal は window.PonoAcornCopy.get(gameId,state) を参照する)。
+     defer 同士は記述順で実行されるので順序を変えないこと。 -->
+<script src="../common/acorn-audio.js" defer></script>
+<script src="../common/acorn-copy-loader.js" defer></script>
+<script src="../common/acorn-modal.js" defer></script>
 </body>
 </html>
