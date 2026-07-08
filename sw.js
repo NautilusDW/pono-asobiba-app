@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2058: Bento チュートリアルで、パレットスクロール完了後に青枠を出すようにし、
+//   のり編集パネルの青枠、はっぱタブ/おかず選択導線を修正。play.html PAGE_CACHE_VERSION と同期。
 // v2057: Bento チュートリアルのはっぱ手順で、食材/カップの半透明見本残り・吹き出しのタップ阻害・
 //   leaf タブ状態ずれを修正。book/free 案内モーダルの重複タイトルを省き、
 //   合言葉の場所を「えほんの さいごの ページ」表記へ統一。play.html PAGE_CACHE_VERSION と同期。
@@ -932,7 +934,7 @@
 //   oto / bento free-book ロック差分と avatar assets 同期を反映。
 // v2052: oto のタイトルロゴを上寄せ + 明るいグロウへ変更し、リズム曲の tier 自動進行漏れと結果おてほん導線を修正。
 // v2053: free tier のロック時コピーを「えほんがあるともっとひろがるよ」に寄せ、迷路/パズル/音タッチの free 到達後にえほん案内を一度だけ表示。
-const CACHE_VERSION = 2057;
+const CACHE_VERSION = 2058;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
