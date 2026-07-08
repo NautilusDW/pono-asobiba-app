@@ -283,12 +283,9 @@ BASE_STAGES.forEach((s, i) => {
 
 let STAGES = [...BASE_STAGES];
 
-// v3 (feature_tier_v3): free = book (機能差ゼロ)。
-// 旧仕様はえほん版だけ built-in ステージを一つ飛びで進める BOOK_PUZZLE_STAGE_SEQUENCE
-// (common/tier.js のロック定義を経由しない独自バイパス) を持っていたが、
-// これは isPuzzleStageUnlocked(stageNum) が book/free 共通の FREE_PUZZLE_STAGE_IDS=[1,6,13]
-// に統一された後も残っていた bypass だったため削除し、book も free と同じ
-// PonoTier 経由の判定 (Stage 1/6/13 のみ解放) に統一する。
+// tier ごとの built-in ステージ許可リストは common/tier.js を正とする。
+// free / book は飛び石ステージになるため、「つぎへ」は連番ではなく
+// PonoTier で解放済みの次ステージへ進める。
 
 function getPuzzleTier() {
   try {
@@ -310,9 +307,16 @@ function getStageDisplayMeta(index) {
   return { num: index + 1, total: STAGES.length };
 }
 
-function getNextStageIndexForFlow(index) {
+function getNextUnlockedStageIndexForFlow(index) {
   var current = (typeof index === 'number') ? index : currentStageIndex;
-  return current + 1;
+  for (var i = current + 1; i < STAGES.length; i++) {
+    if (isStageUnlockedForCurrentFlow(i)) return i;
+  }
+  return -1;
+}
+
+function getNextStageIndexForFlow(index) {
+  return getNextUnlockedStageIndexForFlow(index);
 }
 
 function isStageUnlockedForCurrentFlow(index) {
@@ -331,8 +335,25 @@ function isStageUnlockedForCurrentFlow(index) {
 }
 
 function canAdvanceToNextStage() {
-  var nextIndex = getNextStageIndexForFlow(currentStageIndex);
-  return nextIndex < STAGES.length && isStageUnlockedForCurrentFlow(nextIndex);
+  return getNextUnlockedStageIndexForFlow(currentStageIndex) >= 0;
+}
+
+function hasLockedBuiltInStageAfter(index) {
+  var current = (typeof index === 'number') ? index : currentStageIndex;
+  for (var i = current + 1; i < STAGES.length; i++) {
+    var stage = STAGES[i] || null;
+    if (!isBuiltInPuzzleStage(stage)) continue;
+    if (!isStageUnlockedForCurrentFlow(i)) return true;
+  }
+  return false;
+}
+
+function showPuzzleTierLockPromo() {
+  if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
+    window.PonoTier.showTierLockPromo();
+  } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+    window.PonoTier.showSubscribePromo();
+  }
 }
 
 function loadDrawingStages() {
@@ -982,7 +1003,9 @@ function showSuccessModal() {
   }
 
   const displayMeta = getStageDisplayMeta(currentStageIndex);
-  const isLast = currentStageIndex >= STAGES.length - 1;
+  const canAdvance = canAdvanceToNextStage();
+  const hasLockedLater = hasLockedBuiltInStageAfter(currentStageIndex);
+  const isLast = !canAdvance && !hasLockedLater;
   var __stickerKey = '__pono_puzzle_sticker_granted_' + currentStageIndex;
   if (!window[__stickerKey] && window.PonoGameStickers) {
     window[__stickerKey] = true;
@@ -7181,17 +7204,14 @@ if (btnHint) {
 
 btnNextStage.addEventListener('click', () => {
   const nextIndex = getNextStageIndexForFlow(currentStageIndex);
-  if (nextIndex >= STAGES.length) return;
+  if (nextIndex < 0) {
+    nextNudge.stop();
+    showPuzzleTierLockPromo();
+    return;
+  }
   if (!isStageUnlockedForCurrentFlow(nextIndex)) {
     nextNudge.stop();
-    // NOTE: common/tier.js は 2026-06-28 以降 PONO_TIER_GAME_LOCKS_ENABLED=true (Phase 2 稼働中)。
-    // このコメントはかつて false (MVP 全開放) だった頃の名残で、現在はこの分岐が実際に到達する
-    // (free/book tier で Stage 1/6/13 超過時にプロモを表示する現役コード)。
-    if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
-      window.PonoTier.showTierLockPromo();
-    } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
-      window.PonoTier.showSubscribePromo();
-    }
+    showPuzzleTierLockPromo();
     return;
   }
   hideSuccessModal();

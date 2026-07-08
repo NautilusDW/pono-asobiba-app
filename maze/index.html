@@ -11872,6 +11872,59 @@ function showHint(msg, ms) {
 }
 
 // ====== Stage loading ======
+function _mazeStageNumForSlot(idx) {
+  var n = Number(idx);
+  if (!isFinite(n) || n <= 0) return 1;
+  return n;
+}
+
+function _isMazeStageUnlockedForSlot(idx) {
+  if (window._DEV_BYPASS_TIER) return true;
+  if (window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function') {
+    return window.PonoTier.isMazeStageUnlocked(_mazeStageNumForSlot(idx));
+  }
+  return true;
+}
+
+function _findNextUnlockedMazeStageIndex(fromIdx) {
+  var start = (Number(fromIdx) || 0) + 1;
+  for (var i = start; i < STAGES.length; i++) {
+    if (!STAGES[i] || STAGES[i].type !== 'image') continue;
+    if (_isMazeStageUnlockedForSlot(i)) return i;
+  }
+  return -1;
+}
+
+function _hasLockedMazeStageAfter(fromIdx) {
+  var start = (Number(fromIdx) || 0) + 1;
+  for (var i = start; i < STAGES.length; i++) {
+    if (!STAGES[i] || STAGES[i].type !== 'image') continue;
+    if (!_isMazeStageUnlockedForSlot(i)) return true;
+  }
+  return false;
+}
+
+function _isMazeFinalForCurrentFlow() {
+  return _findNextUnlockedMazeStageIndex(stageIdx) < 0 && !_hasLockedMazeStageAfter(stageIdx);
+}
+
+function _showMazeTierLockPromo() {
+  if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
+    window.PonoTier.showTierLockPromo();
+  } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+    window.PonoTier.showSubscribePromo();
+  }
+}
+
+function _loadNextUnlockedMazeStageOrPromo() {
+  var nextIdx = _findNextUnlockedMazeStageIndex(stageIdx);
+  if (nextIdx >= 0) {
+    loadStage(nextIdx);
+  } else {
+    _showMazeTierLockPromo();
+  }
+}
+
 function loadStage(idx) {
   // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
   // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
@@ -11880,10 +11933,9 @@ function loadStage(idx) {
   // このコメントはかつて false (MVP 全開放) だった頃の名残で、現在は isMazeStageUnlocked() が
   // tier に応じて false を返し得るため、以下の showSubscribePromo 分岐は実際に到達する現役コード。
   var requestedIdx = idx | 0;
-  var stageNum = requestedIdx > 0 ? requestedIdx : 1;
   if (!window._DEV_BYPASS_TIER
       && window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'
-      && !window.PonoTier.isMazeStageUnlocked(stageNum)) {
+      && !_isMazeStageUnlockedForSlot(requestedIdx)) {
     if (typeof window.PonoTier.showTierLockPromo === 'function') {
       window.PonoTier.showTierLockPromo();
     } else if (typeof window.PonoTier.showSubscribePromo === 'function') {
@@ -11952,7 +12004,7 @@ function onClear() {
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({
         gameId: 'maze',
-        event: stageIdx >= STAGES.length - 1 ? 'clear' : 'stage_clear'
+        event: _isMazeFinalForCurrentFlow() ? 'clear' : 'stage_clear'
       });
     }
   }
@@ -11969,7 +12021,7 @@ function onClear() {
     if (stage && stage.story) {
       imgShowRescueScene(stage, function() {
         // ボタンクリック後の進行: 最終ステージなら reward → 全クリ overlay、通常は次ステージへ
-        const isLast = stageIdx >= STAGES.length - 1;
+        const isLast = _isMazeFinalForCurrentFlow();
         const isImageStage = stage && stage.type === 'image';
         const isOfficial   = stage && stage._official === true;
         if (isLast) {
@@ -11986,9 +12038,9 @@ function onClear() {
           // 中間ステージ: どんぐり獲得演出 (AcornModal) → 次ステージ / stage3 teaser
           const proceedAfterAcorn = function() {
             if (_shouldShowStage3Teaser()) {
-              _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
+              _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
             } else {
-              loadStage(stageIdx + 1);
+              _loadNextUnlockedMazeStageOrPromo();
             }
           };
           _showMazeAcornModalOrProceed(_mazeGrantedAcorns, isImageStage, isOfficial, proceedAfterAcorn);
@@ -11997,7 +12049,7 @@ function onClear() {
     } else {
       // 最終ステージは AcornModal を介さず直接 final overlay に流す
       // (showStageClearOverlay 内で再度 modal を作る無駄を避ける)。
-      const _isLastNoStory = stageIdx >= STAGES.length - 1;
+      const _isLastNoStory = _isMazeFinalForCurrentFlow();
       if (_isLastNoStory) {
         showStageClearOverlay(0);
       } else {
@@ -12011,7 +12063,7 @@ function showStageClearOverlay(grantedAcorns) {
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
   const _isPreviewMode = (typeof location !== 'undefined' && /[?&]image=/.test(location.search || ''));
-  const isLast = stageIdx >= STAGES.length - 1;
+  const isLast = _isMazeFinalForCurrentFlow();
   if (isLast) {
     // 最終ステージ: 初回クリア報酬を試みる (グリッドステージ + 公式 image ステージのみ)。
     // ?image=<name> でアクセスした非公式 image ステージは報酬対象外。
@@ -12033,9 +12085,9 @@ function showStageClearOverlay(grantedAcorns) {
       ovBtn.onclick = function() {
         hideOverlay();
         if (_shouldShowStage3Teaser()) {
-          _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
+          _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
         } else {
-          loadStage(stageIdx + 1);
+          _loadNextUnlockedMazeStageOrPromo();
         }
       };
       _setOverlayAnimalIcon(stage && stage.story);

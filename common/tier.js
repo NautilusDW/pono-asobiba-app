@@ -1,12 +1,13 @@
 /* ============================================================
-   common/tier.js  (tier v3: free = book 集合方式)
+   common/tier.js  (tier policy centralization)
 
    ユーザー層判定の中央化。
-   v3 (2026-07-06, feature_tier_v3 参照) 以降、 maze/puzzle/quizland/oto/bento の
-   5 ゲームは free = book (機能差ゼロ)。 各ゲームの isXxxUnlocked() は
-   「sub なら true、 それ以外は FREE_* の集合 (indexOf) に含まれるか」 の
-   統一パターンに refactor 済。 book 向けの差別化は付録 (特別シール/特別表紙/
-   welcome演出/月1おかえり) のみで、 本ファイルのゲームロック関数側では扱わない。
+   2026-07-08: maze / puzzle は free と book のステージ差を復帰。
+   quizland / oto / bento は v3 (2026-07-06, feature_tier_v3 参照) の
+   free = book (機能差ゼロ) を維持する。 各ゲームの isXxxUnlocked() は
+   「sub なら true、 それ以外は tier ごとの集合 (indexOf) に含まれるか」 の
+   パターンで扱う。 book 向けの付録 (特別シール/特別表紙/welcome演出/
+   月1おかえり) は本ファイルのゲームロック関数側では扱わない。
    aquarium (isAquariumCreatureUnlocked) / room (isRoomItemUnlocked) /
    bento の box・NPC (isBentoBoxUnlocked/isBentoNpcUnlocked) / oto の
    chord mode (isOtoChordModeUnlocked) は v3 スコープ外につき、
@@ -191,13 +192,16 @@
   ]; // Lv1=10 / Lv2=10 / Lv3=6、計26問
 
   // ---- maze ----
-  // v3: free = book (機能差ゼロ)。 Stage 1/4/5 のみ解放。
-  // Stage 7 は最終ボス露出で物語破綻するため除外 (feature_tier_v3 §2)。
-  var FREE_MAZE_STAGE_IDS = [1, 4, 5];
+  // free: 3 ステージ。 book: free + 2 ステージ。
+  // Stage 7 は最終ボス露出で物語破綻するため book でも除外。
+  var FREE_MAZE_STAGE_IDS = [1, 3, 6];
+  var BOOK_MAZE_STAGE_IDS = [1, 2, 3, 4, 6];
 
   // ---- puzzle ----
-  // v3: free = book (機能差ゼロ)。 Stage 1/6/13 (4/9/16ピースで難易度散らし)。
-  var FREE_PUZZLE_STAGE_IDS = [1, 6, 13];
+  // free: 4 ステージ。 book: free + 3 ステージ + Stage 5 のポノ特別枠。
+  var FREE_PUZZLE_STAGE_IDS = [1, 4, 7, 13];
+  var BOOK_PUZZLE_STAGE_IDS = [1, 4, 5, 7, 11, 13, 17];
+  var BOOK_PUZZLE_PONO_SPECIAL_IDS = ['stage_05'];
 
   // ---- oto ----
   // v3: free = book (機能差ゼロ)。
@@ -297,27 +301,39 @@
 
   function isMazeStageUnlocked(stageNum) {
     if (!gameLocksEnabled()) return true;
+    var n = Number(stageNum);
+    if (!isFinite(n)) return false;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book (機能差ゼロ)
-    return FREE_MAZE_STAGE_IDS.indexOf(stageNum) >= 0;
+    if (t === 'book') return BOOK_MAZE_STAGE_IDS.indexOf(n) >= 0;
+    return FREE_MAZE_STAGE_IDS.indexOf(n) >= 0;
   }
 
   function isPuzzleStageUnlocked(stageNum) {
     if (!gameLocksEnabled()) return true;
+    var n = Number(stageNum);
+    if (!isFinite(n)) return false;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book (機能差ゼロ)
-    return FREE_PUZZLE_STAGE_IDS.indexOf(stageNum) >= 0;
+    if (t === 'book') return BOOK_PUZZLE_STAGE_IDS.indexOf(n) >= 0;
+    return FREE_PUZZLE_STAGE_IDS.indexOf(n) >= 0;
+  }
+
+  function normalizePuzzleSpecialStageId(stageId) {
+    var raw = String(stageId == null ? '' : stageId).trim();
+    if (!raw) return '';
+    var numeric = raw.match(/^(?:stage_)?(\d+)$/);
+    if (!numeric) return raw;
+    return 'stage_' + String(Number(numeric[1])).padStart(2, '0');
   }
 
   function isPuzzlePonoSpecialUnlocked(stageId) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book (機能差ゼロ)。 特別枠は現状 free/book どちらにも未割当
-    // (sub 限定の #5/10/15/20 ポノ特別枠のまま)。 将来 free/book にも割り当てる場合は
-    // ここに専用の FREE_PUZZLE_PONO_SPECIAL_IDS を追加する。
+    if (t === 'book') {
+      return BOOK_PUZZLE_PONO_SPECIAL_IDS.indexOf(normalizePuzzleSpecialStageId(stageId)) >= 0;
+    }
     return false;
   }
 
@@ -710,7 +726,10 @@
     FREE_BENTO_FOOD_IDS: FREE_BENTO_FOOD_IDS,
     FREE_BENTO_NORI_ENABLED: FREE_BENTO_NORI_ENABLED,
     FREE_MAZE_STAGE_IDS: FREE_MAZE_STAGE_IDS,
+    BOOK_MAZE_STAGE_IDS: BOOK_MAZE_STAGE_IDS,
     FREE_PUZZLE_STAGE_IDS: FREE_PUZZLE_STAGE_IDS,
+    BOOK_PUZZLE_STAGE_IDS: BOOK_PUZZLE_STAGE_IDS,
+    BOOK_PUZZLE_PONO_SPECIAL_IDS: BOOK_PUZZLE_PONO_SPECIAL_IDS,
     FREE_OTO_SOUND_SETS: FREE_OTO_SOUND_SETS,
     FREE_OTO_MODES: FREE_OTO_MODES,
     FREE_OTO_SCALES: FREE_OTO_SCALES,
