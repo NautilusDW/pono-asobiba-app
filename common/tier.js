@@ -116,13 +116,16 @@
   ]; // Lv1=10 / Lv2=10 / Lv3=6、計26問
 
   // ---- maze ----
-  var FREE_MAZE_MAX_STAGE = 3;
-  var BOOK_MAZE_MAX_STAGE = 7;
+  // free: 3 ステージ。book: free + 2 ステージ。
+  // Stage 7 は最終ボス露出で物語破綻するため book でも除外。
+  var FREE_MAZE_STAGE_IDS = [1, 3, 6];
+  var BOOK_MAZE_STAGE_IDS = [1, 2, 3, 4, 6];
 
   // ---- puzzle ----
-  var FREE_PUZZLE_MAX_STAGE = 3;
-  var BOOK_PUZZLE_MAX_STAGE = 9;
-  var BOOK_PUZZLE_PONO_SPECIAL_IDS = ['stage_05']; // book に解放するポノ特別枠 (sub は #5/10/15/20 全部)
+  // free: 4 ステージ。book: free + 3 ステージ + Stage 5 のポノ特別枠。
+  var FREE_PUZZLE_STAGE_IDS = [1, 4, 7, 13];
+  var BOOK_PUZZLE_STAGE_IDS = [1, 4, 5, 7, 11, 13, 17];
+  var BOOK_PUZZLE_PONO_SPECIAL_IDS = ['stage_05'];
 
   // ---- oto ----
   var FREE_OTO_SETS = ['doremi','kira'];
@@ -212,25 +215,39 @@
 
   function isMazeStageUnlocked(stageNum) {
     if (!gameLocksEnabled()) return true;
+    var n = Number(stageNum);
+    if (!isFinite(n)) return false;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return stageNum <= BOOK_MAZE_MAX_STAGE;
-    return stageNum <= FREE_MAZE_MAX_STAGE;
+    if (t === 'book') return BOOK_MAZE_STAGE_IDS.indexOf(n) >= 0;
+    return FREE_MAZE_STAGE_IDS.indexOf(n) >= 0;
   }
 
   function isPuzzleStageUnlocked(stageNum) {
     if (!gameLocksEnabled()) return true;
+    var n = Number(stageNum);
+    if (!isFinite(n)) return false;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return stageNum <= BOOK_PUZZLE_MAX_STAGE;
-    return stageNum <= FREE_PUZZLE_MAX_STAGE;
+    if (t === 'book') return BOOK_PUZZLE_STAGE_IDS.indexOf(n) >= 0;
+    return FREE_PUZZLE_STAGE_IDS.indexOf(n) >= 0;
+  }
+
+  function normalizePuzzleSpecialStageId(stageId) {
+    var raw = String(stageId == null ? '' : stageId).trim();
+    if (!raw) return '';
+    var numeric = raw.match(/^(?:stage_)?(\d+)$/);
+    if (!numeric) return raw;
+    return 'stage_' + String(Number(numeric[1])).padStart(2, '0');
   }
 
   function isPuzzlePonoSpecialUnlocked(stageId) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    if (t === 'book') return BOOK_PUZZLE_PONO_SPECIAL_IDS.indexOf(stageId) >= 0;
+    if (t === 'book') {
+      return BOOK_PUZZLE_PONO_SPECIAL_IDS.indexOf(normalizePuzzleSpecialStageId(stageId)) >= 0;
+    }
     return false;
   }
 
@@ -481,6 +498,11 @@
     FREE_QUIZLAND_QUESTION_IDS: FREE_QUIZLAND_QUESTION_IDS,
     ALL_BENTO_FOOD_NAMES: ALL_BENTO_FOOD_NAMES,
     BOOK_BENTO_FOOD_NAMES: BOOK_BENTO_FOOD_NAMES,
-    FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_NAMES
+    FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_NAMES,
+    FREE_MAZE_STAGE_IDS: FREE_MAZE_STAGE_IDS,
+    BOOK_MAZE_STAGE_IDS: BOOK_MAZE_STAGE_IDS,
+    FREE_PUZZLE_STAGE_IDS: FREE_PUZZLE_STAGE_IDS,
+    BOOK_PUZZLE_STAGE_IDS: BOOK_PUZZLE_STAGE_IDS,
+    BOOK_PUZZLE_PONO_SPECIAL_IDS: BOOK_PUZZLE_PONO_SPECIAL_IDS
   };
 })();

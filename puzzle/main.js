@@ -283,9 +283,9 @@ BASE_STAGES.forEach((s, i) => {
 
 let STAGES = [...BASE_STAGES];
 
-// えほん版は序盤が平坦に感じにくいよう、built-in ステージを一つ飛びで進める。
-// common/tier.js のロック定義は触らず、パズル内の進行順だけを変える。
-const BOOK_PUZZLE_STAGE_SEQUENCE = [0, 2, 4, 6, 8, 10, 12, 14, 16];
+// tier ごとの built-in ステージ許可リストは common/tier.js を正とする。
+// free / book は飛び石ステージになるため、「つぎへ」は連番ではなく
+// PonoTier で解放済みの次ステージへ進める。
 
 function getPuzzleTier() {
   try {
@@ -303,39 +303,20 @@ function isBuiltInPuzzleStage(stage) {
   return isFinite(id) && id > 0 && id < 1000;
 }
 
-function getBookStageSequencePosition(index) {
-  for (var i = 0; i < BOOK_PUZZLE_STAGE_SEQUENCE.length; i++) {
-    if (BOOK_PUZZLE_STAGE_SEQUENCE[i] === index) return i;
+function getStageDisplayMeta(index) {
+  return { num: index + 1, total: STAGES.length };
+}
+
+function getNextUnlockedStageIndexForFlow(index) {
+  var current = (typeof index === 'number') ? index : currentStageIndex;
+  for (var i = current + 1; i < STAGES.length; i++) {
+    if (isStageUnlockedForCurrentFlow(i)) return i;
   }
   return -1;
 }
 
-function getStageDisplayMeta(index) {
-  var tier = getPuzzleTier();
-  var stage = STAGES[index] || null;
-  if (tier === 'book' && isBuiltInPuzzleStage(stage)) {
-    var pos = getBookStageSequencePosition(index);
-    if (pos >= 0) {
-      return { num: pos + 1, total: BOOK_PUZZLE_STAGE_SEQUENCE.length };
-    }
-  }
-  return { num: index + 1, total: STAGES.length };
-}
-
 function getNextStageIndexForFlow(index) {
-  var current = (typeof index === 'number') ? index : currentStageIndex;
-  var tier = getPuzzleTier();
-  var stage = STAGES[current] || null;
-  if (tier === 'book' && isBuiltInPuzzleStage(stage)) {
-    var pos = getBookStageSequencePosition(current);
-    if (pos >= 0 && pos < BOOK_PUZZLE_STAGE_SEQUENCE.length - 1) {
-      return BOOK_PUZZLE_STAGE_SEQUENCE[pos + 1];
-    }
-    if (pos === BOOK_PUZZLE_STAGE_SEQUENCE.length - 1) {
-      return current + 2;
-    }
-  }
-  return current + 1;
+  return getNextUnlockedStageIndexForFlow(index);
 }
 
 function isStageUnlockedForCurrentFlow(index) {
@@ -344,9 +325,6 @@ function isStageUnlockedForCurrentFlow(index) {
   if (!isBuiltInPuzzleStage(stage)) return true; // user drawing stages
   var tier = getPuzzleTier();
   if (tier === 'sub') return true;
-  if (tier === 'book') {
-    return getBookStageSequencePosition(index) >= 0;
-  }
   if (!window.PonoTier) return true;
   var stageNum = stage.id != null ? Number(stage.id) : (index + 1);
   var isSpecial = [5, 10, 15, 20].indexOf(stageNum) >= 0;
@@ -357,8 +335,25 @@ function isStageUnlockedForCurrentFlow(index) {
 }
 
 function canAdvanceToNextStage() {
-  var nextIndex = getNextStageIndexForFlow(currentStageIndex);
-  return nextIndex < STAGES.length && isStageUnlockedForCurrentFlow(nextIndex);
+  return getNextUnlockedStageIndexForFlow(currentStageIndex) >= 0;
+}
+
+function hasLockedBuiltInStageAfter(index) {
+  var current = (typeof index === 'number') ? index : currentStageIndex;
+  for (var i = current + 1; i < STAGES.length; i++) {
+    var stage = STAGES[i] || null;
+    if (!isBuiltInPuzzleStage(stage)) continue;
+    if (!isStageUnlockedForCurrentFlow(i)) return true;
+  }
+  return false;
+}
+
+function showPuzzleTierLockPromo() {
+  if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
+    window.PonoTier.showTierLockPromo();
+  } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+    window.PonoTier.showSubscribePromo();
+  }
 }
 
 function loadDrawingStages() {
@@ -975,7 +970,9 @@ function showSuccessModal() {
   }
 
   const displayMeta = getStageDisplayMeta(currentStageIndex);
-  const isLast = currentStageIndex >= STAGES.length - 1;
+  const canAdvance = canAdvanceToNextStage();
+  const hasLockedLater = hasLockedBuiltInStageAfter(currentStageIndex);
+  const isLast = !canAdvance && !hasLockedLater;
   var __stickerKey = '__pono_puzzle_sticker_granted_' + currentStageIndex;
   if (!window[__stickerKey] && window.PonoGameStickers) {
     window[__stickerKey] = true;
@@ -4730,17 +4727,14 @@ if (btnHint) {
 
 btnNextStage.addEventListener('click', () => {
   const nextIndex = getNextStageIndexForFlow(currentStageIndex);
-  if (nextIndex >= STAGES.length) return;
+  if (nextIndex < 0) {
+    nextNudge.stop();
+    showPuzzleTierLockPromo();
+    return;
+  }
   if (!isStageUnlockedForCurrentFlow(nextIndex)) {
     nextNudge.stop();
-    // NOTE: MVP では common/tier.js が PONO_TIER_GAME_LOCKS_ENABLED=false を設定するため、
-    // isStageUnlockedForCurrentFlow() は常に true を返し、この分岐は到達しない。
-    // Phase 2 でロック機能を再有効化する際に、本ブランチが復活する想定。
-    if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
-      window.PonoTier.showTierLockPromo();
-    } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
-      window.PonoTier.showSubscribePromo();
-    }
+    showPuzzleTierLockPromo();
     return;
   }
   hideSuccessModal();

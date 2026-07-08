@@ -165,18 +165,37 @@ window.PonoPartners = (function () {
     }
   }
 
-  function isStageCleared(stageNum) {
+  function isStagePlayableByCurrentTier(stageNum) {
     var n = Number(stageNum);
     if (!isFinite(n) || n <= 0) return false;
+    if (!window.PonoTier) return true;
+    var isSpecial = [5, 10, 15, 20].indexOf(n) >= 0;
+    var stageId = 'stage_' + String(n).padStart(2, '0');
+    if (isSpecial && typeof window.PonoTier.isPuzzlePonoSpecialUnlocked === 'function') {
+      return window.PonoTier.isPuzzlePonoSpecialUnlocked(stageId);
+    }
+    if (typeof window.PonoTier.isPuzzleStageUnlocked === 'function') {
+      return window.PonoTier.isPuzzleStageUnlocked(n);
+    }
+    return true;
+  }
+
+  function getClearedPlayableStageCount() {
     var clears = readClears();
-    return !!clears[String(n)];
+    var count = 0;
+    for (var key in clears) {
+      if (!Object.prototype.hasOwnProperty.call(clears, key)) continue;
+      if (!clears[key]) continue;
+      if (isStagePlayableByCurrentTier(key)) count += 1;
+    }
+    return count;
   }
 
   function progressAllows(partner) {
     if (!partner) return false;
     var after = Number(partner.unlockAfterStage || 0);
     if (!isFinite(after) || after <= 0) return true;
-    return isStageCleared(after);
+    return getClearedPlayableStageCount() >= after;
   }
 
   function isUnlocked(partner) {
@@ -192,7 +211,7 @@ window.PonoPartners = (function () {
       return partner.tier === 'book' ? '📖 えほん' : '⭐ サブスク';
     }
     if (!progressAllows(partner)) {
-      return 'ステージ' + String(partner.unlockAfterStage || '?') + ' クリアで';
+      return String(partner.unlockAfterStage || '?') + 'こ クリアで';
     }
     return '🔒 まだ';
   }

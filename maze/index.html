@@ -9907,6 +9907,59 @@ function showHint(msg, ms) {
 }
 
 // ====== Stage loading ======
+function _mazeStageNumForSlot(idx) {
+  var n = Number(idx);
+  if (!isFinite(n) || n <= 0) return 1;
+  return n;
+}
+
+function _isMazeStageUnlockedForSlot(idx) {
+  if (window._DEV_BYPASS_TIER) return true;
+  if (window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function') {
+    return window.PonoTier.isMazeStageUnlocked(_mazeStageNumForSlot(idx));
+  }
+  return true;
+}
+
+function _findNextUnlockedMazeStageIndex(fromIdx) {
+  var start = (Number(fromIdx) || 0) + 1;
+  for (var i = start; i < STAGES.length; i++) {
+    if (!STAGES[i]) continue;
+    if (_isMazeStageUnlockedForSlot(i)) return i;
+  }
+  return -1;
+}
+
+function _hasLockedMazeStageAfter(fromIdx) {
+  var start = (Number(fromIdx) || 0) + 1;
+  for (var i = start; i < STAGES.length; i++) {
+    if (!STAGES[i]) continue;
+    if (!_isMazeStageUnlockedForSlot(i)) return true;
+  }
+  return false;
+}
+
+function _isMazeFinalForCurrentFlow() {
+  return _findNextUnlockedMazeStageIndex(stageIdx) < 0 && !_hasLockedMazeStageAfter(stageIdx);
+}
+
+function _showMazeTierLockPromo() {
+  if (window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function') {
+    window.PonoTier.showTierLockPromo();
+  } else if (window.PonoTier && typeof window.PonoTier.showSubscribePromo === 'function') {
+    window.PonoTier.showSubscribePromo();
+  }
+}
+
+function _loadNextUnlockedMazeStageOrPromo() {
+  var nextIdx = _findNextUnlockedMazeStageIndex(stageIdx);
+  if (nextIdx >= 0) {
+    loadStage(nextIdx);
+  } else {
+    _showMazeTierLockPromo();
+  }
+}
+
 function loadStage(idx) {
   // Phase 2 ティアロック判定: image stage slots are stored 1-based in STAGES.
   // Legacy/generated stages may still call loadStage(0), so keep that as stage 1.
@@ -9915,10 +9968,9 @@ function loadStage(idx) {
   // isMazeStageUnlocked() が常に true を返すため、以下の showSubscribePromo 分岐は
   // 到達しない dead code。Phase 2 (有料ロック有効化時) のために保持。
   var requestedIdx = idx | 0;
-  var stageNum = requestedIdx > 0 ? requestedIdx : 1;
   if (!window._DEV_BYPASS_TIER
       && window.PonoTier && typeof window.PonoTier.isMazeStageUnlocked === 'function'
-      && !window.PonoTier.isMazeStageUnlocked(stageNum)) {
+      && !_isMazeStageUnlockedForSlot(requestedIdx)) {
     if (typeof window.PonoTier.showTierLockPromo === 'function') {
       window.PonoTier.showTierLockPromo();
     } else if (typeof window.PonoTier.showSubscribePromo === 'function') {
@@ -10004,7 +10056,7 @@ function onClear() {
     if (window.PonoGameStickers) {
       window.PonoGameStickers.grant({
         gameId: 'maze',
-        event: stageIdx >= STAGES.length - 1 ? 'clear' : 'stage_clear'
+        event: _isMazeFinalForCurrentFlow() ? 'clear' : 'stage_clear'
       });
     }
   }
@@ -10020,7 +10072,7 @@ function onClear() {
     if (stage && stage.story) {
       imgShowRescueScene(stage, function() {
         // ボタンクリック後の進行: 最終ステージなら reward → 全クリ overlay、通常は次ステージへ
-        const isLast = stageIdx >= STAGES.length - 1;
+        const isLast = _isMazeFinalForCurrentFlow();
         const isImageStage = stage && stage.type === 'image';
         const isOfficial   = stage && stage._official === true;
         if (isLast) {
@@ -10035,9 +10087,9 @@ function onClear() {
           }
         } else if (_shouldShowStage3Teaser()) {
           // stage3 クリア後の予告ビート (free tier のみ)。1 枚パネル内に 3 枚のコラージュ。
-          _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
+          _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
         } else {
-          loadStage(stageIdx + 1);
+          _loadNextUnlockedMazeStageOrPromo();
         }
       });
     } else {
@@ -10049,7 +10101,7 @@ function onClear() {
 function showStageClearOverlay() {
   const isImageStage = stage && stage.type === 'image';
   const isOfficial   = stage && stage._official === true;
-  const isLast = stageIdx >= STAGES.length - 1;
+  const isLast = _isMazeFinalForCurrentFlow();
   if (isLast) {
     // 最終ステージ: 初回クリア報酬を試みる (グリッドステージ + 公式 image ステージのみ)。
     // ?image=<name> でアクセスした非公式 image ステージは報酬対象外。
@@ -10069,9 +10121,9 @@ function showStageClearOverlay() {
     ovBtn.onclick = function() {
       hideOverlay();
       if (_shouldShowStage3Teaser()) {
-        _showStage3TeaserPanel(function() { loadStage(stageIdx + 1); });
+        _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
       } else {
-        loadStage(stageIdx + 1);
+        _loadNextUnlockedMazeStageOrPromo();
       }
     };
     _setOverlayAnimalIcon(stage && stage.story);
