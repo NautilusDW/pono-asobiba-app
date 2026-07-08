@@ -1061,6 +1061,12 @@ body.image-stage-mode .game-wrap {
   grid-template-columns: 1fr;
   padding: 18px 20px;
 }
+.encounter-modal .enc-card.is-truefalse {
+  width: min(92vw, 720px);
+  max-height: calc(100dvh - 24px);
+  padding: 16px 20px 18px;
+  row-gap: 10px;
+}
 .encounter-modal .enc-card.is-water {
   box-sizing: border-box;
   width: min(98vw, 1280px);
@@ -1108,6 +1114,9 @@ body.image-stage-mode .game-wrap {
   justify-content: stretch;
 }
 .encounter-modal .enc-card.is-janken .enc-left {
+  display: none;
+}
+.encounter-modal .enc-card.is-truefalse .enc-left {
   display: none;
 }
 @keyframes encPop {
@@ -1206,6 +1215,28 @@ body.image-stage-mode .game-wrap {
 }
 .encounter-modal .enc-card.is-janken .enc-stage {
   align-items: stretch;
+}
+.encounter-modal .enc-card.is-truefalse .enc-stage {
+  max-height: none;
+  overflow: visible;
+  gap: 10px;
+}
+.encounter-modal .enc-card.is-truefalse .enc-result {
+  margin: 0;
+  line-height: 1.2;
+}
+.encounter-modal .enc-card.is-truefalse .enc-result__icon {
+  width: min(17vw, 88px);
+  height: min(17vw, 88px);
+  margin-bottom: 4px;
+}
+.encounter-modal .enc-card.is-truefalse .row {
+  width: min(100%, 320px) !important;
+  align-self: center;
+}
+.encounter-modal .enc-card.is-truefalse .enc-btn.choice {
+  min-height: 68px;
+  padding: 6px 12px;
 }
 /* Strict 2-col grid for choice rows — overrides inline flex/max-width set by JS */
 .enc-stage .row {
@@ -1458,6 +1489,8 @@ body.image-stage-mode .game-wrap {
 }
 .janken-choice-hand {
   width: min(clamp(44px, 7vw, 66px), calc(100% - 10px));
+  transform: rotate(-90deg);
+  transform-origin: center;
 }
 .janken-choice-label {
   font-size: clamp(0.72rem, 1.6vw, 0.9rem);
@@ -2691,6 +2724,33 @@ body.image-stage-mode .game-wrap {
     padding: 8px 10px;
     width: min(96vw, 650px);
     max-height: calc(100dvh - 18px);
+  }
+  .encounter-modal .enc-card.is-truefalse {
+    width: min(92vw, 540px);
+    max-height: calc(100dvh - 18px);
+    padding: 9px 12px 11px;
+    border-width: 4px;
+    row-gap: 6px;
+  }
+  .encounter-modal .enc-card.is-truefalse .enc-stage {
+    gap: 6px;
+  }
+  .encounter-modal .enc-card.is-truefalse .enc-result {
+    font-size: clamp(0.95rem, 3.4vw, 1.15rem);
+  }
+  .encounter-modal .enc-card.is-truefalse .enc-result__icon {
+    width: min(16vw, 68px);
+    height: min(16vw, 68px);
+    margin-bottom: 2px;
+  }
+  .encounter-modal .enc-card.is-truefalse .row {
+    width: min(100%, 250px) !important;
+    gap: 8px !important;
+  }
+  .encounter-modal .enc-card.is-truefalse .enc-btn.choice {
+    min-height: 52px;
+    padding: 2px 10px;
+    border-width: 3px;
   }
   .encounter-modal .enc-card.is-water {
     width: calc(100vw - 16px);
@@ -5174,6 +5234,7 @@ function _creatureData(c) {
 function _setEncounterMode(mode) {
   if (!encCardEl) return;
   encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'water_bridge_complete' || mode === 'strength_push' || mode === 'web_sweep' || mode === 'donguri_bowl');
+  encCardEl.classList.toggle('is-truefalse', mode === 'truefalse');
   encCardEl.classList.toggle('is-strength', mode === 'strength_push');
   encCardEl.classList.toggle('is-water', mode === 'water_bridge' || mode === 'water_bridge_complete');
   encCardEl.classList.toggle('is-water-complete', mode === 'water_bridge_complete');
@@ -7160,7 +7221,7 @@ function _createImageChoiceButton(item, index) {
 }
 
 function _showTrueFalseChoices() {
-  _setEncounterMode(null);
+  _setEncounterMode('truefalse');
   _preloadMazeVoices('truefalse', ['start','correct','wrong']);
   const q = _pick(QUIZ_TRUEFALSE);
   encStageEl.textContent = '';

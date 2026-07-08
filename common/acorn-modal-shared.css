@@ -688,11 +688,14 @@
 [data-game-id="maze"] .pono-acorn-modal__dismiss {
   position: absolute;
   z-index: 3;
-  top: max(clamp(14px, 1.8vw, 22px), env(safe-area-inset-top, 0px));
-  right: max(clamp(14px, 1.8vw, 22px), env(safe-area-inset-right, 0px));
+  top: max(clamp(22px, 2.6vw, 30px), env(safe-area-inset-top, 0px));
+  right: max(clamp(28px, 3.4vw, 42px), env(safe-area-inset-right, 0px));
 }
 [data-game-id="maze"] .pono-acorn-modal__amount {
   margin-top: -16px;
+}
+[data-game-id="maze"] .pono-acorn-modal__icon {
+  translate: 0 10px;
 }
 [data-game-id="maze"] .pono-acorn-modal__progress {
   margin-top: clamp(14px, 2.3vw, 22px);
