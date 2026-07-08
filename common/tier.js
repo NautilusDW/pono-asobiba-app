@@ -171,20 +171,24 @@
   ];
 
   // ---- quizland ----
-  // v3 (2026-07-06 tier v3): free = book (機能差ゼロ)。 8カテゴリ Lv1 (easy) から
-  // 3問ずつ + trivia 5問 = 計26問を固定リストで直接指定 (集合方式)。
+  // v3 (2026-07-08 tier v3): free = book (機能差ゼロ)。 1回5問を
+  // Lv1 2問 / Lv2 2問 / Lv3 1問で組むため、固定26問プールも
+  // Lv1=10 / Lv2=10 / Lv3=6 に寄せて直接指定する (集合方式)。
   // book 専用の広い level 判定 (旧 BOOK_QUIZLAND_MAX_LEVEL) は廃止し、
   // free と同じ固定リストに統一する。
   var FREE_QUIZLAND_QUESTION_IDS = [
-    'order_color|0','order_color|1','order_color|2',
-    'count_total|0','count_total|1','count_total|2',
-    'shape_name|0','shape_name|1','shape_name|2',
-    'number_sequence|0','number_sequence|1','number_sequence|2',
-    'weather|0','weather|1','weather|2',
-    'opposite|0','opposite|1','opposite|2',
-    'body|0','body|1','body|2',
-    'trivia|0','trivia|1','trivia|2','trivia|3','trivia|4'
-  ]; // 各カテゴリ Lv1 から3問 + trivia 5問 = 26問
+    // Lv1: 10問
+    'order_color|0','count_total|0','shape_name|0','weather|0',
+    'opposite|0','trivia|0','body|0','number_sequence|0',
+    'count_total|1','trivia|1',
+    // Lv2: 10問
+    'order_color|8','count_total|8','shape_name|7','weather|8',
+    'opposite|8','trivia|9','body|8','number_sequence|6',
+    'count_total|9','trivia|10',
+    // Lv3: 6問
+    'order_color|16','count_total|16','shape_name|15','weather|16',
+    'opposite|16','number_sequence|10'
+  ]; // Lv1=10 / Lv2=10 / Lv3=6、計26問
 
   // ---- maze ----
   // v3: free = book (機能差ゼロ)。 Stage 1/4/5 のみ解放。
