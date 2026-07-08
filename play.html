@@ -198,8 +198,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 
   <!-- Preload released-game thumbnails so they're decoded before renderCards()
-       paints the wood-card list. Coming-soon cards render a CSS "?" mark,
-       so their future thumbnails are intentionally not preloaded.
+       paints the wood-card list. Coming-soon thumbnails stay out of the
+       high-priority path because they sit below the first visible set.
        (Cloudflare Workers serves these fine; local preview environments
        that 404 preload requests just ignore the hint — no functional cost.) -->
   <!-- NOTE: maze カードは本物のめいろ絵 (ランタン+小道) が入っている
@@ -212,7 +212,7 @@
   <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_oto.webp">
   <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_bento.webp">
   <link rel="preload" as="image" fetchpriority="high" href="assets/ui/thumb_puzzle.webp">
-  <!-- v2043: title menu is MVP-only again, so app-only/coming-soon thumbnails stay out of the critical preload path. -->
+  <!-- v2048: title menu shows MVP games first, then non-clickable coming-soon wood cards. -->
   <!-- v1950: v1949 で追加した peek bg 8 種 + mask PNG 4 種の preload を撤回。
        4G 実機で合計 5-8MB の追加転送が sw.js precache と競合し、 FV 到達が
        300-800ms 遅延する副作用が観測されうる。 これらは sw.js CRITICAL_ASSETS_IMAGES
@@ -226,6 +226,7 @@
        PNG 未到着でも UI は壊れない (nav 領域が一瞬透明になるだけ)。 -->
   <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp">
   <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/profile_wallet_frame_wide_20260708.webp">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/menu_card_coming_soon_banner_20260708.webp">
   <!-- pressed PNG 4 枚 (~7.1MB) は cold start 帯域を食うので <head> preload から外し、
        common/preload-helper.js が requestIdleCallback または最初の pointerdown で
        <link rel=preload> を動的注入する (v1697 / cross-review perf-regression + sw-pivot)。 -->
@@ -453,80 +454,6 @@
         drop-shadow(0 0 7px rgba(255, 124, 46, 0.86))
         drop-shadow(0 0 16px rgba(255, 196, 76, 0.62));
     }
-    .title-coming-soon {
-      position: absolute;
-      left: 32px;
-      right: 32px;
-      bottom: 110px;
-      z-index: 11;
-      min-height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 4px 12px;
-      border: 2px dashed rgba(133, 87, 34, .36);
-      border-radius: 999px;
-      background: rgba(255, 247, 219, .78);
-      box-shadow:
-        0 7px 14px rgba(75, 41, 14, .16),
-        inset 0 1px 0 rgba(255, 255, 255, .72);
-      color: #573211;
-      font-weight: 900;
-      line-height: 1;
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    .title-coming-soon__tag {
-      flex: 0 0 auto;
-      padding: 3px 8px 4px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #ffcf69, #f28a34);
-      color: #fff8dd;
-      font-size: 12px;
-      text-shadow: 0 1px 1px rgba(94, 52, 12, .48);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .42);
-      white-space: nowrap;
-    }
-    .title-coming-soon__list {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-width: 0;
-      font-size: 16px;
-      letter-spacing: 0;
-      text-shadow: 0 1px 0 rgba(255, 252, 232, .9);
-      white-space: nowrap;
-    }
-    .title-coming-soon__item {
-      display: inline-block;
-      white-space: nowrap;
-    }
-    .title-coming-soon__dot {
-      opacity: .58;
-      font-size: .8em;
-    }
-    @media (orientation: landscape) and (min-aspect-ratio: 2/1) {
-      .title-coming-soon {
-        min-height: 28px;
-        padding: 3px 12px;
-      }
-      .title-coming-soon__tag { display: none; }
-      .title-coming-soon__list {
-        font-size: 22px;
-        gap: 9px;
-      }
-      .title-coming-soon__list::before {
-        content: "つくってるよ";
-        display: inline-block;
-        margin-right: 2px;
-        color: #d06a26;
-        font-size: .78em;
-      }
-    }
-
     @keyframes hintBobUp {
       0%, 100% { transform: translate(-50%, 0); }
       50%      { transform: translate(-50%, -6px); }
@@ -612,19 +539,49 @@
     /* ===== Coming-soon badge ===== */
     .game-card__soon {
       position: absolute;
-      top: 8px;
-      right: 14%;
-      padding: 4px 12px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #ffd97a, #d99320);
-      color: #4a2a08;
-      font-size: 13px;
+      right: 2.2%;
+      top: 50%;
+      width: 27%;
+      height: 54%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5%;
+      border: 0;
+      border-radius: 0;
+      background: transparent url("assets/ui/menu_card_coming_soon_banner_20260708.webp") center / 100% 100% no-repeat;
+      color: #6b3a00;
+      font-size: clamp(13px, 1.45vw, 18px);
       font-weight: 900;
-      letter-spacing: 0.06em;
-      border: 1.5px solid #6b4218;
-      box-shadow: 0 2px 4px rgba(40, 24, 8, 0.4);
+      line-height: 1;
+      letter-spacing: 0;
+      text-align: center;
+      text-shadow:
+        0 1px 0 rgba(255, 246, 207, .86),
+        0 2px 3px rgba(80, 45, 12, .22);
       pointer-events: none;
+      transform: translateY(-50%) rotate(-1deg);
       z-index: 4;
+    }
+    .game-card__soon > span {
+      display: block;
+      transform: scaleX(.9);
+      transform-origin: center;
+      white-space: nowrap;
+    }
+    .game-card.is-coming-soon {
+      cursor: default;
+    }
+    .game-card.is-coming-soon .game-card__text {
+      right: 30%;
+      gap: 0;
+    }
+    .game-card.is-coming-soon[data-id] .game-card__title {
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+    .game-card.is-coming-soon .game-card__desc {
+      display: none;
     }
     /* v1958: saturate/brightness も filter なので mask×filter 再合成経路に乗る。
        薄い tint overlay (::after) に置換して同じ「じゅんびちゅう感」を近似する。 */
@@ -640,12 +597,12 @@
       pointer-events: none;
       z-index: 3;
     }
-    .game-card.is-coming-soon .game-card__play { opacity: 0.55; }
+    .game-card.is-coming-soon .game-card__play { display: none; }
     /* Debug-playable coming-soon cards: cancel the desaturation/dim play
        button so devs can verify the destination game without losing the
        じゅんびちゅう badge. Visual hover behavior still stays locked. */
     .game-card.is-coming-soon.is-debug-playable::after { content: none; }
-    .game-card.is-coming-soon.is-debug-playable .game-card__play { opacity: 1; }
+    .game-card.is-coming-soon.is-debug-playable .game-card__play { display: block; opacity: 1; }
 
     .game-card {
       position: relative;
@@ -8487,8 +8444,8 @@
       min-width: 0;
       display: inline-flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 6px;
+      justify-content: center;
+      gap: 7px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -8829,16 +8786,6 @@
       .daily-quest-info-banner__body { font-size: 22px; }
       .daily-gacha-entry { height: 106px; }
       .cards-col { padding-top: 24px; }
-      .title-coming-soon {
-        left: 24px;
-        right: 28px;
-        bottom: 92px;
-        min-height: 23px;
-        padding: 4px 10px;
-        gap: 10px;
-      }
-      .title-coming-soon__tag { font-size: 11px; padding: 3px 7px 4px; }
-      .title-coming-soon__list { font-size: 15px; gap: 8px; }
       .game-card__title,
       .game-card[data-id] .game-card__title { font-size: 29px; }
       .game-card__desc { font-size: 18px; }
@@ -8933,17 +8880,6 @@
         justify-content: center;                                     /* NEW v1681 */
         gap: 6px;                                                    /* NEW v1681 (arrows と card-list 間) */
       }
-      .title-coming-soon {
-        left: 8px;
-        right: 12px;
-        bottom: 46px;
-        min-height: 34px;
-        padding: 4px 9px;
-        gap: 8px;
-        border-width: 1.5px;
-      }
-      .title-coming-soon__tag { font-size: 11px; padding: 4px 7px 5px; }
-      .title-coming-soon__list { font-size: 14px; gap: 7px; }
       .card-list {
         gap: 10px;                                                   /* v1680: 8→10 */
         padding-left: 10px;
@@ -9017,14 +8953,6 @@
       .bn-item__sub { display: none; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 5/4) {
-      .title-coming-soon__tag { display: none; }
-      .title-coming-soon__list::before {
-        content: "つくってるよ";
-        display: inline-block;
-        margin-right: 2px;
-        color: #d06a26;
-        font-size: .86em;
-      }
       .bottom-nav {
         --nav-sprite-w: 282px !important;
         --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
@@ -9150,14 +9078,6 @@
             <path d="M6 6 L32 22 L58 6"></path>
             <path d="M14 2 L32 14 L50 2"></path>
           </svg>
-        </div>
-        <div class="title-coming-soon" aria-label="いま つくっている あそび: もじっこファーム、クッキング">
-          <span class="title-coming-soon__tag">いま つくってるよ</span>
-          <span class="title-coming-soon__list">
-            <span class="title-coming-soon__item">もじっこファーム</span>
-            <span class="title-coming-soon__dot" aria-hidden="true">•</span>
-            <span class="title-coming-soon__item">クッキング</span>
-          </span>
         </div>
       </section>
     </main>
@@ -9966,12 +9886,10 @@
     // ----- Phase 1 launch ordering -----
     // 上段 5 本 (quizland → maze → oto → puzzle → bento) は無料公開済みの
     // 本実装ゲーム (tier:'free')。
-    // 下段 4 本 (writing-mori / wordmatch / zukan / kitchen) は本リリースでは
-    // 準備中扱いだが、開発者がリンク経由で挙動を確認できるよう
-    // debugPlayable:true を付与して startGame ガードをすり抜けられるようにする。
-    // (badge と is-coming-soon クラスは残るので一般ユーザーには「じゅんびちゅう」
-    //  として見える)
-    // quiz-sound は MENU_GAMES.filter で除外されるため順番は問わない。
+    // 準備中ゲームは GAMES 側では開発確認用に debugPlayable:true を残す。
+    // タイトルメニューに出す分は MENU_GAMES 作成時に表示専用コピーへ変換し、
+    // 一般ユーザーが押しても遷移しない「いま つくってるよ」カードとして扱う。
+    // quiz-sound などの非表示ゲームは TITLE_MENU_IDS に入れない限りタイトルに出ない。
     const GAMES = [
       {
         id: 'quizland',
@@ -10208,19 +10126,34 @@
     }
     GAMES.forEach((game) => { game.zone = computeGameZone(game); });
 
-    // v2043: 本を購入した人向けMVPが完成するまでは、タイトルメニューは
-    // MVP 5本だけに戻す。app_only / coming_soon の定義は将来戻しやすいよう残すが、
-    // MENU_GAMES へは入れない。
+    // v2048: 本を購入した人向けMVPの導線はMVP 5本を主役にしつつ、
+    // 文字っこファーム / クッキングだけは同じ木札で「いま つくってるよ」と
+    // 最下部に見せる。押しても遷移しない表示専用コピーとして MENU_GAMES へ入れる。
     const TITLE_MENU_IDS = [
       'quizland', 'maze', 'oto', 'bento', 'puzzle'
+    ];
+    const TITLE_COMING_SOON_IDS = [
+      'writing-mori', 'cooking'
     ];
 
     const __rawMenuGames = TITLE_MENU_IDS
       .map((id) => GAMES.find((game) => game.id === id))
       .filter(Boolean);
 
-    // v2046: MVP 5本だけの表示なので、ゾーン見出しカードは出さずゲームカードだけを並べる。
-    const MENU_GAMES = __rawMenuGames;
+    const __comingSoonMenuGames = TITLE_COMING_SOON_IDS
+      .map((id) => GAMES.find((game) => game.id === id))
+      .filter(Boolean)
+      .map((game) => ({
+        ...game,
+        href: '#',
+        debugPlayable: false,
+        menuTitle: game.id === 'cooking' ? 'クッキング' : game.title,
+        menuSubtitle: '',
+        titleDecorationId: game.id === 'cooking' ? 'generic' : game.id
+      }));
+
+    // v2048: ゾーン見出しは出さず、通常カード5本 + 準備中カード2本だけを並べる。
+    const MENU_GAMES = __rawMenuGames.concat(__comingSoonMenuGames);
 
     let currentIdx = 0;
     let activeBgEl = 'A';
@@ -10351,7 +10284,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2047; // sw.js CACHE_VERSION と同期 (title coming-soon note)
+    const PAGE_CACHE_VERSION = 2048; // sw.js CACHE_VERSION と同期 (title coming-soon cards)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10360,7 +10293,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2047';
+    window.PONO_SW_VERSION = 'v2048';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -10383,8 +10316,11 @@
         ? (g.debugPlayable ? ' is-coming-soon is-debug-playable' : ' is-coming-soon')
         : '';
       const comingBadge = g.comingSoon
-        ? '<div class="game-card__soon">じゅんびちゅう</div>'
+        ? '<div class="game-card__soon" aria-hidden="true"><span>つくってるよ</span></div>'
         : '';
+      const displayTitle = g.menuTitle || g.title;
+      const displaySubtitle = g.menuSubtitle != null ? g.menuSubtitle : g.subtitle;
+      const titleDecorationId = g.titleDecorationId || g.id;
       // Pair each panel image with its matching alpha mask. The mask cuts
       // the hover-peek layer to the cream paper region of the wood frame.
       // The actual mask file + offsets are applied via applyTweaks() so
@@ -10410,21 +10346,27 @@
       const priorityAttr  = isPriority ? 'high'  : 'low';
       const peekStyle = g.comingSoon ? 'none' : `url('${esc(__bust(g.bg))}')`;
       const panelUrl  = __bust(g.panel);
-      const thumbMarkup = g.comingSoon
-        ? '<span class="game-card__thumbPlaceholder" aria-hidden="true">?</span>'
-        : `<img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="${decodingAttr}" fetchpriority="${priorityAttr}">`;
+      const thumbMarkup = g.thumb
+        ? `<img class="game-card__thumb" src="${esc(__bust(g.thumb))}" alt="" draggable="false" loading="${loadingAttr}" decoding="${decodingAttr}" fetchpriority="${priorityAttr}">`
+        : '<span class="game-card__thumbPlaceholder" aria-hidden="true">?</span>';
+      const ariaLabel = [displayTitle, displaySubtitle, g.comingSoon && !g.debugPlayable ? 'いま つくってるよ' : '']
+        .filter(Boolean)
+        .join(' ');
+      const disabledAttrs = g.comingSoon && !g.debugPlayable
+        ? ' aria-disabled="true" tabindex="-1"'
+        : '';
       // v1694: panel と play ボタンは <img> を廃止し CSS background-image に。
       // panel は per-card URL なので inline style、 play ボタンは全カード共通
       // URL なので :root の CSS variable から継承。
       return `
-        <button class="game-card${comingClass}" type="button" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" aria-label="${esc(g.title)} ${esc(g.subtitle)}" style="--card-panel: url('${esc(panelUrl)}'); --card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
+        <button class="game-card${comingClass}" type="button" data-idx="${i}" data-rep="${rep}" data-id="${esc(g.id)}" data-panel-n="${panelN}" aria-label="${esc(ariaLabel)}"${disabledAttrs} style="--card-panel: url('${esc(panelUrl)}'); --card-peek: ${peekStyle}; --card-mask: url('${esc(__bust(defaultMaskPath))}'); --card-peek-size: ${esc(g.peekSize || 'cover')}; --card-peek-pos: ${esc(g.peekPos || 'center')}; --gc-thumb-pos: ${esc(g.thumbPos || 'center')};">
           <div class="game-card__peek" aria-hidden="true"></div>
           <div class="game-card__thumbWrap">
             ${thumbMarkup}
           </div>
           <div class="game-card__text">
-            <div class="game-card__title">${decorateGameTitle(g.id, g.title)}</div>
-            <div class="game-card__desc">${decorateKana(g.subtitle)}</div>
+            <div class="game-card__title">${decorateGameTitle(titleDecorationId, displayTitle)}</div>
+            <div class="game-card__desc">${displaySubtitle ? decorateKana(displaySubtitle) : ''}</div>
           </div>
           ${comingBadge}
           <span class="game-card__play" aria-hidden="true"></span>
@@ -10975,6 +10917,11 @@
       if (!isCardTap(e, card)) return;
       const idx = Number(card.dataset.idx);
       if (Number.isNaN(idx)) return;
+      const game = MENU_GAMES[idx];
+      if (game && game.comingSoon && !game.debugPlayable) {
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
       if (idx !== currentIdx) selectGame(idx);
       startGame(idx);
     }
@@ -10991,6 +10938,8 @@
       const idx = Number(card.dataset.idx);
       if (Number.isNaN(idx)) return;
       e.preventDefault();
+      const game = MENU_GAMES[idx];
+      if (game && game.comingSoon && !game.debugPlayable) return;
       if (idx !== currentIdx) selectGame(idx);
       startGame(idx);
     }

@@ -916,7 +916,10 @@
 // v2046: play.html のMVPタイトルメニューから「いま あそべる」ゾーン見出しを削除し、
 //   プロフィール＆どんぐり土台のHTML overlay位置を再調整。
 // v2047: play.html のタイトル下部に、リンクなしの「いま つくってるよ」予告帯を追加。
-const CACHE_VERSION = 2047;
+// v2048: play.html のタイトル下部の常時予告帯を撤去し、同じ木札カードの末尾に
+//   もじっこファーム / クッキングの非リンク準備中カードを追加。生成バナー素材を
+//   カード右側へ重ね、プロフィール土台のどんぐり数を中央寄せ。
+const CACHE_VERSION = 2048;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
@@ -1266,6 +1269,7 @@ const CRITICAL_ASSETS_THUMBS = [
   '/assets/ui/thumb_oto.webp',
   '/assets/ui/thumb_bento.webp',
   '/assets/ui/thumb_puzzle.webp',
+  '/assets/ui/thumb_wordmatch.webp',
   '/assets/ui/thumb_starparodier.webp',
   '/assets/ui/thumb_maze.webp',
   '/assets/ui/thumb_kitchen.webp',
@@ -1279,6 +1283,7 @@ const CRITICAL_ASSETS_CARDS = [
   '/assets/ui/menu_card_paper_mask_02.png',
   '/assets/ui/menu_card_paper_mask_03.png',
   '/assets/ui/menu_card_paper_mask_04.png',
+  '/assets/ui/menu_card_coming_soon_banner_20260708.webp',
 ];
 
 // precache を 5 グループに分割: 1 グループ全失敗しても他は通る (allSettled)。
