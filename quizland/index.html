@@ -243,11 +243,11 @@ body.sheet-on .answer-tray {
   box-shadow: none;
 }
 
-body.sheet-on.layout-editor-on .board::before {
+body.sheet-on.layout-editor-on.qz-explicit-layout-editor .board::before {
   background-image: url('../assets/images/quizland/Fukuro_frame_001_editor_marked.png');
 }
 
-body.sheet-on.layout-editor-on .answer-tray {
+body.sheet-on.layout-editor-on.qz-explicit-layout-editor .answer-tray {
   background-image: url('../assets/images/quizland/Fukuro_frame_002_editor_marked.png');
 }
 
@@ -462,7 +462,7 @@ body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
    editor-bootstrap が追加するため、ゲーム本編プレイ中は overlay が出ない。
    すべて装飾レイヤー (::before/::after/center-dot) で閉じ、.safe-area の grid
    レイアウトには触らない。 ===== */
-body.layout-editor-on.show-safe .safe-area::before {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -470,7 +470,7 @@ body.layout-editor-on.show-safe .safe-area::before {
   pointer-events: none;
   z-index: 9990;
 }
-body.layout-editor-on.show-safe .safe-area::after {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area::after {
   content: "16:9 safe area (1600×900)";
   position: absolute;
   top: 4px; left: 8px;
@@ -482,14 +482,14 @@ body.layout-editor-on.show-safe .safe-area::after {
   pointer-events: none;
   z-index: 9991;
 }
-body.layout-editor-on.show-safe .safe-area {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area {
   background-image:
     linear-gradient(transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
     linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px));
   background-size: 100% 100%, 100% 100%;
   background-repeat: no-repeat, no-repeat;
 }
-body.layout-editor-on.show-safe .safe-area > .center-dot {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .safe-area > .center-dot {
   position: absolute;
   top: 50%; left: 50%;
   width: 14px; height: 14px;
@@ -502,7 +502,8 @@ body.layout-editor-on.show-safe .safe-area > .center-dot {
   z-index: 9992;
 }
 body:not(.layout-editor-on) .center-dot,
-body.layout-editor-on:not(.show-safe) .center-dot { display: none; }
+body.layout-editor-on:not(.show-safe) .center-dot,
+body.layout-editor-on.show-safe:not(.qz-explicit-layout-editor) .center-dot { display: none; }
 
 /* ===== フレーム別 センターマーカー (?edit=1 + show-safe 時のみ)
    各フレーム (.chip / .emoji-display / #answer-panel / .q-text-card) の中心位置を
@@ -515,11 +516,11 @@ body.layout-editor-on:not(.show-safe) .center-dot { display: none; }
    - z-index は resize handle (60-100) より低めの 50 にして、 ハンドル操作を邪魔しない。
    - pointer-events: none で クリックを通す。
    ===== */
-body.layout-editor-on.show-safe #answer-panel {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor #answer-panel {
   position: relative;
 }
-body.layout-editor-on.show-safe .emoji-display::after,
-body.layout-editor-on.show-safe .q-text-card::after {
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .emoji-display::after,
+body.layout-editor-on.show-safe.qz-explicit-layout-editor .q-text-card::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -3981,6 +3982,13 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 <script>
 (function() {
 'use strict';
+
+try {
+  const __qzEditParams = new URLSearchParams(window.location.search || '');
+  if (__qzEditParams.get('edit') === '1') {
+    document.body.classList.add('qz-explicit-layout-editor');
+  }
+} catch (_) {}
 
 // ═══════════════════════════════════════════════════════════
 // State
