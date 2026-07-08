@@ -2,16 +2,15 @@
    common/tier.js  (tier policy centralization)
 
    ユーザー層判定の中央化。
-   2026-07-08: maze / puzzle は free と book のステージ差を復帰。
-   quizland / oto / bento は v3 (2026-07-06, feature_tier_v3 参照) の
+   2026-07-08: maze / puzzle / oto / bento は free と book の差を復帰。
+   quizland は v3 (2026-07-06, feature_tier_v3 参照) の
    free = book (機能差ゼロ) を維持する。 各ゲームの isXxxUnlocked() は
    「sub なら true、 それ以外は tier ごとの集合 (indexOf) に含まれるか」 の
    パターンで扱う。 book 向けの付録 (特別シール/特別表紙/welcome演出/
    月1おかえり) は本ファイルのゲームロック関数側では扱わない。
    aquarium (isAquariumCreatureUnlocked) / room (isRoomItemUnlocked) /
    bento の box・NPC (isBentoBoxUnlocked/isBentoNpcUnlocked) / oto の
-   chord mode (isOtoChordModeUnlocked) は v3 スコープ外につき、
-   book > free の "伸びしろ" 見せ方を維持したまま変更していない。
+   chord mode (isOtoChordModeUnlocked) も book > free の "伸びしろ" として扱う。
 
    公開API (window.PonoTier):
      - getTier()                           → 'free' | 'book' | 'sub'
@@ -204,40 +203,46 @@
   var BOOK_PUZZLE_PONO_SPECIAL_IDS = ['stage_05'];
 
   // ---- oto ----
-  // v3: free = book (機能差ゼロ)。
+  // free: 基本3音色 + 通常スケール。 book: 追加音色 + ペンタ + 和音。
   var FREE_OTO_SOUND_SETS = ['doremi', 'kira', 'animal'];
+  var BOOK_OTO_SOUND_SETS = FREE_OTO_SOUND_SETS.concat(['taiko', 'marimba', 'blip']);
   var FREE_OTO_MODES = ['free', 'rhythm'];
+  var BOOK_OTO_MODES = FREE_OTO_MODES.slice();
   var FREE_OTO_SCALES = ['major'];
+  var BOOK_OTO_SCALES = FREE_OTO_SCALES.concat(['penta']);
   var FREE_OTO_RHYTHM_SONGS = ['kaeru'];
-  // chord mode は tier v3 スコープ外 (feature_tier_v3 §2 に記載なし) につき
-  // book > free の既存差分を維持する (book のみ 'on' 追加解放)。
+  var BOOK_OTO_RHYTHM_SONGS = FREE_OTO_RHYTHM_SONGS.slice();
+  // chord mode は book の追加体験として 'on' を解放する。
   var FREE_OTO_CHORD_MODES = ['off'];
   var BOOK_OTO_CHORD_MODES = ['off', 'on'];
 
   // ---- bento: 30食材 / お弁当箱 / NPC ----
-  // v3: free = book (機能差ゼロ)。 主菜5 + 副菜4 + フルーツ3 = 12食材。
-  // (旧 FREE_BENTO_FOOD_NAMES 8種 + 旧 BOOK 限定だった からあげ/エビフライ/にんじんいんげん/みかん を編入)
+  // free: 基本8食材。 book: 旧 book 追加4食材を足して12食材。
   var FREE_BENTO_FOOD_IDS = [
-    'タコウインナー', 'ハンバーグ', 'たまごやき', 'からあげ', 'エビフライ',      // 主菜5
-    'キャベツ', 'プチトマト', 'ブロッコリー', 'にんじんいんげん',              // 副菜4
-    'いちご', 'バナナ', 'みかん'                                               // フルーツ3
+    'タコウインナー', 'ハンバーグ', 'たまごやき',                              // 主菜3
+    'キャベツ', 'プチトマト', 'ブロッコリー',                                  // 副菜3
+    'いちご', 'バナナ'                                                         // フルーツ2
   ];
-  // v3: のり1種 free 復活 (親満足度優先。 旧方針との差分理由は feature_tier_v3 §2 参照)。
+  var BOOK_BENTO_FOOD_IDS = FREE_BENTO_FOOD_IDS.concat([
+    'からあげ', 'エビフライ',
+    'にんじんいんげん',
+    'みかん'
+  ]);
+  // のり基本パーツは free に残し、追加のり/かざりは bento 側の minTier で book に分ける。
   // NOTE: bento/index.html 側に isBentoDecorUnlocked('nori') 相当の callsite は現状存在しない
   // (nori のロックは bookDecorItem() ラッパーで inline 判定されている)。 この定数は次フェーズで
   // bento/index.html を v3 準拠に直す際の参照値として公開する。
   var FREE_BENTO_NORI_ENABLED = true;
 
   // sub 専用の残り18食材 (30 - 12)。 sub は ALL_BENTO_FOOD_NAMES で全解放。
-  var ALL_BENTO_FOOD_NAMES = FREE_BENTO_FOOD_IDS.concat([
+  var ALL_BENTO_FOOD_NAMES = BOOK_BENTO_FOOD_IDS.concat([
     'コロッケ', 'やきざけ', 'ミートボール', 'コーンほうれんそう',
     'ナポリタン', 'ぎょうざ', 'はるまき', 'ベーコンまき',
     'きんぴらごぼう', 'えだまめ', 'ポテトサラダ', 'ハムサラダ',
     'メロン', 'りんご', 'パイナップル', 'もも', 'ぶどう', 'キウイ'
   ]);  // 12 + 18 = 30累計
 
-  // box / NPC は tier v3 スコープ外 (feature_tier_v3 §2 に記載なし) につき
-  // book > free の既存差分を維持する (未変更)。
+  // box / NPC も book > free の差分として維持する。
   var FREE_BENTO_BOX_IDS = ['box_rect_split'];
   var BOOK_BENTO_BOX_IDS = FREE_BENTO_BOX_IDS.concat(['box_square','box_round']);
   // sub は判定 (isBentoBoxUnlocked) で常 true 返却 = 全箱解放
@@ -341,7 +346,7 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book (機能差ゼロ)
+    if (t === 'book') return BOOK_OTO_SOUND_SETS.indexOf(setId) >= 0;
     return FREE_OTO_SOUND_SETS.indexOf(setId) >= 0;
   }
 
@@ -349,7 +354,7 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book (機能差ゼロ)
+    if (t === 'book') return BOOK_OTO_MODES.indexOf(mode) >= 0;
     return FREE_OTO_MODES.indexOf(mode) >= 0;
   }
 
@@ -357,7 +362,7 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book (機能差ゼロ)
+    if (t === 'book') return BOOK_OTO_SCALES.indexOf(scale) >= 0;
     return FREE_OTO_SCALES.indexOf(scale) >= 0;
   }
 
@@ -365,12 +370,11 @@
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
-    // v3: free = book (機能差ゼロ)
+    if (t === 'book') return BOOK_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
     return FREE_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
   }
 
   function isOtoChordModeUnlocked(mode) {
-    // chord mode は tier v3 スコープ外 (書字なし) につき book > free の既存差分を維持。
     if (!gameLocksEnabled()) return true;
     var t = getTier();
     if (t === 'sub') return true;
@@ -384,7 +388,7 @@
     if (!name) return false;
     var t = getTier();
     if (t === 'sub') return ALL_BENTO_FOOD_NAMES.indexOf(name) >= 0;
-    // v3: free = book (機能差ゼロ)
+    if (t === 'book') return BOOK_BENTO_FOOD_IDS.indexOf(name) >= 0;
     return FREE_BENTO_FOOD_IDS.indexOf(name) >= 0;
   }
 
@@ -719,10 +723,9 @@
     FREE_MONSTER_MATH_STAGE_IDS: FREE_MONSTER_MATH_STAGE_IDS,
     FREE_QUIZLAND_QUESTION_IDS: FREE_QUIZLAND_QUESTION_IDS,
     ALL_BENTO_FOOD_NAMES: ALL_BENTO_FOOD_NAMES,
-    // v3: book = free (機能差ゼロ) につき BOOK_BENTO_FOOD_NAMES / FREE_BENTO_FOOD_NAMES は
-    // 後方互換のため両方とも FREE_BENTO_FOOD_IDS のエイリアスとして残す。
-    BOOK_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_IDS,
+    BOOK_BENTO_FOOD_NAMES: BOOK_BENTO_FOOD_IDS,
     FREE_BENTO_FOOD_NAMES: FREE_BENTO_FOOD_IDS,
+    BOOK_BENTO_FOOD_IDS: BOOK_BENTO_FOOD_IDS,
     FREE_BENTO_FOOD_IDS: FREE_BENTO_FOOD_IDS,
     FREE_BENTO_NORI_ENABLED: FREE_BENTO_NORI_ENABLED,
     FREE_MAZE_STAGE_IDS: FREE_MAZE_STAGE_IDS,
@@ -731,8 +734,12 @@
     BOOK_PUZZLE_STAGE_IDS: BOOK_PUZZLE_STAGE_IDS,
     BOOK_PUZZLE_PONO_SPECIAL_IDS: BOOK_PUZZLE_PONO_SPECIAL_IDS,
     FREE_OTO_SOUND_SETS: FREE_OTO_SOUND_SETS,
+    BOOK_OTO_SOUND_SETS: BOOK_OTO_SOUND_SETS,
     FREE_OTO_MODES: FREE_OTO_MODES,
+    BOOK_OTO_MODES: BOOK_OTO_MODES,
     FREE_OTO_SCALES: FREE_OTO_SCALES,
-    FREE_OTO_RHYTHM_SONGS: FREE_OTO_RHYTHM_SONGS
+    BOOK_OTO_SCALES: BOOK_OTO_SCALES,
+    FREE_OTO_RHYTHM_SONGS: FREE_OTO_RHYTHM_SONGS,
+    BOOK_OTO_RHYTHM_SONGS: BOOK_OTO_RHYTHM_SONGS
   };
 })();
