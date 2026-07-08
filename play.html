@@ -8351,7 +8351,7 @@
     }
     .profile-wallet {
       --profile-wallet-w: 246px;
-      --profile-wallet-h: 118px;
+      --profile-wallet-h: calc(var(--profile-wallet-w) * 472 / 1172);
       position: absolute;
       right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 402px);
       bottom: 20px;
@@ -8362,7 +8362,7 @@
       padding: 0;
       border: 0;
       border-radius: 0;
-      background: transparent url("assets/ui/bottom-nav/profile_wallet_frame_wide_20260708.webp") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/bottom-nav/profile_wallet_frame_wide_20260708.webp") center / contain no-repeat;
       box-shadow: none;
       filter: drop-shadow(0 8px 11px rgba(58, 32, 10, .34));
       font-family: inherit;
@@ -8370,9 +8370,9 @@
     .profile-wallet__profile {
       position: absolute;
       left: 9%;
-      top: 8%;
+      top: 6%;
       width: 41%;
-      height: 84%;
+      height: 86%;
       min-width: 0;
       display: block;
       padding: 0;
@@ -8396,8 +8396,8 @@
     .profile-wallet__avatar.pono-mini-avatar {
       position: absolute;
       left: 50%;
-      top: 6%;
-      width: 54%;
+      top: 5%;
+      width: 50%;
       height: auto;
       min-width: 0;
       min-height: 0;
@@ -8419,7 +8419,7 @@
       position: absolute;
       left: 12%;
       right: 10%;
-      bottom: 19%;
+      bottom: 15%;
       display: block;
       color: #4f2d0c;
       font-size: 11px;
@@ -8437,15 +8437,15 @@
     }
     .profile-wallet__acorns {
       position: absolute;
-      left: 51.5%;
-      top: 43%;
-      width: 43%;
-      height: 28%;
+      left: 54%;
+      top: 38%;
+      width: 38%;
+      height: 32%;
       min-width: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 7px;
+      gap: 5px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -8453,7 +8453,7 @@
       color: #6b3a00;
       box-shadow: none;
       font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
-      font-size: 29px;
+      font-size: 26px;
       font-weight: 900;
       line-height: 1;
       user-select: none;
@@ -8462,7 +8462,7 @@
     }
     .profile-wallet__acorns .acorn-balance-badge__icon {
       display: inline-block;
-      width: 25px;
+      width: 23px;
       aspect-ratio: 85 / 103;
       flex: 0 0 auto;
       background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
@@ -8933,7 +8933,7 @@
       }
       .profile-wallet {
         --profile-wallet-w: 202px;
-        --profile-wallet-h: 98px;
+        --profile-wallet-h: calc(var(--profile-wallet-w) * 472 / 1172);
         right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 334px);
         bottom: 14px;
       }
@@ -10284,7 +10284,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2049; // sw.js CACHE_VERSION と同期 (Puzzle practice lock)
+    const PAGE_CACHE_VERSION = 2050; // sw.js CACHE_VERSION と同期 (profile wallet aspect)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10293,7 +10293,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2048';
+    window.PONO_SW_VERSION = 'v2050';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
