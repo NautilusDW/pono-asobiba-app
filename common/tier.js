@@ -21,6 +21,7 @@
      - isMonsterMathStageUnlocked(mode, stageNum)  モンスターさんすうの各モード×ステージが解放されているか
      - verifyBookPassword(val)             絵本印字パスワードを検証
      - showSubscribePromo(opts)            サブスク誘導モーダル（伸びしろ表現）
+     - showBookLimitPromoOnce(gameId, opts) free で最後まで遊んだ後の一度だけ案内
      - BOOK_AQUARIUM_CREATURE_IDS          絵本層に見せる生き物 8種
      - BOOK_ROOM_ITEM_IDS                  絵本層に見せる家具・かざり 10種
 
@@ -570,9 +571,9 @@
     opts = opts || {};
     if (getTier() === 'free') {
       return {
-        tag: opts.freeTag || 'えほんで ひらくよ',
-        title: opts.freeTitle || 'えほんの ひみつのことばで ひらくよ',
-        body: opts.freeBody || 'タイトルの えほんボタンから ことばを いれてね'
+        tag: opts.freeTag || 'えほんがあると もっと ひろがるよ',
+        title: opts.freeTitle || 'えほんの あいことばで つづきも あそべるよ',
+        body: opts.freeBody || 'タイトルの えほんボタンから あいことばを いれてね'
       };
     }
     return {
@@ -580,6 +581,104 @@
       title: opts.appTitle || 'アプリで もっと ふえるよ',
       body: opts.appBody || 'あたらしい あそびを じゅんびしているよ'
     };
+  }
+
+  function _hasTierExtra(baseList, nextList) {
+    if (!Array.isArray(baseList) || !Array.isArray(nextList)) return false;
+    for (var i = 0; i < nextList.length; i++) {
+      if (baseList.indexOf(nextList[i]) < 0) return true;
+    }
+    return false;
+  }
+
+  function hasBookUpgradeContent(gameId) {
+    if (getTier() !== 'free') return false;
+    switch (String(gameId || '')) {
+      case 'maze':
+        return _hasTierExtra(FREE_MAZE_STAGE_IDS, BOOK_MAZE_STAGE_IDS);
+      case 'puzzle':
+        return _hasTierExtra(FREE_PUZZLE_STAGE_IDS, BOOK_PUZZLE_STAGE_IDS)
+          || BOOK_PUZZLE_PONO_SPECIAL_IDS.length > 0;
+      case 'oto':
+        return _hasTierExtra(FREE_OTO_SOUND_SETS, BOOK_OTO_SOUND_SETS)
+          || _hasTierExtra(FREE_OTO_SCALES, BOOK_OTO_SCALES)
+          || _hasTierExtra(FREE_OTO_CHORD_MODES, BOOK_OTO_CHORD_MODES)
+          || _hasTierExtra(FREE_OTO_RHYTHM_SONGS, BOOK_OTO_RHYTHM_SONGS);
+      case 'bento':
+        return _hasTierExtra(FREE_BENTO_FOOD_IDS, BOOK_BENTO_FOOD_IDS)
+          || _hasTierExtra(FREE_BENTO_BOX_IDS, BOOK_BENTO_BOX_IDS)
+          || _hasTierExtra(FREE_BENTO_NPCS, BOOK_BENTO_NPCS);
+      default:
+        return false;
+    }
+  }
+
+  function getBookLimitPromoCopy(gameId, opts) {
+    opts = opts || {};
+    var id = String(gameId || '');
+    var body = 'えほんの あいことばで つづきも あそべるよ';
+    if (id === 'maze' || id === 'puzzle') {
+      body = 'えほんの あいことばで、あたらしい ステージが あそべるよ';
+    } else if (id === 'oto') {
+      body = 'えほんの あいことばで、ねいろや ライバルたちが ふえるよ';
+    } else if (id === 'bento') {
+      body = 'えほんの あいことばで、おかずや おべんとうばこ、おきゃくさんが ふえるよ';
+    }
+    return {
+      tag: opts.tag || opts.freeTag || 'えほんがあると もっと ひろがるよ',
+      title: opts.title || opts.freeTitle || 'えほんの あいことばで つづきも あそべるよ',
+      body: opts.body || opts.freeBody || body
+    };
+  }
+
+  function _isPromoBlockedByRewardModal() {
+    try {
+      return !!document.querySelector('.pono-acorn-modal');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _showBookLimitPromoWhenQuiet(copy, opts, attempt) {
+    opts = opts || {};
+    attempt = attempt || 0;
+    if (_isPromoBlockedByRewardModal() && attempt < 10) {
+      setTimeout(function() {
+        _showBookLimitPromoWhenQuiet(copy, opts, attempt + 1);
+      }, 900);
+      return true;
+    }
+    return showSubscribePromo({
+      tag: copy.tag,
+      title: copy.title,
+      body: copy.body,
+      buttonText: opts.buttonText || 'とじる',
+      onClose: opts.onClose
+    });
+  }
+
+  function showBookLimitPromo(gameId, opts) {
+    opts = opts || {};
+    if (getTier() !== 'free') return false;
+    if (opts.requireUpgrade !== false && !hasBookUpgradeContent(gameId)) return false;
+    var copy = getBookLimitPromoCopy(gameId, opts);
+    var delay = Math.max(0, Number(opts.delayMs) || 0);
+    if (delay > 0) {
+      setTimeout(function() { _showBookLimitPromoWhenQuiet(copy, opts, 0); }, delay);
+      return true;
+    }
+    return _showBookLimitPromoWhenQuiet(copy, opts, 0);
+  }
+
+  function showBookLimitPromoOnce(gameId, opts) {
+    opts = opts || {};
+    if (getTier() !== 'free') return false;
+    var key = opts.onceKey || ('pono_book_limit_promo_seen_v1:' + String(gameId || ''));
+    try {
+      if (!opts.force && localStorage.getItem(key) === '1') return false;
+      localStorage.setItem(key, '1');
+    } catch (e) {}
+    return showBookLimitPromo(gameId, opts);
   }
 
   function showTierLockPromo(opts) {
@@ -652,7 +751,7 @@
       'font-size:0.95rem', 'font-weight:900', 'cursor:pointer',
       'box-shadow:0 4px 14px rgba(59,130,246,0.4)'
     ].join(';');
-    btn.textContent = 'わかった！';
+    btn.textContent = opts.buttonText || 'わかった！';
     box.appendChild(btn);
 
     ov.appendChild(box);
@@ -704,6 +803,9 @@
     QUIZ_QUESTIONS: QUIZ_QUESTIONS,
     showTierLockPromo: showTierLockPromo,
     showSubscribePromo: showSubscribePromo,
+    showBookLimitPromo: showBookLimitPromo,
+    showBookLimitPromoOnce: showBookLimitPromoOnce,
+    hasBookUpgradeContent: hasBookUpgradeContent,
     BOOK_AQUARIUM_CREATURE_IDS: BOOK_AQUARIUM_CREATURE_IDS,
     BOOK_ROOM_ITEM_IDS:         BOOK_ROOM_ITEM_IDS,
     isQuizlandQuestionUnlocked: isQuizlandQuestionUnlocked,

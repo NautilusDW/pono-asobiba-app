@@ -8039,6 +8039,25 @@ function _nextRhythmStageSong(song) {
   }
   return null;
 }
+function _otoReachedBookLimitForFree(nextStageSong) {
+  if (nextStageSong) return false;
+  if (!window.PonoTier || typeof window.PonoTier.getTier !== 'function') return false;
+  try {
+    if (window.PonoTier.getTier() !== 'free') return false;
+    return typeof window.PonoTier.hasBookUpgradeContent === 'function'
+      && window.PonoTier.hasBookUpgradeContent('oto');
+  } catch (e) {
+    return false;
+  }
+}
+function _showOtoBookLimitPromoOnce() {
+  if (window.PonoTier && typeof window.PonoTier.showBookLimitPromoOnce === 'function') {
+    return window.PonoTier.showBookLimitPromoOnce('oto', {
+      delayMs: 900
+    });
+  }
+  return false;
+}
 function _goToNextRhythmStage() {
   var next = _nextRhythmStageSong(RHYTHM_BASE_SONG);
   if (!next) return false;
@@ -10685,6 +10704,7 @@ function _showRhythmComplete(result) {
   var partialRivalLine = hasNextPart ? 'いいぞ でも まだまだ これからケロ！' : 'ブロックは できたな ほんばんも こい！';
   _updateRhythmBattlePanel(clearedFullSong ? 'defeat' : 'taunt', clearedFullSong ? null : partialRivalLine, _rhythmPonoLine('clear'));
   var nextStageSong = !hasNextPart ? _nextRhythmStageSong(RHYTHM_BASE_SONG) : null;
+  var reachedBookLimit = clearedFullSong && _otoReachedBookLimitForFree(nextStageSong);
   var complete = document.getElementById('rhythm-complete');
   var title = document.getElementById('rhythm-complete-title');
   var text = document.getElementById('rhythm-complete-text');
@@ -10727,10 +10747,11 @@ function _showRhythmComplete(result) {
     if (text) {
       text.textContent = hasNextPart
         ? 'まだまだ これからだよ'
-        : (nextStageSong ? 'つぎのステージも あそべるよ' : 'また あそべるよ');
+        : (nextStageSong ? 'つぎのステージも あそべるよ' : (reachedBookLimit ? 'ここまで できたよ' : 'また あそべるよ'));
       text.classList.add('show'); // v1108: 吹き出しを表示
     }
     if (actions) actions.classList.remove('hidden');
+    if (reachedBookLimit) _showOtoBookLimitPromoOnce();
   }, 900));
   if (clearedFullSong) {
     _rhythm.completeTimers.push(setTimeout(function() {
