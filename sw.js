@@ -921,7 +921,8 @@
 //   カード右側へ重ね、プロフィール土台のどんぐり数を中央寄せ。
 // v2051: play.html のプロフィール財布どんぐり位置を再調整し、common/tier.js の
 //   oto / bento free-book ロック差分と avatar assets 同期を反映。
-const CACHE_VERSION = 2051;
+// v2052: oto のタイトルロゴを上寄せ + 明るいグロウへ変更し、リズム曲の tier 自動進行漏れと結果おてほん導線を修正。
+const CACHE_VERSION = 2052;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。

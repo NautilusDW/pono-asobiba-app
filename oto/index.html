@@ -3550,7 +3550,12 @@
     max-width: 100%;
     height: auto;
     display: block;
-    filter: drop-shadow(0 4px 18px rgba(30,64,124,0.42)) drop-shadow(0 2px 6px rgba(30,64,124,0.28));
+    filter:
+      brightness(1.06)
+      saturate(1.06)
+      drop-shadow(0 0 10px rgba(255,255,255,0.88))
+      drop-shadow(0 0 24px rgba(255,238,168,0.58))
+      drop-shadow(0 3px 8px rgba(30,64,124,0.18));
   }
   .intro-btn {
     font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
@@ -3573,11 +3578,11 @@
   }
   @media (max-width: 900px) {
     .intro__content {
-      top: 42%;
+      top: 29%;
       left: 50%;
       right: auto;
       transform: translate(-50%, -50%);
-      width: min(78vw, 520px);
+      width: min(68vw, 440px);
       align-items: center;
     }
     .intro-logo {
@@ -3597,7 +3602,7 @@
   }
   .start-mode-choice.show { display: flex; }
   .start-mode-panel {
-    width: min(43vw, 560px);
+    width: min(41vw, 520px);
     margin-right: clamp(8px, 3vw, 40px);
     padding: 0;
     border-radius: 0;
@@ -3605,14 +3610,17 @@
     background: transparent;
     box-shadow: none;
     text-align: center;
-    transform: translateY(clamp(62px, 10vh, 84px));
+    transform: translateY(clamp(66px, 11vh, 90px));
   }
   .start-mode-title {
-    color: #FFF8E0;
-    font-size: clamp(1rem, 3vw, 1.35rem);
+    color: #FFFCE9;
+    font-size: clamp(0.95rem, 2.6vw, 1.22rem);
     font-weight: 900;
     line-height: 1.2;
-    text-shadow: 2px 2px 0 rgba(93,58,0,0.62), 0 4px 14px rgba(30,64,124,0.42);
+    text-shadow:
+      0 0 8px rgba(255,255,255,0.82),
+      0 0 18px rgba(255,239,173,0.62),
+      1px 1px 0 rgba(93,58,0,0.45);
   }
   .start-mode-text {
     display: none;
@@ -3635,24 +3643,24 @@
   .start-mode-actions {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 10px;
-    margin-top: 10px;
+    gap: 8px;
+    margin-top: 8px;
   }
   .start-mode-btn {
-    min-height: 64px;
+    min-height: 56px;
     border: 3px solid rgba(255,255,255,0.92);
     border-radius: 999px;
-    padding: 8px 22px;
+    padding: 6px 18px;
     font-family: inherit;
-    font-size: clamp(1.2rem, 3.4vw, 1.62rem);
+    font-size: clamp(1.05rem, 2.9vw, 1.42rem);
     font-weight: 900;
     cursor: pointer;
     touch-action: manipulation;
-    box-shadow: 0 7px 16px rgba(30,64,124,0.22), inset 0 -4px 0 rgba(93,58,0,0.12);
+    box-shadow: 0 6px 14px rgba(30,64,124,0.18), inset 0 -3px 0 rgba(93,58,0,0.12);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 9px;
     letter-spacing: 0.02em;
     white-space: nowrap;
   }
@@ -3661,9 +3669,9 @@
   }
   .start-mode-btn small {
     display: inline-block;
-    padding: 4px 10px;
+    padding: 3px 9px;
     border-radius: 999px;
-    font-size: clamp(0.72rem, 2vw, 0.92rem);
+    font-size: clamp(0.66rem, 1.7vw, 0.82rem);
     line-height: 1;
     background: rgba(255,255,255,0.46);
   }
@@ -3762,10 +3770,10 @@
     .start-mode-choice {
       justify-content: center;
       align-items: center;
-      padding-top: 38vh;
+      padding-top: 43vh;
     }
     .start-mode-panel {
-      width: min(78vw, 520px);
+      width: min(66vw, 480px);
       margin-right: 0;
       transform: none;
     }
@@ -3784,8 +3792,8 @@
       height: 56px;
     }
     .start-mode-btn {
-      min-height: 58px;
-      padding: 8px 16px;
+      min-height: 52px;
+      padding: 6px 14px;
       gap: 8px;
     }
   }
@@ -3796,13 +3804,14 @@
     .intro__content {
       top: 16%;
       width: min(62vw, 360px);
-      transform: translateY(0);
+      transform: translateX(-50%);
     }
     .start-mode-choice {
       padding-top: 6vh;
       align-items: flex-start;
     }
     .start-mode-panel {
+      width: min(78vw, 360px);
       transform: none;
       margin-top: clamp(180px, 36vh, 340px);
     }
@@ -7376,8 +7385,8 @@ var RHYTHM_RIVALS = {
 var RHYTHM_OPENING_SCENES = {
   kaeru: [
     { speaker: 'rival', state: 'taunt', text: 'オレは DJ ケロック！' },
-    { speaker: 'rival', state: 'happy', text: '3きょく しょうぶで うけてみろケロ！' },
-    { speaker: 'rival', state: 'happy', text: 'まずは かえるのうた からだケロ！' },
+    { speaker: 'rival', state: 'happy', text: 'この きょくで しょうぶだケロ！' },
+    { speaker: 'rival', state: 'happy', text: 'かえるのうた からだケロ！' },
     { speaker: 'rival', state: 'attack', text: 'したのボタンで リズム とるケロ！' }
   ],
   mary: [
@@ -7967,7 +7976,13 @@ function _rhythmSongUnlocked(song, progress) {
   if (!song) return false;
   if (_otoDebugAllStagesEnabled()) return true;
   progress = progress || _loadRhythmProgress();
-  return _rhythmSongStage(song) <= Math.max(1, progress.unlockedStage || 1);
+  if (_rhythmSongStage(song) > Math.max(1, progress.unlockedStage || 1)) return false;
+  return _rhythmSongTierUnlocked(song);
+}
+function _rhythmSongTierUnlocked(song) {
+  if (!song) return false;
+  if (!window.PonoTier || typeof window.PonoTier.isOtoRhythmSongUnlocked !== 'function') return true;
+  return !!window.PonoTier.isOtoRhythmSongUnlocked(song.id);
 }
 function _rhythmStageSelectUnlocked(progress) {
   if (_otoDebugAllStagesEnabled()) return true;
@@ -8424,15 +8439,16 @@ function _renderRhythmSongMenu() {
   var songs = _rhythmSongsByStage();
   list.innerHTML = songs.map(function(song) {
     var active = song.id === RHYTHM_BASE_SONG.id ? ' active' : '';
-    var stageLocked = !_rhythmSongUnlocked(song, progress);
-    var tierLocked = (window.PonoTier && !window.PonoTier.isOtoRhythmSongUnlocked(song.id));
-    var locked = stageLocked ? ' locked' : (tierLocked ? ' tier-locked' : '');
+    var tierLocked = !_rhythmSongTierUnlocked(song);
+    var songLocked = !_rhythmSongUnlocked(song, progress);
+    var locked = songLocked ? ' locked' : '';
+    if (tierLocked) locked += ' tier-locked';
     var cleared = _rhythmSongCleared(song, progress);
     var stars = _rhythmSongStars(song, progress);
-    var statusText = stageLocked ? 'まだ' : (cleared ? (_RHYTHM_STAR_DISPLAYS[Math.max(1, stars)] || '★') : 'えらべる'); // batch:940 Fix#6
+    var statusText = songLocked ? 'まだ' : (cleared ? (_RHYTHM_STAR_DISPLAYS[Math.max(1, stars)] || '★') : 'えらべる'); // batch:940 Fix#6
     var diffText = _displayRhythmDiffLabel(song.difficulty || song.note);
     var diffStars = _displayRhythmDiffStars(song.difficulty || song.note);
-    var disabled = stageLocked ? ' disabled aria-disabled="true"' : '';
+    var disabled = songLocked ? ' disabled aria-disabled="true"' : '';
     return '<button class="rhythm-song-choice' + active + locked + '" data-song="' + song.id + '"' + disabled + '>' +
       '<span class="rhythm-song-meta"><span class="rhythm-stage-badge">ステージ' + _rhythmSongStage(song) + '</span><span class="rhythm-clear-badge">' + statusText + '</span><span class="rhythm-clear-badge" aria-label="むずかしさ ' + diffText + '"><span aria-hidden="true">' + diffStars + '</span> ' + diffText + '</span></span>' +
       '<span class="rhythm-song-name">' + song.name + '</span></button>';
@@ -10698,7 +10714,7 @@ function _showRhythmComplete(result) {
     next.textContent = hasNextPart ? 'つぎのパート' : 'つぎのステージ';
     next.classList.toggle('hidden', !(hasNextPart || nextStageSong));
   }
-  if (demo) demo.classList.remove('hidden');
+  if (demo) demo.classList.toggle('hidden', !!clearedFullSong);
   complete.classList.add('show');
   _updateRhythmVictoryRival(clearedFullSong);
   if (clearedFullSong) {
@@ -10711,7 +10727,7 @@ function _showRhythmComplete(result) {
     if (text) {
       text.textContent = hasNextPart
         ? 'まだまだ これからだよ'
-        : (nextStageSong ? 'つぎのステージも あそべるよ' : 'ほんばんも あそべるよ');
+        : (nextStageSong ? 'つぎのステージも あそべるよ' : 'また あそべるよ');
       text.classList.add('show'); // v1108: 吹き出しを表示
     }
     if (actions) actions.classList.remove('hidden');
