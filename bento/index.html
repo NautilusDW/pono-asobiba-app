@@ -10258,7 +10258,7 @@ function getTutorialPaletteAllowance(def) {
       : deny('はっぱを みてみよう');
   }
   if (step === 'tut2-leaf-target') {
-    return def.type === 'leaf' ? ok : deny('おかずを タップしてね');
+    return deny('おかずを タップしてね');
   }
   if (step === 'tut2-leaf-pick' || step === 'tut2-leaf-place') {
     return def.type === 'leaf' ? ok : deny('はっぱを しいてみよう');
@@ -20259,13 +20259,14 @@ function _tutorialShowPaletteSwipeDemo(scrollParent) {
 //      以降は座標だけ更新して animation は途切れさせない)
 // step 遷移 / phase 切替 / active=false でループは自動停止。
 // tutorialAdvance / tutorialTeardown の `_scrollThenTapRaf` 破棄も既に配線済。
-function tutorialScrollThenTap(paletteRef, stepIdAtCall) {
+function tutorialScrollThenTap(paletteRef, stepIdAtCall, opts = {}) {
   const resolve = () => {
     try {
       const el = (typeof paletteRef === 'function') ? paletteRef() : paletteRef;
       return (el && el.isConnected) ? el : null;
     } catch (_) { return null; }
   };
+  const afterVisible = (opts && typeof opts.afterVisible === 'function') ? opts.afterVisible : null;
   if (tutorialState._scrollThenTapRaf) {
     try { cancelAnimationFrame(tutorialState._scrollThenTapRaf); } catch (_) {}
     tutorialState._scrollThenTapRaf = null;
@@ -20277,6 +20278,12 @@ function tutorialScrollThenTap(paletteRef, stepIdAtCall) {
     tutorialState._scrollDemoTimer = null;
   }
   let tapStarted = false;
+  let afterVisibleDone = false;
+  const runAfterVisible = (el) => {
+    if (afterVisibleDone || !afterVisible) return;
+    afterVisibleDone = true;
+    try { afterVisible(el); } catch (_) {}
+  };
   const startTapLoop = () => {
     const tick = () => {
       tutorialState._scrollThenTapRaf = null;
@@ -20291,6 +20298,7 @@ function tutorialScrollThenTap(paletteRef, stepIdAtCall) {
       // Phase A で smooth-scroll 中に大きくズレる可能性は低いが、 palette 再描画で
       // 位置が変わっていたら idempotent に補正 (auto なので追加アニメは走らない)。
       _tutorialScrollPaletteIntoView(el);
+      runAfterVisible(el);
       if (!tapStarted) {
         // keyframe 開始 (open-hand の tap pulse)。
         tutorialAnimateTap(el);
@@ -21561,6 +21569,40 @@ function tut2InstallPaletteScrollSync() {
     });
   }, { passive: true });
 }
+function tut2PaletteNeedsScroll(el) {
+  if (!el || !el.isConnected || !el.closest) return false;
+  try {
+    const scrollParent = el.closest('.free-item-list');
+    if (!scrollParent) return false;
+    const lr = scrollParent.getBoundingClientRect();
+    const br = el.getBoundingClientRect();
+    return !!(br.top < lr.top - 4 || br.bottom > lr.bottom + 4);
+  } catch (_) {
+    return false;
+  }
+}
+function tut2ResolvePaletteRef(paletteRef) {
+  try {
+    const el = (typeof paletteRef === 'function') ? paletteRef() : paletteRef;
+    return (el && el.isConnected) ? el : null;
+  } catch (_) {
+    return null;
+  }
+}
+function tut2AnchorToPaletteIfVisible(paletteRef, opts = {}) {
+  const el = tut2ResolvePaletteRef(paletteRef);
+  if (!el) {
+    tutorialState._bubbleAnchorFn = null;
+    return null;
+  }
+  if (tut2PaletteNeedsScroll(el)) {
+    tutorialClearTrims();
+    tutorialState._bubbleAnchorFn = null;
+    tut2InstallPaletteScrollSync();
+    return el;
+  }
+  return tut2AnchorToPalette(paletteRef, opts);
+}
 // パレット item に強い「target ring + バブル横付け」 を掛けるヘルパー。
 //   paletteRef: Element or () => Element (rebuild 耐性のため getter 推奨)。
 //   opts: { gap, ringRadius, ringWidth, ringColor }
@@ -21765,7 +21807,7 @@ function tut2RenderRicePhaseA(step) {
   // T=0: パレット ring のみ (ghost/finger はまだ出さない)。 owner 指摘: 「タップ前に
   //   半透明ごはんが箱内に floating で現れて『もう入ってる』と混乱」 対策。
   try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.type === 'rice_auto'); } catch (_) {}
-  tut2AnchorToPalette(tutorialFindRicePaletteEl);
+  tut2AnchorToPaletteIfVisible(tutorialFindRicePaletteEl);
   // T=+600ms: finger tap + ghost を同時に出す。 step guard 付き。
   const stepId = step.id;
   if (tutorialState._paletteTapDelayTimer) {
@@ -21776,7 +21818,9 @@ function tut2RenderRicePhaseA(step) {
     tutorialState._paletteTapDelayTimer = null;
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
-    tutorialScrollThenTap(tutorialFindRicePaletteEl, stepId);
+    tutorialScrollThenTap(tutorialFindRicePaletteEl, stepId, {
+      afterVisible: () => tut2AnchorToPalette(tutorialFindRicePaletteEl),
+    });
     try {
       const box = getSelectedBentoBox();
       if (box && box.autoRice) {
@@ -21817,7 +21861,8 @@ function tut2RenderNoriPhaseA(step) {
   try { tut2ApplyNoriSubroundSpeech(step.id, tutorialState.noriIdx || 0); } catch (_) {}
   // T=0: パレット ring のみ (期待品目にフォーカス、 dim 他)。
   try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === expected); } catch (_) {}
-  tut2AnchorToPalette(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl());
+  const noriPaletteRef = () => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl();
+  tut2AnchorToPaletteIfVisible(noriPaletteRef);
   // T=+600ms: scrollIntoView → finger tap + ghost。
   const stepId = step.id;
   if (tutorialState._paletteTapDelayTimer) {
@@ -21828,7 +21873,9 @@ function tut2RenderNoriPhaseA(step) {
     tutorialState._paletteTapDelayTimer = null;
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
-    tutorialScrollThenTap(() => tutorialFindNoriPaletteById(expected) || tutorialFindNoriPaletteEl(), stepId);
+    tutorialScrollThenTap(noriPaletteRef, stepId, {
+      afterVisible: () => tut2AnchorToPalette(noriPaletteRef),
+    });
     try {
       const def = (typeof decorItems !== 'undefined' && Array.isArray(decorItems)) ? decorItems.find(d => d && d.id === expected) : null;
       if (def) {
@@ -21871,7 +21918,6 @@ function tut2RenderNoriMovePhaseB(step) {
   const placed = tutorialFindFirstPlacedDecor();
   tutorialShowBubbleBesideElement('すきな ばしょまで<br>すーっと うごかしてね', placed && placed.el, { side: 'right' });
   if (placed && placed.el) {
-    tutorialMarkTarget(placed.el, { radius: 16 });
     const r = placed.el.getBoundingClientRect();
     const from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     const to = { x: from.x + 30, y: from.y };
@@ -21881,11 +21927,24 @@ function tut2RenderNoriMovePhaseB(step) {
 function tut2RenderNoriEditPhaseA(step) {
   const placed = tutorialFindFirstPlacedDecor();
   if (!placed || !placed.item) return;
-  tutorialShowBubbleBesideElement('のりを タップすると<br>まわしたり おおきさを<br>かえられるよ', placed.el, { side: 'right' });
   try {
     if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid);
   } catch (_) {}
   const stepId = step.id;
+  const showPanelGuide = () => {
+    if (!tutorialState.active) return;
+    if (tutorialState.step !== stepId) return;
+    const panel = tutorialContextToolbarEl();
+    if (!panel) {
+      tutorialRetryRenderStep(stepId, 120);
+      return;
+    }
+    tutorialClearTrims();
+    tutorialClearOutlines();
+    tutorialMarkTarget(panel, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
+    tutorialShowBubbleBesideElement('のりを タップすると<br>まわしたり おおきさを<br>かえられるよ', panel, { side: 'left', gap: 12 });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(showPanelGuide));
   // 前回残置の timer を掃除。
   if (tutorialState._noriEditSeqTimers) {
     for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
@@ -21901,9 +21960,6 @@ function tut2RenderNoriEditPhaseA(step) {
   };
   scheduleAt(400, () => {
     try { setSpeech('のりを タップすると まわしたり おおきさを かえられるよ'); } catch (_) {}
-  });
-  scheduleAt(3600, () => {
-    try { setSpeech('できたら「のりOK」を おそう！'); } catch (_) {}
   });
 }
 function tut2RenderNoriEditPhaseB(step) {
@@ -21927,7 +21983,8 @@ function tut2RenderOkazuMainPhaseA(step) {
   if (paletteId) {
     try { tutorialApplyPaletteFocus(btn => btn === palette); } catch (_) {}
   }
-  tut2AnchorToPalette(() => tutorialFindMainOkazuPaletteEl(preferredSampleId));
+  const mainPaletteRef = () => tutorialFindMainOkazuPaletteEl(preferredSampleId);
+  tut2AnchorToPaletteIfVisible(mainPaletteRef);
   const stepId = step.id;
   if (tutorialState._paletteTapDelayTimer) {
     try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
@@ -21938,7 +21995,9 @@ function tut2RenderOkazuMainPhaseA(step) {
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
     tutorialClearGhostLayer();
-    tutorialScrollThenTap(() => tutorialFindMainOkazuPaletteEl(preferredSampleId), stepId);
+    tutorialScrollThenTap(mainPaletteRef, stepId, {
+      afterVisible: () => tut2AnchorToPalette(mainPaletteRef),
+    });
   }, 600);
 }
 function tut2RenderOkazuMainPhaseB(step) {
@@ -21969,7 +22028,7 @@ function tut2RenderCupPlacePhaseA(step) {
   if (paletteId) {
     try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
   }
-  tut2AnchorToPalette(tutorialFindFirstCupPaletteEl);
+  tut2AnchorToPaletteIfVisible(tutorialFindFirstCupPaletteEl);
   const stepId = step.id;
   if (tutorialState._paletteTapDelayTimer) {
     try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
@@ -21980,7 +22039,9 @@ function tut2RenderCupPlacePhaseA(step) {
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
     tutorialClearGhostLayer();
-    tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, stepId);
+    tutorialScrollThenTap(tutorialFindFirstCupPaletteEl, stepId, {
+      afterVisible: () => tut2AnchorToPalette(tutorialFindFirstCupPaletteEl),
+    });
   }, 600);
 }
 function tut2RenderCupPlacePhaseB(step) {
@@ -22001,7 +22062,7 @@ function tut2RenderCupFoodPhaseA(step) {
   if (paletteId) {
     try { tutorialApplyPaletteFocus(btn => btn.dataset && btn.dataset.itemId === paletteId); } catch (_) {}
   }
-  tut2AnchorToPalette(tutorialFindCupSideFoodPaletteEl);
+  tut2AnchorToPaletteIfVisible(tutorialFindCupSideFoodPaletteEl);
   const stepId = step.id;
   if (tutorialState._paletteTapDelayTimer) {
     try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
@@ -22012,7 +22073,9 @@ function tut2RenderCupFoodPhaseA(step) {
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
     tutorialClearGhostLayer();
-    tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, stepId);
+    tutorialScrollThenTap(tutorialFindCupSideFoodPaletteEl, stepId, {
+      afterVisible: () => tut2AnchorToPalette(tutorialFindCupSideFoodPaletteEl),
+    });
   }, 600);
 }
 function tut2RenderCupFoodPhaseB(step) {
@@ -22034,19 +22097,34 @@ function tut2RenderLeafTab(step) {
   }
   tutorialClearTrims();
   tutorialMarkTarget(leafTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
-  tutorialShowPointingHand(leafTab, { side: 'right' });
+  tutorialHidePointingHand();
+  tutorialAnimateTap(leafTab);
   tutorialPositionBubbleBeside(leafTab, { gap: 14 });
 }
-function tut2EnsureLeafTabView() {
-  if (typeof freeLayoutTab === 'undefined' || freeLayoutTab === 'leaf') return;
-  freeLayoutTab = 'leaf';
+function tut2EnsureLeafTabView(opts = {}) {
+  if (typeof freeLayoutTab === 'undefined') return;
+  const shouldRender = freeLayoutTab !== 'leaf';
+  if (shouldRender) {
+    freeLayoutTab = 'leaf';
+    freeBrushStampDef = null;
+    simpleNoCupSlotIndex = null;
+    simpleCupSlotIndex = null;
+    freeActiveCupUid = null;
+    freeCupEditorUid = null;
+    const selected = getSelectedFreeItem();
+    if (!selected || selected.type !== 'leaf') freeSelectedItemUid = null;
+  }
+  if (opts && opts.armTarget && simpleBentoMode) {
+    simpleLeafApplyArmed = true;
+  }
+  if (!shouldRender) return;
   try {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
   } catch (_) {}
 }
 function tut2RenderLeafTarget(step) {
-  tut2EnsureLeafTabView();
+  tut2EnsureLeafTabView({ armTarget: true });
   tutorialClearGhostLayer();
   if (simpleOkazuEditPickerMode === 'leaf') {
     setTimeout(() => tutorialAdvance('tut2-leaf-pick'), 0);
@@ -22054,11 +22132,13 @@ function tut2RenderLeafTarget(step) {
   }
   const item = tutorialFindFirstMainOkazuItem();
   const el = tutorialFindPlacedElementForItem(item);
-  tutorialShowBubble('はっぱを しく<br>おかずを タップしてね', { topVh: '12', side: 'left' });
   if (el) {
+    tutorialShowBubbleBesideElement('はっぱを しく<br>おかずを タップしてね', el, { side: 'right', gap: 12 });
     tutorialClearTrims();
     tutorialMarkTarget(el, { radius: 18, outline: false, color: '#1E7FD8', width: 5 });
     tutorialAnimateTap(el);
+  } else {
+    tutorialShowBubble('はっぱを しく<br>おかずを タップしてね', { topVh: '18', side: 'right' });
   }
 }
 function tut2RenderLeafPick(step) {
