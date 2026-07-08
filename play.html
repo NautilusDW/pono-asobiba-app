@@ -8350,7 +8350,7 @@
       background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_settings_20260706.webp");
     }
     .profile-wallet {
-      --profile-wallet-w: 246px;
+      --profile-wallet-w: 293px;
       --profile-wallet-h: calc(var(--profile-wallet-w) * 472 / 1172);
       position: absolute;
       right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 402px);
@@ -8396,8 +8396,8 @@
     .profile-wallet__avatar.pono-mini-avatar {
       position: absolute;
       left: 50%;
-      top: 5%;
-      width: 50%;
+      top: 8%;
+      width: 45%;
       height: auto;
       min-width: 0;
       min-height: 0;
@@ -8437,15 +8437,12 @@
     }
     .profile-wallet__acorns {
       position: absolute;
-      left: 50.5%;
-      top: 38%;
-      width: 41%;
-      height: 32%;
+      left: 49.2%;
+      top: 32%;
+      width: 43.8%;
+      height: 38%;
       min-width: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+      display: block;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -8453,7 +8450,7 @@
       color: #6b3a00;
       box-shadow: none;
       font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
-      font-size: 25px;
+      font-size: 29px;
       font-weight: 900;
       line-height: 1;
       user-select: none;
@@ -8461,19 +8458,27 @@
       pointer-events: none;
     }
     .profile-wallet__acorns .acorn-balance-badge__icon {
-      display: inline-block;
-      width: 22px;
+      position: absolute;
+      left: 8%;
+      top: 50%;
+      display: block;
+      width: 24px;
       aspect-ratio: 85 / 103;
-      flex: 0 0 auto;
       background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
       filter: drop-shadow(0 2px 2px rgba(40, 24, 8, .22));
-      transform: translateY(0);
+      transform: translateY(-43%);
     }
     .profile-wallet__acorns .acorn-balance-badge__count {
-      min-width: 1.65em;
+      position: absolute;
+      left: 31%;
+      right: 7%;
+      top: 50%;
+      display: block;
+      min-width: 0;
       text-align: center;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0;
+      transform: translateY(-50%);
     }
     .profile-wallet__acorns.is-bumping {
       animation: profile-wallet-acorn-bump .4s ease-out;
@@ -8796,6 +8801,7 @@
         gap: 0;
       }
       .profile-wallet {
+        --profile-wallet-w: 275px;
         right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 380px);
       }
     }
@@ -8932,7 +8938,7 @@
         gap: 0;
       }
       .profile-wallet {
-        --profile-wallet-w: 202px;
+        --profile-wallet-w: 239px;
         --profile-wallet-h: calc(var(--profile-wallet-w) * 472 / 1172);
         right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 334px);
         bottom: 14px;
@@ -8940,9 +8946,9 @@
       .profile-wallet__profile { border-radius: 15px; }
       .profile-wallet__label { font-size: 10px; transform: scaleX(.78); }
       .profile-wallet__acorns {
-        font-size: 23px;
+        font-size: 24px;
       }
-      .profile-wallet__acorns .acorn-balance-badge__icon { width: 21px; }
+      .profile-wallet__acorns .acorn-balance-badge__icon { width: 20px; }
       .bn-item { border-radius: 14px; }
       .bn-item__icon { width: 38px; height: 32px; font-size: 21px; }
       .bn-item__icon--avatar { width: 40px; height: 34px; }
@@ -8958,6 +8964,7 @@
         --nav-sprite-h: calc(var(--nav-sprite-w) * 492 / 1536);
       }
       .profile-wallet {
+        --profile-wallet-w: 224px;
         right: calc((var(--canvas-w) - var(--safe-w)) / 2 + var(--bottom-nav-right-inset) + 316px);
       }
     }
@@ -10284,7 +10291,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2055; // sw.js CACHE_VERSION と同期 (maze modal sizing polish)
+    const PAGE_CACHE_VERSION = 2056; // sw.js CACHE_VERSION と同期 (profile wallet nav-height fit)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10293,7 +10300,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2055';
+    window.PONO_SW_VERSION = 'v2056';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

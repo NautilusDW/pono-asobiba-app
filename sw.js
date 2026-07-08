@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2056: play.html のプロフィール＆どんぐり土台を右下3ボタンと同じ高さへ戻し、
+//   顔の丸窓とどんぐりアイコン/数字の重ね位置を再調整。
 // v2055: Maze modal sizing polish. Acorn modal close/amount alignment, janken choice-hand orientation, and truefalse short-screen fit.
 // v2054: Maze free teaser / acorn modal / janken polish. Teaser button fit and silhouettes,
 // acorn modal close/amount positioning, transparent janken hand sheet and facing hands.
@@ -927,7 +929,7 @@
 //   oto / bento free-book ロック差分と avatar assets 同期を反映。
 // v2052: oto のタイトルロゴを上寄せ + 明るいグロウへ変更し、リズム曲の tier 自動進行漏れと結果おてほん導線を修正。
 // v2053: free tier のロック時コピーを「えほんがあるともっとひろがるよ」に寄せ、迷路/パズル/音タッチの free 到達後にえほん案内を一度だけ表示。
-const CACHE_VERSION = 2055;
+const CACHE_VERSION = 2056;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
