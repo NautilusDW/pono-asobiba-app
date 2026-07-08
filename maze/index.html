@@ -735,7 +735,7 @@ body.image-stage-mode .game-wrap {
   .rescue-scene .rescue-btn { justify-self: center; }
 }
 
-/* ── Stage3 teaser poster v3 (絵本のオビ風 / 紙質感 + 微小傾き + シルエット透かし) ── */
+/* ── Stage3 teaser poster v3 (絵本のオビ風 / 紙質感 + 微小傾き + シルエット) ── */
 /* v3 では: pyon 突出廃止 (3 体均等)、要素を 2/3 縮小、button 必ず viewport 内、 */
 /* 未配置 creature (hatahata/amenbo/strengthRock) を薄いシルエットで watermark 配置、 */
 /* (v1091: 元は kumo だったが 3-6 歳児への怖さ配慮で岩=strengthRock に差替) */
@@ -770,7 +770,7 @@ body.image-stage-mode .game-wrap {
     /* ベース */
     linear-gradient(175deg, #fffaeb 0%, #fbf0d2 100%);
   border-radius: 14px;
-  padding: 18px 22px 16px;
+  padding: 16px 22px 18px;
   box-shadow:
     0 22px 50px rgba(0,0,0,0.50),
     0 6px 14px rgba(0,0,0,0.28),
@@ -780,8 +780,8 @@ body.image-stage-mode .game-wrap {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
-  overflow: hidden;
+  gap: 8px;
+  overflow: visible;
   animation: rescueCardPop 0.5s ease-out;
 }
 /* washi-tape 風アクセント (左上/右上) */
@@ -804,11 +804,7 @@ body.image-stage-mode .game-wrap {
 
 /* シルエット透かし層 (panel 内に絶対配置、ポインタ無効) */
 .stage-teaser .teaser-silhouettes {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
+  display: none;
 }
 .stage-teaser .teaser-silhouettes img {
   position: absolute;
@@ -906,6 +902,20 @@ body.image-stage-mode .game-wrap {
   object-fit: contain;
   filter: drop-shadow(0 2px 3px rgba(80,50,10,0.25));
 }
+.stage-teaser .teaser-cluster img.is-focus {
+  transform: scale(1.08);
+}
+.stage-teaser .teaser-cluster img.is-silhouette {
+  filter: brightness(0) saturate(100%) opacity(0.28);
+  transform: scale(0.92);
+}
+.stage-teaser .teaser-cluster--animals {
+  grid-template-columns: 1fr 1fr;
+  max-width: 168px;
+}
+.stage-teaser .teaser-cluster--animals img {
+  border-radius: 6px;
+}
 /* 各 cluster の微小傾き (左 -2.5° / 右 +2°) */
 .stage-teaser .teaser-slot:nth-child(1) .teaser-cluster { transform: rotate(-2.5deg); }
 .stage-teaser .teaser-slot:nth-child(3) .teaser-cluster { transform: rotate(2deg); }
@@ -947,9 +957,9 @@ body.image-stage-mode .game-wrap {
   flex-shrink: 0;
   position: relative;
   z-index: 2;
-  margin-top: 2px;
-  padding: 11px 32px;
-  min-height: 44px;
+  margin-top: 0;
+  padding: 10px 32px;
+  min-height: 42px;
   font-size: clamp(0.95rem, 2.2vw, 1.1rem);
   font-weight: 900;
   color: #fff;
@@ -964,6 +974,31 @@ body.image-stage-mode .game-wrap {
   letter-spacing: 0.06em;
 }
 .stage-teaser .teaser-btn:active { transform: scale(0.96); }
+
+@media (max-height: 640px) and (orientation: landscape) {
+  .stage-teaser .teaser-panel {
+    padding: 12px 18px 14px;
+    gap: 6px;
+    max-height: calc(100dvh - 48px);
+  }
+  .stage-teaser .teaser-lead {
+    font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+    margin-top: 0;
+  }
+  .stage-teaser .teaser-lead::after {
+    margin-top: 4px;
+  }
+  .stage-teaser .teaser-cluster img {
+    max-height: 48px;
+  }
+  .stage-teaser .teaser-stage-wrap {
+    max-width: 180px;
+  }
+  .stage-teaser .teaser-btn {
+    padding: 8px 30px;
+    min-height: 40px;
+  }
+}
 
 @media (orientation: portrait), (max-width: 540px) {
   .stage-teaser .teaser-panel {
@@ -1356,7 +1391,7 @@ body.image-stage-mode .game-wrap {
   display: block;
   width: 100%;
   height: 100%;
-  background-image: url('../assets/images/maze/janken_hands_sheet.png');
+  background-image: url('../assets/images/maze/janken_hands_sheet_alpha_20260708.png');
   background-repeat: no-repeat;
   background-size: 300% 100%;
   background-position-y: center;
@@ -1365,8 +1400,8 @@ body.image-stage-mode .game-wrap {
 .janken-hand--scissors::before { background-position-x: 50%; }
 .janken-hand--paper::before { background-position-x: 100%; }
 .janken-hand--pono {
-  transform: rotate(-90deg);
-  transform-origin: center;
+  transform: rotate(0deg);
+  transform-origin: 22% 54%;
 }
 .janken-hand--bug {
   transform: rotate(0deg);
@@ -1431,8 +1466,8 @@ body.image-stage-mode .game-wrap {
   line-height: 1;
 }
 @keyframes jankenReadyPono {
-  from { transform: translateY(-6px) rotate(-97deg); }
-  to   { transform: translateY( 6px) rotate(-83deg); }
+  from { transform: translateY(-6px) rotate(-7deg); }
+  to   { transform: translateY( 6px) rotate(7deg); }
 }
 @keyframes jankenReadyBug {
   from { transform: translateY(-6px) rotate(7deg); }
@@ -12171,19 +12206,21 @@ function _showStage3TeaserPanel(onDone) {
   const btn   = document.getElementById('teaserBtn');
   if (!slot1 || !slot2 || !slot3 || !btn) { if (onDone) onDone(); return; }
 
-  // 左スロット: creature 3 体を 1 集合として配置 (個別フレームなし、種別名なし)
-  // 既存 CREATURE_KIND_DATA の imageUrl を流用。
-  const creatureSrcs = [
-    (CREATURE_KIND_DATA.pyon   && CREATURE_KIND_DATA.pyon.imageUrl)   || '',
-    (CREATURE_KIND_DATA.kabuto && CREATURE_KIND_DATA.kabuto.imageUrl) || '',
-    (CREATURE_KIND_DATA.hachi  && CREATURE_KIND_DATA.hachi.imageUrl)  || ''
+  // 左スロット: まだ遊んでいない gimmick の一部だけを見せる。
+  // 1 体は通常表示、残りはシルエットにして「この先がありそう」を出す。
+  const creatureDefs = [
+    { src: (CREATURE_KIND_DATA.hatahata && CREATURE_KIND_DATA.hatahata.imageUrl) || '', cls: 'is-focus' },
+    { src: (CREATURE_KIND_DATA.amenbo && CREATURE_KIND_DATA.amenbo.imageUrl) || '', cls: 'is-silhouette' },
+    { src: '../assets/images/maze/creatures/ojama_boss.png', cls: 'is-silhouette' }
   ];
   slot1.innerHTML = '';
-  creatureSrcs.forEach(function(src) {
-    if (!src) return;
+  slot1.className = 'teaser-cluster teaser-cluster--peek';
+  creatureDefs.forEach(function(def) {
+    if (!def.src) return;
     const im = document.createElement('img');
-    im.src = src;
+    im.src = def.src;
     im.alt = '';
+    im.className = def.cls;
     slot1.appendChild(im);
   });
 
@@ -12194,13 +12231,13 @@ function _showStage3TeaserPanel(onDone) {
   stageBgEarly.alt = '';
   slot2.appendChild(stageBgEarly);
 
-  // 右スロット: stage5/stage6 救出動物 3 体を 1 集合として配置 (個別フレームなし、動物名なし)
+  // 右スロット: まちびとは通常表示。直後に助けるアヒルはここでは出さない。
   const animalSrcs = [
     'imageStages/animals/shika_goal.png',
-    'imageStages/animals/lesser_panda_goal.png',
-    'imageStages/animals/ahiru_goal.png'
+    'imageStages/animals/lesser_panda_goal.png'
   ];
   slot3.innerHTML = '';
+  slot3.className = 'teaser-cluster teaser-cluster--animals';
   animalSrcs.forEach(function(src) {
     const im = document.createElement('img');
     im.src = src;
@@ -12208,25 +12245,10 @@ function _showStage3TeaserPanel(onDone) {
     slot3.appendChild(im);
   });
 
-  // シルエット透かし: 未配置 creature (hatahata / amenbo / strengthRock) を panel 余白に小さく配置
-  // ※sil-c は当初 kumo (8本足影) を使っていたが、3-6歳児への怖さ配慮で strengthRock (岩) に差替 (v1091)
-  // CSS の filter: brightness(0) opacity(...) で純黒シルエット化、装飾のみ。
+  // 背面の透かしシルエットは重なりやすいため使わない。
   const silWrap = document.getElementById('teaserSilhouettes');
   if (silWrap) {
     silWrap.innerHTML = '';
-    const silDefs = [
-      { src: (CREATURE_KIND_DATA.hatahata     && CREATURE_KIND_DATA.hatahata.imageUrl)     || '', cls: 'sil-a' },
-      { src: (CREATURE_KIND_DATA.amenbo       && CREATURE_KIND_DATA.amenbo.imageUrl)       || '', cls: 'sil-b' },
-      { src: (CREATURE_KIND_DATA.strengthRock && CREATURE_KIND_DATA.strengthRock.imageUrl) || '', cls: 'sil-c' }
-    ];
-    silDefs.forEach(function(def) {
-      if (!def.src) return;
-      const im = document.createElement('img');
-      im.src = def.src;
-      im.alt = '';
-      im.className = def.cls;
-      silWrap.appendChild(im);
-    });
   }
 
   // ボタンは 1 回限りで再バインド (リスナー二重登録を防ぐ)
