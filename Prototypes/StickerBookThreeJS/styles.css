@@ -1,0 +1,4721 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: #0e252d;
+  font-family: Arial, "Meiryo", sans-serif;
+}
+
+:root {
+  --sb3d-ui-button-back: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_back_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-edit: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_edit_pencil_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-mode-paste-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_mode_paste_text_gpt_image2_20260623.png");
+  --sb3d-ui-button-mode-view-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_mode_view_text_gpt_image2_20260623.png");
+  --sb3d-ui-button-settings: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_settings_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-theme: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-theme-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_text_gpt_image2_20260623.png");
+  --sb3d-ui-button-wide: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-album-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_text_gpt_image2_20260623.png");
+  --sb3d-ui-button-exhibition: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_exhibition_gallery_20260704.png");
+  --sb3d-ui-button-prev: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_prev_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-next: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_next_wood_gpt_image2_20260623.png");
+  --sb3d-ui-button-capsule: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_capsule_gpt_image2_20260622.png");
+  --sb3d-ui-page-label: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png");
+  --sb3d-ui-label-cover-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_label_cover_text_gpt_image2_20260623.png");
+  --sticker-thumbnail-outline-filter:
+    drop-shadow(1px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.98));
+  --sticker-page-outline-filter:
+    drop-shadow(1.5px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(-1.5px 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 1.5px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 -1.5px 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(1px 1px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(-1px 1px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(1px -1px 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(-1px -1px 0 rgba(255, 255, 255, 0.96));
+  --sticker-tray-drag-ghost-size: clamp(190px, 30vmin, 280px);
+  --sticker-tray-drag-ghost-image-size: calc(var(--sticker-tray-drag-ghost-size) * 0.9);
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0e252d;
+}
+
+#app::before,
+#app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#app::before {
+  inset: -2%;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 208, 0.04), rgba(8, 30, 38, 0.08)),
+    url("../../assets/ui/sticker_book_table_bg_1600.webp") center / auto 124% no-repeat;
+  filter: saturate(1.03) brightness(0.98);
+  transform: scale(1.01);
+}
+
+#app::after {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(6, 24, 31, 0.14) 0%, rgba(6, 24, 31, 0.03) 52%, rgba(6, 24, 31, 0.22) 100%);
+}
+
+#scene {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+body:not(.is-collection-album) #scene {
+  filter: saturate(1.08) brightness(1.06);
+}
+
+.modebar {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: min(760px, calc(100vw - 24px));
+}
+
+.zukan-settings-panel {
+  position: fixed;
+  top: max(74px, calc(env(safe-area-inset-top) + 68px));
+  right: max(14px, calc(env(safe-area-inset-right) + 14px));
+  z-index: 8;
+  width: min(340px, calc(100vw - 28px));
+  max-height: calc(100vh - 88px);
+  max-height: calc(100dvh - 88px);
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 14px;
+  border: 3px solid rgba(54, 76, 66, 0.72);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 251, 232, 0.98), rgba(242, 253, 248, 0.96));
+  box-shadow: 0 12px 30px rgba(15, 32, 28, 0.24);
+  color: #263c3e;
+}
+
+.book-theme-panel {
+  top: max(16px, calc(env(safe-area-inset-top) + 12px));
+  right: auto;
+  left: 50%;
+  width: min(860px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: 16px 18px;
+  transform: translateX(-50%);
+}
+
+.zukan-settings-panel[hidden] {
+  display: none !important;
+}
+
+.zukan-settings-head,
+.zukan-settings-row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+}
+
+.zukan-settings-head {
+  grid-template-columns: 1fr 44px;
+  margin-bottom: 12px;
+}
+
+.zukan-settings-head h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.zukan-settings-close {
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(47, 67, 62, 0.32);
+  border-radius: 12px;
+  background: #fffdf2;
+  color: #263c3e;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.zukan-settings-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.zukan-settings-back,
+.zukan-settings-help {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  border: 2px solid rgba(225, 185, 68, 0.68);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff7cc, #ffe89f);
+  color: #263c3e;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: inset 0 -4px 0 rgba(210, 165, 48, 0.36);
+}
+
+.zukan-settings-help {
+  background: linear-gradient(180deg, #e8fffa, #bfeee7);
+  border-color: rgba(70, 171, 164, 0.56);
+  box-shadow: inset 0 -4px 0 rgba(61, 153, 149, 0.22);
+}
+
+.zukan-debug-settings {
+  margin-top: 14px;
+  padding: 12px;
+  border: 2px dashed rgba(84, 161, 151, 0.42);
+  border-radius: 14px;
+  background: rgba(235, 255, 250, 0.58);
+}
+
+.zukan-debug-settings[hidden] {
+  display: none !important;
+}
+
+.zukan-debug-settings h3 {
+  margin: 0 0 8px;
+  color: #38605e;
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.zukan-settings-row {
+  grid-template-columns: 64px minmax(0, 1fr);
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.zukan-settings-row-theme {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "label"
+    "current"
+    "picker";
+  align-items: start;
+  align-content: start;
+  gap: 10px;
+  padding: 10px;
+  border: 2px solid rgba(84, 161, 151, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 253, 241, 0.52);
+}
+
+.zukan-settings-row-theme > span {
+  grid-area: label;
+  font-size: 16px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.zukan-theme-current {
+  grid-area: current;
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 98px;
+  padding: 8px;
+  border: 2px solid rgba(84, 161, 151, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 253, 241, 0.86);
+  box-shadow: inset 0 -4px 0 rgba(84, 161, 151, 0.12);
+}
+
+.zukan-theme-current-cover {
+  width: 138px;
+  height: 86px;
+  border-radius: 12px;
+  background-color: rgba(245, 250, 244, 0.9);
+  background-image: var(--book-thumb);
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 5px 10px rgba(31, 55, 54, 0.16);
+}
+
+.zukan-theme-current-info {
+  min-width: 0;
+}
+
+.zukan-theme-current-info strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.zukan-theme-current-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.zukan-theme-current-swatches span {
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+  box-shadow: 0 2px 5px rgba(31, 55, 54, 0.16);
+}
+
+.zukan-settings-segment {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.zukan-settings-segment button {
+  min-height: 38px;
+  border: 2px solid rgba(84, 161, 151, 0.34);
+  border-radius: 10px;
+  background: rgba(255, 253, 241, 0.92);
+  color: #263c3e;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.zukan-settings-segment button.is-active {
+  border-color: rgba(73, 171, 162, 0.88);
+  background: linear-gradient(180deg, #e9fff7, #d7f5ed);
+  box-shadow: inset 0 -4px 0 rgba(73, 171, 162, 0.52);
+}
+
+.zukan-theme-picker {
+  grid-area: picker;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+  max-height: min(44vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 4px 2px 2px;
+}
+
+.zukan-theme-picker button {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: stretch;
+  gap: 5px;
+  min-height: 98px;
+  padding: 6px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.zukan-theme-picker button::before {
+  content: "";
+  display: block;
+  min-height: 58px;
+  border-radius: 10px;
+  background-color: rgba(246, 250, 244, 0.95);
+  background-image: var(--book-thumb);
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.56),
+    0 2px 6px rgba(26, 55, 55, 0.12);
+}
+
+.zukan-theme-picker button.is-active {
+  border-color: var(--book-accent, rgba(73, 171, 162, 0.88));
+}
+
+.zukan-theme-picker button.is-active::before {
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.74),
+    0 0 0 3px var(--book-accent, rgba(73, 171, 162, 0.88)),
+    0 4px 9px rgba(26, 55, 55, 0.18);
+}
+
+/* tier v3: book_exclusive 表紙 (book_buyer_edition 等) のロック表現。 */
+.zukan-theme-picker button.is-tier-locked::before {
+  filter: grayscale(0.5) brightness(0.74);
+}
+
+.zukan-theme-picker button.is-tier-locked {
+  color: rgba(38, 60, 62, 0.66);
+}
+
+.book-theme-lock-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(38, 60, 62, 0.84);
+  color: #fff9e0;
+  font-size: 14px;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.zukan-tune-button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 12px;
+  border: 2px solid rgba(225, 185, 68, 0.68);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff7cc, #ffe89f);
+  color: #263c3e;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: inset 0 -4px 0 rgba(210, 165, 48, 0.36);
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .zukan-settings-panel {
+    top: max(58px, calc(env(safe-area-inset-top) + 54px));
+    right: max(10px, calc(env(safe-area-inset-right) + 10px));
+    width: min(320px, calc(100vw - 20px));
+    max-height: calc(100vh - 70px);
+    max-height: calc(100dvh - 70px);
+    padding: 10px;
+  }
+
+  .book-theme-panel {
+    top: max(8px, calc(env(safe-area-inset-top) + 8px));
+    right: auto;
+    left: 50%;
+    width: min(760px, calc(100vw - 132px));
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    transform: translateX(-50%);
+  }
+
+  .zukan-settings-head {
+    margin-bottom: 8px;
+  }
+
+  .zukan-settings-row {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .zukan-settings-row-theme {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .zukan-settings-segment button {
+    min-height: 34px;
+    font-size: 13px;
+  }
+
+  .zukan-theme-current {
+    grid-template-columns: 104px minmax(0, 1fr);
+    min-height: 76px;
+    gap: 8px;
+    padding: 6px;
+  }
+
+  .zukan-theme-current-cover {
+    width: 104px;
+    height: 66px;
+  }
+
+  .zukan-theme-current-info strong {
+    margin-bottom: 6px;
+    font-size: 16px;
+  }
+
+  .zukan-theme-current-swatches span {
+    width: 22px;
+    height: 22px;
+  }
+
+  .zukan-theme-picker {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 6px;
+    max-height: min(42vh, 196px);
+  }
+
+  .zukan-theme-picker button {
+    min-height: 82px;
+    padding: 5px;
+  }
+
+  .zukan-theme-picker button::before {
+    min-height: 46px;
+  }
+
+  .zukan-tune-button {
+    min-height: 36px;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 720px) {
+  .zukan-settings-panel {
+    top: max(64px, calc(env(safe-area-inset-top) + 58px));
+    right: max(10px, calc(env(safe-area-inset-right) + 10px));
+    width: min(320px, calc(100vw - 20px));
+    max-height: calc(100vh - 76px);
+    max-height: calc(100dvh - 76px);
+    padding: 12px;
+  }
+
+  .book-theme-panel {
+    top: max(10px, calc(env(safe-area-inset-top) + 8px));
+    right: auto;
+    left: 50%;
+    width: min(560px, calc(100vw - 20px));
+    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
+    transform: translateX(-50%);
+  }
+
+  .zukan-settings-row-theme {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "label"
+      "current"
+      "picker";
+  }
+
+  .zukan-theme-current {
+    grid-template-columns: 112px minmax(0, 1fr);
+    min-height: 84px;
+  }
+
+  .zukan-theme-current-cover {
+    width: 112px;
+    height: 70px;
+  }
+
+  .zukan-theme-picker {
+    grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+    max-height: min(38vh, 260px);
+  }
+}
+
+body:not(.is-prototype-controls) .modebar,
+body:not(.is-prototype-controls) .toolbar,
+body:not(.is-prototype-controls) .spread-jumper,
+body:not(.is-editor-enabled) .sticker-editor {
+  display: none !important;
+}
+
+.segmented {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(216, 241, 238, 0.2);
+  border-radius: 8px;
+  background: rgba(9, 30, 38, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: min(720px, calc(100vw - 32px));
+  height: 48px;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  gap: 12px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid rgba(216, 241, 238, 0.2);
+  border-radius: 8px;
+  background: rgba(9, 30, 38, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.toolbar button,
+.segmented button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(218, 243, 239, 0.26);
+  border-radius: 8px;
+  background: rgba(238, 249, 245, 0.08);
+  color: #ecf9f5;
+  cursor: pointer;
+}
+
+.segmented button.is-tier-locked {
+  opacity: 0.68;
+  filter: grayscale(0.4);
+}
+
+.segmented button {
+  width: auto;
+  min-width: 104px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.segmented button[data-book] {
+  min-height: 44px;
+  padding: 4px 10px 4px 48px;
+  background-image: var(--book-thumb);
+  background-position: 8px center;
+  background-repeat: no-repeat;
+  background-size: 34px 24px;
+}
+
+.toolbar button:hover,
+.segmented button:hover {
+  background: rgba(238, 249, 245, 0.15);
+}
+
+.segmented button.is-active {
+  border-color: rgba(255, 246, 212, 0.45);
+  background: rgba(255, 241, 196, 0.2);
+}
+
+.play-icon {
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 13px solid currentColor;
+  transform: translateX(1px);
+}
+
+.playing .play-icon {
+  width: 13px;
+  height: 16px;
+  border: 0;
+  background:
+    linear-gradient(90deg, currentColor 0 34%, transparent 34% 66%, currentColor 66% 100%);
+  transform: none;
+}
+
+.reset-icon {
+  width: 16px;
+  height: 16px;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  position: relative;
+}
+
+.reset-icon::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: -5px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid currentColor;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  transform: rotate(-18deg);
+}
+
+input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  accent-color: #65c8c8;
+}
+
+.spread-jumper {
+  position: fixed;
+  left: 50%;
+  bottom: max(78px, calc(env(safe-area-inset-bottom) + 78px));
+  z-index: 2;
+  transform: translateX(-50%);
+  display: grid;
+  grid-auto-flow: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(216, 241, 238, 0.18);
+  border-radius: 999px;
+  background: rgba(9, 30, 38, 0.52);
+  backdrop-filter: blur(10px);
+}
+
+.spread-jumper[hidden] {
+  display: none;
+}
+
+.spread-jumper button {
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1px solid rgba(220, 242, 236, 0.32);
+  border-radius: 50%;
+  background: rgba(216, 241, 238, 0.28);
+  cursor: pointer;
+}
+
+.spread-jumper button:hover {
+  background: rgba(111, 211, 210, 0.72);
+}
+
+.spread-jumper button.is-active {
+  border-color: rgba(255, 241, 191, 0.82);
+  background: #ffe18a;
+}
+
+.top-action-cluster {
+  position: fixed;
+  top: max(0px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: calc(100vw - 16px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.top-entry-cluster {
+  position: fixed;
+  top: max(0px, env(safe-area-inset-top));
+  left: max(8px, env(safe-area-inset-left));
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.top-entry-cluster > * {
+  pointer-events: auto;
+}
+
+.top-mode-cluster {
+  position: fixed;
+  top: max(0px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0;
+  transform: translateX(-50%);
+}
+
+.top-action-button,
+.top-edit-button,
+.top-theme-button,
+.album-mode-toggle,
+.sticker-exhibition-button {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 58px;
+  border: 0;
+  border-radius: 13px;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  color: #243b40;
+  box-shadow: none;
+  backdrop-filter: none;
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 1;
+  text-align: center;
+}
+
+.top-button-label {
+  display: block;
+  max-width: 100%;
+  transform: translateY(-2px);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.top-action-button {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  margin-top: 2px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background-image: var(--sb3d-ui-button-back);
+  color: transparent;
+  font-size: 0;
+  line-height: 1;
+}
+
+.top-edit-button {
+  width: 186px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: var(--sb3d-ui-button-mode-view-text);
+  color: #243b40;
+  font-size: 15px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+body.is-collection-album .top-edit-button {
+  display: none;
+}
+
+body.is-sticker-edit-mode .top-edit-button {
+  background-image: var(--sb3d-ui-button-mode-paste-text);
+  filter:
+    saturate(1.22)
+    brightness(1.1)
+    drop-shadow(0 9px 16px rgba(4, 24, 30, 0.18));
+}
+
+.top-edit-button.is-tutorial-pressing {
+  transform: translateY(3px) scale(0.985);
+  filter:
+    saturate(1.05)
+    brightness(0.92)
+    drop-shadow(0 4px 8px rgba(4, 24, 30, 0.18));
+}
+
+.top-edit-button .top-button-label,
+.top-theme-button .top-button-label,
+body:not(.is-collection-album) .album-mode-toggle .top-button-label {
+  opacity: 0;
+}
+
+.top-action-button::before {
+  content: "";
+  display: none;
+  position: relative;
+  z-index: 1;
+  color: #243b40;
+  font-size: 24px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.65));
+}
+
+#topSettingsButton {
+  background-image: var(--sb3d-ui-button-settings);
+  background-size: 100% 100%;
+}
+
+#topSettingsButton::before {
+  font-family: "Segoe UI Symbol", "Meiryo", sans-serif;
+}
+
+.top-theme-button {
+  width: 186px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: var(--sb3d-ui-button-theme-text);
+  color: #243b40;
+  font-size: 14px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+}
+
+.album-mode-toggle {
+  position: static;
+  transform: none;
+  width: 204px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: var(--sb3d-ui-button-album-text);
+  color: #243b40;
+  font-size: 14px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+}
+
+.album-mode-toggle[hidden] {
+  display: none;
+}
+
+.sticker-exhibition-button {
+  width: 178px;
+  padding: 0 16px 0 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: var(--sb3d-ui-button-exhibition);
+  color: #2d2415;
+  font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "BIZ UDPGothic", "Meiryo", sans-serif;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+}
+
+.sticker-exhibition-button .top-button-label {
+  display: grid;
+  gap: 1px;
+  line-height: 0.95;
+  transform: translateY(-1px) scaleX(0.98);
+  -webkit-text-stroke: 0.2px rgba(45, 36, 21, 0.82);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+body.is-collection-album .sticker-exhibition-button,
+body.is-sticker-tutorial-active .sticker-exhibition-button {
+  display: none;
+}
+
+.album-mode-toggle .top-button-label {
+  transform: translateY(-2px) scaleX(0.96);
+}
+
+.top-action-button:hover,
+.top-edit-button:hover,
+.top-theme-button:hover,
+.album-mode-toggle:hover,
+.sticker-exhibition-button:hover {
+  filter: brightness(1.04) drop-shadow(0 8px 14px rgba(4, 24, 30, 0.12));
+}
+
+body.is-collection-album .album-mode-toggle {
+  background-image: var(--sb3d-ui-button-wide);
+  padding: 0 16px 0 70px;
+}
+
+.book-page-controls {
+  position: fixed;
+  inset: auto 0 max(18px, calc(env(safe-area-inset-bottom) + 18px));
+  z-index: 4;  /* v1675: 旧 2 → 4。 tray (z:3) より必ず上 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  padding: 0 clamp(20px, 7vw, 110px);
+}
+
+.book-page-controls[hidden] {
+  display: none;
+}
+
+.book-page-button,
+.book-page-label {
+  pointer-events: auto;
+  border: 0;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  color: #243b40;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.book-page-button {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-image: var(--sb3d-ui-button-prev);
+  color: transparent;
+  font-size: 0;
+  font-weight: 900;
+  cursor: pointer;
+  filter: drop-shadow(0 10px 18px rgba(4, 24, 30, 0.16));
+  touch-action: manipulation;  /* v1675: iOS 300ms tap delay 排除 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.book-page-button::before {
+  content: "";
+  display: none;
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: translateY(-50%);
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.52));
+}
+
+.book-page-button-left::before {
+  left: 17px;
+  border-top: 13px solid transparent;
+  border-bottom: 13px solid transparent;
+  border-right: 20px solid #18363d;
+}
+
+.book-page-button-right::before {
+  right: 17px;
+  border-top: 13px solid transparent;
+  border-bottom: 13px solid transparent;
+  border-left: 20px solid #18363d;
+}
+
+.book-page-button-right {
+  background-image: var(--sb3d-ui-button-next);
+}
+
+.book-page-button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.book-page-label {
+  min-width: 168px;
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 1px 24px 10px;
+  border-radius: 999px;
+  background-image: var(--sb3d-ui-page-label);
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+.book-page-label[aria-expanded="true"] {
+  filter: brightness(1.04) saturate(1.04);
+}
+
+body.is-cover-surface .book-page-label {
+  min-width: 132px;
+  min-height: 36px;
+  padding: 0 18px 3px;
+  border: 2px solid rgba(229, 190, 75, 0.68);
+  border-radius: 16px;
+  background-image: none;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 224, 0.96), rgba(255, 239, 177, 0.94));
+  color: #6b4a1e;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.48),
+    0 5px 12px rgba(46, 31, 8, 0.13);
+  cursor: default;
+  pointer-events: none;
+  font-size: 14px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+body:not(.is-collection-album).is-sticker-edit-mode .book-page-label {
+  display: none;
+}
+
+.book-page-jump {
+  position: fixed;
+  left: 50%;
+  bottom: max(70px, calc(env(safe-area-inset-bottom) + 70px));
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap: 7px;
+  width: min(286px, calc(100vw - 32px));
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(216, 241, 238, 0.34);
+  background: rgba(255, 253, 244, 0.9);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+}
+
+.book-page-jump[hidden] {
+  display: none;
+}
+
+body.is-collection-tray-visible .book-page-jump {
+  bottom: max(212px, calc(env(safe-area-inset-bottom) + 212px));
+  z-index: 4;
+}
+
+body.is-collection-tray-visible .book-page-controls {
+  inset: 0;
+  z-index: 5;
+  display: block;
+  padding: 0;
+}
+
+body.is-collection-tray-visible .book-page-button {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+body.is-collection-tray-visible .book-page-button-left {
+  left: max(16px, calc(env(safe-area-inset-left) + 16px));
+}
+
+body.is-collection-tray-visible .book-page-button-right {
+  right: max(16px, calc(env(safe-area-inset-right) + 16px));
+}
+
+body.is-collection-tray-visible .book-page-label {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  bottom: max(8px, calc(env(safe-area-inset-bottom) + 8px));
+  min-width: 118px;
+  min-height: 34px;
+  padding: 0 16px 7px;
+  background-image: var(--sb3d-ui-page-label);
+  box-shadow: none;
+  font-size: 12px;
+  transform: translateX(-50%);
+}
+
+.book-page-jump button {
+  min-height: 36px;
+  border: 1px solid rgba(178, 157, 87, 0.32);
+  border-radius: 12px;
+  background: rgba(255, 251, 228, 0.86);
+  color: #243b40;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.book-page-jump button.is-active {
+  background: #d9f7f7;
+  border-color: rgba(75, 180, 188, 0.5);
+  color: #23565c;
+}
+
+.book-page-jump button:disabled {
+  cursor: default;
+}
+
+.collection-sticker-tray {
+  position: fixed;
+  left: 50%;
+  bottom: max(70px, calc(env(safe-area-inset-bottom) + 70px));
+  z-index: 3;
+  width: min(1240px, calc(100vw - 64px));
+  height: 124px;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  display: grid;
+  align-items: center;
+  padding: 8px 10px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(222, 245, 242, 0.5);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(239, 250, 246, 0.94)),
+    rgba(245, 253, 249, 0.96);
+  box-shadow:
+    0 16px 34px rgba(4, 24, 30, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.72) inset;
+  backdrop-filter: blur(12px);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+body:not(.is-collection-album) .collection-sticker-tray.is-sticker-source {
+  bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
+  opacity: 0.12;
+  pointer-events: none;
+  transform: translate(-50%, calc(100% + 10px));
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body:not(.is-collection-album).is-sticker-tray-peek .collection-sticker-tray.is-sticker-source,
+body:not(.is-collection-album):not(.is-sticker-tutorial-step-ok).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source,
+body:not(.is-collection-album).is-sticker-tray-dragging .collection-sticker-tray.is-sticker-source {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collection-album).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+/* v905: sticker-edit のシール選択トレイは下端固定へ戻す。
+   ページボタンは z-index:4、 tray は z-index:3 なので、重なり回避のために tray 全体を上げない。 */
+body:not(.is-collection-album):not(.is-sticker-tutorial-step-ok).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source,
+body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collection-album).is-sticker-edit-mode:not(.is-inline-sticker-panel-open) .collection-sticker-tray.is-sticker-source {
+  bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
+}
+
+.collection-sticker-tray::before {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.collection-sticker-tray::before {
+  inset: 8px 10px;
+  z-index: -1;
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(221, 246, 239, 0.38)),
+    rgba(255, 255, 255, 0.42);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.56) inset;
+}
+
+.collection-sticker-tray[hidden] {
+  display: none;
+}
+
+.sticker-tray-counter {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  z-index: 2;
+  min-width: 64px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  color: #2b454a;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.sticker-tray-counter[hidden] {
+  display: none;
+}
+
+.collection-sticker-tray-items {
+  min-width: 0;
+  height: 106px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  touch-action: pan-x;
+  padding: 2px 128px 4px 10px;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.collection-toc-title {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  padding: 0 8px 0 2px;
+  color: #365358;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.collection-toc-card {
+  flex: 0 0 78px;
+  width: 78px;
+  height: 60px;
+  display: grid;
+  grid-template-rows: 32px 14px 5px;
+  gap: 4px;
+  place-items: center;
+  padding: 5px 7px 6px;
+  border: 1px solid rgba(188, 145, 54, 0.2);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 248, 221, 0.4)),
+    rgba(255, 250, 226, 0.56);
+  color: #334447;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(181, 135, 45, 0.08);
+  cursor: pointer;
+  touch-action: manipulation;
+  backface-visibility: hidden;
+}
+
+.collection-toc-card:disabled {
+  opacity: 0.58;
+  cursor: default;
+}
+
+.collection-toc-card:hover,
+.collection-toc-card.is-active {
+  border-color: rgba(55, 145, 154, 0.54);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(226, 250, 241, 0.36)),
+    rgba(234, 251, 244, 0.58);
+}
+
+.collection-toc-card.is-active {
+  box-shadow:
+    0 0 0 2px rgba(75, 180, 188, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+}
+
+.collection-toc-icon {
+  width: 34px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.64) inset;
+}
+
+.collection-toc-image {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.collection-toc-image[data-src] {
+  opacity: 0;
+}
+
+.collection-toc-mystery {
+  color: #71806f;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.collection-toc-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #334447;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.collection-toc-bar {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(142, 157, 146, 0.24);
+}
+
+.collection-toc-bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4db6b4, #f1c75e);
+}
+
+.collection-sticker-tray.is-sticker-source .collection-sticker-tray-items {
+  padding-right: 112px;
+}
+
+.sticker-tray-card {
+  flex-basis: 86px;
+  width: 86px;
+  height: 74px;
+  grid-template-rows: 1fr;
+  gap: 0;
+  cursor: default;
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.sticker-tray-card.is-dragging {
+  cursor: grabbing;
+}
+
+.sticker-tray-card.is-dragging {
+  opacity: 0.56;
+}
+
+.sticker-tray-icon {
+  --sticker-tray-icon-pad: 6px;
+  position: relative;
+  width: 70px;
+  height: 58px;
+  box-sizing: border-box;
+  overflow: visible;
+  border-radius: 10px;
+  cursor: grab;
+  /* v1646 (task 5): touch-action: none → pan-x。 アイコン上で指を置いて横スライドしたときに
+     native scroll を奪わない (place TRY 中の tray スライド可否はここに依存)。 縦/斜め drag は
+     handleStickerTrayPointerMove の threshold + verticalDrag 判定で startStickerTrayDrag が起動し、
+     その時点で preventDefault される (pan-x なので縦方向は JS 側でキャンセル可能)。 */
+  touch-action: pan-x;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.sticker-tray-icon:active {
+  cursor: grabbing;
+}
+
+.sticker-tray-icon img {
+  position: absolute;
+  left: var(--sticker-tray-icon-pad);
+  top: var(--sticker-tray-icon-pad);
+  width: calc(100% - var(--sticker-tray-icon-pad) * 2);
+  height: calc(100% - var(--sticker-tray-icon-pad) * 2);
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+  filter: var(--sticker-thumbnail-outline-filter);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+.sticker-tray-empty {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: min(230px, calc(100vw - 118px));
+  height: 58px;
+  box-sizing: border-box;
+  padding: 0 18px;
+  border: 1px dashed rgba(73, 116, 119, 0.34);
+  border-radius: 10px;
+  background: rgba(255, 251, 238, 0.9);
+  color: #365358;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* v1650 (task 3): 旧 body.is-sticker-tutorial-tray-silhouette blanket selector を撤去。
+   旧仕様は チュート中ずっと「target 以外全 silhouette」 になっていたため、 daa5543 の
+   「target ±2 内 SR のみ silhouette」 per-card class が二重塗りで効かず、 また place 以外の
+   step (intro/mode/view/move/scale/rotate/ok) では target が 0 枚なので tray 全カードが silhouette
+   になっていた。 現仕様は per-card class (.is-rarity-super-silhouette) のみに統一。
+   target ハイライトは body class gate を外し、 単独 selector で常時発現。
+   body class .is-sticker-tutorial-tray-silhouette の toggle 自体は main.js 側で温存
+   (将来用 + 他参照箇所への副作用回避)。 */
+.sticker-tray-card.is-tutorial-target-sticker .sticker-tray-icon {
+  background: rgba(255, 247, 206, 0.94);
+  box-shadow:
+    0 0 0 3px rgba(255, 216, 87, 0.82),
+    0 8px 18px rgba(42, 70, 61, 0.14);
+}
+
+/* v1636: チュート中、 target ±2 内の未取得 SR (rarity=super) を silhouette 化。
+   per-card class (main.js:updateRaritySuperSilhouettes で付与)、 target 自身は強制解除。
+   v1650: 旧 body class blanket が撤去されたため、 ここが silhouette の唯一の発生源になる。 */
+.sticker-tray-card.is-rarity-super-silhouette .sticker-tray-icon img {
+  opacity: 0.46;
+  filter: brightness(0) saturate(0) opacity(0.62);
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+.sticker-tray-card.is-tutorial-target-sticker.is-rarity-super-silhouette .sticker-tray-icon img {
+  opacity: 1;
+  filter: none;
+}
+
+/* v1887: 未所有シールを tray 末尾に「薄い森トーンのシルエット」で並べる。
+   完全な白抜き (SR silhouette) との差別化のため grayscale + brightness で「輪郭は残るが色は伏せる」。
+   locked は SR silhouette より後に定義 → 同時付与時は locked が視覚的に勝つ (specificity 同点、後勝ち)。
+   v1888 (Mori-tone review): card background を rgba(190,200,185,0.70) に深めて silhouette との
+   コントラストを確保 (3-8 才児の輪郭視認性優先)。 */
+.sticker-tray-card.is-locked-silhouette {
+  background: rgba(190, 200, 185, 0.70);
+  box-shadow: none;
+  cursor: default;
+}
+.sticker-tray-card.is-locked-silhouette:hover,
+.sticker-tray-card.is-locked-silhouette:focus,
+.sticker-tray-card.is-locked-silhouette:focus-visible,
+.sticker-tray-card.is-locked-silhouette:active {
+  box-shadow: none;
+  transform: none;
+  background: rgba(190, 200, 185, 0.70);
+}
+.sticker-tray-card.is-locked-silhouette .sticker-tray-icon {
+  background: rgba(190, 200, 185, 0.70);
+  box-shadow: none;
+}
+.sticker-tray-card.is-locked-silhouette .sticker-tray-icon img {
+  /* v1888 (Mori-tone review): brightness(0) + grayscale(0.5) で「真っ黒すぎない森トーン馴染みの
+     ソフト silhouette」。 opacity 0.65 で pale forest card background とのコントラスト確保、
+     SR silhouette (完全白抜き) との視覚差別化を維持。 */
+  opacity: 0.65;
+  filter: brightness(0) saturate(0) grayscale(0.5);
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+
+/* v1887: 未所有シールをタップした時の静かな吹き出し。
+   森トーン (#2A463D 系) 半透明、白文字、pointer 無視。 200ms fade。 */
+.sticker-tray-lock-hint {
+  position: fixed;
+  z-index: 20;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(42, 70, 61, 0.92);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 0 6px 16px rgba(42, 70, 61, 0.24);
+  opacity: 0;
+  will-change: opacity;
+  transition: opacity 200ms ease;
+}
+
+.sticker-tray-lock-hint.is-visible {
+  opacity: 1;
+}
+
+.sticker-tray-label {
+  display: none;
+  font-size: 10px;
+}
+
+.sticker-tray-drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  width: var(--sticker-tray-drag-ghost-size);
+  height: var(--sticker-tray-drag-ghost-size);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.sticker-tray-drag-ghost img {
+  display: block;
+  max-width: var(--sticker-tray-drag-ghost-image-size);
+  max-height: var(--sticker-tray-drag-ghost-image-size);
+  object-fit: contain;
+  filter: var(--sticker-thumbnail-outline-filter);
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+.sticker-tray-drag-ghost span {
+  display: none;
+}
+
+body.is-sticker-tray-dragging #scene {
+  cursor: grabbing;
+}
+
+.inline-sticker-controls {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, calc(env(safe-area-inset-bottom) + 14px));
+  z-index: 6;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  gap: 6px 7px;
+  align-items: center;
+  width: min(306px, calc(100vw - 32px));
+  transform: translateX(-50%);
+  color: #234247;
+  font-weight: 900;
+  padding: 8px 9px 9px;
+  border-radius: 13px;
+  background: rgba(255, 253, 236, 0.74);
+  box-shadow:
+    0 10px 22px rgba(25, 45, 40, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.68) inset;
+  backdrop-filter: blur(8px);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8),
+    0 2px 8px rgba(255, 255, 255, 0.72);
+  pointer-events: auto;
+}
+
+.inline-sticker-controls[hidden] {
+  display: none;
+}
+
+.inline-sticker-controls label {
+  grid-column: 1;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+}
+
+.inline-sticker-controls span {
+  justify-self: end;
+  font-size: 13px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.inline-sticker-controls input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  accent-color: #4bb7bb;
+}
+
+.inline-sticker-actions {
+  grid-column: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-sticker-delete,
+.inline-sticker-ok {
+  justify-self: start;
+  min-width: 42px;
+  min-height: 24px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 251, 231, 0.74);
+  color: #234247;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 2px 8px rgba(31, 56, 48, 0.12);
+  cursor: pointer;
+}
+
+.inline-sticker-ok {
+  min-width: 48px;
+  background: linear-gradient(180deg, rgba(255, 244, 190, 0.92), rgba(255, 220, 117, 0.86));
+  box-shadow:
+    0 2px 8px rgba(31, 56, 48, 0.12),
+    inset 0 -2px 0 rgba(199, 143, 43, 0.22);
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, filter 120ms ease-out;
+}
+
+.inline-sticker-ok.is-tutorial-pressing {
+  /* v1625: シール帳チュートリアル OK ボタン押下演出 (top-edit-button.is-tutorial-pressing と同思想)。
+     pill 形状 (border-radius:999px) なので outline ではなく box-shadow 3px リングで押下瞬間の光を表現。 */
+  transform: translateY(2px) scale(0.94);
+  background: linear-gradient(180deg, rgba(255, 232, 150, 0.96), rgba(245, 198, 84, 0.92));
+  box-shadow:
+    0 1px 4px rgba(31, 56, 48, 0.18),
+    inset 0 -1px 0 rgba(160, 110, 24, 0.32),
+    0 0 0 3px rgba(255, 244, 190, 0.55);
+  filter: brightness(0.96);
+}
+
+.inline-sticker-close {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 251, 231, 0.82);
+  color: #234247;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 7px rgba(31, 56, 48, 0.12);
+  cursor: pointer;
+}
+
+.sticker-tutorial[hidden] {
+  display: none;
+}
+
+.sticker-tutorial {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  pointer-events: none;
+  color: #234247;
+  font-weight: 900;
+}
+
+.sticker-tutorial::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 29, 28, 0);
+  pointer-events: none;
+}
+
+.sticker-tutorial-spotlight {
+  position: fixed;
+  left: var(--tutorial-x, 50%);
+  top: var(--tutorial-y, 50%);
+  width: var(--tutorial-w, 180px);
+  height: var(--tutorial-h, 90px);
+  border: 3px solid rgba(255, 230, 130, 0.78);
+  border-radius: var(--tutorial-radius, 18px);
+  background:
+    radial-gradient(ellipse at 50% 50%,
+      rgba(255, 244, 170, 0.32) 0%,
+      rgba(255, 240, 150, 0.18) 55%,
+      rgba(255, 240, 150, 0.04) 90%,
+      transparent 100%);
+  box-shadow:
+    0 0 0 6px rgba(255, 255, 255, 0.32),
+    0 0 32px rgba(255, 220, 84, 1),
+    0 0 72px rgba(255, 240, 150, 0.55);
+  mix-blend-mode: screen;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.sticker-tutorial-hand {
+  position: fixed;
+  z-index: 42;
+  left: var(--tutorial-hand-x, calc(var(--tutorial-x, 50%) + var(--tutorial-w, 180px) * 0.22));
+  top: var(--tutorial-hand-y, calc(var(--tutorial-y, 50%) + var(--tutorial-h, 90px) * 0.16));
+  width: clamp(68px, 7.6vw, 104px);
+  height: auto;
+  filter:
+    drop-shadow(0 8px 12px rgba(22, 48, 44, 0.22))
+    drop-shadow(0 2px 0 rgba(255, 255, 255, 0.35));
+  transform: translate(-50%, -35%);
+  pointer-events: none;
+  transform-origin: 50% 32%;
+}
+
+.sticker-tutorial-ghost {
+  position: fixed;
+  left: var(--tutorial-ghost-x, var(--tutorial-hand-x, 50%));
+  top: var(--tutorial-ghost-y, var(--tutorial-hand-y, 50%));
+  width: clamp(74px, 8vw, 112px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+  pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgba(22, 48, 44, 0.24));
+}
+
+.sticker-tutorial-ghost img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+body.is-sticker-tutorial-step-ok .sticker-tutorial-hand {
+  /* v1628: 旧 stickerTutorialTap (1.35s infinite, OK ボタン右隣で「呼吸」 するだけ) を廃止。
+     stickerTutorialOkPressDemo (3.0s, 1 回再生) に置換: 指が rest (右隣) → OK ボタン中央へ実際に降りて押し込み →
+     離す → 戻る、 の所作で「指で押している」 ことを子供に伝える。 keyframe 50% 押下と
+     triggerStickerTutorialOkButtonPress の class add (≈ 1500ms 後) を同期。 1 回再生で終わるので
+     ボタン消滅 (click 後 inlineStickerControls hidden) 後も指が見えない不整合を排除。 */
+  animation: stickerTutorialOkPressDemo 3s ease-in-out 1 both;
+}
+
+/* step 7 (page) は hand 非表示 + 矢印ボタン強調 + 自動 click。
+   旧 page-swipe / pageHoverVertical 演出は廃止 (display:none 側で hand を消す)。 */
+
+/* 矢印ボタン (#bookNextPage) を丸で囲むハロー + パルス。 押下せず、 視覚的に「ここだよ」 だけ伝える。
+   v1630: ボタン本体の scale(1↔1.12) を完全停止。 理由は:
+   1) getBoundingClientRect は CSS transform を含むため、 pulse 進行中フレームで rect が 12% 拡縮
+   2) viewport 右端固定 (position:fixed; right:16px) のため、 拡大フレームで右側だけ
+      Math.min(window.innerWidth, ...) でクランプされ centerX が左に偏る (非対称クランプ)
+   3) showStickerTutorialStep が 3 回 (即時/180ms/720ms) サンプルするため毎回違う rect → 黄枠が左にずれる
+   呼吸演出は ::after ハロー (pseudo-element は親 rect に影響しない) で完結。 */
+.book-page-button.is-tutorial-spotlit-arrow {
+  position: relative;
+  animation: none !important;
+  transform: none !important;
+  z-index: 30;
+}
+
+.book-page-button.is-tutorial-spotlit-arrow::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 170, 60, 0.95);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.42),
+    0 0 22px rgba(255, 178, 64, 0.82),
+    0 0 46px rgba(255, 210, 120, 0.6);
+  pointer-events: none;
+  animation: stickerTutorialArrowHalo 1.1s ease-in-out infinite;
+}
+
+/* Phase 3 (press): point hand で 3 連押下 (Phase 3 開始から 3.3s 内に 3 押下: 400/1850/3250ms = keyframe 内 12/56/98%) */
+body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-press .sticker-tutorial-hand {
+  animation: stickerTutorialModePressDemo 3.3s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-view .sticker-tutorial-hand {
+  animation: stickerTutorialViewPressDemo 6.8s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-mode.is-sticker-tutorial-phase-try .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-view.is-sticker-tutorial-phase-try .sticker-tutorial-hand {
+  animation: stickerTutorialButtonPointNudge 1.05s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-place .sticker-tutorial-hand {
+  /* base 68/7.6vw/104 → +18% で「迷い/置き」 のジェスチャーを存在感ある大きさで見せる */
+  width: clamp(82px, 9.2vw, 124px);
+  filter:
+    drop-shadow(0 10px 14px rgba(22, 48, 44, 0.32))
+    drop-shadow(0 2px 0 rgba(255, 255, 255, 0.4));
+  /* 15.8s → 17.6s (find phase 30-50% を 30-52.8% 相当に伸ばし、 vibration ≒ 600ms 確保) */
+  animation: stickerTutorialFindPlaceHand 17.6s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
+  animation: stickerTutorialFindPlaceGhost 17.6s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-move .sticker-tutorial-hand {
+  animation: stickerTutorialMoveDemo 4.3s ease-in-out 1 both;
+}
+
+body.is-sticker-tutorial-step-move.is-sticker-tutorial-move-js .sticker-tutorial-hand {
+  animation: none;
+}
+
+body.is-sticker-tutorial-step-scale .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-rotate .sticker-tutorial-hand {
+  animation: stickerTutorialSliderDemo 1.8s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-step-scale.is-sticker-tutorial-slider-js .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-rotate.is-sticker-tutorial-slider-js .sticker-tutorial-hand {
+  animation: none;
+  /* 90° 回転 + scaleX(-1) で指先 (画像 local 32%H, 50%W) が handY に乗るよう translate Y を +36.5% に補正。
+     基本ステート (translate(-50%, -35%)) は非回転前提の値なので、回転後は逆方向のオフセットが必要 */
+  transform: translate(-50%, 36.5%) scaleX(-1) rotate(90deg) scale(0.96);
+}
+
+body.is-sticker-tutorial-step-place .sticker-tutorial-ghost {
+  opacity: 1;
+}
+
+.sticker-tutorial-card,
+.sticker-tutorial-start {
+  position: fixed;
+  left: 50%;
+  bottom: max(160px, calc(env(safe-area-inset-bottom) + 160px));
+  z-index: 26;
+  width: min(430px, calc(100vw - 32px));
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  padding: 14px 16px 12px;
+  border: 3px solid rgba(149, 106, 42, 0.82);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 236, 0.98), rgba(255, 242, 197, 0.96)),
+    #fff8da;
+  box-shadow:
+    0 18px 32px rgba(22, 48, 44, 0.22),
+    inset 0 -5px 0 rgba(214, 163, 61, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.82);
+  pointer-events: auto;
+}
+
+.sticker-tutorial-start {
+  bottom: 50%;
+  width: min(360px, calc(100vw - 44px));
+  padding: 24px 20px 18px;
+  transform: translate(-50%, 50%);
+}
+
+.sticker-tutorial-card[hidden],
+.sticker-tutorial-start[hidden] {
+  display: none;
+}
+
+/* v1650 (task 1): cover-open swing 中 card 潜伏 → 完了後 fade-in (550ms)。
+   旧仕様は swing 1150ms 中ずっと rightPage rect を「左ページ rect」 として誤参照 →
+   book.position.x 補間で card が動き、 swing 完了瞬間に左ページに大ジャンプしていた。
+   現仕様: showStickerTutorialStep 時に coverOpenAnimation 進行中なら is-await-cover-open を付与、
+   updateCoverOpen の open 完了ブランチで rAF 経由で外す → 左ページ rect 確定後の fade-in。 */
+.sticker-tutorial-card.is-await-cover-open {
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+.sticker-tutorial-card.is-page-inscribed.is-await-cover-open {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.sticker-tutorial-card:not(.is-await-cover-open) {
+  opacity: 1;
+  transition: opacity 0.55s ease-out;
+}
+
+.sticker-tutorial-start-title {
+  margin: 0 0 18px;
+  color: #234247;
+  font-size: 28px;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+body.is-sticker-tutorial-card-top .sticker-tutorial-card {
+  top: max(76px, calc(env(safe-area-inset-top) + 76px));
+  bottom: auto;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-card {
+  top: max(74px, calc(env(safe-area-inset-top) + 74px));
+  bottom: auto;
+  left: max(10px, calc(env(safe-area-inset-left) + 10px));
+  width: min(390px, calc(100vw - 20px));
+  transform: none;
+  padding: 18px 28px 15px 110px;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-count {
+  font-size: 10px;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.33;
+}
+
+body.is-sticker-tutorial-card-corner .sticker-tutorial-actions button {
+  min-width: 66px;
+  min-height: 28px;
+  padding: 0 10px 2px;
+  font-size: 12px;
+}
+
+.sticker-tutorial-count {
+  position: absolute;
+  right: 28px;
+  top: 13px;
+  color: #5c7779;
+  font-size: 12px;
+  line-height: 1;
+  text-align: right;
+}
+
+.sticker-tutorial-card p {
+  margin: 0;
+  color: #234247;
+  font-size: 17px;
+  line-height: 1.34;
+  letter-spacing: 0;
+  text-align: center;
+  white-space: pre-line;
+}
+
+.sticker-tutorial-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sticker-tutorial-actions button {
+  min-width: 78px;
+  min-height: 34px;
+  padding: 0 14px 2px;
+  border: 2px solid rgba(145, 105, 42, 0.44);
+  border-radius: 999px;
+  background: rgba(255, 251, 231, 0.88);
+  color: #234247;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  box-shadow:
+    0 4px 10px rgba(31, 56, 48, 0.11),
+    inset 0 -3px 0 rgba(190, 143, 50, 0.14);
+  cursor: pointer;
+}
+
+#stickerTutorialNext {
+  min-width: 86px;
+  background: linear-gradient(180deg, #ffeeb9, #ffc75f);
+  border-color: rgba(177, 119, 34, 0.56);
+}
+
+#stickerTutorialStartButton {
+  min-width: 116px;
+  min-height: 42px;
+  background: linear-gradient(180deg, #ffeeb9, #ffc75f);
+  border-color: rgba(177, 119, 34, 0.56);
+  font-size: 15px;
+}
+
+/* v1630: ポノ吹き出し PNG を廃止し、 ノート 左ページに直書き レイアウトへ。
+   - .sticker-tutorial-card 自体は画面全面のヒットレイヤーに格下げ (pointer-events: none)
+   - .sticker-tutorial-page-text を JS が左ページ rect (CSS 変数) に追従させて配置
+   - 操作ボタン (あとで/もういちど/つぎ) は誤タップ防止のため画面下端中央に固定 */
+.sticker-tutorial-card.is-page-inscribed {
+  position: fixed;
+  inset: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+  aspect-ratio: auto;
+}
+
+.sticker-tutorial-card.is-page-inscribed[hidden] {
+  display: none;
+}
+
+/* v1643 (task 2): 左ページ overlay を 「テキスト + ボタン」 一体ブロックに再編。
+   .sticker-tutorial-page-block が leftpage rect 全体を占有し、 内部で flex-column。
+   - rotate を 0deg に矯正 (v1640 の -1.6deg は実ページと不一致で「ズレてる」 印象)
+   - AABB 膨張で画面左 5% に飛ぶ問題は left/width をページ中央寄せ (08% offset, 84% 幅) で根本回避済
+   - mix-blend-mode は text 側のみ。 ブロックレベルでは normal を維持 (ボタン背景を保護) */
+.sticker-tutorial-page-block {
+  position: absolute;
+  left: var(--tutorial-leftpage-x, 8vw);
+  top: var(--tutorial-leftpage-y, 14vh);
+  width: var(--tutorial-leftpage-w, 38vw);
+  max-height: calc(var(--tutorial-leftpage-h, 40vh) + 8vh);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(6px, 1.0vw, 14px);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* v1640 (task 1): 「便箋カード」 → 「本に直書き」 へ全面退行。
+   v1643: rotate を -1.6deg → 0deg に矯正 (実ページと水平統一)。 page-block の中で static 配置に変更。 */
+.sticker-tutorial-page-text {
+  position: static;
+  padding: clamp(6px, 1.0vw, 14px) clamp(8px, 1.2vw, 18px);
+  pointer-events: none;
+  /* 直書き: 背景 / 角丸 / 影 / 枠 すべて 0 */
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  /* multiply 合成でページ素材 (帆船イラストや紙地) に文字が「染み込む」 */
+  mix-blend-mode: multiply;
+  transform: none;
+  transform-origin: left top;
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+  font-weight: 700;
+  color: #3a2618;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.sticker-tutorial-page-text .sticker-tutorial-count {
+  position: static;
+  margin: 0 0 4px;
+  font-size: clamp(10px, 0.95vw, 12px);
+  color: #8a6a3c;
+  letter-spacing: 0.06em;
+  text-align: left;
+  /* 直書きカウント: 影は控えめ */
+  text-shadow: 0 1px 0 rgba(255, 250, 235, 0.4);
+}
+
+.sticker-tutorial-page-text .sticker-tutorial-text {
+  margin: 0;
+  color: #3a2618;
+  font-size: clamp(16px, 1.6vw, 24px);
+  line-height: 1.45;
+  text-align: left;
+  white-space: pre-line;
+  /* ペン書き凹凸: 紙のハイライトと影で 「本に書いた」 立体感 */
+  text-shadow:
+    0 1px 0 rgba(255, 250, 235, 0.55),
+    0 2px 1px rgba(60, 40, 20, 0.12);
+}
+
+/* v1643 (task 3): 操作ボタンを 「左ページ下部固定 overlay」 → 「テキスト直下 (page-block 内 flex 子)」 に移動。
+   - page-block の flex-column 内に静的配置 → テキスト終端の直下に自然と並ぶ (帆船イラスト回避)
+   - leftpage-btn-* CSS 変数は廃止 (main.js 側でも書き込み停止)
+   - mix-blend-mode を multiply → normal + isolation: isolate で page-text の合成がボタンに伝播しない
+   - 木製スタンプ風 dashed border + 互い違い微回転は維持 */
+.sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions {
+  position: static;
+  left: auto;
+  top: auto;
+  bottom: auto;
+  width: 100%;
+  min-height: 0;
+  transform: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.7vw, 8px);
+  padding: 0 clamp(4px, 0.6vw, 10px);
+  pointer-events: auto;
+  /* page-text の multiply がボタン背景に染み込まないよう独立合成コンテキスト化 */
+  mix-blend-mode: normal;
+  isolation: isolate;
+}
+
+.sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button {
+  /* 木製スタンプ風: dashed border + 微回転 + 半透明背景でページに溶け込む */
+  min-width: clamp(60px, 7vw, 78px);
+  min-height: clamp(28px, 3vw, 34px);
+  padding: 0 clamp(8px, 1vw, 14px) 2px;
+  font-size: clamp(11px, 1.6vw, 14px);
+  border-width: 2px;
+  border-style: dashed;
+  border-color: rgba(145, 105, 42, 0.62);
+  border-radius: 14px;
+  background: rgba(255, 251, 231, 0.88);
+  box-shadow:
+    0 2px 6px rgba(60, 40, 20, 0.14),
+    inset 0 -2px 0 rgba(190, 143, 50, 0.18);
+  transform: rotate(-0.8deg);
+  mix-blend-mode: normal;
+}
+
+.sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button:nth-child(even) {
+  /* 互い違いに微回転で「貼り付けた感」 を強調 */
+  transform: rotate(0.9deg);
+}
+
+.sticker-tutorial-card.is-page-inscribed #stickerTutorialNext {
+  /* 「つぎ」 は山吹色で明示的に強調 (主要動線) */
+  min-width: clamp(72px, 8vw, 92px);
+  background: linear-gradient(180deg, #ffeeb9, #ffc75f);
+  border-color: rgba(177, 119, 34, 0.72);
+  border-style: solid;
+  font-weight: 800;
+}
+
+.sticker-tutorial-actions button:disabled {
+  opacity: 0.46;
+  cursor: default;
+  filter: grayscale(0.18);
+}
+
+/* card-top / card-corner クラスは旧 PNG 吹き出しの位置切替用。
+   ノート直書きモードでは位置は左ページ rect 追従なので、 全面ヒットレイヤーに正規化して影響を消す。 */
+body.is-sticker-tutorial-card-top .sticker-tutorial-card.is-page-inscribed,
+body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0;
+  transform: none;
+}
+
+@keyframes stickerTutorialSwipe {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg);
+  }
+  50% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg);
+  }
+}
+
+@keyframes stickerTutorialLinkedSwipe {
+  0% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg);
+  }
+  100% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg);
+  }
+}
+
+@keyframes stickerTutorialModePressDemo {
+  /* 3.3s 内で 3 連押下 (キーフレーム時刻 ≒ JS triggerStickerTutorialEditButtonPress と同期):
+     0/4/20/28% = from (rest 直上 hover), 12/24/52/64/96/100% = to (押下),
+     既存 5.2s から 3 連発を維持しつつ % を再配置 */
+  0%, 8% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  12%, 16% {
+    /* 押下 1 (≈ 400ms) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.94);
+  }
+  24%, 50% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  56%, 60% {
+    /* 押下 2 (≈ 1850ms) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.94);
+  }
+  68%, 92% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  98%, 100% {
+    /* 押下 3 (≈ 3250ms) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.94);
+  }
+}
+
+@keyframes stickerTutorialViewPressDemo {
+  0%, 52%, 72%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  58%, 64% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.94);
+  }
+}
+
+@keyframes stickerTutorialButtonPointNudge {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  48%, 58% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -38%) scaleX(-1) rotate(90deg) scale(0.92);
+  }
+}
+
+@keyframes stickerTutorialOkPressDemo {
+  /* v1628 OK step 新規 keyframe (3.0s, 1 回再生):
+     0-25%   rest (右隣で待機、 軽い「ここだよ」 sway)
+     25-48%  rest → OK center へ斜めに降下 (easeIn)
+     48-56%  押下 (scale 0.92, translateY 強め) ← JS triggerStickerTutorialOkButtonPress と同期 (≈ 1500ms)
+     56-72%  リリース (lift)、 OK center 真上
+     72-100% rest に戻る (見えない時間 / ボタン click 後の余韻)
+     hand src は point pose 固定 (main.js step.hand="point" / setStickerTutorialHandKey("point") で保証)。 */
+  0% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scale(1) rotate(-3deg);
+    animation-timing-function: ease-in-out;
+  }
+  20% {
+    /* sway: rest 微小に動かして注意喚起 */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scale(0.96) rotate(-6deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  }
+  48% {
+    /* 押下直前: OK center 真上 (まだ触れていない) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -42%) scale(0.96) rotate(-2deg);
+    animation-timing-function: ease-in;
+  }
+  52% {
+    /* 押下接触 (=「ぐっ」 = JS triggerStickerTutorialOkButtonPress の class add とほぼ同タイミング)
+       v1630: -28% → -38% に修正。 48% の -42% から「3-4px だけ控えめに沈み込む」 自然な押下に。
+       元値 -28% は 7px ほど指が button 中央から下にめり込んで「行き過ぎ」 として知覚された */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -38%) scale(0.90) rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  60% {
+    /* リリース (lift) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -45%) scale(1.02) rotate(-2deg);
+    animation-timing-function: ease-in-out;
+  }
+  75%, 100% {
+    /* rest に戻る (ボタン click 後の余韻、 ボタン消えても hand は rest で穏やかに留まる) */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) scale(1) rotate(-3deg);
+  }
+}
+
+/* step 7 page: 旧 pageHoverVertical / pageSwipeHand keyframe は廃止 (hand 非表示化に伴う) */
+
+/* 矢印ボタン本体: 軽くバウンス */
+@keyframes stickerTutorialArrowPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* 矢印ボタンの外周ハロー: リング自体は呼吸、 影で目立たせる */
+@keyframes stickerTutorialArrowHalo {
+  0%, 100% {
+    opacity: 0.85;
+    box-shadow:
+      0 0 0 4px rgba(255, 255, 255, 0.42),
+      0 0 22px rgba(255, 178, 64, 0.82),
+      0 0 46px rgba(255, 210, 120, 0.6);
+  }
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 0 6px rgba(255, 255, 255, 0.55),
+      0 0 34px rgba(255, 178, 64, 1),
+      0 0 68px rgba(255, 210, 120, 0.8);
+  }
+}
+
+@keyframes stickerTutorialFindPlaceHand {
+  /* === tray scroll: 0-26% (1 回目 + 2 回目 両方表示、 26-30% で fade out + ワープ + fade in、 全体 17.6s) ===
+     ユーザー要望: 「2 回目が消えちゃっています。 その後の、 消してほしいところが残っています」
+       → 1 回目 (0-12%) と 2 回目 (15.5-26%) を両方復活、 12-15.5% で短い fade+warp、 26-30% で消えてから find phase で再出現 */
+  0% {
+    /* 1 回目スワイプ起点: 右端 (--tutorial-scroll-from-x) */
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  12% {
+    /* 1 回目スワイプ終端: 左端 (--tutorial-scroll-to-x) */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  13% {
+    /* 短い fade out (左端で消える) ≒ 176ms */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  14.5% {
+    /* 不可視のまま右端 (scroll-from) へワープ ≒ 264ms 不可視 */
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  15.5% {
+    /* 2 回目スワイプ起点で fade in ≒ 176ms */
+    left: var(--tutorial-scroll-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  26% {
+    /* 2 回目スワイプ終端: 左端 (--tutorial-scroll-to-x、 「消してほしい」 区間の入口) */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  27% {
+    /* 2 回目完了後 fade out (左端で消える、 ≒ 176ms) → ユーザー指摘 「消してほしいところ」 を実体化 */
+    left: var(--tutorial-scroll-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-scroll-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scaleX(-1) rotate(90deg) scale(0.98);
+  }
+  29% {
+    /* 不可視のまま demo-from 座標 + 縦向き transform へ事前ワープ (≒ 352ms 不可視 = 「迷い始める直前の間」)
+       transform 関数列を find phase keyframe (30.5%+) と同形に揃えて補間 flicker 根絶 */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -35%) scale(0.96) rotate(-3deg);
+  }
+  30% {
+    /* fade in → find phase 開始 (≒ 176ms fade)、 次の 30.5% findWander1 (opacity:1, scale:0.92, rotate:-10) へ連続 */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.96) rotate(-3deg);
+  }
+  /* === find phase: 32.5-47.5% (v1621 で findWander1 を 30.5% → 32.5% へ後ろ倒し、 30% fade in から 440ms かけて滑らかに左へ = 旧 88ms ワープを 5x slower、 chooseLeft までは 0.79s → 0.44s に短縮されるが距離小なので OK) === */
+  32.5% {
+    /* findWander1: 30% fade in から 440ms かけて滑らかに左へ (旧 88ms ワープを 5x slower、 easeOutCirc) */
+    left: var(--tutorial-demo-find-wander1-x, var(--tutorial-demo-wander1-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%))));
+    top: var(--tutorial-demo-find-wander1-y, var(--tutorial-demo-wander1-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%))));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.92) rotate(-10deg);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  35% {
+    /* chooseLeft hover: 覗き込み 1 拍 (Fitts ベース) */
+    left: var(--tutorial-demo-choose-left-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-choose-left-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -33%) scale(0.90) rotate(-14deg);
+    animation-timing-function: cubic-bezier(0.34, 0.04, 0.30, 0.96);
+  }
+  39.7% {
+    /* fake-out: target 真横を素通り (反対方向確認、 vibration 3 連は廃止して 1 拍に統合) */
+    left: var(--tutorial-demo-find-over-target-x, var(--tutorial-demo-over-target-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%))));
+    top: var(--tutorial-demo-find-over-target-y, var(--tutorial-demo-over-target-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%))));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.85) rotate(-2deg);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  }
+  43.5% {
+    /* chooseLeft back: 「あれ違った」 戻り (easeOutCirc で滑らかに減速) */
+    left: var(--tutorial-demo-choose-left-x, var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-choose-left-y, var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.86) rotate(-7deg);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  46% {
+    /* bobbing (沈み→浮き 1 拍統合): source 着地 + 軽い頷き (mild back-out バネ感) */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -37%) scale(0.94) rotate(2deg);
+    animation-timing-function: cubic-bezier(0.34, 1.20, 0.64, 1);
+  }
+  47.5% {
+    /* source 静止 (掴む直前)、 ここから place phase 開始 */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(0.88) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  }
+  /* === place phase: 50.65-100% (旧 wander/overshoot 12 stop → 5 stop 直行に簡素化、 rotate 0deg 固定で迷い揺れ排除) ===
+     v1628: hover→drop 区間を圧縮し体感を約 1.15s 早める。 hover 64.5%→61% (11352→10736ms)、 to 73%→66% (12848→11616ms)、
+     drop 75.85%→69.32% (13350→12200ms)、 release 79%→72.5% (13904→12760ms)、 away 82.15%→75.5% (14458→13288ms)。
+     pickup grab 50.65% は find phase 接続のため不変。 hover→to を 1.50s → 0.79s に半減し「真下に降りる」 待ち時間短縮。
+     JS open timer (main.js) も 13350→12200ms、 addSticker 13500→12350ms に同期 (open 切替 → +150ms → addSticker の関係不変)。
+     v1629: ユーザー指摘 「下に下がるのが遅い + 静止と同時にパッと離す + シールが貼られる」 を満たすため drop 動作を最小化。
+            hover 61% (10736ms) は維持、 to 66→63% (11616→11088ms = hover→to 880→352ms へ 60% 短縮 = 真下に「シュッ」 と降ろす)。
+            drop press 69.32→63.5% (12200→11176ms = to+88ms ≒ 同フレーム)、
+            release lift 72.5→64.5% (12760→11352ms = drop+176ms = 「離す」 を即時化)、
+            away 75.5→67.5% (13288→11880ms)。 hover→away 全体を 2552ms → 1144ms に 55% 短縮。
+            JS open timer (main.js) も 12200→11176ms、 addSticker 12350→11200ms に同期 (+150ms オフセットは廃止、 ≒同時 24ms に短縮)。 */
+  50.65% {
+    /* pickup grab (easeOutCirc: 軽快な持ち上げ) */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -30%) scale(0.86) rotate(-12deg);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  61% {
+    /* hover: 真上の高い位置でゆっくり減速 (10736ms)、 ここから to まで 2pp ≒ 0.35s で「シュッ」 と素早く降ろす */
+    left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -38%) scale(1.00) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  }
+  63% {
+    /* to: パッと真っ直ぐ降ろした到着点 (v1629: 66% → 63%、 11088ms = hover+352ms) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -38%) scale(0.95) rotate(0deg);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  }
+  63.5% {
+    /* drop 押し付け ぐっ (v1629: 69.32% → 63.5%、 11176ms = JS open timer と同期 / to+88ms ≒ 同フレーム) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -33%) scale(0.92) rotate(0deg);
+    animation-timing-function: ease-in-out;
+  }
+  64.5% {
+    /* release lift (v1629: 72.5% → 64.5%、 11352ms = drop+176ms = 即離す) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -38%) scale(1.04) rotate(0deg);
+    animation-timing-function: ease-in-out;
+  }
+  67.5%, 100% {
+    /* away (v1629: 75.5% → 67.5%、 11880ms) */
+    left: var(--tutorial-demo-away-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-away-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -35%) scale(1) rotate(2deg);
+  }
+}
+
+@keyframes stickerTutorialFindPlaceGhost {
+  /* hand keyframe と同じ 5 stop に集約 (50.65 出現 / 61 hover 追従 / 63 to 追従 / 63.5 drop / 64.5+100 fade out)
+     v1621: 各 stop に hand と同一の animation-timing-function を付与 = ghost が hand 指先から離脱する不整合を解消
+     v1628: hand keyframe の hover→drop 圧縮 (64.5/73/75.85/79 → 61/66/69.32/72.5) と完全同期
+     v1629: hand keyframe の drop 最小化 (66/69.32/72.5 → 63/63.5/64.5) と完全同期 = ghost も「真下シュッ + 同時離脱」 */
+  0%, 49.5% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.88);
+  }
+  50.65% {
+    /* pickup: ghost appears with hand grab */
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.94);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  61% {
+    /* follow hover (hand と同 61% タイミング / 同 bezier に揃え) */
+    left: var(--tutorial-demo-hover-x, var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%)));
+    top: var(--tutorial-demo-hover-y, var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%)));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  }
+  63% {
+    /* follow to (パッと真っ直ぐ降下) (v1629: 66% → 63%) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.35, 1);
+  }
+  63.5% {
+    /* drop (v1629: 69.32% → 63.5%) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.03);
+    animation-timing-function: ease-in-out;
+  }
+  64.5%, 100% {
+    /* fade out (v1629: 72.5% → 64.5% = release lift と同期 = 手が持ち上がる時にシールは page に残るが ghost は消える) */
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.03);
+  }
+}
+
+@keyframes stickerTutorialMoveDemo {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) rotate(-6deg);
+  }
+  55% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, -35%) rotate(6deg);
+  }
+}
+
+@keyframes stickerTutorialSliderDemo {
+  0%, 100% {
+    left: var(--tutorial-demo-from-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-from-y, var(--tutorial-hand-y, 50%));
+    /* slider-js steady-state と同じ補正値 (rotate 90° 後の指先 → handY) */
+    transform: translate(-50%, 36.5%) scaleX(-1) rotate(90deg) scale(0.96);
+  }
+  55% {
+    left: var(--tutorial-demo-to-x, var(--tutorial-hand-x, 50%));
+    top: var(--tutorial-demo-to-y, var(--tutorial-hand-y, 50%));
+    transform: translate(-50%, 36.5%) scaleX(-1) rotate(90deg) scale(1);
+  }
+}
+
+.sticker-editor[hidden] {
+  display: none;
+}
+
+.sticker-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 74% 18%, rgba(255, 230, 137, 0.2), transparent 28rem),
+    rgba(7, 25, 32, 0.86);
+  backdrop-filter: blur(16px);
+}
+
+.sticker-editor-shell {
+  width: min(1280px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+@media (min-width: 721px) {
+  .sticker-editor-shell {
+    width: min(1180px, calc(100vw - 28px), calc((100vh - 28px) * 4 / 3));
+    height: auto;
+    aspect-ratio: 4 / 3;
+    max-height: calc(100vh - 28px);
+  }
+}
+
+@media (min-width: 721px) and (max-aspect-ratio: 4 / 3) {
+  .collection-sticker-tray {
+    bottom: max(86px, calc(env(safe-area-inset-bottom) + 86px));
+  }
+
+  body.is-collection-tray-visible .book-page-label {
+    bottom: max(8px, calc(env(safe-area-inset-bottom) + 8px));
+  }
+
+  body.is-collection-tray-visible .book-page-jump {
+    bottom: max(188px, calc(env(safe-area-inset-bottom) + 188px));
+  }
+}
+
+@media (min-width: 1100px) and (min-aspect-ratio: 3 / 2) {
+  .sticker-editor-shell {
+    width: min(1400px, calc(100vw - 28px), calc((100vh - 28px) * 16 / 9));
+    aspect-ratio: 16 / 9;
+  }
+}
+
+.sticker-menu,
+.editor-workspace {
+  border: 1px solid rgba(216, 241, 238, 0.24);
+  border-radius: 8px;
+  background: rgba(248, 247, 231, 0.95);
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.26);
+}
+
+.sticker-menu {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 12px;
+  color: #334447;
+}
+
+.editor-title-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: start;
+  min-height: 36px;
+}
+
+.sticker-editor.is-draw-mode .sticker-menu {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.editor-title-row h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.editor-title-row p {
+  margin: 5px 0 0;
+  color: #687675;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.editor-icon-button,
+.editor-control-buttons button {
+  min-height: 36px;
+  border: 1px solid rgba(103, 117, 112, 0.22);
+  border-radius: 8px;
+  background: #fff9e7;
+  color: #334447;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.editor-icon-button {
+  width: 38px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.editor-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr 38px;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(103, 117, 112, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.editor-mode-switch .editor-icon-button {
+  width: 100%;
+  min-height: 34px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.editor-mode-switch button,
+.drawing-tools button {
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid rgba(103, 117, 112, 0.2);
+  border-radius: 8px;
+  background: #fff9e7;
+  color: #334447;
+  font: inherit;
+  padding: 0 6px;
+  white-space: nowrap;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.editor-mode-switch button.is-active,
+.drawing-tools button.is-active {
+  border-color: rgba(55, 145, 154, 0.46);
+  background: #dff2ef;
+}
+
+.draw-icon-button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.draw-icon-button img {
+  display: block;
+  width: min(30px, 76%);
+  height: min(30px, 76%);
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 5px rgba(67, 50, 18, 0.16));
+}
+
+.drawing-top-row .draw-icon-button img {
+  width: min(26px, 70%);
+  height: min(26px, 70%);
+}
+
+.editor-index-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid rgba(103, 117, 112, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.editor-index-panel[hidden] {
+  display: none;
+}
+
+.editor-index-panel button {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid rgba(103, 117, 112, 0.18);
+  border-radius: 8px;
+  background: #fffdf4;
+  color: #334447;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.editor-index-panel button.is-active {
+  border-color: rgba(55, 145, 154, 0.5);
+  background: #dff2ef;
+}
+
+.editor-filter-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.editor-filter-grid[hidden],
+.sticker-library[hidden] {
+  display: none;
+}
+
+.editor-filter-grid select,
+.editor-filter-grid input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 1px solid rgba(103, 117, 112, 0.22);
+  border-radius: 8px;
+  background: #fffdf4;
+  color: #334447;
+  font: inherit;
+  font-weight: 700;
+}
+
+.editor-filter-grid input {
+  padding: 0 11px;
+}
+
+.drawing-tools {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(103, 117, 112, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.drawing-tools[hidden] {
+  display: none;
+}
+
+.drawing-top-row,
+.drawing-tool-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.drawing-tool-row {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.drawing-color-palette {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+}
+
+.draw-color-button {
+  min-width: 0;
+  height: 38px;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  box-shadow: 0 3px 8px rgba(61, 48, 20, 0.14);
+}
+
+.drawing-tools .draw-color-button {
+  background: var(--draw-color);
+}
+
+.drawing-tools .draw-color-button.is-active {
+  background: var(--draw-color);
+  border-color: #334447;
+  transform: scale(1.08);
+}
+
+.drawing-size-section {
+  display: grid;
+  grid-template-columns: 54px repeat(3, 1fr);
+  gap: 8px;
+  align-items: center;
+  color: #334447;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.draw-size-button {
+  display: grid;
+  place-items: center;
+  min-height: 36px;
+  border: 1px solid rgba(103, 117, 112, 0.2);
+  border-radius: 8px;
+  background: #fff9e7;
+}
+
+.draw-size-button.is-active {
+  border-color: rgba(236, 72, 153, 0.55);
+  background: #fff0f7;
+}
+
+.draw-size-line {
+  display: block;
+  width: 28px;
+  border-radius: 999px;
+  background: #334447;
+}
+
+.draw-size-line-s {
+  height: 4px;
+}
+
+.draw-size-line-m {
+  height: 10px;
+}
+
+.draw-size-line-l {
+  height: 18px;
+}
+
+.drawing-stamp-panel {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  max-height: 104px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid rgba(103, 117, 112, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 248, 231, 0.92);
+}
+
+.drawing-stamp-panel[hidden] {
+  display: none;
+}
+
+.draw-stamp-button {
+  min-height: 38px;
+  padding: 0;
+  line-height: 1;
+}
+
+.draw-stamp-button img {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 5px rgba(67, 50, 18, 0.14));
+}
+
+.draw-stamp-button.is-active {
+  border-color: rgba(236, 72, 153, 0.5);
+  background: #fff0f7;
+}
+
+.sticker-library {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.sticker-pick {
+  min-width: 0;
+  min-height: 106px;
+  display: grid;
+  grid-template-rows: 58px auto;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(103, 117, 112, 0.18);
+  border-radius: 8px;
+  background: #fffdf4;
+  color: #334447;
+  cursor: pointer;
+}
+
+.sticker-pick:hover {
+  border-color: rgba(55, 145, 154, 0.45);
+  background: #f2fbf8;
+}
+
+.sticker-pick img {
+  max-width: 100%;
+  max-height: 58px;
+  place-self: center;
+  object-fit: contain;
+  filter: var(--sticker-thumbnail-outline-filter);
+}
+
+.sticker-pick span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.editor-workspace {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  padding: 14px;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255, 246, 211, 0.18), transparent 42%),
+    linear-gradient(135deg, rgba(22, 52, 53, 0.9), rgba(44, 65, 50, 0.86));
+}
+
+@media (min-width: 1100px) and (min-aspect-ratio: 3 / 2) {
+  .editor-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+.editor-canvas-frame {
+  position: relative;
+  container-type: size;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+.editor-page-canvas {
+  position: relative;
+  width: min(100cqw, calc(100cqh * 1472 / 1536), 760px);
+  height: auto;
+  max-height: 100cqh;
+  max-width: 100cqw;
+  aspect-ratio: 1472 / 1536;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(177, 155, 82, 0.42);
+  background: #fff8dd;
+  box-shadow:
+    0 20px 44px rgba(51, 35, 14, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.editor-page-canvas::before {
+  display: none;
+}
+
+.editor-template-canvas,
+.editor-draw-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.editor-template-canvas {
+  z-index: 0;
+}
+
+.editor-draw-canvas {
+  z-index: 9000;
+}
+
+.sticker-editor.is-draw-mode .editor-draw-canvas {
+  pointer-events: none;
+}
+
+.sticker-editor.is-draw-mode .editor-page-canvas {
+  cursor: crosshair;
+}
+
+.sticker-editor.is-draw-mode .placed-sticker {
+  pointer-events: none;
+  cursor: default;
+}
+
+.placed-sticker {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: var(--z);
+  width: calc(18% * var(--render-scale, 1));
+  transform: translate(-50%, -50%) rotate(var(--rotation)) scale(var(--visual-scale, var(--scale)));
+  transform-origin: center;
+  touch-action: none;
+  cursor: grab;
+  contain: layout style;
+  will-change: left, top, transform;
+  clip-path: inset(5%);
+}
+
+.placed-sticker[data-genre="sea-album"] {
+  clip-path: inset(14%);
+}
+
+.placed-sticker:active {
+  cursor: grabbing;
+}
+
+.placed-sticker.is-selected {
+  outline: none;
+}
+
+.placed-sticker.is-selected::after {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  box-sizing: border-box;
+  border: var(--selection-border, 2px) solid rgba(70, 181, 188, 0.9);
+  border-radius: var(--selection-radius, 14px);
+  pointer-events: none;
+}
+
+.placed-sticker.is-selected[data-genre="sea-album"]::after {
+  inset: 14%;
+}
+
+.placed-sticker img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  filter:
+    drop-shadow(var(--sticker-white-axis, 0.82px) 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(var(--sticker-white-axis-neg, -0.82px) 0 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 var(--sticker-white-axis, 0.82px) 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(0 var(--sticker-white-axis-neg, -0.82px) 0 rgba(255, 255, 255, 0.98))
+    drop-shadow(var(--sticker-white-diag, 0.58px) var(--sticker-white-diag, 0.58px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-white-diag-neg, -0.58px) var(--sticker-white-diag, 0.58px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-white-diag, 0.58px) var(--sticker-white-diag-neg, -0.58px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-white-diag-neg, -0.58px) var(--sticker-white-diag-neg, -0.58px) 0 rgba(255, 255, 255, 0.96))
+    drop-shadow(var(--sticker-black-axis, 0.28px) 0 0 rgba(35, 35, 28, 0.45))
+    drop-shadow(var(--sticker-black-axis-neg, -0.28px) 0 0 rgba(35, 35, 28, 0.45))
+    drop-shadow(0 var(--sticker-black-axis, 0.28px) 0 rgba(35, 35, 28, 0.45))
+    drop-shadow(0 var(--sticker-black-axis-neg, -0.28px) 0 rgba(35, 35, 28, 0.45));
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.editor-controls {
+  min-width: 0;
+  overflow: visible;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(103, 117, 112, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 253, 244, 0.68);
+  color: #334447;
+}
+
+@media (min-width: 1100px) and (min-aspect-ratio: 3 / 2) {
+  .editor-controls {
+    align-content: start;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+  }
+}
+
+.editor-controls label {
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.editor-controls label span {
+  white-space: nowrap;
+}
+
+.editor-controls input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  accent-color: #48aeb7;
+}
+
+.editor-control-buttons {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.editor-control-buttons button {
+  min-width: 0;
+  width: 100%;
+  padding: 0 8px;
+  white-space: nowrap;
+  line-height: 1.12;
+}
+
+#editorApply {
+  border-color: rgba(55, 145, 154, 0.34);
+  background: #dff2ef;
+}
+
+.editor-control-buttons button:disabled,
+.editor-controls input:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.sticker-editor.is-draw-mode .editor-controls {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1100px) and (min-aspect-ratio: 3 / 2) {
+  .sticker-editor.is-draw-mode .editor-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sticker-editor.is-draw-mode .editor-controls label,
+.sticker-editor.is-draw-mode #editorLayerBack,
+.sticker-editor.is-draw-mode #editorLayerFront,
+.sticker-editor.is-draw-mode #editorDelete {
+  display: none;
+}
+
+.sticker-editor.is-draw-mode .editor-control-buttons {
+  grid-column: auto;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1100px) and (min-aspect-ratio: 3 / 2) {
+  .sticker-editor.is-draw-mode .editor-control-buttons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1100px) {
+  .top-action-cluster {
+    gap: 8px;
+  }
+
+  .top-mode-cluster {
+    gap: 4px;
+  }
+
+  .top-action-button {
+    width: 52px;
+    height: 52px;
+    margin-top: 3px;
+  }
+
+  .top-edit-button {
+    width: 172px;
+    padding: 0;
+    font-size: 12px;
+  }
+
+  .top-theme-button {
+    width: 172px;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .album-mode-toggle {
+    width: 184px;
+    padding: 0;
+    font-size: 12px;
+  }
+
+  .sticker-exhibition-button {
+    width: 164px;
+    padding: 0 12px 0 58px;
+    font-size: 12px;
+  }
+
+  body.is-collection-album .album-mode-toggle {
+    padding: 0 10px 0 54px;
+  }
+}
+
+@media (max-width: 780px) {
+  .top-edit-button {
+    width: 136px;
+    padding: 0;
+    font-size: 10px;
+  }
+
+  .top-theme-button {
+    width: 136px;
+    padding: 0;
+    font-size: 10px;
+  }
+
+  .album-mode-toggle {
+    width: 152px;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .sticker-exhibition-button {
+    width: 148px;
+    padding: 0 10px 0 52px;
+    font-size: 11px;
+  }
+
+  body.is-collection-album .album-mode-toggle {
+    padding: 0 7px 0 42px;
+  }
+}
+
+.tuning-panel[hidden] {
+  display: none;
+}
+
+.tuning-panel {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  width: min(920px, calc(100vw - 28px));
+  max-height: min(38vh, 330px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid rgba(216, 241, 238, 0.26);
+  border-radius: 8px;
+  background: rgba(7, 25, 32, 0.86);
+  color: #edf8f5;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(14px);
+}
+
+.tuning-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tuning-pair {
+  padding: 7px 8px;
+  border: 1px solid rgba(216, 241, 238, 0.18);
+  border-radius: 7px;
+  background: rgba(238, 249, 245, 0.06);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tuning-hint,
+.tuning-selected-label,
+.tuning-autosave-label {
+  padding: 7px 8px;
+  border-radius: 7px;
+  color: rgba(237, 248, 245, 0.86);
+  background: rgba(238, 249, 245, 0.05);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.tuning-selected-label {
+  border: 1px solid rgba(255, 230, 155, 0.3);
+  color: #fff4bf;
+  background: rgba(255, 217, 104, 0.14);
+}
+
+.tuning-autosave-label {
+  border: 1px solid rgba(123, 224, 173, 0.26);
+  color: #c8f6d8;
+  background: rgba(70, 185, 119, 0.13);
+}
+
+.tuning-target-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tuning-target-button {
+  min-width: 0;
+  min-height: 30px;
+  border: 1px solid rgba(216, 241, 238, 0.22);
+  border-radius: 7px;
+  background: rgba(238, 249, 245, 0.08);
+  color: #edf8f5;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tuning-target-button.is-selected,
+.tuning-row.is-selected {
+  border-color: rgba(255, 226, 125, 0.68);
+  background: rgba(255, 217, 104, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(255, 244, 191, 0.14);
+}
+
+.tuning-presets {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.tuning-presets button {
+  min-width: 0;
+  height: 30px;
+  border: 1px solid rgba(216, 241, 238, 0.24);
+  border-radius: 7px;
+  background: rgba(238, 249, 245, 0.08);
+  color: #edf8f5;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tuning-presets button.is-active {
+  border-color: rgba(255, 242, 188, 0.5);
+  background: rgba(255, 230, 155, 0.18);
+}
+
+.tuning-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tuning-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 58px;
+  gap: 8px;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.tuning-row input[type="number"] {
+  min-width: 0;
+  height: 28px;
+  border: 1px solid rgba(216, 241, 238, 0.26);
+  border-radius: 6px;
+  background: rgba(238, 249, 245, 0.08);
+  color: #edf8f5;
+  text-align: right;
+}
+
+.tuning-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tuning-actions button {
+  height: 32px;
+  border: 1px solid rgba(216, 241, 238, 0.26);
+  border-radius: 8px;
+  background: rgba(238, 249, 245, 0.08);
+  color: #edf8f5;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tuning-output {
+  width: 100%;
+  min-height: 92px;
+  box-sizing: border-box;
+  resize: vertical;
+  border: 1px solid rgba(216, 241, 238, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  color: #dff3ef;
+  font-size: 11px;
+}
+
+.zukan-flat-preview[hidden] {
+  display: none;
+}
+
+.zukan-flat-preview {
+  position: fixed;
+  left: max(14px, env(safe-area-inset-left));
+  top: max(86px, env(safe-area-inset-top));
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  width: min(340px, 30vw);
+  max-height: min(42vh, 360px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid rgba(216, 241, 238, 0.26);
+  border-radius: 8px;
+  background: rgba(7, 25, 32, 0.88);
+  color: #edf8f5;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(14px);
+}
+
+.zukan-flat-preview__head {
+  display: grid;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.zukan-flat-preview__head span,
+.zukan-flat-preview__hint {
+  color: rgba(237, 248, 245, 0.76);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.zukan-flat-preview__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.zukan-flat-preview figure {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+
+.zukan-flat-preview figcaption {
+  color: #fff4bf;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.zukan-flat-preview canvas {
+  width: 100%;
+  aspect-ratio: 1472 / 1536;
+  border: 1px solid rgba(255, 230, 155, 0.26);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+@media (max-width: 720px) {
+  .modebar {
+    top: max(12px, env(safe-area-inset-top));
+    gap: 8px;
+    width: calc(100vw - 18px);
+  }
+
+  .segmented {
+    width: 100%;
+    grid-auto-columns: 1fr;
+  }
+
+  .segmented button {
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .toolbar {
+    height: 44px;
+    grid-template-columns: 42px 1fr 42px;
+    gap: 8px;
+  }
+
+  .toolbar button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .spread-jumper {
+    bottom: max(70px, calc(env(safe-area-inset-bottom) + 70px));
+  }
+
+  .top-action-cluster {
+    top: max(0px, env(safe-area-inset-top));
+    right: max(6px, env(safe-area-inset-right));
+    gap: 6px;
+    padding: 0;
+  }
+
+  .top-entry-cluster {
+    top: max(0px, env(safe-area-inset-top));
+    left: max(6px, env(safe-area-inset-left));
+  }
+
+  .top-mode-cluster {
+    top: max(0px, env(safe-area-inset-top));
+  }
+
+  .top-action-button {
+    width: 44px;
+    height: 44px;
+    margin-top: 3px;
+  }
+
+  .top-edit-button {
+    width: 136px;
+    height: 50px;
+    padding: 0;
+    font-size: 10px;
+  }
+
+  .top-theme-button {
+    width: 136px;
+    height: 50px;
+    padding: 0;
+    font-size: 10px;
+  }
+
+  .album-mode-toggle {
+    width: 152px;
+    height: 50px;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .sticker-exhibition-button {
+    width: 148px;
+    height: 50px;
+    padding: 0 10px 0 52px;
+    font-size: 11px;
+  }
+
+  body.is-collection-album .album-mode-toggle {
+    padding: 0 7px 0 42px;
+  }
+
+  .book-page-controls {
+    bottom: max(12px, calc(env(safe-area-inset-bottom) + 12px));
+    padding: 0 12px;
+  }
+
+  .book-page-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .book-page-label {
+    min-width: 144px;
+    min-height: 40px;
+    max-width: calc(100vw - 124px);
+    padding: 1px 18px 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .book-page-jump {
+    bottom: max(62px, calc(env(safe-area-inset-bottom) + 62px));
+    width: min(260px, calc(100vw - 24px));
+  }
+
+  .collection-sticker-tray {
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 24px));
+    width: min(620px, calc(100vw - 24px));
+    height: 84px;
+    padding: 6px 8px;
+  }
+
+  .collection-sticker-tray-items {
+    gap: 7px;
+    height: 68px;
+    padding: 2px 8px 3px;
+  }
+
+  .collection-toc-title {
+    padding-right: 5px;
+    font-size: 11px;
+  }
+
+  .collection-toc-card {
+    flex-basis: 72px;
+    width: 72px;
+    height: 52px;
+    grid-template-rows: 27px 12px 4px;
+    gap: 3px;
+    padding: 4px 6px 5px;
+  }
+
+  .collection-toc-icon {
+    width: 31px;
+    height: 26px;
+    border-radius: 8px;
+  }
+
+  .collection-toc-label {
+    font-size: 10px;
+  }
+
+  .collection-sticker-tray.is-sticker-source .collection-sticker-tray-items {
+    padding-right: 8px;
+  }
+
+  .sticker-tray-card {
+    flex-basis: 72px;
+    width: 72px;
+    height: 58px;
+    grid-template-rows: 1fr;
+  }
+
+  .sticker-tray-icon {
+    --sticker-tray-icon-pad: 5px;
+    width: 58px;
+    height: 46px;
+  }
+
+  .sticker-tray-empty {
+    width: min(184px, calc(100vw - 90px));
+    height: 46px;
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
+  .sticker-tray-drag-ghost {
+    width: var(--sticker-tray-drag-ghost-size);
+    height: var(--sticker-tray-drag-ghost-size);
+  }
+
+  .sticker-tray-drag-ghost img {
+    max-width: var(--sticker-tray-drag-ghost-image-size);
+    max-height: var(--sticker-tray-drag-ghost-image-size);
+  }
+
+  .inline-sticker-controls {
+    bottom: max(8px, calc(env(safe-area-inset-bottom) + 8px));
+    grid-template-columns: minmax(0, 1fr) 22px;
+    width: min(276px, calc(100vw - 124px));
+    gap: 6px 7px;
+    padding: 7px 8px 8px;
+  }
+
+  .inline-sticker-controls label {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .inline-sticker-controls span {
+    font-size: 11px;
+  }
+
+  .inline-sticker-delete,
+  .inline-sticker-ok {
+    min-width: 38px;
+    min-height: 22px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .inline-sticker-ok {
+    min-width: 42px;
+  }
+
+  .inline-sticker-close {
+    width: 22px;
+    height: 22px;
+    font-size: 15px;
+  }
+
+  body.is-collection-tray-visible .book-page-jump {
+    bottom: max(146px, calc(env(safe-area-inset-bottom) + 146px));
+  }
+
+  .tuning-panel {
+    top: auto;
+    bottom: 9px;
+    right: 9px;
+    left: 9px;
+    transform: none;
+    width: auto;
+    max-height: 42vh;
+  }
+
+  .tuning-target-list,
+  .tuning-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .zukan-flat-preview {
+    left: 9px;
+    right: 9px;
+    top: auto;
+    bottom: calc(42vh + 18px);
+    width: auto;
+    max-height: 24vh;
+  }
+
+  .sticker-editor {
+    padding: 8px;
+  }
+
+  .sticker-editor-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(210px, 36vh) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .sticker-editor.is-draw-mode .sticker-editor-shell {
+    grid-template-rows: minmax(270px, 40vh) minmax(0, 1fr);
+  }
+
+  .sticker-menu {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    overflow: auto;
+  }
+
+  .editor-title-row h1 {
+    font-size: 20px;
+  }
+
+  .editor-index-panel {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .sticker-library {
+    grid-template-columns: repeat(4, minmax(72px, 1fr));
+    overflow-x: auto;
+    overflow-y: hidden;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(72px, 1fr);
+  }
+
+  .drawing-tools {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+
+  .drawing-top-row,
+  .drawing-color-palette,
+  .drawing-size-section,
+  .drawing-stamp-panel,
+  .drawing-tool-row {
+    grid-column: 1 / -1;
+  }
+
+  .drawing-color-palette {
+    grid-template-columns: repeat(8, minmax(32px, 1fr));
+  }
+
+  .drawing-tool-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .sticker-pick {
+    min-height: 88px;
+    grid-template-rows: 48px auto;
+    padding: 6px;
+  }
+
+  .sticker-pick img {
+    max-height: 48px;
+  }
+
+  .editor-workspace {
+    padding: 8px;
+  }
+
+  .editor-canvas-frame {
+    padding: 6px;
+  }
+
+  .editor-page-canvas {
+    width: min(100cqw, calc(100cqh * 1472 / 1536));
+    height: auto;
+    max-width: 100cqw;
+    max-height: 100cqh;
+    border-radius: 22px;
+  }
+
+  .editor-controls {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .editor-controls label {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .editor-control-buttons {
+    grid-template-columns: repeat(2, minmax(72px, 1fr));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .sticker-editor {
+    padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  }
+
+  .sticker-editor-shell,
+  .sticker-editor.is-draw-mode .sticker-editor-shell {
+    width: min(calc(100vw - 12px), calc((100vh - 12px) * 16 / 9));
+    height: auto;
+    max-height: calc(100vh - 12px);
+    aspect-ratio: 16 / 9;
+    grid-template-columns: minmax(200px, 34%) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .sticker-menu {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .editor-title-row {
+    gap: 8px;
+    min-height: 34px;
+  }
+
+  .editor-title-row h1 {
+    font-size: 18px;
+  }
+
+  .editor-title-row p {
+    margin-top: 3px;
+    font-size: 12px;
+  }
+
+  .editor-icon-button {
+    width: 34px;
+    min-height: 34px;
+    font-size: 22px;
+  }
+
+  .editor-mode-switch {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .editor-mode-switch button,
+  .drawing-tools button {
+    min-height: 30px;
+    padding: 0 4px;
+    font-size: 13px;
+  }
+
+  .editor-filter-grid {
+    gap: 6px;
+  }
+
+  .editor-filter-grid select,
+  .editor-filter-grid input {
+    height: 34px;
+  }
+
+  .sticker-library {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    overflow: auto;
+  }
+
+  .sticker-pick {
+    min-height: 78px;
+    grid-template-rows: 42px auto;
+    gap: 4px;
+    padding: 5px;
+  }
+
+  .sticker-pick img {
+    max-height: 42px;
+  }
+
+  .sticker-pick span {
+    font-size: 11px;
+  }
+
+  .drawing-tools {
+    gap: 6px;
+    padding: 7px;
+    overflow: auto;
+  }
+
+  .drawing-color-palette {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .draw-color-button {
+    height: 28px;
+  }
+
+  .drawing-size-section {
+    grid-template-columns: 46px repeat(3, 1fr);
+    gap: 5px;
+  }
+
+  .drawing-tool-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .editor-workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .editor-canvas-frame {
+    padding: 4px;
+  }
+
+  .editor-page-canvas {
+    width: min(100cqw, calc(100cqh * 1472 / 1536));
+    height: auto;
+    max-width: 100cqw;
+    max-height: 100cqh;
+    border-radius: 18px;
+  }
+
+  .editor-controls {
+    max-height: none;
+    overflow: visible;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 5px;
+  }
+
+  .editor-controls label {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .editor-control-buttons {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .editor-control-buttons button {
+    min-height: 30px;
+    padding: 0 2px;
+    font-size: 11px;
+  }
+
+  .top-action-cluster {
+    top: max(6px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    gap: 6px;
+  }
+
+  .top-entry-cluster {
+    top: max(6px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+  }
+
+  .top-mode-cluster {
+    top: max(6px, env(safe-area-inset-top));
+    gap: 4px;
+  }
+
+  .top-action-button {
+    width: 40px;
+    height: 40px;
+    margin-top: 1px;
+  }
+
+  .top-edit-button {
+    width: 132px;
+    height: 42px;
+    padding: 0;
+    font-size: 10px;
+  }
+
+  .top-theme-button {
+    width: 132px;
+    height: 42px;
+    padding: 0;
+    font-size: 10px;
+  }
+
+  .album-mode-toggle {
+    width: 152px;
+    height: 42px;
+    padding: 0;
+    font-size: 11px;
+  }
+
+  .sticker-exhibition-button {
+    width: 144px;
+    height: 44px;
+    padding: 0 8px 0 50px;
+    font-size: 10px;
+  }
+
+  body.is-collection-album .album-mode-toggle {
+    padding: 0 7px 0 42px;
+  }
+
+  .book-page-controls {
+    bottom: max(6px, calc(env(safe-area-inset-bottom) + 6px));
+  }
+
+  .book-page-button {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .book-page-label {
+    min-width: 112px;
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .collection-sticker-tray {
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 18px));
+    width: min(980px, calc(100vw - 24px));
+    height: 84px;
+    padding: 5px 7px;
+  }
+
+  .collection-sticker-tray-items {
+    gap: 6px;
+    height: 70px;
+    padding: 1px 8px 2px;
+  }
+
+  .collection-toc-title {
+    padding-right: 4px;
+    font-size: 10px;
+  }
+
+  .collection-toc-card {
+    flex-basis: 64px;
+    width: 64px;
+    height: 42px;
+    grid-template-rows: 21px 10px 4px;
+    gap: 3px;
+    padding: 3px 5px 4px;
+  }
+
+  .collection-toc-icon {
+    width: 27px;
+    height: 20px;
+    border-radius: 7px;
+  }
+
+  .collection-toc-mystery {
+    font-size: 18px;
+  }
+
+  .collection-toc-label {
+    font-size: 9px;
+  }
+
+  .collection-toc-bar {
+    height: 5px;
+  }
+
+  .collection-sticker-tray.is-sticker-source .collection-sticker-tray-items {
+    padding-right: 8px;
+  }
+
+  .sticker-tray-card {
+    flex-basis: 66px;
+    width: 66px;
+    height: 52px;
+    grid-template-rows: 1fr;
+  }
+
+  .sticker-tray-icon {
+    --sticker-tray-icon-pad: 4px;
+    width: 54px;
+    height: 42px;
+  }
+
+  .sticker-tray-empty {
+    width: min(168px, calc(100vw - 86px));
+    height: 42px;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+
+  .sticker-tray-drag-ghost {
+    width: var(--sticker-tray-drag-ghost-size);
+    height: var(--sticker-tray-drag-ghost-size);
+  }
+
+  .sticker-tray-drag-ghost img {
+    max-width: var(--sticker-tray-drag-ghost-image-size);
+    max-height: var(--sticker-tray-drag-ghost-image-size);
+  }
+
+  body.is-collection-tray-visible .book-page-jump {
+    bottom: max(108px, calc(env(safe-area-inset-bottom) + 108px));
+  }
+
+  .sticker-editor.is-draw-mode .editor-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sticker-editor.is-draw-mode .editor-control-buttons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* === sticker tutorial 「つぎ」 ボタン pulse (ジェスチャー完了 / 音声完了で発火) === */
+#stickerTutorialNext.is-ready-pulse:not(:disabled) {
+  animation: stickerTutorialNextPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes stickerTutorialNextPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(255, 180, 80, 0.35);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(255, 180, 80, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #stickerTutorialNext.is-ready-pulse:not(:disabled) {
+    animation: none;
+    box-shadow: 0 6px 18px rgba(255, 180, 80, 0.55);
+  }
+}
+
+/* === intro step: spotlight 黄色枠 + hand + ghost を完全非表示 (下の book/本棚が見える) === */
+/* main.js showStickerTutorialStep が無条件で hidden=false するため CSS で潰す。 step 1 以降は
+   removeStickerTutorialStepClasses で is-sticker-tutorial-step-intro が外れて自動復活 */
+body.is-sticker-tutorial-step-intro .sticker-tutorial-spotlight,
+body.is-sticker-tutorial-step-intro .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-intro .sticker-tutorial-ghost,
+body.is-sticker-tutorial-step-page .sticker-tutorial-hand,
+body.is-sticker-tutorial-step-page .sticker-tutorial-ghost {
+  display: none !important;
+}
+
+/* === step 1 (mode) Phase 0: open hand を book 右下 rest 位置にフェードイン + 呼吸 === */
+body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-rest .sticker-tutorial-hand {
+  left: var(--tutorial-demo-rest-x, 80%);
+  top: var(--tutorial-demo-rest-y, 80%);
+  animation:
+    stickerTutorialModeAppear 0.45s ease-out 1 both,
+    stickerTutorialModeRestBreath 1.6s ease-in-out 0.45s infinite;
+}
+
+@keyframes stickerTutorialModeAppear {
+  from { opacity: 0; transform: translate(-50%, -20%) scale(0.92); }
+  to   { opacity: 1; transform: translate(-50%, -35%) scale(1); }
+}
+
+@keyframes stickerTutorialModeRestBreath {
+  0%, 100% { transform: translate(-50%, -35%) scale(1); }
+  50%      { transform: translate(-50%, -33%) scale(1.02); }
+}
+
+/* === step 1 (mode) Phase 1: rest → editButton 直下 (from) へ 900ms approach (open のまま、 位置のみ移動。 transform 変形は press swap と同フレームへ委譲) === */
+body.is-sticker-tutorial-step-mode.is-sticker-tutorial-mode-approach .sticker-tutorial-hand {
+  animation: stickerTutorialModeApproach 0.9s ease-in-out 1 both;
+}
+
+@keyframes stickerTutorialModeApproach {
+  0% {
+    left: var(--tutorial-demo-rest-x, 80%);
+    top: var(--tutorial-demo-rest-y, 80%);
+    transform: translate(-50%, -35%) scale(1);
+  }
+  100% {
+    left: var(--tutorial-demo-from-x, 50%);
+    top: var(--tutorial-demo-from-y, 50%);
+    transform: translate(-50%, -35%) scale(0.98);
+  }
+}
+
+/* シール帳 正本統一: firstEver=1 専用 welcome overlay */
+.sticker-first-ever-welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 14, 22, 0.62);
+  padding: 18px;
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  animation: stickerFirstEverFade 0.22s ease-out;
+}
+.sticker-first-ever-welcome[hidden] {
+  display: none;
+}
+.sticker-first-ever-welcome__panel {
+  width: min(380px, calc(100vw - 36px));
+  background: linear-gradient(180deg, rgba(255, 253, 236, 0.98), rgba(255, 242, 197, 0.96));
+  border: 4px solid #F2915A;
+  border-radius: 26px;
+  padding: 26px 22px 20px;
+  text-align: center;
+  color: #4A3726;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34), 0 0 46px rgba(255, 216, 94, 0.28), inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  animation: stickerFirstEverPanelIn 0.42s cubic-bezier(0.2, 0.86, 0.2, 1.08);
+}
+.sticker-first-ever-welcome__title {
+  margin: 0 0 12px;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.32;
+  color: #7C2D12;
+  text-shadow: 0 1px 0 #fff;
+}
+.sticker-first-ever-welcome__body {
+  margin: 0 0 18px;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: #5D4E37;
+}
+.sticker-first-ever-welcome__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.sticker-first-ever-welcome__btn {
+  border: 0;
+  border-radius: 999px;
+  font-weight: 900;
+  padding: 11px 18px;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 15px;
+  box-shadow: 0 3px 0 rgba(81, 50, 19, 0.18);
+}
+.sticker-first-ever-welcome__btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(81, 50, 19, 0.18);
+}
+.sticker-first-ever-welcome__btn--sub {
+  background: #EEE6DD;
+  color: #5D4E37;
+}
+.sticker-first-ever-welcome__btn--main {
+  background: #F2915A;
+  color: #fff;
+}
+@keyframes stickerFirstEverFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes stickerFirstEverPanelIn {
+  0% { opacity: 0; transform: translateY(-8px) scale(1.18); }
+  60% { opacity: 1; transform: translateY(2px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* v1637: チュートリアル 2 段階モーダル化 (demo → try → complete)。
+   - hand cursor は demo phase のみ表示 (try / complete では子供の手に渡す)。
+   - spotlight は try phase で強調 pulse、 complete では穏やかに静止。 */
+body.is-sticker-tutorial-phase-try .sticker-tutorial-hand,
+body.is-sticker-tutorial-phase-complete .sticker-tutorial-hand {
+  display: none;
+}
+
+/* v1640 (task 3): place step demo の ghost / hand keyframe は 17.6s だが、
+   finishStickerTutorialDemoToTry が 11.4s で try phase に切替えるため、 残り 6.2s 間
+   ghost が「ポノが置いた残骸」 として浮かび続けて TRY 文言 + spotlight を潰す。
+   try / complete phase では ghost を完全非表示 + hand keyframe を停止して、
+   子供が「やってみよう！」 を視認 → 自分の指で操作する空間を確保する。 */
+body.is-sticker-tutorial-phase-try .sticker-tutorial-ghost,
+body.is-sticker-tutorial-phase-complete .sticker-tutorial-ghost {
+  display: none !important;
+}
+
+body.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-place .sticker-tutorial-hand,
+body.is-sticker-tutorial-phase-complete.is-sticker-tutorial-step-place .sticker-tutorial-hand {
+  animation: none !important;
+}
+
+body.is-sticker-tutorial-phase-demo .sticker-tutorial-spotlight {
+  opacity: 0.55;
+}
+
+body.is-sticker-tutorial-phase-try .sticker-tutorial-spotlight {
+  opacity: 1;
+  animation: stickerTutorialSpotlightTryPulse 1.4s ease-in-out infinite;
+}
+
+body.is-sticker-tutorial-phase-complete .sticker-tutorial-spotlight {
+  opacity: 0.7;
+  animation: none;
+}
+
+@keyframes stickerTutorialSpotlightTryPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 6px rgba(255, 255, 255, 0.32),
+      0 0 32px rgba(255, 220, 84, 1),
+      0 0 72px rgba(255, 240, 150, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(255, 255, 255, 0.18),
+      0 0 48px rgba(255, 220, 84, 0.55),
+      0 0 96px rgba(255, 240, 150, 0.32);
+  }
+}
+
+/* 「とばす」 (try 救済) は既存 .sticker-tutorial-actions button のスタイルを継承。 */
+#stickerTutorialStepSkip {
+  background: linear-gradient(180deg, #ffe4d4, #ffb583);
+  border-color: rgba(180, 80, 30, 0.56);
+  color: #4a1e0a;
+}
+
+/* v1640 (task 5): step 排他制御 — DEMO 中 / TRY 中の不正操作を物理ブロック。
+   - DEMO 中: 全 interactive 要素を pointer-events: none (副作用ゼロでポノの演示を見せる)
+   - TRY 中: 当該 step の対象操作のみ auto に解放 (例: scale step なら scale slider のみ)
+   - ナレ系ボタン (やめる/もういちど/やってみる/とばす/つぎ) は phase/step 問わず常時 auto
+   - canvas (#scene) は move/place step の TRY 中だけ auto (ドラッグ操作のため)
+   - 「とばす」 「やってみる」 の救済 UI を必ず押せるようにする (Risk-6 対策) */
+
+/* DEMO 中: 主要 interactive 要素を全ブロック (ナレ系は後段 override で auto) */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #scene,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topEditButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #topThemeButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #collectionStickerTrayItems,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerScale,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerRotation,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerOk,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerDelete,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #inlineStickerClose,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #bookNextPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #bookPrevPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #albumModeToggle {
+  pointer-events: none !important;
+}
+
+/* TRY 中の汎用ブロック: まず全部止めてから、 step ごとに必要要素を auto に戻す */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #scene,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topEditButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #topThemeButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #collectionStickerTrayItems,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerScale,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerRotation,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerOk,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerDelete,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #inlineStickerClose,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #bookNextPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #bookPrevPage,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #albumModeToggle {
+  pointer-events: none !important;
+}
+
+/* TRY 中 step 別 allowlist: 当該 step の操作要素を auto に戻す */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-mode #topEditButton,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-view #topEditButton {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-place #collectionStickerTrayItems,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-place #scene,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-move #scene {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-scale #inlineStickerScale {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-rotate #inlineStickerRotation {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-ok #inlineStickerOk {
+  pointer-events: auto !important;
+}
+
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutorial-step-page #bookNextPage {
+  pointer-events: auto !important;
+}
+
+/* v1647: 設定ボタンとモーダルはチュートリアル中も常時操作可
+   ユーザーがいつでも 「もどる」 「いちをなおす」 を選べる安全弁。
+   panel 内部要素はもともと blocklist 対象外だが、 将来追加要素にも備えて明示宣言。 */
+body.is-sticker-tutorial-active #topSettingsButton,
+body.is-sticker-tutorial-active #zukanSettingsPanel,
+body.is-sticker-tutorial-active #zukanSettingsPanel * {
+  pointer-events: auto !important;
+}
+
+/* COMPLETE phase: 操作は終わっているので step に応じた要素のみ auto (移動した結果を見せる) */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete .sticker-tutorial-actions,
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete .sticker-tutorial-actions button {
+  pointer-events: auto !important;
+}
+
+/* ナレ系ボタン: phase / step 問わず必ず押せる (常時 auto)。
+   Risk-6 対策: 排他制御で 「とばす」 自体が押せなくなる事故防止。 */
+body.is-sticker-tutorial-active #stickerTutorialSkip,
+body.is-sticker-tutorial-active #stickerTutorialReplay,
+body.is-sticker-tutorial-active #stickerTutorialStepSkip,
+body.is-sticker-tutorial-active #stickerTutorialNext,
+body.is-sticker-tutorial-active #stickerTutorialStartButton,
+body.is-sticker-tutorial-active #stickerTutorialStartSkip {
+  pointer-events: auto !important;
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
+  .top-entry-cluster,
+  .top-action-cluster {
+    top: max(54px, calc(env(safe-area-inset-top) + 54px));
+  }
+
+  .zukan-settings-panel {
+    top: max(112px, calc(env(safe-area-inset-top) + 106px));
+    max-height: calc(100vh - 124px);
+    max-height: calc(100dvh - 124px);
+  }
+
+  .book-theme-panel {
+    top: max(10px, calc(env(safe-area-inset-top) + 8px));
+    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+}
+
+/* === v1643 (task 1): intro (1/10) のみ画面中央モーダル化 ===
+   step 2 以降は左ページ直書き (page-block 配置)、 intro のみ便箋風モーダルに退行。
+   card-corner / card-top の compound override も intro 時は中央寄せを優先。 */
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed,
+body.is-sticker-tutorial-step-intro.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed,
+body.is-sticker-tutorial-step-intro.is-sticker-tutorial-card-top .sticker-tutorial-card.is-page-inscribed {
+  position: fixed;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(420px, calc(100vw - 36px));
+  max-width: none;
+  max-height: none;
+  transform: translate(-50%, -50%);
+  padding: 22px 22px 18px;
+  border: 3px solid rgba(149, 106, 42, 0.82);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 236, 0.98), rgba(255, 242, 197, 0.96)),
+    #fff8da;
+  box-shadow:
+    0 18px 32px rgba(22, 48, 44, 0.22),
+    inset 0 -5px 0 rgba(214, 163, 61, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.82);
+  pointer-events: auto;
+  aspect-ratio: auto;
+  z-index: 32;
+}
+
+/* intro モーダル内: page-block は static + 中央寄せ (絶対配置 leftpage rect を解除)。
+   テキストは multiply を切って便箋背景の上で読みやすく、 ボタンはフレックス中央。 */
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-block {
+  position: static;
+  left: auto;
+  top: auto;
+  width: 100%;
+  max-height: none;
+  align-items: stretch;
+  gap: 16px;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-text {
+  position: static;
+  padding: 4px 6px 0;
+  mix-blend-mode: normal;
+  transform: none;
+  color: #234247;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-text .sticker-tutorial-count {
+  text-align: right;
+  color: #5c7779;
+  font-size: 12px;
+  text-shadow: none;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-page-text .sticker-tutorial-text {
+  color: #234247;
+  font-size: clamp(16px, 4.4vw, 20px);
+  line-height: 1.4;
+  text-align: center;
+  text-shadow: none;
+}
+
+/* intro モーダル内ボタン: ページに「貼った」 演出は不要 → 通常便箋ボタンに戻す。 */
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions {
+  padding: 0;
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button {
+  transform: none;
+  border-style: solid;
+  border-color: rgba(145, 105, 42, 0.44);
+  background: rgba(255, 251, 231, 0.92);
+}
+
+body.is-sticker-tutorial-step-intro .sticker-tutorial-card.is-page-inscribed .sticker-tutorial-actions button:nth-child(even) {
+  transform: none;
+}
+
+/* === v1643 (task 4): DEMO 中 「つぎ」 を視覚的にも disable 強調 (forceReady なしでは押せない) ===
+   updateStickerTutorialNextAvailability が DEMO phase 時は disabled 強制 → 既存
+   .sticker-tutorial-actions button:disabled の opacity 0.46 がそのまま効く。 ここでは
+   demo phase の Next を更に弱める保険 (filter で見た目を明確に分離)。 */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-demo #stickerTutorialNext:disabled {
+  filter: grayscale(0.55) brightness(0.96);
+  background: linear-gradient(180deg, #f4ead4, #d9c79a);
+}
+
+/* === v1643 (task 5): place TRY 完了時の spotlight 再アンカー演出 ===
+   spotlight 自体は updateStickerTutorialLayout が CSS 変数を書き換えるだけで自動追従するが、
+   complete phase に入った瞬間は pulse を強めに当てて「ここに貼れたよ」 を明示。 */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-complete.is-sticker-tutorial-step-place .sticker-tutorial-spotlight {
+  animation: stickerTutorialPlaceCompletePulse 0.9s ease-out 2;
+}
+
+@keyframes stickerTutorialPlaceCompletePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 198, 92, 0.0); }
+  50%  { box-shadow: 0 0 0 14px rgba(255, 198, 92, 0.42); }
+  100% { box-shadow: 0 0 0 22px rgba(255, 198, 92, 0.0); }
+}
+
+/* === v1646 (task 2): TRY 成功時の褒め言葉 pop アニメ ===
+   setStickerTutorialPhase("complete") で stickerTutorialText に is-praise-pop を 650ms 付与し、
+   1.12 倍までの scale + 暖色 (orange) の一瞬切替で「正解できたよ」 を視覚的に強調。
+   その後通常表示 (色/scale 戻り) で「つぎ」 ボタンの pulse に視線誘導。 */
+.sticker-tutorial-text.is-praise-pop {
+  animation: stickerTutorialPraisePop 0.6s ease-out;
+}
+
+@keyframes stickerTutorialPraisePop {
+  0%   { transform: scale(1);    color: #3a2618; }
+  35%  { transform: scale(1.12); color: #ff8a3d; }
+  100% { transform: scale(1);    color: #3a2618; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker-tutorial-text.is-praise-pop {
+    animation: none;
+  }
+}
+
+/* === v1648 (本タスク): TRY フェーズの「やって みよう！」 を光らせる ===
+   「やってみる」 (DemoDo) ボタン廃止に伴い、 TRY 開始の合図を
+   stickerTutorialText 全体の脈動 (色 + glow + scale) で明示する。
+   - 適用範囲: body.is-sticker-tutorial-phase-try のみ
+     → intro/start (phase 未設定) / final finish step (textTry 空) では発火しない
+   - phase-complete に入ると body class が外れて pulse 停止 → 直後に既存
+     .is-praise-pop (scale 1.12 / color #ff8a3d / 0.6s) が起動 → 競合なし
+   - reduced-motion: animation 停止 + 静的 highlight (color/glow のみ) でフォールバック
+   - textTry は step テーブル (main.js:1642-1729) で全 8 step に「やって みよう！」 prefix
+     固定。 段落全体を均等に光らせる前提の設計。 */
+body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #stickerTutorialText {
+  animation: stickerTutorialTryGlow 1.4s ease-in-out infinite;
+}
+
+@keyframes stickerTutorialTryGlow {
+  0%, 100% {
+    color: #3a2618;
+    text-shadow:
+      0 1px 0 rgba(255, 250, 235, 0.55),
+      0 2px 1px rgba(60, 40, 20, 0.12),
+      0 0 0 rgba(255, 184, 60, 0);
+    transform: scale(1);
+  }
+  50% {
+    color: #c2531a;
+    text-shadow:
+      0 1px 0 rgba(255, 250, 235, 0.55),
+      0 2px 1px rgba(60, 40, 20, 0.12),
+      0 0 12px rgba(255, 184, 60, 0.85),
+      0 0 24px rgba(255, 218, 110, 0.6);
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try #stickerTutorialText {
+    animation: none;
+    color: #c2531a;
+    text-shadow:
+      0 1px 0 rgba(255, 250, 235, 0.55),
+      0 2px 1px rgba(60, 40, 20, 0.12),
+      0 0 10px rgba(255, 200, 90, 0.65);
+  }
+}
