@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1268: Maze のじゃんけん音声を順番再生にし、角の設定ボタンを上中央ステージ札へ統合。stage3予告文言も迷子救助の目的へ統一。play.html PAGE_CACHE_VERSION と同期。
 // v1267: ホームのどんぐり数を、行ボックスではなく数字の字形が白いプレート中央に見える位置へ再調整。play.html PAGE_CACHE_VERSION と同期。
 // v1266: ホームのプロフィール土台で、どんぐり数を見た目のプレート縦中央へ揃える。play.html PAGE_CACHE_VERSION と同期。
 // v1265: Puzzle のアプリ枠ロック仲間を完全なグレーシルエットへ変更し、「サブスク」を「アプリ」へ更新。下部操作列から仲間選択をいつでも開き直せるボタンも追加。play.html PAGE_CACHE_VERSION と同期。
@@ -57,7 +58,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1267; // v1267: profile wallet count optical center.
+const CACHE_VERSION = 1268; // v1268: maze audio/menu/teaser.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

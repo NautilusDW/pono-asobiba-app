@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-10 - [batch:1168-maze-janken-audio-start-menu-overlap] DEVELOP-SYNC - Codex: Mazeじゃんけんの押下優先・非重複音声、画像迷路の角設定ボタンを上中央ステージ札へ統合、stage3予告を見出し `まいごの こを たすけに いこう`／左 `おじゃまむし`／中央ラベル削除／右 `まいご` へ更新。ユーザー承認により AGENTS.md のCodexゲーム本体編集禁止も削除。LP cache v1268。develop commit/push前。 (by Codex)
+
 - 2026-07-10 - [batch:1167-profile-count-visual-center-redo] DEVELOP-SYNC - Codex: user再指摘を受けた `develop-app` commit `c9ac2912` のどんぐり数字光学補正を `develop` へ同期。`top:59%` は実画面で約1.9pxしか動かず字形が上寄りに見えたため、4 viewportで行ボックスまで枠内に保てる最大値 `top:67%` へ変更。LP cache v1267として検証・pushする。 (by Codex)
 - 2026-07-10 - [batch:1167-profile-count-visual-center-redo] DEVELOP-VERIFIED - Codex: LP v1267を Playwright local 390x844 / 844x390 / 1024x768 / 1366x768 と残高99で再確認。数字行ボックスは全サイズで枠内、overflowX / pageerror / 画像失敗0。`node --check sw.js` / `git diff --check` も通過。 (by Codex)
 - 2026-07-10 - [batch:1166-oto-latest-tier-profile-count-center] PROFILE-DEVELOP-SYNC - Codex: `develop-app` commit `457d5f6e` のどんぐり数縦中央修正 (`top: 59%`) を `develop` へ同期。LP側 `play.html` / `sw.js` は v1266。4 viewport の表示検証と push 後に完了報告する。 (by Codex)

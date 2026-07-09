@@ -92,7 +92,8 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 | `play.html` 内の hover/select 等の軽い JS | ✅ | レビュー側 | renderCards、 cardClick、 selectGame レベル |
 | `assets/ui/`, `assets/images/` の追加・差し替え | ✅ | レビュー側 | 画像最適化 (§5) を踏むこと |
 | `sw.js` (CACHE_VERSION バンプ含む) | ✅ バンプ OK (2026-05-21〜) | ✅ メイン | §6 のバンプ規約参照。 Codex も自分の変更分は自分でバンプして良い。 競合は §6 の手順で回避 |
-| `scripts/`, `common/`, ゲーム本体 (`maze/`, `quizland/` 等) | ❌ | ✅ メイン | ゲームロジック / 共通ライブラリ。 Claude が並走編集中の競合大 |
+| `scripts/`, `common/` | ❌ | ✅ メイン | 共通ライブラリと自動化。 Claude が並走編集中の競合大 |
+| ゲーム本体 (`maze/`, `quizland/`, `bento/` 等) | ✅ | ✅ | 着手前に working tree / HANDOFF を確認し、同じファイルを並走編集中なら調整する |
 | `quizland/data/questions.js` | ✅ メイン (問題追加・文言調整) | レビュー側 | クイズデータ。 Codex は新規問題追加 OK、 既存問題の id 変更は禁止 |
 | `quizland/saved-layout.json` | ❌ 触らない | ✅ メイン | layout-editor 経由でのみ更新。 手書き編集禁止 (フォーマットが壊れる) |
 | `quizland/data/_review/codex-followup-*.md` | ✅ 読む側 (指示の受信) | ✅ 書く側 (指示の発信) | Claude → Codex への作業依頼ノート |
@@ -110,7 +111,7 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 
 ユーザー方針として、 **Codex への禁止事項は「Claude Code の作業に直接支障が出るもの」 だけに絞る**。 上記マトリクスで Codex ❌ 印が付いているのは、 すべて以下の理由で技術的に競合・破損リスクがあるもののみ:
 
-- `scripts/`, `common/`, ゲーム本体: Claude が並走編集する頻度が極めて高い (orchestrator / layout-editor / ゲームロジック)
+- `scripts/`, `common/`: Claude が並走編集する頻度が極めて高い (orchestrator / layout-editor / 共通ライブラリ)
 - `quizland/saved-layout.json`: 手書き編集でフォーマットが壊れる (layout-editor 経由必須、 技術的制約)
 - `wrangler.toml` / `.github/workflows/` / `.git/hooks/`: デプロイ・CI 設定、 Claude が運用責任を持つ
 - `CLAUDE.md`: Claude Code 固有ファイル
