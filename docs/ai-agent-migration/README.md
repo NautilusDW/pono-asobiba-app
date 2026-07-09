@@ -79,6 +79,42 @@ claude
 
 対象 repo を開いて、過去プロジェクト履歴が見えるか確認します。
 
+## Windows 側の `.claude\worktrees` を掃除する
+
+Claude Code が作った Git worktree が repo 内の `.claude\worktrees` に大量に残ると、D ドライブを大きく圧迫します。
+
+まず dry-run で、消える候補だけ確認します。
+
+```powershell
+.\docs\ai-agent-migration\cleanup-claude-worktrees.ps1
+```
+
+候補一覧だけ素早く見たい場合は、サイズ集計を省略します。
+
+```powershell
+.\docs\ai-agent-migration\cleanup-claude-worktrees.ps1 -SkipSize
+```
+
+実際に削除する時は、Claude Code / Codex / VS Code でその repo を触っていない状態にしてから実行します。
+
+```powershell
+.\docs\ai-agent-migration\cleanup-claude-worktrees.ps1 -Execute
+```
+
+直近 1 日以内に更新されたものを残したい場合:
+
+```powershell
+.\docs\ai-agent-migration\cleanup-claude-worktrees.ps1 -Execute -MinAgeDays 1
+```
+
+未コミット差分がある worktree は標準では消しません。どうしても全部消す時だけ `-IncludeDirty` を足してください。
+
+```powershell
+.\docs\ai-agent-migration\cleanup-claude-worktrees.ps1 -Execute -IncludeDirty
+```
+
+このスクリプトは Git に登録されている `.claude\worktrees` 配下の worktree だけを `git worktree remove --force --force` で削除します。Git が worktree として認識していない通常フォルダは触りません。
+
 ## 注意
 
 - `auth.json` は移しません。Mac 側で `codex login` し直してください。
