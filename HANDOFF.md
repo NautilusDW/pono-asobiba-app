@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-10 - [batch:1163-profile-wallet-overlay-fit] Codex: ユーザー指摘「どんぐりが左へはみ出す／プロフィール文字が右下へずれる／アバターが四角からはみ出す」を受領。既存 batch:1154 / commit `2cda97a` のプロフィール＆どんぐり土台を再生成せず、`play.html` の HTML overlay 座標と収まりを再調整する。共通 `play.html` / `sw.js` 領域のため `develop-app` / `develop` 同期前提。 (by Codex)
+- 2026-07-10 - [batch:1163-profile-wallet-overlay-fit] DONE - Codex: `develop-app` 側で、どんぐりを右プレートの円中心基準へ変更し、`プロフィール` を銘板中央へ左上調整、アバターを白い丸穴内へ縮小・中央合わせ。`play.html` / `sw.js` は v2063。検証: `node --check sw.js`、`git diff --check`、Playwright local 390x844 / 844x390 / 1024x768 / 1366x768 でいちごアバター・ラベル・どんぐり・2桁99が各親枠内、overflowXなし、pageerror 0、画像失敗0。共通UIのため `develop` 同期予定。 (by Codex)
 - 2026-07-09 - [batch:1162-oto-tier-song-split] Codex: ユーザー指摘「音タッチの分け方は古い」を受領。現状 `common/tier.js` / docs は free/book とも `kaeru` のみだが、過去方針 batch:994 の `book=ネジマエストロ枠(choucho)` と整合させるため、進行ロック上は book を `kaeru/mary/twinkle/choucho`（ちょうちょうまで）へ更新し、free は `kaeru`、sub は全7曲にする。共通 Oto/tier 領域のため `develop-app` / `develop` 同期前提。 (by Codex)
 - 2026-07-09 - [batch:1162-oto-tier-song-split] DONE - Codex: `develop-app` 側で OtoTouch のリズム曲 tier を free=`kaeru`、book=`kaeru/mary/twinkle/choucho`（ちょうちょうまで）、sub=全7曲に修正。`docs/TIER_POLICY.md` / `docs/AGE_BALANCE_POLICY.md` も同じ区分へ更新し、`play.html` / `sw.js` は v2062。検証: `node --check common/tier.js sw.js`、`git diff --check`、VM スタブで free/book/sub の `isOtoRhythmSongUnlocked()` 結果確認。 (by Codex)
 - 2026-07-09 - [batch:1162-oto-tier-song-split] DEVELOP-SYNC - Codex: 同じ OtoTouch tier 修正を `develop` へ同期済み。`develop` commit `c146354`、LP 側は `play.html` / `sw.js` v1262。検証: `node --check common/tier.js sw.js`、`git diff --check`、VM スタブで free/book/sub の `isOtoRhythmSongUnlocked()` 結果確認。 (by Codex)

@@ -8395,9 +8395,9 @@
     }
     .profile-wallet__avatar.pono-mini-avatar {
       position: absolute;
-      left: 50%;
-      top: 8%;
-      width: 45%;
+      left: 47.5%;
+      top: 15.3%;
+      width: 34%;
       height: auto;
       min-width: 0;
       min-height: 0;
@@ -8417,9 +8417,9 @@
     }
     .profile-wallet__label {
       position: absolute;
-      left: 12%;
-      right: 10%;
-      bottom: 15%;
+      left: 9%;
+      right: 13%;
+      bottom: 21%;
       display: block;
       color: #4f2d0c;
       font-size: 11px;
@@ -8459,14 +8459,14 @@
     }
     .profile-wallet__acorns .acorn-balance-badge__icon {
       position: absolute;
-      left: 8%;
-      top: 50%;
+      left: 20.2%;
+      top: 54%;
       display: block;
       width: 24px;
       aspect-ratio: 85 / 103;
       background: transparent url("assets/ui/shop/donguri_shop_acorn_icon_20260626.png") center / contain no-repeat;
       filter: drop-shadow(0 2px 2px rgba(40, 24, 8, .22));
-      transform: translateY(-43%);
+      transform: translate(-50%, -43%);
     }
     .profile-wallet__acorns .acorn-balance-badge__count {
       position: absolute;
@@ -10291,7 +10291,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2062; // sw.js CACHE_VERSION と同期 (oto tier song split)
+    const PAGE_CACHE_VERSION = 2063; // sw.js CACHE_VERSION と同期 (profile wallet overlay fit)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10300,7 +10300,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2062';
+    window.PONO_SW_VERSION = 'v2063';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
