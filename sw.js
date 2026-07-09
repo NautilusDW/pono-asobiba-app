@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2067: ホームのどんぐり数を、行ボックスではなく数字の字形が白いプレート中央に見える位置へ再調整。play.html PAGE_CACHE_VERSION と同期。
 // v2066: ホームのプロフィール土台で、どんぐり数を見た目のプレート縦中央へ揃える。play.html PAGE_CACHE_VERSION と同期。
 // v2065: Puzzle のアプリ枠ロック仲間を完全なグレーシルエットへ変更し、「サブスク」を「アプリ」へ更新。下部操作列から仲間選択をいつでも開き直せるボタンも追加。play.html PAGE_CACHE_VERSION と同期。
 // v2064: QuizLand の「つぎへ」を下方向グロウから全周フレーム発光へ変更し、Puzzle 仲間解放画面の料金区分ラベルを削除。play.html PAGE_CACHE_VERSION と同期。
@@ -944,7 +945,7 @@
 //   oto / bento free-book ロック差分と avatar assets 同期を反映。
 // v2052: oto のタイトルロゴを上寄せ + 明るいグロウへ変更し、リズム曲の tier 自動進行漏れと結果おてほん導線を修正。
 // v2053: free tier のロック時コピーを「えほんがあるともっとひろがるよ」に寄せ、迷路/パズル/音タッチの free 到達後にえほん案内を一度だけ表示。
-const CACHE_VERSION = 2066;
+const CACHE_VERSION = 2067;
 // v1951: 星評価 + アンケート導線を Google Forms → Apps Script Web App に移行
 // (batch:936)。 (a) common/rating-modal.js の hidden POST 先を
 // window.PONO_FEEDBACK_APPS_SCRIPT_URL 経由に切替、 fire-and-forget no-cors + FormData。
