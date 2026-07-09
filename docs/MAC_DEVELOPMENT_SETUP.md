@@ -5,6 +5,25 @@
 
 この手順書は、M4 Pro Mac mini 64GB での開発を前提にしています。Windows 側はすぐ止めず、しばらく Mac と並走する想定です。
 
+## まずこのページを開いたら
+
+最初のゴールは、Mac 側でプロジェクトを clone して、ローカルでポノの画面を開くところまでです。
+一気に全部やらなくて大丈夫です。まずはこの順番で進めます。
+
+1. Mac の「ターミナル」を開く。
+2. `## 1. Mac に基本ツールを入れる` を実行する。
+3. `## 2. VS Code を入れる` を実行する。
+4. `## 3. Git、GitHub CLI、Node.js を入れる` を実行する。
+5. `## 4. GitHub にログインする` を実行する。
+6. `## 5. リポジトリを clone する` を実行する。
+7. `## 6. npm 依存を入れる` を実行する。
+8. `## 7. Cloudflare Wrangler を確認する` の `npx wrangler dev --env staging-app` まで実行する。
+
+そこでブラウザに `http://localhost:xxxx` のような URL が出ます。
+その URL を開いてポノの画面が出れば、第一段階は完了です。
+
+途中で止まったら、エラー文をそのまま Windows 側の Codex / Claude Code に貼ってください。
+
 ## 0. いまの前提
 
 - Windows 側の `develop-app` は `origin/develop-app` と一致していて、未コミット差分なし。
@@ -320,4 +339,3 @@ npm ci
 npx playwright install
 npx wrangler dev --env staging-app
 ```
-
