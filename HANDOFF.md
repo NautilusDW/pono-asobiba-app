@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-10 - [batch:1164-puzzle-next-frame-glow-tier-labels] DEVELOP-SYNC - Codex: `develop-app` commit `d8d4f0ad` の QuizLand `つぎへ` 全周フレーム発光と Puzzle 仲間解放画面の `フリー / えほん / サブスク` 表示削除を `develop` へ同期。tier判定・解放条件は無変更。Puzzle query は v1327、LP側 `play.html` / `sw.js` は v1264。検証: `node --check puzzle/main.js sw.js`、`git diff --check`、Playwright local 390x844 / 844x390 / 1024x768 / 1366x768 で両画面 overflowXなし・pageerror 0・画像失敗0、pricing text/DOM 0、reduced-motion animation none。 (by Codex)
 - 2026-07-10 - [batch:1163-profile-wallet-overlay-fit] DEVELOP-SYNC - Codex: `develop-app` commit `dbaf93a1` のプロフィール土台修正を `develop` へ同期。どんぐりを右プレートの円中央へ、`プロフィール` を銘板中央へ、いちご等のアバターを白い丸穴内へ収めた。LP側 `play.html` / `sw.js` は v1263。検証: `node --check sw.js`、`git diff --check`、Playwright local 390x844 / 844x390 / 1024x768 / 1366x768 で全要素が親枠内、2桁99、overflowXなし、pageerror 0、画像失敗0。 (by Codex)
 - 2026-06-22 - [batch:787-daily-gacha-gold-assets-and-weights] DEVELOP-SYNC - Codex: Synced refreshed gold capsule assets and centralized gacha rarity/color weights to develop. LP hides daily gacha unless APP_BUILD/dev; check with ?dev=1&gachaRarity=super. develop PAGE/CACHE_VERSION=1239. (by Codex)
 - 2026-06-22 - [batch:780-daily-gacha-super-rare-sfx] DEVELOP-SYNC - Codex: `assets/audio/gacha/daily_gacha_super_rare_reveal.mp3` と `play.html` のスーパーレア専用開封SE分岐を develop へ同期。LP 側では APP_BUILD falsy のため通常非表示、`?dev=1&gachaRarity=super` で確認可能。develop の `sw.js` / `PAGE_CACHE_VERSION` は 1238。 (by Codex)

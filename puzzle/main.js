@@ -7568,11 +7568,6 @@ function showPartnerUnlockIntro(partners, done) {
   }
   panel.appendChild(list);
 
-  var hint = document.createElement('div');
-  hint.className = 'partner-unlock-intro__tiers';
-  hint.innerHTML = '<span class="is-free">フリー</span><span class="is-book">えほん</span><span class="is-sub">サブスク</span>';
-  panel.appendChild(hint);
-
   var button = document.createElement('button');
   button.type = 'button';
   button.className = 'partner-unlock-intro__button';
