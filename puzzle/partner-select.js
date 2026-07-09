@@ -43,7 +43,9 @@ window.PonoPartnerSelect = (function () {
   function ensureStylesheet() {
     if (document.querySelector('link[data-pono-pselect]')) return;
     // index.html に明示的に書かれていない場合の保険。既に link がある場合はスキップ。
-    var existing = document.querySelector('link[href$="' + CSS_HREF + '"]');
+    var existing = document.querySelector(
+      'link[href="' + CSS_HREF + '"], link[href^="' + CSS_HREF + '?"]'
+    );
     if (existing) {
       existing.setAttribute('data-pono-pselect', '1');
       return;
@@ -126,8 +128,8 @@ window.PonoPartnerSelect = (function () {
       label = 'えほん';
       icon = '📖';
     } else if (tier === 'sub') {
-      label = 'サブスク';
-      icon = '⭐';
+      label = 'アプリ';
+      icon = '📱';
     }
 
     var badge = document.createElement('div');
@@ -197,14 +199,18 @@ window.PonoPartnerSelect = (function () {
 
     // 立ち絵
     var portrait = document.createElement('div');
-    portrait.className = 'pono-pselect__portrait';
+    var useAppSilhouette = locked && tier === 'sub' && !!p.silhouetteImage;
+    portrait.className = 'pono-pselect__portrait' +
+      (useAppSilhouette ? ' is-app-silhouette' : '') +
+      (useAppSilhouette && p.silhouetteMode === 'light-background' ? ' is-light-background' : '');
     var img = document.createElement('img');
-    img.src = p.image || '';
-    img.alt = p.name || '';
+    img.src = useAppSilhouette ? p.silhouetteImage : (p.image || '');
+    img.alt = useAppSilhouette ? '' : (p.name || '');
+    if (useAppSilhouette) img.setAttribute('aria-hidden', 'true');
     img.loading = 'lazy';
     img.decoding = 'async';
     // 個別サムネで微調整が必要な場合だけ object-position を適用する。
-    if (p.imagePosition && typeof p.imagePosition === 'string') {
+    if (!useAppSilhouette && p.imagePosition && typeof p.imagePosition === 'string') {
       img.style.setProperty('--pos-default', p.imagePosition);
       img.style.setProperty('--pos-wide',
         (p.imagePositionWide && typeof p.imagePositionWide === 'string')

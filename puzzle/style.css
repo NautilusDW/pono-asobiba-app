@@ -410,7 +410,7 @@ body .pono-dropdown .pono-dd-item:active {
   }
 
   .sidebar .btn {
-    min-height: 38px;
+    min-height: 44px;
     padding: 7px 14px;
     font-size: 0.92rem;
     letter-spacing: 0.02em;
@@ -1706,6 +1706,7 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
 /* ===== Controls ===== */
 .controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
 }
@@ -1722,6 +1723,7 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
    Normal pointer handlers are untouched; only the OS callout is prevented. */
 .controls .btn-peek,
 .controls .btn-hint,
+.controls .btn-partner-select,
 #puzzle-container canvas {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -1736,7 +1738,9 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
 .controls .btn-peek,
 .controls .btn-peek *,
 .controls .btn-hint,
-.controls .btn-hint * {
+.controls .btn-hint *,
+.controls .btn-partner-select,
+.controls .btn-partner-select * {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -1855,6 +1859,18 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
 .btn-peek.is-active {
   --puzzle-btn-bg: linear-gradient(180deg, #C6ECF9 0%, #82CCE8 100%);
   --puzzle-btn-color: #1F4D61;
+}
+
+/* キャンセル後も、下部操作列からいつでも仲間選択を開き直せる。 */
+.btn-partner-select {
+  --puzzle-btn-bg: linear-gradient(180deg, #E7F7DB 0%, #B9DF9F 100%);
+  --puzzle-btn-color: #315E32;
+  --puzzle-btn-border: rgba(248, 255, 244, 0.96);
+}
+
+/* 練習中は専用進行だけに集中させ、通常プレイへ戻ったら同じ位置に復帰する。 */
+body.partner-practice-active .btn-partner-select {
+  display: none;
 }
 
 /* 完成形オーバーレイ canvas — puzzle-container に重ねる */
@@ -2327,7 +2343,7 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   .sidebar .btn {
     width: 116px;
     min-width: 116px;
-    min-height: 36px;
+    min-height: 44px;
     padding: 6px 10px;
     font-size: 0.86rem;
   }
