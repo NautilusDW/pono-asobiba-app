@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1261: Bento タイトルの上側ピルを非表示にし、無料版でもおねがいモードを見えるロックとして残す。Bento 食材 tier を free 10 / book 16 / sub 30 へ更新。play.html PAGE_CACHE_VERSION と同期。
 // v1260: Bento チュートリアルで、成功 sparkle を配置先へ出し、のり編集説明のちらつきと
 //   はっぱ/しきり説明の順序を「おかず4つ後」へ同期。admin の配置エディタ直リンクにも対応。play.html PAGE_CACHE_VERSION と同期。
 // v1259: Bento チュートリアルで、のり移動/編集の青枠残りを掃除し、
@@ -50,7 +51,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1260; // v1260: bento tutorial sparkle/nori/late leaf sync.
+const CACHE_VERSION = 1261; // v1261: bento title mode lock and tier food sync.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {

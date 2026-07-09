@@ -113,6 +113,7 @@ html, body {
   filter: drop-shadow(0 10px 26px rgba(40, 22, 8, 0.34));
 }
 .title-screen__start {
+  display: none;
   font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
   font-size: clamp(0.9rem, 2.5vw, 1.45rem);
   color: #5D3A00;
@@ -170,6 +171,26 @@ html, body {
 }
 .title-screen__mode-btn--simple:active {
   box-shadow: 0 5px 12px rgba(45, 58, 24, 0.18);
+}
+.title-screen__mode-btn.is-locked {
+  opacity: 0.76;
+  cursor: pointer;
+  filter: grayscale(0.16) brightness(0.98) saturate(0.86) drop-shadow(0 2px 0 rgba(72, 38, 12, 0.14));
+}
+.title-screen__mode-btn.is-locked::before {
+  content: '🔒';
+  position: absolute;
+  top: 9px;
+  left: 18px;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.title-screen__mode-btn.is-locked:active {
+  transform: none;
+  box-shadow: 0 9px 18px rgba(55, 29, 8, 0.20);
+}
+.title-screen__mode-btn.is-locked small {
+  color: #8A6239;
 }
 /* 難易度バッジ (common/difficulty.js 連動)。 quizland の難易度ラベルと視覚整合 */
 .title-screen__mode-btn { position: relative; }
@@ -5864,7 +5885,7 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
 <div id="title-screen" role="button" aria-label="タップしてスタート">
   <div class="title-screen__content">
     <img class="title-screen__logo" src="../assets/images/bento/title_logo.webp" alt="ポノとつくろう いろどりべんとう">
-    <div class="title-screen__start">▶ あそびかたを えらぶ</div>
+    <div class="title-screen__start" hidden>▶ あそびかたを えらぶ</div>
     <div class="title-screen__mode-buttons" aria-label="あそびかた">
       <button type="button" class="title-screen__mode-btn" data-bento-start-mode="request">
         <span class="title-screen__mode-badge" id="title-screen-difficulty-badge" data-difficulty="" role="img" aria-label="" hidden>
@@ -23040,11 +23061,18 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
   const startLabel = titleScreen.querySelector('.title-screen__start');
   const requestButton = titleScreen.querySelector('[data-bento-start-mode="request"]');
   const simpleButton = titleScreen.querySelector('[data-bento-start-mode="simple"]');
+  if (startLabel) startLabel.hidden = true;
   if (!requestAvailable) {
-    if (requestButton) requestButton.hidden = true;
-    if (modeButtons) modeButtons.classList.add('is-simple-only');
-    if (simpleButton) simpleButton.classList.add('title-screen__mode-btn--primary-only');
-    if (startLabel) startLabel.textContent = '▶ じぶんでつくる';
+    if (requestButton) {
+      requestButton.hidden = false;
+      requestButton.classList.add('is-locked');
+      requestButton.dataset.locked = 'book';
+      requestButton.setAttribute('aria-label', 'おねがいモード えほんの あいことばで あそべるよ');
+      const requestNote = requestButton.querySelector('small');
+      if (requestNote) requestNote.textContent = 'えほんの あいことばで あそべるよ';
+    }
+    if (modeButtons) modeButtons.classList.remove('is-simple-only');
+    if (simpleButton) simpleButton.classList.remove('title-screen__mode-btn--primary-only');
   }
   // 難易度バッジ: PonoTier (free/book/sub) → PonoDifficulty で表示。
   // simple モードは中立 (バッジ無し)。 チュートリアル未完了時も非表示 (UI 混乱回避)。
@@ -23087,8 +23115,22 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     titleScreen.classList.remove('hidden');
   }
   window.returnToBentoTitleScreen = returnToTitleScreen;
+  function showBentoRequestModeLocked() {
+    if (window.PonoTier && typeof window.PonoTier.showBookLimitPromo === 'function') {
+      const shown = window.PonoTier.showBookLimitPromo('bento', {
+        title: 'おねがいモードは えほんで あそべるよ',
+        body: 'タイトルの えほんボタンから あいことばを いれてね'
+      });
+      if (shown) return;
+    }
+    try { showToast('えほんの あいことばで あそべるよ'); } catch (_) {}
+  }
   async function startFromTitle(mode) {
     if (started) return;
+    if (mode === 'request' && !requestAvailable) {
+      showBentoRequestModeLocked();
+      return;
+    }
     started = true;
     const requestMode = mode === 'request' && requestAvailable;
     try { await fetchFreeMaskServerDefaults({ force: false }); } catch (_) {}
