@@ -439,6 +439,7 @@ const loadingEl       = document.getElementById('loading');
 const btnShuffle      = document.getElementById('btn-shuffle');
 const btnHint         = document.getElementById('btn-hint');
 const btnPeek         = document.getElementById('btn-peek');
+const btnPartnerSelect = document.getElementById('btn-partner-select');
 const progressFill    = document.getElementById('progress-fill');
 const progressText    = document.getElementById('progress-text');
 const stageLabel      = document.getElementById('stage-label');
@@ -7221,6 +7222,24 @@ if (btnHint) {
   });
 }
 
+if (btnPartnerSelect) {
+  btnPartnerSelect.addEventListener('click', function () {
+    if (partnerPracticeState && partnerPracticeState.active) return;
+    if (scatterAnimating) return;
+    if (!hasAnyUnlockedPartner()) return;
+    if (window.PonoPartnerSelect && typeof window.PonoPartnerSelect.isOpen === 'function'
+        && window.PonoPartnerSelect.isOpen()) return;
+    if (peekOn) setPeekOverlay(false);
+    dragPiece = null;
+    partnerChoiceDismissedStageId = null;
+    maybeShowPartnerChoiceForCurrentStage({
+      force: true,
+      skipUnlockIntro: true,
+      confirmStageRestart: !!(puzzleCanvas && !prestartOverlayEl),
+    });
+  });
+}
+
 // v1342 round-2 FIX 1: a long-press that begins on the 見る/ヒント INNER content
 // (icon / text) — not the button box itself — could still surface a selection /
 // context callout. Catch contextmenu + selectstart at the .controls container
@@ -7616,6 +7635,86 @@ function clearCurrentPartnerSelection() {
   } catch (_) {}
 }
 
+function showPartnerRestartConfirm(onConfirm, onBack) {
+  var overlay = document.createElement('div');
+  overlay.className = 'partner-restart-confirm';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'partner-restart-confirm-title');
+  overlay.setAttribute('aria-describedby', 'partner-restart-confirm-message');
+
+  var panel = document.createElement('div');
+  panel.className = 'partner-restart-confirm__panel';
+  overlay.appendChild(panel);
+
+  var icon = document.createElement('div');
+  icon.className = 'partner-restart-confirm__icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = '🐾';
+  panel.appendChild(icon);
+
+  var title = document.createElement('div');
+  title.id = 'partner-restart-confirm-title';
+  title.className = 'partner-restart-confirm__title';
+  title.textContent = 'なかまを かえる？';
+  panel.appendChild(title);
+
+  var message = document.createElement('div');
+  message.id = 'partner-restart-confirm-message';
+  message.className = 'partner-restart-confirm__message';
+  message.textContent = 'この パズルは さいしょからに なるよ';
+  panel.appendChild(message);
+
+  var actions = document.createElement('div');
+  actions.className = 'partner-restart-confirm__actions';
+  panel.appendChild(actions);
+
+  var backButton = document.createElement('button');
+  backButton.type = 'button';
+  backButton.className = 'partner-restart-confirm__button partner-restart-confirm__button--back';
+  backButton.textContent = 'もどる';
+  actions.appendChild(backButton);
+
+  var confirmButton = document.createElement('button');
+  confirmButton.type = 'button';
+  confirmButton.className = 'partner-restart-confirm__button partner-restart-confirm__button--confirm';
+  confirmButton.textContent = 'えらぶ';
+  actions.appendChild(confirmButton);
+
+  var closed = false;
+  var keyHandler = function (event) {
+    if (event.key === 'Escape' || event.keyCode === 27) {
+      event.preventDefault();
+      finish(onBack);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    event.preventDefault();
+    var buttons = [backButton, confirmButton];
+    var currentIndex = buttons.indexOf(document.activeElement);
+    var nextIndex = event.shiftKey
+      ? (currentIndex <= 0 ? buttons.length - 1 : currentIndex - 1)
+      : (currentIndex >= buttons.length - 1 ? 0 : currentIndex + 1);
+    try { buttons[nextIndex].focus({ preventScroll: true }); } catch (_) {}
+  };
+  var finish = function (next) {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', keyHandler, true);
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    if (typeof next === 'function') next();
+  };
+
+  backButton.addEventListener('click', function () { finish(onBack); });
+  confirmButton.addEventListener('click', function () { finish(onConfirm); });
+  overlay.addEventListener('click', function (event) {
+    if (event.target === overlay) finish(onBack);
+  });
+  document.addEventListener('keydown', keyHandler, true);
+  document.body.appendChild(overlay);
+  try { backButton.focus({ preventScroll: true }); } catch (_) {}
+}
+
 function confirmPartnerSelection(partnerId) {
   try {
     if (partnerId && window.PonoBond && typeof window.PonoBond.setSelectedPartner === 'function') {
@@ -7648,7 +7747,8 @@ function confirmPartnerSelection(partnerId) {
 function maybeShowPartnerChoiceForCurrentStage(options) {
   options = options || {};
   var stageId = getCurrentStageId();
-  if (getCurrentPartner()) return;
+  var partnerBeforeChoice = getCurrentPartner();
+  if (partnerBeforeChoice && !options.force) return;
   if (partnerChoiceDismissedStageId === stageId && !options.force) return;
   if (!hasAnyUnlockedPartner()) {
     clearCurrentPartnerSelection();
@@ -7670,7 +7770,8 @@ function maybeShowPartnerChoiceForCurrentStage(options) {
       var handleChoice = function(result) {
         if (!result || result.action === 'cancel') {
           partnerChoiceDismissedStageId = stageId;
-          clearCurrentPartnerSelection();
+          // 下部の「なかま」から開き直した場合、キャンセルだけで今の仲間を外さない。
+          if (!partnerBeforeChoice) clearCurrentPartnerSelection();
           return;
         }
         var selectedPartnerId = (typeof result === 'string') ? result : result.partnerId;
@@ -7680,20 +7781,34 @@ function maybeShowPartnerChoiceForCurrentStage(options) {
           return;
         }
         var scrollLeft = result.scrollLeft || 0;
-        showPartnerPracticeForChoice(selectedPartnerId, {
-          onConfirm: function () {
-            partnerChoiceDismissedStageId = null;
-            confirmPartnerSelection(selectedPartnerId);
-          },
-          onDone: function () {},
-          onBack: function () {
-            openSelect({
-              initialScrollLeft: scrollLeft,
-              focusPartnerId: selectedPartnerId,
-              skipUnlockIntro: true,
-            });
-          },
-        });
+        if (partnerBeforeChoice && selectedPartnerId === partnerBeforeChoice.id) {
+          partnerChoiceDismissedStageId = null;
+          return;
+        }
+        var reopenSelectedCard = function () {
+          // 再表示後のキャンセル先を、削除済み確認ボタンではなく下部の「なかま」へ戻す。
+          try { if (btnPartnerSelect) btnPartnerSelect.focus({ preventScroll: true }); } catch (_) {}
+          openSelect({
+            initialScrollLeft: scrollLeft,
+            focusPartnerId: selectedPartnerId,
+            skipUnlockIntro: true,
+          });
+        };
+        var beginPartnerPractice = function () {
+          showPartnerPracticeForChoice(selectedPartnerId, {
+            onConfirm: function () {
+              partnerChoiceDismissedStageId = null;
+              confirmPartnerSelection(selectedPartnerId);
+            },
+            onDone: function () {},
+            onBack: reopenSelectedCard,
+          });
+        };
+        if (options.confirmStageRestart) {
+          showPartnerRestartConfirm(beginPartnerPractice, reopenSelectedCard);
+        } else {
+          beginPartnerPractice();
+        }
       };
       openSelect(options);
       return;

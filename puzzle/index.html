@@ -14,8 +14,8 @@
   <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut01.webp" type="image/webp">
   <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut02.webp" type="image/webp">
   <link rel="preload" as="image" href="../assets/images/puzzle/opening/cut03.webp" type="image/webp">
-  <link rel="stylesheet" href="style.css?v=1327">
-  <link rel="stylesheet" href="partner-select.css?v=1327">
+  <link rel="stylesheet" href="style.css?v=1328">
+  <link rel="stylesheet" href="partner-select.css?v=1328">
   <script src="../common/mvp-flags.js"></script>
   <script src="../common/achievements.js"></script>
   <script src="../common/acorns.js"></script>
@@ -95,6 +95,7 @@
         <div class="controls">
           <button id="btn-peek" class="btn btn-peek" aria-pressed="false">👁 みる</button>
           <button id="btn-hint" class="btn btn-hint">ヒント</button>
+          <button id="btn-partner-select" class="btn btn-partner-select" aria-haspopup="dialog" aria-label="なかまを えらぶ">🐾 なかま</button>
         </div>
 
         <div id="challenge-status" class="challenge-status hidden" aria-live="polite"></div>
@@ -123,20 +124,20 @@
   <!-- Confetti container -->
   <div id="confetti-container" class="confetti-container"></div>
 
-  <script src="voice.js?v=1327"></script>
+  <script src="voice.js?v=1328"></script>
   <!-- なかよし MVP (Phase 1): partner / bond / assists / UI モジュール -->
   <!-- 順序: hooks-init(レジストリ) → データ(partners → bond) → assist 群 → UI(partner-select → bond-ui) → main.js -->
   <script src="assists/_hooks-init.js"></script>
-  <script src="partners.js"></script>
+  <script src="partners.js?v=1328"></script>
   <script src="bond.js"></script>
   <script src="assists/kitsune.js"></script>
   <script src="assists/kojika.js"></script>
   <script src="assists/araiguma.js"></script>
   <script src="assists/usagi.js"></script>
   <script src="assists/fukurou.js"></script>
-  <script src="partner-select.js"></script>
+  <script src="partner-select.js?v=1328"></script>
   <script src="bond-ui.js"></script>
-  <script src="main.js?v=1327"></script>
+  <script src="main.js?v=1328"></script>
   <script>
     function updateLandscapeNotice() {
       const notice = document.getElementById('landscape-notice');

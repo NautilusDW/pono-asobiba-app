@@ -89,6 +89,8 @@ window.PonoPartners = (function () {
       assistDesc: 'ボタンを おすと ピースを すこし はめてくれるよ',
       voiceTag: 'partner_araiguma',
       image: PARTNER_IMAGES + 'partner_araiguma.webp',
+      // ロック中は背景透明の輪郭素材を単色化し、元絵の顔や模様を見せない。
+      silhouetteImage: '../assets/zukan/animals/dew_pond/raccoon.png',
       tier: 'sub',
       locked: false,
       unlockAfterStage: 8,
@@ -103,6 +105,7 @@ window.PonoPartners = (function () {
       assistDesc: 'ピースを おく ほうこうを みみで おしえてくれる',
       voiceTag: 'partner_usagi',
       image: PARTNER_IMAGES + 'partner_usagi.webp',
+      silhouetteImage: '../assets/zukan/animals/flower_path/rabbit.png',
       tier: 'sub',
       locked: false,
       unlockAfterStage: 7,
@@ -117,6 +120,7 @@ window.PonoPartners = (function () {
       assistDesc: 'ピースを ながおしすると となりの ピースを おしえてくれる',
       voiceTag: 'partner_fukurou',
       image: PARTNER_IMAGES + 'partner_fukurou.webp',
+      silhouetteImage: '../assets/zukan/animals/reference/owl.png',
       tier: 'sub',
       locked: false,
       unlockAfterStage: 12,
@@ -131,6 +135,8 @@ window.PonoPartners = (function () {
       assistDesc: 'まわった ピースを もどして クリアに ちょうせんする',
       voiceTag: 'partner_karasu',
       image: PARTNER_IMAGES + 'partner_karasu.webp',
+      silhouetteImage: '../assets/images/ocean/Crow/Crow_normal_1.png',
+      silhouetteMode: 'light-background',
       tier: 'sub',
       locked: false,
       unlockAfterStage: 10,
@@ -208,7 +214,7 @@ window.PonoPartners = (function () {
   function getUnlockLabel(partner) {
     if (!partner) return '🔒 まだ';
     if (!tierAllows(partner.tier)) {
-      return partner.tier === 'book' ? '📖 えほん' : '⭐ サブスク';
+      return partner.tier === 'book' ? '📖 えほん' : '📱 アプリ';
     }
     if (!progressAllows(partner)) {
       return String(partner.unlockAfterStage || '?') + 'こ クリアで';

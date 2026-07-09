@@ -280,6 +280,32 @@
   pointer-events: none;
 }
 
+/* アプリ版のロック中キャラは、顔・毛並み・色を一切見せない完全なグレー輪郭にする。
+   解放後は従来のパートナー画像へ戻るため、この状態は sub tier の locked カードだけに限定。 */
+.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette {
+  background: #fff;
+}
+
+.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette img {
+  object-fit: contain;
+  object-position: 50% 50% !important;
+  padding: 6px;
+  filter: brightness(0) saturate(0);
+  opacity: 0.58;
+}
+
+/* カラス素材だけは白背景込み。強い二値化 + ごく小さいぼかしで内部の目や羽模様を
+   塗りつぶし、白背景は portrait の白へ溶け込ませる。 */
+.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette.is-light-background img {
+  padding: 4px;
+  filter: grayscale(1) contrast(1000%) blur(1.2px) contrast(1000%);
+  opacity: 0.58;
+}
+
+.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette .pono-pselect__lock {
+  background: rgba(72, 77, 82, 0.12);
+}
+
 .pono-pselect__lock {
   position: absolute;
   inset: 0;
@@ -421,7 +447,7 @@
 }
 
 /* --- 利用区分タグ ---
-   右上のタグとカード下端の色帯で、フリー / えほん / サブスクを視覚的に分ける。 */
+   右上のタグとカード下端の色帯で、フリー / えほん / アプリを視覚的に分ける。 */
 .pono-pselect__tier {
   position: absolute;
   top: 6px;
@@ -505,6 +531,114 @@
 .pono-pselect__cancel:focus-visible {
   outline: 3px solid #F7C948;
   outline-offset: 3px;
+}
+
+/* プレイ途中の仲間変更だけに出す、ステージ再開の確認。 */
+.partner-restart-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(24, 31, 34, 0.78);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+}
+
+.partner-restart-confirm__panel {
+  width: min(360px, calc(100vw - 36px));
+  padding: 20px 20px 18px;
+  border: 4px solid #F2C16E;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #FFFDF5 0%, #FCEFD3 100%);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38), inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+  color: #5D3A00;
+  text-align: center;
+}
+
+.partner-restart-confirm__icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.partner-restart-confirm__title {
+  margin-top: 6px;
+  font-size: clamp(1.25rem, 4.5vw, 1.55rem);
+  font-weight: 900;
+}
+
+.partner-restart-confirm__message {
+  margin-top: 8px;
+  font-size: clamp(0.94rem, 3.2vw, 1.06rem);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.partner-restart-confirm__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.partner-restart-confirm__button {
+  min-width: 118px;
+  min-height: 48px;
+  padding: 9px 18px;
+  border: 3px solid rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 900;
+  color: #5A3A18;
+  cursor: pointer;
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.partner-restart-confirm__button--back {
+  background: var(--puzzle-btn-cream);
+}
+
+.partner-restart-confirm__button--confirm {
+  background: var(--puzzle-btn-green);
+  color: #244A25;
+}
+
+.partner-restart-confirm__button:focus-visible {
+  outline: 3px solid #F7C948;
+  outline-offset: 3px;
+}
+
+@media (max-height: 430px) {
+  .partner-restart-confirm__panel {
+    padding: 12px 18px;
+  }
+
+  .partner-restart-confirm__icon {
+    font-size: 1.8rem;
+  }
+
+  .partner-restart-confirm__title {
+    margin-top: 3px;
+    font-size: 1.15rem;
+  }
+
+  .partner-restart-confirm__message {
+    margin-top: 4px;
+    font-size: 0.88rem;
+  }
+
+  .partner-restart-confirm__actions {
+    margin-top: 9px;
+  }
+
+  .partner-restart-confirm__button {
+    min-height: 44px;
+    padding: 6px 16px;
+  }
 }
 
 /* 低い横長画面: カード下端が切れないよう情報量と余白を圧縮する。 */
