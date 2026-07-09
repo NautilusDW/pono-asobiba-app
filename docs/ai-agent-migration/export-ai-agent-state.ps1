@@ -32,6 +32,63 @@ function Add-ManifestLine {
   Add-Content -LiteralPath $script:ManifestPath -Encoding utf8 -Value $Line
 }
 
+function New-SafeZipArchive {
+  param(
+    [string]$SourceRoot,
+    [string]$DestinationPath
+  )
+
+  Add-Type -AssemblyName System.IO.Compression
+
+  $sourceFullPath = (Resolve-Path -LiteralPath $SourceRoot).Path.TrimEnd('\', '/')
+  $fileStream = [System.IO.File]::Open(
+    $DestinationPath,
+    [System.IO.FileMode]::CreateNew,
+    [System.IO.FileAccess]::ReadWrite,
+    [System.IO.FileShare]::None
+  )
+
+  try {
+    $zip = New-Object System.IO.Compression.ZipArchive(
+      $fileStream,
+      [System.IO.Compression.ZipArchiveMode]::Create,
+      $false
+    )
+
+    try {
+      $safeTimestamp = [DateTimeOffset]::Now
+      $files = Get-ChildItem -LiteralPath $sourceFullPath -Recurse -Force -File
+
+      foreach ($file in $files) {
+        $relativePath = $file.FullName.Substring($sourceFullPath.Length).TrimStart('\', '/')
+        $entryName = $relativePath.Replace('\', '/')
+        $entry = $zip.CreateEntry($entryName, [System.IO.Compression.CompressionLevel]::Optimal)
+
+        # ZIP timestamps must be representable in the ZIP date range. Some local
+        # agent files can carry values that PowerShell's Compress-Archive cannot
+        # convert, so store a safe export timestamp instead.
+        $entry.LastWriteTime = $safeTimestamp
+
+        $inputStream = [System.IO.File]::OpenRead($file.FullName)
+        try {
+          $entryStream = $entry.Open()
+          try {
+            $inputStream.CopyTo($entryStream)
+          } finally {
+            $entryStream.Dispose()
+          }
+        } finally {
+          $inputStream.Dispose()
+        }
+      }
+    } finally {
+      $zip.Dispose()
+    }
+  } finally {
+    $fileStream.Dispose()
+  }
+}
+
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
   $OutputPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "ai-agent-migration-$timestamp.zip"
@@ -169,7 +226,7 @@ if (Test-Path -LiteralPath $OutputPath) {
   Remove-Item -LiteralPath $OutputPath -Force
 }
 
-Compress-Archive -Path (Join-Path $stageRoot "*") -DestinationPath $OutputPath -Force
+New-SafeZipArchive -SourceRoot $stageRoot -DestinationPath $OutputPath
 
 $size = (Get-Item -LiteralPath $OutputPath).Length
 Remove-Item -LiteralPath $stageRoot -Recurse -Force

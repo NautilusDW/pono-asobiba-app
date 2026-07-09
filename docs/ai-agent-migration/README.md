@@ -37,6 +37,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 ai-agent-migration-20260709-123456.zip
 ```
 
+`DateTimeOffset` / ZIP timestamp 系のエラーを避けるため、スクリプトは ZIP 内のファイル時刻をエクスポート時刻に正規化します。
+
 この ZIP を AirDrop、USB、iCloud Drive などで Mac の `Downloads` に移します。
 
 ## Mac 側へ取り込む
@@ -83,4 +85,3 @@ claude
 - Claude Code も Mac 側でログインし直してください。
 - Windows と Mac の履歴は自動同期されません。これは移行時点のスナップショットです。
 - 以後は Mac を主環境にするのがおすすめです。
-
