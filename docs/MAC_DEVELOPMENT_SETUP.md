@@ -226,6 +226,18 @@ VS Code でも使う場合は、VS Code の Extensions から Codex 拡張を入
 
 ### Codex のチャット履歴を Windows から Mac へ移す
 
+安全にまとめて移すための補助スクリプトを用意しています。通常はこちらを使います。
+
+```text
+docs/ai-agent-migration/README.md
+docs/ai-agent-migration/export-ai-agent-state.ps1
+docs/ai-agent-migration/import-ai-agent-state.sh
+```
+
+Windows 側で ZIP を作り、Mac 側で取り込むだけなら、まず `docs/ai-agent-migration/README.md` を開いてください。
+
+手作業で移す場合の考え方は以下です。
+
 Codex のローカル履歴は、通常この場所にあります。
 
 ```text
