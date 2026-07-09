@@ -180,6 +180,40 @@ Codex CLI の macOS/Linux 公式インストールコマンドです。
 curl -fsSL https://chatgpt.com/codex/install.sh | sh
 ```
 
+インストールが終わったら、ターミナルをいったん閉じて開き直します。開き直したあと、次を確認します。
+
+```bash
+command -v codex
+codex --version
+```
+
+`zsh: command not found: codex` が出る場合は、Codex CLI がまだ入っていないか、今のターミナルに PATH が反映されていません。まずインストールコマンドをもう一度実行します。
+
+```bash
+curl -fsSL https://chatgpt.com/codex/install.sh | sh
+```
+
+そのあと、ターミナルを開き直す代わりに次を実行しても OK です。
+
+```bash
+exec zsh -l
+```
+
+それでも見つからない場合は、Codex 本体がどこに入ったかを確認します。
+
+```bash
+ls -la ~/.local/bin/codex ~/.codex/bin/codex /opt/homebrew/bin/codex /usr/local/bin/codex 2>/dev/null
+echo "$PATH"
+```
+
+`~/.local/bin/codex` が見つかるのに `command -v codex` が空なら、PATH に `~/.local/bin` を追加します。
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+exec zsh -l
+command -v codex
+```
+
 ログインします。
 
 ```bash
@@ -189,6 +223,65 @@ codex login
 ChatGPT アカウントでログインします。
 
 VS Code でも使う場合は、VS Code の Extensions から Codex 拡張を入れます。
+
+### Codex のチャット履歴を Windows から Mac へ移す
+
+Codex のローカル履歴は、通常この場所にあります。
+
+```text
+Windows: C:\Users\<ユーザー名>\.codex\sessions
+Windows: C:\Users\<ユーザー名>\.codex\archived_sessions
+
+Mac: ~/.codex/sessions
+Mac: ~/.codex/archived_sessions
+```
+
+Windows 側から Mac 側へ移すのは、次の 2 フォルダだけにします。
+
+```text
+sessions
+archived_sessions
+```
+
+`auth.json` は認証情報なのでコピーしません。Mac 側では `codex login` でログインし直します。
+
+Windows 側で zip を作る場合は、PowerShell で次を実行します。
+
+```powershell
+$src = Join-Path $env:USERPROFILE ".codex"
+$stage = Join-Path $env:USERPROFILE "Desktop\codex-sessions-transfer"
+New-Item -ItemType Directory -Force $stage | Out-Null
+foreach ($name in "sessions", "archived_sessions") {
+  $path = Join-Path $src $name
+  if (Test-Path $path) {
+    Copy-Item -Recurse -Force $path $stage
+  }
+}
+Compress-Archive -Force -Path (Join-Path $stage "*") -DestinationPath (Join-Path $env:USERPROFILE "Desktop\codex-sessions-transfer.zip")
+```
+
+できた `codex-sessions-transfer.zip` を AirDrop、USB、iCloud Drive などで Mac へ移します。
+
+Mac 側では zip が `~/Downloads/` にある前提で、次を実行します。
+
+```bash
+mkdir -p ~/.codex
+unzip -o ~/Downloads/codex-sessions-transfer.zip -d ~/.codex
+```
+
+そのあと Codex CLI で確認します。
+
+```bash
+codex resume --all
+```
+
+直近だけ開くならこちらです。
+
+```bash
+codex resume --last --all
+```
+
+VS Code 拡張の画面に完全に同じ形で復元されるとは限りませんが、CLI の履歴としてはこの場所が本命です。
 
 参考:
 
