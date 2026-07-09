@@ -1,7 +1,7 @@
 # BENTO CONTENT PLAN — お弁当コンテンツ tier 別再設計
 
 **作成日:** 2026-06-15
-**最終改訂:** 2026-07-08 (tier v3.2 準拠改訂、詳細は §10 変更履歴)
+**最終改訂:** 2026-07-09 (tier v3.3 準拠改訂、詳細は §10 変更履歴)
 **ステータス:** 計画 (Phase 1 着手前)
 **関連ファイル:** [common/tier.js](../common/tier.js), [bento/index.html](../bento/index.html), [TIER_POLICY.md](./TIER_POLICY.md)
 
@@ -9,7 +9,7 @@
 
 ## 0. このドキュメントの位置付け
 
-> **⚠️ 2026-07-08 tier v3.2 更新:** tier 配分の全社的な正本は [TIER_POLICY.md](./TIER_POLICY.md) と [common/tier.js](../common/tier.js)。 bento は free/book 差を復帰し、 **free 8 食材 / book 12 食材 / sub 30 食材** を採用する。 本ドキュメントは bento ゲーム固有の実装事実・アセット touch point・ロードマップの正本として残す。 tier v3 以前の議論 (sub 上限 15 vs 20 など) は歴史的記録として §3/§6 に残すが、 実装時は必ず v3.2 の数字を優先すること。
+> **⚠️ 2026-07-09 tier v3.3 更新:** tier 配分の全社的な正本は [TIER_POLICY.md](./TIER_POLICY.md) と [common/tier.js](../common/tier.js)。 bento は free/book 差を維持しつつ入口の主菜選択肢を増やし、 **free 10 食材 / book 16 食材 / sub 30 食材** を採用する。 本ドキュメントは bento ゲーム固有の実装事実・アセット touch point・ロードマップの正本として残す。 tier v3 以前の議論 (sub 上限 15 vs 20 など) は歴史的記録として §3/§6 に残すが、 実装時は必ず v3.3 の数字を優先すること。
 
 オーナーから「お弁当のコンテンツ数を tier 別に再設計したい」という方針が出た。 既存の [TIER_POLICY.md §12](./TIER_POLICY.md) では `30 食材 / 8-15-30 配分` を採用していたが、 実態 (46 種のおかず + 11 種の飾り + 3 種のごはん) との乖離が大きい。 本ドキュメントは **実装事実 → 新方針 → 差分とアクション** の順に整理し、 Phase 1 (今すぐ) / Phase 2 / Phase 3 のロードマップに落とし込む。
 
@@ -118,9 +118,9 @@ const FREE_SIDE_OKAZU_NAMES = ['キャベツ','プチトマト','たまごやき
 ### 1.6 既存の tier 配分 ([common/tier.js L128-148](../common/tier.js))
 
 ```js
-FREE_BENTO_FOOD_NAMES = [8 食材]       // タコ・ハンバーグ・たまごやき・キャベツ・プチトマト・ブロッコリー・いちご・バナナ
-BOOK_BENTO_FOOD_NAMES = [15 食材]      // free + からあげ・コロッケ・エビフライ・やきざけ・ミートボール・にんじんいんげん・コーンほうれんそう
-ALL_BENTO_FOOD_NAMES  = [30 食材]      // book + 残り 15
+FREE_BENTO_FOOD_NAMES = [10 食材]      // タコ・ハンバーグ・からあげ・コロッケ・たまごやき・キャベツ・プチトマト・ブロッコリー・いちご・バナナ
+BOOK_BENTO_FOOD_NAMES = [16 食材]      // free + エビフライ・やきざけ・ぎょうざ・にんじんいんげん・ミートボール・みかん
+ALL_BENTO_FOOD_NAMES  = [30 食材]      // book + 残り 14
 FREE_BENTO_BOX_IDS    = ['box_rect_split']
 BOOK_BENTO_BOX_IDS    = +['box_square', 'box_round']
 FREE_BENTO_NPCS       = []
@@ -135,18 +135,18 @@ BOOK_BENTO_NPCS       = ['risu', 'inu', 'shika']
 
 ## 2. オーナーの新方針 (2026-07-08 tier v3.2 改訂版、 旧方針は §10 参照)
 
-### 2.1 おかず: **free 8 / book 12 / sub 30**
+### 2.1 おかず: **free 10 / book 16 / sub 30**
 
-tier v3.2 で bento の free/book 差を復帰。 free は入口として 8 食材、book は追加 4 食材を足して 12 食材、sub は既存 30 エントリを全解放する。
+tier v3.3 で bento の free/book 差を再調整。 free は入口として大きいおかずの選択肢を 2 品増やした 10 食材、book は追加 6 食材を足して 16 食材、sub は既存 30 エントリを全解放する。
 
 | tier | 主菜 (メインのおかず) | 副菜 (小さいおかず) | フルーツ | 合計 |
 |---|---|---|---|---|
-| **無料 (free)** | **3 種類** | **3 種類** | **2 種類** | **8 種類** |
-| **本購入 (book)** | free + からあげ / エビフライ | free + にんじんいんげん | free + みかん | **12 種類** |
+| **無料 (free)** | **4 種類** | **4 種類** | **2 種類** | **10 種類** |
+| **本購入 (book)** | free + エビフライ / やきざけ / ぎょうざ | free + にんじんいんげん / ミートボール | free + みかん | **16 種類** |
 | **アプリ購入 (sub)** | 既存 `FREE_COOKED_OKAZU` の全エントリ (現状 30、 新規アセット不要) | | | **30 種類** |
 
-- free の 8 食材: タコウインナー / ハンバーグ / たまごやき / キャベツ / プチトマト / ブロッコリー / いちご / バナナ。
-- book の追加 4 食材: からあげ / エビフライ / にんじんいんげん / みかん。
+- free の 10 食材: タコウインナー / ハンバーグ / からあげ / コロッケ / たまごやき / キャベツ / プチトマト / ブロッコリー / いちご / バナナ。
+- book の追加 6 食材: エビフライ / やきざけ / ぎょうざ / にんじんいんげん / ミートボール / みかん。
 - sub 上限は **30 (既存 UI 表示分そのまま)** に確定。 旧 Q1 (15 vs 20) は解消 (§8 参照)、 Phase 2 で予定していた「sub 向け +10 種新規調理済みアセット」も **不要**になった (§6.1 は歴史的記録として保持)。
 
 ### 2.2 ご飯 + 飾り (のり) — free 基本パーツ / book 追加かざり / sub 蓄積系
@@ -219,7 +219,7 @@ tier v3.2 でも「NPC 依頼者モードは book 以上」の現状方針を維
 | **お弁当箱** | box_rect_split (1 段) | + square / round (計 3、 square/round は 2 段) | + キャラ箱 4 種 (計 7、 キャラ箱も 2 段) |
 | **NPC (依頼者モード)** | なし | risu / inu / shika (3、 wantedFoods は book の 12 種限定) | + ahiru / panda / neko (計 6、 sub 30 種込みの依頼も可) |
 
-ご飯・のりの扱いを「飾れる/飾れない」で書き換えた点が、 旧 [TIER_POLICY.md §12](./TIER_POLICY.md) との大きな差分 (旧版は「のり剥奪」概念がなかった)。 tier v3.2 (2026-07-08) で食材も free 8 / book 12 / sub 30 に戻し、book に少量の追加体験を持たせた。
+ご飯・のりの扱いを「飾れる/飾れない」で書き換えた点が、 旧 [TIER_POLICY.md §12](./TIER_POLICY.md) との大きな差分 (旧版は「のり剥奪」概念がなかった)。 tier v3.3 (2026-07-09) で食材を free 10 / book 16 / sub 30 に調整し、free の入口体験と book の追加体験を両立させた。
 
 ---
 
@@ -229,10 +229,10 @@ tier v3.2 でも「NPC 依頼者モードは book 以上」の現状方針を維
 
 - [x] 本ドキュメント `docs/BENTO_CONTENT_PLAN.md` を作成し、 [TIER_POLICY.md §12](./TIER_POLICY.md) との関係を「BENTO_CONTENT_PLAN.md が bento の正本、 TIER_POLICY.md §12 は旧版」と明示
 - [x] **無料の飾り絞り込み (2026-07-03 実装、 batch:1056)**: 実装は common/tier.js の配列方式では**なく**、 [bento/index.html](../bento/index.html) の `decorItems` 各定義を `bookDecorItem(def)` (L7470、 `minTier:'book'` 付与) でラップし、 palette 側で `isBentoDecorUnlocked(def)` (`PonoTier` 経由の `isBentoMinTierUnlocked`) がガードする **per-def minTier 方式**。 無料 = 目鼻口眉 5 点 + ピック 4 種。 book 追加 = 顔セット 3 種・ほっぺ・うめぼし・のりながしかく１ (旧「のりべん」 `nori_bento_sheet`)・既存 book のり (乗り物/あそび系 shape 5 種の palette hide も解除済)。
-- [x] **tier v3.2: 食材を free 8 / book 12 / sub 30 に設定**。 `common/tier.js` の `FREE_BENTO_FOOD_IDS` / `BOOK_BENTO_FOOD_IDS` / `ALL_BENTO_FOOD_NAMES` で実装。
+- [x] **tier v3.3: 食材を free 10 / book 16 / sub 30 に設定**。 `common/tier.js` の `FREE_BENTO_FOOD_IDS` / `BOOK_BENTO_FOOD_IDS` / `ALL_BENTO_FOOD_NAMES` で実装。
 - [x] **のりながしかく１ は book 側に維持**。 `bookDecorItem` ラッパーを維持し、free は基本顔パーツ + ピックに絞る。
 - [ ] **tier v3: ふりかけご飯 を book → sub に変更**。 `riceBases` に `rice_base_furikake_round` 等を追加する際は `BOOK_BENTO_RICE_IDS` ではなく **sub 限定ガード**で開放 (既存アセット `rice_furikake.webp` 等を流用、 新規画像不要)。
-- [ ] NPC `shika` の wantedFoods を book 12 種の範囲に限定する tier ガードを追加 (sub 食材が book 以下の依頼に混ざらないようにする、 §2.3 参照)
+- [ ] NPC `shika` の wantedFoods を book 16 種の範囲に限定する tier ガードを追加 (sub 食材が book 以下の依頼に混ざらないようにする、 §2.3 参照)
 - [ ] sw.js `CACHE_VERSION` bump (現値を確認の上 +1)
 
 ### Phase 2 — 次 PR 以降
@@ -240,7 +240,7 @@ tier v3.2 でも「NPC 依頼者モードは book 以上」の現状方針を維
 - [ ] ~~sub 向けおかず +10 種~~ **不要になった (tier v3 で sub=既存30エントリに確定、 §3 参照)**
 - [ ] **ふりかけお絵かき機能** (Canvas Path 描画 → ご飯テクスチャに合成)。 sub 限定 (tier v3 で再確定)
 - [ ] フルーツ扱いの open question Q2 を確定し、 タブ UI を確定 (フルーツタブ新設 or 小さいに統合)
-- [x] [common/tier.js](../common/tier.js) の bento 定数を tier v3.2 の集合方式 (indexOf ベース統一) に合わせてリファクタ: `FREE_BENTO_FOOD_NAMES` 8、 `BOOK_BENTO_FOOD_NAMES` 12、 `ALL_BENTO_FOOD_NAMES` 30。
+- [x] [common/tier.js](../common/tier.js) の bento 定数を tier v3.3 の集合方式 (indexOf ベース統一) に合わせてリファクタ: `FREE_BENTO_FOOD_NAMES` 10、 `BOOK_BENTO_FOOD_NAMES` 16、 `ALL_BENTO_FOOD_NAMES` 30。
 
 ### Phase 3 — 将来
 
@@ -316,7 +316,7 @@ sub 上限を **20** に着地させる場合の追加不足: 上記 +10 種 (= 
 過去の知見活用 ([MEMORY.md](../../memory/MEMORY.md) より):
 - **tier_system_policy** 「free/book/sub 3 パターンは確定方針、 違いはゲーム内開放範囲」を踏襲し、 「のり剥奪」「ご飯バリエーション差」もこの原則の延長で設計した。
 - **app_scope_boundary** play.html 以降がゲームアプリ範囲、 index.html は LP として独立 — 本計画も bento ゲーム内のみに閉じ、 LP には触れない。
-- **tier v3.2 (2026-07-08)** で bento は free/book 差を復帰。 free 8 食材 / book 12 食材 / sub 30 食材とし、のりながしかく１は book 側に維持する (§2.1 / §2.2)。
+- **tier v3.3 (2026-07-09)** で bento は free/book 差を維持しつつ入口主菜を追加。 free 10 食材 / book 16 食材 / sub 30 食材とし、のりながしかく１は book 側に維持する (§2.1 / §2.2)。
 
 ---
 
