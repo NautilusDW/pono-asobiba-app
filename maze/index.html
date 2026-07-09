@@ -437,10 +437,30 @@ body.image-stage-mode #hint {
   font-weight: 700;
   font-family: inherit;
   z-index: 100;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   letter-spacing: 0.5px;
   border: 1.5px solid rgba(164,199,109,0.4);
+}
+#imgStageLabel::after {
+  content: '⚙';
+  display: inline-block;
+  margin-left: 8px;
+  color: rgba(255,248,224,0.9);
+  font-size: 0.88em;
+  line-height: 1;
+}
+#imgStageLabel:active { transform: translateX(-50%) scale(0.97); }
+body.image-stage-mode .pono-menu-toggle { display: none !important; }
+body.image-stage-mode .pono-dropdown {
+  top: 50px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translate(-50%, -8px) !important;
+}
+body.image-stage-mode .pono-dropdown.show {
+  transform: translate(-50%, 0) !important;
 }
 #flagInventoryHud {
   position: fixed;
@@ -3590,19 +3610,18 @@ body.image-stage-mode .game-wrap {
     <div class="teaser-panel">
       <!-- 未配置 creature のシルエット透かし層 (装飾のみ、クリック不可) -->
       <div class="teaser-silhouettes" id="teaserSilhouettes" aria-hidden="true"></div>
-      <p class="teaser-lead" id="teaserLead">もっと たのしい もりが まってる</p>
+      <p class="teaser-lead" id="teaserLead">まいごの こを たすけに いこう</p>
       <div class="teaser-grid">
         <div class="teaser-slot">
           <div class="teaser-cluster" id="teaserSlot1"></div>
-          <p class="teaser-slot-label">なかま</p>
+          <p class="teaser-slot-label">おじゃまむし</p>
         </div>
         <div class="teaser-slot">
           <div class="teaser-stage-wrap" id="teaserSlot2"></div>
-          <p class="teaser-slot-label">つぎの もり</p>
         </div>
         <div class="teaser-slot">
           <div class="teaser-cluster" id="teaserSlot3"></div>
-          <p class="teaser-slot-label">まちびと</p>
+          <p class="teaser-slot-label">まいご</p>
         </div>
       </div>
       <button class="teaser-btn" id="teaserBtn">つぎへ ▶</button>
@@ -4114,6 +4133,19 @@ function _playFlagVoice(key) {
 const _MAZE_VOICE_BASE = '../assets/audio/narration/maze/';
 const _mazeVoiceCache = Object.create(null);
 
+function _stopMazeVoicesForGame(gameKey) {
+  const prefix = String(gameKey || '') + '/';
+  Object.keys(_mazeVoiceCache).forEach(function(cacheKey) {
+    if (cacheKey.indexOf(prefix) !== 0) return;
+    try {
+      const a = _mazeVoiceCache[cacheKey];
+      if (!a) return;
+      a.pause();
+      try { a.currentTime = 0; } catch (_) {}
+    } catch (_) {}
+  });
+}
+
 // 実配置済 voice の whitelist (preload/再生 対象を絞る → 404 防止)
 // batch:922/923 で 49 voice 全て Gemini 3.1 Aoede 統一達成。
 const _MAZE_VOICE_BUNDLED = {
@@ -4138,12 +4170,13 @@ const _MAZE_VOICE_BUNDLED = {
   },
 };
 
-function _playMazeVoice(gameKey, key) {
-  if (!gameKey || !key) return;
+function _playMazeVoice(gameKey, key, interruptSameGame) {
+  if (!gameKey || !key) return null;
   const bundle = _MAZE_VOICE_BUNDLED[gameKey] || {};
-  if (!bundle[key]) return;  // whitelist 外は silent skip (404 fetch なし)
+  if (!bundle[key]) return null;  // whitelist 外は silent skip (404 fetch なし)
   const cacheKey = gameKey + '/' + key;
   try {
+    if (interruptSameGame) _stopMazeVoicesForGame(gameKey);
     var a = _mazeVoiceCache[cacheKey];
     if (!a) {
       a = new Audio(_MAZE_VOICE_BASE + cacheKey + '.mp3');
@@ -4154,7 +4187,8 @@ function _playMazeVoice(gameKey, key) {
     a.play().catch(function(err) {
       try { console.warn('[mz-voice]', cacheKey, err && err.name); } catch (_) {}
     });
-  } catch (_) {}
+    return a;
+  } catch (_) { return null; }
 }
 
 function _preloadMazeVoices(gameKey, keys) {
@@ -6903,16 +6937,16 @@ function _resolveJanken(playerHand) {
   setHands('rock', 'rock', true);
   resultEl.textContent = '';
   callEl.textContent = 'ジャン';
-  _playMazeVoice('janken', 'call_jan');
+  _playMazeVoice('janken', 'call_jan', true);
   setTimeout(function() {
     if (!_encounterActive) return;
     callEl.textContent = 'ケン';
-    _playMazeVoice('janken', 'call_ken');
+    _playMazeVoice('janken', 'call_ken', true);
   }, 520);
   setTimeout(function() {
     if (!_encounterActive) return;
     callEl.textContent = 'ポン！';
-    _playMazeVoice('janken', 'call_pon');
+    const ponVoice = _playMazeVoice('janken', 'call_pon', true);
     setHands(playerHand, cpuHand, false);
     ponoSlot.classList.toggle('is-win', outcome === 'win');
     ponoSlot.classList.toggle('is-lose', outcome === 'lose');
@@ -6926,13 +6960,20 @@ function _resolveJanken(playerHand) {
     } else if (outcome === 'lose') {
       if (encounterKey) _jankenNextPlayerWinKeys[encounterKey] = true;
     }
-    // ナレーション: 結果通知 (jan/ken/pon コール直後)
-    if (outcome === 'win') {
-      _playMazeVoice('janken', 'win_01');
-    } else if (outcome === 'lose') {
-      _playMazeVoice('janken', 'lose_01');
+    // 「ポン」と結果ナレーションを重ねない。ポン終了後に最新の結果だけを再生する。
+    const resultVoiceKey = outcome === 'win' ? 'win_01' : (outcome === 'lose' ? 'lose_01' : 'draw_01');
+    let resultVoicePlayed = false;
+    function playResultVoice() {
+      if (resultVoicePlayed || !_encounterActive) return;
+      resultVoicePlayed = true;
+      _playMazeVoice('janken', resultVoiceKey, true);
+    }
+    if (ponVoice) {
+      ponVoice.addEventListener('ended', playResultVoice, { once: true });
+      // 読み込み失敗などで ended が来ない場合だけ救済。
+      setTimeout(playResultVoice, 1400);
     } else {
-      _playMazeVoice('janken', 'draw_01');
+      setTimeout(playResultVoice, 450);
     }
     controlsEl.innerHTML = outcome === 'draw'
       ? '<button class="enc-btn primary" id="encRetry">もう一回</button>'
@@ -12735,6 +12776,35 @@ if (window.initMenu) {
       showOverlay();
     }
   });
+
+  // 画像迷路は道が画面全体を通るため、角の設定ボタンを置かない。
+  // 既に上中央を占有しているステージ札を設定入口として兼用する。
+  (function bindImageStageMenuLauncher() {
+    const label = document.getElementById('imgStageLabel');
+    if (!label) return;
+    label.setAttribute('role', 'button');
+    label.setAttribute('tabindex', '0');
+    label.setAttribute('aria-label', 'せっていを ひらく');
+
+    function toggleStageMenu(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const menuToggle = document.querySelector('.pono-menu-toggle');
+      if (!menuToggle) return;
+      menuToggle.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerType: 'touch'
+      }));
+    }
+
+    label.addEventListener('pointerdown', toggleStageMenu);
+    label.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' || event.key === ' ') toggleStageMenu(event);
+    });
+  })();
 }
 
 updateCharmsUI();
