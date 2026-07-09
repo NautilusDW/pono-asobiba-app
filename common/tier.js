@@ -212,7 +212,9 @@
   var FREE_OTO_SCALES = ['major'];
   var BOOK_OTO_SCALES = FREE_OTO_SCALES.concat(['penta']);
   var FREE_OTO_RHYTHM_SONGS = ['kaeru'];
-  var BOOK_OTO_RHYTHM_SONGS = FREE_OTO_RHYTHM_SONGS.slice();
+  // book はネジマエストロ初登場の「ちょうちょう」まで進める。
+  // stage 進行ロックがあるため、途中の 2/3 曲目も含める。
+  var BOOK_OTO_RHYTHM_SONGS = ['kaeru', 'mary', 'twinkle', 'choucho'];
   // chord mode は book の追加体験として 'on' を解放する。
   var FREE_OTO_CHORD_MODES = ['off'];
   var BOOK_OTO_CHORD_MODES = ['off', 'on'];
