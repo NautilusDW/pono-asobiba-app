@@ -10253,7 +10253,7 @@ function getTutorialPaletteAllowance(def) {
     return def.type === 'food' ? ok : deny('すきな おかずを えらんでね');
   }
   if (step === 'tut2-leaf-tab') {
-    return (def.type === 'leaf' || def.type === 'food' || def.type === 'cup')
+    return def.type === 'leaf'
       ? ok
       : deny('はっぱを みてみよう');
   }
@@ -10264,9 +10264,9 @@ function getTutorialPaletteAllowance(def) {
     return def.type === 'leaf' ? ok : deny('はっぱを しいてみよう');
   }
   if (step === 'tut2-free-okazu') {
-    return (def.type === 'food' || def.type === 'cup' || def.type === 'leaf' || def.type === 'divider' || def.type === 'pick')
+    return (def.type === 'food' || def.type === 'cup')
       ? ok
-      : deny('すきな おかずを いれてね');
+      : deny('まず おかずを 4つに しよう');
   }
   if (step === 'tut2-tabs-intro' || step === 'tut2-okazu-ok') {
     // 追加配置 (main/cup/food) は自由。 タブ操作待ち or ボタン待ち。
@@ -13620,8 +13620,7 @@ function onFreeItemDragEnd(e) {
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
-  const el = document.querySelector(`[data-free-uid="${uid}"]`);
-  spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(movedItem || placedItems.find(i => i.uid === uid));
   playPop();
   try { if (typeof tutorialOnItemMoved === 'function') tutorialOnItemMoved(uid); } catch (_) {}
   // v1494 cup-first: カップ (またはカップ内おかず) は 無移動タップで おかずピッカーを開く。
@@ -13823,7 +13822,7 @@ function addSimpleFoodToCup(def, cup) {
   syncSimplePickItemsToCurrentSlots();
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  spawnLandingSparkles(document.querySelector(`[data-free-uid="${selectedItem.uid}"]`) || document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(selectedItem);
   playPop();
   setSpeech(replacedCupFood
     ? 'カップの なかを いれかえたよ！'
@@ -13915,7 +13914,7 @@ function addSimpleFaceSetPaletteItem(def) {
   simpleReplaceSlotUid = null;
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  spawnLandingSparkles(document.querySelector(`[data-free-uid="${lastItem.uid}"]`) || document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(lastItem);
   playPop();
   setSpeech('おかおが できたよ。のりは すきな ところに うごかせるよ。');
   return lastItem;
@@ -13930,7 +13929,7 @@ function addSimpleDecorPaletteItem(def) {
   simpleReplaceSlotUid = null;
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  spawnLandingSparkles(document.querySelector(`[data-free-uid="${item.uid}"]`) || document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(item);
   playPop();
   setSpeech('のりは すきな ところに うごかせるよ。できたら のりOK を おしてね。');
   return item;
@@ -14027,7 +14026,7 @@ function addSimpleFixedPaletteItem(def, opts = {}) {
   if (def.type !== 'pick') syncSimplePickItemsToCurrentSlots();
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  spawnLandingSparkles(document.querySelector(`[data-free-uid="${item.uid}"]`) || document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(item);
   playPop();
   // v1494 cup-first: カップ配置直後に おかずピッカーを開く (上でセット済みの時のみ)
   if (autoOpenCupEditorUid) openCupEditor(autoOpenCupEditorUid);
@@ -14221,8 +14220,7 @@ function finishFreePaletteDrag(shouldFinalize) {
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
-  const el = document.querySelector(`[data-free-uid="${uid}"]`);
-  spawnLandingSparkles(el || document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(placed || placedItems.find(i => i.uid === uid));
   playPop();
   if (def.snapTarget) {
     openCupEditor(uid);
@@ -14595,7 +14593,7 @@ function duplicateSelectedBrushItem() {
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  spawnLandingSparkles(document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(next);
   playPop();
 }
 function getDefaultFreeRenderLayerBase(item) {
@@ -14869,7 +14867,7 @@ function addBrushStampAtPoint(point) {
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
-  spawnLandingSparkles(document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(item);
   playPop();
   return item;
 }
@@ -14906,7 +14904,7 @@ function addFoodToSelectedCup(def) {
   commitFreeHistoryChange(historyBefore);
   renderFreeLayoutStage();
   renderFreeLayoutControls();
-  spawnLandingSparkles(document.getElementById('free-layout-stage'));
+  spawnLandingSparklesForItem(selectedItem);
   playPop();
   return selectedItem;
 }
@@ -14955,7 +14953,7 @@ function addRiceFaceTemplate(templateId, opts = {}) {
   if (!opts.skipRender) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
-    spawnLandingSparkles(document.getElementById('free-layout-stage'));
+    spawnLandingSparklesForItem(rice);
   }
   if (!opts.skipGuideAdvance && freeGuideStep === 'rice') setFreeGuideStep('decor');
   return rice;
@@ -14992,7 +14990,7 @@ function addAutoRiceForSelectedBox(opts = {}) {
   if (!opts.skipRender) {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
-    spawnLandingSparkles(document.getElementById('free-layout-stage'));
+    spawnLandingSparklesForItem(rice);
   }
   if (!opts.skipGuideAdvance && freeGuideStep === 'rice') setFreeGuideStep('decor');
   return rice;
@@ -18607,6 +18605,42 @@ function spawnLandingSparkles(targetEl) {
     setTimeout(() => s.remove(), 800);
   }
 }
+function freeLayoutStageEl() {
+  return document.getElementById('free-layout-stage') || document.querySelector('.free-layout-stage');
+}
+function makeFreePointSparkleTarget(point, sizeFree = 72) {
+  const stage = freeLayoutStageEl();
+  if (!stage || !point) return null;
+  return {
+    getBoundingClientRect: () => {
+      const sr = stage.getBoundingClientRect();
+      const cx = sr.left + (Number(point.x) || 0) / FREE_LAYOUT_W * sr.width;
+      const cy = sr.top + (Number(point.y) || 0) / FREE_LAYOUT_H * sr.height;
+      const sizePx = Math.max(28, sr.width * (Number(sizeFree) || 72) / FREE_LAYOUT_W);
+      const half = sizePx / 2;
+      return {
+        x: cx - half,
+        y: cy - half,
+        left: cx - half,
+        top: cy - half,
+        right: cx + half,
+        bottom: cy + half,
+        width: sizePx,
+        height: sizePx,
+      };
+    },
+  };
+}
+function freeItemSparkleTarget(item) {
+  if (!item) return null;
+  const el = item.uid ? document.querySelector(`[data-free-uid="${item.uid}"]`) : null;
+  if (el) return el;
+  const sizeFree = (Number(item.size) || 72) * (Number(item.scale) || 1);
+  return makeFreePointSparkleTarget(item, sizeFree);
+}
+function spawnLandingSparklesForItem(item) {
+  spawnLandingSparkles(freeItemSparkleTarget(item) || freeLayoutStageEl());
+}
 
 function flyFood(from, to, src, cb) {
   const fr = from.getBoundingClientRect(), tr = to.getBoundingClientRect();
@@ -21032,11 +21066,11 @@ function tutorialOnTabSwitch(tabId) {
     }));
   };
   // batch:1058 phase1: tut2 台本では tab-rice/tab-okazu step は廃止。
-  // tut2-tabs-intro 中に leaf/divider タブへ触ったら okazu-ok へ進める。
+  // tut2-tabs-intro 中に divider タブへ触ったら okazu-ok へ進める。
   if (s === 'tut2-leaf-tab' && tabId === 'leaf') {
     advance('tut2-leaf-pick');
   }
-  if (s === 'tut2-tabs-intro' && (tabId === 'leaf' || tabId === 'divider')) {
+  if (s === 'tut2-tabs-intro' && tabId === 'divider') {
     advance('tut2-okazu-ok');
   }
 }
@@ -21453,6 +21487,7 @@ function tutorialAdvance(nextStep) {
     try { clearTimeout(tutorialState._tabsChainTimer); } catch (_) {}
     tutorialState._tabsChainTimer = null;
   }
+  tutorialState._tabsIntroPreparedStep = '';
   if (tutorialState._freeOkazuTimer) {
     try { clearTimeout(tutorialState._freeOkazuTimer); } catch (_) {}
     tutorialState._freeOkazuTimer = null;
@@ -21475,6 +21510,8 @@ function tutorialAdvance(nextStep) {
     for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
     tutorialState._noriEditSeqTimers = null;
   }
+  tutorialState._noriEditPanelKey = '';
+  tutorialState._noriEditSeqStepId = '';
   tutorialState.phase = 'demo';
   tutorialState.renderedStep = null;
   if (tutorialState._layerDoneTimer) {
@@ -21584,11 +21621,11 @@ const TUT2_STEPS = [
   { id: 'tut2-cup-btn', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderCupBtn },
   { id: 'tut2-cup-place', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderCupPlacePhaseA, renderPhaseB: tut2RenderCupPlacePhaseB },
   { id: 'tut2-cup-food', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderCupFoodPhaseA, renderPhaseB: tut2RenderCupFoodPhaseB },
+  { id: 'tut2-free-okazu', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderFreeOkazu },
   { id: 'tut2-leaf-tab', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderLeafTab },
   { id: 'tut2-leaf-target', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderLeafTarget },
   { id: 'tut2-leaf-pick', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderLeafPick },
   { id: 'tut2-leaf-place', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderLeafPlace },
-  { id: 'tut2-free-okazu', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderFreeOkazu },
   { id: 'tut2-tabs-intro', single: true, fallbackMs: 6500, renderPhaseB: tut2RenderTabsIntro },
   { id: 'tut2-okazu-ok', single: true, fallbackMs: 5500, renderPhaseB: tut2RenderOkazuOk },
   { id: 'tut2-complete', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderComplete },
@@ -21738,8 +21775,8 @@ const TUT2_PONO_SPEECH = {
   'tut2-leaf-target': 'すきな はっぱを えらんでね。',
   'tut2-leaf-pick': 'すきな はっぱを えらんでね。',
   'tut2-leaf-place': 'おべんとうばこの すきな ばしょを タップしてね。',
-  'tut2-free-okazu': 'すきな おかずを もう ひとつ いれてもいいよ。4つまで いれられるよ。',
-  'tut2-tabs-intro': 'はっぱと しきりも つかえるよ！',
+  'tut2-free-okazu': '4つに なるまで おかずを いれてね。',
+  'tut2-tabs-intro': 'しきりも つかえるよ！',
   'tut2-okazu-ok': 'できあがったら「おかずOK」を おしてね。',
   'tut2-complete': 'わあ、すてきな おべんとうが できたね！',
   'tut2-favorite': 'ほしマークで おきにいりに とっておけるよ。',
@@ -21980,10 +22017,14 @@ function tut2RenderNoriMovePhaseB(step) {
 function tut2RenderNoriEditPhaseA(step) {
   const placed = tutorialFindFirstPlacedDecor();
   if (!placed || !placed.item) return;
-  try {
-    if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid);
-  } catch (_) {}
   const stepId = step.id;
+  const panelKey = stepId + ':' + placed.item.uid;
+  if (tutorialState._noriEditPanelKey !== panelKey) {
+    tutorialState._noriEditPanelKey = panelKey;
+    try {
+      if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid);
+    } catch (_) {}
+  }
   const showPanelGuide = () => {
     if (!tutorialState.active) return;
     if (tutorialState.step !== stepId) return;
@@ -21992,29 +22033,28 @@ function tut2RenderNoriEditPhaseA(step) {
       tutorialRetryRenderStep(stepId, 120);
       return;
     }
-    tutorialClearTrims();
-    tutorialClearOutlines();
-    tutorialClearPaletteFocus();
-    tutorialMarkTarget(panel, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
+    const alreadyMarked = (tutorialState.trims || []).some(t => t && t.target === panel);
+    if (!alreadyMarked) {
+      tutorialClearTrims();
+      tutorialClearOutlines();
+      tutorialClearPaletteFocus();
+      tutorialMarkTarget(panel, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
+    }
     tutorialShowBubbleBesideElement('のりを タップすると<br>まわしたり おおきさを<br>かえられるよ', panel, { side: 'left', gap: 28 });
   };
   requestAnimationFrame(() => requestAnimationFrame(showPanelGuide));
-  // 前回残置の timer を掃除。
+  if (tutorialState._noriEditSeqStepId === stepId) return;
+  tutorialState._noriEditSeqStepId = stepId;
   if (tutorialState._noriEditSeqTimers) {
     for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
   }
   tutorialState._noriEditSeqTimers = [];
-  const scheduleAt = (delay, fn) => {
-    const t = setTimeout(() => {
-      if (!tutorialState.active) return;
-      if (tutorialState.step !== stepId) return;
-      try { fn(); } catch (_) {}
-    }, delay);
-    tutorialState._noriEditSeqTimers.push(t);
-  };
-  scheduleAt(400, () => {
+  const t = setTimeout(() => {
+    if (!tutorialState.active) return;
+    if (tutorialState.step !== stepId) return;
     try { setSpeech('のりを タップすると まわしたり おおきさを かえられるよ'); } catch (_) {}
-  });
+  }, 400);
+  tutorialState._noriEditSeqTimers.push(t);
 }
 function tut2RenderNoriEditPhaseB(step) {
   // batch:1058-hotfix4: Phase B は のりOK 誘導のみ (Phase A で 4 ボタン walk-through 済)。
@@ -22022,6 +22062,7 @@ function tut2RenderNoriEditPhaseB(step) {
   tutorialClearTrims();
   tutorialClearOutlines();
   tutorialClearPaletteFocus();
+  tutorialState._noriEditPanelKey = '';
   tutorialShowBubble('できたら「のりOK」<br>を おそう', { topVh: '8', side: 'right' });
   try { setSpeech('できたら「のりOK」を おそう！'); } catch (_) {}
   const noriOkBtn = tutorialNoriOkButton();
@@ -22146,6 +22187,18 @@ function tut2RenderCupFoodPhaseB(step) {
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderLeafTab(step) {
+  if (freeGuideStep !== 'tier2Side') {
+    freeGuideStep = 'tier2Side';
+    freeActiveTier = getGuideTierForStep('tier2Side');
+    freeBrushStampDef = null;
+    freeSelectedItemUid = null;
+    freeActiveCupUid = null;
+    freeCupEditorUid = null;
+    if (freeLayoutTab === 'box' || freeLayoutTab === 'rice' || freeLayoutTab === 'decor' || freeLayoutTab === 'food') {
+      freeLayoutTab = 'accessory';
+    }
+    try { renderFreeLayoutStage(); renderFreeLayoutControls(); } catch (_) {}
+  }
   tutorialShowBubble('はっぱを しくときは<br>「はっぱ」を おしてね', { topVh: '18', side: 'right' });
   const leafTab = tutorialFindTabBtn('leaf') || document.querySelector('.free-tab[data-tab="leaf"]');
   if (!leafTab) {
@@ -22160,8 +22213,10 @@ function tut2RenderLeafTab(step) {
 }
 function tut2EnsureLeafTabView(opts = {}) {
   if (typeof freeLayoutTab === 'undefined') return;
-  const shouldRender = freeLayoutTab !== 'leaf';
+  const shouldRender = freeLayoutTab !== 'leaf' || freeGuideStep !== 'tier2Side';
   if (shouldRender) {
+    freeGuideStep = 'tier2Side';
+    freeActiveTier = getGuideTierForStep('tier2Side');
     freeLayoutTab = 'leaf';
     freeBrushStampDef = null;
     simpleNoCupSlotIndex = null;
@@ -22231,7 +22286,7 @@ function tut2RenderFreeOkazu(step) {
   }
   tutorialClearTrims();
   tutorialHideFinger();
-  tutorialShowBubble('すきな おかずを<br>もう ひとつ いれてもいいよ<br><span class="tut-emph-red">4つまで</span> いれられるよ', { topVh: '18', side: 'right' });
+  tutorialShowBubble('<span class="tut-emph-red">4つ</span>に なるまで<br>おかずを いれてね', { topVh: '18', side: 'right' });
   const cup = tutorialFindFirstCupPaletteEl();
   if (cup) {
     tutorialMarkTarget(cup, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
@@ -22242,7 +22297,7 @@ function tut2RenderFreeOkazu(step) {
     if (!tutorialState._freeOkazuDoneTimer) {
       tutorialState._freeOkazuDoneTimer = setTimeout(() => {
         tutorialState._freeOkazuDoneTimer = null;
-        if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-okazu-ok');
+        if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-leaf-tab');
       }, 900);
     }
     return;
@@ -22250,54 +22305,41 @@ function tut2RenderFreeOkazu(step) {
   if (!tutorialState._freeOkazuTimer) {
     tutorialState._freeOkazuTimer = setTimeout(() => {
       tutorialState._freeOkazuTimer = null;
-      if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-okazu-ok');
+      if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') {
+        try { setSpeech('4つに なるまで おかずを いれてね'); } catch (_) {}
+        tutorialResetInactivity();
+        tutorialRenderStep();
+      }
     }, step.fallbackMs || 9000);
   }
 }
 function tut2RenderTabsIntro(step) {
-  tutorialShowBubble('はっぱと しきりも つかえるよ！', { topVh: '18', side: 'right' });
-  // batch:1058-hotfix3: 旧実装は 指の pointing hand だけで target ring が無く、
-  //   owner から「タブに何もマーカーがない」 と指摘された。 tutorialTrimPath の青破線
-  //   ring を leaf / divider タブに順番に付け、 バブルは タブに横付け配置に変更。
-  //   cup editor close 直後の advance で `.free-tab` DOM が rebuild 中なことがあるため
-  //   最大 8 回 (~800ms) rAF リトライで leaf タブが現れたら ring を貼る。
-  const attachLeafRing = (retriesLeft) => {
+  if (tutorialState._tabsIntroPreparedStep !== step.id) {
+    tutorialState._tabsIntroPreparedStep = step.id;
+    freeGuideStep = 'tier2Side';
+    freeActiveTier = getGuideTierForStep('tier2Side');
+    freeBrushStampDef = null;
+    simpleLeafApplyArmed = false;
+    clearSimpleLeafArmedState();
+    if (freeLayoutTab !== 'divider') freeLayoutTab = 'divider';
+    try { renderFreeLayoutStage(); renderFreeLayoutControls(); } catch (_) {}
+  }
+  tutorialShowBubble('しきりも つかえるよ！', { topVh: '18', side: 'right' });
+  const attachDivRing = (retriesLeft) => {
     if (!tutorialState.active || tutorialState.step !== 'tut2-tabs-intro') return;
-    const leafTab = tutorialFindTabBtn('leaf') || document.querySelector('.free-tab[data-tab="leaf"]');
-    if (!leafTab) {
-      if (retriesLeft > 0) setTimeout(() => attachLeafRing(retriesLeft - 1), 100);
+    const divTab = tutorialFindTabBtn('divider') || document.querySelector('.free-tab[data-tab="divider"]');
+    if (!divTab) {
+      if (retriesLeft > 0) setTimeout(() => attachDivRing(retriesLeft - 1), 100);
       return;
     }
-    if (!(tutorialState.trims || []).some(t => t.target === leafTab)) {
-      tutorialMarkTarget(leafTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
-    }
-    tutorialShowPointingHand(leafTab, { side: 'right' });
-    try { tutorialPositionBubbleBeside(leafTab, { gap: 14 }); } catch (_) {}
-  };
-  attachLeafRing(8);
-  // batch:1058-hotfix3: 2.4s 後に ring / hand / バブルを divider タブへ移動 (leaf の trim は掃除)。
-  if (tutorialState._tabsRingTimer) {
-    try { clearTimeout(tutorialState._tabsRingTimer); } catch (_) {}
-    tutorialState._tabsRingTimer = null;
-  }
-  tutorialState._tabsRingTimer = setTimeout(() => {
-    tutorialState._tabsRingTimer = null;
-    if (!tutorialState.active) return;
-    if (tutorialState.step !== 'tut2-tabs-intro') return;
-    tutorialClearTrims();
-    const attachDivRing = (retriesLeft) => {
-      if (!tutorialState.active || tutorialState.step !== 'tut2-tabs-intro') return;
-      const divTab = tutorialFindTabBtn('divider') || document.querySelector('.free-tab[data-tab="divider"]');
-      if (!divTab) {
-        if (retriesLeft > 0) setTimeout(() => attachDivRing(retriesLeft - 1), 100);
-        return;
-      }
+    if (!(tutorialState.trims || []).some(t => t && t.target === divTab)) {
+      tutorialClearTrims();
       tutorialMarkTarget(divTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
-      tutorialShowPointingHand(divTab, { side: 'right' });
-      try { tutorialPositionBubbleBeside(divTab, { gap: 14 }); } catch (_) {}
-    };
-    attachDivRing(6);
-  }, 2400);
+    }
+    tutorialShowPointingHand(divTab, { side: 'right' });
+    try { tutorialPositionBubbleBeside(divTab, { gap: 14 }); } catch (_) {}
+  };
+  attachDivRing(8);
   // Soft-chain to okazu-ok after voice ends + ~1.5s dwell. Use fallbackMs timer.
   if (!tutorialState._tabsChainTimer) {
     tutorialState._tabsChainTimer = setTimeout(() => {
@@ -22759,19 +22801,19 @@ function tutorialOnItemPlaced(item) {
     tutorialAdvance('tut2-cup-food');
     return;
   }
-  // Step 10: food inside cup → tabs-intro
+  // Step 10: food inside cup → extra okazu.
   if (step === 'tut2-cup-food' && item.type === 'food' && item.parentCupId) {
     try { tutorialStopVoiceQueueForImmediateAdvance(); } catch (_) {}
-    tutorialAdvance('tut2-leaf-tab');
+    tutorialAdvance('tut2-free-okazu');
     return;
   }
   if ((step === 'tut2-leaf-pick' || step === 'tut2-leaf-place') && item.type === 'leaf') {
     try { setSpeech('はっぱを しいたね！'); } catch (_) {}
     try { tutorialStopVoiceQueueForImmediateAdvance(); } catch (_) {}
-    tutorialAdvance('tut2-free-okazu');
+    tutorialAdvance('tut2-tabs-intro');
     return;
   }
-  // Leaf/free step: 4つ目の おかず が入ったら OK 導線へ。
+  // Free okazu step: 4つ目の おかず が入ったら はっぱ説明へ。
   if (step === 'tut2-free-okazu' && item.type === 'food') {
     if (tutorialCountFoodItems() >= 4) {
       try { setSpeech('4つ そろったね！'); } catch (_) {}
@@ -22779,7 +22821,7 @@ function tutorialOnItemPlaced(item) {
       if (!tutorialState._freeOkazuDoneTimer) {
         tutorialState._freeOkazuDoneTimer = setTimeout(() => {
           tutorialState._freeOkazuDoneTimer = null;
-          if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-okazu-ok');
+          if (tutorialState.active && tutorialState.step === 'tut2-free-okazu') tutorialAdvance('tut2-leaf-tab');
         }, 900);
       }
     }
@@ -22811,7 +22853,7 @@ function tutorialOnLeafPlaced(leaf, target) {
   if (!leaf || !target) return;
   try { setSpeech('はっぱを しいたね！'); } catch (_) {}
   tutorialStopVoiceQueueForImmediateAdvance();
-  tutorialAdvance('tut2-free-okazu');
+  tutorialAdvance('tut2-tabs-intro');
 }
 function tutorialOnStageComplete() {
   if (!tutorialState.active) return;

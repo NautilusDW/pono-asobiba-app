@@ -1736,6 +1736,17 @@ document.querySelectorAll('.tab').forEach(function(tab) {
     if (!hash) return;
     var tab = document.querySelector('.tab[data-panel="' + hash + '"]');
     if (tab) switchTab(hash);
+    var subHash = hash.replace(/^sub-/, '');
+    var subBtn = Array.from(document.querySelectorAll('.sub-tab')).find(function(btn) {
+      return btn.dataset && btn.dataset.sub === subHash;
+    });
+    if (subBtn) {
+      var parent = subBtn.closest('.panel');
+      if (parent && parent.id && parent.id.indexOf('panel-') === 0) {
+        switchTab(parent.id.replace(/^panel-/, ''));
+      }
+      subBtn.click();
+    }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', go);
@@ -1757,6 +1768,7 @@ document.querySelectorAll('.sub-tab').forEach(function(btn) {
     if (sub) sub.classList.add('active');
 
     // サブタブ切替時の初期化
+    try { history.replaceState(null, '', '#' + subId); } catch(e) {}
     if (subId === 'aqua-encyclopedia') fetchEncyclopedia();
     if (subId === 'aqua-creatures')    fetchSeaCreatures();
     if (subId === 'quiz-questions')    renderQuestions();
