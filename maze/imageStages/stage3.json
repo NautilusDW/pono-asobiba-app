@@ -1,6 +1,7 @@
 {
   "type": "image",
   "name": "stage3",
+  "stageOrder": 3,
   "imageUrl": "imageStages/stage3.jpg",
   "viewBox": {
     "w": 2688,
@@ -15,7 +16,8 @@
       "x": 998,
       "y": 129,
       "id": "stage3-strength-rock",
-      "size": 148
+      "size": 148,
+      "eventEnabled": true
     }
   ],
   "creatures": [
@@ -26,16 +28,16 @@
       "y": 1239
     },
     {
-      "id": "c4",
-      "kind": "odoke",
-      "x": 1735,
-      "y": 1189
-    },
-    {
       "id": "c5",
       "kind": "hachi",
       "x": 1233,
       "y": 722
+    },
+    {
+      "id": "c6",
+      "kind": "hachi",
+      "x": 1739,
+      "y": 1291
     }
   ],
   "nodes": [
