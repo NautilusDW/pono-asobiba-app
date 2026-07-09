@@ -1467,41 +1467,6 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   line-height: 1.15;
 }
 
-.partner-unlock-intro__tiers {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.partner-unlock-intro__tiers span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 900;
-  line-height: 1;
-  box-shadow: 0 2px 5px rgba(93, 78, 55, 0.18);
-}
-
-.partner-unlock-intro__tiers .is-free {
-  color: #1E4622;
-  background: #CFF0C3;
-}
-
-.partner-unlock-intro__tiers .is-book {
-  color: #123F66;
-  background: #D6ECFF;
-}
-
-.partner-unlock-intro__tiers .is-sub {
-  color: #3A175B;
-  background: #EEDCFF;
-}
-
 .partner-unlock-intro__button {
   --puzzle-btn-bg: var(--puzzle-btn-green);
   --puzzle-btn-color: #FFFFFF;
@@ -1566,8 +1531,7 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
     grid-template-areas:
       "burst title button"
       "burst body button"
-      "list list list"
-      "tiers tiers tiers";
+      "list list list";
     align-items: center;
     justify-items: center;
     gap: 6px 12px;
@@ -1602,14 +1566,6 @@ body.partner-practice-hand-visible .controls .btn.partner-practice-highlight::be
   }
   .partner-unlock-intro__friend span {
     font-size: 0.88rem;
-  }
-  .partner-unlock-intro__tiers {
-    grid-area: tiers;
-  }
-  .partner-unlock-intro__tiers span {
-    min-height: 22px;
-    padding: 3px 8px;
-    font-size: 0.72rem;
   }
 }
 
