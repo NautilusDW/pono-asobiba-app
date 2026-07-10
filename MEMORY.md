@@ -148,6 +148,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-10T15:48:32Z - book tier (Web+pono_premium) LP staging 動的検証: free/book カード差分・5ゲーム起動スモーク・sub直URL漏れ確認・cloud-sync 503 UI・あいことば導線
+- **タスク**: book tier (Web+pono_premium) LP staging 動的検証: free/book カード差分・5ゲーム起動スモーク・sub直URL漏れ確認・cloud-sync 503 UI・あいことば導線
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-10T15:18:24Z - batch:1214 unity/** を CI paths-ignore と .assetsignore に追加 (unity のみ push のデプロイ抑止 + unity ソース 536 ファイルの配信除外、クロスレビュー clean)
 - **タスク**: batch:1214 unity/** を CI paths-ignore と .assetsignore に追加 (unity のみ push のデプロイ抑止 + unity ソース 536 ファイルの配信除外、クロスレビュー clean)
 - **結果**: 成功
@@ -241,19 +254,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-10T12:40:23Z - develop/develop-app 単一トランク統合計画の文書化 (docs/branch-unification-plan.md新規作成 + AGENTS.md/CLAUDE.md/MEMORY.md/memory新規ファイル更新)
 - **タスク**: develop/develop-app 単一トランク統合計画の文書化 (docs/branch-unification-plan.md新規作成 + AGENTS.md/CLAUDE.md/MEMORY.md/memory新規ファイル更新)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-10T12:26:12Z - develop/develop-app単一トランク統合計画の前提事実調査 (デプロイ配線・worker.js env依存・sw.js差分・develop独自コンテンツ・tier出し分け・native依存・DEPLOY-FACTフック・ドキュメント現状)
-- **タスク**: develop/develop-app単一トランク統合計画の前提事実調査 (デプロイ配線・worker.js env依存・sw.js差分・develop独自コンテンツ・tier出し分け・native依存・DEPLOY-FACTフック・ドキュメント現状)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
