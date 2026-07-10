@@ -228,10 +228,10 @@ namespace Pono.MarbleRun3D.Gameplay
             var triggerObject = new GameObject("GoalTrigger");
             triggerObject.layer = courseLayer;
             triggerObject.transform.SetParent(view.transform, false);
-            triggerObject.transform.localPosition = new Vector3(0f, 0.58f, 0.38f);
+            triggerObject.transform.localPosition = new Vector3(0f, 0.82f, 0.38f);
             var trigger = triggerObject.AddComponent<BoxCollider>();
             trigger.isTrigger = true;
-            trigger.size = new Vector3(1.45f, 1.10f, 0.58f);
+            trigger.size = new Vector3(2.75f, 2.05f, 1.30f);
             view.SetGoalSensor(triggerObject.AddComponent<GoalSensor>());
 
             for (var i = 0; i < 5; i++)
@@ -819,7 +819,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 CreateCube(view, "くるくる カラフル はね", radial * 0.37f,
                     new Vector3(0.76f, 0.10f, 0.58f),
                     Quaternion.AngleAxis(angle - 90f, Vector3.right),
-                    materials.MarbleAt(paddle), courseLayer, true, rotorRoot.transform);
+                    materials.MarbleAt(paddle), courseLayer, false, rotorRoot.transform);
             }
 
             if (isGhost) return;

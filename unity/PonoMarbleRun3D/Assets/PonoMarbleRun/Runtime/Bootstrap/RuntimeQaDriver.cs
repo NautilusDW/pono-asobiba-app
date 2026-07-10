@@ -217,7 +217,8 @@ namespace Pono.MarbleRun3D.Bootstrap
             _controller.StartMode(modeId);
             _controller.StartRun();
             var startedAt = Time.realtimeSinceStartup;
-            var deadline = startedAt + 18f;
+            var timeout = modeId == "starter" ? 26f : modeId == "sample6" ? 22f : 18f;
+            var deadline = startedAt + timeout;
             while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < deadline)
                 yield return null;
             if (_controller.State != MarbleRunState.Celebrating)

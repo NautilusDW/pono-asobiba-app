@@ -59,6 +59,10 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 var domino = Make(MarblePieceKind.Domino, root, materials);
                 Assert.That(start.MarbleSpawn, Is.Not.Null);
                 Assert.That(goal.GoalSensor, Is.Not.Null);
+                var goalTrigger = goal.GoalSensor.GetComponent<BoxCollider>();
+                Assert.That(goalTrigger.isTrigger, Is.True);
+                Assert.That(goalTrigger.size.x, Is.GreaterThanOrEqualTo(2.7f));
+                Assert.That(goalTrigger.size.y, Is.GreaterThanOrEqualTo(2f));
                 Assert.That(seesaw.DynamicBodies.Count, Is.EqualTo(1));
                 Assert.That(domino.DynamicBodies.Count, Is.EqualTo(6));
                 var rails = seesaw.GetComponentsInChildren<Transform>(true)
@@ -209,6 +213,10 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 Assert.That(spinner.GetComponentInChildren<SpinnerMarbleGuide>(true), Is.Not.Null);
                 Assert.That(spinner.GetComponentsInChildren<Transform>(true)
                     .Count(child => child.name == "くるくる カラフル はね"), Is.EqualTo(6));
+                Assert.That(spinner.GetComponentsInChildren<Collider>(true)
+                    .Where(collider => collider.name == "くるくる カラフル はね")
+                    .All(collider => !collider.enabled), Is.True,
+                    "the ball-actuated guide turns the visible paddles without trapping marbles");
                 Assert.That(spinner.DynamicBodies[0].GetComponent<HingeJoint>(), Is.Not.Null);
 
                 Assert.That(materials.ClearShell.color.a, Is.InRange(0.05f, 0.35f));
