@@ -32,9 +32,10 @@
       "id": "hole-1"
     },
     {
-      "kind": "pond",
-      "x": 914,
-      "y": 610
+      "kind": "rock",
+      "x": 892,
+      "y": 614,
+      "id": "rock-1"
     }
   ],
   "creatures": [
@@ -1322,18 +1323,14 @@
       "radius": 92
     }
   },
-  "teaser": {
-    "id": "stage6-shadow",
-    "x": 2470,
-    "y": 30,
-    "rx": 320,
-    "ry": 240,
-    "color": "#1a1230",
-    "opacityMin": 0.35,
-    "opacityMax": 0.45,
-    "pulseSec": 2.6,
-    "approachRadius": 720,
-    "approachAnchor": { "x": 2323, "y": 142 },
-    "dialog": "もりの おくに… なにかいる"
+  "strengthGimmick": {
+    "id": "strength-rock",
+    "obstacleId": "",
+    "encounterRadius": 96,
+    "glove": {
+      "x": 319,
+      "y": 943,
+      "radius": 90
+    }
   }
 }
