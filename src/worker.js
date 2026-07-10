@@ -155,10 +155,12 @@ function injectAppBuildFlag(response, env) {
 // 【対応方針】
 //   upstream に ETag が無い以上、「upstream の ETag に variant サフィックスを
 //   付けて再利用する」だけでは 304 は永久に成立しない。そこで:
-//     1) upstream ETag がもしあれば (将来 Cloudflare 側で付与されるようになった
-//        場合や他経路向けの保険として) それを再利用し、
+//     1) upstream に「強い」ETag がもしあれば (将来 Cloudflare 側で付与されるように
+//        なった場合や他経路向けの保険として) それを再利用し、
 //        APP_BUILD 注入の有無を表す variant サフィックス (-app1/-app0) を付与する
 //        (同じ upstream ファイルでも注入あり/なしで本文が変わるため)。
+//        弱い upstream ETag (W/"...") は昇格させず 2) に落とす (RFC 7232 §2.1、
+//        attachHtmlEtag() 冒頭のコメント参照)。
 //     2) upstream に ETag が無ければ、本文 (APP_BUILD 注入後の最終バイト列) の
 //        SHA-1 ハッシュから自前の ETag を生成する。ハッシュ計算のため本文を
 //        一度バッファする必要があるが、対象は HTML のみ (165-220KB 程度) で
@@ -196,7 +198,11 @@ async function sha1Hex(text) {
 }
 
 async function attachHtmlEtag(request, response, env, appBuildApplied) {
-  if (response.status < 200 || response.status >= 300) return response;
+  // 200 のみ対象 (2xx 全般ではない)。 206 Partial Content を通すと「部分 body の
+  // ハッシュ」を表現全体の強い ETag として公開してしまい、 後続の If-None-Match /
+  // If-Range 判定を壊す。 204 も body が無いので validator を作れない
+  // (2026-07-10 再レビューで検出、 stub test Test 11 で再現)。
+  if (response.status !== 200) return response;
   const url = new URL(request.url);
   const contentType = response.headers.get('content-type') || '';
   const isHTML = contentType.includes('text/html')
@@ -204,13 +210,22 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
   if (!isHTML) return response;
 
   const variantSuffix = appBuildApplied ? 'app1' : 'app0';
-  const upstreamEtag = response.headers.get('etag');
+  const rawUpstreamEtag = response.headers.get('etag');
+  // 弱い upstream ETag (W/"...") は再利用しない。 弱い validator は「意味的等価」しか
+  // 主張しておらず、 それを強い形式 ("...") に昇格させて再発行すると upstream が
+  // 保証していないバイト同一性を主張することになる (RFC 7232 §2.1 違反。 If-Range の
+  // バイトレンジ結合等で実害が出うる)。 弱い場合は upstream ETag 無し扱いにして
+  // 下の自前ハッシュ分岐 (最終バイト列の SHA-1 = 正真の強い ETag) に落とす
+  // (2026-07-10 再レビューで検出、 stub test Test 10 で再現)。
+  const upstreamEtag = rawUpstreamEtag && !/^\s*W\//i.test(rawUpstreamEtag)
+    ? rawUpstreamEtag
+    : null;
 
   let outgoingEtag = null;
   let bodyText = null;
 
   if (upstreamEtag) {
-    // upstream (将来 or 他経路) に ETag があれば再利用。body には触れないので
+    // upstream (将来 or 他経路) に強い ETag があれば再利用。body には触れないので
     // ストリーミングのメリットはそのまま維持される。
     // ※ 強い ETag 形式 (W/ なし) で出すこと。 Worker から弱い W/"..." を返すと
     //   Cloudflare エッジが egress で ETag ヘッダーごと削除する
