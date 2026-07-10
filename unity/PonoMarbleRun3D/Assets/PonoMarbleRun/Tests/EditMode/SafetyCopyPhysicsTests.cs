@@ -42,6 +42,8 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 Is.EqualTo(MarbleSafetyEvent.OutOfBounds));
             Assert.That(model.Tick(new Vector3(80f, 1f, 0f), Vector3.zero, Vector3.zero, 0.01f),
                 Is.EqualTo(MarbleSafetyEvent.OutOfBounds));
+            Assert.That(model.Tick(new Vector3(0f, 1f, 17f), Vector3.zero, Vector3.zero, 0.01f),
+                Is.EqualTo(MarbleSafetyEvent.OutOfBounds));
         }
 
         [Test]
@@ -105,11 +107,101 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(MarbleRunPhysicsProfile.MarbleMaximumSpeed, Is.InRange(10f, 18f));
             Assert.That(MarbleRunPhysicsProfile.MarbleLaunchSpeed, Is.InRange(0f, 1f),
                 "the hopper ramp and gravity, not a horizontal launch, supply the energy");
+            Assert.That(MarbleRunPhysicsProfile.MarbleLinearDamping, Is.InRange(0f, 0.01f));
+            Assert.That(MarbleRunPhysicsProfile.MarbleAngularDamping, Is.InRange(0f, 0.02f));
             Assert.That(MarbleRunPhysicsProfile.MarbleBounciness, Is.LessThan(0.1f));
             Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(24f, 26f));
             Assert.That(
                 Mathf.Tan(MarbleRunPhysicsProfile.SlopeDegrees * Mathf.Deg2Rad) * WoodenPieceFactory.CellSize,
                 Is.EqualTo(WoodenPieceFactory.LevelHeight).Within(0.01f));
+        }
+
+        [Test]
+        public void PassiveEnergyConstraintPreservesEntrySpeedAtTheSameHeight()
+        {
+            const float gravity = 9.81f;
+            const float height = 2.25f;
+            var entryVelocity = new Vector3(3f, 0f, 4f);
+
+            Assert.That(PassiveGuidePhysics.TryCalculateSpecificMechanicalEnergy(
+                entryVelocity, height, gravity, out var specificEnergy), Is.True);
+
+            var constrained = PassiveGuidePhysics.CalculateEnergyConservingVelocity(
+                specificEnergy,
+                height,
+                Vector3.right,
+                gravity);
+
+            Assert.That(constrained.magnitude, Is.EqualTo(entryVelocity.magnitude).Within(0.0001f));
+            Assert.That(constrained.x, Is.EqualTo(entryVelocity.magnitude).Within(0.0001f));
+            Assert.That(constrained.y, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(constrained.z, Is.EqualTo(0f).Within(0.0001f));
+        }
+
+        [Test]
+        public void PassiveEnergyConstraintSlowsUphillAndAcceleratesDownhill()
+        {
+            const float gravity = 9.81f;
+            const float entryHeight = 3f;
+            const float entrySpeed = 8f;
+            Assert.That(PassiveGuidePhysics.TryCalculateSpecificMechanicalEnergy(
+                Vector3.forward * entrySpeed, entryHeight, gravity, out var specificEnergy), Is.True);
+
+            var uphillHeight = entryHeight + 1.5f;
+            var downhillHeight = entryHeight - 1.5f;
+            var uphill = PassiveGuidePhysics.CalculateEnergyConservingVelocity(
+                specificEnergy, uphillHeight, Vector3.forward, gravity);
+            var downhill = PassiveGuidePhysics.CalculateEnergyConservingVelocity(
+                specificEnergy, downhillHeight, Vector3.forward, gravity);
+
+            Assert.That(uphill.magnitude, Is.EqualTo(
+                Mathf.Sqrt(entrySpeed * entrySpeed - 2f * gravity * 1.5f)).Within(0.0001f));
+            Assert.That(uphill.magnitude, Is.LessThan(entrySpeed));
+            Assert.That(downhill.magnitude, Is.EqualTo(
+                Mathf.Sqrt(entrySpeed * entrySpeed + 2f * gravity * 1.5f)).Within(0.0001f));
+            Assert.That(downhill.magnitude, Is.GreaterThan(entrySpeed));
+        }
+
+        [Test]
+        public void PassiveEnergyConstraintNeverExceedsAvailableEnergyOrSpeedCap()
+        {
+            const float gravity = 9.81f;
+            const float entryHeight = 4f;
+            Assert.That(PassiveGuidePhysics.TryCalculateSpecificMechanicalEnergy(
+                Vector3.forward * 12f, entryHeight, gravity, out var specificEnergy), Is.True);
+
+            var currentHeight = entryHeight - 8f;
+            var constrained = PassiveGuidePhysics.CalculateEnergyConservingVelocity(
+                specificEnergy,
+                currentHeight,
+                new Vector3(2f, -1f, 5f),
+                gravity);
+            var availableKineticEnergy = specificEnergy - gravity * currentHeight;
+
+            Assert.That(constrained.magnitude,
+                Is.LessThanOrEqualTo(MarbleRunPhysicsProfile.MarbleMaximumSpeed + 0.0001f));
+            Assert.That(0.5f * constrained.sqrMagnitude,
+                Is.LessThanOrEqualTo(availableKineticEnergy + 0.0001f));
+        }
+
+        [Test]
+        public void PassiveEnergyConstraintHandlesInvalidOrInsufficientEnergySafely()
+        {
+            Assert.That(PassiveGuidePhysics.TryCalculateSpecificMechanicalEnergy(
+                new Vector3(float.NaN, 0f, 0f), 1f, 9.81f, out var invalidEnergy), Is.False);
+            Assert.That(invalidEnergy, Is.EqualTo(0f));
+
+            var invalidVelocity = PassiveGuidePhysics.CalculateEnergyConservingVelocity(
+                float.NaN, 1f, Vector3.forward, 9.81f);
+            Assert.That(invalidVelocity, Is.EqualTo(Vector3.zero));
+
+            Assert.That(PassiveGuidePhysics.TryCalculateEnergyConservingVelocity(
+                10f, 1f, Vector3.zero, 9.81f, 14f, out var rejectedVelocity), Is.False);
+            Assert.That(rejectedVelocity, Is.EqualTo(Vector3.zero));
+
+            var insufficientVelocity = PassiveGuidePhysics.CalculateEnergyConservingVelocity(
+                1f, 2f, Vector3.forward, 9.81f);
+            Assert.That(insufficientVelocity, Is.EqualTo(Vector3.zero));
         }
 
         [Test]

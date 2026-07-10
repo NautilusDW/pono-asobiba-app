@@ -46,6 +46,57 @@ namespace Pono.MarbleRun3D.Gameplay
         }
     }
 
+    /// <summary>
+    /// Keeps the entry energy for one passive guide. Unity's segmented toy-track
+    /// colliders can shave speed at each seam; reconstructing velocity from the
+    /// stored energy corrects that numerical loss without inventing a motor.
+    /// </summary>
+    internal sealed class PassivePathEnergyState
+    {
+        private readonly Dictionary<Rigidbody, float> _specificEnergies =
+            new Dictionary<Rigidbody, float>();
+
+        public void Capture(Rigidbody body)
+        {
+            if (body == null) return;
+            if (PassiveGuidePhysics.TryCalculateSpecificMechanicalEnergy(
+                    body.linearVelocity,
+                    body.worldCenterOfMass.y,
+                    Mathf.Abs(Physics.gravity.y),
+                    out var specificEnergy))
+            {
+                _specificEnergies[body] = specificEnergy;
+            }
+        }
+
+        public void Apply(Rigidbody body, Transform pieceRoot, Vector3 localPathTangent)
+        {
+            if (body == null || pieceRoot == null || body.isKinematic) return;
+            if (!_specificEnergies.TryGetValue(body, out var specificEnergy))
+            {
+                Capture(body);
+                if (!_specificEnergies.TryGetValue(body, out specificEnergy)) return;
+            }
+
+            var worldTangent = pieceRoot.TransformDirection(localPathTangent);
+            if (PassiveGuidePhysics.TryCalculateEnergyConservingVelocity(
+                    specificEnergy,
+                    body.worldCenterOfMass.y,
+                    worldTangent,
+                    Mathf.Abs(Physics.gravity.y),
+                    MarbleRunPhysicsProfile.MarbleMaximumSpeed,
+                    out var constrainedVelocity))
+            {
+                body.linearVelocity = constrainedVelocity;
+            }
+        }
+
+        public void Remove(Rigidbody body)
+        {
+            if (body != null) _specificEnergies.Remove(body);
+        }
+    }
+
     [DisallowMultipleComponent]
     public sealed class HelixMarbleGuide : MonoBehaviour
     {
@@ -54,6 +105,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private float _height = WoodenPieceFactory.LevelHeight * 2f;
         private float _turns = 1.5f;
         private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+        private readonly PassivePathEnergyState _energyState = new PassivePathEnergyState();
 
         public void Configure(Transform pieceRoot, float radius, float height, float turns)
         {
@@ -71,6 +123,7 @@ namespace Pono.MarbleRun3D.Gameplay
             var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
             var along = Vector3.Dot(localVelocity, Tangent(t));
             _travelSigns[body] = Mathf.Abs(along) > 0.15f ? Mathf.Sign(along) : 1f;
+            _energyState.Capture(body);
         }
 
         private void OnTriggerStay(Collider other)
@@ -103,15 +156,18 @@ namespace Pono.MarbleRun3D.Gameplay
                 localVelocity,
                 tangent,
                 correction,
-                5.8f,
-                10.5f,
-                18f);
+                7.5f,
+                14f,
+                36f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
+            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+            if (other.attachedRigidbody == null) return;
+            _travelSigns.Remove(other.attachedRigidbody);
+            _energyState.Remove(other.attachedRigidbody);
         }
 
         private float EstimateProgress(Vector3 localPosition)
@@ -185,6 +241,7 @@ namespace Pono.MarbleRun3D.Gameplay
     {
         private Transform _pieceRoot;
         private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+        private readonly PassivePathEnergyState _energyState = new PassivePathEnergyState();
 
         public void Configure(Transform pieceRoot)
         {
@@ -199,6 +256,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _travelSigns[body] = Mathf.Abs(localVelocity.z) > 0.10f
                 ? Mathf.Sign(localVelocity.z)
                 : localPosition.z <= 0f ? 1f : -1f;
+            _energyState.Capture(body);
         }
 
         private void OnTriggerStay(Collider other)
@@ -216,16 +274,19 @@ namespace Pono.MarbleRun3D.Gameplay
                 localVelocity,
                 tangent,
                 target - localPosition,
-                6.8f,
-                10f,
-                21f);
+                8.5f,
+                15f,
+                32f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration),
                 ForceMode.Acceleration);
+            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+            if (other.attachedRigidbody == null) return;
+            _travelSigns.Remove(other.attachedRigidbody);
+            _energyState.Remove(other.attachedRigidbody);
         }
 
         private static bool TryGetMarble(Collider other, out Rigidbody body)
@@ -443,6 +504,7 @@ namespace Pono.MarbleRun3D.Gameplay
     {
         private Transform _pieceRoot;
         private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+        private readonly PassivePathEnergyState _energyState = new PassivePathEnergyState();
 
         public void Configure(Transform pieceRoot)
         {
@@ -456,6 +518,7 @@ namespace Pono.MarbleRun3D.Gameplay
             var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
             var along = Vector3.Dot(localVelocity, TangentAt(localPosition));
             _travelSigns[body] = Mathf.Abs(along) > 0.10f ? Mathf.Sign(along) : 1f;
+            _energyState.Capture(body);
         }
 
         private void OnTriggerStay(Collider other)
@@ -475,16 +538,19 @@ namespace Pono.MarbleRun3D.Gameplay
                 localVelocity,
                 tangent,
                 correction,
-                6.5f,
-                11f,
-                20f);
+                10f,
+                18f,
+                38f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration),
                 ForceMode.Acceleration);
+            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+            if (other.attachedRigidbody == null) return;
+            _travelSigns.Remove(other.attachedRigidbody);
+            _energyState.Remove(other.attachedRigidbody);
         }
 
         private static Vector3 TangentAt(Vector3 localPosition)
@@ -506,6 +572,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private Transform _pieceRoot;
         private float _amplitude;
         private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+        private readonly PassivePathEnergyState _energyState = new PassivePathEnergyState();
 
         public void Configure(Transform pieceRoot, float amplitude)
         {
@@ -518,6 +585,7 @@ namespace Pono.MarbleRun3D.Gameplay
             if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
             var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
             _travelSigns[body] = Mathf.Abs(localVelocity.z) > 0.10f ? Mathf.Sign(localVelocity.z) : 1f;
+            _energyState.Capture(body);
         }
 
         private void OnTriggerStay(Collider other)
@@ -536,16 +604,19 @@ namespace Pono.MarbleRun3D.Gameplay
                 localVelocity,
                 tangent,
                 target - localPosition,
-                4.8f,
-                8.5f,
-                17f);
+                7f,
+                13f,
+                30f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration),
                 ForceMode.Acceleration);
+            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+            if (other.attachedRigidbody == null) return;
+            _travelSigns.Remove(other.attachedRigidbody);
+            _energyState.Remove(other.attachedRigidbody);
         }
 
         private static bool TryGetMarble(Collider other, out Rigidbody body)
@@ -560,6 +631,7 @@ namespace Pono.MarbleRun3D.Gameplay
     {
         private Transform _pieceRoot;
         private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+        private readonly PassivePathEnergyState _energyState = new PassivePathEnergyState();
 
         public void Configure(Transform pieceRoot)
         {
@@ -574,6 +646,7 @@ namespace Pono.MarbleRun3D.Gameplay
             var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
             var dot = Vector3.Dot(new Vector3(localVelocity.x, 0f, localVelocity.z), tangent);
             _travelSigns[body] = Mathf.Abs(dot) > 0.1f ? Mathf.Sign(dot) : 1f;
+            _energyState.Capture(body);
         }
 
         private void OnTriggerStay(Collider other)
@@ -594,15 +667,18 @@ namespace Pono.MarbleRun3D.Gameplay
                 localVelocity,
                 tangent,
                 correction,
-                7f,
-                12f,
-                20f);
+                10f,
+                18f,
+                38f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
+            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+            if (other.attachedRigidbody == null) return;
+            _travelSigns.Remove(other.attachedRigidbody);
+            _energyState.Remove(other.attachedRigidbody);
         }
 
         private static Vector3 TangentAt(Vector3 localPosition)
@@ -623,6 +699,7 @@ namespace Pono.MarbleRun3D.Gameplay
     {
         private Transform _pieceRoot;
         private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+        private readonly PassivePathEnergyState _energyState = new PassivePathEnergyState();
 
         public void Configure(Transform pieceRoot)
         {
@@ -637,6 +714,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _travelSigns[body] = Mathf.Abs(localVelocity.z) > 0.1f
                 ? Mathf.Sign(localVelocity.z)
                 : localPosition.z <= 0f ? 1f : -1f;
+            _energyState.Capture(body);
         }
 
         private void OnTriggerStay(Collider other)
@@ -651,15 +729,18 @@ namespace Pono.MarbleRun3D.Gameplay
                 localVelocity,
                 tangent,
                 target - localPosition,
-                6f,
-                13.2f,
-                16f);
+                8f,
+                16f,
+                24f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
+            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+            if (other.attachedRigidbody == null) return;
+            _travelSigns.Remove(other.attachedRigidbody);
+            _energyState.Remove(other.attachedRigidbody);
         }
 
         private static bool TryGetMarble(Collider other, out Rigidbody body)

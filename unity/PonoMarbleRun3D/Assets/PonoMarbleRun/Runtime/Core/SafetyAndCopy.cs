@@ -12,8 +12,10 @@ namespace Pono.MarbleRun3D.Core
         public const int SolverIterations = 10;
         public const int SolverVelocityIterations = 4;
         public const float MarbleMass = 0.10f;
-        public const float MarbleLinearDamping = 0.018f;
-        public const float MarbleAngularDamping = 0.04f;
+        // A small toy marble has negligible air drag. Keep damping low so the visible
+        // height drops, rather than an invisible guide motor, can carry a long course.
+        public const float MarbleLinearDamping = 0.004f;
+        public const float MarbleAngularDamping = 0.012f;
         public const float MarbleMaximumSpeed = 14f;
         // The hopper ramp supplies the initial energy. This is only a small nudge so a
         // level track cannot behave like a powered conveyor belt.
@@ -34,6 +36,88 @@ namespace Pono.MarbleRun3D.Core
     /// </summary>
     public static class PassiveGuidePhysics
     {
+        public static bool TryCalculateSpecificMechanicalEnergy(
+            Vector3 velocity,
+            float worldHeight,
+            float gravityMagnitude,
+            out float specificEnergy)
+        {
+            specificEnergy = 0f;
+            if (!IsFinite(velocity)
+                || !IsFinite(worldHeight)
+                || !IsFinite(gravityMagnitude)
+                || gravityMagnitude < 0f)
+            {
+                return false;
+            }
+
+            specificEnergy = 0.5f * velocity.sqrMagnitude + gravityMagnitude * worldHeight;
+            if (IsFinite(specificEnergy)) return true;
+
+            specificEnergy = 0f;
+            return false;
+        }
+
+        /// <summary>
+        /// Reconstructs an ideal constrained velocity from stored specific mechanical
+        /// energy. This corrects small losses from segmented colliders without adding
+        /// a minimum speed: level paths preserve entry speed, climbing spends kinetic
+        /// energy, and descending converts potential energy back into speed.
+        /// </summary>
+        public static Vector3 CalculateEnergyConservingVelocity(
+            float specificEnergy,
+            float worldHeight,
+            Vector3 pathTangent,
+            float gravityMagnitude,
+            float maximumSpeed = MarbleRunPhysicsProfile.MarbleMaximumSpeed)
+        {
+            return TryCalculateEnergyConservingVelocity(
+                specificEnergy,
+                worldHeight,
+                pathTangent,
+                gravityMagnitude,
+                maximumSpeed,
+                out var velocity)
+                ? velocity
+                : Vector3.zero;
+        }
+
+        public static bool TryCalculateEnergyConservingVelocity(
+            float specificEnergy,
+            float worldHeight,
+            Vector3 pathTangent,
+            float gravityMagnitude,
+            float maximumSpeed,
+            out Vector3 velocity)
+        {
+            velocity = Vector3.zero;
+            if (!IsFinite(specificEnergy)
+                || !IsFinite(worldHeight)
+                || !IsFinite(pathTangent)
+                || !IsFinite(gravityMagnitude)
+                || !IsFinite(maximumSpeed)
+                || gravityMagnitude < 0f
+                || maximumSpeed <= 0f)
+            {
+                return false;
+            }
+
+            var tangentMagnitude = pathTangent.magnitude;
+            if (!IsFinite(tangentMagnitude) || tangentMagnitude < 0.0001f)
+                return false;
+
+            var availableKineticEnergy = specificEnergy - gravityMagnitude * worldHeight;
+            if (!IsFinite(availableKineticEnergy)) return false;
+            if (availableKineticEnergy <= 0f) return true;
+
+            var energyLimitedSpeed = Mathf.Sqrt(2f * availableKineticEnergy);
+            if (!IsFinite(energyLimitedSpeed)) return false;
+
+            var speed = Mathf.Min(energyLimitedSpeed, maximumSpeed);
+            velocity = pathTangent / tangentMagnitude * speed;
+            return IsFinite(velocity);
+        }
+
         public static Vector3 CalculateConstraintAcceleration(
             Vector3 velocity,
             Vector3 pathTangent,
@@ -75,6 +159,11 @@ namespace Pono.MarbleRun3D.Core
                 || float.IsNaN(value.y) || float.IsInfinity(value.y)
                 || float.IsNaN(value.z) || float.IsInfinity(value.z));
         }
+
+        private static bool IsFinite(float value)
+        {
+            return !(float.IsNaN(value) || float.IsInfinity(value));
+        }
     }
 
     public enum MarbleSafetyEvent
@@ -94,10 +183,14 @@ namespace Pono.MarbleRun3D.Core
         public float StallDelay { get; set; } = 2.5f;
         public float MinimumY { get; set; } = -2f;
         public float MaximumRadius { get; set; } = 34f;
+        public float MaximumX { get; set; } = 19.5f;
+        public float MaximumZ { get; set; } = 16.5f;
 
         public MarbleSafetyEvent Tick(Vector3 position, Vector3 velocity, Vector3 angularVelocity, float deltaTime)
         {
             if (position.y < MinimumY
+                || Mathf.Abs(position.x) > MaximumX
+                || Mathf.Abs(position.z) > MaximumZ
                 || new Vector2(position.x, position.z).sqrMagnitude > MaximumRadius * MaximumRadius)
             {
                 return MarbleSafetyEvent.OutOfBounds;

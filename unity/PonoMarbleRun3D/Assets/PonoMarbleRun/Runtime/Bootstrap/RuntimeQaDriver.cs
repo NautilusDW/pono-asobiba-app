@@ -147,6 +147,24 @@ namespace Pono.MarbleRun3D.Bootstrap
                     _controller.StartRun();
                     yield return new WaitForSecondsRealtime(4.2f);
                     break;
+                case "starter-15":
+                    _controller.StartMode("starter");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(15f);
+                    _details = DescribeMarbles();
+                    break;
+                case "starter-22":
+                    _controller.StartMode("starter");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(22f);
+                    _details = DescribeMarbles();
+                    break;
+                case "starter-30":
+                    _controller.StartMode("starter");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(30f);
+                    _details = DescribeMarbles();
+                    break;
                 case "follow-run":
                     _controller.StartMode("starter");
                     _controller.StartRun();
@@ -418,7 +436,11 @@ namespace Pono.MarbleRun3D.Bootstrap
                 + "  \"mode\": \"" + mode + "\",\n"
                 + "  \"piece_count\": " + _controller.PieceCount + ",\n"
                 + "  \"selected\": \"" + _controller.SelectedPieceId + "\",\n"
-                + "  \"status\": \"" + Escape(_controller.Ui != null ? _controller.Ui.StatusText : string.Empty) + "\"\n"
+                + "  \"status\": \"" + Escape(_controller.Ui != null ? _controller.Ui.StatusText : string.Empty) + "\",\n"
+                + "  \"camera_follow\": " + (_controller.IsCameraFollowing ? "true" : "false") + ",\n"
+                + "  \"camera_yaw\": " + _controller.OrbitCamera.Yaw.ToString("0.00", CultureInfo.InvariantCulture) + ",\n"
+                + "  \"camera_pitch\": " + _controller.OrbitCamera.Pitch.ToString("0.00", CultureInfo.InvariantCulture) + ",\n"
+                + "  \"camera_distance\": " + _controller.OrbitCamera.Distance.ToString("0.00", CultureInfo.InvariantCulture) + "\n"
                 + "}\n";
             if (payload == _lastPayload) return;
             _lastPayload = payload;

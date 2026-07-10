@@ -354,8 +354,8 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                     descendingKind.ToString());
             }
             Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Elevator), Is.EqualTo(1));
-            Assert.That(course.pieces.Any(piece => piece.kind == MarblePieceKind.Lift), Is.False,
-                "the only rise in this starter route is the visibly powered elevator");
+            Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Lift), Is.EqualTo(1),
+                "each climb must be carried by a visibly powered toy mechanism");
 
             foreach (var piece in course.pieces)
             {
