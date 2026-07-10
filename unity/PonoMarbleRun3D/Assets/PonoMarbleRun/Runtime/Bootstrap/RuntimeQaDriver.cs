@@ -70,10 +70,10 @@ namespace Pono.MarbleRun3D.Bootstrap
             }
 
             if (_delay > 0f) yield return new WaitForSecondsRealtime(_delay);
-            yield return new WaitForEndOfFrame();
             WriteQaReport();
             if (!string.IsNullOrEmpty(_capturePath))
             {
+                yield return new WaitForEndOfFrame();
                 var directory = Path.GetDirectoryName(_capturePath);
                 if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
                 ScreenCapture.CaptureScreenshot(_capturePath, 1);
@@ -180,11 +180,27 @@ namespace Pono.MarbleRun3D.Bootstrap
             if (_controller.State != MarbleRunState.Celebrating)
             {
                 throw new InvalidOperationException(
-                    modeId + " did not physically reach the goal; reached=" + _controller.MarblesAtGoal);
+                    modeId + " did not physically reach the goal; reached=" + _controller.MarblesAtGoal
+                    + "; " + DescribeMarbles());
             }
             _details = modeId + "_goal_seconds="
                 + (Time.realtimeSinceStartup - startedAt).ToString("0.000", CultureInfo.InvariantCulture)
                 + "; reached=" + _controller.MarblesAtGoal;
+        }
+
+        private string DescribeMarbles()
+        {
+            var details = string.Empty;
+            var count = Mathf.Min(_controller.ActiveMarbleCount, _controller.MarbleBodies.Count);
+            for (var i = 0; i < count; i++)
+            {
+                var body = _controller.MarbleBodies[i];
+                if (i > 0) details += " | ";
+                details += i + ":p=" + body.position.ToString("F2")
+                    + ",v=" + body.linearVelocity.ToString("F2")
+                    + ",on=" + body.gameObject.activeSelf;
+            }
+            return details;
         }
 
         private void BuildStraightCourse()

@@ -166,6 +166,7 @@ namespace Pono.MarbleRun3D.Editor
             Physics.IgnoreLayerCollision(6, 7, true);
             Physics.IgnoreLayerCollision(6, 8, true);
             Physics.IgnoreLayerCollision(6, 9, true);
+            Physics.IgnoreLayerCollision(9, 9, true);
             ConfigureTimeManagerAsset();
         }
 

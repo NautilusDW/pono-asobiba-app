@@ -598,6 +598,7 @@ namespace Pono.MarbleRun3D.Gameplay
             Physics.IgnoreLayerCollision(_placementLayer, _marbleLayer, true);
             Physics.IgnoreLayerCollision(_placementLayer, _courseLayer, true);
             Physics.IgnoreLayerCollision(_placementLayer, _boardLayer, true);
+            Physics.IgnoreLayerCollision(_marbleLayer, _marbleLayer, true);
         }
 
         private void BuildWorld()
