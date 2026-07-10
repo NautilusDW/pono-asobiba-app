@@ -22,7 +22,7 @@ Unity: 6000.3.19f1
 - 回転・削除・Undo・全消去: PlayModeで連続操作し、元のデータへ戻ることを確認。
 - 保存・復元: JSONの往復、復元後の追加編集、破損JSONと異なるモードの拒否を確認。
 - 玉の復帰: 玉を盤外へ移し、同じ玉がスタートへ戻って重複しないことを確認。
-- 実走ゴール: スタートとゴールの間に7本のまっすぐレールを置き、テスト内の実物理で約5.58秒後に `Celebrating` へ遷移。
+- 実走ゴール: スタートとゴールの間に7本のまっすぐレールを置き、テスト内の実物理で約5.58秒、最終macOSプレイヤーで5.580秒後に `Celebrating` へ遷移。
 - 坂の高低接続: 上り向きの坂、上段の平面3個、下り向きの坂を接続し、実物理で約7.60秒後にゴールへ到達。
 - 高速すり抜け: `ContinuousDynamic` の球を18 m/sで薄い壁へ当て、壁を貫通しないことを確認。実ゲームでは14 m/sに制限。
 - 一時停止: 玉、シーソー、7個のドミノについて位置・回転が変わらず、Physicsが `SimulationMode.Script` になることを確認。
@@ -62,12 +62,12 @@ OSレベルのマウスイベントを使い、コントローラーのテスト
 - Bundle ID: `com.kodamanomori.pono.marblerun3d`
 - 表示名: `ポノの マーブルラン`
 - `codesign --verify --deep --strict`: 成功
-- 実行ファイルSHA-256: `81cc5cb5093818f446bc5e097f7650c3d941133cf6a45ba17e8d19afb72e7f40`
+- 実行ファイルSHA-256: `b03a74348d0daeddd7c0e220a875368a0d4325f1c5a8b1d80a50e184ac638b2b`
 
 ### Android
 
 - パス: `Builds/Android/PonoMarbleRun.apk`
-- APK SHA-256: `1a903478d47be8c6a11d88cacc54d379ddd2b6d813d55e614a74f2197fb72357`
+- APK SHA-256: `d561e71bb7195db2baeeb93586b3a9a53beb4c43433ae8bb4c07907cbd076913`
 - パッケージ: `com.kodamanomori.pono.marblerun3d`
 - バージョン: 0.1.0（versionCode 1）
 - ABI: arm64-v8aのみ
