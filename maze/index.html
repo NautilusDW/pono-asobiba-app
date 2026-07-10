@@ -755,7 +755,7 @@ body.image-stage-mode .game-wrap {
   .rescue-scene .rescue-btn { justify-self: center; }
 }
 
-/* ── Stage3 teaser poster v3 (絵本のオビ風 / 紙質感 + 微小傾き + シルエット) ── */
+/* ── free 最終ステージ後 teaser poster (絵本のオビ風 / 紙質感 + 微小傾き + シルエット) ── */
 /* v3 では: pyon 突出廃止 (3 体均等)、要素を 2/3 縮小、button 必ず viewport 内、 */
 /* 未配置 creature (hatahata/amenbo/strengthRock) を薄いシルエットで watermark 配置、 */
 /* (v1091: 元は kumo だったが 3-6 歳児への怖さ配慮で岩=strengthRock に差替) */
@@ -994,6 +994,17 @@ body.image-stage-mode .game-wrap {
   letter-spacing: 0.06em;
 }
 .stage-teaser .teaser-btn:active { transform: scale(0.96); }
+.stage-teaser .teaser-book-hint {
+  position: relative;
+  z-index: 2;
+  margin: -1px 0 0;
+  color: #7a4d18;
+  font-size: clamp(0.76rem, 1.8vw, 0.9rem);
+  font-weight: 900;
+  line-height: 1.3;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
 
 @media (max-height: 640px) and (orientation: landscape) {
   .stage-teaser .teaser-panel {
@@ -3624,7 +3635,8 @@ body.image-stage-mode .game-wrap {
           <p class="teaser-slot-label">まいご</p>
         </div>
       </div>
-      <button class="teaser-btn" id="teaserBtn">つぎへ ▶</button>
+      <p class="teaser-book-hint">えほんを よんで もっと あそべるよ</p>
+      <button class="teaser-btn" id="teaserBtn">もどる</button>
     </div>
   </div>
 
@@ -12282,10 +12294,10 @@ function onClear() {
             _showMazeFinalOverlay();
           }
         } else {
-          // 中間ステージ: どんぐり獲得演出 (AcornModal) → 次ステージ / stage3 teaser
+          // 中間ステージ: どんぐり獲得演出 (AcornModal) → 次ステージ / free 最終予告
           const proceedAfterAcorn = function() {
-            if (_shouldShowStage3Teaser()) {
-              _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
+            if (_shouldShowMazeFreeLimitTeaser()) {
+              _showMazeFreeLimitTeaserPanel(function() { location.href = '../play.html'; });
             } else {
               _loadNextUnlockedMazeStageOrPromo();
             }
@@ -12331,8 +12343,8 @@ function showStageClearOverlay(grantedAcorns) {
       ovBtn.textContent = 'つぎへ ▶';
       ovBtn.onclick = function() {
         hideOverlay();
-        if (_shouldShowStage3Teaser()) {
-          _showStage3TeaserPanel(function() { _loadNextUnlockedMazeStageOrPromo(); });
+        if (_shouldShowMazeFreeLimitTeaser()) {
+          _showMazeFreeLimitTeaserPanel(function() { location.href = '../play.html'; });
         } else {
           _loadNextUnlockedMazeStageOrPromo();
         }
@@ -12381,11 +12393,12 @@ function _showMazeAcornModalOrProceed(granted, isImageStage, isOfficial, proceed
   }
 }
 
-// stage3 クリア後の「予告ビート」: 1 枚の統一ポスター内に 3 要素を並列配置して表示。
+// free で遊べる全ステージのクリア後に出す「つづきの予告」。
+// 1 枚の統一ポスター内に 3 要素を並列配置して表示。
 // 個別 polaroid フレーム/個別キャプションは撤廃。ヘッドラインは 1 本だけ。
 // 要素ごとにタップを要求せず、まとめて見せて「つぎへ ▶」で進む。
 // 文言ポリシー: 種別名・戦闘語を使わない。「ふしぎ」「あたらしい」「みたい」の同調トーンで。
-function _showStage3TeaserPanel(onDone) {
+function _showMazeFreeLimitTeaserPanel(onDone) {
   const panel = document.getElementById('stageTeaser');
   if (!panel) { if (onDone) onDone(); return; }
   const slot1 = document.getElementById('teaserSlot1'); // creature 集合 (左)
@@ -12419,7 +12432,7 @@ function _showStage3TeaserPanel(onDone) {
   stageBgEarly.alt = '';
   slot2.appendChild(stageBgEarly);
 
-  // 右スロット: まちびとは通常表示。直後に助けるアヒルはここでは出さない。
+  // 右スロット: この先で助ける迷子を通常表示。直後に助けるアヒルはここでは出さない。
   const animalSrcs = [
     'imageStages/animals/shika_goal.png',
     'imageStages/animals/lesser_panda_goal.png'
@@ -12451,14 +12464,11 @@ function _showStage3TeaserPanel(onDone) {
   panel.setAttribute('aria-hidden', 'false');
 }
 
-// stage3 クリア時に予告パネルを差し込むかの判定。
-// 方針: free tier は次の もり (stage4) が未解放なので「次への予告」として表示する。
-// book/sub は実物を遊べるので冗長になるため非表示。tier 判定が取れない場合は安全側で非表示。
-function _shouldShowStage3Teaser() {
-  if (stageIdx !== 3) return false;
-  if (!window.PonoTier || typeof window.PonoTier.isFree !== 'function') return false;
+// free tier で次に遊べるステージがなく、book に追加ステージがある時だけ表示。
+// 現行の飛び石解放 (free: 1/3/6) では stage6 クリア後に該当する。
+function _shouldShowMazeFreeLimitTeaser() {
   try {
-    return !!window.PonoTier.isFree();
+    return _mazeReachedBookLimitForFree();
   } catch (e) {
     return false;
   }
