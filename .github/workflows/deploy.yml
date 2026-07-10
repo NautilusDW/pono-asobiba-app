@@ -14,6 +14,12 @@ on:
       - '.claude/**'
       - 'logs/**'
       - 'scripts/**'
+      # unity/ は Unity ネイティブゲームのソースで Web (Cloudflare Workers) 配信とは無関係。
+      # unity 単独 push での無駄な Web デプロイを防ぐ (2026-07-11)。
+      # 注意: paths-ignore は push に含まれる「全ファイル」がこのリストのいずれかに
+      # マッチした時だけスキップする。unity/** と HANDOFF.md (既に **/*.md でignore) の
+      # 混在 push でも、両方が ignore パターンに含まれる限りスキップされる。
+      - 'unity/**'
   workflow_dispatch:
 
 # 同一 branch で連続 push があった時は、進行中の deploy をキャンセルして

@@ -91,6 +91,17 @@ namespace Pono.MarbleRun3D.Gameplay
             }
         }
 
+        public Vector3 ApplyAndReadLocalVelocity(
+            Rigidbody body,
+            Transform pieceRoot,
+            Vector3 localPathTangent)
+        {
+            Apply(body, pieceRoot, localPathTangent);
+            return body == null || pieceRoot == null
+                ? Vector3.zero
+                : pieceRoot.InverseTransformDirection(body.linearVelocity);
+        }
+
         public void Remove(Rigidbody body)
         {
             if (body != null) _specificEnergies.Remove(body);
@@ -179,48 +190,69 @@ namespace Pono.MarbleRun3D.Gameplay
             var travelSign = _travelSigns.TryGetValue(body, out var storedSign) ? storedSign : 1f;
             Vector3 target;
             Vector3 tangent;
-            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
-            var centripetalAcceleration = Vector3.zero;
+            var followsSpiral = false;
             var marbleHeight = WoodenPieceFactory.MarbleRadius + 0.18f;
-            if (localPosition.z < -_radius && localPosition.y > _height * 0.72f)
+            var estimatedProgress = EstimateProgress(localPosition);
+            if (travelSign >= 0f
+                && estimatedProgress <= 0.015f
+                && localPosition.z < -_radius)
             {
                 target = new Vector3(0f, _height + marbleHeight, localPosition.z);
-                tangent = Vector3.forward * travelSign;
+                tangent = Vector3.forward;
             }
-            else if (localPosition.z > _radius && localPosition.y < _height * 0.28f + marbleHeight)
+            else if (travelSign >= 0f && estimatedProgress >= 0.985f)
             {
+                target = new Vector3(0f, marbleHeight, Mathf.Max(_radius, localPosition.z));
+                tangent = Vector3.forward;
+            }
+            else if (travelSign < 0f
+                     && estimatedProgress >= 0.985f
+                     && localPosition.z > _radius)
+            {
+                // Reverse traversal begins on the low +Z connector.
                 target = new Vector3(0f, marbleHeight, localPosition.z);
-                tangent = Vector3.forward * travelSign;
+                tangent = Vector3.back;
+            }
+            else if (travelSign < 0f && estimatedProgress <= 0.015f)
+            {
+                // Once the reverse-moving marble reaches the top turn, hand it to the
+                // finite high connector instead of leaving it on the terminal +X arc.
+                target = new Vector3(0f, _height + marbleHeight,
+                    Mathf.Min(-_radius, localPosition.z));
+                tangent = Vector3.back;
             }
             else
             {
-                var t = EstimateProgress(localPosition);
-                // The visible helix ends at (0, +radius) and then has a straight
-                // +Z connector. Select that exit by progress/height; selecting only
-                // by z left a fast marble on the helix's terminal -X tangent forever.
-                if (t >= 0.985f)
-                {
-                    target = new Vector3(0f, marbleHeight, Mathf.Max(_radius, localPosition.z));
-                    tangent = Vector3.forward * travelSign;
-                }
-                else
-                {
-                    target = PathPoint(t) + Vector3.up * marbleHeight;
-                    tangent = Tangent(t) * travelSign;
+                // At the low reverse hand-off, height alone still reports t=1. Clamp
+                // one step into the finite spiral so its reversed tangent has an
+                // upward component and can begin spending the incoming kinetic energy.
+                var pathProgress = travelSign < 0f
+                    ? Mathf.Min(estimatedProgress, 0.985f)
+                    : estimatedProgress;
+                target = PathPoint(pathProgress) + Vector3.up * marbleHeight;
+                tangent = Tangent(pathProgress) * travelSign;
+                followsSpiral = true;
+            }
 
-                    var horizontalTangent = new Vector3(tangent.x, 0f, tangent.z);
-                    var inward = new Vector3(-target.x, 0f, -target.z);
-                    if (horizontalTangent.sqrMagnitude > 0.0001f && inward.sqrMagnitude > 0.0001f)
-                    {
-                        var horizontalSpeed = Vector3.Dot(localVelocity, horizontalTangent.normalized);
-                        // omega = v / r, therefore inward acceleration is omega^2 * r.
-                        var horizontalAngularSpeed = horizontalSpeed / _radius;
-                        centripetalAcceleration = inward.normalized
-                            * (horizontalAngularSpeed * horizontalAngularSpeed * _radius);
-                    }
+            var correction = target - localPosition;
+            // Restore the energy-constrained path velocity first. The following
+            // ideal-rail force must be perpendicular to this latest velocity, not to
+            // the stale pre-correction direction from the preceding collider seam.
+            var localVelocity = _energyState.ApplyAndReadLocalVelocity(body, _pieceRoot, tangent);
+            var centripetalAcceleration = Vector3.zero;
+            if (followsSpiral)
+            {
+                var horizontalTangent = new Vector3(tangent.x, 0f, tangent.z);
+                var inward = new Vector3(-target.x, 0f, -target.z);
+                if (horizontalTangent.sqrMagnitude > 0.0001f && inward.sqrMagnitude > 0.0001f)
+                {
+                    var horizontalSpeed = Vector3.Dot(localVelocity, horizontalTangent.normalized);
+                    // omega = v / r, therefore inward acceleration is omega^2 * r.
+                    var horizontalAngularSpeed = horizontalSpeed / _radius;
+                    centripetalAcceleration = inward.normalized
+                        * (horizontalAngularSpeed * horizontalAngularSpeed * _radius);
                 }
             }
-            var correction = target - localPosition;
             var acceleration = PassiveGuidePhysics.CalculateConstraintAcceleration(
                 localVelocity,
                 tangent,
@@ -230,7 +262,6 @@ namespace Pono.MarbleRun3D.Gameplay
                 120f,
                 centripetalAcceleration);
             body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
-            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
@@ -333,13 +364,13 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
             var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
-            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
             var sign = _travelSigns.TryGetValue(body, out var storedSign) ? storedSign : 1f;
             var tangent = Vector3.forward * sign;
             var target = new Vector3(
                 0f,
                 WoodenPieceFactory.MarbleRadius + 0.20f,
                 localPosition.z);
+            var localVelocity = _energyState.ApplyAndReadLocalVelocity(body, _pieceRoot, tangent);
             var acceleration = PassiveGuidePhysics.CalculateConstraintAcceleration(
                 localVelocity,
                 tangent,
@@ -349,7 +380,6 @@ namespace Pono.MarbleRun3D.Gameplay
                 32f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration),
                 ForceMode.Acceleration);
-            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
@@ -610,6 +640,7 @@ namespace Pono.MarbleRun3D.Gameplay
             var tangent = forwardTangent * sign;
             var correction = targetPoint - localPosition;
             correction.y = WoodenPieceFactory.MarbleRadius + 0.20f - localPosition.y;
+            localVelocity = _energyState.ApplyAndReadLocalVelocity(body, _pieceRoot, tangent);
             var tangentialSpeed = Vector3.Dot(localVelocity, tangent);
             var centripetalAcceleration = -radial
                 * (tangentialSpeed * tangentialSpeed / QuarterCurvePath.Radius);
@@ -623,7 +654,6 @@ namespace Pono.MarbleRun3D.Gameplay
                 centripetalAcceleration);
             body.AddForce(_pieceRoot.TransformDirection(acceleration),
                 ForceMode.Acceleration);
-            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
@@ -666,7 +696,6 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
             var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
-            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
             var t = Mathf.InverseLerp(-WoodenPieceFactory.CellSize * 0.5f,
                 WoodenPieceFactory.CellSize * 0.5f, localPosition.z);
             var surfaceY = Mathf.Sin(t * Mathf.PI) * _amplitude;
@@ -674,6 +703,7 @@ namespace Pono.MarbleRun3D.Gameplay
             var sign = _travelSigns.TryGetValue(body, out var value) ? value : 1f;
             var tangent = new Vector3(0f, slope * sign, sign).normalized;
             var target = new Vector3(0f, surfaceY + WoodenPieceFactory.MarbleRadius + 0.19f, localPosition.z);
+            var localVelocity = _energyState.ApplyAndReadLocalVelocity(body, _pieceRoot, tangent);
             var acceleration = PassiveGuidePhysics.CalculateConstraintAcceleration(
                 localVelocity,
                 tangent,
@@ -683,7 +713,6 @@ namespace Pono.MarbleRun3D.Gameplay
                 30f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration),
                 ForceMode.Acceleration);
-            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
@@ -741,6 +770,7 @@ namespace Pono.MarbleRun3D.Gameplay
             var tangent = forwardTangent * travelSign;
             var correction = targetPoint - localPosition;
             correction.y = 0f;
+            localVelocity = _energyState.ApplyAndReadLocalVelocity(body, _pieceRoot, tangent);
             var tangentialSpeed = Vector3.Dot(localVelocity, tangent);
             var centripetalAcceleration = -radial
                 * (tangentialSpeed * tangentialSpeed / QuarterCurvePath.Radius);
@@ -753,7 +783,6 @@ namespace Pono.MarbleRun3D.Gameplay
                 96f,
                 centripetalAcceleration);
             body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
-            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)
@@ -797,10 +826,10 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
             var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
-            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
             var travelSign = _travelSigns.TryGetValue(body, out var storedSign) ? storedSign : 1f;
             var tangent = Vector3.forward * travelSign;
             var target = new Vector3(0f, localPosition.y, localPosition.z);
+            var localVelocity = _energyState.ApplyAndReadLocalVelocity(body, _pieceRoot, tangent);
             var acceleration = PassiveGuidePhysics.CalculateConstraintAcceleration(
                 localVelocity,
                 tangent,
@@ -809,7 +838,6 @@ namespace Pono.MarbleRun3D.Gameplay
                 16f,
                 24f);
             body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
-            _energyState.Apply(body, _pieceRoot, tangent);
         }
 
         private void OnTriggerExit(Collider other)

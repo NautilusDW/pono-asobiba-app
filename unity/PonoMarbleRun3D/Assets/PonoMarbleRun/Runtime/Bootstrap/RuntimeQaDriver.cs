@@ -82,6 +82,10 @@ namespace Pono.MarbleRun3D.Bootstrap
                 {
                     yield return null;
                 }
+                // Metal may create the PNG path before the asynchronous readback and
+                // file flush are complete. Give it a few frames before QA quits so
+                // evidence never contains transient black tiles.
+                yield return new WaitForSecondsRealtime(0.55f);
             }
             if (_quit) Application.Quit(_passed ? 0 : 2);
         }

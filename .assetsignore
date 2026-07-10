@@ -58,6 +58,12 @@ __pycache__/
 assets/_legacy_png/
 Prototypes/StickerBookThreeJS/screenshots/
 
+# unity/ 全体 (Unity ネイティブゲームのソース) は Web (Cloudflare Workers) 配信と無関係
+# なため除外 (.cs 等は git 管理下だが staging URL では配信させない、2026-07-11)。
+# 下の unity/**/Library/ 等の個別パターン (batch:1210b, git 追跡外のローカル生成物) は
+# 本パターンに包含されるが、ローカル専用生成物であることの明示のため残す。
+unity/
+
 # ローカル専用 Unity 生成物 (.gitignore と同じ集合。 git 追跡外なので CI checkout には
 # 存在せず、 これを足しても CI デプロイのアセット集合と同一のまま)。
 # ローカルからの手動 `wrangler deploy` 時、 アセット走査が 25MiB 超ファイル

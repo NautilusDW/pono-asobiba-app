@@ -530,7 +530,6 @@ namespace Pono.MarbleRun3D.Gameplay
             _ui.ShowBuilder(_mode);
             _ui.SetInventory(_mode, _course);
             _ui.SetStatus("コースを かえてみよう", false);
-            _ui.ShowCelebration(false);
         }
 
         public void SetPaused(bool paused)

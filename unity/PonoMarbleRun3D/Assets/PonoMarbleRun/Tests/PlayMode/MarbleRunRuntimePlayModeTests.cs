@@ -427,6 +427,14 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             _controller.ReturnToEditing();
             Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Editing));
             Assert.That(_controller.MarbleBodies.All(body => !body.gameObject.activeSelf), Is.True);
+            var editActions = _controller.Ui.transform.Find("Canvas/SafeArea/EditActions");
+            var runActions = _controller.Ui.transform.Find("Canvas/SafeArea/RunActions");
+            Assert.That(editActions, Is.Not.Null);
+            Assert.That(runActions, Is.Not.Null);
+            Assert.That(editActions.gameObject.activeSelf, Is.True,
+                "returning from the goal must restore the builder actions");
+            Assert.That(runActions.gameObject.activeSelf, Is.False,
+                "returning from the goal must not leave the preview actions visible");
         }
 
         [UnityTest]

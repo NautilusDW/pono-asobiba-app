@@ -26,12 +26,13 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         public void StallRequiresSustainedLowMotionAndRaisesOnce()
         {
             var model = new MarbleSafetyModel { StallDelay = 1f };
-            Assert.That(model.Tick(Vector3.zero, Vector3.one, Vector3.zero, 0.8f), Is.EqualTo(MarbleSafetyEvent.None));
-            Assert.That(model.Tick(Vector3.zero, Vector3.zero, Vector3.zero, 0.6f), Is.EqualTo(MarbleSafetyEvent.None));
-            Assert.That(model.Tick(Vector3.zero, Vector3.zero, Vector3.zero, 0.5f), Is.EqualTo(MarbleSafetyEvent.Stalled));
-            Assert.That(model.Tick(Vector3.zero, Vector3.zero, Vector3.zero, 1f), Is.EqualTo(MarbleSafetyEvent.None));
-            Assert.That(model.Tick(Vector3.zero, Vector3.one, Vector3.zero, 0.1f), Is.EqualTo(MarbleSafetyEvent.None));
-            Assert.That(model.Tick(Vector3.zero, Vector3.zero, Vector3.zero, 1.1f), Is.EqualTo(MarbleSafetyEvent.Stalled));
+            var runningPosition = new Vector3(0f, 1.47f, 0f);
+            Assert.That(model.Tick(runningPosition, Vector3.one, Vector3.zero, 0.8f), Is.EqualTo(MarbleSafetyEvent.None));
+            Assert.That(model.Tick(runningPosition, Vector3.zero, Vector3.zero, 0.6f), Is.EqualTo(MarbleSafetyEvent.None));
+            Assert.That(model.Tick(runningPosition, Vector3.zero, Vector3.zero, 0.5f), Is.EqualTo(MarbleSafetyEvent.Stalled));
+            Assert.That(model.Tick(runningPosition, Vector3.zero, Vector3.zero, 1f), Is.EqualTo(MarbleSafetyEvent.None));
+            Assert.That(model.Tick(runningPosition, Vector3.one, Vector3.zero, 0.1f), Is.EqualTo(MarbleSafetyEvent.None));
+            Assert.That(model.Tick(runningPosition, Vector3.zero, Vector3.zero, 1.1f), Is.EqualTo(MarbleSafetyEvent.Stalled));
         }
 
         [Test]
@@ -116,6 +117,112 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(
                 Mathf.Tan(MarbleRunPhysicsProfile.SlopeDegrees * Mathf.Deg2Rad) * WoodenPieceFactory.CellSize,
                 Is.EqualTo(WoodenPieceFactory.LevelHeight).Within(0.01f));
+        }
+
+        [Test]
+        public void HelixGuideUsesFiniteConnectorsInBothTravelDirections()
+        {
+            const float radius = 0.82f;
+            const float turns = 1.5f;
+            var height = WoodenPieceFactory.LevelHeight * 2f;
+            var marbleHeight = WoodenPieceFactory.MarbleRadius + 0.18f;
+            var root = new GameObject("helix-test-root");
+            var guideObject = new GameObject("helix-test-guide");
+            guideObject.transform.SetParent(root.transform, false);
+            var guide = guideObject.AddComponent<HelixMarbleGuide>();
+            guide.Configure(root.transform, radius, height, turns);
+            var marble = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            marble.AddComponent<MarbleActor>().Configure(0);
+            var body = marble.AddComponent<Rigidbody>();
+            body.useGravity = false;
+            body.linearDamping = 0f;
+            var collider = marble.GetComponent<SphereCollider>();
+
+            try
+            {
+                // Reverse traversal: low connector (-Z) -> upward spiral -> high
+                // connector (-Z). Nine metres per second contains enough real kinetic
+                // energy to climb this 2.8 m passive helix.
+                body.position = new Vector3(0f, marbleHeight, radius + 0.40f);
+                body.linearVelocity = Vector3.back * 9f;
+                InvokeHelixTrigger(guide, "OnTriggerEnter", collider);
+                InvokeHelixTrigger(guide, "OnTriggerStay", collider);
+                Assert.That(body.linearVelocity.z, Is.LessThan(-8.9f));
+
+                body.position = new Vector3(0f, marbleHeight, radius - 0.02f);
+                Physics.SyncTransforms();
+                InvokeHelixTrigger(guide, "OnTriggerStay", collider);
+                Assert.That(body.linearVelocity.y, Is.GreaterThan(0.5f),
+                    "the low reverse connector must hand off to an upward spiral tangent");
+
+                const float reverseTopProgress = 0.01f;
+                body.position = HelixPointForTest(reverseTopProgress, radius, height, turns)
+                    + Vector3.up * marbleHeight;
+                Physics.SyncTransforms();
+                InvokeHelixTrigger(guide, "OnTriggerStay", collider);
+                Assert.That(body.linearVelocity.x, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(body.linearVelocity.y, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(body.linearVelocity.z, Is.LessThan(-0.1f),
+                    "the top reverse turn must leave through the finite -Z connector");
+                InvokeHelixTrigger(guide, "OnTriggerExit", collider);
+
+                // Normal traversal must retain its high connector, descending spiral,
+                // and low +Z connector behaviour.
+                body.position = new Vector3(0f, height + marbleHeight, -radius - 0.40f);
+                body.linearVelocity = Vector3.forward * 9f;
+                InvokeHelixTrigger(guide, "OnTriggerEnter", collider);
+                InvokeHelixTrigger(guide, "OnTriggerStay", collider);
+                Assert.That(body.linearVelocity.z, Is.GreaterThan(8.9f));
+
+                const float middleProgress = 0.50f;
+                body.position = HelixPointForTest(middleProgress, radius, height, turns)
+                    + Vector3.up * marbleHeight;
+                Physics.SyncTransforms();
+                InvokeHelixTrigger(guide, "OnTriggerStay", collider);
+                Assert.That(body.linearVelocity.y, Is.LessThan(-0.1f));
+
+                const float forwardExitProgress = 0.99f;
+                body.position = HelixPointForTest(forwardExitProgress, radius, height, turns)
+                    + Vector3.up * marbleHeight;
+                Physics.SyncTransforms();
+                InvokeHelixTrigger(guide, "OnTriggerStay", collider);
+                Assert.That(body.linearVelocity.x, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(body.linearVelocity.y, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(body.linearVelocity.z, Is.GreaterThan(0.1f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(marble);
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void ZeroWorkConstraintUsesTheEnergyCorrectedVelocity()
+        {
+            const float gravity = 9.81f;
+            var entryVelocity = new Vector3(1.5f, -0.2f, 5.2f);
+            Assert.That(PassiveGuidePhysics.TryCalculateSpecificMechanicalEnergy(
+                entryVelocity, 3.2f, gravity, out var energy), Is.True);
+
+            var tangent = new Vector3(0.72f, -0.28f, 0.64f).normalized;
+            Assert.That(PassiveGuidePhysics.TryCalculateEnergyConservingVelocity(
+                energy, 2.4f, tangent, gravity, MarbleRunPhysicsProfile.MarbleMaximumSpeed,
+                out var correctedVelocity), Is.True);
+            Assert.That(correctedVelocity, Is.Not.EqualTo(entryVelocity));
+
+            var acceleration = PassiveGuidePhysics.CalculateConstraintAcceleration(
+                correctedVelocity,
+                tangent,
+                new Vector3(-0.9f, 0.7f, 0.35f),
+                8f,
+                14f,
+                80f,
+                new Vector3(-32f, 0f, 8f));
+
+            Assert.That(Vector3.Dot(acceleration, correctedVelocity),
+                Is.EqualTo(0f).Within(0.00002f),
+                "the accumulated guide force must be zero-work for the latest corrected velocity");
         }
 
         [Test]
@@ -320,6 +427,28 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                     5f,
                     10f),
                 Is.EqualTo(Vector3.zero));
+        }
+
+        private static void InvokeHelixTrigger(
+            HelixMarbleGuide guide,
+            string methodName,
+            Collider collider)
+        {
+            var method = typeof(HelixMarbleGuide).GetMethod(
+                methodName,
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null, methodName);
+            method.Invoke(guide, new object[] { collider });
+        }
+
+        private static Vector3 HelixPointForTest(float t, float radius, float height, float turns)
+        {
+            var progress = Mathf.Clamp01(t);
+            var angle = -Mathf.PI * 0.5f + Mathf.PI * 2f * turns * progress;
+            return new Vector3(
+                Mathf.Cos(angle) * radius,
+                Mathf.Lerp(height, 0f, progress),
+                Mathf.Sin(angle) * radius);
         }
     }
 }
