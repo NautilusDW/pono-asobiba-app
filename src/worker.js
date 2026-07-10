@@ -101,7 +101,11 @@ export default {
 
     const response = await env.ASSETS.fetch(request);
     const cached = applyCacheHeaders(request, response);
-    return injectAppBuildFlag(cached, env);
+    // batch:1210b: APP_BUILD 注入が実際に適用されたかどうかを先に確定させ、
+    // 後段の attachHtmlEtag() の variant サフィックス (-app1/-app0) と食い違わないようにする。
+    const appBuildApplied = shouldInjectAppBuildFlag(cached, env);
+    const built = injectAppBuildFlag(cached, env);
+    return attachHtmlEtag(request, built, env, appBuildApplied);
   }
 };
 
@@ -111,11 +115,15 @@ export default {
 // - 既存 worker (production / staging) は APP_BUILD 未定義なので 100% 既存動作のままパススルー。
 // - HTMLRewriter は Cloudflare Workers 標準のストリーミング変換 API なので
 //   巨大な HTML でもメモリに全展開せず低コスト。
-function injectAppBuildFlag(response, env) {
-  if (env.APP_BUILD !== '1') return response;
-  if (response.status < 200 || response.status >= 300) return response;
+function shouldInjectAppBuildFlag(response, env) {
+  if (env.APP_BUILD !== '1') return false;
+  if (response.status < 200 || response.status >= 300) return false;
   const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('text/html')) return response;
+  return contentType.includes('text/html');
+}
+
+function injectAppBuildFlag(response, env) {
+  if (!shouldInjectAppBuildFlag(response, env)) return response;
   return new HTMLRewriter()
     .on('head', {
       element(el) {
@@ -123,6 +131,154 @@ function injectAppBuildFlag(response, env) {
       }
     })
     .transform(response);
+}
+
+// ---------------------------------------------------------------------------
+// batch:1210b — HTML の ETag / 条件付きリクエスト (If-None-Match) 対応。
+//
+// 【実測で確認した根本原因 (2026-07-10)】
+//   env.ASSETS.fetch() が返す HTML レスポンスには ETag / Last-Modified が
+//   一切付かない。これは APP_BUILD 注入 (injectAppBuildFlag/HTMLRewriter) や
+//   applyCacheHeaders のヘッダー再構築が原因ではない —
+//   - APP_BUILD=1 の App staging (/play) と APP_BUILD 未設定の LP staging (/) の
+//     両方で ETag 欠落を確認 (HTMLRewriter を経由しない LP staging でも欠落する
+//     ため、 HTMLRewriter が犯人ではない)。
+//   - applyCacheHeaders は `new Headers(response.headers)` で複製するだけで
+//     ETag を触っていない (該当コード参照)。
+//   - 直接ファイル名+拡張子で一致する静的アセット (例: /common/tier.js) には
+//     Workers Assets のマニフェスト content-hash ETag が付く一方、
+//     html_handling (auto-trailing-slash) 経由で解決される HTML
+//     (`/play.html` → 307 → `/play` 等) には付かない。
+//   → 結論: ETag が失われているのは worker.js ではなく upstream
+//     (Workers Assets の html_handling 経路) 側の未文書化の挙動。
+//
+// 【対応方針】
+//   upstream に ETag が無い以上、「upstream の ETag に variant サフィックスを
+//   付けて再利用する」だけでは 304 は永久に成立しない。そこで:
+//     1) upstream ETag がもしあれば (将来 Cloudflare 側で付与されるようになった
+//        場合や他経路向けの保険として) それを弱い ETag として再利用し、
+//        APP_BUILD 注入の有無を表す variant サフィックス (-app1/-app0) を付与する
+//        (同じ upstream ファイルでも注入あり/なしで本文が変わるため)。
+//     2) upstream に ETag が無ければ、本文 (APP_BUILD 注入後の最終バイト列) の
+//        SHA-1 ハッシュから自前の弱い ETag を生成する。ハッシュ計算のため本文を
+//        一度バッファする必要があるが、対象は HTML のみ (165-220KB 程度) で
+//        Worker CPU コストは軽微。ネットワーク越しに client へ送るバイト数を
+//        減らすことが目的であり、 Worker 内部で本文を読むこと自体はコストにならない。
+//   条件付きリクエストの判定は 「compare-after-fetch」方式を採用する
+//   (upstream 側の If-None-Match を書き換えて 304 を誘発する inverse-mapping 方式は、
+//   upstream が今のところ ETag を返さないため成立せず、素通しで害もないので不要)。
+//   client の If-None-Match が確定した ETag と一致すれば、
+//   ここで body を送らず 304 を返す (body 変換は既に完了済みだが、
+//   ネットワーク転送そのものをスキップできるので目的は達成できる)。
+// ---------------------------------------------------------------------------
+
+function normalizeEtagValue(raw) {
+  const m = /^(W\/)?"(.*)"$/.exec((raw || '').trim());
+  return m ? m[2] : (raw || '').replace(/"/g, '').trim();
+}
+
+// 複数 ETag のカンマ区切り、W/ 弱比較プレフィックス、`*` ワイルドカードを許容する。
+function ifNoneMatchHits(headerValue, etag) {
+  if (!headerValue || !etag) return false;
+  const trimmed = headerValue.trim();
+  if (trimmed === '*') return true;
+  const target = normalizeEtagValue(etag);
+  return trimmed.split(',').some(part => normalizeEtagValue(part) === target);
+}
+
+async function sha1Hex(text) {
+  const data = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-1', data);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function attachHtmlEtag(request, response, env, appBuildApplied) {
+  if (response.status < 200 || response.status >= 300) return response;
+  const url = new URL(request.url);
+  const contentType = response.headers.get('content-type') || '';
+  const isHTML = contentType.includes('text/html')
+    || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
+  if (!isHTML) return response;
+
+  const variantSuffix = appBuildApplied ? 'app1' : 'app0';
+  const upstreamEtag = response.headers.get('etag');
+
+  let outgoingEtag = null;
+  let bodyText = null;
+
+  if (upstreamEtag) {
+    // upstream (将来 or 他経路) に ETag があれば再利用。body には触れないので
+    // ストリーミングのメリットはそのまま維持される。
+    outgoingEtag = `W/"${normalizeEtagValue(upstreamEtag)}-${variantSuffix}"`;
+  } else if (request.method === 'HEAD') {
+    // HEAD には body が無く本文ハッシュを計算できないので、
+    // validator なしの従来動作にフォールバックする（安全側）。
+    return response;
+  } else {
+    try {
+      bodyText = await response.text();
+    } catch {
+      // 本文取得に失敗したら validator なしの従来動作にフォールバック
+      return response;
+    }
+    try {
+      const hash = await sha1Hex(bodyText);
+      outgoingEtag = `W/"h${hash.slice(0, 16)}-${variantSuffix}"`;
+    } catch {
+      // crypto.subtle が使えない環境向けの保険（Workers では通常発生しない）。
+      // 既に body は読み切っているので bodyText で作り直して返す。
+      // response.headers をそのまま使うと、 response.text() が Content-Encoding
+      // (gzip/br 等) を透過的に解凍した後の平文を Content-Encoding 付きのヘッダーで
+      // 送ることになり、 クライアント側で解凍に失敗して HTML が壊れる
+      // (2026-07-10 レビューで検出。 下の 200/304 分岐と同じ理由なのでここでも
+      // 同様に Content-Length / Content-Encoding を削除する)。
+      const fallbackHeaders = new Headers(response.headers);
+      fallbackHeaders.delete('Content-Length');
+      fallbackHeaders.delete('Content-Encoding');
+      return new Response(bodyText, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: fallbackHeaders
+      });
+    }
+  }
+
+  const ifNoneMatch = request.headers.get('if-none-match');
+  if (ifNoneMatchHits(ifNoneMatch, outgoingEtag)) {
+    const headers = new Headers(response.headers);
+    headers.set('ETag', outgoingEtag);
+    headers.delete('Content-Length');
+    // bodyText を読んだ (= response.text() でデコード済み) 場合、 Content-Encoding は
+    // もう実体と一致しない (compressed bytes はデコードで失われている) ので削除する。
+    // 304 自体は body を持たないので直接の実害は無いが、 中間キャッシュ/プロキシが
+    // 304 のヘッダーを対応する 200 の予告として扱うケースに備えて一貫させる
+    // (2026-07-10 レビューで検出。 下の 200 分岐と同じ理由)。
+    if (bodyText !== null) headers.delete('Content-Encoding');
+    if (bodyText === null && response.body && typeof response.body.cancel === 'function') {
+      response.body.cancel().catch(() => {});
+    }
+    // 304 は spec 上 body を持てない (null body)。
+    return new Response(null, { status: 304, statusText: 'Not Modified', headers });
+  }
+
+  const headers = new Headers(response.headers);
+  headers.set('ETag', outgoingEtag);
+  if (bodyText !== null) {
+    // response.text() は Content-Encoding (gzip/br 等) があれば透過的に解凍した上で
+    // デコードするが、 response.headers 側の Content-Encoding はそのまま残る
+    // (Fetch 実装はヘッダーを書き換えない、いわゆる "Content-Encoding の嘘")。
+    // decode 済みの bodyText をそのまま新しい Response に詰めるとき Content-Encoding
+    // を残すと、 「圧縮されている」と主張したまま平文が流れることになりクライアント側で
+    // 解凍に失敗して HTML 全体が壊れる (2026-07-10 レビューで検出、 stub test Test 7 で
+    // 再現)。 Content-Length も本文長が変わるため削除する。
+    headers.delete('Content-Length');
+    headers.delete('Content-Encoding');
+  }
+  return new Response(bodyText !== null ? bodyText : response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
 }
 
 // HTML は常に最新、それ以外（画像・動画・JS・CSS）は長期キャッシュ
@@ -152,8 +308,11 @@ function applyCacheHeaders(request, response) {
     // ため ETag 304 が成立せず、 タイトル⇔ゲーム遷移のたびに HTML 全文 (brotli 165-222KB)
     // を再ダウンロードしていた。 no-cache なら毎リクエスト検証で deploy 即時反映は同一の
     // まま、 変更が無ければ 304 (body なし) で済む (2026-07-10)。
-    // Workers Assets は ETag を付与し、 ASSETS.fetch は If-None-Match を透過して 304 を
-    // 返すため validator はこのまま素通しでよい (下の new Response は headers を複製)。
+    // batch:1210b 追記: 実測の結果、 env.ASSETS.fetch() は HTML に ETag を付与しない
+    // (html_handling 経由の upstream 側の挙動。 詳細は attachHtmlEtag() のコメント参照)。
+    // validator の生成・条件付きリクエスト判定は attachHtmlEtag() (fetch ハンドラの
+    // 最終段) が担当するので、 ここでは Cache-Control 系ヘッダーの上書きのみ行う
+    // (下の new Response は headers を複製するだけで ETag には触れない)。
     headers.set('Cache-Control', 'no-cache');
     headers.set('CDN-Cache-Control', 'no-store');
     headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
